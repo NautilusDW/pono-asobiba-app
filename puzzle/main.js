@@ -7283,6 +7283,9 @@ let bgmStarted = false;
 
 function tryStartBgm() {
   if (!bgmEnabled || bgmStarted) return;
+  // perf 2026-07-10: index.html 側は preload="none" (1.1MB を parse 時に DL しない)。
+  // 実際に鳴らす直前に 'auto' へ昇格させてバッファリングを開始する。
+  if (bgm.preload !== 'auto') bgm.preload = 'auto';
   bgm.play().then(() => {
     bgmStarted = true;
   }).catch(() => {
@@ -7422,11 +7425,33 @@ function hideTitleGuideChoice() {
   titleGuideChoice.setAttribute('aria-hidden', 'true');
 }
 
+function hideTitleScreenNow() {
+  if (titleScreen) titleScreen.classList.add('hidden');
+}
+
+// タイトル画面をベールとして残す間の二重入場防止フラグ (一方通行)
+let titleEntryStarted = false;
+
 function enterPuzzleAfterTitle(options) {
   options = options || {};
+  if (titleEntryStarted) return;
+  titleEntryStarted = true;
+  // NOTE: ベールの pointer-events はデフォルトのまま残す (再タップは本関数と
+  // startFromTitleScreen の titleEntryStarted guard で no-op になる)。
+  // pointer-events:none にすると、ベール表示中の連打が下の みる/ヒント ボタン等へ
+  // 透過してしまうため不可 (ベール自身にタップを吸収させる)。
   hideTitleGuideChoice();
-  if (titleScreen) titleScreen.classList.add('hidden');
+  // perf 2026-07-10: タイトルを即 hide すると、練習ステージ等の JPG 読込中に
+  // 生の盤面が露出してしまう。finishOpeningAndEnterGame() がステージ読込を
+  // 開始した場合 (loading 表示中) は stage-ready コールバックが発火するまで
+  // タイトル画面を不透明ベールとして残す。読込が走らない経路では従来通り即 hide。
   finishOpeningAndEnterGame(options);
+  var stageLoadInFlight = !!(loadingEl && !loadingEl.classList.contains('hidden'));
+  if (stageLoadInFlight) {
+    queueStageReadyCallback(hideTitleScreenNow);
+  } else {
+    hideTitleScreenNow();
+  }
 }
 
 function chooseTitleGuideAction(showPractice) {
@@ -7437,7 +7462,7 @@ function chooseTitleGuideAction(showPractice) {
 
 function startFromTitleScreen(e) {
   if (e && typeof e.preventDefault === 'function') e.preventDefault();
-  if (titleGuideChoiceOpen) return;
+  if (titleGuideChoiceOpen || titleEntryStarted) return;
   getSfxCtx().resume().catch(() => {});
   if (showTitleGuideChoice()) return;
   enterPuzzleAfterTitle({ skipBasicPractice: true });
@@ -7844,6 +7869,9 @@ const OPENING_CUTS = [
   },
 ];
 
+// NOTE (perf 2026-07-10): runOpeningCutscene は commit b4510d5a 以降どこからも呼ばれていない
+// (orphaned)。プロダクト側で復活させる可能性があるため関数と #puzzle-opening マークアップは温存。
+// index.html の cut01-03.webp preload (計841KB) は削除済みなので、復活時は preload も戻すこと。
 function runOpeningCutscene(onDone) {
   const overlay  = document.getElementById('puzzle-opening');
   const audio    = document.getElementById('op-narration');

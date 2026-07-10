@@ -4,17 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
 
-  <!-- ===== FOUC GUARD (oto 型 4 層マスキング: inline 背景 + .page visibility + splash overlay + hard cut) ===== -->
+  <!-- ===== FOUC GUARD (oto 型 4 層マスキング: inline 背景 + .stage visibility + splash overlay + hard cut) ===== -->
   <!-- 1) inline 背景グラデで CSS 取得前の白フラッシュを抑制 -->
-  <!-- 2) .page を visibility:hidden、 body.pono-game-ready で解放 (順次塗りを 1 枚塗りに集約) -->
+  <!-- 2) .stage (本ページの可視ルート。 modal 類は全部 hidden 出荷) を visibility:hidden、
+          body.pono-game-ready で解放 (順次塗りを 1 枚塗りに集約)。
+          v2049 fix: 旧セレクタ .page は本ページに存在せず no-op だった -->
   <!-- 3) #pono-game-splash overlay で main UI 露出までの間 完全遮蔽 -->
   <!-- 4) splash タップ/Enter で display:none (hard cut)。 既存 #pono-tap-intro と排他 (音声未解禁時はそちら優先) -->
   <style id="pono-fouc-guard">
     html, body {
       background: linear-gradient(180deg, #FFF8F0 0%, #FDDCBF 100%);
     }
-    .page { visibility: hidden; }
-    body.pono-game-ready .page { visibility: visible; }
+    .stage { visibility: hidden; }
+    body.pono-game-ready .stage { visibility: visible; }
     #pono-game-splash {
       position: fixed; inset: 0; z-index: 1000;
       background: #FFF8F0;
@@ -78,7 +80,7 @@
           window.__ponoNotifySplashDismissed();
         }
       }
-      // 2 RAF 待ちで .page を可視化 (CSS 評価完了 + 1 フレーム描画後)
+      // 2 RAF 待ちで .stage を可視化 (CSS 評価完了 + 1 フレーム描画後)
       function ready(){
         requestAnimationFrame(function(){
           requestAnimationFrame(function(){
@@ -169,8 +171,11 @@
       });
     })();
   </script>
-  <!-- LCP 候補 (タイトル背景) の先行ロード -->
-  <link rel="preload" as="image" href="assets/images/BG_03.webp" fetchpriority="high">
+  <!-- LCP 候補 (タイトル背景) の先行ロード。
+       v2049 fix: 旧指定 BG_03.webp は本ページで未参照の死荷重だった。
+       実際の初期描画は selectGame(0) が .preview-bg に貼る MENU_GAMES[0] (quizland) の
+       peek 背景なので、 そのファイルを直接 preload する。 -->
+  <link rel="preload" as="image" href="assets/ui/play_quizland_title_back.webp" fetchpriority="high">
   <!-- ===== /FOUC GUARD ===== -->
 
   <title>あそびば｜ポノのあそびば</title>
@@ -224,7 +229,7 @@
        fetchpriority=low に降格して、 サムネ後ろに並べる。
        .bottom-nav は background-color: transparent + drop-shadow なので
        PNG 未到着でも UI は壊れない (nav 領域が一瞬透明になるだけ)。 -->
-  <link rel="preload" as="image" fetchpriority="low" href="assets/ui/bottom-nav/nav_group_3_joined_normal_20260706.webp">
+  <link rel="preload" as="image" fetchpriority="low" href="assets/ui/bottom-nav/nav_group_3_joined_normal_20260710.webp">
   <link rel="preload" as="image" fetchpriority="low" href="assets/ui/bottom-nav/profile_wallet_frame_wide_20260708.webp">
   <link rel="preload" as="image" fetchpriority="low" href="assets/ui/menu_card_coming_soon_banner_20260708.webp">
   <!-- pressed PNG 4 枚 (~7.1MB) は cold start 帯域を食うので <head> preload から外し、
@@ -1253,7 +1258,7 @@
       grid-template-columns: repeat(3, 1fr);
       align-items: stretch;
       justify-content: stretch;
-      background-image: url('assets/ui/bottom-nav/nav_group_3_joined_normal_20260706.webp');
+      background-image: url('assets/ui/bottom-nav/nav_group_3_joined_normal_20260710.webp');
       background-repeat: no-repeat;
       background-size: 100% 100%;
       background-position: center center;
@@ -6582,7 +6587,7 @@
       align-items: center;
       justify-items: center;
       gap: clamp(8px, 1.8vw, 14px);
-      background: transparent url("assets/images/quizland/Fukuro_frame_001.png") center / 100% 100% no-repeat;
+      background: transparent url("assets/images/quizland/Fukuro_frame_001.webp") center / 100% 100% no-repeat;
       color: #5a3515;
       text-align: center;
       filter: drop-shadow(0 18px 22px rgba(39, 24, 11, .36));
@@ -8317,7 +8322,7 @@
       grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 0;
       padding: 0;
-      background: transparent url("assets/ui/bottom-nav/nav_group_3_joined_normal_20260706.webp") center / 100% 100% no-repeat;
+      background: transparent url("assets/ui/bottom-nav/nav_group_3_joined_normal_20260710.webp") center / 100% 100% no-repeat;
       border: 0;
       border-radius: 0;
       overflow: visible;
@@ -8339,15 +8344,15 @@
     }
     .bottom-nav[data-pressed="feedback"]::after {
       opacity: 1;
-      background-image: url("assets/ui/bottom-nav/nav_group_3_joined_pressed_feedback_20260706.webp");
+      background-image: url("assets/ui/bottom-nav/nav_group_3_joined_pressed_feedback_20260710.webp");
     }
     .bottom-nav[data-pressed="news"]::after {
       opacity: 1;
-      background-image: url("assets/ui/bottom-nav/nav_group_3_joined_pressed_news_20260706.webp");
+      background-image: url("assets/ui/bottom-nav/nav_group_3_joined_pressed_news_20260710.webp");
     }
     .bottom-nav[data-pressed="settings"]::after {
       opacity: 1;
-      background-image: url("assets/ui/bottom-nav/nav_group_3_joined_pressed_settings_20260706.webp");
+      background-image: url("assets/ui/bottom-nav/nav_group_3_joined_pressed_settings_20260710.webp");
     }
     .profile-wallet {
       --profile-wallet-w: 293px;
@@ -9065,7 +9070,10 @@
             <span class="daily-quest-info-banner__arrow" aria-hidden="true">›</span>
           </button>
           <button class="daily-gacha-entry" id="dailyGachaEntry" type="button" aria-label="1にち1かい シールがもらえる ポノのガチャガチャ">
-            <span class="daily-gacha-entry__icon" aria-hidden="true"><img src="assets/ui/gacha/daily_gacha_capsule_closed_pink.png" alt="" draggable="false"></span>
+            <!-- v2049 perf: __icon は CSS で display:none 固定 (ボタン絵柄は background-image 側)。
+                 中に居た daily_gacha_capsule_closed_pink.png (820KB) は非表示のまま parse 時に
+                 DL されるだけの死荷重だったため <img> を削除 (span は後方互換で残置) -->
+            <span class="daily-gacha-entry__icon" aria-hidden="true"></span>
             <span class="daily-gacha-entry__label"><span>１にち１かい<br>ポノガチャ</span><span class="daily-gacha-entry__sub" id="dailyGachaEntrySub">シールを ひこう</span></span>
           </button>
         </div>
@@ -9133,13 +9141,17 @@
        iOS Safari は初回ユーザータップまで再生不能なため UX 劣化なし。 -->
   <audio id="play-bgm" src="assets/audio/play_bgm.mp3" loop preload="none"></audio>
 
-  <!-- ===== Shop BGM (v1784: 専用 BGM honey_bell_shop.mp3 に差し替え、 sticker-book との兼用解消) ===== -->
-  <audio id="shop-bgm" src="assets/audio/honey_bell_shop.mp3" loop preload="auto"></audio>
+  <!-- ===== Shop BGM (v1784: 専用 BGM honey_bell_shop.mp3 に差し替え、 sticker-book との兼用解消) =====
+       v2049 perf: play-bgm の v1699/v1700 パターンを踏襲し preload="none" 出荷。
+       cold start で 2.9MB MP3 を即時 fetch せず、 showShop() / startDonguriShopBgm() で
+       auto へ昇格 + load() してから再生する。 -->
+  <audio id="shop-bgm" src="assets/audio/honey_bell_shop.mp3" loop preload="none"></audio>
 
-  <!-- v1895: shop 購入 SE (rarity 別 preloaded、 new Audio() の GuardedAudio silent-reject 経路を回避) -->
-  <audio id="shop-sfx-normal" src="assets/audio/sfx/acorn/acorn_get_festive_20260628.mp3" preload="auto"></audio>
-  <audio id="shop-sfx-rare"   src="assets/audio/gacha/daily_gacha_sticker_sparkle.mp3"     preload="auto"></audio>
-  <audio id="shop-sfx-super"  src="assets/audio/gacha/daily_gacha_magic_sparkle_long.mp3"  preload="auto"></audio>
+  <!-- v1895: shop 購入 SE (rarity 別、 new Audio() の GuardedAudio silent-reject 経路を回避)。
+       v2049 perf: preload="none" 出荷 + showShop() 時に auto 昇格 + load() (購入操作までに十分間に合う)。 -->
+  <audio id="shop-sfx-normal" src="assets/audio/sfx/acorn/acorn_get_festive_20260628.mp3" preload="none"></audio>
+  <audio id="shop-sfx-rare"   src="assets/audio/gacha/daily_gacha_sticker_sparkle.mp3"     preload="none"></audio>
+  <audio id="shop-sfx-super"  src="assets/audio/gacha/daily_gacha_magic_sparkle_long.mp3"  preload="none"></audio>
 
   <!-- ===== Tap-to-start intro overlay (first session only; landscape only) =====
        Single tap dismisses, unlocks BGM autoplay, and reveals the title screen
@@ -9159,7 +9171,9 @@
             <source media="(max-width:768px)" srcset="assets/images/Amazon_mobile.webp" type="image/webp">
             <source srcset="assets/images/Amazon_pc.webp" type="image/webp">
             <source media="(max-width:768px)" srcset="assets/images/Amazon_mobile.png">
-            <img src="assets/images/Amazonリンク.png" alt="絵本『ありがとうって、うれしいね 〜くまのこ ポノの ちいさな ものがたり〜』をAmazonで見る" loading="eager">
+            <!-- v2049 perf: hidden の #tapIntro 内で eager だと parse 時に DL される。
+                 lazy なら display:none 中は intersect しない → tapIntro 表示時に初めて DL -->
+            <img src="assets/images/Amazonリンク.png" alt="絵本『ありがとうって、うれしいね 〜くまのこ ポノの ちいさな ものがたり〜』をAmazonで見る" loading="lazy">
           </picture>
         </a>
       </div>
@@ -9237,7 +9251,9 @@
             <span class="settings-action__sub">どんぐりを ふやす</span>
           </span>
         </button>
-        <a class="settings-action" href="index.html">
+        <!-- v2049 perf: 'index.html' 直指定は Cloudflare Workers assets が './' へ 307 redirect
+             するため、 最初からディレクトリ形式で指定して redirect 1 回分を節約 -->
+        <a class="settings-action" href="./">
           <span class="settings-action__icon" aria-hidden="true">⌂</span>
           <span class="settings-action__text">
             <span class="settings-action__main">こうしきサイト</span>
@@ -9519,7 +9535,9 @@
         <div class="daily-gacha-machine-wrap">
           <img class="daily-gacha-machine" src="assets/ui/gacha/daily_gacha_machine.webp" alt="" draggable="false">
           <button class="daily-gacha-lever" id="dailyGachaLever" type="button" aria-label="ガチャのレバー">
-            <img src="assets/ui/gacha/daily_gacha_lever.png" alt="" draggable="false">
+            <!-- v2049 perf: hidden モーダル内の 820KB PNG を parse 時に DL しないよう data-src 出荷。
+                 openDailyGacha() 冒頭で src へ昇格 (idle warm / hover warm 済ならキャッシュヒット) -->
+            <img data-src="assets/ui/gacha/daily_gacha_lever.png" alt="" draggable="false">
           </button>
           <div class="daily-gacha-turn-cue" aria-hidden="true">
             <div class="daily-gacha-turn-cue__spin">
@@ -9532,9 +9550,12 @@
             </div>
             <span class="daily-gacha-turn-cue__word">まわす</span>
           </div>
-          <img class="daily-gacha-guide-hand" id="dailyGachaGuideHand" src="assets/images/puzzle/ui/tutorial/hand_open_hover.png" alt="" draggable="false" aria-hidden="true">
+          <!-- v2049 perf: 下記 4 img (guide hand / drop capsule / closeup capsule / open halves) は
+               open 経路の JS (setDailyGachaHandState / chooseDailyGachaCapsule ← resetDailyGachaModal)
+               が毎回 .src を代入するため、 HTML では data-src 出荷にして parse 時 DL を回避 -->
+          <img class="daily-gacha-guide-hand" id="dailyGachaGuideHand" data-src="assets/images/puzzle/ui/tutorial/hand_open_hover.png" alt="" draggable="false" aria-hidden="true">
           <div class="daily-gacha-drop-mask" aria-hidden="true">
-            <img class="daily-gacha-drop-capsule" id="dailyGachaDropCapsule" src="assets/ui/gacha/daily_gacha_capsule_closed_pink.png" alt="" draggable="false">
+            <img class="daily-gacha-drop-capsule" id="dailyGachaDropCapsule" data-src="assets/ui/gacha/daily_gacha_capsule_closed_pink.png" alt="" draggable="false">
           </div>
         </div>
       </div>
@@ -9556,10 +9577,10 @@
 
       <div class="daily-gacha-closeup" aria-hidden="true">
         <div class="daily-gacha-closeup__inner">
-          <img class="daily-gacha-closeup__closed" id="dailyGachaCloseCapsule" src="assets/ui/gacha/daily_gacha_capsule_closed_pink.png" alt="" draggable="false">
+          <img class="daily-gacha-closeup__closed" id="dailyGachaCloseCapsule" data-src="assets/ui/gacha/daily_gacha_capsule_closed_pink.png" alt="" draggable="false">
           <div class="daily-gacha-closeup__open-pair" aria-hidden="true">
-            <img class="daily-gacha-closeup__open-half daily-gacha-closeup__open-half--left" id="dailyGachaOpenCapsuleLeft" src="assets/ui/gacha/daily_gacha_capsule_open_pink_pono.png" alt="" draggable="false">
-            <img class="daily-gacha-closeup__open-half daily-gacha-closeup__open-half--right" id="dailyGachaOpenCapsuleRight" src="assets/ui/gacha/daily_gacha_capsule_open_pink_plain.png" alt="" draggable="false">
+            <img class="daily-gacha-closeup__open-half daily-gacha-closeup__open-half--left" id="dailyGachaOpenCapsuleLeft" data-src="assets/ui/gacha/daily_gacha_capsule_open_pink_pono.png" alt="" draggable="false">
+            <img class="daily-gacha-closeup__open-half daily-gacha-closeup__open-half--right" id="dailyGachaOpenCapsuleRight" data-src="assets/ui/gacha/daily_gacha_capsule_open_pink_plain.png" alt="" draggable="false">
           </div>
           <div class="daily-gacha-reward" id="dailyGachaReward" aria-hidden="true">
             <img id="dailyGachaRewardImg" src="" alt="" draggable="false">
@@ -9587,7 +9608,10 @@
       <div class="donguri-shop-v2-character-safe" aria-hidden="true">
         <!-- v1615: shopkeeper is separated from the UI safe layer so the foreground counter can hide the lower body. -->
         <div class="donguri-shop-v2-shopkeeper">
-          <img id="donguriShopkeeperImg" src="assets/ui/shop/sticker_shopkeeper_squirrel_pose_idle_highlight_20260626.png" alt="" draggable="false" />
+          <!-- v2049 perf: showShop() → renderShopCatalog() → _setShopkeeperReaction() が
+               開店のたび必ず src を代入する (DONGURI_SHOPKEEPER_POSES.idle = 同一ファイル) ため、
+               HTML では data-src 出荷にして hidden のまま parse 時に DL しない -->
+          <img id="donguriShopkeeperImg" data-src="assets/ui/shop/sticker_shopkeeper_squirrel_pose_idle_highlight_20260626.png" alt="" draggable="false" />
         </div>
       </div>
       <div class="donguri-shop-v2-counter" aria-hidden="true"></div>
@@ -9702,7 +9726,9 @@
   <div class="book-welcome-overlay" id="bookWelcomeOverlay" hidden aria-hidden="true" role="dialog" aria-modal="true" aria-label="ポノからの ようこそ えんしゅつ">
     <button type="button" class="book-welcome-skip" id="bookWelcomeSkip">スキップ ▶</button>
     <div class="book-welcome-stage" id="bookWelcomeStage">
-      <img class="book-welcome-walker" id="bookWelcomeWalker" src="assets/images/characters/pono_side_fullbody.png" alt="" draggable="false" hidden>
+      <!-- v2049 perf: 生涯 1 回の演出用 img を data-src 出荷 (parse 時 DL 回避)。
+           runBookWelcomeSequence() が overlay 表示前に src へ昇格する -->
+      <img class="book-welcome-walker" id="bookWelcomeWalker" data-src="assets/images/characters/pono_side_fullbody.png" alt="" draggable="false" hidden>
       <div class="book-welcome-letter" id="bookWelcomeLetter" hidden>
         <div class="book-welcome-letter-card">
           <div class="book-welcome-letter-text" id="bookWelcomeLetterText">ありがとう。<br>えほんを よんでくれて。</div>
@@ -9730,7 +9756,9 @@
 
   <!-- ===== v3: 月1 おかえり演出 (feature_tier_v3 §4.4, book/sub 共通) ===== -->
   <div class="okaeri-toast" id="okaeriToast" hidden aria-live="polite">
-    <img class="okaeri-toast-img" src="assets/images/bento/story/staff/pono_wave.png" alt="" draggable="false">
+    <!-- v2049 perf: 月 1 表示の toast 画像を data-src 出荷 (parse 時 DL 回避)。
+         maybeShowMonthlyOkaeri() が表示直前に src へ昇格する -->
+    <img class="okaeri-toast-img" data-src="assets/images/bento/story/staff/pono_wave.png" alt="" draggable="false">
     <div class="okaeri-toast-text">えほんを かってくれて<br>ありがとうね</div>
   </div>
 
@@ -9895,7 +9923,7 @@
         subtitle: 'ひらめき・ものしりクイズ',
         icon: '🦉',
         bg: 'assets/ui/play_quizland_title_back.webp',
-        href: 'quizland/index.html',
+        href: 'quizland/',
         panel: 'assets/ui/menu_card_base_01.webp',
         // owl_professor_guide.png はフクロウ博士の単体立ち絵 (透過)。
         // 旧 thumb_quizland.png (教室シーン) はテーマと合わないため不使用。
@@ -9910,7 +9938,7 @@
         subtitle: 'こたえて トンネルを あけよう',
         icon: '🚂',
         bg: 'assets/ui/play_quiz_sound_title_back.webp',
-        href: 'nazonazo-tunnel/index.html',
+        href: 'nazonazo-tunnel/',
         panel: 'assets/ui/menu_card_base_03.webp',
         thumb: 'assets/ui/thumb_quiz-sound.webp',
         thumbPos: '50% 52%',
@@ -9923,7 +9951,7 @@
         subtitle: 'もじを あつめて ことばを つくろう',
         icon: '🏗️',
         bg: 'assets/ui/play_wordmatch_title_back.webp',
-        href: 'mojicrane/index.html',
+        href: 'mojicrane/',
         panel: 'assets/ui/menu_card_base_01.webp',
         thumb: 'assets/ui/thumb_wordmatch.webp',
         thumbPos: '50% 52%',
@@ -9936,7 +9964,7 @@
         subtitle: 'ランタンをもって まいごさがし',
         icon: '🏮',
         bg: 'assets/ui/play_maze_title_back.webp',
-        href: 'maze/index.html',
+        href: 'maze/',
         panel: 'assets/ui/menu_card_base_04.webp',
         // 本物の迷路絵 (ランタン+夜の小道) は thumb_quiz-sound.webp 側に
         // 入っているのでこちらを流用。 thumb_maze.webp は中身が
@@ -9952,7 +9980,7 @@
         subtitle: 'タップして おとを ならそう',
         icon: '🎵',
         bg: 'assets/ui/play_oto_title_back.webp',
-        href: 'oto/index.html',
+        href: 'oto/',
         panel: 'assets/ui/menu_card_base_01.webp',
         thumb: 'assets/ui/thumb_oto.webp',
         thumbPos: '34% 54%',
@@ -9967,7 +9995,7 @@
         subtitle: 'すきな おかずを つめよう',
         icon: '🍱',
         bg: 'assets/ui/play_bento_title_back.webp',
-        href: 'bento/index.html',
+        href: 'bento/',
         panel: 'assets/ui/menu_card_base_02.webp',
         thumb: 'assets/ui/thumb_bento.webp',
         thumbPos: '31% 58%',
@@ -9980,7 +10008,7 @@
         subtitle: 'ピースを あわせて えを つくろう',
         icon: '🧩',
         bg: 'assets/ui/play_puzzle_title_back.webp',
-        href: 'puzzle/index.html',
+        href: 'puzzle/',
         panel: 'assets/ui/menu_card_base_03.webp',
         thumb: 'assets/ui/thumb_puzzle.webp',
         thumbPos: '36% 52%',
@@ -9993,7 +10021,7 @@
         subtitle: 'たべて かくして かずあそび',
         icon: '🍽️',
         bg: 'monster-math/assets/bg_shokudo.webp',
-        href: 'monster-math/index.html',
+        href: 'monster-math/',
         panel: 'assets/ui/menu_card_base_02.webp',
         thumb: 'monster-math/assets/title_v2_composite.webp',
         thumbPos: '50% 50%',
@@ -10006,7 +10034,7 @@
         subtitle: 'うちゅうで メカと たたかおう',
         icon: '🚀',
         bg: 'assets/ui/play_starparodier_title_back.webp',
-        href: 'starparodier/index.html',
+        href: 'starparodier/',
         panel: 'assets/ui/menu_card_base_03.webp',
         thumb: 'assets/ui/thumb_starparodier.webp',
         thumbPos: '50% 52%',
@@ -10019,7 +10047,7 @@
         subtitle: 'ひかりのエサを とどけよう',
         icon: '🌊',
         bg: 'assets/images/undersea-cave/bg_wall_near.png',
-        href: 'undersea-cave/index.html',
+        href: 'undersea-cave/',
         panel: 'assets/ui/menu_card_base_01.webp',
         thumb: 'assets/images/undersea-cave/friend_whale_sleep.png',
         thumbPos: '48% 52%',
@@ -10032,7 +10060,7 @@
         subtitle: 'いきものを しらべて カードを あつめよう',
         icon: '🐚',
         bg: 'assets/images/sea-album/stage1/stage1_tidepool_scroll_panorama.png',
-        href: 'sea-album/index.html',
+        href: 'sea-album/',
         panel: 'assets/ui/menu_card_base_02.webp',
         thumb: 'assets/images/sea-album/stage1/stage1_tidepool_scroll_panorama.png',
         thumbPos: '50% 62%',
@@ -10046,7 +10074,7 @@
         subtitle: 'ひらがなを なぞって ミルマルを そだてよう',
         icon: '✏️',
         bg: 'assets/ui/play_wordmatch_title_back.webp',
-        href: 'writing-mori/index.html',
+        href: 'writing-mori/',
         panel: 'assets/ui/menu_card_base_04.webp',
         thumb: 'assets/ui/thumb_wordmatch.webp',
         thumbPos: '45% 52%',
@@ -10061,7 +10089,7 @@
         subtitle: 'もりを たんけんして どうぶつを みつけよう',
         icon: '📕',
         bg: 'assets/ui/play_zukan_outer_bg_21x9.webp',
-        href: 'zukan/index.html',
+        href: 'zukan/',
         panel: 'assets/ui/menu_card_base_04.webp',
         // thumb_maze.webp は実際は ずかん風 (本+葉+きのこ+まつぼっくり)
         // の絵なので、 ずかんカードで正しく使う。
@@ -10094,7 +10122,7 @@
         subtitle: 'どうぶつのこえを きいて さがそう',
         icon: '🐦',
         bg: 'assets/ui/play_quiz_sound_title_back.webp',
-        href: 'quiz-sound/index.html',
+        href: 'quiz-sound/',
         panel: 'assets/ui/menu_card_base_02.webp',
         thumb: 'assets/ui/thumb_quiz-sound.webp'
       }
@@ -10282,7 +10310,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 1275; // sw.js CACHE_VERSION と同期 (OtoTouch app-only fluid HUD sync)
+    const PAGE_CACHE_VERSION = 1276; // sw.js CACHE_VERSION と同期 (batch:1210 perf sync, rebased onto OtoTouch fluid HUD sync)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -10291,7 +10319,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v1275';
+    window.PONO_SW_VERSION = 'v1276';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
@@ -11645,6 +11673,11 @@
       // v1699: グローバル mute (play-bgm 用) を尊重 — mute 中は shop でも無音
       if (_shopBgmIsMuted()) return;
       try {
+        // v2049 perf: preload="none" 出荷のため play() 前に auto へ昇格 + load() (v1700 play-bgm パターン)
+        if (bgm.preload !== 'auto') {
+          bgm.preload = 'auto';
+          try { bgm.load(); } catch (_) {}
+        }
         // 再生前に毎回頭出し (前回の半端な位置から復活して途切れて聞こえないよう)
         bgm.currentTime = 0;
         bgm.volume = 0.32;
@@ -12582,6 +12615,15 @@
     function openDailyGacha() {
       if (!dailyGachaEnabled || !dailyGachaModal) return;
       startDailyGachaImagePreload();
+      // v2049 perf: レバー <img> は data-src 出荷 (hidden モーダル内の parse 時 820KB DL 回避)。
+      // 初回 open のここで src へ昇格する (idle/hover warm 済ならキャッシュヒットで即表示)。
+      if (dailyGachaLever) {
+        var leverImg = dailyGachaLever.querySelector('img[data-src]');
+        if (leverImg) {
+          leverImg.src = leverImg.getAttribute('data-src');
+          leverImg.removeAttribute('data-src');
+        }
+      }
       // Debug board 集約: ポノガチャの回数制限 bypass は機能トグル ON の時だけ有効。
       var __debugBypass = !!(window.PonoDebugMode
         && typeof window.PonoDebugMode.isFeatureEnabled === 'function'
@@ -12857,6 +12899,15 @@
       // v1698: daily-gacha → shop 遷移で bed_loop が漏れていた場合に備えて確実に止める
       //        (これが v1693 で観測された「二重再生」 の真因)。
       try { if (typeof stopDailyGachaBed === 'function') stopDailyGachaBed(); } catch (_) {}
+      // v2049 perf: 購入 SE 3 種は preload="none" 出荷なので、 開店時に auto へ昇格 + load()。
+      // 購入操作 (数秒後) までに DL が完了するため体感差なし (v1700 play-bgm パターン)。
+      ['shop-sfx-normal', 'shop-sfx-rare', 'shop-sfx-super'].forEach(function (sfxId) {
+        var se = document.getElementById(sfxId);
+        if (se && se.preload !== 'auto') {
+          se.preload = 'auto';
+          try { se.load(); } catch (_) {}
+        }
+      });
       pauseTopBgmForDonguriShop();
       startDonguriShopBgm();
       shop.hidden = false;
@@ -14281,6 +14332,12 @@
       if (skipBtn) skipBtn.addEventListener('click', onSkip);
       if (doneBtn) doneBtn.addEventListener('click', onDone);
 
+      // v2049 perf: walker は data-src 出荷 (parse 時 DL 回避)。 表示 (250ms 後) 前にここで昇格。
+      if (walker && walker.dataset.src) {
+        walker.src = walker.dataset.src;
+        delete walker.dataset.src;
+      }
+
       overlay.hidden = false;
       requestAnimationFrame(() => overlay.classList.add('is-visible'));
 
@@ -14420,6 +14477,12 @@
         textEl.innerHTML = (tierName === 'sub')
           ? 'またあそんでくれて<br>ありがとうね'
           : 'えほんを かってくれて<br>ありがとうね';
+      }
+      // v2049 perf: toast 画像は data-src 出荷 (parse 時 DL 回避)。 表示直前にここで昇格。
+      const okaeriImg = toast.querySelector('img[data-src]');
+      if (okaeriImg) {
+        okaeriImg.src = okaeriImg.getAttribute('data-src');
+        okaeriImg.removeAttribute('data-src');
       }
       // H4 fix: 月キーの消費を toast 表示が確定した直後 (= 表示成功後) に移動。
       // 以前はここより手前 (tier/pending チェック直後、 かつ splash 表示中) で消費して
@@ -16494,72 +16557,14 @@
       document.head.appendChild(s);
     })();
 
-    // ===== First-visit SW catch-up overlay (Fix 4 / 2026-06-28) =====
-    // 「v1709 を push したのに体感変わらない」 メタ症状対策:
-    // 初回 visit でクライアントが PAGE_CACHE_VERSION 未到達 (lastSeen が古い or 未設定) の場合、
-    // splash に小さなローディング overlay を 500ms 出して、 そのまま自動 reload する。
-    // sessionStorage で 1 回限定 (リロードループ防止)。
-    //
-    // CRITICAL: PAGE_CACHE_VERSION は sw.js の CACHE_VERSION と必ず同期させること。
-    // 両者が divergeすると lastSeenCacheVer < PAGE_CACHE_VERSION でも SW が新しくならず
-    // catch-up が空振り → 無限 reload ループの恐れあり (sessionStorage FLAG で抑止しているが)。
-    (function () {
-      if (!('serviceWorker' in navigator)) return;
-      try {
-        if (/claudeusercontent\.com$/.test(location.hostname)) return;
-      } catch (e) { return; }
-      var FLAG = '__ponoSwCatchupV' + PAGE_CACHE_VERSION;
-      var LAST = 'ponoLastSeenCacheVer';
-      var lastSeen = null;
-      try { lastSeen = parseInt(localStorage.getItem(LAST) || '0', 10) || 0; } catch (e) {}
-      // 既に最新を見ている → 何もしない
-      if (lastSeen >= PAGE_CACHE_VERSION) return;
-      // このセッションで既に catch-up 済 → 何もしない
-      try { if (sessionStorage.getItem(FLAG) === '1') return; } catch (e) { return; }
-      // 初回 (lastSeen=0) かつ controller が無い → SW 自体まだ未登録なので reload しても意味なし
-      if (!navigator.serviceWorker.controller && lastSeen === 0) {
-        try { localStorage.setItem(LAST, String(PAGE_CACHE_VERSION)); } catch (e) {}
-        return;
-      }
-      // controller あり & lastSeen < 現バージョン → 旧 SW が動いてる可能性大。
-      // 短い overlay を出して 1 度だけ reload。
-      try { sessionStorage.setItem(FLAG, '1'); } catch (e) { return; }
-      var overlay = document.createElement('div');
-      overlay.id = 'ponoSwCatchupOverlay';
-      overlay.style.cssText = [
-        'position:fixed;inset:0;z-index:2147483647;',
-        'background:rgba(10,14,22,0.86);color:#fff;',
-        'display:flex;flex-direction:column;align-items:center;justify-content:center;',
-        'font:600 16px/1.5 system-ui,sans-serif;text-align:center;padding:24px;',
-        'animation:ponoSwCatchupFade .2s ease both;'
-      ].join('');
-      overlay.innerHTML = [
-        '<div style="font-size:28px;margin-bottom:12px;">🔄</div>',
-        '<div>あたらしい バージョンに こうしんしています...</div>',
-        '<div style="font-size:13px;opacity:.75;margin-top:8px;">すこし まってね</div>',
-        '<style>@keyframes ponoSwCatchupFade{from{opacity:0}to{opacity:1}}</style>'
-      ].join('');
-      // body がまだなら DOMContentLoaded を待つ
-      function mount() {
-        try { document.body.appendChild(overlay); } catch (e) {}
-        try { localStorage.setItem(LAST, String(PAGE_CACHE_VERSION)); } catch (e) {}
-        setTimeout(function () {
-          try { window.__isReloading = true; } catch (e) {}
-          // __isReloading は通常 reload navigation で page unload するので
-          // 自動解除されるが、 reload が navigate しなかった (失敗/キャンセル)
-          // 場合に備えて 2 秒後にフラグを解除して stale 状態を防ぐ。
-          setTimeout(function () {
-            try { window.__isReloading = false; } catch (e) {}
-          }, 2000);
-          window.location.reload();
-        }, 500);
-      }
-      if (document.body) {
-        mount();
-      } else {
-        document.addEventListener('DOMContentLoaded', mount, { once: true });
-      }
-    })();
+    // ===== (v2049 削除) First-visit SW catch-up overlay =====
+    // 旧実装はデプロイ bump のたび全帰還ユーザーに 「🔄 あたらしいバージョン...」 overlay を
+    // 出して parse 完了 500ms 後に location.reload() していた。 だが sw-update.js の
+    // noteWaitingUpdate は no-op / sw.js は install 時に skipWaiting しないため、
+    // reload しても waiting SW は adopt されず、 次の自然な navigation と結果が変わらない
+    // (cross-audit 裁定済)。 起動を丸ごと 1 回捨てるだけの死荷重として撤去。
+    // localStorage 'ponoLastSeenCacheVer' はこのブロック以外に読者がいないことを
+    // grep 確認済みのため bookkeeping ごと削除。
   </script>
 
   <!-- ===== Stage scale-to-fit + portrait detection ===== -->
@@ -16602,31 +16607,29 @@
       window.addEventListener('resize', fit);
       window.addEventListener('orientationchange', fit);
 
-      // bfcache 復元時の表示崩れ対策:
+      // bfcache 復元時の表示崩れ対策 (v2049: reload 廃止 → その場修復):
       // ゲームページから戻るボタンで戻ってきた時、ブラウザが page-state
       // memory snapshot をそのまま再表示することがある (event.persisted = true)。
-      // その状態だと scale 計算 / SW更新後の最新アセットがどちらも適用されず、
-      // 黒帯が出たり一部画像 (例: 図鑑サムネ) が抜けたりする。検出して 1回だけリロード。
-      //
-      // v1686 緊急 fix: 「リロード ループ」 再発対応。
-      // 旧実装は無条件 location.reload() のため、 sw-update.js の controllerchange→safeReload と
-      // 同時発火するとリロード後に再度 pageshow→reload が走り、 体感「ずっと考え中」 のまま停滞。
-      // 多層ガード:
-      //   1) sessionStorage で「このタブで bfcache reload 既に実行済」 を記録 → 1 セッション 1 回限定
-      //   2) SW がまさに更新通知中 (sw-update.js が pendingReload を立てている) なら任せる
-      //   3) sw-update.js の isNavigating ガードと race しないよう先に window.__isReloading フラグを立てる
+      // 旧実装はここで location.reload() しており、 bfcache の 「一瞬で戻れる」
+      // 利点を毎回 (セッション初回) 丸ごと捨てていた。
+      // 心配していた崩れは個別修復で足りる:
+      //   - scale 崩れ (黒帯)   → fit() 再実行 (この IIFE 内で定義済み)
+      //   - どんぐり残高の stale → acorn バッジ側の pageshow listener が既に再描画する
+      //   - 画像抜け (例: サムネ) → 読み込み失敗した <img> のみ src 再代入で再取得
+      // 修復は冪等・軽量なので session 1 回限定にせず、 復元のたびに毎回実行する。
       window.addEventListener('pageshow', (e) => {
         if (!e.persisted) return;
+        try { fit(); } catch (_) {}
         try {
-          if (window.__isReloading) return;
-          if (sessionStorage.getItem('__bfcacheReloaded') === '1') return;
-          sessionStorage.setItem('__bfcacheReloaded', '1');
-          window.__isReloading = true;
-        } catch (_) {
-          // sessionStorage 不可 (private mode 等) — 安全側に倒し reload しない
-          return;
-        }
-        location.reload();
+          document.querySelectorAll('img[src]').forEach((img) => {
+            const srcAttr = img.getAttribute('src');
+            if (!srcAttr) return; // src="" (演出用の空 img) は触らない
+            if (img.complete && img.naturalWidth === 0) {
+              // 失敗した画像だけ再代入して再フェッチさせる
+              img.src = srcAttr;
+            }
+          });
+        } catch (_) {}
       });
     })();
   </script>

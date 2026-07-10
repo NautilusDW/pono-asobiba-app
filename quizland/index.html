@@ -134,7 +134,7 @@ html, body {
 .stage-wrap {
   position: fixed; inset: 0;
   overflow: hidden;
-  background: #0c0c0c url('../assets/_legacy/preview-placeholders/stage-bg.png') center / cover no-repeat;
+  background: #0c0c0c url('../assets/images/quizland/stage-bg.webp') center / cover no-repeat;
 }
 .stage {
   position: absolute;
@@ -195,7 +195,7 @@ body.sheet-on .stage::after {
    ここで Fukuro_frame_004.png を貼ると、ヘッダー全体の papyrus 背景になる。
    その上に owl-icon + title-card (title_logo.png) / progress-num / dots の各子要素が乗る。 */
 body.sheet-on .hdr-pill {
-  background-image: url('../assets/images/quizland/Fukuro_frame_003.png') !important;
+  background-image: url('../assets/images/quizland/Fukuro_frame_003.webp') !important;
   background-size: 100% 100% !important;
   background-position: center !important;
   background-repeat: no-repeat !important;
@@ -206,7 +206,7 @@ body.sheet-on .hdr-pill {
 
 /* q-text-card: 左カラムの問題文カード (4:3 で最も影響を受ける枠) */
 body.sheet-on .q-text-card {
-  background: url('../assets/images/quizland/Fukuro_frame_003.png') center / 100% 100% no-repeat;
+  background: url('../assets/images/quizland/Fukuro_frame_003.webp') center / 100% 100% no-repeat;
   border-color: transparent;
   box-shadow: none;
 }
@@ -227,7 +227,7 @@ body.sheet-on .board::before {
   position: absolute;
   inset: 0;
   margin: -4px -14px;
-  background: url('../assets/images/quizland/Fukuro_frame_001.png') center / 100% 100% no-repeat;
+  background: url('../assets/images/quizland/Fukuro_frame_001.webp') center / 100% 100% no-repeat;
   pointer-events: none;
   z-index: 0;
 }
@@ -238,7 +238,7 @@ body.sheet-on .board > * {
 
 /* answer-tray: チップが並ぶ下段トレイ */
 body.sheet-on .answer-tray {
-  background: url('../assets/images/quizland/Fukuro_frame_002.png') center / 100% 100% no-repeat;
+  background: url('../assets/images/quizland/Fukuro_frame_002.webp') center / 100% 100% no-repeat;
   border-color: transparent;
   box-shadow: none;
 }
@@ -362,7 +362,7 @@ body.sheet-on .hdr-left .owl-icon img {
    それらは saved-layout の inline style と二重指定になり editor で決めた配置を歪めるため削除。
    貼付ルール (background-image/size/position/repeat/color) と二重表示防止 (color/text-shadow) のみ残す。 */
 body.sheet-on .hdr-left .title-card {
-  background-image: url('../assets/images/quizland/title_logo.png') !important;
+  background-image: url('../assets/images/quizland/title_logo.webp') !important;
   background-size: 100% 100% !important;
   background-position: center !important;
   background-repeat: no-repeat !important;
@@ -596,7 +596,7 @@ body.layout-editor-on.show-safe.qz-explicit-layout-editor .q-text-card::after {
 .hdr-left .title-card small { font-size: 11px; display: block; }
 /* preview/full から移植: title-card.png を背景に被せ、 sheet-on では CSS テキストを透明化 */
 .hdr-left .title-card {
-  background-image: url('../assets/images/quizland/Fukuro_frame_004.png');
+  background-image: url('../assets/images/quizland/Fukuro_frame_004.webp');
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
@@ -1970,7 +1970,7 @@ body.layout-editor-on .character img {
 /* ===== Start Screen ===== */
 .start-screen {
   position: fixed; inset: 0; z-index: 50;
-  background: #C4D9A2 url('../assets/images/quizland/title_back.png') center / cover no-repeat;
+  background: #C4D9A2 url('../assets/images/quizland/title_back.webp') center / cover no-repeat;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   overflow: hidden;
@@ -3607,12 +3607,17 @@ body.layout-editor-on .op-skip {
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0;
+  /* Flash fix (2026-07-10): 黒背景は表示した瞬間から不透明 (opacity:1) にし、
+     フェードインは内側のカード画像 (.quiz-start-card-img) だけに掛ける。
+     旧実装はルート全体を opacity 0→1 でフェードしていたため、 op-cinematic の
+     display:none 直後の 0.35s 間だけ下のゲーム画面が透けてチラつく事故があった。
+     終了時のみ .is-fading-out でルート全体をフェードアウトする (旧挙動を維持)。 */
+  opacity: 1;
   transition: opacity 0.35s ease-out;
   cursor: pointer;
 }
 .quiz-start-card.hidden { display: none; }
-.quiz-start-card.is-revealed { opacity: 1; }
+.quiz-start-card.is-fading-out { opacity: 0; }
 .quiz-start-card-img {
   /* The card is 1024x1024 — fit comfortably without clipping */
   width: auto;
@@ -3622,10 +3627,12 @@ body.layout-editor-on .op-skip {
   object-fit: contain;
   filter: none;
   /* Subtle "pop in" scale animation reveals the card */
+  opacity: 0;
   transform: scale(0.92);
-  transition: transform 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+  transition: transform 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28), opacity 0.35s ease-out;
 }
 .quiz-start-card.is-revealed .quiz-start-card-img {
+  opacity: 1;
   transform: scale(1.0);
 }
 @media (max-width: 540px) {
@@ -3745,7 +3752,7 @@ body.layout-editor-on .qno-plate-overlay.is-tap-skip { pointer-events: none; }
 <!-- ===== Start Screen ===== -->
 <div class="start-screen" id="start-screen" role="button" aria-label="タップして はじめる">
   <div class="start-content">
-    <img class="start-logo" src="../assets/images/quizland/title_logo.png" alt="フクロウはかせのなぞなぞ">
+    <img class="start-logo" src="../assets/images/quizland/title_logo.webp" alt="フクロウはかせのなぞなぞ">
     <div class="start-tap-cta">▶ タップして はじめる</div>
   </div>
 </div>
@@ -3803,7 +3810,7 @@ body.layout-editor-on .qno-plate-overlay.is-tap-skip { pointer-events: none; }
       <div class="hdr">
         <div class="hdr-left hdr-pill">
           <div class="owl-icon">
-            <img src="../assets/images/quizland/owl_professor_guide.png" alt="" aria-hidden="true">
+            <img src="../assets/images/quizland/owl_professor_guide.webp" alt="" aria-hidden="true">
           </div>
           <div class="title-card">
             <small>フクロウはかせの</small>
@@ -3854,7 +3861,7 @@ body.layout-editor-on .qno-plate-overlay.is-tap-skip { pointer-events: none; }
           <div class="bottom-right">
             <div class="char-hint" id="char-hint-bubble"><span id="char-hint-text">ヒント！</span></div>
             <div class="character" id="pono-avatar">
-              <img src="../assets/images/quizland/owl_professor_guide.png" alt="フクロウ博士">
+              <img src="../assets/images/quizland/owl_professor_guide.webp" alt="フクロウ博士">
             </div>
           </div>
         </div>
@@ -3892,7 +3899,7 @@ body.layout-editor-on .qno-plate-overlay.is-tap-skip { pointer-events: none; }
 
 <!-- 正解スタンプ (correct answer transient overlay)。 onChoice が show class を付けて 1.5 秒後に外す。 -->
 <div class="seikai-stamp" id="seikai-stamp" aria-hidden="true">
-  <img src="../assets/images/quizland/stamps/seikai.png" alt="">
+  <img src="../assets/images/quizland/stamps/seikai.webp" alt="">
 </div>
 
 <div class="overlay hidden" id="result-overlay">
@@ -3988,6 +3995,14 @@ try {
     document.body.classList.add('qz-explicit-layout-editor');
   }
 } catch (_) {}
+
+// ─── 静的アセット用 per-deploy キャッシュキー (2026-07-10 perf) ──────────
+//   画像 URL の ?v= と saved-layout.json の cache-bust に使う固定文字列。
+//   アセットを差し替えるデプロイでは手動でバンプすること。
+//   旧実装: window._imgCacheBust = Date.now() — sw.js は ?v= 付き URL を
+//   キャッシュバイパスするため、 毎セッション全問題イラスト (0.5〜2.3MB/枚) を
+//   再ダウンロードしていた。 固定キー化で 2 回目以降は HTTP キャッシュが効く。
+const QUIZLAND_ASSET_VERSION = 'v2073';
 
 // ═══════════════════════════════════════════════════════════
 // State
@@ -5107,7 +5122,71 @@ window.EditorBootstrapConfig = {
 // ═══════════════════════════════════════════════════════════
 // Audio (BGM + 効果音)
 // ═══════════════════════════════════════════════════════════
-window._imgCacheBust = Date.now();
+// per-deploy 固定キー (旧: Date.now() = 毎セッション全画像再 DL。 2026-07-10 廃止、
+// 定義は QUIZLAND_ASSET_VERSION 参照)。
+window._imgCacheBust = QUIZLAND_ASSET_VERSION;
+
+// ─── illust ライブラリ webp 化ヘルパー (2026-07-10 perf) ─────────────
+//   questions.js のデータは .png ファイル名のまま保持し、 表示時に同名 .webp を
+//   優先ロードする (374 枚 / 181MB → 24MB)。 .webp 欠損・読込失敗時は error
+//   1 回につき候補を 1 つ進める one-shot fallback で元 .png に戻す
+//   (候補は有限配列なので無限ループしない)。
+function _qzWebpName(name) {
+  return (typeof name === 'string') ? name.replace(/\.png$/i, '.webp') : name;
+}
+// img に候補 URL を順に試させる。 全候補が失敗したら onAllFailed
+// (CSS fallback 等) を 1 回だけ呼ぶ。 candidates は [webp, png] が基本形。
+function _qzSetImgSrcWithFallback(imgEl, candidates, onAllFailed) {
+  const list = (candidates || []).filter(function (u, i, a) {
+    return u && a.indexOf(u) === i;   // 空値除去 + 重複除去 (webp 名 == png 名の場合)
+  });
+  if (!list.length) return;
+  let idx = 0;
+  imgEl.addEventListener('error', function onErr() {
+    idx++;
+    if (idx < list.length) { imgEl.src = list[idx]; return; }
+    imgEl.removeEventListener('error', onErr);
+    if (typeof onAllFailed === 'function') { try { onAllFailed(); } catch (_) {} }
+  });
+  imgEl.src = list[0];
+}
+// opposite / trivia のステージ絵は「stage/ → choice/」フォルダ fallback に加えて
+// webp → png fallback も必要になったため、 残候補を dataset.qzFallbacks (JSON) に
+// 持たせて error のたびに 1 つずつ消費する常設ハンドラで一元処理する。
+// revealAnswer / _qzRestoreQuestionStageImage の src 差し替え時も同じハンドラが働く
+// (差し替えごとに dataset.qzFallbacks を張り直すので世代の取り違えは起きない)。
+function _qzAttachStageImgFallbackHandler(imgEl) {
+  if (imgEl._qzFallbackHandlerAttached) return;
+  imgEl._qzFallbackHandlerAttached = true;
+  imgEl.addEventListener('error', function () {
+    let rest = [];
+    try { rest = JSON.parse(imgEl.dataset.qzFallbacks || '[]'); } catch (_) { rest = []; }
+    if (!rest.length) return;
+    const next = rest.shift();
+    imgEl.dataset.qzFallbacks = JSON.stringify(rest);
+    imgEl.src = next;
+  });
+}
+// stage/ → choice/ の順で .webp を試し、 だめなら元 .png でも同順で retry する。
+// v は ?v= キャッシュキー (通常 QUIZLAND_ASSET_VERSION)。
+function _qzSetStageChoiceIllust(imgEl, pngName, v) {
+  const q = v ? ('?v=' + v) : '';
+  const webpName = _qzWebpName(pngName);
+  const candidates = [
+    '../assets/images/quizland/illust/stage/' + webpName + q,
+    '../assets/images/quizland/illust/choice/' + webpName + q
+  ];
+  if (webpName !== pngName) {
+    candidates.push(
+      '../assets/images/quizland/illust/stage/' + pngName + q,
+      '../assets/images/quizland/illust/choice/' + pngName + q
+    );
+  }
+  _qzAttachStageImgFallbackHandler(imgEl);
+  imgEl.dataset.qzFallbacks = JSON.stringify(candidates.slice(1));
+  imgEl.src = candidates[0];
+}
+
 let audioCtx = null;
 function ensureAudio() {
   if (!audioCtx) {
@@ -5431,17 +5510,19 @@ function renderOrderColor(stage, q) {
   q.items.forEach(colorKey => {
     const img = document.createElement('img');
     img.className = 'color-chip';
-    img.src = '../assets/images/quizland/illust/color/color_' + colorKey + '.png';
     img.alt = (QUIZLAND_COLORS[colorKey] && QUIZLAND_COLORS[colorKey].name) || '';
-    // 失敗時は CSS color にフォールバック (既存資産が壊れた場合の保険)
-    img.onerror = function() {
+    // .webp 優先 → .png retry → 最後は CSS color にフォールバック (既存資産が壊れた場合の保険)
+    _qzSetImgSrcWithFallback(img, [
+      '../assets/images/quizland/illust/color/color_' + colorKey + '.webp',
+      '../assets/images/quizland/illust/color/color_' + colorKey + '.png'
+    ], function() {
       const fallback = document.createElement('div');
       fallback.className = 'color-chip';
       if (QUIZLAND_COLORS[colorKey]) {
         fallback.style.background = QUIZLAND_COLORS[colorKey].code;
       }
       img.replaceWith(fallback);
-    };
+    });
     row.appendChild(img);
   });
   stage.appendChild(row);
@@ -5490,20 +5571,28 @@ function renderShapeName(stage, q) {
   const img = document.createElement('img');
   img.className = 'shape-img';
   if (q.framed) img.classList.add('is-framed');
-  if (q.img) {
-    img.src = '../assets/images/quizland/illust/stage/' + q.img + '?v=' + (window._imgCacheBust || '');
-  } else {
-    img.src = '../assets/images/quizland/illust/shape/shape_' + q.shape + '.png';
-  }
   img.alt = '';
   // 素材欠損時は CSS 描画にフォールバック (保険)。 ★/♥ は文字を入れる。
-  img.onerror = function() {
+  const shapeCssFallback = function() {
     const fallback = document.createElement('div');
     fallback.className = 'shape-' + q.shape;
     if (q.shape === 'star')  fallback.textContent = '★';
     if (q.shape === 'heart') fallback.textContent = '♥';
     img.replaceWith(fallback);
   };
+  // .webp 優先 → .png retry → CSS フォールバック
+  if (q.img) {
+    const qv = '?v=' + (window._imgCacheBust || '');
+    _qzSetImgSrcWithFallback(img, [
+      '../assets/images/quizland/illust/stage/' + _qzWebpName(q.img) + qv,
+      '../assets/images/quizland/illust/stage/' + q.img + qv
+    ], shapeCssFallback);
+  } else {
+    _qzSetImgSrcWithFallback(img, [
+      '../assets/images/quizland/illust/shape/shape_' + q.shape + '.webp',
+      '../assets/images/quizland/illust/shape/shape_' + q.shape + '.png'
+    ], shapeCssFallback);
+  }
   wrap.appendChild(createStageImageWrap(img, 'shape-img-wrap'));
   stage.appendChild(wrap);
 }
@@ -5603,18 +5692,8 @@ function renderOpposite(stage, q) {
     imgEl.className = 'emoji-main-img';
     if (q.framed) imgEl.classList.add('is-framed');
     imgEl.alt = '';
-    const v = (window._imgCacheBust || '');
-    const stagePath = '../assets/images/quizland/illust/stage/' + q.img_word + (v ? '?v=' + v : '');
-    const choicePath = '../assets/images/quizland/illust/choice/' + q.img_word + (v ? '?v=' + v : '');
-    imgEl.src = stagePath;
-    imgEl.dataset.fallback = choicePath;
-    imgEl.addEventListener('error', function once() {
-      if (imgEl.dataset.fallback && imgEl.src !== imgEl.dataset.fallback) {
-        const fb = imgEl.dataset.fallback;
-        imgEl.dataset.fallback = '';
-        imgEl.src = fb;
-      }
-    });
+    // .webp 優先 (stage/ → choice/) → 元 .png retry (2026-07-10 perf)
+    _qzSetStageChoiceIllust(imgEl, q.img_word, window._imgCacheBust || '');
     container.appendChild(createStageImageWrap(imgEl, 'emoji-img-wrap'));
   } else {
     const wrap = document.createElement('div');
@@ -5634,12 +5713,9 @@ function revealAnswer(q, opts) {
   const imgEl = document.getElementById('opposite-stage-img')
              || document.getElementById('trivia-stage-img');
   if (imgEl && q.img_answer) {
-    const v = (window._imgCacheBust || '');
-    const stagePath = '../assets/images/quizland/illust/stage/' + q.img_answer + (v ? '?v=' + v : '');
-    const choicePath = '../assets/images/quizland/illust/choice/' + q.img_answer + (v ? '?v=' + v : '');
-    imgEl.dataset.fallback = choicePath;
     const applyAnswerImage = () => {
-      imgEl.src = stagePath;
+      // .webp 優先 (stage/ → choice/) → 元 .png retry (2026-07-10 perf)
+      _qzSetStageChoiceIllust(imgEl, q.img_answer, window._imgCacheBust || '');
       // リビール後の画像も枠付きなら drop-shadow を消す (questions.js の framed_answer)。
       if (q.framed_answer) imgEl.classList.add('is-framed');
       else if (!q.framed) imgEl.classList.remove('is-framed');
@@ -5699,12 +5775,9 @@ function _qzRestoreQuestionStageImage(q, opts) {
     setPhase('question');
     return false;
   }
-  const v = (window._imgCacheBust || '');
-  const stagePath = '../assets/images/quizland/illust/stage/' + initialImg + (v ? '?v=' + v : '');
-  const choicePath = '../assets/images/quizland/illust/choice/' + initialImg + (v ? '?v=' + v : '');
-  imgEl.dataset.fallback = choicePath;
   const applyQuestionImage = function () {
-    imgEl.src = stagePath;
+    // .webp 優先 (stage/ → choice/) → 元 .png retry (2026-07-10 perf)
+    _qzSetStageChoiceIllust(imgEl, initialImg, window._imgCacheBust || '');
     if (q.framed) imgEl.classList.add('is-framed');
     else imgEl.classList.remove('is-framed');
     imgEl.style.opacity = '1';
@@ -6222,18 +6295,8 @@ function renderTrivia(stage, q) {
     imgEl.className = 'emoji-main-img';
     if (q.framed) imgEl.classList.add('is-framed');
     imgEl.alt = '';
-    const v = (window._imgCacheBust || '');
-    const stagePath = '../assets/images/quizland/illust/stage/' + initialImg + (v ? '?v=' + v : '');
-    const choicePath = '../assets/images/quizland/illust/choice/' + initialImg + (v ? '?v=' + v : '');
-    imgEl.src = stagePath;
-    imgEl.dataset.fallback = choicePath;
-    imgEl.addEventListener('error', function once() {
-      if (imgEl.dataset.fallback && imgEl.src !== imgEl.dataset.fallback) {
-        const fb = imgEl.dataset.fallback;
-        imgEl.dataset.fallback = '';
-        imgEl.src = fb;
-      }
-    });
+    // .webp 優先 (stage/ → choice/) → 元 .png retry (2026-07-10 perf)
+    _qzSetStageChoiceIllust(imgEl, initialImg, window._imgCacheBust || '');
     wrap.appendChild(createStageImageWrap(imgEl, 'emoji-img-wrap'));
     stage.appendChild(wrap);
     return;
@@ -6314,7 +6377,6 @@ function renderChoices(q) {
       const wrap = document.createElement('div');
       wrap.className = 'circle';
       const img = document.createElement('img');
-      img.src = '../assets/images/quizland/illust/choice/color_dot_' + choice + '.png';
       img.alt = '';
       img.draggable = false;
       img.style.width = '100%';
@@ -6322,8 +6384,12 @@ function renderChoices(q) {
       img.style.objectFit = 'contain';
       img.style.borderRadius = '50%';
       img.style.display = 'block';
-      // PNG 不存在 (404) 時は img を消して、 wrap の CSS gradient を露出させる
-      img.onerror = function() { img.remove(); };
+      // .webp 優先 → .png retry。 どちらも不存在 (404) なら img を消して、
+      // wrap の CSS gradient を露出させる
+      _qzSetImgSrcWithFallback(img, [
+        '../assets/images/quizland/illust/choice/color_dot_' + choice + '.webp',
+        '../assets/images/quizland/illust/choice/color_dot_' + choice + '.png'
+      ], function() { img.remove(); });
       wrap.appendChild(img);
       btn.appendChild(wrap);
       const label = document.createElement('span');
@@ -6351,9 +6417,13 @@ function renderChoices(q) {
       wrap.className = 'chip-illust-wrap';
       const img = document.createElement('img');
       img.className = 'chip-illust';
-      img.src = '../assets/images/quizland/illust/choice/' + choice.image;
       img.alt = '';
       img.draggable = false;
+      // .webp 優先 → 元 .png retry (2026-07-10 perf)
+      _qzSetImgSrcWithFallback(img, [
+        '../assets/images/quizland/illust/choice/' + _qzWebpName(choice.image),
+        '../assets/images/quizland/illust/choice/' + choice.image
+      ]);
       wrap.appendChild(img);
       btn.appendChild(wrap);
       if (choice.text) {
@@ -7278,7 +7348,7 @@ function showResult() {
   // セッション完走 (5 問サイクル完了) を祝福する「ぜんぶ できたね！」スタンプ。
   // 正解率に関わらず常に表示 (= 完走の証)。 cleared/not の差は title テキストで表現。
   document.getElementById('result-icon').innerHTML =
-    '<img src="../assets/images/quizland/stamps/zenbu_dekita.png" alt="" class="result-stamp-img">';
+    '<img src="../assets/images/quizland/stamps/zenbu_dekita.webp" alt="" class="result-stamp-img">';
   document.getElementById('result-title').textContent = '';
   document.getElementById('result-msg').textContent = '';
   const rewardEl = document.getElementById('result-acorn-reward');
@@ -8228,17 +8298,40 @@ async function playOpeningCinematic() {
 
   _opCancelled = false;
 
+  // Flash fix (2026-07-10): 黒オーバーレイの表示は必ず「どの await よりも前」に行う。
+  // 旧実装は下の saved-layout.json fetch (await) の後に reveal していたため、
+  // fetch 待ちの間だけ下のゲーム画面が露出して一瞬チラつく事故があった。
+  // Show cinematic INSTANTLY at opacity 1 with black bg.
+  // This is a HARD CUT from the mode-screen — no fade on the overlay itself.
+  root.classList.remove('hidden');
+  root.setAttribute('aria-hidden', 'false');
+
+  // Now that the black overlay is on top of everything, hide the mode/start screens.
+  // Order matters: black covers first, then the screens disappear, so the
+  // underlying game UI never has a chance to flash on screen.
+  // (start-screen はおすすめフローで hide がここへ deferred される: 2026-07-10)
+  const __modeScreen = document.getElementById('mode-screen');
+  if (__modeScreen) __modeScreen.classList.add('hidden');
+  const __startScreen = document.getElementById('start-screen');
+  if (__startScreen) __startScreen.classList.add('hidden');
+
   // Fix 4 (2026-05-10): ハードリロード直後に LayoutSystem.init の async fetch がまだ
   // 解決していないと、 OP cinematic 開始時点で window._currentLayoutData が null となり
   // _opLoadLayoutOverride / _opLoadNarrationOverride が saved-layout.json の値を見ずに
   // 「CSS デフォルト」 にフォールバックしてしまう (= リロードのたびに結果が揺れる race)。
-  // ここで __op_layout の存在を確認し、 未ロードなら同期 fetch (cache: 'no-store' +
-  // timestamp で CDN/browser cache を bust) してから panel ループに入る。
+  // ここで __op_layout の存在を確認し、 未ロードなら fetch してから panel ループに入る
+  // (cache 方針は下記コメント参照: 通常プレイ = 固定キー / ?edit=1 = no-store bust)。
   // 失敗時は何もしない (= CSS デフォルト fallback で既存挙動を維持)。
   try {
     if (!window._currentLayoutData ||
         !window._currentLayoutData.__op_layout) {
-      const r = await fetch('./saved-layout.json?_=' + Date.now(), { cache: 'no-store' });
+      // Cache 方針 (2026-07-10 perf): 通常プレイは per-deploy 固定キー + 既定キャッシュ
+      // (毎回 no-store + Date.now() だと毎セッション再ダウンロードになるため)。
+      // layout 編集中 (?edit=1 = qz-explicit-layout-editor) のみ従来通り常に最新を取る。
+      const __opEditorMode = document.body.classList.contains('qz-explicit-layout-editor');
+      const r = __opEditorMode
+        ? await fetch('./saved-layout.json?_=' + Date.now(), { cache: 'no-store' })
+        : await fetch('./saved-layout.json?_=' + QUIZLAND_ASSET_VERSION);
       if (r && r.ok) {
         const j = await r.json();
         if (j && typeof j === 'object') window._currentLayoutData = j;
@@ -8270,16 +8363,7 @@ async function playOpeningCinematic() {
     }
   } catch (e) {}
 
-  // Show cinematic INSTANTLY at opacity 1 with black bg.
-  // This is a HARD CUT from the mode-screen — no fade on the overlay itself.
-  root.classList.remove('hidden');
-  root.setAttribute('aria-hidden', 'false');
-
-  // Now that the black overlay is on top of everything, hide the mode-screen.
-  // Order matters: black covers first, then mode-screen disappears, so the
-  // underlying game UI never has a chance to flash on screen.
-  const __modeScreen = document.getElementById('mode-screen');
-  if (__modeScreen) __modeScreen.classList.add('hidden');
+  // (overlay reveal + mode/start-screen hide は関数冒頭 (await より前) へ移動済み: 2026-07-10)
 
   // Reset bg to invisible state, then force reflow so the opacity transition
   // fires the first time .is-revealed is added (in the panel loop below).
@@ -8888,10 +8972,14 @@ async function playQuizStartCard() {
       await new Promise(r => setTimeout(r, stepMs));
     }
     // Fade out (0.35s matches the CSS transition)
+    // Flash fix (2026-07-10): ルート全体のフェードアウトは .is-fading-out で行う
+    // (背景は常時 opacity:1 になったため、 is-revealed 除去だけでは画像しか消えない)。
     root.classList.remove('is-revealed');
+    root.classList.add('is-fading-out');
     await new Promise(r => setTimeout(r, 360));
   } finally {
     root.classList.add('hidden');
+    root.classList.remove('is-fading-out');
     root.setAttribute('aria-hidden', 'true');
     root.removeEventListener('click', onTap);
     _qscRunning = false;
@@ -9054,13 +9142,16 @@ document.getElementById('start-screen').addEventListener('click', function() {
     } catch (e) {}
   } catch (e) {}
   startBGM();
-  document.getElementById('start-screen').classList.add('hidden');
   resetDiffChoice();
   updateRecommendedFlowUI();
   if (shouldUseQuizlandRecommendedFlow()) {
+    // Flash fix (2026-07-10): おすすめフローでは start-screen をここでは隠さない。
+    // playOpeningCinematic が黒オーバーレイで画面を覆った直後に隠す
+    // (先に隠すと cinematic 開始前の await の間、下のゲーム画面が露出してチラつく)。
     startQuizlandRecommendedRound();
     return;
   }
+  document.getElementById('start-screen').classList.add('hidden');
   document.getElementById('mode-screen').classList.remove('hidden');
 });
 

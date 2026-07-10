@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>ポノの なぞなぞトンネル | ポノのあそびば</title>
+<!-- FOUC guard: 初回ペイント時の未スタイル表示を防ぐ -->
+<style>html,body{background:#000}#app{visibility:hidden}body.pono-game-ready #app{visibility:visible}</style>
+<script>document.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(function(){requestAnimationFrame(function(){document.body.classList.add('pono-game-ready')})})});</script>
+<link rel="stylesheet" href="styles.css?v=20260710-1">
+</head>
+<body class="st-town v-train" data-driver="pono" data-driver-mood="happy">
+<div id="app">
+  <div id="scene">
+    <div id="skyA"></div>
+    <div id="skyB"></div>
+    <div id="horizon"></div>
+    <div id="midT"></div>
+    <div id="seaFishLayer" aria-hidden="true"></div>
+    <div id="groundT"></div>
+    <div id="world"></div>
+    <div id="screenPortalBack" aria-hidden="true"><div class="screen-exit-gate"></div></div>
+    <div id="cars"></div>
+    <div id="veh">
+      <div class="vbody">
+        <div class="headlight"></div>
+        <div class="train-art" aria-hidden="true">
+          <div class="train-driver"></div>
+          <div class="train-wheel train-wheel-a"></div>
+          <div class="train-wheel train-wheel-b"></div>
+          <div class="train-wheel train-wheel-c"></div>
+          <div class="train-cylinder" aria-hidden="true"></div>
+          <div class="train-crosshead" aria-hidden="true"></div>
+          <div class="train-piston-rod" aria-hidden="true"></div>
+          <div class="train-wheel-rod train-wheel-rod-a" aria-hidden="true"></div>
+          <div class="train-wheel-rod train-wheel-rod-b" aria-hidden="true"></div>
+          <div class="train-main-rod" aria-hidden="true"></div>
+          <div class="train-wheel-pin train-wheel-pin-a" aria-hidden="true"></div>
+          <div class="train-wheel-pin train-wheel-pin-b" aria-hidden="true"></div>
+          <div class="train-body-img"></div>
+        </div>
+        <div class="tr-boiler"></div>
+        <div class="tr-chim"></div>
+        <div class="tr-cab"></div>
+        <div class="tr-win">🐻</div>
+        <div class="wheel w1"></div>
+        <div class="wheel w2"></div>
+        <div class="wheel w3"></div>
+        <div class="puff" aria-hidden="true"></div>
+        <div class="submarine-art" aria-hidden="true"></div>
+        <div class="sb-hull"></div>
+        <div class="sb-peri"></div>
+        <div class="sb-fin"></div>
+        <div class="sb-win">🐻</div>
+        <div class="rk-body"></div>
+        <div class="rk-nose"></div>
+        <div class="rk-finT"></div>
+        <div class="rk-finB"></div>
+        <div class="rk-win">🐻</div>
+        <div class="rk-flame">🔥</div>
+      </div>
+    </div>
+    <div id="smokeLayer" aria-hidden="true"></div>
+    <div id="portalMaskLayer" aria-hidden="true">
+      <div class="portal-occluder portal-occluder-in" data-portal="in"></div>
+      <div class="portal-occluder portal-occluder-out" data-portal="out"></div>
+    </div>
+    <div id="screenPortalFront" aria-hidden="true"><div class="screen-exit-gate"></div></div>
+    <div id="tunnelExitGlow" aria-hidden="true"></div>
+    <svg id="portalEditOverlay" aria-hidden="true"></svg>
+    <div id="tunnelFade" aria-hidden="true"></div>
+    <div id="fgT"></div>
+  </div>
+
+  <div id="carBadge" aria-live="polite">👥 ×0</div>
+  <div id="helpBadge" aria-live="polite">🍀 ×0</div>
+
+  <div id="hud">
+    <div id="dots"><span id="stgName"></span></div>
+    <button id="homeBtn" type="button">🗺️ ちず</button>
+  </div>
+
+  <div id="quiz">
+    <div id="qRow">
+      <div id="ponoFace">🐻</div>
+      <div id="qBubble">
+        <div id="qText" aria-live="polite"></div>
+        <div id="hintText" aria-live="polite"></div>
+      </div>
+      <button id="spkBtn" type="button" aria-label="ヒント">💡</button>
+      <button id="helpBtn" type="button" aria-label="おたすけ">🍀 ×0</button>
+    </div>
+    <div id="choices" aria-label="こたえ"></div>
+  </div>
+
+  <div id="stamp" role="status" aria-live="polite"></div>
+  <div id="liveRegion" class="sr-only" aria-live="polite"></div>
+
+  <div id="map" class="ovl hidden">
+    <div id="mapTitle">🗺️ ぼうけんちず</div>
+    <div id="loopBadge">🌈 2しゅうめ</div>
+    <div id="mapRow"></div>
+    <div id="mapMsg"></div>
+    <div class="selRow">
+      <button class="bigBtn" id="goBtn" type="button">ここへ いく！</button>
+      <button class="bigBtn pur" id="zkBtnMap" type="button">📖 ずかん</button>
+    </div>
+  </div>
+
+  <div id="result" class="ovl hidden">
+    <div id="resTitle"></div>
+    <div id="resStars"></div>
+    <div id="resMsg"></div>
+    <div class="selRow" id="resBtns">
+      <button class="bigBtn pur" id="loopBtn" type="button" style="display:none">🌈 2しゅうめへ！</button>
+      <button class="bigBtn" id="againBtn" type="button">はじめから</button>
+      <button class="bigBtn alt" id="zkBtnRes" type="button">📖 ずかん</button>
+    </div>
+  </div>
+
+  <div id="zukan" class="ovl hidden">
+    <div id="zkTitle">📖 ともだち ずかん</div>
+    <div id="zkProg"></div>
+    <div id="zkBody"></div>
+    <button class="bigBtn" id="zkClose" type="button">とじる</button>
+  </div>
+
+  <div id="title" class="ovl">
+    <h1>🚂 ポノの なぞなぞトンネル 🚀</h1>
+    <div class="label">トンネルを あけて ともだちを のせよう！ ずかんを ぜんぶ あつめよう</div>
+    <div class="label">むずかしさ</div>
+    <div class="selRow" id="lvSel">
+      <button class="selBtn sel" type="button" data-l="0"><span class="big">🌱</span>かんたん</button>
+      <button class="selBtn" type="button" data-l="1"><span class="big">🌼</span>ふつう</button>
+      <button class="selBtn" type="button" data-l="2"><span class="big">🌟</span>むずかしい</button>
+    </div>
+    <div class="selRow">
+      <button class="bigBtn" id="startBtn" type="button">はじめる！</button>
+      <button class="bigBtn pur" id="zkBtnTitle" type="button">📖 ずかん</button>
+    </div>
+  </div>
+</div>
+<div id="rotateHint">📱➡️ よこむきに してね</div>
+<script src="data/questions.js?v=20260702-1051"></script>
+<script src="js/game.js?v=20260707-3"></script>
+</body>
+</html>

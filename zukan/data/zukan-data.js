@@ -44,20 +44,20 @@ window.ZUKAN_DATA = {
         {
           id: "flower_path_main",
           name: "おはなの ひろば",
-          fieldBg: "../assets/zukan/search/flower_path_field_16x9.png",
+          fieldBg: "../assets/zukan/search/flower_path_field_16x9.webp",
           // v1 (= 既存 fieldBg) + v2〜v9 (2026-05-11 新規追加 8 枚)。
           // 命名規則: <area>_field_16x9_v<N>.png (v1 は既存ファイル名のまま、v2 以降は連番)
           // 元データは D:\ポノのおへや\Zukan\asset\BG\花の小道\ (16:9 のみ採用、 21:9 とスプライトシートは除外)
           fieldBgVariants: [
-            "../assets/zukan/search/flower_path_field_16x9.png",
-            "../assets/zukan/search/flower_path_field_16x9_v2.png",
-            "../assets/zukan/search/flower_path_field_16x9_v3.png",
-            "../assets/zukan/search/flower_path_field_16x9_v4.png",
-            "../assets/zukan/search/flower_path_field_16x9_v5.png",
-            "../assets/zukan/search/flower_path_field_16x9_v6.png",
-            "../assets/zukan/search/flower_path_field_16x9_v7.png",
-            "../assets/zukan/search/flower_path_field_16x9_v8.png",
-            "../assets/zukan/search/flower_path_field_16x9_v9.png"
+            "../assets/zukan/search/flower_path_field_16x9.webp",
+            "../assets/zukan/search/flower_path_field_16x9_v2.webp",
+            "../assets/zukan/search/flower_path_field_16x9_v3.webp",
+            "../assets/zukan/search/flower_path_field_16x9_v4.webp",
+            "../assets/zukan/search/flower_path_field_16x9_v5.webp",
+            "../assets/zukan/search/flower_path_field_16x9_v6.webp",
+            "../assets/zukan/search/flower_path_field_16x9_v7.webp",
+            "../assets/zukan/search/flower_path_field_16x9_v8.webp",
+            "../assets/zukan/search/flower_path_field_16x9_v9.webp"
           ],
           windowFrame: "../assets/zukan/ui/investigation_window_frame_16x9.png",
           // innermap 上のピン位置 (spot_flower_path.png 上の比率)
@@ -99,9 +99,9 @@ window.ZUKAN_DATA = {
         {
           id: "mushroom_forest_main",
           name: "きのこの ひろば",
-          fieldBg: "../assets/zukan/search/mushroom_forest_field_16x9.png",
+          fieldBg: "../assets/zukan/search/mushroom_forest_field_16x9.webp",
           fieldBgVariants: [
-            "../assets/zukan/search/mushroom_forest_field_16x9.png",
+            "../assets/zukan/search/mushroom_forest_field_16x9.webp",
             null, null, null, null
           ],
           windowFrame: "../assets/zukan/ui/investigation_window_frame_16x9.png",
@@ -144,11 +144,11 @@ window.ZUKAN_DATA = {
         {
           id: "sunlit_forest_main",
           name: "こもれびの ひろば",
-          fieldBg: "../assets/zukan/search/leaf_glow_forest_field_16x9.png",
+          fieldBg: "../assets/zukan/search/leaf_glow_forest_field_16x9.webp",
           // 注意: v1 のファイル名は既存命名 (leaf_glow_forest_field_16x9.png) を温存。
           // v2〜v5 は <area>_field_16x9_v<N>.png 規約に従い sunlit_forest_field_16x9_v<N>.png とする。
           fieldBgVariants: [
-            "../assets/zukan/search/leaf_glow_forest_field_16x9.png",
+            "../assets/zukan/search/leaf_glow_forest_field_16x9.webp",
             null, null, null, null
           ],
           windowFrame: "../assets/zukan/ui/investigation_window_frame_16x9.png",
@@ -191,9 +191,9 @@ window.ZUKAN_DATA = {
         {
           id: "dew_pond_main",
           name: "しずくの ひろば",
-          fieldBg: "../assets/zukan/search/dew_pond_field_16x9.png",
+          fieldBg: "../assets/zukan/search/dew_pond_field_16x9.webp",
           fieldBgVariants: [
-            "../assets/zukan/search/dew_pond_field_16x9.png",
+            "../assets/zukan/search/dew_pond_field_16x9.webp",
             null, null, null, null
           ],
           windowFrame: "../assets/zukan/ui/investigation_window_frame_16x9.png",

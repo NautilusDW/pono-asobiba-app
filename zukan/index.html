@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ポノのもりのずかん</title>
+<style>html,body{background:#2a3b2f}.screen{visibility:hidden}body.pono-game-ready .screen{visibility:visible}</style>
+<script>document.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(function(){requestAnimationFrame(function(){document.body.classList.add('pono-game-ready')})})});</script>
 <script src="data/zukan-data.js"></script>
 <style>
 /* ====================================================================
@@ -649,7 +651,7 @@ body[data-screen="collection"] #screen-collection {
   flex-direction: column;
   gap: 8px;
   overflow: hidden;
-  background-image: url('../assets/zukan/ui/hint_panel_empty.png');
+  background-image: url('../assets/zukan/ui/hint_panel_empty.webp');
   background-size: cover;
   background-position: center;
   z-index: 4;
@@ -1142,11 +1144,11 @@ body[data-screen="collection"] #screen-collection {
      ==================================================================== -->
 <section class="screen" id="screen-title">
   <div class="title-bg">
-    <img id="titleBgImg" src="../assets/zukan/title/title_bg.png" alt=""
+    <img id="titleBgImg" src="../assets/zukan/title/title_bg.webp" alt=""
          onerror="this.style.display='none';">
   </div>
   <img class="title-logo" id="titleLogoImg"
-       src="../assets/zukan/title/title_logo.png" alt="ポノのもりのずかん"
+       src="../assets/zukan/title/title_logo.webp" alt="ポノのもりのずかん"
        onerror="this.style.display='none';">
   <button class="title-start" type="button" id="titleStartBtn">はじめる</button>
   <button class="title-collection-link" type="button" id="titleCollectionLink">
@@ -1159,7 +1161,7 @@ body[data-screen="collection"] #screen-collection {
      ==================================================================== -->
 <section class="screen" id="screen-mapselect">
   <div class="outer-bg">
-    <img src="../assets/zukan/bg/zukan_outer_bg_21x9.png" alt=""
+    <img src="../assets/zukan/bg/zukan_outer_bg_21x9.webp" alt=""
          onerror="this.style.display='none';">
   </div>
   <div class="safe-area">
@@ -1171,7 +1173,9 @@ body[data-screen="collection"] #screen-collection {
     </div>
 
     <div class="ms-map-wrap" id="msMapWrap">
-      <img class="ms-map-img" src="../assets/zukan/map/world_map.png" alt=""
+      <!-- world_map はサイズが大きいため title 表示中は読み込まない。
+           mapselect 入場時 (SCREEN_HOOKS.mapselect.onEnter) に data-src → src へ昇格。 -->
+      <img class="ms-map-img" id="msMapImg" data-src="../assets/zukan/map/world_map.webp" alt=""
            onerror="this.style.display='none';">
       <div class="ms-overlay-layer" id="msOverlayLayer" aria-hidden="true"></div>
       <!-- hotspots are injected -->
@@ -1207,7 +1211,7 @@ body[data-screen="collection"] #screen-collection {
      ==================================================================== -->
 <section class="screen" id="screen-innermap">
   <div class="outer-bg">
-    <img src="../assets/zukan/bg/zukan_outer_bg_21x9.png" alt=""
+    <img src="../assets/zukan/bg/zukan_outer_bg_21x9.webp" alt=""
          onerror="this.style.display='none';">
   </div>
   <div class="safe-area">
@@ -1304,7 +1308,7 @@ body[data-screen="collection"] #screen-collection {
      ==================================================================== -->
 <section class="screen" id="screen-collection">
   <div class="outer-bg">
-    <img src="../assets/zukan/bg/zukan_outer_bg_21x9.png" alt=""
+    <img src="../assets/zukan/bg/zukan_outer_bg_21x9.webp" alt=""
          onerror="this.style.display='none';">
   </div>
   <div class="safe-area">
@@ -1350,7 +1354,7 @@ body[data-screen="collection"] #screen-collection {
  * Constants / data hookup
  * ==================================================================== */
 const DATA = window.ZUKAN_DATA || { areas: [], collectionRoster: {} };
-const SHARED_OUTER_BG = "../assets/zukan/bg/zukan_outer_bg_21x9.png";
+const SHARED_OUTER_BG = "../assets/zukan/bg/zukan_outer_bg_21x9.webp";
 
 /* ====================================================================
  * Shared helpers
@@ -1361,6 +1365,25 @@ function setImg(el, src) {
   el.style.display = '';
   el.src = src;
   el.alt = '';
+}
+// 大きい背景差し替え用: 新画像を decode 完了させてから swap する
+// (画面遷移時に背景が白抜け / 遅れてポップするのを防ぐ)。
+// decode 待ちの間に別の src が要求された場合は古い decode 結果を捨てる。
+function setImgDecoded(el, src) {
+  if (!el) return;
+  if (!src) { el.style.display = 'none'; return; }
+  el._pendingSrc = src;
+  const pre = new Image();
+  pre.src = src;
+  const swap = function () {
+    if (el._pendingSrc !== src) return; // より新しい要求が勝つ
+    setImg(el, src);
+  };
+  if (pre.decode) {
+    pre.decode().then(swap).catch(swap);
+  } else {
+    swap();
+  }
 }
 function pctRect(target, rect) {
   target.style.left = (rect.x * 100) + '%';
@@ -1428,6 +1451,11 @@ SCREEN_HOOKS.title = {
 let msSelectedAreaId = null;
 SCREEN_HOOKS.mapselect = {
   onEnter() {
+    // world_map の遅延ロード: 初回入場時に data-src → src へ昇格 (title 表示中のDL回避)
+    const mapImg = document.getElementById('msMapImg');
+    if (mapImg && !mapImg.getAttribute('src') && mapImg.dataset.src) {
+      mapImg.src = mapImg.dataset.src;
+    }
     msSelectedAreaId = null;
     msRenderHotspots();
     msUpdateMemo();
@@ -1728,7 +1756,8 @@ function renderQuestion() {
   const _bgFromVariants = Array.isArray(currentSpot.fieldBgVariants)
     ? currentSpot.fieldBgVariants[0]
     : null;
-  setImg(document.getElementById('windowBg'), _bgFromVariants || currentSpot.fieldBg);
+  // decode 完了後に swap (白抜け / 遅延ポップ防止)
+  setImgDecoded(document.getElementById('windowBg'), _bgFromVariants || currentSpot.fieldBg);
   setImg(document.getElementById('windowFrame'), currentSpot.windowFrame);
 
   const totalSpots = (currentArea.spots || []).length;

@@ -8,7 +8,11 @@
 <title>もじっこファーム | ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="manifest" href="../manifest.json">
-<script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
+<!-- hanzi-writer は CDN から common/vendor/ へローカル化 (2026-07-10 perf)。
+     このページは inline script のパース時 top-level resetWriting() → createWriter() が
+     HanziWriter を参照する (undefined 時は「よみこみが まだみたい」表示に落ちる) ため
+     defer にせず同期ロードのまま同一オリジン配信にする。 -->
+<script src="../common/vendor/hanzi-writer.min.js"></script>
 <script src="../common/achievements.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DotGothic16&family=Zen+Maru+Gothic:wght@500;700;900&display=swap');

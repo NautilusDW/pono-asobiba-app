@@ -2301,7 +2301,7 @@ body.image-stage-mode .game-wrap {
   border-radius: 20px;
   background:
     linear-gradient(180deg, rgba(255,255,255,0.08), rgba(63, 43, 26, 0.16)),
-    url('../assets/images/maze/gimmicks/strength/strength_path_blocked_bg.png?v=1079') center / cover no-repeat,
+    url('../assets/images/maze/gimmicks/strength/strength_path_blocked_bg.png') center / cover no-repeat,
     linear-gradient(180deg, #FFF7DF, #F8E8C7);
   overflow: hidden;
   box-shadow: inset 0 0 0 2px rgba(255,255,255,0.65), 0 4px 14px rgba(0,0,0,0.12);
@@ -3396,6 +3396,14 @@ body.image-stage-mode .game-wrap {
    状態を子供に見せていた。 現実装は BG (op_scale.png 1.4MB) + frame.src を Image.decode()
    で並列 preload → fade-in (500ms) → showBeat(0) の順で発火し、 視覚と音声を同期させる。
    ユーザーが fade-in 中にタップしたら fade を skip して即座に showBeat(0) へ進む。 */
+/* タイトルタップと同一ターンで出す不透明カバー。 op-layout.json fetch (RTT) 中に
+   ゲームキャンバスが一瞬見える flash を防ぐ。 #title-screen (250) より上、
+   #maze-op-overlay (300) より下 → overlay fade-in は黒から自然につながる。 */
+#maze-op-cover {
+  position: fixed; inset: 0;
+  z-index: 299;
+  background: #000;
+}
 #maze-op-overlay {
   position: fixed; inset: 0;
   z-index: 300;
@@ -3701,10 +3709,38 @@ const HEDGEHOG_HAPPY = '../assets/images/characters/headgehog/headgehog_smilewav
 
 const imgPono = new Image();
 imgPono.src = '../assets/images/characters/pono/pono_face_circle.png';
-const imgBowlBoss = new Image();
-imgBowlBoss.src = '../assets/images/maze/creatures/ojama_boss.png?v=1060';
-const imgBowlLaneBg = new Image();
-imgBowlLaneBg.src = '../assets/images/maze/gimmicks/donguri/bowl_lane_bg.png?v=1065';
+
+// ---- ギミック画像の遅延ロード基盤 (perf) ----
+// 旧実装はパース時に flag/water/strength/donguri の全ギミック画像 (~50枚) を一括ロード
+// していた。 Image オブジェクトは従来どおり即生成して既存の参照と
+// 「img.complete && img.naturalWidth > 0」 ガードをそのまま活かしつつ、 src の設定
+// (= 実ネットワークロード) はステージが実際に使うグループだけ loadGimmickAssets()
+// (imgLoadStage / _showBowlGame から呼ぶ) まで遅延する。
+// src 未設定の Image は complete=true でも naturalWidth=0 なので draw 系ガードは安全に skip する。
+// impactFx = strength ミニゲームと bowl (donguri) が共用する damage_* エフェクト画像
+const _mazeLazyImageGroups = { flag: [], water: [], strength: [], donguri: [], impactFx: [] };
+const _mazeLazyGroupsLoaded = Object.create(null);
+function _mazeLazyImage(group, src) {
+  const img = new Image();
+  _mazeLazyImageGroups[group].push({ img: img, src: src });
+  return img;
+}
+function loadGimmickAssets(groupKey) {
+  if (_mazeLazyGroupsLoaded[groupKey]) return;
+  const entries = _mazeLazyImageGroups[groupKey];
+  if (!entries) return;
+  _mazeLazyGroupsLoaded[groupKey] = true;
+  entries.forEach(function(entry) { entry.img.src = entry.src; });
+}
+
+// bowl (どんぐりボーリング) 用素材は donguri グループで遅延ロード。
+// 旧 ?v= クエリは旧 sw.js の画像 no-store bypass を誘発して毎回再取得になっていたため撤去
+// (画像更新の反映は sw.js CACHE_VERSION bump の規約で担保)。
+// ただし ojama_boss.png は v1057 当時に素の URL で旧 art を配信した歴史があり (v1058 で
+// 同名上書き)、 素 URL に戻すと旧 art が HTTP cache (immutable 1yr) から蘇り得るため
+// ?v=1060 を維持する (現行 sw.js は query 込み key の cache-first なので安定値ならコストゼロ)。
+const imgBowlBoss = _mazeLazyImage('donguri', '../assets/images/maze/creatures/ojama_boss.png?v=1060');
+const imgBowlLaneBg = _mazeLazyImage('donguri', '../assets/images/maze/gimmicks/donguri/bowl_lane_bg.png');
 // Image-stage 用の常時表示アイコン (歩きアニメ無し、ランタンを持っている版)
 const imgPonoLantern = new Image();
 imgPonoLantern.src = '../assets/images/characters/pono/pono_lantan.png';
@@ -3730,59 +3766,58 @@ const MAZE_WATER_ASSET_BASE = '../assets/images/maze/gimmicks/water/';
 const MAZE_STRENGTH_ASSET_BASE = '../assets/images/maze/gimmicks/strength/';
 const MAZE_DONGURI_ASSET_BASE = '../assets/images/maze/gimmicks/donguri/';
 const MAZE_DONGURI_EFFECT_ASSET_BASE = MAZE_DONGURI_ASSET_BASE + 'effects/';
-const BOWL_EFFECT_ASSET_VERSION = '?v=1076';
-function _mazeLoadImage(src) {
-  const img = new Image();
-  img.src = src;
-  return img;
-}
+// 各ギミックグループ: _mazeLazyImage で登録のみ行い、 loadGimmickAssets(group) 時に実ロード。
+// donguri effects の旧 ?v=1076 (BOWL_EFFECT_ASSET_VERSION) は旧 sw.js の no-store bypass を
+// 誘発して毎回再取得になっていたため撤去 (更新反映は CACHE_VERSION bump 規約)。
 const MAZE_FLAG_ASSETS = {
-  hatahataPose: _mazeLoadImage(MAZE_FLAG_ASSET_BASE + 'hatahata_pose.png'),
-  hatahataBothDown: _mazeLoadImage(MAZE_FLAG_ASSET_BASE + 'hatahata_both_down.png'),
-  hatahataRedUp: _mazeLoadImage(MAZE_FLAG_ASSET_BASE + 'hatahata_red_up.png'),
-  hatahataWhiteUp: _mazeLoadImage(MAZE_FLAG_ASSET_BASE + 'hatahata_white_up.png'),
-  hatahataBothUp: _mazeLoadImage(MAZE_FLAG_ASSET_BASE + 'hatahata_both_up.png'),
-  ropeLadder: _mazeLoadImage(MAZE_FLAG_ASSET_BASE + 'rope_ladder.png'),
+  hatahataPose: _mazeLazyImage('flag', MAZE_FLAG_ASSET_BASE + 'hatahata_pose.png'),
+  hatahataBothDown: _mazeLazyImage('flag', MAZE_FLAG_ASSET_BASE + 'hatahata_both_down.png'),
+  hatahataRedUp: _mazeLazyImage('flag', MAZE_FLAG_ASSET_BASE + 'hatahata_red_up.png'),
+  hatahataWhiteUp: _mazeLazyImage('flag', MAZE_FLAG_ASSET_BASE + 'hatahata_white_up.png'),
+  hatahataBothUp: _mazeLazyImage('flag', MAZE_FLAG_ASSET_BASE + 'hatahata_both_up.png'),
+  ropeLadder: _mazeLazyImage('flag', MAZE_FLAG_ASSET_BASE + 'rope_ladder.png'),
 };
 const MAZE_WATER_ASSETS = {
-  plankItem: _mazeLoadImage(MAZE_WATER_ASSET_BASE + 'plank_item.png'),
-  bridgeComplete: _mazeLoadImage(MAZE_WATER_ASSET_BASE + 'plank_bridge_complete.png'),
-  puddle: _mazeLoadImage(MAZE_WATER_ASSET_BASE + 'puddle_obstacle.png'),
-  splash: _mazeLoadImage(MAZE_WATER_ASSET_BASE + 'water_splash.png'),
-  amenboPose: _mazeLoadImage(MAZE_WATER_ASSET_BASE + 'amenbo_pose.png'),
-  amenboSkate: _mazeLoadImage(MAZE_WATER_ASSET_BASE + 'amenbo_skate.png'),
-  amenboSplash: _mazeLoadImage(MAZE_WATER_ASSET_BASE + 'amenbo_splash.png'),
-  amenboLineIdle: _mazeLoadImage(MAZE_WATER_ASSET_BASE + 'amenbo_line_skate_idle_20260628.png'),
-  amenboLineGlide: _mazeLoadImage(MAZE_WATER_ASSET_BASE + 'amenbo_line_skate_glide_20260628.png'),
-  amenboLineHappy: _mazeLoadImage(MAZE_WATER_ASSET_BASE + 'amenbo_line_skate_happy_20260628.png'),
+  plankItem: _mazeLazyImage('water', MAZE_WATER_ASSET_BASE + 'plank_item.png'),
+  bridgeComplete: _mazeLazyImage('water', MAZE_WATER_ASSET_BASE + 'plank_bridge_complete.png'),
+  puddle: _mazeLazyImage('water', MAZE_WATER_ASSET_BASE + 'puddle_obstacle.png'),
+  splash: _mazeLazyImage('water', MAZE_WATER_ASSET_BASE + 'water_splash.png'),
+  amenboPose: _mazeLazyImage('water', MAZE_WATER_ASSET_BASE + 'amenbo_pose.png'),
+  amenboSkate: _mazeLazyImage('water', MAZE_WATER_ASSET_BASE + 'amenbo_skate.png'),
+  amenboSplash: _mazeLazyImage('water', MAZE_WATER_ASSET_BASE + 'amenbo_splash.png'),
+  amenboLineIdle: _mazeLazyImage('water', MAZE_WATER_ASSET_BASE + 'amenbo_line_skate_idle_20260628.png'),
+  amenboLineGlide: _mazeLazyImage('water', MAZE_WATER_ASSET_BASE + 'amenbo_line_skate_glide_20260628.png'),
+  amenboLineHappy: _mazeLazyImage('water', MAZE_WATER_ASSET_BASE + 'amenbo_line_skate_happy_20260628.png'),
 };
 const MAZE_STRENGTH_ASSETS = {
-  glovePair: _mazeLoadImage(MAZE_STRENGTH_ASSET_BASE + 'glove_pair_item.png'),
-  glovePush: _mazeLoadImage(MAZE_STRENGTH_ASSET_BASE + 'glove_push.png'),
-  glovePunchLeft: _mazeLoadImage(MAZE_STRENGTH_ASSET_BASE + 'glove_punch_left.png'),
-  glovePunchRight: _mazeLoadImage(MAZE_STRENGTH_ASSET_BASE + 'glove_punch_right.png'),
-  powerSpark: _mazeLoadImage(MAZE_STRENGTH_ASSET_BASE + 'power_spark.png'),
-  rockBreak0: _mazeLoadImage(MAZE_STRENGTH_ASSET_BASE + 'rock_break_0.png'),
-  rockBreak1: _mazeLoadImage(MAZE_STRENGTH_ASSET_BASE + 'rock_break_1.png'),
-  rockBreak2: _mazeLoadImage(MAZE_STRENGTH_ASSET_BASE + 'rock_break_2.png'),
-  rockBreak3: _mazeLoadImage(MAZE_STRENGTH_ASSET_BASE + 'rock_break_3.png'),
+  glovePair: _mazeLazyImage('strength', MAZE_STRENGTH_ASSET_BASE + 'glove_pair_item.png'),
+  glovePush: _mazeLazyImage('strength', MAZE_STRENGTH_ASSET_BASE + 'glove_push.png'),
+  glovePunchLeft: _mazeLazyImage('strength', MAZE_STRENGTH_ASSET_BASE + 'glove_punch_left.png'),
+  glovePunchRight: _mazeLazyImage('strength', MAZE_STRENGTH_ASSET_BASE + 'glove_punch_right.png'),
+  powerSpark: _mazeLazyImage('strength', MAZE_STRENGTH_ASSET_BASE + 'power_spark.png'),
+  rockBreak0: _mazeLazyImage('strength', MAZE_STRENGTH_ASSET_BASE + 'rock_break_0.png'),
+  rockBreak1: _mazeLazyImage('strength', MAZE_STRENGTH_ASSET_BASE + 'rock_break_1.png'),
+  rockBreak2: _mazeLazyImage('strength', MAZE_STRENGTH_ASSET_BASE + 'rock_break_2.png'),
+  rockBreak3: _mazeLazyImage('strength', MAZE_STRENGTH_ASSET_BASE + 'rock_break_3.png'),
 };
 const MAZE_DONGURI_ASSETS = {
-  ojamaGate: _mazeLoadImage(MAZE_DONGURI_ASSET_BASE + 'ojama_gate.png'),
-  acornBag: _mazeLoadImage(MAZE_DONGURI_ASSET_BASE + 'acorn_bag.png'),
-  bossTapBurst: _mazeLoadImage(MAZE_DONGURI_EFFECT_ASSET_BASE + 'boss_tap_burst.png' + BOWL_EFFECT_ASSET_VERSION),
-  bossFlyawaySwirl: _mazeLoadImage(MAZE_DONGURI_EFFECT_ASSET_BASE + 'boss_flyaway_swirl.png' + BOWL_EFFECT_ASSET_VERSION),
-  damagePoof: _mazeLoadImage(MAZE_DONGURI_EFFECT_ASSET_BASE + 'damage_poof.png' + BOWL_EFFECT_ASSET_VERSION),
-  damageBurst: _mazeLoadImage(MAZE_DONGURI_EFFECT_ASSET_BASE + 'damage_burst_halftone.png' + BOWL_EFFECT_ASSET_VERSION),
-  damageSlash: _mazeLoadImage(MAZE_DONGURI_EFFECT_ASSET_BASE + 'damage_slash.png' + BOWL_EFFECT_ASSET_VERSION),
-  damageShockRing: _mazeLoadImage(MAZE_DONGURI_EFFECT_ASSET_BASE + 'damage_shock_ring.png' + BOWL_EFFECT_ASSET_VERSION),
-  damageSparkles: _mazeLoadImage(MAZE_DONGURI_EFFECT_ASSET_BASE + 'damage_sparkles.png' + BOWL_EFFECT_ASSET_VERSION),
-  damageHitFlash: _mazeLoadImage(MAZE_DONGURI_EFFECT_ASSET_BASE + 'damage_hit_flash.png' + BOWL_EFFECT_ASSET_VERSION),
+  ojamaGate: _mazeLazyImage('donguri', MAZE_DONGURI_ASSET_BASE + 'ojama_gate.png'),
+  acornBag: _mazeLazyImage('donguri', MAZE_DONGURI_ASSET_BASE + 'acorn_bag.png'),
+  bossTapBurst: _mazeLazyImage('donguri', MAZE_DONGURI_EFFECT_ASSET_BASE + 'boss_tap_burst.png'),
+  bossFlyawaySwirl: _mazeLazyImage('donguri', MAZE_DONGURI_EFFECT_ASSET_BASE + 'boss_flyaway_swirl.png'),
+  damageBurst: _mazeLazyImage('donguri', MAZE_DONGURI_EFFECT_ASSET_BASE + 'damage_burst_halftone.png'),
+  // damage_* 5 種は strength ミニゲームの hit エフェクト (<img src>) とも共用のため impactFx 群
+  damagePoof: _mazeLazyImage('impactFx', MAZE_DONGURI_EFFECT_ASSET_BASE + 'damage_poof.png'),
+  damageSlash: _mazeLazyImage('impactFx', MAZE_DONGURI_EFFECT_ASSET_BASE + 'damage_slash.png'),
+  damageShockRing: _mazeLazyImage('impactFx', MAZE_DONGURI_EFFECT_ASSET_BASE + 'damage_shock_ring.png'),
+  damageSparkles: _mazeLazyImage('impactFx', MAZE_DONGURI_EFFECT_ASSET_BASE + 'damage_sparkles.png'),
+  damageHitFlash: _mazeLazyImage('impactFx', MAZE_DONGURI_EFFECT_ASSET_BASE + 'damage_hit_flash.png'),
 };
 const MAZE_STRENGTH_CHIP_SRCS = Array.from({ length: 12 }, function(_, i) {
   return MAZE_STRENGTH_ASSET_BASE + 'rock_chip_' + i + '.png';
 });
-MAZE_STRENGTH_CHIP_SRCS.forEach(function(src) { _mazeLoadImage(src); });
+// 岩の破片 (rock_chip_*) の cache warm も strength グループにぶら下げて遅延化
+MAZE_STRENGTH_CHIP_SRCS.forEach(function(src) { _mazeLazyImage('strength', src); });
 // Start / Goal markers for image stages
 const imgMarkerStart = new Image(); imgMarkerStart.src = '../assets/images/maze/marker_start.png';
 const imgMarkerGoal  = new Image(); imgMarkerGoal.src  = '../assets/images/maze/marker_goal.png';
@@ -3874,8 +3909,15 @@ function applyMazeStageStoryFallback(stageDef, slot) {
 // is replaced (or appended if slot === STAGES.length). This is how the maze-editor
 // "💾 本番に保存" button publishes new image stages into the normal progression.
 // Stages from this path are flagged `_official: true` (eligible for clear rewards).
+// ステージ定義 JSON / op-layout.json の cache-bust は旧来の Date.now() (= 毎回 cache miss で
+// ネットワーク往復) ではなく、 内容更新時に手で bump する安定リビジョンで行う。
+// 通常のデプロイ反映は sw.js の CACHE_VERSION bump が正 (deployment-patterns 規約)。
+// JSON は sw.js では network-first 扱い。 さらに imageStages/*.json は worker 側
+// (src/worker.js applyCacheHeaders) が no-cache を付与するため、 エディタの 「本番に保存」
+// 直後も ETag 再検証 (304) で即反映される (?v= は SW cache key の安定化用)。
+const MAZE_DATA_REV = '20260710';
 function _loadImageStageIndex() {
-  return fetch('imageStages/_index.json?_=' + Date.now(), { credentials: 'omit', cache: 'no-store' })
+  return fetch('imageStages/_index.json?v=' + MAZE_DATA_REV, { credentials: 'omit' })
     .then(function(r) {
       if (!r.ok) return null;
       return r.json();
@@ -3893,7 +3935,7 @@ function _loadImageStageIndex() {
           .replace(/[\/\\:*?"<>|%#&]/g, '')
           .replace(/\.\./g, '');
         if (!safe) return Promise.resolve();
-        return fetch('imageStages/' + encodeURIComponent(safe) + '.json?_=' + Date.now(), { credentials: 'omit', cache: 'no-store' })
+        return fetch('imageStages/' + encodeURIComponent(safe) + '.json?v=' + MAZE_DATA_REV, { credentials: 'omit' })
           .then(function(rr) {
             if (!rr.ok) throw new Error(safe + ' HTTP ' + rr.status);
             return rr.json();
@@ -3959,7 +4001,8 @@ function _loadImageStageFromURL() {
       .replace(/[\/\\:*?"<>|%#&]/g, '')
       .replace(/\.\./g, '');
     if (!safe) return Promise.resolve(false);
-    return fetch('imageStages/' + encodeURIComponent(safe) + '.json?_=' + Date.now(), { credentials: 'omit', cache: 'no-store' })
+    // ?image= プレビューも安定リビジョンで fetch (draft は sessionStorage 経由で上で処理済み)
+    return fetch('imageStages/' + encodeURIComponent(safe) + '.json?v=' + MAZE_DATA_REV, { credentials: 'omit' })
       .then(function(r) {
         if (!r.ok) throw new Error('image stage HTTP ' + r.status);
         return r.json();
@@ -4657,6 +4700,12 @@ function imgLoadStage(def) {
   if (!stage.camera) stage.camera = {};
   if (!Number.isFinite(stage.camera.x)) stage.camera.x = stage.start.x;
   if (!Number.isFinite(stage.camera.y)) stage.camera.y = stage.start.y;
+  // このステージが実際に使うギミックの画像グループだけ遅延ロード
+  // (パース時の全グループ一括ロード廃止。 loadGimmickAssets は多重呼び出し安全)
+  if (stage.flagGimmick) loadGimmickAssets('flag');
+  if (stage.waterGimmick) loadGimmickAssets('water');
+  if (stage.strengthGimmick) { loadGimmickAssets('strength'); loadGimmickAssets('impactFx'); }
+  if (stage.webGimmick) { loadGimmickAssets('donguri'); loadGimmickAssets('impactFx'); }
   _initFlagTunnelForStage(stage);
   _initWaterGimmickForStage(stage);
   _initStrengthGimmickForStage(stage);
@@ -4698,12 +4747,56 @@ function imgLoadStage(def) {
   // 動物アイコン (泣き顔・笑顔) を preload して stage に保持
   imgPreloadStoryAssets(stage);
   resizeCanvas();
-  imgShowArrows();
   imgUpdateLandscapeOverlay();
   _mzKickBgmForStage();
-  showHint('やじるしを タップしてね', 2500);
-  // ストーリー紹介モーダル (animal が定義されてる + 初回のみ)
+  // ストーリー紹介モーダルを先に表示 (背景 decode 待ちの間のカバーも兼ねる)
   imgMaybeShowStoryIntro(stage, stageIdx);
+  // 背景画像の decode 完了 (最大 3s) を待ってから矢印とヒントを出す。
+  // 旧実装は即 imgShowArrows() していたため、 背景より先に Pono/マーカー/矢印だけが
+  // 表示される pop-in が起きていた。 待機中は imgDraw 側も背景塗りのみ描画する。
+  const _decodeWaitStage = stage;
+  stage._bgDecodePending = true;
+  const _introModalEl = document.getElementById('storyIntro');
+  if (!_introModalEl || !_introModalEl.classList.contains('show')) {
+    // story モーダルが無いステージ (?image= プレビュー等) では待ち中の目印を出す
+    showHint('よみこみちゅう…', 1500);
+  }
+  _imgStageBgDecodePromise(stage, 3000).then(function() {
+    if (stage !== _decodeWaitStage) return; // 既に別ステージへ切替済み
+    stage._bgDecodePending = false;
+    const modalEl = document.getElementById('storyIntro');
+    if (modalEl && modalEl.classList.contains('show')) return; // モーダル close 時に矢印を出す
+    imgShowArrows();
+    showHint('やじるしを タップしてね', 2500);
+  });
+}
+
+// stage 背景 (image / images[]) の load + decode を待つ。 timeoutMs で必ず resolve する
+// (decode が遅い端末でも最大 3s で強制的に表示へ進む)。 reject はしない。
+function _imgStageBgDecodePromise(stageObj, timeoutMs) {
+  const imgs = (stageObj.images && stageObj.images.length)
+    ? stageObj.images
+    : (stageObj.image ? [stageObj.image] : []);
+  if (!imgs.length) return Promise.resolve();
+  const waits = imgs.map(function(img) {
+    return new Promise(function(resolve) {
+      if (!img) { resolve(); return; }
+      const decodeThenResolve = function() {
+        if (typeof img.decode === 'function') {
+          img.decode().then(resolve).catch(function() { resolve(); });
+        } else {
+          resolve();
+        }
+      };
+      if (img.complete) { decodeThenResolve(); return; }
+      img.addEventListener('load', decodeThenResolve, { once: true });
+      img.addEventListener('error', function() { resolve(); }, { once: true });
+    });
+  });
+  return Promise.race([
+    Promise.all(waits),
+    new Promise(function(resolve) { setTimeout(resolve, timeoutMs || 3000); })
+  ]);
 }
 
 // 動物の泣き顔/救出後の絵を Image オブジェクトとしてプリロード
@@ -4744,6 +4837,11 @@ function imgMaybeShowStoryIntro(stage, idx) {
   newBtn.addEventListener('click', function() {
     modalEl.classList.remove('show');
     modalEl.setAttribute('aria-hidden', 'true');
+    // 背景 decode 待ちが終わっていなければ、 decode 完了側 (imgLoadStage 内) が矢印を出す
+    if (stage && stage._bgDecodePending) {
+      showHint('よみこみちゅう…', 1500);
+      return;
+    }
     imgShowArrows();
   });
 }
@@ -5007,6 +5105,16 @@ function imgDraw(now) {
   if (!_imgLastFrameTs) _imgLastFrameTs = now;
   const dt = Math.min(0.1, (now - _imgLastFrameTs) / 1000);
   _imgLastFrameTs = now;
+
+  // 背景 decode 待ち (imgLoadStage の最大 3s ゲート) の間は背景塗りのみ。
+  // 背景より先に Pono / マーカー / 障害物だけが描かれる pop-in を防ぐ。
+  if (stage._bgDecodePending) {
+    const gw = stage._viewW || canvas.clientWidth;
+    const gh = stage._viewH || canvas.clientHeight;
+    ctx.fillStyle = '#A4C76D';
+    ctx.fillRect(0, 0, gw, gh);
+    return;
+  }
 
   // Determine current pono position (animated or static)
   let px = pono.x, py = pono.y, ftx = pono.faceTx, fty = pono.faceTy;
@@ -7697,6 +7805,8 @@ const WATER_SKATE_SEGMENT_COUNT = WATER_SKATE_SEGMENTS.length;
 
 function _showWaterBridgeGame() {
   _setEncounterMode('water_bridge');
+  // waterGimmick なしのステージから直接 encounter に入るケースの保険 (多重呼び出し安全)
+  loadGimmickAssets('water');
   _clearWaterGimmickTimers();
   _waterSkateLastCompletePoints = null;
   _waterGameState = {
@@ -8837,6 +8947,8 @@ function _startFlagRoundTimer() {
 
 function _showFlagGame() {
   _setEncounterMode('flag');
+  // flagGimmick なしのステージから直接 encounter に入るケースの保険 (多重呼び出し安全)
+  loadGimmickAssets('flag');
   _flagGameState = { step: 0, pose: 'down', locked: false, hp: FLAG_HP_INITIAL, steps: _buildFlagGameSteps() };
   // AF-04: iOS Safari user-gesture-chain アンロック: 全 voice を preload (まだ user gesture 内)
   ['cmd_red_up','cmd_white_up','cmd_red_down','cmd_white_down',
@@ -9138,6 +9250,10 @@ function _strengthRockStageIndex(count) {
 
 function _showStrengthPushGame() {
   _setEncounterMode('strength_push');
+  // strengthGimmick なしのステージから直接 encounter に入るケースの保険 (多重呼び出し安全)。
+  // impactFx は hit エフェクト <img> (damage_*.png) の cache warm 用。
+  loadGimmickAssets('strength');
+  loadGimmickAssets('impactFx');
   _preloadMazeVoices('strength_push', ['start','crack_progress','almost','win','fail']);
   _clearStrengthGimmickTimers();
   _strengthGameState = {
@@ -9393,7 +9509,6 @@ function _spawnStrengthImpactEffect(finalHit, punchHand, tapCount) {
   const layer = document.getElementById('strengthEffectLayer');
   if (!layer) return;
   const base = MAZE_DONGURI_EFFECT_ASSET_BASE;
-  const version = BOWL_EFFECT_ASSET_VERSION;
   const normal = [
     'damage_slash.png',
     'damage_shock_ring.png',
@@ -9406,7 +9521,8 @@ function _spawnStrengthImpactEffect(finalHit, punchHand, tapCount) {
   for (let i = 0; i < files.length; i++) {
     const img = document.createElement('img');
     img.className = 'strength-hit-effect';
-    img.src = base + files[i] + version;
+    // 旧 `+ BOWL_EFFECT_ASSET_VERSION` (?v=) は旧 sw.js の no-store bypass を誘発していたため撤去
+    img.src = base + files[i];
     img.alt = '';
     const seed = (tapCount || 1) * 19 + i * 31;
     const x = (fromRight ? 20 : -20) + Math.sin(seed) * 16 + i * 10;
@@ -9932,6 +10048,9 @@ function _layoutBowlPins(gs, layoutId) {
 
 function _showBowlGame(c) {
   _setEncounterMode('web_sweep'); // 互換トークン: card レイアウトは既存を流用
+  // webGimmick なしのステージから直接 bowl encounter に入るケースの保険 (多重呼び出し安全)
+  loadGimmickAssets('donguri');
+  loadGimmickAssets('impactFx');
   _preloadMazeVoices('kumo', ['start','pin_clear','boss_appear','boss_phase_start','milestone_10','boss_defeated','win']);
   const reducedMotion = _bowlReducedMotion();
   _clearWebGimmickTimers();
@@ -12954,14 +13073,30 @@ function _mazeOpHexToRgba(hex, alpha) {
   return 'rgba(' + r + ',' + g + ',' + b + ',' + (Number(alpha) || 0) + ')';
 }
 
+// タイトルタップ直後の flash 防止カバー (op-layout.json fetch の RTT 中にキャンバスが
+// 露出しないよう、 タップと同一ターンで同期的に表示する)。 CSS は #maze-op-cover 参照。
+function _mazeShowOpCover() {
+  if (document.getElementById('maze-op-cover')) return;
+  const cover = document.createElement('div');
+  cover.id = 'maze-op-cover';
+  document.body.appendChild(cover);
+}
+function _mazeRemoveOpCover() {
+  const cover = document.getElementById('maze-op-cover');
+  if (cover && cover.parentNode) cover.parentNode.removeChild(cover);
+}
+
 async function playMazeOpening(onDone) {
   let cfg;
   try {
-    const r = await fetch('op-layout.json?_=' + Date.now(), { cache: 'no-store' });
+    // 旧: '?_=' + Date.now() + no-store (毎回 cache miss)。 安定リビジョン + default cache に変更。
+    // 内容更新時は MAZE_DATA_REV を bump (通常反映は sw.js CACHE_VERSION bump が正)。
+    const r = await fetch('op-layout.json?v=' + MAZE_DATA_REV);
     if (!r.ok) throw new Error('op-layout HTTP ' + r.status);
     cfg = await r.json();
   } catch (e) {
     console.warn('[maze-op] config load failed, skipping OP:', e);
+    _mazeRemoveOpCover();
     if (typeof onDone === 'function') onDone();
     return;
   }
@@ -12969,6 +13104,7 @@ async function playMazeOpening(onDone) {
   const beats  = Array.isArray(cfg && cfg.beats) ? cfg.beats : [];
   const audios = Array.isArray(cfg && cfg.narrationAudio) ? cfg.narrationAudio : [];
   if (beats.length === 0) {
+    _mazeRemoveOpCover();
     if (typeof onDone === 'function') onDone();
     return;
   }
@@ -13124,6 +13260,7 @@ async function playMazeOpening(onDone) {
     if (skipBtn) skipBtn.removeEventListener('pointerdown', skipOpening);
     overlay.classList.remove('is-active');
     if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+    _mazeRemoveOpCover();
     if (typeof onDone === 'function') onDone();
   }
 
@@ -13347,16 +13484,32 @@ async function playMazeOpening(onDone) {
       if (modal && (ev.target === modal || (modal.contains && modal.contains(ev.target)))) return;
     }
     ts.removeEventListener('click', onTitleClick);
-    ts.classList.add('hidden');
     var params;
     try { params = new URLSearchParams(window.location.search); } catch (_) { params = null; }
     var hasStageParam = params && params.has('stage');
     var hasImageParam = params && params.has('image');
     if (hasStageParam || hasImageParam) {
       // 直リンク (デバッグ含む) は OP スキップ
+      ts.classList.add('hidden');
       _mazeLoadInitialStageAfterPreload();
     } else {
-      playMazeOpening(_mazeLoadInitialStageAfterPreload);
+      // flash 防止: playMazeOpening の最初の await (op-layout.json fetch) 中に
+      // キャンバスが露出しないよう、 同一ターンで不透明カバーを出してからタイトルを隠す。
+      // カバーは OP overlay の finish() / fallback 経路で必ず除去される。
+      _mazeShowOpCover();
+      ts.classList.add('hidden');
+      var _opDoneCalled = false;
+      var _startAfterOp = function() {
+        if (_opDoneCalled) return;
+        _opDoneCalled = true;
+        _mazeLoadInitialStageAfterPreload();
+      };
+      playMazeOpening(_startAfterOp).catch(function(e) {
+        // 想定外の例外でカバーが残り黒画面のまま止まるのを防ぐ最終保険
+        console.warn('[maze-op] opening failed:', e);
+        _mazeRemoveOpCover();
+        _startAfterOp();
+      });
     }
   }
   ts.addEventListener('click', onTitleClick);
