@@ -1244,7 +1244,7 @@ tr:hover { background: #FFFAF0; }
           </div>
         </div>
         <div class="npc-pos-preview-scroll" id="npc-pos-preview-scroll">
-          <div id="npc-pos-preview" style="position:relative;width:100%;aspect-ratio:16/9;background:#f4cf91 url('../assets/images/bento/story/shop_order_counter.png') center/contain no-repeat;border:2px solid #C7894A;border-radius:12px;overflow:hidden;">
+          <div id="npc-pos-preview" style="position:relative;width:100%;aspect-ratio:16/9;background:#f4cf91 url('../assets/images/bento/story/shop_order_counter.webp') center/contain no-repeat;border:2px solid #C7894A;border-radius:12px;overflow:hidden;">
             <!-- 0%/50%/100% 目盛 (横) -->
             <div style="position:absolute;inset:0;pointer-events:none;">
               <div style="position:absolute;left:50%;top:0;bottom:0;width:1px;background:rgba(255,255,255,0.35);"></div>
@@ -5977,9 +5977,9 @@ var HARDCODED_CREATURES = [
   { id: 'jellyfish', displayName: 'クラゲ',       icon: '🪼', folder: 'JellyFish', thumb: 'JellyFish_002.png', pattern: 'jellyfish', spawnCount: 3, source: 'hardcode' },
   { id: 'turtle',    displayName: 'ウミガメ',     icon: '🐢', folder: 'Turtle',    thumb: 'Turtle_002.png',    pattern: 'float',     spawnCount: 2, source: 'hardcode' },
   { id: 'fish',      displayName: 'さかな',       icon: '🐠', folder: 'Fish_S01',  thumb: 'Fish_S01_002.png',  pattern: 'swim',      spawnCount: 4, source: 'hardcode' },
-  { id: 'submarine', displayName: 'せんすいかん', icon: '🛥️', folder: 'Submarine', thumb: 'Submarine_002.png', pattern: 'float',     spawnCount: 1, source: 'hardcode' },
+  { id: 'submarine', displayName: 'せんすいかん', icon: '🛥️', folder: 'Submarine', thumb: 'Submarine_002.webp', pattern: 'float',     spawnCount: 1, source: 'hardcode' },
   { id: 'sunfish',   displayName: 'マンボウ',     icon: '🐡', folder: 'Sunfish',   thumb: 'Sunfish_002.png',   pattern: 'float',     spawnCount: 1, source: 'hardcode' },
-  { id: 'shark',     displayName: 'サメ',         icon: '🦈', folder: 'Shark',    thumb: 'Shark_002.png',     pattern: 'drift',     spawnCount: 1, source: 'hardcode' }
+  { id: 'shark',     displayName: 'サメ',         icon: '🦈', folder: 'Shark',    thumb: 'Shark_002.webp',    pattern: 'drift',     spawnCount: 1, source: 'hardcode' }
 ];
 
 // ── 図鑑用: ハードコード7体のプロフィール（museum-data.js と同期して管理）
@@ -8529,12 +8529,12 @@ var BG_BOWLING_DEFS = [
 
 // ブロック崩し背景の定義（breakout/index.html の BRK_BG_DEFS と一致）
 var BG_BREAKOUT_DEFS = [
-  { id: 'bg_breakout_forest_light',  src: 'assets/images/Block/stage1_forest_light.png',  label: 'あかるいもり' },
-  { id: 'bg_breakout_forest_deep',   src: 'assets/images/Block/stage2_forest_deep.png',   label: 'ふかいもり' },
-  { id: 'bg_breakout_cave_entrance', src: 'assets/images/Block/stage3_cave_entrance.png', label: 'どうくつのいりぐち' },
-  { id: 'bg_breakout_cave_mushroom', src: 'assets/images/Block/stage4_cave_mushroom.png', label: 'きのこどうくつ' },
-  { id: 'bg_breakout_cave_deep',     src: 'assets/images/Block/stage5_cave_deep.png',     label: 'しんかいどうくつ' },
-  { id: 'bg_breakout_night_sky',     src: 'assets/images/Block/stage6_night_sky.png',     label: 'よるのそら' },
+  { id: 'bg_breakout_forest_light',  src: 'assets/images/Block/stage1_forest_light.webp',  label: 'あかるいもり' },
+  { id: 'bg_breakout_forest_deep',   src: 'assets/images/Block/stage2_forest_deep.webp',   label: 'ふかいもり' },
+  { id: 'bg_breakout_cave_entrance', src: 'assets/images/Block/stage3_cave_entrance.webp', label: 'どうくつのいりぐち' },
+  { id: 'bg_breakout_cave_mushroom', src: 'assets/images/Block/stage4_cave_mushroom.webp', label: 'きのこどうくつ' },
+  { id: 'bg_breakout_cave_deep',     src: 'assets/images/Block/stage5_cave_deep.webp',     label: 'しんかいどうくつ' },
+  { id: 'bg_breakout_night_sky',     src: 'assets/images/Block/stage6_night_sky.webp',     label: 'よるのそら' },
 ];
 
 // Hardcoded 海の生き物（aquarium/index.html に直接定義されているもの）
@@ -8543,9 +8543,9 @@ var SEA_HARDCODED = [
   { id: 'jellyfish',  name: 'クラゲ',       img: 'assets/images/ocean/JellyFish/JellyFish_001.png' },
   { id: 'turtle',     name: 'ウミガメ',     img: 'assets/images/ocean/Turtle/Turtle_001.png' },
   { id: 'fish',       name: 'さかな',       img: 'assets/images/ocean/Fish_S01/Fish_S01_001.png' },
-  { id: 'submarine',  name: 'せんすいかん', img: 'assets/images/ocean/Submarine/Submarine_001.png' },
+  { id: 'submarine',  name: 'せんすいかん', img: 'assets/images/ocean/Submarine/Submarine_001.webp' },
   { id: 'sunfish',    name: 'マンボウ',     img: 'assets/images/ocean/Sunfish/Sunfish_001.png' },
-  { id: 'shark',      name: 'サメ',         img: 'assets/images/ocean/Shark/Shark_001.png' },
+  { id: 'shark',      name: 'サメ',         img: 'assets/images/ocean/Shark/Shark_001.webp' },
   // achievements.js で報酬として使われる固定 sea ID（日本語名を表示するためのマッピング）
   { id: 'medaka',     name: 'メダカ',       img: 'assets/images/ocean/Fish_S01/Fish_S01_001.png' },
   { id: 'shell',      name: 'かい',         img: 'assets/images/ocean/Shell/Shell_001.png' },
@@ -15564,8 +15564,8 @@ function npcPosApplyMaskPreview() {
   var mask = npcPosNormalizeCurrentMask(_npcPosState.mask);
   var inset = npcPosStaffMaskInsets(mask);
   maskEl.style.backgroundImage = isStaff
-    ? "url('../assets/images/bento/story/staff/shop_staff_bg_layered.png?v=" + encodeURIComponent(NPC_POS_PORTRAIT_VERSION) + "')"
-    : "url('../assets/images/bento/story/shop_order_counter.png?v=" + encodeURIComponent(NPC_POS_PORTRAIT_VERSION) + "')";
+    ? "url('../assets/images/bento/story/staff/shop_staff_bg_layered.webp?v=" + encodeURIComponent(NPC_POS_PORTRAIT_VERSION) + "')"
+    : "url('../assets/images/bento/story/shop_order_counter.webp?v=" + encodeURIComponent(NPC_POS_PORTRAIT_VERSION) + "')";
   maskEl.style.clipPath = 'inset(' + inset.top + '% ' + inset.right + '% ' + inset.bottom + '% ' + inset.left + '%)';
   maskEl.style.opacity = String(mask.opacity);
   outline.style.display = 'block';
@@ -15585,14 +15585,14 @@ function npcPosApplyPreview() {
   if (cfg.type === 'staff') {
     var file = cfg.files && (cfg.files[exp] || cfg.files.idle);
     src = npcPosVersionedSrc(NPC_POS_STAFF_BASE + file);
-    if (preview) preview.style.backgroundImage = "url('../assets/images/bento/story/staff/shop_staff_bg_layered.png?v=" + encodeURIComponent(NPC_POS_PORTRAIT_VERSION) + "')";
+    if (preview) preview.style.backgroundImage = "url('../assets/images/bento/story/staff/shop_staff_bg_layered.webp?v=" + encodeURIComponent(NPC_POS_PORTRAIT_VERSION) + "')";
     img.style.height = cfg.height || '32%';
     img.style.maxWidth = cfg.maxWidth || '30%';
   } else {
     // プレビュー用 sprite: <charId>_<expression>.png を読込。 happy は素材未配置のため normal にフォールバック
     var fileExp = (exp === 'happy') ? 'normal' : exp;
     src = npcPosVersionedSrc(NPC_POS_PORTRAIT_BASE + _npcPosState.charId + '_' + fileExp + '.png');
-    if (preview) preview.style.backgroundImage = "url('../assets/images/bento/story/shop_order_counter.png?v=" + encodeURIComponent(NPC_POS_PORTRAIT_VERSION) + "')";
+    if (preview) preview.style.backgroundImage = "url('../assets/images/bento/story/shop_order_counter.webp?v=" + encodeURIComponent(NPC_POS_PORTRAIT_VERSION) + "')";
     img.style.height = '40%';
     img.style.maxWidth = '38%';
   }

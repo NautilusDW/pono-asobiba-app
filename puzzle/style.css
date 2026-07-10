@@ -52,7 +52,9 @@ body {
   position: fixed;
   inset: 0;
   z-index: 300;
-  background: center / cover no-repeat url('../assets/images/puzzle/title_back2.jpg');
+  /* perf 2026-07-10: jpg (622KB) デコード完了まで盤面が透けないよう、
+     絵の平均色 (蜂蜜色の木の洞トーン, 実測 #AB925C) をベタ塗りで敷く */
+  background: #AB925C center / cover no-repeat url('../assets/images/puzzle/title_back2.jpg');
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   overflow: hidden;

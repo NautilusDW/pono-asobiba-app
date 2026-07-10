@@ -148,7 +148,13 @@ function applyCacheHeaders(request, response) {
 
   if (isHTML || isFreshData) {
     const headers = new Headers(response.headers);
-    headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    // no-cache = 「保存してよいが使用前に必ず再検証」。 旧 no-store は保存自体を禁止する
+    // ため ETag 304 が成立せず、 タイトル⇔ゲーム遷移のたびに HTML 全文 (brotli 165-222KB)
+    // を再ダウンロードしていた。 no-cache なら毎リクエスト検証で deploy 即時反映は同一の
+    // まま、 変更が無ければ 304 (body なし) で済む (2026-07-10)。
+    // Workers Assets は ETag を付与し、 ASSETS.fetch は If-None-Match を透過して 304 を
+    // 返すため validator はこのまま素通しでよい (下の new Response は headers を複製)。
+    headers.set('Cache-Control', 'no-cache');
     headers.set('CDN-Cache-Control', 'no-store');
     headers.set('Cloudflare-CDN-Cache-Control', 'no-store');
     headers.set('Pragma', 'no-cache');

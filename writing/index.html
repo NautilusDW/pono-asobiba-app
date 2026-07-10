@@ -7,16 +7,23 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>文字書きクエスト | ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<!-- FOUC guard: init 完了 (DOMContentLoaded + 2 rAF) まで本体を非表示にしてチラ見えを防ぐ -->
+<style>html,body{background:#05070f}body{visibility:hidden}body.pono-game-ready{visibility:visible}</style>
+<script>document.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(function(){requestAnimationFrame(function(){document.body.classList.add('pono-game-ready')})})});</script>
 <script src="../common/achievements.js"></script>
 <script src="../common/acorns.js"></script>
 <script src="../common/thankyou.js"></script>
 <script src="../common/menu.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
+<!-- 2026-07-10: CDN 同期ロード (first paint ブロック + SW キャッシュ不可) をローカル vendor + defer に変更。
+     HanziWriter は筆順練習 (createWriter 等、ユーザー操作後) でのみ使用のため defer で安全。 -->
+<script defer src="../common/vendor/hanzi-writer.min.js"></script>
+<!-- フォント: @import (CSS パースをブロック) から <link> に変更 (2026-07-10)。
+     DotGothic16 はレトロ SFC 風ドットフォント (紙芝居オープニング専用)。 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
-/* レトロ SFC 風ドットフォント (紙芝居オープニング専用)。
-   DotGothic16 は Google Fonts が配布する 16px ビットマップ風 日本語フォント。*/
-@import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -6293,8 +6300,10 @@ const SPELL_VIDEOS = {
   // 属性ごとに専用動画 (ユーザー提供素材: D:\ポノのおへや\Mojikaki\magic\spell\movie)。
   fire:    ['../assets/videos/spells/fire.mp4'],
   ice:     ['../assets/videos/spells/ice.mp4'],
-  earth:   ['../assets/videos/spells/earth.mp4'],
-  rainbow: ['../assets/videos/spells/rainbow.mp4'],
+  // 2026-07-10: earth/rainbow は 1920x1080@10Mbps (約5MB) で戦闘中にストールするため
+  // 1280x720 crf26 版 (約0.4MB) に再エンコード (AR 16:9 は完全維持)。
+  earth:   ['../assets/videos/spells/earth_720p.mp4'],
+  rainbow: ['../assets/videos/spells/rainbow_720p.mp4'],
   // 旧 AI 生成 4 本は「属性未設定」フォールバック扱い
   light:   ['../assets/videos/spells/spell_01.mp4', '../assets/videos/spells/spell_02.mp4'],
   arcane:  ['../assets/videos/spells/spell_03.mp4', '../assets/videos/spells/spell_04.mp4'],
@@ -11198,14 +11207,29 @@ function _showStoryboard(scenes, onDone) {
     return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 
-  // 2026-04-23: 全画像と音声を事前に並列プリロード → シーン遷移時にロード待ちで
+  // 2026-04-23: 画像と音声を事前プリロード → シーン遷移時にロード待ちで
   // ポップイン / 音声遅延が起きるのを防ぐ。
-  scenes.forEach(function(s) {
-    if (s && s.image) { var pre = new Image(); pre.src = s.image; }
-    if (s && s.voice) {
+  // 2026-07-10: 全シーン一括プリロード (22+ シーン ≈ 画像 4.9MB + 音声 3.6MB を
+  // 開幕に同時発火) は回線を占有して scene 0 自体の表示を遅らせるため段階式に変更:
+  //   開幕 = scene 0/1 のみ先行 (fetchpriority=high で最優先)、
+  //   以降 = paintScene の度に 2 シーン先まで先読み。
+  var _preloadedScenes = [];   // idx -> true (プリロード発火済み)
+  function ensurePreloaded(i, highPriority) {
+    if (i < 0 || i >= scenes.length || _preloadedScenes[i]) return;
+    _preloadedScenes[i] = true;
+    var s = scenes[i];
+    if (!s) return;
+    if (s.image) {
+      var pre = new Image();
+      if (highPriority) { try { pre.fetchPriority = 'high'; } catch (e) {} }
+      pre.src = s.image;
+    }
+    if (s.voice) {
       try { var pa = new Audio(); pa.preload = 'auto'; pa.src = s.voice; } catch (e) {}
     }
-  });
+  }
+  ensurePreloaded(0, true);
+  ensurePreloaded(1, true);
 
   // ===== 紙芝居 BGM =====
   // シーン毎に s.bgm が指定されていれば、その mp3 にクロスフェードで切替。
@@ -11461,6 +11485,9 @@ function _showStoryboard(scenes, onDone) {
   }
 
   function paintScene(i, keepImage) {
+    // 段階式プリロード: 現シーンを描くタイミングで 2 シーン先まで先読みしておく
+    ensurePreloaded(i + 1);
+    ensurePreloaded(i + 2);
     var s = scenes[i];
     if (s.bg) ov.style.background = s.bg;
     if (s.bgm !== undefined) setBgm(s.bgm);  // シーン指定時のみ切替、未指定は継続
@@ -11929,7 +11956,8 @@ function _playShrineDoorVideo(onDone) {
   ov.id = 'shrineDoorVideoOverlay';
 
   var video = document.createElement('video');
-  video.src = '../assets/videos/shrine_door_open.mp4';
+  // 2026-07-10: 3.3MB 1928x1076 → 1280x714 crf26 (約0.18MB) に再エンコード (AR 完全維持)。
+  video.src = '../assets/videos/shrine_door_open_1280.mp4';
   video.autoplay = true;
   video.muted = true;           // iOS 自動再生のため
   video.playsInline = true;

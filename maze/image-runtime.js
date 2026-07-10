@@ -18,11 +18,17 @@
 
   function _finite(n) { return typeof n === 'number' && Number.isFinite(n); }
   function _validPoint(p) { return p && _finite(p.x) && _finite(p.y); }
+  // Stage 背景画像の cache-bust: 旧実装は '?_=' + Date.now() を毎回付与しており、
+  // 数 MB の背景がロードのたびに HTTP cache miss になっていた。 内容更新時に手で bump する
+  // 安定リビジョンに変更 (通常のデプロイ反映は sw.js の CACHE_VERSION bump が正)。
+  // NOTE: パラメータ名は従来どおり '_' を維持する (旧 sw.js は ?v=/?t= を no-store bypass
+  // していた。 現行 sw.js は query 込み URL を key とする cache-first なので安定値なら名前は不問)。
+  var STAGE_ASSET_REV = '20260710';
   function _cacheBustStageAssetUrl(url) {
     if (typeof url !== 'string' || !url) return url;
     if (/^(data|blob):/i.test(url)) return url;
     if (url.indexOf('imageStages/') < 0 && url.indexOf('/maze/imageStages/') < 0) return url;
-    return url + (url.indexOf('?') >= 0 ? '&' : '?') + '_=' + Date.now();
+    return url + (url.indexOf('?') >= 0 ? '&' : '?') + '_=' + STAGE_ASSET_REV;
   }
 
   function buildStage(stageDef) {

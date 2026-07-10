@@ -1,4 +1,6 @@
-// PuzzleVoice — preloaded HTMLAudioElement pool with simple play() helpers.
+// PuzzleVoice — lazily-warmed HTMLAudioElement pool with simple play() helpers.
+// (Elements are created at parse with preload='none'; the network fetch happens
+//  on the first user gesture via unlock(), or on first play().)
 // Load this file BEFORE main.js.
 //
 // Public API:
@@ -57,14 +59,16 @@ window.PuzzleVoice = (function () {
 
   function makeAudio(file) {
     var a = new Audio(BASE + file + '?v=' + AUDIO_VERSION);
-    a.preload = 'auto';
+    // perf 2026-07-10: preload='none' — parse 時に全クリップ (~1.8MB) を一括 DL しない。
+    // 最初のユーザージェスチャ (unlock()) 内で 'auto' へ昇格させてプールを温める。
+    // unlock 前に playFile() が呼ばれても play() 自体が load を発火するので再生は壊れない。
+    a.preload = 'none';
     a.volume = 1.0;
-    // Avoid the browser re-fetching across page navigations within session.
-    try { a.load(); } catch (_) { /* noop */ }
     return a;
   }
 
-  // Preload one Audio per file (cheap, ~22 elements total).
+  // Create one Audio element per file (cheap; network fetch is deferred until
+  // unlock() promotes preload, or until the first play()).
   Object.keys(REGISTRY).forEach(function (group) {
     REGISTRY[group].forEach(function (file) {
       if (!pool[file]) pool[file] = makeAudio(file);
@@ -107,6 +111,10 @@ window.PuzzleVoice = (function () {
     Promise.resolve().then(function () {
       // Bail if a later playFile/stop superseded this call.
       if (currentAudio !== a) return;
+      // perf 2026-07-10: preload='none' 化で unlock() の priming (muted play) が
+      // ネットワーク待ちで長引く窓ができた。その間に実再生が始まると muted のまま
+      // 無音になるため、実再生前に必ずミュートを解除する (本モジュールは常に非ミュート再生)。
+      a.muted = false;
       try {
         var p = a.play();
         if (p && typeof p.catch === 'function') {
@@ -217,12 +225,27 @@ window.PuzzleVoice = (function () {
     Object.keys(pool).forEach(function (file) {
       var a = pool[file];
       if (!a) return;
+      // 実再生中のクリップは priming しない (muted 化で生きたナレーションを消音しないため)。
+      // paused 判定込み: 再生が reject 済み/終了済みの要素は通常どおり priming する。
+      if (a === currentAudio && !a.paused) return;
       try {
+        // perf 2026-07-10: makeAudio は preload='none' で生成しているので、
+        // ここ (最初のジェスチャ) で 'auto' に昇格させてプールを温める。
+        // pause() 後もバッファリングが継続し、以降の再生が途切れない。
+        a.preload = 'auto';
         var prevMuted = a.muted;
         var prevVol = a.volume;
         a.muted = true;
         var p = a.play();
         var restore = function () {
+          // perf 2026-07-10: preload='none' 化で priming の play() 完了がネットワーク
+          // 待ちになり、完了前に実再生 (playFile) が同じ要素を掴む窓が広がった。
+          // その場合は pause/巻き戻しせず、ミュート解除だけして実再生を活かす。
+          if (currentAudio === a) {
+            a.muted = false;
+            a.volume = prevVol;
+            return;
+          }
           try { a.pause(); } catch (_) {}
           try { a.currentTime = 0; } catch (_) {}
           a.muted = prevMuted;

@@ -145,7 +145,7 @@ canvas { display: block; width: 100%; height: 100%; will-change: transform; }
 </div>
 <div id="score">0</div>
 <div id="combo"></div>
-<audio id="bgm" loop src="../assets/audio/Cheery Strike Loop.mp3" preload="auto"></audio>
+<audio id="bgm" loop src="../assets/audio/Cheery Strike Loop.mp3" preload="none"></audio>
 <div id="zukan-overlay" style="display:none;position:fixed;inset:0;z-index:99990;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;padding:16px;">
   <div style="background:#fff;border-radius:20px;padding:16px;max-width:320px;width:100%;max-height:85vh;overflow-y:auto;text-align:center;">
     <div style="font-size:1.1rem;font-weight:900;color:#4ECDC4;margin-bottom:12px;">📖 いきもの ずかん</div>
@@ -243,15 +243,16 @@ bgmEl.volume = 0.25;
 let bgmStarted = false;
 function tryStartBgm() {
   if (!bgmEnabled || bgmStarted) return;
+  if (bgmEl.preload === 'none') bgmEl.preload = 'auto'; // 初回ジェスチャで読み込み開始（ページ表示時の 1.12MB 先読み防止）
   bgmEl.play().then(() => { bgmStarted = true; }).catch(() => {});
 }
 
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) { bgmEl.pause(); }
-  else if (bgmEnabled) { bgmEl.play().catch(() => {}); }
+  else if (bgmEnabled && bgmStarted) { bgmEl.play().catch(() => {}); }
 });
 window.addEventListener('blur',  () => { if (!document.hidden) return; bgmEl.pause(); });
-window.addEventListener('focus', () => { if (bgmEnabled) bgmEl.play().catch(() => {}); });
+window.addEventListener('focus', () => { if (bgmEnabled && bgmStarted) bgmEl.play().catch(() => {}); });
 
 function showTutorial() {
   var dim = document.getElementById('tut-dim');

@@ -550,7 +550,7 @@ body {
 <body>
 <div class="tut-dim hidden" id="tut-dim"></div>
 <div class="tut-bubble hidden" id="tut-bubble"></div>
-<audio id="bgm" loop src="../assets/audio/Soft Crayon Day.mp3" preload="auto"></audio>
+<audio id="bgm" loop src="../assets/audio/Soft Crayon Day.mp3" preload="none"></audio>
 <div id="app">
   <div class="header">
     <a href="../play.html" class="back-link">← ホーム</a>
@@ -1255,6 +1255,7 @@ function updateBgmIcon() {
 
 function tryStartBgm() {
   if (!bgmEnabled || bgmStarted) return;
+  if (bgm.preload === 'none') bgm.preload = 'auto'; // 初回ジェスチャで読み込み開始（ページ表示時の 1.75MB 先読み防止）
   bgm.play().then(() => { bgmStarted = true; }).catch(() => {});
 }
 
@@ -1381,20 +1382,19 @@ if (!localStorage.getItem('drawing_tut_seen')) {
 
 initMenu({ bgmToggle: toggleBgm, tutorial: showTutorial });
 
+// ページ表示時に play() するとダウンロードが走るため、初回ジェスチャまで待つ
 if (bgmEnabled) {
-  bgm.play().then(() => { bgmStarted = true; }).catch(() => {
-    document.addEventListener('touchstart', tryStartBgm, { once: true, passive: true });
-    document.addEventListener('pointerdown', tryStartBgm, { once: true });
-  });
+  document.addEventListener('touchstart', tryStartBgm, { once: true, passive: true });
+  document.addEventListener('pointerdown', tryStartBgm, { once: true });
 }
 updateBgmIcon();
 
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) { bgm.pause(); }
-  else if (bgmEnabled) { bgm.play().catch(() => {}); }
+  else if (bgmEnabled && bgmStarted) { bgm.play().catch(() => {}); }
 });
 window.addEventListener('blur',  () => { if (!document.hidden) return; bgm.pause(); });
-window.addEventListener('focus', () => { if (bgmEnabled) bgm.play().catch(() => {}); });
+window.addEventListener('focus', () => { if (bgmEnabled && bgmStarted) bgm.play().catch(() => {}); });
 </script>
 </body>
 </html>

@@ -110,6 +110,36 @@
       return;
     }
 
+    // ------------------------------------------------------------------
+    // saved-layout.json prefetch (2026-07-10 perf fix)
+    // 3 スクリプト直列ロード → LayoutSystem.init → applier.fetch の完了を
+    // 待たず、 bootstrap 実行時点 (defer = HTML パース完了直後) で fetch を
+    // 前倒し開始する。 layout-applier.js の fetchLayout が同一 URL の
+    // prefetch を 1 回だけ消費し、 first paint 後の要素ジャンプ窓を縮める。
+    // cache 方針は fetchLayout と同一:
+    //   通常閲覧 = 安定 URL + cache:'default' /
+    //   editor (?edit=1)・/preview/ 配下 = ?t=Date.now() + no-store。
+    // 失敗しても null 解決するだけで、 fetchLayout 側が実 fetch に fallback。
+    // ------------------------------------------------------------------
+    try {
+      if (config.layoutUrl && typeof window.fetch === 'function' && !window.__ponoLayoutPrefetch) {
+        var prefetchBust = false;
+        try {
+          prefetchBust = (window.location.pathname || '').indexOf('/preview/') !== -1 ||
+            new URL(window.location.href).searchParams.get('edit') === '1';
+        } catch (eDetect) { /* 判定失敗時は通常閲覧扱い */ }
+        var prefetchUrl = prefetchBust
+          ? config.layoutUrl + (config.layoutUrl.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now()
+          : config.layoutUrl;
+        window.__ponoLayoutPrefetch = {
+          url: config.layoutUrl,
+          promise: fetch(prefetchUrl, { cache: prefetchBust ? 'no-store' : 'default' })
+            .then(function (r) { return r && r.ok ? r.json() : null; })
+            .catch(function () { return null; })
+        };
+      }
+    } catch (ePrefetch) { /* prefetch は非致命 */ }
+
     var applierUrl = siblingUrl('layout-applier.js');
     var systemUrl  = siblingUrl('layout-system.js');
     var navUrl     = commonUrl('page-nav.js');

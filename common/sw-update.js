@@ -133,7 +133,9 @@
     if (window.__NATIVE_BUILD__) return;
     navigator.serviceWorker.register('/sw.js')
       .then(function (reg) {
-        try { reg.update(); } catch (e) {}
+        // register() 自体が update check を schedule するため (HTML spec の Register →
+        // Update job)、 直後の reg.update() は sw.js の二重 fetch にしかならず削除
+        // (2026-07-10)。 5分毎 + visibilitychange の poll は bind() 内で継続。
         bind(reg);
       })
       .catch(function () {});

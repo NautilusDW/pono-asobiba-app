@@ -2,7 +2,7 @@
 // Public API: window.LayoutApplier
 //
 // Responsibilities:
-//   - Fetch saved-layout.json (cache-busted, no-store).
+//   - Fetch saved-layout.json (通常閲覧: 安定 URL + HTTP cache / editor・preview: cache-busted no-store).
 //   - Apply per-element { w, h, tx, ty } to selectors (idempotent).
 //   - Restore __headerH (CSS variable on <html>).
 //   - Restore __hidden (apply `.user-hidden`).
@@ -178,16 +178,62 @@
 
   // ---- public API -----------------------------------------------------
 
+  // editor / preview 系フローかどうかの判定 (2026-07-10 perf fix)。
+  //   - ?edit=1 (layout-system.js shouldEnableEditor のデフォルト query)
+  //   - LayoutEditor が既にロード済 (enableEditor:true 等の非 query 起動保険)
+  //   - /preview/ 配下 (quizland/preview/full, zukan/preview/* 等の作者用ページ)
+  // これらだけ従来通り ?t=Date.now() + no-store で常に最新 JSON を読む。
+  function isEditorPreviewFlow() {
+    try {
+      if (window.LayoutEditor) return true;
+      if ((window.location.pathname || '').indexOf('/preview/') !== -1) return true;
+      var sp = new URL(window.location.href).searchParams;
+      if (sp.get('edit') === '1') return true;
+    } catch (e) { /* URL parse 失敗時は通常閲覧扱い */ }
+    return false;
+  }
+
   /**
    * fetch(url, opts) → Promise<LayoutData|null>
    * Resilient: 404, network error, malformed JSON → resolve(null), never throws.
+   *
+   * Cache 方針 (2026-07-10 perf fix):
+   *   - 通常閲覧 (kid-facing page): 安定 URL (クエリ無し) + cache:'default'。
+   *     旧実装は毎ロード ?t=Date.now() + no-store で必ず full network miss になり、
+   *     first paint 後の apply で要素ジャンプが目立っていた。 安定 URL なら
+   *     HTTP 304 revalidation / sw.js の network-first + cache fallback が効き、
+   *     offline でも URL 一致で SW cache にヒットする。
+   *   - editor / preview フロー (isEditorPreviewFlow) は従来通り
+   *     ?t=Date.now() + no-store (保存直後の最新 JSON を必ず読む)。
+   *   - opts.cacheBust === true / false で明示 override 可能。
    */
   function fetchLayout(url, opts) {
     if (!url) return Promise.resolve(null);
-    var bust = (opts && opts.cacheBust !== false)
-      ? (url.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now()
-      : '';
-    return fetch(url + bust, { cache: 'no-store' })
+    // editor-bootstrap.js が script chain ロードと並行に前倒しした prefetch
+    // (同一 URL) があれば 1 回だけ消費する。 null 解決 (404/network error) 時は
+    // 通常 fetch に fallback して従来挙動を維持。
+    // opts.cacheBust === true の明示指定時は prefetch を消費しない
+    // (HTTP cache 由来の可能性がある prefetch では「必ず最新」の契約を満たせない)。
+    try {
+      var pre = window.__ponoLayoutPrefetch;
+      if (pre && pre.url === url && pre.promise && !(opts && opts.cacheBust === true)) {
+        window.__ponoLayoutPrefetch = null; // 一度きり (editor の再 fetch は実 fetch に)
+        var fallbackOpts = opts;
+        return pre.promise.then(function (data) {
+          return (data != null) ? data : fetchLayoutNetwork(url, fallbackOpts);
+        });
+      }
+    } catch (e) { /* prefetch 消費失敗時は通常 fetch */ }
+    return fetchLayoutNetwork(url, opts);
+  }
+
+  function fetchLayoutNetwork(url, opts) {
+    var bust;
+    if (opts && opts.cacheBust === true) bust = true;
+    else if (opts && opts.cacheBust === false) bust = false;
+    else bust = isEditorPreviewFlow();
+    var q = bust ? (url.indexOf('?') >= 0 ? '&' : '?') + 't=' + Date.now() : '';
+    return fetch(url + q, { cache: bust ? 'no-store' : 'default' })
       .then(function (r) { return r && r.ok ? r.json() : null; })
       .catch(function (e) {
         console.warn('[LayoutApplier] fetch failed:', url, e);

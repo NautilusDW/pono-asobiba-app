@@ -108,9 +108,9 @@
     jellyfish: { displayName: 'クラゲ',       icon: '🪼', imgFolder: 'JellyFish', thumb: 'JellyFish_002.png' },
     turtle:    { displayName: 'ウミガメ',     icon: '🐢', imgFolder: 'Turtle',    thumb: 'Turtle_002.png' },
     fish:      { displayName: 'さかな',       icon: '🐠', imgFolder: 'Fish_S01',  thumb: 'Fish_S01_002.png' },
-    submarine: { displayName: 'せんすいかん', icon: '🛥️', imgFolder: 'Submarine', thumb: 'Submarine_002.png' },
+    submarine: { displayName: 'せんすいかん', icon: '🛥️', imgFolder: 'Submarine', thumb: 'Submarine_002.webp' },
     sunfish:   { displayName: 'マンボウ',     icon: '🐡', imgFolder: 'Sunfish',   thumb: 'Sunfish_002.png' },
-    shark:     { displayName: 'サメ',         icon: '🦈', imgFolder: 'Shark',     thumb: 'Shark_002.png' }
+    shark:     { displayName: 'サメ',         icon: '🦈', imgFolder: 'Shark',     thumb: 'Shark_002.webp' }
   };
 
   // ── Hardcoded zone assignments for the 7 built-in creatures ───────────────

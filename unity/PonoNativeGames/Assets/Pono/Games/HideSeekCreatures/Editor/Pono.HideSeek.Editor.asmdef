@@ -1,0 +1,22 @@
+{
+  "name": "Pono.HideSeek.Editor",
+  "rootNamespace": "Pono.HideSeekCreatures.Editor",
+  "references": [
+    "Pono.NativeShell",
+    "Pono.HideSeek.Core",
+    "Pono.HideSeek.Rendering",
+    "Pono.HideSeek.App",
+    "Unity.ugui"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

@@ -5,7 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>もじかき シンプルモード | ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
-<script src="https://cdn.jsdelivr.net/npm/hanzi-writer@3.5/dist/hanzi-writer.min.js"></script>
+<!-- hanzi-writer は CDN から common/vendor/ へローカル化 (2026-07-10 perf)。
+     このページは inline script のパース時 top-level で loadCharacter() → HanziWriter.create()
+     を呼ぶため defer 不可 (defer だと未定義エラー)。同期ロードのまま同一オリジン配信にする。 -->
+<script src="../common/vendor/hanzi-writer.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');

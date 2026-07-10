@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>作者より | ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<!-- FOUC guard: 初回ペイント時の未スタイル表示を防ぐ -->
+<style>html,body{background:#FFF8F0}.page{visibility:hidden}body.pono-game-ready .page{visibility:visible}</style>
+<script>document.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(function(){requestAnimationFrame(function(){document.body.classList.add('pono-game-ready')})})});</script>
 <script src="../common/preload-helper.js"></script>
 <script>window.addEventListener('DOMContentLoaded',function(){if(window.PonoPreload)window.PonoPreload.warmGameAssets('message');});</script>
 <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">

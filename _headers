@@ -4,13 +4,15 @@
 # (旧 Netlify _headers と同形式。Cloudflare も同形式をサポート)
 # ──────────────────────────────────────────
 
-# --- HTML はキャッシュしない (常に最新) ---
+# --- HTML は no-cache (常に再検証 = 常に最新、 変更なしなら ETag 304 で body 転送なし) ---
+# 旧 no-store は保存禁止のため 304 が成立せず、 遷移のたびに HTML 全文を再DLしていた
+# (2026-07-10 修正。 src/worker.js applyCacheHeaders と対で変更)
 /*.html
-  Cache-Control: no-cache, no-store, must-revalidate
+  Cache-Control: no-cache
   Pragma: no-cache
 
 /bowling/*.html
-  Cache-Control: no-cache, no-store, must-revalidate
+  Cache-Control: no-cache
   Pragma: no-cache
 
 # --- 管理ツール (頻繁に更新されるので絶対キャッシュしない) ---
@@ -22,9 +24,9 @@
   Cache-Control: no-cache, no-store, must-revalidate
   Pragma: no-cache
 
-# --- Service Worker 自身は絶対にキャッシュしない ---
+# --- Service Worker 自身は常に再検証 (no-cache)。 5分毎の update poll が 304 で済む ---
 /sw.js
-  Cache-Control: no-cache, no-store, must-revalidate
+  Cache-Control: no-cache
 
 # --- 動的更新されるデータ類も no-cache ---
 /assets/data/*.json

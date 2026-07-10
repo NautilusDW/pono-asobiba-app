@@ -138,7 +138,7 @@ html, body {
 .title-screen__mode-btn {
   border: 0;
   border-radius: 20px;
-  background: transparent url('../assets/images/quizland/Fukuro_frame_003.png') center / 100% 100% no-repeat;
+  background: transparent url('../assets/images/quizland/Fukuro_frame_003.webp') center / 100% 100% no-repeat;
   color: #5B3514;
   font-family: 'Zen Maru Gothic', sans-serif;
   font-weight: 900;
@@ -4921,7 +4921,7 @@ body.bento-complete-open .bento-restart-btn { display: none !important; }
   inset: 0;
   background:
     linear-gradient(180deg, rgba(255,255,255,0.72), rgba(255,255,255,0.88)),
-    center / cover no-repeat url('../assets/images/bento/story/shop_order_counter.png');
+    center / cover no-repeat url('../assets/images/bento/story/shop_order_counter.webp');
   opacity: 0.78;
   pointer-events: none;
 }
@@ -5041,7 +5041,7 @@ body.bento-complete-open .bento-restart-btn { display: none !important; }
   border-color: rgba(255,138,76,0.34);
   background:
     linear-gradient(180deg, rgba(255,255,255,0.94), rgba(255,247,231,0.92)),
-    center / cover no-repeat url('../assets/images/bento/story/shop_order_counter.png');
+    center / cover no-repeat url('../assets/images/bento/story/shop_order_counter.webp');
 }
 .complete-request-hero {
   display: flex;
@@ -5880,7 +5880,8 @@ body.bento-complete-open .bento-restart-btn { display: none !important; }
 <body data-game-id="bento">
 
 <!-- BGM (loop) -->
-<audio id="bgm" loop preload="auto" src="../assets/audio/bento_bgm.mp3"></audio>
+<!-- perf-audit: preload="auto" だと 1.1MB の mp3 が毎回ページオープンで即 DL される。 none にして初回 gesture / 再生時に昇格 (tryPlayBgm) -->
+<audio id="bgm" loop preload="none" src="../assets/audio/bento_bgm.mp3"></audio>
 
 <div id="title-screen" role="button" aria-label="タップしてスタート">
   <div class="title-screen__content">
@@ -5904,7 +5905,8 @@ body.bento-complete-open .bento-restart-btn { display: none !important; }
 
 <div class="shop-opening hidden" id="shop-opening" aria-live="polite">
   <div class="shop-opening__frame">
-    <img class="shop-opening__bg" id="shop-opening-bg" src="../assets/images/bento/story/staff/shop_staff_bg_layered.png" alt="">
+    <!-- perf-audit: 静的 src を外して data-src 化 (display:none でも ~2.9MB が毎回 DL されていた)。 src は showShopOpening() の waitForImageReady(bg, step.bg) が表示時に代入する -->
+    <img class="shop-opening__bg" id="shop-opening-bg" data-src="../assets/images/bento/story/staff/shop_staff_bg_layered.webp" alt="">
     <div class="shop-opening__staff" id="shop-opening-staff" aria-hidden="true">
       <img class="shop-opening__staff-member" id="shop-opening-staff-pono" alt="">
       <img class="shop-opening__staff-member" id="shop-opening-staff-boy" alt="">
@@ -6088,7 +6090,8 @@ body.bento-complete-open .bento-restart-btn { display: none !important; }
 
 <div class="bento-delivery hidden" id="bento-delivery" aria-live="polite">
   <div class="bento-delivery__frame">
-    <img class="bento-delivery__bg" src="../assets/images/bento/story/shop_order_counter.png" alt="">
+    <!-- perf-audit: 静的 src を外して data-src 化 (display:none でも ~2.6MB が毎回 DL されていた)。 src は showBentoDelivery() が表示時に代入する -->
+    <img class="bento-delivery__bg" data-src="../assets/images/bento/story/shop_order_counter.webp" alt="">
     <div class="bento-delivery__sparkles"></div>
     <img class="bento-delivery__customer" id="bento-delivery-customer" alt="">
     <div class="bento-delivery__customer-counter-mask" id="bento-delivery-customer-mask" aria-hidden="true"></div>
@@ -8186,8 +8189,11 @@ function showRequesterIntro(req) {
   ov.onclick = dismiss;
 }
 
-const SHOP_OPENING_STAFF_BG = '../assets/images/bento/story/staff/shop_staff_bg_layered.png';
-const SHOP_OPENING_ORDER_BG = '../assets/images/bento/story/shop_order_counter.png';
+// perf-audit: PNG→WebP 化 (~2.9MB/~2.6MB → ~0.4MB/~0.35MB)。 URL はこの定数を正本とし、
+// ?v= 付与はしない (旧実装は 無版 URL と ?v= 付 URL の 2 系統で同一画像を二重 DL していた。
+// WebP 化でファイル名が変わるため cache bust も不要)。
+const SHOP_OPENING_STAFF_BG = '../assets/images/bento/story/staff/shop_staff_bg_layered.webp';
+const SHOP_OPENING_ORDER_BG = '../assets/images/bento/story/shop_order_counter.webp';
 const SHOP_CUSTOMER_ENTER_DELAY_MS = 420;
 const SHOP_STAFF_ASSET_VERSION = '20260621-bento-pono-wave-face-v1';
 const SHOP_STAFF_ASSET_BASE = '../assets/images/bento/story/staff/';
@@ -8329,7 +8335,8 @@ function applyCounterMaskStyle(maskEl, bgUrl, mask, prefix) {
   const normalized = normalizeShopCounterMask(mask, prefix === 'customer' ? SHOP_CUSTOMER_COUNTER_MASK_DEFAULT : SHOP_STAFF_COUNTER_MASK_DEFAULT);
   const right = Math.max(0, 100 - normalized.x - normalized.width);
   const bottom = Math.max(0, 100 - normalized.y - normalized.height);
-  maskEl.style.backgroundImage = 'url("' + bgUrl + '?v=' + encodeURIComponent(SHOP_STAFF_ASSET_VERSION) + '")';
+  // perf-audit: ?v= を外し SHOP_OPENING_*_BG 定数の URL をそのまま使う (無版/有版 二重 DL 防止)
+  maskEl.style.backgroundImage = 'url("' + bgUrl + '")';
   maskEl.style.setProperty('--' + prefix + '-counter-mask-left', normalized.x + '%');
   maskEl.style.setProperty('--' + prefix + '-counter-mask-top', normalized.y + '%');
   maskEl.style.setProperty('--' + prefix + '-counter-mask-right', right + '%');
@@ -8559,7 +8566,7 @@ function showShopOpening(req, onDone, options = {}) {
       sceneReady = Promise.all([
         bgReady,
         waitForShopOpeningStaffReady(),
-        waitForImageSrcReady(SHOP_OPENING_STAFF_BG + '?v=' + encodeURIComponent(SHOP_STAFF_ASSET_VERSION)),
+        waitForImageSrcReady(SHOP_OPENING_STAFF_BG),
       ]);
     }
     if (step.customer) {
@@ -8576,7 +8583,7 @@ function showShopOpening(req, onDone, options = {}) {
       sceneReady = Promise.all([
         bgReady,
         customerReady,
-        waitForImageSrcReady(SHOP_OPENING_ORDER_BG + '?v=' + encodeURIComponent(SHOP_STAFF_ASSET_VERSION)),
+        waitForImageSrcReady(SHOP_OPENING_ORDER_BG),
       ])
         .then(() => waitMs(step.enter ? SHOP_CUSTOMER_ENTER_DELAY_MS : 80));
     } else {
@@ -8816,6 +8823,12 @@ function showBentoDelivery(req, finalEval, onDone) {
     return;
   }
 
+  // perf-audit: 背景は静的 src を外して data-src 化したので、初回表示時にここで読み込む。
+  // shop-opening (SHOP_OPENING_ORDER_BG 同一 URL) を経てから届くため通常は cache hit で即 decode。
+  const deliveryBg = ov.querySelector('.bento-delivery__bg');
+  if (deliveryBg && !deliveryBg.src) {
+    waitForImageReady(deliveryBg, deliveryBg.dataset.src || SHOP_OPENING_ORDER_BG);
+  }
   const mood = (finalEval && finalEval.npcMood) || 'sad';
   img.src = getRequesterPortrait(req, mood);
   img.alt = req.name;
@@ -9490,6 +9503,8 @@ function isMaskEditorAudioMuted() {
 }
 function tryPlayBgm() {
   if (!bgmEl || !bgmEnabled || isMaskEditorAudioMuted()) return;
+  // perf-audit: preload="none" 起動なので、実際に鳴らす段になってから auto へ昇格して読み込む
+  if (bgmEl.preload === 'none') bgmEl.preload = 'auto';
   var p = bgmEl.play();
   if (p && typeof p.catch === 'function') p.catch(function(){});
 }
@@ -9500,7 +9515,9 @@ function stopBgm() { if (bgmEl) bgmEl.pause(); }
     document.removeEventListener(ev, _bgmUnlock);
   }, { passive: true });
 });
-if (bgmEnabled) tryPlayBgm();
+// perf-audit: 旧実装はここで load 時に即 tryPlayBgm() していたが、 autoplay がブロックされる
+// 端末でも play() は mp3 の DL を開始してしまい preload="none" 化が無意味になるため撤去。
+// 初回 gesture (上の _bgmUnlock) で再生される。
 
 function stopBentoAudioForInactive() {
   stopBgm();
@@ -23133,7 +23150,10 @@ if (freeLayoutMode) fetchFreeMaskServerDefaults();
     }
     started = true;
     const requestMode = mode === 'request' && requestAvailable;
-    try { await fetchFreeMaskServerDefaults({ force: false }); } catch (_) {}
+    // perf-audit dead-tap fix: fetch (no-store + Date.now bust) はタイムアウト無しだと
+    // 回線が不安定な端末で「はじめる」タップが無反応に感じられる。 500ms で見切り発車する。
+    // page load 時 (freeLayoutMode) にも同じ fetch が走っており、 race 負けは実害なし。
+    try { await Promise.race([fetchFreeMaskServerDefaults({ force: false }), waitMs(500)]); } catch (_) {}
     titleScreen.classList.add('hidden');
     try { getAC(); } catch (_) {}
     if (bgmEnabled) tryPlayBgm();
@@ -23150,12 +23170,30 @@ if (freeLayoutMode) fetchFreeMaskServerDefaults();
     } catch (_) {}
     if (tutorialPending && typeof tutorialStart === 'function') {
       try { window.__bentoTutorialPendingMode = requestMode ? 'request' : 'simple'; } catch (_) {}
+      // perf-audit flash-fix: タイトル hide と同一タスクで不透明カバーを敷き、
+      // tutorialStart までの 250ms に「素のゲーム画面」が見えるのを塞ぐ。
+      // z-index は shop-opening (20000) より下 = request モードの story 演出はカバーの上に出る。
+      // 色は shop-opening と同じ下地 #f4cf91。
+      const bootCover = document.createElement('div');
+      bootCover.id = 'bento-tutorial-boot-cover';
+      bootCover.style.cssText = 'position:fixed;inset:0;z-index:19990;background:#f4cf91;';
+      document.body.appendChild(bootCover);
+      const removeBootCover = () => { try { bootCover.remove(); } catch (_) {} };
+      // safety net: restart / tutorialStart 側が同期例外などで走らなかった場合でも
+      // カバーが永久残留しないよう、 restart 呼び出しより先に保険の除去を予約しておく
+      // (通常は下の 250ms 側で除去済みの no-op)。
+      setTimeout(removeBootCover, 4000);
       // batch:1058 phase1: tut2 台本は タップ式 (simpleBentoMode) UX 前提。
       // 先に restartSimpleBentoRound / restartSimpleBentoRequestRound で simple モードに
       // 入れてから (setSimpleBentoMode(true) が発火) 200ms 後に tutorialStart を呼ぶ。
       if (requestMode) restartSimpleBentoRequestRound({ skipIntro: false });
       else restartSimpleBentoRound();
-      setTimeout(() => { try { tutorialStart(); } catch (_) {} }, 250);
+      setTimeout(() => {
+        try { tutorialStart(); } catch (_) {}
+        // tutorialStart は同期で overlay を render する (tutorialRenderStep) ため、
+        // 同一タスクで外せば次 paint は「ゲーム画面 + チュートリアル」が同時に出る。
+        removeBootCover();
+      }, 250);
       return;
     }
     if (requestMode) restartSimpleBentoRequestRound({ skipIntro: false });

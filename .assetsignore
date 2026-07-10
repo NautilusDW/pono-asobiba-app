@@ -50,3 +50,10 @@ test-results/
 scratchpad/
 __pycache__/
 *.pyc
+
+# deploy 重量削減 (2026-07-10 perf audit)
+# - assets/_legacy_png/: webp 化前の PNG rollback 退避 (~32MB)。 コメント以外の参照ゼロを grep 確認済。
+# - StickerBookThreeJS/screenshots/: 開発用スクショ (~75MB)。 参照ゼロを grep 確認済。
+# - assets/_legacy/ は quizland ほか複数ページの preview-placeholders 参照が残るため除外しない。
+assets/_legacy_png/
+Prototypes/StickerBookThreeJS/screenshots/
