@@ -1,0 +1,735 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    {
+      "source": "play.html",
+      "destination": "play.html",
+      "type": "file",
+      "stripTapIntroAd": true
+    },
+    {
+      "source": "play.html",
+      "destination": "index.html",
+      "type": "file",
+      "stripTapIntroAd": true
+    },
+    {
+      "source": "favicon.svg",
+      "destination": "favicon.svg",
+      "type": "file"
+    },
+    {
+      "source": "help.html",
+      "destination": "help.html",
+      "type": "file"
+    },
+    {
+      "source": "survey.html",
+      "destination": "survey.html",
+      "type": "file"
+    },
+    {
+      "source": "common",
+      "destination": "common",
+      "type": "file-list",
+      "files": [
+        "achievements.js",
+        "acorn-audio.js",
+        "acorn-copy-loader.js",
+        "acorn-copy.json",
+        "acorn-modal-shared.css",
+        "acorn-modal.js",
+        "acorns.js",
+        "capture.js",
+        "cloud-sync.js",
+        "data-export.js",
+        "debug-features.js",
+        "debug-mode.js",
+        "difficulty.js",
+        "encyclopedia.js",
+        "first-clear.js",
+        "haptics.js",
+        "highscore.js",
+        "layout/editor-bootstrap.js",
+        "layout/layout-applier.js",
+        "layout/layout-editor.css",
+        "layout/layout-editor.js",
+        "layout/layout-shared.css",
+        "layout/layout-system.js",
+        "menu.js",
+        "museum-data.js",
+        "mvp-flags.js",
+        "narration.js",
+        "page-nav.js",
+        "parallax.js",
+        "preload-helper.js",
+        "promo.css",
+        "promo.js",
+        "rating-modal.css",
+        "rating-modal.js",
+        "se.js",
+        "stickers.js",
+        "sw-update.js",
+        "thankyou.js",
+        "tier.js",
+        "treasure.js"
+      ]
+    },
+    {
+      "source": "js",
+      "destination": "js",
+      "type": "directory"
+    },
+    {
+      "source": "quizland/index.html",
+      "destination": "quizland/index.html",
+      "type": "file"
+    },
+    {
+      "source": "quizland/data/flowers.js",
+      "destination": "quizland/data/flowers.js",
+      "type": "file"
+    },
+    {
+      "source": "quizland/data/questions.js",
+      "destination": "quizland/data/questions.js",
+      "type": "file"
+    },
+    {
+      "source": "quizland/saved-layout.json",
+      "destination": "quizland/saved-layout.json",
+      "type": "file"
+    },
+    {
+      "source": "quizland/saved-layout-frozen.json",
+      "destination": "quizland/saved-layout-frozen.json",
+      "type": "file"
+    },
+    {
+      "source": "maze/index.html",
+      "destination": "maze/index.html",
+      "type": "file"
+    },
+    {
+      "source": "maze/image-runtime.js",
+      "destination": "maze/image-runtime.js",
+      "type": "file"
+    },
+    {
+      "source": "maze/imageStages",
+      "destination": "maze/imageStages",
+      "type": "directory"
+    },
+    {
+      "source": "maze/op-layout.json",
+      "destination": "maze/op-layout.json",
+      "type": "file"
+    },
+    {
+      "source": "oto/index.html",
+      "destination": "oto/index.html",
+      "type": "file"
+    },
+    {
+      "source": "bento",
+      "destination": "bento",
+      "type": "directory"
+    },
+    {
+      "source": "puzzle",
+      "destination": "puzzle",
+      "type": "directory"
+    },
+    {
+      "source": "assets/animations",
+      "destination": "assets/animations",
+      "type": "directory"
+    },
+    {
+      "source": "assets/icons",
+      "destination": "assets/icons",
+      "type": "directory"
+    },
+    {
+      "source": "assets/lib",
+      "destination": "assets/lib",
+      "type": "directory"
+    },
+    {
+      "source": "assets/ui/bottom-nav",
+      "destination": "assets/ui/bottom-nav",
+      "type": "directory"
+    },
+    {
+      "source": "assets/ui/gacha",
+      "destination": "assets/ui/gacha",
+      "type": "directory"
+    },
+    {
+      "source": "assets/ui/oto",
+      "destination": "assets/ui/oto",
+      "type": "directory"
+    },
+    {
+      "source": "assets/ui/shop",
+      "destination": "assets/ui/shop",
+      "type": "directory"
+    },
+    {
+      "source": "assets/ui/title",
+      "destination": "assets/ui/title",
+      "type": "directory"
+    },
+    {
+      "source": "assets/ui",
+      "destination": "assets/ui",
+      "type": "file-list",
+      "files": [
+        "brand_sign_01.webp",
+        "brand_sign_02.webp",
+        "daily_challenge_banner_gacha_style_20260625.png",
+        "daily_gacha_shop_button_single_color_20260625.png",
+        "icon_speaker.png",
+        "menu_card_base_01.webp",
+        "menu_card_base_02.webp",
+        "menu_card_base_03.webp",
+        "menu_card_base_04.webp",
+        "menu_card_coming_soon_banner_20260708.webp",
+        "menu_card_paper_mask_01.png",
+        "menu_card_paper_mask_02.png",
+        "menu_card_paper_mask_03.png",
+        "menu_card_paper_mask_04.png",
+        "play_bento_title_back.webp",
+        "play_button_normal.webp",
+        "play_button_pressed.webp",
+        "play_maze_title_back.webp",
+        "play_oto_title_back.webp",
+        "play_puzzle_title_back.webp",
+        "play_quiz_sound_title_back.webp",
+        "play_quizland_title_back.webp",
+        "play_starparodier_title_back.webp",
+        "play_wordmatch_title_back.webp",
+        "play_zukan_outer_bg_21x9.webp",
+        "sticker_book_table_bg_1600.webp",
+        "thumb_bento.webp",
+        "thumb_maze.webp",
+        "thumb_oto.webp",
+        "thumb_puzzle.webp",
+        "thumb_quiz-sound.webp",
+        "thumb_quizland_owl.webp",
+        "thumb_starparodier.webp",
+        "thumb_wordmatch.webp",
+        "wood_panel_mask1.png",
+        "wood_panel_mask2.png",
+        "wood_panel_mask3.png",
+        "wood_panel_mask4.png"
+      ]
+    },
+    {
+      "source": "assets/voices",
+      "destination": "assets/voices",
+      "type": "directory"
+    },
+    {
+      "source": "assets/sounds",
+      "destination": "assets/sounds",
+      "type": "directory"
+    },
+    {
+      "source": "assets/data/game-stickers.json",
+      "destination": "assets/data/game-stickers.json",
+      "type": "file"
+    },
+    {
+      "source": "assets/data/rewards.json",
+      "destination": "assets/data/rewards.json",
+      "type": "file"
+    },
+    {
+      "source": "assets/tts/manifest.json",
+      "destination": "assets/tts/manifest.json",
+      "type": "file"
+    },
+    {
+      "source": "assets/tts/quiz",
+      "destination": "assets/tts/quiz",
+      "type": "directory"
+    },
+    {
+      "source": "assets/audio/bento",
+      "destination": "assets/audio/bento",
+      "type": "directory"
+    },
+    {
+      "source": "assets/audio/gacha",
+      "destination": "assets/audio/gacha",
+      "type": "directory"
+    },
+    {
+      "source": "assets/audio/narration/maze",
+      "destination": "assets/audio/narration/maze",
+      "type": "directory"
+    },
+    {
+      "source": "assets/audio/oto",
+      "destination": "assets/audio/oto",
+      "type": "directory"
+    },
+    {
+      "source": "assets/audio/puzzle",
+      "destination": "assets/audio/puzzle",
+      "type": "directory"
+    },
+    {
+      "source": "assets/audio/sfx",
+      "destination": "assets/audio/sfx",
+      "type": "directory"
+    },
+    {
+      "source": "assets/audio/shop",
+      "destination": "assets/audio/shop",
+      "type": "directory"
+    },
+    {
+      "source": "assets/audio/stems",
+      "destination": "assets/audio/stems",
+      "type": "directory"
+    },
+    {
+      "source": "assets/audio/bento_bgm.mp3",
+      "destination": "assets/audio/bento_bgm.mp3",
+      "type": "file"
+    },
+    {
+      "source": "assets/audio/Cheery Strike Loop2.mp3",
+      "destination": "assets/audio/Cheery Strike Loop2.mp3",
+      "type": "file"
+    },
+    {
+      "source": "assets/audio/honey_bell_shop.mp3",
+      "destination": "assets/audio/honey_bell_shop.mp3",
+      "type": "file"
+    },
+    {
+      "source": "assets/audio/maze_bgm.mp3",
+      "destination": "assets/audio/maze_bgm.mp3",
+      "type": "file"
+    },
+    {
+      "source": "assets/audio/play_bgm.mp3",
+      "destination": "assets/audio/play_bgm.mp3",
+      "type": "file"
+    },
+    {
+      "source": "assets/audio/quiz_bgm.mp3",
+      "destination": "assets/audio/quiz_bgm.mp3",
+      "type": "file"
+    },
+    {
+      "source": "assets/images/BG_03.webp",
+      "destination": "assets/images/BG_03.webp",
+      "type": "file"
+    },
+    {
+      "source": "assets/images/Bento_parts",
+      "destination": "assets/images/Bento_parts",
+      "type": "directory"
+    },
+    {
+      "source": "assets/images/Logo",
+      "destination": "assets/images/Logo",
+      "type": "directory"
+    },
+    {
+      "source": "assets/images/avatars",
+      "destination": "assets/images/avatars",
+      "type": "directory"
+    },
+    {
+      "source": "assets/images/bento",
+      "destination": "assets/images/bento",
+      "type": "directory"
+    },
+    {
+      "source": "assets/images/characters",
+      "destination": "assets/images/characters",
+      "type": "directory"
+    },
+    {
+      "source": "assets/images/maze",
+      "destination": "assets/images/maze",
+      "type": "directory"
+    },
+    {
+      "source": "assets/images/mojikko",
+      "destination": "assets/images/mojikko",
+      "type": "file-list",
+      "files": [
+        "writing/fx_sparkle_large.png",
+        "writing/icon_cookie.png",
+        "writing/icon_heart.png",
+        "writing/icon_heart_large.png",
+        "writing/icon_pencil.png",
+        "writing/icon_sparkle.png",
+        "writing/icon_star.png",
+        "writing/icon_star_large.png"
+      ]
+    },
+    {
+      "source": "assets/images/ocean",
+      "destination": "assets/images/ocean",
+      "type": "directory"
+    },
+    {
+      "source": "assets/images/oto",
+      "destination": "assets/images/oto",
+      "type": "directory"
+    },
+    {
+      "source": "assets/images/puzzle",
+      "destination": "assets/images/puzzle",
+      "type": "directory"
+    },
+    {
+      "source": "assets/images/quizland",
+      "destination": "assets/images/quizland",
+      "type": "directory"
+    },
+    {
+      "source": "assets/images/shop",
+      "destination": "assets/images/shop",
+      "type": "directory"
+    },
+    {
+      "source": "assets/images/word",
+      "destination": "assets/images/word",
+      "type": "directory"
+    },
+    {
+      "source": "assets/images/yard",
+      "destination": "assets/images/yard",
+      "type": "directory"
+    },
+    {
+      "source": "assets/images/zukan",
+      "destination": "assets/images/zukan",
+      "type": "directory"
+    },
+    {
+      "source": "assets/images/nurie001.webp",
+      "destination": "assets/images/nurie001.webp",
+      "type": "file"
+    },
+    {
+      "source": "assets/images/puzzle_birds.jpg",
+      "destination": "assets/images/puzzle_birds.jpg",
+      "type": "file"
+    },
+    {
+      "source": "assets/images/puzzle_pono_owl.jpg",
+      "destination": "assets/images/puzzle_pono_owl.jpg",
+      "type": "file"
+    },
+    {
+      "source": "assets/images/puzzle_pono_sleep.jpg",
+      "destination": "assets/images/puzzle_pono_sleep.jpg",
+      "type": "file"
+    },
+    {
+      "source": "assets/images/puzzle_pono_sparkle.jpg",
+      "destination": "assets/images/puzzle_pono_sparkle.jpg",
+      "type": "file"
+    },
+    {
+      "source": "assets/images/puzzle_pono_water.jpg",
+      "destination": "assets/images/puzzle_pono_water.jpg",
+      "type": "file"
+    },
+    {
+      "source": "assets/zukan/animals",
+      "destination": "assets/zukan/animals",
+      "type": "directory"
+    },
+    {
+      "source": "assets/audio/stickerbook",
+      "destination": "assets/audio/stickerbook",
+      "type": "directory"
+    },
+    {
+      "source": "assets/images/icons",
+      "destination": "assets/images/icons",
+      "type": "file-list",
+      "files": [
+        "icons2_003.png",
+        "icons3_001.png",
+        "icons_001.png",
+        "icons_004.png",
+        "icons_006.png",
+        "kirakira.png",
+        "stamp_001.png"
+      ]
+    },
+    {
+      "source": "monster-math/assets",
+      "destination": "monster-math/assets",
+      "type": "file-list",
+      "files": [
+        "sticker_mm_both_modes.webp",
+        "sticker_mm_kakuren.webp",
+        "sticker_mm_perfect.webp",
+        "sticker_mm_tenmegane.webp"
+      ]
+    },
+    {
+      "source": "Prototypes/StickerBookThreeJS/index.html",
+      "destination": "Prototypes/StickerBookThreeJS/index.html",
+      "type": "file"
+    },
+    {
+      "source": "Prototypes/StickerBookThreeJS/main.js",
+      "destination": "Prototypes/StickerBookThreeJS/main.js",
+      "type": "file"
+    },
+    {
+      "source": "Prototypes/StickerBookThreeJS/styles.css",
+      "destination": "Prototypes/StickerBookThreeJS/styles.css",
+      "type": "file"
+    },
+    {
+      "source": "Prototypes/StickerBookThreeJS/sticker_book_content_plan.json",
+      "destination": "Prototypes/StickerBookThreeJS/sticker_book_content_plan.json",
+      "type": "file"
+    },
+    {
+      "source": "Prototypes/StickerExhibitionCarousel/index.html",
+      "destination": "Prototypes/StickerExhibitionCarousel/index.html",
+      "type": "file"
+    },
+    {
+      "source": "Prototypes/StickerExhibitionCarousel/main.js",
+      "destination": "Prototypes/StickerExhibitionCarousel/main.js",
+      "type": "file"
+    },
+    {
+      "source": "Prototypes/StickerExhibitionCarousel/styles.css",
+      "destination": "Prototypes/StickerExhibitionCarousel/styles.css",
+      "type": "file"
+    },
+    {
+      "source": "Prototypes/StickerExhibitionCarousel/sticker-metrics.js",
+      "destination": "Prototypes/StickerExhibitionCarousel/sticker-metrics.js",
+      "type": "file"
+    },
+    {
+      "source": "Prototypes/StickerExhibitionCarousel/assets/sticker-carousel-frame-base-v4.png",
+      "destination": "Prototypes/StickerExhibitionCarousel/assets/sticker-carousel-frame-base-v4.png",
+      "type": "file"
+    },
+    {
+      "source": "Prototypes/StickerExhibitionCarousel/assets/sticker-exhibition-map-floor1.png",
+      "destination": "Prototypes/StickerExhibitionCarousel/assets/sticker-exhibition-map-floor1.png",
+      "type": "file"
+    },
+    {
+      "source": "Prototypes/StickerExhibitionCarousel/assets/sticker-exhibition-room-bg-v1.png",
+      "destination": "Prototypes/StickerExhibitionCarousel/assets/sticker-exhibition-room-bg-v1.png",
+      "type": "file"
+    },
+    {
+      "source": "assets/_legacy/preview-placeholders",
+      "destination": "assets/_legacy/preview-placeholders",
+      "type": "file-list",
+      "files": [
+        "ctrl-btn-news.png",
+        "ctrl-btn-settings.png",
+        "dot.png",
+        "stage-bg.png"
+      ]
+    },
+    {
+      "source": "assets/_PonoSubmarine/Art/UI/StickerBook3D",
+      "destination": "assets/_PonoSubmarine/Art/UI/StickerBook3D",
+      "type": "file-list",
+      "files": [
+        "sb3d_anime_studio_cover_back_personality_jp_20260629.webp",
+        "sb3d_anime_studio_cover_front_personality_jp_20260629.webp",
+        "sb3d_anime_studio_cover_inside_personality_jp_20260629.webp",
+        "sb3d_anime_studio_free_blank_page_personality_jp_20260629.webp",
+        "sb3d_anime_studio_spine_personality_jp_20260629.webp",
+        "sb3d_book_bonus_cover_front_friends_armfix_20260701.webp",
+        "sb3d_book_bonus_free_blank_page_friends_20260701.webp",
+        "sb3d_book_floor_shadow.webp",
+        "sb3d_boy_cover_back_simple_jp_20260629.webp",
+        "sb3d_boy_cover_front_simple_jp_20260629.webp",
+        "sb3d_boy_cover_inside_simple_jp_20260629.webp",
+        "sb3d_boy_free_blank_page_simple_jp_20260629.webp",
+        "sb3d_boy_page_thickness_left_empty.webp",
+        "sb3d_boy_page_thickness_left_full.webp",
+        "sb3d_boy_page_thickness_left_half.webp",
+        "sb3d_boy_page_thickness_left_mostly.webp",
+        "sb3d_boy_page_thickness_left_small.webp",
+        "sb3d_boy_page_thickness_right_empty.webp",
+        "sb3d_boy_page_thickness_right_full.webp",
+        "sb3d_boy_page_thickness_right_half.webp",
+        "sb3d_boy_page_thickness_right_mostly.webp",
+        "sb3d_boy_page_thickness_right_small.webp",
+        "sb3d_boy_side_tabs_left_generated.webp",
+        "sb3d_boy_side_tabs_right_generated.webp",
+        "sb3d_boy_spine_simple_jp_20260629.webp",
+        "sb3d_candy_pop_cover_back_simple_jp_20260629.webp",
+        "sb3d_candy_pop_cover_front_simple_jp_20260629.webp",
+        "sb3d_candy_pop_cover_inside_simple_jp_20260629.webp",
+        "sb3d_candy_pop_free_blank_page_simple_jp_20260629.webp",
+        "sb3d_candy_pop_spine_simple_jp_20260629.webp",
+        "sb3d_cyber_grid_cover_back_personality_jp_20260629.webp",
+        "sb3d_cyber_grid_cover_front_personality_jp_20260629.webp",
+        "sb3d_cyber_grid_cover_inside_personality_jp_20260629.webp",
+        "sb3d_cyber_grid_free_blank_page_personality_jp_20260629.webp",
+        "sb3d_cyber_grid_spine_personality_jp_20260629.webp",
+        "sb3d_festival_night_cover_back_simple_jp_20260629.webp",
+        "sb3d_festival_night_cover_front_simple_jp_20260629.webp",
+        "sb3d_festival_night_cover_inside_simple_jp_20260629.webp",
+        "sb3d_festival_night_free_blank_page_simple_jp_20260629.webp",
+        "sb3d_festival_night_spine_simple_jp_20260629.webp",
+        "sb3d_flip_shadow.webp",
+        "sb3d_forest_cover_back_canvas_20260623.webp",
+        "sb3d_forest_cover_front_pono_hedgehog_20260629.webp",
+        "sb3d_forest_cover_inside_canvas_20260623.webp",
+        "sb3d_forest_free_blank_page_image2_20260629.webp",
+        "sb3d_forest_spine_canvas_20260623.webp",
+        "sb3d_game_center_cover_back_personality_jp_20260629.webp",
+        "sb3d_game_center_cover_front_personality_jp_20260629.webp",
+        "sb3d_game_center_cover_inside_personality_jp_20260629.webp",
+        "sb3d_game_center_free_blank_page_personality_jp_20260629.webp",
+        "sb3d_game_center_spine_personality_jp_20260629.webp",
+        "sb3d_girl_cover_back_personality_jp_20260629.webp",
+        "sb3d_girl_cover_front_personality_jp_20260629.webp",
+        "sb3d_girl_cover_inside_personality_jp_20260629.webp",
+        "sb3d_girl_free_blank_page_personality_jp_20260629.webp",
+        "sb3d_girl_page_thickness_left_empty.webp",
+        "sb3d_girl_page_thickness_left_full.webp",
+        "sb3d_girl_page_thickness_left_half.webp",
+        "sb3d_girl_page_thickness_left_mostly.webp",
+        "sb3d_girl_page_thickness_left_small.webp",
+        "sb3d_girl_page_thickness_right_empty.webp",
+        "sb3d_girl_page_thickness_right_full.webp",
+        "sb3d_girl_page_thickness_right_half.webp",
+        "sb3d_girl_page_thickness_right_mostly.webp",
+        "sb3d_girl_page_thickness_right_small.webp",
+        "sb3d_girl_side_tabs_left_generated.webp",
+        "sb3d_girl_side_tabs_right_generated.webp",
+        "sb3d_girl_spine_personality_jp_20260629.webp",
+        "sb3d_hero_cover_back_refine_jp_20260629.webp",
+        "sb3d_hero_cover_front_refine_jp_20260629.webp",
+        "sb3d_hero_cover_inside_refine_jp_20260629.webp",
+        "sb3d_hero_free_blank_page_refine_jp_20260629.webp",
+        "sb3d_hero_spine_refine_jp_20260629.webp",
+        "sb3d_idol_cover_back_simple_jp_20260629.webp",
+        "sb3d_idol_cover_front_simple_jp_20260629.webp",
+        "sb3d_idol_cover_inside_simple_jp_20260629.webp",
+        "sb3d_idol_free_blank_page_simple_jp_20260629.webp",
+        "sb3d_idol_spine_simple_jp_20260629.webp",
+        "sb3d_image2_zukan_template_detail_green_wide_labels_alpha_user_20260621.png",
+        "sb3d_image2_zukan_template_index_green_6items_alpha_user_20260621.png",
+        "sb3d_inner_shadow_left.webp",
+        "sb3d_inner_shadow_right.webp",
+        "sb3d_kaiju_cover_back_refine_jp_20260629.webp",
+        "sb3d_kaiju_cover_front_refine_jp_20260629.webp",
+        "sb3d_kaiju_cover_inside_refine_jp_20260629.webp",
+        "sb3d_kaiju_free_blank_page_refine_jp_20260629.webp",
+        "sb3d_kaiju_spine_refine_jp_20260629.webp",
+        "sb3d_manga_action_cover_back_simple_jp_20260629.webp",
+        "sb3d_manga_action_cover_front_simple_jp_20260629.webp",
+        "sb3d_manga_action_cover_inside_simple_jp_20260629.webp",
+        "sb3d_manga_action_free_blank_page_simple_jp_20260629.webp",
+        "sb3d_manga_action_spine_simple_jp_20260629.webp",
+        "sb3d_mascot_cover_back_refine_jp_20260629.webp",
+        "sb3d_mascot_cover_front_single_bear_jp_20260629.webp",
+        "sb3d_mascot_cover_inside_refine_jp_20260629.webp",
+        "sb3d_mascot_free_blank_page_refine_jp_20260629.webp",
+        "sb3d_mascot_spine_refine_jp_20260629.webp",
+        "sb3d_midnight_magic_cover_back_simple_jp_20260629.webp",
+        "sb3d_midnight_magic_cover_front_simple_jp_20260629.webp",
+        "sb3d_midnight_magic_cover_inside_simple_jp_20260629.webp",
+        "sb3d_midnight_magic_free_blank_page_simple_jp_20260629.webp",
+        "sb3d_midnight_magic_spine_simple_jp_20260629.webp",
+        "sb3d_neon_city_cover_back_personality_jp_20260629.webp",
+        "sb3d_neon_city_cover_front_personality_jp_20260629.webp",
+        "sb3d_neon_city_cover_inside_personality_jp_20260629.webp",
+        "sb3d_neon_city_free_blank_page_personality_jp_20260629.webp",
+        "sb3d_neon_city_spine_personality_jp_20260629.webp",
+        "sb3d_page_back_generated.webp",
+        "sb3d_parade_cover_back_simple_jp_20260629.webp",
+        "sb3d_parade_cover_front_simple_jp_20260629.webp",
+        "sb3d_parade_cover_inside_simple_jp_20260629.webp",
+        "sb3d_parade_free_blank_page_simple_jp_20260629.webp",
+        "sb3d_parade_spine_simple_jp_20260629.webp",
+        "sb3d_pop_art_cover_back_simple_jp_20260629.webp",
+        "sb3d_pop_art_cover_front_simple_jp_20260629.webp",
+        "sb3d_pop_art_cover_inside_simple_jp_20260629.webp",
+        "sb3d_pop_art_free_blank_page_simple_jp_20260629.webp",
+        "sb3d_pop_art_spine_simple_jp_20260629.webp",
+        "sb3d_rainbow_dream_cover_back_simple_jp_20260629.webp",
+        "sb3d_rainbow_dream_cover_front_simple_jp_20260629.webp",
+        "sb3d_rainbow_dream_cover_inside_simple_jp_20260629.webp",
+        "sb3d_rainbow_dream_free_blank_page_simple_jp_20260629.webp",
+        "sb3d_rainbow_dream_spine_simple_jp_20260629.webp",
+        "sb3d_robot_cover_back_simple_jp_20260629.webp",
+        "sb3d_robot_cover_front_simple_jp_20260629.webp",
+        "sb3d_robot_cover_inside_simple_jp_20260629.webp",
+        "sb3d_robot_free_blank_page_simple_jp_20260629.webp",
+        "sb3d_robot_spine_simple_jp_20260629.webp",
+        "sb3d_sakura_cover_back_simple_jp_20260629.webp",
+        "sb3d_sakura_cover_front_simple_jp_20260629.webp",
+        "sb3d_sakura_cover_inside_simple_jp_20260629.webp",
+        "sb3d_sakura_free_blank_page_simple_jp_20260629.webp",
+        "sb3d_sakura_spine_simple_jp_20260629.webp",
+        "sb3d_secret_base_cover_back_personality_jp_20260629.webp",
+        "sb3d_secret_base_cover_front_personality_jp_20260629.webp",
+        "sb3d_secret_base_cover_inside_personality_jp_20260629.webp",
+        "sb3d_secret_base_free_blank_page_personality_jp_20260629.webp",
+        "sb3d_secret_base_spine_personality_jp_20260629.webp",
+        "sb3d_shinobi_cover_back_personality_jp_20260629.webp",
+        "sb3d_shinobi_cover_front_personality_jp_20260629.webp",
+        "sb3d_shinobi_cover_inside_personality_jp_20260629.webp",
+        "sb3d_shinobi_free_blank_page_personality_jp_20260629.webp",
+        "sb3d_shinobi_spine_personality_jp_20260629.webp",
+        "sb3d_space_live_cover_back_personality_jp_20260629.webp",
+        "sb3d_space_live_cover_front_personality_jp_20260629.webp",
+        "sb3d_space_live_cover_inside_personality_jp_20260629.webp",
+        "sb3d_space_live_free_blank_page_personality_jp_20260629.webp",
+        "sb3d_space_live_spine_personality_jp_20260629.webp",
+        "sb3d_sports_power_cover_back_simple_jp_20260629.webp",
+        "sb3d_sports_power_cover_front_simple_jp_20260629.webp",
+        "sb3d_sports_power_cover_inside_simple_jp_20260629.webp",
+        "sb3d_sports_power_free_blank_page_simple_jp_20260629.webp",
+        "sb3d_sports_power_spine_simple_jp_20260629.webp",
+        "sb3d_sweet_gothic_cover_back_personality_jp_20260629.webp",
+        "sb3d_sweet_gothic_cover_front_personality_jp_20260629.webp",
+        "sb3d_sweet_gothic_cover_inside_personality_jp_20260629.webp",
+        "sb3d_sweet_gothic_free_blank_page_personality_jp_20260629.webp",
+        "sb3d_sweet_gothic_spine_personality_jp_20260629.webp",
+        "sb3d_ui_button_album_text_gpt_image2_20260623.png",
+        "sb3d_ui_button_album_wood_gpt_image2_20260623.png",
+        "sb3d_ui_button_back_wood_gpt_image2_20260623.png",
+        "sb3d_ui_button_capsule_gpt_image2_20260622.png",
+        "sb3d_ui_button_edit_pencil_wood_gpt_image2_20260623.png",
+        "sb3d_ui_button_exhibition_gallery_20260704.png",
+        "sb3d_ui_button_mode_paste_text_gpt_image2_20260623.png",
+        "sb3d_ui_button_mode_view_text_gpt_image2_20260623.png",
+        "sb3d_ui_button_next_wood_gpt_image2_20260623.png",
+        "sb3d_ui_button_prev_wood_gpt_image2_20260623.png",
+        "sb3d_ui_button_settings_wood_gpt_image2_20260623.png",
+        "sb3d_ui_button_theme_ribbon_wood_gpt_image2_20260623.png",
+        "sb3d_ui_button_theme_text_gpt_image2_20260623.png",
+        "sb3d_ui_label_cover_text_gpt_image2_20260623.png",
+        "sb3d_ui_page_label_wood_canvas_20260623.png",
+        "sb3d_zukan_thickness_strip_01_alpha.png",
+        "sb3d_zukan_thickness_strip_02_alpha.png",
+        "sb3d_zukan_thickness_strip_03_alpha.png",
+        "sb3d_zukan_thickness_strip_04_alpha.png",
+        "sb3d_zukan_thickness_strip_05_alpha.png"
+      ]
+    }
+  ]
+}

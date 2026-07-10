@@ -4,6 +4,9 @@
 
    stage-www.mjs が生成した native/www/ を検証する。Node.js 標準ライブラリのみ。
 
+   content-manifest.json から期待される出力計画を再構築し、実際の www/ が
+   「不足なし・余分なし」で完全一致することも検証する。
+
    Fail 条件 (最優先。「禁止物混入ゼロ」を size budget より主軸に置く):
      - 検証/一時ファイルの混入 (.smoke_*, _tmp*, .dev.vars, .env, .git)
      - 開発/ツール系ディレクトリの混入 (admin/, tools/, scripts/, src/, docs/,
@@ -26,9 +29,13 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { buildStagePlan, verifyOutputInventory } from './stage-www.mjs';
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const NATIVE_ROOT = path.resolve(__dirname, '..');
+const REPO_ROOT = path.resolve(NATIVE_ROOT, '..');
 const WWW_DIR = path.join(NATIVE_ROOT, 'www');
+const MANIFEST_PATH = path.join(NATIVE_ROOT, 'content-manifest.json');
 
 const WARN_BYTES = 900 * 1024 * 1024;       // 900 MB
 const FAIL_BYTES = 1.5 * 1024 * 1024 * 1024; // 1.5 GB
@@ -60,14 +67,26 @@ const failures = [];
 const warnings = [];
 let totalBytes = 0;
 let totalFiles = 0;
+let expectedPlan = null;
+let manifestClosureVerified = false;
 
 function walk(dir, relBase) {
   const entries = fs.readdirSync(dir, { withFileTypes: true });
   for (const entry of entries) {
     const abs = path.join(dir, entry.name);
     const rel = relBase ? `${relBase}/${entry.name}` : entry.name;
+    const stat = fs.lstatSync(abs);
 
-    if (entry.isDirectory()) {
+    if (stat.isSymbolicLink()) {
+      failures.push(`symlink present: ${rel}`);
+      continue;
+    }
+
+    if (stat.isDirectory()) {
+      if (entry.name.startsWith('.')) {
+        failures.push(`hidden directory present: ${rel}/`);
+        continue;
+      }
       if (FORBIDDEN_DIR_SEGMENTS.has(entry.name)) {
         failures.push(`forbidden directory present: ${rel}/`);
         continue; // 中身は精査せず即 fail 対象としてスキップ
@@ -76,11 +95,17 @@ function walk(dir, relBase) {
       continue;
     }
 
-    if (!entry.isFile()) continue;
+    if (!stat.isFile()) {
+      failures.push(`unsupported filesystem node present: ${rel}`);
+      continue;
+    }
 
     totalFiles++;
-    const stat = fs.statSync(abs);
     totalBytes += stat.size;
+
+    if (entry.name.startsWith('.')) {
+      failures.push(`hidden file present: ${rel}`);
+    }
 
     for (const { re, reason } of FORBIDDEN_NAME_PATTERNS) {
       if (re.test(entry.name)) {
@@ -94,6 +119,10 @@ function walk(dir, relBase) {
 
     if (/\.html?$/i.test(entry.name)) {
       const content = fs.readFileSync(abs, 'utf8');
+      const markerCount = (content.match(/data-pono-native-flags/g) || []).length;
+      if (markerCount !== 1) {
+        failures.push(`native flag injection count is ${markerCount}, expected 1: ${rel}`);
+      }
       for (const needle of FORBIDDEN_HTML_SUBSTRINGS) {
         if (content.includes(needle)) {
           failures.push(`forbidden substring "${needle}" found in ${rel}`);
@@ -110,10 +139,24 @@ function main() {
     return;
   }
 
+  try {
+    expectedPlan = buildStagePlan({ repoRoot: REPO_ROOT, manifestPath: MANIFEST_PATH });
+    verifyOutputInventory(WWW_DIR, expectedPlan);
+    manifestClosureVerified = true;
+  } catch (error) {
+    failures.push(`manifest closure verification failed: ${error.message}`);
+  }
+
   walk(WWW_DIR, '');
 
   const mb = (totalBytes / (1024 * 1024)).toFixed(1);
   console.log(`[verify-assets] files: ${totalFiles}, total size: ${mb} MB`);
+  if (manifestClosureVerified) {
+    console.log(
+      `[verify-assets] manifest closure: ${expectedPlan.totalFiles} expected files, ` +
+      `${expectedPlan.htmlFiles} HTML -- exact inventory match`
+    );
+  }
 
   if (totalBytes > FAIL_BYTES) {
     failures.push(`total size ${mb} MB exceeds fail budget (${(FAIL_BYTES / (1024 * 1024)).toFixed(0)} MB)`);
@@ -133,7 +176,7 @@ function main() {
     return;
   }
 
-  console.log('[verify-assets] PASS -- no forbidden content detected.');
+  console.log('[verify-assets] PASS -- manifest-complete and no forbidden content detected.');
 }
 
 main();
