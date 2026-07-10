@@ -95,6 +95,10 @@ OK:
 - 迷ったら memory `[[app_staging_environment]]` と `[[project_url_architecture]]` を再読
 - 確定の正本は `wrangler.toml` の `[env.staging]` (LP staging) と `[env.staging-app]` (App staging)、 および `.github/workflows/deploy.yml` の `command:` 三項分岐
 
+### 【単一トランク統合 承認済み 2026-07-10】
+
+`develop` / `develop-app` の 2 ブランチ並行開発を `develop-app` 単一トランクへ統合する計画がユーザー承認済み (実装は未着手)。詳細・設計決定・実装 Phase は正本 [AGENTS.md §1.1](./AGENTS.md) と [docs/branch-unification-plan.md](./docs/branch-unification-plan.md) を参照。**実装完了までは上記の現行 URL マトリクスがそのまま有効**であり、この注記だけで「統合済み」と誤解しないこと。
+
 ## Base Rules
 
 0. **タスク開始前に `MEMORY.md` を必ず読み込み、過去の失敗・学んだ最適手順を現タスクに反映すること。**
@@ -174,6 +178,8 @@ logs/                  # Runtime artifacts (auto-generated, gitignored)
 - ログファイルは JSONL 形式で `logs/` に保存する。
 - MEMORY.md への書き込みはマーカー (`## Section Name`) で区切る。
 - CLAUDE.md のフレームワーク自動更新セクションは `## Auto-Extracted` または `## Current Difficulty` で始まる。
+
+
 
 
 

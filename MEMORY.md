@@ -51,6 +51,7 @@
 - **【設計変更 2026-05-12】 VOICEPEAK 全カテゴリ + Phase 1/2 横断ユニーク化案 (次バッチから採用)**: [memory/feature_voicepeak_cross_category_dedup.md](memory/feature_voicepeak_cross_category_dedup.md) — 同一単語 (= 「二」 「三」 「七」 等の数字単独や色名・体パーツ等) を全カテゴリ + Phase 1/2 で 1 wav に集約、 アクセント違いが必要なら後で個別追加。 number_sequence バッチ完了後 order_color 着手前に設計実装
 - **【恒久ルール 2026-05-12 大事故から導出】 questions.js の Q### 真値は QUIZLAND_CATEGORIES キー順、 ORDER-FULL.md の宣言順表記は信用しない**: [memory/feedback_questions_js_q_number_canonical_source.md](memory/feedback_questions_js_q_number_canonical_source.md) — Q### は CATEGORIES キー順 (= order_color Q1-24 / count_total Q25-48 / shape_name Q49-71 / **number_sequence Q72-83** / trivia Q84-109 / weather Q110-133 / opposite Q134-157 / body Q158-181) で決まる。 ORDER-FULL.md は宣言順表記で +1 以上ズレている可能性大、 必ず questions.js の CATEGORIES を真値として参照
 
+- **develop / develop-app 単一トランク統合計画 (2026-07-10 承認・実装未着手)**: [memory/project_single_trunk_migration.md](memory/project_single_trunk_migration.md) — 2 ブランチ並行開発を `develop-app` 単一トランク + 環境フラグ/tier 出し分けへ統合する計画。正本は [docs/branch-unification-plan.md](docs/branch-unification-plan.md)、設計決定 D1-D10、Phase 0(前提修理)〜5(本番反映) は全て未着手。`AGENTS.md` §1.1/§1.2 に interim ルール (D8) と「移行後の姿」を追記済み
 - **batch:1210 パフォーマンス改善後のキャッシュ規約 (2026-07-10, sw v2073)**: [memory/project_perf_batch_1210_cache_conventions.md](memory/project_perf_batch_1210_cache_conventions.md) — HTML no-cache 化 / sw.js 画像・動画・音声 cache-first 化 (**同一URL上書き差し替え NG、要リネーム or ?v バンプ**) / cover-first フラッシュ防止原則 (OP前は不透明カバー→await→旧画面hide の順) / Date.now() バスター原則禁止 (editor 経路のみ可) / 新設定数 QUIZLAND_ASSET_VERSION・MAZE_DATA_REV / WebP 494枚変換 285MB→36MB (原本PNG温存、cleanup 別タスク) / **native/www ミラーは pre-batch のまま要再同期**
 
 - **コマ割アニメーションエディタ + manifest 駆動再生 (2026-05-13)**: [memory/feature_koma_wari_editor.md](memory/feature_koma_wari_editor.md) — `tools/koma-wari-editor.html` (= 単一 HTML、 IndexedDB プロジェクト管理 + Undo/Redo + ガイド線 + マスク + Ctrl+CV/Ctrl-drag + 調整ストック)、 `js/animation-player.js` で `assets/animations/<id>/` の manifest 駆動再生。 quizland `playStagePonoHooray` は新経路 + 旧 fallback で段階的移行
@@ -147,6 +148,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-07-10T12:47:15Z - batch:1212 単一トランク統合計画の策定+文書化 (D1-D10/Phase0-5、AGENTS.md interim ルール改訂、計画書新規、調査で webapp 本番 404 を発見)
+- **タスク**: batch:1212 単一トランク統合計画の策定+文書化 (D1-D10/Phase0-5、AGENTS.md interim ルール改訂、計画書新規、調査で webapp 本番 404 を発見)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 0
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {}
+- **サマリ**: 行動ログが空のため分析できません。
+
+
+### 2026-07-10T12:40:23Z - develop/develop-app 単一トランク統合計画の文書化 (docs/branch-unification-plan.md新規作成 + AGENTS.md/CLAUDE.md/MEMORY.md/memory新規ファイル更新)
+- **タスク**: develop/develop-app 単一トランク統合計画の文書化 (docs/branch-unification-plan.md新規作成 + AGENTS.md/CLAUDE.md/MEMORY.md/memory新規ファイル更新)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 0
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {}
+- **サマリ**: 行動ログが空のため分析できません。
+
+
 ### 2026-07-10T12:26:12Z - develop/develop-app単一トランク統合計画の前提事実調査 (デプロイ配線・worker.js env依存・sw.js差分・develop独自コンテンツ・tier出し分け・native依存・DEPLOY-FACTフック・ドキュメント現状)
 - **タスク**: develop/develop-app単一トランク統合計画の前提事実調査 (デプロイ配線・worker.js env依存・sw.js差分・develop独自コンテンツ・tier出し分け・native依存・DEPLOY-FACTフック・ドキュメント現状)
 - **結果**: 成功
@@ -235,32 +262,6 @@ wrangler deploy                  # master 内容を production に
 - **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
 - **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
 - **ツール使用統計**: {"Glob": 1, "Grep": 7, "Bash": 15, "Workflow": 10, "Read": 9, "Agent": 4, "ToolSearch": 2, "SendMessage": 1, "TaskStop": 1}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
-
-
-### 2026-07-07T12:37:25Z - Capacitor M2 Phase A+C+B.1+D 完走 (-220.4MB build + -822MB disk + AAB 1.3GB 実測でハイブリッド戦略確定)。 出版社サイト新規リポ立ち上げ + staging 動線繋げ。 並行 3 sessions と衝突ゼロ協調
-- **タスク**: Capacitor M2 Phase A+C+B.1+D 完走 (-220.4MB build + -822MB disk + AAB 1.3GB 実測でハイブリッド戦略確定)。 出版社サイト新規リポ立ち上げ + staging 動線繋げ。 並行 3 sessions と衝突ゼロ協調
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 329
-- **エラー数**: 40
-- **検出された良いパターン**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **検出された悪いパターン**: 同じエラーを繰り返した
-- **有効だったアクション**: 編集前にファイルを読んで理解した, 小さな単位で検証しながら進めた, エラー発生後に別のアプローチに切り替えた
-- **ツール使用統計**: {"Agent": 31, "ToolSearch": 3, "Read": 35, "Bash": 196, "Edit": 20, "Write": 5, "SendMessage": 4, "Grep": 6, "Workflow": 29}
-- **サマリ**: 成功タスク: 3個の有効パターンを検出。 改善余地: 1個の非効率パターンあり。
-
-
-### 2026-07-07T11:43:39Z - mojicrane round-6 hotfix 最終検証レポート (正解かなカゴ silent 消費バグ / 4ケースマトリクス + 7チェック)
-- **タスク**: mojicrane round-6 hotfix 最終検証レポート (正解かなカゴ silent 消費バグ / 4ケースマトリクス + 7チェック)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 45
-- **エラー数**: 6
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Glob": 1, "Grep": 6, "Bash": 14, "Workflow": 9, "Read": 8, "Agent": 3, "ToolSearch": 2, "SendMessage": 1, "TaskStop": 1}
 - **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
