@@ -1594,10 +1594,11 @@ body.image-stage-mode .game-wrap {
 
 .flag-game {
   display: grid;
-  grid-template-rows: auto minmax(128px, 1fr) auto;
+  grid-template-rows: auto auto auto minmax(96px, 1fr) auto;
   gap: 10px;
   align-items: center;
-  min-height: min(54dvh, 360px);
+  min-height: 0;
+  height: min(76dvh, 500px);
   overflow: hidden;
 }
 .flag-command {
@@ -2929,9 +2930,10 @@ body.image-stage-mode .game-wrap {
     width: min(clamp(46px, 9vw, 58px), calc(100% - 14px));
   }
   .flag-game {
-    grid-template-rows: 1.7em minmax(82px, 1fr) 44px;
-    gap: 6px;
-    min-height: min(64dvh, 220px);
+    grid-template-rows: 1.35em 14px 18px minmax(54px, 1fr) 58px;
+    gap: 3px;
+    min-height: 0;
+    height: min(72dvh, 220px);
   }
   .flag-command {
     min-height: 1.6em;
@@ -2950,13 +2952,13 @@ body.image-stage-mode .game-wrap {
     font-size: 0.78rem;
   }
   .flag-bug-stage {
-    min-height: 82px;
+    min-height: 54px;
     border-width: 3px;
     border-radius: 13px;
   }
   .flag-bug-img {
-    max-width: min(23vw, 96px);
-    max-height: min(28dvh, 110px) !important;
+    max-width: min(18vw, 76px);
+    max-height: min(20dvh, 76px) !important;
   }
   .flag-hp {
     margin-top: 2px;
@@ -2971,13 +2973,13 @@ body.image-stage-mode .game-wrap {
   }
   .flag-controls {
     gap: clamp(20px, 7vw, 34px);
-    margin-top: 4px;
+    margin-top: 0;
   }
   .flag-controls .enc-btn {
-    width: clamp(64px, 17vw, 86px);
-    height: clamp(64px, 17vw, 86px);
-    min-width: 64px;
-    min-height: 64px;
+    width: clamp(54px, 14vw, 64px);
+    height: clamp(54px, 14vw, 64px);
+    min-width: 54px;
+    min-height: 54px;
     padding: 0;
     border-radius: 50%;
     outline-width: 10px;
@@ -7113,11 +7115,17 @@ const MAZE_LOCAL_QUIZ_ASSETS = {
 function _mzAsset(src, label) {
   return { src: src, label: label };
 }
+const MAZE_RECROPPED_ANIMAL_VERSION = {
+  zou: true, neko: true, kuma: true, kirin: true, lion: true
+};
+function _mzVersionedAnimalSrc(base, name) {
+  return base + name + '.png' + (MAZE_RECROPPED_ANIMAL_VERSION[name] ? '?v=2071' : '');
+}
 function _mzLocalQuizSrc(name) {
   return MAZE_LOCAL_QUIZ_ASSETS[name] ? (MAZE_LOCAL_QUIZ_IMG + name + '.png') : '';
 }
 function _mzWord(name, label) {
-  return _mzAsset(_mzLocalQuizSrc(name) || (MAZE_WORD_IMG + name + '.png'), label);
+  return _mzAsset(_mzLocalQuizSrc(name) || _mzVersionedAnimalSrc(MAZE_WORD_IMG, name), label);
 }
 function _mzQuiz(name, label) {
   return _mzAsset(_mzLocalQuizSrc(name) || (MAZE_QUIZ_IMG + name + '.png'), label);
@@ -7129,14 +7137,14 @@ function _mzMazeAnimal(name, label) {
   const assets = {
     usagi: MAZE_QUIZ_STAGE_IMG + 'stage_trivia_rabbit.png',
     iruka: _mzLocalQuizSrc('iruka') || (MAZE_QUIZ_STAGE_IMG + 'stage_trivia_dolphin.png'),
-    kirin: MAZE_QUIZ_IMG + 'kirin.png',
-    kuma: MAZE_QUIZ_IMG + 'kuma.png',
+    kirin: _mzVersionedAnimalSrc(MAZE_QUIZ_IMG, 'kirin'),
+    kuma: _mzVersionedAnimalSrc(MAZE_QUIZ_IMG, 'kuma'),
     kujira: _mzLocalQuizSrc('kujira') || (MAZE_QUIZ_IMG + 'kujira.png'),
     // batch:883 で追加: word/lion.png, word/zou.png は古い縦伸びキャンバス (244x235→512x512
     // 詰め込みで content AR が不自然) なので、 cdb3e31 で kirin/kuma 系を切り替えたのと
     // 同じく choice/ 配下の新版 watercolor (lion 512x512 / zou 292x270) に差し替え。
-    lion: MAZE_QUIZ_IMG + 'lion.png',
-    zou: MAZE_QUIZ_IMG + 'zou.png',
+    lion: _mzVersionedAnimalSrc(MAZE_QUIZ_IMG, 'lion'),
+    zou: _mzVersionedAnimalSrc(MAZE_QUIZ_IMG, 'zou'),
   };
   return _mzAsset(assets[name] || (MAZE_WORD_IMG + name + '.png'), label);
 }
