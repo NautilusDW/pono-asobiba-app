@@ -452,6 +452,11 @@ body.image-stage-mode #hint {
   line-height: 1;
 }
 #imgStageLabel:active { transform: translateX(-50%) scale(0.97); }
+#imgStageLabel.is-path-occluded {
+  opacity: 0;
+  pointer-events: none;
+}
+#imgStageLabel { transition: opacity 160ms ease, transform 100ms ease; }
 body.image-stage-mode .pono-menu-toggle { display: none !important; }
 body.image-stage-mode .pono-dropdown {
   top: 50px !important;
@@ -1310,6 +1315,11 @@ body.image-stage-mode .game-wrap {
   margin: 0 !important;
   width: 100%;
   min-width: 0;
+}
+.enc-stage .row.result-actions {
+  grid-template-columns: 1fr !important;
+  width: min(100%, 280px) !important;
+  justify-self: center;
 }
 .enc-btn {
   padding: 10px 18px; font-family: inherit; font-size: clamp(0.9rem, 2.2vw, 1.05rem); font-weight: 900;
@@ -4844,6 +4854,32 @@ function imgRepositionArrows() {
   }
 }
 
+function _updateImageStageLabelOcclusion(ponoSx, ponoSy) {
+  const label = document.getElementById('imgStageLabel');
+  if (!label || !document.body.classList.contains('image-stage-mode')) return;
+  if (document.querySelector('.pono-dropdown.show')) {
+    label.classList.remove('is-path-occluded');
+    return;
+  }
+  const rect = label.getBoundingClientRect();
+  const pad = 12;
+  let blocked = Number.isFinite(ponoSx) && Number.isFinite(ponoSy)
+    && ponoSx >= rect.left - 46 && ponoSx <= rect.right + 46
+    && ponoSy >= rect.top - 46 && ponoSy <= rect.bottom + 46;
+  if (!blocked) {
+    const arrows = arrowLayer.querySelectorAll('.maze-arrow');
+    for (let i = 0; i < arrows.length; i++) {
+      const ar = arrows[i].getBoundingClientRect();
+      if (ar.right >= rect.left - pad && ar.left <= rect.right + pad
+          && ar.bottom >= rect.top - pad && ar.top <= rect.bottom + pad) {
+        blocked = true;
+        break;
+      }
+    }
+  }
+  label.classList.toggle('is-path-occluded', blocked);
+}
+
 function imgStartWalk(plan) {
   hideArrows();
   if (stage) stage._manualCam = false; // resume auto-follow on walk start
@@ -5106,6 +5142,10 @@ function imgDraw(now) {
 
   // Reposition arrows so they follow pono's screen position (camera lerp)
   if (arrowLayer.children.length > 0) imgRepositionArrows();
+  _updateImageStageLabelOcclusion(
+    w / 2 + (px - stage.camera.x) * drawScale,
+    h / 2 + (py - stage.camera.y) * drawScale
+  );
 
   // Safety: re-show arrows if missing while idle (suppress during bounce-back pause)
   if (!walkAnim && !cleared && !overlay.classList.contains('show')
@@ -5823,12 +5863,19 @@ function imgDrawFlagTunnelScreenGlow(stageObj, now, viewportW, viewportH, scale)
   const st = _flagTunnelState;
   if (!cfg || !st || !stageObj || !scale) return;
   const entrance = _flagEntranceObstacle();
-  if (entrance && !st.unlocked) {
+  if (entrance && st.ladderCollected && !st.unlocked) {
     const pulse = 0.5 + Math.sin(now / 240) * 0.5;
     const sx = viewportW / 2 + (entrance.x - stageObj.camera.x) * scale;
     const sy = viewportH / 2 + (entrance.y - stageObj.camera.y) * scale;
     const radius = (cfg.encounterRadius || stageObj.viewBox.h / 16) * scale * 1.8;
     _drawFlagScreenGlow(sx, sy, radius, pulse, 1);
+    const exit = _flagExitObstacle();
+    const exitFocus = _flagExitFocusPoint(exit);
+    if (exitFocus) {
+      const exitSx = viewportW / 2 + (exitFocus.x - stageObj.camera.x) * scale;
+      const exitSy = viewportH / 2 + (exitFocus.y - stageObj.camera.y) * scale;
+      _drawFlagScreenGlow(exitSx, exitSy, radius, pulse, 0.9);
+    }
   }
   if (st.anim) {
     const exit = _flagExitObstacle();
@@ -5848,10 +5895,12 @@ function imgDrawFlagTunnelGimmick(stageObj, now) {
   const st = _flagTunnelState;
   if (!cfg || !st) return;
   const entrance = _flagEntranceObstacle();
-  if (entrance && !st.unlocked) {
+  if (entrance && st.ladderCollected && !st.unlocked) {
     const pulse = 0.5 + Math.sin(now / 240) * 0.5;
     const r = (cfg.encounterRadius || stageObj.viewBox.h / 16) * (1.05 + pulse * 0.12);
     _drawFlagHoleGlow(entrance.x, entrance.y, r * 1.45, pulse, 1);
+    const exit = _flagExitObstacle();
+    if (exit) _drawFlagHoleGlow(exit.x, exit.y, r * 1.45, pulse, 0.9);
   }
   const ladder = cfg.ladder;
   if (ladder && !st.ladderCollected) {
@@ -9022,7 +9071,7 @@ function _resolveQuiz(correct) {
     '<div class="enc-result ' + (correct ? 'win' : 'lose') + '">' +
       (correct ? 'せいかい！' : 'ざんねん…') +
     '</div>' +
-    '<div class="row">' +
+    '<div class="row result-actions">' +
       '<button class="enc-btn ' + (correct ? 'win' : 'lose') + '" id="encNextQ">' +
         (correct ? 'すすむ ▶' : 'もどる ▶') +
       '</button>' +
