@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v1276: batch:1210 perf 同期 (フラッシュ修正/WebP一括/preload最適化) を develop に反映。play.html PAGE_CACHE_VERSION と同期。
 // v1275: app-only OtoTouch「いろおと」の縦横HUD重なり解消を共通コードへ同期。本版では引き続きAPP_BUILD guardで非表示。play.html PAGE_CACHE_VERSION と同期。
 // v1274: app-only OtoTouch「いろおと」の明色・細筆・通常自由モードoverlay調整を共通コードへ同期。本版では引き続きAPP_BUILD guardで非表示。play.html PAGE_CACHE_VERSION と同期。
 // v1273: OtoTouch の共通コードへ、アプリ版限定の第3自由モード「いろおと」を同期。本版では APP_BUILD guard により非表示・非起動。play.html PAGE_CACHE_VERSION と同期。
@@ -65,7 +66,7 @@
 // v1211: Daily gacha lever tuning synced to develop: smaller centered lever, four hard notched turns, staged zoom, boom/drop, and random split-capsule variants.
 
 // v1210: play.html にアプリ版限定のデイリーシールガチャを同期。APP_BUILD/開発モード時だけ表示し、レバー操作からシール付与まで行う。assets/ui/gacha/ に alpha 済み素材を追加。
-const CACHE_VERSION = 1275; // v1275: app-only OtoTouch fluid HUD sync.
+const CACHE_VERSION = 1276; // v1276: batch:1210 perf sync (rebased onto v1275 OtoTouch fluid HUD sync).
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
