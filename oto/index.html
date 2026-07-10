@@ -5543,25 +5543,71 @@
     }
     body.color-fluid-layout .chord-pill {
       top: calc(max(8px, env(safe-area-inset-top)) + 72px);
+      width: 196px;
+      box-sizing: border-box;
+    }
+    body.color-fluid-layout .chord-pill-btn {
+      min-width: 0;
+      flex: 1;
+      padding: 6px 8px;
+      font-size: 0.82rem;
+      white-space: nowrap;
     }
     body.color-fluid-layout .mode-switch {
       top: calc(max(8px, env(safe-area-inset-top)) + 126px);
+      width: 196px;
+      box-sizing: border-box;
+    }
+    body.color-fluid-layout .mode-btn {
+      min-width: 0;
+      flex: 1;
+      padding: 6px 8px;
+      font-size: 0.82rem;
     }
     body.color-fluid-layout .free-view-switch {
       top: calc(max(8px, env(safe-area-inset-top)) + 176px);
+      width: 230px;
+      box-sizing: border-box;
+    }
+    body.color-fluid-layout .free-view-btn {
+      min-width: 0;
+      flex: 1;
+      padding: 6px 5px;
+      font-size: 0.78rem;
+      white-space: nowrap;
     }
     body.color-fluid-layout .pono-wrap { top: 53%; }
     body.color-fluid-layout .instr-btn[data-idx="0"] { left: 12%; top: 40%; }
-    body.color-fluid-layout .instr-btn[data-idx="1"] { left: 34%; top: 32%; }
-    body.color-fluid-layout .instr-btn[data-idx="2"] { left: 66%; top: 32%; }
+    body.color-fluid-layout .instr-btn[data-idx="1"] { left: 34%; top: 33%; }
+    body.color-fluid-layout .instr-btn[data-idx="2"] { left: 66%; top: 33%; }
     body.color-fluid-layout .instr-btn[data-idx="3"] { left: 88%; top: 40%; }
     body.color-fluid-layout .instr-btn[data-idx="4"] { left: 12%; top: 63%; }
     body.color-fluid-layout .instr-btn[data-idx="5"] { left: 34%; top: 72%; }
     body.color-fluid-layout .instr-btn[data-idx="6"] { left: 66%; top: 72%; }
     body.color-fluid-layout .instr-btn[data-idx="7"] { left: 88%; top: 63%; }
   }
+  @media (orientation: landscape) {
+    body.color-fluid-layout .free-view-switch {
+      left: 24%;
+      top: calc(max(8px, env(safe-area-inset-top)) + 242px);
+      width: 220px;
+      max-width: 220px;
+      box-sizing: border-box;
+    }
+    body.color-fluid-layout .free-view-btn {
+      min-width: 0;
+      flex: 1;
+      padding: 6px 4px;
+      font-size: 0.76rem;
+      white-space: nowrap;
+    }
+  }
   @media (orientation: landscape) and (max-height: 520px) {
-    body.color-fluid-layout .color-fluid-hint { display: none !important; }
+    body.color-fluid-layout .color-fluid-hint,
+    body.color-fluid-layout #oto-top-highscores,
+    body.color-fluid-layout #oto-top-stage-select {
+      display: none !important;
+    }
   }
 </style>
 <link rel="stylesheet" href="../common/acorn-modal-shared.css">
@@ -7626,7 +7672,7 @@ var _playMode = 'free';
 // requested layout can temporarily differ, so fluid visibility follows this
 // effective layout value instead of the stale selected value.
 var _effectiveOtoLayoutMode = 'free';
-var OTO_COLOR_FLUID_ASSET_VERSION = '2076';
+var OTO_COLOR_FLUID_ASSET_VERSION = '2077';
 var _colorFluidAllowed = !!window.__APP_BUILD__;
 var _colorFluid = null;
 var _colorFluidLoadPromise = null;
