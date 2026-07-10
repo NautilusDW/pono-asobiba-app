@@ -29,6 +29,13 @@ metadata:
 - 原本 PNG の cleanup は別タスク。着手前に cross-scope 参照の webp 化が必要: undersea-cave / sea-album / admin / common/museum-data.js / quizland/data/_review/image_manifest.json / .smoke_quizland.html。
 - .assetsignore に assets/_legacy_png/ と Prototypes/StickerBookThreeJS/screenshots/ を追加済み (~107MB 配信除外)。
 
+## develop (LP staging) への同期 (batch:1210c, 2026-07-10 完了)
+
+- perf 改善一式は develop にも同期済み (tip 3be9925e、版数 1276 で統一)。**develop の sw.js は develop-app と別アーキテクチャ (184 行のシンプル版) のため同期対象外** — 今後も sw.js だけはブランチ間コピー禁止、版数バンプのみ。
+- **教訓 (1 回 deploy を壊した)**: ブランチ間同期は「develop-app のファイル丸ごとコピー」ではなく「batch 限定 diff の移植」で行う。丸ごとコピーは batch 外機能の import (google-auth/savedata 等、依存ファイルが develop に無い) を持ち込み wrangler build を壊す。
+- mojicrane / nazonazo-tunnel は develop に js/data が無く未同期 (play.html に dead link が両ブランチ残存、完全同期は別タスク)。
+- LP staging はエッジに古い応答が数分キャッシュ残留する現象あり (cf-cache-status: HIT)。検証時は cache-bust クエリで確認すること。
+
 ## 残課題 (未対処)
 
 - **native/www ミラーは pre-batch のまま** — 次の Capacitor native build 前に再同期必須 (play.html/maze/bento/quizland/oto/preload-helper が旧挙動)。
