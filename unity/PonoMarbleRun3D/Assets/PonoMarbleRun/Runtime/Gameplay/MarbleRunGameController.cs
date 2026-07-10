@@ -650,7 +650,7 @@ namespace Pono.MarbleRun3D.Gameplay
             _pieceRoot = new GameObject("CoursePieces").transform;
             _pieceRoot.SetParent(_worldRoot, false);
 
-            var backdropMaterial = MakeRuntimeMaterial("そら", new Color(0.72f, 0.90f, 0.96f), 0.04f);
+            var backdropMaterial = MakeRuntimeMaterial("そら", new Color(0.87f, 0.95f, 0.98f), 0.03f);
             var floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
             floor.name = "やわらかい ゆか";
             floor.layer = _boardLayer;
@@ -695,18 +695,18 @@ namespace Pono.MarbleRun3D.Gameplay
             CreateBoardEdge(new Vector3(21.1f, 1.02f, 0f), new Vector3(0.66f, 0.72f, 36.8f));
             CreateBoardEdge(new Vector3(-21.1f, 1.02f, 0f), new Vector3(0.66f, 0.72f, 36.8f));
 
-            RenderSettings.ambientLight = new Color(0.74f, 0.78f, 0.82f);
-            RenderSettings.ambientIntensity = 1.15f;
+            RenderSettings.ambientLight = new Color(0.88f, 0.86f, 0.92f);
+            RenderSettings.ambientIntensity = 1.12f;
             var lightObject = new GameObject("SunLight");
             lightObject.transform.SetParent(_worldRoot, false);
             lightObject.transform.rotation = Quaternion.Euler(48f, -32f, 0f);
             var light = lightObject.AddComponent<Light>();
             _sunLight = light;
             light.type = LightType.Directional;
-            light.color = new Color(1f, 0.88f, 0.72f);
-            light.intensity = 1.2f;
+            light.color = new Color(1f, 0.94f, 0.84f);
+            light.intensity = 1.12f;
             light.shadows = LightShadows.Soft;
-            light.shadowStrength = 0.55f;
+            light.shadowStrength = 0.36f;
             light.shadowBias = 0.06f;
         }
 
@@ -720,7 +720,7 @@ namespace Pono.MarbleRun3D.Gameplay
                 _camera = cameraObject.AddComponent<Camera>();
             }
             _camera.clearFlags = CameraClearFlags.SolidColor;
-            _camera.backgroundColor = new Color(0.72f, 0.90f, 0.96f);
+            _camera.backgroundColor = new Color(0.87f, 0.95f, 0.98f);
             _camera.fieldOfView = 43f;
             _camera.nearClipPlane = 0.15f;
             _camera.farClipPlane = 130f;

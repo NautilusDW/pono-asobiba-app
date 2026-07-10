@@ -147,6 +147,26 @@ namespace Pono.MarbleRun3D.Bootstrap
                     _controller.StartRun();
                     yield return new WaitForSecondsRealtime(4.2f);
                     break;
+                case "follow-run":
+                    _controller.StartMode("starter");
+                    _controller.StartRun();
+                    yield return new WaitForSecondsRealtime(2.4f);
+                    if (!_controller.IsCameraFollowing || !_controller.OrbitCamera.IsFollowing)
+                        throw new InvalidOperationException("Preview camera did not remain in marble-follow mode.");
+                    _details = "follow_target=" + _controller.OrbitCamera.Target.ToString("F2")
+                        + "; distance=" + _controller.OrbitCamera.Distance.ToString("0.00", CultureInfo.InvariantCulture);
+                    break;
+                case "overview-run":
+                    _controller.StartMode("starter");
+                    _controller.StartRun();
+                    yield return new WaitForSecondsRealtime(0.8f);
+                    _controller.ToggleCameraFollow();
+                    yield return new WaitForSecondsRealtime(0.2f);
+                    if (_controller.IsCameraFollowing || _controller.OrbitCamera.IsFollowing)
+                        throw new InvalidOperationException("Preview camera did not return to course overview mode.");
+                    _details = "overview_target=" + _controller.OrbitCamera.Target.ToString("F2")
+                        + "; distance=" + _controller.OrbitCamera.Distance.ToString("0.00", CultureInfo.InvariantCulture);
+                    break;
                 case "variety-top":
                     _controller.StartMode("starter");
                     _controller.ToggleCameraAngle();
@@ -326,6 +346,10 @@ namespace Pono.MarbleRun3D.Bootstrap
                 + "  \"active_level\": " + _controller.ActivePlacementLevel + ",\n"
                 + "  \"active_marbles\": " + _controller.ActiveMarbleCount + ",\n"
                 + "  \"marbles_at_goal\": " + _controller.MarblesAtGoal + ",\n"
+                + "  \"camera_follow\": " + (_controller.IsCameraFollowing ? "true" : "false") + ",\n"
+                + "  \"camera_target\": \"" + Escape(_controller.OrbitCamera.Target.ToString("F2")) + "\",\n"
+                + "  \"camera_distance\": "
+                + _controller.OrbitCamera.Distance.ToString("0.00", CultureInfo.InvariantCulture) + ",\n"
                 + "  \"details\": \"" + Escape(_details) + "\"\n"
                 + "}\n";
             File.WriteAllText(_qaOutputPath, json);

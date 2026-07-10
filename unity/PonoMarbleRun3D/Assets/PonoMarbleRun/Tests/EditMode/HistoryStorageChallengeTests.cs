@@ -271,31 +271,24 @@ namespace Pono.MarbleRun3D.Tests.EditMode
             Assert.That(sampleKinds, Does.Contain(MarblePieceKind.ClearTube));
             Assert.That(sampleKinds, Does.Contain(MarblePieceKind.Wave));
             Assert.That(sampleKinds, Does.Contain(MarblePieceKind.Spinner));
-            Assert.That(ChallengeCatalog.Get("sample5").InitialPieces.Select(piece => piece.kind),
-                Is.EqualTo(new[]
-                {
-                    MarblePieceKind.Start,
-                    MarblePieceKind.ClearTube,
-                    MarblePieceKind.Tornado,
-                    MarblePieceKind.Wave,
-                    MarblePieceKind.Spinner,
-                    MarblePieceKind.ClearTube,
-                    MarblePieceKind.Goal
-                }));
-            Assert.That(ChallengeCatalog.Get("sample6").InitialPieces.Select(piece => piece.kind),
-                Is.EqualTo(new[]
-                {
-                    MarblePieceKind.Start,
-                    MarblePieceKind.ClearTube,
-                    MarblePieceKind.Elevator,
-                    MarblePieceKind.Straight,
-                    MarblePieceKind.Wave,
-                    MarblePieceKind.ClearTube,
-                    MarblePieceKind.Tornado,
-                    MarblePieceKind.Spinner,
-                    MarblePieceKind.ClearTube,
-                    MarblePieceKind.Goal
-                }));
+            var tornadoSample = ChallengeCatalog.Get("sample5").InitialPieces;
+            Assert.That(tornadoSample.Count, Is.GreaterThanOrEqualTo(20));
+            Assert.That(tornadoSample.Any(piece => piece.kind == MarblePieceKind.Tornado), Is.True);
+            Assert.That(tornadoSample.Any(piece => piece.kind == MarblePieceKind.ClearCurve), Is.True);
+            Assert.That(tornadoSample.Max(piece => piece.pose.z) - tornadoSample.Min(piece => piece.pose.z),
+                Is.GreaterThanOrEqualTo(7));
+
+            var elevatorSample = ChallengeCatalog.Get("sample6").InitialPieces;
+            Assert.That(elevatorSample.Count, Is.GreaterThanOrEqualTo(20));
+            Assert.That(elevatorSample.Any(piece => piece.kind == MarblePieceKind.Elevator), Is.True);
+            Assert.That(elevatorSample.Any(piece => piece.kind == MarblePieceKind.Tornado), Is.True);
+            Assert.That(elevatorSample.Max(piece => piece.pose.x) - elevatorSample.Min(piece => piece.pose.x),
+                Is.GreaterThanOrEqualTo(7));
+            Assert.That(elevatorSample
+                    .GroupBy(piece => (piece.pose.x, piece.pose.z))
+                    .Any(group => group.Select(piece => piece.pose.level).Distinct().Count() > 1),
+                Is.True,
+                "the city route should visibly pass over the same ground cell at another height");
             Assert.That(PartCatalog.Get(MarblePieceKind.Slope).DisplayName, Is.EqualTo("さかみち"));
             Assert.That(PartCatalog.Get(MarblePieceKind.Helix).DisplayName, Is.EqualTo("ぐるぐる"));
             Assert.That(PartCatalog.Get(MarblePieceKind.Steps).DisplayName, Is.EqualTo("かいだん"));
@@ -325,6 +318,18 @@ namespace Pono.MarbleRun3D.Tests.EditMode
             Assert.That(course.pieces.Count(piece => piece.kind == MarblePieceKind.Goal), Is.EqualTo(1));
             Assert.That(course.pieces.Select(piece => piece.id).Distinct().Count(), Is.EqualTo(course.pieces.Count));
             Assert.That(PlacementSolver.HasStartToGoalGraphPath(course.pieces), Is.True);
+            Assert.That(course.pieces.Count, Is.InRange(24, 36));
+            Assert.That(course.pieces.Max(piece => piece.pose.x) - course.pieces.Min(piece => piece.pose.x),
+                Is.GreaterThanOrEqualTo(8));
+            Assert.That(course.pieces.Max(piece => piece.pose.z) - course.pieces.Min(piece => piece.pose.z),
+                Is.GreaterThanOrEqualTo(7));
+            Assert.That(course.pieces.Min(piece => piece.pose.level), Is.Zero);
+            Assert.That(course.pieces.Max(piece => piece.pose.level), Is.EqualTo(4));
+            Assert.That(course.pieces
+                    .GroupBy(piece => (piece.pose.x, piece.pose.z))
+                    .Count(group => group.Select(piece => piece.pose.level).Distinct().Count() > 1),
+                Is.GreaterThanOrEqualTo(3),
+                "the starter should make its overpasses obvious");
             foreach (var newKind in new[]
                      {
                          MarblePieceKind.Tornado,
@@ -337,6 +342,19 @@ namespace Pono.MarbleRun3D.Tests.EditMode
             {
                 Assert.That(course.pieces.Any(piece => piece.kind == newKind), Is.True, newKind.ToString());
             }
+            foreach (var descendingKind in new[]
+                     {
+                         MarblePieceKind.Slope,
+                         MarblePieceKind.Steps,
+                         MarblePieceKind.Tornado
+                     })
+            {
+                Assert.That(course.pieces.Any(piece => piece.kind == descendingKind), Is.True,
+                    descendingKind.ToString());
+            }
+            Assert.That(course.pieces.Count(piece => piece.kind == MarblePieceKind.Elevator), Is.EqualTo(1));
+            Assert.That(course.pieces.Any(piece => piece.kind == MarblePieceKind.Lift), Is.False,
+                "the only rise in this starter route is the visibly powered elevator");
 
             foreach (var piece in course.pieces)
             {

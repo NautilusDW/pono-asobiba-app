@@ -58,6 +58,7 @@
 ## Active claims
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
+- 2026-07-10 23:30 - by Claude - [batch:1213-trunk-unification-exec] - index.html, sitemap.xml, wrangler.toml, .github/workflows/deploy.yml, .claude/settings.local.json, docs/branch-unification-plan.md, AGENTS.md, CLAUDE.md, memory/**, (develop ブランチ: 凍結コミット), AGENTS_CLAIMS.md, HANDOFF.md - 単一トランク統合の実行 (Phase 1-4: 逆統合 + wrangler 対称化 + CI 両env化 + フック更新 + develop 凍結 + 検証)。⚠️ 以後 develop への push は凍結されます
 - 2026-07-07 12:24 - by Claude - [batch:1058-tutorial-impl-phase1] - bento/index.html, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - tut2 チュートリアル実装 phase1 (見本→まねっこ、15ステップ+2ラッパー、mock voice、PAUSED解除、storage v2)
 - 2026-07-07 - by Claude - [batch:1058-tut2-hotfix4] - bento/index.html, sw.js, play.html, docs/BENTO_TUTORIAL_SCRIPT.md, AGENTS_CLAIMS.md, HANDOFF.md - tut2 UX方針転換: シーケンス順序・ボックス統合・ポノ中心ナレーション・Step6編集パネル詳細説明
 
