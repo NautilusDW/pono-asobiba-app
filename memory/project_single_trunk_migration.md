@@ -36,7 +36,7 @@ metadata:
 
 | Phase | 内容 | 状態 |
 | --- | --- | --- |
-| Phase 0 | 前提修理（webapp 本番 `pono-asobiba-app.ndw.workers.dev` 全パス 404） | ⚠️ **再発 — 再調査必要** (2026-07-10)。一度は「ダッシュボードの workers.dev トグル手動 OFF（管理画面設定が wrangler.toml の `workers_dev=true` より優先）」が原因と判明しユーザーが Domains タブで ON → 全パス 200 実測。**しかし同日中に再び全パス 404 (error 1042)**。統合と無関係（master 未デプロイ）。ダッシュボード再確認 or 本番再デプロイを検討 |
+| Phase 0 | 前提修理（webapp 本番 `pono-asobiba-app.ndw.workers.dev` 全パス 404） | ✅ **根治 (2026-07-10)** — 真犯人 = **Cloudflare Workers Builds の Git 連携** (本番 worker に接続、Production branch=develop、全 push を本番 `npx wrangler deploy`)。develop の toml に workers_dev が無く、デプロイごとに workers.dev URL が無効化されていた。ユーザーが **Disconnect** して根治 + develop 凍結で二重遮断。副作用の「本番が develop 系統 (sw v1277) に置換」は**ユーザー判断 B で容認、近日中の正式 master 更新 (Phase 5) で追認**。⚠️ それまで master へ push すると本番が 7/6 の旧内容に巻き戻る罠あり。再発検知 = prod-url-monitor.yml (6h cron)、default branch は develop-app へ変更済み |
 | Phase 1 | 逆統合（`index.html` canonical/OG/JSON-LD 6 箇所 + Amazon 文言 + `sitemap.xml` 7 URL → `pono.kodama-no-mori.com`） | ✅ 完了 (2026-07-10)。origin/develop 版と byte 一致をレビューで確認 |
 | Phase 2 | 設定統一（`wrangler.toml` に `[env.staging.assets]` 追加） | ✅ 完了 (2026-07-10)。3 env（production/staging/staging-app）全て dry-run ビルド成功 |
 | Phase 3 | CI 切替（`deploy.yml`）+ フック更新（`.claude/settings.local.json`）+ `develop` 凍結宣言 | ✅ 完了 (2026-07-10)。凍結コミット `0dacb4e4` を `[skip deploy]` で push（デプロイ発火ゼロ確認）、develop 側 deploy.yml は `branches: [master]` のみ、`BRANCH_FROZEN.md` 設置 |
