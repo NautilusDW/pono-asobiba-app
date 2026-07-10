@@ -8028,7 +8028,15 @@ function installAlbumMenuItem() {
     e.stopPropagation();
     location.href = 'album.html';
   });
-  dropdown.insertBefore(item, dropdown.firstChild);
+  var backItem = Array.from(dropdown.querySelectorAll('.pono-dd-item')).find(function (button) {
+    var label = button.querySelector('.pono-dd-label');
+    return label && label.textContent.trim() === 'もどる';
+  });
+  if (backItem) {
+    dropdown.insertBefore(item, backItem.nextSibling);
+  } else {
+    dropdown.insertBefore(item, dropdown.firstChild);
+  }
 }
 
 function closePuzzleMenuDropdown() {

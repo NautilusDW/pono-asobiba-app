@@ -1,455 +1,501 @@
 /* ===== もりのアルバム =====
- * 5×20 ヒートマップ (縦=パートナー5名 / 横=ステージ20枚)
- * 表示は「クリア済み / 未クリア」の 2 値 (旧 Lv0-3 の段階表示は廃止)
+ * 8にんのなかまを、カードと太いバーで見わたせるシンプルな一覧。
  */
+
+.album-body,
+.album-body * {
+  box-sizing: border-box;
+}
 
 .album-body {
   display: block;
-  background-image: url('../assets/images/puzzle/bg_carpet_room.jpg');
-  background-size: cover;
+  min-width: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0;
+  padding: clamp(8px, 2vw, 16px);
+  overflow-x: hidden;
+  color: #5d4e37;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  background-color: #efe2c2;
+  background-image:
+    linear-gradient(rgba(255, 250, 231, 0.08), rgba(255, 250, 231, 0.08)),
+    url('../assets/images/puzzle/bg_carpet_room.jpg');
   background-position: center;
   background-repeat: no-repeat;
+  background-size: cover;
   background-attachment: fixed;
-  min-height: 100dvh;
-  padding: 16px;
 }
 
 .album-wrapper {
-  max-width: 1100px;
+  width: min(960px, 100%);
+  max-height: calc(100dvh - clamp(16px, 4vw, 32px));
   margin: 0 auto;
-  background: rgba(255, 248, 224, 0.92);
+  padding: clamp(10px, 1.8vw, 18px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: rgba(255, 249, 228, 0.95);
+  border: 3px solid rgba(255, 255, 255, 0.9);
   border-radius: 24px;
-  padding: 18px 18px 22px;
-  box-shadow: 0 8px 32px rgba(93, 78, 55, 0.18);
+  box-shadow: 0 8px 28px rgba(86, 66, 38, 0.2);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(164, 126, 75, 0.45) transparent;
 }
 
 /* ===== Header ===== */
 .album-header {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(104px, auto) 1fr minmax(104px, auto);
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
+  gap: 10px;
+  min-height: 52px;
+  margin-bottom: 10px;
 }
 
-.album-header__spacer { width: 110px; }
+.album-header__spacer {
+  width: 104px;
+}
 
 .album-title {
-  flex: 1;
-  text-align: center;
-  font-family: 'Zen Maru Gothic', sans-serif;
-  font-weight: 900;
-  color: #5D4E37;
-  font-size: clamp(1.4rem, 4vw, 2rem);
+  min-width: 0;
   margin: 0;
+  color: #5d4e37;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-size: clamp(1.45rem, 3.5vw, 2rem);
+  font-weight: 900;
   letter-spacing: 0.04em;
+  line-height: 1.15;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .album-back {
   appearance: none;
-  --puzzle-btn-bg: var(--puzzle-btn-cream);
-  --puzzle-btn-color: #5A3A18;
-  --puzzle-btn-border: rgba(255, 255, 255, 0.92);
-  border: 3px solid var(--puzzle-btn-border);
-  background: var(--puzzle-btn-bg);
-  color: var(--puzzle-btn-color);
-  font-family: inherit;
-  font-weight: 900;
+  min-width: 104px;
+  min-height: 48px;
+  padding: 8px 15px;
+  border: 3px solid rgba(255, 255, 255, 0.94);
+  border-radius: 999px;
+  color: #5a3a18;
+  background: var(--puzzle-btn-cream, linear-gradient(#fffaf0, #f7ddb0));
+  box-shadow: var(--puzzle-btn-shadow-soft, 0 4px 0 #cfa870);
+  font: inherit;
   font-size: 1rem;
-  padding: 10px 18px;
-  border-radius: 999px;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: var(--puzzle-btn-text-shadow, 0 1px #fff);
   cursor: pointer;
-  box-shadow: var(--puzzle-btn-shadow-soft);
-  text-shadow: var(--puzzle-btn-text-shadow);
-  transition: transform 0.1s ease;
-  min-width: 110px;
+  touch-action: manipulation;
 }
 
-.album-back:active { transform: translateY(2px); box-shadow: var(--puzzle-btn-shadow-pressed); }
+.album-back:active {
+  transform: translateY(2px);
+  box-shadow: var(--puzzle-btn-shadow-pressed, 0 2px 0 #cfa870);
+}
 
-/* ===== Summary ===== */
+.album-back:focus-visible {
+  outline: 4px solid #3d8fd1;
+  outline-offset: 3px;
+}
+
+/* ===== Everyone summary ===== */
 .album-summary {
-  background: linear-gradient(135deg, #FFF1D9, #FFE3C2);
-  border: 2px solid #F2C094;
-  border-radius: 18px;
-  padding: 12px 16px;
-  margin-bottom: 12px;
   display: grid;
-  grid-template-columns: auto 1fr;
-  grid-template-rows: auto auto;
-  gap: 6px 16px;
+  grid-template-columns: 44px minmax(86px, auto) minmax(110px, 1fr);
   align-items: center;
+  gap: 10px;
+  min-height: 66px;
+  margin-bottom: 10px;
+  padding: 9px 14px;
+  background: linear-gradient(135deg, #fff1d9, #ffe3b5);
+  border: 2px solid #efbb7d;
+  border-radius: 18px;
 }
 
-.album-summary__label {
-  font-weight: 900;
-  color: #5D4E37;
-  font-size: 0.95rem;
+.album-summary__icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 2px 6px rgba(121, 83, 37, 0.12);
+  font-size: 1.5rem;
 }
 
-.album-summary__value {
-  text-align: right;
-  font-weight: 900;
-  color: #C25A2A;
-  font-size: 1.4rem;
-  font-family: 'DotGothic16', 'Zen Maru Gothic', monospace;
-}
-
-.album-summary__sep { color: #A89880; font-size: 1.1rem; }
-
-.album-summary__bar {
-  grid-column: 1 / -1;
-  height: 10px;
-  background: rgba(255, 255, 255, 0.7);
-  border-radius: 6px;
-  overflow: hidden;
-  box-shadow: inset 0 1px 2px rgba(93, 78, 55, 0.18);
-}
-
-.album-summary__bar-fill {
-  height: 100%;
-  width: 0%;
-  background: linear-gradient(90deg, #F7C948, #F2915A 60%, #E14B7A);
-  transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
-  border-radius: 6px;
-}
-
-/* ===== Legend ===== */
-.album-legend {
-  display: flex;
-  gap: 10px 18px;
-  flex-wrap: wrap;
-  justify-content: center;
-  padding: 8px 6px 14px;
-  border-bottom: 1px dashed rgba(168, 152, 128, 0.5);
-  margin-bottom: 12px;
-}
-
-.album-legend__item {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: #5D4E37;
-}
-
-.album-legend__swatch {
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  border: 1px solid rgba(93, 78, 55, 0.18);
-  display: inline-block;
-}
-
-/* ===== Grid ===== */
-.album-grid-scroll {
-  width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 8px;
-}
-
-.album-grid {
-  border-collapse: separate;
-  border-spacing: 4px;
-  margin: 0 auto;
-  min-width: 760px;
-}
-
-.album-grid th,
-.album-grid td {
-  padding: 0;
-  text-align: center;
-  vertical-align: middle;
-}
-
-.album-grid__corner {
-  width: 92px;
-  font-size: 0.75rem;
-  color: #A89880;
-  font-weight: 700;
-  text-align: left;
-  padding-left: 4px !important;
-}
-
-.album-grid__col-head {
-  width: 32px;
-  font-family: 'DotGothic16', monospace;
-  font-size: 0.75rem;
-  color: #5D4E37;
-  font-weight: 700;
-  padding: 4px 0 !important;
-}
-
-.album-grid__col-head-num {
-  display: block;
-  line-height: 1;
-}
-
-/* ===== 難易度バッジ (やさしい / ふつう / むずかしい) =====
-   col-head の下に星マークだけの極小バッジを表示。
-   ラベル本文は aria-label + title で読み上げ可。
-   配色は puzzle/partner-select.css の .pono-pselect__difficulty--* と揃える。 */
-.album-diff {
-  display: inline-block;
-  margin-top: 3px;
-  padding: 1px 5px;
-  font-size: 0.55rem;
-  font-weight: 900;
-  font-family: 'Zen Maru Gothic', sans-serif;
-  line-height: 1;
-  border-radius: 999px;
-  letter-spacing: 0.04em;
-  white-space: nowrap;
-  vertical-align: middle;
-  box-shadow: 0 1px 2px rgba(93, 78, 55, 0.18);
-}
-
-.album-diff--easy {
-  background: linear-gradient(180deg, #8BE08F 0%, #4FB55A 100%);
-  color: #1E4622;
-  border: 1px solid #3A9047;
-}
-
-.album-diff--normal {
-  background: linear-gradient(180deg, #FFE27A 0%, #F2B900 100%);
-  color: #5A3D00;
-  border: 1px solid #C99500;
-}
-
-.album-diff--hard {
-  background: linear-gradient(180deg, #F5A0B5 0%, #D2476E 100%);
-  color: #4A0E22;
-  border: 1px solid #A12551;
-}
-
-/* popup 内では label を併記して大きめに表示 */
-.album-diff--popup {
-  font-size: 0.95rem;
-  padding: 4px 12px;
-  margin-top: 0;
-  letter-spacing: 0.06em;
-  box-shadow: 0 2px 6px rgba(93, 78, 55, 0.22);
-}
-
-.album-grid__row-head {
-  width: 92px;
-  padding: 4px 8px 4px 4px !important;
-  text-align: left;
-  font-weight: 900;
-  color: #5D4E37;
-}
-
-.album-grid__row-head-inner {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.85rem;
+.album-summary__copy {
+  min-width: 0;
   line-height: 1.1;
 }
 
-.album-grid__row-head-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: #FDDCBF;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.95rem;
-  flex-shrink: 0;
-  overflow: hidden;
-  border: 2px solid #fff;
-  box-shadow: 0 2px 4px rgba(93, 78, 55, 0.18);
-}
-
-.album-grid__row-head-icon img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.album-grid__row-head-name {
+.album-summary__label {
+  color: #80684a;
+  font-size: 0.78rem;
   font-weight: 900;
-  font-size: 0.85rem;
+}
+
+.album-summary__value {
+  margin-top: 3px;
+  color: #b95128;
+  font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
+  font-size: clamp(1.05rem, 2.6vw, 1.35rem);
+  font-weight: 900;
+  line-height: 1.15;
   white-space: nowrap;
 }
 
-/* Cells */
-.album-cell {
-  width: 32px;
-  height: 32px;
-  border-radius: 7px;
-  background: #E8E0D6;
-  cursor: pointer;
-  border: none;
-  display: inline-block;
-  padding: 0;
-  font-family: inherit;
+.album-summary__bar {
+  width: 100%;
+  height: 14px;
+  overflow: hidden;
+  border: 2px solid rgba(178, 133, 70, 0.2);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: inset 0 2px 3px rgba(93, 78, 55, 0.13);
+}
+
+.album-summary__bar-fill {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #f7c948, #f2915a 58%, #e85b83);
+}
+
+/* ===== Partner cards ===== */
+.album-main {
+  min-width: 0;
+}
+
+.album-partner-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.album-partner-card {
+  display: grid;
+  grid-template-columns: clamp(52px, 6vw, 64px) minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 112px;
+  padding: 10px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.9);
+  border: 3px solid #eccd83;
+  border-radius: 18px;
+  box-shadow: 0 3px 0 rgba(174, 132, 70, 0.22);
+}
+
+.album-partner-card.is-locked {
+  color: #6f6f6f;
+  background: rgba(234, 232, 226, 0.94);
+  border-color: #bebbb2;
+  box-shadow: 0 3px 0 rgba(105, 105, 105, 0.16);
+}
+
+.album-partner-card__portrait {
   position: relative;
-  transition: transform 0.1s ease, box-shadow 0.15s ease;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  display: grid;
+  width: 100%;
+  aspect-ratio: 1;
+  place-items: center;
+  overflow: hidden;
+  border: 2px solid #ecd7a4;
+  border-radius: 15px;
+  background: #fff9e8;
 }
 
-.album-cell:focus-visible {
-  outline: 2px solid #F2915A;
-  outline-offset: 2px;
+.album-partner-card.is-locked .album-partner-card__portrait {
+  border-color: #c9c7c0;
+  background: #deddd8;
 }
 
-.album-cell:active { transform: scale(0.92); }
-
-.album-cell--uncleared { background: #E8E0D6; }
-.album-cell--cleared {
-  background: linear-gradient(135deg, #E14B7A, #C2326A);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.55),
-    0 0 0 1px rgba(225, 75, 122, 0.4),
-    0 0 8px rgba(247, 201, 72, 0.6);
-  animation: albumCellShine 2.4s ease-in-out infinite;
+.album-partner-card__portrait-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
 }
 
-.album-cell--cleared::after {
-  content: '★';
+.album-partner-card__portrait-img.is-silhouette {
+  padding: 4px;
+  object-fit: contain;
+  filter: brightness(0) saturate(0);
+  opacity: 0.58;
+}
+
+.album-partner-card__portrait-img.is-silhouette.is-light-background {
+  padding: 3px;
+  object-fit: contain;
+  filter: grayscale(1) contrast(1000%) blur(1px) contrast(1000%);
+  opacity: 0.58;
+}
+
+.album-partner-card__secret {
+  color: #888780;
+  font-family: 'DotGothic16', sans-serif;
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 900;
+  line-height: 1;
+}
+
+.album-partner-card__lock {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: #FFF6D6;
-  font-size: 0.75rem;
-  text-shadow: 0 1px 2px rgba(93, 78, 55, 0.4);
-  pointer-events: none;
+  right: 2px;
+  bottom: 2px;
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border: 2px solid rgba(255, 255, 255, 0.88);
+  border-radius: 50%;
+  background: #77746f;
+  font-size: 0.72rem;
+  line-height: 1;
 }
 
-@keyframes albumCellShine {
-  0%, 100% { filter: brightness(1); }
-  50%      { filter: brightness(1.18); }
+.album-partner-card__info {
+  min-width: 0;
 }
 
-/* Locked row (フクロウ未解禁) */
-.album-row--locked .album-cell {
-  background: #DBD3C7;
-  cursor: not-allowed;
-  position: relative;
-  opacity: 0.55;
+.album-partner-card__name {
+  margin: 0;
+  overflow: hidden;
+  color: #5d4e37;
+  font-size: clamp(0.95rem, 1.7vw, 1.12rem);
+  font-weight: 900;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.album-row--locked .album-grid__row-head-icon {
-  filter: grayscale(1);
-  opacity: 0.6;
+.album-partner-card.is-locked .album-partner-card__name {
+  color: #66645f;
 }
 
-.album-row--locked .album-grid__row-head-name {
-  color: #A89880;
+.album-partner-card__status {
+  min-height: 2.5em;
+  margin-top: 5px;
+  color: #b85c2b;
+  font-size: clamp(0.72rem, 1.35vw, 0.86rem);
+  font-weight: 900;
+  line-height: 1.25;
 }
 
-.album-row--locked .album-grid__row-head-name::after {
-  content: ' 🔒';
-  font-size: 0.85rem;
-}
-
-/* ===== Popup ===== */
-.album-popup {
-  position: fixed;
-  inset: 0;
-  z-index: 200;
+.album-partner-card.is-locked .album-partner-card__status {
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 16px;
+  color: #696762;
 }
 
-.album-popup.hidden { display: none; }
-
-.album-popup__backdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(93, 78, 55, 0.5);
-  backdrop-filter: blur(2px);
-}
-
-.album-popup__card {
-  position: relative;
-  background: #FFF8F0;
-  border-radius: 24px;
-  padding: 24px 22px 20px;
-  max-width: 360px;
+.album-partner-card__bar {
   width: 100%;
-  text-align: center;
-  box-shadow: 0 12px 36px rgba(93, 78, 55, 0.35);
-  animation: albumPopIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-@keyframes albumPopIn {
-  from { transform: scale(0.85); opacity: 0; }
-  to   { transform: scale(1); opacity: 1; }
-}
-
-.album-popup__close {
-  position: absolute;
-  top: 8px;
-  right: 10px;
-  --puzzle-btn-bg: var(--puzzle-btn-peach);
-  --puzzle-btn-color: #623D16;
-  --puzzle-btn-border: rgba(255, 244, 224, 0.95);
-  background: var(--puzzle-btn-bg);
-  border: 3px solid var(--puzzle-btn-border);
+  height: 12px;
+  margin-top: 6px;
+  overflow: hidden;
+  border: 2px solid rgba(157, 126, 74, 0.16);
   border-radius: 999px;
-  font-size: 1.6rem;
-  color: var(--puzzle-btn-color);
-  cursor: pointer;
-  font-family: inherit;
-  width: 36px;
-  height: 36px;
-  line-height: 1;
-  box-shadow: var(--puzzle-btn-shadow-soft);
-  text-shadow: var(--puzzle-btn-text-shadow);
+  background: #ebe7dc;
+  box-shadow: inset 0 1px 2px rgba(93, 78, 55, 0.14);
 }
 
-.album-popup__partner {
-  font-weight: 900;
-  font-size: 1.15rem;
-  color: #5D4E37;
-  margin-bottom: 4px;
+.album-partner-card__bar-fill {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #7bc96f, #f3c64e 72%, #f0915c);
 }
 
-.album-popup__stage {
-  font-size: 0.95rem;
-  color: #8A7A5A;
-  margin-bottom: 14px;
-  line-height: 1.4;
+/* たて画面は2れつ。8にんを4だんで見せる。 */
+@media (max-width: 600px) {
+  .album-body {
+    padding: 8px;
+  }
+
+  .album-wrapper {
+    max-height: calc(100dvh - 16px);
+    padding: 10px;
+    border-radius: 20px;
+  }
+
+  .album-header {
+    grid-template-columns: 88px 1fr 88px;
+    gap: 5px;
+    margin-bottom: 8px;
+  }
+
+  .album-header__spacer {
+    width: 88px;
+  }
+
+  .album-back {
+    min-width: 88px;
+    min-height: 48px;
+    padding-inline: 5px;
+    font-size: 0.88rem;
+    white-space: nowrap;
+  }
+
+  .album-title {
+    font-size: clamp(1.05rem, 4.6vw, 1.35rem);
+    letter-spacing: 0.02em;
+  }
+
+  .album-summary {
+    grid-template-columns: 38px minmax(82px, auto) minmax(80px, 1fr);
+    gap: 7px;
+    min-height: 60px;
+    padding: 7px 9px;
+    border-radius: 15px;
+  }
+
+  .album-summary__icon {
+    width: 36px;
+    height: 36px;
+    font-size: 1.2rem;
+  }
+
+  .album-summary__value {
+    font-size: 1rem;
+  }
+
+  .album-summary__bar {
+    height: 13px;
+  }
+
+  .album-partner-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .album-partner-card {
+    grid-template-columns: 50px minmax(0, 1fr);
+    gap: 7px;
+    min-height: 108px;
+    padding: 8px;
+    border-width: 2px;
+    border-radius: 15px;
+  }
+
+  .album-partner-card__portrait {
+    border-radius: 12px;
+  }
+
+  .album-partner-card__name {
+    font-size: 0.94rem;
+  }
+
+  .album-partner-card__status {
+    font-size: 0.7rem;
+  }
 }
 
-.album-popup__status {
-  font-family: 'DotGothic16', monospace;
-  font-size: 1.05rem;
-  color: #C44A2A;
-  margin-bottom: 8px;
+/* せのひくい横画面では4×2を1画面におさめる。 */
+@media (orientation: landscape) and (max-height: 430px) {
+  .album-body {
+    padding: 6px;
+  }
+
+  .album-wrapper {
+    width: min(940px, 100%);
+    max-height: calc(100dvh - 12px);
+    padding: 7px 10px 9px;
+    border-radius: 18px;
+  }
+
+  .album-header {
+    grid-template-columns: 90px 1fr 90px;
+    min-height: 44px;
+    margin-bottom: 4px;
+  }
+
+  .album-header__spacer {
+    width: 90px;
+  }
+
+  .album-back {
+    min-width: 90px;
+    min-height: 44px;
+    padding: 6px 10px;
+    font-size: 0.88rem;
+    border-width: 2px;
+  }
+
+  .album-title {
+    font-size: 1.35rem;
+  }
+
+  .album-summary {
+    grid-template-columns: 34px minmax(105px, auto) minmax(140px, 1fr);
+    gap: 8px;
+    min-height: 48px;
+    margin-bottom: 6px;
+    padding: 5px 10px;
+    border-radius: 14px;
+  }
+
+  .album-summary__icon {
+    width: 32px;
+    height: 32px;
+    font-size: 1.05rem;
+  }
+
+  .album-summary__copy {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .album-summary__value {
+    margin-top: 0;
+    font-size: 1rem;
+  }
+
+  .album-summary__bar {
+    height: 12px;
+  }
+
+  .album-partner-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .album-partner-card {
+    grid-template-columns: 48px minmax(0, 1fr);
+    gap: 7px;
+    min-height: 96px;
+    padding: 7px;
+    border-width: 2px;
+    border-radius: 14px;
+    box-shadow: 0 2px 0 rgba(174, 132, 70, 0.2);
+  }
+
+  .album-partner-card__portrait {
+    border-radius: 11px;
+  }
+
+  .album-partner-card__name {
+    font-size: 0.9rem;
+  }
+
+  .album-partner-card__status {
+    min-height: 2.3em;
+    margin-top: 3px;
+    font-size: 0.67rem;
+  }
+
+  .album-partner-card__bar {
+    height: 10px;
+    margin-top: 4px;
+  }
 }
 
-.album-popup__status-sub {
-  font-size: 1.4rem;
-  color: #E14B7A;
-  letter-spacing: 0.1em;
-  font-weight: 900;
-}
-
-/* ===== Responsive ===== */
-@media (max-width: 720px) {
-  .album-wrapper { padding: 14px 10px 18px; border-radius: 18px; }
-  .album-header__spacer { display: none; }
-  .album-back { min-width: 88px; padding: 8px 12px; font-size: 0.9rem; }
-  .album-title { font-size: 1.2rem; }
-  .album-grid { min-width: 720px; }
-  .album-grid__row-head { width: 80px; }
-  .album-grid__row-head-name { font-size: 0.78rem; }
-}
-
-@media (max-width: 480px) {
-  .album-summary__value { font-size: 1.2rem; }
-  .album-summary__label { font-size: 0.85rem; }
-  .album-cell { width: 28px; height: 28px; border-radius: 6px; }
-  .album-grid { border-spacing: 3px; min-width: 660px; }
-  .album-grid__col-head { width: 28px; font-size: 0.7rem; }
+@media (prefers-reduced-motion: reduce) {
+  .album-back:active {
+    transform: none;
+  }
 }
