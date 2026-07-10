@@ -10,11 +10,11 @@
     maxPointers: 6,
     maxSplats: 192,
     dprCap: 1.5,
-    strokeRadius: 0.052,
-    strokeAmount: 0.82,
-    velocityScale: 820,
+    strokeRadius: 0.022,
+    strokeAmount: 0.50,
+    velocityScale: 780,
     velocityDissipation: 0.986,
-    dyeDissipation: 0.978,
+    dyeDissipation: 0.976,
     pressureDissipation: 0.82,
     curlStrength: 5.5
   };
@@ -208,34 +208,38 @@
     void main() {
       vec4 dye = bilerp(vUv);
       float density = max(dye.a, max(dye.r, max(dye.g, dye.b)));
-      if (density < 0.012) {
+      if (density < 0.008) {
         outColor = vec4(0.0);
         return;
       }
 
       vec3 pigment = clamp(dye.rgb / max(dye.a, 0.08), 0.0, 1.0);
-      pigment = floor(pigment * 4.0 + 0.5) / 4.0;
+      float pigmentMean = (pigment.r + pigment.g + pigment.b) / 3.0;
+      pigment = clamp(vec3(pigmentMean) + (pigment - vec3(pigmentMean)) * 1.34, 0.0, 1.0);
+      pigment = pow(pigment, vec3(0.78));
+      pigment = floor(pigment * 5.0 + 0.5) / 5.0;
 
-      float band1 = step(0.025, density);
-      float band2 = step(0.17, density);
-      float band3 = step(0.46, density);
+      float band1 = step(0.016, density);
+      float band2 = step(0.10, density);
+      float band3 = step(0.30, density);
       float level = band1 + band2 + band3;
-      vec3 fill = pigment * (0.68 + level * 0.095) + vec3(level * 0.018);
-      float alpha = band1 * 0.30 + band2 * 0.20 + band3 * 0.20;
+      vec3 pastel = mix(vec3(1.0), pigment, 0.84);
+      vec3 fill = pastel * (0.89 + level * 0.035) + vec3(level * 0.012);
+      float alpha = band1 * 0.20 + band2 * 0.17 + band3 * 0.14;
 
-      float left = densityAt(vUv - vec2(uTexel.x * 1.5, 0.0));
-      float right = densityAt(vUv + vec2(uTexel.x * 1.5, 0.0));
-      float bottom = densityAt(vUv - vec2(0.0, uTexel.y * 1.5));
-      float top = densityAt(vUv + vec2(0.0, uTexel.y * 1.5));
+      float left = densityAt(vUv - vec2(uTexel.x, 0.0));
+      float right = densityAt(vUv + vec2(uTexel.x, 0.0));
+      float bottom = densityAt(vUv - vec2(0.0, uTexel.y));
+      float top = densityAt(vUv + vec2(0.0, uTexel.y));
       float edge = clamp(length(vec2(right - left, top - bottom)) * 1.9, 0.0, 1.0);
-      float localMask = smoothstep(0.018, 0.075, density);
-      float neighborMask = min(min(smoothstep(0.018, 0.075, left), smoothstep(0.018, 0.075, right)),
-                               min(smoothstep(0.018, 0.075, bottom), smoothstep(0.018, 0.075, top)));
+      float localMask = smoothstep(0.012, 0.055, density);
+      float neighborMask = min(min(smoothstep(0.012, 0.055, left), smoothstep(0.012, 0.055, right)),
+                               min(smoothstep(0.012, 0.055, bottom), smoothstep(0.012, 0.055, top)));
       float outerRim = clamp(localMask - neighborMask, 0.0, 1.0);
-      float rim = clamp(outerRim * 1.35 + edge * outerRim * 0.22, 0.0, 0.86);
-      vec3 inkRim = mix(vec3(0.055, 0.075, 0.12), pigment * 0.24, 0.28);
+      float rim = clamp(outerRim * 0.70 + edge * outerRim * 0.10, 0.0, 0.42);
+      vec3 inkRim = mix(vec3(0.96, 0.99, 1.0), pigment, 0.94) * 0.84;
       fill = mix(fill, inkRim, rim);
-      alpha = clamp(alpha + rim * 0.16, 0.0, 0.78);
+      alpha = clamp(alpha + rim * 0.08, 0.0, 0.60);
       outColor = vec4(clamp(fill, 0.0, 1.0), alpha);
     }
   `;
@@ -683,7 +687,9 @@
       var dx = currentX - previous.x;
       var dy = currentY - previous.y;
       var distance = Math.hypot(dx * (simWidth / simHeight), dy);
-      var segments = Math.max(1, Math.min(18, Math.ceil(distance / Math.max(0.008, strokeRadius * 0.42))));
+      // Thin brushes need closer splats, but 0.65 keeps the stroke continuous
+      // without multiplying mobile GPU work as aggressively as the old ratio.
+      var segments = Math.max(1, Math.min(18, Math.ceil(distance / Math.max(0.008, strokeRadius * 0.65))));
       for (var i = 1; i <= segments; i++) {
         var t = i / segments;
         queueSplat(
