@@ -18,6 +18,7 @@
 ## Active (進行中 / 未着手)
 
 - 2026-07-10 - [batch:1169-maze-free-limit-teaser-timing] DEVELOP-SYNC - Codex: Mazeのつづき予告を固定stage3後からfree全範囲（stage 1/3/6）完了後へ移動。`えほんを よんで もっと あそべるよ` を画面内に追加し、buttonを `もどる`、閉じた後をゲーム選択へ変更。別tier promoは重ねない。LP cache v1269、検証・commit/push前。 (by Codex)
+- 2026-07-10 - [batch:1169-maze-free-limit-teaser-timing] DONE - Codex: `develop-app` commit `09742041` (App v2069) と `develop` commit `10678dcc` (LP v1269) へpush済み。stage3後はstage6へ通常進行し、stage6後だけ予告表示。構文/diff/tier分岐検証済み。 (by Codex)
 
 - 2026-07-10 - [batch:1168-maze-janken-audio-start-menu-overlap] DEVELOP-SYNC - Codex: Mazeじゃんけんの押下優先・非重複音声、画像迷路の角設定ボタンを上中央ステージ札へ統合、stage3予告を見出し `まいごの こを たすけに いこう`／左 `おじゃまむし`／中央ラベル削除／右 `まいご` へ更新。ユーザー承認により AGENTS.md のCodexゲーム本体編集禁止も削除。LP cache v1268。develop commit/push前。 (by Codex)
 - 2026-07-10 - [batch:1168-maze-janken-audio-start-menu-overlap] DONE - Codex: 上記修正を `develop-app` commit `f633bb7f` (App v2068) と `develop` commit `9e67a6c0` (LP v1268) へpush済み。構文/diff/旧文言0を検証、ブラウザbackend不在のため視覚操作テストのみ未実施。 (by Codex)
