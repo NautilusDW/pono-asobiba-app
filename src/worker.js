@@ -169,12 +169,18 @@ function injectAppBuildFlag(response, env) {
 //   ※ ETag は必ず「強い形式」("...") で出力する (W/ 付きの弱い形式は Cloudflare
 //     エッジが egress で削除するため。 2026-07-10 live 実測。 詳細は
 //     attachHtmlEtag() 内の自前ハッシュ分岐コメント参照)。
+//   ※※ ただし 2026-07-10 の決定実験で、 強い形式でも html_handling HTML の
+//     ETag はエッジに削除されることが判明。 クライアントに実際に届く validator は
+//     ハッシュ符号化 Last-Modified (encodeValidatorLastModified() 上のコメント参照)。
+//     ETag / If-None-Match ロジックは「届く環境向けの保険 + 判定精度の高い経路」
+//     として温存する (INM が届けば RFC 7232 §6 に従い INM 優先で判定)。
 //   条件付きリクエストの判定は 「compare-after-fetch」方式を採用する
 //   (upstream 側の If-None-Match を書き換えて 304 を誘発する inverse-mapping 方式は、
 //   upstream が今のところ ETag を返さないため成立せず、素通しで害もないので不要)。
-//   client の If-None-Match が確定した ETag と一致すれば、
-//   ここで body を送らず 304 を返す (body 変換は既に完了済みだが、
-//   ネットワーク転送そのものをスキップできるので目的は達成できる)。
+//   client の If-None-Match が確定した ETag と一致するか、 If-Modified-Since が
+//   符号化 Last-Modified と完全一致すれば、 ここで body を送らず 304 を返す
+//   (body 変換は既に完了済みだが、 ネットワーク転送そのものをスキップできるので
+//   目的は達成できる)。
 // ---------------------------------------------------------------------------
 
 function normalizeEtagValue(raw) {
@@ -195,6 +201,54 @@ async function sha1Hex(text) {
   const data = new TextEncoder().encode(text);
   const digest = await crypto.subtle.digest('SHA-1', data);
   return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// ---------------------------------------------------------------------------
+// ハッシュ符号化 Last-Modified (2026-07-10 決定実験の結果を受けた本命 validator)。
+//
+// 【決定実験 (2026-07-10、 staging-app に一時プローブを手動デプロイして実測)】
+//   html_handling 経由の HTML レスポンスに ETag / Last-Modified / カスタムヘッダーを
+//   同時に付けて配送状況を確認した結果:
+//     - ETag: 強い形式 ("...") でも Accept-Encoding の有無を問わず全ケースで
+//       エッジに削除されクライアントに届かない (弱い W/"..." も同様)。
+//       ※ /manifest.json 等「直接拡張子マッチの静的アセット」の ETag は届くため、
+//         エッジは html_handling 解決された HTML の validator だけをサニタイズしている。
+//       ※ worker 内の ETag 計算・If-None-Match 判定自体は生きている
+//         (`If-None-Match: *` → 304 が live 成立、 tail に例外ログゼロ)。
+//     - Last-Modified: 全ケースで無傷でクライアントに届く。
+//     - カスタムヘッダー (x-po-probe): 届く。
+//     - inbound の If-None-Match / If-Modified-Since: どちらも worker まで届く
+//       (プローブでヘッダー値をエコーして確認)。
+//   → 唯一クライアントに届く標準 validator は Last-Modified。
+//
+// 【方式】
+//   コンテンツ SHA-1 の先頭 32bit を 27bit にマスクし、 固定基準日
+//   (2020-01-01T00:00:00Z) からのオフセット秒として過去日時にエンコードする
+//   (最大オフセット 2^27-1 秒 ≈ 4.25 年 → 2024-04-05 まで。 常に過去日時)。
+//   ブラウザは `Cache-Control: no-cache` + Last-Modified の組で自然に
+//   If-Modified-Since を送ってくるので、 これで 304 フローが成立する。
+//
+// 【If-Modified-Since は「完全一致」比較にする理由】
+//   本 Last-Modified は実時刻ではなくハッシュの符号化なので、 RFC 7232 の
+//   「received >= lastModified なら 304」比較を使うと、 たまたま新しい日時を持つ
+//   無関係な IMS に対して誤って 304 を返してしまう。 エンコード値と完全一致した
+//   場合のみ「同一コンテンツの再検証」とみなす (不一致は全て 200 full body = 安全側)。
+//   衝突確率は 1/2^27 ≈ 7.5e-9 (ページ更新時に旧新の符号化値が偶然一致して
+//   304 が返り続ける確率) で実用上無視できる。
+// ---------------------------------------------------------------------------
+const LM_BASE_EPOCH_MS = Date.UTC(2020, 0, 1);
+const LM_OFFSET_MASK = 0x7ffffff; // 27bit
+
+function encodeValidatorLastModified(hashHex) {
+  const offsetSec = (parseInt((hashHex || '').slice(0, 8), 16) || 0) & LM_OFFSET_MASK;
+  return new Date(LM_BASE_EPOCH_MS + offsetSec * 1000).toUTCString();
+}
+
+function ifModifiedSinceHits(headerValue, lastModified) {
+  if (!headerValue || !lastModified) return false;
+  const received = Date.parse(headerValue);
+  const expected = Date.parse(lastModified);
+  return Number.isFinite(received) && Number.isFinite(expected) && received === expected;
 }
 
 async function attachHtmlEtag(request, response, env, appBuildApplied) {
@@ -222,6 +276,7 @@ async function attachHtmlEtag(request, response, env, appBuildApplied) {
     : null;
 
   let outgoingEtag = null;
+  let outgoingLastModified = null;
   let bodyText = null;
 
   if (upstreamEtag) {
@@ -231,6 +286,19 @@ async function attachHtmlEtag(request, response, env, appBuildApplied) {
     //   Cloudflare エッジが egress で ETag ヘッダーごと削除する
     //   (2026-07-10 実測。 詳細は下の自前ハッシュ分岐のコメント参照)。
     outgoingEtag = `"${normalizeEtagValue(upstreamEtag)}-${variantSuffix}"`;
+    // Last-Modified はエッジに削除されない唯一の標準 validator なので必ず併送する
+    // (encodeValidatorLastModified() 上のコメント参照)。 upstream ETag は
+    // content-hash なので「ETag 値 + variant」を種にすれば body を読まずに
+    // 決定的な符号化日時を導出できる (ストリーミング維持)。
+    try {
+      outgoingLastModified = encodeValidatorLastModified(
+        await sha1Hex(normalizeEtagValue(upstreamEtag) + '-' + variantSuffix)
+      );
+    } catch (e) {
+      // LM が作れなくても ETag のみで続行 (安全側)。
+      console.error('[attachHtmlEtag] LM derivation failed for ' + url.pathname + ': ' + (e && e.name) + ': ' + (e && e.message));
+      outgoingLastModified = null;
+    }
   } else if (request.method === 'HEAD') {
     // HEAD には body が無く本文ハッシュを計算できないので、
     // validator なしの従来動作にフォールバックする（安全側）。
@@ -264,7 +332,15 @@ async function attachHtmlEtag(request, response, env, appBuildApplied) {
       //   W/"..." を If-None-Match で送り返しても、 ifNoneMatchHits() は
       //   W/ プレフィックスを無視して比較する (RFC 7232 の weak comparison) ので
       //   304 は正しく成立する。
+      // 【追記 (2026-07-10 決定実験後)】 強い形式にしてもエッジは html_handling
+      //   HTML の ETag を削除することが判明 (encodeValidatorLastModified() 上の
+      //   コメント参照)。 ETag 送出は「届く環境では併用できる保険 + INM 判定の
+      //   ソース」として温存し、 クライアントに実際に届く validator は下の
+      //   ハッシュ符号化 Last-Modified が担う。
       outgoingEtag = `"h${hash.slice(0, 16)}-${variantSuffix}"`;
+      // body ハッシュ (注入後の最終バイト列) をそのまま種に使う。 variant は body に
+      // 織り込み済みなので app0/app1 で自然に別日時になる。
+      outgoingLastModified = encodeValidatorLastModified(hash);
     } catch (e) {
       // crypto.subtle が使えない環境向けの保険（Workers では通常発生しない）。
       console.error('[attachHtmlEtag] sha1Hex() failed for ' + url.pathname + ': ' + (e && e.name) + ': ' + (e && e.message));
@@ -286,9 +362,18 @@ async function attachHtmlEtag(request, response, env, appBuildApplied) {
   }
 
   const ifNoneMatch = request.headers.get('if-none-match');
-  if (ifNoneMatchHits(ifNoneMatch, outgoingEtag)) {
+  const ifModifiedSince = request.headers.get('if-modified-since');
+  // RFC 7232 §6: If-None-Match が存在する場合、 If-Modified-Since は無視する
+  // (ETag の方が精度が高いため)。 実運用では エッジが ETag を削除するので
+  // ブラウザは If-Modified-Since しか送ってこない → ハッシュ符号化 Last-Modified の
+  // 完全一致比較 (ifModifiedSinceHits) が本命の 304 経路になる。
+  const notModified = ifNoneMatch !== null
+    ? ifNoneMatchHits(ifNoneMatch, outgoingEtag)
+    : ifModifiedSinceHits(ifModifiedSince, outgoingLastModified);
+  if (notModified) {
     const headers = new Headers(response.headers);
     headers.set('ETag', outgoingEtag);
+    if (outgoingLastModified) headers.set('Last-Modified', outgoingLastModified);
     headers.delete('Content-Length');
     // bodyText を読んだ (= response.text() でデコード済み) 場合、 Content-Encoding は
     // もう実体と一致しない (compressed bytes はデコードで失われている) ので削除する。
@@ -305,6 +390,7 @@ async function attachHtmlEtag(request, response, env, appBuildApplied) {
 
   const headers = new Headers(response.headers);
   headers.set('ETag', outgoingEtag);
+  if (outgoingLastModified) headers.set('Last-Modified', outgoingLastModified);
   if (bodyText !== null) {
     // response.text() は Content-Encoding (gzip/br 等) があれば透過的に解凍した上で
     // デコードするが、 response.headers 側の Content-Encoding はそのまま残る

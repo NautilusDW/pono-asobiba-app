@@ -174,7 +174,7 @@
       float bottom = texture(uPressure, vUv - vec2(0.0, uTexel.y)).x;
       float top = texture(uPressure, vUv + vec2(0.0, uTexel.y)).x;
       vec2 velocity = texture(uVelocity, vUv).xy;
-      velocity -= vec2(right - left, top - bottom);
+      velocity -= 0.5 * vec2(right - left, top - bottom);
       if (vUv.x <= uTexel.x || vUv.x >= 1.0 - uTexel.x) velocity.x = 0.0;
       if (vUv.y <= uTexel.y || vUv.y >= 1.0 - uTexel.y) velocity.y = 0.0;
       outColor = vec4(velocity, 0.0, 1.0);
@@ -201,7 +201,7 @@
     }
 
     float densityAt(vec2 uv) {
-      vec4 d = bilerp(uv);
+      vec4 d = texture(uDye, clamp(uv, uTexel * 0.5, 1.0 - uTexel * 0.5));
       return max(d.a, max(d.r, max(d.g, d.b)));
     }
 
@@ -316,6 +316,7 @@
     var options = inputOptions || {};
     var simWidth = Math.round(numberOption(options, 'simWidth', DEFAULTS.simWidth, 64, 512));
     var simHeight = Math.round(numberOption(options, 'simHeight', DEFAULTS.simHeight, 36, 512));
+    var simulationLongEdge = Math.max(simWidth, simHeight);
     var pressureIterations = Math.round(numberOption(options, 'pressureIterations', DEFAULTS.pressureIterations, 14, 40));
     var fixedStep = 1 / numberOption(options, 'simulationHz', DEFAULTS.simulationHz, 15, 60);
     var maxSubsteps = Math.round(numberOption(options, 'maxSubsteps', DEFAULTS.maxSubsteps, 1, 6));
