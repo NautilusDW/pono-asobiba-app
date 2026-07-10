@@ -4031,8 +4031,268 @@ let bgmEnabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
 
 // ── Audio: BGM + 効果音（WebAudio合成）──
 const bgmEl = document.getElementById('bgm');
-if (bgmEl) bgmEl.volume = 0.28;
+const MZ_BGM_BASE_VOLUME = 0.28;
+const MZ_EXPLORATION_BGM = '../assets/audio/maze_bgm.mp3';
+const MZ_MINIGAME_BGM = Object.freeze({
+  janken:        '../assets/audio/bgm/maze/maze_janken_loop_20260710.mp3',
+  truefalse:     '../assets/audio/bgm/maze/maze_truefalse_loop_20260710.mp3',
+  simon:         '../assets/audio/bgm/maze/maze_simon_loop_20260710.mp3',
+  silhouette:    '../assets/audio/bgm/maze/maze_silhouette_loop_20260710.mp3',
+  oddone:        '../assets/audio/bgm/maze/maze_oddone_loop_20260710.mp3',
+  flag:          '../assets/audio/bgm/maze/maze_flag_loop_20260710.mp3',
+  water_bridge:  '../assets/audio/bgm/maze/maze_water_bridge_loop_20260710.mp3',
+  strength_push: '../assets/audio/bgm/maze/maze_strength_push_loop_20260710.mp3',
+  donguri_bowl:  '../assets/audio/bgm/maze/maze_donguri_bowl_loop_20260710.mp3',
+});
+// 新曲は探索曲より約3〜5dB大きいため、再生時ゲインで聞感を揃える。
+const MZ_BGM_TRACK_GAIN = Object.freeze({
+  explore: 1,
+  janken: 0.60,
+  truefalse: 0.65,
+  simon: 0.66,
+  silhouette: 0.65,
+  oddone: 0.63,
+  flag: 0.70,
+  water_bridge: 0.69,
+  strength_push: 0.56,
+  donguri_bowl: 0.61,
+});
+
 let _mzBgmKickTimer = null;
+let _mzBgmFadeRaf = 0;
+let _mzBgmFadeGeneration = 0;
+let _mzBgmSwitchGeneration = 0;
+let _mzBgmSwitching = false;
+let _mzCurrentBgmKey = 'explore';
+let _mzDesiredBgmKey = 'explore';
+let _mzExplorationPosition = 0;
+const _mzBgmDuckSources = new Map();
+const _mzWarmedBgmTracks = new Set();
+
+function _mzNormalizeBgmKey(key) {
+  if (key === 'web_sweep' || key === 'donguri_bowl') return 'donguri_bowl';
+  return MZ_MINIGAME_BGM[key] ? key : 'explore';
+}
+
+function _mzBgmUrlForKey(key) {
+  return key === 'explore' ? MZ_EXPLORATION_BGM : MZ_MINIGAME_BGM[key];
+}
+
+function _mzResolvedAudioUrl(src) {
+  try { return new URL(src, document.baseURI).href; }
+  catch (_) { return String(src || ''); }
+}
+
+function _mzBgmTargetVolume() {
+  let duckRatio = 1;
+  _mzBgmDuckSources.forEach(function(ratio) {
+    if (Number.isFinite(ratio)) duckRatio = Math.min(duckRatio, ratio);
+  });
+  const gain = MZ_BGM_TRACK_GAIN[_mzCurrentBgmKey] || 1;
+  return Math.max(0, Math.min(1, MZ_BGM_BASE_VOLUME * gain * duckRatio));
+}
+
+function _mzTreasureControlsBgmVolume() {
+  const treasure = document.getElementById('treasure-overlay');
+  return !!(treasure && treasure.classList.contains('show'));
+}
+
+function _mzCancelBgmFade() {
+  _mzBgmFadeGeneration++;
+  if (_mzBgmFadeRaf) {
+    cancelAnimationFrame(_mzBgmFadeRaf);
+    _mzBgmFadeRaf = 0;
+  }
+}
+
+function _mzFadeBgmTo(target, durationMs, onDone) {
+  if (!bgmEl) {
+    if (typeof onDone === 'function') onDone();
+    return;
+  }
+  _mzCancelBgmFade();
+  const generation = _mzBgmFadeGeneration;
+  const from = Number.isFinite(bgmEl.volume) ? bgmEl.volume : 0;
+  const to = Math.max(0, Math.min(1, Number(target) || 0));
+  const duration = Math.max(0, Number(durationMs) || 0);
+  if (!duration || Math.abs(from - to) < 0.002) {
+    bgmEl.volume = to;
+    if (typeof onDone === 'function') onDone();
+    return;
+  }
+  const startedAt = performance.now();
+  const step = function(now) {
+    if (generation !== _mzBgmFadeGeneration) return;
+    // ナレーションダッキングの音量フェードは、宝箱が音量管理を始めたら即停止する。
+    // onDone 付きの曲切替フェードは処理を完了させ、switching の固着を避ける。
+    if (typeof onDone !== 'function' && _mzTreasureControlsBgmVolume()) {
+      _mzBgmFadeRaf = 0;
+      return;
+    }
+    const t = Math.min(1, Math.max(0, (now - startedAt) / duration));
+    const eased = t * t * (3 - 2 * t);
+    bgmEl.volume = from + (to - from) * eased;
+    if (t < 1) {
+      _mzBgmFadeRaf = requestAnimationFrame(step);
+      return;
+    }
+    _mzBgmFadeRaf = 0;
+    if (typeof onDone === 'function') onDone();
+  };
+  _mzBgmFadeRaf = requestAnimationFrame(step);
+}
+
+function _mzRefreshBgmVolume(immediate) {
+  if (!bgmEl || _mzBgmSwitching || _mzTreasureControlsBgmVolume()) return;
+  _mzFadeBgmTo(_mzBgmTargetVolume(), immediate ? 0 : 130);
+}
+
+function _mzReleaseBgmDuck(audio) {
+  if (!audio || !_mzBgmDuckSources.delete(audio)) return;
+  _mzRefreshBgmVolume(false);
+}
+
+// visibility guard が復帰時に voice/SE を自動再生してもダッキングが戻るよう、
+// media 要素自体の play/pause イベントに永続バインドする。
+function _mzBindBgmDuck(audio, ratio) {
+  if (!audio) return;
+  const safeRatio = Math.max(0.1, Math.min(1, Number(ratio) || 1));
+  audio._mzBgmDuckRatio = Math.min(Number(audio._mzBgmDuckRatio) || 1, safeRatio);
+  if (audio._mzBgmDuckBound) return;
+  audio._mzBgmDuckBound = true;
+  const startDuck = function() {
+    _mzBgmDuckSources.set(audio, Number(audio._mzBgmDuckRatio) || 1);
+    _mzRefreshBgmVolume(false);
+  };
+  const stopDuck = function(event) {
+    // cache Audio を pause 直後に再利用した場合、旧再生の遅延イベントで
+    // 新再生のダッキングを解除しない。
+    if (event && event.type === 'pause' && !audio.paused) return;
+    if (event && event.type === 'ended' && !audio.ended) return;
+    if (event && event.type !== 'pause' && event.type !== 'ended' && !audio.paused && !audio.ended) return;
+    _mzReleaseBgmDuck(audio);
+  };
+  audio.addEventListener('play', startDuck);
+  audio.addEventListener('playing', startDuck);
+  ['pause', 'ended', 'error', 'emptied', 'abort'].forEach(function(name) {
+    audio.addEventListener(name, stopDuck);
+  });
+}
+
+function _mzStartBgmDuck(audio, ratio) {
+  if (!audio) return;
+  _mzBindBgmDuck(audio, ratio);
+  _mzBgmDuckSources.set(audio, Number(audio._mzBgmDuckRatio) || 1);
+  _mzRefreshBgmVolume(false);
+}
+
+function _mzWarmBgmTrack(gameKey) {
+  const key = _mzNormalizeBgmKey(gameKey);
+  if (key === 'explore' || _mzWarmedBgmTracks.has(key)) return;
+  _mzWarmedBgmTracks.add(key);
+  const src = _mzBgmUrlForKey(key);
+  try {
+    fetch(src, { cache: 'force-cache', credentials: 'same-origin' })
+      .then(function(response) {
+        if (!response.ok) throw new Error('BGM HTTP ' + response.status);
+        return response.arrayBuffer();
+      })
+      .catch(function() { _mzWarmedBgmTracks.delete(key); });
+  } catch (_) {
+    _mzWarmedBgmTracks.delete(key);
+  }
+}
+
+function _mzSwitchBgm(gameKey, immediate) {
+  if (!bgmEl) return;
+  const nextKey = _mzNormalizeBgmKey(gameKey);
+  const nextSrc = _mzBgmUrlForKey(nextKey);
+  const nextUrl = _mzResolvedAudioUrl(nextSrc);
+  _mzDesiredBgmKey = nextKey;
+  const switchGeneration = ++_mzBgmSwitchGeneration;
+  _mzCancelBgmFade();
+
+  const loadedUrl = _mzResolvedAudioUrl(bgmEl.currentSrc || bgmEl.src);
+  if (_mzCurrentBgmKey === nextKey && loadedUrl === nextUrl) {
+    _mzBgmSwitching = false;
+    _mzRefreshBgmVolume(true);
+    if (bgmEnabled && !document.hidden) tryPlayBgm(true);
+    return;
+  }
+
+  _mzBgmSwitching = true;
+  if (_mzCurrentBgmKey === 'explore') {
+    try {
+      if (Number.isFinite(bgmEl.currentTime) && bgmEl.currentTime > 0) {
+        _mzExplorationPosition = bgmEl.currentTime;
+      }
+    } catch (_) {}
+  }
+
+  const commitSwitch = function() {
+    if (switchGeneration !== _mzBgmSwitchGeneration) return;
+    try { bgmEl.pause(); } catch (_) {}
+    _mzCurrentBgmKey = nextKey;
+    try {
+      bgmEl.src = nextSrc;
+      bgmEl.preload = 'auto';
+      bgmEl.load();
+    } catch (_) {}
+    bgmEl.volume = 0;
+
+    if (nextKey === 'explore' && _mzExplorationPosition > 0) {
+      const restorePosition = function() {
+        if (switchGeneration !== _mzBgmSwitchGeneration || _mzCurrentBgmKey !== 'explore') return;
+        try {
+          const duration = Number.isFinite(bgmEl.duration) ? bgmEl.duration : Infinity;
+          bgmEl.currentTime = Math.min(_mzExplorationPosition, Math.max(0, duration - 0.05));
+        } catch (_) {}
+      };
+      if (bgmEl.readyState >= 1) restorePosition();
+      else bgmEl.addEventListener('loadedmetadata', restorePosition, { once: true });
+    } else {
+      try { bgmEl.currentTime = 0; } catch (_) {}
+    }
+
+    if (!bgmEnabled || document.hidden) {
+      bgmEl.volume = _mzBgmTargetVolume();
+      _mzBgmSwitching = false;
+      return;
+    }
+    const playPromise = bgmEl.play();
+    if (playPromise && typeof playPromise.catch === 'function') {
+      playPromise.catch(function(){});
+    }
+    _mzFadeBgmTo(_mzBgmTargetVolume(), 240, function() {
+      if (switchGeneration !== _mzBgmSwitchGeneration) return;
+      _mzBgmSwitching = false;
+      _mzRefreshBgmVolume(true);
+    });
+  };
+
+  if (immediate || bgmEl.paused || document.hidden || !bgmEnabled) {
+    commitSwitch();
+  } else {
+    _mzFadeBgmTo(0, 170, commitSwitch);
+  }
+}
+
+if (bgmEl) {
+  bgmEl.volume = MZ_BGM_BASE_VOLUME;
+  bgmEl.addEventListener('error', function() {
+    if (_mzCurrentBgmKey === 'explore' || _mzDesiredBgmKey === 'explore') return;
+    const failedGeneration = _mzBgmSwitchGeneration;
+    const failedKey = _mzCurrentBgmKey;
+    const failedUrl = _mzResolvedAudioUrl(bgmEl.currentSrc || bgmEl.src);
+    try { console.warn('[maze-bgm] minigame BGM failed; restoring exploration BGM'); } catch (_) {}
+    window.setTimeout(function() {
+      if (failedGeneration !== _mzBgmSwitchGeneration) return;
+      if (_mzCurrentBgmKey !== failedKey || _mzDesiredBgmKey !== failedKey) return;
+      if (_mzResolvedAudioUrl(bgmEl.currentSrc || bgmEl.src) !== failedUrl) return;
+      _mzSwitchBgm('explore', true);
+    }, 0);
+  });
+}
 function tryPlayBgm(force) {
   if (!bgmEl || !bgmEnabled || document.hidden) return;
   if (!force && !bgmEl.paused && !bgmEl.ended) return;
@@ -4075,7 +4335,10 @@ function _mzPauseAllAudio() {
   try { if (_mzAC && _mzAC.state === 'running') _mzAC.suspend(); } catch (_) {}
 }
 function _mzResumeAudioIfActive() {
-  if (bgmEnabled) tryPlayBgm();
+  if (bgmEnabled) {
+    _mzRefreshBgmVolume(true);
+    tryPlayBgm();
+  }
   try { if (_mzAC && _mzAC.state === 'suspended') _mzAC.resume(); } catch (_) {}
 }
 document.addEventListener('visibilitychange', function() {
@@ -4169,7 +4432,14 @@ function playMzSe(name) {
     try { a = new Audio(src); a.preload = 'auto'; a.volume = _MZ_SE_VOLUME; _mzSeCache[name] = a; }
     catch (e) { return; }
   }
-  try { a.currentTime = 0; a.play().catch(function(){}); } catch (e) {}
+  // 頻発するカウントダウンは音量がポンピングしないよう対象外。
+  if (name === 'correct' || name === 'wrong' || name === 'mazeClear') {
+    _mzStartBgmDuck(a, 0.62);
+  }
+  try {
+    a.currentTime = 0;
+    a.play().catch(function(){ _mzReleaseBgmDuck(a); });
+  } catch (e) { _mzReleaseBgmDuck(a); }
 }
 
 // 旗あげミニゲーム TTS ナレーション (cmd_red_up / cmd_white_up / cmd_red_down / cmd_white_down /
@@ -4186,7 +4456,9 @@ function _playFlagVoice(key) {
       _flagVoiceCache[key] = a;
     }
     try { a.currentTime = 0; } catch (_) {}
+    _mzStartBgmDuck(a, 0.42);
     a.play().catch(function(err) {
+      _mzReleaseBgmDuck(a);
       try { console.warn('[flag-voice] play failed:', key, err && err.name); } catch (_) {}
     });
   } catch (_) {}
@@ -4209,6 +4481,7 @@ function _stopMazeVoicesForGame(gameKey) {
       if (!a) return;
       a.pause();
       try { a.currentTime = 0; } catch (_) {}
+      _mzReleaseBgmDuck(a);
     } catch (_) {}
   });
 }
@@ -4251,7 +4524,9 @@ function _playMazeVoice(gameKey, key, interruptSameGame) {
       _mazeVoiceCache[cacheKey] = a;
     }
     try { a.currentTime = 0; } catch (_) {}
+    _mzStartBgmDuck(a, 0.42);
     a.play().catch(function(err) {
+      _mzReleaseBgmDuck(a);
       try { console.warn('[mz-voice]', cacheKey, err && err.name); } catch (_) {}
     });
     return a;
@@ -4282,6 +4557,7 @@ function _stopAllMazeVoices() {
       if (a) {
         a.pause();
         try { a.currentTime = 0; } catch (_) {}
+        _mzReleaseBgmDuck(a);
       }
     } catch (_) {}
   });
@@ -4293,6 +4569,20 @@ function _stopAllMazeVoices() {
         if (a) {
           a.pause();
           try { a.currentTime = 0; } catch (_) {}
+          _mzReleaseBgmDuck(a);
+        }
+      } catch (_) {}
+    });
+  } catch (_) {}
+  // flag は専用 cache のため、通常 close 時は別途停止する。
+  try {
+    Object.keys(_flagVoiceCache).forEach(function(k) {
+      try {
+        const a = _flagVoiceCache[k];
+        if (a) {
+          a.pause();
+          try { a.currentTime = 0; } catch (_) {}
+          _mzReleaseBgmDuck(a);
         }
       } catch (_) {}
     });
@@ -4683,6 +4973,8 @@ function imgLoadStage(def) {
     console.error('[maze] MazeImage runtime not loaded');
     return;
   }
+  // DEV ジャンプや将来の別終了経路でも、ステージ開始は必ず探索曲に戻す。
+  _mzSwitchBgm('explore', true);
   // ステージリロード時、前回ステージの defeat-dialog timer が残っていたらキャンセル
   // (timer 内の if (_encounterActive) ガードはあるが、念のため確実に殺しておく)
   if (_creatureDefeatTimer) {
@@ -6843,6 +7135,7 @@ function _triggerWebGimmickEncounter(obstacle) {
 }
 
 function _closeFlagEncounterModalOnly() {
+  _mzSwitchBgm('explore');
   _simonCancelled = true;
   _setEncounterMode(null);
   if (_creatureDefeatTimer) {
@@ -6991,10 +7284,13 @@ function _showEncounterStart() {
   _setEncounterMode(null);
   const c = _currentCreature;
   const game = _currentGame || _gameForCreature(c);
+  _mzWarmBgmTrack(game);
   encStageEl.innerHTML = '<button class="enc-btn primary" id="encStartBtn2">' +
     _GAME_LABELS[game] + ' で あそぶ ▶</button>';
   document.getElementById('encStartBtn2').addEventListener('click', function() {
     const starter = _GAME_STARTERS[game] || _showJankenChoices;
+    // iOS Safari でも最初のタップ内に src/load/play まで実行し、無音開始を防ぐ。
+    _mzSwitchBgm(game, true);
     starter(c);
   });
 }
@@ -9348,9 +9644,11 @@ function _kickStrengthIntroSequence() {
     introAudio.currentTime = 0;
   } catch (_) {}
   try {
+    _mzStartBgmDuck(introAudio, 0.42);
     const p = introAudio.play();
     if (p && typeof p.catch === 'function') {
       p.catch(function(err) {
+        _mzReleaseBgmDuck(introAudio);
         try { console.warn('[maze strength intro] play rejected', err); } catch (_) {}
         try { if (fallbackTimer) clearTimeout(fallbackTimer); } catch (_) {}
         try { introAudio.removeEventListener('ended', onEnd); } catch (_) {}
@@ -9358,6 +9656,7 @@ function _kickStrengthIntroSequence() {
       });
     }
   } catch (e) {
+    _mzReleaseBgmDuck(introAudio);
     try { console.warn('[maze strength intro] play threw', e); } catch (_) {}
     try { if (fallbackTimer) clearTimeout(fallbackTimer); } catch (_) {}
     try { introAudio.removeEventListener('ended', onEnd); } catch (_) {}
@@ -11962,6 +12261,7 @@ const _GAME_STARTERS = {
 };
 
 function _closeEncounter(playerWon) {
+  _mzSwitchBgm('explore');
   _stopAllMazeVoices(); // モーダル閉じる時 in-flight voice (kumo 等) を必ず停止
   _simonCancelled = true; // 念のため: モーダルを閉じる時 simon タイマーも止める
   const wasStrengthPush = _currentGame === 'strength_push';
@@ -12946,7 +13246,10 @@ if (window.initMenu) {
     bgmToggle: function() {
       bgmEnabled = !bgmEnabled;
       localStorage.setItem('pono_bgm_enabled', bgmEnabled ? 'on' : 'off');
-      if (bgmEnabled) tryPlayBgm(); else stopBgm();
+      if (bgmEnabled) {
+        _mzRefreshBgmVolume(true);
+        tryPlayBgm(true);
+      } else stopBgm();
     },
     tutorial: function() {
       ovTitle.textContent = 'あそびかた';
@@ -13217,6 +13520,7 @@ async function playMazeOpening(onDone) {
   function stopAudio() {
     if (currentAudio) {
       try { currentAudio.pause(); currentAudio.currentTime = 0; } catch (_) {}
+      _mzReleaseBgmDuck(currentAudio);
       currentAudio = null;
     }
   }
@@ -13238,10 +13542,15 @@ async function playMazeOpening(onDone) {
       try {
         currentAudio = new Audio(audioPath);
         currentAudio.volume = 0.85;
+        _mzStartBgmDuck(currentAudio, 0.42);
+        const beatAudio = currentAudio;
         // タイトルタップ起因の文脈なので autoplay 制限を通過できる
-        const p = currentAudio.play();
+        const p = beatAudio.play();
         if (p && typeof p.catch === 'function') {
-          p.catch(function(e) { console.warn('[maze-op] audio play failed:', e); });
+          p.catch(function(e) {
+            _mzReleaseBgmDuck(beatAudio);
+            console.warn('[maze-op] audio play failed:', e);
+          });
         }
       } catch (e) {
         console.warn('[maze-op] audio init failed:', e);
