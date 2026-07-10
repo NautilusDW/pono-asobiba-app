@@ -415,9 +415,17 @@
     }
 
     function createDoubleTarget(width, height) {
+      var read = createTarget(width, height);
+      var write = null;
+      try {
+        write = createTarget(width, height);
+      } catch (error) {
+        deleteTarget(read);
+        throw error;
+      }
       var result = {
-        read: createTarget(width, height),
-        write: createTarget(width, height),
+        read: read,
+        write: write,
         swap: function () {
           var temp = result.read;
           result.read = result.write;
@@ -475,13 +483,25 @@
     }
 
     function createSimulationTargets() {
-      return {
-        velocity: createDoubleTarget(simWidth, simHeight),
-        dye: createDoubleTarget(simWidth, simHeight),
-        pressure: createDoubleTarget(simWidth, simHeight),
-        divergence: createTarget(simWidth, simHeight),
-        curl: createTarget(simWidth, simHeight)
-      };
+      var next = {};
+      try {
+        next.velocity = createDoubleTarget(simWidth, simHeight);
+        next.dye = createDoubleTarget(simWidth, simHeight);
+        next.pressure = createDoubleTarget(simWidth, simHeight);
+        next.divergence = createTarget(simWidth, simHeight);
+        next.curl = createTarget(simWidth, simHeight);
+        return next;
+      } catch (error) {
+        deleteTarget(next.velocity && next.velocity.read);
+        deleteTarget(next.velocity && next.velocity.write);
+        deleteTarget(next.dye && next.dye.read);
+        deleteTarget(next.dye && next.dye.write);
+        deleteTarget(next.pressure && next.pressure.read);
+        deleteTarget(next.pressure && next.pressure.write);
+        deleteTarget(next.divergence);
+        deleteTarget(next.curl);
+        throw error;
+      }
     }
 
     function releaseResources(canDelete) {
@@ -595,8 +615,22 @@
         var previousHeight = simHeight;
         chooseSimulationDimensions();
         if (simWidth !== previousWidth || simHeight !== previousHeight) {
+          var replacement;
+          try {
+            replacement = createSimulationTargets();
+          } catch (error) {
+            reason = error && error.message ? error.message : 'fluid resize failed';
+            failed = true;
+            enabled = false;
+            pointers.clear();
+            splats.length = 0;
+            accumulator = 0;
+            releaseResources(true);
+            gl = null;
+            return;
+          }
           deleteSimulationTargets();
-          targets = createSimulationTargets();
+          targets = replacement;
           accumulator = 0;
           pointers.clear();
           splats.length = 0;

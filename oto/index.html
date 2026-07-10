@@ -7581,14 +7581,16 @@ var _playMode = 'free';
 // requested layout can temporarily differ, so fluid visibility follows this
 // effective layout value instead of the stale selected value.
 var _effectiveOtoLayoutMode = 'free';
-var OTO_COLOR_FLUID_ASSET_VERSION = '2074';
+var OTO_COLOR_FLUID_ASSET_VERSION = '2075';
 var _colorFluidAllowed = !!window.__APP_BUILD__;
 var _colorFluid = null;
 var _colorFluidLoadPromise = null;
 var _colorFluidLoadFailed = false;
 var _colorFluidStrokes = new Map();
+var _colorFluidSoundStrokes = new Map();
 var _colorFluidActive = false;
 var _colorFluidSession = 0;
+var _colorFluidContextLostAt = 0;
 var COLOR_FLUID_MAX_POINTERS = 2;
 var COLOR_FLUID_COLORS = [
   [1.00, 0.30, 0.32],
@@ -7608,6 +7610,7 @@ function _disableColorFluid(error) {
   if (_colorFluidLoadFailed) return;
   _colorFluidLoadFailed = true;
   _colorFluidActive = false;
+  _colorFluidContextLostAt = 0;
   console.warn('[oto color fluid] disabled:', error && error.message ? error.message : error);
   _resetColorFluidPointers();
   if (_colorFluid) {
@@ -7699,8 +7702,20 @@ function _loadColorFluidRenderer() {
 
 function _resetColorFluidPointers() {
   _colorFluidSession++;
+  _colorFluidSoundStrokes.forEach(function(stroke) {
+    if (!stroke) return;
+    stroke.soundQueue = [];
+    if (stroke.soundTimer) clearTimeout(stroke.soundTimer);
+    stroke.soundTimer = 0;
+  });
+  _colorFluidSoundStrokes.clear();
   _colorFluidStrokes.forEach(function(stroke, pointerId) {
-    if (stroke) stroke.pendingEnded = true;
+    if (stroke) {
+      stroke.pendingEnded = true;
+      stroke.soundQueue = [];
+      if (stroke.soundTimer) clearTimeout(stroke.soundTimer);
+      stroke.soundTimer = 0;
+    }
     if (_colorFluid && typeof _colorFluid.endStroke === 'function') {
       _colorFluid.endStroke(pointerId);
     }
@@ -7732,12 +7747,15 @@ function _syncColorFluidMode(effectiveMode) {
       if (renderer && _colorFluidActive && typeof renderer.frame === 'function') {
         renderer.frame(0);
         var stats = typeof renderer.getStats === 'function' ? renderer.getStats() : null;
-        if (stats && stats.available === false) {
+        if (stats && stats.contextLost) {
+          if (!_colorFluidContextLostAt) _colorFluidContextLostAt = performance.now();
+        } else if (stats && stats.available === false) {
           _disableColorFluid(new Error(stats.reason || 'WebGL2 fluid unsupported'));
         }
       }
     });
   } else {
+    _colorFluidContextLostAt = 0;
     _resetColorFluidPointers();
     document.body.classList.remove('color-fluid-has-drawn');
     if (_colorFluid) {
@@ -12448,24 +12466,104 @@ function _colorFluidNoteWithHysteresis(stroke, x) {
   return x <= stroke.noteIdx * zoneWidth - margin ? candidate : stroke.noteIdx;
 }
 
+function _colorFluidSoundIntervalMs(event) {
+  var eventSet = event && event.set ? event.set : currentSet;
+  var eventChord = event && typeof event.chord === 'boolean'
+    ? event.chord
+    : CHORD_MODE === 'on';
+  return eventSet === 'animal'
+    ? 500
+    : (eventSet === 'taiko' ? 120 : (eventChord ? 180 : 90));
+}
+
+function _emitColorFluidNote(stroke, event) {
+  if (!stroke || !event) return;
+  playSetSoundFor(event.set, event.noteIdx, event.chord);
+  recordEvent('set', { idx: event.noteIdx, set: event.set, chord: event.chord });
+  stroke.lastSoundAt = performance.now();
+  stroke.lastSoundNote = event.noteIdx;
+  stroke.lastSoundX = event.x;
+  stroke.lastSoundY = event.y;
+}
+
+function _scheduleColorFluidSoundDrain(stroke) {
+  if (!stroke || stroke.soundTimer || !stroke.soundQueue || !stroke.soundQueue.length) return;
+  function drain() {
+    stroke.soundTimer = 0;
+    if (stroke.session !== _colorFluidSession || !_colorFluidActive) {
+      stroke.soundQueue = [];
+      if (_colorFluidSoundStrokes.get(stroke.pointerId) === stroke) {
+        _colorFluidSoundStrokes.delete(stroke.pointerId);
+      }
+      return;
+    }
+    if (!stroke.soundQueue.length) {
+      if (_colorFluidSoundStrokes.get(stroke.pointerId) === stroke) {
+        _colorFluidSoundStrokes.delete(stroke.pointerId);
+      }
+      return;
+    }
+    var waitMs = _colorFluidSoundIntervalMs(stroke.soundQueue[0]) - (performance.now() - stroke.lastSoundAt);
+    if (waitMs > 1) {
+      stroke.soundTimer = setTimeout(drain, waitMs);
+      return;
+    }
+    _emitColorFluidNote(stroke, stroke.soundQueue.shift());
+    if (stroke.soundQueue.length) {
+      stroke.soundTimer = setTimeout(drain, _colorFluidSoundIntervalMs(stroke.soundQueue[0]));
+    } else if (_colorFluidSoundStrokes.get(stroke.pointerId) === stroke) {
+      _colorFluidSoundStrokes.delete(stroke.pointerId);
+    }
+  }
+  _colorFluidSoundStrokes.set(stroke.pointerId, stroke);
+  drain();
+}
+
 function _playColorFluidNote(stroke, noteIdx, x, y, immediate) {
   if (!stroke) return;
-  var now = performance.now();
-  var minimumMs = currentSet === 'animal'
-    ? 500
-    : (currentSet === 'taiko' ? 120 : (CHORD_MODE === 'on' ? 180 : 90));
+  if (!stroke.soundQueue) stroke.soundQueue = [];
+  if (immediate) {
+    stroke.soundQueue = [];
+    if (stroke.soundTimer) clearTimeout(stroke.soundTimer);
+    stroke.soundTimer = 0;
+    _emitColorFluidNote(stroke, {
+      noteIdx: noteIdx,
+      x: x,
+      y: y,
+      set: currentSet,
+      chord: CHORD_MODE === 'on'
+    });
+    return;
+  }
+  var referenceNote = stroke.soundQueue.length
+    ? stroke.soundQueue[stroke.soundQueue.length - 1].noteIdx
+    : stroke.lastSoundNote;
   var dx = x - stroke.lastSoundX;
   var dy = y - stroke.lastSoundY;
   var movedEnough = dx * dx + dy * dy >= 40 * 40;
-  var changed = noteIdx !== stroke.lastSoundNote;
-  var repeatReady = !changed && movedEnough && now - stroke.lastSoundAt >= 280;
-  if (!immediate && (!(changed || repeatReady) || now - stroke.lastSoundAt < minimumMs)) return;
-  playSetSoundFor(currentSet, noteIdx, CHORD_MODE === 'on');
-  recordEvent('set', { idx: noteIdx, set: currentSet, chord: CHORD_MODE === 'on' });
-  stroke.lastSoundAt = now;
-  stroke.lastSoundNote = noteIdx;
-  stroke.lastSoundX = x;
-  stroke.lastSoundY = y;
+  var changed = noteIdx !== referenceNote;
+  var repeatReady = !changed
+    && !stroke.soundQueue.length
+    && movedEnough
+    && performance.now() - stroke.lastSoundAt >= 280;
+  if (!(changed || repeatReady)) return;
+  var event = {
+    noteIdx: noteIdx,
+    x: x,
+    y: y,
+    set: currentSet,
+    chord: CHORD_MODE === 'on'
+  };
+  var queueCap = currentSet === 'animal'
+    ? 2
+    : (CHORD_MODE === 'on' ? 4 : (currentSet === 'taiko' ? 6 : 8));
+  if (stroke.soundQueue.length >= queueCap) {
+    // Keep the early contour but always preserve the final zone reached.
+    stroke.soundQueue[queueCap - 1] = event;
+  } else {
+    stroke.soundQueue.push(event);
+  }
+  _scheduleColorFluidSoundDrain(stroke);
 }
 
 function _queueColorFluidPendingPoint(stroke, x, y, color) {
@@ -12515,8 +12613,17 @@ function _beginColorFluidPointer(e, x, y) {
     session: _colorFluidSession,
     rendererStarted: false,
     pendingEnded: false,
-    pendingPoints: []
+    pendingPoints: [],
+    soundQueue: [],
+    soundTimer: 0
   };
+  var previousSoundStroke = _colorFluidSoundStrokes.get(e.pointerId);
+  if (previousSoundStroke && previousSoundStroke !== stroke) {
+    previousSoundStroke.soundQueue = [];
+    if (previousSoundStroke.soundTimer) clearTimeout(previousSoundStroke.soundTimer);
+    previousSoundStroke.soundTimer = 0;
+  }
+  _colorFluidSoundStrokes.set(e.pointerId, stroke);
   _colorFluidStrokes.set(e.pointerId, stroke);
   try { _stageEl.setPointerCapture(e.pointerId); } catch (_) {}
   document.body.classList.add('color-fluid-has-drawn');
@@ -12587,6 +12694,9 @@ function _endColorFluidPointer(e) {
     _colorFluid.endStroke(e.pointerId);
   }
   _colorFluidStrokes.delete(e.pointerId);
+  if (stroke && !stroke.soundQueue.length && _colorFluidSoundStrokes.get(e.pointerId) === stroke) {
+    _colorFluidSoundStrokes.delete(e.pointerId);
+  }
   try { _stageEl.releasePointerCapture(e.pointerId); } catch (_) {}
   return true;
 }
@@ -12736,7 +12846,15 @@ function resizeBg() {
   bgCanvas.style.height = bgH + 'px';
   bgCtx.setTransform(DPR, 0, 0, DPR, 0, 0);
   if (_colorFluid && typeof _colorFluid.resize === 'function') {
-    _colorFluid.resize(bgW, bgH);
+    try {
+      _colorFluid.resize(bgW, bgH);
+      var resizeStats = typeof _colorFluid.getStats === 'function' ? _colorFluid.getStats() : null;
+      if (resizeStats && resizeStats.available === false && !resizeStats.contextLost) {
+        _disableColorFluid(new Error(resizeStats.reason || 'fluid resize failed'));
+      }
+    } catch (error) {
+      _disableColorFluid(error);
+    }
   }
 }
 resizeBg();
@@ -13178,8 +13296,16 @@ function loop(now) {
       if (_colorFluidHealthFrame >= 30) {
         _colorFluidHealthFrame = 0;
         var fluidStats = typeof _colorFluid.getStats === 'function' ? _colorFluid.getStats() : null;
-        if (fluidStats && fluidStats.available === false) {
-          _disableColorFluid(new Error(fluidStats.reason || 'WebGL2 fluid stopped'));
+        if (fluidStats && fluidStats.contextLost) {
+          if (!_colorFluidContextLostAt) _colorFluidContextLostAt = performance.now();
+          if (performance.now() - _colorFluidContextLostAt >= 3000) {
+            _disableColorFluid(new Error(fluidStats.reason || 'WebGL2 context did not recover'));
+          }
+        } else {
+          _colorFluidContextLostAt = 0;
+          if (fluidStats && fluidStats.available === false) {
+            _disableColorFluid(new Error(fluidStats.reason || 'WebGL2 fluid stopped'));
+          }
         }
       }
     }
