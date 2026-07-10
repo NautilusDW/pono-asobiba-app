@@ -722,6 +722,10 @@ function _restoreGimmicksFromDef(def) {
   state.gimmickConfigs.waterGimmick = _jsonClone(def.waterGimmick);
   state.gimmickConfigs.strengthGimmick = _jsonClone(def.strengthGimmick);
   state.gimmickConfigs.webGimmick = _jsonClone(def.webGimmick);
+  const repairedLinks = _repairAllGimmickObstacleLinks();
+  if (repairedLinks.length) {
+    console.warn('[maze-editor] repaired gimmick links:', repairedLinks.join(', '));
+  }
   Object.keys(GIMMICK_ITEM_DEFS).forEach(function(kind) {
     const meta = GIMMICK_ITEM_DEFS[kind];
     // isObstacleProxy (例: web): 「アイテム」ではなく obstacles[] への proxy。
@@ -804,6 +808,42 @@ function _sanitizeObstacleIdPart(text) {
 function _obstacleById(id) {
   if (!id || !Array.isArray(state.obstacles)) return null;
   return state.obstacles.find(function(o) { return o && o.id === id; }) || null;
+}
+
+function _repairGimmickObstacleLink(configKey, obstacleKind, itemKey) {
+  const cfg = state.gimmickConfigs && state.gimmickConfigs[configKey];
+  if (!cfg) return '';
+  const linked = _obstacleById(cfg.obstacleId);
+  if (linked && linked.kind === obstacleKind) return '';
+  const candidates = (state.obstacles || []).filter(function(o) {
+    return o && o.kind === obstacleKind && Number.isFinite(o.x) && Number.isFinite(o.y);
+  });
+  if (!candidates.length) return '';
+  const anchor = cfg[itemKey];
+  if (anchor && Number.isFinite(anchor.x) && Number.isFinite(anchor.y)) {
+    candidates.sort(function(a, b) {
+      const adx = a.x - anchor.x, ady = a.y - anchor.y;
+      const bdx = b.x - anchor.x, bdy = b.y - anchor.y;
+      return (adx * adx + ady * ady) - (bdx * bdx + bdy * bdy);
+    });
+  }
+  const target = candidates[0];
+  cfg.obstacleId = _ensureObstacleId(target);
+  target.eventEnabled = true;
+  return configKey + '→' + cfg.obstacleId;
+}
+
+function _repairAllGimmickObstacleLinks() {
+  const repaired = [];
+  [
+    ['waterGimmick', 'pond', 'plank'],
+    ['strengthGimmick', 'rock', 'glove'],
+    ['webGimmick', 'web', 'broom'],
+  ].forEach(function(def) {
+    const result = _repairGimmickObstacleLink(def[0], def[1], def[2]);
+    if (result) repaired.push(result);
+  });
+  return repaired;
 }
 
 function _ensureObstacleId(o) {
@@ -982,14 +1022,16 @@ function _setSelectedObstacleEventEnabled(enabled) {
 }
 
 function _autoAttachPlacedObstacleEvent(o) {
-  if (!o || o.kind !== 'web') return false;
+  if (!o || (o.kind !== 'web' && o.kind !== 'rock')) return false;
   const id = _ensureObstacleId(o);
-  const current = state.gimmickConfigs.webGimmick;
+  const configKey = o.kind === 'rock' ? 'strengthGimmick' : 'webGimmick';
+  const current = state.gimmickConfigs[configKey];
+  if (o.kind === 'rock' && !current) return false;
   if (current && current.obstacleId && _obstacleById(current.obstacleId)) return false;
-  const cfg = _jsonClone(current) || _defaultGimmickConfig('webGimmick');
-  cfg.id = cfg.id || 'web-gate';
+  const cfg = _jsonClone(current) || _defaultGimmickConfig(configKey);
+  cfg.id = cfg.id || (o.kind === 'rock' ? 'strength-rock' : 'web-gate');
   cfg.obstacleId = id;
-  state.gimmickConfigs.webGimmick = cfg;
+  state.gimmickConfigs[configKey] = cfg;
   o.eventEnabled = true;
   return true;
 }
@@ -3510,6 +3552,22 @@ function validateForExport() {
   if (!state.nodes.some(function(n) { return n.kind === 'start'; })) { alert('スタートノードを置いてね'); return false; }
   if (!state.nodes.some(function(n) { return n.kind === 'goal'; }))  { alert('ゴールノードを置いてね'); return false; }
   if (state.edges.length === 0) { alert('道を 1 つ以上描いてね'); return false; }
+  _repairAllGimmickObstacleLinks();
+  const linkDefs = [
+    ['waterGimmick', 'pond', '水たまり'],
+    ['strengthGimmick', 'rock', '力の手袋の岩'],
+    ['webGimmick', 'web', 'クモの巣'],
+  ];
+  for (let i = 0; i < linkDefs.length; i++) {
+    const def = linkDefs[i];
+    const cfg = state.gimmickConfigs[def[0]];
+    if (!cfg) continue;
+    const target = _obstacleById(cfg.obstacleId);
+    if (!cfg.obstacleId || !target || target.kind !== def[1]) {
+      alert('⚠ ' + def[2] + 'のイベント先が見つかりません。\n対象の障害物を置いて「イベントあり」にしてから保存してください。');
+      return false;
+    }
+  }
   return true;
 }
 
