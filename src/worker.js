@@ -217,15 +217,20 @@ async function attachHtmlEtag(request, response, env, appBuildApplied) {
   } else {
     try {
       bodyText = await response.text();
-    } catch {
-      // 本文取得に失敗したら validator なしの従来動作にフォールバック
+    } catch (e) {
+      // 本文取得に失敗したら validator なしの従来動作にフォールバック。
+      // 2026-07-10: この catch がステージング環境で ETag 欠落の原因を完全に
+      // 隠していた (failure-safe 設計が実際の runtime-only 例外を握りつぶす)。
+      // 原因を特定できるよう、フォールバックする前に必ずログへ残す。
+      console.error('[attachHtmlEtag] response.text() failed for ' + url.pathname + ': ' + (e && e.name) + ': ' + (e && e.message));
       return response;
     }
     try {
       const hash = await sha1Hex(bodyText);
       outgoingEtag = `W/"h${hash.slice(0, 16)}-${variantSuffix}"`;
-    } catch {
+    } catch (e) {
       // crypto.subtle が使えない環境向けの保険（Workers では通常発生しない）。
+      console.error('[attachHtmlEtag] sha1Hex() failed for ' + url.pathname + ': ' + (e && e.name) + ': ' + (e && e.message));
       // 既に body は読み切っているので bodyText で作り直して返す。
       // response.headers をそのまま使うと、 response.text() が Content-Encoding
       // (gzip/br 等) を透過的に解凍した後の平文を Content-Encoding 付きのヘッダーで
