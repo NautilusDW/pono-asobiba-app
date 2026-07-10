@@ -18,6 +18,7 @@
 ## Active (進行中 / 未着手)
 
 - 2026-07-10 - [batch:1172-puzzle-album-simple-overview] DEVELOP-VERIFIED - Codex: App commit `eb67f268` の共通Puzzle差分（設定順 `もどる → もりのアルバム`、旧160セルを全体サマリ + 8人カードへ簡略化、ロック中は灰色/ひみつ、全体バーは利用可能な仲間だけで集計）を最新developへ同期。LP cache v1272。`node --check` / `git diff --check` / app側4 viewport実画面検証済み。commit/push前。 (by Codex)
+- 2026-07-10 - [batch:1172-puzzle-album-simple-overview] DONE - Codex: `develop-app` commit `eb67f268` (App v2072) / `develop` commit `7ff1913d` (LP v1272) をpushし両deploy成功。両stagingの新album HTML/JS・メニュー順・cache versionをHTTP 200確認済み。fresh cross-reviewの到達不能バー指摘も、利用可能な仲間だけで集計する修正として反映済み。 (by Codex)
 - 2026-07-10 - [batch:1170-maze-ladder-glow-animal-crop-result-hud] DEVELOP-SYNC - Codex: はしご取得後のみ入口/出口を同時点灯、正解後button中央化、ポノ/矢印が上中央札に近い時だけ札をfade/pointer無効化。元の3x3動物sheet由来9種を監査し、混入のあったゾウ/ネコ/クマ/キリン/ライオンを元sheetから再cropしてword/choice計10 PNG差替（元絵あり、生成なし）。LP cache v1270、検証・commit/push前。 (by Codex)
 - 2026-07-10 - [batch:1170-maze-ladder-glow-animal-crop-result-hud] DONE - Codex: `develop-app` commit `617c648f` (App v2070) と `develop` commit `79f06401` (LP v1270) をpush済み。構文/diff/PNG寸法・alpha・容量・目視検証済み、ブラウザbackend不在のため動的操作のみ未実施。 (by Codex)
 
