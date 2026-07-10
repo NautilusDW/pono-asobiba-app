@@ -1,0 +1,23 @@
+{
+  "name": "Pono.MarbleRun.Tests.PlayMode",
+  "rootNamespace": "Pono.MarbleRun3D.Tests.PlayMode",
+  "references": [
+    "Pono.MarbleRun.Core",
+    "Pono.MarbleRun.App",
+    "Unity.ugui"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}
