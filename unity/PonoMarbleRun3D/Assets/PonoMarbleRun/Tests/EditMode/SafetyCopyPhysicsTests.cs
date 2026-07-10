@@ -4,6 +4,7 @@ using System.Text.RegularExpressions;
 using NUnit.Framework;
 using Pono.MarbleRun3D.Core;
 using Pono.MarbleRun3D.Gameplay;
+using Pono.MarbleRun3D.UI;
 using UnityEditor;
 using UnityEngine;
 
@@ -11,6 +12,16 @@ namespace Pono.MarbleRun3D.Tests.EditMode
 {
     public sealed class SafetyCopyPhysicsTests
     {
+        [Test]
+        public void SafeAreaIsClampedInsideTransientDesktopWindowBounds()
+        {
+            var normalized = SafeAreaPanel.ClampToScreen(new Rect(-80f, -20f, 1440f, 780f), 1280, 720);
+            Assert.That(normalized, Is.EqualTo(new Rect(0f, 0f, 1280f, 720f)));
+
+            var notched = SafeAreaPanel.ClampToScreen(new Rect(42f, 0f, 1196f, 720f), 1280, 720);
+            Assert.That(notched, Is.EqualTo(new Rect(42f, 0f, 1196f, 720f)));
+        }
+
         [Test]
         public void StallRequiresSustainedLowMotionAndRaisesOnce()
         {

@@ -33,13 +33,26 @@ namespace Pono.MarbleRun3D.UI
         {
             var rect = transform as RectTransform;
             if (rect == null || Screen.width <= 0 || Screen.height <= 0) return;
-            var safe = Screen.safeArea;
+            var reportedSafeArea = Screen.safeArea;
+            var safe = ClampToScreen(reportedSafeArea, Screen.width, Screen.height);
             rect.anchorMin = new Vector2(safe.xMin / Screen.width, safe.yMin / Screen.height);
             rect.anchorMax = new Vector2(safe.xMax / Screen.width, safe.yMax / Screen.height);
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
-            _lastSafeArea = safe;
+            _lastSafeArea = reportedSafeArea;
             _lastScreen = new Vector2Int(Screen.width, Screen.height);
+        }
+
+        public static Rect ClampToScreen(Rect safe, int width, int height)
+        {
+            if (width <= 0 || height <= 0) return Rect.zero;
+            var xMin = Mathf.Clamp(safe.xMin, 0f, width);
+            var yMin = Mathf.Clamp(safe.yMin, 0f, height);
+            var xMax = Mathf.Clamp(safe.xMax, 0f, width);
+            var yMax = Mathf.Clamp(safe.yMax, 0f, height);
+            if (xMax - xMin < 1f || yMax - yMin < 1f)
+                return new Rect(0f, 0f, width, height);
+            return Rect.MinMaxRect(xMin, yMin, xMax, yMax);
         }
     }
 
