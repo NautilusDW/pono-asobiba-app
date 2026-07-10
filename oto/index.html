@@ -80,15 +80,10 @@
     pointer-events: none;
     background: transparent;
   }
-  body.color-fluid-layout #color-fluid-canvas { display: block; }
-  body.color-fluid-layout #bgCanvas {
-    filter: saturate(0.72) brightness(0.84);
+  body.color-fluid-layout #color-fluid-canvas {
+    display: block;
+    /* 通常 alpha 合成。screen/filter は白飛びと追加compositeを招くため使わない。 */
   }
-  body.color-fluid-layout #instruments {
-    opacity: 0;
-    pointer-events: none;
-  }
-  body.color-fluid-layout .band-group { display: none; }
   body.color-fluid-layout #stage { touch-action: none; }
   .color-fluid-hint {
     position: absolute;
@@ -122,6 +117,14 @@
   }
   @media (prefers-reduced-motion: reduce) {
     .color-fluid-hint { transition: none; }
+  }
+  @media (orientation: landscape) {
+    body.color-fluid-layout .color-fluid-hint {
+      left: 66%;
+      top: max(10px, calc(env(safe-area-inset-top) + 8px));
+      bottom: auto;
+      min-width: min(42vw, 360px);
+    }
   }
   body.rhythm-layout .stage {
     background:
@@ -5518,6 +5521,48 @@
   body.rhythm-layout.free-stage-layout .gh-hitline {
     opacity: 0.8;
   }
+
+  /* 「いろおと」は通常ボタンを見せるため、縦画面だけHUDを詰め直す。
+     既存のボタン自由モードには影響させない。 */
+  @media (orientation: portrait) {
+    body.color-fluid-layout .color-fluid-hint,
+    body.color-fluid-layout #oto-top-highscores,
+    body.color-fluid-layout #oto-top-stage-select {
+      display: none !important;
+    }
+    body.color-fluid-layout .sound-sets-box {
+      top: max(8px, env(safe-area-inset-top));
+      left: 8px;
+      transform: none;
+      padding: 3px 5px 6px;
+    }
+    body.color-fluid-layout .sound-sets { gap: 2px; }
+    body.color-fluid-layout .sound-sets .set-btn {
+      width: 44px;
+      height: 44px;
+    }
+    body.color-fluid-layout .chord-pill {
+      top: calc(max(8px, env(safe-area-inset-top)) + 72px);
+    }
+    body.color-fluid-layout .mode-switch {
+      top: calc(max(8px, env(safe-area-inset-top)) + 126px);
+    }
+    body.color-fluid-layout .free-view-switch {
+      top: calc(max(8px, env(safe-area-inset-top)) + 176px);
+    }
+    body.color-fluid-layout .pono-wrap { top: 53%; }
+    body.color-fluid-layout .instr-btn[data-idx="0"] { left: 12%; top: 40%; }
+    body.color-fluid-layout .instr-btn[data-idx="1"] { left: 34%; top: 32%; }
+    body.color-fluid-layout .instr-btn[data-idx="2"] { left: 66%; top: 32%; }
+    body.color-fluid-layout .instr-btn[data-idx="3"] { left: 88%; top: 40%; }
+    body.color-fluid-layout .instr-btn[data-idx="4"] { left: 12%; top: 63%; }
+    body.color-fluid-layout .instr-btn[data-idx="5"] { left: 34%; top: 72%; }
+    body.color-fluid-layout .instr-btn[data-idx="6"] { left: 66%; top: 72%; }
+    body.color-fluid-layout .instr-btn[data-idx="7"] { left: 88%; top: 63%; }
+  }
+  @media (orientation: landscape) and (max-height: 520px) {
+    body.color-fluid-layout .color-fluid-hint { display: none !important; }
+  }
 </style>
 <link rel="stylesheet" href="../common/acorn-modal-shared.css">
 </head>
@@ -5564,7 +5609,7 @@
         <button class="start-free-view-btn color-flow oto-color-fluid-only" data-free-view="color">
           <span class="start-free-thumb color-flow" aria-hidden="true"></span>
           <span class="start-free-label">いろおと</span>
-          <small>なぞって おとを つくる</small>
+          <small>ボタンと いろで あそぶ</small>
         </button>
       </div>
       <button class="start-free-back" type="button">もどる</button>
@@ -5579,7 +5624,7 @@
     <!-- アプリ版限定「いろおと」: 実流体は別WebGL2 canvasへ描画し、既存背景/自由モードを変更しない -->
     <canvas id="color-fluid-canvas" aria-hidden="true"></canvas>
     <div class="color-fluid-hint" id="color-fluid-hint" aria-live="polite">
-      ゆびで なぞると<br>いろと おとが うまれるよ
+      ボタンを おしても<br>なぞっても いろが でるよ
     </div>
 
     <!-- ポノ (中層) — ラッパーで位置決めし、img は高さ固定 + 幅 auto で中央寄せ -->
@@ -7547,7 +7592,7 @@ var _playMode = 'free';
 // requested layout can temporarily differ, so fluid visibility follows this
 // effective layout value instead of the stale selected value.
 var _effectiveOtoLayoutMode = 'free';
-var OTO_COLOR_FLUID_ASSET_VERSION = '2075';
+var OTO_COLOR_FLUID_ASSET_VERSION = '2076';
 var _colorFluidAllowed = !!window.__APP_BUILD__;
 var _colorFluid = null;
 var _colorFluidLoadPromise = null;
@@ -7559,14 +7604,14 @@ var _colorFluidSession = 0;
 var _colorFluidContextLostAt = 0;
 var COLOR_FLUID_MAX_POINTERS = 2;
 var COLOR_FLUID_COLORS = [
-  [1.00, 0.30, 0.32],
-  [1.00, 0.52, 0.18],
-  [1.00, 0.82, 0.16],
-  [0.24, 0.78, 0.40],
-  [0.18, 0.72, 0.88],
-  [0.22, 0.46, 0.94],
-  [0.55, 0.34, 0.90],
-  [0.94, 0.34, 0.68]
+  [1.00, 0.34, 0.42],
+  [1.00, 0.58, 0.18],
+  [1.00, 0.86, 0.18],
+  [0.25, 0.86, 0.48],
+  [0.16, 0.78, 0.98],
+  [0.28, 0.52, 1.00],
+  [0.64, 0.40, 1.00],
+  [1.00, 0.36, 0.74]
 ];
 if (_colorFluidAllowed && document.body) {
   document.body.classList.add('oto-color-fluid-available');
@@ -7624,9 +7669,11 @@ function _loadColorFluidRenderer() {
           simulationHz: 30,
           maxPointers: COLOR_FLUID_MAX_POINTERS,
           dprCap: 1.5,
+          strokeRadius: reducedMotion ? 0.018 : 0.022,
+          strokeAmount: reducedMotion ? 0.38 : 0.50,
           curlStrength: reducedMotion ? 0 : 5.5,
-          velocityScale: reducedMotion ? 420 : 820,
-          dyeDissipation: reducedMotion ? 0.955 : 0.978
+          velocityScale: reducedMotion ? 400 : 780,
+          dyeDissipation: reducedMotion ? 0.952 : 0.976
         });
         var stats = _colorFluid && typeof _colorFluid.getStats === 'function'
           ? _colorFluid.getStats()
@@ -7699,11 +7746,6 @@ function _syncColorFluidMode(effectiveMode) {
   );
   document.body.classList.toggle('color-fluid-layout', _colorFluidActive);
   if (_colorFluidActive) {
-    if (typeof ambientBubbles !== 'undefined') ambientBubbles.length = 0;
-    if (typeof popAnims !== 'undefined') popAnims.length = 0;
-    if (typeof ripples !== 'undefined') ripples.length = 0;
-    if (typeof soundBursts !== 'undefined') soundBursts.length = 0;
-    if (typeof particles !== 'undefined') particles.length = 0;
     var hint = document.getElementById('color-fluid-hint');
     if (hint) hint.classList.add('show');
     _loadColorFluidRenderer().then(function(renderer) {
@@ -12368,6 +12410,7 @@ document.querySelectorAll('.instr-btn').forEach(function(btn) {
     var p = _viewportPointToStage(cx, cy);
     spawnRipples(cx, cy);
     spawnParticles(p.x, p.y, 8);
+    _injectColorFluidBloom(p.x, p.y, idx);
     triggerFreeStageHit(idx, p.x, p.y);
     bumpPono();
     handleRhythmTap(idx, btn);
@@ -12412,6 +12455,23 @@ var _drag = { active: false, lastX: 0, lastY: 0, colorIdx: 0 };
 var DRAG_SPAWN_DIST = 36; // px ごとに 1 個生成
 function _isColorFluidMode() {
   return !!(_colorFluidActive && _effectiveOtoLayoutMode === 'free' && _freeViewMode === 'color');
+}
+
+function _injectColorFluidBloom(x, y, noteIdx) {
+  if (!_isColorFluidMode()) return;
+  var session = _colorFluidSession;
+  var nx = x / Math.max(1, bgW);
+  var ny = y / Math.max(1, bgH);
+  var color = COLOR_FLUID_COLORS[Math.max(0, Math.min(7, noteIdx | 0))];
+  var pushX = (noteIdx % 2 === 0 ? -1 : 1) * 0.012;
+  function inject(renderer) {
+    if (session !== _colorFluidSession || !_isColorFluidMode()) return;
+    if (!renderer || typeof renderer.inject !== 'function') return;
+    document.body.classList.add('color-fluid-has-drawn');
+    renderer.inject(nx, ny, pushX, -0.022, color, 0.026, 0.58);
+  }
+  if (_colorFluid) inject(_colorFluid);
+  else _loadColorFluidRenderer().then(inject);
 }
 
 function _colorFluidNoteForX(x) {
@@ -12578,7 +12638,9 @@ function _beginColorFluidPointer(e, x, y) {
     pendingEnded: false,
     pendingPoints: [],
     soundQueue: [],
-    soundTimer: 0
+    soundTimer: 0,
+    lastMagicX: x,
+    lastMagicY: y
   };
   var previousSoundStroke = _colorFluidSoundStrokes.get(e.pointerId);
   if (previousSoundStroke && previousSoundStroke !== stroke) {
@@ -12601,6 +12663,9 @@ function _beginColorFluidPointer(e, x, y) {
     });
   }
   _playColorFluidNote(stroke, noteIdx, x, y, true);
+  // 「いろおと」は通常自由モードの波紋/キラキラに流体を足す。
+  // 音は上の流体音だけに任せ、ここでは視覚効果だけを重ねる。
+  spawnFreeTapMagic(x, y, noteIdx, true);
   bumpPono();
   tapCount++;
   if (window.incrementStat) window.incrementStat('oto_taps', 1);
@@ -12646,6 +12711,13 @@ function _moveColorFluidPointer(e, x, y) {
     stroke.lastY = stepY;
   }
   stroke.lastTime = now;
+  var magicDx = x - stroke.lastMagicX;
+  var magicDy = y - stroke.lastMagicY;
+  if (magicDx * magicDx + magicDy * magicDy >= 84 * 84) {
+    spawnFreeTapMagic(x, y, stroke.noteIdx, false);
+    stroke.lastMagicX = x;
+    stroke.lastMagicY = y;
+  }
   return true;
 }
 
@@ -12707,6 +12779,13 @@ _stageEl.addEventListener('pointerdown', function(e) {
   var x = p.x, y = p.y;
   if (_isColorFluidMode()) {
     e.preventDefault();
+    if (popBubbleAt(x, y)) {
+      _injectColorFluidBloom(x, y, _colorFluidNoteForX(x));
+      if (window.incrementStat) window.incrementStat('oto_taps', 1);
+      markPlayedToday();
+      bumpPono();
+      return;
+    }
     _beginColorFluidPointer(e, x, y);
     return;
   }
@@ -12798,7 +12877,9 @@ var bgCtx = bgCanvas.getContext('2d');
 var DPR = 1;
 var bgW = 0, bgH = 0;
 function resizeBg() {
-  DPR = Math.min(window.devicePixelRatio || 1, 2); // 毎回最新 DPR
+  // 流体と通常エフェクトを同時描画する時だけ2D背景を1.5へ抑え、
+  // UI/流体の見た目を保ったまま総fill-rateを抑える。
+  DPR = Math.min(window.devicePixelRatio || 1, _isColorFluidMode() ? 1.5 : 2);
   var stage = document.getElementById('stage');
   var rect = stage ? stage.getBoundingClientRect() : null;
   bgW = Math.max(1, Math.round(rect && rect.width ? rect.width : window.innerWidth));
@@ -13122,11 +13203,14 @@ function drawAmbientBubbles() {
 
 // ─ 背景グラデーション (時間で色変化) ─
 function drawBG(now) {
-  // v1108: 青寄りに振り直し。中心 205°、振幅 ±25 (旧 210±40)。
-  var h = 205 + Math.sin(now / 30000) * 25; // 180〜230 (青〜空青)
+  var colorFluid = _isColorFluidMode();
+  // 「いろおと」は通常自由モードより明るい空色。流体を暗背景で沈ませない。
+  var h = colorFluid
+    ? 196 + Math.sin(now / 30000) * 16
+    : 205 + Math.sin(now / 30000) * 25;
   var grad = bgCtx.createLinearGradient(0, 0, 0, bgH);
-  grad.addColorStop(0, 'hsl(' + h + ', 55%, 55%)');
-  grad.addColorStop(1, 'hsl(' + (h - 20) + ', 60%, 22%)');
+  grad.addColorStop(0, 'hsl(' + h + ', ' + (colorFluid ? 72 : 55) + '%, ' + (colorFluid ? 67 : 55) + '%)');
+  grad.addColorStop(1, 'hsl(' + (h - 18) + ', ' + (colorFluid ? 66 : 60) + '%, ' + (colorFluid ? 43 : 22) + '%)');
   bgCtx.fillStyle = grad;
   bgCtx.fillRect(0, 0, bgW, bgH);
 }
@@ -13272,19 +13356,21 @@ function loop(now) {
         }
       }
     }
-  } else {
-    updateAmbientBubbles(dt, now);
-    drawAmbientBubbles();
-    updatePopAnims(dt);
-    drawPopAnims();
-    updateRipples(dt);
-    drawRipples();
-    updateSoundBursts(dt);
-    drawSoundBursts();
-    updateParticles(dt);
-    drawParticles();
-    drawFinale(now);
   }
+
+  // 波紋・バブル・キラキラは全自由モードで共通。
+  // 流体はこれらを置き換えず、別canvasで上に重なる。
+  updateAmbientBubbles(dt, now);
+  drawAmbientBubbles();
+  updatePopAnims(dt);
+  drawPopAnims();
+  updateRipples(dt);
+  drawRipples();
+  updateSoundBursts(dt);
+  drawSoundBursts();
+  updateParticles(dt);
+  drawParticles();
+  drawFinale(now);
 
   // ポノ
   drawPono(now);
