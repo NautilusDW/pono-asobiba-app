@@ -11,18 +11,29 @@ name: Production URL Monitor
 #
 # 注意:
 # - このワークフローは読み取り専用の外形監視のみを行う。deploy.yml には一切手を加えない。
-# - 失敗すると GitHub Actions の標準通知 (Settings > Notifications の設定に従う)
-#   によりリポジトリ watcher へ失敗メールが自動送信される。
+# - 失敗時の通知先 (GitHub 仕様): schedule 起動の失敗メールは「このファイルの cron 行を
+#   最後に変更した user」にのみ届く (リポジトリ watcher 全員ではない)。workflow_dispatch
+#   起動の失敗は実行した本人に届く。受信者側で Settings > Notifications > Actions の
+#   通知が有効であることが前提。
+# - ⚠️ schedule (cron) は「リポジトリの default branch」上のワークフローしか起動しない。
+#   本リポジトリの default branch は現在 `develop` (凍結予定) のため、このファイルが
+#   `develop-app` にしか存在しない場合 cron は一切発火しない。対応はどちらか:
+#   (a) GitHub 設定で default branch を `develop-app` へ変更する (単一トランク統合として推奨)
+#   (b) `develop` の凍結宣言コミットに本ファイルを同梱する
+#   workflow_dispatch は任意ブランチの版を選んで手動実行できるので動作確認には使える。
 # - 一過性のネットワークゆらぎで誤報しないよう、各 URL は 1 回だけ 30 秒後にリトライする。
 
 on:
   schedule:
     # 6時間ごと (UTC)。 cron は UTC 基準で解釈される。
-    - cron: '0 */6 * * *'
+    # 分は 0 ちょうどを避ける: GitHub は毎時 0 分が最混雑で、schedule の遅延/スキップが
+    # 起きやすいと公式に案内しているため、任意のオフセット分を使う。
+    - cron: '23 */6 * * *'
   workflow_dispatch:
 
-permissions:
-  contents: read
+# curl による外形監視のみで GITHUB_TOKEN を一切使わない (checkout も無い) ため、
+# token の全スコープを無効化する。
+permissions: {}
 
 jobs:
   check-production-urls:

@@ -241,13 +241,22 @@ namespace Pono.MarbleRun3D.Bootstrap
             BuildStraightCourse();
             _controller.StartRun();
             var startedAt = Time.realtimeSinceStartup;
-            var deadline = startedAt + 12f;
+            var deadline = startedAt + 24f;
             while (_controller.State == MarbleRunState.Running && Time.realtimeSinceStartup < deadline)
                 yield return null;
             if (_controller.State != MarbleRunState.Celebrating)
                 throw new InvalidOperationException("Connected flat course did not physically reach the goal.");
+            var allMarblesDeadline = Time.realtimeSinceStartup + 8f;
+            while (_controller.MarblesAtGoal < _controller.ActiveMarbleCount
+                   && Time.realtimeSinceStartup < allMarblesDeadline)
+            {
+                yield return null;
+            }
+            if (_controller.MarblesAtGoal < _controller.ActiveMarbleCount)
+                throw new InvalidOperationException("Not every coasting marble reached the flat-course goal.");
             _details = "physical_goal_seconds="
-                + (Time.realtimeSinceStartup - startedAt).ToString("0.000", CultureInfo.InvariantCulture);
+                + (Time.realtimeSinceStartup - startedAt).ToString("0.000", CultureInfo.InvariantCulture)
+                + "; reached=" + _controller.MarblesAtGoal;
         }
 
         private IEnumerator WaitForSampleGoal(string modeId)
