@@ -914,6 +914,10 @@ namespace Pono.MarbleRun3D.Gameplay
                     materials, courseLayer);
                 CreateSupport(view, "たかい みちの あし", 0.68f, 0.94f, top, record.pose.level,
                     materials, courseLayer);
+                CreateTrestleBeam(view, "たかい みち", -0.94f, top, record.pose.level,
+                    materials, courseLayer);
+                CreateTrestleBeam(view, "たかい みち", 0.94f, top, record.pose.level,
+                    materials, courseLayer);
             }
 
             if (record.kind == MarblePieceKind.Tornado)
@@ -921,6 +925,8 @@ namespace Pono.MarbleRun3D.Gameplay
                 CreateSupport(view, "トルネード たかい あし", -0.67f, -1.03f, LevelHeight * 2.86f,
                     record.pose.level, materials, courseLayer);
                 CreateSupport(view, "トルネード たかい あし", 0.67f, -1.03f, LevelHeight * 2.86f,
+                    record.pose.level, materials, courseLayer);
+                CreateTrestleBeam(view, "トルネード", -1.03f, LevelHeight * 2.86f,
                     record.pose.level, materials, courseLayer);
                 CreateSupport(view, "トルネード まんなか あし", 0f, 0f, LevelHeight * 1.45f,
                     record.pose.level, materials, courseLayer, 0.17f);
@@ -931,12 +937,16 @@ namespace Pono.MarbleRun3D.Gameplay
                     record.pose.level, materials, courseLayer);
                 CreateSupport(view, "エレベーター でぐちの あし", 0.67f, 1.05f, LevelHeight * 2.88f,
                     record.pose.level, materials, courseLayer);
+                CreateTrestleBeam(view, "エレベーター", 1.05f, LevelHeight * 2.88f,
+                    record.pose.level, materials, courseLayer);
             }
             else if (record.kind == MarblePieceKind.Helix)
             {
                 CreateSupport(view, "ぐるぐる たかい あし", -0.66f, -0.92f, LevelHeight * 1.82f,
                     record.pose.level, materials, courseLayer);
                 CreateSupport(view, "ぐるぐる たかい あし", 0.66f, -0.92f, LevelHeight * 1.82f,
+                    record.pose.level, materials, courseLayer);
+                CreateTrestleBeam(view, "ぐるぐる", -0.92f, LevelHeight * 1.82f,
                     record.pose.level, materials, courseLayer);
                 CreateSupport(view, "ぐるぐる まんなか あし", 0f, 0f, LevelHeight * 0.88f,
                     record.pose.level, materials, courseLayer, 0.16f);
@@ -947,6 +957,8 @@ namespace Pono.MarbleRun3D.Gameplay
                     record.pose.level, materials, courseLayer);
                 CreateSupport(view, "さかの あし", 0.66f, -1.03f, LevelHeight * 0.82f,
                     record.pose.level, materials, courseLayer);
+                CreateTrestleBeam(view, "さか", -1.03f, LevelHeight * 0.82f,
+                    record.pose.level, materials, courseLayer);
             }
             else if (record.kind == MarblePieceKind.Lift)
             {
@@ -954,7 +966,33 @@ namespace Pono.MarbleRun3D.Gameplay
                     record.pose.level, materials, courseLayer);
                 CreateSupport(view, "のぼる あし", 0.66f, 1.03f, LevelHeight * 0.82f,
                     record.pose.level, materials, courseLayer);
+                CreateTrestleBeam(view, "のぼる", 1.03f, LevelHeight * 0.82f,
+                    record.pose.level, materials, courseLayer);
             }
+        }
+
+        private static void CreateTrestleBeam(
+            PieceView view,
+            string name,
+            float z,
+            float topLocalY,
+            int baseLevel,
+            ToyMaterialLibrary materials,
+            int courseLayer)
+        {
+            var bottomLocalY = -baseLevel * LevelHeight;
+            var length = topLocalY - bottomLocalY;
+            if (length < 0.35f) return;
+            CreateCylinder(
+                view,
+                "おもちゃ かざり つみき ばり " + name,
+                new Vector3(0f, bottomLocalY + length * 0.52f, z),
+                Vector3.right,
+                0.18f,
+                1.72f,
+                materials.MapleDark,
+                courseLayer,
+                false);
         }
 
         private static void CreateSupport(
@@ -966,7 +1004,7 @@ namespace Pono.MarbleRun3D.Gameplay
             int baseLevel,
             ToyMaterialLibrary materials,
             int courseLayer,
-            float radius = 0.16f)
+            float radius = 0.21f)
         {
             var bottomLocalY = -baseLevel * LevelHeight;
             var length = topLocalY - bottomLocalY;

@@ -67,6 +67,177 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator ToyRoomArtPassStaysVisualOnlyWhileBoardColliderRemainsActive()
+        {
+            yield return null;
+            var toyRoom = _controller.transform.Find("ToyRoom");
+            Assert.That(toyRoom, Is.Not.Null);
+
+            var visualNames = new HashSet<string>
+            {
+                "ラベンダーの あそびマット",
+                "まるい きの だい まんなか",
+                "まるい きの だい みぎ",
+                "まるい きの だい ひだり",
+                "まるい きの だい かど",
+                "キャンディの かど",
+                "キャンディの つまみ",
+                "つみきの き みき",
+                "つみきの き はっぱ",
+                "つみきの き み",
+                "ふわふわ くも"
+            };
+            var decorations = toyRoom.GetComponentsInChildren<Transform>(true)
+                .Where(item => visualNames.Contains(item.name))
+                .ToArray();
+            Assert.That(decorations.Length, Is.EqualTo(40));
+            foreach (var decoration in decorations)
+            {
+                Assert.That(decoration.gameObject.layer, Is.EqualTo(2), decoration.name + " layer");
+                Assert.That(decoration.GetComponent<Renderer>(), Is.Not.Null, decoration.name + " renderer");
+                var collider = decoration.GetComponent<Collider>();
+                Assert.That(collider, Is.Not.Null, decoration.name + " collider component");
+                Assert.That(collider.enabled, Is.False, decoration.name + " visual collider");
+            }
+
+            var board = toyRoom.Find("おおきな きの だい");
+            Assert.That(board, Is.Not.Null);
+            Assert.That(board.GetComponent<Collider>().enabled, Is.True);
+            Assert.That(board.GetComponent<Renderer>().enabled, Is.False);
+        }
+
+        [UnityTest]
+        public IEnumerator UiUsesLayeredStorybookCardsAndColorCodedActionRows()
+        {
+            Canvas.ForceUpdateCanvases();
+            yield return null;
+            var menu = _controller.Ui.transform.Find("Canvas/SafeArea/Menu");
+            Assert.That(menu.GetComponent<Shadow>(), Is.Not.Null);
+            Assert.That(menu.GetComponent<Outline>(), Is.Not.Null);
+
+            var titleTag = menu.Find("TitleTag");
+            Assert.That(titleTag, Is.Not.Null);
+            Assert.That(titleTag.GetComponent<Image>().raycastTarget, Is.False);
+            Assert.That(titleTag.GetComponent<Shadow>(), Is.Not.Null);
+            Assert.That(titleTag.GetComponent<Outline>(), Is.Not.Null);
+
+            var starter = menu.Find("ModeButtons/Starter");
+            Assert.That(starter.GetComponent<Shadow>(), Is.Not.Null);
+            Assert.That(starter.GetComponent<Outline>(), Is.Not.Null);
+            var innerEdge = starter.Find("InnerEdge");
+            Assert.That(innerEdge, Is.Not.Null);
+            Assert.That(innerEdge.GetComponent<Image>().raycastTarget, Is.False);
+            Assert.That(innerEdge.GetComponent<Image>().color.a, Is.InRange(0.20f, 0.40f));
+            Assert.That(innerEdge.GetComponent<Outline>().useGraphicAlpha, Is.True);
+            Assert.That(starter.Find("Label").GetComponent<Shadow>(), Is.Not.Null);
+
+            var subtitle = menu.Find("Subtitle").GetComponent<Text>();
+            Assert.That(PerceivedBrightness(subtitle.color), Is.LessThan(0.28f));
+            var menuButtons = menu.Find("ModeButtons").GetComponentsInChildren<Button>(true);
+            Assert.That(menuButtons.Length, Is.EqualTo(7));
+            var symbols = new HashSet<string>();
+            foreach (var button in menuButtons)
+            {
+                var face = button.GetComponent<Image>();
+                Assert.That(AverageDistanceFromWhite(face.color), Is.GreaterThan(0.24f), button.name + " face");
+                var label = button.transform.Find("Label").GetComponent<Text>();
+                Assert.That(PerceivedBrightness(label.color), Is.LessThan(0.24f), button.name + " label");
+                Assert.That(label.rectTransform.offsetMin.x, Is.GreaterThanOrEqualTo(56f), button.name + " label inset");
+
+                var badge = button.transform.Find("Badge");
+                Assert.That(badge, Is.Not.Null, button.name + " badge");
+                var badgeImage = badge.GetComponent<Image>();
+                Assert.That(badgeImage.raycastTarget, Is.False, button.name + " badge raycast");
+                Assert.That(((RectTransform)badge).rect.width, Is.GreaterThanOrEqualTo(48f), button.name + " badge width");
+                Assert.That(((RectTransform)badge).rect.height, Is.GreaterThanOrEqualTo(44f), button.name + " badge height");
+                var symbol = badge.Find("Symbol").GetComponent<Text>();
+                Assert.That(symbol.raycastTarget, Is.False, button.name + " symbol raycast");
+                Assert.That(symbol.text, Is.Not.Empty, button.name + " symbol");
+                symbols.Add(symbol.text);
+            }
+            Assert.That(symbols.Count, Is.EqualTo(7));
+
+            _controller.StartMode("sandbox");
+            Canvas.ForceUpdateCanvases();
+            yield return null;
+
+            var editActions = _controller.Ui.transform.Find("Canvas/SafeArea/EditActions");
+            var runActions = _controller.Ui.transform.Find("Canvas/SafeArea/RunActions");
+            Assert.That(editActions.GetComponent<Shadow>(), Is.Not.Null);
+            Assert.That(editActions.GetComponent<Outline>(), Is.Not.Null);
+            Assert.That(runActions.GetComponent<Shadow>(), Is.Not.Null);
+            Assert.That(runActions.GetComponent<Outline>(), Is.Not.Null);
+            var status = _controller.Ui.transform.Find("Canvas/SafeArea/BuilderTop/Status");
+            Assert.That(PerceivedBrightness(status.Find("StatusText").GetComponent<Text>().color), Is.LessThan(0.28f));
+            Assert.That(AverageDistanceFromWhite(status.GetComponent<Image>().color), Is.GreaterThan(0.18f));
+
+            var editColors = editActions.GetComponentsInChildren<Button>(true)
+                .Select(button => (Color32)button.targetGraphic.color)
+                .Select(color => color.r + ":" + color.g + ":" + color.b)
+                .Distinct()
+                .ToArray();
+            var runColors = runActions.GetComponentsInChildren<Button>(true)
+                .Select(button => (Color32)button.targetGraphic.color)
+                .Select(color => color.r + ":" + color.g + ":" + color.b)
+                .Distinct()
+                .ToArray();
+            Assert.That(editColors.Length, Is.GreaterThanOrEqualTo(5));
+            Assert.That(runColors.Length, Is.GreaterThanOrEqualTo(4));
+        }
+
+        [UnityTest]
+        public IEnumerator PaletteAndPlacedPieceShowDistinctSelectionStates()
+        {
+            _controller.StartMode("sandbox");
+            Canvas.ForceUpdateCanvases();
+            yield return null;
+
+            var content = _controller.Ui.transform.Find("Canvas/SafeArea/Palette/Scroll/Viewport/Content");
+            var paletteFaces = content.GetComponentsInChildren<PaletteDragItem>(true)
+                .Select(item => item.GetComponent<Image>().color)
+                .ToArray();
+            Assert.That(paletteFaces.Length, Is.EqualTo(19));
+            Assert.That(paletteFaces.All(color => AverageDistanceFromWhite(color) >= 0.139f), Is.True);
+            Assert.That(paletteFaces.All(color => Mathf.Max(color.r, Mathf.Max(color.g, color.b)) <= 0.861f), Is.True);
+            var straight = content.Find("PartStraight");
+            var curve = content.Find("PartCurve");
+            var straightMark = straight.Find("SelectionMark");
+            var curveMark = curve.Find("SelectionMark");
+            var straightLabel = straight.Find("Label").GetComponent<Text>().text;
+            Assert.That(straightMark.gameObject.activeSelf, Is.False);
+            Assert.That(curveMark.gameObject.activeSelf, Is.False);
+
+            straight.GetComponent<Button>().onClick.Invoke();
+            Assert.That(straightMark.gameObject.activeSelf, Is.True);
+            Assert.That(curveMark.gameObject.activeSelf, Is.False);
+            Assert.That(straight.Find("Label").GetComponent<Text>().text, Is.EqualTo(straightLabel));
+
+            curve.GetComponent<Button>().onClick.Invoke();
+            Assert.That(straightMark.gameObject.activeSelf, Is.False);
+            Assert.That(curveMark.gameObject.activeSelf, Is.True);
+
+            var selectedCard = _controller.Ui.transform.Find("Canvas/SafeArea/BuilderTop/SelectedCard");
+            var selectedMarker = selectedCard.Find("SelectedMarker");
+            var idleColor = selectedCard.GetComponent<Image>().color;
+            Assert.That(selectedMarker.gameObject.activeSelf, Is.False);
+
+            _controller.StartMode("sample2");
+            var piece = _controller.Course.pieces.First(record => !record.locked);
+            Assert.That(_controller.SelectForQa(piece.id), Is.True);
+            Assert.That(selectedMarker.gameObject.activeSelf, Is.True);
+            Assert.That(_controller.Ui.transform.Find("Canvas/SafeArea/BuilderTop/Selected").GetComponent<Text>().text,
+                Does.Contain(PartCatalog.Get(piece.kind).DisplayName));
+            var selectedColor = selectedCard.GetComponent<Image>().color;
+            var colorDistance = Mathf.Abs(selectedColor.r - idleColor.r)
+                + Mathf.Abs(selectedColor.g - idleColor.g)
+                + Mathf.Abs(selectedColor.b - idleColor.b);
+            Assert.That(colorDistance, Is.GreaterThan(0.03f));
+            Assert.That(content.GetComponentsInChildren<Transform>(true)
+                .Where(item => item.name == "SelectionMark")
+                .All(item => !item.gameObject.activeSelf), Is.True);
+        }
+
+        [UnityTest]
         public IEnumerator StarterButtonLoadsConnectedRichEditableCourseAndFramesItsHeight()
         {
             var modeButtons = _controller.Ui.transform.Find("Canvas/SafeArea/Menu/ModeButtons");
@@ -835,6 +1006,16 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
         private static Vector2 VirtualSafeSize(AspectCase aspect, Rect safeArea, CanvasScaler scaler)
         {
             return safeArea.size / CanvasScale(aspect, scaler);
+        }
+
+        private static float PerceivedBrightness(Color color)
+        {
+            return color.r * 0.299f + color.g * 0.587f + color.b * 0.114f;
+        }
+
+        private static float AverageDistanceFromWhite(Color color)
+        {
+            return ((1f - color.r) + (1f - color.g) + (1f - color.b)) / 3f;
         }
 
         private static float CanvasScale(AspectCase aspect, CanvasScaler scaler)

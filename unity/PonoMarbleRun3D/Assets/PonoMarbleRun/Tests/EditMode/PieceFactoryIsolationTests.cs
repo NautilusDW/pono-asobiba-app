@@ -237,14 +237,21 @@ namespace Pono.MarbleRun3D.Tests.EditMode
             var materials = new ToyMaterialLibrary();
             try
             {
-                AssertSoftColor(materials.Maple.color, 0.90f, 0.42f, "cream maple");
-                AssertSoftColor(materials.Board.color, 0.88f, 0.42f, "peach play board");
+                AssertSoftColor(materials.Maple.color, 0.68f, 0.65f, "linear vanilla maple");
+                AssertSoftColor(materials.Board.color, 0.64f, 0.70f, "linear peach play board");
+
+                Assert.That(materials.Maple.color.gamma.maxColorComponent, Is.LessThan(0.93f),
+                    "linear maple must retain visible tone instead of clipping white on screen");
+                Assert.That(materials.Board.color.gamma.maxColorComponent, Is.LessThan(0.92f),
+                    "linear board color must stay visibly peach");
+                Assert.That(materials.MapleDark.color.gamma.maxColorComponent, Is.InRange(0.52f, 0.68f),
+                    "support wood needs a clear cocoa silhouette in Linear color space");
 
                 Color.RGBToHSV(materials.MapleDark.color, out _, out var cocoaSaturation, out var cocoaValue);
-                Assert.That(cocoaValue, Is.InRange(0.60f, 0.74f), "cocoa trim must stay readable without looking black");
-                Assert.That(cocoaSaturation, Is.LessThanOrEqualTo(0.55f));
+                Assert.That(cocoaValue, Is.InRange(0.28f, 0.36f), "linear cocoa should remain warm and readable");
+                Assert.That(cocoaSaturation, Is.LessThanOrEqualTo(0.78f));
                 Color.RGBToHSV(materials.BoardEdge.color, out _, out _, out var edgeValue);
-                Assert.That(edgeValue, Is.GreaterThanOrEqualTo(0.58f));
+                Assert.That(edgeValue, Is.GreaterThanOrEqualTo(0.26f));
 
                 var accents = Enum.GetValues(typeof(MarblePieceKind))
                     .Cast<MarblePieceKind>()
@@ -340,9 +347,16 @@ namespace Pono.MarbleRun3D.Tests.EditMode
                     .Where(child => child.name == "たかい みちの あし")
                     .ToArray();
                 Assert.That(supportRods.Length, Is.EqualTo(4));
-                Assert.That(supportRods.All(child => child.localScale.x >= 0.31f), Is.True,
+                Assert.That(supportRods.All(child => child.localScale.x >= 0.41f), Is.True,
                     "storybook supports should be visibly thicker than the old wire-like posts");
                 Assert.That(supportRods.All(IsVisualOnly), Is.True);
+
+                var trestleBeams = elevated.GetComponentsInChildren<Transform>(true)
+                    .Where(child => child.name.StartsWith("おもちゃ かざり つみき ばり", StringComparison.Ordinal))
+                    .ToArray();
+                Assert.That(trestleBeams.Length, Is.EqualTo(2),
+                    "four legs should read as two chunky bridge trestles without adding more legs");
+                Assert.That(trestleBeams.All(IsVisualOnly), Is.True);
 
                 var feet = elevated.GetComponentsInChildren<Transform>(true)
                     .Where(child => child.name.StartsWith("おもちゃ かざり あしの だい", StringComparison.Ordinal))
@@ -372,7 +386,7 @@ namespace Pono.MarbleRun3D.Tests.EditMode
 
                 Assert.That(elevated.GetComponentsInChildren<Transform>(true)
                     .Count(child => child.name.StartsWith("おもちゃ かざり", StringComparison.Ordinal)),
-                    Is.LessThanOrEqualTo(12), "keep the extra primitive budget bounded per elevated module");
+                    Is.LessThanOrEqualTo(14), "keep the extra primitive budget bounded per elevated module");
             }
             finally
             {
@@ -488,6 +502,13 @@ namespace Pono.MarbleRun3D.Tests.EditMode
             {
                 QualitySettings.SetQualityLevel(original, false);
             }
+        }
+
+        private static bool IsVisualOnly(Transform child)
+        {
+            if (child == null || child.gameObject.layer != 2) return false;
+            var collider = child.GetComponent<Collider>();
+            return collider == null || !collider.enabled;
         }
 
         private static PieceView Make(MarblePieceKind kind, Transform root, ToyMaterialLibrary materials)

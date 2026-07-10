@@ -1554,6 +1554,161 @@ namespace Pono.MarbleRun3D.Gameplay
             _ui.ShowTutorialGuide(text, true);
         }
 
+        private void BuildRoundedBoardVisual()
+        {
+            const float width = 41.5f;
+            const float depth = 35.5f;
+            const float radius = 1.20f;
+            const float height = 0.76f;
+            var sideX = width * 0.5f - radius * 0.5f;
+            var cornerX = width * 0.5f - radius;
+            var cornerZ = depth * 0.5f - radius;
+
+            CreateWorldDecoration(
+                PrimitiveType.Cube,
+                "まるい きの だい まんなか",
+                new Vector3(0f, 0.54f, 0f),
+                new Vector3(width - radius * 2f, height, depth),
+                _materials.Board,
+                true);
+            CreateWorldDecoration(
+                PrimitiveType.Cube,
+                "まるい きの だい みぎ",
+                new Vector3(sideX, 0.54f, 0f),
+                new Vector3(radius, height, depth - radius * 2f),
+                _materials.Board,
+                true);
+            CreateWorldDecoration(
+                PrimitiveType.Cube,
+                "まるい きの だい ひだり",
+                new Vector3(-sideX, 0.54f, 0f),
+                new Vector3(radius, height, depth - radius * 2f),
+                _materials.Board,
+                true);
+
+            for (var x = -1; x <= 1; x += 2)
+            {
+                for (var z = -1; z <= 1; z += 2)
+                {
+                    CreateWorldDecoration(
+                        PrimitiveType.Cylinder,
+                        "まるい きの だい かど",
+                        new Vector3(cornerX * x, 0.54f, cornerZ * z),
+                        new Vector3(radius * 2f, height * 0.5f, radius * 2f),
+                        _materials.Board,
+                        true);
+                }
+            }
+        }
+
+        private void BuildBoardCornerToys()
+        {
+            var corners = new[]
+            {
+                new Vector3(-21.08f, 1.16f, -18.08f),
+                new Vector3(21.08f, 1.16f, -18.08f),
+                new Vector3(21.08f, 1.16f, 18.08f),
+                new Vector3(-21.08f, 1.16f, 18.08f)
+            };
+            for (var index = 0; index < corners.Length; index++)
+            {
+                CreateWorldDecoration(
+                    PrimitiveType.Cylinder,
+                    "キャンディの かど",
+                    corners[index],
+                    new Vector3(1.30f, 0.28f, 1.30f),
+                    _materials.PastelAt(index));
+                CreateWorldDecoration(
+                    PrimitiveType.Sphere,
+                    "キャンディの つまみ",
+                    corners[index] + Vector3.up * 0.34f,
+                    new Vector3(0.72f, 0.44f, 0.72f),
+                    _materials.PastelAt(index + 2));
+            }
+        }
+
+        private void BuildToyRoomScenery(Material cloudMaterial)
+        {
+            CreateToyTree(new Vector3(-25f, 1.15f, -15.5f), 0);
+            CreateToyTree(new Vector3(25f, 1.15f, 14.5f), 2);
+            CreateToyTree(new Vector3(-25.5f, 1.05f, 14.2f), 5);
+            CreateToyTree(new Vector3(25.4f, 1.05f, -14.8f), 1);
+
+            CreateCloudCluster(new Vector3(-16f, 5.7f, 21.2f), cloudMaterial, 1.15f);
+            CreateCloudCluster(new Vector3(16.5f, 6.3f, 21.8f), cloudMaterial, 0.95f);
+            CreateCloudCluster(new Vector3(-18f, 5.2f, -21.4f), cloudMaterial, 0.86f);
+            CreateCloudCluster(new Vector3(18f, 5.8f, -21.8f), cloudMaterial, 1.05f);
+        }
+
+        private void CreateToyTree(Vector3 position, int paletteIndex)
+        {
+            CreateWorldDecoration(
+                PrimitiveType.Cylinder,
+                "つみきの き みき",
+                position,
+                new Vector3(0.76f, 1.15f, 0.76f),
+                _materials.MapleDark);
+            CreateWorldDecoration(
+                PrimitiveType.Sphere,
+                "つみきの き はっぱ",
+                position + Vector3.up * 1.42f,
+                new Vector3(3.1f, 2.25f, 3.1f),
+                _materials.PastelAt(paletteIndex));
+            CreateWorldDecoration(
+                PrimitiveType.Sphere,
+                "つみきの き み",
+                position + new Vector3(0.72f, 1.62f, -0.34f),
+                new Vector3(0.48f, 0.48f, 0.48f),
+                _materials.PastelAt(paletteIndex + 3));
+        }
+
+        private void CreateCloudCluster(Vector3 position, Material material, float scale)
+        {
+            CreateWorldDecoration(
+                PrimitiveType.Sphere,
+                "ふわふわ くも",
+                position,
+                new Vector3(4.2f, 1.50f, 2.0f) * scale,
+                material);
+            CreateWorldDecoration(
+                PrimitiveType.Sphere,
+                "ふわふわ くも",
+                position + new Vector3(-1.35f, 0.18f, 0f) * scale,
+                new Vector3(2.2f, 1.35f, 1.7f) * scale,
+                material);
+            CreateWorldDecoration(
+                PrimitiveType.Sphere,
+                "ふわふわ くも",
+                position + new Vector3(1.42f, 0.24f, 0.05f) * scale,
+                new Vector3(2.4f, 1.45f, 1.8f) * scale,
+                material);
+        }
+
+        private GameObject CreateWorldDecoration(
+            PrimitiveType primitive,
+            string name,
+            Vector3 position,
+            Vector3 scale,
+            Material material,
+            bool castShadow = false)
+        {
+            var decoration = GameObject.CreatePrimitive(primitive);
+            decoration.name = name;
+            decoration.layer = 2;
+            decoration.transform.SetParent(_worldRoot, false);
+            decoration.transform.position = position;
+            decoration.transform.localScale = scale;
+            var collider = decoration.GetComponent<Collider>();
+            if (collider != null) collider.enabled = false;
+            var renderer = decoration.GetComponent<Renderer>();
+            renderer.sharedMaterial = material;
+            renderer.shadowCastingMode = castShadow
+                ? UnityEngine.Rendering.ShadowCastingMode.On
+                : UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows = castShadow;
+            return decoration;
+        }
+
         private void CreateBoardEdge(Vector3 position, Vector3 scale)
         {
             var edge = GameObject.CreatePrimitive(PrimitiveType.Cube);
