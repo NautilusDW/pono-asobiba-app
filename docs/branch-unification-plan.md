@@ -18,7 +18,7 @@
 
 各 Phase 完了時にこのチェックボックスを更新すること。
 
-- [ ] Phase 0 — 前提修理（webapp 本番 404 の原因確認・復旧）
+- [x] Phase 0 — 前提修理（webapp 本番 404 の原因確認・復旧）✅ **2026-07-10 完了** — 原因はダッシュボードで本番 worker の workers.dev URL トグルが手動 OFF になっていたこと（wrangler.toml の `workers_dev = true` より管理画面設定が優先されるため 7/6 の修正デプロイでも直らなかった）。ユーザーが Domains タブでトグル ON → `/` `/play` `/quizland/` 全て 200 を実測確認。Preview URL は意図的に OFF のまま。`/api/savedata` の 404 は master に savedata 未搭載のためで正常（App リリース時の master マージ + KV セットアップで有効化、src/api/SETUP.md 参照）。
 - [ ] Phase 1 — 逆統合（develop → develop-app: canonical/OG/JSON-LD/sitemap URL・Amazon 文言）
 - [ ] Phase 2 — 設定統一（`[env.staging.assets]` 追加）
 - [ ] Phase 3 — CI 切替 + フック更新 + `develop` 凍結宣言
@@ -63,6 +63,8 @@
 各 Phase は完了ごとに本ファイル冒頭のチェックリストを更新する運用とする。
 
 ### Phase 0 — 前提修理（統合作業と並行して着手可）
+
+> ✅ **2026-07-10 解決済み**: 原因は Cloudflare ダッシュボード側で本番 worker `pono-asobiba-app` の workers.dev URL トグルが手動 OFF だったこと。ユーザーが Domains タブで ON に切替 → 全パス 200 復旧を実測確認。以下は当時の記録として保存。
 
 - **作業項目**:
   - ⚠️⚠️ Web アプリ本番 `https://pono-asobiba-app.ndw.workers.dev/` が現在**全パス 404**（2026-07-10 実測。本計画書作成中にも `curl` で再確認済み、応答コード `404`）。

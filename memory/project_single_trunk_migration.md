@@ -36,7 +36,7 @@ metadata:
 
 | Phase | 内容 | 状態 |
 | --- | --- | --- |
-| Phase 0 | 前提修理（webapp 本番 `pono-asobiba-app.ndw.workers.dev` 全パス 404 の原因確認・復旧） | 未着手 |
+| Phase 0 | 前提修理（webapp 本番 `pono-asobiba-app.ndw.workers.dev` 全パス 404 の原因確認・復旧） | ✅ 完了 (2026-07-10) — 原因はダッシュボードの workers.dev トグル手動 OFF（管理画面設定が wrangler.toml の `workers_dev=true` より優先）。ユーザーが Domains タブで ON に切替、全パス 200 を実測確認。Preview URL は意図的に OFF 維持 |
 | Phase 1 | 逆統合（`index.html` canonical/OG/JSON-LD 6 箇所 + `sitemap.xml` 7 URL + Amazon 文言） | 未着手 |
 | Phase 2 | 設定統一（`wrangler.toml` に `[env.staging.assets]` 追加） | 未着手 |
 | Phase 3 | CI 切替（`deploy.yml`）+ フック更新（`.claude/settings.local.json`）+ `develop` 凍結宣言 | 未着手 |
