@@ -37,6 +37,7 @@ namespace Pono.MarbleRun3D.Gameplay
 
             BuildByKind(view, record.kind, materials, isGhost, courseLayer);
             BuildWoodenSupports(view, record, materials, courseLayer);
+            BuildPastelDecorations(view, record.kind, materials, courseLayer);
             var runColliders = root.GetComponentsInChildren<Collider>(true);
             for (var colliderIndex = 0; colliderIndex < runColliders.Length; colliderIndex++)
             {
@@ -976,6 +977,148 @@ namespace Pono.MarbleRun3D.Gameplay
                 materials.Maple,
                 courseLayer,
                 false);
+        }
+
+        private static void BuildPastelDecorations(
+            PieceView view,
+            MarblePieceKind kind,
+            ToyMaterialLibrary materials,
+            int courseLayer)
+        {
+            switch (kind)
+            {
+                case MarblePieceKind.Start:
+                    CreateFlowerDecoration(view, "スタート", new Vector3(0.55f, 1.43f, -0.80f),
+                        0.15f, materials, courseLayer, 5);
+                    break;
+                case MarblePieceKind.Goal:
+                    CreateStarDecoration(view, "ゴール", new Vector3(0f, 1.70f, 0.38f),
+                        0.24f, materials.PastelAt(1), courseLayer);
+                    break;
+                case MarblePieceKind.Tunnel:
+                    CreateCloudDecoration(view, "トンネル", new Vector3(0f, 1.62f, 0f),
+                        0.24f, materials, courseLayer);
+                    break;
+                case MarblePieceKind.Funnel:
+                    CreateFlowerDecoration(view, "じょうご", new Vector3(1.10f, 0.95f, 0f),
+                        0.13f, materials, courseLayer, 0);
+                    break;
+                case MarblePieceKind.Helix:
+                    CreateStarDecoration(view, "ぐるぐる", new Vector3(0f, LevelHeight * 2f + 0.44f, 0f),
+                        0.23f, materials.PastelAt(4), courseLayer);
+                    CreateRoundCap(view, "ぐるぐる", new Vector3(0f, LevelHeight * 2f + 0.18f, 0f),
+                        0.28f, materials.PastelAt(5), courseLayer);
+                    break;
+                case MarblePieceKind.Steps:
+                    CreateStarDecoration(view, "だんだん", new Vector3(0.66f, LevelHeight + 0.54f, -1.05f),
+                        0.17f, materials.PastelAt(0), courseLayer);
+                    break;
+                case MarblePieceKind.Lift:
+                    CreateFlowerDecoration(view, "のぼる", new Vector3(0.70f, LevelHeight + 0.50f, 0.85f),
+                        0.12f, materials, courseLayer, 2);
+                    break;
+                case MarblePieceKind.Tornado:
+                    CreateCloudDecoration(view, "トルネード", new Vector3(0f, LevelHeight * 3f + 0.38f, 0f),
+                        0.25f, materials, courseLayer);
+                    CreateRoundCap(view, "トルネード", new Vector3(0f, LevelHeight * 3f + 0.13f, 0f),
+                        0.30f, materials.PastelAt(5), courseLayer);
+                    break;
+                case MarblePieceKind.Elevator:
+                    CreateCloudDecoration(view, "エレベーター", new Vector3(0f, LevelHeight * 3f + 0.57f, -0.06f),
+                        0.25f, materials, courseLayer);
+                    CreateStarDecoration(view, "エレベーター", new Vector3(0.52f, LevelHeight * 3f + 0.25f, 0.52f),
+                        0.15f, materials.PastelAt(1), courseLayer);
+                    break;
+                case MarblePieceKind.ClearTube:
+                    CreateCloudDecoration(view, "すけすけ つつ", new Vector3(0f, 1.34f, 0f),
+                        0.20f, materials, courseLayer);
+                    break;
+                case MarblePieceKind.ClearCurve:
+                    CreateFlowerDecoration(view, "すけすけ カーブ", new Vector3(1.48f, 1.34f, -1.48f),
+                        0.13f, materials, courseLayer, 4);
+                    break;
+                case MarblePieceKind.Wave:
+                    CreateStarDecoration(view, "なみなみ", new Vector3(0.62f, 1.30f, 0f),
+                        0.18f, materials.PastelAt(2), courseLayer);
+                    break;
+                case MarblePieceKind.Spinner:
+                    CreateFlowerDecoration(view, "くるくる", new Vector3(-0.67f, 1.43f, 0f),
+                        0.12f, materials, courseLayer, 1);
+                    break;
+            }
+        }
+
+        private static void CreateFlowerDecoration(
+            PieceView view,
+            string label,
+            Vector3 centre,
+            float radius,
+            ToyMaterialLibrary materials,
+            int courseLayer,
+            int paletteOffset)
+        {
+            const int petalCount = 5;
+            for (var petal = 0; petal < petalCount; petal++)
+            {
+                var angle = Mathf.PI * 2f * petal / petalCount;
+                var offset = new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f) * radius * 0.88f;
+                CreateSphere(view, "パステル かざり おはな " + label,
+                    centre + offset, radius * 0.53f, materials.PastelAt(paletteOffset + petal),
+                    courseLayer, false);
+            }
+            CreateSphere(view, "パステル かざり おはな まんなか " + label,
+                centre, radius * 0.50f, materials.PastelAt(1), courseLayer, false);
+        }
+
+        private static void CreateStarDecoration(
+            PieceView view,
+            string label,
+            Vector3 centre,
+            float radius,
+            Material material,
+            int courseLayer)
+        {
+            for (var ray = 0; ray < 5; ray++)
+            {
+                var angle = ray * 72f;
+                var radians = angle * Mathf.Deg2Rad;
+                var offset = new Vector3(Mathf.Cos(radians), Mathf.Sin(radians), 0f) * radius * 0.43f;
+                CreateCube(view, "パステル かざり おほし " + label,
+                    centre + offset,
+                    new Vector3(radius * 0.22f, radius * 0.86f, radius * 0.16f),
+                    Quaternion.Euler(0f, 0f, angle - 90f), material, courseLayer, false);
+            }
+        }
+
+        private static void CreateCloudDecoration(
+            PieceView view,
+            string label,
+            Vector3 centre,
+            float radius,
+            ToyMaterialLibrary materials,
+            int courseLayer)
+        {
+            CreateSphere(view, "パステル かざり くも " + label,
+                centre + new Vector3(-radius * 0.72f, -radius * 0.12f, 0f),
+                radius * 0.68f, materials.Maple, courseLayer, false);
+            CreateSphere(view, "パステル かざり くも " + label,
+                centre + new Vector3(0f, radius * 0.18f, 0f),
+                radius, materials.Metal, courseLayer, false);
+            CreateSphere(view, "パステル かざり くも " + label,
+                centre + new Vector3(radius * 0.76f, -radius * 0.10f, 0f),
+                radius * 0.72f, materials.Maple, courseLayer, false);
+        }
+
+        private static void CreateRoundCap(
+            PieceView view,
+            string label,
+            Vector3 centre,
+            float radius,
+            Material material,
+            int courseLayer)
+        {
+            CreateCylinder(view, "パステル かざり まるい キャップ " + label,
+                centre, Vector3.up, radius, 0.13f, material, courseLayer, false);
         }
 
         private static void BuildHelixTrackSegment(

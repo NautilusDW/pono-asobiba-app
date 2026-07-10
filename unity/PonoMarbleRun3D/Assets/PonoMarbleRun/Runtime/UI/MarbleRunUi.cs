@@ -155,16 +155,20 @@ namespace Pono.MarbleRun3D.UI
         private Text _selectedText;
         private Text _heightText;
         private Text _viewText;
+        private Text _followText;
         private Text _tutorialText;
         private UiPulse _resetPulse;
         private UiPulse _rotatePulse;
 
-        private static readonly Color Cream = new Color(1f, 0.95f, 0.82f, 0.97f);
-        private static readonly Color Wood = new Color(0.52f, 0.29f, 0.13f, 0.98f);
-        private static readonly Color Sky = new Color(0.34f, 0.78f, 0.92f, 0.96f);
-        private static readonly Color Green = new Color(0.27f, 0.76f, 0.48f, 0.98f);
-        private static readonly Color Coral = new Color(0.95f, 0.43f, 0.35f, 0.98f);
-        private static readonly Color Purple = new Color(0.63f, 0.46f, 0.85f, 0.98f);
+        private static readonly Color Cream = new Color(1f, 0.97f, 0.93f, 0.97f);
+        private static readonly Color Wood = new Color(0.36f, 0.25f, 0.29f, 0.98f);
+        private static readonly Color Sky = new Color(0.66f, 0.86f, 0.95f, 0.98f);
+        private static readonly Color Green = new Color(0.70f, 0.88f, 0.75f, 0.98f);
+        private static readonly Color Coral = new Color(0.97f, 0.72f, 0.69f, 0.98f);
+        private static readonly Color Purple = new Color(0.80f, 0.74f, 0.92f, 0.98f);
+        private static readonly Color Butter = new Color(0.99f, 0.87f, 0.58f, 0.98f);
+        private static readonly Color Peach = new Color(0.98f, 0.78f, 0.62f, 0.98f);
+        private static readonly Color CocoaText = new Color(0.29f, 0.20f, 0.24f);
         private static readonly MarblePieceKind[] PaletteOrder =
         {
             MarblePieceKind.Start,
@@ -192,6 +196,7 @@ namespace Pono.MarbleRun3D.UI
         public string StatusText => _statusText != null ? _statusText.text : string.Empty;
         public string TutorialText => _tutorialText != null ? _tutorialText.text : string.Empty;
         public string HeightText => _heightText != null ? _heightText.text : string.Empty;
+        public string FollowText => _followText != null ? _followText.text : string.Empty;
 
         public void Build(MarbleRunGameController controller)
         {
@@ -274,10 +279,10 @@ namespace Pono.MarbleRun3D.UI
         {
             if (_statusText == null) return;
             _statusText.text = invalid ? "×  " + text : "○  " + text;
-            _statusText.color = invalid ? new Color(0.54f, 0.10f, 0.06f) : new Color(0.08f, 0.31f, 0.22f);
+            _statusText.color = invalid ? new Color(0.48f, 0.18f, 0.20f) : new Color(0.12f, 0.34f, 0.27f);
             _statusPanelImage.color = invalid
-                ? new Color(1f, 0.77f, 0.68f, 0.98f)
-                : new Color(0.78f, 1f, 0.82f, 0.98f);
+                ? new Color(1f, 0.84f, 0.82f, 0.98f)
+                : new Color(0.86f, 0.97f, 0.89f, 0.98f);
         }
 
         public void SetSelected(PieceRecord piece)
@@ -320,6 +325,11 @@ namespace Pono.MarbleRun3D.UI
             if (_viewText != null) _viewText.text = topView ? "ななめ" : "うえから";
         }
 
+        public void SetCameraFollow(bool following)
+        {
+            if (_followText != null) _followText.text = following ? "みわたす" : "おいかける";
+        }
+
         private void EnsureEventSystem()
         {
             if (EventSystem.current != null) return;
@@ -347,9 +357,9 @@ namespace Pono.MarbleRun3D.UI
         private void BuildMenu()
         {
             _menuPanel = CreatePanel("Menu", _safeRoot.transform, new Vector2(0.16f, 0.05f), new Vector2(0.84f, 0.95f),
-                new Color(1f, 0.95f, 0.82f, 0.97f), 26);
+                Cream, 26);
             var title = CreateText("Title", _menuPanel.transform, "ポノの マーブルラン", 50, FontStyle.Bold,
-                new Color(0.38f, 0.20f, 0.09f), TextAnchor.MiddleCenter);
+                CocoaText, TextAnchor.MiddleCenter);
             SetRect(title.rectTransform, new Vector2(0.06f, 0.82f), new Vector2(0.94f, 0.97f));
             var subtitle = CreateText("Subtitle", _menuPanel.transform, "つくって ころがして かえてみよう", 26,
                 FontStyle.Normal, new Color(0.18f, 0.45f, 0.52f), TextAnchor.MiddleCenter);
@@ -364,10 +374,10 @@ namespace Pono.MarbleRun3D.UI
             layout.spacing = new Vector2(14f, 12f);
             layout.childAlignment = TextAnchor.MiddleCenter;
 
-            CreateButton("Starter", buttons.transform, "すぐ ころがす", new Color(0.99f, 0.76f, 0.24f),
+            CreateButton("Starter", buttons.transform, "すぐ ころがす", Butter,
                 () => _controller.StartMode("starter"));
             CreateButton("Tutorial", buttons.transform, "あそびかた", Sky, () => _controller.StartMode("tutorial"));
-            CreateButton("Challenge1", buttons.transform, "チャレンジ １", new Color(0.96f, 0.63f, 0.28f),
+            CreateButton("Challenge1", buttons.transform, "チャレンジ １", Peach,
                 () => _controller.StartMode("challenge1"));
             CreateButton("Challenge2", buttons.transform, "チャレンジ ２", Green,
                 () => _controller.StartMode("challenge2"));
@@ -377,14 +387,14 @@ namespace Pono.MarbleRun3D.UI
                 () => _controller.StartMode("sandbox"));
             var sandboxLayout = sandbox.gameObject.AddComponent<LayoutElement>();
             sandboxLayout.minWidth = 310f;
-            CreateButton("Samples", buttons.transform, "みほん コース", new Color(1f, 0.78f, 0.30f),
+            CreateButton("Samples", buttons.transform, "みほん コース", Butter,
                 ShowSampleMenu);
         }
 
         private void BuildSamplePanel()
         {
             _samplePanel = CreatePanel("Samples", _safeRoot.transform, new Vector2(0.14f, 0.06f), new Vector2(0.86f, 0.94f),
-                new Color(1f, 0.95f, 0.82f, 0.99f), 28);
+                Cream, 28);
             var title = CreateText("SamplesTitle", _samplePanel.transform, "みほん コース", 43, FontStyle.Bold,
                 Wood, TextAnchor.MiddleCenter);
             SetRect(title.rectTransform, new Vector2(0.06f, 0.82f), new Vector2(0.94f, 0.96f));
@@ -409,9 +419,9 @@ namespace Pono.MarbleRun3D.UI
                 () => _controller.StartMode("sample3"), 21);
             CreateButton("Sample4", buttons.transform, "のぼって おりて", Green,
                 () => _controller.StartMode("sample4"), 21);
-            CreateButton("Sample5", buttons.transform, "トルネード タワー", new Color(0.98f, 0.60f, 0.22f),
+            CreateButton("Sample5", buttons.transform, "トルネード タワー", Peach,
                 () => _controller.StartMode("sample5"), 21);
-            CreateButton("Sample6", buttons.transform, "エレベーター シティ", new Color(0.35f, 0.72f, 0.88f),
+            CreateButton("Sample6", buttons.transform, "エレベーター シティ", Sky,
                 () => _controller.StartMode("sample6"), 21);
 
             var back = CreateButton("SamplesBack", _samplePanel.transform, "もどる", Wood,
@@ -454,10 +464,10 @@ namespace Pono.MarbleRun3D.UI
             SetRect(resetView.GetComponent<RectTransform>(), new Vector2(0.92f, 0.53f), new Vector2(0.992f, 0.95f));
 
             _selectedText = CreateText("Selected", _builderTop.transform, "おいた ぶひんを おしてね", 20, FontStyle.Bold,
-                new Color(0.38f, 0.20f, 0.09f), TextAnchor.MiddleLeft);
+                CocoaText, TextAnchor.MiddleLeft);
             SetRect(_selectedText.rectTransform, new Vector2(0.012f, 0.04f), new Vector2(0.34f, 0.48f));
             var statusPanel = CreatePanel("Status", _builderTop.transform, new Vector2(0.35f, 0.04f), new Vector2(0.99f, 0.48f),
-                new Color(0.78f, 1f, 0.82f, 0.98f), 14);
+                new Color(0.86f, 0.97f, 0.89f, 0.98f), 14);
             _statusPanelImage = statusPanel.GetComponent<Image>();
             _statusText = CreateText("StatusText", statusPanel.transform, "○  ぶひんを えらぼう", 22, FontStyle.Bold,
                 new Color(0.08f, 0.31f, 0.22f), TextAnchor.MiddleCenter);
@@ -500,7 +510,7 @@ namespace Pono.MarbleRun3D.UI
             for (var index = 0; index < PaletteOrder.Length; index++)
             {
                 var kind = PaletteOrder[index];
-                var accent = PartCatalog.Get(kind).Accent;
+                var accent = PastelAccent(PartCatalog.Get(kind).Accent);
                 var button = CreateButton("Part" + kind, content.transform, PartCatalog.Get(kind).DisplayName,
                     new Color(accent.r, accent.g, accent.b, 0.98f), () => _controller.ChoosePart(kind), 19);
                 var layout = button.gameObject.AddComponent<LayoutElement>();
@@ -529,13 +539,13 @@ namespace Pono.MarbleRun3D.UI
             _rotatePulse = rotate.gameObject.AddComponent<UiPulse>();
             CreateButton("Delete", _editActions.transform, "けす", Coral, _controller.DeleteSelection, 20);
             CreateButton("Undo", _editActions.transform, "ひとつ\nもどす", Purple, _controller.Undo, 18);
-            CreateButton("Clear", _editActions.transform, "ぜんぶ\nけす", new Color(0.90f, 0.53f, 0.30f), _controller.RequestClearAll, 18);
+            CreateButton("Clear", _editActions.transform, "ぜんぶ\nけす", Peach, _controller.RequestClearAll, 18);
             CreateButton("Run", _editActions.transform, "ためす", Green, _controller.StartRun, 24);
         }
 
         private void BuildRunActions()
         {
-            _runActions = CreatePanel("RunActions", _safeRoot.transform, new Vector2(0.22f, 0.02f), new Vector2(0.98f, 0.15f), Cream, 18);
+            _runActions = CreatePanel("RunActions", _safeRoot.transform, new Vector2(0.18f, 0.02f), new Vector2(0.98f, 0.15f), Cream, 18);
             var layout = _runActions.AddComponent<HorizontalLayoutGroup>();
             layout.padding = new RectOffset(12, 12, 10, 10);
             layout.spacing = 16f;
@@ -545,6 +555,9 @@ namespace Pono.MarbleRun3D.UI
             layout.childForceExpandHeight = true;
             var reset = CreateButton("ResetMarble", _runActions.transform, "たまを もどす", Sky, _controller.ResetMarble, 23);
             _resetPulse = reset.gameObject.AddComponent<UiPulse>();
+            var follow = CreateButton("FollowCamera", _runActions.transform, "みわたす", Butter,
+                _controller.ToggleCameraFollow, 21);
+            _followText = follow.GetComponentInChildren<Text>();
             CreateButton("Pause", _runActions.transform, "いったん とめる", Purple, () => _controller.SetPaused(true), 21);
             CreateButton("Edit", _runActions.transform, "つくりなおす", Green, _controller.ReturnToEditing, 22);
         }
@@ -552,7 +565,7 @@ namespace Pono.MarbleRun3D.UI
         private void BuildPausePanel()
         {
             _pausePanel = CreatePanel("Pause", _safeRoot.transform, new Vector2(0.28f, 0.20f), new Vector2(0.72f, 0.80f),
-                new Color(1f, 0.95f, 0.82f, 0.99f), 28);
+                Cream, 28);
             var title = CreateText("PauseTitle", _pausePanel.transform, "いったん おやすみ", 39, FontStyle.Bold, Wood, TextAnchor.MiddleCenter);
             SetRect(title.rectTransform, new Vector2(0.08f, 0.66f), new Vector2(0.92f, 0.90f));
             var note = CreateText("PauseNote", _pausePanel.transform, "たまも しかけも とまっているよ", 23, FontStyle.Normal,
@@ -565,7 +578,7 @@ namespace Pono.MarbleRun3D.UI
         private void BuildCelebrationPanel()
         {
             _celebrationPanel = CreatePanel("Celebration", _safeRoot.transform, new Vector2(0.28f, 0.23f), new Vector2(0.72f, 0.82f),
-                new Color(1f, 0.91f, 0.56f, 0.98f), 30);
+                new Color(1f, 0.94f, 0.76f, 0.98f), 30);
             var stars = CreateText("Stars", _celebrationPanel.transform, "★  ★  ★", 44, FontStyle.Bold,
                 new Color(0.96f, 0.48f, 0.16f), TextAnchor.MiddleCenter);
             SetRect(stars.rectTransform, new Vector2(0.06f, 0.77f), new Vector2(0.94f, 0.96f));
@@ -583,7 +596,7 @@ namespace Pono.MarbleRun3D.UI
         private void BuildTutorialPanel()
         {
             _tutorialPanel = CreatePanel("TutorialGuide", _safeRoot.transform, new Vector2(0.27f, 0.72f), new Vector2(0.73f, 0.83f),
-                new Color(0.78f, 1f, 0.90f, 0.98f), 18);
+                new Color(0.84f, 0.96f, 0.91f, 0.98f), 18);
             _tutorialText = CreateText("TutorialText", _tutorialPanel.transform, "ぶひんを ひっぱって おこう", 25,
                 FontStyle.Bold, new Color(0.08f, 0.34f, 0.23f), TextAnchor.MiddleCenter);
             Stretch(_tutorialText.rectTransform, 8f);
@@ -603,14 +616,14 @@ namespace Pono.MarbleRun3D.UI
             var button = buttonObject.AddComponent<Button>();
             var colors = button.colors;
             colors.normalColor = Color.white;
-            colors.highlightedColor = new Color(1.08f, 1.08f, 1.08f);
-            colors.pressedColor = new Color(0.82f, 0.82f, 0.82f);
-            colors.disabledColor = new Color(0.62f, 0.62f, 0.62f, 0.72f);
+            colors.highlightedColor = new Color(1.04f, 1.04f, 1.04f);
+            colors.pressedColor = new Color(0.90f, 0.88f, 0.92f);
+            colors.disabledColor = new Color(0.74f, 0.72f, 0.75f, 0.70f);
             colors.colorMultiplier = 1f;
             button.colors = colors;
             if (action != null) button.onClick.AddListener(() => action());
             var text = CreateText("Label", buttonObject.transform, label, fontSize, FontStyle.Bold,
-                new Color(0.20f, 0.10f, 0.05f), TextAnchor.MiddleCenter);
+                CocoaText, TextAnchor.MiddleCenter);
             Stretch(text.rectTransform, 6f);
             return button;
         }
@@ -703,6 +716,16 @@ namespace Pono.MarbleRun3D.UI
                 if (chars[i] >= '0' && chars[i] <= '9') chars[i] = (char)('０' + chars[i] - '0');
             }
             return new string(chars);
+        }
+
+        private static Color PastelAccent(Color source)
+        {
+            var softened = Color.Lerp(source, Color.white, 0.42f);
+            return new Color(
+                Mathf.Clamp(softened.r, 0.58f, 0.98f),
+                Mathf.Clamp(softened.g, 0.58f, 0.98f),
+                Mathf.Clamp(softened.b, 0.58f, 0.98f),
+                1f);
         }
 
         private static void ValidateCopy()

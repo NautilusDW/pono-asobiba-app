@@ -15,7 +15,9 @@ namespace Pono.MarbleRun3D.Core
         public const float MarbleLinearDamping = 0.018f;
         public const float MarbleAngularDamping = 0.04f;
         public const float MarbleMaximumSpeed = 14f;
-        public const float MarbleLaunchSpeed = 6.8f;
+        // The hopper ramp supplies the initial energy. This is only a small nudge so a
+        // level track cannot behave like a powered conveyor belt.
+        public const float MarbleLaunchSpeed = 0.65f;
         public const float TrackStaticFriction = 0.24f;
         public const float TrackDynamicFriction = 0.18f;
         public const float TrackBounciness = 0.02f;
@@ -23,6 +25,66 @@ namespace Pono.MarbleRun3D.Core
         public const float MarbleDynamicFriction = 0.10f;
         public const float MarbleBounciness = 0.04f;
         public const float SlopeDegrees = 25.02f;
+    }
+
+    /// <summary>
+    /// Computes a non-powered path constraint. It may steer a marble back to a path
+    /// and remove sideways motion, but it never accelerates it along the path and
+    /// never performs positive work on its current velocity.
+    /// </summary>
+    public static class PassiveGuidePhysics
+    {
+        public static Vector3 CalculateConstraintAcceleration(
+            Vector3 velocity,
+            Vector3 pathTangent,
+            Vector3 positionError,
+            float alignmentStrength,
+            float centeringStrength,
+            float maximumAcceleration)
+        {
+            if (!IsFinite(velocity) || !IsFinite(pathTangent) || !IsFinite(positionError))
+                return Vector3.zero;
+
+            var tangentMagnitude = pathTangent.magnitude;
+            if (tangentMagnitude < 0.0001f || maximumAcceleration <= 0f)
+                return Vector3.zero;
+
+            var tangent = pathTangent / tangentMagnitude;
+            var tangentialVelocity = tangent * Vector3.Dot(velocity, tangent);
+            var sidewaysVelocity = velocity - tangentialVelocity;
+            var lateralError = positionError - tangent * Vector3.Dot(positionError, tangent);
+            var acceleration = -sidewaysVelocity * Mathf.Max(0f, alignmentStrength)
+                + lateralError * Mathf.Max(0f, centeringStrength);
+            acceleration = Vector3.ClampMagnitude(acceleration, maximumAcceleration);
+
+            // A passive guide can decelerate along the current travel direction, but
+            // cannot add speed in that direction.
+            var alongSpeed = Vector3.Dot(velocity, tangent);
+            var alongAcceleration = Vector3.Dot(acceleration, tangent);
+            if ((alongSpeed > 0.0001f && alongAcceleration > 0f)
+                || (alongSpeed < -0.0001f && alongAcceleration < 0f))
+            {
+                acceleration -= tangent * alongAcceleration;
+            }
+
+            // Centering must not become an invisible motor when the marble approaches
+            // the path from an angle. Remove any remaining positive mechanical work.
+            var speedSquared = velocity.sqrMagnitude;
+            var power = Vector3.Dot(acceleration, velocity);
+            if (power > 0f && speedSquared > 0.000001f)
+            {
+                acceleration -= velocity * (power / speedSquared);
+            }
+
+            return Vector3.ClampMagnitude(acceleration, maximumAcceleration);
+        }
+
+        private static bool IsFinite(Vector3 value)
+        {
+            return !(float.IsNaN(value.x) || float.IsInfinity(value.x)
+                || float.IsNaN(value.y) || float.IsInfinity(value.y)
+                || float.IsNaN(value.z) || float.IsInfinity(value.z));
+        }
     }
 
     public enum MarbleSafetyEvent
@@ -160,6 +222,10 @@ namespace Pono.MarbleRun3D.Core
             "つづける",
             "つくりなおす",
             "みわたす",
+            "おいかける",
+            "たまを おいかけるよ",
+            "コースを みわたすよ",
+            "ドラッグで カメラを うごかせるよ",
             "ぶひんを えらぼう",
             "おいた ぶひんを おしてね",
             "おいた ぶひんを おしてから くるっ",

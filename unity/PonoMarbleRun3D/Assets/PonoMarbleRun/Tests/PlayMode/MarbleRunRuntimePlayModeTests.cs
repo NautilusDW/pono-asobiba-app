@@ -677,6 +677,74 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator PreviewCameraFollowsMarblesAllowsManualControlAndReturnsToOverview()
+        {
+            var followChanges = new List<bool>();
+            _controller.CameraFollowChanged += followChanges.Add;
+            _controller.StartMode("sample5");
+            var courseTarget = _controller.OrbitCamera.CourseTarget;
+            var courseDistance = _controller.OrbitCamera.CourseDistance;
+
+            _controller.StartRun();
+            Assert.That(_controller.State, Is.EqualTo(MarbleRunState.Running));
+            Assert.That(_controller.IsCameraFollowing, Is.True);
+            Assert.That(_controller.OrbitCamera.IsFollowing, Is.True);
+            Assert.That(_controller.Ui.FollowText, Is.EqualTo("みわたす"));
+            Assert.That(_controller.MarbleBody.gameObject.activeSelf, Is.True);
+            Assert.That(_controller.OrbitCamera.Target, Is.Not.EqualTo(courseTarget),
+                "run should immediately begin looking at the first active marble");
+
+            var runningYaw = _controller.OrbitCamera.Yaw;
+            var runningDistance = _controller.OrbitCamera.Distance;
+            _controller.OrbitCamera.Orbit(new Vector2(30f, -20f));
+            _controller.OrbitCamera.Zoom(-2f);
+            Assert.That(_controller.OrbitCamera.Yaw, Is.Not.EqualTo(runningYaw));
+            Assert.That(_controller.OrbitCamera.Distance, Is.LessThan(runningDistance));
+            Assert.That(_controller.IsCameraFollowing, Is.True,
+                "manual orbit and zoom should not turn following off");
+
+            _controller.ToggleCameraFollow();
+            Assert.That(_controller.IsCameraFollowing, Is.False);
+            Assert.That(_controller.Ui.FollowText, Is.EqualTo("おいかける"));
+            Assert.That(_controller.OrbitCamera.Target, Is.EqualTo(courseTarget));
+            Assert.That(_controller.OrbitCamera.Distance, Is.EqualTo(courseDistance).Within(0.001f));
+
+            _controller.ToggleCameraFollow();
+            Assert.That(_controller.Ui.FollowText, Is.EqualTo("みわたす"));
+            _controller.SetPaused(true);
+            Assert.That(_controller.State, Is.EqualTo(MarbleRunState.Paused));
+            Assert.That(_controller.IsCameraFollowing, Is.True);
+            var pausedYaw = _controller.OrbitCamera.Yaw;
+            var pausedDistance = _controller.OrbitCamera.Distance;
+            _controller.OrbitCamera.Orbit(new Vector2(-25f, 15f));
+            _controller.OrbitCamera.Zoom(1.5f);
+            yield return null;
+            Assert.That(_controller.OrbitCamera.Yaw, Is.Not.EqualTo(pausedYaw));
+            Assert.That(_controller.OrbitCamera.Distance, Is.GreaterThan(pausedDistance));
+            Assert.That(Time.timeScale, Is.Zero,
+                "unscaled camera motion must not resume gameplay physics while paused");
+
+            _controller.SetPaused(false);
+            _controller.CelebrateForQa();
+            Assert.That(_controller.State, Is.EqualTo(MarbleRunState.Celebrating));
+            Assert.That(_controller.IsCameraFollowing, Is.False);
+            Assert.That(_controller.Ui.FollowText, Is.EqualTo("おいかける"));
+            var celebrationYaw = _controller.OrbitCamera.Yaw;
+            var celebrationDistance = _controller.OrbitCamera.Distance;
+            _controller.OrbitCamera.Orbit(new Vector2(20f, 10f));
+            _controller.OrbitCamera.Zoom(1f);
+            Assert.That(_controller.OrbitCamera.Yaw, Is.Not.EqualTo(celebrationYaw));
+            Assert.That(_controller.OrbitCamera.Distance, Is.GreaterThan(celebrationDistance));
+
+            _controller.ReturnToEditing();
+            Assert.That(_controller.State, Is.EqualTo(MarbleRunState.Editing));
+            Assert.That(_controller.IsCameraFollowing, Is.False);
+            Assert.That(_controller.OrbitCamera.Target, Is.EqualTo(courseTarget));
+            Assert.That(followChanges, Does.Contain(true));
+            Assert.That(followChanges.Last(), Is.False);
+        }
+
+        [UnityTest]
         public IEnumerator CriticalUiTargetsRemainInsideSafeAreaAtSixteenNineFourThreeAndTwentyNine()
         {
             Canvas.ForceUpdateCanvases();

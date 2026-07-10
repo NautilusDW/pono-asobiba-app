@@ -28,6 +28,9 @@ namespace Pono.MarbleRun3D.Gameplay
         private readonly CourseHistory _history = new CourseHistory(50);
         private readonly List<MarbleRuntime> _marbles = new List<MarbleRuntime>();
         private readonly List<Rigidbody> _marbleBodies = new List<Rigidbody>();
+        private readonly Vector3[] _cameraFollowPositions = new Vector3[MaximumMarbles];
+        private readonly Vector3[] _cameraFollowVelocities = new Vector3[MaximumMarbles];
+        private readonly float[] _cameraFollowAxis = new float[MaximumMarbles];
 
         private ToyMaterialLibrary _materials;
         private ToyAudio _audio;
@@ -89,6 +92,7 @@ namespace Pono.MarbleRun3D.Gameplay
         public Rigidbody MarbleBody => _marbles.Count > 0 ? _marbles[0].Body : null;
         public IReadOnlyList<Rigidbody> MarbleBodies => _marbleBodies;
         public bool IsPaused => State == MarbleRunState.Paused;
+        public bool IsCameraFollowing => _orbit != null && _orbit.IsFollowing;
         public int PieceCount => _course?.pieces.Count ?? 0;
         public int ActiveMarbleCount => _activeMarbleCount;
         public int MarblesAtGoal => _marblesAtGoal;
@@ -99,6 +103,7 @@ namespace Pono.MarbleRun3D.Gameplay
         public MarbleRunUi Ui => _ui;
         public int TutorialStep => _tutorialStep;
         public bool SuppressApplicationPauseForQa { get; set; }
+        public event Action<bool> CameraFollowChanged;
 
         private void Awake()
         {
@@ -119,6 +124,14 @@ namespace Pono.MarbleRun3D.Gameplay
             {
                 UpdateBuilderInput();
             }
+            else if (State == MarbleRunState.Running
+                     || State == MarbleRunState.Paused
+                     || State == MarbleRunState.Celebrating)
+            {
+                UpdatePreviewCameraInput();
+            }
+
+            if (IsCameraFollowing) UpdateCameraFollowTarget();
         }
 
         private void FixedUpdate()
@@ -195,6 +208,8 @@ namespace Pono.MarbleRun3D.Gameplay
             _history.Clear();
             _selectedPieceId = null;
             _activePlacementLevel = 0;
+            SetCameraFollow(false, true);
+            ResetPreviewCameraInput();
             _orbit.ResetView();
             _ui.ShowMenu();
             _ui.SetCameraView(false);
@@ -213,6 +228,8 @@ namespace Pono.MarbleRun3D.Gameplay
             RebuildCourseViews();
             State = MarbleRunState.Editing;
             HideAllMarbles();
+            SetCameraFollow(false, true);
+            ResetPreviewCameraInput();
             _orbit.ResetView();
             _ui.ShowBuilder(_mode);
             _ui.SetCameraView(false);
@@ -275,6 +292,25 @@ namespace Pono.MarbleRun3D.Gameplay
         {
             _orbit.ToggleTopView();
             _ui.SetCameraView(_orbit.IsTopView);
+            _audio.PlayClick();
+        }
+
+        public void ToggleCameraFollow()
+        {
+            var canFollow = State == MarbleRunState.Running
+                || (State == MarbleRunState.Paused && _stateBeforePause == MarbleRunState.Running);
+            if (!canFollow) return;
+
+            SetCameraFollow(!IsCameraFollowing, true);
+            if (IsCameraFollowing)
+            {
+                UpdateCameraFollowTarget();
+                _ui.SetStatus("たまを おいかけるよ", false);
+            }
+            else
+            {
+                _ui.SetStatus("コースを みわたすよ", false);
+            }
             _audio.PlayClick();
         }
 
@@ -456,8 +492,11 @@ namespace Pono.MarbleRun3D.Gameplay
             foreach (var view in _pieceViews.Values) view.SetRunMode(true);
             Physics.SyncTransforms();
             LaunchAllMarbles(start, false);
+            SetCameraFollow(true, false);
+            UpdateCameraFollowTarget();
+            ResetPreviewCameraInput();
             _ui.ShowRunning();
-            _ui.SetStatus("いろいろな たまを みてみよう", false);
+            _ui.SetStatus("ドラッグで カメラを うごかせるよ", false);
             _audio.PlayPlace();
             if (_mode.IsTutorial)
             {
@@ -485,6 +524,8 @@ namespace Pono.MarbleRun3D.Gameplay
             HideAllMarbles();
             foreach (var view in _pieceViews.Values) view.SetRunMode(false);
             State = MarbleRunState.Editing;
+            SetCameraFollow(false, true);
+            ResetPreviewCameraInput();
             _orbit.EndGoalFocus();
             _ui.ShowBuilder(_mode);
             _ui.SetInventory(_mode, _course);
@@ -520,6 +561,7 @@ namespace Pono.MarbleRun3D.Gameplay
 
         public void ResetCameraView()
         {
+            SetCameraFollow(false, true);
             _orbit.ResetView();
             _ui.SetCameraView(false);
             _audio.PlayClick();
@@ -844,6 +886,154 @@ namespace Pono.MarbleRun3D.Gameplay
                 _existingDragActive = false;
                 _movingPieceId = null;
             }
+        }
+
+        private void UpdatePreviewCameraInput()
+        {
+            if (Input.touchCount >= 2)
+            {
+                _pointerDown = false;
+                _cameraDragging = false;
+                var first = Input.GetTouch(0);
+                var second = Input.GetTouch(1);
+                if (IsPointerOverUi(first.fingerId) || IsPointerOverUi(second.fingerId))
+                {
+                    _pinchDistance = 0f;
+                    return;
+                }
+
+                var distance = Vector2.Distance(first.position, second.position);
+                if (first.phase == TouchPhase.Began || second.phase == TouchPhase.Began || _pinchDistance <= 0f)
+                {
+                    _pinchDistance = distance;
+                    return;
+                }
+
+                _orbit.Zoom((_pinchDistance - distance) * 0.018f);
+                _pinchDistance = distance;
+                var averageDelta = (first.deltaPosition + second.deltaPosition) * 0.5f;
+                _orbit.Orbit(averageDelta * 0.30f);
+                return;
+            }
+            _pinchDistance = 0f;
+
+            if (Input.mouseScrollDelta.sqrMagnitude > 0f && !IsPointerOverUi(-1))
+            {
+                _orbit.Zoom(-Input.mouseScrollDelta.y * 1.4f);
+            }
+
+            if (!TryGetPrimaryPointer(out var position, out var phase, out var fingerId)) return;
+            if (phase == TouchPhase.Began)
+            {
+                if (IsPointerOverUi(fingerId)) return;
+                _pointerDown = true;
+                _pointerFingerId = fingerId;
+                _pointerLast = position;
+                _cameraDragging = true;
+            }
+            else if ((phase == TouchPhase.Moved || phase == TouchPhase.Stationary)
+                     && _pointerDown && _cameraDragging && fingerId == _pointerFingerId)
+            {
+                var delta = position - _pointerLast;
+                _orbit.Orbit(delta);
+                _pointerLast = position;
+            }
+            else if ((phase == TouchPhase.Ended || phase == TouchPhase.Canceled)
+                     && _pointerDown && fingerId == _pointerFingerId)
+            {
+                _pointerDown = false;
+                _cameraDragging = false;
+                _pointerFingerId = -1;
+            }
+        }
+
+        private void UpdateCameraFollowTarget()
+        {
+            if (_orbit == null || !_orbit.IsFollowing) return;
+
+            var count = 0;
+            for (var i = 0; i < _activeMarbleCount && count < MaximumMarbles; i++)
+            {
+                var marble = _marbles[i];
+                var body = marble.Body;
+                if (body == null || !marble.Object.activeSelf || marble.ReachedGoal
+                    || body.isKinematic || marble.ResetRoutine != null)
+                {
+                    continue;
+                }
+
+                var position = body.position;
+                var velocity = body.linearVelocity;
+                if (!IsFinite(position) || !IsFinite(velocity)
+                    || position.y < -2f
+                    || new Vector2(position.x, position.z).sqrMagnitude > 34f * 34f)
+                {
+                    continue;
+                }
+
+                _cameraFollowPositions[count] = position;
+                _cameraFollowVelocities[count] = velocity;
+                count++;
+            }
+            if (count == 0) return;
+
+            var median = new Vector3(
+                MedianFollowAxis(count, 0),
+                MedianFollowAxis(count, 1),
+                MedianFollowAxis(count, 2));
+            var center = Vector3.zero;
+            var averageVelocity = Vector3.zero;
+            for (var i = 0; i < count; i++)
+            {
+                center += median + Vector3.ClampMagnitude(_cameraFollowPositions[i] - median, 9f);
+                averageVelocity += Vector3.ClampMagnitude(_cameraFollowVelocities[i], 6f);
+            }
+            center /= count;
+            averageVelocity /= count;
+
+            var lookAhead = averageVelocity * 0.28f;
+            lookAhead.y = Mathf.Clamp(lookAhead.y, -0.45f, 0.45f);
+            _orbit.SetFollowTarget(center + lookAhead + Vector3.up * 0.55f);
+        }
+
+        private float MedianFollowAxis(int count, int axis)
+        {
+            for (var i = 0; i < count; i++)
+            {
+                var value = axis == 0
+                    ? _cameraFollowPositions[i].x
+                    : axis == 1
+                        ? _cameraFollowPositions[i].y
+                        : _cameraFollowPositions[i].z;
+                var insert = i;
+                while (insert > 0 && _cameraFollowAxis[insert - 1] > value)
+                {
+                    _cameraFollowAxis[insert] = _cameraFollowAxis[insert - 1];
+                    insert--;
+                }
+                _cameraFollowAxis[insert] = value;
+            }
+
+            var middle = count / 2;
+            return count % 2 == 1
+                ? _cameraFollowAxis[middle]
+                : (_cameraFollowAxis[middle - 1] + _cameraFollowAxis[middle]) * 0.5f;
+        }
+
+        private void SetCameraFollow(bool enabled, bool returnToCourseOverview)
+        {
+            if (_orbit == null) return;
+            _orbit.SetFollowEnabled(enabled, returnToCourseOverview);
+            _ui?.SetCameraFollow(_orbit.IsFollowing);
+            CameraFollowChanged?.Invoke(_orbit.IsFollowing);
+        }
+
+        private void ResetPreviewCameraInput()
+        {
+            _pointerDown = false;
+            _cameraDragging = false;
+            _pointerFingerId = -1;
+            _pinchDistance = 0f;
         }
 
         private bool TryGetPrimaryPointer(out Vector2 position, out TouchPhase phase, out int fingerId)
@@ -1281,6 +1471,8 @@ namespace Pono.MarbleRun3D.Gameplay
             }
             _goalCelebrationRaised = true;
             State = MarbleRunState.Celebrating;
+            SetCameraFollow(false, false);
+            ResetPreviewCameraInput();
             var goal = FindPiece(MarblePieceKind.Goal);
             if (goal != null) _orbit.FocusForGoal(goal.transform.position);
             _ui.ShowCelebration(true);
@@ -1375,6 +1567,13 @@ namespace Pono.MarbleRun3D.Gameplay
             body.linearVelocity = Vector3.zero;
             body.angularVelocity = Vector3.zero;
             body.isKinematic = true;
+        }
+
+        private static bool IsFinite(Vector3 value)
+        {
+            return !float.IsNaN(value.x) && !float.IsInfinity(value.x)
+                && !float.IsNaN(value.y) && !float.IsInfinity(value.y)
+                && !float.IsNaN(value.z) && !float.IsInfinity(value.z);
         }
     }
 }

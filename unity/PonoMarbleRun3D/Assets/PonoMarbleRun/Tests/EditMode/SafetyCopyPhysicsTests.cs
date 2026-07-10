@@ -103,11 +103,95 @@ namespace Pono.MarbleRun3D.Tests.EditMode
             Assert.That(MarbleRunPhysicsProfile.SolverIterations, Is.GreaterThanOrEqualTo(8));
             Assert.That(MarbleRunPhysicsProfile.SolverVelocityIterations, Is.GreaterThanOrEqualTo(3));
             Assert.That(MarbleRunPhysicsProfile.MarbleMaximumSpeed, Is.InRange(10f, 18f));
+            Assert.That(MarbleRunPhysicsProfile.MarbleLaunchSpeed, Is.InRange(0f, 1f),
+                "the hopper ramp and gravity, not a horizontal launch, supply the energy");
             Assert.That(MarbleRunPhysicsProfile.MarbleBounciness, Is.LessThan(0.1f));
             Assert.That(MarbleRunPhysicsProfile.SlopeDegrees, Is.InRange(24f, 26f));
             Assert.That(
                 Mathf.Tan(MarbleRunPhysicsProfile.SlopeDegrees * Mathf.Deg2Rad) * WoodenPieceFactory.CellSize,
                 Is.EqualTo(WoodenPieceFactory.LevelHeight).Within(0.01f));
+        }
+
+        [Test]
+        public void PassiveGuideNeverAddsTangentialSpeedOrPositiveMechanicalWork()
+        {
+            var cases = new[]
+            {
+                new
+                {
+                    Velocity = new Vector3(1.7f, -0.4f, 4.2f),
+                    Tangent = new Vector3(0.3f, -0.2f, 1f).normalized,
+                    Error = new Vector3(-0.8f, 0.6f, 0.5f)
+                },
+                new
+                {
+                    Velocity = new Vector3(-2.4f, 0.8f, -3.1f),
+                    Tangent = new Vector3(0.6f, 0.1f, 0.8f).normalized,
+                    Error = new Vector3(1.2f, -0.2f, -0.7f)
+                },
+                new
+                {
+                    Velocity = new Vector3(3.5f, 0f, 0.2f),
+                    Tangent = Vector3.forward,
+                    Error = new Vector3(-1.4f, 0.5f, 3f)
+                }
+            };
+
+            foreach (var sample in cases)
+            {
+                var acceleration = PassiveGuidePhysics.CalculateConstraintAcceleration(
+                    sample.Velocity,
+                    sample.Tangent,
+                    sample.Error,
+                    7f,
+                    11f,
+                    20f);
+                var alongSpeed = Vector3.Dot(sample.Velocity, sample.Tangent);
+                var alongAcceleration = Vector3.Dot(acceleration, sample.Tangent);
+
+                Assert.That(Vector3.Dot(acceleration, sample.Velocity), Is.LessThanOrEqualTo(0.00001f),
+                    "a passive constraint cannot add kinetic energy");
+                Assert.That(alongAcceleration * Mathf.Sign(alongSpeed), Is.LessThanOrEqualTo(0.00001f),
+                    "a passive constraint cannot increase speed along the path");
+                Assert.That(acceleration.magnitude, Is.LessThanOrEqualTo(20.0001f));
+            }
+        }
+
+        [Test]
+        public void PassiveGuideCanCenterAStoppedMarbleWithoutPushingItForward()
+        {
+            var acceleration = PassiveGuidePhysics.CalculateConstraintAcceleration(
+                Vector3.zero,
+                Vector3.forward,
+                new Vector3(1f, 0.4f, 5f),
+                6f,
+                10f,
+                18f);
+
+            Assert.That(Vector3.Dot(acceleration, Vector3.forward), Is.EqualTo(0f).Within(0.00001f));
+            Assert.That(acceleration.x, Is.GreaterThan(0f));
+            Assert.That(acceleration.y, Is.GreaterThan(0f));
+        }
+
+        [Test]
+        public void PassiveGuideRejectsInvalidInputsSafely()
+        {
+            Assert.That(PassiveGuidePhysics.CalculateConstraintAcceleration(
+                    Vector3.one,
+                    Vector3.zero,
+                    Vector3.one,
+                    5f,
+                    5f,
+                    10f),
+                Is.EqualTo(Vector3.zero));
+            Assert.That(PassiveGuidePhysics.CalculateConstraintAcceleration(
+                    new Vector3(float.NaN, 0f, 0f),
+                    Vector3.forward,
+                    Vector3.zero,
+                    5f,
+                    5f,
+                    10f),
+                Is.EqualTo(Vector3.zero));
         }
     }
 }

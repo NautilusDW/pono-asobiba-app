@@ -9,6 +9,7 @@ namespace Pono.MarbleRun3D.Gameplay
     {
         private readonly List<Material> _owned = new List<Material>();
         private readonly List<Material> _marbles = new List<Material>();
+        private readonly List<Material> _pastels = new List<Material>();
         private readonly Dictionary<MarblePieceKind, Material> _accent =
             new Dictionary<MarblePieceKind, Material>();
 
@@ -39,34 +40,36 @@ namespace Pono.MarbleRun3D.Gameplay
                 : Shader.Find("Standard") ?? Shader.Find("Universal Render Pipeline/Lit");
             if (BaseShader == null)
                 throw new InvalidOperationException("The toy material shader is unavailable.");
-            Maple = Make("メープル", new Color(0.91f, 0.69f, 0.40f), 0.14f);
-            MapleDark = Make("こい もく", new Color(0.53f, 0.30f, 0.15f), 0.09f);
-            Board = Make("あそびだい", new Color(0.76f, 0.55f, 0.31f), 0.12f);
-            BoardEdge = Make("あそびだい ふち", new Color(0.44f, 0.25f, 0.12f), 0.08f);
-            Connector = Make("つなぎ まる", new Color(0.18f, 0.78f, 0.92f), 0.48f, true);
-            ConnectorGlow = Make("つなぎ ひかり", new Color(0.54f, 1f, 0.66f), 0.55f, true);
+            Maple = Make("クリーム メープル", new Color(0.96f, 0.82f, 0.66f), 0.18f);
+            MapleDark = Make("ミルク ココア", new Color(0.66f, 0.45f, 0.34f), 0.13f);
+            Board = Make("ピーチ あそびだい", new Color(0.94f, 0.78f, 0.63f), 0.16f);
+            BoardEdge = Make("ココア ふち", new Color(0.63f, 0.43f, 0.34f), 0.12f);
+            Connector = Make("みずいろ つなぎ まる", new Color(0.48f, 0.82f, 0.90f), 0.48f, true);
+            ConnectorGlow = Make("ミント つなぎ ひかり", new Color(0.62f, 0.94f, 0.76f), 0.55f, true);
             var marbleColors = new[]
             {
-                new Color(0.96f, 0.30f, 0.25f),
-                new Color(1.00f, 0.57f, 0.18f),
-                new Color(1.00f, 0.82f, 0.22f),
-                new Color(0.28f, 0.78f, 0.42f),
-                new Color(0.20f, 0.66f, 0.96f),
-                new Color(0.64f, 0.42f, 0.92f)
+                new Color(0.98f, 0.62f, 0.57f), // ピーチ
+                new Color(1.00f, 0.84f, 0.48f), // バター
+                new Color(0.52f, 0.86f, 0.68f), // ミント
+                new Color(0.47f, 0.79f, 0.90f), // アクア
+                new Color(0.73f, 0.63f, 0.91f), // ラベンダー
+                new Color(0.94f, 0.62f, 0.76f)  // ピンク
             };
+            var pastelNames = new[] { "ピーチ", "バター", "ミント", "アクア", "ラベンダー", "ピンク" };
             for (var index = 0; index < marbleColors.Length; index++)
             {
-                _marbles.Add(Make("にじいろ たま " + (index + 1), marbleColors[index], 0.88f, false, 0.08f));
+                _pastels.Add(Make("パステル " + pastelNames[index], marbleColors[index], 0.30f));
+                _marbles.Add(Make("にじいろ たま " + pastelNames[index], marbleColors[index], 0.82f, false, 0.05f));
             }
             Marble = _marbles[0];
-            Metal = Make("かなぐ", new Color(0.88f, 0.90f, 0.92f), 0.62f, false, 0.55f);
-            ClearShell = MakeTransparent("とうめい つつ", new Color(0.64f, 0.93f, 1f, 0.20f));
-            ClearEdge = MakeTransparent("とうめい ふち", new Color(0.24f, 0.78f, 0.96f, 0.54f), true);
-            Selection = MakeTransparent("えらんだ しるし", new Color(0.28f, 0.95f, 1f, 0.48f), true);
-            GhostValid = MakeTransparent("おける ゴースト", new Color(0.32f, 1f, 0.62f, 0.48f), true);
-            GhostInvalid = MakeTransparent("おけない ゴースト", new Color(1f, 0.42f, 0.28f, 0.46f), true);
-            InvalidMark = Make("おけない しるし", new Color(0.92f, 0.16f, 0.12f), 0.28f, true);
-            Shadow = MakeTransparent("かげ", new Color(0.16f, 0.09f, 0.06f, 0.22f));
+            Metal = Make("パール かなぐ", new Color(0.91f, 0.88f, 0.84f), 0.58f, false, 0.38f);
+            ClearShell = MakeTransparent("すけすけ みずいろ つつ", new Color(0.60f, 0.86f, 0.96f, 0.18f));
+            ClearEdge = MakeTransparent("すけすけ みずいろ ふち", new Color(0.48f, 0.78f, 0.92f, 0.50f), true);
+            Selection = MakeTransparent("えらんだ しるし", new Color(0.48f, 0.86f, 0.94f, 0.48f), true);
+            GhostValid = MakeTransparent("おける ゴースト", new Color(0.57f, 0.94f, 0.72f, 0.46f), true);
+            GhostInvalid = MakeTransparent("おけない ゴースト", new Color(0.98f, 0.58f, 0.52f, 0.46f), true);
+            InvalidMark = Make("おけない しるし", new Color(0.88f, 0.30f, 0.30f), 0.28f, true);
+            Shadow = MakeTransparent("あたたかい かげ", new Color(0.30f, 0.20f, 0.17f, 0.18f));
             TrackPhysics = new PhysicsMaterial("きの レール")
             {
                 staticFriction = MarbleRunPhysicsProfile.TrackStaticFriction,
@@ -78,7 +81,7 @@ namespace Pono.MarbleRun3D.Gameplay
 
             foreach (MarblePieceKind kind in Enum.GetValues(typeof(MarblePieceKind)))
             {
-                _accent[kind] = Make(PartCatalog.Get(kind).DisplayName, PartCatalog.Get(kind).Accent, 0.26f);
+                _accent[kind] = _pastels[AccentPaletteIndex(kind)];
             }
         }
 
@@ -95,6 +98,14 @@ namespace Pono.MarbleRun3D.Gameplay
             return _marbles[normalized];
         }
 
+        public Material PastelAt(int index)
+        {
+            if (_pastels.Count == 0) return Maple;
+            var normalized = index % _pastels.Count;
+            if (normalized < 0) normalized += _pastels.Count;
+            return _pastels[normalized];
+        }
+
         public void Dispose()
         {
             for (var i = 0; i < _owned.Count; i++)
@@ -105,6 +116,7 @@ namespace Pono.MarbleRun3D.Gameplay
             }
             _owned.Clear();
             _marbles.Clear();
+            _pastels.Clear();
             _accent.Clear();
             if (TrackPhysics != null)
             {
@@ -150,6 +162,36 @@ namespace Pono.MarbleRun3D.Gameplay
             material.DisableKeyword("_ALPHAPREMULTIPLY_ON");
             material.renderQueue = 3000;
             return material;
+        }
+
+        private static int AccentPaletteIndex(MarblePieceKind kind)
+        {
+            switch (kind)
+            {
+                case MarblePieceKind.Start:
+                case MarblePieceKind.Seesaw:
+                case MarblePieceKind.Lift:
+                case MarblePieceKind.Wave:
+                    return 2; // ミント
+                case MarblePieceKind.Goal:
+                case MarblePieceKind.Splitter:
+                case MarblePieceKind.Spinner:
+                    return 1; // バター
+                case MarblePieceKind.Straight:
+                case MarblePieceKind.Tunnel:
+                case MarblePieceKind.Elevator:
+                case MarblePieceKind.ClearTube:
+                    return 3; // アクア
+                case MarblePieceKind.Curve:
+                case MarblePieceKind.Steps:
+                    return 0; // ピーチ
+                case MarblePieceKind.Slope:
+                case MarblePieceKind.Helix:
+                case MarblePieceKind.ClearCurve:
+                    return 4; // ラベンダー
+                default:
+                    return 5; // ピンク
+            }
         }
     }
 }

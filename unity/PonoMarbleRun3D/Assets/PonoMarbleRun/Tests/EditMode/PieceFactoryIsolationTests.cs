@@ -232,6 +232,97 @@ namespace Pono.MarbleRun3D.Tests.EditMode
         }
 
         [Test]
+        public void ToyMaterialsUseBrightSoftPastelsAndAReadableWarmWoodBase()
+        {
+            var materials = new ToyMaterialLibrary();
+            try
+            {
+                AssertSoftColor(materials.Maple.color, 0.90f, 0.42f, "cream maple");
+                AssertSoftColor(materials.Board.color, 0.88f, 0.42f, "peach play board");
+
+                Color.RGBToHSV(materials.MapleDark.color, out _, out var cocoaSaturation, out var cocoaValue);
+                Assert.That(cocoaValue, Is.InRange(0.60f, 0.74f), "cocoa trim must stay readable without looking black");
+                Assert.That(cocoaSaturation, Is.LessThanOrEqualTo(0.55f));
+                Color.RGBToHSV(materials.BoardEdge.color, out _, out _, out var edgeValue);
+                Assert.That(edgeValue, Is.GreaterThanOrEqualTo(0.58f));
+
+                var accents = Enum.GetValues(typeof(MarblePieceKind))
+                    .Cast<MarblePieceKind>()
+                    .Select(materials.Accent)
+                    .ToArray();
+                Assert.That(accents.Distinct().Count(), Is.EqualTo(6),
+                    "parts should reuse the six shared pastel materials");
+                foreach (var accent in accents.Distinct())
+                    AssertSoftColor(accent.color, 0.84f, 0.56f, accent.name);
+
+                Assert.That(materials.MarbleColorCount, Is.EqualTo(6));
+                for (var index = 0; index < materials.MarbleColorCount; index++)
+                    AssertSoftColor(materials.MarbleAt(index).color, 0.84f, 0.56f, "marble " + index);
+
+                Assert.That(materials.ClearShell.color.b, Is.GreaterThan(materials.ClearShell.color.r));
+                Assert.That(materials.ClearShell.color.a, Is.InRange(0.12f, 0.24f));
+                Assert.That(materials.ClearEdge.color.a, Is.InRange(0.42f, 0.58f));
+                Assert.That(Vector3.Distance(
+                    new Vector3(materials.Connector.color.r, materials.Connector.color.g, materials.Connector.color.b),
+                    new Vector3(materials.Maple.color.r, materials.Maple.color.g, materials.Maple.color.b)),
+                    Is.GreaterThan(0.20f), "connection points must remain distinct from the cream wood");
+            }
+            finally
+            {
+                materials.Dispose();
+            }
+        }
+
+        [Test]
+        public void LargePiecesStartAndGoalUseSmallSharedNonCollidingDecorations()
+        {
+            var root = new GameObject("test-root").transform;
+            var materials = new ToyMaterialLibrary();
+            var decoratedKinds = new[]
+            {
+                MarblePieceKind.Start,
+                MarblePieceKind.Goal,
+                MarblePieceKind.Tunnel,
+                MarblePieceKind.Funnel,
+                MarblePieceKind.Helix,
+                MarblePieceKind.Steps,
+                MarblePieceKind.Lift,
+                MarblePieceKind.Tornado,
+                MarblePieceKind.Elevator,
+                MarblePieceKind.ClearTube,
+                MarblePieceKind.ClearCurve,
+                MarblePieceKind.Wave,
+                MarblePieceKind.Spinner
+            };
+            try
+            {
+                foreach (var kind in decoratedKinds)
+                {
+                    var view = Make(kind, root, materials);
+                    var decorations = view.GetComponentsInChildren<Transform>(true)
+                        .Where(child => child.name.StartsWith("パステル かざり", StringComparison.Ordinal))
+                        .ToArray();
+                    Assert.That(decorations.Length, Is.InRange(3, 8), kind + " decoration budget");
+                    Assert.That(decorations.All(child => child.gameObject.layer == 2), Is.True, kind.ToString());
+                    Assert.That(decorations
+                        .Select(child => child.GetComponent<Collider>())
+                        .Where(collider => collider != null)
+                        .All(collider => !collider.enabled), Is.True, kind + " decorations must never affect a marble");
+                    Assert.That(decorations
+                        .Select(child => child.GetComponent<Renderer>())
+                        .Where(renderer => renderer != null)
+                        .All(renderer => renderer.sharedMaterial != null), Is.True, kind.ToString());
+                    UnityEngine.Object.DestroyImmediate(view.gameObject);
+                }
+            }
+            finally
+            {
+                materials.Dispose();
+                UnityEngine.Object.DestroyImmediate(root.gameObject);
+            }
+        }
+
+        [Test]
         public void MarbleColorsActorsAndGoalSensorSupportMultipleStableMarbles()
         {
             var materials = new ToyMaterialLibrary();
@@ -349,6 +440,14 @@ namespace Pono.MarbleRun3D.Tests.EditMode
                 false,
                 6,
                 7);
+        }
+
+        private static void AssertSoftColor(Color color, float minimumValue, float maximumSaturation, string label)
+        {
+            Color.RGBToHSV(color, out _, out var saturation, out var value);
+            Assert.That(value, Is.GreaterThanOrEqualTo(minimumValue), label + " should stay bright");
+            Assert.That(saturation, Is.LessThanOrEqualTo(maximumSaturation), label + " should stay softly saturated");
+            Assert.That(saturation, Is.GreaterThanOrEqualTo(0.18f), label + " should still be distinguishable");
         }
     }
 }
