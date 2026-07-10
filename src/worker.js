@@ -252,6 +252,13 @@ function ifModifiedSinceHits(headerValue, lastModified) {
 }
 
 async function attachHtmlEtag(request, response, env, appBuildApplied) {
+  // GET / HEAD のみ対象。 RFC 9110 §13.1.3 は「GET/HEAD 以外のメソッドでは
+  // If-Modified-Since を無視しなければならない (MUST)」と定めており、 304 自体も
+  // GET/HEAD 専用。 本番の Workers Assets は非 GET/HEAD に 405 を返すので現状は
+  // status !== 200 ガードでも到達しないが、 それは未文書化の upstream 挙動への
+  // 依存であり (本日 ETag 削除で二度学んだ通り)、 ここで明示的に閉じる
+  // (2026-07-10 最終レビューで検出、 stub test Test 13 で再現)。
+  if (request.method !== 'GET' && request.method !== 'HEAD') return response;
   // 200 のみ対象 (2xx 全般ではない)。 206 Partial Content を通すと「部分 body の
   // ハッシュ」を表現全体の強い ETag として公開してしまい、 後続の If-None-Match /
   // If-Range 判定を壊す。 204 も body が無いので validator を作れない

@@ -9,7 +9,8 @@ metadata:
 
 ## 変わった配信規約 (以後の作業で前提にすること)
 
-1. **HTML は no-store → no-cache** (src/worker.js applyCacheHeaders + _headers)。ETag 304 revalidate 前提。デプロイ即時反映は従来どおり保証される。
+1. **HTML は no-store → no-cache** (src/worker.js applyCacheHeaders + _headers)。デプロイ即時反映は従来どおり保証される。
+   **【batch:1210b 追補】HTML の 304 再検証は「ハッシュ符号化 Last-Modified + If-Modified-Since 完全一致」で実現** (src/worker.js attachHtmlEtag / encodeValidatorLastModified)。live 実測 (2026-07-10) で **Cloudflare エッジは html_handling 解決 HTML の ETag を強弱問わず egress で削除する** (静的アセットの ETag は保持、Last-Modified とカスタムヘッダと inbound 条件付きヘッダは素通し) と確定したため、コンテンツ SHA-1 を過去日時 (2020-01〜2024-04) に符号化した Last-Modified を validator として使う。IMS は**完全一致**比較 (≥ 比較は誤 304 の元)、INM 到達時は INM 優先 (RFC 7232 §6)、GET/HEAD 以外は 304 対象外 (RFC 9110 §13.1.3)。HTML レスポンスの Last-Modified が 2020〜2024 年の妙な日付なのは仕様 (ハッシュ符号化) — devtools で見て驚かないこと。既知残リスク: 27bit 衝突 (~7.5e-9/変更) 時の誤 304 は次のコンテンツ変更まで持続し **CACHE_VERSION バンプでは回復しない** (HTML は SW 非経由のため)。
 2. **sw.js の `?v=` / `?t=` 画像バイパスは廃止** — 画像・動画・BGM/storyboard 音声は cache-first。**同一 URL の上書き差し替えは今後 NG**: ピクセルを差し替える時は (a) ファイル名変更 (推奨、`_YYYYMMDD` suffix)、(b) `?v=` の値バンプ、(c) sw.js CACHE_VERSION バンプ (2世代で退役) のいずれか必須。admin の media 上書き系ワークフローは特に注意。
 3. **precache は cache:'reload' → 'no-cache' + 旧世代 cache からの copy-forward**。CACHE_VERSION バンプごとの ~10.7MB 全量再DLは解消済み。
 4. **sw.js の更新履歴コメントは docs/sw-changelog-archive.md へ退避**。sw.js 先頭には直近 ~10 エントリのみ保持 (次のバンプ時に古い行を archive へ移す)。
