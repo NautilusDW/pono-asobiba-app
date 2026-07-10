@@ -650,6 +650,8 @@ namespace Pono.MarbleRun3D.Gameplay
             _pieceRoot.SetParent(_worldRoot, false);
 
             var backdropMaterial = MakeRuntimeMaterial("そら", new Color(0.87f, 0.95f, 0.98f), 0.03f);
+            var cloudMaterial = MakeRuntimeMaterial("ミルクの くも", new Color(1f, 0.97f, 0.91f), 0.08f);
+            var gridMaterial = MakeRuntimeMaterial("うすい ピーチの せん", new Color(0.82f, 0.64f, 0.59f), 0.04f);
             var floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
             floor.name = "やわらかい ゆか";
             floor.layer = _boardLayer;
@@ -658,6 +660,13 @@ namespace Pono.MarbleRun3D.Gameplay
             floor.transform.localScale = new Vector3(72f, 0.25f, 64f);
             floor.GetComponent<Renderer>().sharedMaterial = backdropMaterial;
 
+            CreateWorldDecoration(
+                PrimitiveType.Sphere,
+                "ラベンダーの あそびマット",
+                new Vector3(0f, 0.02f, 0f),
+                new Vector3(48f, 0.16f, 42f),
+                _materials.PastelAt(4));
+
             var board = GameObject.CreatePrimitive(PrimitiveType.Cube);
             board.name = "おおきな きの だい";
             board.layer = _boardLayer;
@@ -665,6 +674,8 @@ namespace Pono.MarbleRun3D.Gameplay
             board.transform.position = new Vector3(0f, 0.54f, 0f);
             board.transform.localScale = new Vector3(41.5f, 0.76f, 35.5f);
             board.GetComponent<Renderer>().sharedMaterial = _materials.Board;
+            board.GetComponent<Renderer>().enabled = false;
+            BuildRoundedBoardVisual();
 
             for (var x = PlacementSolver.MinX; x <= PlacementSolver.MaxX; x++)
             {
@@ -673,8 +684,8 @@ namespace Pono.MarbleRun3D.Gameplay
                 line.layer = 2;
                 line.transform.SetParent(_worldRoot, false);
                 line.transform.position = new Vector3(x * WoodenPieceFactory.CellSize, 0.929f, 0f);
-                line.transform.localScale = new Vector3(0.035f, 0.012f, 33f);
-                line.GetComponent<Renderer>().sharedMaterial = _materials.MapleDark;
+                line.transform.localScale = new Vector3(0.026f, 0.012f, 33f);
+                line.GetComponent<Renderer>().sharedMaterial = gridMaterial;
                 line.GetComponent<Collider>().enabled = false;
             }
             for (var z = PlacementSolver.MinZ; z <= PlacementSolver.MaxZ; z++)
@@ -684,8 +695,8 @@ namespace Pono.MarbleRun3D.Gameplay
                 line.layer = 2;
                 line.transform.SetParent(_worldRoot, false);
                 line.transform.position = new Vector3(0f, 0.93f, z * WoodenPieceFactory.CellSize);
-                line.transform.localScale = new Vector3(39f, 0.012f, 0.035f);
-                line.GetComponent<Renderer>().sharedMaterial = _materials.MapleDark;
+                line.transform.localScale = new Vector3(39f, 0.012f, 0.026f);
+                line.GetComponent<Renderer>().sharedMaterial = gridMaterial;
                 line.GetComponent<Collider>().enabled = false;
             }
 
@@ -693,9 +704,12 @@ namespace Pono.MarbleRun3D.Gameplay
             CreateBoardEdge(new Vector3(0f, 1.02f, -18.1f), new Vector3(42.6f, 0.72f, 0.66f));
             CreateBoardEdge(new Vector3(21.1f, 1.02f, 0f), new Vector3(0.66f, 0.72f, 36.8f));
             CreateBoardEdge(new Vector3(-21.1f, 1.02f, 0f), new Vector3(0.66f, 0.72f, 36.8f));
+            BuildBoardCornerToys();
+            BuildToyRoomScenery(cloudMaterial);
 
-            RenderSettings.ambientLight = new Color(0.88f, 0.86f, 0.92f);
-            RenderSettings.ambientIntensity = 1.12f;
+            RenderSettings.ambientLight = new Color(0.91f, 0.89f, 0.94f);
+            RenderSettings.ambientIntensity = 1.08f;
+            RenderSettings.subtractiveShadowColor = new Color(0.67f, 0.62f, 0.72f);
             var lightObject = new GameObject("SunLight");
             lightObject.transform.SetParent(_worldRoot, false);
             lightObject.transform.rotation = Quaternion.Euler(48f, -32f, 0f);
@@ -719,7 +733,7 @@ namespace Pono.MarbleRun3D.Gameplay
                 _camera = cameraObject.AddComponent<Camera>();
             }
             _camera.clearFlags = CameraClearFlags.SolidColor;
-            _camera.backgroundColor = new Color(0.87f, 0.95f, 0.98f);
+            _camera.backgroundColor = new Color(0.91f, 0.97f, 0.98f);
             _camera.fieldOfView = 43f;
             _camera.nearClipPlane = 0.15f;
             _camera.farClipPlane = 130f;

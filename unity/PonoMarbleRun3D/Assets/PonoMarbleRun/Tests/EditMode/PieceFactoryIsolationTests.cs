@@ -256,6 +256,8 @@ namespace Pono.MarbleRun3D.Tests.EditMode
                     AssertSoftColor(accent.color, 0.84f, 0.56f, accent.name);
 
                 Assert.That(materials.MarbleColorCount, Is.EqualTo(6));
+                Assert.That(materials.SharedMaterialCount, Is.LessThanOrEqualTo(26),
+                    "the art pass must reuse a small shared material library on Android");
                 for (var index = 0; index < materials.MarbleColorCount; index++)
                     AssertSoftColor(materials.MarbleAt(index).color, 0.84f, 0.56f, "marble " + index);
 
@@ -274,26 +276,11 @@ namespace Pono.MarbleRun3D.Tests.EditMode
         }
 
         [Test]
-        public void LargePiecesStartAndGoalUseSmallSharedNonCollidingDecorations()
+        public void EveryPieceUsesSmallSharedNonCollidingStorybookDecorations()
         {
             var root = new GameObject("test-root").transform;
             var materials = new ToyMaterialLibrary();
-            var decoratedKinds = new[]
-            {
-                MarblePieceKind.Start,
-                MarblePieceKind.Goal,
-                MarblePieceKind.Tunnel,
-                MarblePieceKind.Funnel,
-                MarblePieceKind.Helix,
-                MarblePieceKind.Steps,
-                MarblePieceKind.Lift,
-                MarblePieceKind.Tornado,
-                MarblePieceKind.Elevator,
-                MarblePieceKind.ClearTube,
-                MarblePieceKind.ClearCurve,
-                MarblePieceKind.Wave,
-                MarblePieceKind.Spinner
-            };
+            var decoratedKinds = Enum.GetValues(typeof(MarblePieceKind)).Cast<MarblePieceKind>();
             try
             {
                 foreach (var kind in decoratedKinds)
@@ -314,6 +301,78 @@ namespace Pono.MarbleRun3D.Tests.EditMode
                         .All(renderer => renderer.sharedMaterial != null), Is.True, kind.ToString());
                     UnityEngine.Object.DestroyImmediate(view.gameObject);
                 }
+            }
+            finally
+            {
+                materials.Dispose();
+                UnityEngine.Object.DestroyImmediate(root.gameObject);
+            }
+        }
+
+        [Test]
+        public void ChunkyRailsSupportsAndConnectorSocketsStayVisualOnly()
+        {
+            var root = new GameObject("test-root").transform;
+            var materials = new ToyMaterialLibrary();
+            try
+            {
+                var elevated = WoodenPieceFactory.Create(
+                    new PieceRecord
+                    {
+                        id = "cute-elevated",
+                        kind = MarblePieceKind.Straight,
+                        pose = new GridPose(0, 0, 3)
+                    },
+                    materials,
+                    root,
+                    false,
+                    6,
+                    7);
+
+                var chunkyShells = elevated.GetComponentsInChildren<Transform>(true)
+                    .Where(child => child.name.StartsWith("おもちゃ かざり ふとい レール", StringComparison.Ordinal)
+                        || child.name == "おもちゃ かざり ふっくら した")
+                    .ToArray();
+                Assert.That(chunkyShells.Length, Is.EqualTo(3));
+                Assert.That(chunkyShells.All(IsVisualOnly), Is.True);
+
+                var supportRods = elevated.GetComponentsInChildren<Transform>(true)
+                    .Where(child => child.name == "たかい みちの あし")
+                    .ToArray();
+                Assert.That(supportRods.Length, Is.EqualTo(4));
+                Assert.That(supportRods.All(child => child.localScale.x >= 0.31f), Is.True,
+                    "storybook supports should be visibly thicker than the old wire-like posts");
+                Assert.That(supportRods.All(IsVisualOnly), Is.True);
+
+                var feet = elevated.GetComponentsInChildren<Transform>(true)
+                    .Where(child => child.name.StartsWith("おもちゃ かざり あしの だい", StringComparison.Ordinal))
+                    .ToArray();
+                var caps = elevated.GetComponentsInChildren<Transform>(true)
+                    .Where(child => child.name.StartsWith("おもちゃ かざり あしの キャップ", StringComparison.Ordinal))
+                    .ToArray();
+                Assert.That(feet.Length, Is.EqualTo(4));
+                Assert.That(caps.Length, Is.EqualTo(4));
+                Assert.That(feet.Concat(caps).All(IsVisualOnly), Is.True);
+                Assert.That(caps.Select(cap => cap.GetComponent<Renderer>().sharedMaterial).Distinct().Count(),
+                    Is.GreaterThanOrEqualTo(2), "support caps should reuse candy colors");
+
+                var connectors = elevated.GetComponentsInChildren<Transform>(true)
+                    .Where(child => child.name == "つなぎ まる")
+                    .ToArray();
+                Assert.That(connectors.Length, Is.EqualTo(2));
+                foreach (var connector in connectors)
+                {
+                    Assert.That(connector.Find("つなぎ クリーム だい"), Is.Not.Null);
+                    Assert.That(connector.Find("つなぎ リング"), Is.Not.Null);
+                    Assert.That(connector.Find("つなぎ ぺぐ"), Is.Not.Null);
+                    Assert.That(connector.GetComponentsInChildren<Collider>(true)
+                        .All(collider => !collider.enabled), Is.True);
+                    Assert.That(connector.GetComponentsInChildren<Renderer>(true).Length, Is.EqualTo(3));
+                }
+
+                Assert.That(elevated.GetComponentsInChildren<Transform>(true)
+                    .Count(child => child.name.StartsWith("おもちゃ かざり", StringComparison.Ordinal)),
+                    Is.LessThanOrEqualTo(12), "keep the extra primitive budget bounded per elevated module");
             }
             finally
             {

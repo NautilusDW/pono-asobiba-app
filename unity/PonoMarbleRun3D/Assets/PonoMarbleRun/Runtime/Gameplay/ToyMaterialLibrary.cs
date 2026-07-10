@@ -31,6 +31,7 @@ namespace Pono.MarbleRun3D.Gameplay
         public PhysicsMaterial TrackPhysics { get; }
         public Shader BaseShader { get; }
         public int MarbleColorCount => _marbles.Count;
+        public int SharedMaterialCount => _owned.Count;
 
         public ToyMaterialLibrary()
         {
@@ -40,12 +41,12 @@ namespace Pono.MarbleRun3D.Gameplay
                 : Shader.Find("Standard") ?? Shader.Find("Universal Render Pipeline/Lit");
             if (BaseShader == null)
                 throw new InvalidOperationException("The toy material shader is unavailable.");
-            Maple = Make("クリーム メープル", new Color(0.96f, 0.82f, 0.66f), 0.18f);
-            MapleDark = Make("ミルク ココア", new Color(0.66f, 0.45f, 0.34f), 0.13f);
-            Board = Make("ピーチ あそびだい", new Color(0.94f, 0.78f, 0.63f), 0.16f);
-            BoardEdge = Make("ココア ふち", new Color(0.63f, 0.43f, 0.34f), 0.12f);
-            Connector = Make("みずいろ つなぎ まる", new Color(0.48f, 0.82f, 0.90f), 0.48f, true);
-            ConnectorGlow = Make("ミント つなぎ ひかり", new Color(0.62f, 0.94f, 0.76f), 0.55f, true);
+            Maple = Make("バニラ メープル", new Color(0.98f, 0.88f, 0.74f), 0.25f);
+            MapleDark = Make("ミルク ココア", new Color(0.72f, 0.52f, 0.42f), 0.20f);
+            Board = Make("ピーチ あそびだい", new Color(0.97f, 0.84f, 0.72f), 0.22f);
+            BoardEdge = Make("ココア ふち", new Color(0.70f, 0.50f, 0.40f), 0.18f);
+            Connector = Make("キャンディ つなぎ まる", new Color(0.94f, 0.66f, 0.79f), 0.55f, true);
+            ConnectorGlow = Make("ミント つなぎ ひかり", new Color(0.63f, 0.94f, 0.78f), 0.62f, true);
             var marbleColors = new[]
             {
                 new Color(0.98f, 0.62f, 0.57f), // ピーチ
@@ -58,11 +59,11 @@ namespace Pono.MarbleRun3D.Gameplay
             var pastelNames = new[] { "ピーチ", "バター", "ミント", "アクア", "ラベンダー", "ピンク" };
             for (var index = 0; index < marbleColors.Length; index++)
             {
-                _pastels.Add(Make("パステル " + pastelNames[index], marbleColors[index], 0.30f));
+                _pastels.Add(Make("パステル " + pastelNames[index], marbleColors[index], 0.38f));
                 _marbles.Add(Make("にじいろ たま " + pastelNames[index], marbleColors[index], 0.82f, false, 0.05f));
             }
             Marble = _marbles[0];
-            Metal = Make("パール かなぐ", new Color(0.91f, 0.88f, 0.84f), 0.58f, false, 0.38f);
+            Metal = Make("パール かなぐ", new Color(0.96f, 0.93f, 0.89f), 0.64f, false, 0.30f);
             ClearShell = MakeTransparent("すけすけ みずいろ つつ", new Color(0.60f, 0.86f, 0.96f, 0.18f));
             ClearEdge = MakeTransparent("すけすけ みずいろ ふち", new Color(0.48f, 0.78f, 0.92f, 0.50f), true);
             Selection = MakeTransparent("えらんだ しるし", new Color(0.48f, 0.86f, 0.94f, 0.48f), true);

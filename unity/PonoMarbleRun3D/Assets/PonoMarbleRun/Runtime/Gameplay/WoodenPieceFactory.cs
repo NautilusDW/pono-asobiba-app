@@ -152,7 +152,8 @@ namespace Pono.MarbleRun3D.Gameplay
                 3.12f,
                 materials.Maple,
                 materials.Accent(kind),
-                courseLayer);
+                courseLayer,
+                palette: materials);
             AddWoodGrain(view, materials, courseLayer);
         }
 
@@ -165,7 +166,8 @@ namespace Pono.MarbleRun3D.Gameplay
                 3.12f,
                 materials.Maple,
                 materials.Accent(MarblePieceKind.Start),
-                courseLayer);
+                courseLayer,
+                palette: materials);
 
             CreateCylinder(view, "スタート だい", new Vector3(0f, 0.16f, -0.78f), Vector3.up,
                 0.68f, 0.18f, materials.Accent(MarblePieceKind.Start), courseLayer, true);
@@ -192,7 +194,7 @@ namespace Pono.MarbleRun3D.Gameplay
                 new Vector3(1.28f, 0.12f, 1.20f), Quaternion.Euler(18f, 0f, 0f),
                 materials.Accent(MarblePieceKind.Start), courseLayer, true);
             CreateCylinder(view, "はた ぼう", new Vector3(-0.62f, 0.88f, -0.78f), Vector3.up,
-                0.07f, 1.36f, materials.MapleDark, courseLayer, false);
+                0.12f, 1.36f, materials.MapleDark, courseLayer, false);
             CreateCube(view, "はた", new Vector3(-0.36f, 1.31f, -0.78f), new Vector3(0.52f, 0.34f, 0.09f),
                 Quaternion.Euler(0f, 0f, -8f), materials.Accent(MarblePieceKind.Start), courseLayer, false);
             CreateCylinder(view, "ゲート ひだり", new Vector3(-0.72f, 0.60f, 0.72f), Vector3.up,
@@ -215,7 +217,8 @@ namespace Pono.MarbleRun3D.Gameplay
                 3.12f,
                 materials.Maple,
                 materials.Accent(MarblePieceKind.Goal),
-                courseLayer);
+                courseLayer,
+                palette: materials);
 
             CreateCylinder(view, "ゴール ひだり", new Vector3(-0.76f, 0.72f, 0.38f), Vector3.up,
                 0.13f, 1.30f, materials.Accent(MarblePieceKind.Goal), courseLayer, true);
@@ -256,7 +259,7 @@ namespace Pono.MarbleRun3D.Gameplay
                 var end = new Vector3(1.5f + Mathf.Cos(t1) * radius, 0f, -1.5f + Mathf.Sin(t1) * radius);
                 BuildTrackSegment(view, (start + end) * 0.5f, (end - start).normalized,
                     Vector3.Distance(start, end) + 0.16f, materials.Maple,
-                    materials.Accent(MarblePieceKind.Curve), courseLayer, 0.24f);
+                    materials.Accent(MarblePieceKind.Curve), courseLayer, 0.24f, materials);
                 previous = end;
             }
             CreateCylinder(view, "カーブ かざり", new Vector3(1.48f, 0.09f, -1.48f), Vector3.up,
@@ -282,7 +285,8 @@ namespace Pono.MarbleRun3D.Gameplay
                 slopeLength + 0.12f,
                 materials.Maple,
                 materials.Accent(MarblePieceKind.Slope),
-                courseLayer);
+                courseLayer,
+                palette: materials);
             CreateCylinder(view, "さか しるし", new Vector3(0f, LevelHeight * 0.74f, -0.90f), Vector3.up,
                 0.24f, 0.12f, materials.Accent(MarblePieceKind.Slope), courseLayer, false);
         }
@@ -291,11 +295,11 @@ namespace Pono.MarbleRun3D.Gameplay
         {
             var accent = materials.Accent(MarblePieceKind.Splitter);
             BuildTrackSegment(view, new Vector3(0f, 0f, -0.73f), Vector3.forward, 1.75f,
-                materials.Maple, accent, courseLayer);
+                materials.Maple, accent, courseLayer, palette: materials);
             BuildTrackSegment(view, new Vector3(-0.72f, 0f, 0f), Vector3.left, 1.72f,
-                materials.Maple, accent, courseLayer);
+                materials.Maple, accent, courseLayer, palette: materials);
             BuildTrackSegment(view, new Vector3(0.72f, 0f, 0f), Vector3.right, 1.72f,
-                materials.Maple, accent, courseLayer);
+                materials.Maple, accent, courseLayer, palette: materials);
             CreateCylinder(view, "ぶんき まる", new Vector3(0f, 0.06f, 0f), Vector3.up,
                 0.82f, 0.16f, materials.Maple, courseLayer, true);
             CreateCube(view, "ぶんき しるし", new Vector3(0f, 0.33f, -0.02f), new Vector3(0.16f, 0.36f, 0.72f),
@@ -479,7 +483,7 @@ namespace Pono.MarbleRun3D.Gameplay
                 courseLayer);
 
             CreateCylinder(view, "ぐるぐる まんなか", new Vector3(0f, height * 0.46f, 0f), Vector3.up,
-                0.20f, height * 0.92f, materials.MapleDark, courseLayer, false);
+                0.28f, height * 0.92f, materials.MapleDark, courseLayer, false);
             for (var marker = 0; marker < 6; marker++)
             {
                 var t = marker / 5f;
@@ -511,7 +515,8 @@ namespace Pono.MarbleRun3D.Gameplay
                 materials.Maple,
                 accent,
                 courseLayer,
-                0.17f);
+                0.17f,
+                materials);
 
             const int stepCount = 6;
             for (var step = 0; step < stepCount; step++)
@@ -545,7 +550,8 @@ namespace Pono.MarbleRun3D.Gameplay
                 materials.Maple,
                 accent,
                 courseLayer,
-                0.19f);
+                0.19f,
+                materials);
 
             const int rollerCount = 7;
             for (var roller = 0; roller < rollerCount; roller++)
@@ -601,12 +607,12 @@ namespace Pono.MarbleRun3D.Gameplay
                 materials.MarbleAt(segments + 1), materials.ClearEdge, courseLayer);
 
             CreateCylinder(view, "トルネード タワー", new Vector3(0f, height * 0.50f, 0f), Vector3.up,
-                0.17f, height + 0.12f, materials.MapleDark, courseLayer, false);
+                0.26f, height + 0.12f, materials.MapleDark, courseLayer, false);
             for (var band = 0; band < 7; band++)
             {
                 var bandY = height * (band + 0.5f) / 7f;
                 CreateCylinder(view, "トルネード にじいろ バンド", new Vector3(0f, bandY, 0f), Vector3.up,
-                    0.25f, 0.12f, materials.MarbleAt(band), courseLayer, false);
+                    0.35f, 0.15f, materials.PastelAt(band), courseLayer, false);
             }
 
             var guideObject = new GameObject("トルネード ガイド");
@@ -647,17 +653,17 @@ namespace Pono.MarbleRun3D.Gameplay
                 var x = corner % 2 == 0 ? -0.76f : 0.76f;
                 var z = corner < 2 ? -0.50f : 0.50f;
                 CreateCylinder(view, "エレベーター ケージ ぼう", new Vector3(x, cageY, z), Vector3.up,
-                    0.075f, cageHeight, materials.MarbleAt(corner), courseLayer, false);
+                    0.13f, cageHeight, materials.PastelAt(corner), courseLayer, false);
             }
             for (var ring = 0; ring <= 3; ring++)
             {
                 var y = ring * LevelHeight + 0.16f;
                 CreateCube(view, "エレベーター にじいろ わく", new Vector3(0f, y, -0.51f),
-                    new Vector3(1.68f, 0.10f, 0.10f), Quaternion.identity,
-                    materials.MarbleAt(ring), courseLayer, false);
+                    new Vector3(1.68f, 0.15f, 0.15f), Quaternion.identity,
+                    materials.PastelAt(ring), courseLayer, false);
                 CreateCube(view, "エレベーター にじいろ わく", new Vector3(0f, y, 0.51f),
-                    new Vector3(1.68f, 0.10f, 0.10f), Quaternion.identity,
-                    materials.MarbleAt(ring + 2), courseLayer, false);
+                    new Vector3(1.68f, 0.15f, 0.15f), Quaternion.identity,
+                    materials.PastelAt(ring + 2), courseLayer, false);
             }
 
             var movingCar = new GameObject("エレベーター うごく だい");
@@ -802,9 +808,17 @@ namespace Pono.MarbleRun3D.Gameplay
         {
             BuildStraight(view, materials, courseLayer, MarblePieceKind.Spinner);
             CreateCylinder(view, "くるくる ささえ ひだり", new Vector3(-0.75f, 0.73f, 0f), Vector3.up,
-                0.09f, 1.18f, materials.MapleDark, courseLayer, false);
+                0.15f, 1.18f, materials.MapleDark, courseLayer, false);
             CreateCylinder(view, "くるくる ささえ みぎ", new Vector3(0.75f, 0.73f, 0f), Vector3.up,
-                0.09f, 1.18f, materials.MapleDark, courseLayer, false);
+                0.15f, 1.18f, materials.MapleDark, courseLayer, false);
+            for (var support = -1; support <= 1; support += 2)
+            {
+                var x = support * 0.75f;
+                CreateCylinder(view, "おもちゃ かざり くるくる あし", new Vector3(x, 0.15f, 0f),
+                    Vector3.up, 0.26f, 0.11f, materials.Maple, courseLayer, false);
+                CreateCylinder(view, "おもちゃ かざり くるくる キャップ", new Vector3(x, 1.34f, 0f),
+                    Vector3.up, 0.21f, 0.10f, materials.PastelAt(support + 3), courseLayer, false);
+            }
 
             var rotorRoot = new GameObject("くるくる うごく はね");
             rotorRoot.layer = courseLayer;
@@ -952,7 +966,7 @@ namespace Pono.MarbleRun3D.Gameplay
             int baseLevel,
             ToyMaterialLibrary materials,
             int courseLayer,
-            float radius = 0.11f)
+            float radius = 0.16f)
         {
             var bottomLocalY = -baseLevel * LevelHeight;
             var length = topLocalY - bottomLocalY;
@@ -969,12 +983,24 @@ namespace Pono.MarbleRun3D.Gameplay
                 false);
             CreateCylinder(
                 view,
-                name + " そこ",
-                new Vector3(x, bottomLocalY + 0.035f, z),
+                "おもちゃ かざり あしの だい " + name,
+                new Vector3(x, bottomLocalY + 0.055f, z),
                 Vector3.up,
-                radius * 1.55f,
-                0.07f,
-                materials.Maple,
+                radius * 1.90f,
+                0.11f,
+                materials.MapleDark,
+                courseLayer,
+                false);
+            var paletteIndex = Mathf.Abs(
+                Mathf.RoundToInt(x * 10f) + Mathf.RoundToInt(z * 10f) + baseLevel * 3);
+            CreateCylinder(
+                view,
+                "おもちゃ かざり あしの キャップ " + name,
+                new Vector3(x, topLocalY + 0.045f, z),
+                Vector3.up,
+                radius * 1.48f,
+                0.09f,
+                materials.PastelAt(paletteIndex),
                 courseLayer,
                 false);
         }
@@ -989,61 +1015,85 @@ namespace Pono.MarbleRun3D.Gameplay
             {
                 case MarblePieceKind.Start:
                     CreateFlowerDecoration(view, "スタート", new Vector3(0.55f, 1.43f, -0.80f),
-                        0.15f, materials, courseLayer, 5);
+                        0.22f, materials, courseLayer, 5);
                     break;
                 case MarblePieceKind.Goal:
                     CreateStarDecoration(view, "ゴール", new Vector3(0f, 1.70f, 0.38f),
-                        0.24f, materials.PastelAt(1), courseLayer);
+                        0.32f, materials.PastelAt(1), courseLayer);
+                    break;
+                case MarblePieceKind.Straight:
+                    CreateHeartDecoration(view, "まっすぐ", new Vector3(0.58f, 0.48f, 0f),
+                        0.23f, materials.PastelAt(5), courseLayer);
+                    break;
+                case MarblePieceKind.Curve:
+                    CreateFlowerDecoration(view, "カーブ", new Vector3(1.46f, 0.48f, -1.46f),
+                        0.18f, materials, courseLayer, 0);
+                    break;
+                case MarblePieceKind.Slope:
+                    CreateLeafDecoration(view, "さかみち", new Vector3(0.58f, 1.24f, -0.72f),
+                        0.22f, materials, courseLayer);
+                    break;
+                case MarblePieceKind.Splitter:
+                    CreateFlowerDecoration(view, "ぶんき", new Vector3(0f, 0.62f, 0f),
+                        0.18f, materials, courseLayer, 1);
                     break;
                 case MarblePieceKind.Tunnel:
                     CreateCloudDecoration(view, "トンネル", new Vector3(0f, 1.62f, 0f),
-                        0.24f, materials, courseLayer);
+                        0.32f, materials, courseLayer);
                     break;
                 case MarblePieceKind.Funnel:
                     CreateFlowerDecoration(view, "じょうご", new Vector3(1.10f, 0.95f, 0f),
-                        0.13f, materials, courseLayer, 0);
+                        0.19f, materials, courseLayer, 0);
+                    break;
+                case MarblePieceKind.Seesaw:
+                    CreateHeartDecoration(view, "シーソー", new Vector3(-0.62f, 1.02f, 0f),
+                        0.22f, materials.PastelAt(2), courseLayer);
+                    break;
+                case MarblePieceKind.Domino:
+                    CreateStarDecoration(view, "ドミノ", new Vector3(0.62f, 1.32f, 0f),
+                        0.24f, materials.PastelAt(1), courseLayer);
                     break;
                 case MarblePieceKind.Helix:
                     CreateStarDecoration(view, "ぐるぐる", new Vector3(0f, LevelHeight * 2f + 0.44f, 0f),
-                        0.23f, materials.PastelAt(4), courseLayer);
+                        0.32f, materials.PastelAt(4), courseLayer);
                     CreateRoundCap(view, "ぐるぐる", new Vector3(0f, LevelHeight * 2f + 0.18f, 0f),
-                        0.28f, materials.PastelAt(5), courseLayer);
+                        0.38f, materials.PastelAt(5), courseLayer);
                     break;
                 case MarblePieceKind.Steps:
                     CreateStarDecoration(view, "だんだん", new Vector3(0.66f, LevelHeight + 0.54f, -1.05f),
-                        0.17f, materials.PastelAt(0), courseLayer);
+                        0.24f, materials.PastelAt(0), courseLayer);
                     break;
                 case MarblePieceKind.Lift:
                     CreateFlowerDecoration(view, "のぼる", new Vector3(0.70f, LevelHeight + 0.50f, 0.85f),
-                        0.12f, materials, courseLayer, 2);
+                        0.19f, materials, courseLayer, 2);
                     break;
                 case MarblePieceKind.Tornado:
                     CreateCloudDecoration(view, "トルネード", new Vector3(0f, LevelHeight * 3f + 0.38f, 0f),
-                        0.25f, materials, courseLayer);
+                        0.34f, materials, courseLayer);
                     CreateRoundCap(view, "トルネード", new Vector3(0f, LevelHeight * 3f + 0.13f, 0f),
-                        0.30f, materials.PastelAt(5), courseLayer);
+                        0.40f, materials.PastelAt(5), courseLayer);
                     break;
                 case MarblePieceKind.Elevator:
                     CreateCloudDecoration(view, "エレベーター", new Vector3(0f, LevelHeight * 3f + 0.57f, -0.06f),
-                        0.25f, materials, courseLayer);
+                        0.34f, materials, courseLayer);
                     CreateStarDecoration(view, "エレベーター", new Vector3(0.52f, LevelHeight * 3f + 0.25f, 0.52f),
-                        0.15f, materials.PastelAt(1), courseLayer);
+                        0.22f, materials.PastelAt(1), courseLayer);
                     break;
                 case MarblePieceKind.ClearTube:
                     CreateCloudDecoration(view, "すけすけ つつ", new Vector3(0f, 1.34f, 0f),
-                        0.20f, materials, courseLayer);
+                        0.28f, materials, courseLayer);
                     break;
                 case MarblePieceKind.ClearCurve:
                     CreateFlowerDecoration(view, "すけすけ カーブ", new Vector3(1.48f, 1.34f, -1.48f),
-                        0.13f, materials, courseLayer, 4);
+                        0.19f, materials, courseLayer, 4);
                     break;
                 case MarblePieceKind.Wave:
                     CreateStarDecoration(view, "なみなみ", new Vector3(0.62f, 1.30f, 0f),
-                        0.18f, materials.PastelAt(2), courseLayer);
+                        0.25f, materials.PastelAt(2), courseLayer);
                     break;
                 case MarblePieceKind.Spinner:
                     CreateFlowerDecoration(view, "くるくる", new Vector3(-0.67f, 1.43f, 0f),
-                        0.12f, materials, courseLayer, 1);
+                        0.19f, materials, courseLayer, 1);
                     break;
             }
         }
@@ -1088,6 +1138,48 @@ namespace Pono.MarbleRun3D.Gameplay
                     new Vector3(radius * 0.22f, radius * 0.86f, radius * 0.16f),
                     Quaternion.Euler(0f, 0f, angle - 90f), material, courseLayer, false);
             }
+        }
+
+        private static void CreateHeartDecoration(
+            PieceView view,
+            string label,
+            Vector3 centre,
+            float radius,
+            Material material,
+            int courseLayer)
+        {
+            CreateSphere(view, "パステル かざり ハート ひだり " + label,
+                centre + new Vector3(-radius * 0.38f, radius * 0.20f, 0f),
+                radius * 0.58f, material, courseLayer, false);
+            CreateSphere(view, "パステル かざり ハート みぎ " + label,
+                centre + new Vector3(radius * 0.38f, radius * 0.20f, 0f),
+                radius * 0.58f, material, courseLayer, false);
+            CreateCube(view, "パステル かざり ハート した " + label,
+                centre + new Vector3(0f, -radius * 0.24f, 0f),
+                new Vector3(radius * 1.12f, radius * 1.12f, radius * 0.30f),
+                Quaternion.Euler(0f, 0f, 45f), material, courseLayer, false);
+        }
+
+        private static void CreateLeafDecoration(
+            PieceView view,
+            string label,
+            Vector3 centre,
+            float radius,
+            ToyMaterialLibrary materials,
+            int courseLayer)
+        {
+            CreateCylinder(view, "パステル かざり はっぱ ひだり " + label,
+                centre + new Vector3(-radius * 0.30f, radius * 0.18f, 0f),
+                new Vector3(-0.58f, 0.82f, 0f), radius * 0.25f, radius * 1.45f,
+                materials.PastelAt(2), courseLayer, false);
+            CreateCylinder(view, "パステル かざり はっぱ みぎ " + label,
+                centre + new Vector3(radius * 0.30f, radius * 0.18f, 0f),
+                new Vector3(0.58f, 0.82f, 0f), radius * 0.25f, radius * 1.45f,
+                materials.PastelAt(3), courseLayer, false);
+            CreateCylinder(view, "パステル かざり はっぱ くき " + label,
+                centre + new Vector3(0f, -radius * 0.48f, 0f),
+                Vector3.up, radius * 0.10f, radius * 1.05f,
+                materials.MapleDark, courseLayer, false);
         }
 
         private static void CreateCloudDecoration(
@@ -1190,11 +1282,11 @@ namespace Pono.MarbleRun3D.Gameplay
             int courseLayer)
         {
             CreateCylinder(view, name + " ひだり", new Vector3(-0.80f, 0.52f, z), Vector3.up,
-                0.065f, 1.10f, material, courseLayer, false);
+                0.095f, 1.10f, material, courseLayer, false);
             CreateCylinder(view, name + " みぎ", new Vector3(0.80f, 0.52f, z), Vector3.up,
-                0.065f, 1.10f, material, courseLayer, false);
+                0.095f, 1.10f, material, courseLayer, false);
             CreateCylinder(view, name + " うえ", new Vector3(0f, 1.06f, z), Vector3.right,
-                0.065f, 1.66f, material, courseLayer, false);
+                0.095f, 1.66f, material, courseLayer, false);
         }
 
         private static void BuildWaveTrackSegment(
@@ -1226,7 +1318,8 @@ namespace Pono.MarbleRun3D.Gameplay
             Material floorMaterial,
             Material accentMaterial,
             int courseLayer,
-            float railRadius = 0.13f)
+            float railRadius = 0.13f,
+            ToyMaterialLibrary palette = null)
         {
             direction.Normalize();
             var rotation = Quaternion.LookRotation(direction, Vector3.up);
@@ -1239,13 +1332,29 @@ namespace Pono.MarbleRun3D.Gameplay
             CreateCylinder(view, "レール みぎ", centre - side * 0.87f + Vector3.up * 0.31f,
                 direction, railRadius, length, accentMaterial, courseLayer, true);
 
+            if (length >= 1.05f)
+            {
+                // These shells make the modular track read as a chunky wooden toy.
+                // The original colliders above remain unchanged underneath.
+                CreateCylinder(view, "おもちゃ かざり ふっくら した",
+                    centre + Vector3.down * 0.06f, direction, 0.21f, length * 0.91f,
+                    floorMaterial, courseLayer, false);
+                CreateCylinder(view, "おもちゃ かざり ふとい レール ひだり",
+                    centre + side * 0.87f + Vector3.up * 0.31f,
+                    direction, railRadius + 0.045f, length, accentMaterial, courseLayer, false);
+                CreateCylinder(view, "おもちゃ かざり ふとい レール みぎ",
+                    centre - side * 0.87f + Vector3.up * 0.31f,
+                    direction, railRadius + 0.045f, length, accentMaterial, courseLayer, false);
+            }
+
             var slatCount = Mathf.Max(2, Mathf.RoundToInt(length / 0.55f));
             for (var i = 0; i < slatCount; i++)
             {
                 var t = slatCount == 1 ? 0f : Mathf.Lerp(-0.42f, 0.42f, i / (float)(slatCount - 1));
                 var position = centre + direction * length * t + Vector3.up * 0.19f;
-                CreateCube(view, "いろの せん", position, new Vector3(1.46f, 0.035f, 0.055f),
-                    rotation, accentMaterial, courseLayer, false);
+                var stripeMaterial = palette == null ? accentMaterial : palette.PastelAt(i);
+                CreateCylinder(view, "キャンディ いろの せん", position, side,
+                    0.027f, 1.46f, stripeMaterial, courseLayer, false);
             }
         }
 
@@ -1276,11 +1385,21 @@ namespace Pono.MarbleRun3D.Gameplay
                     0.28f + connector.localLevelOffset * LevelHeight,
                     connector.localCellPosition.y * CellSize);
 
+                var socket = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                socket.name = "つなぎ クリーム だい";
+                socket.layer = 2;
+                socket.transform.SetParent(markerRoot.transform, false);
+                socket.transform.localPosition = new Vector3(0f, -0.025f, 0f);
+                socket.transform.localScale = new Vector3(0.64f, 0.035f, 0.64f);
+                socket.GetComponent<Renderer>().sharedMaterial = materials.Maple;
+                socket.GetComponent<Collider>().enabled = false;
+                view.RegisterRenderer(socket.GetComponent<Renderer>());
+
                 var ring = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
                 ring.name = "つなぎ リング";
                 ring.layer = 2;
                 ring.transform.SetParent(markerRoot.transform, false);
-                ring.transform.localScale = new Vector3(0.32f, 0.045f, 0.32f);
+                ring.transform.localScale = new Vector3(0.48f, 0.052f, 0.48f);
                 ring.GetComponent<Renderer>().sharedMaterial = isGhost ? materials.GhostValid : materials.Connector;
                 ring.GetComponent<Collider>().enabled = false;
                 view.RegisterRenderer(ring.GetComponent<Renderer>());
@@ -1289,8 +1408,8 @@ namespace Pono.MarbleRun3D.Gameplay
                 peg.name = "つなぎ ぺぐ";
                 peg.layer = 2;
                 peg.transform.SetParent(markerRoot.transform, false);
-                peg.transform.localPosition = new Vector3(0f, 0.13f, 0f);
-                peg.transform.localScale = Vector3.one * 0.24f;
+                peg.transform.localPosition = new Vector3(0f, 0.15f, 0f);
+                peg.transform.localScale = Vector3.one * 0.34f;
                 peg.GetComponent<Renderer>().sharedMaterial = isGhost ? materials.GhostValid : materials.ConnectorGlow;
                 peg.GetComponent<Collider>().enabled = false;
                 view.RegisterRenderer(peg.GetComponent<Renderer>());
