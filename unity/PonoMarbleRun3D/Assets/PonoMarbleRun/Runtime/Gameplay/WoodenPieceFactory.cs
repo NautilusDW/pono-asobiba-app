@@ -1371,7 +1371,9 @@ namespace Pono.MarbleRun3D.Gameplay
             go.transform.SetParent(customParent != null ? customParent : view.transform, false);
             go.transform.localPosition = localPosition;
             go.transform.localRotation = Quaternion.FromToRotation(Vector3.up, axis.normalized);
-            go.transform.localScale = new Vector3(radius, length * 0.5f, radius);
+            // Unity's primitive cylinder has radius 0.5 and height 2. The helper's
+            // argument is a true radius, matching CreateSphere, so X/Z need diameter.
+            go.transform.localScale = new Vector3(radius * 2f, length * 0.5f, radius * 2f);
             go.GetComponent<Renderer>().sharedMaterial = material;
             go.GetComponent<Collider>().enabled = collider;
             view.RegisterRenderer(go.GetComponent<Renderer>());

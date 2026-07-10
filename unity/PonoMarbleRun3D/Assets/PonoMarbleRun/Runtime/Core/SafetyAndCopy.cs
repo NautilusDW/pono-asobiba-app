@@ -126,6 +126,25 @@ namespace Pono.MarbleRun3D.Core
             float centeringStrength,
             float maximumAcceleration)
         {
+            return CalculateConstraintAcceleration(
+                velocity,
+                pathTangent,
+                positionError,
+                alignmentStrength,
+                centeringStrength,
+                maximumAcceleration,
+                Vector3.zero);
+        }
+
+        public static Vector3 CalculateConstraintAcceleration(
+            Vector3 velocity,
+            Vector3 pathTangent,
+            Vector3 positionError,
+            float alignmentStrength,
+            float centeringStrength,
+            float maximumAcceleration,
+            Vector3 centripetalAcceleration)
+        {
             if (!IsFinite(velocity) || !IsFinite(pathTangent) || !IsFinite(positionError))
                 return Vector3.zero;
 
@@ -137,9 +156,38 @@ namespace Pono.MarbleRun3D.Core
             var tangentialVelocity = tangent * Vector3.Dot(velocity, tangent);
             var sidewaysVelocity = velocity - tangentialVelocity;
             var lateralError = positionError - tangent * Vector3.Dot(positionError, tangent);
-            var acceleration = -sidewaysVelocity * Mathf.Max(0f, alignmentStrength)
+            var candidateAcceleration = -sidewaysVelocity * Mathf.Max(0f, alignmentStrength)
                 + lateralError * Mathf.Max(0f, centeringStrength);
-            acceleration = Vector3.ClampMagnitude(acceleration, maximumAcceleration);
+
+            return CombineZeroWorkConstraintAcceleration(
+                velocity,
+                candidateAcceleration,
+                centripetalAcceleration,
+                maximumAcceleration);
+        }
+
+        /// <summary>
+        /// Adds the inward acceleration needed to follow a curved path, then removes
+        /// every component that could change kinetic energy. The result can turn a
+        /// fast marble but can never propel or brake it along its velocity vector.
+        /// </summary>
+        public static Vector3 CombineZeroWorkConstraintAcceleration(
+            Vector3 velocity,
+            Vector3 candidateAcceleration,
+            Vector3 centripetalAcceleration,
+            float maximumAcceleration)
+        {
+            if (!IsFinite(velocity)
+                || !IsFinite(candidateAcceleration)
+                || !IsFinite(centripetalAcceleration)
+                || !IsFinite(maximumAcceleration)
+                || maximumAcceleration <= 0f)
+            {
+                return Vector3.zero;
+            }
+
+            var acceleration = candidateAcceleration + centripetalAcceleration;
+            if (!IsFinite(acceleration)) return Vector3.zero;
 
             // A rigid rail's normal force is perpendicular to motion. Project away
             // all mechanical work so the helper neither motors nor brakes the marble.
@@ -150,6 +198,7 @@ namespace Pono.MarbleRun3D.Core
                 acceleration -= velocity * (power / speedSquared);
             }
 
+            if (!IsFinite(acceleration)) return Vector3.zero;
             return Vector3.ClampMagnitude(acceleration, maximumAcceleration);
         }
 
@@ -181,7 +230,9 @@ namespace Pono.MarbleRun3D.Core
         public float StallSpeed { get; set; } = 0.08f;
         public float StallAngularSpeed { get; set; } = 0.4f;
         public float StallDelay { get; set; } = 2.5f;
-        public float MinimumY { get; set; } = -2f;
+        // A marble resting on the board (about y=1.24) has left every level-0 rail
+        // (running centre about y=1.47), so return it before it crosses the whole room.
+        public float MinimumY { get; set; } = 1.30f;
         public float MaximumRadius { get; set; } = 34f;
         public float MaximumX { get; set; } = 19.5f;
         public float MaximumZ { get; set; } = 16.5f;

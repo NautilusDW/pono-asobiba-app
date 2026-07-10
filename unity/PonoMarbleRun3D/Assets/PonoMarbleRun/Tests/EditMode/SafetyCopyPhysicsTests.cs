@@ -40,6 +40,8 @@ namespace Pono.MarbleRun3D.Tests.EditMode
             var model = new MarbleSafetyModel();
             Assert.That(model.Tick(new Vector3(0f, -3f, 0f), Vector3.zero, Vector3.zero, 0.01f),
                 Is.EqualTo(MarbleSafetyEvent.OutOfBounds));
+            Assert.That(model.Tick(new Vector3(0f, 1.24f, 0f), Vector3.zero, Vector3.zero, 0.01f),
+                Is.EqualTo(MarbleSafetyEvent.OutOfBounds));
             Assert.That(model.Tick(new Vector3(80f, 1f, 0f), Vector3.zero, Vector3.zero, 0.01f),
                 Is.EqualTo(MarbleSafetyEvent.OutOfBounds));
             Assert.That(model.Tick(new Vector3(0f, 1f, 17f), Vector3.zero, Vector3.zero, 0.01f),
@@ -202,6 +204,45 @@ namespace Pono.MarbleRun3D.Tests.EditMode
             var insufficientVelocity = PassiveGuidePhysics.CalculateEnergyConservingVelocity(
                 1f, 2f, Vector3.forward, 9.81f);
             Assert.That(insufficientVelocity, Is.EqualTo(Vector3.zero));
+        }
+
+        [Test]
+        public void CentripetalConstraintIsInwardFiniteAndCappedWithoutDoingWork()
+        {
+            var velocity = Vector3.forward * 12f;
+            var inwardCentripetal = Vector3.left * (12f * 12f / 1.5f);
+            const float maximumAcceleration = 30f;
+
+            var acceleration = PassiveGuidePhysics.CombineZeroWorkConstraintAcceleration(
+                velocity,
+                Vector3.zero,
+                inwardCentripetal,
+                maximumAcceleration);
+
+            Assert.That(float.IsNaN(acceleration.x) || float.IsInfinity(acceleration.x), Is.False);
+            Assert.That(float.IsNaN(acceleration.y) || float.IsInfinity(acceleration.y), Is.False);
+            Assert.That(float.IsNaN(acceleration.z) || float.IsInfinity(acceleration.z), Is.False);
+            Assert.That(acceleration.x, Is.LessThan(0f), "curve force must point toward its centre");
+            Assert.That(acceleration.magnitude, Is.LessThanOrEqualTo(maximumAcceleration + 0.0001f));
+            Assert.That(Vector3.Dot(acceleration, velocity), Is.EqualTo(0f).Within(0.00001f));
+        }
+
+        [Test]
+        public void CombinedCurveCorrectionRemainsPerpendicularToDriftingVelocity()
+        {
+            var velocity = new Vector3(2.4f, -0.6f, 8.2f);
+            var candidate = new Vector3(-9f, 3f, -1.5f);
+            var centripetal = new Vector3(-42f, 0f, 0f);
+
+            var acceleration = PassiveGuidePhysics.CombineZeroWorkConstraintAcceleration(
+                velocity,
+                candidate,
+                centripetal,
+                36f);
+
+            Assert.That(acceleration.x, Is.LessThan(0f));
+            Assert.That(acceleration.magnitude, Is.LessThanOrEqualTo(36.0001f));
+            Assert.That(Vector3.Dot(acceleration, velocity), Is.EqualTo(0f).Within(0.00002f));
         }
 
         [Test]

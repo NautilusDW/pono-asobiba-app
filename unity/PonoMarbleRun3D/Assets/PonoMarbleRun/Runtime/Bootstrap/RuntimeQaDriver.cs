@@ -268,6 +268,22 @@ namespace Pono.MarbleRun3D.Bootstrap
                     modeId + " did not physically reach the goal; reached=" + _controller.MarblesAtGoal
                     + "; " + DescribeMarbles());
             }
+
+            // The child-facing celebration may begin shortly after the first group
+            // arrives. Keep the QA observer alive long enough to prove every released
+            // marble can still enter the same physical GoalSensor.
+            var allMarblesDeadline = Time.realtimeSinceStartup + 8f;
+            while (_controller.MarblesAtGoal < _controller.ActiveMarbleCount
+                   && Time.realtimeSinceStartup < allMarblesDeadline)
+            {
+                yield return null;
+            }
+            if (_controller.MarblesAtGoal < _controller.ActiveMarbleCount)
+            {
+                throw new InvalidOperationException(
+                    modeId + " celebration began before every marble arrived; reached="
+                    + _controller.MarblesAtGoal + "; " + DescribeMarbles());
+            }
             _details = modeId + "_goal_seconds="
                 + (Time.realtimeSinceStartup - startedAt).ToString("0.000", CultureInfo.InvariantCulture)
                 + "; reached=" + _controller.MarblesAtGoal;
