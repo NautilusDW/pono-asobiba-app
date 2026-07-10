@@ -118,11 +118,13 @@ namespace Pono.MarbleRun3D.Core
     {
         public readonly Vector2 localCellPosition;
         public readonly Vector2Int localFacing;
+        public readonly int localLevelOffset;
 
-        public ConnectorSpec(float x, float z, int facingX, int facingZ)
+        public ConnectorSpec(float x, float z, int facingX, int facingZ, int levelOffset = 0)
         {
             localCellPosition = new Vector2(x, z);
             localFacing = new Vector2Int(facingX, facingZ);
+            localLevelOffset = levelOffset;
         }
     }
 
@@ -130,11 +132,13 @@ namespace Pono.MarbleRun3D.Core
     {
         public readonly Vector2 cellPosition;
         public readonly Vector2Int facing;
+        public readonly int level;
 
-        public ConnectorPose(Vector2 cellPosition, Vector2Int facing)
+        public ConnectorPose(Vector2 cellPosition, Vector2Int facing, int level)
         {
             this.cellPosition = cellPosition;
             this.facing = facing;
+            this.level = level;
         }
     }
 
@@ -189,7 +193,7 @@ namespace Pono.MarbleRun3D.Core
                     MarblePieceKind.Slope,
                     "くだりざか",
                     new Color(0.77f, 0.62f, 0.94f),
-                    new ConnectorSpec(0f, -0.5f, 0, -1),
+                    new ConnectorSpec(0f, -0.5f, 0, -1, 1),
                     new ConnectorSpec(0f, 0.5f, 0, 1)),
                 [MarblePieceKind.Splitter] = new PartSpec(
                     MarblePieceKind.Splitter,
@@ -238,7 +242,8 @@ namespace Pono.MarbleRun3D.Core
             var rotatedFacing = Rotate(connector.localFacing, piece.pose.quarterTurns);
             return new ConnectorPose(
                 new Vector2(piece.pose.x, piece.pose.z) + rotatedPosition,
-                rotatedFacing);
+                rotatedFacing,
+                piece.pose.level + connector.localLevelOffset);
         }
 
         public static Vector2 Rotate(Vector2 value, int quarterTurns)

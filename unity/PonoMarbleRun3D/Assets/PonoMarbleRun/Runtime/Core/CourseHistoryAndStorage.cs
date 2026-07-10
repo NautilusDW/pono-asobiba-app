@@ -95,7 +95,13 @@ namespace Pono.MarbleRun3D.Core
                     || piece.pose.z < PlacementSolver.MinZ
                     || piece.pose.z > PlacementSolver.MaxZ
                     || piece.pose.level < PlacementSolver.MinLevel
-                    || piece.pose.level > PlacementSolver.MaxLevel)
+                    || piece.pose.level > PlacementSolver.MaxLevel
+                    || !PlacementSolver.Validate(
+                        piece.kind,
+                        piece.pose,
+                        course.pieces,
+                        null,
+                        piece.id).IsValid)
                 {
                     course = null;
                     error = "よみこめなかったよ";
@@ -104,6 +110,19 @@ namespace Pono.MarbleRun3D.Core
                 piece.pose.quarterTurns = GridPose.NormalizeQuarterTurns(piece.pose.quarterTurns);
             }
             return true;
+        }
+
+        public static bool TryDecodeForMode(
+            string json,
+            string expectedModeId,
+            out CourseData course,
+            out string error)
+        {
+            if (!TryDecode(json, out course, out error)) return false;
+            if (string.Equals(course.modeId, expectedModeId, StringComparison.Ordinal)) return true;
+            course = null;
+            error = "よみこめなかったよ";
+            return false;
         }
 
         public static string GetSavePath(string modeId)
@@ -148,7 +167,7 @@ namespace Pono.MarbleRun3D.Core
             }
             try
             {
-                return TryDecode(File.ReadAllText(path), out course, out error);
+                return TryDecodeForMode(File.ReadAllText(path), modeId, out course, out error);
             }
             catch (Exception)
             {

@@ -117,6 +117,31 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator VerticalPaletteDragScrollsInsteadOfPlacing()
+        {
+            _controller.StartMode("sandbox");
+            Canvas.ForceUpdateCanvases();
+            yield return null;
+            var scroll = _controller.Ui.GetComponentInChildren<ScrollRect>(true);
+            var drag = _controller.Ui.GetComponentsInChildren<PaletteDragItem>(true).First();
+            Assert.That(scroll, Is.Not.Null);
+            var before = scroll.content.anchoredPosition;
+            var eventData = new PointerEventData(EventSystem.current)
+            {
+                pointerId = 9,
+                button = PointerEventData.InputButton.Left,
+                position = new Vector2(120f, 230f),
+                delta = new Vector2(0f, 32f)
+            };
+            drag.OnBeginDrag(eventData);
+            eventData.position = new Vector2(120f, 500f);
+            eventData.delta = new Vector2(0f, 270f);
+            drag.OnDrag(eventData);
+            drag.OnEndDrag(eventData);
+            Assert.That(Vector2.Distance(scroll.content.anchoredPosition, before), Is.GreaterThan(1f));
+        }
+
+        [UnityTest]
         public IEnumerator PauseFreezesMarbleAndAllDynamicMechanisms()
         {
             BuildStraightCourse();
@@ -173,6 +198,77 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator PausingCelebrationKeepsResumeAboveGoalPanel()
+        {
+            BuildStraightCourse();
+            _controller.StartRun();
+            _controller.CelebrateForQa();
+            yield return null;
+            _controller.SetPaused(true);
+            var pause = _controller.Ui.transform.Find("Canvas/SafeArea/Pause");
+            var celebration = _controller.Ui.transform.Find("Canvas/SafeArea/Celebration");
+            Assert.That(pause, Is.Not.Null);
+            Assert.That(celebration, Is.Not.Null);
+            Assert.That(pause.gameObject.activeSelf, Is.True);
+            Assert.That(celebration.gameObject.activeSelf, Is.True);
+            Assert.That(pause.GetSiblingIndex(), Is.GreaterThan(celebration.GetSiblingIndex()));
+            _controller.SetPaused(false);
+            Assert.That(_controller.State, Is.EqualTo(MarbleRunState.Celebrating));
+        }
+
+        [UnityTest]
+        public IEnumerator TutorialReachesTryInstructionAfterConnectedCourse()
+        {
+            _controller.StartMode("tutorial");
+            Assert.That(_controller.PlaceForQa(MarblePieceKind.Straight, new GridPose(0, -2)), Is.True);
+            var first = _controller.Course.pieces.Single(piece => piece.pose.z == -2);
+            Assert.That(_controller.SelectForQa(first.id), Is.True);
+            for (var i = 0; i < 4; i++) _controller.RotateSelection();
+            Assert.That(_controller.TutorialStep, Is.EqualTo(2));
+            for (var z = -1; z <= 2; z++)
+                Assert.That(_controller.PlaceForQa(MarblePieceKind.Straight, new GridPose(0, z)), Is.True);
+            Assert.That(_controller.TutorialStep, Is.EqualTo(3));
+            Assert.That(_controller.Ui.TutorialText, Is.EqualTo("ためすを おしてみよう"));
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator MarblePhysicallyActuatesSeesawAndDomino()
+        {
+            BuildMechanismCourse(MarblePieceKind.Seesaw);
+            var seesaw = _controller.PieceViews.Values.Single(view => view.Record.kind == MarblePieceKind.Seesaw);
+            var seesawBody = seesaw.DynamicBodies.Single();
+            var seesawStart = seesawBody.rotation;
+            _controller.StartRun();
+            var seesawMaximumAngle = 0f;
+            var deadline = Time.realtimeSinceStartup + 4.5f;
+            while (Time.realtimeSinceStartup < deadline)
+            {
+                seesawMaximumAngle = Mathf.Max(seesawMaximumAngle, Quaternion.Angle(seesawStart, seesawBody.rotation));
+                yield return null;
+            }
+            Assert.That(seesawMaximumAngle, Is.GreaterThan(0.5f));
+            _controller.ReturnToEditing();
+
+            BuildMechanismCourse(MarblePieceKind.Domino);
+            var domino = _controller.PieceViews.Values.Single(view => view.Record.kind == MarblePieceKind.Domino);
+            var dominoBodies = domino.DynamicBodies.ToArray();
+            var dominoStarts = dominoBodies.Select(body => body.rotation).ToArray();
+            _controller.StartRun();
+            var dominoMaximumAngle = 0f;
+            deadline = Time.realtimeSinceStartup + 4.5f;
+            while (Time.realtimeSinceStartup < deadline)
+            {
+                for (var i = 0; i < dominoBodies.Length; i++)
+                    dominoMaximumAngle = Mathf.Max(
+                        dominoMaximumAngle,
+                        Quaternion.Angle(dominoStarts[i], dominoBodies[i].rotation));
+                yield return null;
+            }
+            Assert.That(dominoMaximumAngle, Is.GreaterThan(5f));
+        }
+
+        [UnityTest]
         public IEnumerator ConnectedFlatCoursePhysicallyReachesGoal()
         {
             BuildStraightCourse();
@@ -183,6 +279,26 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
 
             Assert.That(_controller.State, Is.EqualTo(MarbleRunState.Celebrating),
                 "A connected flat course must reach the goal through real physics.");
+        }
+
+        [UnityTest]
+        public IEnumerator TwoSlopesPhysicallyTraverseElevatedLevelAndReachGoal()
+        {
+            _controller.StartMode("sandbox");
+            Assert.That(_controller.PlaceForQa(MarblePieceKind.Straight, new GridPose(0, -3)), Is.True);
+            Assert.That(_controller.PlaceForQa(MarblePieceKind.Slope, new GridPose(0, -2, 0, 2)), Is.True);
+            for (var z = -1; z <= 1; z++)
+                Assert.That(_controller.PlaceForQa(MarblePieceKind.Straight, new GridPose(0, z, 1)), Is.True);
+            Assert.That(_controller.PlaceForQa(MarblePieceKind.Slope, new GridPose(0, 2, 0, 0)), Is.True);
+            Assert.That(_controller.PlaceForQa(MarblePieceKind.Straight, new GridPose(0, 3)), Is.True);
+            Assert.That(PlacementSolver.HasStartToGoalGraphPath(_controller.Course.pieces), Is.True);
+
+            _controller.StartRun();
+            var timeout = Time.realtimeSinceStartup + 12f;
+            while (_controller.State == MarbleRunState.Running && Time.realtimeSinceStartup < timeout)
+                yield return null;
+            Assert.That(_controller.State, Is.EqualTo(MarbleRunState.Celebrating),
+                "A two-slope course must physically cross the elevated level and return to the goal.");
         }
 
         [UnityTest]
@@ -279,6 +395,16 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
             _controller.StartMode("sandbox");
             for (var z = -3; z <= 3; z++)
                 Assert.That(_controller.PlaceForQa(MarblePieceKind.Straight, new GridPose(0, z)), Is.True, "z=" + z);
+        }
+
+        private void BuildMechanismCourse(MarblePieceKind mechanism)
+        {
+            _controller.StartMode("sandbox");
+            for (var z = -3; z <= 3; z++)
+            {
+                var kind = z == 0 ? mechanism : MarblePieceKind.Straight;
+                Assert.That(_controller.PlaceForQa(kind, new GridPose(0, z)), Is.True, kind + " z=" + z);
+            }
         }
     }
 }

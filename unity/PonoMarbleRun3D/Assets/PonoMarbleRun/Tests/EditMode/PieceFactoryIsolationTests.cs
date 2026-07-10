@@ -61,6 +61,20 @@ namespace Pono.MarbleRun3D.Tests.EditMode
                 Assert.That(goal.GoalSensor, Is.Not.Null);
                 Assert.That(seesaw.DynamicBodies.Count, Is.EqualTo(1));
                 Assert.That(domino.DynamicBodies.Count, Is.EqualTo(6));
+                var rails = seesaw.GetComponentsInChildren<Transform>(true)
+                    .Where(child => child.name == "シーソー ひだり" || child.name == "シーソー みぎ")
+                    .ToArray();
+                Assert.That(rails.Length, Is.EqualTo(2));
+                Assert.That(Vector3.Distance(rails[0].position, rails[1].position), Is.EqualTo(1.70f).Within(0.03f));
+                Assert.That(rails.All(rail => rail.GetComponent<Renderer>().bounds.size.magnitude < 4f), Is.True);
+
+                var funnel = Make(MarblePieceKind.Funnel, root, materials);
+                var bowlColliders = funnel.GetComponentsInChildren<Collider>(true)
+                    .Where(collider => collider.name == "じょうご さか" && collider.enabled)
+                    .ToArray();
+                Assert.That(bowlColliders.Length, Is.GreaterThanOrEqualTo(6));
+                Assert.That(bowlColliders.Any(collider =>
+                    Vector3.Angle(collider.transform.up, Vector3.up) > 8f), Is.True);
             }
             finally
             {
@@ -83,6 +97,23 @@ namespace Pono.MarbleRun3D.Tests.EditMode
                 var path = AssetDatabase.GUIDToAssetPath(guid);
                 Assert.That(path, Does.Not.Contain("FluidInk"));
                 Assert.That(path, Does.Not.Contain("HideSeek"));
+            }
+        }
+
+        [Test]
+        public void AndroidDefaultQualityUsesMobileTunedValues()
+        {
+            var original = QualitySettings.GetQualityLevel();
+            try
+            {
+                Assert.That(QualitySettings.names[2], Is.EqualTo("Medium"));
+                QualitySettings.SetQualityLevel(2, false);
+                Assert.That(QualitySettings.antiAliasing, Is.EqualTo(2));
+                Assert.That(QualitySettings.shadowDistance, Is.EqualTo(24f).Within(0.001f));
+            }
+            finally
+            {
+                QualitySettings.SetQualityLevel(original, false);
             }
         }
 

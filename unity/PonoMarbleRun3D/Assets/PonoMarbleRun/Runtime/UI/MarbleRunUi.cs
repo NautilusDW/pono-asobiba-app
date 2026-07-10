@@ -75,12 +75,16 @@ namespace Pono.MarbleRun3D.UI
     {
         private MarbleRunGameController _controller;
         private MarblePieceKind _kind;
+        private ScrollRect _scrollRect;
         private bool _placing;
+        private bool _scrolling;
+        private bool _suppressClick;
 
-        public void Configure(MarbleRunGameController controller, MarblePieceKind kind)
+        public void Configure(MarbleRunGameController controller, MarblePieceKind kind, ScrollRect scrollRect = null)
         {
             _controller = controller;
             _kind = kind;
+            _scrollRect = scrollRect;
         }
 
         public void OnBeginDrag(PointerEventData eventData)
@@ -89,25 +93,38 @@ namespace Pono.MarbleRun3D.UI
             if (Mathf.Abs(eventData.delta.y) > Mathf.Abs(eventData.delta.x) * 1.25f)
             {
                 _placing = false;
+                _scrolling = _scrollRect != null;
+                _suppressClick = true;
+                if (_scrolling) _scrollRect.OnBeginDrag(eventData);
                 return;
             }
+            _scrolling = false;
             _placing = true;
+            _suppressClick = true;
             _controller.BeginPaletteDrag(_kind, eventData.position);
         }
 
         public void OnDrag(PointerEventData eventData)
         {
-            if (_placing) _controller.UpdatePaletteDrag(eventData.position);
+            if (_scrolling) _scrollRect.OnDrag(eventData);
+            else if (_placing) _controller.UpdatePaletteDrag(eventData.position);
         }
 
         public void OnEndDrag(PointerEventData eventData)
         {
-            if (_placing) _controller.EndPaletteDrag(eventData.position);
+            if (_scrolling) _scrollRect.OnEndDrag(eventData);
+            else if (_placing) _controller.EndPaletteDrag(eventData.position);
             _placing = false;
+            _scrolling = false;
         }
 
         public void OnPointerClick(PointerEventData eventData)
         {
+            if (_suppressClick)
+            {
+                _suppressClick = false;
+                return;
+            }
             if (!_placing) _controller?.ChoosePart(_kind);
         }
     }
@@ -148,6 +165,7 @@ namespace Pono.MarbleRun3D.UI
 
         public RectTransform SafeRootRect => _safeRoot?.transform as RectTransform;
         public string StatusText => _statusText != null ? _statusText.text : string.Empty;
+        public string TutorialText => _tutorialText != null ? _tutorialText.text : string.Empty;
 
         public void Build(MarbleRunGameController controller)
         {
@@ -203,6 +221,7 @@ namespace Pono.MarbleRun3D.UI
         public void ShowPause(bool visible)
         {
             SetActive(_pausePanel, visible);
+            if (visible) _pausePanel.transform.SetAsLastSibling();
         }
 
         public void ShowCelebration(bool visible)
@@ -381,7 +400,7 @@ namespace Pono.MarbleRun3D.UI
                 layout.minHeight = 68f;
                 layout.flexibleWidth = 1f;
                 var drag = button.gameObject.AddComponent<PaletteDragItem>();
-                drag.Configure(_controller, kind);
+                drag.Configure(_controller, kind, scroll);
                 _paletteButtons[kind] = button;
                 _paletteLabels[kind] = button.GetComponentInChildren<Text>();
             }

@@ -34,6 +34,7 @@ namespace Pono.MarbleRun3D.Tests.EditMode
                     Assert.That(float.IsNaN(connector.localCellPosition.x) || float.IsInfinity(connector.localCellPosition.x), Is.False);
                     Assert.That(float.IsNaN(connector.localCellPosition.y) || float.IsInfinity(connector.localCellPosition.y), Is.False);
                     Assert.That(Mathf.Abs(connector.localFacing.x) + Mathf.Abs(connector.localFacing.y), Is.EqualTo(1));
+                    Assert.That(connector.localLevelOffset, Is.InRange(0, 1));
                     Assert.That(
                         Mathf.Approximately(Mathf.Abs(connector.localCellPosition.x), 0.5f)
                         || Mathf.Approximately(Mathf.Abs(connector.localCellPosition.y), 0.5f),
@@ -97,6 +98,42 @@ namespace Pono.MarbleRun3D.Tests.EditMode
         }
 
         [Test]
+        public void SlopeSnapsFlatTracksAtBothPhysicalLevels()
+        {
+            var slope = Piece("slope", MarblePieceKind.Slope, 0, 0, 0);
+            var pieces = new List<PieceRecord> { slope };
+
+            var high = PlacementSolver.Solve(
+                MarblePieceKind.Straight,
+                0,
+                new Vector2(0.08f, -1.12f),
+                0,
+                pieces,
+                ChallengeCatalog.Sandbox);
+            Assert.That(high.IsValid, Is.True);
+            Assert.That(high.SnappedToConnector, Is.True);
+            Assert.That(high.Pose, Is.EqualTo(new GridPose(0, -1, 1, 0)));
+            var highTrack = Piece("high", MarblePieceKind.Straight, 0, -1, 0, 1);
+            Assert.That(PlacementSolver.AreConnected(slope, highTrack), Is.True);
+
+            var low = PlacementSolver.Solve(
+                MarblePieceKind.Straight,
+                0,
+                new Vector2(-0.08f, 1.12f),
+                0,
+                pieces,
+                ChallengeCatalog.Sandbox);
+            Assert.That(low.Pose, Is.EqualTo(new GridPose(0, 1, 0, 0)));
+            Assert.That(PlacementSolver.AreConnected(slope,
+                Piece("low", MarblePieceKind.Straight, 0, 1, 0)), Is.True);
+            Assert.That(PlacementSolver.Validate(
+                MarblePieceKind.Slope,
+                new GridPose(2, 2, 1, 0),
+                pieces,
+                ChallengeCatalog.Sandbox).IsValid, Is.False);
+        }
+
+        [Test]
         public void PlacementRejectsOverlapBoundsAndDuplicateEndpoints()
         {
             var pieces = new List<PieceRecord>
@@ -150,9 +187,15 @@ namespace Pono.MarbleRun3D.Tests.EditMode
             };
         }
 
-        public static PieceRecord Piece(string id, MarblePieceKind kind, int x, int z, int turns)
+        public static PieceRecord Piece(
+            string id,
+            MarblePieceKind kind,
+            int x,
+            int z,
+            int turns,
+            int level = 0)
         {
-            return new PieceRecord { id = id, kind = kind, pose = new GridPose(x, z, 0, turns) };
+            return new PieceRecord { id = id, kind = kind, pose = new GridPose(x, z, level, turns) };
         }
     }
 }

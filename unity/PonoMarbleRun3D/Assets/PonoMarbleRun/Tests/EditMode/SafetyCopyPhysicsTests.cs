@@ -1,6 +1,10 @@
 using System.Collections.Generic;
+using System.IO;
+using System.Text.RegularExpressions;
 using NUnit.Framework;
 using Pono.MarbleRun3D.Core;
+using Pono.MarbleRun3D.Gameplay;
+using UnityEditor;
 using UnityEngine;
 
 namespace Pono.MarbleRun3D.Tests.EditMode
@@ -54,6 +58,26 @@ namespace Pono.MarbleRun3D.Tests.EditMode
         }
 
         [Test]
+        public void EveryJapaneseRuntimeStringLiteralIsKanaSafe()
+        {
+            var stringLiteral = new Regex("\"((?:\\\\.|[^\"\\\\])*)\"");
+            var hasJapanese = new Regex("[ぁ-んァ-ヶ一-龯]");
+            var scripts = AssetDatabase.FindAssets("t:MonoScript", new[] { "Assets/PonoMarbleRun/Runtime" });
+            foreach (var guid in scripts)
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                var source = File.ReadAllText(path);
+                foreach (Match match in stringLiteral.Matches(source))
+                {
+                    var value = Regex.Unescape(match.Groups[1].Value);
+                    if (!hasJapanese.IsMatch(value)) continue;
+                    Assert.That(ChildFacingTextValidator.IsKanaSafe(value, out var invalid), Is.True,
+                        path + " value=" + value + " invalid=" + invalid);
+                }
+            }
+        }
+
+        [Test]
         public void PhysicsProfileIsExplicitAndMobileReasonable()
         {
             Assert.That(MarbleRunPhysicsProfile.FixedTimestep, Is.EqualTo(1f / 60f).Within(0.000001f));
@@ -62,7 +86,10 @@ namespace Pono.MarbleRun3D.Tests.EditMode
             Assert.That(MarbleRunPhysicsProfile.SolverVelocityIterations, Is.GreaterThanOrEqualTo(3));
             Assert.That(MarbleRunPhysicsProfile.MarbleMaximumSpeed, Is.InRange(10f, 18f));
             Assert.That(MarbleRunPhysicsProfile.MarbleBounciness, Is.LessThan(0.1f));
-            Assert.That(MarbleRunPhysicsProfile.SlopeDegrees, Is.InRange(10f, 16f));
+            Assert.That(MarbleRunPhysicsProfile.SlopeDegrees, Is.InRange(20f, 28f));
+            Assert.That(
+                Mathf.Tan(MarbleRunPhysicsProfile.SlopeDegrees * Mathf.Deg2Rad) * WoodenPieceFactory.CellSize,
+                Is.EqualTo(WoodenPieceFactory.LevelHeight).Within(0.01f));
         }
     }
 }

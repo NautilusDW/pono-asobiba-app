@@ -148,6 +148,12 @@ namespace Pono.MarbleRun3D.Editor
             PlayerSettings.SetGraphicsAPIs(
                 BuildTarget.Android,
                 new[] { GraphicsDeviceType.Vulkan, GraphicsDeviceType.OpenGLES3 });
+            var currentQuality = QualitySettings.GetQualityLevel();
+            QualitySettings.SetQualityLevel(2, false);
+            QualitySettings.vSyncCount = 0;
+            QualitySettings.antiAliasing = 2;
+            QualitySettings.shadowDistance = 24f;
+            QualitySettings.SetQualityLevel(currentQuality, false);
             QualitySettings.vSyncCount = 0;
             QualitySettings.antiAliasing = 2;
             QualitySettings.shadowDistance = 24f;

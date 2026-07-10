@@ -214,15 +214,16 @@ namespace Pono.MarbleRun3D.Gameplay
         private static void BuildSlope(PieceView view, ToyMaterialLibrary materials, int courseLayer)
         {
             var direction = Quaternion.Euler(MarbleRunPhysicsProfile.SlopeDegrees, 0f, 0f) * Vector3.forward;
+            var slopeLength = Mathf.Sqrt(CellSize * CellSize + LevelHeight * LevelHeight);
             BuildTrackSegment(
                 view,
-                new Vector3(0f, 0.33f, 0f),
+                new Vector3(0f, LevelHeight * 0.5f, 0f),
                 direction,
-                3.14f,
+                slopeLength + 0.12f,
                 materials.Maple,
                 materials.Accent(MarblePieceKind.Slope),
                 courseLayer);
-            CreateCylinder(view, "さか しるし", new Vector3(0f, 0.20f, -0.90f), Vector3.up,
+            CreateCylinder(view, "さか しるし", new Vector3(0f, LevelHeight * 0.74f, -0.90f), Vector3.up,
                 0.24f, 0.12f, materials.Accent(MarblePieceKind.Slope), courseLayer, false);
         }
 
@@ -275,12 +276,15 @@ namespace Pono.MarbleRun3D.Gameplay
             }
             CreateCylinder(view, "じょうご そこ", new Vector3(0f, 0.02f, 0f), Vector3.up,
                 0.78f, 0.10f, materials.MapleDark, courseLayer, false);
-            for (var i = 0; i < 8; i++)
+            for (var i = 0; i < 12; i++)
             {
-                var angle = Mathf.PI * 2f * i / 8f;
-                var position = new Vector3(Mathf.Cos(angle) * 0.70f, 0.25f, Mathf.Sin(angle) * 0.70f);
-                CreateCube(view, "じょうご いろ", position, new Vector3(0.54f, 0.07f, 0.18f),
-                    Quaternion.Euler(0f, -angle * Mathf.Rad2Deg, -11f), accent, courseLayer, false);
+                var angle = Mathf.PI * 2f * i / 12f;
+                if (Mathf.Abs(Mathf.Sin(angle)) > 0.88f) continue;
+                var radial = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
+                var position = radial * 0.66f + Vector3.up * 0.29f;
+                var inwardDown = (-radial + Vector3.down * 0.34f).normalized;
+                CreateCube(view, "じょうご さか", position, new Vector3(0.48f, 0.08f, 0.92f),
+                    Quaternion.LookRotation(inwardDown, Vector3.up), accent, courseLayer, true);
             }
         }
 
@@ -292,27 +296,31 @@ namespace Pono.MarbleRun3D.Gameplay
         {
             CreateCylinder(view, "シーソー どだい", new Vector3(0f, 0.18f, 0f), Vector3.right,
                 0.26f, 1.72f, materials.MapleDark, courseLayer, true);
-            var plank = CreateCube(view, "シーソー いた", new Vector3(0f, 0.43f, 0f),
+            var plankRoot = new GameObject("シーソー うごくいた");
+            plankRoot.layer = courseLayer;
+            plankRoot.transform.SetParent(view.transform, false);
+            plankRoot.transform.localPosition = new Vector3(0f, 0.43f, 0f);
+            CreateCube(view, "シーソー いた", Vector3.zero,
                 new Vector3(1.72f, 0.18f, 3.12f), Quaternion.identity,
-                materials.Maple, courseLayer, true);
+                materials.Maple, courseLayer, true, plankRoot.transform);
             CreateCylinder(view, "シーソー ひだり", new Vector3(-0.85f, 0.21f, 0f), Vector3.forward,
-                0.12f, 3.12f, materials.Accent(MarblePieceKind.Seesaw), courseLayer, true, plank.transform);
+                0.12f, 3.12f, materials.Accent(MarblePieceKind.Seesaw), courseLayer, true, plankRoot.transform);
             CreateCylinder(view, "シーソー みぎ", new Vector3(0.85f, 0.21f, 0f), Vector3.forward,
-                0.12f, 3.12f, materials.Accent(MarblePieceKind.Seesaw), courseLayer, true, plank.transform);
+                0.12f, 3.12f, materials.Accent(MarblePieceKind.Seesaw), courseLayer, true, plankRoot.transform);
 
             if (!isGhost)
             {
-                var body = plank.AddComponent<Rigidbody>();
+                var body = plankRoot.AddComponent<Rigidbody>();
                 body.mass = 0.85f;
                 body.interpolation = RigidbodyInterpolation.Interpolate;
                 body.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
                 body.maxAngularVelocity = 8f;
                 body.isKinematic = true;
-                var hinge = plank.AddComponent<HingeJoint>();
+                var hinge = plankRoot.AddComponent<HingeJoint>();
                 hinge.axis = Vector3.right;
                 hinge.autoConfigureConnectedAnchor = false;
                 hinge.anchor = Vector3.zero;
-                hinge.connectedAnchor = plank.transform.position;
+                hinge.connectedAnchor = plankRoot.transform.position;
                 var limits = hinge.limits;
                 limits.min = -12f;
                 limits.max = 12f;
@@ -411,7 +419,7 @@ namespace Pono.MarbleRun3D.Gameplay
                 markerRoot.transform.SetParent(view.transform, false);
                 markerRoot.transform.localPosition = new Vector3(
                     connector.localCellPosition.x * CellSize,
-                    0.28f,
+                    0.28f + connector.localLevelOffset * LevelHeight,
                     connector.localCellPosition.y * CellSize);
 
                 var ring = GameObject.CreatePrimitive(PrimitiveType.Cylinder);

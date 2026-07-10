@@ -41,6 +41,7 @@ namespace Pono.MarbleRun3D.Gameplay
         private PlacementResult _ghostResult;
         private MarblePieceKind? _placingKind;
         private int _placingQuarterTurns;
+        private int _placingLevel;
         private string _movingPieceId;
         private string _selectedPieceId;
         private bool _externalPaletteDrag;
@@ -75,6 +76,7 @@ namespace Pono.MarbleRun3D.Gameplay
         public IReadOnlyDictionary<string, PieceView> PieceViews => _pieceViews;
         public OrbitCameraController OrbitCamera => _orbit;
         public MarbleRunUi Ui => _ui;
+        public int TutorialStep => _tutorialStep;
         public bool SuppressApplicationPauseForQa { get; set; }
 
         private void Awake()
@@ -201,6 +203,7 @@ namespace Pono.MarbleRun3D.Gameplay
             CancelPlacement();
             _placingKind = kind;
             _placingQuarterTurns = 0;
+            _placingLevel = 0;
             _selectedPieceId = null;
             _ui.SetSelected(null);
             _ui.SetStatus("ここに おこう", false);
@@ -456,6 +459,7 @@ namespace Pono.MarbleRun3D.Gameplay
             };
             _course.pieces.Add(piece);
             RebuildCourseViews();
+            AdvanceTutorialAfterPlace();
             return true;
         }
 
@@ -784,6 +788,7 @@ namespace Pono.MarbleRun3D.Gameplay
             _existingDragActive = true;
             _placingKind = piece.kind;
             _placingQuarterTurns = piece.pose.quarterTurns;
+            _placingLevel = piece.pose.level;
             if (_pieceViews.TryGetValue(piece.id, out var view)) view.gameObject.SetActive(false);
         }
 
@@ -806,7 +811,7 @@ namespace Pono.MarbleRun3D.Gameplay
                 _placingKind.Value,
                 _placingQuarterTurns,
                 new Vector2(cellX, cellZ),
-                0,
+                _placingLevel,
                 _course.pieces,
                 _mode,
                 ignorePieceId);
@@ -848,6 +853,7 @@ namespace Pono.MarbleRun3D.Gameplay
                 _audio.PlayGentleNo();
                 DestroyGhost();
                 _placingKind = null;
+                _placingLevel = 0;
                 _movingPieceId = null;
                 return;
             }
@@ -869,6 +875,7 @@ namespace Pono.MarbleRun3D.Gameplay
             }
             DestroyGhost();
             _placingKind = null;
+            _placingLevel = 0;
             _movingPieceId = null;
             _existingDragActive = false;
             RebuildCourseViews();
@@ -886,6 +893,7 @@ namespace Pono.MarbleRun3D.Gameplay
             }
             DestroyGhost();
             _placingKind = null;
+            _placingLevel = 0;
             _movingPieceId = null;
             _externalPaletteDrag = false;
             _existingDragCandidate = false;
@@ -1028,6 +1036,8 @@ namespace Pono.MarbleRun3D.Gameplay
         {
             if (_mode == null || !_mode.IsTutorial) return;
             if (_tutorialStep == 0) _tutorialStep = 1;
+            else if (_tutorialStep == 2 && PlacementSolver.HasStartToGoalGraphPath(_course.pieces))
+                _tutorialStep = 3;
             UpdateTutorialGuide();
         }
 

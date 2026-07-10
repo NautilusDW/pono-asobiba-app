@@ -59,8 +59,7 @@ namespace Pono.MarbleRun3D.Core
             for (var pieceIndex = 0; pieceIndex < pieces.Count; pieceIndex++)
             {
                 var existing = pieces[pieceIndex];
-                if (string.Equals(existing.id, ignorePieceId, StringComparison.Ordinal)
-                    || existing.pose.level != level)
+                if (string.Equals(existing.id, ignorePieceId, StringComparison.Ordinal))
                 {
                     continue;
                 }
@@ -85,6 +84,11 @@ namespace Pono.MarbleRun3D.Core
                         var candidateOffset = PartCatalog.Rotate(
                             candidateSpec.localCellPosition,
                             quarterTurns);
+                        var candidateLevel = existingConnector.level - candidateSpec.localLevelOffset;
+                        if (candidateLevel < MinLevel || candidateLevel > MaxLevel)
+                        {
+                            continue;
+                        }
                         var targetCentre = existingConnector.cellPosition - candidateOffset;
                         if (Mathf.Abs(targetCentre.x - Mathf.Round(targetCentre.x)) > 0.001f
                             || Mathf.Abs(targetCentre.y - Mathf.Round(targetCentre.y)) > 0.001f)
@@ -102,7 +106,7 @@ namespace Pono.MarbleRun3D.Core
                         pose = new GridPose(
                             Mathf.RoundToInt(targetCentre.x),
                             Mathf.RoundToInt(targetCentre.y),
-                            level,
+                            candidateLevel,
                             quarterTurns);
                         snapped = true;
                         connectedId = existing.id;
@@ -134,6 +138,15 @@ namespace Pono.MarbleRun3D.Core
                 || pose.level < MinLevel || pose.level > MaxLevel)
             {
                 return Invalid(pose, "ここには おけないよ");
+            }
+            var spec = PartCatalog.Get(kind);
+            for (var connectorIndex = 0; connectorIndex < spec.Connectors.Count; connectorIndex++)
+            {
+                var connectorLevel = pose.level + spec.Connectors[connectorIndex].localLevelOffset;
+                if (connectorLevel < MinLevel || connectorLevel > MaxLevel)
+                {
+                    return Invalid(pose, "ここには おけないよ");
+                }
             }
             for (var i = 0; i < pieces.Count; i++)
             {
@@ -183,7 +196,8 @@ namespace Pono.MarbleRun3D.Core
                     {
                         continue;
                     }
-                    if (firstConnector.facing + secondConnector.facing == Vector2Int.zero)
+                    if (firstConnector.level == secondConnector.level
+                        && firstConnector.facing + secondConnector.facing == Vector2Int.zero)
                     {
                         return true;
                     }

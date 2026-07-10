@@ -76,6 +76,19 @@ namespace Pono.MarbleRun3D.Tests.EditMode
         }
 
         [Test]
+        public void SaveFromAnotherModeIsRejected()
+        {
+            var json = CourseStorage.Encode(new CourseData { modeId = "challenge1" });
+            Assert.That(CourseStorage.TryDecodeForMode(
+                json,
+                "sandbox",
+                out var course,
+                out var error), Is.False);
+            Assert.That(course, Is.Null);
+            Assert.That(error, Is.Not.Empty);
+        }
+
+        [Test]
         public void CatalogHasExactlyThreeOpenEndedChallenges()
         {
             Assert.That(ChallengeCatalog.Challenges.Count, Is.EqualTo(3));
@@ -87,13 +100,82 @@ namespace Pono.MarbleRun3D.Tests.EditMode
                         .Any(kind => challenge.LimitFor(kind) == 0), Is.True,
                     "each challenge must hide some parts");
 
-                var straight = new CourseData { modeId = challenge.Id, pieces = CatalogPlacementTests.StraightSolution() };
-                var detour = new CourseData { modeId = challenge.Id, pieces = CatalogPlacementTests.DetourSolution() };
-                Assert.That(challenge.IsCourseGoalReady(straight), Is.True, challenge.Id + " straight");
-                Assert.That(challenge.IsCourseGoalReady(detour), Is.True, challenge.Id + " detour");
-                detour.pieces.RemoveAt(4);
-                Assert.That(challenge.IsCourseGoalReady(detour), Is.False, challenge.Id + " gap");
+                var solutions = ActualChallengeSolutions(challenge);
+                Assert.That(challenge.IsCourseGoalReady(solutions.first), Is.True, challenge.Id + " first");
+                Assert.That(challenge.IsCourseGoalReady(solutions.second), Is.True, challenge.Id + " second");
+                solutions.second.pieces.RemoveAt(2);
+                Assert.That(challenge.IsCourseGoalReady(solutions.second), Is.False, challenge.Id + " gap");
             }
+        }
+
+        private static (CourseData first, CourseData second) ActualChallengeSolutions(ModeDefinition challenge)
+        {
+            switch (challenge.Id)
+            {
+                case "challenge1":
+                    return (
+                        WithRoute(challenge,
+                            P("a-c1", MarblePieceKind.Curve, -3, -1, 0),
+                            P("a-x1", MarblePieceKind.Straight, -2, -1, 1),
+                            P("a-x2", MarblePieceKind.Straight, -1, -1, 1),
+                            P("a-x3", MarblePieceKind.Straight, 0, -1, 1),
+                            P("a-x4", MarblePieceKind.Straight, 1, -1, 1),
+                            P("a-c2", MarblePieceKind.Curve, 2, -1, 2),
+                            P("a-z1", MarblePieceKind.Straight, 2, 0, 0),
+                            P("a-z2", MarblePieceKind.Straight, 2, 1, 0),
+                            P("a-c3", MarblePieceKind.Curve, 2, 2, 0)),
+                        WithRoute(challenge,
+                            P("b-z1", MarblePieceKind.Straight, -3, -1, 0),
+                            P("b-c1", MarblePieceKind.Curve, -3, 0, 0),
+                            P("b-x1", MarblePieceKind.Straight, -2, 0, 1),
+                            P("b-x2", MarblePieceKind.Straight, -1, 0, 1),
+                            P("b-x3", MarblePieceKind.Straight, 0, 0, 1),
+                            P("b-x4", MarblePieceKind.Straight, 1, 0, 1),
+                            P("b-c2", MarblePieceKind.Curve, 2, 0, 2),
+                            P("b-z2", MarblePieceKind.Straight, 2, 1, 0),
+                            P("b-c3", MarblePieceKind.Curve, 2, 2, 0)));
+                case "challenge2":
+                    return (
+                        VerticalRoute(challenge),
+                        VerticalRoute(challenge,
+                            (-2, MarblePieceKind.Tunnel),
+                            (1, MarblePieceKind.Seesaw)));
+                default:
+                    return (
+                        VerticalRoute(challenge),
+                        VerticalRoute(challenge,
+                            (-1, MarblePieceKind.Funnel),
+                            (1, MarblePieceKind.Domino)));
+            }
+        }
+
+        private static CourseData VerticalRoute(
+            ModeDefinition challenge,
+            params (int z, MarblePieceKind kind)[] replacements)
+        {
+            var course = challenge.CreateInitialCourse();
+            for (var z = -3; z <= 3; z++)
+            {
+                var kind = MarblePieceKind.Straight;
+                for (var i = 0; i < replacements.Length; i++)
+                {
+                    if (replacements[i].z == z) kind = replacements[i].kind;
+                }
+                course.pieces.Add(P(challenge.Id + "-" + z, kind, 0, z, 0));
+            }
+            return course;
+        }
+
+        private static CourseData WithRoute(ModeDefinition challenge, params PieceRecord[] route)
+        {
+            var course = challenge.CreateInitialCourse();
+            course.pieces.AddRange(route);
+            return course;
+        }
+
+        private static PieceRecord P(string id, MarblePieceKind kind, int x, int z, int turns)
+        {
+            return CatalogPlacementTests.Piece(id, kind, x, z, turns);
         }
     }
 }
