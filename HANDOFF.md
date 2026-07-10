@@ -18,6 +18,7 @@
 ## Active (進行中 / 未着手)
 
 - 2026-07-10 - [batch:1170-maze-ladder-glow-animal-crop-result-hud] DEVELOP-SYNC - Codex: はしご取得後のみ入口/出口を同時点灯、正解後button中央化、ポノ/矢印が上中央札に近い時だけ札をfade/pointer無効化。元の3x3動物sheet由来9種を監査し、混入のあったゾウ/ネコ/クマ/キリン/ライオンを元sheetから再cropしてword/choice計10 PNG差替（元絵あり、生成なし）。LP cache v1270、検証・commit/push前。 (by Codex)
+- 2026-07-10 - [batch:1170-maze-ladder-glow-animal-crop-result-hud] DONE - Codex: `develop-app` commit `617c648f` (App v2070) と `develop` commit `79f06401` (LP v1270) をpush済み。構文/diff/PNG寸法・alpha・容量・目視検証済み、ブラウザbackend不在のため動的操作のみ未実施。 (by Codex)
 
 - 2026-07-10 - [batch:1169-maze-free-limit-teaser-timing] DEVELOP-SYNC - Codex: Mazeのつづき予告を固定stage3後からfree全範囲（stage 1/3/6）完了後へ移動。`えほんを よんで もっと あそべるよ` を画面内に追加し、buttonを `もどる`、閉じた後をゲーム選択へ変更。別tier promoは重ねない。LP cache v1269、検証・commit/push前。 (by Codex)
 - 2026-07-10 - [batch:1169-maze-free-limit-teaser-timing] DONE - Codex: `develop-app` commit `09742041` (App v2069) と `develop` commit `10678dcc` (LP v1269) へpush済み。stage3後はstage6へ通常進行し、stage6後だけ予告表示。構文/diff/tier分岐検証済み。 (by Codex)
