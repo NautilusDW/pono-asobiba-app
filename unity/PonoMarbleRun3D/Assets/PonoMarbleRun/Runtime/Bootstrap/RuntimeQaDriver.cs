@@ -125,6 +125,20 @@ namespace Pono.MarbleRun3D.Bootstrap
                     _controller.StartRun();
                     yield return new WaitForSecondsRealtime(1.55f);
                     break;
+                case "steps-run":
+                    _controller.StartMode("sample3");
+                    _controller.StartRun();
+                    yield return new WaitForSecondsRealtime(2.4f);
+                    break;
+                case "lift-run":
+                    _controller.StartMode("sample4");
+                    _controller.StartRun();
+                    yield return new WaitForSecondsRealtime(3.2f);
+                    break;
+                case "lift-top":
+                    _controller.StartMode("sample4");
+                    _controller.ToggleCameraAngle();
+                    break;
                 case "pause":
                     BuildStraightCourse();
                     _controller.StartRun();
