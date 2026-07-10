@@ -6,6 +6,7 @@ namespace Pono.MarbleRun3D.Gameplay
     [DisallowMultipleComponent]
     public sealed class OrbitCameraController : MonoBehaviour
     {
+        private const float TopViewDistanceMultiplier = 1.48f;
         private Vector3 _target = new Vector3(0f, 0.8f, 0f);
         private Vector3 _smoothTarget;
         private Vector3 _targetVelocity;
@@ -69,7 +70,7 @@ namespace Pono.MarbleRun3D.Gameplay
             _yaw = _defaultYaw;
             _pitch = _isTopView ? 78f : _defaultPitch;
             _distance = _isTopView
-                ? Mathf.Clamp(_defaultDistance * 1.08f, 17f, 58f)
+                ? Mathf.Clamp(_defaultDistance * TopViewDistanceMultiplier, 17f, 58f)
                 : _defaultDistance;
             _target = _defaultTarget;
         }
@@ -118,7 +119,7 @@ namespace Pono.MarbleRun3D.Gameplay
                 bounds.extents.x * bounds.extents.x + bounds.extents.z * bounds.extents.z) + 3.2f;
             // A diagonal camera projects a long ground-plane course into screen height.
             // Reserve that space as well as the top/bottom child UI overlays.
-            var verticalRadius = bounds.extents.y + 2.8f + horizontalRadius * 0.35f;
+            var verticalRadius = bounds.extents.y + 2.8f + horizontalRadius * 0.50f;
             var horizontalDistance = horizontalRadius / Mathf.Max(0.15f, Mathf.Tan(horizontalHalfAngle));
             var verticalDistance = verticalRadius / Mathf.Max(0.15f, Mathf.Tan(verticalHalfAngle));
             var framedDistance = Mathf.Clamp(Mathf.Max(horizontalDistance, verticalDistance) * 1.14f, 17f, 58f);
@@ -129,7 +130,7 @@ namespace Pono.MarbleRun3D.Gameplay
             _yaw = _defaultYaw;
             _pitch = _isTopView ? 78f : _defaultPitch;
             _distance = _isTopView
-                ? Mathf.Clamp(_defaultDistance * 1.08f, 17f, 58f)
+                ? Mathf.Clamp(_defaultDistance * TopViewDistanceMultiplier, 17f, 58f)
                 : _defaultDistance;
         }
 
