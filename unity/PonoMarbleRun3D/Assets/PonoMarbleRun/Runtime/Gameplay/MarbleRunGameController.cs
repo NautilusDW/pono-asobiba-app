@@ -1158,6 +1158,7 @@ namespace Pono.MarbleRun3D.Gameplay
         {
             if (marble == null || start == null || start.MarbleSpawn == null) return;
             var body = marble.Body;
+            marble.Object.SetActive(true);
             body.isKinematic = true;
             body.linearVelocity = Vector3.zero;
             body.angularVelocity = Vector3.zero;
@@ -1166,7 +1167,6 @@ namespace Pono.MarbleRun3D.Gameplay
             marble.Trail.Clear();
             marble.Safety.Reset();
             marble.ReachedGoal = false;
-            marble.Object.SetActive(true);
             body.isKinematic = false;
             body.linearVelocity = start.transform.forward * MarbleRunPhysicsProfile.MarbleLaunchSpeed;
         }

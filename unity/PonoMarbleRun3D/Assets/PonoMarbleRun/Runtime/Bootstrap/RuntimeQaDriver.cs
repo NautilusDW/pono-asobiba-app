@@ -138,19 +138,24 @@ namespace Pono.MarbleRun3D.Bootstrap
                     yield return new WaitForSecondsRealtime(0.55f);
                     break;
                 case "physical-goal":
-                    yield return WaitForPhysicalGoal();
+                    var flatGoal = WaitForPhysicalGoal();
+                    while (flatGoal.MoveNext()) yield return flatGoal.Current;
                     break;
                 case "tower-physical":
-                    yield return WaitForSampleGoal("sample2");
+                    var towerGoal = WaitForSampleGoal("sample2");
+                    while (towerGoal.MoveNext()) yield return towerGoal.Current;
                     break;
                 case "steps-physical":
-                    yield return WaitForSampleGoal("sample3");
+                    var stepsGoal = WaitForSampleGoal("sample3");
+                    while (stepsGoal.MoveNext()) yield return stepsGoal.Current;
                     break;
                 case "lift-physical":
-                    yield return WaitForSampleGoal("sample4");
+                    var liftGoal = WaitForSampleGoal("sample4");
+                    while (liftGoal.MoveNext()) yield return liftGoal.Current;
                     break;
                 case "journey":
-                    yield return RunJourney();
+                    var journey = RunJourney();
+                    while (journey.MoveNext()) yield return journey.Current;
                     break;
             }
         }
