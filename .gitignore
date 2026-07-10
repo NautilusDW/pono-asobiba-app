@@ -74,3 +74,15 @@ native/node_modules/
 native/android/.gradle/
 native/android/**/build/
 native/android/local.properties
+
+# Standalone Unity prototypes — keep source/settings, ignore generated state.
+unity/**/[Ll]ibrary/
+unity/**/[Tt]emp/
+unity/**/[Oo]bj/
+unity/**/[Ll]ogs/
+unity/**/[Uu]ser[Ss]ettings/
+unity/**/[Bb]uilds/
+unity/**/[Mm]emoryCaptures/
+unity/**/*.csproj
+unity/**/*.sln
+unity/**/*.user
