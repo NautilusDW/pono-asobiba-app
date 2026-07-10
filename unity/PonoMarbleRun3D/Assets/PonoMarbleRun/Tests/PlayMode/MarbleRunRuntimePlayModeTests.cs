@@ -307,7 +307,8 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
             while (_controller.State == MarbleRunState.Running && Time.realtimeSinceStartup < timeout)
                 yield return null;
             Assert.That(_controller.State, Is.EqualTo(MarbleRunState.Celebrating),
-                "A two-slope course must physically cross the elevated level and return to the goal.");
+                "A two-slope course must physically cross the elevated level and return to the goal; marble="
+                + _controller.MarbleBody.position);
         }
 
         [UnityTest]

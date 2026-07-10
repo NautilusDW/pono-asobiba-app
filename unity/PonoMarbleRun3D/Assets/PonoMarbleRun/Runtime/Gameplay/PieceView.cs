@@ -85,6 +85,44 @@ namespace Pono.MarbleRun3D.Gameplay
         }
     }
 
+    [DisallowMultipleComponent]
+    public sealed class FunnelMarbleGuide : MonoBehaviour
+    {
+        private Transform _pieceRoot;
+        private float _travelSign = 1f;
+
+        public void Configure(Transform pieceRoot)
+        {
+            _pieceRoot = pieceRoot;
+        }
+
+        private void OnTriggerEnter(Collider other)
+        {
+            if (!TryGetMarble(other, out var body) || _pieceRoot == null) return;
+            var localVelocity = _pieceRoot.InverseTransformDirection(body.linearVelocity);
+            if (Mathf.Abs(localVelocity.z) > 0.1f) _travelSign = Mathf.Sign(localVelocity.z);
+        }
+
+        private void OnTriggerStay(Collider other)
+        {
+            if (!TryGetMarble(other, out var body) || _pieceRoot == null || body.isKinematic) return;
+            var localPosition = _pieceRoot.InverseTransformPoint(body.worldCenterOfMass);
+            var localVelocity = _pieceRoot.InverseTransformDirection(body.linearVelocity);
+            var horizontalVelocity = new Vector3(localVelocity.x, 0f, localVelocity.z);
+            var targetSpeed = Mathf.Clamp(horizontalVelocity.magnitude, 2.8f, 6f);
+            var desired = new Vector3(-localPosition.x * 2.2f, 0f, _travelSign * targetSpeed);
+            var acceleration = (desired - horizontalVelocity) * 6f;
+            acceleration = Vector3.ClampMagnitude(acceleration, 16f);
+            body.AddForce(_pieceRoot.TransformDirection(acceleration), ForceMode.Acceleration);
+        }
+
+        private static bool TryGetMarble(Collider other, out Rigidbody body)
+        {
+            body = other.attachedRigidbody;
+            return body != null && other.GetComponentInParent<MarbleActor>() != null;
+        }
+    }
+
     public sealed class PieceView : MonoBehaviour
     {
         private readonly List<Renderer> _renderers = new List<Renderer>();

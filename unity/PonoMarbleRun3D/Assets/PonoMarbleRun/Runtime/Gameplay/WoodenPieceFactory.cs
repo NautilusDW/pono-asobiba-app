@@ -294,6 +294,14 @@ namespace Pono.MarbleRun3D.Gameplay
                 CreateCube(view, "じょうご さか", position, new Vector3(0.48f, 0.08f, 0.92f),
                     Quaternion.LookRotation(inwardDown, Vector3.up), accent, courseLayer, true);
             }
+            var guideObject = new GameObject("じょうご ガイド");
+            guideObject.layer = courseLayer;
+            guideObject.transform.SetParent(view.transform, false);
+            guideObject.transform.localPosition = new Vector3(0f, 0.62f, 0f);
+            var guideCollider = guideObject.AddComponent<BoxCollider>();
+            guideCollider.isTrigger = true;
+            guideCollider.size = new Vector3(2.8f, 1.6f, 3f);
+            guideObject.AddComponent<FunnelMarbleGuide>().Configure(view.transform);
         }
 
         private static void BuildSeesaw(

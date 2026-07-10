@@ -156,14 +156,17 @@ function injectAppBuildFlag(response, env) {
 //   upstream に ETag が無い以上、「upstream の ETag に variant サフィックスを
 //   付けて再利用する」だけでは 304 は永久に成立しない。そこで:
 //     1) upstream ETag がもしあれば (将来 Cloudflare 側で付与されるようになった
-//        場合や他経路向けの保険として) それを弱い ETag として再利用し、
+//        場合や他経路向けの保険として) それを再利用し、
 //        APP_BUILD 注入の有無を表す variant サフィックス (-app1/-app0) を付与する
 //        (同じ upstream ファイルでも注入あり/なしで本文が変わるため)。
 //     2) upstream に ETag が無ければ、本文 (APP_BUILD 注入後の最終バイト列) の
-//        SHA-1 ハッシュから自前の弱い ETag を生成する。ハッシュ計算のため本文を
+//        SHA-1 ハッシュから自前の ETag を生成する。ハッシュ計算のため本文を
 //        一度バッファする必要があるが、対象は HTML のみ (165-220KB 程度) で
 //        Worker CPU コストは軽微。ネットワーク越しに client へ送るバイト数を
 //        減らすことが目的であり、 Worker 内部で本文を読むこと自体はコストにならない。
+//   ※ ETag は必ず「強い形式」("...") で出力する (W/ 付きの弱い形式は Cloudflare
+//     エッジが egress で削除するため。 2026-07-10 live 実測。 詳細は
+//     attachHtmlEtag() 内の自前ハッシュ分岐コメント参照)。
 //   条件付きリクエストの判定は 「compare-after-fetch」方式を採用する
 //   (upstream 側の If-None-Match を書き換えて 304 を誘発する inverse-mapping 方式は、
 //   upstream が今のところ ETag を返さないため成立せず、素通しで害もないので不要)。
@@ -209,7 +212,10 @@ async function attachHtmlEtag(request, response, env, appBuildApplied) {
   if (upstreamEtag) {
     // upstream (将来 or 他経路) に ETag があれば再利用。body には触れないので
     // ストリーミングのメリットはそのまま維持される。
-    outgoingEtag = `W/"${normalizeEtagValue(upstreamEtag)}-${variantSuffix}"`;
+    // ※ 強い ETag 形式 (W/ なし) で出すこと。 Worker から弱い W/"..." を返すと
+    //   Cloudflare エッジが egress で ETag ヘッダーごと削除する
+    //   (2026-07-10 実測。 詳細は下の自前ハッシュ分岐のコメント参照)。
+    outgoingEtag = `"${normalizeEtagValue(upstreamEtag)}-${variantSuffix}"`;
   } else if (request.method === 'HEAD') {
     // HEAD には body が無く本文ハッシュを計算できないので、
     // validator なしの従来動作にフォールバックする（安全側）。
@@ -227,7 +233,23 @@ async function attachHtmlEtag(request, response, env, appBuildApplied) {
     }
     try {
       const hash = await sha1Hex(bodyText);
-      outgoingEtag = `W/"h${hash.slice(0, 16)}-${variantSuffix}"`;
+      // 【強い ETag 形式 (W/ なし) を使う理由 — 2026-07-10 live 実測で確定】
+      //   Worker が弱い ETag (W/"...") を返すと、 Cloudflare エッジは egress で
+      //   ETag ヘッダーを丸ごと削除する (Accept-Encoding の有無を問わず全ケースで
+      //   欠落を確認)。 一方、 強い ETag ("...") は:
+      //     - 無圧縮応答ではそのまま届く
+      //     - エッジが gzip/br 圧縮した応答では W/"..." に自動降格されて届く
+      //       (/manifest.json・/common/tier.js の upstream 強 ETag で実測)。
+      //   つまり client に validator を届けるには強い形式で渡すしかない。
+      //   worker 内の attachHtmlEtag が正しく動いていることは
+      //   `If-None-Match: *` → 304 が live で成立したことにより確認済み
+      //   (= コードの例外ではなくエッジのヘッダー削除が根本原因)。
+      //   本 ETag は最終バイト列全体の SHA-1 なので「同一タグ = バイト同一」が
+      //   成立し、 強い ETag の意味論を正しく満たす。 client がエッジ降格後の
+      //   W/"..." を If-None-Match で送り返しても、 ifNoneMatchHits() は
+      //   W/ プレフィックスを無視して比較する (RFC 7232 の weak comparison) ので
+      //   304 は正しく成立する。
+      outgoingEtag = `"h${hash.slice(0, 16)}-${variantSuffix}"`;
     } catch (e) {
       // crypto.subtle が使えない環境向けの保険（Workers では通常発生しない）。
       console.error('[attachHtmlEtag] sha1Hex() failed for ' + url.pathname + ': ' + (e && e.name) + ': ' + (e && e.message));
