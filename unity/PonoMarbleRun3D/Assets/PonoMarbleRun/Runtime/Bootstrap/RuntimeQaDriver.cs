@@ -120,6 +120,11 @@ namespace Pono.MarbleRun3D.Bootstrap
                     _controller.StartRun();
                     yield return new WaitForSecondsRealtime(1.0f);
                     break;
+                case "tower-run":
+                    _controller.StartMode("sample2");
+                    _controller.StartRun();
+                    yield return new WaitForSecondsRealtime(1.55f);
+                    break;
                 case "pause":
                     BuildStraightCourse();
                     _controller.StartRun();
@@ -134,6 +139,15 @@ namespace Pono.MarbleRun3D.Bootstrap
                     break;
                 case "physical-goal":
                     yield return WaitForPhysicalGoal();
+                    break;
+                case "tower-physical":
+                    yield return WaitForSampleGoal("sample2");
+                    break;
+                case "steps-physical":
+                    yield return WaitForSampleGoal("sample3");
+                    break;
+                case "lift-physical":
+                    yield return WaitForSampleGoal("sample4");
                     break;
                 case "journey":
                     yield return RunJourney();
@@ -153,6 +167,24 @@ namespace Pono.MarbleRun3D.Bootstrap
                 throw new InvalidOperationException("Connected flat course did not physically reach the goal.");
             _details = "physical_goal_seconds="
                 + (Time.realtimeSinceStartup - startedAt).ToString("0.000", CultureInfo.InvariantCulture);
+        }
+
+        private IEnumerator WaitForSampleGoal(string modeId)
+        {
+            _controller.StartMode(modeId);
+            _controller.StartRun();
+            var startedAt = Time.realtimeSinceStartup;
+            var deadline = startedAt + 18f;
+            while (_controller.State == MarbleRunState.Running && Time.realtimeSinceStartup < deadline)
+                yield return null;
+            if (_controller.State != MarbleRunState.Celebrating)
+            {
+                throw new InvalidOperationException(
+                    modeId + " did not physically reach the goal; reached=" + _controller.MarblesAtGoal);
+            }
+            _details = modeId + "_goal_seconds="
+                + (Time.realtimeSinceStartup - startedAt).ToString("0.000", CultureInfo.InvariantCulture)
+                + "; reached=" + _controller.MarblesAtGoal;
         }
 
         private void BuildStraightCourse()
