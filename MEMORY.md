@@ -148,6 +148,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-07-10T14:06:31Z - 単一トランク統合 Phase 3: deploy.yml 2step化 + settings.local.json フック更新 + develop 凍結コミット作成 (worktree, push なし)
+- **タスク**: 単一トランク統合 Phase 3: deploy.yml 2step化 + settings.local.json フック更新 + develop 凍結コミット作成 (worktree, push なし)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 0
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {}
+- **サマリ**: 行動ログが空のため分析できません。
+
+
 ### 2026-07-10T14:02:36Z - 単一トランク統合 Phase1-3 (deploy.yml/wrangler.toml/index.html/sitemap.xml/settings.local.json) のクロスレビュー
 - **タスク**: 単一トランク統合 Phase1-3 (deploy.yml/wrangler.toml/index.html/sitemap.xml/settings.local.json) のクロスレビュー
 - **結果**: 成功
@@ -250,18 +263,5 @@ wrangler deploy                  # master 内容を production に
 - **有効だったアクション**: 特になし
 - **ツール使用統計**: {}
 - **サマリ**: 行動ログが空のため分析できません。
-
-
-### 2026-07-07T17:35:54Z - mojicrane round-7 最終検証レポート (真Matter.Constraint carry + CLEANUP silent-drop fix 検証)
-- **タスク**: mojicrane round-7 最終検証レポート (真Matter.Constraint carry + CLEANUP silent-drop fix 検証)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 50
-- **エラー数**: 6
-- **検出された良いパターン**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **検出された悪いパターン**: 同じエラーを繰り返した, テストを一切実行しなかった
-- **有効だったアクション**: エラー発生後に別のアプローチに切り替えた, 実装前にコードベースを探索した
-- **ツール使用統計**: {"Glob": 1, "Grep": 7, "Bash": 15, "Workflow": 10, "Read": 9, "Agent": 4, "ToolSearch": 2, "SendMessage": 1, "TaskStop": 1}
-- **サマリ**: 成功タスク: 2個の有効パターンを検出。 改善余地: 2個の非効率パターンあり。
 
 
