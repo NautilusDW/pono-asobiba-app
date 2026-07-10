@@ -8,6 +8,7 @@ namespace Pono.MarbleRun3D.Gameplay
     public sealed class ToyMaterialLibrary : IDisposable
     {
         private readonly List<Material> _owned = new List<Material>();
+        private readonly List<Material> _marbles = new List<Material>();
         private readonly Dictionary<MarblePieceKind, Material> _accent =
             new Dictionary<MarblePieceKind, Material>();
 
@@ -26,6 +27,7 @@ namespace Pono.MarbleRun3D.Gameplay
         public Material Shadow { get; }
         public PhysicsMaterial TrackPhysics { get; }
         public Shader BaseShader { get; }
+        public int MarbleColorCount => _marbles.Count;
 
         public ToyMaterialLibrary()
         {
@@ -41,7 +43,20 @@ namespace Pono.MarbleRun3D.Gameplay
             BoardEdge = Make("あそびだい ふち", new Color(0.44f, 0.25f, 0.12f), 0.08f);
             Connector = Make("つなぎ まる", new Color(0.18f, 0.78f, 0.92f), 0.48f, true);
             ConnectorGlow = Make("つなぎ ひかり", new Color(0.54f, 1f, 0.66f), 0.55f, true);
-            Marble = Make("たま", new Color(0.96f, 0.34f, 0.28f), 0.88f, false, 0.08f);
+            var marbleColors = new[]
+            {
+                new Color(0.96f, 0.30f, 0.25f),
+                new Color(1.00f, 0.57f, 0.18f),
+                new Color(1.00f, 0.82f, 0.22f),
+                new Color(0.28f, 0.78f, 0.42f),
+                new Color(0.20f, 0.66f, 0.96f),
+                new Color(0.64f, 0.42f, 0.92f)
+            };
+            for (var index = 0; index < marbleColors.Length; index++)
+            {
+                _marbles.Add(Make("にじいろ たま " + (index + 1), marbleColors[index], 0.88f, false, 0.08f));
+            }
+            Marble = _marbles[0];
             Metal = Make("かなぐ", new Color(0.88f, 0.90f, 0.92f), 0.62f, false, 0.55f);
             Selection = MakeTransparent("えらんだ しるし", new Color(0.28f, 0.95f, 1f, 0.48f), true);
             GhostValid = MakeTransparent("おける ゴースト", new Color(0.32f, 1f, 0.62f, 0.48f), true);
@@ -68,6 +83,14 @@ namespace Pono.MarbleRun3D.Gameplay
             return _accent[kind];
         }
 
+        public Material MarbleAt(int index)
+        {
+            if (_marbles.Count == 0) return Marble;
+            var normalized = index % _marbles.Count;
+            if (normalized < 0) normalized += _marbles.Count;
+            return _marbles[normalized];
+        }
+
         public void Dispose()
         {
             for (var i = 0; i < _owned.Count; i++)
@@ -77,6 +100,8 @@ namespace Pono.MarbleRun3D.Gameplay
                 else UnityEngine.Object.DestroyImmediate(_owned[i]);
             }
             _owned.Clear();
+            _marbles.Clear();
+            _accent.Clear();
             if (TrackPhysics != null)
             {
                 if (Application.isPlaying) UnityEngine.Object.Destroy(TrackPhysics);

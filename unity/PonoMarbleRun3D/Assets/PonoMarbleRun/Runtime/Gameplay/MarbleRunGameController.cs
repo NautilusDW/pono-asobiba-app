@@ -20,11 +20,14 @@ namespace Pono.MarbleRun3D.Gameplay
     [DisallowMultipleComponent]
     public sealed class MarbleRunGameController : MonoBehaviour
     {
-        private const int MaximumPieces = 48;
+        private const int MaximumPieces = 64;
+        private const int MaximumMarbles = 8;
+        private const float MarbleReleaseInterval = 0.36f;
         private const float PointerDragThreshold = 10f;
         private readonly Dictionary<string, PieceView> _pieceViews = new Dictionary<string, PieceView>();
-        private readonly MarbleSafetyModel _safety = new MarbleSafetyModel();
         private readonly CourseHistory _history = new CourseHistory(50);
+        private readonly List<MarbleRuntime> _marbles = new List<MarbleRuntime>();
+        private readonly List<Rigidbody> _marbleBodies = new List<Rigidbody>();
 
         private ToyMaterialLibrary _materials;
         private ToyAudio _audio;
@@ -35,13 +38,12 @@ namespace Pono.MarbleRun3D.Gameplay
         private Camera _camera;
         private CourseData _course;
         private ModeDefinition _mode;
-        private Rigidbody _marbleBody;
-        private GameObject _marbleObject;
         private PieceView _ghost;
         private PlacementResult _ghostResult;
         private MarblePieceKind? _placingKind;
         private int _placingQuarterTurns;
         private int _placingLevel;
+        private int _activePlacementLevel;
         private string _movingPieceId;
         private string _selectedPieceId;
         private bool _externalPaletteDrag;
@@ -54,8 +56,9 @@ namespace Pono.MarbleRun3D.Gameplay
         private Vector2 _pointerLast;
         private float _pinchDistance;
         private float _clearConfirmDeadline;
-        private bool _resetScheduled;
-        private bool _goalRaised;
+        private int _activeMarbleCount;
+        private int _marblesAtGoal;
+        private bool _goalCelebrationRaised;
         private MarbleRunState _stateBeforePause;
         private SimulationMode _simulationModeBeforePause;
         private int _tutorialStep;
@@ -64,14 +67,31 @@ namespace Pono.MarbleRun3D.Gameplay
         private int _boardLayer;
         private int _marbleLayer;
         private Coroutine _celebrationRoutine;
+        private Coroutine _launchRoutine;
+        private Coroutine _goalFinishRoutine;
         private Light _sunLight;
+
+        private sealed class MarbleRuntime
+        {
+            public int Index;
+            public GameObject Object;
+            public Rigidbody Body;
+            public TrailRenderer Trail;
+            public readonly MarbleSafetyModel Safety = new MarbleSafetyModel();
+            public Coroutine ResetRoutine;
+            public bool ReachedGoal;
+        }
 
         public MarbleRunState State { get; private set; } = MarbleRunState.Menu;
         public CourseData Course => _course?.Clone();
         public ModeDefinition CurrentMode => _mode;
-        public Rigidbody MarbleBody => _marbleBody;
+        public Rigidbody MarbleBody => _marbles.Count > 0 ? _marbles[0].Body : null;
+        public IReadOnlyList<Rigidbody> MarbleBodies => _marbleBodies;
         public bool IsPaused => State == MarbleRunState.Paused;
         public int PieceCount => _course?.pieces.Count ?? 0;
+        public int ActiveMarbleCount => _activeMarbleCount;
+        public int MarblesAtGoal => _marblesAtGoal;
+        public int ActivePlacementLevel => _activePlacementLevel;
         public string SelectedPieceId => _selectedPieceId ?? string.Empty;
         public IReadOnlyDictionary<string, PieceView> PieceViews => _pieceViews;
         public OrbitCameraController OrbitCamera => _orbit;
@@ -87,7 +107,7 @@ namespace Pono.MarbleRun3D.Gameplay
             _audio = gameObject.AddComponent<ToyAudio>();
             BuildWorld();
             BuildCamera();
-            BuildMarble();
+            BuildMarblePool();
             BuildUi();
             ShowMenu();
         }
@@ -102,26 +122,35 @@ namespace Pono.MarbleRun3D.Gameplay
 
         private void FixedUpdate()
         {
-            if (State != MarbleRunState.Running || _marbleBody == null || !_marbleObject.activeSelf)
+            if (State != MarbleRunState.Running)
             {
                 return;
             }
+            var stalled = false;
             var maximumSpeed = MarbleRunPhysicsProfile.MarbleMaximumSpeed;
-            if (_marbleBody.linearVelocity.sqrMagnitude > maximumSpeed * maximumSpeed)
+            for (var i = 0; i < _activeMarbleCount; i++)
             {
-                _marbleBody.linearVelocity = _marbleBody.linearVelocity.normalized * maximumSpeed;
+                var marble = _marbles[i];
+                if (!marble.Object.activeSelf || marble.ReachedGoal || marble.Body.isKinematic) continue;
+                if (marble.Body.linearVelocity.sqrMagnitude > maximumSpeed * maximumSpeed)
+                {
+                    marble.Body.linearVelocity = marble.Body.linearVelocity.normalized * maximumSpeed;
+                }
+                var safetyEvent = marble.Safety.Tick(
+                    marble.Body.position,
+                    marble.Body.linearVelocity,
+                    marble.Body.angularVelocity,
+                    Time.fixedDeltaTime);
+                if (safetyEvent == MarbleSafetyEvent.OutOfBounds && marble.ResetRoutine == null)
+                {
+                    marble.ResetRoutine = StartCoroutine(ResetAfterFall(marble));
+                }
+                else if (safetyEvent == MarbleSafetyEvent.Stalled)
+                {
+                    stalled = true;
+                }
             }
-            var safetyEvent = _safety.Tick(
-                _marbleBody.position,
-                _marbleBody.linearVelocity,
-                _marbleBody.angularVelocity,
-                Time.fixedDeltaTime);
-            if (safetyEvent == MarbleSafetyEvent.OutOfBounds && !_resetScheduled)
-            {
-                _resetScheduled = true;
-                StartCoroutine(ResetAfterFall());
-            }
-            else if (safetyEvent == MarbleSafetyEvent.Stalled)
+            if (stalled)
             {
                 _ui.SetStatus("たまが とまったよ", false);
                 _ui.SetResetAttention(true);
@@ -154,14 +183,16 @@ namespace Pono.MarbleRun3D.Gameplay
             Physics.simulationMode = SimulationMode.FixedUpdate;
             AudioListener.pause = false;
             State = MarbleRunState.Menu;
-            _marbleObject.SetActive(false);
+            HideAllMarbles();
             ClearCourseViews();
             _course = null;
             _mode = null;
             _history.Clear();
             _selectedPieceId = null;
+            _activePlacementLevel = 0;
             _orbit.ResetView();
             _ui.ShowMenu();
+            _ui.SetCameraView(false);
             _audio.PlayClick();
         }
 
@@ -173,11 +204,14 @@ namespace Pono.MarbleRun3D.Gameplay
             _history.Clear();
             _selectedPieceId = null;
             _tutorialStep = 0;
+            _activePlacementLevel = HighestInitialLevel(_course);
             RebuildCourseViews();
             State = MarbleRunState.Editing;
-            _marbleObject.SetActive(false);
+            HideAllMarbles();
             _orbit.ResetView();
             _ui.ShowBuilder(_mode);
+            _ui.SetCameraView(false);
+            _ui.SetHeightLevel(_activePlacementLevel);
             _ui.SetInventory(_mode, _course);
             _ui.SetSelected(null);
             _ui.SetStatus(_mode.GuideText, false);
@@ -203,10 +237,39 @@ namespace Pono.MarbleRun3D.Gameplay
             CancelPlacement();
             _placingKind = kind;
             _placingQuarterTurns = 0;
-            _placingLevel = 0;
+            _placingLevel = _activePlacementLevel;
             _selectedPieceId = null;
             _ui.SetSelected(null);
             _ui.SetStatus("ここに おこう", false);
+            _audio.PlayClick();
+        }
+
+        public void ChangePlacementLevel(int delta)
+        {
+            if (State != MarbleRunState.Editing) return;
+            var next = Mathf.Clamp(_activePlacementLevel + delta, PlacementSolver.MinLevel, PlacementSolver.MaxLevel);
+            if (next == _activePlacementLevel)
+            {
+                _ui.SetStatus(delta > 0 ? "いちばん うえだよ" : "いちばん しただよ", false);
+                _audio.PlayGentleNo();
+                return;
+            }
+            _activePlacementLevel = next;
+            if (_placingKind.HasValue)
+            {
+                _placingLevel = next;
+                if (_ghost != null)
+                    UpdateGhostAtWorld(_ghostResult.Pose.x, _ghostResult.Pose.z, _movingPieceId);
+            }
+            _ui.SetHeightLevel(next);
+            _ui.SetStatus("たかさを かえたよ", false);
+            _audio.PlayClick();
+        }
+
+        public void ToggleCameraAngle()
+        {
+            _orbit.ToggleTopView();
+            _ui.SetCameraView(_orbit.IsTopView);
             _audio.PlayClick();
         }
 
@@ -362,7 +425,9 @@ namespace Pono.MarbleRun3D.Gameplay
             _history.Capture(_course);
             _course = loaded;
             _selectedPieceId = null;
+            _activePlacementLevel = HighestInitialLevel(_course);
             _ui.SetSelected(null);
+            _ui.SetHeightLevel(_activePlacementLevel);
             RebuildCourseViews();
             _audio.PlayReset();
             _ui.SetStatus("つづきから あそべるよ", false);
@@ -381,18 +446,13 @@ namespace Pono.MarbleRun3D.Gameplay
                 return;
             }
             State = MarbleRunState.Running;
-            _goalRaised = false;
-            _resetScheduled = false;
-            _safety.Reset();
+            _goalCelebrationRaised = false;
+            _marblesAtGoal = 0;
             foreach (var view in _pieceViews.Values) view.SetRunMode(true);
             Physics.SyncTransforms();
-            _marbleObject.SetActive(true);
-            ResetMarbleInternal(false);
-            _marbleBody.isKinematic = false;
-            _marbleBody.linearVelocity = start.transform.forward * MarbleRunPhysicsProfile.MarbleLaunchSpeed;
-            _marbleBody.angularVelocity = Vector3.zero;
+            LaunchAllMarbles(start, false);
             _ui.ShowRunning();
-            _ui.SetStatus("たまを みてみよう", false);
+            _ui.SetStatus("いろいろな たまを みてみよう", false);
             _audio.PlayPlace();
             if (_mode.IsTutorial)
             {
@@ -404,7 +464,8 @@ namespace Pono.MarbleRun3D.Gameplay
         public void ResetMarble()
         {
             if (State != MarbleRunState.Running) return;
-            ResetMarbleInternal(true);
+            var start = FindPiece(MarblePieceKind.Start);
+            if (start != null) LaunchAllMarbles(start, true);
         }
 
         public void ReturnToEditing()
@@ -412,9 +473,9 @@ namespace Pono.MarbleRun3D.Gameplay
             if (State != MarbleRunState.Running && State != MarbleRunState.Celebrating) return;
             if (_celebrationRoutine != null) StopCoroutine(_celebrationRoutine);
             _celebrationRoutine = null;
-            _goalRaised = false;
-            _marbleBody.isKinematic = true;
-            _marbleObject.SetActive(false);
+            _goalCelebrationRaised = false;
+            StopMarbleCoroutines();
+            HideAllMarbles();
             foreach (var view in _pieceViews.Values) view.SetRunMode(false);
             State = MarbleRunState.Editing;
             _orbit.EndGoalFocus();
@@ -453,6 +514,7 @@ namespace Pono.MarbleRun3D.Gameplay
         public void ResetCameraView()
         {
             _orbit.ResetView();
+            _ui.SetCameraView(false);
             _audio.PlayClick();
         }
 
@@ -493,6 +555,15 @@ namespace Pono.MarbleRun3D.Gameplay
         {
             var goal = FindPiece(MarblePieceKind.Goal);
             if (goal != null) HandleGoal(null);
+        }
+
+        public bool ReachGoalForQa(int marbleIndex)
+        {
+            if (marbleIndex < 0 || marbleIndex >= _activeMarbleCount) return false;
+            var runtime = _marbles[marbleIndex];
+            if (!runtime.Object.activeSelf || runtime.ReachedGoal) return false;
+            HandleGoal(runtime.Object.GetComponent<MarbleActor>());
+            return runtime.ReachedGoal;
         }
 
         private void ConfigurePhysics()
@@ -610,16 +681,8 @@ namespace Pono.MarbleRun3D.Gameplay
             _orbit.ConfigureDefault();
         }
 
-        private void BuildMarble()
+        private void BuildMarblePool()
         {
-            _marbleObject = GameObject.CreatePrimitive(PrimitiveType.Sphere);
-            _marbleObject.name = "たま";
-            _marbleObject.layer = _marbleLayer;
-            _marbleObject.transform.SetParent(_worldRoot, false);
-            _marbleObject.transform.localScale = Vector3.one * WoodenPieceFactory.MarbleRadius * 2f;
-            _marbleObject.GetComponent<Renderer>().sharedMaterial = _materials.Marble;
-            _marbleObject.AddComponent<MarbleActor>();
-            var sphere = _marbleObject.GetComponent<SphereCollider>();
             var marblePhysicsMaterial = new PhysicsMaterial("たまの すべり")
             {
                 staticFriction = MarbleRunPhysicsProfile.MarbleStaticFriction,
@@ -628,25 +691,50 @@ namespace Pono.MarbleRun3D.Gameplay
                 frictionCombine = PhysicsMaterialCombine.Minimum,
                 bounceCombine = PhysicsMaterialCombine.Minimum
             };
-            sphere.sharedMaterial = marblePhysicsMaterial;
-            _marbleBody = _marbleObject.AddComponent<Rigidbody>();
-            _marbleBody.mass = MarbleRunPhysicsProfile.MarbleMass;
-            _marbleBody.linearDamping = MarbleRunPhysicsProfile.MarbleLinearDamping;
-            _marbleBody.angularDamping = MarbleRunPhysicsProfile.MarbleAngularDamping;
-            _marbleBody.interpolation = RigidbodyInterpolation.Interpolate;
-            _marbleBody.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
-            _marbleBody.maxAngularVelocity = 35f;
-            _marbleBody.solverIterations = 12;
-            _marbleBody.solverVelocityIterations = 5;
 
-            var trail = _marbleObject.AddComponent<TrailRenderer>();
-            trail.time = 0.34f;
-            trail.startWidth = 0.13f;
-            trail.endWidth = 0.015f;
-            trail.sharedMaterial = _materials.Selection;
-            trail.startColor = new Color(1f, 0.76f, 0.24f, 0.72f);
-            trail.endColor = new Color(0.25f, 0.86f, 1f, 0f);
-            _marbleObject.SetActive(false);
+            for (var index = 0; index < MaximumMarbles; index++)
+            {
+                var marbleObject = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                marbleObject.name = "たま " + (index + 1);
+                marbleObject.layer = _marbleLayer;
+                marbleObject.transform.SetParent(_worldRoot, false);
+                marbleObject.transform.localScale = Vector3.one * WoodenPieceFactory.MarbleRadius * 2f;
+                var marbleMaterial = _materials.MarbleAt(index);
+                marbleObject.GetComponent<Renderer>().sharedMaterial = marbleMaterial;
+                marbleObject.AddComponent<MarbleActor>().Configure(index);
+                marbleObject.GetComponent<SphereCollider>().sharedMaterial = marblePhysicsMaterial;
+
+                var body = marbleObject.AddComponent<Rigidbody>();
+                body.mass = MarbleRunPhysicsProfile.MarbleMass;
+                body.linearDamping = MarbleRunPhysicsProfile.MarbleLinearDamping;
+                body.angularDamping = MarbleRunPhysicsProfile.MarbleAngularDamping;
+                body.interpolation = RigidbodyInterpolation.Interpolate;
+                body.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+                body.maxAngularVelocity = 35f;
+                body.solverIterations = 12;
+                body.solverVelocityIterations = 5;
+                body.isKinematic = true;
+
+                var trail = marbleObject.AddComponent<TrailRenderer>();
+                trail.time = 0.42f;
+                trail.startWidth = 0.13f;
+                trail.endWidth = 0.015f;
+                trail.sharedMaterial = _materials.Selection;
+                var trailColor = marbleMaterial != null ? marbleMaterial.color : Color.white;
+                trail.startColor = new Color(trailColor.r, trailColor.g, trailColor.b, 0.76f);
+                trail.endColor = new Color(trailColor.r, trailColor.g, trailColor.b, 0f);
+
+                var runtime = new MarbleRuntime
+                {
+                    Index = index,
+                    Object = marbleObject,
+                    Body = body,
+                    Trail = trail
+                };
+                _marbles.Add(runtime);
+                _marbleBodies.Add(body);
+                marbleObject.SetActive(false);
+            }
         }
 
         private void BuildUi()
@@ -800,12 +888,15 @@ namespace Pono.MarbleRun3D.Gameplay
             _placingKind = piece.kind;
             _placingQuarterTurns = piece.pose.quarterTurns;
             _placingLevel = piece.pose.level;
+            _activePlacementLevel = piece.pose.level;
+            _ui.SetHeightLevel(_activePlacementLevel);
             if (_pieceViews.TryGetValue(piece.id, out var view)) view.gameObject.SetActive(false);
         }
 
         private void UpdateGhostAtScreen(Vector2 screenPosition, string ignorePieceId)
         {
-            var plane = new Plane(Vector3.up, new Vector3(0f, WoodenPieceFactory.PieceRootY, 0f));
+            var planeHeight = WoodenPieceFactory.PieceRootY + _placingLevel * WoodenPieceFactory.LevelHeight;
+            var plane = new Plane(Vector3.up, new Vector3(0f, planeHeight, 0f));
             var ray = _camera.ScreenPointToRay(screenPosition);
             if (!plane.Raycast(ray, out var distance)) return;
             var world = ray.GetPoint(distance);
@@ -826,6 +917,9 @@ namespace Pono.MarbleRun3D.Gameplay
                 _course.pieces,
                 _mode,
                 ignorePieceId);
+            _placingLevel = _ghostResult.Pose.level;
+            _activePlacementLevel = _ghostResult.Pose.level;
+            _ui.SetHeightLevel(_activePlacementLevel);
             if (_ghost == null || _ghost.Record.kind != _placingKind.Value)
             {
                 DestroyGhost();
@@ -864,7 +958,7 @@ namespace Pono.MarbleRun3D.Gameplay
                 _audio.PlayGentleNo();
                 DestroyGhost();
                 _placingKind = null;
-                _placingLevel = 0;
+                _placingLevel = _activePlacementLevel;
                 _movingPieceId = null;
                 return;
             }
@@ -886,7 +980,9 @@ namespace Pono.MarbleRun3D.Gameplay
             }
             DestroyGhost();
             _placingKind = null;
-            _placingLevel = 0;
+            _activePlacementLevel = _ghostResult.Pose.level;
+            _placingLevel = _activePlacementLevel;
+            _ui.SetHeightLevel(_activePlacementLevel);
             _movingPieceId = null;
             _existingDragActive = false;
             RebuildCourseViews();
@@ -904,7 +1000,7 @@ namespace Pono.MarbleRun3D.Gameplay
             }
             DestroyGhost();
             _placingKind = null;
-            _placingLevel = 0;
+            _placingLevel = _activePlacementLevel;
             _movingPieceId = null;
             _externalPaletteDrag = false;
             _existingDragCandidate = false;
@@ -930,6 +1026,12 @@ namespace Pono.MarbleRun3D.Gameplay
             var record = _course?.Find(id);
             if (record != null && _pieceViews.TryGetValue(id, out var current))
                 current.SetSelected(true);
+            if (record != null)
+            {
+                _activePlacementLevel = record.pose.level;
+                _placingLevel = _activePlacementLevel;
+                _ui.SetHeightLevel(_activePlacementLevel);
+            }
             _ui.SetSelected(record);
             if (record != null)
             {
@@ -937,6 +1039,8 @@ namespace Pono.MarbleRun3D.Gameplay
                     record.locked
                         ? "この ぶひんは そのままだよ"
                         : record.kind == MarblePieceKind.Slope
+                          || record.kind == MarblePieceKind.Steps
+                          || record.kind == MarblePieceKind.Lift
                             ? "くるっを ２かい おすと のぼりと くだりが かわるよ"
                             : "したの くるっで みぎに まわせるよ",
                     record.locked);
@@ -961,6 +1065,13 @@ namespace Pono.MarbleRun3D.Gameplay
                 if (view.GoalSensor != null) view.GoalSensor.MarbleEntered += HandleGoal;
             }
             _ui?.SetInventory(_mode, _course);
+            if (_course != null)
+            {
+                var positions = new List<Vector3>(_course.pieces.Count);
+                for (var i = 0; i < _course.pieces.Count; i++)
+                    positions.Add(WoodenPieceFactory.PoseToWorld(_course.pieces[i].pose));
+                _orbit?.FrameCourse(positions);
+            }
         }
 
         private void ClearCourseViews()
@@ -989,42 +1100,173 @@ namespace Pono.MarbleRun3D.Gameplay
             return null;
         }
 
-        private void ResetMarbleInternal(bool playSound)
+        private static int HighestInitialLevel(CourseData course)
         {
-            var start = FindPiece(MarblePieceKind.Start);
-            if (start == null || start.MarbleSpawn == null) return;
-            if (!_marbleBody.isKinematic)
+            if (course == null || course.pieces == null) return PlacementSolver.MinLevel;
+            var highest = PlacementSolver.MinLevel;
+            for (var i = 0; i < course.pieces.Count; i++)
             {
-                _marbleBody.linearVelocity = Vector3.zero;
-                _marbleBody.angularVelocity = Vector3.zero;
+                var occupancy = PartCatalog.GetWorldOccupancy(course.pieces[i]);
+                for (var cell = 0; cell < occupancy.Count; cell++)
+                    highest = Mathf.Max(highest, occupancy[cell].level);
             }
-            _marbleBody.isKinematic = true;
-            _marbleBody.position = start.MarbleSpawn.position;
-            _marbleBody.rotation = Quaternion.identity;
-            _marbleObject.GetComponent<TrailRenderer>().Clear();
-            _marbleBody.isKinematic = false;
-            _marbleBody.linearVelocity = start.transform.forward * MarbleRunPhysicsProfile.MarbleLaunchSpeed;
-            _safety.Reset();
-            _resetScheduled = false;
-            _ui.SetResetAttention(false);
-            _ui.SetStatus("たまを もどしたよ", false);
-            if (playSound) _audio.PlayReset();
+            return Mathf.Clamp(highest, PlacementSolver.MinLevel, PlacementSolver.MaxLevel);
         }
 
-        private IEnumerator ResetAfterFall()
+        private void LaunchAllMarbles(PieceView start, bool playSound)
         {
+            if (start == null || start.MarbleSpawn == null) return;
+            StopMarbleCoroutines();
+            HideAllMarbles();
+            _activeMarbleCount = Mathf.Clamp(
+                _course != null ? _course.marbleCount : CourseData.DefaultMarbleCount,
+                CourseData.MinimumMarbleCount,
+                Mathf.Min(CourseData.MaximumMarbleCount, MaximumMarbles));
+            _marblesAtGoal = 0;
+            _goalCelebrationRaised = false;
+            var goal = FindPiece(MarblePieceKind.Goal);
+            goal?.GoalSensor?.ResetSensor();
+            _ui.SetResetAttention(false);
+            _launchRoutine = StartCoroutine(ReleaseMarbles(start));
+            if (playSound)
+            {
+                _ui.SetStatus("たまを もどしたよ", false);
+                _audio.PlayReset();
+            }
+        }
+
+        private IEnumerator ReleaseMarbles(PieceView start)
+        {
+            for (var i = 0; i < _activeMarbleCount; i++)
+            {
+                if (State != MarbleRunState.Running && State != MarbleRunState.Celebrating) break;
+                ResetSingleMarble(_marbles[i], start);
+                yield return new WaitForSeconds(MarbleReleaseInterval);
+            }
+            _launchRoutine = null;
+        }
+
+        private void ResetSingleMarble(MarbleRuntime marble, PieceView start)
+        {
+            if (marble == null || start == null || start.MarbleSpawn == null) return;
+            var body = marble.Body;
+            body.isKinematic = true;
+            body.linearVelocity = Vector3.zero;
+            body.angularVelocity = Vector3.zero;
+            body.position = start.MarbleSpawn.position;
+            body.rotation = start.MarbleSpawn.rotation;
+            marble.Trail.Clear();
+            marble.Safety.Reset();
+            marble.ReachedGoal = false;
+            marble.Object.SetActive(true);
+            body.isKinematic = false;
+            body.linearVelocity = start.transform.forward * MarbleRunPhysicsProfile.MarbleLaunchSpeed;
+        }
+
+        private IEnumerator ResetAfterFall(MarbleRuntime marble)
+        {
+            if (marble == null) yield break;
+            marble.Body.isKinematic = true;
+            marble.Body.linearVelocity = Vector3.zero;
+            marble.Body.angularVelocity = Vector3.zero;
+            marble.Object.SetActive(false);
             _ui.SetStatus("たまを もどすね", false);
-            yield return new WaitForSecondsRealtime(0.28f);
-            if (State == MarbleRunState.Running) ResetMarbleInternal(true);
-            _resetScheduled = false;
+            yield return new WaitForSeconds(0.28f);
+            if (State == MarbleRunState.Running)
+            {
+                var start = FindPiece(MarblePieceKind.Start);
+                if (start != null)
+                {
+                    ResetSingleMarble(marble, start);
+                    _audio.PlayReset();
+                }
+            }
+            marble.ResetRoutine = null;
+        }
+
+        private void StopMarbleCoroutines()
+        {
+            if (_launchRoutine != null)
+            {
+                StopCoroutine(_launchRoutine);
+                _launchRoutine = null;
+            }
+            for (var i = 0; i < _marbles.Count; i++)
+            {
+                if (_marbles[i].ResetRoutine == null) continue;
+                StopCoroutine(_marbles[i].ResetRoutine);
+                _marbles[i].ResetRoutine = null;
+            }
+            if (_goalFinishRoutine != null)
+            {
+                StopCoroutine(_goalFinishRoutine);
+                _goalFinishRoutine = null;
+            }
+        }
+
+        private void HideAllMarbles()
+        {
+            for (var i = 0; i < _marbles.Count; i++)
+            {
+                var marble = _marbles[i];
+                marble.Body.isKinematic = true;
+                marble.Body.linearVelocity = Vector3.zero;
+                marble.Body.angularVelocity = Vector3.zero;
+                marble.Trail.Clear();
+                marble.Safety.Reset();
+                marble.ReachedGoal = false;
+                marble.Object.SetActive(false);
+            }
+            _activeMarbleCount = 0;
+            _marblesAtGoal = 0;
         }
 
         private void HandleGoal(MarbleActor marble)
         {
-            if (_goalRaised || (State != MarbleRunState.Running && marble != null)) return;
-            _goalRaised = true;
+            if (State != MarbleRunState.Running && State != MarbleRunState.Celebrating) return;
+            if (marble == null)
+            {
+                BeginGoalCelebration();
+                return;
+            }
+
+            if (marble.Index < 0 || marble.Index >= _activeMarbleCount) return;
+            var runtime = _marbles[marble.Index];
+            if (runtime.ReachedGoal) return;
+            runtime.ReachedGoal = true;
+            runtime.Body.isKinematic = true;
+            runtime.Body.linearVelocity = Vector3.zero;
+            runtime.Body.angularVelocity = Vector3.zero;
+            _marblesAtGoal++;
+            _ui.SetStatus("たまが ついたよ", false);
+
+            if (_marblesAtGoal >= _activeMarbleCount)
+            {
+                BeginGoalCelebration();
+                return;
+            }
+            if (_goalFinishRoutine == null)
+                _goalFinishRoutine = StartCoroutine(CelebrateAfterGoalDelay());
+        }
+
+        private IEnumerator CelebrateAfterGoalDelay()
+        {
+            yield return new WaitForSeconds(2.8f);
+            _goalFinishRoutine = null;
+            if (State == MarbleRunState.Running && _marblesAtGoal > 0)
+                BeginGoalCelebration();
+        }
+
+        private void BeginGoalCelebration()
+        {
+            if (_goalCelebrationRaised) return;
+            if (_goalFinishRoutine != null)
+            {
+                StopCoroutine(_goalFinishRoutine);
+                _goalFinishRoutine = null;
+            }
+            _goalCelebrationRaised = true;
             State = MarbleRunState.Celebrating;
-            if (_marbleBody != null) _marbleBody.isKinematic = true;
             var goal = FindPiece(MarblePieceKind.Goal);
             if (goal != null) _orbit.FocusForGoal(goal.transform.position);
             _ui.ShowCelebration(true);

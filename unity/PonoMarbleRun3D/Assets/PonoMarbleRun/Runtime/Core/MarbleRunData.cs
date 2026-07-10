@@ -15,7 +15,10 @@ namespace Pono.MarbleRun3D.Core
         Tunnel = 6,
         Funnel = 7,
         Seesaw = 8,
-        Domino = 9
+        Domino = 9,
+        Helix = 10,
+        Steps = 11,
+        Lift = 12
     }
 
     [Serializable]
@@ -87,10 +90,14 @@ namespace Pono.MarbleRun3D.Core
     [Serializable]
     public sealed class CourseData
     {
-        public const int CurrentSchemaVersion = 1;
+        public const int CurrentSchemaVersion = 2;
+        public const int DefaultMarbleCount = 6;
+        public const int MinimumMarbleCount = 1;
+        public const int MaximumMarbleCount = 8;
 
         public int schemaVersion = CurrentSchemaVersion;
         public string modeId = "sandbox";
+        public int marbleCount = DefaultMarbleCount;
         public List<PieceRecord> pieces = new List<PieceRecord>();
 
         public CourseData Clone()
@@ -99,6 +106,7 @@ namespace Pono.MarbleRun3D.Core
             {
                 schemaVersion = schemaVersion,
                 modeId = modeId,
+                marbleCount = marbleCount,
                 pieces = new List<PieceRecord>(pieces.Count)
             };
             for (var i = 0; i < pieces.Count; i++)
@@ -142,23 +150,85 @@ namespace Pono.MarbleRun3D.Core
         }
     }
 
+    public readonly struct OccupancySpec
+    {
+        public readonly int localX;
+        public readonly int localZ;
+        public readonly int localLevelOffset;
+
+        public OccupancySpec(int localX, int localZ, int localLevelOffset = 0)
+        {
+            this.localX = localX;
+            this.localZ = localZ;
+            this.localLevelOffset = localLevelOffset;
+        }
+    }
+
+    public readonly struct OccupancyPose : IEquatable<OccupancyPose>
+    {
+        public readonly int x;
+        public readonly int z;
+        public readonly int level;
+
+        public OccupancyPose(int x, int z, int level)
+        {
+            this.x = x;
+            this.z = z;
+            this.level = level;
+        }
+
+        public bool Equals(OccupancyPose other)
+        {
+            return x == other.x && z == other.z && level == other.level;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is OccupancyPose other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(x, z, level);
+        }
+    }
+
     public sealed class PartSpec
     {
         public MarblePieceKind Kind { get; }
         public string DisplayName { get; }
         public Color Accent { get; }
         public IReadOnlyList<ConnectorSpec> Connectors { get; }
+        public IReadOnlyList<OccupancySpec> Occupancy { get; }
 
         public PartSpec(
             MarblePieceKind kind,
             string displayName,
             Color accent,
             params ConnectorSpec[] connectors)
+            : this(
+                kind,
+                displayName,
+                accent,
+                new[] { new OccupancySpec(0, 0) },
+                connectors)
+        {
+        }
+
+        public PartSpec(
+            MarblePieceKind kind,
+            string displayName,
+            Color accent,
+            OccupancySpec[] occupancy,
+            params ConnectorSpec[] connectors)
         {
             Kind = kind;
             DisplayName = displayName;
             Accent = accent;
-            Connectors = connectors;
+            Connectors = connectors ?? Array.Empty<ConnectorSpec>();
+            Occupancy = occupancy == null || occupancy.Length == 0
+                ? new[] { new OccupancySpec(0, 0) }
+                : occupancy;
         }
     }
 
@@ -171,11 +241,13 @@ namespace Pono.MarbleRun3D.Core
                     MarblePieceKind.Start,
                     "スタート",
                     new Color(0.36f, 0.78f, 0.52f),
+                    OccupiesLevels(0, 1),
                     new ConnectorSpec(0f, 0.5f, 0, 1)),
                 [MarblePieceKind.Goal] = new PartSpec(
                     MarblePieceKind.Goal,
                     "ゴール",
                     new Color(1f, 0.69f, 0.26f),
+                    OccupiesLevels(0, 1),
                     new ConnectorSpec(0f, -0.5f, 0, -1)),
                 [MarblePieceKind.Straight] = new PartSpec(
                     MarblePieceKind.Straight,
@@ -193,6 +265,7 @@ namespace Pono.MarbleRun3D.Core
                     MarblePieceKind.Slope,
                     "さかみち",
                     new Color(0.77f, 0.62f, 0.94f),
+                    OccupiesLevels(0, 1),
                     new ConnectorSpec(0f, -0.5f, 0, -1, 1),
                     new ConnectorSpec(0f, 0.5f, 0, 1)),
                 [MarblePieceKind.Splitter] = new PartSpec(
@@ -206,26 +279,51 @@ namespace Pono.MarbleRun3D.Core
                     MarblePieceKind.Tunnel,
                     "トンネル",
                     new Color(0.28f, 0.78f, 0.74f),
+                    OccupiesLevels(0, 1),
                     new ConnectorSpec(0f, -0.5f, 0, -1),
                     new ConnectorSpec(0f, 0.5f, 0, 1)),
                 [MarblePieceKind.Funnel] = new PartSpec(
                     MarblePieceKind.Funnel,
                     "じょうご",
                     new Color(0.96f, 0.53f, 0.72f),
+                    OccupiesLevels(0, 1),
                     new ConnectorSpec(0f, -0.5f, 0, -1),
                     new ConnectorSpec(0f, 0.5f, 0, 1)),
                 [MarblePieceKind.Seesaw] = new PartSpec(
                     MarblePieceKind.Seesaw,
                     "シーソー",
                     new Color(0.48f, 0.82f, 0.38f),
+                    OccupiesLevels(0, 1),
                     new ConnectorSpec(0f, -0.5f, 0, -1),
                     new ConnectorSpec(0f, 0.5f, 0, 1)),
                 [MarblePieceKind.Domino] = new PartSpec(
                     MarblePieceKind.Domino,
                     "ドミノ",
                     new Color(0.95f, 0.40f, 0.33f),
+                    OccupiesLevels(0, 1),
                     new ConnectorSpec(0f, -0.5f, 0, -1),
-                    new ConnectorSpec(0f, 0.5f, 0, 1))
+                    new ConnectorSpec(0f, 0.5f, 0, 1)),
+                [MarblePieceKind.Helix] = new PartSpec(
+                    MarblePieceKind.Helix,
+                    "ぐるぐる",
+                    new Color(0.97f, 0.57f, 0.22f),
+                    OccupiesLevels(0, 1, 2),
+                    new ConnectorSpec(0f, -0.5f, 0, -1, 2),
+                    new ConnectorSpec(0f, 0.5f, 0, 1)),
+                [MarblePieceKind.Steps] = new PartSpec(
+                    MarblePieceKind.Steps,
+                    "かいだん",
+                    new Color(0.40f, 0.75f, 0.93f),
+                    OccupiesLevels(0, 1),
+                    new ConnectorSpec(0f, -0.5f, 0, -1, 1),
+                    new ConnectorSpec(0f, 0.5f, 0, 1)),
+                [MarblePieceKind.Lift] = new PartSpec(
+                    MarblePieceKind.Lift,
+                    "のぼる みち",
+                    new Color(0.50f, 0.82f, 0.43f),
+                    OccupiesLevels(0, 1),
+                    new ConnectorSpec(0f, -0.5f, 0, -1),
+                    new ConnectorSpec(0f, 0.5f, 0, 1, 1))
             };
 
         public static IReadOnlyCollection<PartSpec> All => Specs.Values;
@@ -244,6 +342,27 @@ namespace Pono.MarbleRun3D.Core
                 new Vector2(piece.pose.x, piece.pose.z) + rotatedPosition,
                 rotatedFacing,
                 piece.pose.level + connector.localLevelOffset);
+        }
+
+        public static IReadOnlyList<OccupancyPose> GetWorldOccupancy(PieceRecord piece)
+        {
+            if (piece == null) throw new ArgumentNullException(nameof(piece));
+            var occupancy = Specs[piece.kind].Occupancy;
+            var world = new OccupancyPose[occupancy.Count];
+            for (var i = 0; i < occupancy.Count; i++)
+            {
+                world[i] = GetWorldOccupancy(piece.pose, occupancy[i]);
+            }
+            return world;
+        }
+
+        public static OccupancyPose GetWorldOccupancy(GridPose pose, OccupancySpec local)
+        {
+            var rotated = Rotate(new Vector2Int(local.localX, local.localZ), pose.quarterTurns);
+            return new OccupancyPose(
+                pose.x + rotated.x,
+                pose.z + rotated.y,
+                pose.level + local.localLevelOffset);
         }
 
         public static Vector2 Rotate(Vector2 value, int quarterTurns)
@@ -266,6 +385,16 @@ namespace Pono.MarbleRun3D.Core
                 case 3: return new Vector2Int(-value.y, value.x);
                 default: return value;
             }
+        }
+
+        private static OccupancySpec[] OccupiesLevels(params int[] levels)
+        {
+            var result = new OccupancySpec[levels.Length];
+            for (var i = 0; i < levels.Length; i++)
+            {
+                result[i] = new OccupancySpec(0, 0, levels[i]);
+            }
+            return result;
         }
     }
 }

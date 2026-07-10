@@ -7,7 +7,7 @@ namespace Pono.MarbleRun3D.Gameplay
     public static class WoodenPieceFactory
     {
         public const float CellSize = 3f;
-        public const float LevelHeight = 0.90f;
+        public const float LevelHeight = 1.40f;
         public const float PieceRootY = 0.98f;
         public const float MarbleRadius = 0.32f;
 
@@ -28,13 +28,15 @@ namespace Pono.MarbleRun3D.Gameplay
             var placementObject = new GameObject("PlacementVolume");
             placementObject.layer = placementLayer;
             placementObject.transform.SetParent(root.transform, false);
-            placementObject.transform.localPosition = new Vector3(0f, 0.66f, 0f);
+            var placementSize = GetPlacementVolumeSize(record.kind);
+            placementObject.transform.localPosition = new Vector3(0f, placementSize.y * 0.5f - 0.20f, 0f);
             var placement = placementObject.AddComponent<BoxCollider>();
             placement.isTrigger = true;
-            placement.size = new Vector3(2.75f, 1.7f, 2.75f);
+            placement.size = placementSize;
             view.Initialize(record, placement, isGhost);
 
             BuildByKind(view, record.kind, materials, isGhost, courseLayer);
+            BuildWoodenSupports(view, record, materials, courseLayer);
             var runColliders = root.GetComponentsInChildren<Collider>(true);
             for (var colliderIndex = 0; colliderIndex < runColliders.Length; colliderIndex++)
             {
@@ -106,6 +108,15 @@ namespace Pono.MarbleRun3D.Gameplay
                 case MarblePieceKind.Domino:
                     BuildDomino(view, materials, courseLayer, isGhost);
                     break;
+                case MarblePieceKind.Helix:
+                    BuildHelix(view, materials, courseLayer);
+                    break;
+                case MarblePieceKind.Steps:
+                    BuildSteps(view, materials, courseLayer);
+                    break;
+                case MarblePieceKind.Lift:
+                    BuildLift(view, materials, courseLayer);
+                    break;
             }
         }
 
@@ -139,6 +150,28 @@ namespace Pono.MarbleRun3D.Gameplay
 
             CreateCylinder(view, "スタート だい", new Vector3(0f, 0.16f, -0.78f), Vector3.up,
                 0.68f, 0.18f, materials.Accent(MarblePieceKind.Start), courseLayer, true);
+            CreateCylinder(view, "たま いれ そこ", new Vector3(0f, 0.78f, -0.78f), Vector3.up,
+                0.60f, 0.12f, materials.Maple, courseLayer, true);
+            const int hopperSegments = 12;
+            for (var segment = 0; segment < hopperSegments; segment++)
+            {
+                var angle = Mathf.PI * 2f * segment / hopperSegments;
+                if (Mathf.Sin(angle) > 0.58f) continue;
+                var radial = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
+                var tangent = new Vector3(-Mathf.Sin(angle), 0f, Mathf.Cos(angle));
+                CreateCube(
+                    view,
+                    "たま いれ ふち",
+                    new Vector3(0f, 1.12f, -0.78f) + radial * 0.72f,
+                    new Vector3(0.46f, 0.62f, 0.13f),
+                    Quaternion.LookRotation(tangent, Vector3.up),
+                    materials.MarbleAt(segment),
+                    courseLayer,
+                    true);
+            }
+            CreateCube(view, "たま いれ すべりだい", new Vector3(0f, 0.48f, -0.18f),
+                new Vector3(1.28f, 0.12f, 1.20f), Quaternion.Euler(18f, 0f, 0f),
+                materials.Accent(MarblePieceKind.Start), courseLayer, true);
             CreateCylinder(view, "はた ぼう", new Vector3(-0.62f, 0.88f, -0.78f), Vector3.up,
                 0.07f, 1.36f, materials.MapleDark, courseLayer, false);
             CreateCube(view, "はた", new Vector3(-0.36f, 1.31f, -0.78f), new Vector3(0.52f, 0.34f, 0.09f),
@@ -150,7 +183,7 @@ namespace Pono.MarbleRun3D.Gameplay
 
             var spawn = new GameObject("MarbleSpawn").transform;
             spawn.SetParent(view.transform, false);
-            spawn.localPosition = new Vector3(0f, 0.70f, -0.72f);
+            spawn.localPosition = new Vector3(0f, 1.52f, -0.82f);
             view.SetMarbleSpawn(spawn);
         }
 
@@ -221,7 +254,7 @@ namespace Pono.MarbleRun3D.Gameplay
 
         private static void BuildSlope(PieceView view, ToyMaterialLibrary materials, int courseLayer)
         {
-            var direction = Quaternion.Euler(MarbleRunPhysicsProfile.SlopeDegrees, 0f, 0f) * Vector3.forward;
+            var direction = new Vector3(0f, -LevelHeight, CellSize).normalized;
             var slopeLength = Mathf.Sqrt(CellSize * CellSize + LevelHeight * LevelHeight);
             BuildTrackSegment(
                 view,
@@ -379,6 +412,266 @@ namespace Pono.MarbleRun3D.Gameplay
                 body.isKinematic = true;
                 view.RegisterDynamicBody(body);
             }
+        }
+
+        private static void BuildHelix(PieceView view, ToyMaterialLibrary materials, int courseLayer)
+        {
+            const float radius = 0.82f;
+            const float turns = 1.5f;
+            const int segments = 18;
+            var height = LevelHeight * 2f;
+            var accent = materials.Accent(MarblePieceKind.Helix);
+
+            var highConnector = new Vector3(0f, height, -CellSize * 0.5f);
+            var highCircle = HelixPoint(0f, radius, height, turns);
+            BuildHelixTrackSegment(
+                view,
+                (highConnector + highCircle) * 0.5f,
+                (highCircle - highConnector).normalized,
+                Vector3.Distance(highConnector, highCircle) + 0.12f,
+                materials.Maple,
+                accent,
+                courseLayer);
+
+            var previous = highCircle;
+            for (var segment = 1; segment <= segments; segment++)
+            {
+                var t = segment / (float)segments;
+                var next = HelixPoint(t, radius, height, turns);
+                BuildHelixTrackSegment(
+                    view,
+                    (previous + next) * 0.5f,
+                    (next - previous).normalized,
+                    Vector3.Distance(previous, next) + 0.12f,
+                    materials.Maple,
+                    accent,
+                    courseLayer);
+                previous = next;
+            }
+
+            var lowConnector = new Vector3(0f, 0f, CellSize * 0.5f);
+            BuildHelixTrackSegment(
+                view,
+                (previous + lowConnector) * 0.5f,
+                (lowConnector - previous).normalized,
+                Vector3.Distance(previous, lowConnector) + 0.12f,
+                materials.Maple,
+                accent,
+                courseLayer);
+
+            CreateCylinder(view, "ぐるぐる まんなか", new Vector3(0f, height * 0.46f, 0f), Vector3.up,
+                0.20f, height * 0.92f, materials.MapleDark, courseLayer, false);
+            for (var marker = 0; marker < 6; marker++)
+            {
+                var t = marker / 5f;
+                var point = HelixPoint(t, radius, height, turns);
+                CreateSphere(view, "ぐるぐる いろ", point + Vector3.up * 0.26f, 0.10f,
+                    materials.MarbleAt(marker), courseLayer, false);
+            }
+
+            var guideObject = new GameObject("ぐるぐる ガイド");
+            guideObject.layer = courseLayer;
+            guideObject.transform.SetParent(view.transform, false);
+            guideObject.transform.localPosition = new Vector3(0f, height * 0.5f + 0.35f, 0f);
+            var guideCollider = guideObject.AddComponent<BoxCollider>();
+            guideCollider.isTrigger = true;
+            guideCollider.size = new Vector3(2.85f, height + 1.5f, 2.85f);
+            guideObject.AddComponent<HelixMarbleGuide>().Configure(view.transform, radius, height, turns);
+        }
+
+        private static void BuildSteps(PieceView view, ToyMaterialLibrary materials, int courseLayer)
+        {
+            var direction = new Vector3(0f, -LevelHeight, CellSize).normalized;
+            var length = Mathf.Sqrt(CellSize * CellSize + LevelHeight * LevelHeight);
+            var accent = materials.Accent(MarblePieceKind.Steps);
+            BuildTrackSegment(
+                view,
+                new Vector3(0f, LevelHeight * 0.5f, 0f),
+                direction,
+                length + 0.12f,
+                materials.Maple,
+                accent,
+                courseLayer,
+                0.17f);
+
+            const int stepCount = 6;
+            for (var step = 0; step < stepCount; step++)
+            {
+                var t = (step + 0.5f) / stepCount;
+                var z = Mathf.Lerp(-CellSize * 0.5f, CellSize * 0.5f, t);
+                var surfaceHeight = Mathf.Lerp(LevelHeight, 0f, t);
+                var blockHeight = Mathf.Max(0.12f, surfaceHeight);
+                CreateCube(
+                    view,
+                    "だんだん かざり",
+                    new Vector3(0f, blockHeight * 0.5f - 0.02f, z),
+                    new Vector3(1.48f, blockHeight, CellSize / stepCount * 0.90f),
+                    Quaternion.identity,
+                    materials.MarbleAt(step),
+                    courseLayer,
+                    false);
+            }
+        }
+
+        private static void BuildLift(PieceView view, ToyMaterialLibrary materials, int courseLayer)
+        {
+            var direction = new Vector3(0f, LevelHeight, CellSize).normalized;
+            var length = Mathf.Sqrt(CellSize * CellSize + LevelHeight * LevelHeight);
+            var accent = materials.Accent(MarblePieceKind.Lift);
+            BuildTrackSegment(
+                view,
+                new Vector3(0f, LevelHeight * 0.5f, 0f),
+                direction,
+                length + 0.12f,
+                materials.Maple,
+                accent,
+                courseLayer,
+                0.19f);
+
+            const int rollerCount = 7;
+            for (var roller = 0; roller < rollerCount; roller++)
+            {
+                var t = (roller + 0.5f) / rollerCount;
+                var z = Mathf.Lerp(-CellSize * 0.5f, CellSize * 0.5f, t);
+                var y = Mathf.Lerp(0f, LevelHeight, t) + 0.24f;
+                CreateCylinder(view, "のぼる ローラー", new Vector3(0f, y, z), Vector3.right,
+                    0.12f, 1.46f, materials.MarbleAt(roller), courseLayer, false);
+            }
+
+            var guideObject = new GameObject("のぼる ガイド");
+            guideObject.layer = courseLayer;
+            guideObject.transform.SetParent(view.transform, false);
+            guideObject.transform.localPosition = new Vector3(0f, LevelHeight * 0.5f + 0.48f, 0f);
+            guideObject.transform.localRotation = Quaternion.LookRotation(direction, Vector3.up);
+            var guideCollider = guideObject.AddComponent<BoxCollider>();
+            guideCollider.isTrigger = true;
+            guideCollider.size = new Vector3(2.25f, 1.35f, length + 0.30f);
+            guideObject.AddComponent<LiftMarbleGuide>().Configure(view.transform);
+        }
+
+        private static Vector3 HelixPoint(float t, float radius, float height, float turns)
+        {
+            var angle = -Mathf.PI * 0.5f + Mathf.PI * 2f * turns * t;
+            return new Vector3(
+                Mathf.Cos(angle) * radius,
+                Mathf.Lerp(height, 0f, t),
+                Mathf.Sin(angle) * radius);
+        }
+
+        private static Vector3 GetPlacementVolumeSize(MarblePieceKind kind)
+        {
+            switch (kind)
+            {
+                case MarblePieceKind.Helix:
+                    return new Vector3(2.75f, LevelHeight * 2f + 1.45f, 2.75f);
+                case MarblePieceKind.Slope:
+                case MarblePieceKind.Steps:
+                case MarblePieceKind.Lift:
+                    return new Vector3(2.75f, LevelHeight + 1.45f, 2.75f);
+                default:
+                    return new Vector3(2.75f, 1.70f, 2.75f);
+            }
+        }
+
+        private static void BuildWoodenSupports(
+            PieceView view,
+            PieceRecord record,
+            ToyMaterialLibrary materials,
+            int courseLayer)
+        {
+            if (record.pose.level > 0)
+            {
+                var top = -0.06f;
+                CreateSupport(view, "たかい みちの あし", -0.68f, -0.94f, top, record.pose.level,
+                    materials, courseLayer);
+                CreateSupport(view, "たかい みちの あし", 0.68f, -0.94f, top, record.pose.level,
+                    materials, courseLayer);
+                CreateSupport(view, "たかい みちの あし", -0.68f, 0.94f, top, record.pose.level,
+                    materials, courseLayer);
+                CreateSupport(view, "たかい みちの あし", 0.68f, 0.94f, top, record.pose.level,
+                    materials, courseLayer);
+            }
+
+            if (record.kind == MarblePieceKind.Helix)
+            {
+                CreateSupport(view, "ぐるぐる たかい あし", -0.66f, -0.92f, LevelHeight * 1.82f,
+                    record.pose.level, materials, courseLayer);
+                CreateSupport(view, "ぐるぐる たかい あし", 0.66f, -0.92f, LevelHeight * 1.82f,
+                    record.pose.level, materials, courseLayer);
+                CreateSupport(view, "ぐるぐる まんなか あし", 0f, 0f, LevelHeight * 0.88f,
+                    record.pose.level, materials, courseLayer, 0.16f);
+            }
+            else if (record.kind == MarblePieceKind.Slope || record.kind == MarblePieceKind.Steps)
+            {
+                CreateSupport(view, "さかの あし", -0.66f, -1.03f, LevelHeight * 0.82f,
+                    record.pose.level, materials, courseLayer);
+                CreateSupport(view, "さかの あし", 0.66f, -1.03f, LevelHeight * 0.82f,
+                    record.pose.level, materials, courseLayer);
+            }
+            else if (record.kind == MarblePieceKind.Lift)
+            {
+                CreateSupport(view, "のぼる あし", -0.66f, 1.03f, LevelHeight * 0.82f,
+                    record.pose.level, materials, courseLayer);
+                CreateSupport(view, "のぼる あし", 0.66f, 1.03f, LevelHeight * 0.82f,
+                    record.pose.level, materials, courseLayer);
+            }
+        }
+
+        private static void CreateSupport(
+            PieceView view,
+            string name,
+            float x,
+            float z,
+            float topLocalY,
+            int baseLevel,
+            ToyMaterialLibrary materials,
+            int courseLayer,
+            float radius = 0.11f)
+        {
+            var bottomLocalY = -baseLevel * LevelHeight;
+            var length = topLocalY - bottomLocalY;
+            if (length < 0.12f) return;
+            CreateCylinder(
+                view,
+                name,
+                new Vector3(x, (bottomLocalY + topLocalY) * 0.5f, z),
+                Vector3.up,
+                radius,
+                length,
+                materials.MapleDark,
+                courseLayer,
+                false);
+            CreateCylinder(
+                view,
+                name + " そこ",
+                new Vector3(x, bottomLocalY + 0.035f, z),
+                Vector3.up,
+                radius * 1.55f,
+                0.07f,
+                materials.Maple,
+                courseLayer,
+                false);
+        }
+
+        private static void BuildHelixTrackSegment(
+            PieceView view,
+            Vector3 centre,
+            Vector3 direction,
+            float length,
+            Material floorMaterial,
+            Material accentMaterial,
+            int courseLayer)
+        {
+            direction.Normalize();
+            var rotation = Quaternion.LookRotation(direction, Vector3.up);
+            CreateCube(view, "ぐるぐる みち", centre + Vector3.up * 0.07f,
+                new Vector3(0.96f, 0.16f, length), rotation, floorMaterial, courseLayer, true);
+
+            var side = Vector3.Cross(Vector3.up, direction).normalized;
+            CreateCylinder(view, "ぐるぐる ひだり", centre + side * 0.49f + Vector3.up * 0.28f,
+                direction, 0.12f, length, accentMaterial, courseLayer, true);
+            CreateCylinder(view, "ぐるぐる みぎ", centre - side * 0.49f + Vector3.up * 0.28f,
+                direction, 0.12f, length, accentMaterial, courseLayer, true);
         }
 
         private static void BuildTrackSegment(

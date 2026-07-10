@@ -58,6 +58,11 @@ namespace Pono.MarbleRun3D.Tests.EditMode
                 labels.Add(challenge.DisplayName);
                 labels.Add(challenge.GuideText);
             }
+            foreach (var sample in ChallengeCatalog.Samples)
+            {
+                labels.Add(sample.DisplayName);
+                labels.Add(sample.GuideText);
+            }
             foreach (var label in labels)
             {
                 Assert.That(ChildFacingTextValidator.IsKanaSafe(label, out var invalid), Is.True,
@@ -97,7 +102,7 @@ namespace Pono.MarbleRun3D.Tests.EditMode
             Assert.That(MarbleRunPhysicsProfile.SolverVelocityIterations, Is.GreaterThanOrEqualTo(3));
             Assert.That(MarbleRunPhysicsProfile.MarbleMaximumSpeed, Is.InRange(10f, 18f));
             Assert.That(MarbleRunPhysicsProfile.MarbleBounciness, Is.LessThan(0.1f));
-            Assert.That(MarbleRunPhysicsProfile.SlopeDegrees, Is.InRange(15f, 20f));
+            Assert.That(MarbleRunPhysicsProfile.SlopeDegrees, Is.InRange(24f, 26f));
             Assert.That(
                 Mathf.Tan(MarbleRunPhysicsProfile.SlopeDegrees * Mathf.Deg2Rad) * WoodenPieceFactory.CellSize,
                 Is.EqualTo(WoodenPieceFactory.LevelHeight).Within(0.01f));

@@ -34,7 +34,7 @@ namespace Pono.MarbleRun3D.Core
         public const int MinZ = -5;
         public const int MaxZ = 5;
         public const int MinLevel = 0;
-        public const int MaxLevel = 1;
+        public const int MaxLevel = 4;
         public const float ConnectorSnapToleranceCells = 0.68f;
 
         public static PlacementResult Solve(
@@ -53,7 +53,7 @@ namespace Pono.MarbleRun3D.Core
                 quarterTurns);
             var snapped = false;
             var connectedId = string.Empty;
-            var bestDistance = ConnectorSnapToleranceCells;
+            var bestScore = float.PositiveInfinity;
             var spec = PartCatalog.Get(kind);
 
             for (var pieceIndex = 0; pieceIndex < pieces.Count; pieceIndex++)
@@ -97,12 +97,14 @@ namespace Pono.MarbleRun3D.Core
                         }
 
                         var distance = Vector2.Distance(approximateCellPosition, targetCentre);
-                        if (distance >= bestDistance)
+                        if (distance >= ConnectorSnapToleranceCells)
                         {
                             continue;
                         }
+                        var score = distance + Mathf.Abs(candidateLevel - level) * 0.25f;
+                        if (score >= bestScore) continue;
 
-                        bestDistance = distance;
+                        bestScore = score;
                         pose = new GridPose(
                             Mathf.RoundToInt(targetCentre.x),
                             Mathf.RoundToInt(targetCentre.y),
@@ -148,18 +150,39 @@ namespace Pono.MarbleRun3D.Core
                     return Invalid(pose, "ここには おけないよ");
                 }
             }
+            var candidate = new PieceRecord
+            {
+                id = ignorePieceId ?? string.Empty,
+                kind = kind,
+                pose = pose
+            };
+            var candidateOccupancy = PartCatalog.GetWorldOccupancy(candidate);
+            for (var occupancyIndex = 0; occupancyIndex < candidateOccupancy.Count; occupancyIndex++)
+            {
+                var occupied = candidateOccupancy[occupancyIndex];
+                if (occupied.x < MinX || occupied.x > MaxX
+                    || occupied.z < MinZ || occupied.z > MaxZ
+                    || occupied.level < MinLevel)
+                {
+                    return Invalid(pose, "ここには おけないよ");
+                }
+            }
+
             for (var i = 0; i < pieces.Count; i++)
             {
                 var existing = pieces[i];
+                if (existing == null)
+                {
+                    return Invalid(pose, "ここには おけないよ");
+                }
                 if (string.Equals(existing.id, ignorePieceId, StringComparison.Ordinal))
                 {
                     continue;
                 }
-                if (existing.pose.x == pose.x
-                    && existing.pose.z == pose.z
-                    && existing.pose.level == pose.level)
+                var existingOccupancy = PartCatalog.GetWorldOccupancy(existing);
+                if (OccupancyOverlaps(candidateOccupancy, existingOccupancy))
                 {
-                    return Invalid(pose, "ぶひんが あるよ");
+                    return Invalid(pose, "ぶひんが かさなるよ");
                 }
             }
 
@@ -239,6 +262,20 @@ namespace Pono.MarbleRun3D.Core
                         visited.Add(candidate);
                         queue.Enqueue(candidate);
                     }
+                }
+            }
+            return false;
+        }
+
+        private static bool OccupancyOverlaps(
+            IReadOnlyList<OccupancyPose> first,
+            IReadOnlyList<OccupancyPose> second)
+        {
+            for (var firstIndex = 0; firstIndex < first.Count; firstIndex++)
+            {
+                for (var secondIndex = 0; secondIndex < second.Count; secondIndex++)
+                {
+                    if (first[firstIndex].Equals(second[secondIndex])) return true;
                 }
             }
             return false;

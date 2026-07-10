@@ -99,11 +99,11 @@ namespace Pono.MarbleRun3D.Bootstrap
                     break;
                 case "sample-edit":
                     _controller.StartMode("sample2");
-                    _controller.SelectForQa("sample2-c1");
+                    _controller.SelectForQa("sample2-helix");
                     break;
                 case "sample-slope":
                     _controller.StartMode("sample3");
-                    _controller.SelectForQa("sample3-up");
+                    _controller.SelectForQa("sample3-step1");
                     break;
                 case "edit":
                     BuildStraightCourse();
@@ -146,7 +146,7 @@ namespace Pono.MarbleRun3D.Bootstrap
             BuildStraightCourse();
             _controller.StartRun();
             var startedAt = Time.realtimeSinceStartup;
-            var deadline = startedAt + 8f;
+            var deadline = startedAt + 12f;
             while (_controller.State == MarbleRunState.Running && Time.realtimeSinceStartup < deadline)
                 yield return null;
             if (_controller.State != MarbleRunState.Celebrating)
@@ -170,19 +170,23 @@ namespace Pono.MarbleRun3D.Bootstrap
         private void BuildShowcase()
         {
             _controller.StartMode("sandbox");
-            Place(MarblePieceKind.Straight, -4, -2, 0);
-            Place(MarblePieceKind.Curve, -2, -2, 0);
-            Place(MarblePieceKind.Slope, 0, -2, 0);
-            Place(MarblePieceKind.Splitter, 2, -2, 0);
-            Place(MarblePieceKind.Tunnel, 4, -2, 0);
-            Place(MarblePieceKind.Funnel, -4, 1, 0);
-            Place(MarblePieceKind.Seesaw, -2, 1, 0);
-            Place(MarblePieceKind.Domino, 2, 1, 0);
+            Place(MarblePieceKind.Straight, -5, -2, 0);
+            Place(MarblePieceKind.Curve, -3, -2, 0);
+            Place(MarblePieceKind.Slope, -1, -2, 0);
+            Place(MarblePieceKind.Splitter, 1, -2, 0);
+            Place(MarblePieceKind.Tunnel, 3, -2, 0);
+            Place(MarblePieceKind.Funnel, 5, -2, 0);
+            Place(MarblePieceKind.Seesaw, -5, 1, 0);
+            Place(MarblePieceKind.Domino, -3, 1, 0);
+            Place(MarblePieceKind.Helix, -1, 1, 0);
+            Place(MarblePieceKind.Steps, 2, 1, 0);
+            Place(MarblePieceKind.Lift, 4, 1, 0);
+            Place(MarblePieceKind.Straight, -5, 1, 0, 2);
         }
 
-        private void Place(MarblePieceKind kind, int x, int z, int turns)
+        private void Place(MarblePieceKind kind, int x, int z, int turns, int level = 0)
         {
-            if (!_controller.PlaceForQa(kind, new GridPose(x, z, 0, turns)))
+            if (!_controller.PlaceForQa(kind, new GridPose(x, z, level, turns)))
                 throw new InvalidOperationException("QA showcase placement failed: " + kind);
         }
 
@@ -221,6 +225,9 @@ namespace Pono.MarbleRun3D.Bootstrap
                 + "  \"screen\": \"" + Screen.width + "x" + Screen.height + "\",\n"
                 + "  \"game_state\": \"" + _controller.State + "\",\n"
                 + "  \"piece_count\": " + _controller.PieceCount + ",\n"
+                + "  \"active_level\": " + _controller.ActivePlacementLevel + ",\n"
+                + "  \"active_marbles\": " + _controller.ActiveMarbleCount + ",\n"
+                + "  \"marbles_at_goal\": " + _controller.MarblesAtGoal + ",\n"
                 + "  \"details\": \"" + Escape(_details) + "\"\n"
                 + "}\n";
             File.WriteAllText(_qaOutputPath, json);

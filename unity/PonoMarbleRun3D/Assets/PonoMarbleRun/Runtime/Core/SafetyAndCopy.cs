@@ -22,7 +22,7 @@ namespace Pono.MarbleRun3D.Core
         public const float MarbleStaticFriction = 0.16f;
         public const float MarbleDynamicFriction = 0.10f;
         public const float MarbleBounciness = 0.04f;
-        public const float SlopeDegrees = 16.70f;
+        public const float SlopeDegrees = 25.02f;
     }
 
     public enum MarbleSafetyEvent
@@ -129,9 +129,12 @@ namespace Pono.MarbleRun3D.Core
             "さかみち",
             "みほん コース",
             "はじめての みち",
-            "くねくね みち",
-            "そらの はし",
-            "くるくる じょうご",
+            "にじいろ タワー",
+            "そらの まよいみち",
+            "のぼって おりて",
+            "ぐるぐる",
+            "かいだん",
+            "のぼる みち",
             "もどる",
             "ほぞん",
             "よみこむ",
@@ -154,6 +157,7 @@ namespace Pono.MarbleRun3D.Core
             "ここに おこう",
             "つなげてみよう",
             "ここには おけないよ",
+            "ぶひんが かさなるよ",
             "もういちど おしてね",
             "たまが とまったよ",
             "たまを もどしたよ",

@@ -72,8 +72,15 @@ namespace Pono.MarbleRun3D.Core
                 error = "よみこめなかったよ";
                 return false;
             }
+            if (course != null && course.schemaVersion == 1)
+            {
+                course.schemaVersion = CourseData.CurrentSchemaVersion;
+                course.marbleCount = CourseData.DefaultMarbleCount;
+            }
             if (course == null
                 || course.schemaVersion != CourseData.CurrentSchemaVersion
+                || course.marbleCount < CourseData.MinimumMarbleCount
+                || course.marbleCount > CourseData.MaximumMarbleCount
                 || course.pieces == null
                 || string.IsNullOrWhiteSpace(course.modeId))
             {
@@ -95,8 +102,18 @@ namespace Pono.MarbleRun3D.Core
                     || piece.pose.z < PlacementSolver.MinZ
                     || piece.pose.z > PlacementSolver.MaxZ
                     || piece.pose.level < PlacementSolver.MinLevel
-                    || piece.pose.level > PlacementSolver.MaxLevel
-                    || !PlacementSolver.Validate(
+                    || piece.pose.level > PlacementSolver.MaxLevel)
+                {
+                    course = null;
+                    error = "よみこめなかったよ";
+                    return false;
+                }
+                piece.pose.quarterTurns = GridPose.NormalizeQuarterTurns(piece.pose.quarterTurns);
+            }
+            for (var i = course.pieces.Count - 1; i >= 0; i--)
+            {
+                var piece = course.pieces[i];
+                if (!PlacementSolver.Validate(
                         piece.kind,
                         piece.pose,
                         course.pieces,
@@ -107,7 +124,6 @@ namespace Pono.MarbleRun3D.Core
                     error = "よみこめなかったよ";
                     return false;
                 }
-                piece.pose.quarterTurns = GridPose.NormalizeQuarterTurns(piece.pose.quarterTurns);
             }
             return true;
         }

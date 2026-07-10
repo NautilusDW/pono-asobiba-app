@@ -153,6 +153,8 @@ namespace Pono.MarbleRun3D.UI
         private Text _statusText;
         private Image _statusPanelImage;
         private Text _selectedText;
+        private Text _heightText;
+        private Text _viewText;
         private Text _tutorialText;
         private UiPulse _resetPulse;
         private UiPulse _rotatePulse;
@@ -167,6 +169,7 @@ namespace Pono.MarbleRun3D.UI
         public RectTransform SafeRootRect => _safeRoot?.transform as RectTransform;
         public string StatusText => _statusText != null ? _statusText.text : string.Empty;
         public string TutorialText => _tutorialText != null ? _tutorialText.text : string.Empty;
+        public string HeightText => _heightText != null ? _heightText.text : string.Empty;
 
         public void Build(MarbleRunGameController controller)
         {
@@ -284,6 +287,17 @@ namespace Pono.MarbleRun3D.UI
             if (_resetPulse != null) _resetPulse.Active = attention;
         }
 
+        public void SetHeightLevel(int level)
+        {
+            if (_heightText != null)
+                _heightText.text = "たかさ " + ToFullWidthDigits(Mathf.Max(0, level) + 1);
+        }
+
+        public void SetCameraView(bool topView)
+        {
+            if (_viewText != null) _viewText.text = topView ? "ななめ" : "うえから";
+        }
+
         private void EnsureEventSystem()
         {
             if (EventSystem.current != null) return;
@@ -365,11 +379,11 @@ namespace Pono.MarbleRun3D.UI
 
             CreateButton("Sample1", buttons.transform, "はじめての みち", Sky,
                 () => _controller.StartMode("sample1"), 21);
-            CreateButton("Sample2", buttons.transform, "くねくね みち", Coral,
+            CreateButton("Sample2", buttons.transform, "にじいろ タワー", Coral,
                 () => _controller.StartMode("sample2"), 21);
-            CreateButton("Sample3", buttons.transform, "そらの はし", Purple,
+            CreateButton("Sample3", buttons.transform, "そらの まよいみち", Purple,
                 () => _controller.StartMode("sample3"), 21);
-            CreateButton("Sample4", buttons.transform, "くるくる じょうご", Green,
+            CreateButton("Sample4", buttons.transform, "のぼって おりて", Green,
                 () => _controller.StartMode("sample4"), 21);
 
             var back = CreateButton("SamplesBack", _samplePanel.transform, "もどる", Wood,
@@ -393,11 +407,22 @@ namespace Pono.MarbleRun3D.UI
             _modeText = CreateText("Mode", _builderTop.transform, "じゆうに つくる", 29, FontStyle.Bold, Wood, TextAnchor.MiddleCenter);
             SetRect(_modeText.rectTransform, new Vector2(0.14f, 0.53f), new Vector2(0.47f, 0.96f));
 
+            var levelDown = CreateButton("LevelDown", _builderTop.transform, "▼ した", Sky,
+                () => _controller.ChangePlacementLevel(-1), 15);
+            SetRect(levelDown.GetComponent<RectTransform>(), new Vector2(0.48f, 0.53f), new Vector2(0.545f, 0.95f));
+            _heightText = CreateText("Height", _builderTop.transform, "たかさ １", 19, FontStyle.Bold,
+                Wood, TextAnchor.MiddleCenter);
+            SetRect(_heightText.rectTransform, new Vector2(0.548f, 0.53f), new Vector2(0.655f, 0.95f));
+            var levelUp = CreateButton("LevelUp", _builderTop.transform, "▲ うえ", Green,
+                () => _controller.ChangePlacementLevel(1), 15);
+            SetRect(levelUp.GetComponent<RectTransform>(), new Vector2(0.658f, 0.53f), new Vector2(0.72f, 0.95f));
+
             var save = CreateButton("Save", _builderTop.transform, "ほぞん", Green, _controller.SaveCourse, 17);
             SetRect(save.GetComponent<RectTransform>(), new Vector2(0.73f, 0.53f), new Vector2(0.81f, 0.95f));
             var load = CreateButton("Load", _builderTop.transform, "よみこむ", Sky, _controller.LoadCourse, 17);
             SetRect(load.GetComponent<RectTransform>(), new Vector2(0.82f, 0.53f), new Vector2(0.91f, 0.95f));
-            var resetView = CreateButton("View", _builderTop.transform, "みわたす", Purple, _controller.ResetCameraView, 16);
+            var resetView = CreateButton("View", _builderTop.transform, "うえから", Purple, _controller.ToggleCameraAngle, 15);
+            _viewText = resetView.GetComponentInChildren<Text>();
             SetRect(resetView.GetComponent<RectTransform>(), new Vector2(0.92f, 0.53f), new Vector2(0.992f, 0.95f));
 
             _selectedText = CreateText("Selected", _builderTop.transform, "おいた ぶひんを おしてね", 20, FontStyle.Bold,

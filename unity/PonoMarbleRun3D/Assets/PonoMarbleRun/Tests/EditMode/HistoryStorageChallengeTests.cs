@@ -45,7 +45,7 @@ namespace Pono.MarbleRun3D.Tests.EditMode
         [Test]
         public void SaveRoundTripPreservesStableDataOnly()
         {
-            var original = new CourseData { modeId = "challenge2" };
+            var original = new CourseData { modeId = "challenge2", marbleCount = 8 };
             original.pieces.Add(new PieceRecord
             {
                 id = "stable-piece",
@@ -57,11 +57,50 @@ namespace Pono.MarbleRun3D.Tests.EditMode
             Assert.That(CourseStorage.TryDecode(json, out var restored, out var error), Is.True, error);
             Assert.That(restored.schemaVersion, Is.EqualTo(CourseData.CurrentSchemaVersion));
             Assert.That(restored.modeId, Is.EqualTo("challenge2"));
+            Assert.That(restored.marbleCount, Is.EqualTo(8));
             Assert.That(restored.pieces.Single().id, Is.EqualTo("stable-piece"));
             Assert.That(restored.pieces.Single().kind, Is.EqualTo(MarblePieceKind.Tunnel));
             Assert.That(restored.pieces.Single().pose.quarterTurns, Is.EqualTo(3));
             Assert.That(json, Does.Not.Contain("velocity"));
             Assert.That(json, Does.Not.Contain("selection"));
+        }
+
+        [Test]
+        public void SchemaOneSaveMigratesToSixMarblesWithoutLosingPieces()
+        {
+            const string json = "{\"schemaVersion\":1,\"modeId\":\"sandbox\",\"pieces\":[{\"id\":\"old\",\"kind\":2,\"pose\":{\"x\":1,\"z\":2,\"level\":0,\"quarterTurns\":5},\"locked\":false}]}";
+            Assert.That(CourseStorage.TryDecode(json, out var course, out var error), Is.True, error);
+            Assert.That(course.schemaVersion, Is.EqualTo(CourseData.CurrentSchemaVersion));
+            Assert.That(course.marbleCount, Is.EqualTo(CourseData.DefaultMarbleCount));
+            Assert.That(course.pieces.Single().id, Is.EqualTo("old"));
+            Assert.That(course.pieces.Single().pose.quarterTurns, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void SchemaTwoRejectsUnsafeMarbleCounts()
+        {
+            const string json = "{\"schemaVersion\":2,\"modeId\":\"sandbox\",\"marbleCount\":0,\"pieces\":[]}";
+            Assert.That(CourseStorage.TryDecode(json, out var course, out var error), Is.False);
+            Assert.That(course, Is.Null);
+            Assert.That(error, Is.Not.Empty);
+        }
+
+        [Test]
+        public void SaveValidationRejectsTallOccupancyCollisionButAllowsLayeredFlatTracks()
+        {
+            var layered = new CourseData { modeId = "sandbox" };
+            layered.pieces.Add(CatalogPlacementTests.Piece(
+                "lower", MarblePieceKind.Straight, 0, 0, 0, 0));
+            layered.pieces.Add(CatalogPlacementTests.Piece(
+                "upper", MarblePieceKind.Straight, 0, 0, 0, 1));
+            Assert.That(CourseStorage.TryDecode(
+                CourseStorage.Encode(layered), out _, out var layeredError), Is.True, layeredError);
+
+            layered.pieces[0].kind = MarblePieceKind.Tunnel;
+            Assert.That(CourseStorage.TryDecode(
+                CourseStorage.Encode(layered), out var rejected, out var collisionError), Is.False);
+            Assert.That(rejected, Is.Null);
+            Assert.That(collisionError, Is.Not.Empty);
         }
 
         [TestCase("")]
@@ -112,6 +151,13 @@ namespace Pono.MarbleRun3D.Tests.EditMode
         public void CatalogHasFourEditableConnectedSampleCoursesWithSeparateSaves()
         {
             Assert.That(ChallengeCatalog.Samples.Count, Is.EqualTo(4));
+            Assert.That(ChallengeCatalog.Samples.Select(sample => sample.DisplayName), Is.EqualTo(new[]
+            {
+                "はじめての みち",
+                "にじいろ タワー",
+                "そらの まよいみち",
+                "のぼって おりて"
+            }));
             Assert.That(ChallengeCatalog.Samples.Select(sample => sample.Id).Distinct().Count(), Is.EqualTo(4));
             var savePaths = ChallengeCatalog.Samples
                 .Select(sample => CourseStorage.GetSavePath(sample.Id))
@@ -130,6 +176,7 @@ namespace Pono.MarbleRun3D.Tests.EditMode
 
                 var course = sample.CreateInitialCourse();
                 Assert.That(course.modeId, Is.EqualTo(sample.Id));
+                Assert.That(course.marbleCount, Is.EqualTo(CourseData.DefaultMarbleCount));
                 Assert.That(course.pieces.Count, Is.InRange(3, 48));
                 Assert.That(course.pieces.Count(piece => piece.kind == MarblePieceKind.Start), Is.EqualTo(1));
                 Assert.That(course.pieces.Count(piece => piece.kind == MarblePieceKind.Goal), Is.EqualTo(1));
@@ -152,19 +199,24 @@ namespace Pono.MarbleRun3D.Tests.EditMode
                 Assert.That(second.pieces[0].pose, Is.Not.EqualTo(course.pieces[0].pose), sample.Id + " clone");
             }
 
-            Assert.That(ChallengeCatalog.Samples.SelectMany(sample => sample.InitialPieces)
-                .Any(piece => piece.kind == MarblePieceKind.Curve), Is.True);
-            Assert.That(ChallengeCatalog.Samples.SelectMany(sample => sample.InitialPieces)
-                .Any(piece => piece.kind == MarblePieceKind.Slope), Is.True);
-            Assert.That(ChallengeCatalog.Samples.SelectMany(sample => sample.InitialPieces)
-                .Any(piece => piece.kind == MarblePieceKind.Funnel), Is.True);
-            Assert.That(PartCatalog.Get(MarblePieceKind.Slope).DisplayName, Is.EqualTo("さかみち"));
-            var bridgeSlopes = ChallengeCatalog.Get("sample3").InitialPieces
-                .Where(piece => piece.kind == MarblePieceKind.Slope)
+            Assert.That(ChallengeCatalog.Get("sample1").InitialPieces.All(piece => piece.pose.level == 0), Is.True);
+            foreach (var sample in ChallengeCatalog.Samples.Skip(1))
+            {
+                var start = sample.InitialPieces.Single(piece => piece.kind == MarblePieceKind.Start);
+                var goal = sample.InitialPieces.Single(piece => piece.kind == MarblePieceKind.Goal);
+                Assert.That(start.pose.level, Is.GreaterThan(goal.pose.level), sample.Id);
+            }
+            var sampleKinds = ChallengeCatalog.Samples.SelectMany(sample => sample.InitialPieces)
+                .Select(piece => piece.kind)
                 .ToArray();
-            Assert.That(bridgeSlopes.Length, Is.EqualTo(2));
-            Assert.That(System.Math.Abs(bridgeSlopes[0].pose.quarterTurns - bridgeSlopes[1].pose.quarterTurns),
-                Is.EqualTo(2));
+            Assert.That(sampleKinds, Does.Contain(MarblePieceKind.Curve));
+            Assert.That(sampleKinds, Does.Contain(MarblePieceKind.Helix));
+            Assert.That(sampleKinds, Does.Contain(MarblePieceKind.Steps));
+            Assert.That(sampleKinds, Does.Contain(MarblePieceKind.Lift));
+            Assert.That(PartCatalog.Get(MarblePieceKind.Slope).DisplayName, Is.EqualTo("さかみち"));
+            Assert.That(PartCatalog.Get(MarblePieceKind.Helix).DisplayName, Is.EqualTo("ぐるぐる"));
+            Assert.That(PartCatalog.Get(MarblePieceKind.Steps).DisplayName, Is.EqualTo("かいだん"));
+            Assert.That(PartCatalog.Get(MarblePieceKind.Lift).DisplayName, Is.EqualTo("のぼる みち"));
         }
 
         private static (CourseData first, CourseData second) ActualChallengeSolutions(ModeDefinition challenge)
@@ -174,55 +226,58 @@ namespace Pono.MarbleRun3D.Tests.EditMode
                 case "challenge1":
                     return (
                         WithRoute(challenge,
-                            P("a-c1", MarblePieceKind.Curve, -3, -1, 0),
-                            P("a-x1", MarblePieceKind.Straight, -2, -1, 1),
-                            P("a-x2", MarblePieceKind.Straight, -1, -1, 1),
-                            P("a-x3", MarblePieceKind.Straight, 0, -1, 1),
-                            P("a-x4", MarblePieceKind.Straight, 1, -1, 1),
-                            P("a-c2", MarblePieceKind.Curve, 2, -1, 2),
-                            P("a-z1", MarblePieceKind.Straight, 2, 0, 0),
-                            P("a-z2", MarblePieceKind.Straight, 2, 1, 0),
-                            P("a-c3", MarblePieceKind.Curve, 2, 2, 0)),
+                            P("a-high", MarblePieceKind.Straight, 0, -3, 1),
+                            P("a-step", MarblePieceKind.Steps, 0, -2),
+                            P("a-low1", MarblePieceKind.Straight, 0, -1),
+                            P("a-low2", MarblePieceKind.Straight, 0, 0),
+                            P("a-low3", MarblePieceKind.Straight, 0, 1),
+                            P("a-low4", MarblePieceKind.Straight, 0, 2),
+                            P("a-low5", MarblePieceKind.Straight, 0, 3)),
                         WithRoute(challenge,
-                            P("b-z1", MarblePieceKind.Straight, -3, -1, 0),
-                            P("b-c1", MarblePieceKind.Curve, -3, 0, 0),
-                            P("b-x1", MarblePieceKind.Straight, -2, 0, 1),
-                            P("b-x2", MarblePieceKind.Straight, -1, 0, 1),
-                            P("b-x3", MarblePieceKind.Straight, 0, 0, 1),
-                            P("b-x4", MarblePieceKind.Straight, 1, 0, 1),
-                            P("b-c2", MarblePieceKind.Curve, 2, 0, 2),
-                            P("b-z2", MarblePieceKind.Straight, 2, 1, 0),
-                            P("b-c3", MarblePieceKind.Curve, 2, 2, 0)));
+                            P("b-high", MarblePieceKind.Straight, 0, -3, 1),
+                            P("b-slope", MarblePieceKind.Slope, 0, -2),
+                            P("b-low1", MarblePieceKind.Straight, 0, -1),
+                            P("b-low2", MarblePieceKind.Straight, 0, 0),
+                            P("b-low3", MarblePieceKind.Straight, 0, 1),
+                            P("b-low4", MarblePieceKind.Straight, 0, 2),
+                            P("b-low5", MarblePieceKind.Straight, 0, 3)));
                 case "challenge2":
                     return (
-                        VerticalRoute(challenge),
-                        VerticalRoute(challenge,
-                            (-2, MarblePieceKind.Tunnel),
-                            (1, MarblePieceKind.Seesaw)));
+                        WithRoute(challenge,
+                            P("a-high", MarblePieceKind.Straight, 0, -3, 2),
+                            P("a-helix", MarblePieceKind.Helix, 0, -2),
+                            P("a-low1", MarblePieceKind.Straight, 0, -1),
+                            P("a-low2", MarblePieceKind.Straight, 0, 0),
+                            P("a-low3", MarblePieceKind.Straight, 0, 1),
+                            P("a-low4", MarblePieceKind.Straight, 0, 2),
+                            P("a-low5", MarblePieceKind.Straight, 0, 3)),
+                        WithRoute(challenge,
+                            P("b-high", MarblePieceKind.Straight, 0, -3, 2),
+                            P("b-step1", MarblePieceKind.Steps, 0, -2, 1),
+                            P("b-middle", MarblePieceKind.Straight, 0, -1, 1),
+                            P("b-step2", MarblePieceKind.Steps, 0, 0),
+                            P("b-low1", MarblePieceKind.Straight, 0, 1),
+                            P("b-low2", MarblePieceKind.Straight, 0, 2),
+                            P("b-low3", MarblePieceKind.Straight, 0, 3)));
                 default:
                     return (
-                        VerticalRoute(challenge),
-                        VerticalRoute(challenge,
-                            (-1, MarblePieceKind.Funnel),
-                            (1, MarblePieceKind.Domino)));
+                        WithRoute(challenge,
+                            P("a-high", MarblePieceKind.Straight, 0, -3, 3),
+                            P("a-helix", MarblePieceKind.Helix, 0, -2, 1),
+                            P("a-middle", MarblePieceKind.Straight, 0, -1, 1),
+                            P("a-step", MarblePieceKind.Steps, 0, 0),
+                            P("a-low1", MarblePieceKind.Straight, 0, 1),
+                            P("a-low2", MarblePieceKind.Straight, 0, 2),
+                            P("a-low3", MarblePieceKind.Straight, 0, 3)),
+                        WithRoute(challenge,
+                            P("b-high", MarblePieceKind.Straight, 0, -3, 3),
+                            P("b-step1", MarblePieceKind.Steps, 0, -2, 2),
+                            P("b-level2", MarblePieceKind.Straight, 0, -1, 2),
+                            P("b-step2", MarblePieceKind.Steps, 0, 0, 1),
+                            P("b-level1", MarblePieceKind.Straight, 0, 1, 1),
+                            P("b-slope", MarblePieceKind.Slope, 0, 2),
+                            P("b-low", MarblePieceKind.Straight, 0, 3)));
             }
-        }
-
-        private static CourseData VerticalRoute(
-            ModeDefinition challenge,
-            params (int z, MarblePieceKind kind)[] replacements)
-        {
-            var course = challenge.CreateInitialCourse();
-            for (var z = -3; z <= 3; z++)
-            {
-                var kind = MarblePieceKind.Straight;
-                for (var i = 0; i < replacements.Length; i++)
-                {
-                    if (replacements[i].z == z) kind = replacements[i].kind;
-                }
-                course.pieces.Add(P(challenge.Id + "-" + z, kind, 0, z, 0));
-            }
-            return course;
         }
 
         private static CourseData WithRoute(ModeDefinition challenge, params PieceRecord[] route)
@@ -232,9 +287,15 @@ namespace Pono.MarbleRun3D.Tests.EditMode
             return course;
         }
 
-        private static PieceRecord P(string id, MarblePieceKind kind, int x, int z, int turns)
+        private static PieceRecord P(
+            string id,
+            MarblePieceKind kind,
+            int x,
+            int z,
+            int level = 0,
+            int turns = 0)
         {
-            return CatalogPlacementTests.Piece(id, kind, x, z, turns);
+            return CatalogPlacementTests.Piece(id, kind, x, z, turns, level);
         }
     }
 }

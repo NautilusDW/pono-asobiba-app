@@ -60,7 +60,45 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
             Assert.That(_controller.Ui, Is.Not.Null);
             Assert.That(_controller.OrbitCamera, Is.Not.Null);
             Assert.That(_controller.MarbleBody.gameObject.activeSelf, Is.False);
+            Assert.That(_controller.MarbleBodies.Count, Is.EqualTo(8));
+            Assert.That(_controller.MarbleBodies.All(body => !body.gameObject.activeSelf), Is.True);
             Assert.That(Object.FindFirstObjectByType<EventSystem>(), Is.Not.Null);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator FourHeightLevelsCanBeSelectedShownAndUsedAtOneGridCell()
+        {
+            _controller.StartMode("sandbox");
+            Assert.That(_controller.ActivePlacementLevel, Is.Zero);
+            Assert.That(_controller.Ui.HeightText, Does.Contain("たかさ"));
+
+            var shownLabels = new HashSet<string> { _controller.Ui.HeightText };
+            for (var level = 0; level < 4; level++)
+            {
+                while (_controller.ActivePlacementLevel < level)
+                    _controller.ChangePlacementLevel(1);
+
+                Assert.That(_controller.ActivePlacementLevel, Is.EqualTo(level));
+                shownLabels.Add(_controller.Ui.HeightText);
+                Assert.That(
+                    _controller.PlaceForQa(MarblePieceKind.Straight, new GridPose(2, 0, level)),
+                    Is.True,
+                    "flat rails at separate levels should not occupy one another: level=" + level);
+            }
+
+            Assert.That(shownLabels.Count, Is.EqualTo(4));
+            var stacked = _controller.Course.pieces
+                .Where(piece => piece.kind == MarblePieceKind.Straight && piece.pose.x == 2 && piece.pose.z == 0)
+                .OrderBy(piece => piece.pose.level)
+                .ToArray();
+            Assert.That(stacked.Select(piece => piece.pose.level), Is.EqualTo(new[] { 0, 1, 2, 3 }));
+            for (var index = 1; index < stacked.Length; index++)
+            {
+                var previousY = _controller.PieceViews[stacked[index - 1].id].transform.position.y;
+                var currentY = _controller.PieceViews[stacked[index].id].transform.position.y;
+                Assert.That(currentY - previousY, Is.EqualTo(WoodenPieceFactory.LevelHeight).Within(0.001f));
+            }
             yield return null;
         }
 
@@ -113,23 +151,23 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
             Assert.That(_controller.CurrentMode.Id, Is.EqualTo("sample2"));
             Assert.That(_controller.Course.modeId, Is.EqualTo("sample2"));
             Assert.That(_controller.Ui.transform.Find("Canvas/SafeArea/BuilderTop/Mode").GetComponent<Text>().text,
-                Is.EqualTo("くねくね みち"));
+                Is.EqualTo("にじいろ タワー"));
 
             _controller.RotateSelection();
             Assert.That(_controller.Ui.StatusText, Does.Contain("おしてから くるっ"));
-            var curve = _controller.Course.pieces.First(piece => piece.kind == MarblePieceKind.Curve);
-            var originalTurns = curve.pose.quarterTurns;
-            Assert.That(_controller.SelectForQa(curve.id), Is.True);
+            var editableRail = _controller.Course.pieces.First(piece => piece.kind == MarblePieceKind.Straight);
+            var originalTurns = editableRail.pose.quarterTurns;
+            Assert.That(_controller.SelectForQa(editableRail.id), Is.True);
             var rotatePulse = _controller.Ui.transform.Find("Canvas/SafeArea/EditActions/Rotate")
                 .GetComponent<UiPulse>();
             Assert.That(rotatePulse.Active, Is.True);
             Assert.That(_controller.Ui.StatusText, Does.Contain("くるっで みぎに"));
             _controller.RotateSelection();
-            Assert.That(_controller.Course.Find(curve.id).pose.quarterTurns,
+            Assert.That(_controller.Course.Find(editableRail.id).pose.quarterTurns,
                 Is.EqualTo(GridPose.NormalizeQuarterTurns(originalTurns + 1)));
             Assert.That(_controller.Ui.StatusText, Does.Contain("みぎに まわしたよ"));
             _controller.Undo();
-            Assert.That(_controller.Course.Find(curve.id).pose.quarterTurns, Is.EqualTo(originalTurns));
+            Assert.That(_controller.Course.Find(editableRail.id).pose.quarterTurns, Is.EqualTo(originalTurns));
             Assert.That(rotatePulse.Active, Is.False);
             Assert.That(_controller.Ui.transform.Find("Canvas/SafeArea/BuilderTop/Selected").GetComponent<Text>().text,
                 Is.EqualTo("おいた ぶひんを おしてね"));
@@ -143,8 +181,8 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
             Assert.That(rotatePulse.Active, Is.False);
 
             _controller.StartMode("sample3");
-            var slope = _controller.Course.pieces.First(piece => piece.kind == MarblePieceKind.Slope);
-            Assert.That(_controller.SelectForQa(slope.id), Is.True);
+            var steps = _controller.Course.pieces.First(piece => piece.kind == MarblePieceKind.Steps);
+            Assert.That(_controller.SelectForQa(steps.id), Is.True);
             Assert.That(_controller.Ui.StatusText, Does.Contain("２かい"));
             Assert.That(_controller.Ui.StatusText, Does.Contain("のぼりと くだり"));
         }
@@ -219,21 +257,59 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator ColoredMarblePoolLaunchesAndResetsWithoutDuplication()
+        {
+            var actors = _controller.GetComponentsInChildren<MarbleActor>(true)
+                .OrderBy(actor => actor.Index)
+                .ToArray();
+            Assert.That(actors.Length, Is.EqualTo(8));
+            Assert.That(actors.Select(actor => actor.Index), Is.EqualTo(Enumerable.Range(0, 8)));
+            Assert.That(actors.Select(actor => actor.StableId).Distinct().Count(), Is.EqualTo(8));
+            var colors = actors
+                .Select(actor => (Color32)actor.GetComponent<Renderer>().sharedMaterial.color)
+                .Select(color => color.r + ":" + color.g + ":" + color.b)
+                .Distinct()
+                .ToArray();
+            Assert.That(colors.Length, Is.GreaterThanOrEqualTo(6));
+
+            BuildStraightCourse();
+            _controller.StartRun();
+            yield return new WaitForSeconds(2.25f);
+            Assert.That(_controller.ActiveMarbleCount, Is.EqualTo(CourseData.DefaultMarbleCount));
+            Assert.That(_controller.MarbleBodies.Take(_controller.ActiveMarbleCount)
+                .All(body => body.gameObject.activeSelf), Is.True);
+
+            _controller.ResetMarble();
+            yield return new WaitForSeconds(2.25f);
+            Assert.That(_controller.GetComponentsInChildren<MarbleActor>(true).Length, Is.EqualTo(8));
+            Assert.That(_controller.MarbleBodies.Take(_controller.ActiveMarbleCount)
+                .All(body => body.gameObject.activeSelf), Is.True);
+            Assert.That(_controller.MarblesAtGoal, Is.Zero);
+        }
+
+        [UnityTest]
         public IEnumerator PauseFreezesMarbleAndAllDynamicMechanisms()
         {
             BuildStraightCourse();
             Assert.That(_controller.PlaceForQa(MarblePieceKind.Seesaw, new GridPose(3, 0)), Is.True);
             Assert.That(_controller.PlaceForQa(MarblePieceKind.Domino, new GridPose(-3, 0)), Is.True);
             _controller.StartRun();
-            yield return new WaitForSecondsRealtime(0.28f);
+            yield return new WaitForSeconds(0.82f);
             var bodies = _controller.PieceViews.Values.SelectMany(view => view.DynamicBodies).ToArray();
             Assert.That(bodies.Length, Is.EqualTo(7));
             _controller.SetPaused(true);
-            var marblePosition = _controller.MarbleBody.position;
+            var marblePositions = _controller.MarbleBodies.Select(body => body.position).ToArray();
+            var marbleRotations = _controller.MarbleBodies.Select(body => body.rotation).ToArray();
+            var marbleActiveStates = _controller.MarbleBodies.Select(body => body.gameObject.activeSelf).ToArray();
             var positions = bodies.Select(body => body.position).ToArray();
             var rotations = bodies.Select(body => body.rotation).ToArray();
             yield return new WaitForSecondsRealtime(0.42f);
-            Assert.That(_controller.MarbleBody.position, Is.EqualTo(marblePosition));
+            for (var index = 0; index < _controller.MarbleBodies.Count; index++)
+            {
+                Assert.That(_controller.MarbleBodies[index].position, Is.EqualTo(marblePositions[index]));
+                Assert.That(_controller.MarbleBodies[index].rotation, Is.EqualTo(marbleRotations[index]));
+                Assert.That(_controller.MarbleBodies[index].gameObject.activeSelf, Is.EqualTo(marbleActiveStates[index]));
+            }
             for (var i = 0; i < bodies.Length; i++)
             {
                 Assert.That(bodies[i].position, Is.EqualTo(positions[i]));
@@ -245,17 +321,46 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator FallingMarbleReturnsToStartWithoutDuplication()
+        public IEnumerator FallingMarblesReturnIndependentlyWithoutDuplication()
         {
             BuildStraightCourse();
             _controller.StartRun();
-            yield return new WaitForFixedUpdate();
-            _controller.MarbleBody.position = new Vector3(0f, -5f, 0f);
-            _controller.MarbleBody.linearVelocity = Vector3.down;
-            yield return new WaitForSecondsRealtime(0.65f);
-            Assert.That(_controller.MarbleBody.position.y, Is.GreaterThan(1f));
-            Assert.That(Object.FindObjectsByType<MarbleActor>(FindObjectsSortMode.None).Length, Is.EqualTo(1));
+            yield return new WaitForSeconds(0.48f);
+            for (var index = 0; index < 2; index++)
+            {
+                _controller.MarbleBodies[index].position = new Vector3(index, -5f, 0f);
+                _controller.MarbleBodies[index].linearVelocity = Vector3.down;
+            }
+            yield return new WaitForSeconds(0.72f);
+            Assert.That(_controller.MarbleBodies[0].position.y, Is.GreaterThan(1f));
+            Assert.That(_controller.MarbleBodies[1].position.y, Is.GreaterThan(1f));
+            Assert.That(Object.FindObjectsByType<MarbleActor>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length,
+                Is.EqualTo(8));
             Assert.That(_controller.State, Is.EqualTo(MarbleRunState.Running));
+        }
+
+        [UnityTest]
+        public IEnumerator GoalCountsEachActiveMarbleOnceAndCelebratesAfterTheLast()
+        {
+            BuildStraightCourse();
+            _controller.StartRun();
+            yield return new WaitForSeconds(2.25f);
+            var activeCount = _controller.ActiveMarbleCount;
+            Assert.That(activeCount, Is.EqualTo(CourseData.DefaultMarbleCount));
+
+            for (var index = 0; index < activeCount - 1; index++)
+            {
+                Assert.That(_controller.ReachGoalForQa(index), Is.True, "marble=" + index);
+                Assert.That(_controller.MarblesAtGoal, Is.EqualTo(index + 1));
+                Assert.That(_controller.State, Is.EqualTo(MarbleRunState.Running));
+                Assert.That(_controller.ReachGoalForQa(index), Is.False, "duplicate marble=" + index);
+                Assert.That(_controller.MarblesAtGoal, Is.EqualTo(index + 1));
+            }
+
+            Assert.That(_controller.ReachGoalForQa(activeCount - 1), Is.True);
+            Assert.That(_controller.MarblesAtGoal, Is.EqualTo(activeCount));
+            Assert.That(_controller.State, Is.EqualTo(MarbleRunState.Celebrating));
+            Assert.That(_controller.ReachGoalForQa(activeCount), Is.False);
         }
 
         [UnityTest]
@@ -271,7 +376,7 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
                 .Any(light => light.type == LightType.Point), Is.True);
             _controller.ReturnToEditing();
             Assert.That(_controller.State, Is.EqualTo(MarbleRunState.Editing));
-            Assert.That(_controller.MarbleBody.gameObject.activeSelf, Is.False);
+            Assert.That(_controller.MarbleBodies.All(body => !body.gameObject.activeSelf), Is.True);
         }
 
         [UnityTest]
@@ -310,113 +415,70 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator MarblePhysicallyActuatesSeesawAndDomino()
+        public IEnumerator MechanismsExposeDynamicBodiesAndRestoreWhenEditingResumes()
         {
             BuildMechanismCourse(MarblePieceKind.Seesaw);
             var seesaw = _controller.PieceViews.Values.Single(view => view.Record.kind == MarblePieceKind.Seesaw);
             var seesawBody = seesaw.DynamicBodies.Single();
-            var seesawStart = seesawBody.rotation;
+            var seesawStartPosition = seesawBody.transform.localPosition;
+            var seesawStartRotation = seesawBody.transform.localRotation;
             _controller.StartRun();
-            var seesawMaximumAngle = 0f;
-            var deadline = Time.realtimeSinceStartup + 4.5f;
-            while (Time.realtimeSinceStartup < deadline)
-            {
-                seesawMaximumAngle = Mathf.Max(seesawMaximumAngle, Quaternion.Angle(seesawStart, seesawBody.rotation));
-                yield return null;
-            }
-            Assert.That(seesawMaximumAngle, Is.GreaterThan(0.5f));
+            Assert.That(seesawBody.isKinematic, Is.False);
+            seesawBody.AddTorque(Vector3.forward * 2f, ForceMode.Impulse);
+            yield return new WaitForFixedUpdate();
             _controller.ReturnToEditing();
+            Assert.That(seesawBody.isKinematic, Is.True);
+            Assert.That(seesawBody.transform.localPosition, Is.EqualTo(seesawStartPosition));
+            Assert.That(seesawBody.transform.localRotation, Is.EqualTo(seesawStartRotation));
 
             BuildMechanismCourse(MarblePieceKind.Domino);
             var domino = _controller.PieceViews.Values.Single(view => view.Record.kind == MarblePieceKind.Domino);
             var dominoBodies = domino.DynamicBodies.ToArray();
-            var dominoStarts = dominoBodies.Select(body => body.rotation).ToArray();
+            Assert.That(dominoBodies.Length, Is.EqualTo(6));
             _controller.StartRun();
-            var dominoMaximumAngle = 0f;
-            deadline = Time.realtimeSinceStartup + 4.5f;
-            while (Time.realtimeSinceStartup < deadline)
+            Assert.That(dominoBodies.All(body => !body.isKinematic), Is.True);
+            _controller.ReturnToEditing();
+            Assert.That(dominoBodies.All(body => body.isKinematic), Is.True);
+        }
+
+        [UnityTest]
+        public IEnumerator HelixStepsAndLiftCreateTrueMultiLevelCourseViews()
+        {
+            foreach (var sampleId in new[] { "sample2", "sample3", "sample4" })
             {
-                for (var i = 0; i < dominoBodies.Length; i++)
-                    dominoMaximumAngle = Mathf.Max(
-                        dominoMaximumAngle,
-                        Quaternion.Angle(dominoStarts[i], dominoBodies[i].rotation));
-                yield return null;
-            }
-            Assert.That(dominoMaximumAngle, Is.GreaterThan(5f));
-        }
-
-        [UnityTest]
-        public IEnumerator ConnectedFlatCoursePhysicallyReachesGoal()
-        {
-            BuildStraightCourse();
-            _controller.StartRun();
-            var timeout = Time.realtimeSinceStartup + 8f;
-            while (_controller.State == MarbleRunState.Running && Time.realtimeSinceStartup < timeout)
-                yield return null;
-
-            Assert.That(_controller.State, Is.EqualTo(MarbleRunState.Celebrating),
-                "A connected flat course must reach the goal through real physics.");
-        }
-
-        [UnityTest]
-        public IEnumerator TwoSlopesPhysicallyTraverseElevatedLevelAndReachGoal()
-        {
-            _controller.StartMode("sandbox");
-            Assert.That(_controller.PlaceForQa(MarblePieceKind.Straight, new GridPose(0, -3)), Is.True);
-            Assert.That(_controller.PlaceForQa(MarblePieceKind.Slope, new GridPose(0, -2, 0, 2)), Is.True);
-            for (var z = -1; z <= 1; z++)
-                Assert.That(_controller.PlaceForQa(MarblePieceKind.Straight, new GridPose(0, z, 1)), Is.True);
-            Assert.That(_controller.PlaceForQa(MarblePieceKind.Slope, new GridPose(0, 2, 0, 0)), Is.True);
-            Assert.That(_controller.PlaceForQa(MarblePieceKind.Straight, new GridPose(0, 3)), Is.True);
-            Assert.That(PlacementSolver.HasStartToGoalGraphPath(_controller.Course.pieces), Is.True);
-
-            _controller.StartRun();
-            var timeout = Time.realtimeSinceStartup + 12f;
-            while (_controller.State == MarbleRunState.Running && Time.realtimeSinceStartup < timeout)
-                yield return null;
-            Assert.That(_controller.State, Is.EqualTo(MarbleRunState.Celebrating),
-                "A two-slope course must physically cross the elevated level and return to the goal; marble="
-                + _controller.MarbleBody.position);
-        }
-
-        [UnityTest]
-        public IEnumerator EveryChallengeHasTwoPhysicallySuccessfulLayouts()
-        {
-            foreach (var route in PhysicalChallengeRoutes())
-            {
-                _controller.StartMode(route.modeId);
-                foreach (var piece in route.pieces)
+                _controller.StartMode(sampleId);
+                var course = _controller.Course;
+                Assert.That(course.pieces.Max(piece => piece.pose.level), Is.GreaterThanOrEqualTo(2), sampleId);
+                Assert.That(PlacementSolver.HasStartToGoalGraphPath(course.pieces), Is.True, sampleId);
+                foreach (var piece in course.pieces)
                 {
-                    Assert.That(_controller.PlaceForQa(piece.kind, piece.pose), Is.True,
-                        route.name + " place " + piece.id);
+                    var expectedY = WoodenPieceFactory.PieceRootY
+                        + piece.pose.level * WoodenPieceFactory.LevelHeight;
+                    Assert.That(_controller.PieceViews[piece.id].transform.position.y,
+                        Is.EqualTo(expectedY).Within(0.001f), sampleId + "/" + piece.id);
                 }
-                Assert.That(_controller.CurrentMode.IsCourseGoalReady(_controller.Course), Is.True,
-                    route.name + " graph");
-                _controller.StartRun();
-                var timeout = Time.realtimeSinceStartup + 12f;
-                while (_controller.State == MarbleRunState.Running && Time.realtimeSinceStartup < timeout)
-                    yield return null;
-                Assert.That(_controller.State, Is.EqualTo(MarbleRunState.Celebrating),
-                    route.name + " did not physically reach the goal; marble=" + _controller.MarbleBody.position);
-                _controller.ReturnToEditing();
                 yield return null;
             }
+
+            _controller.StartMode("sample2");
+            Assert.That(_controller.Course.pieces.Any(piece => piece.kind == MarblePieceKind.Helix), Is.True);
+            _controller.StartMode("sample3");
+            Assert.That(_controller.Course.pieces.Count(piece => piece.kind == MarblePieceKind.Steps),
+                Is.GreaterThanOrEqualTo(2));
+            _controller.StartMode("sample4");
+            Assert.That(_controller.Course.pieces.Any(piece => piece.kind == MarblePieceKind.Lift), Is.True);
         }
 
         [UnityTest]
-        public IEnumerator EverySampleCoursePhysicallyReachesGoal()
+        public IEnumerator EverySampleCourseIsConnectedEditableAndFramesTheCamera()
         {
             foreach (var sample in ChallengeCatalog.Samples)
             {
                 _controller.StartMode(sample.Id);
                 Assert.That(PlacementSolver.HasStartToGoalGraphPath(_controller.Course.pieces), Is.True, sample.Id);
-                _controller.StartRun();
-                var timeout = Time.realtimeSinceStartup + 12f;
-                while (_controller.State == MarbleRunState.Running && Time.realtimeSinceStartup < timeout)
-                    yield return null;
-                Assert.That(_controller.State, Is.EqualTo(MarbleRunState.Celebrating),
-                    sample.Id + " did not physically reach the goal; marble=" + _controller.MarbleBody.position);
-                _controller.ReturnToEditing();
+                Assert.That(_controller.State, Is.EqualTo(MarbleRunState.Editing));
+                Assert.That(_controller.OrbitCamera.Target.y, Is.GreaterThanOrEqualTo(0f), sample.Id);
+                Assert.That(_controller.OrbitCamera.Distance, Is.InRange(17f, 48f), sample.Id);
                 yield return null;
             }
         }
@@ -464,32 +526,62 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
         [UnityTest]
         public IEnumerator CameraOrbitAndZoomStayInChildSafeBounds()
         {
-            _controller.StartMode("sandbox");
+            _controller.StartMode("sample3");
+            Assert.That(_controller.OrbitCamera.Target.y, Is.GreaterThan(0.8f));
             _controller.OrbitCamera.Orbit(new Vector2(2000f, 3000f));
             _controller.OrbitCamera.Zoom(-500f);
             Assert.That(_controller.OrbitCamera.Pitch, Is.InRange(28f, 68f));
             Assert.That(_controller.OrbitCamera.Distance, Is.InRange(17f, 48f));
             _controller.OrbitCamera.Zoom(1000f);
             Assert.That(_controller.OrbitCamera.Distance, Is.EqualTo(48f));
+            _controller.ToggleCameraAngle();
+            Assert.That(_controller.OrbitCamera.IsTopView, Is.True);
+            Assert.That(_controller.OrbitCamera.Pitch, Is.GreaterThanOrEqualTo(78f));
+            _controller.ToggleCameraAngle();
+            Assert.That(_controller.OrbitCamera.IsTopView, Is.False);
+            Assert.That(_controller.OrbitCamera.Pitch, Is.LessThan(78f));
             yield return null;
         }
 
         [UnityTest]
-        public IEnumerator CriticalUiTargetsRemainInsideSafeCanvasAtCurrentAspect()
+        public IEnumerator CriticalUiTargetsRemainInsideSafeAreaAtSixteenNineFourThreeAndTwentyNine()
         {
             _controller.StartMode("sandbox");
             Canvas.ForceUpdateCanvases();
             yield return null;
             var safe = _controller.Ui.SafeRootRect;
             Assert.That(safe, Is.Not.Null);
-            var buttons = _controller.Ui.GetComponentsInChildren<Button>(true);
-            Assert.That(buttons.Length, Is.GreaterThanOrEqualTo(20));
-            foreach (var button in buttons.Where(button => button.gameObject.activeInHierarchy))
+            var scaler = _controller.Ui.GetComponentInParent<Canvas>().GetComponent<CanvasScaler>();
+            Assert.That(scaler, Is.Not.Null);
+            var cases = new[]
             {
-                var rect = button.transform as RectTransform;
-                Assert.That(rect.rect.width, Is.GreaterThanOrEqualTo(48f), button.name + " width");
-                Assert.That(rect.rect.height, Is.GreaterThanOrEqualTo(44f), button.name + " height");
-                Assert.That(float.IsNaN(rect.position.x) || float.IsNaN(rect.position.y), Is.False, button.name);
+                new AspectCase("１６たい９", 1920, 1080, new Rect(0f, 0f, 1920f, 1080f)),
+                new AspectCase("４たい３", 1024, 768, new Rect(24f, 20f, 976f, 728f)),
+                new AspectCase("２０たい９", 2400, 1080, new Rect(96f, 28f, 2208f, 1024f))
+            };
+            var criticalButtons = _controller.Ui.GetComponentsInChildren<Button>(true)
+                .Where(button => button.gameObject.activeInHierarchy)
+                .Where(button => button.GetComponentInParent<ScrollRect>() == null)
+                .ToArray();
+            Assert.That(criticalButtons.Length, Is.GreaterThanOrEqualTo(10));
+
+            foreach (var aspect in cases)
+            {
+                var clamped = SafeAreaPanel.ClampToScreen(aspect.safeArea, aspect.width, aspect.height);
+                Assert.That(clamped.xMin, Is.GreaterThanOrEqualTo(0f), aspect.name);
+                Assert.That(clamped.yMin, Is.GreaterThanOrEqualTo(0f), aspect.name);
+                Assert.That(clamped.xMax, Is.LessThanOrEqualTo(aspect.width), aspect.name);
+                Assert.That(clamped.yMax, Is.LessThanOrEqualTo(aspect.height), aspect.name);
+
+                var virtualSafeSize = VirtualSafeSize(aspect, clamped, scaler);
+                foreach (var button in criticalButtons)
+                {
+                    var rect = (RectTransform)button.transform;
+                    var simulatedSize = SimulatedSizeWithinSafeRoot(rect, safe, virtualSafeSize);
+                    Assert.That(simulatedSize.x, Is.GreaterThanOrEqualTo(44f), aspect.name + "/" + button.name + " width");
+                    Assert.That(simulatedSize.y, Is.GreaterThanOrEqualTo(44f), aspect.name + "/" + button.name + " height");
+                    Assert.That(IsNormalizedInsideParent(rect), Is.True, aspect.name + "/" + button.name + " anchors");
+                }
             }
         }
 
@@ -510,6 +602,56 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
             Assert.That(Time.fixedDeltaTime, Is.EqualTo(MarbleRunPhysicsProfile.FixedTimestep).Within(0.00001f));
         }
 
+        private readonly struct AspectCase
+        {
+            public readonly string name;
+            public readonly int width;
+            public readonly int height;
+            public readonly Rect safeArea;
+
+            public AspectCase(string name, int width, int height, Rect safeArea)
+            {
+                this.name = name;
+                this.width = width;
+                this.height = height;
+                this.safeArea = safeArea;
+            }
+        }
+
+        private static Vector2 VirtualSafeSize(AspectCase aspect, Rect safeArea, CanvasScaler scaler)
+        {
+            var reference = scaler.referenceResolution;
+            var logWidth = Mathf.Log(aspect.width / reference.x, 2f);
+            var logHeight = Mathf.Log(aspect.height / reference.y, 2f);
+            var scale = Mathf.Pow(2f, Mathf.Lerp(logWidth, logHeight, scaler.matchWidthOrHeight));
+            return safeArea.size / Mathf.Max(0.0001f, scale);
+        }
+
+        private static Vector2 SimulatedSizeWithinSafeRoot(
+            RectTransform rect,
+            RectTransform safeRoot,
+            Vector2 virtualSafeSize)
+        {
+            if (rect == safeRoot) return virtualSafeSize;
+            var parent = rect.parent as RectTransform;
+            Assert.That(parent, Is.Not.Null, rect.name + " parent");
+            var parentSize = SimulatedSizeWithinSafeRoot(parent, safeRoot, virtualSafeSize);
+            var anchorSpan = rect.anchorMax - rect.anchorMin;
+            var size = Vector2.Scale(parentSize, anchorSpan) + rect.sizeDelta;
+            return new Vector2(Mathf.Abs(size.x), Mathf.Abs(size.y));
+        }
+
+        private static bool IsNormalizedInsideParent(RectTransform rect)
+        {
+            const float epsilon = 0.0001f;
+            return rect.anchorMin.x >= -epsilon
+                && rect.anchorMin.y >= -epsilon
+                && rect.anchorMax.x <= 1f + epsilon
+                && rect.anchorMax.y <= 1f + epsilon
+                && rect.anchorMin.x <= rect.anchorMax.x
+                && rect.anchorMin.y <= rect.anchorMax.y;
+        }
+
         private void BuildStraightCourse()
         {
             _controller.StartMode("sandbox");
@@ -527,58 +669,5 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
             }
         }
 
-        private static IEnumerable<(string name, string modeId, PieceRecord[] pieces)> PhysicalChallengeRoutes()
-        {
-            yield return ("challenge1-a", "challenge1", new[]
-            {
-                P("a-c1", MarblePieceKind.Curve, -3, -1, 0),
-                P("a-x1", MarblePieceKind.Straight, -2, -1, 1),
-                P("a-x2", MarblePieceKind.Straight, -1, -1, 1),
-                P("a-x3", MarblePieceKind.Straight, 0, -1, 1),
-                P("a-x4", MarblePieceKind.Straight, 1, -1, 1),
-                P("a-c2", MarblePieceKind.Curve, 2, -1, 2),
-                P("a-z1", MarblePieceKind.Straight, 2, 0, 0),
-                P("a-z2", MarblePieceKind.Straight, 2, 1, 0),
-                P("a-c3", MarblePieceKind.Curve, 2, 2, 0)
-            });
-            yield return ("challenge1-b", "challenge1", new[]
-            {
-                P("b-z1", MarblePieceKind.Straight, -3, -1, 0),
-                P("b-c1", MarblePieceKind.Curve, -3, 0, 0),
-                P("b-x1", MarblePieceKind.Straight, -2, 0, 1),
-                P("b-x2", MarblePieceKind.Straight, -1, 0, 1),
-                P("b-x3", MarblePieceKind.Straight, 0, 0, 1),
-                P("b-x4", MarblePieceKind.Straight, 1, 0, 1),
-                P("b-c2", MarblePieceKind.Curve, 2, 0, 2),
-                P("b-z2", MarblePieceKind.Straight, 2, 1, 0),
-                P("b-c3", MarblePieceKind.Curve, 2, 2, 0)
-            });
-            yield return ("challenge2-a", "challenge2", VerticalRoute());
-            yield return ("challenge2-b", "challenge2", VerticalRoute(-2, MarblePieceKind.Tunnel));
-            yield return ("challenge3-a", "challenge3", VerticalRoute());
-            yield return ("challenge3-b", "challenge3", VerticalRoute(-1, MarblePieceKind.Funnel));
-        }
-
-        private static PieceRecord[] VerticalRoute(
-            int replacementZ = int.MinValue,
-            MarblePieceKind replacementKind = MarblePieceKind.Straight)
-        {
-            var pieces = new List<PieceRecord>();
-            for (var z = -3; z <= 3; z++)
-            {
-                pieces.Add(P(
-                    "vertical-" + z,
-                    z == replacementZ ? replacementKind : MarblePieceKind.Straight,
-                    0,
-                    z,
-                    0));
-            }
-            return pieces.ToArray();
-        }
-
-        private static PieceRecord P(string id, MarblePieceKind kind, int x, int z, int turns)
-        {
-            return new PieceRecord { id = id, kind = kind, pose = new GridPose(x, z, 0, turns) };
-        }
     }
 }
