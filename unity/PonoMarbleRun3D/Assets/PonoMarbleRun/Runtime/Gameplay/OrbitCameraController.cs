@@ -116,7 +116,9 @@ namespace Pono.MarbleRun3D.Gameplay
             var horizontalHalfAngle = Mathf.Atan(Mathf.Tan(verticalHalfAngle) * aspect);
             var horizontalRadius = Mathf.Sqrt(
                 bounds.extents.x * bounds.extents.x + bounds.extents.z * bounds.extents.z) + 3.2f;
-            var verticalRadius = bounds.extents.y + 2.8f;
+            // A diagonal camera projects a long ground-plane course into screen height.
+            // Reserve that space as well as the top/bottom child UI overlays.
+            var verticalRadius = bounds.extents.y + 2.8f + horizontalRadius * 0.35f;
             var horizontalDistance = horizontalRadius / Mathf.Max(0.15f, Mathf.Tan(horizontalHalfAngle));
             var verticalDistance = verticalRadius / Mathf.Max(0.15f, Mathf.Tan(verticalHalfAngle));
             var framedDistance = Mathf.Clamp(Mathf.Max(horizontalDistance, verticalDistance) * 1.14f, 17f, 58f);

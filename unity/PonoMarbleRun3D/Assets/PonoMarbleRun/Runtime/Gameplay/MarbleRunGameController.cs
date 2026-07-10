@@ -1114,9 +1114,11 @@ namespace Pono.MarbleRun3D.Gameplay
             var highest = PlacementSolver.MinLevel;
             for (var i = 0; i < course.pieces.Count; i++)
             {
-                var occupancy = PartCatalog.GetWorldOccupancy(course.pieces[i]);
-                for (var cell = 0; cell < occupancy.Count; cell++)
-                    highest = Mathf.Max(highest, occupancy[cell].level);
+                var piece = course.pieces[i];
+                highest = Mathf.Max(highest, piece.pose.level);
+                var connectors = PartCatalog.Get(piece.kind).Connectors;
+                for (var connector = 0; connector < connectors.Count; connector++)
+                    highest = Mathf.Max(highest, PartCatalog.GetWorldConnector(piece, connector).level);
             }
             return Mathf.Clamp(highest, PlacementSolver.MinLevel, PlacementSolver.MaxLevel);
         }
