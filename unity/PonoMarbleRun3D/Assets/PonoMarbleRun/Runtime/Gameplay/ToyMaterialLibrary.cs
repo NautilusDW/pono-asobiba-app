@@ -20,6 +20,8 @@ namespace Pono.MarbleRun3D.Gameplay
         public Material ConnectorGlow { get; }
         public Material Marble { get; }
         public Material Metal { get; }
+        public Material ClearShell { get; }
+        public Material ClearEdge { get; }
         public Material Selection { get; }
         public Material GhostValid { get; }
         public Material GhostInvalid { get; }
@@ -58,6 +60,8 @@ namespace Pono.MarbleRun3D.Gameplay
             }
             Marble = _marbles[0];
             Metal = Make("かなぐ", new Color(0.88f, 0.90f, 0.92f), 0.62f, false, 0.55f);
+            ClearShell = MakeTransparent("とうめい つつ", new Color(0.64f, 0.93f, 1f, 0.20f));
+            ClearEdge = MakeTransparent("とうめい ふち", new Color(0.24f, 0.78f, 0.96f, 0.54f), true);
             Selection = MakeTransparent("えらんだ しるし", new Color(0.28f, 0.95f, 1f, 0.48f), true);
             GhostValid = MakeTransparent("おける ゴースト", new Color(0.32f, 1f, 0.62f, 0.48f), true);
             GhostInvalid = MakeTransparent("おけない ゴースト", new Color(1f, 0.42f, 0.28f, 0.46f), true);
@@ -135,9 +139,12 @@ namespace Pono.MarbleRun3D.Gameplay
             var material = Make(name, color, 0.24f, emission);
             material.SetOverrideTag("RenderType", "Transparent");
             if (material.HasProperty("_Mode")) material.SetFloat("_Mode", 3f);
+            if (material.HasProperty("_Surface")) material.SetFloat("_Surface", 1f);
+            if (material.HasProperty("_Blend")) material.SetFloat("_Blend", 0f);
             if (material.HasProperty("_SrcBlend")) material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
             if (material.HasProperty("_DstBlend")) material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
             if (material.HasProperty("_ZWrite")) material.SetInt("_ZWrite", 0);
+            if (material.HasProperty("_AlphaClip")) material.SetFloat("_AlphaClip", 0f);
             material.DisableKeyword("_ALPHATEST_ON");
             material.EnableKeyword("_ALPHABLEND_ON");
             material.DisableKeyword("_ALPHAPREMULTIPLY_ON");

@@ -165,6 +165,28 @@ namespace Pono.MarbleRun3D.UI
         private static readonly Color Green = new Color(0.27f, 0.76f, 0.48f, 0.98f);
         private static readonly Color Coral = new Color(0.95f, 0.43f, 0.35f, 0.98f);
         private static readonly Color Purple = new Color(0.63f, 0.46f, 0.85f, 0.98f);
+        private static readonly MarblePieceKind[] PaletteOrder =
+        {
+            MarblePieceKind.Start,
+            MarblePieceKind.Goal,
+            MarblePieceKind.Tornado,
+            MarblePieceKind.Elevator,
+            MarblePieceKind.ClearTube,
+            MarblePieceKind.ClearCurve,
+            MarblePieceKind.Wave,
+            MarblePieceKind.Spinner,
+            MarblePieceKind.Straight,
+            MarblePieceKind.Curve,
+            MarblePieceKind.Slope,
+            MarblePieceKind.Helix,
+            MarblePieceKind.Steps,
+            MarblePieceKind.Lift,
+            MarblePieceKind.Splitter,
+            MarblePieceKind.Tunnel,
+            MarblePieceKind.Funnel,
+            MarblePieceKind.Seesaw,
+            MarblePieceKind.Domino
+        };
 
         public RectTransform SafeRootRect => _safeRoot?.transform as RectTransform;
         public string StatusText => _statusText != null ? _statusText.text : string.Empty;
@@ -338,10 +360,12 @@ namespace Pono.MarbleRun3D.UI
             var layout = buttons.AddComponent<GridLayoutGroup>();
             layout.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
             layout.constraintCount = 2;
-            layout.cellSize = new Vector2(310f, 82f);
-            layout.spacing = new Vector2(20f, 18f);
+            layout.cellSize = new Vector2(250f, 74f);
+            layout.spacing = new Vector2(14f, 12f);
             layout.childAlignment = TextAnchor.MiddleCenter;
 
+            CreateButton("Starter", buttons.transform, "すぐ ころがす", new Color(0.99f, 0.76f, 0.24f),
+                () => _controller.StartMode("starter"));
             CreateButton("Tutorial", buttons.transform, "あそびかた", Sky, () => _controller.StartMode("tutorial"));
             CreateButton("Challenge1", buttons.transform, "チャレンジ １", new Color(0.96f, 0.63f, 0.28f),
                 () => _controller.StartMode("challenge1"));
@@ -368,13 +392,13 @@ namespace Pono.MarbleRun3D.UI
                 FontStyle.Bold, Wood, TextAnchor.MiddleCenter);
             SetRect(note.rectTransform, new Vector2(0.06f, 0.70f), new Vector2(0.94f, 0.82f));
 
-            var buttons = CreateRect("SampleButtons", _samplePanel.transform, new Vector2(0.08f, 0.24f), new Vector2(0.92f, 0.70f),
+            var buttons = CreateRect("SampleButtons", _samplePanel.transform, new Vector2(0.08f, 0.20f), new Vector2(0.92f, 0.70f),
                 Vector2.zero, Vector2.zero);
             var layout = buttons.AddComponent<GridLayoutGroup>();
             layout.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
             layout.constraintCount = 2;
-            layout.cellSize = new Vector2(280f, 92f);
-            layout.spacing = new Vector2(18f, 18f);
+            layout.cellSize = new Vector2(280f, 82f);
+            layout.spacing = new Vector2(18f, 10f);
             layout.childAlignment = TextAnchor.MiddleCenter;
 
             CreateButton("Sample1", buttons.transform, "はじめての みち", Sky,
@@ -385,10 +409,14 @@ namespace Pono.MarbleRun3D.UI
                 () => _controller.StartMode("sample3"), 21);
             CreateButton("Sample4", buttons.transform, "のぼって おりて", Green,
                 () => _controller.StartMode("sample4"), 21);
+            CreateButton("Sample5", buttons.transform, "トルネード タワー", new Color(0.98f, 0.60f, 0.22f),
+                () => _controller.StartMode("sample5"), 21);
+            CreateButton("Sample6", buttons.transform, "エレベーター シティ", new Color(0.35f, 0.72f, 0.88f),
+                () => _controller.StartMode("sample6"), 21);
 
             var back = CreateButton("SamplesBack", _samplePanel.transform, "もどる", Wood,
                 ShowMenu, 23);
-            SetRect(back.GetComponent<RectTransform>(), new Vector2(0.35f, 0.06f), new Vector2(0.65f, 0.18f));
+            SetRect(back.GetComponent<RectTransform>(), new Vector2(0.35f, 0.05f), new Vector2(0.65f, 0.16f));
             SetActive(_samplePanel, false);
         }
 
@@ -469,8 +497,9 @@ namespace Pono.MarbleRun3D.UI
             fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
             scroll.content = contentRect;
 
-            foreach (MarblePieceKind kind in Enum.GetValues(typeof(MarblePieceKind)))
+            for (var index = 0; index < PaletteOrder.Length; index++)
             {
+                var kind = PaletteOrder[index];
                 var accent = PartCatalog.Get(kind).Accent;
                 var button = CreateButton("Part" + kind, content.transform, PartCatalog.Get(kind).DisplayName,
                     new Color(accent.r, accent.g, accent.b, 0.98f), () => _controller.ChoosePart(kind), 19);

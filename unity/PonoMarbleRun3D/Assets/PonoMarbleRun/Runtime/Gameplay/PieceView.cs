@@ -177,6 +177,355 @@ namespace Pono.MarbleRun3D.Gameplay
     }
 
     [DisallowMultipleComponent]
+    public sealed class ClearTubeMarbleGuide : MonoBehaviour
+    {
+        private Transform _pieceRoot;
+        private readonly Dictionary<Rigidbody, float> _travelSigns = new Dictionary<Rigidbody, float>();
+
+        public void Configure(Transform pieceRoot)
+        {
+            _pieceRoot = pieceRoot;
+        }
+
+        private void OnTriggerEnter(Collider other)
+        {
+            if (!TryGetMarble(other, out var body) || _pieceRoot == null) return;
+            var localPosition = _pieceRoot.InverseTransformPoint(body.worldCenterOfMass);
+            var localVelocity = _pieceRoot.InverseTransformDirection(body.linearVelocity);
+            _travelSigns[body] = Mathf.Abs(localVelocity.z) > 0.10f
+                ? Mathf.Sign(localVelocity.z)
+                : localPosition.z <= 0f ? 1f : -1f;
+        }
+
+        private void OnTriggerStay(Collider other)
+        {
+            if (!TryGetMarble(other, out var body) || _pieceRoot == null || body.isKinematic) return;
+            var localPosition = _pieceRoot.InverseTransformPoint(body.worldCenterOfMass);
+            var localVelocity = _pieceRoot.InverseTransformDirection(body.linearVelocity);
+            var sign = _travelSigns.TryGetValue(body, out var storedSign) ? storedSign : 1f;
+            var targetSpeed = Mathf.Clamp(localVelocity.magnitude, 4.2f, 7.0f);
+            var targetVelocity = Vector3.forward * (targetSpeed * sign);
+            var target = new Vector3(
+                0f,
+                WoodenPieceFactory.MarbleRadius + 0.20f,
+                localPosition.z);
+            var acceleration = (targetVelocity - localVelocity) * 6.8f
+                + (target - localPosition) * 10f;
+            body.AddForce(_pieceRoot.TransformDirection(Vector3.ClampMagnitude(acceleration, 21f)),
+                ForceMode.Acceleration);
+        }
+
+        private void OnTriggerExit(Collider other)
+        {
+            if (other.attachedRigidbody != null) _travelSigns.Remove(other.attachedRigidbody);
+        }
+
+        private static bool TryGetMarble(Collider other, out Rigidbody body)
+        {
+            body = other.attachedRigidbody;
+            return body != null && other.GetComponentInParent<MarbleActor>() != null;
+        }
+    }
+
+    [DisallowMultipleComponent]
+    public sealed class SpinnerMarbleGuide : MonoBehaviour
+    {
+        private Transform _pieceRoot;
+        private Rigidbody _rotor;
+        private readonly Dictionary<Rigidbody, float> _travelSigns = new Dictionary<Rigidbody, float>();
+
+        public void Configure(Transform pieceRoot, Rigidbody rotor)
+        {
+            _pieceRoot = pieceRoot;
+            _rotor = rotor;
+        }
+
+        private void OnTriggerEnter(Collider other)
+        {
+            if (!TryGetMarble(other, out var body) || _pieceRoot == null) return;
+            var localPosition = _pieceRoot.InverseTransformPoint(body.worldCenterOfMass);
+            var localVelocity = _pieceRoot.InverseTransformDirection(body.linearVelocity);
+            _travelSigns[body] = Mathf.Abs(localVelocity.z) > 0.10f
+                ? Mathf.Sign(localVelocity.z)
+                : localPosition.z <= 0f ? 1f : -1f;
+        }
+
+        private void OnTriggerStay(Collider other)
+        {
+            if (!TryGetMarble(other, out var body) || _pieceRoot == null || body.isKinematic) return;
+            var localPosition = _pieceRoot.InverseTransformPoint(body.worldCenterOfMass);
+            var localVelocity = _pieceRoot.InverseTransformDirection(body.linearVelocity);
+            var sign = _travelSigns.TryGetValue(body, out var storedSign) ? storedSign : 1f;
+            var targetSpeed = Mathf.Clamp(localVelocity.magnitude, 4.8f, 7.2f);
+            var targetVelocity = Vector3.forward * (targetSpeed * sign);
+            var target = new Vector3(
+                0f,
+                WoodenPieceFactory.MarbleRadius + 0.24f,
+                localPosition.z);
+            var acceleration = (targetVelocity - localVelocity) * 7.8f
+                + (target - localPosition) * 10.5f;
+            body.AddForce(_pieceRoot.TransformDirection(Vector3.ClampMagnitude(acceleration, 25f)),
+                ForceMode.Acceleration);
+
+            if (_rotor != null && !_rotor.isKinematic)
+                _rotor.AddTorque(_pieceRoot.right * (3.6f * sign), ForceMode.Acceleration);
+        }
+
+        private void OnTriggerExit(Collider other)
+        {
+            if (other.attachedRigidbody != null) _travelSigns.Remove(other.attachedRigidbody);
+        }
+
+        private static bool TryGetMarble(Collider other, out Rigidbody body)
+        {
+            body = other.attachedRigidbody;
+            return body != null && other.GetComponentInParent<MarbleActor>() != null;
+        }
+    }
+
+    [DisallowMultipleComponent]
+    public sealed class ElevatorMarbleGuide : MonoBehaviour
+    {
+        private enum TravelStage
+        {
+            Entering,
+            Rising,
+            Exiting
+        }
+
+        private Transform _pieceRoot;
+        private float _height = WoodenPieceFactory.LevelHeight * 3f;
+        private readonly Dictionary<Rigidbody, TravelStage> _stages =
+            new Dictionary<Rigidbody, TravelStage>();
+        private readonly Dictionary<Rigidbody, float> _lanes =
+            new Dictionary<Rigidbody, float>();
+
+        public float TravelHeight => _height;
+        public int ActiveBodyCount => _stages.Count;
+
+        public void Configure(Transform pieceRoot, float height)
+        {
+            _pieceRoot = pieceRoot;
+            _height = Mathf.Max(WoodenPieceFactory.LevelHeight, height);
+        }
+
+        private void OnTriggerEnter(Collider other)
+        {
+            if (!TryGetMarble(other, out var body) || _pieceRoot == null) return;
+            RegisterBody(body, other.GetComponentInParent<MarbleActor>());
+        }
+
+        private void OnTriggerStay(Collider other)
+        {
+            if (!TryGetMarble(other, out var body) || _pieceRoot == null || body.isKinematic) return;
+            if (!_stages.ContainsKey(body))
+                RegisterBody(body, other.GetComponentInParent<MarbleActor>());
+
+            var localPosition = _pieceRoot.InverseTransformPoint(body.worldCenterOfMass);
+            var localVelocity = _pieceRoot.InverseTransformDirection(body.linearVelocity);
+            var stage = _stages[body];
+            var lane = _lanes[body];
+            var marbleHeight = WoodenPieceFactory.MarbleRadius + 0.20f;
+            Vector3 desiredVelocity;
+            Vector3 correction;
+
+            if (stage == TravelStage.Entering && localPosition.z >= -0.18f)
+            {
+                stage = TravelStage.Rising;
+                _stages[body] = stage;
+            }
+            if (stage == TravelStage.Rising && localPosition.y >= _height + marbleHeight - 0.10f)
+            {
+                stage = TravelStage.Exiting;
+                _stages[body] = stage;
+            }
+
+            switch (stage)
+            {
+                case TravelStage.Entering:
+                    desiredVelocity = new Vector3((lane - localPosition.x) * 4f, 0f, 3.8f);
+                    correction = new Vector3(lane - localPosition.x, marbleHeight - localPosition.y, 0f);
+                    break;
+                case TravelStage.Rising:
+                    desiredVelocity = new Vector3(0f, 3.25f, 0f);
+                    correction = new Vector3(lane - localPosition.x, 0f, -localPosition.z);
+                    break;
+                default:
+                    desiredVelocity = new Vector3(0f, 0f, 4.8f);
+                    correction = new Vector3(-localPosition.x, _height + marbleHeight - localPosition.y, 0f);
+                    break;
+            }
+
+            var acceleration = (desiredVelocity - localVelocity) * 8.5f + correction * 12f;
+            acceleration = Vector3.ClampMagnitude(acceleration, 30f);
+            body.AddForce(_pieceRoot.TransformDirection(acceleration), ForceMode.Acceleration);
+
+            const float maximumSpeed = 7.2f;
+            if (body.linearVelocity.sqrMagnitude > maximumSpeed * maximumSpeed)
+                body.linearVelocity = body.linearVelocity.normalized * maximumSpeed;
+        }
+
+        private void OnTriggerExit(Collider other)
+        {
+            var body = other.attachedRigidbody;
+            if (body == null) return;
+            _stages.Remove(body);
+            _lanes.Remove(body);
+        }
+
+        private void RegisterBody(Rigidbody body, MarbleActor actor)
+        {
+            var localPosition = _pieceRoot.InverseTransformPoint(body.worldCenterOfMass);
+            _stages[body] = localPosition.y > _height * 0.72f
+                ? TravelStage.Exiting
+                : localPosition.z >= -0.18f ? TravelStage.Rising : TravelStage.Entering;
+            var laneIndex = actor == null || actor.Index < 0 ? 1 : actor.Index % 3;
+            _lanes[body] = (laneIndex - 1) * 0.25f;
+        }
+
+        private static bool TryGetMarble(Collider other, out Rigidbody body)
+        {
+            body = other.attachedRigidbody;
+            return body != null && other.GetComponentInParent<MarbleActor>() != null;
+        }
+    }
+
+    [DisallowMultipleComponent]
+    public sealed class ElevatorVisualAnimator : MonoBehaviour
+    {
+        private Transform _movingCar;
+        private Vector3 _baseLocalPosition;
+        private float _travelHeight;
+        private float _phase;
+
+        public float TravelHeight => _travelHeight;
+
+        public void Configure(Transform movingCar, float travelHeight)
+        {
+            _movingCar = movingCar;
+            _travelHeight = Mathf.Max(0.1f, travelHeight);
+            _baseLocalPosition = movingCar == null ? Vector3.zero : movingCar.localPosition;
+        }
+
+        private void Update()
+        {
+            if (_movingCar == null) return;
+            _phase = Mathf.Repeat(_phase + Time.deltaTime * 0.22f, 2f);
+            var normalized = _phase <= 1f ? _phase : 2f - _phase;
+            var eased = normalized * normalized * (3f - 2f * normalized);
+            _movingCar.localPosition = _baseLocalPosition + Vector3.up * (_travelHeight * eased);
+        }
+    }
+
+    [DisallowMultipleComponent]
+    public sealed class ClearCurveMarbleGuide : MonoBehaviour
+    {
+        private Transform _pieceRoot;
+        private readonly Dictionary<Rigidbody, float> _travelSigns = new Dictionary<Rigidbody, float>();
+
+        public void Configure(Transform pieceRoot)
+        {
+            _pieceRoot = pieceRoot;
+        }
+
+        private void OnTriggerEnter(Collider other)
+        {
+            if (!TryGetMarble(other, out var body) || _pieceRoot == null) return;
+            var localPosition = _pieceRoot.InverseTransformPoint(body.worldCenterOfMass);
+            var localVelocity = _pieceRoot.InverseTransformDirection(body.linearVelocity);
+            var along = Vector3.Dot(localVelocity, TangentAt(localPosition));
+            _travelSigns[body] = Mathf.Abs(along) > 0.10f ? Mathf.Sign(along) : 1f;
+        }
+
+        private void OnTriggerStay(Collider other)
+        {
+            if (!TryGetMarble(other, out var body) || _pieceRoot == null || body.isKinematic) return;
+            var localPosition = _pieceRoot.InverseTransformPoint(body.worldCenterOfMass);
+            var radial = new Vector3(localPosition.x - 1.5f, 0f, localPosition.z + 1.5f);
+            if (radial.sqrMagnitude < 0.48f || radial.sqrMagnitude > 5.7f) return;
+
+            var sign = _travelSigns.TryGetValue(body, out var value) ? value : 1f;
+            var tangent = TangentAt(localPosition) * sign;
+            var localVelocity = _pieceRoot.InverseTransformDirection(body.linearVelocity);
+            var targetPoint = new Vector3(1.5f, localPosition.y, -1.5f) + radial.normalized * 1.5f;
+            var correction = targetPoint - localPosition;
+            correction.y = WoodenPieceFactory.MarbleRadius + 0.20f - localPosition.y;
+            var targetSpeed = Mathf.Clamp(localVelocity.magnitude, 3.4f, 7.0f);
+            var acceleration = (tangent * targetSpeed - localVelocity) * 6.5f + correction * 11f;
+            body.AddForce(_pieceRoot.TransformDirection(Vector3.ClampMagnitude(acceleration, 20f)),
+                ForceMode.Acceleration);
+        }
+
+        private void OnTriggerExit(Collider other)
+        {
+            if (other.attachedRigidbody != null) _travelSigns.Remove(other.attachedRigidbody);
+        }
+
+        private static Vector3 TangentAt(Vector3 localPosition)
+        {
+            var angle = Mathf.Atan2(localPosition.z + 1.5f, localPosition.x - 1.5f);
+            return new Vector3(Mathf.Sin(angle), 0f, -Mathf.Cos(angle)).normalized;
+        }
+
+        private static bool TryGetMarble(Collider other, out Rigidbody body)
+        {
+            body = other.attachedRigidbody;
+            return body != null && other.GetComponentInParent<MarbleActor>() != null;
+        }
+    }
+
+    [DisallowMultipleComponent]
+    public sealed class WaveMarbleGuide : MonoBehaviour
+    {
+        private Transform _pieceRoot;
+        private float _amplitude;
+        private readonly Dictionary<Rigidbody, float> _travelSigns = new Dictionary<Rigidbody, float>();
+
+        public void Configure(Transform pieceRoot, float amplitude)
+        {
+            _pieceRoot = pieceRoot;
+            _amplitude = Mathf.Clamp(amplitude, 0.2f, 1.0f);
+        }
+
+        private void OnTriggerEnter(Collider other)
+        {
+            if (!TryGetMarble(other, out var body) || _pieceRoot == null) return;
+            var localVelocity = _pieceRoot.InverseTransformDirection(body.linearVelocity);
+            _travelSigns[body] = Mathf.Abs(localVelocity.z) > 0.10f ? Mathf.Sign(localVelocity.z) : 1f;
+        }
+
+        private void OnTriggerStay(Collider other)
+        {
+            if (!TryGetMarble(other, out var body) || _pieceRoot == null || body.isKinematic) return;
+            var localPosition = _pieceRoot.InverseTransformPoint(body.worldCenterOfMass);
+            var localVelocity = _pieceRoot.InverseTransformDirection(body.linearVelocity);
+            var t = Mathf.InverseLerp(-WoodenPieceFactory.CellSize * 0.5f,
+                WoodenPieceFactory.CellSize * 0.5f, localPosition.z);
+            var surfaceY = Mathf.Sin(t * Mathf.PI) * _amplitude;
+            var slope = Mathf.Cos(t * Mathf.PI) * _amplitude * Mathf.PI / WoodenPieceFactory.CellSize;
+            var sign = _travelSigns.TryGetValue(body, out var value) ? value : 1f;
+            var tangent = new Vector3(0f, slope * sign, sign).normalized;
+            var targetSpeed = Mathf.Clamp(localVelocity.magnitude, 3.6f, 7.2f);
+            var target = new Vector3(0f, surfaceY + WoodenPieceFactory.MarbleRadius + 0.19f, localPosition.z);
+            var acceleration = (tangent * targetSpeed - localVelocity) * 4.8f
+                + (target - localPosition) * 8.5f;
+            body.AddForce(_pieceRoot.TransformDirection(Vector3.ClampMagnitude(acceleration, 17f)),
+                ForceMode.Acceleration);
+        }
+
+        private void OnTriggerExit(Collider other)
+        {
+            if (other.attachedRigidbody != null) _travelSigns.Remove(other.attachedRigidbody);
+        }
+
+        private static bool TryGetMarble(Collider other, out Rigidbody body)
+        {
+            body = other.attachedRigidbody;
+            return body != null && other.GetComponentInParent<MarbleActor>() != null;
+        }
+    }
+
+    [DisallowMultipleComponent]
     public sealed class CurveMarbleGuide : MonoBehaviour
     {
         private Transform _pieceRoot;

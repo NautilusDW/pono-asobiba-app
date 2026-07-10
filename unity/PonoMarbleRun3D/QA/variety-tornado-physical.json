@@ -1,0 +1,11 @@
+{
+  "passed": false,
+  "state": "tornado-physical",
+  "screen": "1280x720",
+  "game_state": "Running",
+  "piece_count": 7,
+  "active_level": 3,
+  "active_marbles": 6,
+  "marbles_at_goal": 0,
+  "details": "InvalidOperationException: sample5 did not physically reach the goal; reached=0; 0:p=(-0.52, 1.47, -3.88),v=(0.01, 0.00, 0.01),on=True | 1:p=(-0.53, 1.47, -3.88),v=(0.00, 0.00, 0.02),on=True | 2:p=(-0.53, 1.47, -3.92),v=(-0.06, 0.00, 0.00),on=True | 3:p=(-0.48, 1.47, -3.92),v=(-0.06, 0.00, -0.01),on=True | 4:p=(-0.46, 1.47, -3.91),v=(-0.06, 0.00, 0.00),on=True | 5:p=(-0.43, 1.47, -3.93),v=(-0.06, 0.00, -0.01),on=True"
+}

@@ -51,6 +51,8 @@ namespace Pono.MarbleRun3D.Tests.EditMode
             foreach (var part in PartCatalog.All) labels.Add(part.DisplayName);
             labels.Add(ChallengeCatalog.Tutorial.DisplayName);
             labels.Add(ChallengeCatalog.Tutorial.GuideText);
+            labels.Add(ChallengeCatalog.Starter.DisplayName);
+            labels.Add(ChallengeCatalog.Starter.GuideText);
             labels.Add(ChallengeCatalog.Sandbox.DisplayName);
             labels.Add(ChallengeCatalog.Sandbox.GuideText);
             foreach (var challenge in ChallengeCatalog.Challenges)

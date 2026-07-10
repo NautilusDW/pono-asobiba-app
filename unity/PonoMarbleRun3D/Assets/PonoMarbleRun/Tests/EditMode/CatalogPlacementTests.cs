@@ -19,13 +19,19 @@ namespace Pono.MarbleRun3D.Tests.EditMode
                 Assert.That(spec.Connectors.Count, Is.GreaterThan(0), spec.Kind.ToString());
                 Assert.That(spec.DisplayName, Is.Not.Empty);
             }
-            Assert.That(seen.Count, Is.EqualTo(13));
+            Assert.That(seen.Count, Is.EqualTo(19));
             foreach (MarblePieceKind kind in Enum.GetValues(typeof(MarblePieceKind)))
                 Assert.That(seen, Does.Contain(kind));
             Assert.That((int)MarblePieceKind.Domino, Is.EqualTo(9));
             Assert.That((int)MarblePieceKind.Helix, Is.EqualTo(10));
             Assert.That((int)MarblePieceKind.Steps, Is.EqualTo(11));
             Assert.That((int)MarblePieceKind.Lift, Is.EqualTo(12));
+            Assert.That((int)MarblePieceKind.Tornado, Is.EqualTo(13));
+            Assert.That((int)MarblePieceKind.Elevator, Is.EqualTo(14));
+            Assert.That((int)MarblePieceKind.ClearTube, Is.EqualTo(15));
+            Assert.That((int)MarblePieceKind.ClearCurve, Is.EqualTo(16));
+            Assert.That((int)MarblePieceKind.Wave, Is.EqualTo(17));
+            Assert.That((int)MarblePieceKind.Spinner, Is.EqualTo(18));
         }
 
         [Test]
@@ -39,7 +45,7 @@ namespace Pono.MarbleRun3D.Tests.EditMode
                     Assert.That(float.IsNaN(connector.localCellPosition.x) || float.IsInfinity(connector.localCellPosition.x), Is.False);
                     Assert.That(float.IsNaN(connector.localCellPosition.y) || float.IsInfinity(connector.localCellPosition.y), Is.False);
                     Assert.That(Mathf.Abs(connector.localFacing.x) + Mathf.Abs(connector.localFacing.y), Is.EqualTo(1));
-                    Assert.That(connector.localLevelOffset, Is.InRange(0, 2));
+                    Assert.That(connector.localLevelOffset, Is.InRange(0, 3));
                     Assert.That(
                         Mathf.Approximately(Mathf.Abs(connector.localCellPosition.x), 0.5f)
                         || Mathf.Approximately(Mathf.Abs(connector.localCellPosition.y), 0.5f),
@@ -197,6 +203,72 @@ namespace Pono.MarbleRun3D.Tests.EditMode
         }
 
         [Test]
+        public void VarietyPartsExposeExpectedHeightGraphAndFlatConnectors()
+        {
+            var tornado = PartCatalog.Get(MarblePieceKind.Tornado);
+            var elevator = PartCatalog.Get(MarblePieceKind.Elevator);
+            Assert.That(tornado.DisplayName, Is.EqualTo("トルネード"));
+            Assert.That(tornado.Connectors.Select(connector => connector.localLevelOffset),
+                Is.EquivalentTo(new[] { 0, 3 }));
+            Assert.That(elevator.DisplayName, Is.EqualTo("エレベーター"));
+            Assert.That(elevator.Connectors[0].localLevelOffset, Is.Zero);
+            Assert.That(elevator.Connectors[1].localLevelOffset, Is.EqualTo(3));
+
+            var tornadoPiece = Piece("tornado", MarblePieceKind.Tornado, 0, 0, 0);
+            Assert.That(PlacementSolver.AreConnected(
+                Piece("tornado-high", MarblePieceKind.Straight, 0, -1, 0, 3), tornadoPiece), Is.True);
+            Assert.That(PlacementSolver.AreConnected(
+                tornadoPiece, Piece("tornado-low", MarblePieceKind.Straight, 0, 1, 0)), Is.True);
+
+            var elevatorPiece = Piece("elevator", MarblePieceKind.Elevator, 2, 0, 0);
+            Assert.That(PlacementSolver.AreConnected(
+                Piece("elevator-low", MarblePieceKind.Straight, 2, -1, 0), elevatorPiece), Is.True);
+            Assert.That(PlacementSolver.AreConnected(
+                elevatorPiece, Piece("elevator-high", MarblePieceKind.Straight, 2, 1, 0, 3)), Is.True);
+
+            Assert.That(PlacementSolver.Validate(
+                MarblePieceKind.Tornado,
+                new GridPose(4, 0, 2),
+                Array.Empty<PieceRecord>(),
+                ChallengeCatalog.Sandbox).IsValid, Is.False, "a tornado cannot rise above level four");
+            Assert.That(PlacementSolver.Validate(
+                MarblePieceKind.Elevator,
+                new GridPose(4, 0, 1),
+                Array.Empty<PieceRecord>(),
+                ChallengeCatalog.Sandbox).IsValid, Is.True);
+
+            var curve = PartCatalog.Get(MarblePieceKind.Curve);
+            var clearCurve = PartCatalog.Get(MarblePieceKind.ClearCurve);
+            Assert.That(clearCurve.Connectors.Count, Is.EqualTo(curve.Connectors.Count));
+            for (var index = 0; index < curve.Connectors.Count; index++)
+            {
+                Assert.That(clearCurve.Connectors[index].localCellPosition,
+                    Is.EqualTo(curve.Connectors[index].localCellPosition));
+                Assert.That(clearCurve.Connectors[index].localFacing,
+                    Is.EqualTo(curve.Connectors[index].localFacing));
+                Assert.That(clearCurve.Connectors[index].localLevelOffset,
+                    Is.EqualTo(curve.Connectors[index].localLevelOffset));
+            }
+
+            foreach (var flatKind in new[]
+                     {
+                         MarblePieceKind.ClearTube,
+                         MarblePieceKind.Wave,
+                         MarblePieceKind.Spinner
+                     })
+            {
+                var spec = PartCatalog.Get(flatKind);
+                Assert.That(spec.Connectors.Select(connector => connector.localLevelOffset),
+                    Is.All.EqualTo(0), flatKind.ToString());
+                Assert.That(PlacementSolver.AreConnected(
+                    Piece(flatKind + "-before", MarblePieceKind.Straight, -2, -1, 0),
+                    Piece(flatKind + "-part", flatKind, -2, 0, 0)),
+                    Is.True,
+                    flatKind.ToString());
+            }
+        }
+
+        [Test]
         public void FlatTracksCanCrossOnSeparateLevelsButTallPartsReserveHeadroom()
         {
             var lowerStraight = Piece("lower", MarblePieceKind.Straight, 0, 0, 0, 0);
@@ -212,7 +284,11 @@ namespace Pono.MarbleRun3D.Tests.EditMode
                          MarblePieceKind.Goal,
                          MarblePieceKind.Slope,
                          MarblePieceKind.Steps,
-                         MarblePieceKind.Lift
+                         MarblePieceKind.Lift,
+                         MarblePieceKind.ClearTube,
+                         MarblePieceKind.ClearCurve,
+                         MarblePieceKind.Wave,
+                         MarblePieceKind.Spinner
                      })
             {
                 var tall = Piece("tall-" + tallKind, tallKind, 0, 0, 0, 0);
@@ -236,6 +312,32 @@ namespace Pono.MarbleRun3D.Tests.EditMode
                 new GridPose(2, 2, 3),
                 new[] { helix },
                 ChallengeCatalog.Sandbox).IsValid, Is.True);
+
+            foreach (var fourLevelKind in new[]
+                     {
+                         MarblePieceKind.Tornado,
+                         MarblePieceKind.Elevator
+                     })
+            {
+                var tall = Piece("four-" + fourLevelKind, fourLevelKind, -2, 2, 0);
+                for (var level = 0; level <= 3; level++)
+                {
+                    Assert.That(PlacementSolver.Validate(
+                            MarblePieceKind.Straight,
+                            new GridPose(-2, 2, level),
+                            new[] { tall },
+                            ChallengeCatalog.Sandbox).IsValid,
+                        Is.False,
+                        fourLevelKind + " level " + level);
+                }
+                Assert.That(PlacementSolver.Validate(
+                        MarblePieceKind.Straight,
+                        new GridPose(-2, 2, 4),
+                        new[] { tall },
+                        ChallengeCatalog.Sandbox).IsValid,
+                    Is.True,
+                    fourLevelKind.ToString());
+            }
         }
 
         [Test]

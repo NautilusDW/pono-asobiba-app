@@ -117,6 +117,24 @@ namespace Pono.MarbleRun3D.Gameplay
                 case MarblePieceKind.Lift:
                     BuildLift(view, materials, courseLayer);
                     break;
+                case MarblePieceKind.Tornado:
+                    BuildTornado(view, materials, courseLayer);
+                    break;
+                case MarblePieceKind.Elevator:
+                    BuildElevator(view, materials, courseLayer);
+                    break;
+                case MarblePieceKind.ClearTube:
+                    BuildClearTube(view, materials, courseLayer);
+                    break;
+                case MarblePieceKind.ClearCurve:
+                    BuildClearCurve(view, materials, courseLayer);
+                    break;
+                case MarblePieceKind.Wave:
+                    BuildWave(view, materials, courseLayer);
+                    break;
+                case MarblePieceKind.Spinner:
+                    BuildSpinner(view, materials, courseLayer, isGhost);
+                    break;
             }
         }
 
@@ -549,6 +567,294 @@ namespace Pono.MarbleRun3D.Gameplay
             guideObject.AddComponent<LiftMarbleGuide>().Configure(view.transform);
         }
 
+        private static void BuildTornado(PieceView view, ToyMaterialLibrary materials, int courseLayer)
+        {
+            const float radius = 0.92f;
+            const float turns = 3.5f;
+            const int segments = 36;
+            var height = LevelHeight * 3f;
+
+            var highConnector = new Vector3(0f, height, -CellSize * 0.5f);
+            var highCircle = HelixPoint(0f, radius, height, turns);
+            BuildTornadoTrackSegment(view, (highConnector + highCircle) * 0.5f,
+                (highCircle - highConnector).normalized,
+                Vector3.Distance(highConnector, highCircle) + 0.10f,
+                materials.MarbleAt(0), materials.ClearEdge, courseLayer);
+
+            var previous = highCircle;
+            for (var segment = 1; segment <= segments; segment++)
+            {
+                var t = segment / (float)segments;
+                var next = HelixPoint(t, radius, height, turns);
+                BuildTornadoTrackSegment(view, (previous + next) * 0.5f,
+                    (next - previous).normalized,
+                    Vector3.Distance(previous, next) + 0.11f,
+                    materials.MarbleAt(segment), materials.MarbleAt(segment + 2), courseLayer);
+                previous = next;
+            }
+
+            var lowConnector = new Vector3(0f, 0f, CellSize * 0.5f);
+            BuildTornadoTrackSegment(view, (previous + lowConnector) * 0.5f,
+                (lowConnector - previous).normalized,
+                Vector3.Distance(previous, lowConnector) + 0.10f,
+                materials.MarbleAt(segments + 1), materials.ClearEdge, courseLayer);
+
+            CreateCylinder(view, "トルネード タワー", new Vector3(0f, height * 0.50f, 0f), Vector3.up,
+                0.17f, height + 0.12f, materials.MapleDark, courseLayer, false);
+            for (var band = 0; band < 7; band++)
+            {
+                var bandY = height * (band + 0.5f) / 7f;
+                CreateCylinder(view, "トルネード にじいろ バンド", new Vector3(0f, bandY, 0f), Vector3.up,
+                    0.25f, 0.12f, materials.MarbleAt(band), courseLayer, false);
+            }
+
+            var guideObject = new GameObject("トルネード ガイド");
+            guideObject.layer = courseLayer;
+            guideObject.transform.SetParent(view.transform, false);
+            guideObject.transform.localPosition = new Vector3(0f, height * 0.5f + 0.34f, 0f);
+            var guideCollider = guideObject.AddComponent<BoxCollider>();
+            guideCollider.isTrigger = true;
+            guideCollider.size = new Vector3(2.92f, height + 1.55f, 2.92f);
+            guideObject.AddComponent<HelixMarbleGuide>().Configure(view.transform, radius, height, turns);
+        }
+
+        private static void BuildElevator(
+            PieceView view,
+            ToyMaterialLibrary materials,
+            int courseLayer)
+        {
+            var height = LevelHeight * 3f;
+            BuildElevatorDeck(view, "エレベーター いりぐち", new Vector3(0f, 0f, -0.90f),
+                materials.Maple, materials.Accent(MarblePieceKind.Elevator), courseLayer);
+            BuildElevatorDeck(view, "エレベーター でぐち", new Vector3(0f, height, 0.90f),
+                materials.Maple, materials.Accent(MarblePieceKind.Elevator), courseLayer);
+
+            var cageHeight = height + 1.08f;
+            var cageY = height * 0.5f + 0.45f;
+            CreateCube(view, "エレベーター とうめい ケージ", new Vector3(-0.73f, cageY, 0f),
+                new Vector3(0.07f, cageHeight, 1.10f), Quaternion.identity,
+                materials.ClearShell, courseLayer, true);
+            CreateCube(view, "エレベーター とうめい ケージ", new Vector3(0.73f, cageY, 0f),
+                new Vector3(0.07f, cageHeight, 1.10f), Quaternion.identity,
+                materials.ClearShell, courseLayer, true);
+            CreateCube(view, "エレベーター とうめい うしろ", new Vector3(0f, cageY, -0.48f),
+                new Vector3(1.52f, cageHeight, 0.06f), Quaternion.identity,
+                materials.ClearShell, courseLayer, false);
+
+            for (var corner = 0; corner < 4; corner++)
+            {
+                var x = corner % 2 == 0 ? -0.76f : 0.76f;
+                var z = corner < 2 ? -0.50f : 0.50f;
+                CreateCylinder(view, "エレベーター ケージ ぼう", new Vector3(x, cageY, z), Vector3.up,
+                    0.075f, cageHeight, materials.MarbleAt(corner), courseLayer, false);
+            }
+            for (var ring = 0; ring <= 3; ring++)
+            {
+                var y = ring * LevelHeight + 0.16f;
+                CreateCube(view, "エレベーター にじいろ わく", new Vector3(0f, y, -0.51f),
+                    new Vector3(1.68f, 0.10f, 0.10f), Quaternion.identity,
+                    materials.MarbleAt(ring), courseLayer, false);
+                CreateCube(view, "エレベーター にじいろ わく", new Vector3(0f, y, 0.51f),
+                    new Vector3(1.68f, 0.10f, 0.10f), Quaternion.identity,
+                    materials.MarbleAt(ring + 2), courseLayer, false);
+            }
+
+            var movingCar = new GameObject("エレベーター うごく だい");
+            movingCar.layer = 2;
+            movingCar.transform.SetParent(view.transform, false);
+            movingCar.transform.localPosition = new Vector3(0f, 0.14f, 0f);
+            CreateCube(view, "エレベーター カラフル カー", Vector3.zero,
+                new Vector3(1.25f, 0.14f, 0.78f), Quaternion.identity,
+                materials.MarbleAt(4), courseLayer, false, movingCar.transform);
+            CreateCylinder(view, "エレベーター カー ひかり", new Vector3(0f, 0.16f, 0f), Vector3.up,
+                0.22f, 0.10f, materials.ConnectorGlow, courseLayer, false, movingCar.transform);
+
+            var animatorObject = new GameObject("エレベーター アニメーター");
+            animatorObject.layer = 2;
+            animatorObject.transform.SetParent(view.transform, false);
+            animatorObject.AddComponent<ElevatorVisualAnimator>().Configure(movingCar.transform, height);
+
+            var guideObject = new GameObject("エレベーター ガイド");
+            guideObject.layer = courseLayer;
+            guideObject.transform.SetParent(view.transform, false);
+            guideObject.transform.localPosition = new Vector3(0f, height * 0.5f + 0.35f, 0f);
+            var guideCollider = guideObject.AddComponent<BoxCollider>();
+            guideCollider.isTrigger = true;
+            guideCollider.size = new Vector3(2.25f, height + 1.55f, 3.10f);
+            guideObject.AddComponent<ElevatorMarbleGuide>().Configure(view.transform, height);
+        }
+
+        private static void BuildClearTube(PieceView view, ToyMaterialLibrary materials, int courseLayer)
+        {
+            CreateCube(view, "とうめい つつ そこ", new Vector3(0f, 0.07f, 0f),
+                new Vector3(1.48f, 0.14f, 3.12f), Quaternion.identity,
+                materials.ClearShell, courseLayer, true);
+            CreateCube(view, "とうめい つつ ひだり", new Vector3(-0.76f, 0.52f, 0f),
+                new Vector3(0.08f, 1.04f, 3.08f), Quaternion.identity,
+                materials.ClearShell, courseLayer, true);
+            CreateCube(view, "とうめい つつ みぎ", new Vector3(0.76f, 0.52f, 0f),
+                new Vector3(0.08f, 1.04f, 3.08f), Quaternion.identity,
+                materials.ClearShell, courseLayer, true);
+            CreateCube(view, "とうめい つつ やね", new Vector3(0f, 1.03f, 0f),
+                new Vector3(1.56f, 0.06f, 3.08f), Quaternion.identity,
+                materials.ClearShell, courseLayer, true);
+
+            for (var ring = 0; ring < 4; ring++)
+            {
+                var z = Mathf.Lerp(-1.20f, 1.20f, ring / 3f);
+                BuildClearRing(view, "とうめい つつ カラフル リング", z,
+                    materials.MarbleAt(ring + 1), courseLayer);
+            }
+
+            var guideObject = new GameObject("とうめい つつ ガイド");
+            guideObject.layer = courseLayer;
+            guideObject.transform.SetParent(view.transform, false);
+            guideObject.transform.localPosition = new Vector3(0f, 0.58f, 0f);
+            var guideCollider = guideObject.AddComponent<BoxCollider>();
+            guideCollider.isTrigger = true;
+            guideCollider.size = new Vector3(2.10f, 1.46f, 3.60f);
+            guideObject.AddComponent<ClearTubeMarbleGuide>().Configure(view.transform);
+        }
+
+        private static void BuildClearCurve(PieceView view, ToyMaterialLibrary materials, int courseLayer)
+        {
+            const int segments = 14;
+            const float radius = 1.5f;
+            for (var segment = 0; segment < segments; segment++)
+            {
+                var t0 = Mathf.PI - Mathf.PI * 0.5f * segment / segments;
+                var t1 = Mathf.PI - Mathf.PI * 0.5f * (segment + 1) / segments;
+                var start = new Vector3(1.5f + Mathf.Cos(t0) * radius, 0f,
+                    -1.5f + Mathf.Sin(t0) * radius);
+                var end = new Vector3(1.5f + Mathf.Cos(t1) * radius, 0f,
+                    -1.5f + Mathf.Sin(t1) * radius);
+                var direction = (end - start).normalized;
+                var centre = (start + end) * 0.5f;
+                var length = Vector3.Distance(start, end) + 0.13f;
+                var rotation = Quaternion.LookRotation(direction, Vector3.up);
+                var side = Vector3.Cross(Vector3.up, direction).normalized;
+
+                CreateCube(view, "とうめい カーブ そこ", centre + Vector3.up * 0.07f,
+                    new Vector3(1.48f, 0.14f, length), rotation,
+                    materials.ClearShell, courseLayer, true);
+                CreateCube(view, "とうめい カーブ そと", centre + side * 0.76f + Vector3.up * 0.52f,
+                    new Vector3(0.08f, 1.02f, length), rotation,
+                    materials.ClearShell, courseLayer, true);
+                CreateCube(view, "とうめい カーブ うち", centre - side * 0.76f + Vector3.up * 0.52f,
+                    new Vector3(0.08f, 1.02f, length), rotation,
+                    materials.ClearShell, courseLayer, true);
+                CreateCube(view, "とうめい カーブ やね", centre + Vector3.up * 1.02f,
+                    new Vector3(1.52f, 0.06f, length), rotation,
+                    materials.ClearShell, courseLayer, false);
+
+                if (segment % 3 == 0)
+                {
+                    CreateCylinder(view, "とうめい カーブ リング ひだり",
+                        centre + side * 0.80f + Vector3.up * 0.52f, Vector3.up,
+                        0.07f, 1.12f, materials.MarbleAt(segment), courseLayer, false);
+                    CreateCylinder(view, "とうめい カーブ リング みぎ",
+                        centre - side * 0.80f + Vector3.up * 0.52f, Vector3.up,
+                        0.07f, 1.12f, materials.MarbleAt(segment + 2), courseLayer, false);
+                }
+            }
+
+            var guideObject = new GameObject("とうめい カーブ ガイド");
+            guideObject.layer = courseLayer;
+            guideObject.transform.SetParent(view.transform, false);
+            guideObject.transform.localPosition = new Vector3(0.18f, 0.60f, -0.18f);
+            var guideCollider = guideObject.AddComponent<BoxCollider>();
+            guideCollider.isTrigger = true;
+            guideCollider.size = new Vector3(3.35f, 1.55f, 3.35f);
+            guideObject.AddComponent<ClearCurveMarbleGuide>().Configure(view.transform);
+        }
+
+        private static void BuildWave(PieceView view, ToyMaterialLibrary materials, int courseLayer)
+        {
+            const int segments = 16;
+            const float amplitude = 0.72f;
+            var previous = WavePoint(0f, amplitude);
+            for (var segment = 1; segment <= segments; segment++)
+            {
+                var t = segment / (float)segments;
+                var next = WavePoint(t, amplitude);
+                BuildWaveTrackSegment(view, (previous + next) * 0.5f,
+                    (next - previous).normalized, Vector3.Distance(previous, next) + 0.10f,
+                    materials.Maple, materials.MarbleAt(segment), courseLayer);
+                previous = next;
+            }
+
+            var guideObject = new GameObject("なみなみ ガイド");
+            guideObject.layer = courseLayer;
+            guideObject.transform.SetParent(view.transform, false);
+            guideObject.transform.localPosition = new Vector3(0f, 0.74f, 0f);
+            var guideCollider = guideObject.AddComponent<BoxCollider>();
+            guideCollider.isTrigger = true;
+            guideCollider.size = new Vector3(2.72f, 2.25f, 3.18f);
+            guideObject.AddComponent<WaveMarbleGuide>().Configure(view.transform, amplitude);
+        }
+
+        private static void BuildSpinner(
+            PieceView view,
+            ToyMaterialLibrary materials,
+            int courseLayer,
+            bool isGhost)
+        {
+            BuildStraight(view, materials, courseLayer, MarblePieceKind.Spinner);
+            CreateCylinder(view, "くるくる ささえ ひだり", new Vector3(-0.75f, 0.73f, 0f), Vector3.up,
+                0.09f, 1.18f, materials.MapleDark, courseLayer, false);
+            CreateCylinder(view, "くるくる ささえ みぎ", new Vector3(0.75f, 0.73f, 0f), Vector3.up,
+                0.09f, 1.18f, materials.MapleDark, courseLayer, false);
+
+            var rotorRoot = new GameObject("くるくる うごく はね");
+            rotorRoot.layer = courseLayer;
+            rotorRoot.transform.SetParent(view.transform, false);
+            rotorRoot.transform.localPosition = new Vector3(0f, 0.76f, 0f);
+            CreateCylinder(view, "くるくる まんなか", Vector3.zero, Vector3.right,
+                0.18f, 1.34f, materials.Metal, courseLayer, false, rotorRoot.transform);
+            for (var paddle = 0; paddle < 6; paddle++)
+            {
+                var angle = paddle * 60f;
+                var radians = angle * Mathf.Deg2Rad;
+                var radial = new Vector3(0f, Mathf.Cos(radians), Mathf.Sin(radians));
+                CreateCube(view, "くるくる カラフル はね", radial * 0.37f,
+                    new Vector3(0.76f, 0.10f, 0.58f),
+                    Quaternion.AngleAxis(angle - 90f, Vector3.right),
+                    materials.MarbleAt(paddle), courseLayer, true, rotorRoot.transform);
+            }
+
+            if (isGhost) return;
+            var body = rotorRoot.AddComponent<Rigidbody>();
+            body.mass = 0.18f;
+            body.interpolation = RigidbodyInterpolation.Interpolate;
+            body.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
+            body.maxAngularVelocity = 20f;
+            body.isKinematic = true;
+            var hinge = rotorRoot.AddComponent<HingeJoint>();
+            hinge.axis = Vector3.right;
+            hinge.autoConfigureConnectedAnchor = false;
+            hinge.anchor = Vector3.zero;
+            hinge.connectedAnchor = rotorRoot.transform.position;
+            hinge.useLimits = false;
+            view.RegisterDynamicBody(body);
+
+            var guideObject = new GameObject("くるくる はね ガイド");
+            guideObject.layer = courseLayer;
+            guideObject.transform.SetParent(view.transform, false);
+            guideObject.transform.localPosition = new Vector3(0f, 0.82f, 0f);
+            var guideCollider = guideObject.AddComponent<BoxCollider>();
+            guideCollider.isTrigger = true;
+            guideCollider.size = new Vector3(2.34f, 2.28f, 3.46f);
+            guideObject.AddComponent<SpinnerMarbleGuide>().Configure(view.transform, body);
+        }
+
+        private static Vector3 WavePoint(float t, float amplitude)
+        {
+            return new Vector3(
+                0f,
+                Mathf.Sin(Mathf.Clamp01(t) * Mathf.PI) * amplitude,
+                Mathf.Lerp(-CellSize * 0.5f, CellSize * 0.5f, Mathf.Clamp01(t)));
+        }
+
         private static Vector3 HelixPoint(float t, float radius, float height, float turns)
         {
             var angle = -Mathf.PI * 0.5f + Mathf.PI * 2f * turns * t;
@@ -562,6 +868,9 @@ namespace Pono.MarbleRun3D.Gameplay
         {
             switch (kind)
             {
+                case MarblePieceKind.Tornado:
+                case MarblePieceKind.Elevator:
+                    return new Vector3(2.90f, LevelHeight * 3f + 1.55f, 2.90f);
                 case MarblePieceKind.Helix:
                     return new Vector3(2.75f, LevelHeight * 2f + 1.45f, 2.75f);
                 case MarblePieceKind.Slope:
@@ -592,7 +901,23 @@ namespace Pono.MarbleRun3D.Gameplay
                     materials, courseLayer);
             }
 
-            if (record.kind == MarblePieceKind.Helix)
+            if (record.kind == MarblePieceKind.Tornado)
+            {
+                CreateSupport(view, "トルネード たかい あし", -0.67f, -1.03f, LevelHeight * 2.86f,
+                    record.pose.level, materials, courseLayer);
+                CreateSupport(view, "トルネード たかい あし", 0.67f, -1.03f, LevelHeight * 2.86f,
+                    record.pose.level, materials, courseLayer);
+                CreateSupport(view, "トルネード まんなか あし", 0f, 0f, LevelHeight * 1.45f,
+                    record.pose.level, materials, courseLayer, 0.17f);
+            }
+            else if (record.kind == MarblePieceKind.Elevator)
+            {
+                CreateSupport(view, "エレベーター でぐちの あし", -0.67f, 1.05f, LevelHeight * 2.88f,
+                    record.pose.level, materials, courseLayer);
+                CreateSupport(view, "エレベーター でぐちの あし", 0.67f, 1.05f, LevelHeight * 2.88f,
+                    record.pose.level, materials, courseLayer);
+            }
+            else if (record.kind == MarblePieceKind.Helix)
             {
                 CreateSupport(view, "ぐるぐる たかい あし", -0.66f, -0.92f, LevelHeight * 1.82f,
                     record.pose.level, materials, courseLayer);
@@ -672,6 +997,82 @@ namespace Pono.MarbleRun3D.Gameplay
                 direction, 0.12f, length, accentMaterial, courseLayer, true);
             CreateCylinder(view, "ぐるぐる みぎ", centre - side * 0.49f + Vector3.up * 0.28f,
                 direction, 0.12f, length, accentMaterial, courseLayer, true);
+        }
+
+        private static void BuildTornadoTrackSegment(
+            PieceView view,
+            Vector3 centre,
+            Vector3 direction,
+            float length,
+            Material floorMaterial,
+            Material railMaterial,
+            int courseLayer)
+        {
+            direction.Normalize();
+            var rotation = Quaternion.LookRotation(direction, Vector3.up);
+            CreateCube(view, "トルネード みち", centre + Vector3.up * 0.065f,
+                new Vector3(0.86f, 0.15f, length), rotation,
+                floorMaterial, courseLayer, true);
+
+            var side = Vector3.Cross(Vector3.up, direction).normalized;
+            CreateCylinder(view, "トルネード ひだり", centre + side * 0.44f + Vector3.up * 0.28f,
+                direction, 0.095f, length, railMaterial, courseLayer, false);
+            CreateCylinder(view, "トルネード みぎ", centre - side * 0.44f + Vector3.up * 0.28f,
+                direction, 0.095f, length, railMaterial, courseLayer, false);
+        }
+
+        private static void BuildElevatorDeck(
+            PieceView view,
+            string name,
+            Vector3 centre,
+            Material floorMaterial,
+            Material accentMaterial,
+            int courseLayer)
+        {
+            const float length = 1.34f;
+            CreateCube(view, name + " みち", centre + Vector3.up * 0.08f,
+                new Vector3(1.56f, 0.17f, length), Quaternion.identity,
+                floorMaterial, courseLayer, true);
+            CreateCylinder(view, name + " ひだり", centre + new Vector3(-0.79f, 0.30f, 0f),
+                Vector3.forward, 0.11f, length, accentMaterial, courseLayer, true);
+            CreateCylinder(view, name + " みぎ", centre + new Vector3(0.79f, 0.30f, 0f),
+                Vector3.forward, 0.11f, length, accentMaterial, courseLayer, true);
+        }
+
+        private static void BuildClearRing(
+            PieceView view,
+            string name,
+            float z,
+            Material material,
+            int courseLayer)
+        {
+            CreateCylinder(view, name + " ひだり", new Vector3(-0.80f, 0.52f, z), Vector3.up,
+                0.065f, 1.10f, material, courseLayer, false);
+            CreateCylinder(view, name + " みぎ", new Vector3(0.80f, 0.52f, z), Vector3.up,
+                0.065f, 1.10f, material, courseLayer, false);
+            CreateCylinder(view, name + " うえ", new Vector3(0f, 1.06f, z), Vector3.right,
+                0.065f, 1.66f, material, courseLayer, false);
+        }
+
+        private static void BuildWaveTrackSegment(
+            PieceView view,
+            Vector3 centre,
+            Vector3 direction,
+            float length,
+            Material floorMaterial,
+            Material accentMaterial,
+            int courseLayer)
+        {
+            direction.Normalize();
+            var rotation = Quaternion.LookRotation(direction, Vector3.up);
+            CreateCube(view, "なみなみ みち", centre + Vector3.up * 0.07f,
+                new Vector3(1.62f, 0.16f, length), rotation,
+                floorMaterial, courseLayer, true);
+            var side = Vector3.Cross(Vector3.up, direction).normalized;
+            CreateCylinder(view, "なみなみ ひだり", centre + side * 0.82f + Vector3.up * 0.29f,
+                direction, 0.105f, length, accentMaterial, courseLayer, false);
+            CreateCylinder(view, "なみなみ みぎ", centre - side * 0.82f + Vector3.up * 0.29f,
+                direction, 0.105f, length, accentMaterial, courseLayer, false);
         }
 
         private static void BuildTrackSegment(

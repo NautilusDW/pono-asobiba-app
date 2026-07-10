@@ -91,6 +91,7 @@ namespace Pono.MarbleRun3D.Core
         private static readonly Dictionary<string, ModeDefinition> Modes = BuildModes();
 
         public static ModeDefinition Tutorial => Modes["tutorial"];
+        public static ModeDefinition Starter => Modes["starter"];
         public static ModeDefinition Sandbox => Modes["sandbox"];
 
         public static IReadOnlyList<ModeDefinition> Challenges { get; } = new[]
@@ -105,7 +106,9 @@ namespace Pono.MarbleRun3D.Core
             Modes["sample1"],
             Modes["sample2"],
             Modes["sample3"],
-            Modes["sample4"]
+            Modes["sample4"],
+            Modes["sample5"],
+            Modes["sample6"]
         };
 
         public static ModeDefinition Get(string id)
@@ -152,7 +155,13 @@ namespace Pono.MarbleRun3D.Core
                         [MarblePieceKind.Curve] = 5,
                         [MarblePieceKind.Slope] = 2,
                         [MarblePieceKind.Steps] = 2,
-                        [MarblePieceKind.Lift] = 1
+                        [MarblePieceKind.Lift] = 1,
+                        [MarblePieceKind.Tornado] = 1,
+                        [MarblePieceKind.Elevator] = 1,
+                        [MarblePieceKind.ClearTube] = 3,
+                        [MarblePieceKind.ClearCurve] = 2,
+                        [MarblePieceKind.Wave] = 2,
+                        [MarblePieceKind.Spinner] = 1
                     },
                     Initial("challenge1", new GridPose(0, -4, 1, 0), new GridPose(0, 4, 0, 0))),
                 ["challenge2"] = new ModeDefinition(
@@ -172,7 +181,13 @@ namespace Pono.MarbleRun3D.Core
                         [MarblePieceKind.Seesaw] = 1,
                         [MarblePieceKind.Helix] = 1,
                         [MarblePieceKind.Steps] = 2,
-                        [MarblePieceKind.Lift] = 1
+                        [MarblePieceKind.Lift] = 1,
+                        [MarblePieceKind.Tornado] = 1,
+                        [MarblePieceKind.Elevator] = 1,
+                        [MarblePieceKind.ClearTube] = 3,
+                        [MarblePieceKind.ClearCurve] = 2,
+                        [MarblePieceKind.Wave] = 2,
+                        [MarblePieceKind.Spinner] = 2
                     },
                     Initial("challenge2", new GridPose(0, -4, 2, 0), new GridPose(0, 4, 0, 0))),
                 ["challenge3"] = new ModeDefinition(
@@ -193,7 +208,13 @@ namespace Pono.MarbleRun3D.Core
                         [MarblePieceKind.Domino] = 1,
                         [MarblePieceKind.Helix] = 1,
                         [MarblePieceKind.Steps] = 2,
-                        [MarblePieceKind.Lift] = 2
+                        [MarblePieceKind.Lift] = 2,
+                        [MarblePieceKind.Tornado] = 1,
+                        [MarblePieceKind.Elevator] = 2,
+                        [MarblePieceKind.ClearTube] = 4,
+                        [MarblePieceKind.ClearCurve] = 3,
+                        [MarblePieceKind.Wave] = 2,
+                        [MarblePieceKind.Spinner] = 2
                     },
                     Initial("challenge3", new GridPose(0, -4, 3, 0), new GridPose(0, 4, 0, 0))),
                 ["sample1"] = new ModeDefinition(
@@ -263,6 +284,58 @@ namespace Pono.MarbleRun3D.Core
                         P("sample4-step", MarblePieceKind.Steps, 0, 1),
                         P("sample4-low2", MarblePieceKind.Straight, 0, 2),
                         P("sample4-goal", MarblePieceKind.Goal, 0, 3))),
+                ["sample5"] = new ModeDefinition(
+                    "sample5",
+                    "トルネード タワー",
+                    "たかい ところから トルネードを おりよう",
+                    false,
+                    false,
+                    allUnlimited,
+                    Sample(
+                        P("sample5-start", MarblePieceKind.Start, 0, -5, 3),
+                        P("sample5-tube-high", MarblePieceKind.ClearTube, 0, -4, 3),
+                        P("sample5-tornado", MarblePieceKind.Tornado, 0, -3),
+                        P("sample5-wave", MarblePieceKind.Wave, 0, -2),
+                        P("sample5-spinner", MarblePieceKind.Spinner, 0, -1),
+                        P("sample5-tube-low", MarblePieceKind.ClearTube, 0, 0),
+                        P("sample5-goal", MarblePieceKind.Goal, 0, 1))),
+                ["sample6"] = new ModeDefinition(
+                    "sample6",
+                    "エレベーター シティ",
+                    "のぼって おりて まちを めぐろう",
+                    false,
+                    false,
+                    allUnlimited,
+                    Sample(
+                        P("sample6-start", MarblePieceKind.Start, 0, -5),
+                        P("sample6-tube-low", MarblePieceKind.ClearTube, 0, -4),
+                        P("sample6-elevator", MarblePieceKind.Elevator, 0, -3),
+                        P("sample6-high", MarblePieceKind.Straight, 0, -2, 3),
+                        P("sample6-wave", MarblePieceKind.Wave, 0, -1, 3),
+                        P("sample6-tube-high", MarblePieceKind.ClearTube, 0, 0, 3),
+                        P("sample6-tornado", MarblePieceKind.Tornado, 0, 1),
+                        P("sample6-spinner", MarblePieceKind.Spinner, 0, 2),
+                        P("sample6-tube-end", MarblePieceKind.ClearTube, 0, 3),
+                        P("sample6-goal", MarblePieceKind.Goal, 0, 4))),
+                ["starter"] = new ModeDefinition(
+                    "starter",
+                    "すぐ ころがす",
+                    "いろいろな うごきを みてみよう",
+                    false,
+                    false,
+                    allUnlimited,
+                    Sample(
+                        P("starter-start", MarblePieceKind.Start, 0, -5),
+                        P("starter-tube-low", MarblePieceKind.ClearTube, 0, -4),
+                        P("starter-elevator", MarblePieceKind.Elevator, 0, -3),
+                        P("starter-wave-high", MarblePieceKind.Wave, 0, -2, 3),
+                        P("starter-curve-high", MarblePieceKind.ClearCurve, 0, -1, 3),
+                        P("starter-tube-high", MarblePieceKind.ClearTube, 1, -1, 3, 1),
+                        P("starter-tornado", MarblePieceKind.Tornado, 2, -1, 0, 1),
+                        P("starter-spinner", MarblePieceKind.Spinner, 3, -1, 0, 1),
+                        P("starter-curve-low", MarblePieceKind.ClearCurve, 4, -1, 0, 1),
+                        P("starter-wave-low", MarblePieceKind.Wave, 4, -2, 0, 0),
+                        P("starter-goal", MarblePieceKind.Goal, 4, -3, 0, 2))),
                 ["sandbox"] = new ModeDefinition(
                     "sandbox",
                     "じゆうに つくる",

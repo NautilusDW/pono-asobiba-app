@@ -67,6 +67,41 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator StarterButtonLoadsConnectedRichEditableCourseAndFramesItsHeight()
+        {
+            var modeButtons = _controller.Ui.transform.Find("Canvas/SafeArea/Menu/ModeButtons");
+            Assert.That(modeButtons.GetComponentsInChildren<Button>(true).Length, Is.EqualTo(7));
+            var starter = modeButtons.Find("Starter").GetComponent<Button>();
+            Assert.That(starter.GetComponentInChildren<Text>().text, Is.EqualTo("すぐ ころがす"));
+
+            starter.onClick.Invoke();
+            Canvas.ForceUpdateCanvases();
+            yield return null;
+
+            Assert.That(_controller.State, Is.EqualTo(MarbleRunState.Editing));
+            Assert.That(_controller.CurrentMode.Id, Is.EqualTo("starter"));
+            Assert.That(_controller.Course.modeId, Is.EqualTo("starter"));
+            Assert.That(PlacementSolver.HasStartToGoalGraphPath(_controller.Course.pieces), Is.True);
+            Assert.That(_controller.Course.pieces.All(piece => !piece.locked), Is.True);
+            foreach (var kind in new[]
+                     {
+                         MarblePieceKind.Tornado,
+                         MarblePieceKind.Elevator,
+                         MarblePieceKind.ClearTube,
+                         MarblePieceKind.ClearCurve,
+                         MarblePieceKind.Wave,
+                         MarblePieceKind.Spinner
+                     })
+            {
+                Assert.That(_controller.Course.pieces.Any(piece => piece.kind == kind), Is.True, kind.ToString());
+            }
+            Assert.That(_controller.PieceViews.Count, Is.EqualTo(_controller.Course.pieces.Count));
+            Assert.That(_controller.OrbitCamera.Target.y,
+                Is.GreaterThan(WoodenPieceFactory.LevelHeight),
+                "the initial camera should frame the three-level connector span");
+        }
+
+        [UnityTest]
         public IEnumerator FourHeightLevelsCanBeSelectedShownAndUsedAtOneGridCell()
         {
             _controller.StartMode("sandbox");
@@ -140,7 +175,19 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
             Assert.That(menu.gameObject.activeSelf, Is.False);
             Assert.That(samples.gameObject.activeSelf, Is.True);
             var sampleButtons = samples.Find("SampleButtons").GetComponentsInChildren<Button>(true);
-            Assert.That(sampleButtons.Length, Is.EqualTo(4));
+            Assert.That(sampleButtons.Length, Is.EqualTo(6));
+            Assert.That(samples.Find("SampleButtons/Sample1/Label").GetComponent<Text>().text,
+                Is.EqualTo("はじめての みち"));
+            Assert.That(samples.Find("SampleButtons/Sample2/Label").GetComponent<Text>().text,
+                Is.EqualTo("にじいろ タワー"));
+            Assert.That(samples.Find("SampleButtons/Sample3/Label").GetComponent<Text>().text,
+                Is.EqualTo("そらの まよいみち"));
+            Assert.That(samples.Find("SampleButtons/Sample4/Label").GetComponent<Text>().text,
+                Is.EqualTo("のぼって おりて"));
+            Assert.That(samples.Find("SampleButtons/Sample5/Label").GetComponent<Text>().text,
+                Is.EqualTo("トルネード タワー"));
+            Assert.That(samples.Find("SampleButtons/Sample6/Label").GetComponent<Text>().text,
+                Is.EqualTo("エレベーター シティ"));
             foreach (var button in sampleButtons)
             {
                 var rect = (RectTransform)button.transform;
@@ -231,9 +278,29 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
             Canvas.ForceUpdateCanvases();
             yield return null;
             var scroll = _controller.Ui.GetComponentInChildren<ScrollRect>(true);
-            var drag = _controller.Ui.GetComponentsInChildren<PaletteDragItem>(true)
-                .First(item => item.GetComponent<Button>().interactable);
             Assert.That(scroll, Is.Not.Null);
+            var paletteItems = _controller.Ui.GetComponentsInChildren<PaletteDragItem>(true);
+            Assert.That(PartCatalog.All.Count, Is.EqualTo(19));
+            Assert.That(paletteItems.Length, Is.EqualTo(19));
+            var firstPaletteItems = scroll.content.GetComponentsInChildren<PaletteDragItem>(true)
+                .Take(8)
+                .Select(item => item.gameObject.name)
+                .ToArray();
+            Assert.That(firstPaletteItems, Is.EqualTo(new[]
+            {
+                "PartStart",
+                "PartGoal",
+                "PartTornado",
+                "PartElevator",
+                "PartClearTube",
+                "PartClearCurve",
+                "PartWave",
+                "PartSpinner"
+            }));
+            Assert.That(LayoutUtility.GetPreferredHeight(scroll.content),
+                Is.GreaterThan(scroll.viewport.rect.height));
+            var drag = paletteItems
+                .First(item => item.GetComponent<Button>().interactable);
             var before = scroll.content.anchoredPosition;
             var eventData = new PointerEventData(EventSystem.current)
             {
@@ -453,6 +520,89 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator TornadoAndElevatorSamplesLoadConnectedNewPieceCourses()
+        {
+            var expectations = new Dictionary<string, MarblePieceKind[]>
+            {
+                ["sample5"] = new[]
+                {
+                    MarblePieceKind.Tornado,
+                    MarblePieceKind.ClearTube,
+                    MarblePieceKind.Wave,
+                    MarblePieceKind.Spinner
+                },
+                ["sample6"] = new[]
+                {
+                    MarblePieceKind.Elevator,
+                    MarblePieceKind.Tornado,
+                    MarblePieceKind.ClearTube,
+                    MarblePieceKind.Wave,
+                    MarblePieceKind.Spinner
+                }
+            };
+
+            foreach (var pair in expectations)
+            {
+                _controller.StartMode(pair.Key);
+                var course = _controller.Course;
+                Assert.That(_controller.State, Is.EqualTo(MarbleRunState.Editing), pair.Key);
+                Assert.That(PlacementSolver.HasStartToGoalGraphPath(course.pieces), Is.True, pair.Key);
+                Assert.That(course.pieces.All(piece => !piece.locked), Is.True, pair.Key);
+                foreach (var kind in pair.Value)
+                    Assert.That(course.pieces.Any(piece => piece.kind == kind), Is.True, pair.Key + "/" + kind);
+                Assert.That(_controller.OrbitCamera.Target.y,
+                    Is.GreaterThan(WoodenPieceFactory.LevelHeight), pair.Key + " camera height");
+                yield return null;
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator NewVarietyViewsExposeTallTransparentWavyAndMovingGeometry()
+        {
+            _controller.StartMode("starter");
+            yield return null;
+
+            var tornado = ViewFor(MarblePieceKind.Tornado);
+            var tornadoGuide = tornado.GetComponentInChildren<HelixMarbleGuide>();
+            Assert.That(tornadoGuide, Is.Not.Null);
+            Assert.That(tornadoGuide.GetComponent<BoxCollider>().size.y,
+                Is.GreaterThan(WoodenPieceFactory.LevelHeight * 3f));
+            Assert.That(RendererHeight(tornado),
+                Is.GreaterThan(WoodenPieceFactory.LevelHeight * 2.5f));
+
+            var elevator = ViewFor(MarblePieceKind.Elevator);
+            var elevatorGuide = elevator.GetComponentInChildren<ElevatorMarbleGuide>();
+            var elevatorAnimator = elevator.GetComponentInChildren<ElevatorVisualAnimator>();
+            Assert.That(elevatorGuide, Is.Not.Null);
+            Assert.That(elevatorAnimator, Is.Not.Null);
+            Assert.That(elevatorGuide.TravelHeight,
+                Is.EqualTo(WoodenPieceFactory.LevelHeight * 3f).Within(0.001f));
+            Assert.That(elevatorAnimator.TravelHeight,
+                Is.EqualTo(elevatorGuide.TravelHeight).Within(0.001f));
+            Assert.That(RendererHeight(elevator),
+                Is.GreaterThan(WoodenPieceFactory.LevelHeight * 3f));
+
+            var clearTube = ViewFor(MarblePieceKind.ClearTube);
+            Assert.That(clearTube.GetComponentInChildren<ClearTubeMarbleGuide>(), Is.Not.Null);
+            Assert.That(clearTube.GetComponentsInChildren<Collider>().Length, Is.GreaterThanOrEqualTo(4));
+            Assert.That(clearTube.GetComponentsInChildren<Renderer>().Any(IsTransparentRenderer), Is.True);
+            var clearCurve = ViewFor(MarblePieceKind.ClearCurve);
+            Assert.That(clearCurve.GetComponentInChildren<ClearCurveMarbleGuide>(), Is.Not.Null);
+            Assert.That(clearCurve.GetComponentsInChildren<Renderer>().Any(IsTransparentRenderer), Is.True);
+
+            var wave = ViewFor(MarblePieceKind.Wave);
+            Assert.That(wave.GetComponentInChildren<WaveMarbleGuide>(), Is.Not.Null);
+            Assert.That(RendererHeight(wave), Is.GreaterThan(0.6f));
+
+            var spinner = ViewFor(MarblePieceKind.Spinner);
+            Assert.That(spinner.DynamicBodies.Count, Is.EqualTo(1));
+            Assert.That(spinner.GetComponentInChildren<SpinnerMarbleGuide>(), Is.Not.Null);
+            Assert.That(spinner.DynamicBodies[0].GetComponent<HingeJoint>(), Is.Not.Null);
+            Assert.That(spinner.DynamicBodies[0].isKinematic, Is.True,
+                "moving mechanisms stay parked while the course is edited");
+        }
+
+        [UnityTest]
         public IEnumerator EverySampleCourseIsConnectedEditableAndFramesTheCamera()
         {
             foreach (var sample in ChallengeCatalog.Samples)
@@ -529,7 +679,6 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
         [UnityTest]
         public IEnumerator CriticalUiTargetsRemainInsideSafeAreaAtSixteenNineFourThreeAndTwentyNine()
         {
-            _controller.StartMode("sandbox");
             Canvas.ForceUpdateCanvases();
             yield return null;
             var safe = _controller.Ui.SafeRootRect;
@@ -542,31 +691,36 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
                 new AspectCase("４たい３", 1024, 768, new Rect(24f, 20f, 976f, 728f)),
                 new AspectCase("２０たい９", 2400, 1080, new Rect(96f, 28f, 2208f, 1024f))
             };
+
+            var menuGrid = _controller.Ui.transform.Find("Canvas/SafeArea/Menu/ModeButtons")
+                .GetComponent<GridLayoutGroup>();
+            var menuButtons = menuGrid.GetComponentsInChildren<Button>(true);
+            Assert.That(menuButtons.Length, Is.EqualTo(7));
+            AssertTouchTargets(menuButtons, cases, safe, scaler, 48f, 44f);
+            AssertGridFits(menuGrid, menuButtons.Length, cases, safe, scaler);
+
+            _controller.Ui.transform.Find("Canvas/SafeArea/Menu/ModeButtons/Samples")
+                .GetComponent<Button>().onClick.Invoke();
+            Canvas.ForceUpdateCanvases();
+            yield return null;
+            var samplePanel = _controller.Ui.transform.Find("Canvas/SafeArea/Samples");
+            var sampleTargets = samplePanel.GetComponentsInChildren<Button>(true)
+                .Where(button => button.gameObject.activeInHierarchy)
+                .ToArray();
+            Assert.That(sampleTargets.Length, Is.EqualTo(7));
+            AssertTouchTargets(sampleTargets, cases, safe, scaler, 48f, 44f);
+            var sampleGrid = samplePanel.Find("SampleButtons").GetComponent<GridLayoutGroup>();
+            AssertGridFits(sampleGrid, 6, cases, safe, scaler);
+
+            _controller.StartMode("sandbox");
+            Canvas.ForceUpdateCanvases();
+            yield return null;
             var criticalButtons = _controller.Ui.GetComponentsInChildren<Button>(true)
                 .Where(button => button.gameObject.activeInHierarchy)
                 .Where(button => button.GetComponentInParent<ScrollRect>() == null)
                 .ToArray();
             Assert.That(criticalButtons.Length, Is.GreaterThanOrEqualTo(10));
-
-            foreach (var aspect in cases)
-            {
-                var clamped = SafeAreaPanel.ClampToScreen(aspect.safeArea, aspect.width, aspect.height);
-                Assert.That(clamped.xMin, Is.GreaterThanOrEqualTo(0f), aspect.name);
-                Assert.That(clamped.yMin, Is.GreaterThanOrEqualTo(0f), aspect.name);
-                Assert.That(clamped.xMax, Is.LessThanOrEqualTo(aspect.width), aspect.name);
-                Assert.That(clamped.yMax, Is.LessThanOrEqualTo(aspect.height), aspect.name);
-
-                var canvasScale = CanvasScale(aspect, scaler);
-                var virtualSafeSize = VirtualSafeSize(aspect, clamped, scaler);
-                foreach (var button in criticalButtons)
-                {
-                    var rect = (RectTransform)button.transform;
-                    var simulatedPixels = SimulatedSizeWithinSafeRoot(rect, safe, virtualSafeSize) * canvasScale;
-                    Assert.That(simulatedPixels.x, Is.GreaterThanOrEqualTo(44f), aspect.name + "/" + button.name + " width");
-                    Assert.That(simulatedPixels.y, Is.GreaterThanOrEqualTo(44f), aspect.name + "/" + button.name + " height");
-                    Assert.That(IsNormalizedInsideParent(rect), Is.True, aspect.name + "/" + button.name + " anchors");
-                }
-            }
+            AssertTouchTargets(criticalButtons, cases, safe, scaler, 44f, 44f);
         }
 
         [UnityTest]
@@ -617,6 +771,70 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
                 Mathf.Pow(2f, Mathf.Lerp(logWidth, logHeight, scaler.matchWidthOrHeight)));
         }
 
+        private static void AssertTouchTargets(
+            IReadOnlyList<Button> buttons,
+            IReadOnlyList<AspectCase> cases,
+            RectTransform safeRoot,
+            CanvasScaler scaler,
+            float minimumWidth,
+            float minimumHeight)
+        {
+            foreach (var aspect in cases)
+            {
+                var clamped = SafeAreaPanel.ClampToScreen(aspect.safeArea, aspect.width, aspect.height);
+                Assert.That(clamped.xMin, Is.GreaterThanOrEqualTo(0f), aspect.name);
+                Assert.That(clamped.yMin, Is.GreaterThanOrEqualTo(0f), aspect.name);
+                Assert.That(clamped.xMax, Is.LessThanOrEqualTo(aspect.width), aspect.name);
+                Assert.That(clamped.yMax, Is.LessThanOrEqualTo(aspect.height), aspect.name);
+
+                var canvasScale = CanvasScale(aspect, scaler);
+                var virtualSafeSize = VirtualSafeSize(aspect, clamped, scaler);
+                foreach (var button in buttons)
+                {
+                    var rect = (RectTransform)button.transform;
+                    var simulatedPixels = SimulatedSizeWithinSafeRoot(rect, safeRoot, virtualSafeSize) * canvasScale;
+                    Assert.That(simulatedPixels.x, Is.GreaterThanOrEqualTo(minimumWidth),
+                        aspect.name + "/" + button.name + " width");
+                    Assert.That(simulatedPixels.y, Is.GreaterThanOrEqualTo(minimumHeight),
+                        aspect.name + "/" + button.name + " height");
+                    Assert.That(IsNormalizedInsideParent(rect), Is.True,
+                        aspect.name + "/" + button.name + " anchors");
+                }
+            }
+        }
+
+        private static void AssertGridFits(
+            GridLayoutGroup grid,
+            int childCount,
+            IReadOnlyList<AspectCase> cases,
+            RectTransform safeRoot,
+            CanvasScaler scaler)
+        {
+            Assert.That(grid.constraint, Is.EqualTo(GridLayoutGroup.Constraint.FixedColumnCount));
+            var columns = Mathf.Max(1, grid.constraintCount);
+            var rows = Mathf.CeilToInt(childCount / (float)columns);
+            var requiredWidth = grid.padding.horizontal
+                + columns * grid.cellSize.x
+                + Mathf.Max(0, columns - 1) * grid.spacing.x;
+            var requiredHeight = grid.padding.vertical
+                + rows * grid.cellSize.y
+                + Mathf.Max(0, rows - 1) * grid.spacing.y;
+
+            foreach (var aspect in cases)
+            {
+                var clamped = SafeAreaPanel.ClampToScreen(aspect.safeArea, aspect.width, aspect.height);
+                var virtualSafeSize = VirtualSafeSize(aspect, clamped, scaler);
+                var available = SimulatedSizeWithinSafeRoot(
+                    (RectTransform)grid.transform,
+                    safeRoot,
+                    virtualSafeSize);
+                Assert.That(available.x, Is.GreaterThanOrEqualTo(requiredWidth),
+                    aspect.name + "/" + grid.name + " grid width");
+                Assert.That(available.y, Is.GreaterThanOrEqualTo(requiredHeight),
+                    aspect.name + "/" + grid.name + " grid height");
+            }
+        }
+
         private static Vector2 SimulatedSizeWithinSafeRoot(
             RectTransform rect,
             RectTransform safeRoot,
@@ -640,6 +858,31 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
                 && rect.anchorMax.y <= 1f + epsilon
                 && rect.anchorMin.x <= rect.anchorMax.x
                 && rect.anchorMin.y <= rect.anchorMax.y;
+        }
+
+        private PieceView ViewFor(MarblePieceKind kind)
+        {
+            return _controller.PieceViews.Values.First(view => view.Record.kind == kind);
+        }
+
+        private static bool IsTransparentRenderer(Renderer renderer)
+        {
+            var material = renderer.sharedMaterial;
+            return material != null && material.renderQueue >= 3000 && material.color.a < 0.90f;
+        }
+
+        private static float RendererHeight(PieceView view)
+        {
+            var renderers = view.GetComponentsInChildren<Renderer>();
+            Assert.That(renderers.Length, Is.GreaterThan(0), view.Record.kind.ToString());
+            var minimum = renderers[0].bounds.min.y;
+            var maximum = renderers[0].bounds.max.y;
+            for (var index = 1; index < renderers.Length; index++)
+            {
+                minimum = Mathf.Min(minimum, renderers[index].bounds.min.y);
+                maximum = Mathf.Max(maximum, renderers[index].bounds.max.y);
+            }
+            return maximum - minimum;
         }
 
         private void BuildStraightCourse()

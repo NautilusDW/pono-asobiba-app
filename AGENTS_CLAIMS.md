@@ -58,6 +58,8 @@
 ## Active claims
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
+- 2026-07-10 22:00 - by Claude - [batch:1212-branch-unification-plan] - docs/branch-unification-plan.md (新規), CLAUDE.md, AGENTS.md, .github/copilot-instructions.md (確認のみ), memory/**, HANDOFF.md, AGENTS_CLAIMS.md - develop/develop-app 単一トランク統合の計画策定 + ドキュメント反映 (実装は別バッチ、今回は計画と書類のみ)
+- 2026-07-10 21:05 - by Codex - [batch:1211-maze-minigame-bgm] - maze/index.html, assets/audio/maze/minigame/**, native/content-manifest.json, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - SUNO製9曲を迷路内ミニゲーム別BGMへ接続し、探索曲復帰・クロスフェード・音声ダッキング・キャッシュ/ネイティブ収録を実装 [overlap: batch:911-maze-water-bug-body-collision]
 - 2026-07-07 12:24 - by Claude - [batch:1058-tutorial-impl-phase1] - bento/index.html, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - tut2 チュートリアル実装 phase1 (見本→まねっこ、15ステップ+2ラッパー、mock voice、PAUSED解除、storage v2)
 - 2026-07-07 - by Claude - [batch:1058-tut2-hotfix4] - bento/index.html, sw.js, play.html, docs/BENTO_TUTORIAL_SCRIPT.md, AGENTS_CLAIMS.md, HANDOFF.md - tut2 UX方針転換: シーケンス順序・ボックス統合・ポノ中心ナレーション・Step6編集パネル詳細説明
 

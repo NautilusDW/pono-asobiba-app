@@ -1,249 +1,181 @@
 <?xml version="1.0" encoding="utf-8"?>
-<test-run id="2" testcasecount="20" result="Passed" total="20" passed="20" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-07-10 10:57:06Z" end-time="2026-07-10 10:57:15Z" duration="9.181172">
-  <test-suite type="TestSuite" id="1028" name="ポノの マーブルラン" fullname="ポノの マーブルラン" runstate="Runnable" testcasecount="20" result="Passed" start-time="2026-07-10 10:57:06Z" end-time="2026-07-10 10:57:15Z" duration="9.181172" total="20" passed="20" failed="0" inconclusive="0" skipped="0" asserts="0">
+<test-run id="2" testcasecount="23" result="Passed" total="23" passed="23" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-07-10 12:24:49Z" end-time="2026-07-10 12:24:58Z" duration="9.362871">
+  <test-suite type="TestSuite" id="1031" name="ポノの マーブルラン" fullname="ポノの マーブルラン" runstate="Runnable" testcasecount="23" result="Passed" start-time="2026-07-10 12:24:49Z" end-time="2026-07-10 12:24:58Z" duration="9.362871" total="23" passed="23" failed="0" inconclusive="0" skipped="0" asserts="0">
     <properties>
       <property name="platform" value="PlayMode" />
     </properties>
-    <test-suite type="Assembly" id="1022" name="Pono.MarbleRun.Tests.PlayMode.dll" fullname="/Users/ndw_mac/AppDevelopment/pono-asobiba-app/unity/PonoMarbleRun3D/Library/ScriptAssemblies/Pono.MarbleRun.Tests.PlayMode.dll" runstate="Runnable" testcasecount="20" result="Passed" start-time="2026-07-10 10:57:06Z" end-time="2026-07-10 10:57:15Z" duration="9.178162" total="20" passed="20" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <test-suite type="Assembly" id="1025" name="Pono.MarbleRun.Tests.PlayMode.dll" fullname="/Users/ndw_mac/AppDevelopment/pono-asobiba-app/unity/PonoMarbleRun3D/Library/ScriptAssemblies/Pono.MarbleRun.Tests.PlayMode.dll" runstate="Runnable" testcasecount="23" result="Passed" start-time="2026-07-10 12:24:49Z" end-time="2026-07-10 12:24:58Z" duration="9.359505" total="23" passed="23" failed="0" inconclusive="0" skipped="0" asserts="0">
       <properties>
-        <property name="_PID" value="19522" />
+        <property name="_PID" value="32847" />
         <property name="_APPDOMAIN" value="Unity Child Domain" />
         <property name="platform" value="PlayMode" />
         <property name="EditorOnly" value="False" />
       </properties>
-      <test-suite type="TestSuite" id="1023" name="Pono" fullname="Pono" runstate="Runnable" testcasecount="20" result="Passed" start-time="2026-07-10 10:57:06Z" end-time="2026-07-10 10:57:15Z" duration="9.178044" total="20" passed="20" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <test-suite type="TestSuite" id="1026" name="Pono" fullname="Pono" runstate="Runnable" testcasecount="23" result="Passed" start-time="2026-07-10 12:24:49Z" end-time="2026-07-10 12:24:58Z" duration="9.359372" total="23" passed="23" failed="0" inconclusive="0" skipped="0" asserts="0">
         <properties />
-        <test-suite type="TestSuite" id="1024" name="MarbleRun3D" fullname="Pono.MarbleRun3D" runstate="Runnable" testcasecount="20" result="Passed" start-time="2026-07-10 10:57:06Z" end-time="2026-07-10 10:57:15Z" duration="9.177989" total="20" passed="20" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <test-suite type="TestSuite" id="1027" name="MarbleRun3D" fullname="Pono.MarbleRun3D" runstate="Runnable" testcasecount="23" result="Passed" start-time="2026-07-10 12:24:49Z" end-time="2026-07-10 12:24:58Z" duration="9.359318" total="23" passed="23" failed="0" inconclusive="0" skipped="0" asserts="0">
           <properties />
-          <test-suite type="TestSuite" id="1025" name="Tests" fullname="Pono.MarbleRun3D.Tests" runstate="Runnable" testcasecount="20" result="Passed" start-time="2026-07-10 10:57:06Z" end-time="2026-07-10 10:57:15Z" duration="9.177936" total="20" passed="20" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <test-suite type="TestSuite" id="1028" name="Tests" fullname="Pono.MarbleRun3D.Tests" runstate="Runnable" testcasecount="23" result="Passed" start-time="2026-07-10 12:24:49Z" end-time="2026-07-10 12:24:58Z" duration="9.359268" total="23" passed="23" failed="0" inconclusive="0" skipped="0" asserts="0">
             <properties />
-            <test-suite type="TestSuite" id="1026" name="PlayMode" fullname="Pono.MarbleRun3D.Tests.PlayMode" runstate="Runnable" testcasecount="20" result="Passed" start-time="2026-07-10 10:57:06Z" end-time="2026-07-10 10:57:15Z" duration="9.177872" total="20" passed="20" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <test-suite type="TestSuite" id="1029" name="PlayMode" fullname="Pono.MarbleRun3D.Tests.PlayMode" runstate="Runnable" testcasecount="23" result="Passed" start-time="2026-07-10 12:24:49Z" end-time="2026-07-10 12:24:58Z" duration="9.359203" total="23" passed="23" failed="0" inconclusive="0" skipped="0" asserts="0">
               <properties />
-              <test-suite type="TestFixture" id="1001" name="MarbleRunRuntimePlayModeTests" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" testcasecount="20" result="Passed" start-time="2026-07-10 10:57:06Z" end-time="2026-07-10 10:57:15Z" duration="9.177354" total="20" passed="20" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <test-suite type="TestFixture" id="1001" name="MarbleRunRuntimePlayModeTests" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" testcasecount="23" result="Passed" start-time="2026-07-10 12:24:49Z" end-time="2026-07-10 12:24:58Z" duration="9.358758" total="23" passed="23" failed="0" inconclusive="0" skipped="0" asserts="0">
                 <properties />
-                <test-case id="1002" name="BootstrapCreatesMenuCameraUiAndNoRunningPhysics" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.BootstrapCreatesMenuCameraUiAndNoRunningPhysics" methodname="BootstrapCreatesMenuCameraUiAndNoRunningPhysics" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="1742123762" result="Passed" start-time="2026-07-10 10:57:06Z" end-time="2026-07-10 10:57:06Z" duration="0.134827" asserts="0">
+                <test-case id="1002" name="BootstrapCreatesMenuCameraUiAndNoRunningPhysics" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.BootstrapCreatesMenuCameraUiAndNoRunningPhysics" methodname="BootstrapCreatesMenuCameraUiAndNoRunningPhysics" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="600094257" result="Passed" start-time="2026-07-10 12:24:49Z" end-time="2026-07-10 12:24:49Z" duration="0.196083" asserts="0">
                   <properties>
                     <property name="_JOINTYPE" value="UnityCombinatorial" />
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1019" name="CameraOrbitAndZoomStayInChildSafeBounds" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.CameraOrbitAndZoomStayInChildSafeBounds" methodname="CameraOrbitAndZoomStayInChildSafeBounds" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="1361192335" result="Passed" start-time="2026-07-10 10:57:06Z" end-time="2026-07-10 10:57:06Z" duration="0.034534" asserts="0">
+                <test-case id="1022" name="CameraOrbitAndZoomStayInChildSafeBounds" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.CameraOrbitAndZoomStayInChildSafeBounds" methodname="CameraOrbitAndZoomStayInChildSafeBounds" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="1060270422" result="Passed" start-time="2026-07-10 12:24:49Z" end-time="2026-07-10 12:24:49Z" duration="0.032724" asserts="0">
                   <properties>
                     <property name="_JOINTYPE" value="UnityCombinatorial" />
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1008" name="ColoredMarblePoolLaunchesAndResetsWithoutDuplication" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.ColoredMarblePoolLaunchesAndResetsWithoutDuplication" methodname="ColoredMarblePoolLaunchesAndResetsWithoutDuplication" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="624224625" result="Passed" start-time="2026-07-10 10:57:06Z" end-time="2026-07-10 10:57:11Z" duration="4.511457" asserts="0">
-                  <properties>
-                    <property name="_JOINTYPE" value="UnityCombinatorial" />
-                    <property name="retryIteration" value="0" />
-                    <property name="repeatIteration" value="0" />
-                  </properties>
-                  <output><![CDATA[Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-]]></output>
-                </test-case>
-                <test-case id="1020" name="CriticalUiTargetsRemainInsideSafeAreaAtSixteenNineFourThreeAndTwentyNine" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.CriticalUiTargetsRemainInsideSafeAreaAtSixteenNineFourThreeAndTwentyNine" methodname="CriticalUiTargetsRemainInsideSafeAreaAtSixteenNineFourThreeAndTwentyNine" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="593139718" result="Passed" start-time="2026-07-10 10:57:11Z" end-time="2026-07-10 10:57:11Z" duration="0.013044" asserts="0">
+                <test-case id="1009" name="ColoredMarblePoolLaunchesAndResetsWithoutDuplication" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.ColoredMarblePoolLaunchesAndResetsWithoutDuplication" methodname="ColoredMarblePoolLaunchesAndResetsWithoutDuplication" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="39966327" result="Passed" start-time="2026-07-10 12:24:49Z" end-time="2026-07-10 12:24:54Z" duration="4.512927" asserts="0">
                   <properties>
                     <property name="_JOINTYPE" value="UnityCombinatorial" />
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1016" name="EverySampleCourseIsConnectedEditableAndFramesTheCamera" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.EverySampleCourseIsConnectedEditableAndFramesTheCamera" methodname="EverySampleCourseIsConnectedEditableAndFramesTheCamera" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="637735811" result="Passed" start-time="2026-07-10 10:57:11Z" end-time="2026-07-10 10:57:11Z" duration="0.026829" asserts="0">
+                <test-case id="1023" name="CriticalUiTargetsRemainInsideSafeAreaAtSixteenNineFourThreeAndTwentyNine" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.CriticalUiTargetsRemainInsideSafeAreaAtSixteenNineFourThreeAndTwentyNine" methodname="CriticalUiTargetsRemainInsideSafeAreaAtSixteenNineFourThreeAndTwentyNine" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="545887750" result="Passed" start-time="2026-07-10 12:24:54Z" end-time="2026-07-10 12:24:54Z" duration="0.020431" asserts="0">
                   <properties>
                     <property name="_JOINTYPE" value="UnityCombinatorial" />
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1003" name="FourHeightLevelsCanBeSelectedShownAndUsedAtOneGridCell" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.FourHeightLevelsCanBeSelectedShownAndUsedAtOneGridCell" methodname="FourHeightLevelsCanBeSelectedShownAndUsedAtOneGridCell" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="1470428428" result="Passed" start-time="2026-07-10 10:57:11Z" end-time="2026-07-10 10:57:11Z" duration="0.019752" asserts="0">
+                <test-case id="1019" name="EverySampleCourseIsConnectedEditableAndFramesTheCamera" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.EverySampleCourseIsConnectedEditableAndFramesTheCamera" methodname="EverySampleCourseIsConnectedEditableAndFramesTheCamera" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="936644727" result="Passed" start-time="2026-07-10 12:24:54Z" end-time="2026-07-10 12:24:54Z" duration="0.038727" asserts="0">
                   <properties>
                     <property name="_JOINTYPE" value="UnityCombinatorial" />
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1011" name="GoalCelebrationChangesCameraLightAndReturnsToEdit" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.GoalCelebrationChangesCameraLightAndReturnsToEdit" methodname="GoalCelebrationChangesCameraLightAndReturnsToEdit" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="553183251" result="Passed" start-time="2026-07-10 10:57:11Z" end-time="2026-07-10 10:57:11Z" duration="0.142509" asserts="0">
-                  <properties>
-                    <property name="_JOINTYPE" value="UnityCombinatorial" />
-                    <property name="retryIteration" value="0" />
-                    <property name="repeatIteration" value="0" />
-                  </properties>
-                  <output><![CDATA[Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-]]></output>
-                </test-case>
-                <test-case id="1010" name="GoalCountsEachActiveMarbleOnceAndCelebratesAfterTheLast" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.GoalCountsEachActiveMarbleOnceAndCelebratesAfterTheLast" methodname="GoalCountsEachActiveMarbleOnceAndCelebratesAfterTheLast" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="591315323" result="Passed" start-time="2026-07-10 10:57:11Z" end-time="2026-07-10 10:57:13Z" duration="2.261139" asserts="0">
-                  <properties>
-                    <property name="_JOINTYPE" value="UnityCombinatorial" />
-                    <property name="retryIteration" value="0" />
-                    <property name="repeatIteration" value="0" />
-                  </properties>
-                  <output><![CDATA[Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-]]></output>
-                </test-case>
-                <test-case id="1015" name="HelixStepsAndLiftCreateTrueMultiLevelCourseViews" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.HelixStepsAndLiftCreateTrueMultiLevelCourseViews" methodname="HelixStepsAndLiftCreateTrueMultiLevelCourseViews" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="1365078786" result="Passed" start-time="2026-07-10 10:57:13Z" end-time="2026-07-10 10:57:13Z" duration="0.032402" asserts="0">
+                <test-case id="1004" name="FourHeightLevelsCanBeSelectedShownAndUsedAtOneGridCell" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.FourHeightLevelsCanBeSelectedShownAndUsedAtOneGridCell" methodname="FourHeightLevelsCanBeSelectedShownAndUsedAtOneGridCell" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="977358608" result="Passed" start-time="2026-07-10 12:24:54Z" end-time="2026-07-10 12:24:54Z" duration="0.020383" asserts="0">
                   <properties>
                     <property name="_JOINTYPE" value="UnityCombinatorial" />
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1018" name="HighSpeedContinuousMarbleDoesNotTunnelThroughThinWall" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.HighSpeedContinuousMarbleDoesNotTunnelThroughThinWall" methodname="HighSpeedContinuousMarbleDoesNotTunnelThroughThinWall" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="443784609" result="Passed" start-time="2026-07-10 10:57:13Z" end-time="2026-07-10 10:57:14Z" duration="0.540722" asserts="0">
+                <test-case id="1012" name="GoalCelebrationChangesCameraLightAndReturnsToEdit" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.GoalCelebrationChangesCameraLightAndReturnsToEdit" methodname="GoalCelebrationChangesCameraLightAndReturnsToEdit" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="376311007" result="Passed" start-time="2026-07-10 12:24:54Z" end-time="2026-07-10 12:24:54Z" duration="0.146843" asserts="0">
                   <properties>
                     <property name="_JOINTYPE" value="UnityCombinatorial" />
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1014" name="MechanismsExposeDynamicBodiesAndRestoreWhenEditingResumes" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.MechanismsExposeDynamicBodiesAndRestoreWhenEditingResumes" methodname="MechanismsExposeDynamicBodiesAndRestoreWhenEditingResumes" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="899203779" result="Passed" start-time="2026-07-10 10:57:14Z" end-time="2026-07-10 10:57:14Z" duration="0.034034" asserts="0">
-                  <properties>
-                    <property name="_JOINTYPE" value="UnityCombinatorial" />
-                    <property name="retryIteration" value="0" />
-                    <property name="repeatIteration" value="0" />
-                  </properties>
-                  <output><![CDATA[Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-]]></output>
-                </test-case>
-                <test-case id="1006" name="PaletteDragHandlesMouseAndTouchStylePointerEvents" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.PaletteDragHandlesMouseAndTouchStylePointerEvents" methodname="PaletteDragHandlesMouseAndTouchStylePointerEvents" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="330891823" result="Passed" start-time="2026-07-10 10:57:14Z" end-time="2026-07-10 10:57:14Z" duration="0.015877" asserts="0">
+                <test-case id="1011" name="GoalCountsEachActiveMarbleOnceAndCelebratesAfterTheLast" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.GoalCountsEachActiveMarbleOnceAndCelebratesAfterTheLast" methodname="GoalCountsEachActiveMarbleOnceAndCelebratesAfterTheLast" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="869122868" result="Passed" start-time="2026-07-10 12:24:54Z" end-time="2026-07-10 12:24:56Z" duration="2.262737" asserts="0">
                   <properties>
                     <property name="_JOINTYPE" value="UnityCombinatorial" />
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1009" name="PauseFreezesMarbleAndAllDynamicMechanisms" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.PauseFreezesMarbleAndAllDynamicMechanisms" methodname="PauseFreezesMarbleAndAllDynamicMechanisms" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="1282336473" result="Passed" start-time="2026-07-10 10:57:14Z" end-time="2026-07-10 10:57:15Z" duration="1.253040" asserts="0">
-                  <properties>
-                    <property name="_JOINTYPE" value="UnityCombinatorial" />
-                    <property name="retryIteration" value="0" />
-                    <property name="repeatIteration" value="0" />
-                  </properties>
-                  <output><![CDATA[Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-]]></output>
-                </test-case>
-                <test-case id="1012" name="PausingCelebrationKeepsResumeAboveGoalPanel" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.PausingCelebrationKeepsResumeAboveGoalPanel" methodname="PausingCelebrationKeepsResumeAboveGoalPanel" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="1665895787" result="Passed" start-time="2026-07-10 10:57:15Z" end-time="2026-07-10 10:57:15Z" duration="0.022565" asserts="0">
-                  <properties>
-                    <property name="_JOINTYPE" value="UnityCombinatorial" />
-                    <property name="retryIteration" value="0" />
-                    <property name="repeatIteration" value="0" />
-                  </properties>
-                  <output><![CDATA[Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-]]></output>
-                </test-case>
-                <test-case id="1004" name="PlaceRotateDeleteUndoAndClearRemainEditable" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.PlaceRotateDeleteUndoAndClearRemainEditable" methodname="PlaceRotateDeleteUndoAndClearRemainEditable" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="695773429" result="Passed" start-time="2026-07-10 10:57:15Z" end-time="2026-07-10 10:57:15Z" duration="0.018178" asserts="0">
+                <test-case id="1016" name="HelixStepsAndLiftCreateTrueMultiLevelCourseViews" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.HelixStepsAndLiftCreateTrueMultiLevelCourseViews" methodname="HelixStepsAndLiftCreateTrueMultiLevelCourseViews" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="695782462" result="Passed" start-time="2026-07-10 12:24:56Z" end-time="2026-07-10 12:24:56Z" duration="0.033620" asserts="0">
                   <properties>
                     <property name="_JOINTYPE" value="UnityCombinatorial" />
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1021" name="RuntimeMarbleUsesTunedCcdAndPhysicsValues" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.RuntimeMarbleUsesTunedCcdAndPhysicsValues" methodname="RuntimeMarbleUsesTunedCcdAndPhysicsValues" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="1565418036" result="Passed" start-time="2026-07-10 10:57:15Z" end-time="2026-07-10 10:57:15Z" duration="0.027688" asserts="0">
-                  <properties>
-                    <property name="_JOINTYPE" value="UnityCombinatorial" />
-                    <property name="retryIteration" value="0" />
-                    <property name="repeatIteration" value="0" />
-                  </properties>
-                  <output><![CDATA[Setting linear velocity of a kinematic body is not supported.
-Setting angular velocity of a kinematic body is not supported.
-]]></output>
-                </test-case>
-                <test-case id="1005" name="SampleChooserLoadsEditableCourseAndExplainsClockwiseRotation" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.SampleChooserLoadsEditableCourseAndExplainsClockwiseRotation" methodname="SampleChooserLoadsEditableCourseAndExplainsClockwiseRotation" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="770347356" result="Passed" start-time="2026-07-10 10:57:15Z" end-time="2026-07-10 10:57:15Z" duration="0.031501" asserts="0">
+                <test-case id="1021" name="HighSpeedContinuousMarbleDoesNotTunnelThroughThinWall" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.HighSpeedContinuousMarbleDoesNotTunnelThroughThinWall" methodname="HighSpeedContinuousMarbleDoesNotTunnelThroughThinWall" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="906249157" result="Passed" start-time="2026-07-10 12:24:56Z" end-time="2026-07-10 12:24:57Z" duration="0.529222" asserts="0">
                   <properties>
                     <property name="_JOINTYPE" value="UnityCombinatorial" />
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1017" name="SaveLoadRoundTripRestoresAndAllowsFurtherEditing" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.SaveLoadRoundTripRestoresAndAllowsFurtherEditing" methodname="SaveLoadRoundTripRestoresAndAllowsFurtherEditing" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="166029368" result="Passed" start-time="2026-07-10 10:57:15Z" end-time="2026-07-10 10:57:15Z" duration="0.016334" asserts="0">
+                <test-case id="1015" name="MechanismsExposeDynamicBodiesAndRestoreWhenEditingResumes" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.MechanismsExposeDynamicBodiesAndRestoreWhenEditingResumes" methodname="MechanismsExposeDynamicBodiesAndRestoreWhenEditingResumes" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="1000238019" result="Passed" start-time="2026-07-10 12:24:57Z" end-time="2026-07-10 12:24:57Z" duration="0.036820" asserts="0">
                   <properties>
                     <property name="_JOINTYPE" value="UnityCombinatorial" />
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1013" name="TutorialReachesTryInstructionAfterConnectedCourse" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.TutorialReachesTryInstructionAfterConnectedCourse" methodname="TutorialReachesTryInstructionAfterConnectedCourse" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="1015225850" result="Passed" start-time="2026-07-10 10:57:15Z" end-time="2026-07-10 10:57:15Z" duration="0.022755" asserts="0">
+                <test-case id="1018" name="NewVarietyViewsExposeTallTransparentWavyAndMovingGeometry" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.NewVarietyViewsExposeTallTransparentWavyAndMovingGeometry" methodname="NewVarietyViewsExposeTallTransparentWavyAndMovingGeometry" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="513662957" result="Passed" start-time="2026-07-10 12:24:57Z" end-time="2026-07-10 12:24:57Z" duration="0.020286" asserts="0">
                   <properties>
                     <property name="_JOINTYPE" value="UnityCombinatorial" />
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1007" name="VerticalPaletteDragScrollsInsteadOfPlacing" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.VerticalPaletteDragScrollsInsteadOfPlacing" methodname="VerticalPaletteDragScrollsInsteadOfPlacing" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="1402111368" result="Passed" start-time="2026-07-10 10:57:15Z" end-time="2026-07-10 10:57:15Z" duration="0.012280" asserts="0">
+                <test-case id="1007" name="PaletteDragHandlesMouseAndTouchStylePointerEvents" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.PaletteDragHandlesMouseAndTouchStylePointerEvents" methodname="PaletteDragHandlesMouseAndTouchStylePointerEvents" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="1622810035" result="Passed" start-time="2026-07-10 12:24:57Z" end-time="2026-07-10 12:24:57Z" duration="0.018404" asserts="0">
+                  <properties>
+                    <property name="_JOINTYPE" value="UnityCombinatorial" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1010" name="PauseFreezesMarbleAndAllDynamicMechanisms" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.PauseFreezesMarbleAndAllDynamicMechanisms" methodname="PauseFreezesMarbleAndAllDynamicMechanisms" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="106072432" result="Passed" start-time="2026-07-10 12:24:57Z" end-time="2026-07-10 12:24:58Z" duration="1.256929" asserts="0">
+                  <properties>
+                    <property name="_JOINTYPE" value="UnityCombinatorial" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1013" name="PausingCelebrationKeepsResumeAboveGoalPanel" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.PausingCelebrationKeepsResumeAboveGoalPanel" methodname="PausingCelebrationKeepsResumeAboveGoalPanel" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="1928177647" result="Passed" start-time="2026-07-10 12:24:58Z" end-time="2026-07-10 12:24:58Z" duration="0.024424" asserts="0">
+                  <properties>
+                    <property name="_JOINTYPE" value="UnityCombinatorial" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1005" name="PlaceRotateDeleteUndoAndClearRemainEditable" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.PlaceRotateDeleteUndoAndClearRemainEditable" methodname="PlaceRotateDeleteUndoAndClearRemainEditable" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="1910211093" result="Passed" start-time="2026-07-10 12:24:58Z" end-time="2026-07-10 12:24:58Z" duration="0.020118" asserts="0">
+                  <properties>
+                    <property name="_JOINTYPE" value="UnityCombinatorial" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1024" name="RuntimeMarbleUsesTunedCcdAndPhysicsValues" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.RuntimeMarbleUsesTunedCcdAndPhysicsValues" methodname="RuntimeMarbleUsesTunedCcdAndPhysicsValues" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="482044659" result="Passed" start-time="2026-07-10 12:24:58Z" end-time="2026-07-10 12:24:58Z" duration="0.044187" asserts="0">
+                  <properties>
+                    <property name="_JOINTYPE" value="UnityCombinatorial" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1006" name="SampleChooserLoadsEditableCourseAndExplainsClockwiseRotation" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.SampleChooserLoadsEditableCourseAndExplainsClockwiseRotation" methodname="SampleChooserLoadsEditableCourseAndExplainsClockwiseRotation" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="232367854" result="Passed" start-time="2026-07-10 12:24:58Z" end-time="2026-07-10 12:24:58Z" duration="0.034462" asserts="0">
+                  <properties>
+                    <property name="_JOINTYPE" value="UnityCombinatorial" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1020" name="SaveLoadRoundTripRestoresAndAllowsFurtherEditing" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.SaveLoadRoundTripRestoresAndAllowsFurtherEditing" methodname="SaveLoadRoundTripRestoresAndAllowsFurtherEditing" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="2114032325" result="Passed" start-time="2026-07-10 12:24:58Z" end-time="2026-07-10 12:24:58Z" duration="0.019606" asserts="0">
+                  <properties>
+                    <property name="_JOINTYPE" value="UnityCombinatorial" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1003" name="StarterButtonLoadsConnectedRichEditableCourseAndFramesItsHeight" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.StarterButtonLoadsConnectedRichEditableCourseAndFramesItsHeight" methodname="StarterButtonLoadsConnectedRichEditableCourseAndFramesItsHeight" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="668622058" result="Passed" start-time="2026-07-10 12:24:58Z" end-time="2026-07-10 12:24:58Z" duration="0.019861" asserts="0">
+                  <properties>
+                    <property name="_JOINTYPE" value="UnityCombinatorial" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1017" name="TornadoAndElevatorSamplesLoadConnectedNewPieceCourses" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.TornadoAndElevatorSamplesLoadConnectedNewPieceCourses" methodname="TornadoAndElevatorSamplesLoadConnectedNewPieceCourses" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="627198776" result="Passed" start-time="2026-07-10 12:24:58Z" end-time="2026-07-10 12:24:58Z" duration="0.023774" asserts="0">
+                  <properties>
+                    <property name="_JOINTYPE" value="UnityCombinatorial" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1014" name="TutorialReachesTryInstructionAfterConnectedCourse" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.TutorialReachesTryInstructionAfterConnectedCourse" methodname="TutorialReachesTryInstructionAfterConnectedCourse" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="344257594" result="Passed" start-time="2026-07-10 12:24:58Z" end-time="2026-07-10 12:24:58Z" duration="0.022321" asserts="0">
+                  <properties>
+                    <property name="_JOINTYPE" value="UnityCombinatorial" />
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1008" name="VerticalPaletteDragScrollsInsteadOfPlacing" fullname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests.VerticalPaletteDragScrollsInsteadOfPlacing" methodname="VerticalPaletteDragScrollsInsteadOfPlacing" classname="Pono.MarbleRun3D.Tests.PlayMode.MarbleRunRuntimePlayModeTests" runstate="Runnable" seed="325152965" result="Passed" start-time="2026-07-10 12:24:58Z" end-time="2026-07-10 12:24:58Z" duration="0.017843" asserts="0">
                   <properties>
                     <property name="_JOINTYPE" value="UnityCombinatorial" />
                     <property name="retryIteration" value="0" />

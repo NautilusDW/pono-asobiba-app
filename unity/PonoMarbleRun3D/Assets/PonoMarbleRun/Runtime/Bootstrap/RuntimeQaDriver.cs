@@ -139,6 +139,18 @@ namespace Pono.MarbleRun3D.Bootstrap
                     _controller.StartMode("sample4");
                     _controller.ToggleCameraAngle();
                     break;
+                case "variety-edit":
+                    _controller.StartMode("starter");
+                    break;
+                case "variety-run":
+                    _controller.StartMode("starter");
+                    _controller.StartRun();
+                    yield return new WaitForSecondsRealtime(4.2f);
+                    break;
+                case "variety-top":
+                    _controller.StartMode("starter");
+                    _controller.ToggleCameraAngle();
+                    break;
                 case "pause":
                     BuildStraightCourse();
                     _controller.StartRun();
@@ -166,6 +178,18 @@ namespace Pono.MarbleRun3D.Bootstrap
                 case "lift-physical":
                     var liftGoal = WaitForSampleGoal("sample4");
                     while (liftGoal.MoveNext()) yield return liftGoal.Current;
+                    break;
+                case "tornado-physical":
+                    var tornadoGoal = WaitForSampleGoal("sample5");
+                    while (tornadoGoal.MoveNext()) yield return tornadoGoal.Current;
+                    break;
+                case "elevator-physical":
+                    var elevatorGoal = WaitForSampleGoal("sample6");
+                    while (elevatorGoal.MoveNext()) yield return elevatorGoal.Current;
+                    break;
+                case "variety-physical":
+                    var varietyGoal = WaitForSampleGoal("starter");
+                    while (varietyGoal.MoveNext()) yield return varietyGoal.Current;
                     break;
                 case "journey":
                     var journey = RunJourney();
@@ -249,6 +273,12 @@ namespace Pono.MarbleRun3D.Bootstrap
             Place(MarblePieceKind.Steps, 2, 1, 0);
             Place(MarblePieceKind.Lift, 4, 1, 0);
             Place(MarblePieceKind.Straight, -5, 1, 0, 2);
+            Place(MarblePieceKind.Tornado, -5, 4, 0);
+            Place(MarblePieceKind.Elevator, -3, 4, 0);
+            Place(MarblePieceKind.ClearTube, -1, 4, 0);
+            Place(MarblePieceKind.ClearCurve, 1, 4, 0);
+            Place(MarblePieceKind.Wave, 3, 4, 0);
+            Place(MarblePieceKind.Spinner, 5, 4, 0);
         }
 
         private void Place(MarblePieceKind kind, int x, int z, int turns, int level = 0)

@@ -20,7 +20,7 @@ namespace Pono.MarbleRun3D.Gameplay
     [DisallowMultipleComponent]
     public sealed class MarbleRunGameController : MonoBehaviour
     {
-        private const int MaximumPieces = 64;
+        private const int MaximumPieces = 96;
         private const int MaximumMarbles = 8;
         private const float MarbleReleaseInterval = 0.36f;
         private const float PointerDragThreshold = 10f;
@@ -1075,9 +1075,21 @@ namespace Pono.MarbleRun3D.Gameplay
             _ui?.SetInventory(_mode, _course);
             if (_course != null)
             {
-                var positions = new List<Vector3>(_course.pieces.Count);
+                var positions = new List<Vector3>(_course.pieces.Count * 3);
                 for (var i = 0; i < _course.pieces.Count; i++)
-                    positions.Add(WoodenPieceFactory.PoseToWorld(_course.pieces[i].pose));
+                {
+                    var piece = _course.pieces[i];
+                    positions.Add(WoodenPieceFactory.PoseToWorld(piece.pose));
+                    var connectors = PartCatalog.Get(piece.kind).Connectors;
+                    for (var connectorIndex = 0; connectorIndex < connectors.Count; connectorIndex++)
+                    {
+                        var connector = PartCatalog.GetWorldConnector(piece, connectorIndex);
+                        positions.Add(new Vector3(
+                            connector.cellPosition.x * WoodenPieceFactory.CellSize,
+                            WoodenPieceFactory.PieceRootY + connector.level * WoodenPieceFactory.LevelHeight,
+                            connector.cellPosition.y * WoodenPieceFactory.CellSize));
+                    }
+                }
                 _orbit?.FrameCourse(positions);
             }
         }
@@ -1161,9 +1173,7 @@ namespace Pono.MarbleRun3D.Gameplay
             if (marble == null || start == null || start.MarbleSpawn == null) return;
             var body = marble.Body;
             marble.Object.SetActive(true);
-            body.isKinematic = true;
-            body.linearVelocity = Vector3.zero;
-            body.angularVelocity = Vector3.zero;
+            FreezeBody(body);
             body.position = start.MarbleSpawn.position;
             body.rotation = start.MarbleSpawn.rotation;
             marble.Trail.Clear();
@@ -1176,9 +1186,7 @@ namespace Pono.MarbleRun3D.Gameplay
         private IEnumerator ResetAfterFall(MarbleRuntime marble)
         {
             if (marble == null) yield break;
-            marble.Body.isKinematic = true;
-            marble.Body.linearVelocity = Vector3.zero;
-            marble.Body.angularVelocity = Vector3.zero;
+            FreezeBody(marble.Body);
             marble.Object.SetActive(false);
             _ui.SetStatus("たまを もどすね", false);
             yield return new WaitForSeconds(0.28f);
@@ -1219,9 +1227,7 @@ namespace Pono.MarbleRun3D.Gameplay
             for (var i = 0; i < _marbles.Count; i++)
             {
                 var marble = _marbles[i];
-                marble.Body.isKinematic = true;
-                marble.Body.linearVelocity = Vector3.zero;
-                marble.Body.angularVelocity = Vector3.zero;
+                FreezeBody(marble.Body);
                 marble.Trail.Clear();
                 marble.Safety.Reset();
                 marble.ReachedGoal = false;
@@ -1244,9 +1250,7 @@ namespace Pono.MarbleRun3D.Gameplay
             var runtime = _marbles[marble.Index];
             if (runtime.ReachedGoal) return;
             runtime.ReachedGoal = true;
-            runtime.Body.isKinematic = true;
-            runtime.Body.linearVelocity = Vector3.zero;
-            runtime.Body.angularVelocity = Vector3.zero;
+            FreezeBody(runtime.Body);
             _marblesAtGoal++;
             _ui.SetStatus("たまが ついたよ", false);
 
@@ -1363,6 +1367,14 @@ namespace Pono.MarbleRun3D.Gameplay
             if (material.HasProperty("_Smoothness")) material.SetFloat("_Smoothness", smoothness);
             material.enableInstancing = true;
             return material;
+        }
+
+        private static void FreezeBody(Rigidbody body)
+        {
+            if (body == null || body.isKinematic) return;
+            body.linearVelocity = Vector3.zero;
+            body.angularVelocity = Vector3.zero;
+            body.isKinematic = true;
         }
     }
 }

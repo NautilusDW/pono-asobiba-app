@@ -148,6 +148,82 @@ namespace Pono.MarbleRun3D.Tests.EditMode
         }
 
         [Test]
+        public void VarietyPiecesExposeDistinctiveGeometryGuidesAndTransparentMaterials()
+        {
+            var root = new GameObject("test-root").transform;
+            var materials = new ToyMaterialLibrary();
+            try
+            {
+                var tornado = Make(MarblePieceKind.Tornado, root, materials);
+                Assert.That(tornado.GetComponentInChildren<HelixMarbleGuide>(true), Is.Not.Null);
+                var tornadoSegments = tornado.GetComponentsInChildren<Collider>(true)
+                    .Where(collider => collider.name == "トルネード みち" && collider.enabled)
+                    .ToArray();
+                Assert.That(tornadoSegments.Length, Is.GreaterThanOrEqualTo(36));
+                var tornadoBounds = tornado.GetComponentsInChildren<Renderer>(true)
+                    .Where(renderer => renderer.name.StartsWith("トルネード"))
+                    .Select(renderer => renderer.bounds)
+                    .ToArray();
+                Assert.That(tornadoBounds.Max(bounds => bounds.max.y) - tornadoBounds.Min(bounds => bounds.min.y),
+                    Is.GreaterThan(WoodenPieceFactory.LevelHeight * 2.8f));
+
+                var elevator = Make(MarblePieceKind.Elevator, root, materials);
+                var elevatorGuide = elevator.GetComponentInChildren<ElevatorMarbleGuide>(true);
+                var elevatorAnimator = elevator.GetComponentInChildren<ElevatorVisualAnimator>(true);
+                Assert.That(elevatorGuide, Is.Not.Null);
+                Assert.That(elevatorGuide.TravelHeight,
+                    Is.EqualTo(WoodenPieceFactory.LevelHeight * 3f).Within(0.001f));
+                Assert.That(elevatorAnimator, Is.Not.Null);
+                Assert.That(elevatorAnimator.TravelHeight,
+                    Is.EqualTo(WoodenPieceFactory.LevelHeight * 3f).Within(0.001f));
+                Assert.That(elevator.GetComponentsInChildren<Transform>(true)
+                    .Count(child => child.name.StartsWith("エレベーター とうめい")), Is.GreaterThanOrEqualTo(3));
+                Assert.That(elevator.GetComponentsInChildren<Transform>(true)
+                    .Any(child => child.name == "エレベーター うごく だい"), Is.True);
+
+                var clearTube = Make(MarblePieceKind.ClearTube, root, materials);
+                Assert.That(clearTube.GetComponentInChildren<ClearTubeMarbleGuide>(true), Is.Not.Null);
+                Assert.That(clearTube.GetComponentsInChildren<Transform>(true)
+                    .Any(child => child.name == "とうめい つつ やね"), Is.True);
+                Assert.That(clearTube.GetComponentsInChildren<Collider>(true)
+                    .Count(collider => collider.name.StartsWith("とうめい つつ") && collider.enabled),
+                    Is.GreaterThanOrEqualTo(4));
+
+                var clearCurve = Make(MarblePieceKind.ClearCurve, root, materials);
+                Assert.That(clearCurve.GetComponentInChildren<ClearCurveMarbleGuide>(true), Is.Not.Null);
+                Assert.That(clearCurve.GetComponentsInChildren<Transform>(true)
+                    .Count(child => child.name == "とうめい カーブ そこ"), Is.EqualTo(14));
+
+                var wave = Make(MarblePieceKind.Wave, root, materials);
+                Assert.That(wave.GetComponentInChildren<WaveMarbleGuide>(true), Is.Not.Null);
+                var waveFloors = wave.GetComponentsInChildren<Renderer>(true)
+                    .Where(renderer => renderer.name == "なみなみ みち")
+                    .Select(renderer => renderer.bounds)
+                    .ToArray();
+                Assert.That(waveFloors.Length, Is.EqualTo(16));
+                Assert.That(waveFloors.Max(bounds => bounds.center.y) - waveFloors.Min(bounds => bounds.center.y),
+                    Is.GreaterThan(0.60f));
+
+                var spinner = Make(MarblePieceKind.Spinner, root, materials);
+                Assert.That(spinner.DynamicBodies.Count, Is.EqualTo(1));
+                Assert.That(spinner.GetComponentInChildren<SpinnerMarbleGuide>(true), Is.Not.Null);
+                Assert.That(spinner.GetComponentsInChildren<Transform>(true)
+                    .Count(child => child.name == "くるくる カラフル はね"), Is.EqualTo(6));
+                Assert.That(spinner.DynamicBodies[0].GetComponent<HingeJoint>(), Is.Not.Null);
+
+                Assert.That(materials.ClearShell.color.a, Is.InRange(0.05f, 0.35f));
+                Assert.That(materials.ClearEdge.color.a, Is.InRange(0.35f, 0.75f));
+                Assert.That(materials.ClearShell.renderQueue, Is.EqualTo(3000));
+                Assert.That(materials.ClearShell.GetTag("RenderType", false), Is.EqualTo("Transparent"));
+            }
+            finally
+            {
+                materials.Dispose();
+                UnityEngine.Object.DestroyImmediate(root.gameObject);
+            }
+        }
+
+        [Test]
         public void MarbleColorsActorsAndGoalSensorSupportMultipleStableMarbles()
         {
             var materials = new ToyMaterialLibrary();

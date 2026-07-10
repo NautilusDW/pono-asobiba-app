@@ -18,7 +18,13 @@ namespace Pono.MarbleRun3D.Core
         Domino = 9,
         Helix = 10,
         Steps = 11,
-        Lift = 12
+        Lift = 12,
+        Tornado = 13,
+        Elevator = 14,
+        ClearTube = 15,
+        ClearCurve = 16,
+        Wave = 17,
+        Spinner = 18
     }
 
     [Serializable]
@@ -323,7 +329,49 @@ namespace Pono.MarbleRun3D.Core
                     new Color(0.50f, 0.82f, 0.43f),
                     OccupiesLevels(0, 1),
                     new ConnectorSpec(0f, -0.5f, 0, -1),
-                    new ConnectorSpec(0f, 0.5f, 0, 1, 1))
+                    new ConnectorSpec(0f, 0.5f, 0, 1, 1)),
+                [MarblePieceKind.Tornado] = new PartSpec(
+                    MarblePieceKind.Tornado,
+                    "トルネード",
+                    new Color(0.98f, 0.34f, 0.62f),
+                    OccupiesLevels(0, 1, 2, 3),
+                    new ConnectorSpec(0f, -0.5f, 0, -1, 3),
+                    new ConnectorSpec(0f, 0.5f, 0, 1)),
+                [MarblePieceKind.Elevator] = new PartSpec(
+                    MarblePieceKind.Elevator,
+                    "エレベーター",
+                    new Color(0.38f, 0.76f, 0.96f),
+                    OccupiesLevels(0, 1, 2, 3),
+                    new ConnectorSpec(0f, -0.5f, 0, -1),
+                    new ConnectorSpec(0f, 0.5f, 0, 1, 3)),
+                [MarblePieceKind.ClearTube] = new PartSpec(
+                    MarblePieceKind.ClearTube,
+                    "すけすけ つつ",
+                    new Color(0.48f, 0.92f, 0.94f),
+                    OccupiesLevels(0, 1),
+                    new ConnectorSpec(0f, -0.5f, 0, -1),
+                    new ConnectorSpec(0f, 0.5f, 0, 1)),
+                [MarblePieceKind.ClearCurve] = new PartSpec(
+                    MarblePieceKind.ClearCurve,
+                    "すけすけ カーブ",
+                    new Color(0.58f, 0.84f, 1f),
+                    OccupiesLevels(0, 1),
+                    new ConnectorSpec(0f, -0.5f, 0, -1),
+                    new ConnectorSpec(0.5f, 0f, 1, 0)),
+                [MarblePieceKind.Wave] = new PartSpec(
+                    MarblePieceKind.Wave,
+                    "なみなみ",
+                    new Color(0.74f, 0.48f, 0.96f),
+                    OccupiesLevels(0, 1),
+                    new ConnectorSpec(0f, -0.5f, 0, -1),
+                    new ConnectorSpec(0f, 0.5f, 0, 1)),
+                [MarblePieceKind.Spinner] = new PartSpec(
+                    MarblePieceKind.Spinner,
+                    "くるくる はね",
+                    new Color(1f, 0.76f, 0.22f),
+                    OccupiesLevels(0, 1),
+                    new ConnectorSpec(0f, -0.5f, 0, -1),
+                    new ConnectorSpec(0f, 0.5f, 0, 1))
             };
 
         public static IReadOnlyCollection<PartSpec> All => Specs.Values;
