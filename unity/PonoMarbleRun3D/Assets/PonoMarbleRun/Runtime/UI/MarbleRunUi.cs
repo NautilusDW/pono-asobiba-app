@@ -70,15 +70,13 @@ namespace Pono.MarbleRun3D.UI
     public sealed class PaletteDragItem : MonoBehaviour,
         IBeginDragHandler,
         IDragHandler,
-        IEndDragHandler,
-        IPointerClickHandler
+        IEndDragHandler
     {
         private MarbleRunGameController _controller;
         private MarblePieceKind _kind;
         private ScrollRect _scrollRect;
         private bool _placing;
         private bool _scrolling;
-        private bool _suppressClick;
 
         public void Configure(MarbleRunGameController controller, MarblePieceKind kind, ScrollRect scrollRect = null)
         {
@@ -94,13 +92,11 @@ namespace Pono.MarbleRun3D.UI
             {
                 _placing = false;
                 _scrolling = _scrollRect != null;
-                _suppressClick = true;
                 if (_scrolling) _scrollRect.OnBeginDrag(eventData);
                 return;
             }
             _scrolling = false;
             _placing = true;
-            _suppressClick = true;
             _controller.BeginPaletteDrag(_kind, eventData.position);
         }
 
@@ -116,16 +112,6 @@ namespace Pono.MarbleRun3D.UI
             else if (_placing) _controller.EndPaletteDrag(eventData.position);
             _placing = false;
             _scrolling = false;
-        }
-
-        public void OnPointerClick(PointerEventData eventData)
-        {
-            if (_suppressClick)
-            {
-                _suppressClick = false;
-                return;
-            }
-            if (!_placing) _controller?.ChoosePart(_kind);
         }
     }
 

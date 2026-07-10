@@ -123,7 +123,8 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
             Canvas.ForceUpdateCanvases();
             yield return null;
             var scroll = _controller.Ui.GetComponentInChildren<ScrollRect>(true);
-            var drag = _controller.Ui.GetComponentsInChildren<PaletteDragItem>(true).First();
+            var drag = _controller.Ui.GetComponentsInChildren<PaletteDragItem>(true)
+                .First(item => item.GetComponent<Button>().interactable);
             Assert.That(scroll, Is.Not.Null);
             var before = scroll.content.anchoredPosition;
             var eventData = new PointerEventData(EventSystem.current)
@@ -139,6 +140,14 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
             drag.OnDrag(eventData);
             drag.OnEndDrag(eventData);
             Assert.That(Vector2.Distance(scroll.content.anchoredPosition, before), Is.GreaterThan(1f));
+            var tap = new PointerEventData(EventSystem.current)
+            {
+                pointerId = 9,
+                button = PointerEventData.InputButton.Left,
+                eligibleForClick = true
+            };
+            drag.GetComponent<Button>().OnPointerClick(tap);
+            Assert.That(_controller.Ui.StatusText, Does.Contain("ここに おこう"));
         }
 
         [UnityTest]
@@ -302,6 +311,30 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator EveryChallengeHasTwoPhysicallySuccessfulLayouts()
+        {
+            foreach (var route in PhysicalChallengeRoutes())
+            {
+                _controller.StartMode(route.modeId);
+                foreach (var piece in route.pieces)
+                {
+                    Assert.That(_controller.PlaceForQa(piece.kind, piece.pose), Is.True,
+                        route.name + " place " + piece.id);
+                }
+                Assert.That(_controller.CurrentMode.IsCourseGoalReady(_controller.Course), Is.True,
+                    route.name + " graph");
+                _controller.StartRun();
+                var timeout = Time.realtimeSinceStartup + 12f;
+                while (_controller.State == MarbleRunState.Running && Time.realtimeSinceStartup < timeout)
+                    yield return null;
+                Assert.That(_controller.State, Is.EqualTo(MarbleRunState.Celebrating),
+                    route.name + " did not physically reach the goal; marble=" + _controller.MarbleBody.position);
+                _controller.ReturnToEditing();
+                yield return null;
+            }
+        }
+
+        [UnityTest]
         public IEnumerator SaveLoadRoundTripRestoresAndAllowsFurtherEditing()
         {
             _controller.StartMode("sandbox");
@@ -405,6 +438,60 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
                 var kind = z == 0 ? mechanism : MarblePieceKind.Straight;
                 Assert.That(_controller.PlaceForQa(kind, new GridPose(0, z)), Is.True, kind + " z=" + z);
             }
+        }
+
+        private static IEnumerable<(string name, string modeId, PieceRecord[] pieces)> PhysicalChallengeRoutes()
+        {
+            yield return ("challenge1-a", "challenge1", new[]
+            {
+                P("a-c1", MarblePieceKind.Curve, -3, -1, 0),
+                P("a-x1", MarblePieceKind.Straight, -2, -1, 1),
+                P("a-x2", MarblePieceKind.Straight, -1, -1, 1),
+                P("a-x3", MarblePieceKind.Straight, 0, -1, 1),
+                P("a-x4", MarblePieceKind.Straight, 1, -1, 1),
+                P("a-c2", MarblePieceKind.Curve, 2, -1, 2),
+                P("a-z1", MarblePieceKind.Straight, 2, 0, 0),
+                P("a-z2", MarblePieceKind.Straight, 2, 1, 0),
+                P("a-c3", MarblePieceKind.Curve, 2, 2, 0)
+            });
+            yield return ("challenge1-b", "challenge1", new[]
+            {
+                P("b-z1", MarblePieceKind.Straight, -3, -1, 0),
+                P("b-c1", MarblePieceKind.Curve, -3, 0, 0),
+                P("b-x1", MarblePieceKind.Straight, -2, 0, 1),
+                P("b-x2", MarblePieceKind.Straight, -1, 0, 1),
+                P("b-x3", MarblePieceKind.Straight, 0, 0, 1),
+                P("b-x4", MarblePieceKind.Straight, 1, 0, 1),
+                P("b-c2", MarblePieceKind.Curve, 2, 0, 2),
+                P("b-z2", MarblePieceKind.Straight, 2, 1, 0),
+                P("b-c3", MarblePieceKind.Curve, 2, 2, 0)
+            });
+            yield return ("challenge2-a", "challenge2", VerticalRoute());
+            yield return ("challenge2-b", "challenge2", VerticalRoute(-2, MarblePieceKind.Tunnel));
+            yield return ("challenge3-a", "challenge3", VerticalRoute());
+            yield return ("challenge3-b", "challenge3", VerticalRoute(-1, MarblePieceKind.Funnel));
+        }
+
+        private static PieceRecord[] VerticalRoute(
+            int replacementZ = int.MinValue,
+            MarblePieceKind replacementKind = MarblePieceKind.Straight)
+        {
+            var pieces = new List<PieceRecord>();
+            for (var z = -3; z <= 3; z++)
+            {
+                pieces.Add(P(
+                    "vertical-" + z,
+                    z == replacementZ ? replacementKind : MarblePieceKind.Straight,
+                    0,
+                    z,
+                    0));
+            }
+            return pieces.ToArray();
+        }
+
+        private static PieceRecord P(string id, MarblePieceKind kind, int x, int z, int turns)
+        {
+            return new PieceRecord { id = id, kind = kind, pose = new GridPose(x, z, 0, turns) };
         }
     }
 }

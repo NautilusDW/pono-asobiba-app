@@ -31,6 +31,60 @@ namespace Pono.MarbleRun3D.Gameplay
         }
     }
 
+    [DisallowMultipleComponent]
+    public sealed class CurveMarbleGuide : MonoBehaviour
+    {
+        private Transform _pieceRoot;
+        private float _travelSign = 1f;
+
+        public void Configure(Transform pieceRoot)
+        {
+            _pieceRoot = pieceRoot;
+        }
+
+        private void OnTriggerEnter(Collider other)
+        {
+            if (!TryGetMarble(other, out var body) || _pieceRoot == null) return;
+            var localPosition = _pieceRoot.InverseTransformPoint(body.worldCenterOfMass);
+            var tangent = TangentAt(localPosition);
+            var localVelocity = _pieceRoot.InverseTransformDirection(body.linearVelocity);
+            var dot = Vector3.Dot(new Vector3(localVelocity.x, 0f, localVelocity.z), tangent);
+            if (Mathf.Abs(dot) > 0.1f) _travelSign = Mathf.Sign(dot);
+        }
+
+        private void OnTriggerStay(Collider other)
+        {
+            if (!TryGetMarble(other, out var body) || _pieceRoot == null || body.isKinematic) return;
+            var localPosition = _pieceRoot.InverseTransformPoint(body.worldCenterOfMass);
+            var radial = new Vector3(localPosition.x - 1.5f, 0f, localPosition.z + 1.5f);
+            var radius = radial.magnitude;
+            if (radius < 0.65f || radius > 2.35f) return;
+
+            var tangent = TangentAt(localPosition) * _travelSign;
+            var localVelocity = _pieceRoot.InverseTransformDirection(body.linearVelocity);
+            var horizontalVelocity = new Vector3(localVelocity.x, 0f, localVelocity.z);
+            var targetSpeed = Mathf.Clamp(horizontalVelocity.magnitude, 3.2f, 7.5f);
+            var targetPoint = new Vector3(1.5f, localPosition.y, -1.5f) + radial.normalized * 1.5f;
+            var correction = targetPoint - localPosition;
+            correction.y = 0f;
+            var acceleration = (tangent * targetSpeed - horizontalVelocity) * 7f + correction * 12f;
+            acceleration = Vector3.ClampMagnitude(acceleration, 20f);
+            body.AddForce(_pieceRoot.TransformDirection(acceleration), ForceMode.Acceleration);
+        }
+
+        private static Vector3 TangentAt(Vector3 localPosition)
+        {
+            var angle = Mathf.Atan2(localPosition.z + 1.5f, localPosition.x - 1.5f);
+            return new Vector3(Mathf.Sin(angle), 0f, -Mathf.Cos(angle)).normalized;
+        }
+
+        private static bool TryGetMarble(Collider other, out Rigidbody body)
+        {
+            body = other.attachedRigidbody;
+            return body != null && other.GetComponentInParent<MarbleActor>() != null;
+        }
+    }
+
     public sealed class PieceView : MonoBehaviour
     {
         private readonly List<Renderer> _renderers = new List<Renderer>();

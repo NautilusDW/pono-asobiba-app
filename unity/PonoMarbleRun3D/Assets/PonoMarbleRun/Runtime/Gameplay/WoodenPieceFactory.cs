@@ -7,7 +7,7 @@ namespace Pono.MarbleRun3D.Gameplay
     public static class WoodenPieceFactory
     {
         public const float CellSize = 3f;
-        public const float LevelHeight = 1.35f;
+        public const float LevelHeight = 0.90f;
         public const float PieceRootY = 0.98f;
         public const float MarbleRadius = 0.32f;
 
@@ -193,7 +193,7 @@ namespace Pono.MarbleRun3D.Gameplay
 
         private static void BuildCurve(PieceView view, ToyMaterialLibrary materials, int courseLayer)
         {
-            const int segments = 10;
+            const int segments = 18;
             const float radius = 1.5f;
             var previous = new Vector3(0f, 0f, -1.5f);
             for (var i = 0; i < segments; i++)
@@ -204,11 +204,19 @@ namespace Pono.MarbleRun3D.Gameplay
                 var end = new Vector3(1.5f + Mathf.Cos(t1) * radius, 0f, -1.5f + Mathf.Sin(t1) * radius);
                 BuildTrackSegment(view, (start + end) * 0.5f, (end - start).normalized,
                     Vector3.Distance(start, end) + 0.16f, materials.Maple,
-                    materials.Accent(MarblePieceKind.Curve), courseLayer);
+                    materials.Accent(MarblePieceKind.Curve), courseLayer, 0.24f);
                 previous = end;
             }
             CreateCylinder(view, "カーブ かざり", new Vector3(1.48f, 0.09f, -1.48f), Vector3.up,
                 0.24f, 0.18f, materials.MapleDark, courseLayer, false);
+            var guideObject = new GameObject("カーブ ガイド");
+            guideObject.layer = courseLayer;
+            guideObject.transform.SetParent(view.transform, false);
+            guideObject.transform.localPosition = new Vector3(0f, 0.62f, 0f);
+            var guideCollider = guideObject.AddComponent<BoxCollider>();
+            guideCollider.isTrigger = true;
+            guideCollider.size = new Vector3(3f, 1.6f, 3f);
+            guideObject.AddComponent<CurveMarbleGuide>().Configure(view.transform);
         }
 
         private static void BuildSlope(PieceView view, ToyMaterialLibrary materials, int courseLayer)
@@ -372,7 +380,8 @@ namespace Pono.MarbleRun3D.Gameplay
             float length,
             Material floorMaterial,
             Material accentMaterial,
-            int courseLayer)
+            int courseLayer,
+            float railRadius = 0.13f)
         {
             direction.Normalize();
             var rotation = Quaternion.LookRotation(direction, Vector3.up);
@@ -381,9 +390,9 @@ namespace Pono.MarbleRun3D.Gameplay
 
             var side = Vector3.Cross(Vector3.up, direction).normalized;
             CreateCylinder(view, "レール ひだり", centre + side * 0.87f + Vector3.up * 0.31f,
-                direction, 0.13f, length, accentMaterial, courseLayer, true);
+                direction, railRadius, length, accentMaterial, courseLayer, true);
             CreateCylinder(view, "レール みぎ", centre - side * 0.87f + Vector3.up * 0.31f,
-                direction, 0.13f, length, accentMaterial, courseLayer, true);
+                direction, railRadius, length, accentMaterial, courseLayer, true);
 
             var slatCount = Mathf.Max(2, Mathf.RoundToInt(length / 0.55f));
             for (var i = 0; i < slatCount; i++)

@@ -70,6 +70,59 @@
     position: absolute; inset: 0;
     z-index: 0; pointer-events: none;
   }
+  #color-fluid-canvas {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    display: none;
+    pointer-events: none;
+    background: transparent;
+  }
+  body.color-fluid-layout #color-fluid-canvas { display: block; }
+  body.color-fluid-layout #bgCanvas {
+    filter: saturate(0.72) brightness(0.84);
+  }
+  body.color-fluid-layout #instruments {
+    opacity: 0;
+    pointer-events: none;
+  }
+  body.color-fluid-layout .band-group { display: none; }
+  body.color-fluid-layout #stage { touch-action: none; }
+  .color-fluid-hint {
+    position: absolute;
+    left: 50%;
+    bottom: max(24px, calc(env(safe-area-inset-bottom) + 18px));
+    z-index: 7;
+    min-width: min(72vw, 420px);
+    padding: 10px 20px 11px;
+    border: 3px solid rgba(255,255,255,0.88);
+    border-radius: 999px;
+    background: rgba(18,44,76,0.72);
+    color: #FFFCE9;
+    font-size: clamp(0.9rem, 2.2vw, 1.12rem);
+    font-weight: 900;
+    line-height: 1.25;
+    text-align: center;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.34);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.22);
+    pointer-events: none;
+    opacity: 0;
+    transform: translate(-50%, 10px);
+    transition: opacity 0.22s ease, transform 0.22s ease;
+  }
+  body.color-fluid-layout .color-fluid-hint.show {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+  body.color-fluid-layout.color-fluid-has-drawn .color-fluid-hint {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .color-fluid-hint { transition: none; }
+  }
   body.rhythm-layout .stage {
     background:
       linear-gradient(115deg, rgba(217,70,239,0.16) 0%, rgba(217,70,239,0) 24%),
@@ -3714,6 +3767,10 @@
     color: #064E3B;
     background: linear-gradient(180deg, rgba(209,250,229,0.92), rgba(45,212,191,0.68));
   }
+  .start-free-view-btn.color-flow {
+    color: #4A285F;
+    background: linear-gradient(180deg, rgba(250,232,255,0.94), rgba(165,243,252,0.76));
+  }
   .start-free-view-btn:active {
     transform: translateY(3px) scale(0.98);
   }
@@ -3741,6 +3798,34 @@
     inset: 0;
     pointer-events: none;
     background: linear-gradient(180deg, rgba(255,255,255,0.18), transparent 42%, rgba(0,0,0,0.12));
+  }
+  .start-free-thumb.color-flow {
+    background:
+      radial-gradient(ellipse at 18% 52%, #FF7B78 0 16%, transparent 17%),
+      radial-gradient(ellipse at 42% 44%, #FFD84D 0 19%, transparent 20%),
+      radial-gradient(ellipse at 64% 57%, #4ED08A 0 20%, transparent 21%),
+      radial-gradient(ellipse at 86% 42%, #6EA8FF 0 18%, transparent 19%),
+      linear-gradient(145deg, #FFF5D9, #DFF7FF);
+  }
+  .start-free-thumb.color-flow::before {
+    content: "";
+    position: absolute;
+    left: -8%;
+    top: 37%;
+    width: 116%;
+    height: 35%;
+    border-radius: 55% 45% 52% 48%;
+    background: linear-gradient(90deg, #FF7676, #FFD84D 31%, #45D59A 60%, #6EA8FF 82%, #C681F2);
+    box-shadow: 0 -5px 0 rgba(255,255,255,0.38), 0 5px 0 rgba(75,65,120,0.20);
+    transform: rotate(-4deg);
+  }
+  .oto-color-fluid-only { display: none !important; }
+  body.oto-color-fluid-available .oto-color-fluid-only { display: flex !important; }
+  body.oto-color-fluid-available .start-mode-choice.free-step .start-mode-panel {
+    width: min(64vw, 760px);
+  }
+  body.oto-color-fluid-available .start-free-actions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .start-free-label {
     font-size: clamp(0.9rem, 2.4vw, 1.15rem);
@@ -3785,11 +3870,19 @@
     .start-free-actions {
       grid-template-columns: 1fr;
     }
+    body.oto-color-fluid-available .start-free-actions {
+      grid-template-columns: 1fr;
+    }
     .start-free-view-btn {
       min-height: 118px;
     }
     .start-free-thumb {
       height: 56px;
+    }
+    .color-fluid-hint {
+      bottom: max(14px, calc(env(safe-area-inset-bottom) + 10px));
+      min-width: min(82vw, 360px);
+      padding: 8px 14px 9px;
     }
     .start-mode-btn {
       min-height: 52px;
@@ -5468,6 +5561,11 @@
           <span class="start-free-label">ステージえんそう</span>
           <small>3Dレーンで あそぶ</small>
         </button>
+        <button class="start-free-view-btn color-flow oto-color-fluid-only" data-free-view="color">
+          <span class="start-free-thumb color-flow" aria-hidden="true"></span>
+          <span class="start-free-label">いろおと</span>
+          <small>なぞって おとを つくる</small>
+        </button>
       </div>
       <button class="start-free-back" type="button">もどる</button>
     </div>
@@ -5478,6 +5576,11 @@
   <div class="stage" id="stage">
     <!-- 最下層: 背景 Canvas (グラデ + 環境バブル + 波紋 + パーティクル) -->
     <canvas id="bgCanvas"></canvas>
+    <!-- アプリ版限定「いろおと」: 実流体は別WebGL2 canvasへ描画し、既存背景/自由モードを変更しない -->
+    <canvas id="color-fluid-canvas" aria-hidden="true"></canvas>
+    <div class="color-fluid-hint" id="color-fluid-hint" aria-live="polite">
+      ゆびで なぞると<br>いろと おとが うまれるよ
+    </div>
 
     <!-- ポノ (中層) — ラッパーで位置決めし、img は高さ固定 + 幅 auto で中央寄せ -->
     <div class="pono-wrap">
@@ -5587,6 +5690,7 @@
     <div class="free-view-switch" id="free-view-switch" role="tablist" aria-label="じゆうモードの見た目">
       <button class="free-view-btn active" data-free-view="classic" role="tab" aria-selected="true">ボタン</button>
       <button class="free-view-btn" data-free-view="stage" role="tab" aria-selected="false">ステージ</button>
+      <button class="free-view-btn oto-color-fluid-only" data-free-view="color" role="tab" aria-selected="false">いろおと</button>
     </div>
 
     <!-- WebGL 3D レーン / ノーツ (対応環境で使用。DOM版はフォールバック) -->
@@ -7473,9 +7577,144 @@ function _preloadRhythmPonoFxAssets() {
   });
 }
 var _playMode = 'free';
+var OTO_COLOR_FLUID_ASSET_VERSION = '2074';
+var _colorFluidAllowed = !!window.__APP_BUILD__;
+var _colorFluid = null;
+var _colorFluidLoadPromise = null;
+var _colorFluidLoadFailed = false;
+var _colorFluidStrokes = new Map();
+var _colorFluidActive = false;
+var COLOR_FLUID_COLORS = [
+  [1.00, 0.30, 0.32],
+  [1.00, 0.52, 0.18],
+  [1.00, 0.82, 0.16],
+  [0.24, 0.78, 0.40],
+  [0.18, 0.72, 0.88],
+  [0.22, 0.46, 0.94],
+  [0.55, 0.34, 0.90],
+  [0.94, 0.34, 0.68]
+];
+if (_colorFluidAllowed && document.body) {
+  document.body.classList.add('oto-color-fluid-available');
+}
+
+function _loadColorFluidRenderer() {
+  if (!_colorFluidAllowed || _colorFluidLoadFailed) return Promise.resolve(null);
+  if (_colorFluid) return Promise.resolve(_colorFluid);
+  if (_colorFluidLoadPromise) return _colorFluidLoadPromise;
+  _colorFluidLoadPromise = new Promise(function(resolve) {
+    function createRenderer() {
+      try {
+        var canvas = document.getElementById('color-fluid-canvas');
+        if (!canvas || !window.OtoColorFluid || typeof window.OtoColorFluid.create !== 'function') {
+          throw new Error('color fluid renderer unavailable');
+        }
+        var reducedMotion = !!(
+          window.matchMedia
+          && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        );
+        _colorFluid = window.OtoColorFluid.create(canvas, {
+          simWidth: 256,
+          simHeight: 144,
+          pressureIterations: 16,
+          simulationHz: 30,
+          curlStrength: reducedMotion ? 0 : 5.5,
+          velocityScale: reducedMotion ? 420 : 820,
+          dyeDissipation: reducedMotion ? 0.955 : 0.978
+        });
+        var stats = _colorFluid && typeof _colorFluid.getStats === 'function'
+          ? _colorFluid.getStats()
+          : null;
+        if (!stats || stats.available === false) throw new Error('WebGL2 fluid unsupported');
+        if (typeof _colorFluid.resize === 'function') {
+          _colorFluid.resize(Math.max(1, bgW || window.innerWidth), Math.max(1, bgH || window.innerHeight));
+        }
+        if (typeof _colorFluid.setEnabled === 'function') _colorFluid.setEnabled(_colorFluidActive);
+        if (_colorFluidActive && typeof _colorFluid.frame === 'function') _colorFluid.frame(0);
+        var initializedStats = typeof _colorFluid.getStats === 'function'
+          ? _colorFluid.getStats()
+          : null;
+        if (initializedStats && initializedStats.available === false) {
+          throw new Error(initializedStats.reason || 'WebGL2 fluid unsupported');
+        }
+        resolve(_colorFluid);
+      } catch (error) {
+        console.warn('[oto color fluid] disabled:', error && error.message ? error.message : error);
+        _colorFluidLoadFailed = true;
+        _colorFluid = null;
+        document.body.classList.remove('oto-color-fluid-available', 'color-fluid-layout');
+        if (_freeViewMode === 'color') {
+          _freeViewMode = 'classic';
+          try { localStorage.setItem('pono_oto_free_view', 'classic'); } catch (e) {}
+          _setModeButtons('free');
+        }
+        resolve(null);
+      }
+    }
+    if (window.OtoColorFluid) {
+      createRenderer();
+      return;
+    }
+    var script = document.createElement('script');
+    script.src = './color-fluid.js?v=' + encodeURIComponent(OTO_COLOR_FLUID_ASSET_VERSION);
+    script.async = true;
+    script.onload = createRenderer;
+    script.onerror = function() {
+      _colorFluidLoadFailed = true;
+      document.body.classList.remove('oto-color-fluid-available', 'color-fluid-layout');
+      resolve(null);
+    };
+    document.head.appendChild(script);
+  });
+  return _colorFluidLoadPromise;
+}
+
+function _resetColorFluidPointers() {
+  _colorFluidStrokes.forEach(function(_, pointerId) {
+    if (_colorFluid && typeof _colorFluid.endStroke === 'function') {
+      _colorFluid.endStroke(pointerId);
+    }
+  });
+  _colorFluidStrokes.clear();
+}
+
+function _syncColorFluidMode() {
+  _colorFluidActive = !!(
+    _colorFluidAllowed
+    && !_colorFluidLoadFailed
+    && _playMode === 'free'
+    && _freeViewMode === 'color'
+  );
+  document.body.classList.toggle('color-fluid-layout', _colorFluidActive);
+  if (_colorFluidActive) {
+    if (typeof ambientBubbles !== 'undefined') ambientBubbles.length = 0;
+    if (typeof popAnims !== 'undefined') popAnims.length = 0;
+    if (typeof ripples !== 'undefined') ripples.length = 0;
+    if (typeof soundBursts !== 'undefined') soundBursts.length = 0;
+    if (typeof particles !== 'undefined') particles.length = 0;
+    var hint = document.getElementById('color-fluid-hint');
+    if (hint) hint.classList.add('show');
+    _loadColorFluidRenderer().then(function(renderer) {
+      if (renderer && typeof renderer.setEnabled === 'function') {
+        renderer.setEnabled(_colorFluidActive);
+      }
+    });
+  } else {
+    _resetColorFluidPointers();
+    document.body.classList.remove('color-fluid-has-drawn');
+    if (_colorFluid) {
+      if (typeof _colorFluid.setEnabled === 'function') _colorFluid.setEnabled(false);
+      if (typeof _colorFluid.reset === 'function') _colorFluid.reset();
+    }
+  }
+}
+
 var _freeViewMode = 'classic';
 try {
-  _freeViewMode = localStorage.getItem('pono_oto_free_view') === 'stage' ? 'stage' : 'classic';
+  var _savedFreeView = localStorage.getItem('pono_oto_free_view');
+  _freeViewMode = _savedFreeView === 'stage'
+    ? 'stage'
+    : (_savedFreeView === 'color' && _colorFluidAllowed ? 'color' : 'classic');
 } catch (e) {
   _freeViewMode = 'classic';
 }
@@ -11651,9 +11890,12 @@ function _setModeButtons(mode) {
   if (typeof resizeBg === 'function') {
     requestAnimationFrame(resizeBg);
   }
+  _syncColorFluidMode();
 }
 function setFreeViewMode(mode, persist) {
-  _freeViewMode = mode === 'stage' ? 'stage' : 'classic';
+  _freeViewMode = mode === 'stage'
+    ? 'stage'
+    : (mode === 'color' && _colorFluidAllowed && !_colorFluidLoadFailed ? 'color' : 'classic');
   if (persist) {
     try { localStorage.setItem('pono_oto_free_view', _freeViewMode); } catch (e) {}
   }
@@ -12148,6 +12390,117 @@ document.querySelectorAll('.instr-btn').forEach(function(btn) {
 var _stageEl = document.getElementById('stage');
 var _drag = { active: false, lastX: 0, lastY: 0, colorIdx: 0 };
 var DRAG_SPAWN_DIST = 36; // px ごとに 1 個生成
+var COLOR_FLUID_MAX_POINTERS = 2;
+
+function _isColorFluidMode() {
+  return !!(_colorFluidActive && _playMode === 'free' && _freeViewMode === 'color');
+}
+
+function _colorFluidNoteForX(x) {
+  return Math.max(0, Math.min(7, Math.floor((x / Math.max(1, bgW)) * 8)));
+}
+
+function _colorFluidNoteWithHysteresis(stroke, x) {
+  var candidate = _colorFluidNoteForX(x);
+  if (!stroke || candidate === stroke.noteIdx) return candidate;
+  var zoneWidth = Math.max(1, bgW / 8);
+  var margin = zoneWidth * 0.04;
+  if (candidate > stroke.noteIdx) {
+    return x >= (stroke.noteIdx + 1) * zoneWidth + margin ? candidate : stroke.noteIdx;
+  }
+  return x <= stroke.noteIdx * zoneWidth - margin ? candidate : stroke.noteIdx;
+}
+
+function _playColorFluidNote(stroke, noteIdx, x, y, immediate) {
+  if (!stroke) return;
+  var now = performance.now();
+  var minimumMs = currentSet === 'animal'
+    ? 500
+    : (currentSet === 'taiko' ? 120 : (CHORD_MODE === 'on' ? 180 : 90));
+  var dx = x - stroke.lastSoundX;
+  var dy = y - stroke.lastSoundY;
+  var movedEnough = dx * dx + dy * dy >= 40 * 40;
+  var changed = noteIdx !== stroke.lastSoundNote;
+  var repeatReady = !changed && movedEnough && now - stroke.lastSoundAt >= 280;
+  if (!immediate && (!(changed || repeatReady) || now - stroke.lastSoundAt < minimumMs)) return;
+  playSetSoundFor(currentSet, noteIdx, CHORD_MODE === 'on');
+  recordEvent('set', { idx: noteIdx, set: currentSet, chord: CHORD_MODE === 'on' });
+  stroke.lastSoundAt = now;
+  stroke.lastSoundNote = noteIdx;
+  stroke.lastSoundX = x;
+  stroke.lastSoundY = y;
+}
+
+function _beginColorFluidPointer(e, x, y) {
+  if (!_isColorFluidMode() || _colorFluidStrokes.has(e.pointerId)) return false;
+  if (_colorFluidStrokes.size >= COLOR_FLUID_MAX_POINTERS) return true;
+  var noteIdx = _colorFluidNoteForX(x);
+  var stroke = {
+    pointerId: e.pointerId,
+    noteIdx: noteIdx,
+    lastX: x,
+    lastY: y,
+    lastTime: performance.now(),
+    lastSoundAt: -Infinity,
+    lastSoundNote: -1,
+    lastSoundX: x,
+    lastSoundY: y
+  };
+  _colorFluidStrokes.set(e.pointerId, stroke);
+  try { _stageEl.setPointerCapture(e.pointerId); } catch (_) {}
+  document.body.classList.add('color-fluid-has-drawn');
+  var color = COLOR_FLUID_COLORS[noteIdx];
+  if (_colorFluid && typeof _colorFluid.beginStroke === 'function') {
+    _colorFluid.beginStroke(e.pointerId, x / Math.max(1, bgW), y / Math.max(1, bgH), color);
+  } else {
+    _loadColorFluidRenderer().then(function(renderer) {
+      if (renderer && _colorFluidStrokes.has(e.pointerId)) {
+        renderer.beginStroke(e.pointerId, x / Math.max(1, bgW), y / Math.max(1, bgH), color);
+      }
+    });
+  }
+  _playColorFluidNote(stroke, noteIdx, x, y, true);
+  bumpPono();
+  tapCount++;
+  if (window.incrementStat) window.incrementStat('oto_taps', 1);
+  markPlayedToday();
+  if (!_clearTriggered && tapCount >= TAP_FOR_CLEAR) {
+    _clearTriggered = true;
+    triggerClearReward();
+  }
+  return true;
+}
+
+function _moveColorFluidPointer(e, x, y) {
+  var stroke = _colorFluidStrokes.get(e.pointerId);
+  if (!stroke) return false;
+  var noteIdx = _colorFluidNoteWithHysteresis(stroke, x);
+  var now = performance.now();
+  var color = COLOR_FLUID_COLORS[noteIdx];
+  if (_colorFluid && typeof _colorFluid.moveStroke === 'function') {
+    _colorFluid.moveStroke(
+      e.pointerId,
+      x / Math.max(1, bgW),
+      y / Math.max(1, bgH),
+      color);
+  }
+  _playColorFluidNote(stroke, noteIdx, x, y, false);
+  stroke.noteIdx = noteIdx;
+  stroke.lastX = x;
+  stroke.lastY = y;
+  stroke.lastTime = now;
+  return true;
+}
+
+function _endColorFluidPointer(e) {
+  if (!e || !_colorFluidStrokes.has(e.pointerId)) return false;
+  if (_colorFluid && typeof _colorFluid.endStroke === 'function') {
+    _colorFluid.endStroke(e.pointerId);
+  }
+  _colorFluidStrokes.delete(e.pointerId);
+  try { _stageEl.releasePointerCapture(e.pointerId); } catch (_) {}
+  return true;
+}
 
 function _isOnButton(e) {
   return !!(e.target && e.target.closest && e.target.closest(
@@ -12190,6 +12543,11 @@ _stageEl.addEventListener('pointerdown', function(e) {
   if (_isOnButton(e)) return;
   var p = _viewportPointToStage(e.clientX, e.clientY);
   var x = p.x, y = p.y;
+  if (_isColorFluidMode()) {
+    e.preventDefault();
+    _beginColorFluidPointer(e, x, y);
+    return;
+  }
   if (popBubbleAt(x, y)) {
     if (window.incrementStat) window.incrementStat('oto_taps', 1);
     markPlayedToday();
@@ -12212,6 +12570,21 @@ _stageEl.addEventListener('pointermove', function(e) {
     _drag.active = false;
     return;
   }
+  if (_isColorFluidMode()) {
+    if (!_colorFluidStrokes.has(e.pointerId)) return;
+    e.preventDefault();
+    var colorEvents = typeof e.getCoalescedEvents === 'function'
+      ? e.getCoalescedEvents()
+      : [e];
+    if (!colorEvents || !colorEvents.length) colorEvents = [e];
+    for (var colorEventIndex = 0; colorEventIndex < colorEvents.length; colorEventIndex++) {
+      var colorPoint = _viewportPointToStage(
+        colorEvents[colorEventIndex].clientX,
+        colorEvents[colorEventIndex].clientY);
+      _moveColorFluidPointer(e, colorPoint.x, colorPoint.y);
+    }
+    return;
+  }
   if (!_drag.active) return;
   if (_isOnButton(e)) return;
   var p = _viewportPointToStage(e.clientX, e.clientY);
@@ -12227,7 +12600,10 @@ _stageEl.addEventListener('pointermove', function(e) {
   _drag.lastX = x; _drag.lastY = y;
 });
 
-function _endDrag() { _drag.active = false; }
+function _endDrag(e) {
+  _endColorFluidPointer(e);
+  _drag.active = false;
+}
 _stageEl.addEventListener('pointerup',     _endDrag);
 _stageEl.addEventListener('pointercancel', _endDrag);
 _stageEl.addEventListener('pointerleave',  _endDrag);
@@ -12270,6 +12646,9 @@ function resizeBg() {
   bgCanvas.style.width  = bgW + 'px';
   bgCanvas.style.height = bgH + 'px';
   bgCtx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  if (_colorFluid && typeof _colorFluid.resize === 'function') {
+    _colorFluid.resize(bgW, bgH);
+  }
 }
 resizeBg();
 window.addEventListener('resize', resizeBg);
@@ -12702,17 +13081,23 @@ function loop(now) {
 
   // 背景 Canvas を一括更新
   drawBG(now);
-  updateAmbientBubbles(dt, now);
-  drawAmbientBubbles();
-  updatePopAnims(dt);
-  drawPopAnims();
-  updateRipples(dt);
-  drawRipples();
-  updateSoundBursts(dt);
-  drawSoundBursts();
-  updateParticles(dt);
-  drawParticles();
-  drawFinale(now);
+  if (_isColorFluidMode()) {
+    if (_colorFluid && typeof _colorFluid.frame === 'function') {
+      _colorFluid.frame(dt);
+    }
+  } else {
+    updateAmbientBubbles(dt, now);
+    drawAmbientBubbles();
+    updatePopAnims(dt);
+    drawPopAnims();
+    updateRipples(dt);
+    drawRipples();
+    updateSoundBursts(dt);
+    drawSoundBursts();
+    updateParticles(dt);
+    drawParticles();
+    drawFinale(now);
+  }
 
   // ポノ
   drawPono(now);
@@ -12724,10 +13109,17 @@ _rafId = requestAnimationFrame(loop);
 document.addEventListener('visibilitychange', function() {
   if (document.hidden) {
     if (_rafId) { cancelAnimationFrame(_rafId); _rafId = null; }
+    _resetColorFluidPointers();
+    if (_colorFluid && typeof _colorFluid.setEnabled === 'function') {
+      _colorFluid.setEnabled(false);
+    }
     if (_ac && _ac.state === 'running') _ac.suspend().catch(function(){});
   } else {
     _lastFrame = 0; // 復帰時 dt 暴走防止
     if (!_rafId) _rafId = requestAnimationFrame(loop);
+    if (_colorFluid && typeof _colorFluid.setEnabled === 'function') {
+      _colorFluid.setEnabled(_colorFluidActive);
+    }
     if (_ac && _ac.state === 'suspended' && !_otoAudioShouldBlock()) _ac.resume().catch(function(){});
   }
 });
@@ -12744,7 +13136,8 @@ var OTO_TUTORIAL_KEYS = {
   rhythmMenuMode: 'pono_oto_rhythm_menu_mode_tut_seen_v7',
   rhythmStory: 'pono_oto_rhythm_story_tut_seen_v5',
   rhythmStoryFromMenu: 'pono_oto_rhythm_story_from_menu_tut_seen_v2',
-  freeStage: 'pono_oto_free_stage_tut_seen_v4'
+  freeStage: 'pono_oto_free_stage_tut_seen_v4',
+  colorFluid: 'pono_oto_color_fluid_tut_seen_v1'
 };
 var OTO_TUTORIAL_AUTO_KEY = 'pono_oto_tutorial_auto_enabled_v1';
 var OTO_RHYTHM_TUTORIAL_VOICE = {
@@ -13544,6 +13937,7 @@ function _currentOtoTutorialKind() {
     return 'rhythmStart';
   }
   if (_playMode === 'free' && _freeViewMode === 'stage') return 'freeStage';
+  if (_playMode === 'free' && _freeViewMode === 'color') return 'colorFluid';
   return 'classic';
 }
 function _makeOtoTutorialSteps(kind) {
@@ -13963,6 +14357,28 @@ function _makeOtoTutorialSteps(kind) {
           _prepareOtoRhythmTutorialStage();
           _setRhythmStatus('ノートを みてね', null, 'judge');
         }
+      }
+    ];
+  }
+  if (kind === 'colorFluid') {
+    return [
+      {
+        badge: 'いろおと',
+        msg: 'ひろい ところを<br>ゆびで なぞってみよう',
+        anchor: '#color-fluid-hint',
+        side: 'above',
+        hand: 'tap',
+        before: function() {
+          setFreeViewMode('color', true);
+          setPlayMode('free');
+        }
+      },
+      {
+        badge: 'ねいろ',
+        msg: 'ねいろを かえると<br>ながれる おとも かわるよ',
+        anchor: '.sound-sets-box',
+        side: 'right',
+        hand: 'point'
       }
     ];
   }
@@ -14628,11 +15044,16 @@ document.addEventListener('click', _captureOtoTutorialRhythmMenuInput, true);
         e.preventDefault();
         e.stopPropagation();
         unlockAudio();
-        var viewMode = btn.dataset.freeView === 'stage' ? 'stage' : 'classic';
-        var tutKind = viewMode === 'classic' ? 'classic' : 'freeStage';
+        var requestedView = btn.dataset.freeView;
+        var viewMode = requestedView === 'stage'
+          ? 'stage'
+          : (requestedView === 'color' && _colorFluidAllowed ? 'color' : 'classic');
+        var tutKind = viewMode === 'classic'
+          ? 'classic'
+          : (viewMode === 'stage' ? 'freeStage' : 'colorFluid');
         // perf audit 2026-07-10: 初回チュートリアル時、 素のゲーム画面が 500-560ms 見える flash を防ぐ。
         // enterApp() より先に黒カバーを同期表示し、 チュートリアル起動待ちはカバー下の短い delay に短縮。
-        var showTut = _otoTutorialPending(tutKind);
+        var showTut = viewMode !== 'color' && _otoTutorialPending(tutKind);
         if (showTut) _showOtoTutorialBlackCover();
         setFreeViewMode(viewMode, true);
         enterApp();

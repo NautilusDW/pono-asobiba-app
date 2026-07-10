@@ -86,7 +86,7 @@ namespace Pono.MarbleRun3D.Tests.EditMode
             Assert.That(MarbleRunPhysicsProfile.SolverVelocityIterations, Is.GreaterThanOrEqualTo(3));
             Assert.That(MarbleRunPhysicsProfile.MarbleMaximumSpeed, Is.InRange(10f, 18f));
             Assert.That(MarbleRunPhysicsProfile.MarbleBounciness, Is.LessThan(0.1f));
-            Assert.That(MarbleRunPhysicsProfile.SlopeDegrees, Is.InRange(20f, 28f));
+            Assert.That(MarbleRunPhysicsProfile.SlopeDegrees, Is.InRange(15f, 20f));
             Assert.That(
                 Mathf.Tan(MarbleRunPhysicsProfile.SlopeDegrees * Mathf.Deg2Rad) * WoodenPieceFactory.CellSize,
                 Is.EqualTo(WoodenPieceFactory.LevelHeight).Within(0.01f));

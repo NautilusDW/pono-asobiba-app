@@ -15,14 +15,14 @@ namespace Pono.MarbleRun3D.Core
         public const float MarbleLinearDamping = 0.018f;
         public const float MarbleAngularDamping = 0.04f;
         public const float MarbleMaximumSpeed = 14f;
-        public const float MarbleLaunchSpeed = 7.5f;
+        public const float MarbleLaunchSpeed = 5.8f;
         public const float TrackStaticFriction = 0.24f;
         public const float TrackDynamicFriction = 0.18f;
         public const float TrackBounciness = 0.02f;
         public const float MarbleStaticFriction = 0.16f;
         public const float MarbleDynamicFriction = 0.10f;
         public const float MarbleBounciness = 0.04f;
-        public const float SlopeDegrees = 24.23f;
+        public const float SlopeDegrees = 16.70f;
     }
 
     public enum MarbleSafetyEvent

@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-07-10 - [batch:1176-color-water-delivery-prototype] PARKED - Codex: ユーザー評価により単独ゲーム化は不採用。流体運動の検証知見だけを残し、ゲーム本体としてcommit/pushしない。後続は既存OtoTouchを変更せず、第3の自由モードとして別実装する。 (by Codex)
+- 2026-07-10 - [batch:1177-oto-color-fluid-free-mode] Codex: 既存OtoTouchの `じゆう/ボタン` と `じゆう/ステージ` を完全維持し、アプリ版限定の第3自由モード `いろおと` を追加開始。WebGL2で速度移流・発散・Jacobi圧力・投影・渦度・色素移流を行う本格2D流体をlazy起動し、表示のみトゥーン量子化/イラスト縁へ変換。指入力は実速度場と色素へ注入し、横8領域を既存8音/8色へ接続する。`oto/` 共通ファイルはguard込みで `develop-app` / `develop` 同期前提。並走中 `unity/PonoMarbleRun3D/` には触れない。 (by Codex)
 - 2026-07-10 - [batch:1175-marble-run-3d] Codex: `develop-app` / clean tree / origin最新を確認し、HANDOFF・claim・関連20件履歴・`unity/` 実体を監査。同一 `unity/PonoMarbleRun3D` 成果物なし。既存 `unity/PonoNativeGames` と HideSeekCreatures、旧 FluidMarbleLab には触れず、流体なしの独立3Dマーブルランを `unity/PonoMarbleRun3D/` に新規作成し、かなUI・木製玩具表現・編集/物理/保存/チュートリアル/3チャレンジ/サンドボックス・EditMode/PlayMode・macOS app/Android APKまで実装する。アプリ版限定のため `develop` 同期なし。 (by Codex)
 - 2026-07-10 - [batch:1176-color-water-delivery-prototype] Codex: ユーザーが流体再設計案3「いろみずの おつかい」を選択。既存HideSeekを変更せず、`unity/PonoNativeGames/Assets/Pono/Games/ColorWaterDelivery/` に独立1ステージ試遊版を作る。青+黄の実流体を葉っぱ水門で導いて混ぜ、緑として動物の家へ届けるコアループを主役にし、消去mask/透け見え/全面こすり最適解は使わない。最初はgraybox品質判定を優先し、macOS単独preview、EditMode/PlayMode、流体GPU検証まで行う。並走中の `unity/PonoMarbleRun3D/` と共有設定への競合を避け、同ディレクトリには触れない。アプリ版限定のため `develop` 同期なし。 (by Codex)
 
