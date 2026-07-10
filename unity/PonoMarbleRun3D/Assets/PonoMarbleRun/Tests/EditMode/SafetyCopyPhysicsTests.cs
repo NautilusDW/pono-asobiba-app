@@ -113,7 +113,7 @@ namespace Pono.MarbleRun3D.Tests.EditMode
         }
 
         [Test]
-        public void PassiveGuideNeverAddsTangentialSpeedOrPositiveMechanicalWork()
+        public void PassiveGuidePerformsNoMechanicalWorkAndRespectsAccelerationCap()
         {
             var cases = new[]
             {
@@ -146,13 +146,8 @@ namespace Pono.MarbleRun3D.Tests.EditMode
                     7f,
                     11f,
                     20f);
-                var alongSpeed = Vector3.Dot(sample.Velocity, sample.Tangent);
-                var alongAcceleration = Vector3.Dot(acceleration, sample.Tangent);
-
-                Assert.That(Vector3.Dot(acceleration, sample.Velocity), Is.LessThanOrEqualTo(0.00001f),
-                    "a passive constraint cannot add kinetic energy");
-                Assert.That(alongAcceleration * Mathf.Sign(alongSpeed), Is.LessThanOrEqualTo(0.00001f),
-                    "a passive constraint cannot increase speed along the path");
+                Assert.That(Vector3.Dot(acceleration, sample.Velocity), Is.EqualTo(0f).Within(0.00001f),
+                    "an ideal passive constraint changes direction without adding or draining kinetic energy");
                 Assert.That(acceleration.magnitude, Is.LessThanOrEqualTo(20.0001f));
             }
         }

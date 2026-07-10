@@ -1,0 +1,14 @@
+{
+  "passed": false,
+  "state": "variety-physical",
+  "screen": "1280x720",
+  "game_state": "Running",
+  "piece_count": 28,
+  "active_level": 4,
+  "active_marbles": 6,
+  "marbles_at_goal": 0,
+  "camera_follow": true,
+  "camera_target": "(9.41, 3.42, -5.63)",
+  "camera_distance": 27.22,
+  "details": "InvalidOperationException: starter did not physically reach the goal; reached=0; 0:p=(10.93, 2.87, -6.06),v=(0.35, 0.00, -0.08),on=True | 1:p=(8.10, 2.87, -5.48),v=(0.25, 0.00, 0.00),on=True | 2:p=(9.85, 2.87, -5.49),v=(0.31, 0.00, 0.00),on=True | 3:p=(8.74, 2.87, -5.47),v=(0.28, 0.00, 0.00),on=True | 4:p=(8.31, 2.87, -5.47),v=(0.27, 0.00, 0.00),on=True | 5:p=(8.08, 2.87, -5.47),v=(0.27, 0.00, 0.00),on=True"
+}

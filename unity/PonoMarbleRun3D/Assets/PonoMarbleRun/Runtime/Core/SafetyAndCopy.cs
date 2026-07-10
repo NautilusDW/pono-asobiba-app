@@ -28,9 +28,9 @@ namespace Pono.MarbleRun3D.Core
     }
 
     /// <summary>
-    /// Computes a non-powered path constraint. It may steer a marble back to a path
-    /// and remove sideways motion, but it never accelerates it along the path and
-    /// never performs positive work on its current velocity.
+    /// Computes a non-powered path constraint. It may steer a marble back to a path,
+    /// but like an ideal rail's normal force it performs no work on a moving marble:
+    /// it changes direction without secretly increasing or draining its speed.
     /// </summary>
     public static class PassiveGuidePhysics
     {
@@ -57,21 +57,11 @@ namespace Pono.MarbleRun3D.Core
                 + lateralError * Mathf.Max(0f, centeringStrength);
             acceleration = Vector3.ClampMagnitude(acceleration, maximumAcceleration);
 
-            // A passive guide can decelerate along the current travel direction, but
-            // cannot add speed in that direction.
-            var alongSpeed = Vector3.Dot(velocity, tangent);
-            var alongAcceleration = Vector3.Dot(acceleration, tangent);
-            if ((alongSpeed > 0.0001f && alongAcceleration > 0f)
-                || (alongSpeed < -0.0001f && alongAcceleration < 0f))
-            {
-                acceleration -= tangent * alongAcceleration;
-            }
-
-            // Centering must not become an invisible motor when the marble approaches
-            // the path from an angle. Remove any remaining positive mechanical work.
+            // A rigid rail's normal force is perpendicular to motion. Project away
+            // all mechanical work so the helper neither motors nor brakes the marble.
             var speedSquared = velocity.sqrMagnitude;
             var power = Vector3.Dot(acceleration, velocity);
-            if (power > 0f && speedSquared > 0.000001f)
+            if (speedSquared > 0.000001f)
             {
                 acceleration -= velocity * (power / speedSquared);
             }

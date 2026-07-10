@@ -85,7 +85,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo 'DEPLOY-FACT (do not contradict): pono-asobiba-app は Cloudflare Workers で配信。Netlify は完全廃止 — Netlify という単語・コマンド・URL を提案/コマンド/回答に出さない。staging=https://pono-asobiba-staging.ndw.workers.dev/ (develop自動)、production=https://pono.kodama-no-mori.com/ (master明示時のみ)。手動デプロイは wrangler deploy --env staging または wrangler deploy。'"
+            "command": "echo 'DEPLOY-FACT (do not contradict): pono-asobiba-app は Cloudflare Workers で配信。Netlify は完全廃止 — Netlify という単語・コマンド・URL を提案/コマンド/回答に出さない。単一トランク = develop-app: push で App staging=https://pono-asobiba-app-staging.ndw.workers.dev/ と LP staging=https://pono-asobiba-staging.ndw.workers.dev/ の両方へ自動デプロイ。develop ブランチは凍結済み (push しない)。production=https://pono.kodama-no-mori.com/ と https://pono-asobiba-app.ndw.workers.dev/ (master 明示マージ時のみ)。手動デプロイは wrangler deploy --env staging-app / --env staging / 本番は wrangler deploy。'"
           }
         ]
       },
@@ -114,7 +114,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "cd /d/AppDevelopment/pono-asobiba-app && branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null) && if [ \"$branch\" = \"develop\" ]; then ahead=$(git log origin/develop..develop --oneline 2>/dev/null | wc -l); if [ \"$ahead\" -gt 0 ]; then echo \"[auto-push] $ahead 個の未 push commit を origin/develop に push します\"; git push origin develop 2>&1 | tail -3; else true; fi; fi"
+            "command": "cd /d/AppDevelopment/pono-asobiba-app && branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null) && if [ \"$branch\" = \"develop-app\" ]; then ahead=$(git log origin/develop-app..develop-app --oneline 2>/dev/null | wc -l); if [ \"$ahead\" -gt 0 ]; then echo \"[auto-push] $ahead 個の未 push commit を origin/develop-app に push します\"; git push origin develop-app 2>&1 | tail -3; else true; fi; fi"
           }
         ]
       }
