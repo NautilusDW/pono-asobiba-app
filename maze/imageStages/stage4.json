@@ -1,7 +1,6 @@
 {
   "type": "image",
   "name": "stage4",
-  "stageOrder": 4,
   "imageUrl": "imageStages/stage4.jpg",
   "viewBox": {
     "w": 2688,
@@ -22,24 +21,29 @@
       "y": 1405
     },
     {
+      "id": "stage4-left-hole",
       "kind": "hole",
       "x": 1389,
-      "y": 564,
-      "id": "stage4-left-hole",
-      "eventEnabled": true
+      "y": 564
     },
     {
+      "id": "stage4-mid-hole",
       "kind": "hole",
       "x": 877,
-      "y": 454,
-      "id": "stage4-mid-hole"
+      "y": 454
     },
     {
-      "kind": "hole",
-      "x": 2490,
-      "y": 716,
       "id": "stage4-flag-tunnel-exit",
-      "eventEnabled": true
+      "kind": "hole",
+      "x": 2483,
+      "y": 293
+    },
+    {
+      "id": "stage4-water-puddle",
+      "kind": "pond",
+      "x": 212,
+      "y": 710,
+      "size": 190
     }
   ],
   "creatures": [
@@ -62,6 +66,32 @@
       "y": 1066
     }
   ],
+  "flagGimmick": {
+    "id": "stage4-flag-tunnel",
+    "ladder": {
+      "x": 1140,
+      "y": 987,
+      "radius": 92
+    },
+    "entranceObstacleId": "stage4-left-hole",
+    "exitObstacleId": "stage4-flag-tunnel-exit",
+    "exitFocus": {
+      "x": 2483,
+      "y": 256
+    },
+    "exitNodeId": "stop12",
+    "encounterRadius": 94
+  },
+  "waterGimmick": {
+    "id": "stage4-water-bridge",
+    "plank": {
+      "x": 212,
+      "y": 386,
+      "radius": 90
+    },
+    "obstacleId": "stage4-water-puddle",
+    "encounterRadius": 104
+  },
   "nodes": [
     {
       "id": "goal",
@@ -7077,31 +7107,5 @@
         "shape": "curve"
       }
     }
-  ],
-  "flagGimmick": {
-    "id": "stage4-flag-tunnel",
-    "ladder": {
-      "x": 1140,
-      "y": 987,
-      "radius": 92
-    },
-    "entranceObstacleId": "stage4-left-hole",
-    "exitObstacleId": "stage4-flag-tunnel-exit",
-    "exitFocus": {
-      "x": 2490,
-      "y": 716
-    },
-    "exitNodeId": "stop12",
-    "encounterRadius": 94
-  },
-  "waterGimmick": {
-    "id": "water-bridge",
-    "obstacleId": "",
-    "encounterRadius": 104,
-    "plank": {
-      "x": 212,
-      "y": 386,
-      "radius": 90
-    }
-  }
+  ]
 }
