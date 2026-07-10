@@ -1,6 +1,23 @@
 # QA evidence
 
-macOSプレイヤーから取得した画面と機械可読記録です。通常起動ではQAドライバーも操作プローブも動きません。
+macOSプレイヤーとUnity Editor Game Viewから取得した画面、および機械可読記録です。通常起動ではQAドライバーも操作プローブも動きません。
+
+## batch:1175f の正本
+
+今回の見た目の正本は `cute-*-final.png` と対応する `cute-*-final.json` です。`pastel-*` は1175e以前との比較用、`camera-*` と`gravity-*`はカメラ・物理回帰の証跡です。
+
+## 絵本玩具アートパス
+
+- `Screenshots/16x9/cute-menu-final.png`: 完成macOSプレイヤーの絵本カード、見出し札、色付きボタン、7種類の固有バッジ。
+- `Screenshots/16x9/cute-edit-final.png`: 角丸木台、ラベンダーマット、太い丸レール、積み木橋脚、接続ソケット、大型パステル装飾。
+- `Screenshots/16x9/cute-run-final.png`: 6色の玉、太い高架シルエット、色分けされた走行操作列。
+- `Screenshots/16x9/cute-starter-goal-final.png`: 28部品コースで6 / 6玉が実物理でゴールした画面。Metalの非同期取得による黒いタイルを避けるため、ゴール後4秒待って再取得した最終PNGです。
+- `Screenshots/4x3/cute-edit-final.png` と `Screenshots/20x9/cute-edit-final.png`: 完成macOSプレイヤーの狭幅・横長表示。
+- `cute-edit-{16x9,4x3,20x9}-final.json`: 3比率とも `passed=true`、`game_state=Editing`、`piece_count=28`。
+- `cute-starter-physical-final.json`: `passed=true`、`game_state=Celebrating`、`active_marbles=6`、`marbles_at_goal=6`、25.271秒。
+- `doubleclick-smoke-final.json`: LaunchServicesの通常アプリ起動で1280 × 720のメニューへ入り、正常終了した記録。
+
+Unity Game Viewで28部品を表示した測定時統計はDraw Calls 159、Static Colliders 448でした。視覚専用の背景・外装・橋脚・装飾はLayer 2かつCollider無効です。これは測定時点のスナップショットで、Android端末fpsの保証値ではありません。
 
 ## batch:1175e の正本
 

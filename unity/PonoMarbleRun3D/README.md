@@ -2,7 +2,7 @@
 
 3〜6歳向けの、斜め上から遊ぶ独立3Dマーブルランです。高いホッパーから6色の玉を順番に流し、トルネード・エレベーター・透明な筒・らせん・かいだん・動力のぼり・高架レールを組み合わせて、上下に広がるコースを作れます。制限時間・減点・ゲームオーバー・怖い失敗演出はありません。
 
-このUnityプロジェクトは `unity/PonoMarbleRun3D/` だけで完結しています。既存のネイティブゲーム、Web版、ゲーム選択画面には接続していません。アプリ版限定の試作なので、`develop` への同期も行いません。
+このUnityプロジェクトは `unity/PonoMarbleRun3D/` だけで完結しています。既存のネイティブゲーム、Web版、ゲーム選択画面には接続していません。開発トランクは `develop-app` で、凍結済みの `develop` への同期作業はありません。
 
 ## すぐに遊ぶ
 
@@ -58,7 +58,11 @@ Androidテスト用APKは次にあります。
 - くるくる はね: 玉が触れると6色の羽根が回る、通過型の仕掛けです。
 - 高架部品: 木製の脚を地面まで伸ばし、どの段にあるか分かる形にします。
 
-木製玩具を意識したクリーム／ピーチの木部と、ピーチ・バター・ミント・アクア・ラベンダー・ピンクの淡い6色を使います。大型部品には、当たり判定を持たない小さな花・星・雲を飾りました。木の台、見分けやすい接続ペグとリング、配置前の半透明ゴースト、配置不可時の赤い×表示も使用します。スタートは複数の玉を入れるカラフルなホッパー形です。
+木製玩具を意識した木部と、ピーチ・バター・ミント・アクア・ラベンダー・ピンクの6色を使います。盤面は角を丸めた大きな木の台とラベンダーの遊びマットで囲み、四隅のキャンディ飾り、積み木の木、雲を置いて、玩具部屋のように見せています。
+
+レールには太い丸形の外装、高架には太い4本脚、2本の積み木橋脚、丸い足台と色付きキャップを追加しました。接続部はクリーム台・色リング・ペグの3層構造です。全19部品には、花・葉・星・ハート・雲など、離れたカメラからも読める飾りを付けています。スタートは複数の玉を入れるカラフルなホッパー形です。
+
+追加した外装、橋脚、接続飾り、盤面背景、小物は視覚専用Layerに置き、Colliderを無効化しています。走行Colliderと配置判定Colliderは従来のまま分離されているため、見た目の追加が玉の物理へ影響しません。UIは影と縁取りのある絵本カード、色分けした操作列、7つのメニューバッジ、選択マークを使います。配置前の半透明ゴーストと、配置不可時の赤い×表示も維持しています。
 
 ## 設計
 
@@ -66,9 +70,9 @@ Androidテスト用APKは次にあります。
 - `Core/PlacementSolver.cs`: グリッド境界、占有判定、接続点スナップ、スタートからゴールまでの接続グラフ。
 - `Core/CourseHistoryAndStorage.cs`: スナップショット型Undoと一時ファイルを使う安全なJSON保存。
 - `Core/ChallengeCatalog.cs`: チュートリアル、3チャレンジ、サンドボックスの部品制限と初期配置。
-- `Gameplay/WoodenPieceFactory.cs`: 木製玩具風3D部品、走行Collider、配置判定領域、可動機構の生成。
+- `Gameplay/WoodenPieceFactory.cs`: 太い丸レール、積み木橋脚、3層接続ソケット、視覚専用装飾、走行Collider、配置判定領域、可動機構の生成。
 - `Gameplay/MarbleRunGameController.cs`: 編集、試走、安全復帰、停止、ゴール演出の状態管理。
-- `UI/MarbleRunUi.cs`: マウス・タッチ共通のuGUIとSafe Area対応。
+- `UI/MarbleRunUi.cs`: マウス・タッチ共通のuGUI、絵本カード、7種の固有バッジ、色分け操作列、選択状態、Safe Area対応。
 
 コースの正本はシリアライズ可能な `CourseData` schema 2です。部品の段、向き、6個を既定とする玉数を保存します。旧schema 1は読込時に安全に移行します。画面上のGameObjectはデータから再構築するため、Undo・保存・復元後も同じ立体経路を編集できます。配置照会、走行形状、盤面、玉は専用Physics Layerへ分けています。
 
@@ -116,14 +120,14 @@ MCP for UnityはローカルHTTP `127.0.0.1:8080` を使う設定です。Unity 
   -batchmode -nographics \
   -projectPath "$PWD/unity/PonoMarbleRun3D" \
   -runTests -testPlatform EditMode \
-  -testResults "$PWD/unity/PonoMarbleRun3D/Logs/EditMode-results.xml" \
+  -testResults "$PWD/unity/PonoMarbleRun3D/TestResults/EditMode.xml" \
   -logFile "$PWD/unity/PonoMarbleRun3D/Logs/EditMode.log"
 
 /Applications/Unity/Hub/Editor/6000.3.19f1/Unity.app/Contents/MacOS/Unity \
   -batchmode -nographics \
   -projectPath "$PWD/unity/PonoMarbleRun3D" \
   -runTests -testPlatform PlayMode \
-  -testResults "$PWD/unity/PonoMarbleRun3D/Logs/PlayMode-results.xml" \
+  -testResults "$PWD/unity/PonoMarbleRun3D/TestResults/PlayMode.xml" \
   -logFile "$PWD/unity/PonoMarbleRun3D/Logs/PlayMode.log"
 ```
 
