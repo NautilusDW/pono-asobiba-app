@@ -1,279 +1,203 @@
-// もりのアルバム — 5×20 ヒートマップ画面
+// もりのアルバム — なかまごとの進み具合を一目で見る画面
 //
 // 依存:
-//   window.PonoPartners  (partners.js)
-//   window.PonoBond      (bond.js)
-//
-// 単独画面 (album.html) として動作する。
-// main.js とは独立しているため、ステージ題名は BASE_STAGES と同期した内部テーブルを持つ。
-// (main.js を丸ごとロードすると puzzle 初期化が走るため、ここでは静的データのみ複製している。)
-
+//   window.PonoPartners (partners.js)
+//   window.PonoBond     (bond.js)
 (function () {
   'use strict';
 
-  // ============================================================
-  // ⚠️ MANUAL SYNC REQUIRED — KEEP IN SYNC WITH main.js:BASE_STAGES
-  //   Source of truth: puzzle/main.js BASE_STAGES (around lines 171-275)
-  //   When adding / removing / renaming any stage in BASE_STAGES,
-  //   update this table at the same time. main.js cannot be imported
-  //   here (it triggers puzzle init on load), so titles are duplicated.
-  //   batch:938 fix #6 — explicit sync notice (no refactor)
-  // ============================================================
-  var STAGE_TITLES = {
-    1:  'あかい りんご',
-    2:  'そらの ふうせん',
-    3:  'おはなと ちょうちょ',
-    4:  'みずの なかの きんぎょ',
-    5:  '✨ おやすみ ポノ',
-    6:  'くだものの かご',
-    7:  'おもちゃの がっき',
-    8:  'おはなの はたけ',
-    9:  'うみの せかい',
-    10: '✨ みずあそび ポノ',
-    11: 'あめあがりの にじ',
-    12: 'ゆめの よぞら',
-    13: 'あまい おやつ',
-    14: 'もりの おんがくかい',
-    15: '✨ きらきら ポノ',
-    16: 'のりものの まち',
-    17: 'もりの ピクニック',
-    18: 'まほうの ほんだな',
-    19: 'おもちゃの テーブル',
-    20: '✨ ポノと さいごのぼうけん',
-  };
-
   var STAGE_COUNT = 20;
-  var FUKUROU_ID = 'fukurou';
 
-  // ---------- DOM helpers ----------
-  function $(id) { return document.getElementById(id); }
+  function $(id) {
+    return document.getElementById(id);
+  }
 
-  function createEl(tag, opts) {
+  function createEl(tag, options) {
     var el = document.createElement(tag);
-    if (!opts) return el;
-    if (opts.cls) el.className = opts.cls;
-    if (opts.text != null) el.textContent = String(opts.text);
-    if (opts.html != null) el.innerHTML = opts.html;
-    if (opts.attrs) {
-      for (var k in opts.attrs) {
-        if (Object.prototype.hasOwnProperty.call(opts.attrs, k)) {
-          el.setAttribute(k, opts.attrs[k]);
-        }
-      }
+    options = options || {};
+    if (options.className) el.className = options.className;
+    if (options.text != null) el.textContent = String(options.text);
+    if (options.attrs) {
+      Object.keys(options.attrs).forEach(function (name) {
+        el.setAttribute(name, String(options.attrs[name]));
+      });
     }
     return el;
   }
 
-  // ---------- Build grid ----------
-  function renderGrid() {
-    var partners = (window.PonoPartners && window.PonoPartners.list) || [];
-    var bondReady = !!(window.PonoBond && typeof window.PonoBond.isCleared === 'function');
-    var fukurouUnlocked = bondReady && window.PonoBond.isFukurouUnlocked();
-
-    // Header row
-    var head = $('album-grid-head');
-    head.innerHTML = '';
-    var corner = createEl('th', { cls: 'album-grid__corner', text: 'パートナー / ステージ' });
-    head.appendChild(corner);
-    var hasDifficulty = !!(window.PonoDifficulty && typeof window.PonoDifficulty.forStage === 'function');
-    for (var s = 1; s <= STAGE_COUNT; s++) {
-      var th = createEl('th', { cls: 'album-grid__col-head' });
-      var numSpan = createEl('span', { cls: 'album-grid__col-head-num', text: String(s) });
-      th.appendChild(numSpan);
-      if (hasDifficulty) {
-        var diff = window.PonoDifficulty.forStage('puzzle', s);
-        if (diff) {
-          var badge = createEl('span', {
-            cls: 'album-diff album-diff--' + diff.key,
-            text: diff.stars,
-            attrs: {
-              'aria-label': 'むずかしさ: ' + diff.label,
-              'title': diff.label,
-              'role': 'img',
-            },
-          });
-          th.appendChild(badge);
-        }
-      }
-      head.appendChild(th);
-    }
-
-    // Body
-    var body = $('album-grid-body');
-    body.innerHTML = '';
-
-    var clearedTotal = 0;
-    var clearedPossible = 0;
-
-    for (var p = 0; p < partners.length; p++) {
-      var partner = partners[p];
-      var locked = (partner.id === FUKUROU_ID) && !fukurouUnlocked;
-
-      var tr = createEl('tr', { cls: 'album-row' + (locked ? ' album-row--locked' : '') });
-
-      // Row header (partner icon + name)
-      var rowHead = createEl('td', { cls: 'album-grid__row-head' });
-      var inner = createEl('div', { cls: 'album-grid__row-head-inner' });
-      var iconWrap = createEl('span', { cls: 'album-grid__row-head-icon' });
-      if (partner.image) {
-        var img = createEl('img', {
-          attrs: {
-            src: partner.image,
-            alt: '',
-            loading: 'lazy',
-            draggable: 'false',
-          },
-        });
-        iconWrap.appendChild(img);
-      }
-      var nameSpan = createEl('span', { cls: 'album-grid__row-head-name', text: partner.name || partner.id });
-      inner.appendChild(iconWrap);
-      inner.appendChild(nameSpan);
-      rowHead.appendChild(inner);
-      tr.appendChild(rowHead);
-
-      // Cells
-      for (var stageId = 1; stageId <= STAGE_COUNT; stageId++) {
-        clearedPossible++;
-        var cleared = !locked && bondReady && window.PonoBond.isCleared(partner.id, stageId);
-        if (cleared) clearedTotal++;
-
-        var btn = createEl('button', {
-          cls: 'album-cell ' + (cleared ? 'album-cell--cleared' : 'album-cell--uncleared'),
-          attrs: {
-            type: 'button',
-            'data-partner-id': partner.id,
-            'data-stage-id': String(stageId),
-            'data-cleared': cleared ? '1' : '0',
-            'data-locked': locked ? '1' : '0',
-            'aria-label': partner.name + ' ステージ' + stageId + (cleared ? ' クリア済み' : ' 未クリア'),
-          },
-        });
-
-        var td = createEl('td');
-        td.appendChild(btn);
-        tr.appendChild(td);
-      }
-
-      body.appendChild(tr);
-    }
-
-    // Summary
-    $('album-summary-current').textContent = String(clearedTotal);
-    $('album-summary-total').textContent = String(clearedPossible);
-    var bar = $('album-summary-bar');
-    var pct = clearedPossible > 0 ? (clearedTotal / clearedPossible) * 100 : 0;
-    // Slight delay so the transition animates from 0%
-    requestAnimationFrame(function () {
-      bar.style.width = pct.toFixed(1) + '%';
-    });
+  function clampCount(value) {
+    var count = Number(value);
+    if (!isFinite(count)) count = 0;
+    return Math.max(0, Math.min(STAGE_COUNT, Math.floor(count)));
   }
 
-  // ---------- Popup ----------
-  function showPopup(opts) {
-    $('album-popup-partner').textContent = opts.partnerName + ' と';
-    var status = opts.cleared
-      ? '「' + opts.stageTitle + '」を クリアしたよ'
-      : '「' + opts.stageTitle + '」は まだ';
-    $('album-popup-stage').textContent = status;
-    $('album-popup-status').textContent = opts.cleared ? '✨ クリア済み' : '— 未クリア';
-    // 難易度ラベル (popup の下部に小バッジで表示)
-    var sub = $('album-popup-status-sub');
-    sub.textContent = '';
-    if (opts.difficulty) {
-      var d = opts.difficulty;
-      var badge = createEl('span', {
-        cls: 'album-diff album-diff--' + d.key + ' album-diff--popup',
-        text: d.stars + ' ' + d.label,
+  function getClearedCount(partnerId) {
+    try {
+      if (window.PonoBond && typeof window.PonoBond.getClearedCount === 'function') {
+        return clampCount(window.PonoBond.getClearedCount(partnerId));
+      }
+      if (window.PonoBond && typeof window.PonoBond.isCleared === 'function') {
+        var count = 0;
+        for (var stageId = 1; stageId <= STAGE_COUNT; stageId++) {
+          if (window.PonoBond.isCleared(partnerId, stageId)) count++;
+        }
+        return clampCount(count);
+      }
+    } catch (_) {}
+    return 0;
+  }
+
+  function isPartnerUnlocked(partner) {
+    try {
+      if (window.PonoPartners && typeof window.PonoPartners.isUnlocked === 'function') {
+        return window.PonoPartners.isUnlocked(partner);
+      }
+    } catch (_) {}
+    return true;
+  }
+
+  function progressLabel(count) {
+    if (count >= STAGE_COUNT) return 'ぜんぶ できた！';
+    if (count <= 0) return 'まだ これから';
+    return String(count) + 'こ できた';
+  }
+
+  function buildPortrait(partner, locked) {
+    var portrait = createEl('div', { className: 'album-partner-card__portrait' });
+
+    if (locked && partner.silhouetteImage) {
+      var silhouette = createEl('img', {
+        className: 'album-partner-card__portrait-img is-silhouette' +
+          (partner.silhouetteMode === 'light-background' ? ' is-light-background' : ''),
         attrs: {
-          'aria-label': 'むずかしさ: ' + d.label,
-          'role': 'img',
+          src: partner.silhouetteImage,
+          alt: '',
+          loading: 'lazy',
+          draggable: 'false',
+          'aria-hidden': 'true',
         },
       });
-      sub.appendChild(badge);
+      portrait.appendChild(silhouette);
+    } else if (locked) {
+      portrait.appendChild(createEl('span', {
+        className: 'album-partner-card__secret',
+        text: '?',
+        attrs: { 'aria-hidden': 'true' },
+      }));
+    } else if (partner.image) {
+      portrait.appendChild(createEl('img', {
+        className: 'album-partner-card__portrait-img',
+        attrs: {
+          src: partner.image,
+          alt: '',
+          loading: 'lazy',
+          draggable: 'false',
+        },
+      }));
     }
-    var popup = $('album-popup');
-    popup.classList.remove('hidden');
-    // focus the close button for keyboard a11y
-    setTimeout(function () { $('album-popup-close').focus(); }, 50);
-  }
-
-  function showLockedPopup(partnerName) {
-    $('album-popup-partner').textContent = partnerName;
-    $('album-popup-stage').textContent = 'まだ あえないよ\nぜんステージ クリアで あえるかも？';
-    $('album-popup-status').textContent = '🔒 ひみつ';
-    $('album-popup-status-sub').textContent = '';
-    $('album-popup').classList.remove('hidden');
-  }
-
-  function hidePopup() {
-    $('album-popup').classList.add('hidden');
-  }
-
-  // ---------- Event wiring ----------
-  function handleCellClick(ev) {
-    var t = ev.target;
-    while (t && t !== document.body) {
-      if (t.classList && t.classList.contains('album-cell')) break;
-      t = t.parentNode;
-    }
-    if (!t || !t.classList || !t.classList.contains('album-cell')) return;
-
-    var partnerId = t.getAttribute('data-partner-id');
-    var stageId = parseInt(t.getAttribute('data-stage-id'), 10);
-    var locked = t.getAttribute('data-locked') === '1';
-    var partner = (window.PonoPartners && window.PonoPartners.get(partnerId)) || null;
-    if (!partner) return;
 
     if (locked) {
-      showLockedPopup(partner.name);
-      return;
+      portrait.appendChild(createEl('span', {
+        className: 'album-partner-card__lock',
+        text: '🔒',
+        attrs: { 'aria-hidden': 'true' },
+      }));
+    }
+    return portrait;
+  }
+
+  function buildPartnerCard(partner, clearedCount) {
+    var unlocked = isPartnerUnlocked(partner);
+    var status = unlocked ? progressLabel(clearedCount) : 'まだ ひみつ';
+    var card = createEl('article', {
+      className: 'album-partner-card' + (unlocked ? '' : ' is-locked'),
+      attrs: {
+        role: 'listitem',
+        'aria-label': unlocked
+          ? partner.name + 'は 20このうち ' + clearedCount + 'こ できた'
+          : partner.name + 'は まだ ひみつ',
+      },
+    });
+    card.appendChild(buildPortrait(partner, !unlocked));
+
+    var info = createEl('div', { className: 'album-partner-card__info' });
+    info.appendChild(createEl('h2', {
+      className: 'album-partner-card__name',
+      text: partner.name || partner.id,
+    }));
+    info.appendChild(createEl('div', {
+      className: 'album-partner-card__status',
+      text: unlocked ? '⭐ ' + status : '🔒 ' + status,
+    }));
+
+    if (unlocked) {
+      var progress = createEl('div', {
+        className: 'album-partner-card__bar',
+        attrs: {
+          role: 'progressbar',
+          'aria-label': partner.name + 'のできたかず',
+          'aria-valuemin': '0',
+          'aria-valuemax': String(STAGE_COUNT),
+          'aria-valuenow': String(clearedCount),
+          'aria-valuetext': progressLabel(clearedCount),
+        },
+      });
+      var fill = createEl('span', { className: 'album-partner-card__bar-fill' });
+      fill.style.width = ((clearedCount / STAGE_COUNT) * 100).toFixed(1) + '%';
+      progress.appendChild(fill);
+      info.appendChild(progress);
     }
 
-    var cleared = t.getAttribute('data-cleared') === '1';
-    var stageTitle = STAGE_TITLES[stageId] || ('ステージ ' + stageId);
-    var difficulty = (window.PonoDifficulty && typeof window.PonoDifficulty.forStage === 'function')
-      ? window.PonoDifficulty.forStage('puzzle', stageId)
-      : null;
-    showPopup({
-      partnerName: partner.name,
-      stageTitle: stageTitle,
-      cleared: cleared,
-      difficulty: difficulty,
+    card.appendChild(info);
+    return card;
+  }
+
+  function renderAlbum() {
+    var partners = (window.PonoPartners && Array.isArray(window.PonoPartners.list))
+      ? window.PonoPartners.list
+      : [];
+    var grid = $('album-partner-grid');
+    grid.innerHTML = '';
+
+    var totalCleared = 0;
+    var availablePartnerCount = 0;
+    partners.forEach(function (partner) {
+      var clearedCount = getClearedCount(partner.id);
+      if (isPartnerUnlocked(partner)) {
+        totalCleared += clearedCount;
+        availablePartnerCount++;
+      }
+      grid.appendChild(buildPartnerCard(partner, clearedCount));
     });
+
+    // ロック中の仲間を母数へ入れると、free / book では到達できないバーになる。
+    // 「もっと買わないと埋まらない」印象を避け、いま遊べる仲間だけでまとめる。
+    var totalPossible = Math.max(1, availablePartnerCount * STAGE_COUNT);
+    var summaryText = String(totalCleared) + 'こ できた';
+    $('album-summary-value').textContent = summaryText;
+    var summaryBar = $('album-summary-bar');
+    summaryBar.setAttribute('aria-valuemax', String(totalPossible));
+    summaryBar.setAttribute('aria-valuenow', String(totalCleared));
+    summaryBar.setAttribute('aria-valuetext', summaryText);
+    $('album-summary-bar-fill').style.width = ((totalCleared / totalPossible) * 100).toFixed(1) + '%';
   }
 
   function handleBack() {
-    // Prefer history back when there's a parent page; fallback to puzzle index.
     try {
       if (window.history.length > 1 && document.referrer && document.referrer.indexOf(window.location.host) !== -1) {
         window.history.back();
         return;
       }
-    } catch (_) { /* fall through */ }
+    } catch (_) {}
     window.location.href = 'index.html';
   }
 
   function init() {
-    // Sanity check dependencies
     if (!window.PonoPartners || !window.PonoBond) {
       console.error('[album] PonoPartners / PonoBond not loaded');
     }
-
-    renderGrid();
-
-    // Grid click delegation
-    $('album-grid-body').addEventListener('click', handleCellClick);
-
-    // Back button
+    renderAlbum();
     $('album-back').addEventListener('click', handleBack);
-
-    // Popup dismiss
-    $('album-popup-close').addEventListener('click', hidePopup);
-    $('album-popup-backdrop').addEventListener('click', hidePopup);
-    document.addEventListener('keydown', function (ev) {
-      if (ev.key === 'Escape') hidePopup();
-    });
   }
 
   if (document.readyState === 'loading') {
