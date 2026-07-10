@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2074: アプリ版 OtoTouch に、圧力投影つき WebGL2 流体をトゥーン描画する第3の自由モード「いろおと」を追加。既存2モードと本版は変更なし。play.html PAGE_CACHE_VERSION と同期。
 // v2073: 全体パフォーマンス改善 (OP前ゲーム画面フラッシュ修正 quizland/maze/bento/oto/puzzle、タイトルFOUCガード修正、隠しモーダル画像の遅延化、preload=none化、WebP一括変換 quizland illust/zukan/oto/bento、SWキャッシュ戦略修正 no-store→cache-first/no-cache、precache copy-forward、nav strip lossy再エンコード)。play.html PAGE_CACHE_VERSION と同期。
 // v2072: Puzzle の設定メニューで「もりのアルバム」を「もどる」の下へ移し、160個のマス一覧を8人の進み具合カードへ簡略化。play.html PAGE_CACHE_VERSION と同期。
 // v2071: Maze の再crop動物画像をversioned URLで強制更新し、旗あげ5段レイアウトを短い横画面内へ収める。play.html PAGE_CACHE_VERSION と同期。
@@ -17,7 +18,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2073;
+const CACHE_VERSION = 2074;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
