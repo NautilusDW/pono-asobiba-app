@@ -321,6 +321,22 @@
       "type": "file"
     },
     {
+      "source": "assets/audio/bgm/maze",
+      "destination": "assets/audio/bgm/maze",
+      "type": "file-list",
+      "files": [
+        "maze_janken_loop_20260710.mp3",
+        "maze_truefalse_loop_20260710.mp3",
+        "maze_simon_loop_20260710.mp3",
+        "maze_silhouette_loop_20260710.mp3",
+        "maze_oddone_loop_20260710.mp3",
+        "maze_flag_loop_20260710.mp3",
+        "maze_water_bridge_loop_20260710.mp3",
+        "maze_strength_push_loop_20260710.mp3",
+        "maze_donguri_bowl_loop_20260710.mp3"
+      ]
+    },
+    {
       "source": "assets/audio/play_bgm.mp3",
       "destination": "assets/audio/play_bgm.mp3",
       "type": "file"
