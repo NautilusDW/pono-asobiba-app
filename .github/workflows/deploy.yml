@@ -1,10 +1,12 @@
 name: Deploy to Cloudflare Workers
 
-# develop / develop-app / master への push で自動的に Cloudflare Workers に deploy する。
+# ⚠️ この develop ブランチは 2026-07-10 に凍結済み (単一トランク develop-app へ移行)。
+# 誤 push が LP staging を上書きしないよう、トリガから develop / develop-app を外し
+# master のみ残す (BRANCH_FROZEN.md 参照)。
 # 手動実行 (workflow_dispatch) にも対応。
 on:
   push:
-    branches: [develop, develop-app, master]
+    branches: [master]
     paths-ignore:
       - '**/*.md'
       - 'docs/**'
