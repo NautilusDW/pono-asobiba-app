@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2079: sub専用5ゲーム (mojicrane/nazonazo/starparodier/undersea-cave/sea-album) に tier ガード追加 + プロフィール「あとで」導線 + アプリ告知文実数修正。play.html PAGE_CACHE_VERSION と同期。
 // v2078: Maze の9種類のミニゲームへ専用BGMを追加し、探索曲への復帰・音量補正・ナレーション中のダッキングを実装。play.html PAGE_CACHE_VERSION と同期。
 // v2077: OtoTouch「いろおと」の縦画面HUDと横画面の見た目切替を再配置し、通常8ボタンとの重なりを解消。play.html PAGE_CACHE_VERSION と同期。
 // v2076: OtoTouch「いろおと」を通常のボタン自由モード＋波紋/キラキラ＋細い明色トゥーン流体へ再構成。暗色filter/黒太縁を撤去。play.html PAGE_CACHE_VERSION と同期。
@@ -9,20 +10,13 @@
 // v2072: Puzzle の設定メニューで「もりのアルバム」を「もどる」の下へ移し、160個のマス一覧を8人の進み具合カードへ簡略化。play.html PAGE_CACHE_VERSION と同期。
 // v2071: Maze の再crop動物画像をversioned URLで強制更新し、旗あげ5段レイアウトを短い横画面内へ収める。play.html PAGE_CACHE_VERSION と同期。
 // v2070: Maze のはしご取得後に入口/出口を同時点灯し、正解ボタン中央化、ステージ札の矢印回避、混入動物画像5種の再クロップを反映。play.html PAGE_CACHE_VERSION と同期。
-// v2069: Maze のつづき予告をstage3後ではなくfree全ステージ完了後だけ表示し、絵本の軽い案内と「もどる」導線を追加。play.html PAGE_CACHE_VERSION と同期。
-// v2068: Maze のじゃんけん音声を順番再生にし、角の設定ボタンを上中央ステージ札へ統合。stage3予告文言も迷子救助の目的へ統一。play.html PAGE_CACHE_VERSION と同期。
-// v2067: ホームのどんぐり数を、行ボックスではなく数字の字形が白いプレート中央に見える位置へ再調整。play.html PAGE_CACHE_VERSION と同期。
-// v2066: ホームのプロフィール土台で、どんぐり数を見た目のプレート縦中央へ揃える。play.html PAGE_CACHE_VERSION と同期。
-// v2065: Puzzle のアプリ枠ロック仲間を完全なグレーシルエットへ変更し、「サブスク」を「アプリ」へ更新。下部操作列から仲間選択をいつでも開き直せるボタンも追加。play.html PAGE_CACHE_VERSION と同期。
-// v2064: QuizLand の「つぎへ」を下方向グロウから全周フレーム発光へ変更し、Puzzle 仲間解放画面の料金区分ラベルを削除。play.html PAGE_CACHE_VERSION と同期。
-// v2063: ホームのプロフィール土台で、アバターとラベルを左枠内へ収め、どんぐりを右側の円中央へ揃える。play.html PAGE_CACHE_VERSION と同期。
 // ── changelog アーカイブ ──
-// v2062 以前の changelog は docs/sw-changelog-archive.md へ移動した (2026-07-10)。
+// v2069 以前の changelog は docs/sw-changelog-archive.md へ移動した (最終移設 2026-07-11)。
 // sw.js が ~318KB (約 93% が changelog コメント) に肥大し、 毎ロード + 5分毎の
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2078;
+const CACHE_VERSION = 2079;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。

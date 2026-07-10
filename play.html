@@ -1637,6 +1637,31 @@
     .profile-step-back:active {
       transform: translateY(1px);
     }
+    /* 「あとで つくる」: 初回ウィザードをその回だけ閉じる控えめリンク。
+       子供の誤タップを避けるため小さく淡色のテキストリンクにする
+       (メインの「つぎへ/きめた」ボタンと視覚階層を明確に分ける)。 */
+    .profile-skip-later {
+      display: block;
+      margin: 6px auto 0;
+      padding: 6px 12px;
+      border: 0;
+      background: transparent;
+      color: var(--text-light);
+      font-family: inherit;
+      font-size: .68rem;
+      font-weight: 700;
+      text-decoration: underline;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .profile-skip-later:active {
+      opacity: .7;
+    }
+    /* display:block が UA の [hidden]{display:none} を上書きしてしまうため、
+       hidden 属性 (既存プロフィール編集時に付与) を明示的に効かせる。 */
+    .profile-skip-later[hidden] {
+      display: none;
+    }
     .profile-field {
       display: grid;
       gap: 4px;
@@ -9351,6 +9376,9 @@
           </div>
         </section>
       </form>
+      <!-- 初回ウィザードをその回だけ閉じる控えめな導線 (永続スキップではない。
+           次回起動時は maybeOpenFirstProfile() がまた自動で開く)。 -->
+      <button class="profile-skip-later" id="profileSkipLaterBtn" type="button">あとで つくる</button>
     </div>
   </div>
 
@@ -10326,7 +10354,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2078; // sw.js CACHE_VERSION と同期 (Maze ミニゲーム別BGM)
+    const PAGE_CACHE_VERSION = 2079; // sw.js CACHE_VERSION と同期 (sub専用5ゲーム tier ガード + プロフィール「あとで」導線)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -10335,7 +10363,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v2078';
+    window.PONO_SW_VERSION = 'v2079';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
@@ -14052,9 +14080,16 @@
 
       if (isBookTier) {
         try { localStorage.setItem(SUB_PROMO_BOOK_LAST_SHOWN_KEY, String(Date.now())); } catch (e) {}
+        // 旧ハードコード「7つ」は実数と乖離していたため、 GAMES の zone:'app_only'
+        // (= tier:'sub' かつ非 comingSoon、 computeGameZone で導出済) を実行時に数える。
+        // GAMES 側でアプリ専用ゲームが増減しても自動で追従する。
+        // 和語数詞「◯つ」が自然なのは 1〜9 のみなので、 範囲外は「たくさん」に逃がす。
+        const appOnlyGameCount = GAMES.filter((g) => g && g.zone === 'app_only').length;
+        const appOnlyCountLabel = (appOnlyGameCount >= 1 && appOnlyGameCount <= 9)
+          ? (appOnlyGameCount + 'つ') : 'たくさん';
         titleEl.innerHTML = 'ありがとう、 えほんを よんでくれて。<br><br>'
           + 'book で あそべる ゲームは、 アプリでも おなじ。<br><br>'
-          + 'でも、 アプリには アプリだけの ゲームが 7つ、<br>'
+          + 'でも、 アプリには アプリだけの ゲームが ' + appOnlyCountLabel + '、<br>'
           + 'もらえる シールも たくさん あるよ。';
         primaryBtn.textContent = 'アプリを みてみる';
         secondaryBtn.textContent = 'いまは いいや';
@@ -14757,6 +14792,7 @@
       const profileStepDetailsBack = document.getElementById('profileStepDetailsBack');
       const profileNameInput = document.getElementById('profileNameInput');
       const profileRandomBtn = document.getElementById('profileRandomBtn');
+      const profileSkipLaterBtn = document.getElementById('profileSkipLaterBtn');
       const profileAgeSelect = document.getElementById('profileAgeSelect');
       const profileGenderGroup = document.getElementById('profileGenderGroup');
       const profileStartAvatarPreview = document.getElementById('profileStartAvatarPreview');
@@ -15550,6 +15586,10 @@
         const requestedStep = startStep || (hasProfile() ? 'name' : 'avatar');
         fillProfileForm(loadProfile());
         setProfileFormStep(requestedStep, { focus: false });
+        // 「あとで つくる」は初回作成ウィザード専用の導線。 既存プロフィールの
+        // 編集時 (設定 / ハブの「なまえを かえる」) に出すと文言が事実と合わない
+        // ため、 プロフィール作成済みなら隠す (従来どおり backdrop タップで閉じる)。
+        if (profileSkipLaterBtn) profileSkipLaterBtn.hidden = hasProfile();
         openModal('profileModal');
         if (requestedStep === 'name') {
           setTimeout(() => {
@@ -15617,6 +15657,17 @@
       }
       if (profileStepDetailsBack) {
         profileStepDetailsBack.addEventListener('click', () => setProfileFormStep('name'));
+      }
+      if (profileSkipLaterBtn) {
+        profileSkipLaterBtn.addEventListener('click', () => {
+          // 「あとで つくる」: この回だけウィザードを閉じる (永続スキップはしない)。
+          // プロフィール未作成でも loadProfile() が defaultProfile() (ゲスト 'ポノ')
+          // を返すため、 タイトル / 設定 / あいことば導線はそのまま安全に動く。
+          // 次回起動時は maybeOpenFirstProfile() が再度自動で開く (仕様)。
+          pendingProfileStartIdx = null;
+          openHubAfterProfileSave = false;
+          closeModal('profileModal');
+        });
       }
       if (profileModal) {
         profileModal.addEventListener('click', (e) => {

@@ -25,8 +25,9 @@
      - BOOK_AQUARIUM_CREATURE_IDS          絵本層に見せる生き物 8種
      - BOOK_ROOM_ITEM_IDS                  絵本層に見せる家具・かざり 10種
 
-   tier 判定の優先順位:
-     pono_sub_active === '1' → 'sub'
+   tier 判定の優先順位 (getTier 実装準拠):
+     capture override / window.__APP_BUILD__ === 1 → 'sub'
+       (sub 判定は APP_BUILD のみ。 localStorage 'pono_sub_active' は旧設計の名残で getTier は読まない)
      pono_premium    === '1' → 'book'   (本に印字パスワード → Web入力で解除)
      それ以外                → 'free'
 

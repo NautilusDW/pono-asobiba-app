@@ -12,6 +12,13 @@ docs/ は `.assetsignore` により deploy 対象外。
 ## Archived entries
 
 ````
+// v2069: Maze のつづき予告をstage3後ではなくfree全ステージ完了後だけ表示し、絵本の軽い案内と「もどる」導線を追加。play.html PAGE_CACHE_VERSION と同期。
+// v2068: Maze のじゃんけん音声を順番再生にし、角の設定ボタンを上中央ステージ札へ統合。stage3予告文言も迷子救助の目的へ統一。play.html PAGE_CACHE_VERSION と同期。
+// v2067: ホームのどんぐり数を、行ボックスではなく数字の字形が白いプレート中央に見える位置へ再調整。play.html PAGE_CACHE_VERSION と同期。
+// v2066: ホームのプロフィール土台で、どんぐり数を見た目のプレート縦中央へ揃える。play.html PAGE_CACHE_VERSION と同期。
+// v2065: Puzzle のアプリ枠ロック仲間を完全なグレーシルエットへ変更し、「サブスク」を「アプリ」へ更新。下部操作列から仲間選択をいつでも開き直せるボタンも追加。play.html PAGE_CACHE_VERSION と同期。
+// v2064: QuizLand の「つぎへ」を下方向グロウから全周フレーム発光へ変更し、Puzzle 仲間解放画面の料金区分ラベルを削除。play.html PAGE_CACHE_VERSION と同期。
+// v2063: ホームのプロフィール土台で、アバターとラベルを左枠内へ収め、どんぐりを右側の円中央へ揃える。play.html PAGE_CACHE_VERSION と同期。
 // v2062: 音タッチ book のリズム曲をネジマエストロ初登場の「ちょうちょう」まで解放。play.html PAGE_CACHE_VERSION と同期。
 // v2061: Bento タイトルの上側ピルを非表示にし、無料版でもおねがいモードを見えるロックとして残す。Bento 食材 tier を free 10 / book 16 / sub 30 へ更新。play.html PAGE_CACHE_VERSION と同期。
 // v2060: Bento チュートリアルで、成功 sparkle を配置先へ出し、のり編集説明のちらつきと
