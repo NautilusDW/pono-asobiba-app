@@ -7577,6 +7577,10 @@ function _preloadRhythmPonoFxAssets() {
   });
 }
 var _playMode = 'free';
+// _playMode is the selected game mode. During story/menu transitions the
+// requested layout can temporarily differ, so fluid visibility follows this
+// effective layout value instead of the stale selected value.
+var _effectiveOtoLayoutMode = 'free';
 var OTO_COLOR_FLUID_ASSET_VERSION = '2074';
 var _colorFluidAllowed = !!window.__APP_BUILD__;
 var _colorFluid = null;
@@ -7584,6 +7588,8 @@ var _colorFluidLoadPromise = null;
 var _colorFluidLoadFailed = false;
 var _colorFluidStrokes = new Map();
 var _colorFluidActive = false;
+var _colorFluidSession = 0;
+var COLOR_FLUID_MAX_POINTERS = 2;
 var COLOR_FLUID_COLORS = [
   [1.00, 0.30, 0.32],
   [1.00, 0.52, 0.18],
@@ -7596,6 +7602,35 @@ var COLOR_FLUID_COLORS = [
 ];
 if (_colorFluidAllowed && document.body) {
   document.body.classList.add('oto-color-fluid-available');
+}
+
+function _disableColorFluid(error) {
+  if (_colorFluidLoadFailed) return;
+  _colorFluidLoadFailed = true;
+  _colorFluidActive = false;
+  console.warn('[oto color fluid] disabled:', error && error.message ? error.message : error);
+  _resetColorFluidPointers();
+  if (_colorFluid) {
+    try {
+      if (typeof _colorFluid.setEnabled === 'function') _colorFluid.setEnabled(false);
+      if (typeof _colorFluid.destroy === 'function') _colorFluid.destroy();
+    } catch (_) {}
+  }
+  _colorFluid = null;
+  if (_freeViewMode === 'color') {
+    _freeViewMode = 'classic';
+    try { localStorage.setItem('pono_oto_free_view', 'classic'); } catch (_) {}
+  }
+  if (document.body) {
+    document.body.classList.remove(
+      'oto-color-fluid-available',
+      'color-fluid-layout',
+      'color-fluid-has-drawn'
+    );
+  }
+  // Keep the current effective screen. A renderer failure while a rhythm
+  // transition is in progress must not pull the player back into free mode.
+  _setModeButtons(_effectiveOtoLayoutMode);
 }
 
 function _loadColorFluidRenderer() {
@@ -7618,6 +7653,8 @@ function _loadColorFluidRenderer() {
           simHeight: 144,
           pressureIterations: 16,
           simulationHz: 30,
+          maxPointers: COLOR_FLUID_MAX_POINTERS,
+          dprCap: 1.5,
           curlStrength: reducedMotion ? 0 : 5.5,
           velocityScale: reducedMotion ? 420 : 820,
           dyeDissipation: reducedMotion ? 0.955 : 0.978
@@ -7639,15 +7676,7 @@ function _loadColorFluidRenderer() {
         }
         resolve(_colorFluid);
       } catch (error) {
-        console.warn('[oto color fluid] disabled:', error && error.message ? error.message : error);
-        _colorFluidLoadFailed = true;
-        _colorFluid = null;
-        document.body.classList.remove('oto-color-fluid-available', 'color-fluid-layout');
-        if (_freeViewMode === 'color') {
-          _freeViewMode = 'classic';
-          try { localStorage.setItem('pono_oto_free_view', 'classic'); } catch (e) {}
-          _setModeButtons('free');
-        }
+        _disableColorFluid(error);
         resolve(null);
       }
     }
@@ -7660,8 +7689,7 @@ function _loadColorFluidRenderer() {
     script.async = true;
     script.onload = createRenderer;
     script.onerror = function() {
-      _colorFluidLoadFailed = true;
-      document.body.classList.remove('oto-color-fluid-available', 'color-fluid-layout');
+      _disableColorFluid(new Error('color fluid asset failed to load'));
       resolve(null);
     };
     document.head.appendChild(script);
@@ -7670,7 +7698,9 @@ function _loadColorFluidRenderer() {
 }
 
 function _resetColorFluidPointers() {
-  _colorFluidStrokes.forEach(function(_, pointerId) {
+  _colorFluidSession++;
+  _colorFluidStrokes.forEach(function(stroke, pointerId) {
+    if (stroke) stroke.pendingEnded = true;
     if (_colorFluid && typeof _colorFluid.endStroke === 'function') {
       _colorFluid.endStroke(pointerId);
     }
@@ -7678,11 +7708,12 @@ function _resetColorFluidPointers() {
   _colorFluidStrokes.clear();
 }
 
-function _syncColorFluidMode() {
+function _syncColorFluidMode(effectiveMode) {
+  effectiveMode = effectiveMode || _effectiveOtoLayoutMode || _playMode;
   _colorFluidActive = !!(
     _colorFluidAllowed
     && !_colorFluidLoadFailed
-    && _playMode === 'free'
+    && effectiveMode === 'free'
     && _freeViewMode === 'color'
   );
   document.body.classList.toggle('color-fluid-layout', _colorFluidActive);
@@ -7697,6 +7728,13 @@ function _syncColorFluidMode() {
     _loadColorFluidRenderer().then(function(renderer) {
       if (renderer && typeof renderer.setEnabled === 'function') {
         renderer.setEnabled(_colorFluidActive);
+      }
+      if (renderer && _colorFluidActive && typeof renderer.frame === 'function') {
+        renderer.frame(0);
+        var stats = typeof renderer.getStats === 'function' ? renderer.getStats() : null;
+        if (stats && stats.available === false) {
+          _disableColorFluid(new Error(stats.reason || 'WebGL2 fluid unsupported'));
+        }
       }
     });
   } else {
@@ -11862,6 +11900,7 @@ function _stopRhythmMode() {
   _bandVolume = _rhythm.prevBandVolume || 1;
 }
 function _setModeButtons(mode) {
+  _effectiveOtoLayoutMode = mode;
   var stageLayout = mode === 'rhythm' || (mode === 'free' && _freeViewMode === 'stage');
   document.body.classList.toggle('rhythm-layout', stageLayout);
   document.body.classList.toggle('free-mode', mode === 'free');
@@ -11890,7 +11929,7 @@ function _setModeButtons(mode) {
   if (typeof resizeBg === 'function') {
     requestAnimationFrame(resizeBg);
   }
-  _syncColorFluidMode();
+  _syncColorFluidMode(mode);
 }
 function setFreeViewMode(mode, persist) {
   _freeViewMode = mode === 'stage'
@@ -12390,10 +12429,8 @@ document.querySelectorAll('.instr-btn').forEach(function(btn) {
 var _stageEl = document.getElementById('stage');
 var _drag = { active: false, lastX: 0, lastY: 0, colorIdx: 0 };
 var DRAG_SPAWN_DIST = 36; // px ごとに 1 個生成
-var COLOR_FLUID_MAX_POINTERS = 2;
-
 function _isColorFluidMode() {
-  return !!(_colorFluidActive && _playMode === 'free' && _freeViewMode === 'color');
+  return !!(_colorFluidActive && _effectiveOtoLayoutMode === 'free' && _freeViewMode === 'color');
 }
 
 function _colorFluidNoteForX(x) {
@@ -12431,6 +12468,36 @@ function _playColorFluidNote(stroke, noteIdx, x, y, immediate) {
   stroke.lastSoundY = y;
 }
 
+function _queueColorFluidPendingPoint(stroke, x, y, color) {
+  if (!stroke) return;
+  if (!stroke.pendingPoints) stroke.pendingPoints = [];
+  stroke.pendingPoints.push({
+    x: x / Math.max(1, bgW),
+    y: y / Math.max(1, bgH),
+    color: color
+  });
+  // The renderer normally preloads on the free-style chooser. This cap only
+  // protects the short first-use window on a slow device or network.
+  if (stroke.pendingPoints.length > 64) stroke.pendingPoints.shift();
+}
+
+function _replayColorFluidPendingStroke(renderer, stroke) {
+  if (!renderer || !stroke || !_colorFluidActive) return;
+  if (stroke.session !== _colorFluidSession || !stroke.pendingPoints || !stroke.pendingPoints.length) return;
+  var points = stroke.pendingPoints.slice();
+  var first = points[0];
+  renderer.beginStroke(stroke.pointerId, first.x, first.y, first.color);
+  for (var i = 1; i < points.length; i++) {
+    var point = points[i];
+    renderer.moveStroke(stroke.pointerId, point.x, point.y, point.color);
+  }
+  stroke.rendererStarted = true;
+  stroke.pendingPoints.length = 0;
+  if (stroke.pendingEnded || !_colorFluidStrokes.has(stroke.pointerId)) {
+    renderer.endStroke(stroke.pointerId);
+  }
+}
+
 function _beginColorFluidPointer(e, x, y) {
   if (!_isColorFluidMode() || _colorFluidStrokes.has(e.pointerId)) return false;
   if (_colorFluidStrokes.size >= COLOR_FLUID_MAX_POINTERS) return true;
@@ -12444,7 +12511,11 @@ function _beginColorFluidPointer(e, x, y) {
     lastSoundAt: -Infinity,
     lastSoundNote: -1,
     lastSoundX: x,
-    lastSoundY: y
+    lastSoundY: y,
+    session: _colorFluidSession,
+    rendererStarted: false,
+    pendingEnded: false,
+    pendingPoints: []
   };
   _colorFluidStrokes.set(e.pointerId, stroke);
   try { _stageEl.setPointerCapture(e.pointerId); } catch (_) {}
@@ -12452,11 +12523,11 @@ function _beginColorFluidPointer(e, x, y) {
   var color = COLOR_FLUID_COLORS[noteIdx];
   if (_colorFluid && typeof _colorFluid.beginStroke === 'function') {
     _colorFluid.beginStroke(e.pointerId, x / Math.max(1, bgW), y / Math.max(1, bgH), color);
+    stroke.rendererStarted = true;
   } else {
+    _queueColorFluidPendingPoint(stroke, x, y, color);
     _loadColorFluidRenderer().then(function(renderer) {
-      if (renderer && _colorFluidStrokes.has(e.pointerId)) {
-        renderer.beginStroke(e.pointerId, x / Math.max(1, bgW), y / Math.max(1, bgH), color);
-      }
+      _replayColorFluidPendingStroke(renderer, stroke);
     });
   }
   _playColorFluidNote(stroke, noteIdx, x, y, true);
@@ -12474,26 +12545,44 @@ function _beginColorFluidPointer(e, x, y) {
 function _moveColorFluidPointer(e, x, y) {
   var stroke = _colorFluidStrokes.get(e.pointerId);
   if (!stroke) return false;
-  var noteIdx = _colorFluidNoteWithHysteresis(stroke, x);
+  var startX = stroke.lastX;
+  var startY = stroke.lastY;
+  var dx = x - startX;
+  var dy = y - startY;
+  var zoneWidth = Math.max(1, bgW / 8);
+  var segments = Math.max(1, Math.min(24, Math.ceil(Math.max(
+    Math.abs(dx) / Math.max(1, zoneWidth * 0.35),
+    Math.hypot(dx, dy) / 32
+  ))));
   var now = performance.now();
-  var color = COLOR_FLUID_COLORS[noteIdx];
-  if (_colorFluid && typeof _colorFluid.moveStroke === 'function') {
-    _colorFluid.moveStroke(
-      e.pointerId,
-      x / Math.max(1, bgW),
-      y / Math.max(1, bgH),
-      color);
+  for (var i = 1; i <= segments; i++) {
+    var t = i / segments;
+    var stepX = startX + dx * t;
+    var stepY = startY + dy * t;
+    var noteIdx = _colorFluidNoteWithHysteresis(stroke, stepX);
+    var color = COLOR_FLUID_COLORS[noteIdx];
+    if (_colorFluid && stroke.rendererStarted && typeof _colorFluid.moveStroke === 'function') {
+      _colorFluid.moveStroke(
+        e.pointerId,
+        stepX / Math.max(1, bgW),
+        stepY / Math.max(1, bgH),
+        color);
+    } else {
+      _queueColorFluidPendingPoint(stroke, stepX, stepY, color);
+    }
+    _playColorFluidNote(stroke, noteIdx, stepX, stepY, false);
+    stroke.noteIdx = noteIdx;
+    stroke.lastX = stepX;
+    stroke.lastY = stepY;
   }
-  _playColorFluidNote(stroke, noteIdx, x, y, false);
-  stroke.noteIdx = noteIdx;
-  stroke.lastX = x;
-  stroke.lastY = y;
   stroke.lastTime = now;
   return true;
 }
 
 function _endColorFluidPointer(e) {
   if (!e || !_colorFluidStrokes.has(e.pointerId)) return false;
+  var stroke = _colorFluidStrokes.get(e.pointerId);
+  if (stroke) stroke.pendingEnded = true;
   if (_colorFluid && typeof _colorFluid.endStroke === 'function') {
     _colorFluid.endStroke(e.pointerId);
   }
@@ -12504,7 +12593,7 @@ function _endColorFluidPointer(e) {
 
 function _isOnButton(e) {
   return !!(e.target && e.target.closest && e.target.closest(
-    '.instr-btn, .set-btn, .speed-btn, .mode-btn, .free-view-btn, .chord-pill-btn, .scale-btn, .set-trigger, .oto-menu-item, .set-popover, .rhythm-menu, .rhythm-complete'
+    'button, input, textarea, select, option, a, label, form, [role="button"], [role="dialog"], [contenteditable="true"], .set-popover, .rhythm-menu, .rhythm-complete, .tutorial-overlay, .acorn-modal'
   ));
 }
 
@@ -13074,6 +13163,7 @@ function drawPono() { /* CSS で描画するので no-op */ }
 
 var _rafId = null;
 var _lastFrame = 0;
+var _colorFluidHealthFrame = 0;
 function loop(now) {
   if (!_lastFrame) _lastFrame = now;
   var dt = Math.min((now - _lastFrame) / 1000, 0.05);
@@ -13084,6 +13174,14 @@ function loop(now) {
   if (_isColorFluidMode()) {
     if (_colorFluid && typeof _colorFluid.frame === 'function') {
       _colorFluid.frame(dt);
+      _colorFluidHealthFrame++;
+      if (_colorFluidHealthFrame >= 30) {
+        _colorFluidHealthFrame = 0;
+        var fluidStats = typeof _colorFluid.getStats === 'function' ? _colorFluid.getStats() : null;
+        if (fluidStats && fluidStats.available === false) {
+          _disableColorFluid(new Error(fluidStats.reason || 'WebGL2 fluid stopped'));
+        }
+      }
     }
   } else {
     updateAmbientBubbles(dt, now);
@@ -14982,6 +15080,9 @@ document.addEventListener('click', _captureOtoTutorialRhythmMenuInput, true);
   function showFreeStyleChoice() {
     if (!startChoice) return;
     startChoice.classList.add('show', 'free-step');
+    // Warm only after the player explicitly opens the free-style chooser.
+    // The classic and rhythm starts do not download or initialize WebGL fluid.
+    if (_colorFluidAllowed && !_colorFluidLoadFailed) _loadColorFluidRenderer();
   }
   function enterApp() {
     document.body.classList.add('app-started');

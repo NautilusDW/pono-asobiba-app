@@ -243,12 +243,18 @@ namespace Pono.MarbleRun3D.Gameplay
                     UpdateGhostAtWorld(_ghostResult.Pose.x, _ghostResult.Pose.z, _movingPieceId);
                 }
                 _audio.PlayClick();
+                _ui.SetStatus("みぎに むきを かえたよ", false);
                 AdvanceTutorialAfterRotate();
                 return;
             }
 
             var piece = _course?.Find(_selectedPieceId);
-            if (piece == null) return;
+            if (piece == null)
+            {
+                _ui.SetStatus("おいた ぶひんを おしてから くるっ", true);
+                _audio.PlayGentleNo();
+                return;
+            }
             if (piece.locked)
             {
                 _ui.SetStatus("この ぶひんは そのままだよ", true);
@@ -268,6 +274,7 @@ namespace Pono.MarbleRun3D.Gameplay
             RebuildCourseViews();
             SelectPiece(piece.id);
             _audio.PlayPlace();
+            _ui.SetStatus("くるっと みぎに まわしたよ", false);
             AdvanceTutorialAfterRotate();
         }
 
@@ -920,6 +927,14 @@ namespace Pono.MarbleRun3D.Gameplay
             if (record != null && _pieceViews.TryGetValue(id, out var current))
                 current.SetSelected(true);
             _ui.SetSelected(record);
+            if (record != null)
+            {
+                _ui.SetStatus(
+                    record.locked
+                        ? "この ぶひんは そのままだよ"
+                        : "したの くるっで みぎに まわせるよ",
+                    record.locked);
+            }
         }
 
         private void RebuildCourseViews()
@@ -1059,7 +1074,7 @@ namespace Pono.MarbleRun3D.Gameplay
             switch (_tutorialStep)
             {
                 case 0: text = "ぶひんを ひっぱって おこう"; break;
-                case 1: text = "くるっ で むきを かえよう"; break;
+                case 1: text = "したの くるっで みぎに まわそう"; break;
                 case 2: text = "みどりの まるを つなげよう"; break;
                 default: text = "ためすを おしてみよう"; break;
             }

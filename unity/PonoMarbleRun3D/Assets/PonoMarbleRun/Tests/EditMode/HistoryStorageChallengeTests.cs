@@ -108,6 +108,65 @@ namespace Pono.MarbleRun3D.Tests.EditMode
             }
         }
 
+        [Test]
+        public void CatalogHasFourEditableConnectedSampleCoursesWithSeparateSaves()
+        {
+            Assert.That(ChallengeCatalog.Samples.Count, Is.EqualTo(4));
+            Assert.That(ChallengeCatalog.Samples.Select(sample => sample.Id).Distinct().Count(), Is.EqualTo(4));
+            var savePaths = ChallengeCatalog.Samples
+                .Select(sample => CourseStorage.GetSavePath(sample.Id))
+                .ToArray();
+            Assert.That(savePaths.Distinct().Count(), Is.EqualTo(4));
+            Assert.That(savePaths, Has.None.EqualTo(CourseStorage.GetSavePath("sandbox")));
+
+            foreach (var sample in ChallengeCatalog.Samples)
+            {
+                Assert.That(sample.IsChallenge, Is.False, sample.Id);
+                Assert.That(sample.IsTutorial, Is.False, sample.Id);
+                Assert.That(ChildFacingTextValidator.IsKanaSafe(sample.DisplayName, out var invalidName),
+                    Is.True, sample.Id + " name=" + invalidName);
+                Assert.That(ChildFacingTextValidator.IsKanaSafe(sample.GuideText, out var invalidGuide),
+                    Is.True, sample.Id + " guide=" + invalidGuide);
+
+                var course = sample.CreateInitialCourse();
+                Assert.That(course.modeId, Is.EqualTo(sample.Id));
+                Assert.That(course.pieces.Count, Is.InRange(3, 48));
+                Assert.That(course.pieces.Count(piece => piece.kind == MarblePieceKind.Start), Is.EqualTo(1));
+                Assert.That(course.pieces.Count(piece => piece.kind == MarblePieceKind.Goal), Is.EqualTo(1));
+                Assert.That(course.pieces.All(piece => !piece.locked), Is.True, sample.Id + " editable");
+                Assert.That(course.pieces.Select(piece => piece.id).Distinct().Count(), Is.EqualTo(course.pieces.Count));
+                foreach (var piece in course.pieces)
+                {
+                    var validation = PlacementSolver.Validate(
+                        piece.kind,
+                        piece.pose,
+                        course.pieces,
+                        sample,
+                        piece.id);
+                    Assert.That(validation.IsValid, Is.True, sample.Id + " " + piece.id + " " + validation.Reason);
+                }
+                Assert.That(PlacementSolver.HasStartToGoalGraphPath(course.pieces), Is.True, sample.Id);
+
+                var second = sample.CreateInitialCourse();
+                course.pieces[0].pose = course.pieces[0].pose.RotatedClockwise();
+                Assert.That(second.pieces[0].pose, Is.Not.EqualTo(course.pieces[0].pose), sample.Id + " clone");
+            }
+
+            Assert.That(ChallengeCatalog.Samples.SelectMany(sample => sample.InitialPieces)
+                .Any(piece => piece.kind == MarblePieceKind.Curve), Is.True);
+            Assert.That(ChallengeCatalog.Samples.SelectMany(sample => sample.InitialPieces)
+                .Any(piece => piece.kind == MarblePieceKind.Slope), Is.True);
+            Assert.That(ChallengeCatalog.Samples.SelectMany(sample => sample.InitialPieces)
+                .Any(piece => piece.kind == MarblePieceKind.Funnel), Is.True);
+            Assert.That(PartCatalog.Get(MarblePieceKind.Slope).DisplayName, Is.EqualTo("さかみち"));
+            var bridgeSlopes = ChallengeCatalog.Get("sample3").InitialPieces
+                .Where(piece => piece.kind == MarblePieceKind.Slope)
+                .ToArray();
+            Assert.That(bridgeSlopes.Length, Is.EqualTo(2));
+            Assert.That(System.Math.Abs(bridgeSlopes[0].pose.quarterTurns - bridgeSlopes[1].pose.quarterTurns),
+                Is.EqualTo(2));
+        }
+
         private static (CourseData first, CourseData second) ActualChallengeSolutions(ModeDefinition challenge)
         {
             switch (challenge.Id)

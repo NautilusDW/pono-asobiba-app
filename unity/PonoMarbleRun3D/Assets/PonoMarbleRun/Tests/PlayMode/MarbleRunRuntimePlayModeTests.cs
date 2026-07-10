@@ -44,6 +44,11 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
             if (_cameraObject != null) Object.Destroy(_cameraObject);
             var path = CourseStorage.GetSavePath("sandbox");
             if (File.Exists(path)) File.Delete(path);
+            foreach (var sample in ChallengeCatalog.Samples)
+            {
+                path = CourseStorage.GetSavePath(sample.Id);
+                if (File.Exists(path)) File.Delete(path);
+            }
             yield return null;
             LogAssert.NoUnexpectedReceived();
         }
@@ -79,6 +84,56 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
             _controller.Undo();
             Assert.That(_controller.PieceCount, Is.EqualTo(initial + 1));
             yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator SampleChooserLoadsEditableCourseAndExplainsClockwiseRotation()
+        {
+            var menu = _controller.Ui.transform.Find("Canvas/SafeArea/Menu");
+            var chooserButton = _controller.Ui.transform.Find("Canvas/SafeArea/Menu/ModeButtons/Samples")
+                .GetComponent<Button>();
+            chooserButton.onClick.Invoke();
+            Canvas.ForceUpdateCanvases();
+            yield return null;
+
+            var samples = _controller.Ui.transform.Find("Canvas/SafeArea/Samples");
+            Assert.That(menu.gameObject.activeSelf, Is.False);
+            Assert.That(samples.gameObject.activeSelf, Is.True);
+            var sampleButtons = samples.Find("SampleButtons").GetComponentsInChildren<Button>(true);
+            Assert.That(sampleButtons.Length, Is.EqualTo(4));
+            foreach (var button in sampleButtons)
+            {
+                var rect = (RectTransform)button.transform;
+                Assert.That(rect.rect.width, Is.GreaterThanOrEqualTo(44f), button.name + " width");
+                Assert.That(rect.rect.height, Is.GreaterThanOrEqualTo(44f), button.name + " height");
+            }
+
+            samples.Find("SampleButtons/Sample2").GetComponent<Button>().onClick.Invoke();
+            Assert.That(_controller.State, Is.EqualTo(MarbleRunState.Editing));
+            Assert.That(_controller.CurrentMode.Id, Is.EqualTo("sample2"));
+            Assert.That(_controller.Course.modeId, Is.EqualTo("sample2"));
+            Assert.That(_controller.Ui.transform.Find("Canvas/SafeArea/BuilderTop/Mode").GetComponent<Text>().text,
+                Is.EqualTo("くねくね みち"));
+
+            _controller.RotateSelection();
+            Assert.That(_controller.Ui.StatusText, Does.Contain("おしてから くるっ"));
+            var curve = _controller.Course.pieces.First(piece => piece.kind == MarblePieceKind.Curve);
+            var originalTurns = curve.pose.quarterTurns;
+            Assert.That(_controller.SelectForQa(curve.id), Is.True);
+            Assert.That(_controller.Ui.StatusText, Does.Contain("くるっで みぎに"));
+            _controller.RotateSelection();
+            Assert.That(_controller.Course.Find(curve.id).pose.quarterTurns,
+                Is.EqualTo(GridPose.NormalizeQuarterTurns(originalTurns + 1)));
+            Assert.That(_controller.Ui.StatusText, Does.Contain("みぎに まわしたよ"));
+            _controller.Undo();
+            Assert.That(_controller.Course.Find(curve.id).pose.quarterTurns, Is.EqualTo(originalTurns));
+
+            var savedCount = _controller.PieceCount;
+            _controller.SaveCourse();
+            Assert.That(_controller.PlaceForQa(MarblePieceKind.Domino, new GridPose(-5, 5)), Is.True);
+            Assert.That(_controller.PieceCount, Is.EqualTo(savedCount + 1));
+            _controller.LoadCourse();
+            Assert.That(_controller.PieceCount, Is.EqualTo(savedCount));
         }
 
         [UnityTest]
@@ -330,6 +385,24 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
                     yield return null;
                 Assert.That(_controller.State, Is.EqualTo(MarbleRunState.Celebrating),
                     route.name + " did not physically reach the goal; marble=" + _controller.MarbleBody.position);
+                _controller.ReturnToEditing();
+                yield return null;
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator EverySampleCoursePhysicallyReachesGoal()
+        {
+            foreach (var sample in ChallengeCatalog.Samples)
+            {
+                _controller.StartMode(sample.Id);
+                Assert.That(PlacementSolver.HasStartToGoalGraphPath(_controller.Course.pieces), Is.True, sample.Id);
+                _controller.StartRun();
+                var timeout = Time.realtimeSinceStartup + 12f;
+                while (_controller.State == MarbleRunState.Running && Time.realtimeSinceStartup < timeout)
+                    yield return null;
+                Assert.That(_controller.State, Is.EqualTo(MarbleRunState.Celebrating),
+                    sample.Id + " did not physically reach the goal; marble=" + _controller.MarbleBody.position);
                 _controller.ReturnToEditing();
                 yield return null;
             }

@@ -9,7 +9,7 @@
     maxSubsteps: 3,
     maxPointers: 6,
     maxSplats: 192,
-    dprCap: 2,
+    dprCap: 1.5,
     strokeRadius: 0.052,
     strokeAmount: 0.82,
     velocityScale: 820,
@@ -446,18 +446,47 @@
       if (target.texture) gl.deleteTexture(target.texture);
     }
 
+    function deleteSimulationTargets() {
+      if (!targets) return;
+      deleteTarget(targets.velocity && targets.velocity.read);
+      deleteTarget(targets.velocity && targets.velocity.write);
+      deleteTarget(targets.dye && targets.dye.read);
+      deleteTarget(targets.dye && targets.dye.write);
+      deleteTarget(targets.pressure && targets.pressure.read);
+      deleteTarget(targets.pressure && targets.pressure.write);
+      deleteTarget(targets.divergence);
+      deleteTarget(targets.curl);
+      targets = null;
+    }
+
+    function chooseSimulationDimensions() {
+      var aspect = Math.max(0.25, Math.min(4, cssWidth / Math.max(1, cssHeight)));
+      var nextWidth;
+      var nextHeight;
+      if (aspect >= 1) {
+        nextWidth = simulationLongEdge;
+        nextHeight = simulationLongEdge / aspect;
+      } else {
+        nextHeight = simulationLongEdge;
+        nextWidth = simulationLongEdge * aspect;
+      }
+      simWidth = Math.max(64, Math.min(512, Math.round(nextWidth / 8) * 8));
+      simHeight = Math.max(64, Math.min(512, Math.round(nextHeight / 8) * 8));
+    }
+
+    function createSimulationTargets() {
+      return {
+        velocity: createDoubleTarget(simWidth, simHeight),
+        dye: createDoubleTarget(simWidth, simHeight),
+        pressure: createDoubleTarget(simWidth, simHeight),
+        divergence: createTarget(simWidth, simHeight),
+        curl: createTarget(simWidth, simHeight)
+      };
+    }
+
     function releaseResources(canDelete) {
       if (canDelete && gl) {
-        if (targets) {
-          deleteTarget(targets.velocity && targets.velocity.read);
-          deleteTarget(targets.velocity && targets.velocity.write);
-          deleteTarget(targets.dye && targets.dye.read);
-          deleteTarget(targets.dye && targets.dye.write);
-          deleteTarget(targets.pressure && targets.pressure.read);
-          deleteTarget(targets.pressure && targets.pressure.write);
-          deleteTarget(targets.divergence);
-          deleteTarget(targets.curl);
-        }
+        deleteSimulationTargets();
         Object.keys(programs).forEach(function (key) {
           if (programs[key] && programs[key].handle) gl.deleteProgram(programs[key].handle);
         });
@@ -505,13 +534,8 @@
         programs.project = makeProgram(PROJECT_FRAGMENT);
         programs.display = makeProgram(DISPLAY_FRAGMENT);
         vao = gl.createVertexArray();
-        targets = {
-          velocity: createDoubleTarget(simWidth, simHeight),
-          dye: createDoubleTarget(simWidth, simHeight),
-          pressure: createDoubleTarget(simWidth, simHeight),
-          divergence: createTarget(simWidth, simHeight),
-          curl: createTarget(simWidth, simHeight)
-        };
+        chooseSimulationDimensions();
+        targets = createSimulationTargets();
         gl.disable(gl.BLEND);
         resize(cssWidth, cssHeight);
         initialized = true;
@@ -566,7 +590,19 @@
       var pixelHeight = Math.max(1, Math.round(cssHeight * dpr));
       if (canvas.width !== pixelWidth) canvas.width = pixelWidth;
       if (canvas.height !== pixelHeight) canvas.height = pixelHeight;
-      if (initialized) clearScreen();
+      if (initialized) {
+        var previousWidth = simWidth;
+        var previousHeight = simHeight;
+        chooseSimulationDimensions();
+        if (simWidth !== previousWidth || simHeight !== previousHeight) {
+          deleteSimulationTargets();
+          targets = createSimulationTargets();
+          accumulator = 0;
+          pointers.clear();
+          splats.length = 0;
+        }
+        clearScreen();
+      }
     }
 
     function queueSplat(x, y, dx, dy, color, radius, amount) {
@@ -649,12 +685,15 @@
     }
 
     function flushSplats() {
-      if (!splats.length) return;
+      if (!splats.length) return false;
       var pending = splats.splice(0, splats.length);
       for (var i = 0; i < pending.length; i++) {
         var point = pending[i];
-        var forceX = point.dx * velocityScale;
-        var forceY = point.dy * velocityScale;
+        // Velocity is stored in simulation-cell units. Because the target
+        // follows the screen aspect, scale each normalized pointer delta by
+        // that axis length so equal on-screen motion stays isotropic.
+        var forceX = point.dx * velocityScale * (simWidth / simulationLongEdge);
+        var forceY = point.dy * velocityScale * (simHeight / simulationLongEdge);
         applySplat(targets.velocity, point, [forceX, forceY, 0, 0]);
         var amount = point.amount;
         applySplat(targets.dye, point, [
@@ -664,6 +703,7 @@
           amount
         ]);
       }
+      return true;
     }
 
     function runPass(program, destination, textures, setup) {
@@ -768,14 +808,16 @@
       try {
         var dt = clamp(dtSeconds == null ? fixedStep : dtSeconds, 0, 0.1);
         accumulator = Math.min(accumulator + dt, fixedStep * maxSubsteps);
-        flushSplats();
+        var hadSplats = flushSplats();
         var substeps = 0;
         while (accumulator >= fixedStep && substeps < maxSubsteps) {
           simulate(fixedStep);
           accumulator -= fixedStep;
           substeps++;
         }
-        render();
+        // The simulation runs at a fixed 30 Hz. Avoid an additional full-screen
+        // display pass on the in-between 60 Hz UI frames unless new ink arrived.
+        if (hadSplats || substeps > 0 || counters.frames === 0) render();
         counters.frames++;
       } catch (error) {
         reason = error && error.message ? error.message : 'fluid frame failed';

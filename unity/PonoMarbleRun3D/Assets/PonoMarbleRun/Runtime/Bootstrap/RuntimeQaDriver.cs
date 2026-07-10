@@ -93,6 +93,14 @@ namespace Pono.MarbleRun3D.Bootstrap
                 case "menu":
                     _controller.ShowMenu();
                     break;
+                case "samples":
+                    _controller.ShowMenu();
+                    _controller.Ui.ShowSampleMenu();
+                    break;
+                case "sample-edit":
+                    _controller.StartMode("sample2");
+                    _controller.SelectForQa("sample2-c1");
+                    break;
                 case "edit":
                     BuildStraightCourse();
                     break;

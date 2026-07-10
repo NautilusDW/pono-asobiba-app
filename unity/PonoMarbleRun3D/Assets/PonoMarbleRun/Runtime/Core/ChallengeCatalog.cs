@@ -100,6 +100,14 @@ namespace Pono.MarbleRun3D.Core
             Modes["challenge3"]
         };
 
+        public static IReadOnlyList<ModeDefinition> Samples { get; } = new[]
+        {
+            Modes["sample1"],
+            Modes["sample2"],
+            Modes["sample3"],
+            Modes["sample4"]
+        };
+
         public static ModeDefinition Get(string id)
         {
             return Modes.TryGetValue(id, out var mode) ? mode : Sandbox;
@@ -180,6 +188,76 @@ namespace Pono.MarbleRun3D.Core
                         [MarblePieceKind.Domino] = 1
                     },
                     Initial("challenge3", new GridPose(0, -4, 0, 0), new GridPose(0, 4, 0, 0))),
+                ["sample1"] = new ModeDefinition(
+                    "sample1",
+                    "はじめての みち",
+                    "そのまま ためしてから かえてみよう",
+                    false,
+                    false,
+                    allUnlimited,
+                    Sample(
+                        P("sample1-start", MarblePieceKind.Start, 0, -4),
+                        P("sample1-s1", MarblePieceKind.Straight, 0, -3),
+                        P("sample1-s2", MarblePieceKind.Straight, 0, -2),
+                        P("sample1-s3", MarblePieceKind.Straight, 0, -1),
+                        P("sample1-s4", MarblePieceKind.Straight, 0, 0),
+                        P("sample1-s5", MarblePieceKind.Straight, 0, 1),
+                        P("sample1-s6", MarblePieceKind.Straight, 0, 2),
+                        P("sample1-s7", MarblePieceKind.Straight, 0, 3),
+                        P("sample1-goal", MarblePieceKind.Goal, 0, 4))),
+                ["sample2"] = new ModeDefinition(
+                    "sample2",
+                    "くねくね みち",
+                    "カーブを おして みぎに まわしてみよう",
+                    false,
+                    false,
+                    allUnlimited,
+                    Sample(
+                        P("sample2-start", MarblePieceKind.Start, -3, -2),
+                        P("sample2-c1", MarblePieceKind.Curve, -3, -1),
+                        P("sample2-s1", MarblePieceKind.Straight, -2, -1, 0, 1),
+                        P("sample2-s2", MarblePieceKind.Straight, -1, -1, 0, 1),
+                        P("sample2-s3", MarblePieceKind.Straight, 0, -1, 0, 1),
+                        P("sample2-s4", MarblePieceKind.Straight, 1, -1, 0, 1),
+                        P("sample2-c2", MarblePieceKind.Curve, 2, -1, 0, 2),
+                        P("sample2-s5", MarblePieceKind.Straight, 2, 0),
+                        P("sample2-s6", MarblePieceKind.Straight, 2, 1),
+                        P("sample2-c3", MarblePieceKind.Curve, 2, 2),
+                        P("sample2-goal", MarblePieceKind.Goal, 3, 2, 0, 1))),
+                ["sample3"] = new ModeDefinition(
+                    "sample3",
+                    "そらの はし",
+                    "さかを のぼって おりてみよう",
+                    false,
+                    false,
+                    allUnlimited,
+                    Sample(
+                        P("sample3-start", MarblePieceKind.Start, 0, -4),
+                        P("sample3-s1", MarblePieceKind.Straight, 0, -3),
+                        P("sample3-up", MarblePieceKind.Slope, 0, -2, 0, 2),
+                        P("sample3-s2", MarblePieceKind.Straight, 0, -1, 1),
+                        P("sample3-s3", MarblePieceKind.Straight, 0, 0, 1),
+                        P("sample3-s4", MarblePieceKind.Straight, 0, 1, 1),
+                        P("sample3-down", MarblePieceKind.Slope, 0, 2),
+                        P("sample3-s5", MarblePieceKind.Straight, 0, 3),
+                        P("sample3-goal", MarblePieceKind.Goal, 0, 4))),
+                ["sample4"] = new ModeDefinition(
+                    "sample4",
+                    "くるくる じょうご",
+                    "じょうごを とおる たまを みてみよう",
+                    false,
+                    false,
+                    allUnlimited,
+                    Sample(
+                        P("sample4-start", MarblePieceKind.Start, 0, -4),
+                        P("sample4-s1", MarblePieceKind.Straight, 0, -3),
+                        P("sample4-s2", MarblePieceKind.Straight, 0, -2),
+                        P("sample4-funnel", MarblePieceKind.Funnel, 0, -1),
+                        P("sample4-s3", MarblePieceKind.Straight, 0, 0),
+                        P("sample4-s4", MarblePieceKind.Straight, 0, 1),
+                        P("sample4-s5", MarblePieceKind.Straight, 0, 2),
+                        P("sample4-s6", MarblePieceKind.Straight, 0, 3),
+                        P("sample4-goal", MarblePieceKind.Goal, 0, 4))),
                 ["sandbox"] = new ModeDefinition(
                     "sandbox",
                     "じゆうに つくる",
@@ -209,6 +287,28 @@ namespace Pono.MarbleRun3D.Core
                     pose = goal,
                     locked = prefix != "sandbox"
                 }
+            };
+        }
+
+        private static List<PieceRecord> Sample(params PieceRecord[] pieces)
+        {
+            return new List<PieceRecord>(pieces);
+        }
+
+        private static PieceRecord P(
+            string id,
+            MarblePieceKind kind,
+            int x,
+            int z,
+            int level = 0,
+            int turns = 0)
+        {
+            return new PieceRecord
+            {
+                id = id,
+                kind = kind,
+                pose = new GridPose(x, z, level, turns),
+                locked = false
             };
         }
     }

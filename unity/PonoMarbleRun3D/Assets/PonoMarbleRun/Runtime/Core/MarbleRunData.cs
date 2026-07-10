@@ -191,7 +191,7 @@ namespace Pono.MarbleRun3D.Core
                     new ConnectorSpec(0.5f, 0f, 1, 0)),
                 [MarblePieceKind.Slope] = new PartSpec(
                     MarblePieceKind.Slope,
-                    "くだりざか",
+                    "さかみち",
                     new Color(0.77f, 0.62f, 0.94f),
                     new ConnectorSpec(0f, -0.5f, 0, -1, 1),
                     new ConnectorSpec(0f, 0.5f, 0, 1)),
