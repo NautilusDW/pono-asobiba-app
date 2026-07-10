@@ -5,8 +5,6 @@
 //   Legacy /.netlify/functions/* paths are kept so existing frontend calls work unchanged.
 
 import { Buffer } from 'node:buffer';
-import { getGoogleAccessToken } from './google-auth.js';
-import { handleSaveData } from './api/savedata.js';
 
 const PROTECTED_PREFIXES = [
   '/admin/',
@@ -18,9 +16,6 @@ const PROTECTED_PREFIXES = [
 ];
 
 const BENTO_MASK_CONFIG_KEY = 'bento-mask-defaults-v1';
-const NPC_POSITIONS_CURRENT_KEY = 'npc-positions:current';
-const NPC_POSITIONS_HISTORY_PREFIX = 'npc-positions:history:';
-const NPC_POSITIONS_HISTORY_MAX = 10;
 
 function requiresAuth(path) {
   return PROTECTED_PREFIXES.some(p => path === p || path.startsWith(p + '/') || path.startsWith(p + '.'));
@@ -62,28 +57,6 @@ export default {
     }
     if (path === '/api/bento/mask-defaults') {
       return handleBentoMaskDefaults(request, env);
-    }
-    // Step C: 合言葉型クラウド同期 (POST /api/savedata, GET /api/savedata/:passcode)
-    if (path === '/api/savedata' || path.startsWith('/api/savedata/')) {
-      return handleSaveData(request, env, ctx, path);
-    }
-    if (path === '/api/admin/bento-npc-positions') {
-      if (request.method === 'OPTIONS') {
-        return new Response('', { status: 200, headers: { ...CORS, ...noStoreHeaders() } });
-      }
-      if (request.method === 'GET') {
-        if (!checkBasicAuth(request, env)) return authChallenge();
-        return handleBentoNpcPositionsGet(request, env);
-      }
-      if (request.method === 'POST') {
-        if (!checkBasicAuth(request, env)) return authChallenge();
-        return handleBentoNpcPositionsPost(request, env);
-      }
-      return new Response('Method Not Allowed', { status: 405, headers: { ...CORS, ...noStoreHeaders() } });
-    }
-    if (path === '/api/admin/tts-generate') {
-      if (!checkBasicAuth(request, env)) return authChallenge();
-      return handleAiTts(request, env);
     }
 
     if (path.startsWith('/api/gh/')) {
@@ -567,296 +540,6 @@ function normalizeBentoCompleteLayoutMap(map) {
   return normalized;
 }
 
-const BENTO_SLOT_LAYOUT_LIMITS = {
-  'main-food': 2,
-  'side-food': 4,
-  cup: 4,
-  leaf: 1,
-  divider: 7,
-  other: 1
-};
-const BENTO_SHARED_SLOT_KINDS = new Set(['leaf', 'other']);
-const BENTO_SHARED_SAMPLE_SIZE_KINDS = new Set(['main-food', 'side-food', 'leaf', 'divider', 'other']);
-const BENTO_SLOT_BOX_ORDER = [
-  'box_rect_split',
-  'box_square',
-  'box_round',
-  'box_bear',
-  'box_bear_pink',
-  'box_cat_blue',
-  'box_cat'
-];
-const BENTO_SLOT_BOX_ALIASES = {
-  box_bear_pink: 'box_bear',
-  box_cat: 'box_cat_blue'
-};
-const BENTO_CUP_SLOT_SIZES = [150];
-const BENTO_SLOT_GLOBAL_SCALE_MIN = 0.6;
-const BENTO_SLOT_GLOBAL_SCALE_MAX = 1.4;
-const BENTO_SLOT_GLOBAL_SCALE_DEFAULT = 1;
-
-function normalizeBentoSlotCounts(raw) {
-  const normalized = {};
-  const source = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
-  const side = source['side-food'] ?? source.sideFood ?? source.sideFoodSlotCount;
-  if (Number.isFinite(Number(side))) {
-    normalized['side-food'] = clampBentoMaskNumber(side, 3, 4, 3, 0);
-  }
-  return normalized;
-}
-
-function normalizeBentoSlotGlobalScale(value) {
-  const n = Number(value);
-  if (!Number.isFinite(n)) return BENTO_SLOT_GLOBAL_SCALE_DEFAULT;
-  return Math.round(clampBentoMaskNumber(n, BENTO_SLOT_GLOBAL_SCALE_MIN, BENTO_SLOT_GLOBAL_SCALE_MAX, BENTO_SLOT_GLOBAL_SCALE_DEFAULT, 3) * 100) / 100;
-}
-
-function normalizeBentoSlotSize(size, kind) {
-  const n = clampBentoMaskNumber(size, 32, 340, 120, 1);
-  if (kind !== 'cup') return n;
-  return BENTO_CUP_SLOT_SIZES.reduce((best, value) => (
-    Math.abs(value - n) < Math.abs(best - n) ? value : best
-  ), BENTO_CUP_SLOT_SIZES[0]);
-}
-
-function normalizeBentoSlotSampleOverrides(point, kind) {
-  const raw = point && point.sampleOverrides;
-  const normalized = {};
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return normalized;
-  Object.keys(raw).sort().forEach(sampleId => {
-    const id = String(sampleId || '').trim();
-    const src = raw[sampleId];
-    if (!/^[a-z0-9_:-]{1,80}$/i.test(id) || !src || typeof src !== 'object' || Array.isArray(src)) return;
-    const override = normalizeBentoSlotPoint(src, kind);
-    delete override.sampleId;
-    delete override.sampleOverrides;
-    delete override.markerX;
-    delete override.markerY;
-    if (src.positionOverride === true) override.positionOverride = true;
-    normalized[id] = override;
-  });
-  return normalized;
-}
-
-function normalizeBentoSlotSampleId(kind, index, sampleId) {
-  const id = String(sampleId || '').trim();
-  if (kind === 'divider' && index === 6) {
-    if (id === 'divider_wood') return 'divider_wood_vertical_front';
-    if (id === 'divider_wave') return 'divider_wave_vertical_front';
-  }
-  return id;
-}
-
-function normalizeBentoSlotPoint(point, kind, index = null) {
-  const normalized = {
-    x: clampBentoMaskNumber(point && point.x, 0, 760, 380, 1),
-    y: clampBentoMaskNumber(point && point.y, 0, 460, 230, 1)
-  };
-  if ((kind === 'side-food' || kind === 'cup')
-      && Number.isFinite(Number(point && point.markerX))
-      && Number.isFinite(Number(point && point.markerY))) {
-    normalized.markerX = clampBentoMaskNumber(point.markerX, 0, 760, 380, 1);
-    normalized.markerY = clampBentoMaskNumber(point.markerY, 0, 460, 230, 1);
-  }
-  if (Number.isFinite(Number(point && point.size))) {
-    normalized.size = normalizeBentoSlotSize(point.size, kind);
-  }
-  const sampleId = normalizeBentoSlotSampleId(kind, index, point && point.sampleId);
-  if (/^[a-z0-9_:-]{1,80}$/i.test(sampleId)) {
-    normalized.sampleId = sampleId;
-  }
-  const sampleOverrides = normalizeBentoSlotSampleOverrides(point, kind);
-  if (Object.keys(sampleOverrides).length) {
-    normalized.sampleOverrides = sampleOverrides;
-  }
-  return normalized;
-}
-function mergeBentoSharedSlotPoints(list, kind) {
-  const valid = Array.isArray(list)
-    ? list.filter(point => point && typeof point === 'object' && !Array.isArray(point))
-    : [];
-  if (!valid.length) return [];
-  const merged = normalizeBentoSlotPoint(valid[0], kind, 0);
-  const overrides = merged.sampleOverrides && typeof merged.sampleOverrides === 'object' && !Array.isArray(merged.sampleOverrides)
-    ? { ...merged.sampleOverrides }
-    : {};
-  valid.forEach((point, index) => {
-    const normalized = normalizeBentoSlotPoint(point, kind, index);
-    Object.entries(normalized.sampleOverrides || {}).forEach(([sampleId, override]) => {
-      if (!override) return;
-      overrides[sampleId] = { ...override, x: merged.x, y: merged.y };
-    });
-    if (normalized.sampleId && Number.isFinite(Number(normalized.size))) {
-      overrides[normalized.sampleId] = {
-        ...(overrides[normalized.sampleId] || {}),
-        x: merged.x,
-        y: merged.y,
-        size: normalized.size
-      };
-    }
-  });
-  if (Object.keys(overrides).length) merged.sampleOverrides = overrides;
-  return [merged];
-}
-
-function getBentoSlotPointSampleSize(point, sampleId, kind) {
-  if (!point || !sampleId) return null;
-  const overrides = point.sampleOverrides && typeof point.sampleOverrides === 'object' && !Array.isArray(point.sampleOverrides)
-    ? point.sampleOverrides
-    : null;
-  const override = overrides && overrides[sampleId];
-  if (override && Number.isFinite(Number(override.size))) return normalizeBentoSlotSize(override.size, kind);
-  if (point.sampleId === sampleId && Number.isFinite(Number(point.size))) return normalizeBentoSlotSize(point.size, kind);
-  return null;
-}
-
-function getBentoSlotLayoutBoxIds(map) {
-  const seen = new Set();
-  const ids = [];
-  if (!map || typeof map !== 'object' || Array.isArray(map)) return ids;
-  BENTO_SLOT_BOX_ORDER.forEach(boxId => {
-    if (Object.prototype.hasOwnProperty.call(map, boxId)) {
-      const canonicalBoxId = BENTO_SLOT_BOX_ALIASES[boxId] || boxId;
-      if (canonicalBoxId !== boxId && Object.prototype.hasOwnProperty.call(map, canonicalBoxId)) return;
-      if (!seen.has(canonicalBoxId)) {
-        seen.add(canonicalBoxId);
-        ids.push(boxId);
-      }
-    }
-  });
-  Object.keys(map).sort().forEach(boxId => {
-    if (/^[a-z0-9_:-]{1,80}$/i.test(boxId)) {
-      const canonicalBoxId = BENTO_SLOT_BOX_ALIASES[boxId] || boxId;
-      if (canonicalBoxId !== boxId && Object.prototype.hasOwnProperty.call(map, canonicalBoxId)) return;
-      if (seen.has(canonicalBoxId)) return;
-      seen.add(canonicalBoxId);
-      ids.push(boxId);
-    }
-  });
-  return ids;
-}
-
-function collectBentoSlotSampleSizes(points, kind, sizes = {}) {
-  if (!BENTO_SHARED_SAMPLE_SIZE_KINDS.has(kind) || !Array.isArray(points)) return sizes;
-  points.forEach(point => {
-    if (!point || typeof point !== 'object' || Array.isArray(point)) return;
-    if (point.sampleId && sizes[point.sampleId] == null) {
-      const activeSize = getBentoSlotPointSampleSize(point, point.sampleId, kind);
-      if (activeSize != null) sizes[point.sampleId] = activeSize;
-    }
-    const overrides = point.sampleOverrides && typeof point.sampleOverrides === 'object' && !Array.isArray(point.sampleOverrides)
-      ? point.sampleOverrides
-      : {};
-    Object.keys(overrides).sort().forEach(sampleId => {
-      if (sizes[sampleId] != null) return;
-      const size = getBentoSlotPointSampleSize(point, sampleId, kind);
-      if (size != null) sizes[sampleId] = size;
-    });
-  });
-  return sizes;
-}
-
-function syncBentoSlotSampleSizes(points, kind, sharedSizes) {
-  if (!BENTO_SHARED_SAMPLE_SIZE_KINDS.has(kind) || !Array.isArray(points)) return points;
-  const sizes = sharedSizes || collectBentoSlotSampleSizes(points, kind, {});
-  if (!Object.keys(sizes).length) return points;
-  return points.map(point => {
-    const next = { ...point };
-    const overrides = next.sampleOverrides && typeof next.sampleOverrides === 'object' && !Array.isArray(next.sampleOverrides)
-      ? { ...next.sampleOverrides }
-      : {};
-    Object.keys(sizes).forEach(sampleId => {
-      const override = overrides[sampleId] || {};
-      const nextOverride = {
-        x: Number.isFinite(Number(override.x)) ? override.x : next.x,
-        y: Number.isFinite(Number(override.y)) ? override.y : next.y,
-        size: sizes[sampleId]
-      };
-      if (override.positionOverride === true) nextOverride.positionOverride = true;
-      overrides[sampleId] = nextOverride;
-      if (next.sampleId === sampleId) next.size = sizes[sampleId];
-    });
-    if (Object.keys(overrides).length) next.sampleOverrides = overrides;
-    return normalizeBentoSlotPoint(next, kind);
-  });
-}
-
-function normalizeBentoSlotLayoutMap(map) {
-  const normalized = {};
-  if (!map || typeof map !== 'object' || Array.isArray(map)) return normalized;
-  getBentoSlotLayoutBoxIds(map).forEach(boxId => {
-    if (!/^[a-z0-9_:-]{1,80}$/i.test(boxId)) return;
-    const canonicalBoxId = BENTO_SLOT_BOX_ALIASES[boxId] || boxId;
-    if (normalized[canonicalBoxId]) return;
-    const box = map[boxId];
-    if (!box || typeof box !== 'object' || Array.isArray(box)) return;
-    const entry = {};
-    const globalScale = normalizeBentoSlotGlobalScale(box.globalScale);
-    if (Math.abs(globalScale - BENTO_SLOT_GLOBAL_SCALE_DEFAULT) >= 0.001) entry.globalScale = globalScale;
-    const slotCounts = normalizeBentoSlotCounts(box.slotCounts || {});
-    if (Object.keys(slotCounts).length) entry.slotCounts = slotCounts;
-    Object.keys(BENTO_SLOT_LAYOUT_LIMITS).forEach(kind => {
-      const list = Array.isArray(box[kind]) ? box[kind] : [];
-      const validPoints = list.filter(point => point && typeof point === 'object' && !Array.isArray(point));
-      const points = BENTO_SHARED_SLOT_KINDS.has(kind)
-        ? mergeBentoSharedSlotPoints(validPoints, kind)
-        : validPoints.slice(0, BENTO_SLOT_LAYOUT_LIMITS[kind]).map((point, index) => normalizeBentoSlotPoint(point, kind, index));
-      if (points.length) entry[kind] = points;
-    });
-    if (Object.keys(entry).length) normalized[canonicalBoxId] = entry;
-  });
-  BENTO_SHARED_SAMPLE_SIZE_KINDS.forEach(kind => {
-    const sizes = {};
-    getBentoSlotLayoutBoxIds(normalized).forEach(boxId => {
-      const box = normalized[boxId];
-      collectBentoSlotSampleSizes(box && box[kind], kind, sizes);
-    });
-    if (!Object.keys(sizes).length) return;
-    getBentoSlotLayoutBoxIds(normalized).forEach(boxId => {
-      const box = normalized[boxId];
-      if (box && Array.isArray(box[kind])) {
-        box[kind] = syncBentoSlotSampleSizes(box[kind], kind, sizes);
-      }
-    });
-  });
-  return normalized;
-}
-
-function normalizeBentoNpcPositionsMap(map) {
-  const normalized = {};
-  if (!map || typeof map !== 'object' || Array.isArray(map)) return normalized;
-  Object.keys(map).sort().forEach(key => {
-    if (!/^[a-z0-9_:-]{1,100}$/i.test(key)) return;
-    const src = map[key];
-    if (!src || typeof src !== 'object' || Array.isArray(src)) return;
-    const entry = {};
-    if (Number.isFinite(Number(src.x))) entry.x = clampBentoMaskNumber(src.x, 0, 100, 58, 1);
-    if (Number.isFinite(Number(src.y))) entry.y = clampBentoMaskNumber(src.y, 0, 100, 23, 1);
-    if (Number.isFinite(Number(src.scale))) entry.scale = clampBentoMaskNumber(src.scale, 0.5, 2, 1, 2);
-    if (Number.isFinite(Number(src.scaleX))) entry.scaleX = clampBentoMaskNumber(src.scaleX, 0.5, 2, 1, 2);
-    if (Number.isFinite(Number(src.scaleY))) entry.scaleY = clampBentoMaskNumber(src.scaleY, 0.5, 2, 1, 2);
-    if (Number.isFinite(Number(src.rotation))) entry.rotation = clampBentoMaskNumber(src.rotation, -20, 20, 0, 1);
-    if (Number.isFinite(Number(src.opacity))) entry.opacity = clampBentoMaskNumber(src.opacity, 0, 1, 1, 2);
-    if (Object.keys(entry).length) normalized[key] = entry;
-  });
-  return normalized;
-}
-
-function normalizeBentoCounterMask(mask, defaults) {
-  const fallback = defaults || { x: 0, y: 0, width: 100, height: 100, opacity: 1 };
-  const src = mask && typeof mask === 'object' && !Array.isArray(mask) ? mask : {};
-  const normalized = {
-    x: clampBentoMaskNumber(src.x, 0, 100, fallback.x, 1),
-    y: clampBentoMaskNumber(src.y, 0, 100, fallback.y, 1),
-    width: clampBentoMaskNumber(src.width, 1, 100, fallback.width, 1),
-    height: clampBentoMaskNumber(src.height, 1, 100, fallback.height, 1),
-    opacity: clampBentoMaskNumber(src.opacity, 0, 1, fallback.opacity, 2)
-  };
-  if (normalized.x + normalized.width > 100) normalized.width = Math.max(1, roundBentoMaskNumber(100 - normalized.x, fallback.width, 1));
-  if (normalized.y + normalized.height > 100) normalized.height = Math.max(1, roundBentoMaskNumber(100 - normalized.y, fallback.height, 1));
-  return normalized;
-}
-
 async function handleBentoMaskDefaults(request, env) {
   if (request.method === 'OPTIONS') {
     return new Response('', { status: 200, headers: { ...CORS, ...noStoreHeaders() } });
@@ -867,29 +550,14 @@ async function handleBentoMaskDefaults(request, env) {
   if (request.method === 'GET') {
     try {
       const stored = await env.BENTO_MASK_CONFIG.get(BENTO_MASK_CONFIG_KEY, 'json');
-      const npcStored = await env.BENTO_MASK_CONFIG.get(NPC_POSITIONS_CURRENT_KEY, 'json').catch(() => null);
-      const base = stored || {
+      return json(200, stored || {
         ok: true,
         exists: false,
         version: 1,
         updatedAt: null,
         maskBounds: {},
-        completeLayout: {},
-        slotLayout: {}
-      };
-      const merged = {
-        ...base,
-        slotLayout: normalizeBentoSlotLayoutMap(base.slotLayout || {}),
-        npcPositions: normalizeBentoNpcPositionsMap(npcStored && (npcStored.data || npcStored.npcPositions)),
-        npcUpdatedAt: (npcStored && (npcStored.updated_at || npcStored.updatedAt)) || null,
-        staffCounterMask: npcStored && npcStored.staffCounterMask
-          ? normalizeBentoCounterMask(npcStored.staffCounterMask, { x: 0, y: 44, width: 100, height: 38, opacity: 1 })
-          : null,
-        customerCounterMask: npcStored && npcStored.customerCounterMask
-          ? normalizeBentoCounterMask(npcStored.customerCounterMask, { x: 0, y: 73, width: 100, height: 27, opacity: 1 })
-          : null
-      };
-      return json(200, merged, noStoreHeaders());
+        completeLayout: {}
+      }, noStoreHeaders());
     } catch (e) {
       return json(500, { ok: false, error: e.message }, noStoreHeaders());
     }
@@ -922,102 +590,12 @@ async function handleBentoMaskDefaults(request, env) {
     version: 1,
     updatedAt: new Date().toISOString(),
     maskBounds: normalizeBentoMaskBoundsMap(body.maskBounds || body.mask || {}),
-    completeLayout: normalizeBentoCompleteLayoutMap(body.completeLayout || body.complete || {}),
-    slotLayout: normalizeBentoSlotLayoutMap(body.slotLayout || body.slots || {})
+    completeLayout: normalizeBentoCompleteLayoutMap(body.completeLayout || body.complete || {})
   };
 
   try {
     await env.BENTO_MASK_CONFIG.put(BENTO_MASK_CONFIG_KEY, JSON.stringify(payload));
     return json(200, payload, noStoreHeaders());
-  } catch (e) {
-    return json(500, { ok: false, error: e.message }, noStoreHeaders());
-  }
-}
-
-// ---------------------------------------------------------------------------
-// NPC position backup (see admin/index.html npcPosSaveAll).
-// LocalStorage is primary; KV (BENTO_MASK_CONFIG namespace, key prefix
-// "npc-positions:") is cross-device backup. Restored to localStorage on
-// admin load if LS empty. Reuses the existing BENTO_MASK_CONFIG KV binding
-// rather than creating a new namespace.
-// ---------------------------------------------------------------------------
-async function handleBentoNpcPositionsGet(request, env) {
-  if (!env.BENTO_MASK_CONFIG) {
-    return json(503, { ok: false, error: 'BENTO_MASK_CONFIG is not configured' }, noStoreHeaders());
-  }
-  try {
-    const stored = await env.BENTO_MASK_CONFIG.get(NPC_POSITIONS_CURRENT_KEY, 'json');
-    if (!stored) {
-      return json(404, { ok: false, error: 'not_found' }, noStoreHeaders());
-    }
-    return json(200, stored, noStoreHeaders());
-  } catch (e) {
-    return json(500, { ok: false, error: e.message }, noStoreHeaders());
-  }
-}
-
-async function handleBentoNpcPositionsPost(request, env) {
-  if (!env.BENTO_MASK_CONFIG) {
-    return json(503, { ok: false, error: 'BENTO_MASK_CONFIG is not configured' }, noStoreHeaders());
-  }
-
-  let text = '';
-  try {
-    text = await request.text();
-  } catch {
-    return json(400, { ok: false, error: 'Invalid request body' }, noStoreHeaders());
-  }
-  if (text.length > 200000) {
-    return json(413, { ok: false, error: 'Payload too large' }, noStoreHeaders());
-  }
-
-  let body;
-  try {
-    body = text ? JSON.parse(text) : {};
-  } catch {
-    return json(400, { ok: false, error: 'Invalid JSON' }, noStoreHeaders());
-  }
-
-  if (!body || typeof body !== 'object' || !body.data || typeof body.data !== 'object' || Array.isArray(body.data)) {
-    return json(400, { ok: false, error: 'data object required' }, noStoreHeaders());
-  }
-
-  const updatedAt = new Date().toISOString();
-  const payload = {
-    data: normalizeBentoNpcPositionsMap(body.data),
-    staffCounterMask: body.staffCounterMask
-      ? normalizeBentoCounterMask(body.staffCounterMask, { x: 0, y: 44, width: 100, height: 38, opacity: 1 })
-      : null,
-    customerCounterMask: body.customerCounterMask
-      ? normalizeBentoCounterMask(body.customerCounterMask, { x: 0, y: 73, width: 100, height: 27, opacity: 1 })
-      : null,
-    updated_at: updatedAt
-  };
-  const serialized = JSON.stringify(payload);
-
-  try {
-    await env.BENTO_MASK_CONFIG.put(NPC_POSITIONS_CURRENT_KEY, serialized);
-    await env.BENTO_MASK_CONFIG.put(NPC_POSITIONS_HISTORY_PREFIX + updatedAt, serialized);
-
-    // Prune history: keep newest NPC_POSITIONS_HISTORY_MAX entries.
-    // Keys are ISO timestamps so lexicographic sort = chronological sort.
-    let historyCount = 0;
-    try {
-      const list = await env.BENTO_MASK_CONFIG.list({ prefix: NPC_POSITIONS_HISTORY_PREFIX });
-      const keys = (list && list.keys ? list.keys.map(k => k.name) : []).sort();
-      historyCount = keys.length;
-      if (historyCount > NPC_POSITIONS_HISTORY_MAX) {
-        const excess = keys.slice(0, historyCount - NPC_POSITIONS_HISTORY_MAX);
-        for (const k of excess) {
-          try { await env.BENTO_MASK_CONFIG.delete(k); } catch {}
-        }
-        historyCount = NPC_POSITIONS_HISTORY_MAX;
-      }
-    } catch {
-      // history listing best-effort; don't fail save if prune itself errors
-    }
-
-    return json(200, { saved: true, history_count: historyCount, updated_at: updatedAt }, noStoreHeaders());
   } catch (e) {
     return json(500, { ok: false, error: e.message }, noStoreHeaders());
   }
@@ -1046,7 +624,7 @@ async function handleAiName(request, env) {
   const model = body.model || 'gemini-flash-latest';
   const apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/'
     + encodeURIComponent(model)
-    + ':generateContent';
+    + ':generateContent?key=' + encodeURIComponent(apiKey);
 
   let parts;
   const images = body.images;
@@ -1062,7 +640,7 @@ async function handleAiName(request, env) {
   try {
     const resp = await fetch(apiUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey.trim() },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts }],
         generationConfig: {
@@ -1093,12 +671,7 @@ async function handleAiTts(request, env) {
   }
 
   const apiKey = env.GEMINI_API_KEY || env.GOOGLE_TTS_API_KEY;
-  const hasServiceAccount = !!env.GOOGLE_SERVICE_ACCOUNT_JSON;
-  if (!apiKey && !hasServiceAccount) {
-    return json(500, {
-      error: 'No TTS auth configured. Set GEMINI_API_KEY / GOOGLE_TTS_API_KEY / GOOGLE_SERVICE_ACCOUNT_JSON.',
-    });
-  }
+  if (!apiKey) return json(500, { error: 'GEMINI_API_KEY not configured on server' });
 
   const adminSecret = env.TTS_ADMIN_SECRET;
   if (adminSecret) {
@@ -1111,14 +684,10 @@ async function handleAiTts(request, env) {
   catch { return json(400, { error: 'Invalid JSON' }); }
 
   if (body.mode === 'list-voices') {
-    const listKey = env.GOOGLE_TTS_API_KEY || apiKey;
-    if (!listKey) {
-      return json(501, { error: 'list-voices requires GEMINI_API_KEY or GOOGLE_TTS_API_KEY (OAuth2-only env not supported for this mode).' });
-    }
     const lang = body.languageCode || 'ja-JP';
     const listUrl = 'https://texttospeech.googleapis.com/v1/voices?languageCode='
       + encodeURIComponent(lang) + '&key='
-      + encodeURIComponent(listKey);
+      + encodeURIComponent(env.GOOGLE_TTS_API_KEY || apiKey);
     try {
       const lr = await fetch(listUrl);
       const ld = await lr.json();
@@ -1156,9 +725,7 @@ async function handleAiTts(request, env) {
   const ALLOWED_STYLES = ['[gently]', '[cheerfully]', '[excitedly]', '[giggles]', '[whispers]', ''];
   let style = (typeof body.stylePrompt === 'string') ? body.stylePrompt.trim() : '[gently]';
   if (ALLOWED_STYLES.indexOf(style) === -1) style = '[gently]';
-  const promptText = (typeof body.promptText === 'string') ? body.promptText.trim() : '';
-  if (promptText.length > 3000) return json(400, { error: 'promptText が長すぎます（3000字まで）' });
-  const styledText = promptText || (style ? (style + ' ' + text) : text);
+  const styledText = style ? (style + ' ' + text) : text;
 
   const MODEL_PRIMARY  = body.modelOverride || 'gemini-3.1-flash-tts-preview';
   const MODEL_FALLBACK = 'gemini-2.5-flash-preview-tts';
@@ -1184,10 +751,10 @@ async function handleAiTts(request, env) {
 
   async function callModel(modelId, customPayload) {
     const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + modelId
-      + ':generateContent';
+      + ':generateContent?key=' + encodeURIComponent(apiKey);
     const resp = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey.trim() },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(customPayload || payload)
     });
     const data = await resp.json();
@@ -1202,33 +769,12 @@ async function handleAiTts(request, env) {
     Leda:1,Aoede:1,Callirrhoe:1,Despina:1,Autonoe:1,Zephyr:1,Erinome:1,
     Puck:1,Orus:1,Kore:1,Charon:1,Fenrir:1,Iapetus:1,Umbriel:1,Algieba:1,Enceladus:1
   };
-  // Cloud TTS は API key 認証を 2025 末に廃止し、 OAuth2 access token 必須に。
-  // GOOGLE_SERVICE_ACCOUNT_JSON secret から JWT 署名 → access token 交換 (google-auth.js)、
-  // 取得できなければ後方互換で旧 ?key= 経路 (Cloud TTS は 401 を返す想定だが secret 登録前は壊れたまま運用可)。
-  async function cloudTtsAuth() {
-    let token = null;
-    try {
-      token = await getGoogleAccessToken(env);
-    } catch (e) {
-      console.warn('getGoogleAccessToken failed:', e && e.message);
-      token = null;
-    }
-    if (token) {
-      return { authMode: 'oauth2', headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }, urlSuffix: '' };
-    }
-    const cloudKey = env.GOOGLE_TTS_API_KEY || apiKey;
-    if (cloudKey) {
-      return { authMode: 'api_key', headers: { 'Content-Type': 'application/json' }, urlSuffix: '?key=' + encodeURIComponent(cloudKey) };
-    }
-    return { authMode: 'none', headers: { 'Content-Type': 'application/json' }, urlSuffix: '' };
-  }
-
   async function callChirp3(geminiVoice) {
     const cloudVoice = CHIRP3_AVAILABLE[geminiVoice] ? ('ja-JP-Chirp3-HD-' + geminiVoice) : 'ja-JP-Chirp3-HD-Leda';
-    const auth = await cloudTtsAuth();
-    const url = 'https://texttospeech.googleapis.com/v1/text:synthesize' + auth.urlSuffix;
+    const cloudKey = env.GOOGLE_TTS_API_KEY || apiKey;
+    const url = 'https://texttospeech.googleapis.com/v1/text:synthesize?key=' + encodeURIComponent(cloudKey);
     const resp = await fetch(url, {
-      method: 'POST', headers: auth.headers,
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         input: { text },
         voice: { languageCode: 'ja-JP', name: cloudVoice },
@@ -1236,7 +782,7 @@ async function handleAiTts(request, env) {
       })
     });
     const data = await resp.json();
-    return { resp, data, cloudVoice, authMode: auth.authMode };
+    return { resp, data, cloudVoice };
   }
   async function callCloudNeural2(geminiVoice) {
     const NEURAL2_MAP = {
@@ -1246,10 +792,10 @@ async function handleAiTts(request, env) {
       Kore:'ja-JP-Neural2-D',Charon:'ja-JP-Neural2-D',Fenrir:'ja-JP-Neural2-D'
     };
     const cloudVoice = NEURAL2_MAP[geminiVoice] || 'ja-JP-Neural2-B';
-    const auth = await cloudTtsAuth();
-    const url = 'https://texttospeech.googleapis.com/v1/text:synthesize' + auth.urlSuffix;
+    const cloudKey = env.GOOGLE_TTS_API_KEY || apiKey;
+    const url = 'https://texttospeech.googleapis.com/v1/text:synthesize?key=' + encodeURIComponent(cloudKey);
     const resp = await fetch(url, {
-      method: 'POST', headers: auth.headers,
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         input: { text },
         voice: { languageCode: 'ja-JP', name: cloudVoice },
@@ -1257,7 +803,7 @@ async function handleAiTts(request, env) {
       })
     });
     const data = await resp.json();
-    return { resp, data, cloudVoice, authMode: auth.authMode };
+    return { resp, data, cloudVoice };
   }
 
   const isBlockedOrEmpty = r => !r.audioPart;
@@ -1267,7 +813,7 @@ async function handleAiTts(request, env) {
 
     if (body.engine === 'chirp3') {
       const chirpDirect = await callChirp3(voice);
-      attemptChain.push({ model: 'chirp3-hd', authMode: chirpDirect.authMode, status: chirpDirect.resp.status, err: (chirpDirect.data && chirpDirect.data.error && chirpDirect.data.error.message) || null });
+      attemptChain.push({ model: 'chirp3-hd', status: chirpDirect.resp.status, err: (chirpDirect.data && chirpDirect.data.error && chirpDirect.data.error.message) || null });
       if (chirpDirect.resp.ok && chirpDirect.data && chirpDirect.data.audioContent) {
         return json(200, {
           audio: chirpDirect.data.audioContent, mime: 'audio/wav',
@@ -1279,21 +825,14 @@ async function handleAiTts(request, env) {
       return json(502, { error: (chirpDirect.data && chirpDirect.data.error && chirpDirect.data.error.message) || 'Chirp 3: HD error', attemptChain });
     }
 
-    let result;
+    let result = await callModel(MODEL_PRIMARY);
+    attemptChain.push({ model: MODEL_PRIMARY, fr: result.finishReason, br: result.blockReason, hasAudio: !!result.audioPart });
     let modelUsed = MODEL_PRIMARY;
-    if (apiKey) {
-      result = await callModel(MODEL_PRIMARY);
-      attemptChain.push({ model: MODEL_PRIMARY, fr: result.finishReason, br: result.blockReason, hasAudio: !!result.audioPart });
 
-      if (isBlockedOrEmpty(result) && MODEL_PRIMARY !== MODEL_FALLBACK) {
-        result = await callModel(MODEL_FALLBACK);
-        attemptChain.push({ model: MODEL_FALLBACK, fr: result.finishReason, br: result.blockReason, hasAudio: !!result.audioPart });
-        modelUsed = MODEL_FALLBACK;
-      }
-    } else {
-      // No Gemini key — skip Gemini entirely and fall through to Cloud TTS (OAuth2) chirp3/neural2.
-      result = { resp: { ok: false, status: 502 }, data: null, audioPart: null, finishReason: 'SKIPPED', blockReason: 'no_gemini_api_key' };
-      attemptChain.push({ model: MODEL_PRIMARY, skipped: 'no_gemini_api_key' });
+    if (isBlockedOrEmpty(result) && MODEL_PRIMARY !== MODEL_FALLBACK) {
+      result = await callModel(MODEL_FALLBACK);
+      attemptChain.push({ model: MODEL_FALLBACK, fr: result.finishReason, br: result.blockReason, hasAudio: !!result.audioPart });
+      modelUsed = MODEL_FALLBACK;
     }
 
     if (isBlockedOrEmpty(result)) {
@@ -1306,7 +845,7 @@ async function handleAiTts(request, env) {
           attemptChain, sampleRate: 24000
         });
       }
-      attemptChain.push({ model: 'chirp3-hd', authMode: chirpResult.authMode, status: chirpResult.resp.status, err: (chirpResult.data && chirpResult.data.error && chirpResult.data.error.message) || null });
+      attemptChain.push({ model: 'chirp3-hd', status: chirpResult.resp.status, err: (chirpResult.data && chirpResult.data.error && chirpResult.data.error.message) || null });
 
       const neuralResult = await callCloudNeural2(voice);
       if (neuralResult.resp.ok && neuralResult.data && neuralResult.data.audioContent) {
@@ -1317,14 +856,11 @@ async function handleAiTts(request, env) {
           attemptChain, sampleRate: 24000
         });
       }
-      attemptChain.push({ model: 'cloud-tts-neural2', authMode: neuralResult.authMode, status: neuralResult.resp.status, err: (neuralResult.data && neuralResult.data.error && neuralResult.data.error.message) || null });
+      attemptChain.push({ model: 'cloud-tts-neural2', status: neuralResult.resp.status, err: (neuralResult.data && neuralResult.data.error && neuralResult.data.error.message) || null });
     }
 
     if (!result.resp.ok) {
-      const skippedGemini = !apiKey;
-      const safeMsg = skippedGemini
-        ? 'Cloud TTS fallback failed (Gemini skipped: no API key)'
-        : (result.data && result.data.error && result.data.error.message) || 'Gemini TTS API error';
+      const safeMsg = (result.data && result.data.error && result.data.error.message) || 'Gemini TTS API error';
       return json(result.resp.status >= 500 ? 502 : result.resp.status, { error: safeMsg, attemptChain });
     }
     if (!result.audioPart) {
@@ -1500,9 +1036,10 @@ async function handleGeminiProxy(request, env) {
 
   const searchParams = new URLSearchParams(url.search);
   searchParams.delete('key');
+  searchParams.set('key', apiKey);
   const geminiUrl = 'https://generativelanguage.googleapis.com' + geminiPath + '?' + searchParams.toString();
 
-  const headers = { 'Content-Type': request.headers.get('Content-Type') || 'application/json', 'x-goog-api-key': apiKey.trim() };
+  const headers = { 'Content-Type': request.headers.get('Content-Type') || 'application/json' };
   const body = (request.method === 'GET' || request.method === 'HEAD')
     ? null
     : await request.arrayBuffer();
