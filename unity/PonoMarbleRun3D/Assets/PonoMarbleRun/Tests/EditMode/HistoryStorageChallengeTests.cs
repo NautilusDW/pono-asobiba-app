@@ -1,6 +1,7 @@
 using System.Linq;
 using NUnit.Framework;
 using Pono.MarbleRun3D.Core;
+using UnityEngine;
 
 namespace Pono.MarbleRun3D.Tests.EditMode
 {
@@ -374,6 +375,41 @@ namespace Pono.MarbleRun3D.Tests.EditMode
                 Is.Not.EqualTo(CourseStorage.GetSavePath("sandbox")));
         }
 
+        [Test]
+        public void FeaturedRoutesUseGravityOrVisiblePowerForEveryHeightChange()
+        {
+            foreach (var modeId in new[] { "starter", "sample5", "sample6" })
+            {
+                var route = ChallengeCatalog.Get(modeId).InitialPieces;
+                for (var index = 0; index < route.Count - 1; index++)
+                {
+                    Assert.That(PlacementSolver.AreConnected(route[index], route[index + 1]), Is.True,
+                        modeId + " route gap after " + route[index].id);
+                }
+
+                for (var index = 1; index < route.Count - 1; index++)
+                {
+                    var entryLevel = SharedConnectorLevel(route[index - 1], route[index]);
+                    var exitLevel = SharedConnectorLevel(route[index], route[index + 1]);
+                    if (exitLevel > entryLevel)
+                    {
+                        Assert.That(route[index].kind,
+                            Is.EqualTo(MarblePieceKind.Elevator).Or.EqualTo(MarblePieceKind.Lift),
+                            modeId + " hides an unpowered climb at " + route[index].id);
+                    }
+                    else if (exitLevel < entryLevel)
+                    {
+                        Assert.That(route[index].kind,
+                            Is.EqualTo(MarblePieceKind.Slope)
+                                .Or.EqualTo(MarblePieceKind.Steps)
+                                .Or.EqualTo(MarblePieceKind.Helix)
+                                .Or.EqualTo(MarblePieceKind.Tornado),
+                            modeId + " hides a descent inside " + route[index].id);
+                    }
+                }
+            }
+        }
+
         private static (CourseData first, CourseData second) ActualChallengeSolutions(ModeDefinition challenge)
         {
             switch (challenge.Id)
@@ -433,6 +469,28 @@ namespace Pono.MarbleRun3D.Tests.EditMode
                             P("b-slope", MarblePieceKind.Slope, 0, 2),
                             P("b-low", MarblePieceKind.Straight, 0, 3)));
             }
+        }
+
+        private static int SharedConnectorLevel(PieceRecord first, PieceRecord second)
+        {
+            var firstSpec = PartCatalog.Get(first.kind);
+            var secondSpec = PartCatalog.Get(second.kind);
+            for (var firstIndex = 0; firstIndex < firstSpec.Connectors.Count; firstIndex++)
+            {
+                var firstConnector = PartCatalog.GetWorldConnector(first, firstIndex);
+                for (var secondIndex = 0; secondIndex < secondSpec.Connectors.Count; secondIndex++)
+                {
+                    var secondConnector = PartCatalog.GetWorldConnector(second, secondIndex);
+                    if (Vector2.SqrMagnitude(firstConnector.cellPosition - secondConnector.cellPosition) < 0.0001f
+                        && firstConnector.level == secondConnector.level
+                        && firstConnector.facing + secondConnector.facing == Vector2Int.zero)
+                    {
+                        return firstConnector.level;
+                    }
+                }
+            }
+            Assert.Fail("pieces do not share a connector: " + first.id + " / " + second.id);
+            return -1;
         }
 
         private static CourseData WithRoute(ModeDefinition challenge, params PieceRecord[] route)

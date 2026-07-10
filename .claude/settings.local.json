@@ -55,7 +55,8 @@
       "Bash(touch .claude/.docs-skip-once && ls -la .claude/.docs-skip-once)",
       "Bash(cd \"d:/AppDevelopment/pono-asobiba-app\" && touch .claude/.docs-skip-once && ls .claude/.docs-skip-once)",
       "WebFetch(domain:docs.github.com)",
-      "WebFetch(domain:developers.cloudflare.com)"
+      "WebFetch(domain:developers.cloudflare.com)",
+      "WebFetch(domain:raw.githubusercontent.com)"
     ],
     "additionalDirectories": [
       "D:\\AppDevelopment\\pono-asobiba-app\\.claude",

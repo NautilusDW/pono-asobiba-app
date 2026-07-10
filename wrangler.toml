@@ -68,6 +68,13 @@ id = "45b26dbf2d7a4f40907517e826e48ed8"
 name = "pono-asobiba-staging"
 routes = []
 
+# Cloudflare の [env.XXX] では top-level [assets] が継承されないため、
+# staging でも明示的に再宣言する（[env.staging-app.assets] と対称）。
+[env.staging.assets]
+directory = "./"
+binding = "ASSETS"
+run_worker_first = true
+
 [[env.staging.kv_namespaces]]
 binding = "BENTO_MASK_CONFIG"
 id = "0c58144b7fe9479e9781ddb1d9b44dc9"
