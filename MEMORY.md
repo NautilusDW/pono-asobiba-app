@@ -148,6 +148,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-07-10T15:18:24Z - batch:1214 unity/** を CI paths-ignore と .assetsignore に追加 (unity のみ push のデプロイ抑止 + unity ソース 536 ファイルの配信除外、クロスレビュー clean)
+- **タスク**: batch:1214 unity/** を CI paths-ignore と .assetsignore に追加 (unity のみ push のデプロイ抑止 + unity ソース 536 ファイルの配信除外、クロスレビュー clean)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 0
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {}
+- **サマリ**: 行動ログが空のため分析できません。
+
+
 ### 2026-07-10T14:53:23Z - batch:1213-followup 本番404の真犯人特定 (CF Workers Builds Git連携 Production branch=develop) + 監視cron追加 + default branch を develop-app へ変更
 - **タスク**: batch:1213-followup 本番404の真犯人特定 (CF Workers Builds Git連携 Production branch=develop) + 監視cron追加 + default branch を develop-app へ変更
 - **結果**: 成功
@@ -241,19 +254,6 @@ wrangler deploy                  # master 内容を production に
 
 ### 2026-07-10T12:26:12Z - develop/develop-app単一トランク統合計画の前提事実調査 (デプロイ配線・worker.js env依存・sw.js差分・develop独自コンテンツ・tier出し分け・native依存・DEPLOY-FACTフック・ドキュメント現状)
 - **タスク**: develop/develop-app単一トランク統合計画の前提事実調査 (デプロイ配線・worker.js env依存・sw.js差分・develop独自コンテンツ・tier出し分け・native依存・DEPLOY-FACTフック・ドキュメント現状)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 0
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {}
-- **サマリ**: 行動ログが空のため分析できません。
-
-
-### 2026-07-10T10:41:36Z - batch:1210c develop(LP staging)同期: 553ファイルを3-way検証同期、いろおと等develop独自機能の巻き戻しゼロ、worker.js batch外import混入によるdeploy失敗を batch限定diff移植で復旧、LP stagingでIMS→304実測確認
-- **タスク**: batch:1210c develop(LP staging)同期: 553ファイルを3-way検証同期、いろおと等develop独自機能の巻き戻しゼロ、worker.js batch外import混入によるdeploy失敗を batch限定diff移植で復旧、LP stagingでIMS→304実測確認
 - **結果**: 成功
 - **理由**: N/A
 - **総アクション数**: 0
