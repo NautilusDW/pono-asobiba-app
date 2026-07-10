@@ -70,6 +70,7 @@ namespace Pono.MarbleRun3D.Gameplay
         private Coroutine _launchRoutine;
         private Coroutine _goalFinishRoutine;
         private Light _sunLight;
+        private GameObject _goalLightObject;
 
         private sealed class MarbleRuntime
         {
@@ -178,7 +179,11 @@ namespace Pono.MarbleRun3D.Gameplay
         public void ShowMenu()
         {
             CancelPlacement();
+            StopMarbleCoroutines();
             StopAllCoroutines();
+            _celebrationRoutine = null;
+            if (_goalLightObject != null) Destroy(_goalLightObject);
+            _goalLightObject = null;
             Time.timeScale = 1f;
             Physics.simulationMode = SimulationMode.FixedUpdate;
             AudioListener.pause = false;
@@ -475,6 +480,8 @@ namespace Pono.MarbleRun3D.Gameplay
             _celebrationRoutine = null;
             _goalCelebrationRaised = false;
             StopMarbleCoroutines();
+            if (_goalLightObject != null) Destroy(_goalLightObject);
+            _goalLightObject = null;
             HideAllMarbles();
             foreach (var view in _pieceViews.Values) view.SetRunMode(false);
             State = MarbleRunState.Editing;
@@ -1277,7 +1284,9 @@ namespace Pono.MarbleRun3D.Gameplay
         private IEnumerator GoalLightShow(PieceView goal)
         {
             if (goal == null) yield break;
+            if (_goalLightObject != null) Destroy(_goalLightObject);
             var lightObject = new GameObject("ゴールの ひかり");
+            _goalLightObject = lightObject;
             lightObject.transform.SetParent(goal.transform, false);
             lightObject.transform.localPosition = new Vector3(0f, 2.2f, 0f);
             var light = lightObject.AddComponent<Light>();
@@ -1285,7 +1294,9 @@ namespace Pono.MarbleRun3D.Gameplay
             light.color = new Color(1f, 0.65f, 0.25f);
             light.range = 9f;
             var start = Time.realtimeSinceStartup;
-            while (State == MarbleRunState.Celebrating && Time.realtimeSinceStartup - start < 8f)
+            while ((State == MarbleRunState.Celebrating
+                    || (State == MarbleRunState.Paused && _stateBeforePause == MarbleRunState.Celebrating))
+                   && Time.realtimeSinceStartup - start < 8f)
             {
                 light.intensity = 1.8f + Mathf.Sin((Time.realtimeSinceStartup - start) * 7f) * 0.65f;
                 goal.transform.localScale = Vector3.one * (1f + Mathf.Sin((Time.realtimeSinceStartup - start) * 5f) * 0.018f);
@@ -1293,6 +1304,8 @@ namespace Pono.MarbleRun3D.Gameplay
             }
             goal.transform.localScale = Vector3.one;
             Destroy(lightObject);
+            if (_goalLightObject == lightObject) _goalLightObject = null;
+            _celebrationRoutine = null;
         }
 
         private void AdvanceTutorialAfterPlace()
