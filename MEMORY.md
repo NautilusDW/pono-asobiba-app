@@ -51,7 +51,7 @@
 - **【設計変更 2026-05-12】 VOICEPEAK 全カテゴリ + Phase 1/2 横断ユニーク化案 (次バッチから採用)**: [memory/feature_voicepeak_cross_category_dedup.md](memory/feature_voicepeak_cross_category_dedup.md) — 同一単語 (= 「二」 「三」 「七」 等の数字単独や色名・体パーツ等) を全カテゴリ + Phase 1/2 で 1 wav に集約、 アクセント違いが必要なら後で個別追加。 number_sequence バッチ完了後 order_color 着手前に設計実装
 - **【恒久ルール 2026-05-12 大事故から導出】 questions.js の Q### 真値は QUIZLAND_CATEGORIES キー順、 ORDER-FULL.md の宣言順表記は信用しない**: [memory/feedback_questions_js_q_number_canonical_source.md](memory/feedback_questions_js_q_number_canonical_source.md) — Q### は CATEGORIES キー順 (= order_color Q1-24 / count_total Q25-48 / shape_name Q49-71 / **number_sequence Q72-83** / trivia Q84-109 / weather Q110-133 / opposite Q134-157 / body Q158-181) で決まる。 ORDER-FULL.md は宣言順表記で +1 以上ズレている可能性大、 必ず questions.js の CATEGORIES を真値として参照
 
-- **develop / develop-app 単一トランク統合計画 (2026-07-10 承認・実装未着手)**: [memory/project_single_trunk_migration.md](memory/project_single_trunk_migration.md) — 2 ブランチ並行開発を `develop-app` 単一トランク + 環境フラグ/tier 出し分けへ統合する計画。正本は [docs/branch-unification-plan.md](docs/branch-unification-plan.md)、設計決定 D1-D10、Phase 0(前提修理)〜5(本番反映) は全て未着手。`AGENTS.md` §1.1/§1.2 に interim ルール (D8) と「移行後の姿」を追記済み
+- **develop / develop-app 単一トランク統合 (2026-07-10 承認・同日 Phase 1-4 実装完了)**: [memory/project_single_trunk_migration.md](memory/project_single_trunk_migration.md) — 2 ブランチ並行開発を廃止し `develop-app` 単一トランク + APP_BUILD/tier 出し分けへ**統合済み**。develop-app push 1回で App/LP 両 staging に自動デプロイ (sw v2078 byte 一致検証済)、**develop は凍結 (0dacb4e4、push 禁止、BRANCH_FROZEN.md)**。Phase 5 (本番) のみ未実施。⚠️ webapp 本番 404 再発中 (error 1042、統合と無関係)。正本は [docs/branch-unification-plan.md](docs/branch-unification-plan.md)、現行ルールは `AGENTS.md` §1.1/§1.2 に反映済み
 - **batch:1210 パフォーマンス改善後のキャッシュ規約 (2026-07-10, sw v2073)**: [memory/project_perf_batch_1210_cache_conventions.md](memory/project_perf_batch_1210_cache_conventions.md) — HTML no-cache 化 / sw.js 画像・動画・音声 cache-first 化 (**同一URL上書き差し替え NG、要リネーム or ?v バンプ**) / cover-first フラッシュ防止原則 (OP前は不透明カバー→await→旧画面hide の順) / Date.now() バスター原則禁止 (editor 経路のみ可) / 新設定数 QUIZLAND_ASSET_VERSION・MAZE_DATA_REV / WebP 494枚変換 285MB→36MB (原本PNG温存、cleanup 別タスク) / **native/www ミラーは pre-batch のまま要再同期**
 
 - **コマ割アニメーションエディタ + manifest 駆動再生 (2026-05-13)**: [memory/feature_koma_wari_editor.md](memory/feature_koma_wari_editor.md) — `tools/koma-wari-editor.html` (= 単一 HTML、 IndexedDB プロジェクト管理 + Undo/Redo + ガイド線 + マスク + Ctrl+CV/Ctrl-drag + 調整ストック)、 `js/animation-player.js` で `assets/animations/<id>/` の manifest 駆動再生。 quizland `playStagePonoHooray` は新経路 + 旧 fallback で段階的移行
@@ -148,6 +148,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-07-10T14:31:19Z - batch:1213 単一トランク統合の実行 (Phase 1-4: 逆統合/wrangler対称化/CI両env化/フック更新/develop凍結/検証全PASS — develop-app 1 push で両 staging 自動デプロイ体制へ移行完了)
+- **タスク**: batch:1213 単一トランク統合の実行 (Phase 1-4: 逆統合/wrangler対称化/CI両env化/フック更新/develop凍結/検証全PASS — develop-app 1 push で両 staging 自動デプロイ体制へ移行完了)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 0
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {}
+- **サマリ**: 行動ログが空のため分析できません。
+
+
+### 2026-07-10T14:29:23Z - 単一トランク統合の実装完了を4ドキュメント (計画書/AGENTS.md/CLAUDE.md/memory) に反映 + Phase 0 再発 (error 1042) 記録
+- **タスク**: 単一トランク統合の実装完了を4ドキュメント (計画書/AGENTS.md/CLAUDE.md/memory) に反映 + Phase 0 再発 (error 1042) 記録
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 0
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {}
+- **サマリ**: 行動ログが空のため分析できません。
+
+
 ### 2026-07-10T14:06:31Z - 単一トランク統合 Phase 3: deploy.yml 2step化 + settings.local.json フック更新 + develop 凍結コミット作成 (worktree, push なし)
 - **タスク**: 単一トランク統合 Phase 3: deploy.yml 2step化 + settings.local.json フック更新 + develop 凍結コミット作成 (worktree, push なし)
 - **結果**: 成功
@@ -228,32 +254,6 @@ wrangler deploy                  # master 内容を production に
 
 ### 2026-07-10T10:33:47Z - batch:1210 develop sync 緊急修正: worker.js を develop ベース + batch 限定変更に作り直し (google-auth/savedata 混入除去、orphan game fragments 削除、wrangler build 復旧)
 - **タスク**: batch:1210 develop sync 緊急修正: worker.js を develop ベース + batch 限定変更に作り直し (google-auth/savedata 混入除去、orphan game fragments 削除、wrangler build 復旧)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 0
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {}
-- **サマリ**: 行動ログが空のため分析できません。
-
-
-### 2026-07-10T09:15:23Z - batch:1210b worker HTML 304 再検証実現 (CF エッジの ETag 削除を決定実験で確定 → ハッシュ符号化 Last-Modified + IMS 完全一致方式で live 304 成立、クロスレビュー3巡で4欠陥修正、テスト66/66)
-- **タスク**: batch:1210b worker HTML 304 再検証実現 (CF エッジの ETag 削除を決定実験で確定 → ハッシュ符号化 Last-Modified + IMS 完全一致方式で live 304 成立、クロスレビュー3巡で4欠陥修正、テスト66/66)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 0
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {}
-- **サマリ**: 行動ログが空のため分析できません。
-
-
-### 2026-07-10T04:20:41Z - 全体パフォーマンス監査+修正 batch:1210 (OP前ゲーム画面フラッシュ修正 quizland/maze/bento/oto/puzzle、play.html FOUCガード修正+隠しモーダル遅延化、SW/HTTPキャッシュ戦略修正 no-store→cache-first/no-cache、WebP一括変換494枚 285MB→36MB、sw v2073)
-- **タスク**: 全体パフォーマンス監査+修正 batch:1210 (OP前ゲーム画面フラッシュ修正 quizland/maze/bento/oto/puzzle、play.html FOUCガード修正+隠しモーダル遅延化、SW/HTTPキャッシュ戦略修正 no-store→cache-first/no-cache、WebP一括変換494枚 285MB→36MB、sw v2073)
 - **結果**: 成功
 - **理由**: N/A
 - **総アクション数**: 0

@@ -83,21 +83,22 @@ OK:
 | ブランチ | 環境 | URL | デプロイ条件 |
 | --- | --- | --- | --- |
 | `develop-app` | **App staging (アプリ版)** | `https://pono-asobiba-app-staging.ndw.workers.dev/` | push で自動 (`wrangler deploy --env staging-app`)。 APP_BUILD=1 注入。 本プロジェクトの app タスク (play.html / 各ゲーム / bento / puzzle / maze 等) の主要 staging |
-| `develop` | **LP staging (LP/本版)** | `https://pono-asobiba-staging.ndw.workers.dev/` | push で自動 (`wrangler deploy --env staging`)。 LP (index.html) 改修用。 app タスクでは原則使わない |
+| `develop-app` (同一 push) | **LP staging (LP/本版)** | `https://pono-asobiba-staging.ndw.workers.dev/` | 同じ push で続けて自動 (`wrangler deploy --env staging`、 2 step 直列)。 APP_BUILD 注入なし。 LP (index.html) の確認用。 **両 staging は常に同一コミット** |
+| `develop` | — **(凍結済み 2026-07-10)** | — | 凍結コミット `0dacb4e4` / `BRANCH_FROZEN.md`。 **push しない**。 deploy トリガからも削除済み |
 | `master` | **LP production** | `https://pono.kodama-no-mori.com/` | 明示マージ + 自動デプロイ (`wrangler deploy`)。 LP 本番 |
 | `master` (workers.dev) | **Web アプリ production** | `https://pono-asobiba-app.ndw.workers.dev/` | 上記同時。 workers.dev サブドメインを Web アプリ本番として常用 ([[project_url_architecture]] 参照) |
 
 **ルール:**
 - ユーザーに staging URL を提示する前に、 必ずどちらの env (App or LP) を指しているか確認する
-- 本プロジェクト (pono-asobiba-app) の app タスク (`play.html` 以降のゲーム、 bento, puzzle, maze, oto 等) は **App staging (`pono-asobiba-app-staging.ndw.workers.dev`)** が正解
-- LP (`index.html`) タスクのときだけ LP staging (`pono-asobiba-staging.ndw.workers.dev`)
-- system-reminder の `DEPLOY-FACT` 文字列にある URL は **LP staging を指している場合がある** が、 文脈で判断 (app タスクなら App staging に置き換えて回答)
-- 迷ったら memory `[[app_staging_environment]]` と `[[project_url_architecture]]` を再読
-- 確定の正本は `wrangler.toml` の `[env.staging]` (LP staging) と `[env.staging-app]` (App staging)、 および `.github/workflows/deploy.yml` の `command:` 三項分岐
+- 本プロジェクト (pono-asobiba-app) の app タスク (`play.html` 以降のゲーム、 bento, puzzle, maze, oto 等) の確認 URL は **App staging (`pono-asobiba-app-staging.ndw.workers.dev`)** が正解
+- LP (`index.html`) タスクの確認 URL は LP staging (`pono-asobiba-staging.ndw.workers.dev`)。 **ただし開発ブランチはどちらも `develop-app`** (単一トランク統合後、 LP 変更も develop-app に push すれば LP staging に自動反映)
+- system-reminder の `DEPLOY-FACT` 文字列にある URL は文脈で判断 (app タスクなら App staging の URL で回答)
+- 迷ったら memory `[[app_staging_environment]]` と `[[project_url_architecture]]` と `[[project_single_trunk_migration]]` を再読
+- 確定の正本は `wrangler.toml` の `[env.staging]` (LP staging) と `[env.staging-app]` (App staging)、 および `.github/workflows/deploy.yml` の if ガード付き 3 step (L51-76)
 
-### 【単一トランク統合 承認済み 2026-07-10】
+### 【単一トランク統合 実装済み 2026-07-10】
 
-`develop` / `develop-app` の 2 ブランチ並行開発を `develop-app` 単一トランクへ統合する計画がユーザー承認済み (実装は未着手)。詳細・設計決定・実装 Phase は正本 [AGENTS.md §1.1](./AGENTS.md) と [docs/branch-unification-plan.md](./docs/branch-unification-plan.md) を参照。**実装完了までは上記の現行 URL マトリクスがそのまま有効**であり、この注記だけで「統合済み」と誤解しないこと。
+`develop` / `develop-app` の 2 ブランチ並行開発は廃止され、 `develop-app` 単一トランク + APP_BUILD/tier 出し分けへの統合が**実装完了** (上記マトリクスは統合後の現行運用)。`develop` は凍結済みで push 禁止。本番反映 (Phase 5) のみ未実施でユーザー明示指示待ち。詳細・設計決定 D1-D10・Phase 実績は正本 [AGENTS.md §1.1](./AGENTS.md) と [docs/branch-unification-plan.md](./docs/branch-unification-plan.md) を参照。⚠️ webapp 本番 (`pono-asobiba-app.ndw.workers.dev`) は 404 再発中 (error 1042、統合と無関係) — 計画書 Phase 0 参照。
 
 ## Base Rules
 
@@ -178,6 +179,8 @@ logs/                  # Runtime artifacts (auto-generated, gitignored)
 - ログファイルは JSONL 形式で `logs/` に保存する。
 - MEMORY.md への書き込みはマーカー (`## Section Name`) で区切る。
 - CLAUDE.md のフレームワーク自動更新セクションは `## Auto-Extracted` または `## Current Difficulty` で始まる。
+
+
 
 
 
