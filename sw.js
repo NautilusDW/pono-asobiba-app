@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v1273: OtoTouch の共通コードへ、アプリ版限定の第3自由モード「いろおと」を同期。本版では APP_BUILD guard により非表示・非起動。play.html PAGE_CACHE_VERSION と同期。
 // v1272: Puzzle の設定メニューで「もりのアルバム」を「もどる」の下へ移し、160個のマス一覧を8人の進み具合カードへ簡略化。play.html PAGE_CACHE_VERSION と同期。
 // v1271: Maze の再crop動物画像をversioned URLで強制更新し、旗あげ5段レイアウトを短い横画面内へ収める。play.html PAGE_CACHE_VERSION と同期。
 // v1270: Maze のはしご取得後に入口/出口を同時点灯し、正解ボタン中央化、ステージ札の矢印回避、混入動物画像5種の再クロップを反映。play.html PAGE_CACHE_VERSION と同期。
@@ -62,7 +63,7 @@
 // v1211: Daily gacha lever tuning synced to develop: smaller centered lever, four hard notched turns, staged zoom, boom/drop, and random split-capsule variants.
 
 // v1210: play.html にアプリ版限定のデイリーシールガチャを同期。APP_BUILD/開発モード時だけ表示し、レバー操作からシール付与まで行う。assets/ui/gacha/ に alpha 済み素材を追加。
-const CACHE_VERSION = 1272; // v1272: puzzle album overview.
+const CACHE_VERSION = 1273; // v1273: app-only OtoTouch color fluid sync.
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 
 self.addEventListener('install', event => {
