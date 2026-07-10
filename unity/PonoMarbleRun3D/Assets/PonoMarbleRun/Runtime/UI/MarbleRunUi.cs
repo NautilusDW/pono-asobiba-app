@@ -350,8 +350,8 @@ namespace Pono.MarbleRun3D.UI
             var title = CreateText("SamplesTitle", _samplePanel.transform, "みほん コース", 43, FontStyle.Bold,
                 Wood, TextAnchor.MiddleCenter);
             SetRect(title.rectTransform, new Vector2(0.06f, 0.82f), new Vector2(0.94f, 0.96f));
-            var note = CreateText("SamplesNote", _samplePanel.transform, "えらぶと すぐに ためせるよ", 24,
-                FontStyle.Normal, new Color(0.18f, 0.45f, 0.52f), TextAnchor.MiddleCenter);
+            var note = CreateText("SamplesNote", _samplePanel.transform, "えらんで ころがして かえてみよう", 24,
+                FontStyle.Bold, Wood, TextAnchor.MiddleCenter);
             SetRect(note.rectTransform, new Vector2(0.06f, 0.70f), new Vector2(0.94f, 0.82f));
 
             var buttons = CreateRect("SampleButtons", _samplePanel.transform, new Vector2(0.08f, 0.24f), new Vector2(0.92f, 0.70f),

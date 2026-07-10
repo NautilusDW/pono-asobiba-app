@@ -120,6 +120,9 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
             var curve = _controller.Course.pieces.First(piece => piece.kind == MarblePieceKind.Curve);
             var originalTurns = curve.pose.quarterTurns;
             Assert.That(_controller.SelectForQa(curve.id), Is.True);
+            var rotatePulse = _controller.Ui.transform.Find("Canvas/SafeArea/EditActions/Rotate")
+                .GetComponent<UiPulse>();
+            Assert.That(rotatePulse.Active, Is.True);
             Assert.That(_controller.Ui.StatusText, Does.Contain("くるっで みぎに"));
             _controller.RotateSelection();
             Assert.That(_controller.Course.Find(curve.id).pose.quarterTurns,
@@ -127,6 +130,9 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
             Assert.That(_controller.Ui.StatusText, Does.Contain("みぎに まわしたよ"));
             _controller.Undo();
             Assert.That(_controller.Course.Find(curve.id).pose.quarterTurns, Is.EqualTo(originalTurns));
+            Assert.That(rotatePulse.Active, Is.False);
+            Assert.That(_controller.Ui.transform.Find("Canvas/SafeArea/BuilderTop/Selected").GetComponent<Text>().text,
+                Is.EqualTo("おいた ぶひんを おしてね"));
 
             var savedCount = _controller.PieceCount;
             _controller.SaveCourse();
@@ -134,6 +140,13 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
             Assert.That(_controller.PieceCount, Is.EqualTo(savedCount + 1));
             _controller.LoadCourse();
             Assert.That(_controller.PieceCount, Is.EqualTo(savedCount));
+            Assert.That(rotatePulse.Active, Is.False);
+
+            _controller.StartMode("sample3");
+            var slope = _controller.Course.pieces.First(piece => piece.kind == MarblePieceKind.Slope);
+            Assert.That(_controller.SelectForQa(slope.id), Is.True);
+            Assert.That(_controller.Ui.StatusText, Does.Contain("２かい"));
+            Assert.That(_controller.Ui.StatusText, Does.Contain("のぼりと くだり"));
         }
 
         [UnityTest]

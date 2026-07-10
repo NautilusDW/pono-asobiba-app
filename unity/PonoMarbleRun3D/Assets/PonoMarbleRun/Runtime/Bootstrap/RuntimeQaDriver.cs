@@ -101,6 +101,10 @@ namespace Pono.MarbleRun3D.Bootstrap
                     _controller.StartMode("sample2");
                     _controller.SelectForQa("sample2-c1");
                     break;
+                case "sample-slope":
+                    _controller.StartMode("sample3");
+                    _controller.SelectForQa("sample3-up");
+                    break;
                 case "edit":
                     BuildStraightCourse();
                     break;

@@ -292,6 +292,7 @@ namespace Pono.MarbleRun3D.Gameplay
             _history.Capture(_course);
             _course.pieces.Remove(piece);
             _selectedPieceId = null;
+            _ui.SetSelected(null);
             RebuildCourseViews();
             _audio.PlayClick();
             _ui.SetStatus("けしたよ ひとつ もどせるよ", false);
@@ -308,6 +309,7 @@ namespace Pono.MarbleRun3D.Gameplay
             }
             _course = restored;
             _selectedPieceId = null;
+            _ui.SetSelected(null);
             RebuildCourseViews();
             _audio.PlayReset();
             _ui.SetStatus("ひとつ もどしたよ", false);
@@ -327,6 +329,7 @@ namespace Pono.MarbleRun3D.Gameplay
             _history.Capture(_course);
             _course.pieces.RemoveAll(piece => !piece.locked);
             _selectedPieceId = null;
+            _ui.SetSelected(null);
             RebuildCourseViews();
             _audio.PlayReset();
             _ui.SetStatus("ぜんぶ けしたよ もどせるよ", false);
@@ -359,6 +362,7 @@ namespace Pono.MarbleRun3D.Gameplay
             _history.Capture(_course);
             _course = loaded;
             _selectedPieceId = null;
+            _ui.SetSelected(null);
             RebuildCourseViews();
             _audio.PlayReset();
             _ui.SetStatus("つづきから あそべるよ", false);
@@ -932,7 +936,9 @@ namespace Pono.MarbleRun3D.Gameplay
                 _ui.SetStatus(
                     record.locked
                         ? "この ぶひんは そのままだよ"
-                        : "したの くるっで みぎに まわせるよ",
+                        : record.kind == MarblePieceKind.Slope
+                            ? "くるっを ２かい おすと のぼりと くだりが かわるよ"
+                            : "したの くるっで みぎに まわせるよ",
                     record.locked);
             }
         }
