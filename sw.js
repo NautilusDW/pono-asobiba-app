@@ -1,6 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
-// v2122: スクショモード common/capture.js の出力低解像度 (全体ぼやけ) を根治 (batch:1244) — html2canvas@1.4.1 の背景描画が CSS px 中間 canvas 縮小で scale の supersampling を捨てる根因に対し、①object-fit img の padding 焼き込み (鮮明 img パス維持)、②CSS 背景→img 注入シム (Option X: トップ/おみせボタン等の単一 url() no-repeat 背景、native 比 9 割へ回復)、③撮影中限定の createPattern スケール補正 hook (Option Y2: repeat/多層背景の保険、shoot() の try/finally で install/uninstall + 再入ガード)、④play-gacha build の scale 動的化 (小窓でもラスタ ≥ preset)。実測: ボタン lapVar 239/270→878/1273。capture-mode OFF の本番挙動は不変。play.html PAGE_CACHE_VERSION と同期 (2122)。
+// v2123: スクショモード common/capture.js の出力低解像度 (全体ぼやけ) を根治 (batch:1244) — html2canvas@1.4.1 の背景描画が CSS px 中間 canvas 縮小で scale の supersampling を捨てる根因に対し、①object-fit img の padding 焼き込み (鮮明 img パス維持)、②CSS 背景→img 注入シム (Option X: トップ/おみせボタン等の単一 url() no-repeat 背景、native 比 9 割へ回復)、③撮影中限定の createPattern スケール補正 hook (Option Y2: repeat/多層背景の保険、shoot() の try/finally で install/uninstall + 再入ガード)、④play-gacha build の scale 動的化 (小窓でもラスタ ≥ preset)。実測: ボタン lapVar 239/270→878/1273。capture-mode OFF の本番挙動は不変。play.html PAGE_CACHE_VERSION と同期 (2123)。
 // v2122: おべんとうチュートリアルの「とりけす」1回制限を撤廃。移動・縮小・拡大・回転の履歴を初期顔へ戻るまで1段階ずつ戻し、両目・鼻・口が元の位置/大きさ/回転へ復元した時だけ「のりOK」へ進む。復元後は顔パーツ配置まで戻しすぎない。play.html PAGE_CACHE_VERSION と同期不要 (bento/index.html/テストのみ変更)。
 // v2121: Mazeステージ4の到達不能な板アイテムをstage/runtime/editor/画像から完全撤去。Basic Auth管理ダッシュボードへ全9ミニゲームの16:9デバッグ枠を追加し、same-origin管理iframeだけが通常のBGM一拍・ナレーション開始経路を進行保存なしで起動可能に。高速切替時は世代IDで旧じゃんけん/Simon timerを無効化。play.html PAGE_CACHE_VERSION と同期 (2121)。
 // v2120: Bento Kitchen のポテト+ひき肉を、中央小山→同じ水彩そぼろ粒が内側・中域・全体へ均等に広がる4段階へ再構成。局所maskを維持したままドラッグ中だけ食材面を小さく追従させ、中央に留まって急に全面へ飛ぶ見え方を解消。コロッケ成形は同一素材をX/Y連続warpし、完成時の中心・幅・高さを点線ゴールへ一致。play.html PAGE_CACHE_VERSION と同期不要 (bento/kitchen.html/画像/テストのみ変更)。
@@ -48,7 +48,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2122;
+const CACHE_VERSION = 2123;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。

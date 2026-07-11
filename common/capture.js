@@ -171,7 +171,7 @@
     });
   }
 
-  // ── v2122 batch:1244: Option Y2 ─ html2canvas 背景パターンの実効スケール補正 hook ──
+  // ── v2123 batch:1244: Option Y2 ─ html2canvas 背景パターンの実効スケール補正 hook ──
   // WHY (根因): Option X (下記 applyBackgroundImgShim) が拾わない repeat / 多層背景
   // も含め、html2canvas 1.4.1 の CanvasRenderer.resizeImage() は url() 背景画像を
   // 毎回 CSS px サイズの中間 canvas へ drawImage で縮小してから、その中間 canvas を
@@ -197,7 +197,7 @@
     if (!proto || typeof DOMMatrix !== 'function' || typeof proto.getTransform !== 'function') {
       return function uninstallPatternScaleHookNoop() {};
     }
-    // v2122 batch:1244 review fix (Medium, 多重 install 残留防止): shoot() 並行呼び出し
+    // v2123 batch:1244 review fix (Medium, 多重 install 残留防止): shoot() 並行呼び出し
     // で install1→install2→uninstall1→uninstall2 の順になると、install2 が退避した
     // origDraw/origPattern は実は install1 の wrapper であり、uninstall2 がそれを
     // prototype へ書き戻して恒久残留してしまう。 wrapper 関数へマーカープロパティ
@@ -311,7 +311,7 @@
       }
     }
 
-    // v2122 batch:1244: Option Y2 hook は build() (=各ゲームの html2canvas 呼び出し)
+    // v2123 batch:1244: Option Y2 hook は build() (=各ゲームの html2canvas 呼び出し)
     // が走る区間だけ集中管理する。 install は build() 直前、 uninstall は
     // Promise.finally() (= try/finally 相当) で build() の成功/失敗どちらでも
     // 必ず 1 回実行する。 compose()/download() の間は hook を外しておくことで、
@@ -573,11 +573,11 @@
   // html2canvas は「img は必ず intrinsic → box へ stretch 描画」するため、
   // src をこれに差し替えると stretch 描画が無害 (透明) になり、
   // 代わりに background-image (contain/cover は正実装) が本来の見た目を描く。
-  // v2122 batch:1244: この方式は cover / none / intrinsic 不明時の fallback に降格
+  // v2123 batch:1244: この方式は cover / none / intrinsic 不明時の fallback に降格
   // (contain / scale-down は padding 焼き込みの鮮明パスへ移行。 下記 onclone 参照)。
   var TRANSPARENT_PX_SRC = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
 
-  // ── v2122 batch:1244: Option X ─ 非 img 要素の CSS 背景 → <img> 昇格シム ──
+  // ── v2123 batch:1244: Option X ─ 非 img 要素の CSS 背景 → <img> 昇格シム ──
   // WHY (根因): 上記 object-fit シムは <img> (置換要素) を対象とするが、通常の
   // 非 img 要素の CSS background-image (url()) は html2canvas の
   // renderBackgroundImage / resizeImage() パスを通る。 このパスは背景画像を一旦
@@ -614,7 +614,7 @@
   }
 
   // computed background-size トークン → タイル寸法 {w,h}
-  // v2122 batch:1244 review fix (Low, パース不能値ガード): computed 値に calc(...)
+  // v2123 batch:1244 review fix (Low, パース不能値ガード): computed 値に calc(...)
   // を含む、または各トークンの parseFloat が NaN になる場合は null を返す。
   // 呼び出し元 (bgShimConvertOne) は null / NaN を検知してこの要素の X 変換を
   // 丸ごとスキップし、背景をそのまま残す (Y2 のパターンスケール hook 側の保険に
@@ -651,7 +651,7 @@
   }
 
   // computed background-position トークン → タイルのエリア内オフセット
-  // v2122 batch:1244 review fix (Low, パース不能値ガード): calc(...) や parseFloat
+  // v2123 batch:1244 review fix (Low, パース不能値ガード): calc(...) や parseFloat
   // が NaN になるトークンは NaN を返す (呼び出し元が isNaN で検知しスキップする)。
   function bgShimPosOffset(token, areaLen, tileLen) {
     var t = String(token == null ? '50%' : token).trim();
@@ -688,7 +688,7 @@
     if (!(area.w > 0 && area.h > 0 && clip.w > 0 && clip.h > 0)) return false;
 
     var tile = bgShimTileSize(cs.backgroundSize, area.w, area.h, nat.w, nat.h);
-    // v2122 batch:1244 review fix (Low, パース不能値ガード): tile が null
+    // v2123 batch:1244 review fix (Low, パース不能値ガード): tile が null
     // (calc()/NaN でパース不能) の場合はここで丸ごとスキップする。
     if (!tile || !(tile.w > 0 && tile.h > 0)) return false;
     var posTok = String(cs.backgroundPosition || '50% 50%').split(/\s+/);
@@ -727,7 +727,7 @@
       'width:' + tile.w + 'px;height:' + tile.h + 'px;';
     img.src = url;
     wrap.appendChild(img);
-    // v2122 batch:1244 review fix (Low, コメント訂正): probe で実証済みの形を
+    // v2123 batch:1244 review fix (Low, コメント訂正): probe で実証済みの形を
     // そのまま採用 (lastChild へ変更しない)。 z-index:-1 なので描画順は注入位置に
     // 依存しないが、firstChild 注入こそ el の子の :first-child/nth-child マッチを
     // clone 上でずらす副作用がある (旧コメントは逆の説明だった)。 現行 capture
@@ -735,7 +735,7 @@
     el.insertBefore(wrap, el.firstChild);
 
     // z-index:-1 ラッパーがこの要素の内側に留まるようスタッキングコンテキストへ昇格
-    // v2122 batch:1244 review fix (Medium, stacking 昇格の z-index 対策): static
+    // v2123 batch:1244 review fix (Medium, stacking 昇格の z-index 対策): static
     // の間は z-index 指定 (computed zIndex が 'auto' 以外の値) があっても不活性
     // (無視) だったが、relative へ昇格した瞬間にその値が突然有効化されてしまう。
     // 昇格したケースでは computed zIndex の値にかかわらず常に z-index を '0' に
@@ -760,7 +760,7 @@
       // 置換要素/void 要素は注入した子を保持できないので対象外
       // (<img> をここで除外するため、object-fit シムの背景 fallback 分岐とは
       //  対象集合が排他になり、同一要素を二重に書き換えない)
-      // v2122 batch:1244 review fix (Low, select/textarea 除外): select/textarea
+      // v2123 batch:1244 review fix (Low, select/textarea 除外): select/textarea
       // も子を描画しない置換系要素で、wrap の <img> は描かれないのに
       // backgroundImage='none' だけが実行されて背景が消える劣化があった。
       if (tag === 'img' || tag === 'canvas' || tag === 'video' || tag === 'input' ||
@@ -869,7 +869,7 @@
                   }
                 }
               }
-              // v2107 batch:1241 → v2122 batch:1244: html2canvas 1.4.1 は object-fit /
+              // v2107 batch:1241 → v2123 batch:1244: html2canvas 1.4.1 は object-fit /
               // object-position を未実装で、img (置換要素) を intrinsic 全域 → content
               // box の 9-arg drawImage で全面 stretch する (renderReplacedElement)。
               // batch:1241 は img を「透明 1px + 等価な background-image」へ変換して
@@ -878,7 +878,7 @@
               // 中間 canvas に縮小してから createPattern で塗るため、scale:2 の
               // supersampling が無効化され (1x 描画 → 2 倍引き伸ばし)、撮影出力が
               // 全体的にぼやける退行が出た (実測 Laplacian 分散 12 分の 1)。
-              // v2122: contain / scale-down は「padding 焼き込み」方式に変更。
+              // v2123: contain / scale-down は「padding 焼き込み」方式に変更。
               //   content box を object-fit の描画矩形まで padding で縮めると、
               //   html2canvas の置換要素パス (intrinsic → content box をラスタ解像度で
               //   1 回だけリサンプル) のまま AR / object-position が正しくなり鮮明。
@@ -970,7 +970,7 @@
           }
         } catch (e) {}
 
-        // v2122 batch:1244: Option X ─ 非 img 要素の CSS 背景 → <img> 昇格シム
+        // v2123 batch:1244: Option X ─ 非 img 要素の CSS 背景 → <img> 昇格シム
         // (定義は上記 applyBackgroundImgShim / TRANSPARENT_PX_SRC 近傍を参照)。
         // html2canvas 1.4.1 は onclone の戻り値が thenable なら await するため、
         // ここで Promise を return してよい。 万一シムが失敗しても撮影全体を

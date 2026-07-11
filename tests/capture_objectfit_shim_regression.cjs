@@ -1,6 +1,6 @@
 "use strict";
 
-// v2107 batch:1241 → v2122 batch:1244 regression:
+// v2107 batch:1241 → v2123 batch:1244 regression:
 //   1) Mac の Shift+Alt+C (e.key='Ç') でもスクショ UI が開くよう e.code==='KeyC' を併用
 //   2) html2canvas 1.4.1 の object-fit 未実装への onclone シム:
 //      - batch:1241 は全 object-fit img を「透明1px + background-image」化して AR を修正
