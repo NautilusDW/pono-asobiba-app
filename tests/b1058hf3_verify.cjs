@@ -76,18 +76,16 @@ async function main() {
 
   // Assert Step 5 bubble text doesn't contain ぽんと by inspection
   const noPontoInSource = await page.evaluate(() => {
-    // Check that Step 6 renderer's bubble text is the new version
-    // We do this by looking at tut2RenderNoriEditPhaseA / PhaseB function source
-    const fnA = tut2RenderNoriEditPhaseA.toString();
-    const fnB = tut2RenderNoriEditPhaseB.toString();
+    // Check the current single-step edit renderer (shrink → grow → rotate).
+    const fn = tut2RenderNoriEdit.toString();
     return {
-      phaseAHasPonto: fnA.indexOf('ぽんと') >= 0,
-      phaseBHasPonto: fnB.indexOf('ぽんと') >= 0,
-      phaseAHasNori: fnA.indexOf('のりを タップ') >= 0,
-      phaseBHasNoriOK: fnB.indexOf('のりOK') >= 0,
+      hasPonto: fn.indexOf('ぽんと') >= 0,
+      hasShrink: fn.indexOf('ちいさく') >= 0,
+      hasGrow: fn.indexOf('おおきく') >= 0,
+      hasRotate: fn.indexOf('まわす') >= 0,
     };
   });
-  results.asserts.push({ label: 'API: Step6 Phase A has no ぽんと and includes のりを タップ', ok: !noPontoInSource.phaseAHasPonto && noPontoInSource.phaseAHasNori, v: noPontoInSource });
+  results.asserts.push({ label: 'API: Step6 has no ぽんと and includes all 3 edit actions', ok: !noPontoInSource.hasPonto && noPontoInSource.hasShrink && noPontoInSource.hasGrow && noPontoInSource.hasRotate, v: noPontoInSource });
 
   // Assert phase reset bug fix is in place
   const renderStepSource = await page.evaluate(() => tutorialRenderStep.toString());
@@ -260,29 +258,39 @@ async function main() {
   const distStep5 = rectDistance(v5.bubbleRect, v5.fingerRect);
   results.asserts.push({ label: 'Step5 bubble ↔ finger distance >= 20', ok: distStep5 >= 20, dist: distStep5, bubble: v5.bubbleRect, finger: v5.fingerRect, bubbleText: v5.bubbleText });
 
-  // Advance from Step 5 to Step 6 by calling tutorialOnItemMoved directly (game hook)
+  // Advance from move to the guided edit sequence with an actual position change.
   await page.evaluate(() => {
     const list = (typeof placedItems !== 'undefined' && placedItems) ? placedItems : [];
     const first = list.find(i => i && i.type === 'decor');
-    if (first && typeof tutorialOnItemMoved === 'function') tutorialOnItemMoved(first.uid);
+    if (first && typeof tutorialOnItemMoved === 'function') {
+      first.x += 18;
+      tutorialOnItemMoved(first.uid);
+    }
   });
-  await page.waitForTimeout(1500);
+  await page.waitForTimeout(500);
 
-  // Step 6 nori-edit — capture Phase A and Phase B
-  const step6a = await page.evaluate(() => ({ step: tutorialState.step, phase: tutorialState.phase }));
+  // Step 6 nori-edit — shrink → grow → rotate are each real required actions.
+  const step6a = await page.evaluate(() => ({ step: tutorialState.step, stage: tutorialState.noriEditStage }));
   results.steps.push({ label: 'entered step6', step: step6a });
-  await page.waitForTimeout(800);
   const v6a = await getVisual(page);
   await page.screenshot({ path: snap('6_edit_phaseA'), fullPage: false });
-  results.asserts.push({ label: 'Step6 Phase A bubble no ぽんと', ok: !/ぽんと/.test(v6a.bubbleText), bubbleText: v6a.bubbleText });
-  // wait for Phase B (2500ms + slack)
-  await page.waitForTimeout(3200);
-  const v6b = await getVisual(page);
-  await page.screenshot({ path: snap('6_edit_phaseB'), fullPage: false });
-  const step6b = await page.evaluate(() => ({ step: tutorialState.step, phase: tutorialState.phase }));
-  results.steps.push({ label: 'step6 after Phase A timer', step: step6b });
-  results.asserts.push({ label: 'Step6 advances to Phase B (phase=try)', ok: step6b.phase === 'try' && step6b.step === 'tut2-nori-edit', v: step6b });
-  // Assert のりOK ring present + finger present
+  results.asserts.push({ label: 'Step6 starts with shrink', ok: step6a.step === 'tut2-nori-edit' && step6a.stage === 'shrink', v: step6a });
+  await page.evaluate(() => scaleSelectedDecorItem(1 / SIMPLE_DECOR_SCALE_STEP));
+  const afterShrink = await page.evaluate(() => ({ step: tutorialState.step, stage: tutorialState.noriEditStage }));
+  results.asserts.push({ label: 'shrink advances to grow', ok: afterShrink.step === 'tut2-nori-edit' && afterShrink.stage === 'grow', v: afterShrink });
+  await page.evaluate(() => scaleSelectedDecorItem(SIMPLE_DECOR_SCALE_STEP));
+  const afterGrow = await page.evaluate(() => ({ step: tutorialState.step, stage: tutorialState.noriEditStage }));
+  results.asserts.push({ label: 'grow advances to rotate', ok: afterGrow.step === 'tut2-nori-edit' && afterGrow.stage === 'rotate', v: afterGrow });
+  await page.evaluate(() => rotateSelectedItem(15));
+  await page.waitForFunction(() => tutorialState.step === 'tut2-nori-undo', null, { timeout: 9500 });
+  const afterRotate = await page.evaluate(() => tutorialState.step);
+  results.asserts.push({ label: 'rotate advances to undo', ok: afterRotate === 'tut2-nori-undo', step: afterRotate });
+  await page.evaluate(() => tutorialOnUndoPressed());
+  await page.waitForFunction(() => tutorialState.step === 'tut2-nori-ok', null, { timeout: 10000 });
+  const step6b = await page.evaluate(() => tutorialState.step);
+  results.asserts.push({ label: 'one undo advances to nori OK', ok: step6b === 'tut2-nori-ok', step: step6b });
+
+  // Assert のりOK ring present.
   const step6BubbleAndRing = await page.evaluate(() => {
     const bubbles = Array.from(document.querySelectorAll('.tut-bubble:not(.hidden)'));
     const bubble = bubbles[0];
@@ -296,7 +304,7 @@ async function main() {
       noriOkRect: noriOkBtn ? noriOkBtn.getBoundingClientRect().toJSON() : null,
     };
   });
-  results.asserts.push({ label: 'Step6 Phase B ring present', ok: step6BubbleAndRing.rings > 0, v: step6BubbleAndRing });
+  results.asserts.push({ label: 'nori OK ring present', ok: step6BubbleAndRing.rings === 1 && step6BubbleAndRing.hasNoriOkBtn, v: step6BubbleAndRing });
 
   // Click のりOK — makeSmallControlButton binds pointerdown, use dispatchEvent
   const clickedOK = await page.evaluate(() => {
