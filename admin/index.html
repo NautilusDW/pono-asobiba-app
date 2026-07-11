@@ -12088,7 +12088,10 @@ function bentoSlotDefaultPoint(box, def) {
     var grid = bentoSlotFoodBounds(box);
     var cols = [0.30, 0.70];
     // batch:1045: bento 本体 (getSimpleLeafDividerSpreadPoints) の rows と一致させる。
-    var rows = [0.25, 0.50, 0.75];
+    // batch:1058-hotfix5 (WP2): divider 用の rows を実おかず配置 (main-food の yMain=0.88 /
+    // yBottom=0.72 相当) に整合させた bento 本体側の修正と同期。 leaf は既存どおり
+    // [0.25,0.50,0.75] のまま (対象外)。
+    var rows = def.kind === 'divider' ? [0.44, 0.62, 0.80] : [0.25, 0.50, 0.75];
     if (def.kind === 'divider' && def.index === 6) {
       return bentoSlotClampPointForDef(box, def, {
         x: grid.x + grid.w * 0.50,

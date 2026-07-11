@@ -76,6 +76,11 @@
       ]
     },
     {
+      "source": "common/vendor/hanzi-writer.min.js",
+      "destination": "common/vendor/hanzi-writer.min.js",
+      "type": "file"
+    },
+    {
       "source": "js",
       "destination": "js",
       "type": "directory"
@@ -143,6 +148,16 @@
     {
       "source": "puzzle",
       "destination": "puzzle",
+      "type": "directory"
+    },
+    {
+      "source": "nazonazo-tunnel",
+      "destination": "nazonazo-tunnel",
+      "type": "directory"
+    },
+    {
+      "source": "writing-mori",
+      "destination": "writing-mori",
       "type": "directory"
     },
     {
@@ -347,6 +362,11 @@
       "type": "file"
     },
     {
+      "source": "assets/audio/こころにぽっぽっぽ.mp3",
+      "destination": "assets/audio/こころにぽっぽっぽ.mp3",
+      "type": "file"
+    },
+    {
       "source": "assets/images/BG_03.webp",
       "destination": "assets/images/BG_03.webp",
       "type": "file"
@@ -384,17 +404,12 @@
     {
       "source": "assets/images/mojikko",
       "destination": "assets/images/mojikko",
-      "type": "file-list",
-      "files": [
-        "writing/fx_sparkle_large.png",
-        "writing/icon_cookie.png",
-        "writing/icon_heart.png",
-        "writing/icon_heart_large.png",
-        "writing/icon_pencil.png",
-        "writing/icon_sparkle.png",
-        "writing/icon_star.png",
-        "writing/icon_star_large.png"
-      ]
+      "type": "directory"
+    },
+    {
+      "source": "assets/images/nazonazo-tunnel",
+      "destination": "assets/images/nazonazo-tunnel",
+      "type": "directory"
     },
     {
       "source": "assets/images/ocean",

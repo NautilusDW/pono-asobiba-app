@@ -4610,6 +4610,17 @@ body.bento-complete-open .bento-restart-btn { display: none !important; }
   filter: grayscale(0.4);
   cursor: not-allowed;
 }
+/* batch:1058-hotfix5 (WP2): したにしく picker tray 内の期待外品目 dim (レタス指定制)。
+   .free-palette-item.tut-locked と同じ視覚言語を流用。
+   base 規則 (.free-okazu-edit-picker--tray button.free-okazu-edit-choice) より詳細度を
+   上げるため同じ祖先スコープで書く (cursor 等が base に負けないように)。 */
+.free-okazu-edit-picker--tray button.free-okazu-edit-choice.tut-locked,
+.free-okazu-edit-picker--tray button.free-okazu-edit-choice.tut-locked:hover,
+.free-okazu-edit-picker--tray button.free-okazu-edit-choice.tut-locked:active {
+  opacity: 0.55;
+  filter: grayscale(0.4);
+  cursor: not-allowed;
+}
 /* batch:1058-hotfix4: パレット item のフォーカスマーカーは tutorialTrimPath (青破線矩形)
    に一本化する。 owner から「rectangle blue outline + circle blue ring の二重表示」 と
    指摘されたため、 focus-target 中は selected / guide-target の付加 outline / box-shadow
@@ -10305,7 +10316,8 @@ function getTutorialPaletteAllowance(def) {
     return def.type === 'leaf' ? ok : deny('はっぱを えらんでね');
   }
   if (step === 'tut2-leaf-pick' || step === 'tut2-leaf-place') {
-    return def.type === 'leaf' ? ok : deny('はっぱを しいてみよう');
+    // batch:1058-hotfix5 (WP2): はっぱ指定制 — レタス (leaf_lettuce) のみ許可。
+    return (def.type === 'leaf' && id === 'leaf_lettuce') ? ok : deny('レタスを タップしてね');
   }
   if (step === 'tut2-free-okazu') {
     return (def.type === 'food' || def.type === 'cup')
@@ -12383,7 +12395,17 @@ function getSimpleFoodSpreadPoints(box) {
 function getSimpleLeafDividerSpreadPoints(box, kind) {
   const b = getFoodPlacementBounds(box);
   const cols = [0.30, 0.70];
-  const rows = [0.25, 0.50, 0.75]; // batch:1044 R6: fallback グリッドを 0.25 刻みに整列
+  // batch:1058-hotfix5 (WP2): divider 専用フォールバック行を getSimpleFoodSpreadPoints の
+  // 実おかず配置 (xLeft/xRight ≈ 0.35/0.78, yBottom=0.72h [奥列], yMain=0.88h [手前列]) と
+  // 整合させる。 横しきり: おかず2行の間 y≈0.80 (=(0.72+0.88)/2) と おかずゾーン上端側
+  // y≈0.62 (yBottom から同間隔 0.18 引いた位置)。 3行目 y≈0.44 は同間隔で更に上へ延長。
+  // 縦しきり (x≈0.50) は kind==='divider' 時に push する 7個目のセンター点が担う (不変)。
+  // 検算 (box_rect_split の maskBounds 実寸 {x:407,y:43,w:270,h:353} = getFoodPlacementBounds
+  // の戻り値とほぼ一致): y=0.62 → 43+353*0.62≈263px / y=0.80 → 43+353*0.80≈325px /
+  // x(center)=0.50 → 407+270*0.50=542px。
+  // kind==='leaf' (直置きフォールバック格子) は既存どおり [0.25,0.50,0.75] のまま (対象外、
+  // getSimpleFixedSlots の kind==='leaf' 分岐は KV 設定を参照せず常にこの関数を使う)。
+  const rows = kind === 'divider' ? [0.44, 0.62, 0.80] : [0.25, 0.50, 0.75];
   const points = [];
   rows.forEach(row => {
     cols.forEach(col => {
@@ -15632,6 +15654,14 @@ function createSimpleOkazuEditPicker(item, leaf) {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'free-okazu-edit-choice' + (def.id === currentId ? ' active' : '');
+    // batch:1058-hotfix5 (WP2): チュートリアル (レタス指定制) が DOM から品目を特定できるように
+    // dataset を付与 (見た目・挙動に影響なし)。
+    b.dataset.itemId = def.id || '';
+    // batch:1058-hotfix5 (WP2): tut2-leaf-pick 中はレタス以外を dim する (Step4A/4B の
+    // 期待品目 dim パターンを流用)。
+    if (mode === 'leaf' && tutorialState && tutorialState.active && tutorialState.step === 'tut2-leaf-pick' && def.id !== 'leaf_lettuce') {
+      b.classList.add('tut-locked');
+    }
     const img = document.createElement('img');
     img.src = def.thumbnailImage || def.image || def.img || '';
     img.alt = '';
@@ -15658,8 +15688,18 @@ function createSimpleOkazuEditPicker(item, leaf) {
       ev.stopPropagation();
       // batch:1058 (bug4): leaf は 2 段階配置 (armed → stage tap) に統一。
       // 即敷きは brushItem 経路 (enterFreeBrushStampMode) と紛らわしいので廃止。
-      if (mode === 'leaf') armSimpleLeafForStageTap(def);
-      else replaceSimpleMainOkazuFromPicker(def);
+      if (mode === 'leaf') {
+        // batch:1058-hotfix5 (WP2): はっぱ指定制 — tut2-leaf-pick 中は leaf_lettuce 以外の
+        // タップを無視する。 getTutorialPaletteAllowance は simpleBentoMode 早期 return で
+        // 効かない (既知の別問題) ため、 ここで直接ガードする。
+        if (tutorialState && tutorialState.active && tutorialState.step === 'tut2-leaf-pick' && def.id !== 'leaf_lettuce') {
+          try { showToast('レタスを タップしてね'); } catch (_) {}
+          return;
+        }
+        armSimpleLeafForStageTap(def);
+      } else {
+        replaceSimpleMainOkazuFromPicker(def);
+      }
     });
     b.addEventListener('pointercancel', () => { press = null; }, { passive: true });
     wrap.appendChild(b);
@@ -18008,7 +18048,8 @@ function renderFreeLayoutControls() {
           const tutorialDirectLeaf = !!(tutorialState && tutorialState.active && String(tutorialState.step || '').indexOf('tut2-leaf') === 0);
           if (tutorialDirectLeaf) {
             simpleLeafApplyArmed = false;
-            setSpeech('すきな はっぱを えらんでね。');
+            // batch:1058-hotfix5 (WP2): はっぱ指定制 — 「すきな はっぱ」 文言を全廃。
+            setSpeech('みどりの レタスを タップ！');
           } else {
             // batch:1046: 「はっぱ」 タブを armed 起動口として復活。 メインおかずタップで leaf picker を直接開く。
             simpleLeafApplyArmed = true;
@@ -19034,9 +19075,14 @@ function stageComplete() {
       });
     }
     revealReactionWithDrama(reaction);
-    setTimeout(() => {
-      try { if (typeof tutorialStartCompleteGuidance === 'function') tutorialStartCompleteGuidance(); } catch (_) {}
-    }, 3000);
+    // batch:1058-hotfix5 (WP3): tut2 中はレガシー complete ガイダンス (basic_tut_14 等の
+    // 実 mp3 再生 + .tut-bubble 上書き) と tutorialOnStageComplete (tut2 dispatcher) が
+    // レースするため、 tut2 中はこのタイマー自体を作らない (非チュートリアル時は不変)。
+    if (!(tutorialState.active && String(tutorialState.step || '').indexOf('tut2') === 0)) {
+      setTimeout(() => {
+        try { if (typeof tutorialStartCompleteGuidance === 'function') tutorialStartCompleteGuidance(); } catch (_) {}
+      }, 3000);
+    }
   };
   if (currentRequester) {
     showBentoDelivery(currentRequester, finalEval, _showCompleteOverlay);
@@ -19910,6 +19956,9 @@ function tutorialSetCompleteGuideTimer(fn, delay) {
   return id;
 }
 function tutorialStartCompleteGuidance() {
+  // batch:1058-hotfix5 (WP3): tut2 は tutorialOnStageComplete (tut2 dispatcher) が完成画面の
+  // 案内を担当するため、 レガシー系統 (basic_tut_14 等) は tut2 中は起動しない。
+  if (tutorialState.active && String(tutorialState.step || '').indexOf('tut2') === 0) return;
   if (!tutorialState.active || tutorialState.completeGuideStarted) return;
   tutorialState.completeGuideStarted = true;
   tutorialClearCompleteGuideTimers();
@@ -19967,6 +20016,9 @@ function tutorialStartCompleteGuidance() {
   });
 }
 function tutorialOnCompleteDetailShown() {
+  // batch:1058-hotfix5 (WP3): tut2 中はレガシー complete ガイダンス系統を無効化 (tut2 dispatcher
+  // が案内を担当するため、 basic_tut_16/17/18 のバブル上書きレースを防ぐ)。
+  if (tutorialState.active && String(tutorialState.step || '').indexOf('tut2') === 0) return;
   if (!tutorialState.active || tutorialState.completeDetailShown) return;
   tutorialState.completeDetailShown = true;
   tutorialState.completeGuideToken++;
@@ -21343,13 +21395,19 @@ function tutorialShowBubbleBesideElement(html, targetEl, opts = {}) {
   tutorialState._bubbleAnchorFn = anchorFn;
 }
 function tutorialFindLeafPaletteChoice() {
+  // batch:1058-hotfix5 (WP2): はっぱ指定制 — tut2SeedLeafTarget() が開いた「したにしく」
+  // picker tray 内の leaf_lettuce ボタンを優先的に探す (対象おかず自動ロック経路)。
+  const trayChoices = Array.from(document.querySelectorAll('.free-okazu-edit-picker--tray .free-okazu-edit-choice'));
+  const lettuceInTray = trayChoices.find(btn => btn && btn.dataset && btn.dataset.itemId === 'leaf_lettuce');
+  if (lettuceInTray) return lettuceInTray;
+  // フォールバック (picker 未展開時): 通常パレットから探す。
   const choices = Array.from(document.querySelectorAll('.free-item-list .free-palette-item, .right-panel.free-layout-panel .free-palette-item'));
   const available = choices.filter(btn => {
     if (!btn || btn.disabled || btn.getAttribute('aria-disabled') === 'true') return false;
     if (btn.classList && (btn.classList.contains('tut-locked') || btn.classList.contains('tier-locked'))) return false;
     return btn.dataset && btn.dataset.type === 'leaf';
   });
-  return available.find(btn => btn.dataset && btn.dataset.itemId === 'leaf_cabbage_shreds')
+  return available.find(btn => btn.dataset && btn.dataset.itemId === 'leaf_lettuce')
       || available[0]
       || null;
 }
@@ -21377,6 +21435,15 @@ function tutorialMakeVirtualFreeTarget(point, size = 92) {
   };
 }
 function tutorialLeafFreePlaceTarget() {
+  // batch:1058-hotfix5 (WP2): はっぱ指定制 — leafTargetUid のおかず本体を優先的に指し示す
+  // (「このおかずの したに しく」 が視覚的にも伝わるように)。
+  try {
+    const uid = tutorialState && tutorialState.leafTargetUid;
+    if (uid) {
+      const el = tutorialFindPlacedElementForItem({ uid });
+      if (el) return el;
+    }
+  } catch (_) {}
   try {
     const b = getFoodPlacementBounds(getSelectedBentoBox());
     return tutorialMakeVirtualFreeTarget({
@@ -21859,11 +21926,12 @@ const TUT2_PONO_SPEECH = {
   'tut2-cup-place': 'すきな カップを ひとつ タップして おこう！',
   'tut2-cup-food': 'カップに いれる おかずを えらんでね。',
   'tut2-leaf-tab': 'はっぱを しくときは「はっぱ」を おしてね。',
-  'tut2-leaf-target': 'すきな はっぱを えらんでね。',
-  'tut2-leaf-pick': 'すきな はっぱを えらんでね。',
-  'tut2-leaf-place': 'おべんとうばこの すきな ばしょを タップしてね。',
+  // batch:1058-hotfix5 (WP2): はっぱ指定制 — 「すきな はっぱ」 文言を全廃。
+  'tut2-leaf-target': 'みどりの レタスを タップ！',
+  'tut2-leaf-pick': 'みどりの レタスを タップ！',
+  'tut2-leaf-place': 'メインおかずの したに レタスを しくよ！',
   'tut2-free-okazu': '4つに なるまで おかずを いれてね。',
-  'tut2-tabs-intro': 'しきりも つかえるよ！',
+  'tut2-tabs-intro': '「しきり」で なかを わけられるよ！',
   'tut2-okazu-ok': 'できあがったら「おかずOK」を おしてね。',
   'tut2-complete': 'わあ、すてきな おべんとうが できたね！',
   'tut2-favorite': 'ほしマークで おきにいりに とっておけるよ。',
@@ -22049,9 +22117,10 @@ function tut2RenderW2Request(step) {
   }
 }
 function tut2RenderBox(step) {
+  // batch:1058-hotfix5 (WP3): floating bubble 廃止、ポノ吹き出し (setSpeech) に一本化
+  // (TUT2_PONO_SPEECH['tut2-box'] と同文、 firstRender で既に反映済みだが明示しておく)。
+  tutorialHideBubble();
   tutorialApplyBoxLock();
-  tutorialShowBubble('きょうは これを つかうよ<br>「これでOK」を おそう', { topVh: '14' });
-  tutorialPositionBubbleBelowBentoBox();
   tutorialHideFinger();
   const shape = document.querySelector('.free-bento-shape') || document.getElementById('free-layout-stage');
   if (shape && !(tutorialState.trims || []).some(t => t.target === shape)) tutorialTrimPath(shape, { radius: 18 });
@@ -22298,10 +22367,11 @@ function tut2RenderOkazuMainPhaseB(step) {
   if (palette) tutorialAnimateTap(palette);
 }
 function tut2RenderCupBtn(step) {
-  tutorialShowBubble('「カップへ」を おしてね', { topVh: '18', side: 'left' });
+  // batch:1058-hotfix5 (WP3): floating bubble 廃止、ポノ吹き出し (setSpeech) に一本化
+  // (TUT2_PONO_SPEECH['tut2-cup-btn'] と同文)。
+  tutorialHideBubble();
   const btn = tutorialFindCupToBtn();
   if (btn) {
-    tutorialPositionBubbleBeside(btn, { gap: 12 });
     tutorialMarkTarget(btn, { radius: 22, outline: false });
     tutorialAnimateTap(btn);
   }
@@ -22387,7 +22457,9 @@ function tut2RenderLeafTab(step) {
     }
     try { renderFreeLayoutStage(); renderFreeLayoutControls(); } catch (_) {}
   }
-  tutorialShowBubble('はっぱを しくときは<br>「はっぱ」を おしてね', { topVh: '18', side: 'right' });
+  // batch:1058-hotfix5 (WP3): floating bubble 廃止、ポノ吹き出し (setSpeech) に一本化
+  // (TUT2_PONO_SPEECH['tut2-leaf-tab'] と同文)。
+  tutorialHideBubble();
   const leafTab = tutorialFindTabBtn('leaf') || document.querySelector('.free-tab[data-tab="leaf"]');
   if (!leafTab) {
     tutorialRetryRenderStep(step.id, 120);
@@ -22397,7 +22469,6 @@ function tut2RenderLeafTab(step) {
   tutorialMarkTarget(leafTab, { radius: 14, outline: false, color: '#1E7FD8', width: 5 });
   tutorialHidePointingHand();
   tutorialAnimateTap(leafTab);
-  tutorialPositionBubbleBeside(leafTab, { gap: 14 });
 }
 function tut2EnsureLeafTabView(opts = {}) {
   if (typeof freeLayoutTab === 'undefined') return;
@@ -22419,41 +22490,83 @@ function tut2EnsureLeafTabView(opts = {}) {
   } else if (tutorialState && tutorialState.active && String(tutorialState.step || '').indexOf('tut2-leaf') === 0) {
     simpleLeafApplyArmed = false;
   }
-  if (!shouldRender) return;
+  // batch:1058-hotfix5 (WP2): はっぱ指定制 — leafTargetUid のおかずを自動選択して
+  // 「したにしく」 picker を開いた状態にしておく (子供の「対象おかずをタップ」操作を省略)。
+  let seededChange = false;
+  if (tutorialState && tutorialState.active && String(tutorialState.step || '').indexOf('tut2-leaf') === 0) {
+    seededChange = tut2SeedLeafTarget();
+  }
+  if (!shouldRender && !seededChange) return;
   try {
     renderFreeLayoutStage();
     renderFreeLayoutControls();
   } catch (_) {}
 }
+// batch:1058-hotfix5 (WP2): leafTargetUid (無ければ最初の main) のおかずを自動選択し、
+// 「したにしく」 picker (simpleOkazuEditPickerMode='leaf') を開いた状態にする純セット関数。
+// これにより実プレイと同じ armed→stage-tap→placeSimpleLeafUnderOkazu 経路へ最小差分で
+// 合流でき、 子供に「対象おかずをタップ」 操作を求めずに済む (操作数削減)。
+// 戻り値: 状態を実際に変更したら true (呼び出し元の再 render 判定に使う)。
+function tut2SeedLeafTarget() {
+  if (typeof placedItems === 'undefined') return false;
+  let target = null;
+  const uid = tutorialState.leafTargetUid;
+  if (uid) target = placedItems.find(it => it && it.uid === uid && it.type === 'food' && !it.parentCupId) || null;
+  if (!target && typeof tutorialFindFirstMainOkazuItem === 'function') target = tutorialFindFirstMainOkazuItem();
+  if (!target) return false;
+  const changed = freeSelectedItemUid !== target.uid || simpleOkazuEditPickerMode !== 'leaf' || simpleOkazuEditPickerUid !== target.uid;
+  if (!changed) return false;
+  freeSelectedItemUid = target.uid;
+  simpleOkazuEditPickerUid = target.uid;
+  simpleOkazuEditPickerMode = 'leaf';
+  clearSimpleLeafArmedState();
+  return true;
+}
 function tut2RenderLeafTarget(step) {
+  // batch:1058-hotfix5 (WP2): floating bubble 廃止。 tut2-leaf-tab の bubble が
+  // 残っている可能性があるので明示的に隠す (dispatcher の firstRender では隠さない)。
+  tutorialHideBubble();
   tut2EnsureLeafTabView();
   setTimeout(() => {
     if (tutorialState.active && tutorialState.step === step.id) tutorialAdvance('tut2-leaf-pick');
   }, 0);
 }
 function tut2RenderLeafPick(step) {
+  // batch:1058-hotfix5 (WP2): tutorialOnTabSwitch は tut2-leaf-tab → tut2-leaf-pick を
+  // 直接遷移させる (tut2-leaf-target を経由しないケースがある) ので、 ここでも念のため
+  // 隠す (idempotent)。
+  tutorialHideBubble();
   tut2EnsureLeafTabView();
   if (freeBrushStampDef || simpleLeafArmedDef) {
     setTimeout(() => tutorialAdvance('tut2-leaf-place'), 0);
     return;
   }
   const choice = tutorialFindLeafPaletteChoice();
-  tutorialShowBubble('すきな はっぱを<br>えらんでね', { topVh: '18', side: 'right' });
+  // batch:1058-hotfix5 (WP2): はっぱ指定制 — 「すきな はっぱ」 文言を全廃し、floating
+  // bubble も廃止してポノ吹き出し (setSpeech) に一本化する。
+  try { setSpeech('みどりの レタスを タップ！'); } catch (_) {}
   if (!choice) {
     tutorialRetryRenderStep(step.id, 120);
     return;
   }
   tutorialClearTrims();
-  tutorialApplyPaletteFocus(btn => btn === choice);
+  // batch:1058-hotfix5 (WP2): したにしく picker tray 内のボタンは createSimpleOkazuEditPicker
+  // が生成時に dim 済み (tut-locked)。 通常パレット (フォールバック経路) の時だけ
+  // tutorialApplyPaletteFocus で dim する。
+  if (!(choice.closest && choice.closest('.free-okazu-edit-picker--tray'))) {
+    tutorialApplyPaletteFocus(btn => btn === choice);
+  }
   tutorialMarkTarget(choice, { radius: 16, outline: false, color: '#1E7FD8', width: 5 });
   tutorialAnimateTap(choice);
-  tutorialPositionBubbleBeside(choice, { gap: 18 });
 }
 function tut2RenderLeafPlace(step) {
   tut2EnsureLeafTabView();
   tutorialClearGhostLayer();
   const target = tutorialLeafFreePlaceTarget();
-  tutorialShowBubbleBesideElement('おべんとうばこの<br>すきな ばしょを<br>タップしてね', target, { side: 'left', gap: 28 });
+  // batch:1058-hotfix5 (WP2): 対象おかず名を動的に埋め込んだ setSpeech に一本化
+  // (floating bubble 廃止)。
+  const targetName = tutorialState.leafTargetName || 'メインおかず';
+  try { setSpeech(targetName + 'の したに レタスを しくよ！おべんとうばこを タップ！'); } catch (_) {}
   tutorialClearTrims();
   if (target) {
     tutorialMarkTarget(target, { radius: 22, outline: false, color: '#1E7FD8', width: 5 });
@@ -22474,12 +22587,13 @@ function tut2RenderFreeOkazu(step) {
   }
   tutorialClearTrims();
   tutorialHideFinger();
-  tutorialShowBubble('<span class="tut-emph-red">4つ</span>に なるまで<br>おかずを いれてね', { topVh: '18', side: 'right' });
+  // batch:1058-hotfix5 (WP3): floating bubble 廃止、ポノ吹き出し (setSpeech) に一本化
+  // (TUT2_PONO_SPEECH['tut2-free-okazu'] と同文)。
+  tutorialHideBubble();
   const cup = tutorialFindFirstCupPaletteEl();
   if (cup) {
     tutorialMarkTarget(cup, { radius: 16, outline: false, color: '#1E7FD8', width: 5 });
     tutorialAnimateTap(cup);
-    tutorialPositionBubbleBeside(cup, { gap: 12 });
   }
   if (foodCount >= 4) {
     if (!tutorialState._freeOkazuDoneTimer) {
@@ -22512,7 +22626,8 @@ function tut2RenderTabsIntro(step) {
     if (freeLayoutTab !== 'divider') freeLayoutTab = 'divider';
     try { renderFreeLayoutStage(); renderFreeLayoutControls(); } catch (_) {}
   }
-  tutorialShowBubble('しきりも つかえるよ！', { topVh: '18', side: 'right' });
+  // batch:1058-hotfix5 (WP2): floating bubble 廃止、ポノ吹き出し (setSpeech) に一本化。
+  try { setSpeech('「しきり」で なかを わけられるよ！'); } catch (_) {}
   const attachDivRing = (retriesLeft) => {
     if (!tutorialState.active || tutorialState.step !== 'tut2-tabs-intro') return;
     const divTab = tutorialFindTabBtn('divider') || document.querySelector('.free-tab[data-tab="divider"]');
@@ -22525,7 +22640,6 @@ function tut2RenderTabsIntro(step) {
       tutorialMarkTarget(divTab, { radius: 14, outline: false, color: '#1E7FD8', width: 5 });
     }
     tutorialShowPointingHand(divTab, { side: 'right' });
-    try { tutorialPositionBubbleBeside(divTab, { gap: 14 }); } catch (_) {}
   };
   attachDivRing(8);
   // Soft-chain to okazu-ok after voice ends + ~1.5s dwell. Use fallbackMs timer.
@@ -22539,10 +22653,11 @@ function tut2RenderTabsIntro(step) {
   }
 }
 function tut2RenderOkazuOk(step) {
-  tutorialShowBubble('できあがったら<br>「おかずOK」を おしてね', { topVh: '18', side: 'left' });
+  // batch:1058-hotfix5 (WP3): floating bubble 廃止、ポノ吹き出し (setSpeech) に一本化
+  // (TUT2_PONO_SPEECH['tut2-okazu-ok'] と同文)。
+  tutorialHideBubble();
   const btn = tutorialFindOkazuOkBtn();
   if (btn) {
-    tutorialPositionBubbleBeside(btn, { gap: 12 });
     tutorialMarkTarget(btn, { radius: 22, outline: false });
     tutorialAnimateTap(btn);
   }
@@ -23020,20 +23135,31 @@ function tutorialOnItemPlaced(item) {
         // 1 個目 → 「もう ひとつ」 促し。 batch:1058-hotfix4: owner の UX 方針転換に合わせ、
         //   ポノ吹き出し (setSpeech) を主 channel として更新し、 独立 callout は補助扱いに
         //   する (バブル濫立の抑制)。 Phase B の finger loop は継続。
+        // batch:1058-hotfix5 (WP3): setSpeech と同文の floating bubble (BesideElement) は
+        //   二重表示になるため削除し、 setSpeech 一本化する。
         const nextSample = tutorialGetNextMainOkazuSampleId();
         const nextName = nextSample === 'hamburger' ? 'ハンバーグ' : 'おかず';
-        const msg = 'もう ひとつ<br>' + nextName + 'を えらぼう！';
         const showSecondOkazuGuide = () => {
           if (!tutorialState.active || tutorialState.step !== 'tut2-okazu-main') return;
           try { setSpeech('もう ひとつ ' + nextName + 'を えらぼう！'); } catch (_) {}
           try { tutorialHidePonoCallout(); } catch (_) {}
-          try { tutorialShowBubbleBesideElement(msg, tutorialFindPlacedElementForItem(item), { side: 'right' }); } catch (_) {}
+          try { tutorialHideBubble(); } catch (_) {}
           try { tutorialFocusMainOkazuPalette(nextSample); } catch (_) {}
         };
         showSecondOkazuGuide();
         requestAnimationFrame(() => requestAnimationFrame(showSecondOkazuGuide));
         tutorialResetInactivity();
         return;
+      }
+    } catch (_) {}
+    // batch:1058-hotfix5 (WP2): はっぱ指定制 — 2個目メインおかず確定時点で「はっぱを
+    //   しく対象」 を固定記録する。 ハンバーグがあれば優先、無ければ最初の main。
+    try {
+      const mains = placedItems.filter(it => it && it.type === 'food' && !it.parentCupId && (it.okazuRole || getOkazuRole(it)) === 'main');
+      const target = mains.find(it => it.simpleSampleId === 'hamburger') || mains[0] || null;
+      if (target) {
+        tutorialState.leafTargetUid = target.uid;
+        tutorialState.leafTargetName = target.name || 'おかず';
       }
     } catch (_) {}
     tutorialAdvance('tut2-cup-btn');
@@ -23052,7 +23178,10 @@ function tutorialOnItemPlaced(item) {
     tutorialAdvance('tut2-free-okazu');
     return;
   }
-  if ((step === 'tut2-leaf-pick' || step === 'tut2-leaf-place') && item.type === 'leaf') {
+  // batch:1058-hotfix5 (WP2): はっぱ指定制 — この汎用フックは placeSimpleLeafUnderOkazu 経路
+  // 以外 (skipTutorialPlace 未指定) で置かれた leaf のためのセーフティネット。 レタス以外なら
+  // advance しない。
+  if ((step === 'tut2-leaf-pick' || step === 'tut2-leaf-place') && item.type === 'leaf' && item.id === 'leaf_lettuce') {
     try { setSpeech('はっぱを しいたね！'); } catch (_) {}
     try { tutorialStopVoiceQueueForImmediateAdvance(); } catch (_) {}
     tutorialAdvance('tut2-tabs-intro');
@@ -23084,19 +23213,30 @@ function tutorialOnLeafPickerOpened(target) {
 function tutorialOnLeafPaletteChosen(def) {
   if (!tutorialState.active || tutorialState.step !== 'tut2-leaf-pick') return;
   if (!def || def.type !== 'leaf') return;
+  // batch:1058-hotfix5 (WP2): はっぱ指定制 — レタス以外 (ブラシ系 leaf_cabbage_shreds 等) は
+  // advance しない。
+  if (def.id !== 'leaf_lettuce') return;
   tutorialStopVoiceQueueForImmediateAdvance();
   tutorialAdvance('tut2-leaf-place');
 }
 function tutorialOnLeafChoiceArmed(def, target) {
   if (!tutorialState.active || tutorialState.step !== 'tut2-leaf-pick') return;
   if (!def || !target) return;
+  // batch:1058-hotfix5 (WP2): はっぱ指定制 — レタス以外は advance しない (念のための
+  // 二重ガード。 実際の入力抑止は createSimpleOkazuEditPicker 側で行っている)。
+  if (def.id !== 'leaf_lettuce') return;
   tutorialStopVoiceQueueForImmediateAdvance();
   tutorialAdvance('tut2-leaf-place');
 }
 function tutorialOnLeafPlaced(leaf, target) {
   if (!tutorialState.active || tutorialState.step !== 'tut2-leaf-place') return;
   if (!leaf || !target) return;
-  try { setSpeech('はっぱを しいたね！'); } catch (_) {}
+  // batch:1058-hotfix5 (WP2): はっぱ指定制 — レタス以外、または対象外のおかずの下に
+  // 置かれた場合は advance しない (leafTargetUid 未設定時は uid 検証をスキップする安全策)。
+  if (leaf.id !== 'leaf_lettuce') return;
+  if (tutorialState.leafTargetUid && target.uid !== tutorialState.leafTargetUid) return;
+  const name = tutorialState.leafTargetName || target.name || 'おかず';
+  try { setSpeech('わあ、' + name + 'の したに レタスを しけたね！'); } catch (_) {}
   tutorialStopVoiceQueueForImmediateAdvance();
   tutorialAdvance('tut2-tabs-intro');
 }

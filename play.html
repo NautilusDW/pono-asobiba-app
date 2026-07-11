@@ -9956,10 +9956,9 @@
     // ----- Phase 1 launch ordering -----
     // 上段 5 本 (quizland → maze → oto → puzzle → bento) は無料公開済みの
     // 本実装ゲーム (tier:'free')。
-    // 準備中ゲームは GAMES 側では開発確認用に debugPlayable:true を残す。
-    // タイトルメニューに出す分は MENU_GAMES 作成時に表示専用コピーへ変換し、
-    // 一般ユーザーが押しても遷移しない「いま つくってるよ」カードとして扱う。
-    // quiz-sound などの非表示ゲームは TITLE_MENU_IDS に入れない限りタイトルに出ない。
+    // App build はこの 5 本に「なぞなぞトレイン / クッキング /
+    // もじっこファーム」を加える。LP free/book にはこの 3 本を表示しない。
+    // その他のゲームは、下のメニュー ID に入れない限りタイトルに出ない。
     const GAMES = [
       {
         id: 'quizland',
@@ -10111,7 +10110,7 @@
         peekPos: '50% 52%',
         tier: 'app'
       },
-      // ----- Coming-soon (debug-playable for devs) -----
+      // ----- App-build menu additions -----
       {
         id: 'writing-mori',
         title: 'もじっこファーム',
@@ -10123,10 +10122,9 @@
         thumb: 'assets/ui/thumb_wordmatch.webp',
         thumbPos: '45% 52%',
         peekPos: '50% 50%',
-        comingSoon: true,
-        debugPlayable: true,
         tier: 'app'
       },
+      // ----- Coming-soon (debug-playable for devs) -----
       {
         id: 'zukan',
         title: 'ポノのもりのずかん',
@@ -10142,22 +10140,20 @@
         debugPlayable: true,
         tier: 'app'
       },
-      // cooking (コトコト もりのキッチン) は iredori bento と対になる料理ゲーム。
-      // アセット (bg / thumb / panel) は launch 前に正規素材へ差し替え予定 (memory: feature_cooking_game)。
+      // cooking の実体は、既存のトントンキッチン。
+      // タイトルでは子どもがすぐ読める短い表示名「クッキング」にする。
       {
         id: 'cooking',
         title: 'コトコト もりのキッチン',
         subtitle: 'ぐつぐつ おりょうりタイム',
         icon: '🍳',
         bg: 'assets/ui/play_quizland_title_back.webp',
-        href: '#',
+        href: 'bento/kitchen.html',
         panel: 'assets/ui/menu_card_base_02.webp',
-        thumb: 'assets/ui/thumb_bento.webp',
+        thumb: 'assets/ui/thumb_kitchen.webp',
         thumbPos: '50% 50%',
         peekPos: '50% 50%',
-        tier: 'app',
-        comingSoon: true,
-        debugPlayable: true
+        tier: 'app'
       },
       // ----- Hidden from menu (filtered out by MENU_GAMES) -----
       {
@@ -10196,34 +10192,43 @@
     }
     GAMES.forEach((game) => { game.zone = computeGameZone(game); });
 
-    // v2048: 本を購入した人向けMVPの導線はMVP 5本を主役にしつつ、
-    // 文字っこファーム / クッキングだけは同じ木札で「いま つくってるよ」と
-    // 最下部に見せる。押しても遷移しない表示専用コピーとして MENU_GAMES へ入れる。
-    const TITLE_MENU_IDS = [
+    // LP free/book は公開済み 5 本だけ。App build は関連するゲームを
+    // 隣り合う位置へ追加し、すべて 1 タップで遊べる通常カードにする。
+    const WEB_TITLE_MENU_IDS = [
       'quizland', 'maze', 'oto', 'bento', 'puzzle'
     ];
-    const TITLE_COMING_SOON_IDS = [
-      'writing-mori', 'cooking'
+    const APP_TITLE_MENU_IDS = [
+      'quizland', 'nazonazo-tunnel', 'maze', 'oto',
+      'bento', 'cooking', 'puzzle', 'writing-mori'
     ];
 
-    const __rawMenuGames = TITLE_MENU_IDS
-      .map((id) => GAMES.find((game) => game.id === id))
-      .filter(Boolean);
+    const APP_TITLE_GAME_OVERRIDES = {
+      'nazonazo-tunnel': {
+        menuTitle: 'なぞなぞトレイン',
+        menuSubtitle: 'なぞなぞに こたえて しゅっぱつ',
+        titleDecorationId: 'generic'
+      },
+      cooking: {
+        menuTitle: 'クッキング',
+        menuSubtitle: 'きって まぜて おりょうりしよう',
+        titleDecorationId: 'generic'
+      }
+    };
 
-    const __comingSoonMenuGames = TITLE_COMING_SOON_IDS
+    const MENU_GAMES = (__isAppBuild ? APP_TITLE_MENU_IDS : WEB_TITLE_MENU_IDS)
       .map((id) => GAMES.find((game) => game.id === id))
       .filter(Boolean)
-      .map((game) => ({
-        ...game,
-        href: '#',
-        debugPlayable: false,
-        menuTitle: game.id === 'cooking' ? 'クッキング' : game.title,
-        menuSubtitle: '',
-        titleDecorationId: game.id === 'cooking' ? 'generic' : game.id
-      }));
-
-    // v2048: ゾーン見出しは出さず、通常カード5本 + 準備中カード2本だけを並べる。
-    const MENU_GAMES = __rawMenuGames.concat(__comingSoonMenuGames);
+      .map((game) => {
+        const override = APP_TITLE_GAME_OVERRIDES[game.id];
+        if (!__isAppBuild || !override) return game;
+        return {
+          ...game,
+          ...override,
+          comingSoon: false,
+          debugPlayable: false,
+          zone: 'app_only'
+        };
+      });
 
     let currentIdx = 0;
     let activeBgEl = 'A';
@@ -10354,7 +10359,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2082; // sw.js CACHE_VERSION と同期 (tier 名 'sub'→'app' 純リネーム)
+    const PAGE_CACHE_VERSION = 2082; // sw.js CACHE_VERSION と同期 (未ローンチ2ゲームに直URLロック追加)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
