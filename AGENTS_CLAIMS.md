@@ -58,6 +58,7 @@
 ## Active claims
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
+- 2026-07-11 21:10 - by Codex - [batch:1247-kitchen-outline-style] - bento/kitchen.html, assets/images/bento/cooking/{potato,korokke/prep}/**, tests/bento_kitchen_*, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - マッシュ段階の旧輪郭を外周優先で消してgapを防ぎ、ポテト+ひき肉mixを直前工程と同じ絵本調へ統一 [overlap: batch:1244-capture-output-resolution, batch:1246-menu-profile-scale, batch:1246-mojikko-onigiri (sw.jsのみ)]
 - 2026-07-11 19:50 - by Claude - [batch:1244-capture-output-resolution] - common/capture.js, play.html (capture build のみ必要時), tests/capture_*, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - スクショモードの出力がぼやける件を実測調査し、html2canvas ラスタ解像度/合成拡大率を改善 [overlap: batch:1242 (sw.js, 自分), batch:1243-nazonazo-picturebook-animals (sw.js)、push 直前に最新採番]
 
 

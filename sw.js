@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2117: Bento Kitchen のじゃがいも潰しで、進行判定領域に切られて残っていた旧画像の上輪郭を、ドラッグ履歴の相補maskで先に除去して同じ位置へ次画像を入れる局所置換へ修正。皿外へ出て戻るpointerは新しいstrokeとして再開し、皿を横切る帯も防止。ポテト+ひき肉の4段階と成形素材は、直前のマッシュと同じ皿・画角・大きさを固定したマットな水彩絵本調へ統一。play.html PAGE_CACHE_VERSION と同期不要 (bento/kitchen.html/画像/テストのみ変更)。
 // v2116: タイトルのめいろ説明文を、写真が出ない通常／選択だけの状態では他カードと同じ焦げ茶へ統一し、実際に写真peekが出るscroll overlay／fine-pointer hover・focusだけ明色へ反転。プロフィール主画面の姿を短画面68pxの3倍となる204pxへ拡大して名前・操作・進捗を右列へ整理し、「ゲームで あそぶと できたことが ふえるよ」を独立枠から進捗ボックス最上段へ統合。490×317を含む5画面幅で下部とじるまでscroll不要。play.html PAGE_CACHE_VERSION と同期 (2116)。
 // v2115: もじっこファームの「もじごはん」を、茶わんのおかゆ風アイコンから白い三角おむすび＋濃いのり＋星形具のピクセルアイコンへ差し替え。持ち物・食事ボタン・食事FX・文字報酬を新versioned画像へ統一し、食事時刻／回数／報酬／保存／文字判定ロジックは不変。play.html PAGE_CACHE_VERSION と同期不要 (writing-mori/画像/テストのみ変更)。
 // v2114: なぞなぞトレインのサル/フクロウを、目の規則だけ維持してポノ型の正面丸顔・淡色顔面パッチから分離。サルは横向きの長い四肢・枝を握る手足・S字尾、フクロウは横広の盾形頭・近い2眼・短い中央くちばし・翼/胸斑/足で種固有シルエットに差し替え、白目/眼輪なしの絵本調を維持。新versioned alpha WebPで旧cacheを回避。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/画像のみ変更)。
@@ -41,7 +42,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2116;
+const CACHE_VERSION = 2117;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。

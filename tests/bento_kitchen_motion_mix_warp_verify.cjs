@@ -48,6 +48,25 @@ assert.ok(mashStart >= 0 && mashEnd > mashStart, 'mash_potato config is missing'
 const mashSource = html.slice(mashStart, mashEnd);
 assert.match(mashSource, /coverageBrushScale:\s*0\.58,[\s\S]*?coverageGrid:\s*\{ cols: 36, rows: 22 \}/);
 assert.match(mashSource, /coverageThreshold:\s*0\.98,[\s\S]*?coverageMinZoneRatio:\s*0\.95/);
+const mashRedrawStart = html.indexOf('function redrawPotatoCoverageOverlay(config)');
+const mashRedrawEnd = html.indexOf('function schedulePotatoCoverageOverlay(config)', mashRedrawStart);
+assert.ok(mashRedrawStart >= 0 && mashRedrawEnd > mashRedrawStart, 'mash replacement compositor is missing');
+const mashRedrawSource = html.slice(mashRedrawStart, mashRedrawEnd);
+assert.match(mashRedrawSource, /getKneadWorkCanvas\('potatoRevealCurrent', canvas\)/);
+assert.match(mashRedrawSource, /getKneadWorkCanvas\('potatoRevealNext', canvas\)/);
+assert.match(mashRedrawSource, /globalCompositeOperation = 'destination-out'/);
+assert.match(mashRedrawSource, /globalCompositeOperation = 'destination-in'/);
+assert.match(mashRedrawSource, /globalCompositeOperation = 'lighter'/);
+assert.doesNotMatch(mashRedrawSource, /coverageZones|addPotatoCoverageZonesPath/, 'render mask must not be clipped to accounting zones');
+assert.doesNotMatch(html, /function addPotatoCoverageZonesPath\(/, 'accounting zones must not be reused as a visual clip');
+assert.match(html, /kneadRuntime\.potatoRevealRaf = requestAnimationFrame/);
+assert.match(html, /cancelAnimationFrame\(kneadRuntime\.potatoRevealRaf\)/);
+const pointerMoveStart = html.indexOf('function onPrepPointerMove(evt)');
+const pointerMoveEnd = html.indexOf('function onPrepPointerUp(evt)', pointerMoveStart);
+assert.ok(pointerMoveStart >= 0 && pointerMoveEnd > pointerMoveStart, 'prep pointer move handler is missing');
+const pointerMoveSource = html.slice(pointerMoveStart, pointerMoveEnd);
+assert.match(pointerMoveSource, /if \(potatoMash && !pointerInside\)[\s\S]*?prepMashPointerInside = false;[\s\S]*?return;/);
+assert.match(pointerMoveSource, /if \(potatoMash && !state\.prepMashPointerInside\)[\s\S]*?prepMashPointerInside = true;[\s\S]*?return;/);
 
 const mixStart = html.indexOf('mix_mince_potato: {');
 const mixEnd = html.indexOf('mix_mince_onion: {', mixStart);
@@ -60,10 +79,13 @@ assert.match(mixSource, /coverageThreshold:\s*0\.96/);
 assert.match(mixSource, /coverageMinZoneRatio:\s*0\.9/);
 assert.match(mixSource, /coverageBrushRadius:\s*\{ rx: 0\.075, ry: 0\.105 \}/);
 assert.match(mixSource, /coverageGrid:\s*\{ cols: 30, rows: 18 \}/);
-assert.match(mixSource, /coverageAspect:\s*720 \/ 497/);
-assert.equal((mixSource.match(/foodSrc:/g) || []).length, 4, 'mix must have four food-only states');
+assert.match(mixSource, /baseSrc:\s*'\.\.\/assets\/images\/bento\/cooking\/potato\/potato_mash_003\.png'/);
+assert.match(mixSource, /coverageAspect:\s*380 \/ 220/);
+assert.equal((mixSource.match(/foodSrc:/g) || []).length, 4, 'mix must have four aligned storybook states');
+assert.equal((mixSource.match(/storybook_v1247\/korokke_mix_storybook_state[0-3]\.png/g) || []).length, 8);
 assert.doesNotMatch(mixSource, /revealNextOnly|solidRevealBrush|commitRevealStage/);
 assert.doesNotMatch(mixSource, /mix_mince_potato_00[123]\.png/);
+assert.doesNotMatch(mixSource, /20260711_(?:1231|1237)/, 'photorealistic legacy mix assets must not be wired');
 assert.match(html, /function drawContinuousKneadBlend\(/);
 assert.match(html, /function drawLocalKneadCoverageReveal\(/);
 assert.match(html, /globalCompositeOperation = 'destination-out'/);
@@ -87,22 +109,26 @@ assert.doesNotMatch(shapeSource, /fixedShapeFrames/);
 const shapeFoodRefs = [...shapeSource.matchAll(/shapeMeatSrc:\s*'([^']+)'/g)].map((match) => match[1]);
 assert.equal(shapeFoodRefs.length, 3);
 assert.equal(new Set(shapeFoodRefs).size, 1, 'all shape stages must warp the exact same food layer');
+assert.match(shapeFoodRefs[0], /storybook_v1247\/korokke_shape_storybook_food\.png$/);
 assert.match(html, /--shape-meat-scale-y', \(1 - morph \* 0\.38\)/);
 assert.match(html, /--shape-clip-rx', \(50 - morph \* 12\)/);
 assert.match(html, /function updateContinuousShapeWarpImpulse\(/);
 
-const assetRefs = [...new Set([...html.matchAll(/'([^']+20260711_(?:1231|1237)\.png)'/g)].map((match) => match[1]))];
-assert.ok(assetRefs.length >= 10, 'expected versioned mix and warp assets');
-for (const src of assetRefs) {
+const storybookMixRefs = [...new Set([...mixSource.matchAll(/'([^']+storybook_v1247\/korokke_mix_storybook_state[0-3]\.png)'/g)].map((match) => match[1]))];
+assert.equal(storybookMixRefs.length, 4, 'four storybook mix states must be wired');
+for (const src of storybookMixRefs) {
   const file = path.resolve(path.dirname(htmlPath), src);
   assert.ok(fs.existsSync(file), `missing asset: ${src}`);
   const stat = fs.statSync(file);
   assert.ok(stat.size > 0 && stat.size < 3 * 1024 * 1024, `invalid asset size: ${src}`);
   const png = fs.readFileSync(file);
   assert.equal(png.toString('ascii', 1, 4), 'PNG', `not a PNG: ${src}`);
-  assert.equal(png.readUInt32BE(16), 720, `unexpected width: ${src}`);
-  assert.equal(png.readUInt32BE(20), 497, `unexpected height: ${src}`);
+  assert.equal(png.readUInt32BE(16), 380, `unexpected width: ${src}`);
+  assert.equal(png.readUInt32BE(20), 220, `unexpected height: ${src}`);
 }
+const storybookShapeFile = path.resolve(path.dirname(htmlPath), shapeFoodRefs[0]);
+assert.ok(fs.existsSync(storybookShapeFile), 'storybook shape food must exist');
+assert.ok(fs.statSync(storybookShapeFile).size > 0 && fs.statSync(storybookShapeFile).size < 3 * 1024 * 1024);
 
 function paeth(a, b, c) {
   const p = a + b - c;
@@ -152,48 +178,91 @@ function decodeRgbaPng(file) {
   return { width, height, data };
 }
 
-const centeredFoodSrc = [...mixSource.matchAll(/foodSrc:\s*'([^']+1237\.png)'/g)].map((match) => match[1])[0];
-const centeredCompositeSrc = [...mixSource.matchAll(/src:\s*'([^']+1237\.png)'/g)].map((match) => match[1])[0];
-assert.ok(centeredFoodSrc && centeredCompositeSrc, 'centered 1237 mix assets must be wired into step one');
-const centeredFood = decodeRgbaPng(path.resolve(path.dirname(htmlPath), centeredFoodSrc));
-const centeredComposite = decodeRgbaPng(path.resolve(path.dirname(htmlPath), centeredCompositeSrc));
-const plate = decodeRgbaPng(path.join(root, 'assets/images/bento/cooking/prep_plate.png'));
-let brownCount = 0;
-let brownX = 0;
-let brownLeft = 0;
-let greenFringe = 0;
-let edgeAlpha = 0;
-let outsidePlateDiff = 0;
-for (let y = 0; y < centeredFood.height; y++) {
-  for (let x = 0; x < centeredFood.width; x++) {
-    const index = (y * centeredFood.width + x) * 4;
-    const r = centeredFood.data[index];
-    const g = centeredFood.data[index + 1];
-    const b = centeredFood.data[index + 2];
-    const a = centeredFood.data[index + 3];
-    if (a > 96 && r < 205 && g < 165 && b < 135 && r > g * 1.08) {
-      brownCount++;
-      brownX += x;
-      if (x < centeredFood.width / 2) brownLeft++;
-    }
-    if (a > 0 && g > r * 1.22 && g > b * 1.22) greenFringe++;
-    if ((x === 0 || y === 0 || x === centeredFood.width - 1 || y === centeredFood.height - 1) && a) edgeAlpha++;
-    if (!a) {
-      for (let channel = 0; channel < 4; channel++) {
-        if (centeredComposite.data[index + channel] !== plate.data[index + channel]) {
-          outsidePlateDiff++;
-          break;
-        }
+const mashBase = decodeRgbaPng(path.join(root, 'assets/images/bento/cooking/potato/potato_mash_003.png'));
+const storybookMixImages = storybookMixRefs
+  .sort((a, b) => Number(a.match(/state(\d)/)[1]) - Number(b.match(/state(\d)/)[1]))
+  .map((src) => decodeRgbaPng(path.resolve(path.dirname(htmlPath), src)));
+const changedCounts = [];
+const spreadAreas = [];
+storybookMixImages.forEach((image, stage) => {
+  assert.equal(image.width, mashBase.width);
+  assert.equal(image.height, mashBase.height);
+  let changed = 0;
+  let changedX = 0;
+  let changedLeft = 0;
+  let greenFringe = 0;
+  let edgeAlpha = 0;
+  let alphaMismatch = 0;
+  let changeOutsideFood = 0;
+  let minChangedX = image.width;
+  let minChangedY = image.height;
+  let maxChangedX = -1;
+  let maxChangedY = -1;
+  for (let y = 0; y < image.height; y++) {
+    for (let x = 0; x < image.width; x++) {
+      const index = (y * image.width + x) * 4;
+      const r = image.data[index];
+      const g = image.data[index + 1];
+      const b = image.data[index + 2];
+      const a = image.data[index + 3];
+      const delta = Math.abs(r - mashBase.data[index])
+        + Math.abs(g - mashBase.data[index + 1])
+        + Math.abs(b - mashBase.data[index + 2]);
+      if (a !== mashBase.data[index + 3]) alphaMismatch++;
+      if (delta > 18) {
+        changed++;
+        changedX += x;
+        if (x < image.width / 2) changedLeft++;
+        minChangedX = Math.min(minChangedX, x);
+        minChangedY = Math.min(minChangedY, y);
+        maxChangedX = Math.max(maxChangedX, x);
+        maxChangedY = Math.max(maxChangedY, y);
+        const foodDistance = ((x / image.width - 0.5) / 0.43) ** 2
+          + ((y / image.height - 0.52) / 0.34) ** 2;
+        if (foodDistance > 1.12) changeOutsideFood++;
       }
+      const baseR = mashBase.data[index];
+      const baseG = mashBase.data[index + 1];
+      const baseB = mashBase.data[index + 2];
+      const baseA = mashBase.data[index + 3];
+      const isGreen = a > 0 && g > r * 1.22 && g > b * 1.22;
+      const baseIsGreen = baseA > 0 && baseG > baseR * 1.22 && baseG > baseB * 1.22;
+      if (isGreen && !baseIsGreen) greenFringe++;
+      if ((x === 0 || y === 0 || x === image.width - 1 || y === image.height - 1) && a) edgeAlpha++;
     }
   }
+  assert.equal(alphaMismatch, 0, `state ${stage} must preserve the exact mash/plate alpha silhouette`);
+  assert.equal(changeOutsideFood, 0, `state ${stage} must not repaint the shared plate`);
+  assert.ok(changed > 250, `state ${stage} mince must remain visible`);
+  assert.ok(Math.abs(changedX / changed - image.width / 2) <= image.width * 0.035, `state ${stage} mince centroid must stay centered`);
+  assert.ok(changedLeft / changed >= 0.4 && changedLeft / changed <= 0.6, `state ${stage} mince must be balanced left/right`);
+  assert.equal(greenFringe, 0, `state ${stage} must not add green fringe beyond the approved mash base`);
+  assert.equal(edgeAlpha, 0, `state ${stage} must keep transparent outer edges`);
+  changedCounts.push(changed);
+  spreadAreas.push((maxChangedX - minChangedX + 1) * (maxChangedY - minChangedY + 1));
+});
+assert.ok(spreadAreas[1] > spreadAreas[0] * 1.15, 'early mix must spread beyond the centered pile');
+assert.ok(spreadAreas[2] > spreadAreas[1] * 1.4, 'middle mix must expand across the potato');
+assert.ok(spreadAreas[3] >= spreadAreas[2] * 0.95, 'final mix must remain broadly distributed');
+assert.ok(changedCounts[3] > 700, 'final mix must retain clearly visible meat flecks');
+
+const storybookShape = decodeRgbaPng(storybookShapeFile);
+assert.ok(storybookShape.width >= 1200 && storybookShape.height >= 700, 'shape food must retain a high-resolution warp source');
+let shapeGreenFringe = 0;
+let shapeEdgeAlpha = 0;
+for (let y = 0; y < storybookShape.height; y++) {
+  for (let x = 0; x < storybookShape.width; x++) {
+    const index = (y * storybookShape.width + x) * 4;
+    const r = storybookShape.data[index];
+    const g = storybookShape.data[index + 1];
+    const b = storybookShape.data[index + 2];
+    const a = storybookShape.data[index + 3];
+    if (a > 0 && g > r * 1.22 && g > b * 1.22) shapeGreenFringe++;
+    if ((x === 0 || y === 0 || x === storybookShape.width - 1 || y === storybookShape.height - 1) && a) shapeEdgeAlpha++;
+  }
 }
-assert.ok(brownCount > 3000, 'centered mince must remain clearly visible');
-assert.ok(Math.abs(brownX / brownCount - 360) <= 12, 'mince centroid must stay near the plate center');
-assert.ok(brownLeft / brownCount >= 0.4 && brownLeft / brownCount <= 0.6, 'mince must be balanced left/right');
-assert.ok(greenFringe <= 16, `too many green fringe pixels: ${greenFringe}`);
-assert.equal(edgeAlpha, 0, 'food-only image must keep transparent outer edges');
-assert.equal(outsidePlateDiff, 0, 'composite must preserve the static plate outside the food layer');
+assert.equal(shapeGreenFringe, 0, 'shape food must not retain green fringe');
+assert.equal(shapeEdgeAlpha, 0, 'shape food must keep transparent outer edges');
 
 const zones = [
   { cx: 0.32, cy: 0.4, rx: 0.17, ry: 0.17 },
@@ -352,6 +421,25 @@ const mashZones = [
     { cx: 0.64, cy: 0.62, rx: 0.2, ry: 0.18 },
   ],
 ];
+const upperLeftContour = { u: 0.25, v: 0.22 };
+const upperLeftInsideAccountingZone = mashZones[0].some((zone) => (
+  ((upperLeftContour.u - zone.cx) / zone.rx) ** 2
+  + ((upperLeftContour.v - zone.cy) / zone.ry) ** 2
+) <= 1);
+assert.equal(upperLeftInsideAccountingZone, false, 'regression point must stay outside accounting zones');
+assert.ok(
+  segmentDistance(
+    upperLeftContour.u,
+    upperLeftContour.v,
+    9.5 / 36,
+    6.5 / 22,
+    9.5 / 36,
+    6.5 / 22,
+    0.07534,
+    0.08855,
+  ) < 1,
+  'upper-left old contour must remain reachable by the visual masher brush',
+);
 for (let stage = 0; stage < mashZones.length; stage++) {
   const coverage = makeCoverage(mashZones[stage], 36, 22);
   const first = nextPoint(coverage);
