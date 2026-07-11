@@ -1673,8 +1673,10 @@ const GUIDE_SVG_BASE_PATH = '../assets/images/mojikko/letters/kana_svg_outlines/
 const STROKE_FILL_COMPLETE_RATIO = 0.38;
 const QUIZ_LENIENCY = 1.8;
 const ATTEMPT_CLEAR_DELAY_MS = 520;
-const STROKE_END_PROGRESS_REQUIRED = 0.88;
+const STROKE_END_PROGRESS_REQUIRED = 0.72;
 const STROKE_END_DISTANCE_TOLERANCE = 24;
+const PENDING_CONTINUATION_MIN_DISTANCE = 45;
+const PENDING_CONTINUATION_MIN_FILL_RATIO = 0.45;
 const CARE_STATE_KEY = 'mojikkoFarmCareStateV1';
 const PENDING_REWARD_KEY = 'mojikkoFarmPendingWritingReward';
 let currentIndex = 0;
@@ -2791,7 +2793,7 @@ function getWriterQuizOptions(startStrokeNum) {
     onMistake: onMistake,
     onComplete: onWriterComplete,
     leniency: QUIZ_LENIENCY,
-    showHintAfterMisses: 3,
+    showHintAfterMisses: 2,
     highlightOnComplete: true,
     highlightCompleteColor: 'rgba(255, 214, 90, 0.95)'
   };
@@ -3011,6 +3013,17 @@ function hasAttemptReachedStrokeEnd(strokeIndex) {
   return activeAttemptMaxProgress >= STROKE_END_PROGRESS_REQUIRED;
 }
 
+function canAcceptPendingContinuation(strokeIndex) {
+  return !!(
+    pendingCorrectStroke &&
+    pendingCorrectStroke.strokeNum === strokeIndex &&
+    activeAttemptPainted &&
+    trailDistance >= PENDING_CONTINUATION_MIN_DISTANCE &&
+    getStrokeFilledRatio(strokeIndex) >= PENDING_CONTINUATION_MIN_FILL_RATIO &&
+    hasAttemptReachedStrokeEnd(strokeIndex)
+  );
+}
+
 function updateAttemptProgressForPoint(point) {
   if (complete || !point || activeAttemptStroke < 0) return;
   const item = getCurrentCharacter();
@@ -3021,12 +3034,8 @@ function updateAttemptProgressForPoint(point) {
     getStrokeProgressAtBoardPoint(strokeIndex, point)
   );
 
-  if (
-    pendingCorrectStroke &&
-    pendingCorrectStroke.strokeNum === strokeIndex &&
-    hasAttemptReachedStrokeEnd(strokeIndex)
-  ) {
-    acceptCorrectStroke(pendingCorrectStroke.data);
+  if (canAcceptPendingContinuation(strokeIndex)) {
+    acceptCorrectStroke(pendingCorrectStroke.data, true);
   }
 }
 
@@ -3157,7 +3166,15 @@ function onTrailPointerDown(event) {
   trailAttemptId += 1;
   const item = getCurrentCharacter();
   const strokeIndex = Math.min(currentStrokeIndex, item.strokes - 1);
-  if (pendingCorrectStroke) {
+  const continuingPending = !!(
+    pendingCorrectStroke && pendingCorrectStroke.strokeNum === strokeIndex
+  );
+  if (continuingPending) {
+    // HanziWriter has already moved to its next internal stroke after calling
+    // onCorrectStroke. Rewind it while keeping our accepted partial drawing so
+    // a child can lift a finger and continue from the same visible stroke.
+    startWriterQuiz(strokesCompleted);
+  } else if (pendingCorrectStroke) {
     pendingCorrectStroke = null;
     startWriterQuiz(strokesCompleted);
   }
@@ -3165,8 +3182,8 @@ function onTrailPointerDown(event) {
   activeAttemptCompletedBefore = strokesCompleted;
   activeAttemptPainted = false;
   activeAttemptHadMistake = false;
-  activeAttemptMaxProgress = 0;
-  if (strokeIndex >= strokesCompleted) {
+  if (!continuingPending) activeAttemptMaxProgress = 0;
+  if (strokeIndex >= strokesCompleted && !continuingPending) {
     const erased = clearStrokePixels(strokeIndex);
     if (erased > 0) renderPixelLetter();
   }
@@ -3211,7 +3228,24 @@ function stopTrail() {
   lastTrailPoint = null;
 }
 
-function finishTrailAttempt() {
+function appendFinalTrailPoint(event) {
+  if (!trailDrawing || !lastTrailPoint || !event || event.type !== 'pointerup') return;
+  const rect = writingBoard.getBoundingClientRect();
+  if (
+    event.clientX < rect.left || event.clientX > rect.right ||
+    event.clientY < rect.top || event.clientY > rect.bottom
+  ) return;
+  const finalPoint = boardPointFromEvent(event);
+  const d = paintTrailSegment(lastTrailPoint, finalPoint);
+  trailDistance += d;
+  if (d > 0) activeAttemptPainted = true;
+  lastTrailPoint = finalPoint;
+  updateAttemptProgressForPoint(finalPoint);
+  maybeUpdateProgressAfterFill();
+}
+
+function finishTrailAttempt(event) {
+  appendFinalTrailPoint(event);
   const attemptId = trailAttemptId;
   const strokeIndex = activeAttemptStroke;
   const completedBefore = activeAttemptCompletedBefore;
@@ -3223,22 +3257,24 @@ function finishTrailAttempt() {
     const pendingStroke = pendingCorrectStroke && pendingCorrectStroke.strokeNum === strokeIndex
       ? pendingCorrectStroke
       : null;
-    if (pendingStroke && hasAttemptReachedStrokeEnd(strokeIndex)) {
-      acceptCorrectStroke(pendingStroke.data);
+    if (pendingStroke && canAcceptPendingContinuation(strokeIndex)) {
+      acceptCorrectStroke(pendingStroke.data, true);
       return;
     }
     activeAttemptStroke = -1;
     activeAttemptCompletedBefore = strokesCompleted;
-    const shouldClear = !!pendingStroke || activeAttemptPainted || activeAttemptHadMistake;
+    const shouldClear = activeAttemptPainted || activeAttemptHadMistake;
     activeAttemptPainted = false;
     activeAttemptHadMistake = false;
-    activeAttemptMaxProgress = 0;
-    if (!shouldClear || strokesCompleted > completedBefore || strokeIndex < strokesCompleted) return;
+    if (strokesCompleted > completedBefore || strokeIndex < strokesCompleted) return;
 
     if (pendingStroke) {
-      pendingCorrectStroke = null;
-      startWriterQuiz(strokeIndex);
+      trailDistance = 0;
+      setMessage(`${strokeIndex + 1}かくめ、つづきから なぞってね`, 'あとすこし');
+      return;
     }
+    activeAttemptMaxProgress = 0;
+    if (!shouldClear) return;
     const erased = clearStrokePixels(strokeIndex);
     if (erased > 0) {
       renderPixelLetter();
@@ -3271,7 +3307,7 @@ function onCorrectStroke(data) {
   acceptCorrectStroke(data);
 }
 
-function acceptCorrectStroke(data) {
+function acceptCorrectStroke(data, resyncWriter) {
   const item = getCurrentCharacter();
   const expectedStroke = Math.min(strokesCompleted, Math.max(0, (item && item.strokes || 1) - 1));
   const rawStrokeNum = data && Number.isFinite(data.strokeNum) ? data.strokeNum : expectedStroke;
@@ -3300,6 +3336,13 @@ function acceptCorrectStroke(data) {
     'いいかんじ！'
   );
   renderStrokeOrder();
+  if (resyncWriter) {
+    if (strokesCompleted < item.strokes) {
+      startWriterQuiz(strokesCompleted);
+    } else if (writer && typeof writer.cancelQuiz === 'function') {
+      try { writer.cancelQuiz(); } catch (_) {}
+    }
+  }
   maybeFinishWritingAfterProgress();
 }
 
@@ -3316,7 +3359,7 @@ function onMistake(data) {
   }
   mistakeCount += 1;
   activeAttemptHadMistake = true;
-  if (trailDrawing) {
+  if (activeAttemptStroke >= 0) {
     setMessage(`${strokeNum + 1}かくめを ゆっくり なぞってね`, 'まだ かけるよ');
     return;
   }
