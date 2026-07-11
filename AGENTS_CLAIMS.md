@@ -58,6 +58,7 @@
 ## Active claims
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
+- 2026-07-11 14:10 - by Codex - [batch:1224-potato-coverage-mix-scale] - bento/kitchen.html, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - じゃがいもは各段階の全体80%をまんべんなく潰す実coverage判定へ、ひき肉+じゃがいもは皿/変化範囲を適正化 [overlap: batch:1204-capacitor-phase1-scaffold (stale bento/kitchen.html)]
 
 
 
