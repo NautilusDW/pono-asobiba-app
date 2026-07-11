@@ -59,7 +59,6 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 - 2026-07-12 01:40 - by Codex - [batch:1251-nazonazo-density-tunnel-title] - nazonazo-tunnel/{index.html,styles.css,js/game.js}, tests/nazonazo_*.cjs, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - ジャングル動物を約1/3の6体へ整理・完全不透明化し、手前動物の見た目の足先を地面へ再接地。トンネル内表示を「トンネルの かくれともだち」に統一 [overlap: batch:1250-maze-debug-dashboard-board-cleanup (sw.js), batch:1244-capture-output-resolution (sw.js)]
-- 2026-07-11 19:50 - by Claude - [batch:1244-capture-output-resolution] - common/capture.js, play.html (capture build のみ必要時), tests/capture_*, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - スクショモードの出力がぼやける件を実測調査し、html2canvas ラスタ解像度/合成拡大率を改善 [overlap: batch:1242 (sw.js, 自分), batch:1243-nazonazo-picturebook-animals (sw.js)、push 直前に最新採番]
 
 
 
