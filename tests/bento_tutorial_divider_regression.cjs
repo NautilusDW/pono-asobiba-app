@@ -45,7 +45,7 @@ assert.match(moveHook, /noriEditStage = 'shrink'/);
 assert.match(moveHook, /tutorialAdvance\('tut2-nori-edit'\)/);
 assert.doesNotMatch(moveHook, /tut2-nori-undo/);
 
-const editHooks = extract(html, 'function tutorialNoriEditExpectedCopy()', '// とりけすは1回だけ', 'nori edit hooks');
+const editHooks = extract(html, 'function tutorialNoriEditExpectedCopy()', '// のり編集で積まれた履歴', 'nori edit hooks');
 const state = { active: true, step: 'tut2-nori-edit', noriEditStage: 'shrink', noriEditTargetUid: 'mouth' };
 const advances = [];
 let renders = 0;
@@ -82,28 +82,51 @@ const undo = extract(html, 'function tutorialOnUndoPressed()', 'function tutoria
 assert.equal((undo.match(/undoFreeItem\(\)/g) || []).length, 2,
   'undo has one normal branch and one tutorial branch');
 assert.match(undo, /tutorialAdvance\('tut2-nori-ok'\)/);
-assert.doesNotMatch(undo, /tut2FaceAtDefault|もういちど/,
-  'tutorial undo must not require repeated presses');
+assert.match(undo, /tut2FaceAtDefault/,
+  'guided undo must finish from the actual initial-face condition, not a press count');
+assert.doesNotMatch(undo, /いちど|pressCount|maxUndo|undoCount/,
+  'guided undo must not impose a fixed number of presses');
+const undoRenderer = extract(html, 'function tut2RenderNoriUndo(step)', 'function tut2RenderNoriOk', 'nori undo renderer');
+assert.match(undoRenderer, /さいしょの おかおに もどるまで/);
+assert.doesNotMatch(undoRenderer, /いちど/);
 const undoState = { active: true, step: 'tut2-nori-edit', _noriUndoDone: false, _noriUndoAckTimer: null };
 let undoCalls = 0;
+let faceAtDefault = false;
+let undoRenders = 0;
 const undoAdvances = [];
+const undoTimers = [];
 const undoHook = vm.runInNewContext(`(() => { ${undo}; return tutorialOnUndoPressed; })()`, {
   tutorialState: undoState,
   tutorialNoriEditExpectedCopy: () => 'edit next',
   setSpeech: () => {},
-  tutorialRenderStep: () => {},
-  undoFreeItem: () => { undoCalls++; },
+  tutorialRenderStep: () => { undoRenders++; },
+  tut2FaceAtDefault: () => faceAtDefault,
+  undoFreeItem: () => {
+    undoCalls++;
+    // move / shrink / grow / rotate の4履歴を想定。最後の履歴で初期顔へ戻る。
+    if (undoCalls === 4) faceAtDefault = true;
+  },
   tutorialClearTrims: () => {},
   tutorialHideFinger: () => {},
   tutorialAdvance: (step) => { undoAdvances.push(step); },
-  setTimeout: (fn) => { fn(); return 1; },
+  setTimeout: (fn) => { undoTimers.push(fn); return undoTimers.length; },
 });
 undoHook();
 assert.equal(undoCalls, 0, 'undo must be blocked before the guided undo step');
 undoState.step = 'tut2-nori-undo';
+for (let i = 0; i < 3; i++) undoHook();
+assert.equal(undoCalls, 3, 'guided undo must allow every incomplete history step');
+assert.equal(undoState._noriUndoDone, false, 'incomplete face restoration must stay on undo');
+assert.equal(undoRenders, 4, 'blocked edit plus each incomplete undo re-renders the current single target');
+assert.deepEqual(undoAdvances, []);
 undoHook();
-assert.equal(undoCalls, 1, 'guided undo must mutate history exactly once');
+assert.equal(undoCalls, 4, 'fourth history step restores the moved eye in this fixture');
 assert.equal(undoState._noriUndoDone, true);
+assert.equal(undoTimers.length, 1, 'completion delay starts only after the face is back at default');
+undoHook();
+assert.equal(undoCalls, 4, 'presses during completion must not undo face-part placement history');
+assert.deepEqual(undoAdvances, []);
+undoTimers[0]();
 assert.deepEqual(undoAdvances, ['tut2-nori-ok']);
 
 // 3. 青枠はscroll安定後に1回だけ開始し、Phase A→Bで作り直さない。

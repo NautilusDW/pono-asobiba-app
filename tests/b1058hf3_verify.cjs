@@ -1,10 +1,12 @@
 // batch:1058-hotfix3 verification. Walks tut2 step-by-step and asserts key invariants.
 const { chromium } = require('playwright-core');
 const fs = require('fs');
+const os = require('os');
 const path = require('path');
 const PORT = 61857;
 const BASE = `http://127.0.0.1:${PORT}/bento/`;
-const OUT = 'C:\\Users\\surfe\\AppData\\Local\\Temp\\claude\\d--AppDevelopment-pono-asobiba-app\\f9999e22-47da-4d64-a4a1-f4525d95d537\\scratchpad';
+const OUT = process.env.BENTO_TEST_OUT || path.join(os.tmpdir(), 'pono-bento-b1058hf3');
+fs.mkdirSync(OUT, { recursive: true });
 const results = { pageerrors: [], steps: [], asserts: [] };
 
 function snap(name) { return path.join(OUT, `b1058hf3_${name}.png`); }
@@ -39,7 +41,10 @@ async function getVisual(page) {
 }
 
 async function main() {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({
+    headless: true,
+    ...(process.env.BENTO_CHROME_PATH ? { executablePath: process.env.BENTO_CHROME_PATH } : {}),
+  });
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 800 } });
   const page = await ctx.newPage();
   page.on('pageerror', e => results.pageerrors.push(e.message));
@@ -263,7 +268,21 @@ async function main() {
     const list = (typeof placedItems !== 'undefined' && placedItems) ? placedItems : [];
     const first = list.find(i => i && i.type === 'decor');
     if (first && typeof tutorialOnItemMoved === 'function') {
+      window.__b1058FaceBeforeUndo = list
+        .filter(i => i && i.type === 'decor' && i.simpleFaceSlot)
+        .map(i => ({
+          uid: i.uid,
+          slot: i.simpleFaceSlot,
+          x: i.x,
+          y: i.y,
+          size: i.size,
+          rotation: i.rotation || 0,
+        }));
+      const before = beginFreeHistoryChange();
       first.x += 18;
+      commitFreeHistoryChange(before);
+      renderFreeLayoutStage({ immediate: true });
+      renderFreeLayoutControls();
       tutorialOnItemMoved(first.uid);
     }
   });
@@ -285,10 +304,71 @@ async function main() {
   await page.waitForFunction(() => tutorialState.step === 'tut2-nori-undo', null, { timeout: 9500 });
   const afterRotate = await page.evaluate(() => tutorialState.step);
   results.asserts.push({ label: 'rotate advances to undo', ok: afterRotate === 'tut2-nori-undo', step: afterRotate });
-  await page.evaluate(() => tutorialOnUndoPressed());
+  const undoTrace = [];
+  for (let i = 0; i < 8; i++) {
+    const beforeUndo = await page.evaluate(() => ({
+      step: tutorialState.step,
+      done: tutorialState._noriUndoDone,
+      atDefault: tut2FaceAtDefault(),
+      historyDepth: freeUndoStack.length,
+    }));
+    if (beforeUndo.step !== 'tut2-nori-undo' || beforeUndo.done) break;
+    await page.evaluate(() => tutorialOnUndoPressed());
+    await page.waitForTimeout(120);
+    const afterUndo = await page.evaluate(() => ({
+      step: tutorialState.step,
+      done: tutorialState._noriUndoDone,
+      atDefault: tut2FaceAtDefault(),
+      historyDepth: freeUndoStack.length,
+      ringCount: document.querySelectorAll('.tut-trim-box').length,
+    }));
+    undoTrace.push({ before: beforeUndo, after: afterUndo });
+  }
+  const undoGuard = await page.evaluate(() => {
+    const faceSnapshot = () => placedItems
+      .filter(i => i && i.type === 'decor' && i.simpleFaceSlot)
+      .map(i => [i.uid, i.simpleFaceSlot, i.x, i.y, i.size, i.rotation || 0]);
+    const before = { historyDepth: freeUndoStack.length, face: faceSnapshot() };
+    tutorialOnUndoPressed();
+    return {
+      before,
+      after: { historyDepth: freeUndoStack.length, face: faceSnapshot() },
+    };
+  });
   await page.waitForFunction(() => tutorialState.step === 'tut2-nori-ok', null, { timeout: 10000 });
-  const step6b = await page.evaluate(() => tutorialState.step);
-  results.asserts.push({ label: 'one undo advances to nori OK', ok: step6b === 'tut2-nori-ok', step: step6b });
+  const step6b = await page.evaluate(() => {
+    const current = placedItems
+      .filter(i => i && i.type === 'decor' && i.simpleFaceSlot)
+      .map(i => ({ uid: i.uid, slot: i.simpleFaceSlot, x: i.x, y: i.y, size: i.size, rotation: i.rotation || 0 }));
+    const initial = window.__b1058FaceBeforeUndo || [];
+    const sameFace = initial.length === 4 && current.length === 4 && initial.every(before => {
+      const after = current.find(item => item.uid === before.uid);
+      return after
+        && after.slot === before.slot
+        && after.x === before.x
+        && after.y === before.y
+        && after.size === before.size
+        && after.rotation === before.rotation;
+    });
+    return { step: tutorialState.step, atDefault: tut2FaceAtDefault(), sameFace, initial, current };
+  });
+  results.asserts.push({
+    label: 'repeated undo restores initial face before nori OK',
+    ok: undoTrace.length > 1
+      && undoTrace.slice(0, -1).every(entry => entry.after.step === 'tut2-nori-undo'
+        && !entry.after.done && entry.after.ringCount === 1)
+      && step6b.step === 'tut2-nori-ok'
+      && step6b.atDefault
+      && step6b.sameFace,
+    step: step6b,
+    undoTrace,
+  });
+  results.asserts.push({
+    label: 'extra undo after restoration cannot remove face parts',
+    ok: undoGuard.before.historyDepth === undoGuard.after.historyDepth
+      && JSON.stringify(undoGuard.before.face) === JSON.stringify(undoGuard.after.face),
+    undoGuard,
+  });
 
   // Assert のりOK ring present.
   const step6BubbleAndRing = await page.evaluate(() => {

@@ -22108,7 +22108,7 @@ const TUT2_PONO_SPEECH = {
   'tut2-nori-face-mouth-nose': 'つぎは、はなと くちを おこう！',
   'tut2-nori-move': 'のりは ゆびで うごかせるよ。すきな ばしょに どうぞ。',
   'tut2-nori-edit': 'のりの おおきさと むきを かえてみよう！',
-  'tut2-nori-undo': 'さいごに「とりけす」を ためしてみよう！',
+  'tut2-nori-undo': 'さいしょの おかおに もどるまで「とりけす」を おしてね！',
   'tut2-nori-ok': 'できたら「のりOK」を おそう！',
   'tut2-okazu-main': 'メインの おかず！すきなのを タップして いれてみよう。',
   'tut2-cup-btn': 'つぎは 「カップへ」を おしてね。',
@@ -22533,7 +22533,7 @@ function tut2RenderNoriUndo(step) {
   if (tutorialState._noriUndoDone) {
     tutorialClearTrims();
     tutorialHideFinger();
-    try { setSpeech('とりけすが できたね！つぎに すすむよ'); } catch (_) {}
+    try { setSpeech('さいしょの おかおに もどったね！'); } catch (_) {}
     return;
   }
   if (!tutorialState._noriUndoPrepared) {
@@ -22541,7 +22541,7 @@ function tut2RenderNoriUndo(step) {
     simpleDecorPanelUid = null;
     try { renderFreeLayoutControls(); } catch (_) {}
   }
-  try { setSpeech('さいごに「とりけす」を いちど おしてみよう！'); } catch (_) {}
+  try { setSpeech('さいしょの おかおに もどるまで「とりけす」を おしてね！'); } catch (_) {}
   const btn = (typeof tutorialUndoButton === 'function') ? tutorialUndoButton() : null;
   if (!btn) {
     tutorialRetryRenderStep(step.id, 120);
@@ -23301,7 +23301,9 @@ function tutorialOnNoriEditAction(uid, action) {
   tutorialHideFinger();
   tutorialRenderStep();
 }
-// とりけすは1回だけ実操作して、そのまま のりOK へ進める。
+// のり編集で積まれた履歴を1操作ずつ戻し、顔が初期配置へ戻った時だけ のりOK へ進める。
+// 回数上限は設けない。初期配置を先に判定してから undo することで、顔パーツを置いた履歴まで
+// 戻してしまう連打も防ぐ。
 function tutorialOnUndoPressed() {
   const isNoriUndo = !!(tutorialState && tutorialState.active && tutorialState.step === 'tut2-nori-undo');
   const isOtherNoriStep = !!(tutorialState && tutorialState.active
@@ -23322,17 +23324,36 @@ function tutorialOnUndoPressed() {
     return;
   }
   if (tutorialState._noriUndoDone || tutorialState._noriUndoAckTimer) return;
-  tutorialState._noriUndoDone = true;
+
+  const finishNoriUndo = () => {
+    if (tutorialState._noriUndoDone || tutorialState._noriUndoAckTimer) return;
+    tutorialState._noriUndoDone = true;
+    tutorialClearTrims();
+    tutorialHideFinger();
+    try { setSpeech('さいしょの おかおに もどったね！'); } catch (_) {}
+    tutorialState._noriUndoAckTimer = setTimeout(() => {
+      tutorialState._noriUndoAckTimer = null;
+      if (!tutorialState.active || tutorialState.step !== 'tut2-nori-undo') return;
+      tutorialAdvance('tut2-nori-ok');
+    }, 600);
+  };
+
+  // すでに初期配置なら、それより前の「目・鼻・口を置いた履歴」は消さない。
+  if (typeof tut2FaceAtDefault === 'function' && tut2FaceAtDefault()) {
+    finishNoriUndo();
+    return;
+  }
+
   undoFreeItem();
   if (!tutorialState.active || tutorialState.step !== 'tut2-nori-undo') return;
-  tutorialClearTrims();
-  tutorialHideFinger();
-  try { setSpeech('とりけすが できたね！'); } catch (_) {}
-  tutorialState._noriUndoAckTimer = setTimeout(() => {
-    tutorialState._noriUndoAckTimer = null;
-    if (!tutorialState.active || tutorialState.step !== 'tut2-nori-undo') return;
-    tutorialAdvance('tut2-nori-ok');
-  }, 600);
+  if (typeof tut2FaceAtDefault === 'function' && tut2FaceAtDefault()) {
+    finishNoriUndo();
+    return;
+  }
+
+  // まだ移動・大きさ・回転のどれかが残っている。timer/done は立てず、同じ1対象を案内する。
+  try { setSpeech('さいしょの おかおに もどるまで「とりけす」を おしてね！'); } catch (_) {}
+  try { tutorialRenderStep(); } catch (_) {}
 }
 function tutorialOnItemPlaced(item) {
   if (!tutorialState.active) return;
