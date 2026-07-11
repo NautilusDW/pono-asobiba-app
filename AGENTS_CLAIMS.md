@@ -58,7 +58,6 @@
 ## Active claims
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
-- 2026-07-11 09:22 - by Codex - [batch:1175g-marble-run-pastel-camera] - unity/PonoMarbleRun3D/**, AGENTS_CLAIMS.md, HANDOFF.md - 明るい少数パステル色・フォント/余白再設計・玉へ寄る見やすい自動回り込みカメラ
 - 2026-07-07 12:24 - by Claude - [batch:1058-tutorial-impl-phase1] - bento/index.html, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - tut2 チュートリアル実装 phase1 (見本→まねっこ、15ステップ+2ラッパー、mock voice、PAUSED解除、storage v2)
 - 2026-07-07 - by Claude - [batch:1058-tut2-hotfix4] - bento/index.html, sw.js, play.html, docs/BENTO_TUTORIAL_SCRIPT.md, AGENTS_CLAIMS.md, HANDOFF.md - tut2 UX方針転換: シーケンス順序・ボックス統合・ポノ中心ナレーション・Step6編集パネル詳細説明
 - 2026-07-11 - by Claude - [batch:1058-tut2-hotfix5] - bento/index.html, sw.js, docs/BENTO_TUTORIAL_SCRIPT.md, AGENTS_CLAIMS.md, HANDOFF.md - tut2: のり移動後の「とりけす」教習+デフォルト顔復元ゲート / はっぱ指定配置 (レタス→おかずの下) / テキストチャネル整理 / しきり位置修正 [overlap: batch:1058-tut2-hotfix4 (同一ストリーム)]
