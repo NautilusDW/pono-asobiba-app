@@ -1,5 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2082: 未ローンチ2ゲーム (トントンキッチン/もじっこファーム) に直URLロック追加 (app tier のみ通過)。play.html PAGE_CACHE_VERSION と同期。
+// v2081: App build のタイトルメニューに「なぞなぞトレイン / クッキング / もじっこファーム」を通常カードで追加。LP free/book は公開済み 5 本のみを維持。play.html PAGE_CACHE_VERSION と同期。
 // v2080: tier 名 'sub'→'app' 純リネーム (batch:1216, tier.js/play.html/game-stickers.js+json/bento/quizland/puzzle/5ゲームガード)。json と js/game-stickers.js は fail-open のため新旧混在キャッシュを防ぐ bump 必須。play.html PAGE_CACHE_VERSION と同期。
 // v2079: sub専用5ゲーム (mojicrane/nazonazo/starparodier/undersea-cave/sea-album) に tier ガード追加 + プロフィール「あとで」導線 + アプリ告知文実数修正。play.html PAGE_CACHE_VERSION と同期。
 // v2078: Maze の9種類のミニゲームへ専用BGMを追加し、探索曲への復帰・音量補正・ナレーション中のダッキングを実装。play.html PAGE_CACHE_VERSION と同期。
@@ -8,15 +10,13 @@
 // v2075: OtoTouch「いろおと」の縦横比追従、WebGL復旧待ち、GPU再確保の安全化、高速スワイプ音列を仕上げ。play.html PAGE_CACHE_VERSION と同期。
 // v2074: アプリ版 OtoTouch に、圧力投影つき WebGL2 流体をトゥーン描画する第3の自由モード「いろおと」を追加。既存2モードと本版は変更なし。play.html PAGE_CACHE_VERSION と同期。
 // v2073: 全体パフォーマンス改善 (OP前ゲーム画面フラッシュ修正 quizland/maze/bento/oto/puzzle、タイトルFOUCガード修正、隠しモーダル画像の遅延化、preload=none化、WebP一括変換 quizland illust/zukan/oto/bento、SWキャッシュ戦略修正 no-store→cache-first/no-cache、precache copy-forward、nav strip lossy再エンコード)。play.html PAGE_CACHE_VERSION と同期。
-// v2072: Puzzle の設定メニューで「もりのアルバム」を「もどる」の下へ移し、160個のマス一覧を8人の進み具合カードへ簡略化。play.html PAGE_CACHE_VERSION と同期。
-// v2071: Maze の再crop動物画像をversioned URLで強制更新し、旗あげ5段レイアウトを短い横画面内へ収める。play.html PAGE_CACHE_VERSION と同期。
 // ── changelog アーカイブ ──
 // v2070 以前の changelog は docs/sw-changelog-archive.md へ移動した (最終移設 2026-07-11)。
 // sw.js が ~318KB (約 93% が changelog コメント) に肥大し、 毎ロード + 5分毎の
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2080;
+const CACHE_VERSION = 2082;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。

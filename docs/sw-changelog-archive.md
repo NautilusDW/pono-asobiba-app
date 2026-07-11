@@ -12,6 +12,8 @@ docs/ は `.assetsignore` により deploy 対象外。
 ## Archived entries
 
 ````
+// v2072: Puzzle の設定メニューで「もりのアルバム」を「もどる」の下へ移し、160個のマス一覧を8人の進み具合カードへ簡略化。play.html PAGE_CACHE_VERSION と同期。
+// v2071: Maze の再crop動物画像をversioned URLで強制更新し、旗あげ5段レイアウトを短い横画面内へ収める。play.html PAGE_CACHE_VERSION と同期。
 // v2070: Maze のはしご取得後に入口/出口を同時点灯し、正解ボタン中央化、ステージ札の矢印回避、混入動物画像5種の再クロップを反映。play.html PAGE_CACHE_VERSION と同期。
 // v2069: Maze のつづき予告をstage3後ではなくfree全ステージ完了後だけ表示し、絵本の軽い案内と「もどる」導線を追加。play.html PAGE_CACHE_VERSION と同期。
 // v2068: Maze のじゃんけん音声を順番再生にし、角の設定ボタンを上中央ステージ札へ統合。stage3予告文言も迷子救助の目的へ統一。play.html PAGE_CACHE_VERSION と同期。
