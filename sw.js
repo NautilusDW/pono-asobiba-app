@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2085: Maze 全9ミニゲームの開始時に探索BGMをフェードアウトし、新BGMを一拍聴かせてからゲーム/ナレーションを開始。ボタンの開始合図と待機取消も追加。play.html PAGE_CACHE_VERSION と同期。
 // v2084: Bento Kitchen の包丁効果線を実際の位置・サイズ・振り下ろし量へ追従させ、線の長さ/太さ/間隔/タイミングを不均一化。play.html PAGE_CACHE_VERSION と同期。
 // v2083: App タイトルのなぞなぞトレイン / クッキング / もじっこファームを専用の既存素材へ差し替え。native manifest に 3 ゲームの本体・必要素材・クッキング thumb を同梱。play.html PAGE_CACHE_VERSION と同期。
 // v2082: 未ローンチ2ゲーム (トントンキッチン/もじっこファーム) に直URLロック追加 (app tier のみ通過)。play.html PAGE_CACHE_VERSION と同期。
@@ -18,7 +19,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2084;
+const CACHE_VERSION = 2085;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
