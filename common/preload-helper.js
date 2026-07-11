@@ -126,13 +126,16 @@
     // 移った時点で gesture context を失い NotAllowedError を返すため、
     // 最初の 1 回だけは gesture callback 内で同期 play() を叩く。
     //
-    // data-pono-force-paused contract (v1944 現在の運用):
+    // data-pono-force-paused contract (v1944 で予約 → v2110 batch:1242 で初 consumer):
     //   - 「意図的抑止」 は bento (isMaskEditorAudioMuted) / oto (_otoTutorialState /
     //     _otoAcornModalActive) が PonoAudioVisibilityResume ハンドラ内で gate する方式が正。
-    //   - data-pono-force-paused="1" を実際に SET する consumer は今のところ無い
-    //     (forward-compat スカフォールド、 将来 「音量トグル OFF で AC/media を
-    //     アクティブに suspend しておく」 実装が入る時のために予約)。 現状で読むだけ
-    //     の dead branch だが safety-net 側の respect を維持することで契約の一貫性を保つ。
+    //   - v2110 batch:1242: play.html のデイリーガチャ/どんぐりショップが
+    //     pauseTopBgmForDailyGacha / pauseTopBgmForDonguriShop でトップ BGM (#play-bgm) に
+    //     data-pono-force-paused="1" を SET する初の consumer になった (閉時の
+    //     resumeTopBgmAfter* で解除)。 この respect (下の early return) を削除すると、
+    //     ガチャ/おみせ中のタブ復帰 backoff replay がトップ BGM を復活させて
+    //     タイトル曲二重再生バグが再発するので、 絶対に外さないこと
+    //     (回帰テスト: tests/play_bgm_suppression_regression.cjs)。
     function tryReplayMedia(el, options) {
       if (!el) return;
       try {

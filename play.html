@@ -10383,7 +10383,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2100; // sw.js CACHE_VERSION と同期 (Maze ○×回答ボタン中央ぞろえ)
+    const PAGE_CACHE_VERSION = 2110; // sw.js CACHE_VERSION と同期 (batch:1242 ガチャ/おみせ中のタイトル BGM 二重再生根治)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -10392,7 +10392,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v2100';
+    window.PONO_SW_VERSION = 'v2110';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
@@ -11686,21 +11686,39 @@
       dailyGachaAudio.resumeTopBgm = !bgm.paused;
       try { bgm.pause(); } catch (_) {}
       dailyGachaAudio.pausedTopBgm = true;
+      // v2110 batch:1242: PonoVisibilityAudioGuard (common/preload-helper.js) の
+      // safety-net replay (タブ復帰/gesture 後の backoff リトライ) が抑止中のトップ BGM を
+      // native play で復活させないよう、 guard が尊重する data-pono-force-paused 契約を利用。
+      try { bgm.setAttribute('data-pono-force-paused', '1'); } catch (_) {}
     }
 
     function resumeTopBgmAfterDailyGacha() {
-      if (!dailyGachaAudio.pausedTopBgm) return;
-      const shouldResume = dailyGachaAudio.resumeTopBgm;
+      // v2110 batch:1242: 残留フラグ掃除のため先にフラグを無条件で下ろす (冪等)。
+      const shouldResume = dailyGachaAudio.pausedTopBgm && dailyGachaAudio.resumeTopBgm;
       dailyGachaAudio.pausedTopBgm = false;
       dailyGachaAudio.resumeTopBgm = false;
-      if (!shouldResume || dailyGachaSoundMuted()) return;
       const bgm = topBgmForDailyGacha();
       if (!bgm) return;
+      // v2110 batch:1242: 他の抑止者 (おみせ等) がまだトップ BGM を止めている間は
+      // force-paused を維持したまま resume しない (単一調停点 isTopBgmSuppressed 参照)。
+      if (isTopBgmSuppressed()) {
+        // v2110 batch:1242 (review fix): ガチャ→おみせと開いて先にガチャを閉じる
+        // クロス順序でも復帰意図が消えないよう、 残存抑止者へ resume 予約を引き継ぐ。
+        if (shouldResume) {
+          try { if (donguriShopAudio.pausedTopBgm) donguriShopAudio.resumeTopBgm = true; } catch (_) {}
+        }
+        return;
+      }
+      try { bgm.removeAttribute('data-pono-force-paused'); } catch (_) {}
+      if (!shouldResume || dailyGachaSoundMuted()) return;
       try {
         // v1699 (Stream D): preload="none" のため play() 前に auto へ昇格
         if (bgm.preload !== 'auto') bgm.preload = 'auto';
         const p = bgm.play();
-        if (p && p.catch) p.catch(() => {});
+        // v2110 batch:1242 (review fix): ミュート開始 (未解禁)→ガチャ中 unmute→close の
+        // 経路では tryPlay() が抑止ガードで markUnlocked に届かないため、 直接 play() の
+        // 成功 (= 実際に解禁済みの証明) をここでも解禁記録する。
+        if (p && p.then) p.then(markTopBgmUnlocked).catch(() => {});
       } catch (_) {}
     }
 
@@ -11716,20 +11734,67 @@
       donguriShopAudio.resumeTopBgm = !bgm.paused;
       try { bgm.pause(); } catch (_) {}
       donguriShopAudio.pausedTopBgm = true;
+      // v2110 batch:1242: guard の safety-net replay 対策 (pauseTopBgmForDailyGacha と同型)。
+      try { bgm.setAttribute('data-pono-force-paused', '1'); } catch (_) {}
     }
     function resumeTopBgmAfterDonguriShop() {
-      var bgm = topBgmForDonguriShop();
-      if (!bgm) return;
-      if (donguriShopAudio.pausedTopBgm && donguriShopAudio.resumeTopBgm) {
-        try {
-          // v1699 (Stream D): preload="none" のため play() 前に auto へ昇格
-          if (bgm.preload !== 'auto') bgm.preload = 'auto';
-          var p = bgm.play();
-          if (p && p.catch) p.catch(function () {});
-        } catch (_) {}
-      }
+      // v2110 batch:1242: 残留フラグ掃除のため先にフラグを無条件で下ろす (冪等)。
+      var shouldResume = donguriShopAudio.pausedTopBgm && donguriShopAudio.resumeTopBgm;
       donguriShopAudio.pausedTopBgm = false;
       donguriShopAudio.resumeTopBgm = false;
+      var bgm = topBgmForDonguriShop();
+      if (!bgm) return;
+      // v2110 batch:1242: ガチャ内オーバーレイからおみせを開いた場合など、 他の抑止者が
+      // 残っている間は force-paused を維持したまま resume しない (isTopBgmSuppressed 参照)。
+      if (isTopBgmSuppressed()) {
+        // v2110 batch:1242 (review fix): クロス順序 close でも復帰意図が消えないよう、
+        // 残存抑止者 (ガチャ) へ resume 予約を引き継ぐ (gacha 側と対称)。
+        if (shouldResume) {
+          try { if (dailyGachaAudio.pausedTopBgm) dailyGachaAudio.resumeTopBgm = true; } catch (_) {}
+        }
+        return;
+      }
+      try { bgm.removeAttribute('data-pono-force-paused'); } catch (_) {}
+      // v2110 batch:1242: gacha 側 (dailyGachaSoundMuted) と同様に mute 中は resume しない
+      // (旧実装は mute 中でも play しており、 ミュートずみユーザーにタイトル曲が鳴っていた)。
+      if (!shouldResume || _shopBgmIsMuted()) return;
+      try {
+        // v1699 (Stream D): preload="none" のため play() 前に auto へ昇格
+        if (bgm.preload !== 'auto') bgm.preload = 'auto';
+        var p = bgm.play();
+        // v2110 batch:1242 (review fix): 直接 play() 成功時の解禁記録 (gacha 側と対称)。
+        if (p && p.then) p.then(markTopBgmUnlocked).catch(function () {});
+      } catch (_) {}
+    }
+
+    // v2110 batch:1242: トップ BGM (play-bgm) 抑止判定の「単一の調停点」。
+    // ガチャ/おみせが自前 BGM を流している間に、 visibilitychange 復帰・soundToggle・
+    // 起動時 tryPlay() 等の無条件 resume 経路がトップ BGM を再開し、 タイトル曲が
+    // ガチャ曲と二重再生される実機バグ (タブを離れて戻ると発生) の根治ガード。
+    // フラグ (pausedTopBgm) と DOM 開閉状態の両方を OR で見る (フラグ drift への多層防御)。
+    // ※ 将来トップ BGM を止める新オーバーレイ (イベント演出等) を追加する場合は、
+    //   ここに抑止条件を 1 行足すこと。 正当な復帰経路 (resumeTopBgmAfterDailyGacha /
+    //   resumeTopBgmAfterDonguriShop) は bgm.play() を直接呼ぶためこのガードを bypass する。
+    function isTopBgmSuppressed() {
+      try {
+        if (dailyGachaAudio.pausedTopBgm || donguriShopAudio.pausedTopBgm) return true;
+      } catch (_) {}
+      try {
+        if (dailyGachaModal && !dailyGachaModal.hidden) return true;
+        var shopEl = document.getElementById('donguriShop');
+        if (shopEl && !shopEl.hidden) return true;
+      } catch (_) {}
+      return false;
+    }
+
+    // v2110 batch:1242 (review fix): 音声解禁の記録 (sessionStorage) 共通ヘルパー。
+    // BGM IIFE 内の markUnlocked と resumeTopBgmAfter* の直接 play() 成功経路が共用する。
+    // isUnlocked() (BGM IIFE) が読む 'pono_audio_unlocked' と同一キーであること。
+    function markTopBgmUnlocked() {
+      try {
+        sessionStorage.setItem('pono_audio_unlocked', '1');
+        sessionStorage.setItem('pono_audio_primed_ts', String(Date.now()));
+      } catch (_) {}
     }
 
     // v1699: shop 専用 BGM (sticker-album-morning.mp3) の再生制御。
@@ -16375,14 +16440,23 @@
         try { return sessionStorage.getItem('pono_audio_unlocked') === '1'; } catch (_) { return false; }
       }
       function markUnlocked() {
-        try {
-          sessionStorage.setItem('pono_audio_unlocked', '1');
-          sessionStorage.setItem('pono_audio_primed_ts', String(Date.now()));
-        } catch (_) {}
+        // v2110 batch:1242 (review fix): 実体は共通ヘルパー markTopBgmUnlocked へ集約
+        // (resumeTopBgmAfter* の直接 play() 成功経路と解禁記録を単一実装で共有)。
+        markTopBgmUnlocked();
       }
 
       function tryPlay() {
         if (isMuted()) return;
+        // v2110 batch:1242: ガチャ/おみせがトップ BGM を抑止中は resume しない
+        // (タブ復帰 visibilitychange / soundToggle / 起動時経路の共通ガード)。
+        // 抑止中に「本来なら鳴らす」 要求が来た場合は resume 予約フラグだけ立てて、
+        // ガチャ/おみせを閉じた時の resumeTopBgmAfter* (このガードを通らない直接
+        // play() 経路) に復帰を委ねる。
+        if (typeof isTopBgmSuppressed === 'function' && isTopBgmSuppressed()) {
+          try { if (dailyGachaAudio.pausedTopBgm) dailyGachaAudio.resumeTopBgm = true; } catch (_) {}
+          try { if (donguriShopAudio.pausedTopBgm) donguriShopAudio.resumeTopBgm = true; } catch (_) {}
+          return;
+        }
         if (!bgm.paused) return;
         // v1699 (Stream D): <audio preload="none"> で出荷しているため play() 前に auto へ昇格
         try { if (bgm.preload !== 'auto') bgm.preload = 'auto'; } catch (_) {}
@@ -16521,6 +16595,9 @@
       });
 
       // Tab hidden → pause; returning → resume (only if already unlocked).
+      // v2110 batch:1242: 復帰側の「ガチャ/おみせ抑止中は resume しない」 ガードは
+      // tryPlay() 冒頭に集約 (isTopBgmSuppressed)。 ここで無条件 tryPlay() しても
+      // ガチャ画面へタイトル曲が二重再生されることはない。
       document.addEventListener('visibilitychange', () => {
         if (document.hidden) bgm.pause();
         else if (isUnlocked()) tryPlay();
