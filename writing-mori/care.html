@@ -162,6 +162,7 @@
   --care-icon-pencil: url('../assets/images/mojikko/writing/icon_pencil.png');
   --care-icon-warm: url('../assets/images/mojikko/care/icon_warm_large.png');
   --care-icon-milk: url('../assets/images/mojikko/care/icon_milk_bottle.png');
+  --care-icon-gohan: url('../assets/images/mojikko/care/icon_moji_gohan.png');
   --care-icon-star: url('../assets/images/mojikko/writing/icon_star.png');
   --care-star-counter: url('../assets/images/mojikko/writing/star_counter.png');
   --care-settings: url('../assets/images/mojikko/writing/settings_button.png');
@@ -487,6 +488,7 @@ html, body {
 
 .cookie-icon,
 .milk-icon,
+.gohan-icon,
 .power-icon {
   position: relative;
   width: 50px;
@@ -510,6 +512,13 @@ html, body {
 
 .milk-icon::before {
   display: none;
+}
+
+.gohan-icon {
+  width: 58px;
+  height: 58px;
+  justify-self: center;
+  background: var(--care-icon-gohan) center / contain no-repeat;
 }
 
 .power-icon {
@@ -1285,6 +1294,12 @@ html, body {
   background-image: var(--care-icon-cookie);
 }
 
+.food-fx.gohan {
+  width: 70px;
+  height: 70px;
+  background-image: var(--care-icon-gohan);
+}
+
 .food-fx.milk {
   width: 46px;
   height: 76px;
@@ -1480,6 +1495,112 @@ html, body {
   z-index: 6;
 }
 
+.meal-schedule {
+  position: absolute;
+  left: 344px;
+  right: 344px;
+  bottom: 222px;
+  height: 54px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  z-index: 6;
+  pointer-events: none;
+}
+
+.meal-schedule[hidden] {
+  display: none;
+}
+
+.meal-slot {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: 1fr 1fr;
+  column-gap: 8px;
+  align-items: center;
+  padding: 5px 10px;
+  border: 3px solid #947152;
+  border-radius: 10px;
+  background: rgba(255, 248, 232, 0.92);
+  box-shadow: 0 3px 0 rgba(91, 58, 34, 0.55);
+  font-family: var(--pixel-font);
+  line-height: 1;
+}
+
+.meal-slot::before {
+  content: '';
+  grid-row: 1 / 3;
+  width: 13px;
+  height: 13px;
+  border: 2px solid rgba(78, 57, 40, 0.3);
+  border-radius: 999px;
+  background: #d8c7ac;
+}
+
+.meal-slot-label {
+  overflow: hidden;
+  font-size: 18px;
+  font-weight: 900;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.meal-slot-status {
+  overflow: hidden;
+  color: #705640;
+  font-family: var(--round-font);
+  font-size: 14px;
+  font-weight: 900;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.meal-slot[data-state="current"] {
+  border-color: #b4653d;
+  background: linear-gradient(180deg, #fff7c6, #ffd786);
+  box-shadow: 0 3px 0 #865039, 0 0 0 4px rgba(255, 223, 102, 0.38);
+}
+
+.meal-slot[data-state="current"]::before {
+  background: #ff865f;
+  box-shadow: 0 0 0 3px rgba(255, 134, 95, 0.18);
+}
+
+.meal-slot[data-state="used"] {
+  border-color: #629d76;
+  background: rgba(220, 245, 218, 0.94);
+}
+
+.meal-slot[data-state="used"]::before {
+  content: '✓';
+  display: grid;
+  place-items: center;
+  background: #73c88e;
+  color: #fff;
+  font-family: var(--round-font);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.meal-slot[data-state="future"] {
+  opacity: 0.82;
+}
+
+.meal-slot[data-state="past"] {
+  opacity: 0.58;
+  filter: saturate(0.62);
+}
+
+.meal-slot[data-state="sleep"] {
+  border-color: #7885a3;
+  background: rgba(227, 232, 247, 0.92);
+}
+
+.meal-slot[data-state="sleep"]::before {
+  background: #8494bd;
+}
+
 .sub-action-row {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -1559,6 +1680,31 @@ html, body {
   display: none;
 }
 
+.meal-main-btn {
+  grid-template-columns: 70px 1fr;
+  grid-template-rows: 1fr auto;
+  padding: 7px 28px;
+  font-size: 30px;
+}
+
+.meal-main-btn .action-icon {
+  width: 62px;
+  height: 52px;
+}
+
+.care-actions:not(.egg-mode) .write-main-btn {
+  grid-template-columns: 50px 1fr;
+  grid-template-rows: 1fr auto;
+  column-gap: 10px;
+  padding: 7px 14px;
+  font-size: 24px;
+}
+
+.care-actions:not(.egg-mode) .write-main-btn .action-icon {
+  width: 50px;
+  height: 50px;
+}
+
 .action-btn.feed { background: linear-gradient(180deg, #fff0bd, #f0c16f); }
 .action-btn.play { background: linear-gradient(180deg, #cdeefe, #75c4e5); }
 .action-btn.write { background: linear-gradient(180deg, #e0f4c9, #9ed572); }
@@ -1598,8 +1744,18 @@ html, body {
   grid-template-rows: 66px;
 }
 
-.care-actions.egg-mode .sub-action-row {
+.care-actions.egg-mode .meal-main-btn,
+.care-actions.egg-mode .action-btn.play {
   display: none;
+}
+
+.care-actions.egg-mode .sub-action-row {
+  display: block;
+}
+
+.care-actions.egg-mode .write-main-btn {
+  width: 100%;
+  height: 66px;
 }
 
 .action-btn.feed .action-icon { background-image: var(--care-icon-cookie); }
@@ -1608,6 +1764,27 @@ html, body {
   color: #4f3825;
   background-image: var(--care-icon-milk);
   background-size: contain;
+}
+
+.action-btn.feed.gohan .action-icon {
+  color: #4f3825;
+  background-image: var(--care-icon-gohan);
+  background-size: contain;
+}
+
+.action-btn.feed.cookie .action-icon {
+  background-image: var(--care-icon-cookie);
+}
+
+.action-btn.feed.meal-closed {
+  filter: saturate(0.62) brightness(0.96);
+  background: linear-gradient(180deg, #eee5d1, #d8c6a7);
+}
+
+.action-btn.feed.meal-closed .action-icon {
+  color: #655a67;
+  background-image: none;
+  font-size: 31px;
 }
 
 .name-modal {
@@ -1789,6 +1966,13 @@ html, body {
           </div>
         </div>
         <div class="item-card">
+          <div class="gohan-icon" aria-hidden="true"></div>
+          <div>
+            <div class="item-name">もじごはん</div>
+            <div class="item-count">× <span id="gohanCount">0</span></div>
+          </div>
+        </div>
+        <div class="item-card">
           <div class="cookie-icon" aria-hidden="true"></div>
           <div>
             <div class="item-name">もじクッキー</div>
@@ -1853,13 +2037,28 @@ html, body {
       </div>
     </aside>
 
+    <section class="meal-schedule" id="mealSchedule" aria-label="きょうの ごはん" hidden>
+      <div class="meal-slot" data-slot="morning" data-state="future">
+        <span class="meal-slot-label">あさ</span><span class="meal-slot-status">あとで</span>
+      </div>
+      <div class="meal-slot" data-slot="lunch" data-state="future">
+        <span class="meal-slot-label">ひる</span><span class="meal-slot-status">あとで</span>
+      </div>
+      <div class="meal-slot" data-slot="afternoon" data-state="future">
+        <span class="meal-slot-label">ごご</span><span class="meal-slot-status">あとで</span>
+      </div>
+      <div class="meal-slot" data-slot="dinner" data-state="future">
+        <span class="meal-slot-label">ばん</span><span class="meal-slot-status">あとで</span>
+      </div>
+    </section>
+
     <nav class="care-actions" aria-label="お世話アクション">
-      <button class="pixel-button write-main-btn" id="writeBtn">
-        <span class="action-icon" id="mainActionIcon">✏</span><span id="mainActionText">もじを かく！</span><span class="action-help" id="mainActionHelp">メインの もじかきへ もどる</span>
+      <button class="pixel-button action-btn feed meal-main-btn" id="feedBtn">
+        <span class="action-icon">🍪</span><span id="feedActionText">あげる</span><span class="action-help" id="feedActionHelp">ごはんを あげる</span>
       </button>
       <div class="sub-action-row">
-        <button class="pixel-button action-btn feed" id="feedBtn">
-          <span class="action-icon">🍪</span><span>あげる</span><span class="action-help">おやつを あげる</span>
+        <button class="pixel-button write-main-btn" id="writeBtn">
+          <span class="action-icon" id="mainActionIcon">✏</span><span id="mainActionText">もじを かく！</span><span class="action-help" id="mainActionHelp">メインの もじかきへ もどる</span>
         </button>
         <button class="pixel-button action-btn play" id="playBtn">
           <span class="action-icon">⚽</span><span>あそぶ</span><span class="action-help">いっしょにあそぶ</span>
@@ -1875,6 +2074,7 @@ html, body {
       <label class="debug-row">すくすく<input id="debugSukusuku" type="number" min="0" max="100" step="1"></label>
       <label class="debug-row">ぽかぽか<input id="debugEggWarmth" type="number" min="0" max="100" step="1"></label>
       <label class="debug-row">ミルク<input id="debugMilkCount" type="number" min="0" max="99" step="1"></label>
+      <label class="debug-row">ごはん<input id="debugGohanCount" type="number" min="0" max="99" step="1"></label>
       <label class="debug-row">クッキー<input id="debugCookieCount" type="number" min="0" max="99" step="1"></label>
       <label class="debug-row">スター<input id="debugStars" type="number" min="0" max="99999" step="25"></label>
       <label class="debug-row checkbox">うまれた<input id="debugHatched" type="checkbox"></label>
@@ -1911,6 +2111,14 @@ html, body {
 const CARE_STATE_KEY = 'mojikkoFarmCareStateV1';
 const PENDING_REWARD_KEY = 'mojikkoFarmPendingWritingReward';
 const DEBUG_MODE_KEY = 'mojikkoFarmCareDebugMode';
+const FOOD_SYSTEM_VERSION = 2;
+const MEAL_SLOT_ORDER = ['morning', 'lunch', 'afternoon', 'dinner'];
+const MEAL_SLOTS = {
+  morning: { id: 'morning', label: 'あさ', start: 6, end: 11 },
+  lunch: { id: 'lunch', label: 'ひる', start: 11, end: 15 },
+  afternoon: { id: 'afternoon', label: 'ごご', start: 15, end: 18 },
+  dinner: { id: 'dinner', label: 'ばん', start: 18, end: 21 }
+};
 
 const defaultState = {
   name: 'ミルマル',
@@ -1921,8 +2129,15 @@ const defaultState = {
   eggWarmth: 0,
   hatched: false,
   stars: 0,
+  foodSystemVersion: FOOD_SYSTEM_VERSION,
+  feedingDay: {
+    localDateKey: '',
+    claimed: {},
+    lastSeenAt: Date.now()
+  },
   inventory: {
     moji_milk: { id: 'moji_milk', name: 'もじミルク', count: 0, type: 'food' },
+    moji_gohan: { id: 'moji_gohan', name: 'もじごはん', count: 0, type: 'food' },
     moji_cookie: { id: 'moji_cookie', name: 'もじクッキー', count: 0, type: 'food' }
   },
   reaction: 'normal',
@@ -1943,8 +2158,9 @@ const growthStages = [
 ];
 
 const careFoods = {
-  moji_milk: { id: 'moji_milk', name: 'もじミルク', gainNakayoshi: 4, gainSukusuku: 4 },
-  moji_cookie: { id: 'moji_cookie', name: 'もじクッキー', gainNakayoshi: 5, gainSukusuku: 2 }
+  moji_milk: { id: 'moji_milk', name: 'もじミルク', shortName: 'ミルク', gainNakayoshi: 3, gainSukusuku: 4, gainGokigen: 18 },
+  moji_gohan: { id: 'moji_gohan', name: 'もじごはん', shortName: 'ごはん', gainNakayoshi: 3, gainSukusuku: 4, gainGokigen: 18 },
+  moji_cookie: { id: 'moji_cookie', name: 'もじクッキー', shortName: 'クッキー', gainNakayoshi: 4, gainSukusuku: 0, gainGokigen: 20 }
 };
 
 const actionStarCost = {
@@ -1956,6 +2172,8 @@ const PET_STROKE_REQUIRED_DISTANCE = 90;
 const PET_TRACE_DISTANCE_STEP = 42;
 
 let state = loadState();
+const entryLastSeenAt = Number(state.feedingDay?.lastSeenAt) || Date.now();
+const entryOpenedAt = Date.now();
 
 const stageEl = document.getElementById('stage');
 const speechBubble = document.getElementById('speechBubble');
@@ -1969,6 +2187,9 @@ const stageNoticeText = document.getElementById('stageNoticeText');
 const careActions = document.querySelector('.care-actions');
 const writeBtn = document.getElementById('writeBtn');
 const feedBtn = document.getElementById('feedBtn');
+const feedActionText = document.getElementById('feedActionText');
+const feedActionHelp = document.getElementById('feedActionHelp');
+const mealSchedule = document.getElementById('mealSchedule');
 const mainActionIcon = document.getElementById('mainActionIcon');
 const mainActionText = document.getElementById('mainActionText');
 const mainActionHelp = document.getElementById('mainActionHelp');
@@ -1990,6 +2211,8 @@ let petStrokeDistance = 0;
 let petLastPoint = null;
 let activePetPointerId = null;
 let petHintShown = false;
+let feedBusy = false;
+let lastMealHintKey = '';
 const roamState = {
   x: 50,
   y: 72,
@@ -2011,7 +2234,8 @@ const carePreloadImages = [
   '../assets/images/mojikko/care/milmaru_yochiyochi_walk_loop_01.png',
   '../assets/images/mojikko/care/milmaru_yochiyochi_walk_loop_02.png',
   '../assets/images/mojikko/care/milmaru_yochiyochi_walk_loop_03.png',
-  '../assets/images/mojikko/care/milmaru_yochiyochi_walk_loop_04.png'
+  '../assets/images/mojikko/care/milmaru_yochiyochi_walk_loop_04.png',
+  '../assets/images/mojikko/care/icon_moji_gohan.png'
 ];
 
 carePreloadImages.forEach((src) => {
@@ -2029,7 +2253,14 @@ function fitStage() {
 
 window.addEventListener('resize', fitStage);
 window.addEventListener('orientationchange', () => setTimeout(fitStage, 100));
-document.addEventListener('visibilitychange', () => { if (!document.hidden) fitStage(); });
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) return;
+  fitStage();
+  syncCareStateFromStorage(true);
+});
+window.addEventListener('storage', (event) => {
+  if (event.key === CARE_STATE_KEY) syncCareStateFromStorage(false);
+});
 fitStage();
 
 let audioCtx = null;
@@ -2103,6 +2334,57 @@ function cloneDefaultState() {
   return JSON.parse(JSON.stringify(defaultState));
 }
 
+function getLocalDateKey(value = Date.now()) {
+  const date = value instanceof Date ? value : new Date(value);
+  const year = String(date.getFullYear());
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function makeFeedingDay(now = Date.now(), lastSeenAt = now) {
+  return {
+    localDateKey: getLocalDateKey(now),
+    claimed: {},
+    lastSeenAt: Number.isFinite(lastSeenAt) ? lastSeenAt : now
+  };
+}
+
+function sanitizeMealClaims(value, now = Date.now()) {
+  const claimed = {};
+  if (!value || typeof value !== 'object') return claimed;
+  MEAL_SLOT_ORDER.forEach((slotId) => {
+    const claim = value[slotId];
+    const activeLock = claim
+      && typeof claim === 'object'
+      && typeof claim.token === 'string'
+      && Number.isFinite(claim.at)
+      && now - claim.at < 15000;
+    if (claim === true || activeLock) {
+      claimed[slotId] = claim;
+    }
+  });
+  return claimed;
+}
+
+function ensureFeedingDayState(target, now = Date.now()) {
+  if (!target || typeof target !== 'object') return false;
+  const todayKey = getLocalDateKey(now);
+  const current = target.feedingDay;
+  const fallbackSeenAt = Number.isFinite(target.lastCareAt) ? target.lastCareAt : now;
+  if (!current || typeof current !== 'object' || current.localDateKey !== todayKey) {
+    const lastSeenAt = Number.isFinite(current?.lastSeenAt) ? current.lastSeenAt : fallbackSeenAt;
+    target.feedingDay = makeFeedingDay(now, lastSeenAt);
+    return true;
+  }
+  target.feedingDay = {
+    localDateKey: todayKey,
+    claimed: sanitizeMealClaims(current.claimed, now),
+    lastSeenAt: Number.isFinite(current.lastSeenAt) ? current.lastSeenAt : fallbackSeenAt
+  };
+  return false;
+}
+
 function sanitizeMilmaruName(value) {
   const text = String(value || '').trim().replace(/\s+/g, '');
   return text ? text.slice(0, 8) : 'ミルマル';
@@ -2115,7 +2397,11 @@ function getMilmaruName() {
 function loadState() {
   try {
     const saved = localStorage.getItem(CARE_STATE_KEY);
-    if (!saved) return cloneDefaultState();
+    if (!saved) {
+      const fresh = cloneDefaultState();
+      ensureFeedingDayState(fresh);
+      return fresh;
+    }
     const parsed = JSON.parse(saved);
     const merged = cloneDefaultState();
     merged.name = sanitizeMilmaruName(parsed.name || merged.name);
@@ -2126,6 +2412,8 @@ function loadState() {
     merged.eggWarmth = Number.isFinite(parsed.eggWarmth) ? clamp(parsed.eggWarmth, 0, 100) : merged.eggWarmth;
     merged.hatched = parsed.hatched === true;
     merged.stars = Number.isFinite(parsed.stars) ? parsed.stars : merged.stars;
+    const previousFoodSystemVersion = Number(parsed.foodSystemVersion) || 0;
+    merged.foodSystemVersion = FOOD_SYSTEM_VERSION;
     if (!merged.hatched && merged.eggWarmth === 0 && merged.stars >= 1000) {
       merged.stars = 0;
     }
@@ -2136,6 +2424,15 @@ function loadState() {
     merged.lastPetAt = Number.isFinite(parsed.lastPetAt) ? parsed.lastPetAt : 0;
     merged.lastWarmAt = Number.isFinite(parsed.lastWarmAt) ? parsed.lastWarmAt : 0;
     merged.lastMoodAt = Number.isFinite(parsed.lastMoodAt) ? parsed.lastMoodAt : merged.lastCareAt;
+    if (parsed.feedingDay && typeof parsed.feedingDay === 'object') {
+      merged.feedingDay = {
+        localDateKey: String(parsed.feedingDay.localDateKey || ''),
+        claimed: sanitizeMealClaims(parsed.feedingDay.claimed),
+        lastSeenAt: Number.isFinite(parsed.feedingDay.lastSeenAt) ? parsed.feedingDay.lastSeenAt : merged.lastCareAt
+      };
+    } else {
+      merged.feedingDay = makeFeedingDay(Date.now(), merged.lastCareAt);
+    }
     if (parsed.inventory) {
       Object.keys(merged.inventory).forEach((id) => {
         if (parsed.inventory[id]) {
@@ -2143,19 +2440,36 @@ function loadState() {
         }
       });
     }
+    if (previousFoodSystemVersion < FOOD_SYSTEM_VERSION && merged.hatched && merged.sukusuku >= 38) {
+      merged.inventory.moji_gohan.count = clamp(merged.inventory.moji_gohan.count + 3, 0, 99);
+    }
+    ensureFeedingDayState(merged);
     return merged;
   } catch (error) {
     console.warn('Could not load care state:', error);
-    return cloneDefaultState();
+    const fresh = cloneDefaultState();
+    ensureFeedingDayState(fresh);
+    return fresh;
   }
 }
 
-function saveState() {
+function saveState({ touchSeen = true } = {}) {
   try {
+    state.foodSystemVersion = FOOD_SYSTEM_VERSION;
+    ensureFeedingDayState(state);
+    if (touchSeen) state.feedingDay.lastSeenAt = Date.now();
     localStorage.setItem(CARE_STATE_KEY, JSON.stringify(state));
   } catch (error) {
     console.warn('Could not save care state:', error);
   }
+}
+
+function syncCareStateFromStorage(touchSeen = false) {
+  if (feedBusy) return;
+  state = loadState();
+  ensureFeedingDayState(state);
+  if (touchSeen) saveState();
+  render();
 }
 
 function configureDebugModeFromQuery() {
@@ -2202,11 +2516,55 @@ function changeInventory(id, delta) {
   return state.inventory[id].count;
 }
 
-function getPreferredFood() {
-  if (!state.hatched) return careFoods.moji_milk;
-  const stage = getCareStage();
-  if (stage.id === 'yochiyochi' && getYochiyochiPhase() === 'crawl') return careFoods.moji_milk;
-  return stage.id === 'baby' ? careFoods.moji_milk : careFoods.moji_cookie;
+function getMealPeriod(now = Date.now()) {
+  const hour = new Date(now).getHours();
+  const slot = MEAL_SLOT_ORDER.find((slotId) => {
+    const range = MEAL_SLOTS[slotId];
+    return hour >= range.start && hour < range.end;
+  });
+  return slot ? { type: 'meal', slotId: slot } : { type: 'sleep', slotId: null };
+}
+
+function getFoodForMeal(slotId, targetState = state) {
+  if (!targetState.hatched) return null;
+  if (Number(targetState.sukusuku) < 38) return careFoods.moji_milk;
+  return slotId === 'afternoon' ? careFoods.moji_cookie : careFoods.moji_gohan;
+}
+
+function getPreferredFood(now = Date.now()) {
+  if (!state.hatched) return null;
+  if (Number(state.sukusuku) < 38) return careFoods.moji_milk;
+  const period = getMealPeriod(now);
+  return getFoodForMeal(period.slotId || 'morning');
+}
+
+function isMealClaimed(slotId, targetState = state) {
+  return Boolean(targetState.feedingDay?.claimed?.[slotId]);
+}
+
+function getMealSlotState(slotId, now = Date.now()) {
+  ensureFeedingDayState(state, now);
+  if (isMealClaimed(slotId)) return 'used';
+  const period = getMealPeriod(now);
+  if (period.type === 'sleep') return 'sleep';
+  if (period.slotId === slotId) return 'current';
+  const currentIndex = MEAL_SLOT_ORDER.indexOf(period.slotId);
+  return MEAL_SLOT_ORDER.indexOf(slotId) < currentIndex ? 'past' : 'future';
+}
+
+function getMealStatusLabel(status) {
+  if (status === 'current') return 'いま';
+  if (status === 'used') return 'すみ';
+  if (status === 'past') return 'おわり';
+  if (status === 'sleep') return 'すやすや';
+  return 'あとで';
+}
+
+function getMealFoodLabel(food, slotId) {
+  if (!food) return '';
+  if (food.id === 'moji_milk' && slotId === 'afternoon') return 'ごごの ミルク';
+  if (food.id === 'moji_cookie' && slotId === 'afternoon') return 'おやつ';
+  return food.name;
 }
 
 function markCareInteraction() {
@@ -2221,13 +2579,9 @@ function applyGokigenDecay(now = Date.now()) {
     state.lastMoodAt = now;
     return false;
   }
-  const lastMoodAt = Number.isFinite(state.lastMoodAt) ? state.lastMoodAt : (Number.isFinite(state.lastCareAt) ? state.lastCareAt : now);
-  const elapsedHours = Math.max(0, (now - lastMoodAt) / 3600000);
-  const decaySteps = Math.floor(Math.max(0, elapsedHours - 6) / 6);
-  if (decaySteps <= 0) return false;
-  state.gokigen = clamp(state.gokigen - decaySteps * 5, 18, 100);
-  state.lastMoodAt = lastMoodAt + decaySteps * 6 * 3600000;
-  return true;
+  // アプリを ひらかなかった時間や、食事をのがしたことでは下げない。
+  state.lastMoodAt = Number.isFinite(state.lastMoodAt) ? state.lastMoodAt : now;
+  return false;
 }
 
 function boostGokigen(amount) {
@@ -2236,9 +2590,14 @@ function boostGokigen(amount) {
   state.lastMoodAt = Date.now();
 }
 
+function getWelcomeBackHours() {
+  return Math.max(0, (entryOpenedAt - entryLastSeenAt) / 3600000);
+}
+
 function getGokigenStatus() {
   if (!state.hatched) return { id: 'sleepy', label: 'すやすや', reaction: 'normal' };
   applyGokigenDecay();
+  if (getWelcomeBackHours() >= 24) return { id: 'welcome', label: 'おかえり', reaction: 'happy' };
   if (state.gokigen >= 88) return { id: 'sparkly', label: 'きらきら', reaction: 'happy' };
   if (state.gokigen >= 68) return { id: 'happy', label: 'にこにこ', reaction: 'happy' };
   if (state.gokigen >= 46) return { id: 'normal', label: 'まったり', reaction: 'normal' };
@@ -2268,17 +2627,25 @@ function getFriendshipBonus() {
 function getIdleMood(now = Date.now()) {
   if (!state.hatched) return null;
   const name = getMilmaruName();
-  const lastCareAt = Number.isFinite(state.lastCareAt) ? state.lastCareAt : now;
-  const hours = (now - lastCareAt) / 3600000;
-  const mood = getGokigenStatus();
-  if (mood.id === 'sulky' || hours >= 48) {
+  const welcomeHours = getWelcomeBackHours(now);
+  if (welcomeHours >= 24) {
     return {
-      reaction: mood.id === 'sulky' ? 'angry' : 'worried',
+      reaction: 'happy',
+      speech: 'おかえり！',
+      message: welcomeHours >= 48
+        ? `${name}が まってたよ。きょうも ゆっくり あそぼう。`
+        : `${name}が うれしそうに おむかえしているよ。`
+    };
+  }
+  const mood = getGokigenStatus();
+  if (mood.id === 'sulky') {
+    return {
+      reaction: 'angry',
       speech: 'むぅ〜...',
       message: `${name}は ちょっと すねているみたい。もじを かいて、おせわしてあげよう。`
     };
   }
-  if (mood.id === 'lonely' || hours >= 24) {
+  if (mood.id === 'lonely') {
     return {
       reaction: 'worried',
       speech: 'くぅん...',
@@ -2308,7 +2675,7 @@ function getBabySpeech(text) {
   if (/ない|たりない|まだ/.test(raw)) return 'ふぇ...？';
   if (/ねむ|すや|すぅ/.test(raw)) return 'すぅ...すぅ...';
   if (/怒|ぷん|まって|さみ|むぅ/.test(raw)) return 'むぅ〜...';
-  if (/おいしい|ごくごく|ミルク|クッキー|おやつ|ほしい|もらった/.test(raw)) return 'みゅみゅ！';
+  if (/おいしい|ごくごく|ミルク|ごはん|クッキー|おやつ|ほしい|もらった/.test(raw)) return 'みゅみゅ！';
   if (/なで|うれしい|ありがとう|ぽかぽか/.test(raw)) return 'ふにゃ〜♪';
   if (/あそ|たのしい|ぴょん/.test(raw)) return 'きゃっきゃ！';
   if (/もじ|かこう|かき/.test(raw)) return 'あう〜？';
@@ -2320,7 +2687,7 @@ function getYochiyochiSpeech(text) {
   if (/ない|たりない/.test(raw)) return 'なぁい...？';
   if (/ねむ|すや|すぅ/.test(raw)) return 'ねむねむ...';
   if (/怒|ぷん|まって|さみ|むぅ/.test(raw)) return 'むーむー！';
-  if (/おいしい|ごくごく|ミルク|クッキー|おやつ|ほしい|もらった/.test(raw)) return 'まんま、んま！';
+  if (/おいしい|ごくごく|ミルク|ごはん|クッキー|おやつ|ほしい|もらった/.test(raw)) return 'まんま、んま！';
   if (/なで|うれしい|ありがとう|しっぽ|ふりふり/.test(raw)) return 'なで...すき';
   if (/あそ|たのしい|ぴょん|おいかけ|たんけん/.test(raw)) return 'あしょぼ！';
   if (/はいはい/.test(raw)) return 'はいはい...いく！';
@@ -2617,6 +2984,7 @@ function getHiddenGrowthHint() {
 
 function getMemoLines(stage, mood, friendship) {
   if (!state.hatched) return ['タマゴの なかで すやすや。', 'ぽかぽかが だいすき！'];
+  if (mood.id === 'welcome') return ['おかえり！ きょうも いっしょ。', 'ゆっくり あそぼうね。'];
   if (mood.id === 'sulky') return ['ちょっと すねているみたい。', 'もじをかいて おせわすると、すぐ げんきになるよ。'];
   if (mood.id === 'lonely') return ['すこし さみしかったみたい。', 'なでると ほっとするよ。'];
   if (friendship.level >= 4) return ['あなたの こえが だいすき！', 'もじをかくと、そばで おうえんするよ。'];
@@ -2636,33 +3004,63 @@ function getEggVisualClass() {
   return 'egg-idle';
 }
 
-function renderActionMode() {
+function renderMealSchedule(now = Date.now()) {
+  mealSchedule.hidden = !state.hatched;
+  if (!state.hatched) return;
+  ensureFeedingDayState(state, now);
+  mealSchedule.querySelectorAll('.meal-slot').forEach((slotEl) => {
+    const status = getMealSlotState(slotEl.dataset.slot, now);
+    slotEl.dataset.state = status;
+    slotEl.querySelector('.meal-slot-status').textContent = getMealStatusLabel(status);
+  });
+}
+
+function renderActionMode(now = Date.now()) {
   const stars = Number(state.stars) || 0;
-  const preferredFood = getPreferredFood();
-  const preferredFoodCount = getInventoryCount(preferredFood.id);
+  const period = getMealPeriod(now);
+  const currentFood = period.slotId ? getFoodForMeal(period.slotId) : getPreferredFood(now);
+  const currentFoodCount = currentFood ? getInventoryCount(currentFood.id) : 0;
+  const mealUsed = period.slotId ? isMealClaimed(period.slotId) : false;
   careActions.classList.toggle('egg-mode', !state.hatched);
   writeBtn.classList.toggle('warm-main', !state.hatched && stars >= actionStarCost.warm);
   writeBtn.classList.toggle('needs-power', !state.hatched && stars < actionStarCost.warm);
   if (state.hatched) {
     mainActionIcon.textContent = '';
     mainActionText.textContent = 'もじを かく！';
-    mainActionHelp.textContent = 'もじを かいて スターと おやつを もらおう！';
+    mainActionHelp.textContent = 'もじを かいて スターと たべものを もらおう！';
   } else {
     mainActionIcon.textContent = stars >= actionStarCost.warm ? '' : '✏';
     mainActionText.textContent = stars >= actionStarCost.warm ? 'あたためる！' : 'もじを かく！';
     mainActionHelp.textContent = stars >= actionStarCost.warm ? `スター${actionStarCost.warm}で あたためる` : 'かくと スターが もらえるよ';
   }
-  feedBtn.classList.toggle('milk', state.hatched && preferredFood.id === 'moji_milk');
-  feedBtn.classList.toggle('has-cookie', state.hatched && preferredFoodCount > 0);
-  feedBtn.querySelector('.action-icon').textContent = '';
-  feedBtn.querySelector('.action-help').textContent = state.hatched
-    ? `${preferredFood.name}を あげる`
-    : 'うまれてから あげよう';
+  feedBtn.classList.toggle('milk', state.hatched && period.type === 'meal' && currentFood?.id === 'moji_milk');
+  feedBtn.classList.toggle('gohan', state.hatched && period.type === 'meal' && currentFood?.id === 'moji_gohan');
+  feedBtn.classList.toggle('cookie', state.hatched && period.type === 'meal' && currentFood?.id === 'moji_cookie');
+  feedBtn.classList.toggle('meal-closed', state.hatched && (period.type === 'sleep' || mealUsed));
+  feedBtn.classList.toggle('has-cookie', state.hatched && period.type === 'meal' && !mealUsed && currentFoodCount > 0);
+  feedBtn.dataset.mealState = period.type === 'sleep' ? 'sleep' : (mealUsed ? 'used' : 'current');
+  feedBtn.setAttribute('aria-disabled', state.hatched && (period.type === 'sleep' || mealUsed) ? 'true' : 'false');
+  feedBtn.querySelector('.action-icon').textContent = period.type === 'sleep' ? '☾' : (mealUsed ? '✓' : '');
+  if (!state.hatched) {
+    feedActionText.textContent = 'あげる';
+    feedActionHelp.textContent = 'うまれてから あげよう';
+  } else if (period.type === 'sleep') {
+    feedActionText.textContent = 'すやすや';
+    feedActionHelp.textContent = 'あさ 6じから';
+  } else if (mealUsed) {
+    feedActionText.textContent = 'ごちそうさま';
+    feedActionHelp.textContent = `${MEAL_SLOTS[period.slotId].label}は たべたよ`;
+  } else {
+    const foodLabel = getMealFoodLabel(currentFood, period.slotId);
+    feedActionText.textContent = `${foodLabel}を あげる`;
+    feedActionHelp.textContent = `${MEAL_SLOTS[period.slotId].label}の じかん`;
+  }
   const playButton = document.getElementById('playBtn');
   playButton.classList.toggle('power-empty', state.hatched && !hasStars(actionStarCost.play));
   playButton.querySelector('.action-help').textContent = state.hatched && hasStars(actionStarCost.play)
     ? `スター${actionStarCost.play}で あそぶ`
     : 'あそびばへ いく';
+  renderMealSchedule(now);
 }
 
 function applyMilmaruClass(reaction) {
@@ -2739,7 +3137,8 @@ function getFoodOfferPoint(foodId) {
 
 function spawnFoodFx(foodId) {
   const piece = document.createElement('div');
-  piece.className = `food-fx ${foodId === 'moji_cookie' ? 'cookie' : 'milk'}`;
+  const foodClass = foodId === 'moji_cookie' ? 'cookie' : (foodId === 'moji_gohan' ? 'gohan' : 'milk');
+  piece.className = `food-fx ${foodClass}`;
   const target = getFoodOfferPoint(foodId);
   piece.style.setProperty('--mouth-x', `${target.x}%`);
   piece.style.setProperty('--mouth-y', `${target.y}%`);
@@ -2919,8 +3318,8 @@ function render() {
   document.getElementById('nakayoshiText').textContent = `${state.nakayoshi} / 100`;
   document.getElementById('nakayoshiFill').style.width = `${state.nakayoshi}%`;
   document.getElementById('milkCount').textContent = String(getInventoryCount('moji_milk'));
+  document.getElementById('gohanCount').textContent = String(getInventoryCount('moji_gohan'));
   document.getElementById('cookieCount').textContent = String(getInventoryCount('moji_cookie'));
-  feedBtn.classList.toggle('has-cookie', state.hatched && getInventoryCount(getPreferredFood().id) > 0);
   speechBubble.textContent = getDisplaySpeech(state.speech);
   const idleMood = (state.reaction || 'normal') === 'normal' ? getIdleMood() : null;
   if (idleMood) {
@@ -2943,6 +3342,7 @@ function renderDebugPanel() {
   document.getElementById('debugSukusuku').value = String(state.sukusuku);
   document.getElementById('debugEggWarmth').value = String(state.eggWarmth);
   document.getElementById('debugMilkCount').value = String(getInventoryCount('moji_milk'));
+  document.getElementById('debugGohanCount').value = String(getInventoryCount('moji_gohan'));
   document.getElementById('debugCookieCount').value = String(getInventoryCount('moji_cookie'));
   document.getElementById('debugStars').value = String(state.stars);
   document.getElementById('debugHatched').checked = state.hatched;
@@ -2971,6 +3371,7 @@ function applyDebugState(next = {}) {
   state.sukusuku = next.sukusuku ?? readDebugNumber('debugSukusuku', 0, 100);
   state.eggWarmth = next.eggWarmth ?? readDebugNumber('debugEggWarmth', 0, 100);
   state.inventory.moji_milk.count = next.milk ?? readDebugNumber('debugMilkCount', 0, 99);
+  state.inventory.moji_gohan.count = next.gohan ?? readDebugNumber('debugGohanCount', 0, 99);
   state.inventory.moji_cookie.count = next.cookies ?? readDebugNumber('debugCookieCount', 0, 99);
   state.stars = next.stars ?? readDebugNumber('debugStars', 0, 99999);
   state.hatched = next.hatched ?? document.getElementById('debugHatched').checked;
@@ -2985,6 +3386,8 @@ function applyDebugState(next = {}) {
   state.lastMoodAt = Date.now();
   state.lastWarmAt = 0;
   state.lastPetAt = 0;
+  state.foodSystemVersion = FOOD_SYSTEM_VERSION;
+  state.feedingDay = makeFeedingDay();
   state.speech = next.speech || (state.hatched ? 'いっしょに もじを かこう！' : 'まだ タマゴだよ');
   bottomMessage.textContent = next.message || 'デバッグ値を 反映したよ。';
   saveState();
@@ -3009,8 +3412,12 @@ function consumePendingWritingReward() {
     console.warn('Could not consume writing reward:', error);
   }
   if (!pending || !pending.result || !pending.result.success) return false;
-  const reward = pending.result.reward || getPreferredFood();
-  if (state.inventory[reward.id]) {
+  const pendingReward = pending.result.reward;
+  const fallbackReward = getPreferredFood();
+  const reward = state.hatched
+    ? (pendingReward && state.inventory[pendingReward.id] ? pendingReward : fallbackReward)
+    : null;
+  if (reward && state.inventory[reward.id]) {
     changeInventory(reward.id, 1);
   }
   state.stars = clamp((Number(state.stars) || 0) + 10, 0, 99999);
@@ -3022,7 +3429,8 @@ function consumePendingWritingReward() {
       state.stars = clamp((Number(state.stars) || 0) + bonus.stars, 0, 99999);
     }
     const stageMessage = getYochiyochiActionMessage('writing');
-    setSpeech(`${reward.name || 'おやつ'}を もらったよ！`, bonus ? bonus.message : (stageMessage || `スターも ふえたよ。${getMilmaruName()}に おせわを してみよう！`));
+    const rewardName = reward?.name || careFoods[reward?.id]?.name || 'たべもの';
+    setSpeech(`${rewardName}を もらったよ！`, bonus ? bonus.message : (stageMessage || `スターも ふえたよ。${getMilmaruName()}に おせわを してみよう！`));
     setReaction('happy');
   } else {
     setSpeech('スターが ふえたよ！', 'スターで タマゴを あたためられるよ。ミルクは うまれてから あげよう。');
@@ -3056,47 +3464,114 @@ function applyEntrySpeech() {
     saveState();
     return;
   }
-  const food = getPreferredFood();
+  const period = getMealPeriod();
+  if (period.type === 'sleep') {
+    setSpeech('すやすや...', 'いまは ねる じかん。あさ 6じから ごはんを あげられるよ。');
+    saveState();
+    return;
+  }
+  const food = getFoodForMeal(period.slotId);
+  if (isMealClaimed(period.slotId)) {
+    setSpeech('ごちそうさま！', `${MEAL_SLOTS[period.slotId].label}は もう たべたよ。`);
+    saveState();
+    return;
+  }
   if (getInventoryCount(food.id) > 0) {
-    setSpeech(`${food.name} ほしいな〜`, `${food.name}を あげたら、${getMilmaruName()}が よろこぶよ。`);
+    setSpeech(`${getMealFoodLabel(food, period.slotId)}の じかん！`, `${food.name}を あげたら、${getMilmaruName()}が よろこぶよ。`);
   } else {
     setSpeech('いっしょに もじを かこう！', getYochiyochiActionMessage('writing') || `もじを かくと、${food.name}と スターが もらえるよ。`);
   }
   saveState();
 }
 
-function feedCookie() {
-  if (!state.hatched) {
-    playSfx('mistake');
-    setSpeech('まだ タマゴだよ', 'いまは スターで あたためてあげよう。ミルクは うまれてからね。');
-    setReaction('relaxed');
+function announceMealHintOnce(key, speech, message) {
+  if (lastMealHintKey === key) return;
+  lastMealHintKey = key;
+  state.speech = speech;
+  speechBubble.textContent = getStageSpeech(speech);
+  bottomMessage.textContent = message;
+}
+
+async function feedCookie() {
+  if (feedBusy) return;
+  feedBusy = true;
+  try {
+    state = loadState();
+    const now = Date.now();
+    ensureFeedingDayState(state, now);
+    if (!state.hatched) {
+      render();
+      announceMealHintOnce('egg', 'まだ タマゴだよ', 'いまは スターで あたためてあげよう。');
+      return;
+    }
+    const period = getMealPeriod(now);
+    if (period.type === 'sleep') {
+      render();
+      announceMealHintOnce('sleep', 'すやすや...', 'いまは ねる じかん。あさ 6じから ごはんを あげられるよ。');
+      return;
+    }
+    const slotId = period.slotId;
+    const slot = MEAL_SLOTS[slotId];
+    if (isMealClaimed(slotId)) {
+      render();
+      announceMealHintOnce(`used-${slotId}`, 'ごちそうさま！', `${slot.label}は もう たべたよ。つぎの じかんを まってね。`);
+      return;
+    }
+    const food = getFoodForMeal(slotId);
+    if (getInventoryCount(food.id) <= 0) {
+      render();
+      announceMealHintOnce(`empty-${slotId}-${food.id}`, `${food.name}が ないみたい。`, `もじを かくと ${food.name}が もらえるよ。`);
+      return;
+    }
+
+    const lockToken = `${now}-${Math.random().toString(36).slice(2)}`;
+    state.feedingDay.claimed[slotId] = { token: lockToken, at: now };
+    saveState();
+    await new Promise((resolve) => setTimeout(resolve, 48));
+
+    const confirmedState = loadState();
+    const confirmedClaim = confirmedState.feedingDay?.claimed?.[slotId];
+    if (!confirmedClaim || confirmedClaim.token !== lockToken) {
+      state = confirmedState;
+      render();
+      announceMealHintOnce(`used-${slotId}`, 'ごちそうさま！', `${slot.label}は もう たべたよ。つぎの じかんを まってね。`);
+      return;
+    }
+
+    state = confirmedState;
+    if (getInventoryCount(food.id) <= 0) {
+      delete state.feedingDay.claimed[slotId];
+      saveState();
+      render();
+      announceMealHintOnce(`empty-${slotId}-${food.id}`, `${food.name}が ないみたい。`, `もじを かくと ${food.name}が もらえるよ。`);
+      return;
+    }
+
+    state.feedingDay.claimed[slotId] = true;
+    changeInventory(food.id, -1);
+    markCareInteraction();
+    boostGokigen(food.gainGokigen);
+    state.nakayoshi = clamp(state.nakayoshi + food.gainNakayoshi, 0, 100);
+    state.sukusuku = clamp(state.sukusuku + food.gainSukusuku, 0, 100);
+    const didStageUp = syncGrowthStageChange();
+    if (!didStageUp) {
+      const growthHint = getHiddenGrowthHint();
+      const stageMessage = getYochiyochiActionMessage('feed');
+      const eatingSpeech = food.id === 'moji_milk'
+        ? 'ごくごく おいしい！'
+        : (food.id === 'moji_gohan' ? 'もぐもぐ おいしい！' : 'おやつ おいしい！');
+      setSpeech(eatingSpeech, growthHint || stageMessage || `${food.name}を たべたよ。なかよしが ふえた！`);
+      setReaction('eating');
+    }
+    saveState();
+    lastMealHintKey = '';
+    playSfx('feed');
+    spawnFoodFx(food.id);
     spawnFx('sparkle');
-    return;
+    render();
+  } finally {
+    feedBusy = false;
   }
-  const food = getPreferredFood();
-  if (getInventoryCount(food.id) <= 0) {
-    playSfx('mistake');
-    setSpeech(`${food.name}が ないみたい。`, `もじを かくと ${food.name}が もらえるよ。`);
-    setReaction('worried', 1200);
-    return;
-  }
-  changeInventory(food.id, -1);
-  playSfx('feed');
-  markCareInteraction();
-  boostGokigen(food.id === 'moji_milk' ? 24 : 20);
-  state.nakayoshi = clamp(state.nakayoshi + food.gainNakayoshi, 0, 100);
-  state.sukusuku = clamp(state.sukusuku + food.gainSukusuku, 0, 100);
-  const didStageUp = syncGrowthStageChange();
-  if (!didStageUp) {
-    const growthHint = getHiddenGrowthHint();
-    const stageMessage = getYochiyochiActionMessage('feed');
-    setSpeech(food.id === 'moji_milk' ? 'ごくごく おいしい！' : 'おいしい！ ありがとう！', growthHint || stageMessage || `${food.name}を あげたよ。なかよしが ふえた！`);
-    setReaction('eating');
-  }
-  spawnFoodFx(food.id);
-  spawnFx('sparkle');
-  saveState();
-  render();
 }
 
 function finishPettingMode() {
@@ -3319,7 +3794,9 @@ function goWrite() {
     return;
   }
   playSfx('select');
-  setSpeech('もじを かきにいこう！', 'かけたら もじクッキーが もらえるよ。');
+  const period = getMealPeriod();
+  const food = period.slotId ? getFoodForMeal(period.slotId) : getPreferredFood();
+  setSpeech('もじを かきにいこう！', `かけたら ${food.name}が もらえるよ。`);
   setReaction('happy');
   saveState();
   setTimeout(() => {
@@ -3377,6 +3854,7 @@ function setupDebugControls() {
     gokigen: Math.max(86, state.gokigen),
     eggWarmth: 100,
     sukusuku: 46,
+    gohan: Math.max(3, getInventoryCount('moji_gohan')),
     cookies: Math.max(1, getInventoryCount('moji_cookie')),
     stars: Math.max(actionStarCost.play, Number(state.stars) || 0),
     speech: 'いっしょに もじを かこう！',
@@ -3404,7 +3882,7 @@ document.getElementById('settingsBtn').addEventListener('click', () => {
   setSpeech('せっていは じゅんびちゅうだよ', 'また あとで つかえるようにするね。');
 });
 document.getElementById('inventoryBtn').addEventListener('click', () => {
-  setSpeech('もちものは ここで みられるよ', 'もじを かくと、ミルク・クッキー・スターが ふえるよ。');
+  setSpeech('もちものは ここで みられるよ', 'もじを かくと、ミルク・ごはん・クッキー・スターが ふえるよ。');
 });
 document.getElementById('albumBtn').addEventListener('click', () => {
   setSpeech('アルバムは じゅんびちゅう！', 'かいた もじを あとで ならべよう。');
@@ -3422,9 +3900,21 @@ milmaruWrap.addEventListener('pointerup', endPetStroke);
 milmaruWrap.addEventListener('pointercancel', cancelPetStroke);
 
 setupDebugControls();
+if (state.hatched && getWelcomeBackHours() >= 24) {
+  state.gokigen = Math.max(68, Number(state.gokigen) || 0);
+  state.lastMoodAt = Date.now();
+}
 const consumedPendingReward = consumePendingWritingReward();
 if (!consumedPendingReward) applyEntrySpeech();
+saveState();
 render();
+
+setInterval(() => {
+  if (document.hidden || feedBusy) return;
+  const startedNewDay = ensureFeedingDayState(state);
+  if (startedNewDay) saveState();
+  renderActionMode();
+}, 30000);
 
 window.MojikkoCareGame = {
   getState: () => JSON.parse(JSON.stringify(state)),

@@ -2208,6 +2208,7 @@ button {
 'use strict';
 
 const CARE_STATE_KEY = 'mojikkoFarmCareStateV1';
+const FOOD_SYSTEM_VERSION = 2;
 const PLAY_STAR_COST = 0;
 const TOTAL_ROUNDS = 5;
 const BALL_SIZE = 58;
@@ -2442,8 +2443,11 @@ const defaultState = {
   stars: 0,
   inventory: {
     moji_milk: { id: 'moji_milk', name: 'もじミルク', count: 0, type: 'food' },
+    moji_gohan: { id: 'moji_gohan', name: 'もじごはん', count: 0, type: 'food' },
     moji_cookie: { id: 'moji_cookie', name: 'もじクッキー', count: 0, type: 'food' }
   },
+  foodSystemVersion: FOOD_SYSTEM_VERSION,
+  feedingDay: createFeedingDay(),
   reaction: 'normal',
   speech: 'いっしょに もじを かこう！',
   lastStageId: 'egg',
@@ -2561,6 +2565,52 @@ function cloneDefaultState() {
   return JSON.parse(JSON.stringify(defaultState));
 }
 
+function getLocalDateKey(timestamp = Date.now()) {
+  const date = new Date(timestamp);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function createFeedingDay(timestamp = Date.now(), lastSeenAt = timestamp) {
+  return {
+    localDateKey: getLocalDateKey(timestamp),
+    claimed: {},
+    lastSeenAt: Number.isFinite(lastSeenAt) ? lastSeenAt : timestamp
+  };
+}
+
+function normalizeFeedingDay(value, timestamp = Date.now()) {
+  const todayKey = getLocalDateKey(timestamp);
+  const existingLastSeenAt = Number.isFinite(value && value.lastSeenAt) ? value.lastSeenAt : timestamp;
+  if (!value || value.localDateKey !== todayKey) return createFeedingDay(timestamp, existingLastSeenAt);
+  const rawClaims = value.claimed || {};
+  const claimed = {};
+  ['morning', 'lunch', 'afternoon', 'dinner'].forEach((slotId) => {
+    const claim = rawClaims[slotId];
+    if (claim === true) {
+      claimed[slotId] = true;
+    } else if (claim && typeof claim === 'object') {
+      claimed[slotId] = JSON.parse(JSON.stringify(claim));
+    }
+  });
+  return {
+    localDateKey: todayKey,
+    claimed,
+    lastSeenAt: existingLastSeenAt
+  };
+}
+
+function migrateFoodSystemV2(merged, parsed) {
+  const previousVersion = Number(parsed && parsed.foodSystemVersion) || 0;
+  if (previousVersion < FOOD_SYSTEM_VERSION && merged.hatched && merged.sukusuku >= 38) {
+    merged.inventory.moji_gohan.count = Math.min(99, merged.inventory.moji_gohan.count + 3);
+  }
+  merged.foodSystemVersion = FOOD_SYSTEM_VERSION;
+  merged.feedingDay = normalizeFeedingDay(parsed && parsed.feedingDay);
+}
+
 function sanitizeMilmaruName(value) {
   const text = String(value || '').trim().replace(/\s+/g, '');
   return text ? text.slice(0, 8) : 'ミルマル';
@@ -2593,6 +2643,7 @@ function loadState() {
         if (parsed.inventory[id]) merged.inventory[id].count = Math.max(0, Number(parsed.inventory[id].count) || 0);
       });
     }
+    migrateFoodSystemV2(merged, parsed);
     return merged;
   } catch (error) {
     console.warn('Could not load care state:', error);
@@ -2602,6 +2653,8 @@ function loadState() {
 
 function saveState() {
   try {
+    state.foodSystemVersion = FOOD_SYSTEM_VERSION;
+    state.feedingDay = normalizeFeedingDay(state.feedingDay);
     localStorage.setItem(CARE_STATE_KEY, JSON.stringify(state));
   } catch (error) {
     console.warn('Could not save care state:', error);
