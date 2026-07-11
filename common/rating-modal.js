@@ -56,6 +56,24 @@
 
   function nowMs() { return Date.now(); }
 
+  // ---- 永久 dedup + debug バイパス (v2101 batch:1236) -----------------
+  // デバッグ機能 'survey-multi-submit' が ON のときだけ、 永久 dedup フラグ
+  // (pono_rating_completed_forever) の 「チェック側」 を無視する。 判定は
+  // common/debug-mode.js (staging ホスト + manage 解錠 sessionStorage) に完全委譲し、
+  // debug-mode.js 未読込の環境では window.PonoDebugMode が無いので常に false。
+  // フラグの set (CTA commit 時) は debug ON でも従来どおり行う。
+  function isDebugMultiSubmit() {
+    try {
+      return !!(window.PonoDebugMode && window.PonoDebugMode.isFeatureEnabled('survey-multi-submit'));
+    } catch (e) { return false; }
+  }
+  function isCompletedForever() {
+    if (isDebugMultiSubmit()) return false;
+    try {
+      return !!window.localStorage.getItem('pono_rating_completed_forever');
+    } catch (e) { return false; }
+  }
+
   // ---- anon_sid (sessionStorage; 8文字 nanoid) ------------------------
   function getAnonSid() {
     var sid = ssGet(SS_KEY_ANON_SID);
@@ -119,9 +137,8 @@
   function saveRating(gameId, stars) {
     if (!gameId) return;
     // v1964 batch:939: 永久 dedup。 record mode でも上書き保存しない
-    try {
-      if (window.localStorage.getItem('pono_rating_completed_forever')) return;
-    } catch (e) { /* noop */ }
+    // (v2101 batch:1236: デバッグ機能 ON のときだけ isCompletedForever が false になり再保存可)
+    if (isCompletedForever()) return;
     var n = stars | 0;
     if (n < 1 || n > 5) return;
     var payload = {
@@ -199,9 +216,8 @@
     var url = window.PONO_FEEDBACK_APPS_SCRIPT_URL || '';
     if (!url) return;
     // v1964 batch:939: 永久 dedup。 一度 CTA を押した端末では以降 Sheets に POST しない
-    try {
-      if (window.localStorage.getItem('pono_rating_completed_forever')) return;
-    } catch (e) { /* noop */ }
+    // (v2101 batch:1236: デバッグ機能 ON のときだけ isCompletedForever が false になり再 POST 可)
+    if (isCompletedForever()) return;
     // v1951 SecReview H-1: client 側でも defensive に 1-5 clamp。 devtools から
     // postStarToAppsScript('quizland', 999, ...) を直接叩かれても Sheets に
     // 不正値が届かないよう防御 (server-side clamp と多層で担保)。
@@ -779,11 +795,8 @@
     // v1964 batch:939 H-2: 永久 dedup。 一度でも CTA で commit したら他ゲームからの
     // 4-gate 通過でも表示しない (通常モーダルを開いても saveRating/postStarToAppsScript は
     // 永久 flag で silently drop されるため UI 不整合を招く)。
-    try {
-      if (window.localStorage.getItem('pono_rating_completed_forever')) {
-        return Promise.resolve(false);
-      }
-    } catch (e) { /* noop */ }
+    // (v2101 batch:1236: デバッグ機能 ON のときだけ isCompletedForever が false になり再表示可)
+    if (isCompletedForever()) return Promise.resolve(false);
 
     // Gate 1: 既評価
     if (hasRated(gameId)) return Promise.resolve(false);
@@ -800,9 +813,9 @@
 
   function _shouldSuppressTitleLPOpen() {
     // 永久 dedup: 一度でも CTA で commit したら title/LP 経路の "評価受付" は再開しない
-    try {
-      if (window.localStorage.getItem('pono_rating_completed_forever')) return 'forever';
-    } catch (e) { /* noop */ }
+    // (v2101 batch:1236: デバッグ機能 ON のときは 'forever' を返さず通常の評価受付 modal に
+    //  戻る。 'today' / null の意味論は不変)
+    if (isCompletedForever()) return 'forever';
     // 「あとで こたえる」当日 cooldown
     try {
       if (window.localStorage.getItem('pono_rating_skip_today_' + ymdTodayLocal())) {

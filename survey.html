@@ -143,11 +143,14 @@ textarea { min-height: 100px; resize: vertical; }
   </div>
 </div>
 
+<!-- v2101 batch:1236: デバッグ機能 (survey-multi-submit) 判定用。 本番ホストでは
+     isFeatureEnabled が常に false なので子供向け挙動には影響しない -->
+<script src="/common/debug-mode.js"></script>
 <script>
 // batch:938 (v1953): survey.html は独立ページで play.html の PONO_SW_VERSION を継承しない。
 // sw.js CACHE_VERSION と同期した値をここで注入し、 L262 fd.append('swVersion', ...) が空文字に
 // ならないようにする。 sw.js を bump するたびにここも同期させる。
-window.PONO_SW_VERSION = 'v1953';
+window.PONO_SW_VERSION = 'v2101';
 (function(){
   var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwAHRy0UyHRCktZdxpQEgUHj7jEuHA49lb6t5HgckVmYogQTDdB4AlRhT99rp94U4hLhA/exec';
 
@@ -161,7 +164,15 @@ window.PONO_SW_VERSION = 'v1953';
   function markSubmitted(){
     try { window.localStorage.setItem(DEDUP_KEY, '1'); } catch(e){}
   }
-  if (isAlreadySubmitted()){
+  // v2101 batch:1236: デバッグ機能 'survey-multi-submit' が ON のときだけ永久 dedup の
+  // チェック側をスキップして何回でも送信テストできるようにする。 判定は common/debug-mode.js の
+  // isFeatureEnabled に完全委譲 (staging ホスト + manage 解錠 sessionStorage が必須条件で、
+  // 本番ホストや debug-mode.js 未読込時は常に false)。 markSubmitted() の set は ON でも
+  // 従来どおり行い、 本番挙動との差分を最小化する。
+  function isDebugMultiSubmit(){
+    try { return !!(window.PonoDebugMode && window.PonoDebugMode.isFeatureEnabled('survey-multi-submit')); } catch(e){ return false; }
+  }
+  if (!isDebugMultiSubmit() && isAlreadySubmitted()){
     try {
       document.getElementById('formPane').classList.add('hidden');
       document.getElementById('alreadyPane').classList.remove('hidden');
@@ -265,7 +276,8 @@ window.PONO_SW_VERSION = 'v1953';
     ev.preventDefault();
     if (__submitted) return;
     // v1965 batch:939b: 永久 dedup 再チェック (mount 後に別タブで star modal を送信したケース対策)
-    if (isAlreadySubmitted()){
+    // v2101 batch:1236: デバッグ機能 ON のときのみスキップ (何回でも送信テスト用)
+    if (!isDebugMultiSubmit() && isAlreadySubmitted()){
       try {
         document.getElementById('formPane').classList.add('hidden');
         document.getElementById('alreadyPane').classList.remove('hidden');
@@ -332,6 +344,34 @@ window.PONO_SW_VERSION = 'v1953';
     document.getElementById('formPane').classList.add('hidden');
     document.getElementById('thanksPane').classList.remove('hidden');
     try { window.scrollTo(0, 0); } catch(e){}
+
+    // v2101 batch:1236: デバッグ機能 ON のときだけ、 thanksPane にリロード不要の
+    // 再送信導線を出す。 OFF (本番含む) では DOM 自体を生成しない (子供向け UI を汚さない)。
+    if (isDebugMultiSubmit()){
+      try {
+        var thanksPane = document.getElementById('thanksPane');
+        if (thanksPane && !document.getElementById('debugResendBtn')){
+          var again = document.createElement('a');
+          again.id = 'debugResendBtn';
+          again.href = '#';
+          again.textContent = 'もういちど おくる（デバッグ）';
+          again.style.marginLeft = '12px';
+          again.style.background = '#E9E4DB';
+          again.addEventListener('click', function(ev2){
+            ev2.preventDefault();
+            __submitted = false;
+            try {
+              var againBtn = document.querySelector('#surveyForm button[type="submit"]');
+              if (againBtn) againBtn.disabled = false;
+            } catch(e){}
+            document.getElementById('thanksPane').classList.add('hidden');
+            document.getElementById('formPane').classList.remove('hidden');
+            try { window.scrollTo(0, 0); } catch(e){}
+          });
+          thanksPane.appendChild(again);
+        }
+      } catch(e){}
+    }
   });
 })();
 </script>

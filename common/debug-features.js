@@ -89,6 +89,13 @@
       label: 'はじめてクリア報酬：記録をリセット',
       description: 'ブラウザコンソールから window.resetFirstClearRewards() で初回クリア報酬の付与記録を消せる',
       default: false
+    },
+    {
+      // v2101 batch:1236: ご感想 (survey.html) と★モーダルの永久 dedup バイパス
+      id: 'survey-multi-submit',
+      label: 'ご感想：何回でも送れる',
+      description: 'ON にすると、ご感想 (survey.html) の「一度送ったら二度と送れない」制限をバイパスして何回でも送信テストできる。★モーダル側の永久 dedup も無効化。デバッグボードを解錠した同じタブで survey.html に移動した場合のみ有効 (解錠は sessionStorage なのでタブ単位)',
+      default: false
     }
   ];
 })(typeof window !== 'undefined' ? window : this);
