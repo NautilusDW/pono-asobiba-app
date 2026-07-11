@@ -149,6 +149,32 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-07-11T03:07:27Z - 仕切りG縦強制撤去 (worker.js/admin/bento 3箇所) のE2Eコードトレースレビュー
+- **タスク**: 仕切りG縦強制撤去 (worker.js/admin/bento 3箇所) のE2Eコードトレースレビュー
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 0
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {}
+- **サマリ**: 行動ログが空のため分析できません。
+
+
+### 2026-07-11T03:01:14Z - src/worker.js: bento仕切りG(index6)強制縦変換ロジックをnormalizeBentoSlotSampleIdから撤去、KV履歴バックアップは温存
+- **タスク**: src/worker.js: bento仕切りG(index6)強制縦変換ロジックをnormalizeBentoSlotSampleIdから撤去、KV履歴バックアップは温存
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 0
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {}
+- **サマリ**: 行動ログが空のため分析できません。
+
+
 ### 2026-07-11T02:42:19Z - tut2-hotfix5 review指摘3件(bento tut2-nori-undo詰み/deadコードガード)修正
 - **タスク**: tut2-hotfix5 review指摘3件(bento tut2-nori-undo詰み/deadコードガード)修正
 - **結果**: 成功
@@ -229,32 +255,6 @@ wrangler deploy                  # master 内容を production に
 
 ### 2026-07-11T01:42:49Z - batch:1216 tier 名 'sub'→'app' 全面リネーム (挙動不変、free/book/app、監査漏れ2件をレビューで捕捉、Playwright 36/36 ×2、sw v2080)
 - **タスク**: batch:1216 tier 名 'sub'→'app' 全面リネーム (挙動不変、free/book/app、監査漏れ2件をレビューで捕捉、Playwright 36/36 ×2、sw v2080)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 0
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {}
-- **サマリ**: 行動ログが空のため分析できません。
-
-
-### 2026-07-11T01:41:23Z - tier名 'sub'→'app' リネームの挙動同一性を Playwright で実測検証 (free/book/app 3状態)
-- **タスク**: tier名 'sub'→'app' リネームの挙動同一性を Playwright で実測検証 (free/book/app 3状態)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 0
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {}
-- **サマリ**: 行動ログが空のため分析できません。
-
-
-### 2026-07-11T01:40:35Z - bento mask-defaults KV に NPC positions と同型の履歴バックアップ+admin GET履歴エンドポイントを追加、staging現在値をdocs/kv-snapshotsへ保存
-- **タスク**: bento mask-defaults KV に NPC positions と同型の履歴バックアップ+admin GET履歴エンドポイントを追加、staging現在値をdocs/kv-snapshotsへ保存
 - **結果**: 成功
 - **理由**: N/A
 - **総アクション数**: 0
