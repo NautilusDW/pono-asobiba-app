@@ -83,9 +83,9 @@ namespace Pono.MarbleRun3D.Bootstrap
                     yield return null;
                 }
                 // Metal may create the PNG path before the asynchronous readback and
-                // file flush are complete. Give it a few frames before QA quits so
-                // evidence never contains transient black tiles.
-                yield return new WaitForSecondsRealtime(0.55f);
+                // file flush are complete. Busy physics frames need more than a few
+                // frames, so keep the Player alive long enough to avoid black tiles.
+                yield return new WaitForSecondsRealtime(2.0f);
             }
             if (_quit) Application.Quit(_passed ? 0 : 2);
         }

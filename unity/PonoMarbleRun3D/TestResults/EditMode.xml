@@ -1,375 +1,420 @@
 <?xml version="1.0" encoding="utf-8"?>
-<test-run id="2" testcasecount="57" result="Passed" total="57" passed="57" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:20Z" duration="0.1456525">
-  <test-suite type="TestSuite" id="1000" name="ポノの マーブルラン" fullname="ポノの マーブルラン" runstate="Runnable" testcasecount="57" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:20Z" duration="0.145653" total="57" passed="57" failed="0" inconclusive="0" skipped="0" asserts="0">
+<test-run id="2" testcasecount="64" result="Passed" total="64" passed="64" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.1384565">
+  <test-suite type="TestSuite" id="1000" name="ポノの マーブルラン" fullname="ポノの マーブルラン" runstate="Runnable" testcasecount="64" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.138457" total="64" passed="64" failed="0" inconclusive="0" skipped="0" asserts="0">
     <properties>
       <property name="platform" value="EditMode" />
     </properties>
-    <test-suite type="Assembly" id="1064" name="Pono.MarbleRun.Tests.EditMode.dll" fullname="/Users/ndw_mac/AppDevelopment/pono-asobiba-app/unity/PonoMarbleRun3D/Library/ScriptAssemblies/Pono.MarbleRun.Tests.EditMode.dll" runstate="Runnable" testcasecount="57" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:20Z" duration="0.142260" total="57" passed="57" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <test-suite type="Assembly" id="1072" name="Pono.MarbleRun.Tests.EditMode.dll" fullname="/Users/ndw_mac/AppDevelopment/pono-asobiba-app/unity/PonoMarbleRun3D/Library/ScriptAssemblies/Pono.MarbleRun.Tests.EditMode.dll" runstate="Runnable" testcasecount="64" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.135395" total="64" passed="64" failed="0" inconclusive="0" skipped="0" asserts="0">
       <properties>
-        <property name="_PID" value="81341" />
+        <property name="_PID" value="93153" />
         <property name="_APPDOMAIN" value="Unity Child Domain" />
         <property name="platform" value="EditMode" />
         <property name="EditorOnly" value="True" />
       </properties>
-      <test-suite type="TestSuite" id="1065" name="Pono" fullname="Pono" runstate="Runnable" testcasecount="57" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:20Z" duration="0.142168" total="57" passed="57" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <test-suite type="TestSuite" id="1073" name="Pono" fullname="Pono" runstate="Runnable" testcasecount="64" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.135314" total="64" passed="64" failed="0" inconclusive="0" skipped="0" asserts="0">
         <properties />
-        <test-suite type="TestSuite" id="1066" name="MarbleRun3D" fullname="Pono.MarbleRun3D" runstate="Runnable" testcasecount="57" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:20Z" duration="0.142134" total="57" passed="57" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <test-suite type="TestSuite" id="1074" name="MarbleRun3D" fullname="Pono.MarbleRun3D" runstate="Runnable" testcasecount="64" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.135286" total="64" passed="64" failed="0" inconclusive="0" skipped="0" asserts="0">
           <properties />
-          <test-suite type="TestSuite" id="1067" name="Tests" fullname="Pono.MarbleRun3D.Tests" runstate="Runnable" testcasecount="57" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:20Z" duration="0.142102" total="57" passed="57" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <test-suite type="TestSuite" id="1075" name="Tests" fullname="Pono.MarbleRun3D.Tests" runstate="Runnable" testcasecount="64" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.135257" total="64" passed="64" failed="0" inconclusive="0" skipped="0" asserts="0">
             <properties />
-            <test-suite type="TestSuite" id="1068" name="EditMode" fullname="Pono.MarbleRun3D.Tests.EditMode" runstate="Runnable" testcasecount="57" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:20Z" duration="0.142038" total="57" passed="57" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <test-suite type="TestSuite" id="1076" name="EditMode" fullname="Pono.MarbleRun3D.Tests.EditMode" runstate="Runnable" testcasecount="64" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.135202" total="64" passed="64" failed="0" inconclusive="0" skipped="0" asserts="0">
               <properties />
-              <test-suite type="TestFixture" id="1002" name="CatalogPlacementTests" fullname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests" classname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests" runstate="Runnable" testcasecount="13" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:19Z" duration="0.020796" total="13" passed="13" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <test-suite type="TestFixture" id="1002" name="CatalogPlacementTests" fullname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests" classname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests" runstate="Runnable" testcasecount="13" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.018838" total="13" passed="13" failed="0" inconclusive="0" skipped="0" asserts="0">
                 <properties />
-                <test-case id="1003" name="CatalogContainsEveryRequiredPieceExactlyOnce" fullname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests.CatalogContainsEveryRequiredPieceExactlyOnce" methodname="CatalogContainsEveryRequiredPieceExactlyOnce" classname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests" runstate="Runnable" seed="1689221114" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:19Z" duration="0.008103" asserts="0">
+                <test-case id="1003" name="CatalogContainsEveryRequiredPieceExactlyOnce" fullname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests.CatalogContainsEveryRequiredPieceExactlyOnce" methodname="CatalogContainsEveryRequiredPieceExactlyOnce" classname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests" runstate="Runnable" seed="1385059034" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.007816" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1004" name="EveryConnectorIsFiniteCardinalAndOnPieceEdge" fullname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests.EveryConnectorIsFiniteCardinalAndOnPieceEdge" methodname="EveryConnectorIsFiniteCardinalAndOnPieceEdge" classname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests" runstate="Runnable" seed="1086651539" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:19Z" duration="0.000461" asserts="0">
+                <test-case id="1004" name="EveryConnectorIsFiniteCardinalAndOnPieceEdge" fullname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests.EveryConnectorIsFiniteCardinalAndOnPieceEdge" methodname="EveryConnectorIsFiniteCardinalAndOnPieceEdge" classname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests" runstate="Runnable" seed="1611829640" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000523" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1012" name="FlatTracksCanCrossOnSeparateLevelsButTallPartsReserveHeadroom" fullname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests.FlatTracksCanCrossOnSeparateLevelsButTallPartsReserveHeadroom" methodname="FlatTracksCanCrossOnSeparateLevelsButTallPartsReserveHeadroom" classname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests" runstate="Runnable" seed="894419518" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:19Z" duration="0.003050" asserts="0">
+                <test-case id="1012" name="FlatTracksCanCrossOnSeparateLevelsButTallPartsReserveHeadroom" fullname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests.FlatTracksCanCrossOnSeparateLevelsButTallPartsReserveHeadroom" methodname="FlatTracksCanCrossOnSeparateLevelsButTallPartsReserveHeadroom" classname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests" runstate="Runnable" seed="545520199" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.002785" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1005" name="FourQuarterTurnsReturnToOriginalConnector" fullname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests.FourQuarterTurnsReturnToOriginalConnector" methodname="FourQuarterTurnsReturnToOriginalConnector" classname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests" runstate="Runnable" seed="388633679" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:19Z" duration="0.000492" asserts="0">
+                <test-case id="1005" name="FourQuarterTurnsReturnToOriginalConnector" fullname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests.FourQuarterTurnsReturnToOriginalConnector" methodname="FourQuarterTurnsReturnToOriginalConnector" classname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests" runstate="Runnable" seed="381977400" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000412" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1015" name="GraphFindsConnectedPathAndRejectsGap" fullname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests.GraphFindsConnectedPathAndRejectsGap" methodname="GraphFindsConnectedPathAndRejectsGap" classname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests" runstate="Runnable" seed="1253414077" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:19Z" duration="0.000802" asserts="0">
+                <test-case id="1015" name="GraphFindsConnectedPathAndRejectsGap" fullname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests.GraphFindsConnectedPathAndRejectsGap" methodname="GraphFindsConnectedPathAndRejectsGap" classname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests" runstate="Runnable" seed="408997334" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000692" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1010" name="NewVerticalPartsExposeExpectedLevelConnections" fullname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests.NewVerticalPartsExposeExpectedLevelConnections" methodname="NewVerticalPartsExposeExpectedLevelConnections" classname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests" runstate="Runnable" seed="395706832" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:19Z" duration="0.001201" asserts="0">
+                <test-case id="1010" name="NewVerticalPartsExposeExpectedLevelConnections" fullname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests.NewVerticalPartsExposeExpectedLevelConnections" methodname="NewVerticalPartsExposeExpectedLevelConnections" classname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests" runstate="Runnable" seed="2052066309" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000769" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1014" name="PlacementRejectsOverlapBoundsAndDuplicateEndpoints" fullname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests.PlacementRejectsOverlapBoundsAndDuplicateEndpoints" methodname="PlacementRejectsOverlapBoundsAndDuplicateEndpoints" classname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests" runstate="Runnable" seed="744764755" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:19Z" duration="0.000170" asserts="0">
+                <test-case id="1014" name="PlacementRejectsOverlapBoundsAndDuplicateEndpoints" fullname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests.PlacementRejectsOverlapBoundsAndDuplicateEndpoints" methodname="PlacementRejectsOverlapBoundsAndDuplicateEndpoints" classname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests" runstate="Runnable" seed="882032520" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000140" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1013" name="RelativeOccupancyRotatesWithPiecePose" fullname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests.RelativeOccupancyRotatesWithPiecePose" methodname="RelativeOccupancyRotatesWithPiecePose" classname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests" runstate="Runnable" seed="515793124" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:19Z" duration="0.000138" asserts="0">
+                <test-case id="1013" name="RelativeOccupancyRotatesWithPiecePose" fullname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests.RelativeOccupancyRotatesWithPiecePose" methodname="RelativeOccupancyRotatesWithPiecePose" classname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests" runstate="Runnable" seed="333046615" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000112" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1009" name="SlopeSnapsFlatTracksAtBothPhysicalLevels" fullname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests.SlopeSnapsFlatTracksAtBothPhysicalLevels" methodname="SlopeSnapsFlatTracksAtBothPhysicalLevels" classname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests" runstate="Runnable" seed="1394676012" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:19Z" duration="0.000562" asserts="0">
+                <test-case id="1009" name="SlopeSnapsFlatTracksAtBothPhysicalLevels" fullname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests.SlopeSnapsFlatTracksAtBothPhysicalLevels" methodname="SlopeSnapsFlatTracksAtBothPhysicalLevels" classname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests" runstate="Runnable" seed="2081496184" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000473" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1006" name="SnapChoosesCompatibleAdjacentConnector" fullname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests.SnapChoosesCompatibleAdjacentConnector" methodname="SnapChoosesCompatibleAdjacentConnector" classname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests" runstate="Runnable" seed="725062897" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:19Z" duration="0.000123" asserts="0">
+                <test-case id="1006" name="SnapChoosesCompatibleAdjacentConnector" fullname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests.SnapChoosesCompatibleAdjacentConnector" methodname="SnapChoosesCompatibleAdjacentConnector" classname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests" runstate="Runnable" seed="1647949729" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000107" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1007" name="SnapDoesNotRotateCandidateOrJumpBeyondTolerance" fullname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests.SnapDoesNotRotateCandidateOrJumpBeyondTolerance" methodname="SnapDoesNotRotateCandidateOrJumpBeyondTolerance" classname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests" runstate="Runnable" seed="162568159" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:19Z" duration="0.000104" asserts="0">
+                <test-case id="1007" name="SnapDoesNotRotateCandidateOrJumpBeyondTolerance" fullname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests.SnapDoesNotRotateCandidateOrJumpBeyondTolerance" methodname="SnapDoesNotRotateCandidateOrJumpBeyondTolerance" classname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests" runstate="Runnable" seed="1261153429" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000091" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1008" name="SnapPrefersConnectorOnRequestedLayerWhenXZMatches" fullname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests.SnapPrefersConnectorOnRequestedLayerWhenXZMatches" methodname="SnapPrefersConnectorOnRequestedLayerWhenXZMatches" classname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests" runstate="Runnable" seed="1242304149" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:19Z" duration="0.000123" asserts="0">
+                <test-case id="1008" name="SnapPrefersConnectorOnRequestedLayerWhenXZMatches" fullname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests.SnapPrefersConnectorOnRequestedLayerWhenXZMatches" methodname="SnapPrefersConnectorOnRequestedLayerWhenXZMatches" classname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests" runstate="Runnable" seed="1675455519" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000106" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1011" name="VarietyPartsExposeExpectedHeightGraphAndFlatConnectors" fullname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests.VarietyPartsExposeExpectedHeightGraphAndFlatConnectors" methodname="VarietyPartsExposeExpectedHeightGraphAndFlatConnectors" classname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests" runstate="Runnable" seed="773757618" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:19Z" duration="0.000682" asserts="0">
+                <test-case id="1011" name="VarietyPartsExposeExpectedHeightGraphAndFlatConnectors" fullname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests.VarietyPartsExposeExpectedHeightGraphAndFlatConnectors" methodname="VarietyPartsExposeExpectedHeightGraphAndFlatConnectors" classname="Pono.MarbleRun3D.Tests.EditMode.CatalogPlacementTests" runstate="Runnable" seed="1558550867" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000550" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
               </test-suite>
-              <test-suite type="TestFixture" id="1016" name="HistoryStorageChallengeTests" fullname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests" classname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests" runstate="Runnable" testcasecount="16" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:19Z" duration="0.011053" total="16" passed="16" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <test-suite type="TestFixture" id="1016" name="HistoryStorageChallengeTests" fullname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests" classname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests" runstate="Runnable" testcasecount="16" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.013097" total="16" passed="16" failed="0" inconclusive="0" skipped="0" asserts="0">
                 <properties />
-                <test-case id="1030" name="CatalogHasExactlyThreeOpenEndedChallenges" fullname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests.CatalogHasExactlyThreeOpenEndedChallenges" methodname="CatalogHasExactlyThreeOpenEndedChallenges" classname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests" runstate="Runnable" seed="1482239" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:19Z" duration="0.001278" asserts="0">
+                <test-case id="1030" name="CatalogHasExactlyThreeOpenEndedChallenges" fullname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests.CatalogHasExactlyThreeOpenEndedChallenges" methodname="CatalogHasExactlyThreeOpenEndedChallenges" classname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests" runstate="Runnable" seed="1522799532" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.001216" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1031" name="CatalogHasSixEditableConnectedSampleCoursesWithSeparateSaves" fullname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests.CatalogHasSixEditableConnectedSampleCoursesWithSeparateSaves" methodname="CatalogHasSixEditableConnectedSampleCoursesWithSeparateSaves" classname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests" runstate="Runnable" seed="1413223997" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:19Z" duration="0.004964" asserts="0">
+                <test-case id="1031" name="CatalogHasSixEditableConnectedSampleCoursesWithSeparateSaves" fullname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests.CatalogHasSixEditableConnectedSampleCoursesWithSeparateSaves" methodname="CatalogHasSixEditableConnectedSampleCoursesWithSeparateSaves" classname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests" runstate="Runnable" seed="1490365778" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.004841" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1033" name="FeaturedRoutesUseGravityOrVisiblePowerForEveryHeightChange" fullname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests.FeaturedRoutesUseGravityOrVisiblePowerForEveryHeightChange" methodname="FeaturedRoutesUseGravityOrVisiblePowerForEveryHeightChange" classname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests" runstate="Runnable" seed="1269991741" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:19Z" duration="0.000484" asserts="0">
+                <test-case id="1033" name="FeaturedRoutesUseGravityOrVisiblePowerForEveryHeightChange" fullname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests.FeaturedRoutesUseGravityOrVisiblePowerForEveryHeightChange" methodname="FeaturedRoutesUseGravityOrVisiblePowerForEveryHeightChange" classname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests" runstate="Runnable" seed="689466873" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000482" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1018" name="HistoryCapacityIsBounded" fullname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests.HistoryCapacityIsBounded" methodname="HistoryCapacityIsBounded" classname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests" runstate="Runnable" seed="1925627734" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:19Z" duration="0.000217" asserts="0">
+                <test-case id="1018" name="HistoryCapacityIsBounded" fullname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests.HistoryCapacityIsBounded" methodname="HistoryCapacityIsBounded" classname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests" runstate="Runnable" seed="1086214163" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000209" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1017" name="HistoryRestoresPlaceRotateDeleteAndClearSnapshots" fullname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests.HistoryRestoresPlaceRotateDeleteAndClearSnapshots" methodname="HistoryRestoresPlaceRotateDeleteAndClearSnapshots" classname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests" runstate="Runnable" seed="1393616623" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:19Z" duration="0.000236" asserts="0">
+                <test-case id="1017" name="HistoryRestoresPlaceRotateDeleteAndClearSnapshots" fullname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests.HistoryRestoresPlaceRotateDeleteAndClearSnapshots" methodname="HistoryRestoresPlaceRotateDeleteAndClearSnapshots" classname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests" runstate="Runnable" seed="21423327" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000232" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-suite type="ParameterizedMethod" id="1028" name="MalformedOrUnsupportedSaveFailsSafely" fullname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests.MalformedOrUnsupportedSaveFailsSafely" classname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:19Z" duration="0.000629" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <test-suite type="ParameterizedMethod" id="1028" name="MalformedOrUnsupportedSaveFailsSafely" fullname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests.MalformedOrUnsupportedSaveFailsSafely" classname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000670" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
                   <properties />
-                  <test-case id="1024" name="MalformedOrUnsupportedSaveFailsSafely(&quot;&quot;)" fullname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests.MalformedOrUnsupportedSaveFailsSafely(&quot;&quot;)" methodname="MalformedOrUnsupportedSaveFailsSafely" classname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests" runstate="Runnable" seed="1155161535" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:19Z" duration="0.000255" asserts="0">
+                  <test-case id="1024" name="MalformedOrUnsupportedSaveFailsSafely(&quot;&quot;)" fullname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests.MalformedOrUnsupportedSaveFailsSafely(&quot;&quot;)" methodname="MalformedOrUnsupportedSaveFailsSafely" classname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests" runstate="Runnable" seed="1209935181" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000255" asserts="0">
                     <properties>
                       <property name="retryIteration" value="0" />
                       <property name="repeatIteration" value="0" />
                     </properties>
                   </test-case>
-                  <test-case id="1025" name="MalformedOrUnsupportedSaveFailsSafely(&quot;{&quot;)" fullname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests.MalformedOrUnsupportedSaveFailsSafely(&quot;{&quot;)" methodname="MalformedOrUnsupportedSaveFailsSafely" classname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests" runstate="Runnable" seed="1239963160" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:19Z" duration="0.000048" asserts="0">
+                  <test-case id="1025" name="MalformedOrUnsupportedSaveFailsSafely(&quot;{&quot;)" fullname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests.MalformedOrUnsupportedSaveFailsSafely(&quot;{&quot;)" methodname="MalformedOrUnsupportedSaveFailsSafely" classname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests" runstate="Runnable" seed="2019532329" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000048" asserts="0">
                     <properties>
                       <property name="retryIteration" value="0" />
                       <property name="repeatIteration" value="0" />
                     </properties>
                   </test-case>
-                  <test-case id="1026" name="MalformedOrUnsupportedSaveFailsSafely(&quot;{\&quot;schemaVersion\&quot;:99,\&quot;modeId\&quot;:\&quot;sandbox\&quot;,\&quot;pieces\&quot;:[]}&quot;)" fullname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests.MalformedOrUnsupportedSaveFailsSafely(&quot;{\&quot;schemaVersion\&quot;:99,\&quot;modeId\&quot;:\&quot;sandbox\&quot;,\&quot;pieces\&quot;:[]}&quot;)" methodname="MalformedOrUnsupportedSaveFailsSafely" classname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests" runstate="Runnable" seed="344269485" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:19Z" duration="0.000082" asserts="0">
+                  <test-case id="1026" name="MalformedOrUnsupportedSaveFailsSafely(&quot;{\&quot;schemaVersion\&quot;:99,\&quot;modeId\&quot;:\&quot;sandbox\&quot;,\&quot;pieces\&quot;:[]}&quot;)" fullname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests.MalformedOrUnsupportedSaveFailsSafely(&quot;{\&quot;schemaVersion\&quot;:99,\&quot;modeId\&quot;:\&quot;sandbox\&quot;,\&quot;pieces\&quot;:[]}&quot;)" methodname="MalformedOrUnsupportedSaveFailsSafely" classname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests" runstate="Runnable" seed="1394396532" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000083" asserts="0">
                     <properties>
                       <property name="retryIteration" value="0" />
                       <property name="repeatIteration" value="0" />
                     </properties>
                   </test-case>
-                  <test-case id="1027" name="MalformedOrUnsupportedSaveFailsSafely(&quot;{\&quot;schemaVersion\&quot;:1,\&quot;modeId\&quot;:\&quot;sandbox\&quot;,\&quot;pieces\&quot;:[{\&quot;id\&quot;:\&quot;x\&quot;,\&quot;kind\&quot;:999,\&quot;pose\&quot;:{\&quot;x\&quot;:0,\&quot;z\&quot;:0,\&quot;level\&quot;:0,\&quot;quarterTurns\&quot;:0}}]}&quot;)" fullname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests.MalformedOrUnsupportedSaveFailsSafely(&quot;{\&quot;schemaVersion\&quot;:1,\&quot;modeId\&quot;:\&quot;sandbox\&quot;,\&quot;pieces\&quot;:[{\&quot;id\&quot;:\&quot;x\&quot;,\&quot;kind\&quot;:999,\&quot;pose\&quot;:{\&quot;x\&quot;:0,\&quot;z\&quot;:0,\&quot;level\&quot;:0,\&quot;quarterTurns\&quot;:0}}]}&quot;)" methodname="MalformedOrUnsupportedSaveFailsSafely" classname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests" runstate="Runnable" seed="384243392" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:19Z" duration="0.000034" asserts="0">
+                  <test-case id="1027" name="MalformedOrUnsupportedSaveFailsSafely(&quot;{\&quot;schemaVersion\&quot;:1,\&quot;modeId\&quot;:\&quot;sandbox\&quot;,\&quot;pieces\&quot;:[{\&quot;id\&quot;:\&quot;x\&quot;,\&quot;kind\&quot;:999,\&quot;pose\&quot;:{\&quot;x\&quot;:0,\&quot;z\&quot;:0,\&quot;level\&quot;:0,\&quot;quarterTurns\&quot;:0}}]}&quot;)" fullname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests.MalformedOrUnsupportedSaveFailsSafely(&quot;{\&quot;schemaVersion\&quot;:1,\&quot;modeId\&quot;:\&quot;sandbox\&quot;,\&quot;pieces\&quot;:[{\&quot;id\&quot;:\&quot;x\&quot;,\&quot;kind\&quot;:999,\&quot;pose\&quot;:{\&quot;x\&quot;:0,\&quot;z\&quot;:0,\&quot;level\&quot;:0,\&quot;quarterTurns\&quot;:0}}]}&quot;)" methodname="MalformedOrUnsupportedSaveFailsSafely" classname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests" runstate="Runnable" seed="443078934" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000033" asserts="0">
                     <properties>
                       <property name="retryIteration" value="0" />
                       <property name="repeatIteration" value="0" />
                     </properties>
                   </test-case>
                 </test-suite>
-                <test-case id="1029" name="SaveFromAnotherModeIsRejected" fullname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests.SaveFromAnotherModeIsRejected" methodname="SaveFromAnotherModeIsRejected" classname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests" runstate="Runnable" seed="661486859" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:19Z" duration="0.000171" asserts="0">
+                <test-case id="1029" name="SaveFromAnotherModeIsRejected" fullname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests.SaveFromAnotherModeIsRejected" methodname="SaveFromAnotherModeIsRejected" classname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests" runstate="Runnable" seed="523298253" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000163" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1019" name="SaveRoundTripPreservesStableDataOnly" fullname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests.SaveRoundTripPreservesStableDataOnly" methodname="SaveRoundTripPreservesStableDataOnly" classname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests" runstate="Runnable" seed="1107387619" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:19Z" duration="0.000332" asserts="0">
+                <test-case id="1019" name="SaveRoundTripPreservesStableDataOnly" fullname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests.SaveRoundTripPreservesStableDataOnly" methodname="SaveRoundTripPreservesStableDataOnly" classname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests" runstate="Runnable" seed="1551435228" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000307" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1023" name="SaveValidationRejectsTallOccupancyCollisionButAllowsLayeredFlatTracks" fullname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests.SaveValidationRejectsTallOccupancyCollisionButAllowsLayeredFlatTracks" methodname="SaveValidationRejectsTallOccupancyCollisionButAllowsLayeredFlatTracks" classname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests" runstate="Runnable" seed="114798135" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:19Z" duration="0.000135" asserts="0">
+                <test-case id="1023" name="SaveValidationRejectsTallOccupancyCollisionButAllowsLayeredFlatTracks" fullname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests.SaveValidationRejectsTallOccupancyCollisionButAllowsLayeredFlatTracks" methodname="SaveValidationRejectsTallOccupancyCollisionButAllowsLayeredFlatTracks" classname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests" runstate="Runnable" seed="685794848" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000121" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1021" name="SchemaOneSaveMigratesToSixMarblesWithoutLosingPieces" fullname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests.SchemaOneSaveMigratesToSixMarblesWithoutLosingPieces" methodname="SchemaOneSaveMigratesToSixMarblesWithoutLosingPieces" classname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests" runstate="Runnable" seed="692138901" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:19Z" duration="0.000090" asserts="0">
+                <test-case id="1021" name="SchemaOneSaveMigratesToSixMarblesWithoutLosingPieces" fullname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests.SchemaOneSaveMigratesToSixMarblesWithoutLosingPieces" methodname="SchemaOneSaveMigratesToSixMarblesWithoutLosingPieces" classname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests" runstate="Runnable" seed="2133221549" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000090" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1022" name="SchemaTwoRejectsUnsafeMarbleCounts" fullname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests.SchemaTwoRejectsUnsafeMarbleCounts" methodname="SchemaTwoRejectsUnsafeMarbleCounts" classname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests" runstate="Runnable" seed="1305677146" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:19Z" duration="0.000058" asserts="0">
+                <test-case id="1022" name="SchemaTwoRejectsUnsafeMarbleCounts" fullname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests.SchemaTwoRejectsUnsafeMarbleCounts" methodname="SchemaTwoRejectsUnsafeMarbleCounts" classname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests" runstate="Runnable" seed="644249331" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000059" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1020" name="SchemaTwoRoundTripPreservesEveryNewPieceKind" fullname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests.SchemaTwoRoundTripPreservesEveryNewPieceKind" methodname="SchemaTwoRoundTripPreservesEveryNewPieceKind" classname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests" runstate="Runnable" seed="1075507678" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:19Z" duration="0.000420" asserts="0">
+                <test-case id="1020" name="SchemaTwoRoundTripPreservesEveryNewPieceKind" fullname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests.SchemaTwoRoundTripPreservesEveryNewPieceKind" methodname="SchemaTwoRoundTripPreservesEveryNewPieceKind" classname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests" runstate="Runnable" seed="1621590734" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000388" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1032" name="StarterModeIsUnlimitedRichConnectedAndIndependentlyEditable" fullname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests.StarterModeIsUnlimitedRichConnectedAndIndependentlyEditable" methodname="StarterModeIsUnlimitedRichConnectedAndIndependentlyEditable" classname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests" runstate="Runnable" seed="246730519" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:19Z" duration="0.001287" asserts="0">
-                  <properties>
-                    <property name="retryIteration" value="0" />
-                    <property name="repeatIteration" value="0" />
-                  </properties>
-                </test-case>
-              </test-suite>
-              <test-suite type="TestFixture" id="1034" name="PieceFactoryIsolationTests" fullname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests" classname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests" runstate="Runnable" testcasecount="11" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:20Z" duration="0.093324" total="11" passed="11" failed="0" inconclusive="0" skipped="0" asserts="0">
-                <properties />
-                <test-case id="1045" name="AndroidDefaultQualityUsesMobileTunedValues" fullname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests.AndroidDefaultQualityUsesMobileTunedValues" methodname="AndroidDefaultQualityUsesMobileTunedValues" classname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests" runstate="Runnable" seed="1682027463" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:19Z" duration="0.000599" asserts="0">
-                  <properties>
-                    <property name="retryIteration" value="0" />
-                    <property name="repeatIteration" value="0" />
-                  </properties>
-                </test-case>
-                <test-case id="1043" name="CameraFramesCourseHeightAndTogglesTopView" fullname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests.CameraFramesCourseHeightAndTogglesTopView" methodname="CameraFramesCourseHeightAndTogglesTopView" classname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests" runstate="Runnable" seed="619344846" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:19Z" duration="0.001930" asserts="0">
-                  <properties>
-                    <property name="retryIteration" value="0" />
-                    <property name="repeatIteration" value="0" />
-                  </properties>
-                </test-case>
-                <test-case id="1041" name="ChunkyRailsSupportsAndConnectorSocketsStayVisualOnly" fullname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests.ChunkyRailsSupportsAndConnectorSocketsStayVisualOnly" methodname="ChunkyRailsSupportsAndConnectorSocketsStayVisualOnly" classname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests" runstate="Runnable" seed="1868681849" result="Passed" start-time="2026-07-10 16:25:19Z" end-time="2026-07-10 16:25:20Z" duration="0.039758" asserts="0">
-                  <properties>
-                    <property name="retryIteration" value="0" />
-                    <property name="repeatIteration" value="0" />
-                  </properties>
-                </test-case>
-                <test-case id="1035" name="EveryPieceBuildsWithSeparatePlacementAndRunColliders" fullname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests.EveryPieceBuildsWithSeparatePlacementAndRunColliders" methodname="EveryPieceBuildsWithSeparatePlacementAndRunColliders" classname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests" runstate="Runnable" seed="587126846" result="Passed" start-time="2026-07-10 16:25:20Z" end-time="2026-07-10 16:25:20Z" duration="0.018938" asserts="0">
-                  <properties>
-                    <property name="retryIteration" value="0" />
-                    <property name="repeatIteration" value="0" />
-                  </properties>
-                </test-case>
-                <test-case id="1040" name="EveryPieceUsesSmallSharedNonCollidingStorybookDecorations" fullname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests.EveryPieceUsesSmallSharedNonCollidingStorybookDecorations" methodname="EveryPieceUsesSmallSharedNonCollidingStorybookDecorations" classname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests" runstate="Runnable" seed="1677697703" result="Passed" start-time="2026-07-10 16:25:20Z" end-time="2026-07-10 16:25:20Z" duration="0.010560" asserts="0">
-                  <properties>
-                    <property name="retryIteration" value="0" />
-                    <property name="repeatIteration" value="0" />
-                  </properties>
-                </test-case>
-                <test-case id="1042" name="MarbleColorsActorsAndGoalSensorSupportMultipleStableMarbles" fullname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests.MarbleColorsActorsAndGoalSensorSupportMultipleStableMarbles" methodname="MarbleColorsActorsAndGoalSensorSupportMultipleStableMarbles" classname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests" runstate="Runnable" seed="413511311" result="Passed" start-time="2026-07-10 16:25:20Z" end-time="2026-07-10 16:25:20Z" duration="0.002432" asserts="0">
-                  <properties>
-                    <property name="retryIteration" value="0" />
-                    <property name="repeatIteration" value="0" />
-                  </properties>
-                </test-case>
-                <test-case id="1044" name="ProjectIsIndependentAndBuildSceneIsExplicit" fullname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests.ProjectIsIndependentAndBuildSceneIsExplicit" methodname="ProjectIsIndependentAndBuildSceneIsExplicit" classname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests" runstate="Runnable" seed="2130476810" result="Passed" start-time="2026-07-10 16:25:20Z" end-time="2026-07-10 16:25:20Z" duration="0.002939" asserts="0">
-                  <properties>
-                    <property name="retryIteration" value="0" />
-                    <property name="repeatIteration" value="0" />
-                  </properties>
-                </test-case>
-                <test-case id="1036" name="StartGoalSeesawAndDominoExposeRequiredRuntimeParts" fullname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests.StartGoalSeesawAndDominoExposeRequiredRuntimeParts" methodname="StartGoalSeesawAndDominoExposeRequiredRuntimeParts" classname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests" runstate="Runnable" seed="1313630760" result="Passed" start-time="2026-07-10 16:25:20Z" end-time="2026-07-10 16:25:20Z" duration="0.003053" asserts="0">
-                  <properties>
-                    <property name="retryIteration" value="0" />
-                    <property name="repeatIteration" value="0" />
-                  </properties>
-                </test-case>
-                <test-case id="1037" name="TowerHelixStepsLiftAndElevatedSupportsExposeStableGeometry" fullname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests.TowerHelixStepsLiftAndElevatedSupportsExposeStableGeometry" methodname="TowerHelixStepsLiftAndElevatedSupportsExposeStableGeometry" classname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests" runstate="Runnable" seed="225171358" result="Passed" start-time="2026-07-10 16:25:20Z" end-time="2026-07-10 16:25:20Z" duration="0.004771" asserts="0">
-                  <properties>
-                    <property name="retryIteration" value="0" />
-                    <property name="repeatIteration" value="0" />
-                  </properties>
-                </test-case>
-                <test-case id="1039" name="ToyMaterialsUseBrightSoftPastelsAndAReadableWarmWoodBase" fullname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests.ToyMaterialsUseBrightSoftPastelsAndAReadableWarmWoodBase" methodname="ToyMaterialsUseBrightSoftPastelsAndAReadableWarmWoodBase" classname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests" runstate="Runnable" seed="354359757" result="Passed" start-time="2026-07-10 16:25:20Z" end-time="2026-07-10 16:25:20Z" duration="0.001541" asserts="0">
-                  <properties>
-                    <property name="retryIteration" value="0" />
-                    <property name="repeatIteration" value="0" />
-                  </properties>
-                </test-case>
-                <test-case id="1038" name="VarietyPiecesExposeDistinctiveGeometryGuidesAndTransparentMaterials" fullname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests.VarietyPiecesExposeDistinctiveGeometryGuidesAndTransparentMaterials" methodname="VarietyPiecesExposeDistinctiveGeometryGuidesAndTransparentMaterials" classname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests" runstate="Runnable" seed="1018819088" result="Passed" start-time="2026-07-10 16:25:20Z" end-time="2026-07-10 16:25:20Z" duration="0.006038" asserts="0">
+                <test-case id="1032" name="StarterModeIsUnlimitedRichConnectedAndIndependentlyEditable" fullname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests.StarterModeIsUnlimitedRichConnectedAndIndependentlyEditable" methodname="StarterModeIsUnlimitedRichConnectedAndIndependentlyEditable" classname="Pono.MarbleRun3D.Tests.EditMode.HistoryStorageChallengeTests" runstate="Runnable" seed="1214908930" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.001573" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
               </test-suite>
-              <test-suite type="TestFixture" id="1046" name="SafetyCopyPhysicsTests" fullname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests" classname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests" runstate="Runnable" testcasecount="17" result="Passed" start-time="2026-07-10 16:25:20Z" end-time="2026-07-10 16:25:20Z" duration="0.016275" total="17" passed="17" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <test-suite type="TestFixture" id="1034" name="OrbitCameraControllerTests" fullname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests" classname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests" runstate="Runnable" testcasecount="7" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.004147" total="7" passed="7" failed="0" inconclusive="0" skipped="0" asserts="0">
                 <properties />
-                <test-case id="1059" name="CentripetalConstraintIsInwardFiniteAndCappedWithoutDoingWork" fullname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests.CentripetalConstraintIsInwardFiniteAndCappedWithoutDoingWork" methodname="CentripetalConstraintIsInwardFiniteAndCappedWithoutDoingWork" classname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests" runstate="Runnable" seed="1318076509" result="Passed" start-time="2026-07-10 16:25:20Z" end-time="2026-07-10 16:25:20Z" duration="0.000415" asserts="0">
+                <test-case id="1040" name="AutoOrbitRateNeverExceedsComfortCap" fullname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests.AutoOrbitRateNeverExceedsComfortCap" methodname="AutoOrbitRateNeverExceedsComfortCap" classname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests" runstate="Runnable" seed="530322610" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000512" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1060" name="CombinedCurveCorrectionRemainsPerpendicularToDriftingVelocity" fullname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests.CombinedCurveCorrectionRemainsPerpendicularToDriftingVelocity" methodname="CombinedCurveCorrectionRemainsPerpendicularToDriftingVelocity" classname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests" runstate="Runnable" seed="726283115" result="Passed" start-time="2026-07-10 16:25:20Z" end-time="2026-07-10 16:25:20Z" duration="0.000114" asserts="0">
+                <test-case id="1039" name="CourseLookAheadSelectsForwardRailAndIgnoresRearCrossing" fullname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests.CourseLookAheadSelectsForwardRailAndIgnoresRearCrossing" methodname="CourseLookAheadSelectsForwardRailAndIgnoresRearCrossing" classname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests" runstate="Runnable" seed="1144483067" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000520" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1051" name="EveryJapaneseRuntimeStringLiteralIsKanaSafe" fullname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests.EveryJapaneseRuntimeStringLiteralIsKanaSafe" methodname="EveryJapaneseRuntimeStringLiteralIsKanaSafe" classname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests" runstate="Runnable" seed="1169863339" result="Passed" start-time="2026-07-10 16:25:20Z" end-time="2026-07-10 16:25:20Z" duration="0.007891" asserts="0">
+                <test-case id="1035" name="FollowGroupUsesMainPackAndRejectsOneWildMarble" fullname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests.FollowGroupUsesMainPackAndRejectsOneWildMarble" methodname="FollowGroupUsesMainPackAndRejectsOneWildMarble" classname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests" runstate="Runnable" seed="1067899537" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000721" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1053" name="HelixGuideUsesFiniteConnectorsInBothTravelDirections" fullname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests.HelixGuideUsesFiniteConnectorsInBothTravelDirections" methodname="HelixGuideUsesFiniteConnectorsInBothTravelDirections" classname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests" runstate="Runnable" seed="1140123761" result="Passed" start-time="2026-07-10 16:25:20Z" end-time="2026-07-10 16:25:20Z" duration="0.003484" asserts="0">
+                <test-case id="1036" name="FollowPlanUsesCloseShoulderViewWithBoundedPitch" fullname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests.FollowPlanUsesCloseShoulderViewWithBoundedPitch" methodname="FollowPlanUsesCloseShoulderViewWithBoundedPitch" classname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests" runstate="Runnable" seed="261321825" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000365" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1050" name="KanaValidatorAcceptsUiCopyAndRejectsKanjiLatinAndIterationMark" fullname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests.KanaValidatorAcceptsUiCopyAndRejectsKanjiLatinAndIterationMark" methodname="KanaValidatorAcceptsUiCopyAndRejectsKanjiLatinAndIterationMark" classname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests" runstate="Runnable" seed="1363431972" result="Passed" start-time="2026-07-10 16:25:20Z" end-time="2026-07-10 16:25:20Z" duration="0.000600" asserts="0">
+                <test-case id="1041" name="ManualOrbitAndZoomHoldAutomationThenOverviewRestoresExactly" fullname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests.ManualOrbitAndZoomHoldAutomationThenOverviewRestoresExactly" methodname="ManualOrbitAndZoomHoldAutomationThenOverviewRestoresExactly" classname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests" runstate="Runnable" seed="773433670" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.001446" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1049" name="OutOfBoundsWinsImmediately" fullname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests.OutOfBoundsWinsImmediately" methodname="OutOfBoundsWinsImmediately" classname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests" runstate="Runnable" seed="1503555254" result="Passed" start-time="2026-07-10 16:25:20Z" end-time="2026-07-10 16:25:20Z" duration="0.000260" asserts="0">
+                <test-case id="1037" name="StationaryMarbleKeepsLastYawInsteadOfSearchingForAHeading" fullname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests.StationaryMarbleKeepsLastYawInsteadOfSearchingForAHeading" methodname="StationaryMarbleKeepsLastYawInsteadOfSearchingForAHeading" classname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests" runstate="Runnable" seed="1477514544" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000082" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1058" name="PassiveEnergyConstraintHandlesInvalidOrInsufficientEnergySafely" fullname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests.PassiveEnergyConstraintHandlesInvalidOrInsufficientEnergySafely" methodname="PassiveEnergyConstraintHandlesInvalidOrInsufficientEnergySafely" classname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests" runstate="Runnable" seed="423467999" result="Passed" start-time="2026-07-10 16:25:20Z" end-time="2026-07-10 16:25:20Z" duration="0.000267" asserts="0">
+                <test-case id="1038" name="VerticalLiftRequestsOnlyASmallOrbitFromTheCurrentSide" fullname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests.VerticalLiftRequestsOnlyASmallOrbitFromTheCurrentSide" methodname="VerticalLiftRequestsOnlyASmallOrbitFromTheCurrentSide" classname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests" runstate="Runnable" seed="1099926886" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000106" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1057" name="PassiveEnergyConstraintNeverExceedsAvailableEnergyOrSpeedCap" fullname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests.PassiveEnergyConstraintNeverExceedsAvailableEnergyOrSpeedCap" methodname="PassiveEnergyConstraintNeverExceedsAvailableEnergyOrSpeedCap" classname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests" runstate="Runnable" seed="590001380" result="Passed" start-time="2026-07-10 16:25:20Z" end-time="2026-07-10 16:25:20Z" duration="0.000093" asserts="0">
+              </test-suite>
+              <test-suite type="TestFixture" id="1042" name="PieceFactoryIsolationTests" fullname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests" classname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests" runstate="Runnable" testcasecount="11" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.085484" total="11" passed="11" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1053" name="AndroidDefaultQualityUsesMobileTunedValues" fullname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests.AndroidDefaultQualityUsesMobileTunedValues" methodname="AndroidDefaultQualityUsesMobileTunedValues" classname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests" runstate="Runnable" seed="732766133" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000220" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1055" name="PassiveEnergyConstraintPreservesEntrySpeedAtTheSameHeight" fullname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests.PassiveEnergyConstraintPreservesEntrySpeedAtTheSameHeight" methodname="PassiveEnergyConstraintPreservesEntrySpeedAtTheSameHeight" classname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests" runstate="Runnable" seed="588772857" result="Passed" start-time="2026-07-10 16:25:20Z" end-time="2026-07-10 16:25:20Z" duration="0.000108" asserts="0">
+                <test-case id="1051" name="CameraFramesCourseHeightAndTogglesTopView" fullname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests.CameraFramesCourseHeightAndTogglesTopView" methodname="CameraFramesCourseHeightAndTogglesTopView" classname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests" runstate="Runnable" seed="818923499" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000745" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1056" name="PassiveEnergyConstraintSlowsUphillAndAcceleratesDownhill" fullname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests.PassiveEnergyConstraintSlowsUphillAndAcceleratesDownhill" methodname="PassiveEnergyConstraintSlowsUphillAndAcceleratesDownhill" classname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests" runstate="Runnable" seed="573433978" result="Passed" start-time="2026-07-10 16:25:20Z" end-time="2026-07-10 16:25:20Z" duration="0.000120" asserts="0">
+                <test-case id="1049" name="ChunkyRailsSupportsAndConnectorSocketsStayVisualOnly" fullname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests.ChunkyRailsSupportsAndConnectorSocketsStayVisualOnly" methodname="ChunkyRailsSupportsAndConnectorSocketsStayVisualOnly" classname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests" runstate="Runnable" seed="1484328672" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.036363" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1062" name="PassiveGuideCanCenterAStoppedMarbleWithoutPushingItForward" fullname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests.PassiveGuideCanCenterAStoppedMarbleWithoutPushingItForward" methodname="PassiveGuideCanCenterAStoppedMarbleWithoutPushingItForward" classname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests" runstate="Runnable" seed="552157957" result="Passed" start-time="2026-07-10 16:25:20Z" end-time="2026-07-10 16:25:20Z" duration="0.000100" asserts="0">
+                <test-case id="1043" name="EveryPieceBuildsWithSeparatePlacementAndRunColliders" fullname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests.EveryPieceBuildsWithSeparatePlacementAndRunColliders" methodname="EveryPieceBuildsWithSeparatePlacementAndRunColliders" classname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests" runstate="Runnable" seed="749910309" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.018869" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1061" name="PassiveGuidePerformsNoMechanicalWorkAndRespectsAccelerationCap" fullname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests.PassiveGuidePerformsNoMechanicalWorkAndRespectsAccelerationCap" methodname="PassiveGuidePerformsNoMechanicalWorkAndRespectsAccelerationCap" classname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests" runstate="Runnable" seed="2005429265" result="Passed" start-time="2026-07-10 16:25:20Z" end-time="2026-07-10 16:25:20Z" duration="0.000289" asserts="0">
+                <test-case id="1048" name="EveryPieceUsesSmallSharedNonCollidingStorybookDecorations" fullname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests.EveryPieceUsesSmallSharedNonCollidingStorybookDecorations" methodname="EveryPieceUsesSmallSharedNonCollidingStorybookDecorations" classname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests" runstate="Runnable" seed="66368269" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.009279" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1063" name="PassiveGuideRejectsInvalidInputsSafely" fullname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests.PassiveGuideRejectsInvalidInputsSafely" methodname="PassiveGuideRejectsInvalidInputsSafely" classname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests" runstate="Runnable" seed="755348305" result="Passed" start-time="2026-07-10 16:25:20Z" end-time="2026-07-10 16:25:20Z" duration="0.000088" asserts="0">
+                <test-case id="1050" name="MarbleColorsActorsAndGoalSensorSupportMultipleStableMarbles" fullname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests.MarbleColorsActorsAndGoalSensorSupportMultipleStableMarbles" methodname="MarbleColorsActorsAndGoalSensorSupportMultipleStableMarbles" classname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests" runstate="Runnable" seed="2096683125" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.002003" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1052" name="PhysicsProfileIsExplicitAndMobileReasonable" fullname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests.PhysicsProfileIsExplicitAndMobileReasonable" methodname="PhysicsProfileIsExplicitAndMobileReasonable" classname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests" runstate="Runnable" seed="1949699976" result="Passed" start-time="2026-07-10 16:25:20Z" end-time="2026-07-10 16:25:20Z" duration="0.000144" asserts="0">
+                <test-case id="1052" name="ProjectIsIndependentAndBuildSceneIsExplicit" fullname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests.ProjectIsIndependentAndBuildSceneIsExplicit" methodname="ProjectIsIndependentAndBuildSceneIsExplicit" classname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests" runstate="Runnable" seed="1894011019" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.002498" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1047" name="SafeAreaIsClampedInsideTransientDesktopWindowBounds" fullname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests.SafeAreaIsClampedInsideTransientDesktopWindowBounds" methodname="SafeAreaIsClampedInsideTransientDesktopWindowBounds" classname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests" runstate="Runnable" seed="2145051184" result="Passed" start-time="2026-07-10 16:25:20Z" end-time="2026-07-10 16:25:20Z" duration="0.000272" asserts="0">
+                <test-case id="1044" name="StartGoalSeesawAndDominoExposeRequiredRuntimeParts" fullname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests.StartGoalSeesawAndDominoExposeRequiredRuntimeParts" methodname="StartGoalSeesawAndDominoExposeRequiredRuntimeParts" classname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests" runstate="Runnable" seed="315466669" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.002710" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1048" name="StallRequiresSustainedLowMotionAndRaisesOnce" fullname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests.StallRequiresSustainedLowMotionAndRaisesOnce" methodname="StallRequiresSustainedLowMotionAndRaisesOnce" classname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests" runstate="Runnable" seed="1286639269" result="Passed" start-time="2026-07-10 16:25:20Z" end-time="2026-07-10 16:25:20Z" duration="0.000137" asserts="0">
+                <test-case id="1045" name="TowerHelixStepsLiftAndElevatedSupportsExposeStableGeometry" fullname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests.TowerHelixStepsLiftAndElevatedSupportsExposeStableGeometry" methodname="TowerHelixStepsLiftAndElevatedSupportsExposeStableGeometry" classname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests" runstate="Runnable" seed="2090659997" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.004616" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />
                   </properties>
                 </test-case>
-                <test-case id="1054" name="ZeroWorkConstraintUsesTheEnergyCorrectedVelocity" fullname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests.ZeroWorkConstraintUsesTheEnergyCorrectedVelocity" methodname="ZeroWorkConstraintUsesTheEnergyCorrectedVelocity" classname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests" runstate="Runnable" seed="814752860" result="Passed" start-time="2026-07-10 16:25:20Z" end-time="2026-07-10 16:25:20Z" duration="0.000140" asserts="0">
+                <test-case id="1047" name="ToyMaterialsUseBrightSoftPastelsAndAReadableWarmWoodBase" fullname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests.ToyMaterialsUseBrightSoftPastelsAndAReadableWarmWoodBase" methodname="ToyMaterialsUseBrightSoftPastelsAndAReadableWarmWoodBase" classname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests" runstate="Runnable" seed="1618275901" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.001335" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1046" name="VarietyPiecesExposeDistinctiveGeometryGuidesAndTransparentMaterials" fullname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests.VarietyPiecesExposeDistinctiveGeometryGuidesAndTransparentMaterials" methodname="VarietyPiecesExposeDistinctiveGeometryGuidesAndTransparentMaterials" classname="Pono.MarbleRun3D.Tests.EditMode.PieceFactoryIsolationTests" runstate="Runnable" seed="1081754439" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.005038" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+              </test-suite>
+              <test-suite type="TestFixture" id="1054" name="SafetyCopyPhysicsTests" fullname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests" classname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests" runstate="Runnable" testcasecount="17" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.013076" total="17" passed="17" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1067" name="CentripetalConstraintIsInwardFiniteAndCappedWithoutDoingWork" fullname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests.CentripetalConstraintIsInwardFiniteAndCappedWithoutDoingWork" methodname="CentripetalConstraintIsInwardFiniteAndCappedWithoutDoingWork" classname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests" runstate="Runnable" seed="1166668291" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000343" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1068" name="CombinedCurveCorrectionRemainsPerpendicularToDriftingVelocity" fullname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests.CombinedCurveCorrectionRemainsPerpendicularToDriftingVelocity" methodname="CombinedCurveCorrectionRemainsPerpendicularToDriftingVelocity" classname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests" runstate="Runnable" seed="354545162" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000097" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1059" name="EveryJapaneseRuntimeStringLiteralIsKanaSafe" fullname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests.EveryJapaneseRuntimeStringLiteralIsKanaSafe" methodname="EveryJapaneseRuntimeStringLiteralIsKanaSafe" classname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests" runstate="Runnable" seed="1483322858" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.005690" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1061" name="HelixGuideUsesFiniteConnectorsInBothTravelDirections" fullname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests.HelixGuideUsesFiniteConnectorsInBothTravelDirections" methodname="HelixGuideUsesFiniteConnectorsInBothTravelDirections" classname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests" runstate="Runnable" seed="531646244" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.003029" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1058" name="KanaValidatorAcceptsUiCopyAndRejectsKanjiLatinAndIterationMark" fullname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests.KanaValidatorAcceptsUiCopyAndRejectsKanjiLatinAndIterationMark" methodname="KanaValidatorAcceptsUiCopyAndRejectsKanjiLatinAndIterationMark" classname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests" runstate="Runnable" seed="115389989" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000554" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1057" name="OutOfBoundsWinsImmediately" fullname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests.OutOfBoundsWinsImmediately" methodname="OutOfBoundsWinsImmediately" classname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests" runstate="Runnable" seed="1134186126" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000253" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1066" name="PassiveEnergyConstraintHandlesInvalidOrInsufficientEnergySafely" fullname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests.PassiveEnergyConstraintHandlesInvalidOrInsufficientEnergySafely" methodname="PassiveEnergyConstraintHandlesInvalidOrInsufficientEnergySafely" classname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests" runstate="Runnable" seed="810033085" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000148" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1065" name="PassiveEnergyConstraintNeverExceedsAvailableEnergyOrSpeedCap" fullname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests.PassiveEnergyConstraintNeverExceedsAvailableEnergyOrSpeedCap" methodname="PassiveEnergyConstraintNeverExceedsAvailableEnergyOrSpeedCap" classname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests" runstate="Runnable" seed="1209862335" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000095" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1063" name="PassiveEnergyConstraintPreservesEntrySpeedAtTheSameHeight" fullname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests.PassiveEnergyConstraintPreservesEntrySpeedAtTheSameHeight" methodname="PassiveEnergyConstraintPreservesEntrySpeedAtTheSameHeight" classname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests" runstate="Runnable" seed="293866710" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000107" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1064" name="PassiveEnergyConstraintSlowsUphillAndAcceleratesDownhill" fullname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests.PassiveEnergyConstraintSlowsUphillAndAcceleratesDownhill" methodname="PassiveEnergyConstraintSlowsUphillAndAcceleratesDownhill" classname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests" runstate="Runnable" seed="328616274" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000119" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1070" name="PassiveGuideCanCenterAStoppedMarbleWithoutPushingItForward" fullname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests.PassiveGuideCanCenterAStoppedMarbleWithoutPushingItForward" methodname="PassiveGuideCanCenterAStoppedMarbleWithoutPushingItForward" classname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests" runstate="Runnable" seed="748638023" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000097" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1069" name="PassiveGuidePerformsNoMechanicalWorkAndRespectsAccelerationCap" fullname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests.PassiveGuidePerformsNoMechanicalWorkAndRespectsAccelerationCap" methodname="PassiveGuidePerformsNoMechanicalWorkAndRespectsAccelerationCap" classname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests" runstate="Runnable" seed="1110848933" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000258" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1071" name="PassiveGuideRejectsInvalidInputsSafely" fullname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests.PassiveGuideRejectsInvalidInputsSafely" methodname="PassiveGuideRejectsInvalidInputsSafely" classname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests" runstate="Runnable" seed="1597945861" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000079" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1060" name="PhysicsProfileIsExplicitAndMobileReasonable" fullname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests.PhysicsProfileIsExplicitAndMobileReasonable" methodname="PhysicsProfileIsExplicitAndMobileReasonable" classname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests" runstate="Runnable" seed="377945057" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000135" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1055" name="SafeAreaIsClampedInsideTransientDesktopWindowBounds" fullname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests.SafeAreaIsClampedInsideTransientDesktopWindowBounds" methodname="SafeAreaIsClampedInsideTransientDesktopWindowBounds" classname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests" runstate="Runnable" seed="2067364985" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000265" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1056" name="StallRequiresSustainedLowMotionAndRaisesOnce" fullname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests.StallRequiresSustainedLowMotionAndRaisesOnce" methodname="StallRequiresSustainedLowMotionAndRaisesOnce" classname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests" runstate="Runnable" seed="1930230" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000135" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1062" name="ZeroWorkConstraintUsesTheEnergyCorrectedVelocity" fullname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests.ZeroWorkConstraintUsesTheEnergyCorrectedVelocity" methodname="ZeroWorkConstraintUsesTheEnergyCorrectedVelocity" classname="Pono.MarbleRun3D.Tests.EditMode.SafetyCopyPhysicsTests" runstate="Runnable" seed="968692511" result="Passed" start-time="2026-07-11 01:01:55Z" end-time="2026-07-11 01:01:55Z" duration="0.000131" asserts="0">
                   <properties>
                     <property name="retryIteration" value="0" />
                     <property name="repeatIteration" value="0" />

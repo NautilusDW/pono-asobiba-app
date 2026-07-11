@@ -237,21 +237,21 @@ namespace Pono.MarbleRun3D.Tests.EditMode
             var materials = new ToyMaterialLibrary();
             try
             {
-                AssertSoftColor(materials.Maple.color, 0.82f, 0.48f, "linear vanilla maple");
-                AssertSoftColor(materials.Board.color, 0.78f, 0.52f, "linear peach play board");
+                AssertSoftColor(materials.Maple.color, 0.94f, 0.36f, "linear vanilla maple");
+                AssertSoftColor(materials.Board.color, 0.92f, 0.36f, "linear peach play board");
 
-                Assert.That(materials.Maple.color.gamma.maxColorComponent, Is.InRange(0.91f, 0.95f),
+                Assert.That(materials.Maple.color.gamma.maxColorComponent, Is.InRange(0.98f, 1.00f),
                     "linear maple should render as a warm cream without turning white");
-                Assert.That(materials.Board.color.gamma.maxColorComponent, Is.InRange(0.89f, 0.93f),
+                Assert.That(materials.Board.color.gamma.maxColorComponent, Is.InRange(0.97f, 0.99f),
                     "linear board should render as a light peach rather than dark orange");
-                Assert.That(materials.MapleDark.color.gamma.maxColorComponent, Is.InRange(0.69f, 0.75f),
+                Assert.That(materials.MapleDark.color.gamma.maxColorComponent, Is.InRange(0.82f, 0.85f),
                     "support wood needs a soft cocoa silhouette in Linear color space");
 
                 Color.RGBToHSV(materials.MapleDark.color, out _, out var cocoaSaturation, out var cocoaValue);
-                Assert.That(cocoaValue, Is.InRange(0.44f, 0.52f), "linear cocoa should remain warm and readable");
+                Assert.That(cocoaValue, Is.InRange(0.64f, 0.69f), "linear cocoa should remain warm and readable");
                 Assert.That(cocoaSaturation, Is.LessThanOrEqualTo(0.58f));
                 Color.RGBToHSV(materials.BoardEdge.color, out _, out _, out var edgeValue);
-                Assert.That(edgeValue, Is.GreaterThanOrEqualTo(0.40f));
+                Assert.That(edgeValue, Is.GreaterThanOrEqualTo(0.61f));
 
                 var accents = Enum.GetValues(typeof(MarblePieceKind))
                     .Cast<MarblePieceKind>()

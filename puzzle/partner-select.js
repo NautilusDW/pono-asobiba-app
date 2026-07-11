@@ -117,7 +117,7 @@ window.PonoPartnerSelect = (function () {
 
   function resolveTier(partner) {
     var tier = partner && partner.tier ? String(partner.tier) : 'free';
-    if (tier === 'book' || tier === 'sub') return tier;
+    if (tier === 'book' || tier === 'app') return tier;
     return 'free';
   }
 
@@ -127,7 +127,7 @@ window.PonoPartnerSelect = (function () {
     if (tier === 'book') {
       label = 'えほん';
       icon = '📖';
-    } else if (tier === 'sub') {
+    } else if (tier === 'app') {
       label = 'アプリ';
       icon = '📱';
     }
@@ -199,7 +199,7 @@ window.PonoPartnerSelect = (function () {
 
     // 立ち絵
     var portrait = document.createElement('div');
-    var useAppSilhouette = locked && tier === 'sub' && !!p.silhouetteImage;
+    var useAppSilhouette = locked && tier === 'app' && !!p.silhouetteImage;
     portrait.className = 'pono-pselect__portrait' +
       (useAppSilhouette ? ' is-app-silhouette' : '') +
       (useAppSilhouette && p.silhouetteMode === 'light-background' ? ' is-light-background' : '');

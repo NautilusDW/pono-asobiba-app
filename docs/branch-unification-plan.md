@@ -35,7 +35,7 @@
 - **同期作業そのものが事故を起こした実績**: `develop-app` の変更を `develop` にブランチ間コピーで同期しようとして `src/worker.js` を丸ごとコピーし、`develop` に存在しない依存ファイル（google-auth / savedata 等）の import を持ち込んで wrangler のビルドを壊した事故が発生済み（詳細は [`memory/project_perf_batch_1210_cache_conventions.md`](../memory/project_perf_batch_1210_cache_conventions.md) の「教訓」節を参照）。この事故は「batch 限定 diff の移植」に切り替えることで復旧したが、根本原因（2 ブランチで同じコードを別々に保守する構造）は残ったままだった。
 - **2026-07-10 batch:1210c** で `develop-app` の perf 改善一式を `develop` に同期する作業（tip `3be9925e`）は完了したが、これも都度手動で行う必要があり、今後も同じ作業が発生し続けることが確実だった。
 
-以上を踏まえ、ユーザーは 2026-07-10 に「2 ブランチ並行開発を廃止し、`develop-app` 単一トランク + 環境フラグ/tier による出し分けに統合する」方針を承認した。目的は **共通コードの同期コストと事故リスクをゼロにする** こと。tier（free / book / sub）による機能出し分けは既存の `common/tier.js` の仕組みをそのまま使うため、ブランチを分ける必然性がそもそも薄いという判断が背景にある。
+以上を踏まえ、ユーザーは 2026-07-10 に「2 ブランチ並行開発を廃止し、`develop-app` 単一トランク + 環境フラグ/tier による出し分けに統合する」方針を承認した。目的は **共通コードの同期コストと事故リスクをゼロにする** こと。tier（free / book / app）による機能出し分けは既存の `common/tier.js` の仕組みをそのまま使うため、ブランチを分ける必然性がそもそも薄いという判断が背景にある。
 
 ---
 
@@ -50,8 +50,8 @@
 | **D3** | canonical/OG/JSON-LD/`sitemap.xml` の URL は統一トランクで **`https://pono.kodama-no-mori.com` 固定**（現 `develop` 側の値を採用）。Amazon 評価文言も `develop` 側の新しい版（「Amazonの商品ページへ」）を採用。**これが唯一の「逆統合」（develop → develop-app）項目。** |
 | **D4** | `sw.js` / `src/worker.js` + `src/` 一式（`google-auth.js`、`api/{savedata,validate,passcode,ratelimit}.js`）/ `.assetsignore` は **`develop-app` 版が正**（bindings 未設定の LP env でも savedata は 503 graceful に倒れる、`sw.js` の precache は同一リポジトリなので LP でも全 URL 実在、と調査済み）。 |
 | **D5** | `wrangler.toml` に **`[env.staging.assets]` を明示追加**（`[env.staging-app.assets]` と対称に）。現在 `[env.staging]` にはこのブロックが欠落しており設定が非対称。 |
-| **D6** | production に `APP_BUILD` var は追加しない。sub tier の入口は (i) App staging（env var 注入）と (ii) Native アプリ（`native/scripts/stage-www.mjs` の静的注入）のみ。絵本購入者（book tier）は `pono_premium` パスワード方式なのでどの URL でも機能する。 |
-| **D7** | 「もじっこファーム」（`id: writing-mori`、`play.html` `GAMES` 配列で `comingSoon: true`）と「コトコト もりのキッチン」（`id: cooking`、実体未実装の新規ゲーム）は **`tier: 'sub'` → `'book'` に変更予定**（絵本購入者まで開放）。実装は各ゲームのローンチバッチで行い、本計画では方針のみ記載。 |
+| **D6** | production に `APP_BUILD` var は追加しない。app tier の入口は (i) App staging（env var 注入）と (ii) Native アプリ（`native/scripts/stage-www.mjs` の静的注入）のみ。絵本購入者（book tier）は `pono_premium` パスワード方式なのでどの URL でも機能する。 |
+| **D7** | 「もじっこファーム」（`id: writing-mori`、`play.html` `GAMES` 配列で `comingSoon: true`）と「コトコト もりのキッチン」（`id: cooking`、実体未実装の新規ゲーム）は **`tier: 'app'` → `'book'` に変更予定**（絵本購入者まで開放）。実装は各ゲームのローンチバッチで行い、本計画では方針のみ記載。 |
 | **D8** | **interim ルール（移行完了まで有効 → 2026-07-10 移行完了により失効）**: `develop` への手動 sync は原則停止（統合待ち）。LP 緊急修正のみ `develop` へ直接コミットしてよく、その内容は統合時に取り込む。新規共通機能はすべて `develop-app` で開発する。**現在は失効済み — `develop` は凍結され、LP 緊急修正も `develop-app` で行う。** |
 | **D9** | フック更新は **Phase 3** で実施: `.claude/settings.local.json` の DEPLOY-FACT 文言（現在 LP 系の URL のみ記載で App staging への言及なし）と、Stop hook の auto-push 判定（`branch = "develop"` 固定チェック）を更新する。 |
 | **D10** | ロールバック: `deploy.yml` の変更コミット 1 個を revert すれば旧 2 ブランチ運用に戻せる（`develop` の凍結を解除すれば復元可能）。 |
@@ -117,7 +117,7 @@
     - `sw.js` の `CACHE_VERSION` が両 URL で一致すること。
     - `play/`, `quizland/` 等の主要ページが両 URL で 200 を返すこと。
     - App staging (`pono-asobiba-app-staging.ndw.workers.dev`) のみ `window.__APP_BUILD__ === 1` が注入されていること。LP staging (`pono-asobiba-staging.ndw.workers.dev`) には注入されていないこと。
-    - tier 挙動: LP staging = `free`/`book`、App staging = `sub`（`common/tier.js` L121-139 `getTier()` の分岐どおり）。
+    - tier 挙動: LP staging = `free`/`book`、App staging = `app`（`common/tier.js` L121-139 `getTier()` の分岐どおり）。
 - **検証方法**: クロスレビュー体制（複数エージェントによる相互検証）で実施。
 - **担当想定**: Claude + Codex のクロスレビュー。
 - **ブロッカー**: Phase 0（本番 404）が未解決でも staging 検証自体は独立して実施可能。

@@ -127,10 +127,10 @@
       var tier = window.PonoTier || null;
       if (tier) {
         if (typeof tier.isBook === 'function' && tier.isBook()) return true;
-        if (typeof tier.isSub === 'function' && tier.isSub()) return true;
+        if (typeof tier.isApp === 'function' && tier.isApp()) return true;
         if (typeof tier.getTier === 'function') {
           var currentTier = tier.getTier();
-          if (currentTier === 'book' || currentTier === 'sub') return true;
+          if (currentTier === 'book' || currentTier === 'app') return true;
         }
       }
     } catch (e) {}
@@ -146,9 +146,12 @@
   }
 
   // tier v3: 各シールエントリの "tier" フィールドによる個別ゲート。
-  // "book_exclusive" | "sub_exclusive" | 未設定/"free" (= 全 tier 開放)。
+  // "book_exclusive" | "app_exclusive" | 未設定/"free" (= 全 tier 開放)。
+  // (2026-07-11 tier 名 'sub'→'app' リネームに伴い "sub_exclusive" → "app_exclusive"。
+  //  assets/data/game-stickers.json と必ず同一コミットで変更すること — fail-open のため
+  //  片方だけ変えると app 限定シールが全 tier 開放される)
   // ページ単位の bookOnly/appOnly ゲート (_isPageLocked) とは独立に、同一ページ内で
-  // tier が混在するケース (例: book-bonus ページに将来 sub 限定シールが混じる等) に備える。
+  // tier が混在するケース (例: book-bonus ページに将来 app 限定シールが混じる等) に備える。
   function _currentTier() {
     try {
       if (window.PonoTier && typeof window.PonoTier.getTier === 'function') {
@@ -156,7 +159,7 @@
       }
     } catch (e) {}
     try {
-      if (Boolean(window.__APP_BUILD__)) return 'sub';
+      if (Boolean(window.__APP_BUILD__)) return 'app';
       if (localStorage.getItem('pono_premium') === '1') return 'book';
     } catch (e2) {}
     return 'free';
@@ -165,8 +168,8 @@
   function _isStickerTierUnlocked(tier) {
     if (!tier || tier === 'free') return true;
     var current = _currentTier();
-    if (tier === 'book_exclusive') return current === 'book' || current === 'sub';
-    if (tier === 'sub_exclusive') return current === 'sub';
+    if (tier === 'book_exclusive') return current === 'book' || current === 'app';
+    if (tier === 'app_exclusive') return current === 'app';
     // 未知の tier 値 (schema typo 等) は fail-open。 誤って正規コンテンツを
     // ブロックしてしまう事故の方が、 未知タグを開放してしまう事故より重い。
     return true;
@@ -731,7 +734,7 @@
     return grantBookBonus(options);
   }
 
-  // tier v3: 特定シール id の tier ("book_exclusive" | "sub_exclusive" | "free") を
+  // tier v3: 特定シール id の tier ("book_exclusive" | "app_exclusive" | "free") を
   // カタログ全ページから検索して返す。 見つからない場合は null。
   // 使い方 (Track C / play.html 側):
   //   PonoGameStickers.getStickerTier('book_bonus_wave_greeting').then(function (tier) { ... });

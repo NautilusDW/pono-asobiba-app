@@ -291,7 +291,7 @@ function getPuzzleTier() {
   try {
     if (window.PonoTier && typeof window.PonoTier.getTier === 'function') {
       var t = window.PonoTier.getTier();
-      if (t === 'free' || t === 'book' || t === 'sub') return t;
+      if (t === 'free' || t === 'book' || t === 'app') return t;
     }
   } catch (_) {}
   return 'free';
@@ -324,7 +324,7 @@ function isStageUnlockedForCurrentFlow(index) {
   if (!stage) return false;
   if (!isBuiltInPuzzleStage(stage)) return true; // user drawing stages
   var tier = getPuzzleTier();
-  if (tier === 'sub') return true;
+  if (tier === 'app') return true;
   if (!window.PonoTier) return true;
   var stageNum = stage.id != null ? Number(stage.id) : (index + 1);
   var isSpecial = [5, 10, 15, 20].indexOf(stageNum) >= 0;

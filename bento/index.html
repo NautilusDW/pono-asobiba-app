@@ -9914,14 +9914,14 @@ function getBentoCurrentTier() {
     if (window.PonoTier && typeof window.PonoTier.getTier === 'function') return window.PonoTier.getTier();
   } catch (_) {}
   try {
-    if (window.__APP_BUILD__ === 1 || window.__APP_BUILD__ === '1') return 'sub';
+    if (window.__APP_BUILD__ === 1 || window.__APP_BUILD__ === '1') return 'app';
   } catch (_) {}
   return 'free';
 }
 function isBentoMinTierUnlocked(minTier) {
   if (!minTier || minTier === 'free') return true;
   const tier = getBentoCurrentTier();
-  if (tier === 'sub') return true;
+  if (tier === 'app') return true;
   if (minTier === 'book') return tier === 'book';
   return false;
 }
@@ -23091,7 +23091,7 @@ if (freeLayoutMode) fetchFreeMaskServerDefaults();
     if (modeButtons) modeButtons.classList.remove('is-simple-only');
     if (simpleButton) simpleButton.classList.remove('title-screen__mode-btn--primary-only');
   }
-  // 難易度バッジ: PonoTier (free/book/sub) → PonoDifficulty で表示。
+  // 難易度バッジ: PonoTier (free/book/app) → PonoDifficulty で表示。
   // simple モードは中立 (バッジ無し)。 チュートリアル未完了時も非表示 (UI 混乱回避)。
   (function syncDifficultyBadge() {
     const badge = document.getElementById('title-screen-difficulty-badge');

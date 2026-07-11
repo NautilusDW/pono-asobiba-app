@@ -4,7 +4,7 @@
 //   PonoPartners.list                - 配列 (定義順)
 //   PonoPartners.get(id)             - 単一定義、未知IDなら null
 //   PonoPartners.defaultId           - 既定パートナーID ('kitsune')
-//   PonoPartners.getTier             - 現在の利用ティア ('free'|'book'|'sub')
+//   PonoPartners.getTier             - 現在の利用ティア ('free'|'book'|'app')
 //   PonoPartners.isUnlocked(partner) - パートナーが現在ティアと進行度で使えるか
 //   PonoPartners.getUnlockLabel(partner) - ロック表示文言
 //
@@ -17,7 +17,7 @@ window.PonoPartners = (function () {
   var PARTNER_IMAGES = '../assets/images/puzzle/partners/';
   var STAGE_CLEAR_KEY = 'pono_puzzle_stage_clears_v1';
 
-  var TIER_RANK = { free: 1, book: 2, sub: 3 };
+  var TIER_RANK = { free: 1, book: 2, app: 3 };
 
   /** 配列順 = パートナー選択画面の並び順 */
   var PARTNERS = [
@@ -91,7 +91,7 @@ window.PonoPartners = (function () {
       image: PARTNER_IMAGES + 'partner_araiguma.webp',
       // ロック中は背景透明の輪郭素材を単色化し、元絵の顔や模様を見せない。
       silhouetteImage: '../assets/zukan/animals/dew_pond/raccoon.png',
-      tier: 'sub',
+      tier: 'app',
       locked: false,
       unlockAfterStage: 8,
       ageHint: '4さい〜',
@@ -106,7 +106,7 @@ window.PonoPartners = (function () {
       voiceTag: 'partner_usagi',
       image: PARTNER_IMAGES + 'partner_usagi.webp',
       silhouetteImage: '../assets/zukan/animals/flower_path/rabbit.png',
-      tier: 'sub',
+      tier: 'app',
       locked: false,
       unlockAfterStage: 7,
       ageHint: '3さい〜',
@@ -121,7 +121,7 @@ window.PonoPartners = (function () {
       voiceTag: 'partner_fukurou',
       image: PARTNER_IMAGES + 'partner_fukurou.webp',
       silhouetteImage: '../assets/zukan/animals/reference/owl.png',
-      tier: 'sub',
+      tier: 'app',
       locked: false,
       unlockAfterStage: 12,
       ageHint: '5さい〜',
@@ -137,7 +137,7 @@ window.PonoPartners = (function () {
       image: PARTNER_IMAGES + 'partner_karasu.webp',
       silhouetteImage: '../assets/images/ocean/Crow/Crow_normal_1.png',
       silhouetteMode: 'light-background',
-      tier: 'sub',
+      tier: 'app',
       locked: false,
       unlockAfterStage: 10,
       ageHint: '6さい〜',
@@ -150,7 +150,7 @@ window.PonoPartners = (function () {
     try {
       if (window.PonoTier && typeof window.PonoTier.getTier === 'function') {
         var t = window.PonoTier.getTier();
-        if (t === 'free' || t === 'book' || t === 'sub') return t;
+        if (t === 'free' || t === 'book' || t === 'app') return t;
       }
     } catch (_) {}
     return 'free';

@@ -5,7 +5,7 @@
    2026-07-08: maze / puzzle / oto / bento は free と book の差を復帰。
    quizland は v3 (2026-07-06, feature_tier_v3 参照) の
    free = book (機能差ゼロ) を維持する。 各ゲームの isXxxUnlocked() は
-   「sub なら true、 それ以外は tier ごとの集合 (indexOf) に含まれるか」 の
+   「app なら true、 それ以外は tier ごとの集合 (indexOf) に含まれるか」 の
    パターンで扱う。 book 向けの付録 (特別シール/特別表紙/welcome演出/
    月1おかえり) は本ファイルのゲームロック関数側では扱わない。
    aquarium (isAquariumCreatureUnlocked) / room (isRoomItemUnlocked) /
@@ -13,8 +13,9 @@
    chord mode (isOtoChordModeUnlocked) も book > free の "伸びしろ" として扱う。
 
    公開API (window.PonoTier):
-     - getTier()                           → 'free' | 'book' | 'sub'
-     - isFree() / isBook() / isSub()       簡易判定
+     - getTier()                           → 'free' | 'book' | 'app'
+       (2026-07-11: 買い切り確定に伴い tier 名 'sub' → 'app' にリネーム)
+     - isFree() / isBook() / isApp()       簡易判定 (isSub は @deprecated エイリアス)
      - isAquariumCreatureUnlocked(id)      海の生き物が解放されているか
      - isRoomItemUnlocked(id, cat)         家具/かざりが解放されているか
      - isKatakanaUnlocked()                カタカナ編が解放されているか
@@ -26,8 +27,8 @@
      - BOOK_ROOM_ITEM_IDS                  絵本層に見せる家具・かざり 10種
 
    tier 判定の優先順位 (getTier 実装準拠):
-     capture override / window.__APP_BUILD__ === 1 → 'sub'
-       (sub 判定は APP_BUILD のみ。 localStorage 'pono_sub_active' は旧設計の名残で getTier は読まない)
+     capture override / window.__APP_BUILD__ === 1 → 'app'
+       (app 判定は APP_BUILD のみ。 localStorage 'pono_sub_active' は旧設計の名残で getTier は読まない)
      pono_premium    === '1' → 'book'   (本に印字パスワード → Web入力で解除)
      それ以外                → 'free'
 
@@ -46,7 +47,7 @@
   //
   // 本ヘルパーは「クライアント側だけで完結する unlock 抜け穴」 (localStorage 'pono_premium' /
   // sessionStorage 'pono_capture_tier_override' / window.__APP_BUILD__ / 印字パスワード /
-  // 管理用マスター) のゲートに使う。 正規の paid book/sub は将来 Stripe/IAP の
+  // 管理用マスター) のゲートに使う。 正規の paid book/app は将来 Stripe/IAP の
   // サーバ検証経由になるため、 ここでは無関係。
   function isTierUnlockAllowedClientSide() {
     try {
@@ -58,7 +59,7 @@
     }
   }
 
-  // Phase 2 (3-tier locks active) として運用中。 free / book / sub の解錠範囲は
+  // Phase 2 (3-tier locks active) として運用中。 free / book / app の解錠範囲は
   // 本ファイル下部の各 isXxxUnlocked 関数 (isQuizlandQuestionUnlocked / isMazeStageUnlocked /
   // isOtoSoundSetUnlocked / isPuzzleStageUnlocked / isBentoFoodUnlocked 等) を参照。
   //
@@ -68,7 +69,7 @@
   if (typeof window.PONO_TIER_GAME_LOCKS_ENABLED === 'undefined') {
     try {
       Object.defineProperty(window, 'PONO_TIER_GAME_LOCKS_ENABLED', {
-        value: true,  // 3-tier (free / book / sub) ロック有効。 ユーザー確定方針 (2026-06-28)
+        value: true,  // 3-tier (free / book / app) ロック有効。 ユーザー確定方針 (2026-06-28)
         writable: false,
         configurable: true,
         enumerable: true
@@ -87,7 +88,7 @@
   // __APP_BUILD__ は wrangler.toml の [env.staging-app.vars] で staging-app 限定で
   // 立つフラグであり、 production には立たない。 つまりこのフラグ自体が server-side
   // で staging-app 環境を識別する正当ルートになっているため、 PonoDebugMode 経由の
-  // 追加 gate は不要 (gate を入れると staging-app の sub tier ゲームが消える事故になる)。
+  // 追加 gate は不要 (gate を入れると staging-app の app tier ゲームが消える事故になる)。
   // v1581 で PonoDebugMode 縛りを撤去し、 staging-app 経由を正当経路として復活。
   function isAppBuild() {
     try {
@@ -96,16 +97,16 @@
   }
 
   // ---- capture mode 用 tier override ----
-  // common/capture.js (スクショモード) が sub 限定の隠しゲーム (starparodier 等) を
-  // 撮影するために、 session 限定で「sub tier 同等」 にアクセスできるようにするフラグ。
+  // common/capture.js (スクショモード) が app 限定の隠しゲーム (starparodier 等) を
+  // 撮影するために、 session 限定で「app tier 同等」 にアクセスできるようにするフラグ。
   // sessionStorage に保存 → タブを閉じれば消える。 localStorage には書かない。
-  // 既存 tier_system_policy (free/book/sub 3 パターン) は非破壊 (override が立っていなければ
+  // 既存 tier_system_policy (free/book/app 3 パターン) は非破壊 (override が立っていなければ
   // 通常の判定にフォールバック)。 APP_BUILD は書き換えない (Worker prepend の正規ルートを汚染しない)。
   var CAPTURE_OVERRIDE_KEY = 'pono_capture_tier_override';
   function isCaptureOverride() {
     try {
       if (sessionStorage.getItem(CAPTURE_OVERRIDE_KEY) !== '1') return false;
-      // SECURITY: sessionStorage に手で '1' を入れるだけで sub 化できる抜け穴を塞ぐ。
+      // SECURITY: sessionStorage に手で '1' を入れるだけで app 化できる抜け穴を塞ぐ。
       // capture mode は staging host 上での dev 機能なので debug-mode unlock 必須にしても
       // legitimate なスクショ撮影フロー (capture.js は staging host 限定で起動) を壊さない。
       return isTierUnlockAllowedClientSide();
@@ -119,12 +120,13 @@
   }
 
   // ---- tier 判定 ----
+  // 2026-07-11: 買い切り (アプリ買い切り) 確定に伴い tier 名 'sub' → 'app' に純リネーム (挙動不変)。
   function getTier() {
-    // capture mode 中は session 限定で sub 同等
-    if (isCaptureOverride()) return 'sub';
-    // アプリ版 (APP_BUILD=1) は無条件で sub tier (アプリ版 URL に来た時点で sub 想定)
-    if (isAppBuild()) return 'sub';
-    // 本版: localStorage 状態で book / free のみ。 sub には絶対到達しない
+    // capture mode 中は session 限定で app 同等
+    if (isCaptureOverride()) return 'app';
+    // アプリ版 (APP_BUILD=1) は無条件で app tier (アプリ版 URL に来た時点で app 想定)
+    if (isAppBuild()) return 'app';
+    // 本版: localStorage 状態で book / free のみ。 app には絶対到達しない
     //
     // pono_premium === '1' は verifyBookPassword 経由で立てた正当な永続フラグ
     // (絵本奥付パスワードを親が入力 → book tier 解放)。 v1581 で PonoDebugMode 縛りを撤去し、
@@ -140,7 +142,7 @@
   }
   function isFree() { return getTier() === 'free'; }
   function isBook() { return getTier() === 'book'; }
-  function isSub()  { return getTier() === 'sub';  }
+  function isApp()  { return getTier() === 'app';  }
 
   // ---- 絵本購入者に解放する海の生き物 (aquarium) 8種 ----
   // 代表的なカラフルな魚 + アクセント生物をバランスよく配置。
@@ -238,7 +240,7 @@
   // bento/index.html を v3 準拠に直す際の参照値として公開する。
   var FREE_BENTO_NORI_ENABLED = true;
 
-  // sub 専用の残り14食材 (30 - 16)。 sub は ALL_BENTO_FOOD_NAMES で全解放。
+  // app 専用の残り14食材 (30 - 16)。 app は ALL_BENTO_FOOD_NAMES で全解放。
   var ALL_BENTO_FOOD_NAMES = BOOK_BENTO_FOOD_IDS.concat([
     'コーンほうれんそう',
     'ナポリタン', 'はるまき', 'ベーコンまき',
@@ -249,21 +251,21 @@
   // box / NPC も book > free の差分として維持する。
   var FREE_BENTO_BOX_IDS = ['box_rect_split'];
   var BOOK_BENTO_BOX_IDS = FREE_BENTO_BOX_IDS.concat(['box_square','box_round']);
-  // sub は判定 (isBentoBoxUnlocked) で常 true 返却 = 全箱解放
+  // app は判定 (isBentoBoxUnlocked) で常 true 返却 = 全箱解放
   var FREE_BENTO_NPCS = [];
   var BOOK_BENTO_NPCS = ['risu','inu','shika'];
 
   // ---- 各ゲームごとの解放判定 ----
   function isAquariumCreatureUnlocked(id) {
     var t = getTier();
-    if (t === 'sub')  return true;
+    if (t === 'app')  return true;
     if (t === 'book') return BOOK_AQUARIUM_CREATURE_IDS.indexOf(id) >= 0;
     return false; // 無料はそもそも aquarium に辿り着けない (保険)
   }
 
   function isRoomItemUnlocked(id, cat) {
     var t = getTier();
-    if (t === 'sub')  return true;
+    if (t === 'app')  return true;
     // 壁紙・床は背景扱いで全開放
     if (cat === 'wall' || cat === 'floor') return true;
     if (t === 'book') return BOOK_ROOM_ITEM_IDS.indexOf(id) >= 0;
@@ -271,7 +273,7 @@
   }
 
   function isKatakanaUnlocked() {
-    return getTier() === 'sub';
+    return getTier() === 'app';
   }
 
   // ---- 共通5本のロック判定 (Phase 2: 3-tier locks active) ----
@@ -283,7 +285,7 @@
   function isQuizlandQuestionUnlocked(qid, category, level) {
     if (!gameLocksEnabled()) return true;
     var t = getTier();
-    if (t === 'sub') return true;
+    if (t === 'app') return true;
     // v3: free = book (機能差ゼロ)。 固定リスト (FREE_QUIZLAND_QUESTION_IDS) に含まれる
     // qid のみ解放 (free/book 共通)。
     // 空配列の場合はフェイルセーフで true (= 全開放) を返し、 万一 list が空になった瞬間に
@@ -296,14 +298,14 @@
   // ---- quizland 難易度ロック ----
   // 難易度 (easy=Lv1 / normal=Lv2 / hard=Lv3) を tier だけで判定する。
   //   free / book: easy のみ (Lv1) ※ v3 で free = book に統一
-  //   sub: 全開放
+  //   app: 全開放
   // DIFF_MIN_LEVEL は呼び出し側 (quizland) と整合: easy=1, normal=2, hard=3。
   function isQuizlandDifficultyUnlocked(diff, mode) {
     if (!gameLocksEnabled()) return true;
     var lvMap = { easy: 1, normal: 2, hard: 3 };
     var lv = lvMap[diff] || 1;
     var t = getTier();
-    if (t === 'sub') return true;
+    if (t === 'app') return true;
     // v3: free = book (機能差ゼロ)
     return lv === 1;
   }
@@ -313,7 +315,7 @@
     var n = Number(stageNum);
     if (!isFinite(n)) return false;
     var t = getTier();
-    if (t === 'sub') return true;
+    if (t === 'app') return true;
     if (t === 'book') return BOOK_MAZE_STAGE_IDS.indexOf(n) >= 0;
     return FREE_MAZE_STAGE_IDS.indexOf(n) >= 0;
   }
@@ -323,7 +325,7 @@
     var n = Number(stageNum);
     if (!isFinite(n)) return false;
     var t = getTier();
-    if (t === 'sub') return true;
+    if (t === 'app') return true;
     if (t === 'book') return BOOK_PUZZLE_STAGE_IDS.indexOf(n) >= 0;
     return FREE_PUZZLE_STAGE_IDS.indexOf(n) >= 0;
   }
@@ -339,7 +341,7 @@
   function isPuzzlePonoSpecialUnlocked(stageId) {
     if (!gameLocksEnabled()) return true;
     var t = getTier();
-    if (t === 'sub') return true;
+    if (t === 'app') return true;
     if (t === 'book') {
       return BOOK_PUZZLE_PONO_SPECIAL_IDS.indexOf(normalizePuzzleSpecialStageId(stageId)) >= 0;
     }
@@ -349,7 +351,7 @@
   function isOtoSoundSetUnlocked(setId) {
     if (!gameLocksEnabled()) return true;
     var t = getTier();
-    if (t === 'sub') return true;
+    if (t === 'app') return true;
     if (t === 'book') return BOOK_OTO_SOUND_SETS.indexOf(setId) >= 0;
     return FREE_OTO_SOUND_SETS.indexOf(setId) >= 0;
   }
@@ -357,7 +359,7 @@
   function isOtoModeUnlocked(mode) {
     if (!gameLocksEnabled()) return true;
     var t = getTier();
-    if (t === 'sub') return true;
+    if (t === 'app') return true;
     if (t === 'book') return BOOK_OTO_MODES.indexOf(mode) >= 0;
     return FREE_OTO_MODES.indexOf(mode) >= 0;
   }
@@ -365,7 +367,7 @@
   function isOtoScaleUnlocked(scale) {
     if (!gameLocksEnabled()) return true;
     var t = getTier();
-    if (t === 'sub') return true;
+    if (t === 'app') return true;
     if (t === 'book') return BOOK_OTO_SCALES.indexOf(scale) >= 0;
     return FREE_OTO_SCALES.indexOf(scale) >= 0;
   }
@@ -373,7 +375,7 @@
   function isOtoRhythmSongUnlocked(songId) {
     if (!gameLocksEnabled()) return true;
     var t = getTier();
-    if (t === 'sub') return true;
+    if (t === 'app') return true;
     if (t === 'book') return BOOK_OTO_RHYTHM_SONGS.indexOf(songId) >= 0;
     return FREE_OTO_RHYTHM_SONGS.indexOf(songId) >= 0;
   }
@@ -381,7 +383,7 @@
   function isOtoChordModeUnlocked(mode) {
     if (!gameLocksEnabled()) return true;
     var t = getTier();
-    if (t === 'sub') return true;
+    if (t === 'app') return true;
     if (t === 'book') return BOOK_OTO_CHORD_MODES.indexOf(mode) >= 0;
     return FREE_OTO_CHORD_MODES.indexOf(mode) >= 0;
   }
@@ -391,7 +393,7 @@
     var name = typeof foodNameOrObj === 'string' ? foodNameOrObj : (foodNameOrObj && foodNameOrObj.name);
     if (!name) return false;
     var t = getTier();
-    if (t === 'sub') return ALL_BENTO_FOOD_NAMES.indexOf(name) >= 0;
+    if (t === 'app') return ALL_BENTO_FOOD_NAMES.indexOf(name) >= 0;
     if (t === 'book') return BOOK_BENTO_FOOD_IDS.indexOf(name) >= 0;
     return FREE_BENTO_FOOD_IDS.indexOf(name) >= 0;
   }
@@ -400,7 +402,7 @@
     if (!gameLocksEnabled()) return true;
     if (!boxId) return false;
     var t = getTier();
-    if (t === 'sub') return true;
+    if (t === 'app') return true;
     if (t === 'book') return BOOK_BENTO_BOX_IDS.indexOf(boxId) >= 0;
     return FREE_BENTO_BOX_IDS.indexOf(boxId) >= 0;
   }
@@ -408,7 +410,7 @@
   function isBentoNpcUnlocked(npcId) {
     if (!gameLocksEnabled()) return true;
     var t = getTier();
-    if (t === 'sub') return true;
+    if (t === 'app') return true;
     if (t === 'book') return BOOK_BENTO_NPCS.indexOf(npcId) >= 0;
     return FREE_BENTO_NPCS.indexOf(npcId) >= 0;
   }
@@ -418,7 +420,7 @@
   // [Phase R3 Fix (2026-07-07)] 旧3モード (かぞえる/10づくり/たしざん) は
   // テンメガネ (ten) / カクレン (kak) の2モードに統合された (engine.js MODE_ORDER 準拠)。
   // カクレン Stage1-2 (旧かぞえる相当) / テンメガネ Stage1 (旧10づくり相当) のみ解放、
-  // 残りは sub。
+  // 残りは app。
   var FREE_MONSTER_MATH_STAGE_IDS = {
     kak: [1, 2],
     ten: [1]
@@ -427,7 +429,7 @@
   function isMonsterMathStageUnlocked(mode, stageNum) {
     if (!gameLocksEnabled()) return true;
     var t = getTier();
-    if (t === 'sub') return true;
+    if (t === 'app') return true;
     // v3: free = book (機能差ゼロ)
     var list = FREE_MONSTER_MATH_STAGE_IDS[mode];
     if (!list) return false; // 未知の mode 名は保険で全ロック (誤って全開放しない)
@@ -793,7 +795,10 @@
     isAppBuild: isAppBuild,
     isFree: isFree,
     isBook: isBook,
-    isSub:  isSub,
+    isApp:  isApp,
+    // @deprecated 2026-07-11 tier 名 'sub'→'app' リネーム (買い切り確定)。 旧名エイリアス。
+    // 他セッション / Codex の未マージ作業・見落とし callsite が即死しないための保険。 新規コードは isApp を使うこと。
+    isSub:  isApp,
     setCaptureOverride: setCaptureOverride,
     isCaptureOverride: isCaptureOverride,
     isAquariumCreatureUnlocked: isAquariumCreatureUnlocked,

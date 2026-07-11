@@ -52,7 +52,7 @@
 - **【恒久ルール 2026-05-12 大事故から導出】 questions.js の Q### 真値は QUIZLAND_CATEGORIES キー順、 ORDER-FULL.md の宣言順表記は信用しない**: [memory/feedback_questions_js_q_number_canonical_source.md](memory/feedback_questions_js_q_number_canonical_source.md) — Q### は CATEGORIES キー順 (= order_color Q1-24 / count_total Q25-48 / shape_name Q49-71 / **number_sequence Q72-83** / trivia Q84-109 / weather Q110-133 / opposite Q134-157 / body Q158-181) で決まる。 ORDER-FULL.md は宣言順表記で +1 以上ズレている可能性大、 必ず questions.js の CATEGORIES を真値として参照
 
 - **develop / develop-app 単一トランク統合 (2026-07-10 承認・同日 Phase 1-4 実装完了)**: [memory/project_single_trunk_migration.md](memory/project_single_trunk_migration.md) — 2 ブランチ並行開発を廃止し `develop-app` 単一トランク + APP_BUILD/tier 出し分けへ**統合済み**。develop-app push 1回で App/LP 両 staging に自動デプロイ (sw v2078 byte 一致検証済)、**develop は凍結 (0dacb4e4、push 禁止、BRANCH_FROZEN.md)**。Phase 5 (本番) のみ未実施。⚠️ webapp 本番 404 再発中 (error 1042、統合と無関係)。正本は [docs/branch-unification-plan.md](docs/branch-unification-plan.md)、現行ルールは `AGENTS.md` §1.1/§1.2 に反映済み
-- **【恒久ルール 2026-07-11】ゲーム開放はユーザーのローンチ判断のみ**: [memory/feedback_no_premature_game_launch.md](memory/feedback_no_premature_game_launch.md) — もじっこファーム (writing-mori) / トントンキッチン (bento/kitchen.html、コロッケ・から揚げ・千切り・肉こね実装済みの完成コード) は**「MVPじゃないからまだダメ」(ユーザー明示)** — コード完成 ≠ ローンチ可。comingSoon+sub のまま維持し、開放提案を先走らない。未ローンチコンテンツの直 URL 漏れをガードで塞ぐ提案は歓迎
+- **【恒久ルール 2026-07-11】ゲーム開放はユーザーのローンチ判断のみ**: [memory/feedback_no_premature_game_launch.md](memory/feedback_no_premature_game_launch.md) — もじっこファーム (writing-mori) / トントンキッチン (bento/kitchen.html、コロッケ・から揚げ・千切り・肉こね実装済みの完成コード) は**「MVPじゃないからまだダメ」(ユーザー明示)** — コード完成 ≠ ローンチ可。comingSoon+app (旧 sub、2026-07-11 tier 名リネーム) のまま維持し、開放提案を先走らない。未ローンチコンテンツの直 URL 漏れをガードで塞ぐ提案は歓迎
 - **batch:1210 パフォーマンス改善後のキャッシュ規約 (2026-07-10, sw v2073)**: [memory/project_perf_batch_1210_cache_conventions.md](memory/project_perf_batch_1210_cache_conventions.md) — HTML no-cache 化 / sw.js 画像・動画・音声 cache-first 化 (**同一URL上書き差し替え NG、要リネーム or ?v バンプ**) / cover-first フラッシュ防止原則 (OP前は不透明カバー→await→旧画面hide の順) / Date.now() バスター原則禁止 (editor 経路のみ可) / 新設定数 QUIZLAND_ASSET_VERSION・MAZE_DATA_REV / WebP 494枚変換 285MB→36MB (原本PNG温存、cleanup 別タスク) / **native/www ミラーは pre-batch のまま要再同期**
 
 - **コマ割アニメーションエディタ + manifest 駆動再生 (2026-05-13)**: [memory/feature_koma_wari_editor.md](memory/feature_koma_wari_editor.md) — `tools/koma-wari-editor.html` (= 単一 HTML、 IndexedDB プロジェクト管理 + Undo/Redo + ガイド線 + マスク + Ctrl+CV/Ctrl-drag + 調整ストック)、 `js/animation-player.js` で `assets/animations/<id>/` の manifest 駆動再生。 quizland `playStagePonoHooray` は新経路 + 旧 fallback で段階的移行
@@ -149,6 +149,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-07-11T01:17:31Z - batch:1216 tier名 'sub'→'app' 全面リネーム実装 (runtime 15ファイル + docs 9ファイル、isSubエイリアス保持、Playwright 36チェック全PASS、監査漏れ2件 difficulty.js/partner-select.css を追加発見・修正)
+- **タスク**: batch:1216 tier名 'sub'→'app' 全面リネーム実装 (runtime 15ファイル + docs 9ファイル、isSubエイリアス保持、Playwright 36チェック全PASS、監査漏れ2件 difficulty.js/partner-select.css を追加発見・修正)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 0
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {}
+- **サマリ**: 行動ログが空のため分析できません。
+
+
 ### 2026-07-11T00:54:29Z - tier名 sub→app リネームのREAD-ONLY監査 (全出現箇所の分類列挙)
 - **タスク**: tier名 sub→app リネームのREAD-ONLY監査 (全出現箇所の分類列挙)
 - **結果**: 成功
@@ -242,19 +255,6 @@ wrangler deploy                  # master 内容を production に
 
 ### 2026-07-10T15:48:32Z - book tier (Web+pono_premium) LP staging 動的検証: free/book カード差分・5ゲーム起動スモーク・sub直URL漏れ確認・cloud-sync 503 UI・あいことば導線
 - **タスク**: book tier (Web+pono_premium) LP staging 動的検証: free/book カード差分・5ゲーム起動スモーク・sub直URL漏れ確認・cloud-sync 503 UI・あいことば導線
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 0
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {}
-- **サマリ**: 行動ログが空のため分析できません。
-
-
-### 2026-07-10T15:18:24Z - batch:1214 unity/** を CI paths-ignore と .assetsignore に追加 (unity のみ push のデプロイ抑止 + unity ソース 536 ファイルの配信除外、クロスレビュー clean)
-- **タスク**: batch:1214 unity/** を CI paths-ignore と .assetsignore に追加 (unity のみ push のデプロイ抑止 + unity ソース 536 ファイルの配信除外、クロスレビュー clean)
 - **結果**: 成功
 - **理由**: N/A
 - **総アクション数**: 0

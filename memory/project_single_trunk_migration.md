@@ -7,6 +7,8 @@ metadata:
 
 # develop / develop-app 単一トランク統合 (2026-07-10 承認・同日実装完了)
 
+> 【改名注記 2026-07-11】買い切り確定に伴い tier 名 `'sub'` は `'app'` へ純リネーム済み (batch:1216)。本ファイル中の `sub` は現行コードでは `app` と読み替えること。
+
 ## ステータス
 
 **【実装完了 — Phase 5 (本番反映) のみ未実施】** 2026-07-10 にユーザー承認され、同日中に Phase 1〜4 の実装・検証まで完了した。**現行の運用: `develop-app` が唯一の開発トランク。push 1 回で App staging / LP staging の両方に自動デプロイ (deploy.yml の if ガード付き 3 step 直列)。`develop` は凍結済み（凍結コミット `0dacb4e4`、`BRANCH_FROZEN.md` 設置、以後 push しない）。** 出し分けはブランチではなく APP_BUILD (env 単位注入) / tier (`common/tier.js`) で行う。production への反映（Phase 5）は従来どおりユーザー明示指示時のみ。

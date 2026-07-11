@@ -9744,7 +9744,7 @@
     </div>
   </div>
 
-  <!-- v3: H5 fix — book throttle 中に sub 専用ゲームをタップした時の quiet block toast。
+  <!-- v3: H5 fix — book throttle 中に app 専用ゲームをタップした時の quiet block toast。
        モーダルは出さないが遷移はブロックしているので一言だけ添える (何も起きなかった感を防ぐ)。 -->
   <div class="azp-quiet-toast" id="azpQuietToast" hidden aria-live="polite">アプリで あそべるよ</div>
 
@@ -9782,7 +9782,7 @@
     </div>
   </div>
 
-  <!-- ===== v3: 月1 おかえり演出 (feature_tier_v3 §4.4, book/sub 共通) ===== -->
+  <!-- ===== v3: 月1 おかえり演出 (feature_tier_v3 §4.4, book/app 共通) ===== -->
   <div class="okaeri-toast" id="okaeriToast" hidden aria-live="polite">
     <!-- v2049 perf: 月 1 表示の toast 画像を data-src 出荷 (parse 時 DL 回避)。
          maybeShowMonthlyOkaeri() が表示直前に src へ昇格する -->
@@ -9987,7 +9987,7 @@
         thumb: 'assets/ui/thumb_quiz-sound.webp',
         thumbPos: '50% 52%',
         peekPos: '50% 50%',
-        tier: 'sub'
+        tier: 'app'
       },
       {
         id: 'mojicrane',
@@ -10000,7 +10000,7 @@
         thumb: 'assets/ui/thumb_wordmatch.webp',
         thumbPos: '50% 52%',
         peekPos: '50% 50%',
-        tier: 'sub'
+        tier: 'app'
       },
       {
         id: 'maze',
@@ -10070,7 +10070,7 @@
         thumb: 'monster-math/assets/title_v2_composite.webp',
         thumbPos: '50% 50%',
         peekPos: '50% 50%',
-        tier: 'sub'
+        tier: 'app'
       },
       {
         id: 'starparodier',
@@ -10083,7 +10083,7 @@
         thumb: 'assets/ui/thumb_starparodier.webp',
         thumbPos: '50% 52%',
         peekPos: '50% 50%',
-        tier: 'sub'
+        tier: 'app'
       },
       {
         id: 'undersea-cave',
@@ -10096,7 +10096,7 @@
         thumb: 'assets/images/undersea-cave/friend_whale_sleep.png',
         thumbPos: '48% 52%',
         peekPos: '50% 50%',
-        tier: 'sub'
+        tier: 'app'
       },
       {
         id: 'sea-album',
@@ -10109,7 +10109,7 @@
         thumb: 'assets/images/sea-album/stage1/stage1_tidepool_scroll_panorama.png',
         thumbPos: '50% 62%',
         peekPos: '50% 52%',
-        tier: 'sub'
+        tier: 'app'
       },
       // ----- Coming-soon (debug-playable for devs) -----
       {
@@ -10125,7 +10125,7 @@
         peekPos: '50% 50%',
         comingSoon: true,
         debugPlayable: true,
-        tier: 'sub'
+        tier: 'app'
       },
       {
         id: 'zukan',
@@ -10140,7 +10140,7 @@
         thumb: 'assets/ui/thumb_maze.webp',
         comingSoon: true,
         debugPlayable: true,
-        tier: 'sub'
+        tier: 'app'
       },
       // cooking (コトコト もりのキッチン) は iredori bento と対になる料理ゲーム。
       // アセット (bg / thumb / panel) は launch 前に正規素材へ差し替え予定 (memory: feature_cooking_game)。
@@ -10155,7 +10155,7 @@
         thumb: 'assets/ui/thumb_bento.webp',
         thumbPos: '50% 50%',
         peekPos: '50% 50%',
-        tier: 'sub',
+        tier: 'app',
         comingSoon: true,
         debugPlayable: true
       },
@@ -10187,11 +10187,11 @@
     // 手動の個別分類はしない — GAMES 側で tier/comingSoon を変えれば自動で
     // ゾーンが追従する。
     //   playable    : tier:'free' (free=book, 機能差ゼロ) かつ comingSoon なし
-    //   app_only    : tier:'sub' かつ comingSoon なし
+    //   app_only    : tier:'app' かつ comingSoon なし (2026-07-11 tier 名 'sub'→'app' リネーム)
     //   coming_soon : comingSoon:true (tier に関わらず最後尾ゾーン)
     function computeGameZone(game) {
       if (game.comingSoon) return 'coming_soon';
-      if (game.tier === 'sub') return 'app_only';
+      if (game.tier === 'app') return 'app_only';
       return 'playable';
     }
     GAMES.forEach((game) => { game.zone = computeGameZone(game); });
@@ -11025,7 +11025,7 @@
       const blocked = game.comingSoon && !game.debugPlayable;
       if (blocked || !game.href || game.href === '#') return;
       // v3 (feature_tier_v3 §5): 「アプリで あそべる」 ゾーンは LP 版でも
-      // カードとして見せているが、 sub tier (= アプリ版 or capture override) 以外の
+      // カードとして見せているが、 app tier (= アプリ版 or capture override) 以外の
       // タップは実際のゲームへ遷移させず、 book/free 別コピーの誘導モーダルを出す。
       if (game.zone === 'app_only' && typeof openAppZonePromo === 'function' && openAppZonePromo(game)) {
         return;
@@ -11385,7 +11385,7 @@
     // v3 (feature_tier_v3 §7): free/book も対象に含める (旧: アプリ版/dev-mode 限定)。
     // 抽選母数そのものは grantDailyGachaSticker() 内の tier gate で free/book なら
     // quizland 1ページのみに絞られるため、 ここで visibility を解放しても
-    // 無料層が sub 専用ページのシールを引けるようになるわけではない。
+    // 無料層が app 専用ページのシールを引けるようになるわけではない。
     const dailyGachaEnabled = true;
     const dailyGachaState = {
       dragging: false,
@@ -12466,16 +12466,16 @@
       const pages = (catalog && catalog.pages) || {};
       const candidates = [];
       // v3 (feature_tier_v3 §7): daily gacha の抽選母数を tier でゲートする。
-      //   sub  : 全ページ (bookOnly を除く)
+      //   app  : 全ページ (bookOnly を除く)  (2026-07-11 tier 名 'sub'→'app' リネーム)
       //   free/book (free=book, 機能差ゼロ) : quizland 1ページのみ
-      // 旧 `page.appOnly && !__isAppBuild` ゲートは isSubTier 判定に包含される
-      // (isAppBuild → PonoTier.getTier()==='sub' なので冗長化のため撤去)。
+      // 旧 `page.appOnly && !__isAppBuild` ゲートは isAppTier 判定に包含される
+      // (isAppBuild → PonoTier.getTier()==='app' なので冗長化のため撤去)。
       const __gachaTier = window.PonoTier || null;
-      const __gachaIsSub = __gachaTier && typeof __gachaTier.isSub === 'function' ? __gachaTier.isSub() : __isAppBuild;
+      const __gachaIsApp = __gachaTier && typeof __gachaTier.isApp === 'function' ? __gachaTier.isApp() : __isAppBuild;
       Object.keys(pages).forEach((id) => {
         const page = pages[id] || {};
         if (page.bookOnly) return false;
-        if (!__gachaIsSub && id !== 'quizland') return false;
+        if (!__gachaIsApp && id !== 'quizland') return false;
         if (!Array.isArray(page.stickers) || !page.stickers.length) return false;
         const owned = typeof api.getOwned === 'function' ? (api.getOwned(id) || {}) : {};
         page.stickers.forEach((sticker) => {
@@ -14021,10 +14021,13 @@
     // book/free それぞれタップ時のコピー・ボタンが違う 1 枚のモーダルを共用する。
     // book: 24h に 1 回だけ自動表示 (連打で毎回出さない)、 × dismiss で 7 日非表示。
     // free: 毎回表示 (絵本へ誘導する唯一の導線なので抑制しない)。
-    const SUB_PROMO_BOOK_LAST_SHOWN_KEY = 'pono_sub_promo_book_last_shown_at';
-    const SUB_PROMO_BOOK_DISMISSED_KEY = 'pono_sub_promo_book_dismissed_at';
-    const SUB_PROMO_BOOK_THROTTLE_MS = 24 * 60 * 60 * 1000;      // 24h
-    const SUB_PROMO_BOOK_DISMISS_MS = 7 * 24 * 60 * 60 * 1000;   // 7day
+    // 2026-07-11 tier 名 'sub'→'app' リネーム: 定数名のみ APP_PROMO_* に改名。
+    // localStorage キー文字列 (pono_sub_promo_book_*) は既存ユーザーの 24h throttle /
+    // 7日 dismiss 状態を維持するため意図的に旧名のまま (変えると挙動変化 = 純リネーム違反)。
+    const APP_PROMO_BOOK_LAST_SHOWN_KEY = 'pono_sub_promo_book_last_shown_at';
+    const APP_PROMO_BOOK_DISMISSED_KEY = 'pono_sub_promo_book_dismissed_at';
+    const APP_PROMO_BOOK_THROTTLE_MS = 24 * 60 * 60 * 1000;      // 24h
+    const APP_PROMO_BOOK_DISMISS_MS = 7 * 24 * 60 * 60 * 1000;   // 7day
 
     // 本版 (LP) から アプリ版 (App staging/production) への正規 URL。
     // memory: project_url_architecture / CLAUDE.md URL マトリクス準拠。
@@ -14038,19 +14041,19 @@
       return 'https://pono-asobiba-app.ndw.workers.dev/';
     }
 
-    function shouldShowBookSubPromo() {
+    function shouldShowBookAppPromo() {
       try {
-        const dismissedAt = Number(localStorage.getItem(SUB_PROMO_BOOK_DISMISSED_KEY) || 0);
-        if (dismissedAt && (Date.now() - dismissedAt) < SUB_PROMO_BOOK_DISMISS_MS) return false;
-        const lastShownAt = Number(localStorage.getItem(SUB_PROMO_BOOK_LAST_SHOWN_KEY) || 0);
-        if (lastShownAt && (Date.now() - lastShownAt) < SUB_PROMO_BOOK_THROTTLE_MS) return false;
+        const dismissedAt = Number(localStorage.getItem(APP_PROMO_BOOK_DISMISSED_KEY) || 0);
+        if (dismissedAt && (Date.now() - dismissedAt) < APP_PROMO_BOOK_DISMISS_MS) return false;
+        const lastShownAt = Number(localStorage.getItem(APP_PROMO_BOOK_LAST_SHOWN_KEY) || 0);
+        if (lastShownAt && (Date.now() - lastShownAt) < APP_PROMO_BOOK_THROTTLE_MS) return false;
       } catch (e) {}
       return true;
     }
 
     /**
      * 「アプリで あそべる」 ゾーンのカードをタップした時の誘導モーダル。
-     * sub tier (アプリ版 / capture override) では何もせず false を返す
+     * app tier (アプリ版 / capture override) では何もせず false を返す
      * (= 呼び出し側でそのまま通常遷移させる)。
      * book/free では専用モーダルを表示して true を返す (= 遷移をブロックする)。
      * @param {object} game タップされた GAMES entry
@@ -14058,14 +14061,14 @@
      */
     function openAppZonePromo(game) {
       const tier = window.PonoTier || null;
-      const isSubTier = tier && typeof tier.isSub === 'function' ? tier.isSub() : __isAppBuild;
-      if (isSubTier) return false;
+      const isAppTier = tier && typeof tier.isApp === 'function' ? tier.isApp() : __isAppBuild;
+      if (isAppTier) return false;
       const isBookTier = tier && typeof tier.isBook === 'function' ? tier.isBook() : isBookBenefitUnlocked();
       // H5 fix: throttle 中 (24h 以内に表示済み / 7日 dismiss 中) でも「遷移をブロックする」
       // 効果は必ず維持する。 以前はここで false を返して呼び出し側 (startGame) が
-      // そのまま通常遷移させてしまい、 book 購入者が sub 専用ゲームに素通りできてしまっていた。
+      // そのまま通常遷移させてしまい、 book 購入者が app 専用ゲームに素通りできてしまっていた。
       // モーダルの再表示だけを抑制し、 代わりに quiet toast で一言添えて遷移をブロックする。
-      if (isBookTier && !shouldShowBookSubPromo()) {
+      if (isBookTier && !shouldShowBookAppPromo()) {
         showAppZoneQuietToast();
         return true;
       }
@@ -14079,9 +14082,9 @@
       if (!titleEl || !primaryBtn || !secondaryBtn) return false;
 
       if (isBookTier) {
-        try { localStorage.setItem(SUB_PROMO_BOOK_LAST_SHOWN_KEY, String(Date.now())); } catch (e) {}
+        try { localStorage.setItem(APP_PROMO_BOOK_LAST_SHOWN_KEY, String(Date.now())); } catch (e) {}
         // 旧ハードコード「7つ」は実数と乖離していたため、 GAMES の zone:'app_only'
-        // (= tier:'sub' かつ非 comingSoon、 computeGameZone で導出済) を実行時に数える。
+        // (= tier:'app' かつ非 comingSoon、 computeGameZone で導出済) を実行時に数える。
         // GAMES 側でアプリ専用ゲームが増減しても自動で追従する。
         // 和語数詞「◯つ」が自然なのは 1〜9 のみなので、 範囲外は「たくさん」に逃がす。
         const appOnlyGameCount = GAMES.filter((g) => g && g.zone === 'app_only').length;
@@ -14097,7 +14100,7 @@
         secondaryBtn.dataset.action = 'dismiss-book';
       } else {
         // H6 fix: 旧コピー「絵本を かってくれた人と アプリで あそんでくれる人 だけの
-        // ゲームだよ」 は事実相違 (実際は sub tier = アプリ版のみ、 book だけでは遊べない)。
+        // ゲームだよ」 は事実相違 (実際は app tier = アプリ版のみ、 book だけでは遊べない)。
         // 案A (採用): 事実と一致 + 絵本→あいことば誘導を維持。 3 案検討ログは HANDOFF 参照。
         titleEl.innerHTML = 'このゲームは、 アプリで あそんでくれる人<br>'
           + 'だけの ゲームだよ。<br><br>'
@@ -14120,7 +14123,7 @@
       setTimeout(() => { modal.hidden = true; }, 220);
     }
 
-    // H5 fix: book throttle 中に sub 専用ゲームをタップした時の quiet block。
+    // H5 fix: book throttle 中に app 専用ゲームをタップした時の quiet block。
     // モーダルは連打抑制で出さないが、 遷移は必ずブロックしているので
     // 「何も起きなかったように見える」 事故を避けるため一言だけ小さく添える。
     let azpQuietToastHideTimer = null;
@@ -14154,7 +14157,7 @@
       if (secondaryBtn) {
         secondaryBtn.addEventListener('click', () => {
           if (secondaryBtn.dataset.action === 'dismiss-book') {
-            try { localStorage.setItem(SUB_PROMO_BOOK_DISMISSED_KEY, String(Date.now())); } catch (e) {}
+            try { localStorage.setItem(APP_PROMO_BOOK_DISMISSED_KEY, String(Date.now())); } catch (e) {}
           }
           closeAppZonePromo();
         });
@@ -14501,7 +14504,7 @@
     // pending が残っていれば拾う safety net。
     maybeStartBookWelcome();
 
-    // ===== v3: 月1 おかえり演出 (feature_tier_v3 §4.4, book/sub 共通) =====
+    // ===== v3: 月1 おかえり演出 (feature_tier_v3 §4.4, book/app 共通) =====
     const OKAERI_LAST_SHOWN_KEY = 'pono_last_okaeri_shown_at';
     // JST (UTC+9) 基準の "YYYY-MM" キー。 端末ローカルタイムゾーンに依存させない簡易実装。
     function jstYearMonthKey(d) {
@@ -14515,17 +14518,17 @@
       try {
         const tier = window.PonoTier || null;
         tierName = tier && typeof tier.getTier === 'function' ? tier.getTier() : 'free';
-        if (tierName !== 'book' && tierName !== 'sub') return; // free には出さない
+        if (tierName !== 'book' && tierName !== 'app') return; // free には出さない
         if (bookWelcomeRunning) return;          // welcome 演出と競合させない
         key = jstYearMonthKey();
         if (localStorage.getItem(OKAERI_LAST_SHOWN_KEY) === key) return;
       } catch (e) { return; }
       const toast = document.getElementById('okaeriToast');
       if (!toast) return;
-      // H4 fix: tier ごとに挨拶コピーを分岐 (spec §4.3)。 book/sub で微妙にニュアンスを変える。
+      // H4 fix: tier ごとに挨拶コピーを分岐 (spec §4.3)。 book/app で微妙にニュアンスを変える。
       const textEl = toast.querySelector('.okaeri-toast-text');
       if (textEl) {
-        textEl.innerHTML = (tierName === 'sub')
+        textEl.innerHTML = (tierName === 'app')
           ? 'またあそんでくれて<br>ありがとうね'
           : 'えほんを かってくれて<br>ありがとうね';
       }

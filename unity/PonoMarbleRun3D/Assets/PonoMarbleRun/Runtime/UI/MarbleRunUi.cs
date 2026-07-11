@@ -185,7 +185,7 @@ namespace Pono.MarbleRun3D.UI
         private static readonly Color Coral = new Color(0.957f, 0.714f, 0.690f, 0.99f);
         private static readonly Color Lavender = new Color(0.831f, 0.765f, 0.925f, 0.99f);
         private static readonly Color CocoaText = new Color(0.349f, 0.271f, 0.298f, 1f);
-        private static readonly Color MutedText = new Color(0.42f, 0.35f, 0.39f, 1f);
+        private static readonly Color MutedText = new Color(0.36f, 0.29f, 0.32f, 1f);
         private static readonly Color CardShadow = new Color(0.25f, 0.18f, 0.22f, 0.13f);
         private static readonly Color SoftSkyPaper = new Color(0.949f, 0.980f, 0.992f, 0.98f);
         private static readonly Color SoftPeachPaper = new Color(1f, 0.976f, 0.949f, 0.98f);
@@ -791,11 +791,13 @@ namespace Pono.MarbleRun3D.UI
             var textObject = CreateRect(name, parent, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
             var text = textObject.AddComponent<Text>();
             var hasDedicatedDisplayFont = _displayFont != null && _displayFont != _bodyFont;
-            var useDisplayFont = style == FontStyle.Bold;
-            text.font = useDisplayFont ? _displayFont : _bodyFont;
+            // Kosugi Maru stays comfortably legible at the small sizes used by the
+            // child-facing helper copy. Use one friendly rounded voice throughout
+            // the UI instead of letting normal-weight Noto turn pale beside it.
+            text.font = hasDedicatedDisplayFont ? _displayFont : _bodyFont;
             text.text = value;
             text.fontSize = fontSize;
-            text.fontStyle = useDisplayFont && hasDedicatedDisplayFont ? FontStyle.Normal : style;
+            text.fontStyle = hasDedicatedDisplayFont ? FontStyle.Normal : style;
             text.color = color;
             text.alignment = alignment;
             text.lineSpacing = style == FontStyle.Normal ? 1.08f : 0.96f;

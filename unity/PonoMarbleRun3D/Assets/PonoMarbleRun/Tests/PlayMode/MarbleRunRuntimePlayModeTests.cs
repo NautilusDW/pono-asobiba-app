@@ -140,11 +140,11 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
             Assert.That(title.fontStyle,
                 Is.EqualTo(roundedDisplayFont == bundledJapaneseFont ? FontStyle.Bold : FontStyle.Normal));
             Assert.That(title.fontSize, Is.InRange(46, 52));
-            Assert.That(subtitle.font, Is.EqualTo(bundledJapaneseFont));
+            Assert.That(subtitle.font, Is.EqualTo(roundedDisplayFont));
             Assert.That(subtitle.fontStyle, Is.EqualTo(FontStyle.Normal));
             Assert.That(subtitle.fontSize, Is.InRange(22, 26));
             Assert.That(subtitle.lineSpacing, Is.InRange(1.04f, 1.12f));
-            Assert.That(PerceivedBrightness(subtitle.color), Is.InRange(0.34f, 0.41f));
+            Assert.That(PerceivedBrightness(subtitle.color), Is.InRange(0.29f, 0.34f));
             var menuButtons = menu.Find("ModeButtons").GetComponentsInChildren<Button>(true);
             Assert.That(menuButtons.Length, Is.EqualTo(7));
             var symbols = new HashSet<string>();

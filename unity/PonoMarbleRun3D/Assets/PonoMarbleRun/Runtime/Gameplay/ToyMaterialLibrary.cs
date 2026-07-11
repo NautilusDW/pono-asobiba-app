@@ -43,10 +43,10 @@ namespace Pono.MarbleRun3D.Gameplay
                 throw new InvalidOperationException("The toy material shader is unavailable.");
             // Runtime is Linear. Keep the wood close to the earlier pastel delivery:
             // bright enough to feel like a nursery toy, with cocoa only for structure.
-            Maple = Make("バニラ メープル", new Color(0.84f, 0.66f, 0.46f), 0.20f);
-            MapleDark = Make("ミルク ココア", new Color(0.48f, 0.30f, 0.23f), 0.16f);
-            Board = Make("ピーチ あそびだい", new Color(0.80f, 0.58f, 0.42f), 0.18f);
-            BoardEdge = Make("ココア ふち", new Color(0.44f, 0.25f, 0.18f), 0.15f);
+            Maple = Make("バニラ メープル", new Color(0.96f, 0.82f, 0.66f), 0.20f);
+            MapleDark = Make("ミルク ココア", new Color(0.66f, 0.45f, 0.34f), 0.16f);
+            Board = Make("ピーチ あそびだい", new Color(0.94f, 0.78f, 0.63f), 0.18f);
+            BoardEdge = Make("ココア ふち", new Color(0.63f, 0.43f, 0.34f), 0.15f);
             Connector = Make("みずいろ つなぎ まる", new Color(0.397f, 0.716f, 0.888f), 0.50f, true);
             ConnectorGlow = Make("ミント つなぎ ひかり", new Color(0.479f, 0.761f, 0.533f), 0.56f, true);
             var marbleColors = new[]

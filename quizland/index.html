@@ -4097,17 +4097,17 @@ function selectAllQuizlandCategories() {
   ALL_CATS.forEach(function(c) { selectedCategories[c] = true; });
 }
 
-function isQuizlandSubTierLocal() {
+function isQuizlandAppTierLocal() {
   try {
-    if (window.PonoTier && typeof window.PonoTier.isSub === 'function') {
-      return !!window.PonoTier.isSub();
+    if (window.PonoTier && typeof window.PonoTier.isApp === 'function') {
+      return !!window.PonoTier.isApp();
     }
   } catch (_) {}
   return !!window.__APP_BUILD__;
 }
 
 function shouldUseQuizlandRecommendedFlow() {
-  return !isQuizlandSubTierLocal();
+  return !isQuizlandAppTierLocal();
 }
 
 function updateRecommendedFlowUI() {
@@ -4115,7 +4115,7 @@ function updateRecommendedFlowUI() {
   if (changeBtn) changeBtn.hidden = shouldUseQuizlandRecommendedFlow();
 }
 
-// ─── 難易度ロック判定 (free/book/sub × Lv) ───
+// ─── 難易度ロック判定 (free/book/app × Lv) ───
 //   common/tier.js の PonoTier.isQuizlandDifficultyUnlocked を使う。
 //   PonoTier が無い (= 古い sw キャッシュ等) 場合は安全側で全開放。
 function isQuizlandDifficultyUnlockedLocal(diff) {

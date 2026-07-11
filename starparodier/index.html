@@ -14,7 +14,7 @@
 <script src="../common/menu.js"></script>
 <script src="../common/debug-mode.js"></script>
 <script src="../common/capture.js" defer></script>
-<!-- sub (アプリばん) 専用 tier ガード。 tier.js 未読込/例外時は fail-open (従来通り表示)。 -->
+<!-- app (アプリばん) 専用 tier ガード。 tier.js 未読込/例外時は fail-open (従来通り表示)。 -->
 <script src="../common/tier.js"></script>
 <script>
 (function(){
@@ -22,7 +22,7 @@
   var locked = false;
   try {
     var pt = window.PonoTier;
-    if (pt && typeof pt.getTier === 'function') locked = (pt.getTier() !== 'sub');
+    if (pt && typeof pt.getTier === 'function') locked = (pt.getTier() !== 'app');
   } catch (e) { locked = false; }
   if (!locked) return;
   window.__PONO_TIER_LOCKED__ = true;

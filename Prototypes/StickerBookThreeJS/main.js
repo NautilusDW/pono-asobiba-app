@@ -2825,9 +2825,10 @@ function isBookVariantLocked(bookName) {
     return false;
   }
   if (bundle.tier === "book_exclusive") {
-    // book 購入者 + sub 契約者は開放 (sub は「全付録」を含む方針: feature_tier_v3 参照)。
+    // book 購入者 + app 版利用者は開放 (app は「全付録」を含む方針: feature_tier_v3 参照)。
+    // (2026-07-11 tier 名 'sub'→'app' リネーム、買い切り確定)
     const tier = currentPonoTier();
-    return tier !== "book" && tier !== "sub";
+    return tier !== "book" && tier !== "app";
   }
   return false;
 }
@@ -8735,7 +8736,7 @@ function buildStickerOptionsFromGameCatalog(catalog) {
         sort: pageIndex * 1000 + stickerIndex,
         stage: stickerIndex + 1,
         rarity: sticker.rarity || "normal",
-        tier: page?.bookOnly ? "book" : (page?.appOnly ? "sub" : "free"),
+        tier: page?.bookOnly ? "book" : (page?.appOnly ? "app" : "free"),
         bookOnly: Boolean(page?.bookOnly),
         unlock: "catalog",
         listNote: page?.subtitle || "",
@@ -8748,11 +8749,13 @@ function buildStickerOptionsFromGameCatalog(catalog) {
 }
 
 function canUseGameStickerCatalogPage(page) {
-  // [[H2]] sub_exclusive (appOnly/subOnly) ページは book tier でも非表示にする防御的判定。
-  // bookOnly と appOnly/subOnly は排他 (現行 catalog では同時 true にならない想定) だが、
+  // [[H2]] app_exclusive (appOnly/appBonusOnly) ページは book tier でも非表示にする防御的判定。
+  // (2026-07-11 tier 名 'sub'→'app' リネーム: 旧 subOnly フィールドは appBonusOnly へ改名。
+  //  appOnly との統合はしない — appOnly は「ページ由来 tier ラベル導出」にも使われる別意味フィールド)
+  // bookOnly と appOnly/appBonusOnly は排他 (現行 catalog では同時 true にならない想定) だが、
   // 両方チェックして万一の組み合わせでも安全側 (両方満たさないと表示しない) に倒す。
-  if (page?.appOnly || page?.subOnly) {
-    if (!isSubBonusStickerUnlocked()) {
+  if (page?.appOnly || page?.appBonusOnly) {
+    if (!isAppBonusStickerUnlocked()) {
       return false;
     }
   }
@@ -8779,13 +8782,13 @@ function isBookBonusStickerUnlocked() {
   return Boolean(window.__APP_BUILD__);
 }
 
-function isSubBonusStickerUnlocked() {
-  // [[H2]] sub-bonus (sub_exclusive) ページ用ゲート。 PonoTier.isSub() を優先し、
+function isAppBonusStickerUnlocked() {
+  // [[H2]] app-bonus (app_exclusive) ページ用ゲート。 PonoTier.isApp() を優先し、
   // tier.js 未読込時のみ window.__APP_BUILD__ (アプリ版) fallback。
   // [[feedback_ponotier_propagation]] 準拠で raw localStorage 直読みはしない。
   try {
-    if (window.PonoTier && typeof window.PonoTier.isSub === 'function') {
-      return window.PonoTier.isSub();
+    if (window.PonoTier && typeof window.PonoTier.isApp === 'function') {
+      return window.PonoTier.isApp();
     }
   } catch {}
   return Boolean(window.__APP_BUILD__);

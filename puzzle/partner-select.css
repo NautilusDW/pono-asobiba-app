@@ -245,7 +245,7 @@
   --tier-color: #5FA4E8;
 }
 
-.pono-pselect__card.is-tier-sub {
+.pono-pselect__card.is-tier-app {
   --tier-color: #B77AE7;
 }
 
@@ -281,12 +281,12 @@
 }
 
 /* アプリ版のロック中キャラは、顔・毛並み・色を一切見せない完全なグレー輪郭にする。
-   解放後は従来のパートナー画像へ戻るため、この状態は sub tier の locked カードだけに限定。 */
-.pono-pselect__card.is-tier-sub.is-locked .pono-pselect__portrait.is-app-silhouette {
+   解放後は従来のパートナー画像へ戻るため、この状態は app tier の locked カードだけに限定。 */
+.pono-pselect__card.is-tier-app.is-locked .pono-pselect__portrait.is-app-silhouette {
   background: #fff;
 }
 
-.pono-pselect__card.is-tier-sub.is-locked .pono-pselect__portrait.is-app-silhouette img {
+.pono-pselect__card.is-tier-app.is-locked .pono-pselect__portrait.is-app-silhouette img {
   object-fit: contain;
   object-position: 50% 50% !important;
   padding: 6px;
@@ -296,13 +296,13 @@
 
 /* カラス素材だけは白背景込み。強い二値化 + ごく小さいぼかしで内部の目や羽模様を
    塗りつぶし、白背景は portrait の白へ溶け込ませる。 */
-.pono-pselect__card.is-tier-sub.is-locked .pono-pselect__portrait.is-app-silhouette.is-light-background img {
+.pono-pselect__card.is-tier-app.is-locked .pono-pselect__portrait.is-app-silhouette.is-light-background img {
   padding: 4px;
   filter: grayscale(1) contrast(1000%) blur(1.2px) contrast(1000%);
   opacity: 0.58;
 }
 
-.pono-pselect__card.is-tier-sub.is-locked .pono-pselect__portrait.is-app-silhouette .pono-pselect__lock {
+.pono-pselect__card.is-tier-app.is-locked .pono-pselect__portrait.is-app-silhouette .pono-pselect__lock {
   background: rgba(72, 77, 82, 0.12);
 }
 
@@ -485,7 +485,7 @@
   border: 1px solid #5897CA;
 }
 
-.pono-pselect__tier--sub {
+.pono-pselect__tier--app {
   color: #3A175B;
   background: linear-gradient(180deg, #F8E9FF 0%, #D6A7F4 100%);
   border: 1px solid #9E62C9;

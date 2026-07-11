@@ -28,10 +28,11 @@
   };
 
   // tier → 難易度 (bento リクエストモード等)
+  // 2026-07-11 tier 名 'sub'→'app' リネーム (買い切り確定)。 PonoTier.getTier() の返り値がキー。
   var TIER_TO_DIFFICULTY = {
     free: DIFFICULTY.EASY,
     book: DIFFICULTY.NORMAL,
-    sub:  DIFFICULTY.HARD
+    app:  DIFFICULTY.HARD
   };
 
   // 表記揺れ正規化 (旧データ「かんたん」「難しい」 を新ラベルにマップ)
