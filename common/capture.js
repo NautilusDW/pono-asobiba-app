@@ -376,8 +376,16 @@
   // ── キーボード Shift+Alt+C (修飾必須) ──
   function onKeyDown(e) {
     if (!e || !e.shiftKey || !e.altKey) return;
+    // v2107 batch:1241: IME 変換中 (key='Process' 等) は code='KeyC' でも誤発火させない
+    if (e.isComposing) return;
+    // v2107 batch:1241: Mac では Option(Alt)+Shift+C が合成文字になり e.key='Ç'
+    // (toLowerCase しても 'ç') のため 'c' 比較を素通りしてショートカットが効かなかった。
+    // レイアウト非依存の物理キー e.code==='KeyC' を併用する (合成 KeyboardEvent
+    // {key:'Ç', code:'KeyC', altKey, shiftKey} で再現・修正確認済)。
+    // shiftKey/altKey 必須と isCaptureAllowed() gating は従来どおり不変。
     var k = String(e.key || '').toLowerCase();
-    if (k !== 'c') return;
+    var isC = (k === 'c') || (String(e.code || '') === 'KeyC');
+    if (!isC) return;
     if (!isCaptureAllowed()) return;
     e.preventDefault();
     show();
@@ -451,6 +459,13 @@
   //                              合わせる方が結果的に締まる。 実 DOM は無影響 (clonedDoc 限定)
   // 各ゲームの html2canvas 呼び出しは: html2canvas(target, PonoCapture.html2canvasOptions())
   // のように使う。 overrides で個別調整可能 (例: backgroundColor を白に固定したい等)。
+
+  // v2107 batch:1241: object-fit シム用の透明 1×1 PNG。
+  // html2canvas は「img は必ず intrinsic → box へ stretch 描画」するため、
+  // src をこれに差し替えると stretch 描画が無害 (透明) になり、
+  // 代わりに background-image (contain/cover は正実装) が本来の見た目を描く。
+  var TRANSPARENT_PX_SRC = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+
   function html2canvasOptions(overrides) {
     var base = {
       backgroundColor: null,
@@ -519,6 +534,51 @@
                   if (fs && fs <= 28) {
                     el.style.fontSize = Math.round(fs * 1.4) + 'px';
                     el.style.textRendering = 'geometricPrecision';
+                  }
+                }
+              }
+              // v2107 batch:1241: html2canvas 1.4.1 は object-fit / object-position を
+              // 未実装で、img (置換要素) を intrinsic 全域 → content box の 9-arg
+              // drawImage で全面 stretch する (renderReplacedElement)。このため
+              // object-fit:contain の画像 (例: デイリーガチャ筐体 .daily-gacha-machine)
+              // が撮影時のみ box の縦横比に引き伸ばされ「横太り」になっていた。
+              // html2canvas の background 描画 (contain/cover/position) は正しく実装
+              // されているので、object-fit を持つ img を「透明 1px + 等価な
+              // background-image」へ変換して同じ見た目を焼かせる。
+              // clonedDoc 限定の書き換えなので実画面 DOM は無影響。
+              // (Playwright 実測: 筐体 AR 1.02〜1.07 → 0.812 に復元、 intrinsic 0.8115)
+              if (cs && (el.tagName || '').toLowerCase() === 'img') {
+                var fit = cs.objectFit;
+                if (fit === 'contain' || fit === 'cover' || fit === 'none' || fit === 'scale-down') {
+                  var imgSrc = el.currentSrc || el.getAttribute('src');
+                  if (imgSrc && imgSrc !== TRANSPARENT_PX_SRC) {
+                    // url() 内の " と \ をエスケープ (\ を先に)。 未エンコードの
+                    // SVG data URI 等で宣言全体が invalid になり画像が消えるのを防ぐ。
+                    var cssUrl = imgSrc.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+                    el.style.backgroundImage = 'url("' + cssUrl + '")';
+                    // scale-down は「none と contain の小さい方」だが、 素材は常に
+                    // box より大きい前提 (ゲーム画像) なので contain へ丸める。
+                    el.style.backgroundSize = (fit === 'none') ? 'auto' : (fit === 'scale-down' ? 'contain' : fit);
+                    el.style.backgroundPosition = cs.objectPosition || '50% 50%';
+                    el.style.backgroundRepeat = 'no-repeat';
+                    // object-fit は content box 基準。 padding 付き img でも等価に
+                    // なるよう background も content-box 基準で描かせる。
+                    el.style.backgroundOrigin = 'content-box';
+                    el.style.backgroundClip = 'content-box';
+                    el.setAttribute('src', TRANSPARENT_PX_SRC);
+                    el.removeAttribute('srcset');
+                    // <picture> 内の img は <source srcset> が resource selection を
+                    // 支配し、 src 差し替えだけでは stretch された原画が background の
+                    // 上に二重描画され得る。 クローン DOM 限定なので <source> ごと除去。
+                    if (el.closest) {
+                      var pic = el.closest('picture');
+                      if (pic) {
+                        var srcEls = pic.querySelectorAll('source');
+                        for (var si = srcEls.length - 1; si >= 0; si--) {
+                          if (srcEls[si].parentNode) srcEls[si].parentNode.removeChild(srcEls[si]);
+                        }
+                      }
+                    }
                   }
                 }
               }
