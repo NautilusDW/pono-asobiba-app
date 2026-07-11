@@ -10028,11 +10028,26 @@
             if (typeof html2canvas !== 'function') {
               throw new Error('html2canvas module shape unexpected');
             }
+            // v2122 batch:1244: scale を動的化してラスタ ≥ preset を常時保証。
+            // 固定 scale:2 だと小さいウィンドウ (shell が 90dvh 制約で縮んだ状態、
+            // 例: shell 864px → ラスタ 1728px < 1920px) で compose 段の拡大が発生し
+            // 出力がぼやけていた。 preset 寸法 (opts.width/height) / shell 実寸の
+            // 大きい方と 2 の max を取る (shell 1080px 時は従来どおり 2)。
+            // ラスタ幅は presetW で頭打ちになるため iOS canvas 上限 (4096px) にも安全。
+            var shellRect = container.getBoundingClientRect();
+            var dynScale = 2;
+            if (shellRect && shellRect.width > 0 && shellRect.height > 0) {
+              dynScale = Math.max(
+                2,
+                (opts && opts.width ? opts.width : 0) / shellRect.width,
+                (opts && opts.height ? opts.height : 0) / shellRect.height
+              );
+            }
             var h2cOpts = (window.PonoCapture && typeof window.PonoCapture.html2canvasOptions === 'function')
-              ? window.PonoCapture.html2canvasOptions({ backgroundColor: null })
+              ? window.PonoCapture.html2canvasOptions({ backgroundColor: null, scale: dynScale })
               : {
                   backgroundColor: null,
-                  scale: 2,
+                  scale: dynScale,
                   useCORS: true,
                   allowTaint: false,
                   logging: false,
@@ -10547,7 +10562,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2121; // sw.js CACHE_VERSION と同期 (batch:1250 Maze板撤去 + 管理画面9ミニゲーム起動)
+    const PAGE_CACHE_VERSION = 2122; // sw.js CACHE_VERSION と同期 (batch:1244 スクショ出力の低解像度根治: padding 焼き込み + 背景→img 注入 + pattern scale hook + 動的 scale)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -10556,7 +10571,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v2121';
+    window.PONO_SW_VERSION = 'v2122';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.

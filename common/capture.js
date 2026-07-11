@@ -171,6 +171,107 @@
     });
   }
 
+  // ── v2122 batch:1244: Option Y2 ─ html2canvas 背景パターンの実効スケール補正 hook ──
+  // WHY (根因): Option X (下記 applyBackgroundImgShim) が拾わない repeat / 多層背景
+  // も含め、html2canvas 1.4.1 の CanvasRenderer.resizeImage() は url() 背景画像を
+  // 毎回 CSS px サイズの中間 canvas へ drawImage で縮小してから、その中間 canvas を
+  // ctx.createPattern() でパターン化して塗る。 scale:2 の super-sampling は
+  // ctx.scale() 変換の "外側" にあるこの中間 canvas 生成そのものには効かず、
+  // 結果としてパターン塗りは常に 1x 品質のまま拡大表示されぼやける。
+  // 対策: 撮影中だけ CanvasRenderingContext2D.prototype.drawImage / createPattern
+  // を差し替え、(1) drawImage の引数形状から resizeImage() が「画像 I を丸ごと
+  // 中間 canvas C へ描いた」瞬間だけを記録 (それ以外の drawImage は無変更で素通し
+  // = ゲーム canvas が撮影中に animate していても安全)、(2) 直後の
+  // createPattern(C, ...) 呼び出しでは C の代わりに実効スケール分だけ高解像度な
+  // 中間 canvas を元画像 I から再生成し、pattern.setTransform() で拡大分を打ち消して
+  // 同じ CSS px 周期でタイルさせる。
+  // 実効スケールは install() への固定引数ではなく、createPattern 呼び出し時点の
+  // ctx.getTransform() の a/d (=scaleX/scaleY) から都度導出する: 各ゲームの
+  // html2canvasOptions() は scale:2 が基本だが play-gacha の build() は shell
+  // サイズ依存の動的 scale (dynScale) を使うため、install 時点で単一の固定値を
+  // 決め打ちすると呼び出し元によって実際値とズレる。 ctx の現在の変換行列から
+  // 読むことで、どの build() が何 scale で html2canvas を呼んでも自動的に追従する
+  // (DOMMatrix / getTransform 非対応環境は原挙動へフォールバック)。
+  function installPatternScaleHook() {
+    var proto = window.CanvasRenderingContext2D && CanvasRenderingContext2D.prototype;
+    if (!proto || typeof DOMMatrix !== 'function' || typeof proto.getTransform !== 'function') {
+      return function uninstallPatternScaleHookNoop() {};
+    }
+    // v2122 batch:1244 review fix (Medium, 多重 install 残留防止): shoot() 並行呼び出し
+    // で install1→install2→uninstall1→uninstall2 の順になると、install2 が退避した
+    // origDraw/origPattern は実は install1 の wrapper であり、uninstall2 がそれを
+    // prototype へ書き戻して恒久残留してしまう。 wrapper 関数へマーカープロパティ
+    // (_ponoPatternHook) を付け、「現在 prototype に載っているのが (どの install
+    // 呼び出しであれ) このフック自身の wrapper か」を判定する。 既に載っていれば
+    // 二重 install をスキップし、noop の uninstall を返して既存 wrapper をそのまま
+    // 共有利用させる (=install はネストさせず、実質シングルトンにする)。
+    if (proto.drawImage && proto.drawImage._ponoPatternHook) {
+      return function uninstallPatternScaleHookNoop() {};
+    }
+    var origDraw = proto.drawImage;
+    var origPattern = proto.createPattern;
+    var tileSrc = new WeakMap(); // 中間 canvas -> { img, w, h }
+
+    var wrappedDraw = function (img) {
+      try {
+        // resizeImage() の呼び出し形状 (画像全域 → 中間 canvas 全域への単発 9 引数
+        // drawImage) に一致するときだけ記録する。それ以外の drawImage は判定せず
+        // 素通しなので、ゲーム自身の canvas 描画には一切干渉しない。
+        if (arguments.length === 9 &&
+            (img instanceof HTMLImageElement) &&
+            arguments[1] === 0 && arguments[2] === 0 &&
+            arguments[3] === img.width && arguments[4] === img.height &&
+            arguments[5] === 0 && arguments[6] === 0 &&
+            this.canvas &&
+            Math.abs(arguments[7] - this.canvas.width) < 1 &&
+            Math.abs(arguments[8] - this.canvas.height) < 1) {
+          tileSrc.set(this.canvas, { img: img, w: arguments[7], h: arguments[8] });
+        }
+      } catch (e) {}
+      return origDraw.apply(this, arguments);
+    };
+    wrappedDraw._ponoPatternHook = true;
+
+    var wrappedPattern = function (src, rep) {
+      try {
+        var rec = src && src instanceof HTMLCanvasElement ? tileSrc.get(src) : null;
+        if (rec && rec.img && rec.img.width > 0) {
+          // 呼び出し時点の実効スケールを ctx.getTransform() から導出 (固定引数不使用)。
+          var m = this.getTransform();
+          var sx = Math.abs(m.a) || 1;
+          var sy = Math.abs(m.d) || 1;
+          if (sx > 1 || sy > 1) {
+            var hi = document.createElement('canvas');
+            hi.width = Math.max(1, Math.round(rec.w * sx));
+            hi.height = Math.max(1, Math.round(rec.h * sy));
+            var g = hi.getContext('2d');
+            g.imageSmoothingEnabled = true;
+            g.imageSmoothingQuality = 'high';
+            g.drawImage(rec.img, 0, 0, rec.img.width, rec.img.height, 0, 0, hi.width, hi.height);
+            var p = origPattern.call(this, hi, rep);
+            if (p && p.setTransform) {
+              p.setTransform(new DOMMatrix([rec.w / hi.width, 0, 0, rec.h / hi.height, 0, 0]));
+              return p;
+            }
+          }
+        }
+      } catch (e) {}
+      return origPattern.call(this, src, rep);
+    };
+    wrappedPattern._ponoPatternHook = true;
+
+    proto.drawImage = wrappedDraw;
+    proto.createPattern = wrappedPattern;
+
+    return function uninstallPatternScaleHook() {
+      // 対称ガード: 自分が実際に patch した wrapper が「今も」乗っているときだけ
+      // 書き戻す。 並行 shoot() で既に他の呼び出しが復元/上書き済みなら何もしない
+      // (=先勝ち・後勝ちどちらの順でも native からズレた状態が恒久残留しない)。
+      if (proto.drawImage === wrappedDraw) proto.drawImage = origDraw;
+      if (proto.createPattern === wrappedPattern) proto.createPattern = origPattern;
+    };
+  }
+
   // ── shoot: 単発撮影 ──
   function shoot(opts) {
     opts = opts || {};
@@ -210,8 +311,16 @@
       }
     }
 
+    // v2122 batch:1244: Option Y2 hook は build() (=各ゲームの html2canvas 呼び出し)
+    // が走る区間だけ集中管理する。 install は build() 直前、 uninstall は
+    // Promise.finally() (= try/finally 相当) で build() の成功/失敗どちらでも
+    // 必ず 1 回実行する。 compose()/download() の間は hook を外しておくことで、
+    // 撮影後の他処理へ影響が漏れない。 各ゲームの build() 自体は無変更のまま恩恵を受ける。
+    var uninstallPatternHook = installPatternScaleHook();
+
     return Promise.resolve()
       .then(function () { return registered.build(buildOpts); })
+      .finally(function () { uninstallPatternHook(); })
       .then(function (src) {
         if (!src) return null;
         // build() が canvas を返してきたか、 image/url を返したかで分岐
@@ -464,7 +573,230 @@
   // html2canvas は「img は必ず intrinsic → box へ stretch 描画」するため、
   // src をこれに差し替えると stretch 描画が無害 (透明) になり、
   // 代わりに background-image (contain/cover は正実装) が本来の見た目を描く。
+  // v2122 batch:1244: この方式は cover / none / intrinsic 不明時の fallback に降格
+  // (contain / scale-down は padding 焼き込みの鮮明パスへ移行。 下記 onclone 参照)。
   var TRANSPARENT_PX_SRC = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+
+  // ── v2122 batch:1244: Option X ─ 非 img 要素の CSS 背景 → <img> 昇格シム ──
+  // WHY (根因): 上記 object-fit シムは <img> (置換要素) を対象とするが、通常の
+  // 非 img 要素の CSS background-image (url()) は html2canvas の
+  // renderBackgroundImage / resizeImage() パスを通る。 このパスは背景画像を一旦
+  // CSS px サイズの中間 canvas へ縮小してから createPattern で塗るため、
+  // scale:2 の super-sampling が効かず、単一の no-repeat 背景を持つ要素
+  // (トップ/おみせボタン・吹き出し・部屋背景等) が軒並みぼやける。 置換要素
+  // (<img>) は intrinsic → box への 1 回リサンプル (renderReplacedElement) で
+  // ラスタ解像度のまま描画されるため鮮明。
+  // そこで clone 限定で「単一 url() の no-repeat 背景」を持つ非 img 要素を検出し、
+  // 同じ矩形の <img> を最背面 (z-index:-1) に注入して背景を置換要素パスへ逃がす
+  // (repeat / 多層 / fixed / text-clip の背景は安全側スキップ — Option Y2 の
+  // パターンスケール hook 側の保険に委ねる)。 実画面 DOM には一切触れない
+  // (clonedDoc 限定)。 <img> 要素自体は bgShimCollect で除外するため、上記
+  // object-fit シム (background fallback 分岐) とは対象集合が排他。
+  var bgShimNaturalCache = {}; // url -> {w,h} | null (撮影セッション間で共有)
+
+  function bgShimLoadNatural(url) {
+    if (Object.prototype.hasOwnProperty.call(bgShimNaturalCache, url)) {
+      return Promise.resolve(bgShimNaturalCache[url]);
+    }
+    return new Promise(function (resolve) {
+      var img = new Image();
+      var done = function (ok) {
+        bgShimNaturalCache[url] = ok && img.naturalWidth > 0
+          ? { w: img.naturalWidth, h: img.naturalHeight }
+          : null;
+        resolve(bgShimNaturalCache[url]);
+      };
+      img.onload = function () { done(true); };
+      img.onerror = function () { done(false); };
+      img.src = url; // computed backgroundImage の URL は絶対 URL
+      if (img.complete && img.naturalWidth > 0) done(true);
+    });
+  }
+
+  // computed background-size トークン → タイル寸法 {w,h}
+  // v2122 batch:1244 review fix (Low, パース不能値ガード): computed 値に calc(...)
+  // を含む、または各トークンの parseFloat が NaN になる場合は null を返す。
+  // 呼び出し元 (bgShimConvertOne) は null / NaN を検知してこの要素の X 変換を
+  // 丸ごとスキップし、背景をそのまま残す (Y2 のパターンスケール hook 側の保険に
+  // 委ねる)。 以前は NaN のまま計算を続け、後段で 'NaNpx' を style へ書き込んで
+  // CSS 宣言全体が invalid drop → 背景が消える/位置がズレる劣化があった。
+  function bgShimTileSize(sizeStr, areaW, areaH, natW, natH) {
+    var s = String(sizeStr || 'auto').trim();
+    if (s.indexOf('calc(') >= 0) return null;
+    if (s === 'cover' || s === 'contain') {
+      var k = (s === 'cover')
+        ? Math.max(areaW / natW, areaH / natH)
+        : Math.min(areaW / natW, areaH / natH);
+      return { w: natW * k, h: natH * k };
+    }
+    var tok = s.split(/\s+/);
+    var tx = tok[0] || 'auto';
+    var ty = tok[1] || 'auto';
+    function len(t, area) {
+      if (t === 'auto') return null;
+      if (t.indexOf('%') >= 0) {
+        var pv = parseFloat(t);
+        return isNaN(pv) ? NaN : area * pv / 100;
+      }
+      var v = parseFloat(t);
+      return isNaN(v) ? null : v;
+    }
+    var w = len(tx, areaW);
+    var h = len(ty, areaH);
+    if ((typeof w === 'number' && isNaN(w)) || (typeof h === 'number' && isNaN(h))) return null;
+    if (w === null && h === null) return { w: natW, h: natH };
+    if (w === null) return { w: h * (natW / natH), h: h };
+    if (h === null) return { w: w, h: w * (natH / natW) };
+    return { w: w, h: h };
+  }
+
+  // computed background-position トークン → タイルのエリア内オフセット
+  // v2122 batch:1244 review fix (Low, パース不能値ガード): calc(...) や parseFloat
+  // が NaN になるトークンは NaN を返す (呼び出し元が isNaN で検知しスキップする)。
+  function bgShimPosOffset(token, areaLen, tileLen) {
+    var t = String(token == null ? '50%' : token).trim();
+    if (t.indexOf('calc(') >= 0) return NaN;
+    if (t.indexOf('%') >= 0) {
+      var pv = parseFloat(t);
+      return isNaN(pv) ? NaN : (areaLen - tileLen) * pv / 100;
+    }
+    var v = parseFloat(t);
+    return isNaN(v) ? (areaLen - tileLen) / 2 : v;
+  }
+
+  function bgShimPx(v) { return parseFloat(v) || 0; }
+
+  function bgShimConvertOne(clonedDoc, el, cs, url, nat) {
+    var bl = bgShimPx(cs.borderLeftWidth), br = bgShimPx(cs.borderRightWidth);
+    var bt = bgShimPx(cs.borderTopWidth), bb = bgShimPx(cs.borderBottomWidth);
+    var pl = bgShimPx(cs.paddingLeft), pr = bgShimPx(cs.paddingRight);
+    var pt = bgShimPx(cs.paddingTop), pb = bgShimPx(cs.paddingBottom);
+    // ローカル (変形前) の border box
+    var bw = el.offsetWidth, bh = el.offsetHeight;
+    if (!(bw > 0 && bh > 0)) return false;
+
+    // "padding box" 座標系のボックス群 (この要素の絶対配置子の原点は padding box 左上)
+    function box(kind) {
+      if (kind === 'border-box') return { x: -bl, y: -bt, w: bw, h: bh };
+      if (kind === 'content-box') {
+        return { x: pl, y: pt, w: bw - bl - br - pl - pr, h: bh - bt - bb - pt - pb };
+      }
+      return { x: 0, y: 0, w: bw - bl - br, h: bh - bt - bb }; // padding-box
+    }
+    var area = box(cs.backgroundOrigin || 'padding-box');
+    var clip = box(cs.backgroundClip || 'border-box');
+    if (!(area.w > 0 && area.h > 0 && clip.w > 0 && clip.h > 0)) return false;
+
+    var tile = bgShimTileSize(cs.backgroundSize, area.w, area.h, nat.w, nat.h);
+    // v2122 batch:1244 review fix (Low, パース不能値ガード): tile が null
+    // (calc()/NaN でパース不能) の場合はここで丸ごとスキップする。
+    if (!tile || !(tile.w > 0 && tile.h > 0)) return false;
+    var posTok = String(cs.backgroundPosition || '50% 50%').split(/\s+/);
+    var ox = bgShimPosOffset(posTok[0], area.w, tile.w);
+    var oy = bgShimPosOffset(posTok[1], area.h, tile.h);
+    // 同上: background-position 側が calc()/NaN でパース不能ならスキップ。
+    if (isNaN(ox) || isNaN(oy)) return false;
+
+    // background-clip box に合わせたクリップ用ラッパー
+    var wrap = clonedDoc.createElement('div');
+    wrap.setAttribute('data-pono-bg-shim', '1');
+    wrap.style.cssText =
+      'position:absolute;overflow:hidden;pointer-events:none;margin:0;padding:0;border:0;' +
+      'z-index:-1;' +
+      'left:' + clip.x + 'px;top:' + clip.y + 'px;' +
+      'width:' + clip.w + 'px;height:' + clip.h + 'px;';
+    // border-radius: border-box クリップは厳密値、 padding/content-box クリップは
+    // ボーダー幅分を差し引いた近似値
+    var rad = [
+      [cs.borderTopLeftRadius, bl, bt], [cs.borderTopRightRadius, br, bt],
+      [cs.borderBottomRightRadius, br, bb], [cs.borderBottomLeftRadius, bl, bb]
+    ].map(function (r) {
+      var v = bgShimPx(String(r[0]).split(/\s+/)[0]);
+      if ((cs.backgroundClip || 'border-box') !== 'border-box') {
+        v = Math.max(0, v - Math.max(r[1], r[2]));
+      }
+      return v + 'px';
+    });
+    wrap.style.borderRadius = rad.join(' ');
+
+    var img = clonedDoc.createElement('img');
+    img.setAttribute('data-pono-bg-shim-img', '1');
+    img.style.cssText =
+      'position:absolute;margin:0;padding:0;border:0;max-width:none;max-height:none;' +
+      'left:' + (area.x + ox - clip.x) + 'px;top:' + (area.y + oy - clip.y) + 'px;' +
+      'width:' + tile.w + 'px;height:' + tile.h + 'px;';
+    img.src = url;
+    wrap.appendChild(img);
+    // v2122 batch:1244 review fix (Low, コメント訂正): probe で実証済みの形を
+    // そのまま採用 (lastChild へ変更しない)。 z-index:-1 なので描画順は注入位置に
+    // 依存しないが、firstChild 注入こそ el の子の :first-child/nth-child マッチを
+    // clone 上でずらす副作用がある (旧コメントは逆の説明だった)。 現行 capture
+    // 対象ページでは該当する組み合わせがゼロであることを確認済み。
+    el.insertBefore(wrap, el.firstChild);
+
+    // z-index:-1 ラッパーがこの要素の内側に留まるようスタッキングコンテキストへ昇格
+    // v2122 batch:1244 review fix (Medium, stacking 昇格の z-index 対策): static
+    // の間は z-index 指定 (computed zIndex が 'auto' 以外の値) があっても不活性
+    // (無視) だったが、relative へ昇格した瞬間にその値が突然有効化されてしまう。
+    // 昇格したケースでは computed zIndex の値にかかわらず常に z-index を '0' に
+    // 上書きし、静的だった頃と同じ「意図しない stacking 変化なし」を保証する。
+    if (cs.position === 'static') {
+      el.style.position = 'relative';
+      el.style.zIndex = '0';
+    } else if (cs.zIndex === 'auto') {
+      el.style.zIndex = '0';
+    }
+    el.style.backgroundImage = 'none';
+    return true;
+  }
+
+  function bgShimCollect(clonedDoc) {
+    var view = clonedDoc.defaultView || window;
+    var els = clonedDoc.querySelectorAll('*');
+    var jobs = [];
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i];
+      var tag = (el.tagName || '').toLowerCase();
+      // 置換要素/void 要素は注入した子を保持できないので対象外
+      // (<img> をここで除外するため、object-fit シムの背景 fallback 分岐とは
+      //  対象集合が排他になり、同一要素を二重に書き換えない)
+      // v2122 batch:1244 review fix (Low, select/textarea 除外): select/textarea
+      // も子を描画しない置換系要素で、wrap の <img> は描かれないのに
+      // backgroundImage='none' だけが実行されて背景が消える劣化があった。
+      if (tag === 'img' || tag === 'canvas' || tag === 'video' || tag === 'input' ||
+          tag === 'iframe' || tag === 'svg' || tag === 'br' || tag === 'hr' ||
+          tag === 'select' || tag === 'textarea') continue;
+      var cs;
+      try { cs = view.getComputedStyle(el); } catch (e) { continue; }
+      if (!cs) continue;
+      // 安全弁: url(...) 単体との完全一致のみ対象化 (^...$ アンカー付き)。
+      // カンマ区切りの多層背景やグラデーションはこの正規表現にマッチせず、
+      // 自動的に「原挙動 (Option Y2 のパターン hook 側の保険) へスキップ」される。
+      var m = /^url\((['"]?)([^'")]*)\1\)$/.exec(String(cs.backgroundImage || 'none').trim());
+      if (!m || !m[2]) continue;
+      var rep = String(cs.backgroundRepeat || '').trim();
+      if (rep !== 'no-repeat' && rep !== 'no-repeat no-repeat') continue;
+      if (String(cs.backgroundAttachment || 'scroll').indexOf('fixed') >= 0) continue;
+      if (String(cs.backgroundClip || '').indexOf('text') >= 0) continue;
+      if (!(el.offsetWidth > 0 && el.offsetHeight > 0)) continue;
+      jobs.push({ el: el, cs: cs, url: m[2] });
+    }
+    return jobs;
+  }
+
+  function applyBackgroundImgShim(clonedDoc) {
+    var jobs;
+    try { jobs = bgShimCollect(clonedDoc); } catch (e) { return Promise.resolve({ converted: 0, error: String(e) }); }
+    return Promise.all(jobs.map(function (j) { return bgShimLoadNatural(j.url); }))
+      .then(function (nats) {
+        var n = 0;
+        for (var i = 0; i < jobs.length; i++) {
+          if (!nats[i]) continue;
+          try { if (bgShimConvertOne(clonedDoc, jobs[i].el, jobs[i].cs, jobs[i].url, nats[i])) n++; } catch (e) {}
+        }
+        return { converted: n, candidates: jobs.length };
+      });
+  }
 
   function html2canvasOptions(overrides) {
     var base = {
@@ -537,39 +869,91 @@
                   }
                 }
               }
-              // v2107 batch:1241: html2canvas 1.4.1 は object-fit / object-position を
-              // 未実装で、img (置換要素) を intrinsic 全域 → content box の 9-arg
-              // drawImage で全面 stretch する (renderReplacedElement)。このため
-              // object-fit:contain の画像 (例: デイリーガチャ筐体 .daily-gacha-machine)
-              // が撮影時のみ box の縦横比に引き伸ばされ「横太り」になっていた。
-              // html2canvas の background 描画 (contain/cover/position) は正しく実装
-              // されているので、object-fit を持つ img を「透明 1px + 等価な
-              // background-image」へ変換して同じ見た目を焼かせる。
-              // clonedDoc 限定の書き換えなので実画面 DOM は無影響。
-              // (Playwright 実測: 筐体 AR 1.02〜1.07 → 0.812 に復元、 intrinsic 0.8115)
+              // v2107 batch:1241 → v2122 batch:1244: html2canvas 1.4.1 は object-fit /
+              // object-position を未実装で、img (置換要素) を intrinsic 全域 → content
+              // box の 9-arg drawImage で全面 stretch する (renderReplacedElement)。
+              // batch:1241 は img を「透明 1px + 等価な background-image」へ変換して
+              // AR を直したが、html2canvas の background 描画パス
+              // (renderBackgroundImage) は画像を resizeImage() で一旦 CSS px サイズの
+              // 中間 canvas に縮小してから createPattern で塗るため、scale:2 の
+              // supersampling が無効化され (1x 描画 → 2 倍引き伸ばし)、撮影出力が
+              // 全体的にぼやける退行が出た (実測 Laplacian 分散 12 分の 1)。
+              // v2122: contain / scale-down は「padding 焼き込み」方式に変更。
+              //   content box を object-fit の描画矩形まで padding で縮めると、
+              //   html2canvas の置換要素パス (intrinsic → content box をラスタ解像度で
+              //   1 回だけリサンプル) のまま AR / object-position が正しくなり鮮明。
+              //   (Playwright 実測: 筐体 crop lapVar 69.8 → 372、AR 0.8137 維持)
+              // cover / none / intrinsic 不明 (naturalWidth=0) は描画矩形が content box
+              // を超え padding では表現できないため、従来 background シムへ fallback。
+              // いずれも clonedDoc 限定の書き換えなので実画面 DOM は無影響。
               if (cs && (el.tagName || '').toLowerCase() === 'img') {
                 var fit = cs.objectFit;
                 if (fit === 'contain' || fit === 'cover' || fit === 'none' || fit === 'scale-down') {
                   var imgSrc = el.currentSrc || el.getAttribute('src');
                   if (imgSrc && imgSrc !== TRANSPARENT_PX_SRC) {
-                    // url() 内の " と \ をエスケープ (\ を先に)。 未エンコードの
-                    // SVG data URI 等で宣言全体が invalid になり画像が消えるのを防ぐ。
-                    var cssUrl = imgSrc.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
-                    el.style.backgroundImage = 'url("' + cssUrl + '")';
-                    // scale-down は「none と contain の小さい方」だが、 素材は常に
-                    // box より大きい前提 (ゲーム画像) なので contain へ丸める。
-                    el.style.backgroundSize = (fit === 'none') ? 'auto' : (fit === 'scale-down' ? 'contain' : fit);
-                    el.style.backgroundPosition = cs.objectPosition || '50% 50%';
-                    el.style.backgroundRepeat = 'no-repeat';
-                    // object-fit は content box 基準。 padding 付き img でも等価に
-                    // なるよう background も content-box 基準で描かせる。
-                    el.style.backgroundOrigin = 'content-box';
-                    el.style.backgroundClip = 'content-box';
-                    el.setAttribute('src', TRANSPARENT_PX_SRC);
-                    el.removeAttribute('srcset');
+                    var nw = el.naturalWidth || 0;
+                    var nh = el.naturalHeight || 0;
+                    var padL = parseFloat(cs.paddingLeft) || 0;
+                    var padR = parseFloat(cs.paddingRight) || 0;
+                    var padT = parseFloat(cs.paddingTop) || 0;
+                    var padB = parseFloat(cs.paddingBottom) || 0;
+                    // client* は transform 非適用のローカル px。 content box を復元。
+                    var cw = el.clientWidth - padL - padR;
+                    var ch = el.clientHeight - padT - padB;
+                    var canPad = (fit === 'contain' || fit === 'scale-down') &&
+                      nw > 0 && nh > 0 && cw > 0 && ch > 0;
+                    if (canPad) {
+                      // 鮮明パス: img (置換要素) のまま、content box を contain の
+                      // 描画矩形へ縮める padding を焼き込む。
+                      var fitScale = Math.min(cw / nw, ch / nh);
+                      if (fit === 'scale-down') fitScale = Math.min(fitScale, 1);
+                      var gapX = Math.max(0, cw - nw * fitScale);
+                      var gapY = Math.max(0, ch - nh * fitScale);
+                      var posTokens = String(cs.objectPosition || '50% 50%').split(' ');
+                      var offsetFor = function (token, gap) {
+                        if (!token) return gap / 2;
+                        if (token.indexOf('%') >= 0) return gap * (parseFloat(token) / 100);
+                        var px = parseFloat(token);
+                        if (isNaN(px)) return gap / 2;
+                        return Math.max(0, Math.min(px, gap));
+                      };
+                      var offX = offsetFor(posTokens[0], gapX);
+                      var offY = offsetFor(posTokens[1], gapY);
+                      // border box を現在値 (offsetWidth/Height) で固定してから
+                      // padding を加算 → クローン内 layout は不変 (±1px の整数丸めのみ)。
+                      el.style.boxSizing = 'border-box';
+                      el.style.width = el.offsetWidth + 'px';
+                      el.style.height = el.offsetHeight + 'px';
+                      el.style.paddingLeft = (padL + offX) + 'px';
+                      el.style.paddingRight = (padR + (gapX - offX)) + 'px';
+                      el.style.paddingTop = (padT + offY) + 'px';
+                      el.style.paddingBottom = (padB + (gapY - offY)) + 'px';
+                      // <picture> の <source srcset> が resource selection を支配する
+                      // ため、選択済み URL (currentSrc) を src に確定させる。
+                      if (el.getAttribute('src') !== imgSrc) el.setAttribute('src', imgSrc);
+                      el.removeAttribute('srcset');
+                    } else {
+                      // fallback (batch:1241 シム): AR は正しいが background パスの
+                      // CSS px 描画のため contain より柔らかい。
+                      // url() 内の " と \ をエスケープ (\ を先に)。 未エンコードの
+                      // SVG data URI 等で宣言全体が invalid になり画像が消えるのを防ぐ。
+                      var cssUrl = imgSrc.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+                      el.style.backgroundImage = 'url("' + cssUrl + '")';
+                      // scale-down は「none と contain の小さい方」だが、 素材は常に
+                      // box より大きい前提 (ゲーム画像) なので contain へ丸める。
+                      el.style.backgroundSize = (fit === 'none') ? 'auto' : (fit === 'scale-down' ? 'contain' : fit);
+                      el.style.backgroundPosition = cs.objectPosition || '50% 50%';
+                      el.style.backgroundRepeat = 'no-repeat';
+                      // object-fit は content box 基準。 padding 付き img でも等価に
+                      // なるよう background も content-box 基準で描かせる。
+                      el.style.backgroundOrigin = 'content-box';
+                      el.style.backgroundClip = 'content-box';
+                      el.setAttribute('src', TRANSPARENT_PX_SRC);
+                      el.removeAttribute('srcset');
+                    }
                     // <picture> 内の img は <source srcset> が resource selection を
-                    // 支配し、 src 差し替えだけでは stretch された原画が background の
-                    // 上に二重描画され得る。 クローン DOM 限定なので <source> ごと除去。
+                    // 支配し、 src 差し替えだけでは意図しない原画が選択され直し得る。
+                    // クローン DOM 限定なので <source> ごと除去 (両パス共通)。
                     if (el.closest) {
                       var pic = el.closest('picture');
                       if (pic) {
@@ -585,6 +969,13 @@
             } catch (e) {}
           }
         } catch (e) {}
+
+        // v2122 batch:1244: Option X ─ 非 img 要素の CSS 背景 → <img> 昇格シム
+        // (定義は上記 applyBackgroundImgShim / TRANSPARENT_PX_SRC 近傍を参照)。
+        // html2canvas 1.4.1 は onclone の戻り値が thenable なら await するため、
+        // ここで Promise を return してよい。 万一シムが失敗しても撮影全体を
+        // 巻き込んで失敗させないよう必ず catch する (実画面 DOM は無影響)。
+        return applyBackgroundImgShim(clonedDoc).catch(function () { return null; });
       }
     };
     if (overrides && typeof overrides === 'object') {
