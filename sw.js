@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2107: スクショモード capture.js の2不具合修正 (batch:1241) — ① html2canvas 1.4.1 が object-fit/object-position 未実装で img を box へ全面 stretch するため、デイリーガチャの LP 16:9 撮影でガチャ機が横太り (実測 AR 0.81→1.02〜1.07、viewport 依存で毎回変動) していた問題を、onclone で該当 img を透明1px + 等価 background-image (contain/cover) へ変換して修正 (クローン DOM 限定・実画面無影響、Playwright 実測で AR 0.812 に復元)。② Mac で Shift+Alt+C が e.key='Ç' となり撮影 UI が開かない問題へ e.code==='KeyC' 併用で対応。isFeatureEnabled('capture-mode') gating は不変。play.html PAGE_CACHE_VERSION と同期不要 (play.html 未変更、common/capture.js のみ変更)。
 // v2106: Bento Kitchen のじゃがいも切れ端を、縮小後pxの二重適用を避けた9固定スロットで皿の横90%・縦84%へ分散。マッシュは各段階を全体98%・各領域95%まで保持。ポテト+ひき肉はGPT Image 2の中央小山素材へ差し替え、共通皿を固定したままドラッグ履歴maskで触れた食材部分だけを次状態へ置換する局所mixへ変更し、段階境界も全体96%・6領域90%まで保持。play.html PAGE_CACHE_VERSION と同期不要 (bento/kitchen.html/画像のみ変更)。
 // v2105: もじっこファームのお世話で、縮小画面でも同じ長さになるようなで距離を正規化し、短い一筆は累積して中央通知を繰り返さないよう修正。タマゴ中の案内から「あたま／ミルマル」を外し、文字完了後にお世話から戻ると次の文字を復元。副指・pointercancelも分離。play.html PAGE_CACHE_VERSION と同期不要 (writing-mori のみ変更)。
 // v2104: なぞなぞトレインの町で雨を旅ごと50%抽選へ変更し、雨天は列車の巡航を8%ゆっくりにする代わり、めずらしい仲間の1回ごとの遭遇率を25%→40%へ上げる。かな2行の効果案内、マップ/ステージをまたがないレアtimer guardも追加。最遠景山は通常30vh・超横長22vh、次の山はtop -38vhへ上げ、下端gapなしで奥行きを強調。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel のみ変更)。
@@ -31,7 +32,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2106;
+const CACHE_VERSION = 2107;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
