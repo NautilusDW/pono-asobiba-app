@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2101: デバッグ機能 'survey-multi-submit' を追加 (batch:1236)。ON のときだけご感想 (survey.html) と★モーダル (rating-modal.js) の永久 dedup チェックをバイパスして何回でも送信テスト可能に。survey.html に debug-mode.js 読込 + リロード不要の再送信ボタン (デバッグ時のみ DOM 生成) を追加、PONO_SW_VERSION を v2101 に同期。isAllowed() gating (staging + manage 解錠) は不変で本番挙動に影響なし。play.html PAGE_CACHE_VERSION と同期不要 (play.html 未変更、survey.html/common/debug-features.js/rating-modal.js のみ変更)。
 // v2100: Maze ○×クイズの回答行を横画面gridの水平中央へ固定し、2ボタンの左右余白を均等化。play.html PAGE_CACHE_VERSION と同期。
 // v2099: Maze 全9ミニゲームの16:9枠内で、旧compact上限により小さく浮いていた主役絵・ゲーム盤・操作面を短辺比例へ変更。じゃんけん/旗/○×/Simon/シルエット/なかまはずれ/水/岩/ボウリングと結果・報酬状態の余白を再配分。play.html PAGE_CACHE_VERSION と同期。
 // v2098: なぞなぞトレインの規則的な雨タイルを、長さ・太さ・速度・開始位相・横流れが粒ごとに異なる遠/中/手前3層パーティクルへ刷新。固定プール再利用、iOS 74粒上限、トンネル/晴天/LPロック時停止、reduced-motion静止に対応し、空と一体の最遠景山も通常18vh・超横長14vh上へ移動。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel のみ変更)。
@@ -25,7 +26,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2100;
+const CACHE_VERSION = 2101;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
