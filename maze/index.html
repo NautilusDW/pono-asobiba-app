@@ -2857,7 +2857,9 @@ body.image-stage-mode .game-wrap {
   line-height: 1.15;
 }
 
-@media (max-height: 430px), (max-width: 760px) and (orientation: landscape) {
+@media (max-height: 430px),
+       (orientation: landscape) and (max-height: 560px),
+       (max-width: 760px) and (orientation: landscape) {
   .encounter-modal .enc-card.is-janken {
     padding: 8px 10px;
     width: min(96vw, 650px);
@@ -2999,7 +3001,7 @@ body.image-stage-mode .game-wrap {
     width: min(clamp(46px, 9vw, 58px), calc(100% - 14px));
   }
   .flag-game {
-    grid-template-rows: 1.35em 14px 18px minmax(54px, 1fr) 58px;
+    grid-template-rows: auto auto auto minmax(54px, 1fr) minmax(68px, auto);
     gap: 3px;
     min-height: 0;
     height: min(72dvh, 220px);
@@ -3326,6 +3328,150 @@ body.image-stage-mode .game-wrap {
     width: clamp(48px, 14dvh, 64px);
     height: clamp(48px, 14dvh, 64px);
     max-height: none !important;
+  }
+}
+
+/* ── ミニゲーム共通プレイ枠 ──
+   紹介画面は従来の縦積みのまま、プレイ開始後だけ厳密な16:9へ切り替える。
+   横長画面では高さ、4:3寄りの画面では幅を基準にし、枠自体をviewport内へ収める。 */
+@media (orientation: landscape) {
+  .encounter-modal .enc-card.is-minigame {
+    width: min(
+      1180px,
+      calc(100vw - max(10px, env(safe-area-inset-left)) - max(10px, env(safe-area-inset-right)))
+    );
+    height: auto;
+    max-width: 100%;
+    max-height: none;
+    aspect-ratio: 16 / 9;
+    padding: clamp(6px, 1.4dvh, 16px) clamp(8px, 1.4vw, 18px);
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    row-gap: 0;
+    align-items: stretch;
+    justify-items: stretch;
+    overflow: hidden;
+  }
+
+  .encounter-modal .enc-card.is-minigame:not(.is-oddone) .enc-left {
+    display: none;
+  }
+
+  .encounter-modal .enc-card.is-minigame .enc-stage {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    max-height: none;
+    gap: clamp(5px, 1.2dvh, 10px);
+    align-items: stretch;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .encounter-modal .enc-card.is-minigame .janken-arena,
+  .encounter-modal .enc-card.is-minigame .flag-game,
+  .encounter-modal .enc-card.is-minigame .water-game,
+  .encounter-modal .enc-card.is-minigame .water-complete-scene,
+  .encounter-modal .enc-card.is-minigame .strength-game,
+  .encounter-modal .enc-card.is-minigame .bowl-game {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    max-height: 100%;
+  }
+
+  .encounter-modal .enc-card.is-minigame .janken-call {
+    min-height: 0;
+    line-height: 1;
+  }
+  .encounter-modal .enc-card.is-minigame .janken-result {
+    height: auto;
+    min-height: 0;
+    line-height: 1;
+  }
+
+  .encounter-modal .enc-card.is-minigame .peek-choice-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .encounter-modal .enc-card.is-minigame .peek-choice {
+    min-width: 0 !important;
+    min-height: 60px;
+  }
+
+  .encounter-modal .enc-card.is-minigame .strength-game {
+    grid-template-rows: auto minmax(0, 1fr) auto 10px auto;
+  }
+  .encounter-modal .enc-card.is-minigame .strength-game__stage,
+  .encounter-modal .enc-card.is-minigame .strength-rock-btn,
+  .encounter-modal .enc-card.is-minigame .strength-game__impact-zone {
+    height: 100%;
+    min-height: 0;
+  }
+  .encounter-modal .enc-card.is-minigame .strength-rock-btn {
+    min-height: 44px;
+  }
+
+  .encounter-modal .enc-card.is-minigame .water-complete-stage {
+    min-height: 0;
+  }
+  .encounter-modal .enc-card.is-minigame .water-game__stage,
+  .encounter-modal .enc-card.is-minigame .bowl-game__stage {
+    height: 100%;
+    min-height: 44px;
+  }
+  .encounter-modal .enc-card.is-minigame .bowl-game {
+    grid-template-rows: minmax(0, 1fr);
+  }
+  .encounter-modal .enc-card.is-minigame .bowl-game__stage {
+    aspect-ratio: auto;
+  }
+
+  /* なかまはずれだけは虫の案内も問題の一部なので、16:9内で左右に並べる。 */
+  .encounter-modal .enc-card.is-minigame.is-oddone {
+    grid-template-columns: minmax(126px, 0.76fr) minmax(0, 1.65fr);
+    grid-template-rows: minmax(0, 1fr);
+    column-gap: clamp(8px, 1.8vw, 18px);
+    row-gap: 0;
+  }
+  .encounter-modal .enc-card.is-minigame.is-oddone .enc-left,
+  .encounter-modal .enc-card.is-minigame.is-oddone .enc-stage {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    max-height: 100%;
+    overflow: hidden;
+  }
+  .encounter-modal .enc-card.is-minigame.is-oddone .enc-dialog {
+    overflow: hidden;
+  }
+}
+
+/* 16:9より横長の画面は、使える高さから枠を決める。
+   663.75px × 16/9 = 1180px なので、最大幅でも比率が崩れない。 */
+@media (orientation: landscape) and (min-aspect-ratio: 16 / 9) {
+  .encounter-modal .enc-card.is-minigame {
+    width: auto;
+    height: min(
+      663.75px,
+      calc(100dvh - max(10px, env(safe-area-inset-top)) - max(10px, env(safe-area-inset-bottom)))
+    );
+    max-width: calc(
+      100vw - max(10px, env(safe-area-inset-left)) - max(10px, env(safe-area-inset-right))
+    );
+  }
+}
+
+@media (orientation: landscape) and (max-height: 560px) {
+  .encounter-modal .enc-card.is-minigame .peek-choice {
+    padding: 3px 5px !important;
+  }
+  .encounter-modal .enc-card.is-minigame .peek-choice img {
+    width: clamp(44px, 12dvh, 64px) !important;
+    height: clamp(44px, 12dvh, 64px) !important;
+  }
+  .encounter-modal .enc-card.is-minigame .flag-bug-img {
+    max-width: clamp(64px, 20dvh, 112px);
+    max-height: clamp(64px, 20dvh, 112px) !important;
   }
 }
 
@@ -6195,6 +6341,7 @@ function _creatureData(c) {
 
 function _setEncounterMode(mode) {
   if (!encCardEl) return;
+  encCardEl.classList.toggle('is-minigame', typeof mode === 'string' && mode.length > 0);
   encCardEl.classList.toggle('is-janken', mode === 'janken' || mode === 'flag' || mode === 'water_bridge' || mode === 'water_bridge_complete' || mode === 'strength_push' || mode === 'web_sweep' || mode === 'donguri_bowl');
   encCardEl.classList.toggle('is-truefalse', mode === 'truefalse');
   encCardEl.classList.toggle('is-oddone', mode === 'oddone');
@@ -8146,7 +8293,7 @@ function _pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 // 1 回間違えると別の場所に穴が増えてヒント追加。2 回間違えるとアウト。
 let _peekState = null;
 function _showPeekChoices() {
-  _setEncounterMode(null);
+  _setEncounterMode('silhouette');
   _preloadMazeVoices('silhouette', ['start','hint_more','correct','wrong']);
   const ans = _pick(PEEK_QUIZ_POOL);
   // 別カテゴリにならないよう、PEEK_QUIZ_POOL から ans 以外を 2 つランダム抽出
@@ -8171,7 +8318,7 @@ function _showPeekChoices() {
   peekWrap.appendChild(canvasEl);
   encStageEl.appendChild(peekWrap);
   const rowEl = document.createElement('div');
-  rowEl.className = 'row';
+  rowEl.className = 'row peek-choice-grid';
   choices.forEach(function(c) {
     const btn = document.createElement('button');
     btn.className = 'enc-btn choice peek-choice';
@@ -8406,7 +8553,7 @@ function _simonPlayTone(freq, ms) {
 }
 
 function _showSimonGame() {
-  _setEncounterMode(null);
+  _setEncounterMode('simon');
   _preloadMazeVoices('simon', ['start','your_turn','correct','wrong']);
   // Generate a random sequence
   _simonSeq = [];
