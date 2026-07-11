@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2087: Maze なかまはずれを短い横画面で虫/4択の左右2列へ切替え、全15問を画面内へ収容。細長いネコ/いぬ/くま/ライオン/ぞうを既存生成素材へ差し替え。play.html PAGE_CACHE_VERSION と同期。
 // v2086: bento tut2 hotfix5 (batch:1058) — とりけす教習ステップ + はっぱ指定制 (レタス→おかず下) + 完成画面レガシー二重系統の tut2 中無効化 + 全ステップのテキストチャネル整理 (floating bubble 削除・setSpeech 一本化) + 仕切りG 縦強制撤去 (bento/admin/worker)。play.html PAGE_CACHE_VERSION と同期不要 (bento/admin/worker 変更)。
 // v2085: Maze 全9ミニゲームの開始時に探索BGMをフェードアウトし、新BGMを一拍聴かせてからゲーム/ナレーションを開始。ボタンの開始合図と待機取消も追加。play.html PAGE_CACHE_VERSION と同期。
 // v2084: Bento Kitchen の包丁効果線を実際の位置・サイズ・振り下ろし量へ追従させ、線の長さ/太さ/間隔/タイミングを不均一化。play.html PAGE_CACHE_VERSION と同期。
@@ -20,7 +21,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2086;
+const CACHE_VERSION = 2087;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
