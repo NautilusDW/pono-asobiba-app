@@ -27,6 +27,15 @@ assert.match(html, /rockBtn\.addEventListener\('pointerdown', _onStrengthRockPoi
 assert.match(html, /rockBtn\.addEventListener\('click', _onStrengthRockClick\)/);
 assert.doesNotMatch(html, /rockBtn\.addEventListener\('click', _onStrengthRockTap\)/);
 
+const tapStart = html.indexOf('function _onStrengthRockTap()');
+const failStart = html.indexOf('function _failStrengthPushGame()', tapStart);
+assert.ok(tapStart >= 0 && failStart > tapStart, 'rock hit handler is missing');
+const tapSource = html.slice(tapStart, failStart);
+const finalLock = tapSource.indexOf('if (finalHit) gs.locked = true;');
+const renderAfterHit = tapSource.indexOf('_renderStrengthPushGame();');
+assert.ok(finalLock >= 0 && finalLock < renderAfterHit, 'the final hit must lock success before timeout rendering');
+assert.match(tapSource, /if \(finalHit\) \{\s*_strengthGimmickSetTimeout/);
+
 const pointerStart = html.indexOf('function _onStrengthRockPointerDown(');
 const clickStart = html.indexOf('function _onStrengthRockClick(', pointerStart);
 const showStart = html.indexOf('function _showStrengthPushGame(', clickStart);

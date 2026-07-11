@@ -10376,6 +10376,8 @@ function _onStrengthRockTap() {
   const punchHand = (gs.tapCount % 2 === 1) ? 'right' : 'left';
   gs.lastPunchHand = punchHand;
   const finalHit = gs.tapCount >= gs.required;
+  // 制限時間の境界でも、最終打は失敗判定より先に成功として確定する。
+  if (finalHit) gs.locked = true;
   const damageRatio = Math.max(0, Math.min(1, gs.tapCount / gs.required));
   gs.status = finalHit
     ? 'くだけた！'
@@ -10411,8 +10413,7 @@ function _onStrengthRockTap() {
     }, 260);
   }
   _renderStrengthPushGame();
-  if (gs.tapCount >= gs.required) {
-    gs.locked = true;
+  if (finalHit) {
     _strengthGimmickSetTimeout(function() {
       if (_strengthGameState === gs) _resolveStrengthPushGame();
     }, 420);
