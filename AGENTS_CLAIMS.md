@@ -59,7 +59,6 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 - 2026-07-11 14:15 - by Codex - [batch:1225-maze-animal-purge-strength] - maze/index.html, assets/images/word/**, assets/images/quizland/illust/choice/**, assets/zukan/animals/**, tests/maze_*animal*.cjs, tests/maze_strength_rapid_input_verify.cjs, sw.js, play.html, tmp/review/maze-animal-assets/**, AGENTS_CLAIMS.md, HANDOFF.md - 縦長旧動物assetを全参照監査後に移行/削除、犬crop確認と動物比較一覧、岩体力24打/13秒化 [overlap: batch:1224-potato-coverage-mix-scale (sw.js)]
-- 2026-07-11 14:10 - by Codex - [batch:1224-potato-coverage-mix-scale] - bento/kitchen.html, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - じゃがいもは各段階の全体80%をまんべんなく潰す実coverage判定へ、ひき肉+じゃがいもは皿/変化範囲を適正化 [overlap: batch:1204-capacitor-phase1-scaffold (stale bento/kitchen.html)]
 
 
 
