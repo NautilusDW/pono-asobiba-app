@@ -149,6 +149,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-07-11T03:25:18Z - bento tut2 hotfix5: とりけす教習+顔復元ゲート/レタス指定配置/テキスト1本化/しきりG横向き対応(3層撤去)/KV履歴バックアップ+スナップショット (fable orchestrator + sonnet 実装チーム, クロスレビューで critical 1 + high 2 + worker側残存を検出し全修正, sw v2086)
+- **タスク**: bento tut2 hotfix5: とりけす教習+顔復元ゲート/レタス指定配置/テキスト1本化/しきりG横向き対応(3層撤去)/KV履歴バックアップ+スナップショット (fable orchestrator + sonnet 実装チーム, クロスレビューで critical 1 + high 2 + worker側残存を検出し全修正, sw v2086)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 0
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {}
+- **サマリ**: 行動ログが空のため分析できません。
+
+
 ### 2026-07-11T03:14:15Z - 仕切りG(index6)横見本化修正の3ファイル横断エンドツーエンド独立検証
 - **タスク**: 仕切りG(index6)横見本化修正の3ファイル横断エンドツーエンド独立検証
 - **結果**: 成功
@@ -242,19 +255,6 @@ wrangler deploy                  # master 内容を production に
 
 ### 2026-07-11T02:00:43Z - クロスレビュー: bento/kitchen + writing-mori 3ページの tier ガード追加差分 (kitchen の CRLF→LF 全行書換を修正し最小diff化、Playwright 18ケース検証)
 - **タスク**: クロスレビュー: bento/kitchen + writing-mori 3ページの tier ガード追加差分 (kitchen の CRLF→LF 全行書換を修正し最小diff化、Playwright 18ケース検証)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 0
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {}
-- **サマリ**: 行動ログが空のため分析できません。
-
-
-### 2026-07-11T01:52:41Z - 未ローンチ2ゲーム(bento/kitchen.html, writing-mori 3ページ)へ batch:1215 同型の直URL tier ロックを移植 + Playwright 8ケース検証
-- **タスク**: 未ローンチ2ゲーム(bento/kitchen.html, writing-mori 3ページ)へ batch:1215 同型の直URL tier ロックを移植 + Playwright 8ケース検証
 - **結果**: 成功
 - **理由**: N/A
 - **総アクション数**: 0
