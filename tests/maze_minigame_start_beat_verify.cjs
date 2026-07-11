@@ -45,7 +45,8 @@ assert.match(html, /class="enc-start-cue__note"[^>]*>♪<\/span><span>はじま�
 assert.match(html, /\.enc-btn\.primary\.is-starting:disabled/);
 assert.match(html, /@media \(prefers-reduced-motion: reduce\)/);
 assert.match(html, /button\.disabled = true;/);
-assert.match(html, /button\.style\.width = Math\.ceil\(rect\.width\)/);
+assert.match(html, /button\.style\.width = Math\.ceil\(buttonWidth\)/);
+assert.match(html, /const buttonWidth = button\.offsetWidth;/);
 assert.match(html, /encStageEl\.setAttribute\('aria-busy', 'true'\)/);
 assert.match(html, /id="mzStartAnnouncer" role="status" aria-live="polite"/);
 assert.match(html, /mzStartAnnouncer\.textContent = 'ミニゲームを はじめるよ'/);

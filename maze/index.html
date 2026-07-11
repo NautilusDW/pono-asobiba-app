@@ -7644,12 +7644,12 @@ function _mzBeginEncounterStart(button, creature, game) {
   _mzEncounterStarting = true;
 
   // ラベル変更でボタンが縮まらないよう、タップ時の実寸を維持する。
-  const rect = button.getBoundingClientRect();
-  if (rect.width > 0) button.style.width = Math.ceil(rect.width) + 'px';
-  if (rect.height > 0) button.style.height = Math.ceil(rect.height) + 'px';
+  const buttonWidth = button.offsetWidth;
+  const buttonHeight = button.offsetHeight;
+  if (buttonWidth > 0) button.style.width = Math.ceil(buttonWidth) + 'px';
+  if (buttonHeight > 0) button.style.height = Math.ceil(buttonHeight) + 'px';
   button.disabled = true;
   button.classList.add('is-starting');
-  button.setAttribute('aria-label', 'ミニゲームを はじめるよ');
   button.innerHTML = '<span class="enc-start-cue__note" aria-hidden="true">♪</span><span>はじまるよ</span>';
   encStageEl.setAttribute('aria-busy', 'true');
   if (mzStartAnnouncer) mzStartAnnouncer.textContent = 'ミニゲームを はじめるよ';
