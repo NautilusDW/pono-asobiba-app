@@ -2,6 +2,14 @@ import * as THREE from "https://unpkg.com/three@0.165.0/build/three.module.js";
 
 const ASSET_ROOT = "../../assets/_PonoSubmarine/Art/UI/StickerBook3D/";
 const ASSET_VERSION = "20260705-1088";
+const REPLACED_ANIMAL_ASSET_VERSION = "20260711-1225";
+const REPLACED_ANIMAL_ASSET_PATHS = new Set([
+  "assets/images/quizland/illust/choice/neko.png",
+  "assets/images/quizland/illust/choice/kuma.png",
+  "assets/images/quizland/illust/choice/kirin.png",
+  "assets/images/quizland/illust/choice/lion.png",
+  "assets/images/quizland/illust/choice/zou.png",
+]);
 const PAGE_ASPECT = 1472 / 1536;
 const PAGE_TEXTURE_W = 1472;
 const PAGE_TEXTURE_H = 1536;
@@ -10687,10 +10695,16 @@ function createDrawingStrokeId() {
 }
 
 function stickerAssetUrl(path) {
+  let url;
   if (/^https?:\/\//.test(path) || path.startsWith("../") || path.startsWith("./")) {
-    return path;
+    url = path;
+  } else {
+    url = `${STICKER_ASSET_PREFIX}${path}`;
   }
-  return `${STICKER_ASSET_PREFIX}${path}`;
+  if (REPLACED_ANIMAL_ASSET_PATHS.has(path)) {
+    return `${url}${url.includes("?") ? "&" : "?"}v=${REPLACED_ANIMAL_ASSET_VERSION}`;
+  }
+  return url;
 }
 
 function escapeHtml(value) {

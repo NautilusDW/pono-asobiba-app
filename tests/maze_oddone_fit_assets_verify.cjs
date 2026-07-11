@@ -53,9 +53,12 @@ const expectedAnimals = {
   lion: 'assets/images/quizland/illust/choice/lion.png',
   zou: 'assets/images/quizland/illust/choice/zou.png',
 };
-for (const id of Object.keys(expectedAnimals)) {
-  assert.match(html, new RegExp(`${id}: MAZE_QUIZ_IMG \\+ '${id}\\.png'`));
+const replacedAnimalVersion = '20260711-1225';
+assert.match(html, new RegExp(`const MAZE_REPLACED_ANIMAL_ASSET_VERSION = '\\?v=${replacedAnimalVersion}'`));
+for (const id of ['neko', 'kuma', 'kirin', 'lion', 'zou']) {
+  assert.match(html, new RegExp(`${id}: MAZE_QUIZ_IMG \\+ '${id}\\.png' \\+ MAZE_REPLACED_ANIMAL_ASSET_VERSION`));
 }
+assert.match(html, /inu: MAZE_QUIZ_IMG \+ 'inu\.png'/);
 for (const relative of Object.values(expectedAnimals)) {
   const file = path.join(root, relative);
   const png = fs.readFileSync(file);
@@ -96,12 +99,12 @@ for (const question of quizContext.__oddone) {
 const byLabel = new Map(
   quizContext.__oddone.flatMap((question) => question.items).map((item) => [item.label, item.src]),
 );
-assert.equal(byLabel.get('ねこ'), '../assets/images/quizland/illust/choice/neko.png');
+assert.equal(byLabel.get('ねこ'), `../assets/images/quizland/illust/choice/neko.png?v=${replacedAnimalVersion}`);
 assert.equal(byLabel.get('いぬ'), '../assets/images/quizland/illust/choice/inu.png');
-assert.equal(byLabel.get('くま'), '../assets/images/quizland/illust/choice/kuma.png');
-assert.equal(byLabel.get('きりん'), '../assets/images/quizland/illust/choice/kirin.png');
-assert.equal(byLabel.get('らいおん'), '../assets/images/quizland/illust/choice/lion.png');
-assert.equal(byLabel.get('ぞう'), '../assets/images/quizland/illust/choice/zou.png');
+assert.equal(byLabel.get('くま'), `../assets/images/quizland/illust/choice/kuma.png?v=${replacedAnimalVersion}`);
+assert.equal(byLabel.get('きりん'), `../assets/images/quizland/illust/choice/kirin.png?v=${replacedAnimalVersion}`);
+assert.equal(byLabel.get('らいおん'), `../assets/images/quizland/illust/choice/lion.png?v=${replacedAnimalVersion}`);
+assert.equal(byLabel.get('ぞう'), `../assets/images/quizland/illust/choice/zou.png?v=${replacedAnimalVersion}`);
 
 const nativeSources = new Set(nativeManifest.entries.map((entry) => entry.source));
 assert.ok(nativeSources.has('assets/images/maze'), 'native build must include Maze quiz art');

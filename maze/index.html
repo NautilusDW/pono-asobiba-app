@@ -8020,14 +8020,17 @@ function _mzLocalQuizSrc(name) {
 }
 // 迷路内で使う動物は、この安全確認済みの正方形アセットへ一本化する。
 // `_mzWord('neko')` のような古い呼び方が残っても、削除済みの縦長 word 画像へ戻らない。
+// 同名 choice ファイルを良画像へ差し替えた5種は、旧 cache-first エントリを避けるため
+// 固定 query も更新する (CACHE_VERSION bump だけでは1世代前cacheが残るため)。
+const MAZE_REPLACED_ANIMAL_ASSET_VERSION = '?v=20260711-1225';
 const MAZE_CANONICAL_ANIMAL_ASSETS = Object.freeze({
-  neko: MAZE_QUIZ_IMG + 'neko.png',
+  neko: MAZE_QUIZ_IMG + 'neko.png' + MAZE_REPLACED_ANIMAL_ASSET_VERSION,
   inu: MAZE_QUIZ_IMG + 'inu.png',
   usagi: MAZE_QUIZ_STAGE_IMG + 'stage_trivia_rabbit.png',
-  kuma: MAZE_QUIZ_IMG + 'kuma.png',
-  kirin: MAZE_QUIZ_IMG + 'kirin.png',
-  lion: MAZE_QUIZ_IMG + 'lion.png',
-  zou: MAZE_QUIZ_IMG + 'zou.png',
+  kuma: MAZE_QUIZ_IMG + 'kuma.png' + MAZE_REPLACED_ANIMAL_ASSET_VERSION,
+  kirin: MAZE_QUIZ_IMG + 'kirin.png' + MAZE_REPLACED_ANIMAL_ASSET_VERSION,
+  lion: MAZE_QUIZ_IMG + 'lion.png' + MAZE_REPLACED_ANIMAL_ASSET_VERSION,
+  zou: MAZE_QUIZ_IMG + 'zou.png' + MAZE_REPLACED_ANIMAL_ASSET_VERSION,
   iruka: MAZE_LOCAL_QUIZ_IMG + 'iruka.png',
   kujira: MAZE_LOCAL_QUIZ_IMG + 'kujira.png',
 });
