@@ -58,7 +58,6 @@
 ## Active claims
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
-- 2026-07-11 12:35 - by Codex - [batch:1221-maze-oddone-fit-animal-assets] - maze/index.html, assets/images/word/**, assets/images/quizland/illust/choice/**, tests/**, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - なかまはずれ4択を短い横画面へ完全収容し、縦長化した動物を既存の正しい生成済み/再クロップ素材へ復元
 - 2026-07-11 12:47 - by Codex - [batch:1222-potato-masher-reveal] - bento/kitchen.html, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - じゃがいもを既存マッシャーでタップ/ドラッグし、同角度の3段階を局所リビールして確実に進行 [overlap: batch:1221-maze-oddone-fit-animal-assets (sw.js/play.html), batch:1204-capacitor-phase1-scaffold (bento/kitchen.html)]
 - 2026-07-11 - by Claude - [batch:1218-menu-scroll-arrow-pulse] - play.html (スクロール矢印の CSS/該当マークアップのみ), sw.js - メニューのスクロール矢印を 白⇄オレンジ でゆっくり明滅させ視認性向上 [overlap: play.html は並走 WIP と部分ステージで分離]
 
