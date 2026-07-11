@@ -58,7 +58,6 @@
 ## Active claims
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
-- 2026-07-12 01:25 - by Codex - [batch:1251-kitchen-shape-breading-match] - bento/kitchen.html, tests/bento_kitchen_*, tests/e2e/bento/**, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - コロッケ成形完了の輪郭を、直後の粉・卵・パン粉工程で使う素コロッケ輪郭へ連続接続
 
 
 
