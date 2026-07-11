@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2105: もじっこファームのお世話で、縮小画面でも同じ長さになるようなで距離を正規化し、短い一筆は累積して中央通知を繰り返さないよう修正。タマゴ中の案内から「あたま／ミルマル」を外し、文字完了後にお世話から戻ると次の文字を復元。副指・pointercancelも分離。play.html PAGE_CACHE_VERSION と同期不要 (writing-mori のみ変更)。
 // v2104: なぞなぞトレインの町で雨を旅ごと50%抽選へ変更し、雨天は列車の巡航を8%ゆっくりにする代わり、めずらしい仲間の1回ごとの遭遇率を25%→40%へ上げる。かな2行の効果案内、マップ/ステージをまたがないレアtimer guardも追加。最遠景山は通常30vh・超横長22vh、次の山はtop -38vhへ上げ、下端gapなしで奥行きを強調。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel のみ変更)。
 // v2103: もじっこファームの文字書きで、HanziWriter 合格後の独自終点条件を88%→72%へ緩和。合格済みの途中線を消さず次のタッチで続けられるようにし、3回目は前向き45%・終点72%・塗り50%・逆戻り12%以内・実ドラッグをすべて満たす時だけ救済。点打ち/微小往復/逆書き/別画を拒否し、pointercancel/二本指の認識ずれも防止。play.html PAGE_CACHE_VERSION と同期不要 (writing-mori/index.html のみ変更)。
 // v2102: Bento Kitchen の包丁効果線を11本へ増やして実表示2.7〜6.8pxへ増太。じゃがいも潰しは90%/全域条件を保ちつつ細かなcoverageで所要操作を延長し、ポテト+ひき肉混ぜは共通皿上の小粒食材レイヤーを全域coverageで連続blend/warpする方式へ刷新。左残り・局所塗り絵表示・大粒の納豆状表現を解消し、成形も同一食材から小判形へ連続warpする。play.html PAGE_CACHE_VERSION と同期不要 (bento/kitchen.html/画像のみ変更)。
@@ -29,7 +30,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2104;
+const CACHE_VERSION = 2105;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
