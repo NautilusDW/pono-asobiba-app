@@ -60,7 +60,6 @@
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 - 2026-07-11 17:05 - by Codex - [batch:1235-nazonazo-random-rain-tradeoff] - nazonazo-tunnel/index.html, nazonazo-tunnel/styles.css, nazonazo-tunnel/js/game.js, tests/nazonazo_*, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - 遠景2層を大幅に上げ、雨を旅ごとのランダム抽選にし、低速化とレア遭遇率上昇のトレードオフを追加 [overlap: sw.js は他active batchの完了後、push直前に最新採番]
 - 2026-07-11 17:01 - by Codex - [batch:1234-writing-mori-judgment-relax] - writing-mori/index.html, tests/mojikko_writing_judgment_regression.cjs, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - HanziWriter後の二重終点判定を幼児向けに緩和し、途中で指を離しても続きから書けるようにする [overlap: batch:1232-maze-minigame-content-scale (sw.js), batch:1231-kitchen-mash-mix-warp (sw.js)]
-- 2026-07-11 16:35 - by Claude - [batch:1236-survey-debug-multi-submit] - survey.html, common/rating-modal.js, common/debug-features.js, sw.js, tests/survey_debug_multi_submit_regression.cjs, AGENTS_CLAIMS.md, HANDOFF.md - デバッグモードでご感想(アンケート)を何回も送れるようにする (永久dedupのdebug bypass)。1233/1234/1235 は Codex 使用済みのため 1236 に再採番 [overlap: batch:1234-writing-mori-judgment-relax / batch:1235-nazonazo-random-rain-tradeoff (sw.js)、push 直前に最新採番]
 - 2026-07-11 16:23 - by Codex - [batch:1231-kitchen-mash-mix-warp] - bento/kitchen.html, assets/images/bento/cooking/korokke/**, tmp/alpha_pending/1231-kitchen-mash-mix-warp/**, tests/bento_*, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - 包丁線を増量・増太、マッシャー操作を長くし、ひき肉混ぜの粒/左残り/塗り絵感とコロッケ成形を連続変形へ改善 [overlap: batch:1230-nazonazo-rain-particles-far-mountain (sw.js)]
 
 
