@@ -10,9 +10,8 @@
 // v2073: 全体パフォーマンス改善 (OP前ゲーム画面フラッシュ修正 quizland/maze/bento/oto/puzzle、タイトルFOUCガード修正、隠しモーダル画像の遅延化、preload=none化、WebP一括変換 quizland illust/zukan/oto/bento、SWキャッシュ戦略修正 no-store→cache-first/no-cache、precache copy-forward、nav strip lossy再エンコード)。play.html PAGE_CACHE_VERSION と同期。
 // v2072: Puzzle の設定メニューで「もりのアルバム」を「もどる」の下へ移し、160個のマス一覧を8人の進み具合カードへ簡略化。play.html PAGE_CACHE_VERSION と同期。
 // v2071: Maze の再crop動物画像をversioned URLで強制更新し、旗あげ5段レイアウトを短い横画面内へ収める。play.html PAGE_CACHE_VERSION と同期。
-// v2070: Maze のはしご取得後に入口/出口を同時点灯し、正解ボタン中央化、ステージ札の矢印回避、混入動物画像5種の再クロップを反映。play.html PAGE_CACHE_VERSION と同期。
 // ── changelog アーカイブ ──
-// v2069 以前の changelog は docs/sw-changelog-archive.md へ移動した (最終移設 2026-07-11)。
+// v2070 以前の changelog は docs/sw-changelog-archive.md へ移動した (最終移設 2026-07-11)。
 // sw.js が ~318KB (約 93% が changelog コメント) に肥大し、 毎ロード + 5分毎の
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、

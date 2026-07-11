@@ -31,7 +31,7 @@ namespace Pono.MarbleRun3D.UI
             image.raycastTarget = false;
 
             if (image.sprite == null)
-                Debug.LogWarning("ぶひんの えが みつかりません: " + ResourcePath(kind));
+                Debug.LogWarning("ぶひんの えが みつかりません " + ResourcePath(kind));
         }
 
         public static Sprite LoadSprite(MarblePieceKind kind)

@@ -209,6 +209,24 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
             Assert.That(runColors.Length, Is.InRange(3, 4));
             Assert.That(editColors.Concat(runColors).Distinct().Count(), Is.LessThanOrEqualTo(4),
                 "all action controls share the same four soft hues");
+
+            var iconFirstButtons = editActions.GetComponentsInChildren<Button>(true)
+                .Concat(runActions.GetComponentsInChildren<Button>(true))
+                .ToArray();
+            Assert.That(iconFirstButtons.Length, Is.EqualTo(9));
+            foreach (var button in iconFirstButtons)
+            {
+                var icon = button.transform.Find("ActionIcon")?.GetComponent<Image>();
+                Assert.That(icon, Is.Not.Null, button.name + " needs a primary pictogram");
+                Assert.That(icon.sprite, Is.Not.Null, button.name + " pictogram sprite");
+                Assert.That(icon.raycastTarget, Is.False, button.name + " icon must not block taps");
+                Assert.That(icon.preserveAspect, Is.True, button.name + " icon aspect");
+                Assert.That(icon.rectTransform.anchorMax.x - icon.rectTransform.anchorMin.x,
+                    Is.GreaterThanOrEqualTo(0.38f), button.name + " icon should remain visually primary");
+                var helper = button.transform.Find("Label").GetComponent<Text>();
+                Assert.That(helper.fontSize, Is.LessThanOrEqualTo(17), button.name + " text is supplementary");
+                Assert.That(helper.text, Does.Not.Contain("\n"), button.name + " helper stays short");
+            }
         }
 
         [UnityTest]
