@@ -58,6 +58,7 @@
 ## Active claims
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
+- 2026-07-12 09:05 - by Codex - [batch:1248-nazonazo-animal-grounding] - nazonazo-tunnel/{js/game.js,styles.css,index.html}, tests/nazonazo_jungle_animals_regression.cjs, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - ジャングル動物を空中の同列配置から枝/樹冠/地面基準へ再配置し、キリン等の種別体格差を明確化 [overlap: batch:1244-capture-output-resolution (sw.js)]
 - 2026-07-11 19:50 - by Claude - [batch:1244-capture-output-resolution] - common/capture.js, play.html (capture build のみ必要時), tests/capture_*, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - スクショモードの出力がぼやける件を実測調査し、html2canvas ラスタ解像度/合成拡大率を改善 [overlap: batch:1242 (sw.js, 自分), batch:1243-nazonazo-picturebook-animals (sw.js)、push 直前に最新採番]
 
 
