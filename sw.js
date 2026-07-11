@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2119: なぞなぞトレインのジャングル動物18体を、空中の画像上端基準から枝・吊り下がり・足元基準へ再配置。樹上動物を116%中景タイルと同位相で流し、地上組は草地へ接地して上下浮遊を停止。vminでキリン最長身／ゾウ大柄／シマウマ中型／ライオン低めの体格差を固定し、ジャングル時の運転席内装で背景動物の車窓貫通も防止。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/テストのみ変更)。
 // v2118: おべんとうチュートリアルののり操作を「移動→ちいさく→おおきく→回転→とりけす1回→のりOK」の実操作順へ整理。パレット内外のscroll完了と安定rectを待って青枠を1回だけ開始し、Phase切替・配置直後・遅延callbackでの途中描画/別位置再表示を防止。しきりは管理エディター/APIのA〜G配列を座標・向き・サイズの正本としてindex順に配置する。play.html PAGE_CACHE_VERSION と同期不要 (bento/index.html/テストのみ変更)。
 // v2117: Bento Kitchen のじゃがいも潰しで、進行判定領域に切られて残っていた旧画像の上輪郭を、ドラッグ履歴の相補maskで先に除去して同じ位置へ次画像を入れる局所置換へ修正。皿外へ出て戻るpointerは新しいstrokeとして再開し、皿を横切る帯も防止。ポテト+ひき肉の4段階と成形素材は、直前のマッシュと同じ皿・画角・大きさを固定したマットな水彩絵本調へ統一。play.html PAGE_CACHE_VERSION と同期不要 (bento/kitchen.html/画像/テストのみ変更)。
 // v2116: タイトルのめいろ説明文を、写真が出ない通常／選択だけの状態では他カードと同じ焦げ茶へ統一し、実際に写真peekが出るscroll overlay／fine-pointer hover・focusだけ明色へ反転。プロフィール主画面の姿を短画面68pxの3倍となる204pxへ拡大して名前・操作・進捗を右列へ整理し、「ゲームで あそぶと できたことが ふえるよ」を独立枠から進捗ボックス最上段へ統合。490×317を含む5画面幅で下部とじるまでscroll不要。play.html PAGE_CACHE_VERSION と同期 (2116)。
@@ -43,7 +44,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2118;
+const CACHE_VERSION = 2119;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
