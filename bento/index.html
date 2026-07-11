@@ -21587,12 +21587,14 @@ function tutorialAdvance(nextStep) {
     try { clearTimeout(tutorialState._paletteTapDelayTimer); } catch (_) {}
     tutorialState._paletteTapDelayTimer = null;
   }
-  if (tutorialState._noriEditSeqTimers) {
-    for (const t of tutorialState._noriEditSeqTimers) { try { clearTimeout(t); } catch (_) {} }
-    tutorialState._noriEditSeqTimers = null;
+  // batch:1058-hotfix5 (WP1): とりけす教習 (tut2-nori-undo) の 800ms ack 遅延 timer /
+  //   のりOK ソフトゲートの block カウントも step 遷移で必ず破棄・リセットする。
+  if (tutorialState._noriUndoAckTimer) {
+    try { clearTimeout(tutorialState._noriUndoAckTimer); } catch (_) {}
+    tutorialState._noriUndoAckTimer = null;
   }
+  tutorialState._noriOkBlockCount = 0;
   tutorialState._noriEditPanelKey = '';
-  tutorialState._noriEditSeqStepId = '';
   tutorialState.phase = 'demo';
   tutorialState.renderedStep = null;
   if (tutorialState._layerDoneTimer) {
@@ -22211,6 +22213,10 @@ function tut2RenderNoriUndoPhaseB(step) {
   }
 }
 function tut2RenderNoriEditPhaseA(step) {
+  // batch:1058-hotfix5 (WP1): floating bubble 廃止 (ポノ吹き出しは firstRender の
+  //   TUT2_PONO_SPEECH で既に設定済み、 二重送信していた 400ms 遅延 setSpeech も削除)。
+  //   パネルへのトリムのみ維持する。
+  tutorialHideBubble();
   const placed = tutorialFindFirstPlacedDecor();
   if (!placed || !placed.item) return;
   const stepId = step.id;
@@ -22236,34 +22242,20 @@ function tut2RenderNoriEditPhaseA(step) {
       tutorialClearPaletteFocus();
       tutorialMarkTarget(panel, { radius: 16, outline: false, color: '#1E7FD8', width: 5 });
     }
-    tutorialShowBubbleBesideElement('のりを タップすると<br>まわしたり おおきさを<br>かえられるよ', panel, { side: 'left', gap: 28 });
   };
   requestAnimationFrame(() => requestAnimationFrame(showPanelGuide));
-  if (tutorialState._noriEditSeqStepId === stepId) return;
-  tutorialState._noriEditSeqStepId = stepId;
-  if (tutorialState._noriEditSeqTimers) {
-    for (const t of tutorialState._noriEditSeqTimers) { try { clearTimeout(t); } catch (_) {} }
-  }
-  tutorialState._noriEditSeqTimers = [];
-  const t = setTimeout(() => {
-    if (!tutorialState.active) return;
-    if (tutorialState.step !== stepId) return;
-    try { setSpeech('のりを タップすると まわしたり おおきさを かえられるよ'); } catch (_) {}
-  }, 400);
-  tutorialState._noriEditSeqTimers.push(t);
 }
 function tut2RenderNoriEditPhaseB(step) {
-  // batch:1058-hotfix4: Phase B は のりOK 誘導のみ (Phase A で 4 ボタン walk-through 済)。
-  //   バブルは のりOK 横に anchor (owner 方針で高情報ステップは独立バブル可)。
+  // batch:1058-hotfix4/5: Phase B は のりOK 誘導のみ (Phase A で 4 ボタン walk-through 済)。
+  //   batch:1058-hotfix5 (WP1): floating bubble 廃止、 ポノ吹き出し (setSpeech) のみに一本化。
+  tutorialHideBubble();
   tutorialClearTrims();
   tutorialClearOutlines();
   tutorialClearPaletteFocus();
   tutorialState._noriEditPanelKey = '';
-  tutorialShowBubble('できたら「のりOK」<br>を おそう', { topVh: '8', side: 'right' });
   try { setSpeech('できたら「のりOK」を おそう！'); } catch (_) {}
   const noriOkBtn = tutorialNoriOkButton();
   if (noriOkBtn) {
-    tutorialPositionBubbleBeside(noriOkBtn, { gap: 12 });
     tutorialMarkTarget(noriOkBtn, { radius: 22, outline: false });
     tutorialAnimateTap(noriOkBtn);
   }
@@ -22747,10 +22739,13 @@ function tutorialTeardown() {
     try { clearTimeout(tutorialState._paletteTapDelayTimer); } catch (_) {}
     tutorialState._paletteTapDelayTimer = null;
   }
-  if (tutorialState._noriEditSeqTimers) {
-    for (const t of tutorialState._noriEditSeqTimers) { try { clearTimeout(t); } catch (_) {} }
-    tutorialState._noriEditSeqTimers = null;
+  // batch:1058-hotfix5 (WP1): とりけす教習の ack 遅延 timer / のりOK ソフトゲート
+  //   block カウントも teardown で回収・リセット。
+  if (tutorialState._noriUndoAckTimer) {
+    try { clearTimeout(tutorialState._noriUndoAckTimer); } catch (_) {}
+    tutorialState._noriUndoAckTimer = null;
   }
+  tutorialState._noriOkBlockCount = 0;
   if (tutorialState.ghostLayerEl && tutorialState.ghostLayerEl.parentNode) {
     try { tutorialState.ghostLayerEl.parentNode.removeChild(tutorialState.ghostLayerEl); } catch (_) {}
   }

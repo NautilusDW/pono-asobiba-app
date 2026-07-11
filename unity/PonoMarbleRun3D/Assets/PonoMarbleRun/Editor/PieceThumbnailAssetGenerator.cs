@@ -25,7 +25,17 @@ namespace Pono.MarbleRun3D.Editor
         public static void GenerateAll()
         {
             Directory.CreateDirectory(OutputFolder);
-            var previewScene = EditorSceneManager.NewPreviewScene();
+            var previousActiveScene = SceneManager.GetActiveScene();
+            if (string.IsNullOrEmpty(previousActiveScene.path))
+            {
+                if (!Application.isBatchMode)
+                    throw new InvalidOperationException("Save the open scene before rebuilding piece pictures.");
+                previousActiveScene = EditorSceneManager.OpenScene(
+                    MarbleRunProjectSetup.ScenePath,
+                    OpenSceneMode.Single);
+            }
+            var previewScene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Additive);
+            SceneManager.SetActiveScene(previewScene);
             var previewRoot = default(GameObject);
             var cameraObject = default(GameObject);
             var keyLightObject = default(GameObject);
@@ -90,8 +100,10 @@ namespace Pono.MarbleRun3D.Editor
                     UnityEngine.Object.DestroyImmediate(target);
                 }
                 materials?.Dispose();
-                if (EditorSceneManager.IsPreviewScene(previewScene))
-                    EditorSceneManager.ClosePreviewScene(previewScene);
+                if (previousActiveScene.IsValid() && previousActiveScene.isLoaded)
+                    SceneManager.SetActiveScene(previousActiveScene);
+                if (previewScene.IsValid() && previewScene.isLoaded)
+                    EditorSceneManager.CloseScene(previewScene, true);
             }
         }
 
@@ -120,7 +132,7 @@ namespace Pono.MarbleRun3D.Editor
 
         private static GameObject CreateInScene(Scene scene, string name, params Type[] components)
         {
-            var gameObject = new GameObject(name, components) { hideFlags = HideFlags.HideAndDontSave };
+            var gameObject = new GameObject(name, components) { hideFlags = HideFlags.DontSave };
             gameObject.layer = PreviewLayer;
             SceneManager.MoveGameObjectToScene(gameObject, scene);
             return gameObject;
@@ -128,7 +140,7 @@ namespace Pono.MarbleRun3D.Editor
 
         private static Camera ConfigureCamera(Camera camera)
         {
-            camera.hideFlags = HideFlags.HideAndDontSave;
+            camera.hideFlags = HideFlags.DontSave;
             camera.clearFlags = CameraClearFlags.SolidColor;
             camera.backgroundColor = new Color(0f, 0f, 0f, 0f);
             camera.cullingMask = 1 << PreviewLayer;

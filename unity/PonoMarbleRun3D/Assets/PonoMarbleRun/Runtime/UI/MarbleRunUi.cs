@@ -170,7 +170,9 @@ namespace Pono.MarbleRun3D.UI
         private Image _selectedPieceMarkerImage;
         private Text _heightText;
         private Text _viewText;
+        private Image _viewIconImage;
         private Text _followText;
+        private Image _followIconImage;
         private Text _tutorialText;
         private UiPulse _resetPulse;
         private UiPulse _rotatePulse;
@@ -361,12 +363,16 @@ namespace Pono.MarbleRun3D.UI
 
         public void SetCameraView(bool topView)
         {
-            if (_viewText != null) _viewText.text = topView ? "ななめ" : "うえから";
+            if (_viewText != null) _viewText.text = topView ? "ななめ" : "うえ";
+            if (_viewIconImage != null)
+                _viewIconImage.sprite = ActionIconAtlas.Get(topView ? ActionIcon.Orbit : ActionIcon.Overview);
         }
 
         public void SetCameraFollow(bool following)
         {
             if (_followText != null) _followText.text = following ? "みわたす" : "おいかける";
+            if (_followIconImage != null)
+                _followIconImage.sprite = ActionIconAtlas.Get(following ? ActionIcon.Overview : ActionIcon.Orbit);
         }
 
         private void EnsureEventSystem()
@@ -473,8 +479,8 @@ namespace Pono.MarbleRun3D.UI
             CreateButton("Sample6", buttons.transform, "エレベーター シティ", Sky,
                 () => _controller.StartMode("sample6"), 21);
 
-            var back = CreateButton("SamplesBack", _samplePanel.transform, "もどる", Lavender,
-                ShowMenu, 23);
+            var back = CreateIconButton("SamplesBack", _samplePanel.transform, "もどる", Lavender,
+                ActionIcon.Undo, ShowMenu, 18);
             SetRect(back.GetComponent<RectTransform>(), new Vector2(0.35f, 0.05f), new Vector2(0.65f, 0.16f));
             SetActive(_samplePanel, false);
         }
@@ -491,7 +497,8 @@ namespace Pono.MarbleRun3D.UI
             _builderTop = CreatePanel("BuilderTop", _safeRoot.transform, new Vector2(0.01f, 0.84f), new Vector2(0.99f, 0.99f),
                 SoftSkyPaper, 18);
             StyleCard(_builderTop, Sky, new Vector2(0f, -4f));
-            var back = CreateButton("Back", _builderTop.transform, "もどる", Lavender, _controller.ShowMenu, 18);
+            var back = CreateIconButton("Back", _builderTop.transform, "もどる", Lavender,
+                ActionIcon.Undo, _controller.ShowMenu, 13, true);
             SetRect(back.GetComponent<RectTransform>(), new Vector2(0.012f, 0.53f), new Vector2(0.13f, 0.95f));
             CreateHeadingPlate("ModeTag", _builderTop.transform, new Vector2(0.145f, 0.56f), new Vector2(0.465f, 0.94f),
                 SoftPeachPaper, 16);
@@ -510,12 +517,16 @@ namespace Pono.MarbleRun3D.UI
                 () => _controller.ChangePlacementLevel(1), 15);
             SetRect(levelUp.GetComponent<RectTransform>(), new Vector2(0.658f, 0.53f), new Vector2(0.72f, 0.95f));
 
-            var save = CreateButton("Save", _builderTop.transform, "ほぞん", Green, _controller.SaveCourse, 17);
+            var save = CreateIconButton("Save", _builderTop.transform, "ほぞん", Green,
+                ActionIcon.Save, _controller.SaveCourse, 12, true);
             SetRect(save.GetComponent<RectTransform>(), new Vector2(0.73f, 0.53f), new Vector2(0.81f, 0.95f));
-            var load = CreateButton("Load", _builderTop.transform, "よみこむ", Sky, _controller.LoadCourse, 17);
+            var load = CreateIconButton("Load", _builderTop.transform, "よむ", Sky,
+                ActionIcon.Load, _controller.LoadCourse, 12, true);
             SetRect(load.GetComponent<RectTransform>(), new Vector2(0.82f, 0.53f), new Vector2(0.91f, 0.95f));
-            var resetView = CreateButton("View", _builderTop.transform, "うえから", Lavender, _controller.ToggleCameraAngle, 15);
-            _viewText = resetView.GetComponentInChildren<Text>();
+            var resetView = CreateIconButton("View", _builderTop.transform, "うえ", Lavender,
+                ActionIcon.Overview, _controller.ToggleCameraAngle, 12, true);
+            _viewText = resetView.transform.Find("Label").GetComponent<Text>();
+            _viewIconImage = resetView.transform.Find("ActionIcon").GetComponent<Image>();
             SetRect(resetView.GetComponent<RectTransform>(), new Vector2(0.92f, 0.53f), new Vector2(0.992f, 0.95f));
 
             var selectedCard = CreatePanel("SelectedCard", _builderTop.transform, new Vector2(0.012f, 0.04f), new Vector2(0.34f, 0.48f),
@@ -632,13 +643,17 @@ namespace Pono.MarbleRun3D.UI
             layout.childForceExpandWidth = true;
             layout.childControlHeight = true;
             layout.childForceExpandHeight = true;
-            var rotate = CreateButton("Rotate", _editActions.transform, "↻ くるっ\nみぎに まわす", Sky,
-                _controller.RotateSelection, 17);
+            var rotate = CreateIconButton("Rotate", _editActions.transform, "まわす", Sky,
+                ActionIcon.Rotate, _controller.RotateSelection, 16);
             _rotatePulse = rotate.gameObject.AddComponent<UiPulse>();
-            CreateButton("Delete", _editActions.transform, "けす", Coral, _controller.DeleteSelection, 20);
-            CreateButton("Undo", _editActions.transform, "ひとつ\nもどす", Lavender, _controller.Undo, 18);
-            CreateButton("Clear", _editActions.transform, "ぜんぶ\nけす", Coral, _controller.RequestClearAll, 18);
-            CreateButton("Run", _editActions.transform, "ためす", Green, _controller.StartRun, 24);
+            CreateIconButton("Delete", _editActions.transform, "けす", Coral,
+                ActionIcon.Delete, _controller.DeleteSelection, 16);
+            CreateIconButton("Undo", _editActions.transform, "もどす", Lavender,
+                ActionIcon.Undo, _controller.Undo, 16);
+            CreateIconButton("Clear", _editActions.transform, "ぜんぶ", Coral,
+                ActionIcon.Clear, _controller.RequestClearAll, 16);
+            CreateIconButton("Run", _editActions.transform, "ころがす", Green,
+                ActionIcon.Play, _controller.StartRun, 16);
         }
 
         private void BuildRunActions()
@@ -653,13 +668,17 @@ namespace Pono.MarbleRun3D.UI
             layout.childForceExpandWidth = true;
             layout.childControlHeight = true;
             layout.childForceExpandHeight = true;
-            var reset = CreateButton("ResetMarble", _runActions.transform, "たまを もどす", Sky, _controller.ResetMarble, 23);
+            var reset = CreateIconButton("ResetMarble", _runActions.transform, "たまを もどす", Sky,
+                ActionIcon.Reset, _controller.ResetMarble, 17);
             _resetPulse = reset.gameObject.AddComponent<UiPulse>();
-            var follow = CreateButton("FollowCamera", _runActions.transform, "みわたす", Sky,
-                _controller.ToggleCameraFollow, 21);
-            _followText = follow.GetComponentInChildren<Text>();
-            CreateButton("Pause", _runActions.transform, "いったん とめる", Lavender, () => _controller.SetPaused(true), 21);
-            CreateButton("Edit", _runActions.transform, "つくりなおす", Green, _controller.ReturnToEditing, 22);
+            var follow = CreateIconButton("FollowCamera", _runActions.transform, "みわたす", Sky,
+                ActionIcon.Overview, _controller.ToggleCameraFollow, 17);
+            _followText = follow.transform.Find("Label").GetComponent<Text>();
+            _followIconImage = follow.transform.Find("ActionIcon").GetComponent<Image>();
+            CreateIconButton("Pause", _runActions.transform, "とめる", Lavender,
+                ActionIcon.Pause, () => _controller.SetPaused(true), 17);
+            CreateIconButton("Edit", _runActions.transform, "つくる", Green,
+                ActionIcon.Edit, _controller.ReturnToEditing, 17);
         }
 
         private void BuildPausePanel()
@@ -674,7 +693,8 @@ namespace Pono.MarbleRun3D.UI
             var note = CreateText("PauseNote", _pausePanel.transform, "たまも しかけも とまっているよ", 23, FontStyle.Normal,
                 MutedText, TextAnchor.MiddleCenter);
             SetRect(note.rectTransform, new Vector2(0.08f, 0.48f), new Vector2(0.92f, 0.68f));
-            var resume = CreateButton("Resume", _pausePanel.transform, "つづける", Green, () => _controller.SetPaused(false), 28);
+            var resume = CreateIconButton("Resume", _pausePanel.transform, "つづける", Green,
+                ActionIcon.Play, () => _controller.SetPaused(false), 20);
             SetRect(resume.GetComponent<RectTransform>(), new Vector2(0.18f, 0.20f), new Vector2(0.82f, 0.44f));
         }
 
@@ -694,8 +714,8 @@ namespace Pono.MarbleRun3D.UI
             var yay = CreateText("Yay", _celebrationPanel.transform, "やったね！", 31, FontStyle.Bold,
                 MutedText, TextAnchor.MiddleCenter);
             SetRect(yay.rectTransform, new Vector2(0.06f, 0.38f), new Vector2(0.94f, 0.56f));
-            var edit = CreateButton("ContinueEdit", _celebrationPanel.transform, "コースを かえる", Green,
-                _controller.ReturnToEditing, 25);
+            var edit = CreateIconButton("ContinueEdit", _celebrationPanel.transform, "コースを かえる", Green,
+                ActionIcon.Edit, _controller.ReturnToEditing, 19);
             SetRect(edit.GetComponent<RectTransform>(), new Vector2(0.17f, 0.11f), new Vector2(0.83f, 0.35f));
         }
 
@@ -793,6 +813,38 @@ namespace Pono.MarbleRun3D.UI
             text.lineSpacing = 0.90f;
             Stretch(text.rectTransform, 10f);
             AddDropShadow(text, new Color(CocoaText.r, CocoaText.g, CocoaText.b, 0.07f), new Vector2(0f, -1f));
+            return button;
+        }
+
+        private Button CreateIconButton(
+            string name,
+            Transform parent,
+            string label,
+            Color color,
+            ActionIcon icon,
+            Action action,
+            int fontSize = 16,
+            bool compact = false)
+        {
+            var button = CreateButton(name, parent, label, color, action, fontSize);
+            var iconRight = compact ? 0.48f : 0.43f;
+            var iconObject = CreateRect("ActionIcon", button.transform,
+                new Vector2(0.035f, 0.08f), new Vector2(iconRight, 0.92f), Vector2.zero, Vector2.zero);
+            var iconImage = iconObject.AddComponent<Image>();
+            iconImage.sprite = ActionIconAtlas.Get(icon);
+            iconImage.color = Color.white;
+            iconImage.preserveAspect = true;
+            iconImage.raycastTarget = false;
+
+            var text = button.transform.Find("Label").GetComponent<Text>();
+            text.rectTransform.anchorMin = new Vector2(iconRight, 0.06f);
+            text.rectTransform.anchorMax = new Vector2(0.965f, 0.94f);
+            text.rectTransform.offsetMin = Vector2.zero;
+            text.rectTransform.offsetMax = Vector2.zero;
+            text.alignment = TextAnchor.MiddleCenter;
+            text.resizeTextForBestFit = true;
+            text.resizeTextMinSize = compact ? 9 : 12;
+            text.resizeTextMaxSize = fontSize;
             return button;
         }
 

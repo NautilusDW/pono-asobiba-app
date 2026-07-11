@@ -404,14 +404,14 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
                 Is.EqualTo("にじいろ タワー"));
 
             _controller.RotateSelection();
-            Assert.That(_controller.Ui.StatusText, Does.Contain("おしてから くるっ"));
+            Assert.That(_controller.Ui.StatusText, Does.Contain("おしてから まわす"));
             var editableRail = _controller.Course.pieces.First(piece => piece.kind == MarblePieceKind.Straight);
             var originalTurns = editableRail.pose.quarterTurns;
             Assert.That(_controller.SelectForQa(editableRail.id), Is.True);
             var rotatePulse = _controller.Ui.transform.Find("Canvas/SafeArea/EditActions/Rotate")
                 .GetComponent<UiPulse>();
             Assert.That(rotatePulse.Active, Is.True);
-            Assert.That(_controller.Ui.StatusText, Does.Contain("くるっで みぎに"));
+            Assert.That(_controller.Ui.StatusText, Does.Contain("まわすで みぎに"));
             _controller.RotateSelection();
             Assert.That(_controller.Course.Find(editableRail.id).pose.quarterTurns,
                 Is.EqualTo(GridPose.NormalizeQuarterTurns(originalTurns + 1)));
@@ -669,7 +669,7 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
             for (var z = -1; z <= 2; z++)
                 Assert.That(_controller.PlaceForQa(MarblePieceKind.Straight, new GridPose(0, z)), Is.True);
             Assert.That(_controller.TutorialStep, Is.EqualTo(3));
-            Assert.That(_controller.Ui.TutorialText, Is.EqualTo("ためすを おしてみよう"));
+            Assert.That(_controller.Ui.TutorialText, Is.EqualTo("ころがすを おしてみよう"));
             yield return null;
         }
 
