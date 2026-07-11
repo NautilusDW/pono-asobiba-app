@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2097: なぞなぞトレインの町外れで遠景・中景の山を上へ移動し、固定枠内ミラー式ループでiOSを含む横切れ・継ぎ目を解消。1周目の町に3層の雨と景色減光を追加し、トンネル内/次ステージ/reduced-motion/管理用晴雨比較に対応。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel のみ変更)。
 // v2096: Bento Kitchen の包丁効果線を実表示1.9〜5.4pxへ太くし、じゃがいも潰しを実coverage 90% + 全域80%へ引き上げ。コロッケ成形は共通皿・同一中心/水平角度の食材レイヤー3段階へ統一し、未成形の山から小判形へ進む見た目に刷新。play.html PAGE_CACHE_VERSION と同期不要 (bento/kitchen.html/画像のみ変更)。
 // v2095: Maze 全9ミニゲームのプレイ枠を16:9へ統一し、viewport短辺へ収める。シルエット/リズムで残っていた虫紹介欄と内部scroll、旗/岩/ボウリングの高さ431〜560pxでの下端切れを解消。play.html PAGE_CACHE_VERSION と同期。
 // v2094: Maze の旧縦長動物cropを全参照から撤去し、安全な単体画像へ統一。犬を中央配置画像へ変更し、岩くだきは24打/13秒へ延長。同名画像は固定queryで旧cacheを回避。play.html PAGE_CACHE_VERSION と同期。
@@ -21,7 +22,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2096;
+const CACHE_VERSION = 2097;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
