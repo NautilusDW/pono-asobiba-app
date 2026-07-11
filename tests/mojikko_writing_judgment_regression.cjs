@@ -132,6 +132,7 @@ function makePointerDownContext(pending) {
     complete: false,
     trailDrawing: false,
     activeTrailPointerId: null,
+    activeTrailTouchId: null,
     trailDistance: 99,
     sparkleBudget: 0,
     trailAttemptId: 0,
@@ -173,6 +174,19 @@ assert.equal(continuingContext.activeAttemptStartProgress, null, 'each contact m
 assert.equal(continuingContext.activeAttemptLastProgress, 0, 'each contact must reset its last sampled progress');
 assert.equal(continuingContext.activeTrailPointerId, 7, 'the first contact must own the trail');
 
+let secondPointerPrevented = false;
+let secondPointerStopped = false;
+continuingContext.onTrailPointerDown({
+  pointerType: 'touch',
+  button: 0,
+  pointerId: 8,
+  preventDefault() { secondPointerPrevented = true; },
+  stopImmediatePropagation() { secondPointerStopped = true; },
+});
+assert.equal(secondPointerPrevented, true, 'a second pointerdown must be cancelled before HanziWriter sees it');
+assert.equal(secondPointerStopped, true, 'a second pointerdown must stop at capture phase');
+assert.equal(continuingContext.activeTrailPointerId, 7, 'a second pointerdown must not replace trail ownership');
+
 const freshContext = makePointerDownContext(null);
 vm.createContext(freshContext);
 vm.runInContext(pointerDownSource, freshContext, { filename: 'mojikko-writing-pointerdown-fresh.js' });
@@ -186,6 +200,7 @@ function makeFinishContext(pending) {
     calls,
     trailDrawing: false,
     activeTrailPointerId: 11,
+    activeTrailTouchId: null,
     lastTrailPoint: null,
     complete: false,
     trailAttemptId: 7,
@@ -216,6 +231,7 @@ function makeFinishContext(pending) {
     context.trailDrawing = false;
     context.lastTrailPoint = null;
     context.activeTrailPointerId = null;
+    context.activeTrailTouchId = null;
   };
   return context;
 }
@@ -249,8 +265,51 @@ foreignPointerFinish.finishTrailAttempt({ type: 'pointerup', pointerId: 99 });
 assert.equal(foreignPointerFinish.calls.timers.length, 0, 'a second finger must not finish the active trail');
 assert.equal(foreignPointerFinish.activeTrailPointerId, 11, 'a second finger must not steal trail ownership');
 
+const touchGuardContext = {
+  activeTrailTouchId: null,
+  trailDrawing: false,
+  Array,
+};
+vm.createContext(touchGuardContext);
+vm.runInContext(
+  between('function getChangedTouchIds(', 'function onTrailPointerDown('),
+  touchGuardContext,
+  { filename: 'mojikko-writing-touch-guards.js' },
+);
+function fakeTouchEvent(ids, cancelable = true) {
+  const state = { prevented: false, stopped: false };
+  return {
+    state,
+    cancelable,
+    changedTouches: ids.map((identifier) => ({ identifier })),
+    preventDefault() { state.prevented = true; },
+    stopImmediatePropagation() { state.stopped = true; },
+  };
+}
+const firstTouchStart = fakeTouchEvent([21]);
+touchGuardContext.guardWritingTouchStart(firstTouchStart);
+assert.equal(touchGuardContext.activeTrailTouchId, 21, 'the first native touch must own HanziWriter input');
+assert.equal(firstTouchStart.state.stopped, false);
+touchGuardContext.trailDrawing = true;
+const secondTouchStart = fakeTouchEvent([22]);
+touchGuardContext.guardWritingTouchStart(secondTouchStart);
+assert.deepEqual(secondTouchStart.state, { prevented: true, stopped: true }, 'a second native touchstart must be blocked');
+const secondTouchMove = fakeTouchEvent([22]);
+touchGuardContext.guardWritingTouchMove(secondTouchMove);
+assert.deepEqual(secondTouchMove.state, { prevented: true, stopped: true }, 'a second native touchmove must be blocked');
+const secondTouchEnd = fakeTouchEvent([22]);
+touchGuardContext.guardWritingTouchEnd(secondTouchEnd);
+assert.deepEqual(secondTouchEnd.state, { prevented: true, stopped: true }, 'a second native touchend must not end HanziWriter input');
+assert.equal(touchGuardContext.activeTrailTouchId, 21);
+const firstTouchEnd = fakeTouchEvent([21]);
+touchGuardContext.guardWritingTouchEnd(firstTouchEnd);
+assert.equal(firstTouchEnd.state.stopped, false, 'the primary native touchend must reach HanziWriter');
+assert.equal(touchGuardContext.activeTrailTouchId, null);
+
 assert.match(html, /if \(strokeNum !== expectedStroke\)/, 'expected-stroke order guard was removed');
 assert.match(html, /bestDistanceSq <= maxDistanceSq \?[^:]+: null;/, 'off-guide points must not become fake zero progress');
+assert.match(html, /addEventListener\('touchstart', guardWritingTouchStart, \{ capture: true, passive: false \}\)/);
+assert.match(html, /addEventListener\('touchend', guardWritingTouchEnd, \{ capture: true, passive: false \}\)/);
 assert.match(html, /if \(strokeNum > expectedStroke\)[\s\S]*?startWriterQuiz\(expectedStroke\)/, 'future-stroke recovery was removed');
 assert.match(html, /acceptCorrectStroke\(pendingCorrectStroke\.data, true\)/, 'pending continuation must request writer resync');
 assert.match(html, /if \(resyncWriter\)[\s\S]*?startWriterQuiz\(strokesCompleted\)/, 'writer resync after local continuation is missing');

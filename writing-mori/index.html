@@ -1694,6 +1694,7 @@ let pixelLetter = null;
 let trailDrawing = false;
 let lastTrailPoint = null;
 let activeTrailPointerId = null;
+let activeTrailTouchId = null;
 let trailDistance = 0;
 let trailAttemptId = 0;
 let activeAttemptStroke = -1;
@@ -2824,6 +2825,7 @@ function resetWriting() {
   trailDrawing = false;
   lastTrailPoint = null;
   activeTrailPointerId = null;
+  activeTrailTouchId = null;
   trailDistance = 0;
   trailAttemptId += 1;
   activeAttemptStroke = -1;
@@ -3186,8 +3188,47 @@ function spawnSpark(clientX, clientY) {
   setTimeout(() => particle.remove(), 900);
 }
 
+function getChangedTouchIds(event) {
+  return Array.from(event && event.changedTouches || [], (touch) => touch.identifier);
+}
+
+function blockTouchEvent(event) {
+  if (event.cancelable) event.preventDefault();
+  event.stopImmediatePropagation();
+}
+
+function guardWritingTouchStart(event) {
+  const changedIds = getChangedTouchIds(event);
+  if (activeTrailTouchId === null) {
+    if (changedIds.length > 0) activeTrailTouchId = changedIds[0];
+    return;
+  }
+  if (changedIds.some((id) => id !== activeTrailTouchId)) blockTouchEvent(event);
+}
+
+function guardWritingTouchMove(event) {
+  if (activeTrailTouchId === null) return;
+  const changedIds = getChangedTouchIds(event);
+  if (changedIds.length > 0 && !changedIds.includes(activeTrailTouchId)) blockTouchEvent(event);
+}
+
+function guardWritingTouchEnd(event) {
+  if (activeTrailTouchId === null) return;
+  const changedIds = getChangedTouchIds(event);
+  if (changedIds.includes(activeTrailTouchId)) {
+    activeTrailTouchId = null;
+    return;
+  }
+  if (trailDrawing) blockTouchEvent(event);
+}
+
 function onTrailPointerDown(event) {
-  if (complete || trailDrawing || event.pointerType === 'mouse' && event.button !== 0) return;
+  if (complete || event.pointerType === 'mouse' && event.button !== 0) return;
+  if (trailDrawing) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    return;
+  }
   playSfx('writeStart');
   trailDrawing = true;
   activeTrailPointerId = event.pointerId;
@@ -3262,6 +3303,7 @@ function stopTrail() {
   trailDrawing = false;
   lastTrailPoint = null;
   activeTrailPointerId = null;
+  activeTrailTouchId = null;
 }
 
 function appendFinalTrailPoint(event) {
@@ -3585,6 +3627,10 @@ modalRetryBtn.addEventListener('click', nextCharacter);
 document.getElementById('careBtn').addEventListener('click', navigateToCareScreen);
 companionCard.addEventListener('click', navigateToCareScreen);
 
+writingBoard.addEventListener('touchstart', guardWritingTouchStart, { capture: true, passive: false });
+writingBoard.addEventListener('touchmove', guardWritingTouchMove, { capture: true, passive: false });
+window.addEventListener('touchend', guardWritingTouchEnd, { capture: true, passive: false });
+window.addEventListener('touchcancel', guardWritingTouchEnd, { capture: true, passive: false });
 writingBoard.addEventListener('pointerdown', onTrailPointerDown, true);
 writingBoard.addEventListener('pointermove', onTrailPointerMove, true);
 window.addEventListener('pointerup', finishTrailAttempt, true);
