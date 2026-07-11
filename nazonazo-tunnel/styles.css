@@ -329,6 +329,8 @@ body.portal-edit #portalEditPanel{display:block}
 .train-art{display:none}
 body.v-train .train-art{display:block;position:absolute;inset:-3% -4% -1% -2%}
 body.v-train .tr-cab,body.v-train .tr-boiler,body.v-train .tr-chim,body.v-train .tr-win,body.v-train .wheel{display:none}
+body.st-jungle.v-train .train-art::before{content:"";position:absolute;left:12.4%;top:31%;width:21.8%;height:35.8%;z-index:1;border-radius:22%;pointer-events:none;
+  background:linear-gradient(145deg,#c9ead4 0%,#80b99a 58%,#4f826d 100%);box-shadow:inset 0 0 0 2px rgba(45,95,75,.16)}
 .train-body-img{position:absolute;inset:0;z-index:7;background:url("../assets/images/nazonazo-tunnel/vehicle_train_body_straight_frame_v2_bumpy_20260704.webp") center/contain no-repeat;transform:translateY(2.8%)}
 .train-driver{position:absolute;left:10.3%;top:36.0%;width:17.1%;height:31.8%;z-index:2;
   background-image:url("../assets/images/nazonazo-tunnel/vehicle_driver_pono_sheet_cabfit_20260705.webp");

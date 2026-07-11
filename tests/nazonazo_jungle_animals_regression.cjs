@@ -4,6 +4,7 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
+const vm = require("node:vm");
 
 const root = path.resolve(__dirname, "..");
 const read = rel => fs.readFileSync(path.join(root, rel), "utf8");
@@ -23,6 +24,95 @@ const animalFiles = Object.fromEntries(animals.map(animal => [
 animalFiles.monkey = "jungle_animal_monkey_storybook_v2_20260711.webp";
 animalFiles.owl = "jungle_animal_owl_storybook_v2_20260711.webp";
 
+function extractConstObject(source, name) {
+  const marker = `const ${name}=`;
+  const markerAt = source.indexOf(marker);
+  assert.ok(markerAt >= 0, `${name}: declaration missing`);
+  const objectAt = source.indexOf("{", markerAt + marker.length);
+  assert.ok(objectAt >= 0, `${name}: object literal missing`);
+  let depth = 0;
+  let quote = "";
+  let escaped = false;
+  for (let index = objectAt; index < source.length; index += 1) {
+    const char = source[index];
+    if (quote) {
+      if (escaped) escaped = false;
+      else if (char === "\\") escaped = true;
+      else if (char === quote) quote = "";
+      continue;
+    }
+    if (char === "\"" || char === "'" || char === "`") {
+      quote = char;
+      continue;
+    }
+    if (char === "{") depth += 1;
+    if (char === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        const literal = source.slice(objectAt, index + 1);
+        const value = vm.runInNewContext(`(${literal})`, Object.create(null), { timeout: 1000 });
+        return JSON.parse(JSON.stringify(value));
+      }
+    }
+  }
+  assert.fail(`${name}: unterminated object literal`);
+}
+
+const jungleAnimalLayout = extractConstObject(js, "JUNGLE_ANIMAL_LAYOUT");
+const layoutSpecs = Object.entries(jungleAnimalLayout).flatMap(([layer, specs]) =>
+  specs.map((spec, index) => ({ ...spec, layer, index }))
+);
+const expectedAnchorBySpecies = {
+  monkey: "perch",
+  owl: "perch",
+  toucans: "perch",
+  butterflies: "air",
+  sloth: "hang",
+  snake: "perch",
+  frog: "understory",
+  crocodile: "understory",
+  elephant: "ground",
+  giraffe: "ground",
+  lion: "ground",
+  zebra: "ground"
+};
+
+assert.deepEqual(Object.keys(jungleAnimalLayout).sort(), ["far", "mid", "near"]);
+assert.equal(layoutSpecs.length, 18, "desktop wildlife density must remain 18 sprites");
+assert.deepEqual([...new Set(layoutSpecs.map(spec => spec.species))].sort(), animals.slice().sort(), "layout must cover all animal species");
+for (const spec of layoutSpecs) {
+  const label = `${spec.layer}[${spec.index}] ${spec.species || "unknown"}`;
+  assert.equal(spec.anchor, expectedAnchorBySpecies[spec.species], `${label}: habitat anchor mismatch`);
+  assert.ok(Number.isFinite(spec.anchorY) && spec.anchorY >= 0 && spec.anchorY <= 100, `${label}: invalid image anchorY`);
+  assert.ok(Number.isFinite(spec.moveY), `${label}: moveY must be explicit`);
+  assert.ok(Number.isFinite(spec.w) && Number.isFinite(spec.min) && Number.isFinite(spec.max), `${label}: size intent missing`);
+  assert.ok(spec.min > 0 && spec.max >= spec.min, `${label}: invalid size clamp`);
+  if (spec.anchor !== "air") {
+    assert.equal(spec.moveY, 0, `${label}: attached animals must not float vertically`);
+    assert.ok(!["bob", "flutter"].includes(spec.motion), `${label}: attached animals need anchored motion`);
+  }
+  if (spec.anchor === "perch" || spec.anchor === "hang") {
+    assert.equal(spec.loop, "mid", `${label}: tree animals must share the middle-forest tile loop`);
+    assert.equal(spec.depth, 0.25, `${label}: tree animals must travel with the middle-forest layer`);
+    assert.ok(spec.x <= 28 || spec.x >= 100, `${label}: tree animal must stay in the forest tile's canopy bands`);
+  }
+  if (spec.anchor === "ground" || spec.anchor === "understory") {
+    assert.equal(spec.anchorY, 100, `${label}: feet/log must define the image anchor`);
+    assert.ok(spec.depth >= 0.85, `${label}: ground habitat must travel with the near landscape`);
+  }
+}
+
+const primarySpec = Object.fromEntries(animals.map(animal => [animal, layoutSpecs.find(spec => spec.species === animal)]));
+for (const sizeKey of ["w", "min", "max"]) {
+  assert.ok(primarySpec.giraffe[sizeKey] > primarySpec.zebra[sizeKey], `giraffe ${sizeKey} must exceed zebra`);
+  assert.ok(primarySpec.elephant[sizeKey] > primarySpec.lion[sizeKey], `elephant ${sizeKey} must exceed lion`);
+  assert.ok(primarySpec.crocodile[sizeKey] > primarySpec.frog[sizeKey], `crocodile ${sizeKey} must exceed frog`);
+  assert.ok(primarySpec.monkey[sizeKey] > primarySpec.butterflies[sizeKey], `monkey ${sizeKey} must exceed butterflies`);
+}
+assert.ok(new Set(layoutSpecs.map(spec => spec.w)).size >= 5, "animal widths need at least five visibly distinct scales");
+const layoutWidths = layoutSpecs.map(spec => spec.w);
+assert.ok(Math.max(...layoutWidths) / Math.min(...layoutWidths) >= 1.8, "animal scale range is too uniform");
+
 for (const id of ["Far", "Mid", "Near"]) {
   assert.match(html, new RegExp(`id="jungleAnimals${id}"[^>]*class="jungle-animal-layer"[^>]*aria-hidden="true"`));
 }
@@ -31,6 +121,7 @@ assert.match(css, /\.jungle-animal-layer\{[^}]*pointer-events:none/);
 assert.match(css, /body\.st-jungle \.jungle-animal-layer\{display:block\}/);
 assert.match(css, /body\.tunnel-interior \.jungle-animal-layer\{display:none!important\}/);
 assert.match(css, /#jungleAnimalsNear\{[^}]*bottom:14\.5vh/);
+assert.match(css, /body\.st-jungle\.v-train \.train-art::before\{[^}]*z-index:1[^}]*background:linear-gradient/, "opaque jungle cab interior must hide passing wildlife behind the driver");
 assert.match(css, /@media \(prefers-reduced-motion:reduce\)[\s\S]*?\.jungle-animal-art\{animation:none!important;transform:none!important\}/);
 const motionStart = css.indexOf("@keyframes jungleAnimalSway");
 const motionEnd = css.indexOf("#groundT", motionStart);
@@ -42,6 +133,8 @@ assert.match(js, /if\(window\.__PONO_TIER_LOCKED__\)return;/, "LP lock must not 
 assert.match(js, /const limit=IOS_DEVICE\?Math\.min\(5,layout\.length\):layout\.length;/, "iOS sprite cap missing");
 assert.match(js, /if\(!jungleAnimalSprites\.length\|\|tunnelInteriorMode\|\|!document\.body\.classList\.contains\("st-jungle"\)\)return;/);
 assert.match(js, /if\(renderKey===lastJungleAnimalRenderKey\)return;/, "stationary frames must not rewrite every animal transform");
+assert.match(js, /const JUNGLE_MID_TILE_ASPECT=2,JUNGLE_MID_TILE_SCALE=1\.16;/, "middle-forest tile dimensions must stay explicit");
+assert.match(js, /const midPeriod=\(\(window\.innerHeight\|\|1\)\*JUNGLE_MID_TILE_ASPECT\*JUNGLE_MID_TILE_SCALE\/\(window\.innerWidth\|\|1\)\)\*100;/, "tree animals must use the rendered 116% middle-forest tile width");
 assert.match(js, /renderSeaFish\(now\);\s*renderJungleAnimals\(\);/);
 assert.doesNotMatch(js.slice(js.indexOf("function buildJungleAnimals"), js.indexOf("function renderJungleAnimals")), /addEventListener|bindTap/, "ambient animals must not be interactive");
 
@@ -60,6 +153,122 @@ for (const animal of animals) {
   assert.doesNotMatch(js, new RegExp(`jungle_animal_${animal}_20260711\\.webp`), `${animal}: old realistic asset still referenced`);
 }
 assert.doesNotMatch(js, /jungle_animal_(?:monkey|owl)_storybook_20260711\.webp/, "Pono-like monkey/owl assets must not remain referenced");
+
+async function settleViewport(page, width, height) {
+  await page.setViewportSize({ width, height });
+  await page.evaluate(() => new Promise(resolve => {
+    requestAnimationFrame(() => requestAnimationFrame(resolve));
+  }));
+}
+
+async function collectSceneMetrics(page) {
+  return page.evaluate(() => {
+    const before = (first, second) => Boolean(first.compareDocumentPosition(second) & Node.DOCUMENT_POSITION_FOLLOWING);
+    const layerByDepth = {
+      far: document.getElementById("jungleAnimalsFar"),
+      mid: document.getElementById("jungleAnimalsMid"),
+      near: document.getElementById("jungleAnimalsNear")
+    };
+    const layers = Object.values(layerByDepth).map(el => {
+      const rect = el.getBoundingClientRect();
+      return {
+        id: el.id,
+        display: getComputedStyle(el).display,
+        pointer: getComputedStyle(el).pointerEvents,
+        z: getComputedStyle(el).zIndex,
+        top: rect.top,
+        bottom: rect.bottom
+      };
+    });
+    const groundTop = document.getElementById("groundT").getBoundingClientRect().top;
+    const animalRects = Array.from(document.querySelectorAll(".jungle-animal-sprite")).map(el => {
+      const rect = el.getBoundingClientRect();
+      const layerRect = layerByDepth[el.dataset.animalDepth].getBoundingClientRect();
+      const anchorY = Number(el.dataset.animalAnchorY);
+      const clippedTop = Math.max(rect.top, layerRect.top, 0);
+      const clippedBottom = Math.min(rect.bottom, layerRect.bottom, innerHeight);
+      return {
+        species: el.dataset.animalSpecies || "",
+        anchor: el.dataset.animalAnchor || "",
+        anchorY,
+        anchorPx: rect.top + rect.height * anchorY / 100,
+        width: rect.width,
+        height: rect.height,
+        area: rect.width * rect.height,
+        verticalVisibleRatio: Math.max(0, clippedBottom - clippedTop) / Math.max(1, rect.height),
+        onScreen: rect.right > 0 && rect.left < innerWidth && rect.bottom > 0 && rect.top < innerHeight && Number(getComputedStyle(el).opacity) > 0
+      };
+    });
+    const speciesBoxes = {};
+    for (const animal of animalRects) {
+      const box = speciesBoxes[animal.species] || { width: 0, height: 0, area: 0 };
+      box.width = Math.max(box.width, animal.width);
+      box.height = Math.max(box.height, animal.height);
+      box.area = Math.max(box.area, animal.area);
+      speciesBoxes[animal.species] = box;
+    }
+    const controls = Array.from(document.querySelectorAll("#homeBtn,#spkBtn,#helpBtn,.choice")).filter(el => {
+      const rect = el.getBoundingClientRect();
+      const style = getComputedStyle(el);
+      return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;
+    });
+    const animalIntercepts = controls.map((control, index) => {
+      const rect = control.getBoundingClientRect();
+      const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      return {
+        id: control.id || `choice-${index}`,
+        animalIntercept: Boolean(hit && hit.closest(".jungle-animal-layer"))
+      };
+    }).filter(result => result.animalIntercept);
+    const orderedLayers = [
+      document.getElementById("jungleAnimalsFar"),
+      document.getElementById("midT"),
+      document.getElementById("jungleAnimalsMid"),
+      document.getElementById("groundT"),
+      document.getElementById("jungleAnimalsNear"),
+      document.getElementById("world"),
+      document.getElementById("fgT")
+    ];
+    return {
+      layers,
+      groundTop,
+      animals: animalRects,
+      speciesBoxes,
+      visible: animalRects.filter(animal => animal.onScreen).length,
+      count: animalRects.length,
+      layerOrder: orderedLayers.every((layer, index) => index === orderedLayers.length - 1 || before(layer, orderedLayers[index + 1])),
+      animalIntercepts,
+      overflowX: document.documentElement.scrollWidth - innerWidth,
+      overflowY: document.documentElement.scrollHeight - innerHeight,
+      viewport: { width: innerWidth, height: innerHeight }
+    };
+  });
+}
+
+function assertGroundedScene(scene, label, expectedCount) {
+  assert.equal(scene.count, expectedCount, `${label}: unexpected per-depth sprite cap`);
+  assert.ok(scene.visible >= (expectedCount === 15 ? 8 : 10), `${label}: expected plentiful visible wildlife, got ${scene.visible}`);
+  assert.ok(scene.layers.every(layer => layer.display === "block" && layer.pointer === "none"), `${label}: invalid layer state`);
+  assert.deepEqual(scene.layers.map(layer => layer.z), ["1", "2", "3"]);
+  assert.ok(Math.abs(scene.layers[2].bottom - scene.groundTop) <= 2, `${label}: near layer must meet the jungle ground line`);
+  assert.ok(scene.layerOrder, `${label}: animal/foliage/world layer order drifted`);
+  assert.deepEqual(scene.animalIntercepts, [], `${label}: wildlife blocked a foreground control`);
+  assert.ok(scene.overflowX <= 1 && scene.overflowY <= 1, `${label}: overflow detected`);
+  assert.deepEqual([...new Set(scene.animals.map(animal => animal.species))].sort(), animals.slice().sort(), `${label}: runtime species metadata incomplete`);
+  for (const animal of scene.animals) {
+    assert.equal(animal.anchor, expectedAnchorBySpecies[animal.species], `${label}: ${animal.species} runtime anchor mismatch`);
+    assert.ok(Number.isFinite(animal.anchorY), `${label}: ${animal.species} runtime anchorY missing`);
+    assert.ok(animal.verticalVisibleRatio >= 0.85, `${label}: ${animal.species} vertically clipped (${animal.verticalVisibleRatio.toFixed(3)})`);
+    if (animal.anchor === "ground") {
+      const tolerance = Math.max(4, scene.viewport.height * 0.02);
+      assert.ok(Math.abs(animal.anchorPx - scene.groundTop) <= tolerance, `${label}: ${animal.species} floats away from ground (${animal.anchorPx.toFixed(1)} vs ${scene.groundTop.toFixed(1)})`);
+    }
+  }
+  const boxes = scene.speciesBoxes;
+  assert.ok(boxes.giraffe.height >= Math.max(boxes.elephant.height, boxes.zebra.height) * 1.12, `${label}: giraffe must read clearly taller than elephant/zebra`);
+  assert.ok(boxes.elephant.area >= boxes.lion.area * 1.1, `${label}: elephant must read larger than lion`);
+  assert.ok(boxes.crocodile.width >= boxes.frog.width * 1.25, `${label}: crocodile must read wider than frog`);
+}
 
 async function runBrowser(browserName) {
   const { chromium, webkit } = require("playwright");
@@ -106,37 +315,8 @@ async function runBrowser(browserName) {
   await page.locator("#quiz.show").waitFor({ state: "visible", timeout: 20000 });
   await page.waitForFunction(() => Array.from(document.querySelectorAll(".jungle-animal-art")).every(img => img.complete && img.naturalWidth > 0), null, { timeout: 20000 });
 
-  const scene = await page.evaluate(() => {
-    const layers = ["jungleAnimalsFar", "jungleAnimalsMid", "jungleAnimalsNear"].map(id => {
-      const el = document.getElementById(id);
-      const r = el.getBoundingClientRect();
-      return { id, display: getComputedStyle(el).display, pointer: getComputedStyle(el).pointerEvents, z: getComputedStyle(el).zIndex, bottom: r.bottom };
-    });
-    const visible = Array.from(document.querySelectorAll(".jungle-animal-sprite")).filter(el => {
-      const r = el.getBoundingClientRect();
-      return r.right > 0 && r.left < innerWidth && r.bottom > 0 && r.top < innerHeight && Number(getComputedStyle(el).opacity) > 0;
-    }).length;
-    const choice = document.querySelector(".choice");
-    const cr = choice.getBoundingClientRect();
-    const hit = document.elementFromPoint(cr.left + cr.width / 2, cr.top + cr.height / 2);
-    return {
-      layers,
-      visible,
-      count: document.querySelectorAll(".jungle-animal-sprite").length,
-      nearBeforeWorld: document.getElementById("jungleAnimalsNear").nextElementSibling.id === "world",
-      animalIntercept: Boolean(hit && hit.closest(".jungle-animal-layer")),
-      overflowX: document.documentElement.scrollWidth - innerWidth,
-      overflowY: document.documentElement.scrollHeight - innerHeight
-    };
-  });
-  assert.equal(scene.count, isIOS ? 15 : 18, `${browserName}: unexpected per-depth sprite cap`);
-  assert.ok(scene.visible >= (isIOS ? 8 : 10), `${browserName}: expected plentiful visible wildlife, got ${scene.visible}`);
-  assert.ok(scene.layers.every(layer => layer.display === "block" && layer.pointer === "none"), `${browserName}: invalid layer state`);
-  assert.deepEqual(scene.layers.map(layer => layer.z), ["1", "2", "3"]);
-  assert.ok(Math.abs(scene.layers[2].bottom - 390 * 0.855) < 3, `${browserName}: near clipping boundary drifted`);
-  assert.ok(scene.nearBeforeWorld, `${browserName}: near animals must remain before the world layer`);
-  assert.equal(scene.animalIntercept, false, `${browserName}: animals intercepted foreground controls`);
-  assert.ok(scene.overflowX <= 1 && scene.overflowY <= 1, `${browserName}: overflow detected`);
+  const scene = await collectSceneMetrics(page);
+  assertGroundedScene(scene, `${browserName} 844x390`, isIOS ? 15 : 18);
 
   const beforeMotion = await page.locator(".jungle-animal-art.motion-flutter").evaluate(el => getComputedStyle(el).transform);
   await page.waitForTimeout(650);
@@ -145,19 +325,21 @@ async function runBrowser(browserName) {
 
   const viewports = [[390, 844], [740, 320], [844, 390], [1024, 768], [1366, 768]];
   for (const [width, height] of viewports) {
-    await page.setViewportSize({ width, height });
-    await page.waitForTimeout(80);
+    await settleViewport(page, width, height);
     const fit = await page.evaluate(() => ({ x: document.documentElement.scrollWidth - innerWidth, y: document.documentElement.scrollHeight - innerHeight }));
     assert.ok(fit.x <= 1 && fit.y <= 1, `${browserName}: overflow at ${width}x${height}`);
+    if (width === 1366 && height === 768) {
+      const desktopScene = await collectSceneMetrics(page);
+      assertGroundedScene(desktopScene, `${browserName} ${width}x${height}`, isIOS ? 15 : 18);
+    }
   }
-  await page.setViewportSize({ width: 844, height: 390 });
+  await settleViewport(page, 844, 390);
   await page.emulateMedia({ reducedMotion: "reduce" });
   const reduced = await page.locator(".jungle-animal-art.motion-flutter").evaluate(el => ({ name: getComputedStyle(el).animationName, transform: getComputedStyle(el).transform }));
   assert.equal(reduced.name, "none", `${browserName}: reduced-motion animation must stop`);
   assert.equal(reduced.transform, "none", `${browserName}: reduced-motion transform must be static`);
   await page.emulateMedia({ reducedMotion: "no-preference" });
-  await page.setViewportSize({ width: 930, height: 499 });
-  await page.waitForTimeout(120);
+  await settleViewport(page, 930, 499);
   await page.screenshot({ path: `/tmp/nazonazo-jungle-animals-${browserName}.png`, fullPage: true });
 
   const hidden = await page.evaluate(() => {
@@ -167,6 +349,17 @@ async function runBrowser(browserName) {
   assert.ok(hidden, `${browserName}: tunnel must hide animal layers`);
   assert.deepEqual(errors, [], `${browserName}: page errors\n${errors.join("\n")}`);
   assert.deepEqual(failed, [], `${browserName}: request failures\n${failed.join("\n")}`);
+  const lockedContext = await browser.newContext({ viewport: { width: 844, height: 390 } });
+  const lockedPage = await lockedContext.newPage();
+  const lockedAnimalRequests = [];
+  lockedPage.on("request", request => {
+    if (/\/jungle_animal_[^/]+\.webp(?:\?|$)/.test(request.url())) lockedAnimalRequests.push(request.url());
+  });
+  await lockedPage.goto(`${base}/nazonazo-tunnel/?weather=clear#fast`, { waitUntil: "networkidle" });
+  await lockedPage.locator("#ponoTierLockScreen").waitFor({ state: "visible", timeout: 10000 });
+  assert.equal(await lockedPage.locator(".jungle-animal-sprite").count(), 0, `${browserName}: LP lock built app-only animals`);
+  assert.deepEqual(lockedAnimalRequests, [], `${browserName}: LP lock requested app-only animal assets`);
+  await lockedContext.close();
   await browser.close();
 }
 

@@ -284,30 +284,31 @@ const STAGES=[
 ];
 const RARES=[["🕊️","しろい はと"],["🦜","にじいろ おうむ"],["💯","ひゃくてんまん"],["🐳","そらとぶ くじら"],["🛸","なぞの ゆーふぉー"],["☄️","おおながれぼし"]];
 const RUN_EVENTS={town:[["🦋","ちょう"],["🌼","おはな"],["🍀","よつば"],["🎈","ふうせん"],["🐦","ことり"]]};
+const JUNGLE_MID_TILE_ASPECT=2,JUNGLE_MID_TILE_SCALE=1.16;
 const JUNGLE_ANIMAL_LAYOUT={
  far:[
-  {asset:0,x:4,y:13,w:5.4,min:36,max:78,depth:.11,opacity:.64,motion:"sway",flip:1},
-  {asset:1,x:25,y:12,w:4.7,min:34,max:70,depth:.09,opacity:.62,motion:"breathe",flip:1},
-  {asset:2,x:47,y:16,w:5.5,min:38,max:82,depth:.105,opacity:.66,motion:"bob",flip:-1},
-  {asset:3,x:69,y:12,w:5,min:32,max:72,depth:.13,opacity:.74,motion:"flutter",flip:1},
-  {asset:0,x:91,y:14,w:4.6,min:34,max:68,depth:.115,opacity:.56,motion:"still",flip:-1},
-  {asset:1,x:113,y:15,w:4,min:32,max:64,depth:.095,opacity:.54,motion:"breathe",flip:-1}
+  {asset:0,species:"monkey",anchor:"perch",x:8,y:58,anchorY:91,w:14,min:42,max:122,depth:.25,opacity:.72,motion:"sway",flip:1,origin:"50% 91%",moveY:0,loop:"mid"},
+  {asset:1,species:"owl",anchor:"perch",x:20,y:54,anchorY:82,w:9,min:30,max:78,depth:.25,opacity:.69,motion:"breathe",flip:1,origin:"50% 82%",moveY:0,loop:"mid"},
+  {asset:2,species:"toucans",anchor:"perch",x:112,y:55,anchorY:76,w:11.2,min:34,max:98,depth:.25,opacity:.73,motion:"sway",flip:-1,origin:"50% 76%",moveY:0,loop:"mid"},
+  {asset:3,species:"butterflies",anchor:"air",x:69,y:30,anchorY:50,w:8.5,min:28,max:74,depth:.095,opacity:.76,motion:"flutter",flip:1,origin:"50% 50%",moveY:-1.5},
+  {asset:0,species:"monkey",anchor:"perch",x:124,y:60,anchorY:91,w:12.2,min:38,max:106,depth:.25,opacity:.62,motion:"still",flip:-1,origin:"50% 91%",moveY:0,loop:"mid"},
+  {asset:1,species:"owl",anchor:"perch",x:102,y:56,anchorY:82,w:8.2,min:28,max:70,depth:.25,opacity:.61,motion:"breathe",flip:-1,origin:"50% 82%",moveY:0,loop:"mid"}
  ],
  mid:[
-  {asset:0,x:7,y:24,w:7.4,min:52,max:105,depth:.2,opacity:.72,motion:"sway",flip:1,origin:"50% 12%"},
-  {asset:1,x:28,y:31,w:7.2,min:50,max:104,depth:.23,opacity:.78,motion:"sway",flip:-1},
-  {asset:2,x:50,y:34,w:5.5,min:46,max:82,depth:.25,opacity:.8,motion:"breathe",flip:1},
-  {asset:3,x:70,y:32,w:8.8,min:58,max:118,depth:.22,opacity:.76,motion:"bob",flip:1},
-  {asset:0,x:92,y:26,w:6.4,min:48,max:94,depth:.205,opacity:.63,motion:"still",flip:-1,origin:"50% 12%"},
-  {asset:2,x:112,y:36,w:4.8,min:42,max:74,depth:.255,opacity:.68,motion:"bob",flip:-1}
+  {asset:0,species:"sloth",anchor:"hang",x:6,y:37,anchorY:10,w:18.7,min:52,max:164,depth:.25,opacity:.78,motion:"sway",flip:1,origin:"50% 10%",moveY:0,loop:"mid"},
+  {asset:1,species:"snake",anchor:"perch",x:26,y:62,anchorY:64,w:14.3,min:46,max:126,depth:.25,opacity:.82,motion:"sway",flip:-1,origin:"50% 64%",moveY:0,loop:"mid"},
+  {asset:2,species:"frog",anchor:"understory",x:50,y:85,anchorY:100,w:8,min:32,max:70,depth:.86,opacity:.86,motion:"breathe",flip:1,origin:"50% 100%",moveY:0},
+  {asset:3,species:"crocodile",anchor:"understory",x:70,y:85,anchorY:100,w:14.4,min:48,max:126,depth:.92,opacity:.86,motion:"breathe",flip:1,origin:"50% 100%",moveY:0},
+  {asset:0,species:"sloth",anchor:"hang",x:120,y:39,anchorY:10,w:16.4,min:48,max:144,depth:.25,opacity:.69,motion:"still",flip:-1,origin:"50% 10%",moveY:0,loop:"mid"},
+  {asset:2,species:"frog",anchor:"understory",x:112,y:85,anchorY:100,w:7.2,min:30,max:62,depth:.88,opacity:.74,motion:"breathe",flip:-1,origin:"50% 100%",moveY:0}
  ],
  near:[
-  {asset:0,x:4,y:55,w:10.6,min:72,max:150,depth:.28,opacity:.84,motion:"bob",flip:1},
-  {asset:1,x:26,y:42,w:7.5,min:70,max:128,depth:.265,opacity:.83,motion:"sway",flip:-1},
-  {asset:2,x:47,y:59,w:9.8,min:70,max:142,depth:.3,opacity:.86,motion:"breathe",flip:1},
-  {asset:3,x:68,y:57,w:9.7,min:70,max:142,depth:.29,opacity:.84,motion:"bob",flip:-1},
-  {asset:0,x:90,y:63,w:8.7,min:66,max:128,depth:.285,opacity:.72,motion:"still",flip:-1},
-  {asset:2,x:111,y:61,w:8.4,min:64,max:124,depth:.305,opacity:.74,motion:"breathe",flip:-1}
+  {asset:0,species:"elephant",anchor:"ground",x:4,y:85.4,anchorY:100,w:24,min:72,max:240,depth:.94,opacity:.93,motion:"breathe",flip:1,origin:"50% 100%",moveY:0},
+  {asset:1,species:"giraffe",anchor:"ground",x:26,y:85.4,anchorY:100,w:23.5,min:70,max:230,depth:.9,opacity:.94,motion:"sway",flip:-1,origin:"50% 100%",moveY:0},
+  {asset:2,species:"lion",anchor:"ground",x:47,y:85.3,anchorY:100,w:19.5,min:58,max:195,depth:.98,opacity:.92,motion:"breathe",flip:1,origin:"50% 100%",moveY:0},
+  {asset:3,species:"zebra",anchor:"ground",x:68,y:85.4,anchorY:100,w:18,min:56,max:180,depth:.96,opacity:.93,motion:"sway",flip:-1,origin:"50% 100%",moveY:0},
+  {asset:0,species:"elephant",anchor:"ground",x:90,y:85.4,anchorY:100,w:21.5,min:66,max:215,depth:.95,opacity:.82,motion:"still",flip:-1,origin:"50% 100%",moveY:0},
+  {asset:2,species:"lion",anchor:"ground",x:111,y:85.3,anchorY:100,w:17.2,min:54,max:172,depth:1,opacity:.81,motion:"breathe",flip:-1,origin:"50% 100%",moveY:0}
  ]
 };
 const NPC_BASE="../assets/images/bento/npc/";
@@ -1462,7 +1463,10 @@ function buildJungleAnimals(){
    const move=layerName==="far"?1.5:(layerName==="mid"?2.6:3.5);
    sprite.className="jungle-animal-sprite";
    sprite.dataset.animalDepth=layerName;
-   sprite.style.setProperty("--animal-width",spec.w+"vw");
+   sprite.dataset.animalSpecies=spec.species;
+   sprite.dataset.animalAnchor=spec.anchor;
+   sprite.dataset.animalAnchorY=String(spec.anchorY);
+   sprite.style.setProperty("--animal-width",spec.w+"vmin");
    sprite.style.setProperty("--animal-min",spec.min+"px");
    sprite.style.setProperty("--animal-max",spec.max+"px");
    sprite.style.setProperty("--animal-opacity",String(spec.opacity));
@@ -1471,11 +1475,11 @@ function buildJungleAnimals(){
    art.style.setProperty("--animal-duration",(5.6+((index*17+layerIndex*11)%34)/10).toFixed(1)+"s");
    art.style.setProperty("--animal-delay",(-(index*.93+layerIndex*.61)).toFixed(2)+"s");
    art.style.setProperty("--animal-move-x",(move*(index%2?-.55:.45)).toFixed(1)+"px");
-   art.style.setProperty("--animal-move-y",(-move).toFixed(1)+"px");
+   art.style.setProperty("--animal-move-y",(Number.isFinite(spec.moveY)?spec.moveY:-move).toFixed(1)+"px");
    art.style.setProperty("--animal-rotate",(layerName==="far"?.65:(layerName==="mid"?.85:1.05))+"deg");
    if(spec.origin)art.style.setProperty("--animal-origin",spec.origin);
    sprite.appendChild(art);fragment.appendChild(sprite);
-   jungleAnimalSprites.push({el:sprite,baseX:spec.x,y:spec.y,depth:spec.depth,flip:spec.flip||1});
+   jungleAnimalSprites.push({el:sprite,baseX:spec.x,y:spec.y,anchorY:Number.isFinite(spec.anchorY)?spec.anchorY:0,depth:spec.depth,flip:spec.flip||1,loop:spec.loop||"world"});
   });
   layer.appendChild(fragment);
  });
@@ -1486,11 +1490,14 @@ function renderJungleAnimals(){
  const renderKey=localWorldX.toFixed(3)+"|"+(window.innerWidth||0)+"x"+(window.innerHeight||0);
  if(renderKey===lastJungleAnimalRenderKey)return;
  lastJungleAnimalRenderKey=renderKey;
- const period=128;
+ const midPeriod=((window.innerHeight||1)*JUNGLE_MID_TILE_ASPECT*JUNGLE_MID_TILE_SCALE/(window.innerWidth||1))*100;
  jungleAnimalSprites.forEach(animal=>{
-  let x=animal.baseX-localWorldX*animal.depth;
+  const period=animal.loop==="mid"?midPeriod:128;
+  const baseX=animal.loop==="mid"?animal.baseX/128*period:animal.baseX;
+  const scrollX=animal.loop==="mid"?worldX:localWorldX;
+  let x=baseX-scrollX*animal.depth;
   x=((x+18)%period+period)%period-18;
-  animal.el.style.transform="translate3d("+cssXFromVw(x)+","+cssYFromVh(animal.y)+",0) scaleX("+animal.flip+")";
+  animal.el.style.transform="translate3d("+cssXFromVw(x)+","+cssYFromVh(animal.y)+",0) translateY(-"+animal.anchorY+"%) scaleX("+animal.flip+")";
  });
 }
 
