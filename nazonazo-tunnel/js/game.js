@@ -132,22 +132,22 @@ const ASSETS={
   decor:"../assets/images/nazonazo-tunnel/jungle_station_line_trees_20260706.webp",
   animals:{
    far:[
-    "../assets/images/nazonazo-tunnel/jungle_animal_monkey_20260711.webp",
-    "../assets/images/nazonazo-tunnel/jungle_animal_owl_20260711.webp",
-    "../assets/images/nazonazo-tunnel/jungle_animal_toucans_20260711.webp",
-    "../assets/images/nazonazo-tunnel/jungle_animal_butterflies_20260711.webp"
+    "../assets/images/nazonazo-tunnel/jungle_animal_monkey_storybook_20260711.webp",
+    "../assets/images/nazonazo-tunnel/jungle_animal_owl_storybook_20260711.webp",
+    "../assets/images/nazonazo-tunnel/jungle_animal_toucans_storybook_20260711.webp",
+    "../assets/images/nazonazo-tunnel/jungle_animal_butterflies_storybook_20260711.webp"
    ],
    mid:[
-    "../assets/images/nazonazo-tunnel/jungle_animal_sloth_20260711.webp",
-    "../assets/images/nazonazo-tunnel/jungle_animal_snake_20260711.webp",
-    "../assets/images/nazonazo-tunnel/jungle_animal_frog_20260711.webp",
-    "../assets/images/nazonazo-tunnel/jungle_animal_crocodile_20260711.webp"
+    "../assets/images/nazonazo-tunnel/jungle_animal_sloth_storybook_20260711.webp",
+    "../assets/images/nazonazo-tunnel/jungle_animal_snake_storybook_20260711.webp",
+    "../assets/images/nazonazo-tunnel/jungle_animal_frog_storybook_20260711.webp",
+    "../assets/images/nazonazo-tunnel/jungle_animal_crocodile_storybook_20260711.webp"
    ],
    near:[
-    "../assets/images/nazonazo-tunnel/jungle_animal_elephant_20260711.webp",
-    "../assets/images/nazonazo-tunnel/jungle_animal_giraffe_20260711.webp",
-    "../assets/images/nazonazo-tunnel/jungle_animal_lion_20260711.webp",
-    "../assets/images/nazonazo-tunnel/jungle_animal_zebra_20260711.webp"
+    "../assets/images/nazonazo-tunnel/jungle_animal_elephant_storybook_20260711.webp",
+    "../assets/images/nazonazo-tunnel/jungle_animal_giraffe_storybook_20260711.webp",
+    "../assets/images/nazonazo-tunnel/jungle_animal_lion_storybook_20260711.webp",
+    "../assets/images/nazonazo-tunnel/jungle_animal_zebra_storybook_20260711.webp"
    ]
   }
  },

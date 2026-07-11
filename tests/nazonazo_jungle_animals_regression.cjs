@@ -40,7 +40,7 @@ assert.match(js, /renderSeaFish\(now\);\s*renderJungleAnimals\(\);/);
 assert.doesNotMatch(js.slice(js.indexOf("function buildJungleAnimals"), js.indexOf("function renderJungleAnimals")), /addEventListener|bindTap/, "ambient animals must not be interactive");
 
 for (const animal of animals) {
-  const rel = `assets/images/nazonazo-tunnel/jungle_animal_${animal}_20260711.webp`;
+  const rel = `assets/images/nazonazo-tunnel/jungle_animal_${animal}_storybook_20260711.webp`;
   const full = path.join(root, rel);
   assert.ok(fs.existsSync(full), `${rel} missing`);
   const stat = fs.statSync(full);
@@ -49,7 +49,8 @@ for (const animal of animals) {
   assert.equal(buf.subarray(0, 4).toString("ascii"), "RIFF", `${rel} is not RIFF WebP`);
   assert.equal(buf.subarray(8, 12).toString("ascii"), "WEBP", `${rel} is not WebP`);
   assert.ok(buf.includes(Buffer.from("ALPH")), `${rel} must contain alpha data`);
-  assert.match(js, new RegExp(`jungle_animal_${animal}_20260711\\.webp`));
+  assert.match(js, new RegExp(`jungle_animal_${animal}_storybook_20260711\\.webp`));
+  assert.doesNotMatch(js, new RegExp(`jungle_animal_${animal}_20260711\\.webp`), `${animal}: old realistic asset still referenced`);
 }
 
 async function runBrowser(browserName) {
