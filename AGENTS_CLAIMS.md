@@ -58,7 +58,6 @@
 ## Active claims
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
-- 2026-07-11 18:05 - by Codex - [batch:1238-mojikko-care-resume] - writing-mori/care.html, writing-mori/index.html, tests/mojikko_*, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - タマゴなでの連続通知と成長段階に合わない文言を直し、お世話から文字書きへ戻ると前回完了文字の次から再開する [overlap: batch:1235-nazonazo-random-rain-tradeoff, batch:1237-kitchen-local-mix-threshold (sw.js)]
 - 2026-07-11 17:44 - by Codex - [batch:1237-kitchen-local-mix-threshold] - bento/kitchen.html, assets/images/bento/cooking/korokke/**, tmp/alpha_pending/1237-kitchen-local-mix-threshold/**, tests/bento_*, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - 切ったじゃがいもを皿全体へ散らし、潰し段階をほぼ100%まで保ち、中央のひき肉をドラッグ箇所だけ局所的に混ぜる [overlap: batch:1235-nazonazo-random-rain-tradeoff (sw.js)]
 
 
