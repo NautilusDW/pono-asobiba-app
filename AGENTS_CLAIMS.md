@@ -59,7 +59,6 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 - 2026-07-11 18:35 - by Codex - [batch:1240-mojikko-writing-stable] - writing-mori/index.html, tests/mojikko_*, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - 文字ごとに難しさが変わる二重判定を全かなで再計測し、見本どおりの一筆は一貫して通り書き順違いだけを止める安定判定へ固定する [overlap: batch:1239-nazonazo-jungle-animals (sw.js予定)]
-- 2026-07-11 18:25 - by Claude - [batch:1241-capture-mac-shortcut-and-stretch] - common/capture.js, play.html (capture registration/CSS 必要時のみ), tests/capture_*, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - スクショモード: Mac で Shift+Alt+C が効かない件 (e.key='Ç' 問題) と 16:9 撮影の横伸びを調査・修正 [overlap: batch:1239/1240 (sw.js)、push 直前に最新採番]
 - 2026-07-11 18:35 - by Codex - [batch:1240-mojikko-writing-stable] - writing-mori/index.html, tests/mojikko_*, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - 文字ごとに難しさが変わる二重判定を全かなで再計測し、見本どおりの一筆は一貫して通り書き順違いだけを止める安定判定へ固定する [overlap: batch:1239-nazonazo-jungle-animals (sw.js予定)]
 
 
