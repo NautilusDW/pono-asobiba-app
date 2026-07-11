@@ -9,6 +9,8 @@ const zlib = require('node:zlib');
 const root = path.resolve(__dirname, '..');
 const mazeHtml = fs.readFileSync(path.join(root, 'maze/index.html'), 'utf8');
 const adminHtml = fs.readFileSync(path.join(root, 'admin/index.html'), 'utf8');
+const swSource = fs.readFileSync(path.join(root, 'sw.js'), 'utf8');
+const playHtml = fs.readFileSync(path.join(root, 'play.html'), 'utf8');
 const stickerMain = fs.readFileSync(path.join(root, 'Prototypes/StickerBookThreeJS/main.js'), 'utf8');
 const stickerIndex = fs.readFileSync(path.join(root, 'Prototypes/StickerBookThreeJS/index.html'), 'utf8');
 const reviewManifest = JSON.parse(fs.readFileSync(path.join(root, 'quizland/data/_review/image_manifest.json'), 'utf8'));
@@ -139,6 +141,10 @@ const subjectAspectRanges = {
   zou: [1.15, 1.5],
 };
 const replacedAnimalVersion = '20260711-1225';
+const swVersion = Number(swSource.match(/^const CACHE_VERSION = (\d+);/m)?.[1]);
+const pageVersion = Number(playHtml.match(/const PAGE_CACHE_VERSION = (\d+);/)?.[1]);
+assert.ok(swVersion >= 2094, 'the animal replacement must ship after cache v2093');
+assert.equal(pageVersion, swVersion, 'Maze asset changes require play.html and sw.js cache versions to stay synced');
 assert.match(mazeHtml, new RegExp(`const MAZE_REPLACED_ANIMAL_ASSET_VERSION = '\\?v=${replacedAnimalVersion}'`));
 assert.match(stickerMain, new RegExp(`const REPLACED_ANIMAL_ASSET_VERSION = "${replacedAnimalVersion}"`));
 assert.match(stickerIndex, new RegExp(`main\\.js\\?v=${replacedAnimalVersion}`));
