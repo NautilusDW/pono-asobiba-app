@@ -58,6 +58,7 @@
 ## Active claims
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
+- 2026-07-11 16:18 - by Codex - [batch:1230-nazonazo-rain-particles-far-mountain] - nazonazo-tunnel/**, tests/nazonazo_*, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - 規則的な雨タイルを遠近3層のランダム粒子へ置換し、空と一体の最遠景山をさらに上げる [overlap: sw.js はpush直前に最新採番]
 
 
 
