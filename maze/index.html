@@ -3932,6 +3932,23 @@ body.image-stage-mode .game-wrap {
 }
 .stage-select-modal__close:active { transform: translateY(1px); }
 
+/* Basic Auth 管理ダッシュボード内の16:9デバッグiframeだけで表示する待機面。 */
+.maze-admin-debug-idle {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  display: grid;
+  place-content: center;
+  gap: 8px;
+  padding: 24px;
+  background: linear-gradient(180deg, rgba(22, 42, 30, 0.96), rgba(12, 27, 19, 0.98));
+  color: #fff8e7;
+  text-align: center;
+}
+.maze-admin-debug-idle[hidden] { display: none; }
+.maze-admin-debug-idle strong { font-size: clamp(1rem, 4dvh, 1.5rem); }
+.maze-admin-debug-idle span { color: rgba(255, 248, 231, 0.78); font-size: clamp(0.76rem, 2.8dvh, 1rem); }
+
 /* ===== 縦持ち時の警告オーバーレイ (横画面前提) ===== */
 /* ※ maze は既に landscape-notice (id) を別途持っているのでクラス名を変えて競合回避 */
 .landscape-notice-overlay {
@@ -4129,6 +4146,10 @@ body.image-stage-mode .game-wrap {
 </div>
 
 <div id="app">
+  <div class="maze-admin-debug-idle" id="mazeAdminDebugIdle" hidden aria-live="polite">
+    <strong>ミニゲーム待機中</strong>
+    <span>管理ダッシュボードで試すゲームを選んでください。</span>
+  </div>
   <div class="header">
     <h1>ポノとランタンのめいろ</h1>
     <p class="subtitle">やじるしを タップして すすもう</p>
@@ -4359,8 +4380,6 @@ const MAZE_FLAG_ASSETS = {
   ropeLadder: _mazeLazyImage('flag', MAZE_FLAG_ASSET_BASE + 'rope_ladder.png'),
 };
 const MAZE_WATER_ASSETS = {
-  plankItem: _mazeLazyImage('water', MAZE_WATER_ASSET_BASE + 'plank_item.png'),
-  bridgeComplete: _mazeLazyImage('water', MAZE_WATER_ASSET_BASE + 'plank_bridge_complete.png'),
   puddle: _mazeLazyImage('water', MAZE_WATER_ASSET_BASE + 'puddle_obstacle.png'),
   splash: _mazeLazyImage('water', MAZE_WATER_ASSET_BASE + 'water_splash.png'),
   amenboPose: _mazeLazyImage('water', MAZE_WATER_ASSET_BASE + 'amenbo_pose.png'),
@@ -4496,7 +4515,7 @@ function applyMazeStageStoryFallback(stageDef, slot) {
 // JSON は sw.js では network-first 扱い。 さらに imageStages/*.json は worker 側
 // (src/worker.js applyCacheHeaders) が no-cache を付与するため、 エディタの 「本番に保存」
 // 直後も ETag 再検証 (304) で即反映される (?v= は SW cache key の安定化用)。
-const MAZE_DATA_REV = '20260710';
+const MAZE_DATA_REV = '20260712';
 function _loadImageStageIndex() {
   return fetch('imageStages/_index.json?v=' + MAZE_DATA_REV, { credentials: 'omit' })
     .then(function(r) {
@@ -6201,7 +6220,6 @@ function imgFinishWalk() {
   walkAnim = null;
   const pickedUpItem =
     _checkFlagLadderPickup(pono.x, pono.y) ||
-    _checkWaterPlankPickup(pono.x, pono.y) ||
     _checkStrengthGlovePickup(pono.x, pono.y) ||
     _checkWebBroomPickup(pono.x, pono.y);
   if (pono.nodeId === stage.goal.id) {
@@ -6249,7 +6267,6 @@ function imgDraw(now) {
       px = r.x; py = r.y; ftx = r.tx; fty = r.ty;
       isWalking = true;
       _checkFlagLadderPickup(px, py);
-      _checkWaterPlankPickup(px, py);
       _checkStrengthGlovePickup(px, py);
       _checkWebBroomPickup(px, py);
       // Obstacle hit → bounce back (no minigame). Creatures take priority via encounter.
@@ -6670,10 +6687,6 @@ const MAZE_ITEM_HINTS = {
     title: 'なわばしごを てにいれた！',
     body: 'ふかい あなでも\nおりられるかも。\nひかっている あなを\nさがしてみよう。',
   },
-  plank: {
-    title: 'まるたの いたを てにいれた！',
-    body: 'みずたまりに ならべたら\nちいさな はしが\nできるかも。',
-  },
   glove: {
     title: 'ちからの てぶくろを てにいれた！',
     body: 'ふつうでは こわせない いわも\nこれなら くだけるかも。',
@@ -6793,9 +6806,6 @@ function _updateFlagInventoryHud() {
   if (st && st.ladderCollected) {
     items.push({ src: MAZE_FLAG_ASSET_BASE + 'rope_ladder.png', alt: 'なわばしご' });
   }
-  if (_waterGimmickState && !_waterGimmickState.lineSkateReady && _waterGimmickState.plankCollected && !_waterGimmickState.bridgeBuilt) {
-    items.push({ src: MAZE_WATER_ASSET_BASE + 'plank_item.png', alt: 'まるたのいた' });
-  }
   if (_strengthGimmickState && _strengthGimmickState.gloveCollected && !_strengthGimmickState.rockMoved) {
     items.push({ src: MAZE_STRENGTH_ASSET_BASE + 'glove_pair_item.png', alt: 'ちからのてぶくろ' });
   }
@@ -6910,8 +6920,6 @@ function _initWaterGimmickForStage(stageObj) {
   }
   _waterGimmickState = {
     id: stageObj.waterGimmick.id || 'water-bridge',
-    plankCollected: false,
-    lineSkateReady: true,
     bridgeBuilt: false,
   };
   _updateFlagInventoryHud();
@@ -7179,27 +7187,9 @@ function imgDrawWaterGimmick(stageObj, now) {
       _drawWorldImage(MAZE_WATER_ASSETS.amenboLineHappy, water.x + size * 0.08, water.y - size * 0.2 + bob, size * 0.46, 0.95);
     } else {
       _drawWorldImage(MAZE_WATER_ASSETS.puddle, water.x, water.y, size * 0.85, 1);
-      if (st.lineSkateReady) {
-        const bob = Math.sin(now / 320) * (stageObj.viewBox.h / 180);
-        _drawWorldImage(MAZE_WATER_ASSETS.amenboLineIdle, water.x + Math.sin(now / 520) * (size * 0.18), water.y - size * 0.16 + bob, size * 0.42, 0.94);
-      } else if (st.plankCollected) {
-        const bob = Math.sin(now / 320) * (stageObj.viewBox.h / 180);
-        _drawWorldImage(MAZE_WATER_ASSETS.amenboSkate, water.x + Math.sin(now / 520) * (size * 0.28), water.y - size * 0.14 + bob, size * 0.38, 0.92);
-      }
+      const bob = Math.sin(now / 320) * (stageObj.viewBox.h / 180);
+      _drawWorldImage(MAZE_WATER_ASSETS.amenboLineIdle, water.x + Math.sin(now / 520) * (size * 0.18), water.y - size * 0.16 + bob, size * 0.42, 0.94);
     }
-  }
-  const plank = cfg.plank;
-  if (plank && !st.lineSkateReady && !st.plankCollected) {
-    const bob = Math.sin(now / 360) * (stageObj.viewBox.h / 140);
-    const glow = 0.5 + Math.sin(now / 300) * 0.5;
-    ctx.save();
-    ctx.globalAlpha = 0.18 + glow * 0.16;
-    ctx.fillStyle = '#FFF8A8';
-    ctx.beginPath();
-    ctx.arc(plank.x, plank.y + bob, (plank.radius || 86) * 0.78, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-    _drawWorldImage(MAZE_WATER_ASSETS.plankItem, plank.x, plank.y + bob, stageObj.viewBox.h / 11, 1);
   }
 }
 
@@ -7412,25 +7402,6 @@ function _checkFlagLadderPickup(px, py) {
   imgShowBubble('なわばしごを ひろったよ！', { x: cfg.ladder.x, y: cfg.ladder.y }, 1900);
   showHint('🪜 なわばしごを ひろったよ。ひかる あなに いってみよう！', 3000);
   _showItemHintModal('ladder');
-  return true;
-}
-
-function _checkWaterPlankPickup(px, py) {
-  const cfg = _waterGimmickCfg();
-  const st = _waterGimmickState;
-  if (st && st.lineSkateReady) return false;
-  if (!cfg || !st || st.plankCollected || !cfg.plank) return false;
-  const r = cfg.plank.radius || 88;
-  const dx = px - cfg.plank.x;
-  const dy = py - cfg.plank.y;
-  if (dx * dx + dy * dy > r * r) return false;
-  st.plankCollected = true;
-  _markRecentItemPickup();
-  _updateFlagInventoryHud();
-  playApple();
-  imgShowBubble('まるたの いたを ひろったよ！', { x: cfg.plank.x, y: cfg.plank.y }, 1900);
-  showHint('🪵 いたを ひろったよ。みずたまりに ならべてみよう！', 3000);
-  _showItemHintModal('plank');
   return true;
 }
 
@@ -7758,14 +7729,6 @@ function _handleWaterGimmickObstacle(o, px, py) {
   const st = _waterGimmickState;
   if (!cfg || !st || !_isWaterGimmickObstacle(o)) return false;
   if (st.bridgeBuilt) return false;
-  if (!st.lineSkateReady && !st.plankCollected) {
-    _bounceFromFlagTunnelObstacle(
-      o, px, py,
-      'みずたまりで とおれないよ！',
-      '🪵 まるたの いたが あれば、ちいさな はしを つくれるかも。'
-    );
-    return true;
-  }
   const backNodeId = walkAnim ? walkAnim.startNodeId : (pono.nodeId || (stage.start && stage.start.id));
   pono.x = px;
   pono.y = py;
@@ -7862,9 +7825,11 @@ function _obstacleHintFor(kind) {
 // 現在のエンカウンター対象 (どのミニゲームに分岐するかの判断に使う)
 let _currentCreature = null;
 let _currentGame = null;
+let _encounterRunGeneration = 0;
 
 function _triggerEncounter(c) {
   if (_encounterActive) return;
+  ++_encounterRunGeneration;
   _mzCancelEncounterStart();
   // 新しいエンカウンター開始時、前回の defeat-dialog timer が残っていたら必ずキャンセル
   // (前回の勝利演出 timer がまだ走っていると、新しい敵に対して誤って _closeEncounter(true) してしまうため)
@@ -7963,6 +7928,8 @@ function _triggerWebGimmickEncounter(obstacle) {
 }
 
 function _closeFlagEncounterModalOnly() {
+  const wasAdminDebug = _mazeAdminDebugActive;
+  ++_encounterRunGeneration;
   _mzCancelEncounterStart();
   _mzSwitchBgm('explore');
   _simonCancelled = true;
@@ -7975,6 +7942,14 @@ function _closeFlagEncounterModalOnly() {
   encModal.setAttribute('aria-hidden', 'true');
   _encounterActive = false;
   _encounteringCreatureId = null;
+  if (wasAdminDebug) {
+    _clearFlagTunnelTimers();
+    _flagGameState = null;
+    _stopAllMazeVoices();
+    _currentCreature = null;
+    _currentGame = null;
+    if (!_mazeAdminDebugSwitching) _mazeAdminDebugFinish('終了しました。別のミニゲームを選べます。');
+  }
 }
 
 function _startFlagTunnelTravel(obstacle) {
@@ -8312,6 +8287,13 @@ function _chooseJankenCpuHand(playerHand) {
 
 function _resolveJanken(playerHand) {
   playerHand = _jankenSafeHand(playerHand);
+  const encounterGeneration = _encounterRunGeneration;
+  const encounterCreature = _currentCreature;
+  const jankenEncounterIsCurrent = function() {
+    return _encounterActive
+      && _encounterRunGeneration === encounterGeneration
+      && _currentCreature === encounterCreature;
+  };
   const callEl = document.getElementById('jankenCall');
   const resultEl = document.getElementById('jankenResult');
   const controlsEl = document.getElementById('jankenControls');
@@ -8340,12 +8322,12 @@ function _resolveJanken(playerHand) {
   callEl.textContent = 'ジャン';
   _playMazeVoice('janken', 'call_jan', true);
   setTimeout(function() {
-    if (!_encounterActive) return;
+    if (!jankenEncounterIsCurrent()) return;
     callEl.textContent = 'ケン';
     _playMazeVoice('janken', 'call_ken', true);
   }, 520);
   setTimeout(function() {
-    if (!_encounterActive) return;
+    if (!jankenEncounterIsCurrent()) return;
     callEl.textContent = 'ポン！';
     const ponVoice = _playMazeVoice('janken', 'call_pon', true);
     setHands(playerHand, cpuHand, false);
@@ -8355,7 +8337,7 @@ function _resolveJanken(playerHand) {
     bugSlot.classList.toggle('is-lose', outcome === 'win');
     resultEl.className = 'janken-result' + (outcome === 'win' ? ' win' : (outcome === 'lose' ? ' lose' : ''));
     resultEl.textContent = outcome === 'win' ? 'かった！' : outcome === 'lose' ? 'まけた…' : 'あいこ！';
-    const encounterKey = _jankenEncounterKey(_currentCreature);
+    const encounterKey = _jankenEncounterKey(encounterCreature);
     if (outcome === 'win') {
       if (encounterKey) delete _jankenNextPlayerWinKeys[encounterKey];
     } else if (outcome === 'lose') {
@@ -8365,7 +8347,7 @@ function _resolveJanken(playerHand) {
     const resultVoiceKey = outcome === 'win' ? 'win_01' : (outcome === 'lose' ? 'lose_01' : 'draw_01');
     let resultVoicePlayed = false;
     function playResultVoice() {
-      if (resultVoicePlayed || !_encounterActive) return;
+      if (resultVoicePlayed || !jankenEncounterIsCurrent()) return;
       resultVoicePlayed = true;
       _playMazeVoice('janken', resultVoiceKey, true);
     }
@@ -8845,6 +8827,13 @@ function _simonPlayTone(freq, ms) {
 
 function _showSimonGame() {
   _setEncounterMode('simon');
+  const encounterGeneration = _encounterRunGeneration;
+  const encounterCreature = _currentCreature;
+  const simonEncounterIsCurrent = function() {
+    return _encounterActive
+      && _encounterRunGeneration === encounterGeneration
+      && _currentCreature === encounterCreature;
+  };
   _preloadMazeVoices('simon', ['start','your_turn','correct','wrong']);
   // Generate a random sequence
   _simonSeq = [];
@@ -8864,7 +8853,7 @@ function _showSimonGame() {
   // Play sequence
   let step = 0;
   function flashNext() {
-    if (_simonCancelled) return; // モーダル閉じ後 / 早期解決後は中断
+    if (_simonCancelled || !simonEncounterIsCurrent()) return; // モーダル閉じ後 / 別エンカウンターでは中断
     if (step >= _simonSeq.length) {
       // Now wait for player input
       encStageEl.querySelectorAll('.simon-cell').forEach(function(cell) {
@@ -8884,6 +8873,7 @@ function _showSimonGame() {
       cell.classList.add('is-flashing');
       _simonPlayTone(c.freq, 400);
       setTimeout(function() {
+        if (!simonEncounterIsCurrent()) return;
         if (cell) {
           cell.style.opacity = '0.4';
           cell.classList.remove('is-flashing');
@@ -13208,7 +13198,138 @@ const _GAME_STARTERS = {
   donguri_bowl: _showBowlGame, // 新トークン (記述的)。internal は引き続き web_sweep に正規化される
 };
 
+// ===== Basic Auth 管理ダッシュボード専用ミニゲーム起動ブリッジ =====
+// 公開queryやself postMessageでは起動しない。same-origin iframeかつ親pathが
+// /admin の時だけ、canonical 9 tokenを synthetic encounterへ渡す。
+const MAZE_ADMIN_DEBUG_CHANNEL = 'pono-maze-admin-debug-v1';
+const MAZE_ADMIN_DEBUG_GAMES = Object.freeze({
+  janken:        { kind: 'mayoi' },
+  truefalse:     { kind: 'odoke' },
+  simon:         { kind: 'pyon' },
+  silhouette:    { kind: 'kabuto' },
+  oddone:        { kind: 'hachi' },
+  flag:          { kind: 'hatahata' },
+  water_bridge:  { kind: 'amenbo' },
+  strength_push: { kind: 'strengthRock' },
+  donguri_bowl:  { kind: 'kumo' },
+});
+let _mazeAdminDebugEnabled = false;
+let _mazeAdminDebugActive = false;
+let _mazeAdminDebugGameId = '';
+let _mazeAdminDebugSwitching = false;
+
+function _mazeAdminDebugParentIsTrusted() {
+  if (window.parent === window) return false;
+  try {
+    return window.parent.location.origin === window.location.origin
+      && /^\/admin(?:\/|$)/.test(window.parent.location.pathname || '');
+  } catch (_) {
+    return false;
+  }
+}
+
+function _mazeAdminDebugNotify(type, detail) {
+  if (!_mazeAdminDebugEnabled || window.parent === window) return;
+  const payload = Object.assign({ channel: MAZE_ADMIN_DEBUG_CHANNEL, type: type }, detail || {});
+  try { window.parent.postMessage(payload, window.location.origin); } catch (_) {}
+}
+
+function _mazeAdminDebugSetIdle(show) {
+  const idle = document.getElementById('mazeAdminDebugIdle');
+  if (idle) idle.hidden = !show;
+}
+
+function _mazeAdminDebugFinish(message) {
+  _mazeAdminDebugActive = false;
+  _mazeAdminDebugGameId = '';
+  _mazeAdminDebugSetIdle(true);
+  _mazeAdminDebugNotify('idle', { message: message || '終了しました。別のミニゲームを選べます。' });
+}
+
+function _mazeAdminDebugCreature(gameId) {
+  const meta = MAZE_ADMIN_DEBUG_GAMES[gameId];
+  if (!meta) return null;
+  const normalized = _normalizeGameToken(gameId);
+  return {
+    id: 'admin-debug-' + gameId,
+    kind: meta.kind,
+    minigame: gameId,
+    x: 0,
+    y: 0,
+    dialog: _GAME_DIALOGS[gameId] || _GAME_DIALOGS[normalized] || '',
+  };
+}
+
+function _mazeAdminDebugStop(message) {
+  if (_encounterActive) {
+    _mazeAdminDebugSwitching = true;
+    _closeEncounter(false);
+    _mazeAdminDebugSwitching = false;
+  }
+  _mazeAdminDebugFinish(message || '停止しました。別のミニゲームを選べます。');
+}
+
+function _mazeAdminDebugLaunch(gameId) {
+  if (!_mazeAdminDebugEnabled || !Object.prototype.hasOwnProperty.call(MAZE_ADMIN_DEBUG_GAMES, gameId)) {
+    _mazeAdminDebugNotify('rejected', { message: '不明なミニゲームIDを拒否しました。' });
+    return false;
+  }
+  const creature = _mazeAdminDebugCreature(gameId);
+  if (!creature) return false;
+  if (_encounterActive) {
+    _mazeAdminDebugSwitching = true;
+    _closeEncounter(false);
+    _mazeAdminDebugSwitching = false;
+  }
+  _mazeAdminDebugActive = true;
+  _mazeAdminDebugGameId = gameId;
+  _mazeAdminDebugSetIdle(false);
+  _triggerEncounter(creature);
+  if (!_encounterActive) {
+    _mazeAdminDebugFinish('起動できませんでした。');
+    return false;
+  }
+  const normalized = _normalizeGameToken(gameId);
+  _mazeAdminDebugNotify('started', {
+    gameId: gameId,
+    label: _GAME_LABELS[gameId] || _GAME_LABELS[normalized] || gameId,
+  });
+  return true;
+}
+
+function _initMazeAdminDebugBridge() {
+  let requested = false;
+  try { requested = new URLSearchParams(window.location.search).get('adminDebug') === '1'; } catch (_) {}
+  if (!requested || !_mazeAdminDebugParentIsTrusted()) return false;
+  _mazeAdminDebugEnabled = true;
+  document.body.classList.add('maze-started', 'image-stage-mode', 'maze-admin-debug');
+  const title = document.getElementById('title-screen');
+  if (title) title.classList.add('hidden');
+  _mazeAdminDebugSetIdle(true);
+  window.addEventListener('message', function(event) {
+    if (event.origin !== window.location.origin || event.source !== window.parent) return;
+    if (!_mazeAdminDebugParentIsTrusted()) return;
+    const data = event.data;
+    if (!data || data.channel !== MAZE_ADMIN_DEBUG_CHANNEL) return;
+    if (data.type === 'stop') {
+      _mazeAdminDebugStop();
+      return;
+    }
+    if (data.type !== 'launch') return;
+    const gameId = String(data.gameId || '');
+    if (!Object.prototype.hasOwnProperty.call(MAZE_ADMIN_DEBUG_GAMES, gameId)) {
+      _mazeAdminDebugNotify('rejected', { message: '不明なミニゲームIDを拒否しました。' });
+      return;
+    }
+    _mazeAdminDebugLaunch(gameId);
+  });
+  _mazeAdminDebugNotify('ready');
+  return true;
+}
+
 function _closeEncounter(playerWon) {
+  const wasAdminDebug = _mazeAdminDebugActive;
+  ++_encounterRunGeneration;
   _mzCancelEncounterStart();
   _mzSwitchBgm('explore');
   _stopAllMazeVoices(); // モーダル閉じる時 in-flight voice (kumo 等) を必ず停止
@@ -13244,6 +13365,12 @@ function _closeEncounter(playerWon) {
   const cid = _encounteringCreatureId;
   _encounterActive = false;
   _encounteringCreatureId = null;
+  if (wasAdminDebug) {
+    _currentCreature = null;
+    _currentGame = null;
+    if (!_mazeAdminDebugSwitching) _mazeAdminDebugFinish('終了しました。別のミニゲームを選べます。');
+    return;
+  }
   if (playerWon) {
     // Defeat creature, resume the walk forward
     _defeatedCreatures.add(cid);
@@ -14659,6 +14786,7 @@ async function playMazeOpening(onDone) {
 // ?stage=N / ?image=<name> 直リンク時は OP をスキップして即 loadStage (デバッグ/直リンク用途)
 // batch:890 maze-stage-select-ux: タイトル右下のステージセレクトボタン (DEV toggle ON 時のみ表示) と、
 // modal からの直接ジャンプ (loadStage(N)) を追加。 modal を開いたら title click を消費しない。
+_initMazeAdminDebugBridge();
 (function() {
   var ts = document.getElementById('title-screen');
   if (!ts) return;

@@ -235,6 +235,65 @@ tr:hover { background: #FFFAF0; }
 .btn-sm { font-size: 0.72rem; padding: 5px 12px; }
 .btn:disabled { opacity: 0.4; cursor: default; }
 
+/* ── Maze minigame debug preview ── */
+.maze-debug-game-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+.maze-debug-game-btn {
+  width: 100%;
+  min-height: 48px;
+  justify-content: center;
+  text-align: center;
+}
+.maze-debug-game-btn.is-active {
+  background: #7C3AED;
+  color: #fff;
+  box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.18);
+}
+.maze-debug-preview-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+.maze-debug-preview-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.maze-debug-status {
+  min-height: 1.4em;
+  color: #6D5B45;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.maze-debug-preview {
+  width: min(100%, 1180px);
+  aspect-ratio: 16 / 9;
+  margin: 10px auto 0;
+  overflow: hidden;
+  border: 3px solid #D8C9B2;
+  border-radius: 14px;
+  background: #172319;
+  box-shadow: 0 5px 18px rgba(50, 35, 18, 0.16);
+}
+.maze-debug-preview[hidden] { display: none; }
+.maze-debug-preview iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #172319;
+}
+@media (max-width: 520px) {
+  .maze-debug-game-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .maze-debug-game-btn { min-height: 46px; padding-inline: 8px; }
+}
+
 /* ── Upload inline ── */
 .upload-inline { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 4px; padding: 6px; border: 2px dashed transparent; border-radius: 8px; transition: all 0.2s; }
 .upload-status { font-size: 0.7rem; margin-top: 2px; }
@@ -1390,6 +1449,35 @@ tr:hover { background: #FFFAF0; }
     </div>
   </div>
 
+  <div class="section" id="maze-minigame-debug-section">
+    <div class="section-title">🎮 ミニゲームを試す</div>
+    <div style="font-size:0.75rem;color:#8B7355;margin:-6px 0 12px;line-height:1.5;">
+      9種類のミニゲームを、進行状況やアイテムに関係なく下の16:9枠で起動します。<br>
+      通常プレイの撃破・報酬・セーブデータは変更しません。
+    </div>
+    <div class="maze-debug-game-grid" id="maze-debug-game-grid" role="group" aria-label="迷路ミニゲーム一覧">
+      <button class="btn btn-blue maze-debug-game-btn" type="button" data-maze-debug-game="janken" onclick="mazeLaunchMinigameDebug('janken')">✊ じゃんけん</button>
+      <button class="btn btn-blue maze-debug-game-btn" type="button" data-maze-debug-game="truefalse" onclick="mazeLaunchMinigameDebug('truefalse')">⭕ ○×クイズ</button>
+      <button class="btn btn-blue maze-debug-game-btn" type="button" data-maze-debug-game="simon" onclick="mazeLaunchMinigameDebug('simon')">🎵 リズムまね</button>
+      <button class="btn btn-blue maze-debug-game-btn" type="button" data-maze-debug-game="silhouette" onclick="mazeLaunchMinigameDebug('silhouette')">👀 ちらっとクイズ</button>
+      <button class="btn btn-blue maze-debug-game-btn" type="button" data-maze-debug-game="oddone" onclick="mazeLaunchMinigameDebug('oddone')">🔎 なかまはずれ</button>
+      <button class="btn btn-blue maze-debug-game-btn" type="button" data-maze-debug-game="flag" onclick="mazeLaunchMinigameDebug('flag')">🚩 はたあげ</button>
+      <button class="btn btn-blue maze-debug-game-btn" type="button" data-maze-debug-game="water_bridge" onclick="mazeLaunchMinigameDebug('water_bridge')">💧 みずすべり</button>
+      <button class="btn btn-blue maze-debug-game-btn" type="button" data-maze-debug-game="strength_push" onclick="mazeLaunchMinigameDebug('strength_push')">🪨 いわくだき</button>
+      <button class="btn btn-blue maze-debug-game-btn" type="button" data-maze-debug-game="donguri_bowl" onclick="mazeLaunchMinigameDebug('donguri_bowl')">🌰 どんぐりボウリング</button>
+    </div>
+    <div class="maze-debug-preview-head">
+      <div class="maze-debug-status" id="maze-debug-status" role="status" aria-live="polite">ミニゲームを選んでください。</div>
+      <div class="maze-debug-preview-actions">
+        <button class="btn btn-pink btn-sm" id="maze-debug-stop" type="button" onclick="mazeStopMinigameDebug()" disabled>■ 停止</button>
+        <button class="btn btn-gold btn-sm" id="maze-debug-reload" type="button" onclick="mazeReloadMinigameDebug()" disabled>↻ 枠を再読込</button>
+      </div>
+    </div>
+    <div class="maze-debug-preview" id="maze-debug-preview" hidden>
+      <iframe id="maze-debug-frame" title="迷路ミニゲーム デバッグプレビュー" allow="autoplay" data-src="../maze/?adminDebug=1"></iframe>
+    </div>
+  </div>
+
   <div class="section">
     <div class="section-title">🔄 進行・チャームリセット</div>
     <div style="font-size:0.75rem;color:#8B7355;margin:-6px 0 12px;line-height:1.5;">
@@ -1637,6 +1725,128 @@ function switchTab(panelId) {
 /* ===== 🦔 めいろ 管理パネル ===== */
 // ステージ名キャッシュ（_index.json の overrides を取得して上書き表示）
 var MAZE_STAGE_LABEL_CACHE = null;
+var MAZE_DEBUG_CHANNEL = 'pono-maze-admin-debug-v1';
+var MAZE_DEBUG_GAME_IDS = Object.freeze([
+  'janken', 'truefalse', 'simon', 'silhouette', 'oddone',
+  'flag', 'water_bridge', 'strength_push', 'donguri_bowl'
+]);
+var mazeDebugFrameReady = false;
+var mazeDebugPendingGame = '';
+
+function mazeDebugGameIsKnown(gameId) {
+  return MAZE_DEBUG_GAME_IDS.indexOf(String(gameId || '')) !== -1;
+}
+
+function mazeSetDebugStatus(text) {
+  var el = document.getElementById('maze-debug-status');
+  if (el) el.textContent = String(text || '');
+}
+
+function mazeSetDebugActiveButton(gameId) {
+  document.querySelectorAll('[data-maze-debug-game]').forEach(function(btn) {
+    btn.classList.toggle('is-active', !!gameId && btn.getAttribute('data-maze-debug-game') === gameId);
+  });
+}
+
+function mazePostDebugMessage(type, gameId) {
+  var frame = document.getElementById('maze-debug-frame');
+  if (!frame || !frame.contentWindow || !mazeDebugFrameReady) return false;
+  frame.contentWindow.postMessage({
+    channel: MAZE_DEBUG_CHANNEL,
+    type: type,
+    gameId: gameId || ''
+  }, location.origin);
+  return true;
+}
+
+function mazeEnsureDebugFrame() {
+  var wrap = document.getElementById('maze-debug-preview');
+  var frame = document.getElementById('maze-debug-frame');
+  if (!frame) return false;
+  if (wrap) wrap.hidden = false;
+  var desired = frame.getAttribute('data-src') || '../maze/?adminDebug=1';
+  if (!frame.getAttribute('src')) {
+    mazeDebugFrameReady = false;
+    frame.setAttribute('src', desired);
+    mazeSetDebugStatus('プレビューを読み込んでいます…');
+  }
+  var reload = document.getElementById('maze-debug-reload');
+  if (reload) reload.disabled = false;
+  return true;
+}
+
+function mazeLaunchMinigameDebug(gameId) {
+  gameId = String(gameId || '');
+  if (!mazeDebugGameIsKnown(gameId)) {
+    mazeSetDebugStatus('不明なミニゲームIDです。');
+    return;
+  }
+  mazeDebugPendingGame = gameId;
+  mazeSetDebugActiveButton(gameId);
+  if (!mazeEnsureDebugFrame()) {
+    mazeSetDebugStatus('プレビュー枠を作れませんでした。');
+    return;
+  }
+  if (!mazePostDebugMessage('launch', gameId)) {
+    mazeSetDebugStatus('プレビューの準備を待っています…');
+  }
+}
+
+function mazeStopMinigameDebug() {
+  if (!mazePostDebugMessage('stop', '')) return;
+  mazeDebugPendingGame = '';
+  mazeSetDebugActiveButton('');
+  mazeSetDebugStatus('停止しています…');
+}
+
+function mazeReloadMinigameDebug() {
+  var frame = document.getElementById('maze-debug-frame');
+  if (!frame || !frame.getAttribute('src')) return;
+  mazeDebugFrameReady = false;
+  mazeDebugPendingGame = '';
+  var stop = document.getElementById('maze-debug-stop');
+  if (stop) stop.disabled = true;
+  mazeSetDebugActiveButton('');
+  mazeSetDebugStatus('プレビューを再読み込みしています…');
+  try { frame.contentWindow.location.reload(); }
+  catch (e) { frame.setAttribute('src', frame.getAttribute('data-src') || '../maze/?adminDebug=1'); }
+}
+
+window.addEventListener('message', function(event) {
+  var frame = document.getElementById('maze-debug-frame');
+  if (!frame || event.origin !== location.origin || event.source !== frame.contentWindow) return;
+  var data = event.data;
+  if (!data || data.channel !== MAZE_DEBUG_CHANNEL) return;
+  if (data.type === 'ready') {
+    mazeDebugFrameReady = true;
+    mazeSetDebugStatus('準備できました。ミニゲームを選んでください。');
+    if (mazeDebugPendingGame) mazePostDebugMessage('launch', mazeDebugPendingGame);
+    return;
+  }
+  if (data.type === 'started' && mazeDebugGameIsKnown(data.gameId)) {
+    mazeDebugPendingGame = data.gameId;
+    mazeSetDebugActiveButton(data.gameId);
+    mazeSetDebugStatus(String(data.label || data.gameId) + ' を起動しました。');
+    var stop = document.getElementById('maze-debug-stop');
+    if (stop) stop.disabled = false;
+    return;
+  }
+  if (data.type === 'idle') {
+    mazeDebugPendingGame = '';
+    mazeSetDebugActiveButton('');
+    mazeSetDebugStatus(String(data.message || '終了しました。別のミニゲームを選べます。'));
+    var stopIdle = document.getElementById('maze-debug-stop');
+    if (stopIdle) stopIdle.disabled = true;
+    return;
+  }
+  if (data.type === 'rejected') {
+    mazeDebugPendingGame = '';
+    mazeSetDebugActiveButton('');
+    mazeSetDebugStatus(String(data.message || '起動要求を拒否しました。'));
+    var stopRejected = document.getElementById('maze-debug-stop');
+    if (stopRejected) stopRejected.disabled = true;
+  }
+});
 
 function mazeInitPanel() {
   // 初回表示時にステージ名と draft 状態を反映

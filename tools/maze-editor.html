@@ -360,7 +360,6 @@ html, body { height: 100vh; overflow: hidden;
     </div>
     <div id="gimmickItemKindRow" class="modes" style="display:none; margin-top:6px;">
       <button class="kind-btn active" data-ikind="ladder">🪜 なわばしご</button>
-      <button class="kind-btn" data-ikind="plank">🪵 まるたの板</button>
       <button class="kind-btn" data-ikind="glove">🥊 力の手袋</button>
       <button class="kind-btn" data-ikind="broom">🧹 ほうき</button>
       <button class="kind-btn" data-ikind="web">🕸️ クモの巣を動かす</button>
@@ -542,13 +541,6 @@ const GIMMICK_ITEM_DEFS = {
     configKey: 'flagGimmick',
     itemKey: 'ladder',
   },
-  plank: {
-    label: 'まるたの板',
-    imageUrl: '../assets/images/maze/gimmicks/water/plank_item.png',
-    radius: 90,
-    configKey: 'waterGimmick',
-    itemKey: 'plank',
-  },
   glove: {
     label: '力の手袋',
     imageUrl: '../assets/images/maze/gimmicks/strength/glove_pair_item.png',
@@ -610,7 +602,7 @@ const state = {
   edges: [],            // { from, to, controls: [{x,y}], shape?: 'curve'|'polyline' }
   obstacles: [],        // { kind, x, y }
   creatures: [],        // { id, kind, x, y }
-  gimmickItems: [],      // { kind:'ladder'|'plank'|'glove'|'broom', x, y, radius }
+  gimmickItems: [],      // { kind:'ladder'|'glove'|'broom', x, y, radius }
   gimmickConfigs: {      // original stage gimmick settings, with item positions overridden on export
     flagGimmick: null,
     waterGimmick: null,
@@ -722,6 +714,9 @@ function _restoreGimmicksFromDef(def) {
   state.gimmickConfigs.waterGimmick = _jsonClone(def.waterGimmick);
   state.gimmickConfigs.strengthGimmick = _jsonClone(def.strengthGimmick);
   state.gimmickConfigs.webGimmick = _jsonClone(def.webGimmick);
+  // 旧「板を拾って橋を作る」schema は、現行のみずすべりへ移行済み。
+  // サーバーに古い plank 座標が残っていても、編集・再保存で復活させない。
+  if (state.gimmickConfigs.waterGimmick) delete state.gimmickConfigs.waterGimmick.plank;
   const repairedLinks = _repairAllGimmickObstacleLinks();
   if (repairedLinks.length) {
     console.warn('[maze-editor] repaired gimmick links:', repairedLinks.join(', '));
@@ -782,14 +777,19 @@ function _syncObstacleProxyItems() {
 }
 
 function _copyGimmickStateFromSnapshot(snap) {
-  state.gimmickItems = Array.isArray(snap && snap.gimmickItems) ? snap.gimmickItems : [];
+  // 旧draft / 名前付き保存に板が残っていても、未知kindが ladder fallbackとして
+  // 再表示されないよう読込時に破棄する。
+  state.gimmickItems = Array.isArray(snap && snap.gimmickItems)
+    ? snap.gimmickItems.filter(function(item) { return item && item.kind !== 'plank'; })
+    : [];
   state.gimmickConfigs = (snap && snap.gimmickConfigs && typeof snap.gimmickConfigs === 'object')
-    ? snap.gimmickConfigs
+    ? (_jsonClone(snap.gimmickConfigs) || {})
     : { flagGimmick: null, waterGimmick: null, strengthGimmick: null, webGimmick: null };
   if (!state.gimmickConfigs.flagGimmick) state.gimmickConfigs.flagGimmick = null;
   if (!state.gimmickConfigs.waterGimmick) state.gimmickConfigs.waterGimmick = null;
   if (!state.gimmickConfigs.strengthGimmick) state.gimmickConfigs.strengthGimmick = null;
   if (!state.gimmickConfigs.webGimmick) state.gimmickConfigs.webGimmick = null;
+  if (state.gimmickConfigs.waterGimmick) delete state.gimmickConfigs.waterGimmick.plank;
 }
 
 const OBSTACLE_KIND_LABELS = {
@@ -819,7 +819,7 @@ function _repairGimmickObstacleLink(configKey, obstacleKind, itemKey) {
     return o && o.kind === obstacleKind && Number.isFinite(o.x) && Number.isFinite(o.y);
   });
   if (!candidates.length) return '';
-  const anchor = cfg[itemKey];
+  const anchor = itemKey ? cfg[itemKey] : null;
   if (anchor && Number.isFinite(anchor.x) && Number.isFinite(anchor.y)) {
     candidates.sort(function(a, b) {
       const adx = a.x - anchor.x, ady = a.y - anchor.y;
@@ -836,7 +836,7 @@ function _repairGimmickObstacleLink(configKey, obstacleKind, itemKey) {
 function _repairAllGimmickObstacleLinks() {
   const repaired = [];
   [
-    ['waterGimmick', 'pond', 'plank'],
+    ['waterGimmick', 'pond', null],
     ['strengthGimmick', 'rock', 'glove'],
     ['webGimmick', 'web', 'broom'],
   ].forEach(function(def) {
@@ -3050,7 +3050,7 @@ function drawGimmickItem(item) {
     const drawW = drawH * ratio;
     ctx.drawImage(img, item.x - drawW/2, item.y - drawH/2, drawW, drawH);
   } else {
-    const fallback = meta.emoji || (item.kind === 'glove' ? '🥊' : (item.kind === 'plank' ? '🪵' : '🪜'));
+    const fallback = meta.emoji || (item.kind === 'glove' ? '🥊' : '🪜');
     ctx.font = (r * 0.8) + 'px serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -3306,7 +3306,7 @@ function _snapshotJSON() {
   // シリアライズ側はクリーンな (proxy なし) gimmickItems のみ保持する。
   // これがないと _applySnapshot 復元時の呼び出し順依存で proxy が二重追加されうる。
   const cleanGimmickItems = Array.isArray(state.gimmickItems)
-    ? state.gimmickItems.filter(function(it) { return it && !it.isObstacleProxy; })
+    ? state.gimmickItems.filter(function(it) { return it && it.kind !== 'plank' && !it.isObstacleProxy; })
     : [];
   return JSON.stringify({
     nodes: state.nodes,
@@ -3445,6 +3445,15 @@ function _defaultGimmickConfig(configKey) {
 }
 
 function _applyGimmickItemsToDef(def) {
+  // waterGimmick は取得アイテムを持たない現行みずすべり設定として独立保存する。
+  // 旧実装のように plank item 定義へ依存させると、板を消した時に池イベントまで
+  // export から落ちるため、ここを正本にする。
+  const waterExisting = state.gimmickConfigs && state.gimmickConfigs.waterGimmick;
+  if (waterExisting) {
+    const waterCfg = _jsonClone(waterExisting) || _defaultGimmickConfig('waterGimmick');
+    delete waterCfg.plank;
+    def.waterGimmick = waterCfg;
+  }
   Object.keys(GIMMICK_ITEM_DEFS).forEach(function(kind) {
     const meta = GIMMICK_ITEM_DEFS[kind];
     // isObstacleProxy: 位置/サイズの正本は obstacles[] にあるので webGimmick への書き込み不要。
