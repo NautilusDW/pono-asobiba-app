@@ -167,7 +167,7 @@ const ASSETS={
 };
 const bgUrl=src=>'url("'+src+'")';
 const STAGES=[
- {id:"town",icon:"🏘️",veh:"train",bank:TOWN,gens:[],skyPosition:"center calc(100% - 8vh)",
+ {id:"town",icon:"🏘️",veh:"train",bank:TOWN,gens:[],skyPosition:"center calc(100% - var(--town-sky-lift,18vh))",
   names:["まちはずれ","ゆうやけの まちはずれ"],
   assets:ASSETS.town,
   pals:[
@@ -415,8 +415,104 @@ const dotsEl=$("dots"),stamp=$("stamp");
 const portalMaskLayer=$("portalMaskLayer"),portalEditOverlay=$("portalEditOverlay");
 const portalOccIn=portalMaskLayer&&portalMaskLayer.querySelector(".portal-occluder-in");
 const portalOccOut=portalMaskLayer&&portalMaskLayer.querySelector(".portal-occluder-out");
+const rainLayerElements={far:$("rainFar"),mid:$("rainMid"),near:$("rainNear")};
 let seaFishSprites=[];
 let lastWheelPeriod=0;
+
+/* ================= weather particles ================= */
+const RAIN_PARTICLE_PROFILES=[
+ {depth:"far",base:30,max:48,iosMax:34,seed:0x11f4a7c3,length:[8,18],width:[.55,.9],duration:[1.55,2.25],opacity:[.14,.3],drift:[-11,-6],angle:[5,9]},
+ {depth:"mid",base:22,max:36,iosMax:25,seed:0x65bd1e37,length:[18,34],width:[.8,1.35],duration:[.95,1.48],opacity:[.26,.48],drift:[-18,-10],angle:[8,14]},
+ {depth:"near",base:14,max:24,iosMax:15,seed:0xa7c3e91d,length:[38,72],width:[1.3,2.2],duration:[.58,.98],opacity:[.38,.64],drift:[-28,-17],angle:[12,19]}
+];
+function createRainParticleSeed(){
+ try{
+  const values=new Uint32Array(1);
+  if(window.crypto&&typeof window.crypto.getRandomValues==="function"){
+   window.crypto.getRandomValues(values);
+   if(values[0])return values[0];
+  }
+ }catch(_){}
+ return ((Date.now()^(Math.floor((performance.now?performance.now():0)*1000)))>>>0)||0x51f15e;
+}
+function makeRainRandom(seed){
+ let value=seed>>>0;
+ return function(){
+  value=(value+0x6d2b79f5)>>>0;
+  let mixed=value;
+  mixed=Math.imul(mixed^(mixed>>>15),mixed|1);
+  mixed^=mixed+Math.imul(mixed^(mixed>>>7),mixed|61);
+  return ((mixed^(mixed>>>14))>>>0)/4294967296;
+ };
+}
+function rainRange(random,range){return range[0]+(range[1]-range[0])*random();}
+const RAIN_PARTICLE_SEED=createRainParticleSeed();
+let rainParticleCountKey="",rainParticleResizeTimer=0;
+function rainParticleActiveCount(profile){
+ const viewportWidth=Math.max(320,window.innerWidth||844);
+ const viewportHeight=Math.max(280,window.innerHeight||390);
+ const scale=Math.max(.82,Math.min(1.6,Math.sqrt((viewportWidth*viewportHeight)/(844*390))));
+ const limit=IOS_DEVICE?profile.iosMax:profile.max;
+ return Math.min(limit,Math.round(profile.base*scale));
+}
+function updateRainParticleVisibility(force){
+ if(window.__PONO_TIER_LOCKED__)return;
+ const counts=RAIN_PARTICLE_PROFILES.map(rainParticleActiveCount);
+ const countKey=counts.join(":");
+ if(!force&&countKey===rainParticleCountKey)return;
+ rainParticleCountKey=countKey;
+ RAIN_PARTICLE_PROFILES.forEach((profile,depthIndex)=>{
+  const layer=rainLayerElements[profile.depth];
+  if(!layer)return;
+  const activeCount=counts[depthIndex];
+  Array.from(layer.children).forEach((particle,index)=>{particle.hidden=index>=activeCount;});
+  layer.dataset.particleCount=String(activeCount);
+ });
+}
+function buildRainParticles(force,seedOverride){
+ if(window.__PONO_TIER_LOCKED__){
+  Object.values(rainLayerElements).forEach(layer=>{if(layer)layer.replaceChildren();});
+  return;
+ }
+ const baseSeed=Number.isFinite(seedOverride)?seedOverride>>>0:RAIN_PARTICLE_SEED;
+ RAIN_PARTICLE_PROFILES.forEach(profile=>{
+  const layer=rainLayerElements[profile.depth];
+  if(!layer)return;
+  const poolSize=IOS_DEVICE?profile.iosMax:profile.max;
+  if(force||layer.children.length!==poolSize){
+   const random=makeRainRandom((baseSeed^profile.seed)>>>0);
+   const fragment=document.createDocumentFragment();
+   for(let i=0;i<poolSize;i++){
+    const particle=document.createElement("span");
+    particle.className="rain-particle";
+    particle.dataset.depth=profile.depth;
+    particle.dataset.particleIndex=String(i);
+    const duration=rainRange(random,profile.duration);
+    const xPhase=(((i+1)*.61803398875+random()*.18)%1);
+    const timePhase=(((i+1)*.754877666+random()*.2)%1);
+    const restPhase=(((i+1)*.41421356237+random()*.2)%1);
+    particle.style.setProperty("--rain-left",(xPhase*112-6).toFixed(2)+"%");
+    particle.style.setProperty("--rain-rest-x",(restPhase*104-2).toFixed(2)+"%");
+    particle.style.setProperty("--rain-rest-y",(random()*94+3).toFixed(2)+"%");
+    particle.style.setProperty("--rain-length",rainRange(random,profile.length).toFixed(2)+"px");
+    particle.style.setProperty("--rain-width",rainRange(random,profile.width).toFixed(2)+"px");
+    particle.style.setProperty("--rain-duration",duration.toFixed(3)+"s");
+    particle.style.setProperty("--rain-delay",(-timePhase*duration).toFixed(3)+"s");
+    particle.style.setProperty("--rain-opacity",rainRange(random,profile.opacity).toFixed(3));
+    particle.style.setProperty("--rain-drift",rainRange(random,profile.drift).toFixed(2)+"vw");
+    particle.style.setProperty("--rain-angle",rainRange(random,profile.angle).toFixed(2)+"deg");
+    fragment.appendChild(particle);
+   }
+   layer.replaceChildren(fragment);
+  }
+ });
+ rainParticleCountKey="";
+ updateRainParticleVisibility(true);
+}
+function scheduleRainParticleRebuild(){
+ clearTimeout(rainParticleResizeTimer);
+ rainParticleResizeTimer=setTimeout(()=>updateRainParticleVisibility(false),120);
+}
 
 /* ================= audio & speech ================= */
 let ac=null;
@@ -1903,6 +1999,7 @@ bindTap($("homeBtn"),()=>{
 bindTap($("spkBtn"),()=>{showHint();});
 bindTap($("helpBtn"),()=>{useHelp();});
 
+buildRainParticles(false);
 buildRegistry();
 loadPortalTuning();
 loadGame();applyLevelSelection();
@@ -1918,9 +2015,10 @@ document.addEventListener("visibilitychange",()=>{
  if(document.hidden){safeSuspend();}
  else{ensureAC();}
 });
-window.addEventListener("pageshow",()=>{ensureAC();});
+window.addEventListener("resize",scheduleRainParticleRebuild,{passive:true});
+window.addEventListener("pageshow",()=>{ensureAC();updateRainParticleVisibility(false);});
 window.addEventListener("focus",()=>{ensureAC();});
-window.addEventListener("pagehide",()=>{safeSuspend();});
+window.addEventListener("pagehide",()=>{clearTimeout(rainParticleResizeTimer);safeSuspend();});
 
 requestAnimationFrame(gloop);
 })();

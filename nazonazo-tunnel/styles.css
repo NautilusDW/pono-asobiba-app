@@ -10,6 +10,7 @@
   --screen-exit-left-vh:-.14;
   --screen-exit-mask-edge:.54;
   --screen-exit-shift-x:0px;
+  --town-sky-lift:18vh;
   --portal-mask-in:polygon(14% 37%,35% 37%,35% 49%,26% 49%,26% 83%,42% 83%,42% 98%,13% 98%,13% 49%,14% 49%);
   --portal-mask-out:polygon(54% 42%,65% 42%,65% 97%,54% 97%);
 }
@@ -111,39 +112,41 @@ body.st-town .town-loop-strip{display:flex}
 #townMidLoop .town-loop-tile::before{background-image:url("../assets/images/nazonazo-tunnel/town_mid_layer_20260703.webp")}
 body.st-town #horizon,body.st-town #midT{background-image:none!important}
 
-/* ===== weather: first release = rain ===== */
-.weather-rain-layer{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .65s ease;
-  --rain-x:48px;--rain-y:136px;--rain-speed:.76s}
-.weather-rain-layer::before{content:"";position:absolute;inset:-100px -70px;will-change:transform;
-  background-repeat:repeat;background-size:var(--rain-x) var(--rain-y);
-  animation:rainTile var(--rain-speed) linear infinite paused}
-#rainFar{z-index:1;--rain-x:34px;--rain-y:104px;--rain-speed:1.05s}
-#rainFar::before{background-image:linear-gradient(106deg,transparent 0 46%,rgba(207,229,242,.54) 47% 49%,transparent 50% 100%)}
-#rainMid{z-index:6;--rain-x:48px;--rain-y:136px;--rain-speed:.76s}
-#rainMid::before{background-image:linear-gradient(105deg,transparent 0 45%,rgba(216,235,247,.66) 46% 49%,transparent 50% 100%)}
+/* ===== weather: individually varied rain particles in three depth planes ===== */
+.weather-rain-layer{position:absolute;inset:0;overflow:hidden;contain:layout paint;pointer-events:none;opacity:0;visibility:hidden;
+  transition:opacity .35s ease,visibility 0s linear .35s}
+.rain-particle{position:absolute;left:var(--rain-left);top:-30vh;display:block;width:var(--rain-width);
+  height:var(--rain-length);border-radius:999px;pointer-events:none;opacity:var(--rain-opacity);transform-origin:50% 50%;
+  background:linear-gradient(180deg,rgba(235,247,255,0),rgba(226,242,252,.94) 24%,rgba(217,238,251,.82) 76%,rgba(217,238,251,0));
+  animation:rainParticleFall var(--rain-duration) linear var(--rain-delay) infinite paused}
+.rain-particle[hidden]{display:none}
+#rainFar{z-index:1}
+#rainMid{z-index:6}
 #weatherShade{position:absolute;inset:0;z-index:9;pointer-events:none;opacity:0;
   background:linear-gradient(180deg,rgba(18,35,50,.17) 0%,rgba(24,40,52,.14) 58%,rgba(30,44,52,.1) 100%);
   transition:opacity .65s ease}
-#rainNear{z-index:9;--rain-x:64px;--rain-y:176px;--rain-speed:.56s}
-#rainNear::before{background-image:linear-gradient(105deg,transparent 0 43%,rgba(231,243,251,.78) 44% 49%,transparent 50% 100%)}
-body.weather-rain:not(.tunnel-interior) #rainFar{opacity:.3}
-body.weather-rain:not(.tunnel-interior) #rainMid{opacity:.4}
-body.weather-rain:not(.tunnel-interior) #rainNear{opacity:.54}
-body.weather-rain:not(.tunnel-interior) .weather-rain-layer::before{animation-play-state:running}
-body.weather-rain:not(.tunnel-interior) #weatherShade{opacity:1}
-body.weather-rain:not(.tunnel-interior) #skyA,body.weather-rain:not(.tunnel-interior) #skyB,
-body.weather-rain:not(.tunnel-interior) #horizon,body.weather-rain:not(.tunnel-interior) #midT,
-body.weather-rain:not(.tunnel-interior) #groundT,body.weather-rain:not(.tunnel-interior) #fgT,
-body.weather-rain:not(.tunnel-interior) #world>.tun,body.weather-rain:not(.tunnel-interior) #world>.dropStation{
+#rainNear{z-index:9}
+#rainNear .rain-particle{background:linear-gradient(180deg,rgba(244,250,255,0),rgba(238,248,255,.98) 20%,rgba(224,242,253,.9) 80%,rgba(224,242,253,0))}
+body.pono-game-ready.weather-rain:not(.tunnel-interior) .weather-rain-layer{visibility:visible;transition-delay:0s}
+body.pono-game-ready.weather-rain:not(.tunnel-interior) #rainFar{opacity:.82}
+body.pono-game-ready.weather-rain:not(.tunnel-interior) #rainMid{opacity:.9}
+body.pono-game-ready.weather-rain:not(.tunnel-interior) #rainNear{opacity:.96}
+body.pono-game-ready.weather-rain:not(.tunnel-interior) .rain-particle{animation-play-state:running;will-change:transform}
+body:not(.weather-rain) .rain-particle,body.tunnel-interior .rain-particle{animation-play-state:paused;will-change:auto}
+body.pono-game-ready.weather-rain:not(.tunnel-interior) #weatherShade{opacity:1}
+body.pono-game-ready.weather-rain:not(.tunnel-interior) #skyA,body.pono-game-ready.weather-rain:not(.tunnel-interior) #skyB,
+body.pono-game-ready.weather-rain:not(.tunnel-interior) #horizon,body.pono-game-ready.weather-rain:not(.tunnel-interior) #midT,
+body.pono-game-ready.weather-rain:not(.tunnel-interior) #groundT,body.pono-game-ready.weather-rain:not(.tunnel-interior) #fgT,
+body.pono-game-ready.weather-rain:not(.tunnel-interior) #world>.tun,body.pono-game-ready.weather-rain:not(.tunnel-interior) #world>.dropStation{
   filter:brightness(.7) saturate(.62) contrast(.98)}
-body.weather-rain:not(.tunnel-interior) #world>.decor{
+body.pono-game-ready.weather-rain:not(.tunnel-interior) #world>.decor{
   filter:brightness(.7) saturate(.62) contrast(.98) drop-shadow(0 3px 0 rgba(70,45,25,.12))}
-body.weather-rain:not(.tunnel-interior) #veh,body.weather-rain:not(.tunnel-interior) #cars{
+body.pono-game-ready.weather-rain:not(.tunnel-interior) #veh,body.pono-game-ready.weather-rain:not(.tunnel-interior) #cars{
   filter:brightness(.84) saturate(.76) contrast(1.01)}
-body.weather-rain:not(.tunnel-interior) .runEvent{filter:brightness(1.08) saturate(1.05)}
-@keyframes rainTile{
-  from{transform:translate3d(calc(var(--rain-x) * .5),calc(var(--rain-y) * -.5),0)}
-  to{transform:translate3d(calc(var(--rain-x) * -.5),calc(var(--rain-y) * .5),0)}
+body.pono-game-ready.weather-rain:not(.tunnel-interior) .runEvent{filter:brightness(1.08) saturate(1.05)}
+@keyframes rainParticleFall{
+  from{transform:translate3d(0,0,0) rotate(var(--rain-angle))}
+  to{transform:translate3d(var(--rain-drift),150vh,0) rotate(var(--rain-angle))}
 }
 .flyer{position:absolute;z-index:12;font-size:clamp(30px,6.4vw,60px);pointer-events:none;
   transform:translateX(-50%);transition:left .75s cubic-bezier(.3,.8,.5,1),bottom .75s cubic-bezier(.4,-.3,.6,1)}
@@ -606,6 +609,7 @@ h1{font-size:clamp(24px,5.6vw,50px);color:#e0704a;text-shadow:0 3px 0 #fff}
 #rotateHint{display:none;position:fixed;inset:0;z-index:99;background:#ffe9c2;color:var(--ink);
   font-size:clamp(18px,5vw,30px);font-weight:800;align-items:center;justify-content:center;text-align:center;padding:20px}
 @media (orientation:portrait){#rotateHint{display:flex}}
+@media (min-aspect-ratio:2/1){:root{--town-sky-lift:14vh}}
 @media (orientation:landscape) and (max-height:360px){
   .ovl{gap:1.2vh;padding:8px}
   h1{font-size:clamp(22px,5vw,36px)}
@@ -632,5 +636,6 @@ h1{font-size:clamp(24px,5.6vw,50px);color:#e0704a;text-shadow:0 3px 0 #fff}
 }
 @media (prefers-reduced-motion:reduce){
   *{animation-duration:.01s!important;transition-duration:.01s!important}
-  .weather-rain-layer::before{animation:none!important;transform:none!important}
+  .rain-particle{left:var(--rain-rest-x);top:var(--rain-rest-y);animation:none!important;transform:rotate(var(--rain-angle));will-change:auto!important}
+  #rainFar .rain-particle:nth-child(n+8),#rainMid .rain-particle:nth-child(n+6),#rainNear .rain-particle:nth-child(n+4){display:none}
 }

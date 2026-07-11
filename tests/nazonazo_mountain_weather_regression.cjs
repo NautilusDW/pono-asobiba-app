@@ -14,8 +14,26 @@ for (const id of ["rainFar", "rainMid", "weatherShade", "rainNear"]) {
   assert.match(html, new RegExp(`id="${id}"[^>]+aria-hidden="true"`), `${id} must remain decorative`);
 }
 assert.match(css, /\.weather-rain-layer\{[^}]*pointer-events:none/, "rain must never block child input");
-assert.match(css, /\.weather-rain-layer::before\{[^}]*inset:-100px -70px/, "rain planes must only overscan their maximum tile movement");
+assert.match(css, /\.weather-rain-layer\{[^}]*opacity:0;visibility:hidden/, "particle planes must stay hidden outside active rain");
+assert.match(css, /\.rain-particle\{[^}]*pointer-events:none[^}]*animation:rainParticleFall[^}]*infinite paused/, "each decorative drop must be an independently paused particle by default");
 assert.doesNotMatch(css, /\.weather-rain-layer\{[^}]*will-change:/, "the full viewport rain wrappers must not become permanent compositor layers");
+assert.doesNotMatch(css, /\.weather-rain-layer::before|@keyframes rainTile|--rain-x|--rain-y/, "the old repeating-gradient rain tiles must be fully removed");
+for (const rule of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+  if (rule[1].includes(".rain-particle")) {
+    assert.doesNotMatch(rule[2], /(?:filter|backdrop-filter|box-shadow|mix-blend-mode)\s*:/, "particles must avoid per-drop compositing effects");
+  }
+}
+assert.match(css, /body\.pono-game-ready\.weather-rain:not\(\.tunnel-interior\) \.weather-rain-layer\{visibility:visible;transition-delay:0s\}/, "ready rainy scenes must reveal the particle planes");
+assert.match(css, /body\.pono-game-ready\.weather-rain:not\(\.tunnel-interior\) #rainFar\{opacity:\.82\}/, "far rain opacity must stay subtle");
+assert.match(css, /body\.pono-game-ready\.weather-rain:not\(\.tunnel-interior\) #rainMid\{opacity:\.9\}/, "middle rain opacity must be stronger than far rain");
+assert.match(css, /body\.pono-game-ready\.weather-rain:not\(\.tunnel-interior\) #rainNear\{opacity:\.96\}/, "near rain opacity must be strongest");
+assert.match(css, /#weatherShade\{[^}]*pointer-events:none/, "the weather shade must never block scene interactions");
+assert.match(css, /body\.pono-game-ready\.weather-rain:not\(\.tunnel-interior\) #weatherShade\{opacity:1\}/, "rain must still darken the scenery");
+assert.match(css, /body\.pono-game-ready\.weather-rain:not\(\.tunnel-interior\) \.rain-particle\{animation-play-state:running;will-change:transform\}/, "rain may animate only on a ready, unlocked, rainy exterior screen");
+assert.match(css, /body:not\(\.weather-rain\) \.rain-particle,body\.tunnel-interior \.rain-particle\{animation-play-state:paused;will-change:auto\}/, "clear weather and tunnels must pause particle work");
+assert.match(css, /#rainFar\{z-index:1\}/, "far rain must stay behind middle scenery");
+assert.match(css, /#rainMid\{z-index:6\}/, "middle rain must stay behind the train");
+assert.match(css, /#rainNear\{z-index:9\}/, "near rain must pass in front of the train but behind UI");
 assert.equal((html.match(/id="townHorizonLoop"[\s\S]*?<\/div>/)?.[0].match(/class="town-loop-tile"/g) || []).length, 4, "the hill panorama needs enough mirrored tiles");
 assert.equal((html.match(/id="townMidLoop"[\s\S]*?<\/div>/)?.[0].match(/class="town-loop-tile"/g) || []).length, 4, "the near panorama needs enough mirrored tiles");
 assert.match(css, /\.town-loop-tile\{[^}]*overflow:hidden/, "tile layout boxes must stay fixed at every panorama join");
@@ -24,16 +42,27 @@ assert.match(css, /\.town-loop-tile:nth-child\(even\)::before\{transform:scaleX\
 assert.doesNotMatch(css, /\.town-loop-tile:nth-child\(even\)\{transform:/, "mirroring the tile element itself creates fractional WebKit gaps");
 assert.match(css, /body\.st-town #horizon,body\.st-town #midT\{background-image:none!important\}/, "town must use the mirrored strips instead of the old hard seams");
 assert.doesNotMatch(css, /#town(?:Horizon|Mid)Loop[^}]*background-size:\s*100%\s+100%/, "panorama aspect ratios must not be stretched");
-assert.match(css, /@media \(prefers-reduced-motion:reduce\)[\s\S]*\.weather-rain-layer::before\{animation:none!important/, "reduced motion must not turn rain into a fast flicker");
-assert.match(game, /id:"town"[^\n]+skyPosition:"center calc\(100% - 8vh\)"/, "the baked mountains must be raised without stretching the sky");
+assert.match(css, /@media \(prefers-reduced-motion:reduce\)[\s\S]*\.rain-particle\{[^}]*animation:none!important/, "reduced motion must leave a small static rain sample instead of fast flicker");
+assert.match(css, /#rainFar \.rain-particle:nth-child\(n\+8\),#rainMid \.rain-particle:nth-child\(n\+6\),#rainNear \.rain-particle:nth-child\(n\+4\)\{display:none\}/, "reduced motion must cap visible drops at seven, five, and three");
+assert.match(css, /\.rain-particle\[hidden\]\{display:none\}/, "inactive pooled particles must not render");
+assert.match(css, /--town-sky-lift:18vh/, "the baked far mountain must move substantially higher on regular screens");
+assert.match(css, /@media \(min-aspect-ratio:2\/1\)\{:root\{--town-sky-lift:14vh\}\}/, "ultrawide screens must retain more of the sky and clouds");
+assert.match(game, /id:"town"[^\n]+skyPosition:"center calc\(100% - var\(--town-sky-lift,18vh\)\)"/, "the sky asset must use the responsive mountain lift without stretching");
 assert.match(game, /loop===0&&stage&&stage\.id==="town"\?"rain":"clear"/, "only loop-zero town should rain in normal play");
 assert.match(game, /debug\.isAllowed\(\)/, "weather overrides must stay behind the existing debug gate");
 assert.match(game, /value==="rain"\|\|value==="clear"/, "tests must be able to force rain or clear weather without a child-facing control");
 assert.match(game, /townMidLoop\.style\.transform="translate3d\("\+\(-loopOffset\)/, "the near mirrored strip must follow parallax motion");
 assert.match(game, /const period=tileWidth\*2;/, "the near panorama must wrap only after one original-plus-mirror pair");
 assert.match(game, /%period\+period\)%period/, "the near panorama offset must stay inside its seamless pair");
-assert.match(css, /from\{transform:translate3d\(calc\(var\(--rain-x\) \* \.5\),calc\(var\(--rain-y\) \* -\.5\),0\)\}[\s\S]*to\{transform:translate3d\(calc\(var\(--rain-x\) \* -\.5\),calc\(var\(--rain-y\) \* \.5\),0\)\}/, "rain must move by exactly one repeated tile so the animation reset cannot jump");
-assert.doesNotMatch(css, /#rainFar::before\{[^}]*filter:/, "the oversized far-rain plane must avoid an iOS-expensive full-screen filter");
+assert.match(css, /@keyframes rainParticleFall\{\s*from\{transform:translate3d\(0,0,0\) rotate\(var\(--rain-angle\)\)\}\s*to\{transform:translate3d\(var\(--rain-drift\),150vh,0\) rotate\(var\(--rain-angle\)\)\}\s*\}/, "particles must fall with transform-only movement outside both viewport edges");
+assert.match(game, /const RAIN_PARTICLE_PROFILES=\[[\s\S]*depth:"far"[\s\S]*depth:"mid"[\s\S]*depth:"near"/, "rain must keep distinct far, middle, and near particle profiles");
+assert.match(game, /layer\.replaceChildren\(fragment\)/, "particle pool construction must replace instead of append");
+assert.equal((game.match(/buildRainParticles\(false\);/g) || []).length, 1, "particle pools must be initialized exactly once outside applySkin");
+assert.equal((game.match(/addEventListener\("resize",scheduleRainParticleRebuild/g) || []).length, 1, "particle resizing must register exactly one listener");
+assert.match(game, /addEventListener\("pageshow",\(\)=>\{ensureAC\(\);updateRainParticleVisibility\(false\);\}\)/, "BFCache restore must refresh particle visibility without rebuilding");
+assert.match(game, /addEventListener\("pagehide",\(\)=>\{clearTimeout\(rainParticleResizeTimer\);safeSuspend\(\);\}\)/, "pagehide must clear the pending resize callback");
+assert.doesNotMatch(game.slice(game.indexOf("function applySkin()"), game.indexOf("function buildWorld(")), /buildRainParticles|scheduleRainParticle/, "skin changes must never rebuild particle DOM");
+assert.match(game, /if\(window\.__PONO_TIER_LOCKED__\)/, "locked LP views must not create hidden particle work");
 assert.doesNotMatch(css, /#world(?:,|\{)[^}]*filter:/, "the multi-thousand-vw world container must never receive one giant group filter");
 assert.match(css, /#world>\.tun[^}]*[\s\S]*filter:brightness\(\.7\)/, "bounded town scenery should still darken in rain");
 
