@@ -58,6 +58,7 @@
 ## Active claims
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
+- 2026-07-11 19:25 - by Codex - [batch:1243-mojikko-meal-schedule] - writing-mori/{care,index,play}.html, assets/images/mojikko/{care,writing}/, tests/mojikko_*, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - GPT Image 2のもじごはん／無地報酬枠と、朝昼午後晩各1回の成長別食事・報酬・保存移行を実装する [overlap: batch:1242-gacha-title-bgm-overlap (sw.js予定)]
 
 
 
