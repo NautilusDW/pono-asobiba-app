@@ -5,6 +5,17 @@
 > 現行のタップ式 + カップファースト UX (box → rice → decor → tier2Main → tier2Side → complete) に完全準拠。
 > 音声は全て新規 ID (`tut2_XX_<slug>.mp3`)。旧 `basic_tut_*` は **ID ごと廃止・再利用禁止** (ファイル名と中身の不一致事故の再発防止)。
 
+> ### 2026-07-11 batch:1058-tut2-hotfix5 とりけす教習 + はっぱ指定制 + テキスト整理 (implemented, sw v2083)
+> owner フィードバック (2026-07-11、「のり移動後に顔がズレたまま のりOK に進んでしまう」「はっぱが自由選択で品目/置き場所が曖昧」「テキストボックスが混戦」「しきりの位置ずれ」) を受けて 5 点を実装。
+>
+> - **(a) 新 step `tut2-nori-undo` + のりOK ソフトゲート**: Step5 (のり移動) と Step6 (のり編集+のりOK) の間に挿入。 のりを動かした後、 目・鼻・口が既定位置からズレたまま「のりOK」に進んでしまう問題を解消するため、 まず「とりけす」ボタンの使い方を教え、`tut2FaceAtDefault()` (純関数。 `getSimpleDecorPlacement` の期待座標と実配置を許容誤差 ±8px / 回転差 ≤4° / サイズ比 0.95〜1.05 で比較。 目は左右を最近傍マッチングで対応付け) が `true` になってから Step6 の「のりOK」へ進めるようにした。 デフォルト到達後に更に「とりけす」を押しても Step4 の配置まで巻き戻らないようガード。 ゲートは 3 回ブロックしたら 4 回目は無条件で通す softlock 回避付き (`tutorialState._noriOkBlockCount`)。 voice: `tut2_05b_undo` (新規)。
+> - **(b) はっぱ指定制 (自由選択を廃止)**: 品目は **レタス (`leaf_lettuce`) 固定**、 置き場所は **2 個目に置いたメインおかず (ハンバーグ優先) の下** に指定。 2 個目メインおかず確定時に `tutorialState.leafTargetUid` / `leafTargetName` を記録し、 はっぱタブ選択時に対象おかずを自動的に armed 状態にすることで、 子供は「おべんとうばこをタップ」するだけで所定のおかずの下にレタスが敷ける (対象おかずを個別にタップする操作を省略)。 「すきな はっぱ」 文言は全廃。 voice: `tut2_17_leafpick` / `tut2_18_leafplace` (新規)。
+> - **(c) テキストチャネル・ポリシー確立 (1 step 1 テキスト)**: 常設のポノ吹き出し (`#free-speech` / `setSpeech`) を唯一の説明チャネルとし、 独立 floating bubble (`tutorialShowBubble`) は **greet / w2-request の中央カード、 tut2-complete / tut2-favorite (complete-overlay が `#free-speech` を覆うため)、 tut2-w3-deliver (お届けパネル `#bento-delivery` が `#free-speech` を覆うため) の 4 箇所限定**に整理。 box / cup-btn / free-okazu / leaf-tab / okazu-ok / okazu-main の 2 個目ガイド / nori-move / nori-edit / leaf-pick / leaf-place / tabs-intro にあった「setSpeech と同文の floating bubble」二重表示を setSpeech 一本化に統一 (視線誘導はトリム(青枠) + 指アニメが担う)。
+> - **(d) しきり位置ズレ修正**: コード内蔵フォールバック格子 `getSimpleLeafDividerSpreadPoints` (divider 分岐) の rows を `[0.25, 0.50, 0.75]` → `[0.44, 0.62, 0.80]` に修正し、 実おかず配置 (`getSimpleFoodSpreadPoints` の yBottom≈0.72h / yMain≈0.88h) と整合させた。 admin/index.html の default grid (`#bento-slot-layout`) も同時更新。 **ただし 2026-07-11 時点で staging KV (`/api/bento/mask-defaults`) の `box_rect_split.divider` には既に admin 側で保存済みの手動座標 7 点が入っており、 KV 保存値がフォールバックより優先されるため、 このコード修正だけでは実画面の見た目は変わらない**。 フォールバックはあくまで「KV 未設定時の安全網」を正しい値にする修正であり、 現状の表示調整は admin の `#bento-slot-layout` で行う。
+> - **(e) 完成画面レガシー二重系統の tut2 中無効化**: `tutorialStartCompleteGuidance` (`basic_tut_14`/`favorite_save_01` 等の実 mp3 再生 + `.tut-bubble` 上書き) と、 それを起動する `_showCompleteOverlay` 内の 3000ms タイマー、 および `tutorialOnCompleteDetailShown` の 3 箇所に `tutorialState.step` が `tut2-*` の間は即 return するガードを追加。 これにより `tutorialOnStageComplete` (tut2 dispatcher、 tut2-complete/tut2-favorite の即時+5500/6500ms チェーン) とのレース (同じ `.tut-bubble` を奪い合う) が tut2 中は発生しなくなる。 **非チュートリアル時 (`tutorialState.active === false`) の挙動は完全不変**。
+>
+> 新規音声 3 本 (§3 追記): `tut2_05b_undo` / `tut2_17_leafpick` / `tut2_18_leafplace`。 `tut2_11_tabs` の読み上げテキストは将来「しきり」単独紹介 (はっぱ紹介と分離) に改訂予定 — mp3 は未収録のため、 台本変更による実害は無い。
+
 > ### 2026-07-07 batch:1058-tut2-hotfix4 UX 方針転換 (implemented, sw v2036)
 > owner の v2029 プレイテスト後、 「バブルが 3〜4 箇所に散在」 「タップ前に半透明品目が箱内に floating」 「サブラウンド間の間がない」 「Step 6 の説明が曖昧」 「パレット項目が二重ブルーリング」 の 5 問題を UX 方針転換で解決。
 >
