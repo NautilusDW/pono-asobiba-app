@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2093: なぞなぞトレインで開始時のスキン更新後も初期描画ガード解除クラスを保持し、音だけ流れて全画面が消える回帰を修正。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel のみ変更)。
 // v2092: Bento Kitchen のじゃがいも潰しを各画像段階の実coverage 80% + 全域判定へ変更し、同じ場所の連打を無効化。ポテト+ひき肉は皿を適正化し、太い連続ブラシで広く混ざる表示へ修正。play.html PAGE_CACHE_VERSION と同期不要 (bento/kitchen.html のみ変更)。
 // v2091: タイトルメニューのスクロール矢印を白⇄オレンジでゆっくり明滅 (視認性向上)。play.html PAGE_CACHE_VERSION と同期。
 // v2090: Maze 岩くだきの入力を click 完了待ちから primary pointerdown 即時受付へ変更し、高速マウス連打の取りこぼしを防止。後続 click の重複除外、キーボード/支援技術 fallback、固定 hit area も追加。play.html PAGE_CACHE_VERSION と同期。
@@ -17,7 +18,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2092;
+const CACHE_VERSION = 2093;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
