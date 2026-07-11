@@ -30,6 +30,7 @@ const preserveSnippet = applySkin.slice(preserveStart, preserveEnd);
 function runSkinClassReset(initialClassName, iosDevice, portalEdit) {
   let classes = new Set(initialClassName.split(/\s+/).filter(Boolean));
   const body = {
+    dataset: {},
     classList: {
       contains(name) { return classes.has(name); },
       add(name) { classes.add(name); }
@@ -44,6 +45,7 @@ function runSkinClassReset(initialClassName, iosDevice, portalEdit) {
     document: { body },
     IOS_DEVICE: iosDevice,
     PORTAL_EDIT_ENABLED: portalEdit,
+    weatherForStage() { return "rain"; },
     st: { id: "town", veh: "train" }
   });
   return classes;
@@ -52,14 +54,14 @@ function runSkinClassReset(initialClassName, iosDevice, portalEdit) {
 const started = runSkinClassReset("pono-game-ready st-old v-old tunnel-interior", false, false);
 assert.deepEqual(
   [...started].sort(),
-  ["pono-game-ready", "st-town", "v-train"].sort(),
+  ["pono-game-ready", "st-town", "v-train", "weather-rain"].sort(),
   "starting or changing a stage must preserve the ready class while replacing transient skin classes"
 );
 
 const beforeReady = runSkinClassReset("st-old v-old", true, true);
 assert.deepEqual(
   [...beforeReady].sort(),
-  ["ios-device", "portal-edit", "st-town", "v-train"].sort(),
+  ["ios-device", "portal-edit", "st-town", "v-train", "weather-rain"].sort(),
   "the initial pre-ready skin pass must not reveal the app early"
 );
 

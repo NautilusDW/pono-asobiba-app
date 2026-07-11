@@ -70,15 +70,23 @@
   else { document.addEventListener('DOMContentLoaded', showLock); }
 })();
 </script>
-<link rel="stylesheet" href="styles.css?v=20260710-1">
+<link rel="stylesheet" href="styles.css?v=20260711-1229">
 </head>
 <body class="st-town v-train" data-driver="pono" data-driver-mood="happy">
 <div id="app">
   <div id="scene">
     <div id="skyA"></div>
     <div id="skyB"></div>
-    <div id="horizon"></div>
-    <div id="midT"></div>
+    <div id="horizon">
+      <div id="townHorizonLoop" class="town-loop-strip" aria-hidden="true">
+        <span class="town-loop-tile"></span><span class="town-loop-tile"></span><span class="town-loop-tile"></span><span class="town-loop-tile"></span>
+      </div>
+    </div>
+    <div id="midT">
+      <div id="townMidLoop" class="town-loop-strip" aria-hidden="true">
+        <span class="town-loop-tile"></span><span class="town-loop-tile"></span><span class="town-loop-tile"></span><span class="town-loop-tile"></span>
+      </div>
+    </div>
     <div id="seaFishLayer" aria-hidden="true"></div>
     <div id="groundT"></div>
     <div id="world"></div>
@@ -133,6 +141,10 @@
     <svg id="portalEditOverlay" aria-hidden="true"></svg>
     <div id="tunnelFade" aria-hidden="true"></div>
     <div id="fgT"></div>
+    <div id="rainFar" class="weather-rain-layer" aria-hidden="true"></div>
+    <div id="rainMid" class="weather-rain-layer" aria-hidden="true"></div>
+    <div id="weatherShade" aria-hidden="true"></div>
+    <div id="rainNear" class="weather-rain-layer" aria-hidden="true"></div>
   </div>
 
   <div id="carBadge" aria-live="polite">👥 ×0</div>
@@ -205,6 +217,6 @@
 </div>
 <div id="rotateHint">📱➡️ よこむきに してね</div>
 <script src="data/questions.js?v=20260702-1051"></script>
-<script src="js/game.js?v=20260711-1"></script>
+<script src="js/game.js?v=20260711-1229"></script>
 </body>
 </html>

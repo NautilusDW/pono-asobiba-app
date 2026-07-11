@@ -29,9 +29,9 @@ body.tunnel-interior #scene::after{display:block}
 #skyA,#skyB{position:absolute;inset:0;z-index:0}
 #skyB{opacity:0}
 #horizon{position:absolute;top:0;bottom:0;left:0;width:170vw;z-index:1;
-  background-repeat:no-repeat;background-size:auto 100%;will-change:transform}
+  overflow:hidden;background-repeat:no-repeat;background-size:auto 100%;will-change:transform}
 #midT{position:absolute;top:0;bottom:0;left:0;right:0;z-index:2;
-  background-repeat:repeat-x;background-size:auto 100%;will-change:background-position}
+  overflow:hidden;background-repeat:repeat-x;background-size:auto 100%;will-change:background-position}
 #seaFishLayer{position:absolute;inset:0;z-index:4;display:none;pointer-events:none;overflow:hidden}
 body.st-sea #seaFishLayer{display:block}
 body.tunnel-interior #seaFishLayer{display:none!important}
@@ -96,6 +96,55 @@ body.st-town.v-train #veh,body.st-jungle.v-train #veh,body.st-number.v-train #ve
 body.st-space #veh{bottom:26vh}
 #fgT{position:absolute;left:0;right:0;bottom:0;height:22vh;z-index:8;pointer-events:none;
   background-repeat:repeat-x;background-size:auto 100%;will-change:background-position}
+
+/* ===== town panorama loops: mirrored neighbors make every join pixel-exact ===== */
+.town-loop-strip{display:none;position:absolute;left:0;width:max-content;pointer-events:none;will-change:transform}
+.town-loop-tile{position:relative;display:block;height:100%;flex:0 0 auto;overflow:hidden}
+.town-loop-tile::before{content:"";position:absolute;inset:-1px;background-position:center;background-size:cover;background-repeat:no-repeat}
+.town-loop-tile:nth-child(even)::before{transform:scaleX(-1)}
+body.st-town .town-loop-strip{display:flex}
+#townHorizonLoop{top:-30vh;height:124%}
+#townHorizonLoop .town-loop-tile{aspect-ratio:1983/793}
+#townHorizonLoop .town-loop-tile::before{background-image:url("../assets/images/nazonazo-tunnel/town_horizon_layer_20260703.webp")}
+#townMidLoop{top:-16vh;height:114%}
+#townMidLoop .town-loop-tile{aspect-ratio:1774/887}
+#townMidLoop .town-loop-tile::before{background-image:url("../assets/images/nazonazo-tunnel/town_mid_layer_20260703.webp")}
+body.st-town #horizon,body.st-town #midT{background-image:none!important}
+
+/* ===== weather: first release = rain ===== */
+.weather-rain-layer{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .65s ease;
+  --rain-x:48px;--rain-y:136px;--rain-speed:.76s}
+.weather-rain-layer::before{content:"";position:absolute;inset:-100px -70px;will-change:transform;
+  background-repeat:repeat;background-size:var(--rain-x) var(--rain-y);
+  animation:rainTile var(--rain-speed) linear infinite paused}
+#rainFar{z-index:1;--rain-x:34px;--rain-y:104px;--rain-speed:1.05s}
+#rainFar::before{background-image:linear-gradient(106deg,transparent 0 46%,rgba(207,229,242,.54) 47% 49%,transparent 50% 100%)}
+#rainMid{z-index:6;--rain-x:48px;--rain-y:136px;--rain-speed:.76s}
+#rainMid::before{background-image:linear-gradient(105deg,transparent 0 45%,rgba(216,235,247,.66) 46% 49%,transparent 50% 100%)}
+#weatherShade{position:absolute;inset:0;z-index:9;pointer-events:none;opacity:0;
+  background:linear-gradient(180deg,rgba(18,35,50,.17) 0%,rgba(24,40,52,.14) 58%,rgba(30,44,52,.1) 100%);
+  transition:opacity .65s ease}
+#rainNear{z-index:9;--rain-x:64px;--rain-y:176px;--rain-speed:.56s}
+#rainNear::before{background-image:linear-gradient(105deg,transparent 0 43%,rgba(231,243,251,.78) 44% 49%,transparent 50% 100%)}
+body.weather-rain:not(.tunnel-interior) #rainFar{opacity:.3}
+body.weather-rain:not(.tunnel-interior) #rainMid{opacity:.4}
+body.weather-rain:not(.tunnel-interior) #rainNear{opacity:.54}
+body.weather-rain:not(.tunnel-interior) .weather-rain-layer::before{animation-play-state:running}
+body.weather-rain:not(.tunnel-interior) #weatherShade{opacity:1}
+body.weather-rain:not(.tunnel-interior) #skyA,body.weather-rain:not(.tunnel-interior) #skyB,
+body.weather-rain:not(.tunnel-interior) #horizon,body.weather-rain:not(.tunnel-interior) #midT,
+body.weather-rain:not(.tunnel-interior) #groundT,body.weather-rain:not(.tunnel-interior) #fgT,
+body.weather-rain:not(.tunnel-interior) #world>.tun,body.weather-rain:not(.tunnel-interior) #world>.dropStation{
+  filter:brightness(.7) saturate(.62) contrast(.98)}
+body.weather-rain:not(.tunnel-interior) #world>.decor{
+  filter:brightness(.7) saturate(.62) contrast(.98) drop-shadow(0 3px 0 rgba(70,45,25,.12))}
+body.weather-rain:not(.tunnel-interior) #veh,body.weather-rain:not(.tunnel-interior) #cars{
+  filter:brightness(.84) saturate(.76) contrast(1.01)}
+body.weather-rain:not(.tunnel-interior) .runEvent{filter:brightness(1.08) saturate(1.05)}
+@keyframes rainTile{
+  from{transform:translate3d(calc(var(--rain-x) * .5),calc(var(--rain-y) * -.5),0)}
+  to{transform:translate3d(calc(var(--rain-x) * -.5),calc(var(--rain-y) * .5),0)}
+}
 .flyer{position:absolute;z-index:12;font-size:clamp(30px,6.4vw,60px);pointer-events:none;
   transform:translateX(-50%);transition:left .75s cubic-bezier(.3,.8,.5,1),bottom .75s cubic-bezier(.4,-.3,.6,1)}
 .flyer img{width:clamp(54px,9vw,92px);height:clamp(54px,9vw,92px);object-fit:contain;object-position:center bottom;filter:drop-shadow(0 4px 0 rgba(70,45,25,.16))}
@@ -336,8 +385,7 @@ body.tunnel-enter-run #smokeLayer,body.tunnel-exit-run #smokeLayer{display:none}
 body.st-future .tr-boiler{background:#b8f3ff;border-color:#4bb8d6;border-radius:26px 6px 6px 26px}
 body.st-future .tr-cab{background:#8e7cf0;border-color:#5c4bd6}
 body.st-future .tr-chim{display:none}
-body.st-town #horizon{background-size:auto 124%;background-position-y:-20vh}
-body.st-town #midT{background-size:auto 114%;background-position-y:-10vh}
+body.st-town #horizon,body.st-town #midT{background-size:auto 100%;background-position-y:0}
 body.st-town #groundT{height:15vh;background-size:auto 100%}
 body.st-town #fgT{height:6.5vh;background-size:auto 100%}
 body.st-jungle #horizon{background-size:auto 126%;background-position-y:-22vh}
@@ -582,4 +630,7 @@ h1{font-size:clamp(24px,5.6vw,50px);color:#e0704a;text-shadow:0 3px 0 #fff}
 @media (orientation:landscape) and (max-height:480px){
   #portalEditPanel{width:min(320px,calc(100vw - 16px));max-height:46vh}
 }
-@media (prefers-reduced-motion:reduce){*{animation-duration:.01s!important;transition-duration:.01s!important}}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.01s!important;transition-duration:.01s!important}
+  .weather-rain-layer::before{animation:none!important;transform:none!important}
+}

@@ -167,7 +167,7 @@ const ASSETS={
 };
 const bgUrl=src=>'url("'+src+'")';
 const STAGES=[
- {id:"town",icon:"🏘️",veh:"train",bank:TOWN,gens:[],
+ {id:"town",icon:"🏘️",veh:"train",bank:TOWN,gens:[],skyPosition:"center calc(100% - 8vh)",
   names:["まちはずれ","ゆうやけの まちはずれ"],
   assets:ASSETS.town,
   pals:[
@@ -357,6 +357,14 @@ let bestStarsByStage={},answerLocked=false,portalEditHolding=false,nextMagicPuff
 const SAVE_KEY="pono_nazonazo_tunnel_v1";
 const FAST=(location.hash==="#fast")?6:1;
 const FORCERARE=(location.hash==="#fast");
+function forcedWeather(){
+ try{
+  const debug=window.PonoDebugMode;
+  if(!debug||typeof debug.isAllowed!=="function"||!debug.isAllowed())return "";
+  const value=new URLSearchParams(location.search).get("weather");
+  return value==="rain"||value==="clear"?value:"";
+ }catch(_){return "";}
+}
 const IOS_DEVICE=/iPad|iPhone|iPod/.test(navigator.userAgent)||
  (navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
 const TRAIN_DRIVER_ID="pono";
@@ -387,6 +395,10 @@ function cssYFromVh(vh){
  return (IOS_DEVICE?Math.round(px):Number(px.toFixed(2)))+"px";
 }
 
+function weatherForStage(stage){
+ return forcedWeather()||(loop===0&&stage&&stage.id==="town"?"rain":"clear");
+}
+
 function setDriverForStage(){
  document.body.dataset.driver=TRAIN_DRIVER_ID;
 }
@@ -396,7 +408,7 @@ function setDriverMood(mood){
 
 /* ================= dom ================= */
 const $=id=>document.getElementById(id);
-const world=$("world"),veh=$("veh"),horizon=$("horizon"),midT=$("midT"),groundT=$("groundT"),fgT=$("fgT"),seaFishLayer=$("seaFishLayer"),smokeLayer=$("smokeLayer");
+const world=$("world"),veh=$("veh"),horizon=$("horizon"),midT=$("midT"),groundT=$("groundT"),fgT=$("fgT"),seaFishLayer=$("seaFishLayer"),smokeLayer=$("smokeLayer"),townMidLoop=$("townMidLoop");
 const skyA=$("skyA"),skyB=$("skyB"),carsEl=$("cars"),carBadge=$("carBadge"),helpBadge=$("helpBadge"),helpBtn=$("helpBtn");
 const quiz=$("quiz"),qText=$("qText"),hintText=$("hintText"),choicesEl=$("choices");
 const dotsEl=$("dots"),stamp=$("stamp");
@@ -1042,11 +1054,13 @@ function applySkin(){
  const nIdx=Math.min(stg+1,STAGES.length-1);
  const NP=STAGES[nIdx].pals[loop%2];
  const wasGameReady=document.body.classList.contains("pono-game-ready");
- document.body.className=(IOS_DEVICE?"ios-device ":"")+"st-"+st.id+" v-"+st.veh+(PORTAL_EDIT_ENABLED?" portal-edit":"");
+ const weather=weatherForStage(st);
+ document.body.className=(IOS_DEVICE?"ios-device ":"")+"st-"+st.id+" v-"+st.veh+" weather-"+weather+(PORTAL_EDIT_ENABLED?" portal-edit":"");
  // 画面スキンの全置換で、初期描画ガードを解除する永続クラスまで消さない。
  if(wasGameReady)document.body.classList.add("pono-game-ready");
+ document.body.dataset.weather=weather;
  setDriverForStage(stg);
- skyA.style.background=st.assets?bgUrl(st.assets.sky)+" center bottom / cover no-repeat":"linear-gradient("+P.sky[0]+","+P.sky[1]+")";
+ skyA.style.background=st.assets?bgUrl(st.assets.sky)+" "+(st.skyPosition||"center bottom")+" / cover no-repeat":"linear-gradient("+P.sky[0]+","+P.sky[1]+")";
  skyB.style.background="linear-gradient("+NP.sky[0]+","+NP.sky[1]+")";
  skyB.style.opacity="0";
  horizon.style.backgroundImage=st.assets?bgUrl(st.assets.horizon):st.horizon(P,NP);
@@ -1607,7 +1621,16 @@ function render(now){
  updateScreenExitShift();
  const hd=clamp((worldX-o)*0.095,0,70);
  horizon.style.transform="translate3d("+cssXFromVw(-hd)+",0,0)";
- midT.style.backgroundPositionX=cssXFromVw(-worldX*0.25);
+ if(document.body.classList.contains("st-town")&&townMidLoop){
+  const tileWidth=(window.innerHeight||390)*1.14*(1774/887);
+  const period=tileWidth*2;
+  const rawOffset=((worldX*0.25*(window.innerWidth||844)/100)%period+period)%period;
+  const loopOffset=IOS_DEVICE?Math.round(rawOffset):Number(rawOffset.toFixed(2));
+  townMidLoop.style.transform="translate3d("+(-loopOffset)+"px,0,0)";
+  midT.style.backgroundPositionX="0px";
+ }else{
+  midT.style.backgroundPositionX=cssXFromVw(-worldX*0.25);
+ }
  groundT.style.backgroundPositionX=cssXFromVw(-worldX);
  fgT.style.backgroundPositionX=cssXFromVw(-worldX*1.35);
  const p=clamp((worldX-o)/COVER_OFF,0,1);
