@@ -111,7 +111,11 @@ assert.match(contentScaleCss, /\.flag-ladder-img\s*\{[\s\S]*?clamp\(110px, 40dvh
 assert.match(html, /<div class="[^"]*\brow\b[^"]*\bresult-actions\b[^"]*">[\s\S]*?<button[^>]*id="flagBackBtn">/);
 assert.match(contentScaleCss, /\.is-truefalse \.enc-stage\s*\{[\s\S]*?grid-template-rows:\s*minmax\(0, 1fr\)/);
 assert.match(contentScaleCss, /grid-template-rows:\s*minmax\(0, 1fr\) clamp\(64px, 18dvh, 112px\)/);
-assert.match(contentScaleCss, /\.is-truefalse \.row\s*\{\s*width:\s*min\(78%, 560px\) !important;/);
+assert.match(
+  contentScaleCss,
+  /\.is-truefalse \.row\s*\{[\s\S]*?width:\s*min\(78%, 560px\) !important;[\s\S]*?justify-self:\s*center;/,
+  'the true/false answer pair must be centered on the horizontal grid axis',
+);
 assert.match(contentScaleCss, /#simonGrid\s*\{[\s\S]*?flex:\s*1 1 0;[\s\S]*?repeat\(2, minmax\(44px, 1fr\)\)/);
 assert.match(contentScaleCss, /#simonGrid\s*\{[\s\S]*?width:\s*min\(82%, 720px\) !important;/);
 assert.match(contentScaleCss, /\.simon-dot\s*\{[\s\S]*?clamp\(64px, 20dvh, 126px\)/);
@@ -139,6 +143,7 @@ const MAX_FRAME_HEIGHT = MAX_FRAME_WIDTH * 9 / 16;
 const viewports = [
   [740, 320],
   [844, 390],
+  [932, 497],
   [986, 477],
   [1024, 507],
   [1024, 768],
@@ -195,9 +200,17 @@ for (const [viewportWidth, viewportHeight] of viewports) {
   assert.ok(flagButton >= 44 && flagButton >= gameHeight * 0.14, `${viewportWidth}x${viewportHeight}: flag controls are too small`);
 
   const trueFalseRow = clamp(64, viewportHeight * 0.18, 112);
+  const trueFalseAnswerWidth = Math.min(gameWidth * 0.78, 560);
+  const trueFalseAnswerInset = (gameWidth - trueFalseAnswerWidth) / 2;
   const trueFalseIcon = Math.min(
     (gameHeight - trueFalseRow - clamp(5, viewportHeight * 0.012, 10)) * 0.70,
     clamp(96, viewportHeight * 0.38, 240),
+  );
+  assert.ok(trueFalseAnswerInset >= 0, `${viewportWidth}x${viewportHeight}: true/false answers overflow horizontally`);
+  assert.equal(
+    trueFalseAnswerInset,
+    (gameWidth - trueFalseAnswerWidth) - trueFalseAnswerInset,
+    `${viewportWidth}x${viewportHeight}: true/false answer pair is not horizontally centered`,
   );
   assert.ok(trueFalseIcon >= gameHeight * 0.18, `${viewportWidth}x${viewportHeight}: true/false icon is too small`);
   const simonWidth = Math.min(gameWidth * 0.82, 720);
