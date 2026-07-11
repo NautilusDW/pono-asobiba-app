@@ -581,7 +581,7 @@
     //   - stage_07: choosePartnerPracticeStageIndex の free tier 選択
     //     (FREE_PUZZLE_STAGE_IDS=[1,4,7,13] では 10-12pc が無く 9pc の 7 に fallback。
     //      初回訪問 = practice 対象者は free tier が大半)
-    //   - stage_09: 同 picker の第一候補 (10-12pc / sub tier・ロック無効時)
+    //   - stage_09: 同 picker の第一候補 (10-12pc / app tier・ロック無効時)
     //   ※ book tier の pick (stage_11) は budget 超過のため見送り
     // 実測累計: ~1.5MB (608KB + 204KB + 337KB + 388KB)
     puzzle: [

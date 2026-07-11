@@ -996,13 +996,13 @@ namespace Pono.MarbleRun3D.Gameplay
                 _cameraFollowVelocities,
                 count);
             if (!group.IsValid) return;
-            var courseDirection = OrbitCameraController.SelectCourseLookDirection(
+            var courseLook = OrbitCameraController.SelectCourseLookAhead(
                 group.Center,
                 group.AverageVelocity,
                 _cameraCoursePositions,
                 _cameraCoursePositionCount,
                 _orbit.FollowHeading);
-            _orbit.SetFollowFrame(group, courseDirection);
+            _orbit.SetFollowFrame(group, courseLook.Direction, courseLook.Target);
         }
 
         private void SetCameraFollow(bool enabled, bool returnToCourseOverview)

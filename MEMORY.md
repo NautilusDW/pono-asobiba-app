@@ -149,6 +149,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-07-11T01:26:28Z - batch:1216 tier リネーム クロスレビュー (残存sub修正 + sw CACHE_VERSION 2080 bump)
+- **タスク**: batch:1216 tier リネーム クロスレビュー (残存sub修正 + sw CACHE_VERSION 2080 bump)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 0
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {}
+- **サマリ**: 行動ログが空のため分析できません。
+
+
 ### 2026-07-11T01:17:31Z - batch:1216 tier名 'sub'→'app' 全面リネーム実装 (runtime 15ファイル + docs 9ファイル、isSubエイリアス保持、Playwright 36チェック全PASS、監査漏れ2件 difficulty.js/partner-select.css を追加発見・修正)
 - **タスク**: batch:1216 tier名 'sub'→'app' 全面リネーム実装 (runtime 15ファイル + docs 9ファイル、isSubエイリアス保持、Playwright 36チェック全PASS、監査漏れ2件 difficulty.js/partner-select.css を追加発見・修正)
 - **結果**: 成功
@@ -242,19 +255,6 @@ wrangler deploy                  # master 内容を production に
 
 ### 2026-07-10T16:07:20Z - sub専用5ゲーム(mojicrane/nazonazo-tunnel/starparodier/undersea-cave/sea-album)にtierガード追加+Playwright検証
 - **タスク**: sub専用5ゲーム(mojicrane/nazonazo-tunnel/starparodier/undersea-cave/sea-album)にtierガード追加+Playwright検証
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 0
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {}
-- **サマリ**: 行動ログが空のため分析できません。
-
-
-### 2026-07-10T15:48:32Z - book tier (Web+pono_premium) LP staging 動的検証: free/book カード差分・5ゲーム起動スモーク・sub直URL漏れ確認・cloud-sync 503 UI・あいことば導線
-- **タスク**: book tier (Web+pono_premium) LP staging 動的検証: free/book カード差分・5ゲーム起動スモーク・sub直URL漏れ確認・cloud-sync 503 UI・あいことば導線
 - **結果**: 成功
 - **理由**: N/A
 - **総アクション数**: 0

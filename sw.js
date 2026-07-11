@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2080: tier 名 'sub'→'app' 純リネーム (batch:1216, tier.js/play.html/game-stickers.js+json/bento/quizland/puzzle/5ゲームガード)。json と js/game-stickers.js は fail-open のため新旧混在キャッシュを防ぐ bump 必須。play.html PAGE_CACHE_VERSION と同期。
 // v2079: sub専用5ゲーム (mojicrane/nazonazo/starparodier/undersea-cave/sea-album) に tier ガード追加 + プロフィール「あとで」導線 + アプリ告知文実数修正。play.html PAGE_CACHE_VERSION と同期。
 // v2078: Maze の9種類のミニゲームへ専用BGMを追加し、探索曲への復帰・音量補正・ナレーション中のダッキングを実装。play.html PAGE_CACHE_VERSION と同期。
 // v2077: OtoTouch「いろおと」の縦画面HUDと横画面の見た目切替を再配置し、通常8ボタンとの重なりを解消。play.html PAGE_CACHE_VERSION と同期。
@@ -16,7 +17,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2079;
+const CACHE_VERSION = 2080;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。

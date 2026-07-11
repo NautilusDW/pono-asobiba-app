@@ -913,7 +913,7 @@
 <script>
 (() => {
   'use strict';
-  // sub 専用 tier ロック中はゲームを初期化しない (head 側ガードで判定済)
+  // app 専用 tier ロック中はゲームを初期化しない (head 側ガードで判定済)
   if (window.__PONO_TIER_LOCKED__) return;
 
   const BASE_W = 1600;

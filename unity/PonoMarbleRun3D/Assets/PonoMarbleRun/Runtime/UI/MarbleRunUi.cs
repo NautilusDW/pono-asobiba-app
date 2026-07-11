@@ -584,17 +584,34 @@ namespace Pono.MarbleRun3D.UI
                 var kind = PaletteOrder[index];
                 var accent = PastelAccent(PartCatalog.Get(kind).Accent);
                 var button = CreateButton("Part" + kind, content.transform, PartCatalog.Get(kind).DisplayName,
-                    new Color(accent.r, accent.g, accent.b, 0.98f), () => ChoosePalettePart(kind), 19);
+                    new Color(accent.r, accent.g, accent.b, 0.98f), () => ChoosePalettePart(kind), 14);
                 var layout = button.gameObject.AddComponent<LayoutElement>();
-                layout.preferredHeight = 74f;
-                layout.minHeight = 68f;
+                layout.preferredHeight = 92f;
+                layout.minHeight = 86f;
                 layout.flexibleWidth = 1f;
                 var drag = button.gameObject.AddComponent<PaletteDragItem>();
                 drag.Configure(_controller, kind, scroll, () => SetPaletteChoice(kind));
                 var label = button.GetComponentInChildren<Text>();
-                label.rectTransform.offsetMin = new Vector2(20f, label.rectTransform.offsetMin.y);
+                label.rectTransform.anchorMin = new Vector2(0.53f, 0.08f);
+                label.rectTransform.anchorMax = new Vector2(0.96f, 0.92f);
+                label.rectTransform.offsetMin = Vector2.zero;
+                label.rectTransform.offsetMax = Vector2.zero;
+                label.alignment = TextAnchor.MiddleCenter;
+                label.resizeTextForBestFit = true;
+                label.resizeTextMinSize = 10;
+                label.resizeTextMaxSize = 14;
+
+                var picturePlate = CreateDecoration("PicturePlate", button.transform,
+                    new Vector2(0.08f, 0.08f), new Vector2(0.53f, 0.92f),
+                    new Color(SoftSkyPaper.r, SoftSkyPaper.g, SoftSkyPaper.b, 0.88f), 22);
+                AddOutline(picturePlate.GetComponent<Image>(), CardEdge(accent, 0.34f), new Vector2(1f, -1f));
+                var picture = CreateRect("Picture", picturePlate.transform,
+                    new Vector2(0.035f, 0.035f), new Vector2(0.965f, 0.965f), Vector2.zero, Vector2.zero);
+                picture.AddComponent<Image>();
+                picture.AddComponent<PieceThumbnailIcon>().Configure(kind);
+
                 var selectionMark = CreateDecoration("SelectionMark", button.transform,
-                    new Vector2(0.028f, 0.19f), new Vector2(0.095f, 0.81f), SelectionGold, 14);
+                    new Vector2(0.025f, 0.19f), new Vector2(0.070f, 0.81f), SelectionGold, 14);
                 AddOutline(selectionMark.GetComponent<Image>(), CardEdge(SelectionGold, 0.84f), new Vector2(1f, -1f));
                 SetActive(selectionMark, false);
                 _paletteButtons[kind] = button;

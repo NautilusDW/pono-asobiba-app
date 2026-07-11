@@ -20624,6 +20624,16 @@ function tutorialNoriOkButton() {
   }
   return null;
 }
+// batch:1058-hotfix5 (WP1): とりけすボタン (renderFreeLayoutControls の .free-action-row 内、
+// id/class なしのため tutorialNoriOkButton と同じ textContent 一致パターンで取得)。
+function tutorialUndoButton() {
+  const buttons = document.querySelectorAll('.free-action-row button');
+  for (const b of buttons) {
+    const t = (b.textContent || '').trim();
+    if (t === 'とりけす') return b;
+  }
+  return null;
+}
 // v1500 FIX9c: tutorialCupOkButton は cup-edit step 廃止 (v1497) 以降どこからも
 // 呼ばれない dead helper だったため削除。
 function tutorialResetInactivity() {
@@ -21839,6 +21849,92 @@ function tut2ApplyNoriSubroundSpeech(stepId, idx) {
     try { setSpeech(idx === 0 ? 'まずは おめめを タップ！' : 'もう ひとつ おめめを タップ！'); } catch (_) {}
   } else if (stepId === 'tut2-nori-face-mouth-nose') {
     try { setSpeech(idx === 0 ? 'つぎは おはなを タップ！' : 'さいごに おくちを タップ！'); } catch (_) {}
+  }
+}
+// batch:1058-hotfix5 (WP1): のり顔パーツ (目2/はな1/くち1) が全て「初期配置」 に戻って
+// いるかを判定する純関数。 とりけす教習 (tut2-nori-undo) の完了判定と、 のりOK ソフトゲート
+// (tut2-nori-edit) の両方から参照する。 目は生成順で simpleFaceSlot ('eye:left'/'eye:right')
+// が固定されるだけで、 getSimpleDecorPlacement 自身は「既に2個置かれている」 状態だと
+// countSimpleFaceSlotPrefix の parity 判定が常に同じ側を返してしまうため、 ここでは
+// 期待2点 (左右) を getSimpleDecorPlacement の eye 分岐と同じ式で直接算出し、 置かれている
+// 目2個と最近傍マッチングで対応付けて比較する (どちらの目がどちらのスロット由来でも
+// 見た目上そろっていれば「デフォルト」 と判定する)。
+function tut2FaceAtDefault() {
+  try {
+    if (typeof placedItems === 'undefined' || !Array.isArray(placedItems)) return false;
+    if (typeof decorItems === 'undefined' || !Array.isArray(decorItems)) return false;
+    const tier = (typeof getTargetTierForType === 'function') ? getTargetTierForType('decor') : 1;
+    const bySlot = { 'eye:left': [], 'eye:right': [], 'nose:center': [], 'mouth:center': [] };
+    for (const item of placedItems) {
+      if (!item || item.type !== 'decor') continue;
+      if (getItemTier(item) !== tier) continue;
+      const slot = item.simpleFaceSlot;
+      if (slot && bySlot[slot]) bySlot[slot].push(item);
+    }
+    const eyeItems = bySlot['eye:left'].concat(bySlot['eye:right']);
+    const noseItems = bySlot['nose:center'];
+    const mouthItems = bySlot['mouth:center'];
+    // 4スロット (目2/はな1/くち1) が過不足なく揃っていない間は 「デフォルト」 と判定しない
+    // (5個目以降の余分な decor は bySlot に集計されないので自然に無視される)。
+    if (eyeItems.length !== 2 || noseItems.length !== 1 || mouthItems.length !== 1) return false;
+
+    const POS_TOL = 8;
+    const ROT_TOL = 4;
+    const SCALE_MIN = 0.95;
+    const SCALE_MAX = 1.05;
+    const rotDiff = (a, b) => {
+      const na = ((Number(a) || 0) % 360 + 360) % 360;
+      const nb = ((Number(b) || 0) % 360 + 360) % 360;
+      const d = Math.abs(na - nb);
+      return d > 180 ? 360 - d : d;
+    };
+    const withinTolerance = (item, placement) => {
+      if (!item || !placement) return false;
+      if (Math.abs((item.x || 0) - placement.x) > POS_TOL) return false;
+      if (Math.abs((item.y || 0) - placement.y) > POS_TOL) return false;
+      if (rotDiff(item.rotation, placement.rotation) > ROT_TOL) return false;
+      const ratio = placement.size ? (item.size || 0) / placement.size : 1;
+      if (ratio < SCALE_MIN || ratio > SCALE_MAX) return false;
+      return true;
+    };
+
+    // はな / くち: スロット1個ずつなので直接比較。
+    const noseDef = decorItems.find(d => d && d.id === noseItems[0].id);
+    if (!noseDef || !withinTolerance(noseItems[0], getSimpleDecorPlacement(noseDef, tier))) return false;
+    const mouthDef = decorItems.find(d => d && d.id === mouthItems[0].id);
+    if (!mouthDef || !withinTolerance(mouthItems[0], getSimpleDecorPlacement(mouthDef, tier))) return false;
+
+    // め: 期待2点 (左右) を明示的に両方算出 (getSimpleDecorPlacement の eye 分岐と同じ式)。
+    const eyeDefs = eyeItems.map(item => decorItems.find(d => d && d.id === item.id));
+    if (eyeDefs.some(d => !d)) return false;
+    const box = (typeof getSelectedBentoBox === 'function') ? getSelectedBentoBox() : null;
+    const riceBounds = getRicePlacementBounds(box);
+    const center = (box && box.riceSpots && box.riceSpots[0]) || {
+      x: riceBounds.x + riceBounds.w / 2,
+      y: riceBounds.y + riceBounds.h / 2,
+    };
+    const expectedEyePoints = [-0.17, 0.17].map((xRatio, idx) => {
+      const def = eyeDefs[idx] || eyeDefs[0];
+      const size = getSimpleDecorSize(def, 'eye');
+      const raw = makeSimpleFacePoint(center, riceBounds, xRatio, -0.13);
+      const clamped = clampPointToRice(raw.x, raw.y, { type: 'decor', size, scale: def && def.scale ? def.scale : 1 });
+      return { x: clamped.x, y: clamped.y, size, rotation: def && def.rotation != null ? def.rotation : 0 };
+    });
+    // 最近傍マッチング (2x2 総当たりで距離合計が小さいペアリングを採用)。
+    const d00 = Math.hypot(eyeItems[0].x - expectedEyePoints[0].x, eyeItems[0].y - expectedEyePoints[0].y);
+    const d01 = Math.hypot(eyeItems[0].x - expectedEyePoints[1].x, eyeItems[0].y - expectedEyePoints[1].y);
+    const d10 = Math.hypot(eyeItems[1].x - expectedEyePoints[0].x, eyeItems[1].y - expectedEyePoints[0].y);
+    const d11 = Math.hypot(eyeItems[1].x - expectedEyePoints[1].x, eyeItems[1].y - expectedEyePoints[1].y);
+    const straightPairing = (d00 + d11) <= (d01 + d10);
+    const pairs = straightPairing
+      ? [[eyeItems[0], expectedEyePoints[0]], [eyeItems[1], expectedEyePoints[1]]]
+      : [[eyeItems[0], expectedEyePoints[1]], [eyeItems[1], expectedEyePoints[0]]];
+    for (const pair of pairs) {
+      if (!withinTolerance(pair[0], pair[1])) return false;
+    }
+    return true;
+  } catch (_) {
+    return false;
   }
 }
 
