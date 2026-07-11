@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2110: ガチャ/おみせ画面へタイトル BGM が二重再生される実機バグを根治 (batch:1242) — タブ復帰時の visibilitychange 復帰経路 (play.html tryPlay) がガチャ/おみせの抑止状態を見ず無条件 resume していた問題へ、単一調停点 isTopBgmSuppressed() (pausedTopBgm フラグ + モーダル DOM 開閉の OR) ガードを導入。PonoVisibilityAudioGuard の backoff replay が抑止中の play-bgm を native play で復活させる経路も data-pono-force-paused 契約で封鎖。閉時の正当復帰 (resumeTopBgmAfter*) は直接 play() でガードを bypass し不変。play.html PAGE_CACHE_VERSION と同期 (2110)。
 // v2109: もじっこファームの文字書きで、点線ガイド・塗り判定・HanziWriter の座標変換を共通化し、HanziWriter 合格後に別条件で拒否する終点判定／途中保留／3回目救済を撤去。見えるガイドの約65%を順方向になぞる共通fallbackと、半濁点など閉ループ10画の循環進捗を追加し、全142かな418画の100%/65%正方向通過・逆方向/点打ち拒否を固定テスト。play.html PAGE_CACHE_VERSION と同期不要 (writing-mori/index.html/テストのみ変更)。
 // v2108: なぞなぞトレインのジャングルへGPT Image 2生成の動物12種を奥・中・手前寄り3層で追加。18体（iOSは15体上限）を大きさ・向き・位相・速度違いでパララックス微動させ、問題/列車より後ろ・pointer-eventsなし・トンネル/他stage非表示・reduced-motion静止・雨天暗転・LPロック時0読込に対応。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/画像のみ変更)。
 // v2107: スクショモード capture.js の2不具合修正 (batch:1241) — ① html2canvas 1.4.1 が object-fit/object-position 未実装で img を box へ全面 stretch するため、デイリーガチャの LP 16:9 撮影でガチャ機が横太り (実測 AR 0.81→1.02〜1.07、viewport 依存で毎回変動) していた問題を、onclone で該当 img を透明1px + 等価 background-image (contain/cover) へ変換して修正 (クローン DOM 限定・実画面無影響、Playwright 実測で AR 0.812 に復元)。② Mac で Shift+Alt+C が e.key='Ç' となり撮影 UI が開かない問題へ e.code==='KeyC' 併用で対応。isFeatureEnabled('capture-mode') gating は不変。play.html PAGE_CACHE_VERSION と同期不要 (play.html 未変更、common/capture.js のみ変更)。
@@ -34,7 +35,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2109;
+const CACHE_VERSION = 2110;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
