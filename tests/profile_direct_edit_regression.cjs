@@ -1,7 +1,7 @@
 "use strict";
 
-// batch:1245 regression: プロフィールハブの名前・姿を本体タップで編集し、
-// 意味の不明瞭だった「いちばん / もうすぐ」集計を明確な達成表示へ置き換える。
+// batch:1245/1246 regression: プロフィールハブの名前・姿を本体タップで編集し、
+// 大きな姿と、ひとつにまとまった達成表示を保つ。
 
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
@@ -63,6 +63,18 @@ assert.match(hub, /id="profileHubProgressBar"[^>]*role="progressbar"/);
 assert.match(hub, /id="profileHubNextGoal"/);
 assert.match(hub, /id="profileDetailProgressBar"[^>]*role="progressbar"/);
 assert.match(hub, /id="profileDetailNextGoal"/);
+
+// 未プレイ時の説明は独立した破線ボックスではなく、主進捗カードの先頭に置く。
+const mainProgressStart = hub.indexOf('<div class="profile-progress-card" aria-label="できたこと">');
+const emptyHelp = hub.indexOf('id="profileHubEmpty"');
+const progressTop = hub.indexOf('class="profile-progress-card__top"', mainProgressStart);
+const namePanelStart = hub.indexOf('id="profileNamePanel"');
+assert.ok(mainProgressStart >= 0 && emptyHelp > mainProgressStart && emptyHelp < progressTop,
+  "no-progress help must be the first item inside the main progress card");
+assert.ok(progressTop < namePanelStart,
+  "main progress card must close before the name editor panel");
+assert.equal((hub.match(/id="profileHubEmpty"/g) || []).length, 1,
+  "no-progress help must not remain as a second standalone box");
 
 // profileProgressSummary の選定規則を、プロフィール100%に引っ張られない例で駆動。
 const summarySource = extract(html, 'function profileProgressSummary()', 'function updateProfileHome', "progress summary");
@@ -128,11 +140,19 @@ assert.equal(savedProfile.avatar.preset, "fox");
 assert.equal(shownPanel, "main");
 assert.equal(focusReturned, true);
 
-// 5. 直接タップ部は小画面ルールでも44pxを維持し、キーボードはbutton標準挙動を使う。
+// 5. 姿はユーザーが見比べられる204px（旧短画面68pxの3倍）を保ち、
+//    直接タップ部はbutton標準挙動を使う。
 assert.match(html, /\.profile-hub-name-button \{[\s\S]*?min-height: 44px;/);
-assert.match(html, /\.profile-hub-avatar-button \{[\s\S]*?width: 92px;[\s\S]*?height: 92px;/);
-assert.match(html, /@media \(max-height: 360px\) and \(min-width: 481px\)[\s\S]*?\.profile-hub-empty \{ display: none; \}/,
-  "very short landscape must not leave a clipped empty-state sliver above the close button");
+assert.match(html, /\.profile-hub-head \{[\s\S]*?grid-template-columns: 204px minmax\(0, 1fr\);/,
+  "wide/landscape profile must reserve a 204px avatar column");
+assert.match(html, /\.profile-hub-avatar-button \{[\s\S]*?width: 204px;[\s\S]*?height: 204px;/);
+assert.match(html, /\.profile-hub-avatar\.pono-mini-avatar \{[\s\S]*?width: 204px;[\s\S]*?height: 204px;/);
+assert.match(html, /@media \(max-width: 480px\) \{[\s\S]*?\.profile-hub-head \{[\s\S]*?grid-template-columns: 1fr;/,
+  "portrait profile must stack the large avatar instead of crushing the summary column");
+assert.doesNotMatch(html, /\.profile-hub-empty\s*\{[^}]*display:\s*none;/,
+  "the requested no-progress help must remain visible in short landscape");
+assert.match(html, /\.profile-hub-card \.profile-hub-empty \{[\s\S]*?border-bottom:[\s\S]*?text-align: left;/,
+  "integrated help must use a divider, not its former standalone card styling");
 assert.match(html, /function openProfileHub\(\)[\s\S]{0,420}profileHubEditBtn && profileHubEditBtn\.focus\(\)/,
   "opening the profile hub must focus its first direct-edit control");
 

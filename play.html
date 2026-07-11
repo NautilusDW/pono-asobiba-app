@@ -1058,20 +1058,20 @@
         -0.8px -0.8px 0 rgba(255, 250, 230, .96),
         0 2px 4px rgba(80, 50, 20, .35);
     }
-    /* v1681: maze カード (夜マップ) は title 同様 dark halo へ切替 — クリームハロー
-       だと夜空に溶けて読めなくなるため、 #fff0c8 文字 + 焦げ茶アウトラインへ反転。 */
+    /* 通常の紙面では、めいろの説明もほかのカードと同じ焦げ茶に揃える。
+       写真の peek が出た状態だけ、下の state rule で明るい文字へ反転する。 */
     .game-card[data-id="maze"] .game-card__desc {
-      color: #fff0c8;
+      color: #4a2e15;
       text-shadow:
-        1.1px 0 0 rgba(40, 24, 8, .96),
-        -1.1px 0 0 rgba(40, 24, 8, .96),
-        0 1.1px 0 rgba(40, 24, 8, .96),
-        0 -1.1px 0 rgba(40, 24, 8, .96),
-        0.8px 0.8px 0 rgba(40, 24, 8, .96),
-        -0.8px 0.8px 0 rgba(40, 24, 8, .96),
-        0.8px -0.8px 0 rgba(40, 24, 8, .96),
-        -0.8px -0.8px 0 rgba(40, 24, 8, .96),
-        0 2px 4px rgba(0, 0, 0, .5);
+        1.1px 0 0 rgba(255, 250, 230, .96),
+        -1.1px 0 0 rgba(255, 250, 230, .96),
+        0 1.1px 0 rgba(255, 250, 230, .96),
+        0 -1.1px 0 rgba(255, 250, 230, .96),
+        0.8px 0.8px 0 rgba(255, 250, 230, .96),
+        -0.8px 0.8px 0 rgba(255, 250, 230, .96),
+        0.8px -0.8px 0 rgba(255, 250, 230, .96),
+        -0.8px -0.8px 0 rgba(255, 250, 230, .96),
+        0 2px 4px rgba(80, 50, 20, .35);
     }
     .game-card.is-coming-soon .game-card__title,
     .game-card.is-coming-soon:hover .game-card__title,
@@ -1946,22 +1946,25 @@
     }
     .profile-hub-head {
       display: grid;
-      grid-template-columns: 92px minmax(0, 1fr);
-      gap: 14px;
-      align-items: center;
-      margin-bottom: 12px;
+      grid-template-columns: 204px minmax(0, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+    .profile-hub-summary {
+      min-width: 0;
     }
     .profile-hub-id {
       min-width: 0;
+      padding-right: 42px;
     }
     .profile-hub-avatar-button {
-      width: 92px;
-      height: 92px;
+      width: 204px;
+      height: 204px;
       display: grid;
       place-items: center;
       padding: 0;
       border: 0;
-      border-radius: 27px;
+      border-radius: 44px;
       background: transparent;
       cursor: pointer;
       touch-action: manipulation;
@@ -1975,10 +1978,10 @@
       outline-offset: 2px;
     }
     .profile-hub-avatar.pono-mini-avatar {
-      width: 86px;
-      height: 86px;
-      border-radius: 24px;
-      border-width: 5px;
+      width: 204px;
+      height: 204px;
+      border-radius: 42px;
+      border-width: 7px;
     }
     .profile-hub-avatar .pono-mini-avatar__body {
       left: 23px;
@@ -2020,12 +2023,12 @@
       width: 18px;
       height: 18px;
     }
-    .profile-hub-title {
-      margin: 0 0 3px;
+    .profile-hub-card .profile-hub-title {
+      margin: 0 44px 7px;
       color: var(--primary);
       font-size: 1.18rem;
       line-height: 1.08;
-      text-align: left;
+      text-align: center;
     }
     .profile-hub-name-button {
       min-width: 0;
@@ -2072,12 +2075,15 @@
       font-size: .82rem;
       font-weight: 900;
       line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .profile-hub-actions {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 8px;
-      margin: 8px 0 12px;
+      margin: 8px 0;
     }
     .profile-hub-btn {
       min-height: 42px;
@@ -2107,7 +2113,7 @@
       border: 2px solid rgba(242, 145, 90, .26);
       border-radius: 16px;
       background: rgba(255, 253, 250, .72);
-      margin-bottom: 12px;
+      margin-bottom: 0;
     }
     .profile-progress-card__top {
       display: flex;
@@ -2147,7 +2153,7 @@
       border-radius: inherit;
       background: linear-gradient(90deg, #88d38a, #ffd84d);
     }
-    .profile-progress-next {
+    .profile-hub-card .profile-progress-next {
       margin: 0;
       color: #6a4300;
       font-size: .78rem;
@@ -2225,17 +2231,15 @@
       font-variant-numeric: tabular-nums;
       white-space: nowrap;
     }
-    .profile-hub-empty {
-      margin: 4px 0 12px;
-      padding: 14px 12px;
-      border: 2px dashed rgba(242, 145, 90, .4);
-      border-radius: 16px;
-      background: rgba(255, 253, 250, .62);
-      color: var(--text-light);
-      font-size: .88rem;
+    .profile-hub-card .profile-hub-empty {
+      margin: 0;
+      padding: 0 0 7px;
+      border-bottom: 2px dashed rgba(242, 145, 90, .34);
+      color: #6a4300;
+      font-size: .78rem;
       font-weight: 900;
-      line-height: 1.35;
-      text-align: center;
+      line-height: 1.25;
+      text-align: left;
     }
     .profile-hub-panel[hidden] {
       display: none !important;
@@ -2518,9 +2522,9 @@
     @media (max-width: 480px), (max-height: 540px) {
       .modal-card.profile-hub-card { padding: 12px 14px; }
       .profile-hub-xclose { top: 8px; right: 8px; width: 34px; height: 34px; font-size: 20px; }
-      .profile-hub-head { grid-template-columns: 72px minmax(0, 1fr); gap: 10px; margin-bottom: 9px; }
-      .profile-hub-avatar-button { width: 72px; height: 72px; border-radius: 22px; }
-      .profile-hub-avatar.pono-mini-avatar { width: 68px; height: 68px; border-radius: 20px; }
+      .profile-hub-head { grid-template-columns: 204px minmax(0, 1fr); gap: 10px; }
+      .profile-hub-avatar-button { width: 204px; height: 204px; border-radius: 44px; }
+      .profile-hub-avatar.pono-mini-avatar { width: 204px; height: 204px; border-radius: 42px; border-width: 7px; }
       .profile-hub-avatar .pono-mini-avatar__body { left: 18px; bottom: 7px; width: 32px; height: 25px; }
       .profile-hub-avatar .pono-mini-avatar__face { left: 17px; top: 16px; width: 34px; height: 32px; }
       .profile-hub-avatar .pono-mini-avatar__face::before,
@@ -2530,7 +2534,7 @@
       .profile-hub-avatar .pono-mini-avatar__hair { left: 15px; top: 11px; width: 38px; height: 20px; }
       .profile-hub-avatar .pono-mini-avatar__hair::after { left: 24px; top: 7px; width: 13px; height: 17px; }
       .profile-hub-avatar .pono-mini-avatar__mark { right: 10px; top: 8px; width: 14px; height: 14px; }
-      .profile-hub-title { font-size: 1rem; }
+      .profile-hub-card .profile-hub-title { margin-bottom: 4px; font-size: 1rem; }
       .profile-hub-name { font-size: 1.18rem; }
       .profile-hub-name-button { min-height: 44px; gap: 5px; padding: 2px 7px 3px 3px; border-radius: 10px; }
       .profile-hub-edit-mark { font-size: .94rem; }
@@ -2542,7 +2546,8 @@
       .profile-progress-card__count { font-size: .86rem; }
       .profile-progress-card__count strong { font-size: 1.1rem; }
       .profile-progress-bar { height: 10px; }
-      .profile-progress-next { font-size: .7rem; }
+      .profile-hub-card .profile-progress-next { font-size: .7rem; line-height: 1.25; }
+      .profile-hub-card .profile-hub-empty { padding-bottom: 5px; font-size: .7rem; line-height: 1.25; }
       .profile-hub-card .modal-close { margin-top: 9px; padding: 9px; }
       .profile-goal-list { gap: 6px; }
       .profile-goal-row { grid-template-columns: 30px minmax(0, 1fr) auto; padding: 7px 8px; gap: 7px; }
@@ -2572,6 +2577,14 @@
       .profile-avatar-preset { min-height: 54px; grid-template-columns: 44px minmax(0, 1fr); gap: 7px; padding: 5px 8px 5px 5px; border-radius: 14px; }
       .profile-avatar-preset .pono-mini-avatar { width: 42px; height: 42px; border-radius: 14px; }
       .profile-avatar-preset__name { font-size: .7rem; }
+    }
+    @media (max-width: 480px) {
+      .profile-hub-head {
+        grid-template-columns: 1fr;
+        justify-items: center;
+      }
+      .profile-hub-summary { width: 100%; }
+      .profile-hub-id { padding-right: 0; }
     }
     @media (max-width: 620px) {
       .modal-card.profile-hub-card { max-width: min(560px, calc(100vw - 28px)); }
@@ -2677,11 +2690,12 @@
         max-height: calc(100dvh - 12px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
         padding: 8px 12px;
       }
-      .profile-hub-head { margin-bottom: 4px; }
+      .profile-hub-card .profile-hub-title { margin-bottom: 3px; }
       .profile-hub-actions { gap: 6px; margin: 3px 0 5px; }
-      .profile-progress-card { gap: 4px; margin-bottom: 5px; padding: 6px 10px; }
+      .profile-progress-card { gap: 4px; margin-bottom: 0; padding: 6px 10px; }
+      .profile-progress-card__count { text-align: right; }
       .profile-progress-bar { height: 8px; }
-      .profile-hub-empty { display: none; }
+      .profile-hub-card .profile-hub-empty { padding-bottom: 4px; font-size: .66rem; line-height: 1.15; }
       .profile-hub-card .modal-close { margin-top: 5px; padding: 7px; }
     }
     .setting-row {
@@ -8441,10 +8455,23 @@
         -0.8px -0.8px 0 rgba(255, 250, 230, .96),
         0 2px 4px rgba(80, 50, 20, .35);
     }
-    /* v1681: maze overlay desc も dark halo へ */
-    .game-card[data-id="maze"] .game-card__desc,
-    .game-card[data-id="maze"]:hover .game-card__desc,
-    .game-card[data-id="maze"]:focus-visible .game-card__desc {
+    /* めいろも通常時は他カードと同じ焦げ茶。写真が実際に見える
+       hover / focus / scroll overlay / tweak 状態だけ明色にする。 */
+    .game-card[data-id="maze"] .game-card__desc {
+      color: #4a2e15;
+      text-shadow:
+        1.1px 0 0 rgba(255, 250, 230, .96),
+        -1.1px 0 0 rgba(255, 250, 230, .96),
+        0 1.1px 0 rgba(255, 250, 230, .96),
+        0 -1.1px 0 rgba(255, 250, 230, .96),
+        0.8px 0.8px 0 rgba(255, 250, 230, .96),
+        -0.8px 0.8px 0 rgba(255, 250, 230, .96),
+        0.8px -0.8px 0 rgba(255, 250, 230, .96),
+        -0.8px -0.8px 0 rgba(255, 250, 230, .96),
+        0 2px 4px rgba(80, 50, 20, .35);
+    }
+    .game-card[data-id="maze"]:not(.is-coming-soon).is-overlay-active .game-card__desc,
+    body.peek-always .game-card[data-id="maze"]:not(.is-coming-soon) .game-card__desc {
       color: #fff0c8;
       text-shadow:
         1.1px 0 0 rgba(40, 24, 8, .96),
@@ -8456,6 +8483,22 @@
         0.8px -0.8px 0 rgba(40, 24, 8, .96),
         -0.8px -0.8px 0 rgba(40, 24, 8, .96),
         0 2px 4px rgba(0, 0, 0, .5);
+    }
+    @media (hover: hover) and (pointer: fine) {
+      .game-card[data-id="maze"]:not(.is-coming-soon):hover .game-card__desc,
+      .game-card[data-id="maze"]:not(.is-coming-soon):focus-visible .game-card__desc {
+        color: #fff0c8;
+        text-shadow:
+          1.1px 0 0 rgba(40, 24, 8, .96),
+          -1.1px 0 0 rgba(40, 24, 8, .96),
+          0 1.1px 0 rgba(40, 24, 8, .96),
+          0 -1.1px 0 rgba(40, 24, 8, .96),
+          0.8px 0.8px 0 rgba(40, 24, 8, .96),
+          -0.8px 0.8px 0 rgba(40, 24, 8, .96),
+          0.8px -0.8px 0 rgba(40, 24, 8, .96),
+          -0.8px -0.8px 0 rgba(40, 24, 8, .96),
+          0 2px 4px rgba(0, 0, 0, .5);
+      }
     }
     .game-card__play {
       pointer-events: none;
@@ -9517,34 +9560,36 @@
     <div class="modal-card profile-hub-card">
       <button class="profile-hub-xclose" type="button" data-close="profileHubModal" aria-label="とじる">×</button>
       <div class="profile-hub-panel" id="profileHubMainPanel">
+        <h3 class="profile-hub-title" id="profileHubTitle">プロフィール</h3>
         <div class="profile-hub-head">
           <button class="profile-hub-avatar-button" id="profileAvatarEditBtn" type="button" aria-label="すがたを えらぶ">
             <span class="pono-mini-avatar profile-hub-avatar" id="profileHubAvatar" data-variant="0" aria-hidden="true"></span>
           </button>
-          <div class="profile-hub-id">
-            <h3 class="profile-hub-title" id="profileHubTitle">プロフィール</h3>
-            <button class="profile-hub-name-button" id="profileHubEditBtn" type="button" aria-label="なまえを かえる">
-              <span class="profile-hub-name" id="profileHubName">ポノ</span>
-              <span class="profile-hub-edit-mark" aria-hidden="true">✎</span>
-            </button>
-            <div class="profile-hub-meta" id="profileHubMeta">ねんれい えらばない</div>
+          <div class="profile-hub-summary">
+            <div class="profile-hub-id">
+              <button class="profile-hub-name-button" id="profileHubEditBtn" type="button" aria-label="なまえを かえる">
+                <span class="profile-hub-name" id="profileHubName">ポノ</span>
+                <span class="profile-hub-edit-mark" aria-hidden="true">✎</span>
+              </button>
+              <div class="profile-hub-meta" id="profileHubMeta">ねんれい えらばない</div>
+            </div>
+            <div class="profile-hub-actions">
+              <button class="profile-hub-btn" id="profileStickerBookBtn" type="button">シールちょう</button>
+              <button class="profile-hub-btn" id="profileAchievementsBtn" type="button">できたことを くわしく</button>
+            </div>
+            <div class="profile-progress-card" aria-label="できたこと">
+              <p class="profile-hub-empty" id="profileHubEmpty" hidden>ゲームで あそぶと できたことが ふえるよ</p>
+              <div class="profile-progress-card__top">
+                <span class="profile-progress-card__label">できたこと</span>
+                <span class="profile-progress-card__count"><strong id="profileHubDoneCount">0</strong>こ / ぜんぶ <span id="profileHubTotalCount">17</span>こ</span>
+              </div>
+              <div class="profile-progress-bar" id="profileHubProgressBar" role="progressbar" aria-label="できたこと" aria-valuemin="0" aria-valuemax="17" aria-valuenow="0">
+                <span></span>
+              </div>
+              <p class="profile-progress-next" id="profileHubNextGoal">つぎは クイズ 1もん 0/1</p>
+            </div>
           </div>
         </div>
-        <div class="profile-hub-actions">
-          <button class="profile-hub-btn" id="profileStickerBookBtn" type="button">シールちょう</button>
-          <button class="profile-hub-btn" id="profileAchievementsBtn" type="button">できたことを くわしく</button>
-        </div>
-        <div class="profile-progress-card" aria-label="できたこと">
-          <div class="profile-progress-card__top">
-            <span class="profile-progress-card__label">できたこと</span>
-            <span class="profile-progress-card__count"><strong id="profileHubDoneCount">0</strong>こ / ぜんぶ <span id="profileHubTotalCount">17</span>こ</span>
-          </div>
-          <div class="profile-progress-bar" id="profileHubProgressBar" role="progressbar" aria-label="できたこと" aria-valuemin="0" aria-valuemax="17" aria-valuenow="0">
-            <span></span>
-          </div>
-          <p class="profile-progress-next" id="profileHubNextGoal">つぎは クイズ 1もん 0/1</p>
-        </div>
-        <p class="profile-hub-empty" id="profileHubEmpty" hidden>ゲームで あそぶと できたことが ふえるよ</p>
       </div>
 
       <div class="profile-hub-panel" id="profileNamePanel" hidden>
@@ -10502,7 +10547,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2113; // sw.js CACHE_VERSION と同期 (batch:1245 プロフィールの名前・姿を本体タップ編集 + 進捗表示明確化)
+    const PAGE_CACHE_VERSION = 2116; // sw.js CACHE_VERSION と同期 (batch:1246 めいろ説明の状態色 + プロフィール姿204px/進捗案内統合)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -10511,7 +10556,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v2113';
+    window.PONO_SW_VERSION = 'v2116';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
