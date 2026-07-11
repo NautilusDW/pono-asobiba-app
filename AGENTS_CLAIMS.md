@@ -58,6 +58,7 @@
 ## Active claims
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
+- 2026-07-11 20:04 - by Codex - [batch:1245-nazonazo-monkey-owl-species] - assets/images/nazonazo-tunnel/jungle_animal_{monkey,owl}_storybook_v2_20260711.webp, tmp/alpha_pending/1245-nazonazo-monkey-owl-species/**, nazonazo-tunnel/js/game.js, nazonazo-tunnel/index.html, tests/nazonazo_jungle_animals_regression.cjs, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - 目の規則だけを維持し、ポノに似た正面顔を避けた種固有シルエットのサル/フクロウへ再生成・差し替え [overlap: batch:1243-mojikko-meal-schedule, batch:1244-capture-output-resolution (sw.js)]
 - 2026-07-11 19:50 - by Claude - [batch:1244-capture-output-resolution] - common/capture.js, play.html (capture build のみ必要時), tests/capture_*, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - スクショモードの出力がぼやける件を実測調査し、html2canvas ラスタ解像度/合成拡大率を改善 [overlap: batch:1242 (sw.js, 自分), batch:1243-nazonazo-picturebook-animals (sw.js)、push 直前に最新採番]
 - 2026-07-11 19:25 - by Codex - [batch:1243-mojikko-meal-schedule] - writing-mori/{care,index,play}.html, assets/images/mojikko/{care,writing}/, tests/mojikko_*, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - GPT Image 2のもじごはん／無地報酬枠と、朝昼午後晩各1回の成長別食事・報酬・保存移行を実装する [overlap: batch:1242-gacha-title-bgm-overlap (sw.js予定)]
 
