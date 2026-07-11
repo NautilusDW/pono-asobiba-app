@@ -149,6 +149,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-07-11T09:45:56Z - スクショモード: Macショートカット不発(e.key=Ç)とhtml2canvas object-fit未実装による横伸びを修正 (batch:1241, sw v2107)
+- **タスク**: スクショモード: Macショートカット不発(e.key=Ç)とhtml2canvas object-fit未実装による横伸びを修正 (batch:1241, sw v2107)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 0
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {}
+- **サマリ**: 行動ログが空のため分析できません。
+
+
 ### 2026-07-11T09:38:29Z - batch:1240 capture.js Mac shortcut + object-fit shim の正当性・安全性レビュー (findings: Low/Nit のみ、Critical/High なし)
 - **タスク**: batch:1240 capture.js Mac shortcut + object-fit shim の正当性・安全性レビュー (findings: Low/Nit のみ、Critical/High なし)
 - **結果**: 成功
@@ -242,19 +255,6 @@ wrangler deploy                  # master 内容を production に
 
 ### 2026-07-11T04:31:57Z - sw.js CACHE_VERSION 2089 バンプ + changelog 追記/アーカイブ移設 + play.html 版数同期 (スクロール矢印明滅 finalize)
 - **タスク**: sw.js CACHE_VERSION 2089 バンプ + changelog 追記/アーカイブ移設 + play.html 版数同期 (スクロール矢印明滅 finalize)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 0
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {}
-- **サマリ**: 行動ログが空のため分析できません。
-
-
-### 2026-07-11T04:28:52Z - クロスレビュー: play.html scroll-hint 白⇄オレンジ明滅アニメ (ba81b945) の Playwright 検証
-- **タスク**: クロスレビュー: play.html scroll-hint 白⇄オレンジ明滅アニメ (ba81b945) の Playwright 検証
 - **結果**: 成功
 - **理由**: N/A
 - **総アクション数**: 0
