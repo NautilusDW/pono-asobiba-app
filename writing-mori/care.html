@@ -755,10 +755,11 @@ html, body {
     left var(--roam-duration, 4.8s) var(--roam-easing, ease-in-out),
     bottom var(--roam-duration, 4.8s) var(--roam-easing, ease-in-out);
   will-change: left, bottom, transform;
+  touch-action: none;
 }
 
 .milmaru-wrap.petting-ready {
-  touch-action: none;
+  cursor: grab;
 }
 
 .milmaru-wrap.petting-ready .milmaru {
@@ -1951,6 +1952,9 @@ const actionStarCost = {
   play: 20
 };
 
+const PET_STROKE_REQUIRED_DISTANCE = 90;
+const PET_TRACE_DISTANCE_STEP = 42;
+
 let state = loadState();
 
 const stageEl = document.getElementById('stage');
@@ -1984,6 +1988,8 @@ let pettingMode = false;
 let petStrokeActive = false;
 let petStrokeDistance = 0;
 let petLastPoint = null;
+let activePetPointerId = null;
+let petHintShown = false;
 const roamState = {
   x: 50,
   y: 72,
@@ -3098,6 +3104,8 @@ function finishPettingMode() {
   petStrokeActive = false;
   petStrokeDistance = 0;
   petLastPoint = null;
+  activePetPointerId = null;
+  petHintShown = false;
   clearTimeout(beginPetMilmaru._timer);
   milmaruWrap.classList.remove('petting-ready');
   syncRoaming();
@@ -3110,6 +3118,8 @@ function beginPetMilmaru(showGuide = true) {
   petStrokeActive = false;
   petStrokeDistance = 0;
   petLastPoint = null;
+  activePetPointerId = null;
+  petHintShown = false;
   freezeRoamPosition();
   milmaruWrap.classList.add('petting-ready');
   state.reaction = 'normal';
@@ -3117,20 +3127,36 @@ function beginPetMilmaru(showGuide = true) {
   syncRoaming();
   setSpeech('なでてね', state.hatched ? `${getMilmaruName()}の あたまを やさしく なでてあげよう。` : 'タマゴを やさしく なでてあげよう。');
   if (showGuide) {
-    showCareNotice('なでなでしてね', 'ミルマルを 直接さわって、ゆっくり スワイプしよう。', 3000);
+    showCareNotice(
+      state.hatched ? 'なでなでしてね' : 'タマゴを なでてね',
+      state.hatched
+        ? `${getMilmaruName()}の あたまを、やさしく なでてあげよう。`
+        : 'タマゴの まんなかを、やさしく なでてあげよう。',
+      3000
+    );
   }
   clearTimeout(beginPetMilmaru._timer);
   beginPetMilmaru._timer = setTimeout(() => {
     if (!pettingMode) return;
     finishPettingMode();
-    setSpeech('まってるよ', 'ミルマルを さわると、いつでも なでられるよ。');
+    setSpeech(
+      'まってるよ',
+      state.hatched
+        ? `${getMilmaruName()}を さわると、いつでも なでられるよ。`
+        : 'タマゴを さわると、いつでも なでられるよ。'
+    );
     render();
   }, 9000);
   return true;
 }
 
 function getPetPointerPoint(event) {
-  return { x: event.clientX, y: event.clientY };
+  const rect = stageEl.getBoundingClientRect();
+  const scale = Math.max(0.01, rect.width / 1600);
+  return {
+    x: (event.clientX - rect.left) / scale,
+    y: (event.clientY - rect.top) / scale
+  };
 }
 
 function isPetPointOnHead(event) {
@@ -3155,46 +3181,83 @@ function spawnPetTrace(event) {
 }
 
 function startPetStroke(event) {
+  if (event.pointerType === 'mouse' && event.button !== 0) return;
+  if (event.isPrimary === false || (petStrokeActive && event.pointerId !== activePetPointerId)) {
+    event.preventDefault();
+    event.stopImmediatePropagation?.();
+    return;
+  }
+  if (petStrokeActive) return;
   if (!pettingMode && !beginPetMilmaru(false)) return;
   if (!isPetPointOnHead(event)) {
-    showCareNotice(
-      state.hatched ? 'あたまを なでてね' : 'タマゴを なでてね',
-      state.hatched ? 'ミルマルの あたまのあたりを、そっと なでてあげよう。' : 'タマゴの まんなかを、そっと なでてあげよう。',
-      2200
-    );
+    if (!petHintShown) {
+      petHintShown = true;
+      setSpeech(
+        state.hatched ? 'あたまを なでてね' : 'タマゴを なでてね',
+        state.hatched
+          ? `${getMilmaruName()}の あたまのあたりを、やさしく なでてあげよう。`
+          : 'タマゴの まんなかを、やさしく なでてあげよう。'
+      );
+    }
     return;
   }
   event.preventDefault();
   petStrokeActive = true;
-  petStrokeDistance = 0;
+  activePetPointerId = event.pointerId;
   petLastPoint = getPetPointerPoint(event);
   milmaruWrap.setPointerCapture?.(event.pointerId);
   spawnPetTrace(event);
 }
 
-function movePetStroke(event) {
-  if (!pettingMode || !petStrokeActive || !petLastPoint) return;
-  event.preventDefault();
+function addPetStrokePoint(event) {
+  if (!petStrokeActive || !petLastPoint) return false;
   const point = getPetPointerPoint(event);
   const distance = Math.hypot(point.x - petLastPoint.x, point.y - petLastPoint.y);
   petStrokeDistance += distance;
   petLastPoint = point;
-  if (petStrokeDistance > 42 && Math.floor(petStrokeDistance / 42) !== Math.floor((petStrokeDistance - distance) / 42)) {
+  if (
+    petStrokeDistance > PET_TRACE_DISTANCE_STEP
+    && Math.floor(petStrokeDistance / PET_TRACE_DISTANCE_STEP) !== Math.floor((petStrokeDistance - distance) / PET_TRACE_DISTANCE_STEP)
+  ) {
     spawnPetTrace(event);
   }
-  if (petStrokeDistance >= 120) {
+  if (petStrokeDistance >= PET_STROKE_REQUIRED_DISTANCE) {
     completePetMilmaru();
+    return true;
   }
+  return false;
+}
+
+function movePetStroke(event) {
+  if (!pettingMode || !petStrokeActive || event.pointerId !== activePetPointerId) return;
+  event.preventDefault();
+  addPetStrokePoint(event);
 }
 
 function endPetStroke(event) {
-  if (!petStrokeActive) return;
+  if (!petStrokeActive || event.pointerId !== activePetPointerId) return;
+  event.preventDefault();
+  if (addPetStrokePoint(event)) return;
   petStrokeActive = false;
   petLastPoint = null;
+  activePetPointerId = null;
   milmaruWrap.releasePointerCapture?.(event.pointerId);
-  if (pettingMode && petStrokeDistance < 120) {
-    showCareNotice('もうすこし', 'あたまを ゆっくり なでると、ミルマルが よろこぶよ。', 2200);
+  if (pettingMode && petStrokeDistance < PET_STROKE_REQUIRED_DISTANCE && !petHintShown) {
+    petHintShown = true;
+    setSpeech(
+      'そのまま なでてね',
+      state.hatched
+        ? `${getMilmaruName()}の あたまを、やさしく なでてあげよう。`
+        : 'タマゴの まんなかを、やさしく なでてあげよう。'
+    );
   }
+}
+
+function cancelPetStroke(event) {
+  if (!petStrokeActive || event.pointerId !== activePetPointerId) return;
+  petStrokeActive = false;
+  petLastPoint = null;
+  activePetPointerId = null;
 }
 
 function completePetMilmaru() {
@@ -3356,7 +3419,7 @@ document.getElementById('writeBtn').addEventListener('click', goWrite);
 milmaruWrap.addEventListener('pointerdown', startPetStroke);
 milmaruWrap.addEventListener('pointermove', movePetStroke);
 milmaruWrap.addEventListener('pointerup', endPetStroke);
-milmaruWrap.addEventListener('pointercancel', endPetStroke);
+milmaruWrap.addEventListener('pointercancel', cancelPetStroke);
 
 setupDebugControls();
 const consumedPendingReward = consumePendingWritingReward();

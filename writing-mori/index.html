@@ -1684,6 +1684,7 @@ const STROKE_ASSIST_MIN_PROGRESS_SPAN = 0.45;
 const STROKE_ASSIST_MAX_BACKTRACK = 0.12;
 const CARE_STATE_KEY = 'mojikkoFarmCareStateV1';
 const PENDING_REWARD_KEY = 'mojikkoFarmPendingWritingReward';
+const WRITING_CURSOR_KEY = 'mojikkoFarmWritingCursorV1';
 let currentIndex = 0;
 let currentGroup = 'hiragana';
 let writer = null;
@@ -1942,6 +1943,32 @@ function updateCompanionCard() {
 function navigateToCareScreen() {
   saveCareState();
   window.location.href = 'care.html?from=writing';
+}
+
+function saveWritingCursor(index) {
+  const item = writingCharacters[index];
+  if (!item) return;
+  try {
+    localStorage.setItem(WRITING_CURSOR_KEY, JSON.stringify({ characterId: item.id }));
+  } catch (error) {
+    console.warn('Could not save writing cursor:', error);
+  }
+}
+
+function getInitialWritingIndex() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('from') !== 'care') return 0;
+  try {
+    const raw = localStorage.getItem(WRITING_CURSOR_KEY);
+    if (!raw) return 0;
+    const parsed = JSON.parse(raw);
+    const characterId = typeof parsed === 'string' ? parsed : parsed && parsed.characterId;
+    const index = writingCharacters.findIndex((item) => item.id === characterId);
+    return index >= 0 ? index : 0;
+  } catch (error) {
+    console.warn('Could not load writing cursor:', error);
+    return 0;
+  }
 }
 
 function fitStage() {
@@ -3520,6 +3547,7 @@ function completeWriting(manual, summary) {
   renderPixelLetter();
   renderCanvasStrokeNumbers();
   completedCharacters.add(item.id);
+  saveWritingCursor((currentIndex + 1) % writingCharacters.length);
   renderStrokeOrder();
   updateCharacterButtons();
   writingBoard.classList.add('success');
@@ -3602,6 +3630,7 @@ function launchBurst() {
 
 function nextCharacter() {
   currentIndex = (currentIndex + 1) % writingCharacters.length;
+  saveWritingCursor(currentIndex);
   syncCurrentGroupFromCharacter();
   resetWriting();
 }
@@ -3646,6 +3675,8 @@ window.MojikkoWritingGame = {
 };
 
 starCountEl.textContent = String(stars);
+currentIndex = getInitialWritingIndex();
+syncCurrentGroupFromCharacter();
 resetWriting();
 </script>
 </body>
