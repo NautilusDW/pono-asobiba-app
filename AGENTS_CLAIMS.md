@@ -59,7 +59,6 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 - 2026-07-11 15:29 - by Codex - [batch:1229-nazonazo-mountains-rain] - nazonazo-tunnel/**, assets/images/nazonazo-tunnel/**, tmp/alpha_pending/1229-nazonazo-mountains-rain/**, tests/nazonazo_*, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - 町外れ遠景/山を上げて横切れを解消し、景色全体が暗くなる雨天を導入 [overlap: batch:1227-maze-minigame-16x9-frame, batch:1228-kitchen-visibility-coverage-angle (sw.js)]
-- 2026-07-11 15:28 - by Codex - [batch:1228-kitchen-visibility-coverage-angle] - bento/kitchen.html, assets/images/bento/cooking/korokke/prep/**, tmp/alpha_pending/1228-korokke-shape/**, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - 包丁効果線を視認できる太さへ、じゃがいもcoverageを90%へ、コロッケ成形3段階を同じ真上角度/大きさへ統一 [overlap: batch:1227-maze-minigame-16x9-frame (sw.js)]
 
 
 
