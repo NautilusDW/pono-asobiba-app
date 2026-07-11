@@ -58,6 +58,7 @@
 ## Active claims
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
+- 2026-07-11 15:18 - by Codex - [batch:1227-maze-minigame-16x9-frame] - maze/index.html, tests/maze_*frame*.cjs, tests/maze_minigame_start_beat_verify.cjs, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - 迷路ミニゲーム共通枠を16:9でviewport内に収め、旗あげ/シルエットを含む全9種の切れ・内部scrollを解消
 
 
 
