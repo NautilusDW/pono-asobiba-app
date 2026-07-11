@@ -624,7 +624,7 @@ function decodeRgbaPng(file) {
 }
 
 const bitmapCases = [
-  ['assets/images/mojikko/care/icon_moji_gohan.png', 160, 160],
+  ['assets/images/mojikko/care/icon_moji_gohan_onigiri.png', 160, 160],
   ['assets/images/mojikko/writing/reward_box_blank.png', 311, 122]
 ];
 for (const [relative, expectedWidth, expectedHeight] of bitmapCases) {
@@ -646,8 +646,10 @@ for (const [relative, expectedWidth, expectedHeight] of bitmapCases) {
   assert.deepEqual(cornerAlpha, [0, 0, 0, 0], `${relative}: generated background leaked into a corner`);
 }
 
-assert.match(pages.care, /--care-icon-gohan:\s*url\('\.\.\/assets\/images\/mojikko\/care\/icon_moji_gohan\.png'\)/);
-assert.match(pages.writing, /--moji-icon-gohan:\s*url\('\.\.\/assets\/images\/mojikko\/care\/icon_moji_gohan\.png'\)/);
+assert.match(pages.care, /--care-icon-gohan:\s*url\('\.\.\/assets\/images\/mojikko\/care\/icon_moji_gohan_onigiri\.png'\)/);
+assert.match(pages.writing, /--moji-icon-gohan:\s*url\('\.\.\/assets\/images\/mojikko\/care\/icon_moji_gohan_onigiri\.png'\)/);
+assert.doesNotMatch(pages.care, /icon_moji_gohan\.png/, 'care must not keep serving the bowl-shaped meal icon');
+assert.doesNotMatch(pages.writing, /icon_moji_gohan\.png/, 'writing must not keep serving the bowl-shaped meal icon');
 assert.match(pages.writing, /--moji-reward-box:\s*url\('\.\.\/assets\/images\/mojikko\/writing\/reward_box_blank\.png'\)/);
 assert.match(pages.writing, /\.reward-box \.food-pixel\s*\{\s*display: block;/);
 
