@@ -1041,7 +1041,10 @@ function applySkin(){
  const st=STAGES[stg],P=palOf(stg);
  const nIdx=Math.min(stg+1,STAGES.length-1);
  const NP=STAGES[nIdx].pals[loop%2];
+ const wasGameReady=document.body.classList.contains("pono-game-ready");
  document.body.className=(IOS_DEVICE?"ios-device ":"")+"st-"+st.id+" v-"+st.veh+(PORTAL_EDIT_ENABLED?" portal-edit":"");
+ // 画面スキンの全置換で、初期描画ガードを解除する永続クラスまで消さない。
+ if(wasGameReady)document.body.classList.add("pono-game-ready");
  setDriverForStage(stg);
  skyA.style.background=st.assets?bgUrl(st.assets.sky)+" center bottom / cover no-repeat":"linear-gradient("+P.sky[0]+","+P.sky[1]+")";
  skyB.style.background="linear-gradient("+NP.sky[0]+","+NP.sky[1]+")";
