@@ -58,6 +58,7 @@
 ## Active claims
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
+- 2026-07-11 15:28 - by Codex - [batch:1228-kitchen-visibility-coverage-angle] - bento/kitchen.html, assets/images/bento/cooking/korokke/prep/**, tmp/alpha_pending/1228-korokke-shape/**, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - 包丁効果線を視認できる太さへ、じゃがいもcoverageを90%へ、コロッケ成形3段階を同じ真上角度/大きさへ統一 [overlap: batch:1227-maze-minigame-16x9-frame (sw.js)]
 - 2026-07-11 15:18 - by Codex - [batch:1227-maze-minigame-16x9-frame] - maze/index.html, tests/maze_*frame*.cjs, tests/maze_minigame_start_beat_verify.cjs, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - 迷路ミニゲーム共通枠を16:9でviewport内に収め、旗あげ/シルエットを含む全9種の切れ・内部scrollを解消
 
 
