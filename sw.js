@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2111: なぞなぞトレインのジャングル動物12種を、白目なしの濃い丸目＋小さなハイライト、丸い単純形、マットな水彩・ガッシュの絵本調へ全差し替え。サル/フクロウを基準に全種の目と描き込み量を統一し、新versioned alpha WebPで旧リアル調cacheを回避。既存3深度パララックス・微動・iOS上限・トンネル/reduced-motion/LP lockは維持。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/画像のみ変更)。
 // v2110: ガチャ/おみせ画面へタイトル BGM が二重再生される実機バグを根治 (batch:1242) — タブ復帰時の visibilitychange 復帰経路 (play.html tryPlay) がガチャ/おみせの抑止状態を見ず無条件 resume していた問題へ、単一調停点 isTopBgmSuppressed() (pausedTopBgm フラグ + モーダル DOM 開閉の OR) ガードを導入。PonoVisibilityAudioGuard の backoff replay が抑止中の play-bgm を native play で復活させる経路も data-pono-force-paused 契約で封鎖。閉時の正当復帰 (resumeTopBgmAfter*) は直接 play() でガードを bypass し不変。play.html PAGE_CACHE_VERSION と同期 (2110)。
 // v2109: もじっこファームの文字書きで、点線ガイド・塗り判定・HanziWriter の座標変換を共通化し、HanziWriter 合格後に別条件で拒否する終点判定／途中保留／3回目救済を撤去。見えるガイドの約65%を順方向になぞる共通fallbackと、半濁点など閉ループ10画の循環進捗を追加し、全142かな418画の100%/65%正方向通過・逆方向/点打ち拒否を固定テスト。play.html PAGE_CACHE_VERSION と同期不要 (writing-mori/index.html/テストのみ変更)。
 // v2108: なぞなぞトレインのジャングルへGPT Image 2生成の動物12種を奥・中・手前寄り3層で追加。18体（iOSは15体上限）を大きさ・向き・位相・速度違いでパララックス微動させ、問題/列車より後ろ・pointer-eventsなし・トンネル/他stage非表示・reduced-motion静止・雨天暗転・LPロック時0読込に対応。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/画像のみ変更)。
@@ -35,7 +36,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2110;
+const CACHE_VERSION = 2111;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
