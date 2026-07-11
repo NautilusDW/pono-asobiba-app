@@ -7160,6 +7160,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       fixedShapeScale: 1.2,
       shapeGuideWidth: 'min(40%, 405px)',
       shapeGuideHeight: '29%',
+      shapeGuideTop: '47.4%',
       shapeDistanceScale: 1.08,
       startSpeech: 'コロッケを こばんがたに かたちづくろう！',
       completeSpeech: 'コロッケの かたちが できたよ！',
@@ -9347,9 +9348,10 @@ body.layout-editor-on .bowl-fill-mask::after {
       els.shapePrepGuide.style.setProperty('--shape-opacity', isShape ? (0.92 - ratio * 0.16).toFixed(3) : '0.9');
       const guideWidth = isBallsShape ? 'min(44%, 420px)' : ((config && config.shapeGuideWidth) || 'min(37%, 370px)');
       const guideHeight = isBallsShape ? '40%' : ((config && config.shapeGuideHeight) || '35.5%');
+      const guideTop = isBallsShape ? '49%' : ((config && config.shapeGuideTop) || '49%');
       els.shapePrepGuide.style.setProperty('--shape-guide-width', guideWidth);
       els.shapePrepGuide.style.setProperty('--shape-guide-height', guideHeight);
-      els.shapePrepGuide.style.setProperty('--shape-guide-top', isBallsShape ? '49%' : '49%');
+      els.shapePrepGuide.style.setProperty('--shape-guide-top', guideTop);
       if (!isShape) {
         els.shapePrepGuide.style.setProperty('--shape-hit', '0');
         els.shapePrepGuide.style.setProperty('--shape-hit-scale', '0.55');
