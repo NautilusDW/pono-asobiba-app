@@ -1,0 +1,75 @@
+'use strict';
+
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+
+const root = path.resolve(__dirname, '..');
+const html = fs.readFileSync(path.join(root, 'maze/index.html'), 'utf8');
+
+let inlineCount = 0;
+for (const match of html.matchAll(/<script([^>]*)>([\s\S]*?)<\/script>/gi)) {
+  if (/\bsrc=/.test(match[1])) continue;
+  inlineCount++;
+  new vm.Script(match[2], { filename: `maze-inline-${inlineCount}.js` });
+}
+assert.equal(inlineCount, 4, 'unexpected Maze inline script count');
+
+assert.match(html, /\.strength-rock-btn \{[\s\S]*?touch-action: manipulation;/);
+assert.match(html, /\.strength-rock-btn \{[\s\S]*?user-select: none;/);
+assert.match(html, /\.strength-rock-btn:active \{\s*transform: none;/);
+assert.match(html, /\.strength-rock-btn:active \.strength-game__impact-zone \{\s*transform: scale\(0\.985\);/);
+assert.match(html, /\.strength-game__impact-zone \{[\s\S]*?pointer-events: none;/);
+assert.doesNotMatch(html, /\.strength-rock-btn:active \{\s*transform: scale/);
+
+assert.match(html, /rockBtn\.addEventListener\('pointerdown', _onStrengthRockPointerDown\)/);
+assert.match(html, /rockBtn\.addEventListener\('click', _onStrengthRockClick\)/);
+assert.doesNotMatch(html, /rockBtn\.addEventListener\('click', _onStrengthRockTap\)/);
+
+const pointerStart = html.indexOf('function _onStrengthRockPointerDown(');
+const clickStart = html.indexOf('function _onStrengthRockClick(', pointerStart);
+const showStart = html.indexOf('function _showStrengthPushGame(', clickStart);
+assert.ok(pointerStart >= 0 && clickStart > pointerStart && showStart > clickStart, 'input adapters are missing');
+
+const adapterSource = html.slice(pointerStart, showStart);
+const accepted = [];
+const context = {
+  window: { PointerEvent: function PointerEvent() {} },
+  _onStrengthRockTap() { accepted.push('hit'); },
+};
+vm.runInNewContext(adapterSource, context, { filename: 'maze-strength-input-adapters.js' });
+
+for (let i = 0; i < 30; i++) {
+  context._onStrengthRockPointerDown({
+    isPrimary: true,
+    button: 0,
+    pointerType: 'mouse',
+  });
+  context._onStrengthRockClick({ detail: 1 });
+}
+assert.equal(accepted.length, 30, 'primary mouse presses must count once each without click duplication');
+
+let touchPrevented = false;
+context._onStrengthRockPointerDown({
+  isPrimary: true,
+  button: 0,
+  pointerType: 'touch',
+  preventDefault() { touchPrevented = true; },
+});
+context._onStrengthRockClick({ detail: 1 });
+assert.equal(accepted.length, 31, 'touch pointerdown plus compatibility click must count once');
+assert.equal(touchPrevented, true, 'touch pointerdown must suppress delayed compatibility behavior');
+
+context._onStrengthRockPointerDown({ isPrimary: false, button: 0, pointerType: 'touch' });
+context._onStrengthRockPointerDown({ isPrimary: true, button: 2, pointerType: 'mouse' });
+assert.equal(accepted.length, 31, 'secondary contacts and right clicks must not damage the rock');
+
+context._onStrengthRockClick({ detail: 0 });
+assert.equal(accepted.length, 32, 'keyboard and assistive-technology clicks must remain available');
+
+delete context.window.PointerEvent;
+context._onStrengthRockClick({ detail: 1 });
+assert.equal(accepted.length, 33, 'click must remain a fallback when Pointer Events are unavailable');
+
+console.log('maze strength rapid input verification: PASS');

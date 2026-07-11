@@ -2379,8 +2379,14 @@ body.image-stage-mode .game-wrap {
   background: transparent;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
 }
 .strength-rock-btn:active {
+  transform: none;
+}
+.strength-rock-btn:active .strength-game__impact-zone {
   transform: scale(0.985);
 }
 .strength-game__impact-zone {
@@ -2390,6 +2396,7 @@ body.image-stage-mode .game-wrap {
   display: grid;
   place-items: center;
   transform-style: preserve-3d;
+  pointer-events: none;
 }
 .strength-game__rock {
   width: min(34vw, 330px);
@@ -10038,6 +10045,23 @@ function _strengthRockStageIndex(count) {
   return Math.min(3, Math.floor((count / STRENGTH_TAP_REQUIRED) * 4));
 }
 
+// 高速連打は「離した時」の hit-test を待たず、押した瞬間に 1 回として受け取る。
+// pointerdown 後にブラウザが合成する click は detail > 0 なので、click 側で重複を除く。
+// キーボード / 支援技術 / HTMLElement.click() は detail === 0 の click のため従来通り使える。
+function _onStrengthRockPointerDown(ev) {
+  if (!ev || ev.isPrimary === false) return;
+  if (typeof ev.button === 'number' && ev.button !== 0) return;
+  if (ev.pointerType && ev.pointerType !== 'mouse') {
+    try { ev.preventDefault(); } catch (_) {}
+  }
+  _onStrengthRockTap();
+}
+
+function _onStrengthRockClick(ev) {
+  if (typeof window.PointerEvent === 'function' && ev && Number(ev.detail) > 0) return;
+  _onStrengthRockTap();
+}
+
 function _showStrengthPushGame() {
   _setEncounterMode('strength_push');
   // strengthGimmick なしのステージから直接 encounter に入るケースの保険 (多重呼び出し安全)。
@@ -10093,7 +10117,12 @@ function _showStrengthPushGame() {
     '<div class="strength-game__status" id="strengthStatus"></div>';
   encStageEl.appendChild(wrap);
   const rockBtn = document.getElementById('strengthRockBtn');
-  if (rockBtn) rockBtn.addEventListener('click', _onStrengthRockTap);
+  if (rockBtn) {
+    if (typeof window.PointerEvent === 'function') {
+      rockBtn.addEventListener('pointerdown', _onStrengthRockPointerDown);
+    }
+    rockBtn.addEventListener('click', _onStrengthRockClick);
+  }
 
   // sw1380: 静的な初期表示 (タイムバー満タン、 HP 100%)
   const bar0 = document.getElementById('strengthTimeBar');
