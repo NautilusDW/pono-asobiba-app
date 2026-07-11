@@ -58,6 +58,7 @@
 ## Active claims
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
+- 2026-07-11 18:35 - by Codex - [batch:1240-mojikko-writing-stable] - writing-mori/index.html, tests/mojikko_*, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - 文字ごとに難しさが変わる二重判定を全かなで再計測し、見本どおりの一筆は一貫して通り書き順違いだけを止める安定判定へ固定する [overlap: batch:1239-nazonazo-jungle-animals (sw.js予定)]
 
 
 
