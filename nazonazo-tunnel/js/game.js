@@ -129,7 +129,27 @@ const ASSETS={
   ground:"../assets/images/nazonazo-tunnel/rail_track_loop_jungle_style_bright_20260705.webp",
   fg:"../assets/images/nazonazo-tunnel/jungle_foreground_layer_20260703.webp",
   station:"../assets/images/nazonazo-tunnel/jungle_station_checkpoint_20260706.webp",
-  decor:"../assets/images/nazonazo-tunnel/jungle_station_line_trees_20260706.webp"
+  decor:"../assets/images/nazonazo-tunnel/jungle_station_line_trees_20260706.webp",
+  animals:{
+   far:[
+    "../assets/images/nazonazo-tunnel/jungle_animal_monkey_20260711.webp",
+    "../assets/images/nazonazo-tunnel/jungle_animal_owl_20260711.webp",
+    "../assets/images/nazonazo-tunnel/jungle_animal_toucans_20260711.webp",
+    "../assets/images/nazonazo-tunnel/jungle_animal_butterflies_20260711.webp"
+   ],
+   mid:[
+    "../assets/images/nazonazo-tunnel/jungle_animal_sloth_20260711.webp",
+    "../assets/images/nazonazo-tunnel/jungle_animal_snake_20260711.webp",
+    "../assets/images/nazonazo-tunnel/jungle_animal_frog_20260711.webp",
+    "../assets/images/nazonazo-tunnel/jungle_animal_crocodile_20260711.webp"
+   ],
+   near:[
+    "../assets/images/nazonazo-tunnel/jungle_animal_elephant_20260711.webp",
+    "../assets/images/nazonazo-tunnel/jungle_animal_giraffe_20260711.webp",
+    "../assets/images/nazonazo-tunnel/jungle_animal_lion_20260711.webp",
+    "../assets/images/nazonazo-tunnel/jungle_animal_zebra_20260711.webp"
+   ]
+  }
  },
  sea:{
   sky:"../assets/images/nazonazo-tunnel/sea_parallax_sky_back_20260706.webp",
@@ -264,6 +284,32 @@ const STAGES=[
 ];
 const RARES=[["🕊️","しろい はと"],["🦜","にじいろ おうむ"],["💯","ひゃくてんまん"],["🐳","そらとぶ くじら"],["🛸","なぞの ゆーふぉー"],["☄️","おおながれぼし"]];
 const RUN_EVENTS={town:[["🦋","ちょう"],["🌼","おはな"],["🍀","よつば"],["🎈","ふうせん"],["🐦","ことり"]]};
+const JUNGLE_ANIMAL_LAYOUT={
+ far:[
+  {asset:0,x:4,y:13,w:5.4,min:36,max:78,depth:.11,opacity:.64,motion:"sway",flip:1},
+  {asset:1,x:25,y:12,w:4.7,min:34,max:70,depth:.09,opacity:.62,motion:"breathe",flip:1},
+  {asset:2,x:47,y:16,w:5.5,min:38,max:82,depth:.105,opacity:.66,motion:"bob",flip:-1},
+  {asset:3,x:69,y:12,w:5,min:32,max:72,depth:.13,opacity:.74,motion:"flutter",flip:1},
+  {asset:0,x:91,y:14,w:4.6,min:34,max:68,depth:.115,opacity:.56,motion:"still",flip:-1},
+  {asset:1,x:113,y:15,w:4,min:32,max:64,depth:.095,opacity:.54,motion:"breathe",flip:-1}
+ ],
+ mid:[
+  {asset:0,x:7,y:24,w:7.4,min:52,max:105,depth:.2,opacity:.72,motion:"sway",flip:1,origin:"50% 12%"},
+  {asset:1,x:28,y:31,w:7.2,min:50,max:104,depth:.23,opacity:.78,motion:"sway",flip:-1},
+  {asset:2,x:50,y:34,w:5.5,min:46,max:82,depth:.25,opacity:.8,motion:"breathe",flip:1},
+  {asset:3,x:70,y:32,w:8.8,min:58,max:118,depth:.22,opacity:.76,motion:"bob",flip:1},
+  {asset:0,x:92,y:26,w:6.4,min:48,max:94,depth:.205,opacity:.63,motion:"still",flip:-1,origin:"50% 12%"},
+  {asset:2,x:112,y:36,w:4.8,min:42,max:74,depth:.255,opacity:.68,motion:"bob",flip:-1}
+ ],
+ near:[
+  {asset:0,x:4,y:55,w:10.6,min:72,max:150,depth:.28,opacity:.84,motion:"bob",flip:1},
+  {asset:1,x:26,y:42,w:7.5,min:70,max:128,depth:.265,opacity:.83,motion:"sway",flip:-1},
+  {asset:2,x:47,y:59,w:9.8,min:70,max:142,depth:.3,opacity:.86,motion:"breathe",flip:1},
+  {asset:3,x:68,y:57,w:9.7,min:70,max:142,depth:.29,opacity:.84,motion:"bob",flip:-1},
+  {asset:0,x:90,y:63,w:8.7,min:66,max:128,depth:.285,opacity:.72,motion:"still",flip:-1},
+  {asset:2,x:111,y:61,w:8.4,min:64,max:124,depth:.305,opacity:.74,motion:"breathe",flip:-1}
+ ]
+};
 const NPC_BASE="../assets/images/bento/npc/";
 const NPC_VER="20260617-risu-bright-set";
 const npcSrc=(id,mood)=>NPC_BASE+id+"_"+mood+".png?v="+encodeURIComponent(NPC_VER);
@@ -441,6 +487,7 @@ function setDriverMood(mood){
 /* ================= dom ================= */
 const $=id=>document.getElementById(id);
 const world=$("world"),veh=$("veh"),horizon=$("horizon"),midT=$("midT"),groundT=$("groundT"),fgT=$("fgT"),seaFishLayer=$("seaFishLayer"),smokeLayer=$("smokeLayer"),townMidLoop=$("townMidLoop");
+const jungleAnimalLayers={far:$("jungleAnimalsFar"),mid:$("jungleAnimalsMid"),near:$("jungleAnimalsNear")};
 const skyA=$("skyA"),skyB=$("skyB"),carsEl=$("cars"),carBadge=$("carBadge"),helpBadge=$("helpBadge"),helpBtn=$("helpBtn");
 const quiz=$("quiz"),qText=$("qText"),hintText=$("hintText"),choicesEl=$("choices");
 const dotsEl=$("dots"),stamp=$("stamp"),weatherNotice=$("weatherNotice");
@@ -449,6 +496,8 @@ const portalOccIn=portalMaskLayer&&portalMaskLayer.querySelector(".portal-occlud
 const portalOccOut=portalMaskLayer&&portalMaskLayer.querySelector(".portal-occluder-out");
 const rainLayerElements={far:$("rainFar"),mid:$("rainMid"),near:$("rainNear")};
 let seaFishSprites=[];
+let jungleAnimalSprites=[];
+let lastJungleAnimalRenderKey="";
 let lastWheelPeriod=0;
 let weatherNoticeTimer=0;
 
@@ -1219,6 +1268,7 @@ function applySkin(){
  fgT.style.backgroundImage=st.assets?bgUrl(st.assets.fg):st.fg(P);
  buildAmbient(P);
  buildSeaFish();
+ buildJungleAnimals();
 }
 function buildWorld(keepCover){
  world.innerHTML="";
@@ -1385,6 +1435,62 @@ function renderSeaFish(now){
   const y=f.y+Math.sin(t*f.bobRate+f.phase)*f.bob;
   const flip=f.dir>0?-1:1;
   f.el.style.transform="translate3d("+cssXFromVw(x)+","+cssYFromVh(y)+",0) scaleX("+flip+")";
+ });
+}
+
+function buildJungleAnimals(){
+ jungleAnimalSprites=[];
+ lastJungleAnimalRenderKey="";
+ Object.values(jungleAnimalLayers).forEach(layer=>{if(layer)layer.replaceChildren();});
+ if(window.__PONO_TIER_LOCKED__)return;
+ const st=STAGES[stg];
+ const animalAssets=st&&st.id==="jungle"&&st.assets&&st.assets.animals;
+ if(!animalAssets)return;
+ const layerNames=["far","mid","near"];
+ layerNames.forEach((layerName,layerIndex)=>{
+  const layer=jungleAnimalLayers[layerName];
+  const assets=animalAssets[layerName]||[];
+  const layout=JUNGLE_ANIMAL_LAYOUT[layerName]||[];
+  if(!layer||!assets.length)return;
+  const limit=IOS_DEVICE?Math.min(5,layout.length):layout.length;
+  const fragment=document.createDocumentFragment();
+  layout.slice(0,limit).forEach((spec,index)=>{
+   const src=assets[spec.asset%assets.length];
+   if(!src)return;
+   const sprite=document.createElement("span");
+   const art=document.createElement("img");
+   const move=layerName==="far"?1.5:(layerName==="mid"?2.6:3.5);
+   sprite.className="jungle-animal-sprite";
+   sprite.dataset.animalDepth=layerName;
+   sprite.style.setProperty("--animal-width",spec.w+"vw");
+   sprite.style.setProperty("--animal-min",spec.min+"px");
+   sprite.style.setProperty("--animal-max",spec.max+"px");
+   sprite.style.setProperty("--animal-opacity",String(spec.opacity));
+   art.className="jungle-animal-art motion-"+spec.motion;
+   art.src=src;art.alt="";art.draggable=false;art.decoding="async";
+   art.style.setProperty("--animal-duration",(5.6+((index*17+layerIndex*11)%34)/10).toFixed(1)+"s");
+   art.style.setProperty("--animal-delay",(-(index*.93+layerIndex*.61)).toFixed(2)+"s");
+   art.style.setProperty("--animal-move-x",(move*(index%2?-.55:.45)).toFixed(1)+"px");
+   art.style.setProperty("--animal-move-y",(-move).toFixed(1)+"px");
+   art.style.setProperty("--animal-rotate",(layerName==="far"?.65:(layerName==="mid"?.85:1.05))+"deg");
+   if(spec.origin)art.style.setProperty("--animal-origin",spec.origin);
+   sprite.appendChild(art);fragment.appendChild(sprite);
+   jungleAnimalSprites.push({el:sprite,baseX:spec.x,y:spec.y,depth:spec.depth,flip:spec.flip||1});
+  });
+  layer.appendChild(fragment);
+ });
+}
+function renderJungleAnimals(){
+ if(!jungleAnimalSprites.length||tunnelInteriorMode||!document.body.classList.contains("st-jungle"))return;
+ const localWorldX=worldX-origin(stg);
+ const renderKey=localWorldX.toFixed(3)+"|"+(window.innerWidth||0)+"x"+(window.innerHeight||0);
+ if(renderKey===lastJungleAnimalRenderKey)return;
+ lastJungleAnimalRenderKey=renderKey;
+ const period=128;
+ jungleAnimalSprites.forEach(animal=>{
+  let x=animal.baseX-localWorldX*animal.depth;
+  x=((x+18)%period+period)%period-18;
+  animal.el.style.transform="translate3d("+cssXFromVw(x)+","+cssYFromVh(animal.y)+",0) scaleX("+animal.flip+")";
  });
 }
 
@@ -1782,6 +1888,7 @@ function render(now){
   document.documentElement.style.setProperty("--num-pan",(-(worldX-o)*.06)+"vw");
  }
  renderSeaFish(now);
+ renderJungleAnimals();
  updateScreenExitShift();
  const hd=clamp((worldX-o)*0.095,0,70);
  horizon.style.transform="translate3d("+cssXFromVw(-hd)+",0,0)";

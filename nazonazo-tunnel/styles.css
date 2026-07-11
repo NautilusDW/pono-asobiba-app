@@ -39,6 +39,27 @@ body.tunnel-interior #seaFishLayer{display:none!important}
 .sea-fish{position:absolute;left:0;top:0;width:clamp(36px,var(--fish-w,5.5vw),96px);aspect-ratio:var(--fish-ratio,1.25);
   background:center/contain no-repeat;filter:drop-shadow(0 2px 0 rgba(10,45,75,.14));opacity:var(--fish-opacity,.86);
   transform:translate3d(-20vw,30vh,0);will-change:transform}
+.jungle-animal-layer{position:absolute;left:0;right:0;top:0;bottom:0;display:none;overflow:hidden;
+  contain:layout paint;pointer-events:none}
+#jungleAnimalsFar{z-index:1}
+#jungleAnimalsMid{z-index:2}
+#jungleAnimalsNear{z-index:3;bottom:14.5vh}
+body.st-jungle .jungle-animal-layer{display:block}
+body.tunnel-interior .jungle-animal-layer{display:none!important}
+.jungle-animal-sprite{position:absolute;left:0;top:0;width:clamp(var(--animal-min,36px),var(--animal-width,6vw),var(--animal-max,112px));
+  opacity:var(--animal-opacity,.76);transform:translate3d(-20vw,20vh,0);transform-origin:center;pointer-events:none}
+.jungle-animal-art{display:block;width:100%;height:auto;object-fit:contain;pointer-events:none;
+  transform-origin:var(--animal-origin,50% 70%);animation-duration:var(--animal-duration,7s);animation-delay:var(--animal-delay,-1s);
+  animation-iteration-count:infinite;animation-timing-function:ease-in-out;animation-play-state:paused}
+.jungle-animal-art.motion-sway{animation-name:jungleAnimalSway}
+.jungle-animal-art.motion-bob{animation-name:jungleAnimalBob}
+.jungle-animal-art.motion-breathe{animation-name:jungleAnimalBreathe}
+.jungle-animal-art.motion-flutter{animation-name:jungleAnimalFlutter}
+body.st-jungle:not(.tunnel-interior) .jungle-animal-art:not(.motion-still){animation-play-state:running}
+@keyframes jungleAnimalSway{0%,100%{transform:translate3d(0,0,0) rotate(-.45deg)}50%{transform:translate3d(var(--animal-move-x,2px),var(--animal-move-y,-3px),0) rotate(var(--animal-rotate,.8deg))}}
+@keyframes jungleAnimalBob{0%,100%{transform:translate3d(0,0,0) rotate(0)}48%{transform:translate3d(var(--animal-move-x,1px),var(--animal-move-y,-3px),0) rotate(var(--animal-rotate,.6deg))}}
+@keyframes jungleAnimalBreathe{0%,100%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(0,var(--animal-move-y,-2px),0) scale(1.012)}}
+@keyframes jungleAnimalFlutter{0%,100%{transform:translate3d(-3px,2px,0) rotate(-1deg)}35%{transform:translate3d(4px,-5px,0) rotate(.8deg)}68%{transform:translate3d(-1px,-2px,0) rotate(-.4deg)}}
 #groundT{position:absolute;left:0;right:0;bottom:0;height:12vh;z-index:2;
   background-repeat:repeat-x;background-size:auto 100%;will-change:background-position}
 #world{position:absolute;top:0;bottom:0;left:0;width:0;z-index:3;will-change:transform}
@@ -137,6 +158,7 @@ body.pono-game-ready.weather-rain:not(.tunnel-interior) #weatherShade{opacity:1}
 body.pono-game-ready.weather-rain:not(.tunnel-interior) #skyA,body.pono-game-ready.weather-rain:not(.tunnel-interior) #skyB,
 body.pono-game-ready.weather-rain:not(.tunnel-interior) #horizon,body.pono-game-ready.weather-rain:not(.tunnel-interior) #midT,
 body.pono-game-ready.weather-rain:not(.tunnel-interior) #groundT,body.pono-game-ready.weather-rain:not(.tunnel-interior) #fgT,
+body.pono-game-ready.weather-rain:not(.tunnel-interior) .jungle-animal-layer,
 body.pono-game-ready.weather-rain:not(.tunnel-interior) #world>.tun,body.pono-game-ready.weather-rain:not(.tunnel-interior) #world>.dropStation{
   filter:brightness(.7) saturate(.62) contrast(.98)}
 body.pono-game-ready.weather-rain:not(.tunnel-interior) #world>.decor{
@@ -423,7 +445,7 @@ body.st-sea.v-sub #veh.inTun .submarine-art{filter:brightness(.72) saturate(.82)
 body.ios-device #world,body.ios-device #horizon,body.ios-device #veh,body.ios-device #cars,
 body.ios-device .train-art,body.ios-device .train-wheel,body.ios-device .car-wheel,
 body.ios-device .train-wheel-rod,body.ios-device .train-main-rod,body.ios-device .train-crosshead,
-body.ios-device .runEvent,body.ios-device .sea-fish,body.ios-device #smokeLayer,body.ios-device .magic-puff{
+body.ios-device .runEvent,body.ios-device .sea-fish,body.ios-device .jungle-animal-sprite,body.ios-device #smokeLayer,body.ios-device .magic-puff{
   -webkit-backface-visibility:hidden;backface-visibility:hidden;transform-style:flat}
 body.ios-device #veh.idle .vbody{animation:none}
 body.ios-device .train-wheel,body.ios-device .car-wheel,
@@ -645,4 +667,5 @@ h1{font-size:clamp(24px,5.6vw,50px);color:#e0704a;text-shadow:0 3px 0 #fff}
   *{animation-duration:.01s!important;transition-duration:.01s!important}
   .rain-particle{left:var(--rain-rest-x);top:var(--rain-rest-y);animation:none!important;transform:rotate(var(--rain-angle));will-change:auto!important}
   #rainFar .rain-particle:nth-child(n+8),#rainMid .rain-particle:nth-child(n+6),#rainNear .rain-particle:nth-child(n+4){display:none}
+  .jungle-animal-art{animation:none!important;transform:none!important}
 }
