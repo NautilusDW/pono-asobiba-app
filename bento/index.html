@@ -10341,6 +10341,14 @@ function getTutorialPaletteAllowance(def) {
   return ok;
 }
 function isTutorialPaletteItemLocked(def) {
+  // review fix (2026-07-11): getTutorialPaletteAllowance の tut2-nori-undo deny は
+  // simpleBentoMode 早期 return で到達不能 (tut2 は常時 simpleBentoMode=true)。 実際の
+  // 配置ブロックは addSimpleFreePaletteItem の直接ガードで行っているが、 パレットボタンの
+  // 見た目 (tut-locked / 🔒 相当のロック表示) もそれに合わせて一貫させる。
+  if (def && def.type === 'decor' && tutorialState && tutorialState.active
+    && (tutorialState.step === 'tut2-nori-undo' || tutorialState.step === 'tut2-nori-edit')) {
+    return true;
+  }
   return !getTutorialPaletteAllowance(def).allowed;
 }
 function showTutorialPaletteLockToast(def) {
@@ -11548,10 +11556,6 @@ function normalizeSimpleSlotSampleOverrides(point, kind = '') {
 }
 function normalizeSimpleSlotSampleId(kind, index, sampleId) {
   const id = String(sampleId || '').trim();
-  if (kind === 'divider' && index === 6) {
-    if (id === 'divider_wood') return 'divider_wood_vertical_front';
-    if (id === 'divider_wave') return 'divider_wave_vertical_front';
-  }
   return id;
 }
 function normalizeSimpleSlotPoint(point, kind = '', index = null) {
@@ -13583,15 +13587,20 @@ function eventToFreePoint(e) {
   };
 }
 function canMoveFreeItemInCurrentTutorial(item) {
+  // review fix (2026-07-11): tut2 は常時 simpleBentoMode=true で動くため、 下の
+  // simpleBentoMode 早期 return より前に tut2-nori-undo 用の deny を評価しないと
+  // 到達不能な死コードになる (WP1 が意図した 「とりけす教習中は decor の新規ドラッグ
+  // 開始を禁止」 が effectively 無効化されていた既知バグの修正)。
+  if (item && item.type === 'decor' && tutorialState && tutorialState.active
+    && tutorialState.step === 'tut2-nori-undo') {
+    return false;
+  }
   if (!tutorialState || !tutorialState.active || simpleBentoMode) return true;
   if (!item) return false;
   // batch:1058 phase1: tut2 では nori-move step で全 decor を移動許可、
   // それ以外の tut2 step でも自由 (追加配置した decor/food/cup を子供が動かせるように)。
   // 唯一動かしてほしくないのは rice (削除は canRemoveFreeItemNow で別途ブロック済み)。
   if (item.type === 'rice') return false;
-  // batch:1058-hotfix5 (WP1): とりけす教習中は decor の新規ドラッグ開始を禁止する
-  // (undo 対象がこれ以上増えると 「とりけすで顔を戻す」 という学習目的が崩れる)。
-  if (tutorialState.step === 'tut2-nori-undo' && item.type === 'decor') return false;
   return true;
 }
 function beginFreeItemDrag(e, uid) {
@@ -14123,6 +14132,19 @@ function addSimpleFreePaletteItem(def) {
   if (!def) return;
   if (!canStartFreePaletteDrag(def)) return;
   if (def.type === 'decor') {
+    // review fix (2026-07-11): とりけす教習中 (tut2-nori-undo) / のりOK ソフトゲート中
+    // (tut2-nori-edit) に同じ部位の decor パレットを再タップすると、
+    // createSimpleDecorPlacedItem / addSimpleFaceSetPaletteItem が既存アイテムを削除して
+    // デフォルト位置へ無言で置換してしまい、 とりけすを一度も押さないまま
+    // tut2FaceAtDefault() が true になる「もう もとどおりだよ」 ループの別経路になる。
+    // getTutorialPaletteAllowance は simpleBentoMode 早期 return で tut2-nori-undo の
+    // deny 分岐が到達不能な既知の別問題 (別 finding で修正対象) のため、 ここでは
+    // WP2 (leaf-pick, createSimpleOkazuEditPicker) と同じ直接ガードで新規/置換配置を止める。
+    if (tutorialState && tutorialState.active
+      && (tutorialState.step === 'tut2-nori-undo' || tutorialState.step === 'tut2-nori-edit')) {
+      try { showToast('「とりけす」を おしてね'); } catch (_) {}
+      return null;
+    }
     return addSimpleDecorPaletteItem(def);
   }
   if (isCabbageBrushDef(def) && !getEditingCup()) {
@@ -14453,6 +14475,14 @@ function getSelectedFreeItem() {
 function rotateSelectedItem(deltaAngle) {
   const item = getSelectedFreeItem();
   if (!item) return;
+  // review fix (2026-07-11): とりけす教習中 (tut2-nori-undo) に、 tut2-nori-move の
+  // うちに開いたままの編集パネルから回転ボタンを連打されると、 undo を経由せず顔が
+  // どんどんデフォルトから離れてしまう。 canMoveFreeItemInCurrentTutorial は今回の修正で
+  // tut2-nori-undo 中の decor を正しく deny するようになったので、 ここでも同じ判定を使う。
+  if (typeof canMoveFreeItemInCurrentTutorial === 'function' && !canMoveFreeItemInCurrentTutorial(item)) {
+    try { showToast('いまは うごかさなくて だいじょうぶ'); } catch (_) {}
+    return;
+  }
   const historyBefore = beginFreeHistoryChange();
   let next = ((item.rotation || 0) + deltaAngle) % 360;
   if (next < 0) next += 360;
@@ -14545,6 +14575,12 @@ function canScaleSelectedDecorItem(item, factor) {
 function scaleSelectedDecorItem(factor) {
   const item = getSelectedFreeItem();
   if (!item || item.type !== 'decor') return;
+  // review fix (2026-07-11): rotateSelectedItem と同じ理由 — とりけす教習中は開きっぱなしの
+  // 編集パネルからのサイズ変更も止める (canMoveFreeItemInCurrentTutorial に一本化)。
+  if (typeof canMoveFreeItemInCurrentTutorial === 'function' && !canMoveFreeItemInCurrentTutorial(item)) {
+    try { showToast('いまは うごかさなくて だいじょうぶ'); } catch (_) {}
+    return;
+  }
   const next = getScaledSimpleDecorSize(item, factor);
   if (next === item.size) return;
   const historyBefore = beginFreeHistoryChange();
@@ -23009,6 +23045,11 @@ function tutorialOnItemMoved(uid) {
     const moved = items.find(i => i && i.uid === uid);
     if (!moved || moved.type !== 'decor') return;
   } catch (_) {}
+  // review fix (2026-07-11): onFreeItemDragEnd はドラッグ距離 0 の「タップのみ」でも
+  // 無条件でここを呼ぶ。 顔が依然デフォルト位置のまま tut2-nori-undo へ進めてしまうと、
+  // とりけす教習に戻すものが無く「もう もとどおりだよ」ループで詰む。 実際に顔パーツが
+  // 動いた (tut2FaceAtDefault()===false) 場合のみ進める。
+  if (typeof tut2FaceAtDefault === 'function' && tut2FaceAtDefault()) return;
   tutorialAdvance('tut2-nori-undo');
 }
 // batch:1058-hotfix5 (WP1): とりけすボタンの単一入口。 通常時は undoFreeItem() をそのまま

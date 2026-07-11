@@ -11764,10 +11764,6 @@ function bentoSlotFindSampleById(kind, sampleId) {
 }
 function bentoSlotNormalizeSampleIdForDef(def, sampleId) {
   var id = String(sampleId || '').trim();
-  if (def && def.kind === 'divider' && def.index === 6) {
-    if (id === 'divider_wood') return 'divider_wood_vertical_front';
-    if (id === 'divider_wave') return 'divider_wave_vertical_front';
-  }
   return id;
 }
 function bentoSlotNearestCupPreset(size) {
