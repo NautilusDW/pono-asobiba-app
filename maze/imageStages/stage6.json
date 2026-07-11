@@ -20,8 +20,8 @@
     },
     {
       "kind": "hole",
-      "x": 2509,
-      "y": 161,
+      "x": 1963,
+      "y": 304,
       "id": "hole-3",
       "eventEnabled": true
     },
@@ -193,8 +193,8 @@
     },
     {
       "id": "stop20",
-      "x": 2511,
-      "y": 168,
+      "x": 2510,
+      "y": 176,
       "kind": "stop"
     },
     {
@@ -1143,8 +1143,8 @@
           "y": 451
         },
         {
-          "x": 2511,
-          "y": 168
+          "x": 2510,
+          "y": 176
         }
       ],
       "_editor": {
@@ -1154,8 +1154,8 @@
             "y": 451
           },
           {
-            "x": 2511,
-            "y": 168
+            "x": 2510,
+            "y": 176
           }
         ],
         "shape": "polyline"
@@ -1325,7 +1325,7 @@
   },
   "strengthGimmick": {
     "id": "strength-rock",
-    "obstacleId": "rock-1",
+    "obstacleId": "",
     "encounterRadius": 96,
     "glove": {
       "x": 319,
