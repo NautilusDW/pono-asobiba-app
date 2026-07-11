@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2091: タイトルメニューのスクロール矢印を白⇄オレンジでゆっくり明滅 (視認性向上)。play.html PAGE_CACHE_VERSION と同期。
 // v2090: Maze 岩くだきの入力を click 完了待ちから primary pointerdown 即時受付へ変更し、高速マウス連打の取りこぼしを防止。後続 click の重複除外、キーボード/支援技術 fallback、固定 hit area も追加。play.html PAGE_CACHE_VERSION と同期。
 // v2089: Bento Kitchen のじゃがいも潰しを、既存マッシャーのタップ/ドラッグと同角度3段階の局所リビールへ変更。指ぶれ・Enter・画像失敗時の進行も保護。play.html PAGE_CACHE_VERSION と同期不要 (bento/kitchen.html のみ変更)。
 // v2088: bento tier 別アイテム再配分 (batch:1221) — 小さいおかず(ミートボール/にんじんいんげんをfreeへ降格、えだまめ/ポテトサラダ/りんごをbookへ昇格。ぶどうはカタログ実体なしのため不採用)、しきり/ピックを各1種(なみなみ/ほし)のみ無料化し他3種ずつをbook以上に変更 (common/tier.js, bento/index.html)。play.html PAGE_CACHE_VERSION と同期不要 (tier.js/bento/index.html 変更)。
@@ -9,22 +10,13 @@
 // v2084: Bento Kitchen の包丁効果線を実際の位置・サイズ・振り下ろし量へ追従させ、線の長さ/太さ/間隔/タイミングを不均一化。play.html PAGE_CACHE_VERSION と同期。
 // v2083: App タイトルのなぞなぞトレイン / クッキング / もじっこファームを専用の既存素材へ差し替え。native manifest に 3 ゲームの本体・必要素材・クッキング thumb を同梱。play.html PAGE_CACHE_VERSION と同期。
 // v2082: 未ローンチ2ゲーム (トントンキッチン/もじっこファーム) に直URLロック追加 (app tier のみ通過)。play.html PAGE_CACHE_VERSION と同期。
-// v2081: App build のタイトルメニューに「なぞなぞトレイン / クッキング / もじっこファーム」を通常カードで追加。LP free/book は公開済み 5 本のみを維持。play.html PAGE_CACHE_VERSION と同期。
-// v2080: tier 名 'sub'→'app' 純リネーム (batch:1216, tier.js/play.html/game-stickers.js+json/bento/quizland/puzzle/5ゲームガード)。json と js/game-stickers.js は fail-open のため新旧混在キャッシュを防ぐ bump 必須。play.html PAGE_CACHE_VERSION と同期。
-// v2079: sub専用5ゲーム (mojicrane/nazonazo/starparodier/undersea-cave/sea-album) に tier ガード追加 + プロフィール「あとで」導線 + アプリ告知文実数修正。play.html PAGE_CACHE_VERSION と同期。
-// v2078: Maze の9種類のミニゲームへ専用BGMを追加し、探索曲への復帰・音量補正・ナレーション中のダッキングを実装。play.html PAGE_CACHE_VERSION と同期。
-// v2077: OtoTouch「いろおと」の縦画面HUDと横画面の見た目切替を再配置し、通常8ボタンとの重なりを解消。play.html PAGE_CACHE_VERSION と同期。
-// v2076: OtoTouch「いろおと」を通常のボタン自由モード＋波紋/キラキラ＋細い明色トゥーン流体へ再構成。暗色filter/黒太縁を撤去。play.html PAGE_CACHE_VERSION と同期。
-// v2075: OtoTouch「いろおと」の縦横比追従、WebGL復旧待ち、GPU再確保の安全化、高速スワイプ音列を仕上げ。play.html PAGE_CACHE_VERSION と同期。
-// v2074: アプリ版 OtoTouch に、圧力投影つき WebGL2 流体をトゥーン描画する第3の自由モード「いろおと」を追加。既存2モードと本版は変更なし。play.html PAGE_CACHE_VERSION と同期。
-// v2073: 全体パフォーマンス改善 (OP前ゲーム画面フラッシュ修正 quizland/maze/bento/oto/puzzle、タイトルFOUCガード修正、隠しモーダル画像の遅延化、preload=none化、WebP一括変換 quizland illust/zukan/oto/bento、SWキャッシュ戦略修正 no-store→cache-first/no-cache、precache copy-forward、nav strip lossy再エンコード)。play.html PAGE_CACHE_VERSION と同期。
 // ── changelog アーカイブ ──
-// v2070 以前の changelog は docs/sw-changelog-archive.md へ移動した (最終移設 2026-07-11)。
+// v2081 以前の changelog は docs/sw-changelog-archive.md へ移動した (最終移設 2026-07-11)。
 // sw.js が ~318KB (約 93% が changelog コメント) に肥大し、 毎ロード + 5分毎の
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2090;
+const CACHE_VERSION = 2091;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。

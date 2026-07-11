@@ -12,6 +12,15 @@ docs/ は `.assetsignore` により deploy 対象外。
 ## Archived entries
 
 ````
+// v2081: App build のタイトルメニューに「なぞなぞトレイン / クッキング / もじっこファーム」を通常カードで追加。LP free/book は公開済み 5 本のみを維持。play.html PAGE_CACHE_VERSION と同期。
+// v2080: tier 名 'sub'→'app' 純リネーム (batch:1216, tier.js/play.html/game-stickers.js+json/bento/quizland/puzzle/5ゲームガード)。json と js/game-stickers.js は fail-open のため新旧混在キャッシュを防ぐ bump 必須。play.html PAGE_CACHE_VERSION と同期。
+// v2079: sub専用5ゲーム (mojicrane/nazonazo/starparodier/undersea-cave/sea-album) に tier ガード追加 + プロフィール「あとで」導線 + アプリ告知文実数修正。play.html PAGE_CACHE_VERSION と同期。
+// v2078: Maze の9種類のミニゲームへ専用BGMを追加し、探索曲への復帰・音量補正・ナレーション中のダッキングを実装。play.html PAGE_CACHE_VERSION と同期。
+// v2077: OtoTouch「いろおと」の縦画面HUDと横画面の見た目切替を再配置し、通常8ボタンとの重なりを解消。play.html PAGE_CACHE_VERSION と同期。
+// v2076: OtoTouch「いろおと」を通常のボタン自由モード＋波紋/キラキラ＋細い明色トゥーン流体へ再構成。暗色filter/黒太縁を撤去。play.html PAGE_CACHE_VERSION と同期。
+// v2075: OtoTouch「いろおと」の縦横比追従、WebGL復旧待ち、GPU再確保の安全化、高速スワイプ音列を仕上げ。play.html PAGE_CACHE_VERSION と同期。
+// v2074: アプリ版 OtoTouch に、圧力投影つき WebGL2 流体をトゥーン描画する第3の自由モード「いろおと」を追加。既存2モードと本版は変更なし。play.html PAGE_CACHE_VERSION と同期。
+// v2073: 全体パフォーマンス改善 (OP前ゲーム画面フラッシュ修正 quizland/maze/bento/oto/puzzle、タイトルFOUCガード修正、隠しモーダル画像の遅延化、preload=none化、WebP一括変換 quizland illust/zukan/oto/bento、SWキャッシュ戦略修正 no-store→cache-first/no-cache、precache copy-forward、nav strip lossy再エンコード)。play.html PAGE_CACHE_VERSION と同期。
 // v2072: Puzzle の設定メニューで「もりのアルバム」を「もどる」の下へ移し、160個のマス一覧を8人の進み具合カードへ簡略化。play.html PAGE_CACHE_VERSION と同期。
 // v2071: Maze の再crop動物画像をversioned URLで強制更新し、旗あげ5段レイアウトを短い横画面内へ収める。play.html PAGE_CACHE_VERSION と同期。
 // v2070: Maze のはしご取得後に入口/出口を同時点灯し、正解ボタン中央化、ステージ札の矢印回避、混入動物画像5種の再クロップを反映。play.html PAGE_CACHE_VERSION と同期。
