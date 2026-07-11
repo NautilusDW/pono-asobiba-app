@@ -7515,14 +7515,22 @@ const bentoAccessories = [
   { id: 'cup_check', type: 'cup', name: 'チェックカップ', image: FREE_ASSET + 'cup_check.png', css: 'free-css-cup', snapTarget: true, radius: 108, size: 150, sizeKey: 'small', layerBase: 10 },
   { id: 'cup_flower', type: 'cup', name: 'おはなカップ', image: FREE_ASSET + 'cup_flower.png', css: 'free-css-cup', snapTarget: true, radius: 108, size: 150, sizeKey: 'small', layerBase: 10 },
   { id: 'cup_star', type: 'cup', name: 'ほしカップ', image: FREE_ASSET + 'cup_star.png', css: 'free-css-cup', snapTarget: true, radius: 108, size: 150, sizeKey: 'small', layerBase: 10 },
+  // batch:1221: しきり(divider) は「なみなみ」のみ free、他3種(きの横1種+たて2種)は book 以上。
+  // ゲートは getFreePaletteItems('divider') 側の isBentoDecorUnlocked フィルタで掛ける (下記参照)。
+  // minTier は getSimpleDividerDefForSlot / syncSimpleDividerItemToSlot からは一切参照されない
+  // (bentoAccessories を id 直引きするだけ) ため、 free ユーザーが なみなみ を縦スロットに置いた時の
+  // divider_wave_vertical への自動スワップ (id 直引き) はこの minTier の影響を受けない。
+  // なお _vertical 2 種はそもそも getFreePaletteItems('divider') の !item.verticalDivider で
+  // パレット非表示 (縦は横選択→スロット向きで自動化) のため、 minTier 付与は実利用上ノーオペだが、
+  // 「4種中3種がbook」というデータの一貫性のため付与しておく。
   { id: 'divider_wave', type: 'divider', name: 'なみなみしきり', image: FREE_ASSET + 'divider_wave.png', css: 'free-css-divider', size: 220, sizeKey: 'medium', layerBase: 12, rotation: 0, simpleSampleId: 'divider_wave' },
-  { id: 'divider_wood', type: 'divider', name: 'きのしきり', image: FREE_ASSET + 'divider_wood.png', css: 'free-css-divider', size: 200, sizeKey: 'medium', layerBase: 12, rotation: 0, simpleSampleId: 'divider_wood' },
-  { id: 'divider_wave_vertical', type: 'divider', name: 'みどりたてしきり', image: FREE_ASSET + 'divider_wave_vertical_mid.png', css: 'free-css-divider', size: 46, renderAspect: 2.74, sizeKey: 'medium', layerBase: 12, rotation: 0, verticalDivider: true, simpleSampleId: 'divider_wave_vertical_mid', slotVariantImages: [
+  { id: 'divider_wood', type: 'divider', name: 'きのしきり', image: FREE_ASSET + 'divider_wood.png', css: 'free-css-divider', size: 200, sizeKey: 'medium', layerBase: 12, rotation: 0, simpleSampleId: 'divider_wood', minTier: 'book' },
+  { id: 'divider_wave_vertical', type: 'divider', name: 'みどりたてしきり', image: FREE_ASSET + 'divider_wave_vertical_mid.png', css: 'free-css-divider', size: 46, renderAspect: 2.74, sizeKey: 'medium', layerBase: 12, rotation: 0, verticalDivider: true, simpleSampleId: 'divider_wave_vertical_mid', minTier: 'book', slotVariantImages: [
     { key: 'back', sampleId: 'divider_wave_vertical_back', image: FREE_ASSET + 'divider_wave_vertical_back.png', size: 42, renderAspect: 2.55 },
     { key: 'mid', sampleId: 'divider_wave_vertical_mid', image: FREE_ASSET + 'divider_wave_vertical_mid.png', size: 46, renderAspect: 2.74 },
     { key: 'front', sampleId: 'divider_wave_vertical_front', image: FREE_ASSET + 'divider_wave_vertical_front.png', size: 50, renderAspect: 2.48 },
   ] },
-  { id: 'divider_wood_vertical', type: 'divider', name: 'きのたてしきり', image: FREE_ASSET + 'divider_wood_vertical_mid.png', css: 'free-css-divider', size: 46, renderAspect: 2.74, sizeKey: 'medium', layerBase: 12, rotation: 0, verticalDivider: true, simpleSampleId: 'divider_wood_vertical_mid', slotVariantImages: [
+  { id: 'divider_wood_vertical', type: 'divider', name: 'きのたてしきり', image: FREE_ASSET + 'divider_wood_vertical_mid.png', css: 'free-css-divider', size: 46, renderAspect: 2.74, sizeKey: 'medium', layerBase: 12, rotation: 0, verticalDivider: true, simpleSampleId: 'divider_wood_vertical_mid', minTier: 'book', slotVariantImages: [
     { key: 'back', sampleId: 'divider_wood_vertical_back', image: FREE_ASSET + 'divider_wood_vertical_back.png', size: 42, renderAspect: 2.45 },
     { key: 'mid', sampleId: 'divider_wood_vertical_mid', image: FREE_ASSET + 'divider_wood_vertical_mid.png', size: 46, renderAspect: 2.74 },
     { key: 'front', sampleId: 'divider_wood_vertical_front', image: FREE_ASSET + 'divider_wood_vertical_front.png', size: 50, renderAspect: 2.48 },
@@ -7570,7 +7578,8 @@ const decorItems = [
   // batch:1049 — faceSet の palette icon は 1 パーツではなくミニ顔コンポジット (clusterImages) で表示する。
   // image は tab thumbnail / 単画像 fallback 用に残す。 座標は box 中心 -0.5..0.5、 w は box 幅比。
   // batch:1056 — OWNER DECISION (2026-07-03): 無料の のり/かざり は目鼻口眉 5 点のみ。
-  // セット 3 種 / ほっぺ / うめぼし / のりシート は book 以上 (bookDecorItem)。 ピック 4 種は無料継続。
+  // セット 3 種 / ほっぺ / うめぼし / のりシート は book 以上 (bookDecorItem)。
+  // batch:1221: ピックは「ほし」のみ無料継続、他3種(おはな/はた/ハート)は book 以上に変更 (bookDecorItem)。
   // batch:1058 (bug3): くまセットとの palette icon 差別化。 「にこ」らしく閉じた ^^ 目 + 大口。
   bookDecorItem({ id: 'nori_face_set_smile', type: 'decor', name: 'にこセット', image: FREE_ASSET + 'nori_mouth_smile.png', faceSet: 'smile', size: 78, layerBase: 50, clusterImages: [
     { img: FREE_ASSET + 'book_nori_eye_smile_20260703.png', x: -0.19, y: -0.24, w: 0.28 },
@@ -7703,9 +7712,9 @@ const decorItems = [
   bookDecorItem({ id: 'ketchup_cheek', type: 'decor', name: 'ほっぺ', image: FREE_ASSET + 'ketchup_cheek.png', css: 'free-css-ketchup-cheek', size: 50, layerBase: 50 }), // batch:1056 book 化
   bookDecorItem({ id: 'decor_umeboshi', type: 'decor', name: 'うめぼし', image: FREE_ASSET + 'decor_umeboshi_20260703.png', size: 54, layerBase: 52 }), // batch:1056 book 化
   { id: 'pick_star', type: 'pick', name: 'ほしピック', image: FREE_ASSET + 'pick_star.png', css: 'free-css-pick', size: 62, layerBase: 60 },
-  { id: 'pick_flower', type: 'pick', name: 'おはなピック', image: FREE_ASSET + 'pick_flower.png', css: 'free-css-pick', size: 64, layerBase: 60 },
-  { id: 'pick_flag', type: 'pick', name: 'はたピック', image: FREE_ASSET + 'pick_flag.png', css: 'free-css-pick', size: 64, layerBase: 60 },
-  { id: 'pick_heart', type: 'pick', name: 'ハートピック', image: FREE_ASSET + 'pick_heart.png', css: 'free-css-pick', size: 64, layerBase: 60 },
+  bookDecorItem({ id: 'pick_flower', type: 'pick', name: 'おはなピック', image: FREE_ASSET + 'pick_flower.png', css: 'free-css-pick', size: 64, layerBase: 60 }),
+  bookDecorItem({ id: 'pick_flag', type: 'pick', name: 'はたピック', image: FREE_ASSET + 'pick_flag.png', css: 'free-css-pick', size: 64, layerBase: 60 }),
+  bookDecorItem({ id: 'pick_heart', type: 'pick', name: 'ハートピック', image: FREE_ASSET + 'pick_heart.png', css: 'free-css-pick', size: 64, layerBase: 60 }),
 ];
 const riceFaceTemplates = {
   roundSmile: {
@@ -10855,7 +10864,10 @@ function getFreePaletteItems(tabId) {
   if (tabId === 'accessory') return bentoAccessories.filter(item => item.type === 'cup');
   // batch:1044 R4: palette は横しきり 2 種のみ (縦はスロット向きで自動)。catalog の _vertical def は
   // getSimpleDividerDefForSlot / syncSimpleDividerItemToSlot が参照するため絶対に消さない。
-  if (tabId === 'divider') return bentoAccessories.filter(item => item.type === 'divider' && !item.verticalDivider);
+  // batch:1221: isBentoDecorUnlocked フィルタを追加し、 free では divider_wave (なみなみ) のみ表示。
+  // このフィルタは palette 表示のみに掛かり、 getSimpleDividerDefForSlot 側の id 直引き (縦スロット
+  // 自動スワップ) には影響しない (関数コメント参照)。
+  if (tabId === 'divider') return bentoAccessories.filter(item => item.type === 'divider' && !item.verticalDivider && isBentoDecorUnlocked(item));
   if (tabId === 'leaf') return bentoLeafItems;
   if (tabId === 'pick') return decorItems.filter(item => item.type === 'pick' && isBentoDecorUnlocked(item));
   // v1373: のり弁を rice palette から削除。 のりは decor step で別 layer から乗せる。

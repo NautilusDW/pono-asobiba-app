@@ -222,17 +222,24 @@
   var FREE_OTO_CHORD_MODES = ['off'];
   var BOOK_OTO_CHORD_MODES = ['off', 'on'];
 
-  // ---- bento: 30食材 / お弁当箱 / NPC ----
-  // free: 基本10食材。 book: 追加6食材を足して16食材。
+  // ---- bento: 29食材 / お弁当箱 / NPC ----
+  // free: 基本12食材。 book: 追加7食材を足して19食材。
+  // batch:1221: 副菜を free 側に厚くする再配分。 ミートボール/にんじんいんげん を
+  // free に降格し、 えだまめ/ポテトサラダ を book に昇格 (旧: book 限定だった前者2品を free に、
+  // 旧: app 限定だった後者2品を book に、それぞれ移動)。
   var FREE_BENTO_FOOD_IDS = [
     'タコウインナー', 'ハンバーグ', 'からあげ', 'コロッケ',                    // 主菜4
-    'たまごやき', 'キャベツ', 'プチトマト', 'ブロッコリー',                    // 副菜4
-    'いちご', 'バナナ'                                                         // フルーツ2
+    'たまごやき', 'キャベツ', 'プチトマト', 'ブロッコリー',                    // 副菜4 (キャベツはbento/index.html カタログに実体なしのデッドエントリ。既知・削除しない)
+    'ミートボール', 'にんじんいんげん',                                        // 副菜+2 (batch:1221: book→free 降格)
+    'いちご', 'バナナ'                                                         // フルーツ2 (バナナはbento/index.html カタログに実体なしのデッドエントリ。既知・削除しない)
   ];
   var BOOK_BENTO_FOOD_IDS = FREE_BENTO_FOOD_IDS.concat([
-    'エビフライ', 'やきざけ', 'ぎょうざ',
-    'にんじんいんげん', 'ミートボール',
-    'みかん'
+    'エビフライ', 'やきざけ', 'ぎょうざ',                                      // 主菜+3
+    'えだまめ', 'ポテトサラダ',                                                // 副菜+2 (batch:1221: app→book 昇格)
+    'みかん', 'りんご'                                                         // フルーツ+2 (りんご は batch:1221 で
+    // 当初指定の 'ぶどう' の代替。 'ぶどう' は bento/index.html のカタログ (OKAZU_MEAT/VEG/FRUITS,
+    // FREE_COOKED_OKAZU) に実体が一切なくカップに入れられないため不採用。 side 適格 (okazuRole:'side')
+    // かつ実在する 'りんご' で代替し、 tier.js からは完全に除外した (ALL_BENTO_FOOD_NAMES にも含めない)。
   ]);
   // のり基本パーツは free に残し、追加のり/かざりは bento 側の minTier で book に分ける。
   // NOTE: bento/index.html 側に isBentoDecorUnlocked('nori') 相当の callsite は現状存在しない
@@ -240,13 +247,22 @@
   // bento/index.html を v3 準拠に直す際の参照値として公開する。
   var FREE_BENTO_NORI_ENABLED = true;
 
-  // app 専用の残り14食材 (30 - 16)。 app は ALL_BENTO_FOOD_NAMES で全解放。
+  // batch:1221: しきり(divider)/ピック(pick) の無料1種化。 実際のゲートは bento/index.html 側で
+  // 各カタログ def に minTier: 'book' を inline 付与する方式 (nori の bookDecorItem() ラッパーと同じ
+  // v3 準拠パターン)。 本定数は tier.js 側の参照値・ドキュメントとして公開する
+  // (FREE_BENTO_NORI_ENABLED と同じ位置づけで、 bento/index.html から直接 read されるものではない)。
+  var FREE_BENTO_DIVIDER_IDS = ['divider_wave'];
+  var BOOK_BENTO_DIVIDER_IDS = ['divider_wave', 'divider_wood', 'divider_wave_vertical', 'divider_wood_vertical'];
+  var FREE_BENTO_PICK_IDS = ['pick_star'];
+  var BOOK_BENTO_PICK_IDS = ['pick_star', 'pick_flower', 'pick_flag', 'pick_heart'];
+
+  // app 専用の残り10食材 (29 - 19)。 app は ALL_BENTO_FOOD_NAMES で全解放。
   var ALL_BENTO_FOOD_NAMES = BOOK_BENTO_FOOD_IDS.concat([
     'コーンほうれんそう',
     'ナポリタン', 'はるまき', 'ベーコンまき',
-    'きんぴらごぼう', 'えだまめ', 'ポテトサラダ', 'ハムサラダ',
-    'メロン', 'りんご', 'パイナップル', 'もも', 'ぶどう', 'キウイ'
-  ]);  // 16 + 14 = 30累計
+    'きんぴらごぼう', 'ハムサラダ',
+    'メロン', 'パイナップル', 'もも', 'キウイ'
+  ]);  // 19 + 10 = 29累計 (batch:1221: えだまめ/ポテトサラダ/りんごを book へ移動、 実体なしの ぶどう を除外したため 30→29)
 
   // box / NPC も book > free の差分として維持する。
   var FREE_BENTO_BOX_IDS = ['box_rect_split'];
@@ -841,6 +857,10 @@
     BOOK_BENTO_FOOD_IDS: BOOK_BENTO_FOOD_IDS,
     FREE_BENTO_FOOD_IDS: FREE_BENTO_FOOD_IDS,
     FREE_BENTO_NORI_ENABLED: FREE_BENTO_NORI_ENABLED,
+    FREE_BENTO_DIVIDER_IDS: FREE_BENTO_DIVIDER_IDS,
+    BOOK_BENTO_DIVIDER_IDS: BOOK_BENTO_DIVIDER_IDS,
+    FREE_BENTO_PICK_IDS: FREE_BENTO_PICK_IDS,
+    BOOK_BENTO_PICK_IDS: BOOK_BENTO_PICK_IDS,
     FREE_MAZE_STAGE_IDS: FREE_MAZE_STAGE_IDS,
     BOOK_MAZE_STAGE_IDS: BOOK_MAZE_STAGE_IDS,
     FREE_PUZZLE_STAGE_IDS: FREE_PUZZLE_STAGE_IDS,
