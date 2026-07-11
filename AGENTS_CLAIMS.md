@@ -58,7 +58,6 @@
 ## Active claims
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
-- 2026-07-11 16:27 - by Codex - [batch:1232-maze-minigame-content-scale] - maze/index.html, tests/maze_minigame_frame_verify.cjs, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - 16:9迷路ミニゲーム枠内の過小表示と余白を解消し、全9種の主役絵・操作面を枠に比例して拡大 [overlap: batch:1230-nazonazo-rain-particles-far-mountain (sw.js), batch:1231-kitchen-mash-mix-warp (sw.js)]
 - 2026-07-11 16:23 - by Codex - [batch:1231-kitchen-mash-mix-warp] - bento/kitchen.html, assets/images/bento/cooking/korokke/**, tmp/alpha_pending/1231-kitchen-mash-mix-warp/**, tests/bento_*, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - 包丁線を増量・増太、マッシャー操作を長くし、ひき肉混ぜの粒/左残り/塗り絵感とコロッケ成形を連続変形へ改善 [overlap: batch:1230-nazonazo-rain-particles-far-mountain (sw.js)]
 - 2026-07-11 17:01 - by Codex - [batch:1234-writing-mori-judgment-relax] - writing-mori/index.html, tests/mojikko_writing_judgment_regression.cjs, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - HanziWriter後の二重終点判定を幼児向けに緩和し、途中で指を離しても続きから書けるようにする [overlap: batch:1232-maze-minigame-content-scale (sw.js), batch:1231-kitchen-mash-mix-warp (sw.js)]
 
