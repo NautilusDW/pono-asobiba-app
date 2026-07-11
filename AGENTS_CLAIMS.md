@@ -58,7 +58,6 @@
 ## Active claims
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
-- 2026-07-11 13:21 - by Codex - [batch:1223-maze-strength-rapid-input] - maze/index.html, tests/maze_strength_rapid_input_verify.cjs, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - PCの岩くだき高速連打をpointerdown基準で1押下1回にし、互換クリック/キーボードを重複なく維持 [overlap: batch:911-maze-water-bug-body-collision (stale maze/index.html), batch:1222-potato-masher-reveal (sw.js/play.html), batch:1218-menu-scroll-arrow-pulse (sw.js/play.html)]
 
 
 
