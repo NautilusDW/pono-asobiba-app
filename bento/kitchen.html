@@ -4599,48 +4599,64 @@ body.layout-editor-on #fry-stage .oil-bubbles {
 }
 .knife-speed-lines {
   position: absolute;
-  left: 12%;
-  top: -4%;
-  width: 76%;
-  height: 108%;
+  inset: 0;
   z-index: 2;
   pointer-events: none;
-  opacity: 0;
-  transform: skewX(-9deg);
-  background:
-    linear-gradient(90deg,
-      transparent 0 7%,
-      rgba(255, 255, 255, 0.88) 7% 8.4%,
-      transparent 8.4% 17%,
-      rgba(79, 184, 255, 0.42) 17% 19%,
-      transparent 19% 32%,
-      rgba(255, 220, 98, 0.58) 32% 34%,
-      transparent 34% 48%,
-      rgba(255, 255, 255, 0.76) 48% 49.5%,
-      transparent 49.5% 64%,
-      rgba(79, 184, 255, 0.34) 64% 66%,
-      transparent 66% 100%);
-  filter: blur(0.2px);
-  mix-blend-mode: screen;
+  overflow: visible;
 }
-.knife-speed-lines.show {
-  animation: knifeSpeedLines 0.18s ease-out both;
+.knife-speed-line {
+  position: absolute;
+  left: var(--line-x, 0px);
+  top: var(--line-y, 0px);
+  width: var(--line-width, 2px);
+  height: var(--line-height, 48px);
+  border-radius: 999px;
+  opacity: 0;
+  background: linear-gradient(180deg,
+    transparent 0%,
+    var(--line-color, #fff) 22%,
+    var(--line-color, #fff) 70%,
+    transparent 100%);
+  transform-origin: 50% 0%;
+}
+.knife-speed-line:nth-child(1),
+.knife-speed-line:nth-child(4) { --line-color: rgba(255, 255, 255, 0.96); }
+.knife-speed-line:nth-child(2),
+.knife-speed-line:nth-child(6) { --line-color: rgba(91, 196, 255, 0.9); }
+.knife-speed-line:nth-child(3),
+.knife-speed-line:nth-child(7) { --line-color: rgba(255, 224, 108, 0.92); }
+.knife-speed-line:nth-child(5) { --line-color: rgba(224, 247, 255, 0.86); }
+.knife-speed-lines.show .knife-speed-line {
+  animation: knifeSpeedLine var(--knife-streak-duration, 82ms)
+    cubic-bezier(0.12, 0.78, 0.22, 1) var(--line-delay, 0ms) both;
 }
 body.layout-editor-on .knife-speed-lines {
   display: none;
 }
-@keyframes knifeSpeedLines {
+@keyframes knifeSpeedLine {
   0% {
     opacity: 0;
-    transform: translateY(-8%) skewX(-9deg) scaleY(0.92);
+    transform: scaleY(0.08);
   }
-  18% {
-    opacity: 0.88;
+  22% {
+    opacity: var(--line-opacity, 0.72);
+    transform: scaleY(0.28);
+  }
+  42% {
+    opacity: var(--line-opacity, 0.72);
+    transform: scaleY(0.55);
+  }
+  78% {
+    opacity: var(--line-fade-opacity, 0.24);
+    transform: scaleY(1);
   }
   100% {
     opacity: 0;
-    transform: translateY(14%) skewX(-9deg) scaleY(1.08);
+    transform: scaleY(1);
   }
+}
+@media (prefers-reduced-motion: reduce) {
+  .knife-speed-lines { display: none; }
 }
 /* v400 [Critical fix]: 通常プレイでは .knife を pointer-events: none で透過させて
    まな板タップを邪魔しないが、 editor モード (?edit=1) では knife 本体を掴んで
@@ -5789,7 +5805,15 @@ body.layout-editor-on .bowl-fill-mask::after {
         <div class="ton-burst" id="ton-text">トン！</div>
 
         <div class="cutting-board" id="cutting-board" role="button" tabindex="0" aria-label="まな板（タップまたは Enter/Space キーでトントン）" aria-keyshortcuts="Enter Space">
-          <div class="knife-speed-lines" id="knife-speed-lines" aria-hidden="true"></div>
+          <div class="knife-speed-lines" id="knife-speed-lines" aria-hidden="true">
+            <span class="knife-speed-line"></span>
+            <span class="knife-speed-line"></span>
+            <span class="knife-speed-line"></span>
+            <span class="knife-speed-line"></span>
+            <span class="knife-speed-line"></span>
+            <span class="knife-speed-line"></span>
+            <span class="knife-speed-line"></span>
+          </div>
           <!-- [v419] knife を wrapper(.knife) + inner(.knife-inner) の 2 層に分離。
                editor が動かすのは外側 .knife (per-ingredient transform を saved-layout
                に保存)、 chop アニメが動かすのは内側 .knife-inner。 CSS transform は
@@ -16754,7 +16778,6 @@ body.layout-editor-on .bowl-fill-mask::after {
     const ing = state.current;
     const progressSnapshot = state.chopProgress;
     const comboSnapshot = state.combo;
-    showKnifeSpeedLines();
     playChopAnim(function () {
       applyChopImpactEffects(ing, progressSnapshot, comboSnapshot);
     });
@@ -16818,11 +16841,74 @@ body.layout-editor-on .bowl-fill-mask::after {
     };
   }
 
-  function showKnifeSpeedLines() {
-    if (!els.knifeSpeedLines) return;
-    els.knifeSpeedLines.classList.remove('show');
-    void els.knifeSpeedLines.offsetWidth;
-    els.knifeSpeedLines.classList.add('show');
+  // 包丁の効果線は「まな板全体の固定模様」ではなく、振り下ろし直前の包丁の
+  // 実寸・実位置・実移動量から毎回配置する。運動方向は真下なので線の角度は
+  // 全て軌道と平行に保ち、速さのリズムは長さ/太さ/束間隔/濃さで表現する。
+  const KNIFE_SPEED_LINE_PROFILE = [
+    // 刃先側に3本、中央に3本を小さく束ね、間に大きな空白をつくる。
+    { x: 0.06, y: 0.02, length: 0.54, widthPx: 1.6, delay: 4, opacity: 0.46 },
+    { x: 0.13, y: 0.05, length: 1.00, widthPx: 4.2, delay: 0, opacity: 0.92 },
+    { x: 0.21, y: 0.10, length: 0.68, widthPx: 2.3, delay: 6, opacity: 0.64 },
+    { x: 0.43, y: 0.26, length: 0.86, widthPx: 3.3, delay: 2, opacity: 0.84 },
+    { x: 0.49, y: 0.31, length: 0.43, widthPx: 1.35, delay: 8, opacity: 0.44 },
+    { x: 0.62, y: 0.43, length: 0.71, widthPx: 2.4, delay: 3, opacity: 0.68 },
+    { x: 0.86, y: 0.65, length: 0.36, widthPx: 1.2, delay: 7, opacity: 0.38 },
+  ];
+
+  function showKnifeSpeedLines(chopY, liftY, durationMs, targetKnifeLeftPct, editorTxPx) {
+    const layer = els.knifeSpeedLines;
+    if (!layer || !els.board || !els.knife) return;
+    layer.classList.remove('show');
+
+    const reducedMotion = window.matchMedia
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reducedMotion || document.body.classList.contains('layout-editor-on')) return;
+
+    const boardRect = els.board.getBoundingClientRect();
+    const knifeRect = els.knife.getBoundingClientRect();
+    const boardLocalW = els.board.offsetWidth;
+    const boardLocalH = els.board.offsetHeight;
+    if (!boardRect.width || !boardRect.height || !boardLocalW || !boardLocalH
+      || !knifeRect.width || !knifeRect.height) return;
+
+    // getBoundingClientRect は fit-stage 等の親scale込み。子の px 座標へ戻して、
+    // 画面比率が変わっても包丁と線が同じローカル座標に着地するようにする。
+    const scaleX = boardLocalW / boardRect.width;
+    const scaleY = boardLocalH / boardRect.height;
+    const measuredKnifeLeft = (knifeRect.left - boardRect.left) * scaleX;
+    const targetLeftPct = Number(targetKnifeLeftPct);
+    // 横移動は requestAnimationFrame 後に始まるため、低FPS時にlive rectを読むと
+    // ごく稀に移動途中のXを拾う。計算済みの到着leftとeditor txを優先して固定する。
+    const knifeLeft = isFinite(targetLeftPct)
+      ? (boardLocalW * targetLeftPct / 100) + (Number(editorTxPx) || 0)
+      : measuredKnifeLeft;
+    const knifeTop = (knifeRect.top - boardRect.top) * scaleY;
+    const knifeWidth = knifeRect.width * scaleX;
+    const knifeHeight = knifeRect.height * scaleY;
+    const travel = Math.abs(Number(chopY || 0) - Number(liftY || 0))
+      * knifeHeight / 100;
+    if (!isFinite(travel) || travel < 8) return;
+
+    const lines = layer.querySelectorAll('.knife-speed-line');
+    KNIFE_SPEED_LINE_PROFILE.forEach(function (profile, index) {
+      const line = lines[index];
+      if (!line) return;
+      const lineHeight = travel * profile.length;
+      // fit-stage で画面全体が縮小されても、最終表示上の太さの差 (1.2〜4.2px)
+      // は潰さない。screen px を board local px へ逆変換してから指定する。
+      const lineWidth = profile.widthPx * scaleX;
+      line.style.setProperty('--line-x', (knifeLeft + knifeWidth * profile.x).toFixed(2) + 'px');
+      line.style.setProperty('--line-y', (knifeTop + knifeHeight * profile.y).toFixed(2) + 'px');
+      line.style.setProperty('--line-height', lineHeight.toFixed(2) + 'px');
+      line.style.setProperty('--line-width', lineWidth.toFixed(2) + 'px');
+      line.style.setProperty('--line-delay', profile.delay + 'ms');
+      line.style.setProperty('--line-opacity', String(profile.opacity));
+      line.style.setProperty('--line-fade-opacity', String(Number((profile.opacity * 0.34).toFixed(3))));
+    });
+
+    layer.style.setProperty('--knife-streak-duration', Math.round(Math.max(44, Math.min(110, durationMs || 82))) + 'ms');
+    void layer.offsetWidth;
+    layer.classList.add('show');
   }
 
   function playChopAnim(onImpact) {
@@ -16933,6 +17019,10 @@ body.layout-editor-on .bowl-fill-mask::after {
         if (chopSnapshot >= total) return; // [v430] 最終タップは横移動のみ
         if (state.transitioning) return;
         if (state.cutting) return; // [v429] 最終タップ後 (mask 0%) は振り下ろし skip
+        // animation 78%地点で線が全移動量まで伸びるため、そこを包丁の下降完了
+        // (innerMs) に合わせる。食材ごとの速い/遅い包丁でも線だけ残らない。
+        const streakDurationMs = timing.innerMs / 0.78;
+        showKnifeSpeedLines(chopY, liftY, streakDurationMs, targetWrapperX, editorTx);
         knifeInner.style.transform = 'translate(0, ' + chopY + '%)';
       }, timing.downDelayMs));
 
