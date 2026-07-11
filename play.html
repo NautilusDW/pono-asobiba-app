@@ -1954,6 +1954,26 @@
     .profile-hub-id {
       min-width: 0;
     }
+    .profile-hub-avatar-button {
+      width: 92px;
+      height: 92px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      border: 0;
+      border-radius: 27px;
+      background: transparent;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .profile-hub-avatar-button:active {
+      transform: scale(.97);
+    }
+    .profile-hub-avatar-button:focus-visible,
+    .profile-hub-name-button:focus-visible {
+      outline: 4px solid rgba(245, 168, 0, .42);
+      outline-offset: 2px;
+    }
     .profile-hub-avatar.pono-mini-avatar {
       width: 86px;
       height: 86px;
@@ -2007,6 +2027,28 @@
       line-height: 1.08;
       text-align: left;
     }
+    .profile-hub-name-button {
+      min-width: 0;
+      max-width: 100%;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      margin: 0;
+      padding: 3px 8px 4px 4px;
+      border: 2px solid rgba(242, 145, 90, .22);
+      border-radius: 12px;
+      background: rgba(255, 253, 250, .72);
+      color: inherit;
+      font: inherit;
+      text-align: left;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .profile-hub-name-button:active {
+      transform: translateY(1px);
+      background: #fff3c4;
+    }
     .profile-hub-name {
       min-width: 0;
       color: var(--text);
@@ -2016,6 +2058,13 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+    }
+    .profile-hub-edit-mark {
+      flex: 0 0 auto;
+      color: #b66a2e;
+      font-size: 1.08rem;
+      font-weight: 900;
+      line-height: 1;
     }
     .profile-hub-meta {
       margin-top: 5px;
@@ -2051,35 +2100,60 @@
     .profile-hub-btn:active:not(:disabled) {
       transform: translateY(1px);
     }
-    .profile-hub-summary {
+    .profile-progress-card {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 8px;
-      margin-bottom: 12px;
-    }
-    .profile-hub-meter {
-      min-width: 0;
-      padding: 10px 8px;
+      padding: 11px 13px;
       border: 2px solid rgba(242, 145, 90, .26);
       border-radius: 16px;
       background: rgba(255, 253, 250, .72);
-      text-align: center;
+      margin-bottom: 12px;
     }
-    .profile-hub-meter__num {
-      display: block;
+    .profile-progress-card__top {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 12px;
+      min-width: 0;
+    }
+    .profile-progress-card__label {
+      color: var(--text);
+      font-size: .9rem;
+      font-weight: 900;
+      line-height: 1.1;
+    }
+    .profile-progress-card__count {
       color: #6a4300;
-      font-size: 1.42rem;
+      font-size: 1rem;
       font-weight: 900;
       line-height: 1;
       font-variant-numeric: tabular-nums;
+      white-space: nowrap;
     }
-    .profile-hub-meter__label {
+    .profile-progress-card__count strong {
+      font-size: 1.34rem;
+    }
+    .profile-progress-bar {
+      height: 12px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: rgba(149, 108, 63, .18);
+      box-shadow: inset 0 1px 2px rgba(106, 67, 0, .12);
+    }
+    .profile-progress-bar > span {
       display: block;
-      margin-top: 4px;
-      color: var(--text-light);
-      font-size: .72rem;
+      width: var(--profile-progress-pct, 0%);
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #88d38a, #ffd84d);
+    }
+    .profile-progress-next {
+      margin: 0;
+      color: #6a4300;
+      font-size: .78rem;
       font-weight: 900;
-      line-height: 1.1;
+      line-height: 1.25;
+      text-align: left;
     }
     .profile-goal-list {
       display: grid;
@@ -2168,6 +2242,25 @@
     }
     .profile-hub-btn--wide {
       grid-column: 1 / -1;
+    }
+    .profile-hub-name-form {
+      display: grid;
+      gap: 12px;
+      max-width: 470px;
+      margin: 4px auto 8px;
+      padding: 14px;
+      border: 2px solid rgba(242, 145, 90, .24);
+      border-radius: 18px;
+      background: rgba(255, 253, 250, .72);
+    }
+    .profile-hub-name-form .profile-input,
+    .profile-hub-name-form .profile-random {
+      min-height: 44px;
+    }
+    .profile-hub-name-save {
+      min-width: 150px;
+      min-height: 44px;
+      margin: 0 auto;
     }
     .profile-panel-head {
       display: grid;
@@ -2409,12 +2502,7 @@
       margin-top: 4px;
       margin-inline: auto;
     }
-    .profile-achievement-summary {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      gap: 8px;
-      margin-bottom: 12px;
-    }
+    .profile-progress-card--detail { margin-bottom: 12px; }
     .profile-goal-section {
       display: grid;
       gap: 7px;
@@ -2431,6 +2519,7 @@
       .modal-card.profile-hub-card { padding: 12px 14px; }
       .profile-hub-xclose { top: 8px; right: 8px; width: 34px; height: 34px; font-size: 20px; }
       .profile-hub-head { grid-template-columns: 72px minmax(0, 1fr); gap: 10px; margin-bottom: 9px; }
+      .profile-hub-avatar-button { width: 72px; height: 72px; border-radius: 22px; }
       .profile-hub-avatar.pono-mini-avatar { width: 68px; height: 68px; border-radius: 20px; }
       .profile-hub-avatar .pono-mini-avatar__body { left: 18px; bottom: 7px; width: 32px; height: 25px; }
       .profile-hub-avatar .pono-mini-avatar__face { left: 17px; top: 16px; width: 34px; height: 32px; }
@@ -2443,12 +2532,17 @@
       .profile-hub-avatar .pono-mini-avatar__mark { right: 10px; top: 8px; width: 14px; height: 14px; }
       .profile-hub-title { font-size: 1rem; }
       .profile-hub-name { font-size: 1.18rem; }
+      .profile-hub-name-button { min-height: 44px; gap: 5px; padding: 2px 7px 3px 3px; border-radius: 10px; }
+      .profile-hub-edit-mark { font-size: .94rem; }
       .profile-hub-meta { font-size: .74rem; }
       .profile-hub-actions { margin: 6px 0 9px; }
       .profile-hub-btn { min-height: 38px; font-size: .82rem; }
-      .profile-hub-summary { gap: 6px; margin-bottom: 9px; }
-      .profile-hub-meter { padding: 8px 5px; }
-      .profile-hub-meter__num { font-size: 1.1rem; }
+      .profile-progress-card { gap: 6px; margin-bottom: 9px; padding: 8px 10px; }
+      .profile-progress-card__label { font-size: .8rem; }
+      .profile-progress-card__count { font-size: .86rem; }
+      .profile-progress-card__count strong { font-size: 1.1rem; }
+      .profile-progress-bar { height: 10px; }
+      .profile-progress-next { font-size: .7rem; }
       .profile-hub-card .modal-close { margin-top: 9px; padding: 9px; }
       .profile-goal-list { gap: 6px; }
       .profile-goal-row { grid-template-columns: 30px minmax(0, 1fr) auto; padding: 7px 8px; gap: 7px; }
@@ -2576,6 +2670,19 @@
         font-size: .7rem;
         text-align: left;
       }
+    }
+    @media (max-height: 360px) and (min-width: 481px) {
+      .profile-hub-modal { padding: 6px; }
+      .modal-card.profile-hub-card {
+        max-height: calc(100dvh - 12px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+        padding: 8px 12px;
+      }
+      .profile-hub-head { margin-bottom: 4px; }
+      .profile-hub-actions { gap: 6px; margin: 3px 0 5px; }
+      .profile-progress-card { gap: 4px; margin-bottom: 5px; padding: 6px 10px; }
+      .profile-progress-bar { height: 8px; }
+      .profile-hub-empty { display: none; }
+      .profile-hub-card .modal-close { margin-top: 5px; padding: 7px; }
     }
     .setting-row {
       display: flex;
@@ -9411,34 +9518,50 @@
       <button class="profile-hub-xclose" type="button" data-close="profileHubModal" aria-label="とじる">×</button>
       <div class="profile-hub-panel" id="profileHubMainPanel">
         <div class="profile-hub-head">
-          <span class="pono-mini-avatar profile-hub-avatar" id="profileHubAvatar" data-variant="0" aria-hidden="true"></span>
+          <button class="profile-hub-avatar-button" id="profileAvatarEditBtn" type="button" aria-label="すがたを えらぶ">
+            <span class="pono-mini-avatar profile-hub-avatar" id="profileHubAvatar" data-variant="0" aria-hidden="true"></span>
+          </button>
           <div class="profile-hub-id">
             <h3 class="profile-hub-title" id="profileHubTitle">プロフィール</h3>
-            <div class="profile-hub-name" id="profileHubName">ポノ</div>
+            <button class="profile-hub-name-button" id="profileHubEditBtn" type="button" aria-label="なまえを かえる">
+              <span class="profile-hub-name" id="profileHubName">ポノ</span>
+              <span class="profile-hub-edit-mark" aria-hidden="true">✎</span>
+            </button>
             <div class="profile-hub-meta" id="profileHubMeta">ねんれい えらばない</div>
           </div>
         </div>
         <div class="profile-hub-actions">
-          <button class="profile-hub-btn" id="profileHubEditBtn" type="button">なまえを かえる</button>
-          <button class="profile-hub-btn" id="profileAvatarEditBtn" type="button">すがたを えらぶ</button>
           <button class="profile-hub-btn" id="profileStickerBookBtn" type="button">シールちょう</button>
           <button class="profile-hub-btn" id="profileAchievementsBtn" type="button">できたことを くわしく</button>
         </div>
-        <div class="profile-hub-summary" aria-label="できたこと">
-          <div class="profile-hub-meter">
-            <span class="profile-hub-meter__num" id="profileHubDoneCount">0</span>
-            <span class="profile-hub-meter__label">できた</span>
+        <div class="profile-progress-card" aria-label="できたこと">
+          <div class="profile-progress-card__top">
+            <span class="profile-progress-card__label">できたこと</span>
+            <span class="profile-progress-card__count"><strong id="profileHubDoneCount">0</strong>こ / ぜんぶ <span id="profileHubTotalCount">17</span>こ</span>
           </div>
-          <div class="profile-hub-meter">
-            <span class="profile-hub-meter__num" id="profileHubBestPct">0%</span>
-            <span class="profile-hub-meter__label">いちばん</span>
+          <div class="profile-progress-bar" id="profileHubProgressBar" role="progressbar" aria-label="できたこと" aria-valuemin="0" aria-valuemax="17" aria-valuenow="0">
+            <span></span>
           </div>
-          <div class="profile-hub-meter">
-            <span class="profile-hub-meter__num" id="profileHubNextCount">0</span>
-            <span class="profile-hub-meter__label">もうすぐ</span>
-          </div>
+          <p class="profile-progress-next" id="profileHubNextGoal">つぎは クイズ 1もん 0/1</p>
         </div>
         <p class="profile-hub-empty" id="profileHubEmpty" hidden>ゲームで あそぶと できたことが ふえるよ</p>
+      </div>
+
+      <div class="profile-hub-panel" id="profileNamePanel" hidden>
+        <div class="profile-panel-head">
+          <button class="profile-hub-back" id="profileNameBackBtn" type="button">もどる</button>
+          <h3 class="profile-panel-title">なまえを かえる</h3>
+        </div>
+        <form class="profile-hub-name-form" id="profileHubNameForm">
+          <label class="profile-field" for="profileHubNameInput">
+            <span>なまえ</span>
+            <span class="profile-name-row">
+              <input class="profile-input" id="profileHubNameInput" type="text" maxlength="8" autocomplete="off" inputmode="text" value="ポノ">
+              <button class="profile-random" id="profileHubNameRandomBtn" type="button">ランダム</button>
+            </span>
+          </label>
+          <button class="profile-save profile-hub-name-save" type="submit">きめた</button>
+        </form>
       </div>
 
       <div class="profile-hub-panel" id="profileAvatarPanel" hidden>
@@ -9461,19 +9584,15 @@
           <button class="profile-hub-back" id="profileAchievementsBackBtn" type="button">もどる</button>
           <h3 class="profile-panel-title">できたこと</h3>
         </div>
-        <div class="profile-achievement-summary" aria-label="できたこと まとめ">
-          <div class="profile-hub-meter">
-            <span class="profile-hub-meter__num" id="profileDetailDoneCount">0</span>
-            <span class="profile-hub-meter__label">できた</span>
+        <div class="profile-progress-card profile-progress-card--detail" aria-label="できたこと まとめ">
+          <div class="profile-progress-card__top">
+            <span class="profile-progress-card__label">できたこと</span>
+            <span class="profile-progress-card__count"><strong id="profileDetailDoneCount">0</strong>こ / ぜんぶ <span id="profileDetailTotalCount">17</span>こ</span>
           </div>
-          <div class="profile-hub-meter">
-            <span class="profile-hub-meter__num" id="profileDetailTotalCount">0</span>
-            <span class="profile-hub-meter__label">ぜんぶ</span>
+          <div class="profile-progress-bar" id="profileDetailProgressBar" role="progressbar" aria-label="できたこと" aria-valuemin="0" aria-valuemax="17" aria-valuenow="0">
+            <span></span>
           </div>
-          <div class="profile-hub-meter">
-            <span class="profile-hub-meter__num" id="profileDetailNextCount">0</span>
-            <span class="profile-hub-meter__label">もうすぐ</span>
-          </div>
+          <p class="profile-progress-next" id="profileDetailNextGoal">つぎは クイズ 1もん 0/1</p>
         </div>
         <div class="profile-goal-list" id="profileGoalList"></div>
       </div>
@@ -10383,7 +10502,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2110; // sw.js CACHE_VERSION と同期 (batch:1242 ガチャ/おみせ中のタイトル BGM 二重再生根治)
+    const PAGE_CACHE_VERSION = 2113; // sw.js CACHE_VERSION と同期 (batch:1245 プロフィールの名前・姿を本体タップ編集 + 進捗表示明確化)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -10392,7 +10511,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v2110';
+    window.PONO_SW_VERSION = 'v2113';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
@@ -14908,12 +15027,18 @@
       const profileHubMeta = document.getElementById('profileHubMeta');
       const profileHubEditBtn = document.getElementById('profileHubEditBtn');
       const profileHubMainPanel = document.getElementById('profileHubMainPanel');
+      const profileNamePanel = document.getElementById('profileNamePanel');
+      const profileNameBackBtn = document.getElementById('profileNameBackBtn');
+      const profileHubNameForm = document.getElementById('profileHubNameForm');
+      const profileHubNameInput = document.getElementById('profileHubNameInput');
+      const profileHubNameRandomBtn = document.getElementById('profileHubNameRandomBtn');
       const profileAvatarEditBtn = document.getElementById('profileAvatarEditBtn');
       const profileStickerBookBtn = document.getElementById('profileStickerBookBtn');
       const profileAchievementsBtn = document.getElementById('profileAchievementsBtn');
       const profileHubDoneCount = document.getElementById('profileHubDoneCount');
-      const profileHubBestPct = document.getElementById('profileHubBestPct');
-      const profileHubNextCount = document.getElementById('profileHubNextCount');
+      const profileHubTotalCount = document.getElementById('profileHubTotalCount');
+      const profileHubProgressBar = document.getElementById('profileHubProgressBar');
+      const profileHubNextGoal = document.getElementById('profileHubNextGoal');
       const profileAvatarPanel = document.getElementById('profileAvatarPanel');
       const profileAvatarBackBtn = document.getElementById('profileAvatarBackBtn');
       const profileAvatarPreview = document.getElementById('profileAvatarPreview');
@@ -14924,7 +15049,8 @@
       const profileAchievementsBackBtn = document.getElementById('profileAchievementsBackBtn');
       const profileDetailDoneCount = document.getElementById('profileDetailDoneCount');
       const profileDetailTotalCount = document.getElementById('profileDetailTotalCount');
-      const profileDetailNextCount = document.getElementById('profileDetailNextCount');
+      const profileDetailProgressBar = document.getElementById('profileDetailProgressBar');
+      const profileDetailNextGoal = document.getElementById('profileDetailNextGoal');
       const profileGoalList = document.getElementById('profileGoalList');
       const profileHubEmpty = document.getElementById('profileHubEmpty');
       const STATS_KEY = 'pono_stats';
@@ -15151,6 +15277,18 @@
         const text = String(name || '').replace(/[\u0000-\u001F\u007F]/g, '').trim();
         return Array.from(text || 'ポノ').slice(0, 8).join('');
       }
+      function randomProfileName(currentName) {
+        const current = sanitizeProfileName(currentName);
+        const choices = RANDOM_NAMES.filter((name) => name !== current);
+        const pool = choices.length ? choices : RANDOM_NAMES;
+        const idx = Math.floor(Math.random() * pool.length);
+        return pool[idx] || 'ポノ';
+      }
+      function fillRandomProfileName(input) {
+        if (!input) return;
+        input.value = randomProfileName(input.value);
+        try { input.focus(); input.select(); } catch (_) {}
+      }
       function normalizeGender(value) {
         return value === 'girl' || value === 'boy' ? value : 'none';
       }
@@ -15360,10 +15498,22 @@
       function profileProgressSummary() {
         const rows = profileGoalRows();
         const done = rows.filter((row) => row.done).length;
-        const best = rows.length ? Math.max.apply(null, rows.map((row) => row.pct)) : 0;
-        const next = rows.filter((row) => !row.done && row.pct >= 60).length;
+        const total = rows.length;
+        const completionPct = total ? Math.round((done / total) * 100) : 0;
+        const nextGoal = rows.reduce((closest, row) => {
+          if (row.done) return closest;
+          if (!closest || row.pct > closest.pct) return row;
+          return closest;
+        }, null);
         const hasGameProgress = rows.some((row) => !row.goal.profile && row.current > 0);
-        return { rows: rows, done: done, total: rows.length, best: best, next: next, hasGameProgress: hasGameProgress };
+        return {
+          rows: rows,
+          done: done,
+          total: total,
+          completionPct: completionPct,
+          nextGoal: nextGoal,
+          hasGameProgress: hasGameProgress
+        };
       }
       function updateProfileHome(profile) {
         profile = profile || loadProfile();
@@ -15386,8 +15536,28 @@
       }
       function showProfilePanel(name) {
         if (profileHubMainPanel) profileHubMainPanel.hidden = name !== 'main';
+        if (profileNamePanel) profileNamePanel.hidden = name !== 'name';
         if (profileAvatarPanel) profileAvatarPanel.hidden = name !== 'avatar';
         if (profileAchievementsPanel) profileAchievementsPanel.hidden = name !== 'achievements';
+      }
+      function profileNextGoalText(summary) {
+        const row = summary && summary.nextGoal;
+        if (!row) return 'ぜんぶ できた！';
+        const current = Math.min(Math.floor(row.current), row.target);
+        return 'つぎは ' + row.goal.title + '　' + current + '/' + row.target;
+      }
+      function renderProfileProgress(summary, doneEl, totalEl, progressEl, nextEl) {
+        if (!summary) return;
+        if (doneEl) doneEl.textContent = String(summary.done);
+        if (totalEl) totalEl.textContent = String(summary.total);
+        if (progressEl) {
+          progressEl.setAttribute('aria-valuemax', String(summary.total));
+          progressEl.setAttribute('aria-valuenow', String(summary.done));
+          progressEl.setAttribute('aria-valuetext', summary.done + 'こ できた。ぜんぶで ' + summary.total + 'こ');
+          const fill = progressEl.querySelector('span');
+          if (fill) fill.style.setProperty('--profile-progress-pct', summary.completionPct + '%');
+        }
+        if (nextEl) nextEl.textContent = profileNextGoalText(summary);
       }
       function createGoalRow(row) {
         const item = document.createElement('div');
@@ -15424,9 +15594,13 @@
       }
       function renderAchievementDetails() {
         const summary = profileProgressSummary();
-        if (profileDetailDoneCount) profileDetailDoneCount.textContent = String(summary.done);
-        if (profileDetailTotalCount) profileDetailTotalCount.textContent = String(summary.total);
-        if (profileDetailNextCount) profileDetailNextCount.textContent = String(summary.next);
+        renderProfileProgress(
+          summary,
+          profileDetailDoneCount,
+          profileDetailTotalCount,
+          profileDetailProgressBar,
+          profileDetailNextGoal
+        );
         if (!profileGoalList) return;
 
         profileGoalList.textContent = '';
@@ -15582,15 +15756,46 @@
         saveProfile(profile);
         renderProfileHub();
         showProfilePanel('main');
+        setTimeout(() => {
+          try { profileAvatarEditBtn && profileAvatarEditBtn.focus(); } catch (_) {}
+        }, 0);
+      }
+      function openProfileNameEditor() {
+        const profile = loadProfile();
+        if (profileHubNameInput) profileHubNameInput.value = profile.name || 'ポノ';
+        showProfilePanel('name');
+        setTimeout(() => {
+          try {
+            if (profileHubNameInput) {
+              profileHubNameInput.focus();
+              profileHubNameInput.select();
+            }
+          } catch (_) {}
+        }, 60);
+      }
+      function saveProfileNameDraft() {
+        const profile = loadProfile();
+        profile.name = profileHubNameInput ? profileHubNameInput.value : profile.name;
+        saveProfile(profile);
+        renderProfileHub();
+        showProfilePanel('main');
+        setTimeout(() => {
+          try { profileHubEditBtn && profileHubEditBtn.focus(); } catch (_) {}
+        }, 0);
       }
       function renderProfileHub() {
         const profile = loadProfile();
         const summary = profileProgressSummary();
         if (profileHubName) profileHubName.textContent = profile.name || 'ポノ';
+        if (profileHubEditBtn) profileHubEditBtn.setAttribute('aria-label', 'なまえ ' + (profile.name || 'ポノ') + ' を かえる');
         if (profileHubMeta) profileHubMeta.textContent = profileMetaText(profile);
-        if (profileHubDoneCount) profileHubDoneCount.textContent = String(summary.done);
-        if (profileHubBestPct) profileHubBestPct.textContent = summary.best + '%';
-        if (profileHubNextCount) profileHubNextCount.textContent = String(summary.next);
+        renderProfileProgress(
+          summary,
+          profileHubDoneCount,
+          profileHubTotalCount,
+          profileHubProgressBar,
+          profileHubNextGoal
+        );
         if (profileHubEmpty) profileHubEmpty.hidden = summary.hasGameProgress;
         applyAvatarToElement(profileHubAvatar, profile);
         updateProfileHome(profile);
@@ -15604,6 +15809,9 @@
         renderProfileHub();
         showProfilePanel('main');
         openModal('profileHubModal');
+        setTimeout(() => {
+          try { profileHubEditBtn && profileHubEditBtn.focus(); } catch (_) {}
+        }, 0);
       }
       function saveProfile(profile) {
         const previous = hasProfile() ? loadProfile() : null;
@@ -15714,12 +15922,7 @@
         });
       }
       if (profileRandomBtn) {
-        profileRandomBtn.addEventListener('click', () => {
-          if (!profileNameInput) return;
-          const idx = Math.floor(Math.random() * RANDOM_NAMES.length);
-          profileNameInput.value = RANDOM_NAMES[idx] || 'ポノ';
-          try { profileNameInput.focus(); profileNameInput.select(); } catch (_) {}
-        });
+        profileRandomBtn.addEventListener('click', () => fillRandomProfileName(profileNameInput));
       }
       if (profileForm) {
         profileForm.addEventListener('submit', (e) => {
@@ -15774,21 +15977,46 @@
           }
         });
       }
+      if (profileHubModal) {
+        profileHubModal.addEventListener('click', (e) => {
+          if (e.target === profileHubModal || e.target.closest('[data-close="profileHubModal"]')) {
+            setTimeout(() => {
+              try { profileHomeBtn && profileHomeBtn.focus(); } catch (_) {}
+            }, 0);
+          }
+        });
+      }
       if (profileHomeBtn) {
         profileHomeBtn.addEventListener('click', openProfileHub);
       }
       if (profileHubEditBtn) {
-        profileHubEditBtn.addEventListener('click', () => {
-          closeModal('profileHubModal');
-          pendingProfileStartIdx = null;
-          openHubAfterProfileSave = true;
-          openProfileModal('name');
+        profileHubEditBtn.addEventListener('click', openProfileNameEditor);
+      }
+      if (profileNameBackBtn) {
+        profileNameBackBtn.addEventListener('click', () => {
+          renderProfileHub();
+          showProfilePanel('main');
+          setTimeout(() => {
+            try { profileHubEditBtn && profileHubEditBtn.focus(); } catch (_) {}
+          }, 0);
+        });
+      }
+      if (profileHubNameRandomBtn) {
+        profileHubNameRandomBtn.addEventListener('click', () => fillRandomProfileName(profileHubNameInput));
+      }
+      if (profileHubNameForm) {
+        profileHubNameForm.addEventListener('submit', (e) => {
+          e.preventDefault();
+          saveProfileNameDraft();
         });
       }
       if (profileAvatarEditBtn) {
         profileAvatarEditBtn.addEventListener('click', () => {
           renderAvatarBuilder();
           showProfilePanel('avatar');
+          setTimeout(() => {
+            try { profileAvatarBackBtn && profileAvatarBackBtn.focus(); } catch (_) {}
+          }, 0);
         });
       }
       if (profileStickerBookBtn) {
@@ -15800,6 +16028,9 @@
         profileAchievementsBtn.addEventListener('click', () => {
           renderAchievementDetails();
           showProfilePanel('achievements');
+          setTimeout(() => {
+            try { profileAchievementsBackBtn && profileAchievementsBackBtn.focus(); } catch (_) {}
+          }, 0);
         });
       }
       if (profileAvatarBackBtn) {
@@ -15807,12 +16038,18 @@
           avatarDraft = null;
           renderProfileHub();
           showProfilePanel('main');
+          setTimeout(() => {
+            try { profileAvatarEditBtn && profileAvatarEditBtn.focus(); } catch (_) {}
+          }, 0);
         });
       }
       if (profileAchievementsBackBtn) {
         profileAchievementsBackBtn.addEventListener('click', () => {
           renderProfileHub();
           showProfilePanel('main');
+          setTimeout(() => {
+            try { profileAchievementsBtn && profileAchievementsBtn.focus(); } catch (_) {}
+          }, 0);
         });
       }
       if (profileAvatarControls) {

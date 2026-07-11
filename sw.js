@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2113: プロフィールハブの独立した「なまえを かえる」「すがたを えらぶ」ボタンを撤去し、名前本体とサムネイルを直接タップする編集導線へ変更。名前専用パネルへランダム機能を追加し、意味が伝わりにくかった「できた／いちばん／もうすぐ」を、達成数／全数・全体バー・次の具体的な項目へ置換。490×317を含む短い横画面の下端収まりと、各サブ画面のフォーカス移動も調整。play.html PAGE_CACHE_VERSION と同期 (2113)。
 // v2112: もじっこファームへ、朝・昼・ごご・ばん各1回の食事枠と成長別のもじミルク／もじごはん／もじクッキーを追加。GPT Image 2のもじごはん画像と動的な報酬枠、旧セーブ移行、日跨ぎ・複数タブの重複防止、欠食で機嫌を下げない表示を実装。タマゴ中の文字報酬はスターのみ。play.html PAGE_CACHE_VERSION と同期不要 (writing-mori/画像/テストのみ変更)。
 // v2111: なぞなぞトレインのジャングル動物12種を、白目なしの濃い丸目＋小さなハイライト、丸い単純形、マットな水彩・ガッシュの絵本調へ全差し替え。サル/フクロウを基準に全種の目と描き込み量を統一し、新versioned alpha WebPで旧リアル調cacheを回避。既存3深度パララックス・微動・iOS上限・トンネル/reduced-motion/LP lockは維持。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/画像のみ変更)。
 // v2110: ガチャ/おみせ画面へタイトル BGM が二重再生される実機バグを根治 (batch:1242) — タブ復帰時の visibilitychange 復帰経路 (play.html tryPlay) がガチャ/おみせの抑止状態を見ず無条件 resume していた問題へ、単一調停点 isTopBgmSuppressed() (pausedTopBgm フラグ + モーダル DOM 開閉の OR) ガードを導入。PonoVisibilityAudioGuard の backoff replay が抑止中の play-bgm を native play で復活させる経路も data-pono-force-paused 契約で封鎖。閉時の正当復帰 (resumeTopBgmAfter*) は直接 play() でガードを bypass し不変。play.html PAGE_CACHE_VERSION と同期 (2110)。
@@ -37,7 +38,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2112;
+const CACHE_VERSION = 2113;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
