@@ -1673,15 +1673,17 @@ const GUIDE_SVG_BASE_PATH = '../assets/images/mojikko/letters/kana_svg_outlines/
 const STROKE_FILL_COMPLETE_RATIO = 0.38;
 const QUIZ_LENIENCY = 1.8;
 const ATTEMPT_CLEAR_DELAY_MS = 520;
-const STROKE_END_PROGRESS_REQUIRED = 0.72;
-const STROKE_END_DISTANCE_TOLERANCE = 24;
-const PENDING_CONTINUATION_MIN_DISTANCE = 45;
-const PENDING_CONTINUATION_MIN_FILL_RATIO = 0.45;
-const STROKE_ASSIST_AFTER_MISSES = 3;
-const STROKE_ASSIST_MIN_DISTANCE = 45;
-const STROKE_ASSIST_MIN_FILL_RATIO = 0.5;
-const STROKE_ASSIST_MIN_PROGRESS_SPAN = 0.45;
-const STROKE_ASSIST_MAX_BACKTRACK = 0.12;
+// Keep these as stroke-relative ratios. The visible guide and HanziWriter share
+// one transform; never add a second endpoint veto after HanziWriter says OK.
+const VISIBLE_GUIDE_DISTANCE_TOLERANCE = 24;
+const VISIBLE_GUIDE_MIN_FILL_RATIO = 0.30;
+const VISIBLE_GUIDE_MAX_START_PROGRESS = 0.35;
+const VISIBLE_GUIDE_MIN_END_PROGRESS = 0.62;
+const VISIBLE_GUIDE_MIN_PROGRESS_SPAN = 0.45;
+const VISIBLE_GUIDE_MAX_BACKTRACK = 0.20;
+// The ten circular handakuten/diacritic medians close exactly. Keep this raw
+// tolerance tiny so an ordinary short hook is never treated as a loop.
+const VISIBLE_GUIDE_CLOSED_ENDPOINT_TOLERANCE = 1;
 const CARE_STATE_KEY = 'mojikkoFarmCareStateV1';
 const PENDING_REWARD_KEY = 'mojikkoFarmPendingWritingReward';
 const WRITING_CURSOR_KEY = 'mojikkoFarmWritingCursorV1';
@@ -1705,7 +1707,8 @@ let activeAttemptHadMistake = false;
 let activeAttemptMaxProgress = 0;
 let activeAttemptStartProgress = null;
 let activeAttemptLastProgress = 0;
-let pendingCorrectStroke = null;
+let activeAttemptPreviousRawProgress = null;
+let activeAttemptClosedStroke = false;
 let sparkleBudget = 0;
 let strokesCompleted = 0;
 let currentStrokeIndex = 0;
@@ -2089,7 +2092,22 @@ function clearStrokeNumbers() {
 
 function getPixelLetterPadding() {
   const size = Math.max(1, currentWriterSize || writingBoard.getBoundingClientRect().width || 610);
-  return Math.max(36, Math.min(120, (WRITER_PADDING / size) * 1000));
+  return (WRITER_PADDING / size) * 1000;
+}
+
+function getHanziGridTransform(gridSize, pixelPadding) {
+  const padding = (pixelPadding / 1000) * gridSize;
+  // HanziWriter's character bounds include the descender below y=0. Reusing
+  // its positioner is what keeps the painted dots and the judged median equal.
+  if (typeof HanziWriter !== 'undefined' && typeof HanziWriter.getScalingTransform === 'function') {
+    return HanziWriter.getScalingTransform(gridSize, gridSize, padding);
+  }
+  const scale = (gridSize - padding * 2) / 1024;
+  return {
+    x: padding,
+    y: padding + 124 * scale,
+    scale
+  };
 }
 
 function makeStrokeMask(pathData, gridSize, pixelPadding, offsetX, offsetY) {
@@ -2097,13 +2115,19 @@ function makeStrokeMask(pathData, gridSize, pixelPadding, offsetX, offsetY) {
   maskCanvas.width = gridSize;
   maskCanvas.height = gridSize;
   const maskCtx = maskCanvas.getContext('2d');
-  const gridPadding = (pixelPadding / 1000) * gridSize;
-  const scale = (gridSize - gridPadding * 2) / 1024;
+  const transform = getHanziGridTransform(gridSize, pixelPadding);
   const dx = offsetX || 0;
   const dy = offsetY || 0;
   maskCtx.clearRect(0, 0, gridSize, gridSize);
   maskCtx.fillStyle = '#000';
-  maskCtx.setTransform(scale, 0, 0, -scale, gridPadding + dx, gridSize - gridPadding + dy);
+  maskCtx.setTransform(
+    transform.scale,
+    0,
+    0,
+    -transform.scale,
+    transform.x + dx,
+    gridSize - transform.y + dy
+  );
   maskCtx.fill(new Path2D(pathData));
   maskCtx.setTransform(1, 0, 0, 1, 0, 0);
 
@@ -2200,24 +2224,24 @@ async function loadGuideSvgMask(item, gridSize) {
   return guideMask;
 }
 
-function rawMedianPointToGrid(point, gridSize) {
+function rawMedianPointToGrid(point, gridSize, pixelPadding = getPixelLetterPadding()) {
   const x = Number(point && point[0]);
   const y = Number(point && point[1]);
   if (!Number.isFinite(x) || !Number.isFinite(y)) return null;
+  const transform = getHanziGridTransform(gridSize, pixelPadding);
   return {
-    x: (x / 1024) * gridSize,
-    y: ((1024 - y) / 1024) * gridSize
+    x: transform.x + x * transform.scale,
+    y: gridSize - transform.y - y * transform.scale
   };
 }
 
 function guideGridPointToRawMedian(point, gridSize, pixelPadding) {
   if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) return null;
-  const gridPadding = (pixelPadding / 1000) * gridSize;
-  const scale = (gridSize - gridPadding * 2) / 1024;
-  if (!Number.isFinite(scale) || scale <= 0) return null;
+  const transform = getHanziGridTransform(gridSize, pixelPadding);
+  if (!Number.isFinite(transform.scale) || transform.scale <= 0) return null;
   return [
-    Math.max(0, Math.min(1024, (point.x - gridPadding) / scale)),
-    Math.max(0, Math.min(1024, (gridSize - gridPadding - point.y) / scale))
+    Math.max(0, Math.min(1024, (point.x - transform.x) / transform.scale)),
+    Math.max(0, Math.min(1024, (gridSize - transform.y - point.y) / transform.scale))
   ];
 }
 
@@ -2342,12 +2366,12 @@ function distanceSqToPolyline(px, py, points) {
   return best;
 }
 
-function splitGuideMaskByNearestMedian(guideMask, medians, gridSize) {
+function splitGuideMaskByNearestMedian(guideMask, medians, gridSize, providedMapMedianPoint) {
   if (!guideMask || !Array.isArray(medians) || medians.length === 0) return null;
   const guideBounds = getMaskBounds(guideMask, gridSize);
   if (!guideBounds) return null;
 
-  const mapMedianPoint = createMedianToGuideMapper(medians, guideBounds, gridSize);
+  const mapMedianPoint = providedMapMedianPoint || createMedianToGuideMapper(medians, guideBounds, gridSize);
   const polylines = medians.map((median) => makeMedianPolyline(median, mapMedianPoint));
   if (!polylines.some((points) => points.length > 0)) return null;
 
@@ -2545,27 +2569,15 @@ async function buildPixelLetterMask(data, item, token) {
   const pixelPadding = getPixelLetterPadding();
   try {
     let strokeMasks = data.strokes.map((path) => makeStrokeMask(path, gridSize, pixelPadding, 0, 0));
-    let merged = mergeStrokeMasks(strokeMasks, gridSize);
-    const bounds = getMaskBounds(merged.mask, gridSize);
-    let offsetX = 0;
-    let offsetY = 0;
-    if (bounds) {
-      const centerX = (bounds.minX + bounds.maxX + 1) / 2;
-      const centerY = (bounds.minY + bounds.maxY + 1) / 2;
-      const clamped = clampOffsetToBoard(Math.round(gridSize / 2 - centerX), Math.round(gridSize / 2 - centerY), bounds, gridSize);
-      offsetX = clamped.x;
-      offsetY = clamped.y;
-      if (offsetX || offsetY) {
-        strokeMasks = data.strokes.map((path) => makeStrokeMask(path, gridSize, pixelPadding, offsetX, offsetY));
-        merged = mergeStrokeMasks(strokeMasks, gridSize);
-      }
-    }
+    const merged = mergeStrokeMasks(strokeMasks, gridSize);
+    const offsetX = 0;
+    const offsetY = 0;
     let guideMask = merged.mask;
     let totalMaskCells = merged.totalMaskCells;
-    let mapMedianPoint = null;
+    let mapMedianPoint = (point) => rawMedianPointToGrid(point, gridSize, pixelPadding);
     let writerOffsetX = offsetX;
     let writerOffsetY = offsetY;
-    const baseSplit = splitGuideMaskByNearestMedian(guideMask, data.medians, gridSize);
+    const baseSplit = splitGuideMaskByNearestMedian(guideMask, data.medians, gridSize, mapMedianPoint);
     if (baseSplit && baseSplit.strokeMasks) {
       strokeMasks = baseSplit.strokeMasks;
       mapMedianPoint = baseSplit.mapMedianPoint;
@@ -2862,7 +2874,8 @@ function resetWriting() {
   activeAttemptMaxProgress = 0;
   activeAttemptStartProgress = null;
   activeAttemptLastProgress = 0;
-  pendingCorrectStroke = null;
+  activeAttemptPreviousRawProgress = null;
+  activeAttemptClosedStroke = false;
   sparkleBudget = 0;
   strokesCompleted = 0;
   currentStrokeIndex = 0;
@@ -2989,13 +3002,7 @@ function medianPointToLetterGrid(point) {
     if (mapped && Number.isFinite(mapped.x) && Number.isFinite(mapped.y)) return mapped;
   }
 
-  const gridSize = pixelLetter.gridSize || PIXEL_GRID_SIZE;
-  const gridPadding = (getPixelLetterPadding() / 1000) * gridSize;
-  const scale = (gridSize - gridPadding * 2) / 1024;
-  return {
-    x: gridPadding + (pixelLetter.offsetX || 0) + x * scale,
-    y: gridSize - gridPadding + (pixelLetter.offsetY || 0) - y * scale
-  };
+  return rawMedianPointToGrid(point, pixelLetter.gridSize || PIXEL_GRID_SIZE);
 }
 
 function getStrokeProgressAtBoardPoint(strokeIndex, boardPoint) {
@@ -3043,41 +3050,40 @@ function getStrokeProgressAtBoardPoint(strokeIndex, boardPoint) {
     }
   });
 
-  const maxDistanceSq = STROKE_END_DISTANCE_TOLERANCE * STROKE_END_DISTANCE_TOLERANCE;
+  const maxDistanceSq = VISIBLE_GUIDE_DISTANCE_TOLERANCE * VISIBLE_GUIDE_DISTANCE_TOLERANCE;
   return bestDistanceSq <= maxDistanceSq ? Math.max(0, Math.min(1, bestProgress)) : null;
 }
 
-function hasAttemptReachedStrokeEnd(strokeIndex) {
-  if (!currentCharData || !Array.isArray(currentCharData.medians)) return true;
-  if (strokeIndex < 0 || strokeIndex < strokesCompleted) return true;
-  return activeAttemptMaxProgress >= STROKE_END_PROGRESS_REQUIRED;
+function isClosedStrokeMedian(strokeIndex) {
+  if (!currentCharData || !Array.isArray(currentCharData.medians)) return false;
+  const median = currentCharData.medians[strokeIndex];
+  if (!Array.isArray(median) || median.length < 3) return false;
+  const first = median[0];
+  const last = median[median.length - 1];
+  if (!Array.isArray(first) || !Array.isArray(last)) return false;
+  const dx = Number(first[0]) - Number(last[0]);
+  const dy = Number(first[1]) - Number(last[1]);
+  return Number.isFinite(dx) && Number.isFinite(dy) &&
+    Math.hypot(dx, dy) <= VISIBLE_GUIDE_CLOSED_ENDPOINT_TOLERANCE;
 }
 
-function canAcceptPendingContinuation(strokeIndex) {
+function canAcceptVisibleGuideStroke(strokeIndex) {
+  const progressSpan = activeAttemptMaxProgress - activeAttemptStartProgress;
+  const startedNearBeginning = activeAttemptClosedStroke
+    ? Math.abs(activeAttemptStartProgress) <= VISIBLE_GUIDE_MAX_START_PROGRESS
+    : activeAttemptStartProgress <= VISIBLE_GUIDE_MAX_START_PROGRESS;
+  const reachedEnoughOfGuide = activeAttemptClosedStroke
+    ? progressSpan >= VISIBLE_GUIDE_MIN_END_PROGRESS
+    : activeAttemptMaxProgress >= VISIBLE_GUIDE_MIN_END_PROGRESS;
   return !!(
-    pendingCorrectStroke &&
-    pendingCorrectStroke.strokeNum === strokeIndex &&
-    activeAttemptPainted &&
-    trailDistance >= PENDING_CONTINUATION_MIN_DISTANCE &&
-    getStrokeFilledRatio(strokeIndex) >= PENDING_CONTINUATION_MIN_FILL_RATIO &&
-    hasAttemptReachedStrokeEnd(strokeIndex)
-  );
-}
-
-function canAcceptGuidedStrokeAssist(strokeIndex, data) {
-  const missesOnStroke = data && Number.isFinite(data.mistakesOnStroke)
-    ? data.mistakesOnStroke
-    : 0;
-  return !!(
-    missesOnStroke >= STROKE_ASSIST_AFTER_MISSES &&
     activeAttemptStroke === strokeIndex &&
     activeAttemptPainted &&
-    trailDistance >= STROKE_ASSIST_MIN_DISTANCE &&
-    getStrokeFilledRatio(strokeIndex) >= STROKE_ASSIST_MIN_FILL_RATIO &&
-    hasAttemptReachedStrokeEnd(strokeIndex) &&
+    getStrokeFilledRatio(strokeIndex) >= VISIBLE_GUIDE_MIN_FILL_RATIO &&
     Number.isFinite(activeAttemptStartProgress) &&
-    activeAttemptLastProgress - activeAttemptStartProgress >= STROKE_ASSIST_MIN_PROGRESS_SPAN &&
-    activeAttemptMaxProgress - activeAttemptLastProgress <= STROKE_ASSIST_MAX_BACKTRACK
+    startedNearBeginning &&
+    reachedEnoughOfGuide &&
+    progressSpan >= VISIBLE_GUIDE_MIN_PROGRESS_SPAN &&
+    activeAttemptMaxProgress - activeAttemptLastProgress <= VISIBLE_GUIDE_MAX_BACKTRACK
   );
 }
 
@@ -3086,15 +3092,32 @@ function updateAttemptProgressForPoint(point) {
   const item = getCurrentCharacter();
   const strokeIndex = Math.min(activeAttemptStroke, item.strokes - 1);
   if (strokeIndex < 0 || strokeIndex < strokesCompleted) return;
-  const progress = getStrokeProgressAtBoardPoint(strokeIndex, point);
-  if (!Number.isFinite(progress)) return;
-  if (activeAttemptStartProgress === null) activeAttemptStartProgress = progress;
-  activeAttemptLastProgress = progress;
-  activeAttemptMaxProgress = Math.max(activeAttemptMaxProgress, progress);
+  const rawProgress = getStrokeProgressAtBoardPoint(strokeIndex, point);
+  if (!Number.isFinite(rawProgress)) return;
 
-  if (canAcceptPendingContinuation(strokeIndex)) {
-    acceptCorrectStroke(pendingCorrectStroke.data, true);
+  if (activeAttemptPreviousRawProgress === null) {
+    // A closed median has the same point at progress 0 and 1. Represent its
+    // first sample on the side nearest the seam so forward motion can unwrap.
+    const initialProgress = activeAttemptClosedStroke && rawProgress > 0.5
+      ? rawProgress - 1
+      : rawProgress;
+    activeAttemptStartProgress = initialProgress;
+    activeAttemptLastProgress = initialProgress;
+    activeAttemptMaxProgress = initialProgress;
+    activeAttemptPreviousRawProgress = rawProgress;
+    return;
   }
+
+  if (activeAttemptClosedStroke) {
+    let delta = rawProgress - activeAttemptPreviousRawProgress;
+    if (delta < -0.5) delta += 1;
+    if (delta > 0.5) delta -= 1;
+    activeAttemptLastProgress += delta;
+  } else {
+    activeAttemptLastProgress = rawProgress;
+  }
+  activeAttemptPreviousRawProgress = rawProgress;
+  activeAttemptMaxProgress = Math.max(activeAttemptMaxProgress, activeAttemptLastProgress);
 }
 
 function fillStrokePixels(strokeIndex) {
@@ -3264,26 +3287,16 @@ function onTrailPointerDown(event) {
   trailAttemptId += 1;
   const item = getCurrentCharacter();
   const strokeIndex = Math.min(currentStrokeIndex, item.strokes - 1);
-  const continuingPending = !!(
-    pendingCorrectStroke && pendingCorrectStroke.strokeNum === strokeIndex
-  );
-  if (continuingPending) {
-    // HanziWriter has already moved to its next internal stroke after calling
-    // onCorrectStroke. Rewind it while keeping our accepted partial drawing so
-    // a child can lift a finger and continue from the same visible stroke.
-    startWriterQuiz(strokesCompleted);
-  } else if (pendingCorrectStroke) {
-    pendingCorrectStroke = null;
-    startWriterQuiz(strokesCompleted);
-  }
   activeAttemptStroke = strokeIndex;
   activeAttemptCompletedBefore = strokesCompleted;
   activeAttemptPainted = false;
   activeAttemptHadMistake = false;
   activeAttemptStartProgress = null;
   activeAttemptLastProgress = 0;
-  if (!continuingPending) activeAttemptMaxProgress = 0;
-  if (strokeIndex >= strokesCompleted && !continuingPending) {
+  activeAttemptMaxProgress = 0;
+  activeAttemptPreviousRawProgress = null;
+  activeAttemptClosedStroke = isClosedStrokeMedian(strokeIndex);
+  if (strokeIndex >= strokesCompleted) {
     const erased = clearStrokePixels(strokeIndex);
     if (erased > 0) renderPixelLetter();
   }
@@ -3358,21 +3371,21 @@ function finishTrailAttempt(event) {
   const attemptId = trailAttemptId;
   const strokeIndex = activeAttemptStroke;
   const completedBefore = activeAttemptCompletedBefore;
+  const visibleGuideAccepted = !!(
+    event && event.type === 'pointerup' && canAcceptVisibleGuideStroke(strokeIndex)
+  );
   stopTrail();
   if (strokeIndex < 0) return;
+  if (visibleGuideAccepted) {
+    acceptCorrectStroke({ strokeNum: strokeIndex, source: 'visible-guide' }, true);
+    return;
+  }
   if (event && event.type === 'pointercancel') {
     startWriterQuiz(strokesCompleted);
   }
 
   setTimeout(() => {
     if (complete || trailAttemptId !== attemptId || activeAttemptStroke !== strokeIndex) return;
-    const pendingStroke = pendingCorrectStroke && pendingCorrectStroke.strokeNum === strokeIndex
-      ? pendingCorrectStroke
-      : null;
-    if (pendingStroke && canAcceptPendingContinuation(strokeIndex)) {
-      acceptCorrectStroke(pendingStroke.data, true);
-      return;
-    }
     activeAttemptStroke = -1;
     activeAttemptCompletedBefore = strokesCompleted;
     const shouldClear = activeAttemptPainted || activeAttemptHadMistake;
@@ -3380,14 +3393,11 @@ function finishTrailAttempt(event) {
     activeAttemptHadMistake = false;
     if (strokesCompleted > completedBefore || strokeIndex < strokesCompleted) return;
 
-    if (pendingStroke) {
-      trailDistance = 0;
-      setMessage(`${strokeIndex + 1}かくめ、つづきから なぞってね`, 'あとすこし');
-      return;
-    }
     activeAttemptMaxProgress = 0;
     activeAttemptStartProgress = null;
     activeAttemptLastProgress = 0;
+    activeAttemptPreviousRawProgress = null;
+    activeAttemptClosedStroke = false;
     if (!shouldClear) return;
     const erased = clearStrokePixels(strokeIndex);
     if (erased > 0) {
@@ -3404,7 +3414,6 @@ function onCorrectStroke(data) {
   const strokeNum = data && Number.isFinite(data.strokeNum) ? data.strokeNum : strokesCompleted;
   if (strokeNum !== expectedStroke) {
     if (strokeNum > expectedStroke) {
-      pendingCorrectStroke = null;
       activeAttemptHadMistake = true;
       clearStrokePixels(strokeNum);
       renderPixelLetter();
@@ -3413,11 +3422,8 @@ function onCorrectStroke(data) {
     }
     return;
   }
-  if (strokeNum >= strokesCompleted && !hasAttemptReachedStrokeEnd(strokeNum)) {
-    pendingCorrectStroke = { strokeNum, data };
-    setMessage(`${strokeNum + 1}かくめ、さいごの ところまで なぞってね`, 'あとすこし');
-    return;
-  }
+  // HanziWriter OK is authoritative. The visible-guide check is only an OR
+  // fallback for kana whose supplied outline and median disagree slightly.
   acceptCorrectStroke(data);
 }
 
@@ -3427,7 +3433,6 @@ function acceptCorrectStroke(data, resyncWriter) {
   const rawStrokeNum = data && Number.isFinite(data.strokeNum) ? data.strokeNum : expectedStroke;
   const strokeNum = rawStrokeNum === expectedStroke ? rawStrokeNum : expectedStroke;
   playSfx('strokeOk');
-  pendingCorrectStroke = null;
   fillStrokePixels(strokeNum);
   const nextCompleted = strokeNum < strokesCompleted
     ? strokesCompleted
@@ -3443,6 +3448,8 @@ function acceptCorrectStroke(data, resyncWriter) {
   activeAttemptMaxProgress = 0;
   activeAttemptStartProgress = null;
   activeAttemptLastProgress = 0;
+  activeAttemptPreviousRawProgress = null;
+  activeAttemptClosedStroke = false;
   renderPixelLetter();
   renderCanvasStrokeNumbers();
   setMessage(
@@ -3468,17 +3475,8 @@ function onMistake(data) {
   if (rawStrokeNum < strokesCompleted) return;
   playSfx('mistake');
   const strokeNum = Math.min(strokesCompleted, item.strokes - 1);
-  if (pendingCorrectStroke) {
-    activeAttemptHadMistake = true;
-    setMessage(`${pendingCorrectStroke.strokeNum + 1}かくめ、さいごまで なぞってね`, 'あとすこし');
-    return;
-  }
   mistakeCount += 1;
   activeAttemptHadMistake = true;
-  if (canAcceptGuidedStrokeAssist(strokeNum, data)) {
-    acceptCorrectStroke({ ...data, strokeNum, source: 'guided-assist' }, true);
-    return;
-  }
   if (activeAttemptStroke >= 0) {
     setMessage(`${strokeNum + 1}かくめを ゆっくり なぞってね`, 'まだ かけるよ');
     return;
@@ -3490,6 +3488,8 @@ function onMistake(data) {
   activeAttemptMaxProgress = 0;
   activeAttemptStartProgress = null;
   activeAttemptLastProgress = 0;
+  activeAttemptPreviousRawProgress = null;
+  activeAttemptClosedStroke = false;
   const erased = clearStrokePixels(strokeNum);
   if (erased > 0) {
     renderPixelLetter();
@@ -3501,10 +3501,8 @@ function onMistake(data) {
 
 function onWriterComplete(summary) {
   const item = getCurrentCharacter();
-  if (pendingCorrectStroke || strokesCompleted < item.strokes) {
-    const strokeNum = pendingCorrectStroke
-      ? pendingCorrectStroke.strokeNum
-      : Math.min(strokesCompleted, item.strokes - 1);
+  if (strokesCompleted < item.strokes) {
+    const strokeNum = Math.min(strokesCompleted, item.strokes - 1);
     setMessage(`${strokeNum + 1}かくめ、さいごまで なぞってね`, 'あとすこし');
     return;
   }
