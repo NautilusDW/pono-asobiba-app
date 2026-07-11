@@ -43,19 +43,19 @@ for (const viewport of landscapeFitCases) {
 const usesShortLandscapeLayout = (width, height) => width > height && height <= 560;
 assert.equal(usesShortLandscapeLayout(1024, 768), false, '1024x768 must keep the regular tablet layout');
 assert.equal(usesShortLandscapeLayout(390, 844), false, '390x844 must keep the portrait layout');
+assert.equal(usesShortLandscapeLayout(1366, 768), false, '1366x768 must keep the regular desktop layout');
 
 const expectedAnimals = {
-  neko: 'assets/zukan/animals/flower_path/kitten.png',
-  inu: 'assets/zukan/animals/flower_path/puppy.png',
-  kuma: 'assets/zukan/animals/sunlit_forest/bear_cub.png',
-  lion: 'assets/images/quizland/illust/stage/lion_osu.png',
-  zou: 'assets/images/quizland/illust/stage/stage_trivia_long_nose_elephant.png',
+  neko: 'assets/images/quizland/illust/choice/neko.png',
+  inu: 'assets/images/quizland/illust/choice/inu.png',
+  kuma: 'assets/images/quizland/illust/choice/kuma.png',
+  kirin: 'assets/images/quizland/illust/choice/kirin.png',
+  lion: 'assets/images/quizland/illust/choice/lion.png',
+  zou: 'assets/images/quizland/illust/choice/zou.png',
 };
-assert.match(html, /neko: '\.\.\/assets\/zukan\/animals\/flower_path\/kitten\.png'/);
-assert.match(html, /inu: '\.\.\/assets\/zukan\/animals\/flower_path\/puppy\.png'/);
-assert.match(html, /kuma: '\.\.\/assets\/zukan\/animals\/sunlit_forest\/bear_cub\.png'/);
-assert.match(html, /lion: MAZE_QUIZ_STAGE_IMG \+ 'lion_osu\.png'/);
-assert.match(html, /zou: MAZE_QUIZ_STAGE_IMG \+ 'stage_trivia_long_nose_elephant\.png'/);
+for (const id of Object.keys(expectedAnimals)) {
+  assert.match(html, new RegExp(`${id}: MAZE_QUIZ_IMG \\+ '${id}\\.png'`));
+}
 for (const relative of Object.values(expectedAnimals)) {
   const file = path.join(root, relative);
   const png = fs.readFileSync(file);
@@ -69,9 +69,10 @@ for (const relative of Object.values(expectedAnimals)) {
 
 assert.match(
   html,
-  /return _mzAsset\(MAZE_ODDONE_ANIMAL_ASSETS\[name\] \|\| _mzVersionedAnimalSrc/,
-  'odd-one choices must resolve through the generated natural-proportion animal map',
+  /function _mzOddAnimal\(name, label\) \{\s*return _mzMazeAnimal\(name, label\);/,
+  'odd-one choices must resolve through the canonical animal map',
 );
+assert.doesNotMatch(html, /MAZE_RECROPPED_ANIMAL_VERSION|_mzVersionedAnimalSrc|MAZE_ODDONE_ANIMAL_ASSETS/);
 assert.doesNotMatch(html, /QUIZ_ODDONE[\s\S]*?_mzWord\('(neko|inu)'/);
 
 const dataStart = html.indexOf('const MAZE_WORD_IMG');
@@ -95,17 +96,17 @@ for (const question of quizContext.__oddone) {
 const byLabel = new Map(
   quizContext.__oddone.flatMap((question) => question.items).map((item) => [item.label, item.src]),
 );
-assert.equal(byLabel.get('ねこ'), '../assets/zukan/animals/flower_path/kitten.png');
-assert.equal(byLabel.get('いぬ'), '../assets/zukan/animals/flower_path/puppy.png');
-assert.equal(byLabel.get('くま'), '../assets/zukan/animals/sunlit_forest/bear_cub.png');
-assert.equal(byLabel.get('らいおん'), '../assets/images/quizland/illust/stage/lion_osu.png');
-assert.equal(byLabel.get('ぞう'), '../assets/images/quizland/illust/stage/stage_trivia_long_nose_elephant.png');
+assert.equal(byLabel.get('ねこ'), '../assets/images/quizland/illust/choice/neko.png');
+assert.equal(byLabel.get('いぬ'), '../assets/images/quizland/illust/choice/inu.png');
+assert.equal(byLabel.get('くま'), '../assets/images/quizland/illust/choice/kuma.png');
+assert.equal(byLabel.get('きりん'), '../assets/images/quizland/illust/choice/kirin.png');
+assert.equal(byLabel.get('らいおん'), '../assets/images/quizland/illust/choice/lion.png');
+assert.equal(byLabel.get('ぞう'), '../assets/images/quizland/illust/choice/zou.png');
 
 const nativeSources = new Set(nativeManifest.entries.map((entry) => entry.source));
 assert.ok(nativeSources.has('assets/images/maze'), 'native build must include Maze quiz art');
 assert.ok(nativeSources.has('assets/images/word'), 'native build must include shared word art');
 assert.ok(nativeSources.has('assets/images/quizland'), 'native build must include QuizLand animal art');
-assert.ok(nativeSources.has('assets/zukan/animals'), 'native build must include generated Zukan animal art');
 for (const question of quizContext.__oddone) {
   for (const item of question.items) {
     const file = path.resolve(root, 'maze', item.src.split('?')[0]);

@@ -99,24 +99,6 @@
         { "id": "Tongue",     "save_path": "assets/images/ocean/Tongue/Tongue_normal_1.png",         "bbox": [512, 1024, 512, 512] },
         { "id": "Ear_part",   "save_path": "assets/images/ocean/Ear_part/Ear_part_normal_1.png",     "bbox": [1024, 1024, 512, 512] }
       ]
-    },
-    {
-      "sheet_id": "sheet_animal_extras",
-      "purpose": "9 animals/objects, 3x3 grid (word/ extras)",
-      "output_path": "assets/images/quizland/illust/_sheets/sheet_animal_extras.png",
-      "size": "1536x1536",
-      "prompt": "A 3 columns × 3 rows grid (total 1536x1536) of 9 simple kid-friendly cute animal/object illustrations, each cell 512x512 transparent. Top row left-to-right: a friendly grey elephant with long curved trunk (ぞう), an orange tabby cat with smile (ねこ), a fluffy white rabbit with long ears (うさぎ). Middle row left-to-right: a brown bear sitting peacefully (クマ), a tall yellow giraffe with brown spots (キリン), a golden lion with full mane (ライオン). Bottom row left-to-right: a friendly grey-blue dolphin (イルカ), a large blue whale with friendly eye (クジラ), a yellow banana fruit with brown stem (バナナ). All in hand-drawn watercolor style with subtle paper texture, warm Japanese children's book aesthetic, soft drop shadow, transparent PNG. White space between cells. No text, no labels.",
-      "crops": [
-        { "id": "zou",    "save_path": "assets/images/word/zou.png",    "bbox": [0, 0, 512, 512] },
-        { "id": "neko",   "save_path": "assets/images/word/neko.png",   "bbox": [512, 0, 512, 512] },
-        { "id": "usagi",  "save_path": "assets/images/word/usagi.png",  "bbox": [1024, 0, 512, 512] },
-        { "id": "kuma",   "save_path": "assets/images/word/kuma.png",   "bbox": [0, 512, 512, 512] },
-        { "id": "kirin",  "save_path": "assets/images/word/kirin.png",  "bbox": [512, 512, 512, 512] },
-        { "id": "lion",   "save_path": "assets/images/word/lion.png",   "bbox": [1024, 512, 512, 512] },
-        { "id": "iruka",  "save_path": "assets/images/word/iruka.png",  "bbox": [0, 1024, 512, 512] },
-        { "id": "kujira", "save_path": "assets/images/word/kujira.png", "bbox": [512, 1024, 512, 512] },
-        { "id": "banana", "save_path": "assets/images/word/banana.png", "bbox": [1024, 1024, 512, 512] }
-      ]
     }
   ],
   "items": [

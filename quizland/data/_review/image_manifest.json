@@ -660,23 +660,6 @@
       ]
     },
     {
-      "id": "sheet_animal_extras",
-      "save_path": "assets/images/quizland/illust/_sheets/sheet_animal_extras.png",
-      "jp_labels": [
-        "sheet_animal_extras"
-      ],
-      "usage": [
-        "stage"
-      ],
-      "source_sheet": null,
-      "subject_detailed": "9アイテム (8動物+バナナ) を 3×3 グリッドで等間隔配置、動物は全身を斜め前から",
-      "alternatives": [],
-      "status": "generated",
-      "context_tags": [
-        "animal"
-      ]
-    },
-    {
       "id": "sheet_body_emoji",
       "save_path": "assets/images/quizland/illust/_sheets/sheet_body_emoji.png",
       "jp_labels": [
@@ -1855,11 +1838,10 @@
       "usage": [
         "choice"
       ],
-      "source_sheet": "choice_trivia_hibernate_animal_set",
-      "subject_detailed": "キリンの全身 (共有)",
+      "source_sheet": null,
+      "subject_detailed": "安全確認済みの単体キリン全身。透明余白つき正方形キャンバス (共有)",
       "alternatives": [
-        "assets/images/ocean/Giraffe/Giraffe_normal_1.png",
-        "assets/images/word/kirin.png"
+        "assets/images/ocean/Giraffe/Giraffe_normal_1.png"
       ],
       "status": "generated",
       "context_tags": [
@@ -1896,12 +1878,11 @@
       "usage": [
         "choice"
       ],
-      "source_sheet": "choice_trivia_hibernate_animal_set",
-      "subject_detailed": "茶色いクマの全身、立ち姿 (共有) (正解)",
+      "source_sheet": null,
+      "subject_detailed": "安全確認済みの茶色いクマ全身。透明余白つき正方形キャンバス (共有) (正解)",
       "alternatives": [
         "assets/images/ocean/Bear/Bear_normal_1.png",
-        "assets/images/quizland/illust/stage/stage_trivia_sleeping_bear_cave.png",
-        "assets/images/word/kuma.png"
+        "assets/images/quizland/illust/stage/stage_trivia_sleeping_bear_cave.png"
       ],
       "status": "generated",
       "context_tags": [
@@ -1942,13 +1923,12 @@
       "usage": [
         "choice"
       ],
-      "source_sheet": "choice_trivia_hibernate_animal_set",
-      "subject_detailed": "ライオンの全身 (共有)",
+      "source_sheet": null,
+      "subject_detailed": "安全確認済みのオスライオン全身。透明余白つき正方形キャンバス (共有)",
       "alternatives": [
         "assets/images/ocean/Lion/Lion_normal_1.png",
         "assets/images/ocean/Sea_lion/Sea_lion_normal_1.png",
-        "assets/images/quizland/illust/stage/stage_trivia_male_lion.png",
-        "assets/images/word/lion.png"
+        "assets/images/quizland/illust/stage/stage_trivia_male_lion.png"
       ],
       "status": "generated",
       "context_tags": [
@@ -2057,12 +2037,11 @@
       "usage": [
         "choice"
       ],
-      "source_sheet": "choice_trivia_animal_sound_set",
-      "subject_detailed": "猫の顔のアップ、茶トラ or 黒猫、目が大きい (正解)",
+      "source_sheet": null,
+      "subject_detailed": "安全確認済みの茶トラ猫全身。透明余白つき正方形キャンバス (正解)",
       "alternatives": [
         "assets/images/ocean/Cat/Cat_normal_1.png",
-        "assets/images/quizland/illust/stage/stage_trivia_meowing_cat.png",
-        "assets/images/word/neko.png"
+        "assets/images/quizland/illust/stage/stage_trivia_meowing_cat.png"
       ],
       "status": "generated",
       "context_tags": [
@@ -3210,13 +3189,12 @@
       "usage": [
         "choice"
       ],
-      "source_sheet": "choice_trivia_biggest_creature_set",
-      "subject_detailed": "ゾウ全身 (共有)",
+      "source_sheet": null,
+      "subject_detailed": "安全確認済みの長い鼻のゾウ全身。透明余白つき正方形キャンバス (共有)",
       "alternatives": [
         "assets/images/ocean/Elephant/Elephant_normal_1.png",
         "assets/images/quizland/illust/stage/stage_trivia_huge_creatures_compare.png",
-        "assets/images/quizland/illust/stage/stage_trivia_long_nose_elephant.png",
-        "assets/images/word/zou.png"
+        "assets/images/quizland/illust/stage/stage_trivia_long_nose_elephant.png"
       ],
       "status": "generated",
       "context_tags": [
@@ -4118,8 +4096,7 @@
         "assets/images/quizland/illust/choice/zou.png",
         "assets/images/quizland/illust/stage/stage_trivia_long_nose_elephant.png",
         "assets/images/quizland/illust/stage/stage_trivia_ocean_silhouettes_4.png",
-        "assets/images/word/ika.png",
-        "assets/images/word/zou.png"
+        "assets/images/word/ika.png"
       ],
       "status": "generated",
       "context_tags": [
@@ -4166,8 +4143,7 @@
         "assets/images/quizland/illust/choice/face_nose.png",
         "assets/images/quizland/illust/choice/part_nose.png",
         "assets/images/quizland/illust/choice/zou.png",
-        "assets/images/quizland/illust/stage/stage_trivia_huge_creatures_compare.png",
-        "assets/images/word/zou.png"
+        "assets/images/quizland/illust/stage/stage_trivia_huge_creatures_compare.png"
       ],
       "status": "generated",
       "context_tags": [
@@ -4189,8 +4165,7 @@
       "alternatives": [
         "assets/images/ocean/Lion/Lion_normal_1.png",
         "assets/images/ocean/Sea_lion/Sea_lion_normal_1.png",
-        "assets/images/quizland/illust/choice/lion.png",
-        "assets/images/word/lion.png"
+        "assets/images/quizland/illust/choice/lion.png"
       ],
       "status": "generated",
       "context_tags": [
@@ -4211,8 +4186,7 @@
       "subject_detailed": "stage_trivia_meowing_cat のステージ用情景イラスト。問題ボード中央で使う大きな絵。",
       "alternatives": [
         "assets/images/ocean/Cat/Cat_normal_1.png",
-        "assets/images/quizland/illust/choice/neko.png",
-        "assets/images/word/neko.png"
+        "assets/images/quizland/illust/choice/neko.png"
       ],
       "status": "generated",
       "context_tags": [
@@ -4367,8 +4341,7 @@
       "subject_detailed": "stage_trivia_sleeping_bear_cave のステージ用情景イラスト。問題ボード中央で使う大きな絵。",
       "alternatives": [
         "assets/images/ocean/Bear/Bear_normal_1.png",
-        "assets/images/quizland/illust/choice/kuma.png",
-        "assets/images/word/kuma.png"
+        "assets/images/quizland/illust/choice/kuma.png"
       ],
       "status": "generated",
       "context_tags": [

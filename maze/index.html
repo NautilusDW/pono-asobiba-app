@@ -8015,17 +8015,24 @@ const MAZE_LOCAL_QUIZ_ASSETS = {
 function _mzAsset(src, label) {
   return { src: src, label: label };
 }
-const MAZE_RECROPPED_ANIMAL_VERSION = {
-  zou: true, neko: true, kuma: true, kirin: true, lion: true
-};
-function _mzVersionedAnimalSrc(base, name) {
-  return base + name + '.png' + (MAZE_RECROPPED_ANIMAL_VERSION[name] ? '?v=2071' : '');
-}
 function _mzLocalQuizSrc(name) {
   return MAZE_LOCAL_QUIZ_ASSETS[name] ? (MAZE_LOCAL_QUIZ_IMG + name + '.png') : '';
 }
+// 迷路内で使う動物は、この安全確認済みの正方形アセットへ一本化する。
+// `_mzWord('neko')` のような古い呼び方が残っても、削除済みの縦長 word 画像へ戻らない。
+const MAZE_CANONICAL_ANIMAL_ASSETS = Object.freeze({
+  neko: MAZE_QUIZ_IMG + 'neko.png',
+  inu: MAZE_QUIZ_IMG + 'inu.png',
+  usagi: MAZE_QUIZ_STAGE_IMG + 'stage_trivia_rabbit.png',
+  kuma: MAZE_QUIZ_IMG + 'kuma.png',
+  kirin: MAZE_QUIZ_IMG + 'kirin.png',
+  lion: MAZE_QUIZ_IMG + 'lion.png',
+  zou: MAZE_QUIZ_IMG + 'zou.png',
+  iruka: MAZE_LOCAL_QUIZ_IMG + 'iruka.png',
+  kujira: MAZE_LOCAL_QUIZ_IMG + 'kujira.png',
+});
 function _mzWord(name, label) {
-  return _mzAsset(_mzLocalQuizSrc(name) || _mzVersionedAnimalSrc(MAZE_WORD_IMG, name), label);
+  return _mzAsset(_mzLocalQuizSrc(name) || MAZE_CANONICAL_ANIMAL_ASSETS[name] || (MAZE_WORD_IMG + name + '.png'), label);
 }
 function _mzQuiz(name, label) {
   return _mzAsset(_mzLocalQuizSrc(name) || (MAZE_QUIZ_IMG + name + '.png'), label);
@@ -8034,19 +8041,7 @@ function _mzCreature(name, label) {
   return _mzAsset(_mzLocalQuizSrc(name) || (MAZE_CREATURE_IMG + name + '.png'), label);
 }
 function _mzMazeAnimal(name, label) {
-  const assets = {
-    usagi: MAZE_QUIZ_STAGE_IMG + 'stage_trivia_rabbit.png',
-    iruka: _mzLocalQuizSrc('iruka') || (MAZE_QUIZ_STAGE_IMG + 'stage_trivia_dolphin.png'),
-    kirin: _mzVersionedAnimalSrc(MAZE_QUIZ_IMG, 'kirin'),
-    kuma: _mzVersionedAnimalSrc(MAZE_QUIZ_IMG, 'kuma'),
-    kujira: _mzLocalQuizSrc('kujira') || (MAZE_QUIZ_IMG + 'kujira.png'),
-    // batch:883 で追加: word/lion.png, word/zou.png は古い縦伸びキャンバス (244x235→512x512
-    // 詰め込みで content AR が不自然) なので、 cdb3e31 で kirin/kuma 系を切り替えたのと
-    // 同じく choice/ 配下の新版 watercolor (lion 512x512 / zou 292x270) に差し替え。
-    lion: _mzVersionedAnimalSrc(MAZE_QUIZ_IMG, 'lion'),
-    zou: _mzVersionedAnimalSrc(MAZE_QUIZ_IMG, 'zou'),
-  };
-  return _mzAsset(assets[name] || (MAZE_WORD_IMG + name + '.png'), label);
+  return _mzAsset(MAZE_CANONICAL_ANIMAL_ASSETS[name] || _mzLocalQuizSrc(name) || (MAZE_WORD_IMG + name + '.png'), label);
 }
 function _mzPeek(id, label, asset) {
   return { id: id, label: label, src: asset.src };
@@ -8101,20 +8096,8 @@ const QUIZ_TRUEFALSE = [
   { q: 'くまは どうぶつ？', a: true, icon: _mzMazeAnimal('kuma', 'くま') },
 ];
 
-// なかまはずれ: 旧 animal_extras crop の細長い被写体を避け、
-// 既存の生成済み透過素材のうち自然な全身比率の絵へ、このゲームだけ差し替える。
-const MAZE_ODDONE_ANIMAL_ASSETS = Object.freeze({
-  neko: '../assets/zukan/animals/flower_path/kitten.png',
-  inu: '../assets/zukan/animals/flower_path/puppy.png',
-  usagi: MAZE_QUIZ_STAGE_IMG + 'stage_trivia_rabbit.png',
-  kuma: '../assets/zukan/animals/sunlit_forest/bear_cub.png',
-  lion: MAZE_QUIZ_STAGE_IMG + 'lion_osu.png',
-  zou: MAZE_QUIZ_STAGE_IMG + 'stage_trivia_long_nose_elephant.png',
-  iruka: MAZE_LOCAL_QUIZ_IMG + 'iruka.png',
-  kirin: _mzVersionedAnimalSrc(MAZE_QUIZ_IMG, 'kirin'),
-});
 function _mzOddAnimal(name, label) {
-  return _mzAsset(MAZE_ODDONE_ANIMAL_ASSETS[name] || _mzVersionedAnimalSrc(MAZE_WORD_IMG, name), label);
+  return _mzMazeAnimal(name, label);
 }
 
 // items 4つ、odd は items のうち仲間外れの index
@@ -10037,8 +10020,8 @@ function _showCreatureDefeatDialog() {
 }
 
 // ── 力の手袋: 岩くだき ──
-const STRENGTH_TAP_REQUIRED = 18;
-const STRENGTH_TAP_MS = 10000;
+const STRENGTH_TAP_REQUIRED = 24;
+const STRENGTH_TAP_MS = 13000;
 
 function _strengthRockStageIndex(count) {
   if (count >= STRENGTH_TAP_REQUIRED) return 3;

@@ -2,15 +2,6 @@
   "generated_at": "2026-05-05T00:00:00+09:00",
   "duplicates": [
     {
-      "id": "banana",
-      "sheets": [
-        "sheet_animal_extras",
-        "choice_trivia_koala_food_set"
-      ],
-      "primary_sheet": "sheet_animal_extras",
-      "action": "primary を残し、他 sheet では同一 crop を再生成せず reference 化する"
-    },
-    {
       "id": "bone",
       "sheets": [
         "choice_body_wrap_set",
@@ -151,49 +142,28 @@
     {
       "id": "kirin",
       "sheets": [
-        "sheet_animal_extras",
         "choice_trivia_fast_animal_set",
         "choice_trivia_hibernate_animal_set"
       ],
-      "primary_sheet": "sheet_animal_extras",
+      "primary_sheet": "choice_trivia_hibernate_animal_set",
       "action": "primary を残し、他 sheet では同一 crop を再生成せず reference 化する"
     },
     {
       "id": "kujira",
       "sheets": [
-        "sheet_animal_extras",
         "choice_trivia_big_fish_set",
         "choice_trivia_dolphin_friend_set"
       ],
-      "primary_sheet": "sheet_animal_extras",
-      "action": "primary を残し、他 sheet では同一 crop を再生成せず reference 化する"
-    },
-    {
-      "id": "kuma",
-      "sheets": [
-        "sheet_animal_extras",
-        "choice_trivia_hibernate_animal_set"
-      ],
-      "primary_sheet": "sheet_animal_extras",
+      "primary_sheet": "choice_trivia_dolphin_friend_set",
       "action": "primary を残し、他 sheet では同一 crop を再生成せず reference 化する"
     },
     {
       "id": "lion",
       "sheets": [
-        "sheet_animal_extras",
         "choice_trivia_fast_animal_set",
         "choice_trivia_hibernate_animal_set"
       ],
-      "primary_sheet": "sheet_animal_extras",
-      "action": "primary を残し、他 sheet では同一 crop を再生成せず reference 化する"
-    },
-    {
-      "id": "neko",
-      "sheets": [
-        "sheet_animal_extras",
-        "choice_trivia_animal_sound_set"
-      ],
-      "primary_sheet": "sheet_animal_extras",
+      "primary_sheet": "choice_trivia_hibernate_animal_set",
       "action": "primary を残し、他 sheet では同一 crop を再生成せず reference 化する"
     },
     {
@@ -271,11 +241,10 @@
     {
       "id": "zou",
       "sheets": [
-        "sheet_animal_extras",
         "choice_trivia_hibernate_animal_set",
         "choice_trivia_biggest_creature_set"
       ],
-      "primary_sheet": "sheet_animal_extras",
+      "primary_sheet": "choice_trivia_biggest_creature_set",
       "action": "primary を残し、他 sheet では同一 crop を再生成せず reference 化する"
     }
   ]

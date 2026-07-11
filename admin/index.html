@@ -13532,8 +13532,18 @@ var WM_CROSSWORDS = [
   { diff: 'hard', diffLabel: '★★ 難しい', vertical: 'タイヤ', horizontal: 'ライオン', shared: 'イ', img1: 'taiya', img2: 'raion' }
 ];
 
+// 旧 animal_extras の word 画像は削除済み。動物名からURLを組み立てる管理表も、
+// 再び削除パスを読まないよう安全確認済みの choice 画像へ固定する。
+var WM_WORD_IMAGE_OVERRIDES = Object.freeze({
+  neko: '../assets/images/quizland/illust/choice/neko.png',
+  inu: '../assets/images/quizland/illust/choice/inu.png',
+  kuma: '../assets/images/quizland/illust/choice/kuma.png',
+  kirin: '../assets/images/quizland/illust/choice/kirin.png',
+  lion: '../assets/images/quizland/illust/choice/lion.png',
+  zou: '../assets/images/quizland/illust/choice/zou.png'
+});
 function wmWordImgUrl(name) {
-  return '../assets/images/word/' + name + '.png?_=' + Date.now();
+  return (WM_WORD_IMAGE_OVERRIDES[name] || ('../assets/images/word/' + name + '.png')) + '?_=' + Date.now();
 }
 
 // --- マッチステージテーブル描画 ---

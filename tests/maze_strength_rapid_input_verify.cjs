@@ -27,6 +27,24 @@ assert.match(html, /rockBtn\.addEventListener\('pointerdown', _onStrengthRockPoi
 assert.match(html, /rockBtn\.addEventListener\('click', _onStrengthRockClick\)/);
 assert.doesNotMatch(html, /rockBtn\.addEventListener\('click', _onStrengthRockTap\)/);
 
+const strengthConstantsStart = html.indexOf('const STRENGTH_TAP_REQUIRED');
+const pointerStart = html.indexOf('function _onStrengthRockPointerDown(', strengthConstantsStart);
+assert.ok(strengthConstantsStart >= 0 && pointerStart > strengthConstantsStart, 'strength constants are missing');
+const strengthRules = {};
+vm.runInNewContext(
+  html.slice(strengthConstantsStart, pointerStart)
+    + '\nthis.__required = STRENGTH_TAP_REQUIRED; this.__duration = STRENGTH_TAP_MS; this.__stage = _strengthRockStageIndex;',
+  strengthRules,
+  { filename: 'maze-strength-rules.js' },
+);
+assert.equal(strengthRules.__required, 24, 'rock durability must be raised from 18 to 24 hits');
+assert.equal(strengthRules.__duration, 13000, 'the 1.3x-longer rock must keep a comparable tapping pace');
+assert.deepEqual(
+  [0, 5, 6, 11, 12, 17, 18, 23, 24].map(strengthRules.__stage),
+  [0, 0, 1, 1, 2, 2, 3, 3, 3],
+  'crack stages must scale across the 24-hit durability',
+);
+
 const tapStart = html.indexOf('function _onStrengthRockTap()');
 const failStart = html.indexOf('function _failStrengthPushGame()', tapStart);
 assert.ok(tapStart >= 0 && failStart > tapStart, 'rock hit handler is missing');
@@ -36,7 +54,6 @@ const renderAfterHit = tapSource.indexOf('_renderStrengthPushGame();');
 assert.ok(finalLock >= 0 && finalLock < renderAfterHit, 'the final hit must lock success before timeout rendering');
 assert.match(tapSource, /if \(finalHit\) \{\s*_strengthGimmickSetTimeout/);
 
-const pointerStart = html.indexOf('function _onStrengthRockPointerDown(');
 const clickStart = html.indexOf('function _onStrengthRockClick(', pointerStart);
 const showStart = html.indexOf('function _showStrengthPushGame(', clickStart);
 assert.ok(pointerStart >= 0 && clickStart > pointerStart && showStart > clickStart, 'input adapters are missing');
@@ -80,5 +97,40 @@ assert.equal(accepted.length, 32, 'keyboard and assistive-technology clicks must
 delete context.window.PointerEvent;
 context._onStrengthRockClick({ detail: 1 });
 assert.equal(accepted.length, 33, 'click must remain a fallback when Pointer Events are unavailable');
+
+const scheduled = [];
+const tapContext = {
+  _strengthGameState: {
+    tapCount: 22,
+    required: 24,
+    locked: false,
+    lastPunchHand: 'left',
+    punchSeq: 0,
+    punchTimer: null,
+    crackPlayed: true,
+    almostPlayed: true,
+    status: '',
+  },
+  _playMazeVoice() {},
+  playRockHit() {},
+  _spawnStrengthDebrisBurst() {},
+  _spawnStrengthImpactEffect() {},
+  _renderStrengthPushGame() {},
+  _strengthGimmickSetTimeout(fn, delay) { scheduled.push({ fn, delay }); },
+  _resolveStrengthPushGame() {},
+  document: { getElementById() { return null; } },
+  setTimeout() { throw new Error('no punch timeout expected without a button'); },
+  clearTimeout() {},
+};
+vm.runInNewContext(tapSource, tapContext, { filename: 'maze-strength-hit-handler.js' });
+tapContext._onStrengthRockTap();
+assert.equal(tapContext._strengthGameState.tapCount, 23);
+assert.equal(tapContext._strengthGameState.locked, false, '23 hits must not break a 24-hit rock');
+assert.equal(scheduled.length, 0, '23 hits must not schedule success');
+tapContext._onStrengthRockTap();
+assert.equal(tapContext._strengthGameState.tapCount, 24);
+assert.equal(tapContext._strengthGameState.locked, true, 'the 24th hit must lock success immediately');
+assert.equal(scheduled.length, 1, 'the 24th hit must schedule exactly one success resolution');
+assert.equal(scheduled[0].delay, 420);
 
 console.log('maze strength rapid input verification: PASS');
