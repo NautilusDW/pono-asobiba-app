@@ -1681,6 +1681,7 @@ const STROKE_ASSIST_AFTER_MISSES = 3;
 const STROKE_ASSIST_MIN_DISTANCE = 45;
 const STROKE_ASSIST_MIN_FILL_RATIO = 0.5;
 const STROKE_ASSIST_MIN_PROGRESS_SPAN = 0.45;
+const STROKE_ASSIST_MAX_BACKTRACK = 0.12;
 const CARE_STATE_KEY = 'mojikkoFarmCareStateV1';
 const PENDING_REWARD_KEY = 'mojikkoFarmPendingWritingReward';
 let currentIndex = 0;
@@ -1692,6 +1693,7 @@ let currentWriterSize = 610;
 let pixelLetter = null;
 let trailDrawing = false;
 let lastTrailPoint = null;
+let activeTrailPointerId = null;
 let trailDistance = 0;
 let trailAttemptId = 0;
 let activeAttemptStroke = -1;
@@ -2821,6 +2823,7 @@ function resetWriting() {
   syncCurrentGroupFromCharacter();
   trailDrawing = false;
   lastTrailPoint = null;
+  activeTrailPointerId = null;
   trailDistance = 0;
   trailAttemptId += 1;
   activeAttemptStroke = -1;
@@ -3012,7 +3015,7 @@ function getStrokeProgressAtBoardPoint(strokeIndex, boardPoint) {
   });
 
   const maxDistanceSq = STROKE_END_DISTANCE_TOLERANCE * STROKE_END_DISTANCE_TOLERANCE;
-  return bestDistanceSq <= maxDistanceSq ? Math.max(0, Math.min(1, bestProgress)) : 0;
+  return bestDistanceSq <= maxDistanceSq ? Math.max(0, Math.min(1, bestProgress)) : null;
 }
 
 function hasAttemptReachedStrokeEnd(strokeIndex) {
@@ -3044,7 +3047,8 @@ function canAcceptGuidedStrokeAssist(strokeIndex, data) {
     getStrokeFilledRatio(strokeIndex) >= STROKE_ASSIST_MIN_FILL_RATIO &&
     hasAttemptReachedStrokeEnd(strokeIndex) &&
     Number.isFinite(activeAttemptStartProgress) &&
-    activeAttemptLastProgress - activeAttemptStartProgress >= STROKE_ASSIST_MIN_PROGRESS_SPAN
+    activeAttemptLastProgress - activeAttemptStartProgress >= STROKE_ASSIST_MIN_PROGRESS_SPAN &&
+    activeAttemptMaxProgress - activeAttemptLastProgress <= STROKE_ASSIST_MAX_BACKTRACK
   );
 }
 
@@ -3054,6 +3058,7 @@ function updateAttemptProgressForPoint(point) {
   const strokeIndex = Math.min(activeAttemptStroke, item.strokes - 1);
   if (strokeIndex < 0 || strokeIndex < strokesCompleted) return;
   const progress = getStrokeProgressAtBoardPoint(strokeIndex, point);
+  if (!Number.isFinite(progress)) return;
   if (activeAttemptStartProgress === null) activeAttemptStartProgress = progress;
   activeAttemptLastProgress = progress;
   activeAttemptMaxProgress = Math.max(activeAttemptMaxProgress, progress);
@@ -3182,9 +3187,10 @@ function spawnSpark(clientX, clientY) {
 }
 
 function onTrailPointerDown(event) {
-  if (complete || event.pointerType === 'mouse' && event.button !== 0) return;
+  if (complete || trailDrawing || event.pointerType === 'mouse' && event.button !== 0) return;
   playSfx('writeStart');
   trailDrawing = true;
+  activeTrailPointerId = event.pointerId;
   trailDistance = 0;
   sparkleBudget = 0;
   trailAttemptId += 1;
@@ -3229,7 +3235,10 @@ function onTrailPointerDown(event) {
 }
 
 function onTrailPointerMove(event) {
-  if (!trailDrawing || complete || !lastTrailPoint) return;
+  if (
+    !trailDrawing || complete || !lastTrailPoint ||
+    activeTrailPointerId !== null && event.pointerId !== activeTrailPointerId
+  ) return;
   const next = boardPointFromEvent(event);
   const d = paintTrailSegment(lastTrailPoint, next);
   trailDistance += d;
@@ -3252,6 +3261,7 @@ function onTrailPointerMove(event) {
 function stopTrail() {
   trailDrawing = false;
   lastTrailPoint = null;
+  activeTrailPointerId = null;
 }
 
 function appendFinalTrailPoint(event) {
@@ -3271,12 +3281,19 @@ function appendFinalTrailPoint(event) {
 }
 
 function finishTrailAttempt(event) {
+  if (
+    activeTrailPointerId !== null &&
+    (!event || event.pointerId !== activeTrailPointerId)
+  ) return;
   appendFinalTrailPoint(event);
   const attemptId = trailAttemptId;
   const strokeIndex = activeAttemptStroke;
   const completedBefore = activeAttemptCompletedBefore;
   stopTrail();
   if (strokeIndex < 0) return;
+  if (event && event.type === 'pointercancel') {
+    startWriterQuiz(strokesCompleted);
+  }
 
   setTimeout(() => {
     if (complete || trailAttemptId !== attemptId || activeAttemptStroke !== strokeIndex) return;

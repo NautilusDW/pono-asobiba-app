@@ -23,6 +23,7 @@ assert.match(html, /const STROKE_ASSIST_AFTER_MISSES = 3;/);
 assert.match(html, /const STROKE_ASSIST_MIN_DISTANCE = 45;/);
 assert.match(html, /const STROKE_ASSIST_MIN_FILL_RATIO = 0\.5;/);
 assert.match(html, /const STROKE_ASSIST_MIN_PROGRESS_SPAN = 0\.45;/);
+assert.match(html, /const STROKE_ASSIST_MAX_BACKTRACK = 0\.12;/);
 assert.match(html, /showHintAfterMisses: 2,/);
 assert.doesNotMatch(html, /markStrokeCorrectAfterMisses:/);
 
@@ -47,6 +48,7 @@ const decisionContext = {
   STROKE_ASSIST_MIN_DISTANCE: 45,
   STROKE_ASSIST_MIN_FILL_RATIO: 0.5,
   STROKE_ASSIST_MIN_PROGRESS_SPAN: 0.45,
+  STROKE_ASSIST_MAX_BACKTRACK: 0.12,
   activeAttemptStroke: 0,
   activeAttemptStartProgress: 0,
   activeAttemptLastProgress: 0.45,
@@ -82,6 +84,7 @@ assert.equal(decisionContext.canAcceptPendingContinuation(0), false, 'a future-s
 decisionContext.pendingCorrectStroke = null;
 decisionContext.fillRatio = 0.5;
 decisionContext.activeAttemptMaxProgress = 0.72;
+decisionContext.activeAttemptLastProgress = 0.72;
 assert.equal(
   decisionContext.canAcceptGuidedStrokeAssist(0, { mistakesOnStroke: 3 }),
   true,
@@ -106,6 +109,21 @@ assert.equal(
   false,
   'small jitter must not receive the guided assist',
 );
+decisionContext.activeAttemptStartProgress = 1;
+decisionContext.activeAttemptLastProgress = 0.5;
+assert.equal(
+  decisionContext.canAcceptGuidedStrokeAssist(0, { mistakesOnStroke: 3 }),
+  false,
+  'an off-guide touch followed by a backwards stroke must not receive the assist',
+);
+decisionContext.activeAttemptStartProgress = 0;
+decisionContext.activeAttemptMaxProgress = 1;
+decisionContext.activeAttemptLastProgress = 0.5;
+assert.equal(
+  decisionContext.canAcceptGuidedStrokeAssist(0, { mistakesOnStroke: 3 }),
+  false,
+  'crossing the guide forward and then tracing backwards must not receive the assist',
+);
 
 function makePointerDownContext(pending) {
   const calls = { start: [], clear: 0, render: 0 };
@@ -113,6 +131,7 @@ function makePointerDownContext(pending) {
     calls,
     complete: false,
     trailDrawing: false,
+    activeTrailPointerId: null,
     trailDistance: 99,
     sparkleBudget: 0,
     trailAttemptId: 0,
@@ -145,26 +164,28 @@ const pointerDownSource = between('function onTrailPointerDown(', 'function onTr
 const continuingContext = makePointerDownContext({ strokeNum: 0, data: { strokeNum: 0 } });
 vm.createContext(continuingContext);
 vm.runInContext(pointerDownSource, continuingContext, { filename: 'mojikko-writing-pointerdown-continuation.js' });
-continuingContext.onTrailPointerDown({ pointerType: 'touch', button: 0 });
+continuingContext.onTrailPointerDown({ pointerType: 'touch', button: 0, pointerId: 7 });
 assert.deepEqual(continuingContext.calls.start, [0], 'continuation must rewind HanziWriter to the pending stroke');
 assert.equal(continuingContext.calls.clear, 0, 'continuation must keep the visible partial stroke');
 assert.equal(continuingContext.pendingCorrectStroke.strokeNum, 0, 'continuation must retain the Hanzi-approved pending stroke');
 assert.equal(continuingContext.activeAttemptMaxProgress, 0.6, 'continuation must retain prior endpoint progress');
 assert.equal(continuingContext.activeAttemptStartProgress, null, 'each contact must begin a fresh direction check');
 assert.equal(continuingContext.activeAttemptLastProgress, 0, 'each contact must reset its last sampled progress');
+assert.equal(continuingContext.activeTrailPointerId, 7, 'the first contact must own the trail');
 
 const freshContext = makePointerDownContext(null);
 vm.createContext(freshContext);
 vm.runInContext(pointerDownSource, freshContext, { filename: 'mojikko-writing-pointerdown-fresh.js' });
-freshContext.onTrailPointerDown({ pointerType: 'touch', button: 0 });
+freshContext.onTrailPointerDown({ pointerType: 'touch', button: 0, pointerId: 8 });
 assert.equal(freshContext.calls.clear, 1, 'a fresh retry must still clear its own unaccepted stroke');
 assert.equal(freshContext.activeAttemptMaxProgress, 0, 'a fresh retry must reset endpoint progress');
 
 function makeFinishContext(pending) {
-  const calls = { clear: 0, messages: [], timers: [] };
+  const calls = { clear: 0, messages: [], timers: [], start: [] };
   const context = {
     calls,
     trailDrawing: false,
+    activeTrailPointerId: 11,
     lastTrailPoint: null,
     complete: false,
     trailAttemptId: 7,
@@ -185,6 +206,7 @@ function makeFinishContext(pending) {
     maybeUpdateProgressAfterFill() {},
     canAcceptPendingContinuation() { return false; },
     acceptCorrectStroke() { throw new Error('unexpected continuation acceptance'); },
+    startWriterQuiz(index) { calls.start.push(index); },
     clearStrokePixels() { calls.clear += 1; return 1; },
     renderPixelLetter() {},
     setMessage(text, sub) { calls.messages.push([text, sub]); },
@@ -193,6 +215,7 @@ function makeFinishContext(pending) {
   context.stopTrail = () => {
     context.trailDrawing = false;
     context.lastTrailPoint = null;
+    context.activeTrailPointerId = null;
   };
   return context;
 }
@@ -201,9 +224,10 @@ const finishSource = between('function appendFinalTrailPoint(', 'function onCorr
 const pendingFinish = makeFinishContext({ strokeNum: 0, data: { strokeNum: 0 } });
 vm.createContext(pendingFinish);
 vm.runInContext(finishSource, pendingFinish, { filename: 'mojikko-writing-finish-pending.js' });
-pendingFinish.finishTrailAttempt({ type: 'pointercancel' });
+pendingFinish.finishTrailAttempt({ type: 'pointercancel', pointerId: 11 });
 assert.equal(pendingFinish.calls.timers.length, 1);
 assert.equal(pendingFinish.calls.timers[0].delay, 520);
+assert.deepEqual(pendingFinish.calls.start, [0], 'pointercancel must resync HanziWriter to the expected stroke');
 pendingFinish.calls.timers[0].fn();
 assert.equal(pendingFinish.calls.clear, 0, 'a Hanzi-approved partial stroke must survive pointer release');
 assert.equal(pendingFinish.pendingCorrectStroke.strokeNum, 0, 'pending stroke must remain available for the next touch');
@@ -213,12 +237,20 @@ assert.match(pendingFinish.calls.messages.at(-1)[0], /つづきから/);
 const rejectedFinish = makeFinishContext(null);
 vm.createContext(rejectedFinish);
 vm.runInContext(finishSource, rejectedFinish, { filename: 'mojikko-writing-finish-rejected.js' });
-rejectedFinish.finishTrailAttempt({ type: 'pointercancel' });
+rejectedFinish.finishTrailAttempt({ type: 'pointercancel', pointerId: 11 });
 rejectedFinish.calls.timers[0].fn();
 assert.equal(rejectedFinish.calls.clear, 1, 'a genuinely rejected attempt must still clear after the grace period');
 assert.equal(rejectedFinish.activeAttemptMaxProgress, 0, 'a rejected attempt must reset endpoint progress');
 
+const foreignPointerFinish = makeFinishContext(null);
+vm.createContext(foreignPointerFinish);
+vm.runInContext(finishSource, foreignPointerFinish, { filename: 'mojikko-writing-finish-foreign-pointer.js' });
+foreignPointerFinish.finishTrailAttempt({ type: 'pointerup', pointerId: 99 });
+assert.equal(foreignPointerFinish.calls.timers.length, 0, 'a second finger must not finish the active trail');
+assert.equal(foreignPointerFinish.activeTrailPointerId, 11, 'a second finger must not steal trail ownership');
+
 assert.match(html, /if \(strokeNum !== expectedStroke\)/, 'expected-stroke order guard was removed');
+assert.match(html, /bestDistanceSq <= maxDistanceSq \?[^:]+: null;/, 'off-guide points must not become fake zero progress');
 assert.match(html, /if \(strokeNum > expectedStroke\)[\s\S]*?startWriterQuiz\(expectedStroke\)/, 'future-stroke recovery was removed');
 assert.match(html, /acceptCorrectStroke\(pendingCorrectStroke\.data, true\)/, 'pending continuation must request writer resync');
 assert.match(html, /if \(resyncWriter\)[\s\S]*?startWriterQuiz\(strokesCompleted\)/, 'writer resync after local continuation is missing');
