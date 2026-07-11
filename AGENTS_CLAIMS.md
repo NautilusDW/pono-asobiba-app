@@ -61,7 +61,6 @@
 - 2026-07-11 19:50 - by Claude - [batch:1244-capture-output-resolution] - common/capture.js, play.html (capture build のみ必要時), tests/capture_*, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - スクショモードの出力がぼやける件を実測調査し、html2canvas ラスタ解像度/合成拡大率を改善 [overlap: batch:1242 (sw.js, 自分), batch:1243-nazonazo-picturebook-animals (sw.js)、push 直前に最新採番]
 - 2026-07-11 19:25 - by Codex - [batch:1243-mojikko-meal-schedule] - writing-mori/{care,index,play}.html, assets/images/mojikko/{care,writing}/, tests/mojikko_*, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - GPT Image 2のもじごはん／無地報酬枠と、朝昼午後晩各1回の成長別食事・報酬・保存移行を実装する [overlap: batch:1242-gacha-title-bgm-overlap (sw.js予定)]
 - 2026-07-11 19:11 - by Codex - [batch:1243-nazonazo-picturebook-animals] - assets/images/nazonazo-tunnel/jungle_animal_*_storybook_20260711.webp, tmp/alpha_pending/1243-nazonazo-picturebook-animals/**, nazonazo-tunnel/js/game.js, nazonazo-tunnel/index.html, tests/nazonazo_jungle_animals_regression.cjs, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - ジャングル動物12種を白目なし・濃い丸目＋小さなハイライト・単純化した絵本調で全再生成し、リアル寄り素材を差し替える [overlap: batch:1240-mojikko-writing-stable, batch:1242-gacha-title-bgm-overlap (sw.js)]
-- 2026-07-11 19:25 - by Codex - [batch:1243-mojikko-meal-schedule] - writing-mori/{care,index,play}.html, assets/images/mojikko/{care,writing}/, tests/mojikko_*, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - GPT Image 2のもじごはん／無地報酬枠と、朝昼午後晩各1回の成長別食事・報酬・保存移行を実装する [overlap: batch:1242-gacha-title-bgm-overlap (sw.js予定)]
 
 
 
