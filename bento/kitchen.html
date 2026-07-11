@@ -812,6 +812,11 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   transform: translate(-50%, -50%);
   transition: background-image 0.18s ease, transform 0.12s ease, filter 0.2s ease;
 }
+.prep-workbench[data-prep-kind="shape_korokke"] .prep-art-main {
+  top: 49%;
+  width: min(82%, 780px);
+  height: 78%;
+}
 .prep-workbench[data-prep-kind^="shape_"].is-working .prep-art-main {
   filter: drop-shadow(0 14px 18px rgba(80,50,30,0.2));
 }
@@ -824,9 +829,14 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   background-position: center;
   background-size: contain;
   opacity: var(--shape-meat-opacity, 0);
-  transform-origin: 50% 54%;
-  transform: scale(var(--shape-meat-scale-x, 1), var(--shape-meat-scale-y, 1));
-  transition: transform 0.12s ease, opacity 0.12s ease, background-image 0.18s ease;
+  transform-origin: 50% var(--shape-meat-origin-y, 54%);
+  clip-path: ellipse(var(--shape-clip-rx, 50%) var(--shape-clip-ry, 50%) at 50% 50%);
+  transform:
+    translate(var(--shape-warp-x, 0px), var(--shape-warp-y, 0px))
+    rotate(var(--shape-warp-rotate, 0deg))
+    skewX(var(--shape-warp-skew, 0deg))
+    scale(var(--shape-meat-scale-x, 1), var(--shape-meat-scale-y, 1));
+  transition: transform 0.1s linear, clip-path 0.12s ease, opacity 0.12s ease, background-image 0.18s ease;
   pointer-events: none;
 }
 .prep-workbench[data-prep-kind^="shape_"].is-working .prep-art-main {
@@ -4687,12 +4697,16 @@ body.layout-editor-on #fry-stage .oil-bubbles {
   transform-origin: 50% 0%;
 }
 .knife-speed-line:nth-child(1),
-.knife-speed-line:nth-child(4) { --line-color: rgba(255, 255, 255, 0.96); }
+.knife-speed-line:nth-child(5),
+.knife-speed-line:nth-child(9) { --line-color: rgba(255, 255, 255, 0.96); }
 .knife-speed-line:nth-child(2),
-.knife-speed-line:nth-child(6) { --line-color: rgba(91, 196, 255, 0.9); }
+.knife-speed-line:nth-child(6),
+.knife-speed-line:nth-child(10) { --line-color: rgba(91, 196, 255, 0.9); }
 .knife-speed-line:nth-child(3),
-.knife-speed-line:nth-child(7) { --line-color: rgba(255, 224, 108, 0.92); }
-.knife-speed-line:nth-child(5) { --line-color: rgba(224, 247, 255, 0.86); }
+.knife-speed-line:nth-child(7),
+.knife-speed-line:nth-child(11) { --line-color: rgba(255, 224, 108, 0.92); }
+.knife-speed-line:nth-child(4),
+.knife-speed-line:nth-child(8) { --line-color: rgba(224, 247, 255, 0.86); }
 .knife-speed-lines.show .knife-speed-line {
   animation: knifeSpeedLine var(--knife-streak-duration, 82ms)
     cubic-bezier(0.12, 0.78, 0.22, 1) var(--line-delay, 0ms) both;
@@ -5880,6 +5894,10 @@ body.layout-editor-on .bowl-fill-mask::after {
             <span class="knife-speed-line"></span>
             <span class="knife-speed-line"></span>
             <span class="knife-speed-line"></span>
+            <span class="knife-speed-line"></span>
+            <span class="knife-speed-line"></span>
+            <span class="knife-speed-line"></span>
+            <span class="knife-speed-line"></span>
           </div>
           <!-- [v419] knife を wrapper(.knife) + inner(.knife-inner) の 2 層に分離。
                editor が動かすのは外側 .knife (per-ingredient transform を saved-layout
@@ -6806,6 +6824,10 @@ body.layout-editor-on .bowl-fill-mask::after {
     masherPressToken: 0,
     masherHeld: false,
     potatoCoverage: null,
+    blendToken: 0,
+    mixWarpX: 0,
+    mixWarpY: 0,
+    mixWarpRotate: 0,
   };
   const prepImagePreloadCache = {};
 
@@ -6868,41 +6890,55 @@ body.layout-editor-on .bowl-fill-mask::after {
     mix_mince_potato: {
       kind: 'mix_mince_potato',
       dragPrep: true,
-      dragDistanceScale: 2.15,
-      revealNextOnly: true,
-      commitRevealStage: true,
-      solidRevealBrush: true,
-      solidBrushScale: 1.7,
+      continuousBlend: true,
+      mixCoverage: true,
+      baseSrc: '../assets/images/bento/cooking/prep_plate.png',
+      coverageThreshold: 0.78,
+      coverageMinZoneRatio: 0.54,
+      coverageBrushRadius: { rx: 0.075, ry: 0.105 },
+      coverageGrid: { cols: 30, rows: 18 },
+      coverageAspect: 720 / 497,
+      coverageZones: [
+        { cx: 0.32, cy: 0.4, rx: 0.17, ry: 0.17 },
+        { cx: 0.5, cy: 0.38, rx: 0.17, ry: 0.17 },
+        { cx: 0.68, cy: 0.4, rx: 0.17, ry: 0.17 },
+        { cx: 0.32, cy: 0.62, rx: 0.17, ry: 0.17 },
+        { cx: 0.5, cy: 0.64, rx: 0.17, ry: 0.17 },
+        { cx: 0.68, cy: 0.62, rx: 0.17, ry: 0.17 },
+      ],
       foodClip: { cx: 0.5, cy: 0.51, rx: 0.39, ry: 0.31 },
-      imageOffsetXBySrc: {
-        '../assets/images/bento/cooking/potato/mix_mince_potato_001.png': -0.025,
-        '../assets/images/bento/cooking/potato/mix_mince_potato_003.png': 0.02,
-      },
+      coverageRepeatMessage: 'そこは まざったよ。ほかも ぐるぐる！',
+      coverageSpreadMessage: 'まだの ところも まぜてね！',
       startSpeech: 'マッシュポテトに ひきにくを まぜよう！',
       completeSpeech: 'コロッケの たねが できたよ！ つぎは かたちを つくろう！',
       steps: [
-        { src: '../assets/images/bento/cooking/potato/mix_mince_potato_001.png', label: 'ひきにくを いれよう', caption: 'ぐるぐるドラッグ！', burst: 'ぽん！' },
         {
-          src: '../assets/images/bento/cooking/potato/mix_mince_potato_002.png',
-          brushSrcs: [
-            '../assets/images/bento/cooking/potato/mix_mince_potato_002.png',
-            '../assets/images/bento/cooking/potato/mix_mince_potato_003.png',
-            '../assets/images/bento/cooking/potato/mix_mince_potato_001.png',
-          ],
+          src: '../assets/images/bento/cooking/korokke/prep/korokke_mix_001_20260711_1231.png',
+          foodSrc: '../assets/images/bento/cooking/korokke/prep/korokke_mix_food_001_20260711_1231.png',
+          label: 'ひきにくを ちらそう',
+          caption: 'ぜんたいを ぐるぐる！',
+          burst: 'ぽん！',
+        },
+        {
+          src: '../assets/images/bento/cooking/korokke/prep/korokke_mix_002_20260711_1231.png',
+          foodSrc: '../assets/images/bento/cooking/korokke/prep/korokke_mix_food_002_20260711_1231.png',
           label: 'ぐるぐる まぜよう',
           caption: 'まざってきたよ！',
           burst: 'こねこね！',
         },
         {
-          src: '../assets/images/bento/cooking/potato/mix_mince_potato_003.png',
-          brushSrcs: [
-            '../assets/images/bento/cooking/potato/mix_mince_potato_003.png',
-            '../assets/images/bento/cooking/potato/mix_mince_potato_002.png',
-            '../assets/images/bento/cooking/potato/mix_mince_potato_003.png',
-          ],
-          label: 'もっと まぜよう',
+          src: '../assets/images/bento/cooking/korokke/prep/korokke_mix_003_20260711_1231.png',
+          foodSrc: '../assets/images/bento/cooking/korokke/prep/korokke_mix_food_003_20260711_1231.png',
+          label: 'すみまで まぜよう',
           caption: 'あとすこし！',
-          burst: 'ぎゅっ！',
+          burst: 'ぐるぐる！',
+        },
+        {
+          src: '../assets/images/bento/cooking/korokke/prep/korokke_mix_004_20260711_1231.png',
+          foodSrc: '../assets/images/bento/cooking/korokke/prep/korokke_mix_food_004_20260711_1231.png',
+          label: 'できあがり',
+          caption: 'ぜんたいが まざったよ！',
+          burst: 'できた！',
         },
       ],
     },
@@ -7109,9 +7145,9 @@ body.layout-editor-on .bowl-fill-mask::after {
       revealNextOnly: true,
       coverageThreshold: 0.9,
       coverageMinZoneRatio: 0.8,
-      coverageBrushScale: 0.72,
+      coverageBrushScale: 0.62,
       coverageAspect: 1.7272727273,
-      coverageGrid: { cols: 28, rows: 16 },
+      coverageGrid: { cols: 36, rows: 22 },
       coverageZonesByStage: [
         [
           { cx: 0.35, cy: 0.4, rx: 0.14, ry: 0.14 },
@@ -7156,35 +7192,34 @@ body.layout-editor-on .bowl-fill-mask::after {
       kind: 'shape_korokke',
       shapePrep: true,
       shapeType: 'patty',
-      fixedShapeFrames: true,
-      fixedShapeScale: 1.2,
-      shapeGuideWidth: 'min(40%, 405px)',
-      shapeGuideHeight: '29%',
-      shapeGuideTop: '47.4%',
+      continuousShapeWarp: true,
+      shapeGuideWidth: 'min(47%, 465px)',
+      shapeGuideHeight: '34%',
+      shapeGuideTop: '49%',
       shapeDistanceScale: 1.08,
       startSpeech: 'コロッケを こばんがたに かたちづくろう！',
       completeSpeech: 'コロッケの かたちが できたよ！',
       steps: [
         {
           src: '../assets/images/bento/cooking/prep_plate.png',
-          shapeMeatSrc: '../assets/images/bento/cooking/korokke/prep/korokke_shape_food_001_20260711.png',
-          thumbSrc: '../assets/images/bento/cooking/korokke/prep/korokke_shape_food_001_20260711.png',
+          shapeMeatSrc: '../assets/images/bento/cooking/korokke/prep/korokke_mix_food_004_20260711_1231.png',
+          thumbSrc: '../assets/images/bento/cooking/korokke/prep/korokke_mix_004_20260711_1231.png',
           label: 'たねを まとめよう',
           caption: 'ドラッグで ぎゅっ！',
           burst: 'ぎゅっ！',
         },
         {
           src: '../assets/images/bento/cooking/prep_plate.png',
-          shapeMeatSrc: '../assets/images/bento/cooking/korokke/prep/korokke_shape_food_002_20260711.png',
-          thumbSrc: '../assets/images/bento/cooking/korokke/prep/korokke_shape_food_002_20260711.png',
+          shapeMeatSrc: '../assets/images/bento/cooking/korokke/prep/korokke_mix_food_004_20260711_1231.png',
+          thumbSrc: '../assets/images/bento/cooking/korokke/prep/korokke_shape_warp_002_20260711_1231.png',
           label: 'こばんに しよう',
           caption: 'まとまってきたよ！',
           burst: 'ぺたん！',
         },
         {
           src: '../assets/images/bento/cooking/prep_plate.png',
-          shapeMeatSrc: '../assets/images/bento/cooking/korokke/prep/korokke_shape_food_003_20260711.png',
-          thumbSrc: '../assets/images/bento/cooking/korokke/prep/korokke_shape_food_003_20260711.png',
+          shapeMeatSrc: '../assets/images/bento/cooking/korokke/prep/korokke_mix_food_004_20260711_1231.png',
+          thumbSrc: '../assets/images/bento/cooking/korokke/prep/korokke_shape_warp_003_20260711_1231.png',
           label: 'できあがり',
           caption: 'ころもを つけられるよ！',
           burst: 'できた！',
@@ -7491,6 +7526,10 @@ body.layout-editor-on .bowl-fill-mask::after {
     state.prepDragPointerId = null;
     state.prepMashTapCount = 0;
     state.prepMashPointerTravel = 0;
+    kneadRuntime.blendToken += 1;
+    kneadRuntime.mixWarpX = 0;
+    kneadRuntime.mixWarpY = 0;
+    kneadRuntime.mixWarpRotate = 0;
     state.prepTrayDistance = 0;
     state.prepTraySide = 'front';
     state.prepTrayFrontProgress = 0;
@@ -9179,10 +9218,11 @@ body.layout-editor-on .bowl-fill-mask::after {
     const firstStep = (config.steps && config.steps[0]) || {};
     if (els.prepActionLabel) els.prepActionLabel.textContent = firstStep.label || action.label || 'したごしらえしよう';
     if (els.prepStage) {
-      els.prepStage.setAttribute('aria-label', isPotatoMashConfig(config)
+      const coverageLabel = isPotatoMashConfig(config)
         ? 'じゃがいもを マッシャーで おして つぶそう'
-        : (ing.name + 'の したごしらえ'));
-      if (isPotatoMashConfig(config)) {
+        : (config && config.mixCoverage ? 'ポテトと ひきにくを ぜんたいに まぜよう' : '');
+      els.prepStage.setAttribute('aria-label', coverageLabel || (ing.name + 'の したごしらえ'));
+      if (isCoveragePrepConfig(config)) {
         els.prepStage.setAttribute('aria-keyshortcuts', 'Enter Space');
       } else {
         els.prepStage.removeAttribute('aria-keyshortcuts');
@@ -9340,6 +9380,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     const isMultiBalls = isMultiBallShapeConfig(config);
     const isPortionBalls = isPortionBallShapeConfig(config);
     const usesFixedShapeFrames = isShape && !!config.fixedShapeFrames;
+    const usesContinuousShapeWarp = isShape && !!config.continuousShapeWarp;
     const ease = 1 - Math.pow(1 - ratio, 2);
     if (els.shapePrepGuide) {
       els.shapePrepGuide.dataset.shapeType = isShape ? (config.shapeType || 'patty') : '';
@@ -9366,16 +9407,32 @@ body.layout-editor-on .bowl-fill-mask::after {
         delete els.prepStage.dataset.shapeMode;
       }
       els.prepStage.style.setProperty('--shape-progress', ratio.toFixed(3));
-      if (usesFixedShapeFrames) {
+      if (usesContinuousShapeWarp) {
+        const morph = ratio * ratio * (3 - 2 * ratio);
+        els.prepStage.style.setProperty('--shape-meat-scale-x', (1 + morph * 0.012).toFixed(3));
+        els.prepStage.style.setProperty('--shape-meat-scale-y', (1 - morph * 0.38).toFixed(3));
+        els.prepStage.style.setProperty('--shape-clip-rx', (50 - morph * 12).toFixed(2) + '%');
+        els.prepStage.style.setProperty('--shape-clip-ry', (50 - morph * 15).toFixed(2) + '%');
+        els.prepStage.style.setProperty('--shape-meat-origin-y', '50%');
+      } else if (usesFixedShapeFrames) {
         const frameScale = Math.max(0.7, Math.min(1.5, Number(config.fixedShapeScale) || 1));
         els.prepStage.style.setProperty('--shape-meat-scale-x', frameScale.toFixed(3));
         els.prepStage.style.setProperty('--shape-meat-scale-y', frameScale.toFixed(3));
+        els.prepStage.style.setProperty('--shape-clip-rx', '50%');
+        els.prepStage.style.setProperty('--shape-clip-ry', '50%');
+        els.prepStage.style.setProperty('--shape-meat-origin-y', '54%');
       } else if (isShape && !isBallsShape && !isMultiBalls && !isPortionBalls) {
         els.prepStage.style.setProperty('--shape-meat-scale-x', (0.72 + ease * 0.36).toFixed(3));
         els.prepStage.style.setProperty('--shape-meat-scale-y', (1.22 - ease * 0.28).toFixed(3));
+        els.prepStage.style.setProperty('--shape-clip-rx', '50%');
+        els.prepStage.style.setProperty('--shape-clip-ry', '50%');
+        els.prepStage.style.setProperty('--shape-meat-origin-y', '54%');
       } else {
         els.prepStage.style.setProperty('--shape-meat-scale-x', '1');
         els.prepStage.style.setProperty('--shape-meat-scale-y', '1');
+        els.prepStage.style.setProperty('--shape-clip-rx', '50%');
+        els.prepStage.style.setProperty('--shape-clip-ry', '50%');
+        els.prepStage.style.setProperty('--shape-meat-origin-y', '54%');
       }
     }
   }
@@ -9761,10 +9818,12 @@ body.layout-editor-on .bowl-fill-mask::after {
 
   function preloadPrepFoodFrames(config) {
     if (!config) return;
+    preloadPrepImage(config.baseSrc);
     if (Array.isArray(config.steps)) {
       config.steps.forEach(function (step) {
         if (!step) return;
         preloadPrepImage(step.src);
+        preloadPrepImage(step.foodSrc);
         preloadPrepImage(step.shapeMeatSrc);
         preloadPrepImage(step.thumbSrc);
         if (Array.isArray(step.brushSrcs)) step.brushSrcs.forEach(preloadPrepImage);
@@ -10755,6 +10814,14 @@ body.layout-editor-on .bowl-fill-mask::after {
   }
 
   function preloadKneadNeighborImages(config, progress) {
+    if (config && config.continuousBlend) {
+      loadKneadImage(config.baseSrc);
+      (config.steps || []).forEach(function (step) {
+        if (step && step.foodSrc) loadKneadImage(step.foodSrc);
+        if (step && step.src) loadKneadImage(step.src);
+      });
+      return;
+    }
     [getKneadStepForProgress(config, progress)].concat(getKneadBrushSteps(config, progress)).forEach(function (step) {
       if (step && step.src) {
         const wasLoaded = !!kneadRuntime.images[step.src];
@@ -10949,6 +11016,10 @@ body.layout-editor-on .bowl-fill-mask::after {
     return !!(config && config.masherPrep && config.kind === 'mash_potato');
   }
 
+  function isCoveragePrepConfig(config) {
+    return isPotatoMashConfig(config) || !!(config && config.mixCoverage);
+  }
+
   function resetPotatoCoverage() {
     kneadRuntime.potatoCoverage = null;
     if (!els.prepStage) return;
@@ -10956,6 +11027,9 @@ body.layout-editor-on .bowl-fill-mask::after {
     delete els.prepStage.dataset.mashCoverage;
     delete els.prepStage.dataset.mashZoneMin;
     delete els.prepStage.dataset.mashAdded;
+    delete els.prepStage.dataset.prepCoverage;
+    delete els.prepStage.dataset.prepCoverageZoneMin;
+    delete els.prepStage.dataset.prepCoverageAdded;
   }
 
   function getPotatoCoverageStage(config) {
@@ -10964,6 +11038,7 @@ body.layout-editor-on .bowl-fill-mask::after {
   }
 
   function getPotatoCoverageZones(config, stage) {
+    if (config && Array.isArray(config.coverageZones)) return config.coverageZones;
     const stages = config && Array.isArray(config.coverageZonesByStage)
       ? config.coverageZonesByStage
       : [];
@@ -10971,7 +11046,7 @@ body.layout-editor-on .bowl-fill-mask::after {
   }
 
   function ensurePotatoCoverage(config, forcedStage) {
-    if (!isPotatoMashConfig(config)) return null;
+    if (!isCoveragePrepConfig(config)) return null;
     const stage = Number.isFinite(forcedStage) ? forcedStage : getPotatoCoverageStage(config);
     const existing = kneadRuntime.potatoCoverage;
     if (existing && existing.config === config && existing.stage === stage) return existing;
@@ -11124,10 +11199,15 @@ body.layout-editor-on .bowl-fill-mask::after {
   function publishPotatoCoverage(config, coverage, added) {
     if (!els.prepStage || !coverage) return;
     const stats = getPotatoCoverageStats(config, coverage);
-    els.prepStage.dataset.mashStage = String(coverage.stage);
-    els.prepStage.dataset.mashCoverage = stats.overall.toFixed(3);
-    els.prepStage.dataset.mashZoneMin = stats.minZone.toFixed(3);
-    els.prepStage.dataset.mashAdded = String(Math.max(0, added || 0));
+    els.prepStage.dataset.prepCoverage = stats.overall.toFixed(3);
+    els.prepStage.dataset.prepCoverageZoneMin = stats.minZone.toFixed(3);
+    els.prepStage.dataset.prepCoverageAdded = String(Math.max(0, added || 0));
+    if (isPotatoMashConfig(config)) {
+      els.prepStage.dataset.mashStage = String(coverage.stage);
+      els.prepStage.dataset.mashCoverage = stats.overall.toFixed(3);
+      els.prepStage.dataset.mashZoneMin = stats.minZone.toFixed(3);
+      els.prepStage.dataset.mashAdded = String(Math.max(0, added || 0));
+    }
   }
 
   function announcePrepStatus(message) {
@@ -11139,6 +11219,13 @@ body.layout-editor-on .bowl-fill-mask::after {
   }
 
   function getPotatoCoverageBrushRadii(config, geometry) {
+    const fixed = config && config.coverageBrushRadius;
+    if (fixed) {
+      return {
+        rx: Math.max(0.025, Math.min(0.2, Number(fixed.rx) || 0.075)),
+        ry: Math.max(0.03, Math.min(0.22, Number(fixed.ry) || 0.105)),
+      };
+    }
     const scale = Math.max(0.35, Number(config && config.coverageBrushScale) || 0.72);
     const masherRect = els.potatoMasher && els.potatoMasher.getBoundingClientRect();
     const visualWidth = masherRect && masherRect.width
@@ -11210,9 +11297,11 @@ body.layout-editor-on .bowl-fill-mask::after {
 
     const visibleProgress = coverage.stage + Math.min(0.98, stats.completion * 0.98);
     updatePrepView(config, visibleProgress, false);
-    let message = 'まだの ところも おしてね！';
-    if (!result.added) message = 'そこは つぶれたよ。ほかも ぎゅっ！';
-    else if (stats.minZone + 0.0001 < (Number(config.coverageMinZoneRatio) || 0.8)) message = 'まだの ところも おしてね！';
+    const spreadMessage = config.coverageSpreadMessage || 'まだの ところも おしてね！';
+    const repeatMessage = config.coverageRepeatMessage || 'そこは つぶれたよ。ほかも ぎゅっ！';
+    let message = spreadMessage;
+    if (!result.added) message = repeatMessage;
+    else if (stats.minZone + 0.0001 < (Number(config.coverageMinZoneRatio) || 0.8)) message = spreadMessage;
     else if (stats.completion >= 0.82) message = 'あと すこし！';
     if (els.prepProgressCap) els.prepProgressCap.textContent = message;
     const now = Date.now();
@@ -11440,7 +11529,96 @@ body.layout-editor-on .bowl-fill-mask::after {
     }, 360));
   }
 
+  function getContinuousKneadBlendState(config, progress) {
+    const steps = Array.isArray(config && config.steps) ? config.steps : [];
+    if (!steps.length) return null;
+    const maxIndex = steps.length - 1;
+    const safe = Math.max(0, Math.min(maxIndex, Number(progress) || 0));
+    const index = Math.max(0, Math.min(maxIndex, Math.floor(safe + 0.0001)));
+    const nextIndex = Math.min(maxIndex, index + 1);
+    const raw = nextIndex === index ? 0 : Math.max(0, Math.min(1, safe - index));
+    const blend = raw * raw * (3 - 2 * raw);
+    return {
+      current: steps[index],
+      next: steps[nextIndex],
+      index: index,
+      nextIndex: nextIndex,
+      blend: blend,
+    };
+  }
+
+  function drawContinuousKneadBlend(config, progress) {
+    if (!config || !config.continuousBlend || !els.kneadCanvas) return;
+    const blendState = getContinuousKneadBlendState(config, progress);
+    const baseSrc = config.baseSrc;
+    const currentSrc = blendState && blendState.current && blendState.current.foodSrc;
+    const nextSrc = blendState && blendState.next && blendState.next.foodSrc;
+    if (!blendState || !baseSrc || !currentSrc || !nextSrc) return;
+    const token = ++kneadRuntime.blendToken;
+    Promise.all([
+      loadKneadImage(baseSrc),
+      loadKneadImage(currentSrc),
+      loadKneadImage(nextSrc),
+    ]).then(function (images) {
+      if (token !== kneadRuntime.blendToken || getActiveDragPrepConfig() !== config) return;
+      const baseImage = images[0];
+      const currentImage = images[1];
+      const nextImage = images[2];
+      if (!baseImage || !currentImage || !nextImage || !resizeKneadCanvas()) return;
+      const canvas = els.kneadCanvas;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawKneadImageOnCanvas(canvas, baseImage, 1, config, baseSrc);
+
+      const foodLayer = getKneadWorkCanvas('continuousBlendLayer', canvas);
+      if (!foodLayer) return;
+      clearCanvas(foodLayer);
+      drawKneadImageOnCanvas(foodLayer, currentImage, 1 - blendState.blend, config, currentSrc);
+      if (blendState.nextIndex !== blendState.index && blendState.blend > 0.001) {
+        drawKneadImageOnCanvas(foodLayer, nextImage, blendState.blend, config, nextSrc);
+      }
+
+      const clip = getKneadClipEllipse(config, canvas);
+      const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const warpX = reducedMotion ? 0 : (kneadRuntime.mixWarpX || 0);
+      const warpY = reducedMotion ? 0 : (kneadRuntime.mixWarpY || 0);
+      const warpRotate = reducedMotion ? 0 : (kneadRuntime.mixWarpRotate || 0);
+      ctx.save();
+      if (clip) {
+        ctx.beginPath();
+        ctx.ellipse(clip.cx, clip.cy, clip.rx * 1.03, clip.ry * 1.03, 0, 0, Math.PI * 2);
+        ctx.clip();
+      }
+      ctx.translate(canvas.width / 2 + warpX, canvas.height / 2 + warpY);
+      ctx.rotate(warpRotate * Math.PI / 180);
+      ctx.scale(1 + Math.abs(warpRotate) * 0.0025, 1 - Math.abs(warpRotate) * 0.0018);
+      ctx.drawImage(foodLayer, -canvas.width / 2, -canvas.height / 2);
+      ctx.restore();
+      kneadRuntime.lastSrc = 'continuous:' + blendState.index + ':' + blendState.nextIndex;
+      if (els.prepStage) {
+        els.prepStage.dataset.mixBlend = blendState.blend.toFixed(3);
+        els.prepStage.dataset.mixStage = String(blendState.index);
+      }
+    });
+  }
+
+  function relaxContinuousKneadWarp(config) {
+    if (!config || !config.continuousBlend) return;
+    kneadRuntime.mixWarpX = 0;
+    kneadRuntime.mixWarpY = 0;
+    kneadRuntime.mixWarpRotate = 0;
+    drawContinuousKneadBlend(config, state.prepProgress || 0);
+  }
+
   function resetKneadCanvas(config, progress) {
+    if (config && config.continuousBlend) {
+      kneadRuntime.mixWarpX = 0;
+      kneadRuntime.mixWarpY = 0;
+      kneadRuntime.mixWarpRotate = 0;
+      preloadKneadNeighborImages(config, progress);
+      drawContinuousKneadBlend(config, progress);
+      return;
+    }
     const step = getKneadStepForProgress(config, progress);
     const src = step && step.src;
     if (!els.kneadCanvas || !src) return;
@@ -11485,6 +11663,11 @@ body.layout-editor-on .bowl-fill-mask::after {
   }
 
   function syncKneadCanvas(config, progress, animate) {
+    if (config && config.continuousBlend) {
+      preloadKneadNeighborImages(config, progress);
+      drawContinuousKneadBlend(config, progress);
+      return;
+    }
     const step = getKneadStepForProgress(config, progress);
     const src = step && step.src;
     if (!els.kneadCanvas || !src) return;
@@ -11524,6 +11707,18 @@ body.layout-editor-on .bowl-fill-mask::after {
     const inside = Math.pow((x2 - clip.cx) / clip.rx, 2) + Math.pow((y2 - clip.cy) / clip.ry, 2);
     if (inside > 1.22) return false;
 
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const len = Math.hypot(dx, dy);
+    if (len < 2) return false;
+    if (config && config.continuousBlend) {
+      kneadRuntime.trailCount = (kneadRuntime.trailCount || 0) + 1;
+      kneadRuntime.mixWarpX = Math.max(-7, Math.min(7, dx * 0.09));
+      kneadRuntime.mixWarpY = Math.max(-4, Math.min(4, dy * 0.07));
+      kneadRuntime.mixWarpRotate = Math.max(-0.9, Math.min(0.9, dx * 0.018));
+      return true;
+    }
+
     const brushSteps = getKneadBrushSteps(config, state.prepProgress || 0);
     const brushEntries = brushSteps.map(function (step) {
       return { step: step, img: step && step.src ? kneadRuntime.images[step.src] : null };
@@ -11535,10 +11730,6 @@ body.layout-editor-on .bowl-fill-mask::after {
       return false;
     }
 
-    const dx = x2 - x1;
-    const dy = y2 - y1;
-    const len = Math.hypot(dx, dy);
-    if (len < 2) return false;
     const ctx = canvas.getContext('2d');
     const count = (kneadRuntime.trailCount = (kneadRuntime.trailCount || 0) + 1);
     const p = Math.max(0, Math.min(1, progressRatio || 0));
@@ -11894,6 +12085,12 @@ body.layout-editor-on .bowl-fill-mask::after {
     state.prepDragLastX = evt.clientX;
     state.prepDragLastY = evt.clientY;
     state.suppressPrepClick = false;
+    if (config.continuousShapeWarp && els.prepStage) {
+      els.prepStage.style.setProperty('--shape-warp-x', '0px');
+      els.prepStage.style.setProperty('--shape-warp-y', '0px');
+      els.prepStage.style.setProperty('--shape-warp-rotate', '0deg');
+      els.prepStage.style.setProperty('--shape-warp-skew', '0deg');
+    }
     updateShapePointerFeedback(evt, 0.9);
     if (els.prepStage) {
       els.prepStage.classList.add('is-dragging');
@@ -11926,6 +12123,28 @@ body.layout-editor-on .bowl-fill-mask::after {
     if (nextProgress >= maxProgress) finishDragPrep(ing, config);
   }
 
+  function updateContinuousShapeWarpImpulse(config, dx, dy, distance) {
+    if (!config || !config.continuousShapeWarp || !els.prepStage) return;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const strength = Math.max(0, Math.min(1, (distance || 0) / 24));
+    const warpX = Math.max(-5, Math.min(5, (dx || 0) * 0.16));
+    const warpY = Math.max(-3, Math.min(3, (dy || 0) * 0.1));
+    const rotate = Math.max(-0.8, Math.min(0.8, (dx || 0) * 0.035)) * strength;
+    const skew = Math.max(-1.4, Math.min(1.4, (dx || 0) * 0.06)) * strength;
+    els.prepStage.style.setProperty('--shape-warp-x', warpX.toFixed(2) + 'px');
+    els.prepStage.style.setProperty('--shape-warp-y', warpY.toFixed(2) + 'px');
+    els.prepStage.style.setProperty('--shape-warp-rotate', rotate.toFixed(2) + 'deg');
+    els.prepStage.style.setProperty('--shape-warp-skew', skew.toFixed(2) + 'deg');
+  }
+
+  function resetContinuousShapeWarpImpulse(config) {
+    if (!config || !config.continuousShapeWarp || !els.prepStage) return;
+    els.prepStage.style.setProperty('--shape-warp-x', '0px');
+    els.prepStage.style.setProperty('--shape-warp-y', '0px');
+    els.prepStage.style.setProperty('--shape-warp-rotate', '0deg');
+    els.prepStage.style.setProperty('--shape-warp-skew', '0deg');
+  }
+
   function moveShapePrepDrag(evt, config) {
     if (!state.prepDragging || state.prepDragMode !== 'shape' || evt.pointerId !== state.prepDragPointerId) return;
     if (!config) return;
@@ -11943,6 +12162,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     const inside = pointIsInsideShapePrep(evt, config);
     updateShapePointerFeedback(evt, inside ? 1 : 0.18);
     if (dist > 1 && inside) {
+      updateContinuousShapeWarpImpulse(config, dx, dy, dist);
       playKneadSe(dist, 0.72);
       advanceShapePrep(config, dist);
     }
@@ -11955,6 +12175,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       endPortionBallDrag(evt, config);
       return;
     }
+    resetContinuousShapeWarpImpulse(config);
     state.prepDragging = false;
     state.prepDragMode = '';
     state.prepDragPointerId = null;
@@ -12148,6 +12369,12 @@ body.layout-editor-on .bowl-fill-mask::after {
 
   function finishDragPrep(ing, config) {
     if (state.prepAnimating) return;
+    resetContinuousShapeWarpImpulse(config);
+    if (config && config.continuousBlend) {
+      kneadRuntime.mixWarpX = 0;
+      kneadRuntime.mixWarpY = 0;
+      kneadRuntime.mixWarpRotate = 0;
+    }
     state.prepDragging = false;
     state.prepDragMode = '';
     state.prepDragPointerId = null;
@@ -12160,7 +12387,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     if (isPotatoMashConfig(config)) holdPotatoMasher(false);
     const maxProgress = getPrepMaxProgress(config);
     updatePrepView(config, maxProgress, true);
-    if (isPotatoMashConfig(config)) resetPotatoCoverage();
+    if (isCoveragePrepConfig(config)) resetPotatoCoverage();
     showPrepBurst(config.completeBurst || 'できた！');
     setSpeech(config.completeSpeech || 'したごしらえ できたよ！', 'prep');
     const nextAction = getNextAction(ing);
@@ -13035,8 +13262,9 @@ body.layout-editor-on .bowl-fill-mask::after {
         holdPotatoMasher(false);
       }
     }
+    const usesCoverage = isCoveragePrepConfig(config);
     const gesture = dist > 1 && pointerInside && mashDragStarted
-      ? (isPotatoMashConfig(config)
+      ? (usesCoverage
         ? { effectiveDist: dist, power: 1 }
         : getKneadGesturePower(dist))
       : { effectiveDist: 0, power: 0 };
@@ -13055,10 +13283,10 @@ body.layout-editor-on .bowl-fill-mask::after {
     state.prepDragLastX = evt.clientX;
     state.prepDragLastY = evt.clientY;
     if (dist > 1 && mashDragStarted) state.suppressPrepClick = true;
-    if (didSmear || (isPotatoMashConfig(config) && gesture.effectiveDist > 1)) {
+    if (didSmear || (usesCoverage && gesture.effectiveDist > 1)) {
       state.suppressPrepClick = true;
       playKneadSe(gesture.effectiveDist, gesture.power);
-      if (isPotatoMashConfig(config)) {
+      if (usesCoverage) {
         const coverageResult = markPotatoCoverageSegment(
           config,
           state.prepDragLastX - dx,
@@ -13094,6 +13322,9 @@ body.layout-editor-on .bowl-fill-mask::after {
     if (isPotatoMashConfig(activeDragConfig)) {
       holdPotatoMasher(false);
       redrawPotatoCoverageOverlay(activeDragConfig);
+    }
+    if (activeDragConfig && activeDragConfig.continuousBlend) {
+      relaxContinuousKneadWarp(activeDragConfig);
     }
     if (!state.prepDragging || evt.pointerId !== state.prepDragPointerId) return;
     state.prepDragging = false;
@@ -13169,6 +13400,25 @@ body.layout-editor-on .bowl-fill-mask::after {
       showPrepBurst('ぎゅっ！');
       const coverageResult = markPotatoCoverageSegment(config, point.x, point.y, point.x, point.y);
       applyPotatoCoverage(config, coverageResult, evt && evt.keyboard ? 'keyboard' : 'tap');
+      return;
+    }
+
+    if (config.mixCoverage) {
+      if (evt && evt.keyboard) {
+        const point = getPotatoMashPoint(evt, config);
+        if (!point) return;
+        const rect = els.kneadCanvas && els.kneadCanvas.getBoundingClientRect();
+        const span = Math.max(8, ((rect && rect.width) || 560) * 0.022);
+        smearKneadCanvas(point.x - span, point.y, point.x + span, point.y, 0, 1, config);
+        const coverageResult = markPotatoCoverageSegment(config, point.x - span, point.y, point.x + span, point.y);
+        playKneadSe(72, 0.82);
+        applyPotatoCoverage(config, coverageResult, 'keyboard');
+        state.pendingTimers.push(setTimeout(function () {
+          if (getActiveDragPrepConfig() === config) relaxContinuousKneadWarp(config);
+        }, 110));
+      } else {
+        setSpeech('おさらの ぜんたいを ぐるぐる ドラッグしよう！', 'prep');
+      }
       return;
     }
 
@@ -17636,14 +17886,18 @@ body.layout-editor-on .bowl-fill-mask::after {
   // 実寸・実位置・実移動量から毎回配置する。運動方向は真下なので線の角度は
   // 全て軌道と平行に保ち、速さのリズムは長さ/太さ/束間隔/濃さで表現する。
   const KNIFE_SPEED_LINE_PROFILE = [
-    // 刃先側に3本、中央に3本を小さく束ね、間に大きな空白をつくる。
-    { x: 0.06, y: 0.02, length: 0.54, widthPx: 2.4, delay: 4, opacity: 0.62 },
-    { x: 0.13, y: 0.05, length: 1.00, widthPx: 5.4, delay: 0, opacity: 0.98 },
-    { x: 0.21, y: 0.10, length: 0.68, widthPx: 3.2, delay: 6, opacity: 0.78 },
-    { x: 0.43, y: 0.26, length: 0.86, widthPx: 4.4, delay: 2, opacity: 0.94 },
-    { x: 0.49, y: 0.31, length: 0.43, widthPx: 2.1, delay: 8, opacity: 0.62 },
-    { x: 0.62, y: 0.43, length: 0.71, widthPx: 3.4, delay: 3, opacity: 0.82 },
-    { x: 0.86, y: 0.65, length: 0.36, widthPx: 1.9, delay: 7, opacity: 0.56 },
+    // 4本・3本・2本・2本の束。大きな空白を残し、雨線ではなく振り下ろしの残像に見せる。
+    { x: 0.05, y: 0.02, length: 0.48, widthPx: 3.0, delay: 6, opacity: 0.62 },
+    { x: 0.12, y: 0.04, length: 0.76, widthPx: 4.6, delay: 3, opacity: 0.82 },
+    { x: 0.20, y: 0.09, length: 1.00, widthPx: 6.8, delay: 0, opacity: 0.99 },
+    { x: 0.29, y: 0.15, length: 0.61, widthPx: 3.6, delay: 7, opacity: 0.72 },
+    { x: 0.42, y: 0.24, length: 0.45, widthPx: 2.8, delay: 9, opacity: 0.58 },
+    { x: 0.49, y: 0.30, length: 0.87, widthPx: 5.8, delay: 2, opacity: 0.94 },
+    { x: 0.57, y: 0.37, length: 0.67, widthPx: 4.1, delay: 5, opacity: 0.80 },
+    { x: 0.69, y: 0.47, length: 0.74, widthPx: 5.0, delay: 1, opacity: 0.88 },
+    { x: 0.77, y: 0.54, length: 0.42, widthPx: 3.1, delay: 8, opacity: 0.64 },
+    { x: 0.89, y: 0.65, length: 0.55, widthPx: 4.0, delay: 4, opacity: 0.76 },
+    { x: 0.96, y: 0.72, length: 0.32, widthPx: 2.7, delay: 10, opacity: 0.55 },
   ];
 
   function showKnifeSpeedLines(chopY, liftY, durationMs, targetKnifeLeftPct, editorTxPx) {
@@ -17685,7 +17939,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       const line = lines[index];
       if (!line) return;
       const lineHeight = travel * profile.length;
-      // fit-stage で画面全体が縮小されても、最終表示上の太さの差 (1.9〜5.4px)
+      // fit-stage で画面全体が縮小されても、最終表示上の太さの差 (2.7〜6.8px)
       // は潰さない。screen px を board local px へ逆変換してから指定する。
       const lineWidth = profile.widthPx * scaleX;
       line.style.setProperty('--line-x', (knifeLeft + knifeWidth * profile.x).toFixed(2) + 'px');
@@ -18748,15 +19002,30 @@ body.layout-editor-on .bowl-fill-mask::after {
     if (els.prepStage) {
       els.prepStage.style.setProperty('--shape-meat-scale-x', '1');
       els.prepStage.style.setProperty('--shape-meat-scale-y', '1');
+      els.prepStage.style.setProperty('--shape-clip-rx', '50%');
+      els.prepStage.style.setProperty('--shape-clip-ry', '50%');
+      els.prepStage.style.setProperty('--shape-meat-origin-y', '54%');
+      els.prepStage.style.setProperty('--shape-warp-x', '0px');
+      els.prepStage.style.setProperty('--shape-warp-y', '0px');
+      els.prepStage.style.setProperty('--shape-warp-rotate', '0deg');
+      els.prepStage.style.setProperty('--shape-warp-skew', '0deg');
     }
     if (els.kneadCanvas) {
       const ctx = els.kneadCanvas.getContext('2d');
       ctx.clearRect(0, 0, els.kneadCanvas.width, els.kneadCanvas.height);
+      kneadRuntime.blendToken += 1;
       kneadRuntime.lastSrc = '';
       kneadRuntime.overlaySrc = '';
       kneadRuntime.trailCount = 0;
       kneadRuntime.strokeDistance = 0;
       kneadRuntime.strokeLimit = 0;
+      kneadRuntime.mixWarpX = 0;
+      kneadRuntime.mixWarpY = 0;
+      kneadRuntime.mixWarpRotate = 0;
+      if (els.prepStage) {
+        delete els.prepStage.dataset.mixBlend;
+        delete els.prepStage.dataset.mixStage;
+      }
     }
     resetCookDrag();
     updateCookDots('grill', 0);
