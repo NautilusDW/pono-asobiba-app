@@ -287,28 +287,16 @@ const RUN_EVENTS={town:[["🦋","ちょう"],["🌼","おはな"],["🍀","よ�
 const JUNGLE_MID_TILE_ASPECT=2,JUNGLE_MID_TILE_SCALE=1.16;
 const JUNGLE_ANIMAL_LAYOUT={
  far:[
-  {asset:0,species:"monkey",anchor:"perch",x:8,y:58,anchorY:91,w:14,min:42,max:122,depth:.25,opacity:.72,motion:"sway",flip:1,origin:"50% 91%",moveY:0,loop:"mid"},
-  {asset:1,species:"owl",anchor:"perch",x:20,y:54,anchorY:82,w:9,min:30,max:78,depth:.25,opacity:.69,motion:"breathe",flip:1,origin:"50% 82%",moveY:0,loop:"mid"},
-  {asset:2,species:"toucans",anchor:"perch",x:112,y:55,anchorY:76,w:11.2,min:34,max:98,depth:.25,opacity:.73,motion:"sway",flip:-1,origin:"50% 76%",moveY:0,loop:"mid"},
-  {asset:3,species:"butterflies",anchor:"air",x:69,y:30,anchorY:50,w:8.5,min:28,max:74,depth:.095,opacity:.76,motion:"flutter",flip:1,origin:"50% 50%",moveY:-1.5},
-  {asset:0,species:"monkey",anchor:"perch",x:124,y:60,anchorY:91,w:12.2,min:38,max:106,depth:.25,opacity:.62,motion:"still",flip:-1,origin:"50% 91%",moveY:0,loop:"mid"},
-  {asset:1,species:"owl",anchor:"perch",x:102,y:56,anchorY:82,w:8.2,min:28,max:70,depth:.25,opacity:.61,motion:"breathe",flip:-1,origin:"50% 82%",moveY:0,loop:"mid"}
+  {asset:2,species:"toucans",anchor:"perch",x:112,y:55,anchorY:76,w:11.2,min:34,max:98,depth:.25,opacity:1,motion:"sway",flip:-1,origin:"50% 76%",moveY:0,loop:"mid"},
+  {asset:3,species:"butterflies",anchor:"air",x:69,y:30,anchorY:50,w:8.5,min:28,max:74,depth:.095,opacity:1,motion:"flutter",flip:1,origin:"50% 50%",moveY:-1.5}
  ],
  mid:[
-  {asset:0,species:"sloth",anchor:"hang",x:6,y:37,anchorY:10,w:18.7,min:52,max:164,depth:.25,opacity:.78,motion:"sway",flip:1,origin:"50% 10%",moveY:0,loop:"mid"},
-  {asset:1,species:"snake",anchor:"perch",x:26,y:62,anchorY:64,w:14.3,min:46,max:126,depth:.25,opacity:.82,motion:"sway",flip:-1,origin:"50% 64%",moveY:0,loop:"mid"},
-  {asset:2,species:"frog",anchor:"understory",x:50,y:85,anchorY:100,w:8,min:32,max:70,depth:.86,opacity:.86,motion:"breathe",flip:1,origin:"50% 100%",moveY:0},
-  {asset:3,species:"crocodile",anchor:"understory",x:70,y:85,anchorY:100,w:14.4,min:48,max:126,depth:.92,opacity:.86,motion:"breathe",flip:1,origin:"50% 100%",moveY:0},
-  {asset:0,species:"sloth",anchor:"hang",x:120,y:39,anchorY:10,w:16.4,min:48,max:144,depth:.25,opacity:.69,motion:"still",flip:-1,origin:"50% 10%",moveY:0,loop:"mid"},
-  {asset:2,species:"frog",anchor:"understory",x:112,y:85,anchorY:100,w:7.2,min:30,max:62,depth:.88,opacity:.74,motion:"breathe",flip:-1,origin:"50% 100%",moveY:0}
+  {asset:0,species:"sloth",anchor:"hang",x:6,y:37,anchorY:10,w:18.7,min:52,max:164,depth:.25,opacity:1,motion:"sway",flip:1,origin:"50% 10%",moveY:0,loop:"mid"},
+  {asset:3,species:"crocodile",anchor:"understory",x:70,y:85.5,anchorY:98.62,w:14.4,min:48,max:126,depth:.92,opacity:1,motion:"breathe",flip:1,origin:"50% 98.62%",moveY:0}
  ],
  near:[
-  {asset:0,species:"elephant",anchor:"ground",x:4,y:85.4,anchorY:100,w:24,min:72,max:240,depth:.94,opacity:.93,motion:"breathe",flip:1,origin:"50% 100%",moveY:0},
-  {asset:1,species:"giraffe",anchor:"ground",x:26,y:85.4,anchorY:100,w:23.5,min:70,max:230,depth:.9,opacity:.94,motion:"sway",flip:-1,origin:"50% 100%",moveY:0},
-  {asset:2,species:"lion",anchor:"ground",x:47,y:85.3,anchorY:100,w:19.5,min:58,max:195,depth:.98,opacity:.92,motion:"breathe",flip:1,origin:"50% 100%",moveY:0},
-  {asset:3,species:"zebra",anchor:"ground",x:68,y:85.4,anchorY:100,w:18,min:56,max:180,depth:.96,opacity:.93,motion:"sway",flip:-1,origin:"50% 100%",moveY:0},
-  {asset:0,species:"elephant",anchor:"ground",x:90,y:85.4,anchorY:100,w:21.5,min:66,max:215,depth:.95,opacity:.82,motion:"still",flip:-1,origin:"50% 100%",moveY:0},
-  {asset:2,species:"lion",anchor:"ground",x:111,y:85.3,anchorY:100,w:17.2,min:54,max:172,depth:1,opacity:.81,motion:"breathe",flip:-1,origin:"50% 100%",moveY:0}
+  {asset:1,species:"giraffe",anchor:"ground",x:26,y:85.5,anchorY:98.75,w:23.5,min:70,max:230,depth:.9,opacity:1,motion:"breathe",flip:-1,origin:"50% 98.75%",moveY:0},
+  {asset:0,species:"elephant",anchor:"ground",x:90,y:85.5,anchorY:98.75,w:24,min:72,max:240,depth:.94,opacity:1,motion:"breathe",flip:1,origin:"50% 98.75%",moveY:0}
  ]
 };
 const NPC_BASE="../assets/images/bento/npc/";
@@ -331,6 +319,7 @@ const CHECKPOINT_STOP_LEFT_VW=24, TUNNEL_ENTRY_CAMERA_LEFT_VW=28, TUNNEL_INTERIO
 const TUNNEL_EXIT_APPROACH_RUN_VW=135;
 const TUNNEL_ENTRY_FADE_DELAY_MS=900, TUNNEL_ENTRY_SWITCH_MS=1320, TUNNEL_ENTRY_BLACK_HOLD_MS=420;
 const TUNNEL_EXIT_FADE_SETUP_MS=420, TUNNEL_EXIT_BLACK_HOLD_MS=320, TUNNEL_EXIT_RUN_MS=1250, TUNNEL_EXIT_CLEAR_MS=1600;
+const TUNNEL_FRIEND_LIMIT=3,TUNNEL_FRIEND_SLOTS=[{x:10,y:36},{x:50,y:44},{x:90,y:34}];
 const STOP_SETTLE_MS=230, WHEEL_FAST_PERIOD=0.62, WHEEL_SLOW_PERIOD=1.55, WHEEL_STOP_EASE_VW=82;
 function trainLeftVw(){
  const vw=window.innerWidth||844;
@@ -400,6 +389,7 @@ function openZukan(){
 let level=0,stg=0,loop=0,unlockedLoop=0,cleared=[],qSeg=0,qList=[],cur=null,missInQ=0,stageMiss=0,totalStars=0;
 let worldX=0,vel=0,target=0,pending=null,driving=false,swapReady=false,swapped=false,coverEl=null,dropEl=null,transitCover=null;
 let tunnels=[],playing=false,cars=[],helpItems=[],rareCount=0,rareEl=null,rareSpawned=false,rareSpawnTimer=0;
+let tunnelFriendCandidates=[],tunnelFriendsFound=0,tunnelFriendTotalFound=0,tunnelFriendRewardGranted=false,tunnelFriendGameActive=false;
 let bestStarsByStage={},answerLocked=false,portalEditHolding=false,nextMagicPuffAt=0,exitPortalBaseWorldX=0;
 const SAVE_KEY="pono_nazonazo_tunnel_v1";
 const FAST=(location.hash==="#fast")?6:1;
@@ -492,6 +482,7 @@ const jungleAnimalLayers={far:$("jungleAnimalsFar"),mid:$("jungleAnimalsMid"),ne
 const skyA=$("skyA"),skyB=$("skyB"),carsEl=$("cars"),carBadge=$("carBadge"),helpBadge=$("helpBadge"),helpBtn=$("helpBtn");
 const quiz=$("quiz"),qText=$("qText"),hintText=$("hintText"),choicesEl=$("choices");
 const dotsEl=$("dots"),stamp=$("stamp"),weatherNotice=$("weatherNotice");
+const tunnelFriendGame=$("tunnelFriendGame"),tunnelFriendGuide=$("tunnelFriendGuide"),tunnelFriendCounter=$("tunnelFriendCounter"),tunnelFriendLayer=$("tunnelFriendLayer"),tunnelFriendResult=$("tunnelFriendResult");
 const portalMaskLayer=$("portalMaskLayer"),portalEditOverlay=$("portalEditOverlay");
 const portalOccIn=portalMaskLayer&&portalMaskLayer.querySelector(".portal-occluder-in");
 const portalOccOut=portalMaskLayer&&portalMaskLayer.querySelector(".portal-occluder-out");
@@ -1598,6 +1589,7 @@ function enterTunnelInterior(){
  world.innerHTML="";tunnels=[];coverEl=null;dropEl=null;
  worldX=origin(stg)+COVER_OFF;
  setTunnelInteriorBackdrop();
+ startTunnelFriendGame();
  target=worldX+TUNNEL_INTERIOR_RUN_VW;
  pending="tunnelExit";driving=true;swapReady=false;swapped=false;
  veh.classList.add("go","inTun");veh.classList.remove("idle");
@@ -1609,6 +1601,7 @@ function enterTunnelInterior(){
   },TUNNEL_ENTRY_BLACK_HOLD_MS);
 }
 function startTunnelExitApproach(){
+ showTunnelFriendResult();
  veh.classList.add("go","inTun");carsEl.classList.add("go","inTun");
  veh.classList.remove("idle");
  document.body.classList.add("tunnel-exit-approach");
@@ -1618,6 +1611,7 @@ function startTunnelExitApproach(){
  sndGo();
 }
 function finishTunnelInterior(){
+ clearTunnelFriendGame();
  veh.classList.add("go","inTun");carsEl.classList.add("go","inTun");
  clearMagicPuffs();
  document.body.classList.remove("tunnel-enter-run","tunnel-exit-setup","tunnel-exit-run","tunnel-exit-clear","tunnel-exit-brighten");
@@ -1668,6 +1662,7 @@ function beginStageTransit(){
 function showDropoff(){
  setDriverMood("happy");
  const hadCars=cars.length>0;
+ if(hadCars)prepareTunnelFriends();else tunnelFriendCandidates=[];
  if(dropEl)dropEl.classList.add("open");
  if(hadCars){
   carsEl.classList.add("unloading");
@@ -1785,6 +1780,84 @@ function updateHelpHud(){
  const n=helpItems.length;
  if(helpBadge){helpBadge.style.display=n?"block":"none";helpBadge.textContent=(n?helpItems[n-1].e:"🍀")+" ×"+n;}
  if(helpBtn){helpBtn.textContent="🍀 ×"+n;helpBtn.classList.toggle("empty",!n);helpBtn.disabled=false;}
+}
+function prepareTunnelFriends(){
+ const unique=[],seen=new Set();
+ cars.forEach(passenger=>{
+  if(!passenger||passenger.pending)return;
+  const friend={e:passenger.e||"",t:passengerLabel(passenger)||"ともだち",img:passenger.img||""};
+  const key=(friend.img||friend.e)+"|"+friend.t;
+  if((!friend.img&&!friend.e)||seen.has(key))return;
+  seen.add(key);unique.push(friend);
+ });
+ tunnelFriendCandidates=shuffle(unique).slice(0,TUNNEL_FRIEND_LIMIT);
+}
+function drawTunnelFriendHud(){
+ if(!tunnelFriendCounter)return;
+ tunnelFriendCounter.textContent="みつけた "+tunnelFriendsFound+" / "+tunnelFriendCandidates.length;
+}
+function startTunnelFriendGame(){
+ if(!tunnelFriendGame||!tunnelFriendLayer||!tunnelFriendCandidates.length)return;
+ tunnelFriendsFound=0;tunnelFriendRewardGranted=false;tunnelFriendGameActive=true;
+ tunnelFriendLayer.replaceChildren();
+ tunnelFriendGame.classList.remove("is-result");
+ tunnelFriendGame.setAttribute("aria-hidden","false");
+ if(tunnelFriendGuide)tunnelFriendGuide.textContent="さっきの ともだちを みつけよう！";
+ if(tunnelFriendResult){tunnelFriendResult.hidden=true;tunnelFriendResult.textContent="";}
+ const slots=shuffle(TUNNEL_FRIEND_SLOTS);
+ tunnelFriendCandidates.forEach((friend,index)=>{
+  const button=document.createElement("button");
+  const slot=slots[index%slots.length];
+  button.type="button";button.className="tunnel-friend";
+  button.dataset.friendIndex=String(index);
+  button.setAttribute("aria-label",friend.t+"を みつける");
+  button.style.setProperty("--friend-x",slot.x+"%");
+  button.style.setProperty("--friend-y",slot.y+"%");
+  if(friend.img){
+   const img=document.createElement("img");img.src=friend.img;img.alt="";img.draggable=false;img.decoding="async";
+   button.appendChild(img);
+  }else{
+   const icon=document.createElement("span");icon.textContent=friend.e;button.appendChild(icon);
+  }
+  bindTap(button,()=>findTunnelFriend(button,friend));
+  tunnelFriendLayer.appendChild(button);
+ });
+ drawTunnelFriendHud();
+}
+function findTunnelFriend(button,friend){
+ if(!tunnelFriendGameActive||!button||button.disabled||button.dataset.found==="1")return;
+ button.dataset.found="1";
+ requestAnimationFrame(()=>{button.disabled=true;button.classList.add("found");});
+ tunnelFriendsFound++;tunnelFriendTotalFound++;
+ drawTunnelFriendHud();
+ tone(1047,0,.1,"triangle",.12);tone(1319,.08,.14,"triangle",.1);
+ showStamp("みーつけた！","new");
+ announce(friend.t+"を みつけた。"+tunnelFriendsFound+" / "+tunnelFriendCandidates.length);
+ if(tunnelFriendsFound===tunnelFriendCandidates.length)confetti(8);
+}
+function showTunnelFriendResult(){
+ if(!tunnelFriendGame||!tunnelFriendGameActive)return;
+ tunnelFriendGameActive=false;
+ tunnelFriendLayer.querySelectorAll(".tunnel-friend").forEach(button=>{button.disabled=true;});
+ const total=tunnelFriendCandidates.length;
+ let message=tunnelFriendsFound? tunnelFriendsFound+"にん みつけた！":"また こんど さがしてみよう！";
+ if(total===TUNNEL_FRIEND_LIMIT&&tunnelFriendsFound===total){
+  let gainedHelp=false;
+  if(!tunnelFriendRewardGranted&&helpItems.length<HELP_MAX){
+   helpItems.push({e:"🍀",t:"かくれともだち"});updateHelpHud();gainedHelp=true;
+  }
+  tunnelFriendRewardGranted=true;
+  message="ぜんぶ みつけた！"+(gainedHelp?"\n🍀 おたすけ ゲット！":"");
+ }
+ tunnelFriendGame.classList.add("is-result");
+ if(tunnelFriendResult){tunnelFriendResult.textContent=message;tunnelFriendResult.hidden=false;}
+ announce(message);
+}
+function clearTunnelFriendGame(){
+ tunnelFriendGameActive=false;tunnelFriendsFound=0;tunnelFriendRewardGranted=false;tunnelFriendCandidates=[];
+ if(tunnelFriendLayer)tunnelFriendLayer.replaceChildren();
+ if(tunnelFriendResult){tunnelFriendResult.hidden=true;tunnelFriendResult.textContent="";}
+ if(tunnelFriendGame){tunnelFriendGame.classList.remove("is-result");tunnelFriendGame.setAttribute("aria-hidden","true");}
 }
 function confetti(n){const em=["🎉","⭐","🎈","✨","💛"];
  for(let i=0;i<(n||24);i++){const c=document.createElement("div");c.className="conf";
@@ -2015,6 +2088,7 @@ function gloop(t){
 function startJourneyAt(s){
  hideWeatherNotice();
  clearRareEvent();
+ clearTunnelFriendGame();
  stg=s;qSeg=0;stageMiss=0;rareSpawned=false;
  portalEditHolding=false;tunnelInteriorMode=false;
  document.body.classList.remove("tunnel-enter-run","tunnel-exit-setup","tunnel-exit-run","tunnel-exit-clear","tunnel-exit-approach","tunnel-exit-brighten","tunnel-exit-white","tunnel-fade-dark","tunnel-interior");
@@ -2111,6 +2185,7 @@ function proceed(){
 function ending(){
  hideWeatherNotice();
  clearRareEvent();
+ clearTunnelFriendGame();
  setDriverMood("cheer");
  playing=false;
  confetti(40);sndFan();
@@ -2121,6 +2196,7 @@ function ending(){
  $("resStars").textContent="⭐×"+totalStars;
  $("resMsg").textContent="ともだち ずかん "+zkCount()+"/"+zkTotal()
   +(rareCount?"　めずらしい ともだち "+rareCount+"かい はっけん！":"")
+  +(tunnelFriendTotalFound?"　かくれともだち "+tunnelFriendTotalFound+"にん はっけん！":"")
   +(grand?"　きみは なぞなぞマスターだ！":"");
  $("loopBtn").style.display=(loop===0)?"inline-block":"none";
  speak(grand?"ぎんがのはてまで、だいせいこう！きみはなぞなぞマスターだ！":"うちゅうまで とうちゃく！だいぼうけん、だいせいこう！");
@@ -2131,6 +2207,7 @@ function ending(){
 function openMap(msg){
  hideWeatherNotice();
  clearRareEvent();
+ clearTunnelFriendGame();
  playing=false;driving=false;quiz.classList.remove("show");
  const row=$("mapRow");row.innerHTML="";
  let highestOpen=0;
@@ -2167,7 +2244,7 @@ bindTap($("startBtn"),()=>{
  const p=ensureAC();
  const boot=()=>{
   primeAC();
-  stg=0;loop=0;cleared=[];totalStars=0;rareCount=0;
+  stg=0;loop=0;cleared=[];totalStars=0;rareCount=0;tunnelFriendTotalFound=0;
   rollJourneyWeather();
   startJourneyAt(0);
   bootPending=false;
@@ -2176,10 +2253,10 @@ bindTap($("startBtn"),()=>{
 });
 bindTap($("goBtn"),()=>{ensureAC();startJourneyAt(stg);});
 bindTap($("againBtn"),()=>{ensureAC();
- $("result").classList.add("hidden");stg=0;loop=0;cleared=[];totalStars=0;rareCount=0;rollJourneyWeather();startJourneyAt(0);});
+ $("result").classList.add("hidden");stg=0;loop=0;cleared=[];totalStars=0;rareCount=0;tunnelFriendTotalFound=0;rollJourneyWeather();startJourneyAt(0);});
 bindTap($("loopBtn"),()=>{ensureAC();
  $("result").classList.add("hidden");
- loop=1;stg=0;cleared=[];totalStars=0;rareCount=0;
+ loop=1;stg=0;cleared=[];totalStars=0;rareCount=0;tunnelFriendTotalFound=0;
  rollJourneyWeather();
  startJourneyAt(0);
  speak("2しゅうめ！せかいのいろが かわってるよ！");});

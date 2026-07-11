@@ -70,7 +70,7 @@
   else { document.addEventListener('DOMContentLoaded', showLock); }
 })();
 </script>
-<link rel="stylesheet" href="styles.css?v=20260712-1248">
+<link rel="stylesheet" href="styles.css?v=20260712-1251">
 </head>
 <body class="st-town v-train" data-driver="pono" data-driver-mood="happy">
 <div id="app">
@@ -141,6 +141,15 @@
     </div>
     <div id="screenPortalFront" aria-hidden="true"><div class="screen-exit-gate"></div></div>
     <div id="tunnelExitGlow" aria-hidden="true"></div>
+    <section id="tunnelFriendGame" aria-label="トンネルの かくれともだち" aria-hidden="true">
+      <div id="tunnelFriendPanel">
+        <h2 id="tunnelFriendTitle">トンネルの かくれともだち</h2>
+        <div id="tunnelFriendGuide">さっきの ともだちを みつけよう！</div>
+        <div id="tunnelFriendCounter" aria-live="polite">みつけた 0 / 3</div>
+      </div>
+      <div id="tunnelFriendLayer"></div>
+      <div id="tunnelFriendResult" role="status" aria-live="polite" hidden></div>
+    </section>
     <svg id="portalEditOverlay" aria-hidden="true"></svg>
     <div id="tunnelFade" aria-hidden="true"></div>
     <div id="fgT"></div>
@@ -222,6 +231,6 @@
 </div>
 <div id="rotateHint">📱➡️ よこむきに してね</div>
 <script src="data/questions.js?v=20260702-1051"></script>
-<script src="js/game.js?v=20260712-1248"></script>
+<script src="js/game.js?v=20260712-1251"></script>
 </body>
 </html>

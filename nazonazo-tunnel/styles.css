@@ -43,7 +43,7 @@ body.tunnel-interior #seaFishLayer{display:none!important}
   contain:layout paint;pointer-events:none}
 #jungleAnimalsFar{z-index:1}
 #jungleAnimalsMid{z-index:2}
-#jungleAnimalsNear{z-index:3;bottom:14.5vh}
+#jungleAnimalsNear{z-index:3;bottom:14vh}
 body.st-jungle .jungle-animal-layer{display:block}
 body.tunnel-interior .jungle-animal-layer{display:none!important}
 .jungle-animal-sprite{position:absolute;left:0;top:0;width:clamp(var(--animal-min,36px),var(--animal-width,6vw),var(--animal-max,112px));
@@ -265,6 +265,33 @@ body.tunnel-fade-dark #tunnelFade{opacity:1;transition-duration:.28s}
   filter:blur(8px);mix-blend-mode:screen;transform:translateX(18vw) scaleX(.72);transform-origin:100% 50%}
 body.tunnel-exit-approach #tunnelExitGlow{opacity:1;animation:tunnelExitGlowIn 2.15s linear forwards}
 @keyframes tunnelExitGlowIn{0%{opacity:.12;transform:translateX(20vw) scaleX(.62)}45%{opacity:.62;transform:translateX(5vw) scaleX(.9)}100%{opacity:.95;transform:translateX(-8vw) scaleX(1.08)}}
+#tunnelFriendGame{position:absolute;inset:0;z-index:9;display:none;overflow:hidden;pointer-events:none;color:#fff8df}
+body.tunnel-interior #tunnelFriendGame[aria-hidden="false"]{display:block}
+#tunnelFriendPanel{position:absolute;left:50%;top:calc(58px + env(safe-area-inset-top));z-index:2;transform:translateX(-50%);
+  width:min(74vw,480px);padding:7px 18px 8px;border:2px solid rgba(255,221,140,.7);border-radius:18px;text-align:center;
+  background:rgba(35,24,14,.86);box-shadow:0 4px 0 rgba(0,0,0,.24),inset 0 1px 0 rgba(255,247,215,.18)}
+#tunnelFriendTitle{margin:0;font-size:clamp(16px,3vw,24px);line-height:1.2;color:#fff2bd;text-shadow:0 2px 0 rgba(0,0,0,.38)}
+#tunnelFriendGuide,#tunnelFriendCounter{font-size:clamp(12px,2.1vw,16px);font-weight:800;line-height:1.25}
+#tunnelFriendCounter{color:#ffe281;margin-top:2px}
+#tunnelFriendLayer{position:absolute;inset:0;z-index:1;pointer-events:none}
+.tunnel-friend{appearance:none;-webkit-appearance:none;position:absolute;left:var(--friend-x);top:var(--friend-y);z-index:1;
+  width:clamp(54px,8vw,76px);aspect-ratio:1;display:grid;place-items:center;overflow:hidden;pointer-events:auto;cursor:pointer;
+  border:3px solid #d9a95b;border-radius:44% 56% 48% 52%;padding:5px;background:radial-gradient(circle at 46% 42%,#5c4630 0 38%,#2c2118 72%);
+  box-shadow:0 4px 0 rgba(15,10,7,.5),inset 0 0 0 2px rgba(255,231,165,.12);transform:translate(-50%,-50%);
+  touch-action:manipulation}
+.tunnel-friend img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;opacity:1;filter:drop-shadow(0 2px 0 rgba(0,0,0,.28));animation:tunnelFriendPeekArt 1.35s ease-in-out infinite alternate}
+.tunnel-friend span{display:block;font-size:clamp(32px,5.8vw,54px);line-height:1;filter:drop-shadow(0 2px 0 rgba(0,0,0,.32));animation:tunnelFriendPeekArt 1.35s ease-in-out infinite alternate}
+.tunnel-friend:focus-visible{outline:4px solid #fff3a8;outline-offset:4px}
+.tunnel-friend.found{pointer-events:none;opacity:1;border-color:#ffe281;box-shadow:0 0 0 4px rgba(255,226,129,.24),inset 0 0 0 2px rgba(255,247,204,.26)}
+.tunnel-friend.found img,.tunnel-friend.found span{animation:none;transform:scale(.88);opacity:.72}
+.tunnel-friend.found::after{content:"✓";position:absolute;right:2px;top:1px;display:grid;place-items:center;width:23px;height:23px;
+  border-radius:50%;background:#ffdd69;color:#4d351d;font-size:18px;font-weight:1000;line-height:1;box-shadow:0 2px 0 rgba(0,0,0,.32)}
+#tunnelFriendGame.is-result #tunnelFriendPanel,#tunnelFriendGame.is-result #tunnelFriendLayer{display:none}
+#tunnelFriendGame.is-result{z-index:23}
+#tunnelFriendResult{position:absolute;left:50%;top:38%;z-index:3;transform:translate(-50%,-50%);width:min(84vw,520px);
+  padding:14px 24px;border:3px solid #ffd977;border-radius:22px;background:rgba(38,27,17,.94);color:#fff4c7;text-align:center;
+  font-size:clamp(20px,4vw,34px);font-weight:900;line-height:1.35;white-space:pre-line;box-shadow:0 6px 0 rgba(0,0,0,.3)}
+@keyframes tunnelFriendPeekArt{from{transform:translateY(1px) rotate(-2deg) scale(.98)}to{transform:translateY(-3px) rotate(2deg) scale(1.03)}}
 body.tunnel-enter-run #veh,body.tunnel-enter-run #cars{transform:translateX(74vw) scale(.96);transition:transform 1.18s linear}
 body.tunnel-exit-setup #veh,body.tunnel-exit-setup #cars{transform:translateX(-58vw) scale(.96);transition:none}
 body.tunnel-exit-run #veh,body.tunnel-exit-run #cars{animation:tunnelExitDrive 1.08s linear both}
@@ -661,6 +688,9 @@ h1{font-size:clamp(24px,5.6vw,50px);color:#e0704a;text-shadow:0 3px 0 #fff}
   .choice .em{font-size:clamp(34px,7vw,54px)}
   .choice .lb{font-size:clamp(13px,2.6vw,18px)}
   #stamp{top:28%;font-size:clamp(24px,5.4vw,42px)}
+  #tunnelFriendPanel{top:calc(52px + env(safe-area-inset-top));padding:5px 14px 6px}
+  #tunnelFriendTitle{font-size:clamp(15px,2.7vw,20px)}
+  #tunnelFriendGuide,#tunnelFriendCounter{font-size:clamp(11px,1.9vw,14px)}
 }
 @media (orientation:landscape) and (max-height:480px){
   #portalEditPanel{width:min(320px,calc(100vw - 16px));max-height:46vh}
@@ -670,4 +700,5 @@ h1{font-size:clamp(24px,5.6vw,50px);color:#e0704a;text-shadow:0 3px 0 #fff}
   .rain-particle{left:var(--rain-rest-x);top:var(--rain-rest-y);animation:none!important;transform:rotate(var(--rain-angle));will-change:auto!important}
   #rainFar .rain-particle:nth-child(n+8),#rainMid .rain-particle:nth-child(n+6),#rainNear .rain-particle:nth-child(n+4){display:none}
   .jungle-animal-art{animation:none!important;transform:none!important}
+  .tunnel-friend,.tunnel-friend img,.tunnel-friend span{animation:none!important}
 }
