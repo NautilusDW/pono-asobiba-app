@@ -17,6 +17,7 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-07-11 - [batch:1220-maze-minigame-start-beat] Codex: ユーザー実機評価「BGMがバツッと変わる/ナレーションとゲーム開始が早すぎる/待ち中に無反応に見える」を受領。主操作は「ミニゲームをはじめる」、予備は遇遇画面のまま。タップ即時の視覚フィードバック→探索BGMフェードアウト→専用BGMフェードイン→一拍後にスターター/ナレーションの順へ9ゲーム共通化し、二重開始・閉じる/非表示・reduced-motionも安全に取り消す。最新 `origin/develop-app` の隔離worktreeで実装し、凍結 `develop` には触れない。 (by Codex)
 - 2026-07-11 - [batch:1219-kitchen-knife-speed-lines] Codex: ユーザー実画面評価「下ごしらえの包丁効果線が包丁と位置・大きさ・角度とも合わず、全線同じ太さ/間隔/長さで速さが出ない」を受領。固定のまな板基準グラデーションとタップ直後の早すぎる発火が原因と確認。包丁の実DOM寸法・振り下ろし距離を基準に掃引範囲へ配置し、軌道角は統一しつつ長さ/太さ/束間隔/濃さを秩序立てて変え、振り下ろし開始〜impactだけ表示する。reduced-motion、4 viewport、入力阻害なし、LP/App両方を検証する。別作業の `bento/index.html` 等には触れず、最新 `origin/develop-app` の隔離worktreeで実装する。 (by Codex)
 - 2026-07-11 - [batch:1218-app-title-menu-games] DONE - Codex: App build のタイトルを 8 本構成にし、「なぞなぞトレイン」→ `nazonazo-tunnel/`、「クッキング」→ `bento/kitchen.html`、「もじっこファーム」→ `writing-mori/` を通常カードで追加。LP free/book は公開済み 5 本のみ。各3カードをゲーム実素材へ差し替え、native manifest に本体・必要画像/音源/ライブラリ・クッキング thumb を同梱。Playwright で LP/App × 390x844/844x390/1024x768/1366x768、3リンク遷移、pageerror/requestfailed/overflow 0、native 4630 files / 932.9MB exact inventory + 800 local refs PASS。別エージェント2名クロスレビュー APPROVE (Critical/Medium 0)。`develop-app` 単一トランク、凍結 `develop` 同期なし。 (by Codex)
 - 2026-07-11 - [batch:1218-app-title-menu-games] Codex: クロスレビューで native content manifest に `nazonazo-tunnel/` / `writing-mori/` が未同梱と判明。native stage は `__APP_BUILD__=1` を注入するため、メニューだけ出してリンク切れにならないよう `native/content-manifest.json` も同バッチで更新する。既存の `bento/**` 同梱によりクッキングは追加不要。 (by Codex)

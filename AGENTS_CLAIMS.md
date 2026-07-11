@@ -58,6 +58,7 @@
 ## Active claims
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
+- 2026-07-11 12:05 - by Codex - [batch:1220-maze-minigame-start-beat] - maze/index.html, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - 迷路9ミニゲームをBGMフェードアウト→専用曲→一拍の視覚合図→ゲーム/ナレーション開始の共通シーケンスへ改善 [overlap: batch:1219-kitchen-knife-speed-lines, batch:1058-tut2-hotfix5 (sw.js/play.html の版数のみ)]
 - 2026-07-11 11:39 - by Codex - [batch:1219-kitchen-knife-speed-lines] - bento/kitchen.html, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - 下ごしらえ包丁の効果線を実軌道・実寸へ追従させ、長さ/太さ/間隔/タイミングをブラッシュアップ [overlap: batch:1204-capacitor-phase1-scaffold (bento/kitchen.html), batch:1058-tut2-hotfix5 (sw.js/play.html)]
 - 2026-07-07 12:24 - by Claude - [batch:1058-tutorial-impl-phase1] - bento/index.html, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - tut2 チュートリアル実装 phase1 (見本→まねっこ、15ステップ+2ラッパー、mock voice、PAUSED解除、storage v2)
 - 2026-07-07 - by Claude - [batch:1058-tut2-hotfix4] - bento/index.html, sw.js, play.html, docs/BENTO_TUTORIAL_SCRIPT.md, AGENTS_CLAIMS.md, HANDOFF.md - tut2 UX方針転換: シーケンス順序・ボックス統合・ポノ中心ナレーション・Step6編集パネル詳細説明
