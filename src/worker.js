@@ -18,6 +18,8 @@ const PROTECTED_PREFIXES = [
 ];
 
 const BENTO_MASK_CONFIG_KEY = 'bento-mask-defaults-v1';
+const BENTO_MASK_HISTORY_PREFIX = 'bento-mask-defaults-v1:history:';
+const BENTO_MASK_HISTORY_MAX = 10;
 const NPC_POSITIONS_CURRENT_KEY = 'npc-positions:current';
 const NPC_POSITIONS_HISTORY_PREFIX = 'npc-positions:history:';
 const NPC_POSITIONS_HISTORY_MAX = 10;
@@ -80,6 +82,16 @@ export default {
         return handleBentoNpcPositionsPost(request, env);
       }
       return new Response('Method Not Allowed', { status: 405, headers: { ...CORS, ...noStoreHeaders() } });
+    }
+    if (path === '/api/admin/bento-mask-defaults-history') {
+      if (request.method === 'OPTIONS') {
+        return new Response('', { status: 200, headers: { ...CORS, ...noStoreHeaders() } });
+      }
+      if (request.method !== 'GET') {
+        return new Response('Method Not Allowed', { status: 405, headers: { ...CORS, ...noStoreHeaders() } });
+      }
+      if (!checkBasicAuth(request, env)) return authChallenge();
+      return handleBentoMaskDefaultsHistoryGet(request, env, url);
     }
     if (path === '/api/admin/tts-generate') {
       if (!checkBasicAuth(request, env)) return authChallenge();
@@ -926,12 +938,73 @@ async function handleBentoMaskDefaults(request, env) {
     slotLayout: normalizeBentoSlotLayoutMap(body.slotLayout || body.slots || {})
   };
 
+  // Backup: preserve the current value as history before it gets overwritten
+  // (see NPC positions backup below for the same pattern). Best-effort — a
+  // backup failure must never block the main save.
+  try {
+    const previous = await env.BENTO_MASK_CONFIG.get(BENTO_MASK_CONFIG_KEY);
+    if (previous) {
+      const backupAt = new Date().toISOString();
+      await env.BENTO_MASK_CONFIG.put(BENTO_MASK_HISTORY_PREFIX + backupAt, previous);
+
+      // Prune history: keep newest BENTO_MASK_HISTORY_MAX entries.
+      // Keys are ISO timestamps so lexicographic sort = chronological sort.
+      const list = await env.BENTO_MASK_CONFIG.list({ prefix: BENTO_MASK_HISTORY_PREFIX });
+      const keys = (list && list.keys ? list.keys.map(k => k.name) : []).sort();
+      if (keys.length > BENTO_MASK_HISTORY_MAX) {
+        const excess = keys.slice(0, keys.length - BENTO_MASK_HISTORY_MAX);
+        for (const k of excess) {
+          try { await env.BENTO_MASK_CONFIG.delete(k); } catch {}
+        }
+      }
+    }
+  } catch {
+    // history backup best-effort; don't fail save if backup itself errors
+  }
+
   try {
     await env.BENTO_MASK_CONFIG.put(BENTO_MASK_CONFIG_KEY, JSON.stringify(payload));
     return json(200, payload, noStoreHeaders());
   } catch (e) {
     return json(500, { ok: false, error: e.message }, noStoreHeaders());
   }
+}
+
+// ---------------------------------------------------------------------------
+// bento-mask-defaults history read (admin-only). Backup writes happen inline
+// in handleBentoMaskDefaults() above (mirrors the NPC positions backup
+// pattern below), keyed by ISO timestamp under BENTO_MASK_HISTORY_PREFIX.
+// ---------------------------------------------------------------------------
+async function handleBentoMaskDefaultsHistoryGet(request, env, url) {
+  if (!env.BENTO_MASK_CONFIG) {
+    return json(503, { ok: false, error: 'BENTO_MASK_CONFIG is not configured' }, noStoreHeaders());
+  }
+
+  const ts = url.searchParams.get('ts');
+  if (ts) {
+    try {
+      const stored = await env.BENTO_MASK_CONFIG.get(BENTO_MASK_HISTORY_PREFIX + ts, 'json');
+      if (!stored) {
+        return json(404, { ok: false, error: 'not_found' }, noStoreHeaders());
+      }
+      return json(200, { ok: true, timestamp: ts, data: stored }, noStoreHeaders());
+    } catch (e) {
+      return json(500, { ok: false, error: e.message }, noStoreHeaders());
+    }
+  }
+
+  if (url.searchParams.get('list') === '1') {
+    try {
+      const list = await env.BENTO_MASK_CONFIG.list({ prefix: BENTO_MASK_HISTORY_PREFIX });
+      const keys = (list && list.keys ? list.keys.map(k => k.name) : []).sort();
+      const timestamps = keys.map(k => k.slice(BENTO_MASK_HISTORY_PREFIX.length)).reverse();
+      return json(200, { ok: true, count: timestamps.length, timestamps }, noStoreHeaders());
+    } catch (e) {
+      return json(500, { ok: false, error: e.message }, noStoreHeaders());
+    }
+  }
+
+  return json(400, { ok: false, error: 'specify list=1 or ts=<timestamp>' }, noStoreHeaders());
 }
 
 // ---------------------------------------------------------------------------
