@@ -107,6 +107,7 @@ namespace Pono.MarbleRun3D.Gameplay
         private float _occlusionYawOffset;
         private float _nextOcclusionCheckAt;
         private float _occlusionSideHoldUntil;
+        private int _occlusionLayerMask = Physics.DefaultRaycastLayers;
         private readonly RaycastHit[] _occlusionHits = new RaycastHit[12];
         private readonly float[] _occlusionScores = new float[OcclusionYawOffsets.Length];
 
@@ -149,6 +150,9 @@ namespace Pono.MarbleRun3D.Gameplay
             _hasFollowCourseDirection = false;
             _isVerticalFollowMotion = false;
             _followBaseYaw = yaw;
+            _occlusionLayerMask = Physics.DefaultRaycastLayers;
+            var marbleLayer = LayerMask.NameToLayer("Marble");
+            if (marbleLayer >= 0) _occlusionLayerMask &= ~(1 << marbleLayer);
             ResetOcclusionAvoidance();
             ApplyImmediately();
         }
@@ -602,10 +606,10 @@ namespace Pono.MarbleRun3D.Gameplay
             }
 
             var directionBlend = found ? 0.72f : 0f;
-            var direction = FlattenDirection(
+            var lookDirection = FlattenDirection(
                 Vector3.Lerp(travel, bestDirection, directionBlend),
                 travel);
-            return new CourseLookSample(direction, bestTarget, found);
+            return new CourseLookSample(lookDirection, bestTarget, found);
         }
 
         public static FollowViewPlan CalculateFollowViewPlan(
@@ -802,7 +806,7 @@ namespace Pono.MarbleRun3D.Gameplay
                 sight / sightDistance,
                 _occlusionHits,
                 sightDistance,
-                Physics.DefaultRaycastLayers,
+                _occlusionLayerMask,
                 QueryTriggerInteraction.Ignore);
             var nearestBlockingDistance = sightDistance;
             for (var i = 0; i < hitCount; i++)

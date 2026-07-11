@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="12" result="Passed" total="12" passed="12" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-07-11 01:27:48Z" end-time="2026-07-11 01:27:48Z" duration="0.0210013">
+  <test-suite type="TestSuite" id="1000" name="ポノの マーブルラン" fullname="ポノの マーブルラン" runstate="Runnable" testcasecount="75" result="Passed" start-time="2026-07-11 01:27:48Z" end-time="2026-07-11 01:27:48Z" duration="0.021001" total="12" passed="12" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="EditMode" />
+    </properties>
+    <test-suite type="Assembly" id="1085" name="Pono.MarbleRun.Tests.EditMode.dll" fullname="/Users/ndw_mac/AppDevelopment/pono-asobiba-app/unity/PonoMarbleRun3D/Library/ScriptAssemblies/Pono.MarbleRun.Tests.EditMode.dll" runstate="Runnable" testcasecount="75" result="Passed" start-time="2026-07-11 01:27:48Z" end-time="2026-07-11 01:27:48Z" duration="0.016256" total="12" passed="12" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="96412" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="EditMode" />
+        <property name="EditorOnly" value="True" />
+      </properties>
+      <test-suite type="TestSuite" id="1086" name="Pono" fullname="Pono" runstate="Runnable" testcasecount="75" result="Passed" start-time="2026-07-11 01:27:48Z" end-time="2026-07-11 01:27:48Z" duration="0.015951" total="12" passed="12" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-suite type="TestSuite" id="1087" name="MarbleRun3D" fullname="Pono.MarbleRun3D" runstate="Runnable" testcasecount="75" result="Passed" start-time="2026-07-11 01:27:48Z" end-time="2026-07-11 01:27:48Z" duration="0.015720" total="12" passed="12" failed="0" inconclusive="0" skipped="0" asserts="0">
+          <properties />
+          <test-suite type="TestSuite" id="1088" name="Tests" fullname="Pono.MarbleRun3D.Tests" runstate="Runnable" testcasecount="75" result="Passed" start-time="2026-07-11 01:27:48Z" end-time="2026-07-11 01:27:48Z" duration="0.015483" total="12" passed="12" failed="0" inconclusive="0" skipped="0" asserts="0">
+            <properties />
+            <test-suite type="TestSuite" id="1089" name="EditMode" fullname="Pono.MarbleRun3D.Tests.EditMode" runstate="Runnable" testcasecount="75" result="Passed" start-time="2026-07-11 01:27:48Z" end-time="2026-07-11 01:27:48Z" duration="0.015224" total="12" passed="12" failed="0" inconclusive="0" skipped="0" asserts="0">
+              <properties />
+              <test-suite type="TestFixture" id="1038" name="OrbitCameraControllerTests" fullname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests" classname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests" runstate="Runnable" testcasecount="12" result="Passed" start-time="2026-07-11 01:27:48Z" end-time="2026-07-11 01:27:48Z" duration="0.014418" total="12" passed="12" failed="0" inconclusive="0" skipped="0" asserts="0">
+                <properties />
+                <test-case id="1047" name="AutoOrbitRateNeverExceedsComfortCap" fullname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests.AutoOrbitRateNeverExceedsComfortCap" methodname="AutoOrbitRateNeverExceedsComfortCap" classname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests" runstate="Runnable" seed="332754877" result="Passed" start-time="2026-07-11 01:27:48Z" end-time="2026-07-11 01:27:48Z" duration="0.004738" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1044" name="CourseLookAheadReturnsTheNextReadableRailAsPredictiveTarget" fullname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests.CourseLookAheadReturnsTheNextReadableRailAsPredictiveTarget" methodname="CourseLookAheadReturnsTheNextReadableRailAsPredictiveTarget" classname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests" runstate="Runnable" seed="115116755" result="Passed" start-time="2026-07-11 01:27:48Z" end-time="2026-07-11 01:27:48Z" duration="0.001725" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1043" name="CourseLookAheadSelectsForwardRailAndIgnoresRearCrossing" fullname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests.CourseLookAheadSelectsForwardRailAndIgnoresRearCrossing" methodname="CourseLookAheadSelectsForwardRailAndIgnoresRearCrossing" classname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests" runstate="Runnable" seed="521565297" result="Passed" start-time="2026-07-11 01:27:48Z" end-time="2026-07-11 01:27:48Z" duration="0.000140" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1039" name="FollowGroupUsesMainPackAndRejectsOneWildMarble" fullname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests.FollowGroupUsesMainPackAndRejectsOneWildMarble" methodname="FollowGroupUsesMainPackAndRejectsOneWildMarble" classname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests" runstate="Runnable" seed="1659951759" result="Passed" start-time="2026-07-11 01:27:48Z" end-time="2026-07-11 01:27:48Z" duration="0.000708" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1046" name="FollowPlanPrefersCourseAheadOverInstantaneousSpiralTangent" fullname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests.FollowPlanPrefersCourseAheadOverInstantaneousSpiralTangent" methodname="FollowPlanPrefersCourseAheadOverInstantaneousSpiralTangent" classname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests" runstate="Runnable" seed="698127351" result="Passed" start-time="2026-07-11 01:27:48Z" end-time="2026-07-11 01:27:48Z" duration="0.000305" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1040" name="FollowPlanUsesCloseShoulderViewWithBoundedPitch" fullname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests.FollowPlanUsesCloseShoulderViewWithBoundedPitch" methodname="FollowPlanUsesCloseShoulderViewWithBoundedPitch" classname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests" runstate="Runnable" seed="801003198" result="Passed" start-time="2026-07-11 01:27:48Z" end-time="2026-07-11 01:27:48Z" duration="0.000141" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1050" name="ManualOrbitAndZoomHoldAutomationThenOverviewRestoresExactly" fullname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests.ManualOrbitAndZoomHoldAutomationThenOverviewRestoresExactly" methodname="ManualOrbitAndZoomHoldAutomationThenOverviewRestoresExactly" classname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests" runstate="Runnable" seed="1678110525" result="Passed" start-time="2026-07-11 01:27:48Z" end-time="2026-07-11 01:27:48Z" duration="0.001705" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1048" name="OcclusionCandidateChoosesVisibleSideThenHysteresisPreventsFlip" fullname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests.OcclusionCandidateChoosesVisibleSideThenHysteresisPreventsFlip" methodname="OcclusionCandidateChoosesVisibleSideThenHysteresisPreventsFlip" classname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests" runstate="Runnable" seed="723074221" result="Passed" start-time="2026-07-11 01:27:48Z" end-time="2026-07-11 01:27:48Z" duration="0.000239" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1049" name="OcclusionHysteresisAllowsEmergencySideChangeAndIgnoresTargetRail" fullname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests.OcclusionHysteresisAllowsEmergencySideChangeAndIgnoresTargetRail" methodname="OcclusionHysteresisAllowsEmergencySideChangeAndIgnoresTargetRail" classname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests" runstate="Runnable" seed="630056660" result="Passed" start-time="2026-07-11 01:27:48Z" end-time="2026-07-11 01:27:48Z" duration="0.000073" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1045" name="RapidAlternatingTornadoDirectionsAreHeavilyDamped" fullname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests.RapidAlternatingTornadoDirectionsAreHeavilyDamped" methodname="RapidAlternatingTornadoDirectionsAreHeavilyDamped" classname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests" runstate="Runnable" seed="175794636" result="Passed" start-time="2026-07-11 01:27:48Z" end-time="2026-07-11 01:27:48Z" duration="0.000081" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1041" name="StationaryMarbleKeepsLastYawInsteadOfSearchingForAHeading" fullname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests.StationaryMarbleKeepsLastYawInsteadOfSearchingForAHeading" methodname="StationaryMarbleKeepsLastYawInsteadOfSearchingForAHeading" classname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests" runstate="Runnable" seed="602311056" result="Passed" start-time="2026-07-11 01:27:48Z" end-time="2026-07-11 01:27:48Z" duration="0.000077" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                </test-case>
+                <test-case id="1042" name="VerticalLiftRequestsOnlyASmallOrbitFromTheCurrentSide" fullname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests.VerticalLiftRequestsOnlyASmallOrbitFromTheCurrentSide" methodname="VerticalLiftRequestsOnlyASmallOrbitFromTheCurrentSide" classname="Pono.MarbleRun3D.Tests.EditMode.OrbitCameraControllerTests" runstate="Runnable" seed="2048706027" result="Passed" start-time="2026-07-11 01:27:48Z" end-time="2026-07-11 01:27:48Z" duration="0.000095" asserts="0">
+                  <properties>
+                    <property name="retryIteration" value="0" />
+                    <property name="repeatIteration" value="0" />
+                  </properties>
+                  <output><![CDATA[<b><color=#2EA3FF>MCP-FOR-UNITY</color></b>: [TestRunnerNoThrottle] Restored Interaction Mode after test run.
+Saving results to: /Users/ndw_mac/AppDevelopment/pono-asobiba-app/unity/PonoMarbleRun3D/TestResults/OrbitCameraControllerTests.xml
+]]></output>
+                </test-case>
+              </test-suite>
+            </test-suite>
+          </test-suite>
+        </test-suite>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

@@ -9571,6 +9571,7 @@ const BENTO_TUTORIAL_STEP_VOICE = {
   'tut2-nori-face-eyes': 'tut2_04a_eyes',
   'tut2-nori-face-mouth-nose': 'tut2_04b_mouth_nose',
   'tut2-nori-move': 'tut2_05_norimove',
+  'tut2-nori-undo': 'tut2_05b_undo',
   'tut2-nori-edit': 'tut2_06_noriedit',
   'tut2-okazu-main': 'tut2_07_okazu',
   'tut2-cup-btn': 'tut2_08_cupbtn',
@@ -10265,6 +10266,11 @@ function getTutorialPaletteAllowance(def) {
     return def.type === 'decor' && id === expected
       ? ok
       : deny(expected === 'nori_nose_bear' ? 'おはなを タップしてね' : 'おくちを タップしてね');
+  }
+  if (step === 'tut2-nori-undo') {
+    // batch:1058-hotfix5 (WP1): とりけす教習中はパレットからの新規配置を止め、
+    // 「とりけす」 ボタンに意識を向けさせる。
+    return deny('「とりけす」を おしてね');
   }
   if (step === 'tut2-nori-move' || step === 'tut2-nori-edit') {
     // 追加配置 (のり) は任意で許可 (待つ)。 それ以外は otro.
@@ -13558,6 +13564,9 @@ function canMoveFreeItemInCurrentTutorial(item) {
   // それ以外の tut2 step でも自由 (追加配置した decor/food/cup を子供が動かせるように)。
   // 唯一動かしてほしくないのは rice (削除は canRemoveFreeItemNow で別途ブロック済み)。
   if (item.type === 'rice') return false;
+  // batch:1058-hotfix5 (WP1): とりけす教習中は decor の新規ドラッグ開始を禁止する
+  // (undo 対象がこれ以上増えると 「とりけすで顔を戻す」 という学習目的が崩れる)。
+  if (tutorialState.step === 'tut2-nori-undo' && item.type === 'decor') return false;
   return true;
 }
 function beginFreeItemDrag(e, uid) {
@@ -17019,6 +17028,29 @@ function countDecorOnTier(tier = 1) {
   return placedItems.filter(i => i.type === 'decor' && getItemTier(i) === tier).length;
 }
 function handleNoriOkPressed() {
+  // batch:1058-hotfix5 (WP1): のりOK ソフトゲート。 tut2-nori-undo / tut2-nori-edit 中に
+  // 顔がまだデフォルト位置に戻っていなければ進めない (とりけすボタンへ誘導)。
+  // softlock 回避のため 3 回ブロックしたら 4 回目は通す。
+  if (tutorialState && tutorialState.active
+      && (tutorialState.step === 'tut2-nori-undo' || tutorialState.step === 'tut2-nori-edit')
+      && typeof tut2FaceAtDefault === 'function' && !tut2FaceAtDefault()) {
+    tutorialState._noriOkBlockCount = (tutorialState._noriOkBlockCount || 0) + 1;
+    if (tutorialState._noriOkBlockCount < 4) {
+      try { setSpeech('おかおを もとに もどしてから のりOK だよ！「とりけす」を おそう'); } catch (_) {}
+      try {
+        tutorialClearTrims();
+        tutorialClearOutlines();
+        const undoBtn = (typeof tutorialUndoButton === 'function') ? tutorialUndoButton() : null;
+        if (undoBtn) {
+          tutorialMarkTarget(undoBtn, { radius: 20, outline: false });
+          tutorialAnimateTap(undoBtn);
+        }
+      } catch (_) {}
+      return;
+    }
+    // 4回目はセーフティで通す (softlock 回避)。
+    tutorialState._noriOkBlockCount = 0;
+  }
   if (countDecorOnTier(1) === 0) {
     showNoDecorConfirmModal();
     return;
@@ -18091,7 +18123,8 @@ function renderFreeLayoutControls() {
   undo.type = 'button';
   undo.textContent = 'とりけす';
   undo.disabled = !freeUndoStack.length;
-  undo.addEventListener('pointerdown', e => { e.preventDefault(); undoFreeItem(); });
+  // batch:1058-hotfix5 (WP1): tutorialOnUndoPressed が単一入口 (通常時はそのまま undoFreeItem に委譲)。
+  undo.addEventListener('pointerdown', e => { e.preventDefault(); tutorialOnUndoPressed(); });
   actions.appendChild(undo);
   const redo = document.createElement('button');
   redo.type = 'button';
@@ -21664,6 +21697,9 @@ const TUT2_STEPS = [
   { id: 'tut2-nori-face-eyes', phaseAMs: 2400, fallbackMs: 8000, renderPhaseA: tut2RenderNoriPhaseA, renderPhaseB: tut2RenderNoriPhaseB },
   { id: 'tut2-nori-face-mouth-nose', phaseAMs: 2400, fallbackMs: 8000, renderPhaseA: tut2RenderNoriPhaseA, renderPhaseB: tut2RenderNoriPhaseB },
   { id: 'tut2-nori-move', phaseAMs: 2500, fallbackMs: 6000, renderPhaseA: tut2RenderNoriMovePhaseA, renderPhaseB: tut2RenderNoriMovePhaseB },
+  // batch:1058-hotfix5 (WP1): のり移動後に「とりけす」の使い方を教え、 顔がデフォルト位置に
+  // 戻ってから nori-edit (のりOK ゲート) へ進める。
+  { id: 'tut2-nori-undo', phaseAMs: 2200, fallbackMs: 9000, renderPhaseA: tut2RenderNoriUndoPhaseA, renderPhaseB: tut2RenderNoriUndoPhaseB },
   { id: 'tut2-nori-edit', phaseAMs: 5600, fallbackMs: 9000, renderPhaseA: tut2RenderNoriEditPhaseA, renderPhaseB: tut2RenderNoriEditPhaseB },
   { id: 'tut2-okazu-main', phaseAMs: 2500, fallbackMs: 7000, renderPhaseA: tut2RenderOkazuMainPhaseA, renderPhaseB: tut2RenderOkazuMainPhaseB },
   { id: 'tut2-cup-btn', single: true, fallbackMs: 5000, renderPhaseB: tut2RenderCupBtn },
@@ -21814,6 +21850,7 @@ const TUT2_PONO_SPEECH = {
   'tut2-nori-face-eyes': 'のりで おかおを つくろう！まずは おめめだよ。',
   'tut2-nori-face-mouth-nose': 'つぎは、はなと くちを おこう！',
   'tut2-nori-move': 'のりは ゆびで うごかせるよ。すきな ばしょに どうぞ。',
+  'tut2-nori-undo': 'まちがえても だいじょうぶ！「とりけす」で もとに もどせるよ。',
   'tut2-nori-edit': 'のりを タップすると まわしたり おおきさを かえられるよ！',
   'tut2-okazu-main': 'メインの おかず！すきなのを タップして いれてみよう。',
   'tut2-cup-btn': 'つぎは 「カップへ」を おしてね。',
@@ -22129,8 +22166,10 @@ function tut2RenderNoriPhaseB(step) {
   if (palette) tutorialAnimateTap(palette);
 }
 function tut2RenderNoriMovePhaseA(step) {
+  // batch:1058-hotfix5 (WP1): floating bubble 廃止、 ポノ吹き出し (setSpeech) に一本化。
+  tutorialHideBubble();
+  try { setSpeech('みてて！のりは ゆびで うごかせるよ'); } catch (_) {}
   const placed = tutorialFindFirstPlacedDecor();
-  tutorialShowBubbleBesideElement('ゆびで うごかせるよ', placed && placed.el, { side: 'right', gap: 32 });
   if (placed && placed.el) {
     const r = placed.el.getBoundingClientRect();
     const from = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
@@ -22139,13 +22178,36 @@ function tut2RenderNoriMovePhaseA(step) {
   }
 }
 function tut2RenderNoriMovePhaseB(step) {
+  // batch:1058-hotfix5 (WP1): floating bubble 廃止、 ポノ吹き出し (setSpeech) に一本化。
+  tutorialHideBubble();
+  try { setSpeech('すきな ばしょまで すーっと うごかしてみて！'); } catch (_) {}
   const placed = tutorialFindFirstPlacedDecor();
-  tutorialShowBubbleBesideElement('すきな ばしょまで<br>すーっと うごかしてね', placed && placed.el, { side: 'right', gap: 36 });
   if (placed && placed.el) {
     const r = placed.el.getBoundingClientRect();
     const from = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
     const to = { x: from.x + 30, y: from.y };
     tutorialAnimateDrag(from, to, {});
+  }
+}
+// batch:1058-hotfix5 (WP1): のり移動後の「とりけす」教習。 実 state を書き換える演出は
+// 行わず、 とりけすボタンへの視線誘導 (トリム+指) のみ。 Phase A→B とも同じボタンを
+// 指すが文言を変えて 「まず説明 → 実際に押してみて」 のリズムを作る。
+function tut2RenderNoriUndoPhaseA(step) {
+  tutorialHideBubble();
+  try { setSpeech('まちがえても だいじょうぶ！「とりけす」で もとに もどせるよ'); } catch (_) {}
+  const btn = (typeof tutorialUndoButton === 'function') ? tutorialUndoButton() : null;
+  if (btn) {
+    tutorialMarkTarget(btn, { radius: 20, outline: false });
+    tutorialAnimateTap(btn);
+  }
+}
+function tut2RenderNoriUndoPhaseB(step) {
+  tutorialHideBubble();
+  try { setSpeech('「とりけす」を おして、おかおを もとに もどそう！'); } catch (_) {}
+  const btn = (typeof tutorialUndoButton === 'function') ? tutorialUndoButton() : null;
+  if (btn) {
+    tutorialMarkTarget(btn, { radius: 20, outline: false });
+    tutorialAnimateTap(btn);
   }
 }
 function tut2RenderNoriEditPhaseA(step) {
@@ -22792,7 +22854,11 @@ function tutorialOnGuideChange(/* step */) {
     return;
   }
   const s = tutorialState.step;
-  const noriSteps = ['tut2-nori-face-eyes', 'tut2-nori-face-mouth-nose', 'tut2-nori-move', 'tut2-nori-edit'];
+  // batch:1058-hotfix5 (WP1): tut2-nori-undo 追加に伴い noriSteps にも編入。 これが無いと
+  // (softlock セーフティ等で) nori-undo 中に のりOK が直接通ってしまった場合に
+  // tutorialState.step が 'tut2-nori-undo' のまま取り残され、 実画面 (tier2Main) と
+  // ガイドが desync する。
+  const noriSteps = ['tut2-nori-face-eyes', 'tut2-nori-face-mouth-nose', 'tut2-nori-move', 'tut2-nori-undo', 'tut2-nori-edit'];
   if (noriSteps.indexOf(s) >= 0 && String(freeGuideStep || '').indexOf('Main') > 0 && String(freeGuideStep || '') !== 'rice') {
     tutorialAdvance('tut2-okazu-main');
     return;
@@ -22819,6 +22885,8 @@ function tutorialOnLayerMoved() {
 // batch:1058 phase1: item-moved は tut2-nori-move 中の decor 移動のみで進行。
 // 加えて、 batch:1057 の rotate/scale ボタン押下も move 相当として扱う (renderer 側で
 // rotate/scale 呼出時に tutorialOnItemMoved を明示的に発火するため、 ここは同じ条件で受ける)。
+// batch:1058-hotfix5 (WP1): 移動後にいきなり のりOK ゲートへ進めるのではなく、 一度
+// 「とりけす」 教習 (tut2-nori-undo) を挟んでから nori-edit に入る。
 function tutorialOnItemMoved(uid) {
   if (!tutorialState.active) return;
   if (tutorialState.step !== 'tut2-nori-move') return;
@@ -22828,7 +22896,55 @@ function tutorialOnItemMoved(uid) {
     const moved = items.find(i => i && i.uid === uid);
     if (!moved || moved.type !== 'decor') return;
   } catch (_) {}
-  tutorialAdvance('tut2-nori-edit');
+  tutorialAdvance('tut2-nori-undo');
+}
+// batch:1058-hotfix5 (WP1): とりけすボタンの単一入口。 通常時は undoFreeItem() をそのまま
+// 呼ぶが、 tut2-nori-undo / tut2-nori-edit 中は 「顔が既にデフォルト位置」 の状態での
+// 連打を undoFreeHistory に到達させない (LIFO を遡って Step4 の顔パーツ配置まで消して
+// しまう事故を構造的に防ぐ — 顔が非デフォルトの間は、 履歴を剥がしていけば必ず
+// デフォルトに到達してからガードが効く)。 undo が顔をデフォルトに戻したら、 一拍
+// (800ms, 既存 _noriBeatTimer と同じ state-guard パターン) おいて次のガイドへ進める。
+function tutorialOnUndoPressed() {
+  const guarded = !!(tutorialState && tutorialState.active
+    && (tutorialState.step === 'tut2-nori-undo' || tutorialState.step === 'tut2-nori-edit'));
+  if (!guarded) {
+    undoFreeItem();
+    return;
+  }
+  if (typeof tut2FaceAtDefault === 'function' && tut2FaceAtDefault()) {
+    try { setSpeech('もう もとどおりだよ！'); } catch (_) {}
+    return;
+  }
+  const stepAtPress = tutorialState.step;
+  undoFreeItem();
+  if (!tutorialState.active || tutorialState.step !== stepAtPress) return; // teardown/advance race
+  const backToDefault = (typeof tut2FaceAtDefault === 'function') && tut2FaceAtDefault();
+  if (tutorialState._noriUndoAckTimer) {
+    try { clearTimeout(tutorialState._noriUndoAckTimer); } catch (_) {}
+    tutorialState._noriUndoAckTimer = null;
+  }
+  if (!backToDefault) {
+    if (stepAtPress === 'tut2-nori-undo') {
+      try { setSpeech('もういちど「とりけす」！'); } catch (_) {}
+    }
+    // tut2-nori-edit 中 (ソフトゲート未成立) はそのまま待機、 のりOK 再押下で再ガード。
+    return;
+  }
+  try { setSpeech('もとに もどったね！'); } catch (_) {}
+  tutorialState._noriUndoAckTimer = setTimeout(() => {
+    tutorialState._noriUndoAckTimer = null;
+    if (!tutorialState.active || tutorialState.step !== stepAtPress) return;
+    if (stepAtPress === 'tut2-nori-undo') {
+      tutorialAdvance('tut2-nori-edit');
+    } else if (stepAtPress === 'tut2-nori-edit') {
+      // ソフトゲートでブロックされていた場合、 のりOK 誘導 (Phase B) の見た目に戻す。
+      tutorialState._noriOkBlockCount = 0;
+      const editStep = (typeof tut2FindStep === 'function') ? tut2FindStep('tut2-nori-edit') : null;
+      if (editStep && typeof tut2RenderNoriEditPhaseB === 'function') {
+        try { tut2RenderNoriEditPhaseB(editStep); } catch (_) {}
+      }
+    }
+  }, 800);
 }
 function tutorialOnItemPlaced(item) {
   if (!tutorialState.active) return;
