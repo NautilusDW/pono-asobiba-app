@@ -19,6 +19,10 @@ assert.equal(inlineCount, 2, 'unexpected writing-mori inline script count');
 assert.match(html, /const STROKE_END_PROGRESS_REQUIRED = 0\.72;/);
 assert.match(html, /const PENDING_CONTINUATION_MIN_DISTANCE = 45;/);
 assert.match(html, /const PENDING_CONTINUATION_MIN_FILL_RATIO = 0\.45;/);
+assert.match(html, /const STROKE_ASSIST_AFTER_MISSES = 3;/);
+assert.match(html, /const STROKE_ASSIST_MIN_DISTANCE = 45;/);
+assert.match(html, /const STROKE_ASSIST_MIN_FILL_RATIO = 0\.5;/);
+assert.match(html, /const STROKE_ASSIST_MIN_PROGRESS_SPAN = 0\.45;/);
 assert.match(html, /showHintAfterMisses: 2,/);
 assert.doesNotMatch(html, /markStrokeCorrectAfterMisses:/);
 
@@ -39,6 +43,13 @@ const decisionContext = {
   STROKE_END_PROGRESS_REQUIRED: 0.72,
   PENDING_CONTINUATION_MIN_DISTANCE: 45,
   PENDING_CONTINUATION_MIN_FILL_RATIO: 0.45,
+  STROKE_ASSIST_AFTER_MISSES: 3,
+  STROKE_ASSIST_MIN_DISTANCE: 45,
+  STROKE_ASSIST_MIN_FILL_RATIO: 0.5,
+  STROKE_ASSIST_MIN_PROGRESS_SPAN: 0.45,
+  activeAttemptStroke: 0,
+  activeAttemptStartProgress: 0,
+  activeAttemptLastProgress: 0.45,
   fillRatio: 0,
 };
 decisionContext.getStrokeFilledRatio = () => decisionContext.fillRatio;
@@ -68,6 +79,34 @@ decisionContext.fillRatio = 0.45;
 decisionContext.pendingCorrectStroke = { strokeNum: 1, data: {} };
 assert.equal(decisionContext.canAcceptPendingContinuation(0), false, 'a future-stroke continuation must not advance');
 
+decisionContext.pendingCorrectStroke = null;
+decisionContext.fillRatio = 0.5;
+decisionContext.activeAttemptMaxProgress = 0.72;
+assert.equal(
+  decisionContext.canAcceptGuidedStrokeAssist(0, { mistakesOnStroke: 3 }),
+  true,
+  'the third meaningful forward trace must provide a bounded escape hatch',
+);
+assert.equal(
+  decisionContext.canAcceptGuidedStrokeAssist(0, { mistakesOnStroke: 2 }),
+  false,
+  'the guided assist must not activate before the third genuine miss',
+);
+decisionContext.activeAttemptStartProgress = 1;
+decisionContext.activeAttemptLastProgress = 0;
+assert.equal(
+  decisionContext.canAcceptGuidedStrokeAssist(0, { mistakesOnStroke: 3 }),
+  false,
+  'a backwards stroke must not receive the guided assist',
+);
+decisionContext.activeAttemptStartProgress = 0.4;
+decisionContext.activeAttemptLastProgress = 0.5;
+assert.equal(
+  decisionContext.canAcceptGuidedStrokeAssist(0, { mistakesOnStroke: 3 }),
+  false,
+  'small jitter must not receive the guided assist',
+);
+
 function makePointerDownContext(pending) {
   const calls = { start: [], clear: 0, render: 0 };
   return {
@@ -85,6 +124,8 @@ function makePointerDownContext(pending) {
     activeAttemptPainted: false,
     activeAttemptHadMistake: false,
     activeAttemptMaxProgress: 0.6,
+    activeAttemptStartProgress: 0.1,
+    activeAttemptLastProgress: 0.6,
     lastTrailPoint: null,
     LETTER_BRUSH_RADIUS: 4,
     playSfx() {},
@@ -109,6 +150,8 @@ assert.deepEqual(continuingContext.calls.start, [0], 'continuation must rewind H
 assert.equal(continuingContext.calls.clear, 0, 'continuation must keep the visible partial stroke');
 assert.equal(continuingContext.pendingCorrectStroke.strokeNum, 0, 'continuation must retain the Hanzi-approved pending stroke');
 assert.equal(continuingContext.activeAttemptMaxProgress, 0.6, 'continuation must retain prior endpoint progress');
+assert.equal(continuingContext.activeAttemptStartProgress, null, 'each contact must begin a fresh direction check');
+assert.equal(continuingContext.activeAttemptLastProgress, 0, 'each contact must reset its last sampled progress');
 
 const freshContext = makePointerDownContext(null);
 vm.createContext(freshContext);
@@ -179,5 +222,10 @@ assert.match(html, /if \(strokeNum !== expectedStroke\)/, 'expected-stroke order
 assert.match(html, /if \(strokeNum > expectedStroke\)[\s\S]*?startWriterQuiz\(expectedStroke\)/, 'future-stroke recovery was removed');
 assert.match(html, /acceptCorrectStroke\(pendingCorrectStroke\.data, true\)/, 'pending continuation must request writer resync');
 assert.match(html, /if \(resyncWriter\)[\s\S]*?startWriterQuiz\(strokesCompleted\)/, 'writer resync after local continuation is missing');
+assert.match(
+  html,
+  /if \(canAcceptGuidedStrokeAssist\(strokeNum, data\)\)[\s\S]*?source: 'guided-assist'[\s\S]*?true\);/,
+  'the bounded third-miss assist or its writer resync is missing',
+);
 
 console.log('Mojikko writing judgment regression: PASS');

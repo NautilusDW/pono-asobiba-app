@@ -1677,6 +1677,10 @@ const STROKE_END_PROGRESS_REQUIRED = 0.72;
 const STROKE_END_DISTANCE_TOLERANCE = 24;
 const PENDING_CONTINUATION_MIN_DISTANCE = 45;
 const PENDING_CONTINUATION_MIN_FILL_RATIO = 0.45;
+const STROKE_ASSIST_AFTER_MISSES = 3;
+const STROKE_ASSIST_MIN_DISTANCE = 45;
+const STROKE_ASSIST_MIN_FILL_RATIO = 0.5;
+const STROKE_ASSIST_MIN_PROGRESS_SPAN = 0.45;
 const CARE_STATE_KEY = 'mojikkoFarmCareStateV1';
 const PENDING_REWARD_KEY = 'mojikkoFarmPendingWritingReward';
 let currentIndex = 0;
@@ -1695,6 +1699,8 @@ let activeAttemptCompletedBefore = 0;
 let activeAttemptPainted = false;
 let activeAttemptHadMistake = false;
 let activeAttemptMaxProgress = 0;
+let activeAttemptStartProgress = null;
+let activeAttemptLastProgress = 0;
 let pendingCorrectStroke = null;
 let sparkleBudget = 0;
 let strokesCompleted = 0;
@@ -2822,6 +2828,8 @@ function resetWriting() {
   activeAttemptPainted = false;
   activeAttemptHadMistake = false;
   activeAttemptMaxProgress = 0;
+  activeAttemptStartProgress = null;
+  activeAttemptLastProgress = 0;
   pendingCorrectStroke = null;
   sparkleBudget = 0;
   strokesCompleted = 0;
@@ -3024,15 +3032,31 @@ function canAcceptPendingContinuation(strokeIndex) {
   );
 }
 
+function canAcceptGuidedStrokeAssist(strokeIndex, data) {
+  const missesOnStroke = data && Number.isFinite(data.mistakesOnStroke)
+    ? data.mistakesOnStroke
+    : 0;
+  return !!(
+    missesOnStroke >= STROKE_ASSIST_AFTER_MISSES &&
+    activeAttemptStroke === strokeIndex &&
+    activeAttemptPainted &&
+    trailDistance >= STROKE_ASSIST_MIN_DISTANCE &&
+    getStrokeFilledRatio(strokeIndex) >= STROKE_ASSIST_MIN_FILL_RATIO &&
+    hasAttemptReachedStrokeEnd(strokeIndex) &&
+    Number.isFinite(activeAttemptStartProgress) &&
+    activeAttemptLastProgress - activeAttemptStartProgress >= STROKE_ASSIST_MIN_PROGRESS_SPAN
+  );
+}
+
 function updateAttemptProgressForPoint(point) {
   if (complete || !point || activeAttemptStroke < 0) return;
   const item = getCurrentCharacter();
   const strokeIndex = Math.min(activeAttemptStroke, item.strokes - 1);
   if (strokeIndex < 0 || strokeIndex < strokesCompleted) return;
-  activeAttemptMaxProgress = Math.max(
-    activeAttemptMaxProgress,
-    getStrokeProgressAtBoardPoint(strokeIndex, point)
-  );
+  const progress = getStrokeProgressAtBoardPoint(strokeIndex, point);
+  if (activeAttemptStartProgress === null) activeAttemptStartProgress = progress;
+  activeAttemptLastProgress = progress;
+  activeAttemptMaxProgress = Math.max(activeAttemptMaxProgress, progress);
 
   if (canAcceptPendingContinuation(strokeIndex)) {
     acceptCorrectStroke(pendingCorrectStroke.data, true);
@@ -3182,6 +3206,8 @@ function onTrailPointerDown(event) {
   activeAttemptCompletedBefore = strokesCompleted;
   activeAttemptPainted = false;
   activeAttemptHadMistake = false;
+  activeAttemptStartProgress = null;
+  activeAttemptLastProgress = 0;
   if (!continuingPending) activeAttemptMaxProgress = 0;
   if (strokeIndex >= strokesCompleted && !continuingPending) {
     const erased = clearStrokePixels(strokeIndex);
@@ -3274,6 +3300,8 @@ function finishTrailAttempt(event) {
       return;
     }
     activeAttemptMaxProgress = 0;
+    activeAttemptStartProgress = null;
+    activeAttemptLastProgress = 0;
     if (!shouldClear) return;
     const erased = clearStrokePixels(strokeIndex);
     if (erased > 0) {
@@ -3327,6 +3355,8 @@ function acceptCorrectStroke(data, resyncWriter) {
   activeAttemptPainted = false;
   activeAttemptHadMistake = false;
   activeAttemptMaxProgress = 0;
+  activeAttemptStartProgress = null;
+  activeAttemptLastProgress = 0;
   renderPixelLetter();
   renderCanvasStrokeNumbers();
   setMessage(
@@ -3359,6 +3389,10 @@ function onMistake(data) {
   }
   mistakeCount += 1;
   activeAttemptHadMistake = true;
+  if (canAcceptGuidedStrokeAssist(strokeNum, data)) {
+    acceptCorrectStroke({ ...data, strokeNum, source: 'guided-assist' }, true);
+    return;
+  }
   if (activeAttemptStroke >= 0) {
     setMessage(`${strokeNum + 1}かくめを ゆっくり なぞってね`, 'まだ かけるよ');
     return;
@@ -3368,6 +3402,8 @@ function onMistake(data) {
   activeAttemptPainted = false;
   activeAttemptHadMistake = false;
   activeAttemptMaxProgress = 0;
+  activeAttemptStartProgress = null;
+  activeAttemptLastProgress = 0;
   const erased = clearStrokePixels(strokeNum);
   if (erased > 0) {
     renderPixelLetter();
