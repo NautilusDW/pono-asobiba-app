@@ -820,24 +820,36 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
 .prep-workbench[data-prep-kind^="shape_"].is-working .prep-art-main {
   filter: drop-shadow(0 14px 18px rgba(80,50,30,0.2));
 }
+.prep-workbench[data-prep-kind^="shape_"] .prep-art-main::before,
 .prep-workbench[data-prep-kind^="shape_"] .prep-art-main::after {
   content: '';
   position: absolute;
   inset: 0;
-  background-image: var(--shape-meat-image, none);
   background-repeat: no-repeat;
   background-position: center;
   background-size: contain;
-  opacity: var(--shape-meat-opacity, 0);
   transform-origin: 50% var(--shape-meat-origin-y, 54%);
   clip-path: ellipse(var(--shape-clip-rx, 50%) var(--shape-clip-ry, 50%) at 50% 50%);
+  pointer-events: none;
+  transition: transform 0.1s linear, clip-path 0.12s ease, opacity 0.12s ease, background-image 0.18s ease;
+}
+.prep-workbench[data-prep-kind^="shape_"] .prep-art-main::before {
+  background-image: var(--shape-meat-start-image, none);
+  opacity: var(--shape-meat-start-opacity, 0);
+  transform:
+    translate(calc(var(--shape-meat-offset-x, 0px) + var(--shape-warp-x, 0px)), var(--shape-warp-y, 0px))
+    rotate(var(--shape-warp-rotate, 0deg))
+    skewX(var(--shape-warp-skew, 0deg))
+    scale(var(--shape-rough-scale-x, 1), var(--shape-rough-scale-y, 1));
+}
+.prep-workbench[data-prep-kind^="shape_"] .prep-art-main::after {
+  background-image: var(--shape-meat-image, none);
+  opacity: var(--shape-meat-opacity, 0);
   transform:
     translate(calc(var(--shape-meat-offset-x, 0px) + var(--shape-warp-x, 0px)), var(--shape-warp-y, 0px))
     rotate(var(--shape-warp-rotate, 0deg))
     skewX(var(--shape-warp-skew, 0deg))
     scale(var(--shape-meat-scale-x, 1), var(--shape-meat-scale-y, 1));
-  transition: transform 0.1s linear, clip-path 0.12s ease, opacity 0.12s ease, background-image 0.18s ease;
-  pointer-events: none;
 }
 .prep-workbench[data-prep-kind^="shape_"].is-working .prep-art-main {
   animation: none;
@@ -1728,6 +1740,19 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
 .prep-breading-food[data-kind="bread_korokke"] {
   width: var(--prep-food-w, 28%);
   height: var(--prep-food-h, 31%);
+}
+.prep-breading-food.is-shape-handoff {
+  pointer-events: none;
+  transition:
+    left 0.42s cubic-bezier(.2,.78,.24,1),
+    top 0.42s cubic-bezier(.2,.78,.24,1),
+    transform 0.42s cubic-bezier(.2,.78,.24,1),
+    filter 0.2s ease;
+}
+@media (prefers-reduced-motion: reduce) {
+  .prep-breading-food.is-shape-handoff {
+    transition: none;
+  }
 }
 .prep-breading-food::before,
 .prep-breading-food::after {
@@ -7211,11 +7236,26 @@ body.layout-editor-on .bowl-fill-mask::after {
       shapePrep: true,
       shapeType: 'patty',
       continuousShapeWarp: true,
-      shapeFinalScaleX: 0.85,
-      shapeFinalScaleY: 0.74,
-      shapeMeatOffsetX: -12.04,
+      // 成形完了と直後の粉工程で同じ素コロッケを使い、工程境界で
+      // 平たいタネから厚い小判形へ突然切り替わらないようにする。
+      shapeCrossfade: true,
+      shapeCrossfadeStart: 0.3,
+      shapeCrossfadeEnd: 0.9,
+      shapeRoughStartScaleX: 0.95,
+      shapeRoughStartScaleY: 1.05,
+      shapeRoughFinalScaleX: 0.85,
+      shapeRoughFinalScaleY: 0.8,
+      shapeStartScaleX: 0.75,
+      shapeStartScaleY: 0.85,
+      shapeFinalScaleX: 0.67,
+      shapeFinalScaleY: 0.67,
+      shapeStartClipRx: 50,
+      shapeStartClipRy: 50,
+      shapeFinalClipRx: 50,
+      shapeFinalClipRy: 50,
+      shapeMeatOffsetX: 0,
       shapeGuideWidth: 'min(47%, 465px)',
-      shapeGuideHeight: '34%',
+      shapeGuideHeight: '36.6%',
       shapeGuideTop: '49%',
       shapeDistanceScale: 1.08,
       startSpeech: 'コロッケを こばんがたに かたちづくろう！',
@@ -7223,7 +7263,8 @@ body.layout-editor-on .bowl-fill-mask::after {
       steps: [
         {
           src: '../assets/images/bento/cooking/prep_plate.png',
-          shapeMeatSrc: '../assets/images/bento/cooking/korokke/prep/storybook_v1249/korokke_shape_storybook_food.png',
+          shapeStartMeatSrc: '../assets/images/bento/cooking/korokke/prep/storybook_v1249/korokke_shape_storybook_food.png',
+          shapeMeatSrc: '../assets/images/bento/cooking/korokke/prep/korokke_flour_01.png',
           thumbSrc: '../assets/images/bento/cooking/korokke/prep/storybook_v1249/korokke_mix_storybook_state3.png',
           label: 'たねを まとめよう',
           caption: 'ドラッグで ぎゅっ！',
@@ -7231,7 +7272,8 @@ body.layout-editor-on .bowl-fill-mask::after {
         },
         {
           src: '../assets/images/bento/cooking/prep_plate.png',
-          shapeMeatSrc: '../assets/images/bento/cooking/korokke/prep/storybook_v1249/korokke_shape_storybook_food.png',
+          shapeStartMeatSrc: '../assets/images/bento/cooking/korokke/prep/storybook_v1249/korokke_shape_storybook_food.png',
+          shapeMeatSrc: '../assets/images/bento/cooking/korokke/prep/korokke_flour_01.png',
           thumbSrc: '../assets/images/bento/cooking/korokke/prep/storybook_v1249/korokke_mix_storybook_state3.png',
           label: 'こばんに しよう',
           caption: 'まとまってきたよ！',
@@ -7239,7 +7281,8 @@ body.layout-editor-on .bowl-fill-mask::after {
         },
         {
           src: '../assets/images/bento/cooking/prep_plate.png',
-          shapeMeatSrc: '../assets/images/bento/cooking/korokke/prep/storybook_v1249/korokke_shape_storybook_food.png',
+          shapeStartMeatSrc: '../assets/images/bento/cooking/korokke/prep/storybook_v1249/korokke_shape_storybook_food.png',
+          shapeMeatSrc: '../assets/images/bento/cooking/korokke/prep/korokke_flour_01.png',
           thumbSrc: '../assets/images/bento/cooking/korokke/prep/storybook_v1249/korokke_mix_storybook_state3.png',
           label: 'できあがり',
           caption: 'ころもを つけられるよ！',
@@ -7305,6 +7348,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       kind: 'bread_korokke',
       trayPrep: true,
       singleSurfacePrep: true,
+      shapeHandoffAlpha: { canvasW: 320, canvasH: 190, x: 18, y: 20, w: 284, h: 149 },
       startSpeech: 'コロッケに ころもを つけよう！',
       completeSpeech: 'コロッケの したごしらえ できたよ！',
       toolSteps: BREADING_TRAY_STEPS,
@@ -7460,6 +7504,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     prepPankoGrabDistance: 0,
     prepPankoAirLastAt: 0,
     prepDragLastStep: 0,
+    prepShapeExitRect: null,
     suppressPrepClick: false,
     cookProgress: 0,
     cookPieceIndex: 0,
@@ -9205,6 +9250,12 @@ body.layout-editor-on .bowl-fill-mask::after {
     state.prepEggSplashLastAt = 0;
     resetPrepEggMotion();
     state.prepTrayLastValidPose = null;
+    if (els.prepBreadingFood) {
+      els.prepBreadingFood.classList.remove('is-shape-handoff');
+      delete els.prepBreadingFood.dataset.shapeHandoff;
+      els.prepBreadingFood.style.removeProperty('transition');
+      els.prepBreadingFood.style.removeProperty('--prep-food-scale');
+    }
     state.prepFlourPressLastAt = 0;
     state.prepPankoGrabDistance = 0;
     state.prepPankoAirLastAt = 0;
@@ -9242,6 +9293,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     resetCookDrag();
     hideCombo();
     const config = getPrepConfig(action, ing);
+    if (!config || config.kind !== 'bread_korokke') state.prepShapeExitRect = null;
     resetPotatoMasherUi();
     resetPotatoCoverage();
     preloadPrepFoodFrames(config);
@@ -9261,6 +9313,13 @@ body.layout-editor-on .bowl-fill-mask::after {
     }
     setSpeech(config.startSpeech || (ing.name + 'を したごしらえしよう！'), 'prep');
     showScreen('prep');
+    if (config.kind === 'bread_korokke' && state.prepShapeExitRect) {
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          playKorokkeShapeToBreadingHandoff(config);
+        });
+      });
+    }
     if (isCoveragePrepConfig(config)) ensurePotatoCoverage(config, 0);
     if (config.dragPrep) {
       scheduleKneadCanvasReset(config, 0);
@@ -9429,6 +9488,20 @@ body.layout-editor-on .bowl-fill-mask::after {
         els.shapePrepGuide.style.setProperty('--shape-hit-scale', '0.55');
       }
     }
+    if (els.prepArtMain) {
+      let startOpacity = 0;
+      let finalOpacity = isShape ? 1 : 0;
+      if (usesContinuousShapeWarp && config.shapeCrossfade) {
+        const fadeStart = Math.max(0, Math.min(0.9, Number(config.shapeCrossfadeStart) || 0.3));
+        const fadeEnd = Math.max(fadeStart + 0.05, Math.min(1, Number(config.shapeCrossfadeEnd) || 0.9));
+        const rawFade = Math.max(0, Math.min(1, (ratio - fadeStart) / (fadeEnd - fadeStart)));
+        const smoothFade = rawFade * rawFade * (3 - 2 * rawFade);
+        startOpacity = 1 - smoothFade;
+        finalOpacity = smoothFade;
+      }
+      els.prepArtMain.style.setProperty('--shape-meat-start-opacity', startOpacity.toFixed(3));
+      els.prepArtMain.style.setProperty('--shape-meat-opacity', finalOpacity.toFixed(3));
+    }
     if (els.prepStage) {
       if (isMultiBalls) {
         els.prepStage.dataset.shapeMode = 'multi-balls';
@@ -9440,19 +9513,33 @@ body.layout-editor-on .bowl-fill-mask::after {
       els.prepStage.style.setProperty('--shape-progress', ratio.toFixed(3));
       if (usesContinuousShapeWarp) {
         const morph = ratio * ratio * (3 - 2 * ratio);
+        const startScaleX = Math.max(0.55, Math.min(1.2, Number(config.shapeStartScaleX) || 1));
+        const startScaleY = Math.max(0.55, Math.min(1.2, Number(config.shapeStartScaleY) || 1));
         const finalScaleX = Math.max(0.55, Math.min(1.2, Number(config.shapeFinalScaleX) || 1.012));
         const finalScaleY = Math.max(0.55, Math.min(1.2, Number(config.shapeFinalScaleY) || 0.62));
+        const roughStartScaleX = Math.max(0.55, Math.min(1.2, Number(config.shapeRoughStartScaleX) || startScaleX));
+        const roughStartScaleY = Math.max(0.55, Math.min(1.2, Number(config.shapeRoughStartScaleY) || startScaleY));
+        const roughFinalScaleX = Math.max(0.55, Math.min(1.2, Number(config.shapeRoughFinalScaleX) || finalScaleX));
+        const roughFinalScaleY = Math.max(0.55, Math.min(1.2, Number(config.shapeRoughFinalScaleY) || finalScaleY));
+        const startClipRx = Math.max(25, Math.min(50, Number(config.shapeStartClipRx) || 50));
+        const startClipRy = Math.max(25, Math.min(50, Number(config.shapeStartClipRy) || 50));
+        const finalClipRx = Math.max(25, Math.min(50, Number(config.shapeFinalClipRx) || 38));
+        const finalClipRy = Math.max(25, Math.min(50, Number(config.shapeFinalClipRy) || 35));
         const meatOffsetX = Math.max(-40, Math.min(40, Number(config.shapeMeatOffsetX) || 0));
-        els.prepStage.style.setProperty('--shape-meat-scale-x', (1 + morph * (finalScaleX - 1)).toFixed(3));
-        els.prepStage.style.setProperty('--shape-meat-scale-y', (1 + morph * (finalScaleY - 1)).toFixed(3));
+        els.prepStage.style.setProperty('--shape-meat-scale-x', (startScaleX + morph * (finalScaleX - startScaleX)).toFixed(3));
+        els.prepStage.style.setProperty('--shape-meat-scale-y', (startScaleY + morph * (finalScaleY - startScaleY)).toFixed(3));
+        els.prepStage.style.setProperty('--shape-rough-scale-x', (roughStartScaleX + morph * (roughFinalScaleX - roughStartScaleX)).toFixed(3));
+        els.prepStage.style.setProperty('--shape-rough-scale-y', (roughStartScaleY + morph * (roughFinalScaleY - roughStartScaleY)).toFixed(3));
         els.prepStage.style.setProperty('--shape-meat-offset-x', meatOffsetX.toFixed(2) + 'px');
-        els.prepStage.style.setProperty('--shape-clip-rx', (50 - morph * 12).toFixed(2) + '%');
-        els.prepStage.style.setProperty('--shape-clip-ry', (50 - morph * 15).toFixed(2) + '%');
+        els.prepStage.style.setProperty('--shape-clip-rx', (startClipRx + morph * (finalClipRx - startClipRx)).toFixed(2) + '%');
+        els.prepStage.style.setProperty('--shape-clip-ry', (startClipRy + morph * (finalClipRy - startClipRy)).toFixed(2) + '%');
         els.prepStage.style.setProperty('--shape-meat-origin-y', '50%');
       } else if (usesFixedShapeFrames) {
         const frameScale = Math.max(0.7, Math.min(1.5, Number(config.fixedShapeScale) || 1));
         els.prepStage.style.setProperty('--shape-meat-scale-x', frameScale.toFixed(3));
         els.prepStage.style.setProperty('--shape-meat-scale-y', frameScale.toFixed(3));
+        els.prepStage.style.setProperty('--shape-rough-scale-x', frameScale.toFixed(3));
+        els.prepStage.style.setProperty('--shape-rough-scale-y', frameScale.toFixed(3));
         els.prepStage.style.setProperty('--shape-clip-rx', '50%');
         els.prepStage.style.setProperty('--shape-clip-ry', '50%');
         els.prepStage.style.setProperty('--shape-meat-origin-y', '54%');
@@ -9460,6 +9547,8 @@ body.layout-editor-on .bowl-fill-mask::after {
       } else if (isShape && !isBallsShape && !isMultiBalls && !isPortionBalls) {
         els.prepStage.style.setProperty('--shape-meat-scale-x', (0.72 + ease * 0.36).toFixed(3));
         els.prepStage.style.setProperty('--shape-meat-scale-y', (1.22 - ease * 0.28).toFixed(3));
+        els.prepStage.style.setProperty('--shape-rough-scale-x', (0.72 + ease * 0.36).toFixed(3));
+        els.prepStage.style.setProperty('--shape-rough-scale-y', (1.22 - ease * 0.28).toFixed(3));
         els.prepStage.style.setProperty('--shape-clip-rx', '50%');
         els.prepStage.style.setProperty('--shape-clip-ry', '50%');
         els.prepStage.style.setProperty('--shape-meat-origin-y', '54%');
@@ -9467,6 +9556,8 @@ body.layout-editor-on .bowl-fill-mask::after {
       } else {
         els.prepStage.style.setProperty('--shape-meat-scale-x', '1');
         els.prepStage.style.setProperty('--shape-meat-scale-y', '1');
+        els.prepStage.style.setProperty('--shape-rough-scale-x', '1');
+        els.prepStage.style.setProperty('--shape-rough-scale-y', '1');
         els.prepStage.style.setProperty('--shape-clip-rx', '50%');
         els.prepStage.style.setProperty('--shape-clip-ry', '50%');
         els.prepStage.style.setProperty('--shape-meat-origin-y', '54%');
@@ -9862,6 +9953,7 @@ body.layout-editor-on .bowl-fill-mask::after {
         if (!step) return;
         preloadPrepImage(step.src);
         preloadPrepImage(step.foodSrc);
+        preloadPrepImage(step.shapeStartMeatSrc);
         preloadPrepImage(step.shapeMeatSrc);
         preloadPrepImage(step.thumbSrc);
         if (Array.isArray(step.brushSrcs)) step.brushSrcs.forEach(preloadPrepImage);
@@ -9905,10 +9997,12 @@ body.layout-editor-on .bowl-fill-mask::after {
       el.style.backgroundImage = 'url("' + (visual.src || '') + '")';
       el.style.backgroundSize = 'contain';
       el.style.backgroundPosition = 'center';
+      el.style.setProperty('--shape-meat-start-image', visual.shapeStartMeatSrc ? ('url("' + visual.shapeStartMeatSrc + '")') : 'none');
       el.style.setProperty('--shape-meat-image', 'url("' + visual.shapeMeatSrc + '")');
-      el.style.setProperty('--shape-meat-opacity', '1');
       return;
     }
+    el.style.removeProperty('--shape-meat-start-image');
+    el.style.removeProperty('--shape-meat-start-opacity');
     el.style.removeProperty('--shape-meat-image');
     el.style.removeProperty('--shape-meat-opacity');
     if (visual.src) {
@@ -9933,6 +10027,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     if (!visual || !visual.thumbSrc) return visual;
     const thumbVisual = Object.assign({}, visual);
     thumbVisual.src = visual.thumbSrc;
+    delete thumbVisual.shapeStartMeatSrc;
     delete thumbVisual.shapeMeatSrc;
     delete thumbVisual.thumbSrc;
     return thumbVisual;
@@ -10467,6 +10562,63 @@ body.layout-editor-on .bowl-fill-mask::after {
       return;
     }
     snapPrepFoodToTray();
+  }
+
+  function playKorokkeShapeToBreadingHandoff(config) {
+    const exitRect = state.prepShapeExitRect;
+    state.prepShapeExitRect = null;
+    if (!exitRect || !config || config.kind !== 'bread_korokke' || !els.prepStage || !els.prepBreadingFood) return;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const alpha = config.shapeHandoffAlpha;
+    if (!alpha || !alpha.canvasW || !alpha.canvasH || !alpha.w || !alpha.h) return;
+    const food = els.prepBreadingFood;
+    const stageRect = els.prepStage.getBoundingClientRect();
+    const foodRect = food.getBoundingClientRect();
+    if (!stageRect.width || !stageRect.height || !foodRect.width || !foodRect.height || !food.offsetWidth || !food.offsetHeight) return;
+    const rootScaleX = foodRect.width / food.offsetWidth;
+    const rootScaleY = foodRect.height / food.offsetHeight;
+    const containScale = Math.min(food.offsetWidth / alpha.canvasW, food.offsetHeight / alpha.canvasH);
+    const alphaWidth = alpha.w * containScale * rootScaleX;
+    const alphaHeight = alpha.h * containScale * rootScaleY;
+    if (!alphaWidth || !alphaHeight) return;
+    const scaleX = exitRect.width / alphaWidth;
+    const scaleY = exitRect.height / alphaHeight;
+    const entryScale = Math.max(0.7, Math.min(1.8, (scaleX + scaleY) / 2));
+    const alphaCenterX = alpha.x + alpha.w / 2;
+    const alphaCenterY = alpha.y + alpha.h / 2;
+    const alphaOffsetX = (alphaCenterX - alpha.canvasW / 2) * containScale * rootScaleX * entryScale;
+    const alphaOffsetY = (alphaCenterY - alpha.canvasH / 2) * containScale * rootScaleY * entryScale;
+    const exitCenterX = exitRect.left + exitRect.width / 2;
+    const exitCenterY = exitRect.top + exitRect.height / 2;
+    const entryX = ((exitCenterX - alphaOffsetX - stageRect.left) / stageRect.width) * 100;
+    const entryY = ((exitCenterY - alphaOffsetY - stageRect.top) / stageRect.height) * 100;
+
+    state.prepAnimating = true;
+    food.classList.add('is-shape-handoff');
+    food.dataset.shapeHandoff = '1';
+    food.style.transition = 'none';
+    setPrepFoodPose(entryX.toFixed(3) + '%', entryY.toFixed(3) + '%', '0deg');
+    food.style.setProperty('--prep-food-scale', entryScale.toFixed(4));
+    void food.offsetWidth;
+
+    state.pendingTimers.push(setTimeout(function () {
+      if (getActiveTrayPrepConfig() !== config || !food.isConnected) return;
+      food.style.removeProperty('transition');
+      food.dataset.shapeHandoff = 'moving';
+      requestAnimationFrame(function () {
+        if (getActiveTrayPrepConfig() !== config || !food.isConnected) return;
+        setPrepFoodPose('50%', '52%', '0deg');
+        food.style.setProperty('--prep-food-scale', '1');
+      });
+    }, 160));
+    state.pendingTimers.push(setTimeout(function () {
+      if (!food.isConnected) return;
+      food.classList.remove('is-shape-handoff');
+      delete food.dataset.shapeHandoff;
+      food.style.removeProperty('transition');
+      food.style.removeProperty('--prep-food-scale');
+      if (getActiveTrayPrepConfig() === config) state.prepAnimating = false;
+    }, 650));
   }
 
   function renderPrepBreadingGame(config, progress) {
@@ -12550,6 +12702,12 @@ body.layout-editor-on .bowl-fill-mask::after {
     if (isPotatoMashConfig(config)) holdPotatoMasher(false);
     const maxProgress = getPrepMaxProgress(config);
     updatePrepView(config, maxProgress, true);
+    if (config && config.kind === 'shape_korokke' && els.shapePrepGuide) {
+      const rect = els.shapePrepGuide.getBoundingClientRect();
+      state.prepShapeExitRect = rect.width && rect.height
+        ? { left: rect.left, top: rect.top, width: rect.width, height: rect.height }
+        : null;
+    }
     if (isCoveragePrepConfig(config)) resetPotatoCoverage();
     showPrepBurst(config.completeBurst || 'できた！');
     setSpeech(config.completeSpeech || 'したごしらえ できたよ！', 'prep');
@@ -19104,6 +19262,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     state.prepRouteChoiceOpen = false;
     state.prepFlourPressLastAt = 0;
     state.prepDragLastStep = 0;
+    state.prepShapeExitRect = null;
     state.suppressPrepClick = false;
     state.cookProgress = 0;
     state.cookPieceIndex = 0;
@@ -19173,6 +19332,8 @@ body.layout-editor-on .bowl-fill-mask::after {
       els.prepArtMain.style.backgroundImage = '';
       els.prepArtMain.style.backgroundSize = '';
       els.prepArtMain.style.backgroundPosition = '';
+      els.prepArtMain.style.removeProperty('--shape-meat-start-image');
+      els.prepArtMain.style.removeProperty('--shape-meat-start-opacity');
       els.prepArtMain.style.removeProperty('--shape-meat-image');
       els.prepArtMain.style.removeProperty('--shape-meat-opacity');
     }
@@ -19201,6 +19362,8 @@ body.layout-editor-on .bowl-fill-mask::after {
     if (els.prepStage) {
       els.prepStage.style.setProperty('--shape-meat-scale-x', '1');
       els.prepStage.style.setProperty('--shape-meat-scale-y', '1');
+      els.prepStage.style.setProperty('--shape-rough-scale-x', '1');
+      els.prepStage.style.setProperty('--shape-rough-scale-y', '1');
       els.prepStage.style.setProperty('--shape-meat-offset-x', '0px');
       els.prepStage.style.setProperty('--shape-clip-rx', '50%');
       els.prepStage.style.setProperty('--shape-clip-ry', '50%');

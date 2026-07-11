@@ -108,20 +108,47 @@ const shapeEnd = html.indexOf('bread_shrimp: {', shapeStart);
 assert.ok(shapeStart >= 0 && shapeEnd > shapeStart, 'shape_korokke config is missing');
 const shapeSource = html.slice(shapeStart, shapeEnd);
 assert.match(shapeSource, /continuousShapeWarp:\s*true/);
-assert.match(shapeSource, /shapeFinalScaleX:\s*0\.85/);
-assert.match(shapeSource, /shapeFinalScaleY:\s*0\.74/);
-assert.match(shapeSource, /shapeMeatOffsetX:\s*-12\.04/);
+assert.match(shapeSource, /shapeCrossfade:\s*true/);
+assert.match(shapeSource, /shapeRoughStartScaleX:\s*0\.95/);
+assert.match(shapeSource, /shapeRoughStartScaleY:\s*1\.05/);
+assert.match(shapeSource, /shapeRoughFinalScaleX:\s*0\.85/);
+assert.match(shapeSource, /shapeRoughFinalScaleY:\s*0\.8/);
+assert.match(shapeSource, /shapeStartScaleX:\s*0\.75/);
+assert.match(shapeSource, /shapeStartScaleY:\s*0\.85/);
+assert.match(shapeSource, /shapeFinalScaleX:\s*0\.67/);
+assert.match(shapeSource, /shapeFinalScaleY:\s*0\.67/);
+assert.match(shapeSource, /shapeFinalClipRx:\s*50/);
+assert.match(shapeSource, /shapeFinalClipRy:\s*50/);
+assert.match(shapeSource, /shapeMeatOffsetX:\s*0/);
+assert.match(shapeSource, /shapeGuideHeight:\s*'36\.6%'/);
 assert.doesNotMatch(shapeSource, /fixedShapeFrames/);
 const shapeFoodRefs = [...shapeSource.matchAll(/shapeMeatSrc:\s*'([^']+)'/g)].map((match) => match[1]);
+const shapeStartFoodRefs = [...shapeSource.matchAll(/shapeStartMeatSrc:\s*'([^']+)'/g)].map((match) => match[1]);
 assert.equal(shapeFoodRefs.length, 3);
+assert.equal(shapeStartFoodRefs.length, 3);
 assert.equal(new Set(shapeFoodRefs).size, 1, 'all shape stages must warp the exact same food layer');
-assert.match(shapeFoodRefs[0], /storybook_v1249\/korokke_shape_storybook_food\.png$/);
-assert.match(html, /--shape-meat-scale-x', \(1 \+ morph \* \(finalScaleX - 1\)\)/);
-assert.match(html, /--shape-meat-scale-y', \(1 \+ morph \* \(finalScaleY - 1\)\)/);
+assert.equal(new Set(shapeStartFoodRefs).size, 1, 'all shape stages must keep the same rough food layer');
+assert.match(shapeFoodRefs[0], /korokke\/prep\/korokke_flour_01\.png$/);
+assert.match(shapeStartFoodRefs[0], /storybook_v1249\/korokke_shape_storybook_food\.png$/);
+const breadStart = html.indexOf('bread_korokke: {', shapeEnd);
+const breadEnd = html.indexOf('marinate_chicken: {', breadStart);
+assert.ok(breadStart > shapeEnd && breadEnd > breadStart, 'bread_korokke config is missing');
+const breadSource = html.slice(breadStart, breadEnd);
+const flourStartMatch = breadSource.match(/stepFrames:\s*\[\s*\[\s*'([^']+)'/);
+assert.ok(flourStartMatch, 'bread_korokke flour start frame is missing');
+assert.equal(shapeFoodRefs[0], flourStartMatch[1], 'shape completion must reuse the exact flour-start food source');
+assert.match(html, /--shape-meat-scale-x', \(startScaleX \+ morph \* \(finalScaleX - startScaleX\)\)/);
+assert.match(html, /--shape-meat-scale-y', \(startScaleY \+ morph \* \(finalScaleY - startScaleY\)\)/);
+assert.match(html, /--shape-rough-scale-x', \(roughStartScaleX \+ morph \* \(roughFinalScaleX - roughStartScaleX\)\)/);
+assert.match(html, /--shape-meat-start-opacity', startOpacity\.toFixed\(3\)/);
 assert.match(html, /--shape-meat-offset-x', meatOffsetX\.toFixed\(2\) \+ 'px'/);
 assert.match(html, /translate\(calc\(var\(--shape-meat-offset-x, 0px\) \+ var\(--shape-warp-x, 0px\)\)/);
-assert.match(html, /--shape-clip-rx', \(50 - morph \* 12\)/);
+assert.match(html, /--shape-clip-rx', \(startClipRx \+ morph \* \(finalClipRx - startClipRx\)\)/);
 assert.match(html, /function updateContinuousShapeWarpImpulse\(/);
+assert.match(html, /function playKorokkeShapeToBreadingHandoff\(config\)/);
+assert.match(html, /shapeHandoffAlpha:\s*\{ canvasW: 320, canvasH: 190, x: 18, y: 20, w: 284, h: 149 \}/);
+assert.match(html, /food\.dataset\.shapeHandoff = '1'/);
+assert.match(html, /state\.prepShapeExitRect = rect\.width && rect\.height/);
 
 const storybookMixRefs = [...new Set([...mixSource.matchAll(/'([^']+storybook_v1249\/korokke_mix_storybook_state[0-3]\.png)'/g)].map((match) => match[1]))];
 assert.equal(storybookMixRefs.length, 4, 'four storybook mix states must be wired');
@@ -305,9 +332,14 @@ radialSteps90.forEach((step, stage) => {
 });
 
 const storybookShape = decodeRgbaPng(storybookShapeFile);
-assert.ok(storybookShape.width >= 1200 && storybookShape.height >= 700, 'shape food must retain a high-resolution warp source');
+assert.equal(storybookShape.width, 320, 'shape food must reuse the 320px flour-start source');
+assert.equal(storybookShape.height, 190, 'shape food must reuse the 190px flour-start source');
 let shapeGreenFringe = 0;
 let shapeEdgeAlpha = 0;
+let shapeMinX = storybookShape.width;
+let shapeMinY = storybookShape.height;
+let shapeMaxX = -1;
+let shapeMaxY = -1;
 for (let y = 0; y < storybookShape.height; y++) {
   for (let x = 0; x < storybookShape.width; x++) {
     const index = (y * storybookShape.width + x) * 4;
@@ -317,10 +349,19 @@ for (let y = 0; y < storybookShape.height; y++) {
     const a = storybookShape.data[index + 3];
     if (a > 0 && g > r * 1.22 && g > b * 1.22) shapeGreenFringe++;
     if ((x === 0 || y === 0 || x === storybookShape.width - 1 || y === storybookShape.height - 1) && a) shapeEdgeAlpha++;
+    if (a > 128) {
+      shapeMinX = Math.min(shapeMinX, x);
+      shapeMinY = Math.min(shapeMinY, y);
+      shapeMaxX = Math.max(shapeMaxX, x);
+      shapeMaxY = Math.max(shapeMaxY, y);
+    }
   }
 }
 assert.equal(shapeGreenFringe, 0, 'shape food must not retain green fringe');
 assert.equal(shapeEdgeAlpha, 0, 'shape food must keep transparent outer edges');
+assert.deepEqual([shapeMinX, shapeMinY, shapeMaxX, shapeMaxY], [18, 20, 301, 168], 'shape handoff alpha metadata must match flour source');
+const shapeAlphaAspect = (shapeMaxX - shapeMinX + 1) / (shapeMaxY - shapeMinY + 1);
+assert.ok(shapeAlphaAspect >= 1.89 && shapeAlphaAspect <= 1.92, `shape/flour silhouette aspect drift: ${shapeAlphaAspect}`);
 
 const zones = [
   { cx: 0.32, cy: 0.4, rx: 0.17, ry: 0.17 },
@@ -520,21 +561,27 @@ for (let stage = 0; stage < mashZones.length; stage++) {
 const shapeRatios = [0, 0.25, 0.5, 0.75, 1].map((ratio) => {
   const morph = ratio * ratio * (3 - 2 * ratio);
   return {
-    x: 1 + morph * (0.85 - 1),
-    y: 1 + morph * (0.74 - 1),
-    rx: 50 - morph * 12,
-    ry: 50 - morph * 15,
+    x: 0.75 + morph * (0.67 - 0.75),
+    y: 0.85 + morph * (0.67 - 0.85),
+    roughX: 0.95 + morph * (0.85 - 0.95),
+    roughY: 1.05 + morph * (0.8 - 1.05),
+    rx: 50,
+    ry: 50,
   };
 });
 for (let index = 1; index < shapeRatios.length; index++) {
   assert.ok(shapeRatios[index].x < shapeRatios[index - 1].x, 'shape width must decrease continuously toward the guide');
   assert.ok(shapeRatios[index].y < shapeRatios[index - 1].y, 'shape height must decrease continuously');
-  assert.ok(shapeRatios[index].rx < shapeRatios[index - 1].rx, 'shape horizontal clip must tighten continuously');
-  assert.ok(shapeRatios[index].ry < shapeRatios[index - 1].ry, 'shape vertical clip must tighten continuously');
+  assert.ok(shapeRatios[index].roughX < shapeRatios[index - 1].roughX, 'rough shape width must decrease continuously');
+  assert.ok(shapeRatios[index].roughY < shapeRatios[index - 1].roughY, 'rough shape height must decrease continuously');
+  assert.ok(shapeRatios[index].x / shapeRatios[index].y > shapeRatios[index - 1].x / shapeRatios[index - 1].y, 'shape must become progressively more oval');
+  assert.ok(shapeRatios[index].roughX / shapeRatios[index].roughY > shapeRatios[index - 1].roughX / shapeRatios[index - 1].roughY, 'rough layer must become progressively more oval');
+  assert.equal(shapeRatios[index].rx, shapeRatios[index - 1].rx, 'flour silhouette must not be clipped horizontally');
+  assert.equal(shapeRatios[index].ry, shapeRatios[index - 1].ry, 'flour silhouette must not be clipped vertically');
 }
-assert.equal(shapeRatios.at(-1).x, 0.85);
-assert.equal(shapeRatios.at(-1).y, 0.74);
-assert.equal(shapeRatios.at(-1).rx, 38);
-assert.equal(shapeRatios.at(-1).ry, 35);
+assert.equal(shapeRatios.at(-1).x, 0.67);
+assert.equal(shapeRatios.at(-1).y, 0.67);
+assert.equal(shapeRatios.at(-1).rx, 50);
+assert.equal(shapeRatios.at(-1).ry, 50);
 
 console.log('bento kitchen motion/mix/warp verification: PASS');

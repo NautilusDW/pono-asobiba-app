@@ -11,7 +11,8 @@ const MASH_NEXT = '/assets/images/bento/cooking/potato/potato_mash_002.png';
 const MIX_STATE_0 = '/assets/images/bento/cooking/korokke/prep/storybook_v1249/korokke_mix_storybook_state0.png';
 const MIX_STATE_1 = '/assets/images/bento/cooking/korokke/prep/storybook_v1249/korokke_mix_storybook_state1.png';
 const MIX_STATE_2 = '/assets/images/bento/cooking/korokke/prep/storybook_v1249/korokke_mix_storybook_state2.png';
-const SHAPE_FOOD = '/assets/images/bento/cooking/korokke/prep/storybook_v1249/korokke_shape_storybook_food.png';
+const ROUGH_SHAPE_FOOD = '/assets/images/bento/cooking/korokke/prep/storybook_v1249/korokke_shape_storybook_food.png';
+const SHAPE_FOOD = '/assets/images/bento/cooking/korokke/prep/korokke_flour_01.png';
 
 type Rgb = [number, number, number];
 
@@ -355,17 +356,41 @@ test('mix moves from the center through evenly spaced intermediate states', asyn
   expect(distance(secondStage.actual, secondStage.second)).toBeGreaterThan(12);
 });
 
-test('korokke final food silhouette matches the dashed shaping goal', async ({ page }) => {
+test('korokke final silhouette matches both the dashed goal and flour-start food', async ({ page }) => {
   test.setTimeout(85_000);
   await enterPotatoMash(page);
   await advanceMashToMix(page);
   await advanceMixToShape(page);
 
   const stage = page.locator('#prep-stage');
+  const shapeStart = await page.evaluate(() => {
+    const stageElement = document.querySelector<HTMLElement>('#prep-stage');
+    const art = document.querySelector<HTMLElement>('#prep-art-main');
+    if (!stageElement || !art) throw new Error('shape start missing');
+    return {
+      roughImage: getComputedStyle(art, '::before').backgroundImage,
+      finalImage: getComputedStyle(art, '::after').backgroundImage,
+      roughOpacity: getComputedStyle(art, '::before').opacity,
+      finalOpacity: getComputedStyle(art, '::after').opacity,
+      roughScaleX: stageElement.style.getPropertyValue('--shape-rough-scale-x'),
+      roughScaleY: stageElement.style.getPropertyValue('--shape-rough-scale-y'),
+      finalScaleX: stageElement.style.getPropertyValue('--shape-meat-scale-x'),
+      finalScaleY: stageElement.style.getPropertyValue('--shape-meat-scale-y'),
+    };
+  });
+  expect(shapeStart.roughImage).toContain(ROUGH_SHAPE_FOOD);
+  expect(shapeStart.finalImage).toContain(SHAPE_FOOD);
+  expect(Number(shapeStart.roughOpacity)).toBeCloseTo(1, 2);
+  expect(Number(shapeStart.finalOpacity)).toBeCloseTo(0, 2);
+  expect(Number(shapeStart.roughScaleX)).toBeCloseTo(0.95, 2);
+  expect(Number(shapeStart.roughScaleY)).toBeCloseTo(1.05, 2);
+  expect(Number(shapeStart.finalScaleX)).toBeCloseTo(0.75, 2);
+  expect(Number(shapeStart.finalScaleY)).toBeCloseTo(0.85, 2);
   for (let index = 0; index < 4; index++) {
     await stage.press('Enter');
     await page.waitForTimeout(25);
   }
+  await page.waitForTimeout(160);
   // finishDragPrep keeps the completed shape on screen for 1180ms before the
   // next action, so inspect the exact 100% warp during that confirmation beat.
   await expect(stage).toHaveAttribute('data-prep-kind', 'shape_korokke');
@@ -420,6 +445,11 @@ test('korokke final food silhouette matches the dashed shaping goal', async ({ p
       scaleX,
       scaleY,
       offsetX,
+      clipRx: stage.style.getPropertyValue('--shape-clip-rx'),
+      clipRy: stage.style.getPropertyValue('--shape-clip-ry'),
+      shapeImage: getComputedStyle(art, '::after').backgroundImage,
+      roughOpacity: getComputedStyle(art, '::before').opacity,
+      finalOpacity: getComputedStyle(art, '::after').opacity,
       foodWidth,
       foodHeight,
       foodCenterX,
@@ -431,11 +461,79 @@ test('korokke final food silhouette matches the dashed shaping goal', async ({ p
     };
   }, SHAPE_FOOD);
 
-  expect(metrics.scaleX).toBeCloseTo(0.85, 2);
-  expect(metrics.scaleY).toBeCloseTo(0.74, 2);
-  expect(metrics.offsetX).toBeCloseTo(-12.04, 1);
+  expect(metrics.scaleX).toBeCloseTo(0.67, 2);
+  expect(metrics.scaleY).toBeCloseTo(0.67, 2);
+  expect(metrics.offsetX).toBeCloseTo(0, 1);
+  expect(metrics.clipRx).toBe('50.00%');
+  expect(metrics.clipRy).toBe('50.00%');
+  expect(metrics.shapeImage).toContain(SHAPE_FOOD);
+  expect(Number(metrics.roughOpacity)).toBeCloseTo(0, 2);
+  expect(Number(metrics.finalOpacity)).toBeCloseTo(1, 2);
   expect(Math.abs(metrics.foodWidth - metrics.guideWidth)).toBeLessThanOrEqual(3);
   expect(Math.abs(metrics.foodHeight - metrics.guideHeight)).toBeLessThanOrEqual(3);
   expect(Math.abs(metrics.foodCenterX - metrics.guideCenterX)).toBeLessThanOrEqual(2);
   expect(Math.abs(metrics.foodCenterY - metrics.guideCenterY)).toBeLessThanOrEqual(2);
+
+  await expect(stage).toHaveAttribute('data-prep-kind', 'bread_korokke', { timeout: 5_000 });
+  await page.waitForFunction(() => document.querySelector<HTMLElement>('#prep-breading-food')?.dataset.shapeHandoff === '1');
+  const flourStart = await page.evaluate(async (shapeSrc) => {
+    const food = document.querySelector<HTMLElement>('#prep-breading-food');
+    if (!food) throw new Error('flour-start food missing');
+    const backgroundImage = getComputedStyle(food).backgroundImage;
+    const image = new Image();
+    image.src = shapeSrc;
+    await image.decode();
+    const canvas = document.createElement('canvas');
+    canvas.width = image.naturalWidth;
+    canvas.height = image.naturalHeight;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    if (!ctx) throw new Error('flour alpha context unavailable');
+    ctx.drawImage(image, 0, 0);
+    const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    let minX = canvas.width;
+    let minY = canvas.height;
+    let maxX = -1;
+    let maxY = -1;
+    for (let y = 0; y < canvas.height; y++) {
+      for (let x = 0; x < canvas.width; x++) {
+        if (pixels[(y * canvas.width + x) * 4 + 3] <= 32) continue;
+        minX = Math.min(minX, x);
+        minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x);
+        maxY = Math.max(maxY, y);
+      }
+    }
+    const rect = food.getBoundingClientRect();
+    const containScale = Math.min(food.offsetWidth / image.naturalWidth, food.offsetHeight / image.naturalHeight);
+    const rootScaleX = rect.width / food.offsetWidth;
+    const rootScaleY = rect.height / food.offsetHeight;
+    const alphaWidth = maxX - minX + 1;
+    const alphaHeight = maxY - minY + 1;
+    const alphaCenterX = (minX + maxX + 1) / 2;
+    const alphaCenterY = (minY + maxY + 1) / 2;
+    return {
+      backgroundImage,
+      frameSeries: food.dataset.frameSeries,
+      mask: food.style.getPropertyValue('--prep-base-mask'),
+      rotation: food.style.getPropertyValue('--prep-food-rot'),
+      handoff: food.dataset.shapeHandoff,
+      alphaAspect: alphaWidth / alphaHeight,
+      alphaWidth: alphaWidth * containScale * rootScaleX,
+      alphaHeight: alphaHeight * containScale * rootScaleY,
+      alphaCenterX: rect.left + rect.width / 2 + (alphaCenterX - image.naturalWidth / 2) * containScale * rootScaleX,
+      alphaCenterY: rect.top + rect.height / 2 + (alphaCenterY - image.naturalHeight / 2) * containScale * rootScaleY,
+    };
+  }, SHAPE_FOOD);
+  expect(flourStart.backgroundImage).toContain(SHAPE_FOOD);
+  expect(flourStart.frameSeries).toBe('true');
+  expect(flourStart.mask).toBe('none');
+  expect(flourStart.rotation).toBe('0deg');
+  expect(flourStart.handoff).toBe('1');
+  expect(Math.abs(metrics.foodWidth / metrics.foodHeight - flourStart.alphaAspect)).toBeLessThanOrEqual(0.02);
+  expect(Math.abs(metrics.foodWidth - flourStart.alphaWidth)).toBeLessThanOrEqual(3);
+  expect(Math.abs(metrics.foodHeight - flourStart.alphaHeight)).toBeLessThanOrEqual(3);
+  expect(Math.abs(metrics.foodCenterX - flourStart.alphaCenterX)).toBeLessThanOrEqual(3);
+  expect(Math.abs(metrics.foodCenterY - flourStart.alphaCenterY)).toBeLessThanOrEqual(3);
+  await page.waitForTimeout(700);
+  await expect(page.locator('#prep-breading-food')).not.toHaveAttribute('data-shape-handoff');
 });
