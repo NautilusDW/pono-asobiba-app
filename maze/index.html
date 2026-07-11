@@ -3335,6 +3335,17 @@ body.image-stage-mode .game-wrap {
    紹介画面は従来の縦積みのまま、プレイ開始後だけ厳密な16:9へ切り替える。
    横長画面では高さ、4:3寄りの画面では幅を基準にし、枠自体をviewport内へ収める。 */
 @media (orientation: landscape) {
+  .encounter-modal .enc-card.is-minigame .enc-stage > .row.result-actions {
+    width: min(78%, 320px) !important;
+    height: auto !important;
+    align-self: center;
+  }
+  .encounter-modal .enc-card.is-minigame .enc-stage > .row.result-actions > .enc-btn {
+    min-height: 56px;
+    max-height: 72px;
+    padding: 8px 18px;
+  }
+
   .encounter-modal .enc-card.is-minigame {
     width: min(
       1180px,
@@ -3461,17 +3472,296 @@ body.image-stage-mode .game-wrap {
   }
 }
 
-@media (orientation: landscape) and (max-height: 560px) {
-  .encounter-modal .enc-card.is-minigame .peek-choice {
-    padding: 3px 5px !important;
+/* ── 16:9プレイ枠の中身を短辺へ比例させる ──
+   旧compact値は「収める」ための下限として残し、この後勝ちルールで主役行を
+   stretchする。枠だけ大きく中身が中央に浮く回帰を全横画面で防ぐ。 */
+@media (orientation: landscape) {
+  .encounter-modal .enc-card.is-minigame .janken-arena {
+    grid-template-columns:
+      clamp(90px, 28dvh, 200px) minmax(0, 1fr)
+      minmax(0, 1fr) clamp(90px, 28dvh, 200px);
+    grid-template-rows:
+      clamp(30px, 10%, 58px) minmax(0, 1fr)
+      clamp(24px, 8%, 48px) clamp(72px, 24%, 142px);
+    gap: clamp(4px, 1.2dvh, 10px);
+    align-items: stretch;
   }
-  .encounter-modal .enc-card.is-minigame .peek-choice img {
-    width: clamp(44px, 12dvh, 64px) !important;
-    height: clamp(44px, 12dvh, 64px) !important;
+  .encounter-modal .enc-card.is-minigame .janken-side {
+    align-self: stretch;
+    place-content: center;
+    gap: clamp(2px, 0.8dvh, 6px);
+  }
+  .encounter-modal .enc-card.is-minigame .janken-side__img {
+    width: clamp(78px, 28dvh, 200px);
+    height: clamp(88px, 31dvh, 220px);
+    max-width: 100%;
+  }
+  .encounter-modal .enc-card.is-minigame .janken-side__name {
+    font-size: clamp(0.74rem, 2.8dvh, 1rem);
+  }
+  .encounter-modal .enc-card.is-minigame .janken-slot {
+    align-self: stretch;
+    height: 100%;
+    min-height: 0;
+    border-radius: clamp(14px, 3dvh, 22px);
+  }
+  .encounter-modal .enc-card.is-minigame .janken-hand {
+    width: min(clamp(96px, 38dvh, 260px), calc(100% - 20px));
+  }
+  .encounter-modal .enc-card.is-minigame .janken-call {
+    font-size: clamp(1.35rem, 5.5dvh, 2.8rem);
+  }
+  .encounter-modal .enc-card.is-minigame .janken-result {
+    font-size: clamp(0.9rem, 3.2dvh, 1.5rem);
+  }
+  .encounter-modal .enc-card.is-minigame .janken-controls {
+    height: 100%;
+    gap: clamp(6px, 1.4dvh, 14px);
+  }
+  .encounter-modal .enc-card.is-minigame .janken-controls .enc-btn {
+    min-width: 0;
+    width: clamp(76px, 24dvh, 154px);
+    height: calc(100% - 4px);
+    border-radius: clamp(12px, 2.8dvh, 18px);
+  }
+  .encounter-modal .enc-card.is-minigame .janken-controls > .enc-btn:only-child {
+    width: min(60%, 240px);
+    min-width: 150px;
+    padding: 8px 18px;
+  }
+  .encounter-modal .enc-card.is-minigame .janken-choice-hand {
+    width: min(clamp(40px, 12dvh, 82px), calc(100% - 12px));
+  }
+  .encounter-modal .enc-card.is-minigame .janken-choice-label {
+    font-size: clamp(0.7rem, 2.4dvh, 0.95rem);
+  }
+
+  .encounter-modal .enc-card.is-minigame .flag-game {
+    grid-template-rows:
+      clamp(30px, 10%, 50px) clamp(18px, 4%, 26px)
+      clamp(24px, 7%, 40px) minmax(0, 1fr) clamp(78px, 27%, 160px);
+    gap: clamp(3px, 1dvh, 8px);
+    align-items: stretch;
+  }
+  .encounter-modal .enc-card.is-minigame .flag-command {
+    min-height: 0;
+    line-height: 1;
+    font-size: clamp(1.3rem, 5.5dvh, 2.25rem);
+  }
+  .encounter-modal .enc-card.is-minigame .flag-timer {
+    align-self: stretch;
+    width: min(78%, 560px);
+    height: 100%;
+    margin-top: 0;
+  }
+  .encounter-modal .enc-card.is-minigame .flag-timer__track {
+    height: clamp(10px, 2.8dvh, 16px);
+  }
+  .encounter-modal .enc-card.is-minigame .flag-hp {
+    align-self: stretch;
+    height: 100%;
+    margin-top: 0;
+    align-items: center;
+  }
+  .encounter-modal .enc-card.is-minigame .flag-hp__heart {
+    width: clamp(22px, 6dvh, 38px);
+    height: clamp(22px, 6dvh, 38px);
+    max-height: 100%;
+  }
+  .encounter-modal .enc-card.is-minigame .flag-hp__heart::before {
+    font-size: clamp(21px, 5.8dvh, 36px);
+  }
+  .encounter-modal .enc-card.is-minigame .flag-bug-stage {
+    align-self: stretch;
+    height: 100%;
+    min-height: 0;
+    border-radius: clamp(13px, 3dvh, 20px);
   }
   .encounter-modal .enc-card.is-minigame .flag-bug-img {
-    max-width: clamp(64px, 20dvh, 112px);
-    max-height: clamp(64px, 20dvh, 112px) !important;
+    width: auto;
+    height: min(calc(100% - 8px), clamp(108px, 40dvh, 280px));
+    max-width: min(48%, 280px);
+    max-height: calc(100% - 8px) !important;
+  }
+  .encounter-modal .enc-card.is-minigame .flag-controls {
+    align-self: stretch;
+    height: 100%;
+    gap: clamp(24px, 8dvh, 72px);
+    margin-top: 0;
+  }
+  .encounter-modal .enc-card.is-minigame .flag-controls .enc-btn {
+    width: auto;
+    height: min(calc(100% - 4px), clamp(72px, 26dvh, 154px));
+    min-width: 0;
+    min-height: 44px;
+    aspect-ratio: 1;
+    box-shadow:
+      inset 0 -6px 10px rgba(0,0,0,0.13),
+      inset 0 3px 8px rgba(255,255,255,0.30);
+  }
+  .encounter-modal .enc-card.is-minigame .flag-controls .enc-btn::after {
+    inset: 19%;
+  }
+  .encounter-modal .enc-card.is-minigame .flag-controls .enc-btn:active,
+  .encounter-modal .enc-card.is-minigame .flag-controls .enc-btn.is-pressing {
+    box-shadow: inset 0 6px 12px rgba(0,0,0,0.25);
+  }
+  .encounter-modal .enc-card.is-minigame .flag-reward {
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: clamp(6px, 1.4dvh, 12px);
+  }
+  .encounter-modal .enc-card.is-minigame .flag-ladder-stage {
+    width: min(86%, 720px);
+    height: 100%;
+    min-height: 0;
+  }
+  .encounter-modal .enc-card.is-minigame .flag-ladder-img {
+    width: auto;
+    height: min(90%, clamp(110px, 40dvh, 260px));
+    max-height: none !important;
+  }
+
+  .encounter-modal .enc-card.is-minigame.is-truefalse .enc-stage {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) clamp(64px, 18dvh, 112px);
+    gap: clamp(5px, 1.2dvh, 10px);
+    align-items: stretch;
+    justify-content: stretch;
+  }
+  .encounter-modal .enc-card.is-minigame.is-truefalse .enc-result {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    place-items: center;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .encounter-modal .enc-card.is-minigame.is-truefalse .enc-result__icon {
+    width: auto;
+    height: min(70%, clamp(96px, 38dvh, 240px));
+    max-height: 70% !important;
+  }
+  .encounter-modal .enc-card.is-minigame.is-truefalse .row {
+    width: min(78%, 560px) !important;
+    height: 100%;
+    align-self: center;
+  }
+  .encounter-modal .enc-card.is-minigame.is-truefalse .enc-btn.choice {
+    height: 100%;
+    min-height: 44px;
+    font-size: clamp(2.5rem, 10dvh, 5rem) !important;
+  }
+
+  .encounter-modal .enc-card.is-minigame #simonGrid {
+    flex: 1 1 0;
+    width: min(82%, 720px) !important;
+    min-height: 0;
+    align-self: center;
+    grid-template-rows: repeat(2, minmax(44px, 1fr));
+  }
+  .encounter-modal .enc-card.is-minigame .simon-cell {
+    height: auto;
+    min-height: 44px;
+  }
+  .encounter-modal .enc-card.is-minigame .simon-dot {
+    width: clamp(64px, 20dvh, 126px);
+    height: clamp(64px, 20dvh, 126px);
+  }
+
+  .encounter-modal .enc-card.is-minigame .peek-wrap {
+    flex: 1 1 0;
+    width: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .encounter-modal .enc-card.is-minigame #peekCanvas {
+    width: auto;
+    height: 100%;
+    max-height: min(100%, 420px) !important;
+  }
+  .encounter-modal .enc-card.is-minigame .peek-choice-grid {
+    flex: 0 0 clamp(82px, 19dvh, 118px);
+    height: clamp(82px, 19dvh, 118px);
+  }
+  .encounter-modal .enc-card.is-minigame .peek-choice {
+    height: 100%;
+    min-height: 44px;
+    padding: 3px 5px !important;
+    overflow: hidden;
+  }
+  .encounter-modal .enc-card.is-minigame .peek-choice img {
+    width: clamp(44px, 13dvh, 88px) !important;
+    height: clamp(44px, 13dvh, 88px) !important;
+  }
+
+  .encounter-modal .enc-card.is-minigame.is-oddone {
+    grid-template-columns: clamp(126px, 28%, 220px) minmax(0, 1fr);
+  }
+  .encounter-modal .enc-card.is-minigame.is-oddone .enc-stage {
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    align-items: stretch;
+  }
+  .encounter-modal .enc-card.is-minigame.is-oddone .oddone-choice-grid {
+    width: min(100%, 920px) !important;
+    height: 100%;
+    grid-template-rows: repeat(2, minmax(44px, 1fr));
+  }
+  .encounter-modal .enc-card.is-minigame.is-oddone .enc-btn.choice.has-img {
+    height: 100%;
+    min-height: 44px;
+  }
+  .encounter-modal .enc-card.is-minigame.is-oddone .enc-choice-img {
+    width: clamp(64px, 24dvh, 150px);
+    height: clamp(64px, 24dvh, 150px);
+  }
+  .encounter-modal .enc-card.is-minigame.is-oddone .enc-creature img {
+    height: clamp(76px, 26dvh, 150px) !important;
+    max-width: min(100%, 180px) !important;
+  }
+  .encounter-modal .enc-card.is-minigame.is-oddone .enc-stage > .enc-result:only-child {
+    grid-row: 1 / -1;
+    align-self: center;
+  }
+
+  .encounter-modal .enc-card.is-minigame .water-rider {
+    width: clamp(132px, 30dvh, 240px);
+  }
+  .encounter-modal .enc-card.is-minigame .water-hazard__bug {
+    width: clamp(58px, 16dvh, 102px);
+  }
+  .encounter-modal .enc-card.is-minigame .water-skate-start,
+  .encounter-modal .enc-card.is-minigame .water-skate-goal {
+    width: clamp(48px, 13dvh, 74px);
+  }
+  .encounter-modal .enc-card.is-minigame .water-skate-guide {
+    font-size: clamp(0.78rem, 2.8dvh, 1.08rem);
+  }
+
+  .encounter-modal .enc-card.is-minigame .strength-game__impact-zone {
+    width: min(94%, 900px);
+  }
+  .encounter-modal .enc-card.is-minigame .strength-game__rock {
+    width: clamp(150px, 42dvh, 340px);
+    max-height: min(72%, 340px) !important;
+  }
+  .encounter-modal .enc-card.is-minigame .strength-game__glove {
+    width: clamp(96px, 30dvh, 220px);
+  }
+  .encounter-modal .enc-card.is-minigame .strength-durability {
+    width: min(80%, 720px);
+  }
+
+  .encounter-modal .enc-card.is-minigame .bowl-game__stage-note {
+    font-size: clamp(0.72rem, 2.5dvh, 0.98rem);
+  }
+  .encounter-modal .enc-card.is-minigame .bowl-game__boss-intro-panel {
+    width: min(78%, 560px);
+  }
+  .encounter-modal .enc-card.is-minigame .bowl-game__boss-intro-btn {
+    min-height: 56px;
   }
 }
 
@@ -10067,7 +10357,7 @@ function _resolveFlagGame(won, reason) {
                : 'ちがった…';
     encStageEl.innerHTML =
       '<div class="enc-result lose">' + text + '</div>' +
-      '<div class="row"><button class="enc-btn lose" id="flagBackBtn">もどる ▶</button></div>';
+      '<div class="row result-actions"><button class="enc-btn lose" id="flagBackBtn">もどる ▶</button></div>';
     const back = document.getElementById('flagBackBtn');
     if (back) back.addEventListener('click', function() { _closeEncounter(false); });
     return;
