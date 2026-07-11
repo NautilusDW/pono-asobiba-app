@@ -58,6 +58,7 @@
 ## Active claims
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
+- 2026-07-11 12:35 - by Codex - [batch:1221-maze-oddone-fit-animal-assets] - maze/index.html, assets/images/word/**, assets/images/quizland/illust/choice/**, tests/**, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - なかまはずれ4択を短い横画面へ完全収容し、縦長化した動物を既存の正しい生成済み/再クロップ素材へ復元
 
 
 
