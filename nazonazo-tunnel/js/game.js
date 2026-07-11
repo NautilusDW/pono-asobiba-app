@@ -1782,15 +1782,10 @@ function updateHelpHud(){
  if(helpBtn){helpBtn.textContent="🍀 ×"+n;helpBtn.classList.toggle("empty",!n);helpBtn.disabled=false;}
 }
 function prepareTunnelFriends(){
- const unique=[],seen=new Set();
- cars.forEach(passenger=>{
-  if(!passenger||passenger.pending)return;
-  const friend={e:passenger.e||"",t:passengerLabel(passenger)||"ともだち",img:passenger.img||""};
-  const key=(friend.img||friend.e)+"|"+friend.t;
-  if((!friend.img&&!friend.e)||seen.has(key))return;
-  seen.add(key);unique.push(friend);
- });
- tunnelFriendCandidates=shuffle(unique).slice(0,TUNNEL_FRIEND_LIMIT);
+ tunnelFriendCandidates=cars
+  .filter(passenger=>passenger&&!passenger.pending&&(passenger.img||passenger.e))
+  .slice(-TUNNEL_FRIEND_LIMIT)
+  .map(passenger=>({e:passenger.e||"",t:passengerLabel(passenger)||"ともだち",img:passenger.img||""}));
 }
 function drawTunnelFriendHud(){
  if(!tunnelFriendCounter)return;

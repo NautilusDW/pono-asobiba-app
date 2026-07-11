@@ -378,9 +378,20 @@ harness.api.setCars(sourceCars);
 harness.api.prepare();
 let state = plain(harness.api.state());
 assert.equal(state.candidates.length, 3, "candidate preparation must cap the recap at three friends");
-assert.equal(new Set(state.candidates.map(friend => `${friend.e}|${friend.name || friend.t}`)).size, 3, "candidate preparation must remove duplicate passengers");
+assert.deepEqual(state.candidates.map(friend => friend.t), ["あひるさん", "しかさん", "ねこさん"], "the recap must use the last three real passengers in boarding order");
 assert.ok(state.candidates.every(friend => !friend.pending), "pending seats must not become hidden friends");
 assert.equal(sourceCars.length, 6, "candidate preparation must not mutate the car history");
+
+const repeatedHarness = createHiddenFriendHarness();
+repeatedHarness.api.setCars([
+  { e: "🐻", t: "くまさん" },
+  { e: "🐰", t: "うさぎさん" },
+  { e: "🐭", t: "ねずみ" },
+  { e: "🐭", t: "ねずみ" },
+  { e: "🐭", t: "ねずみ" }
+]);
+repeatedHarness.api.prepare();
+assert.equal(plain(repeatedHarness.api.state()).candidates.length, 3, "repeated answers must still produce a reachable 3/3 tunnel bonus");
 
 harness.api.start();
 state = plain(harness.api.state());
