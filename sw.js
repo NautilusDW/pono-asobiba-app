@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2103: もじっこファームの文字書きで、HanziWriter 合格後の独自終点条件を88%→72%へ緩和。合格済みの途中線を消さず次のタッチで続けられるようにし、3回目は前向き45%・終点72%・塗り50%・逆戻り12%以内・実ドラッグをすべて満たす時だけ救済。点打ち/微小往復/逆書き/別画を拒否し、pointercancel/二本指の認識ずれも防止。play.html PAGE_CACHE_VERSION と同期不要 (writing-mori/index.html のみ変更)。
 // v2102: Bento Kitchen の包丁効果線を11本へ増やして実表示2.7〜6.8pxへ増太。じゃがいも潰しは90%/全域条件を保ちつつ細かなcoverageで所要操作を延長し、ポテト+ひき肉混ぜは共通皿上の小粒食材レイヤーを全域coverageで連続blend/warpする方式へ刷新。左残り・局所塗り絵表示・大粒の納豆状表現を解消し、成形も同一食材から小判形へ連続warpする。play.html PAGE_CACHE_VERSION と同期不要 (bento/kitchen.html/画像のみ変更)。
 // v2101: デバッグ機能 'survey-multi-submit' を追加 (batch:1236)。ON のときだけご感想 (survey.html) と★モーダル (rating-modal.js) の永久 dedup チェックをバイパスして何回でも送信テスト可能に。survey.html に debug-mode.js 読込 + リロード不要の再送信ボタン (デバッグ時のみ DOM 生成) を追加、PONO_SW_VERSION を v2101 に同期。isAllowed() gating (staging + manage 解錠) は不変で本番挙動に影響なし。play.html PAGE_CACHE_VERSION と同期不要 (play.html 未変更、survey.html/common/debug-features.js/rating-modal.js のみ変更)。
 // v2100: Maze ○×クイズの回答行を横画面gridの水平中央へ固定し、2ボタンの左右余白を均等化。play.html PAGE_CACHE_VERSION と同期。
@@ -27,7 +28,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2102;
+const CACHE_VERSION = 2103;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
