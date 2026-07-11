@@ -59,7 +59,6 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 - 2026-07-11 20:34 - by Codex - [batch:1246-menu-profile-scale] - play.html, sw.js, tests/profile_*, tests/menu_* , AGENTS_CLAIMS.md, HANDOFF.md - 迷路カード通常時の説明色を茶色へ揃え、プロフィール姿を高さ約3倍へ拡大し、未進捗案内を進捗ボックス最上段へ統合 [overlap: batch:1244-capture-output-resolution (play.html/sw.js), batch:1245-nazonazo-monkey-owl-species (sw.js)]
-- 2026-07-11 20:15 - by Codex - [batch:1246-mojikko-onigiri] - assets/images/mojikko/care/icon_moji_gohan_onigiri.png, tmp/alpha_pending/1246-mojikko-onigiri/**, writing-mori/{care,index}.html, tests/mojikko_meal_schedule_regression.cjs, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - ユーザー評価を受け、茶わん型もじごはんを三角おむすび型へGPT Image 2で再設計・差し替えする。食事ロジックは不変 [overlap: batch:1244-capture-output-resolution, batch:1245-nazonazo-monkey-owl-species (sw.js)]
 - 2026-07-11 19:50 - by Claude - [batch:1244-capture-output-resolution] - common/capture.js, play.html (capture build のみ必要時), tests/capture_*, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - スクショモードの出力がぼやける件を実測調査し、html2canvas ラスタ解像度/合成拡大率を改善 [overlap: batch:1242 (sw.js, 自分), batch:1243-nazonazo-picturebook-animals (sw.js)、push 直前に最新採番]
 
 
