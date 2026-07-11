@@ -650,13 +650,10 @@ function normalizeBentoSlotSampleOverrides(point, kind) {
   return normalized;
 }
 
+// batch:1058-hotfix5: 仕切りG(index6)の縦強制変換は撤去。admin の横見本の明示選択を尊重する。
+// 旧短縮形ID(divider_wood/divider_wave)の自動移行は 2026-07-02 の KV 再構築で対象データが実在しないため不要。
 function normalizeBentoSlotSampleId(kind, index, sampleId) {
-  const id = String(sampleId || '').trim();
-  if (kind === 'divider' && index === 6) {
-    if (id === 'divider_wood') return 'divider_wood_vertical_front';
-    if (id === 'divider_wave') return 'divider_wave_vertical_front';
-  }
-  return id;
+  return String(sampleId || '').trim();
 }
 
 function normalizeBentoSlotPoint(point, kind, index = null) {
