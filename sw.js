@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2121: Mazeステージ4の到達不能な板アイテムをstage/runtime/editor/画像から完全撤去。Basic Auth管理ダッシュボードへ全9ミニゲームの16:9デバッグ枠を追加し、same-origin管理iframeだけが通常のBGM一拍・ナレーション開始経路を進行保存なしで起動可能に。高速切替時は世代IDで旧じゃんけん/Simon timerを無効化。play.html PAGE_CACHE_VERSION と同期 (2121)。
 // v2120: Bento Kitchen のポテト+ひき肉を、中央小山→同じ水彩そぼろ粒が内側・中域・全体へ均等に広がる4段階へ再構成。局所maskを維持したままドラッグ中だけ食材面を小さく追従させ、中央に留まって急に全面へ飛ぶ見え方を解消。コロッケ成形は同一素材をX/Y連続warpし、完成時の中心・幅・高さを点線ゴールへ一致。play.html PAGE_CACHE_VERSION と同期不要 (bento/kitchen.html/画像/テストのみ変更)。
 // v2119: なぞなぞトレインのジャングル動物18体を、空中の画像上端基準から枝・吊り下がり・足元基準へ再配置。樹上動物を116%中景タイルと同位相で流し、地上組は草地へ接地して上下浮遊を停止。vminでキリン最長身／ゾウ大柄／シマウマ中型／ライオン低めの体格差を固定し、ジャングル時の運転席内装で背景動物の車窓貫通も防止。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/テストのみ変更)。
 // v2118: おべんとうチュートリアルののり操作を「移動→ちいさく→おおきく→回転→とりけす1回→のりOK」の実操作順へ整理。パレット内外のscroll完了と安定rectを待って青枠を1回だけ開始し、Phase切替・配置直後・遅延callbackでの途中描画/別位置再表示を防止。しきりは管理エディター/APIのA〜G配列を座標・向き・サイズの正本としてindex順に配置する。play.html PAGE_CACHE_VERSION と同期不要 (bento/index.html/テストのみ変更)。
@@ -45,7 +46,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2120;
+const CACHE_VERSION = 2121;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
