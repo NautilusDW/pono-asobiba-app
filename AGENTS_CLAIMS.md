@@ -58,8 +58,6 @@
 ## Active claims
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
-- 2026-07-11 11:18 - by Codex - [batch:1218-app-title-menu-games] - native/content-manifest.json, native/README.md - ネイティブ版でも追加カードのリンク先を欠落させないため、なぞなぞ/もじっこ本体と必要素材を同梱対象に追加 [overlap: batch:1204-capacitor-phase1-scaffold]
-- 2026-07-11 10:55 - by Codex - [batch:1218-app-title-menu-games] - play.html, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - アプリ版タイトルになぞなぞトレイン/クッキング/もじっこファームを遊べるカードとして追加し、LP版には出さない [overlap: batch:1217-unlaunched-game-guards, batch:1058-tutorial-impl-phase1]
 - 2026-07-07 12:24 - by Claude - [batch:1058-tutorial-impl-phase1] - bento/index.html, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - tut2 チュートリアル実装 phase1 (見本→まねっこ、15ステップ+2ラッパー、mock voice、PAUSED解除、storage v2)
 - 2026-07-07 - by Claude - [batch:1058-tut2-hotfix4] - bento/index.html, sw.js, play.html, docs/BENTO_TUTORIAL_SCRIPT.md, AGENTS_CLAIMS.md, HANDOFF.md - tut2 UX方針転換: シーケンス順序・ボックス統合・ポノ中心ナレーション・Step6編集パネル詳細説明
 - 2026-07-11 - by Claude - [batch:1058-tut2-hotfix5] - bento/index.html, sw.js, docs/BENTO_TUTORIAL_SCRIPT.md, AGENTS_CLAIMS.md, HANDOFF.md - tut2: のり移動後の「とりけす」教習+デフォルト顔復元ゲート / はっぱ指定配置 (レタス→おかずの下) / テキストチャネル整理 / しきり位置修正 [overlap: batch:1058-tut2-hotfix4 (同一ストリーム)]
