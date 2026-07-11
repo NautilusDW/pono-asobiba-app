@@ -7107,8 +7107,8 @@ body.layout-editor-on .bowl-fill-mask::after {
       dragPrep: true,
       masherPrep: true,
       revealNextOnly: true,
-      coverageThreshold: 0.8,
-      coverageMinZoneRatio: 0.55,
+      coverageThreshold: 0.9,
+      coverageMinZoneRatio: 0.8,
       coverageBrushScale: 0.72,
       coverageAspect: 1.7272727273,
       coverageGrid: { cols: 28, rows: 16 },
@@ -7156,13 +7156,38 @@ body.layout-editor-on .bowl-fill-mask::after {
       kind: 'shape_korokke',
       shapePrep: true,
       shapeType: 'patty',
+      fixedShapeFrames: true,
+      fixedShapeScale: 1.2,
+      shapeGuideWidth: 'min(40%, 405px)',
+      shapeGuideHeight: '29%',
       shapeDistanceScale: 1.08,
       startSpeech: 'コロッケを こばんがたに かたちづくろう！',
       completeSpeech: 'コロッケの かたちが できたよ！',
       steps: [
-        { src: '../assets/images/bento/cooking/korokke/prep/korokke_dough_001.png', label: 'たねを まとめよう', caption: 'ドラッグで ぎゅっ！', burst: 'ぎゅっ！' },
-        { src: '../assets/images/bento/cooking/korokke/prep/korokke_shape_002.png', label: 'こばんに しよう', caption: 'まとまってきたよ！', burst: 'ぺたん！' },
-        { src: '../assets/images/bento/cooking/korokke/prep/korokke_shape_003.png', label: 'できあがり', caption: 'ころもを つけられるよ！', burst: 'できた！' },
+        {
+          src: '../assets/images/bento/cooking/prep_plate.png',
+          shapeMeatSrc: '../assets/images/bento/cooking/korokke/prep/korokke_shape_food_001_20260711.png',
+          thumbSrc: '../assets/images/bento/cooking/korokke/prep/korokke_shape_food_001_20260711.png',
+          label: 'たねを まとめよう',
+          caption: 'ドラッグで ぎゅっ！',
+          burst: 'ぎゅっ！',
+        },
+        {
+          src: '../assets/images/bento/cooking/prep_plate.png',
+          shapeMeatSrc: '../assets/images/bento/cooking/korokke/prep/korokke_shape_food_002_20260711.png',
+          thumbSrc: '../assets/images/bento/cooking/korokke/prep/korokke_shape_food_002_20260711.png',
+          label: 'こばんに しよう',
+          caption: 'まとまってきたよ！',
+          burst: 'ぺたん！',
+        },
+        {
+          src: '../assets/images/bento/cooking/prep_plate.png',
+          shapeMeatSrc: '../assets/images/bento/cooking/korokke/prep/korokke_shape_food_003_20260711.png',
+          thumbSrc: '../assets/images/bento/cooking/korokke/prep/korokke_shape_food_003_20260711.png',
+          label: 'できあがり',
+          caption: 'ころもを つけられるよ！',
+          burst: 'できた！',
+        },
       ],
     },
     bread_shrimp: {
@@ -9313,14 +9338,17 @@ body.layout-editor-on .bowl-fill-mask::after {
     const isBallsShape = isShape && config.shapeType === 'balls';
     const isMultiBalls = isMultiBallShapeConfig(config);
     const isPortionBalls = isPortionBallShapeConfig(config);
+    const usesFixedShapeFrames = isShape && !!config.fixedShapeFrames;
     const ease = 1 - Math.pow(1 - ratio, 2);
     if (els.shapePrepGuide) {
       els.shapePrepGuide.dataset.shapeType = isShape ? (config.shapeType || 'patty') : '';
       els.shapePrepGuide.style.setProperty('--shape-progress', ratio.toFixed(3));
       els.shapePrepGuide.style.setProperty('--shape-scale', isShape ? '1' : '0.96');
       els.shapePrepGuide.style.setProperty('--shape-opacity', isShape ? (0.92 - ratio * 0.16).toFixed(3) : '0.9');
-      els.shapePrepGuide.style.setProperty('--shape-guide-width', isBallsShape ? 'min(44%, 420px)' : 'min(37%, 370px)');
-      els.shapePrepGuide.style.setProperty('--shape-guide-height', isBallsShape ? '40%' : '35.5%');
+      const guideWidth = isBallsShape ? 'min(44%, 420px)' : ((config && config.shapeGuideWidth) || 'min(37%, 370px)');
+      const guideHeight = isBallsShape ? '40%' : ((config && config.shapeGuideHeight) || '35.5%');
+      els.shapePrepGuide.style.setProperty('--shape-guide-width', guideWidth);
+      els.shapePrepGuide.style.setProperty('--shape-guide-height', guideHeight);
       els.shapePrepGuide.style.setProperty('--shape-guide-top', isBallsShape ? '49%' : '49%');
       if (!isShape) {
         els.shapePrepGuide.style.setProperty('--shape-hit', '0');
@@ -9336,7 +9364,11 @@ body.layout-editor-on .bowl-fill-mask::after {
         delete els.prepStage.dataset.shapeMode;
       }
       els.prepStage.style.setProperty('--shape-progress', ratio.toFixed(3));
-      if (isShape && !isBallsShape && !isMultiBalls && !isPortionBalls) {
+      if (usesFixedShapeFrames) {
+        const frameScale = Math.max(0.7, Math.min(1.5, Number(config.fixedShapeScale) || 1));
+        els.prepStage.style.setProperty('--shape-meat-scale-x', frameScale.toFixed(3));
+        els.prepStage.style.setProperty('--shape-meat-scale-y', frameScale.toFixed(3));
+      } else if (isShape && !isBallsShape && !isMultiBalls && !isPortionBalls) {
         els.prepStage.style.setProperty('--shape-meat-scale-x', (0.72 + ease * 0.36).toFixed(3));
         els.prepStage.style.setProperty('--shape-meat-scale-y', (1.22 - ease * 0.28).toFixed(3));
       } else {
@@ -11076,8 +11108,8 @@ body.layout-editor-on .bowl-fill-mask::after {
       return total ? coverage.zoneCovered[index] / total : 1;
     });
     const minZone = zoneRatios.length ? Math.min.apply(null, zoneRatios) : overall;
-    const threshold = Math.max(0.5, Math.min(0.98, Number(config.coverageThreshold) || 0.8));
-    const minZoneThreshold = Math.max(0.25, Math.min(threshold, Number(config.coverageMinZoneRatio) || 0.55));
+    const threshold = Math.max(0.5, Math.min(0.98, Number(config.coverageThreshold) || 0.9));
+    const minZoneThreshold = Math.max(0.25, Math.min(threshold, Number(config.coverageMinZoneRatio) || 0.8));
     const completion = Math.max(0, Math.min(1, overall / threshold));
     return {
       overall: overall,
@@ -11178,7 +11210,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     updatePrepView(config, visibleProgress, false);
     let message = 'まだの ところも おしてね！';
     if (!result.added) message = 'そこは つぶれたよ。ほかも ぎゅっ！';
-    else if (stats.minZone + 0.0001 < (Number(config.coverageMinZoneRatio) || 0.55)) message = 'まだの ところも おしてね！';
+    else if (stats.minZone + 0.0001 < (Number(config.coverageMinZoneRatio) || 0.8)) message = 'まだの ところも おしてね！';
     else if (stats.completion >= 0.82) message = 'あと すこし！';
     if (els.prepProgressCap) els.prepProgressCap.textContent = message;
     const now = Date.now();
@@ -17603,13 +17635,13 @@ body.layout-editor-on .bowl-fill-mask::after {
   // 全て軌道と平行に保ち、速さのリズムは長さ/太さ/束間隔/濃さで表現する。
   const KNIFE_SPEED_LINE_PROFILE = [
     // 刃先側に3本、中央に3本を小さく束ね、間に大きな空白をつくる。
-    { x: 0.06, y: 0.02, length: 0.54, widthPx: 1.6, delay: 4, opacity: 0.46 },
-    { x: 0.13, y: 0.05, length: 1.00, widthPx: 4.2, delay: 0, opacity: 0.92 },
-    { x: 0.21, y: 0.10, length: 0.68, widthPx: 2.3, delay: 6, opacity: 0.64 },
-    { x: 0.43, y: 0.26, length: 0.86, widthPx: 3.3, delay: 2, opacity: 0.84 },
-    { x: 0.49, y: 0.31, length: 0.43, widthPx: 1.35, delay: 8, opacity: 0.44 },
-    { x: 0.62, y: 0.43, length: 0.71, widthPx: 2.4, delay: 3, opacity: 0.68 },
-    { x: 0.86, y: 0.65, length: 0.36, widthPx: 1.2, delay: 7, opacity: 0.38 },
+    { x: 0.06, y: 0.02, length: 0.54, widthPx: 2.4, delay: 4, opacity: 0.62 },
+    { x: 0.13, y: 0.05, length: 1.00, widthPx: 5.4, delay: 0, opacity: 0.98 },
+    { x: 0.21, y: 0.10, length: 0.68, widthPx: 3.2, delay: 6, opacity: 0.78 },
+    { x: 0.43, y: 0.26, length: 0.86, widthPx: 4.4, delay: 2, opacity: 0.94 },
+    { x: 0.49, y: 0.31, length: 0.43, widthPx: 2.1, delay: 8, opacity: 0.62 },
+    { x: 0.62, y: 0.43, length: 0.71, widthPx: 3.4, delay: 3, opacity: 0.82 },
+    { x: 0.86, y: 0.65, length: 0.36, widthPx: 1.9, delay: 7, opacity: 0.56 },
   ];
 
   function showKnifeSpeedLines(chopY, liftY, durationMs, targetKnifeLeftPct, editorTxPx) {
@@ -17651,7 +17683,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       const line = lines[index];
       if (!line) return;
       const lineHeight = travel * profile.length;
-      // fit-stage で画面全体が縮小されても、最終表示上の太さの差 (1.2〜4.2px)
+      // fit-stage で画面全体が縮小されても、最終表示上の太さの差 (1.9〜5.4px)
       // は潰さない。screen px を board local px へ逆変換してから指定する。
       const lineWidth = profile.widthPx * scaleX;
       line.style.setProperty('--line-x', (knifeLeft + knifeWidth * profile.x).toFixed(2) + 'px');
