@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2100: Maze ○×クイズの回答行を横画面gridの水平中央へ固定し、2ボタンの左右余白を均等化。play.html PAGE_CACHE_VERSION と同期。
 // v2099: Maze 全9ミニゲームの16:9枠内で、旧compact上限により小さく浮いていた主役絵・ゲーム盤・操作面を短辺比例へ変更。じゃんけん/旗/○×/Simon/シルエット/なかまはずれ/水/岩/ボウリングと結果・報酬状態の余白を再配分。play.html PAGE_CACHE_VERSION と同期。
 // v2098: なぞなぞトレインの規則的な雨タイルを、長さ・太さ・速度・開始位相・横流れが粒ごとに異なる遠/中/手前3層パーティクルへ刷新。固定プール再利用、iOS 74粒上限、トンネル/晴天/LPロック時停止、reduced-motion静止に対応し、空と一体の最遠景山も通常18vh・超横長14vh上へ移動。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel のみ変更)。
 // v2097: なぞなぞトレインの町外れで遠景・中景の山を上へ移動し、固定枠内ミラー式ループでiOSを含む横切れ・継ぎ目を解消。1周目の町に3層の雨と景色減光を追加し、トンネル内/次ステージ/reduced-motion/管理用晴雨比較に対応。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel のみ変更)。
@@ -24,7 +25,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2099;
+const CACHE_VERSION = 2100;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
