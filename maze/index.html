@@ -3248,6 +3248,80 @@ body.image-stage-mode .game-wrap {
   }
 }
 
+/* なかまはずれ: ブラウザUI込みで高さが少ない横画面も、4択を同時に見せる。
+   既存DOMの虫側/問題側を左右に分け、通常の縦積みはタブレット以上で維持する。 */
+@media (orientation: landscape) and (max-height: 560px) {
+  .encounter-modal .enc-card.is-oddone {
+    width: min(100%, 760px);
+    max-height: 100%;
+    grid-template-columns: minmax(170px, 0.8fr) minmax(0, 1.65fr);
+    column-gap: clamp(10px, 2vw, 18px);
+    row-gap: 0;
+    padding: 8px 10px;
+    align-items: center;
+    justify-items: stretch;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+  .encounter-modal .enc-card.is-oddone .enc-left,
+  .encounter-modal .enc-card.is-oddone .enc-stage {
+    min-height: 0;
+    max-height: calc(100dvh - 40px);
+  }
+  .encounter-modal .enc-card.is-oddone .enc-left {
+    gap: clamp(2px, 1dvh, 5px);
+    justify-content: center;
+  }
+  .encounter-modal .enc-card.is-oddone .enc-creature img {
+    width: auto;
+    height: clamp(64px, 20dvh, 104px) !important;
+    max-width: min(100%, 150px) !important;
+    max-height: none !important;
+  }
+  .encounter-modal .enc-card.is-oddone .enc-name {
+    font-size: clamp(0.72rem, 2.2dvh, 0.9rem);
+    line-height: 1;
+  }
+  .encounter-modal .enc-card.is-oddone .enc-dialog {
+    width: 100%;
+    max-height: min(22dvh, 96px);
+    padding: 6px 9px;
+    border-radius: 13px;
+    font-size: clamp(0.68rem, 2.2dvh, 0.84rem);
+    line-height: 1.22;
+    overflow-y: auto;
+  }
+  .encounter-modal .enc-card.is-oddone .enc-dialog::before,
+  .encounter-modal .enc-card.is-oddone .enc-dialog::after {
+    display: none;
+  }
+  .encounter-modal .enc-card.is-oddone .enc-stage {
+    gap: 5px;
+    overflow: visible;
+  }
+  .encounter-modal .enc-card.is-oddone .enc-result {
+    font-size: clamp(0.82rem, 2.8dvh, 1rem) !important;
+  }
+  .encounter-modal .enc-card.is-oddone .enc-result small {
+    font-size: 0.72em;
+  }
+  .encounter-modal .enc-card.is-oddone .oddone-choice-grid {
+    width: min(100%, 480px) !important;
+    gap: 6px !important;
+  }
+  .encounter-modal .enc-card.is-oddone .enc-btn.choice.has-img {
+    min-height: clamp(56px, 18dvh, 76px);
+    padding: 2px 7px;
+    border-width: 3px;
+    border-radius: 12px;
+  }
+  .encounter-modal .enc-card.is-oddone .enc-choice-img {
+    width: clamp(48px, 14dvh, 64px);
+    height: clamp(48px, 14dvh, 64px);
+    max-height: none !important;
+  }
+}
+
 /* Portrait fallback: 縦積みでも 1 画面に収める */
 @media (orientation: portrait) {
   .encounter-modal .enc-card { width: min(94vw, 720px); }
@@ -8020,20 +8094,36 @@ const QUIZ_TRUEFALSE = [
   { q: 'くまは どうぶつ？', a: true, icon: _mzMazeAnimal('kuma', 'くま') },
 ];
 
-// なかまはずれ: items 4つ、odd は items のうち仲間外れの index
+// なかまはずれ: 旧 animal_extras crop の細長い被写体を避け、
+// 既存の生成済み透過素材のうち自然な全身比率の絵へ、このゲームだけ差し替える。
+const MAZE_ODDONE_ANIMAL_ASSETS = Object.freeze({
+  neko: '../assets/zukan/animals/flower_path/kitten.png',
+  inu: '../assets/zukan/animals/flower_path/puppy.png',
+  usagi: MAZE_QUIZ_STAGE_IMG + 'stage_trivia_rabbit.png',
+  kuma: '../assets/zukan/animals/sunlit_forest/bear_cub.png',
+  lion: MAZE_QUIZ_STAGE_IMG + 'lion_osu.png',
+  zou: MAZE_QUIZ_STAGE_IMG + 'stage_trivia_long_nose_elephant.png',
+  iruka: MAZE_LOCAL_QUIZ_IMG + 'iruka.png',
+  kirin: _mzVersionedAnimalSrc(MAZE_QUIZ_IMG, 'kirin'),
+});
+function _mzOddAnimal(name, label) {
+  return _mzAsset(MAZE_ODDONE_ANIMAL_ASSETS[name] || _mzVersionedAnimalSrc(MAZE_WORD_IMG, name), label);
+}
+
+// items 4つ、odd は items のうち仲間外れの index
 const QUIZ_ODDONE = [
-  { items: [_mzWord('ringo','りんご'), _mzWord('banana','バナナ'), _mzWord('mikan','みかん'), _mzWord('inu','いぬ')], odd: 3, hint: 'くだもの' },
-  { items: [_mzWord('kuruma','くるま'), _mzWord('taxi','タクシー'), _mzWord('bus','バス'), _mzMazeAnimal('kirin','きりん')], odd: 3, hint: 'のりもの' },
-  { items: [_mzWord('neko','ねこ'), _mzWord('inu','いぬ'), _mzMazeAnimal('usagi', 'うさぎ'), _mzWord('ichigo','いちご')], odd: 3, hint: 'どうぶつ' },
+  { items: [_mzWord('ringo','りんご'), _mzWord('banana','バナナ'), _mzWord('mikan','みかん'), _mzOddAnimal('inu','いぬ')], odd: 3, hint: 'くだもの' },
+  { items: [_mzWord('kuruma','くるま'), _mzWord('taxi','タクシー'), _mzWord('bus','バス'), _mzOddAnimal('kirin','きりん')], odd: 3, hint: 'のりもの' },
+  { items: [_mzOddAnimal('neko','ねこ'), _mzOddAnimal('inu','いぬ'), _mzOddAnimal('usagi', 'うさぎ'), _mzWord('ichigo','いちご')], odd: 3, hint: 'どうぶつ' },
   { items: [_mzWord('ki','き'), _mzWord('kusa','くさ'), _mzWord('kinoko','きのこ'), _mzQuiz('sakana','さかな')], odd: 3, hint: 'もりに あるもの' },
   { items: [_mzWord('taiyou','たいよう'), _mzWord('tsuki','つき'), _mzWord('hoshi','ほし'), _mzWord('banana','バナナ')], odd: 3, hint: 'そら' },
   { items: [_mzWord('ninjin','にんじん'), _mzWord('tomato','トマト'), _mzWord('kyuuri','きゅうり'), _mzQuiz('sakana','さかな')], odd: 3, hint: 'やさい' },
-  { items: [_mzMazeAnimal('lion','らいおん'), _mzMazeAnimal('kirin','きりん'), _mzMazeAnimal('zou','ぞう'), _mzWord('rocket','ロケット')], odd: 3, hint: 'どうぶつ' },
-  { items: [_mzWord('ringo','りんご'), _mzWord('inu','いぬ'), _mzWord('mikan','みかん'), _mzWord('banana','バナナ')], odd: 1, hint: 'くだもの' },
-  { items: [_mzWord('kuruma','くるま'), _mzWord('neko','ねこ'), _mzWord('taxi','タクシー'), _mzWord('bus','バス')], odd: 1, hint: 'のりもの' },
+  { items: [_mzOddAnimal('lion','らいおん'), _mzOddAnimal('kirin','きりん'), _mzOddAnimal('zou','ぞう'), _mzWord('rocket','ロケット')], odd: 3, hint: 'どうぶつ' },
+  { items: [_mzWord('ringo','りんご'), _mzOddAnimal('inu','いぬ'), _mzWord('mikan','みかん'), _mzWord('banana','バナナ')], odd: 1, hint: 'くだもの' },
+  { items: [_mzWord('kuruma','くるま'), _mzOddAnimal('neko','ねこ'), _mzWord('taxi','タクシー'), _mzWord('bus','バス')], odd: 1, hint: 'のりもの' },
   { items: [_mzWord('tsuki','つき'), _mzWord('hoshi','ほし'), _mzWord('hana','はな'), _mzWord('taiyou','たいよう')], odd: 2, hint: 'そらに あるもの' },
-  { items: [_mzQuiz('sakana','さかな'), _mzWord('kani','かに'), _mzMazeAnimal('iruka', 'いるか'), _mzMazeAnimal('kirin','きりん')], odd: 3, hint: 'みずの いきもの' },
-  { items: [_mzCreature('hachi','はち'), _mzQuiz('chocho','ちょうちょ'), _mzQuiz('batta','ばった'), _mzMazeAnimal('kuma','くま')], odd: 3, hint: 'むし' },
+  { items: [_mzQuiz('sakana','さかな'), _mzWord('kani','かに'), _mzOddAnimal('iruka', 'いるか'), _mzOddAnimal('kirin','きりん')], odd: 3, hint: 'みずの いきもの' },
+  { items: [_mzCreature('hachi','はち'), _mzQuiz('chocho','ちょうちょ'), _mzQuiz('batta','ばった'), _mzOddAnimal('kuma','くま')], odd: 3, hint: 'むし' },
   { items: [_mzWord('jitensha','じてんしゃ'), _mzWord('helicopter','ヘリコプター'), _mzWord('fune','ふね'), _mzWord('ringo','りんご')], odd: 3, hint: 'のりもの' },
   { items: [_mzWord('hana','はな'), _mzWord('sakura','さくら'), _mzWord('kusa','くさ'), _mzQuiz('chocho','ちょうちょ')], odd: 3, hint: 'しょくぶつ' },
   { items: [_mzWord('cake','ケーキ'), _mzWord('cake2','ケーキ'), _mzWord('okashi','おかし'), _mzWord('ninjin','にんじん')], odd: 3, hint: 'あまいもの' },
@@ -8289,9 +8379,7 @@ function _showOddOneOutChoices() {
   encStageEl.appendChild(title);
 
   const row = document.createElement('div');
-  row.className = 'row';
-  row.style.flexWrap = 'wrap';
-  row.style.maxWidth = '320px';
+  row.className = 'row oddone-choice-grid';
   q.items.forEach(function(item, i) {
     row.appendChild(_createImageChoiceButton(item, i));
   });
