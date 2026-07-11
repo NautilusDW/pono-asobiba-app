@@ -237,21 +237,21 @@ namespace Pono.MarbleRun3D.Tests.EditMode
             var materials = new ToyMaterialLibrary();
             try
             {
-                AssertSoftColor(materials.Maple.color, 0.68f, 0.65f, "linear vanilla maple");
-                AssertSoftColor(materials.Board.color, 0.64f, 0.70f, "linear peach play board");
+                AssertSoftColor(materials.Maple.color, 0.82f, 0.48f, "linear vanilla maple");
+                AssertSoftColor(materials.Board.color, 0.78f, 0.52f, "linear peach play board");
 
-                Assert.That(materials.Maple.color.gamma.maxColorComponent, Is.LessThan(0.93f),
-                    "linear maple must retain visible tone instead of clipping white on screen");
-                Assert.That(materials.Board.color.gamma.maxColorComponent, Is.LessThan(0.92f),
-                    "linear board color must stay visibly peach");
-                Assert.That(materials.MapleDark.color.gamma.maxColorComponent, Is.InRange(0.52f, 0.68f),
-                    "support wood needs a clear cocoa silhouette in Linear color space");
+                Assert.That(materials.Maple.color.gamma.maxColorComponent, Is.InRange(0.91f, 0.95f),
+                    "linear maple should render as a warm cream without turning white");
+                Assert.That(materials.Board.color.gamma.maxColorComponent, Is.InRange(0.89f, 0.93f),
+                    "linear board should render as a light peach rather than dark orange");
+                Assert.That(materials.MapleDark.color.gamma.maxColorComponent, Is.InRange(0.69f, 0.75f),
+                    "support wood needs a soft cocoa silhouette in Linear color space");
 
                 Color.RGBToHSV(materials.MapleDark.color, out _, out var cocoaSaturation, out var cocoaValue);
-                Assert.That(cocoaValue, Is.InRange(0.28f, 0.36f), "linear cocoa should remain warm and readable");
-                Assert.That(cocoaSaturation, Is.LessThanOrEqualTo(0.78f));
+                Assert.That(cocoaValue, Is.InRange(0.44f, 0.52f), "linear cocoa should remain warm and readable");
+                Assert.That(cocoaSaturation, Is.LessThanOrEqualTo(0.58f));
                 Color.RGBToHSV(materials.BoardEdge.color, out _, out _, out var edgeValue);
-                Assert.That(edgeValue, Is.GreaterThanOrEqualTo(0.26f));
+                Assert.That(edgeValue, Is.GreaterThanOrEqualTo(0.40f));
 
                 var accents = Enum.GetValues(typeof(MarblePieceKind))
                     .Cast<MarblePieceKind>()

@@ -41,14 +41,14 @@ namespace Pono.MarbleRun3D.Gameplay
                 : Shader.Find("Standard") ?? Shader.Find("Universal Render Pipeline/Lit");
             if (BaseShader == null)
                 throw new InvalidOperationException("The toy material shader is unavailable.");
-            // Runtime is Linear. These values intentionally look darker in source so
-            // the displayed toy keeps warm wood contrast instead of clipping to white.
-            Maple = Make("バニラ メープル", new Color(0.72f, 0.50f, 0.30f), 0.25f);
-            MapleDark = Make("ミルク ココア", new Color(0.32f, 0.15f, 0.09f), 0.20f);
-            Board = Make("ピーチ あそびだい", new Color(0.68f, 0.42f, 0.25f), 0.22f);
-            BoardEdge = Make("ココア ふち", new Color(0.30f, 0.13f, 0.08f), 0.18f);
-            Connector = Make("キャンディ つなぎ まる", new Color(0.73f, 0.38f, 0.56f), 0.55f, true);
-            ConnectorGlow = Make("ミント つなぎ ひかり", new Color(0.38f, 0.74f, 0.50f), 0.62f, true);
+            // Runtime is Linear. Keep the wood close to the earlier pastel delivery:
+            // bright enough to feel like a nursery toy, with cocoa only for structure.
+            Maple = Make("バニラ メープル", new Color(0.84f, 0.66f, 0.46f), 0.20f);
+            MapleDark = Make("ミルク ココア", new Color(0.48f, 0.30f, 0.23f), 0.16f);
+            Board = Make("ピーチ あそびだい", new Color(0.80f, 0.58f, 0.42f), 0.18f);
+            BoardEdge = Make("ココア ふち", new Color(0.44f, 0.25f, 0.18f), 0.15f);
+            Connector = Make("みずいろ つなぎ まる", new Color(0.397f, 0.716f, 0.888f), 0.50f, true);
+            ConnectorGlow = Make("ミント つなぎ ひかり", new Color(0.479f, 0.761f, 0.533f), 0.56f, true);
             var marbleColors = new[]
             {
                 new Color(0.98f, 0.62f, 0.57f), // ピーチ

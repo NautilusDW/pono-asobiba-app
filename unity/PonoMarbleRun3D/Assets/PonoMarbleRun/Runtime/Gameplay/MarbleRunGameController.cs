@@ -30,7 +30,7 @@ namespace Pono.MarbleRun3D.Gameplay
         private readonly List<Rigidbody> _marbleBodies = new List<Rigidbody>();
         private readonly Vector3[] _cameraFollowPositions = new Vector3[MaximumMarbles];
         private readonly Vector3[] _cameraFollowVelocities = new Vector3[MaximumMarbles];
-        private readonly float[] _cameraFollowAxis = new float[MaximumMarbles];
+        private readonly Vector3[] _cameraCoursePositions = new Vector3[MaximumPieces * 4];
 
         private ToyMaterialLibrary _materials;
         private ToyAudio _audio;
@@ -74,6 +74,7 @@ namespace Pono.MarbleRun3D.Gameplay
         private Coroutine _goalFinishRoutine;
         private Light _sunLight;
         private GameObject _goalLightObject;
+        private int _cameraCoursePositionCount;
 
         private sealed class MarbleRuntime
         {
@@ -990,47 +991,18 @@ namespace Pono.MarbleRun3D.Gameplay
             }
             if (count == 0) return;
 
-            var median = new Vector3(
-                MedianFollowAxis(count, 0),
-                MedianFollowAxis(count, 1),
-                MedianFollowAxis(count, 2));
-            var center = Vector3.zero;
-            var averageVelocity = Vector3.zero;
-            for (var i = 0; i < count; i++)
-            {
-                center += median + Vector3.ClampMagnitude(_cameraFollowPositions[i] - median, 9f);
-                averageVelocity += Vector3.ClampMagnitude(_cameraFollowVelocities[i], 6f);
-            }
-            center /= count;
-            averageVelocity /= count;
-
-            var lookAhead = averageVelocity * 0.28f;
-            lookAhead.y = Mathf.Clamp(lookAhead.y, -0.45f, 0.45f);
-            _orbit.SetFollowTarget(center + lookAhead + Vector3.up * 0.55f);
-        }
-
-        private float MedianFollowAxis(int count, int axis)
-        {
-            for (var i = 0; i < count; i++)
-            {
-                var value = axis == 0
-                    ? _cameraFollowPositions[i].x
-                    : axis == 1
-                        ? _cameraFollowPositions[i].y
-                        : _cameraFollowPositions[i].z;
-                var insert = i;
-                while (insert > 0 && _cameraFollowAxis[insert - 1] > value)
-                {
-                    _cameraFollowAxis[insert] = _cameraFollowAxis[insert - 1];
-                    insert--;
-                }
-                _cameraFollowAxis[insert] = value;
-            }
-
-            var middle = count / 2;
-            return count % 2 == 1
-                ? _cameraFollowAxis[middle]
-                : (_cameraFollowAxis[middle - 1] + _cameraFollowAxis[middle]) * 0.5f;
+            var group = OrbitCameraController.CalculateFollowGroup(
+                _cameraFollowPositions,
+                _cameraFollowVelocities,
+                count);
+            if (!group.IsValid) return;
+            var courseDirection = OrbitCameraController.SelectCourseLookDirection(
+                group.Center,
+                group.AverageVelocity,
+                _cameraCoursePositions,
+                _cameraCoursePositionCount,
+                _orbit.FollowHeading);
+            _orbit.SetFollowFrame(group, courseDirection);
         }
 
         private void SetCameraFollow(bool enabled, bool returnToCourseOverview)
@@ -1282,15 +1254,19 @@ namespace Pono.MarbleRun3D.Gameplay
                 for (var i = 0; i < _course.pieces.Count; i++)
                 {
                     var piece = _course.pieces[i];
-                    positions.Add(WoodenPieceFactory.PoseToWorld(piece.pose));
+                    var piecePosition = WoodenPieceFactory.PoseToWorld(piece.pose);
+                    positions.Add(piecePosition);
+                    CacheCameraCoursePosition(piecePosition);
                     var connectors = PartCatalog.Get(piece.kind).Connectors;
                     for (var connectorIndex = 0; connectorIndex < connectors.Count; connectorIndex++)
                     {
                         var connector = PartCatalog.GetWorldConnector(piece, connectorIndex);
-                        positions.Add(new Vector3(
+                        var connectorPosition = new Vector3(
                             connector.cellPosition.x * WoodenPieceFactory.CellSize,
                             WoodenPieceFactory.PieceRootY + connector.level * WoodenPieceFactory.LevelHeight,
-                            connector.cellPosition.y * WoodenPieceFactory.CellSize));
+                            connector.cellPosition.y * WoodenPieceFactory.CellSize);
+                        positions.Add(connectorPosition);
+                        CacheCameraCoursePosition(connectorPosition);
                     }
                 }
                 _orbit?.FrameCourse(positions);
@@ -1300,6 +1276,7 @@ namespace Pono.MarbleRun3D.Gameplay
         private void ClearCourseViews()
         {
             DestroyGhost();
+            _cameraCoursePositionCount = 0;
             foreach (var view in _pieceViews.Values)
             {
                 if (view != null)
@@ -1309,6 +1286,12 @@ namespace Pono.MarbleRun3D.Gameplay
                 }
             }
             _pieceViews.Clear();
+        }
+
+        private void CacheCameraCoursePosition(Vector3 position)
+        {
+            if (_cameraCoursePositionCount >= _cameraCoursePositions.Length || !IsFinite(position)) return;
+            _cameraCoursePositions[_cameraCoursePositionCount++] = position;
         }
 
         private PieceView FindPiece(MarblePieceKind kind)

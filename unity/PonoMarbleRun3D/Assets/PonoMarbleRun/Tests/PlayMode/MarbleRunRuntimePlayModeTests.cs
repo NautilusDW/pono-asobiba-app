@@ -131,18 +131,41 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
             Assert.That(innerEdge.GetComponent<Outline>().useGraphicAlpha, Is.True);
             Assert.That(starter.Find("Label").GetComponent<Shadow>(), Is.Not.Null);
 
+            var bundledJapaneseFont = Resources.Load<Font>("Fonts/NotoSansJP-Variable");
+            var roundedDisplayFont = Resources.Load<Font>("Fonts/KosugiMaru-Regular") ?? bundledJapaneseFont;
+            var title = menu.Find("Title").GetComponent<Text>();
             var subtitle = menu.Find("Subtitle").GetComponent<Text>();
-            Assert.That(PerceivedBrightness(subtitle.color), Is.LessThan(0.28f));
+            Assert.That(bundledJapaneseFont, Is.Not.Null);
+            Assert.That(title.font, Is.EqualTo(roundedDisplayFont));
+            Assert.That(title.fontStyle,
+                Is.EqualTo(roundedDisplayFont == bundledJapaneseFont ? FontStyle.Bold : FontStyle.Normal));
+            Assert.That(title.fontSize, Is.InRange(46, 52));
+            Assert.That(subtitle.font, Is.EqualTo(bundledJapaneseFont));
+            Assert.That(subtitle.fontStyle, Is.EqualTo(FontStyle.Normal));
+            Assert.That(subtitle.fontSize, Is.InRange(22, 26));
+            Assert.That(subtitle.lineSpacing, Is.InRange(1.04f, 1.12f));
+            Assert.That(PerceivedBrightness(subtitle.color), Is.InRange(0.34f, 0.41f));
             var menuButtons = menu.Find("ModeButtons").GetComponentsInChildren<Button>(true);
             Assert.That(menuButtons.Length, Is.EqualTo(7));
             var symbols = new HashSet<string>();
+            var menuFaceColors = new HashSet<string>();
             foreach (var button in menuButtons)
             {
                 var face = button.GetComponent<Image>();
-                Assert.That(AverageDistanceFromWhite(face.color), Is.GreaterThan(0.24f), button.name + " face");
+                Assert.That(PerceivedBrightness(face.color), Is.InRange(0.76f, 0.85f), button.name + " bright face");
+                Assert.That(AverageDistanceFromWhite(face.color), Is.InRange(0.14f, 0.23f), button.name + " soft face");
+                var face32 = (Color32)face.color;
+                menuFaceColors.Add(face32.r + ":" + face32.g + ":" + face32.b);
                 var label = button.transform.Find("Label").GetComponent<Text>();
-                Assert.That(PerceivedBrightness(label.color), Is.LessThan(0.24f), button.name + " label");
-                Assert.That(label.rectTransform.offsetMin.x, Is.GreaterThanOrEqualTo(56f), button.name + " label inset");
+                Assert.That(PerceivedBrightness(label.color), Is.InRange(0.26f, 0.33f), button.name + " warm label");
+                Assert.That(label.font, Is.EqualTo(roundedDisplayFont), button.name + " font");
+                Assert.That(label.fontStyle,
+                    Is.EqualTo(roundedDisplayFont == bundledJapaneseFont ? FontStyle.Bold : FontStyle.Normal),
+                    button.name + " weight");
+                Assert.That(label.fontSize, Is.GreaterThanOrEqualTo(21), button.name + " size");
+                Assert.That(label.lineSpacing, Is.InRange(0.86f, 0.96f), button.name + " line spacing");
+                Assert.That(label.rectTransform.offsetMin.x, Is.GreaterThanOrEqualTo(60f), button.name + " label inset");
+                Assert.That(label.rectTransform.offsetMin.y, Is.GreaterThanOrEqualTo(8f), button.name + " vertical inset");
 
                 var badge = button.transform.Find("Badge");
                 Assert.That(badge, Is.Not.Null, button.name + " badge");
@@ -156,6 +179,7 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
                 symbols.Add(symbol.text);
             }
             Assert.That(symbols.Count, Is.EqualTo(7));
+            Assert.That(menuFaceColors.Count, Is.InRange(3, 4), "menu reuses four soft hues at most");
 
             _controller.StartMode("sandbox");
             Canvas.ForceUpdateCanvases();
@@ -168,7 +192,7 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
             Assert.That(runActions.GetComponent<Shadow>(), Is.Not.Null);
             Assert.That(runActions.GetComponent<Outline>(), Is.Not.Null);
             var status = _controller.Ui.transform.Find("Canvas/SafeArea/BuilderTop/Status");
-            Assert.That(PerceivedBrightness(status.Find("StatusText").GetComponent<Text>().color), Is.LessThan(0.28f));
+            Assert.That(PerceivedBrightness(status.Find("StatusText").GetComponent<Text>().color), Is.InRange(0.26f, 0.33f));
             Assert.That(AverageDistanceFromWhite(status.GetComponent<Image>().color), Is.GreaterThan(0.18f));
 
             var editColors = editActions.GetComponentsInChildren<Button>(true)
@@ -181,8 +205,10 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
                 .Select(color => color.r + ":" + color.g + ":" + color.b)
                 .Distinct()
                 .ToArray();
-            Assert.That(editColors.Length, Is.GreaterThanOrEqualTo(5));
-            Assert.That(runColors.Length, Is.GreaterThanOrEqualTo(4));
+            Assert.That(editColors.Length, Is.InRange(3, 4));
+            Assert.That(runColors.Length, Is.InRange(3, 4));
+            Assert.That(editColors.Concat(runColors).Distinct().Count(), Is.LessThanOrEqualTo(4),
+                "all action controls share the same four soft hues");
         }
 
         [UnityTest]
@@ -197,8 +223,12 @@ namespace Pono.MarbleRun3D.Tests.PlayMode
                 .Select(item => item.GetComponent<Image>().color)
                 .ToArray();
             Assert.That(paletteFaces.Length, Is.EqualTo(19));
-            Assert.That(paletteFaces.All(color => AverageDistanceFromWhite(color) >= 0.139f), Is.True);
-            Assert.That(paletteFaces.All(color => Mathf.Max(color.r, Mathf.Max(color.g, color.b)) <= 0.861f), Is.True);
+            Assert.That(paletteFaces.All(color => AverageDistanceFromWhite(color) >= 0.14f), Is.True);
+            Assert.That(paletteFaces.All(color => PerceivedBrightness(color) >= 0.76f), Is.True);
+            Assert.That(paletteFaces.All(color => Mathf.Max(color.r, Mathf.Max(color.g, color.b)) <= 0.96f), Is.True);
+            Assert.That(paletteFaces.Select(color => (Color32)color)
+                .Select(color => color.r + ":" + color.g + ":" + color.b)
+                .Distinct().Count(), Is.EqualTo(3), "the parts list reuses only the three soft accents");
             var straight = content.Find("PartStraight");
             var curve = content.Find("PartCurve");
             var straightMark = straight.Find("SelectionMark");
