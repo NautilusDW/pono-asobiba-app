@@ -451,6 +451,12 @@
     .scroll-hint.is-active path {
       stroke: #f0782f;            /* オレンジ (スクロール可能方向) */
       stroke-width: 5.6;
+      /* 白⇄オレンジのゆっくり明滅 (2s/往復) — 見過ごし防止。 点滅ではなく滑らかフェード */
+      animation: hintStrokePulse 2s ease-in-out infinite;
+    }
+    .scroll-hint.is-active svg {
+      /* 明滅と同期した軽い白グロー脈動 (drop-shadow は控えめに — 絵本トーン維持) */
+      animation: hintGlowPulse 2s ease-in-out infinite;
     }
     .scroll-hint.is-active {
       opacity: 1;
@@ -467,10 +473,28 @@
       0%, 100% { transform: translate(-50%, 0); }
       50%      { transform: translate(-50%, 6px); }
     }
+    /* scroll-hint 白⇄オレンジ明滅 (stroke) + 白グロー脈動 (filter)。
+       0%=オレンジ → 50%=白 → 100%=オレンジ の滑らかな往復 */
+    @keyframes hintStrokePulse {
+      0%, 100% { stroke: #f0782f; }
+      50%      { stroke: #ffffff; }
+    }
+    @keyframes hintGlowPulse {
+      0%, 100% { filter: none; }
+      50%      { filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.65)); }
+    }
 
     @media (prefers-reduced-motion: reduce) {
       .scroll-hint--up,
       .scroll-hint--down {
+        animation: none;
+      }
+      /* 明滅も停止 — 静止オレンジ (is-active の基底 stroke) に固定。
+         .is-active 付きで指定しないと specificity 負けするので注意 */
+      .scroll-hint path,
+      .scroll-hint svg,
+      .scroll-hint.is-active path,
+      .scroll-hint.is-active svg {
         animation: none;
       }
     }
