@@ -59,7 +59,6 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 - 2026-07-11 17:05 - by Codex - [batch:1235-nazonazo-random-rain-tradeoff] - nazonazo-tunnel/index.html, nazonazo-tunnel/styles.css, nazonazo-tunnel/js/game.js, tests/nazonazo_*, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - 遠景2層を大幅に上げ、雨を旅ごとのランダム抽選にし、低速化とレア遭遇率上昇のトレードオフを追加 [overlap: sw.js は他active batchの完了後、push直前に最新採番]
-- 2026-07-11 17:01 - by Codex - [batch:1234-writing-mori-judgment-relax] - writing-mori/index.html, tests/mojikko_writing_judgment_regression.cjs, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - HanziWriter後の二重終点判定を幼児向けに緩和し、途中で指を離しても続きから書けるようにする [overlap: batch:1232-maze-minigame-content-scale (sw.js), batch:1231-kitchen-mash-mix-warp (sw.js)]
 
 
 
