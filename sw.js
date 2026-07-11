@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2089: Bento Kitchen のじゃがいも潰しを、既存マッシャーのタップ/ドラッグと同角度3段階の局所リビールへ変更。指ぶれ・Enter・画像失敗時の進行も保護。play.html PAGE_CACHE_VERSION と同期不要 (bento/kitchen.html のみ変更)。
 // v2088: bento tier 別アイテム再配分 (batch:1221) — 小さいおかず(ミートボール/にんじんいんげんをfreeへ降格、えだまめ/ポテトサラダ/りんごをbookへ昇格。ぶどうはカタログ実体なしのため不採用)、しきり/ピックを各1種(なみなみ/ほし)のみ無料化し他3種ずつをbook以上に変更 (common/tier.js, bento/index.html)。play.html PAGE_CACHE_VERSION と同期不要 (tier.js/bento/index.html 変更)。
 // v2087: Maze なかまはずれを短い横画面で虫/4択の左右2列へ切替え、全15問を画面内へ収容。細長いネコ/いぬ/くま/ライオン/ぞうを既存生成素材へ差し替え。play.html PAGE_CACHE_VERSION と同期。
 // v2086: bento tut2 hotfix5 (batch:1058) — とりけす教習ステップ + はっぱ指定制 (レタス→おかず下) + 完成画面レガシー二重系統の tut2 中無効化 + 全ステップのテキストチャネル整理 (floating bubble 削除・setSpeech 一本化) + 仕切りG 縦強制撤去 (bento/admin/worker)。play.html PAGE_CACHE_VERSION と同期不要 (bento/admin/worker 変更)。
@@ -22,7 +23,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2088;
+const CACHE_VERSION = 2089;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
