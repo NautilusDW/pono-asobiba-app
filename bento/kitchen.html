@@ -741,11 +741,13 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   outline: none;
   overflow: hidden;
 }
-.prep-workbench[data-prep-kind="mix_mince"] {
+.prep-workbench[data-prep-kind="mix_mince"],
+.prep-workbench[data-prep-kind="mash_potato"] {
   cursor: grab;
   touch-action: none;
 }
-.prep-workbench[data-prep-kind="mix_mince"].is-dragging {
+.prep-workbench[data-prep-kind="mix_mince"].is-dragging,
+.prep-workbench[data-prep-kind="mash_potato"].is-dragging {
   cursor: grabbing;
 }
 .prep-workbench[data-prep-kind^="shape_"] {
@@ -789,6 +791,9 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   height: 136%;
   mix-blend-mode: normal;
   filter: drop-shadow(0 16px 18px rgba(80,50,30,0.14));
+  opacity: 0;
+}
+.prep-workbench[data-prep-kind="mash_potato"] .prep-art-main {
   opacity: 0;
 }
 .prep-workbench[data-prep-kind^="shape_"] .prep-art-main {
@@ -1437,6 +1442,41 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
 }
 .prep-workbench[data-prep-kind="mix_mince"] .knead-canvas {
   display: block;
+}
+.prep-workbench[data-prep-kind="mash_potato"] .knead-canvas {
+  display: block;
+  top: 49%;
+  width: min(66%, 560px);
+  height: 62%;
+  filter: drop-shadow(0 12px 16px rgba(80,50,30,0.16));
+}
+.potato-masher {
+  display: none;
+  position: absolute;
+  left: 43%;
+  top: 52%;
+  width: clamp(92px, 14.5%, 150px);
+  aspect-ratio: 220 / 260;
+  z-index: 6;
+  pointer-events: none;
+  opacity: 0;
+  background: url('../assets/images/bento/cooking/potato/masher.png') center / contain no-repeat;
+  filter: drop-shadow(0 8px 7px rgba(78, 48, 24, 0.24));
+  transform-origin: 50% 82%;
+  transform: translate(-50%, -84%) rotate(-3deg);
+  transition: left 0.055s linear, top 0.055s linear, transform 0.12s ease-out, filter 0.12s ease-out, opacity 0.16s ease;
+  will-change: left, top, transform;
+}
+.prep-workbench[data-prep-kind="mash_potato"] .potato-masher {
+  display: block;
+  opacity: 1;
+}
+.prep-workbench[data-prep-kind="mash_potato"] .potato-masher.is-pressing {
+  transform: translate(-50%, -78%) rotate(1deg) scale(1.035, 0.94);
+  filter: drop-shadow(0 3px 3px rgba(78, 48, 24, 0.2));
+}
+.prep-workbench[data-prep-kind="mash_potato"] .potato-masher.is-demo {
+  animation: potatoMasherDemo 1.15s cubic-bezier(0.22, 0.76, 0.32, 1) 0.14s 1 both;
 }
 .prep-workbench-ui {
   position: absolute;
@@ -2184,6 +2224,16 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   0%, 100% { transform: translate(-50%, -50%) rotate(0deg) scale(1); }
   25% { transform: translate(calc(-50% - 8px), -50%) rotate(-3deg) scale(1.03); }
   58% { transform: translate(calc(-50% + 8px), -49%) rotate(3deg) scale(1.04); }
+}
+@keyframes potatoMasherDemo {
+  0%, 18%, 100% { transform: translate(-50%, -84%) rotate(-3deg); }
+  48%, 64% { transform: translate(-50%, -78%) rotate(1deg) scale(1.035, 0.94); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .prep-workbench[data-prep-kind="mash_potato"] .potato-masher {
+    animation: none !important;
+    transition: none;
+  }
 }
 @keyframes prepDust {
   0%, 100% { transform: translate(-50%, -50%) scale(1); filter: drop-shadow(0 12px 16px rgba(80,50,30,0.16)); }
@@ -5890,6 +5940,7 @@ body.layout-editor-on .bowl-fill-mask::after {
         <div class="shape-ball-game" id="shape-ball-game" aria-hidden="true"></div>
         <div class="prep-marinate-game" id="prep-marinate-game" aria-hidden="true"></div>
         <canvas class="knead-canvas" id="knead-canvas" aria-hidden="true"></canvas>
+        <div class="potato-masher" id="potato-masher" aria-hidden="true"></div>
         <div class="prep-breading-game" id="prep-breading-game" aria-hidden="true">
           <div class="prep-breading-hint" id="prep-breading-hint">トレイの なかで ころころしよう！</div>
           <div class="prep-breading-trays" id="prep-breading-trays"></div>
@@ -6735,6 +6786,8 @@ body.layout-editor-on .bowl-fill-mask::after {
     trailCount: 0,
     strokeDistance: 0,
     strokeLimit: 0,
+    masherPressToken: 0,
+    masherHeld: false,
   };
   const prepImagePreloadCache = {};
 
@@ -7026,20 +7079,23 @@ body.layout-editor-on .bowl-fill-mask::after {
     mash_potato: {
       kind: 'mash_potato',
       dragPrep: true,
-      dragDistanceScale: 2.2,
-      startSpeech: 'じゃがいもを ぐにぐに つぶそう！',
+      masherPrep: true,
+      revealNextOnly: true,
+      dragDistanceScale: 0.8,
+      tapAdvanceDistance: 520,
+      startSpeech: 'マッシャーで おして つぶそう！',
       completeSpeech: 'じゃがいもが なめらかに なったよ！',
       steps: [
-        { src: '../assets/images/bento/cooking/potato/potato_boiled_001.png', label: 'じゃがいもを ボウルへ', caption: 'ぐにぐに ドラッグ！', burst: 'ぽとん！' },
+        { src: '../assets/images/bento/cooking/potato/potato_boiled_001.png', label: 'マッシャーで おして つぶそう', caption: 'タップでも ドラッグでも できるよ！', burst: 'ぎゅっ！' },
         {
           src: '../assets/images/bento/cooking/potato/potato_mash_002.png',
           brushSrcs: [
             '../assets/images/bento/cooking/potato/potato_mash_002.png',
             '../assets/images/bento/cooking/potato/potato_mash_003.png',
           ],
-          label: 'ぐにぐに つぶそう',
-          caption: 'だんだん なめらかに！',
-          burst: 'ぐにぐに！',
+          label: 'あらく つぶそう',
+          caption: 'マッシャーを うごかそう！',
+          burst: 'ぎゅっ！',
         },
         {
           src: '../assets/images/bento/cooking/potato/potato_mash_003.png',
@@ -7047,11 +7103,10 @@ body.layout-editor-on .bowl-fill-mask::after {
             '../assets/images/bento/cooking/potato/potato_mash_003.png',
             '../assets/images/bento/cooking/potato/potato_mash_002.png',
           ],
-          label: 'もっと つぶそう',
+          label: 'なめらかに つぶそう',
           caption: 'あとすこし！',
-          burst: 'なめらか！',
+          burst: 'ぎゅぎゅ！',
         },
-        { src: '../assets/images/bento/cooking/potato/potato_mash_003.png', label: 'できあがり', caption: 'マッシュポテトが できたよ！', burst: 'できた！' },
       ],
     },
     shape_korokke: {
@@ -7242,6 +7297,8 @@ body.layout-editor-on .bowl-fill-mask::after {
     prepDragLastX: 0,
     prepDragLastY: 0,
     prepDragDistance: 0,
+    prepMashTapCount: 0,
+    prepMashPointerTravel: 0,
     prepTrayDistance: 0,
     prepTraySide: 'front',
     prepTrayFrontProgress: 0,
@@ -7363,6 +7420,8 @@ body.layout-editor-on .bowl-fill-mask::after {
     state.prepDragging = false;
     state.prepDragMode = '';
     state.prepDragPointerId = null;
+    state.prepMashTapCount = 0;
+    state.prepMashPointerTravel = 0;
     state.prepTrayDistance = 0;
     state.prepTraySide = 'front';
     state.prepTrayFrontProgress = 0;
@@ -7375,6 +7434,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     state.cookEggLidClosed = false;
     state.cookEggLidDragging = false;
     state.cookSubStepLock = false;
+    resetPotatoMasherUi();
     stopCookTimingGauge();
     if (!state.pendingTimers || !state.pendingTimers.length) return;
     state.pendingTimers.forEach(id => {
@@ -7756,6 +7816,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     shapeBallGame: document.getElementById('shape-ball-game'),
     prepMarinateGame: document.getElementById('prep-marinate-game'),
     kneadCanvas:   document.getElementById('knead-canvas'),
+    potatoMasher:  document.getElementById('potato-masher'),
     prepBreadingGame: document.getElementById('prep-breading-game'),
     prepBreadingTrays: document.getElementById('prep-breading-trays'),
     prepBreadingLiquid: document.getElementById('prep-breading-liquid'),
@@ -8982,6 +9043,8 @@ body.layout-editor-on .bowl-fill-mask::after {
     state.prepDragLastX = 0;
     state.prepDragLastY = 0;
     state.prepDragDistance = 0;
+    state.prepMashTapCount = 0;
+    state.prepMashPointerTravel = 0;
     state.prepTrayDistance = 0;
     state.prepTraySide = 'front';
     state.prepTrayFrontProgress = 0;
@@ -9039,16 +9102,22 @@ body.layout-editor-on .bowl-fill-mask::after {
     resetCookDrag();
     hideCombo();
     const config = getPrepConfig(action, ing);
+    resetPotatoMasherUi();
     preloadPrepFoodFrames(config);
     updatePrepView(config, 0, false);
     const firstStep = (config.steps && config.steps[0]) || {};
     if (els.prepActionLabel) els.prepActionLabel.textContent = firstStep.label || action.label || 'したごしらえしよう';
-    if (els.prepStage) els.prepStage.setAttribute('aria-label', ing.name + 'の したごしらえ');
+    if (els.prepStage) {
+      els.prepStage.setAttribute('aria-label', isPotatoMashConfig(config)
+        ? 'じゃがいもを マッシャーで おして つぶそう'
+        : (ing.name + 'の したごしらえ'));
+    }
     setSpeech(config.startSpeech || (ing.name + 'を したごしらえしよう！'), 'prep');
     showScreen('prep');
     if (config.dragPrep) {
       scheduleKneadCanvasReset(config, 0);
     }
+    startPotatoMasherDemo(config);
   }
 
   function getPrepConfig(action, ing) {
@@ -9613,6 +9682,7 @@ body.layout-editor-on .bowl-fill-mask::after {
         preloadPrepImage(step.src);
         preloadPrepImage(step.shapeMeatSrc);
         preloadPrepImage(step.thumbSrc);
+        if (Array.isArray(step.brushSrcs)) step.brushSrcs.forEach(preloadPrepImage);
       });
     }
     if (isMultiBallShapeConfig(config)) {
@@ -10578,6 +10648,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     if (!unique.length) return [];
     const current = getKneadStepForProgress(config, progress);
     const reveal = getKneadRevealStep(config, progress) || current;
+    if (config && config.revealNextOnly) return reveal ? [reveal] : [];
     const srcs = [];
     const addSrc = function (src) {
       if (src && !srcs.includes(src)) srcs.push(src);
@@ -10602,6 +10673,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       if (step && step.src) {
         loadKneadImage(step.src).then(function (img) {
           if (!img || !els.kneadCanvas || !resizeKneadCanvas()) return;
+          if (!config || config.kind !== 'mix_mince') return;
           const warmup = function () {
             getKneadMeatMaskCanvas(step.src, img, els.kneadCanvas);
           };
@@ -10692,6 +10764,24 @@ body.layout-editor-on .bowl-fill-mask::after {
     ctx.restore();
   }
 
+  function drawPotatoMasherMask(ctx, x1, y1, mx, my, x2, y2, brushWidth, force) {
+    const len = Math.max(1, Math.hypot(x2 - x1, y2 - y1));
+    const diameter = Math.max(44, brushWidth * 0.92);
+    const stampCount = Math.max(1, Math.min(24, Math.ceil(len / Math.max(12, diameter * 0.24))));
+    ctx.save();
+    ctx.filter = 'blur(' + Math.max(1.2, diameter * 0.018).toFixed(2) + 'px)';
+    ctx.globalCompositeOperation = 'source-over';
+    for (let i = 0; i <= stampCount; i++) {
+      const t = stampCount ? i / stampCount : 0.5;
+      const point = getQuadraticPoint(x1, y1, mx, my, x2, y2, t);
+      ctx.beginPath();
+      ctx.ellipse(point.x, point.y, diameter * 0.5, diameter * 0.34, 0, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(255,255,255,' + (0.78 + Math.max(0, Math.min(1, force || 0)) * 0.2).toFixed(3) + ')';
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
   function getKneadStrokeLimitCss() {
     if (!els.kneadCanvas) return 180;
     const rect = els.kneadCanvas.getBoundingClientRect();
@@ -10721,6 +10811,98 @@ body.layout-editor-on .bowl-fill-mask::after {
     const rx = canvas.width * 0.37;
     const ry = canvas.height * 0.43;
     return Math.pow((x - cx) / rx, 2) + Math.pow((y - cy) / ry, 2) <= 1.22;
+  }
+
+  function isPotatoMashConfig(config) {
+    return !!(config && config.masherPrep && config.kind === 'mash_potato');
+  }
+
+  function resetPotatoMasherUi() {
+    if (!els.potatoMasher) return;
+    kneadRuntime.masherPressToken += 1;
+    kneadRuntime.masherHeld = false;
+    els.potatoMasher.classList.remove('is-demo', 'is-pressing');
+    els.potatoMasher.style.left = '43%';
+    els.potatoMasher.style.top = '52%';
+  }
+
+  function startPotatoMasherDemo(config) {
+    if (!els.potatoMasher || !isPotatoMashConfig(config)) return;
+    resetPotatoMasherUi();
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    void els.potatoMasher.offsetWidth;
+    els.potatoMasher.classList.add('is-demo');
+    state.pendingTimers.push(setTimeout(function () {
+      if (els.potatoMasher) els.potatoMasher.classList.remove('is-demo');
+    }, 1450));
+  }
+
+  function stopPotatoMasherDemo() {
+    if (els.potatoMasher) els.potatoMasher.classList.remove('is-demo');
+  }
+
+  function positionPotatoMasher(clientX, clientY) {
+    if (!els.potatoMasher || !els.prepStage || !Number.isFinite(clientX) || !Number.isFinite(clientY)) return;
+    const rect = els.prepStage.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const localWidth = els.prepStage.offsetWidth || rect.width;
+    const localHeight = els.prepStage.offsetHeight || rect.height;
+    const scaleX = rect.width / Math.max(1, localWidth);
+    const scaleY = rect.height / Math.max(1, localHeight);
+    const localX = (clientX - rect.left) / Math.max(0.001, scaleX);
+    const localY = (clientY - rect.top) / Math.max(0.001, scaleY);
+    const x = Math.max(localWidth * 0.08, Math.min(localWidth * 0.92, localX));
+    const y = Math.max(localHeight * 0.2, Math.min(localHeight * 0.78, localY));
+    els.potatoMasher.style.left = x.toFixed(1) + 'px';
+    els.potatoMasher.style.top = y.toFixed(1) + 'px';
+  }
+
+  function holdPotatoMasher(pressed) {
+    if (!els.potatoMasher) return;
+    const nextHeld = !!pressed;
+    const isPressed = els.potatoMasher.classList.contains('is-pressing');
+    if (nextHeld && kneadRuntime.masherHeld) return;
+    if (!nextHeld && !kneadRuntime.masherHeld && !isPressed) return;
+    kneadRuntime.masherPressToken += 1;
+    kneadRuntime.masherHeld = nextHeld;
+    els.potatoMasher.classList.toggle('is-pressing', nextHeld);
+  }
+
+  function animatePotatoMasherPress(clientX, clientY) {
+    if (!els.potatoMasher) return;
+    stopPotatoMasherDemo();
+    positionPotatoMasher(clientX, clientY);
+    const token = ++kneadRuntime.masherPressToken;
+    kneadRuntime.masherHeld = false;
+    els.potatoMasher.classList.add('is-pressing');
+    state.pendingTimers.push(setTimeout(function () {
+      if (!els.potatoMasher || kneadRuntime.masherPressToken !== token) return;
+      els.potatoMasher.classList.remove('is-pressing');
+    }, 180));
+  }
+
+  function getPotatoMashPoint(evt) {
+    if (!els.kneadCanvas) return null;
+    const rect = els.kneadCanvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return null;
+    if (evt && !evt.keyboard && Number.isFinite(evt.clientX) && Number.isFinite(evt.clientY)) {
+      return { x: evt.clientX, y: evt.clientY };
+    }
+    const points = [
+      [0.39, 0.42], [0.61, 0.42], [0.5, 0.57],
+      [0.34, 0.6], [0.66, 0.6], [0.5, 0.46],
+    ];
+    const point = points[(state.prepMashTapCount || 0) % points.length];
+    return { x: rect.left + rect.width * point[0], y: rect.top + rect.height * point[1] };
+  }
+
+  function stampPotatoMashCanvas(config, point) {
+    if (!point || !els.kneadCanvas) return false;
+    const rect = els.kneadCanvas.getBoundingClientRect();
+    const span = Math.max(7, rect.width * 0.025);
+    const maxProgress = getPrepMaxProgress(config);
+    const progressRatio = maxProgress ? Math.max(0, Math.min(1, (state.prepProgress || 0) / maxProgress)) : 0;
+    return smearKneadCanvas(point.x - span, point.y, point.x + span, point.y, progressRatio, 1, config);
   }
 
   function getKneadGesturePower(deltaDistance) {
@@ -10803,6 +10985,10 @@ body.layout-editor-on .bowl-fill-mask::after {
       return;
     }
     if (src !== kneadRuntime.lastSrc) {
+      if (isPotatoMashConfig(config)) {
+        resetKneadCanvas(config, progress);
+        return;
+      }
       loadKneadImage(src).then(function (img) {
         if (!img) return;
         kneadRuntime.lastSrc = src;
@@ -10851,6 +11037,12 @@ body.layout-editor-on .bowl-fill-mask::after {
     const p = Math.max(0, Math.min(1, progressRatio || 0));
     const baseRadius = Math.max(42, Math.min(canvas.width, canvas.height) * (0.076 + p * 0.018));
     const brushWidth = baseRadius * (1.08 + force * 0.68);
+    const masherRect = isPotatoMashConfig(config) && els.potatoMasher
+      ? els.potatoMasher.getBoundingClientRect()
+      : null;
+    const visualBrushWidth = masherRect && masherRect.width
+      ? Math.max(brushWidth, masherRect.width * px)
+      : brushWidth;
     const nx = len ? -dy / len : 0;
     const ny = len ? dx / len : 0;
     const wobble = Math.sin(count * 1.73) * brushWidth * (0.12 + force * 0.1);
@@ -10876,19 +11068,25 @@ body.layout-editor-on .bowl-fill-mask::after {
 
       mctx.save();
       mctx.filter = 'none';
-      drawKneadBrushMask(mctx, x1, y1, mx, my, x2, y2, brushWidth, force, brushIndex, count);
+      if (isPotatoMashConfig(config)) {
+        drawPotatoMasherMask(mctx, x1, y1, mx, my, x2, y2, visualBrushWidth, force);
+      } else {
+        drawKneadBrushMask(mctx, x1, y1, mx, my, x2, y2, brushWidth, force, brushIndex, count);
+      }
       mctx.restore();
 
       lctx.save();
       lctx.globalCompositeOperation = 'destination-in';
       lctx.drawImage(mask, 0, 0);
       lctx.restore();
-      const meatMask = getKneadMeatMaskCanvas(brushSteps[brushIndex] && brushSteps[brushIndex].src, img, canvas);
-      if (!meatMask) return;
-      lctx.save();
-      lctx.globalCompositeOperation = 'destination-in';
-      lctx.drawImage(meatMask, 0, 0);
-      lctx.restore();
+      if (config && config.kind === 'mix_mince') {
+        const meatMask = getKneadMeatMaskCanvas(brushSteps[brushIndex] && brushSteps[brushIndex].src, img, canvas);
+        if (!meatMask) return;
+        lctx.save();
+        lctx.globalCompositeOperation = 'destination-in';
+        lctx.drawImage(meatMask, 0, 0);
+        lctx.restore();
+      }
 
       ctx.globalAlpha = Math.max(0.56, 0.88 - brushIndex * 0.12);
       ctx.drawImage(layer, 0, 0);
@@ -11436,6 +11634,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       els.prepStage.classList.remove('is-dragging');
       els.prepStage.classList.add('is-working');
     }
+    if (isPotatoMashConfig(config)) holdPotatoMasher(false);
     const maxProgress = getPrepMaxProgress(config);
     updatePrepView(config, maxProgress, true);
     showPrepBurst(config.completeBurst || 'できた！');
@@ -12237,12 +12436,23 @@ body.layout-editor-on .bowl-fill-mask::after {
     }
     const config = getActiveDragPrepConfig();
     if (!config || state.cutting || state.transitioning || state.prepAnimating) return;
+    if (isPotatoMashConfig(config)) {
+      stopPotatoMasherDemo();
+      if (!isKneadPointerInside(evt.clientX, evt.clientY)) {
+        holdPotatoMasher(false);
+        setSpeech('じゃがいもの うえを おしてね！', 'prep');
+        return;
+      }
+      positionPotatoMasher(evt.clientX, evt.clientY);
+      holdPotatoMasher(true);
+    }
     evt.preventDefault();
     state.prepDragging = true;
     state.prepDragMode = 'knead';
     state.prepDragPointerId = evt.pointerId;
     state.prepDragLastX = evt.clientX;
     state.prepDragLastY = evt.clientY;
+    state.prepMashPointerTravel = 0;
     state.suppressPrepClick = false;
     resetKneadGesture();
     if (els.prepStage) {
@@ -12251,7 +12461,9 @@ body.layout-editor-on .bowl-fill-mask::after {
       try { els.prepStage.setPointerCapture(evt.pointerId); } catch (_) {}
     }
     if (!kneadRuntime.lastSrc) resetKneadCanvas(config, state.prepProgress || 0);
-    setSpeech('そのまま ぐるぐる こねよう！', 'prep');
+    setSpeech(isPotatoMashConfig(config)
+      ? 'マッシャーを おしたまま うごかそう！'
+      : 'そのまま ぐるぐる こねよう！', 'prep');
   }
 
   function onPrepPointerMove(evt) {
@@ -12278,10 +12490,25 @@ body.layout-editor-on .bowl-fill-mask::after {
     const dx = evt.clientX - state.prepDragLastX;
     const dy = evt.clientY - state.prepDragLastY;
     const dist = Math.hypot(dx, dy);
+    if (isPotatoMashConfig(config)) {
+      state.prepMashPointerTravel = Math.max(0, (state.prepMashPointerTravel || 0) + dist);
+    }
+    const mashDragStarted = !isPotatoMashConfig(config) || (state.prepMashPointerTravel || 0) >= 12;
     const maxProgress = getPrepMaxProgress(config);
     const progressRatio = maxProgress ? Math.max(0, Math.min(1, (state.prepProgress || 0) / maxProgress)) : 0;
-    const gesture = dist > 1 && isKneadPointerInside(evt.clientX, evt.clientY)
-      ? getKneadGesturePower(dist)
+    const pointerInside = isKneadPointerInside(evt.clientX, evt.clientY);
+    if (isPotatoMashConfig(config)) {
+      if (pointerInside) {
+        positionPotatoMasher(evt.clientX, evt.clientY);
+        holdPotatoMasher(true);
+      } else {
+        holdPotatoMasher(false);
+      }
+    }
+    const gesture = dist > 1 && pointerInside && mashDragStarted
+      ? (isPotatoMashConfig(config)
+        ? { effectiveDist: Math.min(dist, 56), power: 1 }
+        : getKneadGesturePower(dist))
       : { effectiveDist: 0, power: 0 };
     const smearRatio = dist > 0 ? Math.max(0, Math.min(1, gesture.effectiveDist / dist)) : 0;
     const smearX = state.prepDragLastX + dx * smearRatio;
@@ -12297,8 +12524,8 @@ body.layout-editor-on .bowl-fill-mask::after {
     );
     state.prepDragLastX = evt.clientX;
     state.prepDragLastY = evt.clientY;
-    if (dist > 1) state.suppressPrepClick = true;
-    if (didSmear) {
+    if (dist > 1 && mashDragStarted) state.suppressPrepClick = true;
+    if (didSmear || (isPotatoMashConfig(config) && gesture.effectiveDist > 1)) {
       state.suppressPrepClick = true;
       playKneadSe(gesture.effectiveDist, gesture.power);
       advanceDragPrep(config, gesture.effectiveDist * gesture.power * 3.2);
@@ -12322,10 +12549,13 @@ body.layout-editor-on .bowl-fill-mask::after {
       endShapePrepDrag(evt);
       return;
     }
+    const activeDragConfig = getActiveDragPrepConfig();
+    if (isPotatoMashConfig(activeDragConfig)) holdPotatoMasher(false);
     if (!state.prepDragging || evt.pointerId !== state.prepDragPointerId) return;
     state.prepDragging = false;
     state.prepDragMode = '';
     state.prepDragPointerId = null;
+    state.prepMashPointerTravel = 0;
     if (els.prepStage) {
       els.prepStage.classList.remove('is-dragging');
       els.prepStage.classList.remove('is-working');
@@ -12377,6 +12607,26 @@ body.layout-editor-on .bowl-fill-mask::after {
       if ((state.prepProgress || 0) >= 0.985) {
         states.forEach(function (st) { st.progress = 1; });
         finishDragPrep(ing, config);
+      }
+      return;
+    }
+
+    if (isPotatoMashConfig(config)) {
+      const point = getPotatoMashPoint(evt);
+      if (!point || !isKneadPointerInside(point.x, point.y)) {
+        setSpeech('じゃがいもの うえを おしてね！', 'prep');
+        return;
+      }
+      stopPotatoMasherDemo();
+      animatePotatoMasherPress(point.x, point.y);
+      stampPotatoMashCanvas(config, point);
+      state.prepMashTapCount = (state.prepMashTapCount || 0) + 1;
+      playKneadSe(76, 1);
+      showPrepBurst('ぎゅっ！');
+      advanceDragPrep(config, Math.max(320, config.tapAdvanceDistance || 520));
+      if (!state.prepAnimating) {
+        const activeStep = getPrepStepForProgress(config, state.prepProgress || 0);
+        setSpeech(activeStep.caption || activeStep.label || 'マッシャーで おして つぶそう！', 'prep');
       }
       return;
     }
@@ -17844,6 +18094,8 @@ body.layout-editor-on .bowl-fill-mask::after {
     state.prepDragLastX = 0;
     state.prepDragLastY = 0;
     state.prepDragDistance = 0;
+    state.prepMashTapCount = 0;
+    state.prepMashPointerTravel = 0;
     state.prepTrayDistance = 0;
     state.prepTraySide = 'front';
     state.prepTrayFrontProgress = 0;
