@@ -132,8 +132,8 @@ const ASSETS={
   decor:"../assets/images/nazonazo-tunnel/jungle_station_line_trees_20260706.webp",
   animals:{
    far:[
-    "../assets/images/nazonazo-tunnel/jungle_animal_monkey_storybook_20260711.webp",
-    "../assets/images/nazonazo-tunnel/jungle_animal_owl_storybook_20260711.webp",
+    "../assets/images/nazonazo-tunnel/jungle_animal_monkey_storybook_v2_20260711.webp",
+    "../assets/images/nazonazo-tunnel/jungle_animal_owl_storybook_v2_20260711.webp",
     "../assets/images/nazonazo-tunnel/jungle_animal_toucans_storybook_20260711.webp",
     "../assets/images/nazonazo-tunnel/jungle_animal_butterflies_storybook_20260711.webp"
    ],

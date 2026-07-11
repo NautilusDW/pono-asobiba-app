@@ -16,6 +16,12 @@ const animals = [
   "sloth", "snake", "frog", "crocodile",
   "elephant", "giraffe", "lion", "zebra"
 ];
+const animalFiles = Object.fromEntries(animals.map(animal => [
+  animal,
+  `jungle_animal_${animal}_storybook_20260711.webp`
+]));
+animalFiles.monkey = "jungle_animal_monkey_storybook_v2_20260711.webp";
+animalFiles.owl = "jungle_animal_owl_storybook_v2_20260711.webp";
 
 for (const id of ["Far", "Mid", "Near"]) {
   assert.match(html, new RegExp(`id="jungleAnimals${id}"[^>]*class="jungle-animal-layer"[^>]*aria-hidden="true"`));
@@ -40,7 +46,8 @@ assert.match(js, /renderSeaFish\(now\);\s*renderJungleAnimals\(\);/);
 assert.doesNotMatch(js.slice(js.indexOf("function buildJungleAnimals"), js.indexOf("function renderJungleAnimals")), /addEventListener|bindTap/, "ambient animals must not be interactive");
 
 for (const animal of animals) {
-  const rel = `assets/images/nazonazo-tunnel/jungle_animal_${animal}_storybook_20260711.webp`;
+  const file = animalFiles[animal];
+  const rel = `assets/images/nazonazo-tunnel/${file}`;
   const full = path.join(root, rel);
   assert.ok(fs.existsSync(full), `${rel} missing`);
   const stat = fs.statSync(full);
@@ -49,9 +56,10 @@ for (const animal of animals) {
   assert.equal(buf.subarray(0, 4).toString("ascii"), "RIFF", `${rel} is not RIFF WebP`);
   assert.equal(buf.subarray(8, 12).toString("ascii"), "WEBP", `${rel} is not WebP`);
   assert.ok(buf.includes(Buffer.from("ALPH")), `${rel} must contain alpha data`);
-  assert.match(js, new RegExp(`jungle_animal_${animal}_storybook_20260711\\.webp`));
+  assert.ok(js.includes(`../assets/images/nazonazo-tunnel/${file}`), `${animal}: runtime reference missing`);
   assert.doesNotMatch(js, new RegExp(`jungle_animal_${animal}_20260711\\.webp`), `${animal}: old realistic asset still referenced`);
 }
+assert.doesNotMatch(js, /jungle_animal_(?:monkey|owl)_storybook_20260711\.webp/, "Pono-like monkey/owl assets must not remain referenced");
 
 async function runBrowser(browserName) {
   const { chromium, webkit } = require("playwright");
