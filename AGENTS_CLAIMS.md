@@ -58,6 +58,7 @@
 ## Active claims
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
+- 2026-07-12 00:35 - by Codex - [batch:1249-kitchen-mix-continuity-shape] - bento/kitchen.html, assets/images/bento/cooking/korokke/prep/storybook_v1249/**, tests/bento_kitchen_*, tests/e2e/bento/**, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - ポテト+ひき肉が中央段階に留まり急に全体へ飛ぶ進行を、中心から外へ連続的に広がる細分化段階へ刷新し、成形点線を実際の完成warp輪郭へ一致 [overlap: batch:1244-capture-output-resolution, batch:1248-bento-tutorial-divider (sw.jsのみ)]
 - 2026-07-11 19:50 - by Claude - [batch:1244-capture-output-resolution] - common/capture.js, play.html (capture build のみ必要時), tests/capture_*, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - スクショモードの出力がぼやける件を実測調査し、html2canvas ラスタ解像度/合成拡大率を改善 [overlap: batch:1242 (sw.js, 自分), batch:1243-nazonazo-picturebook-animals (sw.js)、push 直前に最新採番]
 
 

@@ -82,7 +82,7 @@ assert.match(mixSource, /coverageGrid:\s*\{ cols: 30, rows: 18 \}/);
 assert.match(mixSource, /baseSrc:\s*'\.\.\/assets\/images\/bento\/cooking\/potato\/potato_mash_003\.png'/);
 assert.match(mixSource, /coverageAspect:\s*380 \/ 220/);
 assert.equal((mixSource.match(/foodSrc:/g) || []).length, 4, 'mix must have four aligned storybook states');
-assert.equal((mixSource.match(/storybook_v1247\/korokke_mix_storybook_state[0-3]\.png/g) || []).length, 8);
+assert.equal((mixSource.match(/storybook_v1249\/korokke_mix_storybook_state[0-3]\.png/g) || []).length, 8);
 assert.doesNotMatch(mixSource, /revealNextOnly|solidRevealBrush|commitRevealStage/);
 assert.doesNotMatch(mixSource, /mix_mince_potato_00[123]\.png/);
 assert.doesNotMatch(mixSource, /20260711_(?:1231|1237)/, 'photorealistic legacy mix assets must not be wired');
@@ -92,7 +92,10 @@ assert.match(html, /globalCompositeOperation = 'destination-out'/);
 assert.match(html, /globalCompositeOperation = 'destination-in'/);
 assert.match(html, /getKneadWorkCanvas\('localCoverageComposite', canvas\)/);
 assert.match(html, /foodCtx\.globalCompositeOperation = 'lighter'/);
-assert.match(html, /ctx\.drawImage\(foodComposite, 0, 0\)/);
+assert.match(html, /ctx\.drawImage\(foodComposite, -canvas\.width \/ 2, -canvas\.height \/ 2\)/);
+assert.match(html, /const warpX = reducedMotion \? 0 : \(kneadRuntime\.mixWarpX \|\| 0\)/);
+assert.match(html, /ctx\.translate\(canvas\.width \/ 2 \+ warpX, canvas\.height \/ 2 \+ warpY\)/);
+assert.match(html, /if \(config\.localCoverageReveal\) \{[\s\S]*?mixWarpX = Math\.max\(-3,[\s\S]*?mixWarpRotate = Math\.max\(-0\.45/);
 assert.match(html, /function scheduleLocalKneadCoverageReveal\(/);
 assert.match(html, /kneadRuntime\.localRevealRaf = requestAnimationFrame/);
 assert.match(html, /cancelAnimationFrame\(kneadRuntime\.localRevealRaf\)/);
@@ -105,16 +108,22 @@ const shapeEnd = html.indexOf('bread_shrimp: {', shapeStart);
 assert.ok(shapeStart >= 0 && shapeEnd > shapeStart, 'shape_korokke config is missing');
 const shapeSource = html.slice(shapeStart, shapeEnd);
 assert.match(shapeSource, /continuousShapeWarp:\s*true/);
+assert.match(shapeSource, /shapeFinalScaleX:\s*0\.85/);
+assert.match(shapeSource, /shapeFinalScaleY:\s*0\.74/);
+assert.match(shapeSource, /shapeMeatOffsetX:\s*-12\.04/);
 assert.doesNotMatch(shapeSource, /fixedShapeFrames/);
 const shapeFoodRefs = [...shapeSource.matchAll(/shapeMeatSrc:\s*'([^']+)'/g)].map((match) => match[1]);
 assert.equal(shapeFoodRefs.length, 3);
 assert.equal(new Set(shapeFoodRefs).size, 1, 'all shape stages must warp the exact same food layer');
-assert.match(shapeFoodRefs[0], /storybook_v1247\/korokke_shape_storybook_food\.png$/);
-assert.match(html, /--shape-meat-scale-y', \(1 - morph \* 0\.38\)/);
+assert.match(shapeFoodRefs[0], /storybook_v1249\/korokke_shape_storybook_food\.png$/);
+assert.match(html, /--shape-meat-scale-x', \(1 \+ morph \* \(finalScaleX - 1\)\)/);
+assert.match(html, /--shape-meat-scale-y', \(1 \+ morph \* \(finalScaleY - 1\)\)/);
+assert.match(html, /--shape-meat-offset-x', meatOffsetX\.toFixed\(2\) \+ 'px'/);
+assert.match(html, /translate\(calc\(var\(--shape-meat-offset-x, 0px\) \+ var\(--shape-warp-x, 0px\)\)/);
 assert.match(html, /--shape-clip-rx', \(50 - morph \* 12\)/);
 assert.match(html, /function updateContinuousShapeWarpImpulse\(/);
 
-const storybookMixRefs = [...new Set([...mixSource.matchAll(/'([^']+storybook_v1247\/korokke_mix_storybook_state[0-3]\.png)'/g)].map((match) => match[1]))];
+const storybookMixRefs = [...new Set([...mixSource.matchAll(/'([^']+storybook_v1249\/korokke_mix_storybook_state[0-3]\.png)'/g)].map((match) => match[1]))];
 assert.equal(storybookMixRefs.length, 4, 'four storybook mix states must be wired');
 for (const src of storybookMixRefs) {
   const file = path.resolve(path.dirname(htmlPath), src);
@@ -184,6 +193,7 @@ const storybookMixImages = storybookMixRefs
   .map((src) => decodeRgbaPng(path.resolve(path.dirname(htmlPath), src)));
 const changedCounts = [];
 const spreadAreas = [];
+const radialStats = [];
 storybookMixImages.forEach((image, stage) => {
   assert.equal(image.width, mashBase.width);
   assert.equal(image.height, mashBase.height);
@@ -198,6 +208,10 @@ storybookMixImages.forEach((image, stage) => {
   let minChangedY = image.height;
   let maxChangedX = -1;
   let maxChangedY = -1;
+  let meatWeight = 0;
+  let weightedX = 0;
+  let weightedY = 0;
+  const radialSamples = [];
   for (let y = 0; y < image.height; y++) {
     for (let x = 0; x < image.width; x++) {
       const index = (y * image.width + x) * 4;
@@ -208,6 +222,16 @@ storybookMixImages.forEach((image, stage) => {
       const delta = Math.abs(r - mashBase.data[index])
         + Math.abs(g - mashBase.data[index + 1])
         + Math.abs(b - mashBase.data[index + 2]);
+      if (delta > 0) {
+        const radius = Math.hypot(
+          (x / image.width - 0.5) / 0.39,
+          (y / image.height - 0.51) / 0.31,
+        );
+        meatWeight += delta;
+        weightedX += x * delta;
+        weightedY += y * delta;
+        radialSamples.push({ radius, weight: delta });
+      }
       if (a !== mashBase.data[index + 3]) alphaMismatch++;
       if (delta > 18) {
         changed++;
@@ -238,6 +262,22 @@ storybookMixImages.forEach((image, stage) => {
   assert.ok(changedLeft / changed >= 0.4 && changedLeft / changed <= 0.6, `state ${stage} mince must be balanced left/right`);
   assert.equal(greenFringe, 0, `state ${stage} must not add green fringe beyond the approved mash base`);
   assert.equal(edgeAlpha, 0, `state ${stage} must keep transparent outer edges`);
+  radialSamples.sort((a, b) => a.radius - b.radius);
+  const weightedRadius = (quantile) => {
+    const target = meatWeight * quantile;
+    let accumulated = 0;
+    for (const sample of radialSamples) {
+      accumulated += sample.weight;
+      if (accumulated >= target) return sample.radius;
+    }
+    return radialSamples.at(-1).radius;
+  };
+  radialStats.push({
+    r50: weightedRadius(0.5),
+    r90: weightedRadius(0.9),
+    cx: weightedX / meatWeight / image.width,
+    cy: weightedY / meatWeight / image.height,
+  });
   changedCounts.push(changed);
   spreadAreas.push((maxChangedX - minChangedX + 1) * (maxChangedY - minChangedY + 1));
 });
@@ -245,6 +285,24 @@ assert.ok(spreadAreas[1] > spreadAreas[0] * 1.15, 'early mix must spread beyond 
 assert.ok(spreadAreas[2] > spreadAreas[1] * 1.4, 'middle mix must expand across the potato');
 assert.ok(spreadAreas[3] >= spreadAreas[2] * 0.95, 'final mix must remain broadly distributed');
 assert.ok(changedCounts[3] > 700, 'final mix must retain clearly visible meat flecks');
+const radialRanges = [
+  { r50: [0.2, 0.28], r90: [0.35, 0.45] },
+  { r50: [0.36, 0.42], r90: [0.49, 0.59] },
+  { r50: [0.46, 0.53], r90: [0.65, 0.71] },
+  { r50: [0.54, 0.63], r90: [0.75, 0.84] },
+];
+radialStats.forEach((stats, stage) => {
+  const expected = radialRanges[stage];
+  assert.ok(stats.r50 >= expected.r50[0] && stats.r50 <= expected.r50[1], `state ${stage} r50 jump: ${stats.r50}`);
+  assert.ok(stats.r90 >= expected.r90[0] && stats.r90 <= expected.r90[1], `state ${stage} r90 jump: ${stats.r90}`);
+  assert.ok(Math.abs(stats.cx - 0.5) <= 0.025, `state ${stage} weighted X center drift: ${stats.cx}`);
+  if (stage === 0) assert.ok(stats.cy >= 0.44 && stats.cy <= 0.49, `state 0 weighted Y start drift: ${stats.cy}`);
+  else assert.ok(stats.cy >= 0.47 && stats.cy <= 0.54, `state ${stage} weighted Y center drift: ${stats.cy}`);
+});
+const radialSteps90 = radialStats.slice(1).map((stats, stage) => stats.r90 - radialStats[stage].r90);
+radialSteps90.forEach((step, stage) => {
+  assert.ok(step >= 0.08 && step <= 0.18, `state ${stage}->${stage + 1} must spread continuously, got ${step}`);
+});
 
 const storybookShape = decodeRgbaPng(storybookShapeFile);
 assert.ok(storybookShape.width >= 1200 && storybookShape.height >= 700, 'shape food must retain a high-resolution warp source');
@@ -461,14 +519,21 @@ for (let stage = 0; stage < mashZones.length; stage++) {
 
 const shapeRatios = [0, 0.25, 0.5, 0.75, 1].map((ratio) => {
   const morph = ratio * ratio * (3 - 2 * ratio);
-  return { y: 1 - morph * 0.38, rx: 50 - morph * 12, ry: 50 - morph * 15 };
+  return {
+    x: 1 + morph * (0.85 - 1),
+    y: 1 + morph * (0.74 - 1),
+    rx: 50 - morph * 12,
+    ry: 50 - morph * 15,
+  };
 });
 for (let index = 1; index < shapeRatios.length; index++) {
+  assert.ok(shapeRatios[index].x < shapeRatios[index - 1].x, 'shape width must decrease continuously toward the guide');
   assert.ok(shapeRatios[index].y < shapeRatios[index - 1].y, 'shape height must decrease continuously');
   assert.ok(shapeRatios[index].rx < shapeRatios[index - 1].rx, 'shape horizontal clip must tighten continuously');
   assert.ok(shapeRatios[index].ry < shapeRatios[index - 1].ry, 'shape vertical clip must tighten continuously');
 }
-assert.equal(shapeRatios.at(-1).y, 0.62);
+assert.equal(shapeRatios.at(-1).x, 0.85);
+assert.equal(shapeRatios.at(-1).y, 0.74);
 assert.equal(shapeRatios.at(-1).rx, 38);
 assert.equal(shapeRatios.at(-1).ry, 35);
 

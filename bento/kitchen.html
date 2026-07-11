@@ -832,7 +832,7 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   transform-origin: 50% var(--shape-meat-origin-y, 54%);
   clip-path: ellipse(var(--shape-clip-rx, 50%) var(--shape-clip-ry, 50%) at 50% 50%);
   transform:
-    translate(var(--shape-warp-x, 0px), var(--shape-warp-y, 0px))
+    translate(calc(var(--shape-meat-offset-x, 0px) + var(--shape-warp-x, 0px)), var(--shape-warp-y, 0px))
     rotate(var(--shape-warp-rotate, 0deg))
     skewX(var(--shape-warp-skew, 0deg))
     scale(var(--shape-meat-scale-x, 1), var(--shape-meat-scale-y, 1));
@@ -6909,7 +6909,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       localCoverageReveal: true,
       mixCoverage: true,
       // 直前のマッシュ最終画像を固定土台にし、全段階で皿・輪郭・画角を変えない。
-      // storybook_v1247 はこの土台へGPT Image 2の水彩ひき肉だけを合成した同寸画像。
+      // storybook_v1249 はこの土台へGPT Image 2の水彩ひき肉だけを合成した同寸画像。
       baseSrc: '../assets/images/bento/cooking/potato/potato_mash_003.png',
       coverageThreshold: 0.96,
       coverageMinZoneRatio: 0.9,
@@ -6931,29 +6931,29 @@ body.layout-editor-on .bowl-fill-mask::after {
       completeSpeech: 'コロッケの たねが できたよ！ つぎは かたちを つくろう！',
       steps: [
         {
-          src: '../assets/images/bento/cooking/korokke/prep/storybook_v1247/korokke_mix_storybook_state0.png',
-          foodSrc: '../assets/images/bento/cooking/korokke/prep/storybook_v1247/korokke_mix_storybook_state0.png',
+          src: '../assets/images/bento/cooking/korokke/prep/storybook_v1249/korokke_mix_storybook_state0.png',
+          foodSrc: '../assets/images/bento/cooking/korokke/prep/storybook_v1249/korokke_mix_storybook_state0.png',
           label: 'ひきにくを ちらそう',
           caption: 'ぜんたいを ぐるぐる！',
           burst: 'ぽん！',
         },
         {
-          src: '../assets/images/bento/cooking/korokke/prep/storybook_v1247/korokke_mix_storybook_state1.png',
-          foodSrc: '../assets/images/bento/cooking/korokke/prep/storybook_v1247/korokke_mix_storybook_state1.png',
+          src: '../assets/images/bento/cooking/korokke/prep/storybook_v1249/korokke_mix_storybook_state1.png',
+          foodSrc: '../assets/images/bento/cooking/korokke/prep/storybook_v1249/korokke_mix_storybook_state1.png',
           label: 'ぐるぐる まぜよう',
           caption: 'まざってきたよ！',
           burst: 'こねこね！',
         },
         {
-          src: '../assets/images/bento/cooking/korokke/prep/storybook_v1247/korokke_mix_storybook_state2.png',
-          foodSrc: '../assets/images/bento/cooking/korokke/prep/storybook_v1247/korokke_mix_storybook_state2.png',
+          src: '../assets/images/bento/cooking/korokke/prep/storybook_v1249/korokke_mix_storybook_state2.png',
+          foodSrc: '../assets/images/bento/cooking/korokke/prep/storybook_v1249/korokke_mix_storybook_state2.png',
           label: 'すみまで まぜよう',
           caption: 'あとすこし！',
           burst: 'ぐるぐる！',
         },
         {
-          src: '../assets/images/bento/cooking/korokke/prep/storybook_v1247/korokke_mix_storybook_state3.png',
-          foodSrc: '../assets/images/bento/cooking/korokke/prep/storybook_v1247/korokke_mix_storybook_state3.png',
+          src: '../assets/images/bento/cooking/korokke/prep/storybook_v1249/korokke_mix_storybook_state3.png',
+          foodSrc: '../assets/images/bento/cooking/korokke/prep/storybook_v1249/korokke_mix_storybook_state3.png',
           label: 'できあがり',
           caption: 'ぜんたいが まざったよ！',
           burst: 'できた！',
@@ -7211,6 +7211,9 @@ body.layout-editor-on .bowl-fill-mask::after {
       shapePrep: true,
       shapeType: 'patty',
       continuousShapeWarp: true,
+      shapeFinalScaleX: 0.85,
+      shapeFinalScaleY: 0.74,
+      shapeMeatOffsetX: -12.04,
       shapeGuideWidth: 'min(47%, 465px)',
       shapeGuideHeight: '34%',
       shapeGuideTop: '49%',
@@ -7220,24 +7223,24 @@ body.layout-editor-on .bowl-fill-mask::after {
       steps: [
         {
           src: '../assets/images/bento/cooking/prep_plate.png',
-          shapeMeatSrc: '../assets/images/bento/cooking/korokke/prep/storybook_v1247/korokke_shape_storybook_food.png',
-          thumbSrc: '../assets/images/bento/cooking/korokke/prep/storybook_v1247/korokke_mix_storybook_state3.png',
+          shapeMeatSrc: '../assets/images/bento/cooking/korokke/prep/storybook_v1249/korokke_shape_storybook_food.png',
+          thumbSrc: '../assets/images/bento/cooking/korokke/prep/storybook_v1249/korokke_mix_storybook_state3.png',
           label: 'たねを まとめよう',
           caption: 'ドラッグで ぎゅっ！',
           burst: 'ぎゅっ！',
         },
         {
           src: '../assets/images/bento/cooking/prep_plate.png',
-          shapeMeatSrc: '../assets/images/bento/cooking/korokke/prep/storybook_v1247/korokke_shape_storybook_food.png',
-          thumbSrc: '../assets/images/bento/cooking/korokke/prep/storybook_v1247/korokke_mix_storybook_state3.png',
+          shapeMeatSrc: '../assets/images/bento/cooking/korokke/prep/storybook_v1249/korokke_shape_storybook_food.png',
+          thumbSrc: '../assets/images/bento/cooking/korokke/prep/storybook_v1249/korokke_mix_storybook_state3.png',
           label: 'こばんに しよう',
           caption: 'まとまってきたよ！',
           burst: 'ぺたん！',
         },
         {
           src: '../assets/images/bento/cooking/prep_plate.png',
-          shapeMeatSrc: '../assets/images/bento/cooking/korokke/prep/storybook_v1247/korokke_shape_storybook_food.png',
-          thumbSrc: '../assets/images/bento/cooking/korokke/prep/storybook_v1247/korokke_mix_storybook_state3.png',
+          shapeMeatSrc: '../assets/images/bento/cooking/korokke/prep/storybook_v1249/korokke_shape_storybook_food.png',
+          thumbSrc: '../assets/images/bento/cooking/korokke/prep/storybook_v1249/korokke_mix_storybook_state3.png',
           label: 'できあがり',
           caption: 'ころもを つけられるよ！',
           burst: 'できた！',
@@ -9437,8 +9440,12 @@ body.layout-editor-on .bowl-fill-mask::after {
       els.prepStage.style.setProperty('--shape-progress', ratio.toFixed(3));
       if (usesContinuousShapeWarp) {
         const morph = ratio * ratio * (3 - 2 * ratio);
-        els.prepStage.style.setProperty('--shape-meat-scale-x', (1 + morph * 0.012).toFixed(3));
-        els.prepStage.style.setProperty('--shape-meat-scale-y', (1 - morph * 0.38).toFixed(3));
+        const finalScaleX = Math.max(0.55, Math.min(1.2, Number(config.shapeFinalScaleX) || 1.012));
+        const finalScaleY = Math.max(0.55, Math.min(1.2, Number(config.shapeFinalScaleY) || 0.62));
+        const meatOffsetX = Math.max(-40, Math.min(40, Number(config.shapeMeatOffsetX) || 0));
+        els.prepStage.style.setProperty('--shape-meat-scale-x', (1 + morph * (finalScaleX - 1)).toFixed(3));
+        els.prepStage.style.setProperty('--shape-meat-scale-y', (1 + morph * (finalScaleY - 1)).toFixed(3));
+        els.prepStage.style.setProperty('--shape-meat-offset-x', meatOffsetX.toFixed(2) + 'px');
         els.prepStage.style.setProperty('--shape-clip-rx', (50 - morph * 12).toFixed(2) + '%');
         els.prepStage.style.setProperty('--shape-clip-ry', (50 - morph * 15).toFixed(2) + '%');
         els.prepStage.style.setProperty('--shape-meat-origin-y', '50%');
@@ -9449,18 +9456,21 @@ body.layout-editor-on .bowl-fill-mask::after {
         els.prepStage.style.setProperty('--shape-clip-rx', '50%');
         els.prepStage.style.setProperty('--shape-clip-ry', '50%');
         els.prepStage.style.setProperty('--shape-meat-origin-y', '54%');
+        els.prepStage.style.setProperty('--shape-meat-offset-x', '0px');
       } else if (isShape && !isBallsShape && !isMultiBalls && !isPortionBalls) {
         els.prepStage.style.setProperty('--shape-meat-scale-x', (0.72 + ease * 0.36).toFixed(3));
         els.prepStage.style.setProperty('--shape-meat-scale-y', (1.22 - ease * 0.28).toFixed(3));
         els.prepStage.style.setProperty('--shape-clip-rx', '50%');
         els.prepStage.style.setProperty('--shape-clip-ry', '50%');
         els.prepStage.style.setProperty('--shape-meat-origin-y', '54%');
+        els.prepStage.style.setProperty('--shape-meat-offset-x', '0px');
       } else {
         els.prepStage.style.setProperty('--shape-meat-scale-x', '1');
         els.prepStage.style.setProperty('--shape-meat-scale-y', '1');
         els.prepStage.style.setProperty('--shape-clip-rx', '50%');
         els.prepStage.style.setProperty('--shape-clip-ry', '50%');
         els.prepStage.style.setProperty('--shape-meat-origin-y', '54%');
+        els.prepStage.style.setProperty('--shape-meat-offset-x', '0px');
       }
     }
   }
@@ -11658,13 +11668,21 @@ body.layout-editor-on .bowl-fill-mask::after {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       drawKneadImageOnCanvas(canvas, baseImage, 1, config, baseSrc);
       const clip = getKneadClipEllipse(config, canvas);
+      const reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const warpX = reducedMotion ? 0 : (kneadRuntime.mixWarpX || 0);
+      const warpY = reducedMotion ? 0 : (kneadRuntime.mixWarpY || 0);
+      const warpRotate = reducedMotion ? 0 : (kneadRuntime.mixWarpRotate || 0);
       ctx.save();
       if (clip) {
         ctx.beginPath();
         ctx.ellipse(clip.cx, clip.cy, clip.rx * 1.03, clip.ry * 1.03, 0, 0, Math.PI * 2);
         ctx.clip();
       }
-      ctx.drawImage(foodComposite, 0, 0);
+      // 操作中だけ、食材面を指の方向へごく小さく追従させる。局所置換の位置は
+      // coverage mask のままなので、進行判定や「触った場所だけ変わる」契約は不変。
+      ctx.translate(canvas.width / 2 + warpX, canvas.height / 2 + warpY);
+      ctx.rotate(warpRotate * Math.PI / 180);
+      ctx.drawImage(foodComposite, -canvas.width / 2, -canvas.height / 2);
       ctx.restore();
 
       const stats = forceFinal ? { overall: 1 } : getPotatoCoverageStats(config, coverage);
@@ -11870,7 +11888,14 @@ body.layout-editor-on .bowl-fill-mask::after {
     }
     if (config && config.continuousBlend) {
       kneadRuntime.trailCount = (kneadRuntime.trailCount || 0) + 1;
-      if (config.localCoverageReveal) return true;
+      if (config.localCoverageReveal) {
+        // 局所maskを保ったまま、混ぜている最中だけ食材面へ小さな追従を出す。
+        // pointerupでは relaxContinuousKneadWarp() が必ず0へ戻す。
+        kneadRuntime.mixWarpX = Math.max(-3, Math.min(3, dx * 0.05));
+        kneadRuntime.mixWarpY = Math.max(-2, Math.min(2, dy * 0.04));
+        kneadRuntime.mixWarpRotate = Math.max(-0.45, Math.min(0.45, dx * 0.009));
+        return true;
+      }
       kneadRuntime.mixWarpX = Math.max(-7, Math.min(7, dx * 0.09));
       kneadRuntime.mixWarpY = Math.max(-4, Math.min(4, dy * 0.07));
       kneadRuntime.mixWarpRotate = Math.max(-0.9, Math.min(0.9, dx * 0.018));
@@ -19176,6 +19201,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     if (els.prepStage) {
       els.prepStage.style.setProperty('--shape-meat-scale-x', '1');
       els.prepStage.style.setProperty('--shape-meat-scale-y', '1');
+      els.prepStage.style.setProperty('--shape-meat-offset-x', '0px');
       els.prepStage.style.setProperty('--shape-clip-rx', '50%');
       els.prepStage.style.setProperty('--shape-clip-ry', '50%');
       els.prepStage.style.setProperty('--shape-meat-origin-y', '54%');
