@@ -55,6 +55,29 @@ assert.match(play, /animation-delay: -9999s !important;/, "finite reveal animati
 assert.match(play, /animation-play-state: paused !important;/, "capture-clone animations must stay paused");
 assert.match(play, /transition: none !important;/, "capture-clone transitions must not restart");
 
+const animationFreeze = play.match(/function freezeGachaCaptureAnimations\(clonedDoc\)\{[\s\S]*?\n    \}/);
+assert.ok(animationFreeze, "the play-local animation freezer must remain defined");
+assert.match(
+  animationFreeze[0],
+  /\[shell\]\.concat\(Array\.prototype\.slice\.call\(shell\.querySelectorAll\('\*'\)\)\)/,
+  "every materialized animated descendant, including html2canvas pseudo-elements, must be considered"
+);
+assert.match(
+  animationFreeze[0],
+  /var transform = computed\.transform[\s\S]*?setProperty\('animation', 'none', 'important'\)[\s\S]*?setProperty\('transform', transform\)/,
+  "the resolved transform must be read before disabling the animation and then baked into inline style"
+);
+assert.doesNotMatch(
+  animationFreeze[0],
+  /setProperty\('transform', transform, 'important'\)/,
+  "the baked transform must remain non-important so html2canvas can measure untransformed bounds"
+);
+assert.match(
+  animationFreeze[0],
+  /setProperty\('transform-origin', transformOrigin\)[\s\S]*?setProperty\('opacity', opacity\)/,
+  "the frozen transform origin and opacity must stay aligned with the captured animation frame"
+);
+
 const stepZeroStatus = play.match(/\.daily-gacha-modal\[data-gacha-step="0"\] \.daily-gacha-status \{[\s\S]*?\n    \}/);
 const laterStatus = play.match(/\.daily-gacha-modal\[data-gacha-step="1"\] \.daily-gacha-status,[\s\S]*?\.daily-gacha-modal\[data-gacha-step="3"\] \.daily-gacha-status \{[\s\S]*?\n    \}/);
 assert.ok(stepZeroStatus && laterStatus, "all gacha guide-status variants must remain styled");

@@ -10129,6 +10129,50 @@
         '}'
       ].join('\n');
       (clonedDoc.head || clonedDoc.documentElement).appendChild(style);
+
+      // html2canvas 1.4.1 temporarily writes `style.transform = "none"`
+      // while measuring an element's untransformed bounds, then reapplies the
+      // computed transform in the canvas renderer. A still-active CSS
+      // animation wins over that temporary inline value, so the renderer sees
+      // already-transformed bounds and applies the same matrix a second time.
+      // That made the reward / rarity badge jump left and grow, and also made
+      // the opened capsule halves look like a wide-angle camera distortion.
+      //
+      // First let the -9999s paused rule above resolve each animation to the
+      // same deterministic frame as before. Then bake that frame into normal
+      // inline values and remove the animation itself. The transform must NOT
+      // be !important: html2canvas needs its later inline `transform = none`
+      // measurement to win. Pseudo-elements have already been materialized as
+      // html2canvaspseudoelement nodes by onclone time, so the subtree walk
+      // fixes those reveal layers as well as ordinary DOM elements.
+      var shell = clonedDoc.querySelector('.daily-gacha-shell');
+      var view = clonedDoc.defaultView;
+      if (!shell || !view || typeof view.getComputedStyle !== 'function') return;
+      var animatedNodes = [shell].concat(Array.prototype.slice.call(shell.querySelectorAll('*')));
+      for (var i = 0; i < animatedNodes.length; i++) {
+        var node = animatedNodes[i];
+        if (!node || !node.style) continue;
+        var computed;
+        try { computed = view.getComputedStyle(node); } catch (_) { continue; }
+        if (!computed) continue;
+        var animationNames = String(computed.animationName || '').split(',');
+        var hasAnimation = false;
+        for (var ai = 0; ai < animationNames.length; ai++) {
+          if (animationNames[ai].trim() && animationNames[ai].trim() !== 'none') {
+            hasAnimation = true;
+            break;
+          }
+        }
+        if (!hasAnimation) continue;
+        var transform = computed.transform || 'none';
+        var transformOrigin = computed.transformOrigin || '50% 50%';
+        var opacity = computed.opacity || '1';
+        node.style.setProperty('animation', 'none', 'important');
+        node.style.setProperty('transform', transform);
+        node.style.setProperty('transform-origin', transformOrigin);
+        node.style.setProperty('opacity', opacity);
+        node.setAttribute('data-pono-play-gacha-capture-motion-frozen', '1');
+      }
     }
 
     function keepGachaCaptureGuideBackground(clonedDoc){
