@@ -2421,7 +2421,7 @@ function renderNumberJumpGame(){
  const limit=numberJumpLimit();
  const root=document.createElement("div");root.className="number-jump-game";root.setAttribute("role","group");root.setAttribute("aria-labelledby","qText");
  root.style.setProperty("--jump-slots",String(limit+1));root.style.setProperty("--jump-count","0");
- const readout=document.createElement("div");readout.className="number-jump-readout";readout.setAttribute("role","status");readout.setAttribute("aria-live","polite");readout.setAttribute("aria-atomic","true");
+ const readout=document.createElement("div");readout.className="number-jump-readout";
  const readoutLabel=document.createElement("span");readoutLabel.textContent="いま";
  const readoutValue=document.createElement("strong");readoutValue.dataset.jumpCount="";readoutValue.textContent="0";
  const readoutUnit=document.createElement("span");readoutUnit.textContent="かい";

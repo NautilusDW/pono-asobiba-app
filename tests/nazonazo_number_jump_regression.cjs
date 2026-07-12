@@ -4,6 +4,7 @@
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
+const vm = require("node:vm");
 
 const root = path.resolve(__dirname, "..");
 const html = fs.readFileSync(path.join(root, "nazonazo-tunnel/index.html"), "utf8");
@@ -54,8 +55,6 @@ for (const fragment of [
   /className="number-jump-game"/,
   /role","group"/,
   /aria-labelledby","qText"/,
-  /role","status"/,
-  /aria-live","polite"/,
   /className="number-jump-track"/,
   /for\(let i=0;i<=limit;i\+\+\)/,
   /runnerArt\.textContent="🐻"/,
@@ -63,6 +62,7 @@ for (const fragment of [
   /numberJumpButton\("jump","ジャンプ！"/,
   /numberJumpButton\("confirm","ここ！"/
 ]) assert.match(renderGame, fragment);
+assert.doesNotMatch(renderGame, /readout\.setAttribute\("(?:role|aria-live)"/, "the visible counter must not duplicate the shared live-region announcement");
 
 const numberButton = extractFunction("numberJumpButton");
 assert.match(numberButton, /document\.createElement\("button"\)/, "all activity controls must be real buttons");
@@ -100,5 +100,57 @@ assert.match(css, /\.number-jump-runner\{[^}]*transform:translate3d\(calc\(var\(
 assert.match(css, /\.number-jump-action\{[^}]*min-height:52px/, "activity controls must keep child-sized touch targets");
 assert.match(css, /@media \(orientation:landscape\) and \(max-height:360px\)\{[\s\S]*?\.number-jump-action\{min-height:46px/, "short landscape screens need a compact but tappable activity layout");
 assert.match(css, /@media \(prefers-reduced-motion:reduce\)\{[\s\S]*?\.number-jump-runner\{transition:none!important\}[\s\S]*?\.number-jump-runner-art,\.number-jump-step\.is-target\{animation:none!important\}/, "reduced motion must remove both jumping and pulsing");
+
+const actionContext = {
+  Math,
+  actionLog: [],
+  updateLog: [],
+  toneLog: [],
+  clamp(value, min, max) { return Math.max(min, Math.min(max, value)); },
+  quiz: { classList: { contains: name => name === "show" } },
+  choicesEl: {},
+  STAGES: [{ id: "number" }],
+  stg: 0,
+  level: 2,
+  cur: { a: ["2", "に"] },
+  driving: false,
+  answerLocked: false,
+  updateNumberJumpGame(options) { actionContext.updateLog.push(options || null); },
+  tone(...args) { actionContext.toneLog.push(args); },
+  onPick(button, result) { actionContext.actionLog.push({ button, result }); }
+};
+vm.runInNewContext(`
+  let numberJumpCount=0;
+  ${extractFunction("isNumberJumpQuestion")}
+  ${extractFunction("numberJumpLimit")}
+  ${extractFunction("numberJumpAnswer")}
+  ${changeJump}
+  ${submitJump}
+  this.__actions={
+    jump:changeNumberJump,
+    submit:submitNumberJump,
+    count:()=>numberJumpCount,
+    setCount:value=>{numberJumpCount=value;}
+  };
+`, actionContext, { filename: "nazonazo-number-jump-actions.js" });
+const actions = actionContext.__actions;
+actions.jump(-1);
+assert.equal(actions.count(), 0, "back must not cross below zero");
+actions.jump(1);
+actions.jump(1);
+assert.equal(actions.count(), 2, "two jump actions must land on two");
+assert.equal(actionContext.updateLog.length, 2, "only successful moves should redraw the activity");
+actions.submit({ id: "confirm-correct" });
+assert.deepEqual(JSON.parse(JSON.stringify(actionContext.actionLog.at(-1).result)), { ok: true, mode: "number" }, "two jumps must submit as the correct answer two");
+actions.setCount(1);
+actions.submit({ id: "confirm-wrong" });
+assert.deepEqual(JSON.parse(JSON.stringify(actionContext.actionLog.at(-1).result)), { ok: false, mode: "number" }, "an intentionally wrong count must remain a normal number-mode attempt");
+actions.jump(-1);
+assert.equal(actions.count(), 0, "back must allow correction after a wrong count");
+actions.submit({ id: "confirm-zero" });
+assert.equal(actionContext.actionLog.length, 2, "zero must never reach the answer handler");
+actions.setCount(9);
+actions.jump(1);
+assert.equal(actions.count(), 9, "hard mode must stop at the ninth visible step");
 
 console.log("nazonazo number jump regression: PASS");
