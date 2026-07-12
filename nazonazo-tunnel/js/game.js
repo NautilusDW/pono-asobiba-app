@@ -115,8 +115,8 @@ const H=300, HW=1700;
 const ASSETS={
   town:{
    sky:"../assets/images/nazonazo-tunnel/town_sky_back_20260703.webp",
-   horizon:"../assets/images/nazonazo-tunnel/town_horizon_layer_20260703.webp",
-   mid:"../assets/images/nazonazo-tunnel/town_mid_layer_20260703.webp",
+   horizon:"../assets/images/nazonazo-tunnel/town_horizon_layer_whiteback_20260712_v2.webp",
+   mid:"../assets/images/nazonazo-tunnel/town_mid_layer_whiteback_20260712_v2.webp",
    ground:"../assets/images/nazonazo-tunnel/rail_track_loop_jungle_style_bright_20260705.webp",
    fg:"../assets/images/nazonazo-tunnel/town_foreground_grass_20260703_v2.webp",
    station:"../assets/images/nazonazo-tunnel/town_station_checkpoint_20260703.webp",
@@ -124,24 +124,19 @@ const ASSETS={
  },
  jungle:{
   sky:"../assets/images/nazonazo-tunnel/jungle_sky_back_20260703.webp",
-  horizon:"../assets/images/nazonazo-tunnel/jungle_horizon_layer_20260703.webp",
+  horizon:"../assets/images/nazonazo-tunnel/jungle_horizon_layer_whiteback_20260712_v2.webp",
   mid:"../assets/images/nazonazo-tunnel/jungle_mid_layer_20260703.webp",
+  habitat:"../assets/images/nazonazo-tunnel/jungle_habitat_loop_whiteback_20260712.webp",
   ground:"../assets/images/nazonazo-tunnel/rail_track_loop_jungle_style_bright_20260705.webp",
   fg:"../assets/images/nazonazo-tunnel/jungle_foreground_layer_20260703.webp",
   station:"../assets/images/nazonazo-tunnel/jungle_station_checkpoint_20260706.webp",
   decor:"../assets/images/nazonazo-tunnel/jungle_station_line_trees_20260706.webp",
   animals:{
-   far:[
-    "../assets/images/nazonazo-tunnel/jungle_animal_toucans_livedin_20260712.webp"
-   ],
-   mid:[
-    "../assets/images/nazonazo-tunnel/jungle_animal_sloth_livedin_20260712.webp",
-    "../assets/images/nazonazo-tunnel/jungle_animal_crocodile_livedin_20260712.webp"
-   ],
-   near:[
-    "../assets/images/nazonazo-tunnel/jungle_animal_elephant_trunk_3frame_20260712.webp",
-    "../assets/images/nazonazo-tunnel/jungle_animal_giraffe_full_20260712.webp"
-   ]
+   toucans:"../assets/images/nazonazo-tunnel/jungle_animal_toucans_livedin_20260712.webp",
+   sloth:"../assets/images/nazonazo-tunnel/jungle_animal_sloth_livedin_20260712.webp",
+   crocodile:"../assets/images/nazonazo-tunnel/jungle_animal_crocodile_livedin_20260712.webp",
+   elephant:"../assets/images/nazonazo-tunnel/jungle_animal_elephant_trunk_3frame_20260712.webp",
+   giraffe:"../assets/images/nazonazo-tunnel/jungle_animal_giraffe_full_20260712.webp"
   },
   flight:{
    bird:"../assets/images/nazonazo-tunnel/jungle_flying_toucan_3frame_20260712.webp",
@@ -201,7 +196,7 @@ const STAGES=[
   ground(P){return svgURI(600,90,gRail(600,90,P.tie,P.rail,P.grass));},
   fg(P){return svgURI(900,220,gBumps(900,220,P.fgA,7,150,25)+gGrassSpikes(900,220,P.fgB,40,90,27));},
   decor(P,r){return bgUrl(ASSETS.town.decor);}},
- {id:"jungle",icon:"🌴",veh:"train",bank:JUNGLE,gens:["legsJ","sizeJ"],
+ {id:"jungle",icon:"🌴",veh:"train",bank:JUNGLE,gens:["legsJ","sizeJ"],skyPosition:"center calc(100% - 10vh)",
   names:["ジャングル","よるの ジャングル"],
  pals:[
    {sky:["#cfe8b0","#7cc06e"],far1:"#aed69c",far2:"#8cc47c",mid1:"#4f8f42",mid2:"#5c9a4c",trunk:"#35652c",grass:"#6a9e54",tie:"#5a4630",rail:"#3c3c3c",fgA:"#2e6b28",fgB:"#245a1e",mount:"#5f9e4e",fx:"none"},
@@ -284,15 +279,19 @@ const RUN_EVENTS={town:[["🦋","ちょう"],["🌼","おはな"],["🍀","よ�
 const JUNGLE_MID_TILE_ASPECT=2,JUNGLE_MID_TILE_SCALE=1.16;
 const JUNGLE_ANIMAL_LAYOUT={
  far:[
-  {asset:0,species:"toucans",anchor:"perch",x:104,y:34,anchorY:74,w:14,min:46,max:126,depth:.25,opacity:1,motion:"sway",flip:-1,origin:"50% 74%",moveY:0,loop:"mid"}
+  {id:"toucans-loop",asset:"toucans",species:"toucans",anchor:"perch",x:104,y:34,anchorY:74,w:14,min:46,max:126,depth:.25,opacity:1,motion:"sway",flip:-1,origin:"50% 74%",moveY:0,loop:"mid"},
+  {id:"elephant-far-a",role:"distant",asset:"elephant",species:"elephant",anchor:"habitat",stageX:296,align:"right",inset:8,y:74.5,anchorY:80.9,wCss:"min(9vw,23vmin)",min:58,max:92,depth:.28,opacity:1,motion:"breathe",flip:-1,origin:"50% 80.9%",moveY:0,loop:"stage",frames:3,fixedFrame:0},
+  {id:"giraffe-far-a",role:"distant",asset:"giraffe",species:"giraffe",anchor:"habitat",stageX:1156,align:"left",inset:8,y:73.5,anchorY:86.8,wCss:"min(8vw,20vmin)",min:52,max:88,depth:.3,opacity:1,motion:"breathe",flip:-1,origin:"50% 86.8%",moveY:0,loop:"stage"}
  ],
  mid:[
-  {asset:0,species:"sloth",anchor:"hang",x:6,y:37,anchorY:10,w:21,min:62,max:184,depth:.25,opacity:1,motion:"sway",flip:1,origin:"50% 10%",moveY:0,loop:"mid"},
-  {asset:1,species:"crocodile",anchor:"understory",x:70,y:83.5,anchorY:98,w:25.5,min:80,max:225,depth:.92,opacity:1,motion:"breathe",flip:1,origin:"50% 98%",moveY:0}
+  {id:"sloth-loop",asset:"sloth",species:"sloth",anchor:"hang",x:6,y:37,anchorY:10,w:21,min:62,max:184,depth:.25,opacity:1,motion:"sway",flip:1,origin:"50% 10%",moveY:0,loop:"mid"},
+  {id:"crocodile-loop",asset:"crocodile",species:"crocodile",anchor:"understory",x:70,y:80,anchorY:98,w:25.5,min:80,max:225,depth:.92,opacity:1,motion:"breathe",flip:1,origin:"50% 98%",moveY:0},
+  {id:"elephant-mid-b",role:"distant",asset:"elephant",species:"elephant",anchor:"habitat",stageX:2016,align:"left",inset:8,y:78,anchorY:80.9,wCss:"min(13vw,34vmin)",min:88,max:150,depth:.55,opacity:1,motion:"breathe",flip:1,origin:"50% 80.9%",moveY:0,loop:"stage",frames:3,fixedFrame:2},
+  {id:"giraffe-mid-b",role:"distant",asset:"giraffe",species:"giraffe",anchor:"habitat",stageX:2016,align:"right",inset:7,y:78,anchorY:86.8,wCss:"min(12vw,30vmin)",min:78,max:138,depth:.55,opacity:1,motion:"breathe",flip:1,origin:"50% 86.8%",moveY:0,loop:"stage"}
  ],
  near:[
-  {asset:1,species:"giraffe",anchor:"ground",x:26,y:83.5,anchorY:93.4896,wCss:"min(22vw,54vmin)",min:150,max:280,depth:.9,opacity:1,motion:"breathe",flip:-1,origin:"50% 93.4896%",moveY:0},
-  {asset:0,species:"elephant",anchor:"ground",x:90,y:83.5,anchorY:93.75,wCss:"min(28vw,72vmin)",min:190,max:340,depth:.94,opacity:1,motion:"breathe",flip:1,origin:"50% 93.75%",moveY:0,frames:3,frameDuration:3.2}
+  {id:"elephant-hero",role:"hero",asset:"elephant",species:"elephant",anchor:"ground",stageX:726,align:"right",inset:2,y:80,anchorY:80.9,wCss:"min(28vw,72vmin)",min:190,max:340,depth:.94,opacity:1,motion:"breathe",flip:1,origin:"50% 80.9%",moveY:0,loop:"stage",frames:3,frameDuration:3.2},
+  {id:"giraffe-hero",role:"hero",asset:"giraffe",species:"giraffe",anchor:"ground",stageX:1586,align:"right",inset:2,y:80,anchorY:86.8,wCss:"min(22vw,54vmin)",min:150,max:280,depth:.9,opacity:1,motion:"breathe",flip:1,origin:"50% 86.8%",moveY:0,loop:"stage"}
  ]
 };
 const NPC_BASE="../assets/images/bento/npc/";
@@ -336,7 +335,8 @@ function trainCarHeightVh(){
 }
 function trainBottomVh(){
  const st=STAGES[stg];
- return st&&(st.id==="town"||st.id==="jungle"||st.id==="number"||st.id==="future")?9.8:9.1;
+ if(st&&st.id==="jungle")return 13.3;
+ return st&&(st.id==="town"||st.id==="number"||st.id==="future")?9.8:9.1;
 }
 const vehicleLeftVw=()=>STAGES[stg]&&STAGES[stg].veh==="train"?trainLeftVw():DEFAULT_VEHICLE_LEFT_VW;
 const stops=(o,i)=>o+INTRO+i*GAP-CHECKPOINT_STOP_LEFT_VW;
@@ -390,7 +390,12 @@ let tunnels=[],playing=false,cars=[],helpItems=[],rareCount=0,rareEl=null,rareSp
 let journeyScore=0,highScore=0,stageScore=0,stageScoreBreakdown=emptyStageScoreBreakdown(),stageClearScoreGranted=false;
 let tunnelFriendCandidates=[],tunnelFriendsFound=0,tunnelFriendTotalFound=0,tunnelFriendRewardGranted=false,tunnelFriendPerfectScoreGranted=false,tunnelFriendGameActive=false,tunnelFriendStartWorldX=0;
 let bestStarsByStage={},answerLocked=false,portalEditHolding=false,nextMagicPuffAt=0,exitPortalBaseWorldX=0;
-let numberJumpCount=0,numberJumpTargetShown=false;
+let numberCargoPicked=[],numberCargoGoalShown=false;
+let numberCargoTheme=null;
+const NUMBER_CARGO_THEMES=[
+ {e:"⭐",name:"おほしさま"},{e:"🎈",name:"ふうせん"},{e:"🌼",name:"おはな"},
+ {e:"🍎",name:"りんご"},{e:"🌰",name:"どんぐり"},{e:"🍓",name:"いちご"}
+];
 const SAVE_KEY="pono_nazonazo_tunnel_v1";
 const FAST=(location.hash==="#fast")?6:1;
 const FORCERARE=(location.hash==="#fast");
@@ -519,7 +524,7 @@ function setDriverMood(mood){
 
 /* ================= dom ================= */
 const $=id=>document.getElementById(id);
-const world=$("world"),veh=$("veh"),horizon=$("horizon"),midT=$("midT"),groundT=$("groundT"),fgT=$("fgT"),seaFishLayer=$("seaFishLayer"),smokeLayer=$("smokeLayer"),townMidLoop=$("townMidLoop");
+const world=$("world"),veh=$("veh"),horizon=$("horizon"),midT=$("midT"),groundT=$("groundT"),fgT=$("fgT"),seaFishLayer=$("seaFishLayer"),smokeLayer=$("smokeLayer"),townMidLoop=$("townMidLoop"),jungleHabitatBack=$("jungleHabitatBack");
 const jungleAnimalLayers={far:$("jungleAnimalsFar"),mid:$("jungleAnimalsMid"),near:$("jungleAnimalsNear")};
 const jungleFlightLayers={bird:$("jungleBirdFlightLayer"),butterfly:$("jungleButterflyFlightLayer")};
 const skyA=$("skyA"),skyB=$("skyB"),carsEl=$("cars"),carBadge=$("carBadge"),helpBadge=$("helpBadge"),helpBtn=$("helpBtn");
@@ -825,7 +830,7 @@ function announce(t){const live=$("liveRegion");if(live)live.textContent=t||"";}
 function speak(t){announce(t);}
 function showHint(){
  if(!cur)return;
- if(isNumberJumpQuestion()){showNumberJumpHint(false);return;}
+ if(isNumberCargoQuestion()){showNumberCargoHint(false);return;}
  hintText.textContent="💡 ヒント： "+cur.h;
  announce("ヒント。"+cur.h);
 }
@@ -1311,13 +1316,14 @@ function applySkin(weatherReady){
  document.body.dataset.weather=weather;
  setDriverForStage(stg);
  skyA.style.background=st.assets?bgUrl(st.assets.sky)+" "+(st.skyPosition||"center bottom")+" / cover no-repeat":"linear-gradient("+P.sky[0]+","+P.sky[1]+")";
- skyA.style.backgroundColor=st.id==="town"?"#c7d659":"transparent";
+ skyA.style.backgroundColor=st.id==="town"?"#c7d659":(st.id==="jungle"?"#34793f":"transparent");
  skyB.style.background="linear-gradient("+NP.sky[0]+","+NP.sky[1]+")";
  skyB.style.opacity="0";
  horizon.style.backgroundImage=st.assets?bgUrl(st.assets.horizon):st.horizon(P,NP);
  midT.style.backgroundImage=st.assets?bgUrl(st.assets.mid):st.mid(P);
  groundT.style.backgroundImage=st.assets?bgUrl(st.assets.ground):st.ground(P);
  fgT.style.backgroundImage=st.assets?bgUrl(st.assets.fg):st.fg(P);
+ if(jungleHabitatBack)jungleHabitatBack.style.backgroundImage=st.id==="jungle"&&st.assets&&st.assets.habitat?bgUrl(st.assets.habitat):"none";
  buildAmbient(P);
  buildSeaFish();
  buildJungleAnimals();
@@ -1502,13 +1508,12 @@ function buildJungleAnimals(){
  const layerNames=["far","mid","near"];
  layerNames.forEach((layerName,layerIndex)=>{
   const layer=jungleAnimalLayers[layerName];
-  const assets=animalAssets[layerName]||[];
   const layout=JUNGLE_ANIMAL_LAYOUT[layerName]||[];
-  if(!layer||!assets.length)return;
+  if(!layer||!layout.length)return;
   const limit=IOS_DEVICE?Math.min(5,layout.length):layout.length;
   const fragment=document.createDocumentFragment();
   layout.slice(0,limit).forEach((spec,index)=>{
-   const src=assets[spec.asset%assets.length];
+   const src=animalAssets[spec.asset];
    if(!src)return;
    const sprite=document.createElement("span");
    const art=document.createElement("img");
@@ -1517,13 +1522,15 @@ function buildJungleAnimals(){
    sprite.className="jungle-animal-sprite"+(frameClip?" has-frame-sheet":"");
    sprite.dataset.animalDepth=layerName;
    sprite.dataset.animalSpecies=spec.species;
+   sprite.dataset.animalId=spec.id||spec.species;
+   sprite.dataset.animalRole=spec.role||"ambient";
    sprite.dataset.animalAnchor=spec.anchor;
    sprite.dataset.animalAnchorY=String(spec.anchorY);
    sprite.style.setProperty("--animal-width",spec.wCss||spec.w+"vmin");
    sprite.style.setProperty("--animal-min",spec.min+"px");
    sprite.style.setProperty("--animal-max",spec.max+"px");
    sprite.style.setProperty("--animal-opacity",String(spec.opacity));
-   art.className="jungle-animal-art"+(frameClip?" jungle-animal-frame-sheet":" motion-"+spec.motion);
+   art.className="jungle-animal-art"+(frameClip?" jungle-animal-frame-sheet":" motion-"+spec.motion)+(Number.isFinite(spec.fixedFrame)?" is-fixed-frame":"");
    art.src=src;art.alt="";art.draggable=false;art.decoding="async";
    const motionTarget=frameClip||art;
    motionTarget.style.setProperty("--animal-duration",(5.6+((index*17+layerIndex*11)%34)/10).toFixed(1)+"s");
@@ -1535,10 +1542,11 @@ function buildJungleAnimals(){
    if(frameClip){
     frameClip.className="jungle-animal-frame motion-"+spec.motion;
     art.style.setProperty("--animal-frame-duration",(spec.frameDuration||3.2)+"s");
+    if(Number.isFinite(spec.fixedFrame))art.style.setProperty("--animal-fixed-frame",(-33.3333*spec.fixedFrame)+"%");
     frameClip.appendChild(art);sprite.appendChild(frameClip);
    }else sprite.appendChild(art);
    fragment.appendChild(sprite);
-   jungleAnimalSprites.push({el:sprite,baseX:spec.x,y:spec.y,anchorY:Number.isFinite(spec.anchorY)?spec.anchorY:0,depth:spec.depth,flip:spec.flip||1,loop:spec.loop||"world"});
+   jungleAnimalSprites.push({el:sprite,id:spec.id||spec.species,role:spec.role||"ambient",baseX:spec.x,stageX:spec.stageX,align:spec.align||"left",inset:spec.inset||0,y:spec.y,anchorY:Number.isFinite(spec.anchorY)?spec.anchorY:0,depth:spec.depth,flip:spec.flip||1,loop:spec.loop||"world"});
   });
   layer.appendChild(fragment);
  });
@@ -1551,6 +1559,15 @@ function renderJungleAnimals(){
  lastJungleAnimalRenderKey=renderKey;
  const midPeriod=((window.innerHeight||1)*JUNGLE_MID_TILE_ASPECT*JUNGLE_MID_TILE_SCALE/(window.innerWidth||1))*100;
  jungleAnimalSprites.forEach(animal=>{
+  if(animal.loop==="stage"){
+   const widthVw=(animal.el.offsetWidth/(window.innerWidth||1))*100;
+   const homeX=animal.align==="right"?100-animal.inset-widthVw:animal.inset;
+   const x=homeX+(animal.stageX-localWorldX)*animal.depth;
+   animal.el.style.visibility=(x+widthVw<-12||x>112)?"hidden":"visible";
+   animal.el.style.transform="translate3d("+cssXFromVw(x)+","+cssYFromVh(animal.y)+",0) translateY(-"+animal.anchorY+"%) scaleX("+animal.flip+")";
+   return;
+  }
+  animal.el.style.visibility="visible";
   const period=animal.loop==="mid"?midPeriod:128;
   const baseX=animal.loop==="mid"?animal.baseX/128*period:animal.baseX;
   const scrollX=animal.loop==="mid"?worldX:localWorldX;
@@ -2199,11 +2216,11 @@ function useHelp(){
  const item=helpItems.pop();
  updateHelpHud();
  let helpMessage=item.t+"が おしえてくれたよ";
- if(isNumberJumpQuestion()){
-  numberJumpTargetShown=true;
-  updateNumberJumpGame();
-  hintText.textContent="🍀 "+numberJumpAnswer()+"の ところが ひかったよ";
-  helpMessage=item.t+"が "+numberJumpAnswer()+"の ところを おしえてくれたよ";
+ if(isNumberCargoQuestion()){
+  numberCargoGoalShown=true;
+  updateNumberCargoGame();
+  hintText.textContent="🍀 めざすのは "+numberCargoAnswer()+"こ だよ";
+  helpMessage=item.t+"が めざす かずを おしえてくれたよ";
  }else{
   const choices=[...choicesEl.querySelectorAll(".choice")];
   const wrong=choices.find(c=>c.dataset.ok!=="1"&&!c.classList.contains("dim"));
@@ -2242,6 +2259,7 @@ function render(now){
  renderSeaFish(now);
  renderJungleAnimals();
  renderJungleFlights(now);
+ if(jungleHabitatBack&&document.body.classList.contains("st-jungle"))jungleHabitatBack.style.backgroundPositionX=cssXFromVw(-(worldX-o)*.92);
  updateScreenExitShift();
  const hd=clamp((worldX-o)*0.095,0,70);
  horizon.style.transform="translate3d("+cssXFromVw(-hd)+",0,0)";
@@ -2367,7 +2385,7 @@ function gloop(t){
 /* ================= flow ================= */
 function startJourneyAt(s){
  hideWeatherNotice();
- resetNumberJumpGame();
+ resetNumberCargoGame();
  clearRareEvent();
  stopStageWeather();
  clearTunnelFriendGame();
@@ -2387,15 +2405,23 @@ function startJourneyAt(s){
  sndGo();
  if(currentStageWeather==="rain")setWeatherPresentation("rain",{announce:true});
 }
-function isNumberJumpQuestion(){return !!(cur&&STAGES[stg]&&STAGES[stg].id==="number");}
-function numberJumpLimit(){return [3,5,9][level]||3;}
-function numberJumpAnswer(){return clamp(Number(cur&&cur.a&&cur.a[0])||0,0,numberJumpLimit());}
-function resetNumberJumpGame(){
- numberJumpCount=0;numberJumpTargetShown=false;
+function isNumberCargoQuestion(){return !!(cur&&STAGES[stg]&&STAGES[stg].id==="number");}
+function numberCargoLimit(){return [3,5,9][level]||3;}
+function numberCargoAnswer(){return clamp(Number(cur&&cur.a&&cur.a[0])||0,0,numberCargoLimit());}
+function numberCargoColumnCount(limit){return Math.min((window.innerWidth||844)<560?3:5,limit);}
+function syncNumberCargoColumns(){
+ const root=choicesEl.querySelector(".number-cargo-game");if(root)root.style.setProperty("--cargo-columns",String(numberCargoColumnCount(numberCargoLimit())));
+}
+function resolveNumberCargoTheme(){
+ if(numberCargoTheme)return numberCargoTheme;
+ if(cur&&Array.isArray(cur.pe)&&cur.pe[0])numberCargoTheme={e:cur.pe[0],name:cur.pe[1]||"にもつ"};
+ else numberCargoTheme=NUMBER_CARGO_THEMES[(qSeg+stg+loop)%NUMBER_CARGO_THEMES.length];
+ return numberCargoTheme;
+}
+function resetNumberCargoGame(){
+ numberCargoPicked=[];numberCargoGoalShown=false;numberCargoTheme=null;
  quiz.classList.remove("number-quiz");
  choicesEl.classList.remove("number-mode");
- choicesEl.style.removeProperty("--jump-count");
- choicesEl.style.removeProperty("--jump-slots");
  choicesEl.setAttribute("aria-label","こたえを えらぶ");
 }
 function renderChoiceCards(){
@@ -2409,90 +2435,117 @@ function renderChoiceCards(){
   bindTap(b,()=>onPick(b,o));
   choicesEl.appendChild(b);});
 }
-function numberJumpButton(action,text,label,onTap){
+function numberCargoControl(action,text,label,onTap){
  const button=document.createElement("button");
- button.type="button";button.className="number-jump-action is-"+action;
- button.dataset.jumpAction=action;button.textContent=text;button.setAttribute("aria-label",label);
+ button.type="button";button.className="number-cargo-action is-"+action;
+ button.dataset.cargoAction=action;button.textContent=text;button.setAttribute("aria-label",label);
  bindTap(button,()=>onTap(button));return button;
 }
-function renderNumberJumpGame(){
+function renderNumberCargoGame(){
  quiz.classList.add("number-quiz");choicesEl.classList.add("number-mode");
- choicesEl.setAttribute("aria-label","ジャンプで かずを つくる");
- const limit=numberJumpLimit();
- const root=document.createElement("div");root.className="number-jump-game";root.setAttribute("role","group");root.setAttribute("aria-labelledby","qText");
- root.style.setProperty("--jump-slots",String(limit+1));root.style.setProperty("--jump-count","0");
- const readout=document.createElement("div");readout.className="number-jump-readout";
- const readoutLabel=document.createElement("span");readoutLabel.textContent="いま";
- const readoutValue=document.createElement("strong");readoutValue.dataset.jumpCount="";readoutValue.textContent="0";
- const readoutUnit=document.createElement("span");readoutUnit.textContent="かい";
- readout.append(readoutLabel,readoutValue,readoutUnit);
- const track=document.createElement("div");track.className="number-jump-track";track.setAttribute("aria-hidden","true");
- for(let i=0;i<=limit;i++){
-  const step=document.createElement("span");step.className="number-jump-step";step.dataset.jumpStep=String(i);
-  const number=document.createElement("b");number.textContent=String(i);step.appendChild(number);track.appendChild(step);
+ choicesEl.setAttribute("aria-label","こたえの かずだけ にもつを のせる");
+ const theme=resolveNumberCargoTheme(),limit=numberCargoLimit();
+ const root=document.createElement("div");root.className="number-cargo-game";root.setAttribute("role","group");root.setAttribute("aria-labelledby","qText");
+ root.style.setProperty("--cargo-columns",String(numberCargoColumnCount(limit)));
+ const field=document.createElement("div");field.className="number-cargo-field";field.setAttribute("aria-label","タップして のせる");
+ const fieldTitle=document.createElement("div");fieldTitle.className="number-cargo-field-title";fieldTitle.textContent="タップで のせよう！";field.appendChild(fieldTitle);
+ for(let i=0;i<limit;i++){
+  const button=document.createElement("button");button.type="button";button.className="number-cargo-target";button.dataset.cargoIndex=String(i);
+  button.setAttribute("aria-label",theme.name+"を 1こ のせる");
+  button.setAttribute("aria-pressed","false");
+  button.style.setProperty("--cargo-delay",(-((i*37)%13)/10).toFixed(1)+"s");
+  button.style.setProperty("--cargo-drift-x",((i%3)-1)*(4+(i%2)*2)+"px");
+  button.style.setProperty("--cargo-drift-y",(-4-(i%3)*2)+"px");
+  const art=document.createElement("span");art.className="number-cargo-art";art.textContent=theme.e;art.setAttribute("aria-hidden","true");button.appendChild(art);
+  bindTap(button,()=>collectNumberCargo(i,button));field.appendChild(button);
  }
- const runner=document.createElement("span");runner.className="number-jump-runner";
- const runnerArt=document.createElement("span");runnerArt.className="number-jump-runner-art";runnerArt.textContent="🐻";
- runner.appendChild(runnerArt);track.appendChild(runner);
- const actions=document.createElement("div");actions.className="number-jump-actions";
+ const wagon=document.createElement("div");wagon.className="number-cargo-wagon";
+ const count=document.createElement("div");count.className="number-cargo-count";count.innerHTML='<span>のせた</span><strong data-cargo-count>0</strong><span>こ</span>';
+ const goal=document.createElement("div");goal.className="number-cargo-goal";goal.dataset.cargoGoal="";goal.hidden=true;goal.textContent="めざす "+numberCargoAnswer()+"こ";
+ const load=document.createElement("div");load.className="number-cargo-load";load.setAttribute("aria-hidden","true");
+ for(let i=0;i<limit;i++){
+  const slot=document.createElement("span");slot.className="number-cargo-slot";slot.dataset.cargoSlot=String(i);
+  const loadArt=document.createElement("span");loadArt.textContent=theme.e;slot.appendChild(loadArt);load.appendChild(slot);
+ }
+ const wagonBody=document.createElement("div");wagonBody.className="number-cargo-wagon-body";wagonBody.appendChild(load);
+ const wheels=document.createElement("div");wheels.className="number-cargo-wheels";wheels.setAttribute("aria-hidden","true");wheels.innerHTML="<i></i><i></i>";
+ const actions=document.createElement("div");actions.className="number-cargo-actions";
  actions.append(
-  numberJumpButton("back","1こ もどす","1こ もどす",()=>changeNumberJump(-1)),
-  numberJumpButton("jump","ジャンプ！","1かい ジャンプ",()=>changeNumberJump(1)),
-  numberJumpButton("confirm","ここ！","この かずで こたえる",eventButton=>submitNumberJump(eventButton))
+  numberCargoControl("undo","1こ もどす","さいごの 1こを もどす",()=>undoNumberCargo()),
+  numberCargoControl("confirm","しゅっぱつ！","この かずで こたえる",eventButton=>submitNumberCargo(eventButton))
  );
- root.append(readout,track,actions);choicesEl.appendChild(root);updateNumberJumpGame();
+ wagon.append(count,goal,wagonBody,wheels,actions);root.append(field,wagon);choicesEl.appendChild(root);updateNumberCargoGame();
+ hintText.textContent="🎒 こたえの かずだけ のせてね";
 }
-function updateNumberJumpGame(options){
- const root=choicesEl.querySelector(".number-jump-game");if(!root)return;
- root.style.setProperty("--jump-count",String(numberJumpCount));
- const count=root.querySelector("[data-jump-count]");if(count)count.textContent=String(numberJumpCount);
- root.querySelectorAll("[data-jump-step]").forEach(step=>{
-  const value=Number(step.dataset.jumpStep);
-  step.classList.toggle("is-passed",value<numberJumpCount);
-  step.classList.toggle("is-current",value===numberJumpCount);
-  step.classList.toggle("is-target",numberJumpTargetShown&&value===numberJumpAnswer());
+function updateNumberCargoGame(options){
+ const root=choicesEl.querySelector(".number-cargo-game");if(!root)return;
+ const count=numberCargoPicked.length;
+ const countEl=root.querySelector("[data-cargo-count]");if(countEl)countEl.textContent=String(count);
+ root.querySelectorAll("[data-cargo-index]").forEach(button=>{
+  const picked=numberCargoPicked.includes(Number(button.dataset.cargoIndex));
+  button.classList.toggle("is-picked",picked);button.setAttribute("aria-pressed",picked?"true":"false");button.disabled=answerLocked||picked;
  });
- const back=root.querySelector('[data-jump-action="back"]');
- const jump=root.querySelector('[data-jump-action="jump"]');
- const confirm=root.querySelector('[data-jump-action="confirm"]');
- if(back)back.disabled=answerLocked||numberJumpCount<=0;
- if(jump)jump.disabled=answerLocked||numberJumpCount>=numberJumpLimit();
- if(confirm)confirm.disabled=answerLocked||numberJumpCount<=0;
- if(options&&options.hop){
-  const art=root.querySelector(".number-jump-runner-art");
-  if(art){art.classList.remove("is-hopping");void art.offsetWidth;art.classList.add("is-hopping");art.addEventListener("animationend",()=>art.classList.remove("is-hopping"),{once:true});}
+ root.querySelectorAll("[data-cargo-slot]").forEach(slot=>{
+  const value=Number(slot.dataset.cargoSlot);
+  slot.classList.toggle("is-filled",value<count);
+  slot.classList.toggle("is-goal",numberCargoGoalShown&&value<numberCargoAnswer());
+ });
+ root.classList.toggle("goal-shown",numberCargoGoalShown);
+ const goal=root.querySelector("[data-cargo-goal]");if(goal){goal.hidden=!numberCargoGoalShown;if(numberCargoGoalShown)goal.textContent="めざす "+numberCargoAnswer()+"こ";}
+ const undo=root.querySelector('[data-cargo-action="undo"]');
+ const confirm=root.querySelector('[data-cargo-action="confirm"]');
+ if(undo)undo.disabled=answerLocked||count<=0;
+ if(confirm)confirm.disabled=answerLocked||count<=0;
+ if(options&&options.wagonBump){
+  const wagon=root.querySelector(".number-cargo-wagon-body");
+  if(wagon){wagon.classList.remove("is-bumping");void wagon.offsetWidth;wagon.classList.add("is-bumping");wagon.addEventListener("animationend",()=>wagon.classList.remove("is-bumping"),{once:true});}
  }
- if(options&&options.announce)announce(numberJumpCount+"かい");
+ if(options&&options.announce)announce(count+"こ");
 }
-function changeNumberJump(delta){
- if(answerLocked||driving||!quiz.classList.contains("show")||!isNumberJumpQuestion())return;
- const next=clamp(numberJumpCount+delta,0,numberJumpLimit());if(next===numberJumpCount)return;
- numberJumpCount=next;updateNumberJumpGame({announce:true,hop:delta>0});
- tone(delta>0?740:520,0,.08,"triangle",.07);
+function animateNumberCargoToWagon(button,index){
+ if(!button||!document.body||!window.matchMedia||window.matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+ const target=choicesEl.querySelector(".number-cargo-wagon-body");if(!target)return;
+ const from=button.getBoundingClientRect(),to=target.getBoundingClientRect();
+ const fly=document.createElement("span");fly.className="number-cargo-fly";fly.textContent=resolveNumberCargoTheme().e;fly.dataset.cargoIndex=String(index);fly.setAttribute("aria-hidden","true");
+ fly.style.left=(from.left+from.width*.5)+"px";fly.style.top=(from.top+from.height*.5)+"px";
+ fly.style.setProperty("--cargo-fly-x",(to.left+to.width*.5-from.left-from.width*.5)+"px");
+ fly.style.setProperty("--cargo-fly-y",(to.top+to.height*.4-from.top-from.height*.5)+"px");
+ document.body.appendChild(fly);setTimeout(()=>fly.remove(),520);
 }
-function submitNumberJump(button){
- if(answerLocked||numberJumpCount<=0||!isNumberJumpQuestion())return;
- onPick(button,{ok:numberJumpCount===numberJumpAnswer(),mode:"number"});
+function collectNumberCargo(index,button){
+ if(answerLocked||driving||!quiz.classList.contains("show")||!isNumberCargoQuestion()||index<0||index>=numberCargoLimit()||numberCargoPicked.includes(index)||numberCargoPicked.length>=numberCargoLimit())return;
+ numberCargoPicked.push(index);animateNumberCargoToWagon(button,index);
+ updateNumberCargoGame({announce:true,wagonBump:true});
+ const note=620+numberCargoPicked.length*68;tone(note,0,.08,"triangle",.075);tone(note*1.25,.07,.09,"sine",.055);
 }
-function showNumberJumpHint(revealTarget){
- if(!isNumberJumpQuestion())return;
- if(revealTarget)numberJumpTargetShown=true;
- let message="ジャンプ！を おして かずを つくろう";
- if(numberJumpTargetShown)message=numberJumpAnswer()+"の ところが ひかったよ";
- else if(numberJumpCount<numberJumpAnswer()&&numberJumpCount>0)message="もう すこし ジャンプしてみよう";
- else if(numberJumpCount>numberJumpAnswer())message="1こ もどしてみよう";
- else if(numberJumpCount===numberJumpAnswer())message="ここ！を おしてみよう";
- hintText.textContent="💡 "+message;updateNumberJumpGame();announce(message);
+function undoNumberCargo(){
+ if(answerLocked||driving||!quiz.classList.contains("show")||!isNumberCargoQuestion()||!numberCargoPicked.length)return;
+ numberCargoPicked.pop();
+ updateNumberCargoGame({announce:true});tone(470,0,.09,"triangle",.065);
+}
+function submitNumberCargo(button){
+ if(answerLocked||numberCargoPicked.length<=0||!isNumberCargoQuestion())return;
+ onPick(button,{ok:numberCargoPicked.length===numberCargoAnswer(),mode:"number"});
+}
+function showNumberCargoHint(revealGoal){
+ if(!isNumberCargoQuestion())return;
+ if(revealGoal)numberCargoGoalShown=true;
+ let message="こたえの かずだけ にもつを のせよう";
+ if(numberCargoGoalShown)message="めざすのは "+numberCargoAnswer()+"こ だよ";
+ else if(numberCargoPicked.length<numberCargoAnswer()&&numberCargoPicked.length>0)message="もう すこし のせてみよう";
+ else if(numberCargoPicked.length>numberCargoAnswer())message="すこし もどしてみよう";
+ else if(numberCargoPicked.length===numberCargoAnswer())message="しゅっぱつ！を おしてみよう";
+ hintText.textContent="💡 "+message;updateNumberCargoGame();announce(message);
 }
 function showQuiz(){
  hideWeatherNotice();
  setDriverMood("thinking");
- resetNumberJumpGame();
+ resetNumberCargoGame();
  cur=qList[qSeg];missInQ=0;answerLocked=false;
  qText.textContent=cur.helper?(cur.helper.name+"を たすけよう！ "+cur.q):cur.q;
  hintText.textContent=helpItems.length?"🍀 おたすけを つかえるよ":"";
  choicesEl.replaceChildren();
- if(isNumberJumpQuestion())renderNumberJumpGame();else renderChoiceCards();
+ if(isNumberCargoQuestion())renderNumberCargoGame();else renderChoiceCards();
  quiz.classList.add("show");
  speak(cur.s||cur.q);
 }
@@ -2517,9 +2570,9 @@ function onPick(el,o){
   sndNG();
   if(o.mode==="number"){
    el.classList.remove("ng");void el.offsetWidth;el.classList.add("ng");
-   if(missInQ===1)showNumberJumpHint(false);
-   if(missInQ>=2)showNumberJumpHint(true);
-   updateNumberJumpGame();
+   if(missInQ===1)showNumberCargoHint(false);
+   if(missInQ>=2)showNumberCargoHint(true);
+   updateNumberCargoGame();
   }else el.classList.add("ng","dim");
   const t=tunnels[qSeg];
   if(t){t.classList.add("shake");setTimeout(()=>t.classList.remove("shake"),520);}
@@ -2527,7 +2580,7 @@ function onPick(el,o){
   if(o.mode!=="number"&&missInQ===1)showHint();
   if(o.mode!=="number"&&missInQ>=2){choicesEl.querySelectorAll(".choice").forEach(c=>{
    if(!c.classList.contains("dim"))c.classList.add("glow");});}
-  setTimeout(()=>{answerLocked=false;setDriverMood("thinking");if(o.mode==="number")updateNumberJumpGame();},520);
+  setTimeout(()=>{answerLocked=false;setDriverMood("thinking");if(o.mode==="number")updateNumberCargoGame();},520);
  }
 }
 function proceed(){
@@ -2591,7 +2644,7 @@ function ending(){
 /* ================= map ================= */
 function openMap(msg){
  hideWeatherNotice();
- resetNumberJumpGame();
+ resetNumberCargoGame();
  clearRareEvent();
  stopStageWeather();setWeatherPresentation("clear");
  clearTunnelFriendGame();
@@ -2675,6 +2728,7 @@ document.addEventListener("visibilitychange",()=>{
  else{ensureAC();}
 });
 window.addEventListener("resize",scheduleRainParticleRebuild,{passive:true});
+window.addEventListener("resize",syncNumberCargoColumns,{passive:true});
 window.addEventListener("pageshow",()=>{ensureAC();updateRainParticleVisibility(false);});
 window.addEventListener("focus",()=>{ensureAC();});
 window.addEventListener("pagehide",()=>{hideWeatherNotice();clearTimeout(rainParticleResizeTimer);safeSuspend();});

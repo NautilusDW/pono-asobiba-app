@@ -43,7 +43,7 @@ body.tunnel-interior #seaFishLayer{display:none!important}
   contain:layout paint;pointer-events:none}
 #jungleAnimalsFar{z-index:1}
 #jungleAnimalsMid{z-index:2}
-#jungleAnimalsNear{z-index:3;bottom:16vh}
+#jungleAnimalsNear{z-index:3;bottom:19.5vh}
 body.st-jungle .jungle-animal-layer{display:block}
 body.tunnel-interior .jungle-animal-layer{display:none!important}
 .jungle-animal-sprite{position:absolute;left:0;top:0;width:clamp(var(--animal-min,36px),var(--animal-width,6vw),var(--animal-max,112px));
@@ -57,6 +57,7 @@ body.tunnel-interior .jungle-animal-layer{display:none!important}
   animation-timing-function:ease-in-out;animation-play-state:paused}
 .jungle-animal-frame.motion-breathe{animation-name:jungleAnimalBreathe}
 .jungle-animal-frame-sheet{width:300%;height:100%;max-width:none;object-fit:fill;animation:jungleAnimalTrunkFrames var(--animal-frame-duration,3.2s) step-end infinite paused}
+.jungle-animal-frame-sheet.is-fixed-frame{animation:none;transform:translate3d(var(--animal-fixed-frame,0),0,0)}
 .jungle-animal-art.motion-sway{animation-name:jungleAnimalSway}
 .jungle-animal-art.motion-bob{animation-name:jungleAnimalBob}
 .jungle-animal-art.motion-breathe{animation-name:jungleAnimalBreathe}
@@ -91,12 +92,16 @@ body.st-jungle:not(.tunnel-interior) .jungle-flight-layer{display:block}
 }
 #groundT{position:absolute;left:0;right:0;bottom:0;height:12vh;z-index:2;
   background-repeat:repeat-x;background-size:auto 100%;will-change:background-position}
+#jungleHabitatBack{position:absolute;left:0;right:0;bottom:20vh;height:14vh;z-index:3;display:none;overflow:hidden;
+  background-position:left bottom;background-size:auto 100%;background-repeat:repeat-x;pointer-events:none;will-change:background-position}
+body.st-jungle:not(.tunnel-interior) #jungleHabitatBack{display:block}
+body.tunnel-interior #jungleHabitatBack{display:none!important}
 #world{position:absolute;top:0;bottom:0;left:0;width:0;z-index:3;will-change:transform}
 .decor{position:absolute;bottom:11.5vh}
 .decor.town-decor,.decor.image-decor{background-size:contain;background-repeat:no-repeat;background-position:center bottom;filter:drop-shadow(0 3px 0 rgba(70,45,25,.12))}
 .decor.image-decor{bottom:12.2vh;z-index:4}
 .decor.town-decor{bottom:14.2vh}
-.decor.jungle-decor{bottom:13.8vh;filter:drop-shadow(0 4px 0 rgba(35,55,25,.14))}
+.decor.jungle-decor{bottom:17.3vh;filter:drop-shadow(0 4px 0 rgba(35,55,25,.14))}
 .decor.number-decor{bottom:14vh;filter:drop-shadow(0 4px 0 rgba(92,70,135,.13))}
 .decor.future-decor{bottom:14vh;filter:drop-shadow(0 4px 0 rgba(45,72,80,.13))}
 #cars{position:absolute;bottom:6.5vh;left:0;right:0;z-index:7;pointer-events:none}
@@ -145,6 +150,7 @@ body.v-train #cars{bottom:9.1vh}
 body.v-train #veh{left:calc(55vw - clamp(95px,15.45vw,165.5px));bottom:9.1vh;width:clamp(190px,30.9vw,331px);height:clamp(95px,15.45vw,165.5px)}
 body.st-town.v-train #cars,body.st-jungle.v-train #cars,body.st-number.v-train #cars,body.st-future.v-train #cars{bottom:9.8vh}
 body.st-town.v-train #veh,body.st-jungle.v-train #veh,body.st-number.v-train #veh,body.st-future.v-train #veh{bottom:9.8vh}
+body.st-jungle.v-train #cars,body.st-jungle.v-train #veh{bottom:13.3vh}
 body.st-space #veh{bottom:26vh}
 #fgT{position:absolute;left:0;right:0;bottom:0;height:22vh;z-index:8;pointer-events:none;
   background-repeat:repeat-x;background-size:auto 100%;will-change:background-position}
@@ -155,13 +161,23 @@ body.st-space #veh{bottom:26vh}
 .town-loop-tile::before{content:"";position:absolute;inset:-1px;background-position:center;background-size:cover;background-repeat:no-repeat}
 .town-loop-tile:nth-child(even)::before{transform:scaleX(-1)}
 body.st-town .town-loop-strip{display:flex}
-#townHorizonLoop{top:-50vh;height:124%}
+#townHorizonLoop{top:-50vh;height:134%}
 #townHorizonLoop .town-loop-tile{aspect-ratio:1983/793}
-#townHorizonLoop .town-loop-tile::before{background-image:url("../assets/images/nazonazo-tunnel/town_horizon_layer_20260703.webp")}
+#townHorizonLoop .town-loop-tile::before{background-image:url("../assets/images/nazonazo-tunnel/town_horizon_layer_whiteback_20260712_v2.webp")}
 #townMidLoop{top:-16vh;height:114%}
 #townMidLoop .town-loop-tile{aspect-ratio:1774/887}
-#townMidLoop .town-loop-tile::before{background-image:url("../assets/images/nazonazo-tunnel/town_mid_layer_20260703.webp")}
+#townMidLoop .town-loop-tile::before{background-image:url("../assets/images/nazonazo-tunnel/town_mid_layer_whiteback_20260712_v2.webp")}
 body.st-town #horizon,body.st-town #midT{background-image:none!important}
+
+/* ===== jungle far panorama: mirrored neighbors prevent horizontal gaps ===== */
+.jungle-loop-strip{display:none;position:absolute;left:0;width:max-content;pointer-events:none}
+.jungle-loop-tile{position:relative;display:block;height:100%;flex:0 0 auto;overflow:hidden}
+.jungle-loop-tile::before{content:"";position:absolute;inset:-1px;background-position:center;background-size:cover;background-repeat:no-repeat;
+  background-image:url("../assets/images/nazonazo-tunnel/jungle_horizon_layer_whiteback_20260712_v2.webp")}
+.jungle-loop-tile:nth-child(even)::before{transform:scaleX(-1)}
+body.st-jungle .jungle-loop-strip{display:flex}
+#jungleHorizonLoop{top:-34vh;height:126%}
+#jungleHorizonLoop .jungle-loop-tile{aspect-ratio:1700/933}
 
 /* ===== weather: individually varied rain particles in three depth planes ===== */
 .weather-rain-layer{position:absolute;inset:0;overflow:hidden;contain:layout paint;pointer-events:none;opacity:0;visibility:hidden;
@@ -187,7 +203,7 @@ body:not(.weather-rain) .rain-particle,body.tunnel-interior .rain-particle{anima
 body.pono-game-ready.weather-rain:not(.tunnel-interior) #weatherShade{opacity:1}
 body.pono-game-ready.weather-rain:not(.tunnel-interior) #skyA,body.pono-game-ready.weather-rain:not(.tunnel-interior) #skyB,
 body.pono-game-ready.weather-rain:not(.tunnel-interior) #horizon,body.pono-game-ready.weather-rain:not(.tunnel-interior) #midT,
-body.pono-game-ready.weather-rain:not(.tunnel-interior) #groundT,body.pono-game-ready.weather-rain:not(.tunnel-interior) #fgT,
+body.pono-game-ready.weather-rain:not(.tunnel-interior) #groundT,body.pono-game-ready.weather-rain:not(.tunnel-interior) #fgT,body.pono-game-ready.weather-rain:not(.tunnel-interior) #jungleHabitatBack,
 body.pono-game-ready.weather-rain:not(.tunnel-interior) .jungle-animal-layer,
 body.pono-game-ready.weather-rain:not(.tunnel-interior) #world>.tun,body.pono-game-ready.weather-rain:not(.tunnel-interior) #world>.dropStation{
   filter:brightness(.7) saturate(.62) contrast(.98)}
@@ -269,9 +285,10 @@ body.st-space .tun{bottom:20vh}
 .dropStation{position:absolute;bottom:8.9vh;width:38vw;max-width:460px;height:31vh;z-index:5;pointer-events:none}
 body.st-town .tun,body.st-jungle .tun,body.st-number .tun,body.st-future .tun{bottom:12.85vh}
 body.st-town .tun.station,body.st-jungle .tun.station{bottom:10.15vh}
-body.st-jungle .tun.station.jungle-station{bottom:11.45vh}
+body.st-jungle .tun.station.jungle-station{bottom:14.95vh}
 body.st-number .tun.number-gate{bottom:14.55vh}
 body.st-town .dropStation,body.st-jungle .dropStation,body.st-number .dropStation,body.st-future .dropStation{bottom:10.25vh}
+body.st-jungle .dropStation{bottom:13.75vh}
 .drop-station-art{position:absolute;inset:0;background:url("../assets/images/nazonazo-tunnel/dropoff_station_20260703.webp") center bottom/contain no-repeat;filter:drop-shadow(0 4px 0 rgba(70,45,25,.13))}
 .drop-station-name{position:absolute;left:24%;top:24%;width:31%;height:18%;display:flex;align-items:center;justify-content:center;
   z-index:2;border:2px solid #8d6a3d;border-radius:9px;background:#fff9df;color:#79512c;font-weight:900;font-size:clamp(9px,1.45vw,14px);letter-spacing:0;line-height:1.05;text-align:center;white-space:nowrap}
@@ -344,7 +361,7 @@ body.tunnel-exit-setup #world .tun,body.tunnel-exit-setup #world .decor,body.tun
 body.tunnel-exit-run #world .tun,body.tunnel-exit-run #world .decor,body.tunnel-exit-run #world .dropStation,
 body.tunnel-exit-clear #world .tun,body.tunnel-exit-clear #world .decor,body.tunnel-exit-clear #world .dropStation{opacity:0}
 body.tunnel-interior #skyA{background:#17110b url("../assets/images/nazonazo-tunnel/tunnel_interior_side_flat_20260705.webp") left center/auto 100% repeat-x}
-body.tunnel-interior #skyB,body.tunnel-interior #horizon,body.tunnel-interior #midT,body.tunnel-interior #world,body.tunnel-interior #groundT,body.tunnel-interior #fgT{opacity:0!important}
+body.tunnel-interior #skyB,body.tunnel-interior #horizon,body.tunnel-interior #midT,body.tunnel-interior #world,body.tunnel-interior #groundT,body.tunnel-interior #fgT,body.tunnel-interior #jungleHabitatBack{opacity:0!important}
 #screenPortalBack,#screenPortalFront{position:absolute;inset:0;display:none;opacity:0;pointer-events:none;transition:opacity .34s ease;transform:translate3d(var(--screen-exit-shift-x,0px),0,0)}
 #screenPortalBack{z-index:6}
 #screenPortalFront{z-index:9}
@@ -486,9 +503,9 @@ body.st-future .tr-chim{display:none}
 body.st-town #horizon,body.st-town #midT{background-size:auto 100%;background-position-y:0}
 body.st-town #groundT{height:17vh;background-size:auto 100%}
 body.st-town #fgT{height:6.5vh;background-size:auto 100%}
-body.st-jungle #horizon{background-size:auto 126%;background-position-y:-22vh}
-body.st-jungle #midT{background-size:auto 116%;background-position-y:-12vh}
-body.st-jungle #groundT{height:16.5vh;background-size:auto 100%}
+body.st-jungle #horizon{background-image:none!important}
+body.st-jungle #midT{background-size:auto 116%;background-position-y:-18vh}
+body.st-jungle #groundT{height:20vh;background-size:auto 100%}
 body.st-jungle #fgT{height:22vh;background-size:auto 100%}
 body.st-number #horizon{background-repeat:repeat-x;background-size:auto 114%;background-position-y:-14vh;-webkit-mask-image:linear-gradient(to bottom,transparent 0%,transparent 28%,rgba(0,0,0,.68) 46%,#000 64%);mask-image:linear-gradient(to bottom,transparent 0%,transparent 28%,rgba(0,0,0,.68) 46%,#000 64%)}
 body.st-number #midT{background-repeat:repeat-x;background-size:auto 110%;background-position-y:-8vh;opacity:.95;-webkit-mask-image:linear-gradient(to bottom,transparent 0%,transparent 20%,rgba(0,0,0,.82) 42%,#000 62%);mask-image:linear-gradient(to bottom,transparent 0%,transparent 20%,rgba(0,0,0,.82) 42%,#000 62%)}
@@ -665,34 +682,50 @@ body.tunnel-interior #highScorePill>strong{margin-top:3px;color:#fff;font-size:c
 @keyframes glow{0%,100%{box-shadow:0 5px 0 var(--good),0 0 0 0 rgba(87,193,94,.5)}50%{box-shadow:0 5px 0 var(--good),0 0 0 12px rgba(87,193,94,0)}}
 #quiz.number-quiz{width:min(96vw,820px)}
 #choices.number-mode{display:block}
-.number-jump-game{--jump-count:0;--jump-slots:4;display:grid;grid-template-columns:clamp(66px,10vw,88px) minmax(0,1fr);grid-template-rows:auto auto;
-  grid-template-areas:"readout track" "actions actions";gap:8px 10px;width:100%}
-.number-jump-readout{grid-area:readout;min-height:68px;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  border:3px solid #ffd36e;border-radius:16px;background:#fff8d9;color:#76522e;font-size:clamp(10px,1.6vw,13px);font-weight:900;line-height:1}
-.number-jump-readout strong{margin:2px 0 1px;color:#6655b8;font-size:clamp(28px,5vw,40px);font-variant-numeric:tabular-nums}
-.number-jump-track{grid-area:track;position:relative;height:clamp(68px,11vh,86px);display:grid;
-  grid-template-columns:repeat(var(--jump-slots),minmax(0,1fr));align-items:end;gap:3px;padding:25px 5px 5px;
-  border:3px solid #cdbdf1;border-radius:18px;background:linear-gradient(#f9f3ff,#e9ddff);overflow:hidden}
-.number-jump-track::before{content:"";position:absolute;left:3%;right:3%;bottom:17px;height:5px;border-radius:999px;background:#b39ce8;opacity:.55}
-.number-jump-step{position:relative;z-index:1;height:28px;display:grid;place-items:center;border:2px solid #b9a5df;border-radius:8px;
-  background:#fff;color:#6a5794;font-size:clamp(11px,1.8vw,14px);font-weight:1000;box-shadow:0 3px 0 #aa94d2;transition:background .18s,transform .18s}
-.number-jump-step.is-passed{background:#e7f6cf;border-color:#9ccb68;box-shadow:0 3px 0 #83b956}
-.number-jump-step.is-current{background:#fff0a9;border-color:#f0b84f;transform:translateY(-2px);box-shadow:0 5px 0 #d89a38}
-.number-jump-step.is-target{outline:4px solid #63c96b;outline-offset:2px;animation:numberJumpTarget 1s ease-in-out infinite}
-.number-jump-runner{position:absolute;left:0;top:1px;z-index:3;width:calc(100% / var(--jump-slots));display:flex;justify-content:center;
-  transform:translate3d(calc(var(--jump-count) * 100%),0,0);transition:transform .24s cubic-bezier(.2,.8,.3,1);pointer-events:none}
-.number-jump-runner-art{display:block;font-size:clamp(27px,4.9vw,38px);line-height:1;filter:drop-shadow(0 2px 0 rgba(74,52,34,.2));transform-origin:50% 100%}
-.number-jump-runner-art.is-hopping{animation:numberJumpHop .36s ease-out}
-.number-jump-actions{grid-area:actions;display:grid;grid-template-columns:minmax(90px,.8fr) minmax(150px,1.35fr) minmax(90px,.8fr);gap:8px}
-.number-jump-action{appearance:none;-webkit-appearance:none;min-height:52px;padding:6px 10px;border:3px solid rgba(255,255,255,.74);border-radius:15px;
-  color:#fff;font-size:clamp(14px,2.5vw,19px);font-weight:1000;line-height:1.05;cursor:pointer;box-shadow:0 5px 0 rgba(73,54,102,.26);transition:transform .12s,opacity .18s}
-.number-jump-action.is-back{background:#8e7cf0}.number-jump-action.is-jump{background:#ef8a50;font-size:clamp(17px,3vw,23px)}.number-jump-action.is-confirm{background:#57b95d}
-.number-jump-action:disabled{opacity:.42;filter:saturate(.55);cursor:default;box-shadow:0 2px 0 rgba(73,54,102,.16)}
-.number-jump-action:not(:disabled):active{transform:translateY(4px);box-shadow:0 1px 0 rgba(73,54,102,.26)}
-.number-jump-action.ng{animation:ngShake .45s}
-.number-jump-action:focus-visible{outline:4px solid rgba(87,193,94,.72);outline-offset:3px}
-@keyframes numberJumpHop{0%,100%{transform:translateY(0) scale(1)}48%{transform:translateY(-18px) scale(1.08)}}
-@keyframes numberJumpTarget{0%,100%{outline-color:rgba(87,193,94,.55)}50%{outline-color:#57c15e}}
+.number-cargo-game{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(190px,.78fr);gap:9px;width:100%;align-items:stretch}
+.number-cargo-field{position:relative;min-height:128px;display:grid;grid-template-columns:repeat(var(--cargo-columns,5),minmax(46px,1fr));grid-auto-rows:minmax(46px,1fr);
+  align-items:center;justify-items:center;gap:3px 5px;padding:28px 7px 6px;border:3px solid #cdbdf1;border-radius:18px;
+  background:radial-gradient(circle at 14% 20%,#fff 0 3px,transparent 4px),linear-gradient(145deg,#fbf7ff,#e9ddff);overflow:hidden}
+.number-cargo-field-title{position:absolute;left:11px;top:5px;color:#725ba0;font-size:clamp(12px,1.8vw,15px);font-weight:1000;letter-spacing:.02em}
+.number-cargo-target{appearance:none;-webkit-appearance:none;position:relative;width:100%;min-width:46px;min-height:46px;border:2px solid rgba(255,255,255,.72);
+  border-radius:15px;background:rgba(255,255,255,.64);box-shadow:0 3px 0 rgba(115,91,160,.2);cursor:pointer;overflow:visible;transition:opacity .18s,filter .18s,transform .14s}
+.number-cargo-target:not(:disabled):active{transform:translateY(3px);box-shadow:0 1px 0 rgba(115,91,160,.2)}
+.number-cargo-target:focus-visible,.number-cargo-action:focus-visible{outline:4px solid rgba(87,193,94,.72);outline-offset:2px}
+.number-cargo-art{display:grid;place-items:center;font-size:clamp(27px,4.5vw,39px);line-height:1;filter:drop-shadow(0 2px 0 rgba(74,52,34,.16));
+  animation:numberCargoDrift 2.8s ease-in-out var(--cargo-delay,0s) infinite;transform-origin:center;transition:opacity .16s,filter .16s}
+.number-cargo-target.is-picked .number-cargo-art{opacity:.13;filter:grayscale(.65);animation-play-state:paused}
+.number-cargo-target.is-picked::after{content:"✓";position:absolute;inset:0;display:grid;place-items:center;color:#57a85d;font-size:24px;font-weight:1000}
+.number-cargo-wagon{position:relative;min-height:128px;display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto 1fr auto;
+  grid-template-areas:"count goal" "body body" "wheels wheels" "actions actions";gap:3px 6px;padding:6px 7px 5px;border:3px solid #ffd36e;border-radius:18px;
+  background:linear-gradient(#fffaf0,#fff0c9);overflow:hidden}
+.number-cargo-count{grid-area:count;display:flex;align-items:baseline;gap:3px;color:#76522e;font-size:clamp(10px,1.5vw,13px);font-weight:1000;white-space:nowrap}
+.number-cargo-count strong{color:#6655b8;font-size:clamp(24px,4vw,34px);font-variant-numeric:tabular-nums;line-height:.9}
+.number-cargo-goal{grid-area:goal;align-self:center;padding:3px 7px;border-radius:999px;background:#e7f6cf;color:#39763e;font-size:clamp(10px,1.45vw,13px);font-weight:1000;white-space:nowrap}
+.number-cargo-goal[hidden]{display:block;visibility:hidden}
+.number-cargo-wagon-body{grid-area:body;position:relative;min-height:47px;padding:4px 7px 7px;border:3px solid #ef9b43;border-radius:8px 8px 14px 14px;
+  background:linear-gradient(#ffd36a,#f4a64d);box-shadow:inset 0 -6px 0 rgba(185,98,42,.13);transform-origin:50% 100%}
+.number-cargo-wagon-body::before{content:"";position:absolute;left:-8px;top:9px;width:8px;height:22px;border-radius:5px 0 0 5px;background:#cf7134}
+.number-cargo-wagon-body.is-bumping{animation:numberCargoWagonBump .34s ease-out}
+.number-cargo-load{height:100%;display:grid;grid-template-columns:repeat(var(--cargo-columns,5),minmax(17px,1fr));align-items:end;justify-items:center;gap:0 2px}
+.number-cargo-slot{display:grid;place-items:center;width:100%;min-height:25px;border-radius:6px;border:2px dashed rgba(132,75,46,.22);transition:background .16s,outline .16s}
+.number-cargo-slot span{font-size:clamp(16px,2.6vw,23px);line-height:1;opacity:0;transform:translateY(-8px) scale(.55);transition:opacity .18s,transform .22s cubic-bezier(.2,.9,.25,1.25)}
+.number-cargo-slot.is-filled{background:rgba(255,255,255,.35)}.number-cargo-slot.is-filled span{opacity:1;transform:none}
+.number-cargo-slot.is-goal{outline:3px solid rgba(87,193,94,.8);outline-offset:-1px;animation:numberCargoGoal 1s ease-in-out infinite}
+.number-cargo-wheels{grid-area:wheels;height:10px;display:flex;align-items:flex-start;justify-content:space-around;margin-top:-4px;pointer-events:none}
+.number-cargo-wheels i{display:block;width:16px;height:16px;border:4px solid #5c5068;border-radius:50%;background:#b9d7e3;box-shadow:inset 0 0 0 2px #fff}
+.number-cargo-actions{grid-area:actions;display:grid;grid-template-columns:1fr 1.18fr;gap:6px;margin-top:2px}
+.number-cargo-action{appearance:none;-webkit-appearance:none;min-height:46px;padding:5px 7px;border:3px solid rgba(255,255,255,.74);border-radius:13px;
+  color:#fff;font-size:clamp(12px,2vw,17px);font-weight:1000;line-height:1.05;cursor:pointer;box-shadow:0 4px 0 rgba(73,54,102,.26);transition:transform .12s,opacity .18s}
+.number-cargo-action.is-undo{background:#8e7cf0}.number-cargo-action.is-confirm{background:#57b95d}
+.number-cargo-action:disabled{opacity:.42;filter:saturate(.55);cursor:default;box-shadow:0 2px 0 rgba(73,54,102,.16)}
+.number-cargo-action:not(:disabled):active{transform:translateY(3px);box-shadow:0 1px 0 rgba(73,54,102,.26)}
+.number-cargo-action.ng{animation:ngShake .45s}
+.number-cargo-fly{position:fixed;z-index:40;display:block;pointer-events:none;font-size:clamp(28px,4.5vw,40px);line-height:1;
+  transform:translate(-50%,-50%);filter:drop-shadow(0 3px 0 rgba(74,52,34,.18));animation:numberCargoFly .48s cubic-bezier(.2,.75,.25,1) forwards}
+@keyframes numberCargoDrift{0%,100%{transform:translate3d(0,0,0) rotate(-2deg)}50%{transform:translate3d(var(--cargo-drift-x,4px),var(--cargo-drift-y,-6px),0) rotate(3deg)}}
+@keyframes numberCargoFly{0%{transform:translate(-50%,-50%) scale(1);opacity:1}65%{transform:translate(calc(-50% + var(--cargo-fly-x)),calc(-50% + var(--cargo-fly-y) - 18px)) scale(1.15);opacity:1}100%{transform:translate(calc(-50% + var(--cargo-fly-x)),calc(-50% + var(--cargo-fly-y))) scale(.55);opacity:0}}
+@keyframes numberCargoWagonBump{0%,100%{transform:translateY(0) rotate(0)}35%{transform:translateY(-5px) rotate(-1deg)}68%{transform:translateY(1px) rotate(.7deg)}}
+@keyframes numberCargoGoal{0%,100%{outline-color:rgba(87,193,94,.5)}50%{outline-color:#57c15e}}
 
 /* ===== stamp/fx ===== */
 #stamp{position:absolute;left:50%;top:32%;transform:translate(-50%,-50%) scale(0);z-index:12;
@@ -790,16 +823,16 @@ h1{font-size:clamp(24px,5.6vw,50px);color:#e0704a;text-shadow:0 3px 0 #fff}
   .choice{padding:5px 3px;border-radius:16px}
   .choice .em{font-size:clamp(34px,7vw,54px)}
   .choice .lb{font-size:clamp(13px,2.6vw,18px)}
-  .number-jump-game{grid-template-columns:58px minmax(0,1fr);gap:5px 7px}
-  .number-jump-readout{min-height:52px;border-radius:13px}
-  .number-jump-readout strong{font-size:25px}
-  .number-jump-track{height:54px;padding:17px 4px 4px;border-radius:14px;gap:2px}
-  .number-jump-track::before{bottom:13px;height:4px}
-  .number-jump-step{height:21px;border-radius:6px;font-size:10px;box-shadow:0 2px 0 #aa94d2}
-  .number-jump-runner-art{font-size:27px}
-  .number-jump-actions{gap:6px;grid-template-columns:minmax(84px,.8fr) minmax(132px,1.35fr) minmax(78px,.8fr)}
-  .number-jump-action{min-height:46px;padding:4px 7px;border-radius:12px;font-size:13px;box-shadow:0 4px 0 rgba(73,54,102,.26)}
-  .number-jump-action.is-jump{font-size:16px}
+  .number-cargo-game{grid-template-columns:minmax(0,1fr) minmax(202px,.72fr);gap:6px}
+  .number-cargo-field{min-height:116px;padding:24px 5px 4px;gap:2px 3px;border-radius:14px}
+  .number-cargo-field-title{left:8px;top:3px;font-size:11px}
+  .number-cargo-target{min-width:46px;min-height:46px;border-radius:12px}
+  .number-cargo-art{font-size:27px}
+  .number-cargo-wagon{min-height:116px;padding:4px 5px 3px;border-radius:14px;gap:2px 4px}
+  .number-cargo-count strong{font-size:24px}.number-cargo-goal{padding:2px 5px;font-size:10px}
+  .number-cargo-wagon-body{min-height:39px;padding:2px 4px 5px}.number-cargo-slot{min-height:21px}.number-cargo-slot span{font-size:16px}
+  .number-cargo-wheels{height:7px}.number-cargo-wheels i{width:13px;height:13px;border-width:3px}
+  .number-cargo-actions{gap:4px}.number-cargo-action{min-height:46px;padding:3px 4px;border-radius:11px;font-size:12px}
   #stamp{top:28%;font-size:clamp(24px,5.4vw,42px)}
   #tunnelFriendPanel{top:calc(64px + env(safe-area-inset-top));width:min(40vw,300px);padding:5px 9px 6px}
   #tunnelFriendTitle{font-size:clamp(13px,2.25vw,17px)}
@@ -807,6 +840,25 @@ h1{font-size:clamp(24px,5.6vw,50px);color:#e0704a;text-shadow:0 3px 0 #fff}
   .tunnel-score-box strong{font-size:clamp(15px,2.65vw,21px)}
   #tunnelFriendGuide,#tunnelFriendCounter{font-size:clamp(9px,1.65vw,12px)}
   #tunnelFriendResult{top:42%;padding:9px 16px;gap:3px}
+}
+@media (orientation:landscape) and (max-width:559px) and (max-height:360px){
+  #quiz.number-quiz{bottom:0;padding:4px 7px calc(4px + env(safe-area-inset-bottom));border-radius:16px}
+  #quiz.number-quiz #qRow{gap:4px;margin-bottom:3px}
+  #quiz.number-quiz #ponoFace{font-size:28px}
+  #quiz.number-quiz #qBubble{padding:3px 6px;border-width:2px;border-radius:12px}
+  #quiz.number-quiz #qText{font-size:14px;line-height:1.15}
+  #quiz.number-quiz #hintText{min-height:1.05em;margin-top:1px;font-size:11px;line-height:1.05}
+  #quiz.number-quiz #spkBtn,#quiz.number-quiz #helpBtn{width:44px;border-width:2px;font-size:18px}
+  .number-cargo-game{grid-template-columns:minmax(0,1fr) minmax(176px,.72fr);gap:4px}
+  .number-cargo-field{min-height:0;grid-auto-rows:46px;gap:2px;padding:19px 3px 2px;border-radius:12px}
+  .number-cargo-field-title{left:6px;top:2px;font-size:10px}
+  .number-cargo-wagon{min-height:0;padding:3px;border-radius:12px;gap:2px 3px}
+  .number-cargo-count{font-size:9px}.number-cargo-count strong{font-size:20px}
+  .number-cargo-goal{padding:1px 4px;font-size:9px}
+  .number-cargo-wagon-body{min-height:0;padding:1px 3px 3px;border-width:2px}
+  .number-cargo-slot{min-height:18px;border-width:1px}.number-cargo-slot span{font-size:14px}
+  .number-cargo-wheels{height:6px}.number-cargo-wheels i{width:11px;height:11px;border-width:2px}
+  .number-cargo-actions{gap:3px;margin-top:1px}.number-cargo-action{min-height:46px;padding:2px 3px;border-radius:9px;font-size:11px}
 }
 @media (orientation:landscape) and (max-height:480px){
   #portalEditPanel{width:min(320px,calc(100vw - 16px));max-height:46vh}
@@ -818,8 +870,10 @@ h1{font-size:clamp(24px,5.6vw,50px);color:#e0704a;text-shadow:0 3px 0 #fff}
   .jungle-animal-art{animation:none!important;transform:none!important}
   .jungle-animal-frame{animation:none!important;transform:none!important}
   .jungle-animal-frame-sheet{animation:none!important;transform:translate3d(-33.3333%,0,0)!important}
-  .number-jump-runner{transition:none!important}
-  .number-jump-runner-art,.number-jump-step.is-target{animation:none!important}
+  .jungle-animal-frame-sheet.is-fixed-frame{transform:translate3d(var(--animal-fixed-frame,0),0,0)!important}
+  .number-cargo-art{animation:none!important}
+  .number-cargo-slot.is-goal,.number-cargo-wagon-body{animation:none!important}
+  .number-cargo-fly{animation:none!important;display:none!important}
   .jungle-flight-layer{display:none!important}
   .tunnel-friend,.tunnel-friend-visual,.tunnel-friend img,.tunnel-friend .tunnel-friend-emoji,.tunnel-friend::after{animation:none!important;will-change:auto!important}
 }

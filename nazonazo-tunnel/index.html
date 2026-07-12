@@ -70,7 +70,7 @@
   else { document.addEventListener('DOMContentLoaded', showLock); }
 })();
 </script>
-<link rel="stylesheet" href="styles.css?v=20260712-1262">
+<link rel="stylesheet" href="styles.css?v=20260712-1263">
 </head>
 <body class="st-town v-train" data-driver="pono" data-driver-mood="happy">
 <div id="app">
@@ -80,6 +80,9 @@
     <div id="horizon">
       <div id="townHorizonLoop" class="town-loop-strip" aria-hidden="true">
         <span class="town-loop-tile"></span><span class="town-loop-tile"></span><span class="town-loop-tile"></span><span class="town-loop-tile"></span>
+      </div>
+      <div id="jungleHorizonLoop" class="jungle-loop-strip" aria-hidden="true">
+        <span class="jungle-loop-tile"></span><span class="jungle-loop-tile"></span><span class="jungle-loop-tile"></span><span class="jungle-loop-tile"></span>
       </div>
     </div>
     <div id="jungleBirdFlightLayer" class="jungle-flight-layer" aria-hidden="true"></div>
@@ -94,6 +97,7 @@
     <div id="seaFishLayer" aria-hidden="true"></div>
     <div id="groundT"></div>
     <div id="jungleAnimalsNear" class="jungle-animal-layer" aria-hidden="true"></div>
+    <div id="jungleHabitatBack" aria-hidden="true"></div>
     <div id="world"></div>
     <div id="screenPortalBack" aria-hidden="true"><div class="screen-exit-gate"></div></div>
     <div id="cars"></div>
@@ -246,6 +250,6 @@
 </div>
 <div id="rotateHint">📱➡️ よこむきに してね</div>
 <script src="data/questions.js?v=20260702-1051"></script>
-<script src="js/game.js?v=20260712-1262"></script>
+<script src="js/game.js?v=20260712-1263"></script>
 </body>
 </html>
