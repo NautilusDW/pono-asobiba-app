@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2129: おべんとうチュートリアルを、のりの時計回り→反時計回り（相殺して取り消し3回）、小さいおかず4個＋三色バランスの短い再案内、ハンバーグ限定のレタスタップ、しきり1個→ピック1個の実操作順へ更新。play.html PAGE_CACHE_VERSION と同期不要 (bento/index.html/テストのみ変更、batch:1258)。
 // v2128: なぞなぞトレインに面別・旅合計スコア、壁面と同期して流れる「トンネルの かくれともだち」、おたすけ4個目以降の点数変換を追加。ジャングル6種を、森に半ば隠れて生活する高密度なGPT Image 2素材へ差し替え。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/画像/テストのみ変更、batch:1255)。
 // v2127: スクショモードをシール帳 (Prototypes/StickerBookThreeJS、WebGL canvas 直撮り: build 内 1 フレーム明示 render → 同期合成)・シールミュージアム (StickerExhibitionCarousel、#app を html2canvas + 共有シム + dynScale)・どんぐりショップ (play.html #donguriShop .donguri-shop-v2-stage) へ追加 (batch:1254)。play.html はモーダル open ごとに register を上書きする方式 (ガチャ⇄ショップ切替、hideShop でガチャ復帰)。capture-mode OFF の本番挙動は不変。ミュージアム main.js の ?v= もバンプ。play.html PAGE_CACHE_VERSION と同期 (2127)。
 // v2126: もりのおみせの音声排他を修正 (batch:1253) — ガチャ上のショップで gesture/focus/visibility 復帰が背後のガチャbedを再開する経路と、close後にshop曲を復活させる遅延retryを封鎖。ショップ中のおとOFF/ONも無音→shop曲だけへ統一。吹き出しをリスの顔より上へ移し、時刻案内は1行、開店案内は意図した2行へ組版。play.html PAGE_CACHE_VERSION と同期 (2126)。
@@ -53,7 +54,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2128;
+const CACHE_VERSION = 2129;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
