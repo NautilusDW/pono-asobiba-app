@@ -70,7 +70,7 @@
   else { document.addEventListener('DOMContentLoaded', showLock); }
 })();
 </script>
-<link rel="stylesheet" href="styles.css?v=20260712-1268">
+<link rel="stylesheet" href="styles.css?v=20260712-1269">
 </head>
 <body class="st-town v-train" data-driver="pono" data-driver-mood="happy">
 <div id="app">
@@ -84,12 +84,18 @@
       <div id="jungleHorizonLoop" class="jungle-loop-strip" aria-hidden="true">
         <span class="jungle-loop-tile"></span><span class="jungle-loop-tile"></span><span class="jungle-loop-tile"></span><span class="jungle-loop-tile"></span>
       </div>
+      <div id="futureHorizonLoop" class="future-loop-strip" aria-hidden="true">
+        <span class="future-loop-tile"></span><span class="future-loop-tile"></span><span class="future-loop-tile"></span><span class="future-loop-tile"></span>
+      </div>
     </div>
     <div id="jungleBirdFlightLayer" class="jungle-flight-layer" aria-hidden="true"></div>
     <div id="jungleAnimalsFar" class="jungle-animal-layer" aria-hidden="true"></div>
     <div id="midT">
       <div id="townMidLoop" class="town-loop-strip" aria-hidden="true">
         <span class="town-loop-tile"></span><span class="town-loop-tile"></span><span class="town-loop-tile"></span><span class="town-loop-tile"></span>
+      </div>
+      <div id="futureMidLoop" class="future-loop-strip" aria-hidden="true">
+        <span class="future-loop-tile"></span><span class="future-loop-tile"></span><span class="future-loop-tile"></span><span class="future-loop-tile"></span>
       </div>
     </div>
     <div id="jungleButterflyFlightLayer" class="jungle-flight-layer" aria-hidden="true"></div>
@@ -101,6 +107,7 @@
     <div id="seaShotLayer" aria-hidden="true"></div>
     <div id="seaSteerSurface" aria-hidden="true"></div>
     <div id="seaAnswerLayer" role="group" aria-labelledby="qText"></div>
+    <div id="futureRailLayer" role="group" aria-labelledby="qText" hidden></div>
     <div id="seaRoundCountdown" role="status" aria-live="assertive" aria-atomic="true" hidden></div>
     <div id="seaSteerHint" role="status" aria-live="polite" hidden>👆 タッチした ばしょへ うごくよ</div>
     <button id="seaFireButton" type="button" aria-label="おしっぱなしで れんしゃ" hidden><span aria-hidden="true">💫</span><strong>れんしゃ</strong></button>
@@ -176,7 +183,12 @@
     </section>
     <svg id="portalEditOverlay" aria-hidden="true"></svg>
     <div id="tunnelFade" aria-hidden="true"></div>
-    <div id="fgT"></div>
+    <div id="fgT">
+      <div id="futureForegroundLoop" class="future-loop-strip" aria-hidden="true">
+        <span class="future-loop-tile"></span><span class="future-loop-tile"></span><span class="future-loop-tile"></span><span class="future-loop-tile"></span>
+        <span class="future-loop-tile"></span><span class="future-loop-tile"></span><span class="future-loop-tile"></span><span class="future-loop-tile"></span>
+      </div>
+    </div>
     <div id="rainFar" class="weather-rain-layer" aria-hidden="true"></div>
     <div id="rainMid" class="weather-rain-layer" aria-hidden="true"></div>
     <div id="weatherShade" aria-hidden="true"></div>
@@ -261,6 +273,6 @@
 </div>
 <div id="rotateHint">📱➡️ よこむきに してね</div>
 <script src="data/questions.js?v=20260702-1051"></script>
-<script src="js/game.js?v=20260712-1268"></script>
+<script src="js/game.js?v=20260712-1269"></script>
 </body>
 </html>

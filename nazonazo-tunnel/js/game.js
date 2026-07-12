@@ -113,6 +113,10 @@ function gNeonGround(w,h,base,line,tick){
 /* ================= stages: パレット2種(1周目/2周目)対応 ================= */
 const H=300, HW=1700;
 const TOWN_HORIZON_PARALLAX=.16;
+const FUTURE_HORIZON_PARALLAX=.10,FUTURE_MID_PARALLAX=.32,FUTURE_FOREGROUND_PARALLAX=1.12;
+const FUTURE_HORIZON_HEIGHT=.68,FUTURE_HORIZON_ASPECT=2096/594;
+const FUTURE_MID_HEIGHT=.56,FUTURE_MID_ASPECT=2136/532;
+const FUTURE_FOREGROUND_HEIGHT=.092,FUTURE_FOREGROUND_ASPECT=2400/430;
 const ASSETS={
   town:{
    sky:"../assets/images/nazonazo-tunnel/town_sky_back_20260703.webp",
@@ -180,10 +184,11 @@ const ASSETS={
  },
  future:{
   sky:"../assets/images/nazonazo-tunnel/future_city_sky_back_20260707.webp",
-  horizon:"../assets/images/nazonazo-tunnel/future_city_horizon_loop_long_20260707.webp",
-  mid:"../assets/images/nazonazo-tunnel/future_city_mid_loop_long_20260707.webp",
+  horizon:"../assets/images/nazonazo-tunnel/future_city_horizon_cutout_loop_20260712.webp",
+  mid:"../assets/images/nazonazo-tunnel/future_city_mid_cutout_loop_20260712.webp",
   ground:"../assets/images/nazonazo-tunnel/future_city_ground_track_loop_20260707.webp",
   fg:"../assets/images/nazonazo-tunnel/future_city_foreground_loop_20260707.webp",
+  station:"../assets/images/nazonazo-tunnel/future_city_station_checkpoint_20260712.webp",
   decor:"../assets/images/nazonazo-tunnel/future_city_station_line_decor_20260707.webp"
  }
 };
@@ -414,6 +419,11 @@ let seaShooterEpoch=0,seaShots=[],seaCompanionSprites=[],seaCompanionKey="",seaT
 let seaFirePointerId=null,seaFireSources=new Set(),seaMoveKeys=new Set(),seaKeyboardAim=null,seaKeyboardAimStartedAt=0;
 let seaLastVolleyAt=0,seaShooterFrameAt=0,seaVolleyCount=0,seaSalvoHits=new Set();
 let seaRoundPhase="idle",seaRoundCountdownTimer=0;
+const FUTURE_RAIL_ROUTES=[
+ [{x:.10,y:.54},{x:.31,y:.54},{x:.50,y:.32},{x:.68,y:.25},{x:.84,y:.25}],
+ [{x:.10,y:.54},{x:.31,y:.54},{x:.50,y:.66},{x:.68,y:.73},{x:.84,y:.73}]
+];
+let futureRailOptions=[],futureRailRoute=-1,futureRailStep=-1,futureRailPointerId=null,futureRailTracing=false,futureRailResolving=false,futureKeyboardRoute=0,futureRailResolveTimer=0;
 let nazonazoAdminPreviewMode=false;
 const NUMBER_CARGO_THEMES=[
  {e:"⭐",name:"おほしさま"},{e:"🎈",name:"ふうせん"},{e:"🌼",name:"おはな"},
@@ -547,8 +557,9 @@ function setDriverMood(mood){
 
 /* ================= dom ================= */
 const $=id=>document.getElementById(id);
-const world=$("world"),veh=$("veh"),horizon=$("horizon"),midT=$("midT"),groundT=$("groundT"),fgT=$("fgT"),seaFishLayer=$("seaFishLayer"),smokeLayer=$("smokeLayer"),townHorizonLoop=$("townHorizonLoop"),townMidLoop=$("townMidLoop"),jungleHabitatBack=$("jungleHabitatBack");
+const world=$("world"),veh=$("veh"),horizon=$("horizon"),midT=$("midT"),groundT=$("groundT"),fgT=$("fgT"),seaFishLayer=$("seaFishLayer"),smokeLayer=$("smokeLayer"),townHorizonLoop=$("townHorizonLoop"),townMidLoop=$("townMidLoop"),futureHorizonLoop=$("futureHorizonLoop"),futureMidLoop=$("futureMidLoop"),futureForegroundLoop=$("futureForegroundLoop"),jungleHabitatBack=$("jungleHabitatBack");
 const vehicleSteerShell=$("vehicleSteerShell"),seaSteerSurface=$("seaSteerSurface"),seaAnswerLayer=$("seaAnswerLayer"),seaArenaShade=$("seaArenaShade"),seaRoundCountdown=$("seaRoundCountdown"),seaSteerHint=$("seaSteerHint");
+const futureRailLayer=$("futureRailLayer");
 const seaCompanionLayer=$("seaCompanionLayer"),seaShotLayer=$("seaShotLayer"),seaFireButton=$("seaFireButton");
 const jungleAnimalLayers={far:$("jungleAnimalsFar"),mid:$("jungleAnimalsMid"),near:$("jungleAnimalsNear")};
 const jungleFlightLayers={bird:$("jungleBirdFlightLayer"),butterfly:$("jungleButterflyFlightLayer")};
@@ -1984,6 +1995,7 @@ function renderSeaSteering(){
 }
 function activeChoiceButtons(){
  if(document.body.classList.contains("sea-quiz-active")&&seaAnswerLayer)return [...seaAnswerLayer.querySelectorAll(".sea-answer-bubble")];
+ if(document.body.classList.contains("future-rail-active")&&futureRailLayer)return [...futureRailLayer.querySelectorAll(".future-rail-home")];
  return [...choicesEl.querySelectorAll(".choice")];
 }
 function renderSeaBubbleGame(){
@@ -2033,6 +2045,25 @@ if(seaFireButton){
 }
 window.addEventListener("keydown",handleSeaKeyDown);
 window.addEventListener("keyup",handleSeaKeyUp);
+function handleFutureRailKeyDown(event){
+ if(!futureRailPlayable())return;
+ const target=event.target;
+ const focusedHome=target&&typeof target.closest==="function"?target.closest(".future-rail-home"):null;
+ if(event.defaultPrevented||(!focusedHome&&target&&typeof target.matches==="function"&&target.matches("button,a,input,select,textarea,[contenteditable='true']")))return;
+ if(focusedHome){const focusedIndex=futureRailOptions.findIndex(entry=>entry.button===focusedHome);if(focusedIndex>=0)futureKeyboardRoute=focusedIndex;}
+ if(event.key==="ArrowUp"||event.key==="ArrowDown"){
+  event.preventDefault();
+  const wanted=event.key==="ArrowUp"?0:1;
+  const entry=futureRailOptions[wanted];
+  if(entry&&!entry.button.disabled&&!entry.button.classList.contains("dim"))futureKeyboardRoute=wanted;
+  else{const available=futureRailOptions.findIndex(item=>!item.button.disabled&&!item.button.classList.contains("dim"));if(available>=0)futureKeyboardRoute=available;}
+  const target=futureRailOptions[futureKeyboardRoute]&&futureRailOptions[futureKeyboardRoute].button;
+  if(target){target.focus({preventScroll:true});futureRailGuide("エンターで この ホームへ つなぐよ");}
+ }else if((event.key==="Enter"||event.key===" ")&&!event.repeat){
+  event.preventDefault();selectFutureRailRoute(futureKeyboardRoute);
+ }
+}
+window.addEventListener("keydown",handleFutureRailKeyDown);
 
 function buildSeaFish(){
  seaFishSprites=[];
@@ -2863,6 +2894,7 @@ function useHelp(){
   if(wrong){wrong.classList.add("dim");wrong.disabled=true;}
   const ok=choices.find(c=>c.dataset.ok==="1");
   if(ok)ok.classList.add("glow");
+  if(isFutureStage())resetFutureRailTrace();
  }
  tone(880,0,.12,"triangle",.12);tone(1175,.1,.16,"triangle",.1);
  showStamp("おたすけ！","new");
@@ -2903,9 +2935,16 @@ function render(now){
   horizon.style.backgroundPositionX="0px";
   const horizonTileWidth=(window.innerHeight||390)*1.34*(1983/793);
   const horizonPeriod=horizonTileWidth*2;
-  const horizonRawOffset=(((worldX-o)*TOWN_HORIZON_PARALLAX*(window.innerWidth||844)/100)%horizonPeriod+horizonPeriod)%horizonPeriod;
+ const horizonRawOffset=(((worldX-o)*TOWN_HORIZON_PARALLAX*(window.innerWidth||844)/100)%horizonPeriod+horizonPeriod)%horizonPeriod;
   const horizonLoopOffset=IOS_DEVICE?Math.round(horizonRawOffset):Number(horizonRawOffset.toFixed(2));
   townHorizonLoop.style.transform="translate3d("+(-horizonLoopOffset)+"px,0,0)";
+ }else if(document.body.classList.contains("st-future")&&futureHorizonLoop){
+  horizon.style.transform="translate3d(0,0,0)";horizon.style.backgroundPositionX="0px";
+  const tileWidth=(window.innerHeight||390)*FUTURE_HORIZON_HEIGHT*FUTURE_HORIZON_ASPECT;
+  const period=tileWidth*2;
+  const rawOffset=(((worldX-o)*FUTURE_HORIZON_PARALLAX*(window.innerWidth||844)/100)%period+period)%period;
+  const loopOffset=IOS_DEVICE?Math.round(rawOffset):Number(rawOffset.toFixed(2));
+  futureHorizonLoop.style.transform="translate3d("+(-loopOffset)+"px,0,0)";
  }else if(document.body.classList.contains("st-sea")){
   horizon.style.transform="translate3d(0,0,0)";
   horizon.style.backgroundPositionX=cssXFromVw(-(worldX-o)*.1);
@@ -2921,13 +2960,26 @@ function render(now){
   const loopOffset=IOS_DEVICE?Math.round(rawOffset):Number(rawOffset.toFixed(2));
   townMidLoop.style.transform="translate3d("+(-loopOffset)+"px,0,0)";
   midT.style.backgroundPositionX="0px";
+ }else if(document.body.classList.contains("st-future")&&futureMidLoop){
+  const tileWidth=(window.innerHeight||390)*FUTURE_MID_HEIGHT*FUTURE_MID_ASPECT;
+  const period=tileWidth*2;
+  const rawOffset=(((worldX-o)*FUTURE_MID_PARALLAX*(window.innerWidth||844)/100)%period+period)%period;
+  const loopOffset=IOS_DEVICE?Math.round(rawOffset):Number(rawOffset.toFixed(2));
+  futureMidLoop.style.transform="translate3d("+(-loopOffset)+"px,0,0)";midT.style.backgroundPositionX="0px";
  }else if(document.body.classList.contains("st-sea")){
   midT.style.backgroundPositionX=cssXFromVw(-(worldX-o)*.44);
  }else{
   midT.style.backgroundPositionX=cssXFromVw(-worldX*0.25);
  }
- groundT.style.backgroundPositionX=cssXFromVw(-worldX);
- fgT.style.backgroundPositionX=document.body.classList.contains("st-sea")?cssXFromVw(-(worldX-o)*1.06):cssXFromVw(-worldX*1.35);
+ const futureStage=document.body.classList.contains("st-future");
+ groundT.style.backgroundPositionX=cssXFromVw(futureStage?-(worldX-o):-worldX);
+ if(futureStage&&futureForegroundLoop){
+  const tileWidth=(window.innerHeight||390)*FUTURE_FOREGROUND_HEIGHT*FUTURE_FOREGROUND_ASPECT;
+  const period=tileWidth*2;
+  const rawOffset=(((worldX-o)*FUTURE_FOREGROUND_PARALLAX*(window.innerWidth||844)/100)%period+period)%period;
+  const loopOffset=IOS_DEVICE?Math.round(rawOffset):Number(rawOffset.toFixed(2));
+  futureForegroundLoop.style.transform="translate3d("+(-loopOffset)+"px,0,0)";fgT.style.backgroundPositionX="0px";
+ }else fgT.style.backgroundPositionX=document.body.classList.contains("st-sea")?cssXFromVw(-(worldX-o)*1.06):cssXFromVw(-worldX*1.35);
  const p=clamp((worldX-o)/COVER_OFF,0,1);
  skyB.style.opacity=(p>0.78?((p-0.78)/0.22)*0.9:0).toFixed(2);
  const cv=transitCover||coverEl;
@@ -3039,6 +3091,7 @@ function gloop(t){
 function startJourneyAt(s){
  hideWeatherNotice();
  resetNumberCargoGame();
+ clearFutureRailGame();
  clearRareEvent();
  resetSeaInteraction();
  stopStageWeather();
@@ -3077,6 +3130,169 @@ function resetNumberCargoGame(){
  quiz.classList.remove("number-quiz");
  choicesEl.classList.remove("number-mode");
  choicesEl.setAttribute("aria-label","こたえを えらぶ");
+}
+function isFutureStage(){return !!(STAGES[stg]&&STAGES[stg].id==="future");}
+function futureReducedMotion(){
+ try{return !!(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches);}catch(_){return false;}
+}
+function futureQuestionOptions(question){
+ const wrong=shuffle((question&&question.d||[]).map(x=>({e:x[0],t:x[1],ok:false})))[0];
+ return shuffle([{e:question.a[0],t:question.a[1],ok:true},wrong].filter(Boolean));
+}
+function futureRailPlayable(){
+ return !window.__PONO_TIER_LOCKED__&&isFutureStage()&&playing&&!driving&&!answerLocked&&!futureRailResolving&&
+  quiz.classList.contains("show")&&futureRailLayer&&!futureRailLayer.hidden;
+}
+function futureRailGuide(message){
+ const guide=futureRailLayer&&futureRailLayer.querySelector(".future-rail-guide");
+ if(guide)guide.textContent=message;
+}
+function clearFutureRailGame(){
+ clearTimeout(futureRailResolveTimer);futureRailResolveTimer=0;
+ const board=futureRailLayer&&futureRailLayer.querySelector(".future-rail-board");
+ if(board&&futureRailPointerId!==null){try{board.releasePointerCapture(futureRailPointerId);}catch(_){}}
+ futureRailOptions=[];futureRailRoute=-1;futureRailStep=-1;futureRailPointerId=null;futureRailTracing=false;futureRailResolving=false;futureKeyboardRoute=0;
+ document.body.classList.remove("future-rail-active");
+ quiz.classList.remove("future-rail-quiz");choicesEl.classList.remove("future-mode");choicesEl.setAttribute("aria-label","こたえを えらぶ");
+ if(futureRailLayer){futureRailLayer.replaceChildren();futureRailLayer.hidden=true;}
+}
+function futureRailCurrentPoint(){
+ const route=futureRailRoute>=0?futureRailRoute:0;
+ const step=clamp(futureRailStep<0?0:futureRailStep,0,FUTURE_RAIL_ROUTES[route].length-1);
+ return FUTURE_RAIL_ROUTES[route][step];
+}
+function updateFutureRailVisual(){
+ if(!futureRailLayer||futureRailLayer.hidden)return;
+ const board=futureRailLayer.querySelector(".future-rail-board");if(!board)return;
+ board.dataset.route=String(futureRailRoute);
+ board.querySelectorAll(".future-rail-glow").forEach(path=>{
+  const route=Number(path.dataset.route);
+  path.classList.toggle("is-active",futureRailStep>=0&&(futureRailRoute<0||futureRailRoute===route));
+ });
+ board.querySelectorAll(".future-rail-node").forEach(node=>{
+  const route=Number(node.dataset.route),point=Number(node.dataset.point);
+  const common=point<=1;
+  node.classList.toggle("is-complete",futureRailStep>=point&&(common||futureRailRoute===route));
+ });
+ const current=futureRailCurrentPoint(),light=board.querySelector(".future-rail-light");
+ if(light){light.style.setProperty("--light-x",(current.x*100)+"%");light.style.setProperty("--light-y",(current.y*100)+"%");}
+ futureRailOptions.forEach((entry,index)=>entry.button.classList.toggle("is-reachable",futureRailRoute===index&&futureRailStep>=3));
+}
+function resetFutureRailTrace(){
+ if(!futureRailLayer||futureRailLayer.hidden)return;
+ futureRailRoute=-1;futureRailStep=-1;futureRailPointerId=null;futureRailTracing=false;futureRailResolving=false;
+ const board=futureRailLayer.querySelector(".future-rail-board");if(board)board.classList.remove("is-tracing","is-resolving");
+ const first=futureRailOptions.findIndex(entry=>!entry.button.classList.contains("dim")&&!entry.button.disabled);
+ futureKeyboardRoute=first>=0?first:0;
+ futureRailGuide(futureReducedMotion()?"ホームを えらんでね":"ひかりを こたえの ホームまで なぞろう！");
+ updateFutureRailVisual();
+}
+function futureRailDistance(board,event,point){
+ const rect=board.getBoundingClientRect();
+ return Math.hypot(event.clientX-(rect.left+point.x*rect.width),event.clientY-(rect.top+point.y*rect.height));
+}
+function futureRailThreshold(board){
+ const rect=board.getBoundingClientRect();return clamp(Math.min(rect.width,rect.height)*.25,48,82);
+}
+function futureRailPointerDown(event){
+ const board=event.currentTarget;if(!futureRailPlayable()||futureReducedMotion()||event.button>0)return;
+ const current=futureRailCurrentPoint(),threshold=futureRailThreshold(board);
+ if(futureRailDistance(board,event,current)>threshold*(futureRailStep<0?1.45:1.15)){
+  futureRailGuide(futureRailStep<0?"ひかりの たまから はじめよう":"ひかりの ところから つづけよう");return;
+ }
+ event.preventDefault();ensureAC();futureRailPointerId=event.pointerId;futureRailTracing=true;
+ if(futureRailStep<0)futureRailStep=0;
+ board.classList.add("is-tracing");
+ try{board.setPointerCapture(event.pointerId);}catch(_){}
+ futureRailGuide("そのまま レールを なぞってね");updateFutureRailVisual();
+}
+function futureRailPointerMove(event){
+ if(!futureRailTracing||event.pointerId!==futureRailPointerId||!futureRailPlayable())return;
+ const board=event.currentTarget,threshold=futureRailThreshold(board);event.preventDefault();
+ let advanced=false;
+ if(futureRailRoute<0){
+  if(futureRailStep===0&&futureRailDistance(board,event,FUTURE_RAIL_ROUTES[0][1])<=threshold){futureRailStep=1;advanced=true;}
+  if(futureRailStep>=1){
+   let best=null;
+   futureRailOptions.forEach((entry,index)=>{
+    if(entry.button.disabled||entry.button.classList.contains("dim"))return;
+    const distance=futureRailDistance(board,event,FUTURE_RAIL_ROUTES[index][2]);
+    if(!best||distance<best.distance)best={index,distance};
+   });
+   if(best&&best.distance<=threshold*1.18){futureRailRoute=best.index;futureRailStep=2;futureKeyboardRoute=best.index;advanced=true;}
+  }
+ }else{
+  const route=FUTURE_RAIL_ROUTES[futureRailRoute];
+  while(futureRailStep<route.length-1&&futureRailDistance(board,event,route[futureRailStep+1])<=threshold*1.12){futureRailStep++;advanced=true;}
+ }
+ if(advanced){tone(620+Math.max(0,futureRailStep)*85,0,.06,"sine",.045);futureRailGuide("いいね！ そのまま つなごう");updateFutureRailVisual();}
+ else if(futureRailDistance(board,event,futureRailCurrentPoint())>threshold*2.25)futureRailGuide("レールに もどってね");
+ if(futureRailRoute>=0&&futureRailStep===FUTURE_RAIL_ROUTES[futureRailRoute].length-1)finishFutureRailRoute(futureRailRoute);
+}
+function futureRailPointerEnd(event){
+ if(event.pointerId!==futureRailPointerId)return;
+ const board=event.currentTarget;futureRailTracing=false;futureRailPointerId=null;board.classList.remove("is-tracing");
+ try{board.releasePointerCapture(event.pointerId);}catch(_){}
+ if(!futureRailResolving)futureRailGuide(futureRailStep<0?"ひかりの たまから はじめよう":"ひかりの ところから つづけよう");
+}
+function selectFutureRailRoute(index){
+ const entry=futureRailOptions[index];
+ if(!entry||futureRailResolveTimer||!futureRailPlayable()||entry.button.disabled||entry.button.classList.contains("dim"))return;
+ futureKeyboardRoute=index;futureRailRoute=index;futureRailStep=FUTURE_RAIL_ROUTES[index].length-1;updateFutureRailVisual();
+ futureRailResolveTimer=setTimeout(()=>{futureRailResolveTimer=0;finishFutureRailRoute(index);},futureReducedMotion()?20:180);
+}
+function finishFutureRailRoute(index){
+ const entry=futureRailOptions[index],board=futureRailLayer&&futureRailLayer.querySelector(".future-rail-board");
+ if(!entry||!board||futureRailResolving||answerLocked||entry.button.disabled||entry.button.classList.contains("dim"))return;
+ clearTimeout(futureRailResolveTimer);futureRailResolveTimer=0;
+ if(futureRailPointerId!==null){try{board.releasePointerCapture(futureRailPointerId);}catch(_){}}
+ futureRailResolving=true;futureRailTracing=false;futureRailPointerId=null;board.classList.remove("is-tracing");board.classList.add("is-resolving");entry.button.classList.add("is-reachable");
+ futureRailGuide(entry.o.ok?"ひかりが つながった！":"こっちかな？");tone(entry.o.ok?1047:430,0,.13,"triangle",.1);
+ futureRailResolveTimer=setTimeout(()=>{
+  futureRailResolveTimer=0;futureRailResolving=false;
+  onPick(entry.button,{ok:entry.o.ok,mode:"future"});
+  if(entry.o.ok)setTimeout(()=>clearFutureRailGame(),360);
+  else setTimeout(()=>{if(isFutureStage()&&quiz.classList.contains("show"))resetFutureRailTrace();},560);
+ },futureReducedMotion()?30:320);
+}
+function renderFutureRailGame(){
+ if(!futureRailLayer)return;
+ const opts=futureQuestionOptions(cur);
+ document.body.classList.add("future-rail-active");quiz.classList.add("future-rail-quiz");choicesEl.classList.add("future-mode");
+ choicesEl.setAttribute("aria-label","ひかりを こたえの ホームへ つなぐ");futureRailLayer.hidden=false;futureRailLayer.replaceChildren();futureRailOptions=[];
+ const board=document.createElement("div");board.className="future-rail-board";board.setAttribute("aria-label","ひかりの レール");
+ const guide=document.createElement("div");guide.className="future-rail-guide";guide.setAttribute("role","status");guide.setAttribute("aria-live","polite");
+ const svg=document.createElementNS("http://www.w3.org/2000/svg","svg");svg.setAttribute("class","future-rail-map");svg.setAttribute("viewBox","0 0 1000 500");svg.setAttribute("preserveAspectRatio","none");svg.setAttribute("aria-hidden","true");
+ FUTURE_RAIL_ROUTES.forEach((route,index)=>{
+  const d=route.map((point,i)=>(i?"L":"M")+(point.x*1000)+" "+(point.y*500)).join(" ");
+  ["future-rail-base","future-rail-core","future-rail-glow"].forEach(className=>{
+   const path=document.createElementNS("http://www.w3.org/2000/svg","path");path.setAttribute("d",d);path.setAttribute("class",className);path.dataset.route=String(index);svg.appendChild(path);
+  });
+ });
+ board.append(svg,guide);
+ const start=document.createElement("div");start.className="future-rail-start";start.textContent="✦";start.setAttribute("aria-hidden","true");board.appendChild(start);
+ FUTURE_RAIL_ROUTES.forEach((route,routeIndex)=>route.slice(1,-1).forEach((point,offset)=>{
+  const node=document.createElement("span");node.className="future-rail-node";node.dataset.route=String(routeIndex);node.dataset.point=String(offset+1);
+  node.style.setProperty("--node-x",(point.x*100)+"%");node.style.setProperty("--node-y",(point.y*100)+"%");node.setAttribute("aria-hidden","true");board.appendChild(node);
+ }));
+ const light=document.createElement("span");light.className="future-rail-light";light.setAttribute("aria-hidden","true");board.appendChild(light);
+ opts.forEach((o,index)=>{
+  const button=document.createElement("button");button.type="button";button.className="choice future-rail-home";button.dataset.ok=o.ok?"1":"0";
+  const homePoint=FUTURE_RAIL_ROUTES[index][FUTURE_RAIL_ROUTES[index].length-1];
+  button.style.setProperty("--home-y",(homePoint.y*100)+"%");button.setAttribute("aria-label",o.t+"の ホーム");
+  const emoji=document.createElement("span");emoji.className="em";emoji.textContent=o.e;
+  const label=document.createElement("span");label.className="lb";label.textContent=o.t;button.append(emoji,label);
+  bindTap(button,event=>{
+   if(futureReducedMotion()||event.detail===0)selectFutureRailRoute(index);
+   else{futureKeyboardRoute=index;futureRailGuide("ひかりの たまから なぞってね");}
+  });
+  board.appendChild(button);futureRailOptions.push({button,o});
+ });
+ board.addEventListener("pointerdown",futureRailPointerDown);
+ board.addEventListener("pointermove",futureRailPointerMove);
+ board.addEventListener("pointerup",futureRailPointerEnd);
+ board.addEventListener("pointercancel",futureRailPointerEnd);
+ futureRailLayer.appendChild(board);hintText.textContent="✨ ひかりを こたえの ホームまで つなごう";resetFutureRailTrace();
 }
 function renderChoiceCards(){
  let opts=[{e:cur.a[0],t:cur.a[1],ok:true},...cur.d.map(x=>({e:x[0],t:x[1],ok:false}))];
@@ -3196,12 +3412,13 @@ function showQuiz(){
  setDriverMood("thinking");
  cancelSeaPointer();clearSeaBubbleGame();
  resetNumberCargoGame();
+ clearFutureRailGame();
  cur=qList[qSeg];missInQ=0;answerLocked=false;
  qText.textContent=cur.helper?(cur.helper.name+"を たすけよう！ "+cur.q):cur.q;
  hintText.textContent=helpItems.length?"🍀 おたすけを つかえるよ":"";
  choicesEl.replaceChildren();
  quiz.classList.add("show");
- if(isNumberCargoQuestion())renderNumberCargoGame();else if(isSeaStage())renderSeaBubbleGame();else renderChoiceCards();
+ if(isNumberCargoQuestion())renderNumberCargoGame();else if(isSeaStage())renderSeaBubbleGame();else if(isFutureStage())renderFutureRailGame();else renderChoiceCards();
  speak(cur.s||cur.q);
 }
 function onPick(el,o){
@@ -3230,7 +3447,7 @@ function onPick(el,o){
    updateNumberCargoGame();
   }else{
    el.classList.add("ng","dim");
-   if(el.classList.contains("sea-answer-bubble"))el.disabled=true;
+   if(el.classList.contains("sea-answer-bubble")||el.classList.contains("future-rail-home"))el.disabled=true;
   }
   const t=tunnels[qSeg];
   if(t){t.classList.add("shake");setTimeout(()=>t.classList.remove("shake"),520);}
@@ -3280,6 +3497,7 @@ function proceed(){
 function ending(){
  hideWeatherNotice();
  resetSeaInteraction();
+ clearFutureRailGame();
  clearRareEvent();
  stopStageWeather();setWeatherPresentation("clear");
  clearTunnelFriendGame();
@@ -3304,6 +3522,7 @@ function ending(){
 function openMap(msg){
  hideWeatherNotice();
  resetNumberCargoGame();
+ clearFutureRailGame();
  clearRareEvent();
  resetSeaInteraction();
  stopStageWeather();setWeatherPresentation("clear");
@@ -3359,6 +3578,7 @@ function nazonazoAdminPreviewArm(stageId){
   return false;
  }
  const index=NAZONAZO_ADMIN_STAGE_INDEX[stageId];
+ resetSeaInteraction();clearFutureRailGame();
  nazonazoAdminPreviewStageIndex=index;
  stg=index;loop=0;playing=false;driving=false;pending=null;vel=0;
  stopStageWeather();

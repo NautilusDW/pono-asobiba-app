@@ -68,9 +68,11 @@ assert.match(seaCountdownTag[0], /aria-live="(?:polite|assertive)"/);
 assert.match(seaCountdownTag[0], /hidden/, "countdown must be inert and invisible outside the sea arena");
 
 const steerShellCss = cssRule("\\.vehicle-steer-shell");
-assert.match(steerShellCss, /translate3d\([^;]*var\(--sea-steer-x[^;]*var\(--sea-steer-y/, "submarine steering must be transform-only in X and Y");
-assert.match(steerShellCss, /var\(--sea-steer-tilt/);
+assert.match(steerShellCss, /transform\s*:\s*none/, "non-sea locomotives must ignore stale submarine offsets");
 assert.doesNotMatch(steerShellCss, /(?:top|bottom|left|right)\s*:/);
+const seaSteerShellCss = cssRule("body\\.st-sea \\.vehicle-steer-shell");
+assert.match(seaSteerShellCss, /translate3d\([^;]*var\(--sea-steer-x[^;]*var\(--sea-steer-y/, "submarine steering must stay transform-only in X and Y");
+assert.match(seaSteerShellCss, /var\(--sea-steer-tilt/);
 
 const surfaceCss = cssRule("#seaSteerSurface");
 assert.match(surfaceCss, /touch-action\s*:\s*none/);
