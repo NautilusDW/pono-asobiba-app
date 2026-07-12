@@ -58,6 +58,7 @@
 ## Active claims
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
+- 2026-07-12 - by Codex - [batch:1262-nazonazo-depth-animals-number] - nazonazo-tunnel/{index.html,styles.css,js/game.js}, assets/images/nazonazo-tunnel/{jungle_flying_butterfly_*,jungle_animal_elephant_*,jungle_animal_giraffe_*}, tmp/alpha_pending/1262-nazonazo-depth-animals-number/**, tests/nazonazo_*.cjs, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - 町の奥から2番目の山を再調整、チョウ3コマと切れたゾウ/キリン素材をGPT Image 2で置換し大型化、ゾウ鼻3コマ化、数字面を回数ジャンプ式ミニゲームへ試作、数字前景の浮いた下絵を除去
 
 
 
