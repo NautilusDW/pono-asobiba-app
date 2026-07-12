@@ -6256,7 +6256,8 @@ const SK_INTRO_GUIDE_STEPS = [
   { key: 'all', text: 'あか・きいろ・みどりを<br>ひとつずつ いれてみよう。' },
 ];
 // v1380: 5 文に同期させる音声 ID (assets/audio/bento/tutorial/sk_intro_0X.mp3)。
-// 実測 duration は 4.00 / 8.68 / 7.08 / 7.96 / 7.69 秒。 fallbackMs は audio 失敗時の
+// batch:1263 単一マスター版の実測 duration は 2.834 / 5.208 / 5.138 / 4.782 / 3.602 秒。
+// fallbackMs は audio 失敗時の
 // セーフティタイマーで、 各 duration より十分長い 10s 固定 (audio が ended event を
 // 発火しないまま黙る端末でも次へ進めるため)。 onEnded から 600ms 待って次の音声へ。
 const SK_INTRO_VOICE_IDS = ['sk_intro_01', 'sk_intro_02', 'sk_intro_03', 'sk_intro_04', 'sk_intro_05'];
@@ -9619,20 +9620,17 @@ function playPop() { const ac=getAC(),t=ac.currentTime,o=ac.createOscillator(),g
 function playCorrect() { const ac=getAC(),t=ac.currentTime; [523,659,784].forEach((f,i)=>{const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='sine';o.frequency.value=f;const s=t+i*0.1;g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(0.18,s+0.02);g.gain.exponentialRampToValueAtTime(0.001,s+0.25);o.start(s);o.stop(s+0.25);}); }
 function playWrong() { const ac=getAC(),t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='triangle';o.frequency.setValueAtTime(200,t);o.frequency.exponentialRampToValueAtTime(120,t+0.18);g.gain.setValueAtTime(0.1,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.18);o.start(t);o.stop(t+0.18); }
 const BENTO_TUTORIAL_VOICE_BASE = '../assets/audio/bento/tutorial/';
-// batch:1058 phase1: tut2 台本用の新 cache-buster (mock 段階のため mp3 は未配置、
-// silent-mode で fallbackMs タイマーによる自動遷移で全ステップ動く)。
-const BENTO_TUTORIAL_VOICE_VERSION = 'v1600-tut2-mock';
-// batch:1058 phase1: phase1 は音声未収録の mock 段階。 true の間は playBentoTutorialVoice が
-// 実 Audio を作らず fallbackMs タイマーだけで onEnded を発火する (視覚のみ動作確認可能)。
-// 音声収録 + faster-whisper 照合完了後に false に戻し、 mp3 を配置してリリース。
-const BENTO_TUTORIAL_MOCK_VOICE = true;
+// batch:1263: 34 cue を Gemini TTS 3.1 / Leda の単一マスター音源から切り出し、
+// 24 kHz mono / 96 kbps / 1.15 倍速で統一。旧 mock URL を確実に更新する。
+const BENTO_TUTORIAL_VOICE_VERSION = 'v1263-tts31-master';
+// faster-whisper で全 cue の順序・先頭末尾を照合済み。false で実音源を再生する。
+const BENTO_TUTORIAL_MOCK_VOICE = false;
 function shouldMockBentoTutorialVoice(id) {
-  // tut2_* はまだ収録前の仮ID。既存収録済みの OP / 3色説明 / 旧補助ナレは再生する。
+  // 将来の収録待ち検証時だけ tut2_* を silent mock に戻せるよう分岐は残す。
   return !!(BENTO_TUTORIAL_MOCK_VOICE && /^tut2_/.test(String(id || '')));
 }
 const BENTO_TUTORIAL_STEP_VOICE = {
-  // tut2 は未収録の mock ID。現行の収録原稿と追加 event cue は
-  // docs/BENTO_TUTORIAL_NARRATION_SCRIPT.md を正本とする。
+  // 現行の収録原稿と追加 event cue は docs/BENTO_TUTORIAL_NARRATION_SCRIPT.md を正本とする。
   'tut2-greet': 'tut2_01_greet',
   'tut2-box': 'tut2_02_box',
   'tut2-rice': 'tut2_03_rice',
@@ -9642,14 +9640,20 @@ const BENTO_TUTORIAL_STEP_VOICE = {
   'tut2-nori-move-undo': 'tut2_05b_moveundo',
   'tut2-nori-edit': 'tut2_06_noriedit',
   'tut2-nori-undo': 'tut2_06b_editundo',
+  'tut2-nori-ok': 'tut2_06c_noriok',
   'tut2-okazu-main': 'tut2_07_okazu',
   'tut2-cup-btn': 'tut2_08_cupbtn',
   'tut2-cup-place': 'tut2_09_cup',
   'tut2-cup-food': 'tut2_10_cupfood',
+  'tut2-free-okazu': 'tut2_10b_freeokazu',
+  'tut2-leaf-tab': 'tut2_17a_leaf_tab',
   // batch:1058-hotfix5 (WP3): はっぱ指定制 (レタス→メインおかず下) の新規音声 2 本 (mock)。
   'tut2-leaf-pick': 'tut2_17_leafpick',
   'tut2-leaf-place': 'tut2_18_leafplace',
   'tut2-tabs-intro': 'tut2_11_tabs',
+  'tut2-divider-place': 'tut2_11b_dividers',
+  'tut2-pick-tab': 'tut2_11c_pick_tab',
+  'tut2-pick-place': 'tut2_11d_pick_place',
   'tut2-okazu-ok': 'tut2_12_okazuok',
   'tut2-complete': 'tut2_13_complete',
   'tut2-favorite': 'tut2_14_fav',
@@ -19972,6 +19976,8 @@ const tutorialState = {
   ponoCalloutEl: null,
   pointHandEl: null,
   lastVoiceStep: '',
+  _eventVoiceKeys: null,
+  _groupIntroVoiceWait: false,
   completeGuideTimers: [],
   completeGuideToken: 0,
   completeGuideStarted: false,
@@ -20276,6 +20282,14 @@ function tutorialPlayStepVoice(step, firstRender) {
   try { _bentoDebugLog('[bento-debug] dispatching playBentoTutorialVoice', { id: id, step: step, optsKeys: Object.keys(opts) }); } catch (_) {}
   playBentoTutorialVoice(id, opts);
 }
+function tutorialPlayEventVoiceOnce(eventKey, voiceId, fallbackMs) {
+  if (!tutorialState || !tutorialState.active || !voiceId) return null;
+  if (!tutorialState._eventVoiceKeys) tutorialState._eventVoiceKeys = Object.create(null);
+  const scopedKey = String(tutorialState.step || '') + ':' + String(eventKey || voiceId);
+  if (tutorialState._eventVoiceKeys[scopedKey]) return null;
+  tutorialState._eventVoiceKeys[scopedKey] = true;
+  return playBentoTutorialVoice(voiceId, { fallbackMs: fallbackMs || 7000 });
+}
 // v1497 cup-first: tutorialMarkCupOkAfterVoice / tutorialOnCupEditCue / tutorialQueueCupOkHighlight
 // (cup-edit / cup-edit-try 専用ヘルパー) は step 廃止に伴い削除。
 function tutorialClearCompleteGuideTimers() {
@@ -20455,6 +20469,32 @@ function tutorialSetReminderFocus(active) {
 function tutorialShowGroupIntroThen(nextStep) {
   if (tutorialState.groupIntroShown) {
     tutorialAdvance(nextStep);
+    return;
+  }
+  // batch:1263: 「はじめる」を早めにタッチしても冒頭ナレーションを途中で切らず、
+  // 読み終わってから3色ガイドへつなぐ。音声失敗時は保険時間後に視覚案内を続行する。
+  const currentVoice = bentoTutorialVoiceAudio;
+  if (currentVoice && !currentVoice.paused && !currentVoice.ended && !currentVoice._bentoGroupIntroWaitComplete) {
+    if (tutorialState._groupIntroVoiceWait) return;
+    tutorialState._groupIntroVoiceWait = true;
+    let finished = false;
+    const continueToGroupIntro = () => {
+      if (finished) return;
+      finished = true;
+      tutorialState._groupIntroVoiceWait = false;
+      currentVoice._bentoGroupIntroWaitComplete = true;
+      try { currentVoice.removeEventListener('ended', continueToGroupIntro); } catch (_) {}
+      try { currentVoice.removeEventListener('error', continueToGroupIntro); } catch (_) {}
+      if (!tutorialState.active || tutorialState.step !== 'tut2-greet') return;
+      tutorialShowGroupIntroThen(nextStep);
+    };
+    currentVoice.addEventListener('ended', continueToGroupIntro, { once: true });
+    currentVoice.addEventListener('error', continueToGroupIntro, { once: true });
+    const duration = currentVoice.duration;
+    const remainingMs = Number.isFinite(duration) && duration > 0
+      ? Math.max(0, duration - (currentVoice.currentTime || 0)) * 1000 + 500
+      : 6000;
+    setTimeout(continueToGroupIntro, Math.max(1000, Math.min(8000, Math.ceil(remainingMs / 250) * 250)));
     return;
   }
   const intro = document.getElementById('sk-intro');
@@ -22143,16 +22183,12 @@ function tutorialAdvance(nextStep) {
   //   急いで連打しても声が途中で切れない)。
   //   - cup-edit の onEnded auto-advance は ended イベント発火直後に呼ばれるので
   //     audio.ended=true → isPlaying=false で queue されずそのまま通過する。
-  //   - iOS Safari で稀に ended イベントが飛ばないケースの保険として 8s hard timeout を併設。
+  //   - iOS Safari で稀に ended イベントが飛ばないケースの保険として、
+  //     残り再生時間 + 1.5 秒の hard timeout を併設する。
   try {
     const audio = bentoTutorialVoiceAudio;
     const audioDuration = audio ? audio.duration : 0;
-    const isPlaying = audio
-      && !audio.paused
-      && !audio.ended
-      && (audioDuration === Infinity || isFinite(audioDuration))
-      && audio.currentTime > 0
-      && audio.currentTime < (audioDuration || Infinity);
+    const isPlaying = audio && !audio.paused && !audio.ended;
     if (isPlaying && !tutorialState._advanceQueued) {
       try { _bentoDebugLog('[bento-debug] tutorialAdvance queued (voice still playing)', { nextStep: nextStep, currentTime: audio.currentTime, duration: audioDuration }); } catch (_) {}
       tutorialState._advanceQueued = nextStep;
@@ -22167,13 +22203,17 @@ function tutorialAdvance(nextStep) {
       };
       audio.addEventListener('ended', onVoiceEnd, { once: true });
       // 保険: ended が来ない iOS Safari 等のための hard timeout
+      const remainingMs = Number.isFinite(audioDuration) && audioDuration > 0
+        ? Math.max(0, audioDuration - (audio.currentTime || 0)) * 1000 + 1500
+        : 12000;
+      const hardTimeoutMs = Math.max(5000, Math.min(30000, Math.ceil(remainingMs / 500) * 500));
       setTimeout(function () {
         if (tutorialState._advanceQueued === nextStep && tutorialState && tutorialState.active && tutorialState.step !== nextStep) {
           try { _bentoDebugWarn('[bento-debug] queued advance timeout → firing now', { nextStep: nextStep }); } catch (_) {}
           tutorialState._advanceQueued = null;
           tutorialAdvance(nextStep);
         }
-      }, 8000);
+      }, hardTimeoutMs);
       return;
     }
   } catch (_) {}
@@ -22672,6 +22712,8 @@ function tut2RenderGreet(step) {
         tutorialResumePendingModeAfterExit();
         return;
       }
+      btn.disabled = true;
+      btn.textContent = 'きいてね…';
       tutorialShowGroupIntroThen('tut2-box');
     }, { once: true });
   }
@@ -23696,6 +23738,8 @@ function tutorialStart() {
   tutorialState.editDemoShown = false;
   tutorialState.layerMoveDone = false;
   tutorialState.lastVoiceStep = '';
+  tutorialState._eventVoiceKeys = Object.create(null);
+  tutorialState._groupIntroVoiceWait = false;
   tutorialState.completeGuideStarted = false;
   tutorialState.completeDetailShown = false;
   tutorialState.completeGuideToken = 0;
@@ -23836,6 +23880,7 @@ function tutorialOnNoriEditAction(uid, action) {
   if (action !== expected) return;
   if (action === 'shrink') {
     tutorialState.noriEditStage = 'rotate-clockwise';
+    tutorialPlayEventVoiceOnce('nori-rotate', 'tut2_06a_rotate', 9000);
   } else if (action === 'rotate-clockwise') {
     tutorialState.noriEditStage = 'done';
     tutorialClearTrims();
@@ -23940,6 +23985,7 @@ function tutorialOnUndoPressed() {
     finishNoriUndo();
     return;
   }
+  tutorialPlayEventVoiceOnce('nori-undo-last', 'tut2_06b_editundo_last', 7500);
   try { setSpeech('あと 1かい「とりけす」を おして、おおきさを もどそう！'); } catch (_) {}
   try { tutorialRenderStep(); } catch (_) {}
 }

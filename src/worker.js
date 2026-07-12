@@ -5,7 +5,7 @@
 //   Legacy /.netlify/functions/* paths are kept so existing frontend calls work unchanged.
 
 import { Buffer } from 'node:buffer';
-import { getGoogleAccessToken } from './google-auth.js';
+import { getGoogleAccessToken, getGoogleServiceAccountProjectId } from './google-auth.js';
 import { handleSaveData } from './api/savedata.js';
 
 const PROTECTED_PREFIXES = [
@@ -44,6 +44,31 @@ function checkBasicAuth(request, env) {
   }
 }
 
+function constantTimeTextEqual(left, right) {
+  const a = new TextEncoder().encode(String(left || ''));
+  const b = new TextEncoder().encode(String(right || ''));
+  let diff = a.length ^ b.length;
+  const length = Math.max(a.length, b.length);
+  for (let i = 0; i < length; i++) {
+    diff |= (a[i % Math.max(a.length, 1)] || 0) ^ (b[i % Math.max(b.length, 1)] || 0);
+  }
+  return diff === 0;
+}
+
+function isSameOriginOrNonBrowser(request) {
+  const origin = request.headers.get('Origin');
+  return !origin || origin === new URL(request.url).origin;
+}
+
+function checkTtsRequestAuth(request, env) {
+  if (!isSameOriginOrNonBrowser(request)) return false;
+  if (checkBasicAuth(request, env)) return true;
+  const expected = env && env.TTS_ADMIN_SECRET;
+  if (!expected) return false;
+  const provided = request.headers.get('x-admin-secret') || '';
+  return constantTimeTextEqual(provided, expected);
+}
+
 function authChallenge() {
   return new Response('Authentication required', {
     status: 401,
@@ -60,6 +85,9 @@ export default {
       return handleAiName(request, env);
     }
     if (path === '/.netlify/functions/ai-tts' || path === '/api/ai-tts') {
+      if (request.method !== 'OPTIONS' && !checkTtsRequestAuth(request, env)) {
+        return json(401, { error: 'Unauthorized' }, noStoreHeaders());
+      }
       return handleAiTts(request, env);
     }
     if (path === '/api/bento/mask-defaults') {
@@ -94,6 +122,9 @@ export default {
       return handleBentoMaskDefaultsHistoryGet(request, env, url);
     }
     if (path === '/api/admin/tts-generate') {
+      if (!isSameOriginOrNonBrowser(request)) {
+        return json(403, { error: 'Forbidden' }, noStoreHeaders());
+      }
       if (!checkBasicAuth(request, env)) return authChallenge();
       return handleAiTts(request, env);
     }
@@ -1170,12 +1201,6 @@ async function handleAiTts(request, env) {
     });
   }
 
-  const adminSecret = env.TTS_ADMIN_SECRET;
-  if (adminSecret) {
-    const provided = request.headers.get('x-admin-secret') || '';
-    if (provided !== adminSecret) return json(401, { error: 'Unauthorized' });
-  }
-
   let body;
   try { body = await request.json(); }
   catch { return json(400, { error: 'Invalid JSON' }); }
@@ -1228,6 +1253,18 @@ async function handleAiTts(request, env) {
   if (ALLOWED_STYLES.indexOf(style) === -1) style = '[gently]';
   const promptText = (typeof body.promptText === 'string') ? body.promptText.trim() : '';
   if (promptText.length > 3000) return json(400, { error: 'promptText が長すぎます（3000字まで）' });
+  const CLOUD_STYLE_PROMPTS = {
+    '[gently]': 'Speak gently and clearly in a calm, warm female narrator voice.',
+    '[cheerfully]': 'Speak clearly in a bright but controlled female narrator voice.',
+    '[excitedly]': 'Speak with lively energy while staying clear and child-friendly.',
+    '[giggles]': 'Speak playfully with a light smile, without adding words or sounds.',
+    '[whispers]': 'Speak softly and clearly in a gentle whisper.',
+    '': 'Speak clearly in a calm female narrator voice.',
+  };
+  const cloudPrompt = typeof body.cloudPrompt === 'string'
+    ? body.cloudPrompt.trim()
+    : CLOUD_STYLE_PROMPTS[style];
+  if (cloudPrompt.length > 3000) return json(400, { error: 'cloudPrompt が長すぎます（3000字まで）' });
   const styledText = promptText || (style ? (style + ' ' + text) : text);
 
   const MODEL_PRIMARY  = body.modelOverride || 'gemini-3.1-flash-tts-preview';
@@ -1284,13 +1321,73 @@ async function handleAiTts(request, env) {
       token = null;
     }
     if (token) {
-      return { authMode: 'oauth2', headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }, urlSuffix: '' };
+      const headers = { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' };
+      const projectId = getGoogleServiceAccountProjectId(env);
+      if (projectId) headers['x-goog-user-project'] = projectId;
+      return { authMode: 'oauth2', headers, urlSuffix: '' };
     }
     const cloudKey = env.GOOGLE_TTS_API_KEY || apiKey;
     if (cloudKey) {
       return { authMode: 'api_key', headers: { 'Content-Type': 'application/json' }, urlSuffix: '?key=' + encodeURIComponent(cloudKey) };
     }
     return { authMode: 'none', headers: { 'Content-Type': 'application/json' }, urlSuffix: '' };
+  }
+
+  async function callCloudGeminiTts(modelId, geminiVoice) {
+    const byteLength = value => new TextEncoder().encode(value).length;
+    const textBytes = byteLength(text);
+    const promptBytes = byteLength(cloudPrompt);
+    if (textBytes > 4000 || promptBytes > 4000 || textBytes + promptBytes > 8000) {
+      return {
+        resp: { ok: false, status: 400 },
+        data: { error: { status: 'INPUT_LIMIT_EXCEEDED' } },
+        authMode: 'not_requested',
+      };
+    }
+
+    const auth = await cloudTtsAuth();
+    if (auth.authMode !== 'oauth2') {
+      return {
+        resp: { ok: false, status: 503 },
+        data: { error: { status: 'OAUTH2_UNAVAILABLE' } },
+        authMode: auth.authMode,
+      };
+    }
+
+    const input = { text };
+    if (cloudPrompt) input.prompt = cloudPrompt;
+    try {
+      const resp = await fetch('https://texttospeech.googleapis.com/v1/text:synthesize', {
+        method: 'POST',
+        headers: auth.headers,
+        body: JSON.stringify({
+          input,
+          voice: {
+            languageCode: 'ja-JP',
+            name: geminiVoice,
+            modelName: modelId,
+          },
+          audioConfig: {
+            audioEncoding: 'LINEAR16',
+            sampleRateHertz: 24000,
+          },
+        }),
+        signal: AbortSignal.timeout(120000),
+      });
+      let data;
+      try {
+        data = await resp.json();
+      } catch (_) {
+        data = { error: { status: 'INVALID_UPSTREAM_RESPONSE' } };
+      }
+      return { resp, data, authMode: auth.authMode };
+    } catch (_) {
+      return {
+        resp: { ok: false, status: 502 },
+        data: { error: { status: 'UPSTREAM_FETCH_FAILED' } },
+        authMode: auth.authMode,
+      };
+    }
   }
 
   async function callChirp3(geminiVoice) {
@@ -1334,6 +1431,62 @@ async function handleAiTts(request, env) {
 
   try {
     const attemptChain = [];
+
+    const wantsCloudGemini = body.engine === 'gemini-cloud'
+      || (!apiKey && hasServiceAccount);
+    if (wantsCloudGemini) {
+      if (MODEL_PRIMARY !== 'gemini-3.1-flash-tts-preview') {
+        return json(400, { error: 'Cloud Gemini-TTS supports only the approved TTS 3.1 model.' }, noStoreHeaders());
+      }
+      const cloudGemini = await callCloudGeminiTts(MODEL_PRIMARY, voice);
+      const cloudError = cloudGemini.data && cloudGemini.data.error;
+      const cloudAudio = cloudGemini.data && cloudGemini.data.audioContent;
+      let hasCloudWav = false;
+      if (typeof cloudAudio === 'string' && cloudAudio.length > 16) {
+        try {
+          const decoded = Buffer.from(cloudAudio, 'base64');
+          hasCloudWav = decoded.length >= 44
+            && decoded.toString('ascii', 0, 4) === 'RIFF'
+            && decoded.toString('ascii', 8, 12) === 'WAVE';
+        } catch (_) {}
+      }
+      attemptChain.push({
+        model: MODEL_PRIMARY,
+        engine: 'cloud-tts-oauth2',
+        authMode: cloudGemini.authMode,
+        status: cloudGemini.resp.status,
+        hasAudio: hasCloudWav,
+        errCode: cloudError && (cloudError.status || cloudError.code)
+          || (!hasCloudWav ? 'INVALID_AUDIO_RESPONSE' : null),
+      });
+      if (cloudGemini.resp.ok && hasCloudWav) {
+        return json(200, {
+          audio: cloudAudio,
+          mime: 'audio/wav',
+          voice,
+          chars: text.length,
+          model: MODEL_PRIMARY,
+          engine: 'cloud-tts-oauth2',
+          fallbackUsed: false,
+          attemptChain,
+          sampleRate: 24000,
+        }, noStoreHeaders());
+      }
+      if (body.engine === 'gemini-cloud' || body.strictModel === true) {
+        const upstreamStatus = cloudGemini.resp.status;
+        const status = Number.isInteger(upstreamStatus) && upstreamStatus >= 400
+          ? Math.min(599, upstreamStatus)
+          : 502;
+        const message = status === 401 || status === 403
+          ? 'Cloud Gemini-TTS authorization failed.'
+          : status === 429
+            ? 'Cloud Gemini-TTS rate limit reached.'
+            : status >= 500
+              ? 'Cloud Gemini-TTS is temporarily unavailable.'
+              : 'Cloud Gemini-TTS request was rejected.';
+        return json(status, { error: message, attemptChain }, noStoreHeaders());
+      }
+    }
 
     if (body.engine === 'chirp3') {
       const chirpDirect = await callChirp3(voice);

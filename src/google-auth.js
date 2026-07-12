@@ -3,17 +3,18 @@
 // Cloudflare Workers 専用。 Web Crypto API のみ使用。 外部依存ゼロ。
 //
 // セキュリティ:
-// - SCOPE = 'cloud-platform' は広いが Google の TTS 専用 scope は無いため必須。
-//   IAM 側で Service Account に「Cloud Text-to-Speech API ユーザー」
-//   (roles/cloudtts.user 相当) のみ付与すれば、 token が広い scope を持っても
-//   実行可能操作は TTS のみに限定される (最小権限原則)。
-// - 生成された access_token はログに出力しない、 KV のみに保存。
+// - SCOPE = 'cloud-platform' は広いが Cloud TTS の OAuth 認証に必要。
+//   IAM 側では用途に必要な role だけを付与し、 token 自体はログやレスポンスへ出さない。
+//   Gemini-TTS 3.1 は Cloud TTS API に加えて aiplatform.endpoints.predict が必要。
+// - 生成された access_token はログ・レスポンス・永続ストレージへ出さず、
+//   Worker isolate のメモリ内だけに短時間保持する。
 // - error 内に Google からの description が含まれる可能性あり (機密情報は無いはず)。
 
 const TOKEN_ENDPOINT = 'https://oauth2.googleapis.com/token';
 const SCOPE = 'https://www.googleapis.com/auth/cloud-platform';
 const TOKEN_TTL_SEC = 3600;
-const CACHE_TTL_SEC = 3000;  // 50 分、 実 TTL より少し短く
+const CACHE_TTL_MS = 3000 * 1000;  // 50 分、 実 TTL より少し短く
+const memoryTokenCache = new Map();
 
 function base64UrlEncode(buf) {
   let bin = '';
@@ -80,8 +81,7 @@ async function fetchAccessToken(jwt) {
     signal: AbortSignal.timeout(5000),
   });
   if (!r.ok) {
-    const text = await r.text().catch(() => '');
-    throw new Error(`token exchange failed: ${r.status} ${text}`);
+    throw new Error(`token_exchange_http_${r.status}`);
   }
   const data = await r.json();
   if (!data.access_token) throw new Error('no access_token in response');
@@ -89,11 +89,10 @@ async function fetchAccessToken(jwt) {
 }
 
 /**
- * Service Account JSON から access token を取得 (KV キャッシュ付き)。
+ * Service Account JSON から access token を取得 (isolate メモリキャッシュ付き)。
  * env.GOOGLE_SERVICE_ACCOUNT_JSON 未設定なら null を返す (caller でフォールバック判定)
  *
  * @param {Object} env Cloudflare Worker env
- * @param {KVNamespace} [env.BENTO_MASK_CONFIG] token キャッシュ用
  * @param {string} [env.GOOGLE_SERVICE_ACCOUNT_JSON] Service Account JSON 全文
  */
 export async function getGoogleAccessToken(env) {
@@ -103,8 +102,8 @@ export async function getGoogleAccessToken(env) {
   let serviceAccount;
   try {
     serviceAccount = typeof raw === 'string' ? JSON.parse(raw) : raw;
-  } catch (e) {
-    console.warn('GOOGLE_SERVICE_ACCOUNT_JSON parse failed:', e.message);
+  } catch (_) {
+    console.warn('GOOGLE_SERVICE_ACCOUNT_JSON parse failed');
     return null;
   }
   if (!serviceAccount.client_email || !serviceAccount.private_key) {
@@ -112,33 +111,42 @@ export async function getGoogleAccessToken(env) {
     return null;
   }
 
-  const cacheKey = `gcloud-token:${serviceAccount.client_email}`;
-  const kv = env && env.BENTO_MASK_CONFIG;
+  const cacheKey = serviceAccount.client_email;
+  const now = Date.now();
+  const cached = memoryTokenCache.get(cacheKey);
+  if (cached && cached.token && cached.expiresAt > now) return cached.token;
+  if (cached && cached.pending) return cached.pending;
 
-  // 1. KV キャッシュ確認
-  if (kv) {
+  const pending = (async () => {
     try {
-      const cached = await kv.get(cacheKey);
-      if (cached) return cached;
-    } catch (_) {}
-  }
+      const jwt = await signJwt(serviceAccount);
+      const token = await fetchAccessToken(jwt);
+      memoryTokenCache.set(cacheKey, { token, expiresAt: Date.now() + CACHE_TTL_MS });
+      return token;
+    } catch (_) {
+      memoryTokenCache.delete(cacheKey);
+      console.warn('getGoogleAccessToken JWT/token error');
+      return null;
+    }
+  })();
+  memoryTokenCache.set(cacheKey, { pending, expiresAt: 0 });
+  return pending;
+}
 
-  // 2. JWT 署名 → token 交換
-  let token;
+/**
+ * quota project ヘッダー用に Service Account の project_id だけを返す。
+ * JSON 本文や秘密鍵は呼び出し側へ渡さない。
+ */
+export function getGoogleServiceAccountProjectId(env) {
+  const raw = env && env.GOOGLE_SERVICE_ACCOUNT_JSON;
+  if (!raw) return '';
   try {
-    const jwt = await signJwt(serviceAccount);
-    token = await fetchAccessToken(jwt);
-  } catch (e) {
-    console.warn('getGoogleAccessToken JWT/token error:', e && e.message);
-    return null;
+    const serviceAccount = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    const projectId = serviceAccount && typeof serviceAccount.project_id === 'string'
+      ? serviceAccount.project_id.trim()
+      : '';
+    return /^[a-z][a-z0-9-]{4,28}[a-z0-9]$/.test(projectId) ? projectId : '';
+  } catch (_) {
+    return '';
   }
-
-  // 3. KV にキャッシュ
-  if (kv && token) {
-    try {
-      await kv.put(cacheKey, token, { expirationTtl: CACHE_TTL_SEC });
-    } catch (_) {}
-  }
-
-  return token;
 }

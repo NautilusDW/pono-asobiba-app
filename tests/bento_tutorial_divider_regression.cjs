@@ -54,6 +54,7 @@ assert.doesNotMatch(moveHook, /tutorialAdvance\('tut2-nori-edit'\)/);
 const editHooks = extract(html, 'function tutorialNoriEditExpectedCopy()', '// 位置移動は直後に1回', 'nori edit hooks');
 const state = { active: true, step: 'tut2-nori-edit', noriEditStage: 'shrink', noriEditTargetUid: 'mouth' };
 const advances = [];
+const eventVoices = [];
 let renders = 0;
 const hookContext = vm.runInNewContext(`(() => {
   ${editHooks}
@@ -65,12 +66,14 @@ const hookContext = vm.runInNewContext(`(() => {
   tutorialRenderStep: () => { renders++; },
   tutorialClearTrims: () => {},
   tutorialHideFinger: () => {},
+  tutorialPlayEventVoiceOnce: (key, id) => { eventVoices.push([key, id]); },
   tutorialAdvance: (next) => { advances.push(next); },
 });
 assert.equal(hookContext.canUse('mouth', 'grow'), false, 'grow must not replace the guided shrink action');
 renders = 0;
 hookContext.onEdit('mouth', 'shrink');
 assert.equal(state.noriEditStage, 'rotate-clockwise');
+assert.deepEqual(eventVoices, [['nori-rotate', 'tut2_06a_rotate']]);
 assert.equal(hookContext.canUse('mouth', 'rotate-counterclockwise'), false,
   'counterclockwise must not replace the guided clockwise action');
 hookContext.onEdit('mouth', 'rotate-clockwise');
@@ -118,6 +121,7 @@ let finalUndoCalls = 0;
 let undoSucceeds = true;
 let faceAtDefault = false;
 const undoAdvances = [];
+const undoEventVoices = [];
 const undoTimers = [];
 const undoApi = vm.runInNewContext(`(() => {
   ${undo}
@@ -142,6 +146,7 @@ const undoApi = vm.runInNewContext(`(() => {
   freeRedoStack: [{ stale: true }],
   tutorialClearTrims: () => {},
   tutorialHideFinger: () => {},
+  tutorialPlayEventVoiceOnce: (key, id) => { undoEventVoices.push([key, id]); },
   tutorialAdvance: (step) => { undoAdvances.push(step); },
   setTimeout: (fn) => { undoTimers.push(fn); return undoTimers.length; },
 });
@@ -168,6 +173,7 @@ assert.equal(finalUndoCalls, 1, 'the first final undo must restore rotation only
 assert.equal(undoState._noriEditUndoRemaining, 1);
 assert.equal(undoState._noriUndoDone, false, 'one successful press must not finish two edits');
 assert.equal(undoTimers.length, 0);
+assert.deepEqual(undoEventVoices, [['nori-undo-last', 'tut2_06b_editundo_last']]);
 undoApi.press();
 assert.equal(finalUndoCalls, 2, 'the second final undo must restore the scale');
 assert.equal(undoState._noriEditUndoRemaining, 0);
@@ -178,6 +184,108 @@ assert.equal(finalUndoCalls, 2, 'completion guard must preserve face-part placem
 assert.equal(undoApi.redoLength(), 0, 'guided edit redo history must be cleared after restoration');
 undoTimers.shift()();
 assert.deepEqual(undoAdvances, ['tut2-nori-edit', 'tut2-nori-ok']);
+
+const voiceMap = extract(html, 'const BENTO_TUTORIAL_STEP_VOICE = {', 'let bentoTutorialVoiceAudio', 'tutorial voice map');
+assert.match(html, /const BENTO_TUTORIAL_VOICE_VERSION = 'v1263-tts31-master'/,
+  'the shipped narration must use the TTS 3.1 master cache version');
+assert.match(html, /const BENTO_TUTORIAL_MOCK_VOICE = false/,
+  'the shipped narration must play real audio instead of mock timers');
+[
+  ['tut2-nori-ok', 'tut2_06c_noriok'],
+  ['tut2-free-okazu', 'tut2_10b_freeokazu'],
+  ['tut2-leaf-tab', 'tut2_17a_leaf_tab'],
+  ['tut2-divider-place', 'tut2_11b_dividers'],
+  ['tut2-pick-tab', 'tut2_11c_pick_tab'],
+  ['tut2-pick-place', 'tut2_11d_pick_place'],
+].forEach(([stepId, voiceId]) => {
+  assert.match(voiceMap, new RegExp("'" + stepId + "':\\s*'" + voiceId + "'"));
+});
+const advanceSource = extract(html, 'function tutorialAdvance(nextStep)', 'function tutorialUninstallPaletteObserver', 'voice-safe advance');
+assert.match(advanceSource, /audioDuration - \(audio\.currentTime \|\| 0\)/,
+  'queued tutorial advance must use remaining narration duration');
+assert.match(advanceSource, /Math\.ceil\(remainingMs \/ 500\) \* 500/,
+  'narration guard must round the safety timeout up');
+
+const groupIntroSource = extract(
+  html,
+  'function tutorialShowGroupIntroThen(nextStep)',
+  'function tutorialOutlineElement',
+  'greet to color-guide narration boundary',
+);
+const groupIntroState = {
+  groupIntroShown: false,
+  active: true,
+  step: 'tut2-greet',
+  _groupIntroVoiceWait: false,
+};
+const voiceListeners = {};
+const greetAudio = {
+  paused: false,
+  ended: false,
+  duration: 4.8,
+  currentTime: 0.4,
+  addEventListener: (type, fn) => { voiceListeners[type] = fn; },
+  removeEventListener: (type, fn) => {
+    if (voiceListeners[type] === fn) delete voiceListeners[type];
+  },
+};
+let colorGuideStarts = 0;
+let colorGuideShows = 0;
+let colorGuideClick = null;
+const introEl = { classList: { remove: () => { colorGuideShows++; } } };
+const introButton = { addEventListener: (type, fn) => { if (type === 'click') colorGuideClick = fn; } };
+const waitTimers = [];
+const groupIntroApi = vm.runInNewContext(`(() => {
+  ${groupIntroSource}
+  return { show: tutorialShowGroupIntroThen };
+})()`, {
+  tutorialState: groupIntroState,
+  bentoTutorialVoiceAudio: greetAudio,
+  document: { getElementById: id => id === 'sk-intro' ? introEl : id === 'sk-intro-btn' ? introButton : null },
+  tutorialAdvance: () => {},
+  tutorialHideBubble: () => {},
+  tutorialHideFinger: () => {},
+  tutorialClearTrims: () => {},
+  tutorialClearMask: () => {},
+  tutorialClearTargetCircle: () => {},
+  tutorialClearOutlines: () => {},
+  tutorialHidePonoCallout: () => {},
+  startSkIntroGuide: () => { colorGuideStarts++; },
+  setTimeout: fn => { waitTimers.push(fn); return waitTimers.length; },
+  window: {},
+});
+groupIntroApi.show('tut2-box');
+assert.equal(groupIntroState._groupIntroVoiceWait, true,
+  'an early start touch must wait for the greeting narration');
+assert.equal(colorGuideStarts, 0, 'the color guide must not cut off the greeting narration');
+assert.equal(typeof voiceListeners.ended, 'function', 'the greeting must install an ended listener');
+greetAudio.ended = true;
+voiceListeners.ended();
+assert.equal(colorGuideStarts, 1, 'the color guide must start once after the greeting ends');
+assert.equal(colorGuideShows, 1);
+assert.equal(groupIntroState.groupIntroShown, true);
+assert.equal(typeof colorGuideClick, 'function');
+assert.match(html, /btn\.disabled = true;\s*btn\.textContent = 'きいてね…';\s*tutorialShowGroupIntroThen\('tut2-box'\)/,
+  'the pressed start button must show a child-readable waiting state');
+
+const shippedVoiceIds = [
+  'tut2_01_greet',
+  'sk_intro_01', 'sk_intro_02', 'sk_intro_03', 'sk_intro_04', 'sk_intro_05',
+  'tut2_02_box', 'tut2_03_rice', 'tut2_04a_eyes', 'tut2_04b_mouth_nose',
+  'tut2_05_norimove', 'tut2_05b_moveundo', 'tut2_06_noriedit', 'tut2_06a_rotate',
+  'tut2_06b_editundo', 'tut2_06b_editundo_last', 'tut2_06c_noriok',
+  'tut2_07_okazu', 'tut2_08_cupbtn', 'tut2_09_cup', 'tut2_10_cupfood',
+  'tut2_10b_freeokazu', 'tut2_17a_leaf_tab', 'tut2_17_leafpick',
+  'tut2_18_leafplace', 'tut2_11_tabs', 'tut2_11b_dividers',
+  'tut2_11c_pick_tab', 'tut2_11d_pick_place', 'tut2_12_okazuok',
+  'tut2_13_complete', 'tut2_14_fav', 'tut2_15_request', 'tut2_16_deliver',
+];
+assert.equal(new Set(shippedVoiceIds).size, 34, 'all shipped voice ids must be unique');
+for (const voiceId of shippedVoiceIds) {
+  const audioPath = path.join(root, 'assets/audio/bento/tutorial', `${voiceId}.mp3`);
+  assert.ok(fs.existsSync(audioPath), `missing narration asset: ${voiceId}.mp3`);
+  assert.ok(fs.statSync(audioPath).size > 1000, `narration asset is unexpectedly small: ${voiceId}.mp3`);
+}
 
 // 3. simple mode でも指定中の品目だけを許可し、誤選択はspeech/toastだけで拒否する。
 const allowanceSource = extract(
