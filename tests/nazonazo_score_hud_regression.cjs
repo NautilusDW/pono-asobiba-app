@@ -86,6 +86,12 @@ assert.match(scoreTailRule, /position\s*:\s*absolute/, "the high-score tail must
 assert.match(scoreTailRule, /left\s*:\s*calc\(\s*100%\s*\+/, "high score and counters must extend only to the current score's right");
 assert.match(scoreTailRule, /display\s*:\s*flex/, "high score and the two counters must remain in one row");
 assert.match(css, /#scoreHud #helpBadge\s*,\s*#scoreHud #carBadge\s*\{[^}]*position\s*:\s*static/, "legacy lower-left counters must be re-homed inside the score row");
+assert.match(css, /body\.tunnel-interior #scoreCurrentPill,[\s\S]*?body\.tunnel-interior #scoreHud #carBadge\{display:none!important\}/, "the tunnel must remove duplicate journey and inventory pills from the center");
+assert.match(css, /body\.tunnel-interior #scoreHudTail\{[^}]*position:static[^}]*display:block/, "the tunnel high score must become the centered HUD anchor");
+assert.match(css, /body\.tunnel-interior #highScorePill\{[^}]*border:0[^}]*background:transparent[^}]*box-shadow:none/, "the tunnel high score must not keep a textbox or pill decoration");
+assert.match(css, /body\.tunnel-interior #highScorePill>span\{[^}]*color:#fff/, "the tunnel high-score label must be white");
+assert.match(css, /body\.tunnel-interior #highScorePill>strong\{[^}]*color:#fff[^}]*font-size:clamp\(27px,5vw,44px\)/, "the tunnel record number must be large white text");
+assert.match(css, /@media \(orientation:landscape\) and \(max-height:360px\)[\s\S]*?#tunnelFriendPanel\{top:calc\(64px \+ env\(safe-area-inset-top\)\)/, "short landscape screens must keep the tunnel friend panel below the centered record");
 assert.match(css, /@media\s*\(orientation\s*:\s*portrait\)[\s\S]*?#scoreHud\s*\{[^}]*display\s*:\s*none/, "portrait rotate screen must hide the landscape score row");
 assert.match(css, /@media\s*\(orientation\s*:\s*landscape\)\s*and\s*\(max-width\s*:\s*(?:9\d\d|1000)px\)[\s\S]*?#dots\s*\{[^}]*gap\s*:/, "compact landscape must shrink stage progress before it can collide with the centered score");
 

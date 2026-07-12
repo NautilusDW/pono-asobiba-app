@@ -106,7 +106,7 @@ for (const spec of layoutSpecs) {
   if (spec.anchor === "ground" || spec.anchor === "understory") {
     const expectedAlphaBottom = spec.species === "crocodile" ? 98 : 98.75;
     assert.equal(spec.anchorY, expectedAlphaBottom, `${label}: visible feet/log alpha edge must define the image anchor`);
-    assert.equal(spec.y, 85.5, `${label}: visible feet/log must align with the jungle ground line`);
+    assert.equal(spec.y, 83.5, `${label}: visible feet/log must align with the raised jungle ground line`);
     assert.ok(spec.depth >= 0.85, `${label}: ground habitat must travel with the near landscape`);
   }
 }
@@ -129,7 +129,7 @@ assert.match(html, /id="jungleAnimalsNear"[\s\S]*?id="world"/, "near animals mus
 assert.match(css, /\.jungle-animal-layer\{[^}]*pointer-events:none/);
 assert.match(css, /body\.st-jungle \.jungle-animal-layer\{display:block\}/);
 assert.match(css, /body\.tunnel-interior \.jungle-animal-layer\{display:none!important\}/);
-assert.match(css, /#jungleAnimalsNear\{[^}]*bottom:14vh/, "near clip must leave a half-vh alpha-padding pocket below the ground line");
+assert.match(css, /#jungleAnimalsNear\{[^}]*bottom:16vh/, "near clip must leave a half-vh alpha-padding pocket below the raised ground line");
 assert.match(css, /body\.st-jungle\.v-train \.train-art::before\{[^}]*z-index:1[^}]*background:linear-gradient/, "opaque jungle cab interior must hide passing wildlife behind the driver");
 assert.match(css, /@media \(prefers-reduced-motion:reduce\)[\s\S]*?\.jungle-animal-art\{animation:none!important;transform:none!important\}/);
 assert.match(html, /<(?:div|section)[^>]*(?:id|class)="[^"]*(?:jungle[^" ]*flight|flight[^" ]*jungle)[^"]*"[^>]*aria-hidden="true"/i, "the ambient flight layer must be decorative and hidden from assistive technology");

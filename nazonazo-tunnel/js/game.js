@@ -184,7 +184,7 @@ const ASSETS={
 };
 const bgUrl=src=>'url("'+src+'")';
 const STAGES=[
- {id:"town",icon:"🏘️",veh:"train",bank:TOWN,gens:[],skyPosition:"center calc(100% - var(--town-sky-lift,30vh))",
+ {id:"town",icon:"🏘️",veh:"train",bank:TOWN,gens:[],skyPosition:"center calc(100% - var(--town-sky-lift,42vh))",
   names:["まちはずれ","ゆうやけの まちはずれ"],
   assets:ASSETS.town,
   pals:[
@@ -288,11 +288,11 @@ const JUNGLE_ANIMAL_LAYOUT={
  ],
  mid:[
   {asset:0,species:"sloth",anchor:"hang",x:6,y:37,anchorY:10,w:21,min:62,max:184,depth:.25,opacity:1,motion:"sway",flip:1,origin:"50% 10%",moveY:0,loop:"mid"},
-  {asset:1,species:"crocodile",anchor:"understory",x:70,y:85.5,anchorY:98,w:25.5,min:80,max:225,depth:.92,opacity:1,motion:"breathe",flip:1,origin:"50% 98%",moveY:0}
+  {asset:1,species:"crocodile",anchor:"understory",x:70,y:83.5,anchorY:98,w:25.5,min:80,max:225,depth:.92,opacity:1,motion:"breathe",flip:1,origin:"50% 98%",moveY:0}
  ],
  near:[
-  {asset:1,species:"giraffe",anchor:"ground",x:26,y:85.5,anchorY:98.75,w:29,min:92,max:280,depth:.9,opacity:1,motion:"breathe",flip:-1,origin:"50% 98.75%",moveY:0},
-  {asset:0,species:"elephant",anchor:"ground",x:90,y:85.5,anchorY:98.75,w:34,min:110,max:330,depth:.94,opacity:1,motion:"breathe",flip:1,origin:"50% 98.75%",moveY:0}
+  {asset:1,species:"giraffe",anchor:"ground",x:26,y:83.5,anchorY:98.75,w:29,min:92,max:280,depth:.9,opacity:1,motion:"breathe",flip:-1,origin:"50% 98.75%",moveY:0},
+  {asset:0,species:"elephant",anchor:"ground",x:90,y:83.5,anchorY:98.75,w:34,min:110,max:330,depth:.94,opacity:1,motion:"breathe",flip:1,origin:"50% 98.75%",moveY:0}
  ]
 };
 const NPC_BASE="../assets/images/bento/npc/";
@@ -336,7 +336,7 @@ function trainCarHeightVh(){
 }
 function trainBottomVh(){
  const st=STAGES[stg];
- return st&&(st.id==="town"||st.id==="jungle"||st.id==="number"||st.id==="future")?8.45:9.1;
+ return st&&(st.id==="town"||st.id==="jungle"||st.id==="number"||st.id==="future")?9.8:9.1;
 }
 const vehicleLeftVw=()=>STAGES[stg]&&STAGES[stg].veh==="train"?trainLeftVw():DEFAULT_VEHICLE_LEFT_VW;
 const stops=(o,i)=>o+INTRO+i*GAP-CHECKPOINT_STOP_LEFT_VW;
@@ -1309,6 +1309,7 @@ function applySkin(weatherReady){
  document.body.dataset.weather=weather;
  setDriverForStage(stg);
  skyA.style.background=st.assets?bgUrl(st.assets.sky)+" "+(st.skyPosition||"center bottom")+" / cover no-repeat":"linear-gradient("+P.sky[0]+","+P.sky[1]+")";
+ skyA.style.backgroundColor=st.id==="town"?"#c7d659":"transparent";
  skyB.style.background="linear-gradient("+NP.sky[0]+","+NP.sky[1]+")";
  skyB.style.opacity="0";
  horizon.style.backgroundImage=st.assets?bgUrl(st.assets.horizon):st.horizon(P,NP);

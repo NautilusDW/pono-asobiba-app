@@ -45,10 +45,20 @@ assert.doesNotMatch(css, /#town(?:Horizon|Mid)Loop[^}]*background-size:\s*100%\s
 assert.match(css, /@media \(prefers-reduced-motion:reduce\)[\s\S]*\.rain-particle\{[^}]*animation:none!important/, "reduced motion must leave a small static rain sample instead of fast flicker");
 assert.match(css, /#rainFar \.rain-particle:nth-child\(n\+8\),#rainMid \.rain-particle:nth-child\(n\+6\),#rainNear \.rain-particle:nth-child\(n\+4\)\{display:none\}/, "reduced motion must cap visible drops at seven, five, and three");
 assert.match(css, /\.rain-particle\[hidden\]\{display:none\}/, "inactive pooled particles must not render");
-assert.match(css, /--town-sky-lift:30vh/, "the baked far mountain must move decisively higher on regular screens");
+assert.match(css, /--town-sky-lift:42vh/, "the baked far mountain must move substantially higher on regular screens");
 assert.match(css, /#townHorizonLoop\{top:-38vh;height:124%\}/, "the next mountain layer must rise to its last gap-safe position");
-assert.match(css, /@media \(min-aspect-ratio:2\/1\)\{:root\{--town-sky-lift:22vh\}\}/, "ultrawide screens must retain more of the sky and clouds");
-assert.match(game, /id:"town"[^\n]+skyPosition:"center calc\(100% - var\(--town-sky-lift,30vh\)\)"/, "the sky asset must use the responsive mountain lift without stretching");
+assert.match(css, /@media \(min-aspect-ratio:2\/1\)\{:root\{--town-sky-lift:34vh\}\}/, "ultrawide screens must retain more sky while lifting the far mountain by the same amount");
+assert.match(game, /id:"town"[^\n]+skyPosition:"center calc\(100% - var\(--town-sky-lift,42vh\)\)"/, "the sky asset must use the responsive mountain lift without stretching");
+assert.match(game, /skyA\.style\.backgroundColor=st\.id==="town"\?"#c7d659":"transparent";/, "the strongly raised town sky needs a sampled meadow fallback behind transparent hill valleys");
+for (const [stage, height] of [["town", "17"], ["jungle", "16.5"], ["number", "17"], ["future", "17.4"]]) {
+  assert.match(css, new RegExp(`body\\.st-${stage} #groundT\\{height:${height.replace(".", "\\.")}vh`), `${stage}: the train track must move upward without exposing a gap below it`);
+}
+assert.match(css, /body\.st-town\.v-train #cars,[^}]+\{bottom:9\.8vh\}/, "train-stage passenger cars must rise with the running rail");
+assert.match(css, /body\.st-town\.v-train #veh,[^}]+\{bottom:9\.8vh\}/, "the locomotive must rise with the running rail");
+assert.match(game, /function trainBottomVh\(\)\{[\s\S]*?\?9\.8:9\.1;/, "passenger animations must target the raised train baseline");
+assert.match(css, /\.decor\.town-decor\{bottom:14\.2vh\}/, "town scenery must remain rooted at the raised ground edge");
+assert.match(css, /body\.st-town \.tun\.station,body\.st-jungle \.tun\.station\{bottom:10\.15vh\}/, "station platforms must rise with the running rail");
+assert.match(css, /body\.st-town \.dropStation,[^}]+\{bottom:10\.25vh\}/, "drop-off platforms must rise with the running rail");
 assert.match(game, /const JOURNEY_SHOWER_CHANCE=\.25;/, "exactly one quarter of new journeys may contain town showers");
 assert.match(game, /const SHOWER_FIRST_DELAY_MS=\[2500,6000\];/, "a selected journey must start clear before its first shower");
 assert.match(game, /const SHOWER_RAIN_DURATION_MS=\[6000,10000\];/, "rain must stop after a bounded random duration");
@@ -91,9 +101,22 @@ async function verifyPanoramaAssets() {
   }
   const opaqueScreenStart = -38 + 124 * (opaqueTailStart / info.height);
   const horizonBottom = -38 + 124;
-  assert.ok(opaqueScreenStart <= 70, `the fully opaque panorama tail must cover the raised regular sky bottom (starts at ${opaqueScreenStart.toFixed(2)}vh)`);
-  assert.ok(opaqueScreenStart <= 78, "the fully opaque panorama tail must cover the ultrawide sky bottom");
-  assert.ok(horizonBottom >= 85, "the raised panorama must still overlap the town ground");
+  const regularSkyBottom = 100 - 42;
+  const ultrawideSkyBottom = 100 - 34;
+  assert.ok(opaqueScreenStart > regularSkyBottom, "the regression fixture must keep exercising the town fallback gap on regular screens");
+  assert.ok(opaqueScreenStart <= ultrawideSkyBottom + 1, "the ultrawide sky and fully opaque hill tail must still nearly meet");
+  assert.ok(horizonBottom >= 83, "the raised panorama must still overlap the raised town ground");
+
+  const skyPath = path.join(root, "assets/images/nazonazo-tunnel", "town_sky_back_20260703.webp");
+  const { data: skyData, info: skyInfo } = await sharp(skyPath).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  const fallback = [0xc7, 0xd6, 0x59];
+  const rowStart = (skyInfo.height - 1) * skyInfo.width * skyInfo.channels;
+  const average = [0, 1, 2].map(channel => {
+    let sum = 0;
+    for (let x = 0; x < skyInfo.width; x++) sum += skyData[rowStart + x * skyInfo.channels + channel];
+    return sum / skyInfo.width;
+  });
+  assert.ok(average.every((value, channel) => Math.abs(value - fallback[channel]) <= 18), `town fallback ${fallback} must stay close to the sky asset's bottom row ${average.map(value => value.toFixed(1))}`);
 }
 
 verifyPanoramaAssets()

@@ -10,7 +10,7 @@
   --screen-exit-left-vh:-.14;
   --screen-exit-mask-edge:.54;
   --screen-exit-shift-x:0px;
-  --town-sky-lift:30vh;
+  --town-sky-lift:42vh;
   --portal-mask-in:polygon(14% 37%,35% 37%,35% 49%,26% 49%,26% 83%,42% 83%,42% 98%,13% 98%,13% 49%,14% 49%);
   --portal-mask-out:polygon(54% 42%,65% 42%,65% 97%,54% 97%);
 }
@@ -43,7 +43,7 @@ body.tunnel-interior #seaFishLayer{display:none!important}
   contain:layout paint;pointer-events:none}
 #jungleAnimalsFar{z-index:1}
 #jungleAnimalsMid{z-index:2}
-#jungleAnimalsNear{z-index:3;bottom:14vh}
+#jungleAnimalsNear{z-index:3;bottom:16vh}
 body.st-jungle .jungle-animal-layer{display:block}
 body.tunnel-interior .jungle-animal-layer{display:none!important}
 .jungle-animal-sprite{position:absolute;left:0;top:0;width:clamp(var(--animal-min,36px),var(--animal-width,6vw),var(--animal-max,112px));
@@ -82,9 +82,10 @@ body.st-jungle:not(.tunnel-interior) .jungle-flight-layer{display:block}
 .decor{position:absolute;bottom:11.5vh}
 .decor.town-decor,.decor.image-decor{background-size:contain;background-repeat:no-repeat;background-position:center bottom;filter:drop-shadow(0 3px 0 rgba(70,45,25,.12))}
 .decor.image-decor{bottom:12.2vh;z-index:4}
-.decor.jungle-decor{bottom:11.8vh;filter:drop-shadow(0 4px 0 rgba(35,55,25,.14))}
-.decor.number-decor{bottom:12vh;filter:drop-shadow(0 4px 0 rgba(92,70,135,.13))}
-.decor.future-decor{bottom:12vh;filter:drop-shadow(0 4px 0 rgba(45,72,80,.13))}
+.decor.town-decor{bottom:14.2vh}
+.decor.jungle-decor{bottom:13.8vh;filter:drop-shadow(0 4px 0 rgba(35,55,25,.14))}
+.decor.number-decor{bottom:14vh;filter:drop-shadow(0 4px 0 rgba(92,70,135,.13))}
+.decor.future-decor{bottom:14vh;filter:drop-shadow(0 4px 0 rgba(45,72,80,.13))}
 #cars{position:absolute;bottom:6.5vh;left:0;right:0;z-index:7;pointer-events:none}
 body.st-space #cars{bottom:26.3vh}
 .car{position:absolute;bottom:0;width:8vw;height:7.4vw;max-width:96px;max-height:90px;
@@ -129,8 +130,8 @@ body.v-rocket .car::before,body.v-rocket .car::after{display:none}
 #veh{position:absolute;bottom:12.5vh;left:28vw;width:clamp(120px,22vw,220px);height:clamp(70px,13vw,130px);z-index:7}
 body.v-train #cars{bottom:9.1vh}
 body.v-train #veh{left:calc(55vw - clamp(95px,15.45vw,165.5px));bottom:9.1vh;width:clamp(190px,30.9vw,331px);height:clamp(95px,15.45vw,165.5px)}
-body.st-town.v-train #cars,body.st-jungle.v-train #cars,body.st-number.v-train #cars,body.st-future.v-train #cars{bottom:8.45vh}
-body.st-town.v-train #veh,body.st-jungle.v-train #veh,body.st-number.v-train #veh,body.st-future.v-train #veh{bottom:8.45vh}
+body.st-town.v-train #cars,body.st-jungle.v-train #cars,body.st-number.v-train #cars,body.st-future.v-train #cars{bottom:9.8vh}
+body.st-town.v-train #veh,body.st-jungle.v-train #veh,body.st-number.v-train #veh,body.st-future.v-train #veh{bottom:9.8vh}
 body.st-space #veh{bottom:26vh}
 #fgT{position:absolute;left:0;right:0;bottom:0;height:22vh;z-index:8;pointer-events:none;
   background-repeat:repeat-x;background-size:auto 100%;will-change:background-position}
@@ -253,6 +254,11 @@ body.st-space .tun{bottom:20vh}
 .tun.station.open .door.l{transform:translateX(-128%)}
 .tun.station.open .door.r{transform:translateX(128%)}
 .dropStation{position:absolute;bottom:8.9vh;width:38vw;max-width:460px;height:31vh;z-index:5;pointer-events:none}
+body.st-town .tun,body.st-jungle .tun,body.st-number .tun,body.st-future .tun{bottom:12.85vh}
+body.st-town .tun.station,body.st-jungle .tun.station{bottom:10.15vh}
+body.st-jungle .tun.station.jungle-station{bottom:11.45vh}
+body.st-number .tun.number-gate{bottom:14.55vh}
+body.st-town .dropStation,body.st-jungle .dropStation,body.st-number .dropStation,body.st-future .dropStation{bottom:10.25vh}
 .drop-station-art{position:absolute;inset:0;background:url("../assets/images/nazonazo-tunnel/dropoff_station_20260703.webp") center bottom/contain no-repeat;filter:drop-shadow(0 4px 0 rgba(70,45,25,.13))}
 .drop-station-name{position:absolute;left:24%;top:24%;width:31%;height:18%;display:flex;align-items:center;justify-content:center;
   z-index:2;border:2px solid #8d6a3d;border-radius:9px;background:#fff9df;color:#79512c;font-weight:900;font-size:clamp(9px,1.45vw,14px);letter-spacing:0;line-height:1.05;text-align:center;white-space:nowrap}
@@ -465,15 +471,15 @@ body.st-future .tr-boiler{background:#b8f3ff;border-color:#4bb8d6;border-radius:
 body.st-future .tr-cab{background:#8e7cf0;border-color:#5c4bd6}
 body.st-future .tr-chim{display:none}
 body.st-town #horizon,body.st-town #midT{background-size:auto 100%;background-position-y:0}
-body.st-town #groundT{height:15vh;background-size:auto 100%}
+body.st-town #groundT{height:17vh;background-size:auto 100%}
 body.st-town #fgT{height:6.5vh;background-size:auto 100%}
 body.st-jungle #horizon{background-size:auto 126%;background-position-y:-22vh}
 body.st-jungle #midT{background-size:auto 116%;background-position-y:-12vh}
-body.st-jungle #groundT{height:14.5vh;background-size:auto 100%}
+body.st-jungle #groundT{height:16.5vh;background-size:auto 100%}
 body.st-jungle #fgT{height:22vh;background-size:auto 100%}
 body.st-number #horizon{background-repeat:repeat-x;background-size:auto 114%;background-position-y:-14vh;-webkit-mask-image:linear-gradient(to bottom,transparent 0%,transparent 28%,rgba(0,0,0,.68) 46%,#000 64%);mask-image:linear-gradient(to bottom,transparent 0%,transparent 28%,rgba(0,0,0,.68) 46%,#000 64%)}
 body.st-number #midT{background-repeat:repeat-x;background-size:auto 110%;background-position-y:-8vh;opacity:.95;-webkit-mask-image:linear-gradient(to bottom,transparent 0%,transparent 20%,rgba(0,0,0,.82) 42%,#000 62%);mask-image:linear-gradient(to bottom,transparent 0%,transparent 20%,rgba(0,0,0,.82) 42%,#000 62%)}
-body.st-number #groundT{height:15vh;background-size:auto 100%;z-index:3}
+body.st-number #groundT{height:17vh;background-size:auto 100%;z-index:3}
 body.st-number #fgT{height:9vh;background-size:auto 100%;opacity:1;-webkit-mask-image:linear-gradient(to bottom,transparent 0%,rgba(0,0,0,.5) 22%,#000 48%);mask-image:linear-gradient(to bottom,transparent 0%,rgba(0,0,0,.5) 22%,#000 48%)}
 body.st-sea #horizon{background-repeat:repeat-x;background-size:auto 112%;background-position-y:-8vh}
 body.st-sea #midT{background-size:auto 110%;background-repeat:repeat-x;background-position-y:2vh;opacity:.82}
@@ -482,7 +488,7 @@ body.st-sea #groundT{-webkit-mask-image:linear-gradient(to bottom,transparent 0%
 body.st-sea #fgT{height:21vh;background-size:auto 100%;opacity:1;-webkit-mask-image:linear-gradient(to bottom,transparent 0%,rgba(0,0,0,.72) 12%,#000 28%);mask-image:linear-gradient(to bottom,transparent 0%,rgba(0,0,0,.72) 12%,#000 28%)}
 body.st-future #horizon{background-repeat:repeat-x;background-size:auto 116%;background-position-y:-16vh;-webkit-mask-image:linear-gradient(to bottom,transparent 0%,transparent 38%,rgba(0,0,0,.52) 52%,#000 70%);mask-image:linear-gradient(to bottom,transparent 0%,transparent 38%,rgba(0,0,0,.52) 52%,#000 70%)}
 body.st-future #midT{background-repeat:repeat-x;background-size:auto 112%;background-position-y:-8vh;opacity:.94;-webkit-mask-image:linear-gradient(to bottom,transparent 0%,transparent 30%,rgba(0,0,0,.62) 46%,#000 66%);mask-image:linear-gradient(to bottom,transparent 0%,transparent 30%,rgba(0,0,0,.62) 46%,#000 66%)}
-body.st-future #groundT{height:15.4vh;background-size:auto 100%;z-index:3}
+body.st-future #groundT{height:17.4vh;background-size:auto 100%;z-index:3}
 body.st-future #fgT{height:9.2vh;background-size:auto 100%;opacity:1;-webkit-mask-image:linear-gradient(to bottom,transparent 0%,rgba(0,0,0,.52) 22%,#000 48%);mask-image:linear-gradient(to bottom,transparent 0%,rgba(0,0,0,.52) 22%,#000 48%)}
 .sb-hull,.sb-peri,.sb-fin,.sb-win,.submarine-art{display:none}
 body.v-sub #veh{left:calc(53vw - clamp(78px,13vw,143px));bottom:12.4vh;width:clamp(156px,26vw,286px);height:clamp(111px,18.4vw,203px)}
@@ -599,6 +605,15 @@ body.v-rocket #veh.go .rk-flame{opacity:1;animation:flame .22s linear infinite a
 .score-hud-pill.is-high>strong{color:#6655b8}
 #scoreHudTail{position:absolute;left:calc(100% + 4px);top:0;display:flex;align-items:center;gap:4px;white-space:nowrap}
 #scoreHud #helpBadge,#scoreHud #carBadge{position:static;left:auto;bottom:auto;z-index:auto}
+body.tunnel-interior #scoreCurrentPill,
+body.tunnel-interior #scoreHud #helpBadge,
+body.tunnel-interior #scoreHud #carBadge{display:none!important}
+body.tunnel-interior #scoreHudTail{position:static;left:auto;top:auto;display:block}
+body.tunnel-interior #highScorePill{height:auto;min-width:0;padding:0;border:0;border-radius:0;background:transparent;box-shadow:none;line-height:1}
+body.tunnel-interior #highScorePill>span{color:#fff;font-size:clamp(11px,1.7vw,15px);line-height:1;letter-spacing:.08em;
+  text-shadow:0 2px 0 rgba(0,0,0,.85),0 0 8px rgba(0,0,0,.6)}
+body.tunnel-interior #highScorePill>strong{margin-top:3px;color:#fff;font-size:clamp(27px,5vw,44px);line-height:.95;
+  text-shadow:0 3px 0 rgba(0,0,0,.9),0 0 12px rgba(0,0,0,.72)}
 #homeBtn{pointer-events:auto;background:rgba(255,255,255,.85);border:none;border-radius:999px;padding:8px 16px;font:inherit;font-size:clamp(14px,2.6vw,20px);color:var(--ink);box-shadow:0 3px 0 rgba(0,0,0,.15)}
 #weatherNotice{position:absolute;top:calc(60px + env(safe-area-inset-top));left:50%;z-index:10;transform:translateX(-50%);
   width:min(92vw,520px);padding:7px 16px;border:2px solid rgba(163,205,226,.88);border-radius:18px;
@@ -701,7 +716,7 @@ h1{font-size:clamp(24px,5.6vw,50px);color:#e0704a;text-shadow:0 3px 0 #fff}
 #rotateHint{display:none;position:fixed;inset:0;z-index:99;background:#ffe9c2;color:var(--ink);
   font-size:clamp(18px,5vw,30px);font-weight:800;align-items:center;justify-content:center;text-align:center;padding:20px}
 @media (orientation:portrait){#rotateHint{display:flex}#scoreHud{display:none}}
-@media (min-aspect-ratio:2/1){:root{--town-sky-lift:22vh}}
+@media (min-aspect-ratio:2/1){:root{--town-sky-lift:34vh}}
 @media (orientation:landscape) and (max-width:1000px){
   #dots{gap:4px;padding:6px 8px}
   #stgName{font-size:12px;margin-right:2px}
@@ -733,7 +748,7 @@ h1{font-size:clamp(24px,5.6vw,50px);color:#e0704a;text-shadow:0 3px 0 #fff}
   .choice .em{font-size:clamp(34px,7vw,54px)}
   .choice .lb{font-size:clamp(13px,2.6vw,18px)}
   #stamp{top:28%;font-size:clamp(24px,5.4vw,42px)}
-  #tunnelFriendPanel{top:calc(52px + env(safe-area-inset-top));width:min(40vw,300px);padding:5px 9px 6px}
+  #tunnelFriendPanel{top:calc(64px + env(safe-area-inset-top));width:min(40vw,300px);padding:5px 9px 6px}
   #tunnelFriendTitle{font-size:clamp(13px,2.25vw,17px)}
   .tunnel-score-box{font-size:clamp(9px,1.5vw,11px)}
   .tunnel-score-box strong{font-size:clamp(15px,2.65vw,21px)}
