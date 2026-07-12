@@ -63,11 +63,48 @@ function extractFunction(source, name) {
   assert.fail(`${name} function is unterminated`);
 }
 
-assert.match(index, /aria-label="シールちょうを えらぶ"[^>]*>[\s\S]*?ちょうを えらぶ/, "the top action needs the new short and accessible copy");
-assert.match(index, /<h2>シールちょうを えらぶ<\/h2>/, "the panel heading must explain the actual operation");
-assert.match(index, /<span>いまの シールちょう<\/span>/, "the current-book preview needs a descriptive label");
+assert.match(index, /<button id="topThemeButton"[^>]*aria-label="ひょうしを えらぶ"[^>]*aria-controls="bookThemePanel"[^>]*aria-expanded="false"[^>]*>\s*<span class="top-button-label">ひょうし<\/span>/, "the top action must use the short, concrete cover label");
+assert.doesNotMatch(index.match(/<button id="topThemeButton"[^>]*>/)?.[0] || "", /aria-pressed/, "the panel trigger must expose expanded state rather than a pressed toggle");
+assert.match(index, /<section id="bookThemePanel"[^>]*aria-label="ひょうしを えらぶ"/, "the cover panel needs a clear accessible name");
+assert.match(index, /<h2>ひょうしを えらぶ<\/h2>/, "the panel heading must explain the cover choice");
+assert.match(index, /<span>いまの ひょうし<\/span>/, "the current preview must describe the selected cover");
+assert.match(index, /class="zukan-settings-segment zukan-theme-picker"[^>]*aria-label="ひょうしの いちらん"/, "the cover list needs its own accessible name");
+assert.match(index, /<button id="bookPageLabel"[^>]*\shidden(?:\s|>)/, "the default closed-cover load must hide the center label before module startup");
 assert.doesNotMatch(index, /きせかえ/, "the current book-theme UI must reserve きせかえ for future dress-up stickers");
-assert.match(main, /textDemo: "シールちょうを えらんだり\\nミュージアムで シールを みられるよ"/, "the tutorial must use the renamed operation");
+assert.doesNotMatch(index, /シールちょうを えらぶ|>ちょうを えらぶ</, "retired long and ambiguous operation labels must not remain in the cover UI");
+assert.match(main, /textDemo: "ひょうしを えらんだり\\nミュージアムで シールを みられるよ"/, "the tutorial must use the cover term");
+assert.match(main, /freeBody: "アプリでは ひょうしを もっと えらべるよ"/, "the tier prompt must use the same cover term");
+assert.match(main, /`\$\{label\}の ひょうしを えらぶ`/, "available cover cards need explicit accessible actions");
+assert.match(extractFunction(main, "syncTopSettingsButton"), /topThemeButton\?\.setAttribute\("aria-expanded", themeOpen \? "true" : "false"\)/, "the cover trigger must synchronize its panel state");
+
+const updateControlsSource = extractFunction(main, "updateBookPageControls");
+const pageUi = {
+  activeSurface: "cover",
+  activeBookPage: 1,
+  document: { body: { classList: { cover: false, toggle(name, value) { if (name === "is-cover-surface") this.cover = Boolean(value); } } } },
+  bookPageLabel: { hidden: false, textContent: "1-2 / 12", disabled: false },
+  bookPrevPage: { disabled: false },
+  bookNextPage: { disabled: false },
+  bookPageControls: { hidden: true },
+  renderBookPageJump() {},
+  updateCollectionTraySelection() {},
+  rightBookPageNumber() { return 2; },
+  editorPageCount() { return 12; },
+  spreadStartForPage(page) { return page % 2 === 0 ? page - 1 : page; },
+};
+vm.createContext(pageUi);
+vm.runInContext(`${updateControlsSource}\nglobalThis.__updateControls = updateBookPageControls;`, pageUi, { timeout: 1000 });
+pageUi.__updateControls();
+assert.equal(pageUi.bookPageLabel.hidden, true, "the redundant center label must be absent on the closed cover");
+assert.equal(pageUi.bookPageControls.hidden, false, "cover navigation arrows must remain available");
+assert.equal(pageUi.bookPrevPage.disabled, true, "the closed cover must keep the previous arrow disabled");
+assert.equal(pageUi.bookNextPage.disabled, false, "the closed cover must keep the open-book arrow available");
+pageUi.activeSurface = "inside";
+pageUi.__updateControls();
+assert.equal(pageUi.bookPageLabel.hidden, false, "the page label must return inside the book");
+assert.equal(pageUi.bookPageLabel.textContent, "1-2 / 12", "inside spreads must retain their page range");
+assert.equal(pageUi.bookPageLabel.disabled, false, "the inside page label must still open page jump");
+assert.match(extractFunction(main, "renderBookPageJump"), /coverButton\.textContent = "ひょうし"/, "the inside page menu must retain its useful return-to-cover choice");
 
 const selectableThemes = [...index.matchAll(/data-book-theme="([^"]+)"/g)].map((match) => match[1]);
 assert.ok(selectableThemes.length >= 4, "the theme picker must retain its selectable books");
@@ -201,6 +238,7 @@ assert.match(css, /\.top-theme-button \{[\s\S]*?background-image: var\(--sb3d-ui
 assert.doesNotMatch(css, /\.top-theme-button \{[\s\S]{0,180}?padding:\s*0\s+5%\s+0\s+34%/, "button-internal spacing must not resolve against the parent width");
 assert.match(css, /\.top-theme-button \{\s*width: 186px;\s*padding: 0 9px 0 60px;/, "the full-size action needs enough fixed-width room for its label");
 assert.match(css, /\.top-theme-button \{\s*width: 132px;\s*height: 42px;\s*padding: 0 6px 0 43px;/, "the shortest landscape action must keep the whole label visible");
+assert.match(css, /\.book-page-label\[hidden\]\s*\{[^}]*display:\s*none;/, "the closed-cover label must stay out of layout and the accessibility tree");
 assert.ok((css.match(/aspect-ratio: 1472 \/ 1536;/g) || []).length >= 2, "current and selectable previews must use the real book ratio");
 assert.match(css, /background-size: var\(--book-thumb-size, auto 100%\)/, "theme previews must mirror each cover's fit scale");
 assert.match(css, /"label picker"[\s\S]*?"current picker"/, "short landscape panels must avoid nested full-width stacking");
@@ -208,7 +246,7 @@ assert.match(css, /"label picker"[\s\S]*?"current picker"/, "short landscape pan
 const textlessButton = path.join(root, "assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_theme_ribbon_wood_gpt_image2_20260623.webp");
 assert.ok(fs.existsSync(textlessButton), "the optimized textless theme button asset must exist");
 assert.ok(fs.statSync(textlessButton).size < 200 * 1024, "the textless button must not add a megabyte-scale startup cost");
-assert.match(index, /styles\.css\?v=20260713-1273/, "the renamed and resized UI must bypass stale CSS caches");
-assert.match(index, /main\.js\?v=20260713-1273/, "the per-theme fit pipeline must bypass stale module caches");
+assert.match(index, /styles\.css\?v=20260713-1274/, "the shortened cover UI must bypass stale CSS caches");
+assert.match(index, /main\.js\?v=20260713-1274/, "the cover-label behavior must bypass stale module caches");
 
 console.log("stickerbook_theme_fit_copy_regression: all assertions passed");

@@ -2058,7 +2058,7 @@ const STICKER_TUTORIAL_STEPS = [
     id: "extras",
     target: "topExtras",
     card: "corner",
-    textDemo: "シールちょうを えらんだり\nミュージアムで シールを みられるよ",
+    textDemo: "ひょうしを えらんだり\nミュージアムで シールを みられるよ",
     hand: "point",
     minAdvanceMs: 5000,
   },
@@ -3323,10 +3323,10 @@ function showBookVariantLockPromo(bookName) {
     window.PonoTier.showTierLockPromo({
       freeTag: "アプリ",
       freeTitle: "アプリで つかえるよ",
-      freeBody: "アプリでは シールちょうを もっと えらべるよ",
+      freeBody: "アプリでは ひょうしを もっと えらべるよ",
       appTag: "アプリ",
       appTitle: "アプリで つかえるよ",
-      appBody: "アプリでは シールちょうを もっと えらべるよ",
+      appBody: "アプリでは ひょうしを もっと えらべるよ",
     });
     return;
   }
@@ -3373,7 +3373,7 @@ function hydrateBookThemeCards() {
     if (locked) {
       const requiredTier = bookThemeAccess(bookName).minTier;
       button.title = requiredTier === "book" ? "あいことばで つかえるよ" : "アプリで つかえるよ";
-      button.setAttribute("aria-label", `${label} (${button.title})`);
+      button.setAttribute("aria-label", `${label}の ひょうし (${button.title})`);
       if (!button.querySelector(".book-theme-lock-badge")) {
         const badge = document.createElement("span");
         badge.className = "book-theme-lock-badge";
@@ -3383,7 +3383,7 @@ function hydrateBookThemeCards() {
       }
     } else {
       button.removeAttribute("title");
-      button.setAttribute("aria-label", `${label}を えらぶ`);
+      button.setAttribute("aria-label", `${label}の ひょうしを えらぶ`);
       button.querySelector(".book-theme-lock-badge")?.remove();
     }
   }
@@ -4443,7 +4443,7 @@ function syncTopSettingsButton() {
     "aria-pressed",
     settingsOpen ? "true" : "false",
   );
-  topThemeButton?.setAttribute("aria-pressed", themeOpen ? "true" : "false");
+  topThemeButton?.setAttribute("aria-expanded", themeOpen ? "true" : "false");
 }
 
 function setupZukanSettingsPanel() {
@@ -11050,7 +11050,7 @@ function updateBookPageControls() {
   document.body.classList.toggle("is-cover-surface", activeSurface === "cover");
   if (activeSurface === "cover") {
     if (bookPageLabel) {
-      bookPageLabel.textContent = "ひょうし";
+      bookPageLabel.hidden = true;
       bookPageLabel.disabled = true;
     }
     if (bookPrevPage) {
@@ -11072,6 +11072,7 @@ function updateBookPageControls() {
     : String(activeBookPage);
   const lastSpreadStart = spreadStartForPage(editorPageCount());
   if (bookPageLabel) {
+    bookPageLabel.hidden = false;
     bookPageLabel.textContent = `${rangeLabel} / ${editorPageCount()}`;
     bookPageLabel.disabled = activeSurface === "cover";
   }

@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2156: シールちょうのテーマ選択を短い「ひょうし」へ統一し、表紙表示中は中央下の重複する「ひょうし」状態ラベルをfocus／読み上げごと非表示化。中ページのページ番号ボタンとページ一覧内の表紙へ戻る「ひょうし」は維持する (batch:1273)。play.html PAGE_CACHE_VERSION と同期 (2156)。
 // v2155: シールちょうの現行「きせかえ」を将来の着せ替えシールと区別できる「シールちょうを えらぶ」へ改名。「とくべつ」を基準に全25テーマの表紙を等方zoom／中心補正し、必要な中ページ・裏表紙・表紙裏の外周も調整。綴じ絵がないテーマはring下へテーマ色の綴じ板を追加し、補正textureは現在テーマだけ保持して切替時に解放する (batch:1272)。play.html PAGE_CACHE_VERSION と同期 (2155)。
 // v2154: なぞなぞトレインの深い海シューティングを16／20／24発の高速連射、最大2.2倍の非線形膨張、張り→白色フラッシュ→光輪＋36破片の大破裂へ刷新。宇宙はGPT Image 2生成の星雲・惑星・小惑星・探査ロケット・宇宙駅と遠中近の星粒を多重スクロールし、3タップで星座をつないで答える短いミニゲームへ変更した (batch:1271)。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/画像/テストのみ変更)。
 // v2153: ガチャ結果に「はじめて／もってるシール」と獲得後の何枚目かを表示。シール帳は所持countを残り枚数として×N表示し、表紙を含む全ページで所持数まで貼付可能、削除で1枚復帰、旧上限超過配置は非破壊で維持する (batch:1271)。play.html PAGE_CACHE_VERSION と同期 (2153)。
@@ -80,7 +81,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2155;
+const CACHE_VERSION = 2156;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
