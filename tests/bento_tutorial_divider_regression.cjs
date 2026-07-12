@@ -1,6 +1,7 @@
 'use strict';
 
-// batch:1261 regression: 操作数どおりのundo・葉っぱ青枠・仕切り角度のAdmin同期を守る。
+// batch:1262 regression: 操作数どおりのundo・葉っぱ青枠・仕切り角度のAdmin同期に加え、
+// 小さいおかず工程から通常プレイ用の「したに しく」へ逸れないことを守る。
 
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -355,6 +356,88 @@ sideHook({ type: 'food', parentCupId: 'cup-c' });
 assert.equal(sideTimers.length, 2);
 sideTimers[1]();
 assert.deepEqual(sideAdvances, ['tut2-leaf-tab']);
+
+// 小さいおかず工程では配置済みメインを選べず、通常プレイ用の葉っぱ編集を開けない。
+// 正規の leaf-place では内部 target だけ維持し、編集パネルは再表示しない。
+const okazuEditGuardSource = extract(
+  html,
+  'function tutorialAllowsSimpleMainOkazuEditTarget()',
+  'function getSimpleOkazuEditTarget()',
+  'main okazu tutorial edit guards'
+);
+const okazuEditState = { active: false, step: '' };
+const mainOkazu = { uid: 'hamburger-1', type: 'food', okazuRole: 'main' };
+const okazuEditGuards = vm.runInNewContext(`(() => {
+  ${okazuEditGuardSource}
+  return {
+    target: () => isSimpleMainOkazuEditTarget(mainOkazu),
+    picker: tutorialAllowsSimpleMainOkazuEditPicker,
+    panel: tutorialAllowsSimpleMainOkazuEditPanel,
+  };
+})()`, {
+  tutorialState: okazuEditState,
+  mainOkazu,
+  simpleBentoMode: true,
+  getOkazuRole: item => item.okazuRole,
+  isOkazuGuideStep: () => true,
+  freeMaskEditorMode: false,
+  getEditingCup: () => null,
+});
+assert.equal(okazuEditGuards.target(), true, 'normal play keeps the main-food leaf editor');
+assert.equal(okazuEditGuards.picker(), true);
+assert.equal(okazuEditGuards.panel(), true);
+okazuEditState.active = true;
+for (const step of ['tut2-okazu-main', 'tut2-cup-food', 'tut2-free-okazu', 'tut2-leaf-tab', 'tut2-divider-place']) {
+  okazuEditState.step = step;
+  assert.equal(okazuEditGuards.target(), false, `${step} must not expose a leaf edit target`);
+  assert.equal(okazuEditGuards.picker(), false, `${step} must not open the leaf picker`);
+  assert.equal(okazuEditGuards.panel(), false, `${step} must not render the normal-play edit strip`);
+}
+okazuEditState.step = 'tut2-leaf-pick';
+assert.equal(okazuEditGuards.target(), true, 'the guided lettuce picker keeps its seeded hamburger target');
+assert.equal(okazuEditGuards.picker(), true, 'the guided lettuce picker remains available');
+assert.equal(okazuEditGuards.panel(), false, 'the guided picker opens directly without the normal-play edit strip');
+okazuEditState.step = 'tut2-leaf-place';
+assert.equal(okazuEditGuards.target(), true, 'armed lettuce placement still resolves its hamburger target');
+assert.equal(okazuEditGuards.picker(), false, 'lettuce placement must not reopen the edit panel');
+assert.equal(okazuEditGuards.panel(), false);
+
+const okazuToggle = extract(html, 'function toggleSimpleOkazuEditPicker(mode)', '// [おかずを かえる]', 'okazu picker toggle');
+assert.match(okazuToggle, /if \(!tutorialAllowsSimpleMainOkazuEditPicker\(\)\) return;/,
+  'a stale leaf button must be harmless after the tutorial step changes');
+const toolbarSource = extract(html, 'function createFreeContextToolbar(opts = {})', 'function createFreeMainGuideTapLayer()', 'context toolbar');
+assert.match(toolbarSource, /tutorialAllowsSimpleMainOkazuEditPanel\(\)[\s\S]*?isSimpleMainOkazuEditTarget\(item\)/,
+  'the normal-play leaf action must never render during the tutorial');
+
+const simpleSelectionSource = extract(
+  html,
+  'function canSelectFreeItemInCurrentMode(item)',
+  'function clearSimpleSelectionIfBlockedByMode()',
+  'simple selection guard'
+);
+const selectionState = { active: true, step: 'tut2-free-okazu' };
+const selectionMessages = [];
+const selectionGate = vm.runInNewContext(`(() => {
+  ${simpleSelectionSource}
+  return { canSelect: canSelectFreeItemInCurrentMode, show: showSimpleModeSelectionMessage };
+})()`, {
+  tutorialState: selectionState,
+  simpleBentoMode: true,
+  getOkazuRole: item => item.okazuRole,
+  isSimpleDividerEditMode: () => false,
+  isSimplePickEditMode: () => false,
+  tutorialFreeOkazuProgressCopy: () => 'ちいさい おかずを あと 2こ いれてね！',
+  setSpeech: message => selectionMessages.push(['speech', message]),
+  showToast: message => selectionMessages.push(['toast', message]),
+});
+assert.equal(selectionGate.canSelect(mainOkazu), false, 'placed hamburger is not selectable during small-food guidance');
+selectionGate.show(mainOkazu);
+assert.deepEqual(selectionMessages, [
+  ['speech', 'それは ちがうよ。ちいさい おかずを あと 2こ いれてね！'],
+  ['toast', 'それは ちがうよ。ちいさい おかずを あと 2こ いれてね！'],
+]);
+assert.equal(selectionGate.canSelect({ type: 'food', okazuRole: 'side', parentCupId: 'cup-1' }), true,
+  'cup food stays selectable in the same step');
 
 // 5. 葉っぱはハンバーグ本体のタッチだけを受け、外れではarmed状態を維持して再案内する。
 const leafTargetHelpers = extract(

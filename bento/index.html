@@ -9631,8 +9631,8 @@ function shouldMockBentoTutorialVoice(id) {
   return !!(BENTO_TUTORIAL_MOCK_VOICE && /^tut2_/.test(String(id || '')));
 }
 const BENTO_TUTORIAL_STEP_VOICE = {
-  // batch:1058 phase1: tut2 (見本→まねっこ) 17 本。
-  // docs/BENTO_TUTORIAL_SCRIPT.md §3 の generation list と 1:1 対応。
+  // tut2 は未収録の mock ID。現行の収録原稿と追加 event cue は
+  // docs/BENTO_TUTORIAL_NARRATION_SCRIPT.md を正本とする。
   'tut2-greet': 'tut2_01_greet',
   'tut2-box': 'tut2_02_box',
   'tut2-rice': 'tut2_03_rice',
@@ -15633,6 +15633,22 @@ function createFreeContextButton(label, className, onClick, disabled = false, ac
 // はっぱは独立した free item のまま (座標連動の親子関係は持たない)。
 // 「このおかずのはっぱ」= 中心が おかずの 0.6x footprint 半径内にある最寄りの leaf、という近傍規則で対応付ける。
 const SIMPLE_LEAF_BED_FOOTPRINT_RATIO = 1.2; // 葉の見た目 footprint = おかずの約1.2倍 (仕様レンジ 1.15-1.3)
+// batch:1262: 通常プレイ用の「したに しく」導線を、チュートリアルの途中工程へ
+// 露出させない。leaf-place は armed leaf の配置先を内部取得するため target 判定だけ許可し、
+// picker / 編集パネルは leaf-target・leaf-pick の正規導線だけに限定する。
+function tutorialAllowsSimpleMainOkazuEditTarget() {
+  if (!(tutorialState && tutorialState.active)) return true;
+  return ['tut2-leaf-target', 'tut2-leaf-pick', 'tut2-leaf-place'].includes(String(tutorialState.step || ''));
+}
+function tutorialAllowsSimpleMainOkazuEditPicker() {
+  if (!(tutorialState && tutorialState.active)) return true;
+  return ['tut2-leaf-target', 'tut2-leaf-pick'].includes(String(tutorialState.step || ''));
+}
+function tutorialAllowsSimpleMainOkazuEditPanel() {
+  // チュートリアルの葉っぱ一覧は tut2SeedLeafTarget() が直接開くため、通常プレイ用の
+  // 編集帯は不要。レタス選択直後、step 更新前の再描画でも一瞬復活させない。
+  return !(tutorialState && tutorialState.active);
+}
 function getSimpleItemFootprint(item) {
   return (item && item.size ? item.size : 72) * (item && item.scale ? Number(item.scale) || 1 : 1);
 }
@@ -15644,6 +15660,7 @@ function isSimpleMainOkazuEditTarget(item) {
     && !item.parentCupId
     && (item.okazuRole || getOkazuRole(item)) === 'main'
     && isOkazuGuideStep()
+    && tutorialAllowsSimpleMainOkazuEditTarget()
     && !freeMaskEditorMode
     && !getEditingCup()
   );
@@ -15724,6 +15741,8 @@ function getSimpleMainOkazuPickerDefs() {
   );
 }
 function toggleSimpleOkazuEditPicker(mode) {
+  // 再描画直前の古いボタンが押されても、チュートリアルを別工程へ逸らさない。
+  if (!tutorialAllowsSimpleMainOkazuEditPicker()) return;
   const target = getSimpleOkazuEditTarget();
   if (!target) return;
   simpleOkazuEditPickerUid = target.uid;
@@ -16021,7 +16040,12 @@ function renderSimpleOkazuEditPickerTray() {
 function createFreeContextToolbar(opts = {}) {
   const item = getSelectedFreeItem();
   const simpleLeafToolbar = !!(simpleBentoMode && isSimpleLeafEditMode() && item && item.type === 'leaf');
-  const simpleOkazuPanel = !!(simpleBentoMode && !!opts.panel && isSimpleMainOkazuEditTarget(item));
+  const simpleOkazuPanel = !!(
+    simpleBentoMode
+    && !!opts.panel
+    && tutorialAllowsSimpleMainOkazuEditPanel()
+    && isSimpleMainOkazuEditTarget(item)
+  );
   // batch:1057: decor パネル state と選択の sync — 選択が decor 以外/別 uid へ移ったら state を破棄
   // (delete 済み uid も item null でここに落ちる。 simpleOkazuEditPickerUid の render 内 sync と同方式)。
   if (simpleBentoMode && simpleDecorPanelUid && (!item || item.uid !== simpleDecorPanelUid)) {
@@ -17780,6 +17804,11 @@ function isSimplePickEditMode() {
 }
 function canSelectFreeItemInCurrentMode(item) {
   if (!simpleBentoMode || !item) return true;
+  // batch:1262: 小さいおかずをそろえる工程では、配置済みメインを選択して
+  // 通常プレイ用の葉っぱ編集へ寄り道できないよう入力前に止める。
+  if (tutorialState && tutorialState.active && tutorialState.step === 'tut2-free-okazu'
+    && item.type === 'food' && !item.parentCupId
+    && (item.okazuRole || getOkazuRole(item)) === 'main') return false;
   if (isSimpleDividerEditMode()) return item.type === 'divider';
   if (isSimplePickEditMode()) return item.type === 'pick';
   if (item.type === 'divider') return false;
@@ -17787,6 +17816,14 @@ function canSelectFreeItemInCurrentMode(item) {
   return true;
 }
 function showSimpleModeSelectionMessage(item) {
+  if (tutorialState && tutorialState.active && tutorialState.step === 'tut2-free-okazu'
+    && item && item.type === 'food' && !item.parentCupId
+    && (item.okazuRole || getOkazuRole(item)) === 'main') {
+    const message = 'それは ちがうよ。' + tutorialFreeOkazuProgressCopy();
+    setSpeech(message);
+    showToast(message);
+    return;
+  }
   if (item && item.type === 'divider') {
     setSpeech('しきりは しきりモードで うごかせるよ。');
     showToast('しきりモードで うごかそう');
@@ -22333,7 +22370,7 @@ const TUT2_STEPS = [
   { id: 'tut2-nori-face-mouth-nose', phaseAMs: 2400, fallbackMs: 8000, renderPhaseA: tut2RenderNoriPhaseA, renderPhaseB: tut2RenderNoriPhaseB },
   { id: 'tut2-nori-move', phaseAMs: 2500, fallbackMs: 6000, renderPhaseA: tut2RenderNoriMovePhaseA, renderPhaseB: tut2RenderNoriMovePhaseB },
   { id: 'tut2-nori-move-undo', single: true, fallbackMs: 7000, renderPhaseB: tut2RenderNoriMoveUndo },
-  // 位置を戻してから大きさ・回転を試し、最後はまとめた履歴を1回で戻す。
+  // 位置を戻してから大きさ・回転を試し、それぞれの操作履歴を2回に分けて戻す。
   { id: 'tut2-nori-edit', single: true, fallbackMs: 9000, renderPhaseB: tut2RenderNoriEdit },
   { id: 'tut2-nori-undo', single: true, fallbackMs: 9000, renderPhaseB: tut2RenderNoriUndo },
   { id: 'tut2-nori-ok', single: true, fallbackMs: 9000, renderPhaseB: tut2RenderNoriOk },

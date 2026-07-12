@@ -1,5 +1,9 @@
 # お弁当ゲーム 新チュートリアル台本 (tut2)
 
+> **2026-07-12 追記**: 現行実装に合わせた収録用の原稿正本は
+> [`BENTO_TUTORIAL_NARRATION_SCRIPT.md`](./BENTO_TUTORIAL_NARRATION_SCRIPT.md) です。
+> このファイルは旧設計と実装履歴を確認するために残しており、収録原稿には使いません。
+
 > **ステータス: オーナーレビュー待ち (台本のみ、コード変更なし)**
 > 旧チュートリアル (`BENTO_TUTORIAL_PAUSED = true` で停止中の D&D 台本) の全面書き直し。
 > 現行のタップ式 + カップファースト UX (box → rice → decor → tier2Main → tier2Side → complete) に完全準拠。
