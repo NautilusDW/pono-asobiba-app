@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2158: タイトルのポノガチャ残り回数badgeを、小さな「あと／かい」と大きな数字へ再構成。残り1〜2回だけ8秒周期の静かな左→右ライトSweepを入れ、0回とreduced-motionでは停止する (batch:1275)。play.html PAGE_CACHE_VERSION と同期 (2158)。
 // v2157: シールちょう上部の「ひょうし」「シール ミュージアム」を、みるモードと同じ木枠・生成文字・868×272比率のGPT Image 2完成ボタンへ統一。3操作の表示寸法と外周を全画面幅でそろえ、HTML重複文字を非表示化した (batch:1274)。play.html PAGE_CACHE_VERSION と同期 (2157)。
 // v2156: シールちょうのテーマ選択を短い「ひょうし」へ統一し、表紙表示中は中央下の重複する「ひょうし」状態ラベルをfocus／読み上げごと非表示化。中ページのページ番号ボタンとページ一覧内の表紙へ戻る「ひょうし」は維持する (batch:1273)。play.html PAGE_CACHE_VERSION と同期 (2156)。
 // v2155: シールちょうの現行「きせかえ」を将来の着せ替えシールと区別できる「シールちょうを えらぶ」へ改名。「とくべつ」を基準に全25テーマの表紙を等方zoom／中心補正し、必要な中ページ・裏表紙・表紙裏の外周も調整。綴じ絵がないテーマはring下へテーマ色の綴じ板を追加し、補正textureは現在テーマだけ保持して切替時に解放する (batch:1272)。play.html PAGE_CACHE_VERSION と同期 (2155)。
@@ -82,7 +83,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2157;
+const CACHE_VERSION = 2158;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。

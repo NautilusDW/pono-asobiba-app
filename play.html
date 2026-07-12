@@ -8519,9 +8519,85 @@
       box-shadow:
         0 3px 0 #aa2941,
         0 7px 12px rgba(78, 22, 31, .3);
+      overflow: hidden;
+      isolation: isolate;
       pointer-events: none;
       transform: rotate(2deg);
       transform-origin: center;
+    }
+    .daily-gacha-entry__remaining-copy {
+      position: relative;
+      z-index: 2;
+      display: inline-flex;
+      align-items: center;
+      gap: 1px;
+      line-height: 1;
+    }
+    .daily-gacha-entry__remaining-word {
+      color: #fff;
+      font-size: 11px;
+      letter-spacing: .02em;
+      text-shadow:
+        -1px 0 0 rgba(117, 24, 43, .92),
+        1px 0 0 rgba(117, 24, 43, .92),
+        0 -1px 0 rgba(117, 24, 43, .92),
+        0 2px 0 rgba(117, 24, 43, .92);
+      transform: translateY(1px);
+    }
+    .daily-gacha-entry__remaining-number {
+      display: inline-block;
+      min-width: .72em;
+      color: #fff0a1;
+      font-size: 30px;
+      font-weight: 1000;
+      font-variant-numeric: tabular-nums;
+      line-height: .78;
+      letter-spacing: -.04em;
+      text-align: center;
+      text-shadow:
+        -1px 0 0 rgba(117, 24, 43, .96),
+        1px 0 0 rgba(117, 24, 43, .96),
+        0 -1px 0 rgba(117, 24, 43, .96),
+        0 2px 0 rgba(117, 24, 43, .96);
+    }
+    .daily-gacha-entry__remaining::after {
+      content: "";
+      position: absolute;
+      top: -25%;
+      bottom: -25%;
+      left: -44%;
+      z-index: 1;
+      width: 32%;
+      background: linear-gradient(
+        105deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, .12) 24%,
+        rgba(255, 255, 255, .78) 50%,
+        rgba(255, 249, 196, .16) 76%,
+        rgba(255, 255, 255, 0) 100%
+      );
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(0) skewX(-14deg);
+    }
+    .daily-gacha-entry__remaining[data-remaining]:not([data-remaining="0"])::after {
+      animation: dailyGachaRemainingSweep 8s ease-in-out infinite;
+    }
+    @keyframes dailyGachaRemainingSweep {
+      0% {
+        opacity: 0;
+        transform: translateX(0) skewX(-14deg);
+      }
+      2% { opacity: .15; }
+      7% { opacity: .72; }
+      15% {
+        opacity: 0;
+        transform: translateX(470%) skewX(-14deg);
+      }
+      100% {
+        opacity: 0;
+        transform: translateX(470%) skewX(-14deg);
+      }
     }
     .daily-gacha-entry__remaining[data-remaining="0"] {
       border-color: #fff9e8;
@@ -8531,13 +8607,32 @@
         0 3px 0 #5c5149,
         0 6px 10px rgba(58, 45, 36, .24);
     }
+    .daily-gacha-entry__remaining[data-remaining="0"] .daily-gacha-entry__remaining-number {
+      color: #fff9e8;
+      text-shadow:
+        -1px 0 0 rgba(63, 54, 48, .9),
+        1px 0 0 rgba(63, 54, 48, .9),
+        0 -1px 0 rgba(63, 54, 48, .9),
+        0 2px 0 rgba(63, 54, 48, .9);
+    }
     .daily-gacha-entry__remaining[hidden] { display: none; }
     @media (orientation: landscape) and (max-height: 540px) {
       .daily-gacha-entry__remaining {
-        min-width: 116px;
+        min-width: 140px;
         height: 46px;
-        padding-inline: 14px;
-        font-size: 26px;
+        padding-inline: 10px;
+      }
+      .daily-gacha-entry__remaining-word {
+        font-size: 18px;
+      }
+      .daily-gacha-entry__remaining-number {
+        font-size: 38px;
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .daily-gacha-entry__remaining::after {
+        display: none;
+        animation: none;
       }
     }
     /* v1672: acorn 退去で上方 36px 回収 (86→50)。 bottom は nav 干渉回避で据置 */
@@ -9452,7 +9547,7 @@
                  DL されるだけの死荷重だったため <img> を削除 (span は後方互換で残置) -->
             <span class="daily-gacha-entry__icon" aria-hidden="true"></span>
             <span class="daily-gacha-entry__label"><span>１にち１かい<br>ポノガチャ</span><span class="daily-gacha-entry__sub" id="dailyGachaEntrySub">シールを ひこう</span></span>
-            <span class="daily-gacha-entry__remaining" id="dailyGachaRemaining" aria-hidden="true" hidden></span>
+            <span class="daily-gacha-entry__remaining" id="dailyGachaRemaining" aria-hidden="true" hidden><span class="daily-gacha-entry__remaining-copy"><span class="daily-gacha-entry__remaining-word">あと</span><strong class="daily-gacha-entry__remaining-number" id="dailyGachaRemainingNumber">２</strong><span class="daily-gacha-entry__remaining-word">かい</span></span></span>
           </button>
         </div>
       </aside>
@@ -11008,7 +11103,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2157; // sw.js CACHE_VERSION と同期 (batch:1274 シールちょう上部ボタン統一)
+    const PAGE_CACHE_VERSION = 2158; // sw.js CACHE_VERSION と同期 (batch:1275 ガチャ残りbadge強調・Sweep)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -11017,7 +11112,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v2157';
+    window.PONO_SW_VERSION = 'v2158';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
@@ -12029,6 +12124,7 @@
     const dailyGachaEntry = document.getElementById('dailyGachaEntry');
     const dailyGachaEntrySub = document.getElementById('dailyGachaEntrySub');
     const dailyGachaRemaining = document.getElementById('dailyGachaRemaining');
+    const dailyGachaRemainingNumber = document.getElementById('dailyGachaRemainingNumber');
     const dailyGachaModal = document.getElementById('dailyGachaModal');
     const dailyGachaCloseup = document.getElementById('dailyGachaCloseup');
     const dailyGachaClose = document.getElementById('dailyGachaClose');
@@ -12293,7 +12389,7 @@
       dailyGachaEntry.setAttribute('aria-label', entryLabel);
       if (dailyGachaEntrySub) dailyGachaEntrySub.textContent = remainingText;
       if (dailyGachaRemaining) {
-        dailyGachaRemaining.textContent = remainingText;
+        if (dailyGachaRemainingNumber) dailyGachaRemainingNumber.textContent = remainingNumeral;
         dailyGachaRemaining.dataset.remaining = String(remaining);
         dailyGachaRemaining.hidden = false;
       }
