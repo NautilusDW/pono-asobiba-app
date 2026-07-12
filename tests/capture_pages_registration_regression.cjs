@@ -307,8 +307,8 @@ assert.match(
 );
 assert.match(
   stickerBookIndex,
-  /main\.js\?v=20260713-1271/,
-  "StickerBookThreeJS index must bust the module cache for the full-screen capture fix"
+  /main\.js\?v=20260713-1272/,
+  "StickerBookThreeJS index must bust the module cache for the latest StickerBook changes"
 );
 assert.match(
   museumIndex,

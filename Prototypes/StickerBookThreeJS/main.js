@@ -62,6 +62,8 @@ const COLLECTION_ALBUM_STATE_VERSION = 1;
 const DEFAULT_CONTENT_SEED_VERSION = 2;
 const EMPTY_STICKER_START_VERSION = 2;
 const STICKER_TUTORIAL_SEEN_KEY = "sb3d_sticker_tutorial_seen_v1";
+const STICKER_BOOK_THEME_STORAGE_KEY = "pono_sticker_book_theme_v1";
+const coverInsideNameTextureCache = new Map();
 const STICKER_TUTORIAL_AUDIO_BASE = "../../assets/audio/stickerbook/tutorial/";
 const STICKER_TUTORIAL_HAND_BASE = "../../assets/images/puzzle/ui/tutorial/";
 const STICKER_TUTORIAL_HANDS = {
@@ -604,23 +606,11 @@ const BOOK_VARIANTS = {
     spine: "sb3d_forest_spine_canvas_20260623.webp",
     thicknessKey: "boy",
   },
-  book_bonus: {
-    insideLeft: "sb3d_book_bonus_free_blank_page_friends_20260701.webp",
-    insideRight: "sb3d_book_bonus_free_blank_page_friends_20260701.webp",
-    freePage: "sb3d_book_bonus_free_blank_page_friends_20260701.webp",
-    coverPrint: "sb3d_book_bonus_cover_front_friends_armfix_20260701.webp",
-    coverHardwareMode: "separate",
-    coverFront: "sb3d_book_bonus_cover_front_friends_armfix_20260701.webp",
-    coverBack: "sb3d_forest_cover_back_canvas_20260623.webp",
-    coverInside: "sb3d_forest_cover_inside_canvas_20260623.webp",
-    spine: "sb3d_forest_spine_canvas_20260623.webp",
-    thicknessKey: "boy",
-  },
   // tier v3 (feature_tier_v3): 絵本購入者だけが使える特別表紙。
-  // 画像は仮 path (book_bonus/forest の既存 asset を再利用)。 Brand Kit 完了後、
+  // 旧 book_bonus と同じ画像をこの 1 テーマへ統合。 Brand Kit 完了後、
   // 「絵本表紙の再構成 + 右下『絵本を読んでくれたあなたへ』」 版に差し替える。
   // coverInside は sb3d_forest_cover_inside_canvas_20260623.webp をそのまま使うが、
-  // 実表示は coverInsideTextureForBook() が pono_user_name を焼き込んだ CanvasTexture に
+  // 実表示は coverInsideTextureForBook() が現行プロフィール名を焼き込んだ CanvasTexture に
   // 差し替える (below `nameInscription` 座標指定、 画像の金枠ブランクスペースに合わせて調整)。
   book_buyer_edition: {
     insideLeft: "sb3d_book_bonus_free_blank_page_friends_20260701.webp",
@@ -633,11 +623,10 @@ const BOOK_VARIANTS = {
     coverInside: "sb3d_forest_cover_inside_canvas_20260623.webp",
     spine: "sb3d_forest_spine_canvas_20260623.webp",
     thicknessKey: "boy",
-    tier: "book_exclusive",
-    name: "絵本を読んでくれたあなたへ",
-    description: "絵本をよんでくれた あなただけの とくべつな シールちょう",
+    name: "えほんを よんでくれた あなたへ",
+    description: "えほんを よんでくれた あなただけの とくべつな シールちょう",
     unlockedBy: "book_password",
-    unlockMessage: "あいことばを 入れると 使えるよ",
+    unlockMessage: "あいことばで つかえるよ",
     // coverInside 画像 (1472x1536) の金枠ブランクスペースに合わせた名前差し込み座標 (比率指定)。
     nameInscription: {
       xRatio: 0.5,
@@ -1218,6 +1207,55 @@ for (const [key, coverFront] of Object.entries(COVER_ONLY_BOOK_TEXTURE_OVERRIDES
   });
 }
 
+// シール帳きせかえ配分。balanceGroup は在庫バランス確認専用で、
+// プロフィールの性別による選択制限には使わない。
+// free 4 = 2 + 2 / book 7 = 3 + 3 + とくべつ / app 11 = 5 + 5 + とくべつ。
+const BOOK_THEME_ACCESS = Object.freeze({
+  boy: Object.freeze({ minTier: "free", balanceGroup: "boy" }),
+  girl: Object.freeze({ minTier: "free", balanceGroup: "girl" }),
+  shinobi: Object.freeze({ minTier: "free", balanceGroup: "boy" }),
+  sakura: Object.freeze({ minTier: "free", balanceGroup: "girl" }),
+  hero: Object.freeze({ minTier: "book", balanceGroup: "boy" }),
+  idol: Object.freeze({ minTier: "book", balanceGroup: "girl" }),
+  book_buyer_edition: Object.freeze({ minTier: "book", balanceGroup: "all", special: true }),
+  robot: Object.freeze({ minTier: "app", balanceGroup: "boy" }),
+  game_center: Object.freeze({ minTier: "app", balanceGroup: "boy" }),
+  space_live: Object.freeze({ minTier: "app", balanceGroup: "girl" }),
+  rainbow_dream: Object.freeze({ minTier: "app", balanceGroup: "girl" }),
+  // 将来のどんぐり交換・イベント・特典用。在庫として保持し、取得経路ができるまで非表示。
+  kaiju: Object.freeze({ minTier: "future", balanceGroup: "boy" }),
+  mascot: Object.freeze({ minTier: "future", balanceGroup: "girl" }),
+  parade: Object.freeze({ minTier: "future", balanceGroup: "girl" }),
+  secret_base: Object.freeze({ minTier: "future", balanceGroup: "boy" }),
+  anime_studio: Object.freeze({ minTier: "future", balanceGroup: "boy" }),
+  neon_city: Object.freeze({ minTier: "future", balanceGroup: "boy" }),
+  candy_pop: Object.freeze({ minTier: "future", balanceGroup: "girl" }),
+  manga_action: Object.freeze({ minTier: "future", balanceGroup: "boy" }),
+  cyber_grid: Object.freeze({ minTier: "future", balanceGroup: "boy" }),
+  midnight_magic: Object.freeze({ minTier: "future", balanceGroup: "girl" }),
+  pop_art: Object.freeze({ minTier: "future", balanceGroup: "girl" }),
+  festival_night: Object.freeze({ minTier: "future", balanceGroup: "boy" }),
+  sweet_gothic: Object.freeze({ minTier: "future", balanceGroup: "girl" }),
+  sports_power: Object.freeze({ minTier: "future", balanceGroup: "boy" }),
+});
+
+const BOOK_THEME_LEGACY_ALIASES = Object.freeze({
+  book_bonus: "book_buyer_edition",
+  forest: "boy",
+});
+
+const PONO_TIER_RANK = Object.freeze({ free: 0, book: 1, app: 2 });
+const FUTURE_BOOK_THEME_ACCESS = Object.freeze({ minTier: "future", balanceGroup: "all" });
+
+function normalizeBookThemeId(rawBookName) {
+  const bookName = typeof rawBookName === "string" ? rawBookName.trim() : "";
+  return BOOK_THEME_LEGACY_ALIASES[bookName] || bookName;
+}
+
+function bookThemeAccess(bookName) {
+  return BOOK_THEME_ACCESS[normalizeBookThemeId(bookName)] || FUTURE_BOOK_THEME_ACCESS;
+}
+
 const STICKER_BOOK_THEMES = {
   boy: {
     accent: "#d79a34",
@@ -1576,21 +1614,9 @@ const STICKER_BOOK_THEMES = {
   },
 };
 
-STICKER_BOOK_THEMES.book_bonus = {
-  ...STICKER_BOOK_THEMES.forest,
-  accent: "#7da64f",
-  sub: "#58b5a7",
-  line: "#d3bc65",
-  tab: "#edf5d1",
-  collection: {
-    ...STICKER_BOOK_THEMES.forest.collection,
-    tabs: STICKER_BOOK_THEMES.forest.collection.tabs,
-  },
-};
-
-// tier v3: book_buyer_edition は「特別感」を金トーンで表現 (book_bonus からの分岐)。
+// tier v3: book_buyer_edition は旧 book_bonus を統合し、「特別感」を金トーンで表現。
 STICKER_BOOK_THEMES.book_buyer_edition = {
-  ...STICKER_BOOK_THEMES.book_bonus,
+  ...STICKER_BOOK_THEMES.forest,
   accent: "#c9a45a",
   sub: "#8a7248",
   line: "#e4c87a",
@@ -1795,10 +1821,9 @@ const tuningEnabled = params.get("tune") === "1";
 const editorEnabled = true;
 const prototypeControlsEnabled = isLocalPreview && (tuningEnabled || readBooleanParam("controls"));
 const requestedBook = params.get("book");
-// tier v3: URL 直叩き (?book=book_buyer_edition) での tier ゲート回避を防ぐ。
-// 未読込 (window.PonoTier 不在) 時は isBookVariantLocked が "free" フォールバックで
-// 安全側 (ロック扱い) に倒れるため、 common/tier.js の読み込み順が崩れても開放事故にならない。
-let activeBook = BOOK_VARIANTS[requestedBook] && !isBookVariantLocked(requestedBook) ? requestedBook : "boy";
+// URL → 保存済みの選択 → 既定値の順で、現在の tier で使える最初のテーマを選ぶ。
+// 旧 book_bonus URL/保存値は「とくべつ」へ統合し、forest の旧URLは既定テーマへ戻す。
+let activeBook = resolveInitialBookTheme(requestedBook);
 // 図鑑モード (collection) は MVP では非表示。データ/ロジックは削除せず凍結保管し、将来の「森の図鑑」ゲームで再利用する。復活時は true に戻すだけでよい。
 const COLLECTION_MODE_ENABLED = false;
 let activeAlbumMode = params.get("album") === "collection" && COLLECTION_MODE_ENABLED ? "collection" : "free";
@@ -3126,15 +3151,12 @@ resetButton.addEventListener("click", () => {
   syncUrl();
 });
 
-// ---- tier v3: BOOK_VARIANTS 表紙ゲート ----
-// 現状 BOOK_VARIANTS で tier フィールドを持つのは book_buyer_edition ("book_exclusive") のみ。
-// tier 未指定の 25 種は従来通り全 tier 開放 (= 明示的に tier: null を書くのと等価)。
-// window.PonoTier (common/tier.js) が未読込の場合は "free" 相当にフォールバックし、
-// 誤って book 限定表紙を無条件開放しない (tier.js 自身の getTier() フォールバック方針に準拠)。
+// ---- シール帳きせかえ tier / 保存 / 旧ID移行 ----
 function currentPonoTier() {
   try {
     if (window.PonoTier && typeof window.PonoTier.getTier === "function") {
-      return window.PonoTier.getTier();
+      const tier = window.PonoTier.getTier();
+      return Object.prototype.hasOwnProperty.call(PONO_TIER_RANK, tier) ? tier : "free";
     }
   } catch (error) {
     console.warn("PonoTier.getTier failed", error);
@@ -3143,34 +3165,124 @@ function currentPonoTier() {
 }
 
 function isBookVariantLocked(bookName) {
-  const bundle = BOOK_VARIANTS[bookName];
-  if (!bundle || !bundle.tier) {
+  const normalizedBook = normalizeBookThemeId(bookName);
+  if (!BOOK_VARIANTS[normalizedBook]) {
+    return true;
+  }
+  if (prototypeControlsEnabled) {
     return false;
   }
-  if (bundle.tier === "book_exclusive") {
-    // book 購入者 + app 版利用者は開放 (app は「全付録」を含む方針: feature_tier_v3 参照)。
-    // (2026-07-11 tier 名 'sub'→'app' リネーム、買い切り確定)
-    const tier = currentPonoTier();
-    return tier !== "book" && tier !== "app";
-  }
-  return false;
+  const requiredTier = bookThemeAccess(normalizedBook).minTier;
+  const requiredRank = PONO_TIER_RANK[requiredTier];
+  return requiredRank == null || PONO_TIER_RANK[currentPonoTier()] < requiredRank;
 }
 
-function showBookVariantLockPromo(bundle) {
+function isBookVariantVisible(bookName) {
+  const normalizedBook = normalizeBookThemeId(bookName);
+  if (!BOOK_VARIANTS[normalizedBook]) {
+    return false;
+  }
+  if (prototypeControlsEnabled) {
+    return true;
+  }
+  const requiredRank = PONO_TIER_RANK[bookThemeAccess(normalizedBook).minTier];
+  if (requiredRank == null) {
+    return false;
+  }
+  // 子ども向け画面ではロックの壁を作らず、今の tier と次の tier だけを見せる。
+  return requiredRank <= Math.min(PONO_TIER_RANK.app, PONO_TIER_RANK[currentPonoTier()] + 1);
+}
+
+function readStoredBookTheme() {
+  try {
+    const storedBook = localStorage.getItem(STICKER_BOOK_THEME_STORAGE_KEY) || "";
+    const normalizedBook = normalizeBookThemeId(storedBook);
+    if (normalizedBook && normalizedBook !== storedBook && BOOK_VARIANTS[normalizedBook]) {
+      writeStoredBookTheme(normalizedBook);
+    }
+    return normalizedBook;
+  } catch (error) {
+    return "";
+  }
+}
+
+function writeStoredBookTheme(bookName) {
+  const normalizedBook = normalizeBookThemeId(bookName);
+  if (!BOOK_VARIANTS[normalizedBook]) {
+    return false;
+  }
+  try {
+    localStorage.setItem(STICKER_BOOK_THEME_STORAGE_KEY, normalizedBook);
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+function resolveInitialBookTheme(requestedBookName) {
+  const candidates = [normalizeBookThemeId(requestedBookName), readStoredBookTheme(), "boy"];
+  for (const bookName of new Set(candidates)) {
+    if (bookName && BOOK_VARIANTS[bookName] && !isBookVariantLocked(bookName)) {
+      return bookName;
+    }
+  }
+  return "boy";
+}
+
+function showBookVariantLockPromo(bookName) {
   if (!window.PonoTier || typeof window.PonoTier.showTierLockPromo !== "function") {
     return;
   }
+  const normalizedBook = normalizeBookThemeId(bookName);
+  const access = bookThemeAccess(normalizedBook);
+  const bundle = BOOK_VARIANTS[normalizedBook];
+  if (access.minTier === "book") {
+    window.PonoTier.showTierLockPromo({
+      freeTag: "えほん",
+      freeTitle: bundle?.unlockMessage || "あいことばで つかえるよ",
+      freeBody: "おうちの ひとと いれてね",
+    });
+    return;
+  }
+  if (access.minTier === "app") {
+    window.PonoTier.showTierLockPromo({
+      freeTag: "アプリ",
+      freeTitle: "アプリで つかえるよ",
+      freeBody: "アプリには きせかえが もっと あるよ",
+      appTag: "アプリ",
+      appTitle: "アプリで つかえるよ",
+      appBody: "アプリには きせかえが もっと あるよ",
+    });
+    return;
+  }
   window.PonoTier.showTierLockPromo({
-    freeTag: "えほん げんてい",
-    freeTitle: bundle?.unlockMessage || "あいことばで つかえるよ",
-    freeBody: bundle?.description || "えほんを よんでくれた ひとだけの とくべつな シールちょうだよ",
+    freeTag: "これから",
+    freeTitle: "これから ふえるよ",
+    freeBody: "たのしみに まっていてね",
+    appTag: "これから",
+    appTitle: "これから ふえるよ",
+    appBody: "たのしみに まっていてね",
   });
 }
 
 function hydrateBookThemeCards() {
   for (const button of [...themeButtons, ...bookButtons]) {
-    const bookName = button.dataset.bookTheme || button.dataset.book;
+    const bookName = normalizeBookThemeId(button.dataset.bookTheme || button.dataset.book);
     if (!BOOK_VARIANTS[bookName]) {
+      button.hidden = true;
+      continue;
+    }
+    const visible = isBookVariantVisible(bookName);
+    button.hidden = !visible;
+    if (visible) {
+      button.removeAttribute("aria-hidden");
+    } else {
+      button.setAttribute("aria-hidden", "true");
+    }
+    if (!visible) {
+      button.classList.remove("is-tier-locked");
+      button.removeAttribute("title");
+      button.querySelector(".book-theme-lock-badge")?.remove();
       continue;
     }
     const theme = stickerBookTheme(bookName);
@@ -3179,16 +3291,16 @@ function hydrateBookThemeCards() {
     button.style.setProperty("--book-accent", theme.accent || "#49aba2");
     const locked = isBookVariantLocked(bookName);
     button.classList.toggle("is-tier-locked", locked);
-    button.setAttribute("aria-disabled", locked ? "true" : "false");
+    button.removeAttribute("aria-disabled");
     if (locked) {
-      const bundle = BOOK_VARIANTS[bookName];
-      button.title = bundle?.unlockMessage || "あいことばを 入れると つかえるよ";
+      const requiredTier = bookThemeAccess(bookName).minTier;
+      button.title = requiredTier === "book" ? "あいことばで つかえるよ" : "アプリで つかえるよ";
       button.setAttribute("aria-label", `${label} (${button.title})`);
       if (!button.querySelector(".book-theme-lock-badge")) {
         const badge = document.createElement("span");
         badge.className = "book-theme-lock-badge";
         badge.setAttribute("aria-hidden", "true");
-        badge.textContent = "🔒";
+        badge.textContent = requiredTier === "book" ? "えほん" : "アプリ";
         button.appendChild(badge);
       }
     } else {
@@ -3218,13 +3330,17 @@ function updateBookThemePreview() {
 }
 
 async function setActiveBook(nextBook) {
-  const normalizedBook = BOOK_VARIANTS[nextBook] ? nextBook : "boy";
+  const normalizedBook = normalizeBookThemeId(nextBook);
+  if (!BOOK_VARIANTS[normalizedBook]) {
+    return;
+  }
   if (isBookVariantLocked(normalizedBook)) {
-    showBookVariantLockPromo(BOOK_VARIANTS[normalizedBook]);
+    showBookVariantLockPromo(normalizedBook);
     updateControlState();
     return;
   }
   if (normalizedBook === activeBook) {
+    writeStoredBookTheme(normalizedBook);
     updateControlState();
     return;
   }
@@ -3237,6 +3353,7 @@ async function setActiveBook(nextBook) {
   cancelSpreadJump();
   closeBookPageJump();
   activeBook = normalizedBook;
+  writeStoredBookTheme(normalizedBook);
   applyVariantState();
 }
 
@@ -3330,6 +3447,10 @@ applyVariantState();
 window.__stickerBookReady = true;
 resolveStickerBookCaptureReady();
 window.__stickerBookDebugState = () => ({
+  activeBook,
+  tier: currentPonoTier(),
+  visibleThemeCount: themeButtons.filter((button) => !button.hidden).length,
+  lockedThemeCount: themeButtons.filter((button) => !button.hidden && button.classList.contains("is-tier-locked")).length,
   activeBookPage,
   activeSurface,
   activeAlbumMode,
@@ -3358,6 +3479,7 @@ window.__stickerBookDebugState = () => ({
   pageTurnVisible: pageTurn.visible,
   frontPageVisible: frontPage.visible,
   backPageVisible: backPage.visible,
+  coverTurnBackTextureIsCanvas: coverTurnBack.material.map?.image instanceof HTMLCanvasElement,
   coverPlacementCount: availablePagePlacements(COVER_PLACEMENT_PAGE).length,
   closedCoverTextureIsCanvas: closedCover.material.map?.image instanceof HTMLCanvasElement,
   leftPlacementCount: availablePagePlacements(activeBookPage).length,
@@ -12433,17 +12555,35 @@ function assignTextureObject(mesh, texture) {
 }
 
 // ---- tier v3: book_buyer_edition の名前差し込み表紙裏 (coverInside) ----
-// bundle.nameInscription を持つ variant だけ、 localStorage.pono_user_name を
+// bundle.nameInscription を持つ variant だけ、現行プロフィール名を
 // ベース画像に焼き込んだ CanvasTexture を返す (それ以外は従来通り getTexture(file) をそのまま返す)。
 // (bookName, name) の組み合わせでキャッシュし、 名前が変わらない限り再描画しない。
-const coverInsideNameTextureCache = new Map();
+function sanitizeStoredUserName(value) {
+  const text = typeof value === "string" ? value.replace(/[\u0000-\u001F\u007F]/g, "").trim() : "";
+  return Array.from(text).slice(0, 8).join("");
+}
 
 function readStoredUserName() {
   try {
-    return (localStorage.getItem("pono_user_name") || "").trim();
+    const profile = JSON.parse(localStorage.getItem("pono_player_profile_v1") || "null");
+    const profileName = sanitizeStoredUserName(profile?.name);
+    if (profileName) {
+      return profileName;
+    }
   } catch (error) {
-    return "";
+    // 壊れた旧プロフィールがあっても、下の互換キーを試す。
   }
+  for (const legacyKey of ["pono_profile_name", "pono_user_name"]) {
+    try {
+      const legacyName = sanitizeStoredUserName(localStorage.getItem(legacyKey));
+      if (legacyName) {
+        return legacyName;
+      }
+    } catch (error) {
+      // localStorage を使えない環境では、表紙側の「きみ」へフォールバックする。
+    }
+  }
+  return "";
 }
 
 function coverInsideTextureForBook(bookName = activeBook) {
@@ -17100,10 +17240,11 @@ function getCollectionFoldTexture(bookName) {
 
 function assignCoverTurnTextures() {
   assignTextureObject(coverTurnFront, coverTextureForBook(activeBook));
-  if (activeAlbumMode !== "collection") {
-    assignTextureObject(coverTurnBack, getPageTemplateTexture("left", activeBookPage));
-  } else {
+  const bundle = BOOK_VARIANTS[activeBook] || BOOK_VARIANTS.boy;
+  if (activeAlbumMode === "collection" || bundle.nameInscription) {
     assignTextureObject(coverTurnBack, coverInsideTextureForBook(activeBook));
+  } else {
+    assignTextureObject(coverTurnBack, getPageTemplateTexture("left", activeBookPage));
   }
 }
 
