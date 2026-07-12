@@ -112,6 +112,7 @@ function gNeonGround(w,h,base,line,tick){
 
 /* ================= stages: パレット2種(1周目/2周目)対応 ================= */
 const H=300, HW=1700;
+const TOWN_HORIZON_PARALLAX=.16;
 const ASSETS={
   town:{
    sky:"../assets/images/nazonazo-tunnel/town_sky_back_20260703.webp",
@@ -139,8 +140,16 @@ const ASSETS={
    giraffe:"../assets/images/nazonazo-tunnel/jungle_animal_giraffe_full_20260712.webp"
   },
   flight:{
-   bird:"../assets/images/nazonazo-tunnel/jungle_flying_toucan_3frame_20260712.webp",
-   butterfly:"../assets/images/nazonazo-tunnel/jungle_flying_butterfly_3frame_20260712_v2.webp"
+   birds:[
+    {id:"toucan",src:"../assets/images/nazonazo-tunnel/jungle_flying_toucan_3frame_20260712.webp",width:"clamp(58px,9vmin,100px)",speed:1},
+    {id:"macaw",src:"../assets/images/nazonazo-tunnel/jungle_flying_macaw_3frame_20260712.webp",width:"clamp(72px,11vmin,118px)",speed:.9},
+    {id:"hummingbird",src:"../assets/images/nazonazo-tunnel/jungle_flying_hummingbird_3frame_20260712.webp",width:"clamp(42px,6.5vmin,72px)",speed:1.35}
+   ],
+   butterflies:[
+    {id:"blue",src:"../assets/images/nazonazo-tunnel/jungle_flying_butterfly_3frame_20260712_v2.webp",width:"clamp(40px,6.5vmin,68px)",speed:1},
+    {id:"orange",src:"../assets/images/nazonazo-tunnel/jungle_flying_butterfly_orange_3frame_20260712.webp",width:"clamp(43px,7vmin,72px)",speed:.94},
+    {id:"yellow",src:"../assets/images/nazonazo-tunnel/jungle_flying_butterfly_yellow_3frame_20260712.webp",width:"clamp(38px,6.2vmin,66px)",speed:1.08}
+   ]
   }
  },
  sea:{
@@ -392,6 +401,8 @@ let tunnelFriendCandidates=[],tunnelFriendsFound=0,tunnelFriendTotalFound=0,tunn
 let bestStarsByStage={},answerLocked=false,portalEditHolding=false,nextMagicPuffAt=0,exitPortalBaseWorldX=0;
 let numberCargoPicked=[],numberCargoGoalShown=false;
 let numberCargoTheme=null;
+let steerTargetY=0,steerY=0,seaSteerPointerId=null,seaSteerUsed=false;
+let seaBubbleLaunchPending=false,seaBubbleLaunchTimer=0,seaBubbleOptions=[];
 const NUMBER_CARGO_THEMES=[
  {e:"⭐",name:"おほしさま"},{e:"🎈",name:"ふうせん"},{e:"🌼",name:"おはな"},
  {e:"🍎",name:"りんご"},{e:"🌰",name:"どんぐり"},{e:"🍓",name:"いちご"}
@@ -524,7 +535,8 @@ function setDriverMood(mood){
 
 /* ================= dom ================= */
 const $=id=>document.getElementById(id);
-const world=$("world"),veh=$("veh"),horizon=$("horizon"),midT=$("midT"),groundT=$("groundT"),fgT=$("fgT"),seaFishLayer=$("seaFishLayer"),smokeLayer=$("smokeLayer"),townMidLoop=$("townMidLoop"),jungleHabitatBack=$("jungleHabitatBack");
+const world=$("world"),veh=$("veh"),horizon=$("horizon"),midT=$("midT"),groundT=$("groundT"),fgT=$("fgT"),seaFishLayer=$("seaFishLayer"),smokeLayer=$("smokeLayer"),townHorizonLoop=$("townHorizonLoop"),townMidLoop=$("townMidLoop"),jungleHabitatBack=$("jungleHabitatBack");
+const vehicleSteerShell=$("vehicleSteerShell"),seaSteerSurface=$("seaSteerSurface"),seaAnswerLayer=$("seaAnswerLayer"),seaSteerHint=$("seaSteerHint");
 const jungleAnimalLayers={far:$("jungleAnimalsFar"),mid:$("jungleAnimalsMid"),near:$("jungleAnimalsNear")};
 const jungleFlightLayers={bird:$("jungleBirdFlightLayer"),butterfly:$("jungleButterflyFlightLayer")};
 const skyA=$("skyA"),skyB=$("skyB"),carsEl=$("cars"),carBadge=$("carBadge"),helpBadge=$("helpBadge"),helpBtn=$("helpBtn");
@@ -539,6 +551,8 @@ const rainLayerElements={far:$("rainFar"),mid:$("rainMid"),near:$("rainNear")};
 let seaFishSprites=[];
 let jungleAnimalSprites=[];
 let jungleFlightSprites=[];
+const jungleFlightBags={bird:[],butterfly:[]};
+const jungleFlightLast={bird:"",butterfly:""};
 let lastJungleAnimalRenderKey="";
 let lastJungleFlightRenderAt=0;
 let lastWheelPeriod=0;
@@ -1450,6 +1464,173 @@ function buildNumberFx(sc){
  }
  sc.appendChild(layer);
 }
+function seaReducedMotion(){
+ try{return !!(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches);}catch(_){return false;}
+}
+function snapSeaReducedMotion(){
+ if(seaReducedMotion())steerY=steerTargetY;
+}
+function isSeaStage(){return !!(STAGES[stg]&&STAGES[stg].id==="sea");}
+function seaControlAvailable(){
+ return isSeaStage()&&playing&&!tunnelInteriorMode&&
+  !document.body.classList.contains("tunnel-enter-run")&&!document.body.classList.contains("tunnel-exit-run")&&
+  !seaBubbleLaunchPending&&(driving||quiz.classList.contains("show"));
+}
+function seaSteerBounds(){
+ const viewportHeight=window.innerHeight||390;
+ const height=Math.max(1,veh.offsetHeight||viewportHeight*.24);
+ const baseCenter=viewportHeight-viewportHeight*.124-height*.5;
+ const scoreHud=document.getElementById("scoreHud");
+ const hudBottom=scoreHud?scoreHud.getBoundingClientRect().bottom:viewportHeight*.14;
+ const quizTop=quiz.classList.contains("show")?quiz.getBoundingClientRect().top:viewportHeight*.82;
+ const minCenter=Math.min(viewportHeight*.45,Math.max(hudBottom+height*.5+8,viewportHeight*.17));
+ const maxCenter=Math.max(minCenter+12,Math.min(viewportHeight-height*.5-8,quizTop-height*.5-10));
+ return {baseCenter,minY:minCenter-baseCenter,maxY:maxCenter-baseCenter};
+}
+function applySeaSteerVisual(){
+ if(!vehicleSteerShell)return;
+ const y=IOS_DEVICE?Math.round(steerY):Number(steerY.toFixed(2));
+ const tilt=seaReducedMotion()?0:clamp((steerTargetY-steerY)*-.055,-5,5);
+ vehicleSteerShell.style.setProperty("--sea-steer-y",y+"px");
+ vehicleSteerShell.style.setProperty("--sea-steer-tilt",tilt.toFixed(2)+"deg");
+ carsEl.style.setProperty("--sea-steer-y",y+"px");
+}
+function setSeaSteerTarget(clientY,immediate){
+ if(!isSeaStage())return;
+ const bounds=seaSteerBounds();
+ steerTargetY=clamp(clientY-bounds.baseCenter,bounds.minY,bounds.maxY);
+ if(immediate||seaReducedMotion()){steerY=steerTargetY;applySeaSteerVisual();}
+ highlightNearestSeaBubble();
+}
+function renderSeaSteering(){
+ const active=seaControlAvailable();
+ document.body.classList.toggle("sea-steer-active",active);
+ if(seaSteerHint){
+  seaSteerHint.hidden=!active||seaSteerUsed||quiz.classList.contains("show");
+ }
+ if(!isSeaStage()||!vehicleSteerShell)return;
+ if(seaReducedMotion())snapSeaReducedMotion();
+ else steerY+=(steerTargetY-steerY)*.2;
+ if(Math.abs(steerTargetY-steerY)<.08)steerY=steerTargetY;
+ applySeaSteerVisual();
+ highlightNearestSeaBubble();
+}
+function cancelSeaPointer(){
+ if(seaSteerPointerId===null||!seaSteerSurface)return;
+ try{seaSteerSurface.releasePointerCapture(seaSteerPointerId);}catch(_){}
+ seaSteerPointerId=null;
+}
+function clearSeaBubbleGame(){
+ clearTimeout(seaBubbleLaunchTimer);seaBubbleLaunchTimer=0;
+ seaBubbleLaunchPending=false;seaBubbleOptions=[];
+ document.body.classList.remove("sea-quiz-active","sea-dash-active");
+ quiz.classList.remove("sea-quiz");choicesEl.classList.remove("sea-mode");
+ if(seaAnswerLayer)seaAnswerLayer.replaceChildren();
+ if(isSeaStage()){
+  const bounds=seaSteerBounds();
+  steerTargetY=clamp(steerTargetY,bounds.minY,bounds.maxY);
+  steerY=clamp(steerY,bounds.minY,bounds.maxY);
+ }
+}
+function resetSeaInteraction(){
+ cancelSeaPointer();clearSeaBubbleGame();
+ steerTargetY=0;steerY=0;seaSteerUsed=false;
+ if(vehicleSteerShell){
+  vehicleSteerShell.style.setProperty("--sea-steer-y","0px");
+  vehicleSteerShell.style.setProperty("--sea-steer-tilt","0deg");
+ }
+ carsEl.style.setProperty("--sea-steer-y","0px");
+ document.body.classList.remove("sea-steer-active");
+ if(seaSteerHint)seaSteerHint.hidden=true;
+}
+function nearestSeaBubble(){
+ if(!document.body.classList.contains("sea-quiz-active")||!seaAnswerLayer)return null;
+ const buttons=[...seaAnswerLayer.querySelectorAll(".sea-answer-bubble:not(:disabled):not(.dim)")];
+ if(!buttons.length)return null;
+ const shellRect=vehicleSteerShell.getBoundingClientRect();
+ const subCenter=shellRect.top+shellRect.height*.5;
+ return buttons.map(button=>({button,distance:Math.abs(button.getBoundingClientRect().top+button.offsetHeight*.5-subCenter)}))
+  .sort((a,b)=>a.distance-b.distance)[0]||null;
+}
+function highlightNearestSeaBubble(){
+ if(!seaAnswerLayer)return;
+ const nearest=nearestSeaBubble();
+ seaAnswerLayer.querySelectorAll(".sea-answer-bubble").forEach(button=>button.classList.toggle("is-near",!!nearest&&nearest.button===button&&nearest.distance<=Math.max(30,button.offsetHeight*.62)));
+}
+function handleSeaPointerDown(ev){
+ if(!seaControlAvailable()||seaSteerPointerId!==null)return;
+ ensureAC();seaSteerPointerId=ev.pointerId;seaSteerUsed=true;
+ if(seaSteerHint)seaSteerHint.hidden=true;
+ try{seaSteerSurface.setPointerCapture(ev.pointerId);}catch(_){}
+ setSeaSteerTarget(ev.clientY,seaReducedMotion());
+}
+function handleSeaPointerMove(ev){
+ if(ev.pointerId!==seaSteerPointerId)return;
+ setSeaSteerTarget(ev.clientY,false);
+}
+function handleSeaPointerUp(ev){
+ if(ev.pointerId!==seaSteerPointerId)return;
+ setSeaSteerTarget(ev.clientY,seaReducedMotion());
+ const nearest=nearestSeaBubble();
+ cancelSeaPointer();
+ if(nearest&&nearest.distance<=Math.max(30,nearest.button.offsetHeight*.62)){
+  const option=seaBubbleOptions.find(entry=>entry.button===nearest.button);
+  if(option)launchSeaBubbleChoice(nearest.button,option.value);
+ }else if(document.body.classList.contains("sea-quiz-active")){
+  hintText.textContent="🫧 あわの たかさに あわせて はなそう";
+  announce("あわの たかさに あわせて はなそう");
+ }
+}
+function handleSeaPointerCancel(ev){
+ if(ev.pointerId===seaSteerPointerId)cancelSeaPointer();
+}
+function activeChoiceButtons(){
+ if(document.body.classList.contains("sea-quiz-active")&&seaAnswerLayer)return [...seaAnswerLayer.querySelectorAll(".sea-answer-bubble")];
+ return [...choicesEl.querySelectorAll(".choice")];
+}
+function renderSeaBubbleGame(){
+ let opts=[{e:cur.a[0],t:cur.a[1],ok:true},...cur.d.map(x=>({e:x[0],t:x[1],ok:false}))];
+ if(level===0&&opts.length>2)opts=opts.slice(0,2);
+ opts=shuffle(opts).slice(0,level===0?2:3);
+ document.body.classList.add("sea-quiz-active");quiz.classList.add("sea-quiz");choicesEl.classList.add("sea-mode");
+ choicesEl.setAttribute("aria-label","せんすいかんを あわに あわせる");
+ seaAnswerLayer.replaceChildren();seaBubbleOptions=[];
+ const lanes=opts.length===2?[35,58]:[30,46,62];
+ opts.forEach((o,index)=>{
+  const button=document.createElement("button");button.type="button";button.className="sea-answer-bubble";
+  button.dataset.ok=o.ok?"1":"0";button.setAttribute("aria-label",o.t+"の あわ");
+  button.style.setProperty("--bubble-x",(58+(index%2)*3)+"%");button.style.setProperty("--bubble-y",lanes[index]+"%");
+  button.style.setProperty("--bubble-delay",(-index*.47)+"s");button.style.setProperty("--bubble-duration",(2.35+index*.28)+"s");
+  button.innerHTML='<span class="em">'+o.e+'</span><span class="lb">'+o.t+'</span>';
+  bindTap(button,()=>launchSeaBubbleChoice(button,o));
+  seaAnswerLayer.appendChild(button);seaBubbleOptions.push({button,value:o});
+ });
+ hintText.textContent="🫧 タッチで うごかして あわに あわせよう";
+ setSeaSteerTarget((window.innerHeight||390)*lanes[0]/100,seaReducedMotion());
+ highlightNearestSeaBubble();
+}
+function launchSeaBubbleChoice(button,o){
+ if(seaBubbleLaunchPending||answerLocked||driving||!button||button.disabled||button.classList.contains("dim")||!quiz.classList.contains("show"))return;
+ seaBubbleLaunchPending=true;
+ activeChoiceButtons().forEach(choice=>{choice.disabled=true;});
+ tone(520,0,.08,"sine",.08);tone(720,.08,.12,"sine",.07);
+ const finish=()=>{
+  document.body.classList.remove("sea-dash-active");
+  activeChoiceButtons().forEach(choice=>{if(!choice.classList.contains("dim"))choice.disabled=false;});
+  seaBubbleLaunchPending=false;
+  onPick(button,o);
+  if(o.ok)setTimeout(clearSeaBubbleGame,120);
+ };
+ if(seaReducedMotion())finish();
+ else{document.body.classList.add("sea-dash-active");seaBubbleLaunchTimer=setTimeout(()=>{seaBubbleLaunchTimer=0;finish();},300);}
+}
+if(seaSteerSurface){
+ seaSteerSurface.addEventListener("pointerdown",handleSeaPointerDown);
+ seaSteerSurface.addEventListener("pointermove",handleSeaPointerMove);
+ seaSteerSurface.addEventListener("pointerup",handleSeaPointerUp);
+ seaSteerSurface.addEventListener("pointercancel",handleSeaPointerCancel);
+}
+
 function buildSeaFish(){
  seaFishSprites=[];
  if(!seaFishLayer)return;
@@ -1457,7 +1638,7 @@ function buildSeaFish(){
  const st=STAGES[stg];
  const fish=(st&&st.id==="sea"&&st.assets&&st.assets.fish)||[];
  if(!fish.length)return;
- const count=14;
+ const count=seaReducedMotion()?6:(IOS_DEVICE?10:14);
  for(let i=0;i<count;i++){
   const el=document.createElement("div");
   const img=fish[i%fish.length];
@@ -1487,11 +1668,13 @@ function buildSeaFish(){
 function renderSeaFish(now){
  if(!seaFishSprites.length)return;
  const t=((now||_nowMs())/1000);
+ const reduced=seaReducedMotion();
  seaFishSprites.forEach(f=>{
-  const swim=t*f.speed*f.dir;
+  const swim=reduced?0:t*f.speed*f.dir;
   let x=f.baseX-worldX*f.depth+swim;
   x=((x+20)%150+150)%150-20;
-  const y=f.y+Math.sin(t*f.bobRate+f.phase)*f.bob;
+  const bob=reduced?0:Math.sin(t*f.bobRate+f.phase)*f.bob;
+  const y=f.y+bob;
   const flip=f.dir>0?-1:1;
   f.el.style.transform="translate3d("+cssXFromVw(x)+","+cssYFromVh(y)+",0) scaleX("+flip+")";
  });
@@ -1581,15 +1764,48 @@ function jungleFlightReducedMotion(){
  try{return !!(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches);}catch(_){return false;}
 }
 function jungleFlightRandom(min,max){return min+(max-min)*Math.random();}
+function jungleFlightVariants(type){
+ const st=STAGES[stg],flight=st&&st.id==="jungle"&&st.assets&&st.assets.flight;
+ if(!flight)return [];
+ return type==="bird"?(flight.birds||[]):(flight.butterflies||[]);
+}
+function nextJungleFlightVariant(type){
+ const variants=jungleFlightVariants(type);
+ if(!variants.length)return null;
+ if(!jungleFlightBags[type].length){
+  const bag=shuffle(variants);
+  if(bag.length>1&&bag[0].id===jungleFlightLast[type]){
+   const swap=bag[0];bag[0]=bag[1];bag[1]=swap;
+  }
+  jungleFlightBags[type]=bag;
+ }
+ const variant=jungleFlightBags[type].shift();
+ jungleFlightLast[type]=variant.id;
+ return variant;
+}
+function prepareJungleFlightVariant(flight,type){
+ const variant=nextJungleFlightVariant(type);
+ if(!variant||!flight)return null;
+ flight.variant=variant;
+ flight.speedScale=variant.speed||1;
+ flight.el.dataset.flightType=type;
+ flight.el.dataset.flightSpecies=variant.id;
+ flight.el.style.width=variant.width||"";
+ const sheet=flight.el.querySelector(".jungle-flight-sheet");
+ if(sheet&&sheet.getAttribute("src")!==variant.src)sheet.src=variant.src;
+ return variant;
+}
 function resetJungleFlight(flight,now,initial){
  flight.active=false;
  flight.el.hidden=true;
  flight.el.classList.remove("is-flying");
+ if(!initial||!flight.variant)prepareJungleFlightVariant(flight,flight.type);
  const gap=flight.type==="bird"?(initial?[2000,5000]:[5000,10000]):(initial?[1000,4000]:[6000,13000]);
  flight.nextAt=now+jungleFlightRandom(gap[0],gap[1]);
 }
 function buildJungleFlights(){
  jungleFlightSprites=[];lastJungleFlightRenderAt=0;
+ jungleFlightBags.bird=[];jungleFlightBags.butterfly=[];
  Object.values(jungleFlightLayers).forEach(layer=>{if(layer)layer.replaceChildren();});
  if(window.__PONO_TIER_LOCKED__||jungleFlightReducedMotion())return;
  const st=STAGES[stg];
@@ -1597,19 +1813,20 @@ function buildJungleFlights(){
  if(!assets)return;
  const now=_nowMs();
  [
-  {type:"bird",src:assets.bird,layer:jungleFlightLayers.bird},
-  {type:"butterfly",src:assets.butterfly,layer:jungleFlightLayers.butterfly}
+  {type:"bird",variants:assets.birds,layer:jungleFlightLayers.bird},
+  {type:"butterfly",variants:assets.butterflies,layer:jungleFlightLayers.butterfly}
  ].forEach(spec=>{
-  if(!spec.src||!spec.layer)return;
+  if(!spec.variants||!spec.variants.length||!spec.layer)return;
   const sprite=document.createElement("span");
   const sheet=document.createElement("img");
   sprite.className="jungle-flight jungle-flight-"+spec.type;
-  sprite.dataset.flightSpecies=spec.type;
+  sprite.dataset.flightType=spec.type;
   sprite.hidden=true;
   sheet.className="jungle-flight-sheet";
-  sheet.src=spec.src;sheet.alt="";sheet.draggable=false;sheet.decoding="async";
+  sheet.alt="";sheet.draggable=false;sheet.decoding="async";
   sprite.appendChild(sheet);spec.layer.appendChild(sprite);
   const flight={type:spec.type,el:sprite,active:false,sceneActive:false,nextAt:now};
+  prepareJungleFlightVariant(flight,spec.type);
   jungleFlightSprites.push(flight);
  });
 }
@@ -1618,7 +1835,7 @@ function beginJungleFlight(flight,now){
  const direction=bird?-1:(Math.random()<.5?-1:1);
  const startX=direction<0?112:-18;
  const endX=direction<0?-18:112;
- const speed=bird?jungleFlightRandom(9,13):jungleFlightRandom(5.5,8);
+ const speed=(bird?jungleFlightRandom(9,13):jungleFlightRandom(5.5,8))*(flight.speedScale||1);
  flight.direction=direction;
  flight.startX=startX;flight.endX=endX;
  flight.baseY=bird?jungleFlightRandom(18,38):jungleFlightRandom(22,56);
@@ -1725,6 +1942,11 @@ function passengerSeatTargetAt(index){
   const y=trainBottomVh()+trainCarHeightVh()*.37;
   return {left:x+"vw",bottom:y+"vh"};
  }
+ const pendingSeat=carsEl.querySelector(".pending-seat");
+ if(pendingSeat){
+  const rect=pendingSeat.getBoundingClientRect();
+  return {left:(rect.left+rect.width*.5)+"px",bottom:((window.innerHeight||390)-(rect.top+rect.height*.45))+"px"};
+ }
  return {left:(vehicleLeftVw()-carGap())+"vw",bottom:"14vh"};
 }
 function updateScreenExitShift(){
@@ -1829,6 +2051,7 @@ function finishTunnelInterior(){
 function beginStageTransit(){
  if(!coverEl)return;
  clearRareEvent();
+ resetSeaInteraction();
  stopStageWeather();setWeatherPresentation("clear");
  transitCover=coverEl;
  swapReady=false;swapped=false;
@@ -2207,7 +2430,7 @@ function onRunEvent(el,ev){
  speak(ev[1]+"を みつけた！");
 }
 function useHelp(){
- if(answerLocked||driving||!quiz.classList.contains("show"))return;
+ if(answerLocked||driving||seaBubbleLaunchPending||!quiz.classList.contains("show"))return;
  if(!helpItems.length){
   showStamp("みつけてね！","ng");
   announce("はしっているときに、おたすけを みつけよう");
@@ -2222,7 +2445,7 @@ function useHelp(){
   hintText.textContent="🍀 めざすのは "+numberCargoAnswer()+"こ だよ";
   helpMessage=item.t+"が めざす かずを おしえてくれたよ";
  }else{
-  const choices=[...choicesEl.querySelectorAll(".choice")];
+  const choices=activeChoiceButtons();
   const wrong=choices.find(c=>c.dataset.ok!=="1"&&!c.classList.contains("dim"));
   if(wrong){wrong.classList.add("dim");wrong.disabled=true;}
   const ok=choices.find(c=>c.dataset.ok==="1");
@@ -2257,12 +2480,22 @@ function render(now){
   document.documentElement.style.setProperty("--num-pan",(-(worldX-o)*.06)+"vw");
  }
  renderSeaFish(now);
+ renderSeaSteering();
  renderJungleAnimals();
  renderJungleFlights(now);
  if(jungleHabitatBack&&document.body.classList.contains("st-jungle"))jungleHabitatBack.style.backgroundPositionX=cssXFromVw(-(worldX-o)*.92);
  updateScreenExitShift();
- const hd=clamp((worldX-o)*0.095,0,70);
- horizon.style.transform="translate3d("+cssXFromVw(-hd)+",0,0)";
+ if(document.body.classList.contains("st-town")&&townHorizonLoop){
+  horizon.style.transform="translate3d(0,0,0)";
+  const horizonTileWidth=(window.innerHeight||390)*1.34*(1983/793);
+  const horizonPeriod=horizonTileWidth*2;
+  const horizonRawOffset=(((worldX-o)*TOWN_HORIZON_PARALLAX*(window.innerWidth||844)/100)%horizonPeriod+horizonPeriod)%horizonPeriod;
+  const horizonLoopOffset=IOS_DEVICE?Math.round(horizonRawOffset):Number(horizonRawOffset.toFixed(2));
+  townHorizonLoop.style.transform="translate3d("+(-horizonLoopOffset)+"px,0,0)";
+ }else{
+  const hd=clamp((worldX-o)*0.095,0,70);
+  horizon.style.transform="translate3d("+cssXFromVw(-hd)+",0,0)";
+ }
  if(document.body.classList.contains("st-town")&&townMidLoop){
   const tileWidth=(window.innerHeight||390)*1.14*(1774/887);
   const period=tileWidth*2;
@@ -2387,6 +2620,7 @@ function startJourneyAt(s){
  hideWeatherNotice();
  resetNumberCargoGame();
  clearRareEvent();
+ resetSeaInteraction();
  stopStageWeather();
  clearTunnelFriendGame();
  stg=s;resetStageScore();qSeg=0;stageMiss=0;rareSpawned=false;
@@ -2540,13 +2774,14 @@ function showNumberCargoHint(revealGoal){
 function showQuiz(){
  hideWeatherNotice();
  setDriverMood("thinking");
+ cancelSeaPointer();clearSeaBubbleGame();
  resetNumberCargoGame();
  cur=qList[qSeg];missInQ=0;answerLocked=false;
  qText.textContent=cur.helper?(cur.helper.name+"を たすけよう！ "+cur.q):cur.q;
  hintText.textContent=helpItems.length?"🍀 おたすけを つかえるよ":"";
  choicesEl.replaceChildren();
- if(isNumberCargoQuestion())renderNumberCargoGame();else renderChoiceCards();
  quiz.classList.add("show");
+ if(isNumberCargoQuestion())renderNumberCargoGame();else if(isSeaStage())renderSeaBubbleGame();else renderChoiceCards();
  speak(cur.s||cur.q);
 }
 function onPick(el,o){
@@ -2573,12 +2808,15 @@ function onPick(el,o){
    if(missInQ===1)showNumberCargoHint(false);
    if(missInQ>=2)showNumberCargoHint(true);
    updateNumberCargoGame();
-  }else el.classList.add("ng","dim");
+  }else{
+   el.classList.add("ng","dim");
+   if(el.classList.contains("sea-answer-bubble"))el.disabled=true;
+  }
   const t=tunnels[qSeg];
   if(t){t.classList.add("shake");setTimeout(()=>t.classList.remove("shake"),520);}
   showStamp("おしい！","ng");
   if(o.mode!=="number"&&missInQ===1)showHint();
-  if(o.mode!=="number"&&missInQ>=2){choicesEl.querySelectorAll(".choice").forEach(c=>{
+  if(o.mode!=="number"&&missInQ>=2){activeChoiceButtons().forEach(c=>{
    if(!c.classList.contains("dim"))c.classList.add("glow");});}
   setTimeout(()=>{answerLocked=false;setDriverMood("thinking");if(o.mode==="number")updateNumberCargoGame();},520);
  }
@@ -2621,6 +2859,7 @@ function proceed(){
 }
 function ending(){
  hideWeatherNotice();
+ resetSeaInteraction();
  clearRareEvent();
  stopStageWeather();setWeatherPresentation("clear");
  clearTunnelFriendGame();
@@ -2646,6 +2885,7 @@ function openMap(msg){
  hideWeatherNotice();
  resetNumberCargoGame();
  clearRareEvent();
+ resetSeaInteraction();
  stopStageWeather();setWeatherPresentation("clear");
  clearTunnelFriendGame();
  playing=false;driving=false;quiz.classList.remove("show");

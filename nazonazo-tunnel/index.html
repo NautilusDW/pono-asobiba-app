@@ -70,7 +70,7 @@
   else { document.addEventListener('DOMContentLoaded', showLock); }
 })();
 </script>
-<link rel="stylesheet" href="styles.css?v=20260712-1263">
+<link rel="stylesheet" href="styles.css?v=20260712-1264">
 </head>
 <body class="st-town v-train" data-driver="pono" data-driver-mood="happy">
 <div id="app">
@@ -96,13 +96,17 @@
     <div id="jungleAnimalsMid" class="jungle-animal-layer" aria-hidden="true"></div>
     <div id="seaFishLayer" aria-hidden="true"></div>
     <div id="groundT"></div>
+    <div id="seaSteerSurface" aria-hidden="true"></div>
+    <div id="seaAnswerLayer" role="group" aria-labelledby="qText"></div>
+    <div id="seaSteerHint" role="status" aria-live="polite" hidden>👆 タッチした たかさへ うごくよ</div>
     <div id="jungleAnimalsNear" class="jungle-animal-layer" aria-hidden="true"></div>
     <div id="jungleHabitatBack" aria-hidden="true"></div>
     <div id="world"></div>
     <div id="screenPortalBack" aria-hidden="true"><div class="screen-exit-gate"></div></div>
     <div id="cars"></div>
     <div id="veh">
-      <div class="vbody">
+      <div id="vehicleSteerShell" class="vehicle-steer-shell">
+       <div class="vbody">
         <div class="headlight"></div>
         <div class="train-art" aria-hidden="true">
           <div class="train-driver"></div>
@@ -138,6 +142,7 @@
         <div class="rk-finB"></div>
         <div class="rk-win">🐻</div>
         <div class="rk-flame">🔥</div>
+       </div>
       </div>
     </div>
     <div id="smokeLayer" aria-hidden="true"></div>
@@ -250,6 +255,6 @@
 </div>
 <div id="rotateHint">📱➡️ よこむきに してね</div>
 <script src="data/questions.js?v=20260702-1051"></script>
-<script src="js/game.js?v=20260712-1263"></script>
+<script src="js/game.js?v=20260712-1264"></script>
 </body>
 </html>

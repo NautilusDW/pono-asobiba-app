@@ -36,6 +36,28 @@ body.tunnel-interior #scene::after{display:block}
 #seaFishLayer{position:absolute;inset:0;z-index:4;display:none;pointer-events:none;overflow:hidden}
 body.st-sea #seaFishLayer{display:block}
 body.tunnel-interior #seaFishLayer{display:none!important}
+#seaSteerSurface{position:absolute;inset:0;z-index:3;display:none;pointer-events:none;touch-action:none;cursor:ns-resize}
+body.st-sea.sea-steer-active #seaSteerSurface{display:block;pointer-events:auto}
+#seaAnswerLayer{position:absolute;inset:0;z-index:10;display:none;pointer-events:none}
+body.st-sea.sea-quiz-active #seaAnswerLayer{display:block}
+#seaSteerHint{position:absolute;left:50%;top:17%;z-index:10;transform:translateX(-50%);padding:6px 13px;border-radius:999px;
+  background:rgba(236,252,255,.9);border:2px solid rgba(120,213,232,.82);color:#24677d;font-size:clamp(12px,2.1vw,17px);font-weight:900;
+  white-space:nowrap;pointer-events:none;box-shadow:0 3px 10px rgba(5,55,78,.18)}
+#seaSteerHint[hidden]{display:none}
+.sea-answer-bubble{appearance:none;-webkit-appearance:none;position:absolute;left:var(--bubble-x,76%);top:var(--bubble-y,35%);
+  min-width:70px;min-height:70px;width:clamp(70px,11vmin,104px);aspect-ratio:1;transform:translate(-50%,-50%);pointer-events:auto;
+  display:grid;place-items:center;align-content:center;padding:5px;border:4px solid rgba(208,250,255,.94);border-radius:50%;
+  background:radial-gradient(circle at 31% 24%,rgba(255,255,255,.98) 0 8%,rgba(255,255,255,.3) 10% 16%,transparent 18%),linear-gradient(145deg,rgba(202,248,255,.92),rgba(104,204,232,.86));
+  color:#23546c;box-shadow:inset 0 -8px 0 rgba(37,143,180,.13),0 5px 0 rgba(22,112,150,.2),0 0 18px rgba(187,246,255,.55);
+  cursor:pointer;animation:seaBubblePulse var(--bubble-duration,2.6s) ease-in-out var(--bubble-delay,0s) infinite;transition:opacity .25s,filter .25s,transform .2s}
+.sea-answer-bubble .em{font-size:clamp(30px,6vmin,50px);line-height:.95;font-weight:900}
+.sea-answer-bubble .lb{display:block;max-width:92px;font-size:clamp(11px,1.9vw,15px);font-weight:900;line-height:1.05}
+.sea-answer-bubble.is-near{filter:brightness(1.08) saturate(1.12);transform:translate(-50%,-50%) scale(1.1);box-shadow:inset 0 -8px 0 rgba(37,143,180,.13),0 5px 0 rgba(22,112,150,.2),0 0 0 8px rgba(255,236,103,.45),0 0 24px rgba(187,246,255,.8)}
+.sea-answer-bubble:focus-visible{outline:4px solid rgba(255,226,82,.82);outline-offset:4px}
+.sea-answer-bubble.dim{opacity:.28;pointer-events:none;filter:grayscale(.45)}
+.sea-answer-bubble.ng{animation:ngShake .45s}
+.sea-answer-bubble.glow{border-color:#8fea82;box-shadow:0 0 0 8px rgba(110,229,106,.36),0 0 24px rgba(179,255,182,.78)}
+@keyframes seaBubblePulse{0%,100%{margin-top:0}50%{margin-top:-5px}}
 .sea-fish{position:absolute;left:0;top:0;width:clamp(36px,var(--fish-w,5.5vw),96px);aspect-ratio:var(--fish-ratio,1.25);
   background:center/contain no-repeat;filter:drop-shadow(0 2px 0 rgba(10,45,75,.14));opacity:var(--fish-opacity,.86);
   transform:translate3d(-20vw,30vh,0);will-change:transform}
@@ -146,6 +168,10 @@ body.v-rocket .car::before,body.v-rocket .car::after{display:none}
 #carBadge{background:rgba(255,255,255,.85)}
 #helpBadge{background:rgba(255,255,255,.88);border:2px solid rgba(87,193,94,.5)}
 #veh{position:absolute;bottom:12.5vh;left:28vw;width:clamp(120px,22vw,220px);height:clamp(70px,13vw,130px);z-index:7}
+.vehicle-steer-shell{position:absolute;inset:0;transform:translate3d(var(--sea-dash-x,0px),var(--sea-steer-y,0px),0) rotate(var(--sea-steer-tilt,0deg));
+  transition:transform .14s ease-out;transform-origin:center;will-change:transform}
+body.st-sea #veh{pointer-events:none}
+body.st-sea #cars{transform:translate3d(0,var(--sea-steer-y,0px),0)}
 body.v-train #cars{bottom:9.1vh}
 body.v-train #veh{left:calc(55vw - clamp(95px,15.45vw,165.5px));bottom:9.1vh;width:clamp(190px,30.9vw,331px);height:clamp(95px,15.45vw,165.5px)}
 body.st-town.v-train #cars,body.st-jungle.v-train #cars,body.st-number.v-train #cars,body.st-future.v-train #cars{bottom:9.8vh}
@@ -161,6 +187,7 @@ body.st-space #veh{bottom:26vh}
 .town-loop-tile::before{content:"";position:absolute;inset:-1px;background-position:center;background-size:cover;background-repeat:no-repeat}
 .town-loop-tile:nth-child(even)::before{transform:scaleX(-1)}
 body.st-town .town-loop-strip{display:flex}
+body.st-town #horizon{width:100vw}
 #townHorizonLoop{top:-50vh;height:134%}
 #townHorizonLoop .town-loop-tile{aspect-ratio:1983/793}
 #townHorizonLoop .town-loop-tile::before{background-image:url("../assets/images/nazonazo-tunnel/town_horizon_layer_whiteback_20260712_v2.webp")}
@@ -522,6 +549,9 @@ body.st-future #groundT{height:17.4vh;background-size:auto 100%;z-index:3}
 body.st-future #fgT{height:9.2vh;background-size:auto 100%;opacity:1;-webkit-mask-image:linear-gradient(to bottom,transparent 0%,rgba(0,0,0,.52) 22%,#000 48%);mask-image:linear-gradient(to bottom,transparent 0%,rgba(0,0,0,.52) 22%,#000 48%)}
 .sb-hull,.sb-peri,.sb-fin,.sb-win,.submarine-art{display:none}
 body.v-sub #veh{left:calc(53vw - clamp(78px,13vw,143px));bottom:12.4vh;width:clamp(156px,26vw,286px);height:clamp(111px,18.4vw,203px)}
+body.st-sea.v-sub #veh{left:calc(53vw - clamp(59px,9.5vw,105px));width:clamp(118px,19vw,210px);height:clamp(83px,13.4vw,148px)}
+body.st-sea.sea-quiz-active.v-sub #veh{left:calc(30vw - clamp(45px,6.5vw,63px));width:clamp(90px,13vw,126px);height:clamp(63px,9.17vw,89px)}
+body.st-sea.sea-dash-active .vehicle-steer-shell{--sea-dash-x:16vw;transition-duration:.3s;transition-timing-function:cubic-bezier(.2,.75,.25,1)}
 body.v-sub .tr-cab,body.v-sub .tr-boiler,body.v-sub .tr-chim,body.v-sub .wheel,body.v-sub .puff,body.v-sub .tr-win,body.v-sub .headlight{display:none}
 body.v-sub .submarine-art{display:block;position:absolute;inset:0;background:url("../assets/images/nazonazo-tunnel/vehicle_submarine_pono_20260706.webp") center/contain no-repeat;
   filter:drop-shadow(0 3px 0 rgba(20,45,70,.18))}
@@ -682,6 +712,16 @@ body.tunnel-interior #highScorePill>strong{margin-top:3px;color:#fff;font-size:c
 @keyframes glow{0%,100%{box-shadow:0 5px 0 var(--good),0 0 0 0 rgba(87,193,94,.5)}50%{box-shadow:0 5px 0 var(--good),0 0 0 12px rgba(87,193,94,0)}}
 #quiz.number-quiz{width:min(96vw,820px)}
 #choices.number-mode{display:block}
+body.st-sea.sea-quiz-active #quiz{width:min(94vw,720px);padding:7px 11px calc(7px + env(safe-area-inset-bottom));border-width:3px;border-radius:20px}
+#quiz.sea-quiz #qRow{gap:7px;margin-bottom:0}
+#quiz.sea-quiz #ponoFace{font-size:clamp(26px,4.8vw,40px)}
+#quiz.sea-quiz #qBubble{padding:4px 8px;border-width:2px;border-radius:14px}
+#quiz.sea-quiz #qText{font-size:clamp(14px,2.6vw,20px);line-height:1.25}
+#quiz.sea-quiz #hintText{min-height:1.1em;margin-top:2px;font-size:clamp(11px,1.9vw,14px);line-height:1.1}
+#quiz.sea-quiz #spkBtn,#quiz.sea-quiz #helpBtn{height:46px;border-width:2px;font-size:18px}
+#quiz.sea-quiz #spkBtn{width:46px}
+#quiz.sea-quiz #helpBtn{width:62px}
+#choices.sea-mode{display:none}
 .number-cargo-game{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(190px,.78fr);gap:9px;width:100%;align-items:stretch}
 .number-cargo-field{position:relative;min-height:128px;display:grid;grid-template-columns:repeat(var(--cargo-columns,5),minmax(46px,1fr));grid-auto-rows:minmax(46px,1fr);
   align-items:center;justify-items:center;gap:3px 5px;padding:28px 7px 6px;border:3px solid #cdbdf1;border-radius:18px;
@@ -865,6 +905,9 @@ h1{font-size:clamp(24px,5.6vw,50px);color:#e0704a;text-shadow:0 3px 0 #fff}
 }
 @media (prefers-reduced-motion:reduce){
   *{animation-duration:.01s!important;transition-duration:.01s!important}
+  .sea-answer-bubble{animation:none!important}
+  .vehicle-steer-shell{transition:none!important}
+  body.st-sea.v-sub #veh .vbody,body.st-sea.v-sub #veh .submarine-art{animation:none!important}
   .rain-particle{left:var(--rain-rest-x);top:var(--rain-rest-y);animation:none!important;transform:rotate(var(--rain-angle));will-change:auto!important}
   #rainFar .rain-particle:nth-child(n+8),#rainMid .rain-particle:nth-child(n+6),#rainNear .rain-particle:nth-child(n+4){display:none}
   .jungle-animal-art{animation:none!important;transform:none!important}

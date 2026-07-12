@@ -10,6 +10,27 @@ const html = fs.readFileSync(path.join(root, "nazonazo-tunnel/index.html"), "utf
 const css = fs.readFileSync(path.join(root, "nazonazo-tunnel/styles.css"), "utf8");
 const game = fs.readFileSync(path.join(root, "nazonazo-tunnel/js/game.js"), "utf8");
 
+function numericConstant(source, name) {
+  const match = source.match(new RegExp(`const\\s+${name}\\s*=\\s*([0-9.]+)`));
+  assert.ok(match, `${name} must remain a named numeric constant`);
+  return Number(match[1]);
+}
+
+const townHorizonParallax = numericConstant(game, "TOWN_HORIZON_PARALLAX");
+assert.equal(townHorizonParallax, 0.16, "the second-farthest town mountains must visibly scroll throughout the stage");
+assert.ok(0 < townHorizonParallax && townHorizonParallax < 0.25 && 0.25 < 1,
+  "town depth speeds must remain ordered as fixed sky < horizon < middle scenery < track");
+
+const townLocalStops = Array.from({ length: 5 }, (_, index) => 320 + index * 430 - 24);
+const townHorizonTravel = townLocalStops.map(localX => Number((localX * townHorizonParallax).toFixed(2)));
+assert.deepEqual(townHorizonTravel, [47.36, 116.16, 184.96, 253.76, 322.56],
+  "the town horizon must keep accumulating visible parallax at all five quiz stops");
+const townHorizonLegTravel = townHorizonTravel.slice(1).map((value, index) => Number((value - townHorizonTravel[index]).toFixed(2)));
+assert.deepEqual(townHorizonLegTravel, [68.8, 68.8, 68.8, 68.8],
+  "every later town run must move the horizon instead of freezing after the second stop");
+assert.ok(townHorizonTravel.every((value, index) => index === 0 || value > townHorizonTravel[index - 1]),
+  "the horizon may never return to the old 70vw plateau during the five questions");
+
 for (const id of ["rainFar", "rainMid", "weatherShade", "rainNear"]) {
   assert.match(html, new RegExp(`id="${id}"[^>]+aria-hidden="true"`), `${id} must remain decorative`);
 }
@@ -42,6 +63,7 @@ assert.match(css, /\.town-loop-tile::before\{[^}]*inset:-1px[^}]*background-size
 assert.match(css, /\.town-loop-tile:nth-child\(even\)::before\{transform:scaleX\(-1\)\}/, "only the artwork inside alternate tiles may mirror so WebKit cannot move the layout boundary");
 assert.doesNotMatch(css, /\.town-loop-tile:nth-child\(even\)\{transform:/, "mirroring the tile element itself creates fractional WebKit gaps");
 assert.match(css, /body\.st-town #horizon,body\.st-town #midT\{background-image:none!important\}/, "town must use the mirrored strips instead of the old hard seams");
+assert.match(css, /body\.st-town #horizon\{width:100vw\}/, "the town horizon viewport must stay fixed while its mirrored artwork scrolls inside");
 assert.doesNotMatch(css, /#town(?:Horizon|Mid)Loop[^}]*background-size:\s*100%\s+100%/, "panorama aspect ratios must not be stretched");
 assert.match(css, /\.jungle-loop-tile\{[^}]*overflow:hidden/, "jungle horizon tile boxes must stay fixed at mirrored joins");
 assert.match(css, /\.jungle-loop-tile::before\{[^}]*inset:-1px[^}]*background-size:cover[^}]*jungle_horizon_layer_whiteback_20260712_v2\.webp/, "the cleaned jungle horizon must overscan each fixed tile");
@@ -88,6 +110,15 @@ assert.match(game, /const SHOWER_CLEAR_DURATION_MS=\[12000,20000\];/, "successiv
 assert.match(game, /function weatherForStage\(stage\)\{\s*if\(!stage\|\|stage\.id!=="town"\)return "clear";/, "weather must remain clear outside the town scenery");
 assert.match(game, /debug\.isAllowed\(\)/, "weather overrides must stay behind the existing debug gate");
 assert.match(game, /value==="rain"\|\|value==="clear"/, "tests must be able to force rain or clear weather without a child-facing control");
+assert.match(game, /townHorizonLoop=\$\("townHorizonLoop"\)/, "the moving town horizon strip must be connected to its DOM node");
+const renderBlock = game.slice(game.indexOf("function render(now)"), game.indexOf("function setWheelPeriod("));
+assert.match(renderBlock, /document\.body\.classList\.contains\("st-town"\)&&townHorizonLoop/, "the internal horizon loop must have a town-only render path");
+assert.match(renderBlock, /horizon\.style\.transform="translate3d\(0(?:px)?,0(?:px)?,0\)"/, "town must keep the outer horizon viewport stationary");
+assert.match(renderBlock, /\(window\.innerHeight\|\|390\)\*1\.34\*\(1983\/793\)/, "the horizon loop period must preserve the existing 134% height and source aspect ratio");
+assert.match(renderBlock, /\(worldX-o\)\*TOWN_HORIZON_PARALLAX\*\(window\.innerWidth\|\|844\)\/100/, "the horizon must use stage-local distance and the dedicated 0.16 depth speed");
+assert.match(renderBlock, /%\w*[Pp]eriod\+\w*[Pp]eriod\)%\w*[Pp]eriod/, "the horizon offset must wrap across an original-plus-mirror pair without negative phases");
+assert.match(renderBlock, /IOS_DEVICE\?Math\.round\([^:]+\):Number\([^)]*\.toFixed\(2\)\)/, "the mirrored horizon movement must retain the existing iOS pixel rounding policy");
+assert.match(renderBlock, /townHorizonLoop\.style\.transform="translate3d\("\+\(-\w+\)\+"px,0,0\)"/, "the internal mirrored horizon strip, not its viewport, must receive the parallax transform");
 assert.match(game, /townMidLoop\.style\.transform="translate3d\("\+\(-loopOffset\)/, "the near mirrored strip must follow parallax motion");
 assert.match(game, /const period=tileWidth\*2;/, "the near panorama must wrap only after one original-plus-mirror pair");
 assert.match(game, /%period\+period\)%period/, "the near panorama offset must stay inside its seamless pair");

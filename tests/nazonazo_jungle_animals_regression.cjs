@@ -24,9 +24,18 @@ const animalFiles = {
   elephant: "jungle_animal_elephant_trunk_3frame_20260712.webp"
 };
 const flightFiles = {
-  toucan: "jungle_flying_toucan_3frame_20260712.webp",
-  butterfly: "jungle_flying_butterfly_3frame_20260712_v2.webp"
+  birds: [
+    "jungle_flying_toucan_3frame_20260712.webp",
+    "jungle_flying_macaw_3frame_20260712.webp",
+    "jungle_flying_hummingbird_3frame_20260712.webp"
+  ],
+  butterflies: [
+    "jungle_flying_butterfly_3frame_20260712_v2.webp",
+    "jungle_flying_butterfly_orange_3frame_20260712.webp",
+    "jungle_flying_butterfly_yellow_3frame_20260712.webp"
+  ]
 };
+const allFlightFiles = Object.values(flightFiles).flat();
 const habitatFile = "jungle_habitat_loop_whiteback_20260712.webp";
 
 function extractConstObject(source, name) {
@@ -62,6 +71,82 @@ function extractConstObject(source, name) {
   }
   assert.fail(`${name}: unterminated object literal`);
 }
+
+function extractFunction(source, name) {
+  const marker = `function ${name}(`;
+  const markerAt = source.indexOf(marker);
+  assert.ok(markerAt >= 0, `${name}: function declaration missing`);
+  const bodyAt = source.indexOf("{", markerAt + marker.length);
+  assert.ok(bodyAt >= 0, `${name}: function body missing`);
+  let depth = 0;
+  let quote = "";
+  let escaped = false;
+  for (let index = bodyAt; index < source.length; index += 1) {
+    const char = source[index];
+    if (quote) {
+      if (escaped) escaped = false;
+      else if (char === "\\") escaped = true;
+      else if (char === quote) quote = "";
+      continue;
+    }
+    if (char === "\"" || char === "'" || char === "`") {
+      quote = char;
+      continue;
+    }
+    if (char === "{") depth += 1;
+    if (char === "}") {
+      depth -= 1;
+      if (depth === 0) return source.slice(markerAt, index + 1);
+    }
+  }
+  assert.fail(`${name}: unterminated function body`);
+}
+
+function hasPositiveNumber(value) {
+  if (Number.isFinite(value)) return value > 0;
+  if (Array.isArray(value)) return value.length > 0 && value.every(hasPositiveNumber);
+  if (value && typeof value === "object") {
+    const numericValues = Object.values(value).filter(Number.isFinite);
+    return numericValues.length > 0 && numericValues.every(number => number > 0);
+  }
+  return typeof value === "string" && /\d/.test(value);
+}
+
+const runtimeAssets = extractConstObject(js, "ASSETS");
+const runtimeFlightAssets = runtimeAssets.jungle && runtimeAssets.jungle.flight;
+assert.ok(runtimeFlightAssets && typeof runtimeFlightAssets === "object", "jungle flight asset registry missing");
+assert.deepEqual(Object.keys(runtimeFlightAssets).sort(), ["birds", "butterflies"], "jungle flights must be split into bird and butterfly variant arrays");
+assert.ok(!Object.hasOwn(runtimeFlightAssets, "bird") && !Object.hasOwn(runtimeFlightAssets, "butterfly"), "legacy single-flight asset keys must be retired");
+
+const runtimeFlightVariants = {};
+for (const type of ["birds", "butterflies"]) {
+  const variants = runtimeFlightAssets[type];
+  assert.ok(Array.isArray(variants), `${type}: flight variants must be an array`);
+  assert.equal(variants.length, 3, `${type}: exactly three visibly different species are required`);
+  assert.equal(new Set(variants.map(variant => variant.id)).size, 3, `${type}: every variant needs a distinct species id`);
+  assert.deepEqual(
+    variants.map(variant => path.basename(variant.src)).sort(),
+    flightFiles[type].slice().sort(),
+    `${type}: runtime files do not match the selected three-species set`
+  );
+  for (const variant of variants) {
+    assert.equal(typeof variant.id, "string", `${type}: species id missing`);
+    assert.ok(variant.id.trim().length > 0, `${type}: species id must not be blank`);
+    assert.equal(typeof variant.src, "string", `${variant.id}: source path missing`);
+    assert.ok(hasPositiveNumber(variant.width), `${variant.id}: responsive width metadata missing`);
+    assert.ok(hasPositiveNumber(variant.speed), `${variant.id}: positive flight speed metadata missing`);
+  }
+  runtimeFlightVariants[type === "birds" ? "bird" : "butterfly"] = variants;
+}
+assert.equal(new Set(Object.values(runtimeFlightVariants).flat().map(variant => variant.id)).size, 6, "all six flight species ids must be unique");
+const flightSpeciesByType = Object.fromEntries(Object.entries(runtimeFlightVariants).map(([type, variants]) => [
+  type,
+  variants.map(variant => variant.id)
+]));
+const flightFileBySpecies = Object.fromEntries(Object.values(runtimeFlightVariants).flat().map(variant => [
+  variant.id,
+  path.basename(variant.src)
+]));
 
 const jungleAnimalLayout = extractConstObject(js, "JUNGLE_ANIMAL_LAYOUT");
 const layoutSpecs = Object.entries(jungleAnimalLayout).flatMap(([layer, specs]) =>
@@ -244,7 +329,7 @@ assert.match(js, /if\(!jungleAnimalSprites\.length\|\|tunnelInteriorMode\|\|!doc
 assert.match(js, /if\(renderKey===lastJungleAnimalRenderKey\)return;/, "stationary frames must not rewrite every animal transform");
 assert.match(js, /const JUNGLE_MID_TILE_ASPECT=2,JUNGLE_MID_TILE_SCALE=1\.16;/, "middle-forest tile dimensions must stay explicit");
 assert.match(js, /const midPeriod=\(\(window\.innerHeight\|\|1\)\*JUNGLE_MID_TILE_ASPECT\*JUNGLE_MID_TILE_SCALE\/\(window\.innerWidth\|\|1\)\)\*100;/, "tree animals must use the rendered 116% middle-forest tile width");
-assert.match(js, /renderSeaFish\(now\);\s*renderJungleAnimals\(\);/);
+assert.match(js, /renderSeaFish\(now\);\s*(?:renderSeaSteering\(\);\s*)?renderJungleAnimals\(\);/);
 assert.match(js, /spec\.wCss\|\|spec\.w\+"vmin"/, "runtime must accept viewport-safe CSS widths for large animals");
 assert.match(js, /spec\.frames>1\?document\.createElement\("span"\):null/, "runtime must build a clipped frame sheet only for animated animals");
 assert.match(js, /animalAssets\[spec\.asset\]/, "all depth variants must reuse the keyed five-asset map");
@@ -282,19 +367,91 @@ assert.ok(fs.existsSync(habitatPath), `assets/images/nazonazo-tunnel/${habitatFi
 assert.ok(fs.statSync(habitatPath).size > 1000 && fs.statSync(habitatPath).size < 3 * 1024 * 1024, "habitat loop must stay within the repository image limit");
 assert.ok(js.includes(`../assets/images/nazonazo-tunnel/${habitatFile}`), "runtime habitat asset reference missing");
 
-for (const [species, file] of Object.entries(flightFiles)) {
+for (const file of allFlightFiles) {
   const rel = `assets/images/nazonazo-tunnel/${file}`;
   const full = path.join(root, rel);
   assert.ok(fs.existsSync(full), `${rel} missing`);
   const stat = fs.statSync(full);
   assert.ok(stat.size > 1000 && stat.size < 3 * 1024 * 1024, `${rel} unexpected size ${stat.size}`);
-  assert.equal((js.match(new RegExp(file.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g")) || []).length, 1, `${species}: flight sheet must be declared exactly once`);
+  const buf = fs.readFileSync(full);
+  assert.equal(buf.subarray(0, 4).toString("ascii"), "RIFF", `${rel} is not RIFF WebP`);
+  assert.equal(buf.subarray(8, 12).toString("ascii"), "WEBP", `${rel} is not WebP`);
+  assert.equal((js.match(new RegExp(file.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g")) || []).length, 1, `${file}: flight sheet must be declared exactly once`);
 }
 assert.match(css, /\.jungle-flight-sheet\{[^}]*width\s*:\s*300%/, "three-frame sheets must expose exactly three horizontal cells");
 assert.match(css, /\.jungle-flight-sheet\{[^}]*animation\s*:[^;}]*jungleFlightFrames[^;}]*(?:step-end|steps\(\s*3)/, "wing animation must jump between frames rather than sliding the sheet");
 assert.match(css, /@keyframes\s+jungleFlightFrames\s*\{[\s\S]*?translate3d\(\s*-33\.33[\s\S]*?translate3d\(\s*-66\.66/, "flight animation must visit all three sheet cells");
 assert.match(js, /(?:render|update|start|build)JungleFlight/i, "runtime flight lifecycle is missing");
 assert.match(js, /jungleFlight[\s\S]*?translate3d/i, "flying animals must cross the scene with transform-only motion");
+
+const nextFlightVariantSource = extractFunction(js, "nextJungleFlightVariant");
+const prepareFlightVariantSource = extractFunction(js, "prepareJungleFlightVariant");
+const buildFlightsSource = extractFunction(js, "buildJungleFlights");
+const resetFlightSource = extractFunction(js, "resetJungleFlight");
+const renderFlightsSource = extractFunction(js, "renderJungleFlights");
+assert.match(nextFlightVariantSource, /bag/i, "flight variants must be drawn from a shuffle bag rather than independent replacement picks");
+assert.match(nextFlightVariantSource, /shuffle|sort\s*\(/i, "flight bag must randomize each three-species cycle");
+assert.match(nextFlightVariantSource, /last|prev|previous/i, "flight bag must remember the previous species across cycle boundaries");
+assert.match(nextFlightVariantSource, /species|\.id/i, "flight bag boundary guard must compare actual species ids");
+assert.match(prepareFlightVariantSource, /nextJungleFlightVariant\s*\(/, "variant preparation must consume the next shuffled species");
+assert.match(prepareFlightVariantSource, /dataset\.flightSpecies\s*=/, "the rendered sprite must expose its actual species id");
+assert.match(prepareFlightVariantSource, /\.src\s*=/, "variant preparation must swap the three-frame sheet source");
+assert.match(prepareFlightVariantSource, /width/i, "variant preparation must apply species-specific display width");
+assert.match(prepareFlightVariantSource, /speed/i, "variant preparation must apply species-specific travel speed");
+assert.match(buildFlightsSource, /prepareJungleFlightVariant\s*\(/, "the initial bird and butterfly sprites must receive a species before their first flight");
+assert.match(resetFlightSource, /prepareJungleFlightVariant\s*\(/, "a completed flight must prepare a different queued species while hidden");
+assert.match(resetFlightSource, /!initial\|\|!flight\.variant/, "pausing or first activation must not consume a species that has not flown yet");
+assert.match(renderFlightsSource, /progress\s*>=\s*1[\s\S]*?resetJungleFlight\s*\(/, "finishing a crossing must advance through the reset/variant lifecycle");
+assert.match(buildFlightsSource, /__PONO_TIER_LOCKED__[\s\S]*?jungleFlightReducedMotion\(\)[\s\S]*?return/, "LP lock and reduced motion must stop flight construction before variant assets are assigned");
+assert.doesNotMatch(buildFlightsSource, /(?:assets\.birds|assets\.butterflies)\.forEach[\s\S]*?appendChild/, "six species must rotate through two sprites, not create six animated DOM nodes");
+
+function exerciseFlightVariantContract() {
+  const sandbox = Object.create(null);
+  vm.runInNewContext(`
+    const STAGES=[{id:"jungle",assets:{flight:${JSON.stringify(runtimeFlightAssets)}}}];
+    let stg=0;
+    const jungleFlightBags={bird:[],butterfly:[]};
+    const jungleFlightLast={bird:"",butterfly:""};
+    let shuffleCalls=0;
+    const shuffle=values=>{shuffleCalls+=1;return shuffleCalls%2?values.slice():values.slice().reverse();};
+    ${extractFunction(js, "jungleFlightVariants")}
+    ${nextFlightVariantSource}
+    ${prepareFlightVariantSource}
+    const sequences={};
+    for(const type of ["bird","butterfly"]){
+      sequences[type]=Array.from({length:6},()=>nextJungleFlightVariant(type).id);
+    }
+    jungleFlightBags.bird=[];jungleFlightLast.bird="";
+    const sheet={src:"",getAttribute(){return this.src;}};
+    const flight={el:{dataset:{},style:{width:""},querySelector(){return sheet;}}};
+    const preparedVariant=prepareJungleFlightVariant(flight,"bird");
+    result={sequences,prepared:{
+      id:preparedVariant.id,
+      dataset:flight.el.dataset.flightSpecies,
+      type:flight.el.dataset.flightType,
+      src:sheet.src,
+      width:flight.el.style.width,
+      speedScale:flight.speedScale
+    }};
+  `, sandbox, { timeout: 1000 });
+  return JSON.parse(JSON.stringify(sandbox.result));
+}
+
+const flightVariantContract = exerciseFlightVariantContract();
+for (const type of ["bird", "butterfly"]) {
+  const sequence = flightVariantContract.sequences[type];
+  const expected = flightSpeciesByType[type].slice().sort();
+  assert.deepEqual(sequence.slice(0, 3).sort(), expected, `${type}: first shuffle bag must contain every species exactly once`);
+  assert.deepEqual(sequence.slice(3, 6).sort(), expected, `${type}: refilled shuffle bag must contain every species exactly once`);
+  assert.notEqual(sequence[2], sequence[3], `${type}: the last species of one bag must not repeat at the next bag boundary`);
+}
+const preparedRuntimeVariant = runtimeFlightVariants.bird.find(variant => variant.id === flightVariantContract.prepared.id);
+assert.ok(preparedRuntimeVariant, "prepared bird species must come from the runtime registry");
+assert.equal(flightVariantContract.prepared.dataset, preparedRuntimeVariant.id, "prepared sprite species dataset drifted");
+assert.equal(flightVariantContract.prepared.type, "bird", "prepared sprite type dataset drifted");
+assert.equal(flightVariantContract.prepared.src, preparedRuntimeVariant.src, "prepared sprite source drifted");
+assert.equal(flightVariantContract.prepared.width, preparedRuntimeVariant.width, "prepared sprite width drifted");
+assert.equal(flightVariantContract.prepared.speedScale, preparedRuntimeVariant.speed, "prepared sprite speed drifted");
 
 async function settleViewport(page, width, height) {
   await page.setViewportSize({ width, height });
@@ -480,19 +637,25 @@ async function verifyFlightSheets() {
   }
   assert.ok(lowerOpaque / lowerPixels >= 0.9, "habitat loop needs a continuous opaque lower lip to ground animal foliage");
 
-  for (const [species, file] of Object.entries(flightFiles)) {
-    const info = await sharp(path.join(root, "assets/images/nazonazo-tunnel", file)).metadata();
-    assert.equal(info.format, "webp", `${species}: flight sheet must be WebP`);
-    assert.equal(info.hasAlpha, true, `${species}: flight sheet must keep transparent surroundings`);
-    assert.equal(info.width % 3, 0, `${species}: sheet width must divide into exactly three equal frames`);
-    assert.ok(info.width / 3 >= 160 && info.height >= 160, `${species}: individual flight frames are unexpectedly small`);
-  }
-
-  const butterflyPath = path.join(root, "assets/images/nazonazo-tunnel", flightFiles.butterfly);
-  const butterflyInfo = await sharp(butterflyPath).metadata();
-  assert.deepEqual([butterflyInfo.width, butterflyInfo.height], [1536, 512], "butterfly sheet must keep three normalized square cells");
-  for (let frame = 0; frame < 3; frame += 1) {
-    assert.equal(await alphaEdgeIsClear(sharp(butterflyPath).extract({ left: frame * 512, top: 0, width: 512, height: 512 })), true, `butterfly frame ${frame + 1}: no wing or antenna may be cropped`);
+  for (const [type, files] of Object.entries(flightFiles)) {
+    for (const file of files) {
+      const flightPath = path.join(root, "assets/images/nazonazo-tunnel", file);
+      const info = await sharp(flightPath).metadata();
+      assert.equal(info.format, "webp", `${file}: flight sheet must be WebP`);
+      assert.equal(info.hasAlpha, true, `${file}: flight sheet must keep transparent surroundings`);
+      assert.equal(info.width % 3, 0, `${file}: sheet width must divide into exactly three equal frames`);
+      const frameWidth = info.width / 3;
+      assert.ok(frameWidth >= 160 && info.height >= 160, `${file}: individual flight frames are unexpectedly small`);
+      const expectedRatio = type === "birds" ? 4 / 3 : 1;
+      assert.ok(Math.abs(frameWidth / info.height - expectedRatio) <= 0.02, `${file}: frame aspect ratio must match its runtime clip`);
+      for (let frame = 0; frame < 3; frame += 1) {
+        assert.equal(
+          await alphaEdgeIsClear(sharp(flightPath).extract({ left: frame * frameWidth, top: 0, width: frameWidth, height: info.height })),
+          true,
+          `${file} frame ${frame + 1}: wing, beak, tail, or antenna is cropped`
+        );
+      }
+    }
   }
 
   const elephantPath = path.join(root, "assets/images/nazonazo-tunnel", animalFiles.elephant);
@@ -553,19 +716,27 @@ async function runBrowser(browserName) {
   assert.equal(await page.locator(".jungle-animal-sprite").count(), 9, `${browserName}: runtime did not build all nine wildlife placements`);
   await page.locator("#quiz.show").waitFor({ state: "visible", timeout: 20000 });
   await page.waitForFunction(() => Array.from(document.querySelectorAll(".jungle-animal-art")).every(img => img.complete && img.naturalWidth > 0), null, { timeout: 20000 });
-  await page.waitForFunction(() => document.querySelectorAll('img[src*="jungle_flying_toucan_3frame_20260712.webp"],img[src*="jungle_flying_butterfly_3frame_20260712_v2.webp"]').length === 2, null, { timeout: 20000 });
+  await page.waitForFunction(() => {
+    const flights = Array.from(document.querySelectorAll(".jungle-flight"));
+    return flights.length === 2 && flights.every(el => {
+      const img = el.querySelector(".jungle-flight-sheet");
+      return img && img.complete && img.naturalWidth > 0 && el.dataset.flightSpecies;
+    });
+  }, null, { timeout: 20000 });
+  await page.waitForFunction(() => document.querySelectorAll(".jungle-flight.is-flying:not([hidden])").length === 2, null, { timeout: 20000 });
 
   const scene = await collectSceneMetrics(page);
   assertGroundedScene(scene, `${browserName} 844x390`, 9);
 
-  const flights = await page.evaluate(() => Array.from(document.querySelectorAll('img[src*="jungle_flying_toucan_3frame_20260712.webp"],img[src*="jungle_flying_butterfly_3frame_20260712_v2.webp"]')).map(img => {
-    const el = img.closest(".jungle-flight");
+  const flights = await page.evaluate(() => Array.from(document.querySelectorAll(".jungle-flight")).map(el => {
+    const img = el.querySelector(".jungle-flight-sheet");
     const style = getComputedStyle(el);
     const sheetStyle = getComputedStyle(img);
-    const match = img.src.match(/jungle_flying_(toucan|butterfly)_3frame_20260712(?:_v2)?\.webp/);
     const rect = el.getBoundingClientRect();
     return {
-      species: match[1],
+      type: el.classList.contains("jungle-flight-bird") ? "bird" : "butterfly",
+      species: el.dataset.flightSpecies || "",
+      file: img.src.split("/").pop().split("?")[0],
       display: style.display,
       pointer: style.pointerEvents,
       animationName: sheetStyle.animationName,
@@ -574,7 +745,11 @@ async function runBrowser(browserName) {
       height: rect.height
     };
   }));
-  assert.deepEqual(flights.map(flight => flight.species).sort(), ["butterfly", "toucan"], `${browserName}: exactly one bird and one butterfly flight sprite are required`);
+  assert.deepEqual(flights.map(flight => flight.type).sort(), ["bird", "butterfly"], `${browserName}: exactly one bird and one butterfly flight sprite are required`);
+  for (const flight of flights) {
+    assert.ok(flightSpeciesByType[flight.type].includes(flight.species), `${browserName}: ${flight.type} exposed unknown species ${flight.species}`);
+    assert.equal(flight.file, flightFileBySpecies[flight.species], `${browserName}: ${flight.species} dataset and three-frame sheet disagree`);
+  }
   assert.ok(flights.every(flight => flight.display !== "none" && flight.pointer === "none"), `${browserName}: ambient flights must be visible but non-interactive`);
   assert.ok(flights.every(flight => flight.animationName && flight.animationName !== "none"), `${browserName}: flight animation is not running`);
   assert.ok(flights.every(flight => Math.abs(flight.sheetRatio - 3) <= 0.05), `${browserName}: flight sheets are not divided into three frames`);
@@ -600,7 +775,7 @@ async function runBrowser(browserName) {
   const reduced = await page.locator(".jungle-animal-art.motion-sway").first().evaluate(el => ({ name: getComputedStyle(el).animationName, transform: getComputedStyle(el).transform }));
   assert.equal(reduced.name, "none", `${browserName}: reduced-motion animation must stop`);
   assert.equal(reduced.transform, "none", `${browserName}: reduced-motion transform must be static`);
-  const reducedFlights = await page.evaluate(() => Array.from(document.querySelectorAll('img[src*="jungle_flying_toucan_3frame_20260712.webp"],img[src*="jungle_flying_butterfly_3frame_20260712_v2.webp"]')).map(img => getComputedStyle(img.closest(".jungle-flight-layer")).display));
+  const reducedFlights = await page.evaluate(() => Array.from(document.querySelectorAll(".jungle-flight-layer")).map(layer => getComputedStyle(layer).display));
   assert.deepEqual(reducedFlights, ["none", "none"], `${browserName}: reduced motion must hide both cross-screen flight sprites`);
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await settleViewport(page, 930, 499);
@@ -624,6 +799,7 @@ async function runBrowser(browserName) {
   await lockedPage.goto(`${base}/nazonazo-tunnel/?weather=clear#fast`, { waitUntil: "networkidle" });
   await lockedPage.locator("#ponoTierLockScreen").waitFor({ state: "visible", timeout: 10000 });
   assert.equal(await lockedPage.locator(".jungle-animal-sprite").count(), 0, `${browserName}: LP lock built app-only animals`);
+  assert.equal(await lockedPage.locator(".jungle-flight").count(), 0, `${browserName}: LP lock built app-only flight variants`);
   assert.deepEqual(lockedAnimalRequests, [], `${browserName}: LP lock requested app-only animal assets`);
   await lockedContext.close();
   await browser.close();
@@ -635,7 +811,7 @@ async function runBrowser(browserName) {
     const requested = process.env.NAZONAZO_BROWSER.split(",").map(value => value.trim()).filter(Boolean);
     for (const browserName of requested) await runBrowser(browserName);
   }
-  console.log(`nazonazo jungle animals regression: OK (${staticAnimals.length} resting assets, ${Object.keys(flightFiles).length} three-frame flights)`);
+  console.log(`nazonazo jungle animals regression: OK (${staticAnimals.length} resting assets, ${allFlightFiles.length} three-frame flights)`);
 })().catch(error => {
   console.error(error);
   process.exitCode = 1;
