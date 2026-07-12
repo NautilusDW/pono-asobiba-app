@@ -1,0 +1,146 @@
+{
+  "butterfly": {
+    "asset": "jungle_flying_butterfly_3frame_20260712_v2.webp",
+    "size": [
+      1536,
+      512
+    ],
+    "frames": [
+      {
+        "bbox": [
+          81,
+          61,
+          431,
+          451
+        ],
+        "center": [
+          256.0,
+          256.0
+        ],
+        "width": 350,
+        "height": 390,
+        "area": 65387,
+        "anchorY": 88.0859,
+        "edgeAlpha": false
+      },
+      {
+        "bbox": [
+          61,
+          86,
+          451,
+          426
+        ],
+        "center": [
+          256.0,
+          256.0
+        ],
+        "width": 390,
+        "height": 340,
+        "area": 62890,
+        "anchorY": 83.2031,
+        "edgeAlpha": false
+      },
+      {
+        "bbox": [
+          61,
+          169,
+          451,
+          343
+        ],
+        "center": [
+          256.0,
+          256.0
+        ],
+        "width": 390,
+        "height": 174,
+        "area": 33430,
+        "anchorY": 66.9922,
+        "edgeAlpha": false
+      }
+    ]
+  },
+  "elephant": {
+    "asset": "jungle_animal_elephant_trunk_3frame_20260712.webp",
+    "size": [
+      1536,
+      512
+    ],
+    "frames": [
+      {
+        "bbox": [
+          51,
+          31,
+          468,
+          480
+        ],
+        "center": [
+          259.5,
+          255.5
+        ],
+        "width": 417,
+        "height": 449,
+        "area": 128067,
+        "anchorY": 93.75,
+        "edgeAlpha": false
+      },
+      {
+        "bbox": [
+          47,
+          34,
+          477,
+          477
+        ],
+        "center": [
+          262.0,
+          255.5
+        ],
+        "width": 430,
+        "height": 443,
+        "area": 123689,
+        "anchorY": 93.1641,
+        "edgeAlpha": false
+      },
+      {
+        "bbox": [
+          34,
+          36,
+          451,
+          478
+        ],
+        "center": [
+          242.5,
+          257.0
+        ],
+        "width": 417,
+        "height": 442,
+        "area": 123879,
+        "anchorY": 93.3594,
+        "edgeAlpha": false
+      }
+    ]
+  },
+  "giraffe": {
+    "asset": "jungle_animal_giraffe_full_20260712.webp",
+    "size": [
+      512,
+      768
+    ],
+    "metrics": {
+      "bbox": [
+        29,
+        50,
+        483,
+        718
+      ],
+      "center": [
+        256.0,
+        384.0
+      ],
+      "width": 454,
+      "height": 668,
+      "area": 115593,
+      "anchorY": 93.4896,
+      "edgeAlpha": false
+    }
+  }
+}
