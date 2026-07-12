@@ -12,22 +12,15 @@ const html = read("nazonazo-tunnel/index.html");
 const css = read("nazonazo-tunnel/styles.css");
 const js = read("nazonazo-tunnel/js/game.js");
 
-const animals = [
-  "monkey", "owl", "toucans", "butterflies",
-  "sloth", "snake", "frog", "crocodile",
-  "elephant", "giraffe", "lion", "zebra"
-];
 const runtimeAnimals = [
   "toucans", "butterflies",
   "sloth", "crocodile",
   "giraffe", "elephant"
 ];
-const animalFiles = Object.fromEntries(animals.map(animal => [
+const animalFiles = Object.fromEntries(runtimeAnimals.map(animal => [
   animal,
-  `jungle_animal_${animal}_storybook_20260711.webp`
+  `jungle_animal_${animal}_livedin_20260712.webp`
 ]));
-animalFiles.monkey = "jungle_animal_monkey_storybook_v2_20260711.webp";
-animalFiles.owl = "jungle_animal_owl_storybook_v2_20260711.webp";
 
 function extractConstObject(source, name) {
   const marker = `const ${name}=`;
@@ -108,7 +101,7 @@ for (const spec of layoutSpecs) {
     assert.ok(spec.x <= 28 || spec.x >= 100, `${label}: tree animal must stay in the forest tile's canopy bands`);
   }
   if (spec.anchor === "ground" || spec.anchor === "understory") {
-    const expectedAlphaBottom = spec.species === "crocodile" ? 98.62 : 98.75;
+    const expectedAlphaBottom = spec.species === "crocodile" ? 98 : 98.75;
     assert.equal(spec.anchorY, expectedAlphaBottom, `${label}: visible feet/log alpha edge must define the image anchor`);
     assert.equal(spec.y, 85.5, `${label}: visible feet/log must align with the jungle ground line`);
     assert.ok(spec.depth >= 0.85, `${label}: ground habitat must travel with the near landscape`);
@@ -148,7 +141,7 @@ assert.match(js, /const midPeriod=\(\(window\.innerHeight\|\|1\)\*JUNGLE_MID_TIL
 assert.match(js, /renderSeaFish\(now\);\s*renderJungleAnimals\(\);/);
 assert.doesNotMatch(js.slice(js.indexOf("function buildJungleAnimals"), js.indexOf("function renderJungleAnimals")), /addEventListener|bindTap/, "ambient animals must not be interactive");
 
-for (const animal of animals) {
+for (const animal of runtimeAnimals) {
   const file = animalFiles[animal];
   const rel = `assets/images/nazonazo-tunnel/${file}`;
   const full = path.join(root, rel);
@@ -160,9 +153,13 @@ for (const animal of animals) {
   assert.equal(buf.subarray(8, 12).toString("ascii"), "WEBP", `${rel} is not WebP`);
   assert.ok(buf.includes(Buffer.from("ALPH")), `${rel} must contain alpha data`);
   assert.ok(js.includes(`../assets/images/nazonazo-tunnel/${file}`), `${animal}: runtime reference missing`);
-  assert.doesNotMatch(js, new RegExp(`jungle_animal_${animal}_20260711\\.webp`), `${animal}: old realistic asset still referenced`);
+  assert.doesNotMatch(js, new RegExp(`jungle_animal_${animal}_(?:storybook(?:_v2)?_)?20260711\\.webp`), `${animal}: previous animal asset still referenced`);
 }
-assert.doesNotMatch(js, /jungle_animal_(?:monkey|owl)_storybook_20260711\.webp/, "Pono-like monkey/owl assets must not remain referenced");
+const runtimeAnimalReferences = [...js.matchAll(/\.\.\/assets\/images\/nazonazo-tunnel\/(jungle_animal_[^"']+\.webp)/g)]
+  .map(match => match[1]);
+assert.equal(runtimeAnimalReferences.length, 6, "runtime must reference exactly the six selected jungle animal assets");
+assert.ok(runtimeAnimalReferences.every(file => /_livedin_20260712\.webp$/.test(file)), "every runtime jungle animal must use the lived-in 20260712 asset set");
+assert.doesNotMatch(js, /jungle_animal_(?:monkey|owl|snake|frog|lion|zebra)_[^"']+\.webp/, "removed species must not remain in the runtime asset map");
 
 async function settleViewport(page, width, height) {
   await page.setViewportSize({ width, height });
@@ -380,7 +377,7 @@ async function runBrowser(browserName) {
     const requested = process.env.NAZONAZO_BROWSER.split(",").map(value => value.trim()).filter(Boolean);
     for (const browserName of requested) await runBrowser(browserName);
   }
-  console.log(`nazonazo jungle animals regression: OK (${animals.length} alpha assets, ${runtimeAnimals.length} runtime sprites)`);
+  console.log(`nazonazo jungle animals regression: OK (${runtimeAnimals.length} lived-in alpha assets, ${runtimeAnimals.length} runtime sprites)`);
 })().catch(error => {
   console.error(error);
   process.exitCode = 1;

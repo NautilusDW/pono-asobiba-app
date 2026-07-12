@@ -70,7 +70,7 @@
   else { document.addEventListener('DOMContentLoaded', showLock); }
 })();
 </script>
-<link rel="stylesheet" href="styles.css?v=20260712-1251">
+<link rel="stylesheet" href="styles.css?v=20260712-1255">
 </head>
 <body class="st-town v-train" data-driver="pono" data-driver-mood="happy">
 <div id="app">
@@ -144,11 +144,19 @@
     <section id="tunnelFriendGame" aria-label="トンネルの かくれともだち" aria-hidden="true">
       <div id="tunnelFriendPanel">
         <h2 id="tunnelFriendTitle">トンネルの かくれともだち</h2>
-        <div id="tunnelFriendGuide">さっきの ともだちを みつけよう！</div>
+        <div id="tunnelScoreRow">
+          <div class="tunnel-score-box"><span>この めん</span><strong id="tunnelStageScore">0てん</strong></div>
+          <div class="tunnel-score-box is-total"><span>ぜんぶ</span><strong id="tunnelJourneyScore">0てん</strong></div>
+        </div>
+        <div id="tunnelFriendGuide">1にん +100てん　ぜんぶ +200てん</div>
         <div id="tunnelFriendCounter" aria-live="polite">みつけた 0 / 3</div>
       </div>
       <div id="tunnelFriendLayer"></div>
-      <div id="tunnelFriendResult" role="status" aria-live="polite" hidden></div>
+      <div id="tunnelFriendResult" role="status" aria-live="polite" hidden>
+        <strong id="tunnelResultStage"></strong>
+        <span id="tunnelResultBreakdown"></span>
+        <span id="tunnelResultTotal"></span>
+      </div>
     </section>
     <svg id="portalEditOverlay" aria-hidden="true"></svg>
     <div id="tunnelFade" aria-hidden="true"></div>
@@ -231,6 +239,6 @@
 </div>
 <div id="rotateHint">📱➡️ よこむきに してね</div>
 <script src="data/questions.js?v=20260702-1051"></script>
-<script src="js/game.js?v=20260712-1251"></script>
+<script src="js/game.js?v=20260712-1255"></script>
 </body>
 </html>

@@ -76,7 +76,7 @@ assert.equal(weather.speed({ veh: "sub" }, false), 1, "other vehicles must not i
 assert.ok(1 - Math.pow(1 - .4, 5) > 1 - Math.pow(1 - .25, 5), "rain must materially improve the five-attempt encounter chance");
 
 assert.match(game, /if\(!FORCERARE&&Math\.random\(\)>rareSpawnChance\(\)\)return;/, "rare spawning must use the resolved weather chance");
-assert.match(game, /const rainSpeed=rainTrainSpeedMultiplier\(STAGES\[stg\],tunnelRun\);[\s\S]*?const maxV=tunnelRun\?58:\(swapReady\?52:38\)\*rainSpeed;/, "the game loop must apply rain only to exterior cruising speed");
+assert.match(game, /const tunnelGameRun=pending==="tunnelExit";[\s\S]*?const rainSpeed=rainTrainSpeedMultiplier\(STAGES\[stg\],tunnelRun\);[\s\S]*?const maxV=tunnelGameRun\?TUNNEL_GAME_MAX_V:\(tunnelRun\?TUNNEL_TRANSIT_MAX_V:\(swapReady\?52:38\)\*rainSpeed\);/, "the game loop must apply rain only to exterior cruising speed while preserving separate tunnel play/transit speeds");
 assert.match(game, /const weather=weatherForStage\(st\);\s*currentStageWeather=weather;/, "the applied scene weather must feed both speed and rare encounter effects");
 assert.equal((game.match(/rollJourneyWeather\(\);/g) || []).length, 3, "only title start, retry, and loop-two start may redraw weather");
 assert.doesNotMatch(game.match(/bindTap\(\$\("goBtn"\)[^\n]+/)?.[0] || "", /rollJourneyWeather/, "map resume must keep the current journey weather");

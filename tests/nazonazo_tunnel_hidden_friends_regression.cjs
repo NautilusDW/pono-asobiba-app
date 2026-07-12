@@ -14,14 +14,31 @@ const css = read("nazonazo-tunnel/styles.css");
 const game = read("nazonazo-tunnel/js/game.js");
 
 const TITLE = "トンネルの かくれともだち";
-const functionNames = [
+const scoreFunctionNames = [
+  "emptyStageScoreBreakdown",
+  "formatScore",
+  "resetStageScore",
+  "resetJourneyScore",
+  "addScore",
+  "collectHelpItem",
+  "drawTunnelScoreHud",
+  "tunnelScoreBreakdownText"
+];
+const wallFunctionNames = [
+  "tunnelFriendStaticMode",
+  "tunnelWallBayWidthVw",
+  "tunnelFriendWallSlots",
+  "updateTunnelFriendWallMotion"
+];
+const friendFunctionNames = [
   "prepareTunnelFriends",
+  "drawTunnelFriendHud",
   "startTunnelFriendGame",
   "findTunnelFriend",
   "showTunnelFriendResult",
-  "clearTunnelFriendGame",
-  "drawTunnelFriendHud"
+  "clearTunnelFriendGame"
 ];
+const functionNames = [...scoreFunctionNames, ...wallFunctionNames, ...friendFunctionNames];
 
 function scanBalanced(source, openAt, openChar, closeChar) {
   let depth = 0;
@@ -95,7 +112,7 @@ function extractRule(source, selector) {
 
 function extractTunnelConstants(source) {
   const declarations = [];
-  const pattern = /const\s+TUNNEL_FRIEND_[A-Z0-9_]+\s*=/g;
+  const pattern = /const\s+(?:SCORE_POINTS|TUNNEL_(?:GAME|TRANSIT|WALL|FRIEND)_[A-Z0-9_]+)\s*=/g;
   let match;
   while ((match = pattern.exec(source))) {
     let quote = "";
@@ -132,6 +149,22 @@ function extractTunnelConstants(source) {
 }
 
 const hiddenFunctions = Object.fromEntries(functionNames.map(name => [name, extractFunction(game, name)]));
+function extractConstObject(source, name) {
+  const marker = `const ${name}=`;
+  const markerAt = source.indexOf(marker);
+  assert.ok(markerAt >= 0, `${name}: declaration missing`);
+  const objectAt = source.indexOf("{", markerAt + marker.length);
+  assert.ok(objectAt >= 0, `${name}: object literal missing`);
+  const end = scanBalanced(source, objectAt, "{", "}");
+  assert.ok(end > objectAt, `${name}: unterminated object literal`);
+  return vm.runInNewContext(`(${source.slice(objectAt, end + 1)})`, Object.create(null), { timeout: 1000 });
+}
+function numericConstant(source, name) {
+  const match = source.match(new RegExp(`\\b${name}\\s*=\\s*(\\d+(?:\\.\\d+)?|\\.\\d+)\\b`));
+  assert.ok(match, `${name}: numeric declaration missing`);
+  return Number(match[1]);
+}
+const scorePoints = JSON.parse(JSON.stringify(extractConstObject(game, "SCORE_POINTS")));
 const enterTunnel = extractFunction(game, "enterTunnelInterior");
 const exitApproach = extractFunction(game, "startTunnelExitApproach");
 const finishTunnel = extractFunction(game, "finishTunnelInterior");
@@ -139,15 +172,27 @@ const showDropoff = extractFunction(game, "showDropoff");
 const startJourney = extractFunction(game, "startJourneyAt");
 const openMap = extractFunction(game, "openMap");
 const ending = extractFunction(game, "ending");
+const onPick = extractFunction(game, "onPick");
+const proceed = extractFunction(game, "proceed");
+const onRunEvent = extractFunction(game, "onRunEvent");
+const maybeSpawnRare = extractFunction(game, "maybeSpawnRare");
+const setTunnelInteriorBackdrop = extractFunction(game, "setTunnelInteriorBackdrop");
+const gameLoop = extractFunction(game, "gloop");
 
 /* ---------- child-facing DOM and styling contract ---------- */
-for (const id of ["tunnelFriendGame", "tunnelFriendGuide", "tunnelFriendLayer", "tunnelFriendResult"]) {
+for (const id of [
+  "tunnelFriendGame", "tunnelFriendGuide", "tunnelFriendLayer", "tunnelFriendResult",
+  "tunnelStageScore", "tunnelJourneyScore", "tunnelResultStage", "tunnelResultBreakdown", "tunnelResultTotal"
+]) {
   assert.match(html, new RegExp(`id=["']${id}["']`), `${id}: DOM node missing`);
 }
 assert.match(html, /id="tunnelFriendGame"[^>]*(?:\shidden(?:\s|=|>)|aria-hidden="true")/, "the bonus surface must start hidden to assistive technology");
 assert.match(html, /id="tunnelFriendGame"[^>]*(?:aria-label="トンネルの かくれともだち"|aria-labelledby="[^"]+")/, "the bonus surface needs an accessible name");
 assert.match(html, /id="tunnelFriend(?:Title|Guide)"[^>]*>[\s\S]*?トンネルの かくれともだち[\s\S]*?<\/[^>]+>/, "the exact selected title must be visible in the tunnel");
 assert.match(html, /id="tunnelFriendResult"[^>]*role="status"[^>]*aria-live="polite"/, "the result needs a non-interrupting live region");
+assert.match(html, /id="tunnelStageScore"[^>]*>0てん</, "the tunnel must show the current-stage score");
+assert.match(html, /id="tunnelJourneyScore"[^>]*>0てん</, "the tunnel must show the journey score");
+assert.match(html, /id="tunnelFriendGuide"[^>]*>[^<]*1にん\s*\+100てん[^<]*ぜんぶ\s*\+200てん[^<]*</, "the per-friend and 3/3 bonus scores must be explained before play");
 const friendDomStart = html.indexOf('id="tunnelFriendGame"');
 const friendDomEnd = html.indexOf('id="tunnelFriendResult"', friendDomStart);
 assert.ok(friendDomStart >= 0 && friendDomEnd > friendDomStart);
@@ -155,8 +200,16 @@ assert.doesNotMatch(html.slice(friendDomStart, friendDomEnd + 300), /<img\b[^>]*
 
 const gameRule = extractRule(css, "#tunnelFriendGame");
 assert.match(gameRule, /pointer-events\s*:\s*none/, "the bonus layer itself must not block the map or vehicle");
+assert.match(extractRule(css, "#tunnelFriendLayer"), /z-index\s*:\s*6\b/, "wall silhouettes must sit on the tunnel wall layer");
+assert.match(extractRule(css, "#veh.inTun,#cars.inTun"), /z-index\s*:\s*8\b/, "the train must pass in front of wall silhouettes");
+assert.match(extractRule(css, "#tunnelFriendPanel"), /z-index\s*:\s*10\b/, "the score panel must stay above the train");
+assert.match(extractRule(css, "#tunnelFriendResult"), /z-index\s*:\s*23\b/, "the result card must stay above the tunnel scene");
 const buttonRule = extractRule(css, ".tunnel-friend");
 assert.match(buttonRule, /pointer-events\s*:\s*auto/, "only friend buttons may receive tunnel input");
+assert.match(buttonRule, /top\s*:\s*var\(--friend-y\)/, "wall friends need an explicit wall-height anchor");
+assert.match(buttonRule, /--friend-screen-x/, "wall friends must move through the shared wall-position variable");
+assert.match(buttonRule, /background\s*:\s*transparent/, "wall silhouettes must not look like floating cards");
+assert.match(buttonRule, /border\s*:\s*0\b/, "wall silhouettes must not have a floating frame");
 const minimumButtonWidths = [...buttonRule.matchAll(/(?:min-)?width\s*:\s*(?:clamp\(\s*)?(\d+(?:\.\d+)?)px/g)].map(match => Number(match[1]));
 assert.ok(minimumButtonWidths.some(width => width >= 52), "friend buttons must be at least 52px wide");
 assert.ok(
@@ -180,6 +233,7 @@ for (const [label, source] of [["finish", finishTunnel], ["journey", startJourne
 }
 assert.doesNotMatch(startJourney, /tunnelFriendTotalFound\s*=\s*0/, "map resume must not erase the current journey total");
 assert.match(ending, /tunnelFriendTotalFound/, "the journey result must include the hidden-friend total");
+assert.match(ending, /formatScore\(journeyScore\)/, "the journey result must include the final numeric score");
 
 for (const [name, source] of Object.entries(hiddenFunctions)) {
   assert.doesNotMatch(source, /\b(?:target|pending|driving|worldX|stg|qSeg)\s*=/, `${name}: the optional bonus must not control route progression`);
@@ -187,14 +241,51 @@ for (const [name, source] of Object.entries(hiddenFunctions)) {
 }
 assert.match(game, /TUNNEL_INTERIOR_RUN_VW\s*=\s*360\b/, "the tuned tunnel play run must keep its original distance");
 assert.match(game, /TUNNEL_EXIT_APPROACH_RUN_VW\s*=\s*135\b/, "the tuned result approach must keep its original distance");
-assert.match(game, /const maxV=tunnelRun\?58:/, "the tunnel bonus must not slow the existing transition");
-assert.ok((hiddenFunctions.showTunnelFriendResult.match(/helpItems\.push\(/g) || []).length <= 1, "one tunnel may grant at most one help item");
+assert.equal(numericConstant(game, "TUNNEL_GAME_MAX_V"), 32, "the searchable tunnel run needs the slower 32vw/s cap");
+assert.equal(numericConstant(game, "TUNNEL_TRANSIT_MAX_V"), 58, "entry/result transit must keep the 58vw/s cap");
+assert.equal(numericConstant(game, "TUNNEL_WALL_PARALLAX"), 0.55, "wall art and silhouettes must share the same parallax depth");
+const tunnelSearchSeconds = numericConstant(game, "TUNNEL_INTERIOR_RUN_VW") / numericConstant(game, "TUNNEL_GAME_MAX_V");
+assert.ok(tunnelSearchSeconds >= 10.5 && tunnelSearchSeconds <= 12.5, `the normal search window must be about 11.25 seconds, got ${tunnelSearchSeconds}`);
+assert.match(gameLoop, /tunnelGameRun\?TUNNEL_GAME_MAX_V:\(tunnelRun\?TUNNEL_TRANSIT_MAX_V:/, "only the searchable tunnel phase may use the slower speed");
+assert.match(setTunnelInteriorBackdrop, /-panWorld\*TUNNEL_WALL_PARALLAX/, "the wall background must use the shared parallax factor");
+assert.match(hiddenFunctions.updateTunnelFriendWallMotion, /\(worldX-tunnelFriendStartWorldX\)\*TUNNEL_WALL_PARALLAX/, "wall friends must move at the wall background's parallax factor");
+assert.match(hiddenFunctions.tunnelFriendStaticMode, /FAST>1/, "#fast must use stable, tappable silhouette slots");
+assert.match(hiddenFunctions.tunnelFriendStaticMode, /prefers-reduced-motion:\s*reduce/, "reduced motion must use stable, tappable silhouette slots");
+assert.match(hiddenFunctions.tunnelFriendWallSlots, /TUNNEL_FRIEND_STATIC_SLOTS/, "static modes must use the dedicated on-screen slots");
+
+assert.deepEqual(scorePoints, {
+  correct: 100,
+  firstTry: 50,
+  stageClear: 300,
+  noMiss: 200,
+  helpOverflow: 50,
+  rare: 300,
+  tunnelFriend: 100,
+  tunnelPerfect: 200
+}, "the public score table drifted");
+const perfectStagePoints = 5 * (scorePoints.correct + scorePoints.firstTry) + scorePoints.stageClear + scorePoints.noMiss;
+const perfectBaseJourneyPoints = 6 * perfectStagePoints + 5 * (3 * scorePoints.tunnelFriend + scorePoints.tunnelPerfect);
+assert.equal(perfectStagePoints, 1250, "a five-question no-miss stage must total 1,250 points before its tunnel");
+assert.equal(perfectBaseJourneyPoints, 10000, "the six-stage, five-tunnel perfect base journey must total exactly 10,000 points");
+assert.match(onPick, /SCORE_POINTS\.correct\+\(missInQ===0\?SCORE_POINTS\.firstTry:0\)/, "a correct first try must grant 100 + 50 points");
+assert.match(proceed, /if\(!stageClearScoreGranted\)/, "stage-clear scoring needs a duplicate guard");
+assert.match(proceed, /SCORE_POINTS\.stageClear/, "stage clear must grant 300 points");
+assert.match(proceed, /stageMiss===0[\s\S]*?SCORE_POINTS\.noMiss/, "a no-miss clear must grant 200 points");
+assert.match(hiddenFunctions.collectHelpItem, /helpItems\.length>=HELP_MAX[\s\S]*?SCORE_POINTS\.helpOverflow/, "the fourth and later help pickups must convert to 50 points");
+assert.match(maybeSpawnRare, /addScore\(SCORE_POINTS\.rare,["']rare["']\)/, "a rare friend must grant 300 points");
+assert.match(onRunEvent, /collectHelpItem\(/, "ordinary help pickups must share the overflow-score rule");
 assert.match(hiddenFunctions.showTunnelFriendResult, /(?:tunnelFriendsFound\s*(?:===|>=)\s*TUNNEL_FRIEND_LIMIT|total\s*===\s*TUNNEL_FRIEND_LIMIT\s*&&\s*tunnelFriendsFound\s*===\s*total)/, "only a 3/3 find may grant the help reward");
-assert.match(hiddenFunctions.showTunnelFriendResult, /HELP_MAX/, "the reward must respect the existing help inventory cap");
+assert.match(hiddenFunctions.showTunnelFriendResult, /collectHelpItem\(/, "the 3/3 reward must respect the shared help cap and overflow score");
 assert.match(hiddenFunctions.findTunnelFriend, /disabled|\.found|dataset/, "repeat activation needs an idempotency guard");
+assert.match(hiddenFunctions.findTunnelFriend, /addScore\(SCORE_POINTS\.tunnelFriend,["']tunnel["']\)/, "each wall friend must grant 100 points");
+assert.match(hiddenFunctions.findTunnelFriend, /!tunnelFriendPerfectScoreGranted[\s\S]*?SCORE_POINTS\.tunnelPerfect/, "3/3 must grant the 200-point perfect bonus exactly once");
 assert.match(hiddenFunctions.startTunnelFriendGame, /createElement\(["']button["']\)/, "hidden friends must be real buttons");
 assert.match(hiddenFunctions.startTunnelFriendGame, /\.type\s*=\s*["']button["']|setAttribute\(["']type["'],\s*["']button["']\)/, "friend buttons must not act as form submits");
 assert.match(hiddenFunctions.startTunnelFriendGame, /aria-label/, "every friend button needs a spoken action label");
+assert.match(hiddenFunctions.drawTunnelScoreHud, /tunnelStageScore[\s\S]*?stageScore/, "the tunnel HUD must show the stage score");
+assert.match(hiddenFunctions.drawTunnelScoreHud, /tunnelJourneyScore[\s\S]*?journeyScore/, "the tunnel HUD must show the journey score");
+assert.match(hiddenFunctions.showTunnelFriendResult, /tunnelResultStage[\s\S]*?stageScore/, "the result must show the stage score");
+assert.match(hiddenFunctions.showTunnelFriendResult, /tunnelResultTotal[\s\S]*?journeyScore/, "the result must show the journey score");
 
 /* ---------- isolated VM behavior harness ---------- */
 class FakeClassList {
@@ -286,9 +377,11 @@ function descendants(element) {
   return element.children.flatMap(child => [child, ...descendants(child)]);
 }
 
-function createHiddenFriendHarness() {
+function createHiddenFriendHarness({ fast = 1, reducedMotion = false } = {}) {
   const ids = Object.fromEntries([
-    "tunnelFriendGame", "tunnelFriendTitle", "tunnelFriendGuide", "tunnelFriendCounter", "tunnelFriendLayer", "tunnelFriendResult", "helpBadge", "app"
+    "tunnelFriendGame", "tunnelFriendTitle", "tunnelFriendGuide", "tunnelFriendCounter", "tunnelFriendLayer", "tunnelFriendResult",
+    "tunnelStageScore", "tunnelJourneyScore", "tunnelResultStage", "tunnelResultBreakdown", "tunnelResultTotal",
+    "helpBadge", "app"
   ].map(id => [id, new FakeElement("div", id)]));
   const records = { announcements: [], stamps: [], tones: 0, helpHudUpdates: 0 };
   const document = {
@@ -300,12 +393,16 @@ function createHiddenFriendHarness() {
   const context = {
     console,
     document,
-    window: {},
+    window: {
+      innerWidth: 844,
+      innerHeight: 390,
+      matchMedia: () => ({ matches: reducedMotion })
+    },
     Math,
     Number,
     Set,
     Array,
-    TUNNEL_FRIEND_LIMIT: 3,
+    FAST: fast,
     HELP_MAX: 3,
     tunnelFriendGame: ids.tunnelFriendGame,
     tunnelFriendTitle: ids.tunnelFriendTitle,
@@ -313,6 +410,11 @@ function createHiddenFriendHarness() {
     tunnelFriendCounter: ids.tunnelFriendCounter,
     tunnelFriendLayer: ids.tunnelFriendLayer,
     tunnelFriendResult: ids.tunnelFriendResult,
+    tunnelStageScore: ids.tunnelStageScore,
+    tunnelJourneyScore: ids.tunnelJourneyScore,
+    tunnelResultStage: ids.tunnelResultStage,
+    tunnelResultBreakdown: ids.tunnelResultBreakdown,
+    tunnelResultTotal: ids.tunnelResultTotal,
     $: id => ids[id],
     shuffle: values => values.slice(),
     pick: values => values[0],
@@ -340,24 +442,44 @@ function createHiddenFriendHarness() {
     let tunnelFriendsFound=0;
     let tunnelFriendTotalFound=0;
     let tunnelFriendRewardGranted=false;
+    let tunnelFriendPerfectScoreGranted=false;
     let tunnelFriendGameActive=false;
+    let tunnelFriendStartWorldX=0;
+    let worldX=0;
+    let journeyScore=0;
+    let stageScore=0;
+    let stageScoreBreakdown=emptyStageScoreBreakdown();
+    let stageClearScoreGranted=false;
     ${functionNames.map(name => hiddenFunctions[name]).join("\n")}
     this.__tunnelApi={
       setCars:value=>{cars=value;},
       setHelp:value=>{helpItems=value;},
+      setScores:(journey,stage,breakdown)=>{
+        journeyScore=journey;stageScore=stage;
+        stageScoreBreakdown=Object.assign(emptyStageScoreBreakdown(),breakdown||{});
+        drawTunnelScoreHud();
+      },
+      setWall:(start,current)=>{tunnelFriendStartWorldX=start;worldX=current;},
       prepare:prepareTunnelFriends,
       start:startTunnelFriendGame,
       find:findTunnelFriend,
       result:showTunnelFriendResult,
       clear:clearTunnelFriendGame,
       draw:drawTunnelFriendHud,
+      slots:tunnelFriendWallSlots,
+      move:updateTunnelFriendWallMotion,
+      collectHelp:collectHelpItem,
       state:()=>({
         candidates:tunnelFriendCandidates,
         found:tunnelFriendsFound,
         total:tunnelFriendTotalFound,
         reward:tunnelFriendRewardGranted,
+        perfect:tunnelFriendPerfectScoreGranted,
         active:tunnelFriendGameActive,
-        help:helpItems
+        help:helpItems,
+        journeyScore,
+        stageScore,
+        breakdown:stageScoreBreakdown
       })
     };`, context, { filename: "nazonazo-tunnel-hidden-friends-vm.js", timeout: 1000 });
   return { api: context.__tunnelApi, ids, records };
@@ -393,12 +515,14 @@ repeatedHarness.api.setCars([
 repeatedHarness.api.prepare();
 assert.equal(plain(repeatedHarness.api.state()).candidates.length, 3, "repeated answers must still produce a reachable 3/3 tunnel bonus");
 
+harness.api.setScores(1000, 750, { quiz: 750 });
+harness.api.setWall(100, 100);
 harness.api.start();
 state = plain(harness.api.state());
 assert.equal(state.active, true);
 assert.equal(harness.ids.tunnelFriendGame.getAttribute("aria-hidden"), "false", "the game must become visible on tunnel entry");
 const buttons = descendants(harness.ids.tunnelFriendLayer).filter(element => element.tagName === "BUTTON");
-assert.equal(buttons.length, 3, "all three friends must be available immediately, including under #fast");
+assert.equal(buttons.length, 3, "all three wall friends must be created when the search starts");
 for (const button of buttons) {
   assert.equal(button.type, "button");
   assert.ok(button.getAttribute("aria-label"), "each friend button needs an aria-label");
@@ -406,30 +530,60 @@ for (const button of buttons) {
 }
 assert.match(html, new RegExp(TITLE));
 assert.match(harness.ids.tunnelFriendCounter.textContent, /0\s*\/\s*3/, "the initial counter must be visible");
+assert.equal(harness.ids.tunnelStageScore.textContent, "750てん", "the score HUD must carry the just-cleared stage score into the tunnel");
+assert.equal(harness.ids.tunnelJourneyScore.textContent, "1,000てん", "the score HUD must carry the journey total into the tunnel");
+
+const wallStartX = buttons.map(button => Number(button.style["--friend-screen-x"].replace("vw", "")));
+const wallSpeedVwPerSecond = numericConstant(game, "TUNNEL_GAME_MAX_V") * numericConstant(game, "TUNNEL_WALL_PARALLAX");
+for (const [index, startX] of wallStartX.entries()) {
+  const visibleFrom = Math.max(0, (startX - 100) / wallSpeedVwPerSecond);
+  const visibleUntil = Math.min(tunnelSearchSeconds, startX / wallSpeedVwPerSecond);
+  assert.ok(visibleUntil - visibleFrom >= 2.5, `friend ${index}: normal-speed wall visibility is too short (${(visibleUntil - visibleFrom).toFixed(2)}s)`);
+}
+harness.api.setWall(100, 120);
+harness.api.move();
+const wallMovedX = buttons.map(button => Number(button.style["--friend-screen-x"].replace("vw", "")));
+wallStartX.forEach((startX, index) => {
+  assert.ok(Math.abs((startX - wallMovedX[index]) - 11) <= 0.02, `friend ${index}: 20vw of travel must move the wall silhouette by 11vw`);
+});
 
 buttons[0].__tap();
 state = plain(harness.api.state());
 assert.equal(state.found, 1);
 assert.equal(state.total, 1);
+assert.equal(state.stageScore, 850, "one wall friend must add 100 to the stage score");
+assert.equal(state.journeyScore, 1100, "one wall friend must add 100 to the journey score");
 harness.api.find(buttons[0], state.candidates[0]);
 state = plain(harness.api.state());
 assert.equal(state.found, 1, "a found/disabled friend must not count twice");
 assert.equal(state.total, 1, "double activation must not inflate the journey score");
+assert.equal(state.stageScore, 850, "double activation must not duplicate wall-friend points");
 buttons[1].__tap();
 buttons[2].__tap();
 state = plain(harness.api.state());
 assert.equal(state.found, 3);
 assert.equal(state.total, 3);
+assert.equal(state.perfect, true, "3/3 must latch the one-time perfect bonus guard");
+assert.equal(state.stageScore, 1250, "three friends (+300) and the perfect bonus (+200) must add 500 points");
+assert.equal(state.journeyScore, 1500, "the journey score must receive the same 500 tunnel points");
+assert.equal(state.breakdown.tunnel, 500, "the stage breakdown must group all hidden-friend points");
+assert.equal(buttons[2].dataset.score, "+300", "the final friend pop must include its 100 points plus the 200 perfect bonus");
 assert.equal(state.help.length, 0, "the help reward belongs to the result phase, not individual taps");
 
 harness.api.result();
 state = plain(harness.api.state());
 assert.equal(state.reward, true, "3/3 must grant the next-stage reward");
 assert.equal(state.help.length, 1, "3/3 must grant exactly one help item");
-assert.match(harness.ids.tunnelFriendResult.textContent, /ぜんぶ|3\s*\/\s*3|3にん/, "the exit approach must celebrate a complete find");
+assert.equal(state.stageScore, 1250, "storing the 3/3 help reward must not add overflow points");
+assert.match(harness.ids.tunnelResultBreakdown.textContent, /ぜんぶ|3\s*\/\s*3|3にん/, "the exit approach must celebrate a complete find");
+assert.match(harness.ids.tunnelResultStage.textContent, /1,250てん/, "the result must show the completed stage score");
+assert.match(harness.ids.tunnelResultBreakdown.textContent, /なぞなぞ \+750/, "the result must summarize quiz points");
+assert.match(harness.ids.tunnelResultBreakdown.textContent, /かくれともだち \+500/, "the result must summarize wall-friend points");
+assert.match(harness.ids.tunnelResultTotal.textContent, /1,500てん/, "the result must show the journey score");
 harness.api.result();
 state = plain(harness.api.state());
 assert.equal(state.help.length, 1, "re-rendering the exit result must not duplicate the reward");
+assert.equal(state.stageScore, 1250, "re-rendering the exit result must not duplicate score");
 
 harness.api.clear();
 state = plain(harness.api.state());
@@ -438,9 +592,11 @@ assert.equal(state.found, 0);
 assert.equal(state.reward, false);
 assert.equal(state.candidates.length, 0);
 assert.equal(state.total, 3, "stage cleanup must preserve the journey-wide score");
+assert.equal(state.journeyScore, 1500, "stage cleanup must preserve the journey-wide point total");
 assert.equal(harness.ids.tunnelFriendGame.getAttribute("aria-hidden"), "true");
 
 harness.api.setHelp([]);
+harness.api.setScores(1500, 1250, { quiz: 750, tunnel: 500 });
 harness.api.setCars(sourceCars);
 harness.api.prepare();
 harness.api.start();
@@ -448,7 +604,48 @@ harness.api.result();
 state = plain(harness.api.state());
 assert.equal(state.found, 0, "ignoring the optional game must remain valid");
 assert.equal(state.help.length, 0, "0/3 must not grant a help item");
-assert.match(harness.ids.tunnelFriendResult.textContent, /0|こんど|また/, "0/3 still needs a friendly, non-failing result");
+assert.equal(state.journeyScore, 1500, "0/3 must not subtract or add points");
+assert.match(harness.ids.tunnelResultBreakdown.textContent, /0|こんど|また/, "0/3 still needs a friendly, non-failing result");
+
+const overflowHarness = createHiddenFriendHarness();
+overflowHarness.api.setHelp([{ e: "🍀" }, { e: "🌼" }, { e: "🦋" }]);
+overflowHarness.api.collectHelp({ e: "🎈" });
+overflowHarness.api.collectHelp({ e: "🐦" });
+state = plain(overflowHarness.api.state());
+assert.equal(state.help.length, 3, "help inventory must never exceed three items");
+assert.equal(state.stageScore, 100, "the fourth and fifth help pickups must grant 50 points each");
+assert.equal(state.breakdown.help, 100, "help overflow points need their own stage-summary category");
+
+overflowHarness.api.setScores(0, 0);
+overflowHarness.api.setCars(sourceCars);
+overflowHarness.api.prepare();
+overflowHarness.api.setWall(0, 0);
+overflowHarness.api.start();
+const overflowButtons = descendants(overflowHarness.ids.tunnelFriendLayer).filter(element => element.tagName === "BUTTON");
+overflowButtons.forEach(button => button.__tap());
+overflowHarness.api.result();
+state = plain(overflowHarness.api.state());
+assert.equal(state.stageScore, 550, "full-inventory 3/3 must grant 500 tunnel points plus 50 overflow points");
+assert.equal(state.help.length, 3, "full-inventory 3/3 must not create a fourth help item");
+overflowHarness.api.result();
+assert.equal(plain(overflowHarness.api.state()).stageScore, 550, "repeat result rendering must not duplicate help-overflow points");
+
+for (const mode of [
+  { label: "#fast", options: { fast: 8 } },
+  { label: "reduced motion", options: { reducedMotion: true } }
+]) {
+  const staticHarness = createHiddenFriendHarness(mode.options);
+  staticHarness.api.setCars(sourceCars);
+  staticHarness.api.prepare();
+  staticHarness.api.setWall(100, 100);
+  staticHarness.api.start();
+  const staticButtons = descendants(staticHarness.ids.tunnelFriendLayer).filter(element => element.tagName === "BUTTON");
+  assert.deepEqual(staticButtons.map(button => Number(button.dataset.wallStartX)), [10, 34, 90], `${mode.label}: static slot positions drifted`);
+  assert.equal(staticHarness.ids.tunnelFriendGame.classList.contains("is-static"), true, `${mode.label}: static mode class missing`);
+  staticHarness.api.setWall(100, 300);
+  staticHarness.api.move();
+  assert.deepEqual(staticButtons.map(button => button.style["--friend-screen-x"]), ["10.00vw", "34.00vw", "90.00vw"], `${mode.label}: wall friends must stay tappable on screen`);
+}
 
 /* ---------- optional end-to-end browser check ---------- */
 const mime = {
@@ -527,6 +724,9 @@ async function runBrowser(browserName, base) {
   await answerStage(page);
   await page.waitForFunction(() => document.body.classList.contains("tunnel-interior") && document.getElementById("tunnelFriendGame").getAttribute("aria-hidden") === "false", null, { timeout: 70000 });
   assert.equal((await page.locator("#tunnelFriendTitle").textContent()).includes(TITLE), true, `${browserName}: exact title missing`);
+  assert.match(await page.locator("#tunnelFriendGuide").textContent(), /1にん\s*\+100てん[\s\S]*ぜんぶ\s*\+200てん/, `${browserName}: score rules missing from the tunnel panel`);
+  assert.match(await page.locator("#tunnelStageScore").textContent(), /1,250てん/, `${browserName}: perfect stage score missing on tunnel entry`);
+  assert.match(await page.locator("#tunnelJourneyScore").textContent(), /1,250てん/, `${browserName}: journey score missing on tunnel entry`);
   const friendButtons = page.locator("#tunnelFriendLayer .tunnel-friend");
   assert.equal(await friendButtons.count(), 3, `${browserName}: all three friends must appear on entry`);
   const buttonMetrics = await friendButtons.evaluateAll(elements => elements.map(element => {
@@ -548,6 +748,10 @@ async function runBrowser(browserName, base) {
     assert.ok(metric.inside, `${browserName}: friend target is clipped`);
     assert.ok(metric.hittable, `${browserName}: friend target is covered by another layer`);
   }
+  const staticCenters = buttonMetrics.map(metric => metric.centerX / 740 * 100);
+  [10, 34, 90].forEach((expected, index) => {
+    assert.ok(Math.abs(staticCenters[index] - expected) <= 1, `${browserName}: #fast friend ${index} left its static wall slot`);
+  });
   await page.emulateMedia({ reducedMotion: "reduce" });
   const reducedNames = await friendButtons.evaluateAll(elements => elements.map(element => getComputedStyle(element).animationName));
   assert.ok(reducedNames.every(name => name === "none"), `${browserName}: reduced-motion friend animation still runs`);
@@ -559,8 +763,22 @@ async function runBrowser(browserName, base) {
   await page.mouse.click(buttonMetrics[1].centerX, buttonMetrics[1].centerY);
   await page.mouse.click(buttonMetrics[2].centerX, buttonMetrics[2].centerY);
   assert.match(await page.locator("#tunnelFriendCounter").textContent(), /3\s*\/\s*3/, `${browserName}: 3/3 counter missing`);
-  await page.locator("#tunnelFriendResult").waitFor({ state: "visible", timeout: 10000 });
-  assert.match(await page.locator("#tunnelFriendResult").textContent(), /ぜんぶ|3\s*\/\s*3|3にん/, `${browserName}: complete exit result missing`);
+  assert.match(await page.locator("#tunnelStageScore").textContent(), /1,750てん/, `${browserName}: tunnel points were not added to the stage HUD`);
+  assert.match(await page.locator("#tunnelJourneyScore").textContent(), /1,750てん/, `${browserName}: tunnel points were not added to the journey HUD`);
+  // #fast compresses the 2.33-second production recap to roughly 0.39 seconds,
+  // so capture its live-region text instead of requiring the transient card to
+  // remain visible while several Playwright assertions are awaited.
+  await page.waitForFunction(() => window.__tunnelFriendAudit.results.some(text =>
+    /この めん\s*1,750てん/.test(text) &&
+    /かくれともだち\s*\+500/.test(text) &&
+    /ぜんぶ\s*1,750てん/.test(text)
+  ), null, { timeout: 10000 });
+  const capturedResult = await page.evaluate(() => window.__tunnelFriendAudit.results.find(text =>
+    /この めん\s*1,750てん/.test(text) &&
+    /かくれともだち\s*\+500/.test(text) &&
+    /ぜんぶ\s*1,750てん/.test(text)
+  ) || "");
+  assert.match(capturedResult, /ぜんぶ|3\s*\/\s*3|3にん/, `${browserName}: complete exit result missing`);
   await page.waitForFunction(() => /×\s*1/.test(document.getElementById("helpBadge").textContent), null, { timeout: 10000 });
   await page.waitForFunction(() => document.body.classList.contains("st-jungle") && document.getElementById("quiz").classList.contains("show"), null, { timeout: 70000 });
   const firstResults = await page.evaluate(() => window.__tunnelFriendAudit.results.slice());
