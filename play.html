@@ -10009,13 +10009,18 @@
        IIFE 即時登録、 localStorage 'pono_haptics_off'='1' で完全 opt-out。 defer で他 script と並列読込。 -->
   <script src="common/haptics.js" defer></script>
   <!-- ===== Screenshot mode (PonoCapture) registration =====
-       play.html は LP メニュー + 各種モーダル(ガチャ等)を持つ。
-       ガチャモーダル #dailyGachaModal を target に html2canvas でラスタライズ。
-       html2canvas は ESM 動的 import (capture.js が既に DOMContentLoaded で
-       UI 起動するので register() は同期登録 or DOMContentLoaded で間に合う)。 -->
+       play.html は LP メニュー + 各種モーダル(ガチャ・どんぐりショップ等)を持つ。
+       PonoCapture は「最後に register した 1 件」だけが有効 (Phase 1 設計) なので、
+       モーダルを開くたびに該当の register*Capture() を呼び直して target を切り替える
+       (v2127 batch:1254)。 ページロード時はどちらも閉じているのでガチャをデフォルトにする。
+       ガチャモーダル #dailyGachaModal / どんぐりショップ #donguriShop をそれぞれ
+       html2canvas でラスタライズ。 html2canvas は ESM 動的 import (capture.js が既に
+       DOMContentLoaded で UI 起動するので register() は同期登録 or DOMContentLoaded で間に合う)。 -->
   <script>
   (function(){
-    function regCapture(){
+    // v2127 batch:1254: 元 regCapture() を registerGachaCapture() に改名 (中身は不変)。
+    // showShop()/openDailyGacha() など他の <script> ブロックから再登録できるよう window に公開する。
+    function registerGachaCapture(){
       if (!window.PonoCapture) return;
       window.PonoCapture.register({
         gameId: 'play-gacha',
@@ -10089,6 +10094,83 @@
         }
       });
     }
+    // v2127 batch:1254: どんぐりショップ (#donguriShop) 用の新規 registration。
+    function registerShopCapture(){
+      if (!window.PonoCapture) return;
+      window.PonoCapture.register({
+        gameId: 'play-shop',
+        defaultLabel: 'shop',
+        build: async function(opts){
+          // ショップ本体 (#donguriShop 直下の唯一のパネル .donguri-shop-v2-stage) を撮る。
+          // .donguri-shop-v2-stage は position:absolute; inset:0 で #donguriShop
+          // (position:fixed; inset:0) を常に隙間なく埋める唯一の直下要素で、
+          // 背景イラスト(.donguri-shop-v2-backdrop)・カウンター前景・しょっぷけいぱー・
+          // 商品パネル(.donguri-shop-v2-safe)をすべて内包する。 ガチャの
+          // 「黒 backdrop を避けて shell を撮る」と同じ考え方で、 #donguriShop 自身では
+          // なくこのパネルを target にする。
+          var modal = document.getElementById('donguriShop');
+          if (!modal) {
+            console.warn('[play-shop capture] #donguriShop not found');
+            return null;
+          }
+          // #donguriShop が [hidden] のときはパネルも実質非表示なので撮影不可
+          if (modal.hasAttribute('hidden')) {
+            console.warn('[play-shop capture] shop modal is hidden; open the shop first');
+            return null;
+          }
+          var container = modal.querySelector('.donguri-shop-v2-stage');
+          if (!container) {
+            console.warn('[play-shop capture] .donguri-shop-v2-stage not found');
+            return null;
+          }
+          try {
+            var mod = await import('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/+esm');
+            var html2canvas = (mod && (mod.default || mod));
+            if (typeof html2canvas !== 'function') {
+              throw new Error('html2canvas module shape unexpected');
+            }
+            // v2127 batch:1254: ガチャと同じ dynScale ロジックを踏襲 (preset 解像度割れ防止)。
+            var stageRect = container.getBoundingClientRect();
+            var dynScale = 2;
+            if (stageRect && stageRect.width > 0 && stageRect.height > 0) {
+              dynScale = Math.max(
+                2,
+                (opts && opts.width ? opts.width : 0) / stageRect.width,
+                (opts && opts.height ? opts.height : 0) / stageRect.height
+              );
+            }
+            var h2cOpts = (window.PonoCapture && typeof window.PonoCapture.html2canvasOptions === 'function')
+              ? window.PonoCapture.html2canvasOptions({ backgroundColor: null, scale: dynScale })
+              : {
+                  backgroundColor: null,
+                  scale: dynScale,
+                  useCORS: true,
+                  allowTaint: false,
+                  logging: false,
+                  imageTimeout: 30000,
+                  removeContainer: true,
+                  ignoreElements: function(el){
+                    try {
+                      if (!el) return false;
+                      if (el.hasAttribute && el.hasAttribute('data-capture-hide')) return true;
+                      if (el.classList && el.classList.contains && el.classList.contains('pono-capture-overlay')) return true;
+                    } catch(e) {}
+                    return false;
+                  }
+                };
+            return await html2canvas(container, h2cOpts);
+          } catch (e) {
+            console.warn('[play-shop capture] html2canvas import/exec failed:', e);
+            throw e;
+          }
+        }
+      });
+    }
+    // v2127 batch:1254: 他 <script> ブロック (showShop()/openDailyGacha()) から
+    // 呼び直せるよう window に公開。
+    window.registerGachaCapture = registerGachaCapture;
+    window.registerShopCapture = registerShopCapture;
+    function regCapture(){ registerGachaCapture(); }
     if (window.PonoCapture) regCapture();
     else window.addEventListener('DOMContentLoaded', regCapture, { once: true });
   })();
@@ -10581,7 +10663,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2126; // sw.js CACHE_VERSION と同期 (batch:1253 ショップ音声排他 + 吹き出し位置/組版)
+    const PAGE_CACHE_VERSION = 2127; // sw.js CACHE_VERSION と同期 (batch:1254 シール帳・ミュージアム・おみせへスクショモード追加)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -10590,7 +10672,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v2126';
+    window.PONO_SW_VERSION = 'v2127';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
@@ -13007,6 +13089,10 @@
 
     function openDailyGacha() {
       if (!dailyGachaEnabled || !dailyGachaModal) return;
+      // v2127 batch:1254: スクショモードは「最後に register した 1 件」だけが有効。
+      // ガチャを開くたびにガチャ側の撮影 target を再登録して、 直前にショップを
+      // 開いていた場合の登録を上書きする。 例外は子供の操作フローを絶対に壊さないよう握りつぶす。
+      try { if (typeof window.registerGachaCapture === 'function') window.registerGachaCapture(); } catch (_) {}
       startDailyGachaImagePreload();
       // v2049 perf: レバー <img> は data-src 出荷 (hidden モーダル内の parse 時 820KB DL 回避)。
       // 初回 open のここで src へ昇格する (idle/hover warm 済ならキャッシュヒットで即表示)。
@@ -13287,6 +13373,10 @@
       var shop = document.getElementById('donguriShop');
       if (!shop) return;
       donguriShopAudioSession += 1;
+      // v2127 batch:1254: スクショモードは「最後に register した 1 件」だけが有効。
+      // ショップを開くたびにショップ側の撮影 target を再登録して、 直前にガチャを
+      // 開いていた場合の登録を上書きする。 例外は子供の操作フローを絶対に壊さないよう握りつぶす。
+      try { if (typeof window.registerShopCapture === 'function') window.registerShopCapture(); } catch (_) {}
       // v1699: shop 専用 BGM (sticker-album-morning.mp3) を導入。 play-bgm を pause + shop-bgm を start。
       //        v1698 でコメントアウトしていた pauseTopBgmForDonguriShop() を復活、
       //        さらに startDonguriShopBgm() を新規追加。 ヘルパー定義は L7090-7160 付近。
@@ -13323,6 +13413,13 @@
       var shop = document.getElementById('donguriShop');
       donguriShopAudioSession += 1;
       if (shop) shop.hidden = true;
+      // v2127 batch:1254: ショップを閉じても撮影 target がショップ登録のまま残ってしまう
+      // (ガチャ→ショップ→ショップを閉じる、の順で遷移した場合に撮影するとショップの
+      // 絵が出てしまう) のを防ぐ。 ガチャモーダルが開いたままのときだけガチャ側の
+      // 登録に戻す。 例外は握りつぶす (既存 register*Capture フックと同じ様式)。
+      if (dailyGachaModal && !dailyGachaModal.hidden) {
+        try { window.registerGachaCapture && window.registerGachaCapture(); } catch (_) {}
+      }
       _stopShopNarration();
       _clearShopkeeperNeutralTimer();
       _setShopSubtitle('');

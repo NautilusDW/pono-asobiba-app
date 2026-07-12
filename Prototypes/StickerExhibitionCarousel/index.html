@@ -74,7 +74,11 @@
     <div class="loading" id="loading">よみこみちゅう</div>
   </div>
 
+  <!-- v2127 batch:1254: スクショモード基盤。 debug-mode.js → capture.js の順で読み込み必須
+       (capture.js は PonoDebugMode.isFeatureEnabled('capture-mode') に単一ゲート委譲)。 -->
+  <script src="../../common/debug-mode.js"></script>
+  <script src="../../common/capture.js" defer></script>
   <script src="./sticker-metrics.js?v=20260705-7"></script>
-  <script type="module" src="./main.js?v=20260705-7"></script>
+  <script type="module" src="./main.js?v=20260712-1"></script>
 </body>
 </html>

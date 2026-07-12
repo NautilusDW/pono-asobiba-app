@@ -273,10 +273,80 @@ async function init() {
     if (initialRoomId) showRoom(initialRoomId, { updateUrl: false });
     else showMap({ updateUrl: false });
     els.loading.hidden = true;
+    registerCapture();
   } catch (error) {
     console.error(error);
     els.loading.classList.add("is-error");
     els.loading.textContent = "よみこめなかったよ";
+  }
+}
+
+// v2127 batch:1254: スクショモード登録 (PonoCapture)。 DOM + 画像主体のレンダリング
+// (Three.js/WebGL canvas なし) なので html2canvas 方式を採用。 撮影対象は #app (.stage) —
+// museum-bg/vignette/topbar に加え、 表示中の map-screen または carousel-shell +
+// bottom-bar + (開いていれば) detail-overlay を一括で内包しており、 body 直下には
+// これ以外の常設要素がないため #app 単体で「ミュージアムの展示全景」を撮れる。
+// index.html で common/debug-mode.js → common/capture.js の順に読み込み済み前提。
+function registerCapture() {
+  try {
+    if (typeof window === "undefined" || !window.PonoCapture) return;
+    window.PonoCapture.register({
+      gameId: "sticker-museum",
+      defaultLabel: "sticker-museum",
+      build: async function (opts) {
+        const container = document.getElementById("app");
+        if (!container) {
+          console.warn("[PonoCapture/sticker-museum] #app not found");
+          return null;
+        }
+        try {
+          const mod = await import("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/+esm");
+          const html2canvas = (mod && (mod.default || mod)) || window.html2canvas;
+          if (typeof html2canvas !== "function") {
+            console.warn("[PonoCapture/sticker-museum] html2canvas not callable after import");
+            return null;
+          }
+          // v2127 batch:1254: play.html の play-gacha/play-shop と同じ dynScale ロジック。
+          // 固定 scale:2 だと #app が小さいウィンドウで縮んだ状態のとき preset (opts.width/
+          // height) に compose 段で引き伸ばされてぼやける。 rect と preset の大きい方 / 2 の
+          // max を取り、 0 ガード付きで #app 実寸を取得できないときは scale:2 にフォールバック。
+          const rect = container.getBoundingClientRect();
+          let dynScale = 2;
+          if (rect && rect.width > 0 && rect.height > 0) {
+            dynScale = Math.max(
+              2,
+              (opts && opts.width ? opts.width : 0) / rect.width,
+              (opts && opts.height ? opts.height : 0) / rect.height
+            );
+          }
+          const h2cOpts = (window.PonoCapture && typeof window.PonoCapture.html2canvasOptions === "function")
+            ? window.PonoCapture.html2canvasOptions({ scale: dynScale })
+            : {
+                backgroundColor: null,
+                scale: dynScale,
+                useCORS: true,
+                allowTaint: false,
+                logging: false,
+                imageTimeout: 30000,
+                removeContainer: true,
+                ignoreElements: function (el) {
+                  try {
+                    if (!el) return false;
+                    if (el.hasAttribute && el.hasAttribute("data-capture-hide")) return true;
+                    if (el.classList && el.classList.contains && el.classList.contains("pono-capture-overlay")) return true;
+                  } catch (_) {}
+                  return false;
+                },
+              };
+          return await html2canvas(container, h2cOpts);
+        } catch (error) {
+          console.warn("[PonoCapture/sticker-museum] html2canvas import/exec failed", error);
+          return null;
+        }
+      },
+    });
+  } catch (error) {
+    console.warn("[PonoCapture/sticker-museum] register failed", error);
   }
 }
 

@@ -3059,6 +3059,42 @@ window.__stickerBookZukanIndexTargets = (page = activeBookPage) => {
 };
 animate();
 
+// v2127 batch:1254: スクショモード canvas 直撮り登録。
+// WebGL は preserveDrawingBuffer:true (L2507 renderer 生成部) だが、 build() 呼び出し
+// タイミングでの描画内容を確実に反映させるため、 明示的に renderer.render() を
+// 1 回同期実行してから 2D canvas へ drawImage してそれを返す
+// (capture.js 側の compose() が contain-fit で 1920×1080 等プリセットへ合成する)。
+// v2127 batch:1254: 訂正 — PonoCapture.register() 自体は capture-mode の状態に
+// 関わらず常に build() を registered へ格納するだけで no-op にはならない。
+// capture-mode OFF (staging + manage 解錠 + デバッグボードのトグル ON でない環境) を
+// 実際にゲートしているのは shoot()/UI 表示/keydown ショートカット側の
+// isCaptureAllowed() であり、 通常プレイでは撮影 UI・ショートカットが出てこないため
+// この register() が呼ばれても挙動には一切影響しない。
+function regStickerBookCapture() {
+  if (!window.PonoCapture) return;
+  window.PonoCapture.register({
+    gameId: "sticker-book",
+    defaultLabel: "sticker-book",
+    build: function () {
+      try {
+        renderer.render(scene, camera);
+        const shot = document.createElement("canvas");
+        shot.width = canvas.width;
+        shot.height = canvas.height;
+        const ctx = shot.getContext("2d");
+        if (!ctx) return null;
+        ctx.drawImage(canvas, 0, 0);
+        return shot;
+      } catch (err) {
+        console.warn("[sticker-book] capture build failed", err);
+        return null;
+      }
+    },
+  });
+}
+if (window.PonoCapture) regStickerBookCapture();
+else window.addEventListener("DOMContentLoaded", regStickerBookCapture, { once: true });
+
 function setupScenePagePicking() {
   if (!editorEnabled) {
     return;
