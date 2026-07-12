@@ -401,8 +401,15 @@ let tunnelFriendCandidates=[],tunnelFriendsFound=0,tunnelFriendTotalFound=0,tunn
 let bestStarsByStage={},answerLocked=false,portalEditHolding=false,nextMagicPuffAt=0,exitPortalBaseWorldX=0;
 let numberCargoPicked=[],numberCargoGoalShown=false;
 let numberCargoTheme=null;
-let steerTargetY=0,steerY=0,seaSteerPointerId=null,seaSteerUsed=false;
-let seaBubbleLaunchPending=false,seaBubbleLaunchTimer=0,seaBubbleOptions=[];
+const SEA_FIRE_INTERVAL_MS=180;
+const SEA_SHOT_LIMIT=32;
+const SEA_COMPANION_LIMIT=3;
+const SEA_TARGET_HIT_GOALS=[3,4,5];
+let steerTargetX=0,steerX=0,steerTargetY=0,steerY=0,seaSteerPointerId=null,seaSteerUsed=false;
+let seaBubbleLaunchPending=false,seaBubbleLaunchTimer=0,seaShooterResumeTimer=0,seaAssistFireTimer=0,seaBubbleOptions=[];
+let seaShooterEpoch=0,seaShots=[],seaCompanionSprites=[],seaCompanionKey="",seaTrail=[];
+let seaFirePointerId=null,seaFireSources=new Set(),seaMoveKeys=new Set(),seaKeyboardAim=null,seaKeyboardAimStartedAt=0;
+let seaLastVolleyAt=0,seaShooterFrameAt=0,seaVolleyCount=0,seaSalvoHits=new Set();
 let nazonazoAdminPreviewMode=false;
 const NUMBER_CARGO_THEMES=[
  {e:"⭐",name:"おほしさま"},{e:"🎈",name:"ふうせん"},{e:"🌼",name:"おはな"},
@@ -538,6 +545,7 @@ function setDriverMood(mood){
 const $=id=>document.getElementById(id);
 const world=$("world"),veh=$("veh"),horizon=$("horizon"),midT=$("midT"),groundT=$("groundT"),fgT=$("fgT"),seaFishLayer=$("seaFishLayer"),smokeLayer=$("smokeLayer"),townHorizonLoop=$("townHorizonLoop"),townMidLoop=$("townMidLoop"),jungleHabitatBack=$("jungleHabitatBack");
 const vehicleSteerShell=$("vehicleSteerShell"),seaSteerSurface=$("seaSteerSurface"),seaAnswerLayer=$("seaAnswerLayer"),seaSteerHint=$("seaSteerHint");
+const seaCompanionLayer=$("seaCompanionLayer"),seaShotLayer=$("seaShotLayer"),seaFireButton=$("seaFireButton");
 const jungleAnimalLayers={far:$("jungleAnimalsFar"),mid:$("jungleAnimalsMid"),near:$("jungleAnimalsNear")};
 const jungleFlightLayers={bird:$("jungleBirdFlightLayer"),butterfly:$("jungleButterflyFlightLayer")};
 const skyA=$("skyA"),skyB=$("skyB"),carsEl=$("cars"),carBadge=$("carBadge"),helpBadge=$("helpBadge"),helpBtn=$("helpBtn");
@@ -1472,121 +1480,427 @@ function seaReducedMotion(){
  try{return !!(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches);}catch(_){return false;}
 }
 function snapSeaReducedMotion(){
- if(seaReducedMotion())steerY=steerTargetY;
+ if(seaReducedMotion()){steerX=steerTargetX;steerY=steerTargetY;}
 }
 function isSeaStage(){return !!(STAGES[stg]&&STAGES[stg].id==="sea");}
+function seaLandscapeReady(){return (window.innerWidth||844)>=(window.innerHeight||390);}
 function seaControlAvailable(){
- return isSeaStage()&&playing&&!tunnelInteriorMode&&
+ return !window.__PONO_TIER_LOCKED__&&seaLandscapeReady()&&isSeaStage()&&playing&&!tunnelInteriorMode&&
   !document.body.classList.contains("tunnel-enter-run")&&!document.body.classList.contains("tunnel-exit-run")&&
   !seaBubbleLaunchPending&&(driving||quiz.classList.contains("show"));
 }
+function seaShooterActive(){
+ return seaControlAvailable()&&!driving&&!answerLocked&&quiz.classList.contains("show")&&
+  document.body.classList.contains("sea-quiz-active")&&seaBubbleOptions.some(entry=>entry.button&&!entry.button.disabled&&!entry.button.classList.contains("dim"));
+}
 function seaSteerBounds(){
+ const viewportWidth=window.innerWidth||844;
  const viewportHeight=window.innerHeight||390;
+ const width=Math.max(1,veh.offsetWidth||viewportWidth*.16);
  const height=Math.max(1,veh.offsetHeight||viewportHeight*.24);
- const baseCenter=viewportHeight-viewportHeight*.124-height*.5;
+ const baseCenterX=(veh.offsetLeft||viewportWidth*.28)+width*.5;
+ const baseCenterY=(veh.offsetTop>0?veh.offsetTop+height*.5:viewportHeight-viewportHeight*.124-height*.5);
  const scoreHud=document.getElementById("scoreHud");
  const hudBottom=scoreHud?scoreHud.getBoundingClientRect().bottom:viewportHeight*.14;
- const quizTop=quiz.classList.contains("show")?quiz.getBoundingClientRect().top:viewportHeight*.82;
- const minCenter=Math.min(viewportHeight*.45,Math.max(hudBottom+height*.5+8,viewportHeight*.17));
- const maxCenter=Math.max(minCenter+12,Math.min(viewportHeight-height*.5-8,quizTop-height*.5-10));
- return {baseCenter,minY:minCenter-baseCenter,maxY:maxCenter-baseCenter};
+ const quizTop=quiz.classList.contains("show")?quiz.getBoundingClientRect().top:viewportHeight*.72;
+ const rawMaxY=Math.min(viewportHeight-height*.5-8,quizTop-height*.5-10);
+ const maxCenterY=Math.max(height*.5+20,rawMaxY);
+ const wantedMinY=Math.max(hudBottom+height*.5+8,viewportHeight*.17);
+ const minCenterY=Math.max(height*.5+8,Math.min(maxCenterY-12,wantedMinY));
+ const minCenterX=Math.max(width*.5+8,viewportWidth*.08);
+ const maxCenterRatio=.5;
+ const maxCenterX=Math.max(minCenterX+12,Math.min(viewportWidth*maxCenterRatio,viewportWidth-width*.5-8));
+ return {
+  baseCenterX,baseCenterY,
+  minX:minCenterX-baseCenterX,maxX:maxCenterX-baseCenterX,
+  minY:minCenterY-baseCenterY,maxY:Math.max(minCenterY+12,maxCenterY)-baseCenterY
+ };
+}
+function clampSeaSteerOffsets(){
+ if(!isSeaStage())return;
+ const bounds=seaSteerBounds();
+ steerTargetX=clamp(steerTargetX,bounds.minX,bounds.maxX);
+ steerX=clamp(steerX,bounds.minX,bounds.maxX);
+ steerTargetY=clamp(steerTargetY,bounds.minY,bounds.maxY);
+ steerY=clamp(steerY,bounds.minY,bounds.maxY);
 }
 function applySeaSteerVisual(){
  if(!vehicleSteerShell)return;
+ const x=IOS_DEVICE?Math.round(steerX):Number(steerX.toFixed(2));
  const y=IOS_DEVICE?Math.round(steerY):Number(steerY.toFixed(2));
  const tilt=seaReducedMotion()?0:clamp((steerTargetY-steerY)*-.055,-5,5);
+ vehicleSteerShell.style.setProperty("--sea-steer-x",x+"px");
  vehicleSteerShell.style.setProperty("--sea-steer-y",y+"px");
  vehicleSteerShell.style.setProperty("--sea-steer-tilt",tilt.toFixed(2)+"deg");
+ carsEl.style.setProperty("--sea-steer-x",x+"px");
  carsEl.style.setProperty("--sea-steer-y",y+"px");
 }
-function setSeaSteerTarget(clientY,immediate){
+function setSeaSteerTarget(clientX,clientY,immediate){
  if(!isSeaStage())return;
  const bounds=seaSteerBounds();
- steerTargetY=clamp(clientY-bounds.baseCenter,bounds.minY,bounds.maxY);
- if(immediate||seaReducedMotion()){steerY=steerTargetY;applySeaSteerVisual();}
- highlightNearestSeaBubble();
+ const x=Number.isFinite(clientX)?clientX:bounds.baseCenterX+steerTargetX;
+ const y=Number.isFinite(clientY)?clientY:bounds.baseCenterY+steerTargetY;
+ steerTargetX=clamp(x-bounds.baseCenterX,bounds.minX,bounds.maxX);
+ steerTargetY=clamp(y-bounds.baseCenterY,bounds.minY,bounds.maxY);
+ if(immediate||seaReducedMotion()){steerX=steerTargetX;steerY=steerTargetY;applySeaSteerVisual();}
 }
-function renderSeaSteering(){
- const active=seaControlAvailable();
- document.body.classList.toggle("sea-steer-active",active);
- if(seaSteerHint){
-  seaSteerHint.hidden=!active||seaSteerUsed||quiz.classList.contains("show");
- }
- if(!isSeaStage()||!vehicleSteerShell)return;
- if(seaReducedMotion())snapSeaReducedMotion();
- else steerY+=(steerTargetY-steerY)*.2;
- if(Math.abs(steerTargetY-steerY)<.08)steerY=steerTargetY;
- applySeaSteerVisual();
- highlightNearestSeaBubble();
+function nudgeSeaSteerTarget(dx,dy){
+ if(!isSeaStage())return;
+ const bounds=seaSteerBounds();
+ steerTargetX=clamp(steerTargetX+dx,bounds.minX,bounds.maxX);
+ steerTargetY=clamp(steerTargetY+dy,bounds.minY,bounds.maxY);
+ seaSteerUsed=true;
+}
+function setSeaFireSource(source,active){
+ if(active)seaFireSources.add(source);else seaFireSources.delete(source);
+ if(seaFireButton)seaFireButton.classList.toggle("is-firing",seaFireSources.size>0&&seaShooterActive());
+}
+function stopSeaFiring(){
+ seaFireSources.clear();seaKeyboardAim=null;seaKeyboardAimStartedAt=0;seaLastVolleyAt=0;
+ clearTimeout(seaAssistFireTimer);seaAssistFireTimer=0;
+ if(seaFireButton)seaFireButton.classList.remove("is-firing");
 }
 function cancelSeaPointer(){
- if(seaSteerPointerId===null||!seaSteerSurface)return;
- try{seaSteerSurface.releasePointerCapture(seaSteerPointerId);}catch(_){}
+ if(seaSteerPointerId===null)return;
+ const pointerId=seaSteerPointerId;
  seaSteerPointerId=null;
+ setSeaFireSource("steer",false);
+ if(seaSteerSurface){try{seaSteerSurface.releasePointerCapture(pointerId);}catch(_){}}
+}
+function cancelSeaFirePointer(){
+ if(seaFirePointerId===null)return;
+ const pointerId=seaFirePointerId;
+ seaFirePointerId=null;
+ setSeaFireSource("button",false);
+ if(seaFireButton){try{seaFireButton.releasePointerCapture(pointerId);}catch(_){}}
+}
+function removeAllSeaShots(){
+ seaShots.forEach(shot=>{if(shot.el)shot.el.remove();});
+ seaShots=[];
+}
+function clearSeaShotLayer(){
+ removeAllSeaShots();
+ if(seaShotLayer)seaShotLayer.replaceChildren();
 }
 function clearSeaBubbleGame(){
+ seaShooterEpoch++;
  clearTimeout(seaBubbleLaunchTimer);seaBubbleLaunchTimer=0;
- seaBubbleLaunchPending=false;seaBubbleOptions=[];
- document.body.classList.remove("sea-quiz-active","sea-dash-active");
+ clearTimeout(seaShooterResumeTimer);seaShooterResumeTimer=0;
+ clearTimeout(seaAssistFireTimer);seaAssistFireTimer=0;
+ cancelSeaPointer();cancelSeaFirePointer();stopSeaFiring();
+ seaBubbleLaunchPending=false;seaBubbleOptions=[];seaMoveKeys.clear();seaSalvoHits.clear();
+ seaLastVolleyAt=0;seaShooterFrameAt=0;
+ document.body.classList.remove("sea-quiz-active");
  quiz.classList.remove("sea-quiz");choicesEl.classList.remove("sea-mode");
+ choicesEl.setAttribute("aria-label","こたえを えらぶ");
  if(seaAnswerLayer)seaAnswerLayer.replaceChildren();
- if(isSeaStage()){
-  const bounds=seaSteerBounds();
-  steerTargetY=clamp(steerTargetY,bounds.minY,bounds.maxY);
-  steerY=clamp(steerY,bounds.minY,bounds.maxY);
- }
+ clearSeaShotLayer();
+ if(seaFireButton){seaFireButton.hidden=true;seaFireButton.classList.remove("is-firing");}
+ clampSeaSteerOffsets();
 }
 function resetSeaInteraction(){
- cancelSeaPointer();clearSeaBubbleGame();
- steerTargetY=0;steerY=0;seaSteerUsed=false;
+ clearSeaBubbleGame();
+ steerTargetX=0;steerX=0;steerTargetY=0;steerY=0;seaSteerUsed=false;
+ seaCompanionSprites=[];seaCompanionKey="";seaTrail=[];
+ if(seaCompanionLayer)seaCompanionLayer.replaceChildren();
  if(vehicleSteerShell){
+  vehicleSteerShell.style.setProperty("--sea-steer-x","0px");
   vehicleSteerShell.style.setProperty("--sea-steer-y","0px");
   vehicleSteerShell.style.setProperty("--sea-steer-tilt","0deg");
  }
+ carsEl.style.setProperty("--sea-steer-x","0px");
  carsEl.style.setProperty("--sea-steer-y","0px");
  document.body.classList.remove("sea-steer-active");
  if(seaSteerHint)seaSteerHint.hidden=true;
 }
-function nearestSeaBubble(){
- if(!document.body.classList.contains("sea-quiz-active")||!seaAnswerLayer)return null;
- const buttons=[...seaAnswerLayer.querySelectorAll(".sea-answer-bubble:not(:disabled):not(.dim)")];
- if(!buttons.length)return null;
- const shellRect=vehicleSteerShell.getBoundingClientRect();
- const subCenter=shellRect.top+shellRect.height*.5;
- return buttons.map(button=>({button,distance:Math.abs(button.getBoundingClientRect().top+button.offsetHeight*.5-subCenter)}))
-  .sort((a,b)=>a.distance-b.distance)[0]||null;
+function seaAnswerSafeRect(){
+ const scene=document.getElementById("scene");
+ const sceneRect=scene?scene.getBoundingClientRect():{left:0,top:0,width:window.innerWidth||844,height:window.innerHeight||390};
+ const scoreHud=document.getElementById("scoreHud");
+ const hudRect=scoreHud?scoreHud.getBoundingClientRect():{bottom:sceneRect.top+sceneRect.height*.14};
+ const quizRect=quiz.classList.contains("show")?quiz.getBoundingClientRect():{top:sceneRect.top+sceneRect.height*.82};
+ const top=clamp(hudRect.bottom-sceneRect.top+8,42,sceneRect.height*.48);
+ const bottom=Math.max(top+90,Math.min(sceneRect.height-12,quizRect.top-sceneRect.top-9));
+ return {sceneRect,top,bottom,height:Math.max(90,bottom-top)};
 }
-function highlightNearestSeaBubble(){
- if(!seaAnswerLayer)return;
- const nearest=nearestSeaBubble();
- seaAnswerLayer.querySelectorAll(".sea-answer-bubble").forEach(button=>button.classList.toggle("is-near",!!nearest&&nearest.button===button&&nearest.distance<=Math.max(30,button.offsetHeight*.62)));
+function updateSeaAnswerTargets(now){
+ if(!seaBubbleOptions.length)return;
+ const safe=seaAnswerSafeRect();
+ const reduced=seaReducedMotion();
+ const t=(now||_nowMs())/1000;
+ seaBubbleOptions.forEach(entry=>{
+  if(!entry.button||!entry.button.isConnected)return;
+  const focused=document.activeElement===entry.button;
+  const moving=!reduced&&!focused&&!entry.bursting;
+  const wave=moving?Math.sin(t*entry.rate+entry.phase):0;
+  const cross=moving?Math.sin(t*entry.rate*1.47+entry.phase*.63):0;
+  const minX=Math.max(entry.size*.5+8,safe.sceneRect.width*.6);
+  const maxX=Math.min(safe.sceneRect.width-entry.size*.5-10,safe.sceneRect.width*.88);
+  entry.x=clamp(safe.sceneRect.width*entry.baseX+wave*entry.ampX,minX,maxX);
+  entry.y=clamp(safe.top+safe.height*entry.baseY+cross*entry.ampY,safe.top+entry.size*.5,safe.bottom-entry.size*.5);
+  const ratio=clamp(entry.hits/entry.hitGoal,0,1);
+  const flash=entry.flashUntil>now?.055:0;
+  entry.scale=1+Math.min(.28,ratio*.28)+flash;
+  entry.radius=entry.size*entry.scale*.43;
+  const rotation=moving?wave*entry.rotation:0;
+  entry.button.style.transform="translate3d("+entry.x.toFixed(2)+"px,"+entry.y.toFixed(2)+"px,0) translate(-50%,-50%) rotate("+rotation.toFixed(2)+"deg) scale("+entry.scale.toFixed(3)+")";
+ });
+}
+function syncSeaCompanions(){
+ if(!seaCompanionLayer||window.__PONO_TIER_LOCKED__||!isSeaStage())return;
+ const friends=cars.filter(friend=>friend&&!friend.pending&&(friend.img||friend.e)).slice(-SEA_COMPANION_LIMIT);
+ const key=friends.map(friend=>(friend.img||friend.e||"")+"|"+(friend.t||"")).join("||");
+ if(key===seaCompanionKey)return;
+ seaCompanionKey=key;seaCompanionSprites=[];seaTrail=[];seaCompanionLayer.replaceChildren();
+ friends.forEach((friend,index)=>{
+  const el=document.createElement("span");el.className="sea-companion";el.dataset.companionIndex=String(index);
+  if(friend.img){const img=document.createElement("img");img.src=friend.img;img.alt="";img.decoding="async";el.appendChild(img);}
+  else{const emoji=document.createElement("span");emoji.className="sea-companion-emoji";emoji.textContent=friend.e;el.appendChild(emoji);}
+  seaCompanionLayer.appendChild(el);seaCompanionSprites.push({el,index,x:-80,y:-80,size:40});
+ });
+}
+function seaTrailPointAt(time,fallback){
+ if(!seaTrail.length)return fallback;
+ for(let i=seaTrail.length-1;i>=0;i--){
+  const older=seaTrail[i];
+  if(older.t<=time){
+   const newer=seaTrail[i+1];
+   if(!newer||newer.t===older.t)return older;
+   const p=clamp((time-older.t)/(newer.t-older.t),0,1);
+   return {x:older.x+(newer.x-older.x)*p,y:older.y+(newer.y-older.y)*p,t:time};
+  }
+ }
+ return seaTrail[0];
+}
+function renderSeaCompanions(now){
+ if(window.__PONO_TIER_LOCKED__||!isSeaStage()||tunnelInteriorMode||!seaCompanionLayer)return;
+ syncSeaCompanions();
+ const scene=document.getElementById("scene");
+ const sceneRect=scene.getBoundingClientRect(),shellRect=vehicleSteerShell.getBoundingClientRect();
+ const subPoint={x:shellRect.left-sceneRect.left+shellRect.width*.42,y:shellRect.top-sceneRect.top+shellRect.height*.54,t:now};
+ seaTrail.push(subPoint);
+ while(seaTrail.length>2&&seaTrail[0].t<now-1250)seaTrail.shift();
+ const gap=clamp((window.innerWidth||844)*.045,34,52);
+ const reduced=seaReducedMotion();
+ seaCompanionSprites.forEach((companion,index)=>{
+  const point=reduced?subPoint:seaTrailPointAt(now-135*(index+1),subPoint);
+  const size=companion.el.offsetWidth||clamp((window.innerWidth||844)*.051,34,48);
+  const bob=reduced?0:Math.sin(now/650+index*.9)*2;
+  companion.size=size;companion.x=clamp(point.x-gap*(index+1),size*.55,sceneRect.width-size*.55);companion.y=point.y+bob;
+  companion.el.style.transform="translate3d("+(companion.x-size*.5).toFixed(2)+"px,"+(companion.y-size*.5).toFixed(2)+"px,0)";
+ });
+}
+function spawnSeaShot(x,y,companion,salvoId,aimY){
+ if(!seaShotLayer||seaShots.length>=SEA_SHOT_LIMIT||window.__PONO_TIER_LOCKED__)return;
+ const el=document.createElement("span");el.className="sea-shot"+(companion?" is-companion":"");
+ seaShotLayer.appendChild(el);
+ seaShots.push({el,x,y,aimY:Number.isFinite(aimY)?aimY:y,companion,prevX:x,speed:Math.max(560,(window.innerWidth||844)*1.1),salvoId});
+}
+function spawnSeaVolley(now){
+ if(!seaShooterActive()||!vehicleSteerShell||seaShots.length>=SEA_SHOT_LIMIT)return;
+ const scene=document.getElementById("scene"),sceneRect=scene.getBoundingClientRect(),shellRect=vehicleSteerShell.getBoundingClientRect();
+ const salvoId=++seaVolleyCount;
+ const aimY=shellRect.top-sceneRect.top+shellRect.height*.51;
+ spawnSeaShot(shellRect.right-sceneRect.left-shellRect.width*.06,aimY,false,salvoId,aimY);
+ seaCompanionSprites.forEach(companion=>{
+  spawnSeaShot(companion.x+companion.size*.45,companion.y,true,salvoId,aimY);
+  companion.el.classList.remove("is-firing");void companion.el.offsetWidth;companion.el.classList.add("is-firing");
+  setTimeout(()=>companion.el&&companion.el.classList.remove("is-firing"),130);
+ });
+ seaVolleyCount=salvoId;
+ if(salvoId%2===1)tone(760+(salvoId%4)*55,0,.045,"sine",.025);
+ seaLastVolleyAt=now;
+}
+function createSeaHitSpark(x,y){
+ if(!seaShotLayer)return;
+ const spark=document.createElement("span");spark.className="sea-hit-spark";
+ spark.style.setProperty("--spark-x",x.toFixed(1)+"px");spark.style.setProperty("--spark-y",y.toFixed(1)+"px");
+ seaShotLayer.appendChild(spark);setTimeout(()=>spark.remove(),320);
+}
+function createSeaBurstParticles(entry){
+ if(!seaShotLayer)return;
+ const colors=["#baf7ff","#fff39a","#8ee7ff","#d7b9ff"];
+ for(let i=0;i<12;i++){
+  const drop=document.createElement("span"),angle=Math.PI*2*i/12+(i%2)*.14,distance=30+(i%4)*12;
+  drop.className="sea-burst-drop";drop.style.setProperty("--drop-x",entry.x.toFixed(1)+"px");drop.style.setProperty("--drop-y",entry.y.toFixed(1)+"px");
+  drop.style.setProperty("--drop-dx",(Math.cos(angle)*distance).toFixed(1)+"px");drop.style.setProperty("--drop-dy",(Math.sin(angle)*distance).toFixed(1)+"px");
+  drop.style.setProperty("--drop-color",colors[i%colors.length]);seaShotLayer.appendChild(drop);setTimeout(()=>drop.remove(),560);
+ }
+}
+function hitSeaAnswerTarget(entry,salvoId,x,y){
+ if(!entry||seaSalvoHits.has(salvoId)||seaBubbleLaunchPending||answerLocked||entry.bursting||entry.button.disabled||entry.button.classList.contains("dim"))return false;
+ seaSalvoHits.add(salvoId);entry.hits=Math.min(entry.hitGoal,entry.hits+1);entry.flashUntil=_nowMs()+120;
+ entry.button.dataset.hits=String(entry.hits);entry.button.classList.add("is-hit");
+ const epoch=seaShooterEpoch;setTimeout(()=>{if(epoch===seaShooterEpoch&&entry.button)entry.button.classList.remove("is-hit");},130);
+ createSeaHitSpark(x,y);tone(560+entry.hits*90,0,.055,"triangle",.04);
+ if(entry.hits>=entry.hitGoal)beginSeaTargetBurst(entry);
+ return true;
+}
+function removeSeaShotsForSalvo(salvoId){
+ for(let i=seaShots.length-1;i>=0;i--){if(seaShots[i].salvoId===salvoId){seaShots[i].el.remove();seaShots.splice(i,1);}}
+}
+function updateSeaShots(dt){
+ if(!seaShots.length)return;
+ const width=window.innerWidth||844;
+ for(let index=seaShots.length-1;index>=0;index--){
+  const shot=seaShots[index];shot.prevX=shot.x;shot.x+=shot.speed*dt;
+  if(shot.companion)shot.y+=(shot.aimY-shot.y)*clamp(dt*8,0,1);
+  shot.el.style.transform="translate3d("+shot.x.toFixed(2)+"px,"+shot.y.toFixed(2)+"px,0) translate(-50%,-50%)";
+  if(shot.x>width+28){shot.el.remove();seaShots.splice(index,1);continue;}
+  if(seaBubbleLaunchPending||answerLocked)continue;
+  const targetEntry=seaBubbleOptions.find(entry=>{
+   if(!entry.button||entry.button.disabled||entry.button.classList.contains("dim")||entry.bursting)return false;
+   const crossed=shot.x+8>=entry.x-entry.radius&&shot.prevX-8<=entry.x+entry.radius;
+   return crossed&&Math.abs(shot.y-entry.y)<=entry.radius+6;
+  });
+  if(targetEntry&&hitSeaAnswerTarget(targetEntry,shot.salvoId,shot.x,shot.y)){
+   removeSeaShotsForSalvo(shot.salvoId);
+   return;
+  }
+ }
+}
+function beginSeaTargetBurst(entry){
+ if(!entry||seaBubbleLaunchPending||answerLocked||driving||!quiz.classList.contains("show")||entry.button.disabled||entry.button.classList.contains("dim"))return;
+ seaBubbleLaunchPending=true;entry.bursting=true;stopSeaFiring();cancelSeaPointer();cancelSeaFirePointer();seaMoveKeys.clear();removeAllSeaShots();
+ activeChoiceButtons().forEach(choice=>{choice.disabled=true;});
+ entry.button.classList.add("is-bursting");createSeaBurstParticles(entry);
+ tone(700,0,.08,"sine",.07);tone(980,.07,.12,"triangle",.065);
+ const epoch=seaShooterEpoch;
+ const finish=()=>{
+  seaBubbleLaunchTimer=0;
+  if(epoch!==seaShooterEpoch||!entry.button.isConnected||!quiz.classList.contains("show")||!document.body.classList.contains("sea-quiz-active"))return;
+  entry.button.classList.remove("is-bursting");entry.button.classList.add("is-popped");
+  onPick(entry.button,entry.value);
+  if(entry.value.ok){
+   seaShooterResumeTimer=setTimeout(()=>{seaShooterResumeTimer=0;if(epoch===seaShooterEpoch)clearSeaBubbleGame();},120);
+  }else{
+   seaShooterResumeTimer=setTimeout(()=>{
+    seaShooterResumeTimer=0;if(epoch!==seaShooterEpoch||!quiz.classList.contains("show"))return;
+    seaBubbleLaunchPending=false;entry.bursting=false;
+    activeChoiceButtons().forEach(choice=>{if(!choice.classList.contains("dim"))choice.disabled=false;});
+   },560);
+  }
+ };
+ if(seaReducedMotion())finish();else seaBubbleLaunchTimer=setTimeout(finish,220);
+}
+function startSeaKeyboardTargetFire(button,o){
+ const entry=seaBubbleOptions.find(item=>item.button===button&&item.value===o);
+ if(!entry||!seaShooterActive()||button.disabled||button.classList.contains("dim"))return;
+ ensureAC();seaKeyboardAim=entry;seaKeyboardAimStartedAt=_nowMs();seaSteerUsed=true;setSeaFireSource("auto",true);
+ announce(o.t+"を ねらって うつよ");
+}
+function updateSeaKeyboardAim(now){
+ if(!seaKeyboardAim)return;
+ if(!seaShooterActive()||seaKeyboardAim.button.disabled||seaKeyboardAim.button.classList.contains("dim")||now-seaKeyboardAimStartedAt>6000){
+  seaKeyboardAim=null;seaKeyboardAimStartedAt=0;setSeaFireSource("auto",false);return;
+ }
+ setSeaSteerTarget((window.innerWidth||844)*.47,seaKeyboardAim.y,seaReducedMotion());
+}
+function updateSeaKeyboardMovement(dt){
+ if(!seaMoveKeys.size||!seaControlAvailable())return;
+ const left=seaMoveKeys.has("ArrowLeft")||seaMoveKeys.has("KeyA"),right=seaMoveKeys.has("ArrowRight")||seaMoveKeys.has("KeyD");
+ const up=seaMoveKeys.has("ArrowUp")||seaMoveKeys.has("KeyW"),down=seaMoveKeys.has("ArrowDown")||seaMoveKeys.has("KeyS");
+ const axisX=(right?1:0)-(left?1:0),axisY=(down?1:0)-(up?1:0);
+ const magnitude=Math.hypot(axisX,axisY)||1;
+ const speed=clamp(Math.min(window.innerWidth||844,window.innerHeight||390)*.55,180,360);
+ const dx=axisX/magnitude*speed*dt,dy=axisY/magnitude*speed*dt;
+ if(dx||dy)nudgeSeaSteerTarget(dx,dy);
 }
 function handleSeaPointerDown(ev){
- if(!seaControlAvailable()||seaSteerPointerId!==null)return;
+ if(!seaControlAvailable()||seaSteerPointerId!==null||ev.isPrimary===false||(ev.pointerType==="mouse"&&ev.button!==0))return;
+ ev.preventDefault();
  ensureAC();seaSteerPointerId=ev.pointerId;seaSteerUsed=true;
  if(seaSteerHint)seaSteerHint.hidden=true;
  try{seaSteerSurface.setPointerCapture(ev.pointerId);}catch(_){}
- setSeaSteerTarget(ev.clientY,seaReducedMotion());
+ setSeaSteerTarget(ev.clientX,ev.clientY,seaReducedMotion());
+ if(seaShooterActive())setSeaFireSource("steer",true);
 }
 function handleSeaPointerMove(ev){
  if(ev.pointerId!==seaSteerPointerId)return;
- setSeaSteerTarget(ev.clientY,false);
+ ev.preventDefault();setSeaSteerTarget(ev.clientX,ev.clientY,false);
 }
 function handleSeaPointerUp(ev){
  if(ev.pointerId!==seaSteerPointerId)return;
- setSeaSteerTarget(ev.clientY,seaReducedMotion());
- const nearest=nearestSeaBubble();
+ ev.preventDefault();setSeaSteerTarget(ev.clientX,ev.clientY,seaReducedMotion());
  cancelSeaPointer();
- if(nearest&&nearest.distance<=Math.max(30,nearest.button.offsetHeight*.62)){
-  const option=seaBubbleOptions.find(entry=>entry.button===nearest.button);
-  if(option)launchSeaBubbleChoice(nearest.button,option.value);
- }else if(document.body.classList.contains("sea-quiz-active")){
-  hintText.textContent="🫧 あわの たかさに あわせて はなそう";
-  announce("あわの たかさに あわせて はなそう");
- }
 }
 function handleSeaPointerCancel(ev){
  if(ev.pointerId===seaSteerPointerId)cancelSeaPointer();
+}
+function handleSeaFirePointerDown(ev){
+ if(!seaShooterActive()||seaFirePointerId!==null||ev.isPrimary===false||(ev.pointerType==="mouse"&&ev.button!==0))return;
+ ev.preventDefault();ensureAC();seaFirePointerId=ev.pointerId;
+ try{seaFireButton.setPointerCapture(ev.pointerId);}catch(_){}
+ setSeaFireSource("button",true);
+}
+function handleSeaFirePointerUp(ev){
+ if(ev.pointerId!==seaFirePointerId)return;
+ ev.preventDefault();cancelSeaFirePointer();
+}
+function handleSeaFirePointerCancel(ev){if(ev.pointerId===seaFirePointerId)cancelSeaFirePointer();}
+function handleSeaFireClick(ev){
+ if(ev.detail!==0){ev.preventDefault();return;}
+ if(!seaShooterActive())return;
+ ensureAC();setSeaFireSource("assist",true);clearTimeout(seaAssistFireTimer);
+ seaAssistFireTimer=setTimeout(()=>{seaAssistFireTimer=0;setSeaFireSource("assist",false);},1800);
+}
+function handleSeaKeyDown(ev){
+ if(ev.target&&ev.target.classList&&ev.target.classList.contains("sea-answer-bubble"))return;
+ const code=ev.code||ev.key;
+ const movement=["ArrowLeft","ArrowRight","ArrowUp","ArrowDown","KeyA","KeyD","KeyW","KeyS"];
+ if(movement.includes(code)&&seaControlAvailable()){
+  ev.preventDefault();seaMoveKeys.add(code);seaSteerUsed=true;return;
+ }
+ if((code==="Space"||ev.key===" ")&&seaShooterActive()){
+  ev.preventDefault();ensureAC();setSeaFireSource("keyboard",true);
+ }
+}
+function handleSeaKeyUp(ev){
+ if(ev.target&&ev.target.classList&&ev.target.classList.contains("sea-answer-bubble"))return;
+ const code=ev.code||ev.key;
+ seaMoveKeys.delete(code);
+ if(code==="Space"||ev.key===" "){ev.preventDefault();setSeaFireSource("keyboard",false);}
+}
+function pauseSeaInput(){
+ cancelSeaPointer();cancelSeaFirePointer();stopSeaFiring();seaMoveKeys.clear();removeAllSeaShots();
+}
+function handleSeaViewportChange(){
+ if(!isSeaStage())return;
+ pauseSeaInput();seaTrail=[];clampSeaSteerOffsets();updateSeaAnswerTargets(_nowMs());
+}
+function renderSeaSteering(){
+ const now=_nowMs();
+ const dt=seaShooterFrameAt?clamp((now-seaShooterFrameAt)/1000,0,.05):0;
+ seaShooterFrameAt=now;
+ const active=seaControlAvailable(),shooter=seaShooterActive();
+ document.body.classList.toggle("sea-steer-active",active);
+ if(seaSteerHint){
+  seaSteerHint.textContent="👆 タッチした ばしょへ うごくよ";
+  seaSteerHint.hidden=!active||seaSteerUsed||quiz.classList.contains("show");
+ }
+ if(seaFireButton){
+  seaFireButton.hidden=!shooter;
+  if(shooter){
+   const quizRect=quiz.getBoundingClientRect();
+   seaFireButton.style.bottom=Math.max(9,(window.innerHeight||390)-quizRect.top+8)+"px";
+  }
+  seaFireButton.classList.toggle("is-firing",shooter&&seaFireSources.size>0);
+ }
+ if(!isSeaStage()||!vehicleSteerShell)return;
+ updateSeaAnswerTargets(now);
+ updateSeaKeyboardMovement(dt);
+ updateSeaKeyboardAim(now);
+ clampSeaSteerOffsets();
+ if(seaReducedMotion())snapSeaReducedMotion();
+ else{
+  const ease=clamp(dt*9,.12,.34);
+  steerX+=(steerTargetX-steerX)*ease;steerY+=(steerTargetY-steerY)*ease;
+ }
+ if(Math.abs(steerTargetX-steerX)<.08)steerX=steerTargetX;
+ if(Math.abs(steerTargetY-steerY)<.08)steerY=steerTargetY;
+ applySeaSteerVisual();renderSeaCompanions(now);
+ if(shooter&&seaFireSources.size>0&&(seaLastVolleyAt===0||now-seaLastVolleyAt>=SEA_FIRE_INTERVAL_MS))spawnSeaVolley(now);
+ updateSeaShots(dt);
 }
 function activeChoiceButtons(){
  if(document.body.classList.contains("sea-quiz-active")&&seaAnswerLayer)return [...seaAnswerLayer.querySelectorAll(".sea-answer-bubble")];
@@ -1597,43 +1911,49 @@ function renderSeaBubbleGame(){
  if(level===0&&opts.length>2)opts=opts.slice(0,2);
  opts=shuffle(opts).slice(0,level===0?2:3);
  document.body.classList.add("sea-quiz-active");quiz.classList.add("sea-quiz");choicesEl.classList.add("sea-mode");
- choicesEl.setAttribute("aria-label","せんすいかんを あわに あわせる");
- seaAnswerLayer.replaceChildren();seaBubbleOptions=[];
- const lanes=opts.length===2?[35,58]:[30,46,62];
+ choicesEl.setAttribute("aria-label","せんすいかんで こたえを うちぬく");
+ seaAnswerLayer.replaceChildren();seaBubbleOptions=[];seaSalvoHits.clear();seaLastVolleyAt=0;
+ const layout=opts.length===2?[[.68,.28],[.81,.7]]:[[.67,.17],[.81,.5],[.69,.83]];
+ const baseSize=clamp(Math.min(window.innerWidth||844,window.innerHeight||390)*.12,64,96);
  opts.forEach((o,index)=>{
   const button=document.createElement("button");button.type="button";button.className="sea-answer-bubble";
-  button.dataset.ok=o.ok?"1":"0";button.setAttribute("aria-label",o.t+"の あわ");
-  button.style.setProperty("--bubble-x",(58+(index%2)*3)+"%");button.style.setProperty("--bubble-y",lanes[index]+"%");
-  button.style.setProperty("--bubble-delay",(-index*.47)+"s");button.style.setProperty("--bubble-duration",(2.35+index*.28)+"s");
-  button.innerHTML='<span class="em">'+o.e+'</span><span class="lb">'+o.t+'</span>';
-  bindTap(button,()=>launchSeaBubbleChoice(button,o));
-  seaAnswerLayer.appendChild(button);seaBubbleOptions.push({button,value:o});
+  button.dataset.ok=o.ok?"1":"0";button.dataset.hits="0";button.setAttribute("aria-label",o.t+"を ねらって うつ");
+  const size=clamp(baseSize+[-4,4,0][index],64,96);button.style.setProperty("--sea-target-size",size.toFixed(1)+"px");
+  button.style.setProperty("--sea-target-hue",String(184+index*24));
+  const visual=document.createElement("span");visual.className="sea-answer-visual";
+  const emoji=document.createElement("span");emoji.className="em";emoji.textContent=o.e;
+  const label=document.createElement("span");label.className="lb";label.textContent=o.t;
+  visual.append(emoji,label);button.appendChild(visual);
+  bindTap(button,()=>startSeaKeyboardTargetFire(button,o));
+  seaAnswerLayer.appendChild(button);
+  const period=[6,5.4,4.8][level]||5.4;
+  seaBubbleOptions.push({
+   button,value:o,index,baseX:layout[index][0],baseY:layout[index][1],size,
+   ampX:7+index*2,ampY:8+((index+1)%3)*3,rate:Math.PI*2/(period-index*.18),phase:(qSeg+1)*.63+index*2.07,
+   rotation:2.2+index*.7,hits:0,hitGoal:SEA_TARGET_HIT_GOALS[level]||4,flashUntil:0,scale:1,radius:size*.43,x:0,y:0,bursting:false
+  });
  });
- hintText.textContent="🫧 タッチで うごかして あわに あわせよう";
- setSeaSteerTarget((window.innerHeight||390)*lanes[0]/100,seaReducedMotion());
- highlightNearestSeaBubble();
-}
-function launchSeaBubbleChoice(button,o){
- if(seaBubbleLaunchPending||answerLocked||driving||!button||button.disabled||button.classList.contains("dim")||!quiz.classList.contains("show"))return;
- seaBubbleLaunchPending=true;
- activeChoiceButtons().forEach(choice=>{choice.disabled=true;});
- tone(520,0,.08,"sine",.08);tone(720,.08,.12,"sine",.07);
- const finish=()=>{
-  document.body.classList.remove("sea-dash-active");
-  activeChoiceButtons().forEach(choice=>{if(!choice.classList.contains("dim"))choice.disabled=false;});
-  seaBubbleLaunchPending=false;
-  onPick(button,o);
-  if(o.ok)setTimeout(clearSeaBubbleGame,120);
- };
- if(seaReducedMotion())finish();
- else{document.body.classList.add("sea-dash-active");seaBubbleLaunchTimer=setTimeout(()=>{seaBubbleLaunchTimer=0;finish();},300);}
+ hintText.textContent="🎯 おしながら うごかして こたえを うとう";
+ if(!seaSteerUsed)setSeaSteerTarget((window.innerWidth||844)*.28,(window.innerHeight||390)*.45,seaReducedMotion());
+ updateSeaAnswerTargets(_nowMs());
+ if(seaFireButton)seaFireButton.hidden=false;
 }
 if(seaSteerSurface){
  seaSteerSurface.addEventListener("pointerdown",handleSeaPointerDown);
  seaSteerSurface.addEventListener("pointermove",handleSeaPointerMove);
  seaSteerSurface.addEventListener("pointerup",handleSeaPointerUp);
  seaSteerSurface.addEventListener("pointercancel",handleSeaPointerCancel);
+ seaSteerSurface.addEventListener("lostpointercapture",handleSeaPointerCancel);
 }
+if(seaFireButton){
+ seaFireButton.addEventListener("pointerdown",handleSeaFirePointerDown);
+ seaFireButton.addEventListener("pointerup",handleSeaFirePointerUp);
+ seaFireButton.addEventListener("pointercancel",handleSeaFirePointerCancel);
+ seaFireButton.addEventListener("lostpointercapture",handleSeaFirePointerCancel);
+ seaFireButton.addEventListener("click",handleSeaFireClick);
+}
+window.addEventListener("keydown",handleSeaKeyDown);
+window.addEventListener("keyup",handleSeaKeyUp);
 
 function buildSeaFish(){
  seaFishSprites=[];
@@ -1945,6 +2265,15 @@ function passengerSeatTargetAt(index){
   const x=carLeft+trainCarWidthVw()*seatCenters[index%4];
   const y=trainBottomVh()+trainCarHeightVh()*.37;
   return {left:x+"vw",bottom:y+"vh"};
+ }
+ if(isSeaStage()&&vehicleSteerShell){
+  const viewportWidth=window.innerWidth||844,viewportHeight=window.innerHeight||390;
+  const shellRect=vehicleSteerShell.getBoundingClientRect();
+  const gap=clamp(viewportWidth*.045,34,52);
+  const slot=Math.min(Math.max(0,index),SEA_COMPANION_LIMIT-1)+1;
+  const centerX=clamp(shellRect.left+shellRect.width*.42-gap*slot,24,viewportWidth-24);
+  const centerY=clamp(shellRect.top+shellRect.height*.54,24,viewportHeight-24);
+  return {left:centerX.toFixed(1)+"px",bottom:(viewportHeight-centerY).toFixed(1)+"px"};
  }
  const pendingSeat=carsEl.querySelector(".pending-seat");
  if(pendingSeat){
@@ -3060,14 +3389,15 @@ document.addEventListener("pointerdown",()=>{ensureAC();},{capture:true,passive:
 // visibility/lifecycle 復帰: iOS/Android で BG 復帰後に AC が suspended/interrupted のままだと SE が全滅する
 // blur は意図的に購読しない (iOS の疑似 blur で AC を止めない方針)
 document.addEventListener("visibilitychange",()=>{
- if(document.hidden){hideWeatherNotice();safeSuspend();}
+ if(document.hidden){hideWeatherNotice();pauseSeaInput();safeSuspend();}
  else{ensureAC();}
 });
 window.addEventListener("resize",scheduleRainParticleRebuild,{passive:true});
 window.addEventListener("resize",syncNumberCargoColumns,{passive:true});
+window.addEventListener("resize",handleSeaViewportChange,{passive:true});
 window.addEventListener("pageshow",()=>{ensureAC();updateRainParticleVisibility(false);});
 window.addEventListener("focus",()=>{ensureAC();});
-window.addEventListener("pagehide",()=>{hideWeatherNotice();clearTimeout(rainParticleResizeTimer);safeSuspend();});
+window.addEventListener("pagehide",()=>{hideWeatherNotice();pauseSeaInput();clearTimeout(rainParticleResizeTimer);safeSuspend();});
 
 requestAnimationFrame(gloop);
 })();

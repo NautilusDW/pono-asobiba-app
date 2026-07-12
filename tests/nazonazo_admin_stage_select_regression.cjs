@@ -227,8 +227,8 @@ assert.equal(normalWrites, 1, "ordinary play must retain its save path");
 assert.match(game, /const wasAdminPreview=document\.body\.classList\.contains\("nazonazo-admin-stage-preview"\);/);
 assert.match(game, /if\(wasAdminPreview\)document\.body\.classList\.add\("nazonazo-admin-stage-preview"\);/);
 assert.match(html, /id="adminStagePreviewLabel" hidden/);
-assert.match(html, /js\/game\.js\?v=20260712-1266/);
-assert.match(html, /styles\.css\?v=20260712-1266/);
+assert.match(html, /js\/game\.js\?v=20260712-1267/);
+assert.match(html, /styles\.css\?v=20260712-1267/);
 assert.match(styles, /@media \(orientation:landscape\) and \(max-height:180px\)[\s\S]*?body\.nazonazo-admin-stage-preview #title h1,[\s\S]*?#zkBtnTitle\{display:none\}/);
 assert.match(styles, /body\.nazonazo-admin-stage-preview #lvSel\{[^}]*grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
 assert.match(styles, /body\.nazonazo-admin-stage-preview #startBtn\{[^}]*min-height:38px/);
@@ -237,6 +237,6 @@ assert.match(styles, /body\.nazonazo-admin-stage-preview #startBtn\{[^}]*min-hei
 assert.match(worker, /const PROTECTED_PREFIXES = \[[\s\S]*?'\/admin\/'[\s\S]*?'\/admin'/);
 assert.match(worker, /function checkBasicAuth\(request, env\)/);
 assert.match(sw, /event\.request\.url\.includes\('\/admin\/'\)[\s\S]*?return;/);
-assert.match(sw, /const CACHE_VERSION = 2142;/);
+assert.match(sw, /const CACHE_VERSION = 2146;/);
 
 console.log("nazonazo admin stage select regression: PASS");

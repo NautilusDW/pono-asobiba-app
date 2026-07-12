@@ -36,7 +36,11 @@ body.tunnel-interior #scene::after{display:block}
 #seaFishLayer{position:absolute;inset:0;z-index:4;display:none;pointer-events:none;overflow:hidden}
 body.st-sea #seaFishLayer{display:block}
 body.tunnel-interior #seaFishLayer{display:none!important}
-#seaSteerSurface{position:absolute;inset:0;z-index:3;display:none;pointer-events:none;touch-action:none;cursor:ns-resize}
+#seaCompanionLayer{position:absolute;inset:0;z-index:6;display:none;pointer-events:none;overflow:hidden}
+#seaShotLayer{position:absolute;inset:0;z-index:9;display:none;pointer-events:none;overflow:hidden}
+body.st-sea #seaCompanionLayer,body.st-sea #seaShotLayer{display:block}
+body.tunnel-interior #seaCompanionLayer,body.tunnel-interior #seaShotLayer{display:none!important}
+#seaSteerSurface{position:absolute;inset:0;z-index:9;display:none;pointer-events:none;touch-action:none;cursor:crosshair}
 body.st-sea.sea-steer-active #seaSteerSurface{display:block;pointer-events:auto}
 #seaAnswerLayer{position:absolute;inset:0;z-index:10;display:none;pointer-events:none}
 body.st-sea.sea-quiz-active #seaAnswerLayer{display:block}
@@ -44,20 +48,51 @@ body.st-sea.sea-quiz-active #seaAnswerLayer{display:block}
   background:rgba(236,252,255,.9);border:2px solid rgba(120,213,232,.82);color:#24677d;font-size:clamp(12px,2.1vw,17px);font-weight:900;
   white-space:nowrap;pointer-events:none;box-shadow:0 3px 10px rgba(5,55,78,.18)}
 #seaSteerHint[hidden]{display:none}
-.sea-answer-bubble{appearance:none;-webkit-appearance:none;position:absolute;left:var(--bubble-x,76%);top:var(--bubble-y,35%);
-  min-width:70px;min-height:70px;width:clamp(70px,11vmin,104px);aspect-ratio:1;transform:translate(-50%,-50%);pointer-events:auto;
-  display:grid;place-items:center;align-content:center;padding:5px;border:4px solid rgba(208,250,255,.94);border-radius:50%;
-  background:radial-gradient(circle at 31% 24%,rgba(255,255,255,.98) 0 8%,rgba(255,255,255,.3) 10% 16%,transparent 18%),linear-gradient(145deg,rgba(202,248,255,.92),rgba(104,204,232,.86));
-  color:#23546c;box-shadow:inset 0 -8px 0 rgba(37,143,180,.13),0 5px 0 rgba(22,112,150,.2),0 0 18px rgba(187,246,255,.55);
-  cursor:pointer;animation:seaBubblePulse var(--bubble-duration,2.6s) ease-in-out var(--bubble-delay,0s) infinite;transition:opacity .25s,filter .25s,transform .2s}
-.sea-answer-bubble .em{font-size:clamp(30px,6vmin,50px);line-height:.95;font-weight:900}
-.sea-answer-bubble .lb{display:block;max-width:92px;font-size:clamp(11px,1.9vw,15px);font-weight:900;line-height:1.05}
-.sea-answer-bubble.is-near{filter:brightness(1.08) saturate(1.12);transform:translate(-50%,-50%) scale(1.1);box-shadow:inset 0 -8px 0 rgba(37,143,180,.13),0 5px 0 rgba(22,112,150,.2),0 0 0 8px rgba(255,236,103,.45),0 0 24px rgba(187,246,255,.8)}
+#seaFireButton{appearance:none;-webkit-appearance:none;position:absolute;right:max(10px,calc(2vw + env(safe-area-inset-right)));bottom:24vh;z-index:12;
+  width:clamp(64px,10vmin,80px);min-width:64px;min-height:64px;aspect-ratio:1;border:3px solid rgba(221,252,255,.96);border-radius:50%;
+  display:grid;place-items:center;align-content:center;gap:0;padding:3px;background:linear-gradient(145deg,#64e6ef,#218fca);color:#fff;
+  box-shadow:0 5px 0 #176f9d,0 0 0 6px rgba(138,240,255,.24),0 5px 18px rgba(0,48,84,.28);font-weight:1000;line-height:1;touch-action:none;cursor:pointer}
+#seaFireButton[hidden]{display:none!important}
+#seaFireButton span{font-size:clamp(21px,3.6vw,30px)}
+#seaFireButton strong{font-size:clamp(10px,1.6vw,13px);letter-spacing:.02em;white-space:nowrap}
+#seaFireButton.is-firing{transform:translateY(3px) scale(.96);box-shadow:0 2px 0 #176f9d,0 0 0 8px rgba(255,238,105,.34),0 0 22px rgba(130,245,255,.8)}
+#seaFireButton:focus-visible{outline:4px solid rgba(255,226,82,.9);outline-offset:4px}
+.sea-companion{position:absolute;left:0;top:0;width:clamp(34px,5.1vw,48px);aspect-ratio:1;border-radius:50%;display:grid;place-items:center;
+  transform:translate3d(-80px,-80px,0);filter:drop-shadow(0 2px 0 rgba(7,54,82,.22));will-change:transform}
+.sea-companion::before{content:"";position:absolute;inset:4%;border:2px solid rgba(211,251,255,.86);border-radius:50%;
+  background:radial-gradient(circle at 34% 25%,rgba(255,255,255,.84) 0 7%,transparent 10%),rgba(74,209,232,.35);box-shadow:0 0 13px rgba(141,244,255,.72)}
+.sea-companion img,.sea-companion .sea-companion-emoji{position:relative;z-index:1;width:74%;height:74%;object-fit:contain;display:grid;place-items:center;font-size:clamp(20px,3.5vw,31px);line-height:1}
+.sea-companion.is-firing::after{content:"";position:absolute;right:-10px;width:12px;height:6px;border-radius:999px;background:#fff077;box-shadow:0 0 8px #8ff7ff;animation:seaCompanionMuzzle .12s ease-out both}
+@keyframes seaCompanionMuzzle{from{opacity:1;transform:scaleX(.55)}to{opacity:0;transform:translateX(7px) scaleX(1.2)}}
+.sea-shot{position:absolute;left:0;top:0;width:clamp(12px,1.9vw,19px);height:clamp(6px,.85vw,9px);border-radius:999px;
+  background:linear-gradient(90deg,#fff,#fff27d 42%,#55e6ff);box-shadow:0 0 6px #fff,0 0 12px #57eaff;transform:translate3d(-30px,-30px,0);will-change:transform}
+.sea-shot.is-companion{width:clamp(9px,1.35vw,14px);height:clamp(5px,.65vw,7px);background:linear-gradient(90deg,#fff,#a9ffac 45%,#51d8ff);opacity:.9}
+.sea-hit-spark,.sea-burst-drop{position:absolute;left:0;top:0;pointer-events:none}
+.sea-hit-spark{width:18px;height:18px;border:3px solid #fff4a0;border-radius:50%;box-shadow:0 0 12px #68efff;
+  animation:seaHitSpark .26s ease-out both}
+@keyframes seaHitSpark{from{opacity:1;transform:translate3d(var(--spark-x),var(--spark-y),0) translate(-50%,-50%) scale(.4)}to{opacity:0;transform:translate3d(var(--spark-x),var(--spark-y),0) translate(-50%,-50%) scale(1.8)}}
+.sea-burst-drop{width:9px;height:9px;border-radius:50%;background:var(--drop-color,#a8f5ff);box-shadow:0 0 7px rgba(255,255,255,.9);
+  animation:seaBurstDrop .48s cubic-bezier(.15,.65,.35,1) both}
+@keyframes seaBurstDrop{from{opacity:1;transform:translate3d(var(--drop-x),var(--drop-y),0) translate(-50%,-50%) scale(1)}to{opacity:0;transform:translate3d(calc(var(--drop-x) + var(--drop-dx)),calc(var(--drop-y) + var(--drop-dy)),0) translate(-50%,-50%) scale(.25)}}
+.sea-answer-bubble{appearance:none;-webkit-appearance:none;position:absolute;left:0;top:0;min-width:64px;min-height:64px;
+  width:var(--sea-target-size,clamp(64px,12vmin,96px));height:var(--sea-target-size,clamp(64px,12vmin,96px));border:0;border-radius:50%;background:transparent;color:#23546c;
+  padding:0;pointer-events:none;transform:translate3d(-100px,-100px,0) translate(-50%,-50%);transform-origin:center;will-change:transform,opacity}
+.sea-answer-visual{width:100%;height:100%;display:grid;place-items:center;align-content:center;padding:4px;border:3px solid rgba(220,252,255,.96);border-radius:50%;
+  background:radial-gradient(circle at 31% 24%,rgba(255,255,255,.98) 0 8%,rgba(255,255,255,.3) 10% 16%,transparent 18%),linear-gradient(145deg,hsla(var(--sea-target-hue,190),86%,88%,.95),hsla(var(--sea-target-hue,190),65%,57%,.9));
+  box-shadow:inset 0 -7px 0 rgba(37,143,180,.13),0 4px 0 rgba(22,112,150,.2),0 0 16px rgba(187,246,255,.62);transition:filter .16s,box-shadow .16s}
+.sea-answer-bubble .em{font-size:clamp(25px,5.1vmin,43px);line-height:.9;font-weight:900}
+.sea-answer-bubble .lb{display:block;max-width:86px;font-size:clamp(10px,1.65vw,14px);font-weight:900;line-height:1.02}
 .sea-answer-bubble:focus-visible{outline:4px solid rgba(255,226,82,.82);outline-offset:4px}
-.sea-answer-bubble.dim{opacity:.28;pointer-events:none;filter:grayscale(.45)}
-.sea-answer-bubble.ng{animation:ngShake .45s}
-.sea-answer-bubble.glow{border-color:#8fea82;box-shadow:0 0 0 8px rgba(110,229,106,.36),0 0 24px rgba(179,255,182,.78)}
-@keyframes seaBubblePulse{0%,100%{margin-top:0}50%{margin-top:-5px}}
+.sea-answer-bubble.dim{opacity:.24;filter:grayscale(.5)}
+.sea-answer-bubble.is-hit .sea-answer-visual{filter:brightness(1.18) saturate(1.18);box-shadow:inset 0 -7px 0 rgba(37,143,180,.1),0 4px 0 rgba(22,112,150,.17),0 0 0 5px rgba(255,239,102,.42),0 0 22px rgba(165,249,255,.9)}
+.sea-answer-bubble.ng{animation:none}
+.sea-answer-bubble.ng .sea-answer-visual{animation:seaTargetWrong .45s ease-out}
+@keyframes seaTargetWrong{0%,100%{transform:translateX(0)}25%,75%{transform:translateX(-7px)}50%{transform:translateX(7px)}}
+.sea-answer-bubble.glow .sea-answer-visual{border-color:#8fea82;animation:seaTargetGlow 1s ease-in-out infinite}
+@keyframes seaTargetGlow{0%,100%{box-shadow:0 0 0 4px rgba(110,229,106,.22),0 0 16px rgba(179,255,182,.68)}50%{box-shadow:0 0 0 9px rgba(110,229,106,.38),0 0 28px rgba(179,255,182,.92)}}
+.sea-answer-bubble.is-bursting .sea-answer-visual{animation:seaTargetBurst .28s cubic-bezier(.2,.8,.25,1) both}
+.sea-answer-bubble.is-popped{opacity:0}
+@keyframes seaTargetBurst{0%{opacity:1;transform:scale(1)}58%{opacity:1;transform:scale(1.28)}100%{opacity:0;transform:scale(.12)}}
 .sea-fish{position:absolute;left:0;top:0;width:clamp(36px,var(--fish-w,5.5vw),96px);aspect-ratio:var(--fish-ratio,1.25);
   background:center/contain no-repeat;filter:drop-shadow(0 2px 0 rgba(10,45,75,.14));opacity:var(--fish-opacity,.86);
   transform:translate3d(-20vw,30vh,0);will-change:transform}
@@ -168,10 +203,10 @@ body.v-rocket .car::before,body.v-rocket .car::after{display:none}
 #carBadge{background:rgba(255,255,255,.85)}
 #helpBadge{background:rgba(255,255,255,.88);border:2px solid rgba(87,193,94,.5)}
 #veh{position:absolute;bottom:12.5vh;left:28vw;width:clamp(120px,22vw,220px);height:clamp(70px,13vw,130px);z-index:7}
-.vehicle-steer-shell{position:absolute;inset:0;transform:translate3d(var(--sea-dash-x,0px),var(--sea-steer-y,0px),0) rotate(var(--sea-steer-tilt,0deg));
+.vehicle-steer-shell{position:absolute;inset:0;transform:translate3d(var(--sea-steer-x,0px),var(--sea-steer-y,0px),0) rotate(var(--sea-steer-tilt,0deg));
   transition:transform .14s ease-out;transform-origin:center;will-change:transform}
 body.st-sea #veh{pointer-events:none}
-body.st-sea #cars{transform:translate3d(0,var(--sea-steer-y,0px),0)}
+body.st-sea #cars{display:none}
 body.v-train #cars{bottom:9.1vh}
 body.v-train #veh{left:calc(55vw - clamp(95px,15.45vw,165.5px));bottom:9.1vh;width:clamp(190px,30.9vw,331px);height:clamp(95px,15.45vw,165.5px)}
 body.st-town.v-train #cars,body.st-jungle.v-train #cars,body.st-number.v-train #cars,body.st-future.v-train #cars{bottom:9.8vh}
@@ -549,9 +584,7 @@ body.st-future #groundT{height:17.4vh;background-size:auto 100%;z-index:3}
 body.st-future #fgT{height:9.2vh;background-size:auto 100%;opacity:1;-webkit-mask-image:linear-gradient(to bottom,transparent 0%,rgba(0,0,0,.52) 22%,#000 48%);mask-image:linear-gradient(to bottom,transparent 0%,rgba(0,0,0,.52) 22%,#000 48%)}
 .sb-hull,.sb-peri,.sb-fin,.sb-win,.submarine-art{display:none}
 body.v-sub #veh{left:calc(53vw - clamp(78px,13vw,143px));bottom:12.4vh;width:clamp(156px,26vw,286px);height:clamp(111px,18.4vw,203px)}
-body.st-sea.v-sub #veh{left:calc(53vw - clamp(59px,9.5vw,105px));width:clamp(118px,19vw,210px);height:clamp(83px,13.4vw,148px)}
-body.st-sea.sea-quiz-active.v-sub #veh{left:calc(30vw - clamp(45px,6.5vw,63px));width:clamp(90px,13vw,126px);height:clamp(63px,9.17vw,89px)}
-body.st-sea.sea-dash-active .vehicle-steer-shell{--sea-dash-x:16vw;transition-duration:.3s;transition-timing-function:cubic-bezier(.2,.75,.25,1)}
+body.st-sea.v-sub #veh{left:calc(28vw - clamp(55px,8vw,86px));width:clamp(110px,16vw,172px);height:clamp(78px,11.35vw,122px)}
 body.v-sub .tr-cab,body.v-sub .tr-boiler,body.v-sub .tr-chim,body.v-sub .wheel,body.v-sub .puff,body.v-sub .tr-win,body.v-sub .headlight{display:none}
 body.v-sub .submarine-art{display:block;position:absolute;inset:0;background:url("../assets/images/nazonazo-tunnel/vehicle_submarine_pono_20260706.webp") center/contain no-repeat;
   filter:drop-shadow(0 3px 0 rgba(20,45,70,.18))}
@@ -565,7 +598,8 @@ body.st-sea.v-sub #veh.inTun .submarine-art{filter:brightness(.72) saturate(.82)
 body.ios-device #world,body.ios-device #horizon,body.ios-device #veh,body.ios-device #cars,
 body.ios-device .train-art,body.ios-device .train-wheel,body.ios-device .car-wheel,
 body.ios-device .train-wheel-rod,body.ios-device .train-main-rod,body.ios-device .train-crosshead,
-body.ios-device .runEvent,body.ios-device .sea-fish,body.ios-device .jungle-animal-sprite,body.ios-device #smokeLayer,body.ios-device .magic-puff{
+body.ios-device .runEvent,body.ios-device .sea-fish,body.ios-device .sea-shot,body.ios-device .sea-companion,body.ios-device .sea-answer-bubble,
+body.ios-device .jungle-animal-sprite,body.ios-device #smokeLayer,body.ios-device .magic-puff{
   -webkit-backface-visibility:hidden;backface-visibility:hidden;transform-style:flat}
 body.ios-device #veh.idle .vbody{animation:none}
 body.ios-device .train-wheel,body.ios-device .car-wheel,
@@ -920,6 +954,8 @@ h1{font-size:clamp(24px,5.6vw,50px);color:#e0704a;text-shadow:0 3px 0 #fff}
 @media (prefers-reduced-motion:reduce){
   *{animation-duration:.01s!important;transition-duration:.01s!important}
   .sea-answer-bubble{animation:none!important}
+  .sea-answer-bubble.glow .sea-answer-visual{animation:none!important;box-shadow:0 0 0 7px rgba(110,229,106,.36),0 0 22px rgba(179,255,182,.85)}
+  .sea-hit-spark,.sea-burst-drop,.sea-companion.is-firing::after{display:none!important}
   .vehicle-steer-shell{transition:none!important}
   body.st-sea.v-sub #veh .vbody,body.st-sea.v-sub #veh .submarine-art{animation:none!important}
   .rain-particle{left:var(--rain-rest-x);top:var(--rain-rest-y);animation:none!important;transform:rotate(var(--rain-angle));will-change:auto!important}
