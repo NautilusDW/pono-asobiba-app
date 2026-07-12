@@ -6256,7 +6256,7 @@ const SK_INTRO_GUIDE_STEPS = [
   { key: 'all', text: 'あか・きいろ・みどりを<br>ひとつずつ いれてみよう。' },
 ];
 // v1380: 5 文に同期させる音声 ID (assets/audio/bento/tutorial/sk_intro_0X.mp3)。
-// batch:1263 単一マスター版の実測 duration は 2.834 / 5.208 / 5.138 / 4.782 / 3.602 秒。
+// batch:1268 短い連続ブロック版の実測 duration は 3.138 / 5.906 / 6.043 / 5.530 / 4.418 秒。
 // fallbackMs は audio 失敗時の
 // セーフティタイマーで、 各 duration より十分長い 10s 固定 (audio が ended event を
 // 発火しないまま黙る端末でも次へ進めるため)。 onEnded から 600ms 待って次の音声へ。
@@ -9620,9 +9620,9 @@ function playPop() { const ac=getAC(),t=ac.currentTime,o=ac.createOscillator(),g
 function playCorrect() { const ac=getAC(),t=ac.currentTime; [523,659,784].forEach((f,i)=>{const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='sine';o.frequency.value=f;const s=t+i*0.1;g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(0.18,s+0.02);g.gain.exponentialRampToValueAtTime(0.001,s+0.25);o.start(s);o.stop(s+0.25);}); }
 function playWrong() { const ac=getAC(),t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='triangle';o.frequency.setValueAtTime(200,t);o.frequency.exponentialRampToValueAtTime(120,t+0.18);g.gain.setValueAtTime(0.1,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.18);o.start(t);o.stop(t+0.18); }
 const BENTO_TUTORIAL_VOICE_BASE = '../assets/audio/bento/tutorial/';
-// batch:1263/1266/1267: 単一マスターと追加 cue を Gemini TTS 3.1 / Leda、
-// 24 kHz mono / 96 kbps / 1.15 倍速で統一。お気に入り以降は短い連続 take で再収録した。
-const BENTO_TUTORIAL_VOICE_VERSION = 'v1267-favorite-restart';
+// batch:1268: 全37 cue を短い連続ブロックで Gemini TTS 3.1 / Leda から再収録し、
+// 24 kHz mono / 96 kbps / 1.15 倍速とラウドネスを統一した。
+const BENTO_TUTORIAL_VOICE_VERSION = 'v1268-consistent-blocks';
 // faster-whisper で全 cue の順序・先頭末尾を照合済み。false で実音源を再生する。
 const BENTO_TUTORIAL_MOCK_VOICE = false;
 function shouldMockBentoTutorialVoice(id) {
@@ -14928,7 +14928,8 @@ function getDefaultFreeRenderLayerBase(item) {
 }
 function getFreeRenderLayerBase(item) {
   if (isFreeBottomLayerItem(item) && !item.parentCupId) return 8;
-  // しきりも food と同じ base に置き、下段ほど前へ出る既存のY深度順へ参加させる。
+  // しきり同士のY深度順は保ちつつ、ハンバーグを含む全foodより一段前面へ出す。
+  if (item && item.type === 'divider') return 40;
   if (shouldDepthSortFreeItem(item)) return 30;
   const base = Number(item && item.layerBase);
   return Number.isFinite(base) ? base : getDefaultFreeRenderLayerBase(item);

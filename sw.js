@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2147: おべんとうの全しきりをハンバーグを含む全おかずより前面へ戻し、本体と配置エディターのレイヤー正本を同期。全37ナレーションも短い共通アンカー付きブロックからTTS3.1/Ledaで再収録し、1.15倍速・音量・原稿照合を統一した (batch:1268)。play.html PAGE_CACHE_VERSION と同期不要 (bento/admin/音声/docs/テストのみ変更)。
 // v2146: なぞなぞトレインの深い海を、上下左右に動かせる潜水艦シューティングへ刷新。海面を押しながらの連射、動く答えの命中膨張・破裂、直近3人の仲間による軌跡追従・同時射撃、右下ボタンと矢印/WASD＋Space操作を追加した (batch:1267)。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/テストのみ変更)。
 // v2145: おべんとう完成見本の「おきにいり」を現行TTS3.1/Ledaの短い連続takeへ差し替え、「では、じぶんで おべんとうを つくってみよう」の後に空のお弁当箱から一度だけ始める導線を追加。星保存と×のどちらも最後の音声へ合流し、途中連打・評価モーダル・二重再開を防止した (batch:1267)。play.html PAGE_CACHE_VERSION と同期不要 (bento/index.html/音声/docs/テストのみ変更)。
 // v2144: LPのガチャガチャを指定の開封スタンプ画像、お店を看板欠け修正版へ差し替え。撮影中のシール帳遷移でcapture状態を維持し、シール帳は透明なWebGL切抜きでなく机・操作ボタンを含む実画面全体を撮影するよう変更。外部Three.js読込前も暫定登録して早押しを準備完了まで待たせ、シール帳→ミュージアム→トップと共通シール獲得導線でも撮影セッションを継続する (batch:1264)。play.html PAGE_CACHE_VERSION と同期 (2144)。
@@ -71,7 +72,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2146;
+const CACHE_VERSION = 2147;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
