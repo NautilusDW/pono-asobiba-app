@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2131: おべんとうチュートリアルを子ども向けの「タッチ」表記へ統一。指定外の品目・タブは配置前に止めて「それは ちがうよ」と再案内し、のりは位置undo 1回→縮小＋時計回り→まとめてundo 1回へ変更。レタスの青い丸枠、しきり全7枠、しきり前面化、横なみなみしきりの水平補正も反映 (batch:1260)。play.html PAGE_CACHE_VERSION と同期不要 (bento/index.html/admin/テストのみ変更)。
 // v2130: おべんとうのレタス選択直後、画像decode待ちの旧おかずDOMが最初のハンバーグタップを横取りする競合を解消。armed状態を即時描画して、案内が出た瞬間から対象タップが確実にstageへ届くようにした (batch:1258)。play.html PAGE_CACHE_VERSION と同期不要 (bento/index.html/テストのみ変更)。
 // v2129: おべんとうチュートリアルを、のりの時計回り→反時計回り（相殺して取り消し3回）、小さいおかず4個＋三色バランスの短い再案内、ハンバーグ限定のレタスタップ、しきり1個→ピック1個の実操作順へ更新。play.html PAGE_CACHE_VERSION と同期不要 (bento/index.html/テストのみ変更、batch:1258)。
 // v2128: なぞなぞトレインに面別・旅合計スコア、壁面と同期して流れる「トンネルの かくれともだち」、おたすけ4個目以降の点数変換を追加。ジャングル6種を、森に半ば隠れて生活する高密度なGPT Image 2素材へ差し替え。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/画像/テストのみ変更、batch:1255)。
@@ -55,7 +56,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2130;
+const CACHE_VERSION = 2131;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
