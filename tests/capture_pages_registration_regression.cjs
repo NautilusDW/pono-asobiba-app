@@ -101,6 +101,8 @@ assert.ok(
 // ── 4) StickerBookThreeJS/main.js: register('sticker-book') + 実画面全体撮影 ──
 const stickerBookRegisterFn = stickerBookMain.match(/function regStickerBookCapture\(\) \{[\s\S]*?\n\}/);
 assert.ok(stickerBookRegisterFn, "StickerBookThreeJS/main.js must keep a regStickerBookCapture() function");
+const stickerBookBuildFn = stickerBookMain.match(/async function buildStickerBookCapture\(opts\) \{[\s\S]*?\n\}/);
+assert.ok(stickerBookBuildFn, "StickerBookThreeJS/main.js must keep a buildStickerBookCapture(opts) function");
 assert.match(
   stickerBookRegisterFn[0],
   /gameId: "sticker-book"/,
@@ -108,18 +110,28 @@ assert.match(
 );
 assert.match(
   stickerBookRegisterFn[0],
+  /build: buildStickerBookCapture/,
+  "the live sticker-book registration must use the readiness-aware full-screen builder"
+);
+assert.match(
+  stickerBookRegisterFn[0],
+  /__stickerBookCaptureBootstrap\.liveRegistered = true;[\s\S]*?PonoCapture\.register/,
+  "the live module registration must mark the bridge before replacing its placeholder target"
+);
+assert.match(
+  stickerBookBuildFn[0],
   /renderer\.render\(scene, camera\)/,
   "the sticker-book build() must force a synchronous renderer.render() before snapshotting (preserveDrawingBuffer timing)"
 );
 assert.match(
-  stickerBookRegisterFn[0],
+  stickerBookBuildFn[0],
   /await stickerBookCaptureReady;/,
   "an early capture click must wait for the sticker-book scene to finish loading instead of failing"
 );
 assert.ok(
-  stickerBookMain.indexOf("if (window.PonoCapture) regStickerBookCapture();") <
+  stickerBookMain.indexOf("window.__stickerBookCaptureBootstrap?.setBuilder(buildStickerBookCapture);") <
     stickerBookMain.indexOf("const textureEntries = await Promise.all"),
-  "the sticker-book capture target must register before the top-level texture await so the cold-load overlay is never unregistered"
+  "the module builder must connect to the cold-start bridge before the top-level texture await"
 );
 assert.match(
   stickerBookMain,
@@ -127,29 +139,56 @@ assert.match(
   "the capture readiness promise must resolve at the same point as the public sticker-book ready signal"
 );
 assert.match(
-  stickerBookRegisterFn[0],
+  stickerBookBuildFn[0],
   /document\.getElementById\("app"\)/,
   "the sticker-book build() must capture #app so the visible table background and controls are included"
 );
 assert.match(
-  stickerBookRegisterFn[0],
+  stickerBookBuildFn[0],
   /getBoundingClientRect\(\)/,
   "the sticker-book build() must measure the visible app before choosing a raster scale"
 );
 assert.match(
-  stickerBookRegisterFn[0],
+  stickerBookBuildFn[0],
   /Math\.max\([\s\S]*?2,[\s\S]*?opts\?\.width[\s\S]*?rect\.width[\s\S]*?opts\?\.height[\s\S]*?rect\.height/,
   "the sticker-book build() must size dynScale against both requested preset dimensions"
 );
 assert.match(
-  stickerBookRegisterFn[0],
+  stickerBookBuildFn[0],
   /html2canvasOptions\(\{ backgroundColor: null, scale: dynScale \}\)/,
   "the sticker-book build() must use the shared capture options so the overlay stays out of the screenshot"
 );
 assert.match(
-  stickerBookRegisterFn[0],
+  stickerBookBuildFn[0],
   /return await html2canvas\(container, h2cOpts\)/,
   "the sticker-book build() must rasterize the full visible app instead of returning a transparent WebGL cutout"
+);
+const captureScriptPos = stickerBookIndex.indexOf('<script src="../../common/capture.js"></script>');
+const bootstrapScriptPos = stickerBookIndex.indexOf("window.__stickerBookCaptureBootstrap = bridge;");
+const moduleScriptPos = stickerBookIndex.indexOf('<script type="module" src="./main.js?v=20260712-1264"></script>');
+assert.ok(
+  captureScriptPos >= 0 && captureScriptPos < bootstrapScriptPos && bootstrapScriptPos < moduleScriptPos,
+  "the cold-start bridge must sit after capture.js and before the dependency-blocked StickerBook module"
+);
+assert.doesNotMatch(
+  stickerBookIndex,
+  /<script src="\.\.\/\.\.\/common\/capture\.js" defer><\/script>/,
+  "StickerBook capture.js must run synchronously so the bridge can register before an early capture UI is shown"
+);
+assert.match(
+  stickerBookIndex,
+  /function registerBootstrapCapture\(\)[\s\S]*?gameId: 'sticker-book'[\s\S]*?build: waitForBuilder/,
+  "the index bridge must register a placeholder sticker-book build before the module dependency can finish"
+);
+assert.match(
+  stickerBookIndex,
+  /function waitForBuilder\(opts\)[\s\S]*?waiters\.push[\s\S]*?nextBuilder\(opts\)/,
+  "an immediate cold-start click must wait for the real module builder rather than fail unregistered"
+);
+assert.match(
+  stickerBookIndex,
+  /window\.setTimeout\([\s\S]*?resolve\(null\);[\s\S]*?30000\)/,
+  "the cold-start bridge must bound a failed module load instead of leaving the shoot button disabled forever"
 );
 // register() 自体は capture-mode の状態に関わらず常に build() を格納するだけで、
 // 実際のゲートは shoot()/UI 表示/keydown 側の isCaptureAllowed() にある (Nit fix)。

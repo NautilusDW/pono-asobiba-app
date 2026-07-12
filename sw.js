@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2144: LPのガチャガチャを指定の開封スタンプ画像、お店を看板欠け修正版へ差し替え。撮影中のシール帳遷移でcapture状態を維持し、シール帳は透明なWebGL切抜きでなく机・操作ボタンを含む実画面全体を撮影するよう変更。外部Three.js読込前も暫定登録して早押しを準備完了まで待たせ、シール帳→ミュージアム→トップと共通シール獲得導線でも撮影セッションを継続する (batch:1264)。play.html PAGE_CACHE_VERSION と同期 (2144)。
 // v2143: おべんとうの3色ガイド中に開始カードが再表示される20秒再案内競合を止め、目2個目・口の女性ナレーションをTTS3.1/Ledaで追加。しきりは下段主菜→下段横しきり→中段おかず→上段横しきり→上段おかずのY段差レイヤーへ本体と配置エディターを同期した (batch:1266)。play.html PAGE_CACHE_VERSION と同期不要 (bento/index.html/admin/音声/docs/テストのみ変更)。
 // v2142: なぞなぞトレインのジャングルで、雲を含む最奥skyと、その手前の山・樹海horizonを同じ12vh上げた。3層目以降、動物、駅、線路、列車は不変で、horizon下端を線路奥上端80vhへ合わせて隙間を防止 (batch:1266)。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/テストのみ変更)。
 // v2141: Basic Auth管理ダッシュボードへ、なぞなぞトレイン全6ステージの16:9試遊セレクターを追加。same-origin管理iframeだけがステージを選択でき、子画面タップで音声を解錠して開始。試遊中のセーブ書込とLP側のロック迂回を禁止した (batch:1265)。play.html PAGE_CACHE_VERSION と同期不要 (admin/nazonazo-tunnel/テストのみ変更)。
@@ -68,7 +69,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2143;
+const CACHE_VERSION = 2144;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。

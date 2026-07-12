@@ -2552,36 +2552,43 @@ function loadStickerBookCaptureRenderer() {
   return stickerBookCaptureRendererPromise;
 }
 
+async function buildStickerBookCapture(opts) {
+  try {
+    await stickerBookCaptureReady;
+    renderer.render(scene, camera);
+    const container = document.getElementById("app");
+    if (!container) return null;
+    const rect = container.getBoundingClientRect();
+    let dynScale = 2;
+    if (rect.width > 0 && rect.height > 0) {
+      dynScale = Math.max(
+        2,
+        Number(opts?.width || 0) / rect.width,
+        Number(opts?.height || 0) / rect.height,
+      );
+    }
+    const html2canvas = await loadStickerBookCaptureRenderer();
+    const h2cOpts = typeof window.PonoCapture.html2canvasOptions === "function"
+      ? window.PonoCapture.html2canvasOptions({ backgroundColor: null, scale: dynScale })
+      : { backgroundColor: null, scale: dynScale, useCORS: true };
+    return await html2canvas(container, h2cOpts);
+  } catch (err) {
+    console.warn("[sticker-book] capture build failed", err);
+    return null;
+  }
+}
+
+window.__stickerBookCaptureBootstrap?.setBuilder(buildStickerBookCapture);
+
 function regStickerBookCapture() {
   if (!window.PonoCapture) return;
+  if (window.__stickerBookCaptureBootstrap) {
+    window.__stickerBookCaptureBootstrap.liveRegistered = true;
+  }
   window.PonoCapture.register({
     gameId: "sticker-book",
     defaultLabel: "sticker-book",
-    build: async function (opts) {
-      try {
-        await stickerBookCaptureReady;
-        renderer.render(scene, camera);
-        const container = document.getElementById("app");
-        if (!container) return null;
-        const rect = container.getBoundingClientRect();
-        let dynScale = 2;
-        if (rect.width > 0 && rect.height > 0) {
-          dynScale = Math.max(
-            2,
-            Number(opts?.width || 0) / rect.width,
-            Number(opts?.height || 0) / rect.height,
-          );
-        }
-        const html2canvas = await loadStickerBookCaptureRenderer();
-        const h2cOpts = typeof window.PonoCapture.html2canvasOptions === "function"
-          ? window.PonoCapture.html2canvasOptions({ backgroundColor: null, scale: dynScale })
-          : { backgroundColor: null, scale: dynScale, useCORS: true };
-        return await html2canvas(container, h2cOpts);
-      } catch (err) {
-        console.warn("[sticker-book] capture build failed", err);
-        return null;
-      }
-    },
+    build: buildStickerBookCapture,
   });
 }
 if (window.PonoCapture) regStickerBookCapture();

@@ -264,7 +264,59 @@
   </main>
   <script src="../../common/debug-mode.js"></script>
   <!-- v2127 batch:1254: スクショモード基盤。 debug-mode.js の直後 (capture-mode gate 判定に必須)。 -->
-  <script src="../../common/capture.js" defer></script>
+  <!-- batch:1264: このページだけ同期読込。外部Three.jsが遅い場合でも、次のbridgeを
+       撮影UI表示より先に登録して「register されていません」の冷起動raceを防ぐ。 -->
+  <script src="../../common/capture.js"></script>
+  <!-- batch:1264: module の Three.js 取得前でも撮影先を登録しておく cold-start bridge。
+       実buildは main.js が渡し、先に「撮る」を押した場合は準備完了まで待機する。 -->
+  <script>
+  (function () {
+    var builder = null;
+    var waiters = [];
+    var bridge = {
+      liveRegistered: false,
+      setBuilder: function (nextBuilder) {
+        if (typeof nextBuilder !== 'function') return;
+        builder = nextBuilder;
+        var pending = waiters.slice();
+        waiters.length = 0;
+        for (var i = 0; i < pending.length; i++) pending[i](builder);
+      }
+    };
+    window.__stickerBookCaptureBootstrap = bridge;
+
+    function waitForBuilder(opts) {
+      if (builder) return Promise.resolve().then(function () { return builder(opts); });
+      return new Promise(function (resolve) {
+        var settled = false;
+        var timer = window.setTimeout(function () {
+          settled = true;
+          resolve(null);
+        }, 30000);
+        waiters.push(function (nextBuilder) {
+          if (settled) return;
+          settled = true;
+          window.clearTimeout(timer);
+          Promise.resolve(nextBuilder(opts)).then(resolve, function () { resolve(null); });
+        });
+      });
+    }
+
+    function registerBootstrapCapture() {
+      if (!window.PonoCapture || bridge.liveRegistered) return;
+      window.PonoCapture.register({
+        gameId: 'sticker-book',
+        defaultLabel: 'sticker-book',
+        build: waitForBuilder
+      });
+    }
+
+    registerBootstrapCapture();
+    if (!window.PonoCapture && document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', registerBootstrapCapture, { once: true });
+    }
+  })();
+  </script>
   <script src="../../common/tier.js"></script>
   <script src="../../common/haptics.js" defer></script>
   <script type="module" src="./main.js?v=20260712-1264"></script>
