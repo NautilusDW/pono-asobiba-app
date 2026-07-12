@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2135: ガチャガチャの透過案内へ出る矩形マスクを除去し、当日終了案内をフクロウ博士の木枠へ変更。スクショは押下時のstep／開封状態を保持してシール消失・カプセル変形・案内枠の取り違えを防止。お店看板を実img化して半欠けを解消し、LP画像と表記を更新 (batch:1260)。play.html PAGE_CACHE_VERSION と同期 (2135)。
 // v2134: おべんとうチュートリアルの縮小・回転を独立履歴として2回取り消す流れへ修正。はっぱボタン・レタス・ハンバーグの青枠を監視ループ外の専用レイヤーで常時見えるようにし、横なみなみしきりは本体と配置エディターを-4.4度へ同期、左右2枚の中心高さも同じ行へそろえた (batch:1261)。play.html PAGE_CACHE_VERSION と同期不要 (bento/index.html/admin/テストのみ変更)。
 // v2133: なぞなぞトレインの列車ステージで線路・列車・駅・地面接地物を上へ調整。町の空と一体の最遠景山を通常42vh／超横長34vhまで上げ、透明な谷間には空画像下端色を補って黒い隙間を防止。トンネル内ハイスコアは箱をなくし、白文字で画面上中央へ大きく表示。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/テストのみ変更、batch:1261)。
 // v2132: なぞなぞトレインの現在スコアを画面上中央へ固定し、右へハイスコア・おたすけ・ともだち数を横並び化。町の雨を旅ごと25%のにわか雨（晴れ間あり）へ変更し、壁面シルエットの大きさ/角度差、キリン/ゾウ拡大、GPT Image 2の鳥/チョウ3コマ飛行を追加。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/画像/テストのみ変更、batch:1260)。
@@ -59,7 +60,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2134;
+const CACHE_VERSION = 2135;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。

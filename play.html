@@ -3821,9 +3821,11 @@
       line-height: 1.22;
       text-shadow: 0 2px 0 rgba(255, 255, 255, .95);
       box-shadow: none;
-      filter: drop-shadow(0 12px 18px rgba(49, 24, 7, .24));
-      isolation: isolate;
-      overflow: hidden;
+      /* The PNG already contains its soft edge. A CSS drop-shadow on this
+         transparent layer can be composited as a dark rectangular mask. */
+      filter: none;
+      isolation: auto;
+      overflow: visible;
     }
     .daily-gacha-modal[data-gacha-step="0"] .daily-gacha-status::before {
       display: none;
@@ -3863,7 +3865,8 @@
       font-size: clamp(16px, 1.5vw, 21px);
       line-height: 1.12;
       box-shadow: none;
-      filter: drop-shadow(0 10px 14px rgba(55, 28, 9, .22));
+      /* Keep the alpha artwork itself as the only shadow source. */
+      filter: none;
     }
     .daily-gacha-modal[data-gacha-step="1"] .daily-gacha-status::after,
     .daily-gacha-modal[data-gacha-step="3"] .daily-gacha-status::after,
@@ -5775,13 +5778,9 @@
     .daily-gacha-modal[data-quest-bonus="1"] .daily-gacha-sparkles span { filter:drop-shadow(0 0 4px #ffd34d); }
 
     /* ===== お題 + ショップ phase 5 視覚仕上げ (v1571→v1575: バッジ演出削除) ===== */
-    /* 2) ガチャ ボーナス: 金縁グロー + ✨ボーナス✨リボン + 薄い金色オーラ */
-    .daily-gacha-modal[data-quest-bonus="1"] .daily-gacha-card,
-    .daily-gacha-modal[data-quest-bonus="1"] .daily-gacha-modal__card,
-    .daily-gacha-modal[data-quest-bonus="1"] .daily-gacha-panel {
-      box-shadow:0 0 24px 4px #ffd34d, 0 0 48px 8px rgba(255,170,60,.55), 0 8px 24px rgba(0,0,0,.35) !important;
-      animation:pono-bonus-glow 2.4s ease-in-out infinite;
-    }
+    /* 2) ガチャガチャ ボーナス: ✨ボーナス✨リボン + 薄い金色オーラ。
+       案内パネル自体への filter/box-shadow は、透過PNGを矩形マスクとして
+       合成する端末があるため使わない。 */
     .daily-gacha-modal[data-quest-bonus="1"]::before {
       content:'✨ ボーナス ✨'; position:absolute; top:18px; left:50%; transform:translateX(-50%);
       padding:6px 18px; background:linear-gradient(135deg,#ffd34d,#ff9a3c); color:#5a2f00;
@@ -5789,7 +5788,6 @@
       box-shadow:0 3px 0 #8a4a00, 0 0 12px #ffd34d; z-index:5; pointer-events:none;
       animation:pono-bonus-ribbon 1.8s ease-in-out infinite;
     }
-    @keyframes pono-bonus-glow { 0%,100%{filter:brightness(1);} 50%{filter:brightness(1.08);} }
     @keyframes pono-bonus-ribbon { 0%,100%{transform:translateX(-50%) translateY(0);} 50%{transform:translateX(-50%) translateY(-3px);} }
     /* 3) ショップ購入演出: zoom-in サムネ + 紙吹雪 */
     .donguri-shop-celebration { position:fixed; inset:0; z-index:99995; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; pointer-events:none; }
@@ -5825,9 +5823,6 @@
       100% { transform:translate(calc(-50% + var(--cx,0px)), calc(-50% + var(--cy,0px))) rotate(var(--cr,360deg)) scale(1); opacity:0; }
     }
     @media (prefers-reduced-motion: reduce) {
-      .daily-gacha-modal[data-quest-bonus="1"] .daily-gacha-card,
-      .daily-gacha-modal[data-quest-bonus="1"] .daily-gacha-modal__card,
-      .daily-gacha-modal[data-quest-bonus="1"] .daily-gacha-panel { animation:none; }
       .daily-gacha-modal[data-quest-bonus="1"]::before { animation:none; }
       .donguri-shop-celebration__thumb,
       .donguri-shop-celebration__name { animation:pono-shop-pop-rm 2.35s linear forwards; }
@@ -6016,13 +6011,25 @@
       aspect-ratio: 1763 / 519;
       box-sizing: border-box;
       display: flex; align-items: center; justify-content: center;
-      background: transparent url("assets/ui/shop/komorebiya_cute_text_baked_sign_20260626.png") center / 100% 100% no-repeat;
+      background: transparent;
       color: transparent; text-align: center;
       font-size: 0;
       text-shadow: none;
       font-weight: 900;
       position: relative; z-index: 6;
-      overflow: hidden;
+      /* html2canvas applies the translated paint position before the overflow
+         clip, but leaves the clip box unshifted. The sign has transparent
+         edges and needs no clipping, so visible also prevents half-sign shots. */
+      overflow: visible;
+    }
+    .donguri-shop-v2-title__image {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: contain;
+      pointer-events: none;
     }
     .donguri-shop-v2-rotation-note {
       /* v1906: 看板下の案内は --rot-note-top に集約。個別 viewport も素の top ではなく var だけを上書きする。 */
@@ -6587,6 +6594,21 @@
       line-height: 1.18;
       filter: drop-shadow(0 14px 18px rgba(54, 28, 9, .28));
       pointer-events: auto;
+    }
+    .daily-gacha-center-msg[data-msg-mode="used"] {
+      width: min(650px, 72%);
+      aspect-ratio: 1252 / 201;
+      flex-direction: row;
+      gap: .42em;
+      padding: 2.6% 6%;
+      background: transparent url("assets/images/quizland/Fukuro_frame_003.webp") center / contain no-repeat;
+      font-size: clamp(17px, 2.15vw, 27px);
+      line-height: 1.1;
+      filter: none;
+    }
+    .daily-gacha-center-msg[data-msg-mode="used"] .daily-gacha-center-msg__emoji {
+      margin: 0;
+      flex: 0 0 auto;
     }
 
     /* レスポンシブ: 既存 .daily-gacha-entry の縮小ブレークポイントに合わせてバナーも縮める */
@@ -9856,7 +9878,10 @@
         <div class="donguri-shop-v2-reserve is-empty" id="donguriShopReserve" aria-live="polite"></div>
         <header class="donguri-shop-v2-head">
           <button class="donguri-shop-v2-close" id="donguriShopClose" type="button" aria-label="閉じる">×</button>
-          <h2 class="donguri-shop-v2-title" id="donguriShopTitle">もりのおみせ こもれびや</h2>
+          <h2 class="donguri-shop-v2-title" id="donguriShopTitle">
+            もりのおみせ こもれびや
+            <img class="donguri-shop-v2-title__image" data-src="assets/ui/shop/komorebiya_cute_text_baked_sign_20260626.png" alt="" aria-hidden="true" draggable="false">
+          </h2>
           <div class="donguri-shop-v2-balance">
             <span class="donguri-shop-v2-balance-icon" aria-hidden="true"></span>
             <span id="donguriShopBalance">0</span>
@@ -10018,6 +10043,146 @@
        DOMContentLoaded で UI 起動するので register() は同期登録 or DOMContentLoaded で間に合う)。 -->
   <script>
   (function(){
+    var playCaptureRendererPromise = null;
+
+    function loadPlayCaptureRenderer(){
+      if (!playCaptureRendererPromise) {
+        playCaptureRendererPromise = import('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/+esm')
+          .then(function(mod){
+            var renderer = mod && (mod.default || mod);
+            if (typeof renderer !== 'function') {
+              throw new Error('html2canvas module shape unexpected');
+            }
+            return renderer;
+          })
+          .catch(function(error){
+            playCaptureRendererPromise = null;
+            throw error;
+          });
+      }
+      return playCaptureRendererPromise;
+    }
+
+    function prewarmPlayCaptureRenderer(){
+      try {
+        if (window.PonoCapture && typeof window.PonoCapture.isAllowed === 'function'
+            && window.PonoCapture.isAllowed()) {
+          loadPlayCaptureRenderer().catch(function(){});
+        }
+      } catch (_) {}
+    }
+
+    var GACHA_CAPTURE_STATE_ATTRS = [
+      'data-gacha-step',
+      'data-gacha-rarity',
+      'data-quest-bonus'
+    ];
+
+    // Take the logical state before the first await. Timers can otherwise add
+    // is-closeup/is-opened while the renderer module is loading, which makes a
+    // capture contain a reward that was not yet visible when 「撮る」 was tapped.
+    function snapshotGachaCaptureState(modal){
+      var attrs = {};
+      for (var i = 0; i < GACHA_CAPTURE_STATE_ATTRS.length; i++) {
+        var name = GACHA_CAPTURE_STATE_ATTRS[i];
+        attrs[name] = modal.hasAttribute(name) ? modal.getAttribute(name) : null;
+      }
+      return {
+        className: modal.getAttribute('class') || '',
+        attrs: attrs,
+        wasOpened: modal.classList.contains('is-opened')
+      };
+    }
+
+    function restoreGachaCaptureState(clonedDoc, snapshot){
+      var clonedModal = clonedDoc && clonedDoc.getElementById('dailyGachaModal');
+      if (!clonedModal || !snapshot) return;
+      clonedModal.setAttribute('class', snapshot.className);
+      for (var i = 0; i < GACHA_CAPTURE_STATE_ATTRS.length; i++) {
+        var name = GACHA_CAPTURE_STATE_ATTRS[i];
+        var value = snapshot.attrs[name];
+        if (value === null) clonedModal.removeAttribute(name);
+        else clonedModal.setAttribute(name, value);
+      }
+      // Particles are appended only after is-opened. If the click snapshot was
+      // earlier, do not let particles created during module loading leak in.
+      if (!snapshot.wasOpened) {
+        var lateParticles = clonedModal.querySelectorAll('.gacha-particle');
+        for (var pi = lateParticles.length - 1; pi >= 0; pi--) {
+          if (lateParticles[pi].parentNode) lateParticles[pi].parentNode.removeChild(lateParticles[pi]);
+        }
+      }
+    }
+
+    function freezeGachaCaptureAnimations(clonedDoc){
+      var style = clonedDoc.createElement('style');
+      style.setAttribute('data-pono-play-gacha-capture-freeze', '1');
+      style.textContent = [
+        '/* Capture clone only: keep reveal art at the state selected above. */',
+        '#dailyGachaModal .daily-gacha-shell,',
+        '#dailyGachaModal .daily-gacha-shell *,',
+        '#dailyGachaModal .daily-gacha-shell *::before,',
+        '#dailyGachaModal .daily-gacha-shell *::after {',
+        '  animation-delay: -9999s !important;',
+        '  animation-play-state: paused !important;',
+        '  transition: none !important;',
+        '}'
+      ].join('\n');
+      (clonedDoc.head || clonedDoc.documentElement).appendChild(style);
+    }
+
+    function keepGachaCaptureGuideBackground(clonedDoc){
+      var status = clonedDoc && clonedDoc.querySelector('.daily-gacha-status');
+      var modal = clonedDoc && clonedDoc.getElementById('dailyGachaModal');
+      if (!status || !modal) return;
+      var step = modal.getAttribute('data-gacha-step');
+      var url = step === '0'
+        ? 'assets/ui/gacha/daily_gacha_start_panel_pono_alpha_bleed_20260629.png'
+        : (/^[123]$/.test(String(step || ''))
+          ? 'assets/ui/gacha/daily_gacha_more_turn_bubble_alpha_bleed_20260629.png'
+          : '');
+      if (!url) return;
+      // The shared background shim paints this frame through a z-index:-1 child,
+      // which html2canvas can drop for this positioned status element. The image
+      // is already loaded at this point, so restore the single CSS background
+      // for the final paint (the shared pattern-scale hook keeps it sharp).
+      var shims = status.querySelectorAll('[data-pono-bg-shim]');
+      for (var i = shims.length - 1; i >= 0; i--) {
+        if (shims[i].parentNode) shims[i].parentNode.removeChild(shims[i]);
+      }
+      status.style.backgroundImage = 'url("' + url + '")';
+      status.style.backgroundPosition = 'center';
+      status.style.backgroundSize = 'contain';
+      status.style.backgroundRepeat = 'no-repeat';
+      status.style.backgroundColor = 'transparent';
+      status.style.isolation = 'auto';
+    }
+
+    function addGachaCaptureCloneFix(h2cOpts, snapshot){
+      var sharedOnclone = h2cOpts && h2cOpts.onclone;
+      h2cOpts.onclone = function(clonedDoc){
+        // Restore the click-time state before the shared hook reads computed
+        // styles and promotes CSS backgrounds. Otherwise a timer may advance
+        // step/reveal state during renderer loading and bake the later artwork
+        // into the clone even if classes are restored afterward.
+        restoreGachaCaptureState(clonedDoc, snapshot);
+        freezeGachaCaptureAnimations(clonedDoc);
+        var sharedResult;
+        try {
+          sharedResult = (typeof sharedOnclone === 'function') ? sharedOnclone(clonedDoc) : null;
+        } catch (error) {
+          sharedResult = Promise.reject(error);
+        }
+        // The shared hook is async because it promotes CSS backgrounds to img;
+        // html2canvas must wait for it, then keep the promoted guide art in the
+        // status element's stacking context.
+        return Promise.resolve(sharedResult).then(function(){
+          keepGachaCaptureGuideBackground(clonedDoc);
+        });
+      };
+      return h2cOpts;
+    }
+
     // v2127 batch:1254: 元 regCapture() を registerGachaCapture() に改名 (中身は不変)。
     // showShop()/openDailyGacha() など他の <script> ブロックから再登録できるよう window に公開する。
     function registerGachaCapture(){
@@ -10046,12 +10211,9 @@
             console.warn('[play-gacha capture] .daily-gacha-shell not found');
             return null;
           }
+          var gachaCaptureSnapshot = snapshotGachaCaptureState(modal);
           try {
-            var mod = await import('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/+esm');
-            var html2canvas = (mod && (mod.default || mod));
-            if (typeof html2canvas !== 'function') {
-              throw new Error('html2canvas module shape unexpected');
-            }
+            var html2canvas = await loadPlayCaptureRenderer();
             // v2123 batch:1244: scale を動的化してラスタ ≥ preset を常時保証。
             // 固定 scale:2 だと小さいウィンドウ (shell が 90dvh 制約で縮んだ状態、
             // 例: shell 864px → ラスタ 1728px < 1920px) で compose 段の拡大が発生し
@@ -10086,6 +10248,7 @@
                     return false;
                   }
                 };
+            addGachaCaptureCloneFix(h2cOpts, gachaCaptureSnapshot);
             return await html2canvas(container, h2cOpts);
           } catch (e) {
             console.warn('[play-gacha capture] html2canvas import/exec failed:', e);
@@ -10124,11 +10287,7 @@
             return null;
           }
           try {
-            var mod = await import('https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/+esm');
-            var html2canvas = (mod && (mod.default || mod));
-            if (typeof html2canvas !== 'function') {
-              throw new Error('html2canvas module shape unexpected');
-            }
+            var html2canvas = await loadPlayCaptureRenderer();
             // v2127 batch:1254: ガチャと同じ dynScale ロジックを踏襲 (preset 解像度割れ防止)。
             var stageRect = container.getBoundingClientRect();
             var dynScale = 2;
@@ -10170,7 +10329,7 @@
     // 呼び直せるよう window に公開。
     window.registerGachaCapture = registerGachaCapture;
     window.registerShopCapture = registerShopCapture;
-    function regCapture(){ registerGachaCapture(); }
+    function regCapture(){ registerGachaCapture(); prewarmPlayCaptureRenderer(); }
     if (window.PonoCapture) regCapture();
     else window.addEventListener('DOMContentLoaded', regCapture, { once: true });
   })();
@@ -10663,7 +10822,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2127; // sw.js CACHE_VERSION と同期 (batch:1254 シール帳・ミュージアム・おみせへスクショモード追加)
+    const PAGE_CACHE_VERSION = 2135; // sw.js CACHE_VERSION と同期 (batch:1260 ガチャガチャ表示・スクショ・LP表記修正)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -10672,7 +10831,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v2127';
+    window.PONO_SW_VERSION = 'v2135';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
@@ -13373,6 +13532,15 @@
       var shop = document.getElementById('donguriShop');
       if (!shop) return;
       donguriShopAudioSession += 1;
+      // The baked sign is only needed after the hidden shop opens. Keeping it
+      // in data-src avoids adding the 1.3MB PNG to play.html's cold start while
+      // retaining a real img for reliable html2canvas rendering.
+      var shopTitleImg = shop.querySelector('.donguri-shop-v2-title__image[data-src]');
+      if (shopTitleImg) {
+        shopTitleImg.src = shopTitleImg.getAttribute('data-src');
+        shopTitleImg.removeAttribute('data-src');
+        try { if (shopTitleImg.decode) shopTitleImg.decode().catch(function(){}); } catch (_) {}
+      }
       // v2127 batch:1254: スクショモードは「最後に register した 1 件」だけが有効。
       // ショップを開くたびにショップ側の撮影 target を再登録して、 直前にガチャを
       // 開いていた場合の登録を上書きする。 例外は子供の操作フローを絶対に壊さないよう握りつぶす。
