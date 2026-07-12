@@ -47,8 +47,8 @@ function cssRule(selectorPattern) {
   return match[1];
 }
 
-assert.match(html, /styles\.css\?v=20260712-1269/);
-assert.match(html, /js\/game\.js\?v=20260712-1269/);
+assert.match(html, /styles\.css\?v=20260713-1271/);
+assert.match(html, /js\/game\.js\?v=20260713-1271/);
 assert.match(html, /id="futureRailLayer"[^>]*role="group"[^>]*aria-labelledby="qText"[^>]*hidden/);
 assert.equal((html.match(/id="futureHorizonLoop"[\s\S]*?<\/div>/)?.[0].match(/class="future-loop-tile"/g) || []).length, 4);
 assert.equal((html.match(/id="futureMidLoop"[\s\S]*?<\/div>/)?.[0].match(/class="future-loop-tile"/g) || []).length, 4);
@@ -59,7 +59,7 @@ assert.match(game, /future:\{[\s\S]{0,650}mid:"\.\.\/assets\/images\/nazonazo-tu
 assert.match(game, /future:\{[\s\S]{0,650}station:"\.\.\/assets\/images\/nazonazo-tunnel\/future_city_station_checkpoint_20260712\.webp"/);
 assert.doesNotMatch(game, /future_city_(?:horizon|mid)_loop_long_20260707\.webp/, "the baked rectangular seams must not remain active");
 
-const defaultSteer = cssRule("\\.vehicle-steer-shell");
+const defaultSteer = cssRule("(?:^|\\n)\\.vehicle-steer-shell");
 assert.match(defaultSteer, /transform\s*:\s*none/, "non-sea locomotives must ignore stale submarine offsets");
 assert.doesNotMatch(defaultSteer, /--sea-steer-[xy]/);
 const seaSteer = cssRule("body\\.st-sea \\.vehicle-steer-shell");
@@ -112,7 +112,7 @@ assert.match(futureRender, /pointermove/);
 assert.match(futureRender, /futureReducedMotion\(\)\|\|event\.detail===0/);
 assert.match(extractFunction(game, "futureRailPointerMove"), /finishFutureRailRoute\(futureRailRoute\)/);
 assert.match(extractFunction(game, "finishFutureRailRoute"), /onPick\(entry\.button,\{ok:entry\.o\.ok,mode:"future"\}\)/);
-assert.match(extractFunction(game, "onPick"), /classList\.contains\("sea-answer-bubble"\)\|\|el\.classList\.contains\("future-rail-home"\)\)el\.disabled=true/, "a wrong future home must leave the keyboard tab order before retry");
+assert.match(extractFunction(game, "onPick"), /classList\.contains\("sea-answer-bubble"\)\|\|el\.classList\.contains\("future-rail-home"\)\|\|el\.classList\.contains\("space-answer-star"\)\)el\.disabled=true/, "wrong future and space targets must leave the keyboard tab order before retry");
 const futureKeyHandler = extractFunction(game, "handleFutureRailKeyDown");
 assert.match(futureKeyHandler, /ArrowUp/);
 assert.match(futureKeyHandler, /ArrowDown/);

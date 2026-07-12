@@ -59,6 +59,8 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
+- 2026-07-13 00:15 - by Codex - [batch:1271-nazonazo-sea-burst-space-constellation] - nazonazo-tunnel/index.html, nazonazo-tunnel/styles.css, nazonazo-tunnel/js/game.js, assets/images/nazonazo-tunnel/space_*, tmp/alpha_pending/1271-nazonazo-sea-burst-space-constellation/, tests/nazonazo_*_regression.cjs, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - 深海の連射膨張・大破裂を気持ちよく延長し、宇宙を多重スクロール＋短い星座一筆回答ゲームへ刷新 [overlap: batch:886-difficulty-label-sw-bump-1736]
+
 
 
 

@@ -37,7 +37,7 @@ body.tunnel-interior #scene::after{display:block}
 body.st-sea #seaFishLayer{display:block}
 body.tunnel-interior #seaFishLayer{display:none!important}
 #seaCompanionLayer{position:absolute;inset:0;z-index:6;display:none;pointer-events:none;overflow:hidden}
-#seaShotLayer{position:absolute;inset:0;z-index:9;display:none;pointer-events:none;overflow:hidden}
+#seaShotLayer{position:absolute;inset:0;z-index:11;display:none;pointer-events:none;overflow:hidden}
 body.st-sea #seaCompanionLayer,body.st-sea #seaShotLayer{display:block}
 body.tunnel-interior #seaCompanionLayer,body.tunnel-interior #seaShotLayer{display:none!important}
 #seaArenaShade{position:absolute;inset:0;z-index:5;opacity:0;visibility:hidden;pointer-events:none;
@@ -85,13 +85,23 @@ body.st-sea.sea-arena-active #seaFireButton.is-firing{transform:translateX(-50%)
 .sea-shot{position:absolute;left:0;top:0;width:clamp(12px,1.9vw,19px);height:clamp(6px,.85vw,9px);border-radius:999px;
   background:linear-gradient(90deg,#fff,#fff27d 42%,#55e6ff);box-shadow:0 0 6px #fff,0 0 12px #57eaff;transform:translate3d(-30px,-30px,0);will-change:transform}
 .sea-shot.is-companion{width:clamp(9px,1.35vw,14px);height:clamp(5px,.65vw,7px);background:linear-gradient(90deg,#fff,#a9ffac 45%,#51d8ff);opacity:.9}
-.sea-hit-spark,.sea-burst-drop{position:absolute;left:0;top:0;pointer-events:none}
+.sea-hit-spark,.sea-burst-drop,.sea-burst-ring,.sea-burst-flash{position:absolute;left:0;top:0;pointer-events:none}
 .sea-hit-spark{width:18px;height:18px;border:3px solid #fff4a0;border-radius:50%;box-shadow:0 0 12px #68efff;
   animation:seaHitSpark .26s ease-out both}
 @keyframes seaHitSpark{from{opacity:1;transform:translate3d(var(--spark-x),var(--spark-y),0) translate(-50%,-50%) scale(.4)}to{opacity:0;transform:translate3d(var(--spark-x),var(--spark-y),0) translate(-50%,-50%) scale(1.8)}}
-.sea-burst-drop{width:9px;height:9px;border-radius:50%;background:var(--drop-color,#a8f5ff);box-shadow:0 0 7px rgba(255,255,255,.9);
-  animation:seaBurstDrop .48s cubic-bezier(.15,.65,.35,1) both}
-@keyframes seaBurstDrop{from{opacity:1;transform:translate3d(var(--drop-x),var(--drop-y),0) translate(-50%,-50%) scale(1)}to{opacity:0;transform:translate3d(calc(var(--drop-x) + var(--drop-dx)),calc(var(--drop-y) + var(--drop-dy)),0) translate(-50%,-50%) scale(.25)}}
+.sea-burst-drop{width:var(--drop-size,12px);height:var(--drop-size,12px);border:2px solid rgba(255,255,255,.94);border-radius:50%;background:var(--drop-color,#a8f5ff);box-shadow:0 0 7px #fff,0 0 19px var(--drop-color,#a8f5ff);
+  animation:seaBurstDrop .72s var(--drop-delay,0ms) cubic-bezier(.08,.7,.22,1) both}
+.sea-burst-drop.is-star{border-radius:2px;clip-path:polygon(50% 0,62% 36%,100% 50%,62% 64%,50% 100%,38% 64%,0 50%,38% 36%)}
+@keyframes seaBurstDrop{0%{opacity:1;transform:translate3d(var(--drop-x),var(--drop-y),0) translate(-50%,-50%) rotate(0deg) scale(.68)}55%{opacity:1}100%{opacity:0;transform:translate3d(calc(var(--drop-x) + var(--drop-dx)),calc(var(--drop-y) + var(--drop-dy)),0) translate(-50%,-50%) rotate(var(--drop-rot,180deg)) scale(.18)}}
+.sea-burst-ring{width:var(--ring-size,120px);height:var(--ring-size,120px);border:clamp(5px,.9vmin,8px) solid rgba(231,253,255,.96);border-radius:50%;
+  box-shadow:0 0 8px #fff,0 0 24px rgba(109,238,255,.92),inset 0 0 18px rgba(255,246,154,.68);animation:seaBurstRing .7s cubic-bezier(.08,.65,.18,1) both}
+@keyframes seaBurstRing{from{opacity:1;transform:translate3d(var(--ring-x),var(--ring-y),0) translate(-50%,-50%) rotate(0deg) scale(.32)}to{opacity:0;transform:translate3d(var(--ring-x),var(--ring-y),0) translate(-50%,-50%) rotate(68deg) scale(2.05)}}
+.sea-burst-flash{width:var(--flash-size,92px);height:var(--flash-size,92px);border-radius:50%;
+  background:radial-gradient(circle,#fff 0 16%,#fff7aa 27%,rgba(111,239,255,.82) 46%,rgba(125,207,255,0) 72%);
+  filter:drop-shadow(0 0 16px #fff);animation:seaBurstFlash .44s cubic-bezier(.08,.66,.2,1) both}
+.sea-burst-flash::before,.sea-burst-flash::after{content:"";position:absolute;left:50%;top:50%;width:132%;height:7%;border-radius:999px;background:linear-gradient(90deg,transparent,#fff 38% 62%,transparent);transform:translate(-50%,-50%) rotate(45deg)}
+.sea-burst-flash::after{transform:translate(-50%,-50%) rotate(135deg)}
+@keyframes seaBurstFlash{0%{opacity:1;transform:translate3d(var(--flash-x),var(--flash-y),0) translate(-50%,-50%) scale(.24)}38%{opacity:1;transform:translate3d(var(--flash-x),var(--flash-y),0) translate(-50%,-50%) scale(1.08)}100%{opacity:0;transform:translate3d(var(--flash-x),var(--flash-y),0) translate(-50%,-50%) scale(1.7)}}
 .sea-answer-bubble{appearance:none;-webkit-appearance:none;position:absolute;left:0;top:0;min-width:64px;min-height:64px;
   width:var(--sea-target-size,clamp(64px,12vmin,96px));height:var(--sea-target-size,clamp(64px,12vmin,96px));border:0;border-radius:50%;background:transparent;color:#23546c;
   padding:0;pointer-events:none;transform:translate3d(-100px,-100px,0) translate(-50%,-50%);transform-origin:center;will-change:transform,opacity}
@@ -103,14 +113,19 @@ body.st-sea.sea-arena-active #seaFireButton.is-firing{transform:translateX(-50%)
 .sea-answer-bubble:focus-visible{outline:4px solid rgba(255,226,82,.82);outline-offset:4px}
 .sea-answer-bubble.dim{opacity:.24;filter:grayscale(.5)}
 .sea-answer-bubble.is-hit .sea-answer-visual{filter:brightness(1.18) saturate(1.18);box-shadow:inset 0 -7px 0 rgba(37,143,180,.1),0 4px 0 rgba(22,112,150,.17),0 0 0 5px rgba(255,239,102,.42),0 0 22px rgba(165,249,255,.9)}
+.sea-answer-bubble.is-inflated .sea-answer-visual{border-color:rgba(240,255,255,.98);box-shadow:inset 0 -9px 0 rgba(37,143,180,.1),0 5px 0 rgba(22,112,150,.14),0 0 0 5px rgba(132,236,255,.24),0 0 28px rgba(165,249,255,.84)}
+.sea-answer-bubble.is-taut .sea-answer-visual{animation:seaTargetTaut .34s ease-in-out infinite alternate}
+@keyframes seaTargetTaut{from{filter:brightness(1.06) saturate(1.08);box-shadow:0 0 0 5px rgba(124,235,255,.28),0 0 24px rgba(162,247,255,.76)}to{filter:brightness(1.2) saturate(1.16);box-shadow:0 0 0 10px rgba(255,239,105,.2),0 0 36px rgba(185,251,255,.96)}}
 .sea-answer-bubble.ng{animation:none}
 .sea-answer-bubble.ng .sea-answer-visual{animation:seaTargetWrong .45s ease-out}
 @keyframes seaTargetWrong{0%,100%{transform:translateX(0)}25%,75%{transform:translateX(-7px)}50%{transform:translateX(7px)}}
 .sea-answer-bubble.glow .sea-answer-visual{border-color:#8fea82;animation:seaTargetGlow 1s ease-in-out infinite}
 @keyframes seaTargetGlow{0%,100%{box-shadow:0 0 0 4px rgba(110,229,106,.22),0 0 16px rgba(179,255,182,.68)}50%{box-shadow:0 0 0 9px rgba(110,229,106,.38),0 0 28px rgba(179,255,182,.92)}}
-.sea-answer-bubble.is-bursting .sea-answer-visual{animation:seaTargetBurst .28s cubic-bezier(.2,.8,.25,1) both}
+.sea-answer-bubble.is-tensing .sea-answer-visual{animation:seaTargetTense .14s cubic-bezier(.16,.72,.25,1) both}
+.sea-answer-bubble.is-bursting .sea-answer-visual{animation:seaTargetBurst .38s cubic-bezier(.12,.68,.24,1) both}
 .sea-answer-bubble.is-popped{opacity:0}
-@keyframes seaTargetBurst{0%{opacity:1;transform:scale(1)}58%{opacity:1;transform:scale(1.28)}100%{opacity:0;transform:scale(.12)}}
+@keyframes seaTargetTense{from{filter:brightness(1.12) saturate(1.12);transform:scale(1)}to{filter:brightness(1.38) saturate(1.25);transform:scale(1.12)}}
+@keyframes seaTargetBurst{0%{opacity:1;filter:brightness(1.7) saturate(1.28);transform:scale(1.12)}18%{opacity:1;filter:brightness(2);transform:scale(1.22)}30%,100%{opacity:0;filter:brightness(2.2);transform:scale(.12)}}
 
 /* ===== future city answer game: trace a glowing rail to one of two station homes ===== */
 #futureRailLayer{position:absolute;inset:0;z-index:9;pointer-events:none;
@@ -162,6 +177,54 @@ body.st-future.future-rail-active #quiz{width:min(94vw,720px);padding:7px 11px c
 #quiz.future-rail-quiz #spkBtn,#quiz.future-rail-quiz #helpBtn{height:46px;border-width:2px;font-size:18px}
 #quiz.future-rail-quiz #spkBtn{width:46px}#quiz.future-rail-quiz #helpBtn{width:62px}
 #choices.future-mode{display:none}
+
+/* ===== space answer game: three quick taps draw a constellation route ===== */
+#spaceConstellationLayer{position:absolute;inset:0;z-index:9;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 43%,rgba(52,39,112,.04) 0 34%,rgba(4,7,32,.32) 100%)}
+#spaceConstellationLayer[hidden]{display:none!important}
+.space-constellation-board{position:absolute;left:max(14px,3.5vw);right:max(14px,3.5vw);top:11vh;height:min(50vh,300px);
+  overflow:hidden;border:2px solid rgba(181,214,255,.78);border-radius:26px;background:linear-gradient(145deg,rgba(8,12,52,.67),rgba(45,24,91,.53));
+  box-shadow:0 0 0 6px rgba(137,113,234,.1),0 10px 28px rgba(1,2,20,.28),inset 0 0 30px rgba(117,219,255,.08);pointer-events:auto}
+.space-constellation-guide{position:absolute;left:50%;top:7px;z-index:6;transform:translateX(-50%);max-width:76%;padding:4px 13px;
+  border:2px solid rgba(192,228,255,.72);border-radius:999px;background:rgba(247,246,255,.94);color:#574a91;
+  font-size:clamp(11px,1.8vw,15px);font-weight:1000;line-height:1.15;text-align:center;white-space:nowrap}
+.space-constellation-map{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none}
+.space-route-base,.space-route-line{fill:none;stroke-linecap:round;stroke-linejoin:round}
+.space-route-base{stroke:rgba(176,192,232,.3);stroke-width:13}
+.space-route-line{stroke:#b9f4ff;stroke-width:8;opacity:0;stroke-dasharray:16 10;filter:drop-shadow(0 0 8px rgba(129,229,255,.9));transition:opacity .18s ease}
+.space-route-line.is-complete{opacity:1;animation:spaceRouteFlow .72s linear infinite}
+@keyframes spaceRouteFlow{to{stroke-dashoffset:-26}}
+.space-start-star,.space-node-star{position:absolute;left:var(--star-x);top:var(--star-y);z-index:4;transform:translate(-50%,-50%);aspect-ratio:1;border-radius:50%}
+.space-start-star{width:clamp(48px,8vmin,68px);display:grid;place-items:center;border:3px solid rgba(238,252,255,.96);background:radial-gradient(circle,#fff 0 11%,#ffe687 22%,#9deeff 57%,rgba(107,109,225,.72) 100%);
+  color:#fff;font-size:clamp(22px,4.2vw,36px);text-shadow:0 0 8px #fff;box-shadow:0 0 0 7px rgba(124,209,255,.16),0 0 26px rgba(154,231,255,.82);pointer-events:none}
+.space-start-star::after{content:"スタート";position:absolute;top:101%;padding:2px 7px;border-radius:999px;background:rgba(247,246,255,.92);color:#574a91;font-size:clamp(8px,1.35vw,11px);font-weight:1000;white-space:nowrap;text-shadow:none}
+.space-node-star{appearance:none;-webkit-appearance:none;width:clamp(58px,9vmin,72px);border:3px solid rgba(193,209,236,.7);background:radial-gradient(circle,#8190b8 0 16%,#3c3b78 42%,rgba(28,25,77,.8) 72%);color:#fff;
+  box-shadow:0 3px 0 rgba(7,5,39,.35),0 0 10px rgba(153,169,226,.32);font-size:clamp(24px,4.8vw,39px);pointer-events:auto;transition:filter .16s,box-shadow .16s,opacity .16s}
+.space-node-star:disabled{opacity:.48;cursor:default}
+.space-node-star.is-next{opacity:1;border-color:#fff5a8;background:radial-gradient(circle,#fff 0 11%,#ffe46f 24%,#74e6f2 58%,#5d55ba 100%);
+  box-shadow:0 0 0 7px rgba(255,236,112,.16),0 0 27px rgba(127,235,255,.86);animation:spaceNextStar .7s ease-in-out infinite alternate}
+.space-node-star.is-connected{opacity:1;border-color:#e8fdff;background:radial-gradient(circle,#fff 0 14%,#9df1ff 32%,#766be4 72%);box-shadow:0 0 20px rgba(146,237,255,.9)}
+@keyframes spaceNextStar{from{transform:translate(-50%,-50%) scale(.94)}to{transform:translate(-50%,-50%) scale(1.07)}}
+.space-node-star:focus-visible,.space-answer-star:focus-visible{outline:4px solid #fff18a;outline-offset:4px}
+.space-answer-star{appearance:none;-webkit-appearance:none;position:absolute!important;left:84%;top:var(--answer-y);z-index:5;width:clamp(110px,18vw,168px);max-width:none!important;min-height:clamp(64px,14vh,94px);
+  transform:translate(-50%,-50%);display:grid;grid-template-columns:auto 1fr;align-items:center;gap:5px;padding:5px 9px!important;border:3px solid rgba(204,226,255,.9)!important;border-radius:22px!important;
+  background:linear-gradient(145deg,rgba(248,247,255,.98),rgba(206,211,251,.95))!important;color:#544980!important;box-shadow:0 4px 0 rgba(72,64,139,.52),0 0 18px rgba(159,173,255,.42)!important;pointer-events:auto}
+.space-answer-star:disabled{opacity:.5;cursor:default}.space-answer-star.dim{opacity:.22!important;filter:grayscale(.65)}
+.space-answer-star .em{font-size:clamp(28px,5.3vmin,45px)!important;line-height:1!important}.space-answer-star .lb{font-size:clamp(12px,2vw,17px)!important;line-height:1.05!important}
+.space-answer-star::after{content:"こたえの ほし";position:absolute;left:50%;top:-13px;transform:translateX(-50%);padding:1px 7px;border-radius:999px;background:#6557a8;color:#fff;font-size:clamp(8px,1.2vw,11px);font-weight:1000;white-space:nowrap}
+.space-answer-star.is-ready{opacity:1;border-color:#baf5ff!important;box-shadow:0 4px 0 rgba(72,64,139,.52),0 0 0 6px rgba(137,224,255,.14),0 0 24px rgba(169,229,255,.7)!important}
+.space-answer-star.is-selected{border-color:#fff0a1!important;box-shadow:0 4px 0 #b5933e,0 0 0 8px rgba(255,235,118,.2),0 0 31px #92ecff!important}
+.space-answer-star:active{transform:translate(-50%,-50%)!important}
+.space-constellation-board.is-complete{animation:spaceConstellationComplete .38s ease-out both}
+@keyframes spaceConstellationComplete{0%{box-shadow:0 0 0 6px rgba(137,113,234,.1),inset 0 0 30px rgba(117,219,255,.08)}55%{box-shadow:0 0 0 12px rgba(255,236,112,.22),0 0 48px rgba(128,229,255,.62),inset 0 0 44px rgba(255,247,190,.18)}100%{box-shadow:0 0 0 6px rgba(137,113,234,.1),0 10px 28px rgba(1,2,20,.28),inset 0 0 30px rgba(117,219,255,.08)}}
+body.st-space.space-constellation-complete .vehicle-steer-shell{animation:spaceRocketWarp .42s ease-out both}
+@keyframes spaceRocketWarp{0%,100%{transform:translateX(0) scale(1)}52%{transform:translateX(18px) scale(1.06);filter:drop-shadow(-16px 0 12px rgba(125,226,255,.72))}}
+body.st-space.space-constellation-active #quiz{width:min(94vw,720px);padding:7px 11px calc(7px + env(safe-area-inset-bottom));border-width:3px;border-radius:20px}
+#quiz.space-constellation-quiz #qRow{gap:7px;margin-bottom:0}#quiz.space-constellation-quiz #ponoFace{font-size:clamp(26px,4.8vw,40px)}
+#quiz.space-constellation-quiz #qBubble{padding:4px 8px;border-width:2px;border-radius:14px}#quiz.space-constellation-quiz #qText{font-size:clamp(14px,2.6vw,20px);line-height:1.25}
+#quiz.space-constellation-quiz #hintText{min-height:1.1em;margin-top:2px;font-size:clamp(11px,1.9vw,14px);line-height:1.1}
+#quiz.space-constellation-quiz #spkBtn,#quiz.space-constellation-quiz #helpBtn{height:46px;border-width:2px;font-size:18px}#quiz.space-constellation-quiz #spkBtn{width:46px}#quiz.space-constellation-quiz #helpBtn{width:62px}
+#choices.space-mode{display:none}
 .sea-fish{position:absolute;left:0;top:0;width:clamp(36px,var(--fish-w,5.5vw),96px);aspect-ratio:var(--fish-ratio,1.25);
   background:center/contain no-repeat;filter:drop-shadow(0 2px 0 rgba(10,45,75,.14));opacity:var(--fish-opacity,.86);
   transform:translate3d(-20vw,30vh,0);will-change:transform}
@@ -329,6 +392,32 @@ body.st-future #midT,body.st-future #fgT{background-image:none!important}
 #futureForegroundLoop .future-loop-tile{aspect-ratio:2400/430}
 #futureForegroundLoop .future-loop-tile::before{background-image:url("../assets/images/nazonazo-tunnel/future_city_foreground_loop_20260707.webp")}
 
+/* ===== space: generated nebula + independently scrolling planets, stars and asteroids ===== */
+.space-loop-strip{display:none;position:absolute;left:0;width:max-content;pointer-events:none;will-change:transform}
+.space-loop-tile{position:relative;display:block;height:100%;flex:0 0 auto;overflow:hidden}
+.space-loop-tile::before{content:"";position:absolute;inset:-1px;background-position:center;background-size:100% 100%;background-repeat:no-repeat}
+.space-loop-tile:nth-child(even)::before{transform:scaleX(-1)}
+body.st-space .space-loop-strip{display:flex}
+body.st-space #horizon{width:100vw;background:none!important;transform:none!important}
+body.st-space #midT,body.st-space #groundT,body.st-space #fgT{background:none!important}
+#spaceHorizonLoop{inset-block:0;height:100vh}
+#spaceHorizonLoop .space-loop-tile{aspect-ratio:2172/724}
+#spaceHorizonLoop .space-loop-tile::before{background-image:url("../assets/images/nazonazo-tunnel/space_planets_cutout_loop_20260713.png")}
+#spaceForegroundLoop{bottom:-8vh;height:76vh}
+#spaceForegroundLoop .space-loop-tile{aspect-ratio:2172/724}
+#spaceForegroundLoop .space-loop-tile::before{background-image:url("../assets/images/nazonazo-tunnel/space_asteroids_cutout_loop_20260713.png")}
+.space-star-layer{position:absolute;inset:0;display:none;overflow:hidden;contain:layout paint;pointer-events:none}
+body.st-space:not(.tunnel-interior) .space-star-layer{display:block}
+.space-star-far{z-index:1}.space-star-mid{z-index:2}.space-star-near{z-index:6}
+.space-star-particle{position:absolute;left:0;top:0;width:var(--space-star-size,3px);height:var(--space-star-size,3px);
+  transform:translate3d(-40px,-40px,0);will-change:transform}
+.space-star-particle::before{content:"";position:absolute;inset:0;border-radius:50%;background:var(--space-star-color,#fff);
+  opacity:var(--space-star-opacity,.72);box-shadow:0 0 var(--space-star-glow,7px) var(--space-star-color,#fff);
+  animation:spaceStarTwinkle var(--space-star-twinkle,2.8s) ease-in-out var(--space-star-delay,0s) infinite alternate}
+.space-star-particle.is-cross::before{border-radius:1px;clip-path:polygon(44% 0,56% 0,58% 40%,100% 44%,100% 56%,58% 60%,56% 100%,44% 100%,42% 60%,0 56%,0 44%,42% 40%)}
+@keyframes spaceStarTwinkle{from{opacity:.24;transform:scale(.72)}to{opacity:var(--space-star-opacity,.72);transform:scale(1.16)}}
+body.tunnel-interior .space-loop-strip,body.tunnel-interior .space-star-layer{display:none!important}
+
 /* ===== weather: individually varied rain particles in three depth planes ===== */
 .weather-rain-layer{position:absolute;inset:0;overflow:hidden;contain:layout paint;pointer-events:none;opacity:0;visibility:hidden;
   transition:opacity .35s ease,visibility 0s linear .35s}
@@ -411,6 +500,8 @@ body.st-sea .tun.station.sea-station{bottom:17vh;width:60vw;max-width:640px;heig
   filter:drop-shadow(0 5px 0 rgba(4,44,67,.2))}
 body.st-future .tun.station.future-station{bottom:15.2vh;width:64vw;max-width:720px;height:auto;aspect-ratio:2102/492;
   filter:drop-shadow(0 5px 0 rgba(36,84,101,.16))}
+body.st-space .tun.station.space-station{bottom:20vh;width:64vw;max-width:720px;height:auto;aspect-ratio:2172/724;
+  filter:drop-shadow(0 0 14px rgba(91,201,255,.3)) drop-shadow(0 6px 0 rgba(7,5,39,.24))}
 .tun.station .mount{display:none}
 .station-art{position:absolute;inset:0;background:url("../assets/images/nazonazo-tunnel/town_station_checkpoint_20260703.webp") center bottom/contain no-repeat;z-index:1}
 .station-wall{position:absolute;left:10%;right:10%;bottom:12%;height:54%;border:3px solid #b9854d;border-bottom:0;border-radius:10px 10px 4px 4px;
@@ -434,6 +525,11 @@ body.st-future .tun.station.future-station .station-name{left:38%;right:38%;top:
 body.st-future .tun.station.future-station .sign{top:48%;border-color:#75dfe9;background:rgba(244,254,255,.96);color:#356a79;
   box-shadow:0 3px 0 rgba(39,119,139,.2),0 0 14px rgba(112,233,241,.48)}
 body.st-future .tun.station.future-station.open .station-art{filter:brightness(1.08) saturate(1.06) drop-shadow(0 0 11px rgba(100,239,246,.64))}
+body.st-space .tun.station.space-station .station-name{left:37%;right:37%;top:82%;height:14%;border:0;border-radius:999px;background:transparent;
+  color:#63558f;font-size:clamp(11px,1.85vw,17px);text-shadow:0 1px 0 #fff;box-shadow:none}
+body.st-space .tun.station.space-station .sign{top:34%;border-color:#c7f5ff;background:rgba(245,249,255,.94);color:#6557a8;
+  box-shadow:0 0 0 6px rgba(117,224,255,.17),0 0 19px rgba(143,227,255,.74)}
+body.st-space .tun.station.space-station.open .station-art{filter:brightness(1.12) saturate(1.12) drop-shadow(0 0 18px rgba(122,226,255,.78))}
 .station-helper{position:absolute;left:59%;bottom:22%;width:20%;aspect-ratio:1;z-index:3;display:flex;align-items:flex-end;justify-content:center;
   transition:opacity .45s,transform .45s;filter:drop-shadow(0 4px 0 rgba(70,45,25,.13))}
 .station-helper img{width:100%;height:100%;object-fit:contain;object-position:center bottom}
@@ -686,6 +782,10 @@ body.st-future #horizon{background:none;opacity:1;-webkit-mask-image:none;mask-i
 body.st-future #midT{background:none;opacity:1;-webkit-mask-image:none;mask-image:none}
 body.st-future #groundT{height:17.4vh;background-size:auto 100%;z-index:3}
 body.st-future #fgT{height:9.2vh;background:none;opacity:1;-webkit-mask-image:linear-gradient(to bottom,transparent 0%,rgba(0,0,0,.86) 14%,#000 30%);mask-image:linear-gradient(to bottom,transparent 0%,rgba(0,0,0,.86) 14%,#000 30%)}
+body.st-space #horizon{opacity:1;-webkit-mask-image:none;mask-image:none}
+body.st-space #midT{opacity:1;-webkit-mask-image:none;mask-image:none}
+body.st-space #groundT{display:none}
+body.st-space #fgT{height:76vh;overflow:visible;opacity:1;-webkit-mask-image:none;mask-image:none}
 .sb-hull,.sb-peri,.sb-fin,.sb-win,.submarine-art{display:none}
 body.v-sub #veh{left:calc(53vw - clamp(78px,13vw,143px));bottom:12.4vh;width:clamp(156px,26vw,286px);height:clamp(111px,18.4vw,203px)}
 body.st-sea.v-sub #veh{left:calc(28vw - clamp(55px,8vw,86px));width:clamp(110px,16vw,172px);height:clamp(78px,11.35vw,122px)}
@@ -729,6 +829,13 @@ body.v-rocket .rk-win{display:flex;position:absolute;left:34%;top:32%;width:24%;
 body.v-rocket .rk-flame{display:block;position:absolute;left:-14%;top:38%;font-size:clamp(22px,4.4vw,44px);opacity:.35;transform:scaleX(-1)}
 body.v-rocket #veh.go .rk-flame{opacity:1;animation:flame .22s linear infinite alternate}
 @keyframes flame{from{transform:scaleX(-1) scale(.85)}to{transform:scaleX(-1) scale(1.2)}}
+body.st-space.v-rocket #veh{left:21vw;bottom:19vh;width:clamp(200px,30vw,300px);height:clamp(133px,20vw,200px)}
+body.st-space.v-rocket .rk-body{display:block;inset:0;background:url("../assets/images/nazonazo-tunnel/space_vehicle_exploration_rocket_pono_20260713.png") center/contain no-repeat;
+  border:0;border-radius:0;filter:drop-shadow(0 4px 0 rgba(5,3,35,.22)) drop-shadow(0 0 10px rgba(115,216,255,.26))}
+body.st-space.v-rocket .rk-nose,body.st-space.v-rocket .rk-finT,body.st-space.v-rocket .rk-finB,body.st-space.v-rocket .rk-win,body.st-space.v-rocket .rk-flame{display:none!important}
+body.st-space.v-rocket #veh.go .rk-body{animation:spaceRocketGlide 1.7s ease-in-out infinite alternate}
+body.st-space.v-rocket #veh.inTun .rk-body{filter:brightness(.72) saturate(.8) drop-shadow(0 3px 0 rgba(0,0,0,.3))}
+@keyframes spaceRocketGlide{from{transform:translate3d(-2px,2px,0) rotate(-.35deg)}to{transform:translate3d(4px,-3px,0) rotate(.45deg)}}
 
 /* ===== ambient ===== */
 .bub{position:absolute;bottom:-40px;width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.35);animation:rise linear infinite;z-index:2}
@@ -1014,6 +1121,9 @@ h1{font-size:clamp(24px,5.6vw,50px);color:#e0704a;text-shadow:0 3px 0 #fff}
   .future-rail-board{top:11vh;height:51vh;border-radius:18px}
   .future-rail-guide{top:4px;padding:3px 9px;max-width:68%;font-size:10px}
   .future-rail-home{width:clamp(96px,16vw,132px);min-height:62px;padding:3px 6px!important}
+  .space-constellation-board{top:50px;height:52vh;border-radius:18px}
+  .space-constellation-guide{top:4px;padding:3px 9px;max-width:70%;font-size:10px}
+  .space-answer-star{width:clamp(110px,17vw,138px);min-height:64px;padding:3px 6px!important}
   #stamp{top:28%;font-size:clamp(24px,5.4vw,42px)}
   #tunnelFriendPanel{top:calc(64px + env(safe-area-inset-top));width:min(40vw,300px);padding:5px 9px 6px}
   #tunnelFriendTitle{font-size:clamp(13px,2.25vw,17px)}
@@ -1064,7 +1174,7 @@ h1{font-size:clamp(24px,5.6vw,50px);color:#e0704a;text-shadow:0 3px 0 #fff}
   #seaRoundCountdown.is-ready,#seaRoundCountdown.is-go{animation:none!important;opacity:1;transform:translate(-50%,-50%)!important}
   .sea-answer-bubble{animation:none!important}
   .sea-answer-bubble.glow .sea-answer-visual{animation:none!important;box-shadow:0 0 0 7px rgba(110,229,106,.36),0 0 22px rgba(179,255,182,.85)}
-  .sea-hit-spark,.sea-burst-drop,.sea-companion.is-firing::after{display:none!important}
+  .sea-hit-spark,.sea-burst-drop,.sea-burst-ring,.sea-burst-flash,.sea-companion.is-firing::after{display:none!important}
   .vehicle-steer-shell{transition:none!important}
   body.st-sea.v-sub #veh .vbody,body.st-sea.v-sub #veh .submarine-art{animation:none!important}
   .rain-particle{left:var(--rain-rest-x);top:var(--rain-rest-y);animation:none!important;transform:rotate(var(--rain-angle));will-change:auto!important}
@@ -1078,6 +1188,8 @@ h1{font-size:clamp(24px,5.6vw,50px);color:#e0704a;text-shadow:0 3px 0 #fff}
   .number-cargo-fly{animation:none!important;display:none!important}
   .future-rail-glow,.future-rail-node,.future-rail-light{animation:none!important;transition:none!important}
   .future-rail-home.glow,.future-rail-home.ng{animation:none!important}
+  .space-star-particle::before,.space-route-line,.space-node-star,.space-constellation-board,.vehicle-steer-shell{animation:none!important;transition:none!important}
+  .space-answer-star.glow,.space-answer-star.ng{animation:none!important}
   .jungle-flight-layer{display:none!important}
   .tunnel-friend,.tunnel-friend-visual,.tunnel-friend img,.tunnel-friend .tunnel-friend-emoji,.tunnel-friend::after{animation:none!important;will-change:auto!important}
 }

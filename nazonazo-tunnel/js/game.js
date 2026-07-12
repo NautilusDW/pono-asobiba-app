@@ -117,6 +117,9 @@ const FUTURE_HORIZON_PARALLAX=.10,FUTURE_MID_PARALLAX=.32,FUTURE_FOREGROUND_PARA
 const FUTURE_HORIZON_HEIGHT=.68,FUTURE_HORIZON_ASPECT=2096/594;
 const FUTURE_MID_HEIGHT=.56,FUTURE_MID_ASPECT=2136/532;
 const FUTURE_FOREGROUND_HEIGHT=.092,FUTURE_FOREGROUND_ASPECT=2400/430;
+const SPACE_PLANET_PARALLAX=.12,SPACE_FOREGROUND_PARALLAX=.66;
+const SPACE_PLANET_HEIGHT=1,SPACE_PLANET_ASPECT=2172/724;
+const SPACE_FOREGROUND_HEIGHT=.76,SPACE_FOREGROUND_ASPECT=2172/724;
 const ASSETS={
   town:{
    sky:"../assets/images/nazonazo-tunnel/town_sky_back_20260703.webp",
@@ -189,7 +192,13 @@ const ASSETS={
   ground:"../assets/images/nazonazo-tunnel/future_city_ground_track_loop_20260707.webp",
   fg:"../assets/images/nazonazo-tunnel/future_city_foreground_loop_20260707.webp",
   station:"../assets/images/nazonazo-tunnel/future_city_station_checkpoint_20260712.webp",
-  decor:"../assets/images/nazonazo-tunnel/future_city_station_line_decor_20260707.webp"
+   decor:"../assets/images/nazonazo-tunnel/future_city_station_line_decor_20260707.webp"
+ },
+ space:{
+  sky:"../assets/images/nazonazo-tunnel/space_nebula_sky_back_20260713.webp",
+  horizon:"../assets/images/nazonazo-tunnel/space_planets_cutout_loop_20260713.png",
+  fg:"../assets/images/nazonazo-tunnel/space_asteroids_cutout_loop_20260713.png",
+  station:"../assets/images/nazonazo-tunnel/space_constellation_checkpoint_20260713.png"
  }
 };
 const bgUrl=src=>'url("'+src+'")';
@@ -273,6 +282,7 @@ const STAGES=[
   decor(P,r){return bgUrl(ASSETS.future.decor);}},
  {id:"space",icon:"🌌",veh:"rocket",bank:SPACE,gens:[],
   names:["うちゅう","ぎんがの おく"],
+  assets:ASSETS.space,
   pals:[
    {sky:["#0b1030","#1a1145"],mid1:"#2a2560",mid2:"#3a3660",fgA:"#141030",fgB:"#26215a",p1:"#e07a6a",p2:"#e8b06a",p3:"#9a7fd8",mount:"#3a3660"},
    {sky:["#150024","#3a0150"],mid1:"#4a2160",mid2:"#5a2a70",fgA:"#26073a",fgB:"#38104e",p1:"#ff8ab0",p2:"#ffd06a",p3:"#8ad0ff",mount:"#5a3a78"}],
@@ -407,10 +417,16 @@ let tunnelFriendCandidates=[],tunnelFriendsFound=0,tunnelFriendTotalFound=0,tunn
 let bestStarsByStage={},answerLocked=false,portalEditHolding=false,nextMagicPuffAt=0,exitPortalBaseWorldX=0;
 let numberCargoPicked=[],numberCargoGoalShown=false;
 let numberCargoTheme=null;
-const SEA_FIRE_INTERVAL_MS=180;
-const SEA_SHOT_LIMIT=32;
+const SEA_FIRE_INTERVAL_MS=90;
+const SEA_SHOT_LIMIT=56;
 const SEA_COMPANION_LIMIT=3;
-const SEA_TARGET_HIT_GOALS=[3,4,5];
+const SEA_TARGET_HIT_GOALS=[16,20,24];
+const SEA_TARGET_MAX_SCALE=2.2;
+const SEA_TARGET_REDUCED_SCALE=1.34;
+const SEA_ASSIST_FIRE_MS=3600;
+const SEA_BURST_TENSION_MS=140;
+const SEA_BURST_VISUAL_MS=380;
+const SEA_BURST_PARTICLE_MS=720;
 const SEA_READY_MS=700;
 const SEA_GO_MS=500;
 let steerTargetX=0,steerX=0,steerTargetY=0,steerY=0,seaSteerPointerId=null,seaSteerUsed=false;
@@ -424,6 +440,12 @@ const FUTURE_RAIL_ROUTES=[
  [{x:.10,y:.54},{x:.31,y:.54},{x:.50,y:.66},{x:.68,y:.73},{x:.84,y:.73}]
 ];
 let futureRailOptions=[],futureRailRoute=-1,futureRailStep=-1,futureRailPointerId=null,futureRailTracing=false,futureRailResolving=false,futureKeyboardRoute=0,futureRailResolveTimer=0;
+const SPACE_CONSTELLATION_PATTERNS=[
+ {start:{x:.14,y:.61},nodes:[{x:.35,y:.34},{x:.58,y:.56}]},
+ {start:{x:.14,y:.55},nodes:[{x:.35,y:.68},{x:.58,y:.36}]},
+ {start:{x:.14,y:.47},nodes:[{x:.36,y:.27},{x:.58,y:.49}]}
+];
+let spaceConstellationOptions=[],spaceConstellationStep=0,spaceConstellationResolving=false,spaceConstellationTimer=0,spaceConstellationPattern=null;
 let nazonazoAdminPreviewMode=false;
 const NUMBER_CARGO_THEMES=[
  {e:"⭐",name:"おほしさま"},{e:"🎈",name:"ふうせん"},{e:"🌼",name:"おはな"},
@@ -557,13 +579,13 @@ function setDriverMood(mood){
 
 /* ================= dom ================= */
 const $=id=>document.getElementById(id);
-const world=$("world"),veh=$("veh"),horizon=$("horizon"),midT=$("midT"),groundT=$("groundT"),fgT=$("fgT"),seaFishLayer=$("seaFishLayer"),smokeLayer=$("smokeLayer"),townHorizonLoop=$("townHorizonLoop"),townMidLoop=$("townMidLoop"),futureHorizonLoop=$("futureHorizonLoop"),futureMidLoop=$("futureMidLoop"),futureForegroundLoop=$("futureForegroundLoop"),jungleHabitatBack=$("jungleHabitatBack");
+const world=$("world"),veh=$("veh"),horizon=$("horizon"),midT=$("midT"),groundT=$("groundT"),fgT=$("fgT"),seaFishLayer=$("seaFishLayer"),smokeLayer=$("smokeLayer"),townHorizonLoop=$("townHorizonLoop"),townMidLoop=$("townMidLoop"),futureHorizonLoop=$("futureHorizonLoop"),futureMidLoop=$("futureMidLoop"),futureForegroundLoop=$("futureForegroundLoop"),spaceHorizonLoop=$("spaceHorizonLoop"),spaceForegroundLoop=$("spaceForegroundLoop"),jungleHabitatBack=$("jungleHabitatBack");
 const vehicleSteerShell=$("vehicleSteerShell"),seaSteerSurface=$("seaSteerSurface"),seaAnswerLayer=$("seaAnswerLayer"),seaArenaShade=$("seaArenaShade"),seaRoundCountdown=$("seaRoundCountdown"),seaSteerHint=$("seaSteerHint");
-const futureRailLayer=$("futureRailLayer");
+const futureRailLayer=$("futureRailLayer"),spaceConstellationLayer=$("spaceConstellationLayer");
 const seaCompanionLayer=$("seaCompanionLayer"),seaShotLayer=$("seaShotLayer"),seaFireButton=$("seaFireButton");
 const jungleAnimalLayers={far:$("jungleAnimalsFar"),mid:$("jungleAnimalsMid"),near:$("jungleAnimalsNear")};
 const jungleFlightLayers={bird:$("jungleBirdFlightLayer"),butterfly:$("jungleButterflyFlightLayer")};
-const skyA=$("skyA"),skyB=$("skyB"),carsEl=$("cars"),carBadge=$("carBadge"),helpBadge=$("helpBadge"),helpBtn=$("helpBtn");
+const skyA=$("skyA"),skyB=$("skyB"),carsEl=$("cars"),carBadge=$("carBadge"),helpBadge=$("helpBadge"),helpBtn=$("helpBtn"),homeBtn=$("homeBtn");
 const quiz=$("quiz"),qText=$("qText"),hintText=$("hintText"),choicesEl=$("choices");
 const dotsEl=$("dots"),stamp=$("stamp"),weatherNotice=$("weatherNotice"),scoreCurrentPill=$("scoreCurrentPill"),scoreHudValue=$("scoreHudValue"),highScorePill=$("highScorePill"),highScoreValue=$("highScoreValue");
 const tunnelFriendGame=$("tunnelFriendGame"),tunnelFriendGuide=$("tunnelFriendGuide"),tunnelFriendCounter=$("tunnelFriendCounter"),tunnelFriendLayer=$("tunnelFriendLayer"),tunnelFriendResult=$("tunnelFriendResult");
@@ -572,6 +594,7 @@ const portalMaskLayer=$("portalMaskLayer"),portalEditOverlay=$("portalEditOverla
 const portalOccIn=portalMaskLayer&&portalMaskLayer.querySelector(".portal-occluder-in");
 const portalOccOut=portalMaskLayer&&portalMaskLayer.querySelector(".portal-occluder-out");
 const rainLayerElements={far:$("rainFar"),mid:$("rainMid"),near:$("rainNear")};
+const spaceStarLayers={far:$("spaceStarFar"),mid:$("spaceStarMid"),near:$("spaceStarNear")};
 let seaFishSprites=[];
 let jungleAnimalSprites=[];
 let jungleFlightSprites=[];
@@ -579,6 +602,7 @@ const jungleFlightBags={bird:[],butterfly:[]};
 const jungleFlightLast={bird:"",butterfly:""};
 let lastJungleAnimalRenderKey="";
 let lastJungleFlightRenderAt=0;
+let spaceStarSprites=[];
 let lastWheelPeriod=0;
 let weatherNoticeTimer=0;
 
@@ -1356,19 +1380,20 @@ function applySkin(weatherReady){
  if(wasAdminPreview)document.body.classList.add("nazonazo-admin-stage-preview");
  document.body.dataset.weather=weather;
  setDriverForStage(stg);
- skyA.style.background=st.assets?bgUrl(st.assets.sky)+" "+(st.skyPosition||"center bottom")+" / cover no-repeat":"linear-gradient("+P.sky[0]+","+P.sky[1]+")";
+ skyA.style.background=st.assets&&st.assets.sky?bgUrl(st.assets.sky)+" "+(st.skyPosition||"center bottom")+" / cover no-repeat":"linear-gradient("+P.sky[0]+","+P.sky[1]+")";
  skyA.style.backgroundColor=st.id==="town"?"#c7d659":(st.id==="jungle"?"#34793f":"transparent");
  skyB.style.background="linear-gradient("+NP.sky[0]+","+NP.sky[1]+")";
  skyB.style.opacity="0";
- horizon.style.backgroundImage=st.assets?bgUrl(st.assets.horizon):st.horizon(P,NP);
- midT.style.backgroundImage=st.assets?bgUrl(st.assets.mid):st.mid(P);
- groundT.style.backgroundImage=st.assets?bgUrl(st.assets.ground):st.ground(P);
- fgT.style.backgroundImage=st.assets?bgUrl(st.assets.fg):st.fg(P);
+ horizon.style.backgroundImage=st.assets&&st.assets.horizon?bgUrl(st.assets.horizon):st.horizon(P,NP);
+ midT.style.backgroundImage=st.assets&&st.assets.mid?bgUrl(st.assets.mid):st.mid(P);
+ groundT.style.backgroundImage=st.assets&&st.assets.ground?bgUrl(st.assets.ground):st.ground(P);
+ fgT.style.backgroundImage=st.assets&&st.assets.fg?bgUrl(st.assets.fg):st.fg(P);
  if(jungleHabitatBack)jungleHabitatBack.style.backgroundImage=st.id==="jungle"&&st.assets&&st.assets.habitat?bgUrl(st.assets.habitat):"none";
  buildAmbient(P);
  buildSeaFish();
  buildJungleAnimals();
  buildJungleFlights();
+ buildSpaceStars();
 }
 function buildWorld(keepCover){
  world.innerHTML="";
@@ -1398,7 +1423,7 @@ function buildWorld(keepCover){
    t.appendChild(hp);
   }
   world.appendChild(t);tunnels.push(t);
-  for(let k=0;k<2;k++){
+  for(let k=0;k<(st.id==="space"?0:2);k++){
    const d=document.createElement("div");d.className="decor";
    const imageDecor=!!(st.assets&&st.assets.decor);
    const wv=imageDecor?(st.id==="jungle"?68+((i+k)%3)*7:80+((i+k)%3)*7):(8+((i*7+k*5)%8));
@@ -1454,10 +1479,56 @@ function buildAmbient(P){
  if(st.id==="number")buildNumberFx(sc);
  if(st.id==="sea"){for(let i=0;i<8;i++){const b=document.createElement("div");b.className="bub";
   b.style.left=(5+i*12)+"%";b.style.animationDuration=(7+(i%4)*2.5)+"s";b.style.animationDelay=(-i*1.7)+"s";sc.appendChild(b);}}
- if(st.id==="space"||st.id==="future"){for(let i=0;i<10;i++){const t=document.createElement("div");t.className="twk";t.textContent="✦";
+ if(st.id==="future"){for(let i=0;i<10;i++){const t=document.createElement("div");t.className="twk";t.textContent="✦";
   t.style.left=(3+i*10)+"%";t.style.top=(5+((i*23)%40))+"%";t.style.animationDelay=(-i*.4)+"s";sc.appendChild(t);}}
  if(fx==="fireflies"){for(let i=0;i<12;i++){const f=document.createElement("div");f.className="fly";f.textContent="●";
   f.style.left=(3+i*8)+"%";f.style.top=(30+((i*17)%45))+"%";f.style.animationDelay=(-i*.6)+"s";sc.appendChild(f);}}
+}
+const SPACE_STAR_PROFILES={
+ far:{count:28,iosCount:20,reducedCount:12,depth:.04,size:[1,2.4],opacity:[.35,.7],drift:[.18,.42],seed:0x4a19b2d3},
+ mid:{count:22,iosCount:16,reducedCount:9,depth:.24,size:[1.8,4.2],opacity:[.48,.84],drift:[.45,.9],seed:0x73c8e541},
+ near:{count:15,iosCount:10,reducedCount:6,depth:.48,size:[3,7],opacity:[.58,.94],drift:[.85,1.65],seed:0xa53fd287}
+};
+function buildSpaceStars(){
+ spaceStarSprites=[];
+ Object.values(spaceStarLayers).forEach(layer=>{if(layer)layer.replaceChildren();});
+ const st=STAGES[stg];if(!st||st.id!=="space")return;
+ const reduced=seaReducedMotion();
+ const colors=["#ffffff","#bcefff","#fff1a8","#d9c8ff"];
+ Object.entries(SPACE_STAR_PROFILES).forEach(([depthName,profile],profileIndex)=>{
+  const layer=spaceStarLayers[depthName];if(!layer)return;
+  const count=reduced?profile.reducedCount:(IOS_DEVICE?profile.iosCount:profile.count);
+  const random=mulberry32((profile.seed+loop*97)>>>0);
+  for(let i=0;i<count;i++){
+   const el=document.createElement("span");
+   const size=profile.size[0]+random()*(profile.size[1]-profile.size[0]);
+   const opacity=profile.opacity[0]+random()*(profile.opacity[1]-profile.opacity[0]);
+   el.className="space-star-particle"+(i%7===0?" is-cross":"");
+   el.style.setProperty("--space-star-size",size.toFixed(2)+"px");
+   el.style.setProperty("--space-star-opacity",opacity.toFixed(2));
+   el.style.setProperty("--space-star-glow",(size*(1.8+random()*1.6)).toFixed(1)+"px");
+   el.style.setProperty("--space-star-color",colors[(i+profileIndex)%colors.length]);
+   el.style.setProperty("--space-star-twinkle",(1.6+random()*2.8).toFixed(2)+"s");
+   el.style.setProperty("--space-star-delay",(-random()*3.4).toFixed(2)+"s");
+   layer.appendChild(el);
+   spaceStarSprites.push({
+    el,baseX:random()*1.18-.08,baseY:.06+random()*.7,depth:profile.depth,
+    drift:profile.drift[0]+random()*(profile.drift[1]-profile.drift[0]),phase:random()*80
+   });
+  }
+ });
+}
+function renderSpaceStars(now){
+ if(!spaceStarSprites.length||!document.body.classList.contains("st-space")||tunnelInteriorMode)return;
+ const width=Math.max(320,window.innerWidth||844),height=Math.max(240,window.innerHeight||390);
+ const stageTravel=(worldX-origin(stg))*width/100,t=(now||_nowMs())/1000;
+ spaceStarSprites.forEach(star=>{
+  const period=width*1.24;
+  let x=star.baseX*width-stageTravel*star.depth-(t+star.phase)*star.drift;
+  x=((x+width*.12)%period+period)%period-width*.12;
+  const y=star.baseY*height;
+  star.el.style.transform="translate3d("+(IOS_DEVICE?Math.round(x):x.toFixed(2))+"px,"+(IOS_DEVICE?Math.round(y):y.toFixed(2))+"px,0)";
+ });
 }
 function buildNumberFx(sc){
  const layer=document.createElement("div");
@@ -1705,6 +1776,28 @@ function seaAnswerSafeRect(){
  const bottom=Math.max(top+90,Math.min(sceneRect.height-12,quizRect.top-sceneRect.top-9));
  return {sceneRect,top,bottom,height:Math.max(90,bottom-top)};
 }
+function separateSeaAnswerTargets(entries){
+ if(!entries||entries.length<2)return;
+ const a=entries[0],b=entries[1],gap=a._boundaryHalf+b._boundaryHalf+12;
+ const dy=Math.abs(a.y-b.y),neededX=Math.sqrt(Math.max(0,gap*gap-dy*dy));
+ if(Math.abs(a.x-b.x)+.5>=neededX)return;
+ const left=a,right=b;
+ let leftX=clamp((a.x+b.x-neededX)*.5,left._minX,left._maxX);
+ let rightX=clamp((a.x+b.x+neededX)*.5,right._minX,right._maxX);
+ let missing=Math.max(0,neededX-(rightX-leftX));
+ if(missing>0){const next=clamp(leftX-missing,left._minX,left._maxX);missing-=leftX-next;leftX=next;}
+ if(missing>0)rightX=clamp(rightX+missing,right._minX,right._maxX);
+ left.x=leftX;right.x=rightX;
+ const actualX=Math.abs(a.x-b.x),neededY=Math.sqrt(Math.max(0,gap*gap-actualX*actualX));
+ if(Math.abs(a.y-b.y)+.5>=neededY)return;
+ const top=a.y<=b.y?a:b,bottom=top===a?b:a;
+ let topY=clamp((a.y+b.y-neededY)*.5,top._laneMin,top._laneMax);
+ let bottomY=clamp((a.y+b.y+neededY)*.5,bottom._laneMin,bottom._laneMax);
+ missing=Math.max(0,neededY-(bottomY-topY));
+ if(missing>0){const next=clamp(topY-missing,top._laneMin,top._laneMax);missing-=topY-next;topY=next;}
+ if(missing>0)bottomY=clamp(bottomY+missing,bottom._laneMin,bottom._laneMax);
+ top.y=topY;bottom.y=bottomY;
+}
 function updateSeaAnswerTargets(now){
  if(!seaBubbleOptions.length)return;
  const safe=seaAnswerSafeRect();
@@ -1714,25 +1807,36 @@ function updateSeaAnswerTargets(now){
   if(!entry.button||!entry.button.isConnected)return;
   const focused=document.activeElement===entry.button;
   const moving=seaRoundPlayable()&&!reduced&&!focused&&!entry.bursting;
-  const wave=moving?Math.sin(t*entry.rate+entry.phase):0;
-  const cross=moving?Math.sin(t*entry.rate*1.47+entry.phase*.63):0;
-  const minX=Math.max(entry.size*.5+8,safe.sceneRect.width*.66);
-  const maxX=Math.min(safe.sceneRect.width-entry.size*.5-10,safe.sceneRect.width*.92);
-  entry.x=clamp(safe.sceneRect.width*entry.baseX+wave*entry.ampX,minX,maxX);
-  const split=safe.top+safe.height*.5;
-  const laneTop=entry.index===0?safe.top:split+6;
-  const laneBottom=entry.index===0?split-6:safe.bottom;
-  const laneMin=laneTop+entry.size*.5;
-  const laneMax=Math.max(laneMin,laneBottom-entry.size*.5);
-  const laneCenter=(laneMin+laneMax)*.5;
-  const laneAmp=Math.min(entry.ampY,Math.max(0,(laneMax-laneMin)*.48));
-  entry.y=clamp(laneCenter+cross*laneAmp,laneMin,laneMax);
   const ratio=clamp(entry.hits/entry.hitGoal,0,1);
-  const flash=entry.flashUntil>now?.055:0;
-  entry.scale=1+Math.min(.28,ratio*.28)+flash;
-  entry.radius=entry.size*entry.scale*.43;
-  const rotation=moving?wave*entry.rotation:0;
-  entry.button.style.transform="translate3d("+entry.x.toFixed(2)+"px,"+entry.y.toFixed(2)+"px,0) translate(-50%,-50%) rotate("+rotation.toFixed(2)+"deg) scale("+entry.scale.toFixed(3)+")";
+  const balloonCurve=.28*ratio+.72*ratio*ratio;
+  const maxScale=reduced?SEA_TARGET_REDUCED_SCALE:SEA_TARGET_MAX_SCALE;
+  const flash=entry.flashUntil>now?(reduced?0:.045):0;
+  entry.scale=1+(maxScale-1)*balloonCurve+flash;
+  const movementScale=1-balloonCurve*.85;
+  const wave=moving?Math.sin(t*entry.rate+entry.phase)*movementScale:0;
+  const cross=moving?Math.sin(t*entry.rate*1.47+entry.phase*.63)*movementScale:0;
+  const visualHalf=entry.size*entry.scale*.5;
+  const boundaryHalf=visualHalf*(1+.12*balloonCurve);
+  const laneCenter=safe.top+safe.height*(entry.index===0?.34:.76);
+  const laneMin=Math.min(safe.bottom,safe.top+boundaryHalf+4),laneMax=Math.max(laneMin,safe.bottom-boundaryHalf-4);
+  entry.y=clamp(laneCenter+cross*entry.ampY,laneMin,laneMax);
+  const minX=Math.max(boundaryHalf+8,safe.sceneRect.width*.66);
+  let maxX=Math.min(safe.sceneRect.width-boundaryHalf-10,safe.sceneRect.width*.92);
+  if(homeBtn&&entry.index===0){
+   const homeRect=homeBtn.getBoundingClientRect(),homeLeft=homeRect.left-safe.sceneRect.left,homeTop=homeRect.top-safe.sceneRect.top,homeBottom=homeRect.bottom-safe.sceneRect.top;
+   if(entry.y-boundaryHalf<homeBottom+8&&entry.y+boundaryHalf>homeTop-8)maxX=Math.min(maxX,homeLeft-boundaryHalf-8);
+  }
+  const laneSpread=safe.sceneRect.width*.14*Math.sqrt(balloonCurve)*(entry.index===0?-1:1);
+  maxX=Math.max(minX,maxX);entry.x=clamp(safe.sceneRect.width*entry.baseX+wave*entry.ampX+laneSpread,minX,maxX);
+  entry._boundaryHalf=boundaryHalf;entry._minX=minX;entry._maxX=maxX;entry._laneMin=laneMin;entry._laneMax=laneMax;entry._rotation=moving?wave*entry.rotation:0;
+  entry.radius=entry.size*entry.scale*.47;
+  entry.button.classList.toggle("is-inflated",ratio>=.28);
+  entry.button.classList.toggle("is-taut",ratio>=.82&&!entry.bursting);
+ });
+ separateSeaAnswerTargets(seaBubbleOptions);
+ seaBubbleOptions.forEach(entry=>{
+  if(!entry.button||!entry.button.isConnected)return;
+  entry.button.style.transform="translate3d("+entry.x.toFixed(2)+"px,"+entry.y.toFixed(2)+"px,0) translate(-50%,-50%) rotate("+entry._rotation.toFixed(2)+"deg) scale("+entry.scale.toFixed(3)+")";
  });
 }
 function syncSeaCompanions(){
@@ -1797,7 +1901,7 @@ function spawnSeaVolley(now){
   setTimeout(()=>companion.el&&companion.el.classList.remove("is-firing"),130);
  });
  seaVolleyCount=salvoId;
- if(salvoId%2===1)tone(760+(salvoId%4)*55,0,.045,"sine",.025);
+ if(salvoId%3===1)tone(760+(salvoId%5)*42,0,.04,"sine",.022);
  seaLastVolleyAt=now;
 }
 function createSeaHitSpark(x,y){
@@ -1808,12 +1912,21 @@ function createSeaHitSpark(x,y){
 }
 function createSeaBurstParticles(entry){
  if(!seaShotLayer)return;
- const colors=["#baf7ff","#fff39a","#8ee7ff","#d7b9ff"];
- for(let i=0;i<12;i++){
-  const drop=document.createElement("span"),angle=Math.PI*2*i/12+(i%2)*.14,distance=30+(i%4)*12;
-  drop.className="sea-burst-drop";drop.style.setProperty("--drop-x",entry.x.toFixed(1)+"px");drop.style.setProperty("--drop-y",entry.y.toFixed(1)+"px");
+ const colors=["#baf7ff","#fff39a","#8ee7ff","#d7b9ff","#ffffff","#8fffb2"];
+ const flash=document.createElement("span");flash.className="sea-burst-flash";
+ flash.style.setProperty("--flash-x",entry.x.toFixed(1)+"px");flash.style.setProperty("--flash-y",entry.y.toFixed(1)+"px");
+ flash.style.setProperty("--flash-size",Math.max(92,entry.size*entry.scale*.72).toFixed(1)+"px");seaShotLayer.appendChild(flash);setTimeout(()=>flash.remove(),500);
+ const ring=document.createElement("span");ring.className="sea-burst-ring";
+ ring.style.setProperty("--ring-x",entry.x.toFixed(1)+"px");ring.style.setProperty("--ring-y",entry.y.toFixed(1)+"px");
+ ring.style.setProperty("--ring-size",Math.max(120,entry.size*entry.scale*1.08).toFixed(1)+"px");seaShotLayer.appendChild(ring);
+ setTimeout(()=>ring.remove(),SEA_BURST_PARTICLE_MS+40);
+ for(let i=0;i<36;i++){
+  const drop=document.createElement("span"),angle=Math.PI*2*i/36+(i%4)*.055,distance=94+(i%9)*12;
+  drop.className="sea-burst-drop"+(i%3===0?" is-star":"");drop.style.setProperty("--drop-x",entry.x.toFixed(1)+"px");drop.style.setProperty("--drop-y",entry.y.toFixed(1)+"px");
   drop.style.setProperty("--drop-dx",(Math.cos(angle)*distance).toFixed(1)+"px");drop.style.setProperty("--drop-dy",(Math.sin(angle)*distance).toFixed(1)+"px");
-  drop.style.setProperty("--drop-color",colors[i%colors.length]);seaShotLayer.appendChild(drop);setTimeout(()=>drop.remove(),560);
+  drop.style.setProperty("--drop-size",(12+(i%6)*2.4).toFixed(1)+"px");drop.style.setProperty("--drop-delay",((i%7)*9)+"ms");
+  drop.style.setProperty("--drop-rot",(120+(i%8)*37)+"deg");drop.style.setProperty("--drop-color",colors[i%colors.length]);seaShotLayer.appendChild(drop);
+  setTimeout(()=>drop.remove(),SEA_BURST_PARTICLE_MS+90);
  }
 }
 function hitSeaAnswerTarget(entry,salvoId,x,y){
@@ -1821,7 +1934,9 @@ function hitSeaAnswerTarget(entry,salvoId,x,y){
  seaSalvoHits.add(salvoId);entry.hits=Math.min(entry.hitGoal,entry.hits+1);entry.flashUntil=_nowMs()+120;
  entry.button.dataset.hits=String(entry.hits);entry.button.classList.add("is-hit");
  const epoch=seaShooterEpoch;setTimeout(()=>{if(epoch===seaShooterEpoch&&entry.button)entry.button.classList.remove("is-hit");},130);
- createSeaHitSpark(x,y);tone(560+entry.hits*90,0,.055,"triangle",.04);
+ createSeaHitSpark(x,y);
+ const hitRatio=clamp(entry.hits/entry.hitGoal,0,1),pitch=500+620*Math.pow(hitRatio,.72);
+ tone(pitch,0,.048,"triangle",.038);if(entry.hits%4===0)tone(Math.min(1480,pitch*1.32),.015,.052,"sine",.027);
  if(entry.hits>=entry.hitGoal)beginSeaTargetBurst(entry);
  return true;
 }
@@ -1852,25 +1967,32 @@ function beginSeaTargetBurst(entry){
  if(!entry||!seaRoundPlayable()||seaBubbleLaunchPending||answerLocked||driving||!quiz.classList.contains("show")||entry.button.disabled||entry.button.classList.contains("dim"))return;
  seaBubbleLaunchPending=true;entry.bursting=true;stopSeaFiring();cancelSeaPointer();cancelSeaFirePointer();seaMoveKeys.clear();removeAllSeaShots();
  activeChoiceButtons().forEach(choice=>{choice.disabled=true;});
- entry.button.classList.add("is-bursting");createSeaBurstParticles(entry);
- tone(700,0,.08,"sine",.07);tone(980,.07,.12,"triangle",.065);
+ entry.button.classList.remove("is-taut");entry.button.classList.add("is-tensing");
+ tone(720,0,.08,"sine",.06);tone(920,.055,.1,"triangle",.055);
  const epoch=seaShooterEpoch;
  const finish=()=>{
   seaBubbleLaunchTimer=0;
   if(epoch!==seaShooterEpoch||!entry.button.isConnected||!quiz.classList.contains("show")||!document.body.classList.contains("sea-quiz-active"))return;
-  entry.button.classList.remove("is-bursting");entry.button.classList.add("is-popped");
+  entry.button.classList.remove("is-tensing","is-bursting");entry.button.classList.add("is-popped");
   onPick(entry.button,entry.value);
   if(entry.value.ok){
-   seaShooterResumeTimer=setTimeout(()=>{seaShooterResumeTimer=0;if(epoch===seaShooterEpoch)clearSeaBubbleGame();},120);
+   seaShooterResumeTimer=setTimeout(()=>{seaShooterResumeTimer=0;if(epoch===seaShooterEpoch)clearSeaBubbleGame();},420);
   }else{
    seaShooterResumeTimer=setTimeout(()=>{
     seaShooterResumeTimer=0;if(epoch!==seaShooterEpoch||!quiz.classList.contains("show"))return;
     seaBubbleLaunchPending=false;entry.bursting=false;
     activeChoiceButtons().forEach(choice=>{if(!choice.classList.contains("dim"))choice.disabled=false;});
-   },560);
+   },620);
   }
  };
- if(seaReducedMotion())finish();else seaBubbleLaunchTimer=setTimeout(finish,220);
+ const explode=()=>{
+  seaBubbleLaunchTimer=0;
+  if(epoch!==seaShooterEpoch||!entry.button.isConnected)return;
+  entry.button.classList.remove("is-tensing");entry.button.classList.add("is-bursting");createSeaBurstParticles(entry);
+  tone(170,0,.18,"sine",.085);tone(360,.025,.16,"triangle",.06);tone(1040,.04,.1,"triangle",.075);tone(1320,.09,.16,"sine",.06);tone(1660,.14,.18,"triangle",.04);
+  seaBubbleLaunchTimer=setTimeout(finish,SEA_BURST_VISUAL_MS);
+ };
+ if(seaReducedMotion())finish();else seaBubbleLaunchTimer=setTimeout(explode,SEA_BURST_TENSION_MS);
 }
 function startSeaKeyboardTargetFire(button,o){
  const entry=seaBubbleOptions.find(item=>item.button===button&&item.value===o);
@@ -1931,7 +2053,7 @@ function handleSeaFireClick(ev){
  if(ev.detail!==0){ev.preventDefault();return;}
  if(!seaShooterActive())return;
  ensureAC();setSeaFireSource("assist",true);clearTimeout(seaAssistFireTimer);
- seaAssistFireTimer=setTimeout(()=>{seaAssistFireTimer=0;setSeaFireSource("assist",false);},1800);
+ seaAssistFireTimer=setTimeout(()=>{seaAssistFireTimer=0;setSeaFireSource("assist",false);},SEA_ASSIST_FIRE_MS);
 }
 function handleSeaKeyDown(ev){
  if(ev.target&&ev.target.classList&&ev.target.classList.contains("sea-answer-bubble"))return;
@@ -1996,6 +2118,7 @@ function renderSeaSteering(){
 function activeChoiceButtons(){
  if(document.body.classList.contains("sea-quiz-active")&&seaAnswerLayer)return [...seaAnswerLayer.querySelectorAll(".sea-answer-bubble")];
  if(document.body.classList.contains("future-rail-active")&&futureRailLayer)return [...futureRailLayer.querySelectorAll(".future-rail-home")];
+ if(document.body.classList.contains("space-constellation-active")&&spaceConstellationLayer)return [...spaceConstellationLayer.querySelectorAll(".space-answer-star")];
  return [...choicesEl.querySelectorAll(".choice")];
 }
 function renderSeaBubbleGame(){
@@ -2064,6 +2187,18 @@ function handleFutureRailKeyDown(event){
  }
 }
 window.addEventListener("keydown",handleFutureRailKeyDown);
+function handleSpaceConstellationKeyDown(event){
+ if(!spaceConstellationPlayable()||spaceConstellationStep<2||(event.key!=="ArrowUp"&&event.key!=="ArrowDown"))return;
+ const target=event.target;
+ const focusedAnswer=target&&typeof target.closest==="function"?target.closest(".space-answer-star"):null;
+ if(!focusedAnswer&&target&&typeof target.matches==="function"&&target.matches("button,a,input,select,textarea,[contenteditable='true']"))return;
+ event.preventDefault();
+ const wanted=event.key==="ArrowUp"?0:1;
+ let entry=spaceConstellationOptions[wanted];
+ if(!entry||entry.button.disabled||entry.button.classList.contains("dim"))entry=spaceConstellationOptions.find(item=>!item.button.disabled&&!item.button.classList.contains("dim"));
+ if(entry){entry.button.focus({preventScroll:true});spaceConstellationGuide("エンターで この ほしを えらぶよ");}
+}
+window.addEventListener("keydown",handleSpaceConstellationKeyDown);
 
 function buildSeaFish(){
  seaFishSprites=[];
@@ -2928,6 +3063,7 @@ function render(now){
  renderSeaSteering();
  renderJungleAnimals();
  renderJungleFlights(now);
+ renderSpaceStars(now);
  if(jungleHabitatBack&&document.body.classList.contains("st-jungle"))jungleHabitatBack.style.backgroundPositionX=cssXFromVw(-(worldX-o)*.92);
  updateScreenExitShift();
  if(document.body.classList.contains("st-town")&&townHorizonLoop){
@@ -2945,6 +3081,13 @@ function render(now){
   const rawOffset=(((worldX-o)*FUTURE_HORIZON_PARALLAX*(window.innerWidth||844)/100)%period+period)%period;
   const loopOffset=IOS_DEVICE?Math.round(rawOffset):Number(rawOffset.toFixed(2));
   futureHorizonLoop.style.transform="translate3d("+(-loopOffset)+"px,0,0)";
+ }else if(document.body.classList.contains("st-space")&&spaceHorizonLoop){
+  horizon.style.transform="translate3d(0,0,0)";horizon.style.backgroundPositionX="0px";
+  const tileWidth=(window.innerHeight||390)*SPACE_PLANET_HEIGHT*SPACE_PLANET_ASPECT;
+  const period=tileWidth*2;
+  const rawOffset=(((worldX-o)*SPACE_PLANET_PARALLAX*(window.innerWidth||844)/100)%period+period)%period;
+  const loopOffset=IOS_DEVICE?Math.round(rawOffset):Number(rawOffset.toFixed(2));
+  spaceHorizonLoop.style.transform="translate3d("+(-loopOffset)+"px,0,0)";
  }else if(document.body.classList.contains("st-sea")){
   horizon.style.transform="translate3d(0,0,0)";
   horizon.style.backgroundPositionX=cssXFromVw(-(worldX-o)*.1);
@@ -2966,19 +3109,27 @@ function render(now){
   const rawOffset=(((worldX-o)*FUTURE_MID_PARALLAX*(window.innerWidth||844)/100)%period+period)%period;
   const loopOffset=IOS_DEVICE?Math.round(rawOffset):Number(rawOffset.toFixed(2));
   futureMidLoop.style.transform="translate3d("+(-loopOffset)+"px,0,0)";midT.style.backgroundPositionX="0px";
+ }else if(document.body.classList.contains("st-space")){
+  midT.style.backgroundPositionX="0px";
  }else if(document.body.classList.contains("st-sea")){
   midT.style.backgroundPositionX=cssXFromVw(-(worldX-o)*.44);
  }else{
   midT.style.backgroundPositionX=cssXFromVw(-worldX*0.25);
  }
- const futureStage=document.body.classList.contains("st-future");
- groundT.style.backgroundPositionX=cssXFromVw(futureStage?-(worldX-o):-worldX);
+ const futureStage=document.body.classList.contains("st-future"),spaceStage=document.body.classList.contains("st-space");
+ groundT.style.backgroundPositionX=spaceStage?"0px":cssXFromVw(futureStage?-(worldX-o):-worldX);
  if(futureStage&&futureForegroundLoop){
   const tileWidth=(window.innerHeight||390)*FUTURE_FOREGROUND_HEIGHT*FUTURE_FOREGROUND_ASPECT;
   const period=tileWidth*2;
   const rawOffset=(((worldX-o)*FUTURE_FOREGROUND_PARALLAX*(window.innerWidth||844)/100)%period+period)%period;
   const loopOffset=IOS_DEVICE?Math.round(rawOffset):Number(rawOffset.toFixed(2));
   futureForegroundLoop.style.transform="translate3d("+(-loopOffset)+"px,0,0)";fgT.style.backgroundPositionX="0px";
+ }else if(spaceStage&&spaceForegroundLoop){
+  const tileWidth=(window.innerHeight||390)*SPACE_FOREGROUND_HEIGHT*SPACE_FOREGROUND_ASPECT;
+  const period=tileWidth*2;
+  const rawOffset=(((worldX-o)*SPACE_FOREGROUND_PARALLAX*(window.innerWidth||844)/100)%period+period)%period;
+  const loopOffset=IOS_DEVICE?Math.round(rawOffset):Number(rawOffset.toFixed(2));
+  spaceForegroundLoop.style.transform="translate3d("+(-loopOffset)+"px,0,0)";fgT.style.backgroundPositionX="0px";
  }else fgT.style.backgroundPositionX=document.body.classList.contains("st-sea")?cssXFromVw(-(worldX-o)*1.06):cssXFromVw(-worldX*1.35);
  const p=clamp((worldX-o)/COVER_OFF,0,1);
  skyB.style.opacity=(p>0.78?((p-0.78)/0.22)*0.9:0).toFixed(2);
@@ -3092,6 +3243,7 @@ function startJourneyAt(s){
  hideWeatherNotice();
  resetNumberCargoGame();
  clearFutureRailGame();
+ clearSpaceConstellationGame();
  clearRareEvent();
  resetSeaInteraction();
  stopStageWeather();
@@ -3132,6 +3284,7 @@ function resetNumberCargoGame(){
  choicesEl.setAttribute("aria-label","こたえを えらぶ");
 }
 function isFutureStage(){return !!(STAGES[stg]&&STAGES[stg].id==="future");}
+function isSpaceStage(){return !!(STAGES[stg]&&STAGES[stg].id==="space");}
 function futureReducedMotion(){
  try{return !!(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches);}catch(_){return false;}
 }
@@ -3294,6 +3447,114 @@ function renderFutureRailGame(){
  board.addEventListener("pointercancel",futureRailPointerEnd);
  futureRailLayer.appendChild(board);hintText.textContent="✨ ひかりを こたえの ホームまで つなごう";resetFutureRailTrace();
 }
+function spaceQuestionOptions(question){
+ const wrong=shuffle((question&&question.d||[]).map(x=>({e:x[0],t:x[1],ok:false})))[0];
+ return shuffle([{e:question.a[0],t:question.a[1],ok:true},wrong].filter(Boolean));
+}
+function spaceConstellationPlayable(){
+ return !window.__PONO_TIER_LOCKED__&&isSpaceStage()&&playing&&!driving&&!answerLocked&&!spaceConstellationResolving&&
+  quiz.classList.contains("show")&&spaceConstellationLayer&&!spaceConstellationLayer.hidden;
+}
+function clearSpaceConstellationGame(){
+ clearTimeout(spaceConstellationTimer);spaceConstellationTimer=0;
+ spaceConstellationOptions=[];spaceConstellationStep=0;spaceConstellationResolving=false;spaceConstellationPattern=null;
+ document.body.classList.remove("space-constellation-active","space-constellation-complete");
+ quiz.classList.remove("space-constellation-quiz");choicesEl.classList.remove("space-mode");choicesEl.setAttribute("aria-label","こたえを えらぶ");
+ if(spaceConstellationLayer){spaceConstellationLayer.replaceChildren();spaceConstellationLayer.hidden=true;}
+}
+function spaceConstellationGuide(message){
+ const guide=spaceConstellationLayer&&spaceConstellationLayer.querySelector(".space-constellation-guide");if(guide)guide.textContent=message;
+}
+function updateSpaceConstellationVisual(){
+ if(!spaceConstellationLayer||spaceConstellationLayer.hidden)return;
+ const board=spaceConstellationLayer.querySelector(".space-constellation-board");if(!board)return;
+ board.querySelectorAll(".space-route-line[data-segment]").forEach(line=>{
+  const segment=Number(line.dataset.segment);
+  if(segment<2)line.classList.toggle("is-complete",segment<spaceConstellationStep);
+ });
+ board.querySelectorAll(".space-node-star").forEach((node,index)=>{
+  const connected=index<spaceConstellationStep;
+  node.classList.toggle("is-connected",connected);node.classList.toggle("is-next",index===spaceConstellationStep);
+  node.disabled=spaceConstellationResolving||connected||index!==spaceConstellationStep;
+ });
+ spaceConstellationOptions.forEach(entry=>{
+  const unavailable=entry.button.classList.contains("dim");
+  entry.button.disabled=spaceConstellationResolving||spaceConstellationStep<2||unavailable;
+  entry.button.classList.toggle("is-ready",spaceConstellationStep>=2&&!unavailable&&!spaceConstellationResolving);
+ });
+ if(!spaceConstellationResolving){
+  if(spaceConstellationStep===0)spaceConstellationGuide("ひかっている ほしを タップしよう");
+  else if(spaceConstellationStep===1)spaceConstellationGuide("つぎの ほしへ つなごう");
+  else spaceConstellationGuide("さいごに こたえの ほしを えらぼう");
+ }
+}
+function connectSpaceConstellationNode(index,event){
+ if(!spaceConstellationPlayable()||index!==spaceConstellationStep||index>1)return;
+ ensureAC();spaceConstellationStep=index+1;tone(index===0?659:784,0,.11,"sine",.075);tone(index===0?988:1175,.065,.12,"triangle",.045);
+ updateSpaceConstellationVisual();
+ if(event&&event.detail===0){
+  let next=spaceConstellationStep<2?spaceConstellationLayer.querySelector('.space-node-star[data-node="'+spaceConstellationStep+'"]'):null;
+  if(spaceConstellationStep>=2){const available=spaceConstellationOptions.find(entry=>!entry.button.disabled&&!entry.button.classList.contains("dim"));next=available?available.button:null;}
+  if(next)next.focus({preventScroll:true});
+ }
+}
+function finishSpaceConstellation(entry){
+ if(!entry||spaceConstellationStep<2||!spaceConstellationPlayable()||entry.button.disabled||entry.button.classList.contains("dim"))return;
+ spaceConstellationResolving=true;entry.button.classList.add("is-selected");
+ const board=spaceConstellationLayer.querySelector(".space-constellation-board");
+ const answerLine=board&&board.querySelector('.space-route-line[data-answer="'+entry.index+'"]');if(answerLine)answerLine.classList.add("is-complete");
+ if(entry.o.ok){
+  if(board)board.classList.add("is-complete");document.body.classList.add("space-constellation-complete");spaceConstellationGuide("せいざワープ かんせい！");
+  tone(988,0,.11,"triangle",.08);tone(1319,.08,.15,"sine",.07);tone(1760,.16,.2,"triangle",.05);
+ }else{spaceConstellationGuide("もうひとつの ほしへ つなごう");tone(430,0,.13,"sine",.055);}
+ updateSpaceConstellationVisual();
+ spaceConstellationTimer=setTimeout(()=>{
+  spaceConstellationTimer=0;spaceConstellationResolving=false;
+  onPick(entry.button,{ok:entry.o.ok,mode:"space"});
+  if(entry.o.ok){
+   spaceConstellationTimer=setTimeout(()=>{spaceConstellationTimer=0;clearSpaceConstellationGame();},420);
+  }else{
+   spaceConstellationTimer=setTimeout(()=>{
+    spaceConstellationTimer=0;if(!isSpaceStage()||!quiz.classList.contains("show"))return;
+    entry.button.classList.remove("is-selected");if(answerLine)answerLine.classList.remove("is-complete");updateSpaceConstellationVisual();
+   },600);
+  }
+ },futureReducedMotion()?30:260);
+}
+function renderSpaceConstellationGame(){
+ if(!spaceConstellationLayer)return;
+ const opts=spaceQuestionOptions(cur),answerPoints=[{x:.84,y:.25},{x:.84,y:.75}];
+ spaceConstellationPattern=SPACE_CONSTELLATION_PATTERNS[(qSeg+level+loop)%SPACE_CONSTELLATION_PATTERNS.length];
+ spaceConstellationStep=0;spaceConstellationResolving=false;spaceConstellationOptions=[];
+ document.body.classList.add("space-constellation-active");quiz.classList.add("space-constellation-quiz");choicesEl.classList.add("space-mode");
+ choicesEl.setAttribute("aria-label","ほしを つないで こたえる");spaceConstellationLayer.hidden=false;spaceConstellationLayer.replaceChildren();
+ const board=document.createElement("div");board.className="space-constellation-board";board.setAttribute("aria-label","3かい タップで つくる せいざ");
+ const guide=document.createElement("div");guide.className="space-constellation-guide";guide.setAttribute("role","status");guide.setAttribute("aria-live","polite");
+ const svg=document.createElementNS("http://www.w3.org/2000/svg","svg");svg.setAttribute("class","space-constellation-map");svg.setAttribute("viewBox","0 0 1000 500");svg.setAttribute("preserveAspectRatio","none");svg.setAttribute("aria-hidden","true");
+ const points=[spaceConstellationPattern.start,...spaceConstellationPattern.nodes];
+ const segments=[[points[0],points[1]],[points[1],points[2]],[points[2],answerPoints[0]],[points[2],answerPoints[1]]];
+ segments.forEach((segment,index)=>{
+  const d="M"+(segment[0].x*1000)+" "+(segment[0].y*500)+" L"+(segment[1].x*1000)+" "+(segment[1].y*500);
+  const base=document.createElementNS("http://www.w3.org/2000/svg","path");base.setAttribute("d",d);base.setAttribute("class","space-route-base");svg.appendChild(base);
+  const line=document.createElementNS("http://www.w3.org/2000/svg","path");line.setAttribute("d",d);line.setAttribute("class","space-route-line");
+  if(index<2)line.dataset.segment=String(index);else line.dataset.answer=String(index-2);svg.appendChild(line);
+ });
+ board.append(svg,guide);
+ const start=document.createElement("div");start.className="space-start-star";start.textContent="✦";start.setAttribute("aria-hidden","true");
+ start.style.setProperty("--star-x",(points[0].x*100)+"%");start.style.setProperty("--star-y",(points[0].y*100)+"%");board.appendChild(start);
+ spaceConstellationPattern.nodes.forEach((point,index)=>{
+  const button=document.createElement("button");button.type="button";button.className="space-node-star";button.textContent="✦";button.dataset.node=String(index);
+  button.style.setProperty("--star-x",(point.x*100)+"%");button.style.setProperty("--star-y",(point.y*100)+"%");button.setAttribute("aria-label",(index+1)+"ばんめの ほし");
+  bindTap(button,event=>connectSpaceConstellationNode(index,event));board.appendChild(button);
+ });
+ opts.forEach((o,index)=>{
+  const button=document.createElement("button");button.type="button";button.className="choice space-answer-star";button.dataset.ok=o.ok?"1":"0";button.style.setProperty("--answer-y",(answerPoints[index].y*100)+"%");
+  button.setAttribute("aria-label",o.t+"の ほし");const emoji=document.createElement("span");emoji.className="em";emoji.textContent=o.e;
+  const label=document.createElement("span");label.className="lb";label.textContent=o.t;button.append(emoji,label);
+  const entry={button,o,index};bindTap(button,()=>finishSpaceConstellation(entry));board.appendChild(button);spaceConstellationOptions.push(entry);
+ });
+ spaceConstellationLayer.appendChild(board);hintText.textContent="🌟 3かい タップで せいざを つくろう";updateSpaceConstellationVisual();
+}
 function renderChoiceCards(){
  let opts=[{e:cur.a[0],t:cur.a[1],ok:true},...cur.d.map(x=>({e:x[0],t:x[1],ok:false}))];
  if(level===0&&opts.length>2)opts=opts.slice(0,2);
@@ -3413,12 +3674,13 @@ function showQuiz(){
  cancelSeaPointer();clearSeaBubbleGame();
  resetNumberCargoGame();
  clearFutureRailGame();
+ clearSpaceConstellationGame();
  cur=qList[qSeg];missInQ=0;answerLocked=false;
  qText.textContent=cur.helper?(cur.helper.name+"を たすけよう！ "+cur.q):cur.q;
  hintText.textContent=helpItems.length?"🍀 おたすけを つかえるよ":"";
  choicesEl.replaceChildren();
  quiz.classList.add("show");
- if(isNumberCargoQuestion())renderNumberCargoGame();else if(isSeaStage())renderSeaBubbleGame();else if(isFutureStage())renderFutureRailGame();else renderChoiceCards();
+ if(isNumberCargoQuestion())renderNumberCargoGame();else if(isSeaStage())renderSeaBubbleGame();else if(isFutureStage())renderFutureRailGame();else if(isSpaceStage())renderSpaceConstellationGame();else renderChoiceCards();
  speak(cur.s||cur.q);
 }
 function onPick(el,o){
@@ -3447,7 +3709,7 @@ function onPick(el,o){
    updateNumberCargoGame();
   }else{
    el.classList.add("ng","dim");
-   if(el.classList.contains("sea-answer-bubble")||el.classList.contains("future-rail-home"))el.disabled=true;
+   if(el.classList.contains("sea-answer-bubble")||el.classList.contains("future-rail-home")||el.classList.contains("space-answer-star"))el.disabled=true;
   }
   const t=tunnels[qSeg];
   if(t){t.classList.add("shake");setTimeout(()=>t.classList.remove("shake"),520);}
@@ -3498,6 +3760,7 @@ function ending(){
  hideWeatherNotice();
  resetSeaInteraction();
  clearFutureRailGame();
+ clearSpaceConstellationGame();
  clearRareEvent();
  stopStageWeather();setWeatherPresentation("clear");
  clearTunnelFriendGame();
@@ -3523,6 +3786,7 @@ function openMap(msg){
  hideWeatherNotice();
  resetNumberCargoGame();
  clearFutureRailGame();
+ clearSpaceConstellationGame();
  clearRareEvent();
  resetSeaInteraction();
  stopStageWeather();setWeatherPresentation("clear");
@@ -3578,7 +3842,7 @@ function nazonazoAdminPreviewArm(stageId){
   return false;
  }
  const index=NAZONAZO_ADMIN_STAGE_INDEX[stageId];
- resetSeaInteraction();clearFutureRailGame();
+ resetSeaInteraction();clearFutureRailGame();clearSpaceConstellationGame();
  nazonazoAdminPreviewStageIndex=index;
  stg=index;loop=0;playing=false;driving=false;pending=null;vel=0;
  stopStageWeather();

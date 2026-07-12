@@ -67,7 +67,7 @@ assert.match(seaCountdownTag[0], /role="status"/);
 assert.match(seaCountdownTag[0], /aria-live="(?:polite|assertive)"/);
 assert.match(seaCountdownTag[0], /hidden/, "countdown must be inert and invisible outside the sea arena");
 
-const steerShellCss = cssRule("\\.vehicle-steer-shell");
+const steerShellCss = cssRule("(?:^|\\n)\\.vehicle-steer-shell");
 assert.match(steerShellCss, /transform\s*:\s*none/, "non-sea locomotives must ignore stale submarine offsets");
 assert.doesNotMatch(steerShellCss, /(?:top|bottom|left|right)\s*:/);
 const seaSteerShellCss = cssRule("body\\.st-sea \\.vehicle-steer-shell");
@@ -129,17 +129,42 @@ assert.match(targetCss, /min-height\s*:\s*64px/);
 assert.match(targetCss, /pointer-events\s*:\s*none/, "touch must pass through targets to the shooting surface");
 assert.match(css, /\.sea-answer-visual\s*\{[^}]*border-radius\s*:\s*50%/, "target motion and burst visuals need separate transform owners");
 assert.match(css, /\.sea-answer-bubble\.ng \.sea-answer-visual\s*\{[^}]*animation\s*:\s*seaTargetWrong/, "wrong-answer shake must not overwrite target position");
-assert.match(css, /\.sea-answer-bubble\.is-bursting \.sea-answer-visual\s*\{[^}]*seaTargetBurst/);
+assert.match(css, /\.sea-answer-bubble\.is-tensing \.sea-answer-visual\s*\{[^}]*seaTargetTense \.14s/,
+  "the full bubble needs a short pressure hold before it ruptures");
+assert.match(css, /\.sea-answer-bubble\.is-bursting \.sea-answer-visual\s*\{[^}]*seaTargetBurst \.38s/,
+  "the rupture visual must own the configured 380ms burst window");
+assert.match(css, /@keyframes seaTargetBurst\s*\{[^}]*scale\(1\.12\)[\s\S]*?18%\{[^}]*scale\(1\.22\)[\s\S]*?30%,100%\{[^}]*opacity:0[^}]*scale\(\.12\)/,
+  "the taut membrane and its label must vanish sharply while fragments continue outward");
+assert.match(css, /\.sea-burst-flash\s*\{[^}]*animation\s*:\s*seaBurstFlash \.44s/,
+  "the rupture needs a short white center flash");
+assert.match(css, /\.sea-burst-ring\s*\{[^}]*animation\s*:\s*seaBurstRing \.7s/,
+  "the final pop needs one large dashed expanding shockwave");
+assert.match(css, /\.sea-burst-drop\s*\{[^}]*animation\s*:\s*seaBurstDrop \.72s/,
+  "burst fragments must remain long enough to read as a clean explosion");
 assert.match(css, /\.sea-shot\s*\{[^}]*will-change\s*:\s*transform/);
 assert.match(css, /\.sea-companion\s*\{[^}]*will-change\s*:\s*transform/);
 
 /* Runtime state and pointer/keyboard ownership. */
-assert.match(js, /const SEA_FIRE_INTERVAL_MS=180;/);
-assert.match(js, /const SEA_SHOT_LIMIT=32;/);
+assert.match(js, /const SEA_FIRE_INTERVAL_MS=90;/);
+assert.match(js, /const SEA_SHOT_LIMIT=56;/);
 assert.match(js, /const SEA_COMPANION_LIMIT=3;/);
-assert.match(js, /const SEA_TARGET_HIT_GOALS=\[3,4,5\];/);
+assert.match(js, /const SEA_TARGET_HIT_GOALS=\[16,20,24\];/);
+assert.match(js, /const SEA_TARGET_MAX_SCALE=2\.2;/);
+assert.match(js, /const SEA_TARGET_REDUCED_SCALE=1\.34;/);
+assert.match(js, /const SEA_ASSIST_FIRE_MS=3600;/);
+assert.match(js, /const SEA_BURST_TENSION_MS=140;/);
+assert.match(js, /const SEA_BURST_VISUAL_MS=380;/);
+assert.match(js, /const SEA_BURST_PARTICLE_MS=720;/);
 assert.match(js, /const SEA_READY_MS=\d+;/, "ready countdown duration must be explicit");
 assert.match(js, /const SEA_GO_MS=\d+;/, "go countdown duration must be explicit");
+
+const seaFireIntervalMs = 90;
+const seaHitGoals = [16, 20, 24];
+const idealDamageDurations = seaHitGoals.map(goal => (goal - 1) * seaFireIntervalMs);
+assert.deepEqual(idealDamageDurations, [1350, 1710, 2070],
+  "the rapid-fire sequence must deliver many hits without turning one answer into a long stage pause");
+assert.ok(3600 > idealDamageDurations.at(-1) + 1000,
+  "keyboard/assist fire must outlast the hardest hit sequence plus projectile travel");
 assert.match(js, /let steerTargetX=0,steerX=0,steerTargetY=0,steerY=0/);
 assert.match(js, /let seaRoundPhase="idle"[^;]*seaRoundCountdownTimer=0/,
   "the sea arena countdown needs one explicit phase and owned timer");
@@ -223,10 +248,13 @@ const clearSeaRoundBody = extractFunction(js, "clearSeaRoundCountdown");
 const positionSeaArenaBody = extractFunction(js, "positionSeaArenaStart");
 const renderSeaBody = extractFunction(js, "renderSeaBubbleGame");
 const updateTargetsBody = extractFunction(js, "updateSeaAnswerTargets");
+const separateTargetsBody = extractFunction(js, "separateSeaAnswerTargets");
 const spawnVolleyBody = extractFunction(js, "spawnSeaVolley");
 const updateShotsBody = extractFunction(js, "updateSeaShots");
 const hitTargetBody = extractFunction(js, "hitSeaAnswerTarget");
+const burstParticlesBody = extractFunction(js, "createSeaBurstParticles");
 const burstTargetBody = extractFunction(js, "beginSeaTargetBurst");
+const fireClickBody = extractFunction(js, "handleSeaFireClick");
 const clearSeaBody = extractFunction(js, "clearSeaBubbleGame");
 const activeChoiceBody = extractFunction(js, "activeChoiceButtons");
 const useHelpBody = extractFunction(js, "useHelp");
@@ -280,27 +308,55 @@ assert.match(updateTargetsBody, /seaReducedMotion\(\)/);
 assert.match(updateTargetsBody, /document\.activeElement===entry\.button/, "focused targets must pause so keyboard fallback stays usable");
 assert.match(updateTargetsBody, /seaRoundPlayable\(\)|seaRoundPhase==="active"/, "targets must stay arranged and still during ようい / ドン！");
 assert.match(updateTargetsBody, /Math\.sin/);
-assert.match(updateTargetsBody, /ratio\*\.28/);
+assert.match(updateTargetsBody, /const balloonCurve=\.28\*ratio\+\.72\*ratio\*ratio/,
+  "growth must accelerate nonlinearly like a balloon instead of staying linear");
+assert.match(updateTargetsBody, /SEA_TARGET_REDUCED_SCALE:SEA_TARGET_MAX_SCALE/,
+  "reduced motion needs its own restrained growth ceiling");
+assert.match(updateTargetsBody, /const visualHalf=entry\.size\*entry\.scale\*\.5/,
+  "the much larger final bubble must be positioned using its rendered size");
 assert.match(updateTargetsBody, /lane(?:Height|Top|Bottom)|entry\.index/, "each answer needs its own vertical lane to prevent overlap");
 assert.match(updateTargetsBody, /safe\.sceneRect\.width\*\.(?:6[4-9]|[7-8]\d)/,
   "moving targets must remain inside the right-side arena");
+assert.match(updateTargetsBody, /separateSeaAnswerTargets\(seaBubbleOptions\)/,
+  "inflated targets must run through pairwise separation before painting");
+assert.match(separateTargetsBody, /gap=a\._boundaryHalf\+b\._boundaryHalf\+12/,
+  "pairwise separation must include both rendered radii and a readable gap");
+assert.match(updateTargetsBody, /\.14\*Math\.sqrt\(balloonCurve\)\*\(entry\.index===0\?-1:1\)/,
+  "growth must progressively fan the top target left and the bottom target right before separation activates");
 assert.doesNotMatch(updateTargetsBody, /(?:left|top)\s*=/, "target movement must remain transform-only");
 
 function makeTargetMotionSandbox() {
   const state = { phase: "ready", reduced: false };
-  const makeButton = () => ({ isConnected: true, style: {}, classList: { contains: () => false } });
+  const makeButton = () => {
+    const names = new Set();
+    return {
+      isConnected: true,
+      style: {},
+      classList: {
+        contains: name => names.has(name),
+        toggle: (name, force) => {
+          if (force) names.add(name);
+          else names.delete(name);
+          return !!force;
+        }
+      }
+    };
+  };
   const entries = [
     { button: makeButton(), index: 0, baseX: topX, baseY: topY, size: 64, ampX: 38, ampY: 20, rate: 1.18, phase: .7,
-      rotation: 2.2, hits: 0, hitGoal: 3, flashUntil: 0, scale: 1, radius: 28, x: 0, y: 0, bursting: false },
+      rotation: 2.2, hits: 0, hitGoal: 24, flashUntil: 0, scale: 1, radius: 28, x: 0, y: 0, bursting: false },
     { button: makeButton(), index: 1, baseX: bottomX, baseY: bottomY, size: 64, ampX: 46, ampY: 24, rate: 1.33, phase: 2.4,
-      rotation: 2.9, hits: 0, hitGoal: 3, flashUntil: 0, scale: 1, radius: 28, x: 0, y: 0, bursting: false }
+      rotation: 2.9, hits: 0, hitGoal: 24, flashUntil: 0, scale: 1, radius: 28, x: 0, y: 0, bursting: false }
   ];
   const context = {
+    SEA_TARGET_MAX_SCALE: 2.2,
+    SEA_TARGET_REDUCED_SCALE: 1.34,
     seaBubbleOptions: entries,
     seaAnswerSafeRect: () => ({ sceneRect: { left: 0, top: 0, width: 844, height: 390 }, top: 50, bottom: 290, height: 240 }),
     seaReducedMotion: () => state.reduced,
     seaRoundPlayable: () => state.phase === "active",
     seaRoundPhase: state.phase,
+    homeBtn: null,
     document: { activeElement: null },
     clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
     _nowMs: () => 1000,
@@ -308,7 +364,7 @@ function makeTargetMotionSandbox() {
     entries
   };
   vm.createContext(context);
-  vm.runInContext(`${updateTargetsBody};this.updateSeaAnswerTargets=updateSeaAnswerTargets;`, context);
+  vm.runInContext(`${separateTargetsBody};${updateTargetsBody};this.updateSeaAnswerTargets=updateSeaAnswerTargets;`, context);
   return context;
 }
 
@@ -336,8 +392,53 @@ targetMotion.entries.forEach((entry, index) => {
 assert.ok(targetMotion.entries[1].y - targetMotion.entries[0].y >= 72,
   "top and bottom target lanes must remain visibly non-overlapping while both evade");
 
+const growthTarget = targetMotion.entries[0];
+const growthScales = [0, 6, 12, 18, 24].map(hits => {
+  growthTarget.hits = hits;
+  growthTarget.flashUntil = 0;
+  targetMotion.updateSeaAnswerTargets(2000);
+  return growthTarget.scale;
+});
+assert.ok(Math.abs(growthScales[0] - 1) < 1e-9);
+assert.ok(Math.abs(growthScales.at(-1) - 2.2) < 1e-9,
+  "24 hits must finish at the full 2.2x balloon scale");
+const growthSteps = growthScales.slice(1).map((scale, index) => scale - growthScales[index]);
+for (let index = 1; index < growthSteps.length; index += 1) {
+  assert.ok(growthSteps[index] > growthSteps[index - 1],
+    "each later quarter of the hit sequence must inflate more than the previous quarter");
+}
+const finalVisualHalf = growthTarget.size * growthTarget.scale * .5;
+assert.ok(growthTarget.x - finalVisualHalf >= 0 && growthTarget.x + finalVisualHalf <= 844,
+  "the 2.2x bubble must stay fully inside the viewport");
+assert.ok(growthTarget.y - finalVisualHalf >= 50 && growthTarget.y + finalVisualHalf <= 290,
+  "the 2.2x bubble must stay between the HUD and question panel");
+assert.ok(growthTarget.radius > growthTarget.size * .9,
+  "the hit area must grow with the visible balloon so late shots remain generous");
+targetMotion.homeBtn = { getBoundingClientRect: () => ({ left: 730, right: 830, top: 10, bottom: 66 }) };
+targetMotion.updateSeaAnswerTargets(2050);
+const finalBoundaryHalf = finalVisualHalf * 1.12;
+assert.ok(growthTarget.x + finalBoundaryHalf <= 722.01,
+  "the taut 2.2x target must reserve the real right-side map-button rectangle");
+targetMotion.homeBtn = null;
+const hitByHitX = [];
+for (let hits = 0; hits <= 24; hits += 1) {
+  growthTarget.hits = hits;
+  targetMotion.updateSeaAnswerTargets(2100);
+  hitByHitX.push(growthTarget.x);
+  const other = targetMotion.entries[1];
+  const distance = Math.hypot(growthTarget.x - other.x, growthTarget.y - other.y);
+  assert.ok(distance + .51 >= growthTarget._boundaryHalf + other._boundaryHalf + 12,
+    `hit ${hits}: answers must keep a readable pairwise gap`);
+}
+for (let index = 1; index < hitByHitX.length; index += 1) {
+  assert.ok(Math.abs(hitByHitX[index] - hitByHitX[index - 1]) < 28,
+    `hit ${index}: target must fan outward without a one-frame side swap`);
+}
+
 targetMotion.state.reduced = true;
 targetMotion.updateSeaAnswerTargets(2200);
+assert.ok(Math.abs(growthTarget.scale - 1.34) < 1e-9,
+  "reduced motion must show restrained progress without the full 2.2x expansion");
 const reducedPositions = targetMotion.entries.map(entry => ({ x: entry.x, y: entry.y }));
 targetMotion.updateSeaAnswerTargets(3200);
 assert.deepEqual(targetMotion.entries.map(entry => ({ x: entry.x, y: entry.y })), reducedPositions,
@@ -488,13 +589,85 @@ assert.match(updateShotsBody, /removeSeaShotsForSalvo\(shot\.salvoId\)/);
 assert.match(hitTargetBody, /seaSalvoHits\.has\(salvoId\)/);
 assert.match(hitTargetBody, /seaSalvoHits\.add\(salvoId\)/);
 assert.match(hitTargetBody, /entry\.hits\+1/);
+assert.match(hitTargetBody, /500\+620\*Math\.pow\(hitRatio,\.72\)/,
+  "rapid impact pitch must rise smoothly without the old unbounded per-hit climb");
 assert.match(hitTargetBody, /beginSeaTargetBurst\(entry\)/);
+
+/* The large final explosion is one center flash, one shockwave, and 36 varied fragments. */
+assert.match(burstParticlesBody, /flash\.className="sea-burst-flash"/);
+assert.match(burstParticlesBody, /ring\.className="sea-burst-ring"/);
+assert.match(burstParticlesBody, /for\(let i=0;i<36;i\+\+\)/);
+assert.match(burstParticlesBody, /i%3===0\?" is-star":""/);
+assert.match(burstParticlesBody, /SEA_BURST_PARTICLE_MS\+40/);
+assert.match(burstParticlesBody, /SEA_BURST_PARTICLE_MS\+90/);
+
+function makeBurstParticleElement() {
+  const properties = new Map();
+  return {
+    className: "",
+    style: { setProperty: (name, value) => properties.set(name, value), properties },
+    removed: false,
+    remove() { this.removed = true; }
+  };
+}
+const burstParticleChildren = [];
+const burstParticleTimers = [];
+const burstParticleSandbox = {
+  SEA_BURST_PARTICLE_MS: 720,
+  seaShotLayer: { appendChild: element => burstParticleChildren.push(element) },
+  document: { createElement: () => makeBurstParticleElement() },
+  setTimeout: (callback, delay) => { burstParticleTimers.push({ callback, delay }); return burstParticleTimers.length; }
+};
+vm.createContext(burstParticleSandbox);
+vm.runInContext(`${burstParticlesBody};this.createSeaBurstParticles=createSeaBurstParticles;`, burstParticleSandbox);
+burstParticleSandbox.createSeaBurstParticles({ x: 620, y: 150, size: 72, scale: 2.2 });
+assert.equal(burstParticleChildren.length, 38, "one flash, one ring, and 36 fragments must be rendered");
+assert.equal(burstParticleChildren.filter(element => element.className === "sea-burst-flash").length, 1);
+assert.equal(burstParticleChildren.filter(element => element.className === "sea-burst-ring").length, 1);
+assert.equal(burstParticleChildren.filter(element => element.className.startsWith("sea-burst-drop")).length, 36);
+assert.equal(burstParticleChildren.filter(element => element.className.includes("is-star")).length, 12,
+  "twelve fragments should use the brighter star shape");
+assert.equal(burstParticleTimers.filter(timer => timer.delay === 500).length, 1,
+  "the center flash must own a short cleanup timer");
+assert.equal(burstParticleTimers.filter(timer => timer.delay === 760).length, 1,
+  "the ring cleanup must follow the 720ms effect");
+assert.equal(burstParticleTimers.filter(timer => timer.delay === 810).length, 36,
+  "every fragment must own a bounded cleanup timer");
+
+/* Keyboard/assist activation owns a full 3.6-second burst and releases it once. */
+assert.match(fireClickBody, /SEA_ASSIST_FIRE_MS/);
+const assistTimers = [];
+const assistSources = [];
+const assistSandbox = {
+  SEA_ASSIST_FIRE_MS: 3600,
+  seaAssistFireTimer: 0,
+  seaShooterActive: () => true,
+  ensureAC: () => {},
+  setSeaFireSource: (source, active) => assistSources.push([source, active]),
+  clearTimeout: () => {},
+  setTimeout: (callback, delay) => { assistTimers.push({ callback, delay }); return assistTimers.length; }
+};
+vm.createContext(assistSandbox);
+vm.runInContext(`${fireClickBody};this.handleSeaFireClick=handleSeaFireClick;`, assistSandbox);
+assistSandbox.handleSeaFireClick({ detail: 0, preventDefault: () => assert.fail("keyboard click must start assist fire") });
+assert.deepEqual(assistSources, [["assist", true]]);
+assert.equal(assistTimers.length, 1);
+assert.equal(assistTimers[0].delay, 3600);
+assistTimers[0].callback();
+assert.deepEqual(assistSources, [["assist", true], ["assist", false]],
+  "assist fire must release its owned source after 3.6 seconds");
 
 /* The final burst is the only bridge to the established answer/scoring flow. */
 assert.match(burstTargetBody, /seaBubbleLaunchPending=true/, "collision must lock synchronously before another shot can submit");
 assert.match(burstTargetBody, /activeChoiceButtons\(\)\.forEach\(choice=>\{choice\.disabled=true;/);
 assert.match(burstTargetBody, /const epoch=seaShooterEpoch/);
 assert.match(burstTargetBody, /epoch!==seaShooterEpoch/);
+assert.match(burstTargetBody, /setTimeout\(explode,SEA_BURST_TENSION_MS\)/,
+  "normal motion must hold the taut balloon for 140ms before rupture");
+assert.match(burstTargetBody, /setTimeout\(finish,SEA_BURST_VISUAL_MS\)/,
+  "answer resolution must wait for the 380ms rupture visual");
+assert.match(burstTargetBody, /createSeaBurstParticles\(entry\)/,
+  "the rupture phase must create its ring and fragments");
 assert.match(burstTargetBody, /onPick\(entry\.button,entry\.value\)/);
 assert.doesNotMatch(burstTargetBody, /\b(?:addScore|SCORE_POINTS|qSeg\+\+|proceed|boardPassenger)\b/, "shooter must not fork scoring or progression");
 assert.match(burstTargetBody, /if\(seaReducedMotion\(\)\)finish\(\)/, "reduced motion must skip the burst delay");
@@ -516,6 +689,7 @@ const sandbox = {
   seaRoundPhase: "active",
   seaRoundPlayable: () => true,
   seaShooterEpoch: 7,
+  clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
   _nowMs: () => 1000,
   setTimeout: callback => { callback(); return 1; },
   createSeaHitSpark: () => {},
@@ -527,7 +701,7 @@ vm.createContext(sandbox);
 vm.runInContext(`${hitTargetBody};this.hitSeaAnswerTarget=hitSeaAnswerTarget;`, sandbox);
 const targetEntry = {
   hits: 0,
-  hitGoal: 3,
+  hitGoal: 24,
   flashUntil: 0,
   bursting: false,
   button: {
@@ -550,9 +724,13 @@ assert.equal(sandbox.hitSeaAnswerTarget(targetEntry, 1, 100, 100), true);
 assert.equal(targetEntry.hits, 1);
 assert.equal(sandbox.hitSeaAnswerTarget(targetEntry, 1, 100, 100), false, "a companion shot from the same salvo must not add damage");
 assert.equal(targetEntry.hits, 1);
-assert.equal(sandbox.hitSeaAnswerTarget(targetEntry, 2, 100, 100), true);
-assert.equal(sandbox.hitSeaAnswerTarget(targetEntry, 3, 100, 100), true);
-assert.equal(targetEntry.hits, 3);
+for (let salvoId = 2; salvoId < 24; salvoId += 1) {
+  assert.equal(sandbox.hitSeaAnswerTarget(targetEntry, salvoId, 100, 100), true);
+}
+assert.equal(targetEntry.hits, 23);
+assert.equal(sandbox.burstCalls, 0, "the target must absorb all first 23 hits without an early pop");
+assert.equal(sandbox.hitSeaAnswerTarget(targetEntry, 24, 100, 100), true);
+assert.equal(targetEntry.hits, 24);
 assert.equal(sandbox.burstCalls, 1);
 
 /* Execute wrong-answer burst/resume and stale-epoch protection. */
@@ -577,6 +755,8 @@ function makeBurstSandbox(reduced) {
     seaRoundPlayable: () => true,
     seaMoveKeys: new Set(),
     seaShooterEpoch: 4,
+    SEA_BURST_TENSION_MS: 140,
+    SEA_BURST_VISUAL_MS: 380,
     seaBubbleLaunchTimer: 0,
     seaShooterResumeTimer: 0,
     quiz: { classList: { contains: name => name === "show" } },
@@ -586,11 +766,12 @@ function makeBurstSandbox(reduced) {
     cancelSeaFirePointer: () => {},
     removeAllSeaShots: () => {},
     activeChoiceButtons: () => [answerButton, otherButton],
-    createSeaBurstParticles: () => {},
+    createSeaBurstParticles: () => { state.particleCalls += 1; },
     tone: () => {},
     seaReducedMotion: () => reduced,
     clearSeaBubbleGame: () => { state.clearCalls += 1; },
     clearCalls: 0,
+    particleCalls: 0,
     pickCalls: 0,
     onPick: (button, value) => {
       state.pickCalls += 1;
@@ -599,7 +780,7 @@ function makeBurstSandbox(reduced) {
         button.disabled = true;
       }
     },
-    setTimeout: callback => { timers.push(callback); return timers.length; },
+    setTimeout: (callback, delay) => { timers.push({ callback, delay }); return timers.length; },
     clearTimeout: () => {},
     timers,
     answerButton,
@@ -615,8 +796,10 @@ wrongBurst.beginSeaTargetBurst({ button: wrongBurst.answerButton, value: { ok: f
 assert.equal(wrongBurst.pickCalls, 1);
 assert.equal(wrongBurst.seaBubbleLaunchPending, true, "wrong answer must stay locked through feedback");
 assert.equal(wrongBurst.otherButton.disabled, true);
+assert.equal(wrongBurst.particleCalls, 0, "reduced motion must skip explosive fragments");
 assert.equal(wrongBurst.timers.length, 1);
-wrongBurst.timers.shift()();
+assert.equal(wrongBurst.timers[0].delay, 620);
+wrongBurst.timers.shift().callback();
 assert.equal(wrongBurst.seaBubbleLaunchPending, false);
 assert.equal(wrongBurst.answerButton.disabled, true, "popped wrong target must stay disabled");
 assert.equal(wrongBurst.otherButton.disabled, false, "remaining targets must resume after wrong feedback");
@@ -625,9 +808,27 @@ const staleBurst = makeBurstSandbox(false);
 staleBurst.beginSeaTargetBurst({ button: staleBurst.answerButton, value: { ok: true }, bursting: false, x: 100, y: 100 });
 assert.equal(staleBurst.pickCalls, 0);
 assert.equal(staleBurst.timers.length, 1);
+assert.equal(staleBurst.timers[0].delay, 140, "the first phase must be the 140ms pressure hold");
 staleBurst.seaShooterEpoch += 1;
-staleBurst.timers.shift()();
+staleBurst.timers.shift().callback();
 assert.equal(staleBurst.pickCalls, 0, "an old burst timer must not answer a new question");
+assert.equal(staleBurst.particleCalls, 0, "a stale pressure timer must not leave explosion DOM behind");
+
+const stagedBurstRun = makeBurstSandbox(false);
+stagedBurstRun.beginSeaTargetBurst({ button: stagedBurstRun.answerButton, value: { ok: true }, bursting: false, x: 100, y: 100 });
+assert.ok(stagedBurstRun.answerButton.classList.contains("is-tensing"));
+assert.equal(stagedBurstRun.timers[0].delay, 140);
+stagedBurstRun.timers.shift().callback();
+assert.equal(stagedBurstRun.particleCalls, 1);
+assert.ok(stagedBurstRun.answerButton.classList.contains("is-bursting"));
+assert.equal(stagedBurstRun.pickCalls, 0, "rupture particles must precede answer submission");
+assert.equal(stagedBurstRun.timers.length, 1);
+assert.equal(stagedBurstRun.timers[0].delay, 380, "the rupture aftermath must stay visible for 380ms");
+stagedBurstRun.timers.shift().callback();
+assert.equal(stagedBurstRun.pickCalls, 1);
+assert.equal(stagedBurstRun.timers.length, 1);
+assert.equal(stagedBurstRun.timers[0].delay, 420,
+  "correct-answer cleanup must leave enough time for the ring and fragments to finish");
 
 /* Every exit boundary clears stale pointers, timers, shots and target state. */
 assert.match(clearSeaBody, /seaShooterEpoch\+\+/);
@@ -660,7 +861,8 @@ assert.match(extractFunction(js, "seaControlAvailable"), /!window\.__PONO_TIER_L
 assert.match(extractFunction(js, "spawnSeaShot"), /window\.__PONO_TIER_LOCKED__/);
 assert.match(extractFunction(js, "syncSeaCompanions"), /window\.__PONO_TIER_LOCKED__/);
 const reducedCss = css.slice(css.indexOf("@media (prefers-reduced-motion:reduce)"));
-assert.match(reducedCss, /\.sea-hit-spark,\.sea-burst-drop[^}]*display:none!important/);
+assert.match(reducedCss, /\.sea-hit-spark,\.sea-burst-drop,\.sea-burst-ring,\.sea-burst-flash[^}]*display:none!important/,
+  "reduced motion must suppress sparks, fragments, the expanding ring, and center flash");
 assert.match(reducedCss, /\.vehicle-steer-shell[^}]*transition:none!important/);
 assert.match(reducedCss, /body\.st-sea\.v-sub #veh \.vbody,body\.st-sea\.v-sub #veh \.submarine-art\{animation:none!important\}/);
 assert.match(reducedCss, /#seaRoundCountdown[^,{]*(?:,[^{]*)?\{[^}]*animation\s*:\s*none!important/,
