@@ -58,6 +58,7 @@
 ## Active claims
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
+- 2026-07-12 - by Codex - [batch:1260-nazonazo-hud-showers-flight] - nazonazo-tunnel/{index.html,styles.css,js/game.js}, assets/images/nazonazo-tunnel/jungle_{bird,butterfly}_flight_*, tmp/alpha_pending/1260-nazonazo-hud-showers-flight/**, tests/nazonazo_*.cjs, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - 中央上の常設スコア＋ハイスコア右の撮影アイコン、25%のランダムな通り雨、壁面シルエットの大きさ/角度差、キリン/ゾウ拡大、鳥とチョウの3コマ飛行アニメを実装。common/capture.jsは触らずゲーム内CSS/DOM接続だけで配置
 
 
 
