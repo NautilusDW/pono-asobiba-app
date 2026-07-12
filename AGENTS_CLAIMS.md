@@ -59,6 +59,8 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
+- 2026-07-13 01:13 - by Codex - [batch:1272-stickerbook-theme-fit] - Prototypes/StickerBookThreeJS/index.html, Prototypes/StickerBookThreeJS/main.js, Prototypes/StickerBookThreeJS/styles.css, assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_theme_ribbon_wood_gpt_image2_20260623.webp, docs/TIER_POLICY.md, tests/**, play.html, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - 「きせかえ」を将来の着せ替えシールと混同しない名称へ変更し、「とくべつ」を基準に全テーマの表紙・ページ画像をスケール／中心位置で本へ合わせる [overlap: batch:1271-stickerbook-theme-tiers-merge]
+
 
 
 

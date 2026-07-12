@@ -46,6 +46,6 @@ assert.match(
   /PonoCapture\.isAllowed[\s\S]*?PonoCapture\.show\(\)/,
   "an enabled, gated capture feature must show its controls even without ?capture=1",
 );
-assert.match(index, /styles\.css\?v=20260713-1272/, "the latest StickerBook CSS must bypass stale browser caches");
+assert.match(index, /styles\.css\?v=20260713-1273/, "the latest StickerBook CSS must bypass stale browser caches");
 
 console.log("stickerbook_touch_tray_capture_regression: all assertions passed");

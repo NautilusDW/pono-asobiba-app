@@ -5,14 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ポノのずかん Three.js</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="./styles.css?v=20260713-1272">
+  <link rel="stylesheet" href="./styles.css?v=20260713-1273">
 </head>
 <body>
   <main id="app">
     <canvas id="scene" aria-label="ずかんのページめくりプレビュー"></canvas>
     <div class="top-mode-cluster" aria-label="シールちょうのモード">
       <button id="topEditButton" class="top-edit-button" type="button" aria-label="いま みるモード。はるモードにする" aria-pressed="false"><span class="top-button-label">みるモード</span></button>
-      <button id="topThemeButton" class="top-theme-button" type="button" aria-label="きせかえ" aria-pressed="false"><span class="top-button-label">きせかえ</span></button>
+      <button id="topThemeButton" class="top-theme-button" type="button" aria-label="シールちょうを えらぶ" aria-pressed="false"><span class="top-button-label">ちょうを えらぶ</span></button>
     </div>
     <div class="top-entry-cluster" aria-label="シールミュージアム">
       <button id="stickerExhibitionButton" class="sticker-exhibition-button" type="button" aria-label="シールミュージアムへ"><span class="top-button-label"><span>シール</span><span>ミュージアム</span></span></button>
@@ -33,13 +33,13 @@
         </button>
       </div>
     </section>
-    <section id="bookThemePanel" class="zukan-settings-panel book-theme-panel" hidden aria-label="きせかえ">
+    <section id="bookThemePanel" class="zukan-settings-panel book-theme-panel" hidden aria-label="シールちょうを えらぶ">
       <div class="zukan-settings-head">
-        <h2>きせかえ</h2>
+        <h2>シールちょうを えらぶ</h2>
         <button id="bookThemeClose" class="zukan-settings-close" type="button" aria-label="とじる">×</button>
       </div>
       <div class="zukan-settings-row zukan-settings-row-theme">
-        <span>きせかえ</span>
+        <span>いまの シールちょう</span>
         <div id="bookThemePreview" class="zukan-theme-current" aria-live="polite">
           <div id="bookThemePreviewCover" class="zukan-theme-current-cover"></div>
           <div class="zukan-theme-current-info">
@@ -47,7 +47,7 @@
             <div id="bookThemePreviewSwatches" class="zukan-theme-current-swatches" aria-hidden="true"></div>
           </div>
         </div>
-        <div class="zukan-settings-segment zukan-theme-picker" role="group" aria-label="シールちょうきせかえ">
+        <div class="zukan-settings-segment zukan-theme-picker" role="group" aria-label="シールちょうを えらぶ">
           <button type="button" data-book-theme="boy">うみ</button>
           <button type="button" data-book-theme="girl">うみとも</button>
           <button type="button" data-book-theme="shinobi">しのび</button>
@@ -324,6 +324,6 @@
   </script>
   <script src="../../common/tier.js"></script>
   <script src="../../common/haptics.js" defer></script>
-  <script type="module" src="./main.js?v=20260713-1272"></script>
+  <script type="module" src="./main.js?v=20260713-1273"></script>
 </body>
 </html>

@@ -1207,7 +1207,7 @@ for (const [key, coverFront] of Object.entries(COVER_ONLY_BOOK_TEXTURE_OVERRIDES
   });
 }
 
-// シール帳きせかえ配分。balanceGroup は在庫バランス確認専用で、
+// シールちょうテーマの配分。balanceGroup は在庫バランス確認専用で、
 // プロフィールの性別による選択制限には使わない。
 // free 4 = 2 + 2 / book 7 = 3 + 3 + とくべつ / app 11 = 5 + 5 + とくべつ。
 const BOOK_THEME_ACCESS = Object.freeze({
@@ -1254,6 +1254,72 @@ function normalizeBookThemeId(rawBookName) {
 
 function bookThemeAccess(bookName) {
   return BOOK_THEME_ACCESS[normalizeBookThemeId(bookName)] || FUTURE_BOOK_THEME_ACCESS;
+}
+
+// GPT Image 2 の各テーマ画像には数px〜数十pxの不均一な外周余白がある。
+// 「とくべつ」のフルブリード画像を基準に、縦横比を崩さず小さくズーム／中心補正する。
+// 最終 CanvasTexture の UV を動かすと貼ったシールまでずれるため、必ず基画像の描画時だけ使う。
+const DEFAULT_BOOK_IMAGE_FIT = Object.freeze({
+  cover: Object.freeze({ zoom: 1, focusX: 0.5, focusY: 0.5, insets: Object.freeze([0, 0, 0, 0]), binding: "overlay" }),
+  page: Object.freeze({ zoom: 1, focusX: 0.5, focusY: 0.5, insets: Object.freeze([0, 0, 0, 0]) }),
+});
+
+const BOOK_IMAGE_FITS = Object.freeze({
+  boy: Object.freeze({
+    cover: Object.freeze({ zoom: 1.018, focusX: 0.5032, focusY: 0.5036, binding: "baked" }),
+  }),
+  girl: Object.freeze({
+    cover: Object.freeze({ zoom: 1.044, focusX: 0.504, focusY: 0.4968 }),
+    page: Object.freeze({ insets: Object.freeze([0, 12, 0, 12]) }),
+  }),
+  book_buyer_edition: Object.freeze({
+    cover: Object.freeze({ zoom: 1, focusX: 0.4996, focusY: 0.5, binding: "baked" }),
+  }),
+  sakura: Object.freeze({
+    cover: Object.freeze({ zoom: 1.02, focusX: 0.5028, focusY: 0.4964 }),
+  }),
+  shinobi: Object.freeze({
+    cover: Object.freeze({ zoom: 1.041, focusX: 0.4928, focusY: 0.4984 }),
+    page: Object.freeze({ insets: Object.freeze([4, 16, 4, 12]) }),
+  }),
+  hero: Object.freeze({
+    cover: Object.freeze({ zoom: 1.02, focusX: 0.5028, focusY: 0.4964 }),
+    page: Object.freeze({ insets: Object.freeze([8, 0, 8, 24]) }),
+  }),
+  kaiju: Object.freeze({ cover: Object.freeze({ zoom: 1.018, focusX: 0.5028, focusY: 0.502 }) }),
+  idol: Object.freeze({ cover: Object.freeze({ zoom: 1.015, focusX: 0.5024, focusY: 0.496 }) }),
+  robot: Object.freeze({ cover: Object.freeze({ zoom: 1.015, focusX: 0.4948, focusY: 0.4964 }) }),
+  space_live: Object.freeze({ cover: Object.freeze({ zoom: 1.035, focusX: 0.506, focusY: 0.5052 }) }),
+  game_center: Object.freeze({ cover: Object.freeze({ zoom: 1.035, focusX: 0.4912, focusY: 0.5052 }) }),
+  mascot: Object.freeze({ cover: Object.freeze({ zoom: 1.047, focusX: 0.5084, focusY: 0.506 }) }),
+  parade: Object.freeze({ cover: Object.freeze({ zoom: 1.015, focusX: 0.4964, focusY: 0.4972 }) }),
+  secret_base: Object.freeze({ cover: Object.freeze({ zoom: 1.036, focusX: 0.492, focusY: 0.4932 }) }),
+  anime_studio: Object.freeze({ cover: Object.freeze({ zoom: 1.011, focusX: 0.4948, focusY: 0.4956 }) }),
+  neon_city: Object.freeze({ cover: Object.freeze({ zoom: 1.014, focusX: 0.5, focusY: 0.4992 }) }),
+  candy_pop: Object.freeze({ cover: Object.freeze({ zoom: 1.022, focusX: 0.496, focusY: 0.4968 }) }),
+  manga_action: Object.freeze({ cover: Object.freeze({ zoom: 1.014, focusX: 0.5028, focusY: 0.5048 }) }),
+  cyber_grid: Object.freeze({ cover: Object.freeze({ zoom: 1.011, focusX: 0.5, focusY: 0.4956 }) }),
+  rainbow_dream: Object.freeze({
+    cover: Object.freeze({ zoom: 1.02, focusX: 0.502, focusY: 0.4964 }),
+    page: Object.freeze({ insets: Object.freeze([0, 0, 0, 8]) }),
+  }),
+  midnight_magic: Object.freeze({ cover: Object.freeze({ zoom: 1.019, focusX: 0.496, focusY: 0.4968 }) }),
+  pop_art: Object.freeze({ cover: Object.freeze({ zoom: 1.018, focusX: 0.5028, focusY: 0.5052 }) }),
+  festival_night: Object.freeze({ cover: Object.freeze({ zoom: 1.018, focusX: 0.4936, focusY: 0.5044 }) }),
+  sweet_gothic: Object.freeze({ cover: Object.freeze({ zoom: 1.011, focusX: 0.4948, focusY: 0.5004 }) }),
+  sports_power: Object.freeze({ cover: Object.freeze({ zoom: 1.02, focusX: 0.4936, focusY: 0.4976 }) }),
+});
+
+function bookImageFit(bookName, surface = "cover") {
+  const normalizedBook = normalizeBookThemeId(bookName);
+  const role = surface === "cover" ? "cover" : "page";
+  const fallback = DEFAULT_BOOK_IMAGE_FIT[role];
+  const configured = BOOK_IMAGE_FITS[normalizedBook]?.[role] || {};
+  return {
+    ...fallback,
+    ...configured,
+    insets: configured.insets || fallback.insets,
+  };
 }
 
 const STICKER_BOOK_THEMES = {
@@ -1730,6 +1796,14 @@ function assetCssUrl(file) {
   return `url("${ASSET_ROOT}${file}?v=${ASSET_VERSION}")`;
 }
 
+function bookThemeThumbnailCss(bookName) {
+  const fit = bookImageFit(bookName, "cover");
+  return {
+    size: `auto ${(fit.zoom * 100).toFixed(2)}%`,
+    position: `${(fit.focusX * 100).toFixed(2)}% ${(fit.focusY * 100).toFixed(2)}%`,
+  };
+}
+
 const canvas = document.getElementById("scene");
 const slider = document.getElementById("flipSlider");
 const playButton = document.getElementById("playButton");
@@ -1984,7 +2058,7 @@ const STICKER_TUTORIAL_STEPS = [
     id: "extras",
     target: "topExtras",
     card: "corner",
-    textDemo: "きせかえで ひょうしを かえたり\nミュージアムで シールを みられるよ",
+    textDemo: "シールちょうを えらんだり\nミュージアムで シールを みられるよ",
     hand: "point",
     minAdvanceMs: 5000,
   },
@@ -2878,6 +2952,7 @@ const textureMap = new Map(textureEntries);
 const textureLoadPromises = new Map();
 const pageTemplateTextureMap = new Map();
 const coverTemplateTextureMap = new Map();
+const fittedBookSurfaceTextureMap = new Map();
 // v1903: refreshPageTemplateTextures を async double-buffer 化した副作用で
 // 「call 1 が await 中に call 2 が入って更に await → 完了順序が逆転」 したときに
 // 古い texture を最終 swap してしまう race を防ぐための単調増加 token。
@@ -3151,7 +3226,7 @@ resetButton.addEventListener("click", () => {
   syncUrl();
 });
 
-// ---- シール帳きせかえ tier / 保存 / 旧ID移行 ----
+// ---- シールちょうテーマの tier / 保存 / 旧ID移行 ----
 function currentPonoTier() {
   try {
     if (window.PonoTier && typeof window.PonoTier.getTier === "function") {
@@ -3248,10 +3323,10 @@ function showBookVariantLockPromo(bookName) {
     window.PonoTier.showTierLockPromo({
       freeTag: "アプリ",
       freeTitle: "アプリで つかえるよ",
-      freeBody: "アプリには きせかえが もっと あるよ",
+      freeBody: "アプリでは シールちょうを もっと えらべるよ",
       appTag: "アプリ",
       appTitle: "アプリで つかえるよ",
-      appBody: "アプリには きせかえが もっと あるよ",
+      appBody: "アプリでは シールちょうを もっと えらべるよ",
     });
     return;
   }
@@ -3287,7 +3362,10 @@ function hydrateBookThemeCards() {
     }
     const theme = stickerBookTheme(bookName);
     const label = bookThemeLabels.get(bookName) || button.textContent.trim() || bookName;
+    const thumbnail = bookThemeThumbnailCss(bookName);
     button.style.setProperty("--book-thumb", assetCssUrl(bookThemeThumbnailFile(bookName)));
+    button.style.setProperty("--book-thumb-size", thumbnail.size);
+    button.style.setProperty("--book-thumb-position", thumbnail.position);
     button.style.setProperty("--book-accent", theme.accent || "#49aba2");
     const locked = isBookVariantLocked(bookName);
     button.classList.toggle("is-tier-locked", locked);
@@ -3317,7 +3395,10 @@ function updateBookThemePreview() {
   }
   const theme = stickerBookTheme(activeBook);
   const label = bookThemeLabels.get(activeBook) || activeBook;
+  const thumbnail = bookThemeThumbnailCss(activeBook);
   bookThemePreview.style.setProperty("--book-thumb", assetCssUrl(bookThemeThumbnailFile(activeBook)));
+  bookThemePreview.style.setProperty("--book-thumb-size", thumbnail.size);
+  bookThemePreview.style.setProperty("--book-thumb-position", thumbnail.position);
   bookThemePreview.style.setProperty("--book-accent", theme.accent || "#49aba2");
   bookThemePreviewCover.style.backgroundImage = assetCssUrl(bookThemeThumbnailFile(activeBook));
   bookThemePreviewName.textContent = label;
@@ -12544,6 +12625,103 @@ function getTexture(file) {
   return textureMap.get(file);
 }
 
+function bookSurfaceFile(bookName, surface) {
+  const normalizedBook = normalizeBookThemeId(bookName);
+  const bundle = BOOK_VARIANTS[normalizedBook] || BOOK_VARIANTS.boy;
+  if (surface === "cover") {
+    return bundle.coverPrint || bundle.coverFront;
+  }
+  return bundle[surface] || null;
+}
+
+function bookImageSourceRect(image, targetAspect, fit = DEFAULT_BOOK_IMAGE_FIT.cover) {
+  const sourceWidth = Math.max(1, Number(image?.naturalWidth || image?.width) || 1);
+  const sourceHeight = Math.max(1, Number(image?.naturalHeight || image?.height) || 1);
+  const rawInsets = Array.isArray(fit?.insets) ? fit.insets : [0, 0, 0, 0];
+  const [rawLeft, rawTop, rawRight, rawBottom] = rawInsets;
+  const left = Math.max(0, Math.min(sourceWidth - 1, Number(rawLeft) || 0));
+  const top = Math.max(0, Math.min(sourceHeight - 1, Number(rawTop) || 0));
+  const right = Math.max(0, Math.min(sourceWidth - left - 1, Number(rawRight) || 0));
+  const bottom = Math.max(0, Math.min(sourceHeight - top - 1, Number(rawBottom) || 0));
+  const contentWidth = Math.max(1, sourceWidth - left - right);
+  const contentHeight = Math.max(1, sourceHeight - top - bottom);
+  const safeTargetAspect = Number.isFinite(targetAspect) && targetAspect > 0 ? targetAspect : contentWidth / contentHeight;
+  let width = contentWidth;
+  let height = contentHeight;
+  if (contentWidth / contentHeight > safeTargetAspect) {
+    width = contentHeight * safeTargetAspect;
+  } else {
+    height = contentWidth / safeTargetAspect;
+  }
+
+  const zoom = Math.max(1, Math.min(1.2, Number(fit?.zoom) || 1));
+  width = Math.max(1, width / zoom);
+  height = Math.max(1, height / zoom);
+  const focusX = Math.max(0, Math.min(1, Number(fit?.focusX) || 0.5));
+  const focusY = Math.max(0, Math.min(1, Number(fit?.focusY) || 0.5));
+  const wantedX = left + contentWidth * focusX - width / 2;
+  const wantedY = top + contentHeight * focusY - height / 2;
+  const x = Math.max(left, Math.min(left + contentWidth - width, wantedX));
+  const y = Math.max(top, Math.min(top + contentHeight - height, wantedY));
+  return { x, y, width, height };
+}
+
+function drawBookImageCover(ctx, image, bookName, surface, x, y, width, height) {
+  if (!ctx || !image) {
+    return false;
+  }
+  const fit = bookImageFit(bookName, surface);
+  const source = bookImageSourceRect(image, width / height, fit);
+  ctx.drawImage(image, source.x, source.y, source.width, source.height, x, y, width, height);
+  return true;
+}
+
+function configureBookCanvasTexture(texture) {
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.anisotropy = 8;
+  texture.minFilter = THREE.LinearMipmapLinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.needsUpdate = true;
+  return texture;
+}
+
+function getFittedBookSurfaceTexture(bookName, surface) {
+  const normalizedBook = normalizeBookThemeId(bookName);
+  releaseFittedBookSurfaceTexturesExcept(normalizedBook);
+  const file = bookSurfaceFile(normalizedBook, surface);
+  if (!file) {
+    return null;
+  }
+  const key = `${normalizedBook}:${surface}:${file}`;
+  if (fittedBookSurfaceTextureMap.has(key)) {
+    return fittedBookSurfaceTextureMap.get(key);
+  }
+  const image = getTexture(file)?.image;
+  if (!image) {
+    return getTexture(file) || null;
+  }
+  const canvas = document.createElement("canvas");
+  canvas.width = PAGE_TEXTURE_W;
+  canvas.height = PAGE_TEXTURE_H;
+  const ctx = canvas.getContext("2d");
+  drawBookImageCover(ctx, image, normalizedBook, surface, 0, 0, canvas.width, canvas.height);
+  const texture = configureBookCanvasTexture(new THREE.CanvasTexture(canvas));
+  fittedBookSurfaceTextureMap.set(key, texture);
+  return texture;
+}
+
+function releaseFittedBookSurfaceTexturesExcept(bookName) {
+  const normalizedBook = normalizeBookThemeId(bookName);
+  const retainedPrefix = `${normalizedBook}:`;
+  for (const [key, texture] of fittedBookSurfaceTextureMap) {
+    if (key.startsWith(retainedPrefix)) {
+      continue;
+    }
+    texture?.dispose?.();
+    fittedBookSurfaceTextureMap.delete(key);
+  }
+}
+
 function assignTexture(mesh, file) {
   mesh.material.map = getTexture(file);
   mesh.material.needsUpdate = true;
@@ -12556,7 +12734,7 @@ function assignTextureObject(mesh, texture) {
 
 // ---- tier v3: book_buyer_edition の名前差し込み表紙裏 (coverInside) ----
 // bundle.nameInscription を持つ variant だけ、現行プロフィール名を
-// ベース画像に焼き込んだ CanvasTexture を返す (それ以外は従来通り getTexture(file) をそのまま返す)。
+// ベース画像に焼き込んだ CanvasTexture を返す (それ以外も同じ画像フィットを通す)。
 // (bookName, name) の組み合わせでキャッシュし、 名前が変わらない限り再描画しない。
 function sanitizeStoredUserName(value) {
   const text = typeof value === "string" ? value.replace(/[\u0000-\u001F\u007F]/g, "").trim() : "";
@@ -12587,24 +12765,25 @@ function readStoredUserName() {
 }
 
 function coverInsideTextureForBook(bookName = activeBook) {
-  const bundle = BOOK_VARIANTS[bookName] || BOOK_VARIANTS.boy;
+  const normalizedBook = normalizeBookThemeId(bookName);
+  const bundle = BOOK_VARIANTS[normalizedBook] || BOOK_VARIANTS.boy;
   if (!bundle.nameInscription) {
-    return getTexture(bundle.coverInside);
+    return getFittedBookSurfaceTexture(normalizedBook, "coverInside") || getTexture(bundle.coverInside);
   }
   const name = readStoredUserName();
-  const cached = coverInsideNameTextureCache.get(bookName);
+  const cached = coverInsideNameTextureCache.get(normalizedBook);
   if (cached && cached.name === name) {
     return cached.texture;
   }
-  const texture = buildCoverInsideNameTexture(bundle, name);
+  const texture = buildCoverInsideNameTexture(normalizedBook, bundle, name);
   if (!texture) {
-    return getTexture(bundle.coverInside);
+    return getFittedBookSurfaceTexture(normalizedBook, "coverInside") || getTexture(bundle.coverInside);
   }
-  coverInsideNameTextureCache.set(bookName, { name, texture });
+  coverInsideNameTextureCache.set(normalizedBook, { name, texture });
   return texture;
 }
 
-function buildCoverInsideNameTexture(bundle, name) {
+function buildCoverInsideNameTexture(bookName, bundle, name) {
   const baseTexture = getTexture(bundle.coverInside);
   const baseImage = baseTexture?.image;
   if (!baseImage || !baseImage.width) {
@@ -12613,13 +12792,13 @@ function buildCoverInsideNameTexture(bundle, name) {
     return null;
   }
   const region = bundle.nameInscription;
-  const w = baseImage.width;
-  const h = baseImage.height;
+  const w = PAGE_TEXTURE_W;
+  const h = PAGE_TEXTURE_H;
   const canvas = document.createElement("canvas");
   canvas.width = w;
   canvas.height = h;
   const ctx = canvas.getContext("2d");
-  ctx.drawImage(baseImage, 0, 0, w, h);
+  drawBookImageCover(ctx, baseImage, bookName, "coverInside", 0, 0, w, h);
 
   const displayName = name || region.placeholderName || "";
   ctx.save();
@@ -12648,13 +12827,7 @@ function buildCoverInsideNameTexture(bundle, name) {
   ctx.fillText("シールちょうです", w * region.xRatio, h * region.labelBottomYRatio);
   ctx.restore();
 
-  const texture = new THREE.CanvasTexture(canvas);
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.anisotropy = 8;
-  texture.minFilter = THREE.LinearMipmapLinearFilter;
-  texture.magFilter = THREE.LinearFilter;
-  texture.needsUpdate = true;
-  return texture;
+  return configureBookCanvasTexture(new THREE.CanvasTexture(canvas));
 }
 
 function getPageTemplateTexture(side, pageNumber = pageNumberForTemplateSide(side)) {
@@ -12676,7 +12849,7 @@ function getCoverTemplateTexture(bookName = activeBook) {
 
 function coverTextureForBook(bookName = activeBook) {
   return activeAlbumMode === "collection"
-    ? getTexture(coverPrintFile(bookName))
+    ? getFittedBookSurfaceTexture(bookName, "cover") || getTexture(coverPrintFile(bookName))
     : getCoverTemplateTexture(bookName);
 }
 
@@ -12776,7 +12949,7 @@ function createCoverTemplateTexture(bookName = activeBook) {
   const ctx = templateCanvas.getContext("2d");
   const coverImage = getTexture(coverPrintFile(bookName))?.image || null;
   if (coverImage) {
-    drawImageCover(ctx, coverImage, 0, 0, PAGE_TEXTURE_W, PAGE_TEXTURE_H);
+    drawBookImageCover(ctx, coverImage, bookName, "cover", 0, 0, PAGE_TEXTURE_W, PAGE_TEXTURE_H);
   } else {
     drawPageTemplateBase(ctx, stickerBookTheme(bookName), "right", "free");
   }
@@ -13446,32 +13619,13 @@ function drawStickerImage2FreePageTemplate(ctx, bookName = activeBook) {
   if (!image) {
     return false;
   }
-  drawImageCover(ctx, image, 0, 0, PAGE_TEXTURE_W, PAGE_TEXTURE_H);
+  drawBookImageCover(ctx, image, bookName, "freePage", 0, 0, PAGE_TEXTURE_W, PAGE_TEXTURE_H);
   ctx.save();
   ctx.globalCompositeOperation = "screen";
   ctx.fillStyle = "rgba(255, 252, 232, 0.16)";
   ctx.fillRect(0, 0, PAGE_TEXTURE_W, PAGE_TEXTURE_H);
   ctx.restore();
   return true;
-}
-
-function drawImageCover(ctx, image, x, y, width, height) {
-  const sourceWidth = Math.max(1, image.naturalWidth || image.width || 1);
-  const sourceHeight = Math.max(1, image.naturalHeight || image.height || 1);
-  const sourceAspect = sourceWidth / sourceHeight;
-  const targetAspect = width / height;
-  let sx = 0;
-  let sy = 0;
-  let sw = sourceWidth;
-  let sh = sourceHeight;
-  if (sourceAspect > targetAspect) {
-    sw = sourceHeight * targetAspect;
-    sx = (sourceWidth - sw) / 2;
-  } else if (sourceAspect < targetAspect) {
-    sh = sourceWidth / targetAspect;
-    sy = (sourceHeight - sh) / 2;
-  }
-  ctx.drawImage(image, sx, sy, sw, sh, x, y, width, height);
 }
 
 function drawRightPageTemplate(ctx, palette) {
@@ -15765,6 +15919,20 @@ function createCover3DRingLayer() {
   const group = new THREE.Group();
   const hardware = stickerBookTheme(activeBook).coverHardware;
   const materials = {
+    bindingPlate: new THREE.MeshStandardMaterial({
+      color: hardware.spine,
+      transparent: true,
+      alphaTest: 0.02,
+      roughness: 0.78,
+      metalness: 0.0,
+      side: THREE.FrontSide,
+      depthWrite: true,
+    }),
+    bindingSeam: new THREE.MeshBasicMaterial({
+      color: hardware.spineDark,
+      side: THREE.FrontSide,
+      depthWrite: true,
+    }),
     ring: new THREE.MeshStandardMaterial({
       color: hardware.ring,
       emissive: 0x34230e,
@@ -15806,6 +15974,25 @@ function createCover3DRingLayer() {
       depthWrite: false,
     }),
   };
+
+  const bindingPlate = new THREE.Mesh(createCoverSpinePlateGeometry(), materials.bindingPlate);
+  bindingPlate.position.z = STICKER_COVER_CLOSED_BOARD_Z + STICKER_COVER_FACE_LIFT + PAGE_H * 0.0006;
+  bindingPlate.renderOrder = 82;
+  bindingPlate.visible = false;
+  group.add(bindingPlate);
+
+  const bindingSeam = new THREE.Mesh(
+    new THREE.PlaneGeometry(PAGE_W * 0.0045, PAGE_H * 0.94),
+    materials.bindingSeam,
+  );
+  bindingSeam.position.set(
+    PAGE_W * 0.116,
+    0,
+    STICKER_COVER_CLOSED_BOARD_Z + STICKER_COVER_FACE_LIFT + PAGE_H * 0.0012,
+  );
+  bindingSeam.renderOrder = 83;
+  bindingSeam.visible = false;
+  group.add(bindingSeam);
 
   for (const pixelY of STICKER_COVER_3D_RING_PIXELS) {
     const y = PAGE_H / 2 - (pixelY / 1536) * PAGE_H;
@@ -15849,7 +16036,7 @@ function createCover3DRingLayer() {
   }
 
   group.visible = false;
-  return { group, materials };
+  return { group, materials, bindingPlate, bindingSeam };
 }
 
 function createCover3DEyeletGeometry() {
@@ -16001,11 +16188,17 @@ function createCoverBackBoardGeometry() {
 }
 
 function createCoverSpinePlateGeometry() {
-  const width = PAGE_W * 0.17;
-  const height = PAGE_H * 0.92;
+  const width = PAGE_W * 0.132;
+  const height = PAGE_H * 0.985;
   const shape = new THREE.Shape();
-  addRoundedRectPath(shape, -width / 2, -height / 2, width, height, width * 0.42);
+  addRoundedRectPath(shape, 0, -height / 2, width, height, PAGE_RADIUS * 0.88);
   const geometry = new THREE.ShapeGeometry(shape, 20);
+  const positions = geometry.attributes.position;
+  const uvs = [];
+  for (let index = 0; index < positions.count; index += 1) {
+    uvs.push(positions.getX(index) / width, (positions.getY(index) + height / 2) / height);
+  }
+  geometry.setAttribute("uv", new THREE.Float32BufferAttribute(uvs, 2));
   geometry.computeVertexNormals();
   return geometry;
 }
@@ -16314,7 +16507,14 @@ function applyCoverHardwareTheme() {
 }
 
 function applyCover3DRingTheme(hardware) {
+  const showBindingOverlay = bookImageFit(activeBook, "cover").binding === "overlay";
+  const bindingTexture = showBindingOverlay ? getStickerSpineTexture(activeBook) : null;
   for (const layer of [closedCoverRings, coverTurnRings]) {
+    layer.bindingPlate.visible = showBindingOverlay;
+    layer.bindingSeam.visible = showBindingOverlay;
+    layer.materials.bindingPlate.map = bindingTexture;
+    layer.materials.bindingPlate.color.setHex(bindingTexture ? 0xffffff : hardware.spine);
+    layer.materials.bindingSeam.color.setHex(hardware.spineDark);
     layer.materials.ring.color.setHex(hardware.ring);
     layer.materials.ring.emissive.setHex(0x34230e);
     layer.materials.highlight.color.setHex(hardware.ringHighlight);
@@ -16322,6 +16522,8 @@ function applyCover3DRingTheme(hardware) {
     layer.materials.eyelet.emissive.setHex(0x3b2a12);
     layer.materials.socketWall.color.setHex(0x050403);
     layer.materials.socketBack.color.setHex(0x020201);
+    layer.materials.bindingPlate.needsUpdate = true;
+    layer.materials.bindingSeam.needsUpdate = true;
     layer.materials.ring.needsUpdate = true;
     layer.materials.highlight.needsUpdate = true;
     layer.materials.eyelet.needsUpdate = true;
@@ -16856,7 +17058,7 @@ function createTaperedTubeGeometry(points, tubularSegments, radius, radialSegmen
 
 function applyVariantState() {
   const bundle = BOOK_VARIANTS[activeBook] || BOOK_VARIANTS.boy;
-  assignTexture(leftPageOuter, bundle.coverBack);
+  assignTextureObject(leftPageOuter, getFittedBookSurfaceTexture(activeBook, "coverBack") || getTexture(bundle.coverBack));
   assignTextureObject(leftPageInner, getPageTemplateTexture("left"));
   assignTextureObject(rightPage, getPageTemplateTexture("right"));
   if (activeSurface === "inside") {

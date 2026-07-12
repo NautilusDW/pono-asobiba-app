@@ -256,8 +256,8 @@ assert.doesNotMatch(hydrateSource, /aria-haspopup/, "the shared promo is not a s
 assert.match(hydrateSource, /badge\.textContent = requiredTier === "book" \? "えほん" : "アプリ"/);
 assert.match(css, /\.book-theme-lock-badge[\s\S]*?min-width:\s*42px/);
 assert.match(css, /\.zukan-theme-picker button\[hidden\][\s\S]*?display:\s*none/);
-assert.match(index, /styles\.css\?v=20260713-1272/);
-assert.match(index, /main\.js\?v=20260713-1272/);
+assert.match(index, /styles\.css\?v=20260713-1273/);
+assert.match(index, /main\.js\?v=20260713-1273/);
 assert.match(tierPolicy, /\*\*free\*\* \| \*\*4\*\*/);
 assert.match(tierPolicy, /\*\*book\*\* \| \*\*7\*\*/);
 assert.match(tierPolicy, /\*\*app\*\* \| \*\*11\*\*/);

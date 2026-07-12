@@ -17,8 +17,7 @@ body {
   --sb3d-ui-button-mode-paste-text: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_mode_paste_text_gpt_image2_20260623.png");
   --sb3d-ui-button-mode-view-text: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_mode_view_text_gpt_image2_20260623.png");
   --sb3d-ui-button-settings: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_settings_wood_gpt_image2_20260623.png");
-  --sb3d-ui-button-theme: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_theme_ribbon_wood_gpt_image2_20260623.png");
-  --sb3d-ui-button-theme-text: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_theme_text_gpt_image2_20260623.png");
+  --sb3d-ui-button-theme: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_theme_ribbon_wood_gpt_image2_20260623.webp");
   --sb3d-ui-button-wide: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_album_wood_gpt_image2_20260623.png");
   --sb3d-ui-button-album-text: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_album_text_gpt_image2_20260623.png");
   --sb3d-ui-button-exhibition: url("../../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_exhibition_gallery_20260704.png");
@@ -274,7 +273,7 @@ body:not(.is-collection-album) #scene {
 .zukan-theme-current {
   grid-area: current;
   display: grid;
-  grid-template-columns: 138px minmax(0, 1fr);
+  grid-template-columns: 88px minmax(0, 1fr);
   align-items: center;
   gap: 12px;
   min-height: 98px;
@@ -286,13 +285,14 @@ body:not(.is-collection-album) #scene {
 }
 
 .zukan-theme-current-cover {
-  width: 138px;
-  height: 86px;
+  width: 88px;
+  aspect-ratio: 1472 / 1536;
   border-radius: 12px;
   background-color: rgba(245, 250, 244, 0.9);
   background-image: var(--book-thumb);
-  background-position: center;
-  background-size: cover;
+  background-position: var(--book-thumb-position, center);
+  background-size: var(--book-thumb-size, auto 100%);
+  background-repeat: no-repeat;
   box-shadow:
     inset 0 0 0 2px rgba(255, 255, 255, 0.55),
     0 5px 10px rgba(31, 55, 54, 0.16);
@@ -371,12 +371,15 @@ body:not(.is-collection-album) #scene {
 .zukan-theme-picker button::before {
   content: "";
   display: block;
-  min-height: 58px;
+  width: min(72px, 100%);
+  aspect-ratio: 1472 / 1536;
+  justify-self: center;
   border-radius: 10px;
   background-color: rgba(246, 250, 244, 0.95);
   background-image: var(--book-thumb);
-  background-position: center;
-  background-size: cover;
+  background-position: var(--book-thumb-position, center);
+  background-size: var(--book-thumb-size, auto 100%);
+  background-repeat: no-repeat;
   box-shadow:
     inset 0 0 0 2px rgba(255, 255, 255, 0.56),
     0 2px 6px rgba(26, 55, 55, 0.12);
@@ -393,7 +396,7 @@ body:not(.is-collection-album) #scene {
     0 4px 9px rgba(26, 55, 55, 0.18);
 }
 
-/* tier 別きせかえのロック表現。ロック中も案内を開けるボタンとして操作可能。 */
+/* tier 別シールちょうテーマのロック表現。ロック中も案内を開けるボタンとして操作可能。 */
 .zukan-theme-picker button.is-tier-locked::before {
   filter: grayscale(0.5) brightness(0.74);
 }
@@ -459,7 +462,10 @@ body:not(.is-collection-album) #scene {
   }
 
   .zukan-settings-row-theme {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: 148px minmax(0, 1fr);
+    grid-template-areas:
+      "label picker"
+      "current picker";
     gap: 8px;
     padding: 8px;
   }
@@ -470,15 +476,14 @@ body:not(.is-collection-album) #scene {
   }
 
   .zukan-theme-current {
-    grid-template-columns: 104px minmax(0, 1fr);
-    min-height: 76px;
+    grid-template-columns: 62px minmax(0, 1fr);
+    min-height: 72px;
     gap: 8px;
     padding: 6px;
   }
 
   .zukan-theme-current-cover {
-    width: 104px;
-    height: 66px;
+    width: 62px;
   }
 
   .zukan-theme-current-info strong {
@@ -494,7 +499,7 @@ body:not(.is-collection-album) #scene {
   .zukan-theme-picker {
     grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
     gap: 6px;
-    max-height: min(42vh, 196px);
+    max-height: min(58vh, 180px);
   }
 
   .zukan-theme-picker button {
@@ -503,7 +508,7 @@ body:not(.is-collection-album) #scene {
   }
 
   .zukan-theme-picker button::before {
-    min-height: 46px;
+    width: min(46px, 100%);
   }
 }
 @media (max-width: 720px) {
@@ -535,18 +540,39 @@ body:not(.is-collection-album) #scene {
   }
 
   .zukan-theme-current {
-    grid-template-columns: 112px minmax(0, 1fr);
+    grid-template-columns: 72px minmax(0, 1fr);
     min-height: 84px;
   }
 
   .zukan-theme-current-cover {
-    width: 112px;
-    height: 70px;
+    width: 72px;
   }
 
   .zukan-theme-picker {
     grid-template-columns: repeat(auto-fill, minmax(82px, 1fr));
     max-height: min(38vh, 260px);
+  }
+}
+
+@media (orientation: landscape) and (max-height: 520px) and (max-width: 720px) {
+  .zukan-settings-row-theme {
+    grid-template-columns: 132px minmax(0, 1fr);
+    grid-template-areas:
+      "label picker"
+      "current picker";
+  }
+
+  .zukan-theme-current {
+    grid-template-columns: 54px minmax(0, 1fr);
+    min-height: 66px;
+  }
+
+  .zukan-theme-current-cover {
+    width: 54px;
+  }
+
+  .zukan-theme-picker {
+    max-height: min(58vh, 180px);
   }
 }
 
@@ -842,9 +868,15 @@ body.is-sticker-edit-mode .top-edit-button {
 }
 
 .top-edit-button .top-button-label,
-.top-theme-button .top-button-label,
 body:not(.is-collection-album) .album-mode-toggle .top-button-label {
   opacity: 0;
+}
+
+.top-theme-button .top-button-label {
+  width: 100%;
+  opacity: 1;
+  transform: translateY(-1px);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.72);
 }
 
 .top-action-button::before {
@@ -869,12 +901,13 @@ body:not(.is-collection-album) .album-mode-toggle .top-button-label {
 
 .top-theme-button {
   width: 186px;
-  padding: 0;
+  padding: 0 9px 0 60px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background-image: var(--sb3d-ui-button-theme-text);
+  background-image: var(--sb3d-ui-button-theme);
   color: #243b40;
+  font-family: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Meiryo", sans-serif;
   font-size: 14px;
   letter-spacing: 0;
   white-space: nowrap;
@@ -3404,7 +3437,7 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-card.is-page-inscribed {
 
   .top-theme-button {
     width: 172px;
-    padding: 0;
+    padding: 0 8px 0 55px;
     font-size: 11px;
   }
 
@@ -3434,7 +3467,7 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-card.is-page-inscribed {
 
   .top-theme-button {
     width: 136px;
-    padding: 0;
+    padding: 0 7px 0 44px;
     font-size: 10px;
   }
 
@@ -3757,7 +3790,7 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-card.is-page-inscribed {
   .top-theme-button {
     width: 136px;
     height: 50px;
-    padding: 0;
+    padding: 0 7px 0 44px;
     font-size: 10px;
   }
 
@@ -4225,7 +4258,7 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-card.is-page-inscribed {
   .top-theme-button {
     width: 132px;
     height: 42px;
-    padding: 0;
+    padding: 0 6px 0 43px;
     font-size: 10px;
   }
 
