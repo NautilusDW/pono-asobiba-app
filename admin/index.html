@@ -13383,11 +13383,31 @@ function bentoSlotIsBottomLayerSample(kind, sample) {
     || image.indexOf('/cabbage/cabbage_') >= 0
     || image.indexOf('divider_lettuce') >= 0;
 }
-function bentoSlotRenderLayerBase(kind, sample) {
+function bentoSlotIsVerticalDividerSample(kind, sample, def) {
+  if (kind !== 'divider') return false;
+  if ((sample && sample.verticalDivider === true) || (def && def.verticalDivider === true)) return true;
+  var metadata = [
+    sample && sample.id,
+    sample && sample.simpleSampleId,
+    sample && sample.sampleId,
+    sample && sample.sourceSampleId,
+    sample && sample.image,
+    sample && sample.name,
+    def && def.id,
+    def && def.simpleSampleId,
+    def && def.sampleId,
+    def && def.sourceSampleId,
+    def && def.image,
+    def && def.name
+  ].map(function(value) { return String(value || ''); }).join(' ');
+  return /divider_(?:wave|wood)_vertical(?:_|\b)/.test(metadata)
+    || /(?:たてしきり|縦)/.test(metadata);
+}
+function bentoSlotRenderLayerBase(kind, sample, def) {
   if (bentoSlotIsBottomLayerSample(kind, sample)) return 29;
-  // Bento本体と同じく、しきり内のY順は保ったまま全foodより前面へ出す。
-  if (kind === 'divider') return 40;
-  if (kind === 'cup' || kind === 'leaf' || kind === 'main-food' || kind === 'side-food') return 30;
+  // Bento本体と同じく、縦しきりだけを全foodより前面へ出す。
+  if (bentoSlotIsVerticalDividerSample(kind, sample, def)) return 40;
+  if (kind === 'cup' || kind === 'leaf' || kind === 'main-food' || kind === 'side-food' || kind === 'divider') return 30;
   return Math.max(1, Math.floor(Number(sample && sample.layer) || 30));
 }
 function bentoSlotSampleRenderLayer(entry) {
@@ -13397,7 +13417,7 @@ function bentoSlotSampleRenderLayer(entry) {
   }
   var sample = entry.sample || {};
   var point = entry.point || {};
-  var base = bentoSlotRenderLayerBase(entry.def && entry.def.kind, sample);
+  var base = bentoSlotRenderLayerBase(entry.def && entry.def.kind, sample, entry.def);
   var x = bentoSlotClamp(point.x, 0, BENTO_SLOT_W, BENTO_SLOT_W / 2);
   var y = bentoSlotClamp(point.y, 0, BENTO_SLOT_H, BENTO_SLOT_H / 2);
   var tie = Number(sample.layer);

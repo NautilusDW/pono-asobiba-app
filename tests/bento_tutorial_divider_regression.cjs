@@ -4,9 +4,12 @@
 // 小さいおかず工程から通常プレイ用の「したに しく」へ逸れないことを守る。
 // batch:1267 regression: お気に入り保存/×のあとに最後の案内を一度だけ再生し、
 // 空のお弁当を最初から作る通常フローへ戻ることを守る。
-// batch:1268 regression: 全しきりを全おかずより前面に保ち、全37音声の再収録版を配信する。
+// batch:1268 regression: 全しきり前面と全37音声の再収録版を配信する。
+// batch:1269 regression: 縦しきりは全おかずより前、横しきりは同じY深度順に戻し、
+// 「あか」の案内だけ発音が自然だった直前TTS3.1/Leda版を復元する。
 
 const assert = require('node:assert/strict');
+const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
@@ -189,8 +192,8 @@ undoTimers.shift()();
 assert.deepEqual(undoAdvances, ['tut2-nori-edit', 'tut2-nori-ok']);
 
 const voiceMap = extract(html, 'const BENTO_TUTORIAL_STEP_VOICE = {', 'let bentoTutorialVoiceAudio', 'tutorial voice map');
-assert.match(html, /const BENTO_TUTORIAL_VOICE_VERSION = 'v1268-consistent-blocks'/,
-  'the shipped narration must use the all-cue consistency cache version');
+assert.match(html, /const BENTO_TUTORIAL_VOICE_VERSION = 'v1269-red-restore'/,
+  'the shipped narration must bust the cache for the restored red-group voice');
 assert.match(html, /const BENTO_TUTORIAL_MOCK_VOICE = false/,
   'the shipped narration must play real audio instead of mock timers');
 [
@@ -544,6 +547,12 @@ for (const voiceId of shippedVoiceIds) {
   assert.ok(fs.existsSync(audioPath), `missing narration asset: ${voiceId}.mp3`);
   assert.ok(fs.statSync(audioPath).size > 1000, `narration asset is unexpectedly small: ${voiceId}.mp3`);
 }
+const restoredRedVoicePath = path.join(root, 'assets/audio/bento/tutorial/sk_intro_02.mp3');
+assert.equal(
+  crypto.createHash('sha256').update(fs.readFileSync(restoredRedVoicePath)).digest('hex'),
+  'cf7d133330e34fc09126a7397d3fe29337af0ca89c26bc3efeab2d2e08fadd13',
+  'the red-group guide must keep the verified, natural batch1263 Leda take'
+);
 
 // 3. simple mode でも指定中の品目だけを許可し、誤選択はspeech/toastだけで拒否する。
 const allowanceSource = extract(
@@ -1296,7 +1305,7 @@ const runtimeLayerSource = extract(
 const runtimePlacedItems = [];
 const runtimeLayers = vm.runInNewContext(`(() => {
   ${runtimeLayerSource}
-  return { base: getFreeRenderLayerBase, layer: getFreeItemRenderLayer };
+  return { base: getFreeRenderLayerBase, layer: getFreeItemRenderLayer, vertical: isFreeVerticalDividerItem };
 })()`, {
   clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
   FREE_LAYOUT_W: 740,
@@ -1305,6 +1314,7 @@ const runtimeLayers = vm.runInNewContext(`(() => {
   placedItems: runtimePlacedItems,
 });
 const hamburger = { uid: 'hamburger', type: 'food', id: 'hamburger', x: 540, y: 351, layer: 1 };
+const sausage = { uid: 'sausage', type: 'food', id: 'sausage', x: 360, y: 351, layer: 1 };
 const lowerDivider = { uid: 'divider-lower', type: 'divider', id: 'divider_wave', x: 410, y: 279, layer: 1 };
 const middleCup = { uid: 'cup-middle', type: 'cup', id: 'cup_blue_dot', x: 500, y: 235, layer: 1, snapTarget: true };
 const middleFood = { uid: 'food-middle', type: 'food', id: 'momo', x: 500, y: 235, layer: 1, parentCupId: middleCup.uid };
@@ -1313,47 +1323,74 @@ const topCup = { uid: 'cup-top', type: 'cup', id: 'cup_blue_dot', x: 500, y: 113
 const topFood = { uid: 'food-top', type: 'food', id: 'egg', x: 500, y: 113, layer: 1, parentCupId: topCup.uid };
 runtimePlacedItems.push(middleCup, topCup);
 assert.equal(runtimeLayers.base(hamburger), 30);
-assert.equal(runtimeLayers.base(lowerDivider), 40);
+assert.equal(runtimeLayers.base(lowerDivider), 30);
 const verticalBack = { uid: 'vertical-back', type: 'divider', id: 'divider_wave_vertical', x: 410, y: 90, layer: 1 };
 const verticalMid = { uid: 'vertical-mid', type: 'divider', id: 'divider_wave_vertical', x: 410, y: 219.6, layer: 1 };
 const verticalFront = { uid: 'vertical-front', type: 'divider', id: 'divider_wave_vertical', x: 410, y: 341.5, layer: 1 };
 const lettuce = { uid: 'lettuce', type: 'leaf', id: 'leaf_lettuce', x: 540, y: 351, layer: 1, stackTarget: true };
 const decoration = { uid: 'decoration', type: 'decor', id: 'star', x: 540, y: 351, layer: 1 };
 const pick = { uid: 'pick', type: 'pick', id: 'pick_flag', x: 540, y: 351, layer: 1 };
+assert.equal(runtimeLayers.vertical(verticalFront), true);
+assert.equal(runtimeLayers.vertical({ type: 'divider', id: 'legacy-divider', verticalDivider: true }), true);
+assert.equal(runtimeLayers.vertical({ type: 'divider', id: 'legacy-divider', sourceSampleId: 'divider_wood_vertical_back' }), true);
+assert.equal(runtimeLayers.vertical({ type: 'divider', id: 'divider_wave', name: 'なみなみしきり' }), false);
 const runtimeFoodLayers = [hamburger, middleFood, topFood].map(item => runtimeLayers.layer(item));
-const runtimeDividerLayers = [verticalFront, lowerDivider, verticalMid, upperDivider, verticalBack]
-  .map(item => runtimeLayers.layer(item));
+const runtimeHorizontalDividerLayers = [lowerDivider, upperDivider].map(item => runtimeLayers.layer(item));
+const runtimeVerticalDividerLayers = [verticalFront, verticalMid, verticalBack].map(item => runtimeLayers.layer(item));
 assert.deepEqual(runtimeFoodLayers, [3035154, 3025579, 3013366]);
-assert.deepEqual(runtimeDividerLayers, [4034191, 4027941, 4022001, 4016941, 4009041]);
-assert.ok(Math.min(...runtimeDividerLayers) > Math.max(...runtimeFoodLayers),
-  'runtime must draw every divider above the hamburger and all other foods');
+assert.equal(runtimeLayers.layer(sausage), 3035136);
+assert.deepEqual(runtimeHorizontalDividerLayers, [3027941, 3016941]);
+assert.deepEqual(runtimeVerticalDividerLayers, [4034191, 4022001, 4009041]);
+const runtimeHorizontalDepthOrder = [
+  runtimeLayers.layer(hamburger),
+  runtimeLayers.layer(lowerDivider),
+  runtimeLayers.layer(middleFood),
+  runtimeLayers.layer(upperDivider),
+  runtimeLayers.layer(topFood),
+];
+for (let index = 1; index < runtimeHorizontalDepthOrder.length; index++) {
+  assert.ok(runtimeHorizontalDepthOrder[index - 1] > runtimeHorizontalDepthOrder[index],
+    'runtime must interleave horizontal dividers with foods from front to back');
+}
+assert.ok(Math.min(...runtimeVerticalDividerLayers) > Math.max(...runtimeHorizontalDepthOrder),
+  'runtime must draw every vertical divider above the hamburger and all other foods');
 assert.ok(runtimeLayers.layer(lettuce) < runtimeLayers.layer(hamburger));
-assert.ok(runtimeLayers.layer(hamburger) < runtimeLayers.layer(lowerDivider));
-assert.ok(runtimeLayers.layer(lowerDivider) < runtimeLayers.layer(decoration));
+assert.ok(runtimeLayers.layer(lowerDivider) < runtimeLayers.layer(hamburger));
+assert.ok(runtimeLayers.layer(lowerDivider) < runtimeLayers.layer(sausage),
+  'the foreground sausage must also cover the lower horizontal divider');
+assert.ok(runtimeLayers.layer(hamburger) < runtimeLayers.layer(verticalFront));
+assert.ok(runtimeLayers.layer(verticalFront) < runtimeLayers.layer(decoration));
 assert.ok(runtimeLayers.layer(decoration) < runtimeLayers.layer(pick),
-  'runtime must preserve leaf < food < divider < decor < pick tiers');
-for (let index = 1; index < runtimeDividerLayers.length; index++) {
-  assert.ok(runtimeDividerLayers[index - 1] > runtimeDividerLayers[index],
-    'runtime must preserve the divider-only front-to-back Y order');
+  'runtime must preserve leaf < horizontal/food depth < vertical < decor < pick tiers');
+for (let index = 1; index < runtimeVerticalDividerLayers.length; index++) {
+  assert.ok(runtimeVerticalDividerLayers[index - 1] > runtimeVerticalDividerLayers[index],
+    'runtime must preserve the vertical-divider front-to-back Y order');
 }
 
 const adminLayerSource = extract(
   admin,
-  'function bentoSlotRenderLayerBase(kind, sample)',
+  'function bentoSlotIsVerticalDividerSample(kind, sample, def)',
   'function bentoSlotCupSizeKeyForEntry(entry)',
   'admin preview render layers'
 );
 const adminLayers = vm.runInNewContext(`(() => {
   ${adminLayerSource}
-  return { base: bentoSlotRenderLayerBase, layer: bentoSlotSampleRenderLayer };
+  return {
+    base: bentoSlotRenderLayerBase,
+    layer: bentoSlotSampleRenderLayer,
+    vertical: bentoSlotIsVerticalDividerSample,
+  };
 })()`, {
   bentoSlotIsBottomLayerSample: kind => kind === 'leaf',
   bentoSlotClamp: (value, min, max) => Math.max(min, Math.min(max, value)),
   BENTO_SLOT_W: 740,
   BENTO_SLOT_H: 500,
 });
-assert.equal(adminLayers.base('divider', { id: 'divider_wave', layer: 20 }), 40);
+assert.equal(adminLayers.base('divider', { id: 'divider_wave', layer: 20 }), 30);
 assert.equal(adminLayers.base('divider', { id: 'divider_wave_vertical_mid', layer: 20 }), 40);
+assert.equal(adminLayers.vertical('divider', { id: 'legacy-divider' }, { verticalDivider: true }), true);
+assert.equal(adminLayers.vertical('divider', { id: 'legacy-divider', sourceSampleId: 'divider_wood_vertical_back' }), true);
+assert.equal(adminLayers.vertical('divider', { id: 'divider_wave', name: 'なみなみしきり' }), false);
 assert.equal(adminLayers.base('main-food', { layer: 20 }), 30);
 assert.equal(adminLayers.base('leaf', { id: 'leaf_lettuce', layer: 20 }), 29);
 assert.equal(adminLayers.base('other', { id: 'pick_flag', layer: 70 }), 70);
@@ -1372,11 +1409,28 @@ const adminDividerEntries = [
   { def: { kind: 'divider' }, sample: { id: 'divider_wave_vertical_back', layer: 20 }, point: { x: 410, y: 90 } },
 ];
 const adminFoodLayers = adminFoodEntries.map(entry => adminLayers.layer(entry));
-const adminDividerLayers = adminDividerEntries.map(entry => adminLayers.layer(entry));
+const adminSausageLayer = adminLayers.layer({
+  def: { kind: 'main-food' }, sample: { id: 'sausage', layer: 30 }, point: { x: 360, y: 351 },
+});
+const adminHorizontalDividerLayers = [adminDividerEntries[1], adminDividerEntries[3]].map(entry => adminLayers.layer(entry));
+const adminVerticalDividerLayers = [adminDividerEntries[0], adminDividerEntries[2], adminDividerEntries[4]].map(entry => adminLayers.layer(entry));
 assert.deepEqual(adminFoodLayers, [3035154, 3025550, 3013350]);
-assert.deepEqual(adminDividerLayers, [4034191, 4027941, 4022001, 4016941, 4009041]);
-assert.ok(Math.min(...adminDividerLayers) > Math.max(...adminFoodLayers),
-  'Admin preview must mirror the runtime divider-over-food order');
+assert.equal(adminSausageLayer, 3035136);
+assert.deepEqual(adminHorizontalDividerLayers, [3027941, 3016941]);
+assert.deepEqual(adminVerticalDividerLayers, [4034191, 4022001, 4009041]);
+const adminHorizontalDepthOrder = [
+  adminFoodLayers[0],
+  adminHorizontalDividerLayers[0],
+  adminFoodLayers[1],
+  adminHorizontalDividerLayers[1],
+  adminFoodLayers[2],
+];
+for (let index = 1; index < adminHorizontalDepthOrder.length; index++) {
+  assert.ok(adminHorizontalDepthOrder[index - 1] > adminHorizontalDepthOrder[index],
+    'Admin preview must interleave horizontal dividers with foods from front to back');
+}
+assert.ok(Math.min(...adminVerticalDividerLayers) > Math.max(...adminHorizontalDepthOrder),
+  'Admin preview must mirror the runtime vertical-divider-over-food order');
 const adminLeafLayer = adminLayers.layer({
   def: { kind: 'leaf' }, sample: { id: 'leaf_lettuce', layer: 20 }, point: { x: 540, y: 351 },
 });
@@ -1384,12 +1438,15 @@ const adminPickLayer = adminLayers.layer({
   def: { kind: 'other' }, sample: { id: 'pick_flag', layer: 70 }, point: { x: 540, y: 351 },
 });
 assert.ok(adminLeafLayer < adminFoodLayers[0]);
-assert.ok(adminFoodLayers[0] < adminDividerLayers[1]);
-assert.ok(adminDividerLayers[1] < adminPickLayer,
-  'Admin preview must preserve leaf < food < divider < pick tiers');
-for (let index = 1; index < adminDividerLayers.length; index++) {
-  assert.ok(adminDividerLayers[index - 1] > adminDividerLayers[index],
-    'Admin preview must preserve the divider-only front-to-back Y order');
+assert.ok(adminHorizontalDividerLayers[0] < adminFoodLayers[0]);
+assert.ok(adminHorizontalDividerLayers[0] < adminSausageLayer,
+  'Admin preview must keep the foreground sausage above the lower horizontal divider');
+assert.ok(adminFoodLayers[0] < adminVerticalDividerLayers[0]);
+assert.ok(adminVerticalDividerLayers[0] < adminPickLayer,
+  'Admin preview must preserve leaf < horizontal/food depth < vertical < pick tiers');
+for (let index = 1; index < adminVerticalDividerLayers.length; index++) {
+  assert.ok(adminVerticalDividerLayers[index - 1] > adminVerticalDividerLayers[index],
+    'Admin preview must preserve the vertical-divider front-to-back Y order');
 }
 
 console.log('bento tutorial/divider regression: PASS');

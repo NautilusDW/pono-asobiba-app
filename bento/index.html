@@ -6256,7 +6256,7 @@ const SK_INTRO_GUIDE_STEPS = [
   { key: 'all', text: 'あか・きいろ・みどりを<br>ひとつずつ いれてみよう。' },
 ];
 // v1380: 5 文に同期させる音声 ID (assets/audio/bento/tutorial/sk_intro_0X.mp3)。
-// batch:1268 短い連続ブロック版の実測 duration は 3.138 / 5.906 / 6.043 / 5.530 / 4.418 秒。
+// batch:1269 「あか」の直前版復元後の実測 duration は 3.138 / 5.208 / 6.043 / 5.530 / 4.418 秒。
 // fallbackMs は audio 失敗時の
 // セーフティタイマーで、 各 duration より十分長い 10s 固定 (audio が ended event を
 // 発火しないまま黙る端末でも次へ進めるため)。 onEnded から 600ms 待って次の音声へ。
@@ -9620,9 +9620,9 @@ function playPop() { const ac=getAC(),t=ac.currentTime,o=ac.createOscillator(),g
 function playCorrect() { const ac=getAC(),t=ac.currentTime; [523,659,784].forEach((f,i)=>{const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='sine';o.frequency.value=f;const s=t+i*0.1;g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(0.18,s+0.02);g.gain.exponentialRampToValueAtTime(0.001,s+0.25);o.start(s);o.stop(s+0.25);}); }
 function playWrong() { const ac=getAC(),t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='triangle';o.frequency.setValueAtTime(200,t);o.frequency.exponentialRampToValueAtTime(120,t+0.18);g.gain.setValueAtTime(0.1,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.18);o.start(t);o.stop(t+0.18); }
 const BENTO_TUTORIAL_VOICE_BASE = '../assets/audio/bento/tutorial/';
-// batch:1268: 全37 cue を短い連続ブロックで Gemini TTS 3.1 / Leda から再収録し、
-// 24 kHz mono / 96 kbps / 1.15 倍速とラウドネスを統一した。
-const BENTO_TUTORIAL_VOICE_VERSION = 'v1268-consistent-blocks';
+// batch:1268/1269: 36 cue は短い連続ブロック版、「あか」の1本だけ発音が自然だった
+// 直前のTTS 3.1 / Leda版へ復元。全37本を24 kHz mono / 96 kbps / 1.15倍速で配信する。
+const BENTO_TUTORIAL_VOICE_VERSION = 'v1269-red-restore';
 // faster-whisper で全 cue の順序・先頭末尾を照合済み。false で実音源を再生する。
 const BENTO_TUTORIAL_MOCK_VOICE = false;
 function shouldMockBentoTutorialVoice(id) {
@@ -14926,10 +14926,25 @@ function getDefaultFreeRenderLayerBase(item) {
   if (item.type === 'pick') return 60;
   return 30;
 }
+function isFreeVerticalDividerItem(item) {
+  if (!item || item.type !== 'divider') return false;
+  if (item.verticalDivider === true) return true;
+  const metadata = [
+    item.id,
+    item.simpleSampleId,
+    item.sampleId,
+    item.sourceSampleId,
+    item.img,
+    item.image,
+    item.name,
+  ].map(value => String(value || '')).join(' ');
+  return /divider_(?:wave|wood)_vertical(?:_|\b)/.test(metadata)
+    || /(?:たてしきり|縦)/.test(metadata);
+}
 function getFreeRenderLayerBase(item) {
   if (isFreeBottomLayerItem(item) && !item.parentCupId) return 8;
-  // しきり同士のY深度順は保ちつつ、ハンバーグを含む全foodより一段前面へ出す。
-  if (item && item.type === 'divider') return 40;
+  // 縦しきりは全foodより前面。横しきりはfoodと同じY深度にして、手前のおかずを上へ出す。
+  if (isFreeVerticalDividerItem(item)) return 40;
   if (shouldDepthSortFreeItem(item)) return 30;
   const base = Number(item && item.layerBase);
   return Number.isFinite(base) ? base : getDefaultFreeRenderLayerBase(item);
