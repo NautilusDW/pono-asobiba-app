@@ -655,6 +655,62 @@
     .pc-v-sticker{background-image:url('assets/images/sticker-book/sticker_book_base_kids_16x9.png'),linear-gradient(150deg,#FBD8C2,#F4B79A);}
     .pc-v-puzzle {background-image:url('assets/images/puzzle/title_back.jpg'),linear-gradient(150deg,#B0D4E6,#89BAD4);}
     .pc-v-quizland{background-image:url('assets/ui/thumb_quizland_owl.webp'),linear-gradient(150deg,#D4A574,#C08A54);}
+    /* 「遊びのほかにも」専用：実画面を2枚ずつ並べるコンパクトなアプリ紹介 */
+    .play-cards--extras .pc-card{
+      --dx:0px;
+      --dy:0px;
+      display:flex;
+      flex-direction:column;
+    }
+    .play-cards--extras .pc-card:first-child{--rot:-1.25deg;}
+    .play-cards--extras .pc-card:last-child{--rot:1.25deg;}
+    .play-cards--extras .pc-body{
+      display:flex;
+      flex:1;
+      flex-direction:column;
+      padding-top:34px;
+    }
+    .pc-feature-scenes{
+      display:grid;
+      grid-template-columns:repeat(2,minmax(0,1fr));
+      gap:12px;
+      margin-top:14px;
+    }
+    .pc-feature-scene{min-width:0;margin:0;}
+    .pc-feature-media{
+      aspect-ratio:16/9;
+      overflow:hidden;
+      border:1px solid rgba(93,78,55,.12);
+      border-radius:13px;
+      background:linear-gradient(145deg,rgba(253,220,191,.38),rgba(255,255,255,.88));
+      box-shadow:0 5px 14px rgba(93,78,55,.12);
+    }
+    .pc-feature-media img{
+      display:block;
+      width:100%;
+      height:100%;
+      object-fit:contain;
+    }
+    .pc-feature-scene figcaption{
+      margin:8px 2px 0;
+      color:var(--pc-text-light);
+      font-size:clamp(12px,1.7vw,14px);
+      font-weight:700;
+      line-height:1.55;
+    }
+    .pc-feature-scene figcaption strong{
+      display:block;
+      margin-bottom:2px;
+      color:var(--pc-primary-deep);
+      font-size:clamp(12px,1.5vw,14px);
+      font-weight:900;
+      letter-spacing:-.02em;
+      white-space:nowrap;
+    }
+    .pc-caption-keep{white-space:nowrap;}
+    .pc-title-term{display:inline-block;white-space:nowrap;}
+    .play-cards--extras .pc-growth{margin-top:auto;}
+    .play-cards--extras .pc-growth b{display:inline-block;}
     /* ガチャ visual：CSS で描いた素朴なカプセルトイ機（16/9 に収める） */
     .pc-v-gacha{display:flex;align-items:center;justify-content:center;background:linear-gradient(150deg,#FCEBD6,#F6D2AE);}
     .pc-v-gacha .gacha{position:relative;height:86%;aspect-ratio:3/4;}
@@ -715,6 +771,11 @@
     .play-cards a:focus-visible{outline:3px solid var(--pc-primary);outline-offset:3px;}
     @keyframes pc-pop{from{opacity:0;transform:translateY(20px) rotate(0) scale(.85);}to{opacity:1;transform:translate(var(--dx,0),var(--dy,0)) rotate(var(--rot)) scale(.96);}}
     @media (prefers-reduced-motion:reduce){.play-cards *{animation:none!important;transition:none!important;}}
+    @media (max-width:430px){
+      .pc-feature-scenes{grid-template-columns:1fr;gap:14px;}
+      .play-cards--extras .pc-card{--rot:0deg;}
+      .play-cards--extras .pc-body{padding-top:30px;}
+    }
     @media (min-width:768px){.play-cards{padding:40px 32px 48px;}.pc-stack{max-width:900px;display:grid;grid-template-columns:1fr 1fr;gap:30px 28px;}.pc-card--mt5{grid-column:1 / -1;justify-self:center;width:calc(50% - 14px);}}
     @media (min-width:1200px){.pc-stack{max-width:1000px;gap:38px 36px;}.pc-visual{aspect-ratio:16/10;}.pc-card--mt5{width:calc(50% - 18px);}}
 
@@ -1926,47 +1987,58 @@
       </div>
     </section>
 
-    <!-- ===== 遊びのほかにも：ガチャ＋シールアルバム（ゲームカードと同サイズ） ===== -->
-    <section class="play-cards" aria-labelledby="sg-h">
+    <!-- ===== 遊びのほかにも：ガチャ・おみせ＋シールちょう・ミュージアム ===== -->
+    <section class="play-cards play-cards--extras" aria-labelledby="sg-h">
       <div class="pc-head">
         <h2 class="pc-h2" id="sg-h">遊びの<span class="u">ほかにも</span></h2>
-        <p class="pc-sub">ゲームやガチャでシールを集めて、アルバムに貼れます。</p>
+        <p class="pc-sub">ガチャやおみせで出会ったシールを、シールちょうやミュージアムで楽しめます。</p>
       </div>
 
       <div class="pc-stack">
 
-        <!-- ① おたのしみガチャ（入口） -->
+        <!-- ① ガチャ＋どんぐりショップ -->
         <article class="pc-card pc-card--mt4">
-          <div class="pc-bubble pc-bubble--left">★ 1日1回</div>
-          <div class="pc-visual pc-v-gacha" role="img" aria-label="1日1回まわせる、ポノのおたのしみガチャ">
-            <div class="gacha" aria-hidden="true">
-              <div class="gacha-dome">
-                <span class="gacha-caps gacha-c1"></span>
-                <span class="gacha-caps gacha-c2"></span>
-                <span class="gacha-caps gacha-c3"></span>
-                <span class="gacha-caps gacha-c4"></span>
-              </div>
-              <div class="gacha-body">
-                <span class="gacha-knob"></span>
-                <span class="gacha-out"></span>
-              </div>
-            </div>
-          </div>
+          <div class="pc-bubble pc-bubble--left">★ 集めて選ぶ</div>
           <div class="pc-body">
-            <h3 class="pc-title">おたのしみガチャ</h3>
-            <p class="pc-play">1日1回、ガチャを回すとシールがもらえます。明日は何が出るかな、という小さな楽しみを作ります。</p>
-            <p class="pc-growth"><span class="lbl lbl--parent-img"><img src="assets/ui/parent_heading_trust_note_alpha.png" alt="お家の方へ" width="1983" height="793" loading="lazy" decoding="async"></span>課金ガチャではありません。<b>1日1回</b>だけ回せるので、安心して「毎日のお楽しみ」にできます。</p>
+            <h3 class="pc-title">ガチャとおみせ</h3>
+            <div class="pc-feature-scenes">
+              <figure class="pc-feature-scene">
+                <div class="pc-feature-media">
+                  <img src="assets/lp/features/gacha-reveal_20260712.png" alt="ガチャのカプセルからシールが出た画面" width="1280" height="720" loading="lazy" decoding="async">
+                </div>
+                <figcaption><strong>ガチャ</strong><span class="pc-caption-keep">新しいシールに</span><wbr><span class="pc-caption-keep">出会えます。</span></figcaption>
+              </figure>
+              <figure class="pc-feature-scene">
+                <div class="pc-feature-media">
+                  <img src="assets/lp/features/donguri-shop_20260712.png" alt="どんぐりで好きなシールを選べるおみせの画面" width="1280" height="720" loading="lazy" decoding="async">
+                </div>
+                <figcaption><strong>どんぐりショップ</strong>どんぐりで、<wbr><span class="pc-caption-keep">シールを選べます。</span></figcaption>
+              </figure>
+            </div>
+            <p class="pc-growth"><img class="pc-growth-label-img" src="assets/ui/growth_heading_pop_sticker_alpha.png" alt="ココが育つ！" width="900" height="300" loading="lazy" decoding="async">楽しみに待つことや自分で選ぶ体験から、<b>見通しを持つ力と選ぶ力</b>が育ちます。</p>
           </div>
         </article>
 
-        <!-- ② シールアルバム（受け皿） -->
+        <!-- ② シールちょう＋シールミュージアム -->
         <article class="pc-card pc-card--mt1">
-          <div class="pc-bubble pc-bubble--alt">★ 集める</div>
-          <div class="pc-visual pc-v-sticker" role="img" aria-label="集めたシールをアルバムに貼る、シールアルバムの画面"></div>
+          <div class="pc-bubble pc-bubble--alt">★ 集めて眺める</div>
           <div class="pc-body">
-            <h3 class="pc-title">シールアルバム</h3>
-            <p class="pc-play">集めたシールを、自分のアルバムに貼って眺められます。少しずつ増えていく楽しさを味わえます。</p>
-            <p class="pc-growth"><img class="pc-growth-label-img" src="assets/ui/growth_heading_pop_sticker_raw.png" alt="ココが育つ！" width="1774" height="887" loading="lazy" decoding="async">集めて並べる楽しさで <b>達成感とコレクション欲、整理する力</b> が育ちます。</p>
+            <h3 class="pc-title">シールちょうと<wbr><span class="pc-title-term">ミュージアム</span></h3>
+            <div class="pc-feature-scenes">
+              <figure class="pc-feature-scene">
+                <div class="pc-feature-media">
+                  <img src="assets/lp/features/sticker-gallery_20260712.png" alt="集めたシールが額に飾られたギャラリーの画面" width="1280" height="720" loading="lazy" decoding="async">
+                </div>
+                <figcaption><strong>ギャラリー</strong>シールを額に飾って楽しめます。</figcaption>
+              </figure>
+              <figure class="pc-feature-scene">
+                <div class="pc-feature-media">
+                  <img src="assets/lp/features/sticker-museum_20260712.png" alt="集めたシールをテーマ別に見られるシールミュージアムの全景" width="1280" height="720" loading="lazy" decoding="async">
+                </div>
+                <figcaption><strong>シールミュージアム</strong>シールをテーマ別に見られます。</figcaption>
+              </figure>
+            </div>
+            <p class="pc-growth"><img class="pc-growth-label-img" src="assets/ui/growth_heading_pop_sticker_alpha.png" alt="ココが育つ！" width="900" height="300" loading="lazy" decoding="async">見比べたり、テーマごとに整理したりする遊びから、<b>観察する力と整理する力</b>が育ちます。</p>
           </div>
         </article>
 
