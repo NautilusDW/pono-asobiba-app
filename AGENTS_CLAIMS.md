@@ -58,7 +58,6 @@
 ## Active claims
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
-- 2026-07-12 - by Codex - [batch:1266-nazonazo-jungle-far-lift] - nazonazo-tunnel/{styles.css,index.html}, tests/nazonazo_mountain_weather_regression.cjs, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - ジャングル最奥と1つ手前の背景2層をさらに上へ移動
 
 
 

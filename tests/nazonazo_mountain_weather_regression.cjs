@@ -9,6 +9,11 @@ const root = path.resolve(__dirname, "..");
 const html = fs.readFileSync(path.join(root, "nazonazo-tunnel/index.html"), "utf8");
 const css = fs.readFileSync(path.join(root, "nazonazo-tunnel/styles.css"), "utf8");
 const game = fs.readFileSync(path.join(root, "nazonazo-tunnel/js/game.js"), "utf8");
+const sw = fs.readFileSync(path.join(root, "sw.js"), "utf8");
+
+assert.match(html, /styles\.css\?v=20260712-1266/, "the raised jungle layers must bypass stale CSS caches");
+assert.match(html, /js\/game\.js\?v=20260712-1266/, "the raised cloud backdrop must bypass stale game-script caches");
+assert.match(sw, /const CACHE_VERSION = 2142;/, "the layer lift must ship with a fresh service-worker generation");
 
 function numericConstant(source, name) {
   const match = source.match(new RegExp(`const\\s+${name}\\s*=\\s*([0-9.]+)`));
@@ -83,10 +88,10 @@ assert.match(css, /#townHorizonLoop \.town-loop-tile::before\{background-image:u
 assert.match(css, /#townMidLoop \.town-loop-tile::before\{background-image:url\("\.\.\/assets\/images\/nazonazo-tunnel\/town_mid_layer_whiteback_20260712_v2\.webp"\)\}/, "the town middle strip must use the cleaned white-background-derived artwork");
 assert.match(css, /@media \(min-aspect-ratio:2\/1\)\{:root\{--town-sky-lift:34vh\}\}/, "ultrawide screens must retain more sky while lifting the far mountain by the same amount");
 assert.match(game, /id:"town"[^\n]+skyPosition:"center calc\(100% - var\(--town-sky-lift,42vh\)\)"/, "the sky asset must use the responsive mountain lift without stretching");
-assert.match(game, /id:"jungle"[^\n]+skyPosition:"center calc\(100% - 10vh\)"/, "the farthest jungle backdrop must stay lifted at every aspect ratio");
+assert.match(game, /id:"jungle"[^\n]+skyPosition:"center calc\(100% - 22vh\)"/, "the cloud-bearing farthest jungle backdrop must move substantially higher at every aspect ratio");
 assert.match(game, /skyA\.style\.backgroundColor=st\.id==="town"\?"#c7d659":\(st\.id==="jungle"\?"#34793f":"transparent"\);/, "the raised town and jungle skies need sampled ground-color fallbacks behind their transparent layers");
-assert.match(css, /#jungleHorizonLoop\{top:-34vh;height:126%\}/, "the second-farthest jungle mountains must move upward while keeping their rendered scale");
-assert.match(css, /body\.st-jungle #midT\{background-size:auto 116%;background-position-y:-18vh\}/, "the middle jungle canopy must move up with the far layers");
+assert.match(css, /#jungleHorizonLoop\{top:-46vh;height:126%\}/, "the second-farthest jungle mountains must move higher while keeping their rendered scale");
+assert.match(css, /body\.st-jungle #midT\{background-size:auto 116%;background-position-y:-18vh\}/, "the third jungle canopy layer must keep its existing depth while only the two farthest layers rise");
 for (const [stage, height] of [["town", "17"], ["jungle", "20"], ["number", "17"], ["future", "17.4"]]) {
   assert.match(css, new RegExp(`body\\.st-${stage} #groundT\\{height:${height.replace(".", "\\.")}vh`), `${stage}: the train track must move upward without exposing a gap below it`);
 }
@@ -199,11 +204,13 @@ async function verifyPanoramaAssets() {
     if (!rowOpaque) break;
     jungleOpaqueTailStart = y;
   }
-  const jungleOpaqueScreenStart = -34 + 126 * (jungleOpaqueTailStart / jungleInfo.height);
-  const jungleHorizonBottom = -34 + 126;
+  const jungleOpaqueScreenStart = -46 + 126 * (jungleOpaqueTailStart / jungleInfo.height);
+  const jungleHorizonBottom = -46 + 126;
+  const jungleSkyBottom = 100 - 22;
   const jungleGroundTop = 100 - 20;
-  assert.ok(jungleOpaqueScreenStart <= 55, "the lifted jungle horizon must become fully opaque near the middle of the screen");
-  assert.ok(jungleHorizonBottom >= jungleGroundTop + 8, "the jungle horizon must overlap the raised track enough to prevent a vertical gap");
+  assert.ok(jungleOpaqueScreenStart <= 42, "the lifted jungle horizon must become fully opaque above the middle of the screen");
+  assert.equal(jungleHorizonBottom, jungleGroundTop, "the raised horizon must meet the jungle track without a vertical gap");
+  assert.ok(jungleHorizonBottom >= jungleSkyBottom + 2, "the immediately-front horizon must overlap the raised cloud backdrop by two viewport-height units");
 
   const habitatPath = path.join(root, "assets/images/nazonazo-tunnel", "jungle_habitat_loop_whiteback_20260712.webp");
   const habitatMeta = await sharp(habitatPath).metadata();

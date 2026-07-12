@@ -203,7 +203,7 @@ body.st-town #horizon,body.st-town #midT{background-image:none!important}
   background-image:url("../assets/images/nazonazo-tunnel/jungle_horizon_layer_whiteback_20260712_v2.webp")}
 .jungle-loop-tile:nth-child(even)::before{transform:scaleX(-1)}
 body.st-jungle .jungle-loop-strip{display:flex}
-#jungleHorizonLoop{top:-34vh;height:126%}
+#jungleHorizonLoop{top:-46vh;height:126%}
 #jungleHorizonLoop .jungle-loop-tile{aspect-ratio:1700/933}
 
 /* ===== weather: individually varied rain particles in three depth planes ===== */
