@@ -59,8 +59,6 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
-- 2026-07-13 07:52 - by Codex - [batch:1273-stickerbook-cover-label] - Prototypes/StickerBookThreeJS/index.html, Prototypes/StickerBookThreeJS/main.js, Prototypes/StickerBookThreeJS/styles.css, tests/stickerbook_theme_fit_copy_regression.cjs, play.html, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - テーマ選択の子ども向け名称を「ひょうし」へ短縮し、表紙表示中だけ中央下の重複する「ひょうし」ラベルを読み上げ・focusごと非表示にする [overlap: batch:1272-stickerbook-theme-fit]
-
 
 - 2026-06-28 09:27 - by Codex - [batch:877-gacha-tray-mask-lower] - play.html, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - ガチャ受け皿マスクが上すぎるため奥壁ラインを下げて再調整 [overlap: batch:860-data-export-import]
 - 2026-06-28 13:00 - by Claude - [batch:885-difficulty-label-phase3-fix] - quizland/index.html, puzzle/partner-select.js, bento/index.html - クロスレビュー Critical/High 修正 (quizland「かんたん」UI 露出 / puzzle partner「かんたん」/ bento aria-label hardcode) [overlap: batch:884-maze-water-line-skate]
