@@ -70,7 +70,7 @@
   else { document.addEventListener('DOMContentLoaded', showLock); }
 })();
 </script>
-<link rel="stylesheet" href="styles.css?v=20260712-1255">
+<link rel="stylesheet" href="styles.css?v=20260712-1260">
 </head>
 <body class="st-town v-train" data-driver="pono" data-driver-mood="happy">
 <div id="app">
@@ -82,12 +82,14 @@
         <span class="town-loop-tile"></span><span class="town-loop-tile"></span><span class="town-loop-tile"></span><span class="town-loop-tile"></span>
       </div>
     </div>
+    <div id="jungleBirdFlightLayer" class="jungle-flight-layer" aria-hidden="true"></div>
     <div id="jungleAnimalsFar" class="jungle-animal-layer" aria-hidden="true"></div>
     <div id="midT">
       <div id="townMidLoop" class="town-loop-strip" aria-hidden="true">
         <span class="town-loop-tile"></span><span class="town-loop-tile"></span><span class="town-loop-tile"></span><span class="town-loop-tile"></span>
       </div>
     </div>
+    <div id="jungleButterflyFlightLayer" class="jungle-flight-layer" aria-hidden="true"></div>
     <div id="jungleAnimalsMid" class="jungle-animal-layer" aria-hidden="true"></div>
     <div id="seaFishLayer" aria-hidden="true"></div>
     <div id="groundT"></div>
@@ -167,11 +169,16 @@
     <div id="rainNear" class="weather-rain-layer" aria-hidden="true"></div>
   </div>
 
-  <div id="carBadge" aria-live="polite">👥 ×0</div>
-  <div id="helpBadge" aria-live="polite">🍀 ×0</div>
-
   <div id="hud">
     <div id="dots"><span id="stgName"></span></div>
+    <div id="scoreHud">
+      <div id="scoreCurrentPill" class="score-hud-pill"><span>スコア</span><strong id="scoreHudValue">0</strong></div>
+      <div id="scoreHudTail">
+        <div id="highScorePill" class="score-hud-pill is-high"><span>ハイスコア</span><strong id="highScoreValue">0</strong></div>
+        <div id="helpBadge" aria-live="polite">🍀 ×0</div>
+        <div id="carBadge" aria-live="polite">👥 ×0</div>
+      </div>
+    </div>
     <button id="homeBtn" type="button">🗺️ ちず</button>
   </div>
 
@@ -239,6 +246,6 @@
 </div>
 <div id="rotateHint">📱➡️ よこむきに してね</div>
 <script src="data/questions.js?v=20260702-1051"></script>
-<script src="js/game.js?v=20260712-1255"></script>
+<script src="js/game.js?v=20260712-1260"></script>
 </body>
 </html>

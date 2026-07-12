@@ -15,7 +15,7 @@ assert.match(
   "the FOUC guard must still depend on pono-game-ready"
 );
 
-const applyStart = game.indexOf("function applySkin(){");
+const applyStart = game.indexOf("function applySkin(");
 const applyEnd = game.indexOf("\nfunction buildWorld", applyStart);
 assert.ok(applyStart >= 0 && applyEnd > applyStart, "applySkin must be present");
 const applySkin = game.slice(applyStart, applyEnd);
@@ -45,7 +45,9 @@ function runSkinClassReset(initialClassName, iosDevice, portalEdit) {
     document: { body },
     IOS_DEVICE: iosDevice,
     PORTAL_EDIT_ENABLED: portalEdit,
+    weatherReady: true,
     weatherForStage() { return "rain"; },
+    startStageWeather() { return "rain"; },
     st: { id: "town", veh: "train" }
   });
   return classes;

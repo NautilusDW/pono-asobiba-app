@@ -60,6 +60,22 @@ body.st-jungle:not(.tunnel-interior) .jungle-animal-art:not(.motion-still){anima
 @keyframes jungleAnimalBob{0%,100%{transform:translate3d(0,0,0) rotate(0)}48%{transform:translate3d(var(--animal-move-x,1px),var(--animal-move-y,-3px),0) rotate(var(--animal-rotate,.6deg))}}
 @keyframes jungleAnimalBreathe{0%,100%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(0,var(--animal-move-y,-2px),0) scale(1.012)}}
 @keyframes jungleAnimalFlutter{0%,100%{transform:translate3d(-3px,2px,0) rotate(-1deg)}35%{transform:translate3d(4px,-5px,0) rotate(.8deg)}68%{transform:translate3d(-1px,-2px,0) rotate(-.4deg)}}
+.jungle-flight-layer{position:absolute;inset:0;display:none;overflow:hidden;contain:layout paint;pointer-events:none}
+#jungleBirdFlightLayer{z-index:1}
+#jungleButterflyFlightLayer{z-index:2}
+body.st-jungle:not(.tunnel-interior) .jungle-flight-layer{display:block}
+.jungle-flight{position:absolute;left:0;top:0;display:block;overflow:hidden;opacity:0;pointer-events:none;transform-origin:center;will-change:auto}
+.jungle-flight.is-flying{opacity:1;will-change:transform}
+.jungle-flight-bird{width:clamp(58px,9vmin,100px);aspect-ratio:4/3}
+.jungle-flight-butterfly{width:clamp(40px,6.5vmin,68px);aspect-ratio:1}
+.jungle-flight-sheet{display:block;width:300%;height:100%;max-width:none;object-fit:fill;animation:jungleFlightFrames .48s step-end infinite}
+.jungle-flight-butterfly .jungle-flight-sheet{animation-duration:.64s}
+@keyframes jungleFlightFrames{
+  0%,24.99%{transform:translate3d(0,0,0)}
+  25%,49.99%{transform:translate3d(-33.3333%,0,0)}
+  50%,74.99%{transform:translate3d(-66.6667%,0,0)}
+  75%,100%{transform:translate3d(-33.3333%,0,0)}
+}
 #groundT{position:absolute;left:0;right:0;bottom:0;height:12vh;z-index:2;
   background-repeat:repeat-x;background-size:auto 100%;will-change:background-position}
 #world{position:absolute;top:0;bottom:0;left:0;width:0;z-index:3;will-change:transform}
@@ -106,10 +122,10 @@ body.v-sub .car::before,body.v-sub .car::after{display:none}
 body.v-rocket .car{border-radius:50%;background:#e8e8f2;border-color:#a8a8c0}
 body.v-rocket .car::before,body.v-rocket .car::after{display:none}
 .car.fade{opacity:0}
-#carBadge{position:absolute;bottom:21vh;left:2vw;z-index:9;background:rgba(255,255,255,.85);
-  border-radius:999px;padding:5px 12px;font-size:clamp(13px,2.6vw,19px);font-weight:800;display:none}
-#helpBadge{position:absolute;bottom:27vh;left:2vw;z-index:9;background:rgba(255,255,255,.88);
-  border:2px solid rgba(87,193,94,.5);border-radius:999px;padding:5px 12px;font-size:clamp(13px,2.6vw,19px);font-weight:800;display:none}
+#carBadge,#helpBadge{position:static;height:36px;min-width:50px;border-radius:999px;padding:4px 8px;
+  align-items:center;justify-content:center;white-space:nowrap;font-size:14px;font-weight:800;line-height:1;display:none}
+#carBadge{background:rgba(255,255,255,.85)}
+#helpBadge{background:rgba(255,255,255,.88);border:2px solid rgba(87,193,94,.5)}
 #veh{position:absolute;bottom:12.5vh;left:28vw;width:clamp(120px,22vw,220px);height:clamp(70px,13vw,130px);z-index:7}
 body.v-train #cars{bottom:9.1vh}
 body.v-train #veh{left:calc(55vw - clamp(95px,15.45vw,165.5px));bottom:9.1vh;width:clamp(190px,30.9vw,331px);height:clamp(95px,15.45vw,165.5px)}
@@ -282,12 +298,13 @@ body.tunnel-interior #tunnelFriendGame[aria-hidden="false"]{display:block}
   width:clamp(60px,9vw,84px);height:clamp(66px,10.5vw,98px);min-width:56px;min-height:56px;display:grid;place-items:center;overflow:visible;pointer-events:auto;cursor:pointer;
   border:0;border-radius:18px;padding:7px;background:transparent;box-shadow:none;
   transform:translate3d(calc(var(--friend-screen-x) - 50%),-50%,0);will-change:transform;touch-action:manipulation}
+.tunnel-friend-visual{display:grid;width:100%;height:100%;place-items:center;transform:rotate(var(--friend-rotate,0deg)) scale(var(--friend-scale,1));transform-origin:center}
 .tunnel-friend img{display:block;width:100%;height:100%;object-fit:contain;object-position:center bottom;opacity:.9;
   filter:brightness(0) saturate(0) drop-shadow(0 0 2px rgba(255,217,125,.92)) drop-shadow(0 2px 1px rgba(0,0,0,.5));mix-blend-mode:multiply}
-.tunnel-friend span{display:block;font-size:clamp(38px,7vw,62px);line-height:1;opacity:.9;filter:brightness(0) drop-shadow(0 0 2px rgba(255,217,125,.92));mix-blend-mode:multiply}
+.tunnel-friend-emoji{display:block;font-size:clamp(38px,7vw,62px);line-height:1;opacity:.9;filter:brightness(0) drop-shadow(0 0 2px rgba(255,217,125,.92));mix-blend-mode:multiply}
 .tunnel-friend:focus-visible{outline:4px solid #fff3a8;outline-offset:4px}
 .tunnel-friend.found{pointer-events:none}
-.tunnel-friend.found img,.tunnel-friend.found span{opacity:1;mix-blend-mode:normal;filter:drop-shadow(0 0 4px rgba(255,226,129,.95)) drop-shadow(0 2px 1px rgba(0,0,0,.38));animation:tunnelFriendReveal .42s ease both}
+.tunnel-friend.found img,.tunnel-friend.found .tunnel-friend-emoji{opacity:1;mix-blend-mode:normal;filter:drop-shadow(0 0 4px rgba(255,226,129,.95)) drop-shadow(0 2px 1px rgba(0,0,0,.38));animation:tunnelFriendReveal .42s ease both}
 .tunnel-friend.found::after{content:attr(data-score) "てん";position:absolute;right:-16px;top:-12px;display:grid;place-items:center;min-width:48px;height:27px;padding:0 7px;
   border-radius:14px;background:#ffdd69;color:#4d351d;font-size:15px;font-weight:1000;line-height:1;box-shadow:0 2px 0 rgba(0,0,0,.32);animation:tunnelScorePop .72s ease both}
 #tunnelFriendGame.is-result #tunnelFriendPanel,#tunnelFriendGame.is-result #tunnelFriendLayer{display:none}
@@ -573,6 +590,15 @@ body.v-rocket #veh.go .rk-flame{opacity:1;animation:flame .22s linear infinite a
 #stgName{font-size:clamp(13px,2.4vw,18px);font-weight:800;margin-right:6px}
 .dot{width:clamp(16px,3vw,24px);aspect-ratio:1;border-radius:50%;background:#ddd;display:flex;align-items:center;justify-content:center;font-size:clamp(10px,2vw,15px)}
 .dot.on{background:var(--good)}
+#scoreHud{position:absolute;left:50%;top:0;transform:translateX(-50%);display:inline-block;pointer-events:none;font-variant-numeric:tabular-nums}
+.score-hud-pill{height:42px;min-width:84px;padding:3px 10px;border:2px solid rgba(255,201,104,.74);border-radius:999px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(255,255,255,.9);box-shadow:0 3px 0 rgba(0,0,0,.13);line-height:1}
+.score-hud-pill>span{font-size:10px;font-weight:800;color:#8a6a3d}
+.score-hud-pill>strong{margin-top:2px;font-size:16px;font-weight:1000;color:#4a3b2a}
+.score-hud-pill.is-high{min-width:94px;border-color:rgba(142,124,240,.48);background:rgba(250,248,255,.92)}
+.score-hud-pill.is-high>strong{color:#6655b8}
+#scoreHudTail{position:absolute;left:calc(100% + 4px);top:0;display:flex;align-items:center;gap:4px;white-space:nowrap}
+#scoreHud #helpBadge,#scoreHud #carBadge{position:static;left:auto;bottom:auto;z-index:auto}
 #homeBtn{pointer-events:auto;background:rgba(255,255,255,.85);border:none;border-radius:999px;padding:8px 16px;font:inherit;font-size:clamp(14px,2.6vw,20px);color:var(--ink);box-shadow:0 3px 0 rgba(0,0,0,.15)}
 #weatherNotice{position:absolute;top:calc(60px + env(safe-area-inset-top));left:50%;z-index:10;transform:translateX(-50%);
   width:min(92vw,520px);padding:7px 16px;border:2px solid rgba(163,205,226,.88);border-radius:18px;
@@ -674,8 +700,19 @@ h1{font-size:clamp(24px,5.6vw,50px);color:#e0704a;text-shadow:0 3px 0 #fff}
 #zukan #zkClose{position:sticky;bottom:10px;z-index:2}
 #rotateHint{display:none;position:fixed;inset:0;z-index:99;background:#ffe9c2;color:var(--ink);
   font-size:clamp(18px,5vw,30px);font-weight:800;align-items:center;justify-content:center;text-align:center;padding:20px}
-@media (orientation:portrait){#rotateHint{display:flex}}
+@media (orientation:portrait){#rotateHint{display:flex}#scoreHud{display:none}}
 @media (min-aspect-ratio:2/1){:root{--town-sky-lift:22vh}}
+@media (orientation:landscape) and (max-width:1000px){
+  #dots{gap:4px;padding:6px 8px}
+  #stgName{font-size:12px;margin-right:2px}
+  .dot{width:12px;font-size:8px}
+  .score-hud-pill{height:38px;min-width:70px;padding:2px 6px}
+  .score-hud-pill>span{font-size:9px}
+  .score-hud-pill>strong{font-size:13px}
+  .score-hud-pill.is-high{min-width:78px}
+  #scoreHudTail{left:calc(100% + 3px);gap:3px}
+  #scoreHud #helpBadge,#scoreHud #carBadge{height:34px;min-width:42px;padding:3px 5px;font-size:11px}
+}
 @media (orientation:landscape) and (max-height:360px){
   .ovl{gap:1.2vh;padding:8px}
   h1{font-size:clamp(22px,5vw,36px)}
@@ -711,5 +748,6 @@ h1{font-size:clamp(24px,5.6vw,50px);color:#e0704a;text-shadow:0 3px 0 #fff}
   .rain-particle{left:var(--rain-rest-x);top:var(--rain-rest-y);animation:none!important;transform:rotate(var(--rain-angle));will-change:auto!important}
   #rainFar .rain-particle:nth-child(n+8),#rainMid .rain-particle:nth-child(n+6),#rainNear .rain-particle:nth-child(n+4){display:none}
   .jungle-animal-art{animation:none!important;transform:none!important}
-  .tunnel-friend,.tunnel-friend img,.tunnel-friend span,.tunnel-friend::after{animation:none!important;will-change:auto!important}
+  .jungle-flight-layer{display:none!important}
+  .tunnel-friend,.tunnel-friend-visual,.tunnel-friend img,.tunnel-friend .tunnel-friend-emoji,.tunnel-friend::after{animation:none!important;will-change:auto!important}
 }

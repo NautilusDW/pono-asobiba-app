@@ -30,10 +30,19 @@ function createHarness({ fast = 1, forced = "" } = {}) {
   vm.runInNewContext(weatherBlock + `
     this.__weather = {
       roll: rollJourneyWeather,
+      start: startStageWeather,
+      advance: advanceStageWeather,
+      stop: stopStageWeather,
       forStage: weatherForStage,
       rareChance: rareSpawnChance,
       speed: rainTrainSpeedMultiplier,
-      state: () => ({ journeyWeather, currentStageWeather, rainNoticePending }),
+      state: () => ({
+        journeyWeatherPlan,
+        currentStageWeather,
+        showerSchedulerActive,
+        showerPhaseElapsedMs,
+        showerPhaseDurationMs
+      }),
       setCurrent: value => { currentStageWeather = value; }
     };`, context, { filename: "nazonazo-weather-gameplay.js" });
   return context.__weather;
@@ -41,27 +50,78 @@ function createHarness({ fast = 1, forced = "" } = {}) {
 
 const weather = createHarness();
 let draws = 0;
-assert.equal(weather.roll(() => { draws++; return .499999; }), "rain", "values below .5 must draw rain");
+assert.equal(weather.roll(() => { draws++; return .249999; }), "showers", "values below .25 must select a shower journey");
 assert.equal(draws, 1, "one journey must consume exactly one weather draw");
-for (let i = 0; i < 12; i++) assert.equal(weather.forStage({ id: "town" }), "rain", "weather must not redraw during a journey");
-assert.equal(draws, 1, "stage reads must never consume random values");
-assert.equal(weather.forStage({ id: "jungle" }), "clear", "non-town scenery must remain clear");
-assert.equal(weather.state().rainNoticePending, true, "a rainy departure must queue exactly one explanation");
-assert.equal(weather.roll(() => { draws++; return .5; }), "clear", "the .5 boundary must draw clear");
+assert.equal(weather.roll(() => { draws++; return .25; }), "clear", "the .25 boundary must draw a clear journey");
 assert.equal(draws, 2);
-assert.equal(weather.state().rainNoticePending, false, "clear departures must not queue a rain explanation");
+
+weather.roll(() => .249999);
+weather.start({ id: "town", veh: "train" }, () => 0);
+let showerState = weather.state();
+assert.equal(showerState.journeyWeatherPlan, "showers");
+assert.equal(showerState.currentStageWeather, "clear", "a shower journey must still begin clear");
+assert.equal(showerState.showerSchedulerActive, true, "town must arm its shower scheduler");
+assert.equal(showerState.showerPhaseElapsedMs, 0);
+assert.equal(showerState.showerPhaseDurationMs, 2500, "the minimum first-shower delay must be 2.5 seconds");
+assert.equal(weather.forStage({ id: "town" }), "clear", "stage reads must expose the current phase without redrawing");
+assert.equal(weather.forStage({ id: "jungle" }), "clear", "showers must never leak into another stage");
+
+const exteriorDrive = { playing: true, driving: true, tunnelRun: false };
+const stoppedAtQuiz = { playing: true, driving: false, tunnelRun: false };
+weather.advance(2499, exteriorDrive, () => 0);
+assert.equal(weather.state().currentStageWeather, "clear", "rain must not begin before the sampled delay");
+weather.advance(1, exteriorDrive, () => 0);
+showerState = weather.state();
+assert.equal(showerState.currentStageWeather, "rain", "rain must begin at the sampled delay while driving outside");
+assert.equal(showerState.showerPhaseDurationMs, 6000, "the minimum shower duration must be six seconds");
+
+weather.advance(5999, stoppedAtQuiz, () => 0);
+assert.equal(weather.state().currentStageWeather, "rain", "an active shower must continue through its sampled duration");
+weather.advance(1, stoppedAtQuiz, () => 0);
+showerState = weather.state();
+assert.equal(showerState.currentStageWeather, "clear", "an active shower may end while the train is stopped at a town quiz");
+assert.equal(showerState.showerPhaseDurationMs, 12000, "the minimum clear gap must be twelve seconds");
+
+weather.advance(20000, stoppedAtQuiz, () => 0);
+assert.equal(weather.state().showerPhaseElapsedMs, 0, "a clear gap must not advance while the train is stopped");
+weather.advance(12000, exteriorDrive, () => 0);
+assert.equal(weather.state().currentStageWeather, "rain", "another shower may begin only after enough exterior driving");
+
+weather.stop();
+showerState = weather.state();
+assert.equal(showerState.currentStageWeather, "clear", "stopping a stage scheduler must clear active rain");
+assert.equal(showerState.showerSchedulerActive, false);
+assert.equal(showerState.showerPhaseElapsedMs, 0);
+assert.equal(showerState.showerPhaseDurationMs, 0);
+
+weather.roll(() => .249999);
+weather.start({ id: "town", veh: "train" }, () => 0);
+weather.advance(6000, { playing: true, driving: true, tunnelRun: true }, () => 0);
+assert.equal(weather.state().showerPhaseElapsedMs, 0, "the clear-phase clock must pause during tunnel travel");
+weather.start({ id: "jungle", veh: "train" }, () => 0);
+assert.equal(weather.state().currentStageWeather, "clear", "starting another stage must reset the visible weather");
+assert.equal(weather.state().showerSchedulerActive, false, "non-town stages must never retain the scheduler");
 
 let fastDraws = 0;
 const fastWeather = createHarness({ fast: 6 });
 assert.equal(fastWeather.roll(() => { fastDraws++; return 0; }), "clear", "fast regression runs must stay deterministic without an override");
 assert.equal(fastDraws, 0, "fast mode must not consume the weather draw");
+fastWeather.start({ id: "town", veh: "train" }, () => 0);
+assert.equal(fastWeather.state().currentStageWeather, "clear");
+assert.equal(fastWeather.state().showerSchedulerActive, false, "fast mode must not arm random shower work");
 
 for (const forced of ["rain", "clear"]) {
   let forcedDraws = 0;
   const forcedWeather = createHarness({ forced });
-  assert.equal(forcedWeather.roll(() => { forcedDraws++; return forced === "rain" ? 1 : 0; }), forced, `forced ${forced} must win over the random source`);
+  forcedWeather.roll(() => { forcedDraws++; return forced === "rain" ? 1 : 0; });
   assert.equal(forcedDraws, 0, "debug overrides must not consume the random draw");
-  assert.equal(forcedWeather.forStage({ id: "town" }), forced);
+  forcedWeather.start({ id: "town", veh: "train" }, () => { forcedDraws++; return 0; });
+  assert.equal(forcedDraws, 0, "fixed debug weather must not consume scheduler timing draws");
+  assert.equal(forcedWeather.state().currentStageWeather, forced);
+  assert.equal(forcedWeather.state().showerSchedulerActive, false, `forced ${forced} must stay fixed rather than cycle`);
+  forcedWeather.advance(60000, exteriorDrive, () => { forcedDraws++; return 0; });
+  assert.equal(forcedWeather.state().currentStageWeather, forced, `forced ${forced} must remain fixed over time`);
+  assert.equal(forcedDraws, 0);
   assert.equal(forcedWeather.forStage({ id: "jungle" }), "clear", "debug weather must not leak past the town scenery");
 }
 
@@ -75,11 +135,27 @@ assert.equal(weather.speed({ veh: "train" }, true), 1, "tunnel travel must keep 
 assert.equal(weather.speed({ veh: "sub" }, false), 1, "other vehicles must not inherit the rain slowdown");
 assert.ok(1 - Math.pow(1 - .4, 5) > 1 - Math.pow(1 - .25, 5), "rain must materially improve the five-attempt encounter chance");
 
+assert.match(weatherBlock, /const JOURNEY_SHOWER_CHANCE=\.25;/, "a journey must have exactly a twenty-five percent shower-plan chance");
+assert.match(weatherBlock, /const SHOWER_FIRST_DELAY_MS=\[2500,6000\];/, "first rain must wait between 2.5 and 6 seconds of exterior driving");
+assert.match(weatherBlock, /const SHOWER_RAIN_DURATION_MS=\[6000,10000\];/, "one shower must last between 6 and 10 seconds");
+assert.match(weatherBlock, /const SHOWER_CLEAR_DURATION_MS=\[12000,20000\];/, "showers must be separated by 12 to 20 seconds of exterior driving");
+assert.doesNotMatch(weatherBlock, /setTimeout|setInterval/, "the weather state machine must use the existing animation clock without owning timers");
 assert.match(game, /if\(!FORCERARE&&Math\.random\(\)>rareSpawnChance\(\)\)return;/, "rare spawning must use the resolved weather chance");
-assert.match(game, /const tunnelGameRun=pending==="tunnelExit";[\s\S]*?const rainSpeed=rainTrainSpeedMultiplier\(STAGES\[stg\],tunnelRun\);[\s\S]*?const maxV=tunnelGameRun\?TUNNEL_GAME_MAX_V:\(tunnelRun\?TUNNEL_TRANSIT_MAX_V:\(swapReady\?52:38\)\*rainSpeed\);/, "the game loop must apply rain only to exterior cruising speed while preserving separate tunnel play/transit speeds");
-assert.match(game, /const weather=weatherForStage\(st\);\s*currentStageWeather=weather;/, "the applied scene weather must feed both speed and rare encounter effects");
+assert.match(game, /const tunnelGameRun=pending==="tunnelExit";[\s\S]*?advanceStageWeather\([\s\S]*?const rainSpeed=rainTrainSpeedMultiplier\(STAGES\[stg\],tunnelRun\);[\s\S]*?const maxV=tunnelGameRun\?TUNNEL_GAME_MAX_V:\(tunnelRun\?TUNNEL_TRANSIT_MAX_V:\(swapReady\?52:38\)\*rainSpeed\);/, "weather must advance before the game loop resolves the active exterior speed");
 assert.equal((game.match(/rollJourneyWeather\(\);/g) || []).length, 3, "only title start, retry, and loop-two start may redraw weather");
 assert.doesNotMatch(game.match(/bindTap\(\$\("goBtn"\)[^\n]+/)?.[0] || "", /rollJourneyWeather/, "map resume must keep the current journey weather");
+for (const [name, expectation] of [
+  ["startJourneyAt", /stopStageWeather\([\s\S]*?startStageWeather/],
+  ["openMap", /stopStageWeather/],
+  ["beginStageTransit", /stopStageWeather/],
+  ["enterTunnelInterior", /stopStageWeather/],
+  ["ending", /stopStageWeather/]
+]) {
+  const functionStart = game.indexOf(`function ${name}(`);
+  const functionEnd = game.indexOf("\nfunction ", functionStart + 1);
+  assert.ok(functionStart >= 0, `${name} must remain present`);
+  assert.match(game.slice(functionStart, functionEnd < 0 ? game.length : functionEnd), expectation, `${name} must reset shower state at its lifecycle boundary`);
+}
 assert.match(game, /function scheduleRareSpawn\(\)\{[\s\S]*?const scheduledStage=stg,scheduledLoop=loop;[\s\S]*?if\(!playing\|\|!driving\|\|stg!==scheduledStage\|\|loop!==scheduledLoop\)return;/, "delayed rare draws must stay inside the active journey and stage");
 assert.match(game, /function maybeSpawnRare\(\)\{\s*if\(!playing\|\|!driving\|\|rareEl\)return;/, "rare friends must never appear over maps or stopped screens");
 assert.match(game, /function startJourneyAt\(s\)\{\s*hideWeatherNotice\(\);\s*clearRareEvent\(\);/, "new journeys must clear delayed and flying rare friends");
@@ -156,5 +232,6 @@ const showNoticeEnd = game.indexOf("\n}", showNoticeStart);
 const showNotice = game.slice(showNoticeStart, showNoticeEnd + 2);
 assert.doesNotMatch(showNotice, /showStamp|speak/, "the rain explanation must not compete with quiz stamps or narration");
 assert.match(game, /function showQuiz\(\)\{\s*hideWeatherNotice\(\);/, "the notice must be gone before any question appears");
+assert.match(game, /addEventListener\("pagehide",\(\)=>\{[^}]*hideWeatherNotice\(\);[^}]*clearTimeout\(rainParticleResizeTimer\);/, "pagehide must cancel the only weather-owned timeout before BFCache or navigation");
 
 console.log("nazonazo random weather tradeoff regression: PASS");

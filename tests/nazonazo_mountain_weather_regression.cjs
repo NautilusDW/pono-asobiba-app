@@ -49,8 +49,11 @@ assert.match(css, /--town-sky-lift:30vh/, "the baked far mountain must move deci
 assert.match(css, /#townHorizonLoop\{top:-38vh;height:124%\}/, "the next mountain layer must rise to its last gap-safe position");
 assert.match(css, /@media \(min-aspect-ratio:2\/1\)\{:root\{--town-sky-lift:22vh\}\}/, "ultrawide screens must retain more of the sky and clouds");
 assert.match(game, /id:"town"[^\n]+skyPosition:"center calc\(100% - var\(--town-sky-lift,30vh\)\)"/, "the sky asset must use the responsive mountain lift without stretching");
-assert.match(game, /const JOURNEY_RAIN_CHANCE=\.5;/, "new journeys must use an even clear-or-rain draw");
-assert.match(game, /if\(!stage\|\|stage\.id!=="town"\)return "clear";\s*return forcedWeather\(\)\|\|journeyWeather;/, "the drawn weather must stay stable in town without leaking into later scenery");
+assert.match(game, /const JOURNEY_SHOWER_CHANCE=\.25;/, "exactly one quarter of new journeys may contain town showers");
+assert.match(game, /const SHOWER_FIRST_DELAY_MS=\[2500,6000\];/, "a selected journey must start clear before its first shower");
+assert.match(game, /const SHOWER_RAIN_DURATION_MS=\[6000,10000\];/, "rain must stop after a bounded random duration");
+assert.match(game, /const SHOWER_CLEAR_DURATION_MS=\[12000,20000\];/, "successive showers must have a substantial clear gap");
+assert.match(game, /function weatherForStage\(stage\)\{\s*if\(!stage\|\|stage\.id!=="town"\)return "clear";/, "weather must remain clear outside the town scenery");
 assert.match(game, /debug\.isAllowed\(\)/, "weather overrides must stay behind the existing debug gate");
 assert.match(game, /value==="rain"\|\|value==="clear"/, "tests must be able to force rain or clear weather without a child-facing control");
 assert.match(game, /townMidLoop\.style\.transform="translate3d\("\+\(-loopOffset\)/, "the near mirrored strip must follow parallax motion");
@@ -62,8 +65,8 @@ assert.match(game, /layer\.replaceChildren\(fragment\)/, "particle pool construc
 assert.equal((game.match(/buildRainParticles\(false\);/g) || []).length, 1, "particle pools must be initialized exactly once outside applySkin");
 assert.equal((game.match(/addEventListener\("resize",scheduleRainParticleRebuild/g) || []).length, 1, "particle resizing must register exactly one listener");
 assert.match(game, /addEventListener\("pageshow",\(\)=>\{ensureAC\(\);updateRainParticleVisibility\(false\);\}\)/, "BFCache restore must refresh particle visibility without rebuilding");
-assert.match(game, /addEventListener\("pagehide",\(\)=>\{clearTimeout\(rainParticleResizeTimer\);safeSuspend\(\);\}\)/, "pagehide must clear the pending resize callback");
-assert.doesNotMatch(game.slice(game.indexOf("function applySkin()"), game.indexOf("function buildWorld(")), /buildRainParticles|scheduleRainParticle/, "skin changes must never rebuild particle DOM");
+assert.match(game, /addEventListener\("pagehide",\(\)=>\{hideWeatherNotice\(\);clearTimeout\(rainParticleResizeTimer\);safeSuspend\(\);\}\)/, "pagehide must clear both the weather notice and pending resize callback");
+assert.doesNotMatch(game.slice(game.indexOf("function applySkin("), game.indexOf("function buildWorld(")), /buildRainParticles|scheduleRainParticle/, "skin changes must never rebuild particle DOM");
 assert.match(game, /if\(window\.__PONO_TIER_LOCKED__\)/, "locked LP views must not create hidden particle work");
 assert.doesNotMatch(css, /#world(?:,|\{)[^}]*filter:/, "the multi-thousand-vw world container must never receive one giant group filter");
 assert.match(css, /#world>\.tun[^}]*[\s\S]*filter:brightness\(\.7\)/, "bounded town scenery should still darken in rain");

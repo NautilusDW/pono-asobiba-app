@@ -132,8 +132,7 @@ const ASSETS={
   decor:"../assets/images/nazonazo-tunnel/jungle_station_line_trees_20260706.webp",
   animals:{
    far:[
-    "../assets/images/nazonazo-tunnel/jungle_animal_toucans_livedin_20260712.webp",
-    "../assets/images/nazonazo-tunnel/jungle_animal_butterflies_livedin_20260712.webp"
+    "../assets/images/nazonazo-tunnel/jungle_animal_toucans_livedin_20260712.webp"
    ],
    mid:[
     "../assets/images/nazonazo-tunnel/jungle_animal_sloth_livedin_20260712.webp",
@@ -143,6 +142,10 @@ const ASSETS={
     "../assets/images/nazonazo-tunnel/jungle_animal_elephant_livedin_20260712.webp",
     "../assets/images/nazonazo-tunnel/jungle_animal_giraffe_livedin_20260712.webp"
    ]
+  },
+  flight:{
+   bird:"../assets/images/nazonazo-tunnel/jungle_flying_toucan_3frame_20260712.webp",
+   butterfly:"../assets/images/nazonazo-tunnel/jungle_flying_butterfly_3frame_20260712.webp"
   }
  },
  sea:{
@@ -281,16 +284,15 @@ const RUN_EVENTS={town:[["🦋","ちょう"],["🌼","おはな"],["🍀","よ�
 const JUNGLE_MID_TILE_ASPECT=2,JUNGLE_MID_TILE_SCALE=1.16;
 const JUNGLE_ANIMAL_LAYOUT={
  far:[
-  {asset:0,species:"toucans",anchor:"perch",x:104,y:34,anchorY:74,w:14,min:46,max:126,depth:.25,opacity:1,motion:"sway",flip:-1,origin:"50% 74%",moveY:0,loop:"mid"},
-  {asset:1,species:"butterflies",anchor:"air",x:69,y:30,anchorY:50,w:8.5,min:28,max:74,depth:.095,opacity:1,motion:"flutter",flip:1,origin:"50% 50%",moveY:-1.5}
+  {asset:0,species:"toucans",anchor:"perch",x:104,y:34,anchorY:74,w:14,min:46,max:126,depth:.25,opacity:1,motion:"sway",flip:-1,origin:"50% 74%",moveY:0,loop:"mid"}
  ],
  mid:[
   {asset:0,species:"sloth",anchor:"hang",x:6,y:37,anchorY:10,w:21,min:62,max:184,depth:.25,opacity:1,motion:"sway",flip:1,origin:"50% 10%",moveY:0,loop:"mid"},
   {asset:1,species:"crocodile",anchor:"understory",x:70,y:85.5,anchorY:98,w:25.5,min:80,max:225,depth:.92,opacity:1,motion:"breathe",flip:1,origin:"50% 98%",moveY:0}
  ],
  near:[
-  {asset:1,species:"giraffe",anchor:"ground",x:26,y:85.5,anchorY:98.75,w:23.5,min:70,max:230,depth:.9,opacity:1,motion:"breathe",flip:-1,origin:"50% 98.75%",moveY:0},
-  {asset:0,species:"elephant",anchor:"ground",x:90,y:85.5,anchorY:98.75,w:27,min:82,max:270,depth:.94,opacity:1,motion:"breathe",flip:1,origin:"50% 98.75%",moveY:0}
+  {asset:1,species:"giraffe",anchor:"ground",x:26,y:85.5,anchorY:98.75,w:29,min:92,max:280,depth:.9,opacity:1,motion:"breathe",flip:-1,origin:"50% 98.75%",moveY:0},
+  {asset:0,species:"elephant",anchor:"ground",x:90,y:85.5,anchorY:98.75,w:34,min:110,max:330,depth:.94,opacity:1,motion:"breathe",flip:1,origin:"50% 98.75%",moveY:0}
  ]
 };
 const NPC_BASE="../assets/images/bento/npc/";
@@ -385,7 +387,7 @@ function openZukan(){
 let level=0,stg=0,loop=0,unlockedLoop=0,cleared=[],qSeg=0,qList=[],cur=null,missInQ=0,stageMiss=0,totalStars=0;
 let worldX=0,vel=0,target=0,pending=null,driving=false,swapReady=false,swapped=false,coverEl=null,dropEl=null,transitCover=null;
 let tunnels=[],playing=false,cars=[],helpItems=[],rareCount=0,rareEl=null,rareSpawned=false,rareSpawnTimer=0;
-let journeyScore=0,stageScore=0,stageScoreBreakdown=emptyStageScoreBreakdown(),stageClearScoreGranted=false;
+let journeyScore=0,highScore=0,stageScore=0,stageScoreBreakdown=emptyStageScoreBreakdown(),stageClearScoreGranted=false;
 let tunnelFriendCandidates=[],tunnelFriendsFound=0,tunnelFriendTotalFound=0,tunnelFriendRewardGranted=false,tunnelFriendPerfectScoreGranted=false,tunnelFriendGameActive=false,tunnelFriendStartWorldX=0;
 let bestStarsByStage={},answerLocked=false,portalEditHolding=false,nextMagicPuffAt=0,exitPortalBaseWorldX=0;
 const SAVE_KEY="pono_nazonazo_tunnel_v1";
@@ -393,11 +395,15 @@ const FAST=(location.hash==="#fast")?6:1;
 const FORCERARE=(location.hash==="#fast");
 
 /* ================= weather gameplay ================= */
-const JOURNEY_RAIN_CHANCE=.5;
+const JOURNEY_SHOWER_CHANCE=.25;
+const SHOWER_FIRST_DELAY_MS=[2500,6000];
+const SHOWER_RAIN_DURATION_MS=[6000,10000];
+const SHOWER_CLEAR_DURATION_MS=[12000,20000];
 const RAIN_TRAIN_SPEED_MULTIPLIER=.92;
 const RARE_CHANCE_CLEAR=.25;
 const RARE_CHANCE_RAIN=.4;
-let journeyWeather="clear",currentStageWeather="clear",rainNoticePending=false;
+let journeyWeatherPlan="clear",currentStageWeather="clear",showerSchedulerActive=false,showerPhaseElapsedMs=0,showerPhaseDurationMs=0;
+let rainNoticeShownForJourney=false;
 function forcedWeather(){
  try{
   const debug=window.PonoDebugMode;
@@ -415,17 +421,55 @@ function weatherRandomUnit(){
  }catch(_){/* Math.random fallback */}
  return Math.random();
 }
+function showerRandomRange(range,randomFn){
+ const unit=typeof randomFn==="function"?randomFn():weatherRandomUnit();
+ return range[0]+(range[1]-range[0])*Math.max(0,Math.min(.999999,Number(unit)||0));
+}
 function rollJourneyWeather(randomFn){
  const forced=forcedWeather();
- if(forced)journeyWeather=forced;
- else if(FAST>1)journeyWeather="clear";
- else journeyWeather=(typeof randomFn==="function"?randomFn():weatherRandomUnit())<JOURNEY_RAIN_CHANCE?"rain":"clear";
- rainNoticePending=journeyWeather==="rain";
- return journeyWeather;
+ if(forced)journeyWeatherPlan=forced==="rain"?"showers":"clear";
+ else if(FAST>1)journeyWeatherPlan="clear";
+ else journeyWeatherPlan=(typeof randomFn==="function"?randomFn():weatherRandomUnit())<JOURNEY_SHOWER_CHANCE?"showers":"clear";
+ rainNoticeShownForJourney=false;
+ return journeyWeatherPlan;
 }
 function weatherForStage(stage){
  if(!stage||stage.id!=="town")return "clear";
- return forcedWeather()||journeyWeather;
+ return currentStageWeather;
+}
+function stopStageWeather(){
+ currentStageWeather="clear";
+ showerSchedulerActive=false;
+ showerPhaseElapsedMs=0;
+ showerPhaseDurationMs=0;
+ return currentStageWeather;
+}
+function startStageWeather(stage,randomFn){
+ stopStageWeather();
+ if(!stage||stage.id!=="town")return currentStageWeather;
+ const forced=forcedWeather();
+ if(forced){currentStageWeather=forced;return currentStageWeather;}
+ if(FAST>1||journeyWeatherPlan!=="showers")return currentStageWeather;
+ showerSchedulerActive=true;
+ showerPhaseDurationMs=showerRandomRange(SHOWER_FIRST_DELAY_MS,randomFn);
+ return currentStageWeather;
+}
+function advanceStageWeather(dtMs,state,randomFn){
+ if(!showerSchedulerActive)return null;
+ const context=state||{};
+ if(!context.playing||context.tunnelRun)return null;
+ if(currentStageWeather==="clear"&&!context.driving)return null;
+ showerPhaseElapsedMs+=Math.max(0,Number(dtMs)||0);
+ if(showerPhaseElapsedMs<showerPhaseDurationMs)return null;
+ showerPhaseElapsedMs=0;
+ if(currentStageWeather==="rain"){
+  currentStageWeather="clear";
+  showerPhaseDurationMs=showerRandomRange(SHOWER_CLEAR_DURATION_MS,randomFn);
+ }else{
+  currentStageWeather="rain";
+  showerPhaseDurationMs=showerRandomRange(SHOWER_RAIN_DURATION_MS,randomFn);
+ }
+ return currentStageWeather;
 }
 function rareSpawnChance(){
  return currentStageWeather==="rain"?RARE_CHANCE_RAIN:RARE_CHANCE_CLEAR;
@@ -476,9 +520,10 @@ function setDriverMood(mood){
 const $=id=>document.getElementById(id);
 const world=$("world"),veh=$("veh"),horizon=$("horizon"),midT=$("midT"),groundT=$("groundT"),fgT=$("fgT"),seaFishLayer=$("seaFishLayer"),smokeLayer=$("smokeLayer"),townMidLoop=$("townMidLoop");
 const jungleAnimalLayers={far:$("jungleAnimalsFar"),mid:$("jungleAnimalsMid"),near:$("jungleAnimalsNear")};
+const jungleFlightLayers={bird:$("jungleBirdFlightLayer"),butterfly:$("jungleButterflyFlightLayer")};
 const skyA=$("skyA"),skyB=$("skyB"),carsEl=$("cars"),carBadge=$("carBadge"),helpBadge=$("helpBadge"),helpBtn=$("helpBtn");
 const quiz=$("quiz"),qText=$("qText"),hintText=$("hintText"),choicesEl=$("choices");
-const dotsEl=$("dots"),stamp=$("stamp"),weatherNotice=$("weatherNotice");
+const dotsEl=$("dots"),stamp=$("stamp"),weatherNotice=$("weatherNotice"),scoreCurrentPill=$("scoreCurrentPill"),scoreHudValue=$("scoreHudValue"),highScorePill=$("highScorePill"),highScoreValue=$("highScoreValue");
 const tunnelFriendGame=$("tunnelFriendGame"),tunnelFriendGuide=$("tunnelFriendGuide"),tunnelFriendCounter=$("tunnelFriendCounter"),tunnelFriendLayer=$("tunnelFriendLayer"),tunnelFriendResult=$("tunnelFriendResult");
 const tunnelStageScore=$("tunnelStageScore"),tunnelJourneyScore=$("tunnelJourneyScore"),tunnelResultStage=$("tunnelResultStage"),tunnelResultBreakdown=$("tunnelResultBreakdown"),tunnelResultTotal=$("tunnelResultTotal");
 const portalMaskLayer=$("portalMaskLayer"),portalEditOverlay=$("portalEditOverlay");
@@ -487,7 +532,9 @@ const portalOccOut=portalMaskLayer&&portalMaskLayer.querySelector(".portal-occlu
 const rainLayerElements={far:$("rainFar"),mid:$("rainMid"),near:$("rainNear")};
 let seaFishSprites=[];
 let jungleAnimalSprites=[];
+let jungleFlightSprites=[];
 let lastJungleAnimalRenderKey="";
+let lastJungleFlightRenderAt=0;
 let lastWheelPeriod=0;
 let weatherNoticeTimer=0;
 
@@ -508,6 +555,17 @@ function showRainNotice(){
   weatherNotice.replaceChildren(slow,benefit);
  });
  weatherNoticeTimer=setTimeout(hideWeatherNotice,3600);
+}
+function setWeatherPresentation(next,options){
+ const weather=next==="rain"?"rain":"clear";
+ currentStageWeather=weather;
+ document.body.classList.remove("weather-rain","weather-clear");
+ document.body.classList.add("weather-"+weather);
+ document.body.dataset.weather=weather;
+ if(weather==="rain"){
+  if(options&&options.announce&&!rainNoticeShownForJourney){rainNoticeShownForJourney=true;showRainNotice();}
+ }else hideWeatherNotice();
+ return weather;
 }
 
 /* ================= weather particles ================= */
@@ -1142,6 +1200,7 @@ function saveGame(){
    schemaVersion:1,
    lastLevel:level,
    unlockedLoop,
+   highScore,
    bestStarsByStage,
    collectedFriends:[...zkReg]
   };
@@ -1156,6 +1215,7 @@ function loadGame(){
   if(!data||data.schemaVersion!==1)return;
   level=clamp(Number(data.lastLevel)||0,0,2);
   unlockedLoop=clamp(Number(data.unlockedLoop)||0,0,1);
+  highScore=Math.max(0,Math.round(Number(data.highScore)||0));
   bestStarsByStage=(data.bestStarsByStage&&typeof data.bestStarsByStage==="object")?data.bestStarsByStage:{};
   if(Array.isArray(data.collectedFriends)){
    data.collectedFriends.forEach(k=>{if(typeof k==="string"&&k.includes("|"))zkReg.add(k);});
@@ -1236,13 +1296,12 @@ function buildQList(){
 function origin(s){return (loop*STAGES.length+s)*SPAN;}
 function palOf(s){return STAGES[s].pals[loop%2];}
 function hasStationArt(st){return !!(st&&st.assets&&st.assets.station);}
-function applySkin(){
+function applySkin(weatherReady){
  const st=STAGES[stg],P=palOf(stg);
  const nIdx=Math.min(stg+1,STAGES.length-1);
  const NP=STAGES[nIdx].pals[loop%2];
  const wasGameReady=document.body.classList.contains("pono-game-ready");
- const weather=weatherForStage(st);
- currentStageWeather=weather;
+ const weather=weatherReady?weatherForStage(st):startStageWeather(st);
  if(weather!=="rain")hideWeatherNotice();
  document.body.className=(IOS_DEVICE?"ios-device ":"")+"st-"+st.id+" v-"+st.veh+" weather-"+weather+(PORTAL_EDIT_ENABLED?" portal-edit":"");
  // 画面スキンの全置換で、初期描画ガードを解除する永続クラスまで消さない。
@@ -1259,6 +1318,7 @@ function applySkin(){
  buildAmbient(P);
  buildSeaFish();
  buildJungleAnimals();
+ buildJungleFlights();
 }
 function buildWorld(keepCover){
  world.innerHTML="";
@@ -1490,6 +1550,94 @@ function renderJungleAnimals(){
  });
 }
 
+function jungleFlightReducedMotion(){
+ try{return !!(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches);}catch(_){return false;}
+}
+function jungleFlightRandom(min,max){return min+(max-min)*Math.random();}
+function resetJungleFlight(flight,now,initial){
+ flight.active=false;
+ flight.el.hidden=true;
+ flight.el.classList.remove("is-flying");
+ const gap=flight.type==="bird"?(initial?[2000,5000]:[5000,10000]):(initial?[1000,4000]:[6000,13000]);
+ flight.nextAt=now+jungleFlightRandom(gap[0],gap[1]);
+}
+function buildJungleFlights(){
+ jungleFlightSprites=[];lastJungleFlightRenderAt=0;
+ Object.values(jungleFlightLayers).forEach(layer=>{if(layer)layer.replaceChildren();});
+ if(window.__PONO_TIER_LOCKED__||jungleFlightReducedMotion())return;
+ const st=STAGES[stg];
+ const assets=st&&st.id==="jungle"&&st.assets&&st.assets.flight;
+ if(!assets)return;
+ const now=_nowMs();
+ [
+  {type:"bird",src:assets.bird,layer:jungleFlightLayers.bird},
+  {type:"butterfly",src:assets.butterfly,layer:jungleFlightLayers.butterfly}
+ ].forEach(spec=>{
+  if(!spec.src||!spec.layer)return;
+  const sprite=document.createElement("span");
+  const sheet=document.createElement("img");
+  sprite.className="jungle-flight jungle-flight-"+spec.type;
+  sprite.dataset.flightSpecies=spec.type;
+  sprite.hidden=true;
+  sheet.className="jungle-flight-sheet";
+  sheet.src=spec.src;sheet.alt="";sheet.draggable=false;sheet.decoding="async";
+  sprite.appendChild(sheet);spec.layer.appendChild(sprite);
+  const flight={type:spec.type,el:sprite,active:false,sceneActive:false,nextAt:now};
+  jungleFlightSprites.push(flight);
+ });
+}
+function beginJungleFlight(flight,now){
+ const bird=flight.type==="bird";
+ const direction=bird?-1:(Math.random()<.5?-1:1);
+ const startX=direction<0?112:-18;
+ const endX=direction<0?-18:112;
+ const speed=bird?jungleFlightRandom(9,13):jungleFlightRandom(5.5,8);
+ flight.direction=direction;
+ flight.startX=startX;flight.endX=endX;
+ flight.baseY=bird?jungleFlightRandom(18,38):jungleFlightRandom(22,56);
+ flight.amplitude=bird?jungleFlightRandom(.8,1.4):jungleFlightRandom(4,5);
+ flight.slowAmplitude=bird?0:jungleFlightRandom(2,3);
+ flight.waveCycles=bird?jungleFlightRandom(2.2,3.6):jungleFlightRandom(4.2,6.4);
+ flight.startAt=now;
+ flight.duration=Math.abs(endX-startX)/speed*1000;
+ flight.active=true;
+ flight.el.hidden=false;
+ flight.el.classList.add("is-flying");
+}
+function renderJungleFlights(now){
+ if(!jungleFlightSprites.length)return;
+ const tick=Number.isFinite(now)?now:_nowMs();
+ const sceneActive=playing&&!tunnelInteriorMode&&!document.hidden&&STAGES[stg]&&STAGES[stg].id==="jungle";
+ jungleFlightSprites.forEach(flight=>{
+  if(!sceneActive){
+   if(flight.sceneActive){flight.sceneActive=false;resetJungleFlight(flight,tick,true);}
+   return;
+  }
+  if(!flight.sceneActive){flight.sceneActive=true;resetJungleFlight(flight,tick,true);}
+ });
+ if(!sceneActive)return;
+ if(IOS_DEVICE&&tick-lastJungleFlightRenderAt<32)return;
+ lastJungleFlightRenderAt=tick;
+ jungleFlightSprites.forEach(flight=>{
+  if(!flight.active){if(tick>=flight.nextAt)beginJungleFlight(flight,tick);else return;}
+  const progress=Math.max(0,Math.min(1,(tick-flight.startAt)/flight.duration));
+  if(progress>=1){resetJungleFlight(flight,tick,false);return;}
+  let x=flight.startX+(flight.endX-flight.startX)*progress;
+  let y=flight.baseY;
+  let rotation=0;
+  if(flight.type==="bird"){
+   y+=Math.sin(progress*Math.PI*2*flight.waveCycles)*flight.amplitude;
+  }else{
+   y+=Math.sin(progress*Math.PI*2*flight.waveCycles)*flight.amplitude;
+   y+=Math.sin(progress*Math.PI*2*1.7+.8)*flight.slowAmplitude;
+   x+=Math.sin(progress*Math.PI*2*2.3)*1.4;
+   rotation=Math.sin(progress*Math.PI*2*flight.waveCycles)*4;
+  }
+  const flip=flight.direction>0?-1:1;
+  flight.el.style.transform="translate3d("+cssXFromVw(x)+","+cssYFromVh(y)+",0) rotate("+rotation.toFixed(2)+"deg) scaleX("+flip+")";
+ });
+}
+
 /* ================= passengers ================= */
 function carGap(){return STAGES[stg]&&STAGES[stg].veh==="train"?39.0:8.8;}
 function visibleCarGroups(){
@@ -1539,7 +1687,7 @@ function renderCars(){
   carsEl.appendChild(el);
  });
  const realCount=cars.filter(c=>!c.pending).length;
- carBadge.style.display=realCount?"block":"none";
+ carBadge.style.display=realCount?"flex":"none";
  carBadge.textContent="👥 ×"+realCount;
 }
 function passengerSeatTargetAt(index){
@@ -1579,6 +1727,7 @@ function showTunnelRunIn(){
  pending="tunnelSwitch";
 }
 function enterTunnelInterior(){
+ stopStageWeather();setWeatherPresentation("clear");
  if(transitCover){transitCover.remove();transitCover=null;}
  document.body.classList.remove("tunnel-enter-run");
  clearMagicPuffs();
@@ -1610,6 +1759,7 @@ function startTunnelExitApproach(){
  sndGo();
 }
 function finishTunnelInterior(){
+ stopStageWeather();setWeatherPresentation("clear");
  clearTunnelFriendGame();
  veh.classList.add("go","inTun");carsEl.classList.add("go","inTun");
  clearMagicPuffs();
@@ -1652,6 +1802,7 @@ function finishTunnelInterior(){
 function beginStageTransit(){
  if(!coverEl)return;
  clearRareEvent();
+ stopStageWeather();setWeatherPresentation("clear");
  transitCover=coverEl;
  swapReady=false;swapped=false;
  target=coverEntryStop();
@@ -1778,7 +1929,7 @@ function drawDots(){
 function showStamp(txt,cls){stamp.textContent=txt;announce(txt);stamp.className="";void stamp.offsetWidth;stamp.className=cls;}
 function updateHelpHud(){
  const n=helpItems.length;
- if(helpBadge){helpBadge.style.display=n?"block":"none";helpBadge.textContent=(n?helpItems[n-1].e:"🍀")+" ×"+n;}
+ if(helpBadge){helpBadge.style.display=n?"flex":"none";helpBadge.textContent=(n?helpItems[n-1].e:"🍀")+" ×"+n;}
  if(helpBtn){helpBtn.textContent="🍀 ×"+n;helpBtn.classList.toggle("empty",!n);helpBtn.disabled=false;}
 }
 function emptyStageScoreBreakdown(){return {quiz:0,clear:0,help:0,rare:0,tunnel:0};}
@@ -1793,7 +1944,10 @@ function addScore(points,key){
  if(!value)return 0;
  journeyScore+=value;stageScore+=value;
  if(Object.prototype.hasOwnProperty.call(stageScoreBreakdown,key))stageScoreBreakdown[key]+=value;
+ const isNewHigh=journeyScore>highScore;
+ if(isNewHigh)highScore=journeyScore;
  drawTunnelScoreHud();
+ if(isNewHigh)saveGame();
  return value;
 }
 function collectHelpItem(item){
@@ -1805,7 +1959,16 @@ function collectHelpItem(item){
  helpItems.push(item);updateHelpHud();
  return {stored:true,points:0};
 }
+function drawPersistentScoreHud(){
+ if(scoreHudValue)scoreHudValue.textContent=formatScore(journeyScore);
+ if(highScoreValue)highScoreValue.textContent=formatScore(highScore);
+ const scoreText=formatScore(journeyScore);
+ const highText=formatScore(highScore);
+ if(scoreCurrentPill)scoreCurrentPill.setAttribute("aria-label","スコア "+scoreText+"てん");
+ if(highScorePill)highScorePill.setAttribute("aria-label","ハイスコア "+highText+"てん");
+}
 function drawTunnelScoreHud(){
+ drawPersistentScoreHud();
  if(tunnelStageScore)tunnelStageScore.textContent=formatScore(stageScore)+"てん";
  if(tunnelJourneyScore)tunnelJourneyScore.textContent=formatScore(journeyScore)+"てん";
 }
@@ -1832,6 +1995,14 @@ function drawTunnelFriendHud(){
 }
 function tunnelFriendStaticMode(){
  try{return FAST>1||!!(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches);}catch(_){return FAST>1;}
+}
+function tunnelFriendVisualVariation(index,randomFn){
+ if(tunnelFriendStaticMode()){
+  const scales=[.84,1.12,.96],rotations=[-8,7,-3];
+  return {scale:scales[index%scales.length],rotation:rotations[index%rotations.length]};
+ }
+ const draw=typeof randomFn==="function"?randomFn:Math.random;
+ return {scale:.78+draw()*.4,rotation:-10+draw()*20};
 }
 function tunnelWallBayWidthVw(){
  return (window.innerHeight||390)/(window.innerWidth||844)*100*TUNNEL_WALL_ASPECT/TUNNEL_WALL_BAYS;
@@ -1868,19 +2039,26 @@ function startTunnelFriendGame(){
  tunnelFriendCandidates.forEach((friend,index)=>{
   const button=document.createElement("button");
   const slot=slots[index%slots.length];
+  const variation=tunnelFriendVisualVariation(index);
   button.type="button";button.className="tunnel-friend";
   button.dataset.friendIndex=String(index);
   button.dataset.wallStartX=String(slot.x);
+  button.dataset.visualScale=variation.scale.toFixed(3);
+  button.dataset.visualRotate=variation.rotation.toFixed(2);
   button.dataset.score="";
   button.setAttribute("aria-label",friend.t+"を みつける。"+SCORE_POINTS.tunnelFriend+"てん");
   button.style.setProperty("--friend-screen-x",slot.x+"vw");
   button.style.setProperty("--friend-y",slot.y+"%");
+  button.style.setProperty("--friend-scale",variation.scale.toFixed(3));
+  button.style.setProperty("--friend-rotate",variation.rotation.toFixed(2)+"deg");
+  const visual=document.createElement("span");visual.className="tunnel-friend-visual";
   if(friend.img){
    const img=document.createElement("img");img.src=friend.img;img.alt="";img.draggable=false;img.decoding="async";
-   button.appendChild(img);
+   visual.appendChild(img);
   }else{
-   const icon=document.createElement("span");icon.textContent=friend.e;button.appendChild(icon);
+   const icon=document.createElement("span");icon.className="tunnel-friend-emoji";icon.textContent=friend.e;visual.appendChild(icon);
   }
+  button.appendChild(visual);
   bindTap(button,()=>findTunnelFriend(button,friend));
   tunnelFriendLayer.appendChild(button);
  });
@@ -2045,6 +2223,7 @@ function render(now){
  }
  renderSeaFish(now);
  renderJungleAnimals();
+ renderJungleFlights(now);
  updateScreenExitShift();
  const hd=clamp((worldX-o)*0.095,0,70);
  horizon.style.transform="translate3d("+cssXFromVw(-hd)+",0,0)";
@@ -2111,10 +2290,12 @@ function gloop(t){
  if(!lastT)lastT=t;
  let dt=Math.min(0.05,(t-lastT)/1000)*FAST;
  lastT=t;
+ const tunnelGameRun=pending==="tunnelExit";
+ const tunnelRun=pending==="tunnelEntry"||tunnelGameRun||pending==="tunnelExitApproach";
+ const weatherChange=advanceStageWeather(dt*1000,{playing,driving,tunnelRun});
+ if(weatherChange)setWeatherPresentation(weatherChange,{announce:weatherChange==="rain"});
  if(playing&&driving){
   const dist=target-worldX;
-  const tunnelGameRun=pending==="tunnelExit";
-  const tunnelRun=pending==="tunnelEntry"||tunnelGameRun||pending==="tunnelExitApproach";
   const rainSpeed=rainTrainSpeedMultiplier(STAGES[stg],tunnelRun);
   const maxV=tunnelGameRun?TUNNEL_GAME_MAX_V:(tunnelRun?TUNNEL_TRANSIT_MAX_V:(swapReady?52:38)*rainSpeed);
   vel=tunnelRun?maxV:clamp(dist*.98,6,maxV);
@@ -2169,13 +2350,15 @@ function gloop(t){
 function startJourneyAt(s){
  hideWeatherNotice();
  clearRareEvent();
+ stopStageWeather();
  clearTunnelFriendGame();
  stg=s;resetStageScore();qSeg=0;stageMiss=0;rareSpawned=false;
  portalEditHolding=false;tunnelInteriorMode=false;
  document.body.classList.remove("tunnel-enter-run","tunnel-exit-setup","tunnel-exit-run","tunnel-exit-clear","tunnel-exit-approach","tunnel-exit-brighten","tunnel-exit-white","tunnel-fade-dark","tunnel-interior");
  updateScreenExitShift();
  if(transitCover){transitCover.remove();transitCover=null;}
- buildQList();applySkin();buildWorld(false);drawDots();
+ startStageWeather(STAGES[stg]);
+ buildQList();applySkin(true);buildWorld(false);drawDots();
  setDriverMood("cheer");
  worldX=origin(s);target=stops(origin(s),0);
  pending="quiz";driving=true;playing=true;swapReady=false;swapped=false;
@@ -2183,9 +2366,7 @@ function startJourneyAt(s){
  $("map").classList.add("hidden");
  quiz.classList.remove("show");
  sndGo();
- if(s===0&&rainNoticePending&&currentStageWeather==="rain"){
-  rainNoticePending=false;showRainNotice();
- }
+ if(currentStageWeather==="rain")setWeatherPresentation("rain",{announce:true});
 }
 function showQuiz(){
  hideWeatherNotice();
@@ -2273,6 +2454,7 @@ function proceed(){
 function ending(){
  hideWeatherNotice();
  clearRareEvent();
+ stopStageWeather();setWeatherPresentation("clear");
  clearTunnelFriendGame();
  setDriverMood("cheer");
  playing=false;
@@ -2295,6 +2477,7 @@ function ending(){
 function openMap(msg){
  hideWeatherNotice();
  clearRareEvent();
+ stopStageWeather();setWeatherPresentation("clear");
  clearTunnelFriendGame();
  playing=false;driving=false;quiz.classList.remove("show");
  const row=$("mapRow");row.innerHTML="";
@@ -2362,7 +2545,7 @@ bindTap($("helpBtn"),()=>{useHelp();});
 buildRainParticles(false);
 buildRegistry();
 loadPortalTuning();
-loadGame();applyLevelSelection();
+loadGame();applyLevelSelection();drawPersistentScoreHud();
 applySkin();buildWorld(false);drawDots();renderCars();updateHelpHud();render();
 initPortalEditor();
 
@@ -2372,13 +2555,13 @@ document.addEventListener("pointerdown",()=>{ensureAC();},{capture:true,passive:
 // visibility/lifecycle 復帰: iOS/Android で BG 復帰後に AC が suspended/interrupted のままだと SE が全滅する
 // blur は意図的に購読しない (iOS の疑似 blur で AC を止めない方針)
 document.addEventListener("visibilitychange",()=>{
- if(document.hidden){safeSuspend();}
+ if(document.hidden){hideWeatherNotice();safeSuspend();}
  else{ensureAC();}
 });
 window.addEventListener("resize",scheduleRainParticleRebuild,{passive:true});
 window.addEventListener("pageshow",()=>{ensureAC();updateRainParticleVisibility(false);});
 window.addEventListener("focus",()=>{ensureAC();});
-window.addEventListener("pagehide",()=>{clearTimeout(rainParticleResizeTimer);safeSuspend();});
+window.addEventListener("pagehide",()=>{hideWeatherNotice();clearTimeout(rainParticleResizeTimer);safeSuspend();});
 
 requestAnimationFrame(gloop);
 })();

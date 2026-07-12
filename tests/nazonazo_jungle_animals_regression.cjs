@@ -5,6 +5,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
+const sharp = require("sharp");
 
 const root = path.resolve(__dirname, "..");
 const read = rel => fs.readFileSync(path.join(root, rel), "utf8");
@@ -12,15 +13,17 @@ const html = read("nazonazo-tunnel/index.html");
 const css = read("nazonazo-tunnel/styles.css");
 const js = read("nazonazo-tunnel/js/game.js");
 
-const runtimeAnimals = [
-  "toucans", "butterflies",
-  "sloth", "crocodile",
-  "giraffe", "elephant"
+const staticAnimals = [
+  "toucans", "sloth", "crocodile", "giraffe", "elephant"
 ];
-const animalFiles = Object.fromEntries(runtimeAnimals.map(animal => [
+const animalFiles = Object.fromEntries(staticAnimals.map(animal => [
   animal,
   `jungle_animal_${animal}_livedin_20260712.webp`
 ]));
+const flightFiles = {
+  toucan: "jungle_flying_toucan_3frame_20260712.webp",
+  butterfly: "jungle_flying_butterfly_3frame_20260712.webp"
+};
 
 function extractConstObject(source, name) {
   const marker = `const ${name}=`;
@@ -64,7 +67,6 @@ const expectedAnchorBySpecies = {
   monkey: "perch",
   owl: "perch",
   toucans: "perch",
-  butterflies: "air",
   sloth: "hang",
   snake: "perch",
   frog: "understory",
@@ -77,12 +79,13 @@ const expectedAnchorBySpecies = {
 
 assert.deepEqual(Object.keys(jungleAnimalLayout).sort(), ["far", "mid", "near"]);
 assert.deepEqual(Object.fromEntries(Object.entries(jungleAnimalLayout).map(([layer, specs]) => [layer, specs.length])), {
-  far: 2,
+  far: 1,
   mid: 2,
   near: 2
-}, "wildlife density must stay at two unique animals per depth");
-assert.equal(layoutSpecs.length, 6, "wildlife density must remain six sprites");
-assert.deepEqual([...new Set(layoutSpecs.map(spec => spec.species))].sort(), runtimeAnimals.slice().sort(), "runtime layout must use the selected six species without duplicates");
+}, "the five resting animals must remain naturally distributed through the three depth layers");
+assert.equal(layoutSpecs.length, 5, "the static jungle must contain exactly five resting animals");
+assert.deepEqual([...new Set(layoutSpecs.map(spec => spec.species))].sort(), staticAnimals.slice().sort(), "runtime layout must use the selected five resting species without duplicates");
+assert.ok(!layoutSpecs.some(spec => spec.species === "butterflies" || spec.anchor === "air"), "a butterfly must not remain frozen in the static animal layout");
 for (const spec of layoutSpecs) {
   const label = `${spec.layer}[${spec.index}] ${spec.species || "unknown"}`;
   assert.equal(spec.anchor, expectedAnchorBySpecies[spec.species], `${label}: habitat anchor mismatch`);
@@ -108,10 +111,13 @@ for (const spec of layoutSpecs) {
   }
 }
 
-const primarySpec = Object.fromEntries(runtimeAnimals.map(animal => [animal, layoutSpecs.find(spec => spec.species === animal)]));
+const primarySpec = Object.fromEntries(staticAnimals.map(animal => [animal, layoutSpecs.find(spec => spec.species === animal)]));
 assert.ok(primarySpec.elephant.w > primarySpec.crocodile.w, "elephant must read wider than crocodile");
 assert.ok(primarySpec.giraffe.w > primarySpec.sloth.w, "giraffe must read larger than the middle-depth sloth");
-assert.ok(primarySpec.toucans.w > primarySpec.butterflies.w, "perched toucans must read larger than airborne butterflies");
+assert.ok(primarySpec.giraffe.w >= 26, "giraffe must be visibly enlarged beyond the previous 23.5vw treatment");
+assert.ok(primarySpec.giraffe.max >= 250, "giraffe desktop clamp must grow beyond the previous 230px cap");
+assert.ok(primarySpec.elephant.w >= 30, "elephant must be visibly enlarged beyond the previous 27vw treatment");
+assert.ok(primarySpec.elephant.max >= 290, "elephant desktop clamp must grow beyond the previous 270px cap");
 assert.ok(new Set(layoutSpecs.map(spec => spec.w)).size >= 5, "animal widths need at least five visibly distinct scales");
 const layoutWidths = layoutSpecs.map(spec => spec.w);
 assert.ok(Math.max(...layoutWidths) / Math.min(...layoutWidths) >= 1.8, "animal scale range is too uniform");
@@ -126,8 +132,12 @@ assert.match(css, /body\.tunnel-interior \.jungle-animal-layer\{display:none!imp
 assert.match(css, /#jungleAnimalsNear\{[^}]*bottom:14vh/, "near clip must leave a half-vh alpha-padding pocket below the ground line");
 assert.match(css, /body\.st-jungle\.v-train \.train-art::before\{[^}]*z-index:1[^}]*background:linear-gradient/, "opaque jungle cab interior must hide passing wildlife behind the driver");
 assert.match(css, /@media \(prefers-reduced-motion:reduce\)[\s\S]*?\.jungle-animal-art\{animation:none!important;transform:none!important\}/);
+assert.match(html, /<(?:div|section)[^>]*(?:id|class)="[^"]*(?:jungle[^" ]*flight|flight[^" ]*jungle)[^"]*"[^>]*aria-hidden="true"/i, "the ambient flight layer must be decorative and hidden from assistive technology");
+assert.match(css, /body\.st-jungle[^,{]*[,{][\s\S]*?(?:jungle[^,{]*flight|flight[^,{]*jungle)/, "flight sprites must only be exposed in the jungle scene");
+const reducedMotionCss = css.slice(css.indexOf("@media (prefers-reduced-motion:reduce)"));
+assert.match(reducedMotionCss, /(?:jungle[^,{]*flight|flight[^,{]*jungle)[^{]*\{[^}]*display\s*:\s*none\s*!important/, "large cross-screen flights must be removed in reduced-motion mode");
 const motionStart = css.indexOf("@keyframes jungleAnimalSway");
-const motionEnd = css.indexOf("#groundT", motionStart);
+const motionEnd = css.indexOf(".jungle-flight-layer", motionStart);
 const motionCss = css.slice(motionStart, motionEnd);
 assert.ok(motionStart >= 0 && motionEnd > motionStart);
 assert.doesNotMatch(motionCss, /(?:left|right|top|bottom|filter|background-position)\s*:/, "animal keyframes must stay transform-only");
@@ -141,7 +151,7 @@ assert.match(js, /const midPeriod=\(\(window\.innerHeight\|\|1\)\*JUNGLE_MID_TIL
 assert.match(js, /renderSeaFish\(now\);\s*renderJungleAnimals\(\);/);
 assert.doesNotMatch(js.slice(js.indexOf("function buildJungleAnimals"), js.indexOf("function renderJungleAnimals")), /addEventListener|bindTap/, "ambient animals must not be interactive");
 
-for (const animal of runtimeAnimals) {
+for (const animal of staticAnimals) {
   const file = animalFiles[animal];
   const rel = `assets/images/nazonazo-tunnel/${file}`;
   const full = path.join(root, rel);
@@ -157,9 +167,24 @@ for (const animal of runtimeAnimals) {
 }
 const runtimeAnimalReferences = [...js.matchAll(/\.\.\/assets\/images\/nazonazo-tunnel\/(jungle_animal_[^"']+\.webp)/g)]
   .map(match => match[1]);
-assert.equal(runtimeAnimalReferences.length, 6, "runtime must reference exactly the six selected jungle animal assets");
+assert.equal(runtimeAnimalReferences.length, 5, "runtime must reference exactly the five selected static jungle animal assets");
 assert.ok(runtimeAnimalReferences.every(file => /_livedin_20260712\.webp$/.test(file)), "every runtime jungle animal must use the lived-in 20260712 asset set");
+assert.doesNotMatch(js, /jungle_animal_butterflies_livedin_20260712\.webp/, "the old frozen butterfly group must not remain in the runtime asset map");
 assert.doesNotMatch(js, /jungle_animal_(?:monkey|owl|snake|frog|lion|zebra)_[^"']+\.webp/, "removed species must not remain in the runtime asset map");
+
+for (const [species, file] of Object.entries(flightFiles)) {
+  const rel = `assets/images/nazonazo-tunnel/${file}`;
+  const full = path.join(root, rel);
+  assert.ok(fs.existsSync(full), `${rel} missing`);
+  const stat = fs.statSync(full);
+  assert.ok(stat.size > 1000 && stat.size < 3 * 1024 * 1024, `${rel} unexpected size ${stat.size}`);
+  assert.equal((js.match(new RegExp(file.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g")) || []).length, 1, `${species}: flight sheet must be declared exactly once`);
+}
+assert.match(css, /\.jungle-flight-sheet\{[^}]*width\s*:\s*300%/, "three-frame sheets must expose exactly three horizontal cells");
+assert.match(css, /\.jungle-flight-sheet\{[^}]*animation\s*:[^;}]*jungleFlightFrames[^;}]*(?:step-end|steps\(\s*3)/, "wing animation must jump between frames rather than sliding the sheet");
+assert.match(css, /@keyframes\s+jungleFlightFrames\s*\{[\s\S]*?translate3d\(\s*-33\.33[\s\S]*?translate3d\(\s*-66\.66/, "flight animation must visit all three sheet cells");
+assert.match(js, /(?:render|update|start|build)JungleFlight/i, "runtime flight lifecycle is missing");
+assert.match(js, /jungleFlight[\s\S]*?translate3d/i, "flying animals must cross the scene with transform-only motion");
 
 async function settleViewport(page, width, height) {
   await page.setViewportSize({ width, height });
@@ -263,7 +288,7 @@ function assertGroundedScene(scene, label, expectedCount) {
   assert.ok(scene.layerOrder, `${label}: animal/foliage/world layer order drifted`);
   assert.deepEqual(scene.animalIntercepts, [], `${label}: wildlife blocked a foreground control`);
   assert.ok(scene.overflowX <= 1 && scene.overflowY <= 1, `${label}: overflow detected`);
-  assert.deepEqual([...new Set(scene.animals.map(animal => animal.species))].sort(), runtimeAnimals.slice().sort(), `${label}: runtime species metadata incomplete`);
+  assert.deepEqual([...new Set(scene.animals.map(animal => animal.species))].sort(), staticAnimals.slice().sort(), `${label}: runtime species metadata incomplete`);
   for (const animal of scene.animals) {
     assert.equal(animal.anchor, expectedAnchorBySpecies[animal.species], `${label}: ${animal.species} runtime anchor mismatch`);
     assert.ok(Number.isFinite(animal.anchorY), `${label}: ${animal.species} runtime anchorY missing`);
@@ -275,6 +300,16 @@ function assertGroundedScene(scene, label, expectedCount) {
   }
   const boxes = scene.speciesBoxes;
   assert.ok(boxes.giraffe.height >= boxes.elephant.height * 1.18, `${label}: giraffe must read clearly taller than elephant`);
+}
+
+async function verifyFlightSheets() {
+  for (const [species, file] of Object.entries(flightFiles)) {
+    const info = await sharp(path.join(root, "assets/images/nazonazo-tunnel", file)).metadata();
+    assert.equal(info.format, "webp", `${species}: flight sheet must be WebP`);
+    assert.equal(info.hasAlpha, true, `${species}: flight sheet must keep transparent surroundings`);
+    assert.equal(info.width % 3, 0, `${species}: sheet width must divide into exactly three equal frames`);
+    assert.ok(info.width / 3 >= 160 && info.height >= 160, `${species}: individual flight frames are unexpectedly small`);
+  }
 }
 
 async function runBrowser(browserName) {
@@ -318,16 +353,39 @@ async function runBrowser(browserName) {
     }));
     throw new Error(`${browserName}: jungle transition timeout ${JSON.stringify(diagnostic)} pageerrors=${JSON.stringify(errors)}`, { cause: error });
   }
-  await page.waitForFunction(() => document.querySelectorAll(".jungle-animal-sprite").length === 6, null, { timeout: 20000 });
+  await page.waitForFunction(() => document.querySelectorAll(".jungle-animal-sprite").length === 5, null, { timeout: 20000 });
   await page.locator("#quiz.show").waitFor({ state: "visible", timeout: 20000 });
   await page.waitForFunction(() => Array.from(document.querySelectorAll(".jungle-animal-art")).every(img => img.complete && img.naturalWidth > 0), null, { timeout: 20000 });
+  await page.waitForFunction(() => document.querySelectorAll('img[src*="jungle_flying_toucan_3frame_20260712.webp"],img[src*="jungle_flying_butterfly_3frame_20260712.webp"]').length === 2, null, { timeout: 20000 });
 
   const scene = await collectSceneMetrics(page);
-  assertGroundedScene(scene, `${browserName} 844x390`, 6);
+  assertGroundedScene(scene, `${browserName} 844x390`, 5);
 
-  const beforeMotion = await page.locator(".jungle-animal-art.motion-flutter").evaluate(el => getComputedStyle(el).transform);
+  const flights = await page.evaluate(() => Array.from(document.querySelectorAll('img[src*="jungle_flying_toucan_3frame_20260712.webp"],img[src*="jungle_flying_butterfly_3frame_20260712.webp"]')).map(img => {
+    const el = img.closest(".jungle-flight");
+    const style = getComputedStyle(el);
+    const sheetStyle = getComputedStyle(img);
+    const match = img.src.match(/jungle_flying_(toucan|butterfly)_3frame_20260712\.webp/);
+    const rect = el.getBoundingClientRect();
+    return {
+      species: match[1],
+      display: style.display,
+      pointer: style.pointerEvents,
+      animationName: sheetStyle.animationName,
+      sheetRatio: img.getBoundingClientRect().width / Math.max(1, rect.width),
+      width: rect.width,
+      height: rect.height
+    };
+  }));
+  assert.deepEqual(flights.map(flight => flight.species).sort(), ["butterfly", "toucan"], `${browserName}: exactly one bird and one butterfly flight sprite are required`);
+  assert.ok(flights.every(flight => flight.display !== "none" && flight.pointer === "none"), `${browserName}: ambient flights must be visible but non-interactive`);
+  assert.ok(flights.every(flight => flight.animationName && flight.animationName !== "none"), `${browserName}: flight animation is not running`);
+  assert.ok(flights.every(flight => Math.abs(flight.sheetRatio - 3) <= 0.05), `${browserName}: flight sheets are not divided into three frames`);
+  assert.ok(flights.every(flight => flight.width > 0 && flight.height > 0), `${browserName}: flight sprite has no rendered area`);
+
+  const beforeMotion = await page.locator(".jungle-animal-art.motion-sway").first().evaluate(el => getComputedStyle(el).transform);
   await page.waitForTimeout(650);
-  const afterMotion = await page.locator(".jungle-animal-art.motion-flutter").evaluate(el => getComputedStyle(el).transform);
+  const afterMotion = await page.locator(".jungle-animal-art.motion-sway").first().evaluate(el => getComputedStyle(el).transform);
   assert.notEqual(beforeMotion, afterMotion, `${browserName}: animal micro-motion did not advance`);
 
   const viewports = [[390, 844], [740, 320], [844, 390], [1024, 768], [1366, 768]];
@@ -337,18 +395,20 @@ async function runBrowser(browserName) {
     assert.ok(fit.x <= 1 && fit.y <= 1, `${browserName}: overflow at ${width}x${height}`);
     if (width === 1366 && height === 768) {
       const desktopScene = await collectSceneMetrics(page);
-      assertGroundedScene(desktopScene, `${browserName} ${width}x${height}`, 6);
+      assertGroundedScene(desktopScene, `${browserName} ${width}x${height}`, 5);
     }
   }
   await settleViewport(page, 844, 390);
   await page.emulateMedia({ reducedMotion: "reduce" });
-  const reduced = await page.locator(".jungle-animal-art.motion-flutter").evaluate(el => ({ name: getComputedStyle(el).animationName, transform: getComputedStyle(el).transform }));
+  const reduced = await page.locator(".jungle-animal-art.motion-sway").first().evaluate(el => ({ name: getComputedStyle(el).animationName, transform: getComputedStyle(el).transform }));
   assert.equal(reduced.name, "none", `${browserName}: reduced-motion animation must stop`);
   assert.equal(reduced.transform, "none", `${browserName}: reduced-motion transform must be static`);
+  const reducedFlights = await page.evaluate(() => Array.from(document.querySelectorAll('img[src*="jungle_flying_toucan_3frame_20260712.webp"],img[src*="jungle_flying_butterfly_3frame_20260712.webp"]')).map(img => getComputedStyle(img.closest(".jungle-flight-layer")).display));
+  assert.deepEqual(reducedFlights, ["none", "none"], `${browserName}: reduced motion must hide both cross-screen flight sprites`);
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await settleViewport(page, 930, 499);
   const screenshotScene = await collectSceneMetrics(page);
-  assertGroundedScene(screenshotScene, `${browserName} 930x499`, 6);
+  assertGroundedScene(screenshotScene, `${browserName} 930x499`, 5);
   await page.screenshot({ path: `/tmp/nazonazo-jungle-animals-${browserName}.png`, fullPage: true });
 
   const hidden = await page.evaluate(() => {
@@ -362,7 +422,7 @@ async function runBrowser(browserName) {
   const lockedPage = await lockedContext.newPage();
   const lockedAnimalRequests = [];
   lockedPage.on("request", request => {
-    if (/\/jungle_animal_[^/]+\.webp(?:\?|$)/.test(request.url())) lockedAnimalRequests.push(request.url());
+    if (/\/jungle_(?:animal|flying)_[^/]+\.webp(?:\?|$)/.test(request.url())) lockedAnimalRequests.push(request.url());
   });
   await lockedPage.goto(`${base}/nazonazo-tunnel/?weather=clear#fast`, { waitUntil: "networkidle" });
   await lockedPage.locator("#ponoTierLockScreen").waitFor({ state: "visible", timeout: 10000 });
@@ -373,11 +433,12 @@ async function runBrowser(browserName) {
 }
 
 (async () => {
+  await verifyFlightSheets();
   if (process.env.NAZONAZO_BROWSER) {
     const requested = process.env.NAZONAZO_BROWSER.split(",").map(value => value.trim()).filter(Boolean);
     for (const browserName of requested) await runBrowser(browserName);
   }
-  console.log(`nazonazo jungle animals regression: OK (${runtimeAnimals.length} lived-in alpha assets, ${runtimeAnimals.length} runtime sprites)`);
+  console.log(`nazonazo jungle animals regression: OK (${staticAnimals.length} resting assets, ${Object.keys(flightFiles).length} three-frame flights)`);
 })().catch(error => {
   console.error(error);
   process.exitCode = 1;

@@ -21,11 +21,13 @@ const scoreFunctionNames = [
   "resetJourneyScore",
   "addScore",
   "collectHelpItem",
+  "drawPersistentScoreHud",
   "drawTunnelScoreHud",
   "tunnelScoreBreakdownText"
 ];
 const wallFunctionNames = [
   "tunnelFriendStaticMode",
+  "tunnelFriendVisualVariation",
   "tunnelWallBayWidthVw",
   "tunnelFriendWallSlots",
   "updateTunnelFriendWallMotion"
@@ -210,6 +212,7 @@ assert.match(buttonRule, /top\s*:\s*var\(--friend-y\)/, "wall friends need an ex
 assert.match(buttonRule, /--friend-screen-x/, "wall friends must move through the shared wall-position variable");
 assert.match(buttonRule, /background\s*:\s*transparent/, "wall silhouettes must not look like floating cards");
 assert.match(buttonRule, /border\s*:\s*0\b/, "wall silhouettes must not have a floating frame");
+assert.doesNotMatch(buttonRule, /(?:scale|rotate)\s*\(/, "random visual size/tilt must not transform or shrink the button hit target");
 const minimumButtonWidths = [...buttonRule.matchAll(/(?:min-)?width\s*:\s*(?:clamp\(\s*)?(\d+(?:\.\d+)?)px/g)].map(match => Number(match[1]));
 assert.ok(minimumButtonWidths.some(width => width >= 52), "friend buttons must be at least 52px wide");
 assert.ok(
@@ -217,6 +220,9 @@ assert.ok(
   "friend buttons must be at least 52px tall or square"
 );
 assert.match(css, /\.tunnel-friend:focus-visible\s*\{[^}]*outline/, "friend buttons need a visible keyboard focus ring");
+const visualRule = extractRule(css, ".tunnel-friend-visual");
+assert.match(visualRule, /transform\s*:[^;}]*var\(--friend-scale/, "the silhouette art, not its hit target, must receive random scale");
+assert.match(visualRule, /transform\s*:[^;}]*var\(--friend-rotate/, "the silhouette art, not its hit target, must receive random tilt");
 const reducedAt = css.indexOf("@media (prefers-reduced-motion:reduce)");
 assert.ok(reducedAt >= 0, "reduced-motion media query missing");
 const reducedCss = css.slice(reducedAt);
@@ -251,6 +257,8 @@ assert.match(setTunnelInteriorBackdrop, /-panWorld\*TUNNEL_WALL_PARALLAX/, "the 
 assert.match(hiddenFunctions.updateTunnelFriendWallMotion, /\(worldX-tunnelFriendStartWorldX\)\*TUNNEL_WALL_PARALLAX/, "wall friends must move at the wall background's parallax factor");
 assert.match(hiddenFunctions.tunnelFriendStaticMode, /FAST>1/, "#fast must use stable, tappable silhouette slots");
 assert.match(hiddenFunctions.tunnelFriendStaticMode, /prefers-reduced-motion:\s*reduce/, "reduced motion must use stable, tappable silhouette slots");
+assert.match(hiddenFunctions.tunnelFriendVisualVariation, /Math\.random|randomFn/, "normal tunnels must draw fresh visual variation");
+assert.match(hiddenFunctions.tunnelFriendVisualVariation, /scale[\s\S]*?rotation/, "visual variation must cover both size and angle");
 assert.match(hiddenFunctions.tunnelFriendWallSlots, /TUNNEL_FRIEND_STATIC_SLOTS/, "static modes must use the dedicated on-screen slots");
 
 assert.deepEqual(scorePoints, {
@@ -282,6 +290,9 @@ assert.match(hiddenFunctions.findTunnelFriend, /!tunnelFriendPerfectScoreGranted
 assert.match(hiddenFunctions.startTunnelFriendGame, /createElement\(["']button["']\)/, "hidden friends must be real buttons");
 assert.match(hiddenFunctions.startTunnelFriendGame, /\.type\s*=\s*["']button["']|setAttribute\(["']type["'],\s*["']button["']\)/, "friend buttons must not act as form submits");
 assert.match(hiddenFunctions.startTunnelFriendGame, /aria-label/, "every friend button needs a spoken action label");
+assert.match(hiddenFunctions.startTunnelFriendGame, /setProperty\(["']--friend-scale["']/, "each silhouette must receive its own visual scale");
+assert.match(hiddenFunctions.startTunnelFriendGame, /setProperty\(["']--friend-rotate["']/, "each silhouette must receive its own wall tilt");
+assert.match(hiddenFunctions.startTunnelFriendGame, /tunnelFriendVisualVariation\(/, "silhouette scale and tilt must be assigned for every button");
 assert.match(hiddenFunctions.drawTunnelScoreHud, /tunnelStageScore[\s\S]*?stageScore/, "the tunnel HUD must show the stage score");
 assert.match(hiddenFunctions.drawTunnelScoreHud, /tunnelJourneyScore[\s\S]*?journeyScore/, "the tunnel HUD must show the journey score");
 assert.match(hiddenFunctions.showTunnelFriendResult, /tunnelResultStage[\s\S]*?stageScore/, "the result must show the stage score");
@@ -377,19 +388,28 @@ function descendants(element) {
   return element.children.flatMap(child => [child, ...descendants(child)]);
 }
 
-function createHiddenFriendHarness({ fast = 1, reducedMotion = false } = {}) {
+function createHiddenFriendHarness({ fast = 1, reducedMotion = false, randomValues = [0.08, 0.91, 0.24, 0.73, 0.42, 0.58, 0.16, 0.84] } = {}) {
   const ids = Object.fromEntries([
     "tunnelFriendGame", "tunnelFriendTitle", "tunnelFriendGuide", "tunnelFriendCounter", "tunnelFriendLayer", "tunnelFriendResult",
     "tunnelStageScore", "tunnelJourneyScore", "tunnelResultStage", "tunnelResultBreakdown", "tunnelResultTotal",
+    "scoreCurrentPill", "scoreHudValue", "highScorePill", "highScoreValue",
     "helpBadge", "app"
   ].map(id => [id, new FakeElement("div", id)]));
-  const records = { announcements: [], stamps: [], tones: 0, helpHudUpdates: 0 };
+  const records = { announcements: [], stamps: [], tones: 0, helpHudUpdates: 0, saves: 0 };
   const document = {
     body: new FakeElement("body", "body"),
     createElement(tag) { return new FakeElement(tag); },
     createDocumentFragment() { return new FakeElement("fragment"); },
     getElementById(id) { return ids[id] || null; }
   };
+  let randomIndex = 0;
+  const nextRandom = () => {
+    const value = randomValues[randomIndex % randomValues.length];
+    randomIndex += 1;
+    return value;
+  };
+  const deterministicMath = Object.create(Math);
+  deterministicMath.random = nextRandom;
   const context = {
     console,
     document,
@@ -398,7 +418,7 @@ function createHiddenFriendHarness({ fast = 1, reducedMotion = false } = {}) {
       innerHeight: 390,
       matchMedia: () => ({ matches: reducedMotion })
     },
-    Math,
+    Math: deterministicMath,
     Number,
     Set,
     Array,
@@ -415,10 +435,14 @@ function createHiddenFriendHarness({ fast = 1, reducedMotion = false } = {}) {
     tunnelResultStage: ids.tunnelResultStage,
     tunnelResultBreakdown: ids.tunnelResultBreakdown,
     tunnelResultTotal: ids.tunnelResultTotal,
+    scoreCurrentPill: ids.scoreCurrentPill,
+    scoreHudValue: ids.scoreHudValue,
+    highScorePill: ids.highScorePill,
+    highScoreValue: ids.highScoreValue,
     $: id => ids[id],
     shuffle: values => values.slice(),
     pick: values => values[0],
-    rnd: (min, max) => (min + max) / 2,
+    rnd: (min, max) => min + (max - min) * nextRandom(),
     clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
     passengerLabel: passenger => passenger.name || passenger.t || "",
     bindTap(element, callback) { element.__tap = callback; },
@@ -428,6 +452,7 @@ function createHiddenFriendHarness({ fast = 1, reducedMotion = false } = {}) {
     sndNew() { records.tones += 1; },
     confetti() {},
     updateHelpHud() { records.helpHudUpdates += 1; },
+    saveGame() { records.saves += 1; },
     requestAnimationFrame(callback) { callback(); },
     setTimeout(callback) { callback(); return 1; },
     clearTimeout() {},
@@ -447,6 +472,7 @@ function createHiddenFriendHarness({ fast = 1, reducedMotion = false } = {}) {
     let tunnelFriendStartWorldX=0;
     let worldX=0;
     let journeyScore=0;
+    let highScore=0;
     let stageScore=0;
     let stageScoreBreakdown=emptyStageScoreBreakdown();
     let stageClearScoreGranted=false;
@@ -523,6 +549,13 @@ assert.equal(state.active, true);
 assert.equal(harness.ids.tunnelFriendGame.getAttribute("aria-hidden"), "false", "the game must become visible on tunnel entry");
 const buttons = descendants(harness.ids.tunnelFriendLayer).filter(element => element.tagName === "BUTTON");
 assert.equal(buttons.length, 3, "all three wall friends must be created when the search starts");
+const visualScales = buttons.map(button => Number(button.style["--friend-scale"]));
+const visualRotations = buttons.map(button => Number(String(button.style["--friend-rotate"]).replace("deg", "")));
+assert.ok(visualScales.every(scale => Number.isFinite(scale) && scale >= 0.72 && scale <= 1.3), `silhouette scale escaped its natural range: ${visualScales}`);
+assert.ok(visualRotations.every(rotation => Number.isFinite(rotation) && Math.abs(rotation) <= 16), `silhouette tilt escaped its natural range: ${visualRotations}`);
+assert.ok(new Set(visualScales.map(scale => scale.toFixed(3))).size >= 2, "all three wall silhouettes still use the same size");
+assert.ok(new Set(visualRotations.map(rotation => rotation.toFixed(2))).size >= 2, "all three wall silhouettes still use the same angle");
+assert.ok(buttons.every(button => button.getBoundingClientRect().width >= 52 && button.getBoundingClientRect().height >= 52), "randomized silhouette art shrank a button hit target");
 for (const button of buttons) {
   assert.equal(button.type, "button");
   assert.ok(button.getAttribute("aria-label"), "each friend button needs an aria-label");
@@ -738,6 +771,8 @@ async function runBrowser(browserName, base) {
       centerX: rect.left + rect.width / 2,
       centerY: rect.top + rect.height / 2,
       label: element.getAttribute("aria-label") || "",
+      scale: Number(getComputedStyle(element).getPropertyValue("--friend-scale")),
+      rotation: Number(getComputedStyle(element).getPropertyValue("--friend-rotate").replace("deg", "")),
       inside: rect.left >= 0 && rect.top >= 0 && rect.right <= innerWidth && rect.bottom <= innerHeight,
       hittable: Boolean(hit && (hit === element || element.contains(hit)))
     };
@@ -747,7 +782,13 @@ async function runBrowser(browserName, base) {
     assert.ok(metric.label, `${browserName}: friend aria-label missing`);
     assert.ok(metric.inside, `${browserName}: friend target is clipped`);
     assert.ok(metric.hittable, `${browserName}: friend target is covered by another layer`);
+    assert.ok(Number.isFinite(metric.scale) && metric.scale >= 0.72 && metric.scale <= 1.3, `${browserName}: invalid silhouette scale ${metric.scale}`);
+    assert.ok(Number.isFinite(metric.rotation) && Math.abs(metric.rotation) <= 16, `${browserName}: invalid silhouette rotation ${metric.rotation}`);
   }
+  assert.ok(new Set(buttonMetrics.map(metric => metric.scale.toFixed(3))).size >= 2, `${browserName}: wall silhouettes still share one size`);
+  assert.ok(new Set(buttonMetrics.map(metric => metric.rotation.toFixed(2))).size >= 2, `${browserName}: wall silhouettes still share one angle`);
+  assert.ok(Math.max(...buttonMetrics.map(metric => metric.width)) - Math.min(...buttonMetrics.map(metric => metric.width)) <= 1, `${browserName}: visual scale leaked into button width`);
+  assert.ok(Math.max(...buttonMetrics.map(metric => metric.height)) - Math.min(...buttonMetrics.map(metric => metric.height)) <= 1, `${browserName}: visual scale leaked into button height`);
   const staticCenters = buttonMetrics.map(metric => metric.centerX / 740 * 100);
   [10, 34, 90].forEach((expected, index) => {
     assert.ok(Math.abs(staticCenters[index] - expected) <= 1, `${browserName}: #fast friend ${index} left its static wall slot`);
