@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ポノのずかん Three.js</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="./styles.css?v=20260705-1088">
+  <link rel="stylesheet" href="./styles.css?v=20260712-1256">
 </head>
 <body>
   <main id="app">
@@ -22,33 +22,15 @@
       <button id="topSettingsButton" class="top-action-button" type="button" aria-label="せってい" aria-pressed="false">⚙</button>
     </div>
     <section id="zukanSettingsPanel" class="zukan-settings-panel" hidden aria-label="せってい">
-      <div class="zukan-settings-head">
-        <h2>せってい</h2>
-        <button id="zukanSettingsClose" class="zukan-settings-close" type="button" aria-label="とじる">×</button>
-      </div>
       <div class="zukan-settings-actions">
-        <button id="settingsBackButton" class="zukan-settings-back" type="button">もどる</button>
-        <button id="settingsTutorialButton" class="zukan-settings-help" type="button">あそびかた</button>
-      </div>
-      <div id="zukanDebugSettings" class="zukan-debug-settings" hidden>
-        <h3>ページ ちょうせい</h3>
-        <div class="zukan-settings-row">
-          <span>ひだり</span>
-          <div class="zukan-settings-segment" role="group" aria-label="ひだりページ">
-            <button type="button" data-zukan-side="left" data-zukan-type="auto">じどう</button>
-            <button type="button" data-zukan-side="left" data-zukan-type="index">もくじ</button>
-            <button type="button" data-zukan-side="left" data-zukan-type="detail">しょうさい</button>
-          </div>
-        </div>
-        <div class="zukan-settings-row">
-          <span>みぎ</span>
-          <div class="zukan-settings-segment" role="group" aria-label="みぎページ">
-            <button type="button" data-zukan-side="right" data-zukan-type="auto">じどう</button>
-            <button type="button" data-zukan-side="right" data-zukan-type="index">もくじ</button>
-            <button type="button" data-zukan-side="right" data-zukan-type="detail">しょうさい</button>
-          </div>
-        </div>
-        <button id="zukanTuneButton" class="zukan-tune-button" type="button">いちをなおす</button>
+        <button id="settingsBackButton" class="zukan-settings-menu-item" type="button">
+          <span class="zukan-settings-menu-icon" aria-hidden="true">🏠</span>
+          <span>もどる</span>
+        </button>
+        <button id="settingsTutorialButton" class="zukan-settings-menu-item" type="button">
+          <span class="zukan-settings-menu-icon" aria-hidden="true">❓</span>
+          <span>あそびかた</span>
+        </button>
       </div>
     </section>
     <section id="bookThemePanel" class="zukan-settings-panel book-theme-panel" hidden aria-label="きせかえ">

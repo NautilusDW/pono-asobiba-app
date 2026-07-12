@@ -173,44 +173,67 @@ body:not(.is-collection-album) #scene {
   gap: 10px;
 }
 
-.zukan-settings-back,
-.zukan-settings-help {
+#zukanSettingsPanel {
+  width: min(200px, calc(100vw - 20px));
+  max-height: none;
+  overflow: hidden;
+  padding: 6px;
+  border: 0;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.97);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.24);
+  color: #5d4e37;
+}
+
+#zukanSettingsPanel .zukan-settings-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.zukan-settings-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   width: 100%;
   min-height: 48px;
   margin: 0;
-  border: 2px solid rgba(225, 185, 68, 0.68);
+  padding: 10px 14px;
+  border: 0;
   border-radius: 12px;
-  background: linear-gradient(180deg, #fff7cc, #ffe89f);
-  color: #263c3e;
-  font-size: 16px;
+  background: transparent;
+  color: #5d4e37;
+  font-family: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Meiryo", sans-serif;
+  font-size: 0.88rem;
   font-weight: 900;
-  box-shadow: inset 0 -4px 0 rgba(210, 165, 48, 0.36);
-}
-
-.zukan-settings-help {
-  background: linear-gradient(180deg, #e8fffa, #bfeee7);
-  border-color: rgba(70, 171, 164, 0.56);
-  box-shadow: inset 0 -4px 0 rgba(61, 153, 149, 0.22);
-}
-
-.zukan-debug-settings {
-  margin-top: 14px;
-  padding: 12px;
-  border: 2px dashed rgba(84, 161, 151, 0.42);
-  border-radius: 14px;
-  background: rgba(235, 255, 250, 0.58);
-}
-
-.zukan-debug-settings[hidden] {
-  display: none !important;
-}
-
-.zukan-debug-settings h3 {
-  margin: 0 0 8px;
-  color: #38605e;
-  font-size: 14px;
   line-height: 1.2;
-  letter-spacing: 0;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background 150ms ease, transform 120ms ease;
+}
+
+.zukan-settings-menu-item:hover,
+.zukan-settings-menu-item:focus-visible {
+  background: rgba(242, 145, 90, 0.12);
+}
+
+.zukan-settings-menu-item:focus-visible {
+  outline: 3px solid rgba(242, 145, 90, 0.52);
+  outline-offset: -3px;
+}
+
+.zukan-settings-menu-item:active {
+  background: rgba(242, 145, 90, 0.18);
+  transform: scale(0.97);
+}
+
+.zukan-settings-menu-icon {
+  width: 28px;
+  flex: 0 0 28px;
+  font-size: 1.2rem;
+  line-height: 1;
+  text-align: center;
 }
 
 .zukan-settings-row {
@@ -391,19 +414,6 @@ body:not(.is-collection-album) #scene {
   pointer-events: none;
 }
 
-.zukan-tune-button {
-  width: 100%;
-  min-height: 42px;
-  margin-top: 12px;
-  border: 2px solid rgba(225, 185, 68, 0.68);
-  border-radius: 12px;
-  background: linear-gradient(180deg, #fff7cc, #ffe89f);
-  color: #263c3e;
-  font-size: 15px;
-  font-weight: 900;
-  box-shadow: inset 0 -4px 0 rgba(210, 165, 48, 0.36);
-}
-
 @media (orientation: landscape) and (max-height: 520px) {
   .zukan-settings-panel {
     top: max(58px, calc(env(safe-area-inset-top) + 54px));
@@ -480,12 +490,6 @@ body:not(.is-collection-album) #scene {
 
   .zukan-theme-picker button::before {
     min-height: 46px;
-  }
-
-  .zukan-tune-button {
-    min-height: 36px;
-    margin-top: 8px;
-    font-size: 13px;
   }
 }
 @media (max-width: 720px) {
@@ -4517,8 +4521,8 @@ body.is-sticker-tutorial-active.is-sticker-tutorial-phase-try.is-sticker-tutoria
   pointer-events: auto !important;
 }
 
-/* v1647: 設定ボタンとモーダルはチュートリアル中も常時操作可
-   ユーザーがいつでも 「もどる」 「いちをなおす」 を選べる安全弁。
+/* v1647: 設定ボタンとメニューはチュートリアル中も常時操作可
+   ユーザーがいつでも 「もどる」 「あそびかた」 を選べる安全弁。
    panel 内部要素はもともと blocklist 対象外だが、 将来追加要素にも備えて明示宣言。 */
 body.is-sticker-tutorial-active #topSettingsButton,
 body.is-sticker-tutorial-active #zukanSettingsPanel,
