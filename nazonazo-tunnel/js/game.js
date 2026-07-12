@@ -139,13 +139,13 @@ const ASSETS={
     "../assets/images/nazonazo-tunnel/jungle_animal_crocodile_livedin_20260712.webp"
    ],
    near:[
-    "../assets/images/nazonazo-tunnel/jungle_animal_elephant_livedin_20260712.webp",
-    "../assets/images/nazonazo-tunnel/jungle_animal_giraffe_livedin_20260712.webp"
+    "../assets/images/nazonazo-tunnel/jungle_animal_elephant_trunk_3frame_20260712.webp",
+    "../assets/images/nazonazo-tunnel/jungle_animal_giraffe_full_20260712.webp"
    ]
   },
   flight:{
    bird:"../assets/images/nazonazo-tunnel/jungle_flying_toucan_3frame_20260712.webp",
-   butterfly:"../assets/images/nazonazo-tunnel/jungle_flying_butterfly_3frame_20260712.webp"
+   butterfly:"../assets/images/nazonazo-tunnel/jungle_flying_butterfly_3frame_20260712_v2.webp"
   }
  },
  sea:{
@@ -291,8 +291,8 @@ const JUNGLE_ANIMAL_LAYOUT={
   {asset:1,species:"crocodile",anchor:"understory",x:70,y:83.5,anchorY:98,w:25.5,min:80,max:225,depth:.92,opacity:1,motion:"breathe",flip:1,origin:"50% 98%",moveY:0}
  ],
  near:[
-  {asset:1,species:"giraffe",anchor:"ground",x:26,y:83.5,anchorY:98.75,w:29,min:92,max:280,depth:.9,opacity:1,motion:"breathe",flip:-1,origin:"50% 98.75%",moveY:0},
-  {asset:0,species:"elephant",anchor:"ground",x:90,y:83.5,anchorY:98.75,w:34,min:110,max:330,depth:.94,opacity:1,motion:"breathe",flip:1,origin:"50% 98.75%",moveY:0}
+  {asset:1,species:"giraffe",anchor:"ground",x:26,y:83.5,anchorY:93.4896,wCss:"min(22vw,54vmin)",min:150,max:280,depth:.9,opacity:1,motion:"breathe",flip:-1,origin:"50% 93.4896%",moveY:0},
+  {asset:0,species:"elephant",anchor:"ground",x:90,y:83.5,anchorY:93.75,wCss:"min(28vw,72vmin)",min:190,max:340,depth:.94,opacity:1,motion:"breathe",flip:1,origin:"50% 93.75%",moveY:0,frames:3,frameDuration:3.2}
  ]
 };
 const NPC_BASE="../assets/images/bento/npc/";
@@ -390,6 +390,7 @@ let tunnels=[],playing=false,cars=[],helpItems=[],rareCount=0,rareEl=null,rareSp
 let journeyScore=0,highScore=0,stageScore=0,stageScoreBreakdown=emptyStageScoreBreakdown(),stageClearScoreGranted=false;
 let tunnelFriendCandidates=[],tunnelFriendsFound=0,tunnelFriendTotalFound=0,tunnelFriendRewardGranted=false,tunnelFriendPerfectScoreGranted=false,tunnelFriendGameActive=false,tunnelFriendStartWorldX=0;
 let bestStarsByStage={},answerLocked=false,portalEditHolding=false,nextMagicPuffAt=0,exitPortalBaseWorldX=0;
+let numberJumpCount=0,numberJumpTargetShown=false;
 const SAVE_KEY="pono_nazonazo_tunnel_v1";
 const FAST=(location.hash==="#fast")?6:1;
 const FORCERARE=(location.hash==="#fast");
@@ -824,6 +825,7 @@ function announce(t){const live=$("liveRegion");if(live)live.textContent=t||"";}
 function speak(t){announce(t);}
 function showHint(){
  if(!cur)return;
+ if(isNumberJumpQuestion()){showNumberJumpHint(false);return;}
  hintText.textContent="💡 ヒント： "+cur.h;
  announce("ヒント。"+cur.h);
 }
@@ -1510,25 +1512,32 @@ function buildJungleAnimals(){
    if(!src)return;
    const sprite=document.createElement("span");
    const art=document.createElement("img");
+   const frameClip=spec.frames>1?document.createElement("span"):null;
    const move=layerName==="far"?1.5:(layerName==="mid"?2.6:3.5);
-   sprite.className="jungle-animal-sprite";
+   sprite.className="jungle-animal-sprite"+(frameClip?" has-frame-sheet":"");
    sprite.dataset.animalDepth=layerName;
    sprite.dataset.animalSpecies=spec.species;
    sprite.dataset.animalAnchor=spec.anchor;
    sprite.dataset.animalAnchorY=String(spec.anchorY);
-   sprite.style.setProperty("--animal-width",spec.w+"vmin");
+   sprite.style.setProperty("--animal-width",spec.wCss||spec.w+"vmin");
    sprite.style.setProperty("--animal-min",spec.min+"px");
    sprite.style.setProperty("--animal-max",spec.max+"px");
    sprite.style.setProperty("--animal-opacity",String(spec.opacity));
-   art.className="jungle-animal-art motion-"+spec.motion;
+   art.className="jungle-animal-art"+(frameClip?" jungle-animal-frame-sheet":" motion-"+spec.motion);
    art.src=src;art.alt="";art.draggable=false;art.decoding="async";
-   art.style.setProperty("--animal-duration",(5.6+((index*17+layerIndex*11)%34)/10).toFixed(1)+"s");
-   art.style.setProperty("--animal-delay",(-(index*.93+layerIndex*.61)).toFixed(2)+"s");
-   art.style.setProperty("--animal-move-x",(move*(index%2?-.55:.45)).toFixed(1)+"px");
-   art.style.setProperty("--animal-move-y",(Number.isFinite(spec.moveY)?spec.moveY:-move).toFixed(1)+"px");
-   art.style.setProperty("--animal-rotate",(layerName==="far"?.65:(layerName==="mid"?.85:1.05))+"deg");
-   if(spec.origin)art.style.setProperty("--animal-origin",spec.origin);
-   sprite.appendChild(art);fragment.appendChild(sprite);
+   const motionTarget=frameClip||art;
+   motionTarget.style.setProperty("--animal-duration",(5.6+((index*17+layerIndex*11)%34)/10).toFixed(1)+"s");
+   motionTarget.style.setProperty("--animal-delay",(-(index*.93+layerIndex*.61)).toFixed(2)+"s");
+   motionTarget.style.setProperty("--animal-move-x",(move*(index%2?-.55:.45)).toFixed(1)+"px");
+   motionTarget.style.setProperty("--animal-move-y",(Number.isFinite(spec.moveY)?spec.moveY:-move).toFixed(1)+"px");
+   motionTarget.style.setProperty("--animal-rotate",(layerName==="far"?.65:(layerName==="mid"?.85:1.05))+"deg");
+   if(spec.origin)motionTarget.style.setProperty("--animal-origin",spec.origin);
+   if(frameClip){
+    frameClip.className="jungle-animal-frame motion-"+spec.motion;
+    art.style.setProperty("--animal-frame-duration",(spec.frameDuration||3.2)+"s");
+    frameClip.appendChild(art);sprite.appendChild(frameClip);
+   }else sprite.appendChild(art);
+   fragment.appendChild(sprite);
    jungleAnimalSprites.push({el:sprite,baseX:spec.x,y:spec.y,anchorY:Number.isFinite(spec.anchorY)?spec.anchorY:0,depth:spec.depth,flip:spec.flip||1,loop:spec.loop||"world"});
   });
   layer.appendChild(fragment);
@@ -2189,14 +2198,22 @@ function useHelp(){
  }
  const item=helpItems.pop();
  updateHelpHud();
- const choices=[...choicesEl.querySelectorAll(".choice")];
- const wrong=choices.find(c=>c.dataset.ok!=="1"&&!c.classList.contains("dim"));
- if(wrong){wrong.classList.add("dim");wrong.disabled=true;}
- const ok=choices.find(c=>c.dataset.ok==="1");
- if(ok)ok.classList.add("glow");
+ let helpMessage=item.t+"が おしえてくれたよ";
+ if(isNumberJumpQuestion()){
+  numberJumpTargetShown=true;
+  updateNumberJumpGame();
+  hintText.textContent="🍀 "+numberJumpAnswer()+"の ところが ひかったよ";
+  helpMessage=item.t+"が "+numberJumpAnswer()+"の ところを おしえてくれたよ";
+ }else{
+  const choices=[...choicesEl.querySelectorAll(".choice")];
+  const wrong=choices.find(c=>c.dataset.ok!=="1"&&!c.classList.contains("dim"));
+  if(wrong){wrong.classList.add("dim");wrong.disabled=true;}
+  const ok=choices.find(c=>c.dataset.ok==="1");
+  if(ok)ok.classList.add("glow");
+ }
  tone(880,0,.12,"triangle",.12);tone(1175,.1,.16,"triangle",.1);
  showStamp("おたすけ！","new");
- announce(item.t+"が おしえてくれたよ");
+ announce(helpMessage);
 }
 
 function setTunnelInteriorBackdrop(){
@@ -2350,6 +2367,7 @@ function gloop(t){
 /* ================= flow ================= */
 function startJourneyAt(s){
  hideWeatherNotice();
+ resetNumberJumpGame();
  clearRareEvent();
  stopStageWeather();
  clearTunnelFriendGame();
@@ -2369,13 +2387,18 @@ function startJourneyAt(s){
  sndGo();
  if(currentStageWeather==="rain")setWeatherPresentation("rain",{announce:true});
 }
-function showQuiz(){
- hideWeatherNotice();
- setDriverMood("thinking");
- cur=qList[qSeg];missInQ=0;answerLocked=false;
- qText.textContent=cur.helper?(cur.helper.name+"を たすけよう！ "+cur.q):cur.q;
- hintText.textContent=helpItems.length?"🍀 おたすけを つかえるよ":"";
- choicesEl.innerHTML="";
+function isNumberJumpQuestion(){return !!(cur&&STAGES[stg]&&STAGES[stg].id==="number");}
+function numberJumpLimit(){return [3,5,9][level]||3;}
+function numberJumpAnswer(){return clamp(Number(cur&&cur.a&&cur.a[0])||0,0,numberJumpLimit());}
+function resetNumberJumpGame(){
+ numberJumpCount=0;numberJumpTargetShown=false;
+ quiz.classList.remove("number-quiz");
+ choicesEl.classList.remove("number-mode");
+ choicesEl.style.removeProperty("--jump-count");
+ choicesEl.style.removeProperty("--jump-slots");
+ choicesEl.setAttribute("aria-label","こたえを えらぶ");
+}
+function renderChoiceCards(){
  let opts=[{e:cur.a[0],t:cur.a[1],ok:true},...cur.d.map(x=>({e:x[0],t:x[1],ok:false}))];
  if(level===0&&opts.length>2)opts=opts.slice(0,2);
  opts=shuffle(opts);
@@ -2385,6 +2408,91 @@ function showQuiz(){
   b.innerHTML='<span class="em">'+o.e+'</span><span class="lb">'+o.t+'</span>';
   bindTap(b,()=>onPick(b,o));
   choicesEl.appendChild(b);});
+}
+function numberJumpButton(action,text,label,onTap){
+ const button=document.createElement("button");
+ button.type="button";button.className="number-jump-action is-"+action;
+ button.dataset.jumpAction=action;button.textContent=text;button.setAttribute("aria-label",label);
+ bindTap(button,()=>onTap(button));return button;
+}
+function renderNumberJumpGame(){
+ quiz.classList.add("number-quiz");choicesEl.classList.add("number-mode");
+ choicesEl.setAttribute("aria-label","ジャンプで かずを つくる");
+ const limit=numberJumpLimit();
+ const root=document.createElement("div");root.className="number-jump-game";root.setAttribute("role","group");root.setAttribute("aria-labelledby","qText");
+ root.style.setProperty("--jump-slots",String(limit+1));root.style.setProperty("--jump-count","0");
+ const readout=document.createElement("div");readout.className="number-jump-readout";readout.setAttribute("role","status");readout.setAttribute("aria-live","polite");readout.setAttribute("aria-atomic","true");
+ const readoutLabel=document.createElement("span");readoutLabel.textContent="いま";
+ const readoutValue=document.createElement("strong");readoutValue.dataset.jumpCount="";readoutValue.textContent="0";
+ const readoutUnit=document.createElement("span");readoutUnit.textContent="かい";
+ readout.append(readoutLabel,readoutValue,readoutUnit);
+ const track=document.createElement("div");track.className="number-jump-track";track.setAttribute("aria-hidden","true");
+ for(let i=0;i<=limit;i++){
+  const step=document.createElement("span");step.className="number-jump-step";step.dataset.jumpStep=String(i);
+  const number=document.createElement("b");number.textContent=String(i);step.appendChild(number);track.appendChild(step);
+ }
+ const runner=document.createElement("span");runner.className="number-jump-runner";
+ const runnerArt=document.createElement("span");runnerArt.className="number-jump-runner-art";runnerArt.textContent="🐻";
+ runner.appendChild(runnerArt);track.appendChild(runner);
+ const actions=document.createElement("div");actions.className="number-jump-actions";
+ actions.append(
+  numberJumpButton("back","1こ もどす","1こ もどす",()=>changeNumberJump(-1)),
+  numberJumpButton("jump","ジャンプ！","1かい ジャンプ",()=>changeNumberJump(1)),
+  numberJumpButton("confirm","ここ！","この かずで こたえる",eventButton=>submitNumberJump(eventButton))
+ );
+ root.append(readout,track,actions);choicesEl.appendChild(root);updateNumberJumpGame();
+}
+function updateNumberJumpGame(options){
+ const root=choicesEl.querySelector(".number-jump-game");if(!root)return;
+ root.style.setProperty("--jump-count",String(numberJumpCount));
+ const count=root.querySelector("[data-jump-count]");if(count)count.textContent=String(numberJumpCount);
+ root.querySelectorAll("[data-jump-step]").forEach(step=>{
+  const value=Number(step.dataset.jumpStep);
+  step.classList.toggle("is-passed",value<numberJumpCount);
+  step.classList.toggle("is-current",value===numberJumpCount);
+  step.classList.toggle("is-target",numberJumpTargetShown&&value===numberJumpAnswer());
+ });
+ const back=root.querySelector('[data-jump-action="back"]');
+ const jump=root.querySelector('[data-jump-action="jump"]');
+ const confirm=root.querySelector('[data-jump-action="confirm"]');
+ if(back)back.disabled=answerLocked||numberJumpCount<=0;
+ if(jump)jump.disabled=answerLocked||numberJumpCount>=numberJumpLimit();
+ if(confirm)confirm.disabled=answerLocked||numberJumpCount<=0;
+ if(options&&options.hop){
+  const art=root.querySelector(".number-jump-runner-art");
+  if(art){art.classList.remove("is-hopping");void art.offsetWidth;art.classList.add("is-hopping");art.addEventListener("animationend",()=>art.classList.remove("is-hopping"),{once:true});}
+ }
+ if(options&&options.announce)announce(numberJumpCount+"かい");
+}
+function changeNumberJump(delta){
+ if(answerLocked||driving||!quiz.classList.contains("show")||!isNumberJumpQuestion())return;
+ const next=clamp(numberJumpCount+delta,0,numberJumpLimit());if(next===numberJumpCount)return;
+ numberJumpCount=next;updateNumberJumpGame({announce:true,hop:delta>0});
+ tone(delta>0?740:520,0,.08,"triangle",.07);
+}
+function submitNumberJump(button){
+ if(answerLocked||numberJumpCount<=0||!isNumberJumpQuestion())return;
+ onPick(button,{ok:numberJumpCount===numberJumpAnswer(),mode:"number"});
+}
+function showNumberJumpHint(revealTarget){
+ if(!isNumberJumpQuestion())return;
+ if(revealTarget)numberJumpTargetShown=true;
+ let message="ジャンプ！を おして かずを つくろう";
+ if(numberJumpTargetShown)message=numberJumpAnswer()+"の ところが ひかったよ";
+ else if(numberJumpCount<numberJumpAnswer()&&numberJumpCount>0)message="もう すこし ジャンプしてみよう";
+ else if(numberJumpCount>numberJumpAnswer())message="1こ もどしてみよう";
+ else if(numberJumpCount===numberJumpAnswer())message="ここ！を おしてみよう";
+ hintText.textContent="💡 "+message;updateNumberJumpGame();announce(message);
+}
+function showQuiz(){
+ hideWeatherNotice();
+ setDriverMood("thinking");
+ resetNumberJumpGame();
+ cur=qList[qSeg];missInQ=0;answerLocked=false;
+ qText.textContent=cur.helper?(cur.helper.name+"を たすけよう！ "+cur.q):cur.q;
+ hintText.textContent=helpItems.length?"🍀 おたすけを つかえるよ":"";
+ choicesEl.replaceChildren();
+ if(isNumberJumpQuestion())renderNumberJumpGame();else renderChoiceCards();
  quiz.classList.add("show");
  speak(cur.s||cur.q);
 }
@@ -2406,14 +2514,20 @@ function onPick(el,o){
  }else{
   setDriverMood("surprised");
   missInQ++;stageMiss++;
-  sndNG();el.classList.add("ng","dim");
+  sndNG();
+  if(o.mode==="number"){
+   el.classList.remove("ng");void el.offsetWidth;el.classList.add("ng");
+   if(missInQ===1)showNumberJumpHint(false);
+   if(missInQ>=2)showNumberJumpHint(true);
+   updateNumberJumpGame();
+  }else el.classList.add("ng","dim");
   const t=tunnels[qSeg];
   if(t){t.classList.add("shake");setTimeout(()=>t.classList.remove("shake"),520);}
   showStamp("おしい！","ng");
-  if(missInQ===1)showHint();
-  if(missInQ>=2){choicesEl.querySelectorAll(".choice").forEach(c=>{
+  if(o.mode!=="number"&&missInQ===1)showHint();
+  if(o.mode!=="number"&&missInQ>=2){choicesEl.querySelectorAll(".choice").forEach(c=>{
    if(!c.classList.contains("dim"))c.classList.add("glow");});}
-  setTimeout(()=>{answerLocked=false;setDriverMood("thinking");},520);
+  setTimeout(()=>{answerLocked=false;setDriverMood("thinking");if(o.mode==="number")updateNumberJumpGame();},520);
  }
 }
 function proceed(){
@@ -2477,6 +2591,7 @@ function ending(){
 /* ================= map ================= */
 function openMap(msg){
  hideWeatherNotice();
+ resetNumberJumpGame();
  clearRareEvent();
  stopStageWeather();setWeatherPresentation("clear");
  clearTunnelFriendGame();

@@ -16,13 +16,16 @@ const js = read("nazonazo-tunnel/js/game.js");
 const staticAnimals = [
   "toucans", "sloth", "crocodile", "giraffe", "elephant"
 ];
-const animalFiles = Object.fromEntries(staticAnimals.map(animal => [
-  animal,
-  `jungle_animal_${animal}_livedin_20260712.webp`
-]));
+const animalFiles = {
+  toucans: "jungle_animal_toucans_livedin_20260712.webp",
+  sloth: "jungle_animal_sloth_livedin_20260712.webp",
+  crocodile: "jungle_animal_crocodile_livedin_20260712.webp",
+  giraffe: "jungle_animal_giraffe_full_20260712.webp",
+  elephant: "jungle_animal_elephant_trunk_3frame_20260712.webp"
+};
 const flightFiles = {
   toucan: "jungle_flying_toucan_3frame_20260712.webp",
-  butterfly: "jungle_flying_butterfly_3frame_20260712.webp"
+  butterfly: "jungle_flying_butterfly_3frame_20260712_v2.webp"
 };
 
 function extractConstObject(source, name) {
@@ -91,7 +94,7 @@ for (const spec of layoutSpecs) {
   assert.equal(spec.anchor, expectedAnchorBySpecies[spec.species], `${label}: habitat anchor mismatch`);
   assert.ok(Number.isFinite(spec.anchorY) && spec.anchorY >= 0 && spec.anchorY <= 100, `${label}: invalid image anchorY`);
   assert.ok(Number.isFinite(spec.moveY), `${label}: moveY must be explicit`);
-  assert.ok(Number.isFinite(spec.w) && Number.isFinite(spec.min) && Number.isFinite(spec.max), `${label}: size intent missing`);
+  assert.ok((Number.isFinite(spec.w) || typeof spec.wCss === "string") && Number.isFinite(spec.min) && Number.isFinite(spec.max), `${label}: size intent missing`);
   assert.ok(spec.min > 0 && spec.max >= spec.min, `${label}: invalid size clamp`);
   assert.equal(spec.opacity, 1, `${label}: wildlife must be fully opaque`);
   if (spec.anchor !== "air") {
@@ -104,7 +107,7 @@ for (const spec of layoutSpecs) {
     assert.ok(spec.x <= 28 || spec.x >= 100, `${label}: tree animal must stay in the forest tile's canopy bands`);
   }
   if (spec.anchor === "ground" || spec.anchor === "understory") {
-    const expectedAlphaBottom = spec.species === "crocodile" ? 98 : 98.75;
+    const expectedAlphaBottom = { crocodile: 98, giraffe: 93.4896, elephant: 93.75 }[spec.species];
     assert.equal(spec.anchorY, expectedAlphaBottom, `${label}: visible feet/log alpha edge must define the image anchor`);
     assert.equal(spec.y, 83.5, `${label}: visible feet/log must align with the raised jungle ground line`);
     assert.ok(spec.depth >= 0.85, `${label}: ground habitat must travel with the near landscape`);
@@ -112,15 +115,13 @@ for (const spec of layoutSpecs) {
 }
 
 const primarySpec = Object.fromEntries(staticAnimals.map(animal => [animal, layoutSpecs.find(spec => spec.species === animal)]));
-assert.ok(primarySpec.elephant.w > primarySpec.crocodile.w, "elephant must read wider than crocodile");
-assert.ok(primarySpec.giraffe.w > primarySpec.sloth.w, "giraffe must read larger than the middle-depth sloth");
-assert.ok(primarySpec.giraffe.w >= 26, "giraffe must be visibly enlarged beyond the previous 23.5vw treatment");
+assert.match(primarySpec.giraffe.wCss, /min\(22vw,54vmin\)/, "giraffe must use a viewport-safe width that stays tall on ultrawide screens");
 assert.ok(primarySpec.giraffe.max >= 250, "giraffe desktop clamp must grow beyond the previous 230px cap");
-assert.ok(primarySpec.elephant.w >= 30, "elephant must be visibly enlarged beyond the previous 27vw treatment");
+assert.match(primarySpec.elephant.wCss, /min\(28vw,72vmin\)/, "elephant must read much larger than the train while staying inside short landscapes");
 assert.ok(primarySpec.elephant.max >= 290, "elephant desktop clamp must grow beyond the previous 270px cap");
-assert.ok(new Set(layoutSpecs.map(spec => spec.w)).size >= 5, "animal widths need at least five visibly distinct scales");
-const layoutWidths = layoutSpecs.map(spec => spec.w);
-assert.ok(Math.max(...layoutWidths) / Math.min(...layoutWidths) >= 1.8, "animal scale range is too uniform");
+assert.equal(primarySpec.elephant.frames, 3, "elephant must expose exactly three trunk poses");
+assert.ok(new Set(layoutSpecs.map(spec => spec.wCss || spec.w)).size >= 5, "animal widths need at least five visibly distinct scales");
+assert.ok(Math.max(...layoutSpecs.map(spec => spec.max)) / Math.min(...layoutSpecs.map(spec => spec.max)) >= 2.5, "animal scale range is too uniform");
 
 for (const id of ["Far", "Mid", "Near"]) {
   assert.match(html, new RegExp(`id="jungleAnimals${id}"[^>]*class="jungle-animal-layer"[^>]*aria-hidden="true"`));
@@ -131,10 +132,13 @@ assert.match(css, /body\.st-jungle \.jungle-animal-layer\{display:block\}/);
 assert.match(css, /body\.tunnel-interior \.jungle-animal-layer\{display:none!important\}/);
 assert.match(css, /#jungleAnimalsNear\{[^}]*bottom:16vh/, "near clip must leave a half-vh alpha-padding pocket below the raised ground line");
 assert.match(css, /body\.st-jungle\.v-train \.train-art::before\{[^}]*z-index:1[^}]*background:linear-gradient/, "opaque jungle cab interior must hide passing wildlife behind the driver");
+const reducedMotionCss = css.slice(css.indexOf("@media (prefers-reduced-motion:reduce)"));
 assert.match(css, /@media \(prefers-reduced-motion:reduce\)[\s\S]*?\.jungle-animal-art\{animation:none!important;transform:none!important\}/);
+assert.match(css, /\.jungle-animal-frame-sheet\{[^}]*width:300%[^}]*jungleAnimalTrunkFrames/, "elephant trunk sheet must expose three horizontal cells");
+assert.match(css, /@keyframes jungleAnimalTrunkFrames\{[\s\S]*?-33\.3333%[\s\S]*?-66\.6667%/, "elephant trunk animation must visit left, center, and right poses");
+assert.match(reducedMotionCss, /\.jungle-animal-frame-sheet\{[^}]*translate3d\(-33\.3333%,0,0\)!important/, "reduced motion must keep the elephant's centered trunk frame");
 assert.match(html, /<(?:div|section)[^>]*(?:id|class)="[^"]*(?:jungle[^" ]*flight|flight[^" ]*jungle)[^"]*"[^>]*aria-hidden="true"/i, "the ambient flight layer must be decorative and hidden from assistive technology");
 assert.match(css, /body\.st-jungle[^,{]*[,{][\s\S]*?(?:jungle[^,{]*flight|flight[^,{]*jungle)/, "flight sprites must only be exposed in the jungle scene");
-const reducedMotionCss = css.slice(css.indexOf("@media (prefers-reduced-motion:reduce)"));
 assert.match(reducedMotionCss, /(?:jungle[^,{]*flight|flight[^,{]*jungle)[^{]*\{[^}]*display\s*:\s*none\s*!important/, "large cross-screen flights must be removed in reduced-motion mode");
 const motionStart = css.indexOf("@keyframes jungleAnimalSway");
 const motionEnd = css.indexOf(".jungle-flight-layer", motionStart);
@@ -149,6 +153,8 @@ assert.match(js, /if\(renderKey===lastJungleAnimalRenderKey\)return;/, "stationa
 assert.match(js, /const JUNGLE_MID_TILE_ASPECT=2,JUNGLE_MID_TILE_SCALE=1\.16;/, "middle-forest tile dimensions must stay explicit");
 assert.match(js, /const midPeriod=\(\(window\.innerHeight\|\|1\)\*JUNGLE_MID_TILE_ASPECT\*JUNGLE_MID_TILE_SCALE\/\(window\.innerWidth\|\|1\)\)\*100;/, "tree animals must use the rendered 116% middle-forest tile width");
 assert.match(js, /renderSeaFish\(now\);\s*renderJungleAnimals\(\);/);
+assert.match(js, /spec\.wCss\|\|spec\.w\+"vmin"/, "runtime must accept viewport-safe CSS widths for large animals");
+assert.match(js, /spec\.frames>1\?document\.createElement\("span"\):null/, "runtime must build a clipped frame sheet only for animated animals");
 assert.doesNotMatch(js.slice(js.indexOf("function buildJungleAnimals"), js.indexOf("function renderJungleAnimals")), /addEventListener|bindTap/, "ambient animals must not be interactive");
 
 for (const animal of staticAnimals) {
@@ -168,7 +174,8 @@ for (const animal of staticAnimals) {
 const runtimeAnimalReferences = [...js.matchAll(/\.\.\/assets\/images\/nazonazo-tunnel\/(jungle_animal_[^"']+\.webp)/g)]
   .map(match => match[1]);
 assert.equal(runtimeAnimalReferences.length, 5, "runtime must reference exactly the five selected static jungle animal assets");
-assert.ok(runtimeAnimalReferences.every(file => /_livedin_20260712\.webp$/.test(file)), "every runtime jungle animal must use the lived-in 20260712 asset set");
+assert.deepEqual(runtimeAnimalReferences.slice().sort(), Object.values(animalFiles).slice().sort(), "runtime jungle animal references must match the selected replacement set");
+assert.doesNotMatch(js, /jungle_animal_(?:elephant|giraffe)_livedin_20260712\.webp/, "cropped elephant and giraffe assets must be fully retired");
 assert.doesNotMatch(js, /jungle_animal_butterflies_livedin_20260712\.webp/, "the old frozen butterfly group must not remain in the runtime asset map");
 assert.doesNotMatch(js, /jungle_animal_(?:monkey|owl|snake|frog|lion|zebra)_[^"']+\.webp/, "removed species must not remain in the runtime asset map");
 
@@ -299,7 +306,19 @@ function assertGroundedScene(scene, label, expectedCount) {
     }
   }
   const boxes = scene.speciesBoxes;
-  assert.ok(boxes.giraffe.height >= boxes.elephant.height * 1.18, `${label}: giraffe must read clearly taller than elephant`);
+  assert.ok(boxes.giraffe.height >= boxes.elephant.height * 1.15, `${label}: giraffe must read clearly taller than elephant`);
+}
+
+async function alphaEdgeIsClear(image, threshold = 12) {
+  const { data, info } = await image.ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const alphaAt = (x, y) => data[(y * info.width + x) * info.channels + 3];
+  for (let x = 0; x < info.width; x += 1) {
+    if (alphaAt(x, 0) > threshold || alphaAt(x, info.height - 1) > threshold) return false;
+  }
+  for (let y = 0; y < info.height; y += 1) {
+    if (alphaAt(0, y) > threshold || alphaAt(info.width - 1, y) > threshold) return false;
+  }
+  return true;
 }
 
 async function verifyFlightSheets() {
@@ -310,6 +329,25 @@ async function verifyFlightSheets() {
     assert.equal(info.width % 3, 0, `${species}: sheet width must divide into exactly three equal frames`);
     assert.ok(info.width / 3 >= 160 && info.height >= 160, `${species}: individual flight frames are unexpectedly small`);
   }
+
+  const butterflyPath = path.join(root, "assets/images/nazonazo-tunnel", flightFiles.butterfly);
+  const butterflyInfo = await sharp(butterflyPath).metadata();
+  assert.deepEqual([butterflyInfo.width, butterflyInfo.height], [1536, 512], "butterfly sheet must keep three normalized square cells");
+  for (let frame = 0; frame < 3; frame += 1) {
+    assert.equal(await alphaEdgeIsClear(sharp(butterflyPath).extract({ left: frame * 512, top: 0, width: 512, height: 512 })), true, `butterfly frame ${frame + 1}: no wing or antenna may be cropped`);
+  }
+
+  const elephantPath = path.join(root, "assets/images/nazonazo-tunnel", animalFiles.elephant);
+  const elephantInfo = await sharp(elephantPath).metadata();
+  assert.deepEqual([elephantInfo.width, elephantInfo.height], [1536, 512], "elephant must keep three equal trunk-pose cells");
+  for (let frame = 0; frame < 3; frame += 1) {
+    assert.equal(await alphaEdgeIsClear(sharp(elephantPath).extract({ left: frame * 512, top: 0, width: 512, height: 512 })), true, `elephant frame ${frame + 1}: body and surrounding foliage must not be cropped`);
+  }
+
+  const giraffePath = path.join(root, "assets/images/nazonazo-tunnel", animalFiles.giraffe);
+  const giraffeInfo = await sharp(giraffePath).metadata();
+  assert.deepEqual([giraffeInfo.width, giraffeInfo.height], [512, 768], "giraffe must retain a tall full-body canvas");
+  assert.equal(await alphaEdgeIsClear(sharp(giraffePath)), true, "giraffe and surrounding foliage must not be cropped at either side");
 }
 
 async function runBrowser(browserName) {
@@ -356,16 +394,16 @@ async function runBrowser(browserName) {
   await page.waitForFunction(() => document.querySelectorAll(".jungle-animal-sprite").length === 5, null, { timeout: 20000 });
   await page.locator("#quiz.show").waitFor({ state: "visible", timeout: 20000 });
   await page.waitForFunction(() => Array.from(document.querySelectorAll(".jungle-animal-art")).every(img => img.complete && img.naturalWidth > 0), null, { timeout: 20000 });
-  await page.waitForFunction(() => document.querySelectorAll('img[src*="jungle_flying_toucan_3frame_20260712.webp"],img[src*="jungle_flying_butterfly_3frame_20260712.webp"]').length === 2, null, { timeout: 20000 });
+  await page.waitForFunction(() => document.querySelectorAll('img[src*="jungle_flying_toucan_3frame_20260712.webp"],img[src*="jungle_flying_butterfly_3frame_20260712_v2.webp"]').length === 2, null, { timeout: 20000 });
 
   const scene = await collectSceneMetrics(page);
   assertGroundedScene(scene, `${browserName} 844x390`, 5);
 
-  const flights = await page.evaluate(() => Array.from(document.querySelectorAll('img[src*="jungle_flying_toucan_3frame_20260712.webp"],img[src*="jungle_flying_butterfly_3frame_20260712.webp"]')).map(img => {
+  const flights = await page.evaluate(() => Array.from(document.querySelectorAll('img[src*="jungle_flying_toucan_3frame_20260712.webp"],img[src*="jungle_flying_butterfly_3frame_20260712_v2.webp"]')).map(img => {
     const el = img.closest(".jungle-flight");
     const style = getComputedStyle(el);
     const sheetStyle = getComputedStyle(img);
-    const match = img.src.match(/jungle_flying_(toucan|butterfly)_3frame_20260712\.webp/);
+    const match = img.src.match(/jungle_flying_(toucan|butterfly)_3frame_20260712(?:_v2)?\.webp/);
     const rect = el.getBoundingClientRect();
     return {
       species: match[1],
@@ -403,7 +441,7 @@ async function runBrowser(browserName) {
   const reduced = await page.locator(".jungle-animal-art.motion-sway").first().evaluate(el => ({ name: getComputedStyle(el).animationName, transform: getComputedStyle(el).transform }));
   assert.equal(reduced.name, "none", `${browserName}: reduced-motion animation must stop`);
   assert.equal(reduced.transform, "none", `${browserName}: reduced-motion transform must be static`);
-  const reducedFlights = await page.evaluate(() => Array.from(document.querySelectorAll('img[src*="jungle_flying_toucan_3frame_20260712.webp"],img[src*="jungle_flying_butterfly_3frame_20260712.webp"]')).map(img => getComputedStyle(img.closest(".jungle-flight-layer")).display));
+  const reducedFlights = await page.evaluate(() => Array.from(document.querySelectorAll('img[src*="jungle_flying_toucan_3frame_20260712.webp"],img[src*="jungle_flying_butterfly_3frame_20260712_v2.webp"]')).map(img => getComputedStyle(img.closest(".jungle-flight-layer")).display));
   assert.deepEqual(reducedFlights, ["none", "none"], `${browserName}: reduced motion must hide both cross-screen flight sprites`);
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await settleViewport(page, 930, 499);

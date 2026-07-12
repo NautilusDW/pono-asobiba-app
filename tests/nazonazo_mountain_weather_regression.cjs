@@ -46,7 +46,7 @@ assert.match(css, /@media \(prefers-reduced-motion:reduce\)[\s\S]*\.rain-particl
 assert.match(css, /#rainFar \.rain-particle:nth-child\(n\+8\),#rainMid \.rain-particle:nth-child\(n\+6\),#rainNear \.rain-particle:nth-child\(n\+4\)\{display:none\}/, "reduced motion must cap visible drops at seven, five, and three");
 assert.match(css, /\.rain-particle\[hidden\]\{display:none\}/, "inactive pooled particles must not render");
 assert.match(css, /--town-sky-lift:42vh/, "the baked far mountain must move substantially higher on regular screens");
-assert.match(css, /#townHorizonLoop\{top:-38vh;height:124%\}/, "the next mountain layer must rise to its last gap-safe position");
+assert.match(css, /#townHorizonLoop\{top:-50vh;height:124%\}/, "the second-farthest mountain must rise another twelve viewport-height units without rescaling its seamless tiles");
 assert.match(css, /@media \(min-aspect-ratio:2\/1\)\{:root\{--town-sky-lift:34vh\}\}/, "ultrawide screens must retain more sky while lifting the far mountain by the same amount");
 assert.match(game, /id:"town"[^\n]+skyPosition:"center calc\(100% - var\(--town-sky-lift,42vh\)\)"/, "the sky asset must use the responsive mountain lift without stretching");
 assert.match(game, /skyA\.style\.backgroundColor=st\.id==="town"\?"#c7d659":"transparent";/, "the strongly raised town sky needs a sampled meadow fallback behind transparent hill valleys");
@@ -99,13 +99,24 @@ async function verifyPanoramaAssets() {
     if (!rowOpaque) break;
     opaqueTailStart = y;
   }
-  const opaqueScreenStart = -38 + 124 * (opaqueTailStart / info.height);
-  const horizonBottom = -38 + 124;
+  const opaqueScreenStart = -50 + 124 * (opaqueTailStart / info.height);
+  const horizonBottom = -50 + 124;
   const regularSkyBottom = 100 - 42;
   const ultrawideSkyBottom = 100 - 34;
-  assert.ok(opaqueScreenStart > regularSkyBottom, "the regression fixture must keep exercising the town fallback gap on regular screens");
-  assert.ok(opaqueScreenStart <= ultrawideSkyBottom + 1, "the ultrawide sky and fully opaque hill tail must still nearly meet");
-  assert.ok(horizonBottom >= 83, "the raised panorama must still overlap the raised town ground");
+  assert.ok(opaqueScreenStart <= regularSkyBottom + 1, "the raised second mountain must become opaque before the regular far-sky bitmap ends");
+  assert.ok(opaqueScreenStart <= ultrawideSkyBottom + 1, "the raised second mountain must cover the ultrawide far-sky bottom");
+  assert.equal(horizonBottom, 74, "the second mountain must move upward without changing its 124vh scale");
+
+  const midPath = path.join(root, "assets/images/nazonazo-tunnel", "town_mid_layer_20260703.webp");
+  const { data: midData, info: midInfo } = await sharp(midPath).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const rowCoverage = screenY => {
+    const sourceY = Math.max(0, Math.min(midInfo.height - 1, Math.round(((screenY + 16) / 114) * (midInfo.height - 1))));
+    let visible = 0;
+    for (let x = 0; x < midInfo.width; x++) if (midData[(sourceY * midInfo.width + x) * midInfo.channels + 3] > 12) visible++;
+    return visible / midInfo.width;
+  };
+  assert.ok(rowCoverage(horizonBottom) >= .5, "the existing middle panorama must cover at least half of the raised horizon bottom");
+  assert.ok(rowCoverage(83) >= .9, "the existing middle panorama must cover the raised town ground approach");
 
   const skyPath = path.join(root, "assets/images/nazonazo-tunnel", "town_sky_back_20260703.webp");
   const { data: skyData, info: skyInfo } = await sharp(skyPath).removeAlpha().raw().toBuffer({ resolveWithObject: true });

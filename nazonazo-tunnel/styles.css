@@ -51,15 +51,28 @@ body.tunnel-interior .jungle-animal-layer{display:none!important}
 .jungle-animal-art{display:block;width:100%;height:auto;object-fit:contain;pointer-events:none;
   transform-origin:var(--animal-origin,50% 70%);animation-duration:var(--animal-duration,7s);animation-delay:var(--animal-delay,-1s);
   animation-iteration-count:infinite;animation-timing-function:ease-in-out;animation-play-state:paused}
+.jungle-animal-sprite.has-frame-sheet{aspect-ratio:1}
+.jungle-animal-frame{display:block;width:100%;height:100%;overflow:hidden;transform-origin:var(--animal-origin,50% 70%);
+  animation-duration:var(--animal-duration,7s);animation-delay:var(--animal-delay,-1s);animation-iteration-count:infinite;
+  animation-timing-function:ease-in-out;animation-play-state:paused}
+.jungle-animal-frame.motion-breathe{animation-name:jungleAnimalBreathe}
+.jungle-animal-frame-sheet{width:300%;height:100%;max-width:none;object-fit:fill;animation:jungleAnimalTrunkFrames var(--animal-frame-duration,3.2s) step-end infinite paused}
 .jungle-animal-art.motion-sway{animation-name:jungleAnimalSway}
 .jungle-animal-art.motion-bob{animation-name:jungleAnimalBob}
 .jungle-animal-art.motion-breathe{animation-name:jungleAnimalBreathe}
 .jungle-animal-art.motion-flutter{animation-name:jungleAnimalFlutter}
 body.st-jungle:not(.tunnel-interior) .jungle-animal-art:not(.motion-still){animation-play-state:running}
+body.st-jungle:not(.tunnel-interior) .jungle-animal-frame:not(.motion-still){animation-play-state:running}
 @keyframes jungleAnimalSway{0%,100%{transform:translate3d(0,0,0) rotate(-.45deg)}50%{transform:translate3d(var(--animal-move-x,2px),var(--animal-move-y,-3px),0) rotate(var(--animal-rotate,.8deg))}}
 @keyframes jungleAnimalBob{0%,100%{transform:translate3d(0,0,0) rotate(0)}48%{transform:translate3d(var(--animal-move-x,1px),var(--animal-move-y,-3px),0) rotate(var(--animal-rotate,.6deg))}}
 @keyframes jungleAnimalBreathe{0%,100%{transform:translate3d(0,0,0) scale(1)}50%{transform:translate3d(0,var(--animal-move-y,-2px),0) scale(1.012)}}
 @keyframes jungleAnimalFlutter{0%,100%{transform:translate3d(-3px,2px,0) rotate(-1deg)}35%{transform:translate3d(4px,-5px,0) rotate(.8deg)}68%{transform:translate3d(-1px,-2px,0) rotate(-.4deg)}}
+@keyframes jungleAnimalTrunkFrames{
+  0%,24.99%{transform:translate3d(0,0,0)}
+  25%,49.99%{transform:translate3d(-33.3333%,0,0)}
+  50%,74.99%{transform:translate3d(-66.6667%,0,0)}
+  75%,100%{transform:translate3d(-33.3333%,0,0)}
+}
 .jungle-flight-layer{position:absolute;inset:0;display:none;overflow:hidden;contain:layout paint;pointer-events:none}
 #jungleBirdFlightLayer{z-index:1}
 #jungleButterflyFlightLayer{z-index:2}
@@ -142,7 +155,7 @@ body.st-space #veh{bottom:26vh}
 .town-loop-tile::before{content:"";position:absolute;inset:-1px;background-position:center;background-size:cover;background-repeat:no-repeat}
 .town-loop-tile:nth-child(even)::before{transform:scaleX(-1)}
 body.st-town .town-loop-strip{display:flex}
-#townHorizonLoop{top:-38vh;height:124%}
+#townHorizonLoop{top:-50vh;height:124%}
 #townHorizonLoop .town-loop-tile{aspect-ratio:1983/793}
 #townHorizonLoop .town-loop-tile::before{background-image:url("../assets/images/nazonazo-tunnel/town_horizon_layer_20260703.webp")}
 #townMidLoop{top:-16vh;height:114%}
@@ -480,7 +493,7 @@ body.st-jungle #fgT{height:22vh;background-size:auto 100%}
 body.st-number #horizon{background-repeat:repeat-x;background-size:auto 114%;background-position-y:-14vh;-webkit-mask-image:linear-gradient(to bottom,transparent 0%,transparent 28%,rgba(0,0,0,.68) 46%,#000 64%);mask-image:linear-gradient(to bottom,transparent 0%,transparent 28%,rgba(0,0,0,.68) 46%,#000 64%)}
 body.st-number #midT{background-repeat:repeat-x;background-size:auto 110%;background-position-y:-8vh;opacity:.95;-webkit-mask-image:linear-gradient(to bottom,transparent 0%,transparent 20%,rgba(0,0,0,.82) 42%,#000 62%);mask-image:linear-gradient(to bottom,transparent 0%,transparent 20%,rgba(0,0,0,.82) 42%,#000 62%)}
 body.st-number #groundT{height:17vh;background-size:auto 100%;z-index:3}
-body.st-number #fgT{height:9vh;background-size:auto 100%;opacity:1;-webkit-mask-image:linear-gradient(to bottom,transparent 0%,rgba(0,0,0,.5) 22%,#000 48%);mask-image:linear-gradient(to bottom,transparent 0%,rgba(0,0,0,.5) 22%,#000 48%)}
+body.st-number #fgT{display:none}
 body.st-sea #horizon{background-repeat:repeat-x;background-size:auto 112%;background-position-y:-8vh}
 body.st-sea #midT{background-size:auto 110%;background-repeat:repeat-x;background-position-y:2vh;opacity:.82}
 body.st-sea #groundT{height:18vh;background-size:auto 100%;z-index:3}
@@ -650,6 +663,36 @@ body.tunnel-interior #highScorePill>strong{margin-top:3px;color:#fff;font-size:c
 @keyframes ngShake{0%,100%{transform:translateX(0)}25%,75%{transform:translateX(-8px)}50%{transform:translateX(8px)}}
 .choice.glow{animation:glow 1s ease-in-out infinite;border-color:var(--good)}
 @keyframes glow{0%,100%{box-shadow:0 5px 0 var(--good),0 0 0 0 rgba(87,193,94,.5)}50%{box-shadow:0 5px 0 var(--good),0 0 0 12px rgba(87,193,94,0)}}
+#quiz.number-quiz{width:min(96vw,820px)}
+#choices.number-mode{display:block}
+.number-jump-game{--jump-count:0;--jump-slots:4;display:grid;grid-template-columns:clamp(66px,10vw,88px) minmax(0,1fr);grid-template-rows:auto auto;
+  grid-template-areas:"readout track" "actions actions";gap:8px 10px;width:100%}
+.number-jump-readout{grid-area:readout;min-height:68px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  border:3px solid #ffd36e;border-radius:16px;background:#fff8d9;color:#76522e;font-size:clamp(10px,1.6vw,13px);font-weight:900;line-height:1}
+.number-jump-readout strong{margin:2px 0 1px;color:#6655b8;font-size:clamp(28px,5vw,40px);font-variant-numeric:tabular-nums}
+.number-jump-track{grid-area:track;position:relative;height:clamp(68px,11vh,86px);display:grid;
+  grid-template-columns:repeat(var(--jump-slots),minmax(0,1fr));align-items:end;gap:3px;padding:25px 5px 5px;
+  border:3px solid #cdbdf1;border-radius:18px;background:linear-gradient(#f9f3ff,#e9ddff);overflow:hidden}
+.number-jump-track::before{content:"";position:absolute;left:3%;right:3%;bottom:17px;height:5px;border-radius:999px;background:#b39ce8;opacity:.55}
+.number-jump-step{position:relative;z-index:1;height:28px;display:grid;place-items:center;border:2px solid #b9a5df;border-radius:8px;
+  background:#fff;color:#6a5794;font-size:clamp(11px,1.8vw,14px);font-weight:1000;box-shadow:0 3px 0 #aa94d2;transition:background .18s,transform .18s}
+.number-jump-step.is-passed{background:#e7f6cf;border-color:#9ccb68;box-shadow:0 3px 0 #83b956}
+.number-jump-step.is-current{background:#fff0a9;border-color:#f0b84f;transform:translateY(-2px);box-shadow:0 5px 0 #d89a38}
+.number-jump-step.is-target{outline:4px solid #63c96b;outline-offset:2px;animation:numberJumpTarget 1s ease-in-out infinite}
+.number-jump-runner{position:absolute;left:0;top:1px;z-index:3;width:calc(100% / var(--jump-slots));display:flex;justify-content:center;
+  transform:translate3d(calc(var(--jump-count) * 100%),0,0);transition:transform .24s cubic-bezier(.2,.8,.3,1);pointer-events:none}
+.number-jump-runner-art{display:block;font-size:clamp(27px,4.9vw,38px);line-height:1;filter:drop-shadow(0 2px 0 rgba(74,52,34,.2));transform-origin:50% 100%}
+.number-jump-runner-art.is-hopping{animation:numberJumpHop .36s ease-out}
+.number-jump-actions{grid-area:actions;display:grid;grid-template-columns:minmax(90px,.8fr) minmax(150px,1.35fr) minmax(90px,.8fr);gap:8px}
+.number-jump-action{appearance:none;-webkit-appearance:none;min-height:52px;padding:6px 10px;border:3px solid rgba(255,255,255,.74);border-radius:15px;
+  color:#fff;font-size:clamp(14px,2.5vw,19px);font-weight:1000;line-height:1.05;cursor:pointer;box-shadow:0 5px 0 rgba(73,54,102,.26);transition:transform .12s,opacity .18s}
+.number-jump-action.is-back{background:#8e7cf0}.number-jump-action.is-jump{background:#ef8a50;font-size:clamp(17px,3vw,23px)}.number-jump-action.is-confirm{background:#57b95d}
+.number-jump-action:disabled{opacity:.42;filter:saturate(.55);cursor:default;box-shadow:0 2px 0 rgba(73,54,102,.16)}
+.number-jump-action:not(:disabled):active{transform:translateY(4px);box-shadow:0 1px 0 rgba(73,54,102,.26)}
+.number-jump-action.ng{animation:ngShake .45s}
+.number-jump-action:focus-visible{outline:4px solid rgba(87,193,94,.72);outline-offset:3px}
+@keyframes numberJumpHop{0%,100%{transform:translateY(0) scale(1)}48%{transform:translateY(-18px) scale(1.08)}}
+@keyframes numberJumpTarget{0%,100%{outline-color:rgba(87,193,94,.55)}50%{outline-color:#57c15e}}
 
 /* ===== stamp/fx ===== */
 #stamp{position:absolute;left:50%;top:32%;transform:translate(-50%,-50%) scale(0);z-index:12;
@@ -747,6 +790,16 @@ h1{font-size:clamp(24px,5.6vw,50px);color:#e0704a;text-shadow:0 3px 0 #fff}
   .choice{padding:5px 3px;border-radius:16px}
   .choice .em{font-size:clamp(34px,7vw,54px)}
   .choice .lb{font-size:clamp(13px,2.6vw,18px)}
+  .number-jump-game{grid-template-columns:58px minmax(0,1fr);gap:5px 7px}
+  .number-jump-readout{min-height:52px;border-radius:13px}
+  .number-jump-readout strong{font-size:25px}
+  .number-jump-track{height:54px;padding:17px 4px 4px;border-radius:14px;gap:2px}
+  .number-jump-track::before{bottom:13px;height:4px}
+  .number-jump-step{height:21px;border-radius:6px;font-size:10px;box-shadow:0 2px 0 #aa94d2}
+  .number-jump-runner-art{font-size:27px}
+  .number-jump-actions{gap:6px;grid-template-columns:minmax(84px,.8fr) minmax(132px,1.35fr) minmax(78px,.8fr)}
+  .number-jump-action{min-height:46px;padding:4px 7px;border-radius:12px;font-size:13px;box-shadow:0 4px 0 rgba(73,54,102,.26)}
+  .number-jump-action.is-jump{font-size:16px}
   #stamp{top:28%;font-size:clamp(24px,5.4vw,42px)}
   #tunnelFriendPanel{top:calc(64px + env(safe-area-inset-top));width:min(40vw,300px);padding:5px 9px 6px}
   #tunnelFriendTitle{font-size:clamp(13px,2.25vw,17px)}
@@ -763,6 +816,10 @@ h1{font-size:clamp(24px,5.6vw,50px);color:#e0704a;text-shadow:0 3px 0 #fff}
   .rain-particle{left:var(--rain-rest-x);top:var(--rain-rest-y);animation:none!important;transform:rotate(var(--rain-angle));will-change:auto!important}
   #rainFar .rain-particle:nth-child(n+8),#rainMid .rain-particle:nth-child(n+6),#rainNear .rain-particle:nth-child(n+4){display:none}
   .jungle-animal-art{animation:none!important;transform:none!important}
+  .jungle-animal-frame{animation:none!important;transform:none!important}
+  .jungle-animal-frame-sheet{animation:none!important;transform:translate3d(-33.3333%,0,0)!important}
+  .number-jump-runner{transition:none!important}
+  .number-jump-runner-art,.number-jump-step.is-target{animation:none!important}
   .jungle-flight-layer{display:none!important}
   .tunnel-friend,.tunnel-friend-visual,.tunnel-friend img,.tunnel-friend .tunnel-friend-emoji,.tunnel-friend::after{animation:none!important;will-change:auto!important}
 }
