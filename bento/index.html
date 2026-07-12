@@ -9620,9 +9620,9 @@ function playPop() { const ac=getAC(),t=ac.currentTime,o=ac.createOscillator(),g
 function playCorrect() { const ac=getAC(),t=ac.currentTime; [523,659,784].forEach((f,i)=>{const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='sine';o.frequency.value=f;const s=t+i*0.1;g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(0.18,s+0.02);g.gain.exponentialRampToValueAtTime(0.001,s+0.25);o.start(s);o.stop(s+0.25);}); }
 function playWrong() { const ac=getAC(),t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='triangle';o.frequency.setValueAtTime(200,t);o.frequency.exponentialRampToValueAtTime(120,t+0.18);g.gain.setValueAtTime(0.1,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.18);o.start(t);o.stop(t+0.18); }
 const BENTO_TUTORIAL_VOICE_BASE = '../assets/audio/bento/tutorial/';
-// batch:1263: 34 cue を Gemini TTS 3.1 / Leda の単一マスター音源から切り出し、
-// 24 kHz mono / 96 kbps / 1.15 倍速で統一。旧 mock URL を確実に更新する。
-const BENTO_TUTORIAL_VOICE_VERSION = 'v1263-tts31-master';
+// batch:1263/1266: 34 cue の単一マスター収録へ、同じ Gemini TTS 3.1 / Leda 条件で
+// 顔パーツの短い追加 cue 2 本を収録。24 kHz mono / 96 kbps / 1.15 倍速で統一する。
+const BENTO_TUTORIAL_VOICE_VERSION = 'v1266-face-cues';
 // faster-whisper で全 cue の順序・先頭末尾を照合済み。false で実音源を再生する。
 const BENTO_TUTORIAL_MOCK_VOICE = false;
 function shouldMockBentoTutorialVoice(id) {
@@ -14927,7 +14927,7 @@ function getDefaultFreeRenderLayerBase(item) {
 }
 function getFreeRenderLayerBase(item) {
   if (isFreeBottomLayerItem(item) && !item.parentCupId) return 8;
-  if (item && item.type === 'divider') return 40;
+  // しきりも food と同じ base に置き、下段ほど前へ出る既存のY深度順へ参加させる。
   if (shouldDepthSortFreeItem(item)) return 30;
   const base = Number(item && item.layerBase);
   return Number.isFinite(base) ? base : getDefaultFreeRenderLayerBase(item);
@@ -19977,6 +19977,7 @@ const tutorialState = {
   pointHandEl: null,
   lastVoiceStep: '',
   _eventVoiceKeys: null,
+  _queuedEventVoiceKeys: null,
   _groupIntroVoiceWait: false,
   completeGuideTimers: [],
   completeGuideToken: 0,
@@ -20290,6 +20291,49 @@ function tutorialPlayEventVoiceOnce(eventKey, voiceId, fallbackMs) {
   tutorialState._eventVoiceKeys[scopedKey] = true;
   return playBentoTutorialVoice(voiceId, { fallbackMs: fallbackMs || 7000 });
 }
+// 顔パーツの2個目だけは、step 冒頭の説明を途中で切らない。現在の音声が終わった時点で
+// まだ同じ step / 同じ subround なら一度だけ再生し、先に操作できていたら古い案内は捨てる。
+function tutorialQueueNoriSubroundVoice(eventKey, voiceId, expectedStep, expectedIdx) {
+  if (!tutorialState || !tutorialState.active || !voiceId) return null;
+  if (!tutorialState._queuedEventVoiceKeys) tutorialState._queuedEventVoiceKeys = Object.create(null);
+  const scopedKey = String(expectedStep || '') + ':' + String(eventKey || voiceId);
+  if (tutorialState._queuedEventVoiceKeys[scopedKey]) return null;
+  tutorialState._queuedEventVoiceKeys[scopedKey] = true;
+
+  const isStillRelevant = () => !!(
+    tutorialState.active
+    && tutorialState.step === expectedStep
+    && Number(tutorialState.noriIdx || 0) === Number(expectedIdx)
+    && !(typeof document !== 'undefined' && document.hidden)
+  );
+  const currentVoice = bentoTutorialVoiceAudio;
+  let safetyTimer = null;
+  let finished = false;
+  const playIfRelevant = () => {
+    if (finished) return;
+    finished = true;
+    if (safetyTimer) clearTimeout(safetyTimer);
+    if (currentVoice) {
+      try { currentVoice.removeEventListener('ended', playIfRelevant); } catch (_) {}
+      try { currentVoice.removeEventListener('error', playIfRelevant); } catch (_) {}
+    }
+    if (!isStillRelevant()) return;
+    tutorialPlayEventVoiceOnce(eventKey, voiceId, 6500);
+  };
+
+  if (currentVoice && !currentVoice.paused && !currentVoice.ended && !currentVoice._bentoCancelled) {
+    currentVoice.addEventListener('ended', playIfRelevant, { once: true });
+    currentVoice.addEventListener('error', playIfRelevant, { once: true });
+    const duration = Number(currentVoice.duration);
+    const remainingMs = Number.isFinite(duration) && duration > 0
+      ? Math.max(0, duration - Number(currentVoice.currentTime || 0)) * 1000 + 500
+      : 7000;
+    safetyTimer = setTimeout(playIfRelevant, Math.max(750, Math.min(9000, Math.ceil(remainingMs / 250) * 250)));
+    return currentVoice;
+  }
+  playIfRelevant();
+  return null;
+}
 // v1497 cup-first: tutorialMarkCupOkAfterVoice / tutorialOnCupEditCue / tutorialQueueCupOkHighlight
 // (cup-edit / cup-edit-try 専用ヘルパー) は step 廃止に伴い削除。
 function tutorialClearCompleteGuideTimers() {
@@ -20505,6 +20549,10 @@ function tutorialShowGroupIntroThen(nextStep) {
     return;
   }
   tutorialState.groupIntroShown = true;
+  if (tutorialState.inactivityTimer) {
+    clearTimeout(tutorialState.inactivityTimer);
+    tutorialState.inactivityTimer = 0;
+  }
   tutorialHideBubble();
   tutorialHideFinger();
   tutorialClearTrims();
@@ -22598,9 +22646,9 @@ function tut2ApplyPonoSpeech(stepId) {
 // 組み合わせて子供が「1 個 → 間 → 次」 のリズムを掴めるようにする。
 function tut2ApplyNoriSubroundSpeech(stepId, idx) {
   if (stepId === 'tut2-nori-face-eyes') {
-    try { setSpeech(idx === 0 ? 'まずは おめめを タッチ！' : 'もう ひとつ おめめを タッチ！'); } catch (_) {}
+    try { setSpeech(idx === 0 ? 'まずは おめめを タッチ！' : 'もう いっかい おめめを タッチしよう！'); } catch (_) {}
   } else if (stepId === 'tut2-nori-face-mouth-nose') {
-    try { setSpeech(idx === 0 ? 'つぎは おはなを タッチ！' : 'さいごに おくちを タッチ！'); } catch (_) {}
+    try { setSpeech(idx === 0 ? 'つぎは おはなを タッチ！' : 'つぎは おくちを タッチしてね！'); } catch (_) {}
   }
 }
 // のり顔パーツ (目2/はな1/くち1) が全て「初期配置」 のままかを判定する純関数。
@@ -23512,8 +23560,25 @@ function tut2RenderW3Deliver(step) {
 
 // ---- Dispatcher =============================================================
 
+function tutorialIsColorGuideBlocking() {
+  const intro = document.getElementById('sk-intro');
+  return !!(tutorialState.active && intro && !intro.classList.contains('hidden'));
+}
 function tutorialRenderStep() {
   if (!tutorialState.active) return;
+  // 3色ガイド中は step が greet のままなので、20秒の再案内・resize・observer が走っても
+  // 開始カードをガイドの前面へ描き直さない。ガイドを閉じた後だけ通常描画へ戻す。
+  if (tutorialIsColorGuideBlocking()) {
+    tutorialHideBubble();
+    tutorialHideFinger();
+    tutorialClearTrims();
+    tutorialClearMask();
+    tutorialClearTargetCircle();
+    tutorialClearOutlines();
+    tutorialHidePonoCallout();
+    tutorialHidePointingHand();
+    return;
+  }
   if (tutorialIsPortraitBlocking()) {
     tutorialHideFinger();
     tutorialClearTrims();
@@ -23739,6 +23804,7 @@ function tutorialStart() {
   tutorialState.layerMoveDone = false;
   tutorialState.lastVoiceStep = '';
   tutorialState._eventVoiceKeys = Object.create(null);
+  tutorialState._queuedEventVoiceKeys = Object.create(null);
   tutorialState._groupIntroVoiceWait = false;
   tutorialState.completeGuideStarted = false;
   tutorialState.completeDetailShown = false;
@@ -24046,11 +24112,17 @@ function tutorialOnItemPlaced(item) {
           }
           return;
         }
-        // 次サブラウンドの Pono speech を先に更新してから Phase A ゴースト演出を再開する。
+        // 次サブラウンドの画面案内を先に更新して Phase A ゴースト演出を再開する。
+        // 音声は step 冒頭の説明が終わってから、対象がまだ未配置のときだけ続けて流す。
         try { tut2ApplyNoriSubroundSpeech(currentStep, tutorialState.noriIdx || 0); } catch (_) {}
         tutorialState.phase = 'demo';
         tutorialState.renderedStep = null;
         tutorialRenderStep();
+        if (currentStep === 'tut2-nori-face-eyes') {
+          tutorialQueueNoriSubroundVoice('nori-eye-again', 'tut2_04a_eyes_again', currentStep, 1);
+        } else if (currentStep === 'tut2-nori-face-mouth-nose') {
+          tutorialQueueNoriSubroundVoice('nori-mouth', 'tut2_04c_mouth', currentStep, 1);
+        }
       }, 800);
       return;
     }

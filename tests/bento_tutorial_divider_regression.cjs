@@ -186,8 +186,8 @@ undoTimers.shift()();
 assert.deepEqual(undoAdvances, ['tut2-nori-edit', 'tut2-nori-ok']);
 
 const voiceMap = extract(html, 'const BENTO_TUTORIAL_STEP_VOICE = {', 'let bentoTutorialVoiceAudio', 'tutorial voice map');
-assert.match(html, /const BENTO_TUTORIAL_VOICE_VERSION = 'v1263-tts31-master'/,
-  'the shipped narration must use the TTS 3.1 master cache version');
+assert.match(html, /const BENTO_TUTORIAL_VOICE_VERSION = 'v1266-face-cues'/,
+  'the shipped narration must use the cache version that includes both face cues');
 assert.match(html, /const BENTO_TUTORIAL_MOCK_VOICE = false/,
   'the shipped narration must play real audio instead of mock timers');
 [
@@ -217,6 +217,7 @@ const groupIntroState = {
   active: true,
   step: 'tut2-greet',
   _groupIntroVoiceWait: false,
+  inactivityTimer: 42,
 };
 const voiceListeners = {};
 const greetAudio = {
@@ -235,6 +236,7 @@ let colorGuideClick = null;
 const introEl = { classList: { remove: () => { colorGuideShows++; } } };
 const introButton = { addEventListener: (type, fn) => { if (type === 'click') colorGuideClick = fn; } };
 const waitTimers = [];
+const clearedIntroTimers = [];
 const groupIntroApi = vm.runInNewContext(`(() => {
   ${groupIntroSource}
   return { show: tutorialShowGroupIntroThen };
@@ -252,6 +254,7 @@ const groupIntroApi = vm.runInNewContext(`(() => {
   tutorialHidePonoCallout: () => {},
   startSkIntroGuide: () => { colorGuideStarts++; },
   setTimeout: fn => { waitTimers.push(fn); return waitTimers.length; },
+  clearTimeout: id => { clearedIntroTimers.push(id); },
   window: {},
 });
 groupIntroApi.show('tut2-box');
@@ -264,14 +267,58 @@ voiceListeners.ended();
 assert.equal(colorGuideStarts, 1, 'the color guide must start once after the greeting ends');
 assert.equal(colorGuideShows, 1);
 assert.equal(groupIntroState.groupIntroShown, true);
+assert.deepEqual(clearedIntroTimers, [42], 'opening the color guide must stop the greet inactivity retry');
+assert.equal(groupIntroState.inactivityTimer, 0);
 assert.equal(typeof colorGuideClick, 'function');
 assert.match(html, /btn\.disabled = true;\s*btn\.textContent = 'きいてね…';\s*tutorialShowGroupIntroThen\('tut2-box'\)/,
   'the pressed start button must show a child-readable waiting state');
 
+const colorGuideGuardSource = extract(
+  html,
+  'function tutorialIsColorGuideBlocking()',
+  'function tutorialRenderStep()',
+  'color guide visibility guard',
+);
+const renderGuardHead = extract(
+  html,
+  'function tutorialRenderStep() {',
+  '  tutorialDismissFreeGuideBlocker();',
+  'color guide render guard',
+);
+const visibleColorGuide = { classList: { contains: () => false } };
+const guardState = { active: true, step: 'tut2-greet' };
+const guardCalls = [];
+let portraitChecks = 0;
+const colorGuideGuardApi = vm.runInNewContext(`(() => {
+  ${colorGuideGuardSource}
+  ${renderGuardHead}
+  }
+  return { blocks: tutorialIsColorGuideBlocking, render: tutorialRenderStep };
+})()`, {
+  tutorialState: guardState,
+  document: { getElementById: id => id === 'sk-intro' ? visibleColorGuide : null },
+  tutorialHideBubble: () => guardCalls.push('bubble'),
+  tutorialHideFinger: () => guardCalls.push('finger'),
+  tutorialClearTrims: () => guardCalls.push('trims'),
+  tutorialClearMask: () => guardCalls.push('mask'),
+  tutorialClearTargetCircle: () => guardCalls.push('target'),
+  tutorialClearOutlines: () => guardCalls.push('outlines'),
+  tutorialHidePonoCallout: () => guardCalls.push('callout'),
+  tutorialHidePointingHand: () => guardCalls.push('hand'),
+  tutorialIsPortraitBlocking: () => { portraitChecks++; return false; },
+  tutorialShowBubble: () => guardCalls.push('portrait-bubble'),
+});
+assert.equal(colorGuideGuardApi.blocks(), true);
+colorGuideGuardApi.render();
+assert.deepEqual(guardCalls, ['bubble', 'finger', 'trims', 'mask', 'target', 'outlines', 'callout', 'hand'],
+  'inactivity/resize renders must only clean tutorial chrome while the color guide is visible');
+assert.equal(portraitChecks, 0, 'the color guide guard must run before any competing tutorial renderer');
+
 const shippedVoiceIds = [
   'tut2_01_greet',
   'sk_intro_01', 'sk_intro_02', 'sk_intro_03', 'sk_intro_04', 'sk_intro_05',
-  'tut2_02_box', 'tut2_03_rice', 'tut2_04a_eyes', 'tut2_04b_mouth_nose',
+  'tut2_02_box', 'tut2_03_rice', 'tut2_04a_eyes', 'tut2_04a_eyes_again',
+  'tut2_04b_mouth_nose', 'tut2_04c_mouth',
   'tut2_05_norimove', 'tut2_05b_moveundo', 'tut2_06_noriedit', 'tut2_06a_rotate',
   'tut2_06b_editundo', 'tut2_06b_editundo_last', 'tut2_06c_noriok',
   'tut2_07_okazu', 'tut2_08_cupbtn', 'tut2_09_cup', 'tut2_10_cupfood',
@@ -280,7 +327,7 @@ const shippedVoiceIds = [
   'tut2_11c_pick_tab', 'tut2_11d_pick_place', 'tut2_12_okazuok',
   'tut2_13_complete', 'tut2_14_fav', 'tut2_15_request', 'tut2_16_deliver',
 ];
-assert.equal(new Set(shippedVoiceIds).size, 34, 'all shipped voice ids must be unique');
+assert.equal(new Set(shippedVoiceIds).size, 36, 'all shipped voice ids must be unique');
 for (const voiceId of shippedVoiceIds) {
   const audioPath = path.join(root, 'assets/audio/bento/tutorial', `${voiceId}.mp3`);
   assert.ok(fs.existsSync(audioPath), `missing narration asset: ${voiceId}.mp3`);
@@ -731,6 +778,118 @@ assert.doesNotMatch(noriPhase, /tut2AnchorToPaletteIfVisible\(noriPaletteRef\)/,
 assert.match(noriPhase, /_noriBeatActive/);
 const placement = extract(html, 'function tutorialOnItemPlaced(item)', '// Step 7:', 'nori placement beat');
 assert.match(placement, /_noriBeatActive = true[\s\S]*?tutorialCancelPaletteScrollGuidance\(\)/);
+assert.match(placement, /tutorialQueueNoriSubroundVoice\('nori-eye-again', 'tut2_04a_eyes_again', currentStep, 1\)/);
+assert.match(placement, /tutorialQueueNoriSubroundVoice\('nori-mouth', 'tut2_04c_mouth', currentStep, 1\)/);
+assert.match(html, /もう いっかい おめめを タッチしよう！/);
+assert.match(html, /つぎは おくちを タッチしてね！/);
+
+const faceState = {
+  active: true,
+  step: 'tut2-nori-face-eyes',
+  noriQueue: ['nori_eye_round', 'nori_eye_round'],
+  noriIdx: 0,
+  ricePlacedCount: 0,
+  cupPlacedCount: 0,
+  cupChildCount: 0,
+  okazuPlacedCount: 0,
+  decorPlacedCount: 0,
+  _noriBeatActive: false,
+  _noriBeatTimer: null,
+};
+const faceTimers = [];
+const queuedFaceVoices = [];
+const facePlacement = vm.runInNewContext(`(() => { ${itemPlacementHook}; return tutorialOnItemPlaced; })()`, {
+  tutorialState: faceState,
+  tutorialCancelPaletteScrollGuidance: () => {},
+  tutorialClearGhostLayer: () => {},
+  tutorialClearPaletteFocus: () => {},
+  tutorialClearTrims: () => {},
+  tutorialHideFinger: () => {},
+  setSpeech: () => {},
+  clearTimeout: () => {},
+  setTimeout: fn => { faceTimers.push(fn); return faceTimers.length; },
+  tut2ApplyNoriSubroundSpeech: () => {},
+  tutorialRenderStep: () => {},
+  tutorialQueueNoriSubroundVoice: (...args) => queuedFaceVoices.push(args),
+  tutorialAdvance: () => {},
+  tutorialResetInactivity: () => {},
+});
+facePlacement({ type: 'decor', id: 'nori_eye_round' });
+assert.equal(faceTimers.length, 1);
+faceTimers.shift()();
+assert.deepEqual(queuedFaceVoices.shift(), [
+  'nori-eye-again', 'tut2_04a_eyes_again', 'tut2-nori-face-eyes', 1,
+]);
+faceState.step = 'tut2-nori-face-mouth-nose';
+faceState.noriQueue = ['nori_nose_bear', 'nori_mouth_smile'];
+faceState.noriIdx = 0;
+facePlacement({ type: 'decor', id: 'nori_nose_bear' });
+assert.equal(faceTimers.length, 1);
+faceTimers.shift()();
+assert.deepEqual(queuedFaceVoices.shift(), [
+  'nori-mouth', 'tut2_04c_mouth', 'tut2-nori-face-mouth-nose', 1,
+]);
+
+const queuedVoiceSource = extract(
+  html,
+  'function tutorialQueueNoriSubroundVoice(eventKey, voiceId, expectedStep, expectedIdx)',
+  '// v1497 cup-first: tutorialMarkCupOkAfterVoice',
+  'queued face narration',
+);
+const queuedVoiceState = {
+  active: true,
+  step: 'tut2-nori-face-eyes',
+  noriIdx: 1,
+  _queuedEventVoiceKeys: Object.create(null),
+};
+const queuedVoiceListeners = {};
+const currentFaceVoice = {
+  paused: false,
+  ended: false,
+  duration: 6.8,
+  currentTime: 3,
+  addEventListener: (type, fn) => { queuedVoiceListeners[type] = fn; },
+  removeEventListener: (type, fn) => {
+    if (queuedVoiceListeners[type] === fn) delete queuedVoiceListeners[type];
+  },
+};
+const queuedVoiceTimers = [];
+const playedFaceVoices = [];
+const queuedVoiceContext = {
+  tutorialState: queuedVoiceState,
+  bentoTutorialVoiceAudio: currentFaceVoice,
+  tutorialPlayEventVoiceOnce: (...args) => playedFaceVoices.push(args),
+  setTimeout: fn => { queuedVoiceTimers.push(fn); return queuedVoiceTimers.length; },
+  clearTimeout: () => {},
+};
+const queuedVoiceApi = vm.runInNewContext(`(() => {
+  ${queuedVoiceSource}
+  return tutorialQueueNoriSubroundVoice;
+})()`, queuedVoiceContext);
+queuedVoiceApi('nori-eye-again', 'tut2_04a_eyes_again', 'tut2-nori-face-eyes', 1);
+assert.deepEqual(playedFaceVoices, [], 'the second-eye cue must not cut off the current step narration');
+assert.equal(typeof queuedVoiceListeners.ended, 'function');
+queuedVoiceListeners.ended();
+assert.deepEqual(playedFaceVoices, [['nori-eye-again', 'tut2_04a_eyes_again', 6500]]);
+queuedVoiceApi('nori-eye-again', 'tut2_04a_eyes_again', 'tut2-nori-face-eyes', 1);
+assert.equal(playedFaceVoices.length, 1, 'the same face cue must be queued only once');
+
+const staleListeners = {};
+queuedVoiceContext.bentoTutorialVoiceAudio = {
+  paused: false,
+  ended: false,
+  duration: 5,
+  currentTime: 1,
+  addEventListener: (type, fn) => { staleListeners[type] = fn; },
+  removeEventListener: () => {},
+};
+queuedVoiceState.step = 'tut2-nori-face-mouth-nose';
+queuedVoiceState.noriIdx = 1;
+queuedVoiceApi('nori-mouth', 'tut2_04c_mouth', 'tut2-nori-face-mouth-nose', 1);
+queuedVoiceState.noriIdx = 2;
+staleListeners.ended();
+assert.equal(playedFaceVoices.length, 1,
+  'a queued mouth cue must be discarded when the child already touched the mouth');
 
 const scroll = extract(html, 'function _tutorialPaletteScrollParents(el)', 'function tutorialScheduleResync()', 'palette scroll lifecycle');
 assert.match(scroll, /\.free-item-list/);
@@ -837,7 +996,7 @@ assert.deepEqual({ ...orientation }, { vertical: true, horizontal: false, noForc
 assert.match(html, /id: 'divider_wood_vertical'[\s\S]{0,700}?key: 'back'[\s\S]{0,160}?size: 42/,
   'wood divider A must resolve to its vertical-back size instead of a horizontal shared size');
 
-// 9. 横のなみなみ仕切りだけを水平補正し、仕切りはハンバーグより前面に描く。
+// 9. 横のなみなみ仕切りだけを水平補正し、全パーツを下から上へのY段差順で描く。
 const runtimeDividerRotationMatch = html.match(/const BENTO_WAVE_DIVIDER_ROTATION = (-?[\d.]+);/);
 const adminDividerRotationMatch = admin.match(/var BENTO_SLOT_WAVE_DIVIDER_ROTATION = (-?[\d.]+);/);
 assert.ok(runtimeDividerRotationMatch && adminDividerRotationMatch,
@@ -923,6 +1082,7 @@ const runtimeLayerSource = extract(
   'function getLayerContextItems(item)',
   'runtime render layers'
 );
+const runtimePlacedItems = [];
 const runtimeLayers = vm.runInNewContext(`(() => {
   ${runtimeLayerSource}
   return { base: getFreeRenderLayerBase, layer: getFreeItemRenderLayer };
@@ -931,14 +1091,31 @@ const runtimeLayers = vm.runInNewContext(`(() => {
   FREE_LAYOUT_W: 740,
   FREE_LAYOUT_H: 500,
   getItemTier: () => 1,
-  placedItems: [],
+  placedItems: runtimePlacedItems,
 });
 const hamburger = { uid: 'hamburger', type: 'food', id: 'hamburger', x: 540, y: 351, layer: 1 };
-const waveDivider = { uid: 'divider', type: 'divider', id: 'divider_wave', x: 410, y: 279, layer: 1 };
+const lowerDivider = { uid: 'divider-lower', type: 'divider', id: 'divider_wave', x: 410, y: 279, layer: 1 };
+const middleCup = { uid: 'cup-middle', type: 'cup', id: 'cup_blue_dot', x: 500, y: 235, layer: 1, snapTarget: true };
+const middleFood = { uid: 'food-middle', type: 'food', id: 'momo', x: 500, y: 235, layer: 1, parentCupId: middleCup.uid };
+const upperDivider = { uid: 'divider-upper', type: 'divider', id: 'divider_wave', x: 410, y: 169, layer: 1 };
+const topCup = { uid: 'cup-top', type: 'cup', id: 'cup_blue_dot', x: 500, y: 113, layer: 1, snapTarget: true };
+const topFood = { uid: 'food-top', type: 'food', id: 'egg', x: 500, y: 113, layer: 1, parentCupId: topCup.uid };
+runtimePlacedItems.push(middleCup, topCup);
 assert.equal(runtimeLayers.base(hamburger), 30);
-assert.equal(runtimeLayers.base(waveDivider), 40);
-assert.ok(runtimeLayers.layer(waveDivider) > runtimeLayers.layer(hamburger),
-  'divider base 40 must keep it above the hamburger even when its y coordinate is smaller');
+assert.equal(runtimeLayers.base(lowerDivider), 30);
+const runtimeStaircase = [hamburger, lowerDivider, middleFood, upperDivider, topFood]
+  .map(item => runtimeLayers.layer(item));
+for (let index = 1; index < runtimeStaircase.length; index++) {
+  assert.ok(runtimeStaircase[index - 1] > runtimeStaircase[index],
+    'runtime must draw bottom main > lower divider > middle food > upper divider > top food');
+}
+const verticalBack = { uid: 'vertical-back', type: 'divider', id: 'divider_wave_vertical', x: 410, y: 90, layer: 1 };
+const verticalMid = { uid: 'vertical-mid', type: 'divider', id: 'divider_wave_vertical', x: 410, y: 219.6, layer: 1 };
+const verticalFront = { uid: 'vertical-front', type: 'divider', id: 'divider_wave_vertical', x: 410, y: 341.5, layer: 1 };
+assert.ok(runtimeLayers.layer(verticalFront) > runtimeLayers.layer(lowerDivider));
+assert.ok(runtimeLayers.layer(lowerDivider) > runtimeLayers.layer(verticalMid));
+assert.ok(runtimeLayers.layer(verticalMid) > runtimeLayers.layer(upperDivider));
+assert.ok(runtimeLayers.layer(upperDivider) > runtimeLayers.layer(verticalBack));
 
 const adminLayerSource = extract(
   admin,
@@ -955,12 +1132,31 @@ const adminLayers = vm.runInNewContext(`(() => {
   BENTO_SLOT_W: 740,
   BENTO_SLOT_H: 500,
 });
-assert.equal(adminLayers.base('divider', { layer: 20 }), 40);
+assert.equal(adminLayers.base('divider', { id: 'divider_wave', layer: 20 }), 30);
+assert.equal(adminLayers.base('divider', { id: 'divider_wave_vertical_mid', layer: 20 }), 30);
 assert.equal(adminLayers.base('main-food', { layer: 20 }), 30);
-assert.ok(
-  adminLayers.layer({ def: { kind: 'divider' }, sample: { layer: 20 }, point: { x: 410, y: 279 } })
-    > adminLayers.layer({ def: { kind: 'main-food' }, sample: { layer: 20 }, point: { x: 540, y: 351 } }),
-  'admin preview must mirror the runtime divider-over-food order'
-);
+const adminMiddleCup = { def: { kind: 'cup' }, sample: { id: 'cup_blue_dot', layer: 10 }, point: { x: 500, y: 235 } };
+const adminTopCup = { def: { kind: 'cup' }, sample: { id: 'cup_blue_dot', layer: 10 }, point: { x: 500, y: 113 } };
+const adminStaircaseEntries = [
+  { def: { kind: 'main-food' }, sample: { id: 'hamburger', layer: 30 }, point: { x: 540, y: 351 } },
+  { def: { kind: 'divider' }, sample: { id: 'divider_wave', layer: 20 }, point: { x: 410, y: 279 } },
+  { def: { kind: 'side-food' }, sample: { id: 'momo', layer: 54 }, point: { x: 500, y: 235 }, anchoredCupEntry: adminMiddleCup },
+  { def: { kind: 'divider' }, sample: { id: 'divider_wave', layer: 20 }, point: { x: 410, y: 169 } },
+  { def: { kind: 'side-food' }, sample: { id: 'egg', layer: 34 }, point: { x: 500, y: 113 }, anchoredCupEntry: adminTopCup },
+];
+const adminStaircase = adminStaircaseEntries.map(entry => adminLayers.layer(entry));
+for (let index = 1; index < adminStaircase.length; index++) {
+  assert.ok(adminStaircase[index - 1] > adminStaircase[index],
+    'Admin preview must mirror the runtime bottom-to-top staircase');
+}
+const adminVertical = [341.5, 219.6, 90].map((y, index) => adminLayers.layer({
+  def: { kind: 'divider' },
+  sample: { id: `divider_wave_vertical_${['front', 'mid', 'back'][index]}`, layer: 20 },
+  point: { x: 410, y },
+}));
+assert.ok(adminVertical[0] > adminStaircase[1]);
+assert.ok(adminStaircase[1] > adminVertical[1]);
+assert.ok(adminVertical[1] > adminStaircase[3]);
+assert.ok(adminStaircase[3] > adminVertical[2]);
 
 console.log('bento tutorial/divider regression: PASS');

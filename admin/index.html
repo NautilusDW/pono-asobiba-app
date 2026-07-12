@@ -13385,8 +13385,8 @@ function bentoSlotIsBottomLayerSample(kind, sample) {
 }
 function bentoSlotRenderLayerBase(kind, sample) {
   if (bentoSlotIsBottomLayerSample(kind, sample)) return 29;
-  if (kind === 'divider') return 40;
-  if (kind === 'cup' || kind === 'leaf' || kind === 'other' || kind === 'main-food' || kind === 'side-food') return 30;
+  // Bento本体と同じく、しきりをfoodと同じY深度列へ入れて下段ほど前面にする。
+  if (kind === 'cup' || kind === 'leaf' || kind === 'divider' || kind === 'other' || kind === 'main-food' || kind === 'side-food') return 30;
   return Math.max(1, Math.floor(Number(sample && sample.layer) || 30));
 }
 function bentoSlotSampleRenderLayer(entry) {
