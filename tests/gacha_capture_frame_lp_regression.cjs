@@ -112,11 +112,12 @@ assert.match(shopTitleStyle[0], /overflow: visible;/, "the translated shop sign 
 
 assert.match(lp, />ガチャガチャは課金なし</, "the assurance copy must use the full name");
 assert.match(lp, />ガチャガチャとお店</, "the LP feature title must use the full name");
-assert.match(lp, /<strong>ガチャガチャ<\/strong>/, "the LP figure label must use the full name");
-assert.match(lp, /alt="ガチャガチャのカプセルからシールが出た画面"/, "the LP alt copy must use the full name");
+assert.match(lp, /data-game="feature-gacha"/, "the LP gacha cover must open the feature detail modal");
+assert.match(lp, /aria-label="ガチャガチャとお店の画面を開く"/, "the LP cover action must use the full name");
+assert.match(lp, /alt:['"]ガチャガチャのカプセルからシールが出た画面['"]/, "the LP alt copy must use the full name");
 assert.doesNotMatch(lp, />課金ガチャなし</, "the old abbreviated assurance copy must not return");
 assert.doesNotMatch(lp, />ガチャとおみせ</, "the old abbreviated feature title must not return");
-assert.doesNotMatch(lp, /<strong>ガチャ<\/strong>/, "the old abbreviated figure label must not return");
+assert.doesNotMatch(lp, /aria-label="ガチャとお店の画面を開く"/, "the old abbreviated cover label must not return");
 assert.match(
   lp,
   /assets\/lp\/features\/gacha-reveal_20260712\.png\?v=20260712-1264/,

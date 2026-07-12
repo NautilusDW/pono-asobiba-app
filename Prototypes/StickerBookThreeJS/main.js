@@ -2534,6 +2534,209 @@ const stickerBookCaptureReady = new Promise((resolve) => {
 });
 let stickerBookCaptureRendererPromise = null;
 
+function isStickerBookWebKitCapture() {
+  const userAgent = navigator.userAgent || "";
+  if (/AppleWebKit/i.test(userAgent) && /(iPad|iPhone|iPod)/i.test(userAgent)) {
+    // CriOS / EdgiOS are branded differently but still use WebKit on iOS.
+    return true;
+  }
+  return /AppleWebKit/i.test(userAgent)
+    && !/(Chromium|Chrome|Edg|OPR|Android)/i.test(userAgent);
+}
+
+function collectStickerBookFixedCaptureGeometry(container) {
+  const containerRect = container.getBoundingClientRect();
+  const markedNodes = [];
+  let nextId = 0;
+  container.querySelectorAll("*").forEach((element) => {
+    const style = window.getComputedStyle(element);
+    if (style.position !== "fixed" || style.display === "none" || style.visibility === "hidden") {
+      return;
+    }
+    const rect = element.getBoundingClientRect();
+    if (!(rect.width > 0 && rect.height > 0)) {
+      return;
+    }
+    const id = String(nextId++);
+    element.dataset.stickerBookCaptureFixed = id;
+    markedNodes.push({
+      element,
+      id,
+      left: rect.left - containerRect.left,
+      top: rect.top - containerRect.top,
+      width: rect.width,
+      height: rect.height,
+    });
+  });
+  return {
+    containerRect,
+    markedNodes,
+    release() {
+      markedNodes.forEach(({ element }) => {
+        delete element.dataset.stickerBookCaptureFixed;
+      });
+    },
+  };
+}
+
+function prepareStickerBookCaptureSourceImages(container) {
+  const viewportRect = container.getBoundingClientRect();
+  const ignoredImages = new WeakSet();
+  const eagerImages = [];
+  const capturePadding = Math.max(128, viewportRect.width * 0.18);
+  container.querySelectorAll("img").forEach((image) => {
+    const rect = image.getBoundingClientRect();
+    const visible = rect.width > 0
+      && rect.height > 0
+      && rect.right >= viewportRect.left - capturePadding
+      && rect.left <= viewportRect.right + capturePadding
+      && rect.bottom >= viewportRect.top - capturePadding
+      && rect.top <= viewportRect.bottom + capturePadding;
+    if (!visible) {
+      ignoredImages.add(image);
+      return;
+    }
+    // html2canvas waits for every cloned image before invoking onclone on WebKit.
+    // A visible image copied with loading="lazy" may never start in its hidden
+    // iframe, so make only the visible set eager for the synchronous clone pass.
+    if (image.getAttribute("loading") === "lazy") {
+      eagerImages.push(image);
+      image.setAttribute("loading", "eager");
+    }
+  });
+  return {
+    ignoredImages,
+    release() {
+      eagerImages.forEach((image) => image.setAttribute("loading", "lazy"));
+    },
+  };
+}
+
+function pruneStickerBookCaptureTray(clonedDoc) {
+  const sourceTray = document.getElementById("collectionStickerTrayItems");
+  const clonedTray = clonedDoc.getElementById("collectionStickerTrayItems");
+  if (!sourceTray || !clonedTray) {
+    return;
+  }
+  const viewportRect = sourceTray.getBoundingClientRect();
+  const sourceChildren = [...sourceTray.children];
+  const clonedChildren = [...clonedTray.children];
+  sourceChildren.forEach((sourceChild, index) => {
+    const clonedChild = clonedChildren[index];
+    if (!clonedChild) {
+      return;
+    }
+    const rect = sourceChild.getBoundingClientRect();
+    const capturePadding = Math.max(96, viewportRect.width * 0.15);
+    const nearViewport = rect.right >= viewportRect.left - capturePadding
+      && rect.left <= viewportRect.right + capturePadding;
+    if (nearViewport) {
+      return;
+    }
+    // Keep the flex item's measured slot so a scrolled tray stays aligned, but remove
+    // its image subtree. Safari otherwise spends minutes decoding off-screen stickers.
+    clonedChild.replaceChildren();
+    clonedChild.style.visibility = "hidden";
+    clonedChild.setAttribute("aria-hidden", "true");
+  });
+  clonedTray.scrollLeft = sourceTray.scrollLeft;
+}
+
+function prepareStickerBookCaptureClone(clonedDoc, captureState, sceneDataUrl) {
+  const clonedApp = clonedDoc.getElementById("app");
+  if (!clonedApp) {
+    return Promise.resolve();
+  }
+  const { width, height } = captureState.containerRect;
+  clonedApp.style.position = "absolute";
+  clonedApp.style.inset = "auto";
+  clonedApp.style.left = "0";
+  clonedApp.style.top = "0";
+  clonedApp.style.width = `${width}px`;
+  clonedApp.style.height = `${height}px`;
+  clonedApp.style.overflow = "hidden";
+
+  const captureStyle = clonedDoc.createElement("style");
+  captureStyle.dataset.stickerBookStableCapture = "1";
+  captureStyle.textContent = `
+    #app::before, #app::after { content: none !important; }
+    #app, #app * {
+      animation: none !important;
+      transition: none !important;
+      -webkit-backdrop-filter: none !important;
+      backdrop-filter: none !important;
+    }
+  `;
+  (clonedDoc.head || clonedDoc.documentElement).append(captureStyle);
+
+  const tableImage = clonedDoc.createElement("img");
+  tableImage.alt = "";
+  tableImage.dataset.stickerBookCaptureTable = "1";
+  tableImage.src = new URL("../../assets/ui/sticker_book_table_bg_1600.webp", window.location.href).href;
+  tableImage.style.cssText = [
+    "position:absolute",
+    "left:50%",
+    "top:50%",
+    "width:auto",
+    "height:124%",
+    "max-width:none",
+    "max-height:none",
+    "transform:translate(-50%,-50%)",
+    "z-index:0",
+    "pointer-events:none",
+  ].join(";");
+  const tableTone = clonedDoc.createElement("div");
+  tableTone.dataset.stickerBookCaptureTableTone = "1";
+  tableTone.style.cssText = [
+    "position:absolute",
+    "inset:0",
+    "z-index:0",
+    "pointer-events:none",
+    "background:radial-gradient(ellipse at 50% 50%,rgba(6,24,31,.14) 0%,rgba(6,24,31,.03) 52%,rgba(6,24,31,.22) 100%)",
+  ].join(";");
+  clonedApp.insertBefore(tableTone, clonedApp.firstChild);
+  clonedApp.insertBefore(tableImage, clonedApp.firstChild);
+
+  let sceneImage = null;
+  if (sceneDataUrl) {
+    const clonedScene = clonedDoc.getElementById("scene");
+    if (clonedScene) {
+      sceneImage = clonedDoc.createElement("img");
+      [...clonedScene.attributes].forEach((attribute) => {
+        sceneImage.setAttribute(attribute.name, attribute.value);
+      });
+      sceneImage.alt = "";
+      sceneImage.src = sceneDataUrl;
+      sceneImage.style.cssText = clonedScene.style.cssText;
+      clonedScene.replaceWith(sceneImage);
+    }
+  }
+
+  captureState.markedNodes.forEach(({ id, left, top, width: nodeWidth, height: nodeHeight }) => {
+    const element = clonedApp.querySelector(`[data-sticker-book-capture-fixed="${id}"]`);
+    if (!element) {
+      return;
+    }
+    element.style.position = "absolute";
+    element.style.inset = "auto";
+    element.style.left = `${left}px`;
+    element.style.top = `${top}px`;
+    element.style.right = "auto";
+    element.style.bottom = "auto";
+    element.style.width = `${nodeWidth}px`;
+    element.style.height = `${nodeHeight}px`;
+    element.style.margin = "0";
+    element.style.transform = "none";
+    delete element.dataset.stickerBookCaptureFixed;
+  });
+  pruneStickerBookCaptureTray(clonedDoc);
+
+  return Promise.all([
+    typeof tableImage.decode === "function" ? tableImage.decode().catch(() => {}) : Promise.resolve(),
+    sceneImage && typeof sceneImage.decode === "function" ? sceneImage.decode().catch(() => {}) : Promise.resolve(),
+  ]).then(() => undefined);
+}
+
 function loadStickerBookCaptureRenderer() {
   if (!stickerBookCaptureRendererPromise) {
     stickerBookCaptureRendererPromise = import("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/+esm")
@@ -2553,6 +2756,8 @@ function loadStickerBookCaptureRenderer() {
 }
 
 async function buildStickerBookCapture(opts) {
+  let captureCloneState = null;
+  let captureSourceImages = null;
   try {
     await stickerBookCaptureReady;
     renderer.render(scene, camera);
@@ -2568,13 +2773,46 @@ async function buildStickerBookCapture(opts) {
       );
     }
     const html2canvas = await loadStickerBookCaptureRenderer();
+    const useWebKitScaleFallback = isStickerBookWebKitCapture();
+    const webKitCaptureScale = Math.min(dynScale, 2.5);
+    let sceneDataUrl = "";
+    captureCloneState = collectStickerBookFixedCaptureGeometry(container);
+    captureSourceImages = prepareStickerBookCaptureSourceImages(container);
+    try {
+      sceneDataUrl = canvas.toDataURL("image/png");
+    } catch {}
     const h2cOpts = typeof window.PonoCapture.html2canvasOptions === "function"
-      ? window.PonoCapture.html2canvasOptions({ backgroundColor: null, scale: dynScale })
-      : { backgroundColor: null, scale: dynScale, useCORS: true };
+      ? useWebKitScaleFallback
+        ? window.PonoCapture.html2canvasOptions({ backgroundColor: null, scale: webKitCaptureScale })
+        : window.PonoCapture.html2canvasOptions({ backgroundColor: null, scale: dynScale })
+      : { backgroundColor: null, scale: useWebKitScaleFallback ? webKitCaptureScale : dynScale, useCORS: true };
+    const baseOnclone = h2cOpts.onclone;
+    const baseIgnoreElements = h2cOpts.ignoreElements;
+    h2cOpts.width = Math.ceil(rect.width);
+    h2cOpts.height = Math.ceil(rect.height);
+    h2cOpts.windowWidth = Math.ceil(rect.width);
+    h2cOpts.windowHeight = Math.ceil(rect.height);
+    h2cOpts.scrollX = 0;
+    h2cOpts.scrollY = 0;
+    h2cOpts.ignoreElements = (element) => {
+      if (captureSourceImages.ignoredImages.has(element)) {
+        return true;
+      }
+      return typeof baseIgnoreElements === "function" && baseIgnoreElements(element);
+    };
+    h2cOpts.onclone = async (clonedDoc) => {
+      await prepareStickerBookCaptureClone(clonedDoc, captureCloneState, sceneDataUrl);
+      if (typeof baseOnclone === "function") {
+        await baseOnclone(clonedDoc);
+      }
+    };
     return await html2canvas(container, h2cOpts);
   } catch (err) {
     console.warn("[sticker-book] capture build failed", err);
     return null;
+  } finally {
+    captureSourceImages?.release();
+    captureCloneState?.release();
   }
 }
 
@@ -3559,6 +3797,9 @@ function endInlineStickerDrag(event) {
   const moved = inlineStickerDragState.moved;
   cleanupInlineStickerDrag();
   if (moved) {
+    // Pointer moves coalesce while a texture refresh is already running. Always
+    // enqueue one final render after the drag ends so the last coordinates win.
+    refreshInlineStickerPage();
     suppressInlineStickerClick = true;
     window.setTimeout(() => {
       suppressInlineStickerClick = false;
@@ -3574,7 +3815,11 @@ function cancelInlineStickerDrag(event) {
   if (event?.pointerId != null && event.pointerId !== inlineStickerDragState.pointerId) {
     return;
   }
+  const moved = inlineStickerDragState.moved;
   cleanupInlineStickerDrag();
+  if (moved) {
+    refreshInlineStickerPage();
+  }
 }
 
 function cleanupInlineStickerDrag() {
@@ -3602,7 +3847,13 @@ function refreshInlineStickerPage() {
     return Promise.resolve(false);
   }
   if (inlineStickerRefreshPromise) {
-    inlineStickerRefreshQueued = true;
+    // A page texture refresh is expensive (image decode + canvas upload). During
+    // a drag, pointermove can arrive much faster than it completes; queueing each
+    // in-flight update makes the sticker appear to move only a few pixels at a
+    // time. The pointerup/cancel handlers schedule exactly one final refresh.
+    if (!inlineStickerDragState) {
+      inlineStickerRefreshQueued = true;
+    }
     updateInlineStickerControls(false);
     scheduleStickerTutorialLayout();
     return inlineStickerRefreshPromise;
@@ -3613,7 +3864,7 @@ function refreshInlineStickerPage() {
       updatePage(flipProgress);
       updateInlineStickerControls(false);
       scheduleStickerTutorialLayout();
-      if (applied === false) {
+      if (applied === false && !inlineStickerDragState) {
         inlineStickerRefreshQueued = true;
       }
       return applied;

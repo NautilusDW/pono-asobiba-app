@@ -678,6 +678,7 @@
     }
     .pc-feature-scene{min-width:0;margin:0;}
     .pc-feature-media{
+      display:block;
       aspect-ratio:16/9;
       overflow:hidden;
       border:1px solid rgba(93,78,55,.12);
@@ -690,6 +691,64 @@
       width:100%;
       height:100%;
       object-fit:contain;
+    }
+    .pc-feature-entry{
+      appearance:none;
+      width:100%;
+      margin:14px 0 0;
+      padding:0;
+      overflow:hidden;
+      border:1px solid rgba(93,78,55,.12);
+      border-radius:15px;
+      background:#fff;
+      color:var(--pc-text);
+      box-shadow:0 5px 14px rgba(93,78,55,.12);
+      cursor:pointer;
+      text-align:left;
+      transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease;
+    }
+    .pc-feature-entry .pc-feature-media{
+      border:0;
+      border-radius:0;
+      box-shadow:none;
+    }
+    .pc-feature-entry--sticker .pc-feature-media{
+      background:linear-gradient(145deg,#e9f5ee,#fff9e9);
+    }
+    .pc-feature-entry--sticker .pc-feature-media img{
+      padding:10px;
+      object-fit:contain;
+    }
+    .pc-feature-entry-copy{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      min-height:48px;
+      padding:9px 12px 10px;
+      font-size:clamp(12px,1.7vw,14px);
+      font-weight:700;
+      line-height:1.45;
+    }
+    .pc-feature-entry-copy strong{
+      flex:0 0 auto;
+      color:var(--pc-primary-deep);
+      font-size:clamp(13px,1.8vw,15px);
+      font-weight:900;
+      white-space:nowrap;
+    }
+    .pc-feature-entry-copy strong::after{
+      content:" →";
+    }
+    .pc-feature-entry:hover{
+      transform:translateY(-2px);
+      border-color:rgba(201,106,46,.35);
+      box-shadow:0 9px 20px rgba(93,78,55,.17);
+    }
+    .pc-feature-entry:active{transform:translateY(0) scale(.99);}
+    .pc-feature-entry:focus-visible{
+      outline:3px solid var(--pc-primary);
+      outline-offset:3px;
     }
     .pc-feature-scene figcaption{
       margin:8px 2px 0;
@@ -1411,6 +1470,7 @@
     .game-modal-scenes{display:flex;flex-direction:column;gap:28px;padding:20px 20px 18px;}
     .game-modal-scene{display:flex;flex-direction:column;gap:12px;}
     .game-modal-scene img{width:72%;aspect-ratio:16/9;object-fit:cover;border-radius:12px;background:#F0EBE0;display:block;transition:transform .25s ease;}
+    .game-modal-scene img.is-contain{object-fit:contain;background:linear-gradient(145deg,#e9f5ee,#fff9e9);}
     .game-modal-scene:nth-child(odd) img{margin-left:0;margin-right:auto;}
     .game-modal-scene:nth-child(even) img{margin-left:auto;margin-right:0;}
     .game-modal-scene:nth-child(1) img{transform:rotate(-2.5deg) translateX(-6px) scale(0.85);}
@@ -1420,6 +1480,7 @@
     @media (max-width:480px){.game-modal-scene img{width:85%;}}
     .game-modal-caption{font-weight:700;font-size:clamp(14px,3.6vw,16px);line-height:1.8;color:var(--text);margin:0;padding:0 4px;}
     .game-modal-cta-wrap{display:flex;justify-content:center;padding:6px 16px 10px;border-top:1px solid rgba(93,78,55,.08);background:#FFFDF8;}
+    .game-modal-cta-wrap[hidden]{display:none;}
     .game-modal-cta{display:inline-flex;align-items:center;gap:.4em;min-height:36px;padding:8px 18px;background:#888;color:#fff;font-weight:900;font-size:clamp(14px,3.2vw,16px);letter-spacing:.05em;text-decoration:none;border-radius:18px;box-shadow:0 4px 12px rgba(0,0,0,.16);transition:transform .2s ease,box-shadow .2s ease,background .2s ease;}
     .game-modal-cta:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(0,0,0,.26);}
     .game-modal-cta:active{transform:translateY(0) scale(.98);}
@@ -2001,20 +2062,12 @@
           <div class="pc-bubble pc-bubble--left">★ 集めて選ぶ</div>
           <div class="pc-body">
             <h3 class="pc-title">ガチャガチャとお店</h3>
-            <div class="pc-feature-scenes">
-              <figure class="pc-feature-scene">
-                <div class="pc-feature-media">
-                  <img src="assets/lp/features/gacha-reveal_20260712.png?v=20260712-1264" alt="ガチャガチャのカプセルからシールが出た画面" width="1280" height="720" loading="lazy" decoding="async">
-                </div>
-                <figcaption><strong>ガチャガチャ</strong><span class="pc-caption-keep">新しいシールに</span><wbr><span class="pc-caption-keep">出会えます。</span></figcaption>
-              </figure>
-              <figure class="pc-feature-scene">
-                <div class="pc-feature-media">
-                  <img src="assets/lp/features/donguri-shop_20260712.png?v=20260712-1264" alt="どんぐりで好きなシールを選べるおみせの画面" width="1280" height="720" loading="lazy" decoding="async">
-                </div>
-                <figcaption><strong>どんぐりショップ</strong>どんぐりで、<wbr><span class="pc-caption-keep">シールを選べます。</span></figcaption>
-              </figure>
-            </div>
+            <button class="pc-feature-entry" type="button" data-game="feature-gacha" aria-haspopup="dialog" aria-controls="game-modal" aria-label="ガチャガチャとお店の画面を開く">
+              <span class="pc-feature-media">
+                <img src="assets/lp/features/gacha-machine_20260712.webp" alt="森のお店に置かれたガチャガチャ本体" width="1280" height="720" loading="lazy" decoding="async">
+              </span>
+              <span class="pc-feature-entry-copy"><span>回した先を見てみる</span><strong>中を見る</strong></span>
+            </button>
             <p class="pc-growth"><img class="pc-growth-label-img" src="assets/ui/growth_heading_pop_sticker_alpha.png" alt="ココが育つ！" width="900" height="300" loading="lazy" decoding="async">楽しみに待つことや自分で選ぶ体験から、<b>見通しを持つ力と選ぶ力</b>が育ちます。</p>
           </div>
         </article>
@@ -2024,20 +2077,13 @@
           <div class="pc-bubble pc-bubble--alt">★ 集めて眺める</div>
           <div class="pc-body">
             <h3 class="pc-title">シールちょうと<wbr><span class="pc-title-term">ミュージアム</span></h3>
-            <div class="pc-feature-scenes">
-              <figure class="pc-feature-scene">
-                <div class="pc-feature-media">
-                  <img src="assets/lp/features/sticker-gallery_20260712.png" alt="集めたシールが額に飾られたギャラリーの画面" width="1280" height="720" loading="lazy" decoding="async">
-                </div>
-                <figcaption><strong>ギャラリー</strong>シールを額に飾って楽しめます。</figcaption>
-              </figure>
-              <figure class="pc-feature-scene">
-                <div class="pc-feature-media">
-                  <img src="assets/lp/features/sticker-museum_20260712.png" alt="集めたシールをテーマ別に見られるシールミュージアムの全景" width="1280" height="720" loading="lazy" decoding="async">
-                </div>
-                <figcaption><strong>シールミュージアム</strong>シールをテーマ別に見られます。</figcaption>
-              </figure>
-            </div>
+            <!-- 仮表紙：正式なシールちょう画像が完成したら、この src とモーダル側の同じ src を差し替える。 -->
+            <button class="pc-feature-entry pc-feature-entry--sticker" type="button" data-game="feature-sticker-book" aria-haspopup="dialog" aria-controls="game-modal" aria-label="シールちょうとミュージアムの画面を開く">
+              <span class="pc-feature-media">
+                <img src="assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_boy_cover_front_simple_jp_20260629.webp" alt="青いシールちょうの仮表紙" width="1254" height="1254" loading="lazy" decoding="async">
+              </span>
+              <span class="pc-feature-entry-copy"><span>シールの楽しみ方を見る</span><strong>中を見る</strong></span>
+            </button>
             <p class="pc-growth"><img class="pc-growth-label-img" src="assets/ui/growth_heading_pop_sticker_alpha.png" alt="ココが育つ！" width="900" height="300" loading="lazy" decoding="async">見比べたり、テーマごとに整理したりする遊びから、<b>観察する力と整理する力</b>が育ちます。</p>
           </div>
         </article>
@@ -2299,6 +2345,29 @@
             {src:'assets/ui/play_quizland_title_back.webp', alt:'なぞなぞのメニューイメージ', caption:'わかったら こたえを タップ！'},
             {src:'assets/images/quizland/OP/OP_BG.webp', alt:'もりの ふうけい', caption:'せいかいすると はかせが ほめてくれるよ。'}
           ]
+        },
+        'feature-gacha': {
+          title: 'ガチャガチャとお店',
+          accent: '#D87843',
+          accentDark: '#A84E28',
+          growth: '楽しみに待つことや自分で選ぶ体験から、<b>見通しを持つ力と選ぶ力</b>が育ちます。',
+          hideCta: true,
+          scenes: [
+            {src:'assets/lp/features/gacha-reveal_20260712.png?v=20260712-1264', alt:'ガチャガチャのカプセルからシールが出た画面', caption:'ガチャガチャを回すと、新しいシールとの出会いが待っています。'},
+            {src:'assets/lp/features/donguri-shop_20260712.png?v=20260712-1264', alt:'どんぐりで好きなシールを選べるお店の画面', caption:'どんぐりショップでは、集めたどんぐりで好きなシールを選べます。'}
+          ]
+        },
+        'feature-sticker-book': {
+          title: 'シールちょうとミュージアム',
+          accent: '#4B9E91',
+          accentDark: '#2E7168',
+          growth: '見比べたり、テーマごとに整理したりする遊びから、<b>観察する力と整理する力</b>が育ちます。',
+          hideCta: true,
+          scenes: [
+            {src:'assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_boy_cover_front_simple_jp_20260629.webp', alt:'青いシールちょうの仮表紙', caption:'集めたシールを、自分のシールちょうに貼って楽しめます。', fit:'contain'},
+            {src:'assets/lp/features/sticker-gallery_20260712.png', alt:'集めたシールが額に飾られたギャラリーの画面', caption:'ギャラリーでは、お気に入りのシールを額に飾って眺められます。'},
+            {src:'assets/lp/features/sticker-museum_20260712.png', alt:'集めたシールをテーマ別に見られるシールミュージアムの全景', caption:'シールミュージアムでは、集めたシールをテーマ別に見られます。'}
+          ]
         }
       };
 
@@ -2309,6 +2378,7 @@
       var growthTextEl = document.getElementById('game-modal-growth-text');
       var scenesEl = document.getElementById('game-modal-scenes');
       var ctaEl = document.getElementById('game-modal-cta');
+      var ctaWrap = ctaEl ? ctaEl.parentElement : null;
       var closeBtn = modal ? modal.querySelector('.game-modal-close') : null;
       var lastFocused = null;
       var currentAccentDark = null;
@@ -2326,6 +2396,7 @@
         titleEl.textContent = data.title;
         header.style.background = data.accent;
         ctaEl.style.background = data.accent;
+        if(ctaWrap) ctaWrap.hidden = data.hideCta === true;
         currentAccentDark = data.accentDark;
         // Pass accent colors to modal as CSS custom properties so growth box borders/<b> match the game.
         if(modal){
@@ -2354,6 +2425,7 @@
           img.alt = info.alt || '';
           img.loading = 'lazy';
           img.decoding = 'async';
+          if(info.fit === 'contain') img.classList.add('is-contain');
           img.onerror = (function(el){ return function(){ applyPlaceholderOnError(el); }; })(img);
           scene.appendChild(img);
           if(info.caption){
@@ -2406,17 +2478,19 @@
 
       // Bind cards
       function bindCards(){
-        var cards = document.querySelectorAll('.pc-card[data-game]');
+        var cards = document.querySelectorAll('.pc-card[data-game], .pc-feature-entry[data-game]');
         for(var i=0;i<cards.length;i++){
           (function(card){
             var gameId = card.getAttribute('data-game');
             card.addEventListener('click', function(){ openModal(gameId); });
-            card.addEventListener('keydown', function(e){
-              if(e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar'){
-                e.preventDefault();
-                openModal(gameId);
-              }
-            });
+            if(card.tagName !== 'BUTTON'){
+              card.addEventListener('keydown', function(e){
+                if(e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar'){
+                  e.preventDefault();
+                  openModal(gameId);
+                }
+              });
+            }
           })(cards[i]);
         }
       }

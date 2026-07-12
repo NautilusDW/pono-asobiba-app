@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ポノのずかん Three.js</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="./styles.css?v=20260712-1256">
+  <link rel="stylesheet" href="./styles.css?v=20260712-1269">
 </head>
 <body>
   <main id="app">
@@ -309,6 +309,13 @@
         defaultLabel: 'sticker-book',
         build: waitForBuilder
       });
+      // スクショ機能をデバッグボードで有効にしている間は、直URLや別入口から
+      // 来ても撮影パネルを見失わない。staging + manage + feature の共通gateは維持。
+      if (typeof window.PonoCapture.isAllowed === 'function'
+          && window.PonoCapture.isAllowed()
+          && typeof window.PonoCapture.show === 'function') {
+        window.PonoCapture.show();
+      }
     }
 
     registerBootstrapCapture();
@@ -319,6 +326,6 @@
   </script>
   <script src="../../common/tier.js"></script>
   <script src="../../common/haptics.js" defer></script>
-  <script type="module" src="./main.js?v=20260712-1264"></script>
+  <script type="module" src="./main.js?v=20260712-1269"></script>
 </body>
 </html>

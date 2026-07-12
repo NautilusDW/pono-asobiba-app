@@ -165,7 +165,7 @@ assert.match(
 );
 const captureScriptPos = stickerBookIndex.indexOf('<script src="../../common/capture.js"></script>');
 const bootstrapScriptPos = stickerBookIndex.indexOf("window.__stickerBookCaptureBootstrap = bridge;");
-const moduleScriptPos = stickerBookIndex.indexOf('<script type="module" src="./main.js?v=20260712-1264"></script>');
+const moduleScriptPos = stickerBookIndex.indexOf('<script type="module" src="./main.js?v=20260712-1269"></script>');
 assert.ok(
   captureScriptPos >= 0 && captureScriptPos < bootstrapScriptPos && bootstrapScriptPos < moduleScriptPos,
   "the cold-start bridge must sit after capture.js and before the dependency-blocked StickerBook module"
@@ -306,7 +306,7 @@ assert.match(
 );
 assert.match(
   stickerBookIndex,
-  /main\.js\?v=20260712-1264/,
+  /main\.js\?v=20260712-1269/,
   "StickerBookThreeJS index must bust the module cache for the full-screen capture fix"
 );
 assert.match(

@@ -88,6 +88,12 @@ body {
   -webkit-touch-callout: none;
 }
 
+/* はるモードではページ上の縦・斜めドラッグもシール移動として扱う。
+   pan-y のままだとブラウザが途中で pointercancel し、小刻みにしか動かせない。 */
+body.is-sticker-edit-mode #scene {
+  touch-action: none;
+}
+
 body:not(.is-collection-album) #scene {
   filter: saturate(1.08) brightness(1.06);
 }
@@ -1379,7 +1385,8 @@ body.is-sticker-tutorial-active:not(.is-sticker-tutorial-step-ok):not(.is-collec
 }
 
 .collection-sticker-tray.is-sticker-source .collection-sticker-tray-items {
-  padding-right: 112px;
+  padding-right: max(112px, calc(50% - 43px));
+  scroll-padding-inline-end: max(112px, calc(50% - 43px));
 }
 
 .sticker-tray-card {
@@ -3731,7 +3738,8 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-card.is-page-inscribed {
   }
 
   .collection-sticker-tray.is-sticker-source .collection-sticker-tray-items {
-    padding-right: 8px;
+    padding-right: max(8px, calc(50% - 36px));
+    scroll-padding-inline-end: max(8px, calc(50% - 36px));
   }
 
   .sticker-tray-card {
@@ -4197,7 +4205,8 @@ body.is-sticker-tutorial-card-corner .sticker-tutorial-card.is-page-inscribed {
   }
 
   .collection-sticker-tray.is-sticker-source .collection-sticker-tray-items {
-    padding-right: 8px;
+    padding-right: max(8px, calc(50% - 33px));
+    scroll-padding-inline-end: max(8px, calc(50% - 33px));
   }
 
   .sticker-tray-card {
