@@ -255,6 +255,7 @@ const state = {
   glideTimer: 0,
   isGliding: false,
   lastFocus: null,
+  detailStickerId: "",
   mapNoticeTimer: 0,
 };
 
@@ -389,10 +390,15 @@ function resolveAsset(path) {
 
 function applyOwnership(stickers) {
   const owned = readOwnedIds();
-  const useDemo = owned.size === 0;
+  let changed = false;
   stickers.forEach((sticker) => {
-    sticker.owned = useDemo ? demoOwned(sticker) : owned.has(sticker.id);
+    // シールミュージアムは実際の保存状態だけを表示する。
+    // 所持0件をデモ表示へ置き換えると、マップと展示室が架空の獲得数になる。
+    const nextOwned = owned.has(sticker.id);
+    if (sticker.owned !== nextOwned) changed = true;
+    sticker.owned = nextOwned;
   });
+  return changed;
 }
 
 function readOwnedIds() {
@@ -414,12 +420,6 @@ function readOwnedIds() {
   return ids;
 }
 
-function demoOwned(sticker) {
-  if (sticker.pageId === "book-bonus") return sticker.serial % 2 === 0;
-  if (sticker.rarity === "super") return sticker.serial % 3 === 0;
-  return sticker.serial % 4 !== 0;
-}
-
 function renderMapRooms() {
   if (!els.mapScreen) return;
   els.mapScreen.querySelectorAll("[data-room-id]").forEach((button) => {
@@ -431,6 +431,26 @@ function renderMapRooms() {
     button.replaceChildren(createMapLabel(room.label, `${owned} / ${list.length}`));
   });
   renderMapExits();
+}
+
+function refreshOwnershipView() {
+  if (!state.stickers.length || !applyOwnership(state.stickers)) return;
+  renderMapRooms();
+  if (!state.roomId) return;
+  // state.filtered は state.stickers 内の同じオブジェクトを参照しているため、
+  // 所持状態更新後はカードと件数を現在位置のまま描き直す。
+  const focusStickerId = state.lastFocus?.dataset?.stickerId || "";
+  const openDetailId = els.detailOverlay.hidden ? "" : state.detailStickerId;
+  renderCarousel();
+  updateStatus();
+  if (focusStickerId) {
+    state.lastFocus = [...els.carouselLayer.querySelectorAll("[data-sticker-id]")]
+      .find((item) => item.dataset.stickerId === focusStickerId) || null;
+  }
+  if (openDetailId) {
+    const detailSticker = state.stickers.find((sticker) => sticker.id === openDetailId);
+    if (detailSticker) openDetail(detailSticker, { preserveFocus: true });
+  }
 }
 
 function renderMapExits() {
@@ -848,8 +868,9 @@ function resetDragOffset() {
   els.app.classList.remove("is-dragging");
 }
 
-function openDetail(sticker) {
-  state.lastFocus = document.activeElement;
+function openDetail(sticker, options = {}) {
+  if (!options.preserveFocus) state.lastFocus = document.activeElement;
+  state.detailStickerId = sticker.id;
   els.detailOverlay.hidden = false;
   els.detailPanel.classList.toggle("is-locked", !sticker.owned);
   els.detailImage.src = sticker.imageUrl;
@@ -891,6 +912,7 @@ function openDetail(sticker) {
 function closeDetail() {
   const wasHidden = els.detailOverlay.hidden;
   els.detailOverlay.hidden = true;
+  state.detailStickerId = "";
   if (!wasHidden && state.lastFocus && typeof state.lastFocus.focus === "function") {
     state.lastFocus.focus();
   }
@@ -1036,6 +1058,10 @@ function wireEvents() {
     else showMap({ updateUrl: false });
   });
 
+  window.addEventListener("pageshow", refreshOwnershipView);
+  window.addEventListener("storage", (event) => {
+    if (event.key === STATE_KEY || event.key === null) refreshOwnershipView();
+  });
   window.addEventListener("resize", updateCarouselLayout);
 }
 
