@@ -11760,7 +11760,7 @@ var BENTO_SLOT_SAMPLE_ITEMS = {
     { id: 'leaf_lettuce', name: 'レタス', image: '../assets/images/bento/free-layout/divider_lettuce.png', size: 190, rotation: -8, layer: 20 }
   ],
   divider: [
-    { id: 'divider_wave', name: 'なみなみしきり', image: '../assets/images/bento/free-layout/divider_wave.png', size: 184, rotation: 0, layer: 20 },
+    { id: 'divider_wave', name: 'なみなみしきり', image: '../assets/images/bento/free-layout/divider_wave.png', size: 184, rotation: -3, layer: 20 },
     { id: 'divider_wood', name: 'きのしきり', image: '../assets/images/bento/free-layout/divider_wood.png', size: 178, rotation: 0, layer: 20 },
     { id: 'divider_wave_vertical_back', name: 'みどり縦（奥）', image: '../assets/images/bento/free-layout/divider_wave_vertical_back.png', size: 42, rotation: 0, layer: 20 },
     { id: 'divider_wave_vertical_mid', name: 'みどり縦（中）', image: '../assets/images/bento/free-layout/divider_wave_vertical_mid.png', size: 46, rotation: 0, layer: 20 },
@@ -13124,7 +13124,8 @@ function bentoSlotIsBottomLayerSample(kind, sample) {
 }
 function bentoSlotRenderLayerBase(kind, sample) {
   if (bentoSlotIsBottomLayerSample(kind, sample)) return 29;
-  if (kind === 'cup' || kind === 'divider' || kind === 'leaf' || kind === 'other' || kind === 'main-food' || kind === 'side-food') return 30;
+  if (kind === 'divider') return 40;
+  if (kind === 'cup' || kind === 'leaf' || kind === 'other' || kind === 'main-food' || kind === 'side-food') return 30;
   return Math.max(1, Math.floor(Number(sample && sample.layer) || 30));
 }
 function bentoSlotSampleRenderLayer(entry) {
