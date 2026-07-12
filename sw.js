@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2151: なぞなぞトレインの未来シティで海ステージの操舵位置が機関車へ残る浮遊を解消。塔頂まで入る不透明な遠景・中景と横向き未来駅をGPT Image 2で再生成し、遠景0.10／中景0.32／線路・駅1.00／手前1.12のミラー式連続ループへ変更。駅問題は光を上下2択ホームまでなぞるレールゲームへ刷新し、誤答再挑戦・おたすけ・キーボード・reduced-motionを統合した (batch:1269)。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/画像/テストのみ変更)。
 // v2150: タイトル画面のポノガチャバナー右上に当日の残り回数 (2→1→0) を表示。抽選直後・チャレンジ更新・日付更新・別タブ変更・履歴復帰でも同期し、0回時は落ち着いた色へ切り替える (batch:1270)。play.html PAGE_CACHE_VERSION と同期 (2150)。
 // v2149: おべんとうの縦しきりは全おかずより前面のまま、横2本だけをおかずと同じY奥行きへ戻し、手前のソーセージ／ハンバーグを前面化。本体と配置エディターを同期し、3色ガイド「あか」の1本は発音が自然だった直前TTS3.1/Leda版へ復元した (batch:1269)。play.html PAGE_CACHE_VERSION と同期不要 (bento/admin/音声/docs/テストのみ変更)。
 // v2148: なぞなぞトレインの深い海で、遠景0.10／中景0.44／海底と駅1.00／最前景サンゴ1.06へ多重スクロールを整理し、下端透けと開始時の内部15pxスクロールを解消。GPT Image 2生成の横向き海底駅へ差し替え、暗転後の「ようい」「ドン！」から左潜水艦対右縦2択が逃げる連射アリーナを追加した (batch:1268)。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/画像/テストのみ変更)。
@@ -75,7 +76,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2150;
+const CACHE_VERSION = 2151;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
