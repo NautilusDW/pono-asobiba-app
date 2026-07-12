@@ -15654,7 +15654,9 @@ function armSimpleLeafForStageTap(def) {
   setSpeech(tutorialLeafPlace
     ? ((tutorialState.leafTargetName || target.name || 'ハンバーグ') + 'の うえを タップして はっぱを しこう！')
     : 'べんとうばこを タップして はっぱを しこう！');
-  renderFreeLayoutStage();
+  // armed 状態の DOM を即時反映する。画像 decode 待ちの旧 item が残ると、
+  // 直後の target タップを旧 pointerdown が横取りして stage まで届かない。
+  renderFreeLayoutStage({ immediate: true });
   renderFreeLayoutControls();
   try { if (typeof tutorialOnLeafChoiceArmed === 'function') tutorialOnLeafChoiceArmed(def, target); } catch (_) {}
 }

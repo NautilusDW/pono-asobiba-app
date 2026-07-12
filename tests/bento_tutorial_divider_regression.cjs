@@ -287,6 +287,9 @@ const leafClearAt = stageRenderer.indexOf('clearSimpleLeafArmedState();', leafGa
 assert.ok(leafGateAt >= 0 && leafGateAt < leafClearAt,
   'wrong target must be rejected before the armed leaf state is cleared');
 assert.match(stageRenderer, /tutorialRemindLeafTargetTap\(\);[\s\S]*?return;/);
+const leafArm = extract(html, 'function armSimpleLeafForStageTap(def)', 'function placeSimpleLeafUnderOkazu(def)', 'leaf arm');
+assert.match(leafArm, /renderFreeLayoutStage\(\{ immediate: true \}\);/,
+  'armed leaf DOM must commit immediately so the first hamburger tap reaches the stage handler');
 const leafVisibility = extract(html, 'function isTutorialLeafTargetMainOkazu(item)', 'function shouldHideItemForSimpleLeafEdit', 'leaf target visibility');
 assert.match(leafVisibility, /'tut2-leaf-pick', 'tut2-leaf-place'/);
 assert.match(leafVisibility, /item\.uid === tutorialState\.leafTargetUid/,
