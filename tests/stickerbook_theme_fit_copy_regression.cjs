@@ -231,22 +231,42 @@ const ringThemeSource = extractFunction(main, "applyCover3DRingTheme");
 assert.match(ringThemeSource, /binding === "overlay"/, "baked and generated bindings must remain mutually exclusive");
 assert.match(ringThemeSource, /getStickerSpineTexture\(activeBook\)/, "the binding overlay must reuse the existing themed spine texture");
 
-assert.match(css, /--sb3d-ui-button-theme: url\("[^\n]+\.webp"\)/, "the renamed action must use the optimized textless button art");
+assert.match(css, /--sb3d-ui-button-theme: url\("[^\n]+sb3d_ui_button_cover_text_gpt_image2_20260713\.png"\)/, "the cover action must use the baked ひょうし button art");
+assert.match(css, /--sb3d-ui-button-exhibition: url\("[^\n]+sb3d_ui_button_museum_text_gpt_image2_20260713\.png"\)/, "the museum action must use the baked two-line button art");
 assert.doesNotMatch(css, /--sb3d-ui-button-theme-text/, "the old baked きせかえ button must no longer be referenced");
-assert.match(css, /\.top-theme-button \.top-button-label \{[\s\S]*?opacity: 1;/, "the new HTML button label must be visible");
-assert.match(css, /\.top-theme-button \{[\s\S]*?background-image: var\(--sb3d-ui-button-theme\)/, "the top action must use the textless art");
-assert.doesNotMatch(css, /\.top-theme-button \{[\s\S]{0,180}?padding:\s*0\s+5%\s+0\s+34%/, "button-internal spacing must not resolve against the parent width");
-assert.match(css, /\.top-theme-button \{\s*width: 186px;\s*padding: 0 9px 0 60px;/, "the full-size action needs enough fixed-width room for its label");
-assert.match(css, /\.top-theme-button \{\s*width: 132px;\s*height: 42px;\s*padding: 0 6px 0 43px;/, "the shortest landscape action must keep the whole label visible");
+assert.doesNotMatch(css, /sb3d_ui_button_theme_ribbon_wood_gpt_image2_20260623/, "the old ribbon art must no longer be referenced");
+assert.doesNotMatch(css, /sb3d_ui_button_exhibition_gallery_20260704/, "the old textless museum art must no longer be referenced");
+assert.match(css, /\.top-theme-button \.top-button-label,\s*\.sticker-exhibition-button \.top-button-label \{\s*opacity: 0;/, "baked labels must hide their duplicate HTML text");
+assert.match(css, /\.top-edit-button \{[\s\S]*?background-image: var\(--sb3d-ui-button-mode-view-text\)/, "the view action must keep its baked frame art");
+assert.match(css, /\.top-theme-button \{\s*width: 186px;\s*padding: 0;[\s\S]*?background-image: var\(--sb3d-ui-button-theme\)/, "the cover action must use the same full-size frame treatment");
+assert.match(css, /\.sticker-exhibition-button \{\s*width: 186px;\s*padding: 0;[\s\S]*?background-image: var\(--sb3d-ui-button-exhibition\)/, "the museum action must use the same full-size frame treatment");
+assert.match(css, /\.top-action-button,[\s\S]*?\.sticker-exhibition-button \{[\s\S]*?background-size: 100% 100%;/, "all three baked top buttons must share the same frame fill rule");
+for (const [width, height] of [[172, 58], [136, 58], [136, 50], [132, 42]]) {
+  const heightPart = height === 58 ? "(?:\\s*height: 58px;)?" : `\\s*height: ${height}px;`;
+  const themePattern = new RegExp(`\\.top-theme-button \\{\\s*width: ${width}px;${heightPart}\\s*padding: 0;`);
+  const museumPattern = new RegExp(`\\.sticker-exhibition-button \\{\\s*width: ${width}px;${heightPart}\\s*padding: 0;`);
+  assert.match(css, themePattern, `cover button must remain ${width}x${height}`);
+  assert.match(css, museumPattern, `museum button must remain ${width}x${height}`);
+}
 assert.match(css, /\.book-page-label\[hidden\]\s*\{[^}]*display:\s*none;/, "the closed-cover label must stay out of layout and the accessibility tree");
 assert.ok((css.match(/aspect-ratio: 1472 \/ 1536;/g) || []).length >= 2, "current and selectable previews must use the real book ratio");
 assert.match(css, /background-size: var\(--book-thumb-size, auto 100%\)/, "theme previews must mirror each cover's fit scale");
 assert.match(css, /"label picker"[\s\S]*?"current picker"/, "short landscape panels must avoid nested full-width stacking");
 
-const textlessButton = path.join(root, "assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_theme_ribbon_wood_gpt_image2_20260623.webp");
-assert.ok(fs.existsSync(textlessButton), "the optimized textless theme button asset must exist");
-assert.ok(fs.statSync(textlessButton).size < 200 * 1024, "the textless button must not add a megabyte-scale startup cost");
-assert.match(index, /styles\.css\?v=20260713-1274/, "the shortened cover UI must bypass stale CSS caches");
-assert.match(index, /main\.js\?v=20260713-1274/, "the cover-label behavior must bypass stale module caches");
+for (const fileName of [
+  "sb3d_ui_button_cover_text_gpt_image2_20260713.png",
+  "sb3d_ui_button_museum_text_gpt_image2_20260713.png",
+]) {
+  const buttonPath = path.join(root, "assets/_PonoSubmarine/Art/UI/StickerBook3D", fileName);
+  assert.ok(fs.existsSync(buttonPath), `${fileName} must exist`);
+  assert.ok(fs.statSync(buttonPath).size < 3 * 1024 * 1024, `${fileName} must remain below the repository image limit`);
+  const png = fs.readFileSync(buttonPath);
+  assert.equal(png.toString("hex", 0, 8), "89504e470d0a1a0a", `${fileName} must be a PNG`);
+  assert.equal(png.readUInt32BE(16), 868, `${fileName} must match the view-button width`);
+  assert.equal(png.readUInt32BE(20), 272, `${fileName} must match the view-button height`);
+  assert.equal(png[25], 6, `${fileName} must keep an RGBA color type for transparent corners`);
+}
+assert.match(index, /styles\.css\?v=20260713-1275/, "the baked top-button UI must bypass stale CSS caches");
+assert.match(index, /main\.js\?v=20260713-1275/, "the matching StickerBook behavior must bypass stale module caches");
 
 console.log("stickerbook_theme_fit_copy_regression: all assertions passed");
