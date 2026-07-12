@@ -59,6 +59,8 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
+- 2026-07-12 18:52 - by Codex - [batch:1267-nazonazo-sea-shooter] - nazonazo-tunnel/index.html, nazonazo-tunnel/styles.css, nazonazo-tunnel/js/game.js, tests/nazonazo_*_regression.cjs, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - 深い海を上下左右に動かせる潜水艦シューティングへ刷新し、動く選択肢への押しっぱなし連射・命中膨張破裂・仲間の追従射撃を追加 [overlap: batch:886-difficulty-label-sw-bump-1736, batch:933-haptics-quick-win-phase1, batch:tier-v3-phase1]
+
 
 
 
