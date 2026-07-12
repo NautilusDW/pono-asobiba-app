@@ -58,6 +58,7 @@
 ## Active claims
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
+- 2026-07-12 - by Codex - [batch:1264-nazonazo-parallax-jungle-sea-play] - nazonazo-tunnel/{index.html,styles.css,js/game.js}, assets/images/nazonazo-tunnel/{jungle_flying_*,jungle_butterfly_*}, tmp/alpha_pending/1264-nazonazo-parallax-jungle-sea-play/**, tests/nazonazo_*.cjs, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - 町第2遠景の視認できる多重スクロール、ジャングル鳥/蝶の種類追加、海の潜水艦タッチ操縦と海らしい回答ミニゲーム
 
 
 
