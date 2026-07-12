@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2137: なぞなぞトレインの町外れで奥から2番目の山をさらに12vh上げ、数字ステージの浮いて見えた最前景を撤去してジャンプ回数で答えるミニゲームへ変更。ジャングルは向き・縮尺を統一したチョウ3コマと、端切れのない大型キリン・正面ゾウ鼻3コマへ差し替えた (batch:1262)。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/画像/テストのみ変更)。
 // v2136: おべんとうチュートリアル中は通常プレイ用「したに しく」編集帯を隠し、小さいおかず工程の配置済みメイン選択と古い葉っぱ編集callbackを拒否。正規のレタス→ハンバーグ導線は維持し、現行27 cueのナレーション収録正本も追加 (batch:1262)。play.html PAGE_CACHE_VERSION と同期不要 (bento/index.html/docs/テストのみ変更)。
 // v2135: ガチャガチャの透過案内へ出る矩形マスクを除去し、当日終了案内をフクロウ博士の木枠へ変更。スクショは押下時のstep／開封状態を保持してシール消失・カプセル変形・案内枠の取り違えを防止。お店看板を実img化して半欠けを解消し、LP画像と表記を更新 (batch:1260)。play.html PAGE_CACHE_VERSION と同期 (2135)。
 // v2134: おべんとうチュートリアルの縮小・回転を独立履歴として2回取り消す流れへ修正。はっぱボタン・レタス・ハンバーグの青枠を監視ループ外の専用レイヤーで常時見えるようにし、横なみなみしきりは本体と配置エディターを-4.4度へ同期、左右2枚の中心高さも同じ行へそろえた (batch:1261)。play.html PAGE_CACHE_VERSION と同期不要 (bento/index.html/admin/テストのみ変更)。
@@ -61,7 +62,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2136;
+const CACHE_VERSION = 2137;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
