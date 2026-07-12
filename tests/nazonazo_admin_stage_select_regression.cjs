@@ -237,6 +237,6 @@ assert.match(styles, /body\.nazonazo-admin-stage-preview #startBtn\{[^}]*min-hei
 assert.match(worker, /const PROTECTED_PREFIXES = \[[\s\S]*?'\/admin\/'[\s\S]*?'\/admin'/);
 assert.match(worker, /function checkBasicAuth\(request, env\)/);
 assert.match(sw, /event\.request\.url\.includes\('\/admin\/'\)[\s\S]*?return;/);
-assert.match(sw, /const CACHE_VERSION = 2146;/);
+assert.match(sw, /const CACHE_VERSION = 2148;/);
 
 console.log("nazonazo admin stage select regression: PASS");
