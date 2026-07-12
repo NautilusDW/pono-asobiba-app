@@ -59,8 +59,6 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
-- 2026-07-12 23:21 - by Codex - [batch:1270-title-gacha-remaining] - play.html, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - タイトル画面のガチャバナー右上へ残り回数バッジを追加し、回した直後も同期 [overlap: batch:1263-gacha-camera-geometry]
-
 
 
 
