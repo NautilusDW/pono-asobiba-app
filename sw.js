@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2154: なぞなぞトレインの深い海シューティングを16／20／24発の高速連射、最大2.2倍の非線形膨張、張り→白色フラッシュ→光輪＋36破片の大破裂へ刷新。宇宙はGPT Image 2生成の星雲・惑星・小惑星・探査ロケット・宇宙駅と遠中近の星粒を多重スクロールし、3タップで星座をつないで答える短いミニゲームへ変更した (batch:1271)。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/画像/テストのみ変更)。
 // v2153: ガチャ結果に「はじめて／もってるシール」と獲得後の何枚目かを表示。シール帳は所持countを残り枚数として×N表示し、表紙を含む全ページで所持数まで貼付可能、削除で1枚復帰、旧上限超過配置は非破壊で維持する (batch:1271)。play.html PAGE_CACHE_VERSION と同期 (2153)。
 // v2152: LPの「遊びのほかにも」をガチャガチャ本体／シールちょう仮表紙の各1枚から詳細画面を開く構成へ変更。シールちょうは、はるモードの縦ドラッグ中断と重い連続再描画を抑え、下段トレイを71枚目まで中央へ送れるよう修正。スクショモードは有効時に直URLでも表示し、WebKit/Chromiumとも机・本・上部操作・ページボタン・見えているトレイを安定合成する (batch:1269)。play.html PAGE_CACHE_VERSION と同期 (2152)。
 // v2151: なぞなぞトレインの未来シティで海ステージの操舵位置が機関車へ残る浮遊を解消。塔頂まで入る不透明な遠景・中景と横向き未来駅をGPT Image 2で再生成し、遠景0.10／中景0.32／線路・駅1.00／手前1.12のミラー式連続ループへ変更。駅問題は光を上下2択ホームまでなぞるレールゲームへ刷新し、誤答再挑戦・おたすけ・キーボード・reduced-motionを統合した (batch:1269)。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/画像/テストのみ変更)。
@@ -78,7 +79,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2153;
+const CACHE_VERSION = 2154;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
