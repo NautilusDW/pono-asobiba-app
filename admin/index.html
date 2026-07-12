@@ -235,6 +235,62 @@ tr:hover { background: #FFFAF0; }
 .btn-sm { font-size: 0.72rem; padding: 5px 12px; }
 .btn:disabled { opacity: 0.4; cursor: default; }
 
+/* ── Nazonazo stage preview ── */
+.nazonazo-admin-stage-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+.nazonazo-admin-stage-btn {
+  width: 100%;
+  min-height: 48px;
+  justify-content: center;
+  text-align: center;
+}
+.nazonazo-admin-stage-btn.is-active {
+  background: #0F766E;
+  color: #fff;
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.18);
+}
+.nazonazo-admin-preview-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+}
+.nazonazo-admin-preview-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.nazonazo-admin-preview-actions .btn { min-height: 44px; }
+.nazonazo-admin-status {
+  min-height: 1.4em;
+  color: #6D5B45;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+.nazonazo-admin-preview {
+  width: min(100%, 1180px);
+  aspect-ratio: 16 / 9;
+  margin: 10px auto 0;
+  overflow: hidden;
+  border: 3px solid #D8C9B2;
+  border-radius: 14px;
+  background: #172319;
+  box-shadow: 0 5px 18px rgba(50, 35, 18, 0.16);
+}
+.nazonazo-admin-preview[hidden] { display: none; }
+.nazonazo-admin-preview iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #172319;
+}
+
 /* ── Maze minigame debug preview ── */
 .maze-debug-game-grid {
   display: grid;
@@ -290,6 +346,8 @@ tr:hover { background: #FFFAF0; }
   background: #172319;
 }
 @media (max-width: 520px) {
+  .nazonazo-admin-stage-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .nazonazo-admin-stage-btn { min-height: 46px; padding-inline: 8px; }
   .maze-debug-game-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .maze-debug-game-btn { min-height: 46px; padding-inline: 8px; }
 }
@@ -420,6 +478,7 @@ tr:hover { background: #FFFAF0; }
   <button class="tab" data-panel="wordmatch">🔤 ことばあわせ</button>
   <button class="tab" data-panel="bento">🍱 おべんとう</button>
   <button class="tab" data-panel="writing">✏️ 文字書き</button>
+  <button class="tab" data-panel="nazonazo">🚂 なぞなぞ</button>
   <button class="tab" data-panel="maze">🦔 めいろ</button>
   <button class="tab" data-panel="monsters">👾 モンスター</button>
   <button class="tab" data-panel="walls">🧱 壁紙・床</button>
@@ -1424,6 +1483,35 @@ tr:hover { background: #FFFAF0; }
   </div>
 </div><!-- /panel-writing -->
 
+<!-- ===== 🚂 なぞなぞ ===== -->
+<div class="panel" id="panel-nazonazo">
+  <div class="section">
+    <div class="section-title">🚂 ステージを試す</div>
+    <div style="font-size:0.75rem;color:#8B7355;margin:-6px 0 12px;line-height:1.5;">
+      ステージを選ぶと、通常のゲームと同じ画面を下の枠へ読み込みます。<br>
+      枠の中で難易度を選び、<strong>「はじめる！」</strong>を押してください。管理プレビュー中はハイスコア・図鑑・進行状況を保存しません。
+    </div>
+    <div class="nazonazo-admin-stage-grid" id="nazonazo-admin-stage-grid" role="group" aria-label="なぞなぞステージ一覧">
+      <button class="btn btn-blue nazonazo-admin-stage-btn" type="button" data-nazonazo-stage="town" aria-pressed="false" onclick="nazonazoSelectStage('town')">🏘️ まちはずれ</button>
+      <button class="btn btn-blue nazonazo-admin-stage-btn" type="button" data-nazonazo-stage="jungle" aria-pressed="false" onclick="nazonazoSelectStage('jungle')">🌴 ジャングル</button>
+      <button class="btn btn-blue nazonazo-admin-stage-btn" type="button" data-nazonazo-stage="number" aria-pressed="false" onclick="nazonazoSelectStage('number')">🎲 すうじのへや</button>
+      <button class="btn btn-blue nazonazo-admin-stage-btn" type="button" data-nazonazo-stage="sea" aria-pressed="false" onclick="nazonazoSelectStage('sea')">🌊 ふかいうみ</button>
+      <button class="btn btn-blue nazonazo-admin-stage-btn" type="button" data-nazonazo-stage="future" aria-pressed="false" onclick="nazonazoSelectStage('future')">🌆 みらいシティ</button>
+      <button class="btn btn-blue nazonazo-admin-stage-btn" type="button" data-nazonazo-stage="space" aria-pressed="false" onclick="nazonazoSelectStage('space')">🌌 うちゅう</button>
+    </div>
+    <div class="nazonazo-admin-preview-head">
+      <div class="nazonazo-admin-status" id="nazonazo-admin-status" role="status" aria-live="polite">ステージを選んでください。</div>
+      <div class="nazonazo-admin-preview-actions">
+        <button class="btn btn-pink btn-sm" id="nazonazo-admin-stop" type="button" onclick="nazonazoStopStagePreview()" disabled>■ 停止</button>
+        <a class="btn btn-gold btn-sm" href="../nazonazo-tunnel/" target="_blank" rel="noopener">↗ 通常プレイを開く</a>
+      </div>
+    </div>
+    <div class="nazonazo-admin-preview" id="nazonazo-admin-preview" hidden>
+      <iframe id="nazonazo-admin-frame" title="なぞなぞステージ 管理プレビュー" allow="autoplay" data-src="../nazonazo-tunnel/?adminStagePreview=1"></iframe>
+    </div>
+  </div>
+</div><!-- /panel-nazonazo -->
+
 <!-- ===== 🦔 めいろ ===== -->
 <div class="panel" id="panel-maze">
   <div class="section">
@@ -1670,6 +1758,11 @@ function switchTab(panelId) {
   // リダイレクト
   if (TAB_REDIRECT[panelId]) panelId = TAB_REDIRECT[panelId];
 
+  var nazonazoPanel = document.getElementById('panel-nazonazo');
+  if (panelId !== 'nazonazo' && nazonazoPanel && nazonazoPanel.classList.contains('active')) {
+    nazonazoStopStagePreview(true);
+  }
+
   document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
   document.querySelectorAll('.panel').forEach(function(p) { p.classList.remove('active'); });
   var btn = document.querySelector('.tab[data-panel="' + panelId + '"]');
@@ -1717,10 +1810,138 @@ function switchTab(panelId) {
   if (panelId === 'bento')    renderBentoIllust();
   if (panelId === 'writing')  renderWritingIllust();
   if (panelId === 'monsters') renderMonsterIllust();
+  if (panelId === 'nazonazo') nazonazoInitPanel();
   if (panelId === 'maze')     mazeInitPanel();
   if (panelId === 'roadmap') renderRoadmap();
   if (panelId === 'home')    renderHome();
 }
+
+/* ===== 🚂 なぞなぞ 管理パネル ===== */
+var NAZONAZO_ADMIN_STAGE_CHANNEL = 'pono-nazonazo-admin-stage-v1';
+var NAZONAZO_ADMIN_STAGES = Object.freeze({
+  town: 'まちはずれ',
+  jungle: 'ジャングル',
+  number: 'すうじのへや',
+  sea: 'ふかいうみ',
+  future: 'みらいシティ',
+  space: 'うちゅう'
+});
+var nazonazoAdminPendingStage = '';
+var nazonazoAdminFrameReady = false;
+var nazonazoAdminPreviewToken = '';
+
+function nazonazoStageIsKnown(stageId) {
+  return Object.prototype.hasOwnProperty.call(NAZONAZO_ADMIN_STAGES, String(stageId || ''));
+}
+
+function nazonazoSetStatus(text) {
+  var el = document.getElementById('nazonazo-admin-status');
+  if (el) el.textContent = String(text || '');
+}
+
+function nazonazoSetActiveStage(stageId) {
+  document.querySelectorAll('[data-nazonazo-stage]').forEach(function(btn) {
+    var active = !!stageId && btn.getAttribute('data-nazonazo-stage') === stageId;
+    btn.classList.toggle('is-active', active);
+    btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+}
+
+function nazonazoMakePreviewToken() {
+  return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 14);
+}
+
+function nazonazoPostStageSelection() {
+  var frame = document.getElementById('nazonazo-admin-frame');
+  if (!frame || !frame.contentWindow || !nazonazoAdminFrameReady || !nazonazoAdminPendingStage) return false;
+  frame.contentWindow.postMessage({
+    channel: NAZONAZO_ADMIN_STAGE_CHANNEL,
+    type: 'select',
+    stageId: nazonazoAdminPendingStage,
+    token: nazonazoAdminPreviewToken
+  }, location.origin);
+  return true;
+}
+
+function nazonazoSelectStage(stageId) {
+  stageId = String(stageId || '');
+  if (!nazonazoStageIsKnown(stageId)) {
+    nazonazoSetStatus('不明なステージIDです。');
+    return;
+  }
+  if (!window.__APP_BUILD__) {
+    nazonazoSetStatus('ステージプレビューは App staging の管理画面で使えます。');
+    return;
+  }
+  var frame = document.getElementById('nazonazo-admin-frame');
+  var wrap = document.getElementById('nazonazo-admin-preview');
+  if (!frame || !wrap) {
+    nazonazoSetStatus('プレビュー枠を作れませんでした。');
+    return;
+  }
+  nazonazoAdminPendingStage = stageId;
+  nazonazoAdminFrameReady = false;
+  nazonazoAdminPreviewToken = nazonazoMakePreviewToken();
+  nazonazoSetActiveStage(stageId);
+  nazonazoSetStatus('「' + NAZONAZO_ADMIN_STAGES[stageId] + '」を読み込んでいます…');
+  wrap.hidden = false;
+  var stop = document.getElementById('nazonazo-admin-stop');
+  if (stop) stop.disabled = false;
+  var base = frame.getAttribute('data-src') || '../nazonazo-tunnel/?adminStagePreview=1';
+  var separator = base.indexOf('?') === -1 ? '?' : '&';
+  frame.setAttribute('src', base + separator + 'adminPreviewToken=' + encodeURIComponent(nazonazoAdminPreviewToken));
+}
+
+function nazonazoStopStagePreview(silent) {
+  var frame = document.getElementById('nazonazo-admin-frame');
+  var wrap = document.getElementById('nazonazo-admin-preview');
+  if (frame && frame.getAttribute('src')) frame.setAttribute('src', 'about:blank');
+  if (wrap) wrap.hidden = true;
+  nazonazoAdminPendingStage = '';
+  nazonazoAdminFrameReady = false;
+  nazonazoAdminPreviewToken = '';
+  nazonazoSetActiveStage('');
+  var stop = document.getElementById('nazonazo-admin-stop');
+  if (stop) stop.disabled = true;
+  if (!silent) nazonazoSetStatus('停止しました。別のステージを選べます。');
+}
+
+function nazonazoInitPanel() {
+  var enabled = !!window.__APP_BUILD__;
+  document.querySelectorAll('[data-nazonazo-stage]').forEach(function(btn) { btn.disabled = !enabled; });
+  if (!enabled) {
+    nazonazoSetStatus('ステージプレビューは App staging の管理画面で使えます。');
+    return;
+  }
+  var frame = document.getElementById('nazonazo-admin-frame');
+  if (!frame || !frame.getAttribute('src') || frame.getAttribute('src') === 'about:blank') {
+    nazonazoSetStatus('ステージを選んでください。');
+  }
+}
+
+window.addEventListener('message', function(event) {
+  var frame = document.getElementById('nazonazo-admin-frame');
+  if (!frame || event.origin !== location.origin || event.source !== frame.contentWindow) return;
+  var data = event.data;
+  if (!data || data.channel !== NAZONAZO_ADMIN_STAGE_CHANNEL || data.token !== nazonazoAdminPreviewToken) return;
+  if (data.type === 'ready') {
+    nazonazoAdminFrameReady = true;
+    nazonazoSetStatus('ステージを準備しています…');
+    nazonazoPostStageSelection();
+    return;
+  }
+  if (data.type === 'armed' && data.stageId === nazonazoAdminPendingStage && nazonazoStageIsKnown(data.stageId)) {
+    nazonazoSetStatus('「' + NAZONAZO_ADMIN_STAGES[data.stageId] + '」を選びました。枠の中で難易度を選び、「はじめる！」を押してください。');
+    return;
+  }
+  if (data.type === 'started' && data.stageId === nazonazoAdminPendingStage && nazonazoStageIsKnown(data.stageId)) {
+    nazonazoSetStatus('「' + NAZONAZO_ADMIN_STAGES[data.stageId] + '」を開始しました。');
+    return;
+  }
+  if (data.type === 'rejected') {
+    nazonazoSetStatus(String(data.message || 'ステージ選択を拒否しました。'));
+  }
+});
 
 /* ===== 🦔 めいろ 管理パネル ===== */
 // ステージ名キャッシュ（_index.json の overrides を取得して上書き表示）

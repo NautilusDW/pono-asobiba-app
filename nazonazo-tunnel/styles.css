@@ -881,6 +881,20 @@ h1{font-size:clamp(24px,5.6vw,50px);color:#e0704a;text-shadow:0 3px 0 #fff}
   #tunnelFriendGuide,#tunnelFriendCounter{font-size:clamp(9px,1.65vw,12px)}
   #tunnelFriendResult{top:42%;padding:9px 16px;gap:3px}
 }
+/* 管理ダッシュボードの極小16:9枠でも、難易度と開始ボタンを画面内に保つ。 */
+@media (orientation:landscape) and (max-height:180px){
+  body.nazonazo-admin-stage-preview #title{gap:2px;padding:4px}
+  body.nazonazo-admin-stage-preview #title h1,
+  body.nazonazo-admin-stage-preview #title>.label:not(#adminStagePreviewLabel),
+  body.nazonazo-admin-stage-preview #zkBtnTitle{display:none}
+  body.nazonazo-admin-stage-preview #adminStagePreviewLabel{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.1}
+  body.nazonazo-admin-stage-preview #lvSel{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:3px;width:100%;flex-wrap:nowrap}
+  body.nazonazo-admin-stage-preview #lvSel .selBtn{min-width:0;min-height:36px;padding:2px 3px;border-width:2px;border-radius:8px;font-size:9px;line-height:1;box-shadow:0 2px 0 #f5c06a}
+  body.nazonazo-admin-stage-preview #lvSel .selBtn .big{display:inline;font-size:14px;margin-right:2px}
+  body.nazonazo-admin-stage-preview #lvSel .selBtn.sel{box-shadow:0 2px 0 var(--accent);transform:none}
+  body.nazonazo-admin-stage-preview #title>.selRow:last-child{gap:3px}
+  body.nazonazo-admin-stage-preview #startBtn{min-height:38px;padding:3px 12px;font-size:11px;line-height:1.05;box-shadow:0 3px 0 #3d9143}
+}
 @media (orientation:landscape) and (max-width:559px) and (max-height:360px){
   #quiz.number-quiz{bottom:0;padding:4px 7px calc(4px + env(safe-area-inset-bottom));border-radius:16px}
   #quiz.number-quiz #qRow{gap:4px;margin-bottom:3px}

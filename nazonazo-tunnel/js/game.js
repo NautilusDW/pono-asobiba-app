@@ -403,6 +403,7 @@ let numberCargoPicked=[],numberCargoGoalShown=false;
 let numberCargoTheme=null;
 let steerTargetY=0,steerY=0,seaSteerPointerId=null,seaSteerUsed=false;
 let seaBubbleLaunchPending=false,seaBubbleLaunchTimer=0,seaBubbleOptions=[];
+let nazonazoAdminPreviewMode=false;
 const NUMBER_CARGO_THEMES=[
  {e:"⭐",name:"おほしさま"},{e:"🎈",name:"ふうせん"},{e:"🌼",name:"おはな"},
  {e:"🍎",name:"りんご"},{e:"🌰",name:"どんぐり"},{e:"🍓",name:"いちご"}
@@ -1216,6 +1217,7 @@ function stopPortalPoint(){
  savePortalTuning();
 }
 function saveGame(){
+ if(typeof nazonazoAdminPreviewMode!=="undefined"&&nazonazoAdminPreviewMode)return;
  try{
   const payload={
    schemaVersion:1,
@@ -1322,11 +1324,13 @@ function applySkin(weatherReady){
  const nIdx=Math.min(stg+1,STAGES.length-1);
  const NP=STAGES[nIdx].pals[loop%2];
  const wasGameReady=document.body.classList.contains("pono-game-ready");
+ const wasAdminPreview=document.body.classList.contains("nazonazo-admin-stage-preview");
  const weather=weatherReady?weatherForStage(st):startStageWeather(st);
  if(weather!=="rain")hideWeatherNotice();
  document.body.className=(IOS_DEVICE?"ios-device ":"")+"st-"+st.id+" v-"+st.veh+" weather-"+weather+(PORTAL_EDIT_ENABLED?" portal-edit":"");
  // 画面スキンの全置換で、初期描画ガードを解除する永続クラスまで消さない。
  if(wasGameReady)document.body.classList.add("pono-game-ready");
+ if(wasAdminPreview)document.body.classList.add("nazonazo-admin-stage-preview");
  document.body.dataset.weather=weather;
  setDriverForStage(stg);
  skyA.style.background=st.assets?bgUrl(st.assets.sky)+" "+(st.skyPosition||"center bottom")+" / cover no-repeat":"linear-gradient("+P.sky[0]+","+P.sky[1]+")";
@@ -2907,6 +2911,93 @@ function openMap(msg){
  $("map").classList.remove("hidden");
 }
 
+/* ================= Basic Auth 管理ダッシュボード専用ステージ選択 ================= */
+// 公開URLからステージを指定する入口は作らない。same-origin の /admin iframe が
+// canonical IDをpostMessageした時だけ選択し、実開始は子画面のタップで行う。
+const NAZONAZO_ADMIN_STAGE_CHANNEL="pono-nazonazo-admin-stage-v1";
+const NAZONAZO_ADMIN_STAGE_INDEX=Object.freeze({town:0,jungle:1,number:2,sea:3,future:4,space:5});
+let nazonazoAdminPreviewStageIndex=-1;
+let nazonazoAdminPreviewToken="";
+
+function nazonazoAdminPreviewParentIsTrusted(){
+ if(window.parent===window)return false;
+ try{
+  return window.parent.location.origin===window.location.origin&&
+   /^\/admin(?:\/|$)/.test(window.parent.location.pathname||"");
+ }catch(_){return false;}
+}
+async function nazonazoAdminPreviewHasAdminAuth(){
+ try{
+  const response=await fetch("/admin/",{method:"HEAD",credentials:"same-origin",cache:"no-store"});
+  return response.ok;
+ }catch(_){return false;}
+}
+function nazonazoAdminPreviewNotify(type,detail){
+ if(!nazonazoAdminPreviewMode||window.parent===window)return;
+ const payload=Object.assign({channel:NAZONAZO_ADMIN_STAGE_CHANNEL,type,token:nazonazoAdminPreviewToken},detail||{});
+ try{window.parent.postMessage(payload,window.location.origin);}catch(_){}
+}
+function nazonazoAdminPreviewArm(stageId){
+ if(!nazonazoAdminPreviewMode||!Object.prototype.hasOwnProperty.call(NAZONAZO_ADMIN_STAGE_INDEX,stageId)){
+  nazonazoAdminPreviewNotify("rejected",{message:"ふめいな ステージを きょひしました。"});
+  return false;
+ }
+ const index=NAZONAZO_ADMIN_STAGE_INDEX[stageId];
+ nazonazoAdminPreviewStageIndex=index;
+ stg=index;loop=0;playing=false;driving=false;pending=null;vel=0;
+ stopStageWeather();
+ applySkin();
+ worldX=origin(index);target=worldX;
+ buildWorld(false);drawDots();renderCars();updateHelpHud();render();
+ const label=$("adminStagePreviewLabel");
+ if(label){label.hidden=false;label.textContent="『"+STAGES[index].names[0]+"』を えらんだよ";}
+ const start=$("startBtn");
+ if(start){start.disabled=false;start.textContent=STAGES[index].names[0]+"を はじめる！";}
+ nazonazoAdminPreviewNotify("armed",{stageId,label:STAGES[index].names[0]});
+ return true;
+}
+async function initNazonazoAdminStagePreviewBridge(){
+ let requested=false,token="";
+ try{
+  const params=new URLSearchParams(window.location.search);
+  requested=params.get("adminStagePreview")==="1";
+  token=params.get("adminPreviewToken")||"";
+ }catch(_){}
+ if(!requested||!window.__APP_BUILD__||window.__PONO_TIER_LOCKED__||
+  !/^[a-z0-9-]{8,80}$/i.test(token)||!nazonazoAdminPreviewParentIsTrusted())return false;
+ // 認証確認を待つ間も通常開始・saveへ落とさず、管理プレビューとしてfail closedにする。
+ nazonazoAdminPreviewMode=true;
+ nazonazoAdminPreviewToken=token;
+ document.body.classList.add("nazonazo-admin-stage-preview");
+ const label=$("adminStagePreviewLabel");
+ if(label){label.hidden=false;label.textContent="かんり にんしょうを かくにんちゅう";}
+ const start=$("startBtn");
+ if(start){start.disabled=true;start.textContent="かくにんちゅう";}
+ const levelButtons=[...document.querySelectorAll("#lvSel .selBtn")];
+ levelButtons.forEach(button=>{button.disabled=true;});
+ if(!await nazonazoAdminPreviewHasAdminAuth()){
+  if(label)label.textContent="かんり にんしょうを かくにんできませんでした";
+  try{window.parent.postMessage({channel:NAZONAZO_ADMIN_STAGE_CHANNEL,type:"rejected",token,message:"かんり にんしょうを かくにんできませんでした。"},window.location.origin);}catch(_){}
+  return false;
+ }
+ levelButtons.forEach(button=>{button.disabled=false;});
+ if(label){label.hidden=false;label.textContent="かんり がめんで ステージを えらんでね";}
+ if(start){start.disabled=true;start.textContent="ステージを えらんでね";}
+ window.addEventListener("message",event=>{
+  if(event.origin!==window.location.origin||event.source!==window.parent||!nazonazoAdminPreviewParentIsTrusted())return;
+  const data=event.data;
+  if(!data||data.channel!==NAZONAZO_ADMIN_STAGE_CHANNEL||data.type!=="select"||data.token!==nazonazoAdminPreviewToken)return;
+  const stageId=String(data.stageId||"");
+  if(!Object.prototype.hasOwnProperty.call(NAZONAZO_ADMIN_STAGE_INDEX,stageId)){
+   nazonazoAdminPreviewNotify("rejected",{message:"ふめいな ステージを きょひしました。"});
+   return;
+  }
+  nazonazoAdminPreviewArm(stageId);
+ });
+ nazonazoAdminPreviewNotify("ready");
+ return true;
+}
+
 /* ================= wiring ================= */
 document.querySelectorAll("#lvSel .selBtn").forEach(b=>{
  bindTap(b,()=>{ensureAC();
@@ -2924,16 +3015,20 @@ bindTap($("startBtn"),()=>{
  const p=ensureAC();
  const boot=()=>{
   primeAC();
-  stg=0;loop=0;cleared=[];totalStars=0;rareCount=0;tunnelFriendTotalFound=0;resetJourneyScore();
+  const startStage=nazonazoAdminPreviewMode?nazonazoAdminPreviewStageIndex:0;
+  if(startStage<0||startStage>=STAGES.length){bootPending=false;return;}
+  stg=startStage;loop=0;cleared=[];totalStars=0;rareCount=0;tunnelFriendTotalFound=0;resetJourneyScore();
   rollJourneyWeather();
-  startJourneyAt(0);
+  startJourneyAt(startStage);
+  if(nazonazoAdminPreviewMode)nazonazoAdminPreviewNotify("started",{stageId:STAGES[startStage].id,label:STAGES[startStage].names[0]});
   bootPending=false;
  };
  if(p&&p.then)p.then(boot,boot);else boot();
 });
 bindTap($("goBtn"),()=>{ensureAC();startJourneyAt(stg);});
 bindTap($("againBtn"),()=>{ensureAC();
- $("result").classList.add("hidden");stg=0;loop=0;cleared=[];totalStars=0;rareCount=0;tunnelFriendTotalFound=0;resetJourneyScore();rollJourneyWeather();startJourneyAt(0);});
+ const restartStage=nazonazoAdminPreviewMode&&nazonazoAdminPreviewStageIndex>=0?nazonazoAdminPreviewStageIndex:0;
+ $("result").classList.add("hidden");stg=restartStage;loop=0;cleared=[];totalStars=0;rareCount=0;tunnelFriendTotalFound=0;resetJourneyScore();rollJourneyWeather();startJourneyAt(restartStage);});
 bindTap($("loopBtn"),()=>{ensureAC();
  $("result").classList.add("hidden");
  loop=1;stg=0;cleared=[];totalStars=0;rareCount=0;tunnelFriendTotalFound=0;resetJourneyScore();
@@ -2957,6 +3052,7 @@ loadPortalTuning();
 loadGame();applyLevelSelection();drawPersistentScoreHud();
 applySkin();buildWorld(false);drawDots();renderCars();updateHelpHud();render();
 initPortalEditor();
+initNazonazoAdminStagePreviewBridge();
 
 // AC unlock 安全網: bindTap 未配線領域 (背景/scene/portal editor) のタップでも resume を担保
 document.addEventListener("pointerdown",()=>{ensureAC();},{capture:true,passive:true});

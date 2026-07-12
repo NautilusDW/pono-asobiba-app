@@ -58,7 +58,6 @@
 ## Active claims
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
-- 2026-07-12 - by Codex - [batch:1265-nazonazo-admin-stage-select] - admin/index.html, nazonazo-tunnel/{index.html,js/game.js,styles.css}, tests/nazonazo_*.cjs, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - 管理ダッシュボードからなぞなぞトレインの指定ステージを安全に直接開始
 
 
 

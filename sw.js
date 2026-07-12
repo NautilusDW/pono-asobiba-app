@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2141: Basic Auth管理ダッシュボードへ、なぞなぞトレイン全6ステージの16:9試遊セレクターを追加。same-origin管理iframeだけがステージを選択でき、子画面タップで音声を解錠して開始。試遊中のセーブ書込とLP側のロック迂回を禁止した (batch:1265)。play.html PAGE_CACHE_VERSION と同期不要 (admin/nazonazo-tunnel/テストのみ変更)。
 // v2140: なぞなぞトレインの町外れで奥から2番目の山を固定上限なしの0.16倍パララックスへ変更。ジャングルは鳥3種・チョウ3種を各1体ずつシャッフル表示し、深い海は強制スクロールを保ったまま潜水艦の高さ操作と「あわレーン」回答ゲームを追加した (batch:1264)。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/画像/テストのみ変更)。
 // v2139: ガチャガチャ結果の撮影でアニメーションtransformが二重適用され、景品とカプセルが左寄り・拡大して広角に見えていた問題を修正。撮影クローン内だけ最終フレームを静的transformへ焼き込み、実画面と1920×1080保存画像の位置・大きさを一致させた (batch:1263)。play.html PAGE_CACHE_VERSION と同期 (2139)。
 // v2138: なぞなぞトレインの町外れ遠景・中景とジャングル遠景を純白背景から再生成し、紫フリンジを除去して山裾を線路まで延長。ジャングルの最奥2層、線路、列車、駅、木を上げ、駅奥に低い生息地層を追加。ゾウ/キリンは各3回のstage固定出演（大型1回＋小型2回、反転/別コマ）へ整理し足裏接地。数字面は答えの数だけ品物を貨車へ積み、戻す/しゅっぱつで確定するミニゲームへ刷新 (batch:1263)。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/画像/テストのみ変更)。
@@ -65,7 +66,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2140;
+const CACHE_VERSION = 2141;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
