@@ -13,7 +13,10 @@ const sw = fs.readFileSync(path.join(root, "sw.js"), "utf8");
 
 assert.match(html, /styles\.css\?v=20260712-1269/, "the current Nazonazo scenery and stage games must bypass stale CSS caches");
 assert.match(html, /js\/game\.js\?v=20260712-1269/, "the current Nazonazo runtime must bypass stale game-script caches");
-assert.match(sw, /const CACHE_VERSION = 2151;/, "the current Nazonazo bundle must ship with a fresh service-worker generation");
+assert.ok(
+  Number(sw.match(/const CACHE_VERSION = (\d+);/)?.[1]) >= 2151,
+  "the current Nazonazo bundle must ship with at least its original service-worker generation",
+);
 
 function numericConstant(source, name) {
   const match = source.match(new RegExp(`const\\s+${name}\\s*=\\s*([0-9.]+)`));

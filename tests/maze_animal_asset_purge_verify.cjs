@@ -147,7 +147,14 @@ assert.ok(swVersion >= 2094, 'the animal replacement must ship after cache v2093
 assert.equal(pageVersion, swVersion, 'Maze asset changes require play.html and sw.js cache versions to stay synced');
 assert.match(mazeHtml, new RegExp(`const MAZE_REPLACED_ANIMAL_ASSET_VERSION = '\\?v=${replacedAnimalVersion}'`));
 assert.match(stickerMain, new RegExp(`const REPLACED_ANIMAL_ASSET_VERSION = "${replacedAnimalVersion}"`));
-assert.match(stickerIndex, new RegExp(`main\\.js\\?v=${replacedAnimalVersion}`));
+const stickerModuleVersion = stickerIndex.match(/main\.js\?v=(\d{8})-(\d+)/);
+assert.ok(stickerModuleVersion, 'StickerBook module must keep a dated cache-buster');
+const [replacedDate, replacedBatch] = replacedAnimalVersion.split('-').map(Number);
+assert.ok(
+  Number(stickerModuleVersion[1]) > replacedDate
+    || (Number(stickerModuleVersion[1]) === replacedDate && Number(stickerModuleVersion[2]) >= replacedBatch),
+  `StickerBook module cache ${stickerModuleVersion[1]}-${stickerModuleVersion[2]} predates replaced animals`,
+);
 for (const id of canonicalIds) {
   const relative = `assets/images/quizland/illust/choice/${id}.png`;
   const png = fs.readFileSync(path.join(root, relative));

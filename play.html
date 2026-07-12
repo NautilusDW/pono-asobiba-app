@@ -4184,6 +4184,53 @@
       font-size: 18px;
       line-height: 1.06;
     }
+    .daily-gacha-reward-ownership {
+      position: absolute;
+      left: calc(var(--daily-gacha-result-center-x) - clamp(88px, 13vw, 136px));
+      top: clamp(8px, 4%, 22px);
+      z-index: 4;
+      min-width: 174px;
+      padding: 8px 17px 9px;
+      box-sizing: border-box;
+      border: 3px solid rgba(255, 255, 255, .96);
+      border-radius: 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1px;
+      color: #5e351f;
+      text-align: center;
+      line-height: 1.08;
+      white-space: nowrap;
+      background: linear-gradient(180deg, #fff7b0, #ffd763);
+      box-shadow:
+        0 0 0 3px rgba(190, 105, 35, .34),
+        0 8px 16px rgba(60, 30, 10, .23),
+        inset 0 2px 0 rgba(255, 255, 255, .72);
+      opacity: 0;
+      transform: translate(-50%, -8px) scale(.82) rotate(-7deg);
+      pointer-events: none;
+    }
+    .daily-gacha-reward-ownership[hidden] {
+      display: none !important;
+    }
+    .daily-gacha-reward-ownership strong {
+      font-size: 20px;
+      font-weight: 1000;
+      letter-spacing: .03em;
+    }
+    .daily-gacha-reward-ownership span {
+      font-size: 13px;
+      font-weight: 900;
+    }
+    .daily-gacha-reward-ownership[data-gacha-ownership="duplicate"] {
+      color: #fff9e9;
+      background: linear-gradient(180deg, #ef795d, #c84643);
+      box-shadow:
+        0 0 0 3px rgba(119, 41, 37, .42),
+        0 8px 16px rgba(60, 25, 16, .28),
+        inset 0 2px 0 rgba(255, 255, 255, .34);
+    }
     .daily-gacha-reward-note {
       position: absolute;
       top: 94px;
@@ -4427,6 +4474,13 @@
     .daily-gacha-modal.is-opened .daily-gacha-reward-name {
       opacity: 1;
       transition: opacity .3s ease .36s;
+    }
+    .daily-gacha-modal.is-opened .daily-gacha-reward-ownership {
+      opacity: 1;
+      transform: translate(-50%, 0) scale(1) rotate(-4deg);
+      transition:
+        opacity .28s ease .46s,
+        transform .48s cubic-bezier(.16,.94,.22,1.18) .46s;
     }
     .daily-gacha-modal.is-opened .daily-gacha-reward-note {
       opacity: 1;
@@ -4836,6 +4890,26 @@
         font-size: 13px;
         line-height: 1.04;
       }
+      .daily-gacha-reward-ownership {
+        left: calc(var(--daily-gacha-result-center-x) - clamp(68px, 12vw, 102px));
+        top: 4px;
+        min-width: 148px;
+        padding: 5px 11px 6px;
+        border-width: 2px;
+        border-radius: 13px;
+        box-shadow:
+          0 0 0 2px rgba(190, 105, 35, .34),
+          0 6px 11px rgba(60, 30, 10, .22),
+          inset 0 1px 0 rgba(255, 255, 255, .72);
+      }
+      .daily-gacha-reward-ownership strong { font-size: 15px; }
+      .daily-gacha-reward-ownership span { font-size: 12px; }
+      .daily-gacha-reward-ownership[data-gacha-ownership="duplicate"] {
+        box-shadow:
+          0 0 0 2px rgba(119, 41, 37, .42),
+          0 6px 11px rgba(60, 25, 16, .27),
+          inset 0 1px 0 rgba(255, 255, 255, .34);
+      }
       .daily-gacha-reward-note {
         top: 68px;
         right: 7px;
@@ -4890,6 +4964,23 @@
       .daily-gacha-closeup-book {
         flex-basis: clamp(44px, 11vw, 58px);
         width: clamp(44px, 11vw, 58px);
+      }
+    }
+
+    @media (max-height: 540px) {
+      .daily-gacha-fixed-actions {
+        left: 8px;
+        top: 8px;
+        gap: 6px;
+      }
+      .daily-gacha-fixed-home,
+      .daily-gacha-shop-link {
+        flex-basis: 44px;
+        width: 44px;
+        border-radius: 14px;
+      }
+      .daily-gacha-reward-ownership {
+        left: max(calc(var(--daily-gacha-result-center-x) - clamp(68px, 12vw, 102px) + 16px), 191px);
       }
     }
 
@@ -9879,7 +9970,7 @@
         </div>
       </section>
 
-      <div class="daily-gacha-closeup" aria-hidden="true">
+      <div class="daily-gacha-closeup" id="dailyGachaCloseup" aria-hidden="true">
         <div class="daily-gacha-closeup__inner">
           <img class="daily-gacha-closeup__closed" id="dailyGachaCloseCapsule" data-src="assets/ui/gacha/daily_gacha_capsule_closed_pink.png" alt="" draggable="false">
           <div class="daily-gacha-closeup__open-pair" aria-hidden="true">
@@ -9893,6 +9984,10 @@
           </div>
           <div class="daily-gacha-sparkles" aria-hidden="true">
             <span></span><span></span><span></span><span></span>
+          </div>
+          <div class="daily-gacha-reward-ownership" id="dailyGachaRewardOwnership" role="status" aria-live="polite" hidden>
+            <strong id="dailyGachaRewardOwnershipTitle">はじめて！</strong>
+            <span id="dailyGachaRewardOwnershipCount">ぜんぶで １まい</span>
           </div>
           <div class="daily-gacha-reward-name" id="dailyGachaRewardName">シールを ゲット</div>
         </div>
@@ -10913,7 +11008,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2152; // sw.js CACHE_VERSION と同期 (batch:1269 LP表紙導線・シール帳操作/全画面スクショ)
+    const PAGE_CACHE_VERSION = 2153; // sw.js CACHE_VERSION と同期 (batch:1271 ガチャ結果・シール残り枚数)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -10922,7 +11017,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v2152';
+    window.PONO_SW_VERSION = 'v2153';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
@@ -11935,6 +12030,7 @@
     const dailyGachaEntrySub = document.getElementById('dailyGachaEntrySub');
     const dailyGachaRemaining = document.getElementById('dailyGachaRemaining');
     const dailyGachaModal = document.getElementById('dailyGachaModal');
+    const dailyGachaCloseup = document.getElementById('dailyGachaCloseup');
     const dailyGachaClose = document.getElementById('dailyGachaClose');
     const dailyGachaLever = document.getElementById('dailyGachaLever');
     const dailyGachaGuideHand = document.getElementById('dailyGachaGuideHand');
@@ -11953,6 +12049,9 @@
     const dailyGachaRewardImg = document.getElementById('dailyGachaRewardImg');
     const dailyGachaRewardEmoji = document.getElementById('dailyGachaRewardEmoji');
     const dailyGachaRarityBadge = document.getElementById('dailyGachaRarityBadge');
+    const dailyGachaRewardOwnership = document.getElementById('dailyGachaRewardOwnership');
+    const dailyGachaRewardOwnershipTitle = document.getElementById('dailyGachaRewardOwnershipTitle');
+    const dailyGachaRewardOwnershipCount = document.getElementById('dailyGachaRewardOwnershipCount');
     const dailyGachaRewardName = document.getElementById('dailyGachaRewardName');
     const dailyGachaRewardNote = document.getElementById('dailyGachaRewardNote');
     const dailyGachaTomorrowNote = document.getElementById('dailyGachaTomorrowNote');
@@ -12114,6 +12213,34 @@
       if (normalized === 'super') return `やったー！すごい！\n${name}が でたよ！`;
       if (normalized === 'rare') return `すごいね！\n${name}を ゲット`;
       return `やったね！\n${name}を ゲット`;
+    }
+
+    function dailyGachaStickerCountText(value) {
+      const fullWidthDigits = '０１２３４５６７８９';
+      return String(value).replace(/[0-9]/g, (digit) => fullWidthDigits[Number(digit)] || digit);
+    }
+
+    function dailyGachaOwnershipSummary(result) {
+      if (result && result.first === true) {
+        return {
+          kind: 'first',
+          title: 'はじめて！',
+          detail: 'ぜんぶで １まい'
+        };
+      }
+      const count = Number(result && result.count);
+      if (Number.isFinite(count) && Number.isInteger(count) && count >= 2) {
+        return {
+          kind: 'duplicate',
+          title: 'もってる シール！',
+          detail: `これで ${dailyGachaStickerCountText(count)}まいめ`
+        };
+      }
+      return {
+        kind: 'duplicate',
+        title: 'もってる シール！',
+        detail: ''
+      };
     }
 
     function dailyGachaRarityFromResult(result) {
@@ -13071,6 +13198,7 @@
       if (dailyGachaModal) {
         dailyGachaModal.classList.remove('is-used', 'is-armed', 'is-hand-ready', 'is-grabbing', 'is-notch', 'is-turning', 'is-final-zoom', 'is-boom', 'is-dropping', 'is-closeup', 'is-opened');
       }
+      if (dailyGachaCloseup) dailyGachaCloseup.setAttribute('aria-hidden', 'true');
       setDailyGachaHandState('open');
       setDailyGachaPrompt(dailyGachaStepStatus(0));
       if (dailyGachaAssist) {
@@ -13093,6 +13221,13 @@
         dailyGachaRewardName.removeAttribute('data-gacha-rarity');
         dailyGachaRewardName.removeAttribute('data-long-name');
       }
+      if (dailyGachaRewardOwnership) {
+        dailyGachaRewardOwnership.hidden = true;
+        dailyGachaRewardOwnership.removeAttribute('data-gacha-ownership');
+        dailyGachaRewardOwnership.removeAttribute('aria-label');
+      }
+      if (dailyGachaRewardOwnershipTitle) dailyGachaRewardOwnershipTitle.textContent = '';
+      if (dailyGachaRewardOwnershipCount) dailyGachaRewardOwnershipCount.textContent = '';
       setDailyGachaNoteText(dailyGachaRewardNote, '');
       setDailyGachaNoteText(dailyGachaTomorrowNote, '');
       if (dailyGachaLever) {
@@ -13125,6 +13260,16 @@
         dailyGachaRewardName.dataset.gachaRarity = normalizeDailyGachaRarity(resultRarity) || 'normal';
         dailyGachaRewardName.dataset.longName = titleText.replace(/\s/g, '').length > 16 ? '1' : '0';
         dailyGachaRewardName.hidden = false;
+      }
+      if (dailyGachaRewardOwnership) {
+        const ownership = dailyGachaOwnershipSummary(result);
+        if (dailyGachaRewardOwnershipTitle) dailyGachaRewardOwnershipTitle.textContent = ownership.title;
+        if (dailyGachaRewardOwnershipCount) dailyGachaRewardOwnershipCount.textContent = ownership.detail;
+        dailyGachaRewardOwnership.dataset.gachaOwnership = ownership.kind;
+        dailyGachaRewardOwnership.setAttribute(
+          'aria-label',
+          ownership.detail ? `${ownership.title} ${ownership.detail}` : ownership.title
+        );
       }
       setDailyGachaNoteText(dailyGachaRewardNote, DAILY_GACHA_STICKER_BOOK_PROMPT);
       setDailyGachaNoteText(dailyGachaTomorrowNote, DAILY_GACHA_TOMORROW_PROMPT.replace(' やろう', '\nやろう'));
@@ -13325,6 +13470,11 @@
       }, revealProfile.dropDelay);
       setDailyGachaTimer(() => dailyGachaModal.classList.add('is-closeup'), revealProfile.closeupDelay);
       setDailyGachaTimer(() => {
+        if (dailyGachaRewardOwnership) {
+          dailyGachaRewardOwnership.hidden = false;
+          void dailyGachaRewardOwnership.offsetWidth;
+        }
+        if (dailyGachaCloseup) dailyGachaCloseup.setAttribute('aria-hidden', 'false');
         dailyGachaModal.classList.add('is-opened');
         playDailyGachaSfx('capsuleOpen');
         playDailyGachaSfx('sparkle');

@@ -2399,6 +2399,7 @@ let bookSwipeState = null;
 let stickerTrayDragState = null;
 let stickerTrayImageObserver = null;
 let stickerTrayImageHydrationFrame = 0;
+let stickerCopyInventoryRefreshFrame = 0;
 let suppressStickerTrayClick = false;
 let suppressSceneClickAfterSwipe = false;
 // v1650 (task 2): tray drop 直後の合成 click (canvas 側) を 250ms 抑止。
@@ -4478,6 +4479,7 @@ function enterStickerTutorialCleanAlbum() {
   editorState.drawings = {};
   selectedPlacementId = null;
   activeEditorPage = activeBookPage;
+  refreshStickerCopyInventoryUi();
   updateInlineStickerControls();
   refreshPageTemplateTextures();
   updatePage(flipProgress);
@@ -4499,6 +4501,7 @@ function restoreStickerTutorialCleanAlbum() {
     editorStateSaveTimer = 0;
   }
   editorStateDirty = false;
+  refreshStickerCopyInventoryUi();
   updateInlineStickerControls();
   refreshPageTemplateTextures();
   updatePage(flipProgress);
@@ -6544,28 +6547,83 @@ function updateStickerTutorialTraySilhouettes(enabled = false, withTarget = enab
 
 // v1636: target ±2 内の未取得 SR (rarity=super) を silhouette 化するための補助関数群。
 // 既存 updateStickerTutorialTraySilhouettes と独立、 per-card class のみで動作。
-function readOwnedStickerIds() {
-  const owned = new Set();
+function normalizeOwnedStickerCount(value) {
+  const count = Math.floor(Number(value));
+  return Number.isFinite(count) && count > 0 ? count : 0;
+}
+
+function readOwnedStickerCounts() {
+  const owned = new Map();
+  const addOwnedMap = (map) => {
+    Object.entries(map || {}).forEach(([id, entry]) => {
+      const count = normalizeOwnedStickerCount(entry?.count);
+      if (!id || count <= 0) return;
+      owned.set(String(id), (owned.get(String(id)) || 0) + count);
+    });
+  };
+  const addOwnedState = (raw) => {
+    Object.entries(raw || {}).forEach(([id, pageOrEntry]) => {
+      if (normalizeOwnedStickerCount(pageOrEntry?.count) > 0) {
+        addOwnedMap({ [id]: pageOrEntry });
+        return;
+      }
+      addOwnedMap(pageOrEntry?.owned || pageOrEntry);
+    });
+  };
   try {
     if (window.PonoGameStickers && typeof window.PonoGameStickers.getOwned === "function") {
       const raw = window.PonoGameStickers.getOwned();
       // shape: { "<gameId>": { owned: { "<stickerId>": {count,...} } } } or { stickerId: {...} }
-      Object.values(raw || {}).forEach((page) => {
-        const map = page && page.owned ? page.owned : page;
-        Object.entries(map || {}).forEach(([id, entry]) => {
-          if (entry && entry.count > 0) owned.add(id);
-        });
-      });
+      addOwnedState(raw);
     } else {
       const raw = JSON.parse(localStorage.getItem("pono_game_stickers_v1") || "{}");
-      Object.values(raw.pages || {}).forEach((page) => {
-        Object.entries((page && page.owned) || {}).forEach(([id, entry]) => {
-          if (entry && entry.count > 0) owned.add(id);
-        });
-      });
+      addOwnedState(raw.pages);
     }
   } catch (_) {}
   return owned;
+}
+
+function readOwnedStickerIds() {
+  return new Set(readOwnedStickerCounts().keys());
+}
+
+function readPlacedStickerCounts(sourceState = editorState) {
+  const placed = new Map();
+  Object.values(sourceState?.pages || {}).forEach((placements) => {
+    if (!Array.isArray(placements)) return;
+    placements.forEach((placement) => {
+      const id = String(placement?.stickerId || "");
+      if (!id) return;
+      placed.set(id, (placed.get(id) || 0) + 1);
+    });
+  });
+  return placed;
+}
+
+function createStickerCopyInventorySnapshot() {
+  return {
+    unlimited: readDebugAllStickersEnabled(),
+    owned: readOwnedStickerCounts(),
+    placed: readPlacedStickerCounts(),
+  };
+}
+
+function stickerCopyInventory(stickerId, snapshot = createStickerCopyInventorySnapshot()) {
+  const id = String(stickerId || "");
+  const owned = snapshot.owned.get(id) || 0;
+  const placed = snapshot.placed.get(id) || 0;
+  const unlimited = Boolean(snapshot.unlimited);
+  return {
+    owned,
+    placed,
+    remaining: unlimited ? Infinity : Math.max(0, owned - placed),
+    unlimited,
+  };
+}
+
+function canPlaceStickerCopy(stickerId) {
+  const inventory = stickerCopyInventory(stickerId);
+  return inventory.unlimited || inventory.remaining > 0;
 }
 
 function isStickerDebugModeAllowed() {
@@ -7088,8 +7146,11 @@ function setupCollectionStickerTray() {
     }
     const stickerButton = event.target.closest("[data-sticker-tray-id]");
     if (stickerButton && collectionStickerTray.contains(stickerButton)) {
-      // v1887: 未所有 (locked) カードはドラッグ不可 + 静かな吹き出しのみ。
-      if (stickerButton.dataset.stickerLocked === "1") {
+      // 未所有／残り0枚のカードはドラッグ不可 + 静かな吹き出しのみ。
+      if (
+        stickerButton.dataset.stickerLocked === "1"
+        || stickerButton.dataset.stickerDepleted === "1"
+      ) {
         event.preventDefault();
         showStickerTrayLockHint(stickerButton);
         return;
@@ -7292,13 +7353,28 @@ function renderStickerThumbnailTray() {
     return;
   }
 
+  const inventorySnapshot = createStickerCopyInventorySnapshot();
   for (const [index, sticker] of stickerOptions.entries()) {
+    const inventory = stickerCopyInventory(sticker.id, inventorySnapshot);
+    const depleted = !inventory.unlimited && inventory.remaining <= 0;
     const button = document.createElement("button");
     button.type = "button";
     button.className = "collection-toc-card sticker-tray-card";
+    button.classList.toggle("is-depleted", depleted);
     button.dataset.stickerTrayId = sticker.id;
+    button.dataset.stickerOwnedCount = String(inventory.owned);
+    button.dataset.stickerRemainingCount = inventory.unlimited ? "unlimited" : String(inventory.remaining);
+    if (depleted) button.dataset.stickerDepleted = "1";
     button.draggable = false;
-    button.setAttribute("aria-label", `${sticker.label}を ドラッグして はる`);
+    button.setAttribute("aria-disabled", depleted ? "true" : "false");
+    button.setAttribute(
+      "aria-label",
+      depleted
+        ? `${sticker.label}は ぜんぶ はっている。${inventory.owned}まい もっている`
+        : (inventory.unlimited
+          ? `${sticker.label}を ドラッグして はる。なんまいでも はれる`
+          : `${sticker.label}は ${inventory.owned}まい もっている。あと ${inventory.remaining}まい はれる`),
+    );
     button.title = sticker.label;
 
     const icon = document.createElement("span");
@@ -7321,7 +7397,12 @@ function renderStickerThumbnailTray() {
     image.draggable = false;
     icon.append(image);
 
-    button.append(icon);
+    const copyCount = document.createElement("span");
+    copyCount.className = "sticker-tray-copy-count";
+    copyCount.textContent = inventory.unlimited ? "×∞" : `×${inventory.remaining}`;
+    copyCount.setAttribute("aria-hidden", "true");
+
+    button.append(icon, copyCount);
     fragment.append(button);
   }
   // v1887: locked カード (未所有) をカタログ順で末尾に append。全 lazy load。
@@ -7340,6 +7421,50 @@ function renderStickerThumbnailTray() {
   }
   updateCollectionStickerTrayVisibility();
   updateStickerTrayCounter();
+}
+
+function refreshStickerCopyInventoryUi() {
+  const inventorySnapshot = createStickerCopyInventorySnapshot();
+  const stickersById = new Map(stickerOptions.map((sticker) => [sticker.id, sticker]));
+  const syncButton = (button, sticker, badgeSelector, dragLabel = false) => {
+    const inventory = stickerCopyInventory(sticker.id, inventorySnapshot);
+    const depleted = !inventory.unlimited && inventory.remaining <= 0;
+    button.classList.toggle("is-depleted", depleted);
+    button.dataset.stickerOwnedCount = String(inventory.owned);
+    button.dataset.stickerRemainingCount = inventory.unlimited ? "unlimited" : String(inventory.remaining);
+    if (depleted) button.dataset.stickerDepleted = "1";
+    else delete button.dataset.stickerDepleted;
+    button.setAttribute("aria-disabled", depleted ? "true" : "false");
+    button.setAttribute(
+      "aria-label",
+      depleted
+        ? `${sticker.label}は ぜんぶ はっている。${inventory.owned}まい もっている`
+        : (inventory.unlimited
+          ? `${sticker.label}${dragLabel ? "を ドラッグして はる。" : "は "}なんまいでも はれる`
+          : `${sticker.label}は ${inventory.owned}まい もっている。あと ${inventory.remaining}まい はれる`),
+    );
+    const badge = button.querySelector(badgeSelector);
+    if (badge) badge.textContent = inventory.unlimited ? "×∞" : `×${inventory.remaining}`;
+  };
+
+  collectionStickerTrayItems
+    ?.querySelectorAll('[data-sticker-tray-id]:not([data-sticker-locked="1"])')
+    .forEach((button) => {
+      const sticker = stickersById.get(button.dataset.stickerTrayId);
+      if (sticker) syncButton(button, sticker, ".sticker-tray-copy-count", true);
+    });
+  stickerLibrary?.querySelectorAll("[data-sticker-id]").forEach((button) => {
+    const sticker = stickersById.get(button.dataset.stickerId);
+    if (sticker) syncButton(button, sticker, ".sticker-pick-copy-count");
+  });
+}
+
+function scheduleStickerCopyInventoryUiRefresh() {
+  if (stickerCopyInventoryRefreshFrame) return;
+  stickerCopyInventoryRefreshFrame = window.requestAnimationFrame(() => {
+    stickerCopyInventoryRefreshFrame = 0;
+    refreshStickerCopyInventoryUi();
+  });
 }
 
 // v1887: 未所有シール用の tray カード。owned カードと同じ DOM 骨格に
@@ -7398,7 +7523,6 @@ function showStickerTrayLockHint(button) {
   if (!hint || !hint.isConnected) {
     hint = document.createElement("span");
     hint.className = "sticker-tray-lock-hint";
-    hint.textContent = "まだ もっていないよ";
     hint.setAttribute("role", "status");
     hint.setAttribute("aria-live", "polite");
     hint.style.position = "fixed";
@@ -7406,6 +7530,9 @@ function showStickerTrayLockHint(button) {
     document.body.append(hint);
     state.el = hint;
   }
+  hint.textContent = button.dataset.stickerDepleted === "1"
+    ? "このシールは ぜんぶ はっているよ"
+    : "まだ もっていないよ";
   // 位置更新 (button の上端付近を狙う)。
   const rect = button.getBoundingClientRect();
   hint.style.left = `${Math.round(rect.left + rect.width / 2)}px`;
@@ -7566,8 +7693,12 @@ function handleStickerTrayPointerDown(event) {
   if (!button || !collectionStickerTray?.contains(button)) {
     return;
   }
-  // v1887: locked (未所有) カードはドラッグ完全無効化。pointer capture / hold timer もセットしない。
-  if (button.dataset.stickerLocked === "1") {
+  // 未所有／残り0枚のカードはドラッグ完全無効化。pointer capture / hold timer もセットしない。
+  if (
+    button.dataset.stickerLocked === "1"
+    || button.dataset.stickerDepleted === "1"
+    || !canPlaceStickerCopy(button.dataset.stickerTrayId)
+  ) {
     return;
   }
   const icon = event.target.closest(".sticker-tray-icon");
@@ -7795,10 +7926,12 @@ function endStickerTrayDrag(event) {
         }
       }
     }
-    if (target) {
+    if (target && canPlaceStickerCopy(state.sticker.id)) {
       addStickerFromTrayToPage(state.sticker.id, target.page, target.point);
       try { window.Haptics && window.Haptics.fire('stickerPaste'); } catch (_) {}
       // v1896: particle burst は貼付完了後 (finishStickerPeelAnimation) に deferred で発火
+    } else if (target) {
+      showStickerTrayLockHint(state.source);
     }
   }
   cancelStickerTutorialDragPageTurn();
@@ -7952,8 +8085,8 @@ function projectedMeshClientRect(mesh) {
 
 async function addStickerFromTrayToPage(stickerId, page, point = {}) {
   const sticker = stickerOptions.find((item) => item.id === stickerId);
-  if (!sticker || activeAlbumMode === "collection") {
-    return;
+  if (!sticker || activeAlbumMode === "collection" || !canPlaceStickerCopy(stickerId)) {
+    return false;
   }
   const pageNumber = isCoverPlacementPage(page)
     ? COVER_PLACEMENT_PAGE
@@ -7971,6 +8104,7 @@ async function addStickerFromTrayToPage(stickerId, page, point = {}) {
     z: nextPlacementZ(placements),
   };
   placements.push(placement);
+  scheduleStickerCopyInventoryUiRefresh();
   activeEditorPage = pageNumber;
   selectedPlacementId = placement.id;
   saveEditorState();
@@ -7990,10 +8124,11 @@ async function addStickerFromTrayToPage(stickerId, page, point = {}) {
     return swapPromise;
   };
   if (image && startStickerPeelAnimation(placement, pageNumber, image, finalizePlacement)) {
-    return;
+    return true;
   }
   playStickerSfx("paste-settle");
   finalizePlacement();
+  return true;
 }
 
 // Sticker paste is a real temporary Three.js mesh: a subdivided PlaneGeometry is
@@ -9842,14 +9977,40 @@ function renderStickerLibrary() {
     ].some((text) => String(text || "").toLowerCase().includes(query));
   });
 
-  stickerLibrary.innerHTML = filtered.map((sticker) => `
-    <button type="button" class="sticker-pick" data-sticker-id="${escapeHtml(sticker.id)}">
-      <img src="${escapeHtml(sticker.assetUrl)}" alt="${escapeHtml(sticker.label)}" loading="lazy" decoding="async">
-      <span>${escapeHtml(sticker.label)}</span>
+  const inventorySnapshot = createStickerCopyInventorySnapshot();
+  stickerLibrary.innerHTML = filtered.map((sticker) => {
+    const inventory = stickerCopyInventory(sticker.id, inventorySnapshot);
+    const depleted = !inventory.unlimited && inventory.remaining <= 0;
+    const countText = inventory.unlimited ? "×∞" : `×${inventory.remaining}`;
+    const ariaLabel = depleted
+      ? `${sticker.label}は ぜんぶ はっている。${inventory.owned}まい もっている`
+      : (inventory.unlimited
+        ? `${sticker.label}は なんまいでも はれる`
+        : `${sticker.label}は ${inventory.owned}まい もっている。あと ${inventory.remaining}まい はれる`);
+    return `
+    <button
+      type="button"
+      class="sticker-pick${depleted ? " is-depleted" : ""}"
+      data-sticker-id="${escapeHtml(sticker.id)}"
+      data-sticker-owned-count="${inventory.owned}"
+      data-sticker-remaining-count="${inventory.unlimited ? "unlimited" : inventory.remaining}"
+      ${depleted ? 'data-sticker-depleted="1" aria-disabled="true"' : 'aria-disabled="false"'}
+      aria-label="${escapeHtml(ariaLabel)}"
+    >
+      <img src="${escapeHtml(sticker.assetUrl)}" alt="" loading="lazy" decoding="async">
+      <span class="sticker-pick-label">${escapeHtml(sticker.label)}</span>
+      <span class="sticker-pick-copy-count" aria-hidden="true">${countText}</span>
     </button>
-  `).join("");
+  `;
+  }).join("");
   stickerLibrary.querySelectorAll("[data-sticker-id]").forEach((button) => {
-    button.addEventListener("click", () => addStickerToActivePage(button.dataset.stickerId));
+    button.addEventListener("click", () => {
+      if (button.dataset.stickerDepleted === "1") {
+        showStickerTrayLockHint(button);
+        return;
+      }
+      addStickerToActivePage(button.dataset.stickerId);
+    });
   });
 }
 
@@ -9974,8 +10135,8 @@ function updateEditorSelectionClass() {
 
 function addStickerToActivePage(stickerId) {
   const sticker = stickerOptions.find((item) => item.id === stickerId);
-  if (!sticker) {
-    return;
+  if (!sticker || !canPlaceStickerCopy(stickerId)) {
+    return false;
   }
   const placements = getActivePagePlacements();
   const offset = (placements.length % 5) - 2;
@@ -9994,6 +10155,8 @@ function addStickerToActivePage(stickerId) {
   selectedPlacementId = placement.id;
   saveEditorState();
   renderEditorShell();
+  scheduleStickerCopyInventoryUiRefresh();
+  return true;
 }
 
 function handleEditorCanvasPointerDown(event) {
@@ -10391,6 +10554,7 @@ function deleteSelectedPlacement() {
   findPlacementElement(selectedPlacementId)?.remove();
   selectedPlacementId = null;
   saveEditorState();
+  scheduleStickerCopyInventoryUiRefresh();
   updateEditorControls();
   updateInlineStickerControls();
 }
