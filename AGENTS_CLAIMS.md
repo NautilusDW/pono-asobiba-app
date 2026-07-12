@@ -59,7 +59,6 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 - 2026-07-12 - by Codex - [batch:1255-nazonazo-score-wall-animals] - nazonazo-tunnel/{index.html,styles.css,js/game.js}, assets/images/nazonazo-tunnel/jungle_animal_*_livedin_20260712.webp, tmp/alpha_pending/1255-nazonazo-score-wall-animals/**, tests/nazonazo_*.cjs, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - 面ごとの得点をトンネル内で集計し、壁面を流れるシルエット3人のタップ加点・おたすけ上限超過加点・子どもが押せる速度へ改修。ジャングル6種は背景同等の描き込みと生活ポーズのGPT Image 2新素材へ差し替え [overlap: batch:1254-capture-stickerbook-museum-shop (sw.js; push直前に最新採番)]
-- 2026-07-12 - by Claude - [batch:1254-capture-stickerbook-museum-shop] - play.html, Prototypes/StickerBookThreeJS/index.html+main.js, Prototypes/StickerExhibitionCarousel/index.html+main.js, tests/capture_*, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - シール帳/シールミュージアム/おみせにスクショモード追加 (shop は open 時 register 上書き方式、3D book は canvas 直撮り) [overlap: sw.js は push 直前に最新採番]
 
 
 
