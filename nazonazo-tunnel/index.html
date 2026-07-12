@@ -70,7 +70,7 @@
   else { document.addEventListener('DOMContentLoaded', showLock); }
 })();
 </script>
-<link rel="stylesheet" href="styles.css?v=20260712-1267">
+<link rel="stylesheet" href="styles.css?v=20260712-1268">
 </head>
 <body class="st-town v-train" data-driver="pono" data-driver-mood="happy">
 <div id="app">
@@ -96,10 +96,12 @@
     <div id="jungleAnimalsMid" class="jungle-animal-layer" aria-hidden="true"></div>
     <div id="seaFishLayer" aria-hidden="true"></div>
     <div id="groundT"></div>
+    <div id="seaArenaShade" aria-hidden="true"></div>
     <div id="seaCompanionLayer" aria-hidden="true"></div>
     <div id="seaShotLayer" aria-hidden="true"></div>
     <div id="seaSteerSurface" aria-hidden="true"></div>
     <div id="seaAnswerLayer" role="group" aria-labelledby="qText"></div>
+    <div id="seaRoundCountdown" role="status" aria-live="assertive" aria-atomic="true" hidden></div>
     <div id="seaSteerHint" role="status" aria-live="polite" hidden>👆 タッチした ばしょへ うごくよ</div>
     <button id="seaFireButton" type="button" aria-label="おしっぱなしで れんしゃ" hidden><span aria-hidden="true">💫</span><strong>れんしゃ</strong></button>
     <div id="jungleAnimalsNear" class="jungle-animal-layer" aria-hidden="true"></div>
@@ -259,6 +261,6 @@
 </div>
 <div id="rotateHint">📱➡️ よこむきに してね</div>
 <script src="data/questions.js?v=20260702-1051"></script>
-<script src="js/game.js?v=20260712-1267"></script>
+<script src="js/game.js?v=20260712-1268"></script>
 </body>
 </html>

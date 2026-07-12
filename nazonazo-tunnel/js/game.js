@@ -158,6 +158,7 @@ const ASSETS={
   mid:"../assets/images/nazonazo-tunnel/sea_parallax_mid_loop_20260706.webp",
   ground:"../assets/images/nazonazo-tunnel/sea_parallax_ground_loop_20260706.webp",
   fg:"../assets/images/nazonazo-tunnel/sea_parallax_foreground_alpha_loop_20260706.webp",
+  station:"../assets/images/nazonazo-tunnel/sea_station_checkpoint_20260712.webp",
   fish:[
    "../assets/images/nazonazo-tunnel/sea_fish_01_20260706.webp",
    "../assets/images/nazonazo-tunnel/sea_fish_02_20260706.webp",
@@ -405,11 +406,14 @@ const SEA_FIRE_INTERVAL_MS=180;
 const SEA_SHOT_LIMIT=32;
 const SEA_COMPANION_LIMIT=3;
 const SEA_TARGET_HIT_GOALS=[3,4,5];
+const SEA_READY_MS=700;
+const SEA_GO_MS=500;
 let steerTargetX=0,steerX=0,steerTargetY=0,steerY=0,seaSteerPointerId=null,seaSteerUsed=false;
 let seaBubbleLaunchPending=false,seaBubbleLaunchTimer=0,seaShooterResumeTimer=0,seaAssistFireTimer=0,seaBubbleOptions=[];
 let seaShooterEpoch=0,seaShots=[],seaCompanionSprites=[],seaCompanionKey="",seaTrail=[];
 let seaFirePointerId=null,seaFireSources=new Set(),seaMoveKeys=new Set(),seaKeyboardAim=null,seaKeyboardAimStartedAt=0;
 let seaLastVolleyAt=0,seaShooterFrameAt=0,seaVolleyCount=0,seaSalvoHits=new Set();
+let seaRoundPhase="idle",seaRoundCountdownTimer=0;
 let nazonazoAdminPreviewMode=false;
 const NUMBER_CARGO_THEMES=[
  {e:"⭐",name:"おほしさま"},{e:"🎈",name:"ふうせん"},{e:"🌼",name:"おはな"},
@@ -544,7 +548,7 @@ function setDriverMood(mood){
 /* ================= dom ================= */
 const $=id=>document.getElementById(id);
 const world=$("world"),veh=$("veh"),horizon=$("horizon"),midT=$("midT"),groundT=$("groundT"),fgT=$("fgT"),seaFishLayer=$("seaFishLayer"),smokeLayer=$("smokeLayer"),townHorizonLoop=$("townHorizonLoop"),townMidLoop=$("townMidLoop"),jungleHabitatBack=$("jungleHabitatBack");
-const vehicleSteerShell=$("vehicleSteerShell"),seaSteerSurface=$("seaSteerSurface"),seaAnswerLayer=$("seaAnswerLayer"),seaSteerHint=$("seaSteerHint");
+const vehicleSteerShell=$("vehicleSteerShell"),seaSteerSurface=$("seaSteerSurface"),seaAnswerLayer=$("seaAnswerLayer"),seaArenaShade=$("seaArenaShade"),seaRoundCountdown=$("seaRoundCountdown"),seaSteerHint=$("seaSteerHint");
 const seaCompanionLayer=$("seaCompanionLayer"),seaShotLayer=$("seaShotLayer"),seaFireButton=$("seaFireButton");
 const jungleAnimalLayers={far:$("jungleAnimalsFar"),mid:$("jungleAnimalsMid"),near:$("jungleAnimalsNear")};
 const jungleFlightLayers={bird:$("jungleBirdFlightLayer"),butterfly:$("jungleButterflyFlightLayer")};
@@ -1479,6 +1483,72 @@ function buildNumberFx(sc){
 function seaReducedMotion(){
  try{return !!(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches);}catch(_){return false;}
 }
+function seaRoundPlayable(){
+ return !window.__PONO_TIER_LOCKED__&&seaRoundPhase==="active"&&document.body.classList.contains("sea-quiz-active")&&quiz.classList.contains("show");
+}
+function setSeaRoundPhase(phase){
+ seaRoundPhase=phase;
+ const inRound=phase!=="idle";
+ document.body.classList.toggle("sea-arena-active",inRound);
+ document.body.classList.toggle("sea-round-ready",phase==="ready");
+ document.body.classList.toggle("sea-round-go",phase==="go");
+ if(seaRoundCountdown){
+  seaRoundCountdown.classList.remove("is-ready","is-go");
+  if(phase==="ready"||phase==="go"){
+   seaRoundCountdown.hidden=false;
+   seaRoundCountdown.textContent=phase==="ready"?"ようい":"ドン！";
+   void seaRoundCountdown.offsetWidth;
+   seaRoundCountdown.classList.add(phase==="ready"?"is-ready":"is-go");
+  }else{
+   seaRoundCountdown.hidden=true;seaRoundCountdown.textContent="";
+  }
+ }
+ const playable=phase==="active";
+ activeChoiceButtons().forEach(choice=>{
+  if(choice.classList.contains("dim")||choice.classList.contains("is-popped")||choice.classList.contains("is-bursting"))return;
+  choice.disabled=!playable;
+ });
+ if(helpBtn)helpBtn.disabled=phase==="ready"||phase==="go";
+ if(!playable){cancelSeaPointer();cancelSeaFirePointer();stopSeaFiring();seaMoveKeys.clear();removeAllSeaShots();}
+ if(phase==="ready"){hintText.textContent="🎯 ようい…";announce("ようい");}
+ else if(phase==="go"){hintText.textContent="🎯 ドン！";tone(880,0,.09,"triangle",.08);announce("ドン！");}
+ else if(phase==="active")hintText.textContent="🎯 おしながら うごかして こたえを うとう";
+}
+function clearSeaRoundCountdown(){
+ clearTimeout(seaRoundCountdownTimer);seaRoundCountdownTimer=0;seaRoundPhase="idle";
+ document.body.classList.remove("sea-arena-active","sea-round-ready","sea-round-go");
+ if(helpBtn)helpBtn.disabled=false;
+ if(seaRoundCountdown){seaRoundCountdown.hidden=true;seaRoundCountdown.textContent="";seaRoundCountdown.classList.remove("is-ready","is-go");}
+}
+function positionSeaArenaStart(){
+ if(!isSeaStage())return;
+ seaTrail=[];
+ setSeaSteerTarget((window.innerWidth||844)*.23,(window.innerHeight||390)*.47,true);
+ applySeaSteerVisual();
+}
+function startSeaRoundCountdown(){
+ if(window.__PONO_TIER_LOCKED__)return;
+ clearTimeout(seaRoundCountdownTimer);seaRoundCountdownTimer=0;
+ const epoch=seaShooterEpoch;
+ positionSeaArenaStart();setSeaRoundPhase("ready");updateSeaAnswerTargets(_nowMs());
+ seaRoundCountdownTimer=setTimeout(()=>{
+  seaRoundCountdownTimer=0;
+  if(epoch!==seaShooterEpoch||!isSeaStage()||!quiz.classList.contains("show"))return;
+  setSeaRoundPhase("go");
+  seaRoundCountdownTimer=setTimeout(()=>{
+   seaRoundCountdownTimer=0;
+   if(epoch!==seaShooterEpoch||!isSeaStage()||!quiz.classList.contains("show"))return;
+   setSeaRoundPhase("active");
+  },SEA_GO_MS);
+ },SEA_READY_MS);
+}
+function seaQuestionOptions(question){
+ const wrong=shuffle((question&&question.d)||[])[0]||["❓","ちがうもの"];
+ return shuffle([
+  {e:question.a[0],t:question.a[1],ok:true},
+  {e:wrong[0],t:wrong[1],ok:false}
+ ]);
+}
 function snapSeaReducedMotion(){
  if(seaReducedMotion()){steerX=steerTargetX;steerY=steerTargetY;}
 }
@@ -1487,10 +1557,10 @@ function seaLandscapeReady(){return (window.innerWidth||844)>=(window.innerHeigh
 function seaControlAvailable(){
  return !window.__PONO_TIER_LOCKED__&&seaLandscapeReady()&&isSeaStage()&&playing&&!tunnelInteriorMode&&
   !document.body.classList.contains("tunnel-enter-run")&&!document.body.classList.contains("tunnel-exit-run")&&
-  !seaBubbleLaunchPending&&(driving||quiz.classList.contains("show"));
+  !seaBubbleLaunchPending&&(driving||seaRoundPlayable());
 }
 function seaShooterActive(){
- return seaControlAvailable()&&!driving&&!answerLocked&&quiz.classList.contains("show")&&
+ return seaControlAvailable()&&seaRoundPlayable()&&!driving&&!answerLocked&&
   document.body.classList.contains("sea-quiz-active")&&seaBubbleOptions.some(entry=>entry.button&&!entry.button.disabled&&!entry.button.classList.contains("dim"));
 }
 function seaSteerBounds(){
@@ -1508,7 +1578,7 @@ function seaSteerBounds(){
  const wantedMinY=Math.max(hudBottom+height*.5+8,viewportHeight*.17);
  const minCenterY=Math.max(height*.5+8,Math.min(maxCenterY-12,wantedMinY));
  const minCenterX=Math.max(width*.5+8,viewportWidth*.08);
- const maxCenterRatio=.5;
+ const maxCenterRatio=document.body.classList.contains("sea-quiz-active") ? .46 : .5;
  const maxCenterX=Math.max(minCenterX+12,Math.min(viewportWidth*maxCenterRatio,viewportWidth-width*.5-8));
  return {
   baseCenterX,baseCenterY,
@@ -1584,6 +1654,7 @@ function clearSeaShotLayer(){
 }
 function clearSeaBubbleGame(){
  seaShooterEpoch++;
+ clearSeaRoundCountdown();
  clearTimeout(seaBubbleLaunchTimer);seaBubbleLaunchTimer=0;
  clearTimeout(seaShooterResumeTimer);seaShooterResumeTimer=0;
  clearTimeout(seaAssistFireTimer);seaAssistFireTimer=0;
@@ -1631,13 +1702,20 @@ function updateSeaAnswerTargets(now){
  seaBubbleOptions.forEach(entry=>{
   if(!entry.button||!entry.button.isConnected)return;
   const focused=document.activeElement===entry.button;
-  const moving=!reduced&&!focused&&!entry.bursting;
+  const moving=seaRoundPlayable()&&!reduced&&!focused&&!entry.bursting;
   const wave=moving?Math.sin(t*entry.rate+entry.phase):0;
   const cross=moving?Math.sin(t*entry.rate*1.47+entry.phase*.63):0;
-  const minX=Math.max(entry.size*.5+8,safe.sceneRect.width*.6);
-  const maxX=Math.min(safe.sceneRect.width-entry.size*.5-10,safe.sceneRect.width*.88);
+  const minX=Math.max(entry.size*.5+8,safe.sceneRect.width*.66);
+  const maxX=Math.min(safe.sceneRect.width-entry.size*.5-10,safe.sceneRect.width*.92);
   entry.x=clamp(safe.sceneRect.width*entry.baseX+wave*entry.ampX,minX,maxX);
-  entry.y=clamp(safe.top+safe.height*entry.baseY+cross*entry.ampY,safe.top+entry.size*.5,safe.bottom-entry.size*.5);
+  const split=safe.top+safe.height*.5;
+  const laneTop=entry.index===0?safe.top:split+6;
+  const laneBottom=entry.index===0?split-6:safe.bottom;
+  const laneMin=laneTop+entry.size*.5;
+  const laneMax=Math.max(laneMin,laneBottom-entry.size*.5);
+  const laneCenter=(laneMin+laneMax)*.5;
+  const laneAmp=Math.min(entry.ampY,Math.max(0,(laneMax-laneMin)*.48));
+  entry.y=clamp(laneCenter+cross*laneAmp,laneMin,laneMax);
   const ratio=clamp(entry.hits/entry.hitGoal,0,1);
   const flash=entry.flashUntil>now?.055:0;
   entry.scale=1+Math.min(.28,ratio*.28)+flash;
@@ -1728,7 +1806,7 @@ function createSeaBurstParticles(entry){
  }
 }
 function hitSeaAnswerTarget(entry,salvoId,x,y){
- if(!entry||seaSalvoHits.has(salvoId)||seaBubbleLaunchPending||answerLocked||entry.bursting||entry.button.disabled||entry.button.classList.contains("dim"))return false;
+ if(!entry||!seaRoundPlayable()||seaSalvoHits.has(salvoId)||seaBubbleLaunchPending||answerLocked||entry.bursting||entry.button.disabled||entry.button.classList.contains("dim"))return false;
  seaSalvoHits.add(salvoId);entry.hits=Math.min(entry.hitGoal,entry.hits+1);entry.flashUntil=_nowMs()+120;
  entry.button.dataset.hits=String(entry.hits);entry.button.classList.add("is-hit");
  const epoch=seaShooterEpoch;setTimeout(()=>{if(epoch===seaShooterEpoch&&entry.button)entry.button.classList.remove("is-hit");},130);
@@ -1760,7 +1838,7 @@ function updateSeaShots(dt){
  }
 }
 function beginSeaTargetBurst(entry){
- if(!entry||seaBubbleLaunchPending||answerLocked||driving||!quiz.classList.contains("show")||entry.button.disabled||entry.button.classList.contains("dim"))return;
+ if(!entry||!seaRoundPlayable()||seaBubbleLaunchPending||answerLocked||driving||!quiz.classList.contains("show")||entry.button.disabled||entry.button.classList.contains("dim"))return;
  seaBubbleLaunchPending=true;entry.bursting=true;stopSeaFiring();cancelSeaPointer();cancelSeaFirePointer();seaMoveKeys.clear();removeAllSeaShots();
  activeChoiceButtons().forEach(choice=>{choice.disabled=true;});
  entry.button.classList.add("is-bursting");createSeaBurstParticles(entry);
@@ -1794,7 +1872,7 @@ function updateSeaKeyboardAim(now){
  if(!seaShooterActive()||seaKeyboardAim.button.disabled||seaKeyboardAim.button.classList.contains("dim")||now-seaKeyboardAimStartedAt>6000){
   seaKeyboardAim=null;seaKeyboardAimStartedAt=0;setSeaFireSource("auto",false);return;
  }
- setSeaSteerTarget((window.innerWidth||844)*.47,seaKeyboardAim.y,seaReducedMotion());
+ setSeaSteerTarget(NaN,seaKeyboardAim.y,seaReducedMotion());
 }
 function updateSeaKeyboardMovement(dt){
  if(!seaMoveKeys.size||!seaControlAvailable())return;
@@ -1866,7 +1944,9 @@ function pauseSeaInput(){
 }
 function handleSeaViewportChange(){
  if(!isSeaStage())return;
- pauseSeaInput();seaTrail=[];clampSeaSteerOffsets();updateSeaAnswerTargets(_nowMs());
+ pauseSeaInput();seaTrail=[];
+ if(seaRoundPhase==="ready"||seaRoundPhase==="go")positionSeaArenaStart();else clampSeaSteerOffsets();
+ updateSeaAnswerTargets(_nowMs());
 }
 function renderSeaSteering(){
  const now=_nowMs();
@@ -1907,18 +1987,18 @@ function activeChoiceButtons(){
  return [...choicesEl.querySelectorAll(".choice")];
 }
 function renderSeaBubbleGame(){
- let opts=[{e:cur.a[0],t:cur.a[1],ok:true},...cur.d.map(x=>({e:x[0],t:x[1],ok:false}))];
- if(level===0&&opts.length>2)opts=opts.slice(0,2);
- opts=shuffle(opts).slice(0,level===0?2:3);
+ const opts=seaQuestionOptions(cur);
  document.body.classList.add("sea-quiz-active");quiz.classList.add("sea-quiz");choicesEl.classList.add("sea-mode");
  choicesEl.setAttribute("aria-label","せんすいかんで こたえを うちぬく");
  seaAnswerLayer.replaceChildren();seaBubbleOptions=[];seaSalvoHits.clear();seaLastVolleyAt=0;
- const layout=opts.length===2?[[.68,.28],[.81,.7]]:[[.67,.17],[.81,.5],[.69,.83]];
+ const layout=[[.79,.25],[.79,.75]];
+ const viewportWidth=window.innerWidth||844,viewportHeight=window.innerHeight||390;
  const baseSize=clamp(Math.min(window.innerWidth||844,window.innerHeight||390)*.12,64,96);
  opts.forEach((o,index)=>{
   const button=document.createElement("button");button.type="button";button.className="sea-answer-bubble";
+  button.disabled=true;
   button.dataset.ok=o.ok?"1":"0";button.dataset.hits="0";button.setAttribute("aria-label",o.t+"を ねらって うつ");
-  const size=clamp(baseSize+[-4,4,0][index],64,96);button.style.setProperty("--sea-target-size",size.toFixed(1)+"px");
+  const size=clamp(baseSize+[-3,3][index],64,96);button.style.setProperty("--sea-target-size",size.toFixed(1)+"px");
   button.style.setProperty("--sea-target-hue",String(184+index*24));
   const visual=document.createElement("span");visual.className="sea-answer-visual";
   const emoji=document.createElement("span");emoji.className="em";emoji.textContent=o.e;
@@ -1926,17 +2006,16 @@ function renderSeaBubbleGame(){
   visual.append(emoji,label);button.appendChild(visual);
   bindTap(button,()=>startSeaKeyboardTargetFire(button,o));
   seaAnswerLayer.appendChild(button);
-  const period=[6,5.4,4.8][level]||5.4;
+  const period=[5.8,5.1,4.5][level]||5.1;
   seaBubbleOptions.push({
    button,value:o,index,baseX:layout[index][0],baseY:layout[index][1],size,
-   ampX:7+index*2,ampY:8+((index+1)%3)*3,rate:Math.PI*2/(period-index*.18),phase:(qSeg+1)*.63+index*2.07,
+   ampX:clamp(viewportWidth*(.045+index*.012),26,58),ampY:clamp(viewportHeight*(.045+index*.014),14,29),
+   rate:Math.PI*2/(period-index*.22),phase:(qSeg+1)*.63+index*2.07,
    rotation:2.2+index*.7,hits:0,hitGoal:SEA_TARGET_HIT_GOALS[level]||4,flashUntil:0,scale:1,radius:size*.43,x:0,y:0,bursting:false
   });
  });
- hintText.textContent="🎯 おしながら うごかして こたえを うとう";
- if(!seaSteerUsed)setSeaSteerTarget((window.innerWidth||844)*.28,(window.innerHeight||390)*.45,seaReducedMotion());
- updateSeaAnswerTargets(_nowMs());
- if(seaFireButton)seaFireButton.hidden=false;
+ startSeaRoundCountdown();
+ if(seaFireButton)seaFireButton.hidden=true;
 }
 if(seaSteerSurface){
  seaSteerSurface.addEventListener("pointerdown",handleSeaPointerDown);
@@ -2764,6 +2843,7 @@ function onRunEvent(el,ev){
 }
 function useHelp(){
  if(answerLocked||driving||seaBubbleLaunchPending||!quiz.classList.contains("show"))return;
+ if(isSeaStage()&&!seaRoundPlayable())return;
  if(!helpItems.length){
   showStamp("みつけてね！","ng");
   announce("はしっているときに、おたすけを みつけよう");
@@ -2820,12 +2900,17 @@ function render(now){
  updateScreenExitShift();
  if(document.body.classList.contains("st-town")&&townHorizonLoop){
   horizon.style.transform="translate3d(0,0,0)";
+  horizon.style.backgroundPositionX="0px";
   const horizonTileWidth=(window.innerHeight||390)*1.34*(1983/793);
   const horizonPeriod=horizonTileWidth*2;
   const horizonRawOffset=(((worldX-o)*TOWN_HORIZON_PARALLAX*(window.innerWidth||844)/100)%horizonPeriod+horizonPeriod)%horizonPeriod;
   const horizonLoopOffset=IOS_DEVICE?Math.round(horizonRawOffset):Number(horizonRawOffset.toFixed(2));
   townHorizonLoop.style.transform="translate3d("+(-horizonLoopOffset)+"px,0,0)";
+ }else if(document.body.classList.contains("st-sea")){
+  horizon.style.transform="translate3d(0,0,0)";
+  horizon.style.backgroundPositionX=cssXFromVw(-(worldX-o)*.1);
  }else{
+  horizon.style.backgroundPositionX="0px";
   const hd=clamp((worldX-o)*0.095,0,70);
   horizon.style.transform="translate3d("+cssXFromVw(-hd)+",0,0)";
  }
@@ -2836,11 +2921,13 @@ function render(now){
   const loopOffset=IOS_DEVICE?Math.round(rawOffset):Number(rawOffset.toFixed(2));
   townMidLoop.style.transform="translate3d("+(-loopOffset)+"px,0,0)";
   midT.style.backgroundPositionX="0px";
+ }else if(document.body.classList.contains("st-sea")){
+  midT.style.backgroundPositionX=cssXFromVw(-(worldX-o)*.44);
  }else{
   midT.style.backgroundPositionX=cssXFromVw(-worldX*0.25);
  }
  groundT.style.backgroundPositionX=cssXFromVw(-worldX);
- fgT.style.backgroundPositionX=cssXFromVw(-worldX*1.35);
+ fgT.style.backgroundPositionX=document.body.classList.contains("st-sea")?cssXFromVw(-(worldX-o)*1.06):cssXFromVw(-worldX*1.35);
  const p=clamp((worldX-o)/COVER_OFF,0,1);
  skyB.style.opacity=(p>0.78?((p-0.78)/0.22)*0.9:0).toFixed(2);
  const cv=transitCover||coverEl;
@@ -3389,8 +3476,14 @@ document.addEventListener("pointerdown",()=>{ensureAC();},{capture:true,passive:
 // visibility/lifecycle 復帰: iOS/Android で BG 復帰後に AC が suspended/interrupted のままだと SE が全滅する
 // blur は意図的に購読しない (iOS の疑似 blur で AC を止めない方針)
 document.addEventListener("visibilitychange",()=>{
- if(document.hidden){hideWeatherNotice();pauseSeaInput();safeSuspend();}
- else{ensureAC();}
+ if(document.hidden){
+  hideWeatherNotice();
+  if(seaRoundPhase==="ready"||seaRoundPhase==="go"){clearTimeout(seaRoundCountdownTimer);seaRoundCountdownTimer=0;}
+  pauseSeaInput();safeSuspend();
+ }else{
+  ensureAC();
+  if((seaRoundPhase==="ready"||seaRoundPhase==="go")&&!seaRoundCountdownTimer&&isSeaStage()&&quiz.classList.contains("show"))startSeaRoundCountdown();
+ }
 });
 window.addEventListener("resize",scheduleRainParticleRebuild,{passive:true});
 window.addEventListener("resize",syncNumberCargoColumns,{passive:true});

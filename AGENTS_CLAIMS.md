@@ -59,6 +59,7 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
+- 2026-07-12 20:08 - by Codex - [batch:1268-nazonazo-sea-arena-station] - nazonazo-tunnel/index.html, nazonazo-tunnel/styles.css, nazonazo-tunnel/js/game.js, assets/images/nazonazo-tunnel/sea_*, tmp/alpha_pending/1268-nazonazo-sea-arena-station/, tests/nazonazo_*_regression.cjs, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - 深い海の多重スクロールと上下接地を修正し、海底駅を生成、暗転・よういドン・左潜水艦対右縦2択の逃走シューティングへ再構成 [overlap: batch:886-difficulty-label-sw-bump-1736, batch:933-haptics-quick-win-phase1, batch:tier-v3-phase1]
 
 
 

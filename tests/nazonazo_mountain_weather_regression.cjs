@@ -11,8 +11,8 @@ const css = fs.readFileSync(path.join(root, "nazonazo-tunnel/styles.css"), "utf8
 const game = fs.readFileSync(path.join(root, "nazonazo-tunnel/js/game.js"), "utf8");
 const sw = fs.readFileSync(path.join(root, "sw.js"), "utf8");
 
-assert.match(html, /styles\.css\?v=20260712-1267/, "the raised jungle layers and sea shooter must bypass stale CSS caches");
-assert.match(html, /js\/game\.js\?v=20260712-1267/, "the current Nazonazo runtime must bypass stale game-script caches");
+assert.match(html, /styles\.css\?v=20260712-1268/, "the raised jungle layers and sea arena must bypass stale CSS caches");
+assert.match(html, /js\/game\.js\?v=20260712-1268/, "the current Nazonazo runtime must bypass stale game-script caches");
 assert.match(sw, /const CACHE_VERSION = 2146;/, "the current Nazonazo bundle must ship with a fresh service-worker generation");
 
 function numericConstant(source, name) {
