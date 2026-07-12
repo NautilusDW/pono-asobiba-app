@@ -8403,6 +8403,52 @@
       transform: none;
       filter: drop-shadow(0 10px 16px rgba(48, 27, 10, .24));
     }
+    .daily-gacha-entry__remaining {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      z-index: 3;
+      min-width: 96px;
+      height: 38px;
+      box-sizing: border-box;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 12px 2px;
+      border: 3px solid #fff7d5;
+      border-radius: 999px;
+      background: linear-gradient(180deg, #ff7658 0%, #e93650 100%);
+      color: #fff;
+      font-size: 18px;
+      font-weight: 900;
+      line-height: 1;
+      letter-spacing: .01em;
+      white-space: nowrap;
+      text-shadow: 0 2px 0 rgba(139, 28, 51, .72);
+      box-shadow:
+        0 3px 0 #aa2941,
+        0 7px 12px rgba(78, 22, 31, .3);
+      pointer-events: none;
+      transform: rotate(2deg);
+      transform-origin: center;
+    }
+    .daily-gacha-entry__remaining[data-remaining="0"] {
+      border-color: #fff9e8;
+      background: linear-gradient(180deg, #9c8e83 0%, #746960 100%);
+      text-shadow: 0 2px 0 rgba(63, 54, 48, .72);
+      box-shadow:
+        0 3px 0 #5c5149,
+        0 6px 10px rgba(58, 45, 36, .24);
+    }
+    .daily-gacha-entry__remaining[hidden] { display: none; }
+    @media (orientation: landscape) and (max-height: 540px) {
+      .daily-gacha-entry__remaining {
+        min-width: 116px;
+        height: 46px;
+        padding-inline: 14px;
+        font-size: 26px;
+      }
+    }
     /* v1672: acorn 退去で上方 36px 回収 (86→50)。 bottom は nav 干渉回避で据置 */
     .cards-col {
       padding-top: 28px;
@@ -9309,12 +9355,13 @@
             </span>
             <span class="daily-quest-info-banner__arrow" aria-hidden="true">›</span>
           </button>
-          <button class="daily-gacha-entry" id="dailyGachaEntry" type="button" aria-label="1にち1かい シールがもらえる ポノのガチャガチャ">
+          <button class="daily-gacha-entry" id="dailyGachaEntry" type="button" aria-label="ポノのガチャガチャ">
             <!-- v2049 perf: __icon は CSS で display:none 固定 (ボタン絵柄は background-image 側)。
                  中に居た daily_gacha_capsule_closed_pink.png (820KB) は非表示のまま parse 時に
                  DL されるだけの死荷重だったため <img> を削除 (span は後方互換で残置) -->
             <span class="daily-gacha-entry__icon" aria-hidden="true"></span>
             <span class="daily-gacha-entry__label"><span>１にち１かい<br>ポノガチャ</span><span class="daily-gacha-entry__sub" id="dailyGachaEntrySub">シールを ひこう</span></span>
+            <span class="daily-gacha-entry__remaining" id="dailyGachaRemaining" aria-hidden="true" hidden></span>
           </button>
         </div>
       </aside>
@@ -10866,7 +10913,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2144; // sw.js CACHE_VERSION と同期 (batch:1264 LP画像・シール帳スクショ導線/実画面撮影)
+    const PAGE_CACHE_VERSION = 2150; // sw.js CACHE_VERSION と同期 (batch:1270 タイトルのガチャ残り回数)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -10875,7 +10922,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v2144';
+    window.PONO_SW_VERSION = 'v2150';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
@@ -11886,6 +11933,7 @@
     ];
     const dailyGachaEntry = document.getElementById('dailyGachaEntry');
     const dailyGachaEntrySub = document.getElementById('dailyGachaEntrySub');
+    const dailyGachaRemaining = document.getElementById('dailyGachaRemaining');
     const dailyGachaModal = document.getElementById('dailyGachaModal');
     const dailyGachaClose = document.getElementById('dailyGachaClose');
     const dailyGachaLever = document.getElementById('dailyGachaLever');
@@ -12089,15 +12137,39 @@
       return getDailyGachaCount() >= 2;
     }
 
+    function getDailyGachaRemainingCount() {
+      const count = Number(getDailyGachaCount());
+      const normalizedCount = Number.isFinite(count) ? Math.max(0, Math.min(2, Math.floor(count))) : 0;
+      return 2 - normalizedCount;
+    }
+
     function updateDailyGachaEntry() {
       if (!dailyGachaEntry) return;
       if (!dailyGachaEnabled) {
         dailyGachaEntry.classList.remove('is-visible');
+        if (dailyGachaRemaining) dailyGachaRemaining.hidden = true;
         return;
+      }
+      const remaining = getDailyGachaRemainingCount();
+      const remainingNumeral = ['０', '１', '２'][remaining] || String(remaining);
+      const remainingText = `あと${remainingNumeral}かい`;
+      let entryLabel = `ポノのガチャガチャ ${remainingText}`;
+      if (remaining === 1 && getDailyGachaCount() === 1) {
+        try {
+          if (!window.PonoDailyQuest || !window.PonoDailyQuest.isClearedToday()) {
+            entryLabel += ' チャレンジを クリアすると まわせるよ';
+          }
+        } catch (_) {}
       }
       dailyGachaEntry.classList.add('is-visible');
       dailyGachaEntry.classList.remove('is-used');
-      if (dailyGachaEntrySub) dailyGachaEntrySub.textContent = 'シールを ひこう';
+      dailyGachaEntry.setAttribute('aria-label', entryLabel);
+      if (dailyGachaEntrySub) dailyGachaEntrySub.textContent = remainingText;
+      if (dailyGachaRemaining) {
+        dailyGachaRemaining.textContent = remainingText;
+        dailyGachaRemaining.dataset.remaining = String(remaining);
+        dailyGachaRemaining.hidden = false;
+      }
     }
 
     function setDailyGachaLeverRotation(rotation) {
@@ -13151,6 +13223,7 @@
         if (resultRarity) result.rarity = resultRarity;
         // v1719: prev record を渡して count を加算 (1 or 2)
         setDailyGachaRecord(dailyGachaRecordFromResult(result, getDailyGachaRecord()));
+        updateDailyGachaEntry();
         return result;
       }
       return null;
@@ -14456,6 +14529,16 @@
 
     if (dailyGachaEntry) {
       updateDailyGachaEntry();
+      if (window.PonoDailyQuest && typeof window.PonoDailyQuest.subscribe === 'function') {
+        window.PonoDailyQuest.subscribe(updateDailyGachaEntry);
+      }
+      window.addEventListener('storage', function (event) {
+        if (!event || event.key == null || event.key === DAILY_GACHA_KEY) updateDailyGachaEntry();
+      });
+      window.addEventListener('pageshow', updateDailyGachaEntry);
+      document.addEventListener('visibilitychange', function () {
+        if (!document.hidden) updateDailyGachaEntry();
+      });
       scheduleDailyGachaImagePreload();
       // ---- A: ガチャ画面 critical asset を idle warm (Stream A 2026-06-28) ----
       // preload-helper.js の GAME_WARM_ASSETS['gacha'] を <link rel=preload> で
