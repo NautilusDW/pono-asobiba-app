@@ -58,7 +58,7 @@
 ## Active claims
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
-- 2026-07-12 - by Codex - [batch:1261-nazonazo-depth-score-number] - nazonazo-tunnel/{index.html,styles.css}, tests/nazonazo_*.cjs, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - 線路と最遠景を上へ調整し、トンネル内ハイスコアを白文字の中央表示へ変更。数字の部屋は現行出題を監査し、答えの数だけ動く短いミニゲーム案を設計（実装は案選択後）
+- 2026-07-12 - by Codex - [batch:1261-nazonazo-depth-score-number] - nazonazo-tunnel/{index.html,styles.css,js/game.js}, tests/nazonazo_*.cjs, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - 線路と最遠景を上へ調整し、トンネル内ハイスコアを白文字の中央表示へ変更。数字の部屋は現行出題を監査し、答えの数だけ動く短いミニゲーム案を設計（実装は案選択後）
 
 
 
