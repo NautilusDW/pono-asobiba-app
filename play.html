@@ -11598,6 +11598,20 @@
     const TITLE_NEWS_ITEMS = Array.isArray(window.PONO_NEWS_ITEMS) ? window.PONO_NEWS_ITEMS : [];
     const THREE_STICKER_BOOK_URL = 'Prototypes/StickerBookThreeJS/?surface=cover';
 
+    // スクショモードの操作パネルを出したままシールちょうへ移動するときだけ、
+    // 遷移先にも URL trigger を引き継ぐ。通常プレイや、×でパネルを閉じた後の
+    // 遷移には capture=1 を足さないため、子ども向け画面の挙動は変わらない。
+    function captureAwareStickerBookUrl(targetUrl) {
+      if (!document.querySelector('.pono-capture-overlay')) return targetUrl;
+      try {
+        var nextUrl = new URL(targetUrl, location.href);
+        nextUrl.searchParams.set('capture', '1');
+        return nextUrl.href;
+      } catch (_) {
+        return targetUrl;
+      }
+    }
+
     function getBottomNavButton(target) {
       return target && target.closest ? target.closest('.bn-item') : null;
     }
@@ -13474,7 +13488,7 @@
     }
 
     function goDailyGachaStickerBook() {
-      location.href = THREE_STICKER_BOOK_URL;
+      location.href = captureAwareStickerBookUrl(THREE_STICKER_BOOK_URL);
     }
 
     function goDailyGachaHome() {
@@ -16485,7 +16499,7 @@
       }
       if (profileStickerBookBtn) {
         profileStickerBookBtn.addEventListener('click', () => {
-          location.href = THREE_STICKER_BOOK_URL;
+          location.href = captureAwareStickerBookUrl(THREE_STICKER_BOOK_URL);
         });
       }
       if (profileAchievementsBtn) {
@@ -16881,7 +16895,7 @@
     if (debugStickerOpenBookBtn) {
       debugStickerOpenBookBtn.addEventListener('click', function () {
         if (!isManageDebugAllowed()) return;
-        location.href = 'Prototypes/StickerBookThreeJS/?surface=inside';
+        location.href = captureAwareStickerBookUrl('Prototypes/StickerBookThreeJS/?surface=inside');
       });
     }
     // v1897: お店をリセット — rotation cache + purchase history + reservation を全消しして再抽選。

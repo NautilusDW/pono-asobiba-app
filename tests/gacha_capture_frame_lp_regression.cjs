@@ -117,6 +117,16 @@ assert.match(lp, /alt="ガチャガチャのカプセルからシールが出た
 assert.doesNotMatch(lp, />課金ガチャなし</, "the old abbreviated assurance copy must not return");
 assert.doesNotMatch(lp, />ガチャとおみせ</, "the old abbreviated feature title must not return");
 assert.doesNotMatch(lp, /<strong>ガチャ<\/strong>/, "the old abbreviated figure label must not return");
+assert.match(
+  lp,
+  /assets\/lp\/features\/gacha-reveal_20260712\.png\?v=20260712-1264/,
+  "the replaced gacha LP image must have a new URL so image cache-first cannot keep the prior capture"
+);
+assert.match(
+  lp,
+  /assets\/lp\/features\/donguri-shop_20260712\.png\?v=20260712-1264/,
+  "the replaced shop LP image must have a new URL so image cache-first cannot keep the prior capture"
+);
 
 for (const fileName of ["gacha-reveal_20260712.png", "donguri-shop_20260712.png"]) {
   const filePath = path.join(root, "assets", "lp", "features", fileName);

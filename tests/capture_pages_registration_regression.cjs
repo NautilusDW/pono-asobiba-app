@@ -10,11 +10,14 @@
 //     3) play.html: hideShop (shop クローズ処理) に「#dailyGachaModal が開いている
 //        場合のみ」の条件付き gacha 再登録フックがある (Low fix 本体)
 //     4) StickerBookThreeJS/main.js: PonoCapture.register('sticker-book') +
-//        renderer.render() → 2D canvas への直撮り構造
+//        renderer.render() → #app 全体の html2canvas 撮影 + dynScale
 //     5) StickerExhibitionCarousel/main.js: PonoCapture.register('sticker-museum') +
 //        dynScale の動的算出 + PonoCapture.html2canvasOptions への受け渡し
 //     6) StickerExhibitionCarousel/index.html: main.js の cache-buster (?v=) が
 //        main.js 変更日以降であること (floor 比較。完全一致は求めない)
+//     7) play.html: 撮影パネルを表示中のシール帳遷移だけ capture=1 を引き継ぎ、
+//        通常遷移・パネルを閉じた後の遷移へは混入させない
+//     8) シール帳 → ミュージアム → トップでも、開いている撮影パネルを引き継ぐ
 
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
@@ -23,6 +26,7 @@ const path = require("node:path");
 const root = path.resolve(__dirname, "..");
 const playHtml = fs.readFileSync(path.join(root, "play.html"), "utf8");
 const stickerBookMain = fs.readFileSync(path.join(root, "Prototypes/StickerBookThreeJS/main.js"), "utf8");
+const stickerBookIndex = fs.readFileSync(path.join(root, "Prototypes/StickerBookThreeJS/index.html"), "utf8");
 const museumMain = fs.readFileSync(path.join(root, "Prototypes/StickerExhibitionCarousel/main.js"), "utf8");
 const museumIndex = fs.readFileSync(path.join(root, "Prototypes/StickerExhibitionCarousel/index.html"), "utf8");
 
@@ -92,7 +96,7 @@ assert.ok(
   "the conditional gacha re-registration must be wired into the shop-close flow (after the shop is marked hidden)"
 );
 
-// ── 4) StickerBookThreeJS/main.js: register('sticker-book') + 直撮り構造 ──
+// ── 4) StickerBookThreeJS/main.js: register('sticker-book') + 実画面全体撮影 ──
 const stickerBookRegisterFn = stickerBookMain.match(/function regStickerBookCapture\(\) \{[\s\S]*?\n\}/);
 assert.ok(stickerBookRegisterFn, "StickerBookThreeJS/main.js must keep a regStickerBookCapture() function");
 assert.match(
@@ -107,8 +111,28 @@ assert.match(
 );
 assert.match(
   stickerBookRegisterFn[0],
-  /ctx\.drawImage\(canvas, 0, 0\)/,
-  "the sticker-book build() must copy the live WebGL canvas via drawImage (direct snapshot, no html2canvas)"
+  /document\.getElementById\("app"\)/,
+  "the sticker-book build() must capture #app so the visible table background and controls are included"
+);
+assert.match(
+  stickerBookRegisterFn[0],
+  /getBoundingClientRect\(\)/,
+  "the sticker-book build() must measure the visible app before choosing a raster scale"
+);
+assert.match(
+  stickerBookRegisterFn[0],
+  /Math\.max\([\s\S]*?2,[\s\S]*?opts\?\.width[\s\S]*?rect\.width[\s\S]*?opts\?\.height[\s\S]*?rect\.height/,
+  "the sticker-book build() must size dynScale against both requested preset dimensions"
+);
+assert.match(
+  stickerBookRegisterFn[0],
+  /html2canvasOptions\(\{ backgroundColor: null, scale: dynScale \}\)/,
+  "the sticker-book build() must use the shared capture options so the overlay stays out of the screenshot"
+);
+assert.match(
+  stickerBookRegisterFn[0],
+  /return await html2canvas\(container, h2cOpts\)/,
+  "the sticker-book build() must rasterize the full visible app instead of returning a transparent WebGL cutout"
 );
 // register() 自体は capture-mode の状態に関わらず常に build() を格納するだけで、
 // 実際のゲートは shoot()/UI 表示/keydown 側の isCaptureAllowed() にある (Nit fix)。
@@ -163,6 +187,76 @@ assert.ok(
   `main.js cache-buster date (${cacheBusterDate}) must be bumped to 2026-07-12 or later ` +
   "since main.js was edited (dynScale fix) and stale heuristic browser caching could otherwise " +
   "serve the pre-fix main.js on staging"
+);
+
+// ── 7) play.html: シール帳へスクショモードを引き継ぐ ──
+const captureAwareStickerBookUrlFn = playHtml.match(
+  /function captureAwareStickerBookUrl\(targetUrl\) \{[\s\S]*?\n    \}/
+);
+assert.ok(
+  captureAwareStickerBookUrlFn,
+  "play.html must keep a captureAwareStickerBookUrl(targetUrl) helper"
+);
+assert.match(
+  captureAwareStickerBookUrlFn[0],
+  /document\.querySelector\('\.pono-capture-overlay'\)/,
+  "capture propagation must be based on the capture panel actually being open, so closing it with × stops propagation"
+);
+assert.match(
+  captureAwareStickerBookUrlFn[0],
+  /new URL\(targetUrl, location\.href\)/,
+  "the helper must preserve an existing sticker-book query such as surface=cover/inside"
+);
+assert.match(
+  captureAwareStickerBookUrlFn[0],
+  /searchParams\.set\('capture', '1'\)/,
+  "the helper must add the URL trigger consumed by common/capture.js on the destination page"
+);
+
+const captureAwareStickerBookNavigations = playHtml.match(
+  /location\.href = captureAwareStickerBookUrl\(/g
+) || [];
+assert.equal(
+  captureAwareStickerBookNavigations.length,
+  3,
+  "all three sticker-book entries (gacha result, profile, debug board) must preserve an active capture panel"
+);
+assert.doesNotMatch(
+  playHtml,
+  /location\.href = THREE_STICKER_BOOK_URL;/,
+  "no sticker-book entry may bypass the capture-aware navigation helper"
+);
+
+// ── 8) シール帳 → ミュージアム → トップの撮影セッション継続 ──
+assert.match(
+  stickerBookMain,
+  /function captureAwareSiblingUrl\(relativeUrl\)[\s\S]*?querySelector\("\.pono-capture-overlay"\)[\s\S]*?searchParams\.set\("capture", "1"\)/,
+  "StickerBookThreeJS must preserve capture=1 while its capture panel is open"
+);
+assert.match(
+  stickerBookMain,
+  /window\.location\.assign\(captureAwareSiblingUrl\("\.\.\/StickerExhibitionCarousel\/"\)\)/,
+  "the sticker-book museum button must use capture-aware navigation"
+);
+assert.match(
+  museumMain,
+  /function captureAwareNavigationUrl\(relativeUrl\)[\s\S]*?querySelector\("\.pono-capture-overlay"\)[\s\S]*?searchParams\.set\("capture", "1"\)/,
+  "StickerExhibitionCarousel must preserve capture=1 while its capture panel is open"
+);
+assert.match(
+  museumMain,
+  /window\.location\.assign\(captureAwareNavigationUrl\("\.\.\/\.\.\/play\.html"\)\)/,
+  "the museum home button must use capture-aware navigation"
+);
+assert.match(
+  stickerBookIndex,
+  /main\.js\?v=20260712-1264/,
+  "StickerBookThreeJS index must bust the module cache for the full-screen capture fix"
+);
+assert.match(
+  museumIndex,
+  /main\.js\?v=20260712-1264/,
+  "StickerExhibitionCarousel index must bust the module cache for capture-session navigation"
 );
 
 console.log("capture_pages_registration_regression: all assertions passed");
