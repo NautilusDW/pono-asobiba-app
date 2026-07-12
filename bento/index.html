@@ -9620,9 +9620,9 @@ function playPop() { const ac=getAC(),t=ac.currentTime,o=ac.createOscillator(),g
 function playCorrect() { const ac=getAC(),t=ac.currentTime; [523,659,784].forEach((f,i)=>{const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='sine';o.frequency.value=f;const s=t+i*0.1;g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(0.18,s+0.02);g.gain.exponentialRampToValueAtTime(0.001,s+0.25);o.start(s);o.stop(s+0.25);}); }
 function playWrong() { const ac=getAC(),t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='triangle';o.frequency.setValueAtTime(200,t);o.frequency.exponentialRampToValueAtTime(120,t+0.18);g.gain.setValueAtTime(0.1,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.18);o.start(t);o.stop(t+0.18); }
 const BENTO_TUTORIAL_VOICE_BASE = '../assets/audio/bento/tutorial/';
-// batch:1263/1266: 34 cue の単一マスター収録へ、同じ Gemini TTS 3.1 / Leda 条件で
-// 顔パーツの短い追加 cue 2 本を収録。24 kHz mono / 96 kbps / 1.15 倍速で統一する。
-const BENTO_TUTORIAL_VOICE_VERSION = 'v1266-face-cues';
+// batch:1263/1266/1267: 単一マスターと追加 cue を Gemini TTS 3.1 / Leda、
+// 24 kHz mono / 96 kbps / 1.15 倍速で統一。お気に入り以降は短い連続 take で再収録した。
+const BENTO_TUTORIAL_VOICE_VERSION = 'v1267-favorite-restart';
 // faster-whisper で全 cue の順序・先頭末尾を照合済み。false で実音源を再生する。
 const BENTO_TUTORIAL_MOCK_VOICE = false;
 function shouldMockBentoTutorialVoice(id) {
@@ -9657,6 +9657,7 @@ const BENTO_TUTORIAL_STEP_VOICE = {
   'tut2-okazu-ok': 'tut2_12_okazuok',
   'tut2-complete': 'tut2_13_complete',
   'tut2-favorite': 'tut2_14_fav',
+  'tut2-self-start': 'tut2_14b_make_own',
   'tut2-w2-request': 'tut2_15_request',
   'tut2-w3-deliver': 'tut2_16_deliver',
 };
@@ -19291,6 +19292,8 @@ function stageComplete() {
       saveBtn.textContent = '✅ ほぞんしました！';
       saveBtn.classList.add('saved');
       playPop();
+      // snapshot の保存が終わってから、見本を閉じる最終ナレーションへ進む。
+      try { if (typeof tutorialRequestSelfStart === 'function') tutorialRequestSelfStart(); } catch (_) {}
     };
   }
   const detailBtn = document.getElementById('complete-detail-btn');
@@ -19310,6 +19313,9 @@ function stageComplete() {
     };
   }
   const continueAfterCompleteClose = () => {
+    // チュートリアル見本の後だけはタイトルへ戻らず、空のお弁当を最初から始める。
+    if (typeof tutorialStartOwnBentoAfterComplete === 'function'
+        && tutorialStartOwnBentoAfterComplete()) return;
     if (freeLayoutMode) {
       // v1497 tutorial-autostart: 初回チュートリアル (非 simple) 完走後は legacy 非 simple
       // ループ (startNextBentoOrderRound) に入れず、 タイトルへ戻す。 次のタイトル押下からは
@@ -19352,10 +19358,32 @@ function stageComplete() {
     }
   };
 
+  // stageComplete 1回ごとのclosureに置き、遅れて届く2回目の×だけを吸収する。
+  // 次のお弁当が完成すると新しいhandlerとfalseのguardが自然に作られる。
+  let tutorialSelfStartCloseCommitted = false;
   document.getElementById('complete-btn').onclick = () => {
+    // お気に入りを保存しない場合も、×を「じぶんで つくってみよう」への入口にする。
+    // 最終ナレーション中の再タッチは無視し、ended/fallback からの1回だけ閉じる。
+    if (tutorialSelfStartCloseCommitted) return;
+    let finishingTutorialToOwn = false;
+    if (typeof tutorialState !== 'undefined' && tutorialState && tutorialState.active) {
+      if (tutorialState.step === 'tut2-complete' || tutorialState.step === 'tut2-w3-deliver') return;
+      if (tutorialState.step === 'tut2-favorite') {
+        try { if (typeof tutorialRequestSelfStart === 'function') tutorialRequestSelfStart(); } catch (_) {}
+        return;
+      }
+      if (tutorialState.step === 'tut2-self-start' && !tutorialState._finishToSimpleStarted) return;
+      if (tutorialState.step === 'tut2-self-start') {
+        tutorialSelfStartCloseCommitted = true;
+        finishingTutorialToOwn = true;
+      }
+    }
     const shouldGrantTutorialSticker =
       typeof tutorialShouldGrantPendingSticker === 'function'
       && tutorialShouldGrantPendingSticker();
+    // 非同期のシール表示中も inactivity/resize で締めの吹き出しを再表示しないよう、
+    // close権を確定した時点でチュートリアル本体を終了する。
+    if (finishingTutorialToOwn && typeof tutorialMarkDone === 'function') tutorialMarkDone();
     clearRevealTimers();
     try { if (typeof tutorialClearCompleteGuideTimers === 'function') tutorialClearCompleteGuideTimers(); } catch (_) {}
     const slot = document.getElementById('complete-pono-slot');
@@ -19365,11 +19393,13 @@ function stageComplete() {
     document.getElementById('complete-overlay').classList.add('hidden');
     syncCompleteChromeSafeArea();
     // ごかんそう (rating) 4 ゲート chain — bento は first-clear.js 連鎖に乗らないため個別 wire
-    setTimeout(() => {
-      if (window.PonoRating?.maybeShowAfterClear) {
-        window.PonoRating.maybeShowAfterClear('bento');
-      }
-    }, 800);
+    if (!finishingTutorialToOwn) {
+      setTimeout(() => {
+        if (window.PonoRating?.maybeShowAfterClear) {
+          window.PonoRating.maybeShowAfterClear('bento');
+        }
+      }, 800);
+    }
     if (shouldGrantTutorialSticker && typeof tutorialGrantPendingStickerAfterClose === 'function') {
       tutorialGrantPendingStickerAfterClose(continueAfterCompleteClose);
       return;
@@ -19984,6 +20014,9 @@ const tutorialState = {
   completeGuideStarted: false,
   completeDetailShown: false,
   pendingStickerGrant: false,
+  _selfStartRequested: false,
+  _finishToSimpleStarted: false,
+  _selfStartConsumed: false,
 };
 
 function tutorialReadDone() {
@@ -20009,6 +20042,33 @@ function tutorialMarkDone() {
   tutorialState.active = false;
   tutorialState.step = 'done';
   tutorialTeardown();
+}
+// 完成見本から自分のお弁当へ移る最終導線。星の保存・×のどちらから来ても一度だけ進める。
+function tutorialRequestSelfStart() {
+  if (!tutorialState.active || tutorialState.step !== 'tut2-favorite') return false;
+  if (tutorialState._selfStartRequested) return false;
+  tutorialState._selfStartRequested = true;
+  tutorialAdvance('tut2-self-start');
+  return true;
+}
+function tutorialFinishSelfStart() {
+  if (!tutorialState.active || tutorialState.step !== 'tut2-self-start') return false;
+  if (tutorialState._finishToSimpleStarted) return false;
+  tutorialState._finishToSimpleStarted = true;
+  try { tutorialHideBubble(); } catch (_) {}
+  try { tutorialClearTrims(); } catch (_) {}
+  try { if (typeof hideBentoAcornModal === 'function') hideBentoAcornModal(); } catch (_) {}
+  const closeBtn = document.getElementById('complete-btn');
+  if (closeBtn) closeBtn.click();
+  return !!closeBtn;
+}
+function tutorialStartOwnBentoAfterComplete() {
+  if (!tutorialState._finishToSimpleStarted || tutorialState._selfStartConsumed) return false;
+  tutorialState._selfStartConsumed = true;
+  if (tutorialState.active) tutorialMarkDone();
+  try { window.__bentoTutorialPendingMode = null; } catch (_) {}
+  try { if (typeof restartSimpleBentoRound === 'function') restartSimpleBentoRound(); } catch (_) {}
+  return true;
 }
 // v1497 tutorial-autostart: タイトル画面で選んだモード (simple/request) を控えておき、
 // greet で「やめる / つぎからスキップ」した子を選んだモードへそのまま送り届ける。
@@ -20280,6 +20340,19 @@ function tutorialPlayStepVoice(step, firstRender) {
   }
   tutorialState.lastVoiceStep = step;
   const opts = {};
+  // 最終ステップだけは音声を最後まで聞いてから完成見本を閉じる。
+  // ended が来ない端末では playBentoTutorialVoice の fallback が同じ callback を呼ぶ。
+  try {
+    const stepDef = tut2FindStep(step);
+    if (stepDef && typeof stepDef.onVoiceEnded === 'function') {
+      opts.fallbackMs = stepDef.fallbackMs || 7000;
+      opts.onEnded = () => {
+        if (tutorialState.active && tutorialState.step === step) {
+          stepDef.onVoiceEnded(stepDef, tutorialState);
+        }
+      };
+    }
+  } catch (_) {}
   try { _bentoDebugLog('[bento-debug] dispatching playBentoTutorialVoice', { id: id, step: step, optsKeys: Object.keys(opts) }); } catch (_) {}
   playBentoTutorialVoice(id, opts);
 }
@@ -20463,7 +20536,7 @@ function tutorialShouldGrantPendingSticker() {
   return !!(
     tutorialState.active
     && tutorialState.pendingStickerGrant
-    && tutorialState.completeDetailShown
+    && (tutorialState.completeDetailShown || tutorialState._finishToSimpleStarted)
   );
 }
 function tutorialGrantPendingStickerAfterClose(onClose) {
@@ -20473,7 +20546,7 @@ function tutorialGrantPendingStickerAfterClose(onClose) {
   const finish = () => {
     if (finished) return;
     finished = true;
-    tutorialMarkDone();
+    if (tutorialState.active) tutorialMarkDone();
     if (typeof onClose === 'function') onClose();
   };
   try {
@@ -22478,6 +22551,7 @@ const TUT2_STEPS = [
   { id: 'tut2-okazu-ok', single: true, fallbackMs: 5500, renderPhaseB: tut2RenderOkazuOk },
   { id: 'tut2-complete', single: true, fallbackMs: 5000, renderPhaseB: tut2RenderComplete },
   { id: 'tut2-favorite', single: true, fallbackMs: 6000, renderPhaseB: tut2RenderFavorite },
+  { id: 'tut2-self-start', single: true, fallbackMs: 5200, renderPhaseB: tut2RenderSelfStart, onVoiceEnded: tutorialFinishSelfStart },
   // wrapper steps for request mode
   { id: 'tut2-w2-request', single: true, fallbackMs: 5000, renderPhaseB: tut2RenderW2Request },
   { id: 'tut2-w3-deliver', single: true, fallbackMs: 6000, renderPhaseB: tut2RenderW3Deliver },
@@ -22628,6 +22702,7 @@ const TUT2_PONO_SPEECH = {
   'tut2-okazu-ok': 'できあがったら「おかずOK」を おしてね。',
   'tut2-complete': 'わあ、すてきな おべんとうが できたね！',
   'tut2-favorite': 'ほしマークで おきにいりに とっておけるよ。',
+  'tut2-self-start': 'では、じぶんで おべんとうを つくってみよう。',
   'tut2-w2-request': 'アライグマくんの おねがいだよ！',
   'tut2-w3-deliver': 'アライグマくん、とっても よろこんでいるよ！',
 };
@@ -23533,25 +23608,26 @@ function tut2RenderComplete(step) {
 function tut2RenderFavorite(step) {
   const saveBtn = tutorialFindSaveFavBtn();
   tutorialShowBubble('おきにいりに とっておけるよ<br>ほしマークを おしてね', { topVh: '18', side: 'left' });
+  // 完成演出中に星を先に保存できた場合も、favorite音声を聞き終えてから締めへ進む。
+  if (saveBtn && favSaved) {
+    tutorialHideFinger();
+    tutorialClearTrims();
+    tutorialRequestSelfStart();
+    return;
+  }
   if (saveBtn) {
     tutorialPositionBubbleBeside(saveBtn, { gap: 12 });
     tutorialMarkTarget(saveBtn, { radius: 22, outline: false });
     tutorialAnimateTap(saveBtn);
-    if (!saveBtn._tut2FavBound) {
-      saveBtn._tut2FavBound = true;
-      saveBtn.addEventListener('pointerdown', () => {
-        setTimeout(() => tutorialMarkDone(), 400);
-      }, { once: true });
-    }
   }
-  // Also allow × close to end tutorial.
-  const closeBtn = document.getElementById('complete-btn');
-  if (closeBtn && !closeBtn._tut2FavCloseBound) {
-    closeBtn._tut2FavCloseBound = true;
-    closeBtn.addEventListener('pointerdown', () => {
-      setTimeout(() => tutorialMarkDone(), 100);
-    }, { once: true });
-  }
+}
+function tut2RenderSelfStart(step) {
+  tutorialHideFinger();
+  tutorialClearTrims();
+  tutorialClearTargetCircle();
+  tutorialShowBubble('では、じぶんで おべんとうを<br>つくってみよう！', { topVh: '18', side: 'left' });
+  const completeBento = document.getElementById('complete-bento');
+  if (completeBento) tutorialPositionBubbleBeside(completeBento, { gap: 16 });
 }
 function tut2RenderW3Deliver(step) {
   tutorialShowBubble('アライグマくん、とっても<br>よろこんでいるよ！', { topVh: '18', side: 'left' });
@@ -23810,6 +23886,9 @@ function tutorialStart() {
   tutorialState.completeDetailShown = false;
   tutorialState.completeGuideToken = 0;
   tutorialState.pendingStickerGrant = false;
+  tutorialState._selfStartRequested = false;
+  tutorialState._finishToSimpleStarted = false;
+  tutorialState._selfStartConsumed = false;
   tutorialState._freeOkazuPrepared = false;
   tutorialClearCompleteGuideTimers();
   tutorialState.groupIntroShown = !!window.__bentoSkIntroShownThisRun;

@@ -2,6 +2,8 @@
 
 // batch:1262 regression: 操作数どおりのundo・葉っぱ青枠・仕切り角度のAdmin同期に加え、
 // 小さいおかず工程から通常プレイ用の「したに しく」へ逸れないことを守る。
+// batch:1267 regression: お気に入り保存/×のあとに最後の案内を一度だけ再生し、
+// 空のお弁当を最初から作る通常フローへ戻ることを守る。
 
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -186,8 +188,8 @@ undoTimers.shift()();
 assert.deepEqual(undoAdvances, ['tut2-nori-edit', 'tut2-nori-ok']);
 
 const voiceMap = extract(html, 'const BENTO_TUTORIAL_STEP_VOICE = {', 'let bentoTutorialVoiceAudio', 'tutorial voice map');
-assert.match(html, /const BENTO_TUTORIAL_VOICE_VERSION = 'v1266-face-cues'/,
-  'the shipped narration must use the cache version that includes both face cues');
+assert.match(html, /const BENTO_TUTORIAL_VOICE_VERSION = 'v1267-favorite-restart'/,
+  'the shipped narration must use the favorite/restart cache version');
 assert.match(html, /const BENTO_TUTORIAL_MOCK_VOICE = false/,
   'the shipped narration must play real audio instead of mock timers');
 [
@@ -197,9 +199,216 @@ assert.match(html, /const BENTO_TUTORIAL_MOCK_VOICE = false/,
   ['tut2-divider-place', 'tut2_11b_dividers'],
   ['tut2-pick-tab', 'tut2_11c_pick_tab'],
   ['tut2-pick-place', 'tut2_11d_pick_place'],
+  ['tut2-self-start', 'tut2_14b_make_own'],
 ].forEach(([stepId, voiceId]) => {
   assert.match(voiceMap, new RegExp("'" + stepId + "':\\s*'" + voiceId + "'"));
 });
+
+// 2b. お気に入りを保存してもしなくても、締めのナレーションを最後まで聞いてから
+// 空のお弁当へ一度だけ移る。お気に入り保存は先に確定し、途中の close は遮断する。
+const endingStepIds = [...steps.matchAll(/\bid:\s*'([^']+)'/g)].map(match => match[1]);
+const favoriteStepAt = endingStepIds.indexOf('tut2-favorite');
+assert.ok(favoriteStepAt >= 0, 'favorite step must remain in the tutorial');
+assert.equal(endingStepIds[favoriteStepAt + 1], 'tut2-self-start',
+  'the self-start narration must immediately follow favorite');
+assert.match(steps, /id: 'tut2-self-start'[^\n]*onVoiceEnded:\s*tutorialFinishSelfStart/,
+  'the final step must finish from the narration ended/fallback callback');
+
+const requestSelfStartSource = extract(
+  html,
+  'function tutorialRequestSelfStart()',
+  'function tutorialFinishSelfStart()',
+  'favorite to self-start transition',
+);
+assert.match(requestSelfStartSource, /tutorialState\._selfStartRequested/,
+  'the favorite transition must have an exact-once state guard');
+assert.match(requestSelfStartSource, /if\s*\([^)]*_selfStartRequested[^)]*\)\s*return(?:\s+false)?\s*;/,
+  'a second favorite/close signal must not request the final step again');
+assert.equal((requestSelfStartSource.match(/tutorialAdvance\('tut2-self-start'\)/g) || []).length, 1,
+  'the guarded helper must contain one final-step advance');
+
+const requestState = { active: true, step: 'tut2-favorite', _selfStartRequested: false };
+const requestedSteps = [];
+const requestSelfStart = vm.runInNewContext(`(() => {
+  ${requestSelfStartSource}
+  return tutorialRequestSelfStart;
+})()`, {
+  tutorialState: requestState,
+  tutorialAdvance: step => requestedSteps.push(step),
+});
+requestSelfStart();
+requestSelfStart();
+assert.deepEqual(requestedSteps, ['tut2-self-start'],
+  'favorite save and close races must still advance exactly once');
+
+const favoriteSaveSource = extract(
+  html,
+  '    saveBtn.onclick = () => {',
+  '  const detailBtn = document.getElementById(\'complete-detail-btn\');',
+  'favorite save handler',
+);
+const saveFavoriteAt = favoriteSaveSource.indexOf('saveFavorite(snapshot)');
+const favSavedAt = favoriteSaveSource.indexOf('favSaved = true');
+const playPopAt = favoriteSaveSource.indexOf('playPop()');
+const requestAfterSaveAt = favoriteSaveSource.indexOf('tutorialRequestSelfStart()');
+assert.ok(saveFavoriteAt >= 0 && saveFavoriteAt < favSavedAt && favSavedAt < playPopAt && playPopAt < requestAfterSaveAt,
+  'favorite save must persist, update its guard, and play feedback before leaving the step');
+assert.equal((favoriteSaveSource.match(/tutorialRequestSelfStart\(\)/g) || []).length, 1,
+  'the favorite save handler must request the final step once');
+
+const favoriteRendererSource = extract(
+  html,
+  'function tut2RenderFavorite(step)',
+  'function tut2RenderSelfStart(step)',
+  'favorite renderer',
+);
+assert.doesNotMatch(favoriteRendererSource, /pointerdown|tutorialMarkDone/,
+  'favorite rendering must not install early pointerdown completion hooks');
+assert.match(favoriteRendererSource, /if\s*\(saveBtn\s*&&\s*favSaved\)[\s\S]*tutorialRequestSelfStart\(\)/,
+  'an early star save during the completion animation must still continue after favorite audio');
+
+const finishSelfStartSource = extract(
+  html,
+  'function tutorialFinishSelfStart()',
+  'function tutorialStartOwnBentoAfterComplete()',
+  'self-start narration completion',
+);
+assert.match(finishSelfStartSource, /tutorialState\._finishToSimpleStarted\s*=\s*true/,
+  'the final narration callback must unlock its programmatic close');
+assert.match(finishSelfStartSource, /getElementById\('complete-btn'\)/);
+assert.match(finishSelfStartSource, /\.click\(\)/,
+  'the final narration callback must programmatically continue');
+assert.match(finishSelfStartSource, /hideBentoAcornModal\(\)/,
+  'the no-autohide acorn modal must not cover the fresh own-Bento round');
+
+const finishState = { active: true, step: 'tut2-self-start', _finishToSimpleStarted: false };
+let programmaticCloseCount = 0;
+const finishSelfStart = vm.runInNewContext(`(() => {
+  ${finishSelfStartSource}
+  return tutorialFinishSelfStart;
+})()`, {
+  tutorialState: finishState,
+  document: { getElementById: id => id === 'complete-btn' ? { click: () => { programmaticCloseCount++; } } : null },
+});
+assert.equal(finishSelfStart(), true);
+assert.equal(finishSelfStart(), false);
+assert.equal(programmaticCloseCount, 1, 'ended and fallback races must close the exemplar once');
+
+const ownBentoContinuationSource = extract(
+  html,
+  'function tutorialStartOwnBentoAfterComplete()',
+  '// v1497 tutorial-autostart:',
+  'own Bento continuation',
+);
+assert.match(ownBentoContinuationSource, /tutorialState\._selfStartConsumed/,
+  'the new-round continuation must be idempotent');
+assert.match(ownBentoContinuationSource, /tutorialMarkDone\(\)/,
+  'the exemplar tutorial must be persisted as complete');
+assert.match(ownBentoContinuationSource, /window\.__bentoTutorialPendingMode\s*=\s*null/,
+  'the tutorial pending mode must be cleared before the own Bento begins');
+assert.equal((ownBentoContinuationSource.match(/restartSimpleBentoRound\(\)/g) || []).length, 1,
+  'the own-Bento continuation must restart simple mode exactly once');
+
+const ownState = { active: true, _finishToSimpleStarted: true, _selfStartConsumed: false };
+const ownWindow = { __bentoTutorialPendingMode: 'simple' };
+let markDoneCount = 0;
+let restartSimpleCount = 0;
+const startOwnBento = vm.runInNewContext(`(() => {
+  ${ownBentoContinuationSource}
+  return tutorialStartOwnBentoAfterComplete;
+})()`, {
+  tutorialState: ownState,
+  window: ownWindow,
+  tutorialMarkDone: () => { markDoneCount++; },
+  restartSimpleBentoRound: () => { restartSimpleCount++; },
+});
+assert.equal(startOwnBento(), true);
+assert.equal(startOwnBento(), false);
+assert.equal(markDoneCount, 1);
+assert.equal(restartSimpleCount, 1);
+assert.equal(ownWindow.__bentoTutorialPendingMode, null);
+
+const completeCloseSource = extract(
+  html,
+  "  document.getElementById('complete-btn').onclick = () => {",
+  '  // NPC 依頼者モード時は、 完成画面の前に「お弁当を渡す」演出を挟む。',
+  'completion close handler',
+);
+assert.match(html, /let tutorialSelfStartCloseCommitted\s*=\s*false;\s*document\.getElementById\('complete-btn'\)\.onclick/,
+  'each completion screen must get a fresh exact-once close guard');
+assert.match(completeCloseSource, /tut2-complete[^\n]*tut2-w3-deliver[^\n]*return/,
+  '× must not skip the completion voice before the favorite step appears');
+assert.match(completeCloseSource, /tut2-favorite[\s\S]*tutorialRequestSelfStart\(\)[\s\S]*return/,
+  '× on favorite must request the final narration instead of closing');
+assert.match(completeCloseSource, /tut2-self-start[\s\S]*!tutorialState\._finishToSimpleStarted[\s\S]*return/,
+  'manual close must not cut off the final narration');
+assert.match(completeCloseSource, /tutorialSelfStartCloseCommitted[^\n]*return[\s\S]*tutorialSelfStartCloseCommitted\s*=\s*true/,
+  'the final programmatic close and a simultaneous child close must commit atomically once');
+assert.match(completeCloseSource, /finishingTutorialToOwn[\s\S]*tutorialMarkDone\(\)/,
+  'the committed final close must tear down inactivity and observers before an async sticker');
+assert.match(completeCloseSource, /if\s*\(!finishingTutorialToOwn\)[\s\S]*PonoRating\.maybeShowAfterClear/,
+  'the tutorial-to-own transition must suppress the rating popup');
+
+const closeState = {
+  active: true,
+  step: 'tut2-self-start',
+  _finishToSimpleStarted: true,
+};
+const closeNodes = {
+  'complete-btn': {},
+  'complete-pono-slot': { classList: { remove: () => {} } },
+  'complete-right': { classList: { remove: () => {} } },
+  'complete-overlay': { classList: { add: () => {} } },
+};
+let closeMarkDoneCount = 0;
+let stickerGrantCount = 0;
+let stickerOnClose = null;
+let continuationCount = 0;
+const committedClose = vm.runInNewContext(`(() => {
+  let tutorialSelfStartCloseCommitted = false;
+  ${completeCloseSource}
+  return document.getElementById('complete-btn').onclick;
+})()`, {
+  tutorialState: closeState,
+  tutorialRequestSelfStart: () => {},
+  tutorialShouldGrantPendingSticker: () => true,
+  tutorialMarkDone: () => { closeMarkDoneCount++; closeState.active = false; closeState.step = 'done'; },
+  tutorialGrantPendingStickerAfterClose: callback => { stickerGrantCount++; stickerOnClose = callback; },
+  continueAfterCompleteClose: () => { continuationCount++; },
+  clearRevealTimers: () => {},
+  tutorialClearCompleteGuideTimers: () => {},
+  syncCompleteChromeSafeArea: () => {},
+  document: { getElementById: id => closeNodes[id] || null },
+  window: {},
+  setTimeout: () => { throw new Error('rating must be suppressed'); },
+});
+committedClose();
+committedClose();
+assert.equal(closeMarkDoneCount, 1);
+assert.equal(stickerGrantCount, 1, 'double close must not start two sticker grants');
+assert.equal(continuationCount, 0);
+assert.equal(typeof stickerOnClose, 'function');
+stickerOnClose();
+assert.equal(continuationCount, 1, 'the sticker callback must continue once after the committed close');
+
+const completionContinuationSource = extract(
+  html,
+  '  const continueAfterCompleteClose = () => {',
+  "  document.getElementById('complete-btn').onclick = () => {",
+  'post-completion continuation',
+);
+assert.match(completionContinuationSource, /tutorialStartOwnBentoAfterComplete\(\)/,
+  'the close continuation must enter the fresh own-Bento round');
+
+const stickerEligibilitySource = extract(
+  html,
+  'function tutorialShouldGrantPendingSticker()',
+  'function tutorialGrantPendingStickerAfterClose',
+  'tutorial sticker eligibility',
+);
+assert.match(stickerEligibilitySource,
+  /completeDetailShown[\s\S]*\|\|[\s\S]*tutorialState\._finishToSimpleStarted/,
+  'finishing the exemplar without opening detail must still grant its pending sticker');
 const advanceSource = extract(html, 'function tutorialAdvance(nextStep)', 'function tutorialUninstallPaletteObserver', 'voice-safe advance');
 assert.match(advanceSource, /audioDuration - \(audio\.currentTime \|\| 0\)/,
   'queued tutorial advance must use remaining narration duration');
@@ -325,9 +534,10 @@ const shippedVoiceIds = [
   'tut2_10b_freeokazu', 'tut2_17a_leaf_tab', 'tut2_17_leafpick',
   'tut2_18_leafplace', 'tut2_11_tabs', 'tut2_11b_dividers',
   'tut2_11c_pick_tab', 'tut2_11d_pick_place', 'tut2_12_okazuok',
-  'tut2_13_complete', 'tut2_14_fav', 'tut2_15_request', 'tut2_16_deliver',
+  'tut2_13_complete', 'tut2_14_fav', 'tut2_14b_make_own',
+  'tut2_15_request', 'tut2_16_deliver',
 ];
-assert.equal(new Set(shippedVoiceIds).size, 36, 'all shipped voice ids must be unique');
+assert.equal(new Set(shippedVoiceIds).size, 37, 'all shipped voice ids must be unique');
 for (const voiceId of shippedVoiceIds) {
   const audioPath = path.join(root, 'assets/audio/bento/tutorial', `${voiceId}.mp3`);
   assert.ok(fs.existsSync(audioPath), `missing narration asset: ${voiceId}.mp3`);
