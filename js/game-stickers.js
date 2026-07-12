@@ -35,6 +35,17 @@
     return '';
   }
 
+  function _captureAwareStickerBookUrl(url) {
+    if (!document.querySelector('.pono-capture-overlay')) return url;
+    try {
+      var nextUrl = new URL(url, location.href);
+      nextUrl.searchParams.set('capture', '1');
+      return nextUrl.href;
+    } catch (e) {
+      return url;
+    }
+  }
+
   function _getJSON(key, fallback) {
     try {
       var raw = localStorage.getItem(key);
@@ -576,7 +587,7 @@
         if (result.gameId) url += '&game=' + encodeURIComponent(result.gameId);
         if (result.stickerId) url += '&pasteId=' + encodeURIComponent(result.stickerId);
         url += '&firstEver=' + (result.first ? '1' : '0');
-        location.href = url;
+        location.href = _captureAwareStickerBookUrl(url);
       }, 560);
     });
     overlay.addEventListener('click', function (event) {

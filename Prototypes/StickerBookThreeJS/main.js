@@ -2518,6 +2518,75 @@ const cameraTarget = new THREE.Vector3(0, 0.08, 0);
 const pageRaycaster = new THREE.Raycaster();
 const pointerNdc = new THREE.Vector2();
 
+// v2127 batch:1254: スクショモード登録。
+// batch:1264: WebGL canvas だけの直撮りでは、実画面に見えている机背景・
+// 上部ボタン・ページ操作が抜け、特に縦画面の16:9出力がほぼ透明になっていた。
+// renderer を明示描画したあと #app 全体を html2canvas で撮り、見えている画面を
+// そのまま capture.js の preset 合成へ渡す。html2canvas は撮影時だけ遅延読込する。
+// capture=1 のパネルは重いtexture読込より先に出るため、登録自体もここで先に済ませ、
+// build() は ready promise を待ってから最終フレームを撮る。コールド起動直後に
+// 「撮る」を押しても「register されていません」にならず、撮影中のまま準備完了を待てる。
+// PonoCapture.register() 自体は capture-mode の状態に関わらず build() を格納するだけで、
+// 実際のゲートは shoot()/UI 表示/keydown 側の isCaptureAllowed() にある。
+let resolveStickerBookCaptureReady;
+const stickerBookCaptureReady = new Promise((resolve) => {
+  resolveStickerBookCaptureReady = resolve;
+});
+let stickerBookCaptureRendererPromise = null;
+
+function loadStickerBookCaptureRenderer() {
+  if (!stickerBookCaptureRendererPromise) {
+    stickerBookCaptureRendererPromise = import("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/+esm")
+      .then((mod) => {
+        const html2canvas = mod && (mod.default || mod);
+        if (typeof html2canvas !== "function") {
+          throw new Error("html2canvas module shape unexpected");
+        }
+        return html2canvas;
+      })
+      .catch((error) => {
+        stickerBookCaptureRendererPromise = null;
+        throw error;
+      });
+  }
+  return stickerBookCaptureRendererPromise;
+}
+
+function regStickerBookCapture() {
+  if (!window.PonoCapture) return;
+  window.PonoCapture.register({
+    gameId: "sticker-book",
+    defaultLabel: "sticker-book",
+    build: async function (opts) {
+      try {
+        await stickerBookCaptureReady;
+        renderer.render(scene, camera);
+        const container = document.getElementById("app");
+        if (!container) return null;
+        const rect = container.getBoundingClientRect();
+        let dynScale = 2;
+        if (rect.width > 0 && rect.height > 0) {
+          dynScale = Math.max(
+            2,
+            Number(opts?.width || 0) / rect.width,
+            Number(opts?.height || 0) / rect.height,
+          );
+        }
+        const html2canvas = await loadStickerBookCaptureRenderer();
+        const h2cOpts = typeof window.PonoCapture.html2canvasOptions === "function"
+          ? window.PonoCapture.html2canvasOptions({ backgroundColor: null, scale: dynScale })
+          : { backgroundColor: null, scale: dynScale, useCORS: true };
+        return await html2canvas(container, h2cOpts);
+      } catch (err) {
+        console.warn("[sticker-book] capture build failed", err);
+        return null;
+      }
+    },
+  });
+}
+if (window.PonoCapture) regStickerBookCapture();
+else window.addEventListener("DOMContentLoaded", regStickerBookCapture, { once: true });
+
 const loader = new THREE.TextureLoader();
 const textureFiles = [
   ...new Set([
@@ -3013,6 +3082,7 @@ if (editorEnabled) {
 resize();
 applyVariantState();
 window.__stickerBookReady = true;
+resolveStickerBookCaptureReady();
 window.__stickerBookDebugState = () => ({
   activeBookPage,
   activeSurface,
@@ -3066,71 +3136,6 @@ window.__stickerBookZukanIndexTargets = (page = activeBookPage) => {
   return collectionZukanIndexTargetsForPage(pageDef);
 };
 animate();
-
-// v2127 batch:1254: スクショモード登録。
-// batch:1264: WebGL canvas だけの直撮りでは、実画面に見えている机背景・
-// 上部ボタン・ページ操作が抜け、特に縦画面の16:9出力がほぼ透明になっていた。
-// renderer を明示描画したあと #app 全体を html2canvas で撮り、見えている画面を
-// そのまま capture.js の preset 合成へ渡す。html2canvas は撮影時だけ遅延読込する。
-// v2127 batch:1254: 訂正 — PonoCapture.register() 自体は capture-mode の状態に
-// 関わらず常に build() を registered へ格納するだけで no-op にはならない。
-// capture-mode OFF (staging + manage 解錠 + デバッグボードのトグル ON でない環境) を
-// 実際にゲートしているのは shoot()/UI 表示/keydown ショートカット側の
-// isCaptureAllowed() であり、 通常プレイでは撮影 UI・ショートカットが出てこないため
-// この register() が呼ばれても挙動には一切影響しない。
-let stickerBookCaptureRendererPromise = null;
-
-function loadStickerBookCaptureRenderer() {
-  if (!stickerBookCaptureRendererPromise) {
-    stickerBookCaptureRendererPromise = import("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/+esm")
-      .then((mod) => {
-        const html2canvas = mod && (mod.default || mod);
-        if (typeof html2canvas !== "function") {
-          throw new Error("html2canvas module shape unexpected");
-        }
-        return html2canvas;
-      })
-      .catch((error) => {
-        stickerBookCaptureRendererPromise = null;
-        throw error;
-      });
-  }
-  return stickerBookCaptureRendererPromise;
-}
-
-function regStickerBookCapture() {
-  if (!window.PonoCapture) return;
-  window.PonoCapture.register({
-    gameId: "sticker-book",
-    defaultLabel: "sticker-book",
-    build: async function (opts) {
-      try {
-        renderer.render(scene, camera);
-        const container = document.getElementById("app");
-        if (!container) return null;
-        const rect = container.getBoundingClientRect();
-        let dynScale = 2;
-        if (rect.width > 0 && rect.height > 0) {
-          dynScale = Math.max(
-            2,
-            Number(opts?.width || 0) / rect.width,
-            Number(opts?.height || 0) / rect.height,
-          );
-        }
-        const html2canvas = await loadStickerBookCaptureRenderer();
-        const h2cOpts = typeof window.PonoCapture.html2canvasOptions === "function"
-          ? window.PonoCapture.html2canvasOptions({ backgroundColor: null, scale: dynScale })
-          : { backgroundColor: null, scale: dynScale, useCORS: true };
-        return await html2canvas(container, h2cOpts);
-      } catch (err) {
-        console.warn("[sticker-book] capture build failed", err);
-        return null;
-      }
-    },
-  });
-}
-if (window.PonoCapture) regStickerBookCapture();
-else window.addEventListener("DOMContentLoaded", regStickerBookCapture, { once: true });
 
 function setupScenePagePicking() {
   if (!editorEnabled) {

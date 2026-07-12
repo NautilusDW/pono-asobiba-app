@@ -18,6 +18,7 @@
 //     7) play.html: 撮影パネルを表示中のシール帳遷移だけ capture=1 を引き継ぎ、
 //        通常遷移・パネルを閉じた後の遷移へは混入させない
 //     8) シール帳 → ミュージアム → トップでも、開いている撮影パネルを引き継ぐ
+//     9) 各ゲーム共通のシール獲得ポップアップから入る場合も撮影状態を引き継ぐ
 
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
@@ -29,6 +30,7 @@ const stickerBookMain = fs.readFileSync(path.join(root, "Prototypes/StickerBookT
 const stickerBookIndex = fs.readFileSync(path.join(root, "Prototypes/StickerBookThreeJS/index.html"), "utf8");
 const museumMain = fs.readFileSync(path.join(root, "Prototypes/StickerExhibitionCarousel/main.js"), "utf8");
 const museumIndex = fs.readFileSync(path.join(root, "Prototypes/StickerExhibitionCarousel/index.html"), "utf8");
+const gameStickers = fs.readFileSync(path.join(root, "js/game-stickers.js"), "utf8");
 
 // ── 1) play.html: registerGachaCapture / registerShopCapture の定義 + window 公開 ──
 assert.match(
@@ -108,6 +110,21 @@ assert.match(
   stickerBookRegisterFn[0],
   /renderer\.render\(scene, camera\)/,
   "the sticker-book build() must force a synchronous renderer.render() before snapshotting (preserveDrawingBuffer timing)"
+);
+assert.match(
+  stickerBookRegisterFn[0],
+  /await stickerBookCaptureReady;/,
+  "an early capture click must wait for the sticker-book scene to finish loading instead of failing"
+);
+assert.ok(
+  stickerBookMain.indexOf("if (window.PonoCapture) regStickerBookCapture();") <
+    stickerBookMain.indexOf("const textureEntries = await Promise.all"),
+  "the sticker-book capture target must register before the top-level texture await so the cold-load overlay is never unregistered"
+);
+assert.match(
+  stickerBookMain,
+  /window\.__stickerBookReady = true;\s*resolveStickerBookCaptureReady\(\);/,
+  "the capture readiness promise must resolve at the same point as the public sticker-book ready signal"
 );
 assert.match(
   stickerBookRegisterFn[0],
@@ -257,6 +274,18 @@ assert.match(
   museumIndex,
   /main\.js\?v=20260712-1264/,
   "StickerExhibitionCarousel index must bust the module cache for capture-session navigation"
+);
+
+// ── 9) 共通シール獲得ポップアップ → シール帳 ──
+assert.match(
+  gameStickers,
+  /function _captureAwareStickerBookUrl\(url\)[\s\S]*?querySelector\('\.pono-capture-overlay'\)[\s\S]*?searchParams\.set\('capture', '1'\)/,
+  "the shared reward popup must preserve capture=1 only while its capture panel is open"
+);
+assert.match(
+  gameStickers,
+  /location\.href = _captureAwareStickerBookUrl\(url\)/,
+  "the shared reward popup's sticker-book action must use capture-aware navigation"
 );
 
 console.log("capture_pages_registration_regression: all assertions passed");
