@@ -5919,8 +5919,8 @@
       56% { transform: translateX(3px) rotate(.8deg); }
     }
     .donguri-shop-v2-bubble {
-      /* v1911: bottom 48%→40% で看板下の rotation-note から離す。 */
-      position: absolute; left: 5.8%; bottom: 40%;
+      /* batch:1253: リスの顔を覆わず、しっぽだけが耳元を指す高さに固定。 */
+      position: absolute; left: 5.8%; bottom: min(59%, calc(24% + 211px));
       width: min(27%, 350px);
       aspect-ratio: 1774 / 887;
       box-sizing: border-box;
@@ -5931,9 +5931,20 @@
       padding: clamp(8px, .95vw, 12px) clamp(14px, 1.8vw, 24px) clamp(20px, 3.1vw, 34px);
       color: #5a3a00; font-weight: 900; font-size: clamp(12px, 1.5vw, 18px); text-align: center; line-height: 1.2;
       white-space: pre-line;
-      overflow-wrap: anywhere;
+      overflow-wrap: normal;
+      word-break: keep-all;
+      line-break: strict;
+      text-wrap: balance;
       overflow: visible;
       filter: drop-shadow(0 8px 12px rgba(38, 19, 4, .24));
+    }
+    .donguri-shop-v2-bubble[data-layout="countdown"] {
+      padding-left: clamp(10px, 1.15vw, 16px);
+      padding-right: clamp(10px, 1.15vw, 16px);
+      font-size: clamp(11px, 1.35vw, 17px);
+      letter-spacing: -.02em;
+      white-space: nowrap;
+      text-wrap: nowrap;
     }
     .donguri-shop-v2-subtitle {
       /* v1911: bubble 追従で下げ、 字幕と看板の縦間隔を確保 */
@@ -6402,7 +6413,8 @@
       .donguri-shop-v2-title { width: min(39vw, 280px); font-size: 0; }
       .donguri-shop-v2-rotation-note { --rot-note-top: 16.4%; width: min(62vw, 380px); font-size: clamp(8.5px, 1.55vw, 11.5px); }
       .donguri-shop-v2-shopkeeper { left: 3.4%; bottom: 22.8%; width: 21.2%; min-width: 86px; }
-      .donguri-shop-v2-bubble { left: 3.8%; bottom: 51%; width: min(27%, 238px); font-size: clamp(10px, 1.55vw, 13.5px); }
+      .donguri-shop-v2-bubble { left: 3.8%; bottom: 57%; width: min(28%, 238px); font-size: clamp(10px, 1.55vw, 13.5px); }
+      .donguri-shop-v2-bubble[data-layout="countdown"] { padding-left: 10px; padding-right: 10px; font-size: clamp(10px, 1.35vw, 12.5px); }
       .donguri-shop-v2-subtitle { left: 4.2%; bottom: 43.8%; width: min(32%, 250px); min-height: clamp(16px, 4vw, 24px); padding: 2px 6px; font-size: clamp(7px, 1.28vw, 10px); border-width: 1.5px; }
       .donguri-shop-v2-reserve { left: 6.5%; bottom: 4.2%; width: min(25%, 210px); min-width: 126px; height: clamp(72px, 18vw, 90px); padding: 5px 7px; grid-template-columns: 28% minmax(0, 1fr); border-radius: 12px; }
       .donguri-shop-v2-reserve-title { font-size: 9px; }
@@ -6469,6 +6481,13 @@
     /* v1906: wide は safe frame 高さではなく看板実寸に近い長さで固定し、案内が看板内へ戻らないようにする。 */
     @media (min-width: 901px) and (min-aspect-ratio: 1501/1000) {
       .donguri-shop-v2-rotation-note { --rot-note-top: clamp(82px, 9vw, 112px); }
+    }
+    @media (min-width: 901px) and (max-height: 540px) {
+      .donguri-shop-v2-bubble { left: 0; }
+      .donguri-shop-v2-bubble[data-layout="countdown"] { padding-left: 10px; padding-right: 10px; font-size: clamp(10px, 1.35vw, 12.5px); }
+    }
+    @media (max-aspect-ratio: 1/1) {
+      .donguri-shop-v2-bubble { width: min(42%, 238px); }
     }
 
     /* ===== daily-quest UI v2 (v1575) — チャレンジ情報バナー / ガチャ中央メッセージ / ショップ強化 ===== */
@@ -9832,7 +9851,7 @@
       </div>
       <div class="donguri-shop-v2-counter" aria-hidden="true"></div>
       <div class="donguri-shop-v2-safe">
-        <div class="donguri-shop-v2-bubble" id="donguriShopBubble" role="status" aria-live="polite">もうすぐ かわるよ</div>
+        <div class="donguri-shop-v2-bubble" id="donguriShopBubble" role="status" aria-live="polite" data-layout="countdown">もうすぐ かわるよ</div>
         <div class="donguri-shop-v2-subtitle" id="donguriShopSubtitle" role="note" aria-live="polite" hidden></div>
         <div class="donguri-shop-v2-reserve is-empty" id="donguriShopReserve" aria-live="polite"></div>
         <header class="donguri-shop-v2-head">
@@ -10562,7 +10581,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2123; // sw.js CACHE_VERSION と同期 (batch:1244 スクショ出力の低解像度根治: padding 焼き込み + 背景→img 注入 + pattern scale hook + 動的 scale)
+    const PAGE_CACHE_VERSION = 2126; // sw.js CACHE_VERSION と同期 (batch:1253 ショップ音声排他 + 吹き出し位置/組版)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -10571,7 +10590,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v2123';
+    window.PONO_SW_VERSION = 'v2126';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
@@ -11854,6 +11873,13 @@
       try { return localStorage.getItem(SOUND_KEY) === '1'; } catch (_) { return false; }
     }
 
+    function isDonguriShopOpen() {
+      try {
+        var shop = document.getElementById('donguriShop');
+        return !!(shop && !shop.hidden);
+      } catch (_) { return false; }
+    }
+
     function topBgmForDailyGacha() {
       return document.getElementById('play-bgm');
     }
@@ -11978,17 +12004,34 @@
 
     // v1699: shop 専用 BGM (sticker-album-morning.mp3) の再生制御。
     // play-bgm 用の mute フラグ (localStorage 'pono_sound_off') を尊重する。
+    var donguriShopBgmRetryTimers = [];
+    var donguriShopAudioSession = 0;
     function shopBgmElement() {
       return document.getElementById('shop-bgm');
     }
     function _shopBgmIsMuted() {
       try { return localStorage.getItem('pono_sound_off') === '1'; } catch (_) { return false; }
     }
+    function _clearDonguriShopBgmRetryTimers() {
+      donguriShopBgmRetryTimers.forEach(function (timerId) {
+        try { clearTimeout(timerId); } catch (_) {}
+      });
+      donguriShopBgmRetryTimers = [];
+    }
+    function _scheduleDonguriShopBgmRetry(callback, delay) {
+      var timerId = setTimeout(function () {
+        var index = donguriShopBgmRetryTimers.indexOf(timerId);
+        if (index >= 0) donguriShopBgmRetryTimers.splice(index, 1);
+        callback();
+      }, delay);
+      donguriShopBgmRetryTimers.push(timerId);
+    }
     function startDonguriShopBgm() {
       var bgm = shopBgmElement();
-      if (!bgm) return;
+      if (!bgm || !isDonguriShopOpen()) return;
       // v1699: グローバル mute (play-bgm 用) を尊重 — mute 中は shop でも無音
       if (_shopBgmIsMuted()) return;
+      _clearDonguriShopBgmRetryTimers();
       try {
         // v2049 perf: preload="none" 出荷のため play() 前に auto へ昇格 + load() (v1700 play-bgm パターン)
         if (bgm.preload !== 'auto') {
@@ -12000,12 +12043,16 @@
         bgm.volume = 0.32;
         var p = bgm.play();
         if (p && p.catch) p.catch(function () {
-          // v1701: autoplay block 等で fail したら 1 秒後にもう一度試す (user interaction 後にはほぼ通る)
-          setTimeout(function () { try { bgm.play(); } catch (_) {} }, 1000);
+          // batch:1253: close 後の遅延 retry で shop 曲を復活させない。
+          _scheduleDonguriShopBgmRetry(function () {
+            if (!isDonguriShopOpen() || _shopBgmIsMuted() || document.hidden) return;
+            try { bgm.play(); } catch (_) {}
+          }, 1000);
         });
       } catch (_) {}
     }
     function stopDonguriShopBgm() {
+      _clearDonguriShopBgmRetryTimers();
       var bgm = shopBgmElement();
       if (!bgm) return;
       try {
@@ -12046,12 +12093,13 @@
     function ensureShopBgmPlaying() {
       try {
         var bgm = shopBgmElement();
-        if (!bgm) return;
+        if (!bgm || !isDonguriShopOpen()) return;
+        _clearDonguriShopBgmRetryTimers();
         _trackShopMediaEl(bgm); // v1895 security fix: bypass 前に guard 追跡登録
         var np = _nativeMediaPlay();
         var tryPlay = function () {
           try {
-            if (_shopBgmIsMuted()) return;
+            if (!isDonguriShopOpen() || _shopBgmIsMuted()) return;
             // v1895 code-review HIGH fix: __nativePlay bypass が page-hidden 時に background-audio
             //   policy を defeat しないよう、 document.hidden を明示チェック。 遅延 retry でも尊重。
             if (document.hidden) return;
@@ -12063,9 +12111,9 @@
           } catch (_) {}
         };
         tryPlay();
-        setTimeout(tryPlay, 120);
-        setTimeout(tryPlay, 450);
-        setTimeout(tryPlay, 1100);
+        _scheduleDonguriShopBgmRetry(tryPlay, 120);
+        _scheduleDonguriShopBgmRetry(tryPlay, 450);
+        _scheduleDonguriShopBgmRetry(tryPlay, 1100);
       } catch (_) {}
     }
     // v1891→v1895: 購入時 SE (rarity 別、 既存 asset 再利用、 monotonic volume)。
@@ -12077,6 +12125,7 @@
     function playDonguriShopPurchaseSfx(stickerId) {
       try {
         if (_shopBgmIsMuted()) return;
+        var audioSession = donguriShopAudioSession;
         var price = 0;
         try {
           if (window.PonoDonguriShop && typeof window.PonoDonguriShop.getPrice === 'function') {
@@ -12095,7 +12144,10 @@
         var doPlay = function () {
           try {
             // v1895 code-review HIGH fix: bypass でも page-hidden 時は再生しない (policy 尊重)
-            if (document.hidden) return null;
+            if (document.hidden
+                || !isDonguriShopOpen()
+                || _shopBgmIsMuted()
+                || audioSession !== donguriShopAudioSession) return null;
             return np ? np.call(el) : el.play();
           } catch (_) { return null; }
         };
@@ -12125,7 +12177,8 @@
     }
 
     function playDailyGachaMedia(audio) {
-      if (!audio || dailyGachaSoundMuted() || document.hidden) return null;
+      // batch:1253: ガチャの上にショップが開いている間は、bed/SE とも再開しない。
+      if (!audio || dailyGachaSoundMuted() || document.hidden || isDonguriShopOpen()) return null;
       try { _clearAudioInactiveGuard(); } catch (_) {}
       trackDailyGachaMedia(audio);
       const nativePlay = _nativeMediaPlay();
@@ -12200,11 +12253,15 @@
     }
 
     function shouldDailyGachaBedRun() {
-      return !!(dailyGachaModal && !dailyGachaModal.hidden && !dailyGachaSoundMuted());
+      return !!(dailyGachaModal
+        && !dailyGachaModal.hidden
+        && !isDonguriShopOpen()
+        && !dailyGachaSoundMuted());
     }
 
     function startDailyGachaBed(allowRetry = true) {
-      if (dailyGachaSoundMuted()) return;
+      // 全 resume 経路の最終防衛線。呼び出し側が判定を忘れてもショップ中は再生しない。
+      if (!shouldDailyGachaBedRun()) return;
       ensureDailyGachaAudio();
       const bed = dailyGachaAudio.bed;
       if (!bed) return;
@@ -12235,6 +12292,24 @@
       } catch (_) {}
     }
 
+    function suppressDailyGachaBedForShop() {
+      clearDailyGachaBedRetry();
+      var bed = dailyGachaAudio.bed;
+      if (bed) {
+        // PonoVisibilityAudioGuard の native replay もショップ中は止める。
+        try { bed.setAttribute('data-pono-force-paused', '1'); } catch (_) {}
+      }
+      stopDailyGachaBed();
+    }
+
+    function releaseDailyGachaBedAfterShop() {
+      var bed = dailyGachaAudio.bed;
+      if (bed) {
+        try { bed.removeAttribute('data-pono-force-paused'); } catch (_) {}
+      }
+      if (shouldDailyGachaBedRun()) startDailyGachaBed();
+    }
+
     function stopDailyGachaOneShotAudio(reset = true) {
       [
         ...dailyGachaAudio.turnPool,
@@ -12255,6 +12330,7 @@
 
     function playDailyGachaFallbackSfx(kind) {
       try {
+        if (isDonguriShopOpen()) return;
         const AudioCtor = window.AudioContext || window.webkitAudioContext;
         if (!AudioCtor) return;
         if (!dailyGachaAudioCtx) dailyGachaAudioCtx = new AudioCtor();
@@ -12309,7 +12385,7 @@
 
     function playDailyGachaSfx(kind, step = 0) {
       ensureDailyGachaAudio();
-      if (dailyGachaSoundMuted()) return;
+      if (dailyGachaSoundMuted() || isDonguriShopOpen()) return;
       const rarityProfile = dailyGachaRarityProfile();
       if (kind === 'sparkle') {
         let fallbackPlayed = false;
@@ -13210,12 +13286,14 @@
     function showShop() {
       var shop = document.getElementById('donguriShop');
       if (!shop) return;
+      donguriShopAudioSession += 1;
       // v1699: shop 専用 BGM (sticker-album-morning.mp3) を導入。 play-bgm を pause + shop-bgm を start。
       //        v1698 でコメントアウトしていた pauseTopBgmForDonguriShop() を復活、
       //        さらに startDonguriShopBgm() を新規追加。 ヘルパー定義は L7090-7160 付近。
       // v1698: daily-gacha → shop 遷移で bed_loop が漏れていた場合に備えて確実に止める
       //        (これが v1693 で観測された「二重再生」 の真因)。
-      try { if (typeof stopDailyGachaBed === 'function') stopDailyGachaBed(); } catch (_) {}
+      try { if (typeof suppressDailyGachaBedForShop === 'function') suppressDailyGachaBedForShop(); } catch (_) {}
+      try { if (typeof stopDailyGachaOneShotAudio === 'function') stopDailyGachaOneShotAudio(); } catch (_) {}
       // v2049 perf: 購入 SE 3 種は preload="none" 出荷なので、 開店時に auto へ昇格 + load()。
       // 購入操作 (数秒後) までに DL が完了するため体感差なし (v1700 play-bgm パターン)。
       ['shop-sfx-normal', 'shop-sfx-rare', 'shop-sfx-super'].forEach(function (sfxId) {
@@ -13226,8 +13304,8 @@
         }
       });
       pauseTopBgmForDonguriShop();
-      startDonguriShopBgm();
       shop.hidden = false;
+      startDonguriShopBgm();
       // v1591: shop 表示中はメイン残高バッジを hide (shop 内に balance pill があり重複 + 隅で見切れる)
       var badge = document.getElementById('acornBalanceBadge');
       if (badge) badge.classList.add('is-occluded');
@@ -13243,12 +13321,14 @@
     }
     function hideShop() {
       var shop = document.getElementById('donguriShop');
+      donguriShopAudioSession += 1;
       if (shop) shop.hidden = true;
       _stopShopNarration();
       _clearShopkeeperNeutralTimer();
       _setShopSubtitle('');
       // v1699: shop 専用 BGM を停止して play-bgm を復帰。 順序固定 (stop shop → resume top)。
       stopDonguriShopBgm();
+      releaseDailyGachaBedAfterShop();
       resumeTopBgmAfterDonguriShop();
       // v1591: shop を閉じたらメイン残高バッジを復帰
       var badge = document.getElementById('acornBalanceBadge');
@@ -13505,6 +13585,21 @@
       if (!shop || shop.hidden) return;
       _setShopkeeperReaction(donguriShopkeeperNeutral.reaction, donguriShopkeeperNeutral.text, { sticky: true, skipRemember: true });
     }
+    function _shopBubbleLayout(text) {
+      var source = String(text || '');
+      var oneLine = source.replace(/\s+/g, ' ').trim();
+      if (/^(?:(?:あさ|ばん)ごはんの あと|もうすぐ) かわるよ$/.test(oneLine)) return 'countdown';
+      return source.indexOf('\n') >= 0 ? 'dialogue' : 'short';
+    }
+    function _setShopBubbleText(bubble, text) {
+      if (!bubble) return;
+      var source = String(text || '');
+      var layout = _shopBubbleLayout(source);
+      // 時刻案内だけは空白を正規化して必ず一文・一行。他の案内は明示改行を保持する。
+      bubble.textContent = layout === 'countdown' ? source.replace(/\s+/g, ' ').trim() : source;
+      if (source) bubble.setAttribute('data-layout', layout);
+      else bubble.removeAttribute('data-layout');
+    }
     function _setShopkeeperReaction(reactionKey, messageText, options) {
       options = options || {};
       var key = reactionKey || _shopReactionForMessage(messageText);
@@ -13516,7 +13611,7 @@
       _clearShopkeeperNeutralTimer();
       if (img && img.getAttribute('src') !== poseSrc) img.setAttribute('src', poseSrc);
       // bubble は messageText > data.text > countdown の優先順で常に何かを表示 (v1696 復活)
-      if (bubble) bubble.textContent = messageText || data.text || _formatShopCountdown();
+      _setShopBubbleText(bubble, messageText || data.text || _formatShopCountdown());
       if (!options.transient && !options.skipRemember) {
         // v1692: data.text 廃止、 messageText のみで neutral を記憶 (なければ空文字)。
         _rememberShopkeeperNeutral(key, messageText || '');
@@ -13705,7 +13800,7 @@
       // countdown text を bubble に表示 (音声 narration は別系統)
       var countdownText = messageText || _formatShopCountdown();
       if (messageText) _setShopkeeperReaction(null, messageText, { transient: true, duration: options.duration || 2400 });
-      else if (bubbleEl) bubbleEl.textContent = countdownText;
+      else _setShopBubbleText(bubbleEl, countdownText);
       if (!window.PonoDonguriShop) {
         slotsEl.innerHTML = '<div class="donguri-shop-v2-slot"><div class="donguri-shop-v2-thumb"><span class="donguri-shop-v2-thumb-fallback">…</span></div></div>';
         _renderShopReservationPanel(reserveEl, null, {});
@@ -16715,7 +16810,13 @@
     soundToggle.addEventListener('change', () => {
       const on = soundToggle.checked;
       try { localStorage.setItem(SOUND_KEY, on ? '0' : '1'); } catch(_) {}
-      if (!on) _stopShopNarrationAudio();
+      if (!on) {
+        _stopShopNarrationAudio();
+        if (isDonguriShopOpen()) stopDonguriShopBgm();
+      } else if (isDonguriShopOpen()) {
+        // batch:1253: ショップ中の音声再開は shop 曲だけ。タイトル/ガチャ曲は各抑止判定が止める。
+        startDonguriShopBgm();
+      }
     });
     loadSoundPref();
 

@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2126: もりのおみせの音声排他を修正 (batch:1253) — ガチャ上のショップで gesture/focus/visibility 復帰が背後のガチャbedを再開する経路と、close後にshop曲を復活させる遅延retryを封鎖。ショップ中のおとOFF/ONも無音→shop曲だけへ統一。吹き出しをリスの顔より上へ移し、時刻案内は1行、開店案内は意図した2行へ組版。play.html PAGE_CACHE_VERSION と同期 (2126)。
 // v2125: Bento Kitchen のコロッケ成形を、こねたタネから粉工程1枚目と同一の素コロッケ輪郭へ30〜90%で連続クロスフェード。完成時は点線ゴールとalpha輪郭・中心・角度を一致させ、粉工程開始時も同じ大きさ・位置を保持してから皿中央へ滑らかに移動する。play.html PAGE_CACHE_VERSION と同期不要 (bento/kitchen.html/テストのみ変更)。
 // v2124: なぞなぞトレインのジャングル動物を18体から遠・中・手前各2体の6体へ整理し、動物自身を完全不透明化。キリン・ゾウ・ワニは透過alpha下端ではなく可視の足先/丸太を草地線へ接地。各トンネルに「トンネルの かくれともだち」を追加し、直前の仲間3人を探して3/3なら次面用おたすけ1個、無操作でも列車進行は維持。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/テストのみ変更)。
 // v2123: スクショモード common/capture.js の出力低解像度 (全体ぼやけ) を根治 (batch:1244) — html2canvas@1.4.1 の背景描画が CSS px 中間 canvas 縮小で scale の supersampling を捨てる根因に対し、①object-fit img の padding 焼き込み (鮮明 img パス維持)、②CSS 背景→img 注入シム (Option X: トップ/おみせボタン等の単一 url() no-repeat 背景、native 比 9 割へ回復)、③撮影中限定の createPattern スケール補正 hook (Option Y2: repeat/多層背景の保険、shoot() の try/finally で install/uninstall + 再入ガード)、④play-gacha build の scale 動的化 (小窓でもラスタ ≥ preset)。実測: ボタン lapVar 239/270→878/1273。capture-mode OFF の本番挙動は不変。play.html PAGE_CACHE_VERSION と同期 (2123)。
@@ -50,7 +51,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2125;
+const CACHE_VERSION = 2126;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
