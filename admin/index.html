@@ -11709,6 +11709,8 @@ function bentoSlotEnsureSelectedDefActive() {
   }
   bentoSlotEnsureTargetMode();
 }
+// Bento本体の BENTO_WAVE_DIVIDER_ROTATION と同じ値。横仕切り画像の固有傾きを打ち消す。
+var BENTO_SLOT_WAVE_DIVIDER_ROTATION = -4.4;
 var BENTO_SLOT_SAMPLE_ITEMS = {
   'main-food': [
     { id: 'hamburger', name: 'ハンバーグ', image: '../assets/images/bento/cooking/mince_patty/patty_003_done.png', size: 170, rotation: 2, layer: 30 },
@@ -11760,7 +11762,7 @@ var BENTO_SLOT_SAMPLE_ITEMS = {
     { id: 'leaf_lettuce', name: 'レタス', image: '../assets/images/bento/free-layout/divider_lettuce.png', size: 190, rotation: -8, layer: 20 }
   ],
   divider: [
-    { id: 'divider_wave', name: 'なみなみしきり', image: '../assets/images/bento/free-layout/divider_wave.png', size: 184, rotation: -3, layer: 20 },
+    { id: 'divider_wave', name: 'なみなみしきり', image: '../assets/images/bento/free-layout/divider_wave.png', size: 184, rotation: BENTO_SLOT_WAVE_DIVIDER_ROTATION, layer: 20 },
     { id: 'divider_wood', name: 'きのしきり', image: '../assets/images/bento/free-layout/divider_wood.png', size: 178, rotation: 0, layer: 20 },
     { id: 'divider_wave_vertical_back', name: 'みどり縦（奥）', image: '../assets/images/bento/free-layout/divider_wave_vertical_back.png', size: 42, rotation: 0, layer: 20 },
     { id: 'divider_wave_vertical_mid', name: 'みどり縦（中）', image: '../assets/images/bento/free-layout/divider_wave_vertical_mid.png', size: 46, rotation: 0, layer: 20 },
@@ -12078,6 +12080,43 @@ function bentoSlotMergeSharedSlotEntries(list, kind) {
   if (Object.keys(overrides).length) merged.sampleOverrides = overrides;
   return [merged];
 }
+// Bento本体の alignSimpleHorizontalDividerRows と同じ契約。近い中心Yの横仕切りを
+// 1行にそろえ、エディターのプレビュー・保存値・実画面で同じ高さを使う。
+function bentoSlotAlignHorizontalDividerRows(list) {
+  if (!Array.isArray(list) || list.length < 2) return list || [];
+  var points = list.map(function(point) { return Object.assign({}, point); });
+  var rowBand = Math.max(12, BENTO_SLOT_H * 0.04);
+  var candidates = points.map(function(point, index) {
+    var sampleId = String(point && point.sampleId || '');
+    if (!/^divider_(?:wave|wood)$/.test(sampleId)) return null;
+    var override = point.sampleOverrides && point.sampleOverrides[sampleId];
+    var overrideY = override && override.positionOverride === true ? Number(override.y) : NaN;
+    var y = isFinite(overrideY) ? overrideY : Number(point.y);
+    return isFinite(y) ? { index: index, sampleId: sampleId, y: y } : null;
+  }).filter(Boolean).sort(function(a, b) { return a.y - b.y; });
+  var rows = [];
+  candidates.forEach(function(candidate) {
+    var row = rows[rows.length - 1];
+    var previous = row && row[row.length - 1];
+    if (previous && candidate.y - previous.y <= rowBand) row.push(candidate);
+    else rows.push([candidate]);
+  });
+  rows.filter(function(row) { return row.length >= 2; }).forEach(function(row) {
+    var y = bentoSlotRound(row.reduce(function(sum, entry) { return sum + entry.y; }, 0) / row.length);
+    row.forEach(function(entry) {
+      var point = points[entry.index];
+      point.y = y;
+      var overrides = point.sampleOverrides && typeof point.sampleOverrides === 'object'
+        ? Object.assign({}, point.sampleOverrides)
+        : null;
+      if (overrides && overrides[entry.sampleId]) {
+        overrides[entry.sampleId] = Object.assign({}, overrides[entry.sampleId], { y: y });
+        point.sampleOverrides = overrides;
+      }
+    });
+  });
+  return points;
+}
 function bentoSlotNormalizeLayout(map) {
   var out = {};
   if (!map || typeof map !== 'object' || Array.isArray(map)) return out;
@@ -12100,6 +12139,7 @@ function bentoSlotNormalizeLayout(map) {
         : list.slice(0, BENTO_SLOT_LIMITS[kind]).filter(function(p) { return p && typeof p === 'object'; }).map(function(p, index) {
           return bentoSlotEntry(p, { kind: kind, index: index });
         });
+      if (kind === 'divider') points = bentoSlotAlignHorizontalDividerRows(points);
       if (points.length) entry[kind] = points;
     });
     if (Object.keys(entry).length) out[canonicalBoxId] = entry;

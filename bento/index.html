@@ -4452,6 +4452,23 @@ body.bento-complete-open .bento-restart-btn { display: none !important; }
   outline-offset: 3px;
   box-shadow: 0 0 0 3px rgba(255,255,255,0.92), 0 0 14px rgba(30,127,216,0.5) !important;
 }
+.free-tab.tut-blue-outline,
+.free-okazu-edit-picker--tray button.free-okazu-edit-choice.tut-blue-outline {
+  border-color: #1E7FD8 !important;
+  box-shadow:
+    inset 0 0 0 2px rgba(30,127,216,0.18),
+    0 0 0 3px rgba(255,255,255,0.96),
+    0 0 16px rgba(30,127,216,0.78) !important;
+}
+.free-placed-item.tut-blue-outline {
+  border-radius: 24%;
+  filter:
+    drop-shadow(1px 0 0 rgba(255,255,255,0.98))
+    drop-shadow(-1px 0 0 rgba(255,255,255,0.98))
+    drop-shadow(0 1px 0 rgba(255,255,255,0.98))
+    drop-shadow(0 -1px 0 rgba(255,255,255,0.98))
+    drop-shadow(0 0 9px rgba(30,127,216,0.94)) !important;
+}
 .tut-pointer-hand {
   position: fixed;
   z-index: 9301;
@@ -4656,7 +4673,7 @@ body.bento-complete-open .bento-restart-btn { display: none !important; }
   white-space: normal;
   font-size: 0.92rem;
   line-height: 1.55;
-  z-index: 9810;
+  z-index: 9997;
 }
 .tut-bubble--request {
   max-width: min(92vw, 430px);
@@ -4673,7 +4690,7 @@ body.bento-complete-open .bento-restart-btn { display: none !important; }
   left: 50%;
   right: auto;
   transform: translate(-50%, -50%);
-  z-index: 9810;
+  z-index: 9997;
 }
 .tut-skip-mini {
   font-size: 0.62rem;
@@ -4701,9 +4718,16 @@ body.bento-complete-open .bento-restart-btn { display: none !important; }
   font-weight: 700;
 }
 /* v3: trim-path (animated blue stroke that circulates around a target) */
+.tut-focus-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9996;
+  pointer-events: none;
+  overflow: visible;
+}
 .tut-trim-box {
-  position: absolute;
-  z-index: 9805;
+  position: fixed;
+  z-index: 0;
   pointer-events: none;
   overflow: visible;
 }
@@ -4716,15 +4740,19 @@ body.bento-complete-open .bento-restart-btn { display: none !important; }
   overflow: visible;
 }
 .tut-trim-box rect {
-  /* v3.3: 最初の 1400ms で一周描いてから 900ms で点滅 (ユーザー要望: 太く・点滅速く・最初は一周描く)。
-     stroke-dasharray/offset は JS 側で 初期セット。 色は ビビッドな青 (#1E7FD8)。 stroke は実線。 */
+  /* 接続前は隠し、geometry 確定後に完成した青線をすぐ見せる。 */
   animation: none;
-  stroke-dashoffset: var(--trim-len, 1000);
+  stroke-dashoffset: 0;
   opacity: 0;
 }
 .tut-trim-box.is-ready rect {
-  /* geometry と --trim-len を確定してから開始し、初回だけ途中の線が見える race を防ぐ。 */
-  animation: tutTrimDraw 1400ms ease-out forwards, tutTrimBlink 900ms 1400ms infinite ease-in-out;
+  /* 青線DOMを作り直さなくても、常に見える完成線のまま穏やかに明滅する。 */
+  stroke-dashoffset: 0;
+  opacity: 1;
+  filter:
+    drop-shadow(0 0 1.5px rgba(255,255,255,1))
+    drop-shadow(0 0 6px rgba(30,127,216,0.95));
+  animation: tutTrimBlink 900ms infinite ease-in-out;
 }
 /* v3: drop target circle for overlap/layer tutorial */
 .tut-target-circle {
@@ -4746,12 +4774,15 @@ body.bento-complete-open .bento-restart-btn { display: none !important; }
   50%      { transform: scale(1.08); opacity: 1; }
 }
 @keyframes tutTrimBlink {
-  0%, 100% { opacity: 0.4; }
+  0%, 100% { opacity: 0.76; }
   50%      { opacity: 1; }
 }
-@keyframes tutTrimDraw {
-  0%   { stroke-dashoffset: var(--trim-len, 1000); opacity: 1; }
-  100% { stroke-dashoffset: 0; opacity: 1; }
+@media (prefers-reduced-motion: reduce) {
+  .tut-trim-box.is-ready rect {
+    animation: none !important;
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
 }
 /* v3: mask overlay (right-half blink) */
 .tut-mask-overlay {
@@ -7524,6 +7555,9 @@ function preloadBentoBoxImages() {
   });
 }
 preloadBentoBoxImages();
+// 横向きの元画像が右下がり約4.4度なので、配置時は同じ補正値で水平に見せる。
+// Admin のおかず配置エディターも BENTO_SLOT_WAVE_DIVIDER_ROTATION と同値に保つ。
+const BENTO_WAVE_DIVIDER_ROTATION = -4.4;
 const bentoAccessories = [
   { id: 'cup_blue_dot', type: 'cup', name: 'みずたまカップ', image: FREE_ASSET + 'cup_blue_dot.png', css: 'free-css-cup', snapTarget: true, radius: 108, size: 150, sizeKey: 'small', layerBase: 10 },
   { id: 'cup_check', type: 'cup', name: 'チェックカップ', image: FREE_ASSET + 'cup_check.png', css: 'free-css-cup', snapTarget: true, radius: 108, size: 150, sizeKey: 'small', layerBase: 10 },
@@ -7537,7 +7571,7 @@ const bentoAccessories = [
   // なお _vertical 2 種はそもそも getFreePaletteItems('divider') の !item.verticalDivider で
   // パレット非表示 (縦は横選択→スロット向きで自動化) のため、 minTier 付与は実利用上ノーオペだが、
   // 「4種中3種がbook」というデータの一貫性のため付与しておく。
-  { id: 'divider_wave', type: 'divider', name: 'なみなみしきり', image: FREE_ASSET + 'divider_wave.png', css: 'free-css-divider', size: 220, sizeKey: 'medium', layerBase: 12, rotation: -3, simpleSampleId: 'divider_wave' },
+  { id: 'divider_wave', type: 'divider', name: 'なみなみしきり', image: FREE_ASSET + 'divider_wave.png', css: 'free-css-divider', size: 220, sizeKey: 'medium', layerBase: 12, rotation: BENTO_WAVE_DIVIDER_ROTATION, simpleSampleId: 'divider_wave' },
   { id: 'divider_wood', type: 'divider', name: 'きのしきり', image: FREE_ASSET + 'divider_wood.png', css: 'free-css-divider', size: 200, sizeKey: 'medium', layerBase: 12, rotation: 0, simpleSampleId: 'divider_wood', minTier: 'book' },
   { id: 'divider_wave_vertical', type: 'divider', name: 'みどりたてしきり', image: FREE_ASSET + 'divider_wave_vertical_mid.png', css: 'free-css-divider', size: 46, renderAspect: 2.74, sizeKey: 'medium', layerBase: 12, rotation: 0, verticalDivider: true, simpleSampleId: 'divider_wave_vertical_mid', minTier: 'book', slotVariantImages: [
     { key: 'back', sampleId: 'divider_wave_vertical_back', image: FREE_ASSET + 'divider_wave_vertical_back.png', size: 42, renderAspect: 2.55 },
@@ -11676,6 +11710,43 @@ function mergeSimpleSharedSlotPoints(list, kind) {
   if (Object.keys(overrides).length) merged.sampleOverrides = overrides;
   return [merged];
 }
+// 配置エディターで左右の横仕切りを別々に動かした際の数px差を、同じ見た目の行へそろえる。
+// 角度補正とは分け、中心Yが近い横仕切りだけを平均する（縦仕切りと単独枠は変更しない）。
+function alignSimpleHorizontalDividerRows(list) {
+  if (!Array.isArray(list) || list.length < 2) return list || [];
+  const points = list.map(point => ({ ...point }));
+  const rowBand = Math.max(12, FREE_LAYOUT_H * 0.04);
+  const candidates = points.map((point, index) => {
+    const sampleId = String(point && point.sampleId || '');
+    if (!/^divider_(?:wave|wood)$/.test(sampleId)) return null;
+    const override = point.sampleOverrides && point.sampleOverrides[sampleId];
+    const overrideY = override && override.positionOverride === true ? Number(override.y) : NaN;
+    const y = Number.isFinite(overrideY) ? overrideY : Number(point.y);
+    return Number.isFinite(y) ? { index, sampleId, y } : null;
+  }).filter(Boolean).sort((a, b) => a.y - b.y);
+  const rows = [];
+  candidates.forEach(candidate => {
+    const row = rows[rows.length - 1];
+    const previous = row && row[row.length - 1];
+    if (previous && candidate.y - previous.y <= rowBand) row.push(candidate);
+    else rows.push([candidate]);
+  });
+  rows.filter(row => row.length >= 2).forEach(row => {
+    const y = Math.round((row.reduce((sum, entry) => sum + entry.y, 0) / row.length) * 10) / 10;
+    row.forEach(entry => {
+      const point = points[entry.index];
+      point.y = y;
+      const overrides = point.sampleOverrides && typeof point.sampleOverrides === 'object'
+        ? { ...point.sampleOverrides }
+        : null;
+      if (overrides && overrides[entry.sampleId]) {
+        overrides[entry.sampleId] = { ...overrides[entry.sampleId], y };
+        point.sampleOverrides = overrides;
+      }
+    });
+  });
+  return points;
+}
 function normalizeSimpleSlotLayoutMap(map) {
   const normalized = {};
   if (!map || typeof map !== 'object' || Array.isArray(map)) return normalized;
@@ -11695,10 +11766,11 @@ function normalizeSimpleSlotLayoutMap(map) {
     Object.keys(SIMPLE_SLOT_LAYOUT_LIMITS).forEach(kind => {
       const rawList = Array.isArray(boxLayout[kind]) ? boxLayout[kind] : [];
       const validPoints = rawList.filter(point => point && typeof point === 'object' && !Array.isArray(point));
-      const points = SIMPLE_SHARED_SLOT_KINDS.has(kind)
+      let points = SIMPLE_SHARED_SLOT_KINDS.has(kind)
         ? mergeSimpleSharedSlotPoints(validPoints, kind)
         : validPoints.slice(0, SIMPLE_SLOT_LAYOUT_LIMITS[kind])
           .map((point, index) => normalizeSimpleSlotPoint(point, kind, index));
+      if (kind === 'divider') points = alignSimpleHorizontalDividerRows(points);
       if (points.length) entry[kind] = points;
     });
     if (Object.keys(entry).length) normalized[canonicalBoxId] = entry;
@@ -14594,7 +14666,7 @@ function removeFreeItem(uid, opts = {}) {
   renderFreeLayoutControls();
 }
 function undoFreeItem() {
-  undoFreeHistory();
+  return undoFreeHistory();
 }
 function redoFreeItem() {
   redoFreeHistory();
@@ -14620,9 +14692,6 @@ function rotateSelectedItem(deltaAngle) {
   if (next < 0) next += 360;
   item.rotation = next;
   commitFreeHistoryChange(historyBefore);
-  if (tutorialAction === 'rotate-clockwise' && typeof tutorialCollapseNoriEditHistory === 'function') {
-    tutorialCollapseNoriEditHistory();
-  }
   renderFreeLayoutStage();
   renderFreeLayoutControls();
   // 実 DOM の再描画後に次の案内へ進める。古いボタンへ青枠が一瞬付く race を防ぐ。
@@ -14720,9 +14789,6 @@ function scaleSelectedDecorItem(factor) {
   if (typeof tutorialCanUseNoriEditAction === 'function' && !tutorialCanUseNoriEditAction(item.uid, tutorialAction)) return;
   const next = getScaledSimpleDecorSize(item, factor);
   if (next === item.size) return;
-  if (tutorialAction === 'shrink' && typeof tutorialRememberNoriEditHistory === 'function') {
-    tutorialRememberNoriEditHistory();
-  }
   const historyBefore = beginFreeHistoryChange();
   item.size = next;
   // setSelectedAccessorySize と同じ resize 後 reposition。 のり/ふりかけ は rice 上に留める既存規約
@@ -19813,8 +19879,7 @@ const tutorialState = {
   noriEditStage: 'shrink',
   noriEditTargetUid: null,
   noriMoveTargetUid: null,
-  _noriEditStartState: null,
-  _noriEditStartKey: '',
+  _noriEditUndoRemaining: 0,
   _leafWrongTapReminderUntil: 0,
   _noriBeatActive: false,
   _noriMoveUndoDone: false,
@@ -19848,6 +19913,7 @@ const tutorialState = {
   inactivityFired: false,
   observer: null,
   lastRenderKey: '',
+  focusOverlayEl: null,
   trims: [],          // [{ wrap, rect, ro, target }]
   maskEl: null,
   targetCircleEl: null,
@@ -19937,6 +20003,15 @@ function tutorialIsRecallBlocking() {
   return getComputedStyle(m).display !== 'none';
 }
 function tutorialEnsureLayer() {
+  if (!tutorialState.focusOverlayEl || !tutorialState.focusOverlayEl.isConnected) {
+    const existingOverlay = document.getElementById('tut-focus-overlay');
+    const overlay = existingOverlay || document.createElement('div');
+    overlay.className = 'tut-focus-overlay';
+    overlay.id = 'tut-focus-overlay';
+    overlay.setAttribute('aria-hidden', 'true');
+    if (!overlay.isConnected) document.body.appendChild(overlay);
+    tutorialState.focusOverlayEl = overlay;
+  }
   if (!tutorialState.fingerEl) {
     const finger = document.createElement('div');
     finger.className = 'tut-finger';
@@ -21424,6 +21499,7 @@ function tutorialAnimateLayerDemo(fast) {
 // 一周させる「トリムパス」アニメを開始する。 ResizeObserver でサイズ追従。
 function tutorialTrimPath(targetEl, opts = {}) {
   if (!targetEl) return null;
+  tutorialEnsureLayer();
   const OUTSET = 8; // v3.1: target の外側に余白を確保し、 縁ピッタリ問題を回避
   const wrap = document.createElement('div');
   wrap.className = 'tut-trim-box';
@@ -21447,8 +21523,8 @@ function tutorialTrimPath(targetEl, opts = {}) {
     }
     wrap.style.display = '';
     // 外側に OUTSET 分膨らませる (左/上は -OUTSET、 幅/高さは +OUTSET*2)
-    wrap.style.left = (r.left + window.scrollX - OUTSET) + 'px';
-    wrap.style.top = (r.top + window.scrollY - OUTSET) + 'px';
+    wrap.style.left = (r.left - OUTSET) + 'px';
+    wrap.style.top = (r.top - OUTSET) + 'px';
     wrap.style.width = (r.width + OUTSET * 2) + 'px';
     wrap.style.height = (r.height + OUTSET * 2) + 'px';
     // wrap いっぱいに rect を引く (stroke が見切れないよう 1px だけ内側)
@@ -21468,7 +21544,7 @@ function tutorialTrimPath(targetEl, opts = {}) {
   // target geometry / dash length を先に確定し、接続後の次フレームで animation を始める。
   // これにより fallback長(1000)で線が一瞬走ってから実周長へ切り替わる race をなくす。
   sync();
-  document.body.appendChild(wrap);
+  (tutorialState.focusOverlayEl || document.body).appendChild(wrap);
   let ro = null;
   try {
     ro = new ResizeObserver(sync);
@@ -21488,6 +21564,23 @@ function tutorialMarkTarget(targetEl, opts = {}) {
   const alreadyTrimmed = (tutorialState.trims || []).some(t => t.target === targetEl);
   if (!alreadyTrimmed) tutorialTrimPath(targetEl, opts);
   if (opts.outline !== false) tutorialOutlineElement(targetEl);
+}
+
+// 同じ対象の青枠はDOMを作り直さず位置だけ同期する。body直下の監視と再描画が重なっても、
+// 青線アニメが毎回先頭へ戻らないようにする。
+function tutorialEnsureSingleTarget(targetEl, opts = {}) {
+  if (!targetEl || !targetEl.isConnected) return null;
+  const trims = (tutorialState.trims || []).filter(entry => entry && entry.wrap && entry.wrap.isConnected);
+  const current = trims.length === 1 && trims[0].target === targetEl ? trims[0] : null;
+  if (!current) {
+    tutorialClearTrims();
+    tutorialClearOutlines();
+    tutorialMarkTarget(targetEl, opts);
+    return targetEl;
+  }
+  try { if (current.sync) current.sync(); } catch (_) {}
+  if (opts.outline !== false) tutorialOutlineElement(targetEl);
+  return targetEl;
 }
 
 function tutorialClearTrims() {
@@ -22135,8 +22228,7 @@ function tutorialAdvance(nextStep) {
   tutorialState._noriUndoPrepared = false;
   tutorialState._noriMoveUndoDone = false;
   tutorialState._noriUndoDone = false;
-  tutorialState._noriEditStartState = null;
-  tutorialState._noriEditStartKey = '';
+  tutorialState._noriEditUndoRemaining = 0;
   tutorialState._leafWrongTapReminderUntil = 0;
   tutorialState._paletteTapFocusKey = '';
   tutorialState._paletteTapStartedKey = '';
@@ -22392,7 +22484,7 @@ const TUT2_PONO_SPEECH = {
   'tut2-nori-move': 'のりは ゆびで うごかせるよ。すきな ばしょに どうぞ。',
   'tut2-nori-move-undo': 'いちど「とりけす」を おして、ばしょを もどそう！',
   'tut2-nori-edit': 'のりの おおきさと むきを かえてみよう！',
-  'tut2-nori-undo': 'さいごに「とりけす」を 1かい おして、もとに もどそう！',
+  'tut2-nori-undo': 'さいごに「とりけす」を 2かい おして、おおきさと むきを もどそう！',
   'tut2-nori-ok': 'できたら「のりOK」を おそう！',
   'tut2-okazu-main': 'メインの おかず！すきなのを タッチして いれてみよう。',
   'tut2-cup-btn': 'つぎは 「カップへ」を おしてね。',
@@ -22850,10 +22942,14 @@ function tut2RenderNoriUndo(step) {
   }
   if (!tutorialState._noriUndoPrepared) {
     tutorialState._noriUndoPrepared = true;
+    tutorialState._noriEditUndoRemaining = 2;
     simpleDecorPanelUid = null;
     try { renderFreeLayoutControls(); } catch (_) {}
   }
-  try { setSpeech('さいごに「とりけす」を 1かい おして、もとに もどそう！'); } catch (_) {}
+  const remaining = Number(tutorialState._noriEditUndoRemaining) || 0;
+  try { setSpeech(remaining <= 1
+    ? 'あと 1かい「とりけす」を おして、おおきさを もどそう！'
+    : 'さいごに「とりけす」を 2かい おして、おおきさと むきを もどそう！'); } catch (_) {}
   const btn = (typeof tutorialUndoButton === 'function') ? tutorialUndoButton() : null;
   if (!btn) {
     tutorialRetryRenderStep(step.id, 120);
@@ -23015,9 +23111,7 @@ function tut2RenderLeafTab(step) {
     tutorialRetryRenderStep(step.id, 120);
     return;
   }
-  tutorialClearTrims();
-  const leafIcon = leafTab.querySelector('.free-tab-icon') || leafTab;
-  tutorialMarkTarget(leafIcon, { radius: 999, outline: false, color: '#1E7FD8', width: 5 });
+  tutorialEnsureSingleTarget(leafTab, { radius: 14, outline: true, color: '#1E7FD8', width: 5 });
   tutorialHidePointingHand();
   tutorialAnimateTap(leafTab);
 }
@@ -23103,15 +23197,13 @@ function tut2RenderLeafPick(step) {
     tutorialRetryRenderStep(step.id, 120);
     return;
   }
-  tutorialClearTrims();
   // batch:1058-hotfix5 (WP2): したにしく picker tray 内のボタンは createSimpleOkazuEditPicker
   // が生成時に dim 済み (tut-locked)。 通常パレット (フォールバック経路) の時だけ
   // tutorialApplyPaletteFocus で dim する。
   if (!(choice.closest && choice.closest('.free-okazu-edit-picker--tray'))) {
     tutorialApplyPaletteFocus(btn => btn === choice);
   }
-  const lettuceImage = choice.querySelector('img') || choice;
-  tutorialMarkTarget(lettuceImage, { radius: 999, outline: false, color: '#1E7FD8', width: 5 });
+  tutorialEnsureSingleTarget(choice, { radius: 14, outline: true, color: '#1E7FD8', width: 5 });
   tutorialAnimateTap(choice);
 }
 function tut2RenderLeafPlace(step) {
@@ -23125,9 +23217,8 @@ function tut2RenderLeafPlace(step) {
   try { setSpeech(wrongTapReminderActive
     ? ('それは ちがうよ。' + targetName + 'の うえに タッチしてね！')
     : (targetName + 'の したに レタスを しくよ！' + targetName + 'の うえに タッチ！')); } catch (_) {}
-  tutorialClearTrims();
   if (target) {
-    tutorialMarkTarget(target, { radius: 22, outline: false, color: '#1E7FD8', width: 5 });
+    tutorialEnsureSingleTarget(target, { radius: 24, outline: true, color: '#1E7FD8', width: 5 });
     tutorialAnimateTap(target);
   }
 }
@@ -23504,8 +23595,7 @@ function tutorialTeardown() {
   tutorialState._noriUndoPrepared = false;
   tutorialState._noriMoveUndoDone = false;
   tutorialState._noriUndoDone = false;
-  tutorialState._noriEditStartState = null;
-  tutorialState._noriEditStartKey = '';
+  tutorialState._noriEditUndoRemaining = 0;
   tutorialState._paletteTapFocusKey = '';
   tutorialState._paletteTapStartedKey = '';
   if (tutorialState.ghostLayerEl && tutorialState.ghostLayerEl.parentNode) {
@@ -23552,8 +23642,7 @@ function tutorialStart() {
   tutorialState.noriEditStage = 'shrink';
   tutorialState.noriEditTargetUid = null;
   tutorialState.noriMoveTargetUid = null;
-  tutorialState._noriEditStartState = null;
-  tutorialState._noriEditStartKey = '';
+  tutorialState._noriEditUndoRemaining = 0;
   tutorialState._leafWrongTapReminderUntil = 0;
   tutorialState._noriBeatActive = false;
   tutorialState._noriUndoPrepared = false;
@@ -23676,41 +23765,6 @@ function tutorialOnItemMoved(uid) {
   tutorialStopVoiceQueueForImmediateAdvance();
   tutorialAdvance('tut2-nori-move-undo');
 }
-function tutorialRememberNoriEditHistory() {
-  if (!tutorialState || !tutorialState.active || tutorialState.step !== 'tut2-nori-edit') return false;
-  if (tutorialState.noriEditStage !== 'shrink') return false;
-  if (!Array.isArray(freeUndoStack)) return false;
-  const startState = captureFreeHistoryState();
-  tutorialState._noriEditStartState = cloneFreeHistoryValue(startState);
-  tutorialState._noriEditStartKey = getFreeHistoryStateKey(startState);
-  return true;
-}
-function tutorialCollapseNoriEditHistory() {
-  if (!tutorialState || !tutorialState.active || tutorialState.step !== 'tut2-nori-edit') return false;
-  if (tutorialState.noriEditStage !== 'rotate-clockwise') return false;
-  const startState = tutorialState._noriEditStartState;
-  const startKey = tutorialState._noriEditStartKey;
-  if (!startState || !startKey || !Array.isArray(freeUndoStack)) return false;
-  let baselineIndex = -1;
-  for (let index = freeUndoStack.length - 1; index >= 0; index -= 1) {
-    if (getFreeHistoryStateKey(freeUndoStack[index]) === startKey) {
-      baselineIndex = index;
-      break;
-    }
-  }
-  // 履歴上限のshiftで基準が落ちた場合も、保存済みの完全stateを最後の1件として復元する。
-  if (baselineIndex < 0) {
-    freeUndoStack.push(cloneFreeHistoryValue(startState));
-    if (freeUndoStack.length > FREE_LAYOUT_HISTORY_LIMIT) freeUndoStack.shift();
-    baselineIndex = freeUndoStack.length - 1;
-  }
-  // 「ちいさく」と「回転」の中間履歴を消し、最終undo 1回で両方を戻せる1単位にする。
-  freeUndoStack.splice(baselineIndex + 1);
-  freeRedoStack = [];
-  tutorialState._noriEditStartState = null;
-  tutorialState._noriEditStartKey = '';
-  return true;
-}
 function tutorialNoriEditExpectedCopy() {
   const stage = tutorialState.noriEditStage || 'shrink';
   if (stage === 'shrink') return 'まず「ちいさく」を おしてね';
@@ -23758,7 +23812,7 @@ function tutorialOnNoriEditAction(uid, action) {
   tutorialHideFinger();
   tutorialRenderStep();
 }
-// 位置移動は直後に1回、サイズ+回転はまとめた履歴を最後に1回だけ取り消す。
+// 位置移動は直後に1回、サイズと回転はそれぞれの操作履歴を最後に2回取り消す。
 function tutorialOnUndoPressed() {
   const step = tutorialState && tutorialState.active ? String(tutorialState.step || '') : '';
   const isMoveUndo = step === 'tut2-nori-move-undo';
@@ -23805,10 +23859,17 @@ function tutorialOnUndoPressed() {
     return;
   }
   if (tutorialState._noriUndoDone || tutorialState._noriUndoAckTimer) return;
+  if (!Number.isInteger(tutorialState._noriEditUndoRemaining)
+      || tutorialState._noriEditUndoRemaining <= 0) {
+    tutorialState._noriEditUndoRemaining = 2;
+  }
 
   const finishNoriUndo = () => {
     if (tutorialState._noriUndoDone || tutorialState._noriUndoAckTimer) return;
     tutorialState._noriUndoDone = true;
+    tutorialState._noriEditUndoRemaining = 0;
+    // 教習で戻したサイズ・回転を、あとから「やりなおし」で再適用させない。
+    try { freeRedoStack = []; } catch (_) {}
     tutorialClearTrims();
     tutorialHideFinger();
     try { setSpeech('おおきさと むきが もとに もどったね！'); } catch (_) {}
@@ -23825,15 +23886,24 @@ function tutorialOnUndoPressed() {
     return;
   }
 
-  undoFreeItem();
+  const undone = undoFreeItem();
   if (!tutorialState.active || tutorialState.step !== 'tut2-nori-undo') return;
+  if (!undone) {
+    try { setSpeech('「とりけす」を おして、おおきさと むきを もどそう！'); } catch (_) {}
+    try { tutorialRenderStep(); } catch (_) {}
+    return;
+  }
+  tutorialState._noriEditUndoRemaining = Math.max(0, tutorialState._noriEditUndoRemaining - 1);
   if (typeof tut2FaceAtDefault === 'function' && tut2FaceAtDefault()) {
     finishNoriUndo();
     return;
   }
-
-  // 通常は結合済み履歴1件で戻る。万一の古い状態だけ同じボタンを再案内する。
-  try { setSpeech('もういちど「とりけす」を おして、もとに もどそう！'); } catch (_) {}
+  if (tutorialState._noriEditUndoRemaining <= 0) {
+    // 2操作ぶんより前の顔パーツ配置履歴には進まない。
+    finishNoriUndo();
+    return;
+  }
+  try { setSpeech('あと 1かい「とりけす」を おして、おおきさを もどそう！'); } catch (_) {}
   try { tutorialRenderStep(); } catch (_) {}
 }
 function tutorialOnItemPlaced(item) {

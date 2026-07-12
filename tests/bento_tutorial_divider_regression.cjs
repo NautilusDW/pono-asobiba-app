@@ -1,6 +1,6 @@
 'use strict';
 
-// batch:1260 regression: タッチ語・指定ロック・のり2回undo・葉っぱ円・仕切り全枠/前面を守る。
+// batch:1261 regression: 操作数どおりのundo・葉っぱ青枠・仕切り角度のAdmin同期を守る。
 
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
@@ -81,58 +81,15 @@ const rotate = extract(html, 'function rotateSelectedItem(deltaAngle)', 'functio
 assert.ok(rotate.indexOf('renderFreeLayoutControls();') < rotate.indexOf('tutorialOnNoriEditAction(item.uid, tutorialAction)'),
   'rotate must render before attaching the next outline');
 assert.match(rotate, /deltaAngle < 0 \? 'rotate-counterclockwise' : 'rotate-clockwise'/);
-assert.match(rotate, /tutorialCollapseNoriEditHistory\(\)/,
-  'clockwise completion must coalesce the scale + rotation history');
+assert.match(rotate, /commitFreeHistoryChange\(historyBefore\)/,
+  'clockwise rotation must keep its own undo entry');
 const scale = extract(html, 'function scaleSelectedDecorItem(factor)', '// batch:1057: decor 編集パネル', 'scale handler');
 assert.ok(scale.indexOf('renderFreeLayoutControls();') < scale.indexOf('tutorialOnNoriEditAction(item.uid, tutorialAction)'),
   'scale must render before attaching the next outline');
-assert.ok(scale.indexOf('tutorialRememberNoriEditHistory()') < scale.indexOf('beginFreeHistoryChange()'),
-  'the full baseline must be captured before the guided shrink history is committed');
-
-const editHistory = extract(
-  html,
-  'function tutorialRememberNoriEditHistory()',
-  'function tutorialNoriEditExpectedCopy()',
-  'nori combined edit history'
-);
-const editHistoryState = {
-  active: true,
-  step: 'tut2-nori-edit',
-  noriEditStage: 'shrink',
-  _noriEditStartState: null,
-  _noriEditStartKey: '',
-};
-let editSnapshot = { rotation: 0, size: 100, selected: 'mouth' };
-const editUndo = [{ older: true }];
-const editRedo = [{ stale: true }];
-const editHistoryHooks = vm.runInNewContext(`(() => {
-  ${editHistory}
-  return {
-    remember: tutorialRememberNoriEditHistory,
-    collapse: tutorialCollapseNoriEditHistory,
-    undo: () => freeUndoStack,
-    redoLength: () => freeRedoStack.length,
-  };
-})()`, {
-  tutorialState: editHistoryState,
-  freeUndoStack: editUndo,
-  freeRedoStack: editRedo,
-  FREE_LAYOUT_HISTORY_LIMIT: 40,
-  cloneFreeHistoryValue: value => JSON.parse(JSON.stringify(value)),
-  captureFreeHistoryState: () => ({ ...editSnapshot }),
-  getFreeHistoryStateKey: value => JSON.stringify(value),
-});
-assert.equal(editHistoryHooks.remember(), true);
-editUndo.push({ rotation: 0, size: 100, selected: 'mouth' }); // shrink の前
-editSnapshot = { rotation: 0, size: 87, selected: 'mouth' };
-editUndo.push({ rotation: 0, size: 87, selected: 'mouth' }); // rotation の前
-editSnapshot = { rotation: 15, size: 87, selected: 'mouth' };
-editHistoryState.noriEditStage = 'rotate-clockwise';
-assert.equal(editHistoryHooks.collapse(), true);
-assert.equal(editHistoryHooks.undo().length, 2,
-  'shrink + clockwise must collapse to one baseline undo entry');
-assert.deepEqual({ ...editHistoryHooks.undo()[1] }, { rotation: 0, size: 100, selected: 'mouth' });
-assert.equal(editHistoryHooks.redoLength(), 0, 'combined edit collapse must clear stale redo state');
+assert.match(scale, /commitFreeHistoryChange\(historyBefore\)/,
+  'guided shrink must keep its own undo entry');
+assert.doesNotMatch(html, /tutorialRememberNoriEditHistory|tutorialCollapseNoriEditHistory/,
+  'scale and rotation history must never be coalesced');
 
 const undo = extract(html, 'function tutorialOnUndoPressed()', 'function tutorialOnItemPlaced', 'nori undo hook');
 assert.equal((undo.match(/undoFreeItem\(\)/g) || []).length, 3,
@@ -143,7 +100,8 @@ assert.match(undo, /tut2FaceAtDefault/);
 const moveUndoRenderer = extract(html, 'function tut2RenderNoriMoveUndo(step)', 'function tutorialFindNoriEditPlaced', 'move undo renderer');
 assert.match(moveUndoRenderer, /いちど「とりけす」/);
 const undoRenderer = extract(html, 'function tut2RenderNoriUndo(step)', 'function tut2RenderNoriOk', 'final undo renderer');
-assert.match(undoRenderer, /「とりけす」を 1かい/);
+assert.match(undoRenderer, /「とりけす」を 2かい/);
+assert.match(undoRenderer, /あと 1かい/);
 assert.doesNotMatch(undoRenderer, /もどるまで/);
 const undoState = {
   active: true,
@@ -152,25 +110,41 @@ const undoState = {
   _noriMoveUndoDone: false,
   _noriUndoDone: false,
   _noriUndoAckTimer: null,
+  _noriEditUndoRemaining: 0,
 };
 let undoCalls = 0;
+let finalUndoCalls = 0;
+let undoSucceeds = true;
 let faceAtDefault = false;
 const undoAdvances = [];
 const undoTimers = [];
-const undoHook = vm.runInNewContext(`(() => { ${undo}; return tutorialOnUndoPressed; })()`, {
+const undoApi = vm.runInNewContext(`(() => {
+  ${undo}
+  return { press: tutorialOnUndoPressed, redoLength: () => freeRedoStack.length };
+})()`, {
   tutorialState: undoState,
   tutorialNoriEditExpectedCopy: () => 'edit next',
   setSpeech: () => {},
   showToast: () => {},
   tutorialRenderStep: () => {},
   tut2FaceAtDefault: () => faceAtDefault,
-  undoFreeItem: () => { undoCalls++; faceAtDefault = true; },
+  undoFreeItem: () => {
+    undoCalls++;
+    if (!undoSucceeds) return false;
+    if (undoState.step === 'tut2-nori-move-undo') faceAtDefault = true;
+    else {
+      finalUndoCalls++;
+      faceAtDefault = finalUndoCalls >= 2;
+    }
+    return true;
+  },
+  freeRedoStack: [{ stale: true }],
   tutorialClearTrims: () => {},
   tutorialHideFinger: () => {},
   tutorialAdvance: (step) => { undoAdvances.push(step); },
   setTimeout: (fn) => { undoTimers.push(fn); return undoTimers.length; },
 });
-undoHook();
+undoApi.press();
 assert.equal(undoCalls, 1, 'one undo must restore the moved position');
 assert.equal(undoState._noriMoveUndoDone, true);
 assert.equal(undoTimers.length, 1);
@@ -181,13 +155,26 @@ undoState.step = 'tut2-nori-undo';
 undoState._noriMoveUndoDone = false;
 undoState._noriUndoDone = false;
 undoState._noriUndoAckTimer = null;
+undoState._noriEditUndoRemaining = 2;
 faceAtDefault = false;
-undoHook();
-assert.equal(undoCalls, 2, 'one final undo must restore both size and rotation');
+undoSucceeds = false;
+undoApi.press();
+assert.equal(undoState._noriEditUndoRemaining, 2, 'a failed undo must not consume a guided press');
+assert.equal(undoState._noriUndoDone, false);
+undoSucceeds = true;
+undoApi.press();
+assert.equal(finalUndoCalls, 1, 'the first final undo must restore rotation only');
+assert.equal(undoState._noriEditUndoRemaining, 1);
+assert.equal(undoState._noriUndoDone, false, 'one successful press must not finish two edits');
+assert.equal(undoTimers.length, 0);
+undoApi.press();
+assert.equal(finalUndoCalls, 2, 'the second final undo must restore the scale');
+assert.equal(undoState._noriEditUndoRemaining, 0);
 assert.equal(undoState._noriUndoDone, true);
 assert.equal(undoTimers.length, 1);
-undoHook();
-assert.equal(undoCalls, 2, 'completion guard must preserve face-part placement history');
+undoApi.press();
+assert.equal(finalUndoCalls, 2, 'completion guard must preserve face-part placement history');
+assert.equal(undoApi.redoLength(), 0, 'guided edit redo history must be cleared after restoration');
 undoTimers.shift()();
 assert.deepEqual(undoAdvances, ['tut2-nori-edit', 'tut2-nori-ok']);
 
@@ -416,11 +403,35 @@ assert.match(leafVisibility, /'tut2-leaf-pick', 'tut2-leaf-place'/);
 assert.match(leafVisibility, /item\.uid === tutorialState\.leafTargetUid/,
   'only the required hamburger must stay fully visible during the target tap');
 const leafTabRenderer = extract(html, 'function tut2RenderLeafTab(step)', 'function tut2EnsureLeafTabView', 'leaf tab circle');
-assert.match(leafTabRenderer, /querySelector\('\.free-tab-icon'\)/);
-assert.match(leafTabRenderer, /radius: 999/);
+assert.match(leafTabRenderer, /tutorialEnsureSingleTarget\(leafTab, \{ radius: 14, outline: true/,
+  'the whole leaf button must receive a persistent blue outline');
+assert.doesNotMatch(leafTabRenderer, /tutorialClearTrims\(\)/,
+  'refreshing the leaf step must not recreate its trim ring');
 const leafPickRenderer = extract(html, 'function tut2RenderLeafPick(step)', 'function tut2RenderLeafPlace', 'lettuce circle');
-assert.match(leafPickRenderer, /choice\.querySelector\('img'\)/);
-assert.match(leafPickRenderer, /radius: 999/);
+assert.match(leafPickRenderer, /tutorialEnsureSingleTarget\(choice, \{ radius: 14, outline: true/,
+  'the whole lettuce choice must receive a persistent blue outline');
+assert.doesNotMatch(leafPickRenderer, /tutorialClearTrims\(\)/,
+  'refreshing the lettuce step must not recreate its trim ring');
+const leafPlaceRenderer = extract(html, 'function tut2RenderLeafPlace(step)', 'function tut2RenderFreeOkazu', 'hamburger glow');
+assert.match(leafPlaceRenderer, /tutorialEnsureSingleTarget\(target, \{ radius: 24, outline: true/,
+  'the hamburger must receive the same visible focus treatment');
+assert.doesNotMatch(leafPlaceRenderer, /tutorialClearTrims\(\)/,
+  'refreshing the hamburger step must not recreate its trim ring');
+
+const focusCss = extract(html, '.tut-focus-overlay {', '/* v3: drop target circle', 'persistent focus CSS');
+assert.match(focusCss, /z-index: 9996/);
+assert.match(focusCss, /\.tut-trim-box\.is-ready rect[\s\S]*?stroke-dashoffset: 0[\s\S]*?opacity: 1/);
+assert.match(focusCss, /drop-shadow\(0 0 6px rgba\(30,127,216,0\.95\)\)/);
+assert.match(html, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.tut-trim-box\.is-ready rect[\s\S]*?opacity: 1/);
+assert.match(html, /\.tut-bubble--v3 \{[\s\S]*?z-index: 9997/,
+  'instruction bubbles must remain above the focus overlay');
+assert.match(html, /\.tut-bubble--center \{[\s\S]*?z-index: 9997/);
+const focusLayerSource = extract(html, 'function tutorialEnsureLayer()', 'function tutorialHideFinger()', 'focus overlay root');
+assert.match(focusLayerSource, /id = 'tut-focus-overlay'/);
+const trimSource = extract(html, 'function tutorialTrimPath(targetEl, opts = {})', 'function tutorialClearTrims()', 'stable trim implementation');
+assert.match(trimSource, /tutorialState\.focusOverlayEl \|\| document\.body/,
+  'trim nodes must live below the observer-safe overlay root');
+assert.match(trimSource, /function tutorialEnsureSingleTarget/);
 
 // 6. 葉っぱ→しきりタブ→しきり全枠→ピックタブ→ピック配置→OK を実操作で進む。
 const leafPlaceAt = steps.indexOf("id: 'tut2-leaf-place'");
@@ -505,14 +516,16 @@ assert.equal(dividerTimers[0].delay, 600, 'the seventh fixed divider gets a shor
 dividerTimers.shift().fn();
 assert.deepEqual(dividerAdvances, ['tut2-pick-tab']);
 
-// 7. 青枠はscroll安定後に1回だけ開始し、Phase A→Bで作り直さない。
+// 7. 青枠はscroll安定後に1回だけ開始し、Phase A→Bやobserver更新で作り直さない。
 assert.match(html, /\.tut-trim-box rect \{[\s\S]*?animation: none;/);
-assert.match(html, /\.tut-trim-box rect \{[\s\S]*?stroke-dashoffset: var\(--trim-len, 1000\);[\s\S]*?opacity: 0;/,
-  'pre-ready trim must stay hidden at the undrawn offset');
-assert.match(html, /\.tut-trim-box\.is-ready rect \{[\s\S]*?tutTrimDraw/);
+assert.match(html, /\.tut-trim-box rect \{[\s\S]*?stroke-dashoffset: 0;[\s\S]*?opacity: 0;/,
+  'pre-ready trim stays hidden while retaining the complete line geometry');
+assert.match(html, /\.tut-trim-box\.is-ready rect \{[\s\S]*?opacity: 1;[\s\S]*?tutTrimBlink/);
 const trim = extract(html, 'function tutorialTrimPath(targetEl, opts = {})', 'function tutorialMarkTarget', 'trim lifecycle');
-assert.ok(trim.indexOf('sync();') < trim.indexOf('document.body.appendChild(wrap)'),
+assert.ok(trim.indexOf('sync();') < trim.indexOf('(tutorialState.focusOverlayEl || document.body).appendChild(wrap)'),
   'trim geometry must be set before DOM connection');
+assert.doesNotMatch(trim, /document\.body\.appendChild\(wrap\)/,
+  'trim mutations must stay below the body-level MutationObserver');
 assert.match(trim, /requestAnimationFrame\([\s\S]*?classList\.add\('is-ready'\)/);
 
 const dispatcher = extract(html, 'function tutorialRenderStep()', '// .free-tab ボタンを ラベル', 'tutorial dispatcher');
@@ -634,10 +647,84 @@ assert.match(html, /id: 'divider_wood_vertical'[\s\S]{0,700}?key: 'back'[\s\S]{0
   'wood divider A must resolve to its vertical-back size instead of a horizontal shared size');
 
 // 9. 横のなみなみ仕切りだけを水平補正し、仕切りはハンバーグより前面に描く。
-assert.match(html, /id: 'divider_wave', type: 'divider'[^\n]*rotation: -3/);
+const runtimeDividerRotationMatch = html.match(/const BENTO_WAVE_DIVIDER_ROTATION = (-?[\d.]+);/);
+const adminDividerRotationMatch = admin.match(/var BENTO_SLOT_WAVE_DIVIDER_ROTATION = (-?[\d.]+);/);
+assert.ok(runtimeDividerRotationMatch && adminDividerRotationMatch,
+  'runtime and Admin must both declare the horizontal divider correction');
+const runtimeDividerRotation = Number(runtimeDividerRotationMatch[1]);
+const adminDividerRotation = Number(adminDividerRotationMatch[1]);
+assert.equal(runtimeDividerRotation, -4.4,
+  'the measured image correction must remove the remaining up-left tilt');
+assert.equal(adminDividerRotation, runtimeDividerRotation,
+  'Admin preview and runtime must use the same horizontal divider angle');
+assert.match(html, /id: 'divider_wave', type: 'divider'[^\n]*rotation: BENTO_WAVE_DIVIDER_ROTATION/);
 assert.match(html, /id: 'divider_wave_vertical', type: 'divider'[^\n]*rotation: 0/);
-assert.match(admin, /id: 'divider_wave'[^\n]*rotation: -3/);
+assert.match(admin, /id: 'divider_wave'[^\n]*rotation: BENTO_SLOT_WAVE_DIVIDER_ROTATION/);
 assert.match(admin, /id: 'divider_wave_vertical_back'[^\n]*rotation: 0/);
+const runtimePlacementSource = extract(
+  html,
+  'function applySimpleSlotPlacementToItem(item, slot)',
+  'function syncSimplePlacedItemsToCurrentSlots()',
+  'runtime divider rotation path'
+);
+assert.match(runtimePlacementSource, /placementDef\.rotation != null \? placementDef\.rotation/,
+  'runtime slot placement must consume the catalog rotation');
+const adminPreviewSource = extract(
+  admin,
+  'function bentoSlotAppendSampleImage(stage, sample, point, extra)',
+  'function bentoSlotCreateMaskFrame(box, className)',
+  'Admin divider rotation path'
+);
+assert.match(adminPreviewSource, /sample\.rotation/,
+  'the placement editor preview must consume the synchronized sample rotation');
+
+const runtimeRowAlignSource = extract(
+  html,
+  'function alignSimpleHorizontalDividerRows(list)',
+  'function normalizeSimpleSlotLayoutMap(map)',
+  'runtime horizontal divider row alignment'
+);
+const adminRowAlignSource = extract(
+  admin,
+  'function bentoSlotAlignHorizontalDividerRows(list)',
+  'function bentoSlotNormalizeLayout(map)',
+  'Admin horizontal divider row alignment'
+);
+const rowFixture = [
+  { y: 90, sampleId: 'divider_wave_vertical_back' },
+  { y: 166.9, sampleId: 'divider_wave', sampleOverrides: { divider_wave: { y: 166.9, positionOverride: true } } },
+  { y: 171.7, sampleId: 'divider_wave', sampleOverrides: { divider_wave: { y: 171.7, positionOverride: true } } },
+  { y: 278.3, sampleId: 'divider_wave', sampleOverrides: { divider_wave: { y: 278.3, positionOverride: true } } },
+  { y: 280.5, sampleId: 'divider_wave', sampleOverrides: { divider_wave: { y: 280.5, positionOverride: true } } },
+];
+const runtimeAlignRows = vm.runInNewContext(`(() => { ${runtimeRowAlignSource}; return alignSimpleHorizontalDividerRows; })()`, {
+  FREE_LAYOUT_H: 460,
+});
+const adminAlignRows = vm.runInNewContext(`(() => { ${adminRowAlignSource}; return bentoSlotAlignHorizontalDividerRows; })()`, {
+  BENTO_SLOT_H: 460,
+  bentoSlotRound: value => Math.round(Number(value) * 10) / 10,
+});
+const runtimeAlignedRows = JSON.parse(JSON.stringify(runtimeAlignRows(rowFixture)));
+const adminAlignedRows = JSON.parse(JSON.stringify(adminAlignRows(rowFixture)));
+assert.deepEqual(runtimeAlignedRows, adminAlignedRows,
+  'runtime and placement editor must normalize the same horizontal rows');
+assert.deepEqual(runtimeAlignedRows.map(point => point.y), [90, 169.3, 169.3, 279.4, 279.4]);
+assert.equal(runtimeAlignedRows[1].sampleOverrides.divider_wave.y, 169.3);
+assert.equal(runtimeAlignedRows[4].sampleOverrides.divider_wave.y, 279.4);
+const boundaryFixture = [100, 118, 127].map(y => ({ y, sampleId: 'divider_wave' }));
+const runtimeBoundaryOnce = JSON.parse(JSON.stringify(runtimeAlignRows(boundaryFixture)));
+const runtimeBoundaryTwice = JSON.parse(JSON.stringify(runtimeAlignRows(runtimeBoundaryOnce)));
+const adminBoundaryOnce = JSON.parse(JSON.stringify(adminAlignRows(boundaryFixture)));
+const adminBoundaryTwice = JSON.parse(JSON.stringify(adminAlignRows(adminBoundaryOnce)));
+assert.deepEqual(runtimeBoundaryOnce.map(point => point.y), [115, 115, 115],
+  'chained near-neighbours must converge in the first normalization');
+assert.deepEqual(runtimeBoundaryTwice, runtimeBoundaryOnce,
+  'runtime divider row alignment must be idempotent');
+assert.deepEqual(adminBoundaryOnce, runtimeBoundaryOnce);
+assert.deepEqual(adminBoundaryTwice, adminBoundaryOnce,
+  'placement editor divider row alignment must be idempotent');
+assert.match(html, /if \(kind === 'divider'\) points = alignSimpleHorizontalDividerRows\(points\)/);
+assert.match(admin, /if \(kind === 'divider'\) points = bentoSlotAlignHorizontalDividerRows\(points\)/);
 
 const runtimeLayerSource = extract(
   html,
