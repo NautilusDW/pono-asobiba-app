@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2162: タイトルのおしらせを「こうしき／おみせ」タブ、日付・カテゴリ・未読表示・おみせ導線付きカードへ刷新。manage debugの「みため」タブへサンプル6件と未読／既読／shopKey付きショップ更新の再現操作を追加し、タイトルとガチャ内の更新signはdebug時だけ表示して実際の開店時に消す。通常ユーザーの保存・商品状態は変更しない (batch:1282)。play.html PAGE_CACHE_VERSION と同期 (2162)。
 // v2161: おべんとうチュートリアルの縮小・回転後は、とりけすを繰り返し使える説明を聞いて見本側で2段ぶん自動復元。カップの青枠をパレット再描画直後も即時表示し、残りのおかずで3色を再案内。レタス・全しきりの完成状態を不透明で一拍見せ、ハンバーグの角丸線を光だけへ変更し、配置したピックを実際に動かす教習とTTS3.1/Leda音声を追加した (batch:1277)。play.html PAGE_CACHE_VERSION と同期不要 (bento/index.html/音声/docs/テストのみ変更)。
 // v2160: シールちょうの上部5ボタン＋前後ページ＋ページ番号にGPT Image 2押下画を追加。タイトルはガチャ入口・日次チャレンジ5種・絵本特典入口へ押下画を追加し、既存のゲーム再生pressed画像が親カード押下で発火するよう修正。右下3ボタンとプロフィールの既存押下は維持する (batch:1276)。play.html PAGE_CACHE_VERSION と同期 (2160)。
 // v2159: なぞなぞトレインの深い海を、5種類重複なしの泡救出物語へ再構成。小さく閉じ込められた生物を連射で助け、短いかな台詞とともに最大3匹が援護射撃へ参加する。最後はGPT Image 2生成の巨大チョウチンアンコウ「おおあわぬし」の泡バリアを、命中色変化・3段階のひび・残量表示を見ながら破るボス戦を追加した (batch:1273)。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/画像/テストのみ変更)。
@@ -86,7 +87,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2161;
+const CACHE_VERSION = 2162;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
