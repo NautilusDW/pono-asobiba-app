@@ -153,6 +153,36 @@ assert.match(
 assert.ok(!/env\.EVENTS[\s\S]{0,40}503/.test(events), 'events.js must never 503 due to a missing EVENTS binding');
 
 // ---------------------------------------------------------------------------
+// 8b. fail-closed ゲート: env.SAVEDATA_KV 未定義なら受信自体を無効化 (204、writeDataPoint 未到達)。
+//     クロスレビュー major 指摘の是正 — レート制限は SAVEDATA_KV 依存のため、
+//     production のように EVENTS はあるが SAVEDATA_KV が無い env でレート制限なしの
+//     WAE 書込が可能だった残存リスクを構造的に塞ぐ。
+// ---------------------------------------------------------------------------
+{
+  const guardIdx = events.search(/if\s*\(\s*!env\.SAVEDATA_KV\s*\)\s*\{\s*\n\s*return noBody\(204,\s*cors\)/);
+  assert.ok(
+    guardIdx >= 0,
+    'events.js must gate on !env.SAVEDATA_KV and return 204 before any body/EVENTS handling (fail-closed ingestion disable)'
+  );
+  // このゲートは EVENTS binding チェックより前 (早期段階) に置かれていなければならない。
+  const eventsGuardIdx = events.search(/!env\.EVENTS\s*\|\|\s*typeof\s+env\.EVENTS\.writeDataPoint\s*!==\s*'function'/);
+  assert.ok(eventsGuardIdx >= 0, 'events.js must still guard on env.EVENTS binding presence');
+  assert.ok(
+    guardIdx < eventsGuardIdx,
+    'the fail-closed !env.SAVEDATA_KV gate must run before the env.EVENTS binding check (early gate, before any write path)'
+  );
+  // 実際の書込み呼び出しサイト (handleEvents 内の writeAll() 起動) より前でなければならない
+  // (env.EVENTS.writeDataPoint( 自体は writeEvent() のヘルパー定義内にも出現し handleEvents
+  // より前のテキスト位置にあるため、そちらではなく実呼び出し箇所で比較する)。
+  const writeAllCallIdx = events.search(/(?:ctx\.waitUntil\(writeAll\(\)\)|await writeAll\(\))/);
+  assert.ok(writeAllCallIdx >= 0, 'events.js must invoke writeAll() to actually perform the WAE writes');
+  assert.ok(
+    guardIdx < writeAllCallIdx,
+    'the fail-closed !env.SAVEDATA_KV gate must run before the writeAll() call site'
+  );
+}
+
+// ---------------------------------------------------------------------------
 // 9. writeDataPoint 呼び出しがある (indexes/blobs/doubles を組み立てている)
 // ---------------------------------------------------------------------------
 assert.match(events, /env\.EVENTS\.writeDataPoint\(/, 'must call env.EVENTS.writeDataPoint(...)');

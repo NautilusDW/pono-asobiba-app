@@ -257,6 +257,8 @@
 
 **国ゲート(推奨)**: `request.cf.country`が`'JP'`以外のイベントはサーバー側で破棄する国ゲートをPhase 1実装(`/api/e`新設時)に含める。理由: (i) GDPR/GDPR-K圏からのアクセスへの適用リスク回避、(ii) β同意書(`docs/beta/_html/consent_form.html:263`)の「海外からのアクセス時はデータ送信を停止する設計」という記述との整合。VPN等による判定誤差は許容(ベストエフォート)。
 
+**レート制限とfail-closed設計**: `/api/e`は`src/api/ratelimit.js`のIP別/グローバルPOSTカウンタ(`checkIpPost`/`checkAndCountGlobal`、ns=`'ev'`でsavedata.jsのカウンタ空間と分離)を`env.SAVEDATA_KV`上で実行する。クロスレビューで「production は`EVENTS`はbindingされているが`SAVEDATA_KV`は未バインド(§2.2既出)のため、レート制限が丸ごとスキップされたままWAE書込だけが有効になり得る」というmajor指摘を受け、`env.SAVEDATA_KV`が未定義のenvでは`/api/e`の受信そのものをバリデーション前の早期段階で無効化する(204を返し`writeDataPoint`を一切呼ばない)方針に変更した。これによりレート制限なしでのWAE書込は構造的に不可能になる。**production での収集有効化ゲートは`SAVEDATA_KV`+`PASSCODE_HMAC_SECRET`のプロビジョニング(`wrangler.toml`のStep C、§2.2/§9参照)であり、これによりレート制限と受信が同時に有効化される。**
+
 **sw.jsとの関係**: `sw.js`の`if (event.request.method !== 'GET') return;`(`sw.js:451`相当、全パスに無条件適用)により、POSTリクエストはこれだけで既にService Workerのfetchハンドラを素通りする。パスベースbypass(`/admin/`, `/tools/`, `/api/gh/`, `/api/gemini/`等の個別パス列挙、`sw.js:454-462`)には汎用的な`/api/`プレフィックスマッチは存在しないため、`/api/e`が素通りする根拠は**非GETバイパスのみ**である。将来`/api/e`にGET variantを新設する場合、このbypass listに自動的には含まれないため個別追記が必要。レスポンスは`ctx.waitUntil()`でWAE書込みを非同期化し、204 No Contentを即返す。
 
 **オフラインキュー/バッチ設計**: `common/telemetry.js`にIndexedDB write-aheadキューを実装し、共通モジュールとしてネイティブとも共有する。設計の詳細(バッチサイズ上限・チャンク分割・フラッシュトリガ)は§7-1に集約して記載する(Web版から同じ制約——`fetch keepalive`のChromium系約64KiB上限——が適用されるため)。
@@ -422,6 +424,7 @@ iOS scaffold時は`__NATIVE_BUILD__`だけではAndroid/iOSを区別できない
 - **β配布文書3件のliteral-conflict**: `docs/beta/_html/consent_form.html:199,231`(「ボタンを押した時だけ送られます」「〜だけをお預かりします」)/`daycare_request.html:227`(「〜のみ」の限定列挙)がdefault-on自動送信の設計と文字通り矛盾する(§10-1 A-1〜A-3)。**解決済み(2026-07-13): 未配布と確認、文言修正を全7箇所(A-1〜A-3分。B-6の2箇所を加えた総計は9箇所、§10冒頭参照)適用済み。残作業は配布時に最終版であることの確認のみ。**
 - **`/privacy`デッドリンク**: `https://pono.kodama-no-mori.com/privacy`の実体ページが存在しない。URL印字は`consent_form.html:271`(β同意書)のみ、`parent_flyer.html:235`(チラシ)はQR経由でプライバシーポリシーへ誘導。Phase 1必須ゲートのプライバシーポリシーページ新設(§5-4/§10-5)で解消する。
 - **国ゲートの判定粒度・VPNの扱い**: `request.cf.country`ベースの国ゲート(§6-2)はベストエフォートで良いか要確認。
+- **`/api/e`のfail-closedゲートにより、production では`SAVEDATA_KV`未プロビジョニングの間`/api/e`収集が完全停止する**(§6-2で解消済みのmajor指摘の裏返し)。production でテレメトリ収集を開始するには`wrangler.toml`Step Cの`SAVEDATA_KV`+`PASSCODE_HMAC_SECRET`プロビジョニングが前提条件になる。未実施のままでは6-3以降の集計層(cron→D1)もproduction側で常に空データとなる点に注意。
 
 ---
 

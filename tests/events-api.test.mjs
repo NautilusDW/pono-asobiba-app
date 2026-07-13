@@ -7,7 +7,10 @@
 //   1. cheap gates (Origin/country/bot-UA/EVENTS-binding) now run before body read/parse
 //   2. per-IP + global POST rate limiting (env.SAVEDATA_KV reuse, ns='ev' isolation from
 //      savedata.js's own counters)
-//   3. graceful degradation when env.SAVEDATA_KV is absent (no 503, no throttling)
+//   3. fail-closed ingestion gate: when env.SAVEDATA_KV is absent, /api/e disables
+//      ingestion entirely (204, but writeDataPoint is NEVER called) — this is the
+//      hardening fix for a follow-up cross-review major finding ("production-only,
+//      rate-limit-free WAE writes" because production ships EVENTS without SAVEDATA_KV).
 //   4. zone/clear_event prop VALUE allowlisting (minor finding)
 
 import { webcrypto } from 'node:crypto';
@@ -155,16 +158,34 @@ await section('rate limit: events.js and savedata.js counters do not collide (ns
   ok(eventsRes.status === 204, `events.js POST from same IP unaffected by savedata.js lockout (got ${eventsRes.status})`);
 });
 
-await section('graceful degradation: no env.SAVEDATA_KV -> no throttling, no 503', async () => {
+await section('fail-closed: no env.SAVEDATA_KV -> ingestion disabled entirely (204, but never writes)', async () => {
+  // Hardening fix for the follow-up cross-review major finding: production ships
+  // EVENTS without SAVEDATA_KV, which previously meant "rate-limit-free WAE writes
+  // in production". The fix disables ingestion outright when SAVEDATA_KV is absent —
+  // the client still sees 204 (no broken retry/queue logic), but writeDataPoint()
+  // must never be reached, closing the gap structurally rather than relying on the
+  // rate limiter alone.
   const env = { EVENTS: makeEventsBinding() }; // SAVEDATA_KV intentionally absent
   const ctx = makeCtx();
-  const body = envelope([{ n: 'session_start', ts: Date.now(), p: {} }]);
+  const body = envelope([{ n: 'session_start', ts: Date.now(), p: { platform: 'browser' } }]);
+
+  // A single, otherwise-fully-valid batch must still be dropped before writeDataPoint.
+  const single = await handleEvents(makeReq({ headers: { ...JSON_HEADERS, 'CF-Connecting-IP': '9.9.9.9' }, body }), env, ctx);
+  ok(single.status === 204, `valid batch without SAVEDATA_KV -> 204 (got ${single.status})`);
+  await ctx._settle();
+  ok(env.EVENTS._calls.length === 0, 'valid batch without SAVEDATA_KV never reaches writeDataPoint');
+
+  // Repeated requests from the same IP must also never succeed at writing, and must
+  // never 429/503 either (no rate limiter engaged because ingestion is off, not because
+  // the limiter forgot to run).
   let allOk = true;
   for (let i = 0; i < 40; i++) {
     const r = await handleEvents(makeReq({ headers: { ...JSON_HEADERS, 'CF-Connecting-IP': '9.9.9.4' }, body }), env, ctx);
     if (r.status !== 204) allOk = false;
   }
-  ok(allOk, 'without SAVEDATA_KV, 40 same-IP requests all still succeed (204), never 503/429');
+  ok(allOk, 'without SAVEDATA_KV, 40 same-IP requests all still respond 204, never 503/429');
+  await ctx._settle();
+  ok(env.EVENTS._calls.length === 0, 'without SAVEDATA_KV, none of the 41 total requests ever call writeDataPoint');
 });
 
 await section('prop value allowlisting: zone/clear_event enums (minor finding)', async () => {
