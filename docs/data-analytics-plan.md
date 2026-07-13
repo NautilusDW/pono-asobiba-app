@@ -341,7 +341,7 @@ Capacitor native shell(Android のみ scaffold 済み、iOS 未着手)は `serve
 
 **platform**: `window.Capacitor`ランタイム検出コードはアプリコード側に存在しないため、判定は**ビルド時静的フラグ(`window.__NATIVE_BUILD__`)を正とする**。
 - `__NATIVE_BUILD__===1` → `platform='native-android'`
-- 未定義かつ`__APP_BUILD__===1` → `platform='web-staging-app'`
+- 未定義かつ`__APP_BUILD__===1` → `platform='web-app'`(実装確定値。common/telemetry.js:170 / src/api/events.js ALLOWED_PLATFORM_VALUES 準拠。本節はプランニング時点の暫定案`web-staging-app`からの更新)
 - どちらも未定義 → `platform='web'`
 
 iOS scaffold時は`__NATIVE_BUILD__`だけではAndroid/iOSを区別できないため、`stage-www.mjs`の`INJECT_SCRIPT`に`window.PONO_NATIVE_OS='android'|'ios'`を追加する(既存の「ビルド時静的注入」哲学と一貫)。代替として`Capacitor.getPlatform()`の利用も考えられるが、コードベースで一度も呼ばれていない未検証APIのため、静的注入を主・`getPlatform()`を補助的クロスチェックとする二段構えを推奨。

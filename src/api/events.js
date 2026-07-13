@@ -34,11 +34,22 @@
 // -----------------------------------------------------------------------------
 
 import { allowedOrigins } from './savedata.js';
+import { hashIp, getClientIp, checkAndCountGlobal, checkIpPost } from './ratelimit.js';
 
 const MAX_BODY_BYTES = 64 * 1024;        // 64KB (API 契約: 1リクエスト最大約30KB目安、保守的に64KB上限)
 const MAX_EVENTS_PER_REQUEST = 50;       // API 契約: 1リクエスト最大50イベント
 const MAX_PROP_STRING_LEN = 128;         // 文字列プロパティ値の上限
 const MAX_BLOB_TOTAL_BYTES = 5 * 1024;   // WAE blob 合計上限 (公式上限16KBに対し保守的に5KB)
+
+// ---- rate limit (レビュー指摘: mass fake-event injection 対策) ----
+// savedata.js (合言葉発行、稀な明示操作) と違い、テレメトリは正規利用でも
+// 「タブ1枚が30秒毎に自動 flush」+「同一 IP (家庭内 NAT) に複数端末」が常態のため、
+// savedata.js のデフォルト閾値 (IP 3回/分・グローバル10回/分) をそのまま流用すると
+// 正規トラフィックまで弾いてしまう。 ns='ev' で savedata.js とは別の KV キー空間を
+// 使い、この専用の緩めの閾値を適用する (src/api/ratelimit.js の opts 引数で上書き)。
+const EVENTS_IP_POST_LIMIT = 30;         // IP 別 POST: 30回/分
+const EVENTS_IP_POST_LOCK_SEC = 2 * 60;  // 超過時 2分ロック (savedata.js の5分より短め)
+const EVENTS_GLOBAL_POST_LIMIT = 1000;   // グローバル POST: 1000回/分 (大量偽装イベント対策の下限ガード)
 
 // P0 イベント allowlist (計画書 §5-1 の8個から game_title_tap を除いた7個。
 // game_title_tap は Umami 側の data-umami-event 属性で計測するため本エンドポイントでは受けない)。
@@ -69,6 +80,13 @@ export const ALLOWED_PROP_KEYS = new Set([
 
 const ALLOWED_TIER_VALUES = new Set(['free', 'book', 'app']);
 const ALLOWED_PLATFORM_VALUES = new Set(['native-android', 'web-app', 'web']);
+
+// 値が既知の有限集合を持つ prop キーは、キーだけでなく値も allowlist 検証する
+// (レビュー指摘: allowlist キーであれば任意の文字列値がそのまま WAE blob に載る問題)。
+// game_id はゲーム追加のたびに更新が必要な可変集合かつ本ファイルから参照できる
+// 単一の正本カタログが存在しないため、対象外 (128文字上限 + rate limit で影響範囲を限定)。
+const ALLOWED_ZONE_VALUES = new Set(['playable', 'app_only', 'coming_soon']);
+const ALLOWED_CLEAR_EVENT_VALUES = new Set(['clear', 'stage_clear', 'perfect', 'complete']);
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const BOT_UA_RE = /HeadlessChrome|Playwright/i;
@@ -165,13 +183,17 @@ function sanitizePropValue(value) {
 
 // events[].p を allowlist キーのみに絞り込む。未知キー・不正型は黙って削除し、
 // リクエスト全体は失敗させない (savedata.js validateAndSanitize と同じ「allowlist で削る」思想)。
+// キー allowlist に加え、既知の有限集合を持つキー (zone/clear_event) は値も検証する。
 function sanitizeProps(p) {
   const out = {};
   if (!p || typeof p !== 'object' || Array.isArray(p)) return out;
   for (const key of Object.keys(p)) {
     if (!ALLOWED_PROP_KEYS.has(key)) continue;
     const v = sanitizePropValue(p[key]);
-    if (v !== null) out[key] = v;
+    if (v === null) continue;
+    if (key === 'zone' && !ALLOWED_ZONE_VALUES.has(v)) continue;
+    if (key === 'clear_event' && !ALLOWED_CLEAR_EVENT_VALUES.has(v)) continue;
+    out[key] = v;
   }
   return out;
 }
@@ -216,6 +238,64 @@ export async function handleEvents(request, env, ctx) {
   const cors = corsHeaders(request, env);
   if (request.method !== 'POST') {
     return noBody(405, cors);
+  }
+
+  // ---- ここから「安価なゲート」: ヘッダーのみで判定でき、body の読み込み/JSON.parse
+  // より先に評価する (レビュー指摘: 攻撃者に body 読み込み+parse のコストを払わせない)。
+  // 不一致でも 4xx を返さず 204 で黙って捨てる (allowlist/country/bot 判定の有無を
+  // エラーコードの違いで外部に漏らさないため。クライアントの再送/キューロジックも
+  // 壊さない — savedata.js の 503 ガードと同じ思想)。
+
+  if (!isOriginAllowed(request, env)) {
+    return noBody(204, cors);
+  }
+
+  // 国ゲート (§6-2): request.cf.country が 'JP' 以外は書き込まず 204。
+  // request.cf 自体が無い実行環境 (ローカル dev 等) も 'JP' 以外扱いになる。
+  const country = request.cf && request.cf.country;
+  if (country !== 'JP') {
+    return noBody(204, cors);
+  }
+
+  // bot/E2E 除外: Playwright 等の自動テストトラフィックを分析データに混入させない。
+  const ua = request.headers.get('User-Agent') || '';
+  if (BOT_UA_RE.test(ua)) {
+    return noBody(204, cors);
+  }
+
+  // WAE binding 未設定の env (LP staging 等、または binding 追加漏れ) では
+  // 503 ではなく 204 を返す (クライアントを壊さない)。 body を読む前に弾く。
+  if (!env.EVENTS || typeof env.EVENTS.writeDataPoint !== 'function') {
+    return noBody(204, cors);
+  }
+
+  // ---- rate limit (レビュー指摘 major: mass fake-event injection 対策) ----
+  // savedata.js と同じ src/api/ratelimit.js の primitive (checkIpPost/checkAndCountGlobal)
+  // を再利用しつつ、ns='ev' + 専用閾値で savedata.js の KV counter とは完全に独立させる
+  // (同一 IP からの savedata 合言葉発行とテレメトリ POST が互いの枠を奪わないようにするため)。
+  // env.SAVEDATA_KV は savedata.js 用の既存 binding を流用する (専用 KV を新設しない —
+  // 新規 KV namespace 作成には Cloudflare 側の手動プロビジョニングが要るため)。
+  // SAVEDATA_KV 未設定の env (2026-07時点で production は未設定、staging-app のみ設定済み。
+  // wrangler.toml の Step C セットアップ手順参照) では rate limit 自体はスキップし、
+  // 上記の安価なゲート (Origin/国/bot) のみで防御する — 既存の「必須 binding が無くても
+  // 503 にせず機能を維持する」設計方針を踏襲 (production への SAVEDATA_KV 導入は本タスクの
+  // スコープ外、savedata.js 側で既に手順化済みの別タスク)。
+  if (env.SAVEDATA_KV) {
+    const kv = env.SAVEDATA_KV;
+    const ipSalt = env.RL_IP_SALT || env.PASSCODE_HMAC_SECRET || '';
+    const ip = getClientIp(request, env);
+    const ipHash = await hashIp(ip, ipSalt);
+    const ipCheck = await checkIpPost(kv, ipHash, ctx, 'ev', {
+      limit: EVENTS_IP_POST_LIMIT,
+      lockSec: EVENTS_IP_POST_LOCK_SEC
+    });
+    if (!ipCheck.ok) {
+      return noBody(429, { ...cors, 'Retry-After': String(ipCheck.retryAfter) });
+    }
+    const g = await checkAndCountGlobal(kv, 'events_post', ctx, { limit: EVENTS_GLOBAL_POST_LIMIT });
+    if (!g.ok) {
+      return noBody(429, { ...cors, 'Retry-After': String(g.retryAfter) });
+    }
   }
 
   const ctype = (request.headers.get('Content-Type') || '').toLowerCase();
@@ -274,33 +354,6 @@ export async function handleEvents(request, env, ctx) {
     const ts = (typeof ev.ts === 'number' && Number.isFinite(ev.ts) && ev.ts > 0) ? ev.ts : now;
     const props = sanitizeProps(ev.p);
     validEvents.push({ n: ev.n, ts, props });
-  }
-
-  // ---- ここから「ポリシーゲート」: 不一致でも 4xx を返さず 204 で黙って捨てる ----
-  // (allowlist/country/bot 判定の有無をエラーコードの違いで外部に漏らさないため。
-  //  クライアントの再送/キューロジックも壊さない — savedata.js の 503 ガードと同じ思想)
-
-  if (!isOriginAllowed(request, env)) {
-    return noBody(204, cors);
-  }
-
-  // 国ゲート (§6-2): request.cf.country が 'JP' 以外は書き込まず 204。
-  // request.cf 自体が無い実行環境 (ローカル dev 等) も 'JP' 以外扱いになる。
-  const country = request.cf && request.cf.country;
-  if (country !== 'JP') {
-    return noBody(204, cors);
-  }
-
-  // bot/E2E 除外: Playwright 等の自動テストトラフィックを分析データに混入させない。
-  const ua = request.headers.get('User-Agent') || '';
-  if (BOT_UA_RE.test(ua)) {
-    return noBody(204, cors);
-  }
-
-  // WAE binding 未設定の env (LP staging 等、または binding 追加漏れ) では
-  // 503 ではなく 204 を返す (クライアントを壊さない)。
-  if (!env.EVENTS || typeof env.EVENTS.writeDataPoint !== 'function') {
-    return noBody(204, cors);
   }
 
   const writeAll = async () => {

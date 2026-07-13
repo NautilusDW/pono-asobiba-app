@@ -84,9 +84,16 @@ async function readCount(kv, key) {
   return Number.isFinite(n) ? n : 0;
 }
 
-// グローバル GET/POST counter。 kind = 'get' | 'post'
-export async function checkAndCountGlobal(kv, kind, ctx) {
-  const limit = kind === 'post' ? GLOBAL_POST_LIMIT : GLOBAL_GET_LIMIT;
+// グローバル GET/POST counter。 kind = 'get' | 'post' (savedata.js の既存呼び出しは
+// 完全後方互換: opts 未指定なら従来通り 'post'→GLOBAL_POST_LIMIT / それ以外→GLOBAL_GET_LIMIT)。
+// opts.limit: kind が 'get'/'post' 以外の呼び出し元 (例: events.js の 'events_post')
+// が自前の上限値を指定するための上書き。 kind 文字列そのものが KV キーの一部になるため、
+// 呼び出し元ごとに固有の kind を渡すだけで counter の名前空間は自然に分離される
+// (savedata.js の rl:g:post:* / rl:g:get:* と衝突しない)。
+export async function checkAndCountGlobal(kv, kind, ctx, opts) {
+  const limit = (opts && typeof opts.limit === 'number')
+    ? opts.limit
+    : (kind === 'post' ? GLOBAL_POST_LIMIT : GLOBAL_GET_LIMIT);
   const key = `rl:g:${kind}:${minuteBucket()}`;
   const cur = await readCount(kv, key);
   if (cur >= limit) return { ok: false, retryAfter: 60, reason: 'global' };
@@ -132,16 +139,27 @@ export async function checkIpGet(kv, ipHash, ctx, env) {
 
 // IP 別 POST ゲート (HIGH: グローバル POST 枠の枯渇攻撃対策)。
 // 3 回/分 を超えたら 5 分 lock。 checkIpGet と対称。
-export async function checkIpPost(kv, ipHash, ctx) {
-  if (await kv.get(`rl:postlock:${ipHash}`)) {
-    return { ok: false, retryAfter: IP_POST_LOCK_SEC, reason: 'post_lock' };
+// ns (namespace, 省略可): 呼び出し元ごとに KV キー空間を分離するための prefix。
+//   savedata.js は未指定のまま呼ぶ (= 従来のキー形式を完全維持、後方互換)。
+//   events.js 等の別エンドポイントは ns='ev' のように渡し、同じ発信元 IP でも
+//   savedata の合言葉発行カウンタとテレメトリ POST カウンタが互いを枯渇させない
+//   ようにする (2エンドポイントは KV counter を共有しない設計)。
+// opts.limit / opts.lockSec (省略可): エンドポイントごとに閾値を上書きしたい場合に指定。
+//   省略時は savedata.js 用のデフォルト (3回/分, 5分ロック) を維持する。
+export async function checkIpPost(kv, ipHash, ctx, ns, opts) {
+  const limit = (opts && typeof opts.limit === 'number') ? opts.limit : IP_POST_LIMIT;
+  const lockSec = (opts && typeof opts.lockSec === 'number') ? opts.lockSec : IP_POST_LOCK_SEC;
+  const prefix = ns ? `${ns}:` : '';
+  const lockKey = `rl:postlock:${prefix}${ipHash}`;
+  if (await kv.get(lockKey)) {
+    return { ok: false, retryAfter: lockSec, reason: 'post_lock' };
   }
-  const key = `rl:ippost:${ipHash}:${minuteBucket()}`;
+  const key = `rl:ippost:${prefix}${ipHash}:${minuteBucket()}`;
   const cur = await readCount(kv, key);
-  if (cur + 1 > IP_POST_LIMIT) {
-    await waitPut(kv, `rl:postlock:${ipHash}`, '1', IP_POST_LOCK_SEC, ctx);
-    logLock('ip_post', ipHash);
-    return { ok: false, retryAfter: IP_POST_LOCK_SEC, reason: 'ip_post_rate' };
+  if (cur + 1 > limit) {
+    await waitPut(kv, lockKey, '1', lockSec, ctx);
+    logLock(ns ? `ip_post:${ns}` : 'ip_post', ipHash);
+    return { ok: false, retryAfter: lockSec, reason: 'ip_post_rate' };
   }
   await waitPut(kv, key, String(cur + 1), COUNTER_TTL_SEC, ctx);
   return { ok: true };

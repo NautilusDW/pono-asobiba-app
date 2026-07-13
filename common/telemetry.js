@@ -401,12 +401,16 @@
   // ============================================================
   // ---- track() ----
   // ============================================================
+  // 戻り値: 実際に enqueue できたか (true/false)。 opt-out 中や name 欠落時は
+  // false を返す — 呼び出し側 (trackDailyReturnOnce 等) が「送信できた時だけ
+  // dedup マーカーを保存する」ために使う。
   function track(name, props) {
-    if (isOptedOut()) return;
-    if (!name) return;
+    if (isOptedOut()) return false;
+    if (!name) return false;
     try {
       enqueue(String(name), Date.now(), (props && typeof props === 'object') ? props : {});
-    } catch (e) {}
+      return true;
+    } catch (e) { return false; }
   }
 
   // ============================================================
@@ -514,8 +518,11 @@
   function trackDailyReturnOnce() {
     var today = todayKeyJST();
     if (lsGet(LS_LAST_DR) === today) return;
-    track('daily_return', { date_jst: today });
-    lsSet(LS_LAST_DR, today);
+    // track() が opt-out 等で no-op だった場合はマーカーを保存しない
+    // (同日中に opt-in された場合に daily_return が二度と発火しなくなる事故を防ぐ)。
+    if (track('daily_return', { date_jst: today })) {
+      lsSet(LS_LAST_DR, today);
+    }
   }
 
   function trackSessionStart() {

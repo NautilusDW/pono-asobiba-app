@@ -48,10 +48,17 @@ function functionBody(name) {
   assert.ok(idx >= 0, "function " + name + "() must exist");
   return src.slice(idx, idx + 400);
 }
+// track() は opt-out 中/name欠落時に false を返す (下記の trackDailyReturnOnce()
+// dedup 修正が「実際に enqueue できたか」を判別するために必要な契約)。
 assert.match(
   functionBody("track"),
-  /isOptedOut\(\)\s*\)\s*return;/,
-  "track() must early-return when isOptedOut()"
+  /isOptedOut\(\)\s*\)\s*return false;/,
+  "track() must early-return false when isOptedOut()"
+);
+assert.match(
+  functionBody("track"),
+  /return true;/,
+  "track() must return true when it actually enqueues"
 );
 assert.match(
   functionBody("flush"),
@@ -103,6 +110,20 @@ assert.match(src, /maybeShowNotice\(\);/, "auto branch must call maybeShowNotice
 // ---- daily_return dedup (JST, js/daily-quest.js の todayKeyJST を複製) ----
 assert.match(src, /出典: js\/daily-quest\.js/, "todayKeyJST duplication must cite its source per task spec");
 assert.match(src, /getUTCFullYear\(\)\s*\+\s*'-'\s*\+\s*pad2\(j\.getUTCMonth\(\)\s*\+\s*1\)/, "todayKeyJST must match js/daily-quest.js JST logic");
+
+// ---- daily_return dedup マーカーは track() が実際に enqueue できた時だけ保存する
+// (クロスレビュー指摘: opt-out 中に無条件で保存すると、同日中の opt-in 後に
+// daily_return が二度と発火しなくなる)。
+{
+  const fnIdx = src.indexOf("function trackDailyReturnOnce(");
+  assert.ok(fnIdx >= 0, "trackDailyReturnOnce() must exist");
+  const fnBody = src.slice(fnIdx, fnIdx + 400);
+  assert.match(
+    fnBody,
+    /if\s*\(\s*track\('daily_return',\s*\{\s*date_jst:\s*today\s*\}\)\s*\)\s*\{\s*lsSet\(LS_LAST_DR,\s*today\);/,
+    "trackDailyReturnOnce() must only persist LS_LAST_DR when track() returns true"
+  );
+}
 
 // ---- IndexedDB フォールバック (private mode 等) ----
 assert.match(src, /idbAvailable\s*=\s*false/, "must flip idbAvailable=false when IndexedDB is unusable");
