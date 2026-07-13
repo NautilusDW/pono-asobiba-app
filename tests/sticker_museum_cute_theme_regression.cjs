@@ -15,7 +15,7 @@ const main = fs.readFileSync(path.join(museumRoot, "main.js"), "utf8");
 const css = fs.readFileSync(path.join(museumRoot, "styles.css"), "utf8");
 const nativeManifest = JSON.parse(fs.readFileSync(path.join(root, "native/content-manifest.json"), "utf8"));
 
-assert.match(index, /styles\.css\?v=20260713-1284/);
+assert.match(index, /styles\.css\?v=20260713-1286/);
 assert.match(index, /main\.js\?v=20260713-1284/);
 assert.match(index, /sticker-exhibition-map-cute-20260713\.webp/);
 assert.doesNotMatch(index, /sticker-exhibition-map-floor1\.png/);
@@ -29,6 +29,12 @@ assert.match(css, /background:\s*rgba\(255, 252, 239, 0\.86\)/,
   "the top bar must use the warm cream picture-book surface");
 assert.match(css, /outline:\s*4px solid #2f746a/,
   "the light theme must keep a high-visibility keyboard focus ring");
+assert.match(css, /\.stage\.is-map \.topbar::after\s*\{[\s\S]*?flex:\s*0 0 var\(--map-side-balance\)/,
+  "the map title must have an equal-width spacer opposite the home button");
+assert.match(css, /\.stage\.is-map \.topbar\s*\{[\s\S]*?gap:\s*4px/,
+  "the centered title must retain enough width at 390px portrait");
+assert.match(css, /--map-side-balance:\s*58px/,
+  "the short landscape header must mirror the smaller home button width");
 
 const nativeSources = new Set(nativeManifest.entries.map((entry) => entry.source));
 for (const name of [

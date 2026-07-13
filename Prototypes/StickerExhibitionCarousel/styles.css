@@ -78,6 +78,8 @@ button {
 }
 
 .topbar {
+  --map-side-balance: 72px;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -97,6 +99,17 @@ button {
   align-items: center;
   gap: 8px;
   min-width: 0;
+}
+
+.stage.is-map .topbar {
+  gap: 4px;
+}
+
+.stage.is-map .topbar::after {
+  content: "";
+  flex: 0 0 var(--map-side-balance);
+  height: 1px;
+  pointer-events: none;
 }
 
 .top-back,
@@ -976,6 +989,7 @@ button:focus-visible,
   }
 
   .topbar {
+    --map-side-balance: 58px;
     min-height: 46px;
     padding: 6px 10px;
     border-radius: 14px;
