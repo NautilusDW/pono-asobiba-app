@@ -59,8 +59,6 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
-- 2026-07-13 08:10 - by Codex - [batch:1274-stickerbook-cover-button] - tmp/alpha_pending/1274-stickerbook-cover-button/**, assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_button_{cover,museum}_*, Prototypes/StickerBookThreeJS/index.html, Prototypes/StickerBookThreeJS/styles.css, play.html, sw.js, tests/**, AGENTS_CLAIMS.md, HANDOFF.md - 「ひょうし」と「シール ミュージアム」をみるモードと同寸・同枠・生成文字へ統一し、意味が伝わる中央寄せiconへ置換するGPT Image 2素材生成と実装 [overlap: batch:1273-stickerbook-cover-label]
-- 2026-07-13 09:05 - by Codex - [batch:1275-title-gacha-badge-news] - play.html, sw.js, tests/title_gacha_remaining_badge_regression.cjs, AGENTS_CLAIMS.md, HANDOFF.md - 残り回数badgeのかなを小さく数字を大きくし、非0時だけ静かな周期ライトスイープを追加。「おしらせ」は公式情報、ショップ更新は文脈内signへ分離する設計を監査 [overlap: batch:1274-stickerbook-cover-button]
 
 
 - 2026-06-28 09:27 - by Codex - [batch:877-gacha-tray-mask-lower] - play.html, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - ガチャ受け皿マスクが上すぎるため奥壁ラインを下げて再調整 [overlap: batch:860-data-export-import]
