@@ -11,8 +11,8 @@ const css = fs.readFileSync(path.join(root, "nazonazo-tunnel/styles.css"), "utf8
 const game = fs.readFileSync(path.join(root, "nazonazo-tunnel/js/game.js"), "utf8");
 const sw = fs.readFileSync(path.join(root, "sw.js"), "utf8");
 
-assert.match(html, /styles\.css\?v=20260713-1273/, "the current Nazonazo scenery and stage games must bypass stale CSS caches");
-assert.match(html, /js\/game\.js\?v=20260713-1273/, "the current Nazonazo runtime must bypass stale game-script caches");
+assert.match(html, /styles\.css\?v=20260713-1281/, "the current Nazonazo scenery and stage games must bypass stale CSS caches");
+assert.match(html, /js\/game\.js\?v=20260713-1281/, "the current Nazonazo runtime must bypass stale game-script caches");
 assert.ok(
   Number(sw.match(/const CACHE_VERSION = (\d+);/)?.[1]) >= 2151,
   "the current Nazonazo bundle must ship with at least its original service-worker generation",
@@ -88,7 +88,7 @@ assert.match(css, /\.rain-particle\[hidden\]\{display:none\}/, "inactive pooled 
 assert.match(css, /--town-sky-lift:42vh/, "the baked far mountain must move substantially higher on regular screens");
 assert.match(css, /#townHorizonLoop\{top:-50vh;height:134%\}/, "the cleaned second mountain must extend below its raised position to meet the ground layers");
 assert.match(css, /#townHorizonLoop \.town-loop-tile::before\{background-image:url\("\.\.\/assets\/images\/nazonazo-tunnel\/town_horizon_layer_whiteback_20260712_v2\.webp"\)\}/, "the town horizon must use the cleaned white-background-derived artwork");
-assert.match(css, /#townMidLoop \.town-loop-tile::before\{background-image:url\("\.\.\/assets\/images\/nazonazo-tunnel\/town_mid_layer_whiteback_20260712_v2\.webp"\)\}/, "the town middle strip must use the cleaned white-background-derived artwork");
+assert.match(css, /#townMidLoop \.town-loop-tile::before\{background-image:url\("\.\.\/assets\/images\/nazonazo-tunnel\/town_mid_layer_whiteback_20260713_v3\.webp"\)\}/, "the town middle strip must use the cleaned internal-alpha artwork");
 assert.match(css, /@media \(min-aspect-ratio:2\/1\)\{:root\{--town-sky-lift:34vh\}\}/, "ultrawide screens must retain more sky while lifting the far mountain by the same amount");
 assert.match(game, /id:"town"[^\n]+skyPosition:"center calc\(100% - var\(--town-sky-lift,42vh\)\)"/, "the sky asset must use the responsive mountain lift without stretching");
 assert.match(game, /id:"jungle"[^\n]+skyPosition:"center calc\(100% - 22vh\)"/, "the cloud-bearing farthest jungle backdrop must move substantially higher at every aspect ratio");
@@ -145,7 +145,7 @@ assert.match(css, /#world>\.tun[^}]*[\s\S]*filter:brightness\(\.7\)/, "bounded t
 async function verifyPanoramaAssets() {
   const cleanedPanoramas = [
     ["town_horizon_layer_whiteback_20260712_v2.webp", 1983 / 793],
-    ["town_mid_layer_whiteback_20260712_v2.webp", 1774 / 887],
+    ["town_mid_layer_whiteback_20260713_v3.webp", 1774 / 887],
     ["jungle_horizon_layer_whiteback_20260712_v2.webp", 1700 / 933]
   ];
   for (const [name, expectedRatio] of cleanedPanoramas) {
@@ -185,7 +185,7 @@ async function verifyPanoramaAssets() {
   assert.ok(opaqueScreenStart <= ultrawideSkyBottom + 1, "the raised second mountain must cover the ultrawide far-sky bottom");
   assert.equal(horizonBottom, 84, "the extended second mountain must reach one viewport-height unit behind the town track");
 
-  const midPath = path.join(root, "assets/images/nazonazo-tunnel", "town_mid_layer_whiteback_20260712_v2.webp");
+  const midPath = path.join(root, "assets/images/nazonazo-tunnel", "town_mid_layer_whiteback_20260713_v3.webp");
   const { data: midData, info: midInfo } = await sharp(midPath).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const rowCoverage = screenY => {
     const sourceY = Math.max(0, Math.min(midInfo.height - 1, Math.round(((screenY + 16) / 114) * (midInfo.height - 1))));

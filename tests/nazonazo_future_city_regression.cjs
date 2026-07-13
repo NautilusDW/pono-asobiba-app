@@ -47,9 +47,10 @@ function cssRule(selectorPattern) {
   return match[1];
 }
 
-assert.match(html, /styles\.css\?v=20260713-1273/);
-assert.match(html, /js\/game\.js\?v=20260713-1273/);
-assert.match(html, /id="futureRailLayer"[^>]*role="group"[^>]*aria-labelledby="qText"[^>]*hidden/);
+assert.match(html, /styles\.css\?v=20260713-1281/);
+assert.match(html, /js\/game\.js\?v=20260713-1281/);
+assert.match(html, /id="futureMagnetLayer"[^>]*role="group"[^>]*aria-labelledby="qText"[^>]*hidden/);
+assert.doesNotMatch(html, /id="futureRailLayer"/, "the obsolete one-branch rail layer must be removed");
 assert.equal((html.match(/id="futureHorizonLoop"[\s\S]*?<\/div>/)?.[0].match(/class="future-loop-tile"/g) || []).length, 4);
 assert.equal((html.match(/id="futureMidLoop"[\s\S]*?<\/div>/)?.[0].match(/class="future-loop-tile"/g) || []).length, 4);
 assert.equal((html.match(/id="futureForegroundLoop"[\s\S]*?<\/div>/)?.[0].match(/class="future-loop-tile"/g) || []).length, 8);
@@ -65,7 +66,7 @@ assert.doesNotMatch(defaultSteer, /--sea-steer-[xy]/);
 const seaSteer = cssRule("body\\.st-sea \\.vehicle-steer-shell");
 assert.match(seaSteer, /translate3d\([^;]*--sea-steer-x[^;]*--sea-steer-y/);
 const adminArm = extractFunction(game, "nazonazoAdminPreviewArm");
-assert.match(adminArm, /resetSeaInteraction\(\);clearFutureRailGame\(\);/, "admin sea → future switching must clear the submarine transform before repaint");
+assert.match(adminArm, /resetSeaInteraction\(\);clearFutureMagnetGame\(\);clearSpaceGravityGame\(\);/, "admin switching must clear every full-screen answer activity before repaint");
 
 assert.match(css, /body\.st-future #horizon\{[^}]*opacity:1[^}]*mask-image:none/);
 assert.match(css, /body\.st-future #midT\{[^}]*opacity:1[^}]*mask-image:none/);
@@ -103,54 +104,238 @@ assert.equal(options.length, 2);
 assert.equal(options.filter(option => option.ok).length, 1);
 assert.equal(options.filter(option => !option.ok).length, 1);
 
-const futureRender = extractFunction(game, "renderFutureRailGame");
+assert.match(game, /const FUTURE_MAGNET_GOAL=3;/, "the city must require three successful captures");
+assert.match(game, /const FUTURE_MAGNET_TRAVEL_MS=\[2200,1900,1650\];/, "each difficulty needs an explicit capsule pace");
+assert.doesNotMatch(game, /FUTURE_RAIL_ROUTES|futureRailPointerMove|finishFutureRailRoute|renderFutureRailGame/, "the old traced fork must not remain callable");
+assert.doesNotMatch(css, /\.future-rail-|#futureRailLayer/, "old rail-choice styling must not remain active");
+
+const futureRender = extractFunction(game, "renderFutureMagnetGame");
 assert.match(futureRender, /futureQuestionOptions\(cur\)/);
-assert.match(futureRender, /document\.createElementNS\("http:\/\/www\.w3\.org\/2000\/svg","svg"\)/);
-assert.match(futureRender, /button\.className="choice future-rail-home"/);
-assert.match(futureRender, /pointerdown/);
-assert.match(futureRender, /pointermove/);
-assert.match(futureRender, /futureReducedMotion\(\)\|\|event\.detail===0/);
-assert.match(extractFunction(game, "futureRailPointerMove"), /finishFutureRailRoute\(futureRailRoute\)/);
-assert.match(extractFunction(game, "finishFutureRailRoute"), /onPick\(entry\.button,\{ok:entry\.o\.ok,mode:"future"\}\)/);
-assert.match(extractFunction(game, "onPick"), /classList\.contains\("sea-answer-bubble"\)\|\|el\.classList\.contains\("future-rail-home"\)\|\|el\.classList\.contains\("space-answer-star"\)\)el\.disabled=true/, "wrong future and space targets must leave the keyboard tab order before retry");
-const futureKeyHandler = extractFunction(game, "handleFutureRailKeyDown");
-assert.match(futureKeyHandler, /ArrowUp/);
-assert.match(futureKeyHandler, /ArrowDown/);
-assert.match(futureKeyHandler, /Enter/);
-assert.match(futureKeyHandler, /target\.matches\("button,a,input,select,textarea,\[contenteditable='true'\]"\)/, "answer keys must not hijack the sound, help, or navigation buttons");
+assert.match(futureRender, /futureMagnetOptions=futureQuestionOptions\(cur\)\.map/);
+assert.match(futureRender, /className="future-magnet-board charge-0"/);
+assert.match(futureRender, /className="future-magnet-meter"/);
+assert.match(futureRender, /setAttribute\("role","progressbar"\)/);
+assert.match(futureRender, /setAttribute\("aria-valuemax",String\(FUTURE_MAGNET_GOAL\)\)/);
+assert.match(futureRender, /for\(let index=0;index<FUTURE_MAGNET_GOAL;index\+\+\)meter\.appendChild/);
+assert.match(futureRender, /className="future-magnet-gate"/);
+assert.match(futureRender, /bindTap\(gate,event=>activateFutureMagnet\(!!\(event&&event\.type==="click"&&event\.detail===0\)\)\)/,
+  "assistive-technology click must use the nonvisual timing path");
+assert.match(futureRender, /className="future-magnet-runner"/);
+
+const activateFutureMagnet = extractFunction(game, "activateFutureMagnet");
+assert.match(activateFutureMagnet, /inside=!!keyboardAssist\|\|futureReducedMotion\(\)/,
+  "keyboard and assistive input must not require a visual timing window");
+assert.match(activateFutureMagnet, /futureMagnetCharge=Math\.min\(FUTURE_MAGNET_GOAL,futureMagnetCharge\+1\)/);
+assert.match(activateFutureMagnet, /futureMagnetCharge<FUTURE_MAGNET_GOAL/);
+assert.match(activateFutureMagnet, /onPick\(token\.el,\{ok:true,mode:"future"\}\)/);
+assert.match(activateFutureMagnet, /onPick\(token\.el,\{ok:false,mode:"future"\}\)/);
+assert.match(activateFutureMagnet, /token\.el\.classList\.add\(token\.entry\.o\.ok\?"is-captured":"is-rejected"\)/);
+assert.match(extractFunction(game, "spawnFutureMagnetToken"), /gate\.setAttribute\("aria-label","いまは "\+entry\.o\.t/,
+  "the focused gate must announce which capsule is passing");
+assert.match(extractFunction(game, "useHelp"), /futureMagnetResolving\|\|futureMagnetCharge>=FUTURE_MAGNET_GOAL/,
+  "help items must not be consumed during the final capture flourish");
+
+function makeClassList(initial = []) {
+  const values = new Set(initial);
+  return {
+    values,
+    add(...names) { names.forEach(name => values.add(name)); },
+    remove(...names) { names.forEach(name => values.delete(name)); },
+    toggle(name, force) {
+      if (force === undefined ? !values.has(name) : force) values.add(name);
+      else values.delete(name);
+      return values.has(name);
+    },
+    contains(name) { return values.has(name); }
+  };
+}
+
+function createMagnetActivationSandbox() {
+  const timers = [];
+  const picks = [];
+  const energyUpdates = [];
+  const board = { classList: makeClassList() };
+  const gate = { classList: makeClassList(), offsetWidth: 120 };
+  const bodyClasses = makeClassList();
+  const context = {
+    FUTURE_MAGNET_GOAL: 3,
+    futureMagnetCharge: 0,
+    futureMagnetToken: null,
+    futureMagnetEpoch: 4,
+    futureMagnetResolving: false,
+    futureMagnetWrongLocked: false,
+    futureMagnetAssisted: false,
+    futureMagnetTimer: 0,
+    futureMagnetNextAt: 0,
+    futureMagnetPlayable: () => true,
+    futureReducedMotion: () => true,
+    ensureAC() {},
+    futureMagnetGuide() {},
+    tone() {},
+    confetti() {},
+    _nowMs: () => 1000,
+    document: { body: { classList: bodyClasses } },
+    futureMagnetLayer: {
+      querySelector(selector) {
+        if (selector === ".future-magnet-board") return board;
+        if (selector === ".future-magnet-gate") return gate;
+        return null;
+      }
+    },
+    setTimeout(callback) { timers.push(callback); return timers.length; },
+    removeFutureMagnetToken() { context.futureMagnetToken = null; },
+    updateFutureMagnetEnergy() { energyUpdates.push(context.futureMagnetCharge); },
+    onPick(_element, result) { picks.push({ ok: result.ok, mode: result.mode }); },
+    clearFutureMagnetGame() { context.cleanupCalls += 1; },
+    cleanupCalls: 0
+  };
+  vm.createContext(context);
+  vm.runInContext(`${activateFutureMagnet};this.activateFutureMagnet=activateFutureMagnet;`, context);
+  return { context, timers, picks, energyUpdates, board, gate, bodyClasses };
+}
+
+function setMagnetToken(context, ok) {
+  const element = { classList: makeClassList() };
+  context.futureMagnetToken = { progress: 0.5, entry: { o: { ok } }, el: element };
+  return element;
+}
+
+const captureRun = createMagnetActivationSandbox();
+for (let capture = 1; capture <= 3; capture += 1) {
+  setMagnetToken(captureRun.context, true);
+  captureRun.context.activateFutureMagnet();
+  assert.equal(captureRun.context.futureMagnetCharge, capture, `capture ${capture} must add exactly one energy cell`);
+  assert.equal(captureRun.energyUpdates.at(-1), capture, `capture ${capture} must refresh the progress meter`);
+  if (capture < 3) {
+    assert.deepEqual(captureRun.picks, [], "the answer must not resolve before all three cells are charged");
+    const settle = captureRun.timers.shift();
+    assert.equal(typeof settle, "function", "a non-final capture must schedule its reset");
+    settle();
+  }
+}
+assert.ok(captureRun.board.classList.contains("is-complete"), "the third capture must trigger the city-wide release");
+assert.ok(captureRun.bodyClasses.contains("future-magnet-complete"), "the third capture must expose the completion state");
+const resolveCorrect = captureRun.timers.shift();
+assert.equal(typeof resolveCorrect, "function", "the final launch must defer answer resolution until its payoff is visible");
+resolveCorrect();
+assert.deepEqual(captureRun.picks, [{ ok: true, mode: "future" }], "three captures must resolve the quiz exactly once");
+const finishCleanup = captureRun.timers.shift();
+assert.equal(typeof finishCleanup, "function", "the completed activity must schedule cleanup");
+finishCleanup();
+assert.equal(captureRun.context.cleanupCalls, 1, "completion must clear the full-screen activity exactly once");
+
+const wrongRun = createMagnetActivationSandbox();
+wrongRun.context.futureMagnetCharge = 2;
+const wrongElement = setMagnetToken(wrongRun.context, false);
+wrongRun.context.activateFutureMagnet();
+assert.equal(wrongRun.context.futureMagnetCharge, 2, "a rejected capsule must never erase stored energy");
+assert.equal(wrongRun.energyUpdates.length, 0, "a rejected capsule must not rewrite the energy meter");
+assert.ok(wrongRun.context.futureMagnetWrongLocked, "one wrong capture must suppress repeated wrong scoring");
+assert.ok(wrongElement.classList.contains("is-rejected"), "a wrong capsule needs visible repulsion feedback");
+assert.deepEqual(wrongRun.picks, [{ ok: false, mode: "future" }], "a wrong capture must enter the shared miss flow once");
+
+const futureKeyHandler = extractFunction(game, "handleFutureMagnetKeyDown");
+assert.match(futureKeyHandler, /event\.code!=="Space"/);
+assert.match(futureKeyHandler, /event\.key!=="Enter"/);
+assert.match(futureKeyHandler, /target\.matches\("button,a,input,select,textarea,\[contenteditable='true'\]"\)/, "answer keys must not hijack sound, help, or navigation controls");
 const keyCalls = [];
 const keySandbox = {
-  futureRailPlayable: () => true,
-  futureRailOptions: [],
-  futureKeyboardRoute: 0,
-  futureRailGuide() {},
-  selectFutureRailRoute(index) { keyCalls.push(index); }
+  futureMagnetPlayable: () => true,
+  activateFutureMagnet() { keyCalls.push("activate"); }
 };
 vm.createContext(keySandbox);
-vm.runInContext(`${futureKeyHandler};this.handleFutureRailKeyDown=handleFutureRailKeyDown;`, keySandbox);
+vm.runInContext(`${futureKeyHandler};this.handleFutureMagnetKeyDown=handleFutureMagnetKeyDown;`, keySandbox);
 let outsidePrevented = false;
-keySandbox.handleFutureRailKeyDown({
+keySandbox.handleFutureMagnetKeyDown({
+  code: "Enter",
   key: "Enter",
   repeat: false,
   defaultPrevented: false,
-  target: { closest: () => null, matches: selector => selector.includes("button") },
+  target: { closest: () => null, matches: selector => selector.startsWith("button") },
   preventDefault() { outsidePrevented = true; }
 });
 assert.equal(outsidePrevented, false, "Enter on help or sound controls must retain native activation");
-assert.deepEqual(keyCalls, [], "Enter on controls outside the rail board must not choose an answer");
-assert.match(extractFunction(game, "showQuiz"), /isFutureStage\(\)\)renderFutureRailGame\(\)/);
-assert.match(extractFunction(game, "activeChoiceButtons"), /future-rail-home/);
-assert.match(extractFunction(game, "useHelp"), /isFutureStage\(\)\)resetFutureRailTrace\(\)/);
+assert.deepEqual(keyCalls, [], "Enter on controls outside the magnet must not trigger it");
+let gatePrevented = false;
+keySandbox.handleFutureMagnetKeyDown({
+  code: "Space",
+  key: " ",
+  repeat: false,
+  defaultPrevented: false,
+  target: { closest: selector => selector === ".future-magnet-gate" ? {} : null, matches: () => true },
+  preventDefault() { gatePrevented = true; }
+});
+assert.equal(gatePrevented, true, "Space on the magnet must suppress page scrolling");
+assert.deepEqual(keyCalls, ["activate"], "Space must trigger exactly one magnet pulse");
 
-const boardRule = cssRule("\\.future-rail-board");
-assert.match(boardRule, /touch-action\s*:\s*none/);
-assert.match(boardRule, /pointer-events\s*:\s*auto/);
-const homeRule = cssRule("\\.future-rail-home");
-assert.match(homeRule, /width\s*:\s*clamp\(100px,17vw,160px\)/);
-assert.match(homeRule, /min-height\s*:\s*clamp\(62px,14vh,92px\)/);
-assert.match(css, /\.future-rail-home:active\{transform:translate\(-50%,-50%\)!important\}/, "pressed homes must not jump away from their route endpoints");
-assert.match(css, /@media \(prefers-reduced-motion:reduce\)[\s\S]*\.future-rail-glow[^}]*animation:none!important/);
-assert.match(css, /@media \(prefers-reduced-motion:reduce\)[\s\S]*\.future-rail-home\.glow,\.future-rail-home\.ng\{animation:none!important\}/);
+assert.match(extractFunction(game, "showQuiz"), /isFutureStage\(\)\)renderFutureMagnetGame\(\)/);
+assert.match(extractFunction(game, "activeChoiceButtons"), /future-magnet-active[\s\S]*future-magnet-capsule/);
+assert.match(extractFunction(game, "useHelp"), /isFutureStage\(\)\)assistFutureMagnetGame\(\)/);
+const assistFuture = extractFunction(game, "assistFutureMagnetGame");
+assert.match(assistFuture, /futureMagnetAssisted=true;futureMagnetWrongLocked=true/);
+assert.match(assistFuture, /futureMagnetToken&&!futureMagnetToken\.entry\.o\.ok/);
+assert.match(assistFuture, /removeFutureMagnetToken\(\)/, "help must immediately remove a visible wrong capsule");
+assert.match(extractFunction(game, "renderFutureMagnet"), /futureMagnetAssisted&&futureMagnetToken\.entry\.o\.ok\?1\.35:1/, "help must slow the correct capsule without auto-solving");
+assert.match(extractFunction(game, "renderFutureMagnet"), /const progress=reduced\?0\.5:/, "reduced motion must park capsules at the capture gate");
+
+const layerRule = cssRule("#futureMagnetLayer");
+assert.match(layerRule, /position\s*:\s*absolute/);
+assert.match(layerRule, /inset\s*:\s*0/, "the future activity must use the whole scene");
+const boardRule = cssRule("\\.future-magnet-board");
+assert.match(boardRule, /inset\s*:\s*0/, "the board must not collapse back into a small route card");
+const gateRule = cssRule("\\.future-magnet-gate");
+assert.match(gateRule, /width\s*:\s*clamp\(112px,23vmin,176px\)/);
+assert.match(gateRule, /pointer-events\s*:\s*auto/);
+assert.match(gateRule, /touch-action\s*:\s*manipulation/);
+assert.match(css, /\.future-magnet-board\.charge-1[\s\S]*\.future-magnet-board\.charge-2[\s\S]*\.future-magnet-board\.charge-3/, "each stored cell must visibly brighten the city");
+assert.match(css, /\.future-magnet-board\.is-complete \.future-magnet-runner[^{]*\{[^}]*futureLinearLaunch/, "the third cell must release a visible linear launch");
+assert.match(css, /@media \(prefers-reduced-motion:reduce\)[\s\S]*\.future-magnet-lane::before,\.future-magnet-lane::after,\.future-magnet-capsule,\.future-magnet-gate,\.future-magnet-runner,\.future-magnet-board::after\{animation:none!important;transition:none!important\}/);
+
+const clearFuture = extractFunction(game, "clearFutureMagnetGame");
+assert.match(clearFuture, /futureMagnetEpoch\+\+;clearTimeout\(futureMagnetTimer\)/, "cleanup must invalidate delayed captures");
+assert.match(clearFuture, /futureMagnetCharge=0/);
+assert.match(clearFuture, /futureMagnetToken=null/);
+assert.match(clearFuture, /classList\.remove\("future-magnet-active","future-magnet-complete"\)/);
+assert.match(clearFuture, /futureMagnetLayer\.replaceChildren\(\);futureMagnetLayer\.hidden=true/);
+assert.match(extractFunction(game, "startJourneyAt"), /clearFutureMagnetGame\(\)/);
+assert.match(extractFunction(game, "openMap"), /clearFutureMagnetGame\(\)/);
+
+const cleanupClasses = makeClassList(["future-magnet-active", "future-magnet-complete"]);
+const cleanupQuizClasses = makeClassList(["future-magnet-quiz"]);
+const cleanupChoiceClasses = makeClassList(["future-mode"]);
+let clearedTimer = null;
+let replacedChildren = 0;
+const cleanupSandbox = {
+  futureMagnetEpoch: 9,
+  futureMagnetTimer: 77,
+  futureMagnetOptions: [{ o: {} }],
+  futureMagnetCharge: 3,
+  futureMagnetToken: { stale: true },
+  futureMagnetTokenStartedAt: 12,
+  futureMagnetNextAt: 44,
+  futureMagnetSpawnCount: 8,
+  futureMagnetResolving: true,
+  futureMagnetWrongLocked: true,
+  futureMagnetAssisted: true,
+  clearTimeout(id) { clearedTimer = id; },
+  document: { body: { classList: cleanupClasses } },
+  quiz: { classList: cleanupQuizClasses },
+  choicesEl: { classList: cleanupChoiceClasses, setAttribute(name, value) { this[name] = value; } },
+  futureMagnetLayer: { hidden: false, replaceChildren() { replacedChildren += 1; } }
+};
+vm.createContext(cleanupSandbox);
+vm.runInContext(`${clearFuture};this.clearFutureMagnetGame=clearFutureMagnetGame;`, cleanupSandbox);
+cleanupSandbox.clearFutureMagnetGame();
+assert.equal(clearedTimer, 77);
+assert.equal(cleanupSandbox.futureMagnetEpoch, 10);
+assert.equal(cleanupSandbox.futureMagnetCharge, 0);
+assert.equal(cleanupSandbox.futureMagnetToken, null);
+assert.equal(cleanupSandbox.futureMagnetResolving, false);
+assert.equal(cleanupSandbox.futureMagnetAssisted, false);
+assert.equal(cleanupSandbox.futureMagnetLayer.hidden, true);
+assert.equal(replacedChildren, 1);
+assert.equal(cleanupClasses.contains("future-magnet-active"), false);
+assert.equal(cleanupQuizClasses.contains("future-magnet-quiz"), false);
 
 const assets = [
   ["future_city_horizon_cutout_loop_20260712.webp", 2096, 594, 0.94],

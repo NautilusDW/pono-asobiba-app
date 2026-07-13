@@ -124,11 +124,11 @@ const ASSETS={
   town:{
    sky:"../assets/images/nazonazo-tunnel/town_sky_back_20260703.webp",
    horizon:"../assets/images/nazonazo-tunnel/town_horizon_layer_whiteback_20260712_v2.webp",
-   mid:"../assets/images/nazonazo-tunnel/town_mid_layer_whiteback_20260712_v2.webp",
+   mid:"../assets/images/nazonazo-tunnel/town_mid_layer_whiteback_20260713_v3.webp",
    ground:"../assets/images/nazonazo-tunnel/rail_track_loop_jungle_style_bright_20260705.webp",
    fg:"../assets/images/nazonazo-tunnel/town_foreground_grass_20260703_v2.webp",
    station:"../assets/images/nazonazo-tunnel/town_station_checkpoint_20260703.webp",
-   decor:"../assets/images/nazonazo-tunnel/town_station_line_trees_20260706.webp"
+   decor:"../assets/images/nazonazo-tunnel/town_station_line_trees_20260713_v2.webp"
  },
  jungle:{
   sky:"../assets/images/nazonazo-tunnel/jungle_sky_back_20260703.webp",
@@ -137,8 +137,8 @@ const ASSETS={
   habitat:"../assets/images/nazonazo-tunnel/jungle_habitat_loop_whiteback_20260712.webp",
   ground:"../assets/images/nazonazo-tunnel/rail_track_loop_jungle_style_bright_20260705.webp",
   fg:"../assets/images/nazonazo-tunnel/jungle_foreground_layer_20260703.webp",
-  station:"../assets/images/nazonazo-tunnel/jungle_station_checkpoint_20260706.webp",
-  decor:"../assets/images/nazonazo-tunnel/jungle_station_line_trees_20260706.webp",
+  station:"../assets/images/nazonazo-tunnel/jungle_station_checkpoint_20260713_v2.webp",
+  decor:"../assets/images/nazonazo-tunnel/jungle_station_line_trees_20260713_v2.webp",
   animals:{
    toucans:"../assets/images/nazonazo-tunnel/jungle_animal_toucans_livedin_20260712.webp",
    sloth:"../assets/images/nazonazo-tunnel/jungle_animal_sloth_livedin_20260712.webp",
@@ -184,7 +184,7 @@ const ASSETS={
   mid:"../assets/images/nazonazo-tunnel/number_room_mid_loop_20260707.webp",
   ground:"../assets/images/nazonazo-tunnel/number_room_ground_track_loop_20260707.webp",
   fg:"../assets/images/nazonazo-tunnel/number_room_foreground_loop_20260707.webp",
-  decor:"../assets/images/nazonazo-tunnel/number_room_decor_20260707.webp"
+  decor:"../assets/images/nazonazo-tunnel/number_room_decor_20260713_v2.webp"
  },
  future:{
   sky:"../assets/images/nazonazo-tunnel/future_city_sky_back_20260707.webp",
@@ -193,13 +193,14 @@ const ASSETS={
   ground:"../assets/images/nazonazo-tunnel/future_city_ground_track_loop_20260707.webp",
   fg:"../assets/images/nazonazo-tunnel/future_city_foreground_loop_20260707.webp",
   station:"../assets/images/nazonazo-tunnel/future_city_station_checkpoint_20260712.webp",
-   decor:"../assets/images/nazonazo-tunnel/future_city_station_line_decor_20260707.webp"
+   decor:"../assets/images/nazonazo-tunnel/future_city_station_line_decor_20260713_v2.webp"
  },
  space:{
   sky:"../assets/images/nazonazo-tunnel/space_nebula_sky_back_20260713.webp",
   horizon:"../assets/images/nazonazo-tunnel/space_planets_cutout_loop_20260713.png",
   fg:"../assets/images/nazonazo-tunnel/space_asteroids_cutout_loop_20260713.png",
-  station:"../assets/images/nazonazo-tunnel/space_constellation_checkpoint_20260713.png"
+  station:"../assets/images/nazonazo-tunnel/space_constellation_checkpoint_20260713.png",
+  rocket:"../assets/images/nazonazo-tunnel/space_vehicle_exploration_rocket_pono_20260713.png"
  }
 };
 const bgUrl=src=>'url("'+src+'")';
@@ -450,17 +451,14 @@ let seaRoundPhase="idle",seaRoundCountdownTimer=0;
 let seaBossPhase="idle",seaBossHp=0,seaBossMaxHp=0,seaBossX=0,seaBossY=0,seaBossRadiusX=0,seaBossRadiusY=0,seaBossWidth=0;
 let seaBossEpoch=0,seaBossTimer=0,seaBossFlashUntil=0,seaBossSalvos=new Set(),seaBossThresholds=new Set(),seaBossDefeated=false;
 let seaRescueMessageTimer=0,seaDecoysSeen=new Set();
-const FUTURE_RAIL_ROUTES=[
- [{x:.10,y:.54},{x:.31,y:.54},{x:.50,y:.32},{x:.68,y:.25},{x:.84,y:.25}],
- [{x:.10,y:.54},{x:.31,y:.54},{x:.50,y:.66},{x:.68,y:.73},{x:.84,y:.73}]
-];
-let futureRailOptions=[],futureRailRoute=-1,futureRailStep=-1,futureRailPointerId=null,futureRailTracing=false,futureRailResolving=false,futureKeyboardRoute=0,futureRailResolveTimer=0;
-const SPACE_CONSTELLATION_PATTERNS=[
- {start:{x:.14,y:.61},nodes:[{x:.35,y:.34},{x:.58,y:.56}]},
- {start:{x:.14,y:.55},nodes:[{x:.35,y:.68},{x:.58,y:.36}]},
- {start:{x:.14,y:.47},nodes:[{x:.36,y:.27},{x:.58,y:.49}]}
-];
-let spaceConstellationOptions=[],spaceConstellationStep=0,spaceConstellationResolving=false,spaceConstellationTimer=0,spaceConstellationPattern=null;
+const FUTURE_MAGNET_GOAL=3;
+const FUTURE_MAGNET_TRAVEL_MS=[2200,1900,1650];
+let futureMagnetOptions=[],futureMagnetCharge=0,futureMagnetToken=null,futureMagnetTokenStartedAt=0,futureMagnetNextAt=0,futureMagnetSpawnCount=0;
+let futureMagnetResolving=false,futureMagnetWrongLocked=false,futureMagnetAssisted=false,futureMagnetTimer=0,futureMagnetEpoch=0;
+const SPACE_GRAVITY_PORTAL_ANGLES=[-0.72,0.72];
+const SPACE_GRAVITY_ORBIT_MS=[4600,4100,3600];
+let spaceGravityOptions=[],spaceGravityAngle=-2.35,spaceGravityHolding=false,spaceGravityPointerId=null,spaceGravityHoldStartedAt=0,spaceGravityEnergy=0;
+let spaceGravityResolving=false,spaceGravityMisses=0,spaceGravityAssisted=false,spaceGravityKeyboardTarget=-1,spaceGravityTimer=0,spaceGravityEpoch=0,spaceGravityLastFrameAt=0;
 let nazonazoAdminPreviewMode=false;
 const NUMBER_CARGO_THEMES=[
  {e:"⭐",name:"おほしさま"},{e:"🎈",name:"ふうせん"},{e:"🌼",name:"おはな"},
@@ -596,7 +594,7 @@ function setDriverMood(mood){
 const $=id=>document.getElementById(id);
 const world=$("world"),veh=$("veh"),horizon=$("horizon"),midT=$("midT"),groundT=$("groundT"),fgT=$("fgT"),seaFishLayer=$("seaFishLayer"),smokeLayer=$("smokeLayer"),townHorizonLoop=$("townHorizonLoop"),townMidLoop=$("townMidLoop"),futureHorizonLoop=$("futureHorizonLoop"),futureMidLoop=$("futureMidLoop"),futureForegroundLoop=$("futureForegroundLoop"),spaceHorizonLoop=$("spaceHorizonLoop"),spaceForegroundLoop=$("spaceForegroundLoop"),jungleHabitatBack=$("jungleHabitatBack");
 const vehicleSteerShell=$("vehicleSteerShell"),seaSteerSurface=$("seaSteerSurface"),seaAnswerLayer=$("seaAnswerLayer"),seaBossLayer=$("seaBossLayer"),seaRescueMessage=$("seaRescueMessage"),seaArenaShade=$("seaArenaShade"),seaRoundCountdown=$("seaRoundCountdown"),seaSteerHint=$("seaSteerHint");
-const futureRailLayer=$("futureRailLayer"),spaceConstellationLayer=$("spaceConstellationLayer");
+const futureMagnetLayer=$("futureMagnetLayer"),spaceGravityLayer=$("spaceGravityLayer");
 const seaCompanionLayer=$("seaCompanionLayer"),seaShotLayer=$("seaShotLayer"),seaFireButton=$("seaFireButton");
 const jungleAnimalLayers={far:$("jungleAnimalsFar"),mid:$("jungleAnimalsMid"),near:$("jungleAnimalsNear")};
 const jungleFlightLayers={bird:$("jungleBirdFlightLayer"),butterfly:$("jungleButterflyFlightLayer")};
@@ -2295,8 +2293,8 @@ function renderSeaSteering(){
 }
 function activeChoiceButtons(){
  if(document.body.classList.contains("sea-quiz-active")&&seaAnswerLayer)return [...seaAnswerLayer.querySelectorAll(".sea-answer-bubble")];
- if(document.body.classList.contains("future-rail-active")&&futureRailLayer)return [...futureRailLayer.querySelectorAll(".future-rail-home")];
- if(document.body.classList.contains("space-constellation-active")&&spaceConstellationLayer)return [...spaceConstellationLayer.querySelectorAll(".space-answer-star")];
+ if(document.body.classList.contains("future-magnet-active")&&futureMagnetLayer)return [...futureMagnetLayer.querySelectorAll(".future-magnet-capsule")];
+ if(document.body.classList.contains("space-gravity-active")&&spaceGravityLayer)return [...spaceGravityLayer.querySelectorAll(".space-gravity-portal")];
  return [...choicesEl.querySelectorAll(".choice")];
 }
 function renderSeaBubbleGame(){
@@ -2346,37 +2344,34 @@ if(seaFireButton){
 }
 window.addEventListener("keydown",handleSeaKeyDown);
 window.addEventListener("keyup",handleSeaKeyUp);
-function handleFutureRailKeyDown(event){
- if(!futureRailPlayable())return;
- const target=event.target;
- const focusedHome=target&&typeof target.closest==="function"?target.closest(".future-rail-home"):null;
- if(event.defaultPrevented||(!focusedHome&&target&&typeof target.matches==="function"&&target.matches("button,a,input,select,textarea,[contenteditable='true']")))return;
- if(focusedHome){const focusedIndex=futureRailOptions.findIndex(entry=>entry.button===focusedHome);if(focusedIndex>=0)futureKeyboardRoute=focusedIndex;}
+function handleFutureMagnetKeyDown(event){
+ if(!futureMagnetPlayable()||event.defaultPrevented||event.repeat||(event.code!=="Space"&&event.key!==" "&&event.key!=="Enter"))return;
+ const target=event.target,gate=target&&typeof target.closest==="function"?target.closest(".future-magnet-gate"):null;
+ if(!gate&&target&&typeof target.matches==="function"&&target.matches("button,a,input,select,textarea,[contenteditable='true']"))return;
+ event.preventDefault();activateFutureMagnet(true);
+}
+window.addEventListener("keydown",handleFutureMagnetKeyDown);
+function handleSpaceGravityKeyDown(event){
+ if(!spaceGravityPlayable()||event.defaultPrevented)return;
+ const target=event.target,inside=target&&typeof target.closest==="function"?target.closest(".space-gravity-pad,.space-gravity-portal"):null;
+ if(!inside&&target&&typeof target.matches==="function"&&target.matches("button,a,input,select,textarea,[contenteditable='true']"))return;
  if(event.key==="ArrowUp"||event.key==="ArrowDown"){
-  event.preventDefault();
-  const wanted=event.key==="ArrowUp"?0:1;
-  const entry=futureRailOptions[wanted];
-  if(entry&&!entry.button.disabled&&!entry.button.classList.contains("dim"))futureKeyboardRoute=wanted;
-  else{const available=futureRailOptions.findIndex(item=>!item.button.disabled&&!item.button.classList.contains("dim"));if(available>=0)futureKeyboardRoute=available;}
-  const target=futureRailOptions[futureKeyboardRoute]&&futureRailOptions[futureKeyboardRoute].button;
-  if(target){target.focus({preventScroll:true});futureRailGuide("エンターで この ホームへ つなぐよ");}
- }else if((event.key==="Enter"||event.key===" ")&&!event.repeat){
-  event.preventDefault();selectFutureRailRoute(futureKeyboardRoute);
+  event.preventDefault();spaceGravityKeyboardTarget=event.key==="ArrowUp"?0:1;
+  const entry=spaceGravityOptions[spaceGravityKeyboardTarget];if(entry&&!entry.button.disabled){entry.button.focus({preventScroll:true});updateSpaceGravityVisual(_nowMs());spaceGravityGuide(entry.o.t+"を ねらうよ");}
+  return;
+ }
+ if((event.code==="Space"||event.key===" "||event.key==="Enter")&&!event.repeat){
+  if(inside&&inside.classList&&inside.classList.contains("space-gravity-portal")){
+   const index=spaceGravityOptions.findIndex(entry=>entry.button===inside);if(index>=0)selectSpaceGravityTarget(index);
+  }
+  event.preventDefault();startSpaceGravityHold(null);
  }
 }
-window.addEventListener("keydown",handleFutureRailKeyDown);
-function handleSpaceConstellationKeyDown(event){
- if(!spaceConstellationPlayable()||spaceConstellationStep<2||(event.key!=="ArrowUp"&&event.key!=="ArrowDown"))return;
- const target=event.target;
- const focusedAnswer=target&&typeof target.closest==="function"?target.closest(".space-answer-star"):null;
- if(!focusedAnswer&&target&&typeof target.matches==="function"&&target.matches("button,a,input,select,textarea,[contenteditable='true']"))return;
- event.preventDefault();
- const wanted=event.key==="ArrowUp"?0:1;
- let entry=spaceConstellationOptions[wanted];
- if(!entry||entry.button.disabled||entry.button.classList.contains("dim"))entry=spaceConstellationOptions.find(item=>!item.button.disabled&&!item.button.classList.contains("dim"));
- if(entry){entry.button.focus({preventScroll:true});spaceConstellationGuide("エンターで この ほしを えらぶよ");}
+function handleSpaceGravityKeyUp(event){
+ if((event.code==="Space"||event.key===" "||event.key==="Enter")&&spaceGravityHolding){event.preventDefault();releaseSpaceGravityHold(null);}
 }
-window.addEventListener("keydown",handleSpaceConstellationKeyDown);
+window.addEventListener("keydown",handleSpaceGravityKeyDown);
+window.addEventListener("keyup",handleSpaceGravityKeyUp);
 
 function buildSeaFish(){
  seaFishSprites=[];
@@ -3188,6 +3183,7 @@ function onRunEvent(el,ev){
 function useHelp(){
  if(answerLocked||driving||seaBubbleLaunchPending||!quiz.classList.contains("show"))return;
  if(isSeaStage()&&!seaRoundPlayable())return;
+ if((isFutureStage()&&(futureMagnetResolving||futureMagnetCharge>=FUTURE_MAGNET_GOAL))||(isSpaceStage()&&spaceGravityResolving))return;
  if(!helpItems.length){
   showStamp("みつけてね！","ng");
   announce("はしっているときに、おたすけを みつけよう");
@@ -3207,7 +3203,8 @@ function useHelp(){
   if(wrong){wrong.classList.add("dim");wrong.disabled=true;}
   const ok=choices.find(c=>c.dataset.ok==="1");
   if(ok)ok.classList.add("glow");
-  if(isFutureStage())resetFutureRailTrace();
+  if(isFutureStage())assistFutureMagnetGame();
+  if(isSpaceStage())assistSpaceGravityGame();
  }
  tone(880,0,.12,"triangle",.12);tone(1175,.1,.16,"triangle",.1);
  showStamp("おたすけ！","new");
@@ -3243,6 +3240,8 @@ function render(now){
  renderJungleAnimals();
  renderJungleFlights(now);
  renderSpaceStars(now);
+ renderFutureMagnet(now);
+ updateSpaceGravityVisual(now);
  if(jungleHabitatBack&&document.body.classList.contains("st-jungle"))jungleHabitatBack.style.backgroundPositionX=cssXFromVw(-(worldX-o)*.92);
  updateScreenExitShift();
  if(document.body.classList.contains("st-town")&&townHorizonLoop){
@@ -3422,8 +3421,8 @@ function gloop(t){
 function startJourneyAt(s){
  hideWeatherNotice();
  resetNumberCargoGame();
- clearFutureRailGame();
- clearSpaceConstellationGame();
+ clearFutureMagnetGame();
+ clearSpaceGravityGame();
  clearRareEvent();
  resetSeaInteraction();
  stopStageWeather();
@@ -3472,268 +3471,249 @@ function futureQuestionOptions(question){
  const wrong=shuffle((question&&question.d||[]).map(x=>({e:x[0],t:x[1],ok:false})))[0];
  return shuffle([{e:question.a[0],t:question.a[1],ok:true},wrong].filter(Boolean));
 }
-function futureRailPlayable(){
- return !window.__PONO_TIER_LOCKED__&&isFutureStage()&&playing&&!driving&&!answerLocked&&!futureRailResolving&&
-  quiz.classList.contains("show")&&futureRailLayer&&!futureRailLayer.hidden;
+function futureMagnetPlayable(){
+ return !window.__PONO_TIER_LOCKED__&&isFutureStage()&&playing&&!driving&&!answerLocked&&!futureMagnetResolving&&
+  quiz.classList.contains("show")&&futureMagnetLayer&&!futureMagnetLayer.hidden;
 }
-function futureRailGuide(message){
- const guide=futureRailLayer&&futureRailLayer.querySelector(".future-rail-guide");
- if(guide)guide.textContent=message;
+function futureMagnetGuide(message){
+ const guide=futureMagnetLayer&&futureMagnetLayer.querySelector(".future-magnet-guide");if(guide)guide.textContent=message;
 }
-function clearFutureRailGame(){
- clearTimeout(futureRailResolveTimer);futureRailResolveTimer=0;
- const board=futureRailLayer&&futureRailLayer.querySelector(".future-rail-board");
- if(board&&futureRailPointerId!==null){try{board.releasePointerCapture(futureRailPointerId);}catch(_){}}
- futureRailOptions=[];futureRailRoute=-1;futureRailStep=-1;futureRailPointerId=null;futureRailTracing=false;futureRailResolving=false;futureKeyboardRoute=0;
- document.body.classList.remove("future-rail-active");
- quiz.classList.remove("future-rail-quiz");choicesEl.classList.remove("future-mode");choicesEl.setAttribute("aria-label","こたえを えらぶ");
- if(futureRailLayer){futureRailLayer.replaceChildren();futureRailLayer.hidden=true;}
+function clearFutureMagnetGame(){
+ futureMagnetEpoch++;clearTimeout(futureMagnetTimer);futureMagnetTimer=0;
+ futureMagnetOptions=[];futureMagnetCharge=0;futureMagnetToken=null;futureMagnetTokenStartedAt=0;futureMagnetNextAt=0;futureMagnetSpawnCount=0;
+ futureMagnetResolving=false;futureMagnetWrongLocked=false;futureMagnetAssisted=false;
+ document.body.classList.remove("future-magnet-active","future-magnet-complete");
+ quiz.classList.remove("future-magnet-quiz");choicesEl.classList.remove("future-mode");choicesEl.setAttribute("aria-label","こたえを えらぶ");
+ if(futureMagnetLayer){futureMagnetLayer.replaceChildren();futureMagnetLayer.hidden=true;}
 }
-function futureRailCurrentPoint(){
- const route=futureRailRoute>=0?futureRailRoute:0;
- const step=clamp(futureRailStep<0?0:futureRailStep,0,FUTURE_RAIL_ROUTES[route].length-1);
- return FUTURE_RAIL_ROUTES[route][step];
+function updateFutureMagnetEnergy(){
+ if(!futureMagnetLayer||futureMagnetLayer.hidden)return;
+ const board=futureMagnetLayer.querySelector(".future-magnet-board"),meter=futureMagnetLayer.querySelector(".future-magnet-meter");
+ if(board){for(let step=0;step<=FUTURE_MAGNET_GOAL;step++)board.classList.toggle("charge-"+step,step===futureMagnetCharge);}
+ if(meter){meter.setAttribute("aria-valuenow",String(futureMagnetCharge));meter.setAttribute("aria-valuetext","エナジー "+futureMagnetCharge+"こ");
+  meter.querySelectorAll("span").forEach((cell,index)=>cell.classList.toggle("is-on",index<futureMagnetCharge));}
 }
-function updateFutureRailVisual(){
- if(!futureRailLayer||futureRailLayer.hidden)return;
- const board=futureRailLayer.querySelector(".future-rail-board");if(!board)return;
- board.dataset.route=String(futureRailRoute);
- board.querySelectorAll(".future-rail-glow").forEach(path=>{
-  const route=Number(path.dataset.route);
-  path.classList.toggle("is-active",futureRailStep>=0&&(futureRailRoute<0||futureRailRoute===route));
- });
- board.querySelectorAll(".future-rail-node").forEach(node=>{
-  const route=Number(node.dataset.route),point=Number(node.dataset.point);
-  const common=point<=1;
-  node.classList.toggle("is-complete",futureRailStep>=point&&(common||futureRailRoute===route));
- });
- const current=futureRailCurrentPoint(),light=board.querySelector(".future-rail-light");
- if(light){light.style.setProperty("--light-x",(current.x*100)+"%");light.style.setProperty("--light-y",(current.y*100)+"%");}
- futureRailOptions.forEach((entry,index)=>entry.button.classList.toggle("is-reachable",futureRailRoute===index&&futureRailStep>=3));
+function removeFutureMagnetToken(){
+ if(futureMagnetToken&&futureMagnetToken.el)futureMagnetToken.el.remove();futureMagnetToken=null;futureMagnetTokenStartedAt=0;
 }
-function resetFutureRailTrace(){
- if(!futureRailLayer||futureRailLayer.hidden)return;
- futureRailRoute=-1;futureRailStep=-1;futureRailPointerId=null;futureRailTracing=false;futureRailResolving=false;
- const board=futureRailLayer.querySelector(".future-rail-board");if(board)board.classList.remove("is-tracing","is-resolving");
- const first=futureRailOptions.findIndex(entry=>!entry.button.classList.contains("dim")&&!entry.button.disabled);
- futureKeyboardRoute=first>=0?first:0;
- futureRailGuide(futureReducedMotion()?"ホームを えらんでね":"ひかりを こたえの ホームまで なぞろう！");
- updateFutureRailVisual();
+function spawnFutureMagnetToken(now){
+ if(!futureMagnetPlayable()||!futureMagnetLayer)return;
+ removeFutureMagnetToken();
+ const correct=futureMagnetOptions.find(entry=>entry.o.ok),wrong=futureMagnetOptions.find(entry=>!entry.o.ok);
+ const showWrong=!futureMagnetWrongLocked&&wrong&&((futureMagnetSpawnCount+qSeg)%3===1);
+ const entry=showWrong?wrong:correct;if(!entry)return;
+ const button=document.createElement("button");button.type="button";button.tabIndex=-1;button.className="choice future-magnet-capsule";button.dataset.ok=entry.o.ok?"1":"0";
+ button.setAttribute("aria-label",entry.o.t+"の カプセル");button.setAttribute("aria-hidden","true");
+ const emoji=document.createElement("span");emoji.className="em";emoji.textContent=entry.o.e;
+ const label=document.createElement("span");label.className="lb";label.textContent=entry.o.t;button.append(emoji,label);
+ const lane=futureMagnetLayer.querySelector(".future-magnet-lane");if(lane)lane.appendChild(button);
+ const gate=futureMagnetLayer.querySelector(".future-magnet-gate");if(gate)gate.setAttribute("aria-label","いまは "+entry.o.t+"。マグネットを おす");
+ futureMagnetGuide(entry.o.t+"の カプセル！ まんなかで おそう");
+ futureMagnetSpawnCount++;futureMagnetTokenStartedAt=now;futureMagnetToken={el:button,entry,progress:futureReducedMotion()?0.5:0};
 }
-function futureRailDistance(board,event,point){
- const rect=board.getBoundingClientRect();
- return Math.hypot(event.clientX-(rect.left+point.x*rect.width),event.clientY-(rect.top+point.y*rect.height));
-}
-function futureRailThreshold(board){
- const rect=board.getBoundingClientRect();return clamp(Math.min(rect.width,rect.height)*.25,48,82);
-}
-function futureRailPointerDown(event){
- const board=event.currentTarget;if(!futureRailPlayable()||futureReducedMotion()||event.button>0)return;
- const current=futureRailCurrentPoint(),threshold=futureRailThreshold(board);
- if(futureRailDistance(board,event,current)>threshold*(futureRailStep<0?1.45:1.15)){
-  futureRailGuide(futureRailStep<0?"ひかりの たまから はじめよう":"ひかりの ところから つづけよう");return;
+function renderFutureMagnet(now){
+ if(!futureMagnetLayer||futureMagnetLayer.hidden||!document.body.classList.contains("future-magnet-active"))return;
+ const gate=futureMagnetLayer.querySelector(".future-magnet-gate");
+ if(!futureMagnetToken&&!futureMagnetResolving&&now>=futureMagnetNextAt)spawnFutureMagnetToken(now);
+ if(!futureMagnetToken)return;
+ const reduced=futureReducedMotion(),duration=(FUTURE_MAGNET_TRAVEL_MS[level]||1900)*(futureMagnetAssisted&&futureMagnetToken.entry.o.ok?1.35:1);
+ const progress=reduced?0.5:clamp((now-futureMagnetTokenStartedAt)/duration,0,1);futureMagnetToken.progress=progress;
+ futureMagnetToken.el.style.setProperty("--capsule-x",(-12+124*progress).toFixed(2)+"%");
+ const ready=reduced||(progress>=(futureMagnetAssisted?0.28:0.38)&&progress<=(futureMagnetAssisted?0.72:0.62));
+ if(gate)gate.classList.toggle("is-ready",ready);
+ if((!reduced&&progress>=1)||(reduced&&now-futureMagnetTokenStartedAt>1600)){
+  removeFutureMagnetToken();futureMagnetNextAt=now+(reduced?140:90);
  }
- event.preventDefault();ensureAC();futureRailPointerId=event.pointerId;futureRailTracing=true;
- if(futureRailStep<0)futureRailStep=0;
- board.classList.add("is-tracing");
- try{board.setPointerCapture(event.pointerId);}catch(_){}
- futureRailGuide("そのまま レールを なぞってね");updateFutureRailVisual();
 }
-function futureRailPointerMove(event){
- if(!futureRailTracing||event.pointerId!==futureRailPointerId||!futureRailPlayable())return;
- const board=event.currentTarget,threshold=futureRailThreshold(board);event.preventDefault();
- let advanced=false;
- if(futureRailRoute<0){
-  if(futureRailStep===0&&futureRailDistance(board,event,FUTURE_RAIL_ROUTES[0][1])<=threshold){futureRailStep=1;advanced=true;}
-  if(futureRailStep>=1){
-   let best=null;
-   futureRailOptions.forEach((entry,index)=>{
-    if(entry.button.disabled||entry.button.classList.contains("dim"))return;
-    const distance=futureRailDistance(board,event,FUTURE_RAIL_ROUTES[index][2]);
-    if(!best||distance<best.distance)best={index,distance};
-   });
-   if(best&&best.distance<=threshold*1.18){futureRailRoute=best.index;futureRailStep=2;futureKeyboardRoute=best.index;advanced=true;}
-  }
- }else{
-  const route=FUTURE_RAIL_ROUTES[futureRailRoute];
-  while(futureRailStep<route.length-1&&futureRailDistance(board,event,route[futureRailStep+1])<=threshold*1.12){futureRailStep++;advanced=true;}
+function activateFutureMagnet(keyboardAssist){
+ if(!futureMagnetPlayable())return;ensureAC();
+ const board=futureMagnetLayer.querySelector(".future-magnet-board"),gate=futureMagnetLayer.querySelector(".future-magnet-gate");
+ if(!futureMagnetToken){if(gate){gate.classList.remove("is-empty");void gate.offsetWidth;gate.classList.add("is-empty");}futureMagnetGuide("カプセルが きたら おそう！");return;}
+ const p=futureMagnetToken.progress,inside=!!keyboardAssist||futureReducedMotion()||(p>=(futureMagnetAssisted?0.28:0.38)&&p<=(futureMagnetAssisted?0.72:0.62));
+ if(!inside){if(gate){gate.classList.remove("is-empty");void gate.offsetWidth;gate.classList.add("is-empty");}futureMagnetGuide("まんなかで おしてね");tone(330,0,.07,"triangle",.04);return;}
+ const token=futureMagnetToken,epoch=futureMagnetEpoch;futureMagnetResolving=true;token.el.classList.add(token.entry.o.ok?"is-captured":"is-rejected");
+ if(!token.entry.o.ok){
+  futureMagnetWrongLocked=true;futureMagnetGuide("ちがう カプセルは ぽーん！");tone(280,0,.12,"sine",.055);tone(210,.08,.15,"triangle",.04);
+  onPick(token.el,{ok:false,mode:"future"});
+  futureMagnetTimer=setTimeout(()=>{futureMagnetTimer=0;if(epoch!==futureMagnetEpoch)return;removeFutureMagnetToken();futureMagnetResolving=false;futureMagnetNextAt=_nowMs()+120;},620);return;
  }
- if(advanced){tone(620+Math.max(0,futureRailStep)*85,0,.06,"sine",.045);futureRailGuide("いいね！ そのまま つなごう");updateFutureRailVisual();}
- else if(futureRailDistance(board,event,futureRailCurrentPoint())>threshold*2.25)futureRailGuide("レールに もどってね");
- if(futureRailRoute>=0&&futureRailStep===FUTURE_RAIL_ROUTES[futureRailRoute].length-1)finishFutureRailRoute(futureRailRoute);
+ futureMagnetCharge=Math.min(FUTURE_MAGNET_GOAL,futureMagnetCharge+1);updateFutureMagnetEnergy();
+ tone(650+futureMagnetCharge*170,0,.1,"triangle",.08);tone(900+futureMagnetCharge*220,.07,.13,"sine",.06);
+ if(futureMagnetCharge<FUTURE_MAGNET_GOAL){
+  futureMagnetGuide("エナジー "+futureMagnetCharge+"こ！ あと "+(FUTURE_MAGNET_GOAL-futureMagnetCharge)+"こ");
+  futureMagnetTimer=setTimeout(()=>{futureMagnetTimer=0;if(epoch!==futureMagnetEpoch)return;removeFutureMagnetToken();futureMagnetResolving=false;futureMagnetNextAt=_nowMs()+100;},futureReducedMotion()?90:330);return;
+ }
+ if(board)board.classList.add("is-complete");document.body.classList.add("future-magnet-complete");futureMagnetGuide("まちじゅう てんとう！ リニア はっしん！");
+ tone(220,0,.26,"sine",.09);tone(660,.11,.22,"triangle",.09);tone(1047,.25,.28,"sine",.08);confetti(10);
+ futureMagnetTimer=setTimeout(()=>{
+  futureMagnetTimer=0;if(epoch!==futureMagnetEpoch)return;onPick(token.el,{ok:true,mode:"future"});
+  futureMagnetTimer=setTimeout(()=>{futureMagnetTimer=0;if(epoch===futureMagnetEpoch)clearFutureMagnetGame();},420);
+ },futureReducedMotion()?120:650);
 }
-function futureRailPointerEnd(event){
- if(event.pointerId!==futureRailPointerId)return;
- const board=event.currentTarget;futureRailTracing=false;futureRailPointerId=null;board.classList.remove("is-tracing");
- try{board.releasePointerCapture(event.pointerId);}catch(_){}
- if(!futureRailResolving)futureRailGuide(futureRailStep<0?"ひかりの たまから はじめよう":"ひかりの ところから つづけよう");
+function assistFutureMagnetGame(){
+ if(!futureMagnetLayer||futureMagnetLayer.hidden)return;
+ futureMagnetAssisted=true;futureMagnetWrongLocked=true;futureMagnetLayer.querySelector(".future-magnet-board")?.classList.add("is-assisted");
+ if(futureMagnetToken&&!futureMagnetToken.entry.o.ok){removeFutureMagnetToken();futureMagnetNextAt=_nowMs()+80;}
+ futureMagnetGuide("せいかい カプセルが ゆっくりに なるよ");
 }
-function selectFutureRailRoute(index){
- const entry=futureRailOptions[index];
- if(!entry||futureRailResolveTimer||!futureRailPlayable()||entry.button.disabled||entry.button.classList.contains("dim"))return;
- futureKeyboardRoute=index;futureRailRoute=index;futureRailStep=FUTURE_RAIL_ROUTES[index].length-1;updateFutureRailVisual();
- futureRailResolveTimer=setTimeout(()=>{futureRailResolveTimer=0;finishFutureRailRoute(index);},futureReducedMotion()?20:180);
-}
-function finishFutureRailRoute(index){
- const entry=futureRailOptions[index],board=futureRailLayer&&futureRailLayer.querySelector(".future-rail-board");
- if(!entry||!board||futureRailResolving||answerLocked||entry.button.disabled||entry.button.classList.contains("dim"))return;
- clearTimeout(futureRailResolveTimer);futureRailResolveTimer=0;
- if(futureRailPointerId!==null){try{board.releasePointerCapture(futureRailPointerId);}catch(_){}}
- futureRailResolving=true;futureRailTracing=false;futureRailPointerId=null;board.classList.remove("is-tracing");board.classList.add("is-resolving");entry.button.classList.add("is-reachable");
- futureRailGuide(entry.o.ok?"ひかりが つながった！":"こっちかな？");tone(entry.o.ok?1047:430,0,.13,"triangle",.1);
- futureRailResolveTimer=setTimeout(()=>{
-  futureRailResolveTimer=0;futureRailResolving=false;
-  onPick(entry.button,{ok:entry.o.ok,mode:"future"});
-  if(entry.o.ok)setTimeout(()=>clearFutureRailGame(),360);
-  else setTimeout(()=>{if(isFutureStage()&&quiz.classList.contains("show"))resetFutureRailTrace();},560);
- },futureReducedMotion()?30:320);
-}
-function renderFutureRailGame(){
- if(!futureRailLayer)return;
- const opts=futureQuestionOptions(cur);
- document.body.classList.add("future-rail-active");quiz.classList.add("future-rail-quiz");choicesEl.classList.add("future-mode");
- choicesEl.setAttribute("aria-label","ひかりを こたえの ホームへ つなぐ");futureRailLayer.hidden=false;futureRailLayer.replaceChildren();futureRailOptions=[];
- const board=document.createElement("div");board.className="future-rail-board";board.setAttribute("aria-label","ひかりの レール");
- const guide=document.createElement("div");guide.className="future-rail-guide";guide.setAttribute("role","status");guide.setAttribute("aria-live","polite");
- const svg=document.createElementNS("http://www.w3.org/2000/svg","svg");svg.setAttribute("class","future-rail-map");svg.setAttribute("viewBox","0 0 1000 500");svg.setAttribute("preserveAspectRatio","none");svg.setAttribute("aria-hidden","true");
- FUTURE_RAIL_ROUTES.forEach((route,index)=>{
-  const d=route.map((point,i)=>(i?"L":"M")+(point.x*1000)+" "+(point.y*500)).join(" ");
-  ["future-rail-base","future-rail-core","future-rail-glow"].forEach(className=>{
-   const path=document.createElementNS("http://www.w3.org/2000/svg","path");path.setAttribute("d",d);path.setAttribute("class",className);path.dataset.route=String(index);svg.appendChild(path);
-  });
- });
- board.append(svg,guide);
- const start=document.createElement("div");start.className="future-rail-start";start.textContent="✦";start.setAttribute("aria-hidden","true");board.appendChild(start);
- FUTURE_RAIL_ROUTES.forEach((route,routeIndex)=>route.slice(1,-1).forEach((point,offset)=>{
-  const node=document.createElement("span");node.className="future-rail-node";node.dataset.route=String(routeIndex);node.dataset.point=String(offset+1);
-  node.style.setProperty("--node-x",(point.x*100)+"%");node.style.setProperty("--node-y",(point.y*100)+"%");node.setAttribute("aria-hidden","true");board.appendChild(node);
- }));
- const light=document.createElement("span");light.className="future-rail-light";light.setAttribute("aria-hidden","true");board.appendChild(light);
- opts.forEach((o,index)=>{
-  const button=document.createElement("button");button.type="button";button.className="choice future-rail-home";button.dataset.ok=o.ok?"1":"0";
-  const homePoint=FUTURE_RAIL_ROUTES[index][FUTURE_RAIL_ROUTES[index].length-1];
-  button.style.setProperty("--home-y",(homePoint.y*100)+"%");button.setAttribute("aria-label",o.t+"の ホーム");
-  const emoji=document.createElement("span");emoji.className="em";emoji.textContent=o.e;
-  const label=document.createElement("span");label.className="lb";label.textContent=o.t;button.append(emoji,label);
-  bindTap(button,event=>{
-   if(futureReducedMotion()||event.detail===0)selectFutureRailRoute(index);
-   else{futureKeyboardRoute=index;futureRailGuide("ひかりの たまから なぞってね");}
-  });
-  board.appendChild(button);futureRailOptions.push({button,o});
- });
- board.addEventListener("pointerdown",futureRailPointerDown);
- board.addEventListener("pointermove",futureRailPointerMove);
- board.addEventListener("pointerup",futureRailPointerEnd);
- board.addEventListener("pointercancel",futureRailPointerEnd);
- futureRailLayer.appendChild(board);hintText.textContent="✨ ひかりを こたえの ホームまで つなごう";resetFutureRailTrace();
+function renderFutureMagnetGame(){
+ if(!futureMagnetLayer)return;
+ futureMagnetOptions=futureQuestionOptions(cur).map(o=>({o}));futureMagnetCharge=0;futureMagnetWrongLocked=false;futureMagnetAssisted=false;futureMagnetResolving=false;futureMagnetSpawnCount=0;
+ document.body.classList.add("future-magnet-active");quiz.classList.add("future-magnet-quiz");choicesEl.classList.add("future-mode");
+ choicesEl.setAttribute("aria-label","こたえの カプセルを 3こ あつめる");futureMagnetLayer.hidden=false;futureMagnetLayer.replaceChildren();
+ const board=document.createElement("div");board.className="future-magnet-board charge-0";board.setAttribute("aria-label","ミライ マグネット ゲート");
+ const guide=document.createElement("div");guide.className="future-magnet-guide";guide.setAttribute("role","status");guide.setAttribute("aria-live","polite");guide.textContent="こたえ カプセルが まんなかに きたら おそう！";
+ const city=document.createElement("div");city.className="future-magnet-city";city.setAttribute("aria-hidden","true");
+ const meter=document.createElement("div");meter.className="future-magnet-meter";meter.setAttribute("role","progressbar");meter.setAttribute("aria-label","まちの エナジー");meter.setAttribute("aria-valuemin","0");meter.setAttribute("aria-valuemax",String(FUTURE_MAGNET_GOAL));
+ for(let index=0;index<FUTURE_MAGNET_GOAL;index++)meter.appendChild(document.createElement("span"));
+ const lane=document.createElement("div");lane.className="future-magnet-lane";
+ const gate=document.createElement("button");gate.type="button";gate.className="future-magnet-gate";gate.setAttribute("aria-label","マグネットを おす");gate.innerHTML='<span aria-hidden="true">🧲</span><strong>マグネット！</strong>';
+ bindTap(gate,event=>activateFutureMagnet(!!(event&&event.type==="click"&&event.detail===0)));
+ const runner=document.createElement("div");runner.className="future-magnet-runner";runner.setAttribute("aria-hidden","true");runner.innerHTML='<i></i><i></i><i></i>';
+ board.append(city,guide,meter,lane,gate,runner);futureMagnetLayer.appendChild(board);hintText.textContent="🧲 せいかい カプセルを 3こ あつめよう";
+ futureMagnetNextAt=_nowMs()+(futureReducedMotion()?40:280);updateFutureMagnetEnergy();
 }
 function spaceQuestionOptions(question){
  const wrong=shuffle((question&&question.d||[]).map(x=>({e:x[0],t:x[1],ok:false})))[0];
  return shuffle([{e:question.a[0],t:question.a[1],ok:true},wrong].filter(Boolean));
 }
-function spaceConstellationPlayable(){
- return !window.__PONO_TIER_LOCKED__&&isSpaceStage()&&playing&&!driving&&!answerLocked&&!spaceConstellationResolving&&
-  quiz.classList.contains("show")&&spaceConstellationLayer&&!spaceConstellationLayer.hidden;
+function spaceGravityPlayable(){
+ return !window.__PONO_TIER_LOCKED__&&isSpaceStage()&&playing&&!driving&&!answerLocked&&!spaceGravityResolving&&
+  quiz.classList.contains("show")&&spaceGravityLayer&&!spaceGravityLayer.hidden;
 }
-function clearSpaceConstellationGame(){
- clearTimeout(spaceConstellationTimer);spaceConstellationTimer=0;
- spaceConstellationOptions=[];spaceConstellationStep=0;spaceConstellationResolving=false;spaceConstellationPattern=null;
- document.body.classList.remove("space-constellation-active","space-constellation-complete");
- quiz.classList.remove("space-constellation-quiz");choicesEl.classList.remove("space-mode");choicesEl.setAttribute("aria-label","こたえを えらぶ");
- if(spaceConstellationLayer){spaceConstellationLayer.replaceChildren();spaceConstellationLayer.hidden=true;}
+function spaceGravityGuide(message){
+ const guide=spaceGravityLayer&&spaceGravityLayer.querySelector(".space-gravity-guide");if(guide)guide.textContent=message;
 }
-function spaceConstellationGuide(message){
- const guide=spaceConstellationLayer&&spaceConstellationLayer.querySelector(".space-constellation-guide");if(guide)guide.textContent=message;
+function clearSpaceGravityGame(){
+ spaceGravityEpoch++;clearTimeout(spaceGravityTimer);spaceGravityTimer=0;
+ const pad=spaceGravityLayer&&spaceGravityLayer.querySelector(".space-gravity-pad");
+ const activePointer=spaceGravityPointerId;spaceGravityHolding=false;spaceGravityPointerId=null;
+ if(pad&&activePointer!==null){try{pad.releasePointerCapture(activePointer);}catch(_){}}
+ spaceGravityOptions=[];spaceGravityAngle=-2.35;spaceGravityHolding=false;spaceGravityPointerId=null;spaceGravityHoldStartedAt=0;spaceGravityEnergy=0;
+ spaceGravityResolving=false;spaceGravityMisses=0;spaceGravityAssisted=false;spaceGravityKeyboardTarget=-1;spaceGravityLastFrameAt=0;
+ document.body.classList.remove("space-gravity-active","space-gravity-complete");
+ quiz.classList.remove("space-gravity-quiz");choicesEl.classList.remove("space-mode");choicesEl.setAttribute("aria-label","こたえを えらぶ");
+ if(spaceGravityLayer){spaceGravityLayer.replaceChildren();spaceGravityLayer.hidden=true;}
 }
-function updateSpaceConstellationVisual(){
- if(!spaceConstellationLayer||spaceConstellationLayer.hidden)return;
- const board=spaceConstellationLayer.querySelector(".space-constellation-board");if(!board)return;
- board.querySelectorAll(".space-route-line[data-segment]").forEach(line=>{
-  const segment=Number(line.dataset.segment);
-  if(segment<2)line.classList.toggle("is-complete",segment<spaceConstellationStep);
- });
- board.querySelectorAll(".space-node-star").forEach((node,index)=>{
-  const connected=index<spaceConstellationStep;
-  node.classList.toggle("is-connected",connected);node.classList.toggle("is-next",index===spaceConstellationStep);
-  node.disabled=spaceConstellationResolving||connected||index!==spaceConstellationStep;
- });
- spaceConstellationOptions.forEach(entry=>{
-  const unavailable=entry.button.classList.contains("dim");
-  entry.button.disabled=spaceConstellationResolving||spaceConstellationStep<2||unavailable;
-  entry.button.classList.toggle("is-ready",spaceConstellationStep>=2&&!unavailable&&!spaceConstellationResolving);
- });
- if(!spaceConstellationResolving){
-  if(spaceConstellationStep===0)spaceConstellationGuide("ひかっている ほしを タップしよう");
-  else if(spaceConstellationStep===1)spaceConstellationGuide("つぎの ほしへ つなごう");
-  else spaceConstellationGuide("さいごに こたえの ほしを えらぼう");
+function spaceAngleDelta(a,b){return Math.abs(Math.atan2(Math.sin(a-b),Math.cos(a-b)));}
+function spaceGravityWindow(){return spaceGravityAssisted?0.72:(spaceGravityMisses>=2?0.62:0.50);}
+function updateSpaceJourneyTrail(current){
+ if(!spaceGravityLayer)return;
+ spaceGravityLayer.querySelectorAll(".space-journey-star").forEach((star,index)=>star.classList.toggle("is-on",index<current));
+ const trail=spaceGravityLayer.querySelector(".space-journey-trail");if(trail){trail.style.setProperty("--trail-fill",(clamp(current/QN,0,1)*100).toFixed(0)+"%");trail.classList.toggle("is-complete",current>=QN);trail.setAttribute("aria-label","せいざ "+current+"ほん かんせい");}
+ spaceGravityLayer.querySelector(".space-gravity-board")?.classList.toggle("is-constellation-complete",current>=QN);
+}
+function updateSpaceGravityVisual(now){
+ if(!spaceGravityLayer||spaceGravityLayer.hidden)return;
+ const board=spaceGravityLayer.querySelector(".space-gravity-board"),rocket=spaceGravityLayer.querySelector(".space-gravity-rocket"),pad=spaceGravityLayer.querySelector(".space-gravity-pad");if(!board||!rocket||!pad)return;
+ const reduced=futureReducedMotion(),dt=spaceGravityLastFrameAt?clamp((now-spaceGravityLastFrameAt)/1000,0,.05):0;spaceGravityLastFrameAt=now;
+ if(!reduced&&spaceGravityPlayable()){
+  const slow=spaceGravityMisses>=2?0.82:1,holdSlow=spaceGravityHolding?0.76:1;
+  spaceGravityAngle+=(Math.PI*2/((SPACE_GRAVITY_ORBIT_MS[level]||4100)/1000))*dt*slow*holdSlow;
+  if(spaceGravityHolding)spaceGravityEnergy=clamp((now-spaceGravityHoldStartedAt)/900,0,1);
  }
+ const radius=1-(spaceGravityHolding?spaceGravityEnergy*.32:0),x=50+Math.cos(spaceGravityAngle)*14.5*radius,y=48+Math.sin(spaceGravityAngle)*15.5*radius;
+ rocket.style.setProperty("--rocket-x",x.toFixed(2)+"%");rocket.style.setProperty("--rocket-y",y.toFixed(2)+"%");rocket.style.setProperty("--rocket-r",(spaceGravityAngle*180/Math.PI+90).toFixed(1)+"deg");
+ const charge=Math.min(3,Math.ceil(spaceGravityEnergy*3));for(let step=0;step<=3;step++)pad.classList.toggle("charge-"+step,step===charge);pad.classList.toggle("is-holding",spaceGravityHolding);
+ const meter=spaceGravityLayer.querySelector(".space-gravity-meter");if(meter){meter.setAttribute("aria-valuenow",String(charge));meter.setAttribute("aria-valuetext","じゅうりょく "+charge+"だんかい");meter.querySelectorAll("i").forEach((cell,index)=>cell.classList.toggle("is-on",index<charge));}
+ const width=spaceGravityWindow();spaceGravityOptions.forEach((entry,index)=>{
+  const inWindow=spaceAngleDelta(spaceGravityAngle,SPACE_GRAVITY_PORTAL_ANGLES[index])<=width;
+  entry.button.classList.toggle("is-window",!entry.button.disabled&&inWindow);entry.button.classList.toggle("is-target",spaceGravityKeyboardTarget===index);
+ });
 }
-function connectSpaceConstellationNode(index,event){
- if(!spaceConstellationPlayable()||index!==spaceConstellationStep||index>1)return;
- ensureAC();spaceConstellationStep=index+1;tone(index===0?659:784,0,.11,"sine",.075);tone(index===0?988:1175,.065,.12,"triangle",.045);
- updateSpaceConstellationVisual();
- if(event&&event.detail===0){
-  let next=spaceConstellationStep<2?spaceConstellationLayer.querySelector('.space-node-star[data-node="'+spaceConstellationStep+'"]'):null;
-  if(spaceConstellationStep>=2){const available=spaceConstellationOptions.find(entry=>!entry.button.disabled&&!entry.button.classList.contains("dim"));next=available?available.button:null;}
-  if(next)next.focus({preventScroll:true});
+function selectSpaceGravityTarget(index){
+ const entry=spaceGravityOptions[index];if(!entry||entry.button.disabled||spaceGravityResolving)return;
+ spaceGravityKeyboardTarget=index;spaceGravityGuide(entry.o.t+"を ねらうよ。きいろく ひかったら はなそう！");updateSpaceGravityVisual(_nowMs());
+}
+function pulseSpaceGravityReduced(){
+ if(!spaceGravityPlayable())return;
+ if(spaceGravityKeyboardTarget<0||!spaceGravityOptions[spaceGravityKeyboardTarget]||spaceGravityOptions[spaceGravityKeyboardTarget].button.disabled){spaceGravityGuide("ねらう ポータルを えらんでね");return;}
+ spaceGravityEnergy=Math.min(1,spaceGravityEnergy+1/3);tone(620+Math.ceil(spaceGravityEnergy*3)*150,0,.1,"triangle",.075);updateSpaceGravityVisual(_nowMs());
+ if(spaceGravityEnergy>=.99)resolveSpaceGravity(spaceGravityOptions[spaceGravityKeyboardTarget]);else spaceGravityGuide("じゅうりょく あと "+(3-Math.round(spaceGravityEnergy*3))+"かい！");
+}
+function startSpaceGravityHold(event){
+ if(!spaceGravityPlayable()||spaceGravityHolding)return;
+ if(futureReducedMotion()){pulseSpaceGravityReduced();return;}
+ if(spaceGravityKeyboardTarget<0||!spaceGravityOptions[spaceGravityKeyboardTarget]||spaceGravityOptions[spaceGravityKeyboardTarget].button.disabled){spaceGravityGuide("まず こたえの ポータルを えらんでね");return;}
+ if(event&&event.button>0)return;ensureAC();spaceGravityHolding=true;spaceGravityHoldStartedAt=_nowMs();spaceGravityEnergy=0;
+ const pad=spaceGravityLayer.querySelector(".space-gravity-pad");
+ if(event&&pad){event.preventDefault();spaceGravityPointerId=event.pointerId;try{pad.setPointerCapture(event.pointerId);}catch(_){}}
+ spaceGravityGuide("ためて… ひかる ポータルで はなそう！");
+}
+function releaseSpaceGravityHold(event){
+ if(!spaceGravityHolding||(event&&spaceGravityPointerId!==null&&event.pointerId!==spaceGravityPointerId))return;
+ const pad=spaceGravityLayer&&spaceGravityLayer.querySelector(".space-gravity-pad");
+ spaceGravityHolding=false;spaceGravityPointerId=null;
+ if(event&&pad){event.preventDefault();try{pad.releasePointerCapture(event.pointerId);}catch(_){}}
+ if(spaceGravityEnergy<.5){spaceGravityEnergy=0;spaceGravityMisses++;spaceGravityGuide("もうすこし おして ためよう！");tone(310,0,.08,"triangle",.04);updateSpaceGravityVisual(_nowMs());return;}
+ let entry=null;
+ if(spaceGravityKeyboardTarget>=0){
+  const selected=spaceGravityOptions[spaceGravityKeyboardTarget],delta=spaceAngleDelta(spaceGravityAngle,SPACE_GRAVITY_PORTAL_ANGLES[spaceGravityKeyboardTarget]);
+  if(!event||(selected&&!selected.button.disabled&&delta<=spaceGravityWindow()))entry=selected;
  }
+ if(!entry||entry.button.disabled){spaceGravityEnergy=0;spaceGravityMisses++;spaceGravityGuide("もういちど ぐるり！");tone(420,0,.08,"sine",.04);updateSpaceGravityVisual(_nowMs());return;}
+ resolveSpaceGravity(entry);
 }
-function finishSpaceConstellation(entry){
- if(!entry||spaceConstellationStep<2||!spaceConstellationPlayable()||entry.button.disabled||entry.button.classList.contains("dim"))return;
- spaceConstellationResolving=true;entry.button.classList.add("is-selected");
- const board=spaceConstellationLayer.querySelector(".space-constellation-board");
- const answerLine=board&&board.querySelector('.space-route-line[data-answer="'+entry.index+'"]');if(answerLine)answerLine.classList.add("is-complete");
+function cancelSpaceGravityHold(event){
+ if(!spaceGravityHolding||(event&&spaceGravityPointerId!==null&&event.pointerId!==spaceGravityPointerId))return;
+ const pad=spaceGravityLayer&&spaceGravityLayer.querySelector(".space-gravity-pad");
+ spaceGravityHolding=false;spaceGravityPointerId=null;spaceGravityEnergy=0;
+ if(event&&pad){event.preventDefault();try{pad.releasePointerCapture(event.pointerId);}catch(_){}}
+ spaceGravityGuide("もういちど おして ためよう！");updateSpaceGravityVisual(_nowMs());
+}
+function handleSpaceGravityPadClick(event){
+ if(!event||event.detail!==0)return;
+ event.preventDefault();pulseSpaceGravityReduced();
+}
+function resolveSpaceGravity(entry){
+ if(!entry||!spaceGravityPlayable()||entry.button.disabled)return;
+ spaceGravityResolving=true;spaceGravityHolding=false;const epoch=spaceGravityEpoch,board=spaceGravityLayer.querySelector(".space-gravity-board"),rocket=spaceGravityLayer.querySelector(".space-gravity-rocket");
+ entry.button.classList.add("is-selected");if(board)board.classList.add(entry.o.ok?"is-warping":"is-rejected");
+ if(rocket){
+  const rocketRect=rocket.getBoundingClientRect?rocket.getBoundingClientRect():null,portalRect=entry.button.getBoundingClientRect?entry.button.getBoundingClientRect():null;
+  if(rocketRect&&portalRect){rocket.style.setProperty("--warp-x",(portalRect.left+portalRect.width/2-rocketRect.left-rocketRect.width/2).toFixed(1)+"px");rocket.style.setProperty("--warp-y",(portalRect.top+portalRect.height/2-rocketRect.top-rocketRect.height/2).toFixed(1)+"px");rocket.style.setProperty("--warp-end-y",(portalRect.top+portalRect.height/2).toFixed(1)+"px");}
+  else{rocket.style.setProperty("--warp-x","28vw");rocket.style.setProperty("--warp-y",entry.index===0?"-12vh":"12vh");rocket.style.setProperty("--warp-end-y",entry.index===0?"32%":"61%");}
+ }
  if(entry.o.ok){
-  if(board)board.classList.add("is-complete");document.body.classList.add("space-constellation-complete");spaceConstellationGuide("せいざワープ かんせい！");
-  tone(988,0,.11,"triangle",.08);tone(1319,.08,.15,"sine",.07);tone(1760,.16,.2,"triangle",.05);
- }else{spaceConstellationGuide("もうひとつの ほしへ つなごう");tone(430,0,.13,"sine",.055);}
- updateSpaceConstellationVisual();
- spaceConstellationTimer=setTimeout(()=>{
-  spaceConstellationTimer=0;spaceConstellationResolving=false;
-  onPick(entry.button,{ok:entry.o.ok,mode:"space"});
-  if(entry.o.ok){
-   spaceConstellationTimer=setTimeout(()=>{spaceConstellationTimer=0;clearSpaceConstellationGame();},420);
-  }else{
-   spaceConstellationTimer=setTimeout(()=>{
-    spaceConstellationTimer=0;if(!isSpaceStage()||!quiz.classList.contains("show"))return;
-    entry.button.classList.remove("is-selected");if(answerLine)answerLine.classList.remove("is-complete");updateSpaceConstellationVisual();
-   },600);
-  }
- },futureReducedMotion()?30:260);
+  document.body.classList.add("space-gravity-complete");updateSpaceJourneyTrail(qSeg+1);spaceGravityGuide(qSeg===QN-1?"おおきな せいざが できた！":"じゅうりょく ブースト！");
+  tone(330,0,.2,"sine",.08);tone(784,.09,.18,"triangle",.09);tone(1319,.2,.27,"sine",.075);confetti(qSeg===QN-1?14:8);
+ }else{spaceGravityGuide("ちがう ポータル！ ぐるりと もどるよ");tone(360,0,.13,"sine",.055);}
+ spaceGravityTimer=setTimeout(()=>{
+  spaceGravityTimer=0;if(epoch!==spaceGravityEpoch)return;onPick(entry.button,{ok:entry.o.ok,mode:"space"});
+  if(entry.o.ok){spaceGravityTimer=setTimeout(()=>{spaceGravityTimer=0;if(epoch===spaceGravityEpoch)clearSpaceGravityGame();},460);}
+  else{spaceGravityTimer=setTimeout(()=>{spaceGravityTimer=0;if(epoch!==spaceGravityEpoch||!isSpaceStage()||!quiz.classList.contains("show"))return;
+   entry.button.classList.remove("is-selected");if(board)board.classList.remove("is-rejected");spaceGravityResolving=false;spaceGravityEnergy=0;spaceGravityKeyboardTarget=spaceGravityOptions.findIndex(item=>!item.button.disabled);updateSpaceGravityVisual(_nowMs());
+  },620);}
+ },futureReducedMotion()?110:520);
 }
-function renderSpaceConstellationGame(){
- if(!spaceConstellationLayer)return;
- const opts=spaceQuestionOptions(cur),answerPoints=[{x:.84,y:.25},{x:.84,y:.75}];
- spaceConstellationPattern=SPACE_CONSTELLATION_PATTERNS[(qSeg+level+loop)%SPACE_CONSTELLATION_PATTERNS.length];
- spaceConstellationStep=0;spaceConstellationResolving=false;spaceConstellationOptions=[];
- document.body.classList.add("space-constellation-active");quiz.classList.add("space-constellation-quiz");choicesEl.classList.add("space-mode");
- choicesEl.setAttribute("aria-label","ほしを つないで こたえる");spaceConstellationLayer.hidden=false;spaceConstellationLayer.replaceChildren();
- const board=document.createElement("div");board.className="space-constellation-board";board.setAttribute("aria-label","3かい タップで つくる せいざ");
- const guide=document.createElement("div");guide.className="space-constellation-guide";guide.setAttribute("role","status");guide.setAttribute("aria-live","polite");
- const svg=document.createElementNS("http://www.w3.org/2000/svg","svg");svg.setAttribute("class","space-constellation-map");svg.setAttribute("viewBox","0 0 1000 500");svg.setAttribute("preserveAspectRatio","none");svg.setAttribute("aria-hidden","true");
- const points=[spaceConstellationPattern.start,...spaceConstellationPattern.nodes];
- const segments=[[points[0],points[1]],[points[1],points[2]],[points[2],answerPoints[0]],[points[2],answerPoints[1]]];
- segments.forEach((segment,index)=>{
-  const d="M"+(segment[0].x*1000)+" "+(segment[0].y*500)+" L"+(segment[1].x*1000)+" "+(segment[1].y*500);
-  const base=document.createElementNS("http://www.w3.org/2000/svg","path");base.setAttribute("d",d);base.setAttribute("class","space-route-base");svg.appendChild(base);
-  const line=document.createElementNS("http://www.w3.org/2000/svg","path");line.setAttribute("d",d);line.setAttribute("class","space-route-line");
-  if(index<2)line.dataset.segment=String(index);else line.dataset.answer=String(index-2);svg.appendChild(line);
- });
- board.append(svg,guide);
- const start=document.createElement("div");start.className="space-start-star";start.textContent="✦";start.setAttribute("aria-hidden","true");
- start.style.setProperty("--star-x",(points[0].x*100)+"%");start.style.setProperty("--star-y",(points[0].y*100)+"%");board.appendChild(start);
- spaceConstellationPattern.nodes.forEach((point,index)=>{
-  const button=document.createElement("button");button.type="button";button.className="space-node-star";button.textContent="✦";button.dataset.node=String(index);
-  button.style.setProperty("--star-x",(point.x*100)+"%");button.style.setProperty("--star-y",(point.y*100)+"%");button.setAttribute("aria-label",(index+1)+"ばんめの ほし");
-  bindTap(button,event=>connectSpaceConstellationNode(index,event));board.appendChild(button);
- });
+function assistSpaceGravityGame(){
+ if(!spaceGravityLayer||spaceGravityLayer.hidden)return;
+ spaceGravityAssisted=true;const wrong=spaceGravityOptions.find(entry=>!entry.o.ok&&!entry.button.disabled),correct=spaceGravityOptions.find(entry=>entry.o.ok&&!entry.button.disabled);
+ if(wrong){wrong.button.classList.add("dim");wrong.button.disabled=true;}if(correct){correct.button.classList.add("glow");spaceGravityKeyboardTarget=correct.index;}
+ spaceGravityLayer.querySelector(".space-gravity-board")?.classList.add("is-assisted");spaceGravityGuide("せいかい ポータルが おおきく ひかるよ");updateSpaceGravityVisual(_nowMs());
+}
+function renderSpaceGravityGame(){
+ if(!spaceGravityLayer)return;
+ const opts=spaceQuestionOptions(cur);spaceGravityOptions=[];spaceGravityAngle=-2.35+(qSeg%2)*.35;spaceGravityHolding=false;spaceGravityPointerId=null;spaceGravityEnergy=0;spaceGravityResolving=false;spaceGravityMisses=0;spaceGravityAssisted=false;spaceGravityKeyboardTarget=-1;spaceGravityLastFrameAt=0;
+ const reduced=futureReducedMotion();
+ document.body.classList.add("space-gravity-active");quiz.classList.add("space-gravity-quiz");choicesEl.classList.add("space-mode");choicesEl.setAttribute("aria-label","じゅうりょくで こたえの ポータルへ とぶ");
+ spaceGravityLayer.hidden=false;spaceGravityLayer.replaceChildren();const board=document.createElement("div");board.className="space-gravity-board";board.setAttribute("aria-label","じゅうりょく スイング");
+ const guide=document.createElement("div");guide.className="space-gravity-guide";guide.setAttribute("role","status");guide.setAttribute("aria-live","polite");guide.textContent=reduced?"こたえを えらんで、まんなかを 3かい おそう！":"こたえを えらんで、おして ためよう！";
+ const trail=document.createElement("div");trail.className="space-journey-trail";trail.setAttribute("aria-label","せいざ "+qSeg+"ほん かんせい");for(let index=0;index<QN;index++){const star=document.createElement("span");star.className="space-journey-star";star.textContent="✦";trail.appendChild(star);}
+ const orbit=document.createElement("div");orbit.className="space-gravity-orbit";orbit.setAttribute("aria-hidden","true");
+ const planet=document.createElement("div");planet.className="space-gravity-planet";planet.setAttribute("aria-hidden","true");
+ const rocket=document.createElement("img");rocket.className="space-gravity-rocket";rocket.src=ASSETS.space.rocket;rocket.alt="";rocket.decoding="async";
  opts.forEach((o,index)=>{
-  const button=document.createElement("button");button.type="button";button.className="choice space-answer-star";button.dataset.ok=o.ok?"1":"0";button.style.setProperty("--answer-y",(answerPoints[index].y*100)+"%");
-  button.setAttribute("aria-label",o.t+"の ほし");const emoji=document.createElement("span");emoji.className="em";emoji.textContent=o.e;
-  const label=document.createElement("span");label.className="lb";label.textContent=o.t;button.append(emoji,label);
-  const entry={button,o,index};bindTap(button,()=>finishSpaceConstellation(entry));board.appendChild(button);spaceConstellationOptions.push(entry);
+  const button=document.createElement("button");button.type="button";button.className="choice space-gravity-portal";button.dataset.ok=o.ok?"1":"0";button.style.setProperty("--portal-y",index===0?"32%":"61%");button.setAttribute("aria-label",o.t+"の ポータルを ねらう");
+  const emoji=document.createElement("span");emoji.className="em";emoji.textContent=o.e;const label=document.createElement("span");label.className="lb";label.textContent=o.t;button.append(emoji,label);
+  const entry={button,o,index};bindTap(button,()=>selectSpaceGravityTarget(index));board.appendChild(button);spaceGravityOptions.push(entry);
  });
- spaceConstellationLayer.appendChild(board);hintText.textContent="🌟 3かい タップで せいざを つくろう";updateSpaceConstellationVisual();
+ const pad=document.createElement("button");pad.type="button";pad.className="space-gravity-pad charge-0";pad.setAttribute("aria-label",futureReducedMotion()?"3かい おして じゅうりょくを ためる":"おしつづけて じゅうりょくを ためる");pad.innerHTML='<span aria-hidden="true">◎</span><strong>じゅうりょく</strong>';
+ const meter=document.createElement("div");meter.className="space-gravity-meter";meter.setAttribute("role","progressbar");meter.setAttribute("aria-label","じゅうりょく パワー");meter.setAttribute("aria-valuemin","0");meter.setAttribute("aria-valuemax","3");for(let index=0;index<3;index++)meter.appendChild(document.createElement("i"));
+ const finale=document.createElement("div");finale.className="space-constellation-bloom";finale.setAttribute("aria-hidden","true");for(let index=0;index<5;index++)finale.appendChild(document.createElement("b"));for(let index=0;index<4;index++)finale.appendChild(document.createElement("i"));
+ pad.addEventListener("pointerdown",startSpaceGravityHold);pad.addEventListener("pointerup",releaseSpaceGravityHold);pad.addEventListener("pointercancel",cancelSpaceGravityHold);pad.addEventListener("lostpointercapture",cancelSpaceGravityHold);pad.addEventListener("click",handleSpaceGravityPadClick);
+ board.append(guide,trail,orbit,planet,rocket,pad,meter,finale);spaceGravityLayer.appendChild(board);hintText.textContent=reduced?"🪐 こたえを えらんで、まんなかを 3かい おそう":"🪐 こたえを えらんで、きいろく ひかったら はなそう";
+ updateSpaceJourneyTrail(qSeg);updateSpaceGravityVisual(_nowMs());
 }
 function renderChoiceCards(){
  let opts=[{e:cur.a[0],t:cur.a[1],ok:true},...cur.d.map(x=>({e:x[0],t:x[1],ok:false}))];
@@ -3853,14 +3833,14 @@ function showQuiz(){
  setDriverMood("thinking");
  cancelSeaPointer();clearSeaBubbleGame();clearSeaRescueMessage();
  resetNumberCargoGame();
- clearFutureRailGame();
- clearSpaceConstellationGame();
+ clearFutureMagnetGame();
+ clearSpaceGravityGame();
  cur=qList[qSeg];missInQ=0;answerLocked=false;
  qText.textContent=isSeaStage()?("あわの ともだちを たすけよう！ "+cur.q):(cur.helper?(cur.helper.name+"を たすけよう！ "+cur.q):cur.q);
  hintText.textContent=helpItems.length?"🍀 おたすけを つかえるよ":"";
  choicesEl.replaceChildren();
  quiz.classList.add("show");
- if(isNumberCargoQuestion())renderNumberCargoGame();else if(isSeaStage())renderSeaBubbleGame();else if(isFutureStage())renderFutureRailGame();else if(isSpaceStage())renderSpaceConstellationGame();else renderChoiceCards();
+ if(isNumberCargoQuestion())renderNumberCargoGame();else if(isSeaStage())renderSeaBubbleGame();else if(isFutureStage())renderFutureMagnetGame();else if(isSpaceStage())renderSpaceGravityGame();else renderChoiceCards();
  speak(cur.s||cur.q);
 }
 function onPick(el,o){
@@ -3891,7 +3871,7 @@ function onPick(el,o){
    updateNumberCargoGame();
   }else{
    el.classList.add("ng","dim");
-   if(el.classList.contains("sea-answer-bubble")||el.classList.contains("future-rail-home")||el.classList.contains("space-answer-star"))el.disabled=true;
+   if(el.classList.contains("sea-answer-bubble")||el.classList.contains("future-magnet-capsule")||el.classList.contains("space-gravity-portal"))el.disabled=true;
   }
   const t=tunnels[qSeg];
   if(t){t.classList.add("shake");setTimeout(()=>t.classList.remove("shake"),520);}
@@ -3934,8 +3914,8 @@ function proceed(){
 function ending(){
  hideWeatherNotice();
  resetSeaInteraction();
- clearFutureRailGame();
- clearSpaceConstellationGame();
+ clearFutureMagnetGame();
+ clearSpaceGravityGame();
  clearRareEvent();
  stopStageWeather();setWeatherPresentation("clear");
  clearTunnelFriendGame();
@@ -3960,8 +3940,8 @@ function ending(){
 function openMap(msg){
  hideWeatherNotice();
  resetNumberCargoGame();
- clearFutureRailGame();
- clearSpaceConstellationGame();
+ clearFutureMagnetGame();
+ clearSpaceGravityGame();
  clearRareEvent();
  resetSeaInteraction();
  stopStageWeather();setWeatherPresentation("clear");
@@ -4017,7 +3997,7 @@ function nazonazoAdminPreviewArm(stageId){
   return false;
  }
  const index=NAZONAZO_ADMIN_STAGE_INDEX[stageId];
- resetSeaInteraction();clearFutureRailGame();clearSpaceConstellationGame();
+ resetSeaInteraction();clearFutureMagnetGame();clearSpaceGravityGame();
  nazonazoAdminPreviewStageIndex=index;
  stg=index;loop=0;playing=false;driving=false;pending=null;vel=0;
  stopStageWeather();

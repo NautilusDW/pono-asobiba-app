@@ -158,8 +158,8 @@ for (const [name, expectation] of [
 }
 assert.match(game, /function scheduleRareSpawn\(\)\{[\s\S]*?const scheduledStage=stg,scheduledLoop=loop;[\s\S]*?if\(!playing\|\|!driving\|\|stg!==scheduledStage\|\|loop!==scheduledLoop\)return;/, "delayed rare draws must stay inside the active journey and stage");
 assert.match(game, /function maybeSpawnRare\(\)\{\s*if\(!playing\|\|!driving\|\|rareEl\)return;/, "rare friends must never appear over maps or stopped screens");
-assert.match(game, /function startJourneyAt\(s\)\{\s*hideWeatherNotice\(\);\s*resetNumberCargoGame\(\);\s*clearFutureRailGame\(\);\s*clearSpaceConstellationGame\(\);\s*clearRareEvent\(\);/, "new journeys must clear delayed and flying rare friends after resetting stage-specific answer activities");
-assert.match(game, /function openMap\(msg\)\{\s*hideWeatherNotice\(\);\s*resetNumberCargoGame\(\);\s*clearFutureRailGame\(\);\s*clearSpaceConstellationGame\(\);\s*clearRareEvent\(\);/, "opening the map must clear delayed and flying rare friends after resetting stage-specific answer activities");
+assert.match(game, /function startJourneyAt\(s\)\{\s*hideWeatherNotice\(\);\s*resetNumberCargoGame\(\);\s*clearFutureMagnetGame\(\);\s*clearSpaceGravityGame\(\);\s*clearRareEvent\(\);/, "new journeys must clear delayed and flying rare friends after resetting stage-specific answer activities");
+assert.match(game, /function openMap\(msg\)\{\s*hideWeatherNotice\(\);\s*resetNumberCargoGame\(\);\s*clearFutureMagnetGame\(\);\s*clearSpaceGravityGame\(\);\s*clearRareEvent\(\);/, "opening the map must clear delayed and flying rare friends after resetting stage-specific answer activities");
 assert.match(game, /function beginStageTransit\(\)\{\s*if\(!coverEl\)return;\s*clearRareEvent\(\);/, "stage transit must clear the previous stage's rare event");
 
 const rareGuardStart = game.indexOf("function clearRareEvent(){");

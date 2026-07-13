@@ -56,7 +56,7 @@ assert.match(extractFunction("numberCargoAnswer"), /clamp\(Number\(cur&&cur\.a&&
 const showQuiz = extractFunction("showQuiz");
 assert.match(showQuiz, /resetNumberCargoGame\(\);/, "every question must start with an empty wagon");
 assert.match(showQuiz, /choicesEl\.replaceChildren\(\);/, "stale answer controls must be removed before rendering the activity");
-assert.match(showQuiz, /if\(isNumberCargoQuestion\(\)\)renderNumberCargoGame\(\);else if\(isSeaStage\(\)\)renderSeaBubbleGame\(\);else if\(isFutureStage\(\)\)renderFutureRailGame\(\);else if\(isSpaceStage\(\)\)renderSpaceConstellationGame\(\);else renderChoiceCards\(\);/, "number, sea, future, and space questions must keep their own answer games while other stages use cards");
+assert.match(showQuiz, /if\(isNumberCargoQuestion\(\)\)renderNumberCargoGame\(\);else if\(isSeaStage\(\)\)renderSeaBubbleGame\(\);else if\(isFutureStage\(\)\)renderFutureMagnetGame\(\);else if\(isSpaceStage\(\)\)renderSpaceGravityGame\(\);else renderChoiceCards\(\);/, "number, sea, future, and space questions must keep their own answer games while other stages use cards");
 assert.match(extractFunction("renderChoiceCards"), /className="choice"/, "non-number stages must keep their normal answer cards");
 
 const renderGame = extractFunction("renderNumberCargoGame");
