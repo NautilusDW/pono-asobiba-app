@@ -32,7 +32,7 @@ assert.match(stickerEntry, /width="1280" height="720"/);
 assert.match(stickerEntry, /alt="シールを貼って楽しむ、見開きのシールちょう画面"/);
 assert.match(stickerEntry, /aria-haspopup="dialog"/);
 assert.match(stickerEntry, /aria-controls="game-modal"/);
-assert.doesNotMatch(stickerEntry, /sticker-gallery_20260712|sticker-museum_20260712/);
+assert.doesNotMatch(stickerEntry, /sticker-gallery(?:-cute)?_|sticker-museum(?:-cute)?_/);
 assert.doesNotMatch(stickerEntry, /仮表紙|sb3d_boy_cover_front/);
 
 const gachaDetail = lp.match(/'feature-gacha': \{[\s\S]*?\n\s+\]\n\s+\},/);
@@ -45,8 +45,9 @@ const stickerDetail = lp.match(/'feature-sticker-book': \{[\s\S]*?\n\s+\]\n\s+\}
 assert.ok(stickerDetail, "sticker-book detail modal data must exist");
 assert.equal((stickerDetail[0].match(/\{src:/g) || []).length, 3, "sticker detail must contain cover, gallery, and museum");
 assert.match(stickerDetail[0], /sticker-book_20260713_001_sticker-book\.webp/);
-assert.match(stickerDetail[0], /sticker-gallery_20260712\.png/);
-assert.match(stickerDetail[0], /sticker-museum_20260712\.png/);
+assert.match(stickerDetail[0], /sticker-gallery-cute_20260713\.webp/);
+assert.match(stickerDetail[0], /sticker-museum-cute_20260713\.webp/);
+assert.doesNotMatch(stickerDetail[0], /sticker-gallery_20260712|sticker-museum_20260712/);
 assert.match(stickerDetail[0], /fit:'contain'/, "the transparent 16:9 sticker-book screen must remain uncropped in the modal");
 assert.doesNotMatch(lp, /青いシールちょうの仮表紙/);
 assert.match(lp, /\.pc-feature-entry--sticker \.pc-feature-media img\{[\s\S]*?padding:0;[\s\S]*?object-fit:contain;/,
@@ -72,5 +73,12 @@ assert.ok(sticker[20] & 0x10, "sticker-book WebP must retain the supplied alpha 
 assert.equal(readU24LE(sticker, 24) + 1, 1280, "sticker-book cover must be 1280px wide");
 assert.equal(readU24LE(sticker, 27) + 1, 720, "sticker-book cover must be 720px high");
 assert.ok(sticker.length <= 3 * 1024 * 1024, "sticker-book cover must stay within the repository 3MB limit");
+
+for (const name of ["sticker-gallery-cute_20260713.webp", "sticker-museum-cute_20260713.webp"]) {
+  const asset = fs.readFileSync(path.join(root, "assets/lp/features", name));
+  assert.equal(asset.subarray(0, 4).toString("ascii"), "RIFF", `${name} must be WebP`);
+  assert.equal(asset.subarray(8, 12).toString("ascii"), "WEBP", `${name} must be WebP`);
+  assert.ok(asset.length <= 3 * 1024 * 1024, `${name} must stay within the repository 3MB limit`);
+}
 
 console.log("lp_feature_drilldown_regression: all assertions passed");

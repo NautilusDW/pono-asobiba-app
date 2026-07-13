@@ -312,8 +312,8 @@ assert.match(
 );
 assert.match(
   museumIndex,
-  /main\.js\?v=20260712-1264/,
-  "StickerExhibitionCarousel index must bust the module cache for capture-session navigation"
+  /main\.js\?v=20260713-1284/,
+  "StickerExhibitionCarousel index must bust the module cache for the cute museum theme"
 );
 
 // ── 9) 共通シール獲得ポップアップ → シール帳 ──
