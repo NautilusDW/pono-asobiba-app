@@ -2954,6 +2954,24 @@
       grid-template-columns: 1fr 1fr;
       gap: 8px;
     }
+    .debug-preview-groups {
+      display: grid;
+      gap: 10px;
+    }
+    .debug-preview-group {
+      display: grid;
+      gap: 7px;
+      padding: 9px;
+      border: 1px solid #e8d9b5;
+      border-radius: 13px;
+      background: rgba(255, 255, 255, .68);
+    }
+    .debug-preview-group__title {
+      color: var(--text);
+      font-size: .82rem;
+      font-weight: 900;
+      line-height: 1.2;
+    }
     .debug-sticker-toggle {
       margin: 0;
     }
@@ -8702,31 +8720,39 @@
       left: 50%;
       bottom: -18px;
       z-index: 4;
-      min-height: 28px;
+      width: min(82%, 290px);
+      min-height: 36px;
       box-sizing: border-box;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 4px 15px 5px;
-      border: 3px solid #fff8d9;
+      padding: 5px 12px 6px;
+      border: 3px solid #d95d2f;
+      outline: 2px solid #fff7cf;
+      outline-offset: 0;
       border-radius: 999px;
-      background: linear-gradient(180deg, #2f7d48, #1f6138);
-      color: #fff;
+      background: linear-gradient(180deg, #fff7b8 0%, #ffd65f 100%);
+      color: #6b3215;
       font-size: clamp(12px, 1.2vw, 15px);
       font-weight: 1000;
       line-height: 1;
       letter-spacing: .02em;
       white-space: nowrap;
       text-shadow:
-        -1px 0 0 #123a23,
-        1px 0 0 #123a23,
-        0 -1px 0 #123a23,
-        0 2px 0 #123a23;
-      box-shadow: 0 3px 0 #246b3e, 0 7px 12px rgba(29, 78, 47, .28);
+        -1px 0 0 rgba(255, 255, 255, .75),
+        1px 0 0 rgba(255, 255, 255, .75),
+        0 -1px 0 rgba(255, 255, 255, .75),
+        0 2px 0 rgba(255, 255, 255, .75);
+      box-shadow: 0 3px 0 #ad3f22, 0 7px 12px rgba(106, 49, 19, .28);
       transform: translateX(-50%) rotate(-1deg);
+      animation: dailyGachaShopUpdatePop .36s cubic-bezier(.2, 1.35, .45, 1) both;
       pointer-events: none;
     }
     .daily-gacha-entry__shop-update[hidden] { display: none !important; }
+    @keyframes dailyGachaShopUpdatePop {
+      0% { opacity: 0; transform: translateX(-50%) translateY(-5px) rotate(-1deg) scale(.76); }
+      100% { opacity: 1; transform: translateX(-50%) translateY(0) rotate(-1deg) scale(1); }
+    }
     @media (orientation: landscape) and (max-height: 540px) {
       .daily-gacha-entry__remaining {
         min-width: 140px;
@@ -8740,9 +8766,9 @@
         font-size: 38px;
       }
       .daily-gacha-entry__shop-update {
-        bottom: -38px;
+        bottom: -18px;
         min-height: 46px;
-        padding: 6px 18px 7px;
+        padding: 6px 14px 7px;
         border-width: 4px;
         font-size: 26px;
       }
@@ -8752,6 +8778,7 @@
         display: none;
         animation: none;
       }
+      .daily-gacha-entry__shop-update { animation: none; }
     }
     /* v1672: acorn 退去で上方 36px 回収 (86→50)。 bottom は nav 干渉回避で据置 */
     .cards-col {
@@ -9322,7 +9349,7 @@
       height: min(620px, calc(100dvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)));
       max-height: calc(100dvh - 24px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
       display: grid;
-      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      grid-template-rows: auto minmax(0, 1fr) auto;
       gap: 10px;
       padding: 16px 18px 14px;
       overflow: hidden;
@@ -9331,59 +9358,6 @@
       margin: 0;
       font-size: 1.22rem;
     }
-    .news-tabs {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 8px;
-      padding: 4px;
-      border-radius: 18px;
-      background: rgba(242, 145, 90, .13);
-    }
-    .news-tab {
-      position: relative;
-      min-height: 46px;
-      padding: 0 42px 2px 16px;
-      border: 2px solid transparent;
-      border-radius: 15px;
-      background: transparent;
-      color: #6d5a47;
-      font: 1000 .96rem/1 "Zen Maru Gothic","Hiragino Maru Gothic ProN","BIZ UDPGothic",sans-serif;
-      cursor: pointer;
-      touch-action: manipulation;
-    }
-    .news-tab[aria-selected="true"] {
-      border-color: rgba(184, 134, 0, .42);
-      background: #fffdfa;
-      color: #6e4a00;
-      box-shadow: 0 2px 0 rgba(126, 77, 11, .16);
-    }
-    .news-tab:active { transform: translateY(1px); }
-    .news-tab:focus-visible {
-      outline: 3px solid rgba(242, 145, 90, .58);
-      outline-offset: 2px;
-    }
-    .news-tab__count {
-      position: absolute;
-      top: 50%;
-      right: 10px;
-      min-width: 24px;
-      height: 22px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 6px 1px;
-      border: 2px solid #fff8e7;
-      border-radius: 999px;
-      background: #c83443;
-      color: #fff;
-      font-size: 12px;
-      font-weight: 1000;
-      line-height: 1;
-      font-variant-numeric: tabular-nums;
-      transform: translateY(-50%);
-      pointer-events: none;
-    }
-    .news-tab__count[hidden] { display: none !important; }
     .news-panels {
       min-height: 0;
       overflow: hidden;
@@ -9431,12 +9405,6 @@
       background: #fffaf0;
       box-shadow: inset 4px 0 0 #f5a800, 0 2px 0 rgba(171, 104, 54, .12);
     }
-    .news-item[data-news-kind="shop"] {
-      border-color: rgba(75, 155, 105, .42);
-    }
-    .news-item[data-news-kind="shop"].is-unread {
-      box-shadow: inset 4px 0 0 #48a166, 0 2px 0 rgba(56, 112, 73, .14);
-    }
     .news-item__meta {
       display: flex;
       align-items: center;
@@ -9460,10 +9428,6 @@
     .news-item__tag {
       background: #ffedba;
       color: #6e4700;
-    }
-    .news-item[data-news-kind="shop"] .news-item__tag {
-      background: #dff3e4;
-      color: #28683e;
     }
     .news-item__date {
       min-width: 0;
@@ -9492,23 +9456,6 @@
       font-weight: 800;
       line-height: 1.42;
     }
-    .news-item__action {
-      width: 100%;
-      min-height: 44px;
-      margin-top: 10px;
-      padding: 0 16px 2px;
-      border: 2px solid #3c8755;
-      border-radius: 999px;
-      background: linear-gradient(180deg, #a8e0a8, #63b879);
-      color: #123c24;
-      font: 1000 .9rem/1 "Zen Maru Gothic","Hiragino Maru Gothic ProN","BIZ UDPGothic",sans-serif;
-      cursor: pointer;
-      box-shadow: 0 3px 0 #337447;
-    }
-    .news-item__action:active {
-      transform: translateY(2px);
-      box-shadow: 0 1px 0 #337447;
-    }
     .news-modal-card .modal-close {
       min-height: 44px;
       margin-top: 0;
@@ -9521,12 +9468,10 @@
         gap: 6px;
       }
       .news-modal-card h3 { font-size: 1rem; }
-      .news-tab { min-height: 44px; font-size: .84rem; }
       .news-item { padding: 8px 11px 9px; }
       .news-item__meta { margin-bottom: 5px; }
       .news-item__title { font-size: .9rem; }
       .news-item__body { font-size: .75rem; line-height: 1.32; }
-      .news-item__action { min-height: 44px; margin-top: 7px; }
       .news-modal-card .modal-close { min-height: 44px; padding-block: 6px 7px; }
     }
     @media (orientation: landscape) and (max-aspect-ratio: 1599/900) {
@@ -9846,7 +9791,7 @@
             <span class="daily-gacha-entry__icon" aria-hidden="true"></span>
             <span class="daily-gacha-entry__label"><span>１にち１かい<br>ポノガチャ</span><span class="daily-gacha-entry__sub" id="dailyGachaEntrySub">シールを ひこう</span></span>
             <span class="daily-gacha-entry__remaining" id="dailyGachaRemaining" aria-hidden="true" hidden><span class="daily-gacha-entry__remaining-copy"><span class="daily-gacha-entry__remaining-word">あと</span><strong class="daily-gacha-entry__remaining-number" id="dailyGachaRemainingNumber">２</strong><span class="daily-gacha-entry__remaining-word">かい</span></span></span>
-            <span class="daily-gacha-entry__shop-update" id="dailyGachaShopUpdate" aria-hidden="true" hidden>おみせが かわったよ</span>
+            <span class="daily-gacha-entry__shop-update" id="dailyGachaShopUpdate" aria-hidden="true" hidden>おみせが かわったよ！</span>
           </button>
         </div>
       </aside>
@@ -10292,13 +10237,23 @@
         <div class="debug-board-status" id="debugFeaturesStatus" role="status" aria-live="polite"></div>
       </div>
       <div class="debug-board-panel" id="debugBoardPanelPreview" role="tabpanel" aria-labelledby="debugBoardTabPreview" aria-label="おしらせの みため" hidden>
-        <p class="debug-board-help">おしらせと おみせの こうしんを<br>なんどでも ためせるよ</p>
-        <div class="debug-sticker-tools">
-          <button class="debug-board-btn" id="debugNewsOpenBtn" type="button">おしらせを みる</button>
-          <button class="debug-board-btn" id="debugNewsUnreadBtn" type="button">サンプルを みどく</button>
-          <button class="debug-board-btn" id="debugNewsReadBtn" type="button">サンプルを きどく</button>
-          <button class="debug-board-btn" id="debugShopUpdateShowBtn" type="button">おみせ こうしんを だす</button>
-          <button class="debug-board-btn" id="debugShopUpdateHideBtn" type="button">おみせ こうしんを けす</button>
+        <p class="debug-board-help">こうしきの おしらせと おみせの こうしんを<br>べつべつに ためせるよ</p>
+        <div class="debug-preview-groups">
+          <section class="debug-preview-group" aria-labelledby="debugNewsGroupTitle">
+            <strong class="debug-preview-group__title" id="debugNewsGroupTitle">こうしきの おしらせ</strong>
+            <div class="debug-sticker-tools">
+              <button class="debug-board-btn" id="debugNewsOpenBtn" type="button">おしらせを みる</button>
+              <button class="debug-board-btn" id="debugNewsUnreadBtn" type="button">サンプルを みどく</button>
+              <button class="debug-board-btn" id="debugNewsReadBtn" type="button">サンプルを きどく</button>
+            </div>
+          </section>
+          <section class="debug-preview-group" aria-labelledby="debugShopUpdateGroupTitle">
+            <strong class="debug-preview-group__title" id="debugShopUpdateGroupTitle">おみせの こうしん</strong>
+            <div class="debug-sticker-tools">
+              <button class="debug-board-btn" id="debugShopUpdateShowBtn" type="button">こうしんを だす</button>
+              <button class="debug-board-btn" id="debugShopUpdateHideBtn" type="button">こうしんを けす</button>
+            </div>
+          </section>
         </div>
         <div class="debug-board-status" id="debugNewsStatus" role="status" aria-live="polite"></div>
       </div>
@@ -10309,23 +10264,11 @@
   <!-- ===== News Modal ===== -->
   <div class="modal" id="newsModal" hidden role="dialog" aria-modal="true" aria-labelledby="newsTitle">
     <div class="modal-card news-modal-card">
-      <h3 id="newsTitle">おしらせ</h3>
-      <div class="news-tabs" role="tablist" aria-label="おしらせの しゅるい">
-        <button class="news-tab" id="newsTabOfficial" type="button" role="tab" aria-selected="true" aria-controls="newsPanelOfficial" data-news-kind="official">
-          こうしき<span class="news-tab__count" id="newsOfficialCount" hidden>0</span>
-        </button>
-        <button class="news-tab" id="newsTabShop" type="button" role="tab" aria-selected="false" aria-controls="newsPanelShop" data-news-kind="shop" tabindex="-1">
-          おみせ<span class="news-tab__count" id="newsShopCount" hidden>0</span>
-        </button>
-      </div>
-      <div class="news-panels" id="newsList">
-        <section class="news-panel" id="newsPanelOfficial" role="tabpanel" aria-labelledby="newsTabOfficial" aria-label="こうしきの おしらせ いちらん" data-news-panel="official" tabindex="0">
-          <div class="news-list" data-news-list="official"></div>
+      <h3 id="newsTitle">こうしきの おしらせ</h3>
+      <div class="news-panels">
+        <section class="news-panel" id="newsPanelOfficial" aria-label="こうしきの おしらせ いちらん" tabindex="0">
+          <div class="news-list" id="newsList"></div>
           <p class="news-empty" id="newsOfficialEmpty">こうしきの おしらせは まだ ないよ。</p>
-        </section>
-        <section class="news-panel" id="newsPanelShop" role="tabpanel" aria-labelledby="newsTabShop" aria-label="おみせの おしらせ いちらん" data-news-panel="shop" tabindex="0" hidden>
-          <div class="news-list" data-news-list="shop"></div>
-          <p class="news-empty" id="newsShopEmpty">おみせの おしらせは まだ ないよ。</p>
         </section>
       </div>
       <button class="modal-close" type="button" data-close="newsModal">とじる</button>
@@ -11431,7 +11374,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2162; // sw.js CACHE_VERSION と同期 (batch:1282 おしらせ／おみせ更新デバッグ)
+    const PAGE_CACHE_VERSION = 2164; // sw.js CACHE_VERSION と同期 (batch:1283 公式おしらせ／ショップ更新サイン分離)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -11440,7 +11383,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v2162';
+    window.PONO_SW_VERSION = 'v2164';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
@@ -12159,14 +12102,8 @@
     const bottomNavNewsBadge = $('bottomNavNewsBadge');
     const newsModal = $('newsModal');
     const newsList = $('newsList');
-    const newsTabOfficial = $('newsTabOfficial');
-    const newsTabShop = $('newsTabShop');
     const newsPanelOfficial = $('newsPanelOfficial');
-    const newsPanelShop = $('newsPanelShop');
-    const newsOfficialCount = $('newsOfficialCount');
-    const newsShopCount = $('newsShopCount');
     const newsOfficialEmpty = $('newsOfficialEmpty');
-    const newsShopEmpty = $('newsShopEmpty');
     const NEWS_READ_KEY = 'pono_news_read_ids_v1';
     const DEBUG_NEWS_READ_KEY = 'pono_debug_news_read_ids_v1';
     const DEBUG_SHOP_UPDATE_STATE_KEY = 'pono_debug_shop_update_state_v1';
@@ -12206,29 +12143,8 @@
         title: 'ポノの あたらしい えほんが でたよ',
         body: 'ポノの あたらしい おはなしが できたよ。おうちのひとと みてね。',
         debug: true
-      },
-      {
-        id: 'debug-news-shop-lineup-20260713',
-        kind: 'shop',
-        tag: 'おみせ',
-        date: '7がつ 13にち',
-        title: 'めずらしい シールも ならぶよ',
-        body: 'どの シールが でるか、おみせを のぞいてみよう。',
-        action: 'shop',
-        debug: true
-      },
-      {
-        id: 'debug-news-shop-time-20260712',
-        kind: 'shop',
-        tag: 'おみせ',
-        date: '7がつ 12にち',
-        title: 'ゆうがたの おみせに かわったよ',
-        body: 'おみせは あさ 6じと ゆうがた 6じに かわるよ。',
-        action: 'shop',
-        debug: true
       }
     ]);
-    let activeNewsKind = 'official';
     let newsModalOpener = null;
     let shopFocusOpener = null;
     let observedShopKey = '';
@@ -12302,9 +12218,6 @@
     function writeDebugNewsReadIds(ids) {
       writeStoredIdList(sessionStorage, DEBUG_NEWS_READ_KEY, ids);
     }
-    function newsKind(item) {
-      return item && (item.kind === 'shop' || item.category === 'shop') ? 'shop' : 'official';
-    }
     function currentShopKey() {
       try {
         if (!window.PonoDonguriShop || typeof window.PonoDonguriShop.getSlotTimeUntilNext !== 'function') return '';
@@ -12327,28 +12240,10 @@
       const debugState = debugShopUpdateState();
       return debugState === 'unread';
     }
-    function dynamicShopNewsItem() {
-      if (!isShopUpdateUnread()) return null;
-      const shopKey = currentShopKey() || 'preview';
-      const isDebugPreview = debugShopUpdateState() === 'unread';
-      return {
-        id: (isDebugPreview ? 'debug-shop-update-' : 'shop-update-') + shopKey,
-        kind: 'shop',
-        tag: 'おみせ',
-        date: 'きょう',
-        title: 'おみせの シールが かわったよ',
-        body: 'あたらしい シールが 3まい ならんでいるよ。',
-        action: 'shop',
-        shopUpdate: true,
-        debug: isDebugPreview
-      };
-    }
     function getTitleNewsItems() {
       const source = Array.isArray(window.PONO_NEWS_ITEMS) ? window.PONO_NEWS_ITEMS : [];
-      const items = source.slice();
+      const items = source.filter((item) => item && item.kind !== 'shop' && item.category !== 'shop' && item.action !== 'shop');
       if (isManageDebugAllowed()) items.push.apply(items, DEBUG_NEWS_SAMPLE_ITEMS);
-      const shopItem = dynamicShopNewsItem();
-      if (shopItem) items.unshift(shopItem);
       const seen = new Set();
       return items.filter((item) => {
         if (!item || !item.id) return false;
@@ -12367,11 +12262,6 @@
       const debugRead = new Set(readDebugNewsReadIds());
       return getTitleNewsItems().filter((item) => !isNewsItemRead(item, normalRead, debugRead)).length;
     }
-    function unreadNewsCountByKind(kind) {
-      const normalRead = new Set(readNewsReadIds());
-      const debugRead = new Set(readDebugNewsReadIds());
-      return getTitleNewsItems().filter((item) => newsKind(item) === kind && !isNewsItemRead(item, normalRead, debugRead)).length;
-    }
     function setCountBadge(el, count) {
       if (!el) return;
       const safeCount = Math.max(0, Math.min(99, Number(count) || 0));
@@ -12388,7 +12278,6 @@
       if (settingsNewsSub) {
         settingsNewsSub.textContent = count > 0 ? 'あたらしい おしらせ ' + count + 'けん' : 'あたらしい おしらせは ないよ';
       }
-      renderShopUpdateSigns();
     }
     function renderShopUpdateSigns() {
       const unread = isShopUpdateUnread();
@@ -12407,16 +12296,14 @@
     function appendNewsItem(listEl, item, unread) {
       if (!listEl || !item) return;
       const row = document.createElement('article');
-      const kind = newsKind(item);
       row.className = 'news-item' + (unread ? ' is-unread' : '');
-      row.dataset.newsKind = kind;
       row.dataset.newsId = String(item.id || '');
 
       const meta = document.createElement('div');
       meta.className = 'news-item__meta';
       const tag = document.createElement('span');
       tag.className = 'news-item__tag';
-      tag.textContent = String(item.tag || (kind === 'shop' ? 'おみせ' : 'こうしき'));
+      tag.textContent = String(item.tag || 'こうしき');
       const date = document.createElement('span');
       date.className = 'news-item__date';
       date.textContent = String(item.date || '');
@@ -12438,14 +12325,6 @@
       row.appendChild(meta);
       row.appendChild(title);
       if (body.textContent) row.appendChild(body);
-      if (item.action === 'shop') {
-        const action = document.createElement('button');
-        action.className = 'news-item__action';
-        action.type = 'button';
-        action.dataset.newsAction = 'shop';
-        action.textContent = 'おみせを みる';
-        row.appendChild(action);
-      }
       listEl.appendChild(row);
     }
     function renderNewsList() {
@@ -12453,63 +12332,28 @@
       const normalRead = new Set(readNewsReadIds());
       const debugRead = new Set(readDebugNewsReadIds());
       const items = getTitleNewsItems();
-      ['official', 'shop'].forEach((kind) => {
-        const listEl = newsList.querySelector(`[data-news-list="${kind}"]`);
-        const emptyEl = kind === 'shop' ? newsShopEmpty : newsOfficialEmpty;
-        if (listEl) listEl.replaceChildren();
-        const matching = items.filter((item) => newsKind(item) === kind);
-        matching.forEach((item) => appendNewsItem(listEl, item, !isNewsItemRead(item, normalRead, debugRead)));
-        if (emptyEl) emptyEl.hidden = matching.length > 0;
-      });
-      renderNewsTabUnreadCounts();
+      newsList.replaceChildren();
+      items.forEach((item) => appendNewsItem(newsList, item, !isNewsItemRead(item, normalRead, debugRead)));
+      if (newsOfficialEmpty) newsOfficialEmpty.hidden = items.length > 0;
     }
-    function renderNewsTabUnreadCounts() {
-      setCountBadge(newsOfficialCount, unreadNewsCountByKind('official'));
-      setCountBadge(newsShopCount, unreadNewsCountByKind('shop'));
-    }
-    function markNewsCategoryRead(kind) {
-      const items = getTitleNewsItems().filter((item) => newsKind(item) === kind && !item.shopUpdate);
+    function markNewsRead() {
+      const items = getTitleNewsItems();
       const normalIds = items.filter((item) => !item.debug).map((item) => String(item.id));
       const debugIds = items.filter((item) => item.debug).map((item) => String(item.id));
       if (normalIds.length) writeNewsReadIds(readNewsReadIds().concat(normalIds));
       if (debugIds.length) writeDebugNewsReadIds(readDebugNewsReadIds().concat(debugIds));
       renderNewsBadges();
-      renderNewsTabUnreadCounts();
       if (newsModal && !newsModal.hidden) renderNewsList();
     }
-    function selectNewsKind(kind, options) {
-      const nextKind = kind === 'shop' ? 'shop' : 'official';
-      const opts = options || {};
-      const previousKind = activeNewsKind;
-      if (opts.markPrevious !== false && previousKind !== nextKind && newsModal && !newsModal.hidden) {
-        markNewsCategoryRead(previousKind);
-      }
-      activeNewsKind = nextKind;
-      if (newsTabOfficial) {
-        newsTabOfficial.setAttribute('aria-selected', nextKind === 'official' ? 'true' : 'false');
-        newsTabOfficial.tabIndex = nextKind === 'official' ? 0 : -1;
-      }
-      if (newsTabShop) {
-        newsTabShop.setAttribute('aria-selected', nextKind === 'shop' ? 'true' : 'false');
-        newsTabShop.tabIndex = nextKind === 'shop' ? 0 : -1;
-      }
-      if (newsPanelOfficial) newsPanelOfficial.hidden = nextKind !== 'official';
-      if (newsPanelShop) newsPanelShop.hidden = nextKind !== 'shop';
-      if (opts.focus) (nextKind === 'shop' ? newsTabShop : newsTabOfficial)?.focus();
-    }
-    function openNewsModal(preferredKind, explicitOpener) {
+    function openNewsModal(explicitOpener) {
       const currentFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
       const fallbackOpener = bottomNav && bottomNav.querySelector('[data-action="news"]');
       const candidate = explicitOpener || currentFocus;
       newsModalOpener = candidate && !candidate.closest('[hidden]') ? candidate : fallbackOpener;
       renderNewsList();
-      const items = getTitleNewsItems();
-      const fallbackKind = items.some((item) => newsKind(item) === 'official') ? 'official' : 'shop';
-      selectNewsKind(preferredKind === 'shop' ? 'shop' : fallbackKind, { markPrevious: false });
       openModal('newsModal');
       window.requestAnimationFrame(() => {
-        const activeTab = activeNewsKind === 'shop' ? newsTabShop : newsTabOfficial;
-        if (activeTab) activeTab.focus();
+        if (newsPanelOfficial) newsPanelOfficial.focus();
       });
     }
     function restoreNewsModalFocus() {
@@ -12524,7 +12368,6 @@
       if (debugState) {
         try { sessionStorage.setItem(DEBUG_SHOP_UPDATE_STATE_KEY, 'read'); } catch (_) {}
       }
-      renderNewsBadges();
       renderShopUpdateSigns();
     }
     function refreshNewsAndShopRotation() {
@@ -12535,10 +12378,8 @@
       if (changed && shop && !shop.hidden) {
         try { renderShopCatalog('おみせが かわったよ'); } catch (_) {}
         markCurrentShopSeen();
-      } else {
-        renderNewsBadges();
       }
-      if (newsModal && !newsModal.hidden) renderNewsList();
+      renderShopUpdateSigns();
     }
     function resetDebugNewsReadState(read) {
       if (!isManageDebugAllowed()) return false;
@@ -12551,49 +12392,13 @@
       if (!isManageDebugAllowed()) return false;
       try { sessionStorage.setItem(DEBUG_SHOP_UPDATE_STATE_KEY, state === 'unread' ? 'unread' : 'read'); }
       catch (_) { return false; }
-      if (state === 'unread') {
-        const currentId = 'debug-shop-update-' + (currentShopKey() || 'preview');
-        writeDebugNewsReadIds(readDebugNewsReadIds().filter((id) => id !== currentId));
-      }
-      renderNewsList();
-      renderNewsBadges();
+      renderShopUpdateSigns();
       return true;
-    }
-
-    if (newsTabOfficial) newsTabOfficial.addEventListener('click', () => selectNewsKind('official', { focus: true }));
-    if (newsTabShop) newsTabShop.addEventListener('click', () => selectNewsKind('shop', { focus: true }));
-    const newsTabs = [newsTabOfficial, newsTabShop].filter(Boolean);
-    newsTabs.forEach((tab, index) => {
-      tab.addEventListener('keydown', (event) => {
-        let nextIndex = index;
-        if (event.key === 'ArrowRight' || event.key === 'ArrowDown') nextIndex = (index + 1) % newsTabs.length;
-        else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') nextIndex = (index - 1 + newsTabs.length) % newsTabs.length;
-        else if (event.key === 'Home') nextIndex = 0;
-        else if (event.key === 'End') nextIndex = newsTabs.length - 1;
-        else return;
-        event.preventDefault();
-        selectNewsKind(newsTabs[nextIndex].dataset.newsKind, { focus: true });
-      });
-    });
-    if (newsList) {
-      newsList.addEventListener('click', (event) => {
-        const action = event.target && event.target.closest ? event.target.closest('[data-news-action="shop"]') : null;
-        if (!action) return;
-        markNewsCategoryRead(activeNewsKind);
-        shopFocusOpener = newsModalOpener || (bottomNav && bottomNav.querySelector('[data-action="news"]'));
-        closeModal('newsModal');
-        newsModalOpener = null;
-        showShop();
-        window.requestAnimationFrame(() => {
-          const shopClose = $('donguriShopClose');
-          if (shopClose) shopClose.focus();
-        });
-      });
     }
     if (newsModal) {
       newsModal.addEventListener('click', (event) => {
         if (event.target === newsModal || (event.target && event.target.closest && event.target.closest('[data-close="newsModal"]'))) {
-          markNewsCategoryRead(activeNewsKind);
+          markNewsRead();
           restoreNewsModalFocus();
         }
       });
@@ -12617,7 +12422,7 @@
       if (event.key !== 'Escape' || !newsModal || newsModal.hidden) return;
       event.preventDefault();
       event.stopImmediatePropagation();
-      markNewsCategoryRead(activeNewsKind);
+      markNewsRead();
       closeModal('newsModal');
       restoreNewsModalFocus();
     });
@@ -12644,11 +12449,12 @@
       settingsNewsBtn.addEventListener('click', () => {
         const fallbackOpener = bottomNav && bottomNav.querySelector('[data-action="news"]');
         closeModal('settingsModal');
-        openNewsModal(undefined, fallbackOpener);
+        openNewsModal(fallbackOpener);
       });
     }
     observedShopKey = currentShopKey();
     renderNewsBadges();
+    renderShopUpdateSigns();
     window.addEventListener('storage', (event) => {
       if (!event || event.key === NEWS_READ_KEY) {
         renderNewsBadges();
@@ -18170,7 +17976,7 @@
         if (!isManageDebugAllowed()) return;
         const fallbackOpener = bottomNav && bottomNav.querySelector('[data-action="news"]');
         closeModal('debugBoardModal');
-        openNewsModal(undefined, fallbackOpener);
+        openNewsModal(fallbackOpener);
       });
     }
     if (debugNewsUnreadBtn) {
