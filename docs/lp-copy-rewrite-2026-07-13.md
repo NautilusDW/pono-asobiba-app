@@ -130,6 +130,8 @@
 - 結果として現状の feature-sticker-book は「growth=新コピー / scenes caption=旧コピー (敬体) / 画像ファイル=新 (cute 版)」という組み合わせになっている。これはスタイルブリーフが元々認識していた懸念 (「feature-gacha は漢字敬体・feature-sticker-book はひらがな分かち書きへ統一する提案は既存レジスタからの仕様変更のためユーザー承認が必須」) の**否認側の縮退結果とほぼ一致する状態**であり、意図的な選択である可能性が高い。
 - **確認事項**: feature-sticker-book の scenes キャプションを (a) このまま旧敬体で確定するか、(b) バッチが設計した新ひらがなコピーを cute 画像に合わせて再適用するか、ユーザーの判断を仰ぐ必要がある。(b) を選ぶ場合、新ひらがなコピーは `sticker-gallery_20260712.png` / `sticker-museum_20260712.png` (旧ファイル名) を前提に書かれているため、現行の cute 画像を見て内容が齟齬しないか要確認。
 
+**2026-07-13 復元済み**: 上記 (b) を採用し、batch:1284 確定コピー (ひらがな分かち書き3本) を index.html の feature-sticker-book scenes に再適用した。cute 画像3枚 (`sticker-book_20260713_001_sticker-book.webp` / `sticker-gallery-cute_20260713.webp` / `sticker-museum-cute_20260713.webp`) を実際に確認したところ、S2 のきんいろ額+シルエット表現、S3 のテーマ別7部屋+「うえのかい じゅんびちゅう」表示ともに現行画像の内容と一致しており、キャプション文言の修正は不要だった (src/alt は変更なし)。
+
 ## 7. 検証記録
 
 - **エージェント構成**: 46エージェント (Research 8 + Direction 3案+judge2+brief統合 + Copywrite 7 + CrossReview + Finalize + Implement + VerifyDiff の多段ワークフロー)。
