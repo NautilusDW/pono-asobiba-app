@@ -191,7 +191,11 @@ assert.match(events, /doubles:\s*\[ts\]/, 'writeDataPoint doubles must carry the
 assert.match(events, /MAX_BLOB_TOTAL_BYTES/, 'must guard the WAE blob total size budget');
 
 // ---------------------------------------------------------------------------
-// 10. worker.js ルーティング: POST /api/e -> handleEvents, GET /privacy -> /privacy.html rewrite
+// 10. worker.js ルーティング: POST /api/e -> handleEvents
+//     GET /privacy は worker 側で特別扱いしない (静的アセットの html_handling
+//     既定が拡張子なし URL を自動配信するため。かつて存在した /privacy ->
+//     /privacy.html rewrite は ASSETS 側の 307 正規化と衝突し無限リダイレクト
+//     ループを起こしたため撤去済み — 2026-07-13 staging で実証)
 // ---------------------------------------------------------------------------
 assert.match(
   worker,
@@ -203,15 +207,10 @@ assert.match(
   /path\s*===\s*'\/api\/e'[\s\S]{0,80}return handleEvents\(request,\s*env,\s*ctx\)/,
   'worker.js must route path === \'/api/e\' to handleEvents(request, env, ctx)'
 );
-assert.match(
+assert.doesNotMatch(
   worker,
-  /path\s*===\s*'\/privacy'[\s\S]{0,400}\/privacy\.html/,
-  'worker.js must rewrite GET /privacy to serve /privacy.html'
-);
-assert.match(
-  worker,
-  /rewrittenUrl\.pathname\s*=\s*'\/privacy\.html'/,
-  'the /privacy rewrite must target the /privacy.html asset path'
+  /path\s*===\s*'\/privacy'/,
+  'worker.js must not special-case GET /privacy (static assets auto-serve privacy.html via html_handling; a rewrite conflicts with ASSETS 307 normalization and causes an infinite redirect loop)'
 );
 
 // ---------------------------------------------------------------------------
