@@ -166,6 +166,7 @@ const ASSETS={
   ground:"../assets/images/nazonazo-tunnel/sea_parallax_ground_loop_20260706.webp",
   fg:"../assets/images/nazonazo-tunnel/sea_parallax_foreground_alpha_loop_20260706.webp",
   station:"../assets/images/nazonazo-tunnel/sea_station_checkpoint_20260712.webp",
+  boss:"../assets/images/nazonazo-tunnel/sea_boss_anglerfish_20260713.png",
   fish:[
    "../assets/images/nazonazo-tunnel/sea_fish_01_20260706.webp",
    "../assets/images/nazonazo-tunnel/sea_fish_02_20260706.webp",
@@ -412,7 +413,7 @@ function openZukan(){
 let level=0,stg=0,loop=0,unlockedLoop=0,cleared=[],qSeg=0,qList=[],cur=null,missInQ=0,stageMiss=0,totalStars=0;
 let worldX=0,vel=0,target=0,pending=null,driving=false,swapReady=false,swapped=false,coverEl=null,dropEl=null,transitCover=null;
 let tunnels=[],playing=false,cars=[],helpItems=[],rareCount=0,rareEl=null,rareSpawned=false,rareSpawnTimer=0;
-let journeyScore=0,highScore=0,stageScore=0,stageScoreBreakdown=emptyStageScoreBreakdown(),stageClearScoreGranted=false;
+let journeyScore=0,highScore=0,stageScore=0,stageScoreBreakdown=emptyStageScoreBreakdown(),stageClearScoreGranted=false,stageCompletionHandled=false;
 let tunnelFriendCandidates=[],tunnelFriendsFound=0,tunnelFriendTotalFound=0,tunnelFriendRewardGranted=false,tunnelFriendPerfectScoreGranted=false,tunnelFriendGameActive=false,tunnelFriendStartWorldX=0;
 let bestStarsByStage={},answerLocked=false,portalEditHolding=false,nextMagicPuffAt=0,exitPortalBaseWorldX=0;
 let numberCargoPicked=[],numberCargoGoalShown=false;
@@ -429,12 +430,26 @@ const SEA_BURST_VISUAL_MS=380;
 const SEA_BURST_PARTICLE_MS=720;
 const SEA_READY_MS=700;
 const SEA_GO_MS=500;
+const SEA_BOSS_HP=[144,192,240];
+const SEA_BOSS_INTRO_MS=650;
+const SEA_BOSS_VICTORY_MS=1050;
+const SEA_DECOYS=[["🐔","にわとり"],["🐝","はち"],["🐘","ぞう"],["🦒","きりん"],["🐿️","りす"],["🐰","うさぎ"],["🦉","ふくろう"],["🐞","てんとうむし"]];
+const SEA_RESCUE_LINES=[
+ "たすかった！ ぼくも てつだうよ！",
+ "ありがとう！ いっしょに いくよ！",
+ "この おくは あぶないよ！",
+ "あわを つくる ぬしが いるよ！",
+ "おおきな ひかりが ちかいよ！"
+];
 let steerTargetX=0,steerX=0,steerTargetY=0,steerY=0,seaSteerPointerId=null,seaSteerUsed=false;
 let seaBubbleLaunchPending=false,seaBubbleLaunchTimer=0,seaShooterResumeTimer=0,seaAssistFireTimer=0,seaBubbleOptions=[];
 let seaShooterEpoch=0,seaShots=[],seaCompanionSprites=[],seaCompanionKey="",seaTrail=[];
 let seaFirePointerId=null,seaFireSources=new Set(),seaMoveKeys=new Set(),seaKeyboardAim=null,seaKeyboardAimStartedAt=0;
 let seaLastVolleyAt=0,seaShooterFrameAt=0,seaVolleyCount=0,seaSalvoHits=new Set();
 let seaRoundPhase="idle",seaRoundCountdownTimer=0;
+let seaBossPhase="idle",seaBossHp=0,seaBossMaxHp=0,seaBossX=0,seaBossY=0,seaBossRadiusX=0,seaBossRadiusY=0,seaBossWidth=0;
+let seaBossEpoch=0,seaBossTimer=0,seaBossFlashUntil=0,seaBossSalvos=new Set(),seaBossThresholds=new Set(),seaBossDefeated=false;
+let seaRescueMessageTimer=0,seaDecoysSeen=new Set();
 const FUTURE_RAIL_ROUTES=[
  [{x:.10,y:.54},{x:.31,y:.54},{x:.50,y:.32},{x:.68,y:.25},{x:.84,y:.25}],
  [{x:.10,y:.54},{x:.31,y:.54},{x:.50,y:.66},{x:.68,y:.73},{x:.84,y:.73}]
@@ -580,7 +595,7 @@ function setDriverMood(mood){
 /* ================= dom ================= */
 const $=id=>document.getElementById(id);
 const world=$("world"),veh=$("veh"),horizon=$("horizon"),midT=$("midT"),groundT=$("groundT"),fgT=$("fgT"),seaFishLayer=$("seaFishLayer"),smokeLayer=$("smokeLayer"),townHorizonLoop=$("townHorizonLoop"),townMidLoop=$("townMidLoop"),futureHorizonLoop=$("futureHorizonLoop"),futureMidLoop=$("futureMidLoop"),futureForegroundLoop=$("futureForegroundLoop"),spaceHorizonLoop=$("spaceHorizonLoop"),spaceForegroundLoop=$("spaceForegroundLoop"),jungleHabitatBack=$("jungleHabitatBack");
-const vehicleSteerShell=$("vehicleSteerShell"),seaSteerSurface=$("seaSteerSurface"),seaAnswerLayer=$("seaAnswerLayer"),seaArenaShade=$("seaArenaShade"),seaRoundCountdown=$("seaRoundCountdown"),seaSteerHint=$("seaSteerHint");
+const vehicleSteerShell=$("vehicleSteerShell"),seaSteerSurface=$("seaSteerSurface"),seaAnswerLayer=$("seaAnswerLayer"),seaBossLayer=$("seaBossLayer"),seaRescueMessage=$("seaRescueMessage"),seaArenaShade=$("seaArenaShade"),seaRoundCountdown=$("seaRoundCountdown"),seaSteerHint=$("seaSteerHint");
 const futureRailLayer=$("futureRailLayer"),spaceConstellationLayer=$("spaceConstellationLayer");
 const seaCompanionLayer=$("seaCompanionLayer"),seaShotLayer=$("seaShotLayer"),seaFireButton=$("seaFireButton");
 const jungleAnimalLayers={far:$("jungleAnimalsFar"),mid:$("jungleAnimalsMid"),near:$("jungleAnimalsNear")};
@@ -1347,9 +1362,33 @@ const GENS={
  legsS:()=>genLegs(SLEGS), sizeS:()=>genCompare(SSIZE,"おおきい"),
  speedF:()=>genCompare(SPEED,"はやい"), legsJ_none:null
 };
+function seaRescueQuestionKey(question){
+ return question&&question.a?String(question.a[1]||question.a[0]||""):"";
+}
+function buildSeaRescueList(stage){
+ const selected=[],seen=new Set(),generators=(stage.gens||[]).filter(name=>GENS[name]);
+ const add=question=>{
+  const key=seaRescueQuestionKey(question);
+  if(!key||seen.has(key)||selected.length>=QN)return false;
+  seen.add(key);selected.push(question);return true;
+ };
+ const wantedGenerated=level===0?1:2;
+ let generated=0;
+ for(let attempt=0;attempt<32&&generated<wantedGenerated;attempt++){
+  const name=generators.length?pick(generators):null;
+  if(name&&add(GENS[name]()))generated++;
+ }
+ shuffle(stage.bank.filter(question=>(question.min||0)<=level)).forEach(add);
+ for(let attempt=0;attempt<32&&selected.length<QN;attempt++){
+  const name=generators.length?pick(generators):null;
+  if(name)add(GENS[name]());
+ }
+ return shuffle(selected.slice(0,QN));
+}
 function buildQList(){
  const st=STAGES[stg];
  if(st.id==="number"){qList=[];for(let i=0;i<QN;i++)qList.push(Math.random()<0.6?genCount():genNext());return;}
+ if(st.id==="sea"){seaBossDefeated=false;seaDecoysSeen.clear();qList=buildSeaRescueList(st);return;}
  let statics=shuffle(st.bank.filter(x=>(x.min||0)<=level));
  const gens=(st.gens||[]).filter(g=>GENS[g]);
  let nGen=gens.length?(level===0?1:2):0;
@@ -1568,6 +1607,9 @@ function seaReducedMotion(){
 function seaRoundPlayable(){
  return !window.__PONO_TIER_LOCKED__&&seaRoundPhase==="active"&&document.body.classList.contains("sea-quiz-active")&&quiz.classList.contains("show");
 }
+function seaBossPlayable(){
+ return !window.__PONO_TIER_LOCKED__&&seaBossPhase==="active"&&document.body.classList.contains("sea-boss-active")&&seaBossLayer&&!seaBossLayer.hidden;
+}
 function setSeaRoundPhase(phase){
  seaRoundPhase=phase;
  const inRound=phase!=="idle";
@@ -1625,10 +1667,14 @@ function startSeaRoundCountdown(){
  },SEA_READY_MS);
 }
 function seaQuestionOptions(question){
- const wrong=shuffle((question&&question.d)||[])[0]||["❓","ちがうもの"];
+ const friends=cars.filter(friend=>friend&&!friend.pending),rescuedLabels=new Set(friends.map(friend=>passengerLabel(friend))),rescuedEmoji=new Set(friends.map(friend=>friend.e).filter(Boolean));
+ const reservedLabels=new Set(qList.map(item=>seaRescueQuestionKey(item))),reservedEmoji=new Set(qList.map(item=>item&&item.a&&item.a[0]).filter(Boolean));
+ const candidates=shuffle(((question&&question.d)||[]).concat(SEA_DECOYS)).filter(item=>item&&item[1]&&item[1]!==question.a[1]&&!rescuedLabels.has(item[1])&&!rescuedEmoji.has(item[0])&&!reservedLabels.has(item[1])&&!reservedEmoji.has(item[0]));
+ const wrong=candidates.find(item=>!seaDecoysSeen.has(item[1]))||candidates[0]||["❓","ちがうもの"];
+ seaDecoysSeen.add(wrong[1]);
  return shuffle([
-  {e:question.a[0],t:question.a[1],ok:true},
-  {e:wrong[0],t:wrong[1],ok:false}
+  {e:question.a[0],t:question.a[1],ok:true,mode:"sea"},
+  {e:wrong[0],t:wrong[1],ok:false,mode:"sea"}
  ]);
 }
 function snapSeaReducedMotion(){
@@ -1639,11 +1685,13 @@ function seaLandscapeReady(){return (window.innerWidth||844)>=(window.innerHeigh
 function seaControlAvailable(){
  return !window.__PONO_TIER_LOCKED__&&seaLandscapeReady()&&isSeaStage()&&playing&&!tunnelInteriorMode&&
   !document.body.classList.contains("tunnel-enter-run")&&!document.body.classList.contains("tunnel-exit-run")&&
-  !seaBubbleLaunchPending&&(driving||seaRoundPlayable());
+  !seaBubbleLaunchPending&&(driving||seaRoundPlayable()||seaBossPlayable());
 }
 function seaShooterActive(){
- return seaControlAvailable()&&seaRoundPlayable()&&!driving&&!answerLocked&&
-  document.body.classList.contains("sea-quiz-active")&&seaBubbleOptions.some(entry=>entry.button&&!entry.button.disabled&&!entry.button.classList.contains("dim"));
+ if(!seaControlAvailable()||driving||answerLocked)return false;
+ if(seaBossPlayable())return true;
+ return seaRoundPlayable()&&document.body.classList.contains("sea-quiz-active")&&
+  seaBubbleOptions.some(entry=>entry.button&&!entry.button.disabled&&!entry.button.classList.contains("dim"));
 }
 function seaSteerBounds(){
  const viewportWidth=window.innerWidth||844;
@@ -1734,6 +1782,121 @@ function clearSeaShotLayer(){
  removeAllSeaShots();
  if(seaShotLayer)seaShotLayer.replaceChildren();
 }
+function clearSeaRescueMessage(){
+ clearTimeout(seaRescueMessageTimer);seaRescueMessageTimer=0;
+ if(seaRescueMessage){seaRescueMessage.hidden=true;seaRescueMessage.replaceChildren();}
+}
+function showSeaRescueMessage(passenger,index){
+ if(!seaRescueMessage||!passenger)return;
+ clearSeaRescueMessage();
+ const friend=document.createElement("span");friend.className="sea-rescue-friend";friend.textContent=passenger.e||"🐟";friend.setAttribute("aria-hidden","true");
+ const line=document.createElement("span");line.textContent=SEA_RESCUE_LINES[index%SEA_RESCUE_LINES.length];
+ seaRescueMessage.append(friend,line);seaRescueMessage.hidden=false;
+ announce((passengerLabel(passenger)||"うみの ともだち")+"。"+line.textContent);
+ const timer=setTimeout(()=>{if(seaRescueMessageTimer!==timer)return;seaRescueMessageTimer=0;if(seaRescueMessage){seaRescueMessage.hidden=true;seaRescueMessage.replaceChildren();}},1450);
+ seaRescueMessageTimer=timer;
+}
+function clearSeaBossEncounter(){
+ seaBossEpoch++;clearTimeout(seaBossTimer);seaBossTimer=0;
+ seaBossPhase="idle";seaBossHp=0;seaBossMaxHp=0;seaBossX=0;seaBossY=0;seaBossRadiusX=0;seaBossRadiusY=0;seaBossWidth=0;
+ seaBossFlashUntil=0;seaBossSalvos.clear();seaBossThresholds.clear();
+ document.body.classList.remove("sea-boss-active");
+ if(seaRoundPhase==="idle")document.body.classList.remove("sea-arena-active");
+ if(seaBossLayer){seaBossLayer.hidden=true;seaBossLayer.replaceChildren();seaBossLayer.removeAttribute("style");}
+ if(helpBtn)helpBtn.disabled=false;
+ cancelSeaPointer();cancelSeaFirePointer();stopSeaFiring();seaMoveKeys.clear();removeAllSeaShots();
+}
+function seaBossDamagePerVolley(){return 1+Math.min(SEA_COMPANION_LIMIT,seaCompanionSprites.length);}
+function updateSeaBossProgress(){
+ if(!seaBossLayer||seaBossLayer.hidden)return;
+ const meter=seaBossLayer.querySelector(".sea-boss-meter"),fill=meter&&meter.querySelector("span"),wrap=seaBossLayer.querySelector(".sea-boss-wrap");
+ const ratio=seaBossMaxHp?clamp(seaBossHp/seaBossMaxHp,0,1):0;
+ if(meter){meter.setAttribute("aria-valuemax",String(seaBossMaxHp));meter.setAttribute("aria-valuenow",String(Math.ceil(seaBossHp)));meter.setAttribute("aria-valuetext","あわバリア のこり "+Math.ceil(ratio*100)+"ぱーせんと");}
+ if(fill)fill.style.setProperty("--sea-boss-hp",(ratio*100).toFixed(1)+"%");
+ if(wrap){wrap.classList.toggle("damage-1",ratio<=.75);wrap.classList.toggle("damage-2",ratio<=.5);wrap.classList.toggle("damage-3",ratio<=.25);}
+}
+function buildSeaBossEncounter(){
+ if(!seaBossLayer)return;
+ seaBossLayer.replaceChildren();seaBossLayer.hidden=false;
+ const wrap=document.createElement("div");wrap.className="sea-boss-wrap";
+ const art=document.createElement("img");art.className="sea-boss-art";art.src=ASSETS.sea.boss;art.alt="";art.decoding="async";
+ const barrier=document.createElement("span");barrier.className="sea-boss-barrier";barrier.setAttribute("aria-hidden","true");
+ const cracks=document.createElement("span");cracks.className="sea-boss-cracks";cracks.setAttribute("aria-hidden","true");
+ wrap.append(art,barrier,cracks);
+ const hud=document.createElement("div");hud.className="sea-boss-hud";
+ const title=document.createElement("strong");title.textContent="おおあわぬし";
+ const meter=document.createElement("div");meter.className="sea-boss-meter";meter.setAttribute("role","progressbar");meter.setAttribute("aria-label","あわバリア");meter.setAttribute("aria-valuemin","0");
+ const fill=document.createElement("span");meter.appendChild(fill);
+ const guide=document.createElement("small");guide.className="sea-boss-guide";guide.textContent="ねらって れんしゃ！";
+ hud.append(title,meter,guide);seaBossLayer.append(wrap,hud);updateSeaBossProgress();
+}
+function updateSeaBossVisual(now){
+ if(seaBossPhase==="idle"||!seaBossLayer||seaBossLayer.hidden)return;
+ const safe=seaAnswerSafeRect(),width=clamp(safe.sceneRect.width*.31,180,320),height=width/1.5;
+ const top=safe.top+44,bottom=Math.max(top+height,safe.bottom-4);
+ const centerX=clamp(safe.sceneRect.width*.78,width*.56+safe.sceneRect.width*.52,safe.sceneRect.width-width*.48-10);
+ const baseY=clamp((top+bottom)*.5,top+height*.5,bottom-height*.5);
+ const bob=seaReducedMotion()||seaBossPhase!=="active"?0:Math.sin((now||_nowMs())/690)*8;
+ seaBossWidth=width;seaBossX=centerX;seaBossY=baseY+bob;seaBossRadiusX=width*.43;seaBossRadiusY=height*.4;
+ const wrap=seaBossLayer.querySelector(".sea-boss-wrap");
+ if(wrap){
+  wrap.style.setProperty("--sea-boss-width",width.toFixed(1)+"px");
+  wrap.style.setProperty("--sea-boss-left",(seaBossX-width*.5).toFixed(1)+"px");
+  wrap.style.setProperty("--sea-boss-top",(seaBossY-height*.5).toFixed(1)+"px");
+  wrap.classList.toggle("is-hit",seaBossPhase==="active"&&(now||_nowMs())<seaBossFlashUntil);
+ }
+ seaBossLayer.style.setProperty("--sea-boss-hud-x",seaBossX.toFixed(1)+"px");
+ seaBossLayer.style.setProperty("--sea-boss-hud-y",Math.max(safe.top,safe.sceneRect.height*.12).toFixed(1)+"px");
+}
+function seaBossShotHits(shot){
+ if(!shot||!seaBossPlayable()||seaBossRadiusX<=0||seaBossRadiusY<=0)return false;
+ const crossed=shot.x+8>=seaBossX-seaBossRadiusX&&shot.prevX-8<=seaBossX+seaBossRadiusX;
+ if(!crossed)return false;
+ const y=(shot.y-seaBossY)/seaBossRadiusY;
+ const x=(Math.min(seaBossX+seaBossRadiusX,Math.max(seaBossX-seaBossRadiusX,shot.x))-seaBossX)/seaBossRadiusX;
+ return x*x+y*y<=1.08;
+}
+function seaBossGuide(message,announceMessage){
+ const guide=seaBossLayer&&seaBossLayer.querySelector(".sea-boss-guide");if(guide)guide.textContent=message;
+ if(announceMessage)announce(message);
+}
+function finishSeaBossVictory(){
+ if(seaBossPhase!=="active")return;
+ seaBossPhase="defeated";seaBossDefeated=true;stopSeaFiring();cancelSeaPointer();cancelSeaFirePointer();seaMoveKeys.clear();removeAllSeaShots();
+ const wrap=seaBossLayer&&seaBossLayer.querySelector(".sea-boss-wrap");if(wrap)wrap.classList.add("is-defeated");
+ createSeaBurstParticles({x:seaBossX,y:seaBossY,size:Math.min(seaBossWidth,190),scale:1.24});
+ seaBossGuide("まいった〜！ みんなを はなすよ！",true);showStamp("みんなを たすけた！","clear");
+ tone(170,0,.2,"sine",.09);tone(523,.08,.18,"triangle",.08);tone(784,.19,.22,"triangle",.08);tone(1175,.31,.28,"sine",.07);confetti(18);
+ const epoch=seaBossEpoch;
+ seaBossTimer=setTimeout(()=>{
+  seaBossTimer=0;if(epoch!==seaBossEpoch||!playing||!isSeaStage()||!seaBossDefeated)return;
+  clearSeaBossEncounter();completeCurrentStage(origin(stg));
+ },seaReducedMotion()?80:SEA_BOSS_VICTORY_MS);
+}
+function hitSeaBoss(salvoId,x,y){
+ if(!seaBossPlayable()||seaBossSalvos.has(salvoId))return false;
+ seaBossSalvos.add(salvoId);seaBossHp=Math.max(0,seaBossHp-seaBossDamagePerVolley());seaBossFlashUntil=_nowMs()+155;
+ createSeaHitSpark(x,y);tone(360+(seaBossMaxHp-seaBossHp)*2.4,0,.045,"triangle",.035);updateSeaBossProgress();
+ const ratio=seaBossMaxHp?seaBossHp/seaBossMaxHp:0;
+ [[.75,"きいてる！"],[.5,"あと はんぶん！"],[.25,"もう すこし！"]].forEach(([mark,message])=>{
+  if(ratio<=mark&&!seaBossThresholds.has(mark)){seaBossThresholds.add(mark);seaBossGuide(message,true);tone(740+(1-mark)*520,0,.1,"sine",.055);}
+ });
+ if(seaBossHp<=0)finishSeaBossVictory();
+ return true;
+}
+function showSeaBossEncounter(){
+ if(window.__PONO_TIER_LOCKED__||!isSeaStage()||!playing||seaBossDefeated)return;
+ clearSeaRescueMessage();clearSeaBubbleGame();clearSeaBossEncounter();
+ seaBossPhase="intro";seaBossMaxHp=SEA_BOSS_HP[level]||SEA_BOSS_HP[0];seaBossHp=seaBossMaxHp;seaBossSalvos.clear();seaBossThresholds.clear();answerLocked=false;
+ if(helpBtn)helpBtn.disabled=true;
+ document.body.classList.add("sea-boss-active","sea-arena-active");buildSeaBossEncounter();positionSeaArenaStart();updateSeaBossVisual(_nowMs());
+ showStamp("おおあわぬしが きた！","ng");seaBossGuide("あわバリアを こわそう！",true);tone(120,0,.45,"sawtooth",.07);tone(82,.18,.55,"sine",.08);
+ const epoch=seaBossEpoch;
+ seaBossTimer=setTimeout(()=>{
+  seaBossTimer=0;if(epoch!==seaBossEpoch||!playing||!isSeaStage()||seaBossPhase!=="intro")return;
+  seaBossPhase="active";seaBossGuide("ねらって れんしゃ！",true);seaSteerUsed=false;
+ },seaReducedMotion()?30:SEA_BOSS_INTRO_MS);
+}
 function clearSeaBubbleGame(){
  seaShooterEpoch++;
  clearSeaRoundCountdown();
@@ -1752,7 +1915,7 @@ function clearSeaBubbleGame(){
  clampSeaSteerOffsets();
 }
 function resetSeaInteraction(){
- clearSeaBubbleGame();
+ clearSeaBubbleGame();clearSeaBossEncounter();clearSeaRescueMessage();
  steerTargetX=0;steerX=0;steerTargetY=0;steerY=0;seaSteerUsed=false;
  seaCompanionSprites=[];seaCompanionKey="";seaTrail=[];
  if(seaCompanionLayer)seaCompanionLayer.replaceChildren();
@@ -1812,6 +1975,8 @@ function updateSeaAnswerTargets(now){
   const maxScale=reduced?SEA_TARGET_REDUCED_SCALE:SEA_TARGET_MAX_SCALE;
   const flash=entry.flashUntil>now?(reduced?0:.045):0;
   entry.scale=1+(maxScale-1)*balloonCurve+flash;
+  entry.button.style.setProperty("--sea-captive-scale",((.66+.34*ratio)/entry.scale).toFixed(4));
+  entry.button.style.setProperty("--sea-label-scale",(1/entry.scale).toFixed(4));
   const movementScale=1-balloonCurve*.85;
   const wave=moving?Math.sin(t*entry.rate+entry.phase)*movementScale:0;
   const cross=moving?Math.sin(t*entry.rate*1.47+entry.phase*.63)*movementScale:0;
@@ -1841,7 +2006,12 @@ function updateSeaAnswerTargets(now){
 }
 function syncSeaCompanions(){
  if(!seaCompanionLayer||window.__PONO_TIER_LOCKED__||!isSeaStage())return;
- const friends=cars.filter(friend=>friend&&!friend.pending&&(friend.img||friend.e)).slice(-SEA_COMPANION_LIMIT);
+ const friends=[],seen=new Set();
+ for(let index=cars.length-1;index>=0&&friends.length<SEA_COMPANION_LIMIT;index--){
+  const friend=cars[index];if(!friend||friend.pending||!(friend.img||friend.e))continue;
+  const species=(friend.t||friend.e||friend.img||"").trim();if(!species||seen.has(species))continue;
+  seen.add(species);friends.unshift(friend);
+ }
  const key=friends.map(friend=>(friend.img||friend.e||"")+"|"+(friend.t||"")).join("||");
  if(key===seaCompanionKey)return;
  seaCompanionKey=key;seaCompanionSprites=[];seaTrail=[];seaCompanionLayer.replaceChildren();
@@ -1873,13 +2043,13 @@ function renderSeaCompanions(now){
  const subPoint={x:shellRect.left-sceneRect.left+shellRect.width*.42,y:shellRect.top-sceneRect.top+shellRect.height*.54,t:now};
  seaTrail.push(subPoint);
  while(seaTrail.length>2&&seaTrail[0].t<now-1250)seaTrail.shift();
- const gap=clamp((window.innerWidth||844)*.045,34,52);
+ const gap=clamp((window.innerWidth||844)*.05,40,54);
  const reduced=seaReducedMotion();
  seaCompanionSprites.forEach((companion,index)=>{
   const point=reduced?subPoint:seaTrailPointAt(now-135*(index+1),subPoint);
   const size=companion.el.offsetWidth||clamp((window.innerWidth||844)*.051,34,48);
-  const bob=reduced?0:Math.sin(now/650+index*.9)*2;
-  companion.size=size;companion.x=clamp(point.x-gap*(index+1),size*.55,sceneRect.width-size*.55);companion.y=point.y+bob;
+  const fanY=[-12,10,-7][index]||0,bob=reduced?0:Math.sin(now/650+index*.9)*2;
+  companion.size=size;companion.x=clamp(point.x-gap*(index+1.38),size*.55,sceneRect.width-size*.55);companion.y=point.y+fanY+bob;
   companion.el.style.transform="translate3d("+(companion.x-size*.5).toFixed(2)+"px,"+(companion.y-size*.5).toFixed(2)+"px,0)";
  });
 }
@@ -1951,6 +2121,9 @@ function updateSeaShots(dt){
   if(shot.companion)shot.y+=(shot.aimY-shot.y)*clamp(dt*8,0,1);
   shot.el.style.transform="translate3d("+shot.x.toFixed(2)+"px,"+shot.y.toFixed(2)+"px,0) translate(-50%,-50%)";
   if(shot.x>width+28){shot.el.remove();seaShots.splice(index,1);continue;}
+  if(seaBossShotHits(shot)&&hitSeaBoss(shot.salvoId,shot.x,shot.y)){
+   removeSeaShotsForSalvo(shot.salvoId);return;
+  }
   if(seaBubbleLaunchPending||answerLocked)continue;
   const targetEntry=seaBubbleOptions.find(entry=>{
    if(!entry.button||entry.button.disabled||entry.button.classList.contains("dim")||entry.bursting)return false;
@@ -1967,13 +2140,14 @@ function beginSeaTargetBurst(entry){
  if(!entry||!seaRoundPlayable()||seaBubbleLaunchPending||answerLocked||driving||!quiz.classList.contains("show")||entry.button.disabled||entry.button.classList.contains("dim"))return;
  seaBubbleLaunchPending=true;entry.bursting=true;stopSeaFiring();cancelSeaPointer();cancelSeaFirePointer();seaMoveKeys.clear();removeAllSeaShots();
  activeChoiceButtons().forEach(choice=>{choice.disabled=true;});
+ if(entry.value.ok)seaBubbleOptions.forEach(other=>{if(other!==entry)other.button.classList.add("is-dismissed");});
  entry.button.classList.remove("is-taut");entry.button.classList.add("is-tensing");
  tone(720,0,.08,"sine",.06);tone(920,.055,.1,"triangle",.055);
  const epoch=seaShooterEpoch;
  const finish=()=>{
   seaBubbleLaunchTimer=0;
   if(epoch!==seaShooterEpoch||!entry.button.isConnected||!quiz.classList.contains("show")||!document.body.classList.contains("sea-quiz-active"))return;
-  entry.button.classList.remove("is-tensing","is-bursting");entry.button.classList.add("is-popped");
+  entry.button.classList.remove("is-tensing","is-bursting");entry.button.classList.add(entry.value.ok?"is-popped":"is-repelled");
   onPick(entry.button,entry.value);
   if(entry.value.ok){
    seaShooterResumeTimer=setTimeout(()=>{seaShooterResumeTimer=0;if(epoch===seaShooterEpoch)clearSeaBubbleGame();},420);
@@ -1985,6 +2159,10 @@ function beginSeaTargetBurst(entry){
    },620);
   }
  };
+ if(!entry.value.ok){
+  entry.button.classList.remove("is-tensing");entry.button.classList.add("is-repelled");tone(260,0,.12,"sine",.055);tone(190,.08,.16,"triangle",.04);
+  if(seaReducedMotion())finish();else seaBubbleLaunchTimer=setTimeout(finish,220);return;
+ }
  const explode=()=>{
   seaBubbleLaunchTimer=0;
   if(epoch!==seaShooterEpoch||!entry.button.isConnected)return;
@@ -2079,7 +2257,7 @@ function handleSeaViewportChange(){
  if(!isSeaStage())return;
  pauseSeaInput();seaTrail=[];
  if(seaRoundPhase==="ready"||seaRoundPhase==="go")positionSeaArenaStart();else clampSeaSteerOffsets();
- updateSeaAnswerTargets(_nowMs());
+ updateSeaAnswerTargets(_nowMs());updateSeaBossVisual(_nowMs());
 }
 function renderSeaSteering(){
  const now=_nowMs();
@@ -2132,11 +2310,11 @@ function renderSeaBubbleGame(){
  opts.forEach((o,index)=>{
   const button=document.createElement("button");button.type="button";button.className="sea-answer-bubble";
   button.disabled=true;
-  button.dataset.ok=o.ok?"1":"0";button.dataset.hits="0";button.setAttribute("aria-label",o.t+"を ねらって うつ");
+  button.dataset.ok=o.ok?"1":"0";button.dataset.hits="0";button.setAttribute("aria-label",o.ok?("あわの なかで ちいさくされた "+o.t+"を ねらって うつ"):("にせものの あわ "+o.t));
   const size=clamp(baseSize+[-3,3][index],64,96);button.style.setProperty("--sea-target-size",size.toFixed(1)+"px");
   button.style.setProperty("--sea-target-hue",String(184+index*24));
   const visual=document.createElement("span");visual.className="sea-answer-visual";
-  const emoji=document.createElement("span");emoji.className="em";emoji.textContent=o.e;
+  const emoji=document.createElement("span");emoji.className="em sea-captive";emoji.textContent=o.e;
   const label=document.createElement("span");label.className="lb";label.textContent=o.t;
   visual.append(emoji,label);button.appendChild(visual);
   bindTap(button,()=>startSeaKeyboardTargetFire(button,o));
@@ -2675,7 +2853,7 @@ function boardPassenger(p,learned,stationEl){
   im.src=passenger.happy||passenger.img||passenger.normal;im.alt="";
   fl.appendChild(im);
  }else fl.textContent=passenger.e;
- const src=stationEl&&stationEl.querySelector(".station-helper img");
+ const src=stationEl&&(stationEl.classList&&stationEl.classList.contains("sea-answer-bubble")?stationEl:stationEl.querySelector(".station-helper img"));
  if(src){
   const r=src.getBoundingClientRect();
   fl.style.left=(r.left+r.width*.5)+"px";
@@ -2763,7 +2941,7 @@ function updateHelpHud(){
 function emptyStageScoreBreakdown(){return {quiz:0,clear:0,help:0,rare:0,tunnel:0};}
 function formatScore(value){return Math.max(0,Math.round(Number(value)||0)).toLocaleString("ja-JP");}
 function resetStageScore(){
- stageScore=0;stageScoreBreakdown=emptyStageScoreBreakdown();stageClearScoreGranted=false;
+ stageScore=0;stageScoreBreakdown=emptyStageScoreBreakdown();stageClearScoreGranted=false;stageCompletionHandled=false;
  drawTunnelScoreHud();
 }
 function resetJourneyScore(){journeyScore=0;resetStageScore();}
@@ -3060,6 +3238,7 @@ function render(now){
   document.documentElement.style.setProperty("--num-pan",(-(worldX-o)*.06)+"vw");
  }
  renderSeaFish(now);
+ updateSeaBossVisual(now);
  renderSeaSteering();
  renderJungleAnimals();
  renderJungleFlights(now);
@@ -3225,6 +3404,7 @@ function gloop(t){
     carsEl.classList.remove("go");
    }
    if(p==="quiz")showQuizAfterSettle();
+   else if(p==="seaBoss")showSeaBossEncounter();
    else if(p==="dropoff")showDropoff();
    else if(p==="tunnelEntry")showTunnelRunIn();
    else if(p==="tunnelExit")startTunnelExitApproach();
@@ -3671,12 +3851,12 @@ function showNumberCargoHint(revealGoal){
 function showQuiz(){
  hideWeatherNotice();
  setDriverMood("thinking");
- cancelSeaPointer();clearSeaBubbleGame();
+ cancelSeaPointer();clearSeaBubbleGame();clearSeaRescueMessage();
  resetNumberCargoGame();
  clearFutureRailGame();
  clearSpaceConstellationGame();
  cur=qList[qSeg];missInQ=0;answerLocked=false;
- qText.textContent=cur.helper?(cur.helper.name+"を たすけよう！ "+cur.q):cur.q;
+ qText.textContent=isSeaStage()?("あわの ともだちを たすけよう！ "+cur.q):(cur.helper?(cur.helper.name+"を たすけよう！ "+cur.q):cur.q);
  hintText.textContent=helpItems.length?"🍀 おたすけを つかえるよ":"";
  choicesEl.replaceChildren();
  quiz.classList.add("show");
@@ -3688,16 +3868,18 @@ function onPick(el,o){
  answerLocked=true;
  if(o.ok){
   setDriverMood("cheer");
+  const seaRescue=isSeaStage()&&o.mode==="sea";
   const gained=addScore(SCORE_POINTS.correct+(missInQ===0?SCORE_POINTS.firstTry:0),"quiz");
   sndOK();showStamp("せいかい！ +"+gained+"てん","ok");
   quiz.classList.remove("show");
   const pe=cur.pe||[cur.a[0],cur.a[1]];
   const t=tunnels[qSeg];
   const passenger=cur.helper||{e:pe[0],t:pe[1],name:pe[1]};
-  const isNew=boardPassenger(passenger,pe,t);
-  speak(isNew?"せいかい！あたらしい ともだちだ！":"せいかい！"+passengerLabel(passenger)+"が のったよ！");
+  const isNew=boardPassenger(passenger,pe,seaRescue?el:t);
+  if(seaRescue)showSeaRescueMessage(passenger,qSeg);
+  else speak(isNew?"せいかい！あたらしい ともだちだ！":"せいかい！"+passengerLabel(passenger)+"が のったよ！");
   setTimeout(()=>{sndOpen();if(t)t.classList.add("open");const sg=t&&t.querySelector(".sign");if(sg)sg.textContent="⭕";},420);
-  setTimeout(()=>{if(playing)proceed();},1050);
+  setTimeout(()=>{if(playing)proceed();},seaRescue?1500:1050);
  }else{
   setDriverMood("surprised");
   missInQ++;stageMiss++;
@@ -3713,48 +3895,41 @@ function onPick(el,o){
   }
   const t=tunnels[qSeg];
   if(t){t.classList.add("shake");setTimeout(()=>t.classList.remove("shake"),520);}
-  showStamp("おしい！","ng");
+  showStamp(o.mode==="sea"?"にせものの あわ！":"おしい！","ng");
   if(o.mode!=="number"&&missInQ===1)showHint();
   if(o.mode!=="number"&&missInQ>=2){activeChoiceButtons().forEach(c=>{
    if(!c.classList.contains("dim"))c.classList.add("glow");});}
   setTimeout(()=>{answerLocked=false;setDriverMood("thinking");if(o.mode==="number")updateNumberCargoGame();},520);
  }
 }
+function completeCurrentStage(o){
+ if(!playing||stageCompletionHandled)return;
+ stageCompletionHandled=true;
+ cleared[stg]=true;
+ if(!stageClearScoreGranted){
+  addScore(SCORE_POINTS.stageClear,"clear");
+  if(stageMiss===0)addScore(SCORE_POINTS.noMiss,"clear");
+  stageClearScoreGranted=true;
+ }
+ const stars=stageMiss===0?3:(stageMiss<=2?2:1);
+ totalStars+=stars;
+ const key=loop+"-"+stg;
+ bestStarsByStage[key]=Math.max(Number(bestStarsByStage[key])||0,stars);
+ saveGame();
+ showStamp(STAGES[stg].names[loop%2]+" できた！ "+"⭐".repeat(stars),"clear");
+ sndFan();confetti(14);
+ if(stg<STAGES.length-1){
+  if(cars.length&&dropEl){sndGo();target=dropStop(o);pending="dropoff";driving=true;}
+  else beginStageTransit();
+ }else{sndGo();target=tunX(o,QN-1)+150;pending="ending";driving=true;}
+}
 function proceed(){
  if(!playing)return;
- setDriverMood("cheer");
- qSeg++;drawDots();
- const o=origin(stg);
- if(!rareSpawned)scheduleRareSpawn();
- if(qSeg<QN){
-  sndGo();
-  target=stops(o,qSeg);pending="quiz";driving=true;
- }else{
-  cleared[stg]=true;
-  if(!stageClearScoreGranted){
-   addScore(SCORE_POINTS.stageClear,"clear");
-   if(stageMiss===0)addScore(SCORE_POINTS.noMiss,"clear");
-   stageClearScoreGranted=true;
-  }
-  const stars=stageMiss===0?3:(stageMiss<=2?2:1);
-  totalStars+=stars;
-  const key=loop+"-"+stg;
-  bestStarsByStage[key]=Math.max(Number(bestStarsByStage[key])||0,stars);
-  saveGame();
-  showStamp(STAGES[stg].names[loop%2]+" できた！ "+"⭐".repeat(stars),"clear");
-  sndFan();confetti(14);
-  if(stg<STAGES.length-1){
-   if(cars.length&&dropEl){
-    sndGo();
-    target=dropStop(o);pending="dropoff";driving=true;
-   }else{
-    beginStageTransit();
-   }
-  }else{
-   sndGo();
-   target=tunX(o,QN-1)+150;pending="ending";driving=true;
-  }
- }
+ setDriverMood("cheer");qSeg++;drawDots();
+ const o=origin(stg);if(!rareSpawned)scheduleRareSpawn();
+ if(qSeg<QN){sndGo();target=stops(o,qSeg);pending="quiz";driving=true;return;}
+ if(isSeaStage()&&!seaBossDefeated){sndGo();target=stops(o,QN-1)+120;pending="seaBoss";driving=true;return;}
+ completeCurrentStage(o);
 }
 function ending(){
  hideWeatherNotice();
@@ -3941,6 +4116,7 @@ bindTap($("zkBtnRes"),()=>{ensureAC();openZukan();});
 bindTap($("zkClose"),()=>{$("zukan").classList.add("hidden");});
 bindTap($("homeBtn"),()=>{
  if(quiz.classList.contains("show")){showStamp("いまは トンネルを あけよう","ng");return;}
+ if(seaBossPhase!=="idle"){showStamp("いまは おおあわぬしを たおそう","ng");return;}
  openMap();
 });
 bindTap($("spkBtn"),()=>{showHint();});

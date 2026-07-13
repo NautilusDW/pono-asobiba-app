@@ -289,7 +289,15 @@ assert.ok(topY < 0.5 && bottomY > 0.5 && bottomY - topY >= 0.3,
   "answer rows need enough vertical separation for two 64px targets");
 
 /* Option generation is independent of difficulty: one correct plus one distractor. */
-const optionsSandbox = { shuffle: values => values.slice().reverse() };
+const optionsSandbox = {
+  shuffle: values => values.slice().reverse(),
+  cars: [],
+  passengerLabel: friend => friend.t,
+  qList: [],
+  seaRescueQuestionKey: question => question.a[1],
+  SEA_DECOYS: [["🐔", "にわとり"], ["🐝", "はち"]],
+  seaDecoysSeen: new Set()
+};
 vm.createContext(optionsSandbox);
 vm.runInContext(`${seaQuestionOptionsBody};this.seaQuestionOptions=seaQuestionOptions;`, optionsSandbox);
 const optionQuestion = {
@@ -331,7 +339,7 @@ function makeTargetMotionSandbox() {
     const names = new Set();
     return {
       isConnected: true,
-      style: {},
+      style: { setProperty(name, value) { this[name] = value; } },
       classList: {
         contains: name => names.has(name),
         toggle: (name, force) => {
@@ -554,7 +562,11 @@ assert.match(spawnVolleyBody, /const salvoId=\+\+seaVolleyCount/);
 assert.match(spawnVolleyBody, /spawnSeaShot\([^;]*false,salvoId,aimY\)/);
 assert.match(spawnVolleyBody, /seaCompanionSprites\.forEach/);
 assert.match(spawnVolleyBody, /spawnSeaShot\([^;]*true,salvoId,aimY\)/);
-assert.match(extractFunction(js, "syncSeaCompanions"), /slice\(-SEA_COMPANION_LIMIT\)/);
+const syncCompanionBody = extractFunction(js, "syncSeaCompanions");
+assert.match(syncCompanionBody, /const friends=\[\],seen=new Set\(\)/);
+assert.match(syncCompanionBody, /for\(let index=cars\.length-1;index>=0&&friends\.length<SEA_COMPANION_LIMIT;index--\)/);
+assert.match(syncCompanionBody, /seen\.has\(species\)/, "the visible firing formation must not repeat one rescued species");
+assert.match(syncCompanionBody, /friends\.unshift\(friend\)/, "the latest unique friends must keep their journey order");
 const companionRenderBody = extractFunction(js, "renderSeaCompanions");
 assert.match(companionRenderBody, /seaTrailPointAt\(now-135\*\(index\+1\)/);
 assert.match(companionRenderBody, /const point=reduced\?subPoint:/, "reduced motion must use a fixed formation rather than delayed trail motion");
@@ -766,6 +778,7 @@ function makeBurstSandbox(reduced) {
     cancelSeaFirePointer: () => {},
     removeAllSeaShots: () => {},
     activeChoiceButtons: () => [answerButton, otherButton],
+    seaBubbleOptions: [],
     createSeaBurstParticles: () => { state.particleCalls += 1; },
     tone: () => {},
     seaReducedMotion: () => reduced,

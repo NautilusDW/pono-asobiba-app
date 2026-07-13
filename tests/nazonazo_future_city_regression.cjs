@@ -47,8 +47,8 @@ function cssRule(selectorPattern) {
   return match[1];
 }
 
-assert.match(html, /styles\.css\?v=20260713-1271/);
-assert.match(html, /js\/game\.js\?v=20260713-1271/);
+assert.match(html, /styles\.css\?v=20260713-1273/);
+assert.match(html, /js\/game\.js\?v=20260713-1273/);
 assert.match(html, /id="futureRailLayer"[^>]*role="group"[^>]*aria-labelledby="qText"[^>]*hidden/);
 assert.equal((html.match(/id="futureHorizonLoop"[\s\S]*?<\/div>/)?.[0].match(/class="future-loop-tile"/g) || []).length, 4);
 assert.equal((html.match(/id="futureMidLoop"[\s\S]*?<\/div>/)?.[0].match(/class="future-loop-tile"/g) || []).length, 4);
