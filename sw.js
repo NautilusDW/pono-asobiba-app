@@ -136,7 +136,7 @@ const CRITICAL_ASSETS_SCRIPTS = [
   // try/catch でラップされる (precacheAssetGroup の allSettled gate) ため install 失敗にならない。
   '/common/rating-modal.js',
   '/common/rating-modal.css',
-  // v2165: データ分析基盤 (docs/data-analytics-plan.md) — telemetry.js は play.html の
+  // v2166: データ分析基盤 (docs/data-analytics-plan.md) — telemetry.js は play.html の
   // data-pono-telemetry-auto script tag から読まれる必須計測モジュール。rating-modal.js と
   // 同じ理由で precache 対象 (asset 単位 try/catch のためファイル欠落でも install は失敗しない)。
   '/common/telemetry.js',
