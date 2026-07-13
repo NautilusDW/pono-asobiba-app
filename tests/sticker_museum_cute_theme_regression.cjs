@@ -85,8 +85,8 @@ assert.deepEqual(map, { width: 1672, height: 941, alpha: false });
 assert.deepEqual(room, { width: 1672, height: 941, alpha: false });
 assert.deepEqual(frame, { width: 1448, height: 1086, alpha: true });
 
-for (const name of ["sticker-gallery-cute_20260713.webp", "sticker-museum-cute_20260713.webp"]) {
-  assert.deepEqual(readWebp(`assets/lp/features/${name}`), { width: 1280, height: 720, alpha: false });
+for (const name of ["sticker-gallery_20260713_003.webp", "sticker-museum_20260713_005.webp"]) {
+  assert.deepEqual(readWebp(`assets/lp/features/${name}`), { width: 1280, height: 720, alpha: true });
 }
 
 console.log("sticker_museum_cute_theme_regression: all assertions passed");

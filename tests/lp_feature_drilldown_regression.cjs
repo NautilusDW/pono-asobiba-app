@@ -45,9 +45,10 @@ const stickerDetail = lp.match(/'feature-sticker-book': \{[\s\S]*?\n\s+\]\n\s+\}
 assert.ok(stickerDetail, "sticker-book detail modal data must exist");
 assert.equal((stickerDetail[0].match(/\{src:/g) || []).length, 3, "sticker detail must contain cover, gallery, and museum");
 assert.match(stickerDetail[0], /sticker-book_20260713_001_sticker-book\.webp/);
-assert.match(stickerDetail[0], /sticker-gallery-cute_20260713\.webp/);
-assert.match(stickerDetail[0], /sticker-museum-cute_20260713\.webp/);
+assert.match(stickerDetail[0], /sticker-gallery_20260713_003\.webp/);
+assert.match(stickerDetail[0], /sticker-museum_20260713_005\.webp/);
 assert.doesNotMatch(stickerDetail[0], /sticker-gallery_20260712|sticker-museum_20260712/);
+assert.doesNotMatch(stickerDetail[0], /sticker-gallery-cute_20260713|sticker-museum-cute_20260713/);
 assert.match(stickerDetail[0], /fit:'contain'/, "the transparent 16:9 sticker-book screen must remain uncropped in the modal");
 assert.doesNotMatch(lp, /青いシールちょうの仮表紙/);
 assert.match(lp, /\.pc-feature-entry--sticker \.pc-feature-media img\{[\s\S]*?padding:0;[\s\S]*?object-fit:contain;/,
@@ -74,10 +75,14 @@ assert.equal(readU24LE(sticker, 24) + 1, 1280, "sticker-book cover must be 1280p
 assert.equal(readU24LE(sticker, 27) + 1, 720, "sticker-book cover must be 720px high");
 assert.ok(sticker.length <= 3 * 1024 * 1024, "sticker-book cover must stay within the repository 3MB limit");
 
-for (const name of ["sticker-gallery-cute_20260713.webp", "sticker-museum-cute_20260713.webp"]) {
+for (const name of ["sticker-gallery_20260713_003.webp", "sticker-museum_20260713_005.webp"]) {
   const asset = fs.readFileSync(path.join(root, "assets/lp/features", name));
   assert.equal(asset.subarray(0, 4).toString("ascii"), "RIFF", `${name} must be WebP`);
   assert.equal(asset.subarray(8, 12).toString("ascii"), "WEBP", `${name} must be WebP`);
+  assert.equal(asset.subarray(12, 16).toString("ascii"), "VP8X", `${name} must use extended WebP`);
+  assert.ok(asset[20] & 0x10, `${name} must retain the supplied alpha bands`);
+  assert.equal(readU24LE(asset, 24) + 1, 1280, `${name} must be 1280px wide`);
+  assert.equal(readU24LE(asset, 27) + 1, 720, `${name} must be 720px high`);
   assert.ok(asset.length <= 3 * 1024 * 1024, `${name} must stay within the repository 3MB limit`);
 }
 
