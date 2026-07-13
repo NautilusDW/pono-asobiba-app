@@ -420,7 +420,7 @@ iOS scaffold時は`__NATIVE_BUILD__`だけではAndroid/iOSを区別できない
 - **本番webapp Worker(`pono-asobiba-app.ndw.workers.dev`)のerror 1042再発**: 分析基盤とは無関係の既知課題だが、Phase 3(native実機検証)の前提ブロッカー。解消状況次第でPhase 3着手タイミングを調整する。
 - **A-4: GASパイプラインでのメール紐付きリスク(第10章)**: P1の`rating_submitted`/`survey_submitted`に`client_id`を同梱すると、`survey.html`の任意メール欄と同一GASエンドポイント(同一スプレッドシート)で符号と実メールアドレスが同居し再識別可能になる。APPI第31条(個人関連情報の第三者提供)の論点にも接続する(§10-5)。**決定済み(2026-07-13): 分離案採用。残作業は分離の実装完了(分離実装前の`client_id`GAS同梱は禁止)。**
 - **β配布文書3件のliteral-conflict**: `docs/beta/_html/consent_form.html:199,231`(「ボタンを押した時だけ送られます」「〜だけをお預かりします」)/`daycare_request.html:227`(「〜のみ」の限定列挙)がdefault-on自動送信の設計と文字通り矛盾する(§10-1 A-1〜A-3)。**解決済み(2026-07-13): 未配布と確認、文言修正を全7箇所適用済み。残作業は配布時に最終版であることの確認のみ。**
-- **`/privacy`デッドリンク**: `consent_form.html:271`/`parent_flyer.html:235`(β同意書・チラシ)が`https://pono.kodama-no-mori.com/privacy`を印字参照しているが実体ページが存在しない。Phase 1必須ゲートのプライバシーポリシーページ新設(§5-4/§10-5)で解消する。
+- **`/privacy`デッドリンク**: `https://pono.kodama-no-mori.com/privacy`の実体ページが存在しない。URL印字は`consent_form.html:271`(β同意書)のみ、`parent_flyer.html:235`(チラシ)はQR経由でプライバシーポリシーへ誘導。Phase 1必須ゲートのプライバシーポリシーページ新設(§5-4/§10-5)で解消する。
 - **国ゲートの判定粒度・VPNの扱い**: `request.cf.country`ベースの国ゲート(§6-2)はベストエフォートで良いか要確認。
 
 ---
@@ -430,7 +430,7 @@ iOS scaffold時は`__NATIVE_BUILD__`だけではAndroid/iOSを区別できない
 「売り文句と計測の整合性監査」ワークフロー(§11 出典)の成果を収録する。LP・help.html・βテスト配布文書等の対外的な約束文言20件をfile:line単位で監査し、テレメトリ導入後も既存の約束が嘘にならないための文言修正・設計判断・開示設計をまとめた。クロスレビュー(critical 1/major 2/minor 1)反映済みの改訂版を正とする。本章内の「§5-x」等は本書の該当章を指す。
 
 **前提(監査で判明した事実 — 2026-07-13 オーナー決定を反映)**:
-- **プライバシーポリシーページの不在(/privacy デッドリンク)**: 「プライバシーポリシー」という名の実装済みページ・セクションは本番サイト(`index.html`/`help.html`/`play.html`/`survey.html`)にも`src/worker.js`のルーティングにも一切存在しない。`consent_form.html:271`と`parent_flyer.html:235`が参照する`https://pono.kodama-no-mori.com/privacy`は、現状デッドリンクのまま保護者向け配布文書に印字される予定になっている(`docs/PRICING_STRATEGY.md:667`でも「プライバシーポリシー…を整備したか」が未チェックTODO)。
+- **プライバシーポリシーページの不在(/privacy デッドリンク)**: 「プライバシーポリシー」という名の実装済みページ・セクションは本番サイト(`index.html`/`help.html`/`play.html`/`survey.html`)にも`src/worker.js`のルーティングにも一切存在しない。`https://pono.kodama-no-mori.com/privacy`はURL印字が`consent_form.html:271`に、QR経由のプライバシーポリシー誘導が`parent_flyer.html:235`にあり、いずれも現状デッドリンクのまま保護者向け配布文書に載る予定になっている(`docs/PRICING_STRATEGY.md:667`でも「プライバシーポリシー…を整備したか」が未チェックTODO)。
 - **β配布文書の配布ステータス — オーナー確認済み(2026-07-13): 未配布**。配布前の文言修正を適用済み(全7箇所: A-1 `docs/beta/_html/consent_form.html:199` + `assets/_archive/beta/consent_form.md:20` / A-2 `daycare_request.html:227` / A-3 `consent_form.html:231` + `consent_form.md:62` / 追加:「集めるもの」リスト `consent_form.html:206` + `consent_form.md:28`)。
 
 ### 10-1. 整合性マトリクス — 約束文言 × テレメトリ導入後の真偽
@@ -464,7 +464,7 @@ iOS scaffold時は`__NATIVE_BUILD__`だけではAndroid/iOSを区別できない
 
 | 引用(要約) | 出典 | 理由 |
 |---|---|---|
-| 「お子さんを特定できる情報(お名前・顔写真・声・位置情報)は、一切収集しません」 | `consent_form.html:198`、`daycare_request.html:226`、`parent_flyer.html:233` | 列挙対象が氏名・顔写真・声・位置情報に限定。§5-5の非収集リストと完全整合(GPS・カメラ・マイク入力は未使用) |
+| 「お子さんを特定できる情報(お名前・顔写真・声・位置情報)は、一切収集しません」 | `consent_form.html:198`、`daycare_request.html:226` | 列挙対象が氏名・顔写真・声・位置情報に限定。§5-5の非収集リストと完全整合(GPS・カメラ・マイク入力は未使用)。※`parent_flyer.html:233`は実文言が異なるため本行から分離し、B-6として個別判定(2026-07-13) |
 | 「会員登録なし」 | `index.html:1979` | アカウント/ログイン機能は現状もテレメトリ導入後も一切導入しない(§5-3, §5-4) |
 | 「会員登録や名前・メールの入力なしで、そのまま遊べます。」 | `index.html:2047` | B-2と同様「入力」限定 |
 | 「ガチャガチャは課金なし」 | `index.html:1981` | 課金モデルの話でデータ収集と無関係 |
@@ -474,7 +474,7 @@ iOS scaffold時は`__NATIVE_BUILD__`だけではAndroid/iOSを区別できない
 
 **運営内部文書(対外的な約束文言ではないため対象外)**: `google_forms_setup_guide.md:43`(運営向け設定手順)、`PRICING_STRATEGY.md:25`(社内戦略資料の「3つの約束」=広告ゼロ・IAPゼロ・家族共有、データ収集非言及)、`PRICING_STRATEGY.md:667`(未整備TODO、本書§5-4のプライバシーポリシー新設ゲートと符合)。
 
-**別枠の要対応事項(このマトリクスとは別軸)**: `consent_form.html:271`と`parent_flyer.html:235`が参照する`https://pono.kodama-no-mori.com/privacy`は実装ゼロのデッドリンク(本番HTMLに実体0件)。§5-4はプライバシーポリシー新設を「収集開始前の必須ゲート」と明記しており、このURLの実体化そのものがPhase 1完了条件。
+**別枠の要対応事項(このマトリクスとは別軸)**: `https://pono.kodama-no-mori.com/privacy`は実装ゼロのデッドリンク(本番HTMLに実体0件)。URL印字は`consent_form.html:271`のみで、`parent_flyer.html:235`はQR経由でプライバシーポリシーへ誘導する形。§5-4はプライバシーポリシー新設を「収集開始前の必須ゲート」と明記しており、このURLの実体化そのものがPhase 1完了条件。
 
 ### 10-2. 「あつめるもの・あつめないもの」対比表(保護者向け・help.html/プライバシー説明用)
 
