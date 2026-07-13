@@ -164,8 +164,8 @@ const armContext = {
   worldX: 0,
   target: 0,
   resetSeaInteraction() { bridgeCalls.push(["reset-sea"]); },
-  clearFutureMagnetGame() { bridgeCalls.push(["clear-future-magnet"]); },
-  clearSpaceGravityGame() { bridgeCalls.push(["clear-space-gravity"]); },
+  clearFutureBuilderGame() { bridgeCalls.push(["clear-future-builder"]); },
+  clearSpaceGalaxyGame() { bridgeCalls.push(["clear-space-galaxy"]); },
   stopStageWeather() { bridgeCalls.push(["stop-weather"]); },
   applySkin() { bridgeCalls.push(["skin"]); },
   origin(index) { return index * 100; },
@@ -230,8 +230,8 @@ assert.equal(normalWrites, 1, "ordinary play must retain its save path");
 assert.match(game, /const wasAdminPreview=document\.body\.classList\.contains\("nazonazo-admin-stage-preview"\);/);
 assert.match(game, /if\(wasAdminPreview\)document\.body\.classList\.add\("nazonazo-admin-stage-preview"\);/);
 assert.match(html, /id="adminStagePreviewLabel" hidden/);
-assert.match(html, /js\/game\.js\?v=20260713-1281/);
-assert.match(html, /styles\.css\?v=20260713-1281/);
+assert.match(html, /js\/game\.js\?v=20260713-1282/);
+assert.match(html, /styles\.css\?v=20260713-1282/);
 assert.match(styles, /@media \(orientation:landscape\) and \(max-height:180px\)[\s\S]*?body\.nazonazo-admin-stage-preview #title h1,[\s\S]*?#zkBtnTitle\{display:none\}/);
 assert.match(styles, /body\.nazonazo-admin-stage-preview #lvSel\{[^}]*grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
 assert.match(styles, /body\.nazonazo-admin-stage-preview #startBtn\{[^}]*min-height:38px/);

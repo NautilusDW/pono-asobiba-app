@@ -70,7 +70,7 @@ for (const id of ["spaceStarFar", "spaceStarMid", "spaceStarNear"]) {
 }
 assert.equal(loopTileCount("spaceHorizonLoop"), 4, "planet loop needs two mirrored periods plus coverage");
 assert.equal(loopTileCount("spaceForegroundLoop"), 8, "near asteroid loop needs enough short-height coverage");
-assert.match(html, /id="spaceGravityLayer"[^>]*role="group"[^>]*aria-labelledby="qText"[^>]*hidden/);
+assert.match(html, /id="spaceGalaxyLayer"[^>]*role="group"[^>]*aria-labelledby="qText"[^>]*hidden/);
 
 const assetNames = {
   sky: "space_nebula_sky_back_20260713.webp",

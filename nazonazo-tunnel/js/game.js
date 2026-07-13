@@ -451,14 +451,19 @@ let seaRoundPhase="idle",seaRoundCountdownTimer=0;
 let seaBossPhase="idle",seaBossHp=0,seaBossMaxHp=0,seaBossX=0,seaBossY=0,seaBossRadiusX=0,seaBossRadiusY=0,seaBossWidth=0;
 let seaBossEpoch=0,seaBossTimer=0,seaBossFlashUntil=0,seaBossSalvos=new Set(),seaBossThresholds=new Set(),seaBossDefeated=false;
 let seaRescueMessageTimer=0,seaDecoysSeen=new Set();
-const FUTURE_MAGNET_GOAL=3;
-const FUTURE_MAGNET_TRAVEL_MS=[2200,1900,1650];
-let futureMagnetOptions=[],futureMagnetCharge=0,futureMagnetToken=null,futureMagnetTokenStartedAt=0,futureMagnetNextAt=0,futureMagnetSpawnCount=0;
-let futureMagnetResolving=false,futureMagnetWrongLocked=false,futureMagnetAssisted=false,futureMagnetTimer=0,futureMagnetEpoch=0;
-const SPACE_GRAVITY_PORTAL_ANGLES=[-0.72,0.72];
-const SPACE_GRAVITY_ORBIT_MS=[4600,4100,3600];
-let spaceGravityOptions=[],spaceGravityAngle=-2.35,spaceGravityHolding=false,spaceGravityPointerId=null,spaceGravityHoldStartedAt=0,spaceGravityEnergy=0;
-let spaceGravityResolving=false,spaceGravityMisses=0,spaceGravityAssisted=false,spaceGravityKeyboardTarget=-1,spaceGravityTimer=0,spaceGravityEpoch=0,spaceGravityLastFrameAt=0;
+const FUTURE_BUILDER_STEPS=3;
+const FUTURE_BUILDER_DRAG_RATIO=[.36,.42,.48];
+const FUTURE_BUILDER_FIRST_LOCK=.28;
+let futureBuilderOptions=[],futureBuilderSelectedIndex=-1,futureBuilderPointerId=null,futureBuilderPointerIndex=-1;
+let futureBuilderStartY=0,futureBuilderStartProgress=0,futureBuilderDragDistance=0,futureBuilderSuppressClick=false;
+let futureBuilderResolving=false,futureBuilderAssisted=false,futureBuilderAutoPlaying=false,futureBuilderTimer=0,futureBuilderEpoch=0;
+let futureBuilderStepTimer=0,futureBuilderTapQueue=0,futureBuilderTapIndex=-1,futureBuilderTapAnimating=false;
+const SPACE_GALAXY_PLANET_ANGLES=[-2.2,2.2];
+const SPACE_GALAXY_DOCK_WINDOW=.20;
+const SPACE_GALAXY_WIND_GOAL=Math.PI*2*1.15;
+let spaceGalaxyOptions=[],spaceGalaxyRotation=0,spaceGalaxyPhase="idle",spaceGalaxyPointerId=null,spaceGalaxyPointerAngle=0;
+let spaceGalaxyPointerX=0,spaceGalaxyPointerY=0,spaceGalaxyDragged=false,spaceGalaxySuppressClick=false,spaceGalaxyWind=0,spaceGalaxyWindStage=0;
+let spaceGalaxyCoreIndex=-1,spaceGalaxyResolving=false,spaceGalaxyAssisted=false,spaceGalaxyKeyboardTarget=-1,spaceGalaxyTimer=0,spaceGalaxyEpoch=0;
 let nazonazoAdminPreviewMode=false;
 const NUMBER_CARGO_THEMES=[
  {e:"⭐",name:"おほしさま"},{e:"🎈",name:"ふうせん"},{e:"🌼",name:"おはな"},
@@ -594,7 +599,7 @@ function setDriverMood(mood){
 const $=id=>document.getElementById(id);
 const world=$("world"),veh=$("veh"),horizon=$("horizon"),midT=$("midT"),groundT=$("groundT"),fgT=$("fgT"),seaFishLayer=$("seaFishLayer"),smokeLayer=$("smokeLayer"),townHorizonLoop=$("townHorizonLoop"),townMidLoop=$("townMidLoop"),futureHorizonLoop=$("futureHorizonLoop"),futureMidLoop=$("futureMidLoop"),futureForegroundLoop=$("futureForegroundLoop"),spaceHorizonLoop=$("spaceHorizonLoop"),spaceForegroundLoop=$("spaceForegroundLoop"),jungleHabitatBack=$("jungleHabitatBack");
 const vehicleSteerShell=$("vehicleSteerShell"),seaSteerSurface=$("seaSteerSurface"),seaAnswerLayer=$("seaAnswerLayer"),seaBossLayer=$("seaBossLayer"),seaRescueMessage=$("seaRescueMessage"),seaArenaShade=$("seaArenaShade"),seaRoundCountdown=$("seaRoundCountdown"),seaSteerHint=$("seaSteerHint");
-const futureMagnetLayer=$("futureMagnetLayer"),spaceGravityLayer=$("spaceGravityLayer");
+const futureBuilderLayer=$("futureBuilderLayer"),spaceGalaxyLayer=$("spaceGalaxyLayer");
 const seaCompanionLayer=$("seaCompanionLayer"),seaShotLayer=$("seaShotLayer"),seaFireButton=$("seaFireButton");
 const jungleAnimalLayers={far:$("jungleAnimalsFar"),mid:$("jungleAnimalsMid"),near:$("jungleAnimalsNear")};
 const jungleFlightLayers={bird:$("jungleBirdFlightLayer"),butterfly:$("jungleButterflyFlightLayer")};
@@ -2293,8 +2298,8 @@ function renderSeaSteering(){
 }
 function activeChoiceButtons(){
  if(document.body.classList.contains("sea-quiz-active")&&seaAnswerLayer)return [...seaAnswerLayer.querySelectorAll(".sea-answer-bubble")];
- if(document.body.classList.contains("future-magnet-active")&&futureMagnetLayer)return [...futureMagnetLayer.querySelectorAll(".future-magnet-capsule")];
- if(document.body.classList.contains("space-gravity-active")&&spaceGravityLayer)return [...spaceGravityLayer.querySelectorAll(".space-gravity-portal")];
+ if(document.body.classList.contains("future-builder-active")&&futureBuilderLayer)return [...futureBuilderLayer.querySelectorAll(".future-builder-tower")];
+ if(document.body.classList.contains("space-galaxy-active")&&spaceGalaxyLayer)return [...spaceGalaxyLayer.querySelectorAll(".space-galaxy-planet-choice")];
  return [...choicesEl.querySelectorAll(".choice")];
 }
 function renderSeaBubbleGame(){
@@ -2344,34 +2349,37 @@ if(seaFireButton){
 }
 window.addEventListener("keydown",handleSeaKeyDown);
 window.addEventListener("keyup",handleSeaKeyUp);
-function handleFutureMagnetKeyDown(event){
- if(!futureMagnetPlayable()||event.defaultPrevented||event.repeat||(event.code!=="Space"&&event.key!==" "&&event.key!=="Enter"))return;
- const target=event.target,gate=target&&typeof target.closest==="function"?target.closest(".future-magnet-gate"):null;
- if(!gate&&target&&typeof target.matches==="function"&&target.matches("button,a,input,select,textarea,[contenteditable='true']"))return;
- event.preventDefault();activateFutureMagnet(true);
-}
-window.addEventListener("keydown",handleFutureMagnetKeyDown);
-function handleSpaceGravityKeyDown(event){
- if(!spaceGravityPlayable()||event.defaultPrevented)return;
- const target=event.target,inside=target&&typeof target.closest==="function"?target.closest(".space-gravity-pad,.space-gravity-portal"):null;
+function handleFutureBuilderKeyDown(event){
+ if(!futureBuilderPlayable()||event.defaultPrevented||(event.key!=="ArrowLeft"&&event.key!=="ArrowRight"))return;
+ const target=event.target,inside=target&&typeof target.closest==="function"?target.closest(".future-builder-tower"):null;
  if(!inside&&target&&typeof target.matches==="function"&&target.matches("button,a,input,select,textarea,[contenteditable='true']"))return;
- if(event.key==="ArrowUp"||event.key==="ArrowDown"){
-  event.preventDefault();spaceGravityKeyboardTarget=event.key==="ArrowUp"?0:1;
-  const entry=spaceGravityOptions[spaceGravityKeyboardTarget];if(entry&&!entry.button.disabled){entry.button.focus({preventScroll:true});updateSpaceGravityVisual(_nowMs());spaceGravityGuide(entry.o.t+"を ねらうよ");}
+ event.preventDefault();
+ const direction=event.key==="ArrowLeft"?-1:1,enabled=futureBuilderOptions.filter(entry=>!entry.button.disabled&&entry.button.getAttribute("aria-disabled")!=="true");
+ if(!enabled.length)return;
+ const current=enabled.findIndex(entry=>entry.button===inside),next=enabled[(current+direction+enabled.length)%enabled.length];
+ if(next)next.button.focus({preventScroll:true});
+}
+window.addEventListener("keydown",handleFutureBuilderKeyDown);
+function handleSpaceGalaxyKeyDown(event){
+ if(!spaceGalaxyPlayable()||event.defaultPrevented)return;
+ const target=event.target,inside=target&&typeof target.closest==="function"?target.closest(".space-galaxy-planet-choice"):null;
+ if(!inside&&target&&typeof target.matches==="function"&&target.matches("button,a,input,select,textarea,[contenteditable='true']"))return;
+ if(spaceGalaxyPhase==="choose"&&(event.key==="ArrowUp"||event.key==="ArrowDown")){
+  event.preventDefault();const enabled=spaceGalaxyOptions.filter(entry=>!entry.button.disabled);if(!enabled.length)return;
+  const entry=event.key==="ArrowUp"?enabled[0]:enabled[enabled.length-1];spaceGalaxyKeyboardTarget=entry.index;entry.button.focus({preventScroll:true});spaceGalaxyGuide(entry.o.t+"の ほしを まわそう");
   return;
  }
- if((event.code==="Space"||event.key===" "||event.key==="Enter")&&!event.repeat){
-  if(inside&&inside.classList&&inside.classList.contains("space-gravity-portal")){
-   const index=spaceGravityOptions.findIndex(entry=>entry.button===inside);if(index>=0)selectSpaceGravityTarget(index);
-  }
-  event.preventDefault();startSpaceGravityHold(null);
+ if(event.key==="ArrowLeft"||event.key==="ArrowRight"){
+  event.preventDefault();advanceSpaceGalaxyRotation(event.key==="ArrowLeft"?-.34:.34);return;
+ }
+ if(spaceGalaxyPhase==="wind"&&(event.code==="Space"||event.key===" "||event.key==="Enter")&&!event.repeat){
+  event.preventDefault();windSpaceGalaxy(Math.PI/3);
  }
 }
-function handleSpaceGravityKeyUp(event){
- if((event.code==="Space"||event.key===" "||event.key==="Enter")&&spaceGravityHolding){event.preventDefault();releaseSpaceGravityHold(null);}
-}
-window.addEventListener("keydown",handleSpaceGravityKeyDown);
-window.addEventListener("keyup",handleSpaceGravityKeyUp);
+window.addEventListener("keydown",handleSpaceGalaxyKeyDown);
+window.addEventListener("pointermove",handleSpaceGalaxyPointerMove,{passive:false});
+window.addEventListener("pointerup",finishSpaceGalaxyPointer,{passive:true});
+window.addEventListener("pointercancel",finishSpaceGalaxyPointer,{passive:true});
 
 function buildSeaFish(){
  seaFishSprites=[];
@@ -3183,7 +3191,7 @@ function onRunEvent(el,ev){
 function useHelp(){
  if(answerLocked||driving||seaBubbleLaunchPending||!quiz.classList.contains("show"))return;
  if(isSeaStage()&&!seaRoundPlayable())return;
- if((isFutureStage()&&(futureMagnetResolving||futureMagnetCharge>=FUTURE_MAGNET_GOAL))||(isSpaceStage()&&spaceGravityResolving))return;
+ if((isFutureStage()&&(futureBuilderResolving||futureBuilderAutoPlaying||futureBuilderTapAnimating||futureBuilderPointerId!==null))||(isSpaceStage()&&(spaceGalaxyResolving||spaceGalaxyPointerId!==null)))return;
  if(!helpItems.length){
   showStamp("みつけてね！","ng");
   announce("はしっているときに、おたすけを みつけよう");
@@ -3203,8 +3211,8 @@ function useHelp(){
   if(wrong){wrong.classList.add("dim");wrong.disabled=true;}
   const ok=choices.find(c=>c.dataset.ok==="1");
   if(ok)ok.classList.add("glow");
-  if(isFutureStage())assistFutureMagnetGame();
-  if(isSpaceStage())assistSpaceGravityGame();
+  if(isFutureStage())assistFutureBuilderGame();
+  if(isSpaceStage())assistSpaceGalaxyGame();
  }
  tone(880,0,.12,"triangle",.12);tone(1175,.1,.16,"triangle",.1);
  showStamp("おたすけ！","new");
@@ -3240,8 +3248,6 @@ function render(now){
  renderJungleAnimals();
  renderJungleFlights(now);
  renderSpaceStars(now);
- renderFutureMagnet(now);
- updateSpaceGravityVisual(now);
  if(jungleHabitatBack&&document.body.classList.contains("st-jungle"))jungleHabitatBack.style.backgroundPositionX=cssXFromVw(-(worldX-o)*.92);
  updateScreenExitShift();
  if(document.body.classList.contains("st-town")&&townHorizonLoop){
@@ -3421,8 +3427,8 @@ function gloop(t){
 function startJourneyAt(s){
  hideWeatherNotice();
  resetNumberCargoGame();
- clearFutureMagnetGame();
- clearSpaceGravityGame();
+ clearFutureBuilderGame();
+ clearSpaceGalaxyGame();
  clearRareEvent();
  resetSeaInteraction();
  stopStageWeather();
@@ -3471,249 +3477,341 @@ function futureQuestionOptions(question){
  const wrong=shuffle((question&&question.d||[]).map(x=>({e:x[0],t:x[1],ok:false})))[0];
  return shuffle([{e:question.a[0],t:question.a[1],ok:true},wrong].filter(Boolean));
 }
-function futureMagnetPlayable(){
- return !window.__PONO_TIER_LOCKED__&&isFutureStage()&&playing&&!driving&&!answerLocked&&!futureMagnetResolving&&
-  quiz.classList.contains("show")&&futureMagnetLayer&&!futureMagnetLayer.hidden;
+function futureBuilderPlayable(){
+ return !window.__PONO_TIER_LOCKED__&&isFutureStage()&&playing&&!driving&&!answerLocked&&!futureBuilderResolving&&!futureBuilderAutoPlaying&&
+  quiz.classList.contains("show")&&futureBuilderLayer&&!futureBuilderLayer.hidden;
 }
-function futureMagnetGuide(message){
- const guide=futureMagnetLayer&&futureMagnetLayer.querySelector(".future-magnet-guide");if(guide)guide.textContent=message;
+function futureBuilderGuide(message){
+ const guide=futureBuilderLayer&&futureBuilderLayer.querySelector(".future-builder-guide");if(guide)guide.textContent=message;
 }
-function clearFutureMagnetGame(){
- futureMagnetEpoch++;clearTimeout(futureMagnetTimer);futureMagnetTimer=0;
- futureMagnetOptions=[];futureMagnetCharge=0;futureMagnetToken=null;futureMagnetTokenStartedAt=0;futureMagnetNextAt=0;futureMagnetSpawnCount=0;
- futureMagnetResolving=false;futureMagnetWrongLocked=false;futureMagnetAssisted=false;
- document.body.classList.remove("future-magnet-active","future-magnet-complete");
- quiz.classList.remove("future-magnet-quiz");choicesEl.classList.remove("future-mode");choicesEl.setAttribute("aria-label","こたえを えらぶ");
- if(futureMagnetLayer){futureMagnetLayer.replaceChildren();futureMagnetLayer.hidden=true;}
+function clearFutureBuilderGame(){
+ futureBuilderEpoch++;clearTimeout(futureBuilderTimer);clearTimeout(futureBuilderStepTimer);futureBuilderTimer=0;futureBuilderStepTimer=0;
+ const active=futureBuilderOptions[futureBuilderPointerIndex];
+ if(active&&futureBuilderPointerId!==null){try{active.button.releasePointerCapture(futureBuilderPointerId);}catch(_){}}
+ futureBuilderOptions=[];futureBuilderSelectedIndex=-1;futureBuilderPointerId=null;futureBuilderPointerIndex=-1;
+ futureBuilderStartY=0;futureBuilderStartProgress=0;futureBuilderDragDistance=0;futureBuilderSuppressClick=false;
+ futureBuilderResolving=false;futureBuilderAssisted=false;futureBuilderAutoPlaying=false;futureBuilderTapQueue=0;futureBuilderTapIndex=-1;futureBuilderTapAnimating=false;
+ document.body.classList.remove("future-builder-active","future-builder-complete");
+ quiz.classList.remove("future-builder-quiz");choicesEl.classList.remove("future-builder-mode");choicesEl.setAttribute("aria-label","こたえを えらぶ");
+ if(futureBuilderLayer){futureBuilderLayer.replaceChildren();futureBuilderLayer.hidden=true;}
 }
-function updateFutureMagnetEnergy(){
- if(!futureMagnetLayer||futureMagnetLayer.hidden)return;
- const board=futureMagnetLayer.querySelector(".future-magnet-board"),meter=futureMagnetLayer.querySelector(".future-magnet-meter");
- if(board){for(let step=0;step<=FUTURE_MAGNET_GOAL;step++)board.classList.toggle("charge-"+step,step===futureMagnetCharge);}
- if(meter){meter.setAttribute("aria-valuenow",String(futureMagnetCharge));meter.setAttribute("aria-valuetext","エナジー "+futureMagnetCharge+"こ");
-  meter.querySelectorAll("span").forEach((cell,index)=>cell.classList.toggle("is-on",index<futureMagnetCharge));}
+function updateFutureBuilderHistory(current){
+ if(!futureBuilderLayer)return;
+ futureBuilderLayer.querySelectorAll(".future-builder-history b").forEach((building,index)=>building.classList.toggle("is-on",index<current));
+ const history=futureBuilderLayer.querySelector(".future-builder-history");if(history)history.setAttribute("aria-label","まちの ビル "+current+"ほん かんせい");
 }
-function removeFutureMagnetToken(){
- if(futureMagnetToken&&futureMagnetToken.el)futureMagnetToken.el.remove();futureMagnetToken=null;futureMagnetTokenStartedAt=0;
+function updateFutureBuilderEntry(entry,progress,options){
+ if(!entry)return;
+ progress=clamp(Number(progress)||0,0,1);entry.progress=progress;
+ const stage=Math.min(FUTURE_BUILDER_STEPS,Math.floor(progress*FUTURE_BUILDER_STEPS+.0001));
+ const previous=entry.visualStage||0;entry.visualStage=stage;
+ entry.button.style.setProperty("--builder-rise",(14+62*progress).toFixed(2)+"%");
+ for(let index=0;index<FUTURE_BUILDER_STEPS;index++)entry.button.style.setProperty("--builder-seg-"+(index+1),clamp(progress*FUTURE_BUILDER_STEPS-index,.06,1).toFixed(3));
+ for(let index=0;index<=FUTURE_BUILDER_STEPS;index++)entry.button.classList.toggle("builder-step-"+index,index===stage);
+ entry.button.querySelectorAll(".future-builder-meter i").forEach((cell,index)=>cell.classList.toggle("is-on",index<stage));
+ const meter=entry.progressBar;if(meter){meter.setAttribute("aria-valuenow",String(stage));meter.setAttribute("aria-valuetext",stage+"だん のびた");}
+ if(stage!==previous||!entry.button.hasAttribute("aria-label"))entry.button.setAttribute("aria-label",entry.o.t+"の ビルを のばす。いま "+stage+"だん");
+ if(!(options&&options.silent)&&stage>previous){tone(610+stage*170,0,.09,"triangle",.075);tone(820+stage*190,.06,.11,"sine",.045);}
 }
-function spawnFutureMagnetToken(now){
- if(!futureMagnetPlayable()||!futureMagnetLayer)return;
- removeFutureMagnetToken();
- const correct=futureMagnetOptions.find(entry=>entry.o.ok),wrong=futureMagnetOptions.find(entry=>!entry.o.ok);
- const showWrong=!futureMagnetWrongLocked&&wrong&&((futureMagnetSpawnCount+qSeg)%3===1);
- const entry=showWrong?wrong:correct;if(!entry)return;
- const button=document.createElement("button");button.type="button";button.tabIndex=-1;button.className="choice future-magnet-capsule";button.dataset.ok=entry.o.ok?"1":"0";
- button.setAttribute("aria-label",entry.o.t+"の カプセル");button.setAttribute("aria-hidden","true");
- const emoji=document.createElement("span");emoji.className="em";emoji.textContent=entry.o.e;
- const label=document.createElement("span");label.className="lb";label.textContent=entry.o.t;button.append(emoji,label);
- const lane=futureMagnetLayer.querySelector(".future-magnet-lane");if(lane)lane.appendChild(button);
- const gate=futureMagnetLayer.querySelector(".future-magnet-gate");if(gate)gate.setAttribute("aria-label","いまは "+entry.o.t+"。マグネットを おす");
- futureMagnetGuide(entry.o.t+"の カプセル！ まんなかで おそう");
- futureMagnetSpawnCount++;futureMagnetTokenStartedAt=now;futureMagnetToken={el:button,entry,progress:futureReducedMotion()?0.5:0};
+function resetFutureBuilderSelectionIfEmpty(entry){
+ if(entry&&entry.committed>0)return;
+ futureBuilderSelectedIndex=-1;futureBuilderOptions.forEach(item=>{item.button.classList.remove("is-paused");item.button.tabIndex=item.button.disabled?-1:0;item.button.setAttribute("aria-disabled",item.button.disabled?"true":"false");});
 }
-function renderFutureMagnet(now){
- if(!futureMagnetLayer||futureMagnetLayer.hidden||!document.body.classList.contains("future-magnet-active"))return;
- const gate=futureMagnetLayer.querySelector(".future-magnet-gate");
- if(!futureMagnetToken&&!futureMagnetResolving&&now>=futureMagnetNextAt)spawnFutureMagnetToken(now);
- if(!futureMagnetToken)return;
- const reduced=futureReducedMotion(),duration=(FUTURE_MAGNET_TRAVEL_MS[level]||1900)*(futureMagnetAssisted&&futureMagnetToken.entry.o.ok?1.35:1);
- const progress=reduced?0.5:clamp((now-futureMagnetTokenStartedAt)/duration,0,1);futureMagnetToken.progress=progress;
- futureMagnetToken.el.style.setProperty("--capsule-x",(-12+124*progress).toFixed(2)+"%");
- const ready=reduced||(progress>=(futureMagnetAssisted?0.28:0.38)&&progress<=(futureMagnetAssisted?0.72:0.62));
- if(gate)gate.classList.toggle("is-ready",ready);
- if((!reduced&&progress>=1)||(reduced&&now-futureMagnetTokenStartedAt>1600)){
-  removeFutureMagnetToken();futureMagnetNextAt=now+(reduced?140:90);
+function futureBuilderShouldLock(progress,committed){return Number(committed)>0||Number(progress)>=FUTURE_BUILDER_FIRST_LOCK;}
+function selectFutureBuilder(index,commitSelection){
+ const entry=futureBuilderOptions[index];if(!entry||entry.button.disabled)return false;
+ if(futureBuilderSelectedIndex>=0&&futureBuilderSelectedIndex!==index)return false;
+ if(commitSelection===false)return true;
+ futureBuilderSelectedIndex=index;
+ futureBuilderOptions.forEach((item,itemIndex)=>{
+  const paused=itemIndex!==index&&!item.button.disabled;item.button.classList.toggle("is-paused",paused);item.button.tabIndex=paused?-1:0;item.button.setAttribute("aria-disabled",paused?"true":"false");
+ });
+ return true;
+}
+function handleFutureBuilderPointerDown(event,index){
+ if(!futureBuilderPlayable()||futureBuilderPointerId!==null||event.button>0||!selectFutureBuilder(index,false))return;
+ const entry=futureBuilderOptions[index];ensureAC();futureBuilderPointerId=event.pointerId;futureBuilderPointerIndex=index;
+ futureBuilderStartY=event.clientY;futureBuilderStartProgress=entry.committed;futureBuilderDragDistance=0;entry.button.classList.add("is-pulling");
+ try{entry.button.setPointerCapture(event.pointerId);}catch(_){ }
+ futureBuilderGuide(entry.o.t+"の ビルを うえへ のばそう！");
+}
+function handleFutureBuilderPointerMove(event,index){
+ if(futureBuilderPointerId!==event.pointerId||futureBuilderPointerIndex!==index||futureBuilderResolving)return;
+ const entry=futureBuilderOptions[index],distance=futureBuilderStartY-event.clientY;
+ futureBuilderDragDistance=Math.max(futureBuilderDragDistance,Math.abs(distance));
+ const travel=Math.max(92,(window.innerHeight||390)*(FUTURE_BUILDER_DRAG_RATIO[level]||.42));
+ updateFutureBuilderEntry(entry,Math.max(entry.committed,futureBuilderStartProgress+distance/travel));
+ if(futureBuilderShouldLock(entry.progress,entry.committed)&&futureBuilderSelectedIndex<0)selectFutureBuilder(index,true);
+ if(Math.abs(distance)>4)event.preventDefault();
+}
+function finishFutureBuilderPointer(event,index,cancelled){
+ if(futureBuilderPointerId!==event.pointerId||futureBuilderPointerIndex!==index)return;
+ const entry=futureBuilderOptions[index];
+ try{entry.button.releasePointerCapture(event.pointerId);}catch(_){ }
+ entry.button.classList.remove("is-pulling");futureBuilderPointerId=null;futureBuilderPointerIndex=-1;
+ if(cancelled){
+  updateFutureBuilderEntry(entry,entry.committed,{silent:true});
+  resetFutureBuilderSelectionIfEmpty(entry);
+  return;
  }
+ if(futureBuilderDragDistance<=8){updateFutureBuilderEntry(entry,entry.committed,{silent:true});resetFutureBuilderSelectionIfEmpty(entry);return;}
+ event.preventDefault();futureBuilderSuppressClick=true;setTimeout(()=>{futureBuilderSuppressClick=false;},0);
+ if(!futureBuilderShouldLock(entry.progress,entry.committed)){updateFutureBuilderEntry(entry,0,{silent:true});resetFutureBuilderSelectionIfEmpty(entry);futureBuilderGuide("もうすこし うえへ のばそう！");return;}
+ if(!selectFutureBuilder(index,true)){updateFutureBuilderEntry(entry,entry.committed,{silent:true});return;}
+ if(entry.progress>entry.committed+.015)entry.committed=Math.min(1,Math.max(1/FUTURE_BUILDER_STEPS,Math.ceil(entry.progress*FUTURE_BUILDER_STEPS-.02)/FUTURE_BUILDER_STEPS));
+ updateFutureBuilderEntry(entry,entry.committed);
+ if(entry.committed>=.999)resolveFutureBuilder(entry);
 }
-function activateFutureMagnet(keyboardAssist){
- if(!futureMagnetPlayable())return;ensureAC();
- const board=futureMagnetLayer.querySelector(".future-magnet-board"),gate=futureMagnetLayer.querySelector(".future-magnet-gate");
- if(!futureMagnetToken){if(gate){gate.classList.remove("is-empty");void gate.offsetWidth;gate.classList.add("is-empty");}futureMagnetGuide("カプセルが きたら おそう！");return;}
- const p=futureMagnetToken.progress,inside=!!keyboardAssist||futureReducedMotion()||(p>=(futureMagnetAssisted?0.28:0.38)&&p<=(futureMagnetAssisted?0.72:0.62));
- if(!inside){if(gate){gate.classList.remove("is-empty");void gate.offsetWidth;gate.classList.add("is-empty");}futureMagnetGuide("まんなかで おしてね");tone(330,0,.07,"triangle",.04);return;}
- const token=futureMagnetToken,epoch=futureMagnetEpoch;futureMagnetResolving=true;token.el.classList.add(token.entry.o.ok?"is-captured":"is-rejected");
- if(!token.entry.o.ok){
-  futureMagnetWrongLocked=true;futureMagnetGuide("ちがう カプセルは ぽーん！");tone(280,0,.12,"sine",.055);tone(210,.08,.15,"triangle",.04);
-  onPick(token.el,{ok:false,mode:"future"});
-  futureMagnetTimer=setTimeout(()=>{futureMagnetTimer=0;if(epoch!==futureMagnetEpoch)return;removeFutureMagnetToken();futureMagnetResolving=false;futureMagnetNextAt=_nowMs()+120;},620);return;
+function drainFutureBuilderTapQueue(){
+ const entry=futureBuilderOptions[futureBuilderTapIndex];
+ if(!entry||entry.button.disabled||futureBuilderResolving||!futureBuilderTapQueue){futureBuilderTapQueue=0;futureBuilderTapIndex=-1;futureBuilderTapAnimating=false;return;}
+ futureBuilderTapQueue--;futureBuilderTapAnimating=true;entry.committed=Math.min(1,entry.committed+1/FUTURE_BUILDER_STEPS);updateFutureBuilderEntry(entry,entry.committed);
+ futureBuilderGuide(entry.committed>=.999?"ビル かんせい！":"あと "+(FUTURE_BUILDER_STEPS-Math.round(entry.committed*FUTURE_BUILDER_STEPS))+"だん！");
+ if(entry.committed>=.999){futureBuilderTapQueue=0;futureBuilderTapIndex=-1;futureBuilderTapAnimating=false;resolveFutureBuilder(entry);return;}
+ futureBuilderStepTimer=setTimeout(()=>{futureBuilderStepTimer=0;futureBuilderTapAnimating=false;if(futureBuilderTapQueue)drainFutureBuilderTapQueue();},futureReducedMotion()?90:220);
+}
+function stepFutureBuilder(index){
+ if(!futureBuilderPlayable()||!selectFutureBuilder(index))return;
+ const entry=futureBuilderOptions[index];if(futureBuilderTapIndex>=0&&futureBuilderTapIndex!==index)return;
+ futureBuilderTapIndex=index;futureBuilderTapQueue=Math.min(FUTURE_BUILDER_STEPS-Math.round(entry.committed*FUTURE_BUILDER_STEPS),futureBuilderTapQueue+1);
+ if(!futureBuilderTapAnimating)drainFutureBuilderTapQueue();
+}
+function autoCompleteFutureBuilder(index){
+ if(!futureBuilderPlayable()||!selectFutureBuilder(index))return;
+ clearTimeout(futureBuilderStepTimer);futureBuilderStepTimer=0;futureBuilderTapQueue=0;futureBuilderTapIndex=-1;futureBuilderTapAnimating=false;
+ const entry=futureBuilderOptions[index],epoch=futureBuilderEpoch;futureBuilderAutoPlaying=true;
+ const raise=()=>{
+  if(epoch!==futureBuilderEpoch||futureBuilderResolving)return;
+  entry.committed=Math.min(1,entry.committed+1/FUTURE_BUILDER_STEPS);updateFutureBuilderEntry(entry,entry.committed);
+  if(entry.committed>=.999){futureBuilderAutoPlaying=false;resolveFutureBuilder(entry);return;}
+  futureBuilderTimer=setTimeout(raise,futureReducedMotion()?80:170);
+ };
+ raise();
+}
+function handleFutureBuilderClick(event,index){
+ if(futureBuilderSuppressClick){event.preventDefault();futureBuilderSuppressClick=false;return;}
+ event.preventDefault();if(event.detail===0)autoCompleteFutureBuilder(index);else stepFutureBuilder(index);
+}
+function resolveFutureBuilder(entry){
+ if(!entry||futureBuilderResolving||entry.button.disabled||entry.committed<.999)return;
+ clearTimeout(futureBuilderStepTimer);futureBuilderStepTimer=0;futureBuilderTapQueue=0;futureBuilderTapIndex=-1;futureBuilderTapAnimating=false;
+ futureBuilderResolving=true;futureBuilderAutoPlaying=false;const epoch=futureBuilderEpoch,board=futureBuilderLayer.querySelector(".future-builder-board");
+ entry.button.classList.add(entry.o.ok?"is-complete":"is-rejected");
+ if(!entry.o.ok){
+  if(board)board.classList.add("is-rejected");futureBuilderGuide(entry.o.t+"じゃ なかったよ。もう ひとつを のばそう");
+  tone(300,0,.11,"sine",.055);tone(235,.09,.15,"triangle",.04);entry.button.classList.add("is-folding");entry.committed=0;updateFutureBuilderEntry(entry,0,{silent:true});
+  futureBuilderTimer=setTimeout(()=>{
+   futureBuilderTimer=0;if(epoch!==futureBuilderEpoch)return;onPick(entry.button,{ok:false,mode:"future"});
+   futureBuilderTimer=setTimeout(()=>{
+    futureBuilderTimer=0;if(epoch!==futureBuilderEpoch)return;entry.visualStage=0;entry.button.classList.remove("is-rejected","is-folding");
+    if(board)board.classList.remove("is-rejected");futureBuilderSelectedIndex=-1;futureBuilderResolving=false;
+    futureBuilderOptions.forEach(item=>{item.button.classList.remove("is-paused");item.button.tabIndex=item.button.disabled?-1:0;item.button.setAttribute("aria-disabled",item.button.disabled?"true":"false");});
+    const next=futureBuilderOptions.find(item=>!item.button.disabled);if(next)next.button.focus({preventScroll:true});
+   },560);
+  },520);return;
  }
- futureMagnetCharge=Math.min(FUTURE_MAGNET_GOAL,futureMagnetCharge+1);updateFutureMagnetEnergy();
- tone(650+futureMagnetCharge*170,0,.1,"triangle",.08);tone(900+futureMagnetCharge*220,.07,.13,"sine",.06);
- if(futureMagnetCharge<FUTURE_MAGNET_GOAL){
-  futureMagnetGuide("エナジー "+futureMagnetCharge+"こ！ あと "+(FUTURE_MAGNET_GOAL-futureMagnetCharge)+"こ");
-  futureMagnetTimer=setTimeout(()=>{futureMagnetTimer=0;if(epoch!==futureMagnetEpoch)return;removeFutureMagnetToken();futureMagnetResolving=false;futureMagnetNextAt=_nowMs()+100;},futureReducedMotion()?90:330);return;
- }
- if(board)board.classList.add("is-complete");document.body.classList.add("future-magnet-complete");futureMagnetGuide("まちじゅう てんとう！ リニア はっしん！");
- tone(220,0,.26,"sine",.09);tone(660,.11,.22,"triangle",.09);tone(1047,.25,.28,"sine",.08);confetti(10);
- futureMagnetTimer=setTimeout(()=>{
-  futureMagnetTimer=0;if(epoch!==futureMagnetEpoch)return;onPick(token.el,{ok:true,mode:"future"});
-  futureMagnetTimer=setTimeout(()=>{futureMagnetTimer=0;if(epoch===futureMagnetEpoch)clearFutureMagnetGame();},420);
- },futureReducedMotion()?120:650);
+ const hologram=board&&board.querySelector(".future-builder-hologram");if(hologram){hologram.replaceChildren();const emoji=document.createElement("span"),label=document.createElement("strong");emoji.textContent=entry.o.e;label.textContent=entry.o.t;hologram.append(emoji,label);}
+ document.body.classList.add("future-builder-complete");if(board)board.classList.add("is-city-awake");updateFutureBuilderHistory(qSeg+1);
+ futureBuilderGuide("まちが たちあがった！ リニア はっしん！");tone(220,0,.22,"sine",.08);tone(659,.1,.24,"triangle",.09);tone(1047,.24,.28,"sine",.075);confetti(10);
+ futureBuilderTimer=setTimeout(()=>{
+  futureBuilderTimer=0;if(epoch!==futureBuilderEpoch)return;onPick(entry.button,{ok:true,mode:"future"});
+  futureBuilderTimer=setTimeout(()=>{futureBuilderTimer=0;if(epoch===futureBuilderEpoch)clearFutureBuilderGame();},420);
+ },futureReducedMotion()?450:2600);
 }
-function assistFutureMagnetGame(){
- if(!futureMagnetLayer||futureMagnetLayer.hidden)return;
- futureMagnetAssisted=true;futureMagnetWrongLocked=true;futureMagnetLayer.querySelector(".future-magnet-board")?.classList.add("is-assisted");
- if(futureMagnetToken&&!futureMagnetToken.entry.o.ok){removeFutureMagnetToken();futureMagnetNextAt=_nowMs()+80;}
- futureMagnetGuide("せいかい カプセルが ゆっくりに なるよ");
+function assistFutureBuilderGame(){
+ if(!futureBuilderLayer||futureBuilderLayer.hidden||futureBuilderResolving)return;
+ clearTimeout(futureBuilderStepTimer);futureBuilderStepTimer=0;futureBuilderTapQueue=0;futureBuilderTapIndex=-1;futureBuilderTapAnimating=false;
+ futureBuilderAssisted=true;const wrong=futureBuilderOptions.find(entry=>!entry.o.ok),correct=futureBuilderOptions.find(entry=>entry.o.ok);if(!correct)return;
+ if(wrong){wrong.button.classList.add("dim");wrong.button.disabled=true;wrong.committed=0;wrong.visualStage=0;updateFutureBuilderEntry(wrong,0,{silent:true});}
+ futureBuilderSelectedIndex=correct.index;futureBuilderOptions.forEach(entry=>{const paused=entry!==correct&&!entry.button.disabled;entry.button.classList.toggle("is-paused",paused);entry.button.tabIndex=entry===correct?0:-1;entry.button.setAttribute("aria-disabled",entry===correct?"false":"true");});
+ correct.committed=Math.max(correct.committed,1/FUTURE_BUILDER_STEPS);updateFutureBuilderEntry(correct,correct.committed);correct.button.classList.add("glow");correct.button.focus({preventScroll:true});
+ futureBuilderLayer.querySelector(".future-builder-board")?.classList.add("is-assisted");futureBuilderGuide("ひかる ビルを うえへ のばそう！");
 }
-function renderFutureMagnetGame(){
- if(!futureMagnetLayer)return;
- futureMagnetOptions=futureQuestionOptions(cur).map(o=>({o}));futureMagnetCharge=0;futureMagnetWrongLocked=false;futureMagnetAssisted=false;futureMagnetResolving=false;futureMagnetSpawnCount=0;
- document.body.classList.add("future-magnet-active");quiz.classList.add("future-magnet-quiz");choicesEl.classList.add("future-mode");
- choicesEl.setAttribute("aria-label","こたえの カプセルを 3こ あつめる");futureMagnetLayer.hidden=false;futureMagnetLayer.replaceChildren();
- const board=document.createElement("div");board.className="future-magnet-board charge-0";board.setAttribute("aria-label","ミライ マグネット ゲート");
- const guide=document.createElement("div");guide.className="future-magnet-guide";guide.setAttribute("role","status");guide.setAttribute("aria-live","polite");guide.textContent="こたえ カプセルが まんなかに きたら おそう！";
- const city=document.createElement("div");city.className="future-magnet-city";city.setAttribute("aria-hidden","true");
- const meter=document.createElement("div");meter.className="future-magnet-meter";meter.setAttribute("role","progressbar");meter.setAttribute("aria-label","まちの エナジー");meter.setAttribute("aria-valuemin","0");meter.setAttribute("aria-valuemax",String(FUTURE_MAGNET_GOAL));
- for(let index=0;index<FUTURE_MAGNET_GOAL;index++)meter.appendChild(document.createElement("span"));
- const lane=document.createElement("div");lane.className="future-magnet-lane";
- const gate=document.createElement("button");gate.type="button";gate.className="future-magnet-gate";gate.setAttribute("aria-label","マグネットを おす");gate.innerHTML='<span aria-hidden="true">🧲</span><strong>マグネット！</strong>';
- bindTap(gate,event=>activateFutureMagnet(!!(event&&event.type==="click"&&event.detail===0)));
- const runner=document.createElement("div");runner.className="future-magnet-runner";runner.setAttribute("aria-hidden","true");runner.innerHTML='<i></i><i></i><i></i>';
- board.append(city,guide,meter,lane,gate,runner);futureMagnetLayer.appendChild(board);hintText.textContent="🧲 せいかい カプセルを 3こ あつめよう";
- futureMagnetNextAt=_nowMs()+(futureReducedMotion()?40:280);updateFutureMagnetEnergy();
+function renderFutureBuilderGame(){
+ if(!futureBuilderLayer)return;
+ futureBuilderOptions=[];futureBuilderSelectedIndex=-1;futureBuilderPointerId=null;futureBuilderPointerIndex=-1;futureBuilderResolving=false;futureBuilderAssisted=false;futureBuilderAutoPlaying=false;
+ document.body.classList.add("future-builder-active");quiz.classList.add("future-builder-quiz");choicesEl.classList.add("future-builder-mode");choicesEl.setAttribute("aria-label","こたえの ビルを うえへ のばす");
+ futureBuilderLayer.hidden=false;futureBuilderLayer.replaceChildren();
+ const board=document.createElement("div");board.className="future-builder-board";board.setAttribute("aria-label","ミライ ビルダー");
+ const guide=document.createElement("div");guide.className="future-builder-guide";guide.setAttribute("role","status");guide.setAttribute("aria-live","polite");guide.textContent="こたえの ビルを うえへ のばそう！";
+ const history=document.createElement("div");history.className="future-builder-history";history.setAttribute("role","status");for(let index=0;index<QN;index++)history.appendChild(document.createElement("b"));
+ const skyline=document.createElement("div");skyline.className="future-builder-skyline";skyline.setAttribute("aria-hidden","true");for(let index=0;index<8;index++)skyline.appendChild(document.createElement("i"));
+ const rail=document.createElement("div");rail.className="future-builder-light-rail";rail.setAttribute("aria-hidden","true");
+ const runner=document.createElement("div");runner.className="future-builder-runner";runner.setAttribute("aria-hidden","true");runner.innerHTML="<i></i><i></i><i></i>";
+ const hologram=document.createElement("div");hologram.className="future-builder-hologram";hologram.setAttribute("aria-hidden","true");
+ futureQuestionOptions(cur).forEach((o,index)=>{
+  const button=document.createElement("button");button.type="button";button.className="choice future-builder-tower tower-"+(index===0?"left":"right");button.dataset.ok=o.ok?"1":"0";
+  const structure=document.createElement("span");structure.className="future-builder-structure";structure.setAttribute("aria-hidden","true");
+  const base=document.createElement("span");base.className="future-builder-base";for(let segmentIndex=0;segmentIndex<FUTURE_BUILDER_STEPS;segmentIndex++){const segment=document.createElement("span");segment.className="future-builder-segment segment-"+(segmentIndex+1);segment.innerHTML="<i></i><i></i><i></i><i></i>";structure.appendChild(segment);}structure.appendChild(base);
+  const cap=document.createElement("span");cap.className="future-builder-cap";cap.innerHTML='<span class="em">'+o.e+'</span><span class="lb">'+o.t+'</span>';
+  const handle=document.createElement("span");handle.className="future-builder-handle";handle.innerHTML='<b aria-hidden="true">⇧</b><strong>のばす</strong>';
+  const meter=document.createElement("span");meter.className="future-builder-meter";meter.setAttribute("role","progressbar");meter.setAttribute("aria-label",o.t+"の ビル");meter.setAttribute("aria-valuemin","0");meter.setAttribute("aria-valuemax",String(FUTURE_BUILDER_STEPS));for(let cell=0;cell<FUTURE_BUILDER_STEPS;cell++)meter.appendChild(document.createElement("i"));
+  button.append(structure,cap,handle,meter);const entry={button,o,index,progress:0,committed:0,visualStage:0,progressBar:meter};futureBuilderOptions.push(entry);updateFutureBuilderEntry(entry,0,{silent:true});
+  button.addEventListener("pointerdown",event=>handleFutureBuilderPointerDown(event,index));button.addEventListener("pointermove",event=>handleFutureBuilderPointerMove(event,index));
+  button.addEventListener("pointerup",event=>finishFutureBuilderPointer(event,index,false));button.addEventListener("pointercancel",event=>finishFutureBuilderPointer(event,index,true));button.addEventListener("lostpointercapture",event=>finishFutureBuilderPointer(event,index,true));
+  button.addEventListener("click",event=>handleFutureBuilderClick(event,index));board.appendChild(button);
+ });
+ board.append(skyline,rail,runner,hologram,guide,history);futureBuilderLayer.appendChild(board);hintText.textContent="🏙️ こたえの ビルを うえへ のばそう";updateFutureBuilderHistory(qSeg);
 }
 function spaceQuestionOptions(question){
  const wrong=shuffle((question&&question.d||[]).map(x=>({e:x[0],t:x[1],ok:false})))[0];
  return shuffle([{e:question.a[0],t:question.a[1],ok:true},wrong].filter(Boolean));
 }
-function spaceGravityPlayable(){
- return !window.__PONO_TIER_LOCKED__&&isSpaceStage()&&playing&&!driving&&!answerLocked&&!spaceGravityResolving&&
-  quiz.classList.contains("show")&&spaceGravityLayer&&!spaceGravityLayer.hidden;
+function normalizeSpaceGalaxyAngle(angle){return Math.atan2(Math.sin(angle),Math.cos(angle));}
+function spaceGalaxyPlayable(){
+ return !window.__PONO_TIER_LOCKED__&&isSpaceStage()&&playing&&!driving&&!answerLocked&&!spaceGalaxyResolving&&
+  (spaceGalaxyPhase==="choose"||spaceGalaxyPhase==="wind")&&quiz.classList.contains("show")&&spaceGalaxyLayer&&!spaceGalaxyLayer.hidden;
 }
-function spaceGravityGuide(message){
- const guide=spaceGravityLayer&&spaceGravityLayer.querySelector(".space-gravity-guide");if(guide)guide.textContent=message;
+function spaceGalaxyGuide(message){
+ const guide=spaceGalaxyLayer&&spaceGalaxyLayer.querySelector(".space-galaxy-guide");if(guide)guide.textContent=message;
 }
-function clearSpaceGravityGame(){
- spaceGravityEpoch++;clearTimeout(spaceGravityTimer);spaceGravityTimer=0;
- const pad=spaceGravityLayer&&spaceGravityLayer.querySelector(".space-gravity-pad");
- const activePointer=spaceGravityPointerId;spaceGravityHolding=false;spaceGravityPointerId=null;
- if(pad&&activePointer!==null){try{pad.releasePointerCapture(activePointer);}catch(_){}}
- spaceGravityOptions=[];spaceGravityAngle=-2.35;spaceGravityHolding=false;spaceGravityPointerId=null;spaceGravityHoldStartedAt=0;spaceGravityEnergy=0;
- spaceGravityResolving=false;spaceGravityMisses=0;spaceGravityAssisted=false;spaceGravityKeyboardTarget=-1;spaceGravityLastFrameAt=0;
- document.body.classList.remove("space-gravity-active","space-gravity-complete");
- quiz.classList.remove("space-gravity-quiz");choicesEl.classList.remove("space-mode");choicesEl.setAttribute("aria-label","こたえを えらぶ");
- if(spaceGravityLayer){spaceGravityLayer.replaceChildren();spaceGravityLayer.hidden=true;}
+function clearSpaceGalaxyGame(){
+ spaceGalaxyEpoch++;clearTimeout(spaceGalaxyTimer);spaceGalaxyTimer=0;
+ spaceGalaxyOptions=[];spaceGalaxyRotation=0;spaceGalaxyPhase="idle";spaceGalaxyPointerId=null;spaceGalaxyPointerAngle=0;spaceGalaxyPointerX=0;spaceGalaxyPointerY=0;
+ spaceGalaxyDragged=false;spaceGalaxySuppressClick=false;spaceGalaxyWind=0;spaceGalaxyWindStage=0;spaceGalaxyCoreIndex=-1;
+ spaceGalaxyResolving=false;spaceGalaxyAssisted=false;spaceGalaxyKeyboardTarget=-1;
+ document.body.classList.remove("space-galaxy-active","space-galaxy-complete");quiz.classList.remove("space-galaxy-quiz");choicesEl.classList.remove("space-galaxy-mode");choicesEl.setAttribute("aria-label","こたえを えらぶ");
+ if(spaceGalaxyLayer){spaceGalaxyLayer.replaceChildren();spaceGalaxyLayer.hidden=true;}
 }
-function spaceAngleDelta(a,b){return Math.abs(Math.atan2(Math.sin(a-b),Math.cos(a-b)));}
-function spaceGravityWindow(){return spaceGravityAssisted?0.72:(spaceGravityMisses>=2?0.62:0.50);}
-function updateSpaceJourneyTrail(current){
- if(!spaceGravityLayer)return;
- spaceGravityLayer.querySelectorAll(".space-journey-star").forEach((star,index)=>star.classList.toggle("is-on",index<current));
- const trail=spaceGravityLayer.querySelector(".space-journey-trail");if(trail){trail.style.setProperty("--trail-fill",(clamp(current/QN,0,1)*100).toFixed(0)+"%");trail.classList.toggle("is-complete",current>=QN);trail.setAttribute("aria-label","せいざ "+current+"ほん かんせい");}
- spaceGravityLayer.querySelector(".space-gravity-board")?.classList.toggle("is-constellation-complete",current>=QN);
+function spaceGalaxyGeometry(){
+ const width=window.innerWidth||844,height=window.innerHeight||390;
+ return {width,height,cx:width*.48,cy:height*.49,rx:Math.min(width*.34,height*.72,380),ry:Math.min(height*.23,width*.16,155)};
 }
-function updateSpaceGravityVisual(now){
- if(!spaceGravityLayer||spaceGravityLayer.hidden)return;
- const board=spaceGravityLayer.querySelector(".space-gravity-board"),rocket=spaceGravityLayer.querySelector(".space-gravity-rocket"),pad=spaceGravityLayer.querySelector(".space-gravity-pad");if(!board||!rocket||!pad)return;
- const reduced=futureReducedMotion(),dt=spaceGravityLastFrameAt?clamp((now-spaceGravityLastFrameAt)/1000,0,.05):0;spaceGravityLastFrameAt=now;
- if(!reduced&&spaceGravityPlayable()){
-  const slow=spaceGravityMisses>=2?0.82:1,holdSlow=spaceGravityHolding?0.76:1;
-  spaceGravityAngle+=(Math.PI*2/((SPACE_GRAVITY_ORBIT_MS[level]||4100)/1000))*dt*slow*holdSlow;
-  if(spaceGravityHolding)spaceGravityEnergy=clamp((now-spaceGravityHoldStartedAt)/900,0,1);
- }
- const radius=1-(spaceGravityHolding?spaceGravityEnergy*.32:0),x=50+Math.cos(spaceGravityAngle)*14.5*radius,y=48+Math.sin(spaceGravityAngle)*15.5*radius;
- rocket.style.setProperty("--rocket-x",x.toFixed(2)+"%");rocket.style.setProperty("--rocket-y",y.toFixed(2)+"%");rocket.style.setProperty("--rocket-r",(spaceGravityAngle*180/Math.PI+90).toFixed(1)+"deg");
- const charge=Math.min(3,Math.ceil(spaceGravityEnergy*3));for(let step=0;step<=3;step++)pad.classList.toggle("charge-"+step,step===charge);pad.classList.toggle("is-holding",spaceGravityHolding);
- const meter=spaceGravityLayer.querySelector(".space-gravity-meter");if(meter){meter.setAttribute("aria-valuenow",String(charge));meter.setAttribute("aria-valuetext","じゅうりょく "+charge+"だんかい");meter.querySelectorAll("i").forEach((cell,index)=>cell.classList.toggle("is-on",index<charge));}
- const width=spaceGravityWindow();spaceGravityOptions.forEach((entry,index)=>{
-  const inWindow=spaceAngleDelta(spaceGravityAngle,SPACE_GRAVITY_PORTAL_ANGLES[index])<=width;
-  entry.button.classList.toggle("is-window",!entry.button.disabled&&inWindow);entry.button.classList.toggle("is-target",spaceGravityKeyboardTarget===index);
+function updateSpaceGalaxyJourney(current){
+ if(!spaceGalaxyLayer)return;
+ spaceGalaxyLayer.querySelectorAll(".space-galaxy-journey-star").forEach((star,index)=>star.classList.toggle("is-on",index<current));
+ const trail=spaceGalaxyLayer.querySelector(".space-galaxy-journey");if(trail){trail.style.setProperty("--trail-fill",(clamp(current/QN,0,1)*100).toFixed(0)+"%");trail.classList.toggle("is-complete",current>=QN);trail.setAttribute("aria-label","せいざ "+current+"ほん かんせい");}
+ spaceGalaxyLayer.querySelector(".space-galaxy-board")?.classList.toggle("is-constellation-complete",current>=QN);
+}
+function updateSpaceGalaxyVisual(){
+ if(!spaceGalaxyLayer||spaceGalaxyLayer.hidden)return;
+ const board=spaceGalaxyLayer.querySelector(".space-galaxy-board");if(!board)return;const geo=spaceGalaxyGeometry();
+ board.style.setProperty("--galaxy-cx",geo.cx.toFixed(1)+"px");board.style.setProperty("--galaxy-cy",geo.cy.toFixed(1)+"px");board.style.setProperty("--galaxy-rx",geo.rx.toFixed(1)+"px");board.style.setProperty("--galaxy-ry",geo.ry.toFixed(1)+"px");board.style.setProperty("--galaxy-angle",spaceGalaxyRotation.toFixed(4)+"rad");
+ const dock=board.querySelector(".space-galaxy-dock");if(dock){dock.style.left=(geo.cx+geo.rx).toFixed(1)+"px";dock.style.top=geo.cy.toFixed(1)+"px";}
+ let nearest=Math.PI;
+ spaceGalaxyOptions.forEach(entry=>{
+  const core=(spaceGalaxyPhase==="wind"||spaceGalaxyPhase==="burst")&&entry.index===spaceGalaxyCoreIndex;
+  const away=(spaceGalaxyPhase==="wind"||spaceGalaxyPhase==="burst")&&!core;
+  const angle=normalizeSpaceGalaxyAngle(entry.baseAngle+spaceGalaxyRotation);entry.angle=angle;
+  const x=core?geo.cx:geo.cx+Math.cos(angle)*geo.rx,y=core?geo.cy:geo.cy+Math.sin(angle)*geo.ry;
+  entry.button.style.left=x.toFixed(1)+"px";entry.button.style.top=y.toFixed(1)+"px";entry.button.classList.toggle("is-core",core);entry.button.classList.toggle("is-away",away);entry.button.tabIndex=away?-1:0;entry.button.setAttribute("aria-hidden",away?"true":"false");
+  const distance=Math.abs(angle);if(!entry.button.disabled)nearest=Math.min(nearest,distance);entry.button.classList.toggle("is-near-dock",spaceGalaxyPhase==="choose"&&!entry.button.disabled&&distance<.62);
+  entry.button.setAttribute("aria-label",core?(entry.o.t+"の ほし。ぎんがを まわす"):(entry.o.t+"の ほしを ドックへ まわす"));
  });
+ if(dock)dock.classList.toggle("is-ready",spaceGalaxyPhase==="choose"&&nearest<.62);
+ const power=clamp(spaceGalaxyWind/SPACE_GALAXY_WIND_GOAL,0,1),stage=Math.min(3,Math.floor(power*3+.0001));board.style.setProperty("--galaxy-power",(power*100).toFixed(1)+"%");
+ for(let index=0;index<=3;index++)board.classList.toggle("wind-"+index,index===stage);
+ const meter=board.querySelector(".space-galaxy-meter");if(meter){meter.setAttribute("aria-valuenow",String(Math.round(power*100)));meter.setAttribute("aria-valuetext","ぎんが パワー "+Math.round(power*100)+"パーセント");meter.querySelectorAll("i").forEach((cell,index)=>cell.classList.toggle("is-on",index<stage));}
 }
-function selectSpaceGravityTarget(index){
- const entry=spaceGravityOptions[index];if(!entry||entry.button.disabled||spaceGravityResolving)return;
- spaceGravityKeyboardTarget=index;spaceGravityGuide(entry.o.t+"を ねらうよ。きいろく ひかったら はなそう！");updateSpaceGravityVisual(_nowMs());
+function spaceGalaxyPointerAngleFor(event){
+ const geo=spaceGalaxyGeometry(),x=(event.clientX-geo.cx)/Math.max(1,geo.rx),y=(event.clientY-geo.cy)/Math.max(1,geo.ry);
+ if(Math.hypot(x,y)<.22)return null;return Math.atan2(y,x);
 }
-function pulseSpaceGravityReduced(){
- if(!spaceGravityPlayable())return;
- if(spaceGravityKeyboardTarget<0||!spaceGravityOptions[spaceGravityKeyboardTarget]||spaceGravityOptions[spaceGravityKeyboardTarget].button.disabled){spaceGravityGuide("ねらう ポータルを えらんでね");return;}
- spaceGravityEnergy=Math.min(1,spaceGravityEnergy+1/3);tone(620+Math.ceil(spaceGravityEnergy*3)*150,0,.1,"triangle",.075);updateSpaceGravityVisual(_nowMs());
- if(spaceGravityEnergy>=.99)resolveSpaceGravity(spaceGravityOptions[spaceGravityKeyboardTarget]);else spaceGravityGuide("じゅうりょく あと "+(3-Math.round(spaceGravityEnergy*3))+"かい！");
+function handleSpaceGalaxyPointerDown(event){
+ if(!spaceGalaxyPlayable()||event.button>0)return;const angle=spaceGalaxyPointerAngleFor(event);if(angle===null)return;
+ if(window.scrollX||window.scrollY)window.scrollTo(0,0);
+ ensureAC();spaceGalaxyPointerId=event.pointerId;spaceGalaxyPointerAngle=angle;spaceGalaxyPointerX=event.clientX;spaceGalaxyPointerY=event.clientY;spaceGalaxyDragged=false;
 }
-function startSpaceGravityHold(event){
- if(!spaceGravityPlayable()||spaceGravityHolding)return;
- if(futureReducedMotion()){pulseSpaceGravityReduced();return;}
- if(spaceGravityKeyboardTarget<0||!spaceGravityOptions[spaceGravityKeyboardTarget]||spaceGravityOptions[spaceGravityKeyboardTarget].button.disabled){spaceGravityGuide("まず こたえの ポータルを えらんでね");return;}
- if(event&&event.button>0)return;ensureAC();spaceGravityHolding=true;spaceGravityHoldStartedAt=_nowMs();spaceGravityEnergy=0;
- const pad=spaceGravityLayer.querySelector(".space-gravity-pad");
- if(event&&pad){event.preventDefault();spaceGravityPointerId=event.pointerId;try{pad.setPointerCapture(event.pointerId);}catch(_){}}
- spaceGravityGuide("ためて… ひかる ポータルで はなそう！");
+function handleSpaceGalaxyPointerMove(event){
+ if(spaceGalaxyPointerId!==event.pointerId||!spaceGalaxyPlayable())return;
+ if(window.scrollX||window.scrollY)window.scrollTo(0,0);
+ const move=Math.hypot(event.clientX-spaceGalaxyPointerX,event.clientY-spaceGalaxyPointerY);if(move<2)return;
+ const angle=spaceGalaxyPointerAngleFor(event);if(angle===null)return;let delta=normalizeSpaceGalaxyAngle(angle-spaceGalaxyPointerAngle);delta=clamp(delta,-.38,.38);
+ spaceGalaxyPointerAngle=angle;spaceGalaxyPointerX=event.clientX;spaceGalaxyPointerY=event.clientY;if(Math.abs(delta)<.004)return;
+ event.preventDefault();spaceGalaxyDragged=true;advanceSpaceGalaxyRotation(delta);
 }
-function releaseSpaceGravityHold(event){
- if(!spaceGravityHolding||(event&&spaceGravityPointerId!==null&&event.pointerId!==spaceGravityPointerId))return;
- const pad=spaceGravityLayer&&spaceGravityLayer.querySelector(".space-gravity-pad");
- spaceGravityHolding=false;spaceGravityPointerId=null;
- if(event&&pad){event.preventDefault();try{pad.releasePointerCapture(event.pointerId);}catch(_){}}
- if(spaceGravityEnergy<.5){spaceGravityEnergy=0;spaceGravityMisses++;spaceGravityGuide("もうすこし おして ためよう！");tone(310,0,.08,"triangle",.04);updateSpaceGravityVisual(_nowMs());return;}
- let entry=null;
- if(spaceGravityKeyboardTarget>=0){
-  const selected=spaceGravityOptions[spaceGravityKeyboardTarget],delta=spaceAngleDelta(spaceGravityAngle,SPACE_GRAVITY_PORTAL_ANGLES[spaceGravityKeyboardTarget]);
-  if(!event||(selected&&!selected.button.disabled&&delta<=spaceGravityWindow()))entry=selected;
+function finishSpaceGalaxyPointer(event){
+ if(spaceGalaxyPointerId!==event.pointerId)return;spaceGalaxyPointerId=null;
+ if(window.scrollX||window.scrollY)window.scrollTo(0,0);
+ if(spaceGalaxyDragged){spaceGalaxySuppressClick=true;setTimeout(()=>{spaceGalaxySuppressClick=false;},0);}spaceGalaxyDragged=false;
+}
+function advanceSpaceGalaxyRotation(delta){
+ if(!spaceGalaxyPlayable()||!Number.isFinite(delta)||Math.abs(delta)<.001)return;
+ // A tap fallback intentionally advances farther than one drag sample so children who
+ // cannot trace a circle still reach either star in three clear presses.
+ delta=clamp(delta,-1.20,1.20);
+ if(spaceGalaxyPhase==="wind"){
+  windSpaceGalaxy(delta);return;
  }
- if(!entry||entry.button.disabled){spaceGravityEnergy=0;spaceGravityMisses++;spaceGravityGuide("もういちど ぐるり！");tone(420,0,.08,"sine",.04);updateSpaceGravityVisual(_nowMs());return;}
- resolveSpaceGravity(entry);
-}
-function cancelSpaceGravityHold(event){
- if(!spaceGravityHolding||(event&&spaceGravityPointerId!==null&&event.pointerId!==spaceGravityPointerId))return;
- const pad=spaceGravityLayer&&spaceGravityLayer.querySelector(".space-gravity-pad");
- spaceGravityHolding=false;spaceGravityPointerId=null;spaceGravityEnergy=0;
- if(event&&pad){event.preventDefault();try{pad.releasePointerCapture(event.pointerId);}catch(_){}}
- spaceGravityGuide("もういちど おして ためよう！");updateSpaceGravityVisual(_nowMs());
-}
-function handleSpaceGravityPadClick(event){
- if(!event||event.detail!==0)return;
- event.preventDefault();pulseSpaceGravityReduced();
-}
-function resolveSpaceGravity(entry){
- if(!entry||!spaceGravityPlayable()||entry.button.disabled)return;
- spaceGravityResolving=true;spaceGravityHolding=false;const epoch=spaceGravityEpoch,board=spaceGravityLayer.querySelector(".space-gravity-board"),rocket=spaceGravityLayer.querySelector(".space-gravity-rocket");
- entry.button.classList.add("is-selected");if(board)board.classList.add(entry.o.ok?"is-warping":"is-rejected");
- if(rocket){
-  const rocketRect=rocket.getBoundingClientRect?rocket.getBoundingClientRect():null,portalRect=entry.button.getBoundingClientRect?entry.button.getBoundingClientRect():null;
-  if(rocketRect&&portalRect){rocket.style.setProperty("--warp-x",(portalRect.left+portalRect.width/2-rocketRect.left-rocketRect.width/2).toFixed(1)+"px");rocket.style.setProperty("--warp-y",(portalRect.top+portalRect.height/2-rocketRect.top-rocketRect.height/2).toFixed(1)+"px");rocket.style.setProperty("--warp-end-y",(portalRect.top+portalRect.height/2).toFixed(1)+"px");}
-  else{rocket.style.setProperty("--warp-x","28vw");rocket.style.setProperty("--warp-y",entry.index===0?"-12vh":"12vh");rocket.style.setProperty("--warp-end-y",entry.index===0?"32%":"61%");}
+ const previous=spaceGalaxyRotation,next=previous+delta;let docking=null;
+ for(const entry of spaceGalaxyOptions){
+  if(entry.button.disabled)continue;
+  const before=normalizeSpaceGalaxyAngle(entry.baseAngle+previous),after=normalizeSpaceGalaxyAngle(entry.baseAngle+next);
+  if(Math.abs(after)<=SPACE_GALAXY_DOCK_WINDOW||(before*after<=0&&Math.abs(before)+Math.abs(after)<.75)){docking=entry;break;}
  }
- if(entry.o.ok){
-  document.body.classList.add("space-gravity-complete");updateSpaceJourneyTrail(qSeg+1);spaceGravityGuide(qSeg===QN-1?"おおきな せいざが できた！":"じゅうりょく ブースト！");
-  tone(330,0,.2,"sine",.08);tone(784,.09,.18,"triangle",.09);tone(1319,.2,.27,"sine",.075);confetti(qSeg===QN-1?14:8);
- }else{spaceGravityGuide("ちがう ポータル！ ぐるりと もどるよ");tone(360,0,.13,"sine",.055);}
- spaceGravityTimer=setTimeout(()=>{
-  spaceGravityTimer=0;if(epoch!==spaceGravityEpoch)return;onPick(entry.button,{ok:entry.o.ok,mode:"space"});
-  if(entry.o.ok){spaceGravityTimer=setTimeout(()=>{spaceGravityTimer=0;if(epoch===spaceGravityEpoch)clearSpaceGravityGame();},460);}
-  else{spaceGravityTimer=setTimeout(()=>{spaceGravityTimer=0;if(epoch!==spaceGravityEpoch||!isSpaceStage()||!quiz.classList.contains("show"))return;
-   entry.button.classList.remove("is-selected");if(board)board.classList.remove("is-rejected");spaceGravityResolving=false;spaceGravityEnergy=0;spaceGravityKeyboardTarget=spaceGravityOptions.findIndex(item=>!item.button.disabled);updateSpaceGravityVisual(_nowMs());
-  },620);}
- },futureReducedMotion()?110:520);
+ spaceGalaxyRotation=docking?-docking.baseAngle:next;updateSpaceGalaxyVisual();if(docking)dockSpaceGalaxy(docking);
 }
-function assistSpaceGravityGame(){
- if(!spaceGravityLayer||spaceGravityLayer.hidden)return;
- spaceGravityAssisted=true;const wrong=spaceGravityOptions.find(entry=>!entry.o.ok&&!entry.button.disabled),correct=spaceGravityOptions.find(entry=>entry.o.ok&&!entry.button.disabled);
- if(wrong){wrong.button.classList.add("dim");wrong.button.disabled=true;}if(correct){correct.button.classList.add("glow");spaceGravityKeyboardTarget=correct.index;}
- spaceGravityLayer.querySelector(".space-gravity-board")?.classList.add("is-assisted");spaceGravityGuide("せいかい ポータルが おおきく ひかるよ");updateSpaceGravityVisual(_nowMs());
+function stepSpaceGalaxyPlanet(index,event){
+ if(spaceGalaxySuppressClick){if(event)event.preventDefault();spaceGalaxySuppressClick=false;return;}
+ if(!spaceGalaxyPlayable())return;if(event)event.preventDefault();
+ const entry=spaceGalaxyOptions[index];if(!entry||entry.button.disabled)return;
+ if(spaceGalaxyPhase==="wind"){windSpaceGalaxy(event&&event.detail===0?Math.PI/2:Math.PI/3);return;}
+ spaceGalaxyKeyboardTarget=index;
+ const target=-normalizeSpaceGalaxyAngle(entry.baseAngle+spaceGalaxyRotation),amount=event&&event.detail===0?1.15:.76;
+ advanceSpaceGalaxyRotation(clamp(target,-amount,amount));
 }
-function renderSpaceGravityGame(){
- if(!spaceGravityLayer)return;
- const opts=spaceQuestionOptions(cur);spaceGravityOptions=[];spaceGravityAngle=-2.35+(qSeg%2)*.35;spaceGravityHolding=false;spaceGravityPointerId=null;spaceGravityEnergy=0;spaceGravityResolving=false;spaceGravityMisses=0;spaceGravityAssisted=false;spaceGravityKeyboardTarget=-1;spaceGravityLastFrameAt=0;
- const reduced=futureReducedMotion();
- document.body.classList.add("space-gravity-active");quiz.classList.add("space-gravity-quiz");choicesEl.classList.add("space-mode");choicesEl.setAttribute("aria-label","じゅうりょくで こたえの ポータルへ とぶ");
- spaceGravityLayer.hidden=false;spaceGravityLayer.replaceChildren();const board=document.createElement("div");board.className="space-gravity-board";board.setAttribute("aria-label","じゅうりょく スイング");
- const guide=document.createElement("div");guide.className="space-gravity-guide";guide.setAttribute("role","status");guide.setAttribute("aria-live","polite");guide.textContent=reduced?"こたえを えらんで、まんなかを 3かい おそう！":"こたえを えらんで、おして ためよう！";
- const trail=document.createElement("div");trail.className="space-journey-trail";trail.setAttribute("aria-label","せいざ "+qSeg+"ほん かんせい");for(let index=0;index<QN;index++){const star=document.createElement("span");star.className="space-journey-star";star.textContent="✦";trail.appendChild(star);}
- const orbit=document.createElement("div");orbit.className="space-gravity-orbit";orbit.setAttribute("aria-hidden","true");
- const planet=document.createElement("div");planet.className="space-gravity-planet";planet.setAttribute("aria-hidden","true");
- const rocket=document.createElement("img");rocket.className="space-gravity-rocket";rocket.src=ASSETS.space.rocket;rocket.alt="";rocket.decoding="async";
- opts.forEach((o,index)=>{
-  const button=document.createElement("button");button.type="button";button.className="choice space-gravity-portal";button.dataset.ok=o.ok?"1":"0";button.style.setProperty("--portal-y",index===0?"32%":"61%");button.setAttribute("aria-label",o.t+"の ポータルを ねらう");
+function dockSpaceGalaxy(entry){
+ if(!entry||spaceGalaxyPhase!=="choose"||entry.button.disabled)return;
+ const board=spaceGalaxyLayer.querySelector(".space-galaxy-board"),epoch=spaceGalaxyEpoch;entry.button.classList.add(entry.o.ok?"is-docked":"is-rejected");
+ if(!entry.o.ok){
+  spaceGalaxyResolving=true;if(board)board.classList.add("is-rejected");spaceGalaxyGuide(entry.o.t+"じゃ なかったよ。もう ひとつを まわそう");tone(310,0,.12,"sine",.05);onPick(entry.button,{ok:false,mode:"space"});
+  spaceGalaxyTimer=setTimeout(()=>{
+   spaceGalaxyTimer=0;if(epoch!==spaceGalaxyEpoch)return;entry.button.classList.remove("is-rejected","is-docked");if(board)board.classList.remove("is-rejected");
+   spaceGalaxyRotation+=entry.baseAngle<0?.45:-.45;spaceGalaxyResolving=false;spaceGalaxyKeyboardTarget=spaceGalaxyOptions.findIndex(item=>!item.button.disabled);updateSpaceGalaxyVisual();
+  },660);return;
+ }
+ spaceGalaxyPhase="wind";spaceGalaxyCoreIndex=entry.index;spaceGalaxyWind=0;spaceGalaxyWindStage=0;if(board)board.classList.add("is-winding");
+ spaceGalaxyOptions.forEach(item=>{if(item!==entry)item.button.disabled=true;});entry.button.classList.add("is-docked");entry.button.focus({preventScroll:true});spaceGalaxyGuide("そのまま ぐるぐる！ ぎんがを まきあげよう！");tone(523,0,.15,"triangle",.075);tone(784,.1,.18,"sine",.06);updateSpaceGalaxyVisual();
+}
+function windSpaceGalaxy(delta){
+ if(spaceGalaxyPhase!=="wind"||spaceGalaxyResolving||!Number.isFinite(delta))return;
+ if(!futureReducedMotion())spaceGalaxyRotation+=delta;advanceSpaceGalaxyWind(Math.abs(delta));
+}
+function advanceSpaceGalaxyWind(amount){
+ if(spaceGalaxyPhase!=="wind"||spaceGalaxyResolving||!Number.isFinite(amount))return;
+ spaceGalaxyWind=Math.min(SPACE_GALAXY_WIND_GOAL,spaceGalaxyWind+clamp(Math.abs(amount),0,1.60));
+ const stage=Math.min(3,Math.floor(spaceGalaxyWind/SPACE_GALAXY_WIND_GOAL*3+.0001));if(stage>spaceGalaxyWindStage){spaceGalaxyWindStage=stage;tone(570+stage*190,0,.12,"triangle",.085);tone(820+stage*210,.08,.14,"sine",.055);}
+ updateSpaceGalaxyVisual();spaceGalaxyGuide(stage<3?(stage?"ぎんが パワー "+stage+"だん！ もっと ぐるぐる！":"ぎんがが ひかってきた！ もっと ぐるぐる！"):"ぎんが かんせい！");if(spaceGalaxyWind>=SPACE_GALAXY_WIND_GOAL-.001)resolveSpaceGalaxyCorrect();
+}
+function resolveSpaceGalaxyCorrect(){
+ if(spaceGalaxyResolving||spaceGalaxyPhase!=="wind")return;const entry=spaceGalaxyOptions[spaceGalaxyCoreIndex];if(!entry)return;
+ spaceGalaxyResolving=true;spaceGalaxyPhase="burst";const epoch=spaceGalaxyEpoch,board=spaceGalaxyLayer.querySelector(".space-galaxy-board");
+ document.body.classList.add("space-galaxy-complete");if(board)board.classList.add("is-bursting");updateSpaceGalaxyJourney(qSeg+1);updateSpaceGalaxyVisual();
+ spaceGalaxyGuide(qSeg===QN-1?"おおきな せいざが うまれた！":"ぎんが ブースト！");tone(247,0,.25,"sine",.09);tone(784,.12,.24,"triangle",.095);tone(1319,.3,.3,"sine",.08);confetti(qSeg===QN-1?14:8);
+ spaceGalaxyTimer=setTimeout(()=>{
+  spaceGalaxyTimer=0;if(epoch!==spaceGalaxyEpoch)return;onPick(entry.button,{ok:true,mode:"space"});
+  spaceGalaxyTimer=setTimeout(()=>{spaceGalaxyTimer=0;if(epoch===spaceGalaxyEpoch)clearSpaceGalaxyGame();},430);
+ },futureReducedMotion()?300:1080);
+}
+function assistSpaceGalaxyGame(){
+ if(!spaceGalaxyLayer||spaceGalaxyLayer.hidden||spaceGalaxyResolving)return;spaceGalaxyAssisted=true;
+ if(spaceGalaxyPhase==="wind"){windSpaceGalaxy(SPACE_GALAXY_WIND_GOAL/3);return;}
+ const wrong=spaceGalaxyOptions.find(entry=>!entry.o.ok),correct=spaceGalaxyOptions.find(entry=>entry.o.ok);if(!correct)return;
+ if(wrong){wrong.button.classList.add("dim");wrong.button.disabled=true;}correct.button.classList.add("glow");spaceGalaxyKeyboardTarget=correct.index;
+ const near=Math.sign(correct.baseAngle)*.58;spaceGalaxyRotation=near-correct.baseAngle;spaceGalaxyLayer.querySelector(".space-galaxy-board")?.classList.add("is-assisted");
+ spaceGalaxyGuide("ひかる ほしを ドックへ すこし まわそう！");correct.button.focus({preventScroll:true});updateSpaceGalaxyVisual();
+}
+function renderSpaceGalaxyGame(){
+ if(!spaceGalaxyLayer)return;
+ spaceGalaxyOptions=[];spaceGalaxyRotation=qSeg%2?.12:-.12;spaceGalaxyPhase="choose";spaceGalaxyPointerId=null;spaceGalaxyDragged=false;spaceGalaxyWind=0;spaceGalaxyWindStage=0;spaceGalaxyCoreIndex=-1;spaceGalaxyResolving=false;spaceGalaxyAssisted=false;spaceGalaxyKeyboardTarget=-1;
+ document.body.classList.add("space-galaxy-active");quiz.classList.add("space-galaxy-quiz");choicesEl.classList.add("space-galaxy-mode");choicesEl.setAttribute("aria-label","ぎんがを まわして こたえの ほしを ドックへ はこぶ");
+ spaceGalaxyLayer.hidden=false;spaceGalaxyLayer.replaceChildren();const board=document.createElement("div");board.className="space-galaxy-board is-idle";board.setAttribute("aria-label","くるくる ぎんが ドック");
+ const guide=document.createElement("div");guide.className="space-galaxy-guide";guide.setAttribute("role","status");guide.setAttribute("aria-live","polite");guide.textContent="ほしの わを ゆびで まわそう！";
+ const trail=document.createElement("div");trail.className="space-galaxy-journey";trail.setAttribute("role","status");for(let index=0;index<QN;index++){const star=document.createElement("span");star.className="space-galaxy-journey-star";star.textContent="✦";trail.appendChild(star);}
+ const ring=document.createElement("div");ring.className="space-galaxy-ring";ring.setAttribute("aria-hidden","true");for(let index=0;index<42;index++){const star=document.createElement("i"),angle=index*Math.PI*2/42,radius=44-(index%4)*3;star.style.setProperty("--star-x",(50+Math.cos(angle)*radius).toFixed(2)+"%");star.style.setProperty("--star-y",(50+Math.sin(angle)*(radius-3)).toFixed(2)+"%");ring.appendChild(star);}
+ const arms=document.createElement("div");arms.className="space-galaxy-arms";arms.setAttribute("aria-hidden","true");arms.innerHTML="<i></i><i></i><i></i>";
+ const core=document.createElement("div");core.className="space-galaxy-core";core.setAttribute("aria-hidden","true");core.textContent="✦";
+ const dock=document.createElement("div");dock.className="space-galaxy-dock";dock.setAttribute("aria-hidden","true");dock.innerHTML="<span>◉</span><strong>ドック</strong>";
+ spaceQuestionOptions(cur).forEach((o,index)=>{
+  const button=document.createElement("button");button.type="button";button.className="choice space-galaxy-planet-choice";button.dataset.ok=o.ok?"1":"0";
   const emoji=document.createElement("span");emoji.className="em";emoji.textContent=o.e;const label=document.createElement("span");label.className="lb";label.textContent=o.t;button.append(emoji,label);
-  const entry={button,o,index};bindTap(button,()=>selectSpaceGravityTarget(index));board.appendChild(button);spaceGravityOptions.push(entry);
+  const entry={button,o,index,baseAngle:SPACE_GALAXY_PLANET_ANGLES[index],angle:SPACE_GALAXY_PLANET_ANGLES[index]};spaceGalaxyOptions.push(entry);button.addEventListener("click",event=>stepSpaceGalaxyPlanet(index,event));board.appendChild(button);
  });
- const pad=document.createElement("button");pad.type="button";pad.className="space-gravity-pad charge-0";pad.setAttribute("aria-label",futureReducedMotion()?"3かい おして じゅうりょくを ためる":"おしつづけて じゅうりょくを ためる");pad.innerHTML='<span aria-hidden="true">◎</span><strong>じゅうりょく</strong>';
- const meter=document.createElement("div");meter.className="space-gravity-meter";meter.setAttribute("role","progressbar");meter.setAttribute("aria-label","じゅうりょく パワー");meter.setAttribute("aria-valuemin","0");meter.setAttribute("aria-valuemax","3");for(let index=0;index<3;index++)meter.appendChild(document.createElement("i"));
- const finale=document.createElement("div");finale.className="space-constellation-bloom";finale.setAttribute("aria-hidden","true");for(let index=0;index<5;index++)finale.appendChild(document.createElement("b"));for(let index=0;index<4;index++)finale.appendChild(document.createElement("i"));
- pad.addEventListener("pointerdown",startSpaceGravityHold);pad.addEventListener("pointerup",releaseSpaceGravityHold);pad.addEventListener("pointercancel",cancelSpaceGravityHold);pad.addEventListener("lostpointercapture",cancelSpaceGravityHold);pad.addEventListener("click",handleSpaceGravityPadClick);
- board.append(guide,trail,orbit,planet,rocket,pad,meter,finale);spaceGravityLayer.appendChild(board);hintText.textContent=reduced?"🪐 こたえを えらんで、まんなかを 3かい おそう":"🪐 こたえを えらんで、きいろく ひかったら はなそう";
- updateSpaceJourneyTrail(qSeg);updateSpaceGravityVisual(_nowMs());
+ const meter=document.createElement("div");meter.className="space-galaxy-meter";meter.setAttribute("role","progressbar");meter.setAttribute("aria-label","ぎんが パワー");meter.setAttribute("aria-valuemin","0");meter.setAttribute("aria-valuemax","100");for(let index=0;index<3;index++)meter.appendChild(document.createElement("i"));
+ const rocket=document.createElement("img");rocket.className="space-galaxy-rocket";rocket.src=ASSETS.space.rocket;rocket.alt="";rocket.decoding="async";
+ const finale=document.createElement("div");finale.className="space-galaxy-finale";finale.setAttribute("aria-hidden","true");for(let index=0;index<5;index++)finale.appendChild(document.createElement("b"));for(let index=0;index<4;index++)finale.appendChild(document.createElement("i"));
+ board.addEventListener("mousedown",event=>event.preventDefault());board.addEventListener("pointerdown",handleSpaceGalaxyPointerDown);board.append(ring,arms,core,dock,meter,rocket,finale,guide,trail);spaceGalaxyLayer.appendChild(board);
+ hintText.textContent="🌌 こたえの ほしを ドックへ まわそう";updateSpaceGalaxyJourney(qSeg);updateSpaceGalaxyVisual();
 }
 function renderChoiceCards(){
  let opts=[{e:cur.a[0],t:cur.a[1],ok:true},...cur.d.map(x=>({e:x[0],t:x[1],ok:false}))];
@@ -3833,14 +3931,14 @@ function showQuiz(){
  setDriverMood("thinking");
  cancelSeaPointer();clearSeaBubbleGame();clearSeaRescueMessage();
  resetNumberCargoGame();
- clearFutureMagnetGame();
- clearSpaceGravityGame();
+ clearFutureBuilderGame();
+ clearSpaceGalaxyGame();
  cur=qList[qSeg];missInQ=0;answerLocked=false;
  qText.textContent=isSeaStage()?("あわの ともだちを たすけよう！ "+cur.q):(cur.helper?(cur.helper.name+"を たすけよう！ "+cur.q):cur.q);
  hintText.textContent=helpItems.length?"🍀 おたすけを つかえるよ":"";
  choicesEl.replaceChildren();
  quiz.classList.add("show");
- if(isNumberCargoQuestion())renderNumberCargoGame();else if(isSeaStage())renderSeaBubbleGame();else if(isFutureStage())renderFutureMagnetGame();else if(isSpaceStage())renderSpaceGravityGame();else renderChoiceCards();
+ if(isNumberCargoQuestion())renderNumberCargoGame();else if(isSeaStage())renderSeaBubbleGame();else if(isFutureStage())renderFutureBuilderGame();else if(isSpaceStage())renderSpaceGalaxyGame();else renderChoiceCards();
  speak(cur.s||cur.q);
 }
 function onPick(el,o){
@@ -3871,7 +3969,7 @@ function onPick(el,o){
    updateNumberCargoGame();
   }else{
    el.classList.add("ng","dim");
-   if(el.classList.contains("sea-answer-bubble")||el.classList.contains("future-magnet-capsule")||el.classList.contains("space-gravity-portal"))el.disabled=true;
+   if(el.classList.contains("sea-answer-bubble")||el.classList.contains("future-builder-tower")||el.classList.contains("space-galaxy-planet-choice"))el.disabled=true;
   }
   const t=tunnels[qSeg];
   if(t){t.classList.add("shake");setTimeout(()=>t.classList.remove("shake"),520);}
@@ -3914,8 +4012,8 @@ function proceed(){
 function ending(){
  hideWeatherNotice();
  resetSeaInteraction();
- clearFutureMagnetGame();
- clearSpaceGravityGame();
+ clearFutureBuilderGame();
+ clearSpaceGalaxyGame();
  clearRareEvent();
  stopStageWeather();setWeatherPresentation("clear");
  clearTunnelFriendGame();
@@ -3940,8 +4038,8 @@ function ending(){
 function openMap(msg){
  hideWeatherNotice();
  resetNumberCargoGame();
- clearFutureMagnetGame();
- clearSpaceGravityGame();
+ clearFutureBuilderGame();
+ clearSpaceGalaxyGame();
  clearRareEvent();
  resetSeaInteraction();
  stopStageWeather();setWeatherPresentation("clear");
@@ -3997,7 +4095,7 @@ function nazonazoAdminPreviewArm(stageId){
   return false;
  }
  const index=NAZONAZO_ADMIN_STAGE_INDEX[stageId];
- resetSeaInteraction();clearFutureMagnetGame();clearSpaceGravityGame();
+ resetSeaInteraction();clearFutureBuilderGame();clearSpaceGalaxyGame();
  nazonazoAdminPreviewStageIndex=index;
  stg=index;loop=0;playing=false;driving=false;pending=null;vel=0;
  stopStageWeather();
@@ -4128,6 +4226,7 @@ document.addEventListener("visibilitychange",()=>{
 window.addEventListener("resize",scheduleRainParticleRebuild,{passive:true});
 window.addEventListener("resize",syncNumberCargoColumns,{passive:true});
 window.addEventListener("resize",handleSeaViewportChange,{passive:true});
+window.addEventListener("resize",updateSpaceGalaxyVisual,{passive:true});
 window.addEventListener("pageshow",()=>{ensureAC();updateRainParticleVisibility(false);});
 window.addEventListener("focus",()=>{ensureAC();});
 window.addEventListener("pagehide",()=>{hideWeatherNotice();pauseSeaInput();clearTimeout(rainParticleResizeTimer);safeSuspend();});
