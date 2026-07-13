@@ -12,9 +12,9 @@ const html = read("nazonazo-tunnel/index.html");
 const css = read("nazonazo-tunnel/styles.css");
 const js = read("nazonazo-tunnel/js/game.js");
 
-assert.match(html, /styles\.css\?v=20260713-1289/,
+assert.match(html, /styles\.css\?v=20260714-1291/,
   "the final sea/future/space visual pass needs the 1285 stylesheet cache key");
-assert.match(html, /js\/game\.js\?v=20260713-1289/,
+assert.match(html, /js\/game\.js\?v=20260714-1291/,
   "the final sea/future/space interaction pass needs the 1285 script cache key");
 
 function extractFunction(source, name) {

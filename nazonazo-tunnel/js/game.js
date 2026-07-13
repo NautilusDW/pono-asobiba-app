@@ -6,6 +6,33 @@
     KANJI_NUM, CNT_EMO, JLEGS, SLEGS, JSIZE, SSIZE, SPEED
   } = data;
 
+/* ================= generated quiz illustrations ================= */
+function quizArtKey(emoji,label){return String(emoji||"")+"|"+String(label||"");}
+function quizArtItems(){
+ const registry=window.PonoNazonazoQuizArt||{};
+ return registry.items&&typeof registry.items==="object"?registry.items:registry;
+}
+function resolveQuizArt(emoji,label){
+ const item=quizArtItems()[quizArtKey(emoji,label)];
+ const src=typeof item==="string"?item:(item&&item.src);
+ return typeof src==="string"&&src?src:"";
+}
+function createQuizArt(emoji,label,extraClass,srcOverride){
+ const holder=document.createElement("span");
+ holder.className="em quiz-art"+(extraClass?" "+extraClass:"");
+ holder.dataset.quizArtKey=quizArtKey(emoji,label);
+ holder.setAttribute("aria-hidden","true");
+ const image=document.createElement("img");
+ image.className="quiz-art-image";image.alt="";image.decoding="async";image.draggable=false;
+ const fallback=document.createElement("span");
+ fallback.className="quiz-art-fallback";fallback.textContent=emoji||"❓";fallback.hidden=true;
+ const revealFallback=()=>{image.hidden=true;fallback.hidden=false;holder.classList.add("is-fallback");};
+ image.addEventListener("error",revealFallback,{once:true});
+ const src=typeof srcOverride==="string"&&srcOverride?srcOverride:resolveQuizArt(emoji,label);
+ if(src)image.src=src;else revealFallback();
+ holder.append(image,fallback);return holder;
+}
+
 /* ================= seeded rng & svg helpers ================= */
 function mulberry32(s){return function(){s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
 function svgURI(w,h,body){
@@ -404,7 +431,10 @@ function openZukan(){
    const c=document.createElement("div");
    const has=zkReg.has(zkKey(it.e,it.t));
    c.className="zkCell"+(has?"":" no")+(g.rare?" rareC":"");
-   c.innerHTML='<span class="ze">'+(has?it.e:"❓")+'</span><span class="zt">'+(has?it.t:"？？？")+'</span>';
+   const visual=has?createQuizArt(it.e,it.t,"ze"):document.createElement("span");
+   if(!has){visual.className="ze";visual.textContent="❓";visual.setAttribute("aria-hidden","true");}
+   const label=document.createElement("span");label.className="zt";label.textContent=has?it.t:"？？？";
+   c.append(visual,label);
    gr.appendChild(c);
   });
   gd.appendChild(gr);body.appendChild(gd);
@@ -1804,7 +1834,7 @@ function clearSeaRescueMessage(){
 function showSeaRescueMessage(passenger,index){
  if(!seaRescueMessage||!passenger)return;
  clearSeaRescueMessage();
- const friend=document.createElement("span");friend.className="sea-rescue-friend";friend.textContent=passenger.e||"🐟";friend.setAttribute("aria-hidden","true");
+ const friend=createQuizArt(passenger.e||"🐟",passengerLabel(passenger)||"うみの ともだち","sea-rescue-friend",passenger.img||passenger.normal||passenger.happy);
  const line=document.createElement("span");line.textContent=SEA_RESCUE_LINES[index%SEA_RESCUE_LINES.length];
  seaRescueMessage.append(friend,line);seaRescueMessage.hidden=false;
  announce((passengerLabel(passenger)||"うみの ともだち")+"。"+line.textContent);
@@ -2370,9 +2400,9 @@ function renderSeaBubbleGame(){
   const size=clamp(baseSize+[-3,3][index],64,96);button.style.setProperty("--sea-target-size",size.toFixed(1)+"px");
   button.style.setProperty("--sea-target-hue",String(184+index*24));
   const visual=document.createElement("span");visual.className="sea-answer-visual";
-  const emoji=document.createElement("span");emoji.className="em sea-captive";emoji.textContent=o.e;
+  const art=createQuizArt(o.e,o.t,"sea-captive");
   const label=document.createElement("span");label.className="lb";label.textContent=o.t;
-  visual.append(emoji,label);button.appendChild(visual);
+  visual.append(art,label);button.appendChild(visual);
   bindTap(button,()=>startSeaKeyboardTargetFire(button,o));
   seaAnswerLayer.appendChild(button);
   const period=[5.8,5.1,4.5][level]||5.1;
@@ -3746,7 +3776,7 @@ function renderFutureCapsuleGame(){
  futureQuestionOptions(cur).forEach((o,index)=>{
   const button=document.createElement("button");button.type="button";button.className="choice future-capsule-lane lane-"+(index+1);button.dataset.ok=o.ok?"1":"0";button.setAttribute("aria-label",o.t+"の カプセル");button.setAttribute("aria-pressed","false");
   const capsule=document.createElement("span");capsule.className="future-capsule";capsule.setAttribute("aria-hidden","true");
-  const emoji=document.createElement("span");emoji.className="em";emoji.textContent=o.e;const label=document.createElement("span");label.className="lb";label.textContent=o.t;capsule.append(emoji,label);button.appendChild(capsule);
+  const art=createQuizArt(o.e,o.t);const label=document.createElement("span");label.className="lb";label.textContent=o.t;capsule.append(art,label);button.appendChild(capsule);
   const entry={button,o,index,x:50};futureCapsuleOptions.push(entry);button.addEventListener("click",()=>selectFutureCapsule(index));lanes.appendChild(button);
  });
  const runner=document.createElement("div");runner.className="future-capsule-runner";runner.setAttribute("aria-hidden","true");runner.innerHTML="<i></i><i></i><i></i>";
@@ -3873,7 +3903,7 @@ function renderSpaceGalaxyGame(){
  const choices=document.createElement("div");choices.className="space-galaxy-choices";
  spaceQuestionOptions(cur).forEach((o,index)=>{
   const button=document.createElement("button");button.type="button";button.className="choice space-galaxy-planet-choice";button.dataset.ok=o.ok?"1":"0";button.setAttribute("aria-pressed","false");button.setAttribute("aria-label",o.t+"の ほし");
-  const emoji=document.createElement("span");emoji.className="em";emoji.textContent=o.e;const label=document.createElement("span");label.className="lb";label.textContent=o.t;button.append(emoji,label);
+  const art=createQuizArt(o.e,o.t);const label=document.createElement("span");label.className="lb";label.textContent=o.t;button.append(art,label);
   const entry={button,o,index};spaceGalaxyOptions.push(entry);button.addEventListener("click",()=>selectSpaceGalaxyAnswer(index));choices.appendChild(button);
  });
  const engine=document.createElement("button");engine.type="button";engine.className="space-galaxy-engine";engine.disabled=true;engine.setAttribute("aria-label","スター エンジンを ぐるぐる まわす");
@@ -3965,7 +3995,7 @@ function renderChoiceCards(){
  opts.forEach(o=>{const b=document.createElement("button");b.type="button";b.className="choice";
   b.setAttribute("aria-label",o.t);
   b.dataset.ok=o.ok?"1":"0";
-  b.innerHTML='<span class="em">'+o.e+'</span><span class="lb">'+o.t+'</span>';
+  const art=createQuizArt(o.e,o.t);const label=document.createElement("span");label.className="lb";label.textContent=o.t;b.append(art,label);
   bindTap(b,()=>onPick(b,o));
   choicesEl.appendChild(b);});
 }
@@ -3990,7 +4020,7 @@ function renderNumberCargoGame(){
   button.style.setProperty("--cargo-delay",(-((i*37)%13)/10).toFixed(1)+"s");
   button.style.setProperty("--cargo-drift-x",((i%3)-1)*(4+(i%2)*2)+"px");
   button.style.setProperty("--cargo-drift-y",(-4-(i%3)*2)+"px");
-  const art=document.createElement("span");art.className="number-cargo-art";art.textContent=theme.e;art.setAttribute("aria-hidden","true");button.appendChild(art);
+  const art=createQuizArt(theme.e,theme.name,"number-cargo-art");button.appendChild(art);
   if(prefersReducedMotionActive())art.style.setProperty("animation","none","important");
   bindTap(button,()=>collectNumberCargo(i,button));field.appendChild(button);
  }
@@ -4000,7 +4030,7 @@ function renderNumberCargoGame(){
  const load=document.createElement("div");load.className="number-cargo-load";load.setAttribute("aria-hidden","true");
  for(let i=0;i<limit;i++){
   const slot=document.createElement("span");slot.className="number-cargo-slot";slot.dataset.cargoSlot=String(i);
-  const loadArt=document.createElement("span");loadArt.textContent=theme.e;slot.appendChild(loadArt);load.appendChild(slot);
+  const loadArt=createQuizArt(theme.e,theme.name,"number-cargo-load-art");slot.appendChild(loadArt);load.appendChild(slot);
  }
  const wagonBody=document.createElement("div");wagonBody.className="number-cargo-wagon-body";wagonBody.appendChild(load);
  const wheels=document.createElement("div");wheels.className="number-cargo-wheels";wheels.setAttribute("aria-hidden","true");wheels.innerHTML="<i></i><i></i>";
@@ -4041,7 +4071,7 @@ function animateNumberCargoToWagon(button,index){
  if(!button||!document.body||!window.matchMedia||window.matchMedia("(prefers-reduced-motion: reduce)").matches)return;
  const target=choicesEl.querySelector(".number-cargo-wagon-body");if(!target)return;
  const from=button.getBoundingClientRect(),to=target.getBoundingClientRect();
- const fly=document.createElement("span");fly.className="number-cargo-fly";fly.textContent=resolveNumberCargoTheme().e;fly.dataset.cargoIndex=String(index);fly.setAttribute("aria-hidden","true");
+ const theme=resolveNumberCargoTheme(),fly=createQuizArt(theme.e,theme.name,"number-cargo-fly");fly.dataset.cargoIndex=String(index);
  fly.style.left=(from.left+from.width*.5)+"px";fly.style.top=(from.top+from.height*.5)+"px";
  fly.style.setProperty("--cargo-fly-x",(to.left+to.width*.5-from.left-from.width*.5)+"px");
  fly.style.setProperty("--cargo-fly-y",(to.top+to.height*.4-from.top-from.height*.5)+"px");
@@ -4072,6 +4102,17 @@ function showNumberCargoHint(revealGoal){
  else if(numberCargoPicked.length===numberCargoAnswer())message="しゅっぱつ！を おしてみよう";
  hintText.textContent="💡 "+message;updateNumberCargoGame();announce(message);
 }
+function renderQuizQuestion(){
+ const copy=isSeaStage()?cur.q:(cur.helper?(cur.helper.name+"を たすけよう！ "+cur.q):cur.q);
+ qText.removeAttribute("aria-label");
+ if(!isNumberCargoQuestion()||!Array.isArray(cur.pe)||!cur.pe[0]||numberCargoAnswer()<=0){qText.textContent=copy;return;}
+ const count=numberCargoAnswer();
+ const line=document.createElement("span");line.className="number-count-question";
+ const grid=document.createElement("span");grid.className="number-count-grid";grid.style.setProperty("--number-count-columns",String(Math.min(5,count)));
+ for(let index=0;index<count;index++)grid.appendChild(createQuizArt(cur.pe[0],cur.pe[1],"number-count-art"));
+ const prompt=document.createElement("span");prompt.className="number-count-prompt";prompt.textContent=(cur.pe[1]||"にもつ")+"は いくつ かな？";
+ line.append(grid,prompt);qText.replaceChildren(line);qText.setAttribute("aria-label",cur.s||prompt.textContent);
+}
 function showQuiz(){
  hideWeatherNotice();
  setDriverMood("thinking");
@@ -4080,7 +4121,7 @@ function showQuiz(){
  clearFutureCapsuleGame();
  clearSpaceGalaxyGame();
  cur=qList[qSeg];missInQ=0;answerLocked=false;
- qText.textContent=isSeaStage()?cur.q:(cur.helper?(cur.helper.name+"を たすけよう！ "+cur.q):cur.q);
+ renderQuizQuestion();
  hintText.textContent=helpItems.length?"🍀 おたすけを つかえるよ":"";
  choicesEl.replaceChildren();
  quiz.classList.add("show");
@@ -4098,7 +4139,7 @@ function onPick(el,o){
   quiz.classList.remove("show");
   const pe=cur.pe||[cur.a[0],cur.a[1]];
   const t=tunnels[qSeg];
-  const passenger=cur.helper||{e:pe[0],t:pe[1],name:pe[1]};
+  const passenger=cur.helper||{e:pe[0],t:pe[1],name:pe[1],img:resolveQuizArt(pe[0],pe[1])};
   const isNew=boardPassenger(passenger,pe,seaRescue?el:t);
   if(seaRescue)showSeaRescueMessage(passenger,qSeg);
   else speak(isNew?"せいかい！あたらしい ともだちだ！":"せいかい！"+passengerLabel(passenger)+"が のったよ！");

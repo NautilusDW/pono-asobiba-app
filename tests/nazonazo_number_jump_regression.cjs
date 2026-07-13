@@ -75,7 +75,7 @@ for (const fragment of [
   /\.dataset\.cargoIndex=String\(i\)/,
   /\.setAttribute\("aria-pressed","false"\)/,
   /bindTap\([^,]+,\(\)=>collectNumberCargo\(i,[^)]+\)\)/,
-  /className="number-cargo-art"/,
+  /createQuizArt\(theme\.e,theme\.name,"number-cargo-art"\)/,
   /className="number-cargo-wagon"/,
   /className="number-cargo-load"/,
   /className="number-cargo-goal"/,

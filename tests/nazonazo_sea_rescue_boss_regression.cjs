@@ -118,6 +118,7 @@ const buildSeaRescueListBody = extractFunction(js, "buildSeaRescueList");
 const buildQListBody = extractFunction(js, "buildQList");
 const seaQuestionOptionsBody = extractFunction(js, "seaQuestionOptions");
 const showQuizBody = extractFunction(js, "showQuiz");
+const renderQuizQuestionBody = extractFunction(js, "renderQuizQuestion");
 const renderSeaBubbleBody = extractFunction(js, "renderSeaBubbleGame");
 const beginSeaTargetBurstBody = extractFunction(js, "beginSeaTargetBurst");
 const showSeaRescueMessageBody = extractFunction(js, "showSeaRescueMessage");
@@ -175,7 +176,9 @@ assert.match(html, /id="seaRescueMessage"[^>]*role="status"[^>]*aria-live="polit
 assert.match(html, /id="seaQuizGuide"[^>]*aria-hidden="true"[^>]*>ただしい ほうを えらんで たすけよう</);
 assert.doesNotMatch(showQuizBody, /あわの ともだちを たすけよう！/,
   "the already-understood rescue mission must not prefix every riddle");
-assert.match(showQuizBody, /qText\.textContent=isSeaStage\(\)\?cur\.q:/,
+assert.match(showQuizBody, /renderQuizQuestion\(\)/,
+  "every riddle must pass through the shared question renderer");
+assert.match(renderQuizQuestionBody, /const copy=isSeaStage\(\)\?cur\.q:/,
   "sea qText must begin directly with the current riddle");
 const seaQuizGuideCss = cssRule("#seaQuizGuide");
 assert.match(seaQuizGuideCss, /left\s*:\s*50%/);
@@ -192,7 +195,7 @@ assert.match(css, /#seaQuizGuide\s*\{[^}]*animation\s*:[^;}]*seaQuiz/,
 assert.match(seaQuestionOptionsBody, /ok:true,mode:"sea"/);
 assert.match(seaQuestionOptionsBody, /ok:false,mode:"sea"/);
 assert.match(renderSeaBubbleBody, /あわの なかで ちいさくされた/);
-assert.match(renderSeaBubbleBody, /className="em sea-captive"/);
+assert.match(renderSeaBubbleBody, /createQuizArt\(o\.e,o\.t,"sea-captive"\)/);
 assert.match(cssRule("\\.sea-answer-bubble \\.em"), /scale\(var\(--sea-captive-scale,\.66\)\)/);
 assert.match(extractFunction(js, "updateSeaAnswerTargets"), /--sea-captive-scale[\s\S]*?\/entry\.scale/,
   "the creature must stay visibly small while its prison bubble inflates");

@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2173: なぞなぞトレインの全175出題イラストをGPT Image 2の絵本調171素材へ差し替え。通常・海・未来・宇宙・数字の各出題と、正解後の客車・仲間・トンネル表示まで同じ画像を引き継ぎ、絵文字は画像エラー時だけ表示する (batch:1291)。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/画像/テストのみ変更)。
 // v2172: LPの5ゲームカードを、モード名や競争語ではなく「見比べる力」「道を選ぶ力」「音を聞き分ける力」など学びが伝わるタグへ統一。ガチャとシールちょうの詳細導線も、集め方・選び方／貼り方・飾り方を詳しく見る自然な文へ変更した (batch:1290)。play.html PAGE_CACHE_VERSION と同期不要 (index.html/docsのみ変更)。
 // v2171: なぞなぞトレインをiPad実機向けに調整。車輪・走行音を減速し客車車輪を同期、煙のSafari合成と負荷を修正、アイテム取得点と見える演出を追加。通常クイズを中央へ移し、トンネル走行と数字世界の点滅、各ステージ終了時の一時演出残留も解消した (batch:1289)。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/テストのみ変更)。
 // v2170: LPのゲーム紹介文を、保護者向けの遊び説明／育ちの説明／子ども向け場面キャプションに整理。tierで異なる機能数や過度な教育効果の断定を外し、自然で実装に沿う表現へ改稿した (batch:1288)。play.html PAGE_CACHE_VERSION と同期不要 (index.html/docsのみ変更)。
@@ -97,7 +98,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2172;
+const CACHE_VERSION = 2173;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
