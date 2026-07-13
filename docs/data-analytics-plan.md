@@ -24,7 +24,7 @@
 |---|---|---|---|---|
 | A. 汎用統計 | `pono_stats` | `common/achievements.js:83,100-127`(30種超のカウンタ、maze/quizland/bowling/writing/fossil/egg 等30ファイル超から書込) | ゲーム別プレイ回数/正解数/クリア数の万能カウンタ。実績判定にも使用 | **MVPフラグで凍結中**(§3-1) |
 | B. どんぐり経済 | `pono_acorns`, `pono_acorns_daily_<gameId>_<date>` | `common/acorns.js:6-10,33-116,121-155` | 仮想通貨残高・日次上限(無料25/有料35) | MVPでも唯一のcarve-out、現役で稼働中 |
-| C. デイリーログイン | `pono_stickers`, `pono_login_days`, `pono_login_streak`, `pono_streak_bonus_count` | `common/stickers.js:78-83,94-236,247-284` | ログインボーナス・連続日数管理 | **MVPフラグで凍結 かつ `checkDailyLogin()` の呼び出し元が `play-all.html:2193` のみで現行ハブ `play.html` から未呼出**(二重の理由で機能停止、architecture分析確認済み) |
+| C. デイリーログイン | `pono_stickers`, `pono_login_days`, `pono_login_streak`, `pono_streak_bonus_count` | `common/stickers.js:78-83,94-236,247-284` | ログインボーナス・連続日数管理 | **MVPフラグで凍結 かつ `checkDailyLogin()` の呼び出し元が `play-all.html:2193-2194` のみで現行ハブ `play.html` から未呼出**(二重の理由で機能停止、architecture分析確認済み) |
 | D. 実績/コレクション | `pono_achievements`, `pono_unlocked_sea/furn/wall/floor/bg` | `common/achievements.js:84-89,130-196` | 実績56件(review監査で実測、当初「71種」表記は過大)＋報酬解放IDの配列 | **MVPフラグで凍結中** |
 | E. プロフィール | `pono_player_profile_v1`(play.html本流) / `pono_profile`(旧ゲーム群) | `play.html:15806,16623-16637` | name/age/gender/avatar。自由入力(実名可) | cloud-sync/export双方で氏名系4キーは常時stripされサーバー未送信 |
 | F. 評価/匿名ID | `pono_anon_sid`(sessionStorage), `pono_rating_dfp`, `pono_first_visit_at`, `pono_rating_history` | `common/rating-modal.js:35-41,77-129,132-190` | 匿名セッションID＋端末指紋(dfp)＋星評価履歴 | dfpは計算・localStorage永続のみで**未送信**(§3-2) |
@@ -38,7 +38,7 @@
 | エンドポイント/系統 | 認証 | 概要 | file:line | マーケ的価値 |
 |---|---|---|---|---|
 | GAS フィードバック/アンケート | なし(no-cors POST) | ★評価ping + `survey.html` 詳細アンケート。Cloudflare Workerを経由せず直接 `script.google.com` へ | `common/rating-modal.js:215-255`, `survey.html:306-328` | **唯一の定性リサーチ経路**。週次KPI(K1-K12)運用が既に稼働(`docs/SURVEY_WEEKLY_CHECKLIST.md`) |
-| `POST/GET /api/savedata` | passcode(HMACキー化) | 合言葉型クラウド同期。氏名4キーを保存前にstrip | `src/api/savedata.js:128,154-324` | ほぼゼロ。**production/LP stagingでは `SAVEDATA_KV` 未バインドで常時503**、`env.staging-app` のみ有効(`wrangler.toml:50-52,121-122`) |
+| `POST/GET /api/savedata` | passcode(HMACキー化) | 合言葉型クラウド同期。氏名4キーを保存前にstrip | `src/api/savedata.js:128,154-324` | ほぼゼロ。**production/LP stagingでは `SAVEDATA_KV` 未バインドで常時503**、`env.staging-app` のみ有効(`wrangler.toml:50-52,121-123`) |
 | レート制限KVカウンタ | - | グローバル/IP別/失敗回数、TTL 60秒〜24時間 | `src/api/ratelimit.js:22-161` | ゼロ(攻撃抑止専用のephemeralカウンタ) |
 | Bentoマスク/NPC配置API | Basic Auth(POST) | ゲームデザイン設定のKV保存(履歴付き) | `src/worker.js:93-123` | ゼロ(ユーザーデータでない) |
 | `/api/gh/*` | Basic Auth | GitHub Contents APIプロキシ、`admin/index.html` のコンテンツ管理コンソールが利用 | `src/worker.js:132-135,1574-1716` | ゼロ。ただし `GH_BRANCH='develop'` が凍結済みブランチと同名という**運用リスク**あり(§9) |
@@ -76,7 +76,7 @@
 | 3 | **`anonSid`という名前から永続識別子を連想しがちだが実装はタブ単位の使い捨て** | `sessionStorage`保存のため同一ユーザーの複数訪問・複数タブを名寄せできない。日をまたいだリテンション計測に使うことは原理的に不可能 | `common/rating-modal.js:41,78-92` |
 | 4 | **`playDurationSec`は字面上「プレイ時間」に見えるが実際は「評価モーダルが開いてからの経過秒数」** | ゲーム起動からの真のプレイ時間ではない。誤読すると実態と乖離した短い/長いプレイ時間として解釈するリスクが大きい | `common/rating-modal.js:242-245` |
 | 5 | **admin/index.htmlの「実績/統計」タブは「全ユーザー横断ダッシュボード」に見えるが、実際は操作者自身の端末データのみ** | そのadminページを開いているブラウザのlocalStorage(`pono_stats`, `pono_stamp_log`)をその場で読んで表示するだけの疑似ダッシュボード | `admin/index.html:9944-9995` |
-| 6 | **`/api/savedata`(合言葉クラウド同期)というAPIの存在から「サーバー側にユーザーデータDBがある」と誤解しやすい** | production/LP stagingでは`SAVEDATA_KV`が未バインドで常時503を返す設計であり機能自体が動いていない。App staging限定 | `wrangler.toml:50-52,121-122`、`src/api/savedata.js:134-136` |
+| 6 | **`/api/savedata`(合言葉クラウド同期)というAPIの存在から「サーバー側にユーザーデータDBがある」と誤解しやすい** | production/LP stagingでは`SAVEDATA_KV`が未バインドで常時503を返す設計であり機能自体が動いていない。App staging限定 | `wrangler.toml:50-52,121-123`、`src/api/savedata.js:134-136` |
 | 7 | **Umamiの計装は「サイト全体をカバーしている」ように見えるが実際は33ゲーム中15個のみ** | LP(index.html)とハブ(play.html)、maze/quizland/zukan/collection等の人気ゲーム群を含む18ゲームが計装対象外。導入が場当たり的で全体方針のドキュメント化もされていない | 15ファイルへのUmamiタグ埋込を実測確認、LP/play.htmlは0件 |
 | 8 | **LP(index.html)→アプリ(play.html)の転換ファネルは現状計測ゼロ** | LP上の3つのCTA(`#enter-btn`/`.pc-cta`/`#game-modal-cta`)は全て計測コードなしの静的`<a>`。閲覧→CTAクリック→ゲーム起動→app_onlyタイルタップ→アップグレード遷移という課金ファネルの各段が1つも記録されない | `index.html:1948,2046,2286`、`play.html:11767-11789,15082-15179` |
 | 9 | **`admin/index.html`のGitHubコミット先ブランチ`GH_BRANCH='develop'`が凍結済みブランチと同名**(監査missed項目) | CLAUDE.md記載の「developは2026-07-10凍結・push禁止」ブランチと同名であり、`rewards.json`/`creatures.json`/room/quizland等のコンテンツ編集が実際にこの凍結ブランチへコミットされ続けている疑いがある。本計画の主題(データ分析)そのものではないが、どんぐりショップ/ガチャの品揃え(rewards.json由来)データと連動するため運用リスクとして申し送る | `admin/index.html:1656,1692,1712,1789,2208` |
@@ -182,8 +182,10 @@
 「匿名でランダムなclient_id」であることは、それだけでCOPPA上「個人情報でない」ことを意味しない。COPPA(16 CFR 312.2 item 7)は実名の有無に関わらず「時間を超えてユーザーを認識できる永続識別子」を個人情報として扱う。本設計がこの収集を検証済み保護者同意なしに適法に行う根拠は、「内部運用のサポート(support for internal operations)」例外(16 CFR 312.5(c)(7))であり、以下の3条件を**すべて**満たすことをハードな制約としてコミットする(いずれも要確認: 最新のCOPPA Rule/FTC guidanceを参照。EU居住児童向けGDPR-K等は範囲外)。
 
 1. **識別子を他の目的に転用しない**: `client_id`/`session_id`は本計画に列挙されたイベント計測以外(行動ターゲティング広告、子供本人への直接連絡、識別子に基づく差別的取り扱い等)には一切使用しない。
-2. **第三者への開示を行わない**: `client_id`/`session_id`および紐づくイベントデータは運営者自身が管理するパイプライン(WAE/D1、または既存GAS→Sheet)の外には開示しない。Umami(SaaS)には`client_id`/`session_id`等の永続識別子を一切渡さない(渡すのは`data-umami-event`のraw属性値のみ)。
-3. **この慣行をプライバシーポリシーに明記する**: 永続識別子の種類・内部運用目的の範囲内でのみ利用する旨・Cloudflare等インフラ提供者が当該識別子を扱う場合はその開示、をプライバシーポリシー文書(未整備なら本計画の実装と同時に新設)に明記する。**収集開始前の必須ゲート**として扱う(Phase 1完了条件、§8)。
+2. **第三者への開示を行わない**: `client_id`/`session_id`および紐づくイベントデータは運営者自身が管理するパイプラインの外には開示しない。当該パイプラインの識別子が到達するインフラ提供者は **Cloudflare(WAE/D1)と Google(Apps Script / Sheets — ★評価・アンケートの既存フロー、P1で`client_id`同梱化)** の2社であり、いずれも「サービスプロバイダーへの処理委託」として扱う。Umami(SaaS)には`client_id`/`session_id`等の永続識別子を一切渡さない(渡すのは`data-umami-event`のraw属性値のみ)。
+3. **この慣行をプライバシーポリシーに明記する**: 永続識別子の種類・内部運用目的の範囲内でのみ利用する旨・**Cloudflare および Google(Apps Script / Sheets)** 等のインフラ提供者が当該識別子を扱う場合はその開示、をプライバシーポリシー文書(未整備なら本計画の実装と同時に新設)に明記する。**収集開始前の必須ゲート**として扱う(Phase 1完了条件、§8)。
+
+**設計注記(識別子の外部到達の最小化)**: 識別子の外部到達を最小化したい場合は、GAS側には`client_id`を送らず`session_id`のみ(または既存`anonSid`のまま)とする代替案があり、採否はPhase 1実装レビューで最終決定する。
 
 **初回起動時の告知バナー**: 初回`session_start`発火時、画面下部に1回だけ非ブロッキングの小さいバナーを表示: 「あそびかたの記録を、名前と結びつけない符号だけで記録しています。[くわしく]」+閉じるボタン(「わかった」)。表示は`localStorage['pono_telemetry_notice_shown']`で1回のみに制限。「くわしく」タップで`help.html`の該当セクションへ遷移。
 
@@ -293,7 +295,7 @@ crons = []  # 同上。App staging は手動トリガー POST /api/admin/rollup-
 - KPIカード列: 「週間アクティブ端末数」→ **`client_id`ベースの実数**として表示し、「ブラウザ/端末の粗い識別子であり厳密な物理端末数ではない」旨のツールチップを添える。ゲーム起動数合計/CTAクリック数/paywall到達数/ガチャ・ショップ購入回数/★評価平均。
 - **画面設計上の鉄則**: `session_id`由来の数値は**同一訪問内のファネルにのみ**使用可。日次/週次アクティブ端末数・リテンション曲線・コホート分析には**必ず`client_id`を使う**。この2つの識別子を同じKPIカードやテーブルの中で混在させない。
 - ゲーム別テーブル: `gameId × 起動数 × クリア数 × クリア率 × 平均★評価`(既存rating-modal.jsデータとの突合)
-- ファネルビュー: 「LP CTAクリック→play.html到達→タイトルタップ→ゲームクリア」の4段(`session_id`ベース、同一訪問内の計測のため問題ない)
+- ファネルビュー: `/api/e`系イベントのみで構成できる段に限定した2本を描画する — (i) `session_start`→`game_launch`→`game_clear`、(ii) `paywall_hit`→`upgrade_cta_click`(いずれも`session_id`で正しく結合可能)。`lp_cta_click`と`game_title_tap`はUmamiパイプラインに割り当てられており(§5-1/§5-2)、Umamiイベントは`client_id`/`session_id`を一切持たず(§5-5の非収集宣言と整合)データもUmami SaaS側にあってWAE/D1に流入しないため、adminのファネルには組み込めない。LP CTAクリック率・タイトルタップ率はUmami側ダッシュボードで集計レベルの近似として別途確認する運用とする。**パイプライン混在により、エンドツーエンド(LP→クリア)の単一ファネルは描けないという設計上の限界がある。**
 - 課金導線パネル: `openAppZonePromo()`表示回数→「アプリへ進む」クリック回数
 - リテンション/コホートビュー: `active_devices_daily`テーブルを自己結合した「N日後継続率」曲線(`client_id`ベースでのみ意味を持つ)
 - CSVエクスポート: D1該当rollupをブラウザ側Blobダウンロード
@@ -352,7 +354,7 @@ iOS scaffold時は`__NATIVE_BUILD__`だけではAndroid/iOSを区別できない
 
 **Apple Kids カテゴリ + App Privacy ラベル + ATT**: App Store Review Guideline 1.3(Kids Category)は第三者アナリティクス・第三者広告の使用を原則禁止する。**この例外運用はGoogleのような公式certifiedリスト方式とは異なり、Appleは「データを他目的やクロスアプリ識別に転用しない」等の契約上・挙動上の条件を満たす分析ツールに限り例外的な使用を認める、契約・自己申告ベースの基準に近い**(固定の承認プロバイダー一覧は存在しない、要確認: 最新のApple Developer/App Review Guidelines 1.3)。自前バックエンドへの直接送信は「第三者アナリティクスSDK」の定義に該当しないと解釈できる可能性が高いが、「第三者」の定義がインフラ提供者(Cloudflare)まで含むか等は申請前に最終確認すべき。第三者データと突合しない・広告目的で使わない設計であれば「Track」に該当しないと説明しやすく、ATTプロンプトも不要になる可能性が高い。
 
-**COPPA(米国)内部運用目的の分析**: 「Support for Internal Operations」例外は保護者同意不要だが**「無通知でよい」わけではない**。適用条件として、事業者はプライバシーポリシー上に(a)収集する永続識別子の種類、(b)内部運用目的の範囲内でのみ利用する旨、(c)Cloudflare等インフラ提供者が識別子を扱う場合はその開示、を明記する必要がある(16 CFR §312.4(d)(3)相当、要確認)。この開示を欠いたまま技術実装のみを完了すると「設計は例外に合致しているがプライバシーポリシー未整備のため実運用上非準拠」という状態に陥りうる。**ストア審査固有の要件ではなく米国の子供向けサービスとしての一般要件のため、ストア申請(Phase 2扱いのAndroid/Phase 3扱いのiOS)を待たず、production環境でのイベント収集開始(Phase 1)までに満たす**(§5-4と同一のゲート)。
+**COPPA(米国)内部運用目的の分析**: 「Support for Internal Operations」例外は保護者同意不要だが**「無通知でよい」わけではない**。適用条件として、事業者はプライバシーポリシー上に(a)収集する永続識別子の種類、(b)内部運用目的の範囲内でのみ利用する旨、(c)**Cloudflare および Google(Apps Script / Sheets — ★評価・アンケートの既存フロー、P1で`client_id`同梱化)** 等のインフラ提供者が識別子を扱う場合はその開示、を明記する必要がある(16 CFR §312.4(d)(3)相当、要確認)。この開示を欠いたまま技術実装のみを完了すると「設計は例外に合致しているがプライバシーポリシー未整備のため実運用上非準拠」という状態に陥りうる。**ストア審査固有の要件ではなく米国の子供向けサービスとしての一般要件のため、ストア申請(Phase 2扱いのAndroid/Phase 3扱いのiOS)を待たず、production環境でのイベント収集開始(Phase 1)までに満たす**(§5-4と同一のゲート)。
 
 ### 7-4. Web版設計への逆流要件(チェックリスト、全項目)
 
@@ -366,7 +368,7 @@ iOS scaffold時は`__NATIVE_BUILD__`だけではAndroid/iOSを区別できない
 - [ ] **`native/www`の再同期を運用フローに組み込む**: `.gitignore`対象のスナップショットであり`npm run stage-www`実行時のみ更新される(過去複数回のstale事故実績あり)。分析コード変更後は必ずnative側で再ビルド・実機/エミュレータ確認を行う。
 - [ ] **hostname sniffingベースの環境判定を新規実装で使わない**: `detectEnvironment()`はnativeでは`localhost`に誤判定する既知バグを持つ。環境判定は`__APP_BUILD__`/`__NATIVE_BUILD__`ベース、または可能ならサーバー側に寄せる。
 - [ ] **CORS allowlistの一元管理**: `src/api/savedata.js:39-60`の`allowedOrigins(env)`を分析APIとも共有する。
-- [ ] **プライバシーポリシー文言の追加/更新**: COPPA internal operations例外の適用条件(§5-4/§7-3)として、収集する永続識別子の種類・利用目的・インフラ提供者(Cloudflare)開示をプライバシーポリシーに明記する。production環境でのイベント収集開始(Phase 1)までに完了させる。
+- [ ] **プライバシーポリシー文言の追加/更新**: COPPA internal operations例外の適用条件(§5-4/§7-3)として、収集する永続識別子の種類・利用目的・インフラ提供者(**Cloudflare、および Google(Apps Script / Sheets — ★評価・アンケートの既存フロー、P1で`client_id`同梱化)**)開示をプライバシーポリシーに明記する。production環境でのイベント収集開始(Phase 1)までに完了させる。
 
 ### 7-5. 段階導入ロードマップ(ネイティブ視点)
 
