@@ -28,6 +28,7 @@
   <script src="../common/debug-mode.js"></script>
   <script src="../common/tier.js"></script>
   <script src="../common/difficulty.js"></script>
+  <script src="../common/telemetry.js"></script>
   <script src="../common/capture.js" defer></script>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
   <link rel="stylesheet" href="../common/acorn-modal-shared.css">
@@ -42,7 +43,7 @@
   </div>
   <!-- perf 2026-07-10: preload="none" — 1.1MB の mp3 を parse 時に一括 DL しない。再生直前に main.js tryStartBgm() が 'auto' へ昇格 -->
   <audio id="bgm" loop src="../assets/audio/Cheery Strike Loop2.mp3" preload="none"></audio>
-  <div id="title-screen" class="title-screen" role="button" aria-label="タップしてスタート">
+  <div id="title-screen" class="title-screen" role="button" aria-label="タップしてスタート" data-umami-event="game_title_tap" data-umami-event-game="puzzle">
     <div class="title-screen__veil"></div>
     <div class="title-screen__content">
       <img class="title-screen__logo" src="../assets/images/puzzle/title_logo.png" alt="ポノのなかよしパズル">

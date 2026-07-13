@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2166: データ分析基盤 P0 (docs/data-analytics-plan.md) — common/telemetry.js を CRITICAL_ASSETS_SCRIPTS へ追加 precache (rating-modal.js と同じ並列作成パターン、asset 単位 try/catch のため未配備でも install 失敗にならない)。privacy.html は help.html と同じく HTML なので isHTML passthrough の対象外 = precache 登録不要 (network-first で鮮度担保)。rebase 時に v2165 (なぞなぞトレイン改修, batch:1281) と番号衝突したため +1 で再採番。play.html PAGE_CACHE_VERSION と同期 (2166)。
 // v2165: なぞなぞトレインの未来を3個の正解カプセルで街を点灯する全画面マグネットゲート、宇宙を答えポータルへ重力スイングする長押し・解放ゲームへ別ジャンル化。宇宙は5問で星座線が完成し、最終問だけ全画面発光する。町・ジャングル・数字・未来の6背景素材は枝間など内部に残った白だけを透過し、花・数字面・ハイライトを保持した (batch:1281)。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/画像/テストのみ変更)。
 // v2164: タイトルのおしらせを公式情報だけの1一覧へ戻し、おみせタブ・ショップ記事・記事内導線を撤去。ショップ更新は公式未読数から完全に分離し、タイトルの明るい更新札とガチャ内の更新badgeだけで一目表示して、実際におみせを開いた時だけ消す (batch:1283)。play.html PAGE_CACHE_VERSION と同期 (2164)。
 // v2163: おべんとうの3色説明が終わったら「わかった！」を青白く点灯。のり編集は小さく／大きく／左右回転を自由に何度でも試せるようにし、保存状態へ一度で復元。完成時の重複テキストを外し、自由編集ナレーションをTTS3.1/Ledaで更新した (batch:1278)。play.html PAGE_CACHE_VERSION と同期不要 (bento/index.html/音声/docs/テストのみ変更)。
@@ -90,7 +91,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2165;
+const CACHE_VERSION = 2166;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
@@ -135,6 +136,10 @@ const CRITICAL_ASSETS_SCRIPTS = [
   // try/catch でラップされる (precacheAssetGroup の allSettled gate) ため install 失敗にならない。
   '/common/rating-modal.js',
   '/common/rating-modal.css',
+  // v2165: データ分析基盤 (docs/data-analytics-plan.md) — telemetry.js は play.html の
+  // data-pono-telemetry-auto script tag から読まれる必須計測モジュール。rating-modal.js と
+  // 同じ理由で precache 対象 (asset 単位 try/catch のためファイル欠落でも install は失敗しない)。
+  '/common/telemetry.js',
   '/js/game-stickers.js',
   '/js/daily-quest.js',
   '/js/donguri-shop.js',

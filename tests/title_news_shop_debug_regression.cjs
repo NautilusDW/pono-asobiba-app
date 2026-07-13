@@ -147,12 +147,13 @@ assert.match(play, /\.modal-card\.news-modal-card \{[\s\S]*?grid-template-rows: 
 assert.match(play, /\.news-panel \{[\s\S]*?overflow-y: auto;[\s\S]*?overscroll-behavior: contain;/);
 
 // The title's own pair remains synchronized. Later game-only Service Worker
-// cache bumps may legitimately be newer without changing play.html.
+// cache bumps may legitimately be newer without changing play.html, so this
+// checks the 3-way sync invariant (not a pinned literal, which would break on
+// every legitimate version bump — see 2026-07-13 F班 fix).
 const pageVersion = play.match(/const PAGE_CACHE_VERSION = (\d+);/);
 const ponoVersion = play.match(/window\.PONO_SW_VERSION = 'v(\d+)'/);
 const swVersion = sw.match(/const CACHE_VERSION = (\d+);/);
 assert.ok(pageVersion && ponoVersion && swVersion);
-assert.equal(pageVersion[1], "2164");
 assert.equal(ponoVersion[1], pageVersion[1]);
 assert.ok(Number(swVersion[1]) >= Number(pageVersion[1]), "game-only cache bumps may advance the service worker beyond the title pair");
 

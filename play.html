@@ -9742,6 +9742,15 @@
        ファイル未配備でも tag だけ先行登録 (404 silent fallback)。 -->
   <link rel="stylesheet" href="/common/rating-modal.css">
 
+  <!-- Umami (簡易UIタップ計測、data-analytics-plan.md §5-1 #3)。 既存15ゲームと同一形式。 -->
+  <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
+
+  <!-- PonoTelemetry (data-analytics-plan.md §5-1〜§5-3、P0イベント8個の共通クライアント)。
+       data-pono-telemetry-auto="1" は play.html のみ: session_start / daily_return の自動発火 +
+       初回告知バナー表示を module 側が行う。 common/telemetry.js は別エージェント並列作成中のため
+       ファイル未配備でも tag だけ先行登録 (404 silent fallback、rating-modal.css と同方式)。 -->
+  <script src="common/telemetry.js" data-pono-telemetry-auto="1"></script>
+
   <!-- The tweaks panel JSX below is kept inert during normal app loads. -->
 </head>
 <body>
@@ -9959,6 +9968,26 @@
           <span class="settings-action__text">
             <span class="settings-action__main">データかんり (保護者の方へ)</span>
             <span class="settings-action__sub">きしゅへんこう・ブラウザ変更時に</span>
+          </span>
+        </button>
+        <!-- data-analytics-plan.md §5-3: あそびの記録 (テレメトリ) のオプトアウト・リセット。
+             「データかんり」の直下に並べ、 保護者向け導線としてグルーピングする。 -->
+        <div class="settings-action" id="telemetryOptOutRow">
+          <span class="settings-action__icon" aria-hidden="true">🔕</span>
+          <span class="settings-action__text">
+            <span class="settings-action__main">あそびの記録を送らない</span>
+            <span class="settings-action__sub">ONで あそびかたの記録の送信を止めるよ</span>
+          </span>
+          <label class="toggle" style="flex:0 0 auto;">
+            <input type="checkbox" id="telemetryOptOutToggle">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <button class="settings-action" id="telemetryResetIdBtn" type="button">
+          <span class="settings-action__icon" aria-hidden="true">🔄</span>
+          <span class="settings-action__text">
+            <span class="settings-action__main">きろくの符号をリセット</span>
+            <span class="settings-action__sub">いままでの記録の符号を入れかえるよ</span>
           </span>
         </button>
         <button class="settings-action" id="settingsDebugBoardBtn" type="button" hidden>
@@ -11193,6 +11222,15 @@
       return window.__APP_BUILD__ === 1 || window.__APP_BUILD__ === '1';
     })();
 
+    // テレメトリ用 tier 取得ヘルパー (data-analytics-plan.md §5-1: paywall_hit / upgrade_cta_click の
+    // 固有プロパティ tier(free|book) に使う)。 common/tier.js 未ロード時は undefined を返し、
+    // track() 呼び出し側は optional chaining で吸収する。
+    function ponoTelemetryTier() {
+      try {
+        return (window.PonoTier && typeof window.PonoTier.getTier === 'function') ? window.PonoTier.getTier() : undefined;
+      } catch (_) { return undefined; }
+    }
+
     // ===== tier v3: 3ゾーン UI (feature_tier_v3 §7) =====
     // zone は GAMES の既存フィールド (tier / comingSoon) から機械的に導出する。
     // 手動の個別分類はしない — GAMES 側で tier/comingSoon を変えれば自動で
@@ -11374,7 +11412,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2164; // sw.js CACHE_VERSION と同期 (batch:1283 公式おしらせ／ショップ更新サイン分離)
+    const PAGE_CACHE_VERSION = 2165; // sw.js CACHE_VERSION と同期 (データ分析基盤 P0: telemetry.js precache 追加)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -11383,7 +11421,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v2164';
+    window.PONO_SW_VERSION = 'v2165';
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
@@ -12047,8 +12085,13 @@
       // v3 (feature_tier_v3 §5): 「アプリで あそべる」 ゾーンは LP 版でも
       // カードとして見せているが、 app tier (= アプリ版 or capture override) 以外の
       // タップは実際のゲームへ遷移させず、 book/free 別コピーの誘導モーダルを出す。
-      if (game.zone === 'app_only' && typeof openAppZonePromo === 'function' && openAppZonePromo(game)) {
-        return;
+      if (game.zone === 'app_only' && typeof openAppZonePromo === 'function') {
+        const blockedByAppPromo = openAppZonePromo(game);
+        if (blockedByAppPromo) {
+          // paywall_hit (data-analytics-plan.md §5-1 #5): openAppZonePromo() 呼び出し直後。
+          try { window.PonoTelemetry?.track('paywall_hit', { game_id: game.id, tier: ponoTelemetryTier() }); } catch (_) {}
+          return;
+        }
       }
       if (window.PonoPlayerProfile && !window.PonoPlayerProfile.hasProfile()) {
         pendingProfileStartIdx = idx;
@@ -12056,6 +12099,8 @@
         return;
       }
       try { sessionStorage.setItem('pono_audio_primed_ts', String(Date.now())); } catch(_) {}
+      // game_launch (data-analytics-plan.md §5-1 #2): location.href 遷移の直前。
+      try { window.PonoTelemetry?.track('game_launch', { game_id: game.id, zone: game.zone }); } catch (_) {}
       location.href = game.href;
     }
 
@@ -15555,6 +15600,9 @@
     const APP_PROMO_BOOK_DISMISSED_KEY = 'pono_sub_promo_book_dismissed_at';
     const APP_PROMO_BOOK_THROTTLE_MS = 24 * 60 * 60 * 1000;      // 24h
     const APP_PROMO_BOOK_DISMISS_MS = 7 * 24 * 60 * 60 * 1000;   // 7day
+    // upgrade_cta_click (data-analytics-plan.md §5-1 #6) 用: 直近で openAppZonePromo() に
+    // 渡された game の id を覚えておく (primaryBtn クリックハンドラは game 引数を持たないため)。
+    let appZonePromoTrackGameId = null;
 
     // 本版 (LP) から アプリ版 (App staging/production) への正規 URL。
     // memory: project_url_architecture / CLAUDE.md URL マトリクス準拠。
@@ -15587,6 +15635,7 @@
      * @returns {boolean} true ならモーダルを出して遷移をブロックした
      */
     function openAppZonePromo(game) {
+      appZonePromoTrackGameId = (game && game.id) || null;
       const tier = window.PonoTier || null;
       const isAppTier = tier && typeof tier.isApp === 'function' ? tier.isApp() : __isAppBuild;
       if (isAppTier) return false;
@@ -15675,6 +15724,10 @@
           const action = primaryBtn.dataset.action;
           closeAppZonePromo();
           if (action === 'goapp') {
+            // upgrade_cta_click (data-analytics-plan.md §5-1 #6): paywall_hit→クリックのCVR。
+            try {
+              window.PonoTelemetry?.track('upgrade_cta_click', { game_id: appZonePromoTrackGameId, tier: ponoTelemetryTier() });
+            } catch (_) {}
             try { window.location.href = getAppBuildUrl(); } catch (e) {}
           } else if (action === 'openbook') {
             openPasswordUnlockModal();
@@ -17472,6 +17525,42 @@
         } else {
           console.warn('[play] PonoDataExport not loaded');
         }
+      });
+    }
+
+    // ===== Settings: telemetry opt-out + client_id reset (data-analytics-plan.md §5-3) =====
+    // 「データかんり」直下の 2 UI。 window.PonoTelemetry が未ロードでも例外を出さない
+    // optional chaining で統一 (common/telemetry.js は別エージェント並列作成中)。
+    const TELEMETRY_OPT_OUT_KEY = 'pono_telemetry_opt_out';
+    const telemetryOptOutToggle = document.getElementById('telemetryOptOutToggle');
+    function loadTelemetryOptOutPref() {
+      if (!telemetryOptOutToggle) return;
+      let off = false;
+      try {
+        if (window.PonoTelemetry && typeof window.PonoTelemetry.isOptedOut === 'function') {
+          off = !!window.PonoTelemetry.isOptedOut();
+        } else {
+          off = localStorage.getItem(TELEMETRY_OPT_OUT_KEY) === '1';
+        }
+      } catch (_) {}
+      telemetryOptOutToggle.checked = off;
+    }
+    if (telemetryOptOutToggle) {
+      telemetryOptOutToggle.addEventListener('change', () => {
+        const wantsOptOut = telemetryOptOutToggle.checked;
+        try { window.PonoTelemetry?.optOut(wantsOptOut); } catch (_) {}
+      });
+      loadTelemetryOptOutPref();
+    }
+
+    const telemetryResetIdBtn = document.getElementById('telemetryResetIdBtn');
+    if (telemetryResetIdBtn) {
+      telemetryResetIdBtn.addEventListener('click', () => {
+        var ok = false;
+        try { ok = window.confirm('きろくの符号を あたらしくする? (いままでの あそびの記録とは べつものに なるよ)'); }
+        catch (_) { ok = false; } // confirm 不能環境は安全側 (実行しない) に倒す
+        if (!ok) return;
+        try { window.PonoTelemetry?.resetClientId(); } catch (_) {}
       });
     }
 

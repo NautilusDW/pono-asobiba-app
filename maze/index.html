@@ -4116,6 +4116,7 @@ body.image-stage-mode .game-wrap {
 }
 </style>
 <link rel="stylesheet" href="../common/acorn-modal-shared.css">
+<script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
 <body data-game-id="maze">
 
@@ -4123,7 +4124,7 @@ body.image-stage-mode .game-wrap {
 <audio id="bgm" loop preload="auto" src="../assets/audio/maze_bgm.mp3"></audio>
 
 <!-- ===== タイトル画面: 21:9 BG + ロゴ (上部中央) + タップしてスタート ===== -->
-<div id="title-screen" role="button" aria-label="タップしてスタート">
+<div id="title-screen" role="button" aria-label="タップしてスタート" data-umami-event="game_title_tap" data-umami-event-game="maze">
   <img class="title-logo" src="../assets/images/maze/title_logo.png" alt="ポノとランタンのめいろ">
   <div class="title-tap-cta">▶ タップしてスタート</div>
   <!-- batch:890: debug toggle ON 時のみ表示するステージセレクトボタン (右下) -->
@@ -4299,6 +4300,7 @@ body.image-stage-mode .game-wrap {
 <script src="../common/debug-mode.js"></script>
 <script src="../common/tier.js"></script>
 <script src="../common/difficulty.js"></script>
+<script src="../common/telemetry.js"></script>
 <script src="../common/capture.js" defer></script>
 <script src="image-runtime.js"></script>
 

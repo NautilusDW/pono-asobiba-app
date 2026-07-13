@@ -46,6 +46,7 @@
 <script src="../common/debug-mode.js"></script>
 <script src="../common/tier.js"></script>
 <script src="../common/difficulty.js"></script>
+<script src="../common/telemetry.js"></script>
 <script src="../common/capture.js" defer></script>
 <script src="../js/game-stickers.js"></script>
 <style>
@@ -5969,7 +5970,7 @@ body.bento-complete-open .bento-restart-btn { display: none !important; }
 <!-- perf-audit: preload="auto" だと 1.1MB の mp3 が毎回ページオープンで即 DL される。 none にして初回 gesture / 再生時に昇格 (tryPlayBgm) -->
 <audio id="bgm" loop preload="none" src="../assets/audio/bento_bgm.mp3"></audio>
 
-<div id="title-screen" role="button" aria-label="タッチしてスタート">
+<div id="title-screen" role="button" aria-label="タッチしてスタート" data-umami-event="game_title_tap" data-umami-event-game="bento">
   <div class="title-screen__content">
     <img class="title-screen__logo" src="../assets/images/bento/title_logo.webp" alt="ポノとつくろう いろどりべんとう">
     <div class="title-screen__start" hidden>▶ あそびかたを えらぶ</div>

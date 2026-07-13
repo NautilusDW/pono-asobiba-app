@@ -37,7 +37,9 @@ const PATH_GET_PREFIX = '/api/savedata/';
 const PASSCODE_ALLOC_TRIES = 6;
 
 // ---- CORS (env 別 allowlist) ----
-function allowedOrigins(env) {
+// export: src/api/events.js (POST /api/e) が同じ allowlist を再利用するため。
+// savedata 自体の挙動 (Origin ヘッダーの reflect のみ、非許可でも request は処理する) は不変。
+export function allowedOrigins(env) {
   const prod = [
     'https://pono.kodama-no-mori.com',
     'https://pono-asobiba-app.ndw.workers.dev',

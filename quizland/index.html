@@ -23,6 +23,7 @@
 <script src="../common/debug-mode.js"></script>
 <script src="../common/tier.js?v=quiz-mixed-20260708"></script>
 <script src="../common/difficulty.js"></script>
+<script src="../common/telemetry.js"></script>
 <script src="../common/capture.js" defer></script>
 <script src="../common/narration.js"></script>
 <script src="../js/quizland-babble.js"></script>
@@ -3746,11 +3747,12 @@ body.layout-editor-on .qno-plate-overlay.is-tap-skip { pointer-events: none; }
   }
 }
 </style>
+<script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
 <body class="sheet-on show-safe">
 
 <!-- ===== Start Screen ===== -->
-<div class="start-screen" id="start-screen" role="button" aria-label="タップして はじめる">
+<div class="start-screen" id="start-screen" role="button" aria-label="タップして はじめる" data-umami-event="game_title_tap" data-umami-event-game="quizland">
   <div class="start-content">
     <img class="start-logo" src="../assets/images/quizland/title_logo.webp" alt="フクロウはかせのなぞなぞ">
     <div class="start-tap-cta">▶ タップして はじめる</div>

@@ -24,6 +24,7 @@
 <script src="../common/debug-mode.js"></script>
 <script src="../common/tier.js"></script>
 <script src="../common/difficulty.js"></script>
+<script src="../common/telemetry.js"></script>
 <script src="../common/capture.js" defer></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -5611,6 +5612,7 @@
   }
 </style>
 <link rel="stylesheet" href="../common/acorn-modal-shared.css">
+<script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
 <body data-game-id="oto">
 <!-- チュートリアル用: 暗幕 / スポットライト / 吹き出し -->
@@ -5622,7 +5624,7 @@
 </div>
 
 <!-- イントロ: タップで AudioContext をアンロック -->
-<div class="intro" id="intro" role="button" aria-label="タップしてスタート">
+<div class="intro" id="intro" role="button" aria-label="タップしてスタート" data-umami-event="game_title_tap" data-umami-event-game="oto">
   <div class="intro__content">
     <img class="intro-logo" src="../assets/images/oto/title_logo.png" alt="ポノのおとタッチ">
     <div class="intro-btn" id="introBtn">▶ タップしてスタート</div>

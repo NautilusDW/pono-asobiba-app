@@ -7,6 +7,7 @@
 import { Buffer } from 'node:buffer';
 import { getGoogleAccessToken, getGoogleServiceAccountProjectId } from './google-auth.js';
 import { handleSaveData } from './api/savedata.js';
+import { handleEvents } from './api/events.js';
 
 const PROTECTED_PREFIXES = [
   '/admin/',
@@ -96,6 +97,25 @@ export default {
     // Step C: 合言葉型クラウド同期 (POST /api/savedata, GET /api/savedata/:passcode)
     if (path === '/api/savedata' || path.startsWith('/api/savedata/')) {
       return handleSaveData(request, env, ctx, path);
+    }
+    // データ分析基盤: テレメトリ収集 (POST /api/e -> Workers Analytics Engine)。
+    // GET/OPTIONS 等の method ハンドリングは handleEvents 側で完結させる (savedata と同じ流儀)。
+    if (path === '/api/e') {
+      return handleEvents(request, env, ctx);
+    }
+    // プライバシーポリシー: GET /privacy を /privacy.html へ内部 rewrite する
+    // (リダイレクトではなく、ブラウザ URL は /privacy のまま ASSETS.fetch の対象だけ差し替える)。
+    // 通常の HTML レスポンスと同じ後処理 (no-cache ヘッダー付与 / APP_BUILD 注入 / ETag) を
+    // 下の catch-all と揃えるため、ここで applyCacheHeaders 以降のパイプラインを直接実行する。
+    if (path === '/privacy' && (request.method === 'GET' || request.method === 'HEAD')) {
+      const rewrittenUrl = new URL(request.url);
+      rewrittenUrl.pathname = '/privacy.html';
+      const assetsRequest = new Request(rewrittenUrl.toString(), request);
+      const privacyResponse = await env.ASSETS.fetch(assetsRequest);
+      const privacyCached = applyCacheHeaders(request, privacyResponse);
+      const privacyAppBuildApplied = shouldInjectAppBuildFlag(privacyCached, env);
+      const privacyBuilt = injectAppBuildFlag(privacyCached, env);
+      return attachHtmlEtag(request, privacyBuilt, env, privacyAppBuildApplied);
     }
     if (path === '/api/admin/bento-npc-positions') {
       if (request.method === 'OPTIONS') {
