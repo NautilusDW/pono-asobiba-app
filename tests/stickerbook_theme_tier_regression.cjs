@@ -93,14 +93,14 @@ const modebarHtml = section(index, '<div class="modebar"', '<div class="toolbar"
 const panelIds = idsIn(panelHtml, "data-book-theme");
 const modebarIds = idsIn(modebarHtml, "data-book");
 const defaultIds = [
-  "boy", "girl", "shinobi", "sakura",
-  "hero", "idol", "book_buyer_edition",
+  "boy", "sakura",
+  "girl", "shinobi", "hero", "idol", "book_buyer_edition",
   "robot", "space_live", "game_center", "rainbow_dream",
 ];
 
 assert.equal(panelIds.length, 25, "the child-facing picker must keep 25 canonical inventory entries");
 assert.equal(new Set(panelIds).size, 25, "picker theme ids must be unique");
-assert.deepEqual(panelIds.slice(0, 11), defaultIds, "the 4/7/11 cumulative themes must come first");
+assert.deepEqual(panelIds.slice(0, 11), defaultIds, "the 2/7/11 cumulative themes must come first");
 assert.deepEqual(modebarIds, panelIds, "local prototype controls must use the same canonical order");
 assert.ok(!panelIds.includes("book_bonus"), "the duplicate legacy book_bonus card must be removed");
 assert.equal(panelIds.filter((id) => id === "book_buyer_edition").length, 1, "the special cover must appear once");
@@ -164,13 +164,13 @@ const tierGroups = Object.groupBy
       (groups[tier] ||= []).push(id);
       return groups;
     }, {});
-assert.equal(tierGroups.free.length, 4);
-assert.equal(tierGroups.book.length, 3);
+assert.equal(tierGroups.free.length, 2);
+assert.equal(tierGroups.book.length, 5);
 assert.equal(tierGroups.app.length, 4);
 assert.equal(tierGroups.future.length, 14);
 
 const expectedByTier = {
-  free: { visible: 7, unlocked: 4, balance: { boy: 2, girl: 2, all: 0 } },
+  free: { visible: 7, unlocked: 2, balance: { boy: 1, girl: 1, all: 0 } },
   book: { visible: 11, unlocked: 7, balance: { boy: 3, girl: 3, all: 1 } },
   app: { visible: 11, unlocked: 11, balance: { boy: 5, girl: 5, all: 1 } },
 };
@@ -184,6 +184,8 @@ for (const [tier, expected] of Object.entries(expectedByTier)) {
   for (const id of unlocked) balance[api.access(id).balanceGroup] += 1;
   assert.deepEqual(balance, expected.balance, `${tier} balance must include the neutral special without gender gating`);
 }
+assert.deepEqual(panelIds.filter((id) => api.access(id).minTier === "free"), ["boy", "sakura"], "free must be exactly sea and sakura");
+assert.deepEqual(panelIds.filter((id) => ["free", "book"].includes(api.access(id).minTier)), panelIds.slice(0, 7), "book must keep the cumulative first seven themes");
 
 sandbox.prototypeControlsEnabled = true;
 assert.equal(panelIds.filter((id) => api.visible(id)).length, 25, "local controls must expose the full asset inventory");
@@ -200,8 +202,12 @@ storage.clear();
 storage.set("pono_sticker_book_theme_v1", "sakura");
 sandbox.__tier = "free";
 assert.equal(api.resolve("hero"), "sakura", "a locked URL must fall back to an available saved theme");
-storage.set("pono_sticker_book_theme_v1", "book_bonus");
+storage.set("pono_sticker_book_theme_v1", "girl");
+assert.equal(api.resolve(""), "boy", "a newly book-locked saved theme must fall back safely for free users");
+assert.equal(storage.get("pono_sticker_book_theme_v1"), "girl", "a locked saved theme must be retained for a later tier upgrade");
 sandbox.__tier = "book";
+assert.equal(api.resolve(""), "girl", "the retained theme must return after book unlock");
+storage.set("pono_sticker_book_theme_v1", "book_bonus");
 assert.equal(api.read(), "book_buyer_edition", "legacy saved ids must normalize");
 assert.equal(storage.get("pono_sticker_book_theme_v1"), "book_buyer_edition", "legacy storage must migrate in place");
 assert.equal(api.resolve("book_bonus"), "book_buyer_edition", "legacy URLs must open the unified special theme when unlocked");
@@ -256,9 +262,9 @@ assert.doesNotMatch(hydrateSource, /aria-haspopup/, "the shared promo is not a s
 assert.match(hydrateSource, /badge\.textContent = requiredTier === "book" \? "えほん" : "アプリ"/);
 assert.match(css, /\.book-theme-lock-badge[\s\S]*?min-width:\s*42px/);
 assert.match(css, /\.zukan-theme-picker button\[hidden\][\s\S]*?display:\s*none/);
-assert.match(index, /styles\.css\?v=20260713-1276/);
-assert.match(index, /main\.js\?v=20260713-1276/);
-assert.match(tierPolicy, /\*\*free\*\* \| \*\*4\*\*/);
+assert.match(index, /styles\.css\?v=20260713-1278/);
+assert.match(index, /main\.js\?v=20260713-1278/);
+assert.match(tierPolicy, /\*\*free\*\* \| \*\*2\*\*/);
 assert.match(tierPolicy, /\*\*book\*\* \| \*\*7\*\*/);
 assert.match(tierPolicy, /\*\*app\*\* \| \*\*11\*\*/);
 

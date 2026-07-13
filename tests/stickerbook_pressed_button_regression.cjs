@@ -60,7 +60,7 @@ assert.match(css, /\.book-page-label:active:not\(\[hidden\]\) \{\s*background-im
 assert.match(css, /\.book-page-button-left:active:not\(:disabled\) \{[\s\S]*?brightness\(0\.94\)/, "previous page needs a no-layout fallback press");
 assert.match(css, /\.book-page-button-right:active:not\(:disabled\) \{[\s\S]*?brightness\(0\.94\)/, "next page needs a no-layout fallback press");
 assert.match(css, /\.book-page-label:active:not\(\[hidden\]\) \{[\s\S]*?brightness\(0\.94\)/, "page label needs a fallback press");
-assert.match(index, /styles\.css\?v=20260713-1276/);
-assert.match(index, /main\.js\?v=20260713-1276/);
+assert.match(index, /styles\.css\?v=20260713-1278/);
+assert.match(index, /main\.js\?v=20260713-1278/);
 
 console.log("stickerbook_pressed_button_regression: all assertions passed");

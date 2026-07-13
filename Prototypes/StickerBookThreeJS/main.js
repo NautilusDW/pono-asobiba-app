@@ -1209,11 +1209,11 @@ for (const [key, coverFront] of Object.entries(COVER_ONLY_BOOK_TEXTURE_OVERRIDES
 
 // シールちょうテーマの配分。balanceGroup は在庫バランス確認専用で、
 // プロフィールの性別による選択制限には使わない。
-// free 4 = 2 + 2 / book 7 = 3 + 3 + とくべつ / app 11 = 5 + 5 + とくべつ。
+// free 2 = 1 + 1 / book 7 = 3 + 3 + とくべつ / app 11 = 5 + 5 + とくべつ。
 const BOOK_THEME_ACCESS = Object.freeze({
   boy: Object.freeze({ minTier: "free", balanceGroup: "boy" }),
-  girl: Object.freeze({ minTier: "free", balanceGroup: "girl" }),
-  shinobi: Object.freeze({ minTier: "free", balanceGroup: "boy" }),
+  girl: Object.freeze({ minTier: "book", balanceGroup: "girl" }),
+  shinobi: Object.freeze({ minTier: "book", balanceGroup: "boy" }),
   sakura: Object.freeze({ minTier: "free", balanceGroup: "girl" }),
   hero: Object.freeze({ minTier: "book", balanceGroup: "boy" }),
   idol: Object.freeze({ minTier: "book", balanceGroup: "girl" }),

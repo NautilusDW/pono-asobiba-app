@@ -307,7 +307,7 @@ assert.match(
 );
 assert.match(
   stickerBookIndex,
-  /main\.js\?v=20260713-1276/,
+  /main\.js\?v=20260713-1278/,
   "StickerBookThreeJS index must bust the module cache for the latest StickerBook changes"
 );
 assert.match(
