@@ -7,6 +7,8 @@
 // batch:1268 regression: 全しきり前面と全37音声の再収録版を配信する。
 // batch:1269 regression: 縦しきりは全おかずより前、横しきりは同じY深度順に戻し、
 // 「あか」の案内だけ発音が自然だった直前TTS3.1/Leda版を復元する。
+// batch:1277 regression: 最後のundo自動復元、カップ青枠即時化、三色再案内、完成確認の間、
+// ピック移動の実操作を追加し、子どもに不要な操作や待ち時間を戻さない。
 
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
@@ -35,7 +37,7 @@ for (const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi))
 assert.ok(scriptCount >= 10, 'expected bento inline scripts');
 assert.doesNotMatch(html, /タップ/, 'child-facing Bento copy must consistently use タッチ');
 
-// 2. のりは 移動→undo→縮小→時計回り→undo→OK の実操作でだけ進む。
+// 2. のりは 移動→undo→縮小→時計回り→説明後の自動復元→OK の順で進む。
 const steps = extract(html, 'const TUT2_STEPS = [', 'function tut2FindStep', 'tutorial steps');
 const moveAt = steps.indexOf("id: 'tut2-nori-move'");
 const moveUndoAt = steps.indexOf("id: 'tut2-nori-move-undo'");
@@ -49,7 +51,7 @@ assert.match(steps, /id: 'tut2-nori-edit', single: true[^\n]*tut2RenderNoriEdit/
 assert.match(steps, /id: 'tut2-nori-undo', single: true[^\n]*tut2RenderNoriUndo/);
 assert.match(steps, /id: 'tut2-nori-ok', single: true[^\n]*tut2RenderNoriOk/);
 
-const moveHook = extract(html, 'function tutorialOnItemMoved(uid)', 'function tutorialNoriEditExpectedCopy', 'nori move hook');
+const moveHook = extract(html, 'function tutorialOnItemMoved(uid, meta = {})', 'function tutorialNoriEditExpectedCopy', 'nori move hook');
 assert.match(moveHook, /noriEditTargetUid = uid/);
 assert.match(moveHook, /noriEditStage = 'shrink'/);
 assert.match(moveHook, /noriMoveTargetUid[\s\S]*?uid !== tutorialState\.noriMoveTargetUid/);
@@ -57,7 +59,7 @@ assert.match(moveHook, /tutorialStopVoiceQueueForImmediateAdvance\(\)/);
 assert.match(moveHook, /tutorialAdvance\('tut2-nori-move-undo'\)/);
 assert.doesNotMatch(moveHook, /tutorialAdvance\('tut2-nori-edit'\)/);
 
-const editHooks = extract(html, 'function tutorialNoriEditExpectedCopy()', '// 位置移動は直後に1回', 'nori edit hooks');
+const editHooks = extract(html, 'function tutorialNoriEditExpectedCopy()', 'function tutorialOnUndoPressed()', 'nori edit hooks');
 const state = { active: true, step: 'tut2-nori-edit', noriEditStage: 'shrink', noriEditTargetUid: 'mouth' };
 const advances = [];
 const eventVoices = [];
@@ -102,17 +104,26 @@ assert.doesNotMatch(html, /tutorialRememberNoriEditHistory|tutorialCollapseNoriE
   'scale and rotation history must never be coalesced');
 
 const undo = extract(html, 'function tutorialOnUndoPressed()', 'function tutorialOnItemPlaced', 'nori undo hook');
-assert.equal((undo.match(/undoFreeItem\(\)/g) || []).length, 3,
-  'undo has normal, move-undo and final-undo branches');
+assert.equal((undo.match(/undoFreeItem\(\)/g) || []).length, 2,
+  'child undo has only normal and position-restore branches');
 assert.match(undo, /tutorialAdvance\('tut2-nori-edit'\)/);
-assert.match(undo, /tutorialAdvance\('tut2-nori-ok'\)/);
 assert.match(undo, /tut2FaceAtDefault/);
+assert.doesNotMatch(undo, /tut2_06b_editundo_last|tutorialAdvance\('tut2-nori-ok'\)/,
+  'pressing undo in the final explanation must neither play another cue nor advance');
 const moveUndoRenderer = extract(html, 'function tut2RenderNoriMoveUndo(step)', 'function tutorialFindNoriEditPlaced', 'move undo renderer');
 assert.match(moveUndoRenderer, /いちど「とりけす」/);
 const undoRenderer = extract(html, 'function tut2RenderNoriUndo(step)', 'function tut2RenderNoriOk', 'final undo renderer');
-assert.match(undoRenderer, /「とりけす」を 2かい/);
-assert.match(undoRenderer, /あと 1かい/);
-assert.doesNotMatch(undoRenderer, /もどるまで/);
+assert.match(undoRenderer, /ひとつずつ まえの そうさに もどせる/);
+assert.match(undoRenderer, /くりかえし おせば、もっと まえまで もどせる/);
+assert.match(undoRenderer, /こんかいは、もとどおりに しておくね/);
+assert.match(undoRenderer, /_noriAutoRestoreTimer = setTimeout[\s\S]*?}, 14000\)/,
+  'audio cancellation must still have a state-owned restoration watchdog');
+assert.doesNotMatch(undoRenderer, /tutorialMarkTarget|tutorialAnimateTap|2かい|あと 1かい/,
+  'the final explanation must not ask the child to press undo');
+assert.match(steps, /id: 'tut2-nori-undo'[^\n]*onVoiceEnded:\s*tutorialAutoRestoreNoriEdits/,
+  'the two silent history restores must start only after narration ended/fallback');
+assert.match(steps, /id: 'tut2-nori-undo'[^\n]*fallbackMs:\s*13000/,
+  'the fallback must be longer than the verified 10.316-second undo narration');
 const undoState = {
   active: true,
   step: 'tut2-nori-move-undo',
@@ -123,11 +134,9 @@ const undoState = {
   _noriEditUndoRemaining: 0,
 };
 let undoCalls = 0;
-let finalUndoCalls = 0;
 let undoSucceeds = true;
 let faceAtDefault = false;
 const undoAdvances = [];
-const undoEventVoices = [];
 const undoTimers = [];
 const undoApi = vm.runInNewContext(`(() => {
   ${undo}
@@ -143,16 +152,11 @@ const undoApi = vm.runInNewContext(`(() => {
     undoCalls++;
     if (!undoSucceeds) return false;
     if (undoState.step === 'tut2-nori-move-undo') faceAtDefault = true;
-    else {
-      finalUndoCalls++;
-      faceAtDefault = finalUndoCalls >= 2;
-    }
     return true;
   },
   freeRedoStack: [{ stale: true }],
   tutorialClearTrims: () => {},
   tutorialHideFinger: () => {},
-  tutorialPlayEventVoiceOnce: (key, id) => { undoEventVoices.push([key, id]); },
   tutorialAdvance: (step) => { undoAdvances.push(step); },
   setTimeout: (fn) => { undoTimers.push(fn); return undoTimers.length; },
 });
@@ -169,33 +173,81 @@ undoState._noriUndoDone = false;
 undoState._noriUndoAckTimer = null;
 undoState._noriEditUndoRemaining = 2;
 faceAtDefault = false;
-undoSucceeds = false;
+const callsBeforeFinalPress = undoCalls;
 undoApi.press();
-assert.equal(undoState._noriEditUndoRemaining, 2, 'a failed undo must not consume a guided press');
+assert.equal(undoCalls, callsBeforeFinalPress,
+  'a child press during automatic restoration must be a no-op');
+assert.equal(undoState._noriEditUndoRemaining, 2);
 assert.equal(undoState._noriUndoDone, false);
-undoSucceeds = true;
-undoApi.press();
-assert.equal(finalUndoCalls, 1, 'the first final undo must restore rotation only');
-assert.equal(undoState._noriEditUndoRemaining, 1);
-assert.equal(undoState._noriUndoDone, false, 'one successful press must not finish two edits');
 assert.equal(undoTimers.length, 0);
-assert.deepEqual(undoEventVoices, [['nori-undo-last', 'tut2_06b_editundo_last']]);
-undoApi.press();
-assert.equal(finalUndoCalls, 2, 'the second final undo must restore the scale');
-assert.equal(undoState._noriEditUndoRemaining, 0);
-assert.equal(undoState._noriUndoDone, true);
-assert.equal(undoTimers.length, 1);
-undoApi.press();
-assert.equal(finalUndoCalls, 2, 'completion guard must preserve face-part placement history');
-assert.equal(undoApi.redoLength(), 0, 'guided edit redo history must be cleared after restoration');
-undoTimers.shift()();
-assert.deepEqual(undoAdvances, ['tut2-nori-edit', 'tut2-nori-ok']);
+
+const autoRestoreSource = extract(
+  html,
+  'function tutorialAutoRestoreNoriEdits()',
+  'function tut2RenderNoriOk',
+  'silent final nori restore',
+);
+assert.match(autoRestoreSource, /while \(remaining > 0[\s\S]*?undoFreeItem\(\{ silent: true \}\)/,
+  'automatic restoration must consume individual undo entries silently');
+assert.match(autoRestoreSource, /freeRedoStack\s*=\s*\[\]/,
+  'automatic restoration must not leave guided edits redoable');
+const autoState = {
+  active: true,
+  step: 'tut2-nori-undo',
+  _noriAutoRestoreStarted: false,
+  _noriAutoRestoreTimer: 91,
+  _noriUndoDone: false,
+  _noriEditUndoRemaining: 2,
+  _noriUndoAckTimer: null,
+};
+let autoFaceDefault = false;
+const silentUndoOptions = [];
+const autoTimers = [];
+const autoAdvances = [];
+const clearedAutoTimers = [];
+const autoApi = vm.runInNewContext(`(() => {
+  ${autoRestoreSource}
+  return { restore: tutorialAutoRestoreNoriEdits, redoLength: () => freeRedoStack.length };
+})()`, {
+  tutorialState: autoState,
+  tut2FaceAtDefault: () => autoFaceDefault,
+  undoFreeItem: opts => {
+    silentUndoOptions.push(opts);
+    if (silentUndoOptions.length >= 2) autoFaceDefault = true;
+    return true;
+  },
+  freeRedoStack: [{ stale: true }],
+  tutorialClearTrims: () => {},
+  tutorialClearOutlines: () => {},
+  tutorialHideFinger: () => {},
+  renderFreeLayoutStage: () => {},
+  renderFreeLayoutControls: () => {},
+  setSpeech: () => {},
+  tutorialAdvance: step => autoAdvances.push(step),
+  clearTimeout: id => clearedAutoTimers.push(id),
+  setTimeout: (fn, delay) => { autoTimers.push({ fn, delay }); return autoTimers.length; },
+});
+assert.equal(autoApi.restore(), true);
+assert.deepEqual(clearedAutoTimers, [91], 'voice-ended restoration must cancel its watchdog');
+assert.deepEqual(silentUndoOptions.map(opts => opts && opts.silent), [true, true],
+  'scale and rotation remain two separate history entries');
+assert.equal(autoState._noriUndoDone, true);
+assert.equal(autoState._noriEditUndoRemaining, 0);
+assert.equal(autoApi.redoLength(), 0);
+assert.equal(autoTimers.length, 1);
+assert.equal(autoTimers[0].delay, 750);
+assert.equal(autoApi.restore(), false, 'ended and fallback races must not restore twice');
+assert.equal(silentUndoOptions.length, 2);
+autoTimers.shift().fn();
+assert.deepEqual(autoAdvances, ['tut2-nori-ok']);
 
 const voiceMap = extract(html, 'const BENTO_TUTORIAL_STEP_VOICE = {', 'let bentoTutorialVoiceAudio', 'tutorial voice map');
-assert.match(html, /const BENTO_TUTORIAL_VOICE_VERSION = 'v1269-red-restore'/,
-  'the shipped narration must bust the cache for the restored red-group voice');
+assert.match(html, /const BENTO_TUTORIAL_VOICE_VERSION = '[^']+'/,
+  'the shipped narration must keep a nonempty cache-busting version');
 assert.match(html, /const BENTO_TUTORIAL_MOCK_VOICE = false/,
   'the shipped narration must play real audio instead of mock timers');
+assert.doesNotMatch(html, /tut2_06b_editundo_last/,
+  'the obsolete second-undo prompt must not remain active in code');
 [
   ['tut2-nori-ok', 'tut2_06c_noriok'],
   ['tut2-free-okazu', 'tut2_10b_freeokazu'],
@@ -203,6 +255,7 @@ assert.match(html, /const BENTO_TUTORIAL_MOCK_VOICE = false/,
   ['tut2-divider-place', 'tut2_11b_dividers'],
   ['tut2-pick-tab', 'tut2_11c_pick_tab'],
   ['tut2-pick-place', 'tut2_11d_pick_place'],
+  ['tut2-pick-move', 'tut2_11e_pick_move'],
   ['tut2-self-start', 'tut2_14b_make_own'],
 ].forEach(([stepId, voiceId]) => {
   assert.match(voiceMap, new RegExp("'" + stepId + "':\\s*'" + voiceId + "'"));
@@ -533,11 +586,11 @@ const shippedVoiceIds = [
   'tut2_02_box', 'tut2_03_rice', 'tut2_04a_eyes', 'tut2_04a_eyes_again',
   'tut2_04b_mouth_nose', 'tut2_04c_mouth',
   'tut2_05_norimove', 'tut2_05b_moveundo', 'tut2_06_noriedit', 'tut2_06a_rotate',
-  'tut2_06b_editundo', 'tut2_06b_editundo_last', 'tut2_06c_noriok',
+  'tut2_06b_editundo', 'tut2_06c_noriok',
   'tut2_07_okazu', 'tut2_08_cupbtn', 'tut2_09_cup', 'tut2_10_cupfood',
   'tut2_10b_freeokazu', 'tut2_17a_leaf_tab', 'tut2_17_leafpick',
   'tut2_18_leafplace', 'tut2_11_tabs', 'tut2_11b_dividers',
-  'tut2_11c_pick_tab', 'tut2_11d_pick_place', 'tut2_12_okazuok',
+  'tut2_11c_pick_tab', 'tut2_11d_pick_place', 'tut2_11e_pick_move', 'tut2_12_okazuok',
   'tut2_13_complete', 'tut2_14_fav', 'tut2_14b_make_own',
   'tut2_15_request', 'tut2_16_deliver',
 ];
@@ -623,6 +676,12 @@ assert.equal(gates.tab('pick').allowed, false, 'four-small-food step must stay o
 gateState.step = 'tut2-leaf-place';
 assert.equal(gates.tab('leaf').allowed, false, 're-touching the leaf tab must not clear the armed lettuce');
 assert.match(gates.tab('leaf').message, /ハンバーグの うえに タッチしてね/);
+gateState.step = 'tut2-pick-move';
+assert.equal(gates.allowance({ id: 'pick_flag', type: 'pick' }).allowed, false,
+  'the move lesson must reject adding another pick');
+assert.match(gates.allowance({ id: 'pick_flag', type: 'pick' }).message, /さした ピックを うごかしてね/);
+assert.equal(gates.tab('pick').allowed, true);
+assert.equal(gates.tab('divider').allowed, false);
 
 const paletteFocusSource = extract(
   html,
@@ -658,6 +717,14 @@ moveGateState.step = 'tut2-nori-edit';
 assert.equal(canMove({ uid: 'eye-1', type: 'decor' }), true,
   'the selected edit target must remain operable through its buttons');
 assert.equal(canMove({ uid: 'eye-2', type: 'decor' }), false);
+moveGateState.step = 'tut2-pick-move';
+moveGateState.pickMoveTargetUid = 'pick-1';
+assert.equal(canMove({ uid: 'pick-1', type: 'pick' }), true,
+  'only the pick just placed for the lesson may move');
+assert.equal(canMove({ uid: 'pick-2', type: 'pick' }), false);
+assert.equal(canMove({ uid: 'eye-1', type: 'decor' }), false);
+assert.match(simplePalettePlacement, /tutorialStep === 'tut2-pick-move'[\s\S]*?return null/,
+  'palette presses must not add a second pick during the move lesson');
 
 // 4. 小さいおかずは4個を数え、三色の短い再案内後にだけ葉っぱへ進む。
 const requiredCounts = extract(
@@ -673,7 +740,9 @@ assert.match(freeOkazuRenderer, /tutorialCountSideFoodItems\(\)/);
 assert.match(freeOkazuRenderer, /tutorialRequiredSideFoodCount\(\)/);
 assert.doesNotMatch(freeOkazuRenderer, /tutorialCountFoodItems\(\)\s*>=\s*4/);
 assert.match(html, /'tut2-cup-food': 'あか・きいろ・みどりの バランスを かんがえて えらぼう！'/);
-assert.match(html, /'tut2-free-okazu': 'ちいさい おかずを 4つ いれよう！'/);
+assert.match(html, /'tut2-free-okazu': 'あか・きいろ・みどりを おもいだして、のこりの おかずも いれてみよう！'/);
+assert.match(freeOkazuRenderer, /firstPrompt[\s\S]*?あか・きいろ・みどりを おもいだして、のこりの おかずも いれてみよう/,
+  'the three-color reminder must be heard once when the remaining-food lesson starts');
 const cupCloseHook = extract(html, 'function tutorialOnCupEditorClosed()', '// legacy layer-edit callback', 'cup close tutorial hook');
 assert.match(cupCloseHook, /tutorialAdvance\('tut2-free-okazu'\)/,
   'closing the first filled cup must join the four-small-food step');
@@ -871,10 +940,13 @@ assert.match(leafPickRenderer, /tutorialEnsureSingleTarget\(choice, \{ radius: 1
 assert.doesNotMatch(leafPickRenderer, /tutorialClearTrims\(\)/,
   'refreshing the lettuce step must not recreate its trim ring');
 const leafPlaceRenderer = extract(html, 'function tut2RenderLeafPlace(step)', 'function tut2RenderFreeOkazu', 'hamburger glow');
-assert.match(leafPlaceRenderer, /tutorialEnsureSingleTarget\(target, \{ radius: 24, outline: true/,
-  'the hamburger must receive the same visible focus treatment');
-assert.doesNotMatch(leafPlaceRenderer, /tutorialClearTrims\(\)/,
-  'refreshing the hamburger step must not recreate its trim ring');
+assert.match(leafPlaceRenderer, /tutorialGlowElement\(target\)/,
+  'the hamburger must receive a shape-following soft glow');
+assert.match(leafPlaceRenderer, /tutorialClearTrims\(\)[\s\S]*?tutorialClearOutlines\(\)/);
+assert.doesNotMatch(leafPlaceRenderer, /tutorialEnsureSingleTarget|tutorialMarkTarget|tutorialTrimPath/,
+  'the hamburger must not receive a blue/white rounded rectangular frame');
+assert.match(html, /\.free-placed-item\.tut-soft-glow\s*\{[\s\S]*?drop-shadow/,
+  'the placed-food focus must follow the image alpha instead of its DOM box');
 
 const focusCss = extract(html, '.tut-focus-overlay {', '/* v3: drop target circle', 'persistent focus CSS');
 assert.match(focusCss, /z-index: 9996/);
@@ -891,16 +963,18 @@ assert.match(trimSource, /tutorialState\.focusOverlayEl \|\| document\.body/,
   'trim nodes must live below the observer-safe overlay root');
 assert.match(trimSource, /function tutorialEnsureSingleTarget/);
 
-// 6. 葉っぱ→しきりタブ→しきり全枠→ピックタブ→ピック配置→OK を実操作で進む。
+// 6. 葉っぱ→完成確認→しきり全枠→完成確認→ピック配置→ピック移動→OK を実操作で進む。
 const leafPlaceAt = steps.indexOf("id: 'tut2-leaf-place'");
 const dividerTabAt = steps.indexOf("id: 'tut2-tabs-intro'");
 const dividerPlaceAt = steps.indexOf("id: 'tut2-divider-place'");
 const pickTabAt = steps.indexOf("id: 'tut2-pick-tab'");
 const pickPlaceAt = steps.indexOf("id: 'tut2-pick-place'");
+const pickMoveAt = steps.indexOf("id: 'tut2-pick-move'");
 const finalOkAt = steps.indexOf("id: 'tut2-okazu-ok'");
 assert.ok(leafPlaceAt < dividerTabAt && dividerTabAt < dividerPlaceAt
-  && dividerPlaceAt < pickTabAt && pickTabAt < pickPlaceAt && pickPlaceAt < finalOkAt,
-  'leaf, divider, pick and OK steps must stay in the guided order');
+  && dividerPlaceAt < pickTabAt && pickTabAt < pickPlaceAt
+  && pickPlaceAt < pickMoveAt && pickMoveAt < finalOkAt,
+  'leaf, divider, pick placement, pick movement and OK must stay in the guided order');
 const tabSwitchHook = extract(html, 'function tutorialOnTabSwitch(tabId)', '// batch:1058 phase1: tut2 見本', 'tutorial tab switch hook');
 assert.match(tabSwitchHook, /s === 'tut2-tabs-intro' && tabId === 'divider'[\s\S]*?advance\('tut2-divider-place'\)/);
 assert.match(tabSwitchHook, /s === 'tut2-pick-tab' && tabId === 'pick'[\s\S]*?advance\('tut2-pick-place'\)/);
@@ -909,9 +983,131 @@ const tabsIntroRenderer = extract(html, 'function tut2RenderTabsIntro(step)', 'f
 assert.doesNotMatch(tabsIntroRenderer, /_tabsChainTimer|tut2-okazu-ok/,
   'divider introduction must not auto-skip to OK');
 assert.match(itemPlacementHook, /step === 'tut2-divider-place' && item\.type === 'divider'[\s\S]*?tutorialDividerSlotProgress\(\)/);
-assert.match(itemPlacementHook, /latest\.filled >= latest\.total[\s\S]*?tutorialAdvance\('tut2-pick-tab'\)/,
-  'divider placement may advance only after a recheck confirms every fixed slot');
-assert.match(itemPlacementHook, /step === 'tut2-pick-place' && item\.type === 'pick'[\s\S]*?tutorialAdvance\('tut2-okazu-ok'\)/);
+assert.match(itemPlacementHook, /progress\.filled >= progress\.total[\s\S]*?tutorialBeginDividerReview\(\)/,
+  'the final divider must enter the completion-review beat');
+assert.match(itemPlacementHook, /step === 'tut2-pick-place' && item\.type === 'pick'[\s\S]*?pickMoveTargetUid = item\.uid[\s\S]*?tutorialAdvance\('tut2-pick-move'\)/);
+assert.doesNotMatch(itemPlacementHook, /step === 'tut2-pick-place'[\s\S]{0,500}?tutorialAdvance\('tut2-okazu-ok'\)/,
+  'placing a pick must not bypass its movement lesson');
+
+const placedResultSource = extract(
+  html,
+  'function tutorialShowPlacedResult()',
+  'function tutorialBeginLeafReview',
+  'placed-result review cleanup',
+);
+assert.match(placedResultSource, /tutorialClearMask\(\)/);
+assert.match(placedResultSource, /tutorialClearPaletteFocus\(\)/,
+  'review beats must remove the dimmed palette state');
+assert.match(placedResultSource, /renderFreeLayoutStage\(\{ immediate: true \}\)/,
+  'review beats must repaint the real, fully opaque placement immediately');
+
+const leafReviewSource = extract(
+  html,
+  'function tutorialBeginLeafReview(leaf, target)',
+  'function tutorialBeginDividerReview',
+  'lettuce review beat',
+);
+assert.match(leafReviewSource, /_leafReviewActive = true[\s\S]*?tutorialShowPlacedResult\(\)/);
+assert.match(leafReviewSource, /}, 1300\)/,
+  'lettuce must stay fully visible before divider guidance starts');
+const leafReviewState = {
+  active: true,
+  step: 'tut2-leaf-place',
+  leafTargetUid: 'hamburger-1',
+  leafTargetName: 'ハンバーグ',
+  _leafReviewActive: false,
+  _leafDoneTimer: null,
+};
+const reviewLeaf = { uid: 'leaf-1', id: 'leaf_lettuce', type: 'leaf' };
+const reviewHamburger = { uid: 'hamburger-1', type: 'food', name: 'ハンバーグ' };
+const leafReviewTimers = [];
+const leafReviewAdvances = [];
+let leafReviewCleanups = 0;
+const beginLeafReview = vm.runInNewContext(`(() => { ${leafReviewSource}; return tutorialBeginLeafReview; })()`, {
+  tutorialState: leafReviewState,
+  placedItems: [reviewHamburger, reviewLeaf],
+  tutorialShowPlacedResult: () => { leafReviewCleanups++; },
+  setSpeech: () => {},
+  setTimeout: (fn, delay) => { leafReviewTimers.push({ fn, delay }); return leafReviewTimers.length; },
+  tutorialStopVoiceQueueForImmediateAdvance: () => {},
+  tutorialAdvance: step => leafReviewAdvances.push(step),
+  tutorialRenderStep: () => {},
+});
+assert.equal(beginLeafReview(reviewLeaf, reviewHamburger), true);
+assert.equal(leafReviewState._leafReviewActive, true);
+assert.equal(leafReviewCleanups, 1);
+assert.equal(leafReviewTimers[0].delay, 1300);
+leafReviewTimers.shift().fn();
+assert.deepEqual(leafReviewAdvances, ['tut2-tabs-intro']);
+
+const dividerReviewSource = extract(
+  html,
+  'function tutorialBeginDividerReview()',
+  'function tutorialOnItemPlaced',
+  'divider review beat',
+);
+assert.match(dividerReviewSource, /_dividerReviewActive = true[\s\S]*?tutorialShowPlacedResult\(\)/);
+assert.match(dividerReviewSource, /}, 1300\)/,
+  'all dividers must stay fully visible before pick guidance starts');
+const dividerReviewState = {
+  active: true,
+  step: 'tut2-divider-place',
+  _dividerReviewActive: false,
+  _dividerDoneTimer: null,
+};
+const dividerReviewTimers = [];
+const dividerReviewAdvances = [];
+let dividerReviewCleanups = 0;
+const beginDividerReview = vm.runInNewContext(`(() => { ${dividerReviewSource}; return tutorialBeginDividerReview; })()`, {
+  tutorialState: dividerReviewState,
+  tutorialShowPlacedResult: () => { dividerReviewCleanups++; },
+  setSpeech: () => {},
+  setTimeout: (fn, delay) => { dividerReviewTimers.push({ fn, delay }); return dividerReviewTimers.length; },
+  tutorialDividerSlotProgress: () => ({ filled: 7, total: 7 }),
+  tutorialStopVoiceQueueForImmediateAdvance: () => {},
+  tutorialAdvance: step => dividerReviewAdvances.push(step),
+  tutorialRenderStep: () => {},
+});
+assert.equal(beginDividerReview(), true);
+assert.equal(dividerReviewState._dividerReviewActive, true);
+assert.equal(dividerReviewCleanups, 1);
+assert.equal(dividerReviewTimers[0].delay, 1300);
+dividerReviewTimers.shift().fn();
+assert.deepEqual(dividerReviewAdvances, ['tut2-pick-tab']);
+
+const pickMoveState = {
+  active: true,
+  step: 'tut2-pick-move',
+  pickMoveTargetUid: 'pick-1',
+  _pickMoveDoneTimer: null,
+};
+const pickMoveTimers = [];
+const pickMoveAdvances = [];
+const pickMoveApi = vm.runInNewContext(`(() => { ${moveHook}; return tutorialOnItemMoved; })()`, {
+  tutorialState: pickMoveState,
+  placedItems: [{ uid: 'pick-1', type: 'pick' }, { uid: 'pick-2', type: 'pick' }],
+  setSpeech: () => {},
+  tutorialClearTrims: () => {},
+  tutorialClearTargetCircle: () => {},
+  tutorialClearOutlines: () => {},
+  tutorialHideFinger: () => {},
+  tutorialHidePointingHand: () => {},
+  setTimeout: (fn, delay) => { pickMoveTimers.push({ fn, delay }); return pickMoveTimers.length; },
+  tutorialStopVoiceQueueForImmediateAdvance: () => {},
+  tutorialAdvance: step => pickMoveAdvances.push(step),
+});
+pickMoveApi('pick-2', { distance: 40, cancelled: false });
+pickMoveApi('pick-1', { distance: 40, cancelled: true });
+pickMoveApi('pick-1', { distance: 8, cancelled: false });
+assert.equal(pickMoveTimers.length, 0,
+  'wrong, cancelled and eight-pixel gestures must not complete the lesson');
+pickMoveApi('pick-1', { distance: 8.01, cancelled: false });
+assert.equal(pickMoveTimers.length, 1);
+assert.equal(pickMoveTimers[0].delay, 800);
+pickMoveApi('pick-1', { distance: 30, cancelled: false });
+assert.equal(pickMoveTimers.length, 1, 'movement completion must be exact-once');
+pickMoveTimers.shift().fn();
+assert.deepEqual(pickMoveAdvances, ['tut2-okazu-ok']);
 
 const dividerProgressSource = extract(
   html,
@@ -948,6 +1144,7 @@ const dividerState = {
 };
 let dividerFilled = 6;
 let dividerRenders = 0;
+let dividerReviewRequests = 0;
 const dividerTimers = [];
 const dividerAdvances = [];
 const dividerPlacement = vm.runInNewContext(`(() => { ${itemPlacementHook}; return tutorialOnItemPlaced; })()`, {
@@ -957,6 +1154,7 @@ const dividerPlacement = vm.runInNewContext(`(() => { ${itemPlacementHook}; retu
   tutorialStopVoiceQueueForImmediateAdvance: () => {},
   tutorialAdvance: next => { dividerAdvances.push(next); },
   tutorialRenderStep: () => { dividerRenders++; },
+  tutorialBeginDividerReview: () => { dividerReviewRequests++; return true; },
   setSpeech: () => {},
   setTimeout: (fn, delay) => { dividerTimers.push({ fn, delay }); return dividerTimers.length; },
   clearTimeout: () => {},
@@ -969,12 +1167,15 @@ assert.equal(dividerRenders, 1);
 assert.deepEqual(dividerAdvances, []);
 dividerFilled = 7;
 dividerPlacement({ type: 'divider' });
-assert.equal(dividerTimers.length, 1);
-assert.equal(dividerTimers[0].delay, 600, 'the seventh fixed divider gets a short completion beat');
+assert.equal(dividerTimers.length, 1,
+  'the seventh divider waits one task so its normal placement render cannot overwrite the review');
+assert.equal(dividerTimers[0].delay, 0);
+assert.equal(dividerReviewRequests, 0);
 dividerTimers.shift().fn();
-assert.deepEqual(dividerAdvances, ['tut2-pick-tab']);
+assert.equal(dividerReviewRequests, 1);
+assert.deepEqual(dividerAdvances, []);
 
-// 7. 青枠はscroll安定後に1回だけ開始し、Phase A→Bやobserver更新で作り直さない。
+// 7. 一般の青枠はscroll安定後に始めるが、カップだけは音声と同時に即時表示する。
 assert.match(html, /\.tut-trim-box rect \{[\s\S]*?animation: none;/);
 assert.match(html, /\.tut-trim-box rect \{[\s\S]*?stroke-dashoffset: 0;[\s\S]*?opacity: 0;/,
   'pre-ready trim stays hidden while retaining the complete line geometry');
@@ -990,6 +1191,59 @@ const dispatcher = extract(html, 'function tutorialRenderStep()', '// .free-tab 
 const phaseCallback = extract(dispatcher, 'tutorialSetPhaseATimer', '} else {', 'phase transition');
 assert.doesNotMatch(phaseCallback, /renderedStep\s*=\s*null/,
   'Phase A -> B must preserve the same trim node');
+
+const paletteObserver = extract(
+  html,
+  'function tutorialInstallPaletteObserver()',
+  'function tutorialUninstallPaletteObserver()',
+  'palette observer root',
+);
+const foodTrayLookupAt = paletteObserver.indexOf("document.getElementById('food-tray')");
+const bodyFallbackAt = paletteObserver.indexOf('document.body');
+assert.ok(foodTrayLookupAt >= 0 && foodTrayLookupAt < bodyFallbackAt,
+  'the persistent food tray must be observed before any body fallback');
+assert.match(paletteObserver, /obs\.observe\(target, \{ childList: true, subtree: !shallowOnly \}\)/,
+  'replacement palette lists must trigger an immediate rebind');
+
+const cupButtonRenderer = extract(
+  html,
+  'function tut2RenderCupBtn(step)',
+  'function tut2FocusCupPaletteImmediately(step)',
+  'cup button retry',
+);
+assert.match(cupButtonRenderer, /if \(!btn\)[\s\S]*?tutorialRetryRenderStep\(step\.id, 120\)[\s\S]*?return/,
+  'a temporarily missing cup button must retry instead of dropping its blue focus');
+const cupImmediateFocus = extract(
+  html,
+  'function tut2FocusCupPaletteImmediately(step)',
+  'function tut2RenderCupPlacePhaseA(step)',
+  'immediate cup palette focus',
+);
+assert.match(cupImmediateFocus, /tutorialFindFirstCupPaletteEl\(\)/);
+assert.match(cupImmediateFocus, /tutorialRetryRenderStep\(step\.id, 120\)/,
+  'a rebuilt cup palette button must get a short retry');
+assert.match(cupImmediateFocus, /_tutorialScrollPaletteIntoView\(palette, \{ smooth: false, stepId: step\.id \}\)/,
+  'the cup target must become visible synchronously rather than after a long smooth-scroll chain');
+assert.match(cupImmediateFocus, /tutorialFindFirstCupPaletteEl\(\) \|\| palette/,
+  'focus must re-acquire the current palette DOM after scrolling');
+assert.match(cupImmediateFocus, /tutorialEnsureSingleTarget\(palette/,
+  'the immediate helper must attach the persistent blue target');
+const cupPhaseA = extract(
+  html,
+  'function tut2RenderCupPlacePhaseA(step)',
+  'function tut2RenderCupPlacePhaseB(step)',
+  'cup place phase A',
+);
+const cupPhaseB = extract(
+  html,
+  'function tut2RenderCupPlacePhaseB(step)',
+  'function tut2RenderCupFoodPhaseA(step)',
+  'cup place phase B',
+);
+assert.ok(cupPhaseA.indexOf('tut2FocusCupPaletteImmediately(step)') < cupPhaseA.indexOf('setTimeout('),
+  'phase A must draw the cup frame before its delayed finger demonstration');
+assert.match(cupPhaseB, /tut2FocusCupPaletteImmediately\(step\)/,
+  'phase B must preserve/rebind the same immediate cup focus');
 
 const noriPhase = extract(html, 'function tut2RenderNoriPhaseA(step)', 'function tut2RenderNoriMovePhaseA', 'nori palette phases');
 assert.match(noriPhase, /_tutorialWaitForPaletteStable|tutorialScrollThenTap/);
