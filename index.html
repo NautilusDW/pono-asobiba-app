@@ -746,6 +746,30 @@
     .pc-feature-entry-copy strong::after{
       content:" →";
     }
+    .pc-feature-note{
+      display:flex;
+      align-items:flex-start;
+      gap:8px;
+      margin:9px 4px 0;
+      color:var(--pc-text-light);
+      font-size:clamp(11px,1.6vw,12.5px);
+      font-weight:700;
+      line-height:1.55;
+    }
+    .pc-feature-note-badge{
+      display:inline-flex;
+      flex:0 0 auto;
+      align-items:center;
+      min-height:24px;
+      padding:2px 8px;
+      border:1px solid rgba(201,106,46,.25);
+      border-radius:999px;
+      background:#FFF5EA;
+      color:var(--pc-primary-deep);
+      font-weight:900;
+      white-space:nowrap;
+    }
+    .pc-feature-note-copy{padding-top:2px;}
     .pc-feature-entry:hover{
       transform:translateY(-2px);
       border-color:rgba(201,106,46,.35);
@@ -776,7 +800,7 @@
     .pc-title-term{display:inline-block;white-space:nowrap;}
     .play-cards--extras .pc-growth{margin-top:auto;}
     .play-cards--extras .pc-growth b{display:inline-block;}
-    /* ガチャ visual：CSS で描いた素朴なカプセルトイ機（16/9 に収める） */
+    /* ガチャガチャ visual：CSS で描いた素朴なカプセルトイ機（16/9 に収める） */
     .pc-v-gacha{display:flex;align-items:center;justify-content:center;background:linear-gradient(150deg,#FCEBD6,#F6D2AE);}
     .pc-v-gacha .gacha{position:relative;height:86%;aspect-ratio:3/4;}
     .pc-v-gacha .gacha-dome{position:absolute;top:0;left:0;right:0;height:46%;border-radius:50% 50% 14% 14%/60% 60% 14% 14%;
@@ -794,7 +818,7 @@
     .pc-v-gacha .gacha-knob::after{content:"";position:absolute;inset:36%;border-radius:3px;background:#C96A2E;transform:rotate(45deg);}
     .pc-v-gacha .gacha-out{position:absolute;bottom:7%;left:50%;transform:translateX(-50%);width:36%;aspect-ratio:1;border-radius:50%;
       background:#FDD05E;border:3px solid #fff;box-shadow:0 3px 7px rgba(93,78,55,.25);}
-    /* ガチャ札を左上へ（右上だとテープと被るため）— specificity を底上げして base .pc-bubble の right:-6px を確実に上書き */
+    /* ガチャガチャ札を左上へ（右上だとテープと被るため）— specificity を底上げして base .pc-bubble の right:-6px を確実に上書き */
     .pc-bubble.pc-bubble--left{left:-6px;right:auto;transform:rotate(-5deg);border-radius:14px 14px 4px 14px;}
     /* mt4 のテープを中央右寄りに（既存 left:42% → 60%） */
     .pc-card--mt4::before{left:60%;}
@@ -978,7 +1002,7 @@
     .sticker-extra-title{font-weight:900;font-size:clamp(18px,4.5vw,22px);margin:0 0 6px;color:#5D4E37;}
     .sticker-extra-play{font-weight:700;font-size:clamp(13.5px,3.4vw,15px);line-height:1.7;color:#5D4E37;margin:0;}
 
-    /* --- ガチャ並列 追加分 --- */
+    /* --- ガチャガチャ並列 追加分 --- */
     .sticker-extra-grid{display:grid;grid-template-columns:1fr;gap:14px;}
     @media (min-width:560px){.sticker-extra-grid{grid-template-columns:1fr 1fr;align-items:stretch;}}
     .sticker-extra-card{display:flex;flex-direction:column;}  /* 既存 .sticker-extra-card に flex を足す（2枚の高さ揃え用） */
@@ -992,7 +1016,7 @@
       color:#7A6A4F;line-height:1.65;text-align:center;}
     .se-note b{color:#C96A2E;font-weight:900;}
 
-    /* ガチャ visual：CSS で描いた素朴なカプセルトイ機 */
+    /* ガチャガチャ visual：CSS で描いた素朴なカプセルトイ機 */
     .se-v-gacha{display:flex;align-items:center;justify-content:center;background:linear-gradient(150deg,#FCEBD6,#F6D2AE);}
     .gacha{position:relative;width:46%;max-width:130px;aspect-ratio:3/4;}
     .gacha-dome{position:absolute;top:0;left:0;right:0;height:46%;border-radius:50% 50% 14% 14%/60% 60% 14% 14%;
@@ -2072,9 +2096,10 @@
               <span class="pc-feature-media">
                 <img src="assets/lp/features/gacha-machine_20260712.webp" alt="森のお店に置かれたガチャガチャ本体" width="1280" height="720" loading="lazy" decoding="async">
               </span>
-              <span class="pc-feature-entry-copy"><span>シールの集め方・選び方を</span><strong>詳しく見る</strong></span>
+              <span class="pc-feature-entry-copy"><span>シールの集め方・選び方</span><strong>詳しく見る</strong></span>
             </button>
-            <p class="pc-growth"><img class="pc-growth-label-img" src="assets/ui/growth_heading_pop_sticker_alpha.png" alt="ココが育つ！" width="900" height="300" loading="lazy" decoding="async">ガチャで偶然出会う楽しさと、お店で選ぶ楽しさがあります。まだ持っていないシールがあるときは、その中の一枚をどんぐりと交換するか「とりおき」するか考え、<b>見通しをもって選ぶ力</b>が育ちます。</p>
+            <p class="pc-feature-note"><span class="pc-feature-note-badge">課金なし</span><span class="pc-feature-note-copy">ガチャガチャは基本的に1日1回。ミニゲームで遊ぶと、どんぐりがもらえます。</span></p>
+            <p class="pc-growth"><img class="pc-growth-label-img" src="assets/ui/growth_heading_pop_sticker_alpha.png" alt="ココが育つ！" width="900" height="300" loading="lazy" decoding="async">ガチャガチャで偶然シールに出会う楽しさと、お店で選ぶ楽しさがあります。まだ持っていないシールがあるときは、その中の一枚をどんぐりと交換するか「とりおき」するか考え、<b>見通しをもって選ぶ力</b>が育ちます。</p>
           </div>
         </article>
 
@@ -2087,7 +2112,7 @@
               <span class="pc-feature-media">
                 <img src="assets/lp/features/sticker-book_20260713_001_sticker-book.webp" alt="シールを貼って楽しむ、見開きのシールちょう画面" width="1280" height="720" loading="lazy" decoding="async">
               </span>
-              <span class="pc-feature-entry-copy"><span>シールの貼り方・飾り方を</span><strong>詳しく見る</strong></span>
+              <span class="pc-feature-entry-copy"><span>シールの貼り方・飾り方</span><strong>詳しく見る</strong></span>
             </button>
             <p class="pc-growth"><img class="pc-growth-label-img" src="assets/ui/growth_heading_pop_sticker_alpha.png" alt="ココが育つ！" width="900" height="300" loading="lazy" decoding="async">絵本のようにページをめくり、シールを好きな場所に貼ったり、絵を描き足したりできます。<b>配置を工夫する力と、表現する力</b>が育ちます。</p>
           </div>
@@ -2356,7 +2381,7 @@
           title: 'ガチャガチャとお店',
           accent: '#D87843',
           accentDark: '#A84E28',
-          growth: 'ガチャで偶然出会う楽しさと、お店で選ぶ楽しさがあります。まだ持っていないシールがあるときは、その中の一枚をどんぐりと交換するか「とりおき」するか考え、<b>見通しをもって選ぶ力</b>が育ちます。',
+          growth: 'ガチャガチャで偶然シールに出会う楽しさと、お店で選ぶ楽しさがあります。まだ持っていないシールがあるときは、その中の一枚をどんぐりと交換するか「とりおき」するか考え、<b>見通しをもって選ぶ力</b>が育ちます。',
           hideCta: true,
           scenes: [
             {src:'assets/lp/features/gacha-reveal_20260712.png?v=20260712-1264', alt:'ガチャガチャのカプセルからシールが出た画面', caption:'カプセルを あけると、 まだ もっていなかった シールか、 もう もっている シールかが わかるよ。'},

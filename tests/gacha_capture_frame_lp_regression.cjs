@@ -11,6 +11,17 @@ const root = path.resolve(__dirname, "..");
 const play = fs.readFileSync(path.join(root, "play.html"), "utf8");
 const lp = fs.readFileSync(path.join(root, "index.html"), "utf8");
 
+const assuranceCopy = lp.match(/<ul class="parent-assurance-chips"[\s\S]*?<\/ul>/);
+const gachaCardCopy = lp.match(/<!-- ① ガチャガチャ＋どんぐりショップ -->[\s\S]*?<!-- ② シールちょう＋シールミュージアム -->/);
+const gachaModalCopy = lp.match(/'feature-gacha': \{[\s\S]*?(?=\n\s*'feature-sticker-book':)/);
+assert.ok(assuranceCopy && gachaCardCopy && gachaModalCopy, "the parent-facing gacha-gacha copy scopes must remain discoverable");
+const parentGachaCopy = [assuranceCopy[0], gachaCardCopy[0], gachaModalCopy[0]].join("\n");
+assert.doesNotMatch(
+  parentGachaCopy,
+  /(?<!ガチャ)ガチャ(?!ガチャ)/,
+  "parent-facing assurance, card, alt, aria and modal copy must never abbreviate gacha-gacha"
+);
+
 const gachaBuild = play.match(/gameId: 'play-gacha'[\s\S]*?return await html2canvas\(container, h2cOpts\);/);
 assert.ok(gachaBuild, "play.html must keep the play-gacha html2canvas build");
 assert.match(
@@ -115,6 +126,24 @@ assert.match(lp, />ガチャガチャとお店</, "the LP feature title must use
 assert.match(lp, /data-game="feature-gacha"/, "the LP gacha cover must open the feature detail modal");
 assert.match(lp, /aria-label="ガチャガチャとお店の画面を開く"/, "the LP cover action must use the full name");
 assert.match(lp, /alt:['"]ガチャガチャのカプセルからシールが出た画面['"]/, "the LP alt copy must use the full name");
+assert.match(
+  lp,
+  /<span class="pc-feature-entry-copy"><span>シールの集め方・選び方<\/span><strong>詳しく見る<\/strong><\/span>/,
+  "the gacha-gacha detail label must not keep a dangling particle"
+);
+assert.match(
+  lp,
+  /<span class="pc-feature-entry-copy"><span>シールの貼り方・飾り方<\/span><strong>詳しく見る<\/strong><\/span>/,
+  "the sticker-book detail label must not keep a dangling particle"
+);
+assert.match(lp, /<span class="pc-feature-note-badge">課金なし<\/span>/, "the gacha-gacha card must state that it is not paid");
+assert.match(
+  lp,
+  /<span class="pc-feature-note-copy">ガチャガチャは基本的に1日1回。ミニゲームで遊ぶと、どんぐりがもらえます。<\/span>/,
+  "the gacha-gacha card must explain its daily rhythm and how acorns are earned"
+);
+assert.match(lp, /ガチャガチャで偶然シールに出会う楽しさ/, "the learning copy must use the full name");
+assert.doesNotMatch(lp, /シールの(?:集め方・選び方|貼り方・飾り方)を/, "the removed detail-label particle must not return");
 assert.doesNotMatch(lp, />課金ガチャなし</, "the old abbreviated assurance copy must not return");
 assert.doesNotMatch(lp, />ガチャとおみせ</, "the old abbreviated feature title must not return");
 assert.doesNotMatch(lp, /aria-label="ガチャとお店の画面を開く"/, "the old abbreviated cover label must not return");
