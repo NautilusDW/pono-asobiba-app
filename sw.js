@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2167: なぞなぞトレインの未来を、答えタワーを引き上げ／3回タップで街を組み立てる全画面「ミライ・ビルダー」へ再設計。宇宙は固定楕円軌道を回して答え星をドックへ合わせ、同じ円運動で銀河を巻いて解放する全画面「ぎんがドック」へ別ジャンル化した。誤答復帰・おたすけ・キーボード・reduced-motion・5問履歴を維持 (batch:1282)。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/テストのみ変更)。
 // v2166: データ分析基盤 P0 (docs/data-analytics-plan.md) — common/telemetry.js を CRITICAL_ASSETS_SCRIPTS へ追加 precache (rating-modal.js と同じ並列作成パターン、asset 単位 try/catch のため未配備でも install 失敗にならない)。privacy.html は help.html と同じく HTML なので isHTML passthrough の対象外 = precache 登録不要 (network-first で鮮度担保)。rebase 時に v2165 (なぞなぞトレイン改修, batch:1281) と番号衝突したため +1 で再採番。play.html PAGE_CACHE_VERSION と同期 (2166)。
 // v2165: なぞなぞトレインの未来を3個の正解カプセルで街を点灯する全画面マグネットゲート、宇宙を答えポータルへ重力スイングする長押し・解放ゲームへ別ジャンル化。宇宙は5問で星座線が完成し、最終問だけ全画面発光する。町・ジャングル・数字・未来の6背景素材は枝間など内部に残った白だけを透過し、花・数字面・ハイライトを保持した (batch:1281)。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/画像/テストのみ変更)。
 // v2164: タイトルのおしらせを公式情報だけの1一覧へ戻し、おみせタブ・ショップ記事・記事内導線を撤去。ショップ更新は公式未読数から完全に分離し、タイトルの明るい更新札とガチャ内の更新badgeだけで一目表示して、実際におみせを開いた時だけ消す (batch:1283)。play.html PAGE_CACHE_VERSION と同期 (2164)。
@@ -91,7 +92,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2166;
+const CACHE_VERSION = 2167;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
