@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2169: おべんとうのお店モード（おねがいモード）で、のり細工・顔のり等の「かざり」タブを非表示にし新規配置も禁止（チュートリアル中は従来どおり全のり教習可）。ごはんタブをお店モードだけ しろごはん／うめぼし／のりべんセットの3択にし、のり弁はご飯シルエットPNGのCSSマスクで帯のり3枚を全7箱のご飯形状へ自動フィット（新規画像なし）。お店モード初回に「おねがいどおりに つくって とどけてあげてね」の無音橋渡しカードを追加 (batch:1285)。v2168競合のため再採番。play.html PAGE_CACHE_VERSION と同期不要 (bento/index.html/テストのみ変更)。
 // v2168: なぞなぞトレインの深い海で潜水艦の接触回収、独立したクイズ案内、海底生物3種、移動・予告攻撃するおおあわぬしを追加。未来は流れる2択カプセル、宇宙は固定回答を選んで3.25周回すスターエンジンへ再設計し、ロケットの上下左右操作と成功音の一重化も反映した (batch:1285)。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/画像/テストのみ変更)。
 // v2167: なぞなぞトレインの未来を、答えタワーを引き上げ／3回タップで街を組み立てる全画面「ミライ・ビルダー」へ再設計。宇宙は固定楕円軌道を回して答え星をドックへ合わせ、同じ円運動で銀河を巻いて解放する全画面「ぎんがドック」へ別ジャンル化した。誤答復帰・おたすけ・キーボード・reduced-motion・5問履歴を維持 (batch:1282)。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/テストのみ変更)。
 // v2166: データ分析基盤 P0 (docs/data-analytics-plan.md) — common/telemetry.js を CRITICAL_ASSETS_SCRIPTS へ追加 precache (rating-modal.js と同じ並列作成パターン、asset 単位 try/catch のため未配備でも install 失敗にならない)。privacy.html は help.html と同じく HTML なので isHTML passthrough の対象外 = precache 登録不要 (network-first で鮮度担保)。rebase 時に v2165 (なぞなぞトレイン改修, batch:1281) と番号衝突したため +1 で再採番。play.html PAGE_CACHE_VERSION と同期 (2166)。
@@ -93,7 +94,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2168;
+const CACHE_VERSION = 2169;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。

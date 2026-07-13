@@ -1210,6 +1210,26 @@ html, body {
   transform: scale(var(--visual-scale, 1));
   transform-origin: center;
 }
+/* batch:1285 のり弁セット (お店モード ごはんプリセット) */
+.free-noriben-visual { display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; }
+.free-noriben-mask {
+  position: relative;
+  width: 100%;
+  -webkit-mask-size: 100% 100%; mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat; mask-repeat: no-repeat;
+  -webkit-mask-position: center; mask-position: center;
+  mask-mode: alpha;
+  overflow: hidden;
+}
+.free-noriben-mask img {
+  position: absolute;
+  width: var(--cluster-w, 100%);
+  height: auto;
+  left: var(--cluster-x, 50%);
+  top: var(--cluster-y, 50%);
+  transform: translate(-50%, -50%) rotate(var(--cluster-rot, 0deg));
+  transform-origin: center;
+}
 .free-cluster-item {
   position: relative;
   width: 100%;
@@ -8021,6 +8041,9 @@ function restoreFreeHistoryState(state) {
   freeLayerSeq = Math.max(Number(state.freeLayerSeq) || 1, getFreeHistoryMaxLayer(placedItems) + 1);
   freeSelectedItemUid = placedItems.some(item => item.uid === state.freeSelectedItemUid) ? state.freeSelectedItemUid : null;
   freeGuideStep = state.freeGuideStep || freeGuideStep;
+  // batch:1285 fix: undo/redo は setFreeGuideStep を経由しないため、decor→tier2Main の
+  // お店モードリマップをここでも適用しないと のり細工制限を undo で回避できてしまう。
+  if (freeGuideStep === 'decor' && isShopNoriCraftRestricted()) freeGuideStep = 'tier2Main';
   freeCupToolMode = state.freeCupToolMode || 'move';
   freeActiveCupUid = placedItems.some(item => item.uid === state.freeActiveCupUid && item.snapTarget) ? state.freeActiveCupUid : null;
   freeCupEditorUid = placedItems.some(item => item.uid === state.freeCupEditorUid && item.snapTarget) ? state.freeCupEditorUid : null;
@@ -8644,6 +8667,19 @@ function showShopOpening(req, onDone, options = {}) {
       voiceFallbackMs: 9000,
     },
   ];
+  // batch:1285: お店モード初回 (セッション初回) のみ、遊びかたの橋渡しカードを追加。
+  // 音声なし (TTS は後続タスク / fal-ai TTS 禁止)。文言は第三者ナレ視点・キャラ一人称なし。
+  if (!options.skipIntro) {
+    allSteps[allSteps.length - 1] = { ...allSteps[allSteps.length - 1], next: 'つぎへ' };
+    allSteps.push({
+      bg: SHOP_OPENING_ORDER_BG,
+      customer: true,
+      mood: 'request',
+      name: 'おみせの おしごと',
+      line: 'おきゃくさんの おねがいどおりに おべんとうを つくって、とどけてあげてね。',
+      next: 'おべんとうを つくる',
+    });
+  }
   const steps = options.skipIntro ? allSteps.slice(1) : allSteps;
 
   let stepIndex = 0;
@@ -10171,6 +10207,14 @@ function getSimpleDecorPaletteRank(def) {
   const idx = SIMPLE_DECOR_PALETTE_ORDER.indexOf(def && def.id);
   return idx >= 0 ? idx : SIMPLE_DECOR_PALETTE_ORDER.length + 1;
 }
+// batch:1285: お店モード (currentRequester あり) では のり細工 decor を新規使用不可。
+// tutorialState.active 中は必ずバイパス (request モード初回チュートリアルの tut2-nori-* を壊さない)。
+// 判定に tutorialState.mode / bento_play_mode を使ってはいけない (正本は currentRequester)。
+function isBentoShopMode() { return !!currentRequester; }
+function isShopNoriCraftRestricted() {
+  try { if (typeof tutorialState !== 'undefined' && tutorialState && tutorialState.active) return false; } catch (_) {}
+  return isBentoShopMode();
+}
 function getDecorPaletteCatalog() {
   const catalog = decorItems
     .filter(isBentoDecorUnlocked)
@@ -10185,7 +10229,12 @@ function getDecorPaletteCatalog() {
 function getFreeGuideTabs() {
   if (freeGuideStep === 'box') return FREE_TABS.filter(t => t.id === 'box');
   if (freeGuideStep === 'rice') return FREE_TABS.filter(t => t.id === 'rice');
-  if (freeGuideStep === 'decor') return FREE_TABS.filter(t => t.id === 'decor');
+  // batch:1285 fix: freeGuideStep が 'decor' でも お店モード制限中は のり細工タブを出さない
+  // (undo/redo など setFreeGuideStep を経由しない経路で freeGuideStep='decor' が残るケースの防御)。
+  // setFreeGuideStep の decor→tier2Main リマップと同じ着地 (おかず/food タブ) にフォールバックする。
+  if (freeGuideStep === 'decor') {
+    return isShopNoriCraftRestricted() ? FREE_TABS.filter(t => t.id === 'food') : FREE_TABS.filter(t => t.id === 'decor');
+  }
   if (isOkazuGuideStep()) {
     if (String(freeGuideStep).endsWith('Side')) {
       // v1494 cup-first: 小さいおかずはカップ経由のみ。side ステップから おかず/したにしく タブを撤去し、
@@ -10200,7 +10249,8 @@ function getFreeGuideTabs() {
     return FREE_TABS.filter(t => t.id === 'food');
   }
   if (freeGuideStep === 'tier3Prompt') return [];
-  return FREE_TABS;
+  // batch:1285: お店モードでは のり細工 decor タブを非表示にする
+  return FREE_TABS.filter(t => !(t.id === 'decor' && isShopNoriCraftRestricted()));
 }
 function normalizeFreeGuideTab() {
   // v1500: カップピッカー (cup editor) 表示中は food タブを維持する。
@@ -10967,6 +11017,8 @@ function getFreeGuideCopy() {
 function setFreeGuideStep(step, opts = {}) {
   if (step === 'tier2') step = 'tier2Main';
   if (step === 'tier3') step = 'tier3Main';
+  // batch:1285: お店モードでは のり細工工程 (decor step) をスキップして おかずへ直行
+  if (step === 'decor' && isShopNoriCraftRestricted()) step = 'tier2Main';
   freeGuideStep = step;
   simpleNoCupSlotIndex = null;
   simpleLeafApplyArmed = false; // batch:1045: step 変更で必ずアーム解除
@@ -11057,7 +11109,18 @@ function getFreePaletteItems(tabId) {
   if (tabId === 'pick') return decorItems.filter(item => item.type === 'pick' && isBentoDecorUnlocked(item));
   // v1373: のり弁を rice palette から削除。 のりは decor step で別 layer から乗せる。
   // getNoribenPaletteItem は将来復活/admin 等のため定義のみ残す。
-  if (tabId === 'rice') return [getAutoRicePaletteItem()];
+  if (tabId === 'rice') {
+    const riceItems = [getAutoRicePaletteItem()];
+    // batch:1285: お店モードは ごはん3択 (しろごはん/うめぼし/のりべんセット)。自由モード・チュートリアル中は従来の1択
+    if (isShopNoriCraftRestricted()) {
+      riceItems[0] = { ...riceItems[0], name: 'しろごはん' };
+      const umeDef = decorItems.find(d => d.id === 'decor_umeboshi');
+      if (umeDef && isBentoDecorUnlocked(umeDef)) riceItems.push(getUmeboshiRicePaletteItem());
+      const sheetDef = decorItems.find(d => d.id === 'nori_bento_sheet');
+      if (sheetDef && isBentoDecorUnlocked(sheetDef)) riceItems.push(getNoribenRicePaletteItem());
+    }
+    return riceItems;
+  }
   if (tabId === 'food') {
     const foods = getFreeFoodCatalog();
     if (isOkazuGuideStep()) {
@@ -11099,6 +11162,46 @@ function getNoribenPaletteItem() {
     image: FREE_ASSET + 'nori_bento_sheet.png',
     css: base.css,
     size: base.size,
+  };
+}
+// batch:1285: お店モード ごはん3択プリセット。 サムネはチュートリアル箱 (box_rect_split) の rice_base_round 固定 1 種のみ。
+const NORIBEN_RICE_MASK_ASPECT = { rice_base_round: 343 / 303, rice_base_bear: 468 / 411, rice_base_cat: 512 / 438 }; // 実PNG natural size 実測
+const NORIBEN_STRIPS = [
+  { y: -0.30, w: 1.0, rotation: -1.5 },
+  { y: 0, w: 1.0, rotation: 1 },
+  { y: 0.30, w: 1.0, rotation: -1 },
+];
+function getUmeboshiRicePaletteItem() {
+  const base = riceBases[0];
+  return {
+    id: 'rice_preset_umeboshi', type: 'rice_auto', ricePreset: 'umeboshi', name: 'うめぼし', size: base.size,
+    clusterImages: [
+      { img: base.image, x: 0, y: 0, w: 1 },
+      { img: FREE_ASSET + 'decor_umeboshi_20260703.png', x: 0, y: -0.03, w: 0.28 },
+    ],
+  };
+}
+function getNoribenRicePaletteItem() {
+  const base = riceBases[0];
+  return {
+    id: 'rice_preset_noriben', type: 'rice_auto', ricePreset: 'noriben', name: 'のりべんセット', size: base.size,
+    riceMaskImage: base.image, riceMaskAspect: NORIBEN_RICE_MASK_ASPECT[base.id],
+    clusterImages: [{ img: base.image, x: 0, y: 0, w: 1 }].concat(
+      NORIBEN_STRIPS.map(s => ({ img: FREE_ASSET + 'nori_bento_sheet.png', x: 0, y: s.y, w: s.w, rotation: s.rotation }))
+    ),
+  };
+}
+function getNoribenSetItemDef() {
+  // batch:1285: id は nori_ prefix だが「のり禁止」判定は必ず isShopNoriCraftRestricted + decor パレット経路で行うこと。
+  // id prefix ベースの判定に切り替えると、このアイテム自身を巻き込んでしまう。
+  const box = getSelectedBentoBox();
+  const auto = box.autoRice || { baseRice: 'rice_base_round' };
+  const base = riceBases.find(r => r.id === auto.baseRice) || riceBases[0];
+  return {
+    id: 'nori_bento_set', // 'nori_' prefix → isNoriDecorItem → free-rice-decor-layer 描画を自動継承
+    type: 'decor', name: 'のりべん', layerBase: 21, size: base.size,
+    riceMaskImage: base.image, riceMaskAspect: NORIBEN_RICE_MASK_ASPECT[base.id] || NORIBEN_RICE_MASK_ASPECT.rice_base_round,
+    clusterImages: NORIBEN_STRIPS.map(s => ({ img: FREE_ASSET + 'nori_bento_sheet.png', x: 0, y: s.y, w: s.w, rotation: s.rotation })),
   };
 }
 function getBoxCenterSpot(box) {
@@ -14442,6 +14545,13 @@ function addSimpleFreePaletteItem(def) {
     }
   }
   if (def.type === 'decor') {
+    // batch:1285: お店モードでは のり細工 decor の新規配置を禁止 (表示互換: 既存配置の描画は不変)
+    if (isShopNoriCraftRestricted()) {
+      const message = 'おみせの おべんとうには のりの かざりは つかわないよ。';
+      try { setSpeech(message); } catch (_) {}
+      try { showToast(message); } catch (_) {}
+      return null;
+    }
     // review fix (2026-07-11): とりけす教習中 (tut2-nori-undo) / のりOK ソフトゲート中
     // (tut2-nori-edit) に同じ部位の decor パレットを再タッチすると、
     // createSimpleDecorPlacedItem / addSimpleFaceSetPaletteItem が既存アイテムを削除して
@@ -14501,6 +14611,7 @@ function addSimpleFreePaletteItem(def) {
   let item = null;
   if (def.type === 'rice_auto') {
     item = addAutoRiceForSelectedBox();
+    if (item && def.ricePreset) addShopRicePresetTopping(def.ricePreset, item); // batch:1285
     simpleReplaceSlotUid = null;
     simpleNoCupSlotIndex = null;
     simpleCupSlotIndex = null;
@@ -14695,6 +14806,8 @@ function addFreeLayoutItem(def, opts = {}) {
     variantIndex: variantIndex >= 0 ? variantIndex : 0,
     clusterImages: Array.isArray(def.clusterImages) ? def.clusterImages.map(piece => ({ ...piece })) : null,
     renderAspect: opts.renderAspect || def.renderAspect || 1,
+    riceMaskImage: def.riceMaskImage || '', // batch:1285 のり弁マスク (favorites 生 snapshot 往復用)
+    riceMaskAspect: def.riceMaskAspect || 0,
     parentId: opts.parentId || null,
     parentCupId,
     simpleSlot: opts.simpleSlot || '',
@@ -15446,6 +15559,29 @@ function addAutoRiceForSelectedBox(opts = {}) {
   if (!opts.skipGuideAdvance && freeGuideStep === 'rice') setFreeGuideStep('decor');
   return rice;
 }
+// batch:1285: お店モード ごはんプリセットのトッピング。 rice の子にして連鎖削除/追従移動を継承する。
+function addShopRicePresetTopping(kind, rice) {
+  if (!rice) return;
+  if (kind === 'umeboshi') {
+    const umeDef = decorItems.find(d => d.id === 'decor_umeboshi');
+    if (!umeDef) return;
+    addFreeLayoutItem(umeDef, {
+      x: rice.x, y: rice.y - Math.round((rice.size || 138) * 0.02),
+      size: Math.max(44, Math.round((rice.size || 138) * 0.26)),
+      tier: rice.tier, parentId: rice.uid, rotation: 0, skipRender: true, skipTutorialPlace: true,
+    });
+  } else if (kind === 'noriben') {
+    addFreeLayoutItem(getNoribenSetItemDef(), {
+      x: rice.x, y: rice.y, size: rice.size,
+      tier: rice.tier, parentId: rice.uid, rotation: 0, skipRender: true, skipTutorialPlace: true,
+    });
+  }
+  // batch:1285 fix: addFreeLayoutItem() always selects whatever it just placed (the child
+  // topping), so restore selection to the parent rice — mirrors addRiceFaceTemplate() (L15516).
+  freeSelectedItemUid = rice.uid;
+  renderFreeLayoutStage();
+  renderFreeLayoutControls();
+}
 function resetSimpleBentoBuildForBoxChange() {
   placedItems = [];
   resetFreeHistory();
@@ -15539,6 +15675,31 @@ function confirmFreeBentoBoxSelection() {
   }
 }
 function createFreeVisual(item) {
+  if (item && item.riceMaskImage && Array.isArray(item.clusterImages) && item.clusterImages.length) {
+    // batch:1285 のり弁: ご飯シルエット PNG を CSS mask にして帯のりを切る (applyBoxVisualMask と同手法)
+    const wrap = document.createElement('div');
+    wrap.className = 'free-cluster-item free-noriben-visual';
+    const maskBox = document.createElement('div');
+    maskBox.className = 'free-noriben-mask';
+    maskBox.style.aspectRatio = String(item.riceMaskAspect || (343 / 303));
+    const maskUrl = `url("${item.riceMaskImage}")`;
+    maskBox.style.setProperty('-webkit-mask-image', maskUrl);
+    maskBox.style.setProperty('mask-image', maskUrl);
+    item.clusterImages.forEach(piece => {
+      const src = piece && (piece.img || piece.image);
+      if (!src) return;
+      const img = document.createElement('img');
+      img.src = src;
+      img.alt = item.name || '';
+      img.style.setProperty('--cluster-x', ((Number.isFinite(Number(piece.x)) ? Number(piece.x) : 0) * 100 + 50) + '%');
+      img.style.setProperty('--cluster-y', ((Number.isFinite(Number(piece.y)) ? Number(piece.y) : 0) * 100 + 50) + '%');
+      img.style.setProperty('--cluster-w', ((Number.isFinite(Number(piece.w)) ? Number(piece.w) : 1) * 100) + '%');
+      img.style.setProperty('--cluster-rot', (Number.isFinite(Number(piece.rotation)) ? Number(piece.rotation) : 0) + 'deg');
+      maskBox.appendChild(img);
+    });
+    wrap.appendChild(maskBox);
+    return wrap;
+  }
   if (item && Array.isArray(item.clusterImages) && item.clusterImages.length) {
     const wrap = document.createElement('div');
     wrap.className = 'free-cluster-item';
@@ -15594,7 +15755,7 @@ function createFreePlacedElement(item, interactive) {
   el.style.setProperty('--scale', item.scale || 1);
   el.style.setProperty('--visual-scale', item.visualScale || 1);
   el.appendChild(createFreeVisual(item));
-  if (interactive && !freeBrushStampDef && !simpleLeafArmedDef && !leafReference) {
+  if (interactive && !item.riceMaskImage /* batch:1285 のり弁セットは固定 */ && !freeBrushStampDef && !simpleLeafArmedDef && !leafReference) {
     el.addEventListener('pointerdown', ev => {
       ev.stopPropagation();
       if (simpleBentoMode) {
