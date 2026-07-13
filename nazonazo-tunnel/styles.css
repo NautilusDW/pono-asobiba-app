@@ -796,13 +796,28 @@ body.ios-device #world,body.ios-device #horizon,body.ios-device #veh,body.ios-de
 body.ios-device .train-art,body.ios-device .train-wheel,body.ios-device .car-wheel,
 body.ios-device .train-wheel-rod,body.ios-device .train-main-rod,body.ios-device .train-crosshead,
 body.ios-device .runEvent,body.ios-device .sea-fish,body.ios-device .sea-shot,body.ios-device .sea-companion,body.ios-device .sea-answer-bubble,
-body.ios-device .jungle-animal-sprite,body.ios-device #smokeLayer,body.ios-device .magic-puff{
+body.ios-device .jungle-animal-sprite{
   -webkit-backface-visibility:hidden;backface-visibility:hidden;transform-style:flat}
 body.ios-device #veh.idle .vbody{animation:none}
 body.ios-device .train-wheel,body.ios-device .car-wheel,
 body.ios-device .train-wheel-rod,body.ios-device .train-main-rod,body.ios-device .train-crosshead,
 body.ios-device .magic-puff{filter:none}
-body.ios-device #smokeLayer .magic-puff{transform:translate3d(0,0,0) scale(var(--puff-start-scale))}
+/* Safariでは動的に追加した煙を車体と同じ合成層へ入れると消えることがあるため、煙だけ独立させる。 */
+body.ios-device #smokeLayer{z-index:10;overflow:visible;contain:layout paint;isolation:isolate;
+  -webkit-transform:translateZ(0);transform:translateZ(0)}
+body.ios-device #smokeLayer .magic-puff{-webkit-backface-visibility:visible;backface-visibility:visible;transform-style:flat;
+  animation-name:magicPuffFly;animation-fill-mode:forwards}
+/* iPadの60Hz表示で回転がエイリアスしない速度へ揃え、客車側も必ず同じ長手指定で動かす。 */
+body.ios-device.v-train #veh.go .train-wheel,
+body.ios-device.v-train #cars.go .car-wheel{animation-name:spin;animation-duration:var(--wheel-period,1.3s);animation-timing-function:linear;animation-iteration-count:infinite;animation-play-state:running;will-change:transform}
+body.ios-device.v-train #veh.go .train-wheel-rod{animation-name:sideRodTravel;animation-duration:var(--wheel-period,1.3s);animation-timing-function:linear;animation-iteration-count:infinite;animation-play-state:running}
+body.ios-device.v-train #veh.go .train-main-rod{animation-name:mainRodTravel;animation-duration:var(--wheel-period,1.3s);animation-timing-function:linear;animation-iteration-count:infinite;animation-play-state:running}
+body.ios-device.v-train #veh.go .train-crosshead{animation-name:crossheadSlide;animation-duration:var(--wheel-period,1.3s);animation-timing-function:linear;animation-iteration-count:infinite;animation-play-state:running}
+body.ios-device.tunnel-interior.v-train #veh.go .train-wheel,
+body.ios-device.tunnel-interior.v-train #cars.go .car-wheel,
+body.ios-device.tunnel-interior.v-train #veh.go .train-wheel-rod,
+body.ios-device.tunnel-interior.v-train #veh.go .train-main-rod,
+body.ios-device.tunnel-interior.v-train #veh.go .train-crosshead{animation-duration:var(--wheel-period,1.5s)}
 body.ios-device .runEvent{animation:none}
 body.ios-device .runEvent::after{animation:none;opacity:.8}
 body.ios-device .runEvent.found{animation:runEventFound .55s ease forwards}
@@ -875,6 +890,28 @@ body.st-space.v-rocket #veh.inTun .rk-body{filter:brightness(.72) saturate(.8) d
   50%{opacity:.48;transform:translate3d(3vw,-3vh,20px) rotateX(54deg) rotateY(28deg) rotateZ(180deg) scale(calc(var(--scale) * 1.1))}
   100%{opacity:.2;transform:translate3d(-3vw,0,-150px) rotateX(72deg) rotateY(0deg) rotateZ(360deg) scale(var(--scale))}
 }
+/* iOSのpreserve-3d合成ちらつきを避ける、低振幅の2D版。 */
+@keyframes numCardDriftIos{
+  0%,100%{opacity:.82;transform:translate3d(-1vw,1vh,0) rotate(var(--rot)) scale(var(--scale))}
+  50%{opacity:.9;transform:translate3d(1vw,-1vh,0) rotate(calc(var(--rot) + 6deg)) scale(var(--scale))}
+}
+@keyframes numPolyOrbitIos{
+  0%,100%{opacity:.34;transform:translate3d(-.6vw,.8vh,0) rotate(0deg) scale(var(--scale))}
+  50%{opacity:.42;transform:translate3d(.8vw,-.8vh,0) rotate(18deg) scale(var(--scale))}
+}
+@keyframes numRingSpinIos{
+  0%{opacity:.3;transform:translate3d(-.6vw,.4vh,0) rotate(0deg) scale(var(--scale))}
+  50%{opacity:.36;transform:translate3d(.6vw,-.4vh,0) rotate(180deg) scale(var(--scale))}
+  100%{opacity:.3;transform:translate3d(-.6vw,.4vh,0) rotate(360deg) scale(var(--scale))}
+}
+body.ios-device .num-scene{perspective:none;transform-style:flat}
+body.ios-device .num-scene::before{animation-duration:16s;will-change:auto}
+body.ios-device .num-card{animation-name:numCardDriftIos;animation-duration:14s;will-change:auto;-webkit-backface-visibility:hidden;backface-visibility:hidden}
+body.ios-device .num-card:nth-child(3n+2){animation-duration:16s}
+body.ios-device .num-card:nth-child(3n){animation-duration:18s}
+body.ios-device .num-poly{animation-name:numPolyOrbitIos;animation-duration:18s;will-change:auto;-webkit-backface-visibility:hidden;backface-visibility:hidden}
+body.ios-device .num-poly:nth-of-type(even){animation-duration:21s}
+body.ios-device .num-ring{animation-name:numRingSpinIos;animation-duration:26s;transform-style:flat;will-change:auto;-webkit-backface-visibility:hidden;backface-visibility:hidden}
 .spark{position:absolute;font-size:clamp(22px,4.5vw,44px);z-index:9;animation:sparkA .8s ease-out forwards;pointer-events:none}
 @keyframes sparkA{0%{opacity:1;transform:scale(.4)}100%{opacity:0;transform:scale(1.6) translateY(-30px)}}
 .runEvent{appearance:none;-webkit-appearance:none;position:absolute;width:clamp(48px,7vw,70px);aspect-ratio:1;border:3px solid rgba(255,207,94,.95);
@@ -922,11 +959,11 @@ body.tunnel-interior #highScorePill>strong{margin-top:3px;color:#fff;font-size:c
 #weatherNotice .weather-benefit{color:#5965a8}
 
 /* ===== quiz ===== */
-#quiz{position:absolute;left:50%;bottom:2vh;transform:translate(-50%,140%);width:min(94vw,760px);
+#quiz{position:absolute;left:50%;top:50%;bottom:auto;transform:translate(-50%,120vh);width:min(94vw,760px);
   background:var(--panel);border-radius:26px;border:4px solid var(--cardEdge);
   padding:14px 16px calc(14px + env(safe-area-inset-bottom));z-index:11;
   box-shadow:0 8px 24px rgba(0,0,0,.22);transition:transform .5s cubic-bezier(.3,1.4,.5,1)}
-#quiz.show{transform:translate(-50%,0)}
+#quiz.show{transform:translate(-50%,-50%)}
 #qRow{display:flex;align-items:center;gap:10px;margin-bottom:10px}
 #ponoFace{font-size:clamp(30px,6vw,52px);flex:none}
 #qBubble{flex:1;background:#fff;border:3px solid var(--cardEdge);border-radius:18px;padding:8px 12px;position:relative}
@@ -960,6 +997,13 @@ body.st-sea.sea-quiz-active #quiz{width:min(94vw,720px);padding:7px 11px calc(7p
 #quiz.sea-quiz #spkBtn{width:46px}
 #quiz.sea-quiz #helpBtn{width:62px}
 #choices.sea-mode{display:none}
+/* 全画面ミニゲームは中央が操作面なので、問題バーだけ下端へ分離する。 */
+body.st-sea.sea-quiz-active #quiz,
+body.st-future.future-capsule-active #quiz,
+body.st-space.space-galaxy-active #quiz{top:auto;bottom:2vh;transform:translate(-50%,140%)}
+body.st-sea.sea-quiz-active #quiz.show,
+body.st-future.future-capsule-active #quiz.show,
+body.st-space.space-galaxy-active #quiz.show{transform:translate(-50%,0)}
 .number-cargo-game{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(190px,.78fr);gap:9px;width:100%;align-items:stretch}
 .number-cargo-field{position:relative;min-height:128px;display:grid;grid-template-columns:repeat(var(--cargo-columns,5),minmax(46px,1fr));grid-auto-rows:minmax(46px,1fr);
   align-items:center;justify-items:center;gap:3px 5px;padding:28px 7px 6px;border:3px solid #cdbdf1;border-radius:18px;
@@ -1096,7 +1140,7 @@ h1{font-size:clamp(24px,5.6vw,50px);color:#e0704a;text-shadow:0 3px 0 #fff}
   #mapRow{transform:scale(.92);transform-origin:center}
   .mapNode{padding:5px 4px;min-width:clamp(60px,11vw,96px)}
   .mapNode .mi{font-size:clamp(24px,5vw,42px)}
-  #quiz{width:min(96vw,760px);bottom:1vh;border-radius:20px;padding:8px 12px calc(8px + env(safe-area-inset-bottom))}
+  #quiz{width:min(96vw,760px);top:50%;bottom:auto;max-height:calc(100vh - 92px);overflow-y:auto;border-radius:20px;padding:8px 12px calc(8px + env(safe-area-inset-bottom))}
   #qRow{gap:8px;margin-bottom:7px}
   #qBubble{padding:6px 10px}
   #qText{font-size:clamp(15px,3vw,22px);line-height:1.35}
@@ -1147,7 +1191,7 @@ h1{font-size:clamp(24px,5.6vw,50px);color:#e0704a;text-shadow:0 3px 0 #fff}
   body.nazonazo-admin-stage-preview #startBtn{min-height:38px;padding:3px 12px;font-size:11px;line-height:1.05;box-shadow:0 3px 0 #3d9143}
 }
 @media (orientation:landscape) and (max-width:559px) and (max-height:360px){
-  #quiz.number-quiz{bottom:0;padding:4px 7px calc(4px + env(safe-area-inset-bottom));border-radius:16px}
+  #quiz.number-quiz{top:50%;bottom:auto;padding:4px 7px calc(4px + env(safe-area-inset-bottom));border-radius:16px}
   #quiz.number-quiz #qRow{gap:4px;margin-bottom:3px}
   #quiz.number-quiz #ponoFace{font-size:28px}
   #quiz.number-quiz #qBubble{padding:3px 6px;border-width:2px;border-radius:12px}
@@ -1168,8 +1212,38 @@ h1{font-size:clamp(24px,5.6vw,50px);color:#e0704a;text-shadow:0 3px 0 #fff}
 @media (orientation:landscape) and (max-height:480px){
   #portalEditPanel{width:min(320px,calc(100vw - 16px));max-height:46vh}
 }
+/* iPadの通常クイズは中央配置のまま、安全領域内でスクロールできる高さに収める。 */
+body.ios-device #quiz:not(.sea-quiz):not(.future-capsule-quiz):not(.space-galaxy-quiz){
+  top:50%;bottom:auto;max-height:calc(100vh - 96px - env(safe-area-inset-top) - env(safe-area-inset-bottom));overflow-y:auto;
+  -webkit-overflow-scrolling:touch;transform:translate(-50%,120vh)}
+body.ios-device #quiz.show:not(.sea-quiz):not(.future-capsule-quiz):not(.space-galaxy-quiz){transform:translate(-50%,-50%)}
+/* iPad以外のタッチ式タブレットも同じ周期にし、車両ごとの見かけ速度を揃える。 */
+@media (hover:none) and (pointer:coarse) and (min-width:700px){
+  body.v-train #veh.go .train-wheel,body.v-train #cars.go .car-wheel,
+  body.v-train #veh.go .train-wheel-rod,body.v-train #veh.go .train-main-rod,body.v-train #veh.go .train-crosshead{animation-duration:var(--wheel-period,1.3s)}
+  body.tunnel-interior.v-train #veh.go .train-wheel,body.tunnel-interior.v-train #cars.go .car-wheel,
+  body.tunnel-interior.v-train #veh.go .train-wheel-rod,body.tunnel-interior.v-train #veh.go .train-main-rod,body.tunnel-interior.v-train #veh.go .train-crosshead{animation-duration:var(--wheel-period,1.5s)}
+}
+@keyframes magicPuffReduced{
+  0%{opacity:0;transform:translate3d(0,0,0) scale(var(--puff-start-scale))}
+  15%{opacity:var(--puff-alpha)}
+  68%{opacity:var(--puff-mid-alpha)}
+  100%{opacity:0;transform:translate3d(-36px,-12px,0) scale(1.05)}
+}
 @media (prefers-reduced-motion:reduce){
-  *{animation-duration:.01s!important;transition-duration:.01s!important}
+  /* 一律0.01秒化は無限アニメを100Hz点滅にし、有限の取得演出も消すため使用しない。 */
+  body.v-train #veh.go .train-wheel,body.v-train #cars.go .car-wheel,
+  body.v-train #veh.go .train-wheel-rod,body.v-train #veh.go .train-main-rod,body.v-train #veh.go .train-crosshead{
+    animation-duration:1.65s!important;animation-play-state:running!important}
+  body.tunnel-interior.v-train #veh.go .train-wheel,body.tunnel-interior.v-train #cars.go .car-wheel,
+  body.tunnel-interior.v-train #veh.go .train-wheel-rod,body.tunnel-interior.v-train #veh.go .train-main-rod,body.tunnel-interior.v-train #veh.go .train-crosshead{animation-duration:1.8s!important}
+  .magic-puff{animation-name:magicPuffReduced!important;animation-timing-function:ease-out!important;animation-fill-mode:forwards!important}
+  #quiz{transition-duration:.18s!important}
+  .num-scene::before,.num-card,.num-poly,.num-ring,.tun.number-gate .hole::before,
+  .space-star-particle::before,.bub,.twk,.fly,.mapNode.cur,.dropStation.done .drop-station-friends{animation:none!important}
+  .num-card{opacity:.86}.num-poly{opacity:.38}.num-ring{opacity:.3}.space-star-particle::before{opacity:var(--space-star-opacity,.72);transform:none}
+  .runEvent,.runEvent::after{animation:none!important}.runEvent::after{opacity:.8}.runEvent.found{animation:runEventFound .55s ease forwards!important}
+  .choice.glow{animation:none!important;box-shadow:0 5px 0 var(--good),0 0 0 7px rgba(87,193,94,.22)}
   #seaArenaShade,#seaRoundCountdown,body.st-sea #fgT{transition:none!important}
   #seaRoundCountdown.is-ready,#seaRoundCountdown.is-go{animation:none!important;opacity:1;transform:translate(-50%,-50%)!important}
   .sea-answer-bubble{animation:none!important}

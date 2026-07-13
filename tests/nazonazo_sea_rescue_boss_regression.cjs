@@ -375,7 +375,8 @@ assert.match(updateSeaBossVisualBody, /seaReducedMotion\(\)/,
 assert.match(updateSeaBossVisualBody, /classList\.toggle\("is-hit",seaBossPhase==="active"&&\(now\|\|_nowMs\(\)\)<seaBossFlashUntil\)/,
   "hit color must be derived from flashUntil so rapid hits extend rather than race old timers");
 const reducedCss = css.slice(css.indexOf("@media (prefers-reduced-motion:reduce)"));
-assert.match(reducedCss, /\*\{animation-duration:\.01s!important;transition-duration:\.01s!important\}/);
+assert.doesNotMatch(reducedCss, /\*\s*\{[^}]*animation-duration\s*:\s*\.0?1s\s*!important/,
+  "reduced motion must not turn infinite animations into a 100Hz strobe");
 assert.match(reducedCss, /#seaQuizGuide|seaQuizGuide/,
   "reduced motion must keep the mission readable without its repeated pulse");
 

@@ -269,6 +269,7 @@ assert.deepEqual(scorePoints, {
   firstTry: 50,
   stageClear: 300,
   noMiss: 200,
+  helpPickup: 50,
   helpOverflow: 50,
   rare: 300,
   tunnelFriend: 100,
@@ -287,6 +288,8 @@ assert.match(completeCurrentStage, /if\(!stageClearScoreGranted\)/, "stage-clear
 assert.match(completeCurrentStage, /SCORE_POINTS\.stageClear/, "stage clear must grant 300 points");
 assert.match(completeCurrentStage, /stageMiss===0[\s\S]*?SCORE_POINTS\.noMiss/, "a no-miss clear must grant 200 points");
 assert.match(hiddenFunctions.collectHelpItem, /helpItems\.length>=HELP_MAX[\s\S]*?SCORE_POINTS\.helpOverflow/, "the fourth and later help pickups must convert to 50 points");
+assert.match(onRunEvent, /helpResult\.stored\s*\?\s*addScore\(SCORE_POINTS\.helpPickup,["']help["']\)\s*:\s*helpResult\.points/,
+  "every help pickup must visibly add its base 50 points");
 assert.doesNotMatch(maybeSpawnRare, /addScore\(SCORE_POINTS\.rare,["']rare["']\)/,
   "spawning a rare friend must not grant points before the child collects it");
 assert.match(maybeSpawnRare, /collectRareEvent\(el,e,t\)/,
