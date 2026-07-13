@@ -131,14 +131,15 @@ assert.match(play, /\.modal-card\.news-modal-card \{[\s\S]*?grid-template-rows: 
   "header/tabs/footer must stay put while the panel scrolls");
 assert.match(play, /\.news-panel \{[\s\S]*?overflow-y: auto;[\s\S]*?overscroll-behavior: contain;/);
 
-// Cache triplet remains synchronized.
+// The title's own pair remains synchronized. Later game-only Service Worker
+// cache bumps may legitimately be newer without changing play.html.
 const pageVersion = play.match(/const PAGE_CACHE_VERSION = (\d+);/);
 const ponoVersion = play.match(/window\.PONO_SW_VERSION = 'v(\d+)'/);
 const swVersion = sw.match(/const CACHE_VERSION = (\d+);/);
 assert.ok(pageVersion && ponoVersion && swVersion);
 assert.equal(pageVersion[1], "2162");
 assert.equal(ponoVersion[1], pageVersion[1]);
-assert.equal(swVersion[1], pageVersion[1]);
+assert.ok(Number(swVersion[1]) >= Number(pageVersion[1]));
 
 // Parse the actual main classic script. Other apparent <script> tags occur in
 // legacy HTML comments, so locate the known main-script anchor directly.

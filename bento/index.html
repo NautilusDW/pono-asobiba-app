@@ -4251,12 +4251,39 @@ body.bento-complete-open #sk-intro {
   flex: 0 0 auto;
 }
 .sk-intro-btn {
+  position: relative;
   margin-top: 12px; padding: 10px 32px; border: none; border-radius: 50px;
   background: linear-gradient(180deg, #FFD84D, #F5A800);
   color: #5C3A00; font-family: inherit; font-size: 1.1rem; font-weight: 900;
   cursor: pointer; box-shadow: 0 4px 0 #B87200;
 }
+.sk-intro-btn::after {
+  content: '';
+  position: absolute;
+  inset: -9px;
+  border: 4px solid #1E7FD8;
+  border-radius: inherit;
+  box-shadow: 0 0 0 4px rgba(255,255,255,0.98), 0 0 18px 7px rgba(30,127,216,0.62);
+  opacity: 0;
+  transform: scale(0.92);
+  pointer-events: none;
+}
+.sk-intro-btn.is-ready::after {
+  opacity: 1;
+  animation: skIntroButtonReady 1.15s ease-in-out infinite alternate;
+}
+@keyframes skIntroButtonReady {
+  from { transform: scale(0.94); box-shadow: 0 0 0 4px rgba(255,255,255,0.98), 0 0 12px 5px rgba(30,127,216,0.52); }
+  to { transform: scale(1.04); box-shadow: 0 0 0 5px rgba(255,255,255,1), 0 0 24px 10px rgba(30,127,216,0.82); }
+}
 .sk-intro-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #B87200; }
+@media (prefers-reduced-motion: reduce) {
+  .sk-intro-btn.is-ready::after {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
 @media (max-height: 430px), (max-width: 700px) {
   .sk-intro-card { padding: 10px 12px 11px; border-radius: 20px; }
   .sk-intro-title { margin-bottom: 6px; }
@@ -6281,9 +6308,16 @@ const BENTO_COLOR_GUIDE_SKIP_KEY = 'bento_color_guide_skip_v1';
 const BENTO_TUTORIAL_PAUSED = false;
 let skIntroGuideTimer = null;
 let skIntroGuideIndex = 0;
+let skIntroGuideRunToken = 0;
+function setSkIntroButtonReady(ready) {
+  const btn = document.getElementById('sk-intro-btn');
+  if (btn) btn.classList.toggle('is-ready', !!ready);
+}
 function stopSkIntroGuide() {
+  skIntroGuideRunToken += 1;
   if (skIntroGuideTimer) clearTimeout(skIntroGuideTimer);
   skIntroGuideTimer = null;
+  setSkIntroButtonReady(false);
   // v1380: 連続再生中の sk_intro 音声があれば必ず止める (モーダル閉じや早期遷移時)。
   try { if (typeof stopBentoTutorialVoice === 'function') stopBentoTutorialVoice(); } catch (_) {}
   const intro = document.getElementById('sk-intro');
@@ -6393,18 +6427,48 @@ function applySkIntroGuideStep(index) {
 function scheduleNextSkIntroGuideStep() {
   if (skIntroGuideTimer) clearTimeout(skIntroGuideTimer);
   skIntroGuideTimer = null;
+  const runToken = skIntroGuideRunToken;
+  const scheduledIndex = skIntroGuideIndex;
+  const isCurrentVisibleStep = () => {
+    const intro = document.getElementById('sk-intro');
+    return runToken === skIntroGuideRunToken
+      && !!intro
+      && !intro.classList.contains('hidden')
+      && skIntroGuideIndex === SK_INTRO_GUIDE_STEPS.length - 1;
+  };
   if (skIntroGuideIndex >= SK_INTRO_GUIDE_STEPS.length - 1) {
     // 最終 step (key:'all') もナレーション再生は行いたいので、 直前で applyStep 後にこの関数が
     // 呼ばれた前提で playBentoTutorialVoice をここで起動する。
     const lastVoiceId = SK_INTRO_VOICE_IDS[skIntroGuideIndex];
-    if (lastVoiceId && typeof playBentoTutorialVoice === 'function') {
-      try { playBentoTutorialVoice(lastVoiceId, { fallbackMs: SK_INTRO_VOICE_FALLBACK_MS }); } catch (_) {}
+    const markReady = () => {
+      if (!isCurrentVisibleStep()) return;
+      if (skIntroGuideTimer) clearTimeout(skIntroGuideTimer);
+      skIntroGuideTimer = null;
+      setSkIntroButtonReady(true);
+    };
+    const muted = (typeof isMaskEditorAudioMuted === 'function') && isMaskEditorAudioMuted();
+    if (muted || !lastVoiceId || typeof playBentoTutorialVoice !== 'function') {
+      skIntroGuideTimer = setTimeout(markReady, 3600);
+      return;
+    }
+    // Audio が cancel されると playBentoTutorialVoice 側の onEnded/fallback は呼ばれないため、
+    // ガイド自身が独立した watchdog を持つ。runToken で閉じた旧モーダルの遅延点灯を防ぐ。
+    skIntroGuideTimer = setTimeout(markReady, SK_INTRO_VOICE_FALLBACK_MS + 250);
+    try {
+      playBentoTutorialVoice(lastVoiceId, {
+        fallbackMs: SK_INTRO_VOICE_FALLBACK_MS,
+        onEnded: markReady,
+      });
+    } catch (_) {
+      if (skIntroGuideTimer) clearTimeout(skIntroGuideTimer);
+      skIntroGuideTimer = setTimeout(markReady, 3600);
     }
     return;
   }
   const currentVoiceId = SK_INTRO_VOICE_IDS[skIntroGuideIndex];
   const muted = (typeof isMaskEditorAudioMuted === 'function') && isMaskEditorAudioMuted();
   const advance = () => {
+    if (runToken !== skIntroGuideRunToken || skIntroGuideIndex !== scheduledIndex) return;
     skIntroGuideIndex += 1;
     if (applySkIntroGuideStep(skIntroGuideIndex)) scheduleNextSkIntroGuideStep();
   };
@@ -6422,6 +6486,7 @@ function scheduleNextSkIntroGuideStep() {
     playBentoTutorialVoice(currentVoiceId, {
       fallbackMs: SK_INTRO_VOICE_FALLBACK_MS,
       onEnded: () => {
+        if (runToken !== skIntroGuideRunToken || skIntroGuideIndex !== scheduledIndex) return;
         if (skIntroGuideTimer) clearTimeout(skIntroGuideTimer);
         skIntroGuideTimer = setTimeout(advance, SK_INTRO_VOICE_GAP_MS);
       },
@@ -6434,6 +6499,12 @@ function startSkIntroGuide() {
   stopSkIntroGuide();
   skIntroGuideIndex = 0;
   if (applySkIntroGuideStep(skIntroGuideIndex)) scheduleNextSkIntroGuideStep();
+}
+function resumeSkIntroGuideIfVisible() {
+  const intro = document.getElementById('sk-intro');
+  if (!intro || intro.classList.contains('hidden') || intro.classList.contains('is-guiding')) return false;
+  startSkIntroGuide();
+  return true;
 }
 
 // 三色食品群 ルール確認（お願いモード用。チュートリアルとは別設定）
@@ -9030,7 +9101,6 @@ function choosePonoReaction(rCount, yCount, gCount, okazuNames) {
 function chooseFreePlayCompleteReaction() {
   const msgs = [
     'よくできたね！\nとっても おいしそう！',
-    'すてきな おべんとうが できたね！',
     'おいしそう！\nたのしく つくれたね！',
   ];
   return {
@@ -9603,8 +9673,9 @@ function stopBentoAudioForInactive() {
 document.addEventListener('visibilitychange', function () {
   if (document.hidden) {
     stopBentoAudioForInactive();
-  } else if (bgmEnabled && !isMaskEditorAudioMuted()) {
-    tryPlayBgm();
+  } else {
+    if (bgmEnabled && !isMaskEditorAudioMuted()) tryPlayBgm();
+    try { if (typeof resumeSkIntroGuideIfVisible === 'function') resumeSkIntroGuideIfVisible(); } catch (_) {}
   }
 });
 // pagehide: iOS Safari でホーム画面に戻る / アプリ切替 / 画面ロック時に発火。
@@ -9614,18 +9685,21 @@ window.addEventListener('PonoAudioVisibilityStop', stopBentoAudioForInactive);
 window.addEventListener('pageshow', function () {
   if (document.hidden) return;
   if (bgmEnabled && !isMaskEditorAudioMuted()) tryPlayBgm();
+  try { if (typeof resumeSkIntroGuideIfVisible === 'function') resumeSkIntroGuideIfVisible(); } catch (_) {}
 });
 window.addEventListener('PonoAudioVisibilityResume', function () {
   if (document.hidden) return;
   if (bgmEnabled && !isMaskEditorAudioMuted()) tryPlayBgm();
+  try { if (typeof resumeSkIntroGuideIfVisible === 'function') resumeSkIntroGuideIfVisible(); } catch (_) {}
 });
 function playPop() { const ac=getAC(),t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain(); o.connect(g);g.connect(ac.destination); o.type='sine';o.frequency.setValueAtTime(600,t);o.frequency.exponentialRampToValueAtTime(900,t+0.08); g.gain.setValueAtTime(0.2,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.12); o.start(t);o.stop(t+0.12); }
 function playCorrect() { const ac=getAC(),t=ac.currentTime; [523,659,784].forEach((f,i)=>{const o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='sine';o.frequency.value=f;const s=t+i*0.1;g.gain.setValueAtTime(0,s);g.gain.linearRampToValueAtTime(0.18,s+0.02);g.gain.exponentialRampToValueAtTime(0.001,s+0.25);o.start(s);o.stop(s+0.25);}); }
 function playWrong() { const ac=getAC(),t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.connect(g);g.connect(ac.destination);o.type='triangle';o.frequency.setValueAtTime(200,t);o.frequency.exponentialRampToValueAtTime(120,t+0.18);g.gain.setValueAtTime(0.1,t);g.gain.exponentialRampToValueAtTime(0.001,t+0.18);o.start(t);o.stop(t+0.18); }
 const BENTO_TUTORIAL_VOICE_BASE = '../assets/audio/bento/tutorial/';
-// batch:1277: 取り消し説明・3色再案内・ピック移動の3 cueを同じTTS 3.1 / Ledaで更新。
-// 「あか」は発音が自然だった直前版を維持し、使用中37本を24 kHz mono / 96 kbps / 1.15倍速で配信する。
-const BENTO_TUTORIAL_VOICE_VERSION = 'v1277-flow-polish';
+// batch:1278: のり自由編集 cueを同じTTS 3.1 / Ledaで更新。
+// 「あか」は発音が自然だった直前版を維持し、配信用37本（現行使用36本）を
+// 24 kHz mono / 96 kbps / 1.15倍速で配信する。
+const BENTO_TUTORIAL_VOICE_VERSION = 'v1278-color-nori-free';
 // faster-whisper で全 cue の順序・先頭末尾を照合済み。false で実音源を再生する。
 const BENTO_TUTORIAL_MOCK_VOICE = false;
 function shouldMockBentoTutorialVoice(id) {
@@ -13776,9 +13850,7 @@ function beginFreeItemDrag(e, uid) {
     if (e) {
       try { e.stopPropagation(); } catch (_) {}
     }
-    try { setSpeech(tutorialState.noriEditStage === 'done'
-      ? 'できたね！つぎに すすむよ'
-      : 'したの あおい わくの ボタンを おしてね'); } catch (_) {}
+    try { setSpeech('したの 4つの ボタンは、どれでも なんどでも おせるよ！'); } catch (_) {}
     return;
   }
   if (!canMoveFreeItemInCurrentTutorial(item)) {
@@ -14383,7 +14455,7 @@ function addSimpleFreePaletteItem(def) {
           ? 'いま もとどおりに しているよ'
           : (tutorialState.step === 'tut2-nori-ok'
             ? '「のりOK」を おしてね'
-            : (tutorialState.noriEditStage === 'done' ? 'つぎに すすむよ' : 'したの ボタンを おしてね')));
+            : 'したの 4つの ボタンを おしてみてね'));
       } catch (_) {}
       return null;
     }
@@ -17432,6 +17504,23 @@ function tryAdvanceFromNori() {
 function countDecorOnTier(tier = 1) {
   return placedItems.filter(i => i.type === 'decor' && getItemTier(i) === tier).length;
 }
+function tutorialFinishNoriFreeEdit() {
+  if (!(tutorialState && tutorialState.active && tutorialState.step === 'tut2-nori-edit')) return false;
+  if (tutorialState._noriEditFinishRequested) return false;
+  if (!(Number(tutorialState._noriEditActionCount) > 0)) {
+    const message = 'どれか ひとつ、したの ボタンを おしてみよう！';
+    try { setSpeech(message); showToast(message); tutorialRenderStep(); } catch (_) {}
+    return false;
+  }
+  tutorialState._noriEditFinishRequested = true;
+  const finishBtn = document.getElementById('free-nori-edit-reset');
+  if (finishBtn) finishBtn.disabled = true;
+  tutorialClearTrims();
+  tutorialHideFinger();
+  try { setSpeech('いいね！こんかいは もとどおりに するよ。'); } catch (_) {}
+  tutorialAdvance('tut2-nori-undo');
+  return true;
+}
 function handleNoriOkPressed() {
   // のり操作の教習中は、現在の青枠の操作が終わるまで先へ飛ばさない。
   if (tutorialState && tutorialState.active
@@ -17576,7 +17665,19 @@ function renderFreeGuidePanel() {
     actions.appendChild(okBtn);
   } else if (freeGuideStep === 'decor') {
     // batch:1045: 「ごはんにもどる」戻るボタンは撤去。 最初からやり直しは floating restart ボタンに一本化。
-    actions.appendChild(makeSmallControlButton(countDecorOnTier(1) > 0 ? 'のりOK' : 'つぎへ', 'primary', handleNoriOkPressed));
+    const tutorialFreeEdit = !!(tutorialState && tutorialState.active && tutorialState.step === 'tut2-nori-edit');
+    if (tutorialFreeEdit) {
+      const resetBtn = makeSmallControlButton(
+        'もとに もどす',
+        'primary',
+        tutorialFinishNoriFreeEdit,
+        !(Number(tutorialState._noriEditActionCount) > 0) || !!tutorialState._noriEditFinishRequested
+      );
+      resetBtn.id = 'free-nori-edit-reset';
+      actions.appendChild(resetBtn);
+    } else {
+      actions.appendChild(makeSmallControlButton(countDecorOnTier(1) > 0 ? 'のりOK' : 'つぎへ', 'primary', handleNoriOkPressed));
+    }
   } else if (freeGuideStep === 'tier2Side') {
     const tier = getGuideTierForStep('tier2Side');
     // batch:1045: 「メインにもどる」戻るボタンは撤去。
@@ -20009,10 +20110,15 @@ const tutorialState = {
   phase: 'demo',
   noriQueue: null,
   noriIdx: 0,
-  noriEditStage: 'shrink',
+  noriEditStage: 'free',
   noriEditTargetUid: null,
   noriMoveTargetUid: null,
   _noriEditUndoRemaining: 0,
+  _noriEditBaselineState: null,
+  _noriEditBaselineUndoStack: null,
+  _noriEditActionCount: 0,
+  _noriEditFinishRequested: false,
+  _advanceQueued: null,
   _leafWrongTapReminderUntil: 0,
   _noriBeatActive: false,
   _noriMoveUndoDone: false,
@@ -22518,6 +22624,12 @@ function tutorialAdvance(nextStep) {
   tutorialState._noriUndoDone = false;
   tutorialState._noriAutoRestoreStarted = false;
   tutorialState._noriEditUndoRemaining = 0;
+  if (nextStep !== 'tut2-nori-undo') {
+    tutorialState._noriEditBaselineState = null;
+    tutorialState._noriEditBaselineUndoStack = null;
+    tutorialState._noriEditActionCount = 0;
+    tutorialState._noriEditFinishRequested = false;
+  }
   tutorialState._leafReviewActive = false;
   tutorialState._dividerReviewActive = false;
   if (nextStep !== 'tut2-pick-move') {
@@ -22624,8 +22736,8 @@ const TUT2_STEPS = [
   { id: 'tut2-nori-face-mouth-nose', phaseAMs: 2400, fallbackMs: 8000, renderPhaseA: tut2RenderNoriPhaseA, renderPhaseB: tut2RenderNoriPhaseB },
   { id: 'tut2-nori-move', phaseAMs: 2500, fallbackMs: 6000, renderPhaseA: tut2RenderNoriMovePhaseA, renderPhaseB: tut2RenderNoriMovePhaseB },
   { id: 'tut2-nori-move-undo', single: true, fallbackMs: 7000, renderPhaseB: tut2RenderNoriMoveUndo },
-  // 位置は子どもが1回戻し、大きさ・回転は仕組みを説明したあと見本側で2段ぶん戻す。
-  { id: 'tut2-nori-edit', single: true, fallbackMs: 9000, renderPhaseB: tut2RenderNoriEdit },
+  // 位置は子どもが1回戻し、大きさ・回転は自由に試したあと保存した開始状態へ戻す。
+  { id: 'tut2-nori-edit', single: true, fallbackMs: 16000, renderPhaseB: tut2RenderNoriEdit },
   { id: 'tut2-nori-undo', single: true, fallbackMs: 13000, renderPhaseB: tut2RenderNoriUndo, onVoiceEnded: tutorialAutoRestoreNoriEdits },
   { id: 'tut2-nori-ok', single: true, fallbackMs: 9000, renderPhaseB: tut2RenderNoriOk },
   { id: 'tut2-okazu-main', phaseAMs: 2500, fallbackMs: 7000, renderPhaseA: tut2RenderOkazuMainPhaseA, renderPhaseB: tut2RenderOkazuMainPhaseB },
@@ -22776,7 +22888,7 @@ const TUT2_PONO_SPEECH = {
   'tut2-nori-face-mouth-nose': 'つぎは、はなと くちを おこう！',
   'tut2-nori-move': 'のりは ゆびで うごかせるよ。すきな ばしょに どうぞ。',
   'tut2-nori-move-undo': 'いちど「とりけす」を おして、ばしょを もどそう！',
-  'tut2-nori-edit': 'のりの おおきさと むきを かえてみよう！',
+  'tut2-nori-edit': 'のりは、ちいさくしたり、おおきくしたり、ひだりや みぎに まわしたり できるよ。すきな ボタンを なんどでも おしてみよう。できたら「もとに もどす」を おしてね。',
   'tut2-nori-undo': '「とりけす」は、ひとつずつ まえの そうさに もどせるよ。くりかえし おせば、もっと まえまで もどせるんだ。こんかいは、もとどおりに しておくね。',
   'tut2-nori-ok': 'できたら「のりOK」を おそう！',
   'tut2-okazu-main': 'メインの おかず！すきなのを タッチして いれてみよう。',
@@ -22795,7 +22907,6 @@ const TUT2_PONO_SPEECH = {
   'tut2-pick-place': 'すきな ピックを ひとつ タッチして さしてみよう！',
   'tut2-pick-move': 'ピックも、ゆびで すきな ばしょに うごかせるよ。さした ピックを、すこし うごかしてみよう。',
   'tut2-okazu-ok': 'できあがったら「おかずOK」を おしてね。',
-  'tut2-complete': 'わあ、すてきな おべんとうが できたね！',
   'tut2-favorite': 'ほしマークで おきにいりに とっておけるよ。',
   'tut2-self-start': 'では、じぶんで おべんとうを つくってみよう。',
   'tut2-w2-request': 'アライグマくんの おねがいだよ！',
@@ -23179,54 +23290,41 @@ function tutorialFindNoriEditPlaced() {
   const el = document.querySelector('[data-free-uid="' + item.uid + '"]');
   return { item, el };
 }
-function tutorialNoriEditActionButton(stage) {
-  const toolbar = tutorialContextToolbarEl();
-  if (!toolbar) return null;
-  if (stage === 'shrink') return toolbar.querySelector('[data-free-action="decor-shrink"]:not(:disabled)');
-  if (stage === 'grow') return toolbar.querySelector('[data-free-action="decor-grow"]:not(:disabled)');
-  if (stage === 'rotate-clockwise') {
-    return toolbar.querySelector('[data-free-action="rotate-right"]:not(:disabled)')
-        || toolbar.querySelector('[data-free-icon="rotate-right"]:not(:disabled)');
-  }
-  if (stage === 'rotate-counterclockwise') {
-    return toolbar.querySelector('[data-free-action="rotate-left"]:not(:disabled)')
-        || toolbar.querySelector('[data-free-icon="rotate-left"]:not(:disabled)');
-  }
-  return null;
-}
 function tut2RenderNoriEdit(step) {
   tutorialHideBubble();
   const placed = tutorialFindNoriEditPlaced();
   if (!placed || !placed.item) return;
   tutorialState.noriEditTargetUid = placed.item.uid;
+  if (!tutorialState._noriEditBaselineState) {
+    // 編集回数は自由なので、履歴上限に依存せず正確に戻せるよう開始状態を一度だけ保存する。
+    tutorialState._noriEditBaselineState = captureFreeHistoryState();
+    tutorialState._noriEditBaselineUndoStack = cloneFreeHistoryValue(freeUndoStack);
+    tutorialState._noriEditActionCount = 0;
+    tutorialState._noriEditFinishRequested = false;
+  }
   const panelKey = step.id + ':' + placed.item.uid;
   if (tutorialState._noriEditPanelKey !== panelKey) {
     tutorialState._noriEditPanelKey = panelKey;
     try { if (typeof openSimpleDecorEditPanel === 'function') openSimpleDecorEditPanel(placed.item.uid); } catch (_) {}
   }
-  const stage = tutorialState.noriEditStage || 'shrink';
-  if (stage === 'done') {
-    tutorialClearTrims();
-    tutorialHideFinger();
-    try { setSpeech('できたね！つぎに すすむよ'); } catch (_) {}
-    return;
-  }
-  const copy = stage === 'shrink'
-    ? 'まず「ちいさく」を おしてみよう！'
-    : 'つぎは とけいまわりに まわしてみよう！';
-  try { setSpeech(copy); } catch (_) {}
-  const target = tutorialNoriEditActionButton(stage);
+  const hasTriedEdit = Number(tutorialState._noriEditActionCount) > 0;
+  try {
+    setSpeech(hasTriedEdit
+      ? 'すきなだけ ためせるよ。できたら「もとに もどす」を おしてね！'
+      : 'ちいさく・おおきく・ひだりまわり・みぎまわり。どれでも なんどでも おしてみよう！');
+  } catch (_) {}
+  const toolbar = tutorialContextToolbarEl();
+  const target = toolbar;
   if (!target) {
     tutorialRetryRenderStep(step.id, 120);
     return;
   }
-  const alreadyMarked = (tutorialState.trims || []).some(entry => entry && entry.target === target);
-  if (!alreadyMarked) {
-    tutorialClearTrims();
-    tutorialClearOutlines();
-    tutorialClearPaletteFocus();
-    tutorialMarkTarget(target, { radius: 16, outline: false, color: '#1E7FD8', width: 5 });
+  tutorialClearPaletteFocus();
+  tutorialEnsureSingleTarget(target, { radius: 18, outline: false, color: '#1E7FD8', width: 5 });
+  if (!(tutorialState.trims || []).some(entry => entry && entry._noriTapShown)) {
     tutorialAnimateTap(target);
+    const entry = (tutorialState.trims || []).find(item => item && item.target === target);
+    if (entry) entry._noriTapShown = true;
   }
 }
 function tut2RenderNoriUndo(step) {
@@ -23239,7 +23337,7 @@ function tut2RenderNoriUndo(step) {
   }
   if (!tutorialState._noriUndoPrepared) {
     tutorialState._noriUndoPrepared = true;
-    tutorialState._noriEditUndoRemaining = 2;
+    tutorialState._noriEditUndoRemaining = Number(tutorialState._noriEditActionCount) || 0;
     simpleDecorPanelUid = null;
     try { renderFreeLayoutControls(); } catch (_) {}
     // バックグラウンド移行でAudioがcancelされても、復帰後に必ず自動復元へ進める。
@@ -23265,11 +23363,17 @@ function tutorialAutoRestoreNoriEdits() {
   }
   if (tutorialState._noriAutoRestoreStarted || tutorialState._noriUndoDone) return false;
   tutorialState._noriAutoRestoreStarted = true;
-  let remaining = 2;
-  while (remaining > 0 && !(typeof tut2FaceAtDefault === 'function' && tut2FaceAtDefault())) {
-    if (!undoFreeItem({ silent: true })) break;
-    remaining -= 1;
+  const baselineState = tutorialState._noriEditBaselineState;
+  const baselineUndoStack = tutorialState._noriEditBaselineUndoStack;
+  if (!baselineState || !Array.isArray(baselineUndoStack)) {
+    tutorialState._noriAutoRestoreStarted = false;
+    return false;
   }
+  // 何十回編集しても、チュートリアル前の履歴と見た目を一度で正確に復元する。
+  simpleDecorPanelUid = null;
+  freeUndoStack = cloneFreeHistoryValue(baselineUndoStack);
+  freeRedoStack = [];
+  restoreFreeHistoryState(cloneFreeHistoryValue(baselineState));
   if (!tutorialState.active || tutorialState.step !== 'tut2-nori-undo') return false;
   tutorialState._noriEditUndoRemaining = 0;
   tutorialState._noriUndoDone = true;
@@ -23813,7 +23917,7 @@ function tut2RenderComplete(step) {
   tutorialHideFinger();
   tutorialClearTrims();
   tutorialClearTargetCircle();
-  tutorialShowBubble('わあ、すてきな おべんとうが<br>できたね！', { topVh: '16', side: 'left' });
+  tutorialHideBubble();
   try { localStorage.setItem(TUTORIAL_STORAGE_KEY, '1'); } catch (_) {}
 }
 function tut2RenderFavorite(step) {
@@ -23963,6 +24067,7 @@ function tutorialClearCompletePulse() {
 function tutorialTeardown() {
   stopSkIntroGuide();
   tutorialClearCompleteGuideTimers();
+  tutorialState._advanceQueued = null;
   if (tutorialState.resizeHandler) {
     window.removeEventListener('resize', tutorialState.resizeHandler);
     window.removeEventListener('orientationchange', tutorialState.resizeHandler);
@@ -24034,6 +24139,10 @@ function tutorialTeardown() {
   tutorialState._noriUndoDone = false;
   tutorialState._noriAutoRestoreStarted = false;
   tutorialState._noriEditUndoRemaining = 0;
+  tutorialState._noriEditBaselineState = null;
+  tutorialState._noriEditBaselineUndoStack = null;
+  tutorialState._noriEditActionCount = 0;
+  tutorialState._noriEditFinishRequested = false;
   tutorialState._leafReviewActive = false;
   tutorialState._dividerReviewActive = false;
   tutorialState.pickMoveTargetUid = null;
@@ -24081,10 +24190,15 @@ function tutorialStart() {
   tutorialState.phase = 'demo';
   tutorialState.noriQueue = null;
   tutorialState.noriIdx = 0;
-  tutorialState.noriEditStage = 'shrink';
+  tutorialState.noriEditStage = 'free';
   tutorialState.noriEditTargetUid = null;
   tutorialState.noriMoveTargetUid = null;
   tutorialState._noriEditUndoRemaining = 0;
+  tutorialState._noriEditBaselineState = null;
+  tutorialState._noriEditBaselineUndoStack = null;
+  tutorialState._noriEditActionCount = 0;
+  tutorialState._noriEditFinishRequested = false;
+  tutorialState._advanceQueued = null;
   tutorialState._leafWrongTapReminderUntil = 0;
   tutorialState._noriBeatActive = false;
   tutorialState._noriUndoPrepared = false;
@@ -24239,15 +24353,13 @@ function tutorialOnItemMoved(uid, meta = {}) {
   // 動いた (tut2FaceAtDefault()===false) 場合だけ編集教習へ進める。
   if (typeof tut2FaceAtDefault === 'function' && tut2FaceAtDefault()) return;
   tutorialState.noriEditTargetUid = uid;
-  tutorialState.noriEditStage = 'shrink';
+  tutorialState.noriEditStage = 'free';
   tutorialStopVoiceQueueForImmediateAdvance();
   tutorialAdvance('tut2-nori-move-undo');
 }
 function tutorialNoriEditExpectedCopy() {
-  const stage = tutorialState.noriEditStage || 'shrink';
-  if (stage === 'shrink') return 'まず「ちいさく」を おしてね';
-  if (stage === 'done') return 'できたね！つぎに すすむよ';
-  return 'つぎは とけいまわりの ボタンを おしてね';
+  if (tutorialState && tutorialState._noriEditFinishRequested) return 'いま もとどおりに する じゅんびを しているよ';
+  return 'したの 4つの ボタンは、どれでも なんどでも おせるよ';
 }
 function tutorialCanUseNoriEditAction(uid, action) {
   if (!tutorialState || !tutorialState.active) return true;
@@ -24261,8 +24373,8 @@ function tutorialCanUseNoriEditAction(uid, action) {
     return true;
   }
   const targetUid = tutorialState.noriEditTargetUid;
-  const expected = tutorialState.noriEditStage || 'shrink';
-  if ((targetUid && uid !== targetUid) || action !== expected) {
+  const allowed = new Set(['shrink', 'grow', 'rotate-clockwise', 'rotate-counterclockwise']);
+  if (tutorialState._noriEditFinishRequested || (targetUid && uid !== targetUid) || !allowed.has(action)) {
     const message = 'それは ちがうよ。' + tutorialNoriEditExpectedCopy();
     try { setSpeech(message); } catch (_) {}
     try { showToast(message); } catch (_) {}
@@ -24273,25 +24385,18 @@ function tutorialCanUseNoriEditAction(uid, action) {
 function tutorialOnNoriEditAction(uid, action) {
   if (!tutorialState.active || tutorialState.step !== 'tut2-nori-edit') return;
   if (tutorialState.noriEditTargetUid && uid !== tutorialState.noriEditTargetUid) return;
-  const expected = tutorialState.noriEditStage || 'shrink';
-  if (action !== expected) return;
-  if (action === 'shrink') {
-    tutorialState.noriEditStage = 'rotate-clockwise';
-    tutorialPlayEventVoiceOnce('nori-rotate', 'tut2_06a_rotate', 9000);
-  } else if (action === 'rotate-clockwise') {
-    tutorialState.noriEditStage = 'done';
-    tutorialClearTrims();
-    tutorialHideFinger();
-    tutorialAdvance('tut2-nori-undo');
-    return;
-  } else {
-    return;
-  }
+  if (tutorialState._noriEditFinishRequested) return;
+  const allowed = new Set(['shrink', 'grow', 'rotate-clockwise', 'rotate-counterclockwise']);
+  if (!allowed.has(action)) return;
+  tutorialState.noriEditStage = 'free';
+  tutorialState._noriEditActionCount = (Number(tutorialState._noriEditActionCount) || 0) + 1;
+  const finishBtn = document.getElementById('free-nori-edit-reset');
+  if (finishBtn) finishBtn.disabled = false;
   tutorialClearTrims();
   tutorialHideFinger();
   tutorialRenderStep();
 }
-// 位置移動は子どもが直後に1回戻し、サイズと回転は説明後に見本側で2段ぶん戻す。
+// 位置移動は子どもが直後に1回戻し、自由編集は説明後に保存した開始状態へ戻す。
 function tutorialOnUndoPressed() {
   const step = tutorialState && tutorialState.active ? String(tutorialState.step || '') : '';
   const isMoveUndo = step === 'tut2-nori-move-undo';
@@ -24328,7 +24433,7 @@ function tutorialOnUndoPressed() {
       tutorialState._noriUndoAckTimer = setTimeout(() => {
         tutorialState._noriUndoAckTimer = null;
         if (!tutorialState.active || tutorialState.step !== 'tut2-nori-move-undo') return;
-        tutorialState.noriEditStage = 'shrink';
+        tutorialState.noriEditStage = 'free';
         tutorialAdvance('tut2-nori-edit');
       }, 500);
     } else {
@@ -24337,7 +24442,7 @@ function tutorialOnUndoPressed() {
     }
     return;
   }
-  // この工程は説明を聞いたあと、見本側で2段ぶん戻す。子どもの追加操作は要らない。
+  // この工程は説明を聞いたあと、見本側で保存した開始状態へ戻す。子どもの追加操作は要らない。
   try {
     setSpeech('いま もとどおりに しているよ。ちょっと まってね！');
     showToast('いま もとどおりに しているよ');

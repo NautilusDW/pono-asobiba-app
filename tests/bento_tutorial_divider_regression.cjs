@@ -9,6 +9,8 @@
 // 「あか」の案内だけ発音が自然だった直前TTS3.1/Leda版を復元する。
 // batch:1277 regression: 最後のundo自動復元、カップ青枠即時化、三色再案内、完成確認の間、
 // ピック移動の実操作を追加し、子どもに不要な操作や待ち時間を戻さない。
+// batch:1278 regression: 色説明後の完了ボタン点灯、のり4操作の自由反復とsnapshot復元、
+// 完成時の重複テキスト削除を守る。
 
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
@@ -37,7 +39,7 @@ for (const match of html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi))
 assert.ok(scriptCount >= 10, 'expected bento inline scripts');
 assert.doesNotMatch(html, /タップ/, 'child-facing Bento copy must consistently use タッチ');
 
-// 2. のりは 移動→undo→縮小→時計回り→説明後の自動復元→OK の順で進む。
+// 2. のりは 移動→undo→4ボタン自由編集→保存状態への自動復元→OK の順で進む。
 const steps = extract(html, 'const TUT2_STEPS = [', 'function tut2FindStep', 'tutorial steps');
 const moveAt = steps.indexOf("id: 'tut2-nori-move'");
 const moveUndoAt = steps.indexOf("id: 'tut2-nori-move-undo'");
@@ -53,41 +55,94 @@ assert.match(steps, /id: 'tut2-nori-ok', single: true[^\n]*tut2RenderNoriOk/);
 
 const moveHook = extract(html, 'function tutorialOnItemMoved(uid, meta = {})', 'function tutorialNoriEditExpectedCopy', 'nori move hook');
 assert.match(moveHook, /noriEditTargetUid = uid/);
-assert.match(moveHook, /noriEditStage = 'shrink'/);
+assert.match(moveHook, /noriEditStage = 'free'/);
 assert.match(moveHook, /noriMoveTargetUid[\s\S]*?uid !== tutorialState\.noriMoveTargetUid/);
 assert.match(moveHook, /tutorialStopVoiceQueueForImmediateAdvance\(\)/);
 assert.match(moveHook, /tutorialAdvance\('tut2-nori-move-undo'\)/);
 assert.doesNotMatch(moveHook, /tutorialAdvance\('tut2-nori-edit'\)/);
 
 const editHooks = extract(html, 'function tutorialNoriEditExpectedCopy()', 'function tutorialOnUndoPressed()', 'nori edit hooks');
-const state = { active: true, step: 'tut2-nori-edit', noriEditStage: 'shrink', noriEditTargetUid: 'mouth' };
+const state = {
+  active: true,
+  step: 'tut2-nori-edit',
+  noriEditStage: 'free',
+  noriEditTargetUid: 'mouth',
+  _noriEditActionCount: 0,
+  _noriEditFinishRequested: false,
+};
 const advances = [];
-const eventVoices = [];
 let renders = 0;
+const noriResetButton = { disabled: true };
 const hookContext = vm.runInNewContext(`(() => {
   ${editHooks}
   return { canUse: tutorialCanUseNoriEditAction, onEdit: tutorialOnNoriEditAction };
 })()`, {
   tutorialState: state,
+  document: { getElementById: id => id === 'free-nori-edit-reset' ? noriResetButton : null },
   setSpeech: () => {},
   showToast: () => {},
   tutorialRenderStep: () => { renders++; },
   tutorialClearTrims: () => {},
   tutorialHideFinger: () => {},
-  tutorialPlayEventVoiceOnce: (key, id) => { eventVoices.push([key, id]); },
   tutorialAdvance: (next) => { advances.push(next); },
 });
-assert.equal(hookContext.canUse('mouth', 'grow'), false, 'grow must not replace the guided shrink action');
-renders = 0;
-hookContext.onEdit('mouth', 'shrink');
-assert.equal(state.noriEditStage, 'rotate-clockwise');
-assert.deepEqual(eventVoices, [['nori-rotate', 'tut2_06a_rotate']]);
-assert.equal(hookContext.canUse('mouth', 'rotate-counterclockwise'), false,
-  'counterclockwise must not replace the guided clockwise action');
-hookContext.onEdit('mouth', 'rotate-clockwise');
-assert.deepEqual(advances, ['tut2-nori-undo']);
-assert.equal(state.noriEditStage, 'done', 'completed scale + rotation pair must lock before final undo');
-assert.equal(renders, 1, 'only the shrink action re-renders inside the edit step; rotation advances');
+const freeNoriActions = ['shrink', 'grow', 'rotate-clockwise', 'rotate-counterclockwise'];
+freeNoriActions.forEach(action => assert.equal(hookContext.canUse('mouth', action), true,
+  `${action} must be available during free nori editing`));
+assert.equal(hookContext.canUse('eye', 'shrink'), false, 'a different nori part must remain locked');
+assert.equal(hookContext.canUse('mouth', 'delete'), false, 'unrelated actions must remain locked');
+for (let index = 0; index < 75; index++) {
+  hookContext.onEdit('mouth', freeNoriActions[index % freeNoriActions.length]);
+}
+assert.equal(noriResetButton.disabled, false, 'the reset button must unlock after the first valid edit');
+assert.equal(state._noriEditActionCount, 75, 'all repeated edits must stay available beyond history limit');
+assert.equal(renders, 75, 'each edit must redraw the current free-edit guidance');
+assert.deepEqual(advances, [], 'an edit button must never choose when the child is finished');
+assert.doesNotMatch(editHooks, /tut2_06a_rotate|tutorialPlayEventVoiceOnce|tutorialAdvance\('tut2-nori-undo'\)/,
+  'free editing must not retain the old shrink/clockwise auto-advance');
+
+const finishEditSource = extract(
+  html,
+  'function tutorialFinishNoriFreeEdit()',
+  'function handleNoriOkPressed()',
+  'nori free-edit finish action',
+);
+const finishNoriState = {
+  active: true,
+  step: 'tut2-nori-edit',
+  _noriEditActionCount: 0,
+  _noriEditFinishRequested: false,
+};
+const finishAdvances = [];
+const finishButton = { disabled: false };
+const finishApi = vm.runInNewContext(`(() => {
+  ${finishEditSource}
+  return { finish: tutorialFinishNoriFreeEdit };
+})()`, {
+  tutorialState: finishNoriState,
+  document: { getElementById: id => id === 'free-nori-edit-reset' ? finishButton : null },
+  setSpeech: () => {},
+  showToast: () => {},
+  tutorialRenderStep: () => {},
+  tutorialClearTrims: () => {},
+  tutorialHideFinger: () => {},
+  tutorialAdvance: step => finishAdvances.push(step),
+});
+assert.equal(finishApi.finish(), false, 'at least one free edit must be tried before resetting');
+finishNoriState._noriEditActionCount = 75;
+assert.equal(finishApi.finish(), true);
+assert.deepEqual(finishAdvances, ['tut2-nori-undo']);
+assert.equal(finishButton.disabled, true);
+assert.equal(finishApi.finish(), false, 'double touch must not queue or skip the reset narration');
+const guidePanelSource = extract(html, 'function renderFreeGuidePanel()', 'function renderCupSizeControls', 'free guide panel');
+assert.match(guidePanelSource, /free-nori-edit-reset/);
+assert.match(guidePanelSource, /'もとに もどす'[\s\S]*?tutorialFinishNoriFreeEdit/);
+assert.match(guidePanelSource, /else \{[\s\S]*?'のりOK'[\s\S]*?handleNoriOkPressed/,
+  'normal nori OK must return after the reset step');
+const noriEditRenderer = extract(html, 'function tut2RenderNoriEdit(step)', 'function tut2RenderNoriUndo', 'nori free-edit renderer');
+assert.match(noriEditRenderer, /const target = toolbar/);
+assert.doesNotMatch(noriEditRenderer, /target\s*=\s*hasTriedEdit[\s\S]*?finishBtn/,
+  'the blue focus must stay on all four edit buttons instead of asking the child to stop after one press');
 
 const rotate = extract(html, 'function rotateSelectedItem(deltaAngle)', 'function canShowLayerControlsForItem', 'rotate handler');
 assert.ok(rotate.indexOf('renderFreeLayoutControls();') < rotate.indexOf('tutorialOnNoriEditAction(item.uid, tutorialAction)'),
@@ -127,7 +182,7 @@ assert.match(steps, /id: 'tut2-nori-undo'[^\n]*fallbackMs:\s*13000/,
 const undoState = {
   active: true,
   step: 'tut2-nori-move-undo',
-  noriEditStage: 'shrink',
+  noriEditStage: 'free',
   _noriMoveUndoDone: false,
   _noriUndoDone: false,
   _noriUndoAckTimer: null,
@@ -171,13 +226,13 @@ undoState.step = 'tut2-nori-undo';
 undoState._noriMoveUndoDone = false;
 undoState._noriUndoDone = false;
 undoState._noriUndoAckTimer = null;
-undoState._noriEditUndoRemaining = 2;
+undoState._noriEditUndoRemaining = 75;
 faceAtDefault = false;
 const callsBeforeFinalPress = undoCalls;
 undoApi.press();
 assert.equal(undoCalls, callsBeforeFinalPress,
   'a child press during automatic restoration must be a no-op');
-assert.equal(undoState._noriEditUndoRemaining, 2);
+assert.equal(undoState._noriEditUndoRemaining, 75);
 assert.equal(undoState._noriUndoDone, false);
 assert.equal(undoTimers.length, 0);
 
@@ -187,35 +242,45 @@ const autoRestoreSource = extract(
   'function tut2RenderNoriOk',
   'silent final nori restore',
 );
-assert.match(autoRestoreSource, /while \(remaining > 0[\s\S]*?undoFreeItem\(\{ silent: true \}\)/,
-  'automatic restoration must consume individual undo entries silently');
+assert.match(autoRestoreSource, /_noriEditBaselineState[\s\S]*?_noriEditBaselineUndoStack/,
+  'automatic restoration must use the exact pre-edit snapshot');
+assert.match(autoRestoreSource, /freeUndoStack\s*=\s*cloneFreeHistoryValue\(baselineUndoStack\)/);
+assert.match(autoRestoreSource, /restoreFreeHistoryState\(cloneFreeHistoryValue\(baselineState\)\)/);
+assert.doesNotMatch(autoRestoreSource, /undoFreeItem|while \(/,
+  'automatic restoration must not depend on edit count or the 40-entry history limit');
 assert.match(autoRestoreSource, /freeRedoStack\s*=\s*\[\]/,
   'automatic restoration must not leave guided edits redoable');
+const baselineState = { placedItems: [{ uid: 'mouth', rotation: 0, scale: 1 }] };
+const baselineUndoStack = [{ placedItems: [{ uid: 'before-face' }] }];
 const autoState = {
   active: true,
   step: 'tut2-nori-undo',
   _noriAutoRestoreStarted: false,
   _noriAutoRestoreTimer: 91,
   _noriUndoDone: false,
-  _noriEditUndoRemaining: 2,
+  _noriEditUndoRemaining: 75,
+  _noriEditBaselineState: baselineState,
+  _noriEditBaselineUndoStack: baselineUndoStack,
   _noriUndoAckTimer: null,
 };
-let autoFaceDefault = false;
-const silentUndoOptions = [];
 const autoTimers = [];
 const autoAdvances = [];
 const clearedAutoTimers = [];
+const restoredStates = [];
 const autoApi = vm.runInNewContext(`(() => {
   ${autoRestoreSource}
-  return { restore: tutorialAutoRestoreNoriEdits, redoLength: () => freeRedoStack.length };
+  return {
+    restore: tutorialAutoRestoreNoriEdits,
+    redoLength: () => freeRedoStack.length,
+    undoStack: () => JSON.stringify(freeUndoStack),
+    panelUid: () => simpleDecorPanelUid,
+  };
 })()`, {
   tutorialState: autoState,
-  tut2FaceAtDefault: () => autoFaceDefault,
-  undoFreeItem: opts => {
-    silentUndoOptions.push(opts);
-    if (silentUndoOptions.length >= 2) autoFaceDefault = true;
-    return true;
-  },
+  cloneFreeHistoryValue: value => JSON.parse(JSON.stringify(value)),
+  restoreFreeHistoryState: value => restoredStates.push(value),
+  simpleDecorPanelUid: 'mouth',
+  freeUndoStack: Array.from({ length: 40 }, (_, index) => ({ edit: index })),
   freeRedoStack: [{ stale: true }],
   tutorialClearTrims: () => {},
   tutorialClearOutlines: () => {},
@@ -229,15 +294,17 @@ const autoApi = vm.runInNewContext(`(() => {
 });
 assert.equal(autoApi.restore(), true);
 assert.deepEqual(clearedAutoTimers, [91], 'voice-ended restoration must cancel its watchdog');
-assert.deepEqual(silentUndoOptions.map(opts => opts && opts.silent), [true, true],
-  'scale and rotation remain two separate history entries');
+assert.deepEqual(restoredStates, [baselineState], '75 edits must restore in one exact state application');
+assert.equal(autoApi.undoStack(), JSON.stringify(baselineUndoStack),
+  'the child history from before free editing must be preserved exactly');
+assert.equal(autoApi.panelUid(), null, 'the nori edit panel must close before restoration');
 assert.equal(autoState._noriUndoDone, true);
 assert.equal(autoState._noriEditUndoRemaining, 0);
 assert.equal(autoApi.redoLength(), 0);
 assert.equal(autoTimers.length, 1);
 assert.equal(autoTimers[0].delay, 750);
 assert.equal(autoApi.restore(), false, 'ended and fallback races must not restore twice');
-assert.equal(silentUndoOptions.length, 2);
+assert.equal(restoredStates.length, 1);
 autoTimers.shift().fn();
 assert.deepEqual(autoAdvances, ['tut2-nori-ok']);
 
@@ -249,6 +316,7 @@ assert.match(html, /const BENTO_TUTORIAL_MOCK_VOICE = false/,
 assert.doesNotMatch(html, /tut2_06b_editundo_last/,
   'the obsolete second-undo prompt must not remain active in code');
 [
+  ['tut2-nori-edit', 'tut2_06_noriedit'],
   ['tut2-nori-ok', 'tut2_06c_noriok'],
   ['tut2-free-okazu', 'tut2_10b_freeokazu'],
   ['tut2-leaf-tab', 'tut2_17a_leaf_tab'],
@@ -323,6 +391,27 @@ assert.doesNotMatch(favoriteRendererSource, /pointerdown|tutorialMarkDone/,
   'favorite rendering must not install early pointerdown completion hooks');
 assert.match(favoriteRendererSource, /if\s*\(saveBtn\s*&&\s*favSaved\)[\s\S]*tutorialRequestSelfStart\(\)/,
   'an early star save during the completion animation must still continue after favorite audio');
+
+const completeRendererSource = extract(
+  html,
+  'function tut2RenderComplete(step)',
+  'function tut2RenderFavorite(step)',
+  'tutorial completion renderer',
+);
+assert.match(completeRendererSource, /tutorialHideBubble\(\)/);
+assert.doesNotMatch(completeRendererSource, /tutorialShowBubble|すてきな おべんとうが/,
+  'the completion screen must not add the redundant tutorial text');
+const ponoSpeechMap = extract(html, 'const TUT2_PONO_SPEECH = {', 'function tut2ApplyPonoSpeech', 'tutorial speech map');
+assert.doesNotMatch(ponoSpeechMap, /'tut2-complete'/,
+  'the bottom tutorial speech must not duplicate the completion reaction');
+const freeCompleteReaction = extract(
+  html,
+  'function chooseFreePlayCompleteReaction()',
+  'function chooseCombinedPonoReaction',
+  'free completion reactions',
+);
+assert.doesNotMatch(freeCompleteReaction, /すてきな おべんとうが できたね/,
+  'the removed completion text must not reappear randomly in the normal result bubble');
 
 const finishSelfStartSource = extract(
   html,
@@ -471,6 +560,15 @@ assert.match(advanceSource, /audioDuration - \(audio\.currentTime \|\| 0\)/,
   'queued tutorial advance must use remaining narration duration');
 assert.match(advanceSource, /Math\.ceil\(remainingMs \/ 500\) \* 500/,
   'narration guard must round the safety timeout up');
+assert.match(advanceSource,
+  /if \(nextStep !== 'tut2-nori-undo'\)[\s\S]*?_noriEditBaselineState = null/,
+  'the edit baseline must survive only across free-edit to automatic-reset');
+const teardownSource = extract(html, 'function tutorialTeardown()', 'function tutorialStart()', 'tutorial teardown');
+const startSource = extract(html, 'function tutorialStart()', '// batch:1058 phase1: tut2 台本用のフック配線', 'tutorial start');
+assert.match(teardownSource, /tutorialState\._advanceQueued = null/,
+  'teardown must cancel a finish action queued behind narration');
+assert.match(startSource, /tutorialState\._advanceQueued = null/,
+  'a restarted tutorial must never inherit an old queued nori reset');
 
 const groupIntroSource = extract(
   html,
@@ -580,6 +678,150 @@ assert.deepEqual(guardCalls, ['bubble', 'finger', 'trims', 'mask', 'target', 'ou
   'inactivity/resize renders must only clean tutorial chrome while the color guide is visible');
 assert.equal(portraitChecks, 0, 'the color guide guard must run before any competing tutorial renderer');
 
+// 2d. 5本目の色ナレーションが終わってからだけ「わかった！」を光らせる。
+assert.match(html, /\.sk-intro-btn\.is-ready::after\s*\{/);
+assert.match(html, /@keyframes skIntroButtonReady/);
+assert.match(html, /@media \(prefers-reduced-motion: reduce\)[\s\S]*?\.sk-intro-btn\.is-ready::after/);
+const skIntroGuideSource = extract(
+  html,
+  'let skIntroGuideTimer = null;',
+  '// 三色食品群',
+  'color intro voice guide',
+);
+assert.match(skIntroGuideSource, /skIntroGuideRunToken/);
+assert.match(skIntroGuideSource, /setSkIntroButtonReady\(false\)/);
+assert.match(skIntroGuideSource, /onEnded:\s*markReady/);
+assert.match(skIntroGuideSource, /SK_INTRO_VOICE_FALLBACK_MS \+ 250/,
+  'the final glow must have an audio-cancellation-independent watchdog');
+assert.match(skIntroGuideSource, /function resumeSkIntroGuideIfVisible\(\)/);
+assert.ok((html.match(/resumeSkIntroGuideIfVisible\(\)/g) || []).length >= 4,
+  'visibility, pageshow and app-audio resume paths must restart a visible interrupted guide');
+
+function makeTestClassList(initial = []) {
+  const values = new Set(initial);
+  return {
+    add: (...names) => names.forEach(name => values.add(name)),
+    remove: (...names) => names.forEach(name => values.delete(name)),
+    contains: name => values.has(name),
+    toggle: (name, force) => {
+      const enabled = force === undefined ? !values.has(name) : !!force;
+      if (enabled) values.add(name); else values.delete(name);
+      return enabled;
+    },
+  };
+}
+const skIntroEl = { classList: makeTestClassList() };
+const skIntroReadyButton = { classList: makeTestClassList() };
+const skCaption = {};
+const skCols = ['r', 'y', 'g'].map(group => ({
+  dataset: { skIntroGroup: group },
+  classList: makeTestClassList(),
+}));
+const skPlayCalls = [];
+const skTimers = [];
+let skTimerSeq = 0;
+let skMuted = false;
+const skTimerApi = {
+  setTimeout: (fn, delay) => {
+    const record = { id: ++skTimerSeq, fn, delay, cleared: false, ran: false };
+    skTimers.push(record);
+    return record.id;
+  },
+  clearTimeout: id => {
+    const record = skTimers.find(timer => timer.id === id);
+    if (record) record.cleared = true;
+  },
+};
+const skGuideApi = vm.runInNewContext(`(() => {
+  ${skIntroGuideSource}
+  return {
+    start: startSkIntroGuide,
+    stop: stopSkIntroGuide,
+    resume: resumeSkIntroGuideIfVisible,
+  };
+})()`, {
+  SK_INTRO_GUIDE_STEPS: [
+    { key: 'r' }, { key: 'y' }, { key: 'g' }, { key: 'r' }, { key: 'all' },
+  ],
+  SK_INTRO_VOICE_IDS: ['01', '02', '03', '04', '05'],
+  SK_INTRO_VOICE_GAP_MS: 600,
+  SK_INTRO_VOICE_FALLBACK_MS: 10000,
+  document: {
+    getElementById: id => id === 'sk-intro' ? skIntroEl
+      : id === 'sk-intro-btn' ? skIntroReadyButton
+      : id === 'sk-intro-narration' ? skCaption
+      : null,
+    querySelectorAll: selector => selector === '.sk-intro-col' ? skCols : [],
+  },
+  playBentoTutorialVoice: (id, opts) => skPlayCalls.push({ id, opts }),
+  stopBentoTutorialVoice: () => {},
+  isMaskEditorAudioMuted: () => skMuted,
+  setTimeout: skTimerApi.setTimeout,
+  clearTimeout: skTimerApi.clearTimeout,
+  sessionStorage: { setItem: () => {} },
+  localStorage: { getItem: () => null, setItem: () => {}, removeItem: () => {} },
+  window: {},
+});
+function runLatestSkTimer(expectedDelay) {
+  const timer = [...skTimers].reverse().find(record => !record.cleared && !record.ran);
+  assert.ok(timer, 'expected a pending color-guide timer');
+  if (expectedDelay != null) assert.equal(timer.delay, expectedDelay);
+  timer.ran = true;
+  timer.fn();
+  return timer;
+}
+function driveSkGuideToFinalVoice() {
+  skGuideApi.start();
+  for (let index = 0; index < 4; index++) {
+    const call = skPlayCalls[skPlayCalls.length - 1];
+    assert.equal(call.id, `0${index + 1}`);
+    assert.equal(skIntroReadyButton.classList.contains('is-ready'), false);
+    call.opts.onEnded();
+    runLatestSkTimer(600);
+    if (index === 0) {
+      const playCountAfterAdvance = skPlayCalls.length;
+      call.opts.onEnded();
+      assert.equal(skPlayCalls.length, playCountAfterAdvance,
+        'a duplicate ended callback from an older color must not skip the current step');
+      assert.equal([...skTimers].some(timer => !timer.cleared && !timer.ran), false,
+        'a stale ended callback must not arm another advance timer');
+    }
+  }
+  const finalCall = skPlayCalls[skPlayCalls.length - 1];
+  assert.equal(finalCall.id, '05');
+  assert.equal(skIntroReadyButton.classList.contains('is-ready'), false,
+    'the button must stay quiet while the last narration is speaking');
+  return finalCall;
+}
+let finalSkCall = driveSkGuideToFinalVoice();
+finalSkCall.opts.onEnded();
+assert.equal(skIntroReadyButton.classList.contains('is-ready'), true,
+  'the button must glow as soon as the last narration ends');
+skGuideApi.stop();
+assert.equal(skIntroReadyButton.classList.contains('is-ready'), false);
+finalSkCall.opts.onEnded();
+assert.equal(skIntroReadyButton.classList.contains('is-ready'), false,
+  'a stale callback from a closed guide must never relight the button');
+
+finalSkCall = driveSkGuideToFinalVoice();
+runLatestSkTimer(10250);
+assert.equal(skIntroReadyButton.classList.contains('is-ready'), true,
+  'the independent watchdog must recover when Audio never calls onEnded');
+skGuideApi.stop();
+skMuted = true;
+skGuideApi.start();
+for (let index = 0; index < 5; index++) runLatestSkTimer(3600);
+assert.equal(skIntroReadyButton.classList.contains('is-ready'), true,
+  'muted mode must use the shorter visual-only pacing');
+skGuideApi.stop();
+skMuted = false;
+assert.equal(skGuideApi.resume(), true, 'a visible interrupted guide must restart on foreground resume');
+assert.equal(skGuideApi.resume(), false, 'duplicate resume events must not restart an active guide twice');
+skGuideApi.stop();
+skIntroEl.classList.add('hidden');
+assert.equal(skGuideApi.resume(), false, 'a closed guide must not reopen on foreground resume');
+skIntroEl.classList.remove('hidden');
+
 const shippedVoiceIds = [
   'tut2_01_greet',
   'sk_intro_01', 'sk_intro_02', 'sk_intro_03', 'sk_intro_04', 'sk_intro_05',
@@ -605,6 +847,12 @@ assert.equal(
   crypto.createHash('sha256').update(fs.readFileSync(restoredRedVoicePath)).digest('hex'),
   'cf7d133330e34fc09126a7397d3fe29337af0ca89c26bc3efeab2d2e08fadd13',
   'the red-group guide must keep the verified, natural batch1263 Leda take'
+);
+const freeNoriVoicePath = path.join(root, 'assets/audio/bento/tutorial/tut2_06_noriedit.mp3');
+assert.equal(
+  crypto.createHash('sha256').update(fs.readFileSync(freeNoriVoicePath)).digest('hex'),
+  'f2e8d94c3be65b891eb013256a64af338806246fd12d9eaf44192bbca2ac565b',
+  'the free-edit narration must keep the Whisper-verified TTS3.1/Leda take'
 );
 
 // 3. simple mode でも指定中の品目だけを許可し、誤選択はspeech/toastだけで拒否する。
