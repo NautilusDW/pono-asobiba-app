@@ -154,7 +154,7 @@ const swVersion = sw.match(/const CACHE_VERSION = (\d+);/);
 assert.ok(pageVersion && ponoVersion && swVersion);
 assert.equal(pageVersion[1], "2164");
 assert.equal(ponoVersion[1], pageVersion[1]);
-assert.equal(swVersion[1], pageVersion[1]);
+assert.ok(Number(swVersion[1]) >= Number(pageVersion[1]), "game-only cache bumps may advance the service worker beyond the title pair");
 
 // Parse the actual main classic script. Other apparent <script> tags occur in
 // legacy HTML comments, so locate the known main-script anchor directly.

@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2165: なぞなぞトレインの未来を3個の正解カプセルで街を点灯する全画面マグネットゲート、宇宙を答えポータルへ重力スイングする長押し・解放ゲームへ別ジャンル化。宇宙は5問で星座線が完成し、最終問だけ全画面発光する。町・ジャングル・数字・未来の6背景素材は枝間など内部に残った白だけを透過し、花・数字面・ハイライトを保持した (batch:1281)。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/画像/テストのみ変更)。
 // v2164: タイトルのおしらせを公式情報だけの1一覧へ戻し、おみせタブ・ショップ記事・記事内導線を撤去。ショップ更新は公式未読数から完全に分離し、タイトルの明るい更新札とガチャ内の更新badgeだけで一目表示して、実際におみせを開いた時だけ消す (batch:1283)。play.html PAGE_CACHE_VERSION と同期 (2164)。
 // v2163: おべんとうの3色説明が終わったら「わかった！」を青白く点灯。のり編集は小さく／大きく／左右回転を自由に何度でも試せるようにし、保存状態へ一度で復元。完成時の重複テキストを外し、自由編集ナレーションをTTS3.1/Ledaで更新した (batch:1278)。play.html PAGE_CACHE_VERSION と同期不要 (bento/index.html/音声/docs/テストのみ変更)。
 // v2162: タイトルのおしらせを「こうしき／おみせ」タブ、日付・カテゴリ・未読表示・おみせ導線付きカードへ刷新。manage debugの「みため」タブへサンプル6件と未読／既読／shopKey付きショップ更新の再現操作を追加し、タイトルとガチャ内の更新signはdebug時だけ表示して実際の開店時に消す。通常ユーザーの保存・商品状態は変更しない (batch:1282)。play.html PAGE_CACHE_VERSION と同期 (2162)。
@@ -89,7 +90,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2164;
+const CACHE_VERSION = 2165;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
