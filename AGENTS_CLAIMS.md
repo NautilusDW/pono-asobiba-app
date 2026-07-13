@@ -80,6 +80,7 @@
 - 2026-07-06 - by Claude - [batch:1202-oto-quit-to-play-html] - oto/index.html, sw.js, play.html, AGENTS_CLAIMS.md - batch:1201 の音タッチ もどる/おしまい 実装を forward fix。音タッチ内タイトル (#start-mode-choice) 遷移を廃止し、#oto-menu-home と同型の ../play.html 遷移に訂正 + sw v2003→v2004 [overlap: batch:tier-v3-phase1 (oto/index.html, play.html, sw.js)]
 - 2026-07-06 - by Claude - [batch:1203-ux-3fixes] - common/data-export.js, common/sw-update.js, sw.js, play.html, AGENTS_CLAIMS.md - UX 3件: Preview 強化 + SW toast 繰り返し抑制 + CORE_PRESERVE_IF_ABSENT 拡張 + sw v2006→v2007 [overlap: batch:tier-v3-phase1]
 - 2026-07-06 21:04 - by Claude - [batch:1204-capacitor-phase1-scaffold] - native/** (新規), .gitignore, .assetsignore, common/sw-update.js, common/cloud-sync.js, bento/kitchen.html, AGENTS_CLAIMS.md - Capacitor Phase 1 scaffold (Android 先行、www build pipeline + Web側 SW gating 3点)。play.html/sw.js/CLAUDE.md/HANDOFF.md/MEMORY.md 等の既存 dirty 10 ファイルには一切 touch しない [overlap: batch:1203-ux-3fixes (common/sw-update.js), batch:952-cloud-sync-step-c (common/cloud-sync.js)]
+- 2026-07-13 - by Claude - [batch:1280-data-analytics-plan] - docs/**, AGENTS_CLAIMS.md - 子供の遊びデータ収集の棚卸し + マーケ活用分析 + Cloudflare 分析基盤プラン策定 (docs のみ、コード変更なし) [overlap: batch:931-sticker-book-engagement-research-v2 (docs/**)]
 ## なぜ HANDOFF.md と別ファイルなのか
 
 HANDOFF.md は履歴 (Done エントリ含む) が積み上がるため、 「いまアクティブな claim だけを瞬時に把握する」 用途には不向き。 このボードは **常に短い / 常に最新 / 行は使い捨て** という性質を維持することで、 衝突検出のコストをほぼゼロにする狙い。
