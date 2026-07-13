@@ -180,6 +180,7 @@ const completeCurrentStage = extractFunction(game, "completeCurrentStage");
 const resetStageScore = extractFunction(game, "resetStageScore");
 const onRunEvent = extractFunction(game, "onRunEvent");
 const maybeSpawnRare = extractFunction(game, "maybeSpawnRare");
+const collectRareEvent = extractFunction(game, "collectRareEvent");
 const setTunnelInteriorBackdrop = extractFunction(game, "setTunnelInteriorBackdrop");
 const gameLoop = extractFunction(game, "gloop");
 
@@ -286,7 +287,14 @@ assert.match(completeCurrentStage, /if\(!stageClearScoreGranted\)/, "stage-clear
 assert.match(completeCurrentStage, /SCORE_POINTS\.stageClear/, "stage clear must grant 300 points");
 assert.match(completeCurrentStage, /stageMiss===0[\s\S]*?SCORE_POINTS\.noMiss/, "a no-miss clear must grant 200 points");
 assert.match(hiddenFunctions.collectHelpItem, /helpItems\.length>=HELP_MAX[\s\S]*?SCORE_POINTS\.helpOverflow/, "the fourth and later help pickups must convert to 50 points");
-assert.match(maybeSpawnRare, /addScore\(SCORE_POINTS\.rare,["']rare["']\)/, "a rare friend must grant 300 points");
+assert.doesNotMatch(maybeSpawnRare, /addScore\(SCORE_POINTS\.rare,["']rare["']\)/,
+  "spawning a rare friend must not grant points before the child collects it");
+assert.match(maybeSpawnRare, /collectRareEvent\(el,e,t\)/,
+  "pointer collection must use the shared rare-event transaction");
+assert.match(collectRareEvent, /addScore\(SCORE_POINTS\.rare,["']rare["']\)/,
+  "the shared rare-event transaction must grant 300 points");
+assert.match(collectRareEvent, /dataset\.collected===?["']1["']/,
+  "the shared rare-event transaction needs an idempotency guard");
 assert.match(onRunEvent, /collectHelpItem\(/, "ordinary help pickups must share the overflow-score rule");
 assert.match(hiddenFunctions.showTunnelFriendResult, /(?:tunnelFriendsFound\s*(?:===|>=)\s*TUNNEL_FRIEND_LIMIT|total\s*===\s*TUNNEL_FRIEND_LIMIT\s*&&\s*tunnelFriendsFound\s*===\s*total)/, "only a 3/3 find may grant the help reward");
 assert.match(hiddenFunctions.showTunnelFriendResult, /collectHelpItem\(/, "the 3/3 reward must respect the shared help cap and overflow score");
@@ -303,6 +311,40 @@ assert.match(hiddenFunctions.drawTunnelScoreHud, /tunnelStageScore[\s\S]*?stageS
 assert.match(hiddenFunctions.drawTunnelScoreHud, /tunnelJourneyScore[\s\S]*?journeyScore/, "the tunnel HUD must show the journey score");
 assert.match(hiddenFunctions.showTunnelFriendResult, /tunnelResultStage[\s\S]*?stageScore/, "the result must show the stage score");
 assert.match(hiddenFunctions.showTunnelFriendResult, /tunnelResultTotal[\s\S]*?journeyScore/, "the result must show the journey score");
+
+/* A shared rare collection transaction owns scoring for both pointer and vehicle collisions. */
+const rareRecords = { scores: [], stamps: [], registrations: 0, sounds: 0, confetti: 0, speech: [] };
+const rareElement = {
+  parentNode: {},
+  dataset: {},
+  remove() { this.parentNode = null; }
+};
+const rareContext = {
+  rareEl: rareElement,
+  rareCount: 0,
+  SCORE_POINTS: { rare: scorePoints.rare },
+  addScore(points, category) { rareRecords.scores.push([points, category]); return points; },
+  registerZk() { rareRecords.registrations += 1; return true; },
+  sndNew() { rareRecords.sounds += 1; },
+  confetti(count) { rareRecords.confetti += count; },
+  showStamp(message, kind) { rareRecords.stamps.push([message, kind]); },
+  speak(message) { rareRecords.speech.push(message); }
+};
+vm.runInNewContext(`${collectRareEvent};this.__collectRareEvent=collectRareEvent;`, rareContext, {
+  filename: "nazonazo-shared-rare-event-vm.js",
+  timeout: 1000
+});
+assert.equal(rareContext.__collectRareEvent(rareElement, "🐬", "いるか"), true);
+assert.equal(rareContext.rareCount, 1);
+assert.deepEqual(rareRecords.scores, [[scorePoints.rare, "rare"]], "collecting a rare friend must score exactly 300 points once");
+assert.equal(rareElement.dataset.collected, "1");
+assert.equal(rareContext.rareEl, null);
+assert.match(rareRecords.stamps[0][0], /\+300てん/);
+rareElement.parentNode = {};
+assert.equal(rareContext.__collectRareEvent(rareElement, "🐬", "いるか"), false,
+  "a pointer/collision race must not collect the same rare friend twice");
+assert.equal(rareContext.rareCount, 1);
+assert.deepEqual(rareRecords.scores, [[scorePoints.rare, "rare"]], "duplicate collection must not duplicate rare score");
 
 /* ---------- isolated VM behavior harness ---------- */
 class FakeClassList {

@@ -13,6 +13,9 @@ const html = read("nazonazo-tunnel/index.html");
 const css = read("nazonazo-tunnel/styles.css");
 const game = read("nazonazo-tunnel/js/game.js");
 
+assert.match(html, /styles\.css\?v=20260713-1285/);
+assert.match(html, /js\/game\.js\?v=20260713-1285/);
+
 function extractBalanced(source, start, openChar = "{", closeChar = "}") {
   const open = source.indexOf(openChar, start);
   assert.notEqual(open, -1, `opening ${openChar} missing after offset ${start}`);
@@ -45,6 +48,12 @@ function extractFunction(source, name) {
   assert.ok(match, `${name}: function missing`);
   return source.slice(match.index, source.indexOf("{", match.index)) +
     extractBalanced(source, match.index);
+}
+
+function extractFirstFunction(source, names) {
+  const name = names.find(candidate => new RegExp(`function\\s+${candidate}\\s*\\(`).test(source));
+  assert.ok(name, `expected one function: ${names.join(", ")}`);
+  return extractFunction(source, name);
 }
 
 function extractObject(source, declaration) {
@@ -99,7 +108,8 @@ const buildWorld = extractFunction(game, "buildWorld");
 assert.match(buildWorld, /const stationStage=hasStationArt\(st\)/);
 assert.match(buildWorld, /stationStage\s*\?\s*'<div class="station-art"/);
 assert.match(buildWorld, /t\.classList\.add\("station",st\.id\+"-station"\)/);
-assert.match(buildWorld, /for\(let k=0;k<\(st\.id==="space"\?0:2\);k\+\+\)/, "legacy procedural space decor must not be generated");
+assert.match(buildWorld, /for\(let k=0;k<\(\(st\.id==="space"(?:\|\|st\.id==="sea")?\)\?0:2\);k\+\+\)/,
+  "legacy procedural space decor must not be generated");
 assert.match(css, /body\.st-space \.tun\.station\.space-station\{[^}]*aspect-ratio:2172\/724/);
 assert.match(css, /body\.st-space \.tun\.station\.space-station\.open \.station-art\{/);
 assert.match(css, new RegExp(`body\\.st-space\\.v-rocket \\.rk-body\\{[^}]*${rocketAsset.replace(/\./g, "\\.")}`), "space must replace the procedural tube with the generated exploration rocket");
@@ -162,6 +172,79 @@ assert.match(css, /body\.st-space #midT,body\.st-space #groundT,body\.st-space #
 assert.match(css, /\.space-loop-tile:nth-child\(even\)::before\{transform:scaleX\(-1\)\}/);
 assert.match(css, /body\.tunnel-interior \.space-loop-strip,body\.tunnel-interior \.space-star-layer\{display:none!important\}/);
 assert.match(css, /body\.st-space:not\(\.tunnel-interior\) \.space-star-layer\{display:block\}/);
+
+/* The generated rocket can be steered in both axes during forced scrolling. */
+assert.match(html, /id="spaceSteerSurface"[^>]*aria-hidden="true"/);
+assert.match(html, /id="spaceSteerHint"[^>]*role="status"[^>]*aria-live="polite"[^>]*hidden/);
+const steerSurfaceRule = cssRule("#spaceSteerSurface");
+assert.match(steerSurfaceRule, /position:absolute/);
+assert.match(steerSurfaceRule, /inset:0/);
+assert.match(steerSurfaceRule, /touch-action:none/);
+assert.match(css, /body\.st-space\.space-steer-active[^{]*#spaceSteerSurface[^{]*\{[^}]*pointer-events:auto/);
+assert.match(css, /body\.st-space \.vehicle-steer-shell\{[^}]*translate3d\(var\(--space-steer-x,0px\),var\(--space-steer-y,0px\),0\)/,
+  "space steering must move the visible rocket in X and Y");
+assert.match(game, /const spaceMoveKeys=new Set\(\);/);
+
+const controlAvailable = extractFunction(game, "spaceControlAvailable");
+assert.match(controlAvailable, /isSpaceStage\(\)/);
+assert.match(controlAvailable, /playing/);
+assert.match(controlAvailable, /driving|spaceGalaxyPlayable\(\)|space-galaxy-active/,
+  "rocket steering must be available during the forced scroll or the full-screen space game");
+assert.match(controlAvailable, /tunnelInteriorMode/);
+assert.match(controlAvailable, /tunnel-enter-run/);
+assert.match(controlAvailable, /tunnel-exit-run/);
+
+const steerBounds = extractFunction(game, "spaceSteerBounds");
+assert.match(steerBounds, /viewportWidth/);
+assert.match(steerBounds, /viewportHeight/);
+assert.match(steerBounds, /veh\.(?:offsetWidth|getBoundingClientRect)/);
+assert.match(steerBounds, /hudBottom|scoreHud/,
+  "vertical steering bounds must leave the score HUD clear");
+for (const key of ["minX", "maxX", "minY", "maxY"]) assert.match(steerBounds, new RegExp(key));
+
+const setTarget = extractFunction(game, "setSpaceSteerTarget");
+assert.match(setTarget, /clamp\([^\n]+bounds\.minX,bounds\.maxX\)/);
+assert.match(setTarget, /clamp\([^\n]+bounds\.minY,bounds\.maxY\)/);
+const nudgeTarget = extractFunction(game, "nudgeSpaceSteerTarget");
+assert.match(nudgeTarget, /spaceSteerTargetX\+dx/);
+assert.match(nudgeTarget, /spaceSteerTargetY\+dy/);
+assert.match(nudgeTarget, /bounds\.minX,bounds\.maxX/);
+assert.match(nudgeTarget, /bounds\.minY,bounds\.maxY/);
+
+const renderSteering = extractFunction(game, "renderSpaceSteering");
+assert.match(renderSteering, /spaceControlAvailable\(\)/);
+assert.match(renderSteering, /updateSpaceKeyboardMovement\(dt\)/);
+assert.match(renderSteering, /clampSpaceSteerOffsets\(\)/);
+assert.match(renderSteering, /spaceSteerX\+=\(spaceSteerTargetX-spaceSteerX\)/);
+assert.match(renderSteering, /spaceSteerY\+=\(spaceSteerTargetY-spaceSteerY\)/);
+assert.match(renderSteering, /applySpaceSteerVisual\(\)/);
+assert.match(render, /renderSpaceSteering\(\)/,
+  "the main animation loop must update rocket steering every frame");
+
+const pointerDown = extractFirstFunction(game, ["handleSpaceSteerPointerDown", "handleSpacePointerDown"]);
+assert.match(pointerDown, /spaceControlAvailable\(\)/);
+assert.match(pointerDown, /setSpaceSteerTarget\(ev\.clientX,ev\.clientY/);
+const pointerMove = extractFirstFunction(game, ["handleSpaceSteerPointerMove", "handleSpacePointerMove"]);
+assert.match(pointerMove, /setSpaceSteerTarget\(ev\.clientX,ev\.clientY/);
+const keyDown = extractFirstFunction(game, ["handleSpaceSteerKeyDown", "handleSpaceKeyDown"]);
+assert.match(keyDown, /defaultPrevented/,
+  "answer focus and engine winding keys must not also steer the rocket");
+for (const token of ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "KeyA", "KeyD", "KeyW", "KeyS"]) {
+  assert.match(keyDown, new RegExp(token), `space steering keyboard path is missing ${token}`);
+}
+assert.match(keyDown, /spaceMoveKeys\.add/);
+const keyUp = extractFirstFunction(game, ["handleSpaceSteerKeyUp", "handleSpaceKeyUp"]);
+assert.match(keyUp, /spaceMoveKeys\.delete/);
+
+const resetSteering = extractFunction(game, "resetSpaceSteering");
+assert.match(resetSteering, /spaceMoveKeys\.clear\(\)/);
+assert.match(resetSteering, /spaceSteerTargetX=0/);
+assert.match(resetSteering, /spaceSteerTargetY=0/);
+assert.match(resetSteering, /--space-steer-x","0px"/);
+assert.match(resetSteering, /--space-steer-y","0px"/);
+assert.match(extractFunction(game, "startJourneyAt"), /resetSpaceSteering\(\)/);
+assert.match(extractFunction(game, "ending"), /resetSpaceSteering\(\)/);
+assert.match(extractFunction(game, "openMap"), /resetSpaceSteering\(\)/);
 
 const generatedAssets = [
   { file: assetNames.sky, width: 1983, height: 793, alpha: false },

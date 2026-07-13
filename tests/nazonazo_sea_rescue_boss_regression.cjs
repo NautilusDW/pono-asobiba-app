@@ -126,6 +126,10 @@ const syncSeaCompanionsBody = extractFunction(js, "syncSeaCompanions");
 const seaBossPlayableBody = extractFunction(js, "seaBossPlayable");
 const seaBossDamageBody = extractFunction(js, "seaBossDamagePerVolley");
 const updateSeaBossVisualBody = extractFunction(js, "updateSeaBossVisual");
+const clearSeaBossEnemyShotsBody = extractFunction(js, "clearSeaBossEnemyShots");
+const spawnSeaBossBubbleShotBody = extractFunction(js, "spawnSeaBossBubbleShot");
+const hitSeaSubmarineWithBossBubbleBody = extractFunction(js, "hitSeaSubmarineWithBossBubble");
+const updateSeaBossEnemyShotsBody = extractFunction(js, "updateSeaBossEnemyShots");
 const hitSeaBossBody = extractFunction(js, "hitSeaBoss");
 const finishSeaBossVictoryBody = extractFunction(js, "finishSeaBossVictory");
 const showSeaBossBody = extractFunction(js, "showSeaBossEncounter");
@@ -166,9 +170,25 @@ for (let difficulty = 0; difficulty < 3; difficulty += 1) {
     `difficulty ${difficulty}: WORDPLAY must stay out of the sea rescue run`);
 }
 
-/* The bubble copy and semantic mode explain that the creature is trapped and shrunken. */
+/* The recurring mission copy is a separate, boxless visual guide; qText stays the riddle. */
 assert.match(html, /id="seaRescueMessage"[^>]*role="status"[^>]*aria-live="polite"[^>]*aria-atomic="true"[^>]*hidden/);
-assert.match(showQuizBody, /あわの ともだちを たすけよう！/);
+assert.match(html, /id="seaQuizGuide"[^>]*aria-hidden="true"[^>]*>ただしい ほうを えらんで たすけよう</);
+assert.doesNotMatch(showQuizBody, /あわの ともだちを たすけよう！/,
+  "the already-understood rescue mission must not prefix every riddle");
+assert.match(showQuizBody, /qText\.textContent=isSeaStage\(\)\?cur\.q:/,
+  "sea qText must begin directly with the current riddle");
+const seaQuizGuideCss = cssRule("#seaQuizGuide");
+assert.match(seaQuizGuideCss, /left\s*:\s*50%/);
+assert.match(seaQuizGuideCss, /top\s*:\s*(?:1[2-9]|2\d)%/,
+  "the rescue mission should sit around the upper center, below the score HUD");
+assert.match(seaQuizGuideCss, /text-shadow|-webkit-text-stroke/,
+  "the mission needs outlined/glowing letters rather than a filled panel");
+assert.doesNotMatch(seaQuizGuideCss, /(?:^|;)\s*(?:background|border|box-shadow)\s*:/,
+  "the separate rescue mission must not regain a filled text box");
+assert.match(css, /body\.st-sea\.sea-quiz-active #seaQuizGuide\s*\{[^}]*(?:opacity\s*:\s*1|visibility\s*:\s*visible)/,
+  "the mission guide must only reveal with the sea quiz");
+assert.match(css, /#seaQuizGuide\s*\{[^}]*animation\s*:[^;}]*seaQuiz/,
+  "the mission guide needs a restrained attention pulse");
 assert.match(seaQuestionOptionsBody, /ok:true,mode:"sea"/);
 assert.match(seaQuestionOptionsBody, /ok:false,mode:"sea"/);
 assert.match(renderSeaBubbleBody, /あわの なかで ちいさくされた/);
@@ -334,19 +354,180 @@ assert.ok(fs.statSync(bossAsset).size < 3 * 1024 * 1024, "anglerfish boss asset 
 assert.match(html, /id="seaBossLayer"[^>]*role="group"[^>]*aria-label="おおあわぬしとの たたかい"[^>]*hidden/);
 const buildSeaBossBody = extractFunction(js, "buildSeaBossEncounter");
 assert.match(buildSeaBossBody, /role","progressbar"/);
-assert.match(buildSeaBossBody, /aria-label","あわバリア"/);
+assert.match(buildSeaBossBody, /aria-label","おおあわぬしの たいりょく"/);
 assert.match(buildSeaBossBody, /aria-valuemin","0"/);
+assert.doesNotMatch(buildSeaBossBody, /sea-boss-barrier|sea-boss-cracks/,
+  "the creature that trapped the friends must not itself be enclosed in a rescue bubble");
+assert.doesNotMatch(css, /\.sea-boss-barrier|\.sea-boss-cracks/,
+  "obsolete barrier/crack visuals must be removed, not merely hidden behind the boss art");
 const updateSeaBossProgressBody = extractFunction(js, "updateSeaBossProgress");
 assert.match(updateSeaBossProgressBody, /aria-valuemax/);
 assert.match(updateSeaBossProgressBody, /aria-valuenow/);
-assert.match(updateSeaBossProgressBody, /aria-valuetext","あわバリア のこり /);
+assert.match(updateSeaBossProgressBody, /aria-valuetext","たいりょく のこり /);
 assert.match(cssRule("\\.sea-boss-wrap\\.is-hit \\.sea-boss-art"), /brightness\(1\.36\)[\s\S]*hue-rotate\(-18deg\)/);
 assert.match(css, /\.sea-boss-wrap\.damage-1[\s\S]*\.sea-boss-wrap\.damage-2[\s\S]*\.sea-boss-wrap\.damage-3/);
-assert.match(updateSeaBossVisualBody, /seaReducedMotion\(\)\|\|seaBossPhase!=="active"\?0:Math\.sin/);
+assert.ok((updateSeaBossVisualBody.match(/Math\.sin/g) || []).length >= 2,
+  "the active anglerfish must travel a readable figure-eight in both axes");
+assert.match(updateSeaBossVisualBody, /centerBase[\s\S]*Math\.sin[\s\S]*centerX/,
+  "the figure-eight needs visible horizontal motion, not only the old vertical bob");
+assert.match(updateSeaBossVisualBody, /seaReducedMotion\(\)/,
+  "large boss travel needs a reduced-motion fallback");
 assert.match(updateSeaBossVisualBody, /classList\.toggle\("is-hit",seaBossPhase==="active"&&\(now\|\|_nowMs\(\)\)<seaBossFlashUntil\)/,
   "hit color must be derived from flashUntil so rapid hits extend rather than race old timers");
 const reducedCss = css.slice(css.indexOf("@media (prefers-reduced-motion:reduce)"));
 assert.match(reducedCss, /\*\{animation-duration:\.01s!important;transition-duration:\.01s!important\}/);
+assert.match(reducedCss, /#seaQuizGuide|seaQuizGuide/,
+  "reduced motion must keep the mission readable without its repeated pulse");
+
+function makeBossMotionSandbox(reduced = false) {
+  const wrap = { style: { setProperty() {} }, classList: makeClassList() };
+  const layerStyle = new Map();
+  const state = {
+    seaBossPhase: "active",
+    seaBossLayer: {
+      hidden: false,
+      querySelector: selector => selector === ".sea-boss-wrap" ? wrap : null,
+      style: { setProperty: (name, value) => layerStyle.set(name, value) }
+    },
+    seaBossWidth: 0,
+    seaBossX: 0,
+    seaBossY: 0,
+    seaBossRadiusX: 0,
+    seaBossRadiusY: 0,
+    seaBossFlashUntil: 0,
+    seaBossAttackAt: 0,
+    seaAnswerSafeRect: () => ({ sceneRect: { width: 844, height: 390 }, top: 50, bottom: 300, height: 250 }),
+    clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
+    seaReducedMotion: () => reduced,
+    _nowMs: () => 0
+  };
+  vm.createContext(state);
+  vm.runInContext(`${updateSeaBossVisualBody};this.updateSeaBossVisual=updateSeaBossVisual;`, state);
+  return state;
+}
+
+const movingBoss = makeBossMotionSandbox(false);
+movingBoss.updateSeaBossVisual(1);
+const bossAtStart = { x: movingBoss.seaBossX, y: movingBoss.seaBossY };
+movingBoss.updateSeaBossVisual(1000);
+assert.ok(Math.abs(movingBoss.seaBossX - bossAtStart.x) >= 30,
+  "one second must produce plainly visible horizontal boss travel");
+assert.ok(Math.abs(movingBoss.seaBossY - bossAtStart.y) >= 20,
+  "one second must produce plainly visible vertical boss travel");
+const staticBoss = makeBossMotionSandbox(true);
+staticBoss.updateSeaBossVisual(1);
+const reducedStart = { x: staticBoss.seaBossX, y: staticBoss.seaBossY };
+staticBoss.updateSeaBossVisual(1000);
+assert.deepEqual({ x: staticBoss.seaBossX, y: staticBoss.seaBossY }, reducedStart,
+  "reduced motion must hold the boss at a stable target position");
+
+/* The boss telegraphs aimed bubbles, and a hit has one bounded, non-failing penalty. */
+assert.match(js, /let seaBossEnemyShots=\[\][^;]*seaBossInvulnerableUntil=0[^;]*seaBossStunUntil=0/);
+assert.match(spawnSeaBossBubbleShotBody, /vehicleSteerShell\.getBoundingClientRect\(\)/,
+  "enemy bubbles must aim at the submarine's current position");
+assert.match(spawnSeaBossBubbleShotBody, /className="sea-boss-bubble-shot"/);
+assert.match(updateSeaBossEnemyShotsBody, /seaBossGuide\("あわが くるよ！ よけて！"/,
+  "the attack needs a readable warning before its projectile exists");
+assert.ok(updateSeaBossEnemyShotsBody.indexOf("seaBossAttackAt=now+") < updateSeaBossEnemyShotsBody.indexOf("spawnSeaBossBubbleShot("),
+  "the warning phase must be scheduled before the shot is spawned");
+assert.match(updateSeaBossEnemyShotsBody, /ratio<\.48[\s\S]*spawnSeaBossBubbleShot/,
+  "the low-HP phase should visibly increase pressure");
+assert.match(hitSeaSubmarineWithBossBubbleBody, /now<seaBossInvulnerableUntil/);
+assert.match(hitSeaSubmarineWithBossBubbleBody, /seaBossInvulnerableUntil=now\+900/);
+assert.match(hitSeaSubmarineWithBossBubbleBody, /seaBossStunUntil=now\+420/);
+assert.match(hitSeaSubmarineWithBossBubbleBody, /stopSeaFiring\(\)/,
+  "being hit must briefly interrupt the current burst");
+assert.doesNotMatch(hitSeaSubmarineWithBossBubbleBody, /completeCurrentStage|qSeg\+\+|seaBossHp\s*[-+]=/,
+  "an enemy hit may interrupt firing but must not create a child-hostile fail state");
+const seaShooterActiveBody = extractFunction(js, "seaShooterActive");
+assert.match(seaShooterActiveBody, /_nowMs\(\)<seaBossStunUntil|seaBossStunUntil>_nowMs\(\)/,
+  "the 420ms hit stun must prevent immediately restarting fire");
+const renderSeaSteeringBody = extractFunction(js, "renderSeaSteering");
+assert.match(renderSeaSteeringBody, /updateSeaBossEnemyShots\(now,dt\)/,
+  "enemy bubbles must advance and collide from the same owned sea animation loop");
+assert.match(css, /\.sea-boss-bubble-shot\s*\{[^}]*border-radius\s*:\s*50%/);
+assert.match(css, /\.sea-boss-wrap\.is-attacking[^,{]*\.sea-boss-art\s*\{/,
+  "the anglerfish must visibly telegraph before firing");
+assert.match(css, /body[^,{]*\.sea-sub-hit[^,{]*\.vehicle-steer-shell\s*\{/,
+  "submarine damage needs a short visible flash or kick");
+
+function makeBossAttackSandbox() {
+  const spawnOffsets = [];
+  const state = {
+    seaBossEnemyShots: [],
+    seaBossNextAttackAt: 1000,
+    seaBossAttackAt: 0,
+    seaBossMaxHp: 100,
+    seaBossHp: 100,
+    seaBossPlayable: () => true,
+    seaReducedMotion: () => false,
+    seaBossGuide: () => {},
+    tone: () => {},
+    spawnSeaBossBubbleShot: offset => spawnOffsets.push(offset),
+    clearSeaBossEnemyShots: () => { state.seaBossEnemyShots = []; },
+    hitSeaSubmarineWithBossBubble: () => false,
+    window: { innerWidth: 844, innerHeight: 390 },
+    clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
+    spawnOffsets
+  };
+  vm.createContext(state);
+  vm.runInContext(`${updateSeaBossEnemyShotsBody};this.updateSeaBossEnemyShots=updateSeaBossEnemyShots;`, state);
+  return state;
+}
+
+const attack = makeBossAttackSandbox();
+attack.updateSeaBossEnemyShots(1000, 0);
+assert.equal(attack.spawnOffsets.length, 0, "warning frame must not also spawn the projectile");
+assert.ok(attack.seaBossAttackAt > 1000);
+attack.updateSeaBossEnemyShots(attack.seaBossAttackAt - 1, 0);
+assert.equal(attack.spawnOffsets.length, 0);
+attack.updateSeaBossEnemyShots(attack.seaBossAttackAt, 0);
+assert.equal(attack.spawnOffsets.length, 1, "the warned full-HP attack should fire one aimed bubble");
+attack.seaBossHp = 40;
+attack.seaBossNextAttackAt = 3000;
+attack.updateSeaBossEnemyShots(3000, 0);
+attack.updateSeaBossEnemyShots(attack.seaBossAttackAt, 0);
+assert.equal(attack.spawnOffsets.length, 3, "below half HP the warned attack should add a two-bubble spread");
+
+function makeBossHitSandbox() {
+  const classes = makeClassList();
+  const timers = [];
+  const state = {
+    vehicleSteerShell: { getBoundingClientRect: () => ({ left: 100, right: 200, top: 100, bottom: 180, width: 100, height: 80 }) },
+    document: {
+      getElementById: () => ({ getBoundingClientRect: () => ({ left: 0, top: 0 }) }),
+      body: { classList: classes }
+    },
+    window: { innerWidth: 844 },
+    seaBossInvulnerableUntil: 0,
+    seaBossStunUntil: 0,
+    seaBossEpoch: 4,
+    stopSeaFiring: () => { state.stopCalls += 1; },
+    cancelSeaFirePointer: () => {},
+    nudgeSeaSteerTarget: () => {},
+    clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
+    tone: () => {},
+    showStamp: () => {},
+    setTimeout: (callback, delay) => { timers.push({ callback, delay }); return timers.length; },
+    stopCalls: 0,
+    timers,
+    classes
+  };
+  vm.createContext(state);
+  vm.runInContext(`${hitSeaSubmarineWithBossBubbleBody};this.hitSeaSubmarineWithBossBubble=hitSeaSubmarineWithBossBubble;`, state);
+  return state;
+}
+
+const bossHit = makeBossHitSandbox();
+const overlappingBossBubble = { x: 150, y: 140, radius: 14 };
+assert.equal(bossHit.hitSeaSubmarineWithBossBubble(overlappingBossBubble, 1000), true);
+assert.equal(bossHit.stopCalls, 1);
+assert.equal(bossHit.seaBossInvulnerableUntil, 1900);
+assert.equal(bossHit.seaBossStunUntil, 1420);
+assert.ok(bossHit.classes.contains("sea-sub-hit"));
+assert.equal(bossHit.hitSeaSubmarineWithBossBubble(overlappingBossBubble, 1100), false,
+  "a second bubble inside the invulnerability window must not restun the submarine");
+assert.equal(bossHit.stopCalls, 1);
 
 const bossHpMatch = /const SEA_BOSS_HP=\[([^\]]+)\];/.exec(js);
 assert.ok(bossHpMatch, "SEA_BOSS_HP is missing");
@@ -386,6 +567,8 @@ assert.equal(playableContext.seaBossPlayable(), false);
 assert.match(showSeaBossBody, /if\(window\.__PONO_TIER_LOCKED__\|\|!isSeaStage\(\)\|\|!playing\|\|seaBossDefeated\)return/);
 assert.match(showSeaBossBody, /seaBossPhase="intro"/);
 assert.match(showSeaBossBody, /seaBossPhase="active"/);
+assert.doesNotMatch(showSeaBossBody, /あわバリア/,
+  "boss instructions must not describe the captor as trapped inside a bubble barrier");
 
 /* One salvo does one HP transaction, including all companion damage, and thresholds fire once. */
 const hitContext = {
@@ -429,6 +612,8 @@ assert.equal(hitContext.sparkCalls, 4);
 assert.equal(hitContext.progressCalls, 4);
 
 /* Victory is idempotent, epoch-owned, reduced-motion aware, and completes the stage once. */
+assert.match(finishSeaBossVictoryBody, /clearSeaBossEnemyShots\(\)/,
+  "victory must remove hostile bubbles immediately instead of leaving them over the celebration");
 function makeVictorySandbox(reduced = false) {
   const timers = [];
   const wrap = { classList: makeClassList() };
@@ -446,6 +631,7 @@ function makeVictorySandbox(reduced = false) {
     cancelSeaPointer: () => {},
     cancelSeaFirePointer: () => {},
     removeAllSeaShots: () => {},
+    clearSeaBossEnemyShots: () => { state.enemyClearCalls += 1; },
     createSeaBurstParticles: () => { state.burstCalls += 1; },
     seaBossGuide: () => {},
     showStamp: () => {},
@@ -464,6 +650,7 @@ function makeVictorySandbox(reduced = false) {
     wrap,
     stopCalls: 0,
     burstCalls: 0,
+    enemyClearCalls: 0,
     clearCalls: 0,
     completeCalls: []
   };
@@ -477,6 +664,7 @@ victory.finishSeaBossVictory();
 victory.finishSeaBossVictory();
 assert.equal(victory.seaBossPhase, "defeated");
 assert.equal(victory.burstCalls, 1);
+assert.equal(victory.enemyClearCalls, 1);
 assert.equal(victory.timers.length, 1, "victory may schedule stage completion only once");
 assert.equal(victory.timers[0].delay, 1050);
 victory.timers[0].callback();
@@ -536,7 +724,8 @@ assert.deepEqual(alreadyDefeated.completeCalls, [1000]);
 const bossLayer = makeElement("div");
 bossLayer.hidden = false;
 bossLayer.appendChild(makeElement("span"));
-const cleanupClasses = makeClassList(["sea-boss-active", "sea-arena-active"]);
+const cleanupClasses = makeClassList(["sea-boss-active", "sea-arena-active", "sea-sub-hit"]);
+const enemyShotElement = { removed: false, remove() { this.removed = true; } };
 const cleanupContext = {
   seaBossEpoch: 4,
   seaBossTimer: 77,
@@ -551,6 +740,11 @@ const cleanupContext = {
   seaBossFlashUntil: 1200,
   seaBossSalvos: new Set([1, 2]),
   seaBossThresholds: new Set([.75]),
+  seaBossEnemyShots: [{ el: enemyShotElement }],
+  seaBossNextAttackAt: 1400,
+  seaBossAttackAt: 1200,
+  seaBossInvulnerableUntil: 1800,
+  seaBossStunUntil: 1500,
   seaRoundPhase: "idle",
   seaBossLayer: bossLayer,
   helpBtn: { disabled: true },
@@ -565,7 +759,7 @@ const cleanupContext = {
   shotsCleared: 0
 };
 vm.createContext(cleanupContext);
-vm.runInContext(`${clearSeaBossBody};this.clearSeaBossEncounter=clearSeaBossEncounter;`, cleanupContext);
+vm.runInContext(`${clearSeaBossEnemyShotsBody};${clearSeaBossBody};this.clearSeaBossEncounter=clearSeaBossEncounter;`, cleanupContext);
 cleanupContext.clearSeaBossEncounter();
 assert.equal(cleanupContext.seaBossEpoch, 5);
 assert.equal(cleanupContext.clearedTimer, 77);
@@ -575,10 +769,17 @@ assert.equal(cleanupContext.seaBossMaxHp, 0);
 assert.equal(cleanupContext.seaBossFlashUntil, 0);
 assert.equal(cleanupContext.seaBossSalvos.size, 0);
 assert.equal(cleanupContext.seaBossThresholds.size, 0);
+assert.equal(cleanupContext.seaBossEnemyShots.length, 0);
+assert.equal(enemyShotElement.removed, true);
+assert.equal(cleanupContext.seaBossNextAttackAt, 0);
+assert.equal(cleanupContext.seaBossAttackAt, 0);
+assert.equal(cleanupContext.seaBossInvulnerableUntil, 0);
+assert.equal(cleanupContext.seaBossStunUntil, 0);
 assert.equal(bossLayer.hidden, true);
 assert.equal(bossLayer.children.length, 0);
 assert.equal(cleanupClasses.contains("sea-boss-active"), false);
 assert.equal(cleanupClasses.contains("sea-arena-active"), false);
+assert.equal(cleanupClasses.contains("sea-sub-hit"), false);
 assert.equal(cleanupContext.helpBtn.disabled, false);
 assert.equal(cleanupContext.seaMoveKeys.size, 0);
 assert.equal(cleanupContext.shotsCleared, 1);

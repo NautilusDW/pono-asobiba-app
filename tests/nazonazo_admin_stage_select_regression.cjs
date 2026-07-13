@@ -164,8 +164,9 @@ const armContext = {
   worldX: 0,
   target: 0,
   resetSeaInteraction() { bridgeCalls.push(["reset-sea"]); },
-  clearFutureBuilderGame() { bridgeCalls.push(["clear-future-builder"]); },
+  clearFutureCapsuleGame() { bridgeCalls.push(["clear-future-capsule"]); },
   clearSpaceGalaxyGame() { bridgeCalls.push(["clear-space-galaxy"]); },
+  resetSpaceSteering() { bridgeCalls.push(["reset-space-steering"]); },
   stopStageWeather() { bridgeCalls.push(["stop-weather"]); },
   applySkin() { bridgeCalls.push(["skin"]); },
   origin(index) { return index * 100; },
@@ -189,6 +190,9 @@ assert.equal(armedStart.disabled, false);
 assert.equal(armedStart.textContent, "ふかいうみを はじめる！");
 assert.match(armedLabel.textContent, /ふかいうみ/);
 assert.ok(bridgeCalls.some((call) => call[0] === "notify" && call[1] === "armed" && call[2] === "sea"));
+assert.ok(bridgeCalls.some((call) => call[0] === "clear-future-capsule"), "arming a preview must clear the current future capsule game");
+assert.ok(bridgeCalls.some((call) => call[0] === "clear-space-galaxy"), "arming a preview must clear the current space choice game");
+assert.ok(bridgeCalls.some((call) => call[0] === "reset-space-steering"), "arming a preview must clear stale rocket steering state");
 
 const armStart = bridge.indexOf("function nazonazoAdminPreviewArm(stageId)");
 const armEnd = bridge.indexOf("\nasync function initNazonazoAdminStagePreviewBridge", armStart);
@@ -230,8 +234,8 @@ assert.equal(normalWrites, 1, "ordinary play must retain its save path");
 assert.match(game, /const wasAdminPreview=document\.body\.classList\.contains\("nazonazo-admin-stage-preview"\);/);
 assert.match(game, /if\(wasAdminPreview\)document\.body\.classList\.add\("nazonazo-admin-stage-preview"\);/);
 assert.match(html, /id="adminStagePreviewLabel" hidden/);
-assert.match(html, /js\/game\.js\?v=20260713-1282/);
-assert.match(html, /styles\.css\?v=20260713-1282/);
+assert.match(html, /js\/game\.js\?v=20260713-1285/);
+assert.match(html, /styles\.css\?v=20260713-1285/);
 assert.match(styles, /@media \(orientation:landscape\) and \(max-height:180px\)[\s\S]*?body\.nazonazo-admin-stage-preview #title h1,[\s\S]*?#zkBtnTitle\{display:none\}/);
 assert.match(styles, /body\.nazonazo-admin-stage-preview #lvSel\{[^}]*grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
 assert.match(styles, /body\.nazonazo-admin-stage-preview #startBtn\{[^}]*min-height:38px/);

@@ -47,7 +47,7 @@ function assertNoChildFacingKanji(source, label) {
   }
 }
 
-/* Existing opaque, looped Future City scenery must remain intact. */
+/* Existing opaque, looped Future City scenery remains the stage foundation. */
 assert.equal((html.match(/id="futureHorizonLoop"[\s\S]*?<\/div>/)?.[0].match(/class="future-loop-tile"/g) || []).length, 4);
 assert.equal((html.match(/id="futureMidLoop"[\s\S]*?<\/div>/)?.[0].match(/class="future-loop-tile"/g) || []).length, 4);
 assert.equal((html.match(/id="futureForegroundLoop"[\s\S]*?<\/div>/)?.[0].match(/class="future-loop-tile"/g) || []).length, 8);
@@ -58,154 +58,114 @@ for (const [name, value] of [["FUTURE_HORIZON_PARALLAX", ".10"], ["FUTURE_MID_PA
   assert.match(game, new RegExp(`${name}=${value.replace(".", "\\.")}`));
 }
 
-/* The former timing gate is gone; the whole screen is now a direct builder. */
-assert.match(html, /id="futureBuilderLayer"[^>]*role="group"[^>]*aria-labelledby="qText"[^>]*hidden/);
-assert.doesNotMatch(html, /id="futureMagnetLayer"|id="futureRailLayer"/);
-assert.doesNotMatch(game, /FUTURE_MAGNET|futureMagnet|renderFutureRailGame|futureRailPointerMove/);
-assert.doesNotMatch(css, /future-magnet|future-rail|#futureMagnetLayer|#futureRailLayer/);
+/* The answer is a stable, direct capsule choice; timing gates and the tower builder stay retired. */
+assert.match(html, /id="futureCapsuleLayer"[^>]*role="group"[^>]*aria-labelledby="qText"[^>]*hidden/);
+assert.doesNotMatch(html, /id="futureBuilderLayer"|id="futureMagnetLayer"|id="futureRailLayer"/);
+assert.doesNotMatch(game, /FUTURE_BUILDER|[Ff]utureBuilder|FUTURE_MAGNET|[Ff]utureMagnet|renderFutureRailGame/);
+assert.doesNotMatch(css, /future-builder|future-magnet|future-rail|#futureBuilderLayer|#futureMagnetLayer|#futureRailLayer/);
 
-const layerRule = cssRule("#futureBuilderLayer");
+const layerRule = cssRule("#futureCapsuleLayer");
 assert.match(layerRule, /position\s*:\s*fixed/);
 assert.match(layerRule, /inset\s*:\s*0/);
-assert.match(css, /#futureBuilderLayer\[hidden\]\{display:none!important\}/);
-const boardRule = cssRule("\\.future-builder-board");
+assert.match(css, /#futureCapsuleLayer\[hidden\]\{display:none!important\}/);
+const boardRule = cssRule("\\.future-capsule-board");
 assert.match(boardRule, /position:absolute/);
 assert.match(boardRule, /inset:0/);
-const towerRule = cssRule("\\.future-builder-tower");
-assert.match(towerRule, /width:38%/);
-assert.match(towerRule, /height:56%/);
-assert.match(towerRule, /z-index:9/);
-assert.match(towerRule, /pointer-events:auto/);
-assert.match(towerRule, /touch-action:none/);
-assert.match(css, /body\.future-builder-active #veh,body\.future-builder-active #cars/);
-assert.match(css, /#choices\.future-builder-mode,#choices\.space-galaxy-mode\{display:none\}/);
+const choiceRule = cssRule("\\.future-capsule-lane");
+assert.match(choiceRule, /position:relative/);
+assert.match(choiceRule, /width:100%/);
+assert.match(choiceRule, /pointer-events:auto/);
+assert.match(choiceRule, /touch-action:(?:manipulation|none)/);
+assert.match(css, /body\.future-capsule-active #veh,body\.future-capsule-active #cars/);
+assert.match(css, /#choices\.future-capsule-mode,#choices\.space-galaxy-mode\{display:none\}/);
 
 const optionFn = extractFunction(game, "futureQuestionOptions");
 const optionSandbox = { shuffle: values => values.slice().reverse() };
 vm.createContext(optionSandbox);
 vm.runInContext(`${optionFn};this.futureQuestionOptions=futureQuestionOptions;`, optionSandbox);
 const options = optionSandbox.futureQuestionOptions({ a: ["✅", "せいかい"], d: [["1️⃣", "ひとつ"], ["2️⃣", "ふたつ"]] });
-assert.equal(options.length, 2);
+assert.equal(options.length, 2, "exactly two capsules must be shown together");
 assert.equal(options.filter(option => option.ok).length, 1);
 assert.equal(options.filter(option => !option.ok).length, 1);
 
-assert.match(game, /const FUTURE_BUILDER_STEPS=3;/);
-assert.match(game, /const FUTURE_BUILDER_DRAG_RATIO=\[\.36,\.42,\.48\];/);
-assert.match(game, /const FUTURE_BUILDER_FIRST_LOCK=\.28;/);
-const renderBuilder = extractFunction(game, "renderFutureBuilderGame");
-assert.match(renderBuilder, /futureQuestionOptions\(cur\)\.forEach/);
-assert.match(renderBuilder, /className="choice future-builder-tower tower-"/);
-assert.match(renderBuilder, /className="future-builder-segment segment-"/);
-assert.match(renderBuilder, /className="future-builder-meter"/);
-assert.match(renderBuilder, /setAttribute\("role","progressbar"\)/);
-assert.match(renderBuilder, /pointerdown",event=>handleFutureBuilderPointerDown/);
-assert.match(renderBuilder, /pointermove",event=>handleFutureBuilderPointerMove/);
-assert.match(renderBuilder, /pointercancel",event=>finishFutureBuilderPointer\(event,index,true\)/);
-assert.match(renderBuilder, /click",event=>handleFutureBuilderClick/);
-assert.match(renderBuilder, /className="future-builder-history"/);
-assert.match(renderBuilder, /className="future-builder-runner"/);
-assert.match(renderBuilder, /className="future-builder-hologram"/);
+assert.match(game, /const FUTURE_CAPSULE_TRAVEL_MS=\[[^\]]+\];/);
+assert.match(game, /const FUTURE_CAPSULE_PULSE_MS=\d+;/);
+const renderCapsule = extractFunction(game, "renderFutureCapsuleGame");
+assert.match(renderCapsule, /futureQuestionOptions\(cur\)\.forEach/);
+assert.match(renderCapsule, /className="choice future-capsule-lane/);
+assert.match(renderCapsule, /className="future-capsule"/,
+  "each stable lane must contain one moving visual capsule");
+assert.match(renderCapsule, /button\.dataset\.ok=o\.ok\?"1":"0"/);
+assert.match(renderCapsule, /button\.addEventListener\("click"|bindTap\(button/,
+  "each visible capsule must be a stable direct choice, not a timing window");
+assert.match(renderCapsule, /className="future-capsule-guide"/);
+assert.match(renderCapsule, /className="future-capsule-energy"/);
+assert.match(renderCapsule, /className="future-capsule-city"/);
+assert.match(renderCapsule, /className="future-capsule-runner"/);
+assert.doesNotMatch(renderCapsule, /requestAnimationFrame[\s\S]*(?:hitWindow|captureWindow|timing)/i,
+  "rendering must not bring back a timing gate");
 
-const shouldLock = extractFunction(game, "futureBuilderShouldLock");
-const lockSandbox = { FUTURE_BUILDER_FIRST_LOCK: .28 };
-vm.createContext(lockSandbox);
-vm.runInContext(`${shouldLock};this.futureBuilderShouldLock=futureBuilderShouldLock;`, lockSandbox);
-assert.equal(lockSandbox.futureBuilderShouldLock(.279, 0), false, "a tentative pull below 28% must remain cancellable");
-assert.equal(lockSandbox.futureBuilderShouldLock(.28, 0), true, "the first deliberate floor threshold must lock the chosen tower");
-assert.equal(lockSandbox.futureBuilderShouldLock(0, 1 / 3), true, "an already committed floor must keep the same tower selected");
+const selectCapsule = extractFunction(game, "selectFutureCapsule");
+assert.match(selectCapsule, /futureCapsuleOptions\[index\]/);
+assert.match(selectCapsule, /futureCapsuleSelectedIndex=index/);
+assert.match(selectCapsule, /classList\.add\("is-(?:selected|captured|absorbing)"\)/,
+  "the touched capsule must visibly travel to the center");
+assert.doesNotMatch(selectCapsule, /getBoundingClientRect\(\)[\s\S]*(?:>=|<=)[\s\S]*window/,
+  "a direct capsule tap must work regardless of its current animation position");
 
-const pointerMove = extractFunction(game, "handleFutureBuilderPointerMove");
-assert.match(pointerMove, /futureBuilderStartY-event\.clientY/);
-assert.match(pointerMove, /FUTURE_BUILDER_DRAG_RATIO\[level\]/);
-assert.match(pointerMove, /Math\.max\(entry\.committed,futureBuilderStartProgress\+distance\/travel\)/,
-  "a pull must directly determine tower height without a timing window");
-assert.match(pointerMove, /futureBuilderShouldLock\(entry\.progress,entry\.committed\)/);
-const pointerFinish = extractFunction(game, "finishFutureBuilderPointer");
-assert.match(pointerFinish, /if\(cancelled\)\{[\s\S]*updateFutureBuilderEntry\(entry,entry\.committed,\{silent:true\}\);[\s\S]*return;/,
-  "pointer cancellation must not submit an answer");
-assert.match(pointerFinish, /Math\.ceil\(entry\.progress\*FUTURE_BUILDER_STEPS-\.02\)\/FUTURE_BUILDER_STEPS/,
-  "released towers must snap to one of three stable floors");
-assert.match(pointerFinish, /if\(!futureBuilderShouldLock\(entry\.progress,entry\.committed\)\)/,
-  "a short or downward pull must unlock both answers instead of trapping the child");
-assert.match(pointerFinish, /if\(entry\.committed>=\.999\)resolveFutureBuilder\(entry\)/);
+const resolveCapsule = extractFunction(game, "resolveFutureCapsule");
+assert.match(resolveCapsule, /onPick\(entry\.button,\{ok:false,mode:"future"\}\)/,
+  "a wrong capsule must enter the shared miss flow exactly once");
+assert.equal((resolveCapsule.match(/onPick\(entry\.button,\{ok:false,mode:"future"\}\)/g) || []).length, 1,
+  "one wrong tap must never be scored twice");
+assert.match(resolveCapsule, /futureCapsuleEnergy(?:\+\+|\+=1|=pulse)/,
+  "a correct capsule must charge the city automatically");
+assert.match(resolveCapsule, /futureCapsuleEnergy[^\n]{0,120}3|pulse[^\n]{0,120}3/i,
+  "the correct capture must produce three automatic energy pulses");
+assert.match(resolveCapsule, /classList\.add\("is-(?:complete|city-awake)"\)/,
+  "three pulses must visibly wake the city and launch the linear");
+assert.match(resolveCapsule, /updateFutureCapsuleHistory\(qSeg\+1\)/);
+assert.match(resolveCapsule, /onPick\(entry\.button,\{ok:true,mode:"future"\}\)/);
+assert.match(resolveCapsule, /futureCapsuleEpoch/,
+  "delayed capture pulses must be invalidated when the screen is left");
 
-const tapStep = extractFunction(game, "stepFutureBuilder");
-assert.match(tapStep, /futureBuilderTapQueue/,
-  "rapid taps must be queued so all three floor latches remain visible");
-const drainTap = extractFunction(game, "drainFutureBuilderTapQueue");
-assert.match(drainTap, /entry\.committed\+1\/FUTURE_BUILDER_STEPS/,
-  "a simple tap must be a drag-free one-floor alternative");
-assert.match(drainTap, /futureReducedMotion\(\)\?90:220/);
-const tapTimers = [];
-const tapSandbox = {
-  FUTURE_BUILDER_STEPS: 3,
-  futureBuilderOptions: [{ button: { disabled: false }, committed: 0 }],
-  futureBuilderTapIndex: -1,
-  futureBuilderTapQueue: 0,
-  futureBuilderTapAnimating: false,
-  futureBuilderResolving: false,
-  futureBuilderStepTimer: 0,
-  futureBuilderPlayable: () => true,
-  selectFutureBuilder: () => true,
-  updateFutureBuilderEntry: (entry, progress) => { entry.committed = progress; },
-  futureBuilderGuide: () => {},
-  futureReducedMotion: () => false,
-  setTimeout: callback => { tapTimers.push(callback); return tapTimers.length; },
-  resolveCalls: 0
-};
-tapSandbox.resolveFutureBuilder = () => { tapSandbox.resolveCalls += 1; };
-vm.createContext(tapSandbox);
-vm.runInContext(`${drainTap};${tapStep};this.stepFutureBuilder=stepFutureBuilder;`, tapSandbox);
-tapSandbox.stepFutureBuilder(0);
-tapSandbox.stepFutureBuilder(0);
-tapSandbox.stepFutureBuilder(0);
-assert.equal(tapSandbox.futureBuilderOptions[0].committed, 1 / 3, "rapid taps must first show floor one");
-assert.equal(tapSandbox.futureBuilderTapQueue, 2, "the remaining rapid taps must stay queued");
-tapTimers.shift()();
-assert.equal(tapSandbox.futureBuilderOptions[0].committed, 2 / 3, "the next latch must be shown on its own tick");
-tapTimers.shift()();
-assert.equal(tapSandbox.futureBuilderOptions[0].committed, 1, "the third latch must complete the building");
-assert.equal(tapSandbox.resolveCalls, 1, "three queued taps must submit exactly once");
-const autoStep = extractFunction(game, "autoCompleteFutureBuilder");
-assert.match(autoStep, /futureBuilderAutoPlaying=true/);
-assert.match(autoStep, /setTimeout\(raise,futureReducedMotion\(\)\?80:170\)/,
-  "keyboard and assistive clicks must show the same three-floor cause and effect");
+const updateCapsule = extractFunction(game, "updateFutureCapsuleVisual");
+assert.match(updateCapsule, /futureCapsuleOptions/);
+assert.match(updateCapsule, /futureCapsuleStartedAt/);
+assert.match(updateCapsule, /FUTURE_CAPSULE_TRAVEL_MS/);
+assert.doesNotMatch(updateCapsule, /onPick|resolveFutureCapsule/,
+  "visual motion alone must never submit an answer");
 
-const resolve = extractFunction(game, "resolveFutureBuilder");
-assert.match(resolve, /onPick\(entry\.button,\{ok:false,mode:"future"\}\)/);
-assert.match(resolve, /onPick\(entry\.button,\{ok:true,mode:"future"\}\)/);
-assert.match(resolve, /updateFutureBuilderHistory\(qSeg\+1\)/,
-  "each answer must remain visible as a completed city building");
-assert.match(resolve, /classList\.add\("is-city-awake"\)/);
-assert.match(resolve, /classList\.add\("is-folding"\)[\s\S]*updateFutureBuilderEntry\(entry,0,\{silent:true\}\)[\s\S]*onPick\(entry\.button,\{ok:false,mode:"future"\}\)/,
-  "the wrong tower must visibly fold before the shared miss flow dims it");
-assert.match(resolve, /querySelector\("\.future-builder-hologram"\)/);
-assert.match(resolve, /futureReducedMotion\(\)\?450:2600/,
-  "the city wake-up payoff must stay visible long enough to read");
-assert.match(css, /\.future-builder-board\.is-city-awake \.future-builder-skyline>i/);
-assert.match(css, /\.future-builder-board\.is-city-awake \.future-builder-runner\{[^}]*futureBuilderLaunch/);
-
-const help = extractFunction(game, "assistFutureBuilderGame");
+const help = extractFunction(game, "assistFutureCapsuleGame");
 assert.match(help, /wrong\.button\.disabled=true/);
-assert.match(help, /correct\.committed=Math\.max\(correct\.committed,1\/FUTURE_BUILDER_STEPS\)/);
-assert.doesNotMatch(help, /resolveFutureBuilder\(/, "help must reveal and prebuild, not auto-answer");
+assert.match(help, /correct\.button\.classList\.add\("glow"\)/);
+assert.doesNotMatch(help, /selectFutureCapsule\(|resolveFutureCapsule\(|onPick\(/,
+  "help may reveal the correct moving capsule but must not answer it");
 
-const clear = extractFunction(game, "clearFutureBuilderGame");
-assert.match(clear, /futureBuilderEpoch\+\+;clearTimeout\(futureBuilderTimer\)/);
-assert.match(clear, /futureBuilderPointerId=null/);
-assert.match(clear, /futureBuilderLayer\.replaceChildren\(\);futureBuilderLayer\.hidden=true/);
+const clear = extractFunction(game, "clearFutureCapsuleGame");
+assert.match(clear, /futureCapsuleEpoch\+\+/);
+assert.match(clear, /futureCapsuleTimers\.forEach\(clearTimeout\)/);
+assert.match(clear, /futureCapsuleTimers\.clear\(\)/);
+assert.match(clear, /futureCapsuleSelectedIndex=-1/);
+assert.match(clear, /futureCapsuleLayer\.replaceChildren\(\);futureCapsuleLayer\.hidden=true/);
 for (const lifecycle of ["startJourneyAt", "showQuiz", "ending", "openMap", "nazonazoAdminPreviewArm"]) {
-  assert.match(extractFunction(game, lifecycle), /clearFutureBuilderGame\(\)/, `${lifecycle}: builder state must be cleared`);
+  assert.match(extractFunction(game, lifecycle), /clearFutureCapsuleGame\(\)/, `${lifecycle}: capsule state must be cleared`);
 }
-assert.match(extractFunction(game, "showQuiz"), /isFutureStage\(\)\)renderFutureBuilderGame\(\)/);
-assert.match(extractFunction(game, "activeChoiceButtons"), /future-builder-active[\s\S]*future-builder-tower/);
-assert.match(extractFunction(game, "onPick"), /classList\.contains\("future-builder-tower"\)/);
-assert.match(extractFunction(game, "useHelp"), /futureBuilderPointerId!==null/,
-  "help must not rewrite a tower while a drag is still captured");
-assert.match(css, /@media \(prefers-reduced-motion:reduce\)[\s\S]*\.future-builder-handle b,[\s\S]*animation:none!important/);
-assert.match(css, /prefers-reduced-motion:reduce[\s\S]*\.future-builder-board\.is-city-awake \.future-builder-runner\{display:none!important\}/);
+assert.match(extractFunction(game, "showQuiz"), /isFutureStage\(\)\)renderFutureCapsuleGame\(\)/);
+assert.match(extractFunction(game, "activeChoiceButtons"), /future-capsule-active[\s\S]*future-capsule-lane/);
+assert.match(extractFunction(game, "onPick"), /classList\.contains\("future-capsule-lane"\)/);
+assert.match(extractFunction(game, "useHelp"), /futureCapsuleResolving/,
+  "help must not rewrite a capsule during its capture sequence");
 
-assertNoChildFacingKanji(renderBuilder, "renderFutureBuilderGame");
-assertNoChildFacingKanji(resolve, "resolveFutureBuilder");
+/* Short landscape and reduced-motion retain both choices and a readable static payoff. */
+assert.match(css, /@media [^{]*max-height:(?:360|480)px[^\{]*\{[\s\S]*\.future-capsule-lane/,
+  "568x320 needs an explicit short-height capsule layout");
+assert.match(css, /@media \(prefers-reduced-motion:reduce\)[\s\S]*\.future-capsule-lane[\s\S]*animation:none!important/);
+assert.match(css, /prefers-reduced-motion:reduce[\s\S]*\.future-capsule-board\.is-(?:complete|city-awake)[\s\S]*(?:opacity:1|display:none)/,
+  "reduced motion must preserve a clear completed-city state");
 
-console.log("Nazonazo future builder regression checks passed.");
+assertNoChildFacingKanji(renderCapsule, "renderFutureCapsuleGame");
+assertNoChildFacingKanji(selectCapsule, "selectFutureCapsule");
+assertNoChildFacingKanji(resolveCapsule, "resolveFutureCapsule");
+
+console.log("Nazonazo future capsule regression checks passed.");

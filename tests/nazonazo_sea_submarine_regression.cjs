@@ -12,6 +12,11 @@ const html = read("nazonazo-tunnel/index.html");
 const css = read("nazonazo-tunnel/styles.css");
 const js = read("nazonazo-tunnel/js/game.js");
 
+assert.match(html, /styles\.css\?v=20260713-1285/,
+  "the final sea/future/space visual pass needs the 1285 stylesheet cache key");
+assert.match(html, /js\/game\.js\?v=20260713-1285/,
+  "the final sea/future/space interaction pass needs the 1285 script cache key");
+
 function extractFunction(source, name) {
   const match = new RegExp(`function\\s+${name}\\s*\\([^)]*\\)\\s*\\{`).exec(source);
   assert.ok(match, `${name}: function missing`);
@@ -94,6 +99,41 @@ assert.match(css, /body\.st-sea #groundT\s*\{[^}]*height\s*:\s*24vh/,
 assert.match(css, /body\.st-sea #fgT\s*\{[^}]*height\s*:\s*14vh[^}]*background-size\s*:\s*auto 21vh[^}]*background-position-y\s*:\s*calc\(100% \+ 1\.4vh\)/,
   "the near coral layer must be cropped lower so its transparent tail stays offscreen");
 
+/* The old procedural kelp/blob SVGs were the dark-blue posts in the scene. */
+const buildWorldBody = extractFunction(js, "buildWorld");
+assert.match(buildWorldBody, /st\.id==="space"\|\|st\.id==="sea"[\s\S]{0,40}\?0:2/,
+  "deep sea must not create the generic gKelp/gBumps decor pair at every checkpoint");
+
+/* Three generated, opaque-bottom habitat residents replace those placeholder shapes. */
+assert.match(html, /id="seaHabitatLayer"[^>]*aria-hidden="true"/);
+assert.match(js, /habitat:"\.\.\/assets\/images\/nazonazo-tunnel\/sea_habitat_creatures_sheet_20260713\.webp"/);
+const seaHabitatPath = path.join(root, "assets/images/nazonazo-tunnel/sea_habitat_creatures_sheet_20260713.webp");
+assert.ok(fs.existsSync(seaHabitatPath), "generated moray/seahorse/clownfish habitat sheet is missing");
+assert.ok(fs.statSync(seaHabitatPath).size < 3 * 1024 * 1024, "sea habitat sheet must stay below the image limit");
+const buildSeaHabitatBody = extractFunction(js, "buildSeaHabitat");
+const renderSeaHabitatBody = extractFunction(js, "renderSeaHabitat");
+for (const kind of ["moray", "seahorse", "clownfish"]) {
+  assert.match(buildSeaHabitatBody, new RegExp(`kind:\"${kind}\"`), `${kind}: habitat resident is missing`);
+}
+assert.equal((buildSeaHabitatBody.match(/kind:"(?:moray|seahorse|clownfish)"/g) || []).length, 3,
+  "the habitat layer must contain one instance of each requested species");
+assert.match(buildSeaHabitatBody, /--sea-habitat-cell/,
+  "the three residents must select distinct cells from the generated sheet");
+assert.match(renderSeaHabitatBody, /worldX-origin\(stg\)/,
+  "habitat residents must share stage-local parallax instead of floating at a fixed viewport point");
+assert.match(renderSeaHabitatBody, /translate3d\(/,
+  "habitat scrolling must stay transform-only");
+assert.match(css, /#seaHabitatLayer\s*\{[^}]*inset\s*:\s*0[^}]*z-index\s*:[^;}]+/,
+  "habitat layer needs to cover the stage and keep an explicit depth");
+assert.match(css, /body\.st-sea[^,{]*#seaHabitatLayer\s*\{[^}]*display\s*:\s*block/,
+  "habitat residents must only be visible in the sea stage");
+assert.match(css, /\.sea-habitat-creature\s*\{[^}]*bottom\s*:/,
+  "each resident must be grounded from the seabed rather than positioned from its top edge");
+assert.match(css, /\.sea-habitat-art\s*\{[^}]*background-size\s*:\s*300%\s+100%/,
+  "the generated three-cell sheet must be cropped without stretching one animal into another");
+assert.match(css, /\.sea-habitat-art\s*\{[^}]*animation\s*:[^;}]*seaHabitat/,
+  "seabed residents need a gentle water-current sway");
+
 const seaRenderBody = extractFunction(js, "render");
 assert.match(seaRenderBody, /st-sea[\s\S]{0,220}backgroundPositionX=cssXFromVw\(-\(worldX-o\)\*\.1\)/,
   "the far sea layer must keep looping slowly instead of stopping at the old 70vw cap");
@@ -174,7 +214,10 @@ assert.match(js, /(?:const|let)[^;]*seaRoundCountdown=\$\("seaRoundCountdown"\)/
 assert.match(js, /vehicleSteerShell\.style\.setProperty\("--sea-steer-x"/);
 assert.match(js, /vehicleSteerShell\.style\.setProperty\("--sea-steer-y"/);
 const steerBoundsBody = extractFunction(js, "seaSteerBounds");
-assert.match(steerBoundsBody, /viewportHeight\*\.72/, "travel must reserve the future question panel height");
+assert.match(steerBoundsBody, /quiz\.classList\.contains\("show"\)\?quiz\.getBoundingClientRect\(\)\.top:viewportHeight\b/,
+  "travel and the boss must use the real viewport floor when the question panel is hidden");
+assert.doesNotMatch(steerBoundsBody, /viewportHeight\*\.72/,
+  "a hidden question panel must not keep the submarine trapped above an imaginary 72vh floor");
 assert.match(steerBoundsBody, /const maxCenterRatio=[^;]*\?\s*\.(?:4[4-8])\s*:\s*\.5;/,
   "travel may use half the screen, but the ordered arena must keep the submarine in the left playfield");
 assert.doesNotMatch(steerBoundsBody, /\.82/, "quiz opening must not contract an 82vw travel range in one frame");
@@ -201,7 +244,10 @@ assert.equal(travelBounds.maxX, quizBoundsBeforeArena.maxX, "showing the questio
 boundsState.arenaActive = true;
 const quizBounds = boundsSandbox.seaSteerBounds();
 assert.ok(quizBounds.maxX < travelBounds.maxX, "the active arena must reserve the right side for two answers");
-assert.ok(travelBounds.maxY <= quizBounds.maxY, "reserved travel floor must not snap Y upward when quiz opens");
+assert.ok(travelBounds.maxY > quizBounds.maxY,
+  "free travel must reach lower than the active quiz, which still reserves its real panel");
+assert.ok(boundsSandbox.veh.offsetTop + boundsSandbox.veh.offsetHeight * .5 + travelBounds.maxY + boundsSandbox.veh.offsetHeight * .5 >= 378,
+  "at 844x390 the submarine hull must be able to descend to within about twelve pixels of the viewport floor");
 
 for (const eventName of ["pointerdown", "pointermove", "pointerup", "pointercancel", "lostpointercapture"]) {
   assert.match(js, new RegExp(`seaSteerSurface\\.addEventListener\\("${eventName}"`), `steering surface is missing ${eventName}`);
@@ -225,6 +271,78 @@ assert.doesNotMatch(pointerUp, /onPick|beginSeaTargetBurst/, "movement release m
 for (const body of [pointerDown, pointerMove, pointerUp, extractFunction(js, "setSeaSteerTarget"), extractFunction(js, "updateSeaKeyboardMovement")]) {
   assert.doesNotMatch(body, /(?:^|[;{}])\s*(?:worldX|vel|target)\s*(?:=|\+=|-=|\+\+|--)/m, "viewport steering must not mutate forced-scroll progress");
   assert.doesNotMatch(body, /\b(?:addScore|proceed|onPick)\s*\(/, "movement alone must not score or answer");
+}
+
+/* A sea collectible can be taken by touching it with the submarine as well as by tapping it. */
+const maybeSpawnRareBody = extractFunction(js, "maybeSpawnRare");
+const collectRareEventBody = extractFunction(js, "collectRareEvent");
+const collectSeaRareCollisionBody = extractFunction(js, "collectSeaRareCollision");
+const renderSeaSteeringBody = extractFunction(js, "renderSeaSteering");
+assert.match(maybeSpawnRareBody, /pointerdown",\(\)=>collectRareEvent\(el,e,t\)\)/,
+  "pointer pickup and collision pickup must share one idempotent collector");
+assert.match(collectSeaRareCollisionBody, /vehicleSteerShell\.getBoundingClientRect\(\)/);
+assert.match(collectSeaRareCollisionBody, /rareEl\.getBoundingClientRect\(\)/);
+assert.match(collectSeaRareCollisionBody, /sub\.width\*\.1[\s\S]*sub\.height\*\.18/,
+  "collision must use the visible submarine hull rather than transparent image corners");
+assert.match(collectSeaRareCollisionBody, /return collectRareEvent\(rareEl,/,
+  "collision must enter the same scoring/registry path as a pointer pickup");
+assert.match(renderSeaSteeringBody, /applySeaSteerVisual\(\);collectSeaRareCollision\(\)/,
+  "collision must run after the current transform is applied");
+
+function makeSeaRareCollisionHarness({ overlap = true, sea = true, moving = true, tunnel = false } = {}) {
+  const pickup = {
+    dataset: {},
+    parentNode: {},
+    textContent: "🐳",
+    getBoundingClientRect: () => overlap
+      ? ({ left: 190, right: 238, top: 130, bottom: 178 })
+      : ({ left: 600, right: 648, top: 40, bottom: 88 }),
+    remove() { this.parentNode = null; }
+  };
+  const state = {
+    rareEl: pickup,
+    rareCount: 0,
+    driving: moving,
+    tunnelInteriorMode: tunnel,
+    vehicleSteerShell: {
+      getBoundingClientRect: () => ({ left: 160, right: 260, top: 100, bottom: 200, width: 100, height: 100 })
+    },
+    isSeaStage: () => sea,
+    stg: 3,
+    RARES: [[], [], [], ["🐳", "そらとぶ くじら"]],
+    SCORE_POINTS: { rare: 300 },
+    addScore: () => { state.scoreCalls += 1; },
+    registerZk: () => true,
+    sndNew: () => {},
+    confetti: () => {},
+    showStamp: () => {},
+    speak: () => {},
+    scoreCalls: 0
+  };
+  vm.createContext(state);
+  vm.runInContext(
+    `${collectRareEventBody};${collectSeaRareCollisionBody};this.collectSeaRareCollision=collectSeaRareCollision;`,
+    state
+  );
+  return state;
+}
+
+const collisionPickup = makeSeaRareCollisionHarness();
+assert.equal(collisionPickup.collectSeaRareCollision(), true);
+assert.equal(collisionPickup.rareCount, 1);
+assert.equal(collisionPickup.scoreCalls, 1);
+assert.equal(collisionPickup.collectSeaRareCollision(), false,
+  "one overlap must never collect or score the same item twice");
+assert.equal(collisionPickup.rareCount, 1);
+for (const blocked of [
+  makeSeaRareCollisionHarness({ overlap: false }),
+  makeSeaRareCollisionHarness({ sea: false }),
+  makeSeaRareCollisionHarness({ moving: false }),
+  makeSeaRareCollisionHarness({ tunnel: true })
+]) {
+  assert.equal(blocked.collectSeaRareCollision(), false);
+  assert.equal(blocked.rareCount, 0);
+  assert.equal(blocked.scoreCalls, 0);
 }
 
 const keyDown = extractFunction(js, "handleSeaKeyDown");
