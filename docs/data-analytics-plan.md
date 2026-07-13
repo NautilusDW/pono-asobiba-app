@@ -143,8 +143,8 @@
 | イベント名 | 固有プロパティ | 発火箇所 | パイプライン | 答えられる問い |
 |---|---|---|---|---|
 | `donguri_shop_purchase` | `game_id`, `sticker_id`, `cost_acorns` | `js/donguri-shop.js:456-500`、`PonoDonguriShopPurchased`購読 | `/api/e`(WAE、tier結合が必要なため) | 疑似課金の人気対象、ローテーション施策の効果 |
-| `rating_submitted` | `game_id`, `star_score`(1-5) | `common/rating-modal.js:215-255` `postStarToAppsScript`成功パスに相乗り | **既存GAS**(client_id/session_id同梱化のみ追加)⚠️A-4 | ゲーム別満足度スコア |
-| `survey_submitted` | `game_id`, `star_score`(自由記述等は既存フローのまま) | `survey.html:305-328` | **既存GAS**(同上)⚠️A-4 | 年齢帯・価格受容感・つまずき(既存運用の拡張) |
+| `rating_submitted` | `game_id`, `star_score`(1-5) | `common/rating-modal.js:215-255` `postStarToAppsScript`成功パスに相乗り | **既存GAS**(anonSid維持)+ `client_id`相当の紐付けは`/api/e`側別チャネルで送る ⚠️A-4 | ゲーム別満足度スコア |
+| `survey_submitted` | `game_id`, `star_score`(自由記述等は既存フローのまま) | `survey.html:305-328` | **既存GAS**(anonSid維持)+ `client_id`相当の紐付けは`/api/e`側別チャネルで送る ⚠️A-4 | 年齢帯・価格受容感・つまずき(既存運用の拡張) |
 | `book_bonus_claimed` | `sticker_count` | `js/game-stickers.js:680-746` `grantBookBonus`、`pono-game-sticker-bonus-granted`購読 | `/api/e`(WAE、tier結合が必要) | 絵本購入者が実際にWeb特典を受け取ったか |
 | `lp_cta_click` | `cta_id`(hero\|pc_cta\|modal) | `index.html:1948,2046,2286`の3箇所 | **Umami**(`data-umami-event="lp_cta_click"`+`data-umami-event-cta_id`。index.html自体にUmamiタグ新規導入が必要) | LP→アプリのファネル、CTA別転換率比較 |
 | `lp_feature_card_tap` | `game_id` | `index.html:2480-2496` `bindCards`が処理する要素 | **Umami**(同上属性方式) | LP内アトリビューション |
@@ -184,10 +184,10 @@
 「匿名でランダムなclient_id」であることは、それだけでCOPPA上「個人情報でない」ことを意味しない。COPPA(16 CFR 312.2 item 7)は実名の有無に関わらず「時間を超えてユーザーを認識できる永続識別子」を個人情報として扱う。本設計がこの収集を検証済み保護者同意なしに適法に行う根拠は、「内部運用のサポート(support for internal operations)」例外(16 CFR 312.5(c)(7))であり、以下の3条件を**すべて**満たすことをハードな制約としてコミットする(いずれも要確認: 最新のCOPPA Rule/FTC guidanceを参照。EU居住児童向けGDPR-K等は範囲外)。
 
 1. **識別子を他の目的に転用しない**: `client_id`/`session_id`は本計画に列挙されたイベント計測以外(行動ターゲティング広告、子供本人への直接連絡、識別子に基づく差別的取り扱い等)には一切使用しない。
-2. **第三者への開示を行わない**: `client_id`/`session_id`および紐づくイベントデータは運営者自身が管理するパイプラインの外には開示しない。当該パイプラインの識別子が到達するインフラ提供者は **Cloudflare(WAE/D1)と Google(Apps Script / Sheets — ★評価・アンケートの既存フロー、P1で`client_id`同梱化)** の2社であり、いずれも「サービスプロバイダーへの処理委託」として扱う。Umami(SaaS)には`client_id`/`session_id`等の永続識別子を一切渡さない(渡すのは`data-umami-event`のraw属性値のみ)。
-3. **この慣行をプライバシーポリシーに明記する**: 永続識別子の種類・内部運用目的の範囲内でのみ利用する旨・**Cloudflare および Google(Apps Script / Sheets)** 等のインフラ提供者が当該識別子を扱う場合はその開示、をプライバシーポリシー文書(未整備なら本計画の実装と同時に新設)に明記する。**収集開始前の必須ゲート**として扱う(Phase 1完了条件、§8)。
+2. **第三者への開示を行わない**: `client_id`/`session_id`および紐づくイベントデータは運営者自身が管理するパイプラインの外には開示しない。これらの識別子が到達するインフラ提供者は **Cloudflare(WAE/D1)のみ**。GAS(Google)には従来どおり`anonSid`のみを送り、`client_id`/`session_id`は送らない(A-4分離、§10-1 オーナー決定 2026-07-13)。Cloudflareは「サービスプロバイダーへの処理委託」として扱う。Umami(SaaS)には`client_id`/`session_id`等の永続識別子を一切渡さない(渡すのは`data-umami-event`のraw属性値のみ)。
+3. **この慣行をプライバシーポリシーに明記する**: 永続識別子の種類・内部運用目的の範囲内でのみ利用する旨・インフラ提供者の開示(**Cloudflare** = `client_id`付きイベントの処理、**Google(Apps Script / Sheets)** = ★評価・アンケートデータの処理受託者)、をプライバシーポリシー文書(未整備なら本計画の実装と同時に新設)に明記する。**収集開始前の必須ゲート**として扱う(Phase 1完了条件、§8)。
 
-**設計注記(識別子の外部到達の最小化)**: 識別子の外部到達を最小化したい場合は、GAS側には`client_id`を送らず`session_id`のみ(または既存`anonSid`のまま)とする代替案があり、採否はPhase 1実装レビューで最終決定する。
+**設計注記(識別子の外部到達の最小化)**: **採用決定済み(2026-07-13)**: GASには`client_id`を送らない(分離案、§10-1 A-4)。`client_id`相当の紐付けが必要な場合は`/api/e`側の別チャネルで送る。
 
 **初回起動時の告知バナー**: 初回`session_start`発火時、画面下部に1回だけ非ブロッキングの小さいバナーを表示: 「あそびかたの記録を、名前と結びつけない符号だけで記録しています。[くわしく]」+閉じるボタン(「わかった」)。表示は`localStorage['pono_telemetry_notice_shown']`で1回のみに制限。「くわしく」タップで`help.html`の該当セクションへ遷移。
 
@@ -255,7 +255,7 @@
 
 **ペイロード最小化・PII除外**: タイムスタンプはサーバーの`Date.now()`を正とする。氏名・年齢・性別・emailはallowlist方式で受理しない(`cloud-sync.js`のCLOUD_PROFILE_STRIPおよび`src/api/validate.js`のdenylistと同じ多層防御思想)。bot/自分たち除外は`internal=1`フラグ・env判定・UA判定・`window.__PONO_DISABLE_TELEMETRY__`・`src/api/ratelimit.js`のIPハッシュ化パターンを再利用。
 
-**国ゲート(推奨)**: `request.cf.country`が`'JP'`以外のイベントはサーバー側で破棄する国ゲートをP1実装に含める。理由: (i) GDPR/GDPR-K圏からのアクセスへの適用リスク回避、(ii) β同意書(`docs/beta/_html/consent_form.html:263`)の「海外からのアクセス時はデータ送信を停止する設計」という記述との整合。VPN等による判定誤差は許容(ベストエフォート)。
+**国ゲート(推奨)**: `request.cf.country`が`'JP'`以外のイベントはサーバー側で破棄する国ゲートをPhase 1実装(`/api/e`新設時)に含める。理由: (i) GDPR/GDPR-K圏からのアクセスへの適用リスク回避、(ii) β同意書(`docs/beta/_html/consent_form.html:263`)の「海外からのアクセス時はデータ送信を停止する設計」という記述との整合。VPN等による判定誤差は許容(ベストエフォート)。
 
 **sw.jsとの関係**: `sw.js`の`if (event.request.method !== 'GET') return;`(`sw.js:451`相当、全パスに無条件適用)により、POSTリクエストはこれだけで既にService Workerのfetchハンドラを素通りする。パスベースbypass(`/admin/`, `/tools/`, `/api/gh/`, `/api/gemini/`等の個別パス列挙、`sw.js:454-462`)には汎用的な`/api/`プレフィックスマッチは存在しないため、`/api/e`が素通りする根拠は**非GETバイパスのみ**である。将来`/api/e`にGET variantを新設する場合、このbypass listに自動的には含まれないため個別追記が必要。レスポンスは`ctx.waitUntil()`でWAE書込みを非同期化し、204 No Contentを即返す。
 
@@ -418,8 +418,8 @@ iOS scaffold時は`__NATIVE_BUILD__`だけではAndroid/iOSを区別できない
 - **COPPA「内部運用支援」例外の解釈・最新のFTC guidance**: 要確認。EU居住児童向けGDPR-K等の他法域要件は本計画の範囲外。
 - **`admin/index.html`のGitHubコミット先ブランチ`GH_BRANCH='develop'`が凍結済みブランチと同名の件**(§3 罠#9): 本計画の主題(分析基盤)そのものではないが、コンテンツ管理(rewards.json/creatures.json等)の運用継続性に関わるため、ユーザー確認を推奨する未解決事項として申し送る。
 - **本番webapp Worker(`pono-asobiba-app.ndw.workers.dev`)のerror 1042再発**: 分析基盤とは無関係の既知課題だが、Phase 3(native実機検証)の前提ブロッカー。解消状況次第でPhase 3着手タイミングを調整する。
-- **A-4: GASパイプラインでのメール紐付きリスク(第10章)**: P1の`rating_submitted`/`survey_submitted`に`client_id`を同梱すると、`survey.html`の任意メール欄と同一GASエンドポイント(同一スプレッドシート)で符号と実メールアドレスが同居し再識別可能になる。APPI第31条(個人関連情報の第三者提供)の論点にも接続する(§10-5)。GASパイプライン分離(推奨)か開示強化かのオーナー判断がP1実装前に必要。
-- **β配布文書3件のliteral-conflict**: `docs/beta/_html/consent_form.html:199,231`(「ボタンを押した時だけ送られます」「〜だけをお預かりします」)/`daycare_request.html:227`(「〜のみ」の限定列挙)がdefault-on自動送信の設計と文字通り矛盾する(§10-1 A-1〜A-3)。**配布ステータス(配布済みか未配布ドラフトか)の確認がオーナー宿題**。配布済みなら文言修正、未配布なら修正後に配布。
+- **A-4: GASパイプラインでのメール紐付きリスク(第10章)**: P1の`rating_submitted`/`survey_submitted`に`client_id`を同梱すると、`survey.html`の任意メール欄と同一GASエンドポイント(同一スプレッドシート)で符号と実メールアドレスが同居し再識別可能になる。APPI第31条(個人関連情報の第三者提供)の論点にも接続する(§10-5)。**決定済み(2026-07-13): 分離案採用。残作業は分離の実装完了(分離実装前の`client_id`GAS同梱は禁止)。**
+- **β配布文書3件のliteral-conflict**: `docs/beta/_html/consent_form.html:199,231`(「ボタンを押した時だけ送られます」「〜だけをお預かりします」)/`daycare_request.html:227`(「〜のみ」の限定列挙)がdefault-on自動送信の設計と文字通り矛盾する(§10-1 A-1〜A-3)。**解決済み(2026-07-13): 未配布と確認、文言修正を全7箇所適用済み。残作業は配布時に最終版であることの確認のみ。**
 - **`/privacy`デッドリンク**: `consent_form.html:271`/`parent_flyer.html:235`(β同意書・チラシ)が`https://pono.kodama-no-mori.com/privacy`を印字参照しているが実体ページが存在しない。Phase 1必須ゲートのプライバシーポリシーページ新設(§5-4/§10-5)で解消する。
 - **国ゲートの判定粒度・VPNの扱い**: `request.cf.country`ベースの国ゲート(§6-2)はベストエフォートで良いか要確認。
 
