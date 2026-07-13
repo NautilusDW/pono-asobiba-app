@@ -31,6 +31,10 @@
 //     エラーコードの違いで外部に漏らさないため。
 //   - env.EVENTS 未バインドの env (LP staging 等、または binding 追加漏れ) では
 //     503 ではなく 204 を返し、クライアントの再送/キューロジックを壊さない。
+//   - fail-closed (§6-2 レート制限): レート制限は env.SAVEDATA_KV に依存するため、
+//     KV が未定義の env (2026-07時点で production) では受信自体を無効化し、
+//     バリデーション前の早期段階で 204 を返す (writeDataPoint を一切呼ばない)。
+//     production 有効化は wrangler.toml Step C の SAVEDATA_KV プロビジョニングが前提。
 // -----------------------------------------------------------------------------
 
 import { allowedOrigins } from './savedata.js';
@@ -263,6 +267,13 @@ export async function handleEvents(request, env, ctx) {
     return noBody(204, cors);
   }
 
+  // fail-closed ゲート (クロスレビュー major 指摘の是正): レート制限は env.SAVEDATA_KV
+  // 依存のため、KV が無い env では受信自体を無効化し 204 で終了する (writeDataPoint 到達前)。
+  // production 有効化は wrangler.toml Step C の SAVEDATA_KV プロビジョニングが前提。
+  if (!env.SAVEDATA_KV) {
+    return noBody(204, cors);
+  }
+
   // WAE binding 未設定の env (LP staging 等、または binding 追加漏れ) では
   // 503 ではなく 204 を返す (クライアントを壊さない)。 body を読む前に弾く。
   if (!env.EVENTS || typeof env.EVENTS.writeDataPoint !== 'function') {
@@ -275,11 +286,9 @@ export async function handleEvents(request, env, ctx) {
   // (同一 IP からの savedata 合言葉発行とテレメトリ POST が互いの枠を奪わないようにするため)。
   // env.SAVEDATA_KV は savedata.js 用の既存 binding を流用する (専用 KV を新設しない —
   // 新規 KV namespace 作成には Cloudflare 側の手動プロビジョニングが要るため)。
-  // SAVEDATA_KV 未設定の env (2026-07時点で production は未設定、staging-app のみ設定済み。
-  // wrangler.toml の Step C セットアップ手順参照) では rate limit 自体はスキップし、
-  // 上記の安価なゲート (Origin/国/bot) のみで防御する — 既存の「必須 binding が無くても
-  // 503 にせず機能を維持する」設計方針を踏襲 (production への SAVEDATA_KV 導入は本タスクの
-  // スコープ外、savedata.js 側で既に手順化済みの別タスク)。
+  // 直上の fail-closed ゲートにより、この時点で env.SAVEDATA_KV は必ず truthy
+  // (二重防御として if は残す。将来ゲートが移動/削除されても rate limit だけは
+  // 独立して安全側に倒れる)。
   if (env.SAVEDATA_KV) {
     const kv = env.SAVEDATA_KV;
     const ipSalt = env.RL_IP_SALT || env.PASSCODE_HMAC_SECRET || '';
