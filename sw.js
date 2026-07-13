@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2170: LPのゲーム紹介文を、保護者向けの遊び説明／育ちの説明／子ども向け場面キャプションに整理。tierで異なる機能数や過度な教育効果の断定を外し、自然で実装に沿う表現へ改稿した (batch:1288)。play.html PAGE_CACHE_VERSION と同期不要 (index.html/docsのみ変更)。
 // v2169: おべんとうのお店モード（おねがいモード）で、のり細工・顔のり等の「かざり」タブを非表示にし新規配置も禁止（チュートリアル中は従来どおり全のり教習可）。ごはんタブをお店モードだけ しろごはん／うめぼし／のりべんセットの3択にし、のり弁はご飯シルエットPNGのCSSマスクで帯のり3枚を全7箱のご飯形状へ自動フィット（新規画像なし）。お店モード初回に「おねがいどおりに つくって とどけてあげてね」の無音橋渡しカードを追加 (batch:1285)。v2168競合のため再採番。play.html PAGE_CACHE_VERSION と同期不要 (bento/index.html/テストのみ変更)。
 // v2168: なぞなぞトレインの深い海で潜水艦の接触回収、独立したクイズ案内、海底生物3種、移動・予告攻撃するおおあわぬしを追加。未来は流れる2択カプセル、宇宙は固定回答を選んで3.25周回すスターエンジンへ再設計し、ロケットの上下左右操作と成功音の一重化も反映した (batch:1285)。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/画像/テストのみ変更)。
 // v2167: なぞなぞトレインの未来を、答えタワーを引き上げ／3回タップで街を組み立てる全画面「ミライ・ビルダー」へ再設計。宇宙は固定楕円軌道を回して答え星をドックへ合わせ、同じ円運動で銀河を巻いて解放する全画面「ぎんがドック」へ別ジャンル化した。誤答復帰・おたすけ・キーボード・reduced-motion・5問履歴を維持 (batch:1282)。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/テストのみ変更)。
@@ -94,7 +95,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2169;
+const CACHE_VERSION = 2170;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
