@@ -266,7 +266,7 @@ for (const fileName of [
   assert.equal(png.readUInt32BE(20), 272, `${fileName} must match the view-button height`);
   assert.equal(png[25], 6, `${fileName} must keep an RGBA color type for transparent corners`);
 }
-assert.match(index, /styles\.css\?v=20260713-1275/, "the baked top-button UI must bypass stale CSS caches");
-assert.match(index, /main\.js\?v=20260713-1275/, "the matching StickerBook behavior must bypass stale module caches");
+assert.match(index, /styles\.css\?v=20260713-1276/, "the baked top-button UI must bypass stale CSS caches");
+assert.match(index, /main\.js\?v=20260713-1276/, "the matching StickerBook behavior must bypass stale module caches");
 
 console.log("stickerbook_theme_fit_copy_regression: all assertions passed");
