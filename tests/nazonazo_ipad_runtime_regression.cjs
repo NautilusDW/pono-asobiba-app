@@ -158,28 +158,41 @@ check("iPad uses scene smoke and keeps it visible while the train runs", () => {
   assert.doesNotMatch(css, /body\.ios-device[^{}]*#smokeLayer[^{}]*\{[^}]*display\s*:\s*none/);
 });
 
-check("iPad smoke cadence and pool are bounded", () => {
-  const interval = numericConstant("IOS_SMOKE_INTERVAL_MIN_MS");
-  const jitter = numericConstant("IOS_SMOKE_INTERVAL_JITTER_MS");
-  const limit = numericConstant("IOS_SMOKE_MAX_PUFFS");
-  const reducedLimit = numericConstant("REDUCED_SMOKE_MAX_PUFFS");
-  const reducedLife = numericConstant("REDUCED_SMOKE_LIFE_MS");
-  const desktopMean = numericConstant("SMOKE_INTERVAL_MIN_MS") + numericConstant("SMOKE_INTERVAL_JITTER_MS") / 2;
-  const iosMean = interval + jitter / 2;
-  assert.ok(interval >= 80, `iPad smoke interval ${interval}ms is too dense`);
-  assert.ok(limit >= 6 && limit <= 32, `iPad smoke pool ${limit} should stay visible without overloading Safari`);
-  assert.ok(reducedLimit >= 8 && reducedLimit <= 12,
-    `reduced-motion smoke pool ${reducedLimit} must remain visibly full without flooding Safari`);
-  assert.ok(reducedLife >= 2400, `reduced-motion smoke lifetime ${reducedLife}ms recreates the reported two-puff trickle`);
-  assert.ok(iosMean <= desktopMean * 1.1,
-    `iPad mean smoke cadence ${iosMean}ms is visibly thinner than desktop ${desktopMean}ms`);
-  assert.ok(Math.floor(reducedLife / iosMean) >= 7,
-    "reduced-motion iPad smoke must keep at least seven puffs visible at its mean cadence");
+check("desktop, iPad and reduced motion share one rich bounded smoke density", () => {
+  assert.equal(numericConstant("SMOKE_INTERVAL_MIN_MS"), 70);
+  assert.equal(numericConstant("SMOKE_INTERVAL_JITTER_MS"), 40);
+  assert.equal(numericConstant("SMOKE_LIFE_MIN_MS"), 4800);
+  assert.equal(numericConstant("SMOKE_LIFE_JITTER_MS"), 1400);
+  assert.equal(numericConstant("SMOKE_MAX_PUFFS"), 48);
+  assert.equal(numericConstant("SMOKE_WARM_START_COUNT"), 12);
+  assert.doesNotMatch(game, /\b(?:IOS|REDUCED)_SMOKE_(?:INTERVAL|LIFE|MAX)/,
+    "device and motion preferences must not thin the smoke density again");
   const tick = extractFunction(game, "tickMagicPuffs");
-  assert.match(tick, /IOS_SMOKE_INTERVAL_MIN_MS/);
-  assert.match(tick, /IOS_SMOKE_MAX_PUFFS/);
-  assert.match(tick, /REDUCED_SMOKE_MAX_PUFFS/);
-  assert.match(tick, /REDUCED_SMOKE_LIFE_MS/);
+  assert.match(tick, /warmMagicPuffs\(box,useSceneSmoke\)/);
+  assert.match(tick, /now\+SMOKE_INTERVAL_MIN_MS\+Math\.random\(\)\*SMOKE_INTERVAL_JITTER_MS/);
+  assert.match(tick, /box\.children\.length>=SMOKE_MAX_PUFFS/);
+  assert.match(tick, /box\.firstElementChild[\s\S]*?oldest\.remove\(\)[\s\S]*?spawnMagicPuff\(box,useSceneSmoke,0\)/,
+    "a full pool must recycle its oldest puff and still emit a fresh chimney puff");
+  const warm = extractFunction(game, "warmMagicPuffs");
+  assert.match(warm, /SMOKE_WARM_START_COUNT/);
+  assert.match(warm, /spawnMagicPuff\(box,useSceneSmoke,age\)/);
+  const spawn = extractFunction(game, "spawnMagicPuff");
+  assert.match(spawn, /SMOKE_LIFE_MIN_MS\+Math\.random\(\)\*SMOKE_LIFE_JITTER_MS/);
+  assert.match(spawn, /animationDelay=\(-age\)\+"ms"/,
+    "warm smoke must use real pre-aged animation rather than twelve identical chimney puffs");
+});
+
+check("reduced-motion smoke keeps density but limits only its travel", () => {
+  const spawn = extractFunction(game, "spawnMagicPuff");
+  assert.match(spawn, /reduced\?-40-Math\.random\(\)\*40/);
+  assert.match(spawn, /reduced\?-8-Math\.random\(\)\*14/);
+  assert.match(spawn, /reduced\?0:-18\+Math\.random\(\)\*36/);
+  assert.match(spawn, /reduced\?1\.02\+Math\.random\(\)\*\.18/);
+  assert.match(reducedMotion, /\.magic-puff\{animation-name:magicPuffReduced!important/);
+  const reducedKeyframes = extractBlock(css, "@keyframes magicPuffReduced");
+  assert.match(reducedKeyframes, /translate3d\(var\(--puff-dx\),var\(--puff-dy\),0\)/);
+  assert.match(reducedKeyframes, /scale\(var\(--puff-end-scale\)\)/);
+  assert.doesNotMatch(reducedKeyframes, /rotate\(/, "reduced smoke must not rotate");
 });
 
 check("low iPad frame rates do not stretch route travel", () => {

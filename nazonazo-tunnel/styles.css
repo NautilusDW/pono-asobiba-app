@@ -756,6 +756,9 @@ body.tunnel-enter-run #smokeLayer,body.tunnel-exit-run #smokeLayer{display:none}
   background:url("../assets/images/nazonazo-tunnel/magic_puffs_square_sheet_20260705.webp") no-repeat;background-size:400% 200%;
   transform:translate3d(0,0,0) scale(var(--puff-start-scale));opacity:0;filter:drop-shadow(0 2px 0 rgba(80,60,40,.08));
   will-change:transform,opacity;animation:magicPuffFly var(--puff-life) ease-out forwards}
+.magic-puff::before,.magic-puff::after{content:"";position:absolute;inset:0;background:inherit;pointer-events:none}
+.magic-puff::before{opacity:.9;transform:translate3d(-46%,20%,0) scale(.9)}
+.magic-puff::after{opacity:.76;transform:translate3d(34%,-16%,0) scale(.82)}
 @keyframes magicPuffFly{
   0%{opacity:0;transform:translate3d(0,0,0) rotate(0deg) scale(var(--puff-start-scale))}
   12%{opacity:var(--puff-alpha)}
@@ -815,6 +818,8 @@ body.ios-device #veh.idle .vbody{animation:none}
 body.ios-device .train-wheel,body.ios-device .car-wheel,
 body.ios-device .train-wheel-rod,body.ios-device .train-main-rod,body.ios-device .train-crosshead,
 body.ios-device .magic-puff{filter:none}
+/* iPad煙は既存の一粒がPCより大きく高濃度なので、補助ローブを重ねず同じ見た目量へ揃える。 */
+body.ios-device .magic-puff::before,body.ios-device .magic-puff::after{display:none}
 /* Safariでは動的に追加した煙を車体と同じ合成層へ入れると消えることがあるため、煙だけ独立させる。 */
 body.ios-device #smokeLayer{z-index:10;overflow:visible;contain:layout paint;isolation:isolate;
   -webkit-transform:translateZ(0);transform:translateZ(0)}
@@ -1298,7 +1303,7 @@ body.ios-device #quiz.show:not(.sea-quiz):not(.future-capsule-quiz):not(.space-g
   0%{opacity:0;transform:translate3d(0,0,0) scale(var(--puff-start-scale))}
   15%{opacity:var(--puff-alpha)}
   68%{opacity:var(--puff-mid-alpha)}
-  100%{opacity:0;transform:translate3d(-36px,-12px,0) scale(1.05)}
+  100%{opacity:0;transform:translate3d(var(--puff-dx),var(--puff-dy),0) scale(var(--puff-end-scale))}
 }
 @media (prefers-reduced-motion:reduce){
   /* 一律0.01秒化は無限アニメを100Hz点滅にし、有限の取得演出も消すため使用しない。 */

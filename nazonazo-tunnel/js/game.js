@@ -418,9 +418,9 @@ const TUNNEL_EXIT_FADE_SETUP_MS=420, TUNNEL_EXIT_BLACK_HOLD_MS=320, TUNNEL_EXIT_
 const TUNNEL_GAME_MAX_V=32,TUNNEL_TRANSIT_MAX_V=58,TUNNEL_GAME_WHEEL_PERIOD=1.45,TUNNEL_WALL_PARALLAX=.55,TUNNEL_FRIEND_CALM_PARALLAX=.26,TUNNEL_WALL_ASPECT=1600/900,TUNNEL_WALL_BAYS=4,TUNNEL_FRIEND_GAP_TARGET_VW=55;
 const TUNNEL_FRIEND_LIMIT=3,TUNNEL_FRIEND_Y=[50,61,55],TUNNEL_FRIEND_STATIC_SLOTS=[{x:18,y:68},{x:32,y:70},{x:90,y:68}];
 const STOP_SETTLE_MS=230, WHEEL_FAST_PERIOD=0.98, WHEEL_SLOW_PERIOD=2.05, WHEEL_STOP_EASE_VW=82;
-const IOS_SMOKE_INTERVAL_MIN_MS=280,IOS_SMOKE_INTERVAL_JITTER_MS=140,IOS_SMOKE_MAX_PUFFS=18;
-const SMOKE_INTERVAL_MIN_MS=300,SMOKE_INTERVAL_JITTER_MS=150,SMOKE_MAX_PUFFS=28;
-const REDUCED_SMOKE_MAX_PUFFS=10,REDUCED_SMOKE_LIFE_MS=2800;
+const SMOKE_INTERVAL_MIN_MS=70,SMOKE_INTERVAL_JITTER_MS=40;
+const SMOKE_LIFE_MIN_MS=4800,SMOKE_LIFE_JITTER_MS=1400;
+const SMOKE_MAX_PUFFS=48,SMOKE_WARM_START_COUNT=12;
 function trainLeftVw(){
  const vw=window.innerWidth||844;
  const w=Math.max(TRAIN_WIDTH_MIN_PX,Math.min(TRAIN_WIDTH_MAX_PX,vw*TRAIN_WIDTH_VW/100));
@@ -503,7 +503,7 @@ let worldX=0,vel=0,target=0,pending=null,driving=false,swapReady=false,swapped=f
 let tunnels=[],playing=false,cars=[],helpItems=[],rareCount=0,rareEl=null,rareSpawned=false,rareSpawnTimer=0;
 let journeyScore=0,highScore=0,stageScore=0,stageScoreBreakdown=emptyStageScoreBreakdown(),stageClearScoreGranted=false,stageCompletionHandled=false;
 let tunnelFriendCandidates=[],tunnelFriendsFound=0,tunnelFriendTotalFound=0,tunnelFriendRewardGranted=false,tunnelFriendPerfectScoreGranted=false,tunnelFriendGameActive=false,tunnelFriendStartWorldX=0;
-let bestStarsByStage={},answerLocked=false,portalEditHolding=false,nextMagicPuffAt=0,exitPortalBaseWorldX=0;
+let bestStarsByStage={},answerLocked=false,portalEditHolding=false,nextMagicPuffAt=0,magicPuffsWarmed=false,exitPortalBaseWorldX=0;
 let numberCargoPicked=[],numberCargoGoalShown=false;
 let numberCargoTheme=null;
 const SEA_FIRE_INTERVAL_MS=90;
@@ -3471,27 +3471,17 @@ function clearMagicPuffs(){
  if(box)box.replaceChildren();
  if(smokeLayer)smokeLayer.replaceChildren();
  nextMagicPuffAt=0;
+ magicPuffsWarmed=false;
 }
-function tickMagicPuffs(now){
- if(!playing||!veh.classList.contains("go")||!document.body.classList.contains("v-train"))return;
- if(document.body.classList.contains("tunnel-enter-run")||document.body.classList.contains("tunnel-exit-run"))return;
- if(now<nextMagicPuffAt)return;
- const useSceneSmoke=IOS_DEVICE&&smokeLayer;
+function spawnMagicPuff(box,useSceneSmoke,ageMs){
+ if(!box)return null;
  const reduced=prefersReducedMotionActive();
- const box=useSceneSmoke?smokeLayer:veh.querySelector(".puff");
- if(!box)return;
- // RAF timestamp は ms。旧値 20〜50ms は iPad に毎秒20個以上を積み、長寿命の煙が
- // 100個超まで膨らんで合成落ちしていた。見える密度を保ったまま大幅に間引く。
- nextMagicPuffAt=now+(useSceneSmoke?IOS_SMOKE_INTERVAL_MIN_MS:SMOKE_INTERVAL_MIN_MS)+
-  Math.random()*(useSceneSmoke?IOS_SMOKE_INTERVAL_JITTER_MS:SMOKE_INTERVAL_JITTER_MS);
- const puffLimit=reduced?REDUCED_SMOKE_MAX_PUFFS:(useSceneSmoke?IOS_SMOKE_MAX_PUFFS:SMOKE_MAX_PUFFS);
- if(box.children.length>=puffLimit)return;
  const p=document.createElement("span");
  p.className="magic-puff";
  const idx=rnd(0,7),col=idx%4,row=Math.floor(idx/4);
  const size=(useSceneSmoke?34:18)+Math.random()*(useSceneSmoke?78:62);
- const baseLife=2200+Math.random()*1200;
- const life=reduced?REDUCED_SMOKE_LIFE_MS:baseLife*(1.2+Math.random()*.35);
+ const life=SMOKE_LIFE_MIN_MS+Math.random()*SMOKE_LIFE_JITTER_MS;
+ const age=Math.min(Math.max(0,Number(ageMs)||0),Math.max(0,life-120));
  if(useSceneSmoke){
   const sceneRect=$("scene").getBoundingClientRect();
   const vehRect=veh.getBoundingClientRect();
@@ -3501,19 +3491,51 @@ function tickMagicPuffs(now){
  p.style.width=size+"px";p.style.height=size+"px";
  p.style.setProperty("--puff-size",size+"px");
  p.style.setProperty("--puff-life",life+"ms");
- p.style.setProperty("--puff-dx",(-(useSceneSmoke?180:140)-Math.random()*(useSceneSmoke?300:260))+"px");
- p.style.setProperty("--puff-dy",(-18-Math.random()*(useSceneSmoke?82:64))+"px");
- p.style.setProperty("--puff-rot",(-18+Math.random()*36)+"deg");
+ p.style.setProperty("--puff-dx",(reduced?-40-Math.random()*40:-(useSceneSmoke?180:140)-Math.random()*(useSceneSmoke?300:260))+"px");
+ p.style.setProperty("--puff-dy",(reduced?-8-Math.random()*14:-18-Math.random()*(useSceneSmoke?82:64))+"px");
+ p.style.setProperty("--puff-rot",(reduced?0:-18+Math.random()*36)+"deg");
  p.style.setProperty("--puff-start-scale",(0.42+Math.random()*0.34).toFixed(2));
- p.style.setProperty("--puff-end-scale",(1.2+Math.random()*1.55).toFixed(2));
+ p.style.setProperty("--puff-end-scale",(reduced?1.02+Math.random()*.18:1.2+Math.random()*1.55).toFixed(2));
  const alpha=(useSceneSmoke?0.78:0.6)+Math.random()*(useSceneSmoke?0.18:0.26);
  p.style.setProperty("--puff-alpha",alpha.toFixed(2));
  p.style.setProperty("--puff-mid-alpha",(alpha*.82).toFixed(2));
  p.style.backgroundPosition=(col*33.3333)+"% "+(row*100)+"%";
+ p.style.animationDelay=(-age)+"ms";
+ const clock=(typeof performance!=="undefined"&&typeof performance.now==="function")?performance.now():Date.now();
+ p.dataset.smokeBornAt=Math.round(clock-age)+"";
+ p.dataset.smokeAgeAtSpawn=Math.round(age)+"";
+ p.dataset.smokeLife=Math.round(life)+"";
  box.appendChild(p);
  // 動的挿入した通常版／低移動版 animation を古いiOS WebKitにも確実に認識させる。
  void p.offsetWidth;
- setTimeout(()=>p.remove(),life+80);
+ setTimeout(()=>p.remove(),Math.max(120,life-age)+80);
+ return p;
+}
+function warmMagicPuffs(box,useSceneSmoke){
+ if(magicPuffsWarmed)return;
+ magicPuffsWarmed=true;
+ // 最初のフレームから長い煙列が見えるよう、古い煙から順に事前経過させる。
+ const ageSpan=Math.min(3200,SMOKE_LIFE_MIN_MS*.6);
+ for(let index=SMOKE_WARM_START_COUNT;index>=1;index--){
+  const age=ageSpan*index/(SMOKE_WARM_START_COUNT+1);
+  spawnMagicPuff(box,useSceneSmoke,age);
+ }
+}
+function tickMagicPuffs(now){
+ if(!playing||!veh.classList.contains("go")||!document.body.classList.contains("v-train"))return;
+ if(document.body.classList.contains("tunnel-enter-run")||document.body.classList.contains("tunnel-exit-run"))return;
+ const useSceneSmoke=!!(IOS_DEVICE&&smokeLayer);
+ const box=useSceneSmoke?smokeLayer:veh.querySelector(".puff");
+ if(!box)return;
+ warmMagicPuffs(box,useSceneSmoke);
+ if(now<nextMagicPuffAt)return;
+ nextMagicPuffAt=now+SMOKE_INTERVAL_MIN_MS+Math.random()*SMOKE_INTERVAL_JITTER_MS;
+ // 上限で発生を止めると煙突だけ急に凍って見える。最古の1個を入れ替えて新煙を保つ。
+ if(box.children.length>=SMOKE_MAX_PUFFS){
+  const oldest=box.firstElementChild;
+  if(oldest)oldest.remove();
+ }
+ spawnMagicPuff(box,useSceneSmoke,0);
 }
 function onRunEvent(el,ev){
  if(!driving||!el||el.classList.contains("found"))return;
