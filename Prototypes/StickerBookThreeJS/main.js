@@ -2599,6 +2599,9 @@ let selectedDrawingStamp = DRAWING_STAMPS[0].id;
 let drawingPointerState = null;
 const stickerImageCache = new Map();
 const stickerAspectCache = new Map();
+// Item4 診断用: 画像ロード/描画失敗時の自動リトライを URL 単位で最大 1 回に制限する。
+// (retry 自体が失敗した場合に無限ループ的に refresh を撃ち続けるのを防ぐガード)
+const stickerImageRetryScheduled = new Set();
 const drawingStampImageCache = new Map();
 seedAllTuningPairsFromRightOnlyOnce();
 
@@ -6334,52 +6337,66 @@ function updateStickerTutorialLayout() {
   if (!step || !stickerTutorial || stickerTutorial.hidden) {
     return;
   }
-  const rect = stickerTutorialTargetRect(step);
-  const centerX = rect.left + rect.width / 2;
-  const centerY = rect.top + rect.height / 2;
-  const widthPx = Math.max(46, rect.width);
-  const heightPx = Math.max(38, rect.height);
-  const radiusVal = rect.radius || "18px";
-  stickerTutorial.style.setProperty("--tutorial-x", `${centerX}px`);
-  stickerTutorial.style.setProperty("--tutorial-y", `${centerY}px`);
-  stickerTutorial.style.setProperty("--tutorial-w", `${widthPx}px`);
-  stickerTutorial.style.setProperty("--tutorial-h", `${heightPx}px`);
-  stickerTutorial.style.setProperty("--tutorial-radius", radiusVal);
-  // v1629: 真因対応 (spotlight stale paint root cause)。
-  // 旧仕様は親 stickerTutorial にのみ CSS 変数を書いていたため、 子 stickerTutorialSpotlight が hidden=false に
-  // 切り替わった瞬間、 inherited cascade の flush 遅延 (iOS Safari/WebKit で顕著) で 1 frame だけ前 step の値
-  // (OK ボタン位置 = 画面下端) で描画される → 「黄枠が一瞬下にずれる」 視覚バグ。
-  // 解決: spotlight 要素自身にも同じ変数を inline で複写する (= 子は自分の inline style を優先するため
-  // cascade 遅延の影響を受けない)。 v1628 の 「位置確定後に hidden=false」 と併用して二重防護。
-  if (stickerTutorialSpotlight) {
-    stickerTutorialSpotlight.style.setProperty("--tutorial-x", `${centerX}px`);
-    stickerTutorialSpotlight.style.setProperty("--tutorial-y", `${centerY}px`);
-    stickerTutorialSpotlight.style.setProperty("--tutorial-w", `${widthPx}px`);
-    stickerTutorialSpotlight.style.setProperty("--tutorial-h", `${heightPx}px`);
-    stickerTutorialSpotlight.style.setProperty("--tutorial-radius", radiusVal);
+  // Item5 診断+防御: 本体は毎回 rAF (scheduleStickerTutorialLayout) 経由で呼ばれる。
+  // 内部の getBoundingClientRect/projectedMeshClientRect 系計算 (stickerTutorialTargetRect 等) は
+  // item2 のシール消失バグ等、 他機能側の状態不整合の影響で例外を投げうる。 従来は無防備だったため
+  // 一度例外が飛ぶとこのフレームの更新だけが失敗して静かに終わり (呼び出し元は catch していない)、
+  // オーバーレイ/吹き出し/指差しが固まって 「チュートリアルが突然終わった」 ように見えるフリーズを
+  // 誘発していた。 try/catch でこのフレームだけスキップして次の rAF に処理を継続させる。
+  try {
+    const rect = stickerTutorialTargetRect(step);
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const widthPx = Math.max(46, rect.width);
+    const heightPx = Math.max(38, rect.height);
+    const radiusVal = rect.radius || "18px";
+    stickerTutorial.style.setProperty("--tutorial-x", `${centerX}px`);
+    stickerTutorial.style.setProperty("--tutorial-y", `${centerY}px`);
+    stickerTutorial.style.setProperty("--tutorial-w", `${widthPx}px`);
+    stickerTutorial.style.setProperty("--tutorial-h", `${heightPx}px`);
+    stickerTutorial.style.setProperty("--tutorial-radius", radiusVal);
+    // v1629: 真因対応 (spotlight stale paint root cause)。
+    // 旧仕様は親 stickerTutorial にのみ CSS 変数を書いていたため、 子 stickerTutorialSpotlight が hidden=false に
+    // 切り替わった瞬間、 inherited cascade の flush 遅延 (iOS Safari/WebKit で顕著) で 1 frame だけ前 step の値
+    // (OK ボタン位置 = 画面下端) で描画される → 「黄枠が一瞬下にずれる」 視覚バグ。
+    // 解決: spotlight 要素自身にも同じ変数を inline で複写する (= 子は自分の inline style を優先するため
+    // cascade 遅延の影響を受けない)。 v1628 の 「位置確定後に hidden=false」 と併用して二重防護。
+    if (stickerTutorialSpotlight) {
+      stickerTutorialSpotlight.style.setProperty("--tutorial-x", `${centerX}px`);
+      stickerTutorialSpotlight.style.setProperty("--tutorial-y", `${centerY}px`);
+      stickerTutorialSpotlight.style.setProperty("--tutorial-w", `${widthPx}px`);
+      stickerTutorialSpotlight.style.setProperty("--tutorial-h", `${heightPx}px`);
+      stickerTutorialSpotlight.style.setProperty("--tutorial-radius", radiusVal);
+    }
+    // v1630: ノート直書き chip — 左ページ rect を CSS 変数で公開し
+    // .sticker-tutorial-page-text を mesh に追従させる (mesh は Three.js 描画なので getBoundingClientRect 不可、
+    // projectedMeshClientRect で 2D 画面 rect に射影)。 ページめくり等で leftPageInner.visible=false の間は
+    // 直近の有効 rect を保持して chip がワープしないようにする。
+    const leftPageRect = stickerTutorialSidePageRect("left") || stickerTutorialPageRect();
+    if (leftPageRect && Number.isFinite(leftPageRect.left) && Number.isFinite(leftPageRect.top)) {
+      // v1646 (task 1): 左ページ overlay を中央 70% に再配置。
+      // 旧 (08% offset / 84% 幅) は AABB 由来で 「左上に押し込まれている」 体感が強かったため、
+      // 左右対称 15% 余白 + 上下対称 18% offset で 「ページ中央寄り」 に矯正。
+      // textHeight は 36% でボタン群 (page-block flex 子) と帆船イラスト下半分の干渉を回避。
+      const textTop = leftPageRect.top + leftPageRect.height * 0.18;
+      const textHeight = leftPageRect.height * 0.36;
+      const textLeft = leftPageRect.left + leftPageRect.width * 0.15;
+      const textWidth = leftPageRect.width * 0.70;
+      stickerTutorial.style.setProperty("--tutorial-leftpage-x", `${textLeft}px`);
+      stickerTutorial.style.setProperty("--tutorial-leftpage-y", `${textTop}px`);
+      stickerTutorial.style.setProperty("--tutorial-leftpage-w", `${textWidth}px`);
+      stickerTutorial.style.setProperty("--tutorial-leftpage-h", `${textHeight}px`);
+      // v1643 (task 3): 操作ボタン群を 「左ページ下部固定 overlay」 → 「page-block 内 flex 子 (テキスト直下)」
+      // に再編。 leftpage-btn-* CSS 変数は廃止 (styles.css 側も position: static + flex-column で描画)。
+    }
+    updateStickerTutorialDemo(step, rect);
+  } catch (error) {
+    console.warn(
+      `[StickerBook] updateStickerTutorialLayout: frame skipped due to error ` +
+        `(stepId=${step?.id}, at=${new Date().toISOString()}):`,
+      error,
+    );
   }
-  // v1630: ノート直書き chip — 左ページ rect を CSS 変数で公開し
-  // .sticker-tutorial-page-text を mesh に追従させる (mesh は Three.js 描画なので getBoundingClientRect 不可、
-  // projectedMeshClientRect で 2D 画面 rect に射影)。 ページめくり等で leftPageInner.visible=false の間は
-  // 直近の有効 rect を保持して chip がワープしないようにする。
-  const leftPageRect = stickerTutorialSidePageRect("left") || stickerTutorialPageRect();
-  if (leftPageRect && Number.isFinite(leftPageRect.left) && Number.isFinite(leftPageRect.top)) {
-    // v1646 (task 1): 左ページ overlay を中央 70% に再配置。
-    // 旧 (08% offset / 84% 幅) は AABB 由来で 「左上に押し込まれている」 体感が強かったため、
-    // 左右対称 15% 余白 + 上下対称 18% offset で 「ページ中央寄り」 に矯正。
-    // textHeight は 36% でボタン群 (page-block flex 子) と帆船イラスト下半分の干渉を回避。
-    const textTop = leftPageRect.top + leftPageRect.height * 0.18;
-    const textHeight = leftPageRect.height * 0.36;
-    const textLeft = leftPageRect.left + leftPageRect.width * 0.15;
-    const textWidth = leftPageRect.width * 0.70;
-    stickerTutorial.style.setProperty("--tutorial-leftpage-x", `${textLeft}px`);
-    stickerTutorial.style.setProperty("--tutorial-leftpage-y", `${textTop}px`);
-    stickerTutorial.style.setProperty("--tutorial-leftpage-w", `${textWidth}px`);
-    stickerTutorial.style.setProperty("--tutorial-leftpage-h", `${textHeight}px`);
-    // v1643 (task 3): 操作ボタン群を 「左ページ下部固定 overlay」 → 「page-block 内 flex 子 (テキスト直下)」
-    // に再編。 leftpage-btn-* CSS 変数は廃止 (styles.css 側も position: static + flex-column で描画)。
-  }
-  updateStickerTutorialDemo(step, rect);
 }
 
 function updateStickerTutorialDemo(step, rect) {
@@ -15083,12 +15100,44 @@ function drawAsyncPlacedSticker(ctx, texture, placement, pageNumber) {
       drawPlacedStickerArtwork(ctx, paddedImage, -paddedDrawW / 2, -paddedDrawH / 2, paddedDrawW, paddedDrawH);
       ctx.restore();
     })
-    .catch(() => {
+    .catch((error) => {
+      // Item4 診断: 失敗理由・URL・pageNumber/placementId・タイミングを記録する
+      // (旧実装は catch(() => {}) で完全に握りつぶしており、 実機不具合の原因調査ができなかった)。
+      console.warn(
+        `[StickerBook] drawAsyncPlacedSticker: sticker draw failed ` +
+          `(url=${placement?.assetUrl}, placementId=${placement?.id}, page=${pageNumber}, ` +
+          `at=${new Date().toISOString()}):`,
+        error,
+      );
       // v1650 (task 2): 失敗 Promise が stickerImageCache に永久キャッシュされると
       // 以後同じ URL の sticker が永久に描画されなくなる (低確率だが詰む)。
       // 次回 refresh で再 load を許可するために cache から削除。
       stickerImageCache.delete(placement.assetUrl);
+      // Item4 軽量自己修復: 一定時間後に 1 回だけページ再描画を試みる。 refreshInlineStickerPage は
+      // 既に in-flight refresh との queue/coalesce ロジックを持つため、 ここから直接呼んでも
+      // 二重 refresh やレースを起こさない (stickerEditor が開いている等で no-op の場合は
+      // 単に何も起きないだけで副作用なし)。 URL ごとに最大 1 回までに制限し、 再試行自体が
+      // 失敗し続けるケースで refresh を撃ち続ける事態を防ぐ。
+      scheduleStickerImageRetry(placement?.assetUrl, pageNumber);
     });
+}
+
+function scheduleStickerImageRetry(assetUrl, pageNumber) {
+  if (!assetUrl || stickerImageRetryScheduled.has(assetUrl)) {
+    return;
+  }
+  stickerImageRetryScheduled.add(assetUrl);
+  setTimeout(() => {
+    console.warn(
+      `[StickerBook] scheduleStickerImageRetry: retrying sticker redraw after load failure ` +
+        `(url=${assetUrl}, page=${pageNumber}, at=${new Date().toISOString()})`,
+    );
+    try {
+      refreshInlineStickerPage();
+    } catch (error) {
+      console.warn("[StickerBook] scheduleStickerImageRetry: retry refresh threw:", error);
+    }
+  }, 1500);
 }
 
 function drawInlineStickerSelectionOverlay(ctx, pageNumber) {
@@ -15291,13 +15340,23 @@ function loadStickerImage(src) {
     return Promise.reject(new Error("missing image src"));
   }
   if (!stickerImageCache.has(src)) {
+    const loadStartedAt = Date.now();
     stickerImageCache.set(src, new Promise((resolve, reject) => {
       const image = new Image();
       image.onload = () => {
         stickerAspectCache.set(src, stickerVisualAspectForImage(image));
         resolve(image);
       };
-      image.onerror = reject;
+      image.onerror = (event) => {
+        // Item4 診断: 従来はここで reject するだけで理由・URL・タイミングが一切残らず、
+        // 「画像が表示されずバウンディングボックスのみ」の実機報告を後追い調査できなかった。
+        console.warn(
+          `[StickerBook] loadStickerImage: failed to load sticker image ` +
+            `(url=${src}, elapsedMs=${Date.now() - loadStartedAt}, at=${new Date().toISOString()})`,
+          event,
+        );
+        reject(new Error(`sticker image failed to load: ${src}`));
+      };
       image.decoding = "async";
       image.src = src;
     }));
