@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2185: ガチャ詳細モーダルの初回チュートリアルを追加 (batch:onboarding-tour-gacha)。common/onboarding/steps-gacha.js を新規作成し registerStage('gachaIntro', ...) で requestStage 専用ステージとして登録 (STAGE_ORDER には含めず自動起動シーケンスには乗らない)。play.html はスピン後演出の既存タイマー (revealProfile.actionsDelay) の直後に兄弟タイマーを追加し、恒久ノート表示が出そろってから maybeRequestDailyGachaIntroTour() を呼ぶ。common/onboarding/ 配下の新規ファイルのため CRITICAL_ASSETS_SCRIPTS へ追加 precache 必須 (batch:onboarding-tour と同型)。play.html PAGE_CACHE_VERSION と同期 (2185)。
 // v2184: 初回オンボーディング・タイトル画面ツアーのゲーム一覧スポットライトが下部UIまで明るくなる不具合を修正 (target を #cardList に変更)。シール帳導線ステップは一旦削除しガチャガチャ誘導で終える2ステップ構成へ変更 (batch:onboarding-tour-fix)。play.html PAGE_CACHE_VERSION と同期 (2184)。
 // v2183: タイトル画面カード一覧のドラッグ時ちらつき/大ドラッグ消失を根本修正 (batch:1301)。iOS Safariが
 // ネイティブpan開始時にpointercancelを発火しisDragging追跡が実機で機能していなかった構造バグをtouch
@@ -114,7 +115,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2184;
+const CACHE_VERSION = 2185;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
@@ -171,6 +172,7 @@ const CRITICAL_ASSETS_SCRIPTS = [
   '/common/onboarding/steps-avatar.js',
   '/common/onboarding/steps-title-tour.js',
   '/common/onboarding/steps-book-unlock.js',
+  '/common/onboarding/steps-gacha.js',
   '/js/game-stickers.js',
   '/js/daily-quest.js',
   '/js/donguri-shop.js',

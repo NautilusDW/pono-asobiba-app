@@ -11503,7 +11503,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2184; // sw.js CACHE_VERSION と同期 (batch:onboarding-tour-fix: タイトル画面ツアーのスポットライト範囲修正+シール帳ステップ削除)
+    const PAGE_CACHE_VERSION = 2185; // sw.js CACHE_VERSION と同期 (batch:onboarding-tour-gacha: ガチャ詳細モーダルの初回チュートリアル追加)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -11512,7 +11512,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v2184'; // batch:onboarding-tour-fix: PAGE_CACHE_VERSION/sw.js CACHE_VERSION と同期 (title tour spotlight fix)
+    window.PONO_SW_VERSION = 'v2185'; // batch:onboarding-tour-gacha: PAGE_CACHE_VERSION/sw.js CACHE_VERSION と同期 (ガチャ詳細モーダルの初回チュートリアル追加)
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
@@ -12607,6 +12607,11 @@
     const DAILY_GACHA_CLOSEUP_DELAY = 4820;
     const DAILY_GACHA_OPEN_DELAY = 5600;
     const DAILY_GACHA_ACTIONS_DELAY = 6220;
+    // batch:onboarding-tour-gacha: is-opened から恒久ノート「また あした やろうね」の
+    // CSS transition 完了 (is-opened+3.35s 開始 +0.72s = +4.07s) までに、 actionsDelay
+    // からの待機で必要な最大値は 4070 - (actionsDelay-openDelay) = super 3220ms /
+    // normal・rare 3450ms。 全レア度をカバーする安全マージンとして 3600ms を使う。
+    const DAILY_GACHA_TOUR_NOTE_SETTLE_MS = 3600;
     const DAILY_GACHA_START_PROMPT = '１にち１かい まわせるよ\nつまみを ぐるっと まわしてね';
     const DAILY_GACHA_STICKER_BOOK_PROMPT = 'シールちょうに\nはって あそぼう';
     const DAILY_GACHA_TOMORROW_PROMPT = 'また あした やろうね';
@@ -12864,6 +12869,23 @@
       const id = setTimeout(fn, ms);
       dailyGachaState.timers.push(id);
       return id;
+    }
+
+    // batch:onboarding-tour-gacha: スピン後の演出が出そろった時点 (setDailyGachaTimer
+    // 経由、 clearDailyGachaTimers() で自動キャンセル対象) で初回のみ 'gachaIntro'
+    // ステージを起動する。 requestStage は manual モードで、 「とばす」/Esc 時は
+    // endManualRun() が seen を一切マークしない (tour-engine.js) ため、 呼び出し前に
+    // markStageSeen しておくことで完走/とばす/Esc の全経路で「1回だけ」を保証する。
+    function maybeRequestDailyGachaIntroTour() {
+      try {
+        const tour = window.PonoOnboardingTour;
+        if (!tour) return;
+        if (!dailyGachaModal || dailyGachaModal.hidden) return;
+        if (tour.isStageSeen('gachaIntro')) return;
+        if (tour.isRunning()) return;
+        tour.markStageSeen('gachaIntro');
+        tour.requestStage('gachaIntro');
+      } catch (_) {}
     }
 
     function normalizeDailyGachaRarity(value) {
@@ -14209,6 +14231,8 @@
         if (dailyGachaBook) dailyGachaBook.hidden = false;
         updateDailyGachaEntry();
       }, revealProfile.actionsDelay);
+      // batch:onboarding-tour-gacha: 恒久ノートの表示が出そろってから初回チュートリアルを起動。
+      setDailyGachaTimer(maybeRequestDailyGachaIntroTour, revealProfile.actionsDelay + DAILY_GACHA_TOUR_NOTE_SETTLE_MS);
     }
 
     function showDailyGachaUsed(record) {
@@ -18857,5 +18881,6 @@
   <script src="/common/onboarding/steps-avatar.js" defer></script>
   <script src="/common/onboarding/steps-title-tour.js" defer></script>
   <script src="/common/onboarding/steps-book-unlock.js" defer></script>
+  <script src="/common/onboarding/steps-gacha.js" defer></script>
 </body>
 </html>
