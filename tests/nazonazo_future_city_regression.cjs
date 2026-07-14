@@ -47,125 +47,245 @@ function assertNoChildFacingKanji(source, label) {
   }
 }
 
-/* Existing opaque, looped Future City scenery remains the stage foundation. */
+/* Existing opaque, looped Future City scenery remains the foundation. */
 assert.equal((html.match(/id="futureHorizonLoop"[\s\S]*?<\/div>/)?.[0].match(/class="future-loop-tile"/g) || []).length, 4);
 assert.equal((html.match(/id="futureMidLoop"[\s\S]*?<\/div>/)?.[0].match(/class="future-loop-tile"/g) || []).length, 4);
 assert.equal((html.match(/id="futureForegroundLoop"[\s\S]*?<\/div>/)?.[0].match(/class="future-loop-tile"/g) || []).length, 8);
-assert.match(css, /body\.st-future #horizon\{[^}]*opacity:1[^}]*mask-image:none/);
-assert.match(css, /body\.st-future #midT\{[^}]*opacity:1[^}]*mask-image:none/);
-assert.match(css, /\.future-loop-tile:nth-child\(even\)::before\{transform:scaleX\(-1\)\}/);
 for (const [name, value] of [["FUTURE_HORIZON_PARALLAX", ".10"], ["FUTURE_MID_PARALLAX", ".32"], ["FUTURE_FOREGROUND_PARALLAX", "1.12"]]) {
   assert.match(game, new RegExp(`${name}=${value.replace(".", "\\.")}`));
 }
 
-/* The answer is a stable, direct capsule choice; timing gates and the tower builder stay retired. */
 assert.match(html, /id="futureCapsuleLayer"[^>]*role="group"[^>]*aria-labelledby="qText"[^>]*hidden/);
-assert.doesNotMatch(html, /id="futureBuilderLayer"|id="futureMagnetLayer"|id="futureRailLayer"/);
-assert.doesNotMatch(game, /FUTURE_BUILDER|[Ff]utureBuilder|FUTURE_MAGNET|[Ff]utureMagnet|renderFutureRailGame/);
-assert.doesNotMatch(css, /future-builder|future-magnet|future-rail|#futureBuilderLayer|#futureMagnetLayer|#futureRailLayer/);
-
 const layerRule = cssRule("#futureCapsuleLayer");
 assert.match(layerRule, /position\s*:\s*fixed/);
 assert.match(layerRule, /inset\s*:\s*0/);
-assert.match(css, /#futureCapsuleLayer\[hidden\]\{display:none!important\}/);
 const boardRule = cssRule("\\.future-capsule-board");
-assert.match(boardRule, /position:absolute/);
-assert.match(boardRule, /inset:0/);
-const choiceRule = cssRule("\\.future-capsule-lane");
-assert.match(choiceRule, /position:relative/);
-assert.match(choiceRule, /width:100%/);
-assert.match(choiceRule, /pointer-events:auto/);
-assert.match(choiceRule, /touch-action:(?:manipulation|none)/);
-assert.match(css, /body\.future-capsule-active #veh,body\.future-capsule-active #cars/);
-assert.match(css, /#choices\.future-capsule-mode,#choices\.space-galaxy-mode\{display:none\}/);
+assert.match(boardRule, /pointer-events:auto/);
+assert.match(boardRule, /touch-action:none/);
+assert.match(boardRule, /overscroll-behavior:none/);
 
 const optionFn = extractFunction(game, "futureQuestionOptions");
 const optionSandbox = { shuffle: values => values.slice().reverse() };
 vm.createContext(optionSandbox);
 vm.runInContext(`${optionFn};this.futureQuestionOptions=futureQuestionOptions;`, optionSandbox);
-const options = optionSandbox.futureQuestionOptions({ a: ["✅", "せいかい"], d: [["1️⃣", "ひとつ"], ["2️⃣", "ふたつ"]] });
-assert.equal(options.length, 2, "exactly two capsules must be shown together");
+const options = optionSandbox.futureQuestionOptions({ a: ["a", "せいかい"], d: [["b", "ひとつ"], ["c", "ふたつ"]] });
+assert.equal(options.length, 2);
 assert.equal(options.filter(option => option.ok).length, 1);
 assert.equal(options.filter(option => !option.ok).length, 1);
 
-assert.match(game, /const FUTURE_CAPSULE_TRAVEL_MS=\[[^\]]+\];/);
-assert.match(game, /const FUTURE_CAPSULE_PULSE_MS=\d+;/);
-const renderCapsule = extractFunction(game, "renderFutureCapsuleGame");
-assert.match(renderCapsule, /futureQuestionOptions\(cur\)\.forEach/);
-assert.match(renderCapsule, /className="choice future-capsule-lane/);
-assert.match(renderCapsule, /className="future-capsule"/,
-  "each stable lane must contain one moving visual capsule");
-assert.match(renderCapsule, /button\.dataset\.ok=o\.ok\?"1":"0"/);
-assert.match(renderCapsule, /button\.addEventListener\("click"|bindTap\(button/,
-  "each visible capsule must be a stable direct choice, not a timing window");
-assert.match(renderCapsule, /className="future-capsule-guide"/);
-assert.match(renderCapsule, /className="future-capsule-energy"/);
-assert.match(renderCapsule, /className="future-capsule-city"/);
-assert.match(renderCapsule, /className="future-capsule-runner"/);
-assert.doesNotMatch(renderCapsule, /requestAnimationFrame[\s\S]*(?:hitWindow|captureWindow|timing)/i,
-  "rendering must not bring back a timing gate");
+assert.match(game, /const FUTURE_CRANE_PICKUP_MS=\[80,110,140\]/);
+assert.match(game, /const FUTURE_CRANE_CORE_TOLERANCE=\[16,12,8\]/);
+assert.match(game, /const FUTURE_CRANE_KEY_STEP=14/);
+assert.match(game, /const FUTURE_CRANE_KEY_FAST_STEP=30/);
+assert.match(game, /const FUTURE_CRANE_RETURN_MS=260/);
+assert.match(game, /const FUTURE_CRANE_RETURN_REDUCED_MS=70/);
+assert.doesNotMatch(game, /FUTURE_CAPSULE_TRAVEL_MS|futureCapsuleStartedAt/);
 
-const selectCapsule = extractFunction(game, "selectFutureCapsule");
-assert.match(selectCapsule, /futureCapsuleOptions\[index\]/);
-assert.match(selectCapsule, /futureCapsuleSelectedIndex=index/);
-assert.match(selectCapsule, /classList\.add\("is-(?:selected|captured|absorbing)"\)/,
-  "the touched capsule must visibly travel to the center");
-assert.doesNotMatch(selectCapsule, /getBoundingClientRect\(\)[\s\S]*(?:>=|<=)[\s\S]*window/,
-  "a direct capsule tap must work regardless of its current animation position");
+const render = extractFunction(game, "renderFutureCapsuleGame");
+for (const className of ["future-crane-rail", "future-crane-trolley", "future-crane-hook-rig", "future-crane-core", "future-crane-core-slot", "future-crane-cradle"]) {
+  assert.match(render, new RegExp(`className="${className}`), `${className}: missing`);
+}
+assert.match(render, /className="choice future-capsule-lane future-crane-pod/);
+assert.match(render, /futureQuestionOptions\(cur\)\.forEach/);
+assert.match(render, /createQuizArt\(o\.e,o\.t\)/);
+assert.match(render, /pointerdown[\s\S]*pointermove[\s\S]*pointerup[\s\S]*pointercancel[\s\S]*lostpointercapture/);
+assert.match(render, /board\.tabIndex=0/);
+assert.match(render, /button\.tabIndex=-1/);
+assert.doesNotMatch(render, /addEventListener\("click"|bindTap\(button/,
+  "a pod tap must never submit an answer");
+assert.match(render, /フックを こたえの ポッドまで うごかそう/);
 
-const resolveCapsule = extractFunction(game, "resolveFutureCapsule");
-assert.match(resolveCapsule, /onPick\(entry\.button,\{ok:false,mode:"future"\}\)/,
-  "a wrong capsule must enter the shared miss flow exactly once");
-assert.equal((resolveCapsule.match(/onPick\(entry\.button,\{ok:false,mode:"future"\}\)/g) || []).length, 1,
-  "one wrong tap must never be scored twice");
-assert.match(resolveCapsule, /futureCapsuleEnergy(?:\+\+|\+=1|=pulse)/,
-  "a correct capsule must charge the city automatically");
-assert.match(resolveCapsule, /futureCapsuleEnergy[^\n]{0,120}3|pulse[^\n]{0,120}3/i,
-  "the correct capture must produce three automatic energy pulses");
-assert.match(resolveCapsule, /classList\.add\("is-(?:complete|city-awake)"\)/,
-  "three pulses must visibly wake the city and launch the linear");
-assert.match(resolveCapsule, /updateFutureCapsuleHistory\(qSeg\+1\)/);
-assert.match(resolveCapsule, /onPick\(entry\.button,\{ok:true,mode:"future"\}\)/);
-assert.match(resolveCapsule, /futureCapsuleEpoch/,
-  "delayed capture pulses must be invalidated when the screen is left");
+const pointerDown = extractFunction(game, "handleFutureCranePointerDown");
+const pointerMove = extractFunction(game, "handleFutureCranePointerMove");
+assert.match(pointerDown, /futureCraneDragStartX=event\.clientX/);
+assert.match(pointerDown, /futureCraneHookStartX=futureCraneX/);
+assert.match(pointerDown, /setPointerCapture\(event\.pointerId\)/);
+assert.match(pointerMove, /futureCraneHookStartX\+\(event\.clientX-futureCraneDragStartX\)/,
+  "pointer drag must be relative 1:1 without a pointerdown jump");
 
-const updateCapsule = extractFunction(game, "updateFutureCapsuleVisual");
-assert.match(updateCapsule, /futureCapsuleOptions/);
-assert.match(updateCapsule, /futureCapsuleStartedAt/);
-assert.match(updateCapsule, /FUTURE_CAPSULE_TRAVEL_MS/);
-assert.doesNotMatch(updateCapsule, /onPick|resolveFutureCapsule/,
-  "visual motion alone must never submit an answer");
+const pickup = extractFunction(game, "trackFutureCranePickup");
+assert.match(pickup, /FUTURE_CRANE_PICKUP_MS\[level\]/);
+assert.match(pickup, /futureCranePickupIndex\(\)!==index/,
+  "pickup must remain continuously inside the pickup rect until its timer fires");
+assert.match(pickup, /futureCranePointerId===null/);
 
-const help = extractFunction(game, "assistFutureCapsuleGame");
-assert.match(help, /wrong\.button\.disabled=true/);
-assert.match(help, /correct\.button\.classList\.add\("glow"\)/);
-assert.doesNotMatch(help, /selectFutureCapsule\(|resolveFutureCapsule\(|onPick\(/,
-  "help may reveal the correct moving capsule but must not answer it");
+const geometry = extractFunction(game, "syncFutureCraneGeometry");
+assert.match(geometry, /Object\.assign\(entry,futureCraneEntryGeometry\(entry,boardRect\)\)/);
+const entryGeometry = extractFunction(game, "futureCraneEntryGeometry");
+assert.match(entryGeometry, /entry\.cradle\.querySelector\("\.future-crane-cradle-base"\)\|\|entry\.cradle/,
+  "home must be measured from the untransformed cradle base");
+assert.match(entryGeometry, /homeX=\(homeRect\.left\+homeRect\.right\)\/2-boardRect\.left/);
+assert.match(entryGeometry, /magnetY=homeY-payloadH\/2/);
+assert.match(entryGeometry, /pickupRect:\{left:homeX-17,right:homeX\+17,top:magnetY-10,bottom:magnetY\+10\}/,
+  "pickup must be restricted to the payload's upper magnetic point");
+assert.doesNotMatch(entryGeometry, /homeX=.*payloadRect|homeY=.*payloadRect/,
+  "a carried payload transform must never become its new home");
+let activePayloadRect = { left: 108, right: 196, top: 156, bottom: 200, width: 88, height: 44 };
+const stableBaseRect = { left: 100, right: 204, top: 150, bottom: 206, width: 104, height: 56 };
+const payloadElement = { getBoundingClientRect: () => activePayloadRect };
+const baseElement = { getBoundingClientRect: () => stableBaseRect };
+const earlyEntry = {
+  button: { querySelector: () => payloadElement, getBoundingClientRect: () => activePayloadRect },
+  cradle: { querySelector: () => baseElement, getBoundingClientRect: () => stableBaseRect }
+};
+const earlyGeometrySandbox = {};
+vm.createContext(earlyGeometrySandbox);
+vm.runInContext(`${entryGeometry};this.futureCraneEntryGeometry=futureCraneEntryGeometry;`, earlyGeometrySandbox);
+const boardRectForEarlyDrag = { left: 10, top: 20 };
+const beforeEarlyDrag = earlyGeometrySandbox.futureCraneEntryGeometry(earlyEntry, boardRectForEarlyDrag);
+activePayloadRect = { left: 358, right: 446, top: 84, bottom: 128, width: 88, height: 44 };
+const duringEarlyDrag = earlyGeometrySandbox.futureCraneEntryGeometry(earlyEntry, boardRectForEarlyDrag);
+for (const key of ["homeX", "homeY", "payloadW", "payloadH"])
+  assert.equal(duringEarlyDrag[key], beforeEarlyDrag[key], `early transition sync changed stable ${key}`);
+for (const edge of ["left", "right", "top", "bottom"])
+  assert.equal(duringEarlyDrag.pickupRect[edge], beforeEarlyDrag.pickupRect[edge], `early transition sync changed pickup ${edge}`);
+const returnPayload = extractFunction(game, "returnFutureCranePayload");
+assert.match(returnPayload, /futureCraneFollowX=entry\.homeX-futureCraneX;futureCraneFollowY=entry\.homeY-futureCraneY/);
+assert.match(returnPayload, /entry\.button\.style\.transform="translate3d\(0,0,0\)"/,
+  "an early dropped payload must return to its unchanged cradle home");
+assert.match(geometry, /entry\.homeY-liftDistance-entry\.payloadH\/2/,
+  "short layouts must reserve enough upward room for the full lift threshold");
+const shortHeight = 320;
+const shortRailY = Math.max(52, Math.min(112, shortHeight * .16));
+const shortQuizTop = shortHeight - 98;
+const shortStationY = Math.min(Math.max(shortHeight * .53, 150), shortQuizTop - 36);
+const shortLiftDistance = Math.max(44, Math.min(64, shortHeight * .32));
+const shortMinHookY = Math.max(18, Math.min(shortRailY + 2, shortStationY - shortLiftDistance - 44 / 2));
+assert.ok(shortStationY - (shortMinHookY + 44 / 2) >= shortLiftDistance,
+  "568x320 must physically allow the 88x44 payload to clear the full 64px lift latch");
+
+const safeMaxY = extractFunction(game, "futureCraneSafeMaxY");
+const boundsSandbox = { Math };
+vm.createContext(boundsSandbox);
+vm.runInContext(`${safeMaxY};this.futureCraneSafeMaxY=futureCraneSafeMaxY;`, boundsSandbox);
+for (const sample of [
+  { width: 568, height: 320, quizTop: 215.6, payloadH: 44 },
+  { width: 740, height: 320, quizTop: 215.6, payloadH: 44 },
+  { width: 844, height: 390, quizTop: 274, payloadH: 50 },
+  { width: 1024, height: 768, quizTop: 640, payloadH: 72 }
+]) {
+  const followY = sample.payloadH / 2;
+  const maxY = boundsSandbox.futureCraneSafeMaxY(sample.quizTop, { payloadH: sample.payloadH }, followY);
+  assert.ok(maxY < sample.quizTop, `${sample.width}x${sample.height}: hook maxY must stay above the final quiz top`);
+  assert.ok(maxY + followY + sample.payloadH / 2 <= sample.quizTop - 8,
+    `${sample.width}x${sample.height}: held payload must not enter the quiz`);
+}
+assert.match(geometry, /quizTop[\s\S]*maxY:futureCraneSafeMaxY\(quizTop,null,0\)/);
+assert.match(geometry, /futureCraneY=clamp\(futureCraneY,[\s\S]*futureCraneCurrentMaxY\(\)/,
+  "a settled quiz bound must immediately clamp the current hook and payload");
+const scheduleGeometry = extractFunction(game, "scheduleFutureCraneGeometrySync");
+assert.equal((scheduleGeometry.match(/requestAnimationFrame\(/g) || []).length, 2,
+  "initial geometry must be checked again after two painted frames");
+assert.match(scheduleGeometry, /futureCraneGeometryDirty=true;syncFutureCraneGeometry\(\)/);
+const transitionGeometry = extractFunction(game, "handleFutureCraneQuizTransitionEnd");
+assert.match(transitionGeometry, /event\.target!==quiz\|\|event\.propertyName!=="transform"/);
+assert.match(transitionGeometry, /futureCraneGeometryDirty=true;syncFutureCraneGeometry\(\)/,
+  "the final transitioned quiz top must replace the offscreen entry geometry");
+assert.match(render, /syncFutureCraneGeometry\(\);scheduleFutureCraneGeometrySync\(\)/);
+assert.match(game, /quiz\.addEventListener\("transitionend",handleFutureCraneQuizTransitionEnd\)/);
+
+const latch = extractFunction(game, "latchFutureCranePod");
+assert.match(latch, /futureCraneX=entry\.homeX;futureCraneY=entry\.homeY-entry\.payloadH\/2/);
+assert.match(latch, /futureCraneFollowX=0;futureCraneFollowY=entry\.payloadH\/2/,
+  "latching must snap to one fixed hook/payload connection");
+
+const carry = extractFunction(game, "updateFutureCraneCarryState");
+assert.match(carry, /clamp\(futureCraneGeometry\.height\*\.32,44,64\)/);
+assert.match(carry, /FUTURE_CRANE_CORE_TOLERANCE\[level\]/);
+assert.match(carry, /futureCraneLifted&&inner/);
+assert.match(carry, /futureCraneCoreReady=/);
+assert.match(carry, /payload\.x-halfW>=inner\.left-edgeTolerance&&payload\.x\+halfW<=inner\.right\+edgeTolerance/,
+  "the lower-into-core guide must use the same visible horizontal opening as submission");
+const edgeToleranceFn = extractFunction(game, "futureCraneCoreEdgeTolerance");
+const fitsCore = extractFunction(game, "futureCranePayloadFitsCore");
+const coreSandbox = { Math };
+vm.createContext(coreSandbox);
+vm.runInContext(`${edgeToleranceFn};${fitsCore};this.futureCraneCoreEdgeTolerance=futureCraneCoreEdgeTolerance;this.futureCranePayloadFitsCore=futureCranePayloadFitsCore;`, coreSandbox);
+assert.match(edgeToleranceFn, /Math\.min\(4,/,
+  "no difficulty may accept a payload more than 4px outside the visible core silhouette");
+assert.match(fitsCore, /payload\.x-halfW>=inner\.left-edgeTolerance/);
+assert.match(fitsCore, /payload\.x\+halfW<=inner\.right\+edgeTolerance/);
+assert.match(fitsCore, /payload\.y-halfH>=inner\.top-edgeTolerance/);
+assert.match(fitsCore, /payload\.y\+halfH<=inner\.bottom\+edgeTolerance/);
+const shortCore = { left: 237, right: 331, top: 151, bottom: 201, width: 94, height: 50, cx: 284, cy: 176 };
+for (const [difficultyTolerance, edgeAllowance] of [[16, 4], [12, 3], [8, 2]]) {
+  const limitX = (shortCore.width - 88) / 2 + edgeAllowance;
+  const limitY = (shortCore.height - 44) / 2 + edgeAllowance;
+  for (const sign of [-1, 1]) {
+    assert.equal(coreSandbox.futureCranePayloadFitsCore({ x: shortCore.cx + sign * limitX, y: shortCore.cy }, shortCore, 88, 44, difficultyTolerance), true,
+      `difficulty ${difficultyTolerance}: exact horizontal edge must fit`);
+    assert.equal(coreSandbox.futureCranePayloadFitsCore({ x: shortCore.cx + sign * (limitX + 1), y: shortCore.cy }, shortCore, 88, 44, difficultyTolerance), false,
+      `difficulty ${difficultyTolerance}: one pixel beyond the horizontal edge must fail`);
+    assert.equal(coreSandbox.futureCranePayloadFitsCore({ x: shortCore.cx, y: shortCore.cy + sign * limitY }, shortCore, 88, 44, difficultyTolerance), true,
+      `difficulty ${difficultyTolerance}: exact vertical edge must fit`);
+    assert.equal(coreSandbox.futureCranePayloadFitsCore({ x: shortCore.cx, y: shortCore.cy + sign * (limitY + 1) }, shortCore, 88, 44, difficultyTolerance), false,
+      `difficulty ${difficultyTolerance}: one pixel beyond the vertical edge must fail`);
+  }
+}
+const coreSlotRule = cssRule("\\.future-crane-core-slot");
+for (const inset of ["left:8%", "right:8%", "top:12%", "bottom:12%"])
+  assert.match(coreSlotRule, new RegExp(inset.replace("%", "\\%")), `visible core opening missing ${inset}`);
+for (const text of ["つかんだ！ うえへ もちあげよう", "コアの うえまで はこぼう", "ゆっくり コアへ おろそう", "ここで はなそう！"]) assert.match(game, new RegExp(text));
+
+const release = extractFunction(game, "releaseFutureCranePayload");
+assert.match(release, /!cancelled&&futureCraneHeldIndex>=0&&futureCraneCoreReady/);
+assert.match(release, /resolveFutureCapsule/);
+assert.match(release, /returnFutureCranePayload\("だいじょうぶ。もう いちど！"\)/);
+assert.doesNotMatch(release, /onPick|stageMiss|missInQ/,
+  "motor mistakes and pointer cancellation must not be scored");
+
+const resolve = extractFunction(game, "resolveFutureCapsule");
+assert.match(resolve, /futureCraneSubmissionCommitted/);
+assert.equal((resolve.match(/onPick\(entry\.button,\{ok:false,mode:"future"\}\)/g) || []).length, 1);
+assert.equal((resolve.match(/onPick\(entry\.button,\{ok:true,mode:"future",skipOkSound:true\}\)/g) || []).length, 1);
+assert.match(resolve, /qSeg===QN-1\?"みらいシティ かんせい！":"まちが ひかった！ リニア はっしん！"/);
+
+const keyboard = extractFunction(game, "handleFutureCapsuleKeyDown");
+assert.match(keyboard, /event\.shiftKey\?FUTURE_CRANE_KEY_FAST_STEP:FUTURE_CRANE_KEY_STEP/);
+assert.match(keyboard, /event\.key==="Escape"/);
+assert.match(keyboard, /futureCranePickupIndex\(\)/);
+assert.match(keyboard, /moveFutureCraneHook/);
+assert.match(keyboard, /releaseFutureCranePayload\(false\)/);
+const keyboardLock = keyboard.indexOf('if(answerLocked||futureCapsuleResolving||futureCranePhase==="returning"||futureCranePhase==="resolving"||futureCranePhase==="complete")');
+assert.ok(keyboardLock >= 0 && keyboardLock < keyboard.indexOf("moveFutureCraneHook"),
+  "answer, resolving, and returning phases must consume repeated arrow/action keys before they can move a wrong payload");
+assert.doesNotMatch(game, /grabFutureCraneByKeyboard|futureCraneX=entry\.homeX;futureCraneY=entry\.homeY;latchFutureCranePod/,
+  "keyboard selection must not teleport a pod to the hook");
+
+const visual = extractFunction(game, "updateFutureCapsuleVisual");
+assert.match(visual, /futureCraneGeometryDirty/);
+assert.doesNotMatch(visual, /createElement|append|replaceChildren|onPick/,
+  "the render loop must not allocate DOM or submit answers");
 
 const clear = extractFunction(game, "clearFutureCapsuleGame");
-assert.match(clear, /futureCapsuleEpoch\+\+/);
-assert.match(clear, /futureCapsuleTimers\.forEach\(clearTimeout\)/);
-assert.match(clear, /futureCapsuleTimers\.clear\(\)/);
-assert.match(clear, /futureCapsuleSelectedIndex=-1/);
+assert.match(clear, /releaseFutureCranePointerCapture\(\)/);
+assert.match(clear, /clearFutureCranePickupTimer\(\)/);
+assert.match(clear, /futureCapsuleTimers\.forEach\(clearTimeout\);futureCapsuleTimers\.clear\(\)/);
+assert.match(clear, /futureCraneSubmissionCommitted=false/);
 assert.match(clear, /futureCapsuleLayer\.replaceChildren\(\);futureCapsuleLayer\.hidden=true/);
 for (const lifecycle of ["startJourneyAt", "showQuiz", "ending", "openMap", "nazonazoAdminPreviewArm"]) {
-  assert.match(extractFunction(game, lifecycle), /clearFutureCapsuleGame\(\)/, `${lifecycle}: capsule state must be cleared`);
+  assert.match(extractFunction(game, lifecycle), /clearFutureCapsuleGame\(\)/, `${lifecycle}: future cleanup missing`);
 }
-assert.match(extractFunction(game, "showQuiz"), /isFutureStage\(\)\)renderFutureCapsuleGame\(\)/);
-assert.match(extractFunction(game, "activeChoiceButtons"), /future-capsule-active[\s\S]*future-capsule-lane/);
-assert.match(extractFunction(game, "onPick"), /classList\.contains\("future-capsule-lane"\)/);
-assert.match(extractFunction(game, "useHelp"), /futureCapsuleResolving/,
-  "help must not rewrite a capsule during its capture sequence");
+assert.match(extractFunction(game, "useHelp"), /futureCranePointerId!==null\|\|futureCraneHeldIndex>=0/);
+const help = extractFunction(game, "assistFutureCapsuleGame");
+assert.match(help, /wrong\.button\.disabled=true/);
+assert.match(help, /ひかる ポッドを コアへ はこぼう/);
+assert.doesNotMatch(help, /resolveFutureCapsule|onPick/);
 
-/* Short landscape and reduced-motion retain both choices and a readable static payoff. */
-assert.match(css, /@media [^{]*max-height:(?:360|480)px[^\{]*\{[\s\S]*\.future-capsule-lane/,
-  "568x320 needs an explicit short-height capsule layout");
-assert.match(css, /@media \(prefers-reduced-motion:reduce\)[\s\S]*\.future-capsule-lane[\s\S]*animation:none!important/);
-assert.match(css, /prefers-reduced-motion:reduce[\s\S]*\.future-capsule-board\.is-(?:complete|city-awake)[\s\S]*(?:opacity:1|display:none)/,
-  "reduced motion must preserve a clear completed-city state");
+assert.match(game, /dataset\.cranePhase=phase/);
+assert.match(game, /dataset\.heldPod=/);
+assert.match(game, /dataset\.pointerActive=/);
+assert.match(css, /@media [^{]*max-height:360px[\s\S]*\.future-crane-hook\{width:40px;height:40px/);
+assert.match(css, /max-height:360px[\s\S]*\.future-crane-cradle\{width:104px;height:56px/);
+assert.match(css, /max-height:360px[\s\S]*\.future-capsule\.future-crane-payload\{width:88px;height:44px/);
+assert.match(css, /max-height:360px[\s\S]*\.future-crane-core\{width:112px;height:66px/);
+assert.match(css, /max-height:360px[\s\S]*\.future-capsule\.future-crane-payload \.quiz-art\{width:30px;height:30px/);
+assert.match(css, /max-height:360px[\s\S]*body\.st-future\.future-capsule-active #quiz\{max-height:98px/);
+assert.match(css, /prefers-reduced-motion:reduce[\s\S]*\.future-crane-core-ring[\s\S]*animation:none!important/);
+assert.match(css, /prefers-reduced-motion:reduce[\s\S]*\.future-crane-trolley,[\s\S]*transition-duration:\.07s!important/);
 
-assertNoChildFacingKanji(renderCapsule, "renderFutureCapsuleGame");
-assertNoChildFacingKanji(selectCapsule, "selectFutureCapsule");
-assertNoChildFacingKanji(resolveCapsule, "resolveFutureCapsule");
+for (const [name, source] of [["renderFutureCapsuleGame", render], ["updateFutureCraneCarryState", carry], ["returnFutureCranePayload", extractFunction(game, "returnFutureCranePayload")], ["resolveFutureCapsule", resolve], ["assistFutureCapsuleGame", help]]) {
+  assertNoChildFacingKanji(source, name);
+}
 
-console.log("Nazonazo future capsule regression checks passed.");
+console.log("Nazonazo future gantry-crane regression checks passed.");

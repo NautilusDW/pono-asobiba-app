@@ -12,9 +12,9 @@ const html = read("nazonazo-tunnel/index.html");
 const css = read("nazonazo-tunnel/styles.css");
 const js = read("nazonazo-tunnel/js/game.js");
 
-assert.match(html, /styles\.css\?v=20260714-1297/,
+assert.match(html, /styles\.css\?v=20260715-1301/,
   "the non-choice illustration pass needs a fresh stylesheet cache key");
-assert.match(html, /js\/game\.js\?v=20260714-1297/,
+assert.match(html, /js\/game\.js\?v=20260715-1301/,
   "the non-choice illustration pass needs a fresh script cache key");
 
 function extractFunction(source, name) {
@@ -971,7 +971,7 @@ assert.match(clearSeaBody, /seaSalvoHits\.clear\(\)/);
 for (const functionName of ["startJourneyAt", "beginStageTransit", "openMap", "ending"]) {
   assert.match(extractFunction(js, functionName), /(?:clear|reset|cancel)[A-Za-z_$]*Sea[A-Za-z_$]*\(/, `${functionName}: stale sea interaction is not cleared`);
 }
-assert.match(js, /if\(document\.hidden\)\{[\s\S]{0,360}hideWeatherNotice\(\)[\s\S]{0,360}pauseSeaInput\(\);safeSuspend\(\)/,
+assert.match(js, /if\(document\.hidden\)\{[\s\S]{0,360}hideWeatherNotice\(\)[\s\S]{0,360}pauseSeaInput\(\);pauseFutureCraneInput\(\);safeSuspend\(\)/,
   "backgrounding must still pause sea input and audio");
 assert.match(js, /seaRoundPhase==="ready"\|\|seaRoundPhase==="go"[\s\S]{0,180}clearTimeout\(seaRoundCountdownTimer\)/,
   "backgrounding during countdown must stop the unseen timer");

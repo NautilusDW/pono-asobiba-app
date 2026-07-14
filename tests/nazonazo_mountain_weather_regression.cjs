@@ -11,8 +11,8 @@ const css = fs.readFileSync(path.join(root, "nazonazo-tunnel/styles.css"), "utf8
 const game = fs.readFileSync(path.join(root, "nazonazo-tunnel/js/game.js"), "utf8");
 const sw = fs.readFileSync(path.join(root, "sw.js"), "utf8");
 
-assert.match(html, /styles\.css\?v=20260714-1297/, "the current Nazonazo scenery and stage games must bypass stale CSS caches");
-assert.match(html, /js\/game\.js\?v=20260714-1297/, "the current Nazonazo runtime must bypass stale game-script caches");
+assert.match(html, /styles\.css\?v=20260715-1301/, "the current Nazonazo scenery and stage games must bypass stale CSS caches");
+assert.match(html, /js\/game\.js\?v=20260715-1301/, "the current Nazonazo runtime must bypass stale game-script caches");
 assert.ok(
   Number(sw.match(/const CACHE_VERSION = (\d+);/)?.[1]) >= 2151,
   "the current Nazonazo bundle must ship with at least its original service-worker generation",
@@ -136,7 +136,7 @@ assert.match(game, /layer\.replaceChildren\(fragment\)/, "particle pool construc
 assert.equal((game.match(/buildRainParticles\(false\);/g) || []).length, 1, "particle pools must be initialized exactly once outside applySkin");
 assert.equal((game.match(/addEventListener\("resize",scheduleRainParticleRebuild/g) || []).length, 1, "particle resizing must register exactly one listener");
 assert.match(game, /addEventListener\("pageshow",\(\)=>\{closeGameSettings\(\);ensureAC\(\);updateRainParticleVisibility\(false\);\}\)/, "BFCache restore must close settings and refresh particle visibility without rebuilding");
-assert.match(game, /addEventListener\("pagehide",\(\)=>\{closeGameSettings\(\);hideWeatherNotice\(\);pauseSeaInput\(\);clearTimeout\(rainParticleResizeTimer\);safeSuspend\(\);\}\)/, "pagehide must close settings and clear the weather notice, sea input, and pending resize callback");
+assert.match(game, /addEventListener\("pagehide",\(\)=>\{closeGameSettings\(\);hideWeatherNotice\(\);pauseSeaInput\(\);pauseFutureCraneInput\(\);clearTimeout\(rainParticleResizeTimer\);safeSuspend\(\);\}\)/, "pagehide must close settings and clear the weather notice, sea and crane input, and pending resize callback");
 assert.doesNotMatch(game.slice(game.indexOf("function applySkin("), game.indexOf("function buildWorld(")), /buildRainParticles|scheduleRainParticle/, "skin changes must never rebuild particle DOM");
 assert.match(game, /if\(window\.__PONO_TIER_LOCKED__\)/, "locked LP views must not create hidden particle work");
 assert.doesNotMatch(css, /#world(?:,|\{)[^}]*filter:/, "the multi-thousand-vw world container must never receive one giant group filter");
