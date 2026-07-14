@@ -23,6 +23,8 @@
 
 - 2026-07-14 - [batch:1292-nazonazo-full-art] Codex: 独立UIレビューで844×390のタイトル／通常クイズ／道中アイテム／LP lockと390×844回転案内を確認し、画像404・JS例外・横overflow・fallbackなし。取得アイテムだけHUDで約13pxへ縮むHighを検出し、`.hud-counter-art`を24px固定へ修正。併せて画像lazy decode、点数feedback nowrap、help counter／buttonの残数ARIAを追加し、再レビューでHigh解消・Blockerなしを確認。 (by Codex)
 
+- 2026-07-14 - [batch:1292-nazonazo-full-art] **DONE (staging verified)** — Codex: feature commit `306b8edf`をdevelop-appへpushし、Actions `29296692893`でproduction skip・App staging→LP staging直列deploy成功。両liveの`game.js`／`styles.css`／`quiz-art.js`／`sw.js`はlocal SHA-256完全一致、新規10画像は両env計20件すべてhash一致、UI registry 33 unique assetは両env計66件すべてHTTP 200。両HTMLは`20260714-1292`、Appだけ`window.__APP_BUILD__=1`、LPは未注入でtier lock維持、SW v2175。確認先 App `https://pono-asobiba-app-staging.ndw.workers.dev/nazonazo-tunnel/`、LP `https://pono-asobiba-staging.ndw.workers.dev/nazonazo-tunnel/`。凍結develop／production未変更。 (by Codex)
+
 - 2026-07-14 - [batch:1291-lp-gachagacha-copy] Codex: ユーザー実画面評価「詳細導線末尾の『を』を削除し、ガチャガチャは基本的に1日1回・ミニゲームでどんぐりを得られること・課金なしを小さく明記し、『ガチャ』へ略さない」を受領。直前batch:1290のLP導線文言への追加調整で、該当成果はstaging済みだが今回の説明と完全表記は未反映と確認。対象は親向けLP `index.html`／コピー正本doc／回帰テスト／SW。カード直下に読みやすい補足を置き、モーダルにも同じ事実を含め、既存画像・操作・tier差を維持する。最新origin/develop-app `8145cabc`の隔離worktreeで着手し、凍結develop／productionは触れない。 (by Codex)
 
 - 2026-07-14 - [batch:1291-lp-gachagacha-copy] Codex: ローカル実装・QA完了。両詳細導線から末尾の「を」を削除し、ガチャガチャカード直下へ24〜26pxの「課金なし」badgeと「基本的に1日1回／ミニゲームでどんぐり」の2行補足を追加。カード／モーダルの育ち文は「ガチャガチャ」完全表記へ統一し、利用案内を「ココが育つ！」内へ重複させない構造に整理。390×844／844×390／1024×768／1366×768で補足2行・CTA1行・overflow 0・2列同高・Escape focus復帰を確認。親向けassurance／カード／modalの単独「ガチャ」を拒否する回帰を追加し、関連2テスト、inline script 2本、SW構文、旧語監査、diff check PASS。独立copy再レビューもBlocker/High/Medium 0、SW v2174。commit／push／LP staging確認待ち、凍結develop／productionは未変更。 (by Codex)
