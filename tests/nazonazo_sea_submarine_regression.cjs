@@ -12,10 +12,10 @@ const html = read("nazonazo-tunnel/index.html");
 const css = read("nazonazo-tunnel/styles.css");
 const js = read("nazonazo-tunnel/js/game.js");
 
-assert.match(html, /styles\.css\?v=20260714-1291/,
-  "the final sea/future/space visual pass needs the 1285 stylesheet cache key");
-assert.match(html, /js\/game\.js\?v=20260714-1291/,
-  "the final sea/future/space interaction pass needs the 1285 script cache key");
+assert.match(html, /styles\.css\?v=20260714-1292/,
+  "the non-choice illustration pass needs a fresh stylesheet cache key");
+assert.match(html, /js\/game\.js\?v=20260714-1292/,
+  "the non-choice illustration pass needs a fresh script cache key");
 
 function extractFunction(source, name) {
   const match = new RegExp(`function\\s+${name}\\s*\\([^)]*\\)\\s*\\{`).exec(source);
@@ -278,7 +278,7 @@ const maybeSpawnRareBody = extractFunction(js, "maybeSpawnRare");
 const collectRareEventBody = extractFunction(js, "collectRareEvent");
 const collectSeaRareCollisionBody = extractFunction(js, "collectSeaRareCollision");
 const renderSeaSteeringBody = extractFunction(js, "renderSeaSteering");
-assert.match(maybeSpawnRareBody, /pointerdown",\(\)=>collectRareEvent\(el,e,t\)\)/,
+assert.match(maybeSpawnRareBody, /bindTap\(el,\(\)=>collectRareEvent\(el,e,t\)\)/,
   "pointer pickup and collision pickup must share one idempotent collector");
 assert.match(collectSeaRareCollisionBody, /vehicleSteerShell\.getBoundingClientRect\(\)/);
 assert.match(collectSeaRareCollisionBody, /rareEl\.getBoundingClientRect\(\)/);

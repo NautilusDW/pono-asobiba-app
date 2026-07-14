@@ -496,6 +496,12 @@ function createHiddenFriendHarness({ fast = 1, reducedMotion = false, randomValu
     rnd: (min, max) => min + (max - min) * nextRandom(),
     clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
     passengerLabel: passenger => passenger.name || passenger.t || "",
+    createQuizArt(emoji, label, className) {
+      const holder = new FakeElement("span");
+      holder.className = className || "";
+      holder.dataset.quizArtKey = `${emoji || ""}|${label || ""}`;
+      return holder;
+    },
     bindTap(element, callback) { element.__tap = callback; },
     announce(message) { records.announcements.push(String(message)); },
     showStamp(message) { records.stamps.push(String(message)); },

@@ -17,6 +17,12 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-07-14 - [batch:1292-nazonazo-full-art] Codex: ユーザー実画面評価「選択肢以外にも残る絵文字を、拾えるアイテム・味方になる動物・上部メニューを含めて生成画像へ。既存フレームを優先再利用し、不足分だけ生成」を受領。重複確認でbatch:1291は全175クイズ意味キー／客車・海仲間・トンネル・図鑑のクイズ由来画像化まで完了済みだが、`RARES`／`RUN_EVENTS`／HUD・map・title・help／station helper fallback／weather・result・confetti等の非選択肢絵文字は未監査・未統一と確認。主操作は問題を見て画像の答えを選ぶ、fallbackはかなlabel／キーボード、方向性guided。既存quiz-art 171点、station helper画像、ポノ／UI素材を先に再利用し、足りないsemantic iconだけGPT Image 2 built-inで`tmp/alpha_pending/1292-nazonazo-full-art/`へ生成。通常表示から意味を持つ絵文字glyphを撤去し、img error時だけfallbackを許可。46px操作、固定HUD寸法、かな表記、reduced-motion、score／stage select／LP lockを維持。最新origin/develop-app `a2a62364`の隔離worktreeで着手、凍結develop／productionは触れない。 (by Codex)
+
+- 2026-07-14 - [batch:1292-nazonazo-full-art] Codex: ローカル実装・生成・QA完了。既存クイズ絵／ポノ顔／駅の6動物を再利用し、不足するクローバー・ことり・白いはと・100点メダル・地図・友達グループ・虹・芽・タッチ手・トロフィーの10点だけGPT Image 2で生成、512px透過WebPへ整形。道中アイテム、レア、駅／客車／海／トンネルの仲間、天気、演出、上部HUD、タイトル、難易度、マップ、図鑑、結果、操作案内を37種のUI art registryと共通rendererへ統一し、通常表示HTMLの絵文字glyphを0件化。画像失敗時は絵文字でなく「?」、かなlabel／ARIA、46px操作、iPad配置、reduced-motion、score／stage select／LP lockを維持。新規10点の512×512／alpha／透明四隅／3MB、175クイズ意味key、全表示経路を専用回帰で検査し、全18 `tests/nazonazo_*_regression.cjs`、JS／SW構文、diff checkがPASS。Browser runtime接続先0件のためpointer実画面確認のみ未実施。SW v2175、commit／push／両staging確認待ち、凍結develop／productionは未変更。 (by Codex)
+
+- 2026-07-14 - [batch:1292-nazonazo-full-art] Codex: 独立UIレビューで844×390のタイトル／通常クイズ／道中アイテム／LP lockと390×844回転案内を確認し、画像404・JS例外・横overflow・fallbackなし。取得アイテムだけHUDで約13pxへ縮むHighを検出し、`.hud-counter-art`を24px固定へ修正。併せて画像lazy decode、点数feedback nowrap、help counter／buttonの残数ARIAを追加し、再レビューでHigh解消・Blockerなしを確認。 (by Codex)
+
 - 2026-07-14 - [batch:1291-lp-gachagacha-copy] Codex: ユーザー実画面評価「詳細導線末尾の『を』を削除し、ガチャガチャは基本的に1日1回・ミニゲームでどんぐりを得られること・課金なしを小さく明記し、『ガチャ』へ略さない」を受領。直前batch:1290のLP導線文言への追加調整で、該当成果はstaging済みだが今回の説明と完全表記は未反映と確認。対象は親向けLP `index.html`／コピー正本doc／回帰テスト／SW。カード直下に読みやすい補足を置き、モーダルにも同じ事実を含め、既存画像・操作・tier差を維持する。最新origin/develop-app `8145cabc`の隔離worktreeで着手し、凍結develop／productionは触れない。 (by Codex)
 
 - 2026-07-14 - [batch:1291-lp-gachagacha-copy] Codex: ローカル実装・QA完了。両詳細導線から末尾の「を」を削除し、ガチャガチャカード直下へ24〜26pxの「課金なし」badgeと「基本的に1日1回／ミニゲームでどんぐり」の2行補足を追加。カード／モーダルの育ち文は「ガチャガチャ」完全表記へ統一し、利用案内を「ココが育つ！」内へ重複させない構造に整理。390×844／844×390／1024×768／1366×768で補足2行・CTA1行・overflow 0・2列同高・Escape focus復帰を確認。親向けassurance／カード／modalの単独「ガチャ」を拒否する回帰を追加し、関連2テスト、inline script 2本、SW構文、旧語監査、diff check PASS。独立copy再レビューもBlocker/High/Medium 0、SW v2174。commit／push／LP staging確認待ち、凍結develop／productionは未変更。 (by Codex)

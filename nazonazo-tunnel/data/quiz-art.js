@@ -184,5 +184,65 @@
   Object.keys(slugs).forEach(function (key) {
     items[key] = ROOT + "quiz_" + slugs[key] + "_" + VERSION + ".webp";
   });
-  window.PonoNazonazoQuizArt = { version: VERSION, items: items };
+
+  const UI_ROOT = "../assets/images/nazonazo-tunnel/ui-art/";
+  const uiPath = function (slug) {
+    return UI_ROOT + slug + "_" + VERSION + ".webp";
+  };
+
+  // クイズ以外でも同じ意味の絵を共有する。絵文字は保存データとの互換キーにだけ残し、
+  // 通常表示は必ずこの画像へ解決する。
+  Object.assign(items, {
+    "🦋|ちょう": items["🦋|ちょうちょ"],
+    "🍀|よつば": uiPath("ui_four_leaf_clover"),
+    "🐦|ことり": uiPath("ui_little_bird"),
+    "🕊️|しろい はと": uiPath("ui_white_dove"),
+    "🦜|にじいろ おうむ": items["🦜|おうむ"],
+    "💯|ひゃくてんまん": uiPath("ui_perfect_medal"),
+    "🐳|そらとぶ くじら": items["🐋|くじら"],
+    "🛸|なぞの ゆーふぉー": items["🛸|ゆーふぉー"],
+    "☄️|おおながれぼし": items["☄️|ながれぼし"]
+  });
+
+  const ui = {
+    pono: "../assets/images/characters/pono/pono_face_circle.webp",
+    owl: items["🦉|ふくろう"],
+    sparkle: items["⭐|ほし"],
+    touch: uiPath("ui_touch_hand"),
+    fire: items["☄️|ながれぼし"],
+    help: uiPath("ui_four_leaf_clover"),
+    friends: uiPath("ui_friend_group"),
+    map: uiPath("ui_adventure_map"),
+    rainbow: uiPath("ui_rainbow"),
+    sprout: uiPath("ui_sprout"),
+    trophy: uiPath("ui_trophy"),
+    perfectMedal: uiPath("ui_perfect_medal"),
+    littleBird: uiPath("ui_little_bird"),
+    whiteDove: uiPath("ui_white_dove"),
+    hint: items["💡|でんき"],
+    book: items["📖|えほん"],
+    train: items["🚄|しんかんせん"],
+    rocket: items["🚀|ろけっと"],
+    smartphone: items["📱|でんわ"],
+    flower: items["🌼|おはな"],
+    star: items["⭐|ほし"],
+    rain: items["🌧️|あめ"],
+    umbrella: items["☂️|かさ"],
+    earth: items["🌍|ちきゅう"],
+    cargo: items["🎒|らんどせる"],
+    target: items["⭐|ほし"],
+    city: items["🤖|ろぼっと"],
+    space: items["🪐|どせい"],
+    master: uiPath("ui_trophy"),
+    station: items["🚄|しんかんせん"],
+    rare: items["⭐|ほし"],
+    stageTown: items["📮|ぽすと"],
+    stageJungle: items["🌳|おおきなき"],
+    stageNumber: items["🎲|さいころ"],
+    stageSea: items["🐋|くじら"],
+    stageFuture: items["🤖|ろぼっと"],
+    stageSpace: items["🚀|ろけっと"]
+  };
+
+  window.PonoNazonazoQuizArt = { version: VERSION, items: items, ui: ui };
 })();

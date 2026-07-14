@@ -13,8 +13,8 @@ const html = read("nazonazo-tunnel/index.html");
 const css = read("nazonazo-tunnel/styles.css");
 const game = read("nazonazo-tunnel/js/game.js");
 
-assert.match(html, /styles\.css\?v=20260714-1291/);
-assert.match(html, /js\/game\.js\?v=20260714-1291/);
+assert.match(html, /styles\.css\?v=20260714-1292/);
+assert.match(html, /js\/game\.js\?v=20260714-1292/);
 
 function extractBalanced(source, start, openChar = "{", closeChar = "}") {
   const open = source.indexOf(openChar, start);
@@ -93,7 +93,7 @@ assert.ok(spaceAssets, "ASSETS.space missing");
 for (const [key, file] of Object.entries(assetNames)) {
   assert.match(spaceAssets, new RegExp(`${key}:"\\.\\.\\/assets\\/images\\/nazonazo-tunnel\\/${file.replace(/\./g, "\\.")}"`), `ASSETS.space.${key} is not assigned to ${file}`);
 }
-assert.match(game, /\{id:"space",icon:"🌌",veh:"rocket",bank:SPACE,gens:\[\],[\s\S]{0,120}assets:ASSETS\.space/, "space stage must consume ASSETS.space");
+assert.match(game, /\{id:"space",icon:"🌌",art:"stageSpace",veh:"rocket",bank:SPACE,gens:\[\],[\s\S]{0,160}assets:ASSETS\.space/, "space stage must consume ASSETS.space");
 
 // Sparse space assets intentionally omit mid/ground. Every optional lookup must be guarded,
 // otherwise the browser requests a literal `undefined` URL during a stage switch.

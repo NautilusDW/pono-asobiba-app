@@ -112,8 +112,8 @@ for (const [left, right] of [
   assert.notEqual(itemSrc(registry[left]), itemSrc(registry[right]), `${left} / ${right}: distinct meanings must not collapse to one illustration`);
 }
 
-/* The shared renderer accepts string and object entries and reveals emoji only on failure. */
-const helperNames = ["quizArtKey", "quizArtItems", "resolveQuizArt", "createQuizArt"];
+/* The shared renderer accepts string and object entries and reveals a plain-text fallback only on failure. */
+const helperNames = ["quizArtKey", "quizArtItems", "resolveQuizArt", "fillArtHolder", "createQuizArt"];
 const helperSource = helperNames.map(name => extractFunction(game, name)).join("\n");
 function fakeElement(tagName) {
   const listeners = {};
@@ -125,6 +125,7 @@ function fakeElement(tagName) {
     setAttribute(name, value) { this[name] = String(value); },
     addEventListener(name, callback) { listeners[name] = callback; },
     append(...nodes) { this.children.push(...nodes); },
+    replaceChildren(...nodes) { this.children = nodes; },
     __dispatch(name) { if (listeners[name]) listeners[name](); }
   };
 }
@@ -144,10 +145,11 @@ assert.equal(helperContext.api.resolveQuizArt("🍬", "あめ"), "../assets/cand
 assert.notEqual(helperContext.api.resolveQuizArt("🍬", "あめ"), helperContext.api.resolveQuizArt("🌧️", "あめ"));
 const validArt = helperContext.api.createQuizArt("🍎", "りんご");
 assert.equal(validArt.children[0].src, "../assets/apple.webp");
-assert.equal(validArt.children[1].hidden, true, "emoji fallback must be hidden while the generated image loads normally");
+assert.equal(validArt.children[1].hidden, true, "text fallback must be hidden while the generated image loads normally");
 validArt.children[0].__dispatch("error");
 assert.equal(validArt.children[0].hidden, true);
-assert.equal(validArt.children[1].hidden, false, "an image error must reveal the semantic emoji fallback");
+assert.equal(validArt.children[1].hidden, false, "an image error must reveal the semantic text fallback");
+assert.equal(validArt.children[1].textContent, "?", "failure fallback must not reintroduce an emoji glyph");
 const missingArt = helperContext.api.createQuizArt("❓", "みとうろく");
 assert.equal(missingArt.children[0].hidden, true);
 assert.equal(missingArt.children[1].hidden, false, "a missing registry entry must fail safely without a blank answer");
@@ -162,7 +164,7 @@ const routeExpectations = new Map([
   ["animateNumberCargoToWagon", /createQuizArt\(theme\.e,theme\.name,"number-cargo-fly"\)/],
   ["renderQuizQuestion", /for\(let index=0;index<count;index\+\+\)grid\.appendChild\(createQuizArt\(cur\.pe\[0\],cur\.pe\[1\],"number-count-art"\)\)/],
   ["showSeaRescueMessage", /createQuizArt\([^;]+"sea-rescue-friend"/],
-  ["openZukan", /has\?createQuizArt\(it\.e,it\.t,"ze"\)/]
+  ["openZukan", /has\?createQuizArt\(it\.e,it\.t,"ze",it\.img\)/]
 ]);
 for (const [name, pattern] of routeExpectations) {
   const source = extractFunction(game, name);
@@ -183,7 +185,7 @@ for (const selector of [
   ".number-cargo-fly", ".number-count-grid", ".number-count-art", ".zkCell .ze.quiz-art"
 ]) assert.ok(css.includes(`${selector}{`), `${selector}: illustration sizing rule missing`);
 assert.match(css, /\.quiz-art-fallback\[hidden\]\{display:none!important\}/,
-  "fallback emoji must stay hidden during normal image rendering");
+  "fallback text must stay hidden during normal image rendering");
 assert.match(css, /\.quiz-art-image\{[^}]*object-fit:contain/, "generated art must never be cropped inside a choice");
 assert.match(css, /\.number-count-grid\{[^}]*grid-template-columns/, "up to nine count illustrations need a bounded grid");
 

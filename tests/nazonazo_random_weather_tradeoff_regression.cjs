@@ -221,8 +221,8 @@ assert.equal(rareGuard.api.state().rareEl, null);
 
 const notice = html.match(/<div id="weatherNotice"[\s\S]*?<\/div>/)?.[0] || "";
 assert.match(notice, /role="status"[^>]+aria-live="polite"[^>]+hidden/, "the rain explanation must start hidden and use a polite live region");
-assert.match(game, /slow\.textContent="☔ あめだ！ ゆっくり はしるよ"/, "the slowdown must be explained in child-facing language");
-assert.match(game, /benefit\.textContent="🌟 めずらしい ともだちに あえるかも"/, "the encounter benefit must be explained in child-facing language");
+assert.match(game, /illustratedText\(slow,"umbrella","あめだ！ ゆっくり はしるよ","weather-art"\)/, "the slowdown must use an illustrated umbrella and child-facing language");
+assert.match(game, /illustratedText\(benefit,"star","めずらしい ともだちに あえるかも","weather-art"\)/, "the encounter benefit must use an illustrated star and child-facing language");
 const weatherCopy = ["あめだ！ ゆっくり はしるよ", "めずらしい ともだちに あえるかも"].join("");
 assert.doesNotMatch(weatherCopy, /[一-龯々〆ヵヶ]/, "the child-facing weather explanation must not contain kanji");
 assert.match(game, /weatherNotice\.hidden=true;weatherNotice\.replaceChildren\(\);[\s\S]*?weatherNotice\.replaceChildren\(\);weatherNotice\.hidden=false;[\s\S]*?requestAnimationFrame/, "the live notice must repopulate after becoming active so repeat journeys are announced");

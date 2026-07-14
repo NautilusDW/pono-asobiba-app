@@ -43,8 +43,18 @@
     var card = document.createElement('div');
     card.style.cssText = 'background:#fff;border-radius:26px;padding:28px 24px 26px;max-width:340px;width:100%;box-shadow:0 12px 40px rgba(93,78,55,0.22)';
     var emo = document.createElement('div');
-    emo.style.cssText = 'font-size:2.8rem;line-height:1;margin-bottom:12px';
-    emo.textContent = '🦉✨';
+    emo.setAttribute('aria-hidden', 'true');
+    emo.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:4px;height:58px;margin-bottom:12px';
+    var owl = document.createElement('img');
+    owl.src = '../assets/images/nazonazo-tunnel/quiz-art/quiz_owl_20260714.webp';
+    owl.alt = '';
+    owl.style.cssText = 'display:block;width:58px;height:58px;object-fit:contain';
+    emo.appendChild(owl);
+    var star = document.createElement('img');
+    star.src = '../assets/images/nazonazo-tunnel/quiz-art/quiz_star_20260714.webp';
+    star.alt = '';
+    star.style.cssText = 'display:block;width:28px;height:28px;object-fit:contain';
+    emo.appendChild(star);
     card.appendChild(emo);
     var tag = document.createElement('div');
     tag.style.cssText = 'display:inline-block;font-size:0.74rem;font-weight:900;color:#fff;background:linear-gradient(135deg,#34D399,#10B981);padding:4px 14px;border-radius:50px;letter-spacing:0.06em;margin-bottom:12px';
@@ -70,7 +80,7 @@
   else { document.addEventListener('DOMContentLoaded', showLock); }
 })();
 </script>
-<link rel="stylesheet" href="styles.css?v=20260714-1291">
+<link rel="stylesheet" href="styles.css?v=20260714-1292">
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
 <body class="st-town v-train" data-driver="pono" data-driver-mood="happy">
@@ -122,9 +132,9 @@
     <div id="spaceGalaxyLayer" role="group" aria-labelledby="qText" hidden></div>
     <div id="seaRoundCountdown" role="status" aria-live="assertive" aria-atomic="true" hidden></div>
     <div id="seaQuizGuide" aria-hidden="true">ただしい ほうを えらんで たすけよう</div>
-    <div id="seaSteerHint" role="status" aria-live="polite" hidden>👆 タッチした ばしょへ うごくよ</div>
-    <div id="spaceSteerHint" role="status" aria-live="polite" hidden>🚀 タッチした ばしょへ うごくよ</div>
-    <button id="seaFireButton" type="button" aria-label="おしっぱなしで れんしゃ" hidden><span aria-hidden="true">💫</span><strong>れんしゃ</strong></button>
+    <div id="seaSteerHint" role="status" aria-live="polite" hidden><span class="ui-art" data-ui-art="touch" aria-hidden="true"></span><span>タッチした ばしょへ うごくよ</span></div>
+    <div id="spaceSteerHint" role="status" aria-live="polite" hidden><span class="ui-art" data-ui-art="rocket" aria-hidden="true"></span><span>タッチした ばしょへ うごくよ</span></div>
+    <button id="seaFireButton" type="button" aria-label="おしっぱなしで れんしゃ" hidden><span class="ui-art" data-ui-art="fire" aria-hidden="true"></span><strong>れんしゃ</strong></button>
     <div id="jungleAnimalsNear" class="jungle-animal-layer" aria-hidden="true"></div>
     <div id="jungleHabitatBack" aria-hidden="true"></div>
     <div id="world"></div>
@@ -152,7 +162,7 @@
         <div class="tr-boiler"></div>
         <div class="tr-chim"></div>
         <div class="tr-cab"></div>
-        <div class="tr-win">🐻</div>
+        <div class="tr-win"></div>
         <div class="wheel w1"></div>
         <div class="wheel w2"></div>
         <div class="wheel w3"></div>
@@ -161,13 +171,13 @@
         <div class="sb-hull"></div>
         <div class="sb-peri"></div>
         <div class="sb-fin"></div>
-        <div class="sb-win">🐻</div>
+        <div class="sb-win"></div>
         <div class="rk-body"></div>
         <div class="rk-nose"></div>
         <div class="rk-finT"></div>
         <div class="rk-finB"></div>
-        <div class="rk-win">🐻</div>
-        <div class="rk-flame">🔥</div>
+        <div class="rk-win"></div>
+        <div class="rk-flame"></div>
        </div>
       </div>
     </div>
@@ -219,24 +229,24 @@
       <div id="scoreCurrentPill" class="score-hud-pill"><span>スコア</span><strong id="scoreHudValue">0</strong></div>
       <div id="scoreHudTail">
         <div id="highScorePill" class="score-hud-pill is-high"><span>ハイスコア</span><strong id="highScoreValue">0</strong></div>
-        <div id="helpBadge" aria-live="polite">🍀 ×0</div>
-        <div id="carBadge" aria-live="polite">👥 ×0</div>
+        <div id="helpBadge" aria-live="polite" aria-label="おたすけ 0こ"><span class="ui-art" data-ui-art="help" aria-hidden="true"></span><span class="hud-badge-count">×0</span></div>
+        <div id="carBadge" aria-live="polite" aria-label="ともだち 0にん"><span class="ui-art" data-ui-art="friends" aria-hidden="true"></span><span class="hud-badge-count">×0</span></div>
       </div>
     </div>
-    <button id="homeBtn" type="button">🗺️ ちず</button>
+    <button id="homeBtn" type="button"><span class="ui-art" data-ui-art="map" aria-hidden="true"></span><span>ちず</span></button>
   </div>
 
   <div id="weatherNotice" role="status" aria-live="polite" aria-atomic="true" hidden></div>
 
   <div id="quiz">
     <div id="qRow">
-      <div id="ponoFace">🐻</div>
+      <div id="ponoFace"><span class="ui-art" data-ui-art="pono" aria-hidden="true"></span></div>
       <div id="qBubble">
         <div id="qText" aria-live="polite"></div>
         <div id="hintText" aria-live="polite"></div>
       </div>
-      <button id="spkBtn" type="button" aria-label="ヒント">💡</button>
-      <button id="helpBtn" type="button" aria-label="おたすけ">🍀 ×0</button>
+      <button id="spkBtn" type="button" aria-label="ヒント"><span class="ui-art" data-ui-art="hint" aria-hidden="true"></span></button>
+      <button id="helpBtn" type="button" aria-label="おたすけ"><span class="ui-art" data-ui-art="help" aria-hidden="true"></span><span class="help-button-count">×0</span></button>
     </div>
     <div id="choices" aria-label="こたえ"></div>
   </div>
@@ -245,13 +255,13 @@
   <div id="liveRegion" class="sr-only" aria-live="polite"></div>
 
   <div id="map" class="ovl hidden">
-    <div id="mapTitle">🗺️ ぼうけんちず</div>
-    <div id="loopBadge">🌈 2しゅうめ</div>
+    <div id="mapTitle"><span class="ui-art" data-ui-art="map" aria-hidden="true"></span><span>ぼうけんちず</span></div>
+    <div id="loopBadge"><span class="ui-art" data-ui-art="rainbow" aria-hidden="true"></span><span>2しゅうめ</span></div>
     <div id="mapRow"></div>
     <div id="mapMsg"></div>
     <div class="selRow">
       <button class="bigBtn" id="goBtn" type="button">ここへ いく！</button>
-      <button class="bigBtn pur" id="zkBtnMap" type="button">📖 ずかん</button>
+      <button class="bigBtn pur" id="zkBtnMap" type="button"><span class="ui-art" data-ui-art="book" aria-hidden="true"></span><span>ずかん</span></button>
     </div>
   </div>
 
@@ -260,38 +270,38 @@
     <div id="resStars"></div>
     <div id="resMsg"></div>
     <div class="selRow" id="resBtns">
-      <button class="bigBtn pur" id="loopBtn" type="button" style="display:none">🌈 2しゅうめへ！</button>
+      <button class="bigBtn pur" id="loopBtn" type="button" style="display:none"><span class="ui-art" data-ui-art="rainbow" aria-hidden="true"></span><span>2しゅうめへ！</span></button>
       <button class="bigBtn" id="againBtn" type="button">はじめから</button>
-      <button class="bigBtn alt" id="zkBtnRes" type="button">📖 ずかん</button>
+      <button class="bigBtn alt" id="zkBtnRes" type="button"><span class="ui-art" data-ui-art="book" aria-hidden="true"></span><span>ずかん</span></button>
     </div>
   </div>
 
   <div id="zukan" class="ovl hidden">
-    <div id="zkTitle">📖 ともだち ずかん</div>
+    <div id="zkTitle"><span class="ui-art" data-ui-art="book" aria-hidden="true"></span><span>ともだち ずかん</span></div>
     <div id="zkProg"></div>
     <div id="zkBody"></div>
     <button class="bigBtn" id="zkClose" type="button">とじる</button>
   </div>
 
   <div id="title" class="ovl">
-    <h1>🚂 ポノの なぞなぞトンネル 🚀</h1>
+    <h1><span class="ui-art" data-ui-art="train" aria-hidden="true"></span><span>ポノの なぞなぞトンネル</span><span class="ui-art" data-ui-art="rocket" aria-hidden="true"></span></h1>
     <div class="label" id="adminStagePreviewLabel" hidden></div>
     <div class="label">トンネルを あけて ともだちを のせよう！ ずかんを ぜんぶ あつめよう</div>
     <div class="label">むずかしさ</div>
     <div class="selRow" id="lvSel">
-      <button class="selBtn sel" type="button" data-l="0"><span class="big">🌱</span>かんたん</button>
-      <button class="selBtn" type="button" data-l="1"><span class="big">🌼</span>ふつう</button>
-      <button class="selBtn" type="button" data-l="2"><span class="big">🌟</span>むずかしい</button>
+      <button class="selBtn sel" type="button" data-l="0"><span class="big ui-art" data-ui-art="sprout" aria-hidden="true"></span><span>かんたん</span></button>
+      <button class="selBtn" type="button" data-l="1"><span class="big ui-art" data-ui-art="flower" aria-hidden="true"></span><span>ふつう</span></button>
+      <button class="selBtn" type="button" data-l="2"><span class="big ui-art" data-ui-art="star" aria-hidden="true"></span><span>むずかしい</span></button>
     </div>
     <div class="selRow">
       <button class="bigBtn" id="startBtn" type="button">はじめる！</button>
-      <button class="bigBtn pur" id="zkBtnTitle" type="button">📖 ずかん</button>
+      <button class="bigBtn pur" id="zkBtnTitle" type="button"><span class="ui-art" data-ui-art="book" aria-hidden="true"></span><span>ずかん</span></button>
     </div>
   </div>
 </div>
-<div id="rotateHint">📱➡️ よこむきに してね</div>
+<div id="rotateHint"><span class="ui-art" data-ui-art="smartphone" aria-hidden="true"></span><span class="rotate-arrow" aria-hidden="true">→</span><span>よこむきに してね</span></div>
 <script src="data/questions.js?v=20260713-1273"></script>
-<script src="data/quiz-art.js?v=20260714-1291"></script>
-<script src="js/game.js?v=20260714-1291"></script>
+<script src="data/quiz-art.js?v=20260714-1292"></script>
+<script src="js/game.js?v=20260714-1292"></script>
 </body>
 </html>

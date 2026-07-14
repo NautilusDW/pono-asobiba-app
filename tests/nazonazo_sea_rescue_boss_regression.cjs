@@ -337,6 +337,13 @@ const companionContext = {
   seaCompanionKey: "",
   seaCompanionSprites: [],
   seaTrail: [],
+  passengerLabel: friend => friend.t || "",
+  createQuizArt(emoji, label, className) {
+    const holder = makeElement("span");
+    holder.className = className || "";
+    holder.dataset.quizArtKey = `${emoji || ""}|${label || ""}`;
+    return holder;
+  },
   document: { createElement: tag => makeElement(tag) }
 };
 vm.createContext(companionContext);
@@ -344,9 +351,9 @@ vm.runInContext(`${syncSeaCompanionsBody};this.syncSeaCompanions=syncSeaCompanio
 companionContext.syncSeaCompanions();
 assert.equal(companionContext.seaCompanionSprites.length, 3);
 assert.deepEqual(
-  companionLayer.children.map(element => element.children[0].textContent),
-  ["🐳", "🦑", "🐬"],
-  "the last three unique, non-pending rescued species must follow the submarine"
+  companionLayer.children.map(element => element.children[0].dataset.quizArtKey),
+  ["🐳|くじら", "🦑|いか", "🐬|いるか"],
+  "the last three unique, non-pending rescued species must follow as generated illustrations"
 );
 
 /* Boss asset, semantic HP meter, damage states, and reduced-motion fallback. */
