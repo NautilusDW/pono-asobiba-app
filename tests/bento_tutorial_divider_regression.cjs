@@ -11,6 +11,8 @@
 // ピック移動の実操作を追加し、子どもに不要な操作や待ち時間を戻さない。
 // batch:1278 regression: 色説明後の完了ボタン点灯、のり4操作の自由反復とsnapshot復元、
 // 完成時の重複テキスト削除を守る。
+// batch:1296 regression: 自動復元の説明中だけ「とりけす」を押せる見た目にし、
+// DOM再構築後も白枠・指なしの青枠を現在のボタンへ1個だけ付け直す。
 
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
@@ -144,6 +146,26 @@ assert.match(noriEditRenderer, /const target = toolbar/);
 assert.doesNotMatch(noriEditRenderer, /target\s*=\s*hasTriedEdit[\s\S]*?finishBtn/,
   'the blue focus must stay on all four edit buttons instead of asking the child to stop after one press');
 
+const undoDisabledSource = extract(
+  html,
+  'function shouldDisableFreeUndoButton()',
+  'function renderFreeLayoutControls()',
+  'undo enabled-state policy',
+);
+function undoIsDisabled(active, step, historyDepth) {
+  return vm.runInNewContext(`(() => { ${undoDisabledSource}; return shouldDisableFreeUndoButton(); })()`, {
+    tutorialState: active ? { active: true, step } : null,
+    freeUndoStack: Array.from({ length: historyDepth }, (_, index) => ({ index })),
+  });
+}
+assert.equal(undoIsDisabled(true, 'tut2-nori-undo', 0), false,
+  'the automatic-restore explanation must show an enabled undo button even with no history');
+assert.equal(undoIsDisabled(true, 'tut2-nori-undo', 1), false);
+assert.equal(undoIsDisabled(false, '', 0), true, 'normal play still disables undo with empty history');
+assert.equal(undoIsDisabled(false, '', 1), false, 'normal play still enables undo with history');
+assert.equal(undoIsDisabled(true, 'tut2-nori-move-undo', 0), true,
+  'the real move-undo step must not invent an undo action when its history is empty');
+
 const rotate = extract(html, 'function rotateSelectedItem(deltaAngle)', 'function canShowLayerControlsForItem', 'rotate handler');
 assert.ok(rotate.indexOf('renderFreeLayoutControls();') < rotate.indexOf('tutorialOnNoriEditAction(item.uid, tutorialAction)'),
   'rotate must render before attaching the next outline');
@@ -168,13 +190,93 @@ assert.doesNotMatch(undo, /tut2_06b_editundo_last|tutorialAdvance\('tut2-nori-ok
 const moveUndoRenderer = extract(html, 'function tut2RenderNoriMoveUndo(step)', 'function tutorialFindNoriEditPlaced', 'move undo renderer');
 assert.match(moveUndoRenderer, /いちど「とりけす」/);
 const undoRenderer = extract(html, 'function tut2RenderNoriUndo(step)', 'function tut2RenderNoriOk', 'final undo renderer');
-assert.match(undoRenderer, /ひとつずつ まえの そうさに もどせる/);
-assert.match(undoRenderer, /くりかえし おせば、もっと まえまで もどせる/);
-assert.match(undoRenderer, /こんかいは、もとどおりに しておくね/);
-assert.match(undoRenderer, /_noriAutoRestoreTimer = setTimeout[\s\S]*?}, 14000\)/,
+const liveUndoRenderer = extract(html, 'function tut2RenderNoriUndo(step)', 'function tutorialAutoRestoreNoriEdits()', 'live final undo renderer');
+assert.match(liveUndoRenderer, /ひとつずつ まえの そうさに もどせる/);
+assert.match(liveUndoRenderer, /くりかえし おせば、もっと まえまで もどせる/);
+assert.match(liveUndoRenderer, /こんかいは、もとどおりに しておくね/);
+assert.match(liveUndoRenderer, /tutorialUndoButton\(\)/);
+assert.match(liveUndoRenderer, /if \(!btn \|\| !btn\.isConnected\)[\s\S]*?tutorialRetryRenderStep\(step\.id, 120\)/,
+  'a missing or rebuilt undo button must retry against the current controls DOM');
+assert.match(liveUndoRenderer, /tutorialEnsureSingleTarget\(btn, \{ radius: 20, outline: false, color: '#1E7FD8', width: 5 \}\)/,
+  'the current undo button must receive one blue trim without a white outline');
+assert.equal((liveUndoRenderer.match(/tutorialClearTrims\(\)/g) || []).length, 1,
+  'the live explanation must preserve its trim; only the completed branch clears it');
+assert.match(liveUndoRenderer, /_noriAutoRestoreTimer = setTimeout[\s\S]*?}, 14000\)/,
   'audio cancellation must still have a state-owned restoration watchdog');
-assert.doesNotMatch(undoRenderer, /tutorialMarkTarget|tutorialAnimateTap|2かい|あと 1かい/,
+assert.doesNotMatch(liveUndoRenderer, /tutorialMarkTarget|tutorialAnimateTap|2かい|あと 1かい/,
   'the final explanation must not ask the child to press undo');
+
+const undoRendererState = {
+  active: true,
+  step: 'tut2-nori-undo',
+  _noriUndoDone: false,
+  _noriUndoPrepared: true,
+};
+let currentUndoButton = { id: 'undo-old', isConnected: true };
+const ensuredUndoTargets = [];
+const undoRendererRetries = [];
+let undoRendererTrimClears = 0;
+const renderFinalUndo = vm.runInNewContext(`(() => { ${liveUndoRenderer}; return tut2RenderNoriUndo; })()`, {
+  tutorialState: undoRendererState,
+  tutorialHideBubble: () => {},
+  tutorialClearTrims: () => { undoRendererTrimClears++; },
+  tutorialClearOutlines: () => {},
+  tutorialHideFinger: () => {},
+  setSpeech: () => {},
+  tutorialUndoButton: () => currentUndoButton,
+  tutorialRetryRenderStep: (...args) => undoRendererRetries.push(args),
+  tutorialEnsureSingleTarget: (target, opts) => ensuredUndoTargets.push({ target, opts }),
+});
+renderFinalUndo({ id: 'tut2-nori-undo' });
+assert.equal(undoRendererTrimClears, 0, 'refreshing the live explanation must not clear its trim');
+assert.equal(ensuredUndoTargets.length, 1);
+assert.equal(ensuredUndoTargets[0].target, currentUndoButton);
+assert.equal(ensuredUndoTargets[0].opts.outline, false);
+currentUndoButton.isConnected = false;
+currentUndoButton = null;
+renderFinalUndo({ id: 'tut2-nori-undo' });
+assert.deepEqual(undoRendererRetries, [['tut2-nori-undo', 120]]);
+
+const ensureSingleTargetSource = extract(
+  html,
+  'function tutorialEnsureSingleTarget(targetEl, opts = {})',
+  'function tutorialClearTrims()',
+  'single trim rebinding helper',
+);
+const trimRebindState = { trims: [] };
+let trimRebindClears = 0;
+let trimRebindMarks = 0;
+let trimRebindSyncs = 0;
+let trimRebindOutlines = 0;
+const ensureSingleTarget = vm.runInNewContext(`(() => { ${ensureSingleTargetSource}; return tutorialEnsureSingleTarget; })()`, {
+  tutorialState: trimRebindState,
+  tutorialClearTrims: () => { trimRebindClears++; trimRebindState.trims = []; },
+  tutorialClearOutlines: () => {},
+  tutorialMarkTarget: (target, opts) => {
+    trimRebindMarks++;
+    assert.equal(opts.outline, false);
+    trimRebindState.trims.push({
+      target,
+      wrap: { isConnected: true },
+      sync: () => { trimRebindSyncs++; },
+    });
+  },
+  tutorialOutlineElement: () => { trimRebindOutlines++; },
+});
+const oldUndoButton = { id: 'old-undo', isConnected: true };
+const rebuiltUndoButton = { id: 'rebuilt-undo', isConnected: true };
+ensureSingleTarget(oldUndoButton, { outline: false });
+ensureSingleTarget(oldUndoButton, { outline: false });
+assert.equal(trimRebindMarks, 1, 'refreshing the same button must reuse its trim node');
+assert.equal(trimRebindSyncs, 1);
+oldUndoButton.isConnected = false;
+ensureSingleTarget(rebuiltUndoButton, { outline: false });
+assert.equal(trimRebindMarks, 2, 'a rebuilt controls DOM must bind one trim to its new undo button');
+assert.equal(trimRebindState.trims.length, 1);
+assert.equal(trimRebindState.trims[0].target, rebuiltUndoButton);
+assert.equal(trimRebindOutlines, 0, 'the undo explanation must never add a white outline');
+assert.equal(trimRebindClears, 2, 'only first bind and stale-target replacement rebuild the trim');
+
 assert.match(steps, /id: 'tut2-nori-undo'[^\n]*onVoiceEnded:\s*tutorialAutoRestoreNoriEdits/,
   'the two silent history restores must start only after narration ended/fallback');
 assert.match(steps, /id: 'tut2-nori-undo'[^\n]*fallbackMs:\s*13000/,
@@ -187,20 +289,24 @@ const undoState = {
   _noriUndoDone: false,
   _noriUndoAckTimer: null,
   _noriEditUndoRemaining: 0,
+  _noriAutoRestoreTimer: 44,
+  _noriAutoRestoreStarted: false,
 };
 let undoCalls = 0;
 let undoSucceeds = true;
 let faceAtDefault = false;
 const undoAdvances = [];
 const undoTimers = [];
+const undoSpeeches = [];
+const undoToasts = [];
 const undoApi = vm.runInNewContext(`(() => {
   ${undo}
   return { press: tutorialOnUndoPressed, redoLength: () => freeRedoStack.length };
 })()`, {
   tutorialState: undoState,
   tutorialNoriEditExpectedCopy: () => 'edit next',
-  setSpeech: () => {},
-  showToast: () => {},
+  setSpeech: message => undoSpeeches.push(message),
+  showToast: message => undoToasts.push(message),
   tutorialRenderStep: () => {},
   tut2FaceAtDefault: () => faceAtDefault,
   undoFreeItem: () => {
@@ -228,6 +334,8 @@ undoState._noriUndoDone = false;
 undoState._noriUndoAckTimer = null;
 undoState._noriEditUndoRemaining = 75;
 faceAtDefault = false;
+undoSpeeches.length = 0;
+undoToasts.length = 0;
 const callsBeforeFinalPress = undoCalls;
 undoApi.press();
 assert.equal(undoCalls, callsBeforeFinalPress,
@@ -235,6 +343,15 @@ assert.equal(undoCalls, callsBeforeFinalPress,
 assert.equal(undoState._noriEditUndoRemaining, 75);
 assert.equal(undoState._noriUndoDone, false);
 assert.equal(undoTimers.length, 0);
+assert.deepEqual(undoSpeeches, ['いま もとどおりに しているよ。ちょっと まってね！']);
+assert.deepEqual(undoToasts, ['いま もとどおりに しているよ']);
+const finalPressState = JSON.stringify(undoState);
+undoApi.press();
+undoApi.press();
+assert.equal(undoCalls, callsBeforeFinalPress, 'repeated touches must never mutate undo history');
+assert.equal(JSON.stringify(undoState), finalPressState,
+  'repeated touches must not change restoration state or watchdog ownership');
+assert.equal(undoTimers.length, 0, 'repeated touches must not queue progression timers');
 
 const autoRestoreSource = extract(
   html,

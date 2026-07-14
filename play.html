@@ -673,7 +673,7 @@
          十分達成できる。 */
       transform: translateZ(0);
       contain: layout;
-      transition: transform 0.18s ease, filter 0.18s ease, opacity 0.18s ease;
+      transition: transform 0.18s ease, opacity 0.18s ease;
       -webkit-tap-highlight-color: transparent;
     }
     /* v2003: 木プレート外側に矩形の影が見えないよう、外形は生成画像の
@@ -694,15 +694,15 @@
         box-shadow: none;
       }
     }
-    /* v1949: base の translateZ(0) を保持したまま scale だけ落とす (:active で layer が
-       落ちて 1 frame flicker するのを防ぐ)。 */
+    /* v1949: base の translateZ(0) を保持したまま沈み込みのみ (:active で layer が
+       落ちて 1 frame flicker するのを防ぐ)。 v2161: filter: brightness は v1959 の
+       『.card-list の mask subtree 内 filter 宣言ゼロ』不変条件 (mask×filter で WebKit が
+       fast composite path を外れ全列ちらつき) に違反するため恒久禁止 — 20cf67cc / 1a8b8417 参照。 */
     .game-card:active {
       transform: translateZ(0) translateY(2px) scale(.992);
-      filter: brightness(.98);
     }
     .game-card.is-coming-soon:not(.is-debug-playable):active {
       transform: translateZ(0);
-      filter: none;
     }
     /* "Selected" used to add a yellow halo + swap the play button to a
        different PNG, which made the top card look different from the rest.
@@ -11558,6 +11558,11 @@
       const root = document.documentElement;
       root.style.setProperty('--play-btn-normal',  `url('${PLAY_BTN_NORMAL_URL}')`);
       root.style.setProperty('--play-btn-pressed', `url('${PLAY_BTN_PRESSED_URL}')`);
+      // v2161: pressed 画像 (content: url('assets/ui/play_button_pressed.webp') は
+      // bust なし URL のため --play-btn-pressed とは別 request) を初回タップ前に
+      // decode しておき、 押下時の blank flash を防ぐ。
+      const warmPressed = () => { [PLAY_BTN_PRESSED_URL, 'assets/ui/play_button_pressed.webp'].forEach(u => { const im = new Image(); im.decoding = 'async'; im.src = u; }); };
+      if ('requestIdleCallback' in window) requestIdleCallback(warmPressed, { timeout: 3000 }); else setTimeout(warmPressed, 1500);
 
       const frag = document.createDocumentFragment();
       const tmp = document.createElement('template');

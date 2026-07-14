@@ -18559,6 +18559,13 @@ function renderFreeCupControls() {
   panel.appendChild(list);
   return panel;
 }
+function shouldDisableFreeUndoButton() {
+  // 自動復元の説明中だけは履歴が空でも場所を示せるようにする。
+  // pointerdown は tutorialOnUndoPressed が受け、実際の履歴は変更しない。
+  const tutorialAutoRestoreExplanation = !!(tutorialState && tutorialState.active
+    && tutorialState.step === 'tut2-nori-undo');
+  return !freeUndoStack.length && !tutorialAutoRestoreExplanation;
+}
 function renderFreeLayoutControls() {
   const tray = document.getElementById('food-tray');
   if (!tray) return;
@@ -18800,9 +18807,7 @@ function renderFreeLayoutControls() {
   const undo = document.createElement('button');
   undo.type = 'button';
   undo.textContent = 'とりけす';
-  const tutorialAutoUndoLocked = !!(tutorialState && tutorialState.active
-    && tutorialState.step === 'tut2-nori-undo');
-  undo.disabled = !freeUndoStack.length || tutorialAutoUndoLocked;
+  undo.disabled = shouldDisableFreeUndoButton();
   // batch:1058-hotfix5 (WP1): tutorialOnUndoPressed が単一入口 (通常時はそのまま undoFreeItem に委譲)。
   undo.addEventListener('pointerdown', e => { e.preventDefault(); tutorialOnUndoPressed(); });
   actions.appendChild(undo);
@@ -23510,12 +23515,17 @@ function tut2RenderNoriUndo(step) {
       }
     }, 14000);
   }
-  tutorialClearTrims();
   tutorialClearOutlines();
   tutorialHideFinger();
   try {
     setSpeech('「とりけす」は、ひとつずつ まえの そうさに もどせるよ。くりかえし おせば、もっと まえまで もどせるんだ。こんかいは、もとどおりに しておくね。');
   } catch (_) {}
+  const btn = (typeof tutorialUndoButton === 'function') ? tutorialUndoButton() : null;
+  if (!btn || !btn.isConnected) {
+    tutorialRetryRenderStep(step.id, 120);
+    return;
+  }
+  tutorialEnsureSingleTarget(btn, { radius: 20, outline: false, color: '#1E7FD8', width: 5 });
 }
 function tutorialAutoRestoreNoriEdits() {
   if (!tutorialState.active || tutorialState.step !== 'tut2-nori-undo') return false;

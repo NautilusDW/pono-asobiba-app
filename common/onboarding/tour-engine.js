@@ -42,7 +42,7 @@
   var STAGE_ORDER = ['avatarIntro', 'titleTour', 'bookUnlock'];
 
   var Z_INDEX = 9400; // モーダル既定 100 より上、 tap-intro/portrait-warn (9500/9999) より下
-  var START_BUBBLE_DELAY_MS = 600;   // start(): オーバーレイ即時マウント → 最初の吹き出しは +600ms
+  var START_BUBBLE_DELAY_MS = 600;   // start(): 600ms 後に最初の吹き出し (オーバーレイは吹き出し描画と同時にマウント)
   var WATCHDOG_MS = 8000;            // start() から 8秒、 吹き出しが1つも出なければ強制中断
   var TARGET_RETRY_INTERVAL_MS = 300;
   var TARGET_RETRY_COUNT = 3;
@@ -618,7 +618,9 @@
           advanceAfterStep(rs, stageEntry, isLastOfStage);
           return;
         }
+        mountOverlay();
         rs.shown++;
+        if (!rs.manual) markStageSeen(stageEntry.stageId);
         if (rs.shown === 1) clearWatchdog(); // 吹き出し表示中はタイムアウトさせない
         try {
           renderStep(step, el, rs.shown, rs.total, rs);
@@ -657,7 +659,6 @@
           if (runningState !== rs) return;
           setTimeout(function () {
             if (runningState !== rs) return;
-            mountOverlay();
             runCurrentStep(rs);
           }, STAGE_TRANSITION_DELAY_MS);
         });
@@ -798,7 +799,6 @@
         releaseGate();
         if (!plan.length) return;
         var total1 = planTotal(plan);
-        mountOverlay();
         runningState = { plan: plan, stageIdx: 0, stepIdx: 0, total: total1, shown: 0, manual: false };
         var rs1 = runningState;
         startWatchdog();
@@ -810,9 +810,8 @@
       }
 
       var total = planTotal(plan);
-      if (total === 0) return; // 何も出すものがない (releaseGate は buildAutoPlan 内の ineligible 判定で既に処理済み)
+      if (total === 0) { releaseGate(); return; } // 何も出すものがない (buildAutoPlan は gate を解除しないためここで必ず解除)
 
-      mountOverlay();
       runningState = { plan: plan, stageIdx: 0, stepIdx: 0, total: total, shown: 0, manual: false };
       var rs = runningState;
       startWatchdog();
@@ -851,7 +850,6 @@
       }
       if (!eligibleSteps.length) return;
 
-      mountOverlay();
       runningState = {
         plan: [{ stageId: stageId, steps: eligibleSteps, options: reg.options || {} }],
         stageIdx: 0, stepIdx: 0,
