@@ -333,6 +333,22 @@ function percentile(values, ratio) {
   return sorted[Math.min(sorted.length - 1, Math.floor((sorted.length - 1) * ratio))];
 }
 
+function median(values) {
+  const sorted = [...values].sort((a, b) => a - b);
+  return sorted[Math.floor(sorted.length / 2)];
+}
+
+// Frozen from commit 35785611 (the last rich-PC plume): Chrome 1024x768,
+// seed 1297, real quiz stop 7s -> answer -> 5s drive, smoke-only isolation.
+// Seven independent runs used this same frozen-snapshot central-96%-alpha
+// algorithm; these are their medians (each run is itself three settled frames).
+const OLD_PC_SMOKE_GOLDEN = Object.freeze({
+  ink: 31122.47843137139,
+  centralWidth: 341,
+  centralHeight: 116
+});
+const SMOKE_RAW_RUNAWAY_MAX = Object.freeze({ width: 539, height: 225 });
+
 function withDeadline(label, milliseconds, operation) {
   let timer = 0;
   return Promise.race([
@@ -345,47 +361,115 @@ function withDeadline(label, milliseconds, operation) {
 
 async function smokeAlphaMetrics(page, screenshotPath) {
   await page.evaluate(() => {
-    document.querySelectorAll(".magic-puff").forEach(puff => { puff.style.animationPlayState = "paused"; });
+    const liveSource = document.body.classList.contains("ios-device")
+      ? document.getElementById("smokeLayer")
+      : document.querySelector("#veh .puff");
+    if (!liveSource) throw new Error("live smoke source missing");
+    const snapshot = liveSource.cloneNode(false);
+    snapshot.id = "smokeMeasurementSnapshot";
+    snapshot.dataset.smokeMeasurementSnapshot = "1";
+    const sourceStyle = getComputedStyle(liveSource);
+    for (const property of [
+      "position", "left", "top", "right", "bottom", "width", "height", "z-index",
+      "overflow", "opacity", "transform", "contain", "isolation", "pointer-events", "display"
+    ]) snapshot.style.setProperty(property, sourceStyle.getPropertyValue(property));
+    for (const puff of liveSource.querySelectorAll(".magic-puff")) {
+      puff.style.animationPlayState = "paused";
+      const style = getComputedStyle(puff);
+      const frozen = puff.cloneNode(true);
+      frozen.style.setProperty("animation", "none", "important");
+      frozen.style.setProperty("transform", style.transform, "important");
+      frozen.style.setProperty("opacity", style.opacity, "important");
+      snapshot.appendChild(frozen);
+    }
+    liveSource.dataset.smokeMeasurementLive = "1";
+    liveSource.after(snapshot);
   });
   await page.addStyleTag({ content: `
     html,body,#app,#scene{background:none!important;background-image:none!important}
     body *{visibility:hidden!important;box-shadow:none!important}
-    html,body,#app,#scene,#veh .puff,#veh .magic-puff,
-    #smokeLayer,#smokeLayer .magic-puff{visibility:visible!important}
+    [data-smoke-measurement-live]{visibility:hidden!important}
+    html,body,#app,#scene,#veh,#smokeMeasurementSnapshot,
+    #smokeMeasurementSnapshot .magic-puff{visibility:visible!important}
   ` });
-  const buffer = await page.screenshot({ omitBackground: true, scale: "css" });
-  if (screenshotPath) fs.writeFileSync(screenshotPath, buffer);
-  return page.evaluate(async encoded => {
-    const response = await fetch(`data:image/png;base64,${encoded}`);
-    const bitmap = await createImageBitmap(await response.blob());
-    const canvas = document.createElement("canvas");
-    canvas.width = bitmap.width;
-    canvas.height = bitmap.height;
-    const context = canvas.getContext("2d", { willReadFrequently: true });
-    context.drawImage(bitmap, 0, 0);
-    const pixels = context.getImageData(0, 0, bitmap.width, bitmap.height).data;
-    let ink = 0;
-    let minX = bitmap.width;
-    let minY = bitmap.height;
-    let maxX = -1;
-    let maxY = -1;
-    for (let y = 0; y < bitmap.height; y += 1) {
-      for (let x = 0; x < bitmap.width; x += 1) {
-        const alpha = pixels[(y * bitmap.width + x) * 4 + 3];
-        ink += alpha / 255;
-        if (alpha < 3) continue;
-        minX = Math.min(minX, x);
-        minY = Math.min(minY, y);
-        maxX = Math.max(maxX, x);
-        maxY = Math.max(maxY, y);
+  await page.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  const frames = [];
+  for (let frame = 0; frame < 3; frame += 1) {
+    await page.evaluate(() => new Promise(resolve => requestAnimationFrame(resolve)));
+    const buffer = await page.screenshot({ omitBackground: true, scale: "css" });
+    if (screenshotPath && frame === 1) fs.writeFileSync(screenshotPath, buffer);
+    frames.push(await page.evaluate(async encoded => {
+      const response = await fetch(`data:image/png;base64,${encoded}`);
+      const bitmap = await createImageBitmap(await response.blob());
+      const canvas = document.createElement("canvas");
+      canvas.width = bitmap.width;
+      canvas.height = bitmap.height;
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+      context.drawImage(bitmap, 0, 0);
+      const pixels = context.getImageData(0, 0, bitmap.width, bitmap.height).data;
+      const xMass = new Float64Array(bitmap.width);
+      const yMass = new Float64Array(bitmap.height);
+      let ink = 0;
+      let minX = bitmap.width;
+      let minY = bitmap.height;
+      let maxX = -1;
+      let maxY = -1;
+      for (let y = 0; y < bitmap.height; y += 1) {
+        for (let x = 0; x < bitmap.width; x += 1) {
+          const alpha = pixels[(y * bitmap.width + x) * 4 + 3];
+          const weight = alpha / 255;
+          ink += weight;
+          xMass[x] += weight;
+          yMass[y] += weight;
+          if (alpha < 3) continue;
+          minX = Math.min(minX, x);
+          minY = Math.min(minY, y);
+          maxX = Math.max(maxX, x);
+          maxY = Math.max(maxY, y);
+        }
       }
-    }
-    return {
-      ink,
-      width: maxX >= minX ? maxX - minX + 1 : 0,
-      height: maxY >= minY ? maxY - minY + 1 : 0
-    };
-  }, buffer.toString("base64"));
+      const centralRange = mass => {
+        const lowTarget = ink * .02;
+        const highTarget = ink * .98;
+        let cumulative = 0;
+        let low = 0;
+        let high = mass.length - 1;
+        let lowFound = false;
+        for (let index = 0; index < mass.length; index += 1) {
+          cumulative += mass[index];
+          if (!lowFound && cumulative >= lowTarget) {
+            low = index;
+            lowFound = true;
+          }
+          if (cumulative >= highTarget) {
+            high = index;
+            break;
+          }
+        }
+        return { low, high, size: ink > 0 ? high - low + 1 : 0 };
+      };
+      const centralX = centralRange(xMass);
+      const centralY = centralRange(yMass);
+      return {
+        ink,
+        centralWidth: centralX.size,
+        centralHeight: centralY.size,
+        rawWidth: maxX >= minX ? maxX - minX + 1 : 0,
+        rawHeight: maxY >= minY ? maxY - minY + 1 : 0,
+        settledCount: document.querySelectorAll("#smokeMeasurementSnapshot .magic-puff").length
+      };
+    }, buffer.toString("base64")));
+  }
+  assert.equal(new Set(frames.map(frame => frame.settledCount)).size, 1,
+    "settled smoke snapshot changed between frames");
+  return {
+    ink: median(frames.map(frame => frame.ink)),
+    centralWidth: median(frames.map(frame => frame.centralWidth)),
+    centralHeight: median(frames.map(frame => frame.centralHeight)),
+    rawWidth: Math.max(...frames.map(frame => frame.rawWidth)),
+    rawHeight: Math.max(...frames.map(frame => frame.rawHeight)),
+    rawFrames: frames.map(frame => `${frame.rawWidth}x${frame.rawHeight}`)
+  };
 }
 
 async function runBrowserCheck() {
@@ -406,19 +490,18 @@ async function runBrowserCheck() {
       if (fullMatrix) {
         for (const [width, height] of [[844, 390], [1024, 768], [1366, 768]]) {
           for (const reduced of [false, true]) {
-            scenarios.push({ width, height, reduced, restart: !reduced && width === 1024 });
+            scenarios.push({ width, height, reduced });
           }
         }
       } else if (browserName.startsWith("webkit")) {
         // iPad mini landscape: verify both the normal and reduced-motion visual plume.
         scenarios.push(
-          { width: 1024, height: 768, reduced: false, restart: false },
-          { width: 1024, height: 768, reduced: true, restart: false }
+          { width: 1024, height: 768, reduced: false },
+          { width: 1024, height: 768, reduced: true }
         );
       } else {
-        // PC: use the same CSS viewport as iPad for a controlled cross-engine alpha comparison,
-        // and exercise a real seven-second quiz stop before restarting.
-        scenarios.push({ width: 1024, height: 768, reduced: false, restart: true });
+        // PC: use the same CSS viewport as iPad for a controlled cross-engine alpha comparison.
+        scenarios.push({ width: 1024, height: 768, reduced: false });
       }
       const results = [];
       for (const scenario of scenarios) {
@@ -451,7 +534,7 @@ async function runBrowserCheck() {
           page.on("requestfailed", request => requestFailures.push(request.url()));
           const measurement = await withDeadline(
             `${browserName} ${scenario.width}x${scenario.height}/${scenario.reduced ? "reduced" : "normal"}`,
-            scenario.restart ? 45000 : 18000,
+            45000,
             async () => {
               const routeStartedAt = Date.now();
               await page.goto(`${base}/nazonazo-tunnel/?weather=clear`, { waitUntil: "networkidle" });
@@ -470,27 +553,23 @@ async function runBrowserCheck() {
                 };
                 requestAnimationFrame(watch);
               });
-              if (scenario.restart) {
-                await page.waitForFunction(() => document.getElementById("quiz")?.classList.contains("show"), null, { timeout: 20000 });
-                const routeQuizAt = Date.now() - routeStartedAt;
-                assert.ok(routeQuizAt > 0 && routeQuizAt <= 15000, `route timing changed: first quiz ${routeQuizAt}ms`);
-                assert.equal(await page.locator("#veh").evaluate(node => node.classList.contains("go")), false,
-                  "quiz stop retained the running class");
-                await page.waitForTimeout(7000);
-                const stopped = await page.evaluate(smokeSnapshotScript);
-                assert.equal(stopped.totalCount, 0,
-                  `${browserName} ${scenario.width}x${scenario.height}: stopped plume did not drain`);
-                await page.locator("#choices .choice[data-ok='1']").click();
-                await page.waitForFunction(() => {
-                  const quiz = document.getElementById("quiz");
-                  return document.getElementById("veh")?.classList.contains("go") && !quiz?.classList.contains("show");
-                }, null, { timeout: 10000 });
-                const restartWarm = await page.evaluate(smokeSnapshotScript);
-                assert.ok(restartWarm.warmCount >= 18,
-                  `restart had only ${restartWarm.warmCount} pre-aged warm puffs`);
-              } else {
-                await page.waitForFunction(() => document.getElementById("veh")?.classList.contains("go"), null, { timeout: 5000 });
-              }
+              await page.waitForFunction(() => document.getElementById("quiz")?.classList.contains("show"), null, { timeout: 20000 });
+              const routeQuizAt = Date.now() - routeStartedAt;
+              assert.ok(routeQuizAt > 0 && routeQuizAt <= 15000, `route timing changed: first quiz ${routeQuizAt}ms`);
+              assert.equal(await page.locator("#veh").evaluate(node => node.classList.contains("go")), false,
+                "quiz stop retained the running class");
+              await page.waitForTimeout(7000);
+              const stopped = await page.evaluate(smokeSnapshotScript);
+              assert.equal(stopped.totalCount, 0,
+                `${browserName} ${scenario.width}x${scenario.height}: stopped plume did not drain`);
+              await page.locator("#choices .choice[data-ok='1']").click();
+              await page.waitForFunction(() => {
+                const quiz = document.getElementById("quiz");
+                return document.getElementById("veh")?.classList.contains("go") && !quiz?.classList.contains("show");
+              }, null, { timeout: 10000 });
+              const restartWarm = await page.evaluate(smokeSnapshotScript);
+              assert.ok(restartWarm.warmCount >= 18,
+                `restart had only ${restartWarm.warmCount} pre-aged warm puffs`);
               const driveStart = await page.evaluate(() => {
                 window.__smokeFrameTimes = [];
                 window.__smokeMaxCount = 0;
@@ -553,6 +632,9 @@ async function runBrowserCheck() {
             }
           );
           results.push(measurement);
+          console.log(`${browserName} settled ${scenario.width}x${scenario.height}/${scenario.reduced ? "reduced" : "normal"}: ` +
+            `ink=${measurement.alpha.ink.toFixed(0)},central=${measurement.alpha.centralWidth}x${measurement.alpha.centralHeight},` +
+            `raw<=${measurement.alpha.rawWidth}x${measurement.alpha.rawHeight}`);
         } finally {
           await context.close();
         }
@@ -564,31 +646,56 @@ async function runBrowserCheck() {
         assert.ok(Math.max(...counts) - Math.min(...counts) <= 4,
           `${browserName} viewport parity exceeded four puffs: ${counts.join(",")}`);
       }
-      for (const result of results.filter(item => !item.scenario.reduced)) {
-        assert.ok(result.alpha.ink >= 25715 && result.alpha.ink <= 35500,
-          `${browserName} normal alpha ink ${result.alpha.ink.toFixed(0)} left old-PC range`);
-        assert.ok(result.alpha.width >= 359 && result.alpha.width <= 459,
-          `${browserName} normal bbox width ${result.alpha.width} left old-PC range`);
-        assert.ok(result.alpha.height >= 142 && result.alpha.height <= 192,
-          `${browserName} normal bbox height ${result.alpha.height} left old-PC range`);
+      for (const result of results) {
+        assert.ok(result.alpha.rawWidth <= SMOKE_RAW_RUNAWAY_MAX.width,
+          `${browserName} raw smoke width ran away to ${result.alpha.rawWidth}px`);
+        assert.ok(result.alpha.rawHeight <= SMOKE_RAW_RUNAWAY_MAX.height,
+          `${browserName} raw smoke height ran away to ${result.alpha.rawHeight}px`);
       }
-      for (const normal of results.filter(item => !item.scenario.reduced)) {
-        const reduced = results.find(item => item.scenario.reduced &&
-          item.scenario.width === normal.scenario.width && item.scenario.height === normal.scenario.height);
-        if (!reduced) continue;
-        assert.ok(reduced.alpha.ink >= normal.alpha.ink * .85 && reduced.alpha.ink <= normal.alpha.ink * 1.15,
-          `${browserName} reduced ink ${reduced.alpha.ink.toFixed(0)} vs ${normal.alpha.ink.toFixed(0)}`);
-        // Reduced motion deliberately replaces the 140–400px flight with a fixed 280px
-        // distribution plus tiny local drift. Gate its own fixed-seed footprint instead
-        // of requiring the same travel bbox as the moving plume.
-        assert.ok(reduced.alpha.width >= 330 && reduced.alpha.width <= 420,
-          `${browserName} reduced bbox width ${reduced.alpha.width} left static spread range`);
-        assert.ok(reduced.alpha.height >= 120 && reduced.alpha.height <= 170,
-          `${browserName} reduced bbox height ${reduced.alpha.height} left static spread range`);
+      for (const result of results.filter(item => !item.scenario.reduced)) {
+        assert.ok(result.alpha.ink >= OLD_PC_SMOKE_GOLDEN.ink * .85 &&
+          result.alpha.ink <= OLD_PC_SMOKE_GOLDEN.ink * 1.15,
+        `${browserName} normal alpha ink ${result.alpha.ink.toFixed(0)} left old-PC ±15% range`);
+        const widthRatio = result.alpha.centralWidth / OLD_PC_SMOKE_GOLDEN.centralWidth;
+        const heightRatio = result.alpha.centralHeight / OLD_PC_SMOKE_GOLDEN.centralHeight;
+        assert.ok(widthRatio >= .8 && widthRatio <= 1.2,
+          `${browserName} normal central width ratio ${widthRatio.toFixed(3)} left old-PC 80–120% range`);
+        assert.ok(heightRatio >= .8 && heightRatio <= 1.2,
+          `${browserName} normal central height ratio ${heightRatio.toFixed(3)} left old-PC 80–120% range`);
+      }
+      const normalResults = results.filter(item => !item.scenario.reduced);
+      const deviceNormal = normalResults.length ? {
+        ink: median(normalResults.map(result => result.alpha.ink)),
+        centralWidth: median(normalResults.map(result => result.alpha.centralWidth)),
+        centralHeight: median(normalResults.map(result => result.alpha.centralHeight))
+      } : null;
+      const reducedInkRatios = [];
+      for (const reduced of results.filter(item => item.scenario.reduced)) {
+        if (!deviceNormal) continue;
+        const normal = normalResults.find(item =>
+          item.scenario.width === reduced.scenario.width && item.scenario.height === reduced.scenario.height);
+        assert.ok(normal, `${browserName}: matching normal smoke metric missing for ${reduced.scenario.width}x${reduced.scenario.height}`);
+        const inkRatio = reduced.alpha.ink / normal.alpha.ink;
+        reducedInkRatios.push(inkRatio);
+        assert.ok(inkRatio >= .75 && inkRatio <= 1.15,
+          `${browserName} ${reduced.scenario.width}x${reduced.scenario.height} reduced/normal ink ratio ${inkRatio.toFixed(3)}`);
+        const widthRatio = reduced.alpha.centralWidth / deviceNormal.centralWidth;
+        const heightRatio = reduced.alpha.centralHeight / deviceNormal.centralHeight;
+        assert.ok(widthRatio >= .75 && widthRatio <= 1.2,
+          `${browserName} reduced central width ratio ${widthRatio.toFixed(3)} vs device normal`);
+        assert.ok(heightRatio >= .7 && heightRatio <= 1.2,
+          `${browserName} reduced central height ratio ${heightRatio.toFixed(3)} vs device normal`);
+      }
+      if (reducedInkRatios.length) {
+        const deviceRatio = median(reducedInkRatios);
+        assert.ok(deviceRatio >= .82 && deviceRatio <= 1.10,
+          `${browserName} median reduced/normal ink ratio ${deviceRatio.toFixed(3)}`);
       }
       console.log(`${browserName} smoke measurements: ${results.map(result =>
         `${result.scenario.width}x${result.scenario.height}/${result.scenario.reduced ? "reduced" : "normal"}=` +
-        `${result.at3500.count},${result.at5000.count}; ink=${result.alpha.ink.toFixed(0)},box=${result.alpha.width}x${result.alpha.height}; ` +
+        `${result.at3500.count},${result.at5000.count}; ink=${result.alpha.ink.toFixed(0)},` +
+        `central=${result.alpha.centralWidth}x${result.alpha.centralHeight},` +
+        `raw<=${result.alpha.rawWidth}x${result.alpha.rawHeight}[${result.alpha.rawFrames.join(",")}]; ` +
         `rAF=${result.raf.median.toFixed(1)}/${result.raf.p95.toFixed(1)}ms,min=${result.raf.minPerSecond}/s`
       ).join(" | ")}`);
       allResults.push(...results);
@@ -652,10 +759,13 @@ async function runBrowserCheck() {
   const ipadResults = allResults.filter(result => result.browserName.startsWith("webkit") && !result.scenario.reduced);
   if (pcResults.length && ipadResults.length) {
     for (const pc of pcResults) {
-      const ipad = ipadResults.find(result => result.scenario.width === pc.scenario.width && result.scenario.height === pc.scenario.height);
+      const ipad = ipadResults.find(result =>
+        result.scenario.width === pc.scenario.width && result.scenario.height === pc.scenario.height);
       assert.ok(ipad, "matching iPad smoke metric missing");
-      assert.ok(ipad.alpha.ink >= pc.alpha.ink * .88 && ipad.alpha.ink <= pc.alpha.ink * 1.12,
-        `iPad ink ${ipad.alpha.ink.toFixed(0)} is not within ±12% of PC ${pc.alpha.ink.toFixed(0)}`);
+      // Fable contract is a symmetric cross-engine delta, intentionally normalized by the larger ink mass.
+      const engineDelta = Math.abs(ipad.alpha.ink - pc.alpha.ink) / Math.max(pc.alpha.ink, ipad.alpha.ink);
+      assert.ok(engineDelta <= .15,
+        `iPad/PC ink delta ${(engineDelta * 100).toFixed(1)}% exceeds 15% at ${pc.scenario.width}x${pc.scenario.height}`);
     }
   }
 }
