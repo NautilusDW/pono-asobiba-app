@@ -82,6 +82,7 @@
 - 2026-07-13 - by Claude - [batch:1285-bento-shop-nori-set] - bento/index.html, sw.js, tests/**, docs/**, AGENTS_CLAIMS.md - お店モードのご飯3択化 (白/うめぼし/のり弁セット=全箱マスクフィット) + のり細工を自由モード専用に分離 + お店モード初回橋渡しガイド + LPリライト記録doc [overlap: batch:1280 (docs/**), batch:1281 (sw.js)]
 - 2026-07-13 - by Claude - [batch:1284-lp-game-copy-rewrite] - index.html, AGENTS_CLAIMS.md - LP ゲーム/ガチャ/シール帳紹介モーダルの説明文を特徴・ベネフィット前面コピーへ全面リライト (fable orchestration + sonnet 実装 + クロスレビュー) [overlap: batch:1281-analytics-phase1 (index.html)]
 - 2026-07-13 - by Claude - [batch:1281-analytics-phase1] - src/api/events.js (新規), src/worker.js, wrangler.toml, common/telemetry.js (新規), privacy.html (新規), play.html, sw.js, index.html, help.html, robots.txt, maze/quizland/oto/bento/puzzle の index.html, Umami 未導入ゲーム各 index.html, native/content-manifest.json, tests/** - データ分析基盤 Phase 0+1 実装 (Umami 展開 + /api/e + WAE + P0 イベント 8 種 + オプトアウト/告知 + プライバシーページ + sw bump) [overlap: batch:877/948/951/tier-v3-phase1/1202/1203 (play.html, sw.js — いずれも 7/6 以前の完了済みバッチ)]
+- 2026-07-14 - by Claude - [batch:1295-title-screen-tour-flicker-fix] - play.html, common/onboarding/**, sw.js, AGENTS_CLAIMS.md - タイトル画面のゲームタイトルバータッチ時に一覧が消える/ちらつくバグの根本調査・修正 (fable設計+sonnet5実装のマルチエージェントworkflow、直前にrebaseで取り込んだ batch:onboarding-tour のタイトルツアー機能が最有力原因として要調査)。sw v2178→v2179 は rebase衝突再採番 (batch:onboarding-tour と batch:1294-nazonazo-settings-menu が同番号のため)、本batchでの追加bumpとは別
 ## なぜ HANDOFF.md と別ファイルなのか
 
 HANDOFF.md は履歴 (Done エントリ含む) が積み上がるため、 「いまアクティブな claim だけを瞬時に把握する」 用途には不向き。 このボードは **常に短い / 常に最新 / 行は使い捨て** という性質を維持することで、 衝突検出のコストをほぼゼロにする狙い。
