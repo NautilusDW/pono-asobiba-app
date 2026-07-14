@@ -2552,6 +2552,8 @@ let inlineStickerDragState = null;
 let suppressInlineStickerClick = false;
 let inlineStickerRefreshPromise = null;
 let inlineStickerRefreshQueued = false;
+let inlineStickerAdjustRefreshTimer = null;
+let inlineStickerAdjustRefreshLastRun = 0;
 let stickerTrayTouchStartY = 0;
 let stickerTrayRevealHideTimer = 0;
 let stickerTutorialState = null;
@@ -3943,7 +3945,10 @@ function handleInlineStickerPointerMove(event) {
   placement.y = THREE.MathUtils.clamp(((point.y - inlineStickerDragState.offsetY) / PAGE_TEXTURE_H) * 100, 4, 96);
   inlineStickerDragState.moved = true;
   markEditorStateDirty();
-  refreshInlineStickerPage();
+  // isDragMove=true: ok to drop this refresh if one is already in flight (perf).
+  // The drag-end handlers always call refreshInlineStickerPage() with no args,
+  // which guarantees the final position still gets queued/applied.
+  refreshInlineStickerPage(true);
   notifyStickerTutorialAction("moveSticker");
   return true;
 }
@@ -4001,8 +4006,10 @@ function endInlineStickerDrag(event) {
   const moved = inlineStickerDragState.moved;
   cleanupInlineStickerDrag();
   if (moved) {
-    // Pointer moves coalesce while a texture refresh is already running. Always
-    // enqueue one final render after the drag ends so the last coordinates win.
+    // Pointer moves coalesce while a texture refresh is already running (see
+    // refreshInlineStickerPage's isDragMove param). Calling with no args here
+    // always queues/starts one final render so the last coordinates win, even if
+    // a refresh from earlier in this drag is still in flight.
     refreshInlineStickerPage();
     suppressInlineStickerClick = true;
     window.setTimeout(() => {
@@ -4022,6 +4029,8 @@ function cancelInlineStickerDrag(event) {
   const moved = inlineStickerDragState.moved;
   cleanupInlineStickerDrag();
   if (moved) {
+    // Same guarantee as endInlineStickerDrag: no-arg call always queues/starts
+    // the final refresh, so a pointercancel mid-drag can't lose the last move.
     refreshInlineStickerPage();
   }
 }
@@ -4046,7 +4055,7 @@ function selectInlineSticker(target) {
   notifyStickerTutorialAction("selectSticker");
 }
 
-function refreshInlineStickerPage() {
+function refreshInlineStickerPage(isDragMove = false) {
   if (stickerEditor && !stickerEditor.hidden) {
     return Promise.resolve(false);
   }
@@ -4054,8 +4063,18 @@ function refreshInlineStickerPage() {
     // A page texture refresh is expensive (image decode + canvas upload). During
     // a drag, pointermove can arrive much faster than it completes; queueing each
     // in-flight update makes the sticker appear to move only a few pixels at a
-    // time. The pointerup/cancel handlers schedule exactly one final refresh.
-    if (!inlineStickerDragState) {
+    // time, so only handleInlineStickerPointerMove passes isDragMove=true to opt
+    // into "drop while busy" coalescing.
+    // v1b5eeac6 originally inferred this from `!inlineStickerDragState` (true only
+    // between drags), relying on selectInlineSticker/cleanupInlineStickerDrag
+    // happening to run before inlineStickerDragState is (re)assigned. That is
+    // still the case today, but it made the "must not drop" guarantee implicit
+    // and easy to break by reordering. Every other caller (selectInlineSticker,
+    // endInlineStickerDrag/cancelInlineStickerDrag's final refresh, and all
+    // non-drag call sites) now always queues here regardless of drag state, so a
+    // second grab starting mid-refresh can no longer race past a dropped final
+    // refresh from the previous drag.
+    if (!isDragMove) {
       inlineStickerRefreshQueued = true;
     }
     updateInlineStickerControls(false);
@@ -4068,7 +4087,7 @@ function refreshInlineStickerPage() {
       updatePage(flipProgress);
       updateInlineStickerControls(false);
       scheduleStickerTutorialLayout();
-      if (applied === false && !inlineStickerDragState) {
+      if (applied === false && !isDragMove) {
         inlineStickerRefreshQueued = true;
       }
       return applied;
@@ -4082,6 +4101,35 @@ function refreshInlineStickerPage() {
       return true;
     });
   return inlineStickerRefreshPromise;
+}
+
+// Scale/rotation sliders (inlineStickerScale / inlineStickerRotation) fire many
+// "input" events per second while dragged. updateSelectedPlacement() applies the
+// new value + cheap UI sync synchronously on every event, but calling
+// refreshInlineStickerPage() (image decode + full-page canvas texture rebuild,
+// up to 4 pages) that often saturates the main thread and makes the slider feel
+// laggy. This leading+trailing throttle runs the first refresh immediately (so
+// the drag still feels responsive) and then coalesces any further events within
+// INLINE_STICKER_ADJUST_REFRESH_MS into a single trailing refresh that always
+// picks up the latest placement values, capping the refresh rate instead of
+// dropping updates outright.
+const INLINE_STICKER_ADJUST_REFRESH_MS = 70;
+
+function scheduleInlineStickerAdjustRefresh() {
+  if (inlineStickerAdjustRefreshTimer) {
+    return;
+  }
+  const elapsed = performance.now() - inlineStickerAdjustRefreshLastRun;
+  if (elapsed >= INLINE_STICKER_ADJUST_REFRESH_MS) {
+    inlineStickerAdjustRefreshLastRun = performance.now();
+    refreshInlineStickerPage();
+    return;
+  }
+  inlineStickerAdjustRefreshTimer = window.setTimeout(() => {
+    inlineStickerAdjustRefreshTimer = null;
+    inlineStickerAdjustRefreshLastRun = performance.now();
+    refreshInlineStickerPage();
+  }, INLINE_STICKER_ADJUST_REFRESH_MS - elapsed);
 }
 
 function clearInlineStickerSelection() {
@@ -10721,7 +10769,11 @@ function updateSelectedPlacement(patch) {
   markEditorStateDirty();
   updateEditorControls(false);
   if (!stickerEditor || stickerEditor.hidden) {
-    refreshInlineStickerPage();
+    // Throttled: scale/rotation sliders fire "input" rapidly while dragged, and
+    // the placement mutation + control sync above already ran synchronously for
+    // immediate feedback. See scheduleInlineStickerAdjustRefresh() for why the
+    // expensive texture rebuild itself is coalesced instead of run per event.
+    scheduleInlineStickerAdjustRefresh();
   }
 }
 
