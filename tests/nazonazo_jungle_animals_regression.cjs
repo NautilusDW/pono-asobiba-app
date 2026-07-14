@@ -235,6 +235,16 @@ for (const spec of layoutSpecs) {
 
 const stageSpecs = layoutSpecs.filter(spec => spec.loop === "stage");
 const layoutById = Object.fromEntries(layoutSpecs.map(spec => [spec.id, spec]));
+const slothLoop = layoutById["sloth-loop"];
+assert.ok(slothLoop, "the hanging sloth placement is missing");
+assert.deepEqual(
+  { w: slothLoop.w, min: slothLoop.min, max: slothLoop.max, y: slothLoop.y, anchorY: slothLoop.anchorY },
+  { w: 10.5, min: 31, max: 92, y: 37, anchorY: 10 },
+  "the sloth must be half its previous size while keeping the same branch attachment"
+);
+assert.equal(slothLoop.w, 21 / 2);
+assert.equal(slothLoop.min, 62 / 2);
+assert.equal(slothLoop.max, 184 / 2);
 const elephantSpecs = layoutSpecs.filter(spec => spec.species === "elephant");
 const giraffeSpecs = layoutSpecs.filter(spec => spec.species === "giraffe");
 const elephantHero = elephantSpecs.find(spec => spec.role === "hero");

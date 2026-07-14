@@ -383,7 +383,7 @@ const JUNGLE_ANIMAL_LAYOUT={
   {id:"giraffe-far-a",role:"distant",asset:"giraffe",species:"giraffe",anchor:"habitat",stageX:1156,align:"left",inset:8,y:73.5,anchorY:86.8,wCss:"min(8vw,20vmin)",min:52,max:88,depth:.3,opacity:1,motion:"breathe",flip:-1,origin:"50% 86.8%",moveY:0,loop:"stage"}
  ],
  mid:[
-  {id:"sloth-loop",asset:"sloth",species:"sloth",anchor:"hang",x:6,y:37,anchorY:10,w:21,min:62,max:184,depth:.25,opacity:1,motion:"sway",flip:1,origin:"50% 10%",moveY:0,loop:"mid"},
+  {id:"sloth-loop",asset:"sloth",species:"sloth",anchor:"hang",x:6,y:37,anchorY:10,w:10.5,min:31,max:92,depth:.25,opacity:1,motion:"sway",flip:1,origin:"50% 10%",moveY:0,loop:"mid"},
   {id:"crocodile-loop",asset:"crocodile",species:"crocodile",anchor:"understory",x:70,y:80,anchorY:98,w:25.5,min:80,max:225,depth:.92,opacity:1,motion:"breathe",flip:1,origin:"50% 98%",moveY:0},
   {id:"elephant-mid-b",role:"distant",asset:"elephant",species:"elephant",anchor:"habitat",stageX:2016,align:"left",inset:8,y:78,anchorY:80.9,wCss:"min(13vw,34vmin)",min:88,max:150,depth:.55,opacity:1,motion:"breathe",flip:1,origin:"50% 80.9%",moveY:0,loop:"stage",frames:3,fixedFrame:2},
   {id:"giraffe-mid-b",role:"distant",asset:"giraffe",species:"giraffe",anchor:"habitat",stageX:2016,align:"right",inset:7,y:78,anchorY:86.8,wCss:"min(12vw,30vmin)",min:78,max:138,depth:.55,opacity:1,motion:"breathe",flip:1,origin:"50% 86.8%",moveY:0,loop:"stage"}
@@ -410,15 +410,17 @@ const QN=5, SPAN=2860, INTRO=320, GAP=430, DROP_OFF=2260, COVER_OFF=2480, COVER_
 const TRAIN_WIDTH_MIN_PX=190, TRAIN_WIDTH_VW=30.9, TRAIN_WIDTH_MAX_PX=331, TRAIN_RIGHT_SHIFT_VW=5, DEFAULT_VEHICLE_LEFT_VW=28;
 const TRAIN_CAR_WIDTH_MIN_PX=300, TRAIN_CAR_WIDTH_VW=47, TRAIN_CAR_WIDTH_MAX_PX=480;
 const TRAIN_CAR_HEIGHT_MIN_PX=83, TRAIN_CAR_HEIGHT_VW=13.1, TRAIN_CAR_HEIGHT_MAX_PX=133;
+const TRAIN_CAR_ART_ASPECT=1853/636;
 const CHECKPOINT_STOP_LEFT_VW=24, TUNNEL_ENTRY_CAMERA_LEFT_VW=28, TUNNEL_INTERIOR_RUN_VW=360;
 const TUNNEL_EXIT_APPROACH_RUN_VW=135;
 const TUNNEL_ENTRY_FADE_DELAY_MS=900, TUNNEL_ENTRY_SWITCH_MS=1320, TUNNEL_ENTRY_BLACK_HOLD_MS=420;
 const TUNNEL_EXIT_FADE_SETUP_MS=420, TUNNEL_EXIT_BLACK_HOLD_MS=320, TUNNEL_EXIT_RUN_MS=1250, TUNNEL_EXIT_CLEAR_MS=1600;
-const TUNNEL_GAME_MAX_V=32,TUNNEL_TRANSIT_MAX_V=58,TUNNEL_GAME_WHEEL_PERIOD=1.45,TUNNEL_WALL_PARALLAX=.55,TUNNEL_WALL_ASPECT=1600/900,TUNNEL_WALL_BAYS=4,TUNNEL_FRIEND_GAP_TARGET_VW=55;
-const TUNNEL_FRIEND_LIMIT=3,TUNNEL_FRIEND_Y=[50,61,55],TUNNEL_FRIEND_STATIC_SLOTS=[{x:10,y:68},{x:34,y:70},{x:90,y:68}];
+const TUNNEL_GAME_MAX_V=32,TUNNEL_TRANSIT_MAX_V=58,TUNNEL_GAME_WHEEL_PERIOD=1.45,TUNNEL_WALL_PARALLAX=.55,TUNNEL_FRIEND_CALM_PARALLAX=.26,TUNNEL_WALL_ASPECT=1600/900,TUNNEL_WALL_BAYS=4,TUNNEL_FRIEND_GAP_TARGET_VW=55;
+const TUNNEL_FRIEND_LIMIT=3,TUNNEL_FRIEND_Y=[50,61,55],TUNNEL_FRIEND_STATIC_SLOTS=[{x:18,y:68},{x:32,y:70},{x:90,y:68}];
 const STOP_SETTLE_MS=230, WHEEL_FAST_PERIOD=0.98, WHEEL_SLOW_PERIOD=2.05, WHEEL_STOP_EASE_VW=82;
-const IOS_SMOKE_INTERVAL_MIN_MS=390,IOS_SMOKE_INTERVAL_JITTER_MS=170,IOS_SMOKE_MAX_PUFFS=18;
+const IOS_SMOKE_INTERVAL_MIN_MS=280,IOS_SMOKE_INTERVAL_JITTER_MS=140,IOS_SMOKE_MAX_PUFFS=18;
 const SMOKE_INTERVAL_MIN_MS=300,SMOKE_INTERVAL_JITTER_MS=150,SMOKE_MAX_PUFFS=28;
+const REDUCED_SMOKE_MAX_PUFFS=10,REDUCED_SMOKE_LIFE_MS=2800;
 function trainLeftVw(){
  const vw=window.innerWidth||844;
  const w=Math.max(TRAIN_WIDTH_MIN_PX,Math.min(TRAIN_WIDTH_MAX_PX,vw*TRAIN_WIDTH_VW/100));
@@ -430,9 +432,15 @@ function trainCarWidthVw(){
  return w/vw*100;
 }
 function trainCarHeightVh(){
- const vw=window.innerWidth||844,vh=window.innerHeight||390;
- const h=Math.max(TRAIN_CAR_HEIGHT_MIN_PX,Math.min(TRAIN_CAR_HEIGHT_MAX_PX,vw*TRAIN_CAR_HEIGHT_VW/100));
- return h/vh*100;
+ const vh=window.innerHeight||390;
+ return trainCarHeightPx()/vh*100;
+}
+function trainCarHeightPx(){
+ const vw=window.innerWidth||844;
+ return Math.max(TRAIN_CAR_HEIGHT_MIN_PX,Math.min(TRAIN_CAR_HEIGHT_MAX_PX,vw*TRAIN_CAR_HEIGHT_VW/100));
+}
+function trainCarVisualWidthVw(){
+ return trainCarHeightPx()*TRAIN_CAR_ART_ASPECT/(window.innerWidth||844)*100;
 }
 function trainBottomVh(){
  const st=STAGES[stg];
@@ -637,6 +645,7 @@ function rainTrainSpeedMultiplier(stage,tunnelRun){
 /* ================= device & portal ================= */
 const IOS_DEVICE=/iPad|iPhone|iPod/.test(navigator.userAgent)||
  (navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+const FRAME_DT_MAX_SECONDS=IOS_DEVICE?.1:.05;
 function prefersReducedMotionActive(){
  try{return !!(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches);}catch(_){return false;}
 }
@@ -1470,10 +1479,35 @@ function buildSeaRescueList(stage){
  }
  return shuffle(selected.slice(0,QN));
 }
+function questionAnswerKey(question){
+ return question&&question.a?String(question.a[1]||question.a[0]||"").trim():"";
+}
+function buildJungleQuestionList(stage){
+ const selected=[],seen=new Set(),generators=(stage.gens||[]).filter(name=>GENS[name]);
+ const add=question=>{
+  const key=questionAnswerKey(question);
+  if(!key||seen.has(key)||selected.length>=QN)return false;
+  seen.add(key);selected.push(question);return true;
+ };
+ const wantedGenerated=level===0?1:2;
+ let generated=0;
+ for(let attempt=0;attempt<64&&generated<wantedGenerated;attempt++){
+  const name=generators.length?pick(generators):null;
+  if(name&&add(GENS[name]()))generated++;
+ }
+ if(level===2)shuffle(WORDPLAY).some(question=>add(question));
+ shuffle(stage.bank.filter(question=>(question.min||0)<=level)).forEach(add);
+ for(let attempt=0;attempt<64&&selected.length<QN;attempt++){
+  const name=generators.length?pick(generators):null;
+  if(name)add(GENS[name]());
+ }
+ return shuffle(selected.slice(0,QN));
+}
 function buildQList(){
  const st=STAGES[stg];
  if(st.id==="number"){qList=[];for(let i=0;i<QN;i++)qList.push(Math.random()<0.6?genCount():genNext());return;}
  if(st.id==="sea"){seaBossDefeated=false;seaDecoysSeen.clear();qList=buildSeaRescueList(st);return;}
+ if(st.id==="jungle"){qList=buildJungleQuestionList(st);return;}
  let statics=shuffle(st.bank.filter(x=>(x.min||0)<=level));
  const gens=(st.gens||[]).filter(g=>GENS[g]);
  let nGen=gens.length?(level===0?1:2):0;
@@ -2789,7 +2823,7 @@ function renderJungleFlights(now){
 }
 
 /* ================= passengers ================= */
-function carGap(){return STAGES[stg]&&STAGES[stg].veh==="train"?39.0:8.8;}
+function carGap(){return STAGES[stg]&&STAGES[stg].veh==="train"?trainCarVisualWidthVw():8.8;}
 function visibleCarGroups(){
  const groupSize=STAGES[stg]&&STAGES[stg].veh==="train"?4:2;
  const start=Math.max(0,cars.length-groupSize*3);
@@ -3248,7 +3282,8 @@ function tunnelFriendWallSlots(){
 }
 function updateTunnelFriendWallMotion(){
  if(!tunnelFriendLayer||!tunnelFriendGameActive)return;
- const shift=tunnelFriendStaticMode()?0:(worldX-tunnelFriendStartWorldX)*TUNNEL_WALL_PARALLAX;
+ const parallax=tunnelFriendStaticMode()?TUNNEL_FRIEND_CALM_PARALLAX/Math.max(1,FAST):TUNNEL_WALL_PARALLAX;
+ const shift=(worldX-tunnelFriendStartWorldX)*parallax;
  tunnelFriendLayer.querySelectorAll(".tunnel-friend").forEach(button=>{
   const startX=Number(button.dataset.wallStartX)||0;
   button.style.setProperty("--friend-screen-x",(startX-shift).toFixed(2)+"vw");
@@ -3369,14 +3404,14 @@ function tickMagicPuffs(now){
  // 100個超まで膨らんで合成落ちしていた。見える密度を保ったまま大幅に間引く。
  nextMagicPuffAt=now+(useSceneSmoke?IOS_SMOKE_INTERVAL_MIN_MS:SMOKE_INTERVAL_MIN_MS)+
   Math.random()*(useSceneSmoke?IOS_SMOKE_INTERVAL_JITTER_MS:SMOKE_INTERVAL_JITTER_MS);
- const puffLimit=reduced?4:(useSceneSmoke?IOS_SMOKE_MAX_PUFFS:SMOKE_MAX_PUFFS);
+ const puffLimit=reduced?REDUCED_SMOKE_MAX_PUFFS:(useSceneSmoke?IOS_SMOKE_MAX_PUFFS:SMOKE_MAX_PUFFS);
  if(box.children.length>=puffLimit)return;
  const p=document.createElement("span");
  p.className="magic-puff";
  const idx=rnd(0,7),col=idx%4,row=Math.floor(idx/4);
  const size=(useSceneSmoke?34:18)+Math.random()*(useSceneSmoke?78:62);
  const baseLife=2200+Math.random()*1200;
- const life=reduced?1050:baseLife*(1.2+Math.random()*.35);
+ const life=reduced?REDUCED_SMOKE_LIFE_MS:baseLife*(1.2+Math.random()*.35);
  if(useSceneSmoke){
   const sceneRect=$("scene").getBoundingClientRect();
   const vehRect=veh.getBoundingClientRect();
@@ -3606,7 +3641,7 @@ function showQuizAfterSettle(){
 let lastT=0;
 function gloop(t){
  if(!lastT)lastT=t;
- let dt=Math.min(0.05,(t-lastT)/1000)*FAST;
+ let dt=Math.min(FRAME_DT_MAX_SECONDS,(t-lastT)/1000)*FAST;
  lastT=t;
  const tunnelGameRun=pending==="tunnelExit";
  const tunnelRun=pending==="tunnelEntry"||tunnelGameRun||pending==="tunnelExitApproach";
@@ -3708,6 +3743,8 @@ function resolveNumberCargoTheme(){
 function resetNumberCargoGame(){
  numberCargoPicked=[];numberCargoGoalShown=false;numberCargoTheme=null;
  document.querySelectorAll(".number-cargo-fly").forEach(node=>node.remove());
+ const activeGame=choicesEl.querySelector(".number-cargo-game");
+ if(activeGame)activeGame.remove();
  quiz.classList.remove("number-quiz");
  choicesEl.classList.remove("number-mode");
  choicesEl.setAttribute("aria-label","こたえを えらぶ");
@@ -4193,6 +4230,9 @@ function onPick(el,o){
   const gained=addScore(SCORE_POINTS.correct+(missInQ===0?SCORE_POINTS.firstTry:0),"quiz");
   if(!o.skipOkSound)sndOK();showStamp("せいかい！ +"+gained+"てん","ok");
   quiz.classList.remove("show");
+  // 数字ミニゲームの生成画像とdrift animationを画面外で動かし続けない。
+  // iPadのフレーム落ちが次ステージへの走行まで長引かせるため、正解時に即破棄する。
+  if(o.mode==="number")resetNumberCargoGame();
   const pe=cur.pe||[cur.a[0],cur.a[1]];
   const t=tunnels[qSeg];
   const passenger=cur.helper||{e:pe[0],t:pe[1],name:pe[1],img:resolveQuizArt(pe[0],pe[1])};

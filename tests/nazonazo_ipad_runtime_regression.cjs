@@ -115,6 +115,30 @@ check("all visible train running gear uses the shared wheel period", () => {
   assert.match(css, /#veh\.go \.train-crosshead\s*\{[^}]*var\(--wheel-period/);
 });
 
+check("passenger cars couple at their visible artwork edges", () => {
+  assert.match(game, /const\s+TRAIN_CAR_ART_ASPECT\s*=\s*1853\s*\/\s*636\s*;/);
+  const heightSource = extractFunction(game, "trainCarHeightPx");
+  const visualWidthSource = extractFunction(game, "trainCarVisualWidthVw");
+  const gapSource = extractFunction(game, "carGap");
+  assert.match(gapSource, /trainCarVisualWidthVw\(\)/,
+    "train spacing must follow the rendered image width instead of a fixed vw step");
+  for (const width of [740, 844, 1024, 1366]) {
+    const sandbox = {
+      window: { innerWidth: width },
+      TRAIN_CAR_HEIGHT_MIN_PX: numericConstant("TRAIN_CAR_HEIGHT_MIN_PX"),
+      TRAIN_CAR_HEIGHT_VW: numericConstant("TRAIN_CAR_HEIGHT_VW"),
+      TRAIN_CAR_HEIGHT_MAX_PX: numericConstant("TRAIN_CAR_HEIGHT_MAX_PX"),
+      TRAIN_CAR_ART_ASPECT: 1853 / 636,
+      STAGES: [{ veh: "train" }],
+      stg: 0
+    };
+    vm.runInNewContext(`${heightSource}\n${visualWidthSource}\n${gapSource}\nthis.gap=carGap();`, sandbox);
+    const expectedPx = Math.max(83, Math.min(133, width * 0.131)) * 1853 / 636;
+    assert.ok(Math.abs(sandbox.gap * width / 100 - expectedPx) < 0.5,
+      `${width}px: car gap no longer matches the visible ${expectedPx.toFixed(1)}px artwork width`);
+  }
+});
+
 /* Never turn reduced motion into 100 Hz motion. This caused all reported iPad symptoms at once. */
 check("reduced motion does not collapse every animation to 0.01 seconds", () => {
   assert.doesNotMatch(
@@ -136,12 +160,33 @@ check("iPad uses scene smoke and keeps it visible while the train runs", () => {
 
 check("iPad smoke cadence and pool are bounded", () => {
   const interval = numericConstant("IOS_SMOKE_INTERVAL_MIN_MS");
+  const jitter = numericConstant("IOS_SMOKE_INTERVAL_JITTER_MS");
   const limit = numericConstant("IOS_SMOKE_MAX_PUFFS");
+  const reducedLimit = numericConstant("REDUCED_SMOKE_MAX_PUFFS");
+  const reducedLife = numericConstant("REDUCED_SMOKE_LIFE_MS");
+  const desktopMean = numericConstant("SMOKE_INTERVAL_MIN_MS") + numericConstant("SMOKE_INTERVAL_JITTER_MS") / 2;
+  const iosMean = interval + jitter / 2;
   assert.ok(interval >= 80, `iPad smoke interval ${interval}ms is too dense`);
   assert.ok(limit >= 6 && limit <= 32, `iPad smoke pool ${limit} should stay visible without overloading Safari`);
+  assert.ok(reducedLimit >= 8 && reducedLimit <= 12,
+    `reduced-motion smoke pool ${reducedLimit} must remain visibly full without flooding Safari`);
+  assert.ok(reducedLife >= 2400, `reduced-motion smoke lifetime ${reducedLife}ms recreates the reported two-puff trickle`);
+  assert.ok(iosMean <= desktopMean * 1.1,
+    `iPad mean smoke cadence ${iosMean}ms is visibly thinner than desktop ${desktopMean}ms`);
+  assert.ok(Math.floor(reducedLife / iosMean) >= 7,
+    "reduced-motion iPad smoke must keep at least seven puffs visible at its mean cadence");
   const tick = extractFunction(game, "tickMagicPuffs");
   assert.match(tick, /IOS_SMOKE_INTERVAL_MIN_MS/);
   assert.match(tick, /IOS_SMOKE_MAX_PUFFS/);
+  assert.match(tick, /REDUCED_SMOKE_MAX_PUFFS/);
+  assert.match(tick, /REDUCED_SMOKE_LIFE_MS/);
+});
+
+check("low iPad frame rates do not stretch route travel", () => {
+  assert.match(game, /const\s+FRAME_DT_MAX_SECONDS\s*=\s*IOS_DEVICE\?\.1:\.05\s*;/,
+    "iPad needs a 100ms frame allowance so 10fps remains real-time");
+  const loop = extractFunction(game, "gloop");
+  assert.match(loop, /Math\.min\(FRAME_DT_MAX_SECONDS,\(t-lastT\)\/1000\)\*FAST/);
 });
 
 /* A pickup is a scored cause-and-effect event, even before the three-item inventory is full. */
@@ -219,9 +264,14 @@ check("reduced motion freezes number ambience instead of strobing it", () => {
 });
 
 /* Stage changes must clear transient number/future/space state before another stage appears. */
-check("number minigame cleanup removes in-flight cargo", () => {
+check("number minigame cleanup removes every animated cargo surface", () => {
   const reset = extractFunction(game, "resetNumberCargoGame");
   assert.match(reset, /querySelectorAll\("\.number-cargo-fly"\)[^;]*remove/);
+  assert.match(reset, /querySelector\("\.number-cargo-game"\)[\s\S]*?activeGame\.remove\(\)/,
+    "the hidden cargo grid must stop animating as soon as its answer is judged");
+  const pick = extractFunction(game, "onPick");
+  assert.match(pick, /if\(o\.mode==="number"\)resetNumberCargoGame\(\)/,
+    "a correct number answer must release its animated DOM before train travel starts");
 });
 
 check("future and space cleanup own their timers, classes and layers", () => {

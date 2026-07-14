@@ -129,6 +129,17 @@ assert.match(extractFunction("showHint"), /if\(isNumberCargoQuestion\(\)\)\{show
 for (const boundary of ["startJourneyAt", "openMap"]) {
   assert.match(extractFunction(boundary), /resetNumberCargoGame\(\);/, `${boundary}: leaving the activity must clear its state`);
 }
+const resetCargo = extractFunction("resetNumberCargoGame");
+assert.match(resetCargo, /querySelectorAll\("\.number-cargo-fly"\)[\s\S]*?node\.remove\(\)/,
+  "cargo already flying toward the wagon must be removed at the answer boundary");
+assert.match(resetCargo, /querySelector\("\.number-cargo-game"\)[\s\S]*?activeGame\.remove\(\)/,
+  "the hidden animated cargo grid must not survive into the long station/tunnel transition");
+assert.match(onPick, /quiz\.classList\.remove\("show"\);[\s\S]{0,320}?if\(o\.mode==="number"\)resetNumberCargoGame\(\);/,
+  "a correct number answer must release animated cargo before boarding and route travel");
+assert.match(game, /const\s+FRAME_DT_MAX_SECONDS\s*=\s*IOS_DEVICE\?\.1:\.05\s*;/,
+  "iPad route time must still follow real time at a 10fps animation cadence");
+assert.match(extractFunction("gloop"), /Math\.min\(FRAME_DT_MAX_SECONDS,\(t-lastT\)\/1000\)\*FAST/,
+  "the game loop must use the device-aware frame delta limit");
 
 const childCopy = [
   "のせた", "こ", "タップして のせる", "1こ もどす", "しゅっぱつ！",

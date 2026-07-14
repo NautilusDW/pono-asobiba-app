@@ -253,16 +253,18 @@ assert.match(game, /TUNNEL_EXIT_APPROACH_RUN_VW\s*=\s*135\b/, "the tuned result 
 assert.equal(numericConstant(game, "TUNNEL_GAME_MAX_V"), 32, "the searchable tunnel run needs the slower 32vw/s cap");
 assert.equal(numericConstant(game, "TUNNEL_TRANSIT_MAX_V"), 58, "entry/result transit must keep the 58vw/s cap");
 assert.equal(numericConstant(game, "TUNNEL_WALL_PARALLAX"), 0.55, "wall art and silhouettes must share the same parallax depth");
+assert.equal(numericConstant(game, "TUNNEL_FRIEND_CALM_PARALLAX"), 0.26, "calm-mode silhouettes need a slow but visible wall drift");
 const tunnelSearchSeconds = numericConstant(game, "TUNNEL_INTERIOR_RUN_VW") / numericConstant(game, "TUNNEL_GAME_MAX_V");
 assert.ok(tunnelSearchSeconds >= 10.5 && tunnelSearchSeconds <= 12.5, `the normal search window must be about 11.25 seconds, got ${tunnelSearchSeconds}`);
 assert.match(gameLoop, /tunnelGameRun\?TUNNEL_GAME_MAX_V:\(tunnelRun\?TUNNEL_TRANSIT_MAX_V:/, "only the searchable tunnel phase may use the slower speed");
 assert.match(setTunnelInteriorBackdrop, /-panWorld\*TUNNEL_WALL_PARALLAX/, "the wall background must use the shared parallax factor");
-assert.match(hiddenFunctions.updateTunnelFriendWallMotion, /\(worldX-tunnelFriendStartWorldX\)\*TUNNEL_WALL_PARALLAX/, "wall friends must move at the wall background's parallax factor");
-assert.match(hiddenFunctions.tunnelFriendStaticMode, /FAST>1/, "#fast must use stable, tappable silhouette slots");
-assert.match(hiddenFunctions.tunnelFriendStaticMode, /prefers-reduced-motion:\s*reduce/, "reduced motion must use stable, tappable silhouette slots");
+assert.match(hiddenFunctions.updateTunnelFriendWallMotion, /TUNNEL_FRIEND_CALM_PARALLAX\/Math\.max\(1,FAST\)/, "calm modes must scroll slowly instead of freezing every silhouette");
+assert.match(hiddenFunctions.updateTunnelFriendWallMotion, /\(worldX-tunnelFriendStartWorldX\)\*parallax/, "all wall friends must move with route travel");
+assert.match(hiddenFunctions.tunnelFriendStaticMode, /FAST>1/, "#fast must use predictable, tappable silhouette slots");
+assert.match(hiddenFunctions.tunnelFriendStaticMode, /prefers-reduced-motion:\s*reduce/, "reduced motion must use predictable, tappable silhouette slots");
 assert.match(hiddenFunctions.tunnelFriendVisualVariation, /Math\.random|randomFn/, "normal tunnels must draw fresh visual variation");
 assert.match(hiddenFunctions.tunnelFriendVisualVariation, /scale[\s\S]*?rotation/, "visual variation must cover both size and angle");
-assert.match(hiddenFunctions.tunnelFriendWallSlots, /TUNNEL_FRIEND_STATIC_SLOTS/, "static modes must use the dedicated on-screen slots");
+assert.match(hiddenFunctions.tunnelFriendWallSlots, /TUNNEL_FRIEND_STATIC_SLOTS/, "calm modes must use the dedicated on-screen starting slots");
 
 assert.deepEqual(scorePoints, {
   correct: 100,
@@ -721,8 +723,8 @@ overflowHarness.api.result();
 assert.equal(plain(overflowHarness.api.state()).stageScore, 550, "repeat result rendering must not duplicate help-overflow points");
 
 for (const mode of [
-  { label: "#fast", options: { fast: 8 } },
-  { label: "reduced motion", options: { reducedMotion: true } }
+  { label: "#fast", options: { fast: 8 }, expectedShift: 0.65 },
+  { label: "reduced motion", options: { reducedMotion: true }, expectedShift: 5.2 }
 ]) {
   const staticHarness = createHiddenFriendHarness(mode.options);
   staticHarness.api.setCars(sourceCars);
@@ -730,11 +732,15 @@ for (const mode of [
   staticHarness.api.setWall(100, 100);
   staticHarness.api.start();
   const staticButtons = descendants(staticHarness.ids.tunnelFriendLayer).filter(element => element.tagName === "BUTTON");
-  assert.deepEqual(staticButtons.map(button => Number(button.dataset.wallStartX)), [10, 34, 90], `${mode.label}: static slot positions drifted`);
+  assert.deepEqual(staticButtons.map(button => Number(button.dataset.wallStartX)), [18, 32, 90], `${mode.label}: calm starting slots drifted`);
   assert.equal(staticHarness.ids.tunnelFriendGame.classList.contains("is-static"), true, `${mode.label}: static mode class missing`);
-  staticHarness.api.setWall(100, 300);
+  staticHarness.api.setWall(100, 120);
   staticHarness.api.move();
-  assert.deepEqual(staticButtons.map(button => button.style["--friend-screen-x"]), ["10.00vw", "34.00vw", "90.00vw"], `${mode.label}: wall friends must stay tappable on screen`);
+  const moved = staticButtons.map(button => Number(button.style["--friend-screen-x"].replace("vw", "")));
+  [18, 32, 90].forEach((start, index) => {
+    assert.ok(Math.abs((start - moved[index]) - mode.expectedShift) <= 0.02,
+      `${mode.label}: silhouette ${index} did not make its calm ${mode.expectedShift}vw wall scroll`);
+  });
 }
 
 /* ---------- optional end-to-end browser check ---------- */
@@ -846,9 +852,18 @@ async function runBrowser(browserName, base) {
   assert.ok(new Set(buttonMetrics.map(metric => metric.rotation.toFixed(2))).size >= 2, `${browserName}: wall silhouettes still share one angle`);
   assert.ok(Math.max(...buttonMetrics.map(metric => metric.width)) - Math.min(...buttonMetrics.map(metric => metric.width)) <= 1, `${browserName}: visual scale leaked into button width`);
   assert.ok(Math.max(...buttonMetrics.map(metric => metric.height)) - Math.min(...buttonMetrics.map(metric => metric.height)) <= 1, `${browserName}: visual scale leaked into button height`);
-  const staticCenters = buttonMetrics.map(metric => metric.centerX / 740 * 100);
-  [10, 34, 90].forEach((expected, index) => {
-    assert.ok(Math.abs(staticCenters[index] - expected) <= 1, `${browserName}: #fast friend ${index} left its static wall slot`);
+  const calmCenters = buttonMetrics.map(metric => metric.centerX / 740 * 100);
+  [18, 32, 90].forEach((start, index) => {
+    assert.ok(calmCenters[index] <= start + 1 && calmCenters[index] >= start - 16,
+      `${browserName}: #fast friend ${index} escaped its slowly scrolling wall lane`);
+  });
+  await page.waitForTimeout(100);
+  const laterCalmCenters = await friendButtons.evaluateAll(elements => elements.map(element => {
+    const rect = element.getBoundingClientRect();return (rect.left + rect.width / 2) / innerWidth * 100;
+  }));
+  calmCenters.forEach((center, index) => {
+    assert.ok(laterCalmCenters[index] < center - 0.15,
+      `${browserName}: #fast friend ${index} stayed frozen instead of scrolling left`);
   });
   await page.emulateMedia({ reducedMotion: "reduce" });
   const reducedNames = await friendButtons.evaluateAll(elements => elements.map(element => getComputedStyle(element).animationName));
