@@ -18566,6 +18566,15 @@ function shouldDisableFreeUndoButton() {
     && tutorialState.step === 'tut2-nori-undo');
   return !freeUndoStack.length && !tutorialAutoRestoreExplanation;
 }
+function createFreeUndoActionButton() {
+  const undo = document.createElement('button');
+  undo.type = 'button';
+  undo.textContent = 'とりけす';
+  undo.disabled = shouldDisableFreeUndoButton();
+  // batch:1058-hotfix5 (WP1): tutorialOnUndoPressed が単一入口 (通常時はそのまま undoFreeItem に委譲)。
+  undo.addEventListener('pointerdown', e => { e.preventDefault(); tutorialOnUndoPressed(); });
+  return undo;
+}
 function renderFreeLayoutControls() {
   const tray = document.getElementById('food-tray');
   if (!tray) return;
@@ -18804,13 +18813,7 @@ function renderFreeLayoutControls() {
 
   const actions = document.createElement('div');
   actions.className = 'free-action-row';
-  const undo = document.createElement('button');
-  undo.type = 'button';
-  undo.textContent = 'とりけす';
-  undo.disabled = shouldDisableFreeUndoButton();
-  // batch:1058-hotfix5 (WP1): tutorialOnUndoPressed が単一入口 (通常時はそのまま undoFreeItem に委譲)。
-  undo.addEventListener('pointerdown', e => { e.preventDefault(); tutorialOnUndoPressed(); });
-  actions.appendChild(undo);
+  actions.appendChild(createFreeUndoActionButton());
   const redo = document.createElement('button');
   redo.type = 'button';
   redo.textContent = 'やりなおし';

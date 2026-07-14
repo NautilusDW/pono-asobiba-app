@@ -146,14 +146,14 @@ assert.match(noriEditRenderer, /const target = toolbar/);
 assert.doesNotMatch(noriEditRenderer, /target\s*=\s*hasTriedEdit[\s\S]*?finishBtn/,
   'the blue focus must stay on all four edit buttons instead of asking the child to stop after one press');
 
-const undoDisabledSource = extract(
+const undoButtonFactorySource = extract(
   html,
   'function shouldDisableFreeUndoButton()',
   'function renderFreeLayoutControls()',
-  'undo enabled-state policy',
+  'undo enabled-state policy and button factory',
 );
 function undoIsDisabled(active, step, historyDepth) {
-  return vm.runInNewContext(`(() => { ${undoDisabledSource}; return shouldDisableFreeUndoButton(); })()`, {
+  return vm.runInNewContext(`(() => { ${undoButtonFactorySource}; return shouldDisableFreeUndoButton(); })()`, {
     tutorialState: active ? { active: true, step } : null,
     freeUndoStack: Array.from({ length: historyDepth }, (_, index) => ({ index })),
   });
@@ -165,6 +165,75 @@ assert.equal(undoIsDisabled(false, '', 0), true, 'normal play still disables und
 assert.equal(undoIsDisabled(false, '', 1), false, 'normal play still enables undo with history');
 assert.equal(undoIsDisabled(true, 'tut2-nori-move-undo', 0), true,
   'the real move-undo step must not invent an undo action when its history is empty');
+
+function buildUndoActionButton(active, step, historyDepth) {
+  const listeners = new Map();
+  let handlerCalls = 0;
+  const button = {
+    type: '',
+    textContent: '',
+    disabled: false,
+    addEventListener(type, listener) { listeners.set(type, listener); },
+    dispatchEvent(event) {
+      const listener = listeners.get(event.type);
+      if (listener) listener(event);
+      return !event.defaultPrevented;
+    },
+  };
+  const create = vm.runInNewContext(`(() => { ${undoButtonFactorySource}; return createFreeUndoActionButton; })()`, {
+    tutorialState: active ? { active: true, step } : null,
+    freeUndoStack: Array.from({ length: historyDepth }, (_, index) => ({ index })),
+    document: { createElement: tag => {
+      assert.equal(tag, 'button');
+      return button;
+    } },
+    tutorialOnUndoPressed: () => { handlerCalls++; },
+  });
+  const created = create();
+  assert.equal(created, button, 'the factory must return the connected action button it configured');
+  return {
+    button,
+    dispatchPointerDown() {
+      let preventDefaultCalls = 0;
+      const listener = listeners.get('pointerdown');
+      assert.equal(typeof listener, 'function', 'the factory must wire pointerdown to the tutorial undo entry point');
+      const event = {
+        type: 'pointerdown',
+        defaultPrevented: false,
+        preventDefault() {
+          preventDefaultCalls++;
+          this.defaultPrevented = true;
+        },
+      };
+      button.dispatchEvent(event);
+      return { preventDefaultCalls, handlerCalls };
+    },
+  };
+}
+const finalEmptyUndoAction = buildUndoActionButton(true, 'tut2-nori-undo', 0);
+assert.equal(finalEmptyUndoAction.button.disabled, false,
+  'the actual final-explanation button must be enabled even when history is empty');
+assert.equal(finalEmptyUndoAction.button.type, 'button');
+assert.equal(finalEmptyUndoAction.button.textContent, 'とりけす');
+assert.deepEqual(finalEmptyUndoAction.dispatchPointerDown(), { preventDefaultCalls: 1, handlerCalls: 1 });
+const normalEmptyUndoAction = buildUndoActionButton(false, '', 0);
+assert.equal(normalEmptyUndoAction.button.disabled, true,
+  'the actual normal-play button must stay disabled when history is empty');
+const normalReadyUndoAction = buildUndoActionButton(false, '', 1);
+assert.equal(normalReadyUndoAction.button.disabled, false,
+  'the actual normal-play button must be enabled when an undo entry exists');
+assert.deepEqual(normalReadyUndoAction.dispatchPointerDown(), { preventDefaultCalls: 1, handlerCalls: 1 });
+
+const freeControlsRenderer = extract(
+  html,
+  'function renderFreeLayoutControls()',
+  'function tutorialFindNoriEditPlaced()',
+  'free controls renderer',
+);
+assert.match(freeControlsRenderer, /actions\.appendChild\(createFreeUndoActionButton\(\)\)/,
+  'the live action row must append the button returned by the tested factory');
+assert.doesNotMatch(freeControlsRenderer, /undo\.addEventListener/,
+  'the live renderer must not keep an untested duplicate undo listener');
 
 const rotate = extract(html, 'function rotateSelectedItem(deltaAngle)', 'function canShowLayerControlsForItem', 'rotate handler');
 assert.ok(rotate.indexOf('renderFreeLayoutControls();') < rotate.indexOf('tutorialOnNoriEditAction(item.uid, tutorialAction)'),
