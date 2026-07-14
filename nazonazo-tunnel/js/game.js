@@ -539,10 +539,19 @@ let seaBossPhase="idle",seaBossHp=0,seaBossMaxHp=0,seaBossX=0,seaBossY=0,seaBoss
 let seaBossEpoch=0,seaBossTimer=0,seaBossFlashUntil=0,seaBossSalvos=new Set(),seaBossThresholds=new Set(),seaBossDefeated=false;
 let seaBossEnemyShots=[],seaBossNextAttackAt=0,seaBossAttackAt=0,seaBossInvulnerableUntil=0,seaBossStunUntil=0;
 let seaRescueMessageTimer=0,seaDecoysSeen=new Set();
-const FUTURE_CAPSULE_TRAVEL_MS=[4300,3700,3200];
-const FUTURE_CAPSULE_PULSE_MS=230;
-let futureCapsuleOptions=[],futureCapsuleResolving=false,futureCapsuleAssisted=false,futureCapsuleStartedAt=0;
+const FUTURE_CRANE_PICKUP_MS=[80,110,140];
+const FUTURE_CRANE_CORE_TOLERANCE=[16,12,8];
+const FUTURE_CRANE_KEY_STEP=14;
+const FUTURE_CRANE_KEY_FAST_STEP=30;
+const FUTURE_CRANE_RETURN_MS=260;
+const FUTURE_CRANE_PULSE_MS=110;
+let futureCapsuleOptions=[],futureCapsuleResolving=false,futureCapsuleAssisted=false;
 let futureCapsuleSelectedIndex=-1,futureCapsuleEnergy=0,futureCapsuleTimers=new Set(),futureCapsuleEpoch=0;
+let futureCranePhase="idle",futureCranePointerId=null,futureCraneHeldIndex=-1,futureCraneHoverIndex=-1;
+let futureCranePickupTimer=0,futureCraneHoverSince=0,futureCraneX=0,futureCraneY=0;
+let futureCraneDragStartX=0,futureCraneDragStartY=0,futureCraneHookStartX=0,futureCraneHookStartY=0;
+let futureCraneFollowX=0,futureCraneFollowY=0,futureCraneLatchPayloadY=0,futureCraneLifted=false,futureCraneCoreReady=false;
+let futureCraneSubmissionCommitted=false,futureCraneKeyboardActive=false,futureCraneGeometry=null,futureCraneGeometryDirty=true;
 const SPACE_GALAXY_WIND_GOAL=Math.PI*2*3.25;
 let spaceGalaxyOptions=[],spaceGalaxyRotation=0,spaceGalaxyPhase="idle",spaceGalaxyPointerId=null,spaceGalaxyPointerAngle=0;
 let spaceGalaxyPointerX=0,spaceGalaxyPointerY=0,spaceGalaxyDragged=false,spaceGalaxySuppressClick=false,spaceGalaxyWind=0,spaceGalaxyWindStage=0;
@@ -2594,8 +2603,25 @@ if(seaFireButton){
 window.addEventListener("keydown",handleSeaKeyDown);
 window.addEventListener("keyup",handleSeaKeyUp);
 function handleFutureCapsuleKeyDown(event){
- if(!futureCapsulePlayable()||event.defaultPrevented||(event.key!=="ArrowUp"&&event.key!=="ArrowDown"&&event.key!=="ArrowLeft"&&event.key!=="ArrowRight"))return;
+ if(!futureCraneScreenActive()||event.defaultPrevented)return;
  const target=event.target,inside=target&&typeof target.closest==="function"?target.closest(".future-capsule-lane"):null;
+ const isArrow=event.key==="ArrowUp"||event.key==="ArrowDown"||event.key==="ArrowLeft"||event.key==="ArrowRight";
+ const isAction=event.code==="Space"||event.key===" "||event.key==="Enter";
+ if(event.key==="Escape"&&(futureCranePointerId!==null||futureCraneHeldIndex>=0||futureCranePhase!=="idle")){
+  event.preventDefault();returnFutureCranePayload("だいじょうぶ。もう いちど！",true);return;
+ }
+ if(futureCraneHeldIndex>=0&&(isArrow||isAction)){
+  event.preventDefault();
+  if(isAction){if(!event.repeat)releaseFutureCranePayload(false);return;}
+  const step=event.shiftKey?FUTURE_CRANE_KEY_FAST_STEP:FUTURE_CRANE_KEY_STEP;
+  moveFutureCraneHook((event.key==="ArrowRight"?step:event.key==="ArrowLeft"?-step:0),(event.key==="ArrowDown"?step:event.key==="ArrowUp"?-step:0));
+  return;
+ }
+ if(isAction&&inside&&!event.repeat){
+  event.preventDefault();const entry=futureCapsuleOptions.find(item=>item.button===inside);
+  if(entry&&!entry.button.disabled)grabFutureCraneByKeyboard(entry.index);return;
+ }
+ if(!isArrow)return;
  if(!inside&&target&&typeof target.matches==="function"&&target.matches("button,a,input,select,textarea,[contenteditable='true']"))return;
  event.preventDefault();
  const direction=event.key==="ArrowLeft"||event.key==="ArrowUp"?-1:1,enabled=futureCapsuleOptions.filter(entry=>!entry.button.disabled);
@@ -3887,9 +3913,12 @@ function futureQuestionOptions(question){
  const wrong=shuffle((question&&question.d||[]).map(x=>({e:x[0],t:x[1],ok:false})))[0];
  return shuffle([{e:question.a[0],t:question.a[1],ok:true},wrong].filter(Boolean));
 }
+function futureCraneScreenActive(){
+ return !window.__PONO_TIER_LOCKED__&&isFutureStage()&&playing&&!driving&&quiz.classList.contains("show")&&
+  futureCapsuleLayer&&!futureCapsuleLayer.hidden;
+}
 function futureCapsulePlayable(){
- return !window.__PONO_TIER_LOCKED__&&isFutureStage()&&playing&&!driving&&!answerLocked&&!futureCapsuleResolving&&
-  quiz.classList.contains("show")&&futureCapsuleLayer&&!futureCapsuleLayer.hidden;
+ return futureCraneScreenActive()&&!answerLocked&&!futureCapsuleResolving&&futureCranePointerId===null&&futureCraneHeldIndex<0;
 }
 function futureCapsuleGuide(message){
  const guide=futureCapsuleLayer&&futureCapsuleLayer.querySelector(".future-capsule-guide");if(guide)guide.textContent=message;
@@ -3897,9 +3926,28 @@ function futureCapsuleGuide(message){
 function setFutureCapsuleTimer(callback,delay){
  const timer=setTimeout(()=>{futureCapsuleTimers.delete(timer);callback();},delay);futureCapsuleTimers.add(timer);return timer;
 }
+function clearFutureCranePickupTimer(){
+ if(!futureCranePickupTimer)return;clearTimeout(futureCranePickupTimer);futureCapsuleTimers.delete(futureCranePickupTimer);futureCranePickupTimer=0;
+}
+function setFutureCranePhase(phase){
+ futureCranePhase=phase;
+ const board=futureCapsuleLayer&&futureCapsuleLayer.querySelector(".future-capsule-board");if(!board)return;
+ board.dataset.cranePhase=phase;board.dataset.heldPod=futureCraneHeldIndex<0?"":String(futureCraneHeldIndex);
+ board.dataset.pointerActive=futureCranePointerId===null?"false":"true";
+}
+function releaseFutureCranePointerCapture(){
+ const board=futureCapsuleLayer&&futureCapsuleLayer.querySelector(".future-capsule-board"),pointerId=futureCranePointerId;
+ futureCranePointerId=null;
+ if(board&&pointerId!==null){try{if(!board.hasPointerCapture||board.hasPointerCapture(pointerId))board.releasePointerCapture(pointerId);}catch(_){}}
+ if(board)board.dataset.pointerActive="false";
+}
 function clearFutureCapsuleGame(){
+ releaseFutureCranePointerCapture();clearFutureCranePickupTimer();
  futureCapsuleEpoch++;futureCapsuleTimers.forEach(clearTimeout);futureCapsuleTimers.clear();
- futureCapsuleOptions=[];futureCapsuleSelectedIndex=-1;futureCapsuleResolving=false;futureCapsuleAssisted=false;futureCapsuleStartedAt=0;futureCapsuleEnergy=0;
+ futureCapsuleOptions=[];futureCapsuleSelectedIndex=-1;futureCapsuleResolving=false;futureCapsuleAssisted=false;futureCapsuleEnergy=0;
+ futureCranePhase="idle";futureCraneHeldIndex=-1;futureCraneHoverIndex=-1;futureCraneHoverSince=0;futureCraneX=0;futureCraneY=0;
+ futureCraneFollowX=0;futureCraneFollowY=0;futureCraneLatchPayloadY=0;futureCraneLifted=false;futureCraneCoreReady=false;
+ futureCraneSubmissionCommitted=false;futureCraneKeyboardActive=false;futureCraneGeometry=null;futureCraneGeometryDirty=true;
  document.body.classList.remove("future-capsule-active","future-capsule-complete");
  quiz.classList.remove("future-capsule-quiz");choicesEl.classList.remove("future-capsule-mode");choicesEl.setAttribute("aria-label","こたえを えらぶ");
  if(futureCapsuleLayer){futureCapsuleLayer.replaceChildren();futureCapsuleLayer.hidden=true;}
@@ -3909,95 +3957,216 @@ function updateFutureCapsuleHistory(current){
  futureCapsuleLayer.querySelectorAll(".future-capsule-progress i").forEach((building,index)=>building.classList.toggle("is-on",index<current));
  const progress=futureCapsuleLayer.querySelector(".future-capsule-progress");if(progress)progress.setAttribute("aria-label","まちの あかり "+current+"こ てんとう");
 }
-function updateFutureCapsuleVisual(now){
- if(!futureCapsuleLayer||futureCapsuleLayer.hidden||!futureCapsuleOptions.length)return;
- const board=futureCapsuleLayer.querySelector(".future-capsule-board"),viewportHeight=window.innerHeight||390;
- if(board&&quiz.classList.contains("show")){
-  const rect=quiz.getBoundingClientRect();board.style.setProperty("--future-quiz-inset",Math.max(84,viewportHeight-rect.top+10)+"px");
- }
- const elapsed=Math.max(0,(Number(now)||_nowMs())-futureCapsuleStartedAt),travel=FUTURE_CAPSULE_TRAVEL_MS[level]||FUTURE_CAPSULE_TRAVEL_MS[0];
+function syncFutureCraneGeometry(){
+ const board=futureCapsuleLayer&&futureCapsuleLayer.querySelector(".future-capsule-board");if(!board||futureCapsuleLayer.hidden)return;
+ const boardRect=board.getBoundingClientRect(),quizRect=quiz.getBoundingClientRect(),height=boardRect.height||window.innerHeight||390;
+ const quizTop=quiz.classList.contains("show")?quizRect.top-boardRect.top:height-98;
+ board.style.setProperty("--future-quiz-inset",Math.max(84,height-quizTop+8)+"px");
+ const railY=clamp(height*.23,78,126),stationMax=Math.max(142,quizTop-(height<=360?36:44));
+ const stationY=Math.min(Math.max(height*.53,150),stationMax);
+ board.style.setProperty("--future-crane-rail-y",railY.toFixed(1)+"px");
+ board.style.setProperty("--future-crane-station-y",stationY.toFixed(1)+"px");
+ const coreInner=board.querySelector(".future-crane-core-slot")?.getBoundingClientRect();
+ futureCraneGeometry={
+  width:boardRect.width,height,homeX:boardRect.width/2,homeY:railY+34,minX:22,maxX:Math.max(22,boardRect.width-22),
+  minY:railY+2,maxY:Math.max(railY+2,quizTop-18),railY,
+  coreInner:coreInner?{left:coreInner.left-boardRect.left,right:coreInner.right-boardRect.left,top:coreInner.top-boardRect.top,bottom:coreInner.bottom-boardRect.top}:null
+ };
  futureCapsuleOptions.forEach(entry=>{
-  if(futureCapsuleResolving&&entry.index===futureCapsuleSelectedIndex)return;
-  let progress=futureReducedMotion()?(.28+entry.index*.44):((elapsed/travel+entry.index*.41)%1);
-  if(entry.index%2)progress=1-progress;
-  entry.x=12+progress*76;entry.button.style.setProperty("--capsule-x",entry.x.toFixed(2)+"%");
+  const payload=entry.button.querySelector(".future-capsule")?.getBoundingClientRect(),pickup=entry.cradle.getBoundingClientRect();
+  const rect=payload||entry.button.getBoundingClientRect();
+  entry.homeX=(rect.left+rect.right)/2-boardRect.left;entry.homeY=(rect.top+rect.bottom)/2-boardRect.top;
+  entry.pickupRect={left:pickup.left-boardRect.left,right:pickup.right-boardRect.left,top:pickup.top-boardRect.top,bottom:pickup.bottom-boardRect.top};
  });
+ if(futureCranePointerId===null&&futureCraneHeldIndex<0&&futureCranePhase==="idle"){
+  futureCraneX=futureCraneGeometry.homeX;futureCraneY=futureCraneGeometry.homeY;
+ }else{
+  futureCraneX=clamp(futureCraneX,futureCraneGeometry.minX,futureCraneGeometry.maxX);
+  futureCraneY=clamp(futureCraneY,futureCraneGeometry.minY,futureCraneGeometry.maxY);
+ }
+ futureCraneGeometryDirty=false;applyFutureCraneVisual();
 }
-function selectFutureCapsule(index){
- if(!futureCapsulePlayable())return;
- const entry=futureCapsuleOptions[index];if(!entry||entry.button.disabled)return;
- ensureAC();futureCapsuleSelectedIndex=index;futureCapsuleResolving=true;
- entry.button.classList.add("is-selected");entry.button.setAttribute("aria-pressed","true");
+function updateFutureCapsuleVisual(){
+ if(!futureCapsuleLayer||futureCapsuleLayer.hidden||!futureCapsuleOptions.length||!futureCraneGeometryDirty)return;
+ syncFutureCraneGeometry();
+}
+function futureCranePayloadCenter(){
+ const entry=futureCapsuleOptions[futureCraneHeldIndex];
+ return entry?{x:futureCraneX+futureCraneFollowX,y:futureCraneY+futureCraneFollowY}:null;
+}
+function applyFutureCraneVisual(){
+ const board=futureCapsuleLayer&&futureCapsuleLayer.querySelector(".future-capsule-board");if(!board||!futureCraneGeometry)return;
+ board.style.setProperty("--future-crane-x",futureCraneX.toFixed(2)+"px");board.style.setProperty("--future-crane-y",futureCraneY.toFixed(2)+"px");
+ board.style.setProperty("--future-crane-cable-scale",Math.max(.06,(futureCraneY-futureCraneGeometry.railY)/100).toFixed(3));
+ const entry=futureCapsuleOptions[futureCraneHeldIndex],payload=futureCranePayloadCenter();
+ if(entry&&payload)entry.button.style.transform="translate3d("+(payload.x-entry.homeX).toFixed(2)+"px,"+(payload.y-entry.homeY).toFixed(2)+"px,0)";
+ board.classList.toggle("is-pointer-active",futureCranePointerId!==null);board.classList.toggle("is-carrying",futureCraneHeldIndex>=0);
+ board.classList.toggle("is-lifted",futureCraneLifted);board.classList.toggle("is-core-ready",futureCraneCoreReady);
+ board.dataset.heldPod=futureCraneHeldIndex<0?"":String(futureCraneHeldIndex);board.dataset.pointerActive=futureCranePointerId===null?"false":"true";
+}
+function futureCranePickupIndex(){
+ if(!futureCraneGeometry)return -1;
+ const hook={left:futureCraneX-10,right:futureCraneX+10,top:futureCraneY-9,bottom:futureCraneY+9};
+ const entry=futureCapsuleOptions.find(item=>!item.button.disabled&&item.pickupRect&&hook.right>=item.pickupRect.left&&hook.left<=item.pickupRect.right&&hook.bottom>=item.pickupRect.top&&hook.top<=item.pickupRect.bottom);
+ return entry?entry.index:-1;
+}
+function trackFutureCranePickup(){
+ if(futureCranePointerId===null||futureCraneHeldIndex>=0)return;
+ const index=futureCranePickupIndex();
+ if(index===futureCraneHoverIndex)return;
+ clearFutureCranePickupTimer();futureCraneHoverIndex=index;futureCraneHoverSince=index<0?0:_nowMs();
+ futureCapsuleOptions.forEach(entry=>entry.cradle.classList.toggle("is-hovered",entry.index===index));
+ if(index<0)return;
+ const epoch=futureCapsuleEpoch,delay=FUTURE_CRANE_PICKUP_MS[level]||FUTURE_CRANE_PICKUP_MS[1];
+ futureCranePickupTimer=setFutureCapsuleTimer(()=>{
+  futureCranePickupTimer=0;
+  if(epoch!==futureCapsuleEpoch||futureCranePointerId===null||futureCraneHeldIndex>=0||futureCranePickupIndex()!==index)return;
+  const entry=futureCapsuleOptions[index];if(entry&&!entry.button.disabled)latchFutureCranePod(entry,false);
+ },delay);
+}
+function latchFutureCranePod(entry,keyboard){
+ if(!entry||entry.button.disabled||futureCraneHeldIndex>=0||!futureCraneGeometry)return;
+ clearFutureCranePickupTimer();futureCraneHoverIndex=-1;futureCraneHeldIndex=entry.index;futureCapsuleSelectedIndex=entry.index;
+ futureCraneKeyboardActive=!!keyboard;futureCraneFollowX=entry.homeX-futureCraneX;futureCraneFollowY=entry.homeY-futureCraneY;
+ futureCraneLatchPayloadY=entry.homeY;futureCraneLifted=false;futureCraneCoreReady=false;
+ entry.button.classList.add("is-selected");entry.button.setAttribute("aria-pressed","true");entry.cradle.classList.remove("is-hovered");
  futureCapsuleOptions.forEach(item=>{if(item!==entry)item.button.setAttribute("aria-disabled","true");});
- const board=futureCapsuleLayer.querySelector(".future-capsule-board");if(board)board.classList.add("is-capturing");
- futureCapsuleGuide(entry.o.t+"を キャッチ！");tone(620,0,.09,"triangle",.055);tone(880,.07,.12,"sine",.045);
- resolveFutureCapsule(entry);
+ setFutureCranePhase("latched");futureCapsuleGuide("つかんだ！ うえへ もちあげよう");tone(620,0,.08,"triangle",.05);tone(820,.06,.1,"sine",.04);applyFutureCraneVisual();
+}
+function grabFutureCraneByKeyboard(index){
+ if(!futureCapsulePlayable())return;
+ if(futureCraneGeometryDirty||!futureCraneGeometry)syncFutureCraneGeometry();
+ const entry=futureCapsuleOptions[index];if(!entry||entry.button.disabled||!futureCraneGeometry)return;
+ ensureAC();futureCraneX=entry.homeX;futureCraneY=entry.homeY;latchFutureCranePod(entry,true);
+}
+function updateFutureCraneCarryState(){
+ const payload=futureCranePayloadCenter();if(!payload||!futureCraneGeometry)return;
+ const liftDistance=clamp(futureCraneGeometry.height*.32,44,64);
+ if(!futureCraneLifted&&futureCraneLatchPayloadY-payload.y>=liftDistance)futureCraneLifted=true;
+ const inner=futureCraneGeometry.coreInner,tolerance=FUTURE_CRANE_CORE_TOLERANCE[level]||FUTURE_CRANE_CORE_TOLERANCE[1];
+ const horizontallyReady=!!(futureCraneLifted&&inner&&payload.x>=inner.left-tolerance&&payload.x<=inner.right+tolerance);
+ futureCraneCoreReady=!!(horizontallyReady&&payload.y>=inner.top-tolerance&&payload.y<=inner.bottom+tolerance);
+ let next="latched",message="つかんだ！ うえへ もちあげよう";
+ if(futureCraneCoreReady){next="core-ready";message="ここで はなそう！";}
+ else if(horizontallyReady){next="core-above";message="ゆっくり コアへ おろそう";}
+ else if(futureCraneLifted){next="lifted";message="コアの うえまで はこぼう";}
+ if(next!==futureCranePhase){setFutureCranePhase(next);futureCapsuleGuide(message);if(next==="core-ready")tone(880,0,.08,"sine",.045);}
+ applyFutureCraneVisual();
+}
+function setFutureCraneHook(x,y){
+ if(!futureCraneGeometry)return;
+ futureCraneX=clamp(x,futureCraneGeometry.minX,futureCraneGeometry.maxX);futureCraneY=clamp(y,futureCraneGeometry.minY,futureCraneGeometry.maxY);
+ applyFutureCraneVisual();if(futureCraneHeldIndex>=0)updateFutureCraneCarryState();else trackFutureCranePickup();
+}
+function moveFutureCraneHook(dx,dy){
+ if(futureCraneGeometryDirty||!futureCraneGeometry)syncFutureCraneGeometry();if(!futureCraneGeometry)return;
+ setFutureCraneHook(futureCraneX+dx,futureCraneY+dy);
+}
+function handleFutureCranePointerDown(event){
+ if(!futureCapsulePlayable()||event.button!==0||event.isPrimary===false)return;
+ if(futureCraneGeometryDirty||!futureCraneGeometry)syncFutureCraneGeometry();if(!futureCraneGeometry)return;
+ event.preventDefault();ensureAC();futureCranePointerId=event.pointerId;futureCraneKeyboardActive=false;
+ futureCraneDragStartX=event.clientX;futureCraneDragStartY=event.clientY;futureCraneHookStartX=futureCraneX;futureCraneHookStartY=futureCraneY;
+ const board=event.currentTarget;try{board.setPointerCapture(event.pointerId);}catch(_){}
+ setFutureCranePhase("dragging");applyFutureCraneVisual();trackFutureCranePickup();
+}
+function handleFutureCranePointerMove(event){
+ if(event.pointerId!==futureCranePointerId||!futureCraneGeometry)return;
+ event.preventDefault();setFutureCraneHook(futureCraneHookStartX+(event.clientX-futureCraneDragStartX),futureCraneHookStartY+(event.clientY-futureCraneDragStartY));
+}
+function finishFutureCranePointer(event){
+ if(event.pointerId!==futureCranePointerId)return;event.preventDefault();releaseFutureCranePayload(false);
+}
+function cancelFutureCranePointer(event){
+ if(event.pointerId!==futureCranePointerId)return;releaseFutureCranePayload(true);
+}
+function returnFutureCranePayload(message){
+ const board=futureCapsuleLayer&&futureCapsuleLayer.querySelector(".future-capsule-board"),entry=futureCapsuleOptions[futureCraneHeldIndex],epoch=futureCapsuleEpoch;
+ clearFutureCranePickupTimer();releaseFutureCranePointerCapture();futureCapsuleResolving=true;futureCraneCoreReady=false;futureCraneLifted=false;
+ if(board){board.classList.remove("is-pointer-active","is-carrying","is-core-ready","is-lifted","is-rejected");board.classList.add("is-returning");}
+ if(futureCraneGeometry){futureCraneX=futureCraneGeometry.homeX;futureCraneY=futureCraneGeometry.homeY;}
+ if(entry&&futureCraneGeometry){futureCraneFollowX=entry.homeX-futureCraneX;futureCraneFollowY=entry.homeY-futureCraneY;entry.button.style.transform="translate3d(0,0,0)";}
+ setFutureCranePhase("returning");futureCapsuleGuide(message||"だいじょうぶ。もう いちど！");applyFutureCraneVisual();
+ setFutureCapsuleTimer(()=>{
+  if(epoch!==futureCapsuleEpoch)return;
+  if(board)board.classList.remove("is-returning","is-carrying","is-rejected");
+  if(entry){entry.button.classList.remove("is-selected","is-rejected");entry.button.setAttribute("aria-pressed","false");}
+  futureCraneHeldIndex=-1;futureCapsuleSelectedIndex=-1;futureCraneHoverIndex=-1;futureCraneFollowX=0;futureCraneFollowY=0;
+  futureCraneSubmissionCommitted=false;futureCraneKeyboardActive=false;futureCapsuleResolving=false;
+  futureCapsuleOptions.forEach(item=>item.button.setAttribute("aria-disabled",item.button.disabled?"true":"false"));
+  setFutureCranePhase("idle");applyFutureCraneVisual();
+  const focusEntry=entry&&!entry.button.disabled?entry:futureCapsuleOptions.find(item=>!item.button.disabled);if(focusEntry)focusEntry.button.focus({preventScroll:true});
+ },futureReducedMotion()?220:FUTURE_CRANE_RETURN_MS);
+}
+function releaseFutureCranePayload(cancelled){
+ clearFutureCranePickupTimer();releaseFutureCranePointerCapture();
+ if(!cancelled&&futureCraneHeldIndex>=0&&futureCraneCoreReady){resolveFutureCapsule(futureCapsuleOptions[futureCraneHeldIndex]);return;}
+ returnFutureCranePayload("だいじょうぶ。もう いちど！");
 }
 function resolveFutureCapsule(entry){
- if(!entry||futureCapsuleSelectedIndex!==entry.index)return;
- const epoch=futureCapsuleEpoch,board=futureCapsuleLayer.querySelector(".future-capsule-board");
+ if(!entry||futureCraneHeldIndex!==entry.index||!futureCraneCoreReady||futureCraneSubmissionCommitted)return;
+ futureCraneSubmissionCommitted=true;futureCapsuleResolving=true;releaseFutureCranePointerCapture();clearFutureCranePickupTimer();
+ const epoch=futureCapsuleEpoch,board=futureCapsuleLayer.querySelector(".future-capsule-board");setFutureCranePhase("resolving");
  if(!entry.o.ok){
-  entry.button.classList.add("is-rejected");if(board){board.classList.remove("is-capturing");board.classList.add("is-rejected");}
-  futureCapsuleGuide("こっちじゃないよ。もう ひとつ！");
-  setFutureCapsuleTimer(()=>{
-   if(epoch!==futureCapsuleEpoch)return;onPick(entry.button,{ok:false,mode:"future"});
-   setFutureCapsuleTimer(()=>{
-    if(epoch!==futureCapsuleEpoch)return;
-    if(board)board.classList.remove("is-rejected");futureCapsuleSelectedIndex=-1;futureCapsuleResolving=false;
-    futureCapsuleOptions.forEach(item=>{item.button.setAttribute("aria-pressed","false");item.button.setAttribute("aria-disabled",item.button.disabled?"true":"false");});
-    const next=futureCapsuleOptions.find(item=>!item.button.disabled);if(next){next.button.classList.add("glow");next.button.focus({preventScroll:true});}
-    futureCapsuleGuide("もう ひとつの カプセルを タッチ！");
-   },620);
-  },260);return;
+  entry.button.classList.add("is-rejected");if(board)board.classList.add("is-rejected");futureCapsuleGuide("もう ひとつの ポッドを はこぼう");
+  setFutureCapsuleTimer(()=>{if(epoch!==futureCapsuleEpoch)return;onPick(entry.button,{ok:false,mode:"future"});returnFutureCranePayload("もう ひとつの ポッドを はこぼう");},180);return;
  }
- entry.button.classList.add("is-capturing");futureCapsuleEnergy=0;
+ entry.button.classList.add("is-inserting");if(board)board.classList.add("is-inserting");futureCapsuleEnergy=0;
  const pulse=()=>{
   if(epoch!==futureCapsuleEpoch)return;
   futureCapsuleEnergy+=1;
-  const energyMeter=futureCapsuleLayer.querySelector(".future-capsule-energy"),cells=futureCapsuleLayer.querySelectorAll(".future-capsule-energy i");
-  if(energyMeter){energyMeter.setAttribute("aria-valuenow",String(futureCapsuleEnergy));energyMeter.setAttribute("aria-valuetext","エナジー "+futureCapsuleEnergy+"こ");}
-  if(cells[futureCapsuleEnergy-1])cells[futureCapsuleEnergy-1].classList.add("is-on");
-  tone(660+futureCapsuleEnergy*170,0,.11,"triangle",.07);
-  if(futureCapsuleEnergy<3){setFutureCapsuleTimer(pulse,futureReducedMotion()?80:FUTURE_CAPSULE_PULSE_MS);return;}
-  if(board){board.classList.remove("is-capturing");board.classList.add("is-complete");}
-  document.body.classList.add("future-capsule-complete");updateFutureCapsuleHistory(qSeg+1);
-  futureCapsuleGuide("まちが ひかった！ リニア はっしん！");tone(988,.08,.2,"sine",.075);confetti(10);
-  setFutureCapsuleTimer(()=>{
-   if(epoch!==futureCapsuleEpoch)return;onPick(entry.button,{ok:true,mode:"future"});
-   setFutureCapsuleTimer(()=>{if(epoch===futureCapsuleEpoch)clearFutureCapsuleGame();},420);
-  },futureReducedMotion()?240:920);
+  const energy=futureCapsuleLayer.querySelector(".future-capsule-energy"),cells=futureCapsuleLayer.querySelectorAll(".future-capsule-energy i");
+  if(energy){energy.setAttribute("aria-valuenow",String(futureCapsuleEnergy));energy.setAttribute("aria-valuetext","エナジー "+futureCapsuleEnergy+"こ");}
+  if(cells[futureCapsuleEnergy-1])cells[futureCapsuleEnergy-1].classList.add("is-on");tone(650+futureCapsuleEnergy*150,0,.09,"triangle",.055);
+  if(futureCapsuleEnergy<3){setFutureCapsuleTimer(pulse,futureReducedMotion()?45:FUTURE_CRANE_PULSE_MS);return;}
+  if(board){board.classList.remove("is-inserting");board.classList.add("is-complete");}
+  document.body.classList.add("future-capsule-complete");updateFutureCapsuleHistory(qSeg+1);setFutureCranePhase("complete");
+  futureCapsuleGuide(qSeg===QN-1?"みらいシティ かんせい！":"まちが ひかった！ リニア はっしん！");tone(988,.06,.2,"sine",.07);confetti(10);
+  onPick(entry.button,{ok:true,mode:"future",skipOkSound:true});
+  setFutureCapsuleTimer(()=>{if(epoch===futureCapsuleEpoch)clearFutureCapsuleGame();},futureReducedMotion()?280:480);
  };
- setFutureCapsuleTimer(pulse,futureReducedMotion()?30:160);
+ setFutureCapsuleTimer(pulse,futureReducedMotion()?30:80);
 }
 function assistFutureCapsuleGame(){
- if(!futureCapsuleLayer||futureCapsuleLayer.hidden||futureCapsuleResolving)return;
+ if(!futureCapsuleLayer||futureCapsuleLayer.hidden||futureCapsuleResolving||futureCranePointerId!==null||futureCraneHeldIndex>=0)return;
  futureCapsuleAssisted=true;
  const wrong=futureCapsuleOptions.find(entry=>!entry.o.ok),correct=futureCapsuleOptions.find(entry=>entry.o.ok);if(!correct)return;
  if(wrong){wrong.button.classList.add("dim");wrong.button.disabled=true;wrong.button.setAttribute("aria-disabled","true");}
  correct.button.classList.add("glow");correct.button.focus({preventScroll:true});
- futureCapsuleLayer.querySelector(".future-capsule-board")?.classList.add("is-assisted");futureCapsuleGuide("ひかる カプセルを タッチ！");
+ futureCapsuleLayer.querySelector(".future-capsule-board")?.classList.add("is-assisted");futureCapsuleGuide("ひかる ポッドを コアへ はこぼう");
 }
 function renderFutureCapsuleGame(){
  if(!futureCapsuleLayer)return;
- futureCapsuleOptions=[];futureCapsuleSelectedIndex=-1;futureCapsuleResolving=false;futureCapsuleAssisted=false;futureCapsuleEnergy=0;futureCapsuleStartedAt=_nowMs();
+ futureCapsuleOptions=[];futureCapsuleSelectedIndex=-1;futureCapsuleResolving=false;futureCapsuleAssisted=false;futureCapsuleEnergy=0;
+ futureCranePhase="idle";futureCranePointerId=null;futureCraneHeldIndex=-1;futureCraneHoverIndex=-1;futureCraneLifted=false;futureCraneCoreReady=false;
+ futureCraneSubmissionCommitted=false;futureCraneKeyboardActive=false;futureCraneGeometry=null;futureCraneGeometryDirty=true;
  document.body.classList.add("future-capsule-active");quiz.classList.add("future-capsule-quiz");choicesEl.classList.add("future-capsule-mode");choicesEl.setAttribute("aria-label","ただしい カプセルを えらぶ");
  futureCapsuleLayer.hidden=false;futureCapsuleLayer.replaceChildren();
- const board=document.createElement("div");board.className="future-capsule-board";board.setAttribute("aria-label","ミライ カプセル キャッチ");
- const guide=document.createElement("div");guide.className="future-capsule-guide";guide.setAttribute("role","status");guide.setAttribute("aria-live","polite");guide.textContent="ただしい カプセルを タッチ！";
+ const board=document.createElement("div");board.className="future-capsule-board";board.setAttribute("aria-label","ミライシティの クレーン");
+ const guide=document.createElement("div");guide.className="future-capsule-guide";guide.setAttribute("role","status");guide.setAttribute("aria-live","polite");guide.textContent="フックを こたえの ポッドまで うごかそう";
  const progress=document.createElement("div");progress.className="future-capsule-progress";progress.setAttribute("role","status");for(let index=0;index<QN;index++)progress.appendChild(document.createElement("i"));
  const city=document.createElement("div");city.className="future-capsule-city";city.setAttribute("aria-hidden","true");
- const reactor=document.createElement("div");reactor.className="future-capsule-reactor";reactor.setAttribute("aria-hidden","true");reactor.textContent="✦";
- const energy=document.createElement("div");energy.className="future-capsule-energy";energy.setAttribute("role","progressbar");energy.setAttribute("aria-label","まちの エナジー");energy.setAttribute("aria-valuemin","0");energy.setAttribute("aria-valuemax","3");for(let index=0;index<3;index++)energy.appendChild(document.createElement("i"));
- const lanes=document.createElement("div");lanes.className="future-capsule-lanes";
+ const rail=document.createElement("div");rail.className="future-crane-rail";rail.setAttribute("aria-hidden","true");
+ const trolley=document.createElement("div");trolley.className="future-crane-trolley";trolley.setAttribute("aria-hidden","true");
+ const rig=document.createElement("div");rig.className="future-crane-hook-rig";rig.setAttribute("aria-hidden","true");
+ const cable=document.createElement("span");cable.className="future-crane-cable";const hook=document.createElement("span");hook.className="future-crane-hook";
+ const clawLeft=document.createElement("i"),clawRight=document.createElement("i");hook.append(clawLeft,clawRight);rig.append(cable,hook);
+ const core=document.createElement("div");core.className="future-crane-core";core.setAttribute("aria-hidden","true");
+ const coreRing=document.createElement("span");coreRing.className="future-crane-core-ring";const coreSlot=document.createElement("span");coreSlot.className="future-crane-core-slot";core.append(coreRing,coreSlot);
+ const energy=document.createElement("div");energy.className="future-capsule-energy";energy.setAttribute("role","progressbar");energy.setAttribute("aria-label","まちの エナジー");energy.setAttribute("aria-valuemin","0");energy.setAttribute("aria-valuemax","3");energy.setAttribute("aria-valuenow","0");for(let index=0;index<3;index++)energy.appendChild(document.createElement("i"));core.appendChild(energy);
+ const stations=document.createElement("div");stations.className="future-crane-stations";
  futureQuestionOptions(cur).forEach((o,index)=>{
-  const button=document.createElement("button");button.type="button";button.className="choice future-capsule-lane lane-"+(index+1);button.dataset.ok=o.ok?"1":"0";button.setAttribute("aria-label",o.t+"の カプセル");button.setAttribute("aria-pressed","false");
-  const capsule=document.createElement("span");capsule.className="future-capsule";capsule.setAttribute("aria-hidden","true");
+  const cradle=document.createElement("div");cradle.className="future-crane-cradle cradle-"+(index+1);const base=document.createElement("span");base.className="future-crane-cradle-base";base.setAttribute("aria-hidden","true");
+  const button=document.createElement("button");button.type="button";button.className="choice future-capsule-lane future-crane-pod pod-"+(index+1);button.dataset.ok=o.ok?"1":"0";button.setAttribute("aria-label",o.t+"の ポッド。スペースで つかむ");button.setAttribute("aria-pressed","false");
+  const capsule=document.createElement("span");capsule.className="future-capsule future-crane-payload";capsule.setAttribute("aria-hidden","true");
   const art=createQuizArt(o.e,o.t);const label=document.createElement("span");label.className="lb";label.textContent=o.t;capsule.append(art,label);button.appendChild(capsule);
-  const entry={button,o,index,x:50};futureCapsuleOptions.push(entry);button.addEventListener("click",()=>selectFutureCapsule(index));lanes.appendChild(button);
+  cradle.append(base,button);stations.appendChild(cradle);futureCapsuleOptions.push({button,cradle,o,index,homeX:0,homeY:0,pickupRect:null});
  });
  const runner=document.createElement("div");runner.className="future-capsule-runner";runner.setAttribute("aria-hidden","true");runner.innerHTML="<i></i><i></i><i></i>";
- board.append(city,reactor,energy,lanes,runner,guide,progress);futureCapsuleLayer.appendChild(board);
- illustratedText(hintText,"city","ながれる カプセルを タッチ","hint-inline-art");updateFutureCapsuleHistory(qSeg);updateFutureCapsuleVisual(futureCapsuleStartedAt);
+ board.append(city,rail,trolley,core,stations,runner,rig,guide,progress);futureCapsuleLayer.appendChild(board);
+ board.addEventListener("pointerdown",handleFutureCranePointerDown,{passive:false});board.addEventListener("pointermove",handleFutureCranePointerMove,{passive:false});
+ board.addEventListener("pointerup",finishFutureCranePointer,{passive:false});board.addEventListener("pointercancel",cancelFutureCranePointer);board.addEventListener("lostpointercapture",cancelFutureCranePointer);
+ setFutureCranePhase("idle");illustratedText(hintText,"city","ポッドを コアへ はこぼう","hint-inline-art");updateFutureCapsuleHistory(qSeg);syncFutureCraneGeometry();
 }
 function spaceQuestionOptions(question){
  const wrong=shuffle((question&&question.d||[]).map(x=>({e:x[0],t:x[1],ok:false})))[0];
