@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2182: プロフィールのアバター選択に free/book/app tier ロックを追加 (common/tier.js: FREE_AVATAR_PRESET_IDS/BOOK_AVATAR_PRESET_IDS/isAvatarPresetUnlocked、hasBookUpgradeContent/getBookLimitPromoCopy に avatar 分岐追加。play.html: .tier-locked CSS・ロック判定・クリックガード追加)。common/tier.js は CRITICAL_ASSETS_SCRIPTS の precache 対象のため CACHE_VERSION バンプ必須 (batch:1300-avatar-tier-gating)。play.html PAGE_CACHE_VERSION と同期 (2182)。
 // v2181: おべんとうの「とりけす」ボタン生成を単一factoryへまとめ、自動復元説明中／通常時の有効状態とpointerdown案内配線を実ボタン相当の回帰テストで固定した (batch:1296-bento-undo-focus review follow-up)。play.html PAGE_CACHE_VERSION と同期不要 (bento/index.html/テストのみ変更)。
 // v2180: おべんとうののり編集を自動で元に戻す説明中、「とりけす」を灰色にせず、現在のボタンへ白枠・指なしの青い案内枠を1個だけ表示。触れても履歴は変えず既存案内だけを返し、通常の取り消し可否は維持する (batch:1296-bento-undo-focus)。play.html PAGE_CACHE_VERSION と同期不要 (bento/index.html/テストのみ変更)。
 // v2179: 初回プレイ時のオンボーディング・チュートリアル (アバター作成案内→タイトル画面ツアーの4ステップ、2回目以降のセッションでは絵本あいことば案内を追加) を新規実装。common/onboarding/ 配下 (tour-engine.js/tour.css/steps-avatar.js/steps-title-tour.js/steps-book-unlock.js) を新規precache (batch:onboarding-tour)。play.html PAGE_CACHE_VERSION と同期 (2179)。rebase時にv2178 (batch:1294-nazonazo-settings-menu) と番号衝突したため+1で再採番。
@@ -106,7 +107,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2181;
+const CACHE_VERSION = 2182;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。

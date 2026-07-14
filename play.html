@@ -2453,6 +2453,54 @@
       text-overflow: ellipsis;
       pointer-events: none;
     }
+    /* ── ティアロック共通スタイル (free/book ユーザー向け) ──
+       TIER_POLICY.md §3: グレーアウト + 中央🔒で表現。 ×印は使わない。
+       静止画化 (transition/transform 無効) + 中央に 🔒 を疑似要素で表示。
+       タップ自体は受けて showSubscribePromo() の柔らかいモーダルへ誘導する。
+       ※ 子孫要素にも cascade して止める (子セレクタアニメ・タップ拡縮対策)。
+       oto/index.html:3530-3576 / quizland/index.html:2172-2213 と同一定義 (表記統一)。 */
+    .tier-locked,
+    .tier-locked * {
+      transition: none !important;
+      transform: none !important;
+      animation: none !important;
+      will-change: auto !important;
+    }
+    .tier-locked {
+      filter: saturate(0.35) brightness(0.94);
+      opacity: 0.6;
+      position: relative;
+    }
+    .tier-locked:hover,
+    .tier-locked:active,
+    .tier-locked:focus,
+    .tier-locked:hover *,
+    .tier-locked:active *,
+    .tier-locked:focus * {
+      opacity: 0.6;
+      transform: none !important;
+      animation: none !important;
+      transition: none !important;
+      filter: saturate(0.35) brightness(0.94);
+    }
+    /* ::after は鍵中央配置に transform が必須なので、子セレクタの transform:none を
+       個別 !important で上書きする (詳細度は同じだが宣言順で後勝ち + 個別宣言)。 */
+    .tier-locked::after {
+      content: '🔒';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) !important;
+      transform-origin: center center !important;
+      font-size: 1.8rem;
+      line-height: 1;
+      z-index: 5;
+      pointer-events: none;
+      filter: drop-shadow(0 1px 3px rgba(0,0,0,0.6));
+      opacity: 0.95;
+      animation: none !important;
+      transition: none !important;
+    }
     .avatar-edit-group {
       display: grid;
       gap: 6px;
@@ -11455,7 +11503,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2179; // sw.js CACHE_VERSION と同期 (初回オンボーディング・チュートリアル追加 batch:onboarding-tour、rebase時にv2178 (batch:1294-nazonazo-settings-menu) と番号衝突したため+1で再採番)
+    const PAGE_CACHE_VERSION = 2182; // sw.js CACHE_VERSION と同期 (avatar tier gating batch:1300: プロフィールのアバター選択に free/book/app tier ロックを追加。レビュー指摘によりsw.js側の未バンプを2182で是正・同期)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -11464,7 +11512,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v2166';
+    window.PONO_SW_VERSION = 'v2182'; // batch:1300: PAGE_CACHE_VERSION/sw.js CACHE_VERSION と同期 (avatar tier gating)
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
@@ -17076,6 +17124,17 @@
         btn.setAttribute('aria-pressed', selected && selected.preset === avatar.preset ? 'true' : 'false');
         btn.classList.toggle('is-active', !!selected && selected.preset === avatar.preset);
 
+        // ── tier ゲーティング (avatar 選択制限) ──
+        // PonoTier 未ロード時は locked=false のフェイルオープン (全開放) とし、選択機能を止めない。
+        const tierApiForBtn = window.PonoTier || null;
+        const avatarPresetLocked = !!(tierApiForBtn && typeof tierApiForBtn.isAvatarPresetUnlocked === 'function' && !tierApiForBtn.isAvatarPresetUnlocked(preset.id));
+        if (avatarPresetLocked) {
+          btn.classList.add('tier-locked');
+          btn.dataset.tierLocked = '1';
+          btn.setAttribute('aria-disabled', 'true');
+          btn.setAttribute('aria-label', (avatar.name || 'すがた') + '（えほんの あいことばで ひらくよ）');
+        }
+
         const thumb = document.createElement('span');
         thumb.className = 'pono-mini-avatar';
         thumb.setAttribute('aria-hidden', 'true');
@@ -17146,6 +17205,19 @@
       function setProfileFormAvatarPreset(id) {
         profileFormAvatarDraft = avatarFromPreset(id || AVATAR_DEFAULT_ID);
         renderProfileFormAvatar();
+      }
+      // tier ロック中のアバターがタップされた時の共通ガード。
+      // #profileAvatarControls / #profileStartAvatarControls の両クリックハンドラから
+      // 同一ロジックで呼ぶ (文言・誘導の表記ゆれ防止)。ロック中なら true を返し、
+      // 呼び出し側は setAvatarDraftPreset/setProfileFormAvatarPreset を呼ばず早期return する。
+      function handleAvatarPresetLockTap(btn) {
+        if (!btn || btn.dataset.tierLocked !== '1') return false;
+        const tierApi = window.PonoTier;
+        if (tierApi) {
+          const shown = typeof tierApi.showBookLimitPromo === 'function' && tierApi.showBookLimitPromo('avatar');
+          if (!shown && typeof tierApi.showTierLockPromo === 'function') tierApi.showTierLockPromo();
+        }
+        return true;
       }
       function renderAvatarPreview() {
         if (profileAvatarPreview) applyAvatarToElement(profileAvatarPreview, avatarDraft);
@@ -17497,6 +17569,7 @@
           if (!btn) return;
           e.preventDefault();
           if (presetBtn) {
+            if (handleAvatarPresetLockTap(presetBtn)) return;
             setAvatarDraftPreset(presetBtn.dataset.avatarPreset);
           } else if (partBtn) {
             setAvatarDraftPart(partBtn.dataset.avatarPart, partBtn.dataset.avatarValue);
@@ -17510,6 +17583,7 @@
           const btn = e.target.closest('[data-avatar-preset]');
           if (!btn) return;
           e.preventDefault();
+          if (handleAvatarPresetLockTap(btn)) return;
           setProfileFormAvatarPreset(btn.dataset.avatarPreset);
         });
       }

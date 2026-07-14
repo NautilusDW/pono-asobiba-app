@@ -290,6 +290,21 @@
     return false;
   }
 
+  // ---- 絵本購入者に解放するプロフィールアバター 10種 (free 4種を含むスーパーセット) ----
+  // free: 男女2:2 (pono_kko/sky_kko が中性〜男児寄り、berry_kko/niji_kko が女児寄り)。
+  // book: free 4種 + fox/rabbit/bear/cat/robot_blue/star_mon の6種を追加。
+  // app は isAvatarPresetUnlocked 内で常 true 返却 = 全40種解放。
+  var FREE_AVATAR_PRESET_IDS = ['pono_kko', 'sky_kko', 'berry_kko', 'niji_kko'];
+  var BOOK_AVATAR_PRESET_IDS = FREE_AVATAR_PRESET_IDS.concat(['fox', 'rabbit', 'bear', 'cat', 'robot_blue', 'star_mon']);
+
+  function isAvatarPresetUnlocked(id) {
+    var t = getTier();
+    if (t === 'app') return true;
+    var key = String(id || '');
+    if (t === 'book') return BOOK_AVATAR_PRESET_IDS.indexOf(key) >= 0;
+    return FREE_AVATAR_PRESET_IDS.indexOf(key) >= 0;
+  }
+
   function isKatakanaUnlocked() {
     return getTier() === 'app';
   }
@@ -631,6 +646,8 @@
         return _hasTierExtra(FREE_BENTO_FOOD_IDS, BOOK_BENTO_FOOD_IDS)
           || _hasTierExtra(FREE_BENTO_BOX_IDS, BOOK_BENTO_BOX_IDS)
           || _hasTierExtra(FREE_BENTO_NPCS, BOOK_BENTO_NPCS);
+      case 'avatar':
+        return _hasTierExtra(FREE_AVATAR_PRESET_IDS, BOOK_AVATAR_PRESET_IDS);
       default:
         return false;
     }
@@ -646,6 +663,8 @@
       body = 'えほんの あいことばで、ねいろや ライバルたちが ふえるよ';
     } else if (id === 'bento') {
       body = 'えほんの あいことばで、おかずや おべんとうばこ、おきゃくさんが ふえるよ';
+    } else if (id === 'avatar') {
+      body = 'えほんの あいことばで、えらべる すがたが ふえるよ';
     }
     return {
       tag: opts.tag || opts.freeTag || 'えほんがあると もっと ひろがるよ',
@@ -821,6 +840,7 @@
     isCaptureOverride: isCaptureOverride,
     isAquariumCreatureUnlocked: isAquariumCreatureUnlocked,
     isRoomItemUnlocked: isRoomItemUnlocked,
+    isAvatarPresetUnlocked: isAvatarPresetUnlocked,
     isKatakanaUnlocked: isKatakanaUnlocked,
     verifyBookPassword: verifyBookPassword,
     // verifyAdminPassword: 削除済 (v17XX: abcd 廃止、 arigato_pono2026 1 本化)。
@@ -863,6 +883,8 @@
     BOOK_BENTO_DIVIDER_IDS: BOOK_BENTO_DIVIDER_IDS,
     FREE_BENTO_PICK_IDS: FREE_BENTO_PICK_IDS,
     BOOK_BENTO_PICK_IDS: BOOK_BENTO_PICK_IDS,
+    FREE_AVATAR_PRESET_IDS: FREE_AVATAR_PRESET_IDS,
+    BOOK_AVATAR_PRESET_IDS: BOOK_AVATAR_PRESET_IDS,
     FREE_MAZE_STAGE_IDS: FREE_MAZE_STAGE_IDS,
     BOOK_MAZE_STAGE_IDS: BOOK_MAZE_STAGE_IDS,
     FREE_PUZZLE_STAGE_IDS: FREE_PUZZLE_STAGE_IDS,
