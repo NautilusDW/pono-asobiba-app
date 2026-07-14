@@ -752,13 +752,15 @@ body[data-driver-mood="cheer"]{--driver-y:100%}
 body.tunnel-enter-run #veh .puff,body.tunnel-exit-run #veh .puff{opacity:0}
 #smokeLayer{position:absolute;inset:0;z-index:8;pointer-events:none;overflow:hidden}
 body.tunnel-enter-run #smokeLayer,body.tunnel-exit-run #smokeLayer{display:none}
+body.tunnel-interior #veh .puff,body.tunnel-interior #smokeLayer{display:none!important}
 .magic-puff{position:absolute;left:0;top:0;width:var(--puff-size);height:var(--puff-size);
   background:url("../assets/images/nazonazo-tunnel/magic_puffs_square_sheet_20260705.webp") no-repeat;background-size:400% 200%;
   transform:translate3d(0,0,0) scale(var(--puff-start-scale));opacity:0;filter:drop-shadow(0 2px 0 rgba(80,60,40,.08));
   will-change:transform,opacity;animation:magicPuffFly var(--puff-life) ease-out forwards}
 .magic-puff::before,.magic-puff::after{content:"";position:absolute;inset:0;background:inherit;pointer-events:none}
-.magic-puff::before{opacity:.9;transform:translate3d(-46%,20%,0) scale(.9)}
-.magic-puff::after{opacity:.76;transform:translate3d(34%,-16%,0) scale(.82)}
+.magic-puff::before{opacity:.94;transform:translate3d(-46%,20%,0) scale(.9)}
+.magic-puff::after{display:none;opacity:.82;transform:translate3d(34%,-16%,0) scale(.82)}
+.magic-puff.magic-puff--triple::after{display:block}
 @keyframes magicPuffFly{
   0%{opacity:0;transform:translate3d(0,0,0) rotate(0deg) scale(var(--puff-start-scale))}
   12%{opacity:var(--puff-alpha)}

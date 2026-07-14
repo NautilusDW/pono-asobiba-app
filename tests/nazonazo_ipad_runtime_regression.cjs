@@ -164,35 +164,53 @@ check("desktop, iPad and reduced motion share one rich bounded smoke density", (
   assert.equal(numericConstant("SMOKE_LIFE_MIN_MS"), 4800);
   assert.equal(numericConstant("SMOKE_LIFE_JITTER_MS"), 1400);
   assert.equal(numericConstant("SMOKE_MAX_PUFFS"), 48);
-  assert.equal(numericConstant("SMOKE_WARM_START_COUNT"), 12);
+  assert.equal(numericConstant("SMOKE_WARM_START_COUNT"), 18);
+  assert.equal(numericConstant("SMOKE_WARM_MAX_AGE_MS"), 1600);
   assert.doesNotMatch(game, /\b(?:IOS|REDUCED)_SMOKE_(?:INTERVAL|LIFE|MAX)/,
     "device and motion preferences must not thin the smoke density again");
   const tick = extractFunction(game, "tickMagicPuffs");
   assert.match(tick, /warmMagicPuffs\(box,useSceneSmoke\)/);
   assert.match(tick, /now\+SMOKE_INTERVAL_MIN_MS\+Math\.random\(\)\*SMOKE_INTERVAL_JITTER_MS/);
-  assert.match(tick, /box\.children\.length>=SMOKE_MAX_PUFFS/);
-  assert.match(tick, /box\.firstElementChild[\s\S]*?oldest\.remove\(\)[\s\S]*?spawnMagicPuff\(box,useSceneSmoke,0\)/,
+  assert.match(tick, /if\(!smokeRunning\)[\s\S]*?smokeRunning=true[\s\S]*?warmMagicPuffs\(box,useSceneSmoke\)/,
+    "every stopped-to-running edge must warm-start a fresh plume");
+  assert.match(tick, /recycleOldestMagicPuff\(box\)[\s\S]*?spawnMagicPuff\(box,useSceneSmoke,0\)/,
     "a full pool must recycle its oldest puff and still emit a fresh chimney puff");
+  const recycle = extractFunction(game, "recycleOldestMagicPuff");
+  assert.match(recycle, /box\.children\.length<SMOKE_MAX_PUFFS/);
+  assert.match(recycle, /box\.firstElementChild[\s\S]*?oldest\.remove\(\)/);
   const warm = extractFunction(game, "warmMagicPuffs");
   assert.match(warm, /SMOKE_WARM_START_COUNT/);
+  assert.match(warm, /SMOKE_WARM_MAX_AGE_MS\*index\/\(SMOKE_WARM_START_COUNT\+1\)/);
   assert.match(warm, /spawnMagicPuff\(box,useSceneSmoke,age\)/);
   const spawn = extractFunction(game, "spawnMagicPuff");
   assert.match(spawn, /SMOKE_LIFE_MIN_MS\+Math\.random\(\)\*SMOKE_LIFE_JITTER_MS/);
   assert.match(spawn, /animationDelay=\(-age\)\+"ms"/,
-    "warm smoke must use real pre-aged animation rather than twelve identical chimney puffs");
+    "warm smoke must use real pre-aged animation rather than identical chimney puffs");
 });
 
 check("reduced-motion smoke keeps density but limits only its travel", () => {
   const spawn = extractFunction(game, "spawnMagicPuff");
-  assert.match(spawn, /reduced\?-40-Math\.random\(\)\*40/);
-  assert.match(spawn, /reduced\?-8-Math\.random\(\)\*14/);
+  assert.match(spawn, /const slot=\(serial\*13\)%SMOKE_MAX_PUFFS/);
+  assert.match(spawn, /const staticX=reduced\?-280\*slot\/\(SMOKE_MAX_PUFFS-1\):0/,
+    "reduced smoke must keep a full plume footprint without a long flight");
+  assert.match(spawn, /reduced\?-8-Math\.random\(\)\*12/);
+  assert.match(spawn, /reduced\?-3-Math\.random\(\)\*6/);
   assert.match(spawn, /reduced\?0:-18\+Math\.random\(\)\*36/);
-  assert.match(spawn, /reduced\?1\.02\+Math\.random\(\)\*\.18/);
+  assert.match(spawn, /baseScale=reduced\?1\.15\+Math\.random\(\)\*\.20/);
+  assert.match(spawn, /endScale=reduced\?baseScale\+Math\.random\(\)\*\.04/);
   assert.match(reducedMotion, /\.magic-puff\{animation-name:magicPuffReduced!important/);
   const reducedKeyframes = extractBlock(css, "@keyframes magicPuffReduced");
   assert.match(reducedKeyframes, /translate3d\(var\(--puff-dx\),var\(--puff-dy\),0\)/);
   assert.match(reducedKeyframes, /scale\(var\(--puff-end-scale\)\)/);
   assert.doesNotMatch(reducedKeyframes, /rotate\(/, "reduced smoke must not rotate");
+});
+
+check("tunnel interior cannot retain or respawn smoke", () => {
+  const canRun = extractFunction(game, "smokeCanRun");
+  assert.match(canRun, /!document\.body\.classList\.contains\("tunnel-interior"\)/);
+  const clear = extractFunction(game, "clearMagicPuffs");
+  assert.match(clear, /smokeRunning=false/);
+  assert.match(css, /body\.tunnel-interior #veh \.puff,body\.tunnel-interior #smokeLayer\{display:none!important\}/);
 });
 
 check("low iPad frame rates do not stretch route travel", () => {
