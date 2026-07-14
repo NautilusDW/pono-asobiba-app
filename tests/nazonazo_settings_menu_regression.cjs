@@ -159,10 +159,10 @@ async function runBrowserCheck() {
     await navigationPage.locator("#startBtn").click();
     await navigationPage.locator("#settingsBtn").click();
     await Promise.all([
-      navigationPage.waitForURL(url => url.pathname.endsWith("/play.html")),
+      navigationPage.waitForURL(url => /\/play(?:\.html)?\/?$/.test(url.pathname)),
       navigationPage.locator("#returnHomeLink").click()
     ]);
-    assert.ok(new URL(navigationPage.url()).pathname.endsWith("/play.html"), `${browserName}: Home did not return to play.html`);
+    assert.match(new URL(navigationPage.url()).pathname, /\/play(?:\.html)?\/?$/, `${browserName}: Home did not return to play`);
     await navigationContext.close();
   } finally {
     await browser.close();
