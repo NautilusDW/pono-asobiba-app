@@ -11,6 +11,71 @@ function readUint24LE(buffer, offset) {
   return buffer[offset] | (buffer[offset + 1] << 8) | (buffer[offset + 2] << 16);
 }
 
+// v1959 established (and v2161 re-established after a v2160-era regression)
+// a hard invariant: WebKit falls off its fast composite path when an element
+// inside a masked subtree (here, `.card-list`'s `-webkit-mask-image` fade)
+// also carries a `filter`/`backdrop-filter`. The composite bug isn't scoped
+// to one selector — any `.game-card`/`.card-list`-targeting rule anywhere in
+// this 9000+ line stylesheet can reintroduce it. So instead of grepping for
+// the one string that regressed last time, walk every CSS rule in the main
+// <style> block and assert none of the mask-subtree-scoped ones declare a
+// filter, no matter where in the file they live.
+function extractStyleBlockCss(html) {
+  const openTag = "\n  <style>\n";
+  const start = html.indexOf(openTag);
+  assert.ok(start !== -1, "main <style> block must exist");
+  const end = html.indexOf("\n  </style>", start);
+  assert.ok(end !== -1, "main <style> block must be closed");
+  const rawCss = html.slice(start + openTag.length, end);
+  // Strip CSS comments before the brace-depth walk in extractRuleBlocks: a
+  // comment containing example CSS with balanced `{}` (a pattern already
+  // used elsewhere in this stylesheet) would otherwise desync the walk's
+  // selector/body split and could hide a real filter declaration from
+  // assertNoFilterInCardMaskSubtree.
+  return rawCss.replace(/\/\*[\s\S]*?\*\//g, "");
+}
+
+// Single-pass brace-depth walk: turns nested `@media { selector { decls } }`
+// text into a flat list of {selector, body} leaf pairs. Nesting depth is
+// unbounded (works for @media-inside-@supports etc.) because each level's
+// body only ever holds the text since its last child closed.
+function extractRuleBlocks(css) {
+  const rules = [];
+  const selectorStack = [];
+  let buf = "";
+  for (let i = 0; i < css.length; i++) {
+    const ch = css[i];
+    if (ch === "{") {
+      selectorStack.push(buf);
+      buf = "";
+    } else if (ch === "}") {
+      rules.push({ selector: (selectorStack.pop() || "").trim(), body: buf });
+      buf = "";
+    } else {
+      buf += ch;
+    }
+  }
+  return rules;
+}
+
+const FILTER_DECL_RE = /(^|[^-\w])(-webkit-filter|filter|backdrop-filter)\s*:/;
+
+function assertNoFilterInCardMaskSubtree(html) {
+  const rules = extractRuleBlocks(extractStyleBlockCss(html));
+  const maskSubtreeRules = rules.filter(
+    (r) => r.selector.includes(".game-card") || r.selector.includes(".card-list"),
+  );
+  assert.ok(maskSubtreeRules.length > 20, "sanity check: expected dozens of .game-card/.card-list rules");
+  const offenders = maskSubtreeRules.filter((r) => FILTER_DECL_RE.test(r.body));
+  assert.equal(
+    offenders.length,
+    0,
+    `no .game-card/.card-list rule may declare filter/-webkit-filter/backdrop-filter ` +
+      `(mask×filter WebKit composite bug — v1959/20cf67cc, regressed+refixed v2161/cb295bad); ` +
+      `offending selectors: ${offenders.map((o) => JSON.stringify(o.selector)).join(", ")}`,
+  );
+}
+
 const pressedAssets = [
   ["assets/ui/gacha/daily_gacha_entry_button_pressed_gpt_image2_20260713.webp", 1839, 568],
   ["assets/ui/title/title_book_unlock_plate_pressed_gpt_image2_20260713.webp", 1973, 632],
@@ -48,9 +113,15 @@ for (const questId of ["maze", "quizland", "oto", "puzzle", "bento"]) {
 }
 
 assert.match(play, /\.game-card:active \.game-card__play,[\s\S]*?background-image: var\(--play-btn-pressed/, "the existing play-button pressed image must be driven by the clickable parent card");
-assert.match(play, /\.game-card\.is-coming-soon:not\(\.is-debug-playable\):active \{\s*transform: translateZ\(0\);\s*filter: none;/, "disabled coming-soon cards must not fake an available press");
+// v2161: filter was dropped from both pressed rules (mask×filter WebKit bug,
+// see assertNoFilterInCardMaskSubtree above) — this now only needs to assert
+// the coming-soon pressed state stays a no-op depth shift (no fake press),
+// with nothing else (filter included) sneaking into the same rule.
+assert.match(play, /\.game-card\.is-coming-soon:not\(\.is-debug-playable\):active \{\s*transform: translateZ\(0\);\s*\}/, "disabled coming-soon cards must not fake an available press (no depth shift, no filter)");
 assert.match(play, /\.profile-wallet__profile:active \{[\s\S]*?translateY\(2px\)/, "dynamic profile composition must retain its CSS press feedback");
 assert.match(play, /\.bottom-nav\[data-pressed="feedback"\]::after[\s\S]*?pressed_feedback_20260710\.webp[\s\S]*?\.bottom-nav\[data-pressed="news"\]::after[\s\S]*?pressed_news_20260710\.webp[\s\S]*?\.bottom-nav\[data-pressed="settings"\]::after[\s\S]*?pressed_settings_20260710\.webp/, "existing joined bottom-nav pressed images must remain wired");
 assert.match(play, /#pono-game-splash \.pgs-btn:active \{\s*animation: none;[\s\S]*?translateY\(3px\) scale\(\.98\)/, "short-lived splash button still needs immediate CSS feedback");
+
+assertNoFilterInCardMaskSubtree(play);
 
 console.log("title_pressed_button_regression: all assertions passed");
