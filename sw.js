@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2179: 初回プレイ時のオンボーディング・チュートリアル (アバター作成案内→タイトル画面ツアーの4ステップ、2回目以降のセッションでは絵本あいことば案内を追加) を新規実装。common/onboarding/ 配下 (tour-engine.js/tour.css/steps-avatar.js/steps-title-tour.js/steps-book-unlock.js) を新規precache (batch:onboarding-tour)。play.html PAGE_CACHE_VERSION と同期 (2179)。rebase時にv2178 (batch:1294-nazonazo-settings-menu) と番号衝突したため+1で再採番。
 // v2178: なぞなぞトレインへ、既存のせってい画像を使った固定ドロップダウンを追加。ちずと「ホームへ もどる」を全ステージから開けるようにし、外側タップの誤作動防止・キーボード操作・iPad縦横表示に対応した (batch:1294-nazonazo-settings-menu)。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/テストのみ変更)。
 // v2177: なぞなぞトレインのiPad煙量、客車連結間隔、ジャングル正解重複とナマケモノ寸法、トンネルのかくれともだち移動、数字面終了後の残留アニメ／低fps進行遅延を修正した (batch:1293-nazonazo-runtime-fixes)。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/テストのみ変更)。
 // v2176: telemetry初回告知バナーの文言を、「符号」等の分かりにくい語を避けて「遊んだゲームと回数を、お名前とは結びつけずに記録しています」へ差し替えた (batch:telemetry-notice-copy)。play.html PAGE_CACHE_VERSION と同期不要 (テキストのみ変更)。
@@ -103,7 +104,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2178;
+const CACHE_VERSION = 2179;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
@@ -152,6 +153,14 @@ const CRITICAL_ASSETS_SCRIPTS = [
   // data-pono-telemetry-auto script tag から読まれる必須計測モジュール。rating-modal.js と
   // 同じ理由で precache 対象 (asset 単位 try/catch のためファイル欠落でも install は失敗しない)。
   '/common/telemetry.js',
+  // v2179: 初回オンボーディング・チュートリアル (batch:onboarding-tour) — 依存ゼロの
+  // 単独 IIFE (telemetry.js/rating-modal.js と同型)。 asset 単位 try/catch precache の
+  // ため未配備でも install 失敗にならない。
+  '/common/onboarding/tour-engine.js',
+  '/common/onboarding/tour.css',
+  '/common/onboarding/steps-avatar.js',
+  '/common/onboarding/steps-title-tour.js',
+  '/common/onboarding/steps-book-unlock.js',
   '/js/game-stickers.js',
   '/js/daily-quest.js',
   '/js/donguri-shop.js',

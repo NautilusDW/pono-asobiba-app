@@ -1,0 +1,233 @@
+/* =============================================================
+ * common/onboarding/tour.css
+ * -------------------------------------------------------------
+ * 初回オンボーディング・ツアー 共通エンジン (PonoOnboardingTour) の見た目。
+ * common/onboarding/tour-engine.js と不可分 (同一エージェントで作成)。
+ *
+ * scope: .pono-tour-* prefix で隔離。 他コンポーネントと衝突しない。
+ * DOM 構造 (tour-engine.js が動的に組み立てる):
+ *   <div class="pono-tour-overlay">
+ *     <div class="pono-tour-spotlight"></div>
+ *     <div class="pono-tour-bubble" data-placement="above|below|left|right|center">
+ *       <div class="pono-tour-bubble__progress"></div>
+ *       <div class="pono-tour-bubble__text"></div>
+ *       <div class="pono-tour-bubble__actions">
+ *         <button class="pono-tour-bubble__skip">とばす</button>
+ *         <button class="pono-tour-bubble__next">つぎへ</button>
+ *       </div>
+ *     </div>
+ *   </div>
+ * ============================================================= */
+
+.pono-tour-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9400; /* モーダル既定 100 より上、 tap-intro/portrait-warn (9500/9999) より下 */
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  pointer-events: auto; /* 受動ツアー: 背景・スポットライト穴ともクリック不可 */
+  opacity: 0;
+  transition: opacity 0.22s ease-out;
+  font-family: "Zen Maru Gothic", "Hiragino Maru Gothic ProN",
+               "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic",
+               "Meiryo", sans-serif;
+}
+.pono-tour-overlay.is-visible {
+  opacity: 1;
+}
+
+/* =============================================================
+ * スポットライト (box-shadow くり抜き方式)
+ * target あり: 実サイズで配置し、 box-shadow 0 0 0 100vmax が周囲を暗転。
+ * target なし (center): 0x0 に収縮し、 box-shadow だけで画面全体を均一に暗転。
+ * ============================================================= */
+.pono-tour-spotlight {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  border-radius: 20px;
+  box-shadow: 0 0 0 100vmax rgba(30, 22, 12, 0.55);
+  transition: top 0.32s cubic-bezier(.22, .9, .3, 1),
+              left 0.32s cubic-bezier(.22, .9, .3, 1),
+              width 0.32s cubic-bezier(.22, .9, .3, 1),
+              height 0.32s cubic-bezier(.22, .9, .3, 1),
+              border-radius 0.32s ease;
+}
+
+/* =============================================================
+ * 吹き出し
+ * ============================================================= */
+.pono-tour-bubble {
+  position: absolute;
+  top: 0;
+  left: 0;
+  max-width: min(320px, 42vw);
+  min-width: 220px;
+  box-sizing: border-box;
+  background: #fffdfa;
+  border: 3px solid rgba(242, 145, 90, 0.55);
+  border-radius: 22px;
+  padding: 16px 18px 14px;
+  box-shadow: 0 14px 32px rgba(60, 36, 16, 0.28),
+              0 4px 10px rgba(60, 36, 16, 0.14);
+  color: #4a3018;
+  outline: none;
+  transition: top 0.28s cubic-bezier(.22, .9, .3, 1),
+              left 0.28s cubic-bezier(.22, .9, .3, 1);
+}
+
+/* しっぽ (吹き出しの向き) */
+.pono-tour-bubble::after {
+  content: "";
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: #fffdfa;
+  border: 3px solid rgba(242, 145, 90, 0.55);
+  border-radius: 4px;
+  z-index: -1;
+}
+.pono-tour-bubble[data-placement="below"]::after {
+  top: -9px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  border-right: none;
+  border-bottom: none;
+}
+.pono-tour-bubble[data-placement="above"]::after {
+  bottom: -9px;
+  left: 50%;
+  transform: translateX(-50%) rotate(45deg);
+  border-left: none;
+  border-top: none;
+}
+.pono-tour-bubble[data-placement="right"]::after {
+  left: -9px;
+  top: 50%;
+  transform: translateY(-50%) rotate(45deg);
+  border-top: none;
+  border-right: none;
+}
+.pono-tour-bubble[data-placement="left"]::after {
+  right: -9px;
+  top: 50%;
+  transform: translateY(-50%) rotate(45deg);
+  border-bottom: none;
+  border-left: none;
+}
+.pono-tour-bubble[data-placement="center"]::after {
+  display: none;
+}
+
+.pono-tour-bubble__progress {
+  font-size: 12px;
+  font-weight: 900;
+  color: #b5773f;
+  letter-spacing: 0.04em;
+  margin: 0 0 6px;
+}
+
+.pono-tour-bubble__text {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.6;
+  margin: 0 0 14px;
+  white-space: normal;
+}
+
+.pono-tour-bubble__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.pono-tour-bubble__skip {
+  order: -1;
+  margin-right: auto;
+  min-height: 40px;
+  padding: 6px 10px;
+  border: none;
+  background: transparent;
+  color: #9a8062;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  border-radius: 8px;
+}
+.pono-tour-bubble__skip:hover { color: #6d5638; }
+.pono-tour-bubble__skip:focus-visible {
+  outline: 3px solid #FFD93D;
+  outline-offset: 2px;
+  text-decoration: none;
+}
+
+.pono-tour-bubble__next {
+  min-height: 44px;
+  padding: 10px 22px;
+  border: none;
+  border-radius: 999px;
+  background: #FFD84D;
+  color: #5a3515;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 4px 0 rgba(170, 110, 0, 0.32),
+              0 6px 14px rgba(0, 0, 0, 0.16);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .pono-tour-bubble__next:hover { transform: translateY(-1px); }
+}
+.pono-tour-bubble__next:active {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 rgba(170, 110, 0, 0.32),
+              0 3px 8px rgba(0, 0, 0, 0.16);
+}
+.pono-tour-bubble__next:focus-visible {
+  outline: 3px solid #3B82F6;
+  outline-offset: 2px;
+}
+
+/* =============================================================
+ * Mobile
+ * ============================================================= */
+@media (max-width: 640px) {
+  .pono-tour-bubble {
+    max-width: min(280px, 74vw);
+    min-width: 200px;
+    padding: 14px 16px 12px;
+  }
+  .pono-tour-bubble__text { font-size: 15px; }
+  .pono-tour-bubble__next { padding: 9px 18px; font-size: 14px; }
+}
+
+/* =============================================================
+ * Reduced motion: パルス/フェードに加え、 ステップ間のスポットライト・
+ * 吹き出しの移動トランジションも無効化し瞬時切り替えにする。
+ * ============================================================= */
+@media (prefers-reduced-motion: reduce) {
+  .pono-tour-overlay,
+  .pono-tour-spotlight,
+  .pono-tour-bubble {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+/* JS 側フォールバック: matchMedia 判定が使えない/信頼できない環境でも、
+   mountOverlay() が overlayEl 自身に付与する .pono-tour-reduced-motion で
+   同様に無効化できるようにしておく (二重ガード)。 */
+.pono-tour-overlay.pono-tour-reduced-motion,
+.pono-tour-overlay.pono-tour-reduced-motion .pono-tour-spotlight,
+.pono-tour-overlay.pono-tour-reduced-motion .pono-tour-bubble {
+  transition: none !important;
+  animation: none !important;
+}

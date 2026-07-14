@@ -9742,6 +9742,10 @@
        ファイル未配備でも tag だけ先行登録 (404 silent fallback)。 -->
   <link rel="stylesheet" href="/common/rating-modal.css">
 
+  <!-- 初回オンボーディング・ツアー (PonoOnboardingTour、 batch:onboarding-tour)。
+       common/onboarding/tour-engine.js と不可分の見た目定義。 -->
+  <link rel="stylesheet" href="/common/onboarding/tour.css">
+
   <!-- Umami (簡易UIタップ計測、data-analytics-plan.md §5-1 #3)。 既存15ゲームと同一形式。 -->
   <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 
@@ -9954,6 +9958,15 @@
           <span class="settings-action__text">
             <span class="settings-action__main">ヘルプ</span>
             <span class="settings-action__sub">こまった ときに みる</span>
+          </span>
+        </button>
+        <!-- batch:onboarding-tour fileArchitecture (f): 初回ツアーの手動再生導線。
+             seen フラグは変更しない (PonoOnboardingTour.requestStage は読み書きしない)。 -->
+        <button class="settings-action" id="settingsTourReplayBtn" type="button">
+          <span class="settings-action__icon" aria-hidden="true">🧭</span>
+          <span class="settings-action__text">
+            <span class="settings-action__main">あそびかたを みる</span>
+            <span class="settings-action__sub">あんないを もういちど みられるよ</span>
           </span>
         </button>
         <button class="settings-action" id="settingsRefreshBtn" type="button">
@@ -10281,6 +10294,14 @@
             <div class="debug-sticker-tools">
               <button class="debug-board-btn" id="debugShopUpdateShowBtn" type="button">こうしんを だす</button>
               <button class="debug-board-btn" id="debugShopUpdateHideBtn" type="button">こうしんを けす</button>
+            </div>
+          </section>
+          <!-- batch:onboarding-tour fileArchitecture (g): PonoOnboardingTour.resetAll() へ接続。
+               isManageDebugAllowed() ゲート、 debugShopResetBtn と同型。 -->
+          <section class="debug-preview-group" aria-labelledby="debugTourGroupTitle">
+            <strong class="debug-preview-group__title" id="debugTourGroupTitle">オンボーディング・ツアー</strong>
+            <div class="debug-sticker-tools">
+              <button class="debug-board-btn" id="debugTourResetBtn" type="button">ツアーをもう一度見る</button>
             </div>
           </section>
         </div>
@@ -10963,6 +10984,28 @@
        PonoCloudSync の参照は data-export.js の関数内のみ / inline script からの参照ゼロ。 -->
   <script src="common/cloud-sync.js?v=1973" defer></script>
 
+  <!-- 初回オンボーディング・ツアー ゲート (batch:onboarding-tour, sequencingPlan §3)。
+       同期 <script> で、 メインの <script> ブロック (startGame/maybeOpenFirstProfile を
+       含む) より前に確定させる必要がある。 window.__ponoTourGatesFirstProfile===true の
+       間、 maybeOpenFirstProfile() は 700ms 再試行で待機し、 startGame() の profile
+       分岐は return する (#profileModal ウィザードより先に avatar-welcome 吹き出しを
+       出すため)。 common/onboarding/tour-engine.js が avatar-welcome を閉じた/不適格と
+       判定した時点で false に解除する (engine は「設定」しない、 「解除」のみ担当)。
+       tour-engine.js が 404/構文エラーで評価されない場合は 8 秒でこのウォッチドッグが
+       自己解除し、 従来動作 (ゲートなし) へフォールバックする。 -->
+  <script>
+    try {
+      window.__ponoTourGatesFirstProfile = (localStorage.getItem('pono_tour_avatar_intro_seen_v1') !== '1');
+    } catch (_) {
+      window.__ponoTourGatesFirstProfile = false;
+    }
+    if (window.__ponoTourGatesFirstProfile) {
+      setTimeout(function () {
+        if (!window.PonoOnboardingTour) window.__ponoTourGatesFirstProfile = false;
+      }, 8000);
+    }
+  </script>
+
   <script>
     'use strict';
 
@@ -11412,7 +11455,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2166; // sw.js CACHE_VERSION と同期 (データ分析基盤 P0: telemetry.js precache 追加、rebase 時 v2165 衝突のため +1)
+    const PAGE_CACHE_VERSION = 2179; // sw.js CACHE_VERSION と同期 (初回オンボーディング・チュートリアル追加 batch:onboarding-tour、rebase時にv2178 (batch:1294-nazonazo-settings-menu) と番号衝突したため+1で再採番)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -12094,6 +12137,10 @@
         }
       }
       if (window.PonoPlayerProfile && !window.PonoPlayerProfile.hasProfile()) {
+        // batch:onboarding-tour (sequencingPlan §5、 技術レビュー Issue1 対応):
+        // avatar-welcome 吹き出し表示中にカードタップでウィザードへ直行してしまう
+        // 第二経路を塞ぐ。 タップは無反応になるだけで pendingProfileStartIdx も汚染しない。
+        if (window.__ponoTourGatesFirstProfile === true) return;
         pendingProfileStartIdx = idx;
         window.PonoPlayerProfile.open();
         return;
@@ -12141,6 +12188,7 @@
     // ===== Bottom nav =====
     const bottomNav = $('bottomNav');
     const settingsHelpBtn = $('settingsHelpBtn');
+    const settingsTourReplayBtn = $('settingsTourReplayBtn');
     const settingsNewsBtn = $('settingsNewsBtn');
     const settingsNewsSub = $('settingsNewsSub');
     const settingsNewsBadge = $('settingsNewsBadge');
@@ -12488,6 +12536,14 @@
     if (settingsHelpBtn) {
       settingsHelpBtn.addEventListener('click', () => {
         location.href = 'help.html';
+      });
+    }
+    if (settingsTourReplayBtn) {
+      // batch:onboarding-tour fileArchitecture (f): 手動再生。 seen フラグは
+      // 変更しない。 engine 未ロード時は optional chaining で no-op。
+      settingsTourReplayBtn.addEventListener('click', () => {
+        closeModal('settingsModal');
+        try { window.PonoOnboardingTour?.requestStage('titleTour'); } catch (_) {}
       });
     }
     if (settingsNewsBtn) {
@@ -17277,6 +17333,14 @@
           setTimeout(maybeOpenFirstProfile, 700);
           return;
         }
+        // batch:onboarding-tour (sequencingPlan §4): avatar-welcome 吹き出しが
+        // #profileModal より先に表示されるまで、 既存の 700ms ポーリング様式を
+        // そのまま再利用して待機する。 tour-engine.js が avatar-welcome を
+        // 閉じた/不適格判定した時点でこのフラグを false に解除する。
+        if (window.__ponoTourGatesFirstProfile === true) {
+          setTimeout(maybeOpenFirstProfile, 700);
+          return;
+        }
         openProfileModal('avatar');
       }
 
@@ -17916,6 +17980,7 @@
     const debugNewsReadBtn = document.getElementById('debugNewsReadBtn');
     const debugShopUpdateShowBtn = document.getElementById('debugShopUpdateShowBtn');
     const debugShopUpdateHideBtn = document.getElementById('debugShopUpdateHideBtn');
+    const debugTourResetBtn = document.getElementById('debugTourResetBtn');
     const debugNewsStatus = document.getElementById('debugNewsStatus');
 
     function selectDebugBoardTab(tabKey) {
@@ -18090,6 +18155,19 @@
       debugShopUpdateHideBtn.addEventListener('click', function () {
         if (!setDebugShopUpdateState('read')) return;
         setDebugNewsStatus('おみせの こうしんを けしたよ');
+      });
+    }
+    // batch:onboarding-tour fileArchitecture (g): 全 seenKey を削除して次回リロードで
+    // 初回ツアーを再表示させる。 debugShopResetBtn と同型 (isManageDebugAllowed ゲート)。
+    if (debugTourResetBtn) {
+      debugTourResetBtn.addEventListener('click', function () {
+        if (!isManageDebugAllowed()) return;
+        if (!window.PonoOnboardingTour) {
+          setDebugNewsStatus('ツアーが よみこまれていません');
+          return;
+        }
+        try { window.PonoOnboardingTour.resetAll(); } catch (_) {}
+        setDebugNewsStatus('ツアーをリセットしたよ (つぎの さいよみこみで もういちど でるよ)');
       });
     }
 
@@ -18721,5 +18799,11 @@
   </script>
   <!-- ごかんそう (rating) modal — 別エージェント並列作成中。 defer で他 init 妨害なし。 -->
   <script src="/common/rating-modal.js" defer></script>
+  <!-- 初回オンボーディング・ツアー (batch:onboarding-tour, fileArchitecture (e))。
+       engine → steps の順で defer 読込。 steps 側は pending キュー機構で順序非依存。 -->
+  <script src="/common/onboarding/tour-engine.js" defer></script>
+  <script src="/common/onboarding/steps-avatar.js" defer></script>
+  <script src="/common/onboarding/steps-title-tour.js" defer></script>
+  <script src="/common/onboarding/steps-book-unlock.js" defer></script>
 </body>
 </html>
