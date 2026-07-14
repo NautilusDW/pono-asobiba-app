@@ -5088,6 +5088,31 @@
       }
     }
 
+    /* v2187: タッチデバイス向けレバー当たり判定の独立拡張。
+       上の @media (max-width: 820px), (max-height: 540px) ブロックはビューポート
+       サイズだけで判定しており、 iPad 横向き(幅1024px以上)や 11インチ以上の縦向き
+       (834px) のような「大きいがタッチ操作」の端末は該当せず、 デスクトップ既定の
+       狭い当たり判定 (inset: -60% -20%, 3601行) のままになってしまう。
+       この独立ブロックは (hover:none)/(pointer:coarse) のみで判定し、
+       上のモバイル向けレイアウト調整ブロック (padding/shell幅/背景inset等) には
+       一切触れず、 .daily-gacha-lever::before の当たり判定だけを上書きする副作用ゼロ設計。
+       値はモバイル上書き (4903行) と同じ top:-90%/right:-25%/bottom:-60%/left:-25% を採用。
+       レバー本体の width/scale (見た目のサイズ) は変更しない。
+       カスケード順: このブロックは上の2ブロックより後方にあるため、
+       同一セレクタ (.daily-gacha-lever::before, 同一詳細度) に対して常に優先される。
+       - 幅821px以上のタッチ端末: このブロックのみ適用 (値が有効)
+       - 幅820px以下のタッチ端末: 上のモバイル上書きとこのブロックが両方マッチするが、
+         値は同一 (top:-90%/right:-25%/bottom:-60%/left:-25%) なので矛盾なし
+       - マウス/トラックパッド (pointer:fine): 非適用、 デスクトップ既定 -60% -20% を維持 */
+    @media (hover: none), (pointer: coarse) {
+      .daily-gacha-lever::before {
+        top: -90%;
+        right: -25%;
+        bottom: -60%;
+        left: -25%;
+      }
+    }
+
     @media (max-height: 540px) {
       .daily-gacha-fixed-actions {
         left: 8px;
@@ -11503,7 +11528,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2185; // sw.js CACHE_VERSION と同期 (batch:onboarding-tour-gacha: ガチャ詳細モーダルの初回チュートリアル追加)
+    const PAGE_CACHE_VERSION = 2187; // sw.js CACHE_VERSION と同期 (batch:gacha-lever-touch + batch:gacha-tour-note: レバー当たり判定拡張 + ガチャチュートリアル2ステップ化)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -11512,7 +11537,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v2185'; // batch:onboarding-tour-gacha: PAGE_CACHE_VERSION/sw.js CACHE_VERSION と同期 (ガチャ詳細モーダルの初回チュートリアル追加)
+    window.PONO_SW_VERSION = 'v2187'; // batch:gacha-lever-touch + batch:gacha-tour-note: PAGE_CACHE_VERSION/sw.js CACHE_VERSION と同期
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
