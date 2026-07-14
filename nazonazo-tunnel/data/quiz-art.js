@@ -213,6 +213,7 @@
     help: uiPath("ui_four_leaf_clover"),
     friends: uiPath("ui_friend_group"),
     map: uiPath("ui_adventure_map"),
+    home: "../assets/ui/gacha/daily_gacha_action_home_normal.png",
     rainbow: uiPath("ui_rainbow"),
     sprout: uiPath("ui_sprout"),
     trophy: uiPath("ui_trophy"),

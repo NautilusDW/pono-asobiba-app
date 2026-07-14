@@ -40,7 +40,7 @@ function assertAsset(src, label) {
 
 /* Every non-answer illustration ID used by static and runtime UI must resolve. */
 const requiredUiIds = [
-  "pono", "owl", "sparkle", "touch", "fire", "help", "friends", "map", "rainbow", "sprout",
+  "pono", "owl", "sparkle", "touch", "fire", "help", "friends", "map", "home", "rainbow", "sprout",
   "trophy", "perfectMedal", "littleBird", "whiteDove", "hint", "book", "train", "rocket",
   "smartphone", "flower", "star", "rain", "umbrella", "earth", "cargo", "target", "city",
   "space", "master", "station", "rare", "stageTown", "stageJungle", "stageNumber", "stageSea",
@@ -96,12 +96,12 @@ for (const key of [
 
 /* Static child-facing chrome contains image hosts, never platform-dependent pictographs. */
 assert.doesNotMatch(html, /\p{Extended_Pictographic}/u, "static child-facing HTML must not render emoji glyphs");
-for (const id of ["help", "friends", "map", "pono", "hint", "book", "train", "rocket", "sprout", "flower", "star", "smartphone", "rainbow", "touch", "fire"]) {
+for (const id of ["help", "friends", "map", "home", "pono", "hint", "book", "train", "rocket", "sprout", "flower", "star", "smartphone", "rainbow", "touch", "fire"]) {
   assert.match(html, new RegExp(`data-ui-art="${id}"`), `static UI is missing the ${id} image host`);
 }
-assert.match(html, /data\/quiz-art\.js\?v=20260714-1293/);
-assert.match(html, /js\/game\.js\?v=20260714-1293/);
-assert.match(html, /styles\.css\?v=20260714-1293/);
+assert.match(html, /data\/quiz-art\.js\?v=20260714-1294/);
+assert.match(html, /js\/game\.js\?v=20260714-1294/);
+assert.match(html, /styles\.css\?v=20260714-1294/);
 
 /* Every non-choice runtime route goes through the same generated/reused image renderers. */
 const runtimeRoutes = [
@@ -128,8 +128,8 @@ assert.match(game, /helpBadge\.setAttribute\("aria-label","おたすけ "\+n\+"�
   "the illustrated help counter needs a spoken label");
 assert.match(game, /helpBtn\.setAttribute\("aria-label","おたすけ "\+n\+"こ"\)/,
   "the help button needs to announce its remaining count");
-assert.match(game, /image\.loading="lazy"/,
-  "hidden overlay illustrations should not eagerly decode on the title screen");
+assert.match(game, /image\.loading=holder\.dataset\.uiArtEager==="1"\?"eager":"lazy"/,
+  "hidden overlay illustrations should stay lazy unless a first-open control explicitly opts in");
 assert.match(game, /whiteSpace:"nowrap"[\s\S]{0,180}pointerEvents:"none"/,
   "pickup score feedback must not wrap on iPad landscape");
 
@@ -139,7 +139,8 @@ assert.match(game, /STATION_HELPERS\.map\(h=>\(\{e:h\.e,t:h\.name,img:h\.normal\
   "station friends must keep their generated portrait in the friend book");
 
 /* Child controls stay usable after replacing one-glyph emoji with real image boxes. */
-assert.match(css, /#homeBtn\{[^}]*min-height:46px/);
+assert.match(css, /#settingsBtn\{[^}]*width:56px[^}]*height:56px/);
+assert.match(css, /\.settings-menu-item\{[^}]*min-height:52px/);
 assert.match(css, /#spkBtn,#helpBtn\{[^}]*min-width:46px[^}]*min-height:46px/);
 assert.match(css, /\.selBtn\{[^}]*min-height:46px/);
 assert.match(css, /\.bigBtn\{[^}]*min-height:46px/);

@@ -968,8 +968,20 @@ body.tunnel-interior #highScorePill>span{color:#fff;font-size:clamp(11px,1.7vw,1
   text-shadow:0 2px 0 rgba(0,0,0,.85),0 0 8px rgba(0,0,0,.6)}
 body.tunnel-interior #highScorePill>strong{margin-top:3px;color:#fff;font-size:clamp(27px,5vw,44px);line-height:.95;
   text-shadow:0 3px 0 rgba(0,0,0,.9),0 0 12px rgba(0,0,0,.72)}
-#homeBtn{pointer-events:auto;min-height:46px;background:rgba(255,255,255,.85);border:none;border-radius:999px;padding:7px 16px;font:inherit;font-size:clamp(14px,2.6vw,20px);color:var(--ink);box-shadow:0 3px 0 rgba(0,0,0,.15);display:inline-flex;align-items:center;justify-content:center;gap:5px}
-#homeBtn .ui-art{width:clamp(24px,4vw,34px);height:clamp(24px,4vw,34px)}
+/* ===== せっていメニュー =====
+   共通の木製せってい画像だけを再利用し、なぞなぞ内の全画面ゲームへ
+   共通menu.jsのviewport補正や絵文字を持ち込まない。 */
+#gameSettings{position:fixed;top:calc(8px + env(safe-area-inset-top));right:max(12px,env(safe-area-inset-right));z-index:120;width:56px;pointer-events:none;font-family:inherit}
+#settingsBtn{appearance:none;-webkit-appearance:none;display:block;width:56px;height:56px;padding:0;border:0;background:transparent;cursor:pointer;pointer-events:auto;-webkit-tap-highlight-color:transparent;transition:transform .16s ease}
+#settingsBtn>img{display:block;width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none;-webkit-user-drag:none}
+#settingsBtn[aria-expanded="true"]{transform:scale(1.045)}
+#settingsDropdown{position:absolute;right:0;top:58px;width:max-content;min-width:210px;padding:7px;display:grid;gap:5px;border:2px solid rgba(190,132,54,.42);border-radius:18px;background:rgba(255,252,242,.97);box-shadow:0 8px 24px rgba(57,40,23,.24);pointer-events:auto}
+#settingsDropdown[hidden]{display:none}
+.settings-menu-item{appearance:none;-webkit-appearance:none;min-height:52px;padding:5px 12px;border:0;border-radius:13px;background:rgba(255,255,255,.72);display:flex;align-items:center;gap:10px;color:#5d4630;font:inherit;font-size:clamp(14px,2.15vw,17px);font-weight:900;line-height:1.15;text-decoration:none;white-space:nowrap;cursor:pointer;-webkit-tap-highlight-color:transparent;box-shadow:inset 0 0 0 2px rgba(240,194,116,.28)}
+.settings-menu-item .ui-art{display:grid;width:38px;height:38px;flex:0 0 38px}
+.settings-menu-item:hover,.settings-menu-item:focus-visible{background:#fff4cf;outline:4px solid rgba(87,193,94,.65);outline-offset:2px}
+.settings-menu-item:active{transform:scale(.97)}
+body.nazonazo-admin-stage-preview #gameSettings{display:none!important}
 #weatherNotice{position:absolute;top:calc(60px + env(safe-area-inset-top));left:50%;z-index:10;transform:translateX(-50%);
   width:min(92vw,520px);padding:7px 16px;border:2px solid rgba(163,205,226,.88);border-radius:18px;
   background:rgba(242,250,255,.94);box-shadow:0 4px 12px rgba(22,49,66,.18);color:#35536a;
@@ -1003,7 +1015,7 @@ body.tunnel-interior #highScorePill>strong{margin-top:3px;color:#fff;font-size:c
 #choices{display:flex;gap:12px;justify-content:center}
 .choice{appearance:none;-webkit-appearance:none;flex:1;max-width:200px;background:var(--card);border:4px solid var(--cardEdge);border-radius:20px;
   padding:8px 4px;text-align:center;box-shadow:0 5px 0 var(--cardEdge);cursor:pointer;transition:transform .15s,opacity .3s}
-.choice:focus-visible,#spkBtn:focus-visible,#helpBtn:focus-visible,#homeBtn:focus-visible,.bigBtn:focus-visible,.selBtn:focus-visible,.mapNode:focus-visible{outline:4px solid rgba(87,193,94,.65);outline-offset:3px}
+.choice:focus-visible,#spkBtn:focus-visible,#helpBtn:focus-visible,#settingsBtn:focus-visible,.bigBtn:focus-visible,.selBtn:focus-visible,.mapNode:focus-visible{outline:4px solid rgba(87,193,94,.65);outline-offset:3px}
 .choice:active{transform:translateY(4px);box-shadow:0 1px 0 var(--cardEdge)}
 .choice .em{font-size:clamp(38px,8.5vw,72px);line-height:1.15;display:block;font-weight:800}
 .choice .lb{font-size:clamp(14px,3vw,22px);font-weight:700}
@@ -1182,6 +1194,11 @@ h1{font-size:clamp(24px,5.6vw,50px);color:#e0704a;text-shadow:0 3px 0 #fff}
   #scoreHud #helpBadge,#scoreHud #carBadge{height:34px;min-width:42px;padding:3px 5px;font-size:11px}
 }
 @media (orientation:landscape) and (max-height:360px){
+  #gameSettings{width:48px}
+  #settingsBtn{width:48px;height:48px}
+  #settingsDropdown{top:50px;min-width:190px;padding:5px;gap:3px;border-radius:15px}
+  .settings-menu-item{min-height:48px;padding:4px 9px;border-radius:11px;font-size:14px}
+  .settings-menu-item .ui-art{width:34px;height:34px;flex-basis:34px}
   .ovl{gap:1.2vh;padding:8px}
   h1{font-size:clamp(22px,5vw,36px)}
   #title .label{font-size:clamp(12px,2.4vw,16px)}
@@ -1313,6 +1330,7 @@ body.ios-device #quiz.show:not(.sea-quiz):not(.future-capsule-quiz):not(.space-g
   .jungle-animal-frame-sheet.is-fixed-frame{transform:translate3d(var(--animal-fixed-frame,0),0,0)!important}
   .number-cargo-art{animation:none!important}
   .number-cargo-slot.is-goal,.number-cargo-wagon-body{animation:none!important}
+  #settingsBtn,.settings-menu-item{transition:none!important}
   .number-cargo-fly{animation:none!important;display:none!important}
   .future-capsule-lane::before,.future-capsule-lane::after,.future-capsule-reactor::after,.future-capsule-energy .is-on,.future-capsule-energy-pulse .is-on,.future-capsule-runner,.future-capsule-board::after{animation:none!important;transition:none!important}.future-capsule-lane:is(.is-capturing,.is-captured) .future-capsule,.future-capsule-board.is-capturing .future-capsule-lane.is-selected .future-capsule{animation:none!important;left:50%;opacity:.18;transform:translate(-50%,-50%) scale(.3)}.future-capsule-board.is-complete .future-capsule-city{opacity:1;filter:brightness(1.22)}.future-capsule-board.is-complete .future-capsule-runner{display:none!important}
   .space-galaxy-engine::before,.space-galaxy-star-engine::before,.space-galaxy-engine-rings,.space-galaxy-engine-ring,.space-galaxy-core,.space-galaxy-planet-choice,.space-galaxy-journey,.space-galaxy-journey-star,.space-galaxy-rocket,.space-galaxy-finale,.space-galaxy-board.is-bursting::after,.vehicle-steer-shell{animation:none!important;transition:none!important}

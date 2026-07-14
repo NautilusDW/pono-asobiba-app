@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2178: なぞなぞトレインへ、既存のせってい画像を使った固定ドロップダウンを追加。ちずと「ホームへ もどる」を全ステージから開けるようにし、外側タップの誤作動防止・キーボード操作・iPad縦横表示に対応した (batch:1294-nazonazo-settings-menu)。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/テストのみ変更)。
 // v2177: なぞなぞトレインのiPad煙量、客車連結間隔、ジャングル正解重複とナマケモノ寸法、トンネルのかくれともだち移動、数字面終了後の残留アニメ／低fps進行遅延を修正した (batch:1293-nazonazo-runtime-fixes)。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/テストのみ変更)。
 // v2176: telemetry初回告知バナーの文言を、「符号」等の分かりにくい語を避けて「遊んだゲームと回数を、お名前とは結びつけずに記録しています」へ差し替えた (batch:telemetry-notice-copy)。play.html PAGE_CACHE_VERSION と同期不要 (テキストのみ変更)。
 // v2175: なぞなぞトレインの選択肢以外に残っていた絵文字を、既存クイズ絵とGPT Image 2の新規10素材へ差し替え。おたすけ・道中アイテム・レア／駅／海／トンネルの仲間・上部HUD・マップ・図鑑・結果・操作案内まで共通画像rendererへ統一した (batch:1292-nazonazo-full-art)。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/画像/テストのみ変更)。
@@ -102,7 +103,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2177;
+const CACHE_VERSION = 2178;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。

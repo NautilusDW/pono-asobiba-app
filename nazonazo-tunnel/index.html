@@ -80,7 +80,7 @@
   else { document.addEventListener('DOMContentLoaded', showLock); }
 })();
 </script>
-<link rel="stylesheet" href="styles.css?v=20260714-1293">
+<link rel="stylesheet" href="styles.css?v=20260714-1294">
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
 <body class="st-town v-train" data-driver="pono" data-driver-mood="happy">
@@ -233,7 +233,6 @@
         <div id="carBadge" aria-live="polite" aria-label="ともだち 0にん"><span class="ui-art" data-ui-art="friends" aria-hidden="true"></span><span class="hud-badge-count">×0</span></div>
       </div>
     </div>
-    <button id="homeBtn" type="button"><span class="ui-art" data-ui-art="map" aria-hidden="true"></span><span>ちず</span></button>
   </div>
 
   <div id="weatherNotice" role="status" aria-live="polite" aria-atomic="true" hidden></div>
@@ -299,9 +298,22 @@
     </div>
   </div>
 </div>
+<div id="gameSettings" aria-label="せってい">
+  <button id="settingsBtn" type="button" aria-label="せってい" aria-haspopup="menu" aria-controls="settingsDropdown" aria-expanded="false">
+    <img src="../assets/_legacy/preview-placeholders/ctrl-btn-settings.png" alt="" draggable="false">
+  </button>
+  <div id="settingsDropdown" role="menu" aria-label="せってい" aria-hidden="true" hidden>
+    <button id="mapMenuBtn" class="settings-menu-item" type="button" role="menuitem">
+      <span class="ui-art" data-ui-art="map" data-ui-art-eager="1" aria-hidden="true"></span><span>ちず</span>
+    </button>
+    <a id="returnHomeLink" class="settings-menu-item" href="../play.html" role="menuitem">
+      <span class="ui-art" data-ui-art="home" data-ui-art-eager="1" aria-hidden="true"></span><span>ホームへ もどる</span>
+    </a>
+  </div>
+</div>
 <div id="rotateHint"><span class="ui-art" data-ui-art="smartphone" aria-hidden="true"></span><span class="rotate-arrow" aria-hidden="true">→</span><span>よこむきに してね</span></div>
 <script src="data/questions.js?v=20260713-1273"></script>
-<script src="data/quiz-art.js?v=20260714-1293"></script>
-<script src="js/game.js?v=20260714-1293"></script>
+<script src="data/quiz-art.js?v=20260714-1294"></script>
+<script src="js/game.js?v=20260714-1294"></script>
 </body>
 </html>

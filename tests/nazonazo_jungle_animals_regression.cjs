@@ -533,7 +533,7 @@ async function collectSceneMetrics(page) {
       box.area = Math.max(box.area, animal.area);
       speciesBoxes[animal.species] = box;
     }
-    const controls = Array.from(document.querySelectorAll("#homeBtn,#spkBtn,#helpBtn,.choice")).filter(el => {
+    const controls = Array.from(document.querySelectorAll("#settingsBtn,#mapMenuBtn,#spkBtn,#helpBtn,.choice")).filter(el => {
       const rect = el.getBoundingClientRect();
       const style = getComputedStyle(el);
       return style.display !== "none" && style.visibility !== "hidden" && rect.width > 0 && rect.height > 0;

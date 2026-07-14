@@ -29,7 +29,7 @@ function resolveUiArt(id){
 function fillArtHolder(holder,src,key){
  holder.replaceChildren();holder.dataset.artKey=String(key||"");holder.setAttribute("aria-hidden","true");
  const image=document.createElement("img");
- image.className="art-image quiz-art-image ui-art-image";image.alt="";image.decoding="async";image.loading="lazy";image.draggable=false;
+ image.className="art-image quiz-art-image ui-art-image";image.alt="";image.decoding="async";image.loading=holder.dataset.uiArtEager==="1"?"eager":"lazy";image.draggable=false;
  const fallback=document.createElement("span");
  fallback.className="art-fallback quiz-art-fallback ui-art-fallback";fallback.textContent="?";fallback.hidden=true;
  const revealFallback=()=>{image.hidden=true;fallback.hidden=false;holder.classList.add("is-fallback");};
@@ -692,7 +692,7 @@ const futureCapsuleLayer=$("futureCapsuleLayer"),spaceGalaxyLayer=$("spaceGalaxy
 const seaCompanionLayer=$("seaCompanionLayer"),seaShotLayer=$("seaShotLayer"),seaFireButton=$("seaFireButton");
 const jungleAnimalLayers={far:$("jungleAnimalsFar"),mid:$("jungleAnimalsMid"),near:$("jungleAnimalsNear")};
 const jungleFlightLayers={bird:$("jungleBirdFlightLayer"),butterfly:$("jungleButterflyFlightLayer")};
-const skyA=$("skyA"),skyB=$("skyB"),carsEl=$("cars"),carBadge=$("carBadge"),helpBadge=$("helpBadge"),helpBtn=$("helpBtn"),homeBtn=$("homeBtn");
+const skyA=$("skyA"),skyB=$("skyB"),carsEl=$("cars"),carBadge=$("carBadge"),helpBadge=$("helpBadge"),helpBtn=$("helpBtn"),settingsBtn=$("settingsBtn"),settingsDropdown=$("settingsDropdown"),mapMenuBtn=$("mapMenuBtn"),returnHomeLink=$("returnHomeLink"),gameSettings=$("gameSettings");
 const quiz=$("quiz"),qText=$("qText"),hintText=$("hintText"),choicesEl=$("choices");
 const dotsEl=$("dots"),stamp=$("stamp"),weatherNotice=$("weatherNotice"),scoreCurrentPill=$("scoreCurrentPill"),scoreHudValue=$("scoreHudValue"),highScorePill=$("highScorePill"),highScoreValue=$("highScoreValue");
 const tunnelFriendGame=$("tunnelFriendGame"),tunnelFriendGuide=$("tunnelFriendGuide"),tunnelFriendCounter=$("tunnelFriendCounter"),tunnelFriendLayer=$("tunnelFriendLayer"),tunnelFriendResult=$("tunnelFriendResult");
@@ -1042,6 +1042,86 @@ function bindTap(el,fn){
   }
   else ev.preventDefault();
  });
+}
+
+/* ================= game settings menu ================= */
+let settingsOutsideClickUntil=0;
+let settingsOutsideClickTarget=null;
+function gameSettingsMenuItems(){
+ return [mapMenuBtn,returnHomeLink].filter(item=>item&&item.isConnected);
+}
+function gameSettingsMenuIsOpen(){
+ return !!(settingsDropdown&&!settingsDropdown.hidden);
+}
+function focusGameSettingsItem(item){
+ if(!item)return;
+ try{item.focus({preventScroll:true});}catch(_){item.focus();}
+}
+function setGameSettingsOpen(open,options){
+ if(!settingsBtn||!settingsDropdown)return;
+ const next=!!open,opts=options||{};
+ settingsDropdown.hidden=!next;
+ settingsDropdown.setAttribute("aria-hidden",next?"false":"true");
+ settingsBtn.setAttribute("aria-expanded",next?"true":"false");
+ document.body.classList.toggle("game-settings-open",next);
+ gameSettingsMenuItems().forEach(item=>{item.tabIndex=next?0:-1;});
+ if(next&&opts.focusFirst){
+  requestAnimationFrame(()=>{if(gameSettingsMenuIsOpen())focusGameSettingsItem(gameSettingsMenuItems()[0]);});
+ }else if(!next&&opts.restoreFocus){
+  focusGameSettingsItem(settingsBtn);
+ }
+}
+function closeGameSettings(options){
+ setGameSettingsOpen(false,options);
+}
+function initGameSettingsMenu(){
+ if(!gameSettings||!settingsBtn||!settingsDropdown||!mapMenuBtn||!returnHomeLink||gameSettings.dataset.ready==="1")return;
+ gameSettings.dataset.ready="1";
+ setGameSettingsOpen(false);
+ bindTap(settingsBtn,event=>{
+  const opening=!gameSettingsMenuIsOpen();
+  setGameSettingsOpen(opening,{focusFirst:opening&&!event.pointerType,restoreFocus:!opening});
+ });
+ settingsBtn.addEventListener("keydown",event=>{
+  if(event.key==="Escape"&&gameSettingsMenuIsOpen()){
+   event.preventDefault();event.stopPropagation();closeGameSettings({restoreFocus:true});return;
+  }
+  if(gameSettingsMenuIsOpen()&&(event.key==="ArrowDown"||event.key==="ArrowUp")){
+   event.preventDefault();event.stopPropagation();
+   const items=gameSettingsMenuItems();focusGameSettingsItem(event.key==="ArrowUp"?items[items.length-1]:items[0]);return;
+  }
+  if(event.key==="Enter"||event.key===" ")event.stopPropagation();
+ });
+ settingsDropdown.addEventListener("keydown",event=>{
+  event.stopPropagation();
+  if(event.key==="Escape"){
+   event.preventDefault();closeGameSettings({restoreFocus:true});return;
+  }
+  const items=gameSettingsMenuItems();
+  if(!items.length)return;
+  const current=Math.max(0,items.indexOf(document.activeElement));
+  let next=-1;
+  if(event.key==="ArrowDown")next=(current+1)%items.length;
+  else if(event.key==="ArrowUp")next=(current-1+items.length)%items.length;
+  else if(event.key==="Home")next=0;
+  else if(event.key==="End")next=items.length-1;
+  if(next>=0){event.preventDefault();focusGameSettingsItem(items[next]);}
+ });
+ gameSettings.addEventListener("focusout",()=>{
+  setTimeout(()=>{if(gameSettingsMenuIsOpen()&&!gameSettings.contains(document.activeElement))closeGameSettings();},0);
+ });
+ document.addEventListener("pointerdown",event=>{
+  if(!gameSettingsMenuIsOpen()||gameSettings.contains(event.target))return;
+  settingsOutsideClickUntil=Date.now()+500;
+  settingsOutsideClickTarget=event.target;
+  event.preventDefault();event.stopImmediatePropagation();closeGameSettings();
+ },true);
+ document.addEventListener("click",event=>{
+  if(event.detail===0||Date.now()>settingsOutsideClickUntil||event.target!==settingsOutsideClickTarget)return;
+  settingsOutsideClickTarget=null;
+  event.preventDefault();event.stopImmediatePropagation();
+ },true);
+ returnHomeLink.addEventListener("click",()=>{closeGameSettings();});
 }
 function clonePortalTuning(src){
  return JSON.parse(JSON.stringify(src));
@@ -2154,9 +2234,9 @@ function updateSeaAnswerTargets(now){
   entry.y=clamp(laneCenter+cross*entry.ampY,laneMin,laneMax);
   const minX=Math.max(boundaryHalf+8,safe.sceneRect.width*.66);
   let maxX=Math.min(safe.sceneRect.width-boundaryHalf-10,safe.sceneRect.width*.92);
-  if(homeBtn&&entry.index===0){
-   const homeRect=homeBtn.getBoundingClientRect(),homeLeft=homeRect.left-safe.sceneRect.left,homeTop=homeRect.top-safe.sceneRect.top,homeBottom=homeRect.bottom-safe.sceneRect.top;
-   if(entry.y-boundaryHalf<homeBottom+8&&entry.y+boundaryHalf>homeTop-8)maxX=Math.min(maxX,homeLeft-boundaryHalf-8);
+  if(settingsBtn&&entry.index===0){
+   const settingsRect=settingsBtn.getBoundingClientRect(),settingsLeft=settingsRect.left-safe.sceneRect.left,settingsTop=settingsRect.top-safe.sceneRect.top,settingsBottom=settingsRect.bottom-safe.sceneRect.top;
+   if(entry.y-boundaryHalf<settingsBottom+8&&entry.y+boundaryHalf>settingsTop-8)maxX=Math.min(maxX,settingsLeft-boundaryHalf-8);
   }
   const laneSpread=safe.sceneRect.width*.14*Math.sqrt(balloonCurve)*(entry.index===0?-1:1);
   maxX=Math.max(minX,maxX);entry.x=clamp(safe.sceneRect.width*entry.baseX+wave*entry.ampX+laneSpread,minX,maxX);
@@ -4482,7 +4562,8 @@ bindTap($("zkBtnTitle"),()=>{ensureAC();openZukan();});
 bindTap($("zkBtnMap"),()=>{ensureAC();openZukan();});
 bindTap($("zkBtnRes"),()=>{ensureAC();openZukan();});
 bindTap($("zkClose"),()=>{$("zukan").classList.add("hidden");});
-bindTap($("homeBtn"),()=>{
+bindTap(mapMenuBtn,()=>{
+ closeGameSettings();
  if(quiz.classList.contains("show")){showStamp("いまは トンネルを あけよう","ng");return;}
  if(seaBossPhase!=="idle"){showStamp("いまは おおあわぬしを たおそう","ng");return;}
  openMap();
@@ -4490,6 +4571,7 @@ bindTap($("homeBtn"),()=>{
 bindTap($("spkBtn"),()=>{showHint();});
 bindTap($("helpBtn"),()=>{useHelp();});
 
+initGameSettingsMenu();
 buildRainParticles(false);
 buildRegistry();
 loadPortalTuning();
@@ -4505,6 +4587,7 @@ document.addEventListener("pointerdown",()=>{ensureAC();},{capture:true,passive:
 // blur は意図的に購読しない (iOS の疑似 blur で AC を止めない方針)
 document.addEventListener("visibilitychange",()=>{
  if(document.hidden){
+  closeGameSettings();
   hideWeatherNotice();
   if(seaRoundPhase==="ready"||seaRoundPhase==="go"){clearTimeout(seaRoundCountdownTimer);seaRoundCountdownTimer=0;}
   pauseSeaInput();safeSuspend();
@@ -4517,9 +4600,9 @@ window.addEventListener("resize",scheduleRainParticleRebuild,{passive:true});
 window.addEventListener("resize",syncNumberCargoColumns,{passive:true});
 window.addEventListener("resize",handleSeaViewportChange,{passive:true});
 window.addEventListener("resize",updateSpaceGalaxyVisual,{passive:true});
-window.addEventListener("pageshow",()=>{ensureAC();updateRainParticleVisibility(false);});
+window.addEventListener("pageshow",()=>{closeGameSettings();ensureAC();updateRainParticleVisibility(false);});
 window.addEventListener("focus",()=>{ensureAC();});
-window.addEventListener("pagehide",()=>{hideWeatherNotice();pauseSeaInput();clearTimeout(rainParticleResizeTimer);safeSuspend();});
+window.addEventListener("pagehide",()=>{closeGameSettings();hideWeatherNotice();pauseSeaInput();clearTimeout(rainParticleResizeTimer);safeSuspend();});
 
 requestAnimationFrame(gloop);
 })();

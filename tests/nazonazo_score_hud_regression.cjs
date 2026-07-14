@@ -69,12 +69,14 @@ assert.match(html, /id="highScorePill"[\s\S]*?>\s*<span[^>]*>ハイスコア<\/s
 
 const order = Object.fromEntries([
   "hud", "dots", "scoreHud", "scoreCurrentPill", "scoreHudValue", "scoreHudTail",
-  "highScorePill", "highScoreValue", "helpBadge", "carBadge", "homeBtn"
+  "highScorePill", "highScoreValue", "helpBadge", "carBadge", "gameSettings", "settingsBtn", "mapMenuBtn"
 ].map(id => [id, html.indexOf(`id="${id}"`)]));
 assert.ok(Object.values(order).every(index => index >= 0), "score HUD ordering nodes missing");
-assert.ok(order.hud < order.dots && order.dots < order.scoreHud && order.scoreHud < order.homeBtn, "score HUD must live between stage progress and map button");
+assert.ok(order.hud < order.dots && order.dots < order.scoreHud && order.scoreHud < order.carBadge, "score HUD must follow stage progress and own its counters");
 assert.ok(order.scoreCurrentPill < order.scoreHudTail && order.scoreHudTail < order.highScorePill, "the high-score tail must be a sibling to the centered current pill");
-assert.ok(order.highScoreValue < order.helpBadge && order.helpBadge < order.carBadge && order.carBadge < order.homeBtn, "right-side order must be high score, help, passengers, map");
+assert.ok(order.highScoreValue < order.helpBadge && order.helpBadge < order.carBadge, "right-side order must be high score, help, passengers");
+assert.ok(order.carBadge < order.gameSettings && order.gameSettings < order.settingsBtn && order.settingsBtn < order.mapMenuBtn,
+  "the fixed settings menu must sit outside the HUD and contain the map action");
 
 const scoreHudRule = extractRule(css, "#scoreHud");
 assert.match(scoreHudRule, /position\s*:\s*absolute/, "score HUD must not consume flex width or shift the true center");
@@ -229,7 +231,7 @@ async function runBrowser(browserName, base) {
       return {
         portrait: matchMedia("(orientation:portrait)").matches,
         score: rect("scoreHud"), current: rect("scoreCurrentPill"), high: rect("highScorePill"),
-        help: rect("helpBadge"), car: rect("carBadge"), dots: rect("dots"), home: rect("homeBtn"), rotate: rect("rotateHint"),
+        help: rect("helpBadge"), car: rect("carBadge"), dots: rect("dots"), settings: rect("settingsBtn"), rotate: rect("rotateHint"),
         viewportWidth: innerWidth,
         overflowX: document.documentElement.scrollWidth - innerWidth,
         overflowY: document.documentElement.scrollHeight - innerHeight
@@ -244,7 +246,7 @@ async function runBrowser(browserName, base) {
     assert.ok(Math.abs((metrics.current.left + metrics.current.right) / 2 - metrics.viewportWidth / 2) <= 1, `${browserName}: current score is not centered at ${width}x${height}`);
     assert.ok(metrics.dots.right <= metrics.current.left, `${browserName}: stage progress overlaps current score at ${width}x${height}`);
     assert.ok(metrics.current.right <= metrics.high.left && metrics.high.right <= metrics.help.left && metrics.help.right <= metrics.car.left, `${browserName}: score/high-score/help/passenger order drifted at ${width}x${height}`);
-    assert.ok(metrics.car.right <= metrics.home.left, `${browserName}: passenger count overlaps map button at ${width}x${height}`);
+    assert.ok(metrics.car.right <= metrics.settings.left, `${browserName}: passenger count overlaps settings at ${width}x${height}`);
   }
   assert.deepEqual(errors, [], `${browserName}: page errors\n${errors.join("\n")}`);
   await context.close();

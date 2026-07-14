@@ -12,9 +12,9 @@ const html = read("nazonazo-tunnel/index.html");
 const css = read("nazonazo-tunnel/styles.css");
 const js = read("nazonazo-tunnel/js/game.js");
 
-assert.match(html, /styles\.css\?v=20260714-1293/,
+assert.match(html, /styles\.css\?v=20260714-1294/,
   "the non-choice illustration pass needs a fresh stylesheet cache key");
-assert.match(html, /js\/game\.js\?v=20260714-1293/,
+assert.match(html, /js\/game\.js\?v=20260714-1294/,
   "the non-choice illustration pass needs a fresh script cache key");
 
 function extractFunction(source, name) {
@@ -482,7 +482,7 @@ function makeTargetMotionSandbox() {
     seaReducedMotion: () => state.reduced,
     seaRoundPlayable: () => state.phase === "active",
     seaRoundPhase: state.phase,
-    homeBtn: null,
+    settingsBtn: null,
     document: { activeElement: null },
     clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
     _nowMs: () => 1000,
@@ -540,12 +540,12 @@ assert.ok(growthTarget.y - finalVisualHalf >= 50 && growthTarget.y + finalVisual
   "the 2.2x bubble must stay between the HUD and question panel");
 assert.ok(growthTarget.radius > growthTarget.size * .9,
   "the hit area must grow with the visible balloon so late shots remain generous");
-targetMotion.homeBtn = { getBoundingClientRect: () => ({ left: 730, right: 830, top: 10, bottom: 66 }) };
+targetMotion.settingsBtn = { getBoundingClientRect: () => ({ left: 776, right: 832, top: 8, bottom: 64 }) };
 targetMotion.updateSeaAnswerTargets(2050);
 const finalBoundaryHalf = finalVisualHalf * 1.12;
 assert.ok(growthTarget.x + finalBoundaryHalf <= 722.01,
-  "the taut 2.2x target must reserve the real right-side map-button rectangle");
-targetMotion.homeBtn = null;
+  "the taut 2.2x target must reserve the always-visible settings-button rectangle");
+targetMotion.settingsBtn = null;
 const hitByHitX = [];
 for (let hits = 0; hits <= 24; hits += 1) {
   growthTarget.hits = hits;
@@ -977,7 +977,7 @@ assert.match(js, /seaRoundPhase==="ready"\|\|seaRoundPhase==="go"[\s\S]{0,180}cl
   "backgrounding during countdown must stop the unseen timer");
 assert.match(js, /!seaRoundCountdownTimer[\s\S]{0,180}startSeaRoundCountdown\(\)/,
   "foregrounding must replay an interrupted ようい / ドン！ sequence");
-assert.match(js, /window\.addEventListener\("pagehide",\(\)=>\{hideWeatherNotice\(\);pauseSeaInput\(\)/);
+assert.match(js, /window\.addEventListener\("pagehide",\(\)=>\{closeGameSettings\(\);hideWeatherNotice\(\);pauseSeaInput\(\)/);
 assert.match(js, /window\.addEventListener\("resize",handleSeaViewportChange/);
 
 /* Reduced motion and LP lock remain explicit. */
