@@ -11558,8 +11558,12 @@
       // でも lazy img の hydrate 待ちで blank タイルがちらつく症状があるため、
       // rep<=PRIORITY_REP を eager 対象に拡張 (FV 内は fetchpriority=high、
       // 隣接 set は eager+async+low で並列を抑えつつ事前 decode)。
+      // v2183相当: rep=2 (第3コピー) だけ lazy のまま残り、大ドラッグで露出した際に
+      // blank タイルになる非対称を解消。thumb URL は rep 間で完全同一なのでブラウザは
+      // 各 URL を1回しか fetch せず、eager 化のネットワークコスト増はゼロ。
+      // fetchpriority の仕分け (isPriority) は据置き。
       const isPriority = (rep === PRIORITY_REP) && (i < PRIORITY_EAGER_COUNT);
-      const isEager    = rep <= PRIORITY_REP;
+      const isEager    = true;
       const loadingAttr   = isEager    ? 'eager' : 'lazy';
       const decodingAttr  = isPriority ? 'sync'  : 'async';
       const priorityAttr  = isPriority ? 'high'  : 'low';
@@ -11629,10 +11633,6 @@
       cardList.addEventListener('pointerdown', onCardPointerDown, { passive: true });
       cardList.addEventListener('pointercancel', clearCardPointerDown, { passive: true });
       cardList.addEventListener('click', onCardClick);
-      // v1949: v1948 で追加した window pointerup/pointercancel 上の releaseCardDragFlag は
-      // 撤去。 setupLoopScroll 内の handlePointerUp が window にも張られていて pointerId 一致
-      // 経路で確実に isDragging/pointerId をクリアするので冗長かつ、 releaseCardDragFlag が
-      // handlePointerUp より先に発火して teleport 判定を早期 return させる順序依存を招いていた。
 
       // Mark broken images so CSS fallbacks kick in (local preview without assets).
       // iOS Safari ではメモリ圧迫で <img> が一時的にロード失敗することがあるので、
@@ -11682,9 +11682,6 @@
     function setupLoopScroll() {
       const cards = cardList.querySelectorAll('.game-card');
       if (cards.length < MENU_GAMES.length * LOOP_COPIES) return;
-      // v1950: handlePointerUp が window/cardList に登録されるのはこの関数末尾。
-      // onCardPointerDown の isDragging gate を開放するのはここが最速で安全。
-      cardScrollState.loopScrollReady = true;
 
       // Lock the list's visible height to exactly 4 cards + 3 gaps so
       // no 5th card peeks through the top/bottom edges. Recompute when
@@ -11728,7 +11725,7 @@
       };
       const recomputeHeight = () => {
         // v1950: recomputeRaf > 0 (rAF pending) は当然抑止。 recomputeRaf === -1
-        // (drag 中 pending) も再スケジュール禁止 — handlePointerUp 側で消化する。
+        // (drag 中 pending) も再スケジュール禁止 — touchend 側で消化する。
         if (recomputeRaf) return;
         recomputeRaf = requestAnimationFrame(recomputeHeightImpl);
       };
@@ -11833,6 +11830,8 @@
         cardScrollState.snapping = true;
         const t0 = performance.now();
         const tick = (now) => {
+          // v2183相当: snap アニメ中に子供が指でリストを掴んだら即座に放棄し、指に主導権を渡す。
+          if (cardScrollState.isDragging) { cardScrollState.snapping = false; return; }
           const p = Math.min(1, (now - t0) / duration);
           cardList.scrollTop = start + dist * easeOutCubic(p);
           if (p < 1) {
@@ -11856,6 +11855,33 @@
         animateScrollTo(target);
       };
 
+      // v2183相当: スクロール静止 (scroll イベント 140ms 途絶 + 指が離れている) 時に
+      // のみ、 (1) LOOP 帯復帰 teleport → (2) card 境界 snap の順で実行する。
+      // 指接地中は何もしない (touchend 側が再スケジュールする)。 momentum 中は
+      // scroll イベントが継続するのでデバウンスにより自然に静止まで先送りされる。
+      const settleLoop = () => {
+        if (cardScrollState.isDragging) return;
+        if (cardScrollState.teleporting || cardScrollState.snapping) return;
+        const set = oneSetH();
+        const t = cardList.scrollTop;
+        if (set) {
+          if (t < set * 0.5) {
+            cardScrollState.teleporting = true;
+            cardList.scrollTop = t + set;
+            lastScrollTop = cardList.scrollTop;
+            requestAnimationFrame(() => { cardScrollState.teleporting = false; snapToNearest(); });
+            return;
+          } else if (t > set * 1.5) {
+            cardScrollState.teleporting = true;
+            cardList.scrollTop = t - set;
+            lastScrollTop = cardList.scrollTop;
+            requestAnimationFrame(() => { cardScrollState.teleporting = false; snapToNearest(); });
+            return;
+          }
+        }
+        snapToNearest();
+      };
+
       cardList.addEventListener('scroll', () => {
         const t = cardList.scrollTop;
         // Accumulate user-driven scroll only — exclude programmatic snap/
@@ -11870,29 +11896,29 @@
 
         if (cardScrollState.teleporting) return;
         const set = oneSetH();
-        // v1947: 指ドラッグ中は LOOP teleport を pointerup まで遅延。
-        // finger drag 中の同期 scrollTop ジャンプが GPU 合成と競合して
-        // drop-shadow が 1 frame drop する 「一瞬消える」 症状を消す。
-        // pointerup 後の handlePointerUp() で境界チェックしてまとめて teleport。
-        if (!cardScrollState.isDragging) {
-          if (t < set * 0.5) {
-            cardScrollState.teleporting = true;
-            cardList.scrollTop = t + set;
-            lastScrollTop = cardList.scrollTop;
-            requestAnimationFrame(() => { cardScrollState.teleporting = false; });
-            return;
-          } else if (t > set * 1.5) {
-            cardScrollState.teleporting = true;
-            cardList.scrollTop = t - set;
-            lastScrollTop = cardList.scrollTop;
-            requestAnimationFrame(() => { cardScrollState.teleporting = false; });
-            return;
-          }
+        // v2183相当: 通常帯 (0.5set-1.5set) の teleport はスクロール静止時 (settleLoop)
+        // に移設。 ここでは物理端クランプ直前の緊急時のみ即時 teleport する
+        // (指ドラッグ/momentum 中の scrollTop 書き込みは compositor と競合するため、
+        // 1 set 以上を一気に移動する稀なジェスチャに限って 1 frame の乱れを許容)。
+        const maxScroll = cardList.scrollHeight - cardList.clientHeight;
+        const EDGE = set * 0.15;
+        if (t < EDGE) {
+          cardScrollState.teleporting = true;
+          cardList.scrollTop = t + set;
+          lastScrollTop = cardList.scrollTop;
+          requestAnimationFrame(() => { cardScrollState.teleporting = false; });
+          return;
+        } else if (t > maxScroll - EDGE) {
+          cardScrollState.teleporting = true;
+          cardList.scrollTop = t - set;
+          lastScrollTop = cardList.scrollTop;
+          requestAnimationFrame(() => { cardScrollState.teleporting = false; });
+          return;
         }
         // Debounced snap: wait for the user to stop scrolling.
         if (cardScrollState.snapping) return;
         clearTimeout(snapTimer);
-        snapTimer = setTimeout(snapToNearest, 140);
+        snapTimer = setTimeout(settleLoop, 140);
 
         // v1672: scroll-hint 色更新 — rAF throttled
         if (!scrollHintRaf) {
@@ -11911,49 +11937,17 @@
         }
       }, { passive: true });
 
-      // v1947: 指ドラッグ終了時に (1) middle overlay を再計算、
-      // (2) 保留していた LOOP teleport 境界を再判定してまとめて teleport。
-      // v1948:
-      //   - `!isDragging` の早期 return を撤去。 clearCardPointerDown が isDragging を
-      //     操作しなくなったので、 実 pointerup は必ず isDragging=true で入る想定だが、
-      //     万一 false でも teleport/overlay 更新は冪等なので safe to run。
-      //   - pointerId gate を追加。 window に登録した listener が bottom-nav / modal /
-      //     capture.js overlay 等 cardList 外の pointerup を拾って、 進行中のドラッグの
-      //     isDragging を早期に落とすのを防ぐ (二本指 iPad で頻発する race)。
-      const handlePointerUp = (e) => {
-        // v1948: 既に release 済み (isDragging=false かつ pointerId=null) なら何もしない。
-        // window listener が bottom-nav 等の関係ない pointerup で毎回 teleport チェック +
-        // rAF updateMiddleOverlay を回さないように早期 return。
-        if (!cardScrollState.isDragging && cardScrollState.pointerId === null) return;
-        if (
-          e && e.pointerId !== undefined && cardScrollState.pointerId !== null &&
-          e.pointerId !== cardScrollState.pointerId
-        ) {
-          return;
-        }
+      // v2183相当: iOS はネイティブパン開始時に pointercancel を発火するため、
+      // pointer events では「指が接地中」を追跡できない (v1947-v1950 の isDragging
+      // 保留が実機で常に無効化されていた根本原因)。 touch events はネイティブパン
+      // 中も passive で配送され、 touchend は指を離すまで発火しないので正とする。
+      const onCardTouchStart = () => {
+        cardScrollState.isDragging = true;
+      };
+      const onCardTouchEnd = (e) => {
+        if (e.touches && e.touches.length > 0) return; // まだ別の指が残っている
         cardScrollState.isDragging = false;
-        cardScrollState.pointerId = null;
-        // v1950: v1949 の 「teleport 全体を rAF で 1 frame 遅延」 は iOS Safari の
-        // momentum scroll (pointerup 後も 16ms で 10-30px 前進) と衝突し、 rAF 内で
-        // 古い t 基準に代入することで 「momentum 逆流→急停止」 の新種 flicker を招く
-        // ため撤回。 scrollTop 代入は同期に戻し (v1948 相当)、 pointerup 集中負荷は
-        // updateMiddleOverlay 側の rAF (下記) 分散だけで担う。
-        const t = cardList.scrollTop;
-        const setNow = oneSetH();
-        if (setNow) {
-          if (t < setNow * 0.5) {
-            cardScrollState.teleporting = true;
-            cardList.scrollTop = t + setNow;
-            lastScrollTop = cardList.scrollTop;
-            requestAnimationFrame(() => { cardScrollState.teleporting = false; });
-          } else if (t > setNow * 1.5) {
-            cardScrollState.teleporting = true;
-            cardList.scrollTop = t - setNow;
-            lastScrollTop = cardList.scrollTop;
-            requestAnimationFrame(() => { cardScrollState.teleporting = false; });
-          }
-        }
-        // v1950: drag 中に保留された recomputeHeight を消化 (spin loop 回避)。
+        // drag 中に保留された recomputeHeight を消化 (旧 handlePointerUp から移設)
         if (recomputeRaf === -1) {
           recomputeRaf = 0;
           recomputeHeight();
@@ -11964,13 +11958,13 @@
             updateMiddleOverlay();
           });
         }
+        // momentum が無い離し方でも必ず settle が走るよう再スケジュール
+        clearTimeout(snapTimer);
+        snapTimer = setTimeout(settleLoop, 140);
       };
-      cardList.addEventListener('pointerup', handlePointerUp, { passive: true });
-      cardList.addEventListener('pointercancel', handlePointerUp, { passive: true });
-      // Safari では touch を離す前に window の外へ抜けると pointerup が飛ばない
-      // ケースがあるため window 側にも保険を張る (二重発火は isDragging guard で無害)。
-      window.addEventListener('pointerup', handlePointerUp, { passive: true });
-      window.addEventListener('pointercancel', handlePointerUp, { passive: true });
+      cardList.addEventListener('touchstart', onCardTouchStart, { passive: true });
+      window.addEventListener('touchend', onCardTouchEnd, { passive: true });
+      window.addEventListener('touchcancel', onCardTouchEnd, { passive: true });
 
       // 初回 scroll-hint 状態反映
       updateScrollHints();
