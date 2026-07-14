@@ -485,7 +485,7 @@
 
       var msg = document.createElement('span');
       msg.style.cssText = 'flex:1 1 200px;line-height:1.5';
-      msg.textContent = 'あそびかたの記録を、名前と結びつけない符号だけで記録しています。';
+      msg.textContent = 'もっと楽しく遊べるように、遊んだゲームと回数を、お名前とは結びつけずに記録しています。';
       bar.appendChild(msg);
 
       var detailLink = document.createElement('a');
