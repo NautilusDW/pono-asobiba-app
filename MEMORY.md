@@ -149,6 +149,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-07-14T12:13:38Z - オンボーディング・タイトルツアー: スポットライト範囲修正(#cardList)+シール帳ステップ削除
+- **タスク**: オンボーディング・タイトルツアー: スポットライト範囲修正(#cardList)+シール帳ステップ削除
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 0
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {}
+- **サマリ**: 行動ログが空のため分析できません。
+
+
 ### 2026-07-14T11:26:22Z - タイトル画面カード一覧のドラッグ時ちらつき/大ドラッグ消失を根本修正 (iOS pointercancel構造バグ+第3コピーサムネlazy非対称、fable設計+sonnet5実装+クロスレビュー)
 - **タスク**: タイトル画面カード一覧のドラッグ時ちらつき/大ドラッグ消失を根本修正 (iOS pointercancel構造バグ+第3コピーサムネlazy非対称、fable設計+sonnet5実装+クロスレビュー)
 - **結果**: 成功
@@ -242,19 +255,6 @@ wrangler deploy                  # master 内容を production に
 
 ### 2026-07-14T09:44:30Z - アバターtierゲーティングのクロスレビュー指摘(Critical/High/Medium)を修正: sw.js CACHE_VERSIONバンプ, nativeミラー再生成, TIER_POLICY.md追記
 - **タスク**: アバターtierゲーティングのクロスレビュー指摘(Critical/High/Medium)を修正: sw.js CACHE_VERSIONバンプ, nativeミラー再生成, TIER_POLICY.md追記
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 0
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {}
-- **サマリ**: 行動ログが空のため分析できません。
-
-
-### 2026-07-14T09:41:16Z - title_pressed_button_regression.cjs のCSSコメント誤カウントfalse negativeバグ修正
-- **タスク**: title_pressed_button_regression.cjs のCSSコメント誤カウントfalse negativeバグ修正
 - **結果**: 成功
 - **理由**: N/A
 - **総アクション数**: 0
