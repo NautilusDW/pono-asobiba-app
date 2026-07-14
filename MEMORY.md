@@ -149,6 +149,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-07-14T09:51:44Z - タイトル画面ゲームカード一覧のタッチ時ちらつき/消失バグを根本修正 (fable設計+sonnet5実装+クロスレビューのマルチエージェントworkflow)
+- **タスク**: タイトル画面ゲームカード一覧のタッチ時ちらつき/消失バグを根本修正 (fable設計+sonnet5実装+クロスレビューのマルチエージェントworkflow)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 0
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {}
+- **サマリ**: 行動ログが空のため分析できません。
+
+
 ### 2026-07-14T09:48:29Z - avatar tier gating 最終検証 (sw.js CACHE_VERSION整合確認・構文チェック・回帰テスト・diff監査)
 - **タスク**: avatar tier gating 最終検証 (sw.js CACHE_VERSION整合確認・構文チェック・回帰テスト・diff監査)
 - **結果**: 成功
@@ -242,19 +255,6 @@ wrangler deploy                  # master 内容を production に
 
 ### 2026-07-14T09:19:13Z - タイトル画面カード一覧ちらつきバグの検証(batch:1295 title-tour-flicker-fix): Playwright WebKit + 静的トレースで修正済みコードのA/B/C全項目PASS確認、pre-fixコミットでの陰性対照試験で回帰再現力も確認
 - **タスク**: タイトル画面カード一覧ちらつきバグの検証(batch:1295 title-tour-flicker-fix): Playwright WebKit + 静的トレースで修正済みコードのA/B/C全項目PASS確認、pre-fixコミットでの陰性対照試験で回帰再現力も確認
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 0
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {}
-- **サマリ**: 行動ログが空のため分析できません。
-
-
-### 2026-07-14T03:19:20Z - オンボーディング・チュートリアル最終統合検証 (batch:onboarding-tour): 実装内容の確定仕様準拠チェック + sw.js/play.html CACHE_VERSION同期バンプ(2177→2178) + AGENTS_CLAIMS.md claim削除
-- **タスク**: オンボーディング・チュートリアル最終統合検証 (batch:onboarding-tour): 実装内容の確定仕様準拠チェック + sw.js/play.html CACHE_VERSION同期バンプ(2177→2178) + AGENTS_CLAIMS.md claim削除
 - **結果**: 成功
 - **理由**: N/A
 - **総アクション数**: 0
