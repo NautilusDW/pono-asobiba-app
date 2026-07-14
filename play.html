@@ -11947,7 +11947,7 @@
       const onCardTouchEnd = (e) => {
         if (e.touches && e.touches.length > 0) return; // まだ別の指が残っている
         cardScrollState.isDragging = false;
-        // drag 中に保留された recomputeHeight を消化 (旧 handlePointerUp から移設)
+        // drag 中に保留された recomputeHeight を消化 (旧ドラッグ終了フローから移設)
         if (recomputeRaf === -1) {
           recomputeRaf = 0;
           recomputeHeight();
@@ -12037,19 +12037,11 @@
     let cardPointerDownTimer = 0;
     // Shared scroll state exposed by setupLoopScroll so isCardTap can tell
     // user-driven scroll apart from programmatic snap/teleport.
-    // v1947: isDragging を追加。 pointerdown〜pointerup 間は真になり、
-    // scroll handler 内の rAF middle-overlay 更新 / LOOP teleport を保留する
-    // ことでカードの連続点滅と 1 frame blank 消失を防ぐ。
-    // v1948: pointerId を追加。 handlePointerUp を window にも登録している都合で、
-    // bottom-nav や modal 等 cardList 外の pointerup も届くため、 pointerdown 時の
-    // pointerId と一致した pointerup だけ isDragging を落とす (multi-touch でも
-    // 「別の指が cardList 外で離れた」を無視できる)。
-    // v1950: loopScrollReady を追加。 renderCards は onCardPointerDown を同期登録するが
-    // handlePointerUp は 1 frame 後の setupLoopScroll でしか登録されないため、 cold start
-    // 直後の 16ms 以内に fast tap すると pointerdown で isDragging=true が立ったまま
-    // pointerup を拾う handler が居ない → 恒常的に isDragging=true でラッチ。 gate flag で
-    // setupLoopScroll 完了までは isDragging を立てないようにして初期 1 frame race を封じる。
-    const cardScrollState = { teleporting: false, snapping: false, userScrollDelta: 0, isDragging: false, pointerId: null, loopScrollReady: false };
+    // v2183相当: isDragging は「指が cardList 上に物理的に接地しているか」を touchstart/
+    // touchend (window) で追跡する。 pointer events は iOS Safari がネイティブパン開始時に
+    // pointercancel を発火してしまい実機でドラッグ中を追跡できなかったため touch events に
+    // 統一した (詳細は setupLoopScroll 内 onCardTouchStart/onCardTouchEnd)。
+    const cardScrollState = { teleporting: false, snapping: false, userScrollDelta: 0, isDragging: false };
 
     function isTapIntroBlockingInput() {
       const intro = document.getElementById('tapIntro');
@@ -12066,16 +12058,6 @@
         return;
       }
       if (typeof e.button === 'number' && e.button > 0) return;
-      // v1948: cardList (padding 24/32px と card 間 4px gap を含む) に触れた瞬間から
-      // LOOP teleport / overlay toggle を保留する。 target が `.game-card` でなくても
-      // padding/gap をタッチしたドラッグは十分あり得るため、 isDragging を先に立てる。
-      // pointerId は handlePointerUp が bottom-nav 等の pointerup と混線しないための marker。
-      // v1950: setupLoopScroll 未完了 (handlePointerUp 未登録) の間は isDragging を
-      // 立てないことで、 cold start 直後 fast tap の permanent latch を防ぐ。
-      if (cardScrollState.loopScrollReady) {
-        cardScrollState.isDragging = true;
-        if (e.pointerId !== undefined) cardScrollState.pointerId = e.pointerId;
-      }
       const card = e.target.closest('.game-card');
       if (!card) return;
       clearTimeout(cardPointerDownTimer);
@@ -12095,14 +12077,11 @@
       clearTimeout(cardPointerDownTimer);
       cardPointerDownTimer = 0;
       cardPointerDown = null;
-      // v1948→v1950: `isDragging=false` の同時解除を撤去。 CARD_TAP_STATE_TTL_MS (800ms)
-      // 経由の stale-tap invalidate だけを担わせ、 ドラッグ抑止フラグは pointerup/pointercancel
-      // ライフサイクル (setupLoopScroll 内 handlePointerUp が cardList + window の 2 経路に
-      // 張った同一 handler) だけが操作する。 v1949 で releaseCardDragFlag 相当の外部 safety net
-      // は撤去済み (順序依存 race を招くため)、 初期 1 frame の未登録期間は onCardPointerDown
-      // 側の loopScrollReady gate で吸収する。 800ms を超える 「ゆっくり指ドラッグ」 が途中で
-      // isDragging=false になり保留 LOOP teleport が指の途中で再開して drop-shadow が
-      // 1 frame 落ちる v1947 の critical bug 対策としてこの撤去は維持。
+      // v2183相当: `isDragging` はここでは触らない。 接地状態の唯一の管理者は
+      // setupLoopScroll 内の touchstart/touchend (window) — CARD_TAP_STATE_TTL_MS
+      // (800ms) 経由の stale-tap invalidate と混ぜると、 800ms を超える「ゆっくり指
+      // ドラッグ」の途中で isDragging=false になり保留 teleport が指の下で再開する
+      // (v1947 の critical bug) ため二重管理を避ける。
     }
 
     function isCardTap(e, card) {
