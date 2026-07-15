@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2197: もじっこファームの文字練習へ「ことばの あな」と「きょうの 3もじ」を追加し、各課題の再開保存、複数タブでの原子的な報酬claim、IDB障害時のfail-closed fallback、途中報酬表示、縦向き中断と短い横画面の操作領域を回帰固定した (batch:1307-mojikko-writing-modes)。play.html PAGE_CACHE_VERSION と同期不要 (writing-mori/index.html/テストのみ変更)。
 // v2196: みちつなぎを、明るい16:9背景8景が連続する一人旅へ刷新。ポノの入場→通常プレイ→道を歩く→手がかり発見→右退出を単一actorへ統合し、重複表示を構造的に防止。「ここへ」を物理的な空き穴へ置換し、最初の一手だけを案内。到着前の手がかり非表示、柔らかい絵本調のおかあさん、旧暗色カットシーンの明色レイヤー化、reduced-motion、全8面／Chromium／WebKit回帰を追加した (batch:1306-slide-solo-adventure)。play.html PAGE_CACHE_VERSION と同期不要 (slide/index.html/画像/テストのみ変更)。
 // v2195: もじっこファームの文字練習で、クリア済み文字と順番モードの次の未完了文字を端末へ保存し、通常入場／別ゲームからの復帰／再読込でも続きから再開。文字別の完了マーカーとV2一覧キャッシュを併用して複数タブの同時更新を収束させ、旧V1 cursor互換も維持した (batch:1306-mojikko-writing-resume)。play.html PAGE_CACHE_VERSION と同期不要 (writing-mori/index.html/テストのみ変更)。
 // v2194: みちつなぎを16:9の世界一体型盤面へ再設計。大型情報カードと青い二重枠／反復タイル画像を外し、小型HUD、全身ポノ／おかあさん、テーマ別の木・石・星明かりの道、空きマス／動かせるパネル／接続済み経路の独立色と流れを追加。初回チュートリアルのpause競合・二重起動・stage-start状態ずれも修正し、全8面／Chromium／WebKit／coarse pointer／reduced-motion／free-book-app gateを回帰した (batch:1305-slide-worldboard-redesign)。play.html PAGE_CACHE_VERSION と同期不要 (slide/index.html/テストのみ変更)。
@@ -126,7 +127,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2196;
+const CACHE_VERSION = 2197;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
