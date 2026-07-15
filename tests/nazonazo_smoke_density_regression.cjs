@@ -60,7 +60,8 @@ assert.doesNotMatch(game, /\b(?:IOS|REDUCED)_SMOKE_(?:INTERVAL|LIFE|MAX)/,
 assert.match(html, /styles\.css\?v=20260715-1302/);
 assert.match(html, /js\/game\.js\?v=20260715-1302/);
 assert.match(serviceWorker, /v2186: なぞなぞトレインの煙/);
-assert.match(serviceWorker, /const CACHE_VERSION = 2189;/);
+assert.ok(Number(serviceWorker.match(/const CACHE_VERSION = (\d+);/)?.[1]) >= 2189,
+  "later game releases may advance the global service-worker cache version");
 assert.match(css, /body\.tunnel-enter-run #veh \.puff,body\.tunnel-exit-run #veh \.puff\{opacity:0\}/);
 assert.match(css, /body\.tunnel-enter-run #smokeLayer,body\.tunnel-exit-run #smokeLayer\{display:none\}/);
 assert.match(css, /body\.tunnel-interior #veh \.puff,body\.tunnel-interior #smokeLayer\{display:none!important\}/,

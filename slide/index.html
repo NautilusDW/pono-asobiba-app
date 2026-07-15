@@ -21,10 +21,14 @@
   --text-light: #A89880;
   --shadow: rgba(93,78,55,0.12);
   --radius: 20px;
+  --slide-shell-width: min(100vw, calc(100dvh * 16 / 9));
+  --slide-shell-height: min(100dvh, calc(100vw * 9 / 16));
+  --slide-shell-left: calc((100vw - var(--slide-shell-width)) / 2);
+  --slide-shell-top: calc((100dvh - var(--slide-shell-height)) / 2);
 }
 
 html, body {
-  height: 100dvh; overflow: hidden;
+  width: 100%; height: 100dvh; overflow: hidden;
   overscroll-behavior: none;
   font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
   background-color: var(--bg);
@@ -34,26 +38,64 @@ html, body {
   -webkit-user-select: none; user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
+body { display: grid; place-items: center; }
 
 #app {
-  display: flex; flex-direction: column;
-  height: 100dvh;
-  max-width: 540px; margin: 0 auto;
-  padding: 4px 10px 10px;
+  position: relative;
+  width: var(--slide-shell-width);
+  height: var(--slide-shell-height);
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  isolation: isolate;
+  border-radius: clamp(12px, 2vmin, 24px);
+  background: rgba(255,248,240,0.3);
+  box-shadow: 0 12px 40px rgba(58,48,36,0.22);
+}
+/* common viewport safety CSS sets #app to 100% height on coarse pointers.
+   This page intentionally owns a centered 16:9 shell, so keep that contract. */
+body > #app {
+  width: var(--slide-shell-width) !important;
+  height: var(--slide-shell-height) !important;
+  max-height: var(--slide-shell-height) !important;
+  min-height: 0 !important;
 }
 
-/* ===== Header ===== */
-.header { flex-shrink: 0; text-align: center; padding: 48px 0 4px; position: relative; }
+/* ===== 16:9 information rail ===== */
+.game-rail {
+  position: absolute;
+  z-index: 4;
+  top: clamp(64px, 15%, 112px);
+  left: clamp(10px, 2%, 28px);
+  width: clamp(142px, 21%, 220px);
+  padding: clamp(9px, 1.5vmin, 16px);
+  border: 2px solid rgba(255,255,255,0.72);
+  border-radius: clamp(14px, 2vmin, 22px);
+  background: rgba(255,252,244,0.9);
+  box-shadow: 0 6px 22px rgba(67,52,35,0.18);
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+}
+.header { text-align: center; padding: 0; position: static; }
 .back-link {
   position: absolute; left: 0; top: 50%; transform: translateY(-50%);
   color: var(--primary); font-weight: 700; font-size: 0.85rem; text-decoration: none;
 }
 .header h1 {
-  font-size: 1.3rem; font-weight: 900;
+  font-size: clamp(0.92rem, 2.1vmin, 1.3rem); font-weight: 900;
+  line-height: 1.35;
   background: linear-gradient(135deg, #4CAF50, #81C784);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
-.subtitle { font-size: 0.76rem; color: #A89080; font-weight: 700; text-align: center; margin-top: 1px; }
+.subtitle {
+  font-size: clamp(0.62rem, 1.4vmin, 0.76rem);
+  color: #8A7665;
+  font-weight: 700;
+  line-height: 1.45;
+  text-align: center;
+  margin-top: 3px;
+}
 .btn-bgm {
   position: absolute; right: 0; top: 50%; transform: translateY(-50%);
   width: 34px; height: 34px; border-radius: 50%;
@@ -65,31 +107,61 @@ html, body {
 .btn-bgm:active { transform: translateY(-50%) scale(0.9); }
 .btn-bgm.bgm-off { opacity: 0.4; filter: grayscale(1); }
 .btn-pause {
-  position: fixed; left: 62px; top: 12px;
-  width: 34px; height: 34px; border-radius: 50%;
+  position: absolute;
+  left: clamp(68px, 10%, 88px);
+  top: clamp(8px, 1.5%, 14px);
+  width: clamp(44px, 7vmin, 52px);
+  height: clamp(44px, 7vmin, 52px);
+  border-radius: 50%;
   background: #FFF3EE; border: 2px solid var(--primary);
-  font-size: 1rem; cursor: pointer;
+  font-size: clamp(1rem, 2.5vmin, 1.3rem); cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   box-shadow: 0 2px 6px var(--shadow); z-index: 9988; transition: transform 0.15s;
 }
 .btn-pause:active { transform: scale(0.9); }
 
+/* common/menu.js injects these rules later; !important keeps the shared menu
+   attached to this centered 16:9 shell instead of the browser corner. */
+.pono-menu-toggle {
+  top: calc(var(--slide-shell-top) + 8px) !important;
+  left: calc(var(--slide-shell-left) + 10px) !important;
+  width: clamp(44px, 7vmin, 56px) !important;
+  height: clamp(44px, 7vmin, 56px) !important;
+}
+.pono-dropdown {
+  top: calc(var(--slide-shell-top) + 54px) !important;
+  left: calc(var(--slide-shell-left) + 10px) !important;
+}
+
 /* ===== HUD ===== */
 .hud {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 3px 8px; font-size: 0.85rem; font-weight: 700;
-  flex-shrink: 0;
+  display: grid;
+  gap: 4px;
+  align-items: center;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(93,78,55,0.14);
+  font-size: clamp(0.68rem, 1.55vmin, 0.85rem);
+  font-weight: 800;
+  text-align: center;
 }
 #hud-stage { color: var(--primary); }
-#hud-moves { text-align: right; color: var(--text); }
+#hud-moves { color: var(--text); }
+#stage-num {
+  color: var(--text-light);
+  font-size: clamp(0.72rem, 1.65vmin, 0.92rem);
+  font-weight: 900;
+}
 
 /* ===== Game area ===== */
 .game-wrap {
-  flex: 1; min-height: 0;
-  border-radius: var(--radius);
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  min-height: 0;
+  border-radius: inherit;
   overflow: hidden;
   overscroll-behavior: none;
-  position: relative;
   touch-action: none;
 }
 #gameCanvas { display: block; width: 100%; height: 100%; }
@@ -108,7 +180,7 @@ html, body {
 
 /* ===== Overlay ===== */
 .overlay {
-  position: fixed; inset: 0; z-index: 20;
+  position: absolute; inset: 0; z-index: 20;
   display: flex; align-items: center; justify-content: center;
   background: rgba(93,78,55,0.72);
   backdrop-filter: blur(4px);
@@ -165,7 +237,7 @@ html, body {
 
 #landscape-notice {
   display: none;
-  position: fixed; inset: 0; z-index: 9980;
+  position: fixed; inset: 0; z-index: 10050;
   background: #1a3a4a;
   flex-direction: column; align-items: center; justify-content: center; gap: 20px;
   color: white; text-align: center; padding: 40px;
@@ -177,6 +249,21 @@ html, body {
   50% { transform: rotate(-90deg); }
 }
 #landscape-notice p { font-size: 18px; line-height: 1.6; }
+.landscape-back {
+  display: inline-flex;
+  min-width: 168px;
+  min-height: 48px;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 22px;
+  border: 2px solid rgba(255,255,255,0.78);
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(255,255,255,0.12);
+  font-size: 0.95rem;
+  font-weight: 900;
+  text-decoration: none;
+}
 .tut-dim { position:fixed;inset:0;z-index:9995;background:rgba(93,78,55,0.6);pointer-events:auto; }
 .tut-dim.hidden { display:none; }
 .tut-bubble { position:fixed;z-index:9997;background:#fff;border-radius:16px;padding:12px 12px;max-width:none;box-shadow:0 4px 20px rgba(93,78,55,0.3);font-size:0.95rem;font-weight:700;color:#5D4E37;line-height:1.6;text-align:center;white-space:nowrap;animation:tutPopIn 0.3s cubic-bezier(0.34,1.56,0.64,1); }
@@ -188,7 +275,63 @@ html, body {
   70% { opacity:1; transform:translateY(-10px) scale(1.1); }
   100% { opacity:0; transform:translateY(-20px) scale(0.8); }
 }
-.tut-next-btn { display:inline-block;margin-top:10px;padding:8px 24px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#818CF8);color:#fff;font-family:inherit;font-size:0.85rem;font-weight:900;cursor:pointer; }
+.tut-next-btn { display:inline-flex;min-height:48px;align-items:center;justify-content:center;margin-top:10px;padding:10px 24px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#818CF8);color:#fff;font-family:inherit;font-size:0.85rem;font-weight:900;cursor:pointer; }
+
+@media (orientation: landscape) and (max-height: 480px),
+       (orientation: landscape) and (max-width: 853px) {
+  .game-rail {
+    top: 62px;
+    left: 10px;
+    width: clamp(142px, 21%, 166px);
+    padding: 9px 10px;
+  }
+  .header h1 { font-size: 0.88rem; }
+  .subtitle { font-size: 0.6rem; }
+  .hud { margin-top: 6px; padding-top: 6px; gap: 2px; font-size: 0.66rem; }
+  #stage-num { font-size: 0.68rem; }
+
+  .ov-card,
+  .ov-card.cutscene-mode {
+    display: grid;
+    grid-template-columns: minmax(150px, 0.9fr) minmax(220px, 1.1fr);
+    grid-template-areas:
+      'icon title'
+      'icon message'
+      'icon button'
+      'icon back';
+    column-gap: 16px;
+    row-gap: 5px;
+    width: min(720px, calc(100% - 24px));
+    max-width: min(720px, calc(100% - 24px));
+    max-height: calc(100% - 16px);
+    padding: 12px 16px;
+  }
+  .ov-icon { grid-area: icon; }
+  .ov-title { grid-area: title; white-space: normal; font-size: 1.05rem; }
+  .ov-msg { grid-area: message; font-size: 0.78rem; line-height: 1.4; }
+  .ov-btn {
+    grid-area: button;
+    min-height: 48px;
+    margin: 0;
+    padding: 10px 24px;
+    font-size: 0.95rem;
+  }
+  .ov-back { grid-area: back; }
+  .ov-card:not(.cutscene-mode) .ov-icon img {
+    width: clamp(84px, 24vh, 112px) !important;
+    height: clamp(84px, 24vh, 112px) !important;
+  }
+  .cutscene-img {
+    width: 100%;
+    max-height: calc(100dvh - 40px);
+    object-fit: contain;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #landscape-notice .rotate-icon { animation: none; transform: rotate(-90deg); }
+  .overlay { animation: none; }
+}
 
 </style>
 <script src="../common/achievements.js"></script>
@@ -205,24 +348,27 @@ html, body {
 
 <div id="landscape-notice">
   <div class="rotate-icon">📱</div>
-  <p>スマホを<br><strong>たてむき</strong>にしてね！</p>
+  <p>スマホを<br><strong>よこむき</strong>にしてね！</p>
+  <a class="landscape-back" href="../play.html">ホームにもどる</a>
 </div>
 
 <audio id="bgm" loop src="../assets/audio/slide_bgm.mp3" preload="auto"></audio>
 
 <div id="app">
-  <div class="header">
-    <h1>おかあさん どこいったの？</h1>
-    <p class="subtitle">みちを つなげて ポノを みちびこう</p>
-    <button id="btn-pause" class="btn-pause">⏸</button>
-    <button id="btn-bgm" class="btn-bgm" aria-label="おとのオンオフ">🎵</button>
-  </div>
+  <button id="btn-pause" class="btn-pause" aria-label="ポーズ">⏸</button>
+  <aside class="game-rail" aria-label="ゲームの じょうほう">
+    <div class="header">
+      <h1>おかあさん どこいったの？</h1>
+      <p class="subtitle">みちを つなげて ポノを みちびこう</p>
+      <button id="btn-bgm" class="btn-bgm" aria-label="おとのオンオフ">🎵</button>
+    </div>
 
-  <div class="hud">
-    <div id="hud-stage">はじめてのみち</div>
-    <div id="hud-moves">てかず: 0</div>
-  </div>
-  <div id="stage-num" style="text-align:center;font-size:1rem;font-weight:900;color:var(--text-light);padding:0 0 2px;flex-shrink:0;"></div>
+    <div class="hud">
+      <div id="hud-stage">はじめてのみち</div>
+      <div id="stage-num"></div>
+      <div id="hud-moves">てかず: 0</div>
+    </div>
+  </aside>
 
   <div class="game-wrap" id="gameWrap">
     <canvas id="gameCanvas"></canvas>
@@ -276,15 +422,11 @@ imgPono.src = '../assets/images/characters/pono/pono_face_circle.png';
 const imgWalkSheet = new Image();
 imgWalkSheet.src = '../assets/images/characters/pono/pono_walk_sheet.png';
 const WALK_FRAMES = 25;
-const WALK_FRAME_W = 92;
-const WALK_FRAME_H = 128;
 const WALK_FPS = 12;
-// Side-walk sprite sheet (35 frames @12fps, 77x128 each, facing right)
+// Side-walk sprite sheet (35 frames @12fps, facing right)
 const imgWalkSideSheet = new Image();
 imgWalkSideSheet.src = '../assets/images/characters/pono/pono_walk_side_sheet.png';
 const SIDE_WALK_FRAMES = 35;
-const SIDE_WALK_FRAME_W = 77;
-const SIDE_WALK_FRAME_H = 128;
 const SIDE_WALK_SCALE = 1232 / 1132; // compensate taller canvas vs front
 const imgMom = new Image();
 imgMom.src = '../assets/images/characters/pono/mom_face_circle.png';
@@ -460,18 +602,22 @@ function resize() {
 }
 
 function calcLayout() {
-  const pad = CW * 0.05;
-  const charH = Math.max(46, CH * 0.07); // space for characters at top/bottom
-  const availW = CW - pad * 2;
-  const availH = CH - charH * 2 - pad * 2;
-  cellSize = Math.floor(Math.min(availW / curCols, availH / curRows));
+  const safe = Math.max(8, Math.min(20, CH * 0.025));
+  const availW = CW - safe * 2;
+  const maxByHeight = (CH - safe * 2) / (curRows + 1.3);
+  const maxByTouch = CH * 0.22;
+  cellSize = Math.floor(Math.min(availW / curCols, maxByHeight, maxByTouch));
   const gridW = cellSize * curCols;
   const gridH = cellSize * curRows;
   gridOX = Math.floor((CW - gridW) / 2);
-  gridOY = Math.floor(charH + pad + (availH - gridH) / 2);
+  gridOY = Math.floor((CH - gridH) / 2);
 }
 
 window.addEventListener('resize', resize);
+if (window.ResizeObserver) {
+  const wrapResizeObserver = new ResizeObserver(function() { resize(); });
+  wrapResizeObserver.observe(wrap);
+}
 
 // ===== Audio =====
 let audioCtx = null;
@@ -915,7 +1061,8 @@ function draw(now) {
   // Draw tiles
   const total = curCols * curRows;
   for (let i = 0; i < total; i++) {
-    if (grid[i] === null) continue;
+    const tileKey = grid[i];
+    if (!tileKey) continue;
     const row = Math.floor(i / curCols), col = i % curCols;
     let x = gridOX + col * cellSize;
     let y = gridOY + row * cellSize;
@@ -925,7 +1072,7 @@ function draw(now) {
       y = anim.curY;
     }
 
-    drawTile(x, y, cellSize, grid[i]);
+    drawTile(x, y, cellSize, tileKey);
   }
 
   // Start & Goal markers
@@ -935,7 +1082,10 @@ function draw(now) {
   if (winAnim.active && winAnim.path.length > 0) {
     const elapsed = now - winAnim.t0;
     const dur = winAnim.path.length * 867; // walk speed
-    const t = Math.min(elapsed / dur, 1);
+    // onStageClear() が同じrAF内で performance.now() を採ると、渡された
+    // frame timestamp よりわずかに未来になるため、初回だけ負値になり得る。
+    const t = Math.max(0, Math.min(elapsed / dur, 1));
+    const spriteElapsed = Math.max(0, elapsed);
     const totalPts = winAnim.path.length;
     const exactIdx = t * (totalPts - 1);
     const idxA = Math.floor(exactIdx);
@@ -964,27 +1114,31 @@ function draw(now) {
     if (isHorizontal && imgWalkSideSheet.complete && imgWalkSideSheet.naturalWidth > 0) {
       // Side walk (scaled up to match front character size)
       const sideH = Math.floor(walkH * SIDE_WALK_SCALE);
-      const sideW = Math.floor(sideH * SIDE_WALK_FRAME_W / SIDE_WALK_FRAME_H);
-      const frameIdx = Math.floor(elapsed / (1000 / WALK_FPS)) % SIDE_WALK_FRAMES;
-      const sx = frameIdx * SIDE_WALK_FRAME_W;
+      const sourceW = imgWalkSideSheet.naturalWidth / SIDE_WALK_FRAMES;
+      const sourceH = imgWalkSideSheet.naturalHeight;
+      const sideW = Math.floor(sideH * sourceW / sourceH);
+      const frameIdx = Math.floor(spriteElapsed / (1000 / WALK_FPS)) % SIDE_WALK_FRAMES;
+      const sx = frameIdx * sourceW;
       ctx.save();
       if (dCol < 0) {
         // Moving left — flip horizontally
         ctx.translate(fx, fy);
         ctx.scale(-1, 1);
-        ctx.drawImage(imgWalkSideSheet, sx, 0, SIDE_WALK_FRAME_W, SIDE_WALK_FRAME_H,
+        ctx.drawImage(imgWalkSideSheet, sx, 0, sourceW, sourceH,
                        -sideW / 2, -sideH / 2, sideW, sideH);
       } else {
-        ctx.drawImage(imgWalkSideSheet, sx, 0, SIDE_WALK_FRAME_W, SIDE_WALK_FRAME_H,
+        ctx.drawImage(imgWalkSideSheet, sx, 0, sourceW, sourceH,
                        fx - sideW / 2, fy - sideH / 2, sideW, sideH);
       }
       ctx.restore();
     } else if (imgWalkSheet.complete && imgWalkSheet.naturalWidth > 0) {
       // Front walk (vertical movement or side sheet not loaded)
-      const walkW = Math.floor(walkH * WALK_FRAME_W / WALK_FRAME_H);
-      const frameIdx = Math.floor(elapsed / (1000 / WALK_FPS)) % WALK_FRAMES;
-      const sx = frameIdx * WALK_FRAME_W;
-      ctx.drawImage(imgWalkSheet, sx, 0, WALK_FRAME_W, WALK_FRAME_H,
+      const sourceW = imgWalkSheet.naturalWidth / WALK_FRAMES;
+      const sourceH = imgWalkSheet.naturalHeight;
+      const walkW = Math.floor(walkH * sourceW / sourceH);
+      const frameIdx = Math.floor(spriteElapsed / (1000 / WALK_FPS)) % WALK_FRAMES;
+      const sx = frameIdx * sourceW;
+      ctx.drawImage(imgWalkSheet, sx, 0, sourceW, sourceH,
                      fx - walkW / 2, fy - walkH / 2, walkW, walkH);
     } else {
       ctx.font = `${Math.floor(cellSize * 0.5)}px serif`;
@@ -994,6 +1148,9 @@ function draw(now) {
 
     if (t >= 1) {
       winAnim.active = false;
+      // チュートリアル完了は専用の「あそぼう！」案内へつなぐ。
+      // 通常ステージのクリア表示を背後で重ねない。
+      if (_slideTutActive) return;
       const isLast = stageIdx >= LEVELS.length - 1;
       // ★ 全ステージクリア時は宝箱演出を先に表示してから最終オーバーレイ
       if (isLast && window.triggerFirstClearReward) {
@@ -1271,15 +1428,21 @@ function showCutscene() {
 })();
 
 // ===== Pause =====
+function updatePauseButton(isPaused) {
+  const button = document.getElementById('btn-pause');
+  button.textContent = isPaused ? '▶' : '⏸';
+  button.setAttribute('aria-label', isPaused ? 'さいかい' : 'ポーズ');
+}
+
 function togglePause() {
   if (state === S.PAUSED) {
     state = prepauseState;
-    document.getElementById('btn-pause').textContent = '⏸';
+    updatePauseButton(false);
     if (bgmEnabled) bgm.play().catch(() => {});
   } else if (state === S.PLAYING) {
     prepauseState = state;
     state = S.PAUSED;
-    document.getElementById('btn-pause').textContent = '▶';
+    updatePauseButton(true);
     bgm.pause();
   }
 }
@@ -1326,10 +1489,10 @@ window.addEventListener('focus', () => { if (bgmEnabled) bgm.play().catch(() => 
 
 var _slideTutActive = false;
 function showTutorial() {
-  _slideTutActive = true;
   var dim = document.getElementById('tut-dim');
   var bubble = document.getElementById('tut-bubble');
   if (!dim || !bubble) return;
+  _slideTutActive = true;
 
   // チュートリアル用: 3手で完成する固定配置
   // 解答: ['BLANK','V','BLANK', 'BLANK','V','BLANK', null,'V','BLANK']
@@ -1346,6 +1509,27 @@ function showTutorial() {
     { row: 2, col: 0, msg: 'さいごは ここ！' }
   ];
   var tutStepIdx = 0;
+
+  // はじめての導線だけでなく、共有メニューの「あそびかた」から
+  // 開き直した場合も、必ず同じ3手の練習盤面から始める。
+  stageIdx = 0;
+  moveCount = 0;
+  curCols = 3;
+  curRows = 3;
+  grid = tutGrid.slice();
+  emptyIdx = tutEmpty;
+  animating = false;
+  winAnim.active = false;
+  state = S.PLAYING;
+  prepauseState = S.PLAYING;
+  updatePauseButton(false);
+  if (bgmEnabled) bgm.play().catch(() => {});
+  overlay.classList.add('hidden');
+  calcLayout();
+  document.getElementById('hud-stage').textContent = 'れんしゅう';
+  document.getElementById('hud-moves').textContent = '';
+  var stageNum = document.getElementById('stage-num');
+  if (stageNum) stageNum.textContent = 'チュートリアル';
 
   // Step 0: 導入
   dim.classList.remove('hidden');
@@ -1496,11 +1680,10 @@ requestAnimationFrame(loop);
 function updateLandscapeNotice() {
   const notice = document.getElementById('landscape-notice');
   if (!notice) return;
-  const isLandscape = window.innerWidth > window.innerHeight;
-  const isTouch = matchMedia('(pointer: coarse)').matches;
-  notice.style.display = (isLandscape && isTouch) ? 'flex' : 'none';
-  // 縦に戻した時にキャンバスをリサイズ
-  if (!isLandscape || !isTouch) resize();
+  const isPortrait = window.innerHeight >= window.innerWidth;
+  notice.style.display = isPortrait ? 'flex' : 'none';
+  // 横向きへ戻した時に、中央の16:9シェルへキャンバス実寸を同期する。
+  if (!isPortrait) resize();
 }
 updateLandscapeNotice();
 window.addEventListener('orientationchange', () => {

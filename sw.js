@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2190: みちつなぎを16:9横画面へ再構成し、最終ステージまでの盤面寸法、横向き案内、短い画面のダイアログ、チュートリアル再開を調整。最適化済み歩行スプライトの実寸から1フレームずつ切り出し、歩行中にポノが2〜3匹へ増える表示を修正した (batch:1303-slide-landscape)。play.html PAGE_CACHE_VERSION と同期不要 (slide/index.html/テストのみ変更)。
 // v2189: なぞなぞトレインのミライシティを、丸ハンドルで左右位置を合わせ、大ボタンの長押し／解放でポッドを下ろすUFOキャッチャーへ再設計。適正高さの光・音・案内、吸着後の独立3タップ、自動上昇、中央コアへの投入、Space／Enter操作、スナップ保持、誤答後の再操作を統合した (batch:1302-nazonazo-future-ufo-crank)。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/テストのみ変更)。
 // v2188: なぞなぞトレインのミライシティを、固定2ポッドからフックで答えをつかみ、持ち上げ、中央コアへ運んで下ろすガントリークレーンゲームへ全面置換。操作ミスは無罰、誤答投入だけ既存誤答へ接続し、キーボード・reduced-motion・短い横画面・クイズ遷移中の早操作にも対応した (batch:1301-nazonazo-future-crane)。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/テストのみ変更)。
 // v2187: デイリーガチャレバーのタッチ当たり判定を独立メディアクエリ ((hover:none),(pointer:coarse)) で拡張し、iPad横向き(幅1024px以上)や11インチ以上の縦向き(834px)などモバイル向けレイアウト分岐に含まれない「大きいがタッチ操作」の端末でも指当たり判定を確保した (batch:gacha-lever-touch)。あわせてガチャ詳細モーダルの初回チュートリアル (common/onboarding/steps-gacha.js) を1ステップ→2ステップへ再設計し、獲得シール本体の案内後に既存の「シールちょうに はって あそぼう」ノート (#dailyGachaRewardNote) へ誘導するステップを追加した (batch:gacha-tour-note)。play.html PAGE_CACHE_VERSION と同期 (2187)。
@@ -119,7 +120,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2189;
+const CACHE_VERSION = 2190;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
