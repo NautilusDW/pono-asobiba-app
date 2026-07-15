@@ -260,46 +260,9 @@ body > #app {
 .ov-card.cutscene-mode { max-width: 360px; padding: 16px 16px 20px; gap: 10px; }
 .ov-card.cutscene-mode .ov-icon { width: 100%; font-size: unset; line-height: unset; }
 .cutscene-img {
-  width: 100%; border-radius: 16px;
+  display: block; width: 100%; border-radius: 16px;
   object-fit: cover; aspect-ratio: 16/9;
   box-shadow: 0 4px 16px rgba(0,0,0,0.18);
-}
-.cutscene-scene {
-  position: relative;
-  width: 100%;
-  aspect-ratio: 16 / 9;
-  overflow: hidden;
-  border-radius: 16px;
-  background-position: center;
-  background-size: cover;
-  box-shadow: 0 4px 16px rgba(51,76,82,0.16);
-}
-.cutscene-scene::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(111,195,218,0.08));
-  pointer-events: none;
-}
-.cutscene-mom,
-.cutscene-pono {
-  position: absolute;
-  z-index: 1;
-  bottom: -9%;
-  height: 94%;
-  object-fit: contain;
-  filter: drop-shadow(0 4px 5px rgba(58,68,57,0.17));
-}
-.cutscene-mom { right: 7%; }
-.cutscene-pono { left: 12%; height: 64%; bottom: -6%; }
-.cutscene-hearts {
-  position: absolute;
-  z-index: 2;
-  left: 45%;
-  top: 20%;
-  color: #ff7186;
-  font-size: clamp(1rem, 4vmin, 1.7rem);
-  text-shadow: 0 2px 4px rgba(255,255,255,0.85);
 }
 .ov-card.cutscene-mode .ov-title {
   font-size: 1rem; white-space: pre-line; line-height: 1.6;
@@ -519,7 +482,7 @@ imgWalkSideSheet.src = '../assets/images/characters/pono/pono_walk_side_sheet.pn
 const SIDE_WALK_FRAMES = 35;
 const SIDE_WALK_SCALE = 1232 / 1132; // compensate taller canvas vs front
 const imgMomFull = new Image();
-imgMomFull.src = '../assets/images/Slide/adventure/mom_soft_style.webp';
+imgMomFull.src = '../assets/images/Slide/pono_mom_only.png';
 const imgClueSheet = new Image();
 imgClueSheet.src = '../assets/images/Slide/adventure/clue_sheet_3x2.webp';
 const imgMoonClue = new Image();
@@ -581,7 +544,10 @@ const VERTICAL_LEVELS = [
     discoveryMsg: 'かごに ついていた はなを みつけました',
     goalIcon: '🌸',
     clueCell: [1, 0],
-    cutscene: { text: 'そのころ おかあさんは…\nポノの だいすきな きのみを\nさがしていました' },
+    cutscene: {
+      text: 'そのころ おかあさんは…\nポノの だいすきな きのみを\nさがしていました',
+      img: '../assets/images/Slide/cutscene_1.png',
+    },
     start: { col: 1, side: 'top' },
     goal: { col: 1, side: 'bottom' },
     solved: ['BLANK','V','BLANK', null,'V','BLANK', 'BLANK','V','BLANK'],
@@ -611,7 +577,10 @@ const VERTICAL_LEVELS = [
     discoveryMsg: 'くらやみに ひかる キノコが みえました',
     goalIcon: '🍄',
     clueCell: [0, 1],
-    cutscene: { text: 'おかあさんは おもいました\n「ポノ よろこんでくれるかな？」' },
+    cutscene: {
+      text: 'おかあさんは おもいました\n「ポノ よろこんでくれるかな？」',
+      img: '../assets/images/Slide/cutscene_2.png',
+    },
     start: { col: 1, side: 'top' },
     goal: { col: 1, side: 'bottom' },
     solved: ['BLANK','V','BLANK', 'BLANK','CROSS',null, 'BLANK','CROSS','BLANK', 'BLANK','V','BLANK'],
@@ -640,7 +609,10 @@ const VERTICAL_LEVELS = [
     discoveryMsg: 'つきあかりの みちへ でました',
     goalIcon: '🌙',
     clueAsset: 'moonlight',
-    cutscene: { text: 'やっと ぜんぶ みつけた！\nはやく ポノに\nとどけなきゃ！' },
+    cutscene: {
+      text: 'やっと ぜんぶ みつけた！\nはやく ポノに\nとどけなきゃ！',
+      img: '../assets/images/Slide/cutscene_3.png',
+    },
     start: { col: 1, side: 'top' },
     goal: { col: 2, side: 'bottom' },
     solved: ['BLANK','V','BLANK','BLANK', 'BLANK','CROSS','CROSS','BLANK', 'BLANK',null,'V','BLANK', 'BLANK','BLANK','V','BLANK'],
@@ -1043,6 +1015,18 @@ const THEMES = {
     mote: 'rgba(255,232,145,0.78)',
   },
 };
+
+// The goal keeps one visual language across every world. Its coral flag and
+// round badge sit outside the board, so they cannot be mistaken for the dark
+// square empty well or for a movable road panel.
+const GOAL_STYLE = Object.freeze({
+  marker: '#FF6F7A',
+  markerDark: '#8E3943',
+  cream: '#FFFDF2',
+  outline: '#FFFFFF',
+  shadow: 'rgba(73,31,42,0.34)',
+});
+
 function getTheme() {
   // stageIdx 0-based → ユーザー表示は stageIdx+1
   // ステージ1-3 (stageIdx 0-2): forest
@@ -1436,6 +1420,105 @@ function getJourneyGeometry() {
   };
 }
 
+function getGoalBeaconBounds(geo) {
+  const radius = Math.max(22, Math.min(54, cellSize * 0.36));
+  return {
+    radius: radius,
+    left: geo.goalX - radius * 0.82,
+    right: geo.goalX + radius * 0.98,
+    top: geo.goalY - radius * 1.06,
+    bottom: geo.goalY + radius * 0.78,
+    centerY: geo.goalY,
+  };
+}
+
+function drawGoalBeacon(now, geo, active, discovered) {
+  const th = getTheme();
+  const bounds = getGoalBeaconBounds(geo);
+  const radius = bounds.radius;
+  const badgeX = geo.goalX - radius * 0.12;
+  const badgeR = radius * 0.56;
+  const poleX = geo.goalX - radius * 0.2;
+  const poleTop = geo.goalY - radius * 0.7;
+  const pulse = reducedMotionQuery.matches || discovered
+    ? 0 : (Math.sin(now * 0.0045) + 1) * 0.5;
+
+  ctx.save();
+  ctx.globalAlpha = discovered ? 0.24 : 1;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  // A short solid socket locks the marker to the exact exit row.
+  ctx.beginPath();
+  ctx.moveTo(geo.rightEdge - Math.max(4, cellSize * 0.035), geo.goalY);
+  ctx.lineTo(bounds.left + radius * 0.12, geo.goalY);
+  ctx.strokeStyle = GOAL_STYLE.outline;
+  ctx.lineWidth = Math.max(7, cellSize * 0.09);
+  ctx.shadowColor = GOAL_STYLE.shadow;
+  ctx.shadowBlur = Math.max(5, radius * 0.22);
+  ctx.stroke();
+  ctx.shadowColor = 'transparent';
+  ctx.strokeStyle = active ? th.connected : GOAL_STYLE.marker;
+  ctx.lineWidth = Math.max(3.5, cellSize * 0.045);
+  ctx.stroke();
+
+  // The right chevron communicates direction without adding another sentence.
+  const chevronX = bounds.left + radius * 0.12;
+  const chevron = Math.max(5, radius * 0.24);
+  ctx.beginPath();
+  ctx.moveTo(chevronX, geo.goalY - chevron);
+  ctx.lineTo(chevronX + chevron, geo.goalY);
+  ctx.lineTo(chevronX, geo.goalY + chevron);
+  ctx.strokeStyle = GOAL_STYLE.outline;
+  ctx.lineWidth = Math.max(3, radius * 0.15);
+  ctx.stroke();
+
+  // A circular white badge remains legible over forest, cave, and night art.
+  ctx.beginPath();
+  ctx.arc(badgeX, geo.goalY, badgeR, 0, Math.PI * 2);
+  ctx.fillStyle = GOAL_STYLE.cream;
+  ctx.shadowColor = active ? th.connectedGlow : GOAL_STYLE.shadow;
+  ctx.shadowBlur = Math.max(9, radius * (0.34 + pulse * 0.16));
+  ctx.fill();
+  ctx.shadowColor = 'transparent';
+  ctx.strokeStyle = GOAL_STYLE.outline;
+  ctx.lineWidth = Math.max(5, radius * 0.2);
+  ctx.stroke();
+  ctx.strokeStyle = GOAL_STYLE.marker;
+  ctx.lineWidth = Math.max(2.5, radius * 0.1);
+  ctx.stroke();
+
+  // Finish flag: fixed coral color, white outline, and two cream checks.
+  ctx.beginPath();
+  ctx.moveTo(poleX, geo.goalY + radius * 0.5);
+  ctx.lineTo(poleX, poleTop);
+  ctx.strokeStyle = GOAL_STYLE.outline;
+  ctx.lineWidth = Math.max(5, radius * 0.19);
+  ctx.stroke();
+  ctx.strokeStyle = GOAL_STYLE.markerDark;
+  ctx.lineWidth = Math.max(2.5, radius * 0.09);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(poleX, poleTop);
+  ctx.lineTo(geo.goalX + radius * 0.76, poleTop + radius * 0.18);
+  ctx.lineTo(poleX, poleTop + radius * 0.52);
+  ctx.closePath();
+  ctx.fillStyle = GOAL_STYLE.marker;
+  ctx.fill();
+  ctx.strokeStyle = GOAL_STYLE.outline;
+  ctx.lineWidth = Math.max(2.5, radius * 0.1);
+  ctx.stroke();
+
+  const checkSize = Math.max(3, radius * 0.13);
+  ctx.fillStyle = GOAL_STYLE.cream;
+  ctx.fillRect(poleX + radius * 0.16, poleTop + radius * 0.12, checkSize, checkSize);
+  ctx.fillRect(poleX + radius * 0.16 + checkSize, poleTop + radius * 0.12 + checkSize,
+    checkSize, checkSize);
+  ctx.restore();
+  return bounds;
+}
+
 function drawStartGoal(now, connectedSet) {
   const level = LEVELS[stageIdx];
   const geo = getJourneyGeometry();
@@ -1475,22 +1558,7 @@ function drawStartGoal(now, connectedSet) {
   const goalTile = grid[goalIdx];
   const goalActive = connectedSet.has(goalIdx) && goalTile && goalTile !== 'BLANK' &&
     TILE_TYPES[goalTile].edges[1];
-  const ringR = Math.max(21, Math.min(58, cellSize * 0.34));
-
-  ctx.save();
-  const goalGlow = ctx.createRadialGradient(
-    geo.goalX, geo.goalY, ringR * 0.12, geo.goalX, geo.goalY, ringR);
-  goalGlow.addColorStop(0, goalActive ? 'rgba(255,250,185,0.64)' : 'rgba(255,252,224,0.22)');
-  goalGlow.addColorStop(0.72, goalActive ? getTheme().connectedGlow : 'rgba(225,243,236,0.12)');
-  goalGlow.addColorStop(1, 'rgba(255,255,255,0)');
-  ctx.fillStyle = goalGlow;
-  ctx.beginPath();
-  ctx.arc(geo.goalX, geo.goalY, ringR, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-
-  drawGuideTrail(geo.rightEdge - Math.max(5, cellSize * 0.04),
-    geo.goalX - ringR * 0.42, geo.goalY, goalActive, now);
+  drawGoalBeacon(now, geo, goalActive, clueDiscovered);
 
   // A solved board is only a road. The clue appears after Pono actually arrives.
   if (!clueDiscovered) {
@@ -1969,11 +2037,7 @@ function showOverlay(type) {
     playGameClearSound();
     var card = document.querySelector('.ov-card');
     card.classList.add('cutscene-mode');
-    icon.innerHTML    = '<div class="cutscene-scene" style="background-image:url(&quot;' + STAGE_BGS[7] + '&quot;)">' +
-      '<img src="../assets/images/characters/pono/pono_003.png" class="cutscene-pono" alt="ポノ">' +
-      '<span class="cutscene-hearts" aria-hidden="true">♥ ♥</span>' +
-      '<img src="../assets/images/Slide/adventure/mom_soft_style.webp" class="cutscene-mom" alt="おかあさん">' +
-      '</div>';
+    icon.innerHTML    = '<img src="../assets/images/Slide/cutscene_ending.png" class="cutscene-img" alt="おかあさんと いっしょ">';
     title.textContent = 'おかあさんと さいかい！';
     msg.textContent   = `「ポノの だいすきな きのみと\nキノコを とりにきたの。\nおそくなって ごめんね！\nいっしょに かえろう！」\nてかず${moveCount} でクリア！`;
     btn.textContent   = 'もういっかい ▶';
@@ -2043,9 +2107,7 @@ function showCutscene() {
   setPauseAvailable(false);
   overlay.classList.remove('hidden');
   card.classList.add('cutscene-mode');
-  icon.innerHTML = '<div class="cutscene-scene" style="background-image:url(&quot;' + STAGE_BGS[stageIdx] + '&quot;)">' +
-    '<img src="../assets/images/Slide/adventure/mom_soft_style.webp" class="cutscene-mom" alt="おかあさん">' +
-    '</div>';
+  icon.innerHTML = '<img src="' + level.cutscene.img + '" class="cutscene-img" alt="おかあさんの ものがたり">';
   title.textContent = level.cutscene.text;
   title.style.whiteSpace = 'pre-line';
   msg.textContent = '';

@@ -215,9 +215,14 @@ const markerDraw = html.match(/function drawStartGoal\(now, connectedSet\) \{[\s
 assert.ok(markerDraw, "start/goal marker drawing must exist");
 const journeyGeometry = html.match(/function getJourneyGeometry\(\) \{[\s\S]*?\n\}/);
 assert.ok(journeyGeometry, "the continuous journey must own left-entry and right-exit geometry");
+const goalBeaconGeometry = html.match(/function getGoalBeaconBounds\(geo\) \{[\s\S]*?\n\}/);
+assert.ok(goalBeaconGeometry, "the right-side goal must own inspectable marker bounds");
 assert.match(markerDraw[0], /level\.start\.row/);
 assert.match(markerDraw[0], /level\.goal\.row/);
 assert.match(journeyGeometry[0], /const leftEdge = gridOX/);
+assert.match(goalBeaconGeometry[0], /geo\.goalX/);
+assert.match(goalBeaconGeometry[0], /centerY: geo\.goalY/,
+  "the permanent finish flag must identify the exact configured goal row");
 assert.match(journeyGeometry[0], /const rightEdge = gridOX \+ curCols \* cellSize/);
 assert.match(journeyGeometry[0], /entryX: leftEdge - cellSize \* 1\.25/);
 assert.match(journeyGeometry[0], /departX: rightEdge \+ cellSize \* 1\.35/);

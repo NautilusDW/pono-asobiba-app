@@ -194,26 +194,47 @@ check("eight unique landscape story backgrounds", () => {
   });
 });
 
-check("the adopted art stays bright and replaces the old dark cutscenes", () => {
-  assert.doesNotMatch(html, /cutscene_[123]\.png|cutscene_ending\.png|pono_mom_only\.png/,
-    "heavy-ink legacy cutscenes and mother art must not return to runtime markup");
+check("bright gameplay plates keep the preferred earlier story illustrations", () => {
+  const levelMatch = script.match(/const VERTICAL_LEVELS = (\[[\s\S]*?\n\]);\n\n\/\/ 行列の転置/);
+  assert.ok(levelMatch, "level story data remains inspectable");
+  const levels = vm.runInNewContext(levelMatch[1], Object.create(null), {
+    filename: "slide-story-art.js",
+  });
+  const expectedStoryArt = new Map([
+    [1, "../assets/images/Slide/cutscene_1.png"],
+    [3, "../assets/images/Slide/cutscene_2.png"],
+    [5, "../assets/images/Slide/cutscene_3.png"],
+  ]);
+  expectedStoryArt.forEach((source, index) => {
+    assert.equal(levels[index].cutscene.img, source,
+      `stage ${index + 1}: restores its earlier story illustration`);
+    const filePath = path.resolve(slideDir, source);
+    assert.ok(fs.existsSync(filePath), `${source} exists`);
+    assert.ok(fs.statSync(filePath).size < 3 * 1024 * 1024,
+      `${source} stays below the repository image limit`);
+    const size = imageSize(filePath);
+    assert.ok(Math.abs(size.width / size.height - 16 / 9) <= 0.01,
+      `${source} remains a 16:9 story card`);
+  });
+
   assert.match(script,
-    /imgMomFull\.src = '\.\.\/assets\/images\/Slide\/adventure\/mom_soft_style\.webp'/,
-    "the reunion uses the soft picture-book mother cutout");
-  const motherPath = path.join(root, "assets/images/Slide/adventure/mom_soft_style.webp");
-  assert.ok(fs.existsSync(motherPath), "the soft mother cutout exists");
+    /imgMomFull\.src = '\.\.\/assets\/images\/Slide\/pono_mom_only\.png'/,
+    "the final world marker uses the mother matching the earlier story art");
+  const motherPath = path.join(root, "assets/images/Slide/pono_mom_only.png");
+  assert.ok(fs.existsSync(motherPath), "the earlier mother cutout exists");
   assert.ok(fs.statSync(motherPath).size < 3 * 1024 * 1024,
-    "the adopted mother asset stays below the repository image limit");
+    "the earlier mother cutout stays below the repository image limit");
   const moonCluePath = path.join(root, "assets/images/Slide/adventure/moonlight_clue.webp");
   assert.ok(fs.existsSync(moonCluePath), "the moonlight discovery has a matched clue asset");
   assert.match(script, /imgMoonClue\.src = '\.\.\/assets\/images\/Slide\/adventure\/moonlight_clue\.webp'/,
     "the moonlight clue is preloaded with the other journey art");
 
   const showCutscene = extractNamedFunction(script, "showCutscene");
-  assert.match(showCutscene, /cutscene-scene[\s\S]*?STAGE_BGS\[stageIdx\]/,
-    "story postcards reuse the current bright journey plate");
-  assert.match(showCutscene, /mom_soft_style\.webp/,
-    "story postcards layer the matched mother instead of a dark baked scene");
+  assert.match(showCutscene, /level\.cutscene\.img[\s\S]*?cutscene-img/,
+    "story postcards display each earlier complete illustration without recomposing its character");
+  const showOverlay = extractNamedFunction(script, "showOverlay");
+  assert.match(showOverlay, /cutscene_ending\.png[\s\S]*?cutscene-img/,
+    "the earlier parent-and-child ending illustration returns");
   const draw = extractNamedFunction(script, "draw");
   assert.match(draw, /wash\.addColorStop\(0, 'rgba\(20,67,73,0\.04\)'\)/,
     "the top wash remains nearly transparent");
@@ -239,6 +260,31 @@ check("the empty cell reads as a physical hole without visible copy", () => {
     "offset light/shadow must communicate which surface is lower");
   const pathLayers = (drawEmptySlot.match(/\.(?:roundRect|rect|arc)\s*\(/g) || []).length;
   assert.ok(pathLayers >= 2, "the hole needs separate outer-rim and inner-well geometry");
+});
+
+check("a permanent goal beacon marks the exact right-side row", () => {
+  assert.match(script, /const GOAL_STYLE = Object\.freeze\([\s\S]*?marker: '#FF6F7A'/,
+    "one fixed coral goal language is shared by every world theme");
+  const bounds = extractNamedFunction(script, "getGoalBeaconBounds");
+  assert.match(bounds, /geo\.goalX/);
+  assert.match(bounds, /centerY: geo\.goalY/,
+    "the beacon remains centered on the configured goal row");
+
+  const beacon = extractNamedFunction(script, "drawGoalBeacon");
+  assert.match(beacon, /geo\.rightEdge[\s\S]*?geo\.goalY/,
+    "a solid socket attaches the outside marker to the board exit");
+  assert.match(beacon, /GOAL_STYLE\.marker/,
+    "the goal uses a stable color distinct from theme-dependent paths and holes");
+  assert.match(beacon, /reducedMotionQuery\.matches/,
+    "goal emphasis becomes static for reduced-motion users");
+  assert.doesNotMatch(beacon, /fillText\s*\(|setLineDash\s*\(/,
+    "the finish flag communicates without another instruction or dashed empty-slot cue");
+
+  const goalDraw = extractNamedFunction(script, "drawStartGoal");
+  const beaconAt = goalDraw.indexOf("drawGoalBeacon(");
+  const discoveryGateAt = goalDraw.indexOf("if (!clueDiscovered)");
+  assert.ok(beaconAt >= 0 && discoveryGateAt > beaconAt,
+    "the generic goal remains visible before the discovery reward is revealed");
 });
 
 check("clues stay hidden until Pono reaches the discovery beat", () => {

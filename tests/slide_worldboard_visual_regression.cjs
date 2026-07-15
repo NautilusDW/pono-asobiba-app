@@ -24,6 +24,22 @@ assert.doesNotMatch(html, /['"`]ここへ['"`]|ctx\.fillText\([^\n]*ここへ/,
 assert.doesNotMatch(html.match(/function drawEmptySlot\(now\) \{[\s\S]*?\n\}/)[0], /setLineDash|fillText/,
   "the physical hole must not look like another dashed, labelled panel");
 
+/* The exact right-side row has a permanent marker before its reward appears. */
+assert.match(html, /const GOAL_STYLE = Object\.freeze\([\s\S]*?marker: '#FF6F7A'/);
+assert.match(html, /function getGoalBeaconBounds\(geo\)[\s\S]*?centerY: geo\.goalY/);
+const goalBeaconDraw = html.match(/function drawGoalBeacon\(now, geo, active, discovered\) \{[\s\S]*?\n\}/);
+assert.ok(goalBeaconDraw, "the goal needs a dedicated canvas marker");
+assert.match(goalBeaconDraw[0], /geo\.rightEdge/,
+  "the goal marker attaches to the board with a short exit socket");
+assert.match(goalBeaconDraw[0], /GOAL_STYLE\.marker/,
+  "the goal keeps one high-contrast color across every theme");
+assert.doesNotMatch(goalBeaconDraw[0], /setLineDash|fillText/,
+  "the goal flag must not resemble the old dashed empty-cell instruction");
+const startGoalDraw = html.match(/function drawStartGoal\(now, connectedSet\) \{[\s\S]*?\n\}\n\nfunction drawJourneyActor/);
+assert.ok(startGoalDraw, "start and goal drawing remains inspectable");
+assert.ok(startGoalDraw[0].indexOf("drawGoalBeacon(") < startGoalDraw[0].indexOf("if (!clueDiscovered)"),
+  "the generic goal marker appears before the discovery-only clue gate");
+
 /* Only one reassuring first move and the start-connected route are visible at a glance. */
 assert.match(html, /function getStartConnectedTileSet\(\)/);
 assert.match(html, /connected\.add\(idx\)/);
@@ -119,7 +135,7 @@ async function openPlayingPage(browserType, browserName, base, viewport,
         if (source.includes("clue_sheet_3x2") || source.includes("moonlight_clue")) {
           window.__slideDirectDraws.clue = (window.__slideDirectDraws.clue || 0) + 1;
         }
-        if (source.includes("mom_soft_style")) {
+        if (source.includes("pono_mom_only")) {
           window.__slideDirectDraws.mom = (window.__slideDirectDraws.mom || 0) + 1;
         }
       }
@@ -205,11 +221,30 @@ async function inspectLandscape(browserType, browserName, base, viewport, minimu
           calcLayout();
           updateHUD();
           state = S.PLAYING;
+          clueDiscovered = false;
           draw(performance.now());
+          const geo = getJourneyGeometry();
+          const goal = getGoalBeaconBounds(geo);
+          const scanLeft = Math.max(0, Math.floor(goal.left));
+          const scanTop = Math.max(0, Math.floor(goal.top));
+          const scanWidth = Math.max(1, Math.min(CW - scanLeft, Math.ceil(goal.right) - scanLeft));
+          const scanHeight = Math.max(1, Math.min(CH - scanTop, Math.ceil(goal.bottom) - scanTop));
+          const pixels = ctx.getImageData(scanLeft, scanTop, scanWidth, scanHeight).data;
+          let coralPixels = 0;
+          for (let p = 0; p < pixels.length; p += 4) {
+            if (pixels[p] > 220 && pixels[p + 1] >= 65 && pixels[p + 1] <= 155 &&
+                pixels[p + 2] >= 75 && pixels[p + 2] <= 165 && pixels[p + 3] > 180) {
+              coralPixels++;
+            }
+          }
           return {
             cols: curCols, rows: curRows, emptyCount: grid.filter(tile => tile === null).length,
             gridLeft: gridOX, gridRight: gridOX + curCols * cellSize,
             gridTop: gridOY, gridBottom: gridOY + curRows * cellSize,
+            goalLeft: goal.left, goalRight: goal.right, goalTop: goal.top, goalBottom: goal.bottom,
+            goalCenterY: goal.centerY,
+            expectedGoalY: gridOY + (LEVELS[stageIdx].goal.row + 0.5) * cellSize,
+            coralPixels,
             theme: getTheme() === THEMES.forest ? 'forest' : getTheme() === THEMES.cave ? 'cave' : 'night'
           };
         })()`), stage);
@@ -218,6 +253,13 @@ async function inspectLandscape(browserType, browserName, base, viewport, minimu
         assert.equal(runtime.emptyCount, 1, `${browserName}: stage ${stage + 1} keeps one hollow`);
         assert.ok(runtime.gridLeft > 0 && runtime.gridRight < shell.width && runtime.gridTop > 52 && runtime.gridBottom < shell.height,
           `${browserName}: stage ${stage + 1} world board stays inside the shell`);
+        assert.equal(runtime.goalCenterY, runtime.expectedGoalY,
+          `${browserName}: stage ${stage + 1} goal flag stays centered on its configured row`);
+        assert.ok(runtime.goalLeft >= runtime.gridRight && runtime.goalRight < shell.width &&
+          runtime.goalTop >= 0 && runtime.goalBottom < shell.height,
+          `${browserName}: stage ${stage + 1} goal flag remains visible in the outside marker lane`);
+        assert.ok(runtime.coralPixels >= 12,
+          `${browserName}: stage ${stage + 1} goal flag paints a visible coral target before discovery`);
         assert.equal(runtime.theme, stage < 3 ? "forest" : stage < 6 ? "cave" : "night",
           `${browserName}: stage ${stage + 1} uses its intended world palette`);
       }
@@ -489,7 +531,7 @@ async function inspectJourneyTransitions(base) {
       ["PLAYING", true, false, false],
       "next INTRO hands off once and re-enables pause only in PLAYING");
 
-    /* Cutscene stage: departure opens a bright story postcard, then its single next action. */
+    /* Cutscene stage: departure opens the preferred earlier story art, then one next action. */
     const cutsceneReady = await prepareSolvedStage(page, 1);
     assert.equal(cutsceneReady.introPauseDisabled, true,
       "cutscene stage: pause is disabled during INTRO");
@@ -512,13 +554,13 @@ async function inspectJourneyTransitions(base) {
     );
     const postcard = await page.evaluate(() => {
       const card = document.querySelector(".ov-card");
-      const scene = card.querySelector(".cutscene-scene");
+      const scene = card.querySelector(".cutscene-img");
       const color = getComputedStyle(card).backgroundColor.match(/[\d.]+/g).map(Number);
       return {
         cutsceneMode: card.classList.contains("cutscene-mode"),
         brightness: (color[0] + color[1] + color[2]) / 3,
-        sceneBackground: scene ? scene.style.backgroundImage : "",
-        momCount: card.querySelectorAll(".cutscene-scene .cutscene-mom").length,
+        sceneSource: scene ? scene.getAttribute("src") : "",
+        imageCount: card.querySelectorAll(".cutscene-img").length,
         title: document.getElementById("ov-title").textContent,
         expectedTitle: eval("LEVELS[stageIdx].cutscene.text"),
         message: document.getElementById("ov-msg").textContent,
@@ -527,9 +569,9 @@ async function inspectJourneyTransitions(base) {
     });
     assert.equal(postcard.cutsceneMode, true, "story postcard uses the dedicated landscape card mode");
     assert.ok(postcard.brightness >= 245, "story postcard stays bright and child-friendly");
-    assert.match(postcard.sceneBackground, /stage2_forest_gate_16x9/,
-      "story postcard remains visually anchored to the stage just explored");
-    assert.equal(postcard.momCount, 1, "story postcard shows one mother vignette");
+    assert.match(postcard.sceneSource, /cutscene_1\.png/,
+      "story postcard restores the earlier illustrated berry-gathering scene");
+    assert.equal(postcard.imageCount, 1, "story postcard shows one complete illustration");
     assert.equal(postcard.title, postcard.expectedTitle, "story postcard preserves the stage narrative");
     assert.equal(postcard.message, "", "story postcard avoids a second competing text block");
     assert.equal(postcard.action, "cutscene-next", "story postcard exposes one explicit next action");
@@ -548,6 +590,17 @@ async function inspectJourneyTransitions(base) {
     const playingAfterPostcard = await advanceJourneyBeat(page, "INTRO");
     assert.equal(playingAfterPostcard.pauseDisabled, false,
       "pause returns after the post-card INTRO reaches PLAYING");
+
+    for (const [storyStage, expectedSource] of [[3, "cutscene_2.png"], [5, "cutscene_3.png"]]) {
+      await page.evaluate(nextStoryStage => eval(`(() => {
+        stageIdx = nextStoryStage;
+        showCutscene();
+      })()`), storyStage);
+      const storyImage = page.locator(".cutscene-img");
+      await storyImage.evaluate(image => image.decode());
+      assert.match(await storyImage.getAttribute("src"), new RegExp(expectedSource.replace(".", "\\.")),
+        `stage ${storyStage + 1}: the earlier complete story illustration decodes`);
+    }
 
     /* Final stage: departure terminates in GAME_CLEAR and one reunion composition. */
     const finalReady = await prepareSolvedStage(page, 7);
@@ -575,18 +628,23 @@ async function inspectJourneyTransitions(base) {
       cutsceneMode: document.querySelector(".ov-card").classList.contains("cutscene-mode"),
       title: document.getElementById("ov-title").textContent,
       action: document.getElementById("ov-btn").dataset.ovType,
-      ponoCount: document.querySelectorAll(".cutscene-scene .cutscene-pono").length,
-      momCount: document.querySelectorAll(".cutscene-scene .cutscene-mom").length,
-      heartsCount: document.querySelectorAll(".cutscene-scene .cutscene-hearts").length,
+      imageCount: document.querySelectorAll(".cutscene-img").length,
+      imageSource: document.querySelector(".cutscene-img")?.getAttribute("src") || "",
     }));
-    assert.deepEqual(reunion, {
+    assert.deepEqual({
+      cutsceneMode: reunion.cutsceneMode,
+      title: reunion.title,
+      action: reunion.action,
+      imageCount: reunion.imageCount,
+    }, {
       cutsceneMode: true,
       title: "おかあさんと さいかい！",
       action: "gameclear",
-      ponoCount: 1,
-      momCount: 1,
-      heartsCount: 1,
-    }, "the reunion postcard contains exactly one Pono and one mother");
+      imageCount: 1,
+    }, "the reunion postcard contains one complete earlier ending illustration");
+    assert.match(reunion.imageSource, /cutscene_ending\.png/,
+      "the reunion restores the preferred parent-and-child ending art");
+    await page.locator(".cutscene-img").evaluate(image => image.decode());
     assert.deepEqual(errors, [], "all accelerated normal-stage transitions create no page errors");
   } finally {
     await browser.close();
@@ -604,7 +662,8 @@ async function main() {
       [{ width: 1366, height: 768 }, 157, false],
     ]) {
       await inspectLandscape(chromium, "chromium", base, viewport, minimumCell,
-        viewport.width === 844 && viewport.height === 390, hasTouch);
+        (viewport.width === 568 && viewport.height === 320) ||
+        (viewport.width === 844 && viewport.height === 390), hasTouch);
     }
     await inspectLandscape(webkit, "webkit", base, { width: 844, height: 390 }, 74, true);
     await inspectFirstRunTutorial(base);
