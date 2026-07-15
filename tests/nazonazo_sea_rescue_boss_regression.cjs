@@ -711,6 +711,8 @@ function makeProceedSandbox({ qSeg = 4, defeated = false } = {}) {
     scheduleRareSpawn: () => {},
     sndGo: () => {},
     stops: (originValue, index) => originValue + index * 100,
+    isSpaceStage: () => false,
+    restoreSpaceStationSteerPosition: () => false,
     isSeaStage: () => true,
     completeCurrentStage: value => { state.completeCalls.push(value); },
     completeCalls: []
