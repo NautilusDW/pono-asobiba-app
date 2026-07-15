@@ -1,0 +1,123 @@
+{
+  "errors": [],
+  "screenshots": [
+    "00_initial",
+    "01_box",
+    "02_rice_A",
+    "03_rice_B",
+    "04_4A_A",
+    "05_4A_B",
+    "06_after_first_eye"
+  ],
+  "bubbleRects": [
+    {
+      "step": "initial",
+      "rect": {
+        "x": 505.4765625,
+        "y": 336.796875,
+        "width": 269.046875,
+        "height": 126.40625
+      }
+    },
+    {
+      "step": "box",
+      "rect": {
+        "x": 505.4765625,
+        "y": 336.796875,
+        "width": 269.046875,
+        "height": 126.40625
+      }
+    },
+    {
+      "step": "rice_A",
+      "rect": null
+    },
+    {
+      "step": "rice_B",
+      "rect": null
+    },
+    {
+      "step": "4A_A",
+      "rect": null
+    },
+    {
+      "step": "4A_B",
+      "rect": null
+    },
+    {
+      "step": "after_first_eye",
+      "rect": null
+    }
+  ],
+  "observations": [
+    {
+      "step": "after_load",
+      "dbg": {
+        "simpleBentoMode": false,
+        "tutState": {
+          "active": false,
+          "step": null,
+          "phase": "demo"
+        },
+        "tutPaused": false,
+        "tutDone": false,
+        "skIntroVisible": false,
+        "titleVisible": true
+      }
+    },
+    {
+      "step": "after_title_click",
+      "dbg": {
+        "simpleBentoMode": true,
+        "tutState": {
+          "active": true,
+          "step": "tut2-greet",
+          "phase": "try"
+        },
+        "skIntroVisible": false,
+        "skIntroBtnPresent": true,
+        "bubbleVisible": false
+      }
+    },
+    {
+      "step": "rice_A",
+      "ghostSrc": null
+    },
+    {
+      "step": "rice_A",
+      "trimBoxes": 0
+    },
+    {
+      "step": "rice_B",
+      "focused": 0,
+      "dimmed": 0
+    },
+    {
+      "step": "4A_A",
+      "ghostSrc": null
+    },
+    {
+      "step": "4A_A",
+      "focused_round": 0,
+      "dimmed_faceSets": 0,
+      "dimmed_bookEye": 0
+    },
+    {
+      "step": "4A_A",
+      "trimBoxes": 0
+    },
+    {
+      "step": "wrong_tap",
+      "decorBefore": 0,
+      "decorAfterWrong": 0
+    },
+    {
+      "step": "after_first_eye",
+      "decorPlaced": 0
+    },
+    {
+      "step": "after_first_eye",
+      "placedRect": null
+    }
+  ]
+}
