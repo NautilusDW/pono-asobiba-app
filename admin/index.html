@@ -235,6 +235,29 @@ tr:hover { background: #FFFAF0; }
 .btn-sm { font-size: 0.72rem; padding: 5px 12px; }
 .btn:disabled { opacity: 0.4; cursor: default; }
 
+/* ── Analytics ── */
+.analytics-diag-bar {
+  padding: 10px 14px; border-radius: 10px; font-size: 0.8rem; font-weight: 700;
+  background: #F3F4F6; color: #374151; border: 1px solid #E5E7EB;
+}
+.analytics-diag-ok    { background: #ECFDF5; color: #047857; border-color: #A7F3D0; }
+.analytics-diag-warn  { background: #FFFBEB; color: #92400E; border-color: #FDE68A; }
+.analytics-diag-error { background: #FEF2F2; color: #B91C1C; border-color: #FECACA; }
+.analytics-legend { display: flex; gap: 14px; margin-top: 6px; font-size: 0.72rem; color: #5D4E37; flex-wrap: wrap; }
+.analytics-legend span { display: inline-flex; align-items: center; gap: 5px; }
+.analytics-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; }
+.analytics-funnel-row {
+  display: grid; grid-template-columns: 190px 1fr 240px; gap: 10px;
+  align-items: center; margin-bottom: 8px;
+}
+.analytics-funnel-label { font-size: 0.78rem; font-weight: 700; color: #5D4E37; }
+.analytics-funnel-bar-wrap { background: #F5F0E8; border-radius: 8px; height: 16px; overflow: hidden; }
+.analytics-funnel-bar { background: linear-gradient(90deg, #FF6B9D, #3B82F6); height: 100%; border-radius: 8px; }
+.analytics-funnel-val { font-size: 0.72rem; color: #8B7355; }
+@media (max-width: 640px) {
+  .analytics-funnel-row { grid-template-columns: 1fr; }
+}
+
 /* ── Nazonazo stage preview ── */
 .nazonazo-admin-stage-grid {
   display: grid;
@@ -485,6 +508,7 @@ tr:hover { background: #FFFAF0; }
   <button class="tab" data-panel="stamp">🎟 報酬管理</button>
   <button class="tab" data-panel="achievements">🏆 実績一覧</button>
   <button class="tab" data-panel="stats">📊 統計/状態</button>
+  <button class="tab" data-panel="analytics">📊 ぶんせき</button>
   <button class="tab" data-panel="tools">🔧 ツール</button>
   <button class="tab" data-panel="github">🔑 GitHub設定</button>
 </div>
@@ -845,6 +869,57 @@ tr:hover { background: #FFFAF0; }
   <div class="section">
     <div class="section-title">✅ 解除済み実績</div>
     <div id="unlocked-list" style="font-size:0.8rem;"></div>
+  </div>
+</div>
+
+<!-- ===== 📊 ぶんせき ===== -->
+<div class="panel" id="panel-analytics">
+  <div class="section">
+    <div class="section-title">🩺 分析基盤の状態</div>
+    <div class="analytics-diag-bar" id="analytics-diag">確認中…</div>
+    <div style="margin-top:10px;">
+      <button class="btn btn-gold btn-sm" id="analytics-rollup-btn" onclick="analyticsRunRollup()">🔄 きょうまでを集計</button>
+      <span id="analytics-rollup-result" style="font-size:0.75rem;color:#8B7355;margin-left:8px;"></span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">📅 集計期間</div>
+    <div class="sub-tabs" id="analytics-days-tabs">
+      <button class="sub-tab" data-days="7" onclick="analyticsSetDays(7)">直近7日</button>
+      <button class="sub-tab active" data-days="30" onclick="analyticsSetDays(30)">直近30日</button>
+      <button class="sub-tab" data-days="90" onclick="analyticsSetDays(90)">直近90日</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">📈 KPI サマリー</div>
+    <div class="stat-grid" id="analytics-kpi-grid"><div style="font-size:0.8rem;color:#8B7355;">読み込み中…</div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">📉 日次トレンド（週間アクティブ端末数・ゲーム起動数）</div>
+    <div id="analytics-trend-chart"><div style="font-size:0.8rem;color:#8B7355;">読み込み中…</div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🎮 ゲーム人気ランキング（起動数 上位15）</div>
+    <div id="analytics-games-table"><div style="font-size:0.8rem;color:#8B7355;">読み込み中…</div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🔻 ファネル：セッション開始 → ゲーム起動 → ゲームクリア</div>
+    <div id="analytics-funnel-play"><div style="font-size:0.8rem;color:#8B7355;">読み込み中…</div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">💰 ファネル：課金導線到達 → アップグレードCTAクリック</div>
+    <div id="analytics-funnel-paywall"><div style="font-size:0.8rem;color:#8B7355;">読み込み中…</div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🔁 リテンション（初回訪問日別コホート）</div>
+    <div id="analytics-retention-table"><div style="font-size:0.8rem;color:#8B7355;">読み込み中…</div></div>
   </div>
 </div>
 
@@ -1814,6 +1889,7 @@ function switchTab(panelId) {
   if (panelId === 'maze')     mazeInitPanel();
   if (panelId === 'roadmap') renderRoadmap();
   if (panelId === 'home')    renderHome();
+  if (panelId === 'analytics') analyticsInitPanel();
 }
 
 /* ===== 🚂 なぞなぞ 管理パネル ===== */
@@ -16341,6 +16417,345 @@ function npcPosInit() {
   npcPosLoadCurrent();
   // localStorage が空なら Cloudflare KV からシード復元 (fire-and-forget)
   try { npcPosSeedFromServerIfEmpty(); } catch (e) {}
+}
+
+/* ════════════════════════════════════════════════════════════════
+   📊 ぶんせき（データ分析タブ）
+   仕様: docs/data-analytics-plan.md §6-3/§6-4/§8
+   session_id 由来の値(ファネル)と client_id 由来の値(uu/リテンション)を
+   同じ表・カードに混在させない (§6-4の鉄則)。
+   ════════════════════════════════════════════════════════════════ */
+var currentAnalyticsDays = 30;
+var analyticsPanelLoaded = false;
+
+function analyticsFriendlyErrorText(code) {
+  if (code === 'analytics-not-provisioned') {
+    return 'この環境では分析用のデータベース(D1)がまだ設定されていません。';
+  }
+  return String(code || '不明なエラー');
+}
+
+function analyticsFetchJson(url, opts) {
+  return fetch(url, opts || { credentials: 'same-origin', cache: 'no-store' }).then(function(r) {
+    return r.json().catch(function() {
+      throw new Error('サーバーの応答を解析できませんでした（HTTP ' + r.status + '）');
+    }).then(function(data) {
+      if (!r.ok && !(data && data.error)) throw new Error('HTTP ' + r.status + ' エラー');
+      return data;
+    });
+  });
+}
+
+function analyticsSectionLoading(id) {
+  var el = document.getElementById(id);
+  if (el) el.innerHTML = '<div style="font-size:0.8rem;color:#8B7355;">読み込み中…</div>';
+}
+
+function analyticsShowError(id, err) {
+  var el = document.getElementById(id);
+  if (!el) return;
+  var msg = (err && err.message) ? err.message : String(err);
+  el.innerHTML = '<div style="font-size:0.8rem;color:#B91C1C;">⚠ エラー: ' + escapeHtml(msg) + '</div>';
+}
+
+function analyticsRenderDiag(data) {
+  var box = document.getElementById('analytics-diag');
+  if (!box) return;
+  if (!data) {
+    box.className = 'analytics-diag-bar analytics-diag-error';
+    box.textContent = '状態の取得に失敗しました。';
+    return;
+  }
+  if (data.error) {
+    box.className = 'analytics-diag-bar analytics-diag-warn';
+    box.textContent = analyticsFriendlyErrorText(data.error) + ' 集計はまだ動いていません。';
+    return;
+  }
+  if (!data.hasToken || !data.hasDb) {
+    var missing = [];
+    if (!data.hasToken) missing.push('WAE_SQL_TOKEN（集計読み出し用トークン）');
+    if (!data.hasDb) missing.push('ANALYTICS_DB（D1データベース）');
+    box.className = 'analytics-diag-bar analytics-diag-warn';
+    box.textContent = '集計はまだ動いていません: ' + missing.join('・') + ' を設定してください。';
+    return;
+  }
+  box.className = 'analytics-diag-bar analytics-diag-ok';
+  // data.lastRollup は API 契約上プレーンな日付文字列 (YYYY-MM-DD) であり、オブジェクトでは
+  // ない (src/api/analytics-admin.js handleAnalyticsStatus: lastRollup = row.date)。
+  var lastRollupDate = data.lastRollup ? data.lastRollup : '未実施';
+  box.textContent = '✅ 集計は正常に設定されています。最終ロールアップ: ' +
+    lastRollupDate + '（' + (data.rows != null ? data.rows : '-') +
+    ' 行 / dataset: ' + (data.datasetVar || '-') + '）';
+}
+
+function analyticsLoadStatus() {
+  var box = document.getElementById('analytics-diag');
+  if (box) box.textContent = '確認中…';
+  analyticsFetchJson('/api/admin/analytics/status')
+    .then(analyticsRenderDiag)
+    .catch(function(e) {
+      var el = document.getElementById('analytics-diag');
+      if (el) {
+        el.className = 'analytics-diag-bar analytics-diag-error';
+        el.textContent = '状態の取得に失敗しました: ' + (e && e.message ? e.message : e);
+      }
+    });
+}
+
+// KPI カード: uu/game_launch/game_clear は client_id・イベント件数ベースの日次合算、
+// paywall_hit/upgrade_cta_click も同様。session_id 由来の値はここに混在させない。
+function analyticsRenderKpi(totals) {
+  var grid = document.getElementById('analytics-kpi-grid');
+  if (!grid) return;
+  var cards = [
+    { key: 'uu', label: '週間アクティブ端末数', title: 'ブラウザ/端末の粗い識別子であり、厳密な物理端末数ではありません' },
+    { key: 'game_launch', label: 'ゲーム起動数', title: '期間内のゲーム起動イベント合計' },
+    { key: 'game_clear', label: 'ゲームクリア数', title: '期間内のゲームクリアイベント合計' },
+    { key: 'paywall_hit', label: 'paywall到達数', title: '期間内に課金導線を表示した回数' },
+    { key: 'upgrade_cta_click', label: 'アップグレードCTAクリック数', title: '期間内にアップグレード導線をタップした回数' }
+  ];
+  grid.innerHTML = cards.map(function(c) {
+    var val = (totals && totals[c.key] != null) ? totals[c.key] : 0;
+    return '<div class="stat-card" title="' + escapeHtml(c.title) + '">' +
+      '<span class="stat-key">' + escapeHtml(c.label) + '</span>' +
+      '<span class="stat-val">' + escapeHtml(String(val)) + '</span></div>';
+  }).join('');
+}
+
+function analyticsBuildTrendSvg(daysArr) {
+  if (!daysArr || !daysArr.length) {
+    return '<div style="font-size:0.8rem;color:#8B7355;">データがありません</div>';
+  }
+  var w = 800, h = 220, padL = 34, padR = 12, padT = 14, padB = 30;
+  var innerW = w - padL - padR, innerH = h - padT - padB;
+  var n = daysArr.length;
+  var maxVal = 1;
+  daysArr.forEach(function(d) {
+    maxVal = Math.max(maxVal, Number(d.uu) || 0, Number(d.game_launch) || 0);
+  });
+  function xFor(i) { return padL + (n <= 1 ? 0 : (innerW * i / (n - 1))); }
+  function yFor(v) { return padT + innerH - (innerH * (v / maxVal)); }
+  var uuPts = daysArr.map(function(d, i) { return xFor(i) + ',' + yFor(Number(d.uu) || 0); }).join(' ');
+  var glPts = daysArr.map(function(d, i) { return xFor(i) + ',' + yFor(Number(d.game_launch) || 0); }).join(' ');
+  var dots = '';
+  daysArr.forEach(function(d, i) {
+    var dateLabel = escapeHtml(d.date || '');
+    dots += '<circle cx="' + xFor(i) + '" cy="' + yFor(Number(d.uu) || 0) + '" r="3" fill="#FF6B9D">' +
+      '<title>' + dateLabel + ' 週間アクティブ端末数: ' + (Number(d.uu) || 0) + '</title></circle>';
+    dots += '<circle cx="' + xFor(i) + '" cy="' + yFor(Number(d.game_launch) || 0) + '" r="3" fill="#3B82F6">' +
+      '<title>' + dateLabel + ' ゲーム起動数: ' + (Number(d.game_launch) || 0) + '</title></circle>';
+  });
+  var labelStep = Math.max(1, Math.ceil(n / 6));
+  var xLabels = '';
+  daysArr.forEach(function(d, i) {
+    if (i % labelStep !== 0 && i !== n - 1) return;
+    xLabels += '<text x="' + xFor(i) + '" y="' + (h - 10) + '" font-size="10" fill="#8B7355" text-anchor="middle">' +
+      escapeHtml((d.date || '').slice(5)) + '</text>';
+  });
+  var yLabels = '<text x="2" y="' + (padT + 6) + '" font-size="10" fill="#8B7355">' + maxVal + '</text>' +
+    '<text x="2" y="' + (h - padB) + '" font-size="10" fill="#8B7355">0</text>';
+  var svg = '<svg viewBox="0 0 ' + w + ' ' + h + '" style="width:100%;height:auto;max-height:260px;" role="img" aria-label="日次トレンド: 週間アクティブ端末数とゲーム起動数">' +
+    '<line x1="' + padL + '" y1="' + (h - padB) + '" x2="' + (w - padR) + '" y2="' + (h - padB) + '" stroke="#E0D8CC" stroke-width="1"/>' +
+    yLabels + xLabels +
+    '<polyline points="' + uuPts + '" fill="none" stroke="#FF6B9D" stroke-width="2"/>' +
+    '<polyline points="' + glPts + '" fill="none" stroke="#3B82F6" stroke-width="2" stroke-dasharray="6,4"/>' +
+    dots +
+    '</svg>';
+  var legend = '<div class="analytics-legend">' +
+    '<span><i style="background:#FF6B9D"></i>週間アクティブ端末数(uu)</span>' +
+    '<span><i style="background:#3B82F6"></i>ゲーム起動数</span></div>';
+  return svg + legend;
+}
+
+function analyticsRenderGames(games) {
+  var box = document.getElementById('analytics-games-table');
+  if (!box) return;
+  if (!games || !games.length) {
+    box.innerHTML = '<div style="font-size:0.8rem;color:#8B7355;">データがありません</div>';
+    return;
+  }
+  var sorted = games.slice().sort(function(a, b) { return (Number(b.launches) || 0) - (Number(a.launches) || 0); }).slice(0, 15);
+  var rows = sorted.map(function(g) {
+    var launches = Number(g.launches) || 0;
+    var clears = Number(g.clears) || 0;
+    var rate = launches > 0 ? Math.round((clears / launches) * 1000) / 10 : 0;
+    return '<tr><td>' + escapeHtml(g.game_id || '-') + '</td><td>' + launches + '</td><td>' + clears + '</td><td>' + rate + '%</td></tr>';
+  }).join('');
+  box.innerHTML = '<div style="overflow-x:auto;"><table><thead><tr><th>ゲームID</th><th>起動数</th><th>クリア数</th><th>クリア率</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+}
+
+// ファネルは session_id で正しく結合できる /api/e 系イベントのみで構成 (§6-4)。
+function analyticsRenderFunnel(elId, steps) {
+  var box = document.getElementById(elId);
+  if (!box) return;
+  if (!steps || !steps.length) {
+    box.innerHTML = '<div style="font-size:0.8rem;color:#8B7355;">データがありません</div>';
+    return;
+  }
+  var base = Number(steps[0].value) || 0;
+  var html = '';
+  steps.forEach(function(s, i) {
+    var val = Number(s.value) || 0;
+    var pctOfBase = base > 0 ? Math.round((val / base) * 1000) / 10 : 0;
+    var prev = i > 0 ? Number(steps[i - 1].value) || 0 : 0;
+    var pctOfPrev = (i > 0 && prev > 0) ? Math.round((val / prev) * 1000) / 10 : null;
+    var width = base > 0 ? Math.max(val > 0 ? 2 : 0, Math.round((val / base) * 100)) : 0;
+    html += '<div class="analytics-funnel-row">' +
+      '<div class="analytics-funnel-label">' + escapeHtml(s.label) + '</div>' +
+      '<div class="analytics-funnel-bar-wrap"><div class="analytics-funnel-bar" style="width:' + width + '%"></div></div>' +
+      '<div class="analytics-funnel-val">' + val + ' 件（全体比 ' + pctOfBase + '%' +
+      (pctOfPrev != null ? '、直前比 ' + pctOfPrev + '%' : '') + '）</div>' +
+      '</div>';
+  });
+  box.innerHTML = html;
+}
+
+// リテンション/コホートは client_id ベース (日をまたぐ集計に session_id は使わない、§6-4の鉄則)。
+function analyticsRenderRetention(cohorts) {
+  var box = document.getElementById('analytics-retention-table');
+  if (!box) return;
+  if (!cohorts || !cohorts.length) {
+    box.innerHTML = '<div style="font-size:0.8rem;color:#8B7355;">データがありません</div>';
+    return;
+  }
+  function pct(v, size) { return size > 0 ? Math.round(((Number(v) || 0) / size) * 1000) / 10 + '%' : '-'; }
+  var rows = cohorts.map(function(c) {
+    var size = Number(c.size) || 0;
+    return '<tr><td>' + escapeHtml(c.first_seen_date || '-') + '</td><td>' + size + '</td>' +
+      '<td>' + (Number(c.d1) || 0) + '（' + pct(c.d1, size) + '）</td>' +
+      '<td>' + (Number(c.d7) || 0) + '（' + pct(c.d7, size) + '）</td>' +
+      '<td>' + (Number(c.d30) || 0) + '（' + pct(c.d30, size) + '）</td></tr>';
+  }).join('');
+  box.innerHTML = '<div style="overflow-x:auto;"><table><thead><tr><th>初回訪問日</th><th>人数</th><th>1日後再訪</th><th>7日後再訪</th><th>30日後再訪</th></tr></thead><tbody>' + rows + '</tbody></table></div>';
+}
+
+function analyticsSetDays(days) {
+  currentAnalyticsDays = days;
+  document.querySelectorAll('#analytics-days-tabs .sub-tab').forEach(function(b) {
+    b.classList.toggle('active', Number(b.dataset.days) === days);
+  });
+  analyticsLoadAll(days);
+}
+
+function analyticsLoadAll(days) {
+  days = days || currentAnalyticsDays;
+
+  analyticsSectionLoading('analytics-kpi-grid');
+  analyticsSectionLoading('analytics-trend-chart');
+  analyticsSectionLoading('analytics-funnel-play');
+  analyticsSectionLoading('analytics-funnel-paywall');
+  analyticsFetchJson('/api/admin/analytics/overview?days=' + encodeURIComponent(days))
+    .then(function(data) {
+      if (data && data.error) {
+        var friendly = new Error(analyticsFriendlyErrorText(data.error));
+        analyticsShowError('analytics-kpi-grid', friendly);
+        analyticsShowError('analytics-trend-chart', friendly);
+        analyticsShowError('analytics-funnel-play', friendly);
+        analyticsShowError('analytics-funnel-paywall', friendly);
+        return;
+      }
+      var totals = (data && data.totals) || {};
+      var daysArr = (data && data.days) || [];
+      analyticsRenderKpi(totals);
+      var chartBox = document.getElementById('analytics-trend-chart');
+      if (chartBox) chartBox.innerHTML = analyticsBuildTrendSvg(daysArr);
+      analyticsRenderFunnel('analytics-funnel-play', [
+        { label: 'セッション開始', value: totals.session_start || 0 },
+        { label: 'ゲーム起動', value: totals.game_launch || 0 },
+        { label: 'ゲームクリア', value: totals.game_clear || 0 }
+      ]);
+      analyticsRenderFunnel('analytics-funnel-paywall', [
+        { label: '課金導線到達 (paywall_hit)', value: totals.paywall_hit || 0 },
+        { label: 'アップグレードCTAクリック', value: totals.upgrade_cta_click || 0 }
+      ]);
+    })
+    .catch(function(e) {
+      analyticsShowError('analytics-kpi-grid', e);
+      analyticsShowError('analytics-trend-chart', e);
+      analyticsShowError('analytics-funnel-play', e);
+      analyticsShowError('analytics-funnel-paywall', e);
+    });
+
+  analyticsSectionLoading('analytics-games-table');
+  analyticsFetchJson('/api/admin/analytics/games?days=' + encodeURIComponent(days))
+    .then(function(data) {
+      if (data && data.error) { analyticsShowError('analytics-games-table', new Error(analyticsFriendlyErrorText(data.error))); return; }
+      analyticsRenderGames((data && data.games) || []);
+    })
+    .catch(function(e) { analyticsShowError('analytics-games-table', e); });
+
+  analyticsSectionLoading('analytics-retention-table');
+  analyticsFetchJson('/api/admin/analytics/retention?days=' + encodeURIComponent(days))
+    .then(function(data) {
+      if (data && data.error) { analyticsShowError('analytics-retention-table', new Error(analyticsFriendlyErrorText(data.error))); return; }
+      analyticsRenderRetention((data && data.cohorts) || []);
+    })
+    .catch(function(e) { analyticsShowError('analytics-retention-table', e); });
+}
+
+function analyticsJstTodayStr() {
+  var now = new Date();
+  var jst = new Date(now.getTime() + (9 * 60 + now.getTimezoneOffset()) * 60000);
+  return jst.toISOString().slice(0, 10);
+}
+
+function analyticsAddDaysStr(dateStr, delta) {
+  var d = new Date(dateStr + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() + delta);
+  return d.toISOString().slice(0, 10);
+}
+
+function analyticsRunRollup() {
+  var btn = document.getElementById('analytics-rollup-btn');
+  var resultEl = document.getElementById('analytics-rollup-result');
+  if (btn) btn.disabled = true;
+  if (resultEl) resultEl.textContent = '集計中…';
+
+  var today = analyticsJstTodayStr();
+  var yesterday = analyticsAddDaysStr(today, -1);
+
+  function runOne(date) {
+    return fetch('/api/admin/analytics/rollup', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date: date })
+    }).then(function(r) {
+      return r.json().catch(function() { return null; }).then(function(data) {
+        return { date: date, ok: r.ok, data: data };
+      });
+    });
+  }
+
+  runOne(yesterday).then(function(r1) {
+    return runOne(today).then(function(r2) { return [r1, r2]; });
+  }).then(function(results) {
+    // resultEl.textContent への代入なのでここでは escapeHtml() を使わない
+    // (textContent 自体がエスケープするため、事前エスケープすると二重エスケープになる)。
+    var msgs = results.map(function(r) {
+      var errCode = r.data && r.data.error;
+      if (errCode === 'too-soon') {
+        return r.date + ': さきほど集計済みのため少し待ってから再実行してください';
+      }
+      if (!r.ok || errCode) {
+        return r.date + ': 失敗（' + (errCode || 'HTTPエラー') + '）';
+      }
+      return r.date + ': 完了';
+    });
+    if (resultEl) resultEl.textContent = msgs.join(' / ');
+    analyticsLoadStatus();
+    analyticsLoadAll(currentAnalyticsDays);
+  }).catch(function(e) {
+    if (resultEl) resultEl.textContent = '集計に失敗しました: ' + (e && e.message ? e.message : e);
+  }).finally(function() {
+    if (btn) btn.disabled = false;
+  });
+}
+
+function analyticsInitPanel() {
+  analyticsPanelLoaded = true;
+  analyticsLoadStatus();
+  analyticsLoadAll(currentAnalyticsDays);
 }
 
 </script>

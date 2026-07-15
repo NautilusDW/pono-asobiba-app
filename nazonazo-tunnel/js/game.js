@@ -3939,7 +3939,10 @@ function futureCraneScreenActive(){
   futureCapsuleLayer&&!futureCapsuleLayer.hidden;
 }
 function futureCapsulePlayable(){
- return futureCraneScreenActive()&&!answerLocked&&!futureCapsuleResolving&&futureCranePointerId===null&&futureCraneHeldIndex<0;
+ return futureCraneScreenActive()&&!answerLocked&&!futureCapsuleResolving&&(futureCranePhase==="seek"||futureCranePhase==="pod-aligned");
+}
+function futureCraneBusy(){
+ return futureCranePointerId!==null||futureCraneKeyboardActionHeld||!["seek","pod-aligned"].includes(futureCranePhase);
 }
 function futureCapsuleGuide(message){
  const guide=futureCapsuleLayer&&futureCapsuleLayer.querySelector(".future-capsule-guide");if(guide)guide.textContent=message;
@@ -3947,29 +3950,49 @@ function futureCapsuleGuide(message){
 function setFutureCapsuleTimer(callback,delay){
  const timer=setTimeout(()=>{futureCapsuleTimers.delete(timer);callback();},delay);futureCapsuleTimers.add(timer);return timer;
 }
-function clearFutureCranePickupTimer(){
- if(!futureCranePickupTimer)return;clearTimeout(futureCranePickupTimer);futureCapsuleTimers.delete(futureCranePickupTimer);futureCranePickupTimer=0;
+function futureCranePhaseCanTurn(){
+ return futureCranePhase==="seek"||futureCranePhase==="pod-aligned"||futureCranePhase==="carry"||futureCranePhase==="core-aligned";
+}
+function updateFutureCraneControls(){
+ const board=futureCapsuleLayer&&futureCapsuleLayer.querySelector(".future-capsule-board");if(!board)return;
+ const handle=board.querySelector(".future-crane-handle"),action=board.querySelector(".future-crane-action"),label=action&&action.querySelector(".future-crane-action-label");
+ const actionReady=futureCranePhase==="pod-aligned"||futureCranePhase==="lower-pod"||futureCranePhase==="grip"||futureCranePhase==="core-aligned"||futureCranePhase==="lower-core";
+ const handleReady=futureCranePhaseCanTurn();
+ board.classList.toggle("is-handle-ready",futureCranePhase==="seek"||futureCranePhase==="carry");
+ board.classList.toggle("is-action-ready",actionReady);
+ if(handle){handle.disabled=!handleReady||answerLocked||futureCapsuleResolving;handle.setAttribute("aria-pressed",futureCranePointerRole==="crank"?"true":"false");}
+ if(action){
+  action.disabled=!actionReady||answerLocked||futureCapsuleResolving;
+  action.setAttribute("aria-pressed",futureCraneActionHeld||futureCranePointerRole==="action"?"true":"false");
+  action.setAttribute("aria-label",futureCranePhase==="grip"?"ぎゅっと つかむ "+futureCraneGripCount+" / "+FUTURE_CRANE_GRIP_GOAL:"クレーンを おろす");
+ }
+ if(label)label.textContent=futureCranePhase==="grip"?"ぎゅっ！":"おす！";
+ board.querySelectorAll(".future-crane-grip-meter i").forEach((dot,index)=>dot.classList.toggle("is-on",index<futureCraneGripCount));
+ board.style.setProperty("--future-grip",String(futureCraneGripCount/FUTURE_CRANE_GRIP_GOAL));
 }
 function setFutureCranePhase(phase){
  futureCranePhase=phase;
  const board=futureCapsuleLayer&&futureCapsuleLayer.querySelector(".future-capsule-board");if(!board)return;
  board.dataset.cranePhase=phase;board.dataset.heldPod=futureCraneHeldIndex<0?"":String(futureCraneHeldIndex);
  board.dataset.pointerActive=futureCranePointerId===null?"false":"true";
+ board.classList.toggle("is-auto-lifting",phase==="auto-lift");board.classList.toggle("is-auto-rising",phase==="auto-rise");
+ updateFutureCraneControls();
 }
 function releaseFutureCranePointerCapture(){
- const board=futureCapsuleLayer&&futureCapsuleLayer.querySelector(".future-capsule-board"),pointerId=futureCranePointerId;
- futureCranePointerId=null;
- if(board&&pointerId!==null){try{if(!board.hasPointerCapture||board.hasPointerCapture(pointerId))board.releasePointerCapture(pointerId);}catch(_){}}
+ const board=futureCapsuleLayer&&futureCapsuleLayer.querySelector(".future-capsule-board"),pointerId=futureCranePointerId,captureTarget=futureCranePointerCaptureTarget;
+ futureCranePointerId=null;futureCranePointerRole="";futureCranePointerCaptureTarget=null;futureCraneCrankLastAngle=null;
+ if(captureTarget&&pointerId!==null){try{if(!captureTarget.hasPointerCapture||captureTarget.hasPointerCapture(pointerId))captureTarget.releasePointerCapture(pointerId);}catch(_){}}
  if(board)board.dataset.pointerActive="false";
 }
 function clearFutureCapsuleGame(){
- releaseFutureCranePointerCapture();clearFutureCranePickupTimer();
+ releaseFutureCranePointerCapture();
  if(futureCraneGeometryFrame){cancelAnimationFrame(futureCraneGeometryFrame);futureCraneGeometryFrame=0;}
  futureCapsuleEpoch++;futureCapsuleTimers.forEach(clearTimeout);futureCapsuleTimers.clear();
  futureCapsuleOptions=[];futureCapsuleSelectedIndex=-1;futureCapsuleResolving=false;futureCapsuleAssisted=false;futureCapsuleEnergy=0;
- futureCranePhase="idle";futureCraneHeldIndex=-1;futureCraneHoverIndex=-1;futureCraneHoverSince=0;futureCraneX=0;futureCraneY=0;
- futureCraneLastPointerX=0;futureCraneLastPointerY=0;
- futureCraneFollowX=0;futureCraneFollowY=0;futureCraneLatchPayloadY=0;futureCraneLifted=false;futureCraneCoreReady=false;
+ futureCranePhase="idle";futureCranePointerPhaseAtDown="";futureCraneHeldIndex=-1;futureCraneTargetIndex=-1;futureCraneX=0;futureCraneY=0;
+ futureCraneLastPointerX=0;futureCraneLastPointerY=0;futureCraneCrankRotation=0;futureCraneActionHeld=false;futureCraneKeyboardActionHeld=false;
+ futureCraneGripTapEligible=false;futureCraneGripCount=0;futureCraneGripArmedAt=0;futureCraneLastTickAt=0;futureCraneSkipSnapKey="";
+ futureCraneFollowX=0;futureCraneFollowY=0;futureCraneLifted=false;futureCraneCoreReady=false;
  futureCraneSubmissionCommitted=false;futureCraneKeyboardActive=false;futureCraneGeometry=null;futureCraneGeometryDirty=true;
  document.body.classList.remove("future-capsule-active","future-capsule-complete");
  quiz.classList.remove("future-capsule-quiz");choicesEl.classList.remove("future-capsule-mode");choicesEl.setAttribute("aria-label","こたえを えらぶ");
@@ -4008,42 +4031,63 @@ function futureCraneEntryGeometry(entry,boardRect){
  const baseElement=entry.cradle.querySelector(".future-crane-cradle-base")||entry.cradle,homeRect=baseElement.getBoundingClientRect();
  const homeX=(homeRect.left+homeRect.right)/2-boardRect.left,homeY=(homeRect.top+homeRect.bottom)/2-boardRect.top;
  const payloadW=payloadRect.width,payloadH=payloadRect.height,magnetY=homeY-payloadH/2;
- return {homeX,homeY,payloadW,payloadH,pickupRect:{left:homeX-17,right:homeX+17,top:magnetY-10,bottom:magnetY+10}};
+ return {homeX,homeY,payloadW,payloadH,magnetY};
 }
 function syncFutureCraneGeometry(){
  const board=futureCapsuleLayer&&futureCapsuleLayer.querySelector(".future-capsule-board");if(!board||futureCapsuleLayer.hidden)return;
- const boardRect=board.getBoundingClientRect(),quizRect=quiz.getBoundingClientRect(),height=boardRect.height||window.innerHeight||390;
+ const oldGeometry=futureCraneGeometry,boardRect=board.getBoundingClientRect(),quizRect=quiz.getBoundingClientRect(),height=boardRect.height||window.innerHeight||390;
  const quizTop=quiz.classList.contains("show")?quizRect.top-boardRect.top:height-98;
  board.style.setProperty("--future-quiz-inset",Math.max(84,height-quizTop+8)+"px");
  const railY=clamp(height*.16,52,112),stationMax=Math.max(142,quizTop-(height<=360?36:44));
  const stationY=Math.min(Math.max(height*.53,150),stationMax);
  board.style.setProperty("--future-crane-rail-y",railY.toFixed(1)+"px");
  board.style.setProperty("--future-crane-station-y",stationY.toFixed(1)+"px");
- const coreInner=board.querySelector(".future-crane-core-slot")?.getBoundingClientRect();
+ const coreInner=board.querySelector(".future-crane-core-slot")?.getBoundingClientRect(),handleRect=board.querySelector(".future-crane-handle")?.getBoundingClientRect();
  futureCraneGeometry={
   width:boardRect.width,height,homeX:boardRect.width/2,homeY:railY+34,minX:22,maxX:Math.max(22,boardRect.width-22),
-  minY:railY+2,maxY:futureCraneSafeMaxY(quizTop,null,0),railY,quizTop,
+  minY:railY+34,maxY:futureCraneSafeMaxY(quizTop,null,0),railY,quizTop,
+  crankCx:handleRect?(handleRect.left+handleRect.right)/2:56,crankCy:handleRect?(handleRect.top+handleRect.bottom)/2:stationY,
   coreInner:coreInner?{left:coreInner.left-boardRect.left,right:coreInner.right-boardRect.left,top:coreInner.top-boardRect.top,bottom:coreInner.bottom-boardRect.top,width:coreInner.width,height:coreInner.height,cx:(coreInner.left+coreInner.right)/2-boardRect.left,cy:(coreInner.top+coreInner.bottom)/2-boardRect.top}:null
  };
  futureCapsuleOptions.forEach(entry=>{
   Object.assign(entry,futureCraneEntryGeometry(entry,boardRect));
  });
- const liftDistance=clamp(height*.32,44,64);
- const liftCeiling=futureCapsuleOptions.reduce((ceiling,entry)=>Math.min(ceiling,entry.homeY-liftDistance-entry.payloadH/2),futureCraneGeometry.minY);
- futureCraneGeometry.minY=Math.max(18,liftCeiling);
  futureCraneGeometry.maxY=Math.max(futureCraneGeometry.minY,futureCraneGeometry.maxY);
- if(futureCranePointerId===null&&futureCraneHeldIndex<0&&futureCranePhase==="idle"){
+ if(!oldGeometry||futureCranePhase==="idle"){
   futureCraneX=futureCraneGeometry.homeX;futureCraneY=futureCraneGeometry.homeY;
  }else{
-  futureCraneX=clamp(futureCraneX,futureCraneGeometry.minX,futureCraneGeometry.maxX);
+  const oldSpan=Math.max(1,oldGeometry.maxX-oldGeometry.minX),newSpan=Math.max(1,futureCraneGeometry.maxX-futureCraneGeometry.minX);
+  futureCraneX=futureCraneGeometry.minX+clamp((futureCraneX-oldGeometry.minX)/oldSpan,0,1)*newSpan;
+  const targetEntry=futureCapsuleOptions[futureCraneTargetIndex];
+  if(targetEntry&&(futureCranePhase==="pod-aligned"||futureCranePhase==="lower-pod"||futureCranePhase==="grip"||futureCranePhase==="auto-lift"))futureCraneX=targetEntry.homeX;
+  if(futureCraneHeldIndex>=0&&(futureCranePhase==="core-aligned"||futureCranePhase==="lower-core")&&futureCraneGeometry.coreInner)futureCraneX=futureCraneGeometry.coreInner.cx;
   futureCraneY=clamp(futureCraneY,futureCraneGeometry.minY,Math.max(futureCraneGeometry.minY,futureCraneCurrentMaxY()));
-  if(futureCranePointerId!==null){futureCraneDragStartX=futureCraneLastPointerX;futureCraneDragStartY=futureCraneLastPointerY;futureCraneHookStartX=futureCraneX;futureCraneHookStartY=futureCraneY;}
  }
+ if(futureCranePointerRole==="crank")futureCraneCrankLastAngle=futureCranePointerAngle(futureCraneLastPointerX,futureCraneLastPointerY);
  futureCraneGeometryDirty=false;applyFutureCraneVisual();
 }
-function updateFutureCapsuleVisual(){
- if(!futureCapsuleLayer||futureCapsuleLayer.hidden||!futureCapsuleOptions.length||!futureCraneGeometryDirty)return;
- syncFutureCraneGeometry();
+function futureCraneDescentTargetY(){
+ if(!futureCraneGeometry)return 0;
+ if(futureCranePhase==="lower-pod"){
+  const entry=futureCapsuleOptions[futureCraneTargetIndex];return entry?entry.magnetY:futureCraneGeometry.homeY;
+ }
+ if(futureCranePhase==="lower-core"){
+  const inner=futureCraneGeometry.coreInner;return inner?inner.cy-futureCraneFollowY:futureCraneGeometry.homeY;
+ }
+ return futureCraneGeometry.homeY;
+}
+function updateFutureCapsuleVisual(now){
+ if(!futureCapsuleLayer||futureCapsuleLayer.hidden||!futureCapsuleOptions.length)return;
+ if(futureCraneGeometryDirty||!futureCraneGeometry)syncFutureCraneGeometry();
+ if(!futureCraneGeometry)return;
+ if(!futureCraneActionHeld||(futureCranePhase!=="lower-pod"&&futureCranePhase!=="lower-core")){futureCraneLastTickAt=now||0;return;}
+ const current=Number.isFinite(now)?now:_nowMs(),last=futureCraneLastTickAt||current,dt=clamp(current-last,0,50)/1000;futureCraneLastTickAt=current;
+ const targetY=clamp(futureCraneDescentTargetY(),futureCraneGeometry.minY,Math.max(futureCraneGeometry.minY,futureCraneCurrentMaxY()));
+ const distance=Math.max(0,targetY-futureCraneY),slowRadius=FUTURE_CRANE_SLOW_RADIUS[level]||FUTURE_CRANE_SLOW_RADIUS[1];
+ const speed=distance<=slowRadius?(FUTURE_CRANE_SLOW_SPEED[level]||FUTURE_CRANE_SLOW_SPEED[1]):(FUTURE_CRANE_DESCENT_SPEED[level]||FUTURE_CRANE_DESCENT_SPEED[1]);
+ futureCraneY=Math.min(targetY,futureCraneY+speed*dt);
+ if(futureCranePhase==="lower-core")updateFutureCraneCoreReady();
+ applyFutureCraneVisual();
 }
 function futureCranePayloadCenter(){
  const entry=futureCapsuleOptions[futureCraneHeldIndex];
@@ -4053,6 +4097,7 @@ function applyFutureCraneVisual(){
  const board=futureCapsuleLayer&&futureCapsuleLayer.querySelector(".future-capsule-board");if(!board||!futureCraneGeometry)return;
  board.style.setProperty("--future-crane-x",futureCraneX.toFixed(2)+"px");board.style.setProperty("--future-crane-y",futureCraneY.toFixed(2)+"px");
  board.style.setProperty("--future-crane-cable-scale",Math.max(.06,(futureCraneY-futureCraneGeometry.railY)/100).toFixed(3));
+ board.style.setProperty("--future-crank-angle",futureCraneCrankRotation.toFixed(4)+"rad");
  const entry=futureCapsuleOptions[futureCraneHeldIndex],payload=futureCranePayloadCenter();
  if(entry&&payload)entry.button.style.transform="translate3d("+(payload.x-entry.homeX).toFixed(2)+"px,"+(payload.y-entry.homeY).toFixed(2)+"px,0)";
  board.classList.toggle("is-pointer-active",futureCranePointerId!==null);board.classList.toggle("is-carrying",futureCraneHeldIndex>=0);
@@ -4061,34 +4106,78 @@ function applyFutureCraneVisual(){
 }
 function futureCranePickupIndex(){
  if(!futureCraneGeometry)return -1;
- const hook={left:futureCraneX-10,right:futureCraneX+10,top:futureCraneY-9,bottom:futureCraneY+9};
- const entry=futureCapsuleOptions.find(item=>!item.button.disabled&&item.pickupRect&&hook.right>=item.pickupRect.left&&hook.left<=item.pickupRect.right&&hook.bottom>=item.pickupRect.top&&hook.top<=item.pickupRect.bottom);
+ const xTolerance=FUTURE_CRANE_PICKUP_X_TOLERANCE[level]||FUTURE_CRANE_PICKUP_X_TOLERANCE[1],yTolerance=FUTURE_CRANE_PICKUP_Y_TOLERANCE[level]||FUTURE_CRANE_PICKUP_Y_TOLERANCE[1];
+ const entry=futureCapsuleOptions.find(item=>!item.button.disabled&&Math.abs(futureCraneX-item.homeX)<=xTolerance&&Math.abs(futureCraneY-item.magnetY)<=yTolerance);
  return entry?entry.index:-1;
 }
-function trackFutureCranePickup(){
- if(futureCranePointerId===null||futureCraneHeldIndex>=0)return;
- const index=futureCranePickupIndex();
- if(index===futureCraneHoverIndex)return;
- clearFutureCranePickupTimer();futureCraneHoverIndex=index;futureCraneHoverSince=index<0?0:_nowMs();
- futureCapsuleOptions.forEach(entry=>entry.cradle.classList.toggle("is-hovered",entry.index===index));
- if(index<0)return;
- const epoch=futureCapsuleEpoch,delay=FUTURE_CRANE_PICKUP_MS[level]||FUTURE_CRANE_PICKUP_MS[1];
- futureCranePickupTimer=setFutureCapsuleTimer(()=>{
-  futureCranePickupTimer=0;
-  if(epoch!==futureCapsuleEpoch||futureCranePointerId===null||futureCraneHeldIndex>=0||futureCranePickupIndex()!==index)return;
-  const entry=futureCapsuleOptions[index];if(entry&&!entry.button.disabled)latchFutureCranePod(entry,false);
- },delay);
+function futureCraneCrossesTarget(oldX,newX,targetX){
+ return (oldX-targetX)*(newX-targetX)<0||newX===targetX;
 }
-function latchFutureCranePod(entry,keyboard){
- if(!entry||entry.button.disabled||futureCraneHeldIndex>=0||!futureCraneGeometry)return;
- clearFutureCranePickupTimer();futureCraneHoverIndex=-1;futureCraneHeldIndex=entry.index;futureCapsuleSelectedIndex=entry.index;
- futureCraneKeyboardActive=!!keyboard;
- futureCraneX=entry.homeX;futureCraneY=entry.homeY-entry.payloadH/2;futureCraneFollowX=0;futureCraneFollowY=entry.payloadH/2;
- if(futureCranePointerId!==null){futureCraneDragStartX=futureCraneLastPointerX;futureCraneDragStartY=futureCraneLastPointerY;futureCraneHookStartX=futureCraneX;futureCraneHookStartY=futureCraneY;}
- futureCraneLatchPayloadY=entry.homeY;futureCraneLifted=false;futureCraneCoreReady=false;
- entry.button.classList.add("is-selected");entry.button.setAttribute("aria-pressed","true");entry.cradle.classList.remove("is-hovered");entry.cradle.classList.add("is-carrying");
- futureCapsuleOptions.forEach(item=>{if(item!==entry)item.button.setAttribute("aria-disabled","true");});
- setFutureCranePhase("latched");futureCapsuleGuide("つかんだ！ うえへ もちあげよう");tone(620,0,.08,"triangle",.05);tone(820,.06,.1,"sine",.04);applyFutureCraneVisual();
+function prepareFutureCraneSnapDeparture(){
+ if(futureCranePhase==="pod-aligned"){
+  futureCraneSkipSnapKey="pod:"+futureCraneTargetIndex;setFutureCranePhase("seek");futureCapsuleGuide("ハンドルで ポッドに あわせよう");
+ }else if(futureCranePhase==="core-aligned"){
+  futureCraneSkipSnapKey="core";setFutureCranePhase("carry");futureCapsuleGuide("ハンドルを まんなかへ もどそう");
+ }
+}
+function futureCraneSnapPod(oldX,newX){
+ const tolerance=FUTURE_CRANE_PICKUP_X_TOLERANCE[level]||FUTURE_CRANE_PICKUP_X_TOLERANCE[1];
+ if(futureCraneSkipSnapKey.startsWith("pod:")){
+  const skipped=futureCapsuleOptions[Number(futureCraneSkipSnapKey.slice(4))];
+  if(!skipped||Math.abs(newX-skipped.homeX)>tolerance)futureCraneSkipSnapKey="";
+ }
+ const candidates=futureCapsuleOptions.filter(entry=>!entry.button.disabled&&futureCraneSkipSnapKey!=="pod:"+entry.index);
+ const crossed=candidates.filter(entry=>futureCraneCrossesTarget(oldX,newX,entry.homeX)).sort((a,b)=>Math.abs(a.homeX-oldX)-Math.abs(b.homeX-oldX))[0];
+ if(crossed)return crossed;
+ return candidates.filter(entry=>Math.abs(newX-entry.homeX)<=tolerance).sort((a,b)=>Math.abs(newX-a.homeX)-Math.abs(newX-b.homeX))[0]||null;
+}
+function futureCraneSnapCore(oldX,newX){
+ const inner=futureCraneGeometry&&futureCraneGeometry.coreInner;if(!inner)return false;
+ const tolerance=FUTURE_CRANE_CORE_SNAP_X[level]||FUTURE_CRANE_CORE_SNAP_X[1];
+ if(futureCraneSkipSnapKey==="core"&&Math.abs(newX-inner.cx)>tolerance)futureCraneSkipSnapKey="";
+ if(futureCraneSkipSnapKey==="core")return false;
+ return Math.abs(newX-inner.cx)<=tolerance||futureCraneCrossesTarget(oldX,newX,inner.cx);
+}
+function turnFutureCraneByAngle(angle){
+ if(!futureCraneScreenActive()||answerLocked||futureCapsuleResolving||!futureCranePhaseCanTurn())return false;
+ if(futureCraneGeometryDirty||!futureCraneGeometry)syncFutureCraneGeometry();if(!futureCraneGeometry)return false;
+ if(futureCranePhase==="pod-aligned"||futureCranePhase==="core-aligned")prepareFutureCraneSnapDeparture();
+ const railSpan=Math.max(1,futureCraneGeometry.maxX-futureCraneGeometry.minX),perTurn=FUTURE_CRANE_RAIL_PER_TURN[level]||FUTURE_CRANE_RAIL_PER_TURN[1];
+ const oldX=futureCraneX,newX=clamp(oldX+angle/(Math.PI*2)*railSpan*perTurn,futureCraneGeometry.minX,futureCraneGeometry.maxX);
+ futureCraneCrankRotation+=angle;
+ if(futureCraneHeldIndex<0){
+  const entry=futureCraneSnapPod(oldX,newX);
+  if(entry){futureCraneX=entry.homeX;futureCraneTargetIndex=entry.index;futureCraneSkipSnapKey="";setFutureCranePhase("pod-aligned");futureCapsuleGuide("あった！ ボタンを おして おろそう");tone(760,0,.05,"sine",.035);}
+  else{futureCraneX=newX;futureCraneTargetIndex=-1;if(futureCranePhase!=="seek")setFutureCranePhase("seek");}
+ }else if(futureCraneSnapCore(oldX,newX)){
+  futureCraneX=futureCraneGeometry.coreInner.cx;futureCraneFollowX=0;futureCraneSkipSnapKey="";setFutureCranePhase("core-aligned");futureCapsuleGuide("まんなか！ ボタンで コアへ おろそう");tone(840,0,.05,"sine",.035);
+ }else{futureCraneX=newX;futureCraneFollowX=0;if(futureCranePhase!=="carry")setFutureCranePhase("carry");}
+ futureCraneCoreReady=false;applyFutureCraneVisual();return true;
+}
+function normalizeFutureCraneAngle(angle){return Math.atan2(Math.sin(angle),Math.cos(angle));}
+function futureCranePointerAngle(clientX,clientY){
+ if(!futureCraneGeometry)return null;
+ const dx=clientX-futureCraneGeometry.crankCx,dy=clientY-futureCraneGeometry.crankCy;
+ return Math.hypot(dx,dy)<FUTURE_CRANE_CRANK_DEADZONE?null:Math.atan2(dy,dx);
+}
+function handleFutureCraneHandlePointerDown(event){
+ if(event.button!==0||event.isPrimary===false||futureCranePointerId!==null||!futureCranePhaseCanTurn()||answerLocked||futureCapsuleResolving)return;
+ if(futureCraneGeometryDirty||!futureCraneGeometry)syncFutureCraneGeometry();if(!futureCraneGeometry)return;
+ event.preventDefault();ensureAC();futureCranePointerId=event.pointerId;futureCranePointerRole="crank";futureCranePointerCaptureTarget=event.currentTarget;
+ futureCranePointerPhaseAtDown=futureCranePhase;futureCraneLastPointerX=event.clientX;futureCraneLastPointerY=event.clientY;futureCraneCrankLastAngle=futureCranePointerAngle(event.clientX,event.clientY);futureCraneKeyboardActive=false;
+ try{event.currentTarget.setPointerCapture(event.pointerId);}catch(_){}applyFutureCraneVisual();updateFutureCraneControls();
+}
+function handleFutureCraneHandlePointerMove(event){
+ if(event.pointerId!==futureCranePointerId||futureCranePointerRole!=="crank")return;
+ event.preventDefault();futureCraneLastPointerX=event.clientX;futureCraneLastPointerY=event.clientY;
+ const angle=futureCranePointerAngle(event.clientX,event.clientY);if(angle===null){futureCraneCrankLastAngle=null;return;}
+ if(futureCraneCrankLastAngle===null){futureCraneCrankLastAngle=angle;return;}
+ const delta=clamp(normalizeFutureCraneAngle(angle-futureCraneCrankLastAngle),-FUTURE_CRANE_EVENT_ANGLE_CAP,FUTURE_CRANE_EVENT_ANGLE_CAP);futureCraneCrankLastAngle=angle;
+ if(Math.abs(delta)>.003)turnFutureCraneByAngle(delta);
+}
+function finishFutureCraneHandlePointer(event){
+ if(event.pointerId!==futureCranePointerId||futureCranePointerRole!=="crank")return;
+ event.preventDefault();releaseFutureCranePointerCapture();applyFutureCraneVisual();updateFutureCraneControls();
 }
 function futureCraneCoreEdgeTolerance(tolerance){return Math.min(4,Math.max(0,tolerance/4));}
 function futureCranePayloadFitsCore(payload,inner,payloadW,payloadH,tolerance){
@@ -4096,52 +4185,89 @@ function futureCranePayloadFitsCore(payload,inner,payloadW,payloadH,tolerance){
  const edgeTolerance=futureCraneCoreEdgeTolerance(tolerance),halfW=payloadW/2,halfH=payloadH/2;
  return payload.x-halfW>=inner.left-edgeTolerance&&payload.x+halfW<=inner.right+edgeTolerance&&payload.y-halfH>=inner.top-edgeTolerance&&payload.y+halfH<=inner.bottom+edgeTolerance;
 }
-function updateFutureCraneCarryState(){
- const payload=futureCranePayloadCenter(),entry=futureCapsuleOptions[futureCraneHeldIndex];if(!payload||!entry||!futureCraneGeometry)return;
- const liftDistance=clamp(futureCraneGeometry.height*.32,44,64);
- if(!futureCraneLifted&&futureCraneLatchPayloadY-payload.y>=liftDistance)futureCraneLifted=true;
- const inner=futureCraneGeometry.coreInner,tolerance=FUTURE_CRANE_CORE_TOLERANCE[level]||FUTURE_CRANE_CORE_TOLERANCE[1];
- const edgeTolerance=futureCraneCoreEdgeTolerance(tolerance),halfW=entry.payloadW/2;
- const horizontallyReady=!!(futureCraneLifted&&inner&&payload.x-halfW>=inner.left-edgeTolerance&&payload.x+halfW<=inner.right+edgeTolerance);
- futureCraneCoreReady=!!(futureCraneLifted&&futureCranePayloadFitsCore(payload,inner,entry.payloadW,entry.payloadH,tolerance));
- let next="latched",message="つかんだ！ うえへ もちあげよう";
- if(futureCraneCoreReady){next="core-ready";message="ここで はなそう！";}
- else if(horizontallyReady){next="core-above";message="ゆっくり コアへ おろそう";}
- else if(futureCraneLifted){next="lifted";message="コアの うえまで はこぼう";}
- if(next!==futureCranePhase){setFutureCranePhase(next);futureCapsuleGuide(message);if(next==="core-ready")tone(880,0,.08,"sine",.045);}
- applyFutureCraneVisual();
+function updateFutureCraneCoreReady(){
+ const entry=futureCapsuleOptions[futureCraneHeldIndex],payload=futureCranePayloadCenter(),inner=futureCraneGeometry&&futureCraneGeometry.coreInner,tolerance=FUTURE_CRANE_CORE_TOLERANCE[level]||FUTURE_CRANE_CORE_TOLERANCE[1];
+ futureCraneCoreReady=!!(entry&&futureCranePhase==="lower-core"&&futureCranePayloadFitsCore(payload,inner,entry.payloadW,entry.payloadH,tolerance));
 }
-function setFutureCraneHook(x,y){
+function startFutureCraneAction(input){
+ if(!futureCraneScreenActive()||answerLocked||futureCapsuleResolving)return false;
+ futureCranePointerPhaseAtDown=futureCranePhase;futureCraneGripTapEligible=futureCranePhase==="grip"&&_nowMs()>=futureCraneGripArmedAt;
+ if(futureCranePhase==="pod-aligned"){
+  futureCraneActionHeld=true;futureCraneLastTickAt=_nowMs();setFutureCranePhase("lower-pod");futureCapsuleGuide("おしている あいだ おりるよ");
+ }else if(futureCranePhase==="core-aligned"){
+  futureCraneActionHeld=true;futureCraneCoreReady=false;futureCraneLastTickAt=_nowMs();setFutureCranePhase("lower-core");futureCapsuleGuide("コアの なかまで おろそう");
+ }else if(futureCranePhase!=="grip"){
+  futureCapsuleGuide(futureCraneHeldIndex>=0?"ハンドルを まんなかへ もどそう":"ハンドルで ポッドに あわせよう");return false;
+ }
+ if(input==="keyboard")futureCraneKeyboardActive=true;
+ updateFutureCraneControls();return true;
+}
+function handleFutureCraneActionPointerDown(event){
+ if(event.button!==0||event.isPrimary===false||futureCranePointerId!==null||answerLocked||futureCapsuleResolving)return;
+ if(!["pod-aligned","core-aligned","grip"].includes(futureCranePhase))return;
+ event.preventDefault();ensureAC();futureCranePointerId=event.pointerId;futureCranePointerRole="action";futureCranePointerCaptureTarget=event.currentTarget;futureCraneKeyboardActive=false;
+ try{event.currentTarget.setPointerCapture(event.pointerId);}catch(_){}startFutureCraneAction("pointer");applyFutureCraneVisual();
+}
+function performFutureCraneGripTap(){
+ if(futureCranePhase!=="grip"||_nowMs()<futureCraneGripArmedAt||futureCraneGripCount>=FUTURE_CRANE_GRIP_GOAL)return false;
+ futureCraneGripCount+=1;futureCapsuleGuide(futureCraneGripCount<FUTURE_CRANE_GRIP_GOAL?"ぎゅっ！ あと "+(FUTURE_CRANE_GRIP_GOAL-futureCraneGripCount)+"かい":"しっかり つかんだ！");
+ tone(560+futureCraneGripCount*110,0,.07,"triangle",.05);updateFutureCraneControls();applyFutureCraneVisual();
+ if(futureCraneGripCount>=FUTURE_CRANE_GRIP_GOAL)attachFutureCranePod();return true;
+}
+function finishFutureCranePodDescent(cancelled){
+ const entry=futureCapsuleOptions[futureCraneTargetIndex],xTolerance=FUTURE_CRANE_PICKUP_X_TOLERANCE[level]||FUTURE_CRANE_PICKUP_X_TOLERANCE[1],yTolerance=FUTURE_CRANE_PICKUP_Y_TOLERANCE[level]||FUTURE_CRANE_PICKUP_Y_TOLERANCE[1];
+ const reached=!!(!cancelled&&entry&&!entry.button.disabled&&Math.abs(futureCraneX-entry.homeX)<=xTolerance&&Math.abs(futureCraneY-entry.magnetY)<=yTolerance);
+ futureCraneActionHeld=false;futureCraneLastTickAt=0;
+ if(!reached){autoRiseFutureCrane("pod-aligned","もう すこし おろしてみよう");return;}
+ futureCraneX=entry.homeX;futureCraneY=entry.magnetY;futureCraneGripCount=0;futureCraneGripArmedAt=_nowMs()+FUTURE_CRANE_GRIP_ARM_MS;
+ setFutureCranePhase("grip");futureCapsuleGuide("ボタンを 3かい ぎゅっ！");tone(680,0,.08,"sine",.04);applyFutureCraneVisual();
+}
+function finishFutureCraneCoreDescent(cancelled){
+ futureCraneActionHeld=false;futureCraneLastTickAt=0;updateFutureCraneCoreReady();
+ if(!cancelled&&futureCraneCoreReady){resolveFutureCapsule(futureCapsuleOptions[futureCraneHeldIndex]);return;}
+ autoRiseFutureCrane("core-aligned","もう すこし コアへ おろそう");
+}
+function finishFutureCraneAction(cancelled,input){
+ const phaseAtDown=futureCranePointerPhaseAtDown,tapEligible=futureCraneGripTapEligible;
+ if(input==="pointer")releaseFutureCranePointerCapture();
+ futureCraneActionHeld=false;futureCraneGripTapEligible=false;futureCranePointerPhaseAtDown="";
+ if(phaseAtDown==="pod-aligned"&&futureCranePhase==="lower-pod"){finishFutureCranePodDescent(cancelled);return;}
+ if(phaseAtDown==="core-aligned"&&futureCranePhase==="lower-core"){finishFutureCraneCoreDescent(cancelled);return;}
+ if(phaseAtDown==="grip"&&futureCranePhase==="grip"&&!cancelled&&tapEligible)performFutureCraneGripTap();
+ updateFutureCraneControls();applyFutureCraneVisual();
+}
+function finishFutureCraneActionPointer(event){
+ if(event.pointerId!==futureCranePointerId||futureCranePointerRole!=="action")return;event.preventDefault();finishFutureCraneAction(false,"pointer");
+}
+function cancelFutureCraneActionPointer(event){
+ if(event.pointerId!==futureCranePointerId||futureCranePointerRole!=="action")return;finishFutureCraneAction(true,"pointer");
+}
+function attachFutureCranePod(){
+ const entry=futureCapsuleOptions[futureCraneTargetIndex];if(!entry||entry.button.disabled||futureCraneHeldIndex>=0||!futureCraneGeometry)return;
+ futureCraneHeldIndex=entry.index;futureCapsuleSelectedIndex=entry.index;futureCraneX=entry.homeX;futureCraneY=entry.magnetY;futureCraneFollowX=0;futureCraneFollowY=entry.payloadH/2;
+ futureCraneLifted=false;futureCraneCoreReady=false;entry.button.classList.add("is-selected");entry.button.setAttribute("aria-pressed","true");entry.cradle.classList.add("is-carrying");
+ futureCapsuleOptions.forEach(item=>{if(item!==entry)item.button.setAttribute("aria-disabled","true");});
+ const duration=futureReducedMotion()?FUTURE_CRANE_RETURN_REDUCED_MS:FUTURE_CRANE_AUTO_LIFT_MS,epoch=futureCapsuleEpoch,board=futureCapsuleLayer.querySelector(".future-capsule-board");
+ if(board)board.style.setProperty("--future-auto-ms",duration+"ms");setFutureCranePhase("auto-lift");futureCapsuleGuide("つかんだ！ うえへ あがるよ");applyFutureCraneVisual();
+ futureCraneY=futureCraneGeometry.homeY;applyFutureCraneVisual();tone(620,0,.08,"triangle",.05);tone(820,.06,.1,"sine",.04);
+ setFutureCapsuleTimer(()=>{
+  if(epoch!==futureCapsuleEpoch||futureCranePhase!=="auto-lift")return;
+  futureCraneY=futureCraneGeometry?futureCraneGeometry.homeY:futureCraneY;futureCraneLifted=true;futureCraneSkipSnapKey="";setFutureCranePhase("carry");futureCapsuleGuide("ハンドルを まんなかへ もどそう");applyFutureCraneVisual();
+ },duration);
+}
+function autoRiseFutureCrane(nextPhase,message){
  if(!futureCraneGeometry)return;
- futureCraneX=clamp(x,futureCraneGeometry.minX,futureCraneGeometry.maxX);futureCraneY=clamp(y,futureCraneGeometry.minY,Math.max(futureCraneGeometry.minY,futureCraneCurrentMaxY()));
- applyFutureCraneVisual();if(futureCraneHeldIndex>=0)updateFutureCraneCarryState();else trackFutureCranePickup();
-}
-function moveFutureCraneHook(dx,dy){
- if(futureCraneGeometryDirty||!futureCraneGeometry)syncFutureCraneGeometry();if(!futureCraneGeometry)return;
- setFutureCraneHook(futureCraneX+dx,futureCraneY+dy);
-}
-function handleFutureCranePointerDown(event){
- if(!futureCapsulePlayable()||event.button!==0||event.isPrimary===false)return;
- if(futureCraneGeometryDirty||!futureCraneGeometry)syncFutureCraneGeometry();if(!futureCraneGeometry)return;
- event.preventDefault();ensureAC();futureCranePointerId=event.pointerId;futureCraneKeyboardActive=false;
- futureCraneDragStartX=event.clientX;futureCraneDragStartY=event.clientY;futureCraneLastPointerX=event.clientX;futureCraneLastPointerY=event.clientY;futureCraneHookStartX=futureCraneX;futureCraneHookStartY=futureCraneY;
- const board=event.currentTarget;try{board.setPointerCapture(event.pointerId);}catch(_){}
- setFutureCranePhase("dragging");applyFutureCraneVisual();trackFutureCranePickup();
-}
-function handleFutureCranePointerMove(event){
- if(event.pointerId!==futureCranePointerId||!futureCraneGeometry)return;
- event.preventDefault();futureCraneLastPointerX=event.clientX;futureCraneLastPointerY=event.clientY;setFutureCraneHook(futureCraneHookStartX+(event.clientX-futureCraneDragStartX),futureCraneHookStartY+(event.clientY-futureCraneDragStartY));
-}
-function finishFutureCranePointer(event){
- if(event.pointerId!==futureCranePointerId)return;event.preventDefault();releaseFutureCranePayload(false);
-}
-function cancelFutureCranePointer(event){
- if(event.pointerId!==futureCranePointerId)return;releaseFutureCranePayload(true);
+ const epoch=futureCapsuleEpoch,duration=futureReducedMotion()?FUTURE_CRANE_RETURN_REDUCED_MS:FUTURE_CRANE_RETURN_MS,board=futureCapsuleLayer.querySelector(".future-capsule-board");
+ releaseFutureCranePointerCapture();futureCraneKeyboardActionHeld=false;futureCraneActionHeld=false;futureCraneCoreReady=false;futureCapsuleResolving=true;
+ if(board)board.style.setProperty("--future-auto-ms",duration+"ms");setFutureCranePhase("auto-rise");futureCapsuleGuide(message);futureCraneY=futureCraneGeometry.homeY;applyFutureCraneVisual();
+ setFutureCapsuleTimer(()=>{
+  if(epoch!==futureCapsuleEpoch||futureCranePhase!=="auto-rise")return;
+  futureCapsuleResolving=false;futureCraneY=futureCraneGeometry?futureCraneGeometry.homeY:futureCraneY;setFutureCranePhase(nextPhase);applyFutureCraneVisual();
+ },duration);
 }
 function returnFutureCranePayload(message){
  const board=futureCapsuleLayer&&futureCapsuleLayer.querySelector(".future-capsule-board"),entry=futureCapsuleOptions[futureCraneHeldIndex],epoch=futureCapsuleEpoch;
- clearFutureCranePickupTimer();releaseFutureCranePointerCapture();futureCapsuleResolving=true;futureCraneCoreReady=false;futureCraneLifted=false;
- futureCapsuleOptions.forEach(item=>item.cradle.classList.remove("is-hovered"));
+ releaseFutureCranePointerCapture();futureCraneKeyboardActionHeld=false;futureCraneActionHeld=false;futureCapsuleResolving=true;futureCraneCoreReady=false;futureCraneLifted=false;
  if(board){board.classList.remove("is-pointer-active","is-carrying","is-core-ready","is-lifted","is-rejected");board.classList.add("is-returning");}
  if(futureCraneGeometry){futureCraneX=futureCraneGeometry.homeX;futureCraneY=futureCraneGeometry.homeY;}
  if(entry&&futureCraneGeometry){futureCraneFollowX=entry.homeX-futureCraneX;futureCraneFollowY=entry.homeY-futureCraneY;entry.button.style.transform="translate3d(0,0,0)";}
@@ -4150,29 +4276,30 @@ function returnFutureCranePayload(message){
   if(epoch!==futureCapsuleEpoch)return;
   if(board)board.classList.remove("is-returning","is-carrying","is-rejected");
   if(entry){entry.button.classList.remove("is-selected","is-rejected");entry.button.setAttribute("aria-pressed","false");entry.cradle.classList.remove("is-carrying");}
-  futureCraneHeldIndex=-1;futureCapsuleSelectedIndex=-1;futureCraneHoverIndex=-1;futureCraneFollowX=0;futureCraneFollowY=0;
+  futureCraneHeldIndex=-1;futureCraneTargetIndex=-1;futureCapsuleSelectedIndex=-1;futureCraneFollowX=0;futureCraneFollowY=0;futureCraneGripCount=0;
   futureCraneSubmissionCommitted=false;futureCraneKeyboardActive=false;futureCapsuleResolving=false;
   futureCapsuleOptions.forEach(item=>item.button.setAttribute("aria-disabled",item.button.disabled?"true":"false"));
-  setFutureCranePhase("idle");applyFutureCraneVisual();
+  setFutureCranePhase("seek");futureCapsuleGuide(message||"ハンドルで ポッドに あわせよう");applyFutureCraneVisual();
   if(board)board.focus({preventScroll:true});
  },futureReducedMotion()?FUTURE_CRANE_RETURN_REDUCED_MS:FUTURE_CRANE_RETURN_MS);
 }
-function releaseFutureCranePayload(cancelled){
- clearFutureCranePickupTimer();releaseFutureCranePointerCapture();
- if(!cancelled&&futureCraneHeldIndex>=0&&futureCraneCoreReady){resolveFutureCapsule(futureCapsuleOptions[futureCraneHeldIndex]);return;}
- returnFutureCranePayload("だいじょうぶ。もう いちど！");
+function cancelFutureCraneInteraction(message){
+ if(futureCranePhase==="lower-pod"||futureCranePhase==="grip"){autoRiseFutureCrane("pod-aligned",message);return;}
+ if(futureCranePhase==="lower-core"){autoRiseFutureCrane("core-aligned",message);return;}
+ if(futureCraneHeldIndex>=0){returnFutureCranePayload(message);return;}
+ releaseFutureCranePointerCapture();futureCraneKeyboardActionHeld=false;futureCraneActionHeld=false;applyFutureCraneVisual();
 }
 function pauseFutureCraneInput(){
  if(!futureCapsuleLayer||futureCapsuleLayer.hidden||futureCapsuleResolving)return;
- if(futureCranePointerId!==null||futureCraneHeldIndex>=0||futureCranePhase==="dragging")returnFutureCranePayload("だいじょうぶ。もう いちど！");
+ if(futureCranePointerId!==null||futureCraneKeyboardActionHeld||futureCraneHeldIndex>=0||futureCranePhase==="lower-pod"||futureCranePhase==="grip")cancelFutureCraneInteraction("だいじょうぶ。もう いちど！");
 }
 function handleFutureCraneViewportChange(){
  if(!futureCapsuleLayer||futureCapsuleLayer.hidden)return;
- pauseFutureCraneInput();futureCraneGeometryDirty=true;scheduleFutureCraneGeometrySync();
+ futureCraneGeometryDirty=true;scheduleFutureCraneGeometrySync();
 }
 function resolveFutureCapsule(entry){
  if(!entry||futureCraneHeldIndex!==entry.index||!futureCraneCoreReady||futureCraneSubmissionCommitted)return;
- futureCraneSubmissionCommitted=true;futureCapsuleResolving=true;releaseFutureCranePointerCapture();clearFutureCranePickupTimer();
+ futureCraneSubmissionCommitted=true;futureCapsuleResolving=true;releaseFutureCranePointerCapture();
  const epoch=futureCapsuleEpoch,board=futureCapsuleLayer.querySelector(".future-capsule-board");setFutureCranePhase("resolving");
  if(!entry.o.ok){
   entry.button.classList.add("is-rejected");if(board)board.classList.add("is-rejected");futureCapsuleGuide("もう ひとつの ポッドを はこぼう");
@@ -4195,22 +4322,23 @@ function resolveFutureCapsule(entry){
  setFutureCapsuleTimer(pulse,futureReducedMotion()?30:80);
 }
 function assistFutureCapsuleGame(){
- if(!futureCapsuleLayer||futureCapsuleLayer.hidden||futureCapsuleResolving||futureCranePointerId!==null||futureCraneHeldIndex>=0)return;
+ if(!futureCapsuleLayer||futureCapsuleLayer.hidden||futureCapsuleResolving||futureCraneBusy())return;
  futureCapsuleAssisted=true;
  const wrong=futureCapsuleOptions.find(entry=>!entry.o.ok),correct=futureCapsuleOptions.find(entry=>entry.o.ok);if(!correct)return;
  if(wrong){wrong.button.classList.add("dim");wrong.button.disabled=true;wrong.button.setAttribute("aria-disabled","true");}
  correct.button.classList.add("glow");futureCapsuleLayer.querySelector(".future-capsule-board")?.focus({preventScroll:true});
- futureCapsuleLayer.querySelector(".future-capsule-board")?.classList.add("is-assisted");futureCapsuleGuide("ひかる ポッドを コアへ はこぼう");
+ futureCapsuleLayer.querySelector(".future-capsule-board")?.classList.add("is-assisted");futureCapsuleGuide("ひかる ポッドに ハンドルを あわせよう");
 }
 function renderFutureCapsuleGame(){
  if(!futureCapsuleLayer)return;
  futureCapsuleOptions=[];futureCapsuleSelectedIndex=-1;futureCapsuleResolving=false;futureCapsuleAssisted=false;futureCapsuleEnergy=0;
- futureCranePhase="idle";futureCranePointerId=null;futureCraneHeldIndex=-1;futureCraneHoverIndex=-1;futureCraneLifted=false;futureCraneCoreReady=false;
- futureCraneSubmissionCommitted=false;futureCraneKeyboardActive=false;futureCraneGeometry=null;futureCraneGeometryDirty=true;
+ futureCranePhase="idle";futureCranePointerId=null;futureCranePointerRole="";futureCranePointerCaptureTarget=null;futureCranePointerPhaseAtDown="";futureCraneHeldIndex=-1;futureCraneTargetIndex=-1;
+ futureCraneCrankLastAngle=null;futureCraneCrankRotation=0;futureCraneActionHeld=false;futureCraneKeyboardActionHeld=false;futureCraneGripTapEligible=false;futureCraneGripCount=0;futureCraneGripArmedAt=0;futureCraneLastTickAt=0;futureCraneSkipSnapKey="";
+ futureCraneLifted=false;futureCraneCoreReady=false;futureCraneSubmissionCommitted=false;futureCraneKeyboardActive=false;futureCraneGeometry=null;futureCraneGeometryDirty=true;
  document.body.classList.add("future-capsule-active");quiz.classList.add("future-capsule-quiz");choicesEl.classList.add("future-capsule-mode");choicesEl.setAttribute("aria-label","ただしい ポッドを コアへ はこぶ");
  futureCapsuleLayer.hidden=false;futureCapsuleLayer.replaceChildren();
- const board=document.createElement("div");board.className="future-capsule-board";board.tabIndex=0;board.setAttribute("aria-label","ミライシティの クレーン。やじるしで フックを うごかし、スペースで つかんだり はなしたり する");board.setAttribute("aria-keyshortcuts","ArrowUp ArrowDown ArrowLeft ArrowRight Space Enter Escape");
- const guide=document.createElement("div");guide.className="future-capsule-guide";guide.setAttribute("role","status");guide.setAttribute("aria-live","polite");guide.textContent="フックを こたえの ポッドまで うごかそう";
+ const board=document.createElement("div");board.className="future-capsule-board";board.tabIndex=0;board.setAttribute("aria-label","ミライシティの ユーフォーキャッチャー。ハンドルを まわし、ボタンを おして ポッドを はこぶ");board.setAttribute("aria-keyshortcuts","ArrowLeft ArrowRight Space Enter Escape");
+ const guide=document.createElement("div");guide.className="future-capsule-guide";guide.setAttribute("role","status");guide.setAttribute("aria-live","polite");guide.textContent="ハンドルで ポッドに あわせよう";
  const progress=document.createElement("div");progress.className="future-capsule-progress";progress.setAttribute("role","status");for(let index=0;index<QN;index++)progress.appendChild(document.createElement("i"));
  const city=document.createElement("div");city.className="future-capsule-city";city.setAttribute("aria-hidden","true");
  const rail=document.createElement("div");rail.className="future-crane-rail";rail.setAttribute("aria-hidden","true");
@@ -4224,16 +4352,21 @@ function renderFutureCapsuleGame(){
  const stations=document.createElement("div");stations.className="future-crane-stations";
  futureQuestionOptions(cur).forEach((o,index)=>{
   const cradle=document.createElement("div");cradle.className="future-crane-cradle cradle-"+(index+1);const base=document.createElement("span");base.className="future-crane-cradle-base";base.setAttribute("aria-hidden","true");
-  const button=document.createElement("button");button.type="button";button.tabIndex=-1;button.className="choice future-capsule-lane future-crane-pod pod-"+(index+1);button.dataset.ok=o.ok?"1":"0";button.setAttribute("aria-label",o.t+"の ポッド");button.setAttribute("aria-pressed","false");
+  const button=document.createElement("button");button.type="button";button.tabIndex=-1;button.className="choice future-capsule-lane future-crane-pod pod-"+(index+1);button.dataset.ok=o.ok?"1":"0";button.setAttribute("aria-label",o.t+"の ポッド");button.setAttribute("aria-pressed","false");button.setAttribute("aria-disabled","false");
   const capsule=document.createElement("span");capsule.className="future-capsule future-crane-payload";capsule.setAttribute("aria-hidden","true");
   const art=createQuizArt(o.e,o.t);const label=document.createElement("span");label.className="lb";label.textContent=o.t;capsule.append(art,label);button.appendChild(capsule);
-  cradle.append(base,button);stations.appendChild(cradle);futureCapsuleOptions.push({button,cradle,o,index,homeX:0,homeY:0,payloadW:0,payloadH:0,pickupRect:null});
+  cradle.append(base,button);stations.appendChild(cradle);futureCapsuleOptions.push({button,cradle,o,index,homeX:0,homeY:0,payloadW:0,payloadH:0,magnetY:0});
  });
+ const controls=document.createElement("div");controls.className="future-crane-controls";
+ const handle=document.createElement("button");handle.type="button";handle.className="future-crane-handle";handle.setAttribute("aria-label","まるい ハンドルを まわす");handle.setAttribute("aria-pressed","false");
+ const handleWheel=document.createElement("span");handleWheel.className="future-crane-handle-wheel";for(let index=0;index<4;index++)handleWheel.appendChild(document.createElement("i"));const handleKnob=document.createElement("b");handleKnob.setAttribute("aria-hidden","true");handleWheel.appendChild(handleKnob);handle.appendChild(handleWheel);
+ const action=document.createElement("button");action.type="button";action.className="future-crane-action";action.setAttribute("aria-label","クレーンを おろす");action.setAttribute("aria-pressed","false");
+ const actionLabel=document.createElement("span");actionLabel.className="future-crane-action-label";actionLabel.textContent="おす！";const gripMeter=document.createElement("span");gripMeter.className="future-crane-grip-meter";gripMeter.setAttribute("aria-hidden","true");for(let index=0;index<FUTURE_CRANE_GRIP_GOAL;index++)gripMeter.appendChild(document.createElement("i"));action.append(actionLabel,gripMeter);controls.append(handle,action);
  const runner=document.createElement("div");runner.className="future-capsule-runner";runner.setAttribute("aria-hidden","true");runner.innerHTML="<i></i><i></i><i></i>";
- board.append(city,rail,trolley,core,stations,runner,rig,guide,progress);futureCapsuleLayer.appendChild(board);
- board.addEventListener("pointerdown",handleFutureCranePointerDown,{passive:false});board.addEventListener("pointermove",handleFutureCranePointerMove,{passive:false});
- board.addEventListener("pointerup",finishFutureCranePointer,{passive:false});board.addEventListener("pointercancel",cancelFutureCranePointer);board.addEventListener("lostpointercapture",cancelFutureCranePointer);
- setFutureCranePhase("idle");illustratedText(hintText,"city","ポッドを コアへ はこぼう","hint-inline-art");updateFutureCapsuleHistory(qSeg);syncFutureCraneGeometry();scheduleFutureCraneGeometrySync();board.focus({preventScroll:true});
+ board.append(city,rail,trolley,core,stations,runner,rig,controls,guide,progress);futureCapsuleLayer.appendChild(board);
+ handle.addEventListener("pointerdown",handleFutureCraneHandlePointerDown,{passive:false});handle.addEventListener("pointermove",handleFutureCraneHandlePointerMove,{passive:false});handle.addEventListener("pointerup",finishFutureCraneHandlePointer,{passive:false});handle.addEventListener("pointercancel",finishFutureCraneHandlePointer);handle.addEventListener("lostpointercapture",finishFutureCraneHandlePointer);
+ action.addEventListener("pointerdown",handleFutureCraneActionPointerDown,{passive:false});action.addEventListener("pointerup",finishFutureCraneActionPointer,{passive:false});action.addEventListener("pointercancel",cancelFutureCraneActionPointer);action.addEventListener("lostpointercapture",cancelFutureCraneActionPointer);
+ setFutureCranePhase("seek");illustratedText(hintText,"city","ポッドを コアへ はこぼう","hint-inline-art");updateFutureCapsuleHistory(qSeg);syncFutureCraneGeometry();scheduleFutureCraneGeometrySync();board.focus({preventScroll:true});
 }
 function spaceQuestionOptions(question){
  const wrong=shuffle((question&&question.d||[]).map(x=>({e:x[0],t:x[1],ok:false})))[0];

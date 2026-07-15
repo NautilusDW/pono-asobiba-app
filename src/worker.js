@@ -8,6 +8,14 @@ import { Buffer } from 'node:buffer';
 import { getGoogleAccessToken, getGoogleServiceAccountProjectId } from './google-auth.js';
 import { handleSaveData } from './api/savedata.js';
 import { handleEvents } from './api/events.js';
+import { handleScheduledRollup } from './api/analytics-rollup.js';
+import {
+  handleAnalyticsOverview,
+  handleAnalyticsGames,
+  handleAnalyticsRetention,
+  handleAnalyticsStatus,
+  handleAnalyticsRollupTrigger
+} from './api/analytics-admin.js';
 
 const PROTECTED_PREFIXES = [
   '/admin/',
@@ -134,6 +142,59 @@ export default {
       if (!checkBasicAuth(request, env)) return authChallenge();
       return handleAiTts(request, env);
     }
+    // データ分析基盤: admin/index.html「📈 分析」タブ向け読み取り API + 手動ロールアップ起点。
+    // 仕様正本: docs/data-analytics-plan.md §6-3/§6-4/§8。実処理は src/api/analytics-admin.js
+    // に委譲 (このファイル自体は既存 /api/admin/* と同じ Basic Auth 保護のみを担当)。
+    if (path === '/api/admin/analytics/overview') {
+      if (request.method === 'OPTIONS') {
+        return new Response('', { status: 200, headers: { ...CORS, ...noStoreHeaders() } });
+      }
+      if (request.method !== 'GET') {
+        return new Response('Method Not Allowed', { status: 405, headers: { ...CORS, ...noStoreHeaders() } });
+      }
+      if (!checkBasicAuth(request, env)) return authChallenge();
+      return handleAnalyticsOverview(request, env, url);
+    }
+    if (path === '/api/admin/analytics/games') {
+      if (request.method === 'OPTIONS') {
+        return new Response('', { status: 200, headers: { ...CORS, ...noStoreHeaders() } });
+      }
+      if (request.method !== 'GET') {
+        return new Response('Method Not Allowed', { status: 405, headers: { ...CORS, ...noStoreHeaders() } });
+      }
+      if (!checkBasicAuth(request, env)) return authChallenge();
+      return handleAnalyticsGames(request, env, url);
+    }
+    if (path === '/api/admin/analytics/retention') {
+      if (request.method === 'OPTIONS') {
+        return new Response('', { status: 200, headers: { ...CORS, ...noStoreHeaders() } });
+      }
+      if (request.method !== 'GET') {
+        return new Response('Method Not Allowed', { status: 405, headers: { ...CORS, ...noStoreHeaders() } });
+      }
+      if (!checkBasicAuth(request, env)) return authChallenge();
+      return handleAnalyticsRetention(request, env, url);
+    }
+    if (path === '/api/admin/analytics/status') {
+      if (request.method === 'OPTIONS') {
+        return new Response('', { status: 200, headers: { ...CORS, ...noStoreHeaders() } });
+      }
+      if (request.method !== 'GET') {
+        return new Response('Method Not Allowed', { status: 405, headers: { ...CORS, ...noStoreHeaders() } });
+      }
+      if (!checkBasicAuth(request, env)) return authChallenge();
+      return handleAnalyticsStatus(request, env);
+    }
+    if (path === '/api/admin/analytics/rollup') {
+      if (request.method === 'OPTIONS') {
+        return new Response('', { status: 200, headers: { ...CORS, ...noStoreHeaders() } });
+      }
+      if (request.method !== 'POST') {
+        return new Response('Method Not Allowed', { status: 405, headers: { ...CORS, ...noStoreHeaders() } });
+      }
+      if (!checkBasicAuth(request, env)) return authChallenge();
+      return handleAnalyticsRollupTrigger(request, env);
+    }
 
     if (path.startsWith('/api/gh/')) {
       if (!checkBasicAuth(request, env)) return authChallenge();
@@ -155,6 +216,16 @@ export default {
     const appBuildApplied = shouldInjectAppBuildFlag(cached, env);
     const built = injectAppBuildFlag(cached, env);
     return attachHtmlEtag(request, built, env, appBuildApplied);
+  },
+
+  // データ分析基盤: 日次ロールアップ (docs/data-analytics-plan.md §6-3)。
+  // wrangler.toml の [triggers]/[env.staging-app.triggers] crons=["0 19 * * *"]
+  // (UTC19時=JST翌4時、production/staging-appのみ。LP stagingは crons=[] で無効化済み) から
+  // 起動される。実処理は src/api/analytics-rollup.js の handleScheduledRollup(env) に委譲し、
+  // 同関数は WAE_SQL_TOKEN/ANALYTICS_DB/ANALYTICS_DATASET のいずれかが env に無ければ
+  // エラーで落とさず graceful skip する (契約: このファイルからは env を渡すだけで良い)。
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(handleScheduledRollup(env));
   }
 };
 

@@ -265,53 +265,68 @@
 
 ### 6-3. 集計層設計(cron Worker → D1)
 
+> **実装確定事項の注記(2026-07-15)**: 本節の初期ドラフトは`active_devices_daily`/`daily_rollup`の2テーブル・env列持ちという設計だったが、実装(`src/api/analytics-rollup.js`新設)では用途別に正規化した4テーブル構成(`daily_events`/`daily_clients`/`clients`/`rollup_log`、詳細は本節末尾)を採用した。**D1データベース自体をenv(production/staging-app)ごとに分離するため、テーブル列としての`env`は不要と判明し廃止**。SUM(_sample_interval)補正・DISTINCT cidのサンプリング下過小評価という技術的論点(以下の分析)はそのまま有効であり、`active_devices_daily`→`daily_clients`+`clients`、`daily_rollup`→`daily_events`と読み替えて参照すること。読み出しAPIの正式名は`WAE_SQL_TOKEN`(旧ドラフトの`CF_ANALYTICS_API_TOKEN`から改称)。
+
 **cron定義**: Cloudflare公式ドキュメント確認により、`[triggers]`は`vars`/`kv_namespaces`等のbindings系とは異なり**inheritableキー**であり、トップレベルの`[triggers]`は`env.staging`/`env.staging-app`へ自動継承される。放置すると`--env staging-app`と`--env staging`がそれぞれ同じcronスケジュールを別Worker名に登録し、集計が3重に走る事故になる。
 
 ```toml
 # --- production (トップレベル) ---
 [triggers]
-crons = ["0 18 * * *"]  # UTC18:00 = JST翌03:00
+crons = ["0 19 * * *"]  # UTC19:00 = JST翌04:00(実装確定値。ドラフト時のUTC18:00から1時間後ろ倒し=WAE遅延書込みの取りこぼしを減らすバッファ)
 
 # --- env.staging (LP staging) ---
 [env.staging.triggers]
-crons = []  # production の継承を明示的に上書きして無効化
+crons = []  # production の継承を明示的に上書きして無効化。LP staging はD1 bindingを持たないため実行しても即graceful skipになる
 
 # --- env.staging-app (App staging) ---
 [env.staging-app.triggers]
-crons = []  # 同上。App staging は手動トリガー POST /api/admin/rollup-run のみで確認
+crons = ["0 19 * * *"]  # 実装確定でApp stagingも本番と同時刻の日次cronを有効化(ドラフト時の「手動トリガーのみ」から変更)。手動トリガー POST /api/admin/analytics/rollup も引き続き利用可能
 ```
 
 過去に`crons=[]`が継承を打ち消せなかったバグ(`cloudflare/workers-sdk#5450`)はresolved済みだが、**デプロイ後に必ずCloudflare dashboardのTriggersタブで`pono-asobiba-staging`/`pono-asobiba-app-staging`側にcronが0件であることを目視確認する**手順をPhase2の受け入れ条件に追加する(このプロジェクトの`wrangler.toml`コメントは`[assets]`/`[observability]`を非継承と明記しており、公式ドキュメントの一般論と食い違う実例が既にあるため、ドキュメントを鵜呑みにせず目視確認を省略しない)。
 
-**scheduledハンドラ処理**:
-1. 対象日を「昨日(JST)」+「一昨日」の2日分再集計(遅延書込みのカバー)。
-2. Analytics Engine SQL APIへ`Authorization: Bearer <CF_ANALYTICS_API_TOKEN>`でPOSTし、`game_id, event, tier, env`単位で集計。**`COUNT(*)`ではなく`SUM(_sample_interval)`を使用**してサンプリングによる過小カウントを補正する。
-3. **ユニーク系(UU/リテンション)はWAEのSQLに頼らない**: `COUNT(DISTINCT client_id)`にはサンプリング補正の公式手法が存在しないため、WAEから「その日に観測された`client_id`の一覧」を取得し、D1側に新設する`active_devices_daily(date, client_id, tier, env)`テーブルへ`INSERT OR IGNORE`で書き込む。D1側では常に厳密なdistinct行(同一client_idが同日に何度書かれても1行)となり、サンプリング補正問題そのものを回避できる(ただしWAE側のサンプリングで生ログが最初から欠落した場合はこの限りではない、要確認)。この`(date, client_id)`を自己結合すれば「前日も遊んで今日も遊んだclient_idの数」というリテンション/WAUが直接計算できる。
-4. 通常のカウント系ロールアップは`daily_rollup(date, game_id, event, tier, env, cnt, uniq_client_id)`へ`INSERT OR REPLACE`(冪等設計)。
-5. 失敗時は`console.error`に記録し次回cronのリトライに任せる。
+**scheduledハンドラ処理(実装確定版)**:
+1. 対象日はJST基準で解決(アプリは国ゲートで日本のみのため日付境界=JST固定)。`scheduled()`ハンドラは**「昨日(JST)」+「一昨日」の2日分を毎回再集計する**(ドラフト時からの設計意図を維持: WAEへの書込みは即時反映が保証されないため、昨日分の初回ロールアップ後に遅れて着地するイベントを一昨日分の再実行で拾い直し、`daily_events`/`daily_clients`/`clients.first_seen`を自己修復する。DELETE→INSERT/upsert(MIN/MAX)のidempotent設計により、同一日を毎日再実行しても安全)。手動実行`POST /api/admin/analytics/rollup`(body`{date?:"YYYY-MM-DD"}`、省略時=JST昨日の1日のみ)は`scheduled()`と**同一のロールアップ関数(`runRollupForDate`)を呼ぶ**共通実装だが、日付ループはscheduled側にのみある(手動実行は管理者が任意の日を指定して個別に再実行できるため1日単位のまま)。
+2. Analytics Engine読み出しはWorker bindingではなくREST SQL API(`POST https://api.cloudflare.com/client/v4/accounts/{CF_ACCOUNT_ID}/analytics_engine/sql`、`Authorization: Bearer <WAE_SQL_TOKEN>`)。`game_id, event, platform, tier`単位で集計。**`COUNT(*)`ではなく`SUM(_sample_interval)`を使用**してサンプリングによる過小カウントを補正し、`daily_events`へ書き込む。DISTINCT cidはサンプリング下で過小になり得る旨をコード内コメントに明記(v1は許容、要確認事項は§9に集約)。
+3. **ユニーク系(UU/リテンション)はWAEのSQLに頼らない**: WAEから「その日に観測された`client_id`の一覧」を取得し、D1の`daily_clients(date, cid)`へ書き込む(同一cidが同日に何度書かれても1行=厳密distinct)。`clients(cid, first_seen, last_seen)`をあわせて更新することで、`first_seen`日付を起点に`daily_clients`を自己結合した「N日後継続率」コホート計算(D1/D7/D30)が可能になる。
+4. **冪等性はDELETE→INSERT方式**: 同一`date`の再実行時は該当日付の既存行を`DELETE`してから再`INSERT`する(行単位の`INSERT OR REPLACE`ではなく日付単位の置き換え)ことで、再集計しても重複・古い値の残存が起きない設計。
+5. 処理後、`rollup_log(date, rolled_at, events_rows, clients_rows)`に実行記録を1行残す(直近ロールアップ日時・行数の診断に使用、`GET /api/admin/analytics/status`が参照)。
+6. **graceful skip**: `WAE_SQL_TOKEN` / `ANALYTICS_DB`(D1 binding名) / `ANALYTICS_DATASET`(env var)のいずれかが未設定のenvでは、エラーで落とさずログのみ出して早期return(scheduled/手動どちらの経路でも同様)。これにより秘密情報未プロビジョニングのenv(例: production初期状態)でcronが失敗イベントを出し続けることを防ぐ。
 
-**シークレット/DB分離**: `CF_ANALYTICS_API_TOKEN`は「Account Analytics: Read」限定、production/staging-appでD1を別々に作成。
+**D1スキーマ(4テーブル、`ensureSchema()`で`CREATE TABLE IF NOT EXISTS`によりidempotentに作成。migrationツールは不使用)**:
+```sql
+daily_events(date TEXT, event TEXT, game_id TEXT DEFAULT '', platform TEXT DEFAULT '', tier TEXT DEFAULT '', count INTEGER,
+  PRIMARY KEY(date, event, game_id, platform, tier))
+daily_clients(date TEXT, cid TEXT, PRIMARY KEY(date, cid))
+clients(cid TEXT PRIMARY KEY, first_seen TEXT, last_seen TEXT)
+rollup_log(date TEXT PRIMARY KEY, rolled_at INTEGER, events_rows INTEGER, clients_rows INTEGER)
+```
+
+**シークレット/DB分離**: 読み出し用トークンは`WAE_SQL_TOKEN`(secretとして登録、「Account Analytics: Read」限定)。`CF_ACCOUNT_ID`(`f5788e90dd05047ab67ada1b6a6f2448`)は秘匿性が無いため`wrangler.toml`の`[vars]`に平文で保持し、dataset名は`ANALYTICS_DATASET`というenv var経由でenvごとに注入(production=`pono_events`/`env.staging`=`pono_events_stg`/`env.staging-app`=`pono_events_stgapp`、§Phase1実装の既存binding命名を再利用)。D1 binding名は`ANALYTICS_DB`で統一し、production用とstaging-app用の2つを別々に作成(LP staging=`env.staging`にはbindingを付けない=そもそもテレメトリ着地しないenvのため)。
 
 ### 6-4. 可視化: admin/分析タブ
 
-既存`admin/index.html`のタブ機構(`.tabs`/`panel-*`/`switchTab()`、`admin/index.html:471-489,1757`)に新規「📈 分析」タブを追加(既存の「📊 統計/状態」タブは操作者自身のlocalStorage表示のまま現状維持)。`env.ADMIN_PASSWORD`によるBasic Authで保護。
+既存`admin/index.html`のタブ機構(`.tabs`/`panel-*`/`switchTab()`、`admin/index.html:471-489,1757`)に新規「📈 分析」タブを追加(既存の「📊 統計/状態」タブは操作者自身のlocalStorage表示のまま現状維持)。`env.ADMIN_PASSWORD`によるBasic Authで保護(既存`/api/admin/*`と同じ認可方式を踏襲)。
 
-**画面構成**:
-- 上段: 日付レンジピッカー(既定 直近7日/30日)+ env切替(production既定、staging-app確認用に切替可)
-- KPIカード列: 「週間アクティブ端末数」→ **`client_id`ベースの実数**として表示し、「ブラウザ/端末の粗い識別子であり厳密な物理端末数ではない」旨のツールチップを添える。ゲーム起動数合計/アップグレードCTAクリック数(`upgrade_cta_click`)/paywall到達数/ガチャ・ショップ購入回数/★評価平均。
+> **実装確定事項の注記(2026-07-15)**: 以下は実装後のタブ構成。ドラフト時の「上段: 日付レンジピッカー+env切替」は、GET APIが`days`クエリのみで応答し**env切替自体はwrangler環境(URLのstaging/production)で分離される**設計に確定したため、タブ内env切替UIは持たない(誤操作でproduction/staging-appを取り違えるリスクを避ける狙い)。
+
+**画面構成(実装確定: 診断バー→KPI5枚→トレンド→ランキング→ファネル2本→リテンション→手動ロールアップの縦積み)**:
+- **診断バー**: `GET /api/admin/analytics/status` → `{lastRollup, rows, datasetVar, hasToken, hasDb}`を表示。`WAE_SQL_TOKEN`未設定や`ANALYTICS_DB`未バインドのenvでは`hasToken:false`/`hasDb:false`が一目でわかり、「なぜデータが0件か」の一次切り分けに使う。D1未バインドenv(LP staging)では他エンドポイントが`{error:"analytics-not-provisioned"}`を200で返すため、診断バーがそれをやさしく表示する入口になる。
+- **KPIカード列(5枚)**: `GET /api/admin/analytics/overview?days=30`の`totals`から生成。「週間アクティブ端末数」(`uu`、期間ユニーク`client_id`。「ブラウザ/端末の粗い識別子であり厳密な物理端末数ではない」旨のツールチップ付き)/ゲーム起動数合計(`game_launch`)/クリア数合計(`game_clear`)/paywall到達数(`paywall_hit`)/アップグレードCTAクリック数(`upgrade_cta_click`)。
 - **画面設計上の鉄則**: `session_id`由来の数値は**同一訪問内のファネルにのみ**使用可。日次/週次アクティブ端末数・リテンション曲線・コホート分析には**必ず`client_id`を使う**。この2つの識別子を同じKPIカードやテーブルの中で混在させない。
-- ゲーム別テーブル: `gameId × 起動数 × クリア数 × クリア率 × 平均★評価`(既存rating-modal.jsデータとの突合)
-- ファネルビュー: `/api/e`系イベントのみで構成できる段に限定した2本を描画する — (i) `session_start`→`game_launch`→`game_clear`、(ii) `paywall_hit`→`upgrade_cta_click`(いずれも`session_id`で正しく結合可能)。`lp_cta_click`と`game_title_tap`はUmamiパイプラインに割り当てられており(§5-1/§5-2)、Umamiイベントは`client_id`/`session_id`を一切持たず(§5-5の非収集宣言と整合)データもUmami SaaS側にあってWAE/D1に流入しないため、adminのファネルには組み込めない。LP CTAクリック率・タイトルタップ率はUmami側ダッシュボードで集計レベルの近似として別途確認する運用とする。**パイプライン混在により、エンドツーエンド(LP→クリア)の単一ファネルは描けないという設計上の限界がある。**
-- 課金導線パネル: `openAppZonePromo()`表示回数→「アプリへ進む」クリック回数
-- リテンション/コホートビュー: `active_devices_daily`テーブルを自己結合した「N日後継続率」曲線(`client_id`ベースでのみ意味を持つ)
-- CSVエクスポート: D1該当rollupをブラウザ側Blobダウンロード
+- **トレンド**: 同じ`overview`レスポンスの`days[]`(date別`uu`/`session_start`/`game_launch`/`game_clear`/`paywall_hit`/`upgrade_cta_click`/`acorn_earned`/`daily_return`)を日次推移としてインラインSVGで描画(外部チャートライブラリ不使用の既存規約準拠)。
+- **ランキング**: `GET /api/admin/analytics/games?days=30` → `{games:[{game_id,launches,clears}]}`(launches降順)をテーブル表示。既存rating-modal.jsの★評価データとの突合は将来拡張として保留。
+- **ファネルビュー(2本、`/api/e`系イベントのみで構成できる段に限定)**: (i) `session_start`→`game_launch`→`game_clear`、(ii) `paywall_hit`→`upgrade_cta_click`(いずれも`overview`のdaily集計から合算表示。`session_id`単位の厳密結合は現状のD1スキーマでは行わず、日次カウントの段間比率として近似表示する)。`lp_cta_click`と`game_title_tap`はUmamiパイプラインに割り当てられており(§5-1/§5-2)、Umamiイベントは`client_id`/`session_id`を一切持たず(§5-5の非収集宣言と整合)データもUmami SaaS側にあってWAE/D1に流入しないため、adminのファネルには組み込めない。LP CTAクリック率・タイトルタップ率はUmami側ダッシュボードで集計レベルの近似として別途確認する運用とする。**パイプライン混在により、エンドツーエンド(LP→クリア)の単一ファネルは描けないという設計上の限界がある(ファネルは`/api/e`系のみの2本構成が確定)。**
+- **リテンション/コホートビュー**: `GET /api/admin/analytics/retention?days=30` → `{cohorts:[{first_seen_date,size,d1,d7,d30}]}`。`clients.first_seen`×`daily_clients`から算出した「N日後継続率」曲線(`client_id`ベースでのみ意味を持つ)。d1/d7/d30は「その日数後に再訪した人数」。
+- **手動ロールアップ**: 管理者操作で`POST /api/admin/analytics/rollup`(body`{date?}`)を叩けるボタンを配置し、cron前倒しでの動作確認・障害時の再実行に使う(§6-3のscheduledハンドラと同一関数)。
+- **未実装env(LP staging等)への配慮**: D1未バインドenvでは各GET APIが`{error:"analytics-not-provisioned"}`を200で返すため、admin UI側は例外throwではなく「このenvには分析データがありません」という穏当な表示に倒す。
 
 ### 6-5. 環境分離(staging-app先行導入)
 
 1. **実装**: `develop-app`ブランチでPhase1コード(`src/worker.js`/`src/api/events.js`/`common/telemetry.js`/`common/device-id.js`/`wrangler.toml`へのWAE binding追加)を実装。`env.staging-app`側にも明示的にWAE binding(`[[env.staging-app.analytics_engine_datasets]]`)を追加する(このプロジェクトの`[env.XXX]`のbindings系は非継承パターンに従う。ただし`[triggers]`はbindingsではなくinheritableキーのため同じ理屈は通用しない、明示的な空配列上書きが必須)。
 2. **push**: `develop-app`へのpushでApp staging・LP stagingの両方が同一コミットで自動デプロイされる。WAE bindingを`env.staging-app`にのみ追加する場合、LP staging側では`env.ANALYTICS`(binding名)の存在チェックでガードし黙ってno-opにする。
 3. **検証**: App stagingで実機/Playwright確認。`/api/e`にイベントが届くか、sw.jsのbypassが機能しているか、`client_id`が正しく送信されているか(空文字でないか)、Basic Auth利用者のイベントが除外されているかを確認。Cloudflare dashboardのTriggersタブで両stagingにcronが登録されていない(0件)ことを確認。
-4. **Phase2も同様に先行導入**: cron/D1/admin可視化をdevelop-appでstaging-app先行実装→確認。cronはproduction一本化方針のため、staging-appでは手動トリガーエンドポイント(`POST /api/admin/rollup-run`)で動作確認。D1データベースはstaging-app用を別途作成。
+4. **Phase2も同様に先行導入**: cron/D1/admin可視化をdevelop-appでstaging-app先行実装→確認。cronはproduction一本化方針のため、staging-appでは手動トリガーエンドポイント(`POST /api/admin/analytics/rollup`)で動作確認。D1データベースはstaging-app用を別途作成。
 5. **本番反映**: 十分な検証後、ユーザーの明示指示を得てから`master`への明示マージ。
 6. **本番用リソースの新規発行**: production用のWAE dataset/D1データベース/`CF_ANALYTICS_API_TOKEN`はstaging用と共有せず別途新規作成・登録。
 7. **既知の留意点**: webapp本番(`pono-asobiba-app.ndw.workers.dev`)は現在`error 1042`による404が再発中(本計画とは無関係の既知課題、Phase 3のnative実機検証の前提ブロッカー)。
@@ -395,7 +410,7 @@ iOS scaffold時は`__NATIVE_BUILD__`だけではAndroid/iOSを区別できない
 | **Phase 0** | ゼロ実装系。既存Umamiタグを LP `index.html`/`play.html`/未導入18ゲームへ展開。CF Workers Observabilityの確認手順確立。Google Sheets週次KPI(K1-K12)継続運用。`robots.txt`/`sitemap.xml`整備(Sitemap行の実体化、30以上あるゲームディレクトリの網羅)。 | 即日〜半日 |
 | | ⚠️ **並行留意事項**: 本番webapp Worker(`pono-asobiba-app.ndw.workers.dev`)のerror 1042 404未解決は、分析基盤本体とは独立の障害だが**Phase 3(Android native実機検証)の前提ブロッカー**であるため早期解消が望ましい。 | — |
 | **Phase 1** | Web収集開始。`/api/e`(`src/api/events.js`新設)+WAE binding、`common/telemetry.js`+`common/device-id.js`新設、`pono_client_id`(`crypto.randomUUID`、プロフィールと物理分離)、P0イベント8個実装、オプトアウトトグル+告知バナー、プライバシーポリシー記載(§5-4/§7-3のCOPPAゲート)、staging-app先行導入+Playwright/admin除外。CORSは`src/api/savedata.js`の`allowedOrigins()`を共有。**追加ゲート: 第10章のA-4分離の実装(決定済み 2026-07-13・実装必須)。β配布文書の整合は文言修正適用済み(2026-07-13、§10-1 A項)。** | 2〜3日 |
-| **Phase 2** | 集計+可視化。D1作成+migration、cron trigger(`[triggers]`はinheritableのため`env.staging`/`env.staging-app`にcrons=[]の明示上書き必須+デプロイ後ダッシュボード目視確認)、`admin/`分析タブ実装。 | 3〜5日 |
+| **Phase 2** | 集計+可視化。D1作成+migration、cron trigger(`[triggers]`はinheritableのため`env.staging`/`env.staging-app`にcrons=[]の明示上書き必須+デプロイ後ダッシュボード目視確認)、`admin/`分析タブ実装。**実装完了(2026-07-15)**: `src/api/analytics-rollup.js`新設(D1スキーマ4テーブル・DELETE→INSERT冪等・graceful skip)、cronはUTC19時(JST翌4時)でproduction/staging-appの2面が有効(§6-3)、admin「📈 分析」タブ(診断バー/KPI5枚/トレンド/ランキング/ファネル2本/リテンション/手動ロールアップ、§6-4)。**有効化に残る手順は2点**: (1) `WAE_SQL_TOKEN`のsecret登録(`wrangler secret put WAE_SQL_TOKEN --env staging-app`)——未登録の間はgraceful skipで空データのまま(`/api/admin/analytics/status`で診断可)。(2) production有効化は`master`マージ+Step C(`SAVEDATA_KV`/`PASSCODE_HMAC_SECRET`プロビジョニング、§9)+production用`WAE_SQL_TOKEN`/D1の新規発行が前提(いずれもユーザーの明示指示待ち、§6-5)。 | 3〜5日 |
 | **Phase 3** | Android native。前提=error 1042解消+`stage-www.mjs`のPONO_API_BASEビルド時切替テンプレート化。`native/content-manifest.json`への`common/telemetry.js`等の手動追加(file-list方式)、`native/www`再同期(stale事故既知)、実機検証ゲート(オフライン→復帰の到達率/強制killからのキュー残存/バッチ上限超過失敗率)、Google Playファミリーポリシー+Data Safetyフォーム。 | — |
 | **Phase 4** | iOS native。scaffoldゼロから。`capacitor://localhost`(`savedata.js`のallowlistに先回り追加済み・未検証)、Apple Kidsカテゴリ(公式certifiedリストは無い・契約/自己申告ベース)、App Privacyラベル、ATT要否最終判断。 | — |
 | **Phase 5** | 高度化・継続。tier別ファネル、コホート分析、料金テストの効果測定、P1/P2イベント追加。 | 継続的 |
@@ -425,6 +440,8 @@ iOS scaffold時は`__NATIVE_BUILD__`だけではAndroid/iOSを区別できない
 - **`/privacy`デッドリンク**: `https://pono.kodama-no-mori.com/privacy`の実体ページが存在しない。URL印字は`consent_form.html:271`(β同意書)のみ、`parent_flyer.html:235`(チラシ)はQR経由でプライバシーポリシーへ誘導。Phase 1必須ゲートのプライバシーポリシーページ新設(§5-4/§10-5)で解消する。
 - **国ゲートの判定粒度・VPNの扱い**: `request.cf.country`ベースの国ゲート(§6-2)はベストエフォートで良いか要確認。
 - **`/api/e`のfail-closedゲートにより、production では`SAVEDATA_KV`未プロビジョニングの間`/api/e`収集が完全停止する**(§6-2で解消済みのmajor指摘の裏返し)。production でテレメトリ収集を開始するには`wrangler.toml`Step Cの`SAVEDATA_KV`+`PASSCODE_HMAC_SECRET`プロビジョニングが前提条件になる。未実施のままでは6-3以降の集計層(cron→D1)もproduction側で常に空データとなる点に注意。
+- **`WAE_SQL_TOKEN`未設定の間、cron/手動ロールアップはgraceful skip(診断は`GET /api/admin/analytics/status`)**。
+- **遅延書込みの吸収は「一昨日まで」の2日分に限定**: `handleScheduledRollup`は毎回「昨日」+「一昨日」の2日を再集計してWAEの遅延書込みを自己修復するが(§6-3)、それより古い日(3日以上遅れて着地したイベント)は自動では拾い直されない。この場合`clients.first_seen`が実際の初回訪問日より後にずれ、`retention`コホート(d1/d7/d30)の該当ユーザーの起点日もずれる。障害/長期のgraceful skip復旧後などで3日以上前のデータを再取り込みしたい場合は`POST /api/admin/analytics/rollup`(body`{date}`)で該当日を手動指定して再実行する運用でカバーする。
 
 ---
 
