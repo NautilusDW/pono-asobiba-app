@@ -232,6 +232,17 @@ function makeCompleteContext(currentIndex, readiness = true) {
     complete: false,
     completionQueued: false,
     pendingNextWritingIndex: null,
+    pendingNextAction: null,
+    pendingModeAdvanceTimer: null,
+    pendingResultOverlayTimer: null,
+    writingCompletionToken: 0,
+    writingCompletionInFlight: false,
+    allowBlockedModeTaskSettlement: false,
+    pendingModeChoiceOpen: false,
+    activeMode: 'sequence',
+    activeModeTaskId: null,
+    WRITING_MODES: { sequence: 'sequence', wordHole: 'word-hole', dailyThree: 'daily-three' },
+    isWritingModeRuntimeBlocked() { return false; },
     writer: null,
     strokesCompleted: 1,
     currentStrokeIndex: 0,
@@ -243,6 +254,7 @@ function makeCompleteContext(currentIndex, readiness = true) {
     companionCard: { classList: { toggle() {} } },
     resultReward: { textContent: '' },
     resultRewardIcon: {},
+    resultRewardWrap: { hidden: false },
     modalRetryBtn: { textContent: '' },
     starCountEl: { textContent: '' },
     resultOverlay: { classList: { add() { calls.overlay += 1; } } },
@@ -269,12 +281,27 @@ function makeCompleteContext(currentIndex, readiness = true) {
     setFoodIconClass() {},
     launchBurst() {},
     calculateAccuracy() { return 0.9; },
+    completeActiveModeTask() {
+      return {
+        action: {
+          type: 'sequence',
+          mode: 'sequence',
+          targetIndex: context.pendingNextWritingIndex,
+          showOverlay: true
+        },
+        isNewCompletion: true
+      };
+    },
+    configureModeCompletion() {
+      const pending = characters[context.pendingNextWritingIndex] || characters[0];
+      context.modalRetryBtn.textContent = `つぎは「${pending.char}」`;
+    },
     onWritingComplete(result) { calls.completed.push(result); },
     setTimeout(fn) { fn(); return 1; }
   };
   vm.createContext(context);
   vm.runInContext(
-    between(writingHtml, 'function completeWriting(', 'function onWritingComplete('),
+    between(writingHtml, 'async function completeWriting(', 'function onWritingComplete('),
     context,
     { filename: `mojikko-writing-complete-${currentIndex}.js` }
   );
@@ -301,6 +328,6 @@ assert.equal(notReadyComplete.calls.completed.length, 0, 'readiness failure must
 assert.equal(notReadyComplete.stars, 0);
 assert.equal(notReadyComplete.complete, false);
 
-assert.match(writingHtml, /const initialWritingProgress = loadWritingProgress\(\);[\s\S]*?completedCharacters\.add\(id\)[\s\S]*?currentIndex = getInitialWritingIndex\(initialWritingProgress\);\s*syncCurrentGroupFromCharacter\(\);\s*resetWriting\(\);/);
+assert.match(writingHtml, /const initialWritingProgress = loadWritingProgress\(\);[\s\S]*?completedCharacters\.add\(id\)[\s\S]*?if \(!initializeWritingModesIfAllowed\(\)\) \{[\s\S]*?resetWriting\(\{ skipModeBoundary: true \}\);\s*\}/);
 
 console.log('Mojikko care and resume regression: PASS');

@@ -351,8 +351,20 @@ check('setItem failures do not block completion or its reward path', () => {
     companionCard: { classList: { toggle() {} } },
     resultReward: { textContent: '' },
     resultRewardIcon: {},
+    resultRewardWrap: { hidden: false },
     starCountEl: { textContent: '' },
     resultOverlay: { classList: { add() { calls.overlay = (calls.overlay || 0) + 1; } } },
+    pendingNextAction: null,
+    pendingModeAdvanceTimer: null,
+    pendingResultOverlayTimer: null,
+    writingCompletionToken: 0,
+    writingCompletionInFlight: false,
+    allowBlockedModeTaskSettlement: false,
+    pendingModeChoiceOpen: false,
+    activeMode: 'sequence',
+    activeModeTaskId: null,
+    WRITING_MODES: { sequence: 'sequence', wordHole: 'word-hole', dailyThree: 'daily-three' },
+    isWritingModeRuntimeBlocked() { return false; },
     getCurrentCharacter() { return writingCharacters[context.currentIndex]; },
     getWritingReadiness() { return { ready: true }; },
     playSfx() {},
@@ -366,11 +378,18 @@ check('setItem failures do not block completion or its reward path', () => {
     setFoodIconClass() {},
     launchBurst() {},
     calculateAccuracy() { return 0.9; },
+    completeActiveModeTask() {
+      return {
+        action: { type: 'sequence', mode: 'sequence', targetIndex: 1, showOverlay: true },
+        isNewCompletion: true
+      };
+    },
+    configureModeCompletion() {},
     onWritingComplete(result) { calls.rewardResult = result; },
     setTimeout(fn) { fn(); return 1; }
   });
   vm.runInContext(
-    between(html, 'function completeWriting(', 'function onWritingComplete('),
+    between(html, 'async function completeWriting(', 'function onWritingComplete('),
     context,
     { filename: 'mojikko-writing-complete-storage-failure.js' }
   );
@@ -399,6 +418,7 @@ check('result next action follows the confirmed pending cursor', () => {
   const context = {
     currentIndex: 0,
     pendingNextWritingIndex: 5,
+    pendingNextAction: null,
     writingCharacters,
     syncCurrentGroupFromCharacter() { calls.sync += 1; },
     resetWriting() { calls.reset += 1; },
@@ -419,7 +439,7 @@ check('result next action follows the confirmed pending cursor', () => {
 });
 
 check('success alone records current and next, with ポ wrapping to あ', () => {
-  const completeSource = between(html, 'function completeWriting(', 'function onWritingComplete(');
+  const completeSource = between(html, 'async function completeWriting(', 'function onWritingComplete(');
   assert.match(completeSource, /pendingNextWritingIndex = saveWritingCursor\(item\.id\);/);
   assert.ok(completeSource.indexOf('if (!readiness.ready)') < completeSource.indexOf('saveWritingCursor(item.id)'));
 });
@@ -427,7 +447,7 @@ check('success alone records current and next, with ポ wrapping to あ', () => 
 check('initialization hydrates marks before rendering the restored cursor', () => {
   assert.match(
     html,
-    /const initialWritingProgress = loadWritingProgress\(\);[\s\S]*?initialWritingProgress\.completedIds\.forEach\(\(id\) => completedCharacters\.add\(id\)\);[\s\S]*?currentIndex = getInitialWritingIndex\(initialWritingProgress\);\s*syncCurrentGroupFromCharacter\(\);\s*resetWriting\(\);/
+    /const initialWritingProgress = loadWritingProgress\(\);[\s\S]*?initialWritingProgress\.completedIds\.forEach\(\(id\) => completedCharacters\.add\(id\)\);[\s\S]*?if \(!initializeWritingModesIfAllowed\(\)\) \{[\s\S]*?resetWriting\(\{ skipModeBoundary: true \}\);\s*\}/
   );
 });
 

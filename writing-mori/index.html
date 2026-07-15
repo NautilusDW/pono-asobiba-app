@@ -409,6 +409,33 @@ html, body {
   letter-spacing: 0.08em;
 }
 
+.mode-switch-btn {
+  grid-column: 2;
+  width: min(430px, 100%);
+  height: 64px;
+  justify-self: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding-inline: 26px;
+  font-size: 21px;
+  white-space: nowrap;
+}
+
+.current-mode-name {
+  min-width: 116px;
+  padding: 5px 12px 6px;
+  border: 3px solid #4c8b70;
+  border-radius: 8px;
+  background: #e8fff2;
+  color: #2f7158;
+  font-family: var(--round-font);
+  font-size: 17px;
+  font-weight: 900;
+  line-height: 1;
+}
+
 .header-right {
   grid-column: 3;
   display: flex;
@@ -528,6 +555,155 @@ html, body {
   display: grid;
   grid-template-rows: 50px 50px minmax(0, 1fr);
   min-height: 0;
+}
+
+.character-panel.mode-task-panel {
+  grid-template-rows: 50px minmax(0, 1fr);
+}
+
+.kana-tabs[hidden],
+.char-list[hidden],
+.mode-progress[hidden] {
+  display: none;
+}
+
+.mode-progress {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  padding: 18px 16px 16px;
+  text-align: center;
+}
+
+.mode-progress-count {
+  justify-self: center;
+  min-width: 106px;
+  padding: 7px 14px 8px;
+  border: 3px solid #9a704c;
+  border-radius: 8px;
+  background: #fff7d9;
+  font-family: var(--pixel-font);
+  font-size: 21px;
+  color: #65452e;
+}
+
+.mode-clue {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 13px;
+}
+
+.word-clue-emoji {
+  font-size: 70px;
+  line-height: 1;
+}
+
+.word-clue-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  width: 100%;
+}
+
+.word-clue-cell {
+  width: 48px;
+  height: 54px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 4px solid #9b704b;
+  color: #513724;
+  font-family: var(--round-font);
+  font-size: 34px;
+  font-weight: 900;
+}
+
+.word-clue-cell.blank {
+  border: 4px dashed #db7953;
+  border-radius: 8px;
+  background: #fff3ca;
+  color: #d96544;
+}
+
+.daily-clue-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  width: 100%;
+}
+
+.daily-clue-cell {
+  position: relative;
+  height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 4px solid #a57a52;
+  border-radius: 10px;
+  background: #fff8e7;
+  color: #5a3c28;
+  font-family: var(--round-font);
+  font-size: 38px;
+  font-weight: 900;
+}
+
+.daily-clue-cell.current {
+  border-color: #df7950;
+  background: #fff0bd;
+  box-shadow: 0 0 0 4px rgba(255, 193, 91, 0.36);
+}
+
+.daily-clue-cell.done {
+  border-color: #4d9d72;
+  background: #dff7e8;
+  color: #357655;
+}
+
+.daily-clue-cell.done::after {
+  content: '✓';
+  position: absolute;
+  right: 3px;
+  bottom: -1px;
+  font-family: var(--round-font);
+  font-size: 22px;
+}
+
+.mode-progress-items {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.mode-progress-dot {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid #9d754e;
+  border-radius: 50%;
+  background: #fff8e7;
+  color: #6b4b32;
+  font-family: var(--pixel-font);
+  font-size: 14px;
+}
+
+.mode-progress-dot.current {
+  border-color: #db744c;
+  background: #ffd98c;
+  transform: scale(1.12);
+}
+
+.mode-progress-dot.done {
+  border-color: #438d67;
+  background: #8ed7ac;
+  color: #fff;
 }
 
 .kana-tabs {
@@ -1363,6 +1539,143 @@ html, body {
   display: none;
 }
 
+.mode-choice-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 44px;
+  background: rgba(42, 65, 55, 0.58);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease;
+}
+
+.mode-choice-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.mode-choice-card {
+  width: min(980px, 94%);
+  padding: 30px 34px 28px;
+  display: grid;
+  justify-items: center;
+  gap: 20px;
+  transform: scale(0.94);
+  transition: transform 0.2s ease;
+}
+
+.mode-choice-overlay.show .mode-choice-card {
+  transform: scale(1);
+}
+
+.mode-choice-title {
+  font-family: var(--pixel-font);
+  font-size: 39px;
+  font-weight: 700;
+  color: #9d552f;
+}
+
+.mode-choice-buttons {
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.mode-choice-button {
+  height: 144px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px 12px;
+  white-space: normal;
+}
+
+.mode-choice-button strong {
+  font-family: var(--pixel-font);
+  font-size: 27px;
+  line-height: 1.15;
+}
+
+.mode-choice-button span {
+  font-family: var(--round-font);
+  font-size: 17px;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.mode-choice-button.active {
+  border-color: #3f8e69;
+  background: linear-gradient(180deg, #eafff1 0%, #9cddb8 100%);
+  box-shadow: 0 6px 0 #2e684e, 0 0 0 5px rgba(126, 214, 168, 0.36);
+}
+
+.mode-choice-button:disabled {
+  cursor: not-allowed;
+  filter: grayscale(0.7);
+  opacity: 0.58;
+}
+
+.mode-choice-message {
+  min-height: 30px;
+  color: #845a3d;
+  font-family: var(--round-font);
+  font-size: 20px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.mode-choice-close {
+  width: 260px;
+  height: 62px;
+  font-size: 22px;
+}
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .stage-header {
+    top: 6px;
+    height: 108px;
+  }
+
+  .back-btn,
+  .mode-switch-btn {
+    height: 108px;
+    min-height: 108px;
+  }
+
+  .mode-choice-close {
+    height: 116px;
+    min-height: 116px;
+  }
+
+  #stage #careBtn,
+  #stage #modalRetryBtn {
+    height: 124px;
+    min-height: 124px;
+  }
+
+  #stage .result-card {
+    width: 1120px;
+    max-width: calc(100% - 96px);
+    min-height: 360px;
+    padding: 20px 26px;
+    gap: 12px;
+  }
+
+  .result-copy,
+  .reward-large,
+  .result-actions {
+    max-width: 100%;
+  }
+}
+
 .result-overlay {
   position: absolute;
   inset: 0;
@@ -1422,6 +1735,10 @@ html, body {
   background: #fff8e8;
   font-family: var(--pixel-font);
   font-size: 23px;
+}
+
+.reward-large[hidden] {
+  display: none;
 }
 
 .result-actions {
@@ -1550,6 +1867,10 @@ html, body {
     <header class="stage-header">
       <button class="pixel-button back-btn" id="backBtn" type="button" aria-label="もどる">← もどる</button>
       <div class="wood-panel title-plaque">ひらがなを かいてみよう！</div>
+      <button class="pixel-button mode-switch-btn" id="modeSwitchBtn" type="button" aria-haspopup="dialog" aria-controls="modeChoiceOverlay">
+        <span>あそびを かえる</span>
+        <span class="current-mode-name" id="currentModeName">じゅんばん</span>
+      </button>
       <div class="header-right">
         <div class="pixel-panel star-box" aria-label="スター">
           <span class="star-icon" aria-hidden="true"></span>
@@ -1562,9 +1883,14 @@ html, body {
     <section class="layout">
       <div class="side-stack">
         <aside class="pixel-panel character-panel" aria-label="もじリスト">
-          <div class="panel-title">もじリスト</div>
+          <div class="panel-title" id="characterPanelTitle">もじリスト</div>
           <div class="kana-tabs" id="kanaTabs" role="tablist" aria-label="もじの しゅるい"></div>
           <div class="char-list" id="charList"></div>
+          <div class="mode-progress" id="modeProgress" hidden>
+            <div class="mode-progress-count" id="modeProgressCount"></div>
+            <div class="mode-clue" id="modeClue"></div>
+            <div class="mode-progress-items" id="modeProgressItems"></div>
+          </div>
         </aside>
 
         <button class="pixel-panel companion-card" id="companionCard" type="button" aria-label="ミルマルのお世話へ">
@@ -1614,9 +1940,9 @@ html, body {
     <div class="result-overlay" id="resultOverlay" role="dialog" aria-modal="true" aria-label="かんせい">
       <div class="result-burst" id="resultBurst"></div>
       <div class="pixel-panel result-card">
-        <div class="result-title">すごい！</div>
-        <div class="result-copy">じょうずに かけたね！</div>
-        <div class="reward-large">
+        <div class="result-title" id="resultTitle">すごい！</div>
+        <div class="result-copy" id="resultCopy">じょうずに かけたね！</div>
+        <div class="reward-large" id="resultRewardWrap">
           <span class="food-pixel" id="resultRewardIcon" aria-hidden="true"></span>
           <span id="resultReward">たべものを ゲット！</span>
         </div>
@@ -1626,9 +1952,32 @@ html, body {
         </div>
       </div>
     </div>
+
+    <div class="mode-choice-overlay" id="modeChoiceOverlay" role="dialog" aria-modal="true" aria-labelledby="modeChoiceTitle" aria-hidden="true" inert>
+      <div class="pixel-panel mode-choice-card">
+        <div class="mode-choice-title" id="modeChoiceTitle">どれで かく？</div>
+        <div class="mode-choice-buttons">
+          <button class="pixel-button mode-choice-button" type="button" data-writing-mode="sequence">
+            <strong>じゅんばん</strong>
+            <span>つづきの もじから</span>
+          </button>
+          <button class="pixel-button mode-choice-button" id="wordHoleModeBtn" type="button" data-writing-mode="word-hole">
+            <strong>ことばの あな</strong>
+            <span>あいている もじを かこう</span>
+          </button>
+          <button class="pixel-button mode-choice-button" type="button" data-writing-mode="daily-three">
+            <strong>きょうの 3もじ</strong>
+            <span>3つだけ かいてみよう</span>
+          </button>
+        </div>
+        <div class="mode-choice-message" id="modeChoiceMessage" aria-live="polite"></div>
+        <button class="pixel-button ghost mode-choice-close" id="modeChoiceCloseBtn" type="button">もどる</button>
+      </div>
+    </div>
   </main>
 </div>
 
+<script src="../mojicrane/data/words.js?v=20260715-1307"></script>
 <script>
 'use strict';
 
@@ -1705,6 +2054,7 @@ const rewardNameEl = document.getElementById('rewardName');
 const resultOverlay = document.getElementById('resultOverlay');
 const resultRewardIcon = document.getElementById('resultRewardIcon');
 const resultReward = document.getElementById('resultReward');
+const resultRewardWrap = document.getElementById('resultRewardWrap');
 const resultBurst = document.getElementById('resultBurst');
 const modalRetryBtn = document.getElementById('modalRetryBtn');
 const companionCard = document.getElementById('companionCard');
@@ -1712,6 +2062,20 @@ const companionCookieIcon = document.getElementById('companionCookieIcon');
 const companionSpeech = document.getElementById('companionSpeech');
 const companionStatus = document.getElementById('companionStatus');
 const starCountEl = document.getElementById('starCount');
+const modeSwitchBtn = document.getElementById('modeSwitchBtn');
+const currentModeNameEl = document.getElementById('currentModeName');
+const modeChoiceOverlay = document.getElementById('modeChoiceOverlay');
+const modeChoiceCloseBtn = document.getElementById('modeChoiceCloseBtn');
+const modeChoiceMessage = document.getElementById('modeChoiceMessage');
+const wordHoleModeBtn = document.getElementById('wordHoleModeBtn');
+const characterPanel = document.querySelector('.character-panel');
+const characterPanelTitle = document.getElementById('characterPanelTitle');
+const modeProgress = document.getElementById('modeProgress');
+const modeProgressCount = document.getElementById('modeProgressCount');
+const modeClue = document.getElementById('modeClue');
+const modeProgressItems = document.getElementById('modeProgressItems');
+const resultTitleEl = document.getElementById('resultTitle');
+const resultCopyEl = document.getElementById('resultCopy');
 
 const trailCtx = pixelTrailCanvas.getContext('2d');
 const PIXEL_GRID_SIZE = 132;
@@ -1741,6 +2105,46 @@ const PENDING_REWARD_KEY = 'mojikkoFarmPendingWritingReward';
 const WRITING_CURSOR_KEY = 'mojikkoFarmWritingCursorV1';
 const WRITING_PROGRESS_KEY = 'mojikkoFarmWritingProgressV2';
 const WRITING_COMPLETED_MARKER_PREFIX = 'mojikkoFarmWritingCompletedV1:';
+const WRITING_MODE_STATE_KEY = 'mojikkoFarmWritingModeV1';
+const WORD_HOLE_STATE_KEY = 'mojikkoFarmWordHoleV1';
+const DAILY_THREE_STATE_KEY = 'mojikkoFarmDailyThreeV1';
+const WRITING_MODES = Object.freeze({
+  sequence: 'sequence',
+  wordHole: 'word-hole',
+  dailyThree: 'daily-three'
+});
+const WRITING_MODE_LABELS = Object.freeze({
+  [WRITING_MODES.sequence]: 'じゅんばん',
+  [WRITING_MODES.wordHole]: 'ことばの あな',
+  [WRITING_MODES.dailyThree]: 'きょうの 3もじ'
+});
+const WORD_HOLE_SESSION_SIZE = 5;
+const WORD_HOLE_MAX_ORDINAL = 1000000;
+const DAILY_THREE_SIZE = 3;
+const MODE_TASK_RECEIPT_DB_NAME = 'mojikkoFarmModeTaskReceiptsV1';
+const MODE_TASK_RECEIPT_STORE_NAME = 'claims';
+const MODE_TASK_RECEIPT_FALLBACK_PREFIX = 'mojikkoFarmModeTaskReceiptV1:';
+const WORD_HOLE_CLEAR_KANA = new Set(Array.from('あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをん'));
+const WORD_HOLE_BLUEPRINTS = Object.freeze([
+  { word: 'ねこ', blankIndex: 1 },
+  { word: 'いぬ', blankIndex: 1 },
+  { word: 'くま', blankIndex: 1 },
+  { word: 'ほし', blankIndex: 1 },
+  { word: 'はな', blankIndex: 1 },
+  { word: 'ふね', blankIndex: 1 },
+  { word: 'かに', blankIndex: 1 },
+  { word: 'たこ', blankIndex: 0 },
+  { word: 'つき', blankIndex: 0 },
+  { word: 'くるま', blankIndex: 1 },
+  { word: 'さかな', blankIndex: 1 },
+  { word: 'みかん', blankIndex: 2 },
+  { word: 'とけい', blankIndex: 1 },
+  { word: 'きりん', blankIndex: 1 },
+  { word: 'こあら', blankIndex: 2 },
+  { word: 'ひこうき', blankIndex: 2 },
+  { word: 'らいおん', blankIndex: 2 },
+  { word: 'ひまわり', blankIndex: 2 }
+]);
 const FOOD_SYSTEM_VERSION = 2;
 const DAILY_FEEDING_SLOTS = [
   { id: 'morning', foodId: 'moji_gohan' },
@@ -1777,6 +2181,22 @@ let mistakeCount = 0;
 let complete = false;
 let completionQueued = false;
 let pendingNextWritingIndex = null;
+let pendingNextAction = null;
+let pendingModeAdvanceTimer = null;
+let pendingResultOverlayTimer = null;
+let pendingAutoCompleteTimer = null;
+let writingCompletionToken = 0;
+let writingCompletionInFlight = false;
+let writingNeedsResetAfterRuntimeBlock = false;
+let allowBlockedModeTaskSettlement = false;
+let pendingModeChoiceOpen = false;
+let activeMode = WRITING_MODES.sequence;
+let activeModeTaskId = null;
+let wordHoleCatalog = [];
+let wordHoleState = null;
+let dailyThreeState = null;
+let writingModesInitialized = false;
+let modeChoiceReturnFocus = null;
 const completedCharacters = new Set();
 const guideSvgMaskCache = new Map();
 
@@ -2128,6 +2548,7 @@ function updateCompanionCard() {
 }
 
 function navigateToCareScreen() {
+  clearPendingWritingCompletionTimers();
   saveCareState();
   window.location.href = 'care.html?from=writing';
 }
@@ -2337,13 +2758,612 @@ function handleWritingProgressStorageEvent(event) {
     reconcileWritingProgressFromStorage();
     return;
   }
-  if (typeof event.key !== 'string' || !event.key.startsWith(WRITING_COMPLETED_MARKER_PREFIX)) return;
-  const characterId = event.key.slice(WRITING_COMPLETED_MARKER_PREFIX.length);
-  if (event.newValue !== '1' || getWritingCharacterIndex(characterId) < 0) return;
-  reconcileWritingProgressFromStorage();
+  if (typeof event.key === 'string' && event.key.startsWith(WRITING_COMPLETED_MARKER_PREFIX)) {
+    const characterId = event.key.slice(WRITING_COMPLETED_MARKER_PREFIX.length);
+    if (event.newValue === '1' && getWritingCharacterIndex(characterId) >= 0) {
+      reconcileWritingProgressFromStorage();
+    }
+    return;
+  }
+  handleWritingModeStorageEvent(event);
 }
 
 window.addEventListener('storage', handleWritingProgressStorageEvent);
+
+function hashWritingModeSeed(value) {
+  let hash = 0x811c9dc5;
+  const text = String(value || '');
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return hash >>> 0;
+}
+
+function createWritingModeRandom(seed) {
+  let state = seed >>> 0;
+  return function nextRandom() {
+    state = (state + 0x6d2b79f5) | 0;
+    let value = state;
+    value = Math.imul(value ^ (value >>> 15), value | 1);
+    value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+    return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function seededWritingModeShuffle(values, seedText) {
+  const shuffled = Array.isArray(values) ? values.slice() : [];
+  const random = createWritingModeRandom(hashWritingModeSeed(seedText));
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(random() * (index + 1));
+    const temp = shuffled[index];
+    shuffled[index] = shuffled[swapIndex];
+    shuffled[swapIndex] = temp;
+  }
+  return shuffled;
+}
+
+function getCharacterIdForWritingChar(char) {
+  const item = writingCharacters.find((candidate) => candidate.char === char);
+  return item ? item.id : '';
+}
+
+function buildValidatedWordHoleCatalog(wordData) {
+  if (!wordData || typeof wordData !== 'object' || Array.isArray(wordData)) return [];
+  const sourceByWord = new Map();
+  ['easy', 'normal', 'challenge'].forEach((level) => {
+    const entries = Array.isArray(wordData[level]) ? wordData[level] : [];
+    entries.forEach((entry) => {
+      if (!entry || typeof entry.word !== 'string' || typeof entry.emoji !== 'string') return;
+      const emoji = entry.emoji.trim();
+      if (!emoji) return;
+      if (!sourceByWord.has(entry.word)) sourceByWord.set(entry.word, { ...entry, emoji });
+    });
+  });
+
+  const answerIds = new Set();
+  const catalog = [];
+  for (const blueprint of WORD_HOLE_BLUEPRINTS) {
+    const source = sourceByWord.get(blueprint.word);
+    const wordChars = Array.from(String(blueprint.word || '').normalize('NFC'));
+    if (!source || wordChars.length < 2 || wordChars.length > 4) return [];
+    if (!Number.isInteger(blueprint.blankIndex) || blueprint.blankIndex < 0 || blueprint.blankIndex >= wordChars.length) return [];
+    const answer = wordChars[blueprint.blankIndex];
+    const characterId = getCharacterIdForWritingChar(answer);
+    if (!characterId || !WORD_HOLE_CLEAR_KANA.has(answer) || answerIds.has(characterId)) return [];
+    answerIds.add(characterId);
+    catalog.push({
+      id: `word:${blueprint.word}:${blueprint.blankIndex}`,
+      word: blueprint.word,
+      emoji: source.emoji,
+      blankIndex: blueprint.blankIndex,
+      answer,
+      characterId
+    });
+  }
+  return catalog.length === WORD_HOLE_BLUEPRINTS.length ? catalog : [];
+}
+
+function createWordHoleSession(ordinal, catalog = wordHoleCatalog) {
+  if (!Array.isArray(catalog) || catalog.length < WORD_HOLE_SESSION_SIZE) return null;
+  const normalizedOrdinal = Number.isSafeInteger(ordinal) && ordinal >= 0 && ordinal <= WORD_HOLE_MAX_ORDINAL
+    ? ordinal
+    : 0;
+  const tasks = seededWritingModeShuffle(catalog, `mojikko-word-hole:${normalizedOrdinal}`)
+    .slice(0, WORD_HOLE_SESSION_SIZE)
+    .map((task) => task.id);
+  const nonce = createWordHoleSessionNonce();
+  const sessionId = createWordHoleSessionId(normalizedOrdinal, tasks, nonce);
+  return {
+    version: 1,
+    nonce,
+    sessionId,
+    planId: sessionId,
+    ordinal: normalizedOrdinal,
+    tasks,
+    completedTaskIds: []
+  };
+}
+
+function createWordHoleSessionNonce() {
+  try {
+    if (typeof crypto !== 'undefined' && crypto && typeof crypto.randomUUID === 'function') {
+      return crypto.randomUUID();
+    }
+  } catch (_) {}
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+}
+
+function createLegacyWordHoleSessionNonce(ordinal, tasks) {
+  return `legacy-${hashWritingModeSeed(`${ordinal}:${(Array.isArray(tasks) ? tasks : []).join('|')}`).toString(36)}`;
+}
+
+function createWordHoleSessionId(ordinal, tasks, nonce) {
+  return `word-hole-${ordinal}:${nonce}:${(Array.isArray(tasks) ? tasks : []).join('|')}`;
+}
+
+function normalizeWordHoleState(value, catalog = wordHoleCatalog) {
+  if (!value || typeof value !== 'object' || Array.isArray(value) || value.version !== 1) return null;
+  if (!Number.isSafeInteger(value.ordinal) || value.ordinal < 0 || value.ordinal > WORD_HOLE_MAX_ORDINAL) return null;
+  const catalogIds = new Set((Array.isArray(catalog) ? catalog : []).map((task) => task.id));
+  if (!Array.isArray(value.tasks) || value.tasks.length !== WORD_HOLE_SESSION_SIZE) return null;
+  if (new Set(value.tasks).size !== WORD_HOLE_SESSION_SIZE || value.tasks.some((id) => !catalogIds.has(id))) return null;
+  const legacySessionId = `word-hole-${value.ordinal}`;
+  const legacySnapshotId = `word-hole-${value.ordinal}:${value.tasks.join('|')}`;
+  const hasNonce = typeof value.nonce === 'string' && /^[A-Za-z0-9_-]{8,128}$/.test(value.nonce);
+  if (value.nonce !== undefined && !hasNonce) return null;
+  const nonce = hasNonce ? value.nonce : createLegacyWordHoleSessionNonce(value.ordinal, value.tasks);
+  const sessionId = createWordHoleSessionId(value.ordinal, value.tasks, nonce);
+  if (hasNonce) {
+    if (typeof value.sessionId === 'string' && value.sessionId !== sessionId) return null;
+    if (typeof value.planId === 'string' && value.planId !== sessionId) return null;
+  } else {
+    if (typeof value.sessionId === 'string' && value.sessionId !== legacySessionId && value.sessionId !== legacySnapshotId) return null;
+    if (typeof value.planId === 'string' && value.planId !== legacySessionId && value.planId !== legacySnapshotId) return null;
+  }
+  const requestedCompleted = new Set(Array.isArray(value.completedTaskIds) ? value.completedTaskIds : []);
+  return {
+    version: 1,
+    nonce,
+    sessionId,
+    planId: sessionId,
+    ordinal: value.ordinal,
+    tasks: value.tasks.slice(),
+    completedTaskIds: value.tasks.filter((id) => requestedCompleted.has(id))
+  };
+}
+
+function isWritingModeRuntimeBlocked() {
+  if (window.__PONO_TIER_LOCKED__) return true;
+  let portraitMedia = false;
+  try {
+    if (typeof window.matchMedia === 'function') {
+      portraitMedia = window.matchMedia('(orientation: portrait)').matches;
+    }
+  } catch (_) {}
+  return portraitMedia || (Number.isFinite(window.innerWidth)
+    && Number.isFinite(window.innerHeight)
+    && window.innerHeight > window.innerWidth);
+}
+
+function parseWritingModeStorageSnapshot(rawValue, normalizer) {
+  if (typeof rawValue !== 'string' || !rawValue) return null;
+  try {
+    return normalizer(JSON.parse(rawValue));
+  } catch (_) {
+    return null;
+  }
+}
+
+function readWordHoleState() {
+  if (isWritingModeRuntimeBlocked() && !allowBlockedModeTaskSettlement) return null;
+  try {
+    const raw = localStorage.getItem(WORD_HOLE_STATE_KEY);
+    return parseWritingModeStorageSnapshot(raw, normalizeWordHoleState);
+  } catch (error) {
+    console.warn('Could not load word-hole state:', error);
+    return null;
+  }
+}
+
+function mergeCanonicalWordHoleStates(...states) {
+  const normalized = states.map((state) => normalizeWordHoleState(state)).filter(Boolean);
+  if (!normalized.length) return null;
+  const hasCompletedCap = normalized.some((state) => (
+    state.ordinal === WORD_HOLE_MAX_ORDINAL
+      && !getFirstIncompleteTaskId(state.tasks, state.completedTaskIds)
+  ));
+  const wrapped = hasCompletedCap
+    ? normalized.filter((state) => state.ordinal >= 1 && state.ordinal < WORD_HOLE_MAX_ORDINAL)
+    : [];
+  const candidates = wrapped.length ? wrapped : normalized;
+  const highestOrdinal = Math.max(...candidates.map((state) => state.ordinal));
+  const sameOrdinal = candidates.filter((state) => state.ordinal === highestOrdinal);
+  const canonicalPlanId = sameOrdinal.map((state) => state.planId).sort()[0];
+  const canonicalStates = sameOrdinal.filter((state) => state.planId === canonicalPlanId);
+  const canonical = canonicalStates[0];
+  const completed = new Set(canonicalStates.flatMap((state) => state.completedTaskIds));
+  return {
+    ...canonical,
+    completedTaskIds: canonical.tasks.filter((id) => completed.has(id))
+  };
+}
+
+function writeWordHoleState(state, ...additionalStates) {
+  const normalized = normalizeWordHoleState(state);
+  if (!normalized || (isWritingModeRuntimeBlocked() && !allowBlockedModeTaskSettlement)) return normalized;
+  const stored = readWordHoleState();
+  const canonical = mergeCanonicalWordHoleStates(normalized, ...additionalStates, stored);
+  if (!canonical) return null;
+  try {
+    localStorage.setItem(WORD_HOLE_STATE_KEY, JSON.stringify(canonical));
+  } catch (error) {
+    console.warn('Could not save word-hole state:', error);
+  }
+  return canonical;
+}
+
+function getWordHoleTask(taskId) {
+  return wordHoleCatalog.find((task) => task.id === taskId) || null;
+}
+
+function getFirstIncompleteTaskId(taskIds, completedIds) {
+  const completed = new Set(Array.isArray(completedIds) ? completedIds : []);
+  return (Array.isArray(taskIds) ? taskIds : []).find((id) => !completed.has(id)) || '';
+}
+
+function createWordHoleActiveTaskId(state, taskId) {
+  return state && taskId ? `${state.planId}::${taskId}` : '';
+}
+
+function markWordHoleTaskCompleted(taskToken) {
+  const stored = readWordHoleState();
+  const canonical = mergeCanonicalWordHoleStates(wordHoleState, stored);
+  if (!canonical) return { state: wordHoleState, taskId: '', isNewCompletion: false };
+  const taskId = canonical.tasks.find((id) => taskToken === id || taskToken === createWordHoleActiveTaskId(canonical, id)) || '';
+  const isNewCompletion = !!taskId && !canonical.completedTaskIds.includes(taskId);
+  const completed = new Set(canonical.completedTaskIds);
+  if (isNewCompletion) completed.add(taskId);
+  const candidate = {
+    ...canonical,
+    completedTaskIds: canonical.tasks.filter((id) => completed.has(id))
+  };
+  wordHoleState = writeWordHoleState(candidate, wordHoleState, stored) || candidate;
+  return { state: wordHoleState, taskId, isNewCompletion };
+}
+
+function createDailyThreePlanId(dateKey, taskIds) {
+  return `daily-three-${dateKey}:${(Array.isArray(taskIds) ? taskIds : []).join('|')}`;
+}
+
+function createDailyThreeState(dateKey, progress = loadWritingProgress()) {
+  if (typeof dateKey !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dateKey)) return null;
+  const completedIds = normalizeWritingCompletedIds(progress && progress.completedIds);
+  const completed = new Set(completedIds);
+  const storedIndex = getWritingCharacterIndex(progress && progress.cursorId);
+  const startIndex = storedIndex >= 0 ? storedIndex : 0;
+  const incomplete = [];
+  for (let offset = 0; offset < writingCharacters.length; offset += 1) {
+    const item = writingCharacters[(startIndex + offset) % writingCharacters.length];
+    if (item && !completed.has(item.id)) incomplete.push(item.id);
+  }
+  const review = seededWritingModeShuffle(
+    writingCharacters.filter((item) => completed.has(item.id)).map((item) => item.id),
+    `mojikko-daily-three:${dateKey}`
+  );
+  const selected = [];
+  incomplete.slice(0, 2).forEach((id) => selected.push(id));
+  if (review.length) selected.push(review[0]);
+  for (const id of incomplete.slice(2)) {
+    if (selected.length >= DAILY_THREE_SIZE) break;
+    if (!selected.includes(id)) selected.push(id);
+  }
+  for (const id of review.slice(1)) {
+    if (selected.length >= DAILY_THREE_SIZE) break;
+    if (!selected.includes(id)) selected.push(id);
+  }
+  if (selected.length < DAILY_THREE_SIZE) return null;
+  const taskIds = selected.slice(0, DAILY_THREE_SIZE);
+  return {
+    version: 1,
+    dateKey,
+    planId: createDailyThreePlanId(dateKey, taskIds),
+    taskIds,
+    completedIds: []
+  };
+}
+
+function normalizeDailyThreeState(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value) || value.version !== 1) return null;
+  if (typeof value.dateKey !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value.dateKey)) return null;
+  if (!Array.isArray(value.taskIds) || value.taskIds.length !== DAILY_THREE_SIZE) return null;
+  if (new Set(value.taskIds).size !== DAILY_THREE_SIZE) return null;
+  if (value.taskIds.some((id) => getWritingCharacterIndex(id) < 0)) return null;
+  const planId = createDailyThreePlanId(value.dateKey, value.taskIds);
+  if (typeof value.planId === 'string' && value.planId !== planId) return null;
+  const completed = new Set(Array.isArray(value.completedIds) ? value.completedIds : []);
+  return {
+    version: 1,
+    dateKey: value.dateKey,
+    planId,
+    taskIds: value.taskIds.slice(),
+    completedIds: value.taskIds.filter((id) => completed.has(id))
+  };
+}
+
+function readDailyThreeState() {
+  if (isWritingModeRuntimeBlocked() && !allowBlockedModeTaskSettlement) return null;
+  try {
+    const raw = localStorage.getItem(DAILY_THREE_STATE_KEY);
+    return parseWritingModeStorageSnapshot(raw, normalizeDailyThreeState);
+  } catch (error) {
+    console.warn('Could not load daily-three state:', error);
+    return null;
+  }
+}
+
+function mergeCanonicalDailyThreeStates(...states) {
+  const todayKey = getLocalDateKey();
+  const normalized = states
+    .map((state) => normalizeDailyThreeState(state))
+    .filter((state) => state && state.dateKey === todayKey);
+  if (!normalized.length) return null;
+  const canonicalPlanId = normalized.map((state) => state.planId).sort()[0];
+  const canonicalStates = normalized.filter((state) => state.planId === canonicalPlanId);
+  const canonical = canonicalStates[0];
+  const completed = new Set(canonicalStates.flatMap((state) => state.completedIds));
+  return {
+    ...canonical,
+    completedIds: canonical.taskIds.filter((id) => completed.has(id))
+  };
+}
+
+function writeDailyThreeState(state, ...additionalStates) {
+  const normalized = normalizeDailyThreeState(state);
+  if (!normalized || normalized.dateKey !== getLocalDateKey()
+    || (isWritingModeRuntimeBlocked() && !allowBlockedModeTaskSettlement)) return null;
+  const stored = readDailyThreeState();
+  const canonical = mergeCanonicalDailyThreeStates(normalized, ...additionalStates, stored);
+  if (!canonical) return null;
+  try {
+    localStorage.setItem(DAILY_THREE_STATE_KEY, JSON.stringify(canonical));
+  } catch (error) {
+    console.warn('Could not save daily-three state:', error);
+  }
+  return canonical;
+}
+
+function createDailyThreeActiveTaskId(state, characterId) {
+  if (!state || !characterId) return '';
+  const slotIndex = state.taskIds.indexOf(characterId);
+  return slotIndex >= 0 ? `${state.planId}::${slotIndex}:${characterId}` : '';
+}
+
+function markDailyThreeTaskCompleted(taskToken) {
+  const stored = readDailyThreeState();
+  const canonical = mergeCanonicalDailyThreeStates(dailyThreeState, stored);
+  if (!canonical) return { state: dailyThreeState, characterId: '', isNewCompletion: false };
+  const characterId = canonical.taskIds.find((id) => taskToken === id || taskToken === createDailyThreeActiveTaskId(canonical, id)) || '';
+  const isNewCompletion = !!characterId && !canonical.completedIds.includes(characterId);
+  const completed = new Set(canonical.completedIds);
+  if (isNewCompletion) completed.add(characterId);
+  const candidate = {
+    ...canonical,
+    completedIds: canonical.taskIds.filter((id) => completed.has(id))
+  };
+  dailyThreeState = writeDailyThreeState(candidate, dailyThreeState, stored) || candidate;
+  return { state: dailyThreeState, characterId, isNewCompletion };
+}
+
+function createModeTaskReceiptId(mode, planId, taskId) {
+  if ((mode !== WRITING_MODES.wordHole && mode !== WRITING_MODES.dailyThree)
+    || typeof planId !== 'string' || !planId
+    || typeof taskId !== 'string' || !taskId) return '';
+  return `${mode}::${planId}::${taskId}`;
+}
+
+function getActiveModeTaskClaimCandidate(item, taskToken = activeModeTaskId) {
+  if (!item || isWritingModeRuntimeBlocked()) return { eligible: false, receiptId: '' };
+  if (activeMode === WRITING_MODES.wordHole) {
+    const stored = readWordHoleState();
+    const canonical = mergeCanonicalWordHoleStates(wordHoleState, stored);
+    if (canonical) wordHoleState = writeWordHoleState(canonical, wordHoleState, stored) || canonical;
+    const taskId = canonical
+      ? canonical.tasks.find((id) => taskToken === createWordHoleActiveTaskId(canonical, id)) || ''
+      : '';
+    const task = getWordHoleTask(taskId);
+    const eligible = !!task
+      && task.characterId === item.id
+      && !canonical.completedTaskIds.includes(taskId);
+    return {
+      eligible,
+      receiptId: eligible
+        ? createModeTaskReceiptId(WRITING_MODES.wordHole, canonical.planId, taskId)
+        : ''
+    };
+  }
+  if (activeMode === WRITING_MODES.dailyThree) {
+    const stored = readDailyThreeState();
+    const canonical = mergeCanonicalDailyThreeStates(dailyThreeState, stored);
+    if (canonical) dailyThreeState = writeDailyThreeState(canonical, dailyThreeState, stored) || canonical;
+    const characterId = canonical
+      ? canonical.taskIds.find((id) => taskToken === createDailyThreeActiveTaskId(canonical, id)) || ''
+      : '';
+    const eligible = !!characterId
+      && characterId === item.id
+      && !canonical.completedIds.includes(characterId);
+    return {
+      eligible,
+      receiptId: eligible
+        ? createModeTaskReceiptId(WRITING_MODES.dailyThree, canonical.planId, characterId)
+        : ''
+    };
+  }
+  return { eligible: false, receiptId: '' };
+}
+
+function claimModeTaskCompletionFallback(receiptId) {
+  if (!receiptId || isWritingModeRuntimeBlocked()) return false;
+  const key = `${MODE_TASK_RECEIPT_FALLBACK_PREFIX}${receiptId}`;
+  const claimant = `${Date.now()}:${Math.random().toString(36).slice(2)}`;
+  try {
+    if (localStorage.getItem(key) !== null) return false;
+    localStorage.setItem(key, claimant);
+    return localStorage.getItem(key) === claimant;
+  } catch (error) {
+    console.warn('Could not claim mode task fallback receipt:', error);
+    return false;
+  }
+}
+
+function rememberModeTaskReceiptFallback(receiptId) {
+  if (!receiptId) return;
+  const key = `${MODE_TASK_RECEIPT_FALLBACK_PREFIX}${receiptId}`;
+  try {
+    if (localStorage.getItem(key) === null) localStorage.setItem(key, 'idb');
+  } catch (_) {}
+}
+
+function hasModeTaskReceiptFallback(receiptId) {
+  if (!receiptId) return false;
+  try {
+    return localStorage.getItem(`${MODE_TASK_RECEIPT_FALLBACK_PREFIX}${receiptId}`) !== null;
+  } catch (_) {
+    // An unreadable fallback ledger is an unknown claim state. Suppress the
+    // reward instead of risking a second grant through a recovered IDB path.
+    return true;
+  }
+}
+
+function claimModeTaskCompletionFallbackWithLock(receiptId) {
+  try {
+    if (typeof navigator !== 'undefined' && navigator.locks && typeof navigator.locks.request === 'function') {
+      return navigator.locks.request(
+        `${MODE_TASK_RECEIPT_FALLBACK_PREFIX}${receiptId}`,
+        { mode: 'exclusive' },
+        () => claimModeTaskCompletionFallback(receiptId)
+      ).catch(() => false);
+    }
+  } catch (_) {}
+  return Promise.resolve(claimModeTaskCompletionFallback(receiptId));
+}
+
+function claimModeTaskCompletion(receiptId) {
+  if (!receiptId || isWritingModeRuntimeBlocked()) return Promise.resolve(false);
+  if (hasModeTaskReceiptFallback(receiptId)) return Promise.resolve(false);
+  if (typeof indexedDB === 'undefined' || !indexedDB || typeof indexedDB.open !== 'function') {
+    return claimModeTaskCompletionFallbackWithLock(receiptId);
+  }
+  return new Promise((resolve) => {
+    let settled = false;
+    let database = null;
+    const settle = (claimed) => {
+      if (settled) return;
+      settled = true;
+      if (database) {
+        try { database.close(); } catch (_) {}
+      }
+      resolve(!!claimed);
+    };
+    const fallback = () => {
+      claimModeTaskCompletionFallbackWithLock(receiptId).then(settle, () => settle(false));
+    };
+    let openRequest;
+    try {
+      openRequest = indexedDB.open(MODE_TASK_RECEIPT_DB_NAME, 1);
+    } catch (_) {
+      fallback();
+      return;
+    }
+    openRequest.onupgradeneeded = () => {
+      const upgradeDb = openRequest.result;
+      if (!upgradeDb.objectStoreNames.contains(MODE_TASK_RECEIPT_STORE_NAME)) {
+        upgradeDb.createObjectStore(MODE_TASK_RECEIPT_STORE_NAME);
+      }
+    };
+    openRequest.onerror = fallback;
+    openRequest.onblocked = fallback;
+    openRequest.onsuccess = () => {
+      if (settled) {
+        try { openRequest.result.close(); } catch (_) {}
+        return;
+      }
+      database = openRequest.result;
+      if (hasModeTaskReceiptFallback(receiptId)) {
+        settle(false);
+        return;
+      }
+      let transaction;
+      try {
+        transaction = database.transaction(MODE_TASK_RECEIPT_STORE_NAME, 'readwrite');
+      } catch (_) {
+        fallback();
+        return;
+      }
+      let added = false;
+      let duplicate = false;
+      let addRequest;
+      try {
+        addRequest = transaction.objectStore(MODE_TASK_RECEIPT_STORE_NAME).add({
+          receiptId,
+          claimedAt: Date.now()
+        }, receiptId);
+      } catch (_) {
+        try { transaction.abort(); } catch (_) {}
+        fallback();
+        return;
+      }
+      addRequest.onsuccess = () => { added = true; };
+      addRequest.onerror = (event) => {
+        if (addRequest.error && addRequest.error.name === 'ConstraintError') {
+          duplicate = true;
+          event.preventDefault();
+          event.stopPropagation();
+        }
+      };
+      transaction.oncomplete = () => {
+        rememberModeTaskReceiptFallback(receiptId);
+        settle(added && !duplicate);
+      };
+      transaction.onabort = () => {
+        if (duplicate || (transaction.error && transaction.error.name === 'ConstraintError')) {
+          rememberModeTaskReceiptFallback(receiptId);
+          settle(false);
+        } else fallback();
+      };
+      transaction.onerror = (event) => {
+        if (duplicate || (transaction.error && transaction.error.name === 'ConstraintError')) {
+          event.preventDefault();
+        }
+      };
+    };
+  });
+}
+
+function normalizeWritingModePreference(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value) || value.version !== 1) return WRITING_MODES.sequence;
+  return Object.values(WRITING_MODES).includes(value.activeMode) ? value.activeMode : WRITING_MODES.sequence;
+}
+
+function readWritingModePreference() {
+  if (isWritingModeRuntimeBlocked()) return WRITING_MODES.sequence;
+  try {
+    const raw = localStorage.getItem(WRITING_MODE_STATE_KEY);
+    return raw ? normalizeWritingModePreference(JSON.parse(raw)) : WRITING_MODES.sequence;
+  } catch (error) {
+    console.warn('Could not load writing mode:', error);
+    return WRITING_MODES.sequence;
+  }
+}
+
+function writeWritingModePreference(mode) {
+  const normalizedMode = Object.values(WRITING_MODES).includes(mode) ? mode : WRITING_MODES.sequence;
+  if (isWritingModeRuntimeBlocked()) return normalizedMode;
+  try {
+    localStorage.setItem(WRITING_MODE_STATE_KEY, JSON.stringify({ version: 1, activeMode: normalizedMode }));
+  } catch (error) {
+    console.warn('Could not save writing mode:', error);
+  }
+  return normalizedMode;
+}
+
+function handleWritingModeStorageEvent(event) {
+  if (!event || isWritingModeRuntimeBlocked() || !writingModesInitialized
+    || (event.storageArea && event.storageArea !== localStorage)) return;
+  if (event.key === WORD_HOLE_STATE_KEY) {
+    const incoming = parseWritingModeStorageSnapshot(event.newValue, normalizeWordHoleState);
+    const stored = readWordHoleState();
+    const merged = mergeCanonicalWordHoleStates(wordHoleState, incoming, stored);
+    if (merged) wordHoleState = writeWordHoleState(merged, wordHoleState, incoming, stored) || merged;
+    return;
+  }
+  if (event.key === DAILY_THREE_STATE_KEY) {
+    const incoming = parseWritingModeStorageSnapshot(event.newValue, normalizeDailyThreeState);
+    const stored = readDailyThreeState();
+    const merged = mergeCanonicalDailyThreeStates(dailyThreeState, incoming, stored);
+    if (merged) dailyThreeState = writeDailyThreeState(merged, dailyThreeState, incoming, stored) || merged;
+  }
+}
 
 function fitStage() {
   const aspect = window.innerWidth / Math.max(1, window.innerHeight);
@@ -2357,8 +3377,28 @@ function fitStage() {
   stageEl.style.transform = `translate(${ox}px, ${oy}px) scale(${scale})`;
 }
 
-window.addEventListener('resize', fitStage);
-window.addEventListener('orientationchange', () => setTimeout(fitStage, 100));
+function refreshWritingLayoutAndModeRuntime() {
+  fitStage();
+  if (isWritingModeRuntimeBlocked()) {
+    if (pendingAutoCompleteTimer !== null || complete || completionQueued || writingCompletionInFlight) {
+      clearPendingWritingCompletionTimers();
+      complete = false;
+      completionQueued = false;
+      writingNeedsResetAfterRuntimeBlock = true;
+    }
+    return;
+  }
+  if (writingNeedsResetAfterRuntimeBlock) {
+    writingNeedsResetAfterRuntimeBlock = false;
+    if (pendingNextAction) nextCharacter();
+    else resetWriting({ skipModeBoundary: true });
+    return;
+  }
+  if (!writingModesInitialized) initializeWritingModesIfAllowed();
+}
+
+window.addEventListener('resize', () => setTimeout(refreshWritingLayoutAndModeRuntime, 100));
+window.addEventListener('orientationchange', () => setTimeout(refreshWritingLayoutAndModeRuntime, 100));
 document.addEventListener('visibilitychange', () => { if (!document.hidden) fitStage(); });
 fitStage();
 
@@ -2376,11 +3416,432 @@ function syncCurrentGroupFromCharacter() {
 }
 
 function setCurrentGroup(groupId) {
+  if (activeMode !== WRITING_MODES.sequence) return;
   const firstIndex = writingCharacters.findIndex((item) => item.group === groupId);
   if (firstIndex < 0) return;
   currentGroup = groupId;
   currentIndex = firstIndex;
   resetWriting();
+}
+
+function isWordHoleStateComplete(state = wordHoleState) {
+  return !!state && !getFirstIncompleteTaskId(state.tasks, state.completedTaskIds);
+}
+
+function isDailyThreeStateComplete(state = dailyThreeState) {
+  return !!state && !getFirstIncompleteTaskId(state.taskIds, state.completedIds);
+}
+
+function resolveWordHoleModeTarget(options = {}) {
+  if (isWritingModeRuntimeBlocked()) return { ok: false, reason: 'blocked' };
+  if (wordHoleCatalog.length !== WORD_HOLE_BLUEPRINTS.length) {
+    return { ok: false, reason: 'unavailable' };
+  }
+  const stored = readWordHoleState();
+  wordHoleState = mergeCanonicalWordHoleStates(wordHoleState, stored);
+  if (wordHoleState) wordHoleState = writeWordHoleState(wordHoleState, stored) || wordHoleState;
+  if (!wordHoleState) {
+    if (options.initial) return { ok: false, reason: 'broken' };
+    wordHoleState = writeWordHoleState(createWordHoleSession(0)) || createWordHoleSession(0);
+  } else if (isWordHoleStateComplete(wordHoleState)) {
+    if (!options.explicit) return { ok: false, reason: 'complete' };
+    const nextOrdinal = wordHoleState.ordinal >= WORD_HOLE_MAX_ORDINAL ? 1 : wordHoleState.ordinal + 1;
+    const nextSession = createWordHoleSession(nextOrdinal);
+    wordHoleState = writeWordHoleState(nextSession) || nextSession;
+  }
+  const taskId = getFirstIncompleteTaskId(wordHoleState.tasks, wordHoleState.completedTaskIds);
+  const task = getWordHoleTask(taskId);
+  const targetIndex = task ? getWritingCharacterIndex(task.characterId) : -1;
+  return targetIndex >= 0
+    ? {
+      ok: true,
+      mode: WRITING_MODES.wordHole,
+      targetIndex,
+      taskId,
+      activeModeTaskId: createWordHoleActiveTaskId(wordHoleState, taskId)
+    }
+    : { ok: false, reason: 'broken' };
+}
+
+function resolveDailyThreeModeTarget(options = {}) {
+  if (isWritingModeRuntimeBlocked()) return { ok: false, reason: 'blocked' };
+  const todayKey = getLocalDateKey();
+  const stored = readDailyThreeState();
+  dailyThreeState = mergeCanonicalDailyThreeStates(dailyThreeState, stored);
+  if (dailyThreeState) dailyThreeState = writeDailyThreeState(dailyThreeState, stored) || dailyThreeState;
+  if (!dailyThreeState) {
+    if (options.initial) return { ok: false, reason: 'broken' };
+    const created = createDailyThreeState(todayKey);
+    dailyThreeState = writeDailyThreeState(created) || created;
+  } else if (dailyThreeState.dateKey !== todayKey) {
+    const created = createDailyThreeState(todayKey);
+    dailyThreeState = writeDailyThreeState(created) || created;
+  }
+  if (!dailyThreeState) return { ok: false, reason: 'broken' };
+  if (isDailyThreeStateComplete(dailyThreeState)) return { ok: false, reason: 'complete' };
+  const characterId = getFirstIncompleteTaskId(dailyThreeState.taskIds, dailyThreeState.completedIds);
+  const targetIndex = getWritingCharacterIndex(characterId);
+  return targetIndex >= 0
+    ? {
+      ok: true,
+      mode: WRITING_MODES.dailyThree,
+      targetIndex,
+      characterId,
+      activeModeTaskId: createDailyThreeActiveTaskId(dailyThreeState, characterId)
+    }
+    : { ok: false, reason: 'broken' };
+}
+
+function resolveWritingModeTarget(mode, options = {}) {
+  if (mode === WRITING_MODES.wordHole) return resolveWordHoleModeTarget(options);
+  if (mode === WRITING_MODES.dailyThree) return resolveDailyThreeModeTarget(options);
+  return {
+    ok: true,
+    mode: WRITING_MODES.sequence,
+    targetIndex: getInitialWritingIndex(),
+    activeModeTaskId: null
+  };
+}
+
+function clearPendingModeAdvance() {
+  if (pendingModeAdvanceTimer !== null) {
+    clearTimeout(pendingModeAdvanceTimer);
+    pendingModeAdvanceTimer = null;
+  }
+}
+
+function clearPendingWritingCompletionTimers() {
+  clearPendingModeAdvance();
+  if (pendingResultOverlayTimer !== null) {
+    clearTimeout(pendingResultOverlayTimer);
+    pendingResultOverlayTimer = null;
+  }
+  if (pendingAutoCompleteTimer !== null) {
+    clearTimeout(pendingAutoCompleteTimer);
+    pendingAutoCompleteTimer = null;
+    completionQueued = false;
+  }
+  writingCompletionToken += 1;
+}
+
+function synchronizeActiveModeTaskAtBoundary() {
+  if (!writingModesInitialized || isWritingModeRuntimeBlocked() || activeMode === WRITING_MODES.sequence) return true;
+  const resolved = resolveWritingModeTarget(activeMode, { explicit: false, boundary: true });
+  if (!resolved.ok) {
+    activeMode = WRITING_MODES.sequence;
+    activeModeTaskId = null;
+    currentIndex = getInitialWritingIndex();
+    writeWritingModePreference(activeMode);
+    return false;
+  }
+  currentIndex = resolved.targetIndex;
+  activeModeTaskId = resolved.activeModeTaskId;
+  return true;
+}
+
+function activateWritingMode(mode, options = {}) {
+  if ((!writingModesInitialized && !initializeWritingModesIfAllowed()) || isWritingModeRuntimeBlocked()) return false;
+  const resolved = resolveWritingModeTarget(mode, options);
+  if (!resolved.ok) {
+    if (resolved.reason === 'complete' && mode === WRITING_MODES.dailyThree) {
+      modeChoiceMessage.textContent = 'きょうは できた！ また あした あそぼう';
+    } else if (mode === WRITING_MODES.wordHole && resolved.reason === 'unavailable') {
+      modeChoiceMessage.textContent = 'ことばを よみこめなかったよ';
+    } else {
+      modeChoiceMessage.textContent = 'じゅんばんから はじめよう';
+    }
+    return false;
+  }
+  clearPendingWritingCompletionTimers();
+  activeMode = resolved.mode;
+  activeModeTaskId = resolved.activeModeTaskId || null;
+  currentIndex = resolved.targetIndex;
+  if (options.persist !== false) writeWritingModePreference(activeMode);
+  closeModeChoice();
+  syncCurrentGroupFromCharacter();
+  resetWriting();
+  return true;
+}
+
+function restorePreferredWritingMode() {
+  const preferredMode = readWritingModePreference();
+  const resolved = resolveWritingModeTarget(preferredMode, { initial: true, explicit: false });
+  if (resolved.ok) {
+    activeMode = resolved.mode;
+    activeModeTaskId = resolved.activeModeTaskId || null;
+    currentIndex = resolved.targetIndex;
+    return;
+  }
+  activeMode = WRITING_MODES.sequence;
+  activeModeTaskId = null;
+  currentIndex = getInitialWritingIndex();
+  if (preferredMode !== WRITING_MODES.sequence && resolved.reason !== 'unavailable') {
+    writeWritingModePreference(WRITING_MODES.sequence);
+  }
+}
+
+function initializeWritingModesIfAllowed() {
+  if (writingModesInitialized) return true;
+  if (isWritingModeRuntimeBlocked()) return false;
+  wordHoleCatalog = buildValidatedWordHoleCatalog(window.PonoMojicraneWords);
+  wordHoleModeBtn.disabled = wordHoleCatalog.length !== WORD_HOLE_BLUEPRINTS.length;
+  writingModesInitialized = true;
+  restorePreferredWritingMode();
+  syncCurrentGroupFromCharacter();
+  resetWriting({ skipModeBoundary: true });
+  return true;
+}
+
+function openModeChoice() {
+  if (!writingModesInitialized || isWritingModeRuntimeBlocked()) return;
+  if (writingCompletionInFlight && !pendingNextAction) {
+    pendingModeChoiceOpen = true;
+    return;
+  }
+  if (complete && pendingNextAction) nextCharacter();
+  else if (complete || writingCompletionInFlight) return;
+  clearPendingWritingCompletionTimers();
+  modeChoiceReturnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : modeSwitchBtn;
+  modeChoiceMessage.textContent = '';
+  wordHoleModeBtn.disabled = wordHoleCatalog.length !== WORD_HOLE_BLUEPRINTS.length;
+  wordHoleModeBtn.setAttribute('aria-disabled', wordHoleModeBtn.disabled ? 'true' : 'false');
+  modeChoiceOverlay.querySelectorAll('[data-writing-mode]').forEach((button) => {
+    button.classList.toggle('active', button.dataset.writingMode === activeMode);
+  });
+  modeChoiceOverlay.inert = false;
+  modeChoiceOverlay.classList.add('show');
+  modeChoiceOverlay.setAttribute('aria-hidden', 'false');
+  const activeButton = modeChoiceOverlay.querySelector('[data-writing-mode].active:not(:disabled)')
+    || modeChoiceOverlay.querySelector('[data-writing-mode]:not(:disabled)');
+  if (activeButton) activeButton.focus();
+}
+
+function closeModeChoice() {
+  modeChoiceOverlay.classList.remove('show');
+  modeChoiceOverlay.setAttribute('aria-hidden', 'true');
+  if (document.activeElement && modeChoiceOverlay.contains(document.activeElement)) {
+    const returnTarget = modeChoiceReturnFocus && typeof modeChoiceReturnFocus.focus === 'function'
+      ? modeChoiceReturnFocus
+      : modeSwitchBtn;
+    returnTarget.focus();
+  }
+  modeChoiceOverlay.inert = true;
+  modeChoiceReturnFocus = null;
+}
+
+function createWordClueCell(char, className) {
+  const cell = document.createElement('span');
+  cell.className = `word-clue-cell${className ? ` ${className}` : ''}`;
+  cell.textContent = char;
+  return cell;
+}
+
+function renderWordHolePanel(revealTaskId) {
+  if (!wordHoleState) return;
+  const currentTaskId = revealTaskId || getFirstIncompleteTaskId(wordHoleState.tasks, wordHoleState.completedTaskIds);
+  const currentTask = getWordHoleTask(currentTaskId);
+  if (!currentTask) return;
+  const taskIndex = wordHoleState.tasks.indexOf(currentTaskId);
+  modeProgressCount.textContent = `${taskIndex + 1} / ${WORD_HOLE_SESSION_SIZE}`;
+  modeClue.innerHTML = '';
+  const emoji = document.createElement('div');
+  emoji.className = 'word-clue-emoji';
+  emoji.textContent = currentTask.emoji;
+  emoji.setAttribute('aria-hidden', 'true');
+  const row = document.createElement('div');
+  row.className = 'word-clue-row';
+  Array.from(currentTask.word).forEach((char, index) => {
+    const isBlank = index === currentTask.blankIndex && revealTaskId !== currentTaskId;
+    row.appendChild(createWordClueCell(isBlank ? '□' : char, isBlank ? 'blank' : ''));
+  });
+  modeClue.append(emoji, row);
+  modeClue.setAttribute('aria-label', revealTaskId ? currentTask.word : `${currentTask.word}の あいている もじ`);
+  renderModeProgressDots(wordHoleState.tasks, wordHoleState.completedTaskIds, currentTaskId);
+}
+
+function renderDailyThreePanel(revealCharacterId) {
+  if (!dailyThreeState) return;
+  const currentId = revealCharacterId || getFirstIncompleteTaskId(dailyThreeState.taskIds, dailyThreeState.completedIds);
+  const currentPosition = Math.max(0, dailyThreeState.taskIds.indexOf(currentId));
+  modeProgressCount.textContent = `${currentPosition + 1} / ${DAILY_THREE_SIZE}`;
+  modeClue.innerHTML = '';
+  const row = document.createElement('div');
+  row.className = 'daily-clue-row';
+  const completed = new Set(dailyThreeState.completedIds);
+  dailyThreeState.taskIds.forEach((characterId) => {
+    const item = writingCharacters[getWritingCharacterIndex(characterId)];
+    const cell = document.createElement('span');
+    cell.className = 'daily-clue-cell';
+    if (completed.has(characterId)) cell.classList.add('done');
+    if (!revealCharacterId && characterId === currentId) cell.classList.add('current');
+    cell.textContent = item ? item.char : '';
+    row.appendChild(cell);
+  });
+  modeClue.appendChild(row);
+  renderModeProgressDots(dailyThreeState.taskIds, dailyThreeState.completedIds, currentId);
+}
+
+function renderModeProgressDots(taskIds, completedIds, currentId) {
+  modeProgressItems.innerHTML = '';
+  const completed = new Set(completedIds);
+  taskIds.forEach((taskId, index) => {
+    const dot = document.createElement('span');
+    dot.className = 'mode-progress-dot';
+    if (completed.has(taskId)) dot.classList.add('done');
+    if (!completed.has(taskId) && taskId === currentId) dot.classList.add('current');
+    dot.textContent = completed.has(taskId) ? '✓' : String(index + 1);
+    modeProgressItems.appendChild(dot);
+  });
+}
+
+function renderModePanel(revealTaskId) {
+  const isSequence = activeMode === WRITING_MODES.sequence;
+  characterPanel.classList.toggle('mode-task-panel', !isSequence);
+  kanaTabsEl.hidden = !isSequence;
+  charListEl.hidden = !isSequence;
+  modeProgress.hidden = isSequence;
+  characterPanelTitle.textContent = isSequence ? 'もじリスト' : WRITING_MODE_LABELS[activeMode];
+  characterPanel.setAttribute('aria-label', isSequence ? 'もじリスト' : WRITING_MODE_LABELS[activeMode]);
+  currentModeNameEl.textContent = WRITING_MODE_LABELS[activeMode];
+  modeChoiceOverlay.querySelectorAll('[data-writing-mode]').forEach((button) => {
+    button.classList.toggle('active', button.dataset.writingMode === activeMode);
+  });
+  if (isSequence) return;
+  if (activeMode === WRITING_MODES.wordHole) renderWordHolePanel(revealTaskId);
+  if (activeMode === WRITING_MODES.dailyThree) renderDailyThreePanel(revealTaskId);
+}
+
+function renderWritingModePrompt(item) {
+  if (activeMode === WRITING_MODES.wordHole) {
+    promptText.textContent = '□の もじを かこう！';
+    return;
+  }
+  if (activeMode === WRITING_MODES.dailyThree && dailyThreeState) {
+    const taskIndex = dailyThreeState.taskIds.indexOf(item.id);
+    promptText.textContent = `${Math.max(0, taskIndex) + 1}こめ「${item.char}」を かこう！`;
+    return;
+  }
+  promptText.textContent = `「${item.char}」を かいてみよう！`;
+}
+
+function completeActiveModeTask(item, taskToken = activeModeTaskId, mode = activeMode) {
+  if (mode === WRITING_MODES.wordHole && wordHoleState) {
+    const pinnedTaskId = wordHoleState.tasks.find((id) => taskToken === createWordHoleActiveTaskId(wordHoleState, id)) || '';
+    const pinnedTask = getWordHoleTask(pinnedTaskId);
+    const completion = markWordHoleTaskCompleted(
+      pinnedTask && pinnedTask.characterId === item.id ? taskToken : '__invalid-word-task__'
+    );
+    const nextTaskId = completion.state
+      ? getFirstIncompleteTaskId(completion.state.tasks, completion.state.completedTaskIds)
+      : '';
+    const nextTask = getWordHoleTask(nextTaskId);
+    if (completion.state && (!pinnedTask || pinnedTask.characterId === item.id || !completion.isNewCompletion)) {
+      const action = nextTask
+        ? {
+          type: 'mode-task',
+          mode: WRITING_MODES.wordHole,
+          characterId: nextTask.characterId,
+          activeModeTaskId: createWordHoleActiveTaskId(completion.state, nextTaskId),
+          completedTaskId: pinnedTaskId,
+          completedWord: pinnedTask ? pinnedTask.word : '',
+          showOverlay: false
+        }
+        : {
+        type: 'mode-finished',
+        mode: WRITING_MODES.wordHole,
+        completedTaskId: pinnedTaskId,
+        completedWord: pinnedTask ? pinnedTask.word : '',
+        showOverlay: true
+      };
+      return { action, isNewCompletion: completion.isNewCompletion };
+    }
+  }
+  if (mode === WRITING_MODES.dailyThree && dailyThreeState) {
+    const pinnedCharacterId = dailyThreeState.taskIds.find((id) => taskToken === createDailyThreeActiveTaskId(dailyThreeState, id)) || '';
+    const completion = markDailyThreeTaskCompleted(
+      pinnedCharacterId === item.id ? taskToken : '__invalid-daily-task__'
+    );
+    if (completion.state && (pinnedCharacterId === item.id || !completion.isNewCompletion)) {
+      if (completion.state.dateKey !== getLocalDateKey()) {
+        const created = createDailyThreeState(getLocalDateKey());
+        dailyThreeState = writeDailyThreeState(created) || created;
+      }
+      const nextCharacterId = dailyThreeState
+        ? getFirstIncompleteTaskId(dailyThreeState.taskIds, dailyThreeState.completedIds)
+        : '';
+      const action = nextCharacterId
+        ? {
+          type: 'mode-task',
+          mode: WRITING_MODES.dailyThree,
+          characterId: nextCharacterId,
+          activeModeTaskId: createDailyThreeActiveTaskId(dailyThreeState, nextCharacterId),
+          completedTaskId: pinnedCharacterId,
+          showOverlay: false
+        }
+        : {
+        type: 'mode-finished',
+        mode: WRITING_MODES.dailyThree,
+        completedTaskId: pinnedCharacterId,
+        showOverlay: true
+      };
+      return { action, isNewCompletion: completion.isNewCompletion };
+    }
+  }
+  return {
+    action: {
+      type: 'sequence',
+      mode: WRITING_MODES.sequence,
+      targetIndex: pendingNextWritingIndex,
+      showOverlay: true
+    },
+    isNewCompletion: true
+  };
+}
+
+function configureModeCompletion(action, item, reward, isNewCompletion) {
+  resultTitleEl.textContent = 'すごい！';
+  resultCopyEl.textContent = 'じょうずに かけたね！';
+  const rewardFeedback = reward
+    ? `スター +${WRITING_STAR_REWARD}！ ${reward.name}`
+    : `スター +${WRITING_STAR_REWARD}！`;
+  if (action.mode === WRITING_MODES.wordHole) {
+    renderModePanel(action.completedTaskId);
+    if (action.type === 'mode-finished') {
+      promptText.textContent = action.completedWord ? `「${action.completedWord}」が できた！` : 'ぜんぶ できた！';
+      resultCopyEl.textContent = isNewCompletion
+        ? 'ことばが 5こ できた！ ごほうびも ふえたよ！'
+        : 'ことばが 5こ できた！';
+      modalRetryBtn.textContent = 'じゅんばんへ';
+    } else {
+      const completedCopy = action.completedWord ? `「${action.completedWord}」が できた！` : 'ことばが できた！';
+      promptText.textContent = isNewCompletion
+        ? `${completedCopy} ${rewardFeedback}`
+        : `${completedCopy} クリアずみだよ`;
+      modalRetryBtn.textContent = 'つぎの ことば';
+      setMessage(isNewCompletion ? rewardFeedback : 'この ことばは できていたよ', 'つぎへ すすむよ');
+    }
+    return;
+  }
+  if (action.mode === WRITING_MODES.dailyThree) {
+    renderModePanel(action.completedTaskId);
+    if (action.type === 'mode-finished') {
+      promptText.textContent = `「${item.char}」が かけた！`;
+      resultCopyEl.textContent = isNewCompletion
+        ? 'きょうの 3もじ できた！ ごほうびも ふえたよ！'
+        : 'きょうの 3もじ できた！';
+      modalRetryBtn.textContent = 'じゅんばんへ';
+    } else {
+      const completedCopy = `「${item.char}」が かけた！`;
+      promptText.textContent = isNewCompletion
+        ? `${completedCopy} ${rewardFeedback}`
+        : `${completedCopy} クリアずみだよ`;
+      modalRetryBtn.textContent = 'つぎの もじ';
+      setMessage(isNewCompletion ? rewardFeedback : 'この もじは できていたよ', 'つぎへ すすむよ');
+    }
+    return;
+  }
+  const pendingNextCharacter = writingCharacters[pendingNextWritingIndex] || writingCharacters[0];
+  modalRetryBtn.textContent = `つぎは「${pendingNextCharacter.char}」`;
 }
 
 function escapeAttr(value) {
@@ -3230,8 +4691,11 @@ function startWriterQuiz(startStrokeNum) {
   writer.quiz(getWriterQuizOptions(startStrokeNum));
 }
 
-function resetWriting() {
+function resetWriting(options = {}) {
+  clearPendingWritingCompletionTimers();
   pendingNextWritingIndex = null;
+  pendingNextAction = null;
+  if (!options.skipModeBoundary) synchronizeActiveModeTaskAtBoundary();
   syncCurrentGroupFromCharacter();
   trailDrawing = false;
   lastTrailPoint = null;
@@ -3264,16 +4728,21 @@ function resetWriting() {
   companionCard.classList.remove('celebrate');
   const item = getCurrentCharacter();
   const reward = getCurrentWritingReward();
-  promptText.textContent = `「${item.char}」を かいてみよう！`;
+  resultTitleEl.textContent = 'すごい！';
+  resultCopyEl.textContent = 'じょうずに かけたね！';
+  resultRewardWrap.hidden = false;
+  renderWritingModePrompt(item);
   renderRewardPreview(reward);
   setMessage('ドットの もじを なぞってね', 'ゆっくりで だいじょうぶ');
   renderStrokeOrder();
-  buildCharacterList();
+  if (activeMode === WRITING_MODES.sequence) buildCharacterList();
+  renderModePanel();
   updateCharacterButtons();
   createWriter();
 }
 
 function selectCharacter(index) {
+  if (activeMode !== WRITING_MODES.sequence) return;
   currentIndex = index;
   syncCurrentGroupFromCharacter();
   resetWriting();
@@ -3593,7 +5062,14 @@ function maybeFinishWritingAfterProgress(summary) {
   }
   completionQueued = true;
   setMessage('さいごまで かけたね！', 'できた！');
-  setTimeout(() => {
+  const completionToken = writingCompletionToken;
+  pendingAutoCompleteTimer = setTimeout(() => {
+    pendingAutoCompleteTimer = null;
+    if (completionToken !== writingCompletionToken || isWritingModeRuntimeBlocked()) {
+      completionQueued = false;
+      if (isWritingModeRuntimeBlocked()) writingNeedsResetAfterRuntimeBlock = true;
+      return;
+    }
     completionQueued = false;
     completeWriting(false, summary);
   }, 260);
@@ -3894,9 +5370,13 @@ function calculateAccuracy(item) {
   return Math.max(0.72, Math.min(0.98, Math.round(score * 100) / 100));
 }
 
-function completeWriting(manual, summary) {
+async function completeWriting(manual, summary) {
+  if (isWritingModeRuntimeBlocked()) {
+    completionQueued = false;
+    return;
+  }
   const item = getCurrentCharacter();
-  if (complete) return;
+  if (complete || writingCompletionInFlight) return;
   const readiness = getWritingReadiness(item);
   if (!readiness.ready) {
     completionQueued = false;
@@ -3904,6 +5384,10 @@ function completeWriting(manual, summary) {
     return;
   }
   complete = true;
+  writingCompletionInFlight = true;
+  const completionToken = writingCompletionToken;
+  const completingMode = activeMode;
+  const completingTaskToken = activeModeTaskId;
   playSfx('complete');
   completionQueued = false;
   stopTrail();
@@ -3915,44 +5399,111 @@ function completeWriting(manual, summary) {
   fillAllLetterPixels();
   renderPixelLetter();
   renderCanvasStrokeNumbers();
+  let durableClaimGranted = completingMode === WRITING_MODES.sequence;
+  let claimCandidate = { eligible: completingMode === WRITING_MODES.sequence, receiptId: '' };
+  if (completingMode !== WRITING_MODES.sequence) {
+    claimCandidate = getActiveModeTaskClaimCandidate(item, completingTaskToken);
+    durableClaimGranted = claimCandidate.eligible
+      ? await claimModeTaskCompletion(claimCandidate.receiptId)
+      : false;
+  }
+  const uiAttemptStillCurrent = completionToken === writingCompletionToken
+    && !isWritingModeRuntimeBlocked()
+    && activeMode === completingMode
+    && activeModeTaskId === completingTaskToken;
+  allowBlockedModeTaskSettlement = true;
+  let modeCompletion;
+  try {
+    modeCompletion = completeActiveModeTask(item, completingTaskToken, completingMode);
+  } finally {
+    allowBlockedModeTaskSettlement = false;
+  }
+  const isNewCompletion = completingMode === WRITING_MODES.sequence
+    || (claimCandidate.eligible
+      && durableClaimGranted
+      && modeCompletion.action.mode === completingMode);
   pendingNextWritingIndex = saveWritingCursor(item.id);
+  const reward = isNewCompletion ? getCurrentWritingReward() : null;
+  if (isNewCompletion) {
+    stars += WRITING_STAR_REWARD;
+    starCountEl.textContent = String(stars);
+    const result = {
+      characterId: item.id,
+      char: item.char,
+      group: item.group,
+      success: true,
+      accuracy: calculateAccuracy(item),
+      strokesCompleted: Math.min(item.strokes, Math.max(strokesCompleted, summary && summary.totalStrokes || 0)),
+      reward,
+      mode: modeCompletion.action.mode
+    };
+    onWritingComplete(result, { silent: !uiAttemptStillCurrent });
+  }
+  writingCompletionInFlight = false;
+  if (!uiAttemptStillCurrent) {
+    if (activeMode === completingMode) {
+      pendingNextAction = modeCompletion.action;
+      complete = false;
+      completionQueued = false;
+      if (isWritingModeRuntimeBlocked()) writingNeedsResetAfterRuntimeBlock = true;
+      else nextCharacter();
+    }
+    if (pendingModeChoiceOpen && !isWritingModeRuntimeBlocked()) {
+      pendingModeChoiceOpen = false;
+      openModeChoice();
+    }
+    return;
+  }
+  pendingNextAction = modeCompletion.action;
   renderStrokeOrder();
   updateCharacterButtons();
   writingBoard.classList.add('success');
-  companionCard.classList.toggle('celebrate', careState.hatched === true);
+  companionCard.classList.toggle('celebrate', isNewCompletion && careState.hatched === true);
   setMessage('すごい！ じょうずに かけたね！', 'やったね！');
-  const reward = getCurrentWritingReward();
-  if (typeof renderResultReward === 'function') {
-    renderResultReward(reward);
-  } else {
-    resultReward.textContent = reward
-      ? `${reward.name}と スター +${WRITING_STAR_REWARD}を ゲット！`
-      : `スター +${WRITING_STAR_REWARD}を ゲット！`;
-    setFoodIconClass(resultRewardIcon, reward);
+  resultRewardWrap.hidden = !isNewCompletion;
+  if (isNewCompletion) {
+    if (typeof renderResultReward === 'function') {
+      renderResultReward(reward);
+    } else {
+      resultReward.textContent = reward
+        ? `${reward.name}と スター +${WRITING_STAR_REWARD}を ゲット！`
+        : `スター +${WRITING_STAR_REWARD}を ゲット！`;
+      setFoodIconClass(resultRewardIcon, reward);
+    }
   }
-  const pendingNextCharacter = writingCharacters[pendingNextWritingIndex] || writingCharacters[0];
-  modalRetryBtn.textContent = `つぎは「${pendingNextCharacter.char}」`;
-  stars += WRITING_STAR_REWARD;
-  starCountEl.textContent = String(stars);
-  launchBurst();
+  configureModeCompletion(pendingNextAction, item, reward, isNewCompletion);
+  if (isNewCompletion) {
+    launchBurst();
+  }
 
-  const result = {
-    characterId: item.id,
-    char: item.char,
-    group: item.group,
-    success: true,
-    accuracy: calculateAccuracy(item),
-    strokesCompleted: Math.min(item.strokes, Math.max(strokesCompleted, summary && summary.totalStrokes || 0)),
-    reward
-  };
-  onWritingComplete(result);
-
-  setTimeout(() => {
-    resultOverlay.classList.add('show');
-  }, 520);
+  if (pendingNextAction.showOverlay) {
+    const overlayToken = writingCompletionToken;
+    pendingResultOverlayTimer = setTimeout(() => {
+      pendingResultOverlayTimer = null;
+      if (overlayToken !== writingCompletionToken || !complete || isWritingModeRuntimeBlocked()) {
+        if (isWritingModeRuntimeBlocked()) writingNeedsResetAfterRuntimeBlock = true;
+        return;
+      }
+      resultOverlay.classList.add('show');
+    }, 520);
+  } else {
+    const advanceToken = writingCompletionToken;
+    pendingModeAdvanceTimer = setTimeout(() => {
+      pendingModeAdvanceTimer = null;
+      if (advanceToken !== writingCompletionToken || !complete || isWritingModeRuntimeBlocked()) {
+        if (isWritingModeRuntimeBlocked()) writingNeedsResetAfterRuntimeBlock = true;
+        return;
+      }
+      nextCharacter();
+    }, 900);
+  }
+  if (pendingModeChoiceOpen) {
+    pendingModeChoiceOpen = false;
+    openModeChoice();
+  }
 }
 
-function onWritingComplete(result) {
+function onWritingComplete(result, options = {}) {
   console.log('writing complete', result);
   careState = loadCareState();
   const reward = Object.prototype.hasOwnProperty.call(result, 'reward') ? result.reward : getCurrentWritingReward();
@@ -3968,7 +5519,7 @@ function onWritingComplete(result) {
     console.warn('Could not clear old pending writing reward:', error);
   }
   saveCareState();
-  updateCompanionCard();
+  if (!options.silent) updateCompanionCard();
   // ─── ポノのおへや 実績アンロック (writing 系) ────────────────────────
   // 「はじめてのもじかき」「もじもじ がんばった」「ひらがなマスター」「カタカナマスター」
   try {
@@ -4004,6 +5555,26 @@ function launchBurst() {
 }
 
 function nextCharacter() {
+  if (pendingNextAction && pendingNextAction.type === 'mode-task') {
+    const modeTargetIndex = getWritingCharacterIndex(pendingNextAction.characterId);
+    if (modeTargetIndex >= 0) {
+      activeMode = pendingNextAction.mode;
+      activeModeTaskId = pendingNextAction.activeModeTaskId || null;
+      currentIndex = modeTargetIndex;
+      syncCurrentGroupFromCharacter();
+      resetWriting();
+      return;
+    }
+  }
+  if (pendingNextAction && pendingNextAction.type === 'mode-finished') {
+    activeMode = WRITING_MODES.sequence;
+    activeModeTaskId = null;
+    writeWritingModePreference(activeMode);
+    currentIndex = getInitialWritingIndex();
+    syncCurrentGroupFromCharacter();
+    resetWriting();
+    return;
+  }
   currentIndex = Number.isInteger(pendingNextWritingIndex)
     && writingCharacters[pendingNextWritingIndex]
     ? pendingNextWritingIndex
@@ -4018,7 +5589,39 @@ document.addEventListener('pointerdown', (event) => {
   playSfx(button.classList.contains('char-button') || button.classList.contains('kana-tab') ? 'select' : 'button');
 }, true);
 
+modeSwitchBtn.addEventListener('click', openModeChoice);
+modeChoiceCloseBtn.addEventListener('click', closeModeChoice);
+modeChoiceOverlay.addEventListener('pointerdown', (event) => {
+  if (event.target === modeChoiceOverlay) closeModeChoice();
+});
+modeChoiceOverlay.querySelectorAll('[data-writing-mode]').forEach((button) => {
+  button.addEventListener('click', () => {
+    activateWritingMode(button.dataset.writingMode, { explicit: true });
+  });
+});
+window.addEventListener('keydown', (event) => {
+  if (event.key === 'Tab' && modeChoiceOverlay.classList.contains('show')) {
+    const focusable = Array.from(modeChoiceOverlay.querySelectorAll('button:not(:disabled)'));
+    if (focusable.length) {
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    }
+  }
+  if (event.key === 'Escape' && modeChoiceOverlay.classList.contains('show')) {
+    event.preventDefault();
+    closeModeChoice();
+  }
+});
+
 document.getElementById('backBtn').addEventListener('click', () => {
+  clearPendingWritingCompletionTimers();
   saveCareState();
   window.location.href = '../play.html';
 });
@@ -4041,6 +5644,7 @@ writingBoard.addEventListener('pointerdown', onTrailPointerDown, true);
 writingBoard.addEventListener('pointermove', onTrailPointerMove, true);
 window.addEventListener('pointerup', finishTrailAttempt, true);
 window.addEventListener('pointercancel', finishTrailAttempt, true);
+window.addEventListener('pagehide', clearPendingWritingCompletionTimers);
 
 window.MojikkoWritingGame = {
   writingCharacters,
@@ -4048,15 +5652,28 @@ window.MojikkoWritingGame = {
   resetWriting,
   completeWriting: () => completeWriting(true),
   getCurrentCharacter,
-  getCareState: () => JSON.parse(JSON.stringify(careState))
+  getCareState: () => JSON.parse(JSON.stringify(careState)),
+  getMode: () => activeMode,
+  getModeState: () => ({
+    mode: activeMode,
+    activeModeTaskId,
+    initialized: writingModesInitialized,
+    wordHole: wordHoleState ? JSON.parse(JSON.stringify(wordHoleState)) : null,
+    dailyThree: dailyThreeState ? JSON.parse(JSON.stringify(dailyThreeState)) : null
+  }),
+  selectMode: (mode) => activateWritingMode(mode, { explicit: true })
 };
 
 starCountEl.textContent = String(stars);
 const initialWritingProgress = loadWritingProgress();
 initialWritingProgress.completedIds.forEach((id) => completedCharacters.add(id));
-currentIndex = getInitialWritingIndex(initialWritingProgress);
-syncCurrentGroupFromCharacter();
-resetWriting();
+if (!initializeWritingModesIfAllowed()) {
+  activeMode = WRITING_MODES.sequence;
+  activeModeTaskId = null;
+  currentIndex = getInitialWritingIndex(initialWritingProgress);
+  syncCurrentGroupFromCharacter();
+  resetWriting({ skipModeBoundary: true });
+}
 </script>
 </body>
 </html>
