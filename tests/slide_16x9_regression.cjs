@@ -135,20 +135,20 @@ assert.equal((html.match(/ctx\.drawImage\(imgWalkSheet,/g) || []).length, 1,
   "front walking renders once per animation frame");
 assert.equal((html.match(/ctx\.drawImage\(imgWalkSideSheet,/g) || []).length, 2,
   "side walking has one mutually-exclusive draw for each facing direction");
-assert.match(html, /if \(!winAnim\.active && state === S\.PLAYING\)/,
+assert.match(html, /if \(!journeyActor\.active && state === S\.PLAYING\)/,
   "the stationary full-body Pono must stay hidden while the walking sprite is active");
 
 /* Initial and tutorial-only frames stay error-free and avoid stacked completion UI. */
 assert.match(html, /const tileKey = grid\[i\];\s*if \(!tileKey\) continue/,
   "the idle overlay must not try to draw undefined tiles");
-assert.match(html, /winAnim\.active = false;[\s\S]*?if \(_slideTutActive\) return;/,
-  "tutorial completion must not open a normal stage-clear overlay behind its own prompt");
+assert.match(html, /function finishJourneyDeparture\(\)[\s\S]*?if \(journeyActor\.tutorial\) return;/,
+  "tutorial travel must stop before normal cutscene or next-stage routing");
 assert.match(html, /grid\s*=\s*tutGrid\.slice\(\);[\s\S]*?emptyIdx\s*=\s*tutEmpty;[\s\S]*?state\s*=\s*S\.PLAYING;/,
   "opening the tutorial from the shared menu must reset to its fixed three-move board");
-assert.match(html, /const t = Math\.max\(0, Math\.min\(elapsed \/ dur, 1\)\)/,
-  "the first clear frame must not index the walking path with a negative timestamp");
-assert.equal((html.match(/Math\.floor\(spriteElapsed \/ \(1000 \/ WALK_FPS\)\)/g) || []).length, 2,
-  "front and side sprite sheets must both start on frame zero when rAF time is slightly behind performance.now");
+assert.match(html, /const raw = Math\.max\(0, Math\.min\(\(now - journeyActor\.t0\) \/ duration, 1\)\)/,
+  "the first travel frame must clamp a slightly negative rAF delta");
+assert.equal((html.match(/Math\.floor\(frameClock \/ \(1000 \/ WALK_FPS\)\)/g) || []).length, 2,
+  "front and side sprite sheets must share the persistent actor's non-negative frame clock");
 assert.match(html, /function updatePauseButton\(isPaused\)[\s\S]*?isPaused \? '▶' : '⏸'[\s\S]*?isPaused \? 'さいかい' : 'ポーズ'/,
   "the pause control must expose the action matching its current state");
 assert.match(html, /prepauseState = S\.PLAYING;[\s\S]*?updatePauseButton\(false\);/,

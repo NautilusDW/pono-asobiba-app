@@ -180,8 +180,10 @@ levels.forEach((level, levelIndex) => {
       `stage ${levelIndex + 1} shuffle ${sample}: reversing legal moves recovers the solution`);
   }
 });
-assert.match(html, /if \(checkWin\(\)\) shuffleGrid\(level\);/,
+assert.match(html, /if \(checkWin\(\)\) \{\s*shuffleGrid\(level\);\s*return;\s*\}/,
   "the runtime shuffle must retry rather than start on a connected path");
+assert.match(html, /suggestedMoveIdx = lastMoved;[\s\S]*?hintDismissed = false;/,
+  "the reversible shuffle must retain exactly one safe first-move suggestion");
 
 const tutorialMatch = html.match(
   /const TUTORIAL_GRID = (\[[\s\S]*?\]);\nconst TUTORIAL_EMPTY = (\d+);\nconst TUTORIAL_STEPS = (\[[\s\S]*?\]);/
@@ -209,12 +211,16 @@ for (const step of tutorialSteps) {
 assert.deepEqual(tutorialGrid, levels[0].solved, "three tutorial taps must produce the stage-one horizontal solution");
 assert.ok(findLeftToRightPath(levels[0], tutorialGrid), "tutorial result must connect left to right");
 
-const markerDraw = html.match(/function drawStartGoal\(now, connectedSet\) \{[\s\S]*?\n\}\n\nfunction draw\(now\)/);
+const markerDraw = html.match(/function drawStartGoal\(now, connectedSet\) \{[\s\S]*?\n\}\n\nfunction drawJourneyActor\(now\)/);
 assert.ok(markerDraw, "start/goal marker drawing must exist");
+const journeyGeometry = html.match(/function getJourneyGeometry\(\) \{[\s\S]*?\n\}/);
+assert.ok(journeyGeometry, "the continuous journey must own left-entry and right-exit geometry");
 assert.match(markerDraw[0], /level\.start\.row/);
 assert.match(markerDraw[0], /level\.goal\.row/);
-assert.match(markerDraw[0], /const leftEdge = gridOX/);
-assert.match(markerDraw[0], /const rightEdge = gridOX \+ curCols \* cellSize/);
+assert.match(journeyGeometry[0], /const leftEdge = gridOX/);
+assert.match(journeyGeometry[0], /const rightEdge = gridOX \+ curCols \* cellSize/);
+assert.match(journeyGeometry[0], /entryX: leftEdge - cellSize \* 1\.25/);
+assert.match(journeyGeometry[0], /departX: rightEdge \+ cellSize \* 1\.35/);
 assert.match(markerDraw[0], /const ponoH = Math\.max\(52, Math\.min\(132, cellSize \* 0\.88\)\)/,
   "the left marker must use a readable full-body Pono on the shortest landscape screen");
 assert.match(markerDraw[0], /imgPonoWorld\.naturalWidth \/ imgPonoWorld\.naturalHeight/,
@@ -232,8 +238,8 @@ assert.match(html, /ひだりから みぎへ みちを つなごう/);
 assert.match(html, /🌳 ひだりから みぎへ<br>みちを つなげよう！/);
 assert.match(html, /if \(level\.start\.side === 'left'\)[\s\S]*?startEdge = 3/);
 assert.match(html, /if \(level\.goal\.side === 'right'\)[\s\S]*?goalExitEdge = 1/);
-assert.match(html, /const isHorizontal = Math\.abs\(dCol\) > Math\.abs\(dRow\)/,
-  "left-to-right walking must select the side sprite on horizontal segments");
+assert.match(html, /const horizontal = Math\.abs\(journeyActor\.dx \|\| 1\) >= Math\.abs\(journeyActor\.dy \|\| 0\)/,
+  "left-to-right travel must select the side sprite on horizontal segments");
 assert.match(html, /initMenu\(\{ bgmToggle: function\(\) \{/,
   "the visible shared settings menu must retain the BGM toggle after the compact HUD hides its legacy header");
 assert.doesNotMatch(html, /もう一回/, "child-facing retry copy must use kana only");

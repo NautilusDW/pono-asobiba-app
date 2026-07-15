@@ -164,6 +164,7 @@ body > #app {
   color: rgba(255,255,255,0.9);
   font-size: clamp(0.62rem, 1.35vmin, 0.76rem);
   font-weight: 900;
+  letter-spacing: 0.08em;
 }
 
 /* ===== Game area ===== */
@@ -178,6 +179,40 @@ body > #app {
   touch-action: none;
 }
 #gameCanvas { display: block; width: 100%; height: 100%; }
+
+/* ===== Short, non-blocking picture-book captions ===== */
+.journey-toast {
+  position: absolute;
+  z-index: 8;
+  left: 50%;
+  top: clamp(60px, 12%, 82px);
+  max-width: min(72%, 620px);
+  min-height: 36px;
+  padding: 7px 18px;
+  border: 1.5px solid rgba(255,255,255,0.82);
+  border-radius: 999px;
+  background: rgba(25,75,80,0.82);
+  box-shadow: 0 5px 16px rgba(20,52,57,0.2), inset 0 1px 0 rgba(255,255,255,0.2);
+  color: #fffdf1;
+  font-size: clamp(0.72rem, 1.7vmin, 0.95rem);
+  font-weight: 900;
+  line-height: 1.45;
+  text-align: center;
+  white-space: pre-line;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -8px);
+  transition: opacity 180ms ease, transform 220ms ease;
+}
+.journey-toast.show {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+.journey-toast.discovery {
+  background: rgba(79,72,132,0.88);
+  border-color: rgba(255,241,164,0.9);
+  color: #fffbd7;
+}
 
 /* ===== Confetti ===== */
 .confetti-container {
@@ -195,7 +230,7 @@ body > #app {
 .overlay {
   position: absolute; inset: 0; z-index: 20;
   display: flex; align-items: center; justify-content: center;
-  background: rgba(93,78,55,0.72);
+  background: rgba(43,88,99,0.5);
   backdrop-filter: blur(4px);
   animation: fadeIn 0.25s ease;
 }
@@ -223,11 +258,48 @@ body > #app {
 
 /* Cutscene full-image mode */
 .ov-card.cutscene-mode { max-width: 360px; padding: 16px 16px 20px; gap: 10px; }
-.ov-card.cutscene-mode .ov-icon { font-size: unset; line-height: unset; }
+.ov-card.cutscene-mode .ov-icon { width: 100%; font-size: unset; line-height: unset; }
 .cutscene-img {
   width: 100%; border-radius: 16px;
   object-fit: cover; aspect-ratio: 16/9;
   box-shadow: 0 4px 16px rgba(0,0,0,0.18);
+}
+.cutscene-scene {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 16px;
+  background-position: center;
+  background-size: cover;
+  box-shadow: 0 4px 16px rgba(51,76,82,0.16);
+}
+.cutscene-scene::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(111,195,218,0.08));
+  pointer-events: none;
+}
+.cutscene-mom,
+.cutscene-pono {
+  position: absolute;
+  z-index: 1;
+  bottom: -9%;
+  height: 94%;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 5px rgba(58,68,57,0.17));
+}
+.cutscene-mom { right: 7%; }
+.cutscene-pono { left: 12%; height: 64%; bottom: -6%; }
+.cutscene-hearts {
+  position: absolute;
+  z-index: 2;
+  left: 45%;
+  top: 20%;
+  color: #ff7186;
+  font-size: clamp(1rem, 4vmin, 1.7rem);
+  text-shadow: 0 2px 4px rgba(255,255,255,0.85);
 }
 .ov-card.cutscene-mode .ov-title {
   font-size: 1rem; white-space: pre-line; line-height: 1.6;
@@ -344,6 +416,8 @@ body > #app {
 @media (prefers-reduced-motion: reduce) {
   #landscape-notice .rotate-icon { animation: none; transform: rotate(-90deg); }
   .overlay { animation: none; }
+  .journey-toast { transition: none; transform: translate(-50%, 0); }
+  .confetti-piece, .tut-bubble { animation: none !important; }
 }
 
 </style>
@@ -385,6 +459,7 @@ body > #app {
 
   <div class="game-wrap" id="gameWrap">
     <canvas id="gameCanvas"></canvas>
+    <div class="journey-toast" id="journey-toast" role="status" aria-live="polite"></div>
     <div class="confetti-container" id="confetti"></div>
   </div>
 
@@ -433,7 +508,7 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 const imgPono = new Image();
 imgPono.src = '../assets/images/characters/pono/pono_face_circle.png';
 const imgPonoWorld = new Image();
-imgPonoWorld.src = '../assets/images/characters/pono/pono_001.png';
+imgPonoWorld.src = '../assets/images/characters/pono/pono_003.png';
 const imgWalkSheet = new Image();
 imgWalkSheet.src = '../assets/images/characters/pono/pono_walk_sheet.png';
 const WALK_FRAMES = 25;
@@ -443,10 +518,12 @@ const imgWalkSideSheet = new Image();
 imgWalkSideSheet.src = '../assets/images/characters/pono/pono_walk_side_sheet.png';
 const SIDE_WALK_FRAMES = 35;
 const SIDE_WALK_SCALE = 1232 / 1132; // compensate taller canvas vs front
-const imgMom = new Image();
-imgMom.src = '../assets/images/characters/pono/mom_face_circle.png';
 const imgMomFull = new Image();
-imgMomFull.src = '../assets/images/Slide/pono_mom_only.png';
+imgMomFull.src = '../assets/images/Slide/adventure/mom_soft_style.webp';
+const imgClueSheet = new Image();
+imgClueSheet.src = '../assets/images/Slide/adventure/clue_sheet_3x2.webp';
+const imgMoonClue = new Image();
+imgMoonClue.src = '../assets/images/Slide/adventure/moonlight_clue.webp';
 
 // ===== Tile types =====
 // edges: [top, right, bottom, left] — 1 = path exits this edge
@@ -466,14 +543,14 @@ const TILE_TYPES = {
 // ── Stage backgrounds ──
 // stageIdx (0-7) で直接参照。LEVELS と1対1対応
 const STAGE_BGS = [
-  '../assets/images/Slide/stage1_forest_light.png',  // ステージ1: おかあさん いないよ？
-  '../assets/images/Slide/stage1_forest_light.png',  // ステージ2: もりの いりぐち
-  '../assets/images/Slide/stage2_forest_deep.png',   // ステージ3: きいたことある おと
-  '../assets/images/Slide/stage4_cave_mushroom.png', // ステージ4: ふしぎな どうくつ
-  '../assets/images/Slide/stage4_cave_mushroom.png', // ステージ5: ひかる キノコのみち
-  '../assets/images/Slide/stage5_cave_deep.png',     // ステージ6: そとが みえた！
-  '../assets/images/Slide/stage5_cave_deep.png',     // ステージ7: おかあさんの こえ
-  '../assets/images/Slide/stage6_night_sky.png',     // ステージ8: おかあさーん！
+  '../assets/images/Slide/adventure/stage1_home_clearing_16x9.webp',
+  '../assets/images/Slide/adventure/stage2_forest_gate_16x9.webp',
+  '../assets/images/Slide/adventure/stage3_deep_forest_16x9.webp',
+  '../assets/images/Slide/adventure/stage4_cave_entrance_16x9.webp',
+  '../assets/images/Slide/adventure/stage5_luminous_cave_16x9.webp',
+  '../assets/images/Slide/adventure/stage6_cave_exit_16x9.webp',
+  '../assets/images/Slide/adventure/stage7_moon_forest_16x9.webp',
+  '../assets/images/Slide/adventure/stage8_reunion_clearing_16x9.webp',
 ];
 const stageBgImgs = STAGE_BGS.map(function(src) { var img = new Image(); img.src = src; return img; });
 
@@ -484,9 +561,12 @@ const VERTICAL_LEVELS = [
   {
     name: 'おかあさん いないよ？',
     cols: 3, rows: 3,
+    introMsg: 'ポノが かえると おかあさんが いません',
     storyMsg: 'あそびから かえったら\nおかあさんが いない…\nどこに いったんだろう？',
-    clearMsg: 'あ！おかあさんの あしあとだ！',
+    clearMsg: 'おかあさんの あしあとが もりへ つづいています',
+    discoveryMsg: 'おかあさんの あしあとが もりへ つづいています',
     goalIcon: '🐾',
+    clueCell: [0, 0],
     start: { col: 1, side: 'top' },
     goal: { col: 1, side: 'bottom' },
     solved: ['BLANK','V','BLANK', 'BLANK','V','BLANK', null,'V','BLANK'],
@@ -495,10 +575,13 @@ const VERTICAL_LEVELS = [
   {
     name: 'もりの いりぐち',
     cols: 3, rows: 3,
+    introMsg: 'あしあとを たどって もりへ',
     storyMsg: 'あしあとが もりに つづいてる！\nおかあさーん！',
-    clearMsg: 'あ、この おはな…\nどこかで みたことある…',
+    clearMsg: 'かごに ついていた はなを みつけました',
+    discoveryMsg: 'かごに ついていた はなを みつけました',
     goalIcon: '🌸',
-    cutscene: { text: 'そのころ おかあさんは…\nポノの だいすきな きのみを\nさがしていました', img: '../assets/images/Slide/cutscene_1.png' },
+    clueCell: [1, 0],
+    cutscene: { text: 'そのころ おかあさんは…\nポノの だいすきな きのみを\nさがしていました' },
     start: { col: 1, side: 'top' },
     goal: { col: 1, side: 'bottom' },
     solved: ['BLANK','V','BLANK', null,'V','BLANK', 'BLANK','V','BLANK'],
@@ -507,9 +590,12 @@ const VERTICAL_LEVELS = [
   {
     name: 'きいたことある おと',
     cols: 3, rows: 3,
+    introMsg: 'はなうたの する ほうへ',
     storyMsg: 'もりが ふかく なってきた…\nなんだか この みち\nしってる きがする…',
-    clearMsg: 'この はなうた…\nきいたことある きがする！',
+    clearMsg: 'この みち まえに おかあさんと あるいた みちです',
+    discoveryMsg: 'この みち まえに おかあさんと あるいた みちです',
     goalIcon: '🎵',
+    clueCell: [2, 0],
     start: { col: 0, side: 'top' },
     goal: { col: 1, side: 'bottom' },
     // V→CROSS→CROSS→V (十字2個で確実に曲がれる)
@@ -519,10 +605,13 @@ const VERTICAL_LEVELS = [
   {
     name: 'ふしぎな どうくつ',
     cols: 3, rows: 4,
+    introMsg: 'あしあとが どうくつへ つづいています',
     storyMsg: 'どうくつだ！ なんだか\nここも みたことある きがする…\nおもいだせないけど…',
-    clearMsg: 'ひかる キノコ！\nなつかしい かんじがする…',
+    clearMsg: 'くらやみに ひかる キノコが みえました',
+    discoveryMsg: 'くらやみに ひかる キノコが みえました',
     goalIcon: '🍄',
-    cutscene: { text: 'おかあさんは おもいました\n「ポノ よろこんでくれるかな？」', img: '../assets/images/Slide/cutscene_2.png' },
+    clueCell: [0, 1],
+    cutscene: { text: 'おかあさんは おもいました\n「ポノ よろこんでくれるかな？」' },
     start: { col: 1, side: 'top' },
     goal: { col: 1, side: 'bottom' },
     solved: ['BLANK','V','BLANK', 'BLANK','CROSS',null, 'BLANK','CROSS','BLANK', 'BLANK','V','BLANK'],
@@ -531,9 +620,12 @@ const VERTICAL_LEVELS = [
   {
     name: 'ひかる キノコのみち',
     cols: 3, rows: 4,
+    introMsg: 'ひかる キノコを たよりに',
     storyMsg: 'まっくらだけど がんばる！\nおかあさん どこにいるの…',
-    clearMsg: 'きれいな いし…\nぜったい ここ きたことある！',
+    clearMsg: 'おかあさんと みつけた きれいな いしです',
+    discoveryMsg: 'おかあさんと みつけた きれいな いしです',
     goalIcon: '💎',
+    clueCell: [1, 1],
     start: { col: 1, side: 'top' },
     goal: { col: 1, side: 'bottom' },
     solved: ['BLANK','V',null, 'BLANK','CROSS','BLANK', 'BLANK','CROSS','BLANK', 'BLANK','V','BLANK'],
@@ -542,10 +634,13 @@ const VERTICAL_LEVELS = [
   {
     name: 'そとが みえた！',
     cols: 4, rows: 4,
+    introMsg: 'そとの あかりへ',
     storyMsg: 'あかるく なってきた！\nあとすこし！',
-    clearMsg: 'おそとの あかりだ！',
+    clearMsg: 'つきあかりの みちへ でました',
+    discoveryMsg: 'つきあかりの みちへ でました',
     goalIcon: '🌙',
-    cutscene: { text: 'やっと ぜんぶ みつけた！\nはやく ポノに\nとどけなきゃ！', img: '../assets/images/Slide/cutscene_3.png' },
+    clueAsset: 'moonlight',
+    cutscene: { text: 'やっと ぜんぶ みつけた！\nはやく ポノに\nとどけなきゃ！' },
     start: { col: 1, side: 'top' },
     goal: { col: 2, side: 'bottom' },
     solved: ['BLANK','V','BLANK','BLANK', 'BLANK','CROSS','CROSS','BLANK', 'BLANK',null,'V','BLANK', 'BLANK','BLANK','V','BLANK'],
@@ -554,9 +649,12 @@ const VERTICAL_LEVELS = [
   {
     name: 'おかあさんの こえ',
     cols: 4, rows: 4,
+    introMsg: 'こえの する ほうへ',
     storyMsg: 'あ！おかあさんの こえだ！\nもうすぐ あえる！',
-    clearMsg: 'こえが すぐ ちかくから きこえる！',
+    clearMsg: 'おかあさんの こえが すぐ ちかくです',
+    discoveryMsg: 'おかあさんの こえが すぐ ちかくです',
     goalIcon: '🔔',
+    clueCell: [2, 1],
     start: { col: 1, side: 'top' },
     goal: { col: 2, side: 'bottom' },
     solved: ['BLANK','V','BLANK','BLANK', 'BLANK','CROSS','CROSS','BLANK', null,'BLANK','V','BLANK', 'BLANK','BLANK','V','BLANK'],
@@ -565,8 +663,10 @@ const VERTICAL_LEVELS = [
   {
     name: 'おかあさーん！',
     cols: 4, rows: 5,
+    introMsg: 'きの むこうから こえが します',
     storyMsg: '「ポノーッ！」\nおかあさんの こえだ！',
-    clearMsg: '「ポノ！ さがしにきてくれたの？」',
+    clearMsg: 'みちの さきに おかあさんが いました',
+    discoveryMsg: 'みちの さきに おかあさんが いました',
     goalIcon: 'mom',
     start: { col: 1, side: 'top' },
     goal: { col: 2, side: 'bottom' },
@@ -624,7 +724,15 @@ const TUTORIAL_STEPS = [
 ];
 
 // ===== State machine =====
-const S = { IDLE: 0, PLAYING: 1, STAGE_CLEAR: 2, GAME_CLEAR: 3, PAUSED: 4 };
+const S = { IDLE: 0, PLAYING: 1, TRAVELLING: 2, GAME_CLEAR: 3, PAUSED: 4 };
+const JOURNEY_PHASE = Object.freeze({
+  INTRO: 'INTRO',
+  PLAYING: 'PLAYING',
+  EXIT: 'EXIT',
+  DISCOVERY: 'DISCOVERY',
+  DEPARTING: 'DEPARTING',
+  DONE: 'DONE',
+});
 let state = S.IDLE;
 let prepauseState = S.IDLE;
 let stageIdx = 0;
@@ -632,14 +740,30 @@ let moveCount = 0;
 let grid = [];
 let emptyIdx = -1;
 let curCols = 3, curRows = 3;
+let clueDiscovered = false;
+let suggestedMoveIdx = -1;
+let hintDismissed = false;
+let hintReadyAt = 0;
+let journeyToastHideAt = 0;
+let gameClearQueued = false;
 
 // ===== Animation =====
 let animating = false;
 const SLIDE_DUR = 150;
 let anim = { idx: -1, fromX: 0, fromY: 0, toX: 0, toY: 0, curX: 0, curY: 0, t0: 0 };
 
-// Win celebration animation
-let winAnim = { active: false, t0: 0, path: [], progress: 0 };
+// One persistent Pono actor owns scene entry, path travel, discovery, and departure.
+let journeyActor = {
+  active: false,
+  phase: JOURNEY_PHASE.DONE,
+  path: [],
+  progress: 0,
+  x: 0,
+  y: 0,
+  t0: 0,
+  duration: 0,
+  tutorial: false,
+};
 
 // ===== Canvas =====
 const canvas = document.getElementById('gameCanvas');
@@ -650,9 +774,20 @@ let cellSize = 0, gridOX = 0, gridOY = 0;
 
 function resize() {
   const rect = wrap.getBoundingClientRect();
+  const oldCW = CW;
+  const oldCH = CH;
   CW = canvas.width  = Math.floor(rect.width);
   CH = canvas.height = Math.floor(rect.height);
   calcLayout();
+  if (journeyActor.active && oldCW > 0 && oldCH > 0) {
+    const scaleX = CW / oldCW;
+    const scaleY = CH / oldCH;
+    journeyActor.x *= scaleX;
+    journeyActor.y *= scaleY;
+    journeyActor.path = journeyActor.path.map(function(point) {
+      return { x: point.x * scaleX, y: point.y * scaleY };
+    });
+  }
 }
 
 function calcLayout() {
@@ -742,7 +877,13 @@ function shuffleGrid(level) {
     emptyIdx = pick;
   }
   // Ensure not already solved
-  if (checkWin()) shuffleGrid(level);
+  if (checkWin()) {
+    shuffleGrid(level);
+    return;
+  }
+  // The reverse of the last shuffle step is always a legal, reassuring first move.
+  suggestedMoveIdx = lastMoved;
+  hintDismissed = false;
 }
 
 // ===== Win detection (BFS) =====
@@ -905,10 +1046,10 @@ const THEMES = {
 function getTheme() {
   // stageIdx 0-based → ユーザー表示は stageIdx+1
   // ステージ1-3 (stageIdx 0-2): forest
-  // ステージ4-7 (stageIdx 3-6): cave
-  // ステージ8+  (stageIdx 7+): night
-  if (stageIdx >= 3 && stageIdx <= 6) return THEMES.cave;
-  if (stageIdx >= 7) return THEMES.night;
+  // ステージ4-6 (stageIdx 3-5): cave
+  // ステージ7-8 (stageIdx 6-7): night
+  if (stageIdx >= 3 && stageIdx <= 5) return THEMES.cave;
+  if (stageIdx >= 6) return THEMES.night;
   return THEMES.forest;
 }
 
@@ -964,7 +1105,7 @@ function drawBoardAtmosphere(now) {
     centerX, centerY, radius);
   clearing.addColorStop(0, 'rgba(255,248,211,0.12)');
   clearing.addColorStop(0.58, 'rgba(255,248,211,0.03)');
-  clearing.addColorStop(1, 'rgba(5,23,27,0.22)');
+  clearing.addColorStop(1, 'rgba(5,23,27,0.07)');
   ctx.fillStyle = clearing;
   ctx.fillRect(0, 0, CW, CH);
 
@@ -1145,34 +1286,45 @@ function drawEmptySlot(now) {
   const th = getTheme();
   const row = Math.floor(emptyIdx / curCols), col = emptyIdx % curCols;
   const x = gridOX + col * cellSize, y = gridOY + row * cellSize;
-  const inset = Math.max(4, cellSize * 0.075);
-  const pulse = reducedMotionQuery.matches ? 0 : (Math.sin(now * 0.004) + 1) / 2;
-  const hollow = ctx.createLinearGradient(x, y, x, y + cellSize);
-  hollow.addColorStop(0, th.emptyTop);
-  hollow.addColorStop(1, th.emptyBottom);
+  const rimInset = Math.max(2, cellSize * 0.035);
+  const wellInset = Math.max(7, cellSize * 0.105);
+  const rim = ctx.createLinearGradient(x, y, x, y + cellSize);
+  rim.addColorStop(0, 'rgba(255,255,232,0.72)');
+  rim.addColorStop(0.42, th.slabBorder);
+  rim.addColorStop(1, th.slabBottom);
+  const depthWell = ctx.createLinearGradient(x, y + wellInset, x, y + cellSize - wellInset);
+  depthWell.addColorStop(0, th.emptyBottom);
+  depthWell.addColorStop(0.36, th.emptyTop);
+  depthWell.addColorStop(1, 'rgba(3,18,24,0.96)');
 
   ctx.save();
-  ctx.shadowColor = th.connectedGlow;
-  ctx.shadowBlur = Math.max(8, cellSize * (0.1 + pulse * 0.07));
+  // Raised lip: its drop shadow establishes the board surface above the hollow.
+  ctx.shadowColor = 'rgba(5,24,26,0.42)';
+  ctx.shadowBlur = Math.max(5, cellSize * 0.07);
+  ctx.shadowOffsetY = Math.max(3, cellSize * 0.045);
   ctx.beginPath();
-  ctx.roundRect(x + inset, y + inset, cellSize - inset * 2, cellSize - inset * 2, cellSize * 0.13);
-  ctx.fillStyle = hollow;
+  ctx.roundRect(x + rimInset, y + rimInset,
+    cellSize - rimInset * 2, cellSize - rimInset * 2, cellSize * 0.14);
+  ctx.fillStyle = rim;
   ctx.fill();
-  ctx.shadowColor = 'transparent';
-  ctx.strokeStyle = th.emptyBorder;
-  ctx.globalAlpha = 0.72 + pulse * 0.22;
-  ctx.lineWidth = Math.max(2, cellSize * 0.035);
-  ctx.setLineDash([Math.max(4, cellSize * 0.08), Math.max(4, cellSize * 0.065)]);
-  ctx.lineDashOffset = reducedMotionQuery.matches ? 0 : -now * 0.012;
-  ctx.stroke();
-  ctx.setLineDash([]);
 
-  ctx.globalAlpha = 0.9;
-  ctx.fillStyle = th.emptyText;
-  ctx.font = `900 ${Math.max(10, Math.min(16, Math.floor(cellSize * 0.15)))}px 'Zen Maru Gothic', sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText('ここへ', x + cellSize / 2, y + cellSize / 2);
+  // Recessed inner well: a darker top edge and lower highlight make the hole physical.
+  ctx.shadowColor = 'transparent';
+  ctx.shadowOffsetY = 0;
+  ctx.beginPath();
+  ctx.roundRect(x + wellInset, y + wellInset,
+    cellSize - wellInset * 2, cellSize - wellInset * 2, cellSize * 0.105);
+  ctx.fillStyle = depthWell;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(3,17,22,0.76)';
+  ctx.lineWidth = Math.max(3, cellSize * 0.052);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x + wellInset * 1.35, y + cellSize - wellInset * 1.08);
+  ctx.lineTo(x + cellSize - wellInset * 1.35, y + cellSize - wellInset * 1.08);
+  ctx.strokeStyle = 'rgba(255,245,198,0.3)';
+  ctx.lineWidth = Math.max(1.5, cellSize * 0.025);
+  ctx.stroke();
   ctx.restore();
 }
 
@@ -1265,90 +1417,176 @@ function drawWorldLabel(label, x, y) {
   ctx.restore();
 }
 
+function getJourneyGeometry() {
+  const level = LEVELS[stageIdx];
+  const leftEdge = gridOX;
+  const rightEdge = gridOX + curCols * cellSize;
+  const startY = gridOY + level.start.row * cellSize + cellSize / 2;
+  const goalY = gridOY + level.goal.row * cellSize + cellSize / 2;
+  return {
+    startX: leftEdge - cellSize * 0.58,
+    startY: startY,
+    entryX: leftEdge - cellSize * 1.25,
+    goalX: rightEdge + cellSize * 0.56,
+    goalY: goalY,
+    discoverX: rightEdge + cellSize * 0.2,
+    departX: rightEdge + cellSize * 1.35,
+    leftEdge: leftEdge,
+    rightEdge: rightEdge,
+  };
+}
+
 function drawStartGoal(now, connectedSet) {
   const level = LEVELS[stageIdx];
-
-  // ===== Start marker (ポノ) at left =====
-  const sr = level.start.row;
-  const leftEdge = gridOX;
-  const sy = gridOY + sr * cellSize + cellSize / 2;
+  const geo = getJourneyGeometry();
+  const startIdx = level.start.row * curCols;
+  const startActive = connectedSet.has(startIdx);
   const ponoH = Math.max(52, Math.min(132, cellSize * 0.88));
   const ponoRatio = imgPonoWorld.naturalWidth > 0 && imgPonoWorld.naturalHeight > 0
     ? imgPonoWorld.naturalWidth / imgPonoWorld.naturalHeight : 0.7;
   const ponoW = ponoH * ponoRatio;
-  const sx = leftEdge - Math.max(cellSize * 0.56, ponoW * 0.62 + 7);
-  const startIdx = sr * curCols;
-  const startActive = connectedSet.has(startIdx);
 
-  if (!winAnim.active && state === S.PLAYING) {
+  if (!journeyActor.active && state === S.PLAYING) {
     ctx.save();
-    ctx.fillStyle = 'rgba(10,30,28,0.3)';
+    ctx.fillStyle = 'rgba(10,30,28,0.2)';
     ctx.beginPath();
-    ctx.ellipse(sx, sy + ponoH * 0.42, ponoW * 0.44, ponoH * 0.075, 0, 0, Math.PI * 2);
+    ctx.ellipse(geo.startX, geo.startY + ponoH * 0.42,
+      ponoW * 0.44, ponoH * 0.075, 0, 0, Math.PI * 2);
     ctx.fill();
     if (imgPonoWorld.complete && imgPonoWorld.naturalWidth > 0) {
-      ctx.shadowColor = startActive ? getTheme().connectedGlow : 'rgba(5,20,18,0.34)';
-      ctx.shadowBlur = startActive ? Math.max(10, cellSize * 0.14) : Math.max(4, cellSize * 0.06);
-      ctx.drawImage(imgPonoWorld, sx - ponoW / 2, sy - ponoH / 2, ponoW, ponoH);
+      ctx.shadowColor = startActive ? getTheme().connectedGlow : 'rgba(5,20,18,0.22)';
+      ctx.shadowBlur = startActive ? Math.max(10, cellSize * 0.14) : Math.max(4, cellSize * 0.05);
+      ctx.drawImage(imgPonoWorld, geo.startX - ponoW / 2, geo.startY - ponoH / 2, ponoW, ponoH);
     } else {
       ctx.font = `${Math.floor(cellSize * 0.46)}px serif`;
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('🐻', sx, sy);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('🐻', geo.startX, geo.startY);
     }
     ctx.restore();
-    drawWorldLabel('ポノ', sx, sy + ponoH * 0.5 + Math.max(6, cellSize * 0.05));
+    drawWorldLabel('ポノ', geo.startX,
+      geo.startY + ponoH * 0.5 + Math.max(6, cellSize * 0.05));
   }
 
-  drawGuideTrail(sx + ponoW * 0.34, leftEdge + Math.max(5, cellSize * 0.045), sy, startActive, now);
+  drawGuideTrail(geo.startX + ponoW * 0.34,
+    geo.leftEdge + Math.max(5, cellSize * 0.045), geo.startY, startActive, now);
 
-  // ===== Goal marker at right =====
-  const gr = level.goal.row;
-  const rightEdge = gridOX + curCols * cellSize;
-  const gx = rightEdge + cellSize * 0.56;
-  const gy = gridOY + gr * cellSize + cellSize / 2;
-  const goalIdx = gr * curCols + (curCols - 1);
+  const goalIdx = level.goal.row * curCols + (curCols - 1);
   const goalTile = grid[goalIdx];
-  const goalActive = connectedSet.has(goalIdx) && goalTile && goalTile !== 'BLANK' && TILE_TYPES[goalTile].edges[1];
+  const goalActive = connectedSet.has(goalIdx) && goalTile && goalTile !== 'BLANK' &&
+    TILE_TYPES[goalTile].edges[1];
   const ringR = Math.max(21, Math.min(58, cellSize * 0.34));
 
   ctx.save();
-  const goalGlow = ctx.createRadialGradient(gx, gy, ringR * 0.12, gx, gy, ringR);
-  goalGlow.addColorStop(0, goalActive ? 'rgba(255,246,171,0.58)' : 'rgba(245,239,210,0.26)');
-  goalGlow.addColorStop(0.72, goalActive ? getTheme().connectedGlow : 'rgba(211,231,218,0.13)');
+  const goalGlow = ctx.createRadialGradient(
+    geo.goalX, geo.goalY, ringR * 0.12, geo.goalX, geo.goalY, ringR);
+  goalGlow.addColorStop(0, goalActive ? 'rgba(255,250,185,0.64)' : 'rgba(255,252,224,0.22)');
+  goalGlow.addColorStop(0.72, goalActive ? getTheme().connectedGlow : 'rgba(225,243,236,0.12)');
   goalGlow.addColorStop(1, 'rgba(255,255,255,0)');
   ctx.fillStyle = goalGlow;
   ctx.beginPath();
-  ctx.arc(gx, gy, ringR, 0, Math.PI * 2);
+  ctx.arc(geo.goalX, geo.goalY, ringR, 0, Math.PI * 2);
   ctx.fill();
-  ctx.strokeStyle = goalActive ? getTheme().connected : 'rgba(255,247,211,0.58)';
-  ctx.lineWidth = Math.max(1.5, cellSize * 0.022);
-  ctx.beginPath();
-  ctx.arc(gx, gy, ringR * 0.76, 0, Math.PI * 2);
-  ctx.stroke();
   ctx.restore();
 
+  drawGuideTrail(geo.rightEdge - Math.max(5, cellSize * 0.04),
+    geo.goalX - ringR * 0.42, geo.goalY, goalActive, now);
+
+  // A solved board is only a road. The clue appears after Pono actually arrives.
+  if (!clueDiscovered) {
+    return;
+  }
+
   if (level.goalIcon === 'mom') {
-    // 最終ステージ: お母さん全身画像
     if (imgMomFull.complete && imgMomFull.naturalWidth > 0) {
       const momH = Math.max(66, Math.min(160, cellSize * 1.15));
       const momW = momH * imgMomFull.naturalWidth / imgMomFull.naturalHeight;
-      ctx.drawImage(imgMomFull, gx - momW / 2, gy - momH / 2, momW, momH);
-      drawWorldLabel('おかあさん', gx, gy + momH * 0.5 + Math.max(6, cellSize * 0.04));
-    } else if (imgMom.complete && imgMom.naturalWidth > 0) {
-      const faceSize = ringR * 1.2;
-      ctx.drawImage(imgMom, gx - faceSize / 2, gy - faceSize / 2, faceSize, faceSize);
-      drawWorldLabel('おかあさん', gx, gy + faceSize * 0.65);
+      const momX = geo.goalX + cellSize * 0.12;
+      ctx.drawImage(imgMomFull, momX - momW / 2, geo.goalY - momH / 2, momW, momH);
+      drawWorldLabel('おかあさん', momX,
+        geo.goalY + momH * 0.5 + Math.max(6, cellSize * 0.04));
+    } else {
+      ctx.font = `${Math.max(28, Math.floor(cellSize * 0.48))}px serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('🐻', geo.goalX, geo.goalY);
     }
-  } else {
-    // 手がかりアイコン（絵文字）
-    ctx.save();
-    ctx.font = `${Math.max(24, Math.floor(cellSize * 0.43))}px serif`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(level.goalIcon, gx, gy);
-    ctx.restore();
+    return;
   }
 
-  drawGuideTrail(rightEdge - Math.max(5, cellSize * 0.04), gx - ringR * 0.42, gy, goalActive, now);
+  if (level.clueAsset === 'moonlight' && imgMoonClue.complete && imgMoonClue.naturalWidth > 0) {
+    const moonSize = Math.max(48, Math.min(108, cellSize * 0.72));
+    ctx.save();
+    ctx.shadowColor = 'rgba(255,235,133,0.62)';
+    ctx.shadowBlur = Math.max(10, cellSize * 0.16);
+    ctx.drawImage(imgMoonClue,
+      geo.goalX - moonSize / 2, geo.goalY - moonSize / 2, moonSize, moonSize);
+    ctx.restore();
+    return;
+  }
+
+  if (imgClueSheet.complete && imgClueSheet.naturalWidth > 0 && level.clueCell) {
+    const sourceW = imgClueSheet.naturalWidth / 3;
+    const sourceH = imgClueSheet.naturalHeight / 2;
+    const clueSize = Math.max(48, Math.min(108, cellSize * 0.72));
+    ctx.save();
+    ctx.shadowColor = getTheme().connectedGlow;
+    ctx.shadowBlur = Math.max(10, cellSize * 0.15);
+    ctx.drawImage(imgClueSheet,
+      level.clueCell[0] * sourceW, level.clueCell[1] * sourceH, sourceW, sourceH,
+      geo.goalX - clueSize / 2, geo.goalY - clueSize / 2, clueSize, clueSize);
+    ctx.restore();
+  }
+}
+
+function drawJourneyActor(now) {
+  if (!journeyActor.active) return;
+  const fx = journeyActor.x;
+  const fy = journeyActor.y;
+  const walkH = Math.floor(cellSize * 0.58);
+  const spriteElapsed = Math.max(0, now - journeyActor.t0);
+  const isMoving = journeyActor.phase !== JOURNEY_PHASE.DISCOVERY;
+  const frameClock = isMoving ? spriteElapsed : 0;
+  const horizontal = Math.abs(journeyActor.dx || 1) >= Math.abs(journeyActor.dy || 0);
+
+  ctx.save();
+  ctx.fillStyle = 'rgba(10,30,28,0.2)';
+  ctx.beginPath();
+  ctx.ellipse(fx, fy + walkH * 0.42, walkH * 0.22, walkH * 0.055, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  if (horizontal && imgWalkSideSheet.complete && imgWalkSideSheet.naturalWidth > 0) {
+    const sideH = Math.floor(walkH * SIDE_WALK_SCALE);
+    const sourceW = imgWalkSideSheet.naturalWidth / SIDE_WALK_FRAMES;
+    const sourceH = imgWalkSideSheet.naturalHeight;
+    const sideW = Math.floor(sideH * sourceW / sourceH);
+    const frameIdx = Math.floor(frameClock / (1000 / WALK_FPS)) % SIDE_WALK_FRAMES;
+    const sourceX = frameIdx * sourceW;
+    ctx.save();
+    if ((journeyActor.dx || 1) < 0) {
+      ctx.translate(fx, fy);
+      ctx.scale(-1, 1);
+      ctx.drawImage(imgWalkSideSheet, sourceX, 0, sourceW, sourceH,
+        -sideW / 2, -sideH / 2, sideW, sideH);
+    } else {
+      ctx.drawImage(imgWalkSideSheet, sourceX, 0, sourceW, sourceH,
+        fx - sideW / 2, fy - sideH / 2, sideW, sideH);
+    }
+    ctx.restore();
+  } else if (imgWalkSheet.complete && imgWalkSheet.naturalWidth > 0) {
+    const sourceW = imgWalkSheet.naturalWidth / WALK_FRAMES;
+    const sourceH = imgWalkSheet.naturalHeight;
+    const walkW = Math.floor(walkH * sourceW / sourceH);
+    const frameIdx = Math.floor(frameClock / (1000 / WALK_FPS)) % WALK_FRAMES;
+    ctx.drawImage(imgWalkSheet, frameIdx * sourceW, 0, sourceW, sourceH,
+      fx - walkW / 2, fy - walkH / 2, walkW, walkH);
+  } else {
+    ctx.font = `${Math.floor(cellSize * 0.5)}px serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🐻', fx, fy);
+  }
 }
 
 function draw(now) {
@@ -1365,12 +1603,12 @@ function draw(now) {
     ctx.fillRect(0, 0, CW, CH);
   }
 
-  // Keep the portrait illustration as atmosphere while integrating the board
-  // into the world with a soft clearing instead of an opaque double frame.
+  // The new plates already carry their own light. Keep only a very soft wash so
+  // the board reads clearly without turning the illustration brown or gloomy.
   const wash = ctx.createLinearGradient(0, 0, 0, CH);
-  wash.addColorStop(0, 'rgba(7,27,28,0.16)');
-  wash.addColorStop(0.35, 'rgba(7,27,28,0.02)');
-  wash.addColorStop(1, 'rgba(7,27,28,0.2)');
+  wash.addColorStop(0, 'rgba(20,67,73,0.04)');
+  wash.addColorStop(0.35, 'rgba(255,255,255,0)');
+  wash.addColorStop(1, 'rgba(13,47,61,0.06)');
   ctx.fillStyle = wash;
   ctx.fillRect(0, 0, CW, CH);
   drawBoardAtmosphere(now);
@@ -1378,9 +1616,9 @@ function draw(now) {
   const total = curCols * curRows;
   const hasBoard = emptyIdx >= 0 && grid.length === total;
   const connectedSet = hasBoard ? getStartConnectedTileSet() : new Set();
-  const movableSet = hasBoard
-    ? new Set(getAdjacentIndices(emptyIdx).filter(index => grid[index] !== null))
-    : new Set();
+  const hintVisible = hasBoard && state === S.PLAYING && moveCount === 0 &&
+    !hintDismissed && !_slideTutActive && now >= hintReadyAt &&
+    getAdjacentIndices(emptyIdx).includes(suggestedMoveIdx) && grid[suggestedMoveIdx] !== null;
   if (hasBoard) drawEmptySlot(now);
 
   // Draw tiles
@@ -1394,110 +1632,29 @@ function draw(now) {
     if (animating && i === anim.idx) {
       x = anim.curX;
       y = anim.curY;
+    } else if (hintVisible && i === suggestedMoveIdx && !reducedMotionQuery.matches) {
+      const emptyRow = Math.floor(emptyIdx / curCols), emptyCol = emptyIdx % curCols;
+      const nudge = (Math.sin(now * 0.006) + 1) * cellSize * 0.018;
+      x += (emptyCol - col) * nudge;
+      y += (emptyRow - row) * nudge;
     }
 
     drawTile(x, y, cellSize, tileKey, {
       index: i,
       now: now,
       connected: connectedSet.has(i),
-      movable: movableSet.has(i) && !animating,
+      movable: hintVisible && i === suggestedMoveIdx && !animating,
       animating: animating && i === anim.idx,
     });
   }
 
-  if (!animating && state === S.PLAYING && !winAnim.active) {
-    movableSet.forEach(index => drawMoveHint(index, now));
+  if (hintVisible && !animating) {
+    drawMoveHint(suggestedMoveIdx, now);
   }
 
-  // Start & Goal markers
+  // World markers and the single persistent actor are complementary layers.
   if (hasBoard) drawStartGoal(now, connectedSet);
-
-  // Win celebration walk animation (direction-aware)
-  if (winAnim.active && winAnim.path.length > 0) {
-    const elapsed = now - winAnim.t0;
-    const dur = winAnim.path.length * 867; // walk speed
-    // onStageClear() が同じrAF内で performance.now() を採ると、渡された
-    // frame timestamp よりわずかに未来になるため、初回だけ負値になり得る。
-    const t = Math.max(0, Math.min(elapsed / dur, 1));
-    const spriteElapsed = Math.max(0, elapsed);
-    const totalPts = winAnim.path.length;
-    const exactIdx = t * (totalPts - 1);
-    const idxA = Math.floor(exactIdx);
-    const idxB = Math.min(idxA + 1, totalPts - 1);
-    const frac = exactIdx - idxA;
-
-    const pA = winAnim.path[idxA];
-    const pB = winAnim.path[idxB];
-    const fx = gridOX + (pA.col + (pB.col - pA.col) * frac) * cellSize + cellSize / 2;
-    const fy = gridOY + (pA.row + (pB.row - pA.row) * frac) * cellSize + cellSize / 2;
-
-    // Determine movement direction (look ahead; if same point, look at next segment)
-    let dCol = 0, dRow = 0;
-    if (idxA !== idxB) {
-      dCol = pB.col - pA.col;
-      dRow = pB.row - pA.row;
-    } else if (idxA > 0) {
-      // At last point or boundary — use previous segment direction
-      dCol = pA.col - winAnim.path[idxA - 1].col;
-      dRow = pA.row - winAnim.path[idxA - 1].row;
-    }
-    const isHorizontal = Math.abs(dCol) > Math.abs(dRow);
-
-    const walkH = Math.floor(cellSize * 0.55);
-
-    if (isHorizontal && imgWalkSideSheet.complete && imgWalkSideSheet.naturalWidth > 0) {
-      // Side walk (scaled up to match front character size)
-      const sideH = Math.floor(walkH * SIDE_WALK_SCALE);
-      const sourceW = imgWalkSideSheet.naturalWidth / SIDE_WALK_FRAMES;
-      const sourceH = imgWalkSideSheet.naturalHeight;
-      const sideW = Math.floor(sideH * sourceW / sourceH);
-      const frameIdx = Math.floor(spriteElapsed / (1000 / WALK_FPS)) % SIDE_WALK_FRAMES;
-      const sx = frameIdx * sourceW;
-      ctx.save();
-      if (dCol < 0) {
-        // Moving left — flip horizontally
-        ctx.translate(fx, fy);
-        ctx.scale(-1, 1);
-        ctx.drawImage(imgWalkSideSheet, sx, 0, sourceW, sourceH,
-                       -sideW / 2, -sideH / 2, sideW, sideH);
-      } else {
-        ctx.drawImage(imgWalkSideSheet, sx, 0, sourceW, sourceH,
-                       fx - sideW / 2, fy - sideH / 2, sideW, sideH);
-      }
-      ctx.restore();
-    } else if (imgWalkSheet.complete && imgWalkSheet.naturalWidth > 0) {
-      // Front walk (vertical movement or side sheet not loaded)
-      const sourceW = imgWalkSheet.naturalWidth / WALK_FRAMES;
-      const sourceH = imgWalkSheet.naturalHeight;
-      const walkW = Math.floor(walkH * sourceW / sourceH);
-      const frameIdx = Math.floor(spriteElapsed / (1000 / WALK_FPS)) % WALK_FRAMES;
-      const sx = frameIdx * sourceW;
-      ctx.drawImage(imgWalkSheet, sx, 0, sourceW, sourceH,
-                     fx - walkW / 2, fy - walkH / 2, walkW, walkH);
-    } else {
-      ctx.font = `${Math.floor(cellSize * 0.5)}px serif`;
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText('🐻', fx, fy);
-    }
-
-    if (t >= 1) {
-      winAnim.active = false;
-      // チュートリアル完了は専用の「あそぼう！」案内へつなぐ。
-      // 通常ステージのクリア表示を背後で重ねない。
-      if (_slideTutActive) return;
-      const isLast = stageIdx >= LEVELS.length - 1;
-      // ★ 全ステージクリア時は宝箱演出を先に表示してから最終オーバーレイ
-      if (isLast && window.triggerFirstClearReward) {
-        window.triggerFirstClearReward('slide', {
-          onClose: function() { showOverlay('gameclear'); }
-        }).then(function(shown) {
-          if (!shown) setTimeout(function() { showOverlay('gameclear'); }, 300);
-        }).catch(function() { setTimeout(function() { showOverlay('gameclear'); }, 300); });
-      } else {
-        setTimeout(function() { showOverlay(isLast ? 'gameclear' : 'stageclear'); }, 300);
-      }
-    }
-  }
+  if (journeyActor.active) drawJourneyActor(now);
 
   // Pause overlay on canvas
   if (state === S.PAUSED) {
@@ -1533,16 +1690,169 @@ function updateAnim(now) {
   }
 }
 
+function showJourneyToast(message, discovery) {
+  const toast = document.getElementById('journey-toast');
+  if (!toast || !message) return;
+  toast.textContent = message;
+  toast.classList.toggle('discovery', Boolean(discovery));
+  toast.classList.add('show');
+  journeyToastHideAt = performance.now() + (discovery ? 2100 : 2400);
+}
+
+function updateJourneyToast(now) {
+  if (!journeyToastHideAt || now < journeyToastHideAt) return;
+  const toast = document.getElementById('journey-toast');
+  if (toast) toast.classList.remove('show');
+  journeyToastHideAt = 0;
+}
+
+function setJourneyPath(phase, points, duration, now) {
+  journeyActor.active = true;
+  journeyActor.phase = phase;
+  journeyActor.path = points;
+  journeyActor.progress = 0;
+  journeyActor.t0 = now;
+  journeyActor.duration = duration;
+  journeyActor.x = points[0].x;
+  journeyActor.y = points[0].y;
+  journeyActor.dx = points.length > 1 ? points[1].x - points[0].x : 1;
+  journeyActor.dy = points.length > 1 ? points[1].y - points[0].y : 0;
+}
+
+function updateJourneyPosition(now) {
+  const points = journeyActor.path;
+  if (!points || points.length === 0) return 1;
+  const duration = Math.max(1, journeyActor.duration);
+  const raw = Math.max(0, Math.min((now - journeyActor.t0) / duration, 1));
+  const eased = raw < 0.5 ? 2 * raw * raw : 1 - Math.pow(-2 * raw + 2, 2) / 2;
+  journeyActor.progress = eased;
+  const exact = eased * (points.length - 1);
+  const fromIndex = Math.min(Math.floor(exact), points.length - 1);
+  const toIndex = Math.min(fromIndex + 1, points.length - 1);
+  const mix = exact - fromIndex;
+  const from = points[fromIndex];
+  const to = points[toIndex];
+  journeyActor.x = from.x + (to.x - from.x) * mix;
+  journeyActor.y = from.y + (to.y - from.y) * mix;
+  if (to.x !== from.x || to.y !== from.y) {
+    journeyActor.dx = to.x - from.x;
+    journeyActor.dy = to.y - from.y;
+  }
+  return raw;
+}
+
+function finishJourneyIntro(now) {
+  if (journeyActor.phase !== JOURNEY_PHASE.INTRO) return;
+  const geo = getJourneyGeometry();
+  journeyActor.active = false;
+  journeyActor.phase = JOURNEY_PHASE.PLAYING;
+  journeyActor.x = geo.startX;
+  journeyActor.y = geo.startY;
+  state = S.PLAYING;
+  prepauseState = S.PLAYING;
+  hintReadyAt = now + 1500;
+  setPauseAvailable(true);
+}
+
+function finishExitWithDiscovery(now) {
+  if (journeyActor.phase !== JOURNEY_PHASE.EXIT) return;
+  const geo = getJourneyGeometry();
+  journeyActor.phase = JOURNEY_PHASE.DISCOVERY;
+  journeyActor.active = true;
+  journeyActor.path = [{ x: geo.discoverX, y: geo.goalY }];
+  journeyActor.x = geo.discoverX;
+  journeyActor.y = geo.goalY;
+  journeyActor.t0 = now;
+  journeyActor.duration = reducedMotionQuery.matches ? 700 : 1500;
+  clueDiscovered = true;
+  showJourneyToast(LEVELS[stageIdx].discoveryMsg, true);
+}
+
+function beginJourneyDeparture(now) {
+  const geo = getJourneyGeometry();
+  setJourneyPath(JOURNEY_PHASE.DEPARTING, [
+    { x: journeyActor.x, y: journeyActor.y },
+    { x: geo.departX, y: geo.goalY },
+  ], reducedMotionQuery.matches ? 1 : 620, now);
+}
+
+function queueGameClearReward() {
+  if (gameClearQueued) return;
+  gameClearQueued = true;
+  state = S.GAME_CLEAR;
+  setPauseAvailable(false);
+  if (window.triggerFirstClearReward) {
+    window.triggerFirstClearReward('slide', {
+      onClose: function() { showOverlay('gameclear'); }
+    }).then(function(shown) {
+      if (!shown) showOverlay('gameclear');
+    }).catch(function() { showOverlay('gameclear'); });
+  } else {
+    showOverlay('gameclear');
+  }
+}
+
+function finishJourneyDeparture() {
+  if (journeyActor.phase !== JOURNEY_PHASE.DEPARTING) return;
+  journeyActor.active = false;
+  journeyActor.phase = JOURNEY_PHASE.DONE;
+  if (journeyActor.tutorial) return;
+  if (stageIdx >= LEVELS.length - 1) {
+    queueGameClearReward();
+  } else if (LEVELS[stageIdx].cutscene) {
+    showCutscene();
+  } else {
+    nextStage();
+  }
+}
+
+function updateJourney(now) {
+  if (!journeyActor.active || state === S.PAUSED) return;
+
+  if (journeyActor.phase === JOURNEY_PHASE.INTRO) {
+    if (reducedMotionQuery.matches) {
+      finishJourneyIntro(now);
+      return;
+    }
+    if (updateJourneyPosition(now) >= 1) finishJourneyIntro(now);
+    return;
+  }
+
+  if (journeyActor.phase === JOURNEY_PHASE.EXIT) {
+    if (reducedMotionQuery.matches) {
+      finishExitWithDiscovery(now);
+      return;
+    }
+    if (updateJourneyPosition(now) >= 1) finishExitWithDiscovery(now);
+    return;
+  }
+
+  if (journeyActor.phase === JOURNEY_PHASE.DISCOVERY) {
+    if (now - journeyActor.t0 >= journeyActor.duration) beginJourneyDeparture(now);
+    return;
+  }
+
+  if (journeyActor.phase === JOURNEY_PHASE.DEPARTING) {
+    if (reducedMotionQuery.matches) {
+      finishJourneyDeparture();
+      return;
+    }
+    if (updateJourneyPosition(now) >= 1) finishJourneyDeparture();
+  }
+}
+
 // ===== Game loop =====
 function loop(ts) {
   requestAnimationFrame(loop);
   updateAnim(ts);
+  updateJourney(ts);
+  updateJourneyToast(ts);
   draw(ts);
 }
 
 // ===== Input =====
 function handleTap(px, py) {
-  if (state !== S.PLAYING || animating || winAnim.active) return false;
+  if (state !== S.PLAYING || animating || journeyActor.active) return false;
 
   const col = Math.floor((px - gridOX) / cellSize);
   const row = Math.floor((py - gridOY) / cellSize);
@@ -1565,6 +1875,7 @@ function handleTap(px, py) {
   anim.curX  = anim.fromX;
   anim.curY  = anim.fromY;
   anim.t0    = performance.now();
+  hintDismissed = true;
   playSlideSound();
   return true;
 }
@@ -1580,13 +1891,25 @@ wrap.addEventListener('pointerdown', e => {
 
 // ===== Stage clear =====
 function onStageClear() {
-  state = S.STAGE_CLEAR;
+  state = S.TRAVELLING;
+  setPauseAvailable(false);
   playClearSound();
   if (window.incrementStat) window.incrementStat('slide_clears', 1);
-  const path = traceWinPath();
-  winAnim.active = true;
-  winAnim.t0 = performance.now();
-  winAnim.path = path;
+  const route = traceWinPath();
+  const geo = getJourneyGeometry();
+  const points = route.map(function(point) {
+    return {
+      x: gridOX + (point.col + 0.5) * cellSize,
+      y: gridOY + (point.row + 0.5) * cellSize,
+    };
+  });
+  if (points.length === 0) points.push({ x: geo.startX, y: geo.startY });
+  points[0] = { x: geo.startX, y: geo.startY };
+  points[points.length - 1] = { x: geo.discoverX, y: geo.goalY };
+  journeyActor.tutorial = false;
+  setJourneyPath(JOURNEY_PHASE.EXIT, points,
+    reducedMotionQuery.matches ? 1 : Math.max(900, (points.length - 1) * 260),
+    performance.now());
 }
 
 // ===== Confetti =====
@@ -1620,94 +1943,92 @@ function showOverlay(type) {
   const msg   = document.getElementById('ov-msg');
   const btn   = document.getElementById('ov-btn');
   const back  = document.getElementById('ov-back');
+  setPauseAvailable(false);
   overlay.classList.remove('hidden');
   back.classList.add('hidden');
   title.style.whiteSpace = '';
   document.querySelector('.ov-card').classList.remove('cutscene-mode');
 
+  var actionType = type;
   var ponoFaceTag = '<img src="../assets/images/characters/pono/pono_face_circle.png" style="width:72px;height:72px;object-fit:contain;" alt="ポノ">';
-  var reunionTag  = '<div style="display:flex;align-items:flex-end;justify-content:center;gap:4px;">' +
-                    '<img src="../assets/images/characters/pono/pono_001.png" style="width:60px;height:60px;object-fit:contain;" alt="ポノ">' +
-                    '<div style="display:flex;flex-direction:column;align-items:center;gap:2px;">' +
-                    '<span style="font-size:1.2rem;animation:heartFloat 1.5s ease-in-out infinite;">❤️</span>' +
-                    '<span style="font-size:1.8rem;animation:heartFloat 1.5s ease-in-out 0.5s infinite;">❤️</span>' +
-                    '</div>' +
-                    '<img src="../assets/images/Slide/pono_mom_only.png" style="width:100px;height:100px;object-fit:contain;" alt="おかあさん">' +
-                    '</div>';
 
   if (type === 'start') {
     icon.innerHTML    = ponoFaceTag;
     if (!localStorage.getItem('slide_tut_seen')) {
-      // 初回: ゲーム説明
       title.textContent = 'みちつなぎ';
       msg.textContent   = 'パネルを うごかして\nひだりから みぎへ つなげよう！\nまずは れんしゅうから！';
       btn.textContent   = 'やってみる ▶';
+      actionType = 'tutorial-start';
     } else {
       title.textContent = 'おかあさん どこいったの？';
       msg.textContent   = LEVELS[stageIdx].storyMsg;
       btn.textContent   = 'さがしにいく ▶';
-    }
-  } else if (type === 'stagestart') {
-    icon.innerHTML    = ponoFaceTag;
-    title.textContent = 'ステージ ' + (stageIdx + 1);
-    msg.textContent   = LEVELS[stageIdx].storyMsg;
-    btn.textContent   = 'すすむ ▶';
-  } else if (type === 'stageclear') {
-    launchConfetti();
-    icon.innerHTML    = ponoFaceTag;
-    title.textContent = `${LEVELS[stageIdx].name} クリア！`;
-    msg.textContent   = LEVELS[stageIdx].clearMsg + `\nてかず${moveCount}`;
-    btn.textContent   = 'つぎへ ▶';
-    if (LEVELS[stageIdx].cutscene) {
-      btn.dataset.ovType = 'cutscene';
-      return;
     }
   } else if (type === 'gameclear') {
     launchConfetti();
     playGameClearSound();
     var card = document.querySelector('.ov-card');
     card.classList.add('cutscene-mode');
-    icon.innerHTML    = '<img src="../assets/images/Slide/cutscene_ending.png" class="cutscene-img" alt="おかあさんと いっしょ">';
+    icon.innerHTML    = '<div class="cutscene-scene" style="background-image:url(&quot;' + STAGE_BGS[7] + '&quot;)">' +
+      '<img src="../assets/images/characters/pono/pono_003.png" class="cutscene-pono" alt="ポノ">' +
+      '<span class="cutscene-hearts" aria-hidden="true">♥ ♥</span>' +
+      '<img src="../assets/images/Slide/adventure/mom_soft_style.webp" class="cutscene-mom" alt="おかあさん">' +
+      '</div>';
     title.textContent = 'おかあさんと さいかい！';
     msg.textContent   = `「ポノの だいすきな きのみと\nキノコを とりにきたの。\nおそくなって ごめんね！\nいっしょに かえろう！」\nてかず${moveCount} でクリア！`;
     btn.textContent   = 'もういっかい ▶';
   }
 
-  btn.dataset.ovType = type;
+  btn.dataset.ovType = actionType;
 }
 
 function updateHUD() {
   document.getElementById('hud-stage').textContent = LEVELS[stageIdx].name;
   document.getElementById('hud-moves').textContent = `てかず: ${moveCount}`;
   var stageNum = document.getElementById('stage-num');
-  if (stageNum) stageNum.textContent = 'ステージ ' + (stageIdx + 1) + ' / ' + LEVELS.length;
+  if (stageNum) {
+    stageNum.textContent = LEVELS.map(function(_, index) {
+      return index === stageIdx ? '●' : '•';
+    }).join(' ');
+    stageNum.setAttribute('aria-label', 'たび ' + (stageIdx + 1) + ' / ' + LEVELS.length);
+  }
 }
 
 
 // ===== Start / Next =====
-function startGame() {
-  stageIdx = 0;
+function beginStage(index) {
+  overlay.classList.add('hidden');
+  stageIdx = index;
   moveCount = 0;
+  clueDiscovered = false;
+  hintDismissed = false;
+  animating = false;
   shuffleGrid(LEVELS[stageIdx]);
   calcLayout();
   updateHUD();
-  state = S.IDLE;
-  prepauseState = S.IDLE;
   updatePauseButton(false);
-  showOverlay('stagestart');
+  setPauseAvailable(false);
+  const now = performance.now();
+  const geo = getJourneyGeometry();
+  journeyActor.tutorial = false;
+  state = S.TRAVELLING;
+  prepauseState = S.TRAVELLING;
+  setJourneyPath(JOURNEY_PHASE.INTRO, [
+    { x: geo.entryX, y: geo.startY },
+    { x: geo.startX, y: geo.startY },
+  ], reducedMotionQuery.matches ? 1 : 650, now);
+  showJourneyToast(LEVELS[stageIdx].introMsg, false);
+}
+
+function startGame() {
+  gameClearQueued = false;
+  journeyActor.phase = JOURNEY_PHASE.INTRO;
+  beginStage(0);
 }
 
 function nextStage() {
-  overlay.classList.add('hidden');
-  stageIdx++;
-  moveCount = 0;
-  shuffleGrid(LEVELS[stageIdx]);
-  calcLayout();
-  updateHUD();
-  state = S.IDLE;
-  prepauseState = S.IDLE;
-  updatePauseButton(false);
-  showOverlay('stagestart');
+  journeyActor.phase = JOURNEY_PHASE.INTRO;
+  beginStage(Math.min(stageIdx + 1, LEVELS.length - 1));
 }
 
 // ===== Cutscene =====
@@ -1719,17 +2040,17 @@ function showCutscene() {
   var title = document.getElementById('ov-title');
   var msg   = document.getElementById('ov-msg');
   var btn   = document.getElementById('ov-btn');
+  setPauseAvailable(false);
+  overlay.classList.remove('hidden');
   card.classList.add('cutscene-mode');
-  if (level.cutscene.img) {
-    icon.innerHTML = '<img src="' + level.cutscene.img + '" class="cutscene-img" alt="カットイン">';
-  } else {
-    icon.innerHTML = '<img src="../assets/images/Slide/pono_mom_only.png" style="width:100px;height:100px;object-fit:contain;" alt="おかあさん">';
-  }
+  icon.innerHTML = '<div class="cutscene-scene" style="background-image:url(&quot;' + STAGE_BGS[stageIdx] + '&quot;)">' +
+    '<img src="../assets/images/Slide/adventure/mom_soft_style.webp" class="cutscene-mom" alt="おかあさん">' +
+    '</div>';
   title.textContent = level.cutscene.text;
   title.style.whiteSpace = 'pre-line';
   msg.textContent = '';
   btn.textContent = 'つぎへ ▶';
-  btn.dataset.ovType = 'stageclear';
+  btn.dataset.ovType = 'cutscene-next';
 }
 
 // ===== Overlay button =====
@@ -1737,33 +2058,13 @@ function showCutscene() {
   const ovBtn = document.getElementById('ov-btn');
   function execAction() {
     const t = ovBtn.dataset.ovType;
-    if (t === 'cutscene') { showCutscene(); return; }
-    if (t === 'stageclear') nextStage();
-    else if (t === 'stagestart') {
+    if (t === 'cutscene-next') {
+      nextStage();
+    } else if (t === 'tutorial-start') {
       overlay.classList.add('hidden');
-      state = S.PLAYING;
-      prepauseState = S.PLAYING;
-      updatePauseButton(false);
+      showTutorial();
     } else {
-      if (!localStorage.getItem('slide_tut_seen')) {
-        // チュートリアルから開始（ステージダイアログなし）
-        overlay.classList.add('hidden');
-        stageIdx = 0;
-        moveCount = 0;
-        curCols = 3; curRows = 3;
-        grid = TUTORIAL_GRID.slice();
-        emptyIdx = TUTORIAL_EMPTY;
-        calcLayout();
-        // HUDを「チュートリアル」表示
-        document.getElementById('hud-stage').textContent = 'れんしゅう';
-        document.getElementById('hud-moves').textContent = '';
-        var stageNum = document.getElementById('stage-num');
-        if (stageNum) stageNum.textContent = 'チュートリアル';
-        state = S.PLAYING;
-        setTimeout(showTutorial, 500);
-      } else {
-        startGame();
-      }
+      startGame();
     }
   }
   ovBtn.addEventListener('touchstart', e => { e.preventDefault(); execAction(); }, { passive: false });
@@ -1783,7 +2084,7 @@ function togglePause() {
     state = prepauseState;
     updatePauseButton(false);
     if (bgmEnabled) bgm.play().catch(() => {});
-  } else if (state === S.PLAYING) {
+  } else if (state === S.PLAYING && !animating && !journeyActor.active) {
     prepauseState = state;
     state = S.PAUSED;
     updatePauseButton(true);
@@ -1792,6 +2093,11 @@ function togglePause() {
 }
 
 const btnPause = document.getElementById('btn-pause');
+function setPauseAvailable(available) {
+  btnPause.disabled = !available;
+  if (available) btnPause.removeAttribute('aria-disabled');
+  else btnPause.setAttribute('aria-disabled', 'true');
+}
 btnPause.addEventListener('touchstart', e => { e.stopPropagation(); e.preventDefault(); togglePause(); }, { passive: false });
 btnPause.addEventListener('click', e => { e.stopPropagation(); togglePause(); });
 
@@ -1826,10 +2132,12 @@ updateBgmBtn();
 
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) { bgm.pause(); }
-  else if (bgmEnabled) { bgm.play().catch(() => {}); }
+  else if (bgmEnabled && state !== S.PAUSED) { bgm.play().catch(() => {}); }
 });
 window.addEventListener('blur',  () => { if (!document.hidden) return; bgm.pause(); });
-window.addEventListener('focus', () => { if (bgmEnabled) bgm.play().catch(() => {}); });
+window.addEventListener('focus', () => {
+  if (bgmEnabled && state !== S.PAUSED) bgm.play().catch(() => {});
+});
 
 var _slideTutActive = false;
 function showTutorial() {
@@ -1838,8 +2146,7 @@ function showTutorial() {
   var bubble = document.getElementById('tut-bubble');
   if (!dim || !bubble) return;
   _slideTutActive = true;
-  btnPause.disabled = true;
-  btnPause.setAttribute('aria-disabled', 'true');
+  setPauseAvailable(false);
 
   // チュートリアル用: 左から右へ3手で完成する固定配置。
   var tutGrid = TUTORIAL_GRID.slice();
@@ -1856,7 +2163,11 @@ function showTutorial() {
   grid = tutGrid.slice();
   emptyIdx = tutEmpty;
   animating = false;
-  winAnim.active = false;
+  clueDiscovered = false;
+  hintDismissed = true;
+  journeyActor.active = false;
+  journeyActor.phase = JOURNEY_PHASE.PLAYING;
+  journeyActor.tutorial = true;
   state = S.PLAYING;
   prepauseState = S.PLAYING;
   updatePauseButton(false);
@@ -1959,12 +2270,23 @@ function showTutorial() {
           // チュートリアル完了！ポノをゴールまで歩かせる
           var path = traceWinPath();
           if (path && path.length > 0) {
-            winAnim.active = true;
-            winAnim.t0 = performance.now();
-            winAnim.path = path;
-            // winAnim完了を待ってからダイアログ
+            var geo = getJourneyGeometry();
+            var points = path.map(function(point) {
+              return {
+                x: gridOX + (point.col + 0.5) * cellSize,
+                y: gridOY + (point.row + 0.5) * cellSize,
+              };
+            });
+            points[0] = { x: geo.startX, y: geo.startY };
+            points[points.length - 1] = { x: geo.discoverX, y: geo.goalY };
+            state = S.TRAVELLING;
+            journeyActor.tutorial = true;
+            setJourneyPath(JOURNEY_PHASE.EXIT, points,
+              reducedMotionQuery.matches ? 1 : Math.max(800, (points.length - 1) * 240),
+              performance.now());
+            // たびの演出が終わってから「あそぼう！」へつなぐ。
             var waitWalk = setInterval(function() {
-              if (!winAnim.active) {
+              if (!journeyActor.active) {
                 clearInterval(waitWalk);
                 dim.classList.remove('hidden');
                 bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
@@ -1990,8 +2312,7 @@ function showTutorial() {
 
   function endTut() {
     _slideTutActive = false;
-    btnPause.disabled = false;
-    btnPause.removeAttribute('aria-disabled');
+    setPauseAvailable(true);
     if (_tutOverlay) { _tutOverlay.remove(); _tutOverlay = null; }
     dim.classList.add('hidden');
     bubble.classList.add('hidden');
