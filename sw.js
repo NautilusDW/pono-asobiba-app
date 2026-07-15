@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2205: もじっこ文字書きの短い横画面で、実際のZen Maru Gothic読込時にもモード選択の見出しと補助文が重ならないよう間隔を拡張。667×375／844×390で正の文字間隔、枠内収容、2行以内、44px以上の操作領域を回帰固定した (batch:1311-mojikko-storybook-ui)。play.html PAGE_CACHE_VERSION と同期不要 (writing-mori/index.html/テストのみ変更)。
 // v2204: もじっこファームの文字書き画面を、なぞなぞのフクロウ博士と共通する水彩の森・紙と木の絵本フレーム・丸ゴシックUIへ統一。お手本文字／HanziWriter／判定形状は明朝体のまま維持し、ミルマル4成長状態、もじミルク、ひまわり、ことばの穴18種の水彩絵を追加。短い横画面の実寸文字、モード選択、結果モーダルのfocus／scroll不変も回帰固定した (batch:1311-mojikko-storybook-ui)。play.html PAGE_CACHE_VERSION と同期不要 (writing-mori/index.html/画像/テストのみ変更)。
 // v2203: みちつなぎの途中物語絵を16:9 shellのほぼ全画面へ拡大し、GPT Image 2製の森／洞窟／月夜の道質感、赤旗ゴール、よつぼしへ刷新。道端を平らに重ねて十字を含むマス境界の丸い切れ目を解消し、stage3の経由アイテム取得とstage4の1枚だけ付け替え可能なよつまたを追加した。568×320〜1366×768、coarse touch、Chromium／WebKit、4面全到達状態を回帰した (batch:1311-slide-generated-road-mechanics)。play.html PAGE_CACHE_VERSION と同期不要 (slide/index.html/画像/テストのみ変更)。
 // v2202: なぞなぞトレイン宇宙面の最終追跡を、画面全体へ広がる10分岐・26経路・188通りの迷路ネットワークへ拡張。2択／3択、8の字・旋回・ねじれ・外周、スター多数の遠回りと近道を混在させ、キャラクター表示サイズを維持したまま論理画面を1600×1200へ引いた。分岐中は双方を同速減速し、無入力時の安全路自動選択、ゴール待機中のブースト保持、失敗なし救出を維持した (batch:1312-nazonazo-space-maze-network)。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/テストのみ変更)。
@@ -134,7 +135,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2204;
+const CACHE_VERSION = 2205;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
