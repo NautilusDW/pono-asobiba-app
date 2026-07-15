@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2206: もじっこ文字書きのミルマルを、初期状態確定前は画像なし、確定後はタマゴ／赤ちゃん／よちよち／成長の排他的visual classで対応する1枚だけ読む構造へ変更。不要な成長画像のcancelをなくし、4状態それぞれの正しい1request・他状態0・request failure 0・成功演出の追加request 0を回帰固定した (batch:1311-mojikko-storybook-ui)。play.html PAGE_CACHE_VERSION と同期不要 (writing-mori/index.html/テストのみ変更)。
 // v2205: もじっこ文字書きの短い横画面で、実際のZen Maru Gothic読込時にもモード選択の見出しと補助文が重ならないよう間隔を拡張。667×375／844×390で正の文字間隔、枠内収容、2行以内、44px以上の操作領域を回帰固定した (batch:1311-mojikko-storybook-ui)。play.html PAGE_CACHE_VERSION と同期不要 (writing-mori/index.html/テストのみ変更)。
 // v2204: もじっこファームの文字書き画面を、なぞなぞのフクロウ博士と共通する水彩の森・紙と木の絵本フレーム・丸ゴシックUIへ統一。お手本文字／HanziWriter／判定形状は明朝体のまま維持し、ミルマル4成長状態、もじミルク、ひまわり、ことばの穴18種の水彩絵を追加。短い横画面の実寸文字、モード選択、結果モーダルのfocus／scroll不変も回帰固定した (batch:1311-mojikko-storybook-ui)。play.html PAGE_CACHE_VERSION と同期不要 (writing-mori/index.html/画像/テストのみ変更)。
 // v2203: みちつなぎの途中物語絵を16:9 shellのほぼ全画面へ拡大し、GPT Image 2製の森／洞窟／月夜の道質感、赤旗ゴール、よつぼしへ刷新。道端を平らに重ねて十字を含むマス境界の丸い切れ目を解消し、stage3の経由アイテム取得とstage4の1枚だけ付け替え可能なよつまたを追加した。568×320〜1366×768、coarse touch、Chromium／WebKit、4面全到達状態を回帰した (batch:1311-slide-generated-road-mechanics)。play.html PAGE_CACHE_VERSION と同期不要 (slide/index.html/画像/テストのみ変更)。
@@ -135,7 +136,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2205;
+const CACHE_VERSION = 2206;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
