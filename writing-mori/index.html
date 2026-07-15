@@ -2286,8 +2286,12 @@ html, body {
   width: 116px;
   height: 116px;
   z-index: 1;
-  background: var(--story-milmaru-grown) center / contain no-repeat;
+  background: none center / contain no-repeat;
   image-rendering: auto;
+}
+
+.companion-card.visual-grown .pixel-creature {
+  background-image: var(--story-milmaru-grown);
 }
 
 .companion-card.egg-state .pixel-creature,
@@ -2296,6 +2300,9 @@ html, body {
   bottom: 35px;
   width: 94px;
   height: 116px;
+}
+
+.companion-card.visual-egg .pixel-creature {
   background-image: var(--story-milmaru-egg);
 }
 
@@ -2304,6 +2311,9 @@ html, body {
   bottom: 35px;
   width: 120px;
   height: 120px;
+}
+
+.companion-card.visual-baby .pixel-creature {
   background-image: var(--story-milmaru-baby);
 }
 
@@ -2312,6 +2322,9 @@ html, body {
   bottom: 35px;
   width: 118px;
   height: 118px;
+}
+
+.companion-card.visual-yochiyochi .pixel-creature {
   background-image: var(--story-milmaru-yochiyochi);
 }
 
@@ -3646,6 +3659,15 @@ function updateCompanionCard() {
   companionCard.classList.toggle('hatched-state', hatched);
   companionCard.classList.toggle('baby-state', stageId === 'baby');
   companionCard.classList.toggle('yochiyochi-state', stageId === 'yochiyochi');
+  const visualClass = !hatched
+    ? 'visual-egg'
+    : stageId === 'baby'
+      ? 'visual-baby'
+      : stageId === 'yochiyochi'
+        ? 'visual-yochiyochi'
+        : 'visual-grown';
+  companionCard.classList.remove('visual-egg', 'visual-baby', 'visual-yochiyochi', 'visual-grown');
+  companionCard.classList.add(visualClass);
   setFoodIconClass(companionCookieIcon, reward);
   companionStatus.textContent = !hatched ? `★ ${starValue}` : `× ${foodCount}`;
   if (!hatched) {

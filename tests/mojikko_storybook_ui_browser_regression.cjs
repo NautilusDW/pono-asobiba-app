@@ -17,6 +17,36 @@ const generatedStoryAssets = [
   '/assets/images/mojikko/writing/storybook/milmaru_shell_baby_idle_20260716.webp',
   '/assets/images/mojikko/writing/storybook/milmaru_egg_idle_20260716.webp'
 ];
+const milmaruVisualStates = Object.freeze([
+  {
+    id: 'egg',
+    visualClass: 'visual-egg',
+    stateClasses: ['egg-state'],
+    asset: 'milmaru_egg_idle_20260716.webp',
+    care: { hatched: false, sukusuku: 0, stars: 0, foodSystemVersion: 2 }
+  },
+  {
+    id: 'baby',
+    visualClass: 'visual-baby',
+    stateClasses: ['hatched-state', 'baby-state'],
+    asset: 'milmaru_shell_baby_idle_20260716.webp',
+    care: { hatched: true, sukusuku: 10, stars: 0, foodSystemVersion: 2 }
+  },
+  {
+    id: 'yochiyochi',
+    visualClass: 'visual-yochiyochi',
+    stateClasses: ['hatched-state', 'yochiyochi-state'],
+    asset: 'milmaru_yochiyochi_front_20260716.webp',
+    care: { hatched: true, sukusuku: 30, stars: 0, foodSystemVersion: 2 }
+  },
+  {
+    id: 'grown',
+    visualClass: 'visual-grown',
+    stateClasses: ['hatched-state'],
+    asset: 'milmaru_grown_wave_20260716.webp',
+    care: { hatched: true, sukusuku: 80, stars: 0, foodSystemVersion: 2 }
+  }
+]);
 const kanaAFixture = Object.freeze({
   strokes: [
     'M660,689C637,689 616,679 597,668C570,655 542,648 514,639C464,626 414,615 363,609C319,606 273,607 231,622C211,630 195,646 174,652C167,652 162,643 167,637C181,607 209,587 239,575C284,557 335,556 384,560C462,568 538,593 615,610C639,616 665,619 686,633C695,639 705,646 709,656C712,666 706,676 697,679C685,685 672,689 660,689Z',
@@ -91,6 +121,112 @@ function rectanglesOverlap(first, second) {
 
 function sha256(value) {
   return crypto.createHash('sha256').update(value).digest('hex');
+}
+
+async function auditMilmaruInitialNetwork(browser, base, state) {
+  const context = await browser.newContext({ viewport: { width: 844, height: 390 } });
+  await context.addInitScript(({ care }) => {
+    window.__APP_BUILD__ = 1;
+    localStorage.setItem('pono_bgm_enabled', 'off');
+    localStorage.setItem('mojikkoFarmCareStateV1', JSON.stringify(care));
+  }, { care: state.care });
+
+  const page = await context.newPage();
+  const pageErrors = [];
+  const localFailures = [];
+  const localHttpErrors = [];
+  const milmaruRequests = [];
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+  page.on('request', (request) => {
+    const url = request.url();
+    if (/\/assets\/images\/mojikko\/writing\/storybook\/milmaru_[^/?]+\.webp(?:[?#]|$)/.test(url)) {
+      milmaruRequests.push(path.basename(new URL(url).pathname));
+    }
+  });
+  page.on('requestfailed', (request) => {
+    if (request.url().startsWith(base)) localFailures.push({ url: request.url(), error: request.failure()?.errorText });
+  });
+  page.on('response', (response) => {
+    if (response.url().startsWith(base) && response.status() >= 400) {
+      localHttpErrors.push(`${response.status()} ${response.url()}`);
+    }
+  });
+  await context.route('**/*', (route) => {
+    const url = route.request().url();
+    if (url.includes('cdn.jsdelivr.net') && decodeURIComponent(new URL(url).pathname).endsWith('/あ.json')) {
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json; charset=utf-8',
+        headers: { 'access-control-allow-origin': '*' },
+        body: JSON.stringify(kanaAFixture)
+      });
+      return;
+    }
+    if (url.startsWith(base) || url.startsWith('data:') || url.startsWith('blob:')) {
+      route.continue();
+    } else {
+      route.abort();
+    }
+  });
+
+  try {
+    await page.goto(`${base}/writing-mori/`, { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(({ visualClass, asset }) => {
+      const card = document.querySelector('#companionCard');
+      const creature = document.querySelector('.pixel-creature');
+      return window.MojikkoWritingGame
+        && card.classList.contains(visualClass)
+        && getComputedStyle(creature).backgroundImage.includes(asset);
+    }, { visualClass: state.visualClass, asset: state.asset });
+    await page.waitForFunction((asset) => performance.getEntriesByType('resource').some((entry) => entry.name.includes(asset)), state.asset);
+    await page.waitForTimeout(80);
+
+    const initial = await page.evaluate(() => {
+      const card = document.querySelector('#companionCard');
+      const creature = document.querySelector('.pixel-creature');
+      return {
+        visualClasses: Array.from(card.classList).filter((name) => name.startsWith('visual-')),
+        stateClasses: Array.from(card.classList).filter((name) => (
+          ['egg-state', 'hatched-state', 'baby-state', 'yochiyochi-state'].includes(name)
+        )),
+        background: getComputedStyle(creature).backgroundImage,
+        hasImageElement: creature.querySelector('img') !== null,
+        speech: document.querySelector('#companionSpeech').textContent.trim(),
+        buttonTag: card.tagName
+      };
+    });
+    assert.deepEqual(initial.visualClasses, [state.visualClass], `${state.id}: visual class is not exclusive`);
+    assert.deepEqual(initial.stateClasses, state.stateClasses, `${state.id}: care-stage classes drifted`);
+    assert.match(initial.background, new RegExp(state.asset.replaceAll('.', '\\.')), `${state.id}: wrong initial art`);
+    assert.equal(initial.hasImageElement, false, `${state.id}: CSS art regressed to a broken-icon-prone img`);
+    assert.ok(initial.speech.length > 0, `${state.id}: companion speech disappeared`);
+    assert.equal(initial.buttonTag, 'BUTTON', `${state.id}: care navigation control changed`);
+    assert.deepEqual(milmaruRequests, [state.asset], `${state.id}: initial load requested extra Milmaru art`);
+    assert.deepEqual(localFailures, [], `${state.id}: local request failure`);
+    assert.deepEqual(localHttpErrors, [], `${state.id}: local HTTP error`);
+    assert.deepEqual(pageErrors, [], `${state.id}: page error`);
+
+    const requestCountBeforeCelebrate = milmaruRequests.length;
+    const celebrate = await page.evaluate(() => {
+      const card = document.querySelector('#companionCard');
+      const creature = document.querySelector('.pixel-creature');
+      const before = getComputedStyle(creature).backgroundImage;
+      card.classList.add('celebrate');
+      return {
+        before,
+        after: getComputedStyle(creature).backgroundImage,
+        animation: getComputedStyle(creature).animationName
+      };
+    });
+    await page.waitForTimeout(100);
+    assert.equal(celebrate.after, celebrate.before, `${state.id}: celebration replaced the current art`);
+    assert.match(celebrate.animation, /creatureCheer/, `${state.id}: celebration motion disappeared`);
+    assert.equal(milmaruRequests.length, requestCountBeforeCelebrate, `${state.id}: celebration requested extra art`);
+    assert.deepEqual(localFailures, [], `${state.id}: celebration caused a request failure`);
+    assert.deepEqual(pageErrors, [], `${state.id}: celebration caused a page error`);
+  } finally {
+    await context.close();
+  }
 }
 
 (async () => {
@@ -336,6 +472,14 @@ function sha256(value) {
       assert.ok(initial.visibleImages.every((image) => image.complete && image.width > 0), `${viewport.name}: visible image failed to decode`);
       ['stage-bg.webp', 'Fukuro_frame_001.webp', 'Fukuro_frame_003.webp', 'Fukuro_frame_004.webp', 'milmaru_egg_idle_20260716.webp']
         .forEach((asset) => assert.ok(initial.resources.some((url) => url.includes(asset)), `${viewport.name}: ${asset} was not loaded`));
+      const initialMilmaruResources = initial.resources
+        .filter((url) => /\/assets\/images\/mojikko\/writing\/storybook\/milmaru_[^/?]+\.webp(?:[?#]|$)/.test(url))
+        .map((url) => path.basename(new URL(url).pathname));
+      assert.deepEqual(
+        initialMilmaruResources,
+        ['milmaru_egg_idle_20260716.webp'],
+        `${viewport.name}: fresh egg state requested unrelated Milmaru art`
+      );
       assert.equal(
         initial.resources.some((url) => /assets\/images\/mojikko\/(?:writing\/(?!storybook\/)|care\/)/.test(url)),
         false,
@@ -411,13 +555,16 @@ function sha256(value) {
           const creature = document.querySelector('.pixel-creature');
           const audits = [];
           const states = [
-            { id: 'egg', classes: ['egg-state'], asset: 'milmaru_egg_idle_20260716.webp' },
-            { id: 'baby', classes: ['hatched-state', 'baby-state'], asset: 'milmaru_shell_baby_idle_20260716.webp' },
-            { id: 'yochiyochi', classes: ['hatched-state', 'yochiyochi-state'], asset: 'milmaru_yochiyochi_front_20260716.webp' },
-            { id: 'grown', classes: ['hatched-state'], asset: 'milmaru_grown_wave_20260716.webp' }
+            { id: 'egg', classes: ['egg-state', 'visual-egg'], asset: 'milmaru_egg_idle_20260716.webp' },
+            { id: 'baby', classes: ['hatched-state', 'baby-state', 'visual-baby'], asset: 'milmaru_shell_baby_idle_20260716.webp' },
+            { id: 'yochiyochi', classes: ['hatched-state', 'yochiyochi-state', 'visual-yochiyochi'], asset: 'milmaru_yochiyochi_front_20260716.webp' },
+            { id: 'grown', classes: ['hatched-state', 'visual-grown'], asset: 'milmaru_grown_wave_20260716.webp' }
           ];
           for (const state of states) {
-            card.classList.remove('egg-state', 'hatched-state', 'baby-state', 'yochiyochi-state', 'celebrate');
+            card.classList.remove(
+              'egg-state', 'hatched-state', 'baby-state', 'yochiyochi-state',
+              'visual-egg', 'visual-baby', 'visual-yochiyochi', 'visual-grown', 'celebrate'
+            );
             card.classList.add(...state.classes);
             const normal = getComputedStyle(creature).backgroundImage;
             card.classList.add('celebrate');
@@ -826,6 +973,9 @@ function sha256(value) {
         assert.match(page.url(), /\/writing-mori\/care\.html\?from=writing$/);
       }
       await context.close();
+    }
+    for (const state of milmaruVisualStates) {
+      await auditMilmaruInitialNetwork(browser, base, state);
     }
   } finally {
     await browser.close();
