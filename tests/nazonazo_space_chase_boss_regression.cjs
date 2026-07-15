@@ -48,22 +48,28 @@ function assertNoChildFacingKanji(source, label) {
   }
 }
 
-assert.match(html, /styles\.css\?v=20260716-1310/);
-assert.match(html, /js\/game\.js\?v=20260716-1310/);
-assert.match(sw, /v2201: なぞなぞトレイン宇宙面の最終イベント/);
-assert.match(sw, /const CACHE_VERSION = 2201;/);
+assert.match(html, /styles\.css\?v=20260716-1312/);
+assert.match(html, /js\/game\.js\?v=20260716-1312/);
+assert.match(sw, /v2202: なぞなぞトレイン宇宙面の最終追跡/);
+assert.match(sw, /const CACHE_VERSION = 2202;/);
 
-/* The finale is a visible branching route, with route choice, collectible boost, and rescue. */
+/* The finale now exposes one pulled-back network, not three repeated binary forks. */
 const layerBlock = html.match(/<div id="spaceChaseLayer"[\s\S]*?<div id="seaRoundCountdown"/)?.[0] || "";
 assert.match(layerBlock, /role="group" aria-label="うちゅう おいかけっこ" hidden/);
-assert.match(layerBlock, /id="spaceChaseRouteMap"[^>]*viewBox="0 0 1000 500"/);
+assert.match(layerBlock, /id="spaceChaseRouteMap"[^>]*viewBox="0 -70 1600 1200"/);
 assert.match(layerBlock, /id="spaceChaseRoutePaths"/);
-assert.equal((layerBlock.match(/class="space-chase-boost-item"/g) || []).length, 3);
-assert.equal((layerBlock.match(/data-space-chase-choice=/g) || []).length, 2);
+assert.match(layerBlock, /id="spaceChaseJunctions"/);
+assert.match(layerBlock, /id="spaceChaseBoostItems"/);
+assert.equal((layerBlock.match(/class="space-chase-boost-item"/g) || []).length, 0,
+  "the many route stars must be generated from edge data instead of fixed HTML");
+assert.equal((layerBlock.match(/data-space-chase-choice=/g) || []).length, 3);
 assert.equal((layerBlock.match(/data-space-chase-knot=/g) || []).length, 3);
+assert.match(layerBlock, /space-chase-choice-arrow is-middle/);
 assert.match(layerBlock, /class="space-chase-star-child[^>]*data-ui-art="star"/);
-assert.match(layerBlock, /id="spaceChaseBoostMeter"[^>]*aria-valuemax="2"[^>]*aria-valuenow="1"/);
-assert.match(layerBlock, /class="space-chase-rounds"[^>]*aria-valuemax="3"/);
+assert.match(layerBlock, /id="spaceChaseBoostMeter"[^>]*aria-valuemax="4"[^>]*aria-valuenow="1"/);
+assert.equal((layerBlock.match(/id="spaceChaseBoostMeter"[\s\S]*?<\/div>/)?.[0].match(/<i/g) || []).length, 4);
+assert.match(layerBlock, /class="space-chase-rounds"[^>]*aria-valuemax="5"/);
+assert.equal((layerBlock.match(/class="space-chase-rounds"[\s\S]*?<\/div>/)?.[0].match(/<i/g) || []).length, 5);
 assert.match(layerBlock, /id="spaceChaseRescuePanel"[^>]*aria-hidden="true"[^>]*hidden/);
 assert.doesNotMatch(layerBlock, /spaceChaseTapMeter|space-chase-tap-meter/,
   "the old four-tap loop must not survive inside the route chase");
@@ -72,20 +78,36 @@ const layerCss = cssRule("#spaceChaseLayer");
 assert.match(layerCss, /position\s*:\s*fixed/);
 assert.match(layerCss, /inset\s*:\s*0/);
 assert.match(layerCss, /z-index\s*:\s*18/);
-assert.match(cssRule("#spaceChaseBoostButton"), /min-height\s*:\s*78px/);
-assert.match(cssRule("#spaceChaseBoostButton"), /touch-action\s*:\s*manipulation/);
+assert.match(css, /#spaceChaseBoostButton\{appearance:none[^}]*min-height:78px[^}]*touch-action:manipulation/);
 assert.match(cssRule("\.space-chase-route-choices button"), /min-height\s*:\s*72px/);
 assert.match(cssRule("\.space-chase-rescue-knots button"), /width\s*:\s*clamp\(64px/);
+assert.match(cssRule("\.space-chase-comet"), /width\s*:\s*clamp\(58px,6\.25vw,85px\)/,
+  "the pulled-back map must not shrink the comet character");
+assert.match(css, /\.space-chase-rocket\{left:[^}]*width:clamp\(92px,10\.5vw,140px\)/,
+  "the pulled-back map must not shrink the rocket character");
+assert.match(css, /\.space-chase-route-edge\.is-choice-option-0\{[^}]*stroke:#77eff4/);
+assert.match(css, /\.space-chase-route-edge\.is-choice-option-1\{[^}]*stroke:#fff08a/);
+assert.match(css, /\.space-chase-route-edge\.is-choice-option-2\{[^}]*stroke:#ff92cf/);
 assert.match(css, /\.space-chase-route-edge\.is-comet-route\{[^}]*stroke:#db9df2/);
 assert.match(css, /\.space-chase-route-edge\.is-rocket-route\{[^}]*stroke:#fff08a/);
+assert.match(css, /\.space-chase-controls\.is-choosing\{[^}]*grid-template-columns:minmax\(0,1fr\)/);
+assert.match(css, /\.space-chase-controls\.is-choosing \.space-chase-readout,\.space-chase-controls\.is-choosing #spaceChaseBoostButton\{display:none\}/);
+assert.match(css, /\.space-chase-route-choices\{[^}]*repeat\(var\(--space-choice-count,2\),minmax\(0,1fr\)\)/);
 assert.match(css, /\.space-chase-board\.is-victory \.space-chase-star-child\{[^}]*left:-94%/);
 assert.match(css, /@media \(prefers-reduced-motion:reduce\)[\s\S]*?\.space-chase-camera,[\s\S]*?animation:none!important/);
+assert.match(css, /\.space-chase-board\.is-boosting \.space-chase-rocket\{transform:translate\(-50%,-50%\) scale\(1\.05\) rotate\(var\(--space-chase-rocket-angle\)\)!important\}/);
 assert.match(css, /@media \(orientation:portrait\)[\s\S]*?#rotateHint\{display:flex\}/);
 assert.match(css, /body\.space-chase-active #veh[\s\S]*?visibility:hidden!important/);
 assert.match(css, /body\.space-chase-active #stamp\{z-index:23\}/);
-assert.match(css, /@media \(orientation:landscape\) and \(max-width:559px\) and \(max-height:360px\)[\s\S]*?\.space-chase-controls\.is-choosing\{grid-template-columns:minmax\(0,1fr\) 86px\}/,
-  "small admin frames must collapse route choice and boost into two usable columns");
-assert.match(css, /\.space-chase-controls\.is-choosing \.space-chase-readout\{display:none\}/);
+assert.match(css, /@media \(orientation:landscape\) and \(max-width:559px\) and \(max-height:360px\)[\s\S]*?\.space-chase-controls\.is-choosing\{grid-template-columns:minmax\(0,1fr\);padding-inline:3px\}/,
+  "small admin frames must give all available width to the two or three route buttons");
+assert.match(css, /@media \(orientation:landscape\) and \(max-width:559px\) and \(max-height:360px\)[\s\S]*?\.space-chase-hud\{display:none\}\.space-chase-route-map\{inset:16% 0 auto;height:38%\}/,
+  "tiny admin frames must remap the route into the strip above the controls without shrinking either character");
+assert.match(css, /\.space-chase-boost-item\{top:var\(--space-chase-item-y-compact,var\(--space-chase-item-y,0%\)\)\}/);
+assert.match(css, /\.space-chase-board\.is-caught \.space-chase-rocket,[^}]*top:var\(--space-chase-rocket-y\)/,
+  "the compact race map must return the rocket to the normal rescue-beam position after catch");
+assert.match(css, /\.space-chase-route-choices\[data-choice-count="3"\] \.space-chase-choice-arrow\{display:none\}/,
+  "tiny three-way choices hide only the decorative arrows, not the labels or buttons");
 
 /* Space completion still queues the finale before stage clear and uses a one-shot latch. */
 const buildQList = extractFunction(game, "buildQList");
@@ -104,203 +126,392 @@ assert.doesNotMatch(clearChase, /spaceChaseDefeated\s*=/);
 assert.match(showChase, /prepareSpaceChaseRouteMap\(\)/);
 assert.match(showChase, /advanceSpaceChaseRacer\(spaceChaseState\.comet,SPACE_CHASE_START_LEAD\)/);
 assert.match(updateChase, /spaceChaseState\.completionCommitted=true;const stageOrigin=origin\(stg\);clearSpaceChaseEncounter\(\);completeCurrentStage\(stageOrigin\)/);
-assert.match(updateChase, /SPACE_CHASE_ROCKET_SPEED/);
-assert.match(updateChase, /SPACE_CHASE_COMET_SPEED/);
-assert.match(updateChase, /SPACE_CHASE_BOOST_SPEED/);
 
-const chaseFunctionNames = [
-  "spaceChaseRuntimeActive", "spaceChaseCurvePoint", "ensureSpaceChaseRouteMetrics",
-  "spaceChasePointAtDistance", "collectSpaceChaseBoost", "nextSpaceChaseEdge",
-  "advanceSpaceChaseRacer", "promptSpaceChaseBranch", "chooseSpaceChaseRoute",
-  "spaceChaseBoostPlayable", "useSpaceChaseBoost", "beginSpaceChaseRace",
-  "beginSpaceChaseCaught", "beginSpaceChaseRescue", "releaseSpaceChaseKnot",
-  "finishSpaceChaseVictory", "updateSpaceChase"
+const functionNames = [
+  "spaceChaseRuntimeActive", "spaceChaseEdgeSegments", "spaceChaseCurvePoint",
+  "spaceChaseEdgePathData", "spaceChaseBoostPositions", "spaceChaseYPercent", "ensureSpaceChaseRouteMetrics",
+  "spaceChasePointAtDistance", "prepareSpaceChaseRouteMap", "resetSpaceChaseRouteVisuals",
+  "markSpaceChaseRoute", "spaceChaseRacerPoint", "spaceChaseRacerPose",
+  "collectSpaceChaseBoost", "nextSpaceChaseEdge", "advanceSpaceChaseRacer",
+  "updateSpaceChaseChoiceRouteHighlights", "updateSpaceChaseRouteChoiceControls",
+  "promptSpaceChaseBranch", "chooseSpaceChaseRoute", "spaceChaseBoostPlayable",
+  "useSpaceChaseBoost", "beginSpaceChaseRace", "beginSpaceChaseCaught",
+  "beginSpaceChaseRescue", "releaseSpaceChaseKnot", "finishSpaceChaseVictory",
+  "updateSpaceChase"
 ];
-const chaseSource = chaseFunctionNames.map(name => extractFunction(game, name)).join("\n");
-assert.doesNotMatch(chaseSource, /setTimeout|setInterval/,
+const allChaseSource = functionNames.map(name => extractFunction(game, name)).join("\n");
+assert.doesNotMatch(allChaseSource, /setTimeout|setInterval/,
   "RAF state progress avoids stale timers after map, resize, or page lifecycle changes");
-assert.doesNotMatch(chaseSource, /worldX\s*=|driving\s*=|pending\s*=/,
+assert.doesNotMatch(allChaseSource, /worldX\s*=|driving\s*=|pending\s*=/,
   "the chase must not take ownership of the train journey state");
-assert.doesNotMatch(chaseSource, /addScore|stageMiss|totalStars/,
+assert.doesNotMatch(allChaseSource, /addScore|stageMiss|totalStars/,
   "the no-fail finale must not mutate quiz scoring before completeCurrentStage");
 assert.match(extractFunction(game, "spaceChaseRuntimeActive"), /!document\.hidden/);
 assert.match(extractFunction(game, "spaceChaseRuntimeActive"), /!gameSettingsMenuIsOpen\(\)/);
 assert.match(extractFunction(game, "spaceChaseRuntimeActive"), /spaceLandscapePlayable\(\)/);
-assertNoChildFacingKanji(chaseSource, "Space chase");
+assert.match(extractFunction(game, "prepareSpaceChaseRouteMap"), /vector-effect","non-scaling-stroke/);
+assert.match(extractFunction(game, "prepareSpaceChaseRouteMap"), /Object\.entries\(SPACE_CHASE_JUNCTIONS\)/);
+assert.match(extractFunction(game, "prepareSpaceChaseRouteMap"), /spaceChaseBoostPositions\(edge\)\.forEach/);
+assert.match(extractFunction(game, "advanceSpaceChaseRacer"), /Object\.keys\(SPACE_CHASE_ROUTE_EDGES\)\.length\+4/,
+  "the traversal guard must scale with the route network instead of assuming three forks");
+assertNoChildFacingKanji(allChaseSource, "Space chase");
 
 const constantsStart = game.indexOf("const SPACE_CHASE_VIEWBOX_WIDTH");
 const constantsEnd = game.indexOf("\nlet spaceRepairOptions", constantsStart);
 assert.ok(constantsStart > 0 && constantsEnd > constantsStart);
 const chaseConstants = game.slice(constantsStart, constantsEnd);
+assertNoChildFacingKanji(chaseConstants, "Space chase data");
+
+/* Audit the real route data: connectivity, geometry, route variety, and item-rich detours. */
+const dataSandbox = { clamp: (value, min, max) => Math.max(min, Math.min(max, value)) };
+vm.createContext(dataSandbox);
+vm.runInContext(`
+${chaseConstants}
+${extractFunction(game, "spaceChaseEdgeSegments")}
+${extractFunction(game, "spaceChaseCurvePoint")}
+${extractFunction(game, "spaceChaseBoostPositions")}
+${extractFunction(game, "spaceChaseYPercent")}
+this.routeData={width:SPACE_CHASE_VIEWBOX_WIDTH,top:SPACE_CHASE_VIEWBOX_TOP,height:SPACE_CHASE_VIEWBOX_HEIGHT,compactTop:SPACE_CHASE_COMPACT_TOP_PERCENT,compactHeight:SPACE_CHASE_COMPACT_HEIGHT_PERCENT,edges:SPACE_CHASE_ROUTE_EDGES,junctions:SPACE_CHASE_JUNCTIONS,plans:SPACE_CHASE_COMET_PLANS};
+this.curvePoint=spaceChaseCurvePoint;
+this.boostPositions=spaceChaseBoostPositions;
+this.yPercent=spaceChaseYPercent;
+`, dataSandbox);
+
+const { width, top, height, compactTop, compactHeight, edges, junctions, plans } = dataSandbox.routeData;
+assert.equal(width, 1600);
+assert.equal(top, -70);
+assert.equal(height, 1200);
+assert.equal(compactTop, 16);
+assert.equal(compactHeight, 38);
+assert.equal(Object.keys(edges).length, 26);
+assert.equal(Object.keys(junctions).length, 10);
+assert.equal(Object.values(junctions).filter(junction => junction.choices.length === 3).length, 4);
+assert.ok(Object.values(junctions).every(junction => junction.choices.length === 2 || junction.choices.length === 3));
+assert.equal(plans.length, 4);
+
+const endpoint = edge => edge.segments?.length ? edge.segments[edge.segments.length - 1].to : edge.to;
+for (const [edgeId, edge] of Object.entries(edges)) {
+  if (edge.next) {
+    assert.ok(edges[edge.next], `${edgeId}: next edge ${edge.next} is missing`);
+    assert.deepEqual(Array.from(endpoint(edge)), Array.from(edges[edge.next].from), `${edgeId}: next edge must join without a jump`);
+  }
+  if (edge.nextJunction) {
+    assert.ok(junctions[edge.nextJunction], `${edgeId}: junction ${edge.nextJunction} is missing`);
+    assert.deepEqual(Array.from(endpoint(edge)), Array.from(junctions[edge.nextJunction].at), `${edgeId}: junction must sit on its route endpoint`);
+  }
+}
+for (const [junctionId, junction] of Object.entries(junctions)) {
+  assert.ok(Number.isInteger(junction.fallbackIndex) && junction.choices[junction.fallbackIndex], `${junctionId}: fallback route is invalid`);
+  for (const choice of junction.choices) {
+    assert.ok(edges[choice.edge], `${junctionId}: choice edge ${choice.edge} is missing`);
+    assert.deepEqual(Array.from(edges[choice.edge].from), Array.from(junction.at), `${junctionId}: choice edge must begin at the junction`);
+    assert.match(choice.label, /みち/);
+    assert.ok(["up", "middle", "down"].includes(choice.slot));
+  }
+}
+
+const routeMetrics = {};
+let minX = Infinity;
+let maxX = -Infinity;
+let minY = Infinity;
+let maxY = -Infinity;
+for (const [edgeId, edge] of Object.entries(edges)) {
+  let previous = dataSandbox.curvePoint(edge, 0);
+  let length = 0;
+  for (let index = 0; index <= 192; index += 1) {
+    const point = dataSandbox.curvePoint(edge, index / 192);
+    minX = Math.min(minX, point.x);
+    maxX = Math.max(maxX, point.x);
+    minY = Math.min(minY, point.y);
+    maxY = Math.max(maxY, point.y);
+    if (index) length += Math.hypot(point.x - previous.x, point.y - previous.y);
+    previous = point;
+  }
+  routeMetrics[edgeId] = { length, items: dataSandbox.boostPositions(edge).length };
+}
+assert.ok((maxX - minX) / width >= 0.85, "the network must use at least 85% of the screen width");
+assert.ok((maxY - minY) / height >= 0.54, "the pulled-back network must still span most of the unobstructed playfield height");
+assert.ok((minY - top) / height >= 0.118, "the upper orbit must leave room for the comet body");
+assert.ok((maxY - top) / height <= 0.67, "the lower orbit must leave room for the rocket body above the bottom control tray");
+const tinyCameraTop = -0.04;
+const tinyCameraScale = 1.08;
+const tinyFrameHeight = 180;
+const tinyUpperCenter = tinyCameraTop + (compactTop + (minY - top) / height * compactHeight) / 100 * tinyCameraScale;
+const tinyLowerCenter = tinyCameraTop + (compactTop + (maxY - top) / height * compactHeight) / 100 * tinyCameraScale;
+assert.ok(tinyUpperCenter - 29 / tinyFrameHeight > 0,
+  "the unchanged 58px comet must remain inside a 320x180 admin frame at the uppermost curve");
+assert.ok(tinyLowerCenter + (92 / 1.5 / 2) / tinyFrameHeight < (tinyFrameHeight - 69) / tinyFrameHeight,
+  "the unchanged 92px rocket must remain above the tiny frame's route controls at the lowest curve");
+assert.equal(Object.values(routeMetrics).reduce((sum, metric) => sum + metric.items, 0), 37);
+assert.ok(Object.values(routeMetrics).filter(metric => metric.items >= 4).length >= 6,
+  "several long routes must carry a visible chain of stars");
+
+const reachableEdges = new Set();
+const routes = [];
+function enumerateRoutes(edgeId, stack = new Set(), route = [], length = 0, items = 0) {
+  assert.ok(edges[edgeId], `route references missing edge ${edgeId}`);
+  assert.ok(!stack.has(edgeId), `route graph cycle detected at ${edgeId}`);
+  reachableEdges.add(edgeId);
+  const edge = edges[edgeId];
+  const nextStack = new Set(stack).add(edgeId);
+  const nextRoute = route.concat(edgeId);
+  const nextLength = length + routeMetrics[edgeId].length;
+  const nextItems = items + routeMetrics[edgeId].items;
+  if (edge.finish) {
+    routes.push({ edges: nextRoute, length: nextLength, items: nextItems });
+    return;
+  }
+  if (edge.nextJunction) {
+    for (const choice of junctions[edge.nextJunction].choices) {
+      enumerateRoutes(choice.edge, nextStack, nextRoute, nextLength, nextItems);
+    }
+    return;
+  }
+  assert.ok(edge.next, `${edgeId}: non-finish route has no exit`);
+  enumerateRoutes(edge.next, nextStack, nextRoute, nextLength, nextItems);
+}
+enumerateRoutes("launch");
+assert.equal(reachableEdges.size, Object.keys(edges).length, "every configured edge must be reachable from launch");
+assert.equal(routes.length, 188, "the nested two-way and three-way network must retain 188 possible routes");
+const shortest = routes.reduce((best, route) => route.length < best.length ? route : best);
+const longest = routes.reduce((best, route) => route.length > best.length ? route : best);
+const richest = routes.reduce((best, route) => route.items > best.items ? route : best);
+assert.ok(longest.length / shortest.length > 2.8, "the outer orbit must be a meaningful detour, not another near-identical fork");
+assert.equal(shortest.items, 0, "the true shortcut must trade stars for distance");
+assert.ok(richest.items >= 20, "an item-hunting route must cross at least twenty stars");
+assert.ok(richest.length > shortest.length * 1.8, "the richest star route must visibly go the long way around");
 
 function fakeClassList() {
   const values = new Set();
   return {
-    add(value) { values.add(value); },
-    remove(value) { values.delete(value); },
-    contains(value) { return values.has(value); },
+    add(...names) { names.forEach(name => values.add(name)); },
+    remove(...names) { names.forEach(name => values.delete(name)); },
+    contains(name) { return values.has(name); },
+    toggle(name, force) {
+      const next = force === undefined ? !values.has(name) : !!force;
+      if (next) values.add(name); else values.delete(name);
+      return next;
+    },
+    values,
   };
 }
 
+function fakeChoiceButton(index) {
+  const strong = { textContent: "" };
+  const small = { textContent: "" };
+  const arrow = { classList: fakeClassList() };
+  const attributes = new Map();
+  return {
+    dataset: { spaceChaseChoice: String(index) },
+    hidden: false,
+    disabled: true,
+    strong,
+    small,
+    arrow,
+    attributes,
+    focusCalls: 0,
+    focus() { this.focusCalls += 1; },
+    setAttribute(name, value) { attributes.set(name, String(value)); },
+    querySelector(selector) {
+      if (selector === "strong") return strong;
+      if (selector === "small") return small;
+      if (selector === ".space-chase-choice-arrow") return arrow;
+      return null;
+    },
+  };
+}
+
+/* Execute the real movement functions with a small fake UI. */
+const choiceButtons = [0, 1, 2].map(fakeChoiceButton);
 const knotButtons = [0, 1, 2].map(index => ({
   dataset: { spaceChaseKnot: String(index) },
   disabled: true,
   classList: fakeClassList(),
   focus() {},
 }));
-const choiceButtons = [0, 1].map(() => ({ focus() {} }));
-const sandbox = {
+const controlsClassList = fakeClassList();
+const routeChoicesStyle = {};
+const routeChoices = {
+  hidden: true,
+  dataset: {},
+  style: { setProperty(name, value) { routeChoicesStyle[name] = String(value); } },
+};
+const runtimeSandbox = {
   FAST: 1,
   window: { __PONO_TIER_LOCKED__: false, innerWidth: 844, innerHeight: 390 },
   document: { hidden: false },
   playing: true,
   stg: 5,
   settingsOpen: false,
-  spaceChaseLayer: { hidden: false },
+  spaceChaseLayer: { hidden: false, querySelector: selector => selector === ".space-chase-controls" ? { classList: controlsClassList } : null },
+  spaceChaseRouteChoices: routeChoices,
   spaceChaseChoiceButtons: choiceButtons,
   spaceChaseKnotButtons: knotButtons,
   spaceChaseBoostItems: [],
   spaceChaseRescueGuide: { textContent: "" },
   clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
   isSpaceStage: () => true,
-  spaceLandscapePlayable: () => sandbox.window.innerWidth >= sandbox.window.innerHeight,
-  gameSettingsMenuIsOpen: () => sandbox.settingsOpen,
+  spaceLandscapePlayable: () => runtimeSandbox.window.innerWidth >= runtimeSandbox.window.innerHeight,
+  gameSettingsMenuIsOpen: () => runtimeSandbox.settingsOpen,
   futureReducedMotion: () => false,
   ensureAC() {},
-  setSpaceChaseGuide(message) { sandbox.guide = message; },
-  updateSpaceChaseRouteChoiceControls() {},
-  updateSpaceChaseVisual() { sandbox.visualWrites += 1; },
-  markSpaceChaseRoute(edgeId, kind) { sandbox.marked.push([edgeId, kind]); },
+  setSpaceChaseGuide(message) { runtimeSandbox.guide = message; },
+  updateSpaceChaseVisual() { runtimeSandbox.visualWrites += 1; },
   showStamp() {},
   tone() {},
   confetti() {},
   announce() {},
   origin: stage => stage * 1000,
-  clearSpaceChaseEncounter() { sandbox.clearCalls += 1; sandbox.spaceChaseLayer.hidden = true; },
-  completeCurrentStage(value) { sandbox.completeCalls.push(value); },
-  _nowMs: () => sandbox.clock,
+  clearSpaceChaseEncounter() { runtimeSandbox.clearCalls += 1; runtimeSandbox.spaceChaseLayer.hidden = true; },
+  completeCurrentStage(value) { runtimeSandbox.completeCalls.push(value); },
+  _nowMs: () => runtimeSandbox.clock,
   guide: "",
-  marked: [],
   visualWrites: 0,
   clearCalls: 0,
   completeCalls: [],
   clock: 0,
   Math,
   Number,
+  Object,
+  Set,
+  Map,
 };
-vm.createContext(sandbox);
+vm.createContext(runtimeSandbox);
+
+const runtimeFunctionNames = [
+  "spaceChaseRuntimeActive", "spaceChaseEdgeSegments", "spaceChaseCurvePoint",
+  "spaceChaseBoostPositions", "ensureSpaceChaseRouteMetrics", "spaceChasePointAtDistance",
+  "collectSpaceChaseBoost", "nextSpaceChaseEdge", "advanceSpaceChaseRacer",
+  "updateSpaceChaseChoiceRouteHighlights", "updateSpaceChaseRouteChoiceControls",
+  "markSpaceChaseRoute", "promptSpaceChaseBranch", "chooseSpaceChaseRoute",
+  "spaceChaseBoostPlayable", "useSpaceChaseBoost", "beginSpaceChaseRace",
+  "beginSpaceChaseCaught", "beginSpaceChaseRescue", "releaseSpaceChaseKnot",
+  "finishSpaceChaseVictory", "updateSpaceChase"
+];
+const runtimeSource = runtimeFunctionNames.map(name => extractFunction(game, name)).join("\n");
 vm.runInContext(`
 ${chaseConstants}
 let spaceChaseState=createSpaceChaseState(),spaceChaseDefeated=false;
-const spaceChaseRouteMetrics=new Map();
-${chaseSource}
+const spaceChaseRouteMetrics=new Map(),spaceChaseRouteElements=new Map();
+let spaceChaseChoiceHighlightKey="";
+${runtimeSource}
+Object.keys(SPACE_CHASE_ROUTE_EDGES).forEach(edgeId=>spaceChaseRouteElements.set(edgeId,{classList:{_values:new Set(),add(...names){names.forEach(name=>this._values.add(name));},remove(...names){names.forEach(name=>this._values.delete(name));},contains(name){return this._values.has(name);}}}));
 ensureSpaceChaseRouteMetrics();
-function routeLength(choices){
-  let edgeId="launch",total=0,branchIndex=0,guard=0;
-  while(edgeId&&guard++<20){
-    const metric=spaceChaseRouteMetrics.get(edgeId);total+=metric.length;
-    const edge=metric.edge;
-    if(edge.nextBranch!==undefined){edgeId=SPACE_CHASE_BRANCHES[edge.nextBranch].choices[choices[branchIndex++]].edge;}
-    else edgeId=edge.next||"";
-  }
-  return total;
+function resetSimulation(planIndex){
+ spaceChaseLayer.hidden=false;spaceChaseDefeated=false;spaceChaseState=createSpaceChaseState();spaceChaseState.phase="intro";spaceChaseState.rocket=createSpaceChaseRacer("rocket");spaceChaseState.comet=createSpaceChaseRacer("comet");spaceChaseState.cometChoices=Object.assign(Object.create(null),SPACE_CHASE_COMET_PLANS[planIndex]);
+ spaceChaseChoiceButtons.forEach(button=>{button.hidden=false;button.disabled=true;button.focusCalls=0;});spaceChaseKnotButtons.forEach(button=>{button.disabled=true;button.classList.remove("is-released");});
+ advanceSpaceChaseRacer(spaceChaseState.comet,SPACE_CHASE_START_LEAD);return spaceChaseState;
 }
-function simulateRocket(choices){
-  const saved=spaceChaseState;spaceChaseState=createSpaceChaseState();spaceChaseState.phase="race";spaceChaseState.playerChoices=choices.slice();
-  const racer=createSpaceChaseRacer("rocket");spaceChaseState.rocket=racer;advanceSpaceChaseRacer(racer,10000);
-  const result={finished:racer.finished,branches:racer.completedBranches,boosts:spaceChaseState.collectedBoosts.size,charges:spaceChaseState.boostCharges,choices:spaceChaseState.playerChoices.slice()};spaceChaseState=saved;return result;
+function strategyChoice(strategy,junction){
+ if(strategy==="short"){const direct=junction.choices.findIndex(choice=>choice.kind==="short");if(direct>=0)return direct;let best=0;for(let index=1;index<junction.choices.length;index++)if(spaceChaseRouteMetrics.get(junction.choices[index].edge).length<spaceChaseRouteMetrics.get(junction.choices[best].edge).length)best=index;return best;}
+ if(strategy==="power"){let best=0;for(let index=1;index<junction.choices.length;index++){const candidate=spaceChaseBoostPositions(SPACE_CHASE_ROUTE_EDGES[junction.choices[index].edge]).length,current=spaceChaseBoostPositions(SPACE_CHASE_ROUTE_EDGES[junction.choices[best].edge]).length;if(candidate>current||(candidate===current&&spaceChaseRouteMetrics.get(junction.choices[index].edge).length>spaceChaseRouteMetrics.get(junction.choices[best].edge).length))best=index;}return best;}
+ return -1;
 }
-spaceChaseState.phase="intro";spaceChaseState.rocket=createSpaceChaseRacer("rocket");spaceChaseState.comet=createSpaceChaseRacer("comet");spaceChaseState.cometChoices=SPACE_CHASE_COMET_PLANS[0].slice();advanceSpaceChaseRacer(spaceChaseState.comet,SPACE_CHASE_START_LEAD);
-this.getState=()=>spaceChaseState;this.getDefeated=()=>spaceChaseDefeated;this.getBranches=()=>SPACE_CHASE_BRANCHES;this.getSpeeds=()=>[SPACE_CHASE_COMET_SPEED,SPACE_CHASE_ROCKET_SPEED,SPACE_CHASE_CHOICE_SPEED,SPACE_CHASE_BOOST_SPEED];this.getEdgeLength=edgeId=>spaceChaseRouteMetrics.get(edgeId).length;this.routeLength=routeLength;this.simulateRocket=simulateRocket;this.choose=chooseSpaceChaseRoute;this.boost=useSpaceChaseBoost;this.release=releaseSpaceChaseKnot;this.update=updateSpaceChase;
-`, sandbox);
+function simulate(planIndex,strategy){
+ resetSimulation(planIndex);let now=0,guard=0;
+ while(guard++<7000&&spaceChaseState.phase!=="rescue"){
+  now+=50;updateSpaceChase(now);
+  if(spaceChaseState.phase==="race"&&spaceChaseState.activeJunction&&strategy!=="fallback")chooseSpaceChaseRoute(strategyChoice(strategy,SPACE_CHASE_JUNCTIONS[spaceChaseState.activeJunction]));
+  if(spaceChaseState.phase==="race"&&spaceChaseBoostPlayable())useSpaceChaseBoost();
+ }
+ return {phase:spaceChaseState.phase,now,guard,visited:spaceChaseState.rocket.visitedJunctions.size,choices:Object.assign({},spaceChaseState.playerChoices),items:spaceChaseState.collectedBoosts.size};
+}
+function choiceSnapshot(junctionId){
+ resetSimulation(0);spaceChaseState.phase="race";spaceChaseState.activeJunction=junctionId;updateSpaceChaseRouteChoiceControls();
+ return {hidden:spaceChaseRouteChoices.hidden,count:spaceChaseRouteChoices.dataset.choiceCount,columns:spaceChaseRouteChoices.style?"":null,buttons:spaceChaseChoiceButtons.map(button=>({hidden:button.hidden,disabled:button.disabled,label:button.strong.textContent,note:button.small.textContent,up:button.arrow.classList.contains("is-up"),middle:button.arrow.classList.contains("is-middle"),down:button.arrow.classList.contains("is-down")}))};
+}
+function clearChoiceSnapshot(){spaceChaseState.activeJunction="";updateSpaceChaseRouteChoiceControls();return {hidden:spaceChaseRouteChoices.hidden,choosing:false};}
+function prepareChoicePause(){
+ resetSimulation(0);spaceChaseState.phase="race";spaceChaseState.rocket={kind:"rocket",edgeId:"j0Center",distance:0,finished:false,progress:1,visitedJunctions:new Set()};spaceChaseState.comet={kind:"comet",edgeId:"j0Center",distance:0,finished:false,progress:1,visitedJunctions:new Set()};spaceChaseState.activeJunction="JN";spaceChaseState.boostRemainingMs=750;spaceChaseState.frameAt=50;return 50;
+}
+function prepareFinishWait(boostRemainingMs){
+ resetSimulation(0);spaceChaseState.phase="race";spaceChaseState.rocket={kind:"rocket",edgeId:"finish",distance:0,finished:false,progress:5,visitedJunctions:new Set()};spaceChaseState.comet={kind:"comet",edgeId:"j9Garden",distance:0,finished:false,progress:4,visitedJunctions:new Set()};spaceChaseState.boostRemainingMs=boostRemainingMs;spaceChaseState.frameAt=50;return 50;
+}
+function advanceFrom(now,ms){const end=now+ms;while(now<end){now=Math.min(end,now+50);updateSpaceChase(now);}return now;}
+function stateSnapshot(){return {phase:spaceChaseState.phase,rocket:{edgeId:spaceChaseState.rocket.edgeId,distance:spaceChaseState.rocket.distance},comet:{edgeId:spaceChaseState.comet.edgeId,distance:spaceChaseState.comet.distance},activeJunction:spaceChaseState.activeJunction,boostCharges:spaceChaseState.boostCharges,boostRemainingMs:spaceChaseState.boostRemainingMs,released:spaceChaseState.releasedKnots.size,defeated:spaceChaseDefeated};}
+this.api={
+ speeds:[SPACE_CHASE_COMET_SPEED,SPACE_CHASE_ROCKET_SPEED,SPACE_CHASE_CHOICE_SPEED,SPACE_CHASE_BOOST_SPEED],
+ simulate,choiceSnapshot,clearChoiceSnapshot,prepareChoicePause,prepareFinishWait,advanceFrom,stateSnapshot,
+ boost:useSpaceChaseBoost,release:releaseSpaceChaseKnot,choice:chooseSpaceChaseRoute,
+ getState:()=>spaceChaseState,getDefeated:()=>spaceChaseDefeated
+};
+`, runtimeSandbox);
 
-assert.deepEqual(Array.from(sandbox.getSpeeds()), [50, 54, 30, 86],
-  "rocket is slightly faster at base speed, slows for route choice, and visibly boosts");
-assert.equal(sandbox.getBranches().length, 3);
-for (const branch of sandbox.getBranches()) {
-  const short = branch.choices.find(choice => choice.kind === "short");
-  const power = branch.choices.find(choice => choice.kind === "power");
-  assert.ok(sandbox.getEdgeLength(short.edge) < sandbox.getEdgeLength(power.edge),
-    `${short.edge} must remain shorter than ${power.edge}`);
-}
-const shortChoices = [0, 1, 1];
-const powerChoices = [1, 0, 0];
-assert.ok(sandbox.routeLength(shortChoices) < sandbox.routeLength(powerChoices),
-  "the three shortcut choices must actually produce a shorter route");
-assert.deepEqual(JSON.parse(JSON.stringify(sandbox.simulateRocket(shortChoices))),
-  { finished: true, branches: 3, boosts: 0, charges: 1, choices: shortChoices });
-assert.deepEqual(JSON.parse(JSON.stringify(sandbox.simulateRocket(powerChoices))),
-  { finished: true, branches: 3, boosts: 3, charges: 2, choices: powerChoices });
-assert.deepEqual(JSON.parse(JSON.stringify(sandbox.simulateRocket([null, null, null]))),
-  { finished: true, branches: 3, boosts: 3, charges: 2, choices: powerChoices },
-  "no input must choose the safe star routes and still finish");
+assert.deepEqual(Array.from(runtimeSandbox.api.speeds), [80, 86, 38, 145],
+  "rocket stays slightly faster than the comet, both share a child-friendly choice speed, and boost is distinct");
 
-function advance(ms, chooseShortcuts) {
-  const end = sandbox.clock + ms;
-  while (sandbox.clock < end) {
-    sandbox.clock = Math.min(end, sandbox.clock + 50);
-    sandbox.update(sandbox.clock);
-    const state = sandbox.getState();
-    if (chooseShortcuts && state.phase === "race" && state.activeBranch >= 0) {
-      const branch = sandbox.getBranches()[state.activeBranch];
-      const shortIndex = branch.choices.findIndex(choice => choice.kind === "short");
-      assert.equal(sandbox.choose(shortIndex), true);
+const threeChoice = JSON.parse(JSON.stringify(runtimeSandbox.api.choiceSnapshot("J0")));
+assert.equal(threeChoice.hidden, false);
+assert.equal(threeChoice.count, "3");
+assert.deepEqual(threeChoice.buttons.map(button => button.hidden), [false, false, false]);
+assert.deepEqual(threeChoice.buttons.map(button => button.disabled), [false, false, false]);
+assert.deepEqual(threeChoice.buttons.map(button => [button.up, button.middle, button.down]), [[true, false, false], [false, true, false], [false, false, true]]);
+assert.deepEqual(threeChoice.buttons.map(button => button.note), ["スター 2こ", "ちかみち", "スター 4こ"]);
+assert.equal(controlsClassList.contains("is-choosing"), true);
+
+const twoChoice = JSON.parse(JSON.stringify(runtimeSandbox.api.choiceSnapshot("JN")));
+assert.equal(twoChoice.count, "2");
+assert.deepEqual(twoChoice.buttons.map(button => button.hidden), [false, false, true]);
+assert.deepEqual(twoChoice.buttons.map(button => button.disabled), [false, false, true]);
+runtimeSandbox.api.clearChoiceSnapshot();
+assert.equal(routeChoices.hidden, true);
+assert.equal(controlsClassList.contains("is-choosing"), false);
+
+for (let planIndex = 0; planIndex < plans.length; planIndex += 1) {
+  for (const strategy of ["short", "power", "fallback"]) {
+    const result = JSON.parse(JSON.stringify(runtimeSandbox.api.simulate(planIndex, strategy)));
+    assert.equal(result.phase, "rescue", `plan ${planIndex} with ${strategy} choices must always reach the rescue`);
+    assert.ok(result.guard < 7000, `plan ${planIndex} with ${strategy} choices must finish within the bounded RAF simulation`);
+    assert.ok(result.visited >= 5, `plan ${planIndex} with ${strategy} choices must traverse several nested junctions`);
+    if (strategy === "fallback") {
+      for (const [junctionId, choiceIndex] of Object.entries(result.choices)) {
+        assert.equal(choiceIndex, junctions[junctionId].fallbackIndex, `${junctionId}: no input must use its safe fallback`);
+      }
     }
   }
 }
 
-advance(1150, true);
-assert.equal(sandbox.getState().phase, "race");
-const boostStartDistance = sandbox.getState().rocket.distance;
-assert.equal(sandbox.boost(), true, "the starting boost charge can be used once");
-assert.equal(sandbox.getState().boostCharges, 0, "boost consumes one stored star");
-assert.equal(sandbox.getState().boostRemainingMs, 1250, "boost starts with its full duration");
-assert.equal(sandbox.boost(), false, "a running boost cannot consume another charge");
-advance(500, true);
-assert.ok(Math.abs((sandbox.getState().rocket.distance - boostStartDistance) - 43) < 0.01,
-  "500ms of boost must move at 86 route units per second");
-assert.equal(sandbox.getState().boostRemainingMs, 750);
-const choiceStartDistance = sandbox.getState().rocket.distance;
-sandbox.getState().activeBranch = 1;
-advance(1000, false);
-assert.ok(Math.abs((sandbox.getState().rocket.distance - choiceStartDistance) - 30) < 0.01,
-  "an unanswered branch must keep auto-moving slowly for a child-sized choice window");
-assert.equal(sandbox.getState().boostRemainingMs, 750,
-  "an already-running boost must not be wasted while the route buttons are open");
-const secondBranch = sandbox.getBranches()[1];
-assert.equal(sandbox.choose(secondBranch.choices.findIndex(choice => choice.kind === "short")), true);
-const pausedRocket = { edgeId: sandbox.getState().rocket.edgeId, distance: sandbox.getState().rocket.distance };
-const pausedComet = { edgeId: sandbox.getState().comet.edgeId, distance: sandbox.getState().comet.distance };
-sandbox.settingsOpen = true;
-advance(1600, true);
-assert.deepEqual(
-  { edgeId: sandbox.getState().rocket.edgeId, distance: sandbox.getState().rocket.distance },
-  pausedRocket,
-  "settings must pause rocket movement",
-);
-assert.deepEqual(
-  { edgeId: sandbox.getState().comet.edgeId, distance: sandbox.getState().comet.distance },
-  pausedComet,
-  "settings must pause comet movement",
-);
-sandbox.settingsOpen = false;
-advance(750, true);
-assert.equal(sandbox.getState().boostRemainingMs, 0, "boost ends after exactly 1250ms of active play");
+let pauseClock = runtimeSandbox.api.prepareChoicePause();
+assert.equal(runtimeSandbox.api.boost(), false, "boost is unavailable while route buttons are open");
+pauseClock = runtimeSandbox.api.advanceFrom(pauseClock, 1000);
+let pausedState = JSON.parse(JSON.stringify(runtimeSandbox.api.stateSnapshot()));
+assert.ok(Math.abs(pausedState.rocket.distance - 38) < 0.01);
+assert.ok(Math.abs(pausedState.comet.distance - 38) < 0.01);
+assert.equal(pausedState.boostRemainingMs, 750,
+  "an already-running boost must not be wasted while the child chooses a route");
+const beforeSettingsPause = pausedState;
+runtimeSandbox.settingsOpen = true;
+pauseClock = runtimeSandbox.api.advanceFrom(pauseClock, 1600);
+pausedState = JSON.parse(JSON.stringify(runtimeSandbox.api.stateSnapshot()));
+assert.deepEqual(pausedState, beforeSettingsPause, "settings must pause both racers and every chase timer");
+runtimeSandbox.settingsOpen = false;
 
-for (let guard = 0; guard < 2400 && sandbox.getState().phase !== "rescue"; guard += 1) advance(50, true);
-assert.equal(sandbox.getState().phase, "rescue", "the no-fail route must eventually catch the comet and open rescue");
-assert.equal(sandbox.spaceChaseRescueGuide.textContent, "あと みっつ");
-assert.equal(sandbox.release(knotButtons[0], 0), true);
-assert.equal(sandbox.release(knotButtons[0], 0), false, "the same rescue knot cannot count twice");
-for (let index = 1; index < knotButtons.length; index += 1) assert.equal(sandbox.release(knotButtons[index], index), true);
-assert.equal(sandbox.getState().phase, "victory");
-assert.equal(sandbox.getDefeated(), true);
-assert.equal(sandbox.getState().releasedKnots.size, 3);
-assert.equal(sandbox.spaceChaseRescueGuide.textContent, "なかまの ところへ かえれたよ！");
-advance(1300, false);
-assert.deepEqual(sandbox.completeCalls, [5000]);
-assert.equal(sandbox.clearCalls, 1);
-advance(2000, false);
-assert.deepEqual(sandbox.completeCalls, [5000], "victory must never award stage completion twice");
+let finishWaitClock = runtimeSandbox.api.prepareFinishWait(0);
+assert.equal(runtimeSandbox.api.boost(), false, "a stored boost cannot be consumed while the rocket waits at finish");
+finishWaitClock = runtimeSandbox.api.prepareFinishWait(600);
+finishWaitClock = runtimeSandbox.api.advanceFrom(finishWaitClock, 1000);
+const finishWaitState = JSON.parse(JSON.stringify(runtimeSandbox.api.stateSnapshot()));
+assert.equal(finishWaitState.rocket.distance, 0, "the rocket intentionally waits for the comet on the shared finish edge");
+assert.equal(finishWaitState.boostRemainingMs, 600, "an active boost is frozen, not wasted, during the finish wait");
+assert.ok(finishWaitState.comet.distance > 0, "the comet keeps moving toward the waiting rocket");
 
-console.log("nazonazo space chase boss regression: ok");
+const finalRun = runtimeSandbox.api.simulate(0, "short");
+assert.equal(finalRun.phase, "rescue");
+assert.equal(runtimeSandbox.spaceChaseRescueGuide.textContent, "あと みっつ");
+assert.equal(runtimeSandbox.api.release(knotButtons[0], 0), true);
+assert.equal(runtimeSandbox.api.release(knotButtons[0], 0), false, "the same rescue knot cannot count twice");
+assert.equal(runtimeSandbox.api.release(knotButtons[1], 1), true);
+assert.equal(runtimeSandbox.api.release(knotButtons[2], 2), true);
+assert.equal(runtimeSandbox.api.stateSnapshot().phase, "victory");
+assert.equal(runtimeSandbox.api.getDefeated(), true);
+assert.equal(runtimeSandbox.api.stateSnapshot().released, 3);
+assert.equal(runtimeSandbox.spaceChaseRescueGuide.textContent, "なかまの ところへ かえれたよ！");
+runtimeSandbox.completeCalls.length = 0;
+runtimeSandbox.clearCalls = 0;
+runtimeSandbox.api.advanceFrom(finalRun.now, 1300);
+assert.deepEqual(runtimeSandbox.completeCalls, [5000]);
+assert.equal(runtimeSandbox.clearCalls, 1);
+runtimeSandbox.api.advanceFrom(finalRun.now + 1300, 2000);
+assert.deepEqual(runtimeSandbox.completeCalls, [5000], "victory must never award stage completion twice");
+
+console.log("nazonazo space chase maze-network regression: ok (188 routes)");

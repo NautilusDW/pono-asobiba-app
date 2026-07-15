@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2202: なぞなぞトレイン宇宙面の最終追跡を、画面全体へ広がる10分岐・26経路・188通りの迷路ネットワークへ拡張。2択／3択、8の字・旋回・ねじれ・外周、スター多数の遠回りと近道を混在させ、キャラクター表示サイズを維持したまま論理画面を1600×1200へ引いた。分岐中は双方を同速減速し、無入力時の安全路自動選択、ゴール待機中のブースト保持、失敗なし救出を維持した (batch:1312-nazonazo-space-maze-network)。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/テストのみ変更)。
 // v2201: なぞなぞトレイン宇宙面の最終イベントを、決まった星の道をロケットと彗星が自動で進む分岐追跡へ刷新。近道／ブーストスターの道を3回選び、追いついた後は彗星の尾の結び目をほどいて「ほしのこ」を救出する物語へ接続した。App管理画面には最終追跡だけを直接試せる認証済みiframe導線も追加した (batch:1310-nazonazo-admin-chase-preview)。play.html PAGE_CACHE_VERSION と同期不要 (admin/nazonazo-tunnel/テストのみ変更)。
 // v2200: みちつなぎの右端ゴールを全テーマ共通のコーラル色の旗と短い出口ラインへ変更し、4段／5×4盤面でも正しい段を常時判別可能にした。到着前の手がかり非表示は維持し、途中3枚・最終1枚・盤面上のおかあさんを以前の物語イラストへ正確に復帰。568×320を含む全8面の旗色／位置／範囲と旧挿し絵decodeをChromium／WebKitで回帰した (batch:1310-slide-goal-art-mechanics)。play.html PAGE_CACHE_VERSION と同期不要 (slide/index.html/テストのみ変更)。
 // v2199: なぞなぞトレイン宇宙面の全問後に、視点を引いた宇宙で小さなロケットがおおながれぼしを追う最終イベントを追加。4回タップで自動ブースト、減速を挟んで3セット進む失敗なしの構成とし、遅い入力の保持、設定・縦向き・バックグラウンド中断、二重クリア防止、reduced-motionへ対応した (batch:1309-nazonazo-space-chase-boss)。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/テストのみ変更)。
@@ -131,7 +132,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2201;
+const CACHE_VERSION = 2202;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
