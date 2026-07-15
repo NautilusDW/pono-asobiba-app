@@ -80,7 +80,7 @@
   else { document.addEventListener('DOMContentLoaded', showLock); }
 })();
 </script>
-<link rel="stylesheet" href="styles.css?v=20260716-1309">
+<link rel="stylesheet" href="styles.css?v=20260716-1310">
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
 <body class="st-town v-train" data-driver="pono" data-driver-mood="happy">
@@ -134,25 +134,50 @@
       <div class="space-chase-board">
         <div class="space-chase-camera" aria-hidden="true">
           <div class="space-chase-star-stream"></div>
-          <div class="space-chase-route"></div>
-          <div class="space-chase-comet"><span class="ui-art" data-ui-art="fire" data-ui-art-eager="1"></span></div>
+          <svg id="spaceChaseRouteMap" class="space-chase-route-map" viewBox="0 0 1000 500" preserveAspectRatio="none">
+            <g id="spaceChaseRoutePaths"></g>
+            <g class="space-chase-junctions">
+              <circle cx="185" cy="270" r="9"></circle><circle cx="360" cy="235" r="9"></circle>
+              <circle cx="430" cy="235" r="9"></circle><circle cx="650" cy="245" r="9"></circle>
+              <circle cx="710" cy="245" r="9"></circle><circle cx="880" cy="220" r="9"></circle>
+            </g>
+          </svg>
+          <div class="space-chase-danger-cloud"></div>
+          <div class="space-chase-boost-item" data-space-chase-edge="fork1Power"><span class="ui-art" data-ui-art="star" data-ui-art-eager="1"></span></div>
+          <div class="space-chase-boost-item" data-space-chase-edge="fork2Power"><span class="ui-art" data-ui-art="star" data-ui-art-eager="1"></span></div>
+          <div class="space-chase-boost-item" data-space-chase-edge="fork3Power"><span class="ui-art" data-ui-art="star" data-ui-art-eager="1"></span></div>
+          <div class="space-chase-comet"><span class="ui-art" data-ui-art="fire" data-ui-art-eager="1"></span><span class="space-chase-star-child ui-art" data-ui-art="star" data-ui-art-eager="1"></span></div>
           <img class="space-chase-rocket" src="../assets/images/nazonazo-tunnel/space_vehicle_exploration_rocket_pono_20260713.png" alt="" decoding="async" loading="eager" draggable="false">
+          <div class="space-chase-rescue-beam"></div>
         </div>
         <div class="space-chase-hud">
-          <h2>おおながれぼしを おいかけよう！</h2>
-          <div class="space-chase-rounds" role="progressbar" aria-label="おいつくまでの ブースト" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0"><i></i><i></i><i></i></div>
-          <strong id="spaceChaseRoundText">あと 3かい</strong>
+          <h2 id="spaceChaseTitle">あっ！ ほしのこが ながされてる！</h2>
+          <div class="space-chase-rounds" role="progressbar" aria-label="とおった わかれみち" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0"><i></i><i></i><i></i></div>
+          <strong id="spaceChaseRoundText">あと 3この ぶんき</strong>
         </div>
         <div class="space-chase-controls">
           <div class="space-chase-readout">
-            <p id="spaceChaseGuide" role="status" aria-live="polite" aria-atomic="true">4かい タッチで ブースト！</p>
-            <div id="spaceChaseTapMeter" class="space-chase-tap-meter" role="progressbar" aria-label="ブースト パワー" aria-valuemin="0" aria-valuemax="4" aria-valuenow="0"><i></i><i></i><i></i><i></i></div>
+            <p id="spaceChaseGuide" role="status" aria-live="polite" aria-atomic="true">おいついて たすけよう！</p>
+            <div id="spaceChaseBoostMeter" class="space-chase-boost-meter" role="progressbar" aria-label="ブースト スター" aria-valuemin="0" aria-valuemax="2" aria-valuenow="1"><i class="is-on"></i><i></i></div>
           </div>
-          <button id="spaceChaseBoostButton" type="button" aria-label="タッチして ブーストを ためる" disabled>
-            <span class="ui-art" data-ui-art="rocket" data-ui-art-eager="1" aria-hidden="true"></span>
+          <div id="spaceChaseRouteChoices" class="space-chase-route-choices" role="group" aria-label="すすむ みちを えらぶ" hidden>
+            <button type="button" data-space-chase-choice="0" aria-pressed="false" disabled><span class="space-chase-choice-arrow is-up" aria-hidden="true"></span><span><strong>うえの みち</strong><small>ちかみち</small></span></button>
+            <button type="button" data-space-chase-choice="1" aria-pressed="false" disabled><span class="space-chase-choice-arrow is-down" aria-hidden="true"></span><span><strong>したの みち</strong><small>スター あり</small></span></button>
+          </div>
+          <button id="spaceChaseBoostButton" type="button" aria-label="ブーストを つかう。スター 1こ" disabled>
+            <span class="ui-art" data-ui-art="star" data-ui-art-eager="1" aria-hidden="true"></span>
             <strong>ブースト！</strong>
-            <small>4かいで はっしゃ</small>
+            <small>スター 1こ</small>
           </button>
+        </div>
+        <div id="spaceChaseRescuePanel" class="space-chase-rescue-panel" aria-hidden="true" hidden>
+          <h2>ひかる むすびめを タッチ！</h2>
+          <p id="spaceChaseRescueGuide" role="status" aria-live="polite" aria-atomic="true">あと みっつ</p>
+          <div class="space-chase-rescue-knots" role="group" aria-label="ほしのこを たすける">
+            <button type="button" data-space-chase-knot="0" aria-label="うえの ひかる むすびめを ほどく" disabled><span aria-hidden="true"></span></button>
+            <button type="button" data-space-chase-knot="1" aria-label="まんなかの ひかる むすびめを ほどく" disabled><span aria-hidden="true"></span></button>
+            <button type="button" data-space-chase-knot="2" aria-label="したの ひかる むすびめを ほどく" disabled><span aria-hidden="true"></span></button>
+          </div>
         </div>
       </div>
     </div>
@@ -311,8 +336,8 @@
   <div id="title" class="ovl">
     <h1><span class="ui-art" data-ui-art="train" aria-hidden="true"></span><span>ポノの なぞなぞトンネル</span><span class="ui-art" data-ui-art="rocket" aria-hidden="true"></span></h1>
     <div class="label" id="adminStagePreviewLabel" hidden></div>
-    <div class="label">トンネルを あけて ともだちを のせよう！ ずかんを ぜんぶ あつめよう</div>
-    <div class="label">むずかしさ</div>
+    <div class="label" id="titleGameGuide">トンネルを あけて ともだちを のせよう！ ずかんを ぜんぶ あつめよう</div>
+    <div class="label" id="difficultyLabel">むずかしさ</div>
     <div class="selRow" id="lvSel">
       <button class="selBtn sel" type="button" data-l="0"><span class="big ui-art" data-ui-art="sprout" aria-hidden="true"></span><span>かんたん</span></button>
       <button class="selBtn" type="button" data-l="1"><span class="big ui-art" data-ui-art="flower" aria-hidden="true"></span><span>ふつう</span></button>
@@ -340,6 +365,6 @@
 <div id="rotateHint"><span class="ui-art" data-ui-art="smartphone" aria-hidden="true"></span><span class="rotate-arrow" aria-hidden="true">→</span><span>よこむきに してね</span></div>
 <script src="data/questions.js?v=20260713-1273"></script>
 <script src="data/quiz-art.js?v=20260714-1297"></script>
-<script src="js/game.js?v=20260716-1309"></script>
+<script src="js/game.js?v=20260716-1310"></script>
 </body>
 </html>

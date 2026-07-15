@@ -13,8 +13,8 @@ const html = read("nazonazo-tunnel/index.html");
 const css = read("nazonazo-tunnel/styles.css");
 const game = read("nazonazo-tunnel/js/game.js");
 
-assert.match(html, /styles\.css\?v=20260716-1309/);
-assert.match(html, /js\/game\.js\?v=20260716-1309/);
+assert.match(html, /styles\.css\?v=20260716-1310/);
+assert.match(html, /js\/game\.js\?v=20260716-1310/);
 
 function extractBalanced(source, start, openChar = "{", closeChar = "}") {
   const open = source.indexOf(openChar, start);
@@ -279,7 +279,7 @@ assert.doesNotMatch(pick, /restoreSpaceStationSteerPosition/,
 const proceed = extractFunction(game, "proceed");
 assert.ok(proceed.indexOf("restoreSpaceStationSteerPosition()") < proceed.indexOf("qSeg++"),
   "the saved pose must restore immediately before departure, including the final station");
-assert.match(game, /resize",\(\)=>\{spaceChaseFrameAt=0;invalidateSpaceObstacleLayout\(\);updateSpaceRepairVisual\(\);updateSpaceChaseVisual\(\);if\(!spaceStationSteerResume&&!quiz\.classList\.contains\("show"\)\)clampSpaceSteerOffsets\(\);\}/,
+assert.match(game, /resize",\(\)=>\{spaceChaseState\.frameAt=0;invalidateSpaceObstacleLayout\(\);updateSpaceRepairVisual\(\);updateSpaceChaseVisual\(\);if\(!spaceStationSteerResume&&!quiz\.classList\.contains\("show"\)\)clampSpaceSteerOffsets\(\);\}/,
   "resize must not clamp the saved pose during repair or answer feedback");
 poseSandbox.spaceSteerX = 20; poseSandbox.spaceSteerY = -10;
 poseSandbox.window.innerWidth = 844; poseSandbox.window.innerHeight = 390;
@@ -550,7 +550,7 @@ assert.doesNotMatch(prepareObstacle, /rocketRect|getBoundingClientRect/,
 for (const variable of ["--space-obstacle-width", "--space-obstacle-gap-top", "--space-obstacle-gap-bottom"]) {
   assert.match(prepareObstacle, new RegExp(variable), `${variable} must be cached per gate wrapper`);
 }
-assert.match(game, /resize",\(\)=>\{spaceChaseFrameAt=0;invalidateSpaceObstacleLayout\(\)/,
+assert.match(game, /resize",\(\)=>\{spaceChaseState\.frameAt=0;invalidateSpaceObstacleLayout\(\)/,
   "viewport changes must invalidate the route geometry cache");
 
 const invalidateObstacle = extractFunction(game, "invalidateSpaceObstacleLayout");

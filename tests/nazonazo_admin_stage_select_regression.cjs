@@ -48,6 +48,10 @@ assert.equal(new Set(adminButtons).size, expectedIds.length, "stage buttons must
 for (const [id, label] of expectedStages) {
   assert.match(admin, new RegExp(`data-nazonazo-stage="${id}"[^>]*aria-pressed="false"[^>]*>[^<]*${label}<\\/button>`));
 }
+assert.equal((admin.match(/id="nazonazo-admin-space-chase"/g) || []).length, 1);
+assert.match(admin, /id="nazonazo-admin-space-chase"[^>]*data-nazonazo-preview-kind="spaceChase"[^>]*aria-pressed="false"/);
+assert.match(admin, /nazonazoSelectSpaceChase\(\)/);
+assert.match(admin, /最終おいかけっこだけ すぐ試す/);
 assert.equal((admin.match(/id="nazonazo-admin-frame"/g) || []).length, 1);
 assert.match(
   admin,
@@ -55,6 +59,7 @@ assert.match(
 );
 assert.match(admin, /\.nazonazo-admin-preview\s*\{[\s\S]*?aspect-ratio:\s*16\s*\/\s*9;/);
 assert.match(admin, /\.nazonazo-admin-stage-btn\s*\{[\s\S]*?min-height:\s*48px;/);
+assert.match(admin, /\.nazonazo-admin-special-preview\s*\{[\s\S]*?min-height:\s*50px;/);
 assert.match(admin, /\.nazonazo-admin-preview-actions \.btn\s*\{\s*min-height:\s*44px;/);
 assert.match(
   admin,
@@ -63,11 +68,14 @@ assert.match(
 assert.match(admin, /href="\.\.\/nazonazo-tunnel\/"[^>]*target="_blank"[^>]*rel="noopener"/);
 assert.match(admin, /管理プレビュー中はハイスコア・図鑑・進行状況を保存しません/);
 assert.match(admin, /if \(!window\.__APP_BUILD__\)[\s\S]*?App staging/);
-assert.match(admin, /function nazonazoSelectStage\(stageId\)[\s\S]*?frame\.setAttribute\('src',[\s\S]*?adminPreviewToken=/);
+assert.match(admin, /function nazonazoSelectStage\(stageId, previewKind\)[\s\S]*?frame\.setAttribute\('src',[\s\S]*?adminPreviewToken=/);
+assert.match(admin, /previewKind:\s*nazonazoAdminPendingPreviewKind/);
+assert.match(admin, /previewKind === 'spaceChase' && stageId === 'space'/);
 assert.match(admin, /event\.origin !== location\.origin \|\| event\.source !== frame\.contentWindow/);
 assert.match(admin, /data\.token !== nazonazoAdminPreviewToken/);
 assert.match(admin, /btn\.setAttribute\('aria-pressed', active \? 'true' : 'false'\)/);
 assert.match(admin, /panelId !== 'nazonazo'[\s\S]*?nazonazoStopStagePreview\(true\)/);
+assert.match(admin, /nazonazoAdminPendingPreviewKind = 'stage'/);
 
 // The child bridge is isolated so its trust predicate and canonical mapping can be VM-tested.
 const bridgeStart = game.indexOf("/* ================= Basic Auth 管理ダッシュボード専用ステージ選択 ================= */");
@@ -140,8 +148,11 @@ assert.match(bridge, /const start=\$\("startBtn"\);[\s\S]*?start\.disabled=true;
 assert.match(bridge, /const levelButtons=\[\.\.\.document\.querySelectorAll\("#lvSel \.selBtn"\)\];[\s\S]*?button\.disabled=true/);
 assert.match(bridge, /event\.origin!==window\.location\.origin\|\|event\.source!==window\.parent/);
 assert.match(bridge, /data\.token!==nazonazoAdminPreviewToken/);
-assert.match(bridge, /Object\.prototype\.hasOwnProperty\.call\(NAZONAZO_ADMIN_STAGE_INDEX,stageId\)/);
+assert.match(bridge, /previewKind=String\(data\.previewKind\|\|""\)/);
+assert.match(bridge, /previewKind==="spaceChase"&&stageId==="space"/);
+assert.match(bridge, /nazonazoAdminPreviewArm\(stageId,previewKind\)/);
 assert.ok(!/params\.get\(["'](?:stage|adminStage)["']\)/.test(game), "public stage query launch must not exist");
+assert.ok(!/params\.get\(["'](?:previewKind|spaceChase)["']\)/.test(game), "direct finale kind must come only from the authenticated parent message");
 
 const armedLabel = { hidden: true, textContent: "" };
 const armedStart = { disabled: true, textContent: "" };
@@ -163,6 +174,7 @@ const armContext = {
   vel: 10,
   worldX: 0,
   target: 0,
+  nazonazoAdminPreviewKind: "stage",
   resetNumberCargoGame() { bridgeCalls.push(["reset-number-cargo"]); },
   resetSeaInteraction() { bridgeCalls.push(["reset-sea"]); },
   clearFutureCapsuleGame() { bridgeCalls.push(["clear-future-capsule"]); },
@@ -179,14 +191,15 @@ const armContext = {
   $(id) { return id === "adminStagePreviewLabel" ? armedLabel : armedStart; },
 };
 vm.runInNewContext(
-  bridge + ';nazonazoAdminPreviewMode=true;nazonazoAdminPreviewToken="valid-token";this.__armed=nazonazoAdminPreviewArm("sea");this.__armState={stg,loop,playing,driving,pending,vel,worldX,target,nazonazoAdminPreviewStageIndex};',
+  bridge + ';nazonazoAdminPreviewMode=true;nazonazoAdminPreviewToken="valid-token";this.__armed=nazonazoAdminPreviewArm("sea","stage");this.__armState={stg,loop,playing,driving,pending,vel,worldX,target,nazonazoAdminPreviewStageIndex,nazonazoAdminPreviewKind};this.__allowed={normal:nazonazoAdminPreviewKindIsAllowed("sea","stage"),direct:nazonazoAdminPreviewKindIsAllowed("space","spaceChase"),wrongStage:nazonazoAdminPreviewKindIsAllowed("sea","spaceChase"),wrongKind:nazonazoAdminPreviewKindIsAllowed("space","boss")};',
   armContext,
 );
 assert.equal(armContext.__armed, true);
 assert.deepEqual(
   JSON.parse(JSON.stringify(armContext.__armState)),
-  { stg: 3, loop: 0, playing: false, driving: false, pending: null, vel: 0, worldX: 300, target: 300, nazonazoAdminPreviewStageIndex: 3 },
+  { stg: 3, loop: 0, playing: false, driving: false, pending: null, vel: 0, worldX: 300, target: 300, nazonazoAdminPreviewStageIndex: 3, nazonazoAdminPreviewKind: "stage" },
 );
+assert.deepEqual(JSON.parse(JSON.stringify(armContext.__allowed)), { normal: true, direct: true, wrongStage: false, wrongKind: false });
 assert.equal(armedStart.disabled, false);
 assert.equal(armedStart.textContent, "ふかいうみを はじめる！");
 assert.match(armedLabel.textContent, /ふかいうみ/);
@@ -196,20 +209,39 @@ assert.ok(bridgeCalls.some((call) => call[0] === "clear-future-capsule"), "armin
 assert.ok(bridgeCalls.some((call) => call[0] === "clear-space-repair"), "arming a preview must clear the current space repair game");
 assert.ok(bridgeCalls.some((call) => call[0] === "reset-space-steering"), "arming a preview must clear stale rocket steering state");
 
-const armStart = bridge.indexOf("function nazonazoAdminPreviewArm(stageId)");
+vm.runInNewContext('this.__directArmed=nazonazoAdminPreviewArm("space","spaceChase");this.__directState={stg,nazonazoAdminPreviewStageIndex,nazonazoAdminPreviewKind};', armContext);
+assert.equal(armContext.__directArmed, true);
+assert.deepEqual(JSON.parse(JSON.stringify(armContext.__directState)), { stg: 5, nazonazoAdminPreviewStageIndex: 5, nazonazoAdminPreviewKind: "spaceChase" });
+assert.equal(armedStart.textContent, "おいかけっこを はじめる！");
+assert.match(armedLabel.textContent, /さいしゅう おいかけっこ/);
+
+const armStart = bridge.indexOf("function nazonazoAdminPreviewArm(stageId,previewKind)");
 const armEnd = bridge.indexOf("\nasync function initNazonazoAdminStagePreviewBridge", armStart);
 const arm = bridge.slice(armStart, armEnd);
 assert.ok(armStart >= 0 && armEnd > armStart);
 assert.ok(!arm.includes("startJourneyAt("), "parent selection must arm only; child tap must start audio/gameplay");
 assert.match(arm, /start\.disabled=false/);
-assert.match(arm, /start\.textContent=STAGES\[index\]\.names\[0\]\+"を はじめる！"/);
+assert.match(arm, /previewKind==="spaceChase"\?"おいかけっこを はじめる！"/);
 
 const startHandlerStart = game.indexOf('bindTap($("startBtn"),()=>{');
 const startHandlerEnd = game.indexOf('\nbindTap($("goBtn")', startHandlerStart);
 const startHandler = game.slice(startHandlerStart, startHandlerEnd);
 assert.match(startHandler, /const startStage=nazonazoAdminPreviewMode\?nazonazoAdminPreviewStageIndex:0;/);
-assert.match(startHandler, /const p=ensureAC\(\);[\s\S]*?primeAC\(\);[\s\S]*?startJourneyAt\(startStage\);/);
+assert.match(startHandler, /const p=ensureAC\(\);[\s\S]*?primeAC\(\);[\s\S]*?startJourneyAt\(startStage,\{adminSpaceChase:nazonazoAdminPreviewKind==="spaceChase"\}\);/);
 assert.match(startHandler, /nazonazoAdminPreviewNotify\("started"/);
+
+const startJourney = game.slice(game.indexOf("function startJourneyAt(s,options){"), game.indexOf("\nfunction isNumberCargoQuestion", game.indexOf("function startJourneyAt(s,options){")));
+assert.match(startJourney, /options&&options\.adminSpaceChase&&nazonazoAdminPreviewMode&&nazonazoAdminPreviewKind==="spaceChase"/);
+assert.match(startJourney, /STAGES\[s\]&&STAGES\[s\]\.id==="space"/);
+assert.match(startJourney, /qSeg=QN;drawDots\(\);worldX=stops\(origin\(s\),QN-1\)\+120;target=worldX;pending=null;driving=false;playing=true/);
+assert.equal((startJourney.match(/showSpaceChaseEncounter\(\)/g) || []).length, 1);
+assert.ok(startJourney.indexOf("if(adminSpaceChase)") < startJourney.indexOf("sndGo();"), "direct finale must skip the ordinary first-quiz departure sound/path");
+
+const againHandlerStart = game.indexOf('bindTap($("againBtn"),()=>{');
+const againHandlerEnd = game.indexOf('\nbindTap($("loopBtn")', againHandlerStart);
+const againHandler = game.slice(againHandlerStart, againHandlerEnd);
+assert.match(againHandler, /adminSpaceChase:nazonazoAdminPreviewMode&&nazonazoAdminPreviewKind==="spaceChase"/,
+  "again must return a direct-finale preview to the finale, not the five questions");
 
 // Preview writes are blocked globally, while the ordinary save path remains intact.
 const saveStart = game.indexOf("function saveGame(){");
@@ -235,14 +267,17 @@ assert.equal(normalWrites, 1, "ordinary play must retain its save path");
 
 assert.match(game, /const wasAdminPreview=document\.body\.classList\.contains\("nazonazo-admin-stage-preview"\);/);
 assert.match(game, /if\(wasAdminPreview\)document\.body\.classList\.add\("nazonazo-admin-stage-preview"\);/);
+assert.match(game, /const wasAdminSpaceChase=nazonazoAdminPreviewMode&&nazonazoAdminPreviewKind==="spaceChase";/);
+assert.match(game, /if\(wasAdminSpaceChase\)document\.body\.classList\.add\("nazonazo-admin-space-chase-preview"\);/);
 assert.match(html, /id="adminStagePreviewLabel" hidden/);
-assert.match(html, /js\/game\.js\?v=20260716-1309/);
-assert.match(html, /styles\.css\?v=20260716-1309/);
+assert.match(html, /js\/game\.js\?v=20260716-1310/);
+assert.match(html, /styles\.css\?v=20260716-1310/);
 assert.match(styles, /body\.nazonazo-admin-stage-preview #gameSettings\{display:none!important\}/,
   "the public return menu must not cover the tiny authenticated stage preview");
 assert.match(styles, /@media \(orientation:landscape\) and \(max-height:180px\)[\s\S]*?body\.nazonazo-admin-stage-preview #title h1,[\s\S]*?#zkBtnTitle\{display:none\}/);
 assert.match(styles, /body\.nazonazo-admin-stage-preview #lvSel\{[^}]*grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
 assert.match(styles, /body\.nazonazo-admin-stage-preview #startBtn\{[^}]*min-height:38px/);
+assert.match(styles, /body\.nazonazo-admin-space-chase-preview #titleGameGuide,[\s\S]*?#zkBtnTitle\{display:none!important\}/);
 
 // Preserve the server-side admin boundary and App-only tier behavior.
 assert.match(worker, /const PROTECTED_PREFIXES = \[[\s\S]*?'\/admin\/'[\s\S]*?'\/admin'/);

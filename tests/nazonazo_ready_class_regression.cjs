@@ -45,6 +45,8 @@ function runSkinClassReset(initialClassName, iosDevice, portalEdit) {
     document: { body },
     IOS_DEVICE: iosDevice,
     PORTAL_EDIT_ENABLED: portalEdit,
+    nazonazoAdminPreviewMode: false,
+    nazonazoAdminPreviewKind: "stage",
     weatherReady: true,
     weatherForStage() { return "rain"; },
     startStageWeather() { return "rain"; },

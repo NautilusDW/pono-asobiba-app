@@ -17,6 +17,10 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-07-16 - [batch:1310-nazonazo-admin-chase-preview] Codex: ユーザー実機再評価で、現行の「4回連打→自動加速×3」は距離が縮むだけで想定する追いかけっこと違うと判明し、同バッチを本体再設計まで拡張。小さいロケット／流れ星の大きさは維持し、両者が見える宇宙の分岐軌道を常時自動走行、ロケットは基礎速度を少し速くする。分岐で道を選び、近道またはブーストアイテムのある遠回りを判断、取得ブーストは任意タイミングで使用。物語は「暴走するおおながれぼしから降りられないほしのこを、暗い宇宙雲へ入る前に追いついてレスキュー光線で助ける」とし、追跡理由と到着後の操作を完結させる。管理直行プレビューも維持。 (by Codex)
+
+- 2026-07-16 - [batch:1310-nazonazo-admin-chase-preview] Codex: ユーザー実機確認「管理画面の宇宙から入っても中身が変わっていない」を受領。原因は既存管理プレビューの「うちゅう」が通常stage開始のみで、新追跡イベントは5問＋5リペア完了後にだけ発火するため、入口では従来画面に見えること。既存の通常stageボタンを維持しつつ、認証済みApp staging管理iframeの同一origin＋token bridgeだけで使える「おいかけっこを ためす」専用ボタン／commandを追加し、公開queryでの直起動や保存書込みは作らない。主操作は追跡イベントの直接開始、予備操作は従来どおり宇宙を最初から開始。`assets/.DS_Store`／凍結develop／master／productionは変更しない。 (by Codex)
+
 - 2026-07-16 - [batch:1309-nazonazo-space-chase-boss] Codex: **DONE (staging verified)** — feature commit `96f09951`を`develop-app`へnon-force push。Actions run `29442435706`はproduction skip、App staging→LP staging直列success。App staging `https://pono-asobiba-app-staging.ndw.workers.dev/nazonazo-tunnel/` は`APP_BUILD=1`、HTML query `20260716-1309`、SW v2199、公開game.js SHA-256 `90577f46…`／styles.css `ce301ba9…`がlocalと一致。LP staging `https://pono-asobiba-staging.ndw.workers.dev/nazonazo-tunnel/` はHTTP 200、同HTML queryと追跡レイヤーを配信しつつ`APP_BUILD=1`未注入でfree/book側App専用lockを維持。既存ロケット／すいせい素材もHTTP 200。`assets/.DS_Store`／凍結develop／master／productionは未変更。 (by Codex)
 
 - 2026-07-16 - [batch:1309-nazonazo-space-chase-boss] Codex: **DONE (local + cross-review / push待ち)** — くろあな案は直前の柱回避・修理・連打と遊びの芯が重なるため不採用。宇宙5問後にカメラが引き、既存ロケットとおおながれぼしが小さく見える失敗なしの追跡イベントを追加した。大ボタン4回で自動ブースト→減速を3セット、遅い入力は保持、余分な入力は無視。設定・縦向き・バックグラウンドで停止し、完了二重実行、LP lock、共通cleanup、キーボード、reduced-motionを回帰固定。全`tests/nazonazo_*.cjs` 22本、JS/SW構文、diff check PASS。クロスレビューでopaque layer背面に隠れたstampを検出しz-index 23へ修正、再検証PASS。接続可能ブラウザー0件のため実画面自動QAのみ未実施。HTML query `20260716-1309`、SW v2199。`assets/.DS_Store`／凍結develop／master／productionは未変更。 (by Codex)

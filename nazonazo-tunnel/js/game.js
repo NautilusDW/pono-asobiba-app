@@ -599,12 +599,42 @@ const SPACE_REPAIR_POINTER_SAMPLE_CAP=.50;
 const SPACE_REPAIR_POINTER_DEADZONE_RATIO=.18;
 const SPACE_REPAIR_CLICK_STEP=Math.PI/2;
 const SPACE_REPAIR_KEY_STEP=Math.PI/6;
-const SPACE_CHASE_TAPS_PER_BURST=4;
-const SPACE_CHASE_BURST_GOAL=3;
-const SPACE_CHASE_INTRO_MS=650;
-const SPACE_CHASE_BOOST_MS=900;
-const SPACE_CHASE_COAST_MS=420;
-const SPACE_CHASE_VICTORY_MS=950;
+const SPACE_CHASE_VIEWBOX_WIDTH=1000;
+const SPACE_CHASE_VIEWBOX_HEIGHT=500;
+const SPACE_CHASE_ROUTE_SAMPLE_COUNT=32;
+const SPACE_CHASE_BRANCH_GOAL=3;
+const SPACE_CHASE_INTRO_MS=1050;
+const SPACE_CHASE_CAUGHT_MS=650;
+const SPACE_CHASE_VICTORY_MS=1250;
+const SPACE_CHASE_COMET_SPEED=50;
+const SPACE_CHASE_ROCKET_SPEED=54;
+const SPACE_CHASE_CHOICE_SPEED=30;
+const SPACE_CHASE_BOOST_SPEED=86;
+const SPACE_CHASE_BOOST_MS=1250;
+const SPACE_CHASE_BOOST_MAX=2;
+const SPACE_CHASE_START_LEAD=260;
+const SPACE_CHASE_BRANCH_PROMPT_DISTANCE=135;
+const SPACE_CHASE_CATCH_DISTANCE=32;
+const SPACE_CHASE_ROUTE_EDGES=Object.freeze({
+ launch:{from:[70,270],c1:[105,270],c2:[150,270],to:[185,270],nextBranch:0,rank:0},
+ fork1Short:{from:[185,270],c1:[255,170],c2:[305,165],to:[360,235],next:"bridge1",branch:0,rank:1},
+ fork1Power:{from:[185,270],c1:[235,345],c2:[300,345],to:[360,235],next:"bridge1",branch:0,rank:1,boostAt:.56},
+ bridge1:{from:[360,235],c1:[385,220],c2:[405,220],to:[430,235],nextBranch:1,rank:2},
+ fork2Power:{from:[430,235],c1:[475,125],c2:[575,125],to:[650,245],next:"bridge2",branch:1,rank:3,boostAt:.52},
+ fork2Short:{from:[430,235],c1:[520,300],c2:[585,300],to:[650,245],next:"bridge2",branch:1,rank:3},
+ bridge2:{from:[650,245],c1:[670,230],c2:[692,230],to:[710,245],nextBranch:2,rank:4},
+ fork3Power:{from:[710,245],c1:[750,125],c2:[820,125],to:[880,220],next:"finish",branch:2,rank:5,boostAt:.54},
+ fork3Short:{from:[710,245],c1:[770,300],c2:[825,295],to:[880,220],next:"finish",branch:2,rank:5},
+ finish:{from:[880,220],c1:[910,205],c2:[940,225],to:[965,220],finish:true,rank:6}
+});
+const SPACE_CHASE_BRANCHES=Object.freeze([
+ {entry:"launch",powerIndex:1,choices:[{edge:"fork1Short",direction:"うえ",kind:"short"},{edge:"fork1Power",direction:"した",kind:"power"}]},
+ {entry:"bridge1",powerIndex:0,choices:[{edge:"fork2Power",direction:"うえ",kind:"power"},{edge:"fork2Short",direction:"した",kind:"short"}]},
+ {entry:"bridge2",powerIndex:0,choices:[{edge:"fork3Power",direction:"うえ",kind:"power"},{edge:"fork3Short",direction:"した",kind:"short"}]}
+]);
+const SPACE_CHASE_COMET_PLANS=Object.freeze([[1,1,0],[0,0,1],[1,0,1]]);
+function createSpaceChaseRacer(kind){return {kind,edgeId:"launch",distance:0,finished:false,completedBranches:0};}
+function createSpaceChaseState(){return {phase:"idle",phaseElapsedMs:0,frameAt:0,raceElapsedMs:0,rocket:null,comet:null,playerChoices:[null,null,null],cometChoices:[0,0,0],activeBranch:-1,boostCharges:1,boostRemainingMs:0,collectedBoosts:new Set(),releasedKnots:new Set(),completionCommitted:false};}
 let spaceRepairOptions=[],spaceRepairPhase="idle",spaceRepairSelectedIndex=-1,spaceRepairActiveScrew=-1;
 let spaceRepairProgress=[0,0,0],spaceRepairRotations=[0,0,0],spaceRepairCharge=0,spaceRepairChargeLastAt=0,spaceRepairResolving=false,spaceRepairAssisted=false;
 let spaceRepairPointerId=null,spaceRepairPointerTarget=null,spaceRepairPointerScrew=-1,spaceRepairPointerAngle=0;
@@ -617,9 +647,9 @@ let spaceObstacleLaneKey="",spaceObstacleLaneStart=0;
 const spaceObstacleHitGates=new Set(),spaceObstacleGateLayout=new Array(SPACE_OBSTACLE_MAX_GATES),spaceObstacleFrameHitbox={left:0,right:0,top:0,bottom:0};
 let spaceSteerTargetX=0,spaceSteerX=0,spaceSteerTargetY=0,spaceSteerY=0,spaceSteerPointerId=null,spaceSteerUsed=false,spaceSteerFrameAt=0,spaceStationSteerResume=null;
 const spaceMoveKeys=new Set();
-let spaceChasePhase="idle",spaceChaseTapCount=0,spaceChaseBurstCount=0,spaceChaseProgress=0,spaceChaseBoostStartProgress=0,spaceChaseBoostTargetProgress=0;
-let spaceChasePhaseElapsedMs=0,spaceChaseFrameAt=0,spaceChaseCompletionCommitted=false,spaceChaseDefeated=false;
-let nazonazoAdminPreviewMode=false;
+let spaceChaseState=createSpaceChaseState(),spaceChaseDefeated=false;
+const spaceChaseRouteMetrics=new Map(),spaceChaseRouteElements=new Map();
+let nazonazoAdminPreviewMode=false,nazonazoAdminPreviewKind="stage";
 const NUMBER_CARGO_THEMES=[
  {e:"⭐",name:"おほしさま"},{e:"🎈",name:"ふうせん"},{e:"🌼",name:"おはな"},
  {e:"🍎",name:"りんご"},{e:"🌰",name:"どんぐり"},{e:"🍓",name:"いちご"}
@@ -759,7 +789,10 @@ const $=id=>document.getElementById(id);
 const world=$("world"),veh=$("veh"),horizon=$("horizon"),midT=$("midT"),groundT=$("groundT"),fgT=$("fgT"),seaFishLayer=$("seaFishLayer"),seaHabitatLayer=$("seaHabitatLayer"),smokeLayer=$("smokeLayer"),townHorizonLoop=$("townHorizonLoop"),townMidLoop=$("townMidLoop"),futureHorizonLoop=$("futureHorizonLoop"),futureMidLoop=$("futureMidLoop"),futureForegroundLoop=$("futureForegroundLoop"),spaceHorizonLoop=$("spaceHorizonLoop"),spaceForegroundLoop=$("spaceForegroundLoop"),jungleHabitatBack=$("jungleHabitatBack");
 const vehicleSteerShell=$("vehicleSteerShell"),seaSteerSurface=$("seaSteerSurface"),spaceSteerSurface=$("spaceSteerSurface"),seaAnswerLayer=$("seaAnswerLayer"),seaBossLayer=$("seaBossLayer"),seaRescueMessage=$("seaRescueMessage"),seaArenaShade=$("seaArenaShade"),seaRoundCountdown=$("seaRoundCountdown"),seaQuizGuide=$("seaQuizGuide"),seaSteerHint=$("seaSteerHint"),spaceSteerHint=$("spaceSteerHint");
 const futureCapsuleLayer=$("futureCapsuleLayer"),spaceGalaxyLayer=$("spaceGalaxyLayer");
-const spaceChaseLayer=$("spaceChaseLayer"),spaceChaseGuide=$("spaceChaseGuide"),spaceChaseTapMeter=$("spaceChaseTapMeter"),spaceChaseRoundText=$("spaceChaseRoundText"),spaceChaseBoostButton=$("spaceChaseBoostButton");
+const spaceChaseLayer=$("spaceChaseLayer"),spaceChaseGuide=$("spaceChaseGuide"),spaceChaseTitle=$("spaceChaseTitle"),spaceChaseBoostMeter=$("spaceChaseBoostMeter"),spaceChaseRoundText=$("spaceChaseRoundText"),spaceChaseBoostButton=$("spaceChaseBoostButton"),spaceChaseRoutePaths=$("spaceChaseRoutePaths"),spaceChaseRouteChoices=$("spaceChaseRouteChoices"),spaceChaseRescuePanel=$("spaceChaseRescuePanel"),spaceChaseRescueGuide=$("spaceChaseRescueGuide");
+const spaceChaseChoiceButtons=spaceChaseRouteChoices?[...spaceChaseRouteChoices.querySelectorAll("button[data-space-chase-choice]")]:[];
+const spaceChaseBoostItems=spaceChaseLayer?[...spaceChaseLayer.querySelectorAll(".space-chase-boost-item")]:[];
+const spaceChaseKnotButtons=spaceChaseRescuePanel?[...spaceChaseRescuePanel.querySelectorAll("button[data-space-chase-knot]")]:[];
 const spaceObstacleGatePool=[];
 let spaceObstacleGuide=null;
 const spaceObstacleLayer=(()=>{
@@ -1695,12 +1728,14 @@ function applySkin(weatherReady){
  const NP=STAGES[nIdx].pals[loop%2];
  const wasGameReady=document.body.classList.contains("pono-game-ready");
  const wasAdminPreview=document.body.classList.contains("nazonazo-admin-stage-preview");
+ const wasAdminSpaceChase=nazonazoAdminPreviewMode&&nazonazoAdminPreviewKind==="spaceChase";
  const weather=weatherReady?weatherForStage(st):startStageWeather(st);
  if(weather!=="rain")hideWeatherNotice();
  document.body.className=(IOS_DEVICE?"ios-device ":"")+"st-"+st.id+" v-"+st.veh+" weather-"+weather+(PORTAL_EDIT_ENABLED?" portal-edit":"");
  // 画面スキンの全置換で、初期描画ガードを解除する永続クラスまで消さない。
  if(wasGameReady)document.body.classList.add("pono-game-ready");
  if(wasAdminPreview)document.body.classList.add("nazonazo-admin-stage-preview");
+ if(wasAdminSpaceChase)document.body.classList.add("nazonazo-admin-space-chase-preview");
  document.body.dataset.weather=weather;
  setDriverForStage(stg);
  skyA.style.background=st.assets&&st.assets.sky?bgUrl(st.assets.sky)+" "+(st.skyPosition||"center bottom")+" / cover no-repeat":"linear-gradient("+P.sky[0]+","+P.sky[1]+")";
@@ -3929,7 +3964,8 @@ function gloop(t){
 }
 
 /* ================= flow ================= */
-function startJourneyAt(s){
+function startJourneyAt(s,options){
+ const adminSpaceChase=!!(options&&options.adminSpaceChase&&nazonazoAdminPreviewMode&&nazonazoAdminPreviewKind==="spaceChase"&&STAGES[s]&&STAGES[s].id==="space");
  hideWeatherNotice();
  clearMagicPuffs();
  resetNumberCargoGame();
@@ -3947,6 +3983,10 @@ function startJourneyAt(s){
  startStageWeather(STAGES[stg]);
  buildQList();applySkin(true);buildWorld(false);drawDots();
  setDriverMood("cheer");
+ if(adminSpaceChase){
+  qSeg=QN;drawDots();worldX=stops(origin(s),QN-1)+120;target=worldX;pending=null;driving=false;playing=true;swapReady=false;swapped=false;
+  cars=[];helpItems=[];renderCars();updateHelpHud();$("map").classList.add("hidden");quiz.classList.remove("show");render();showSpaceChaseEncounter();return;
+ }
  worldX=origin(s);target=stops(origin(s),0);
  pending="quiz";driving=true;playing=true;swapReady=false;swapped=false;
  cars=[];helpItems=[];renderCars();updateHelpHud();
@@ -4616,89 +4656,219 @@ function spaceChaseRuntimeActive(){
  return !window.__PONO_TIER_LOCKED__&&isSpaceStage()&&playing&&spaceChaseLayer&&!spaceChaseLayer.hidden&&
   spaceLandscapePlayable()&&!document.hidden&&!gameSettingsMenuIsOpen();
 }
-function spaceChasePlayable(){return spaceChaseRuntimeActive()&&spaceChasePhase==="charge"&&!spaceChaseCompletionCommitted;}
 function setSpaceChaseGuide(message,shouldAnnounce){
  const next=String(message||"");if(spaceChaseGuide&&spaceChaseGuide.textContent!==next)spaceChaseGuide.textContent=next;
  if(shouldAnnounce)announce(next);
 }
-function focusSpaceChaseBoost(){
- if(!spaceChasePlayable()||!spaceChaseBoostButton)return;
- try{spaceChaseBoostButton.focus({preventScroll:true});}catch(_){spaceChaseBoostButton.focus();}
+function spaceChaseCurvePoint(edge,t){
+ const ratio=clamp(Number(t)||0,0,1),inverse=1-ratio,a=inverse*inverse*inverse,b=3*inverse*inverse*ratio,c=3*inverse*ratio*ratio,d=ratio*ratio*ratio;
+ return {x:a*edge.from[0]+b*edge.c1[0]+c*edge.c2[0]+d*edge.to[0],y:a*edge.from[1]+b*edge.c1[1]+c*edge.c2[1]+d*edge.to[1]};
+}
+function ensureSpaceChaseRouteMetrics(){
+ if(spaceChaseRouteMetrics.size===Object.keys(SPACE_CHASE_ROUTE_EDGES).length)return;
+ spaceChaseRouteMetrics.clear();
+ Object.entries(SPACE_CHASE_ROUTE_EDGES).forEach(([edgeId,edge])=>{
+  const samples=[];let length=0,previous=spaceChaseCurvePoint(edge,0);samples.push({t:0,x:previous.x,y:previous.y,d:0});
+  for(let index=1;index<=SPACE_CHASE_ROUTE_SAMPLE_COUNT;index++){
+   const t=index/SPACE_CHASE_ROUTE_SAMPLE_COUNT,point=spaceChaseCurvePoint(edge,t);length+=Math.hypot(point.x-previous.x,point.y-previous.y);samples.push({t,x:point.x,y:point.y,d:length});previous=point;
+  }
+  spaceChaseRouteMetrics.set(edgeId,{edge,length,samples});
+ });
+}
+function spaceChasePointAtDistance(edgeId,distance){
+ ensureSpaceChaseRouteMetrics();const metric=spaceChaseRouteMetrics.get(edgeId);if(!metric)return {x:0,y:0};
+ const target=clamp(Number(distance)||0,0,metric.length),samples=metric.samples;let upper=1;
+ while(upper<samples.length&&samples[upper].d<target)upper++;
+ const b=samples[Math.min(upper,samples.length-1)],a=samples[Math.max(0,upper-1)],span=Math.max(.0001,b.d-a.d),ratio=clamp((target-a.d)/span,0,1);
+ return {x:a.x+(b.x-a.x)*ratio,y:a.y+(b.y-a.y)*ratio};
+}
+function prepareSpaceChaseRouteMap(){
+ ensureSpaceChaseRouteMetrics();if(!spaceChaseRoutePaths)return;
+ if(!spaceChaseRouteElements.size){
+  const namespace="http://www.w3.org/2000/svg";
+  Object.entries(SPACE_CHASE_ROUTE_EDGES).forEach(([edgeId,edge])=>{
+   const path=document.createElementNS(namespace,"path");path.setAttribute("d","M "+edge.from.join(" ")+" C "+edge.c1.join(" ")+" "+edge.c2.join(" ")+" "+edge.to.join(" "));
+   path.setAttribute("class","space-chase-route-edge"+(edge.boostAt?" is-power-route":""));path.dataset.spaceChaseEdge=edgeId;spaceChaseRoutePaths.appendChild(path);spaceChaseRouteElements.set(edgeId,path);
+  });
+ }
+ spaceChaseBoostItems.forEach(item=>{
+  const edgeId=item.dataset.spaceChaseEdge,metric=spaceChaseRouteMetrics.get(edgeId),at=metric&&metric.edge.boostAt||.5,point=spaceChasePointAtDistance(edgeId,metric?metric.length*at:0);
+  item.style.left=(point.x/SPACE_CHASE_VIEWBOX_WIDTH*100).toFixed(2)+"%";item.style.top=(point.y/SPACE_CHASE_VIEWBOX_HEIGHT*100).toFixed(2)+"%";
+ });
+}
+function resetSpaceChaseRouteVisuals(){
+ spaceChaseRouteElements.forEach(path=>path.classList.remove("is-comet-route","is-rocket-route"));
+ spaceChaseBoostItems.forEach(item=>item.classList.remove("is-collected"));
+}
+function markSpaceChaseRoute(edgeId,kind){const path=spaceChaseRouteElements.get(edgeId);if(path)path.classList.add(kind==="comet"?"is-comet-route":"is-rocket-route");}
+function spaceChaseRacerPoint(racer){return racer?spaceChasePointAtDistance(racer.edgeId,racer.distance):{x:0,y:0};}
+function collectSpaceChaseBoost(edgeId){
+ if(spaceChaseState.collectedBoosts.has(edgeId))return false;spaceChaseState.collectedBoosts.add(edgeId);spaceChaseState.boostCharges=Math.min(SPACE_CHASE_BOOST_MAX,spaceChaseState.boostCharges+1);
+ const item=spaceChaseBoostItems.find(entry=>entry.dataset.spaceChaseEdge===edgeId);if(item)item.classList.add("is-collected");
+ setSpaceChaseGuide(spaceChaseState.boostCharges>=SPACE_CHASE_BOOST_MAX?"スター まんたん！":"ブースト スター！",true);tone(740,0,.08,"triangle",.055);tone(1040,.07,.13,"sine",.05);showStamp("ブースト スター！","new");return true;
+}
+function nextSpaceChaseEdge(racer,edge){
+ if(edge.nextBranch!==undefined){
+  const branchIndex=edge.nextBranch,branch=SPACE_CHASE_BRANCHES[branchIndex];let choiceIndex;
+  if(racer.kind==="comet")choiceIndex=spaceChaseState.cometChoices[branchIndex];
+  else{
+   choiceIndex=spaceChaseState.playerChoices[branchIndex];
+   if(choiceIndex===null){choiceIndex=branch.powerIndex;spaceChaseState.playerChoices[branchIndex]=choiceIndex;setSpaceChaseGuide("じどうで スターの みちへ すすむよ",true);}
+   spaceChaseState.activeBranch=-1;updateSpaceChaseRouteChoiceControls();
+  }
+  const next=branch.choices[choiceIndex]&&branch.choices[choiceIndex].edge||branch.choices[branch.powerIndex].edge;markSpaceChaseRoute(next,racer.kind);return next;
+ }
+ return edge.next||"";
+}
+function advanceSpaceChaseRacer(racer,travel){
+ let remaining=Math.max(0,Number(travel)||0),guard=0;
+ while(remaining>0&&!racer.finished&&guard++<16){
+  const metric=spaceChaseRouteMetrics.get(racer.edgeId);if(!metric){racer.finished=true;break;}
+  const edge=metric.edge,available=Math.max(0,metric.length-racer.distance),step=Math.min(available,remaining),before=racer.distance;racer.distance+=step;remaining-=step;
+  if(racer.kind==="rocket"&&edge.boostAt&&!spaceChaseState.collectedBoosts.has(racer.edgeId)&&before<metric.length*edge.boostAt&&racer.distance>=metric.length*edge.boostAt)collectSpaceChaseBoost(racer.edgeId);
+  if(racer.distance<metric.length-.001)break;
+  if(edge.branch!==undefined)racer.completedBranches=Math.max(racer.completedBranches,edge.branch+1);
+  if(edge.finish){racer.finished=true;break;}
+  const next=nextSpaceChaseEdge(racer,edge);if(!next){racer.finished=true;break;}racer.edgeId=next;racer.distance=0;
+  if(racer.kind==="rocket"&&next==="finish"&&spaceChaseState.comet&&spaceChaseState.comet.edgeId!=="finish"&&!spaceChaseState.comet.finished)remaining=0;
+ }
+}
+function updateSpaceChaseRouteChoiceControls(){
+ const active=spaceChaseState.phase==="race"?spaceChaseState.activeBranch:-1,branch=active>=0?SPACE_CHASE_BRANCHES[active]:null;
+ if(spaceChaseRouteChoices)spaceChaseRouteChoices.hidden=!branch;
+ const controls=spaceChaseLayer&&spaceChaseLayer.querySelector(".space-chase-controls");if(controls)controls.classList.toggle("is-choosing",!!branch);
+ spaceChaseChoiceButtons.forEach((button,index)=>{
+  const choice=branch&&branch.choices[index];button.disabled=!choice;button.setAttribute("aria-pressed",choice&&spaceChaseState.playerChoices[active]===index?"true":"false");
+  if(!choice)return;const strong=button.querySelector("strong"),small=button.querySelector("small"),arrow=button.querySelector(".space-chase-choice-arrow");
+  if(strong)strong.textContent=choice.direction+"の みち";if(small)small.textContent=choice.kind==="short"?"ちかみち":"スター あり";if(arrow){arrow.classList.toggle("is-up",choice.direction==="うえ");arrow.classList.toggle("is-down",choice.direction==="した");}
+  button.setAttribute("aria-label",choice.direction+"の "+(choice.kind==="short"?"ちかみち":"スターの みち")+"へ すすむ");
+ });
+}
+function promptSpaceChaseBranch(){
+ if(spaceChaseState.phase!=="race"||!spaceChaseState.rocket)return;const metric=spaceChaseRouteMetrics.get(spaceChaseState.rocket.edgeId),edge=metric&&metric.edge;
+ if(!edge||edge.nextBranch===undefined||spaceChaseState.playerChoices[edge.nextBranch]!==null)return;
+ if(metric.length-spaceChaseState.rocket.distance>SPACE_CHASE_BRANCH_PROMPT_DISTANCE)return;
+ if(spaceChaseState.activeBranch===edge.nextBranch)return;spaceChaseState.activeBranch=edge.nextBranch;setSpaceChaseGuide("どっちの みちに する？",true);updateSpaceChaseRouteChoiceControls();
+ const first=spaceChaseChoiceButtons[0];if(first)try{first.focus({preventScroll:true});}catch(_){first.focus();}
+}
+function chooseSpaceChaseRoute(choiceIndex){
+ if(!spaceChaseRuntimeActive()||spaceChaseState.phase!=="race"||spaceChaseState.activeBranch<0)return false;
+ const branchIndex=spaceChaseState.activeBranch,branch=SPACE_CHASE_BRANCHES[branchIndex],choice=branch&&branch.choices[choiceIndex];if(!choice)return false;
+ spaceChaseState.playerChoices[branchIndex]=choiceIndex;spaceChaseState.activeBranch=-1;markSpaceChaseRoute(choice.edge,"rocket");setSpaceChaseGuide(choice.kind==="short"?"ちかみち みつけた！":"スターを とりに いこう！",true);tone(choice.kind==="short"?880:650,0,.1,"triangle",.055);updateSpaceChaseRouteChoiceControls();updateSpaceChaseVisual();return true;
+}
+function spaceChaseBoostPlayable(){return spaceChaseRuntimeActive()&&spaceChaseState.phase==="race"&&spaceChaseState.activeBranch<0&&spaceChaseState.boostCharges>0&&spaceChaseState.boostRemainingMs<=0;}
+function useSpaceChaseBoost(){
+ if(!spaceChaseBoostPlayable())return false;ensureAC();spaceChaseState.boostCharges--;spaceChaseState.boostRemainingMs=SPACE_CHASE_BOOST_MS;setSpaceChaseGuide("びゅーん！",true);tone(820,0,.11,"sawtooth",.055);tone(1160,.08,.16,"triangle",.06);updateSpaceChaseVisual();return true;
 }
 function updateSpaceChaseVisual(){
  const board=spaceChaseBoard();if(!board||!spaceChaseLayer||spaceChaseLayer.hidden)return;
  const portrait=!spaceLandscapePlayable();spaceChaseLayer.setAttribute("aria-hidden",portrait?"true":"false");if(portrait)spaceChaseLayer.setAttribute("inert","");else spaceChaseLayer.removeAttribute("inert");
- const progress=clamp(spaceChaseProgress,0,1),cometX=78-progress*25.5,rocketX=19+progress*30;
- const cometY=46+Math.sin(progress*Math.PI*1.5)*5,rocketY=59+(cometY-59)*progress;
- board.style.setProperty("--space-chase-comet-x",cometX.toFixed(2)+"%");board.style.setProperty("--space-chase-comet-y",cometY.toFixed(2)+"%");
- board.style.setProperty("--space-chase-rocket-x",rocketX.toFixed(2)+"%");board.style.setProperty("--space-chase-rocket-y",rocketY.toFixed(2)+"%");
- board.classList.toggle("is-ready",spaceChasePhase==="charge"&&spaceChaseTapCount===0);board.classList.toggle("is-boosting",spaceChasePhase==="boost");board.classList.toggle("is-caught",spaceChasePhase==="victory");
- const burstNow=clamp(spaceChaseBurstCount,0,SPACE_CHASE_BURST_GOAL),roundMeter=board.querySelector(".space-chase-rounds");
- if(roundMeter){roundMeter.setAttribute("aria-valuenow",String(burstNow));roundMeter.setAttribute("aria-valuetext",SPACE_CHASE_BURST_GOAL+"かいの うち "+burstNow+"かい ブーストした");roundMeter.querySelectorAll("i").forEach((lamp,index)=>lamp.classList.toggle("is-on",index<burstNow));}
- const tapNow=spaceChasePhase==="boost"?SPACE_CHASE_TAPS_PER_BURST:clamp(spaceChaseTapCount,0,SPACE_CHASE_TAPS_PER_BURST);
- if(spaceChaseTapMeter){spaceChaseTapMeter.setAttribute("aria-valuenow",String(tapNow));spaceChaseTapMeter.setAttribute("aria-valuetext",SPACE_CHASE_TAPS_PER_BURST+"かいの うち "+tapNow+"かい");spaceChaseTapMeter.querySelectorAll("i").forEach((lamp,index)=>lamp.classList.toggle("is-on",index<tapNow));}
- if(spaceChaseRoundText)spaceChaseRoundText.textContent=spaceChasePhase==="victory"?"おいついた！":"あと "+Math.max(0,SPACE_CHASE_BURST_GOAL-burstNow)+"かい";
- if(spaceChaseBoostButton){
-  spaceChaseBoostButton.disabled=!spaceChasePlayable();spaceChaseBoostButton.setAttribute("aria-label",spaceChasePhase==="boost"?"ブーストちゅう":("ブースト パワー "+spaceChaseTapCount+" / "+SPACE_CHASE_TAPS_PER_BURST));
-  const label=spaceChaseBoostButton.querySelector("strong"),note=spaceChaseBoostButton.querySelector("small");if(label)label.textContent=spaceChasePhase==="boost"?"ブーストちゅう！":"ブースト！";if(note)note.textContent=spaceChasePhase==="boost"?"じどうで びゅーん":"4かいで はっしゃ";
- }
+ let rocketPoint=spaceChaseRacerPoint(spaceChaseState.rocket),cometPoint=spaceChaseRacerPoint(spaceChaseState.comet);if(["caught","rescue","victory"].includes(spaceChaseState.phase)){rocketPoint={x:525,y:290};cometPoint={x:650,y:240};}
+ board.style.setProperty("--space-chase-comet-x",(cometPoint.x/SPACE_CHASE_VIEWBOX_WIDTH*100).toFixed(2)+"%");board.style.setProperty("--space-chase-comet-y",(cometPoint.y/SPACE_CHASE_VIEWBOX_HEIGHT*100).toFixed(2)+"%");
+ board.style.setProperty("--space-chase-rocket-x",(rocketPoint.x/SPACE_CHASE_VIEWBOX_WIDTH*100).toFixed(2)+"%");board.style.setProperty("--space-chase-rocket-y",(rocketPoint.y/SPACE_CHASE_VIEWBOX_HEIGHT*100).toFixed(2)+"%");
+ board.classList.toggle("is-boosting",spaceChaseState.phase==="race"&&spaceChaseState.boostRemainingMs>0);board.classList.toggle("has-boost",spaceChaseBoostPlayable());board.classList.toggle("is-caught",spaceChaseState.phase==="caught");board.classList.toggle("is-rescuing",spaceChaseState.phase==="rescue");board.classList.toggle("is-victory",spaceChaseState.phase==="victory");
+ const passed=spaceChaseState.rocket?clamp(spaceChaseState.rocket.completedBranches,0,SPACE_CHASE_BRANCH_GOAL):0,roundMeter=board.querySelector(".space-chase-rounds");
+ if(roundMeter){roundMeter.setAttribute("aria-valuenow",String(passed));roundMeter.setAttribute("aria-valuetext",SPACE_CHASE_BRANCH_GOAL+"この うち "+passed+"この わかれみちを とおった");roundMeter.querySelectorAll("i").forEach((lamp,index)=>lamp.classList.toggle("is-on",index<passed));}
+ if(spaceChaseRoundText)spaceChaseRoundText.textContent=spaceChaseState.phase==="race"?(passed>=SPACE_CHASE_BRANCH_GOAL?"もう すぐ！":"あと "+(SPACE_CHASE_BRANCH_GOAL-passed)+"この ぶんき"):(spaceChaseState.phase==="victory"?"たすけた！":"おいつこう！");
+ if(spaceChaseTitle)spaceChaseTitle.textContent=spaceChaseState.phase==="intro"?"あっ！ ほしのこが ながされてる！":(spaceChaseState.phase==="race"?"ほしのこまで おいつこう！":(spaceChaseState.phase==="victory"?"ほしのこを たすけた！":"ほしのこを たすけよう！"));
+ if(spaceChaseBoostMeter){spaceChaseBoostMeter.setAttribute("aria-valuenow",String(spaceChaseState.boostCharges));spaceChaseBoostMeter.setAttribute("aria-valuetext","ブースト スター "+spaceChaseState.boostCharges+"こ");spaceChaseBoostMeter.querySelectorAll("i").forEach((lamp,index)=>lamp.classList.toggle("is-on",index<spaceChaseState.boostCharges));}
+ if(spaceChaseBoostButton){const boosting=spaceChaseState.boostRemainingMs>0;spaceChaseBoostButton.disabled=!spaceChaseBoostPlayable();spaceChaseBoostButton.setAttribute("aria-label",boosting?"ブーストちゅう":"ブーストを つかう。スター "+spaceChaseState.boostCharges+"こ");const label=spaceChaseBoostButton.querySelector("strong"),note=spaceChaseBoostButton.querySelector("small");if(label)label.textContent=boosting?"ブーストちゅう！":"ブースト！";if(note)note.textContent=boosting?"びゅーん！":"スター "+spaceChaseState.boostCharges+"こ";}
+ const rescueVisible=spaceChaseState.phase==="rescue"||spaceChaseState.phase==="victory";if(spaceChaseRescuePanel){spaceChaseRescuePanel.hidden=!rescueVisible;spaceChaseRescuePanel.setAttribute("aria-hidden",rescueVisible?"false":"true");}
+ updateSpaceChaseRouteChoiceControls();
 }
 function clearSpaceChaseEncounter(){
- spaceChasePhase="idle";spaceChaseTapCount=0;spaceChaseBurstCount=0;spaceChaseProgress=0;spaceChaseBoostStartProgress=0;spaceChaseBoostTargetProgress=0;spaceChasePhaseElapsedMs=0;spaceChaseFrameAt=0;
+ spaceChaseState=createSpaceChaseState();
  document.body.classList.remove("space-chase-active");
- const board=spaceChaseBoard();if(board){board.classList.remove("is-ready","is-boosting","is-caught");board.removeAttribute("style");}
+ const board=spaceChaseBoard();if(board){board.classList.remove("is-boosting","has-boost","is-caught","is-rescuing","is-victory");board.removeAttribute("style");}
+ resetSpaceChaseRouteVisuals();
+ if(spaceChaseRouteChoices)spaceChaseRouteChoices.hidden=true;
+ spaceChaseChoiceButtons.forEach(button=>{button.disabled=true;button.setAttribute("aria-pressed","false");});
+ if(spaceChaseRescuePanel){spaceChaseRescuePanel.hidden=true;spaceChaseRescuePanel.setAttribute("aria-hidden","true");}
+ spaceChaseKnotButtons.forEach(button=>{button.classList.remove("is-released");button.disabled=true;});
  if(spaceChaseBoostButton)spaceChaseBoostButton.disabled=true;
  if(spaceChaseLayer){spaceChaseLayer.hidden=true;spaceChaseLayer.setAttribute("aria-hidden","true");spaceChaseLayer.setAttribute("inert","");}
 }
-function beginSpaceChaseCharge(){
- if(spaceChasePhase!=="intro"&&spaceChasePhase!=="coast")return;
- spaceChasePhase="charge";spaceChasePhaseElapsedMs=0;spaceChaseTapCount=0;
- setSpaceChaseGuide(spaceChaseBurstCount?"つぎも 4かい！":"ボタンを 4かい おして ブースト！",true);updateSpaceChaseVisual();focusSpaceChaseBoost();
+function beginSpaceChaseRace(){
+ if(spaceChaseState.phase!=="intro")return;
+ spaceChaseState.phase="race";spaceChaseState.phaseElapsedMs=0;
+ setSpaceChaseGuide("ロケットは じどうで すすむよ",true);promptSpaceChaseBranch();updateSpaceChaseVisual();
+}
+function beginSpaceChaseCaught(){
+ if(spaceChaseState.phase!=="race")return;
+ spaceChaseState.phase="caught";spaceChaseState.phaseElapsedMs=0;spaceChaseState.boostRemainingMs=0;spaceChaseState.activeBranch=-1;
+ updateSpaceChaseRouteChoiceControls();setSpaceChaseGuide("しっぽに ほしのこが ひっかかってる！",true);showStamp("おいついた！","new");tone(660,0,.09,"triangle",.055);tone(880,.07,.15,"sine",.05);updateSpaceChaseVisual();
+}
+function beginSpaceChaseRescue(){
+ if(spaceChaseState.phase!=="caught")return;
+ spaceChaseState.phase="rescue";spaceChaseState.phaseElapsedMs=0;
+ if(spaceChaseRescueGuide)spaceChaseRescueGuide.textContent="あと みっつ";
+ spaceChaseKnotButtons.forEach(button=>{button.disabled=spaceChaseState.releasedKnots.has(Number(button.dataset.spaceChaseKnot));});
+ setSpaceChaseGuide("ひかる むすびめを タッチ！",true);updateSpaceChaseVisual();
+ const first=spaceChaseKnotButtons.find(button=>!button.disabled);if(first)try{first.focus({preventScroll:true});}catch(_){first.focus();}
+}
+function releaseSpaceChaseKnot(button,index){
+ if(!spaceChaseRuntimeActive()||spaceChaseState.phase!=="rescue"||spaceChaseState.releasedKnots.has(index))return false;
+ ensureAC();spaceChaseState.releasedKnots.add(index);button.classList.add("is-released");button.disabled=true;
+ const remaining=spaceChaseKnotButtons.length-spaceChaseState.releasedKnots.size,copy=remaining===2?"あと ふたつ":(remaining===1?"あと ひとつ":"ぜんぶ ほどけた！");
+ if(spaceChaseRescueGuide)spaceChaseRescueGuide.textContent=copy;tone(690+spaceChaseState.releasedKnots.size*105,0,.09,"triangle",.055);showStamp(copy,remaining?"ok":"clear");
+ if(!remaining){finishSpaceChaseVictory();return true;}
+ const next=spaceChaseKnotButtons.find(entry=>!entry.disabled);if(next)try{next.focus({preventScroll:true});}catch(_){next.focus();}return true;
 }
 function finishSpaceChaseVictory(){
- if(spaceChasePhase!=="boost"||spaceChaseCompletionCommitted)return;
- spaceChasePhase="victory";spaceChaseDefeated=true;spaceChaseProgress=1;spaceChasePhaseElapsedMs=0;
- setSpaceChaseGuide("おおながれぼしに おいついた！",true);showStamp("うちゅう だいせいこう！","clear");tone(784,0,.13,"triangle",.075);tone(1047,.1,.2,"sine",.07);confetti(24);updateSpaceChaseVisual();
-}
-function finishSpaceChaseBoost(){
- if(spaceChasePhase!=="boost")return;
- spaceChaseProgress=spaceChaseBoostTargetProgress;spaceChaseBurstCount=Math.min(SPACE_CHASE_BURST_GOAL,spaceChaseBurstCount+1);
- if(spaceChaseBurstCount>=SPACE_CHASE_BURST_GOAL){finishSpaceChaseVictory();return;}
- spaceChasePhase="coast";spaceChasePhaseElapsedMs=0;spaceChaseTapCount=0;setSpaceChaseGuide(spaceChaseBurstCount+"かいめ ちかづいた！ いったん ゆっくり",true);updateSpaceChaseVisual();
-}
-function chargeSpaceChaseBoost(){
- if(!spaceChasePlayable())return false;ensureAC();
- spaceChaseTapCount=Math.min(SPACE_CHASE_TAPS_PER_BURST,spaceChaseTapCount+1);tone(520+spaceChaseTapCount*92,0,.055,"triangle",.055);
- if(spaceChaseTapCount<SPACE_CHASE_TAPS_PER_BURST){setSpaceChaseGuide("あと "+(SPACE_CHASE_TAPS_PER_BURST-spaceChaseTapCount)+"かい",false);updateSpaceChaseVisual();return true;}
- spaceChasePhase="boost";spaceChasePhaseElapsedMs=0;spaceChaseBoostStartProgress=spaceChaseProgress;spaceChaseBoostTargetProgress=Math.min(SPACE_CHASE_BURST_GOAL,spaceChaseBurstCount+1)/SPACE_CHASE_BURST_GOAL;
- setSpaceChaseGuide("パワー まんたん！ じどうで ブースト！",true);tone(820,0,.1,"sawtooth",.055);tone(1120,.08,.14,"triangle",.06);updateSpaceChaseVisual();return true;
+ if(spaceChaseState.phase!=="rescue"||spaceChaseState.completionCommitted)return;
+ spaceChaseState.phase="victory";spaceChaseState.phaseElapsedMs=0;spaceChaseDefeated=true;
+ spaceChaseKnotButtons.forEach(button=>button.disabled=true);if(spaceChaseRescueGuide)spaceChaseRescueGuide.textContent="なかまの ところへ かえれたよ！";
+ setSpaceChaseGuide("ほしのこを たすけた！",true);showStamp("おたすけ だいせいこう！","clear");tone(784,0,.13,"triangle",.075);tone(1047,.1,.2,"sine",.07);confetti(24);updateSpaceChaseVisual();
 }
 function showSpaceChaseEncounter(){
  if(window.__PONO_TIER_LOCKED__){completeCurrentStage(origin(stg));return;}
  if(!isSpaceStage()||!playing||spaceChaseDefeated||!spaceChaseLayer)return;
  clearSpaceChaseEncounter();clearRareEvent();resetSpaceObstacles();cancelSpaceSteerPointer();spaceMoveKeys.clear();answerLocked=false;
- spaceChaseCompletionCommitted=false;spaceChasePhase="intro";spaceChasePhaseElapsedMs=0;spaceChaseFrameAt=0;spaceChaseLayer.hidden=false;document.body.classList.add("space-chase-active");
- hydrateStaticUiArt(spaceChaseLayer);setSpaceChaseGuide("3かい ブーストで おいつこう！",true);showStamp("おおながれぼしだ！","new");tone(392,0,.14,"sine",.055);tone(587,.1,.18,"triangle",.05);updateSpaceChaseVisual();
+ prepareSpaceChaseRouteMap();resetSpaceChaseRouteVisuals();spaceChaseState=createSpaceChaseState();spaceChaseState.phase="intro";spaceChaseState.rocket=createSpaceChaseRacer("rocket");spaceChaseState.comet=createSpaceChaseRacer("comet");
+ const planIndex=(loop+level+Math.floor(Math.random()*SPACE_CHASE_COMET_PLANS.length))%SPACE_CHASE_COMET_PLANS.length;spaceChaseState.cometChoices=SPACE_CHASE_COMET_PLANS[planIndex].slice();
+ markSpaceChaseRoute("launch","rocket");markSpaceChaseRoute("launch","comet");advanceSpaceChaseRacer(spaceChaseState.comet,SPACE_CHASE_START_LEAD);
+ spaceChaseLayer.hidden=false;spaceChaseLayer.removeAttribute("inert");document.body.classList.add("space-chase-active");hydrateStaticUiArt(spaceChaseLayer);
+ setSpaceChaseGuide("おいついて たすけよう！",true);showStamp("ほしのこが ながされてる！","new");tone(392,0,.14,"sine",.055);tone(587,.1,.18,"triangle",.05);updateSpaceChaseVisual();
 }
 function updateSpaceChase(now){
- if(spaceChasePhase==="idle"||!spaceChaseLayer||spaceChaseLayer.hidden)return;
- const frameNow=Number.isFinite(now)?now:_nowMs(),rawDt=spaceChaseFrameAt?clamp(frameNow-spaceChaseFrameAt,0,50):0;spaceChaseFrameAt=frameNow;
+ if(spaceChaseState.phase==="idle"||!spaceChaseLayer||spaceChaseLayer.hidden)return;
+ const frameNow=Number.isFinite(now)?now:_nowMs(),rawDt=spaceChaseState.frameAt?clamp(frameNow-spaceChaseState.frameAt,0,50):0;spaceChaseState.frameAt=frameNow;
  if(!spaceChaseRuntimeActive()){updateSpaceChaseVisual();return;}
- const dt=rawDt*FAST;spaceChasePhaseElapsedMs+=dt;
- if(spaceChasePhase==="intro"&&spaceChasePhaseElapsedMs>=(futureReducedMotion()?160:SPACE_CHASE_INTRO_MS))beginSpaceChaseCharge();
- else if(spaceChasePhase==="boost"){
-  const duration=futureReducedMotion()?220:SPACE_CHASE_BOOST_MS,ratio=clamp(spaceChasePhaseElapsedMs/duration,0,1),ease=.5-Math.cos(Math.PI*ratio)*.5;
-  spaceChaseProgress=spaceChaseBoostStartProgress+(spaceChaseBoostTargetProgress-spaceChaseBoostStartProgress)*ease;if(ratio>=1)finishSpaceChaseBoost();
- }else if(spaceChasePhase==="coast"&&spaceChasePhaseElapsedMs>=(futureReducedMotion()?100:SPACE_CHASE_COAST_MS))beginSpaceChaseCharge();
- else if(spaceChasePhase==="victory"&&spaceChasePhaseElapsedMs>=(futureReducedMotion()?360:SPACE_CHASE_VICTORY_MS)&&!spaceChaseCompletionCommitted){
-  spaceChaseCompletionCommitted=true;const stageOrigin=origin(stg);clearSpaceChaseEncounter();completeCurrentStage(stageOrigin);return;
+ const dt=rawDt*FAST;spaceChaseState.phaseElapsedMs+=dt;
+ if(spaceChaseState.phase==="intro"&&spaceChaseState.phaseElapsedMs>=(futureReducedMotion()?260:SPACE_CHASE_INTRO_MS))beginSpaceChaseRace();
+ else if(spaceChaseState.phase==="race"){
+  spaceChaseState.raceElapsedMs+=dt;const choosingRoute=spaceChaseState.activeBranch>=0,boostTravelMs=choosingRoute?0:Math.min(dt,spaceChaseState.boostRemainingMs);if(!choosingRoute)spaceChaseState.boostRemainingMs=Math.max(0,spaceChaseState.boostRemainingMs-dt);
+  const comet=spaceChaseState.comet,rocket=spaceChaseState.rocket,cometSpeed=comet.edgeId==="finish"?34:SPACE_CHASE_COMET_SPEED;
+  advanceSpaceChaseRacer(comet,cometSpeed*dt/1000);
+  const baseTravelMs=dt-boostTravelMs;
+  let rocketTravel=choosingRoute?SPACE_CHASE_CHOICE_SPEED*dt/1000:(SPACE_CHASE_BOOST_SPEED*boostTravelMs+SPACE_CHASE_ROCKET_SPEED*baseTravelMs)/1000;
+  if(rocket.edgeId==="finish"&&!rocket.finished&&comet.edgeId!=="finish"&&!comet.finished)rocketTravel=0;
+  else if(rocket.edgeId==="finish"&&comet.edgeId==="finish")rocketTravel=Math.min(rocketTravel,Math.max(0,comet.distance-SPACE_CHASE_CATCH_DISTANCE-rocket.distance));
+  advanceSpaceChaseRacer(rocket,rocketTravel);promptSpaceChaseBranch();
+  if(rocket.edgeId==="finish"&&comet.edgeId==="finish"&&comet.distance-rocket.distance<=SPACE_CHASE_CATCH_DISTANCE+.01)beginSpaceChaseCaught();
+ }else if(spaceChaseState.phase==="caught"&&spaceChaseState.phaseElapsedMs>=(futureReducedMotion()?180:SPACE_CHASE_CAUGHT_MS))beginSpaceChaseRescue();
+ else if(spaceChaseState.phase==="victory"&&spaceChaseState.phaseElapsedMs>=(futureReducedMotion()?360:SPACE_CHASE_VICTORY_MS)&&!spaceChaseState.completionCommitted){
+  spaceChaseState.completionCommitted=true;const stageOrigin=origin(stg);clearSpaceChaseEncounter();completeCurrentStage(stageOrigin);return;
  }
  updateSpaceChaseVisual();
 }
 if(spaceChaseBoostButton){
- bindTap(spaceChaseBoostButton,chargeSpaceChaseBoost);
+ bindTap(spaceChaseBoostButton,useSpaceChaseBoost);
  spaceChaseBoostButton.addEventListener("keydown",event=>{if((event.key==="Enter"||event.key===" ")&&event.repeat)event.preventDefault();});
 }
+spaceChaseChoiceButtons.forEach(button=>{
+ bindTap(button,()=>chooseSpaceChaseRoute(Number(button.dataset.spaceChaseChoice)));
+ button.addEventListener("keydown",event=>{if((event.key==="Enter"||event.key===" ")&&event.repeat)event.preventDefault();});
+});
+spaceChaseKnotButtons.forEach(button=>{
+ bindTap(button,()=>releaseSpaceChaseKnot(button,Number(button.dataset.spaceChaseKnot)));
+ button.addEventListener("keydown",event=>{if((event.key==="Enter"||event.key===" ")&&event.repeat)event.preventDefault();});
+});
+if(spaceChaseLayer)spaceChaseLayer.addEventListener("keydown",event=>{
+ if(spaceChaseState.phase!=="race"||spaceChaseState.activeBranch<0)return;
+ if(event.key!=="ArrowUp"&&event.key!=="ArrowDown")return;event.preventDefault();
+ const branch=SPACE_CHASE_BRANCHES[spaceChaseState.activeBranch],direction=event.key==="ArrowUp"?"うえ":"した",choiceIndex=branch.choices.findIndex(choice=>choice.direction===direction);if(choiceIndex>=0)chooseSpaceChaseRoute(choiceIndex);
+});
 function spaceObstacleGateCount(difficulty,segment){
  const difficultyIndex=Math.floor(clamp(Number(difficulty)||0,0,SPACE_OBSTACLE_COUNT_TABLE.length-1)),row=SPACE_OBSTACLE_COUNT_TABLE[difficultyIndex];
  const segmentIndex=Math.floor(clamp(Number(segment)||0,0,row.length-1));return row[segmentIndex];
@@ -5185,16 +5355,20 @@ async function nazonazoAdminPreviewHasAdminAuth(){
 }
 function nazonazoAdminPreviewNotify(type,detail){
  if(!nazonazoAdminPreviewMode||window.parent===window)return;
- const payload=Object.assign({channel:NAZONAZO_ADMIN_STAGE_CHANNEL,type,token:nazonazoAdminPreviewToken},detail||{});
+ const payload=Object.assign({channel:NAZONAZO_ADMIN_STAGE_CHANNEL,type,token:nazonazoAdminPreviewToken,previewKind:nazonazoAdminPreviewKind},detail||{});
  try{window.parent.postMessage(payload,window.location.origin);}catch(_){}
 }
-function nazonazoAdminPreviewArm(stageId){
- if(!nazonazoAdminPreviewMode||!Object.prototype.hasOwnProperty.call(NAZONAZO_ADMIN_STAGE_INDEX,stageId)){
+function nazonazoAdminPreviewKindIsAllowed(stageId,previewKind){
+ return (previewKind==="stage"&&Object.prototype.hasOwnProperty.call(NAZONAZO_ADMIN_STAGE_INDEX,stageId))||(previewKind==="spaceChase"&&stageId==="space");
+}
+function nazonazoAdminPreviewArm(stageId,previewKind){
+ if(!nazonazoAdminPreviewMode||!nazonazoAdminPreviewKindIsAllowed(stageId,previewKind)){
   nazonazoAdminPreviewNotify("rejected",{message:"ふめいな ステージを きょひしました。"});
   return false;
  }
  const index=NAZONAZO_ADMIN_STAGE_INDEX[stageId];
  resetNumberCargoGame();resetSeaInteraction();clearFutureCapsuleGame();clearSpaceRepairGame();resetSpaceSteering();
+ nazonazoAdminPreviewKind=previewKind;
  nazonazoAdminPreviewStageIndex=index;
  stg=index;loop=0;playing=false;driving=false;pending=null;vel=0;
  stopStageWeather();
@@ -5202,10 +5376,10 @@ function nazonazoAdminPreviewArm(stageId){
  worldX=origin(index);target=worldX;
  buildWorld(false);drawDots();renderCars();updateHelpHud();render();
  const label=$("adminStagePreviewLabel");
- if(label){label.hidden=false;label.textContent="『"+STAGES[index].names[0]+"』を えらんだよ";}
+ if(label){label.hidden=false;label.textContent=previewKind==="spaceChase"?"さいしゅう おいかけっこを えらんだよ":"『"+STAGES[index].names[0]+"』を えらんだよ";}
  const start=$("startBtn");
- if(start){start.disabled=false;start.textContent=STAGES[index].names[0]+"を はじめる！";}
- nazonazoAdminPreviewNotify("armed",{stageId,label:STAGES[index].names[0]});
+ if(start){start.disabled=false;start.textContent=previewKind==="spaceChase"?"おいかけっこを はじめる！":STAGES[index].names[0]+"を はじめる！";}
+ nazonazoAdminPreviewNotify("armed",{stageId,label:STAGES[index].names[0],previewKind});
  return true;
 }
 async function initNazonazoAdminStagePreviewBridge(){
@@ -5239,12 +5413,12 @@ async function initNazonazoAdminStagePreviewBridge(){
   if(event.origin!==window.location.origin||event.source!==window.parent||!nazonazoAdminPreviewParentIsTrusted())return;
   const data=event.data;
   if(!data||data.channel!==NAZONAZO_ADMIN_STAGE_CHANNEL||data.type!=="select"||data.token!==nazonazoAdminPreviewToken)return;
-  const stageId=String(data.stageId||"");
-  if(!Object.prototype.hasOwnProperty.call(NAZONAZO_ADMIN_STAGE_INDEX,stageId)){
+  const stageId=String(data.stageId||""),previewKind=String(data.previewKind||"");
+  if(!nazonazoAdminPreviewKindIsAllowed(stageId,previewKind)){
    nazonazoAdminPreviewNotify("rejected",{message:"ふめいな ステージを きょひしました。"});
    return;
   }
-  nazonazoAdminPreviewArm(stageId);
+  nazonazoAdminPreviewArm(stageId,previewKind);
  });
  nazonazoAdminPreviewNotify("ready");
  return true;
@@ -5271,8 +5445,8 @@ bindTap($("startBtn"),()=>{
   if(startStage<0||startStage>=STAGES.length){bootPending=false;return;}
   stg=startStage;loop=0;cleared=[];totalStars=0;rareCount=0;tunnelFriendTotalFound=0;resetJourneyScore();
   rollJourneyWeather();
-  startJourneyAt(startStage);
-  if(nazonazoAdminPreviewMode)nazonazoAdminPreviewNotify("started",{stageId:STAGES[startStage].id,label:STAGES[startStage].names[0]});
+  startJourneyAt(startStage,{adminSpaceChase:nazonazoAdminPreviewKind==="spaceChase"});
+  if(nazonazoAdminPreviewMode)nazonazoAdminPreviewNotify("started",{stageId:STAGES[startStage].id,label:STAGES[startStage].names[0],previewKind:nazonazoAdminPreviewKind});
   bootPending=false;
  };
  if(p&&p.then)p.then(boot,boot);else boot();
@@ -5280,7 +5454,7 @@ bindTap($("startBtn"),()=>{
 bindTap($("goBtn"),()=>{ensureAC();startJourneyAt(stg);});
 bindTap($("againBtn"),()=>{ensureAC();
  const restartStage=nazonazoAdminPreviewMode&&nazonazoAdminPreviewStageIndex>=0?nazonazoAdminPreviewStageIndex:0;
- $("result").classList.add("hidden");stg=restartStage;loop=0;cleared=[];totalStars=0;rareCount=0;tunnelFriendTotalFound=0;resetJourneyScore();rollJourneyWeather();startJourneyAt(restartStage);});
+ $("result").classList.add("hidden");stg=restartStage;loop=0;cleared=[];totalStars=0;rareCount=0;tunnelFriendTotalFound=0;resetJourneyScore();rollJourneyWeather();startJourneyAt(restartStage,{adminSpaceChase:nazonazoAdminPreviewMode&&nazonazoAdminPreviewKind==="spaceChase"});});
 bindTap($("loopBtn"),()=>{ensureAC();
  $("result").classList.add("hidden");
  loop=1;stg=0;cleared=[];totalStars=0;rareCount=0;tunnelFriendTotalFound=0;resetJourneyScore();
@@ -5295,7 +5469,7 @@ bindTap(mapMenuBtn,()=>{
  closeGameSettings();
  if(quiz.classList.contains("show")){showStamp("いまは トンネルを あけよう","ng");return;}
  if(seaBossPhase!=="idle"){showStamp("いまは おおあわぬしを たおそう","ng");return;}
- if(spaceChasePhase!=="idle"){showStamp("いまは おおながれぼしを おいかけよう","ng");return;}
+ if(spaceChaseState.phase!=="idle"){showStamp("いまは ほしのこを おいかけよう","ng");return;}
  openMap();
 });
 bindTap($("spkBtn"),()=>{showHint();});
@@ -5319,11 +5493,11 @@ document.addEventListener("visibilitychange",()=>{
  if(document.hidden){
   closeGameSettings();
   hideWeatherNotice();
-  spaceChaseFrameAt=0;
+  spaceChaseState.frameAt=0;
   if(seaRoundPhase==="ready"||seaRoundPhase==="go"){clearTimeout(seaRoundCountdownTimer);seaRoundCountdownTimer=0;}
   pauseSeaInput();pauseFutureCraneInput();safeSuspend();
  }else{
-  spaceChaseFrameAt=0;
+  spaceChaseState.frameAt=0;
   ensureAC();
   if((seaRoundPhase==="ready"||seaRoundPhase==="go")&&!seaRoundCountdownTimer&&isSeaStage()&&quiz.classList.contains("show"))startSeaRoundCountdown();
  }
@@ -5332,11 +5506,11 @@ window.addEventListener("resize",scheduleRainParticleRebuild,{passive:true});
 window.addEventListener("resize",syncNumberCargoColumns,{passive:true});
 window.addEventListener("resize",handleSeaViewportChange,{passive:true});
 window.addEventListener("resize",handleFutureCraneViewportChange,{passive:true});
-window.addEventListener("resize",()=>{spaceChaseFrameAt=0;invalidateSpaceObstacleLayout();updateSpaceRepairVisual();updateSpaceChaseVisual();if(!spaceStationSteerResume&&!quiz.classList.contains("show"))clampSpaceSteerOffsets();},{passive:true});
+window.addEventListener("resize",()=>{spaceChaseState.frameAt=0;invalidateSpaceObstacleLayout();updateSpaceRepairVisual();updateSpaceChaseVisual();if(!spaceStationSteerResume&&!quiz.classList.contains("show"))clampSpaceSteerOffsets();},{passive:true});
 quiz.addEventListener("transitionend",handleFutureCraneQuizTransitionEnd);
 window.addEventListener("pageshow",()=>{closeGameSettings();ensureAC();updateRainParticleVisibility(false);});
 window.addEventListener("focus",()=>{ensureAC();});
-window.addEventListener("pagehide",()=>{spaceChaseFrameAt=0;closeGameSettings();hideWeatherNotice();pauseSeaInput();pauseFutureCraneInput();clearTimeout(rainParticleResizeTimer);safeSuspend();});
+window.addEventListener("pagehide",()=>{spaceChaseState.frameAt=0;closeGameSettings();hideWeatherNotice();pauseSeaInput();pauseFutureCraneInput();clearTimeout(rainParticleResizeTimer);safeSuspend();});
 
 requestAnimationFrame(gloop);
 })();
