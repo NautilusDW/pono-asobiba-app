@@ -43,19 +43,49 @@ assert.match(html, /notice\.style\.display = isPortrait \? 'flex' : 'none'/);
 assert.match(html, /new ResizeObserver\(function\(\) \{ resize\(\); \}\)/,
   "the canvas must follow the centered shell after viewport changes");
 
-/* The hardest 4x5 stage keeps a child-sized tile on the shortest supported screen. */
-function landscapeCell(viewportWidth, viewportHeight, cols, rows) {
+/* The rotated 5x4 final stage fits between the left rail and both edge markers. */
+function clamp(min, value, max) { return Math.max(min, Math.min(max, value)); }
+function landscapeLayout(viewportWidth, viewportHeight, cols, rows) {
   const shellWidth = Math.min(viewportWidth, viewportHeight * 16 / 9);
   const shellHeight = Math.min(viewportHeight, viewportWidth * 9 / 16);
   const safe = Math.max(8, Math.min(20, shellHeight * 0.025));
-  return Math.floor(Math.min(
-    (shellWidth - safe * 2) / cols,
+  const compact = viewportHeight <= 480 || viewportWidth <= 853;
+  const railLeft = compact ? 10 : clamp(10, shellWidth * 0.02, 28);
+  const railWidth = compact
+    ? clamp(142, shellWidth * 0.21, 166)
+    : clamp(142, shellWidth * 0.21, 220);
+  const railRight = railLeft + railWidth;
+  const contentLeft = Math.max(safe, Math.min(shellWidth * 0.42, railRight + safe));
+  const markerReserve = Math.max(46, Math.min(112, shellHeight * 0.15));
+  const availableWidth = Math.max(1, shellWidth - contentLeft - safe - markerReserve * 2);
+  const cell = Math.floor(Math.min(
+    availableWidth / cols,
     (shellHeight - safe * 2) / (rows + 1.3),
     shellHeight * 0.22,
   ));
+  const gridWidth = cell * cols;
+  const gridX = Math.floor(contentLeft + markerReserve + (availableWidth - gridWidth) / 2);
+  const markerImageHalf = Math.max(30, Math.floor(cell * 0.45)) / 2;
+  return {
+    cell,
+    railRight,
+    startMarkerLeft: gridX - cell * 0.52 - markerImageHalf,
+    goalMarkerRight: gridX + gridWidth + cell * 0.52 + markerImageHalf,
+    shellWidth,
+  };
 }
-assert.ok(landscapeCell(844, 390, 4, 5) >= 58, "844x390 stage 8 tiles must remain at least 58px");
-assert.ok(landscapeCell(1024, 768, 4, 5) >= 86, "iPad landscape stage 8 tiles must remain at least 86px");
+for (const [width, height, minimumCell] of [[568, 320, 57], [844, 390, 69], [1024, 768, 103]]) {
+  const layout = landscapeLayout(width, height, 5, 4);
+  assert.ok(layout.cell >= minimumCell, `${width}x${height}: stage 8 tiles stay child-sized`);
+  assert.ok(layout.startMarkerLeft >= layout.railRight + 8,
+    `${width}x${height}: the left Pono marker must clear the information rail`);
+  assert.ok(layout.goalMarkerRight <= layout.shellWidth,
+    `${width}x${height}: the right goal marker must stay inside the shell`);
+}
+assert.match(html, /const railRight = railRect \? railRect\.right - wrapRect\.left/,
+  "layout must measure the actual information rail before placing the horizontal board");
+assert.match(html, /const markerReserve = Math\.max\(46, Math\.min\(112, CH \* 0\.15\)\)/,
+  "layout must reserve room for left and right markers");
 assert.match(html, /const maxByHeight = \(CH - safe \* 2\) \/ \(curRows \+ 1\.3\)/,
   "the implementation must reserve vertical breathing room around the stage grid");
 assert.match(html, /const maxByTouch = CH \* 0\.22/,

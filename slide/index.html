@@ -103,6 +103,7 @@ body > #app {
   font-size: 1rem; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
   box-shadow: 0 2px 6px var(--shadow); transition: transform 0.15s;
+  pointer-events: auto;
 }
 .btn-bgm:active { transform: translateY(-50%) scale(0.9); }
 .btn-bgm.bgm-off { opacity: 0.4; filter: grayscale(1); }
@@ -359,7 +360,7 @@ body > #app {
   <aside class="game-rail" aria-label="ゲームの じょうほう">
     <div class="header">
       <h1>おかあさん どこいったの？</h1>
-      <p class="subtitle">みちを つなげて ポノを みちびこう</p>
+      <p class="subtitle">ひだりから みぎへ みちを つなごう</p>
       <button id="btn-bgm" class="btn-bgm" aria-label="おとのオンオフ">🎵</button>
     </div>
 
@@ -380,7 +381,7 @@ body > #app {
     <div class="ov-card">
       <div class="ov-icon" id="ov-icon"><img src="../assets/images/characters/pono/pono_face_circle.png" style="width:72px;height:72px;object-fit:contain;" alt="ポノ"></div>
       <div class="ov-title" id="ov-title">おかあさん どこいったの？</div>
-      <div class="ov-msg" id="ov-msg">みちを つなげよう！</div>
+      <div class="ov-msg" id="ov-msg">ひだりから みぎへ みちを つなげよう！</div>
       <button class="ov-btn" id="ov-btn">スタート ▶</button>
       <a class="ov-back" id="ov-back" href="../play.html">← ホームにもどる</a>
     </div>
@@ -472,9 +473,10 @@ const STAGE_BGS = [
 ];
 const stageBgImgs = STAGE_BGS.map(function(src) { var img = new Image(); img.src = src; return img; });
 
-// start/goal: { col, side: 'top'|'bottom' } — 縦方向（上→下）
+// 旧9:16版で作った縦方向（上→下）の原盤。実行時に行列を入れ替え、
+// 16:9版では左端のポノから右端のゴールへ進む盤面として使う。
 // CROSS(十字)タイルは4方向すべて接続 → 複数ルート可能で難易度が下がる
-const LEVELS = [
+const VERTICAL_LEVELS = [
   {
     name: 'おかあさん いないよ？',
     cols: 3, rows: 3,
@@ -569,6 +571,54 @@ const LEVELS = [
   },
 ];
 
+// 行列の転置: 上→左、右→下、下→右、左→上。
+// 旧盤面で右へ曲がる区間は新盤面では下向きになるため、正面歩行の
+// ポノが後ろ向きに進んで見えず、左→右の主方向も保てる。
+const TRANSPOSE_TILE = {
+  H: 'V', V: 'H',
+  TR: 'BL', RB: 'RB', BL: 'TR', LT: 'LT',
+  CROSS: 'CROSS', BLANK: 'BLANK',
+};
+
+function transposeVerticalLevelToLeftRight(level) {
+  const nextCols = level.rows;
+  const nextRows = level.cols;
+  const nextSolved = new Array(level.cols * level.rows);
+
+  for (let row = 0; row < level.rows; row++) {
+    for (let col = 0; col < level.cols; col++) {
+      const nextRow = col;
+      const nextCol = row;
+      const tile = level.solved[row * level.cols + col];
+      nextSolved[nextRow * nextCols + nextCol] = tile === null ? null : TRANSPOSE_TILE[tile];
+    }
+  }
+
+  return {
+    ...level,
+    cols: nextCols,
+    rows: nextRows,
+    start: { row: level.start.col, side: 'left' },
+    goal: { row: level.goal.col, side: 'right' },
+    solved: nextSolved,
+  };
+}
+
+const LEVELS = VERTICAL_LEVELS.map(transposeVerticalLevelToLeftRight);
+
+// 左→右の3手チュートリアル。空きマスは 3 → 4 → 5 → 2 と移動する。
+const TUTORIAL_GRID = [
+  'BLANK', 'BLANK', 'H',
+  null,    'H',     'H',
+  'BLANK', 'BLANK', 'BLANK',
+];
+const TUTORIAL_EMPTY = 3;
+const TUTORIAL_STEPS = [
+  { row: 1, col: 1, msg: 'この みちパネルを タッチ！' },
+  { row: 1, col: 2, msg: 'つぎは ここ！' },
+  { row: 0, col: 2, msg: 'さいごは ここ！' },
+];
+
 // ===== State machine =====
 const S = { IDLE: 0, PLAYING: 1, STAGE_CLEAR: 2, GAME_CLEAR: 3, PAUSED: 4 };
 let state = S.IDLE;
@@ -603,13 +653,19 @@ function resize() {
 
 function calcLayout() {
   const safe = Math.max(8, Math.min(20, CH * 0.025));
-  const availW = CW - safe * 2;
+  const wrapRect = wrap.getBoundingClientRect();
+  const rail = document.querySelector('.game-rail');
+  const railRect = rail ? rail.getBoundingClientRect() : null;
+  const railRight = railRect ? railRect.right - wrapRect.left : CW * 0.24;
+  const contentLeft = Math.max(safe, Math.min(CW * 0.42, railRight + safe));
+  const markerReserve = Math.max(46, Math.min(112, CH * 0.15));
+  const availW = Math.max(1, CW - contentLeft - safe - markerReserve * 2);
   const maxByHeight = (CH - safe * 2) / (curRows + 1.3);
   const maxByTouch = CH * 0.22;
   cellSize = Math.floor(Math.min(availW / curCols, maxByHeight, maxByTouch));
   const gridW = cellSize * curCols;
   const gridH = cellSize * curRows;
-  gridOX = Math.floor((CW - gridW) / 2);
+  gridOX = Math.floor(contentLeft + markerReserve + (availW - gridW) / 2);
   gridOY = Math.floor((CH - gridH) / 2);
 }
 
@@ -943,11 +999,27 @@ function drawStartGoal() {
   const level = LEVELS[stageIdx];
   const fontSize = Math.floor(cellSize * 0.38);
 
-  // ===== Start marker (ポノ) at top =====
-  const sc = level.start.col;
-  const sx = gridOX + sc * cellSize + cellSize / 2;
-  const sy = gridOY - cellSize * 0.35;
-  const imgSize = Math.floor(cellSize * 0.45);
+  // ===== Start marker (ポノ) at left =====
+  const sr = level.start.row;
+  const leftEdge = gridOX;
+  const sx = leftEdge - cellSize * 0.52;
+  const sy = gridOY + sr * cellSize + cellSize / 2;
+  const imgSize = Math.max(30, Math.floor(cellSize * 0.45));
+  const markerLabelSize = Math.max(9, Math.floor(cellSize * 0.12));
+  const arrowReach = Math.max(10, Math.min(22, Math.floor(cellSize * 0.14)));
+  const arrowHead = Math.max(5, Math.min(10, Math.floor(cellSize * 0.07)));
+  const arrowLineWidth = Math.max(3, Math.min(5, Math.floor(cellSize * 0.035)));
+
+  function drawMarkerLabel(label, x, y) {
+    ctx.font = `900 ${markerLabelSize}px 'Zen Maru Gothic', sans-serif`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = 'rgba(255,255,255,0.94)';
+    ctx.lineWidth = Math.max(2, Math.floor(cellSize * 0.035));
+    ctx.strokeText(label, x, y);
+    ctx.fillStyle = '#5D4E37';
+    ctx.fillText(label, x, y);
+  }
 
   if (!winAnim.active && state === S.PLAYING) {
     if (imgPono.complete && imgPono.naturalWidth > 0) {
@@ -957,33 +1029,30 @@ function drawStartGoal() {
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText('🐻', sx, sy);
     }
-    ctx.font = `900 ${Math.floor(cellSize * 0.12)}px 'Zen Maru Gothic', sans-serif`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#5D4E37';
-    ctx.fillText('ポノ', sx, sy + imgSize / 2 + Math.floor(cellSize * 0.06));
+    drawMarkerLabel('ポノ', sx, sy + imgSize / 2 + Math.floor(cellSize * 0.06));
   }
 
-  // Arrow pointing down into grid
+  // Left edge arrow pointing right into the grid
   ctx.strokeStyle = var_primary;
-  ctx.lineWidth = 3;
-  ctx.setLineDash([4, 4]);
+  ctx.lineWidth = arrowLineWidth;
+  ctx.setLineDash([arrowHead * 0.8, arrowHead * 0.8]);
   ctx.beginPath();
-  ctx.moveTo(sx, gridOY - 10);
-  ctx.lineTo(sx, gridOY + 4);
+  ctx.moveTo(leftEdge - arrowReach, sy);
+  ctx.lineTo(leftEdge + 4, sy);
   ctx.stroke();
   ctx.setLineDash([]);
   ctx.beginPath();
-  ctx.moveTo(sx - 5, gridOY);
-  ctx.lineTo(sx, gridOY + 8);
-  ctx.lineTo(sx + 5, gridOY);
+  ctx.moveTo(leftEdge, sy - arrowHead);
+  ctx.lineTo(leftEdge + arrowHead * 1.6, sy);
+  ctx.lineTo(leftEdge, sy + arrowHead);
   ctx.fillStyle = var_primary;
   ctx.fill();
 
-  // ===== Goal marker at bottom =====
-  const gc = level.goal.col;
-  const gx = gridOX + gc * cellSize + cellSize / 2;
-  const bottomEdge = gridOY + curRows * cellSize;
-  const gy = bottomEdge + cellSize * 0.4;
+  // ===== Goal marker at right =====
+  const gr = level.goal.row;
+  const rightEdge = gridOX + curCols * cellSize;
+  const gx = rightEdge + cellSize * 0.52;
+  const gy = gridOY + gr * cellSize + cellSize / 2;
 
   if (level.goalIcon === 'mom') {
     // 最終ステージ: お母さん全身画像
@@ -992,9 +1061,7 @@ function drawStartGoal() {
     } else if (imgMom.complete && imgMom.naturalWidth > 0) {
       ctx.drawImage(imgMom, gx - imgSize / 2, gy - imgSize / 2, imgSize, imgSize);
     }
-    ctx.font = `900 ${Math.floor(cellSize * 0.12)}px 'Zen Maru Gothic', sans-serif`;
-    ctx.fillStyle = '#5D4E37';
-    ctx.fillText('おかあさん', gx, gy + imgSize / 2 + Math.floor(cellSize * 0.06));
+    drawMarkerLabel('おかあさん', gx, gy + imgSize / 2 + Math.floor(cellSize * 0.06));
   } else {
     // 手がかりアイコン（絵文字）
     ctx.font = `${Math.floor(cellSize * 0.4)}px serif`;
@@ -1002,19 +1069,19 @@ function drawStartGoal() {
     ctx.fillText(level.goalIcon, gx, gy);
   }
 
-  // Arrow at grid bottom edge
+  // Right edge arrow pointing out toward the goal
   ctx.strokeStyle = var_primary;
-  ctx.lineWidth = 3;
-  ctx.setLineDash([4, 4]);
+  ctx.lineWidth = arrowLineWidth;
+  ctx.setLineDash([arrowHead * 0.8, arrowHead * 0.8]);
   ctx.beginPath();
-  ctx.moveTo(gx, bottomEdge - 4);
-  ctx.lineTo(gx, bottomEdge + 10);
+  ctx.moveTo(rightEdge - 4, gy);
+  ctx.lineTo(rightEdge + arrowReach, gy);
   ctx.stroke();
   ctx.setLineDash([]);
   ctx.beginPath();
-  ctx.moveTo(gx - 5, bottomEdge + 6);
-  ctx.lineTo(gx, bottomEdge + 14);
-  ctx.lineTo(gx + 5, bottomEdge + 6);
+  ctx.moveTo(rightEdge + arrowHead * 0.6, gy - arrowHead);
+  ctx.lineTo(rightEdge + arrowHead * 2.2, gy);
+  ctx.lineTo(rightEdge + arrowHead * 0.6, gy + arrowHead);
   ctx.fillStyle = var_primary;
   ctx.fill();
 }
@@ -1305,7 +1372,7 @@ function showOverlay(type) {
     if (!localStorage.getItem('slide_tut_seen')) {
       // 初回: ゲーム説明
       title.textContent = 'みちつなぎ';
-      msg.textContent   = 'パネルを うごかして\nみちを つなげよう！\nまずは れんしゅうから！';
+      msg.textContent   = 'パネルを うごかして\nひだりから みぎへ つなげよう！\nまずは れんしゅうから！';
       btn.textContent   = 'やってみる ▶';
     } else {
       title.textContent = 'おかあさん どこいったの？';
@@ -1335,7 +1402,7 @@ function showOverlay(type) {
     icon.innerHTML    = '<img src="../assets/images/Slide/cutscene_ending.png" class="cutscene-img" alt="おかあさんと いっしょ">';
     title.textContent = 'おかあさんと さいかい！';
     msg.textContent   = `「ポノの だいすきな きのみと\nキノコを とりにきたの。\nおそくなって ごめんね！\nいっしょに かえろう！」\nてかず${moveCount} でクリア！`;
-    btn.textContent   = 'もう一回 ▶';
+    btn.textContent   = 'もういっかい ▶';
   }
 
   btn.dataset.ovType = type;
@@ -1408,8 +1475,8 @@ function showCutscene() {
         stageIdx = 0;
         moveCount = 0;
         curCols = 3; curRows = 3;
-        grid = ['BLANK',null,'BLANK', 'BLANK','V','BLANK', 'V','V','BLANK'];
-        emptyIdx = 1;
+        grid = TUTORIAL_GRID.slice();
+        emptyIdx = TUTORIAL_EMPTY;
         calcLayout();
         // HUDを「チュートリアル」表示
         document.getElementById('hud-stage').textContent = 'れんしゅう';
@@ -1494,20 +1561,10 @@ function showTutorial() {
   if (!dim || !bubble) return;
   _slideTutActive = true;
 
-  // チュートリアル用: 3手で完成する固定配置
-  // 解答: ['BLANK','V','BLANK', 'BLANK','V','BLANK', null,'V','BLANK']
-  // 3手戻し:
-  //   BLANK  null  BLANK    (row0) 空き=idx1
-  //   BLANK  V     BLANK    (row1)
-  //   V      V     BLANK    (row2) Vが左にずれ
-  // 手順: (1,1)→上 → (2,1)→上 → (2,0)→右 = 3手で完成
-  var tutGrid = ['BLANK',null,'BLANK', 'BLANK','V','BLANK', 'V','V','BLANK'];
-  var tutEmpty = 1; // row0,col1
-  var tutSteps = [
-    { row: 1, col: 1, msg: 'この みちパネルを タッチ！' },
-    { row: 2, col: 1, msg: 'つぎは ここ！' },
-    { row: 2, col: 0, msg: 'さいごは ここ！' }
-  ];
+  // チュートリアル用: 左から右へ3手で完成する固定配置。
+  var tutGrid = TUTORIAL_GRID.slice();
+  var tutEmpty = TUTORIAL_EMPTY;
+  var tutSteps = TUTORIAL_STEPS;
   var tutStepIdx = 0;
 
   // はじめての導線だけでなく、共有メニューの「あそびかた」から
@@ -1534,7 +1591,7 @@ function showTutorial() {
   // Step 0: 導入
   dim.classList.remove('hidden');
   bubble.style.cssText = 'top:50%;left:50%;transform:translate(-50%,-50%)';
-  bubble.innerHTML = '🌳 パネルを うごかして<br>みちを つなげよう！<br><button class="tut-next-btn" id="tut-next">やってみる！</button>';
+  bubble.innerHTML = '🌳 ひだりから みぎへ<br>みちを つなげよう！<br><button class="tut-next-btn" id="tut-next">やってみる！</button>';
   bubble.classList.remove('hidden');
 
   document.getElementById('tut-next').addEventListener('pointerdown', function(e) {
