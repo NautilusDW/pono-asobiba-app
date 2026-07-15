@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-07-16 - [batch:1309-nazonazo-space-chase-boss] Codex: **DONE (staging verified)** — feature commit `96f09951`を`develop-app`へnon-force push。Actions run `29442435706`はproduction skip、App staging→LP staging直列success。App staging `https://pono-asobiba-app-staging.ndw.workers.dev/nazonazo-tunnel/` は`APP_BUILD=1`、HTML query `20260716-1309`、SW v2199、公開game.js SHA-256 `90577f46…`／styles.css `ce301ba9…`がlocalと一致。LP staging `https://pono-asobiba-staging.ndw.workers.dev/nazonazo-tunnel/` はHTTP 200、同HTML queryと追跡レイヤーを配信しつつ`APP_BUILD=1`未注入でfree/book側App専用lockを維持。既存ロケット／すいせい素材もHTTP 200。`assets/.DS_Store`／凍結develop／master／productionは未変更。 (by Codex)
+
 - 2026-07-16 - [batch:1309-nazonazo-space-chase-boss] Codex: **DONE (local + cross-review / push待ち)** — くろあな案は直前の柱回避・修理・連打と遊びの芯が重なるため不採用。宇宙5問後にカメラが引き、既存ロケットとおおながれぼしが小さく見える失敗なしの追跡イベントを追加した。大ボタン4回で自動ブースト→減速を3セット、遅い入力は保持、余分な入力は無視。設定・縦向き・バックグラウンドで停止し、完了二重実行、LP lock、共通cleanup、キーボード、reduced-motionを回帰固定。全`tests/nazonazo_*.cjs` 22本、JS/SW構文、diff check PASS。クロスレビューでopaque layer背面に隠れたstampを検出しz-index 23へ修正、再検証PASS。接続可能ブラウザー0件のため実画面自動QAのみ未実施。HTML query `20260716-1309`、SW v2199。`assets/.DS_Store`／凍結develop／master／productionは未変更。 (by Codex)
 
 - 2026-07-16 - [batch:1309-nazonazo-space-chase-boss] Codex: ユーザー確認「くろあな ぐるぐるは直前に実装した柱回避→修理→連打と違うのか」を受け、同案は新規性が弱いため不採用。代わりに宇宙の全問終了後、カメラが大きく引いて既存ロケットと追跡相手が小さく見える「うちゅう おいかけっこ」を試作する。子どもが疲れる常時連打ではなく、4回ほどの短い連打でブースト満タン→約1秒の自動加速→ゆるやかに減速を3セット、遅い連打でも失敗や後退なしで必ず追いつける設計。主操作は画面下の大きなブーストボタン、予備操作は設定／ポーズ、最初の1セットだけGuided以降Operational。重複監査で最終宇宙おいかけっこは未実装、既存のロケット・星／すいせい・宇宙背景素材を再利用できると確認。`assets/.DS_Store`の既存ユーザー差分、凍結develop、productionには触れない。 (by Codex)
