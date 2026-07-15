@@ -252,24 +252,76 @@ assert.match(extractFunction(game, "startJourneyAt"), /resetSpaceSteering\(\)/);
 assert.match(extractFunction(game, "ending"), /resetSpaceSteering\(\)/);
 assert.match(extractFunction(game, "openMap"), /resetSpaceSteering\(\)/);
 
-/* One preallocated asteroid gate crosses each of the five route segments. */
+/* Two to six deterministic gates cross each segment from a fixed six-gate pool. */
 assert.match(game, /layer\.id="spaceObstacleLayer"/);
+assert.match(game, /const SPACE_OBSTACLE_MAX_GATES=6;/);
+assert.match(game, /const SPACE_OBSTACLE_COUNT_TABLE=\[\[2,2,3,3,4\],\[2,3,4,4,5\],\[3,4,5,6,6\]\];/);
+assert.match(game, /for\(let gateIndex=0;gateIndex<SPACE_OBSTACLE_MAX_GATES;gateIndex\+\+\)/);
+assert.match(game, /gate\.className="space-obstacle-gate"/);
 assert.match(game, /\["top","bottom"\]\.forEach/);
 assert.match(game, /bank\.className="space-obstacle-bank is-"\+side/);
 assert.match(game, /for\(let index=0;index<10;index\+\+\)bank\.appendChild/,
-  "one top/bottom pair must be pooled at startup rather than allocated per frame");
+  "all twelve banks and 120 asteroid nodes must be pooled at startup rather than allocated per frame");
 assert.match(cssRule("#spaceObstacleLayer"), /position:absolute/);
 assert.match(cssRule("#spaceObstacleLayer"), /pointer-events:none/);
 assert.match(css, /#spaceObstacleLayer\[hidden\]\{display:none!important\}/);
+const gateRule = cssRule("\\.space-obstacle-gate");
+assert.match(gateRule, /width:var\(--space-obstacle-width,112px\)/,
+  "each composited wrapper must stay a narrow gate strip instead of a full-screen layer");
+assert.match(gateRule, /transform:translate3d\(var\(--space-obstacle-x,110vw\),0,0\)/);
+assert.doesNotMatch(gateRule, /inset:0/,
+  "six full-screen moving wrappers would waste too much iPad compositor memory");
+assert.match(css, /\.space-obstacle-gate\[hidden\]\{display:none!important\}/);
+assert.doesNotMatch(cssRule("\\.space-obstacle-bank"), /will-change/,
+  "static bank heights must not reserve twelve extra compositor resources");
 assert.match(css, /\.space-obstacle-bank\.is-top\{[^}]*height:var\(--space-obstacle-gap-top/);
 assert.match(css, /\.space-obstacle-bank\.is-bottom\{[^}]*top:var\(--space-obstacle-gap-bottom/);
+
+const gateCountSource = extractFunction(game, "spaceObstacleGateCount");
+const anchorSource = extractFunction(game, "spaceObstacleEncounterAnchors");
+const lanePlanSource = extractFunction(game, "spaceObstacleLanePlan");
+const obstaclePlanSandbox = {
+  SPACE_OBSTACLE_COUNT_TABLE: [[2, 2, 3, 3, 4], [2, 3, 4, 4, 5], [3, 4, 5, 6, 6]],
+  SPACE_OBSTACLE_ANCHOR_START: .22,
+  SPACE_OBSTACLE_ANCHOR_END: .78,
+  SPACE_OBSTACLE_GAP_CENTERS: [.38, .62, .44, .58, .36, .54, .66, .48, .60, .40, .56, .34],
+  clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
+  Math,
+  Number,
+  Array
+};
+vm.createContext(obstaclePlanSandbox);
+vm.runInContext(`${gateCountSource}\n${anchorSource}\n${lanePlanSource}\nthis.count=spaceObstacleGateCount;this.anchors=spaceObstacleEncounterAnchors;this.lanes=spaceObstacleLanePlan;`, obstaclePlanSandbox);
+assert.deepEqual(
+  [0, 1, 2].map(difficulty => [0, 1, 2, 3, 4].map(segment => obstaclePlanSandbox.count(difficulty, segment))),
+  [[2, 2, 3, 3, 4], [2, 3, 4, 4, 5], [3, 4, 5, 6, 6]],
+  "each difficulty needs the approved two-to-six gate rhythm"
+);
+for (let difficulty = 0; difficulty < 3; difficulty += 1) {
+  for (let segment = 0; segment < 5; segment += 1) {
+    const anchors = [...obstaclePlanSandbox.anchors(difficulty, segment)];
+    const lanes = [...obstaclePlanSandbox.lanes(difficulty, segment, 0)];
+    assert.equal(anchors.length, obstaclePlanSandbox.count(difficulty, segment));
+    assert.ok(Math.abs(anchors[0] - .22) < 1e-9 && Math.abs(anchors.at(-1) - .78) < 1e-9,
+      `difficulty ${difficulty} segment ${segment}: encounter anchors must span .22 to .78`);
+    assert.equal(lanes.length, anchors.length);
+    assert.deepEqual(lanes, [...obstaclePlanSandbox.lanes(difficulty, segment, 0)],
+      "the same journey must reproduce the same lanes");
+    for (let index = 1; index < lanes.length; index += 1) {
+      const delta = Math.abs(obstaclePlanSandbox.SPACE_OBSTACLE_GAP_CENTERS[lanes[index]] - obstaclePlanSandbox.SPACE_OBSTACLE_GAP_CENTERS[lanes[index - 1]]);
+      assert.ok(delta <= .24 + 1e-9, `lane jump ${delta} is too large for a child to follow`);
+    }
+  }
+}
+assert.doesNotMatch(lanePlanSource, /Math\.random|Date\.|performance\./,
+  "lane phase and direction must be pure and stable for a segment");
 
 const gapGeometry = extractFunction(game, "spaceObstacleGapGeometry");
 const geometrySandbox = {
   SPACE_OBSTACLE_MIN_GAPS: [144, 126, 110],
   SPACE_OBSTACLE_PLAYABLE_RATIOS: [.48, .42, .36],
   SPACE_OBSTACLE_ROCKET_RATIOS: [1.90, 1.65, 1.45],
-  SPACE_OBSTACLE_GAP_CENTERS: [.36, .64, .43, .58, .50],
+  SPACE_OBSTACLE_GAP_CENTERS: [.38, .62, .44, .58, .36, .54, .66, .48, .60, .40, .56, .34],
   clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
   Math,
   Number
@@ -283,26 +335,74 @@ for (const [label, top, bottom, rocketHeight] of [
   ["1366x768", 94, 720, 116]
 ]) {
   for (let difficulty = 0; difficulty < 3; difficulty += 1) {
-    const gap = geometrySandbox.gap(top, bottom, rocketHeight, difficulty, 0);
-    const playable = bottom - top;
-    assert.ok(gap.height >= Math.min(playable - 16, [144, 126, 110][difficulty]) - 0.001,
-      `${label} difficulty ${difficulty}: minimum gap was lost`);
-    assert.ok(gap.height <= playable - 16 + 0.001,
-      `${label} difficulty ${difficulty}: gap exceeds playable area`);
-    assert.ok(gap.top >= top - 0.001 && gap.bottom <= bottom + 0.001,
-      `${label} difficulty ${difficulty}: gate gap leaves the playable area`);
+    for (let lane = 0; lane < obstaclePlanSandbox.SPACE_OBSTACLE_GAP_CENTERS.length; lane += 1) {
+      const gap = geometrySandbox.gap(top, bottom, rocketHeight, difficulty, lane);
+      const playable = bottom - top;
+      assert.ok(gap.height >= Math.min(playable - 16, [144, 126, 110][difficulty]) - 0.001,
+        `${label} difficulty ${difficulty} lane ${lane}: minimum gap was lost`);
+      assert.ok(gap.height <= playable - 16 + 0.001,
+        `${label} difficulty ${difficulty} lane ${lane}: gap exceeds playable area`);
+      assert.ok(gap.top >= top - 0.001 && gap.bottom <= bottom + 0.001,
+        `${label} difficulty ${difficulty} lane ${lane}: gate gap leaves the playable area`);
+    }
   }
 }
-const qCenters = [0, 1, 2, 3, 4].map(segment => geometrySandbox.gap(80, 580, 96, 2, segment).center);
-assert.ok(qCenters[1] > qCenters[3] && qCenters[3] > qCenters[4] && qCenters[4] > qCenters[2] && qCenters[2] > qCenters[0],
-  "the five gates need the specified high/low route rhythm");
+for (const [label, top, bottom, stableRocketHeight, tiltedCollisionHeight] of [
+  ["568x320", 54, 310, 133, 153],
+  ["844x390", 58, 382, 168.8, 193],
+  ["1024x768", 58, 758, 200, 230],
+  ["1366x768", 58, 758, 200, 230]
+]) {
+  let hardMinimumOverlap = Infinity;
+  for (let difficulty = 0; difficulty < 3; difficulty += 1) {
+    for (let lane = 0; lane < obstaclePlanSandbox.SPACE_OBSTACLE_GAP_CENTERS.length; lane += 1) {
+      const nextLane = (lane + 1) % obstaclePlanSandbox.SPACE_OBSTACLE_GAP_CENTERS.length;
+      const current = geometrySandbox.gap(top, bottom, stableRocketHeight, difficulty, lane);
+      const next = geometrySandbox.gap(top, bottom, stableRocketHeight, difficulty, nextLane);
+      const hitboxHalfHeight = tiltedCollisionHeight * .26;
+      const currentLow = current.top - 8 + hitboxHalfHeight;
+      const currentHigh = current.bottom + 8 - hitboxHalfHeight;
+      const nextLow = next.top - 8 + hitboxHalfHeight;
+      const nextHigh = next.bottom + 8 - hitboxHalfHeight;
+      const sharedSafeCenterRange = Math.min(currentHigh, nextHigh) - Math.max(currentLow, nextLow);
+      assert.ok(sharedSafeCenterRange >= -0.001,
+        `${label} difficulty ${difficulty} lanes ${lane}/${nextLane}: no reachable transition remains`);
+      if (difficulty === 2) hardMinimumOverlap = Math.min(hardMinimumOverlap, sharedSafeCenterRange);
+    }
+  }
+  if (label === "568x320") assert.ok(hardMinimumOverlap >= 80, `${label}: hard route lost its iPad-safe overlap`);
+  if (label === "1024x768" || label === "1366x768") assert.ok(hardMinimumOverlap >= 18, `${label}: hard route lost its tilted-rocket overlap`);
+}
+const laneCenters = obstaclePlanSandbox.SPACE_OBSTACLE_GAP_CENTERS.map((_, lane) => geometrySandbox.gap(80, 580, 96, 2, lane).center);
+assert.ok(new Set(laneCenters.map(value => value.toFixed(2))).size >= 8,
+  "the longer lane cycle must visibly vary the route instead of repeating one gap");
 
 const screenX = extractFunction(game, "spaceObstacleScreenX");
 const screenSandbox = { Number };
 vm.createContext(screenSandbox);
 vm.runInContext(`${screenX};this.x=spaceObstacleScreenX;`, screenSandbox);
-assert.ok(Math.abs(screenSandbox.x(.16, 1000) - 1100) < 0.001);
-assert.ok(Math.abs(screenSandbox.x(.72, 1000) + 320) < 0.001);
+assert.ok(Math.abs(screenSandbox.x(0, .22, 568) - 521.342857142857) < 0.001,
+  "the first gate must already peek in from the right as an early warning");
+assert.ok(screenSandbox.x(1, .78, 568) + 92 <= -20,
+  "the last 92px gate must fully leave a 568px viewport before the station");
+const hardSixAnchors = [...obstaclePlanSandbox.anchors(2, 4)];
+for (const [width, height, expectedVisible] of [[568, 320, 5], [844, 390, 4], [1024, 768, 4], [1366, 768, 4]]) {
+  const gateWidth = Math.max(92, Math.min(138, Math.min(width, height) * .28));
+  let maxVisible = 0;
+  for (let step = 0; step <= 1000; step += 1) {
+    const progress = step / 1000;
+    const visible = hardSixAnchors.filter(anchor => {
+      const x = screenSandbox.x(progress, anchor, width);
+      return x < width && x + gateWidth > 0;
+    }).length;
+    maxVisible = Math.max(maxVisible, visible);
+  }
+  assert.equal(maxVisible, expectedVisible, `${width}x${height}: unexpected maximum visible gate count`);
+}
+const firstSegmentHardSpacingMs = ((.78 - .22) / (3 - 1)) * 296 / 38 * 1000;
+const laterHardSpacingMs = ((.78 - .22) / (6 - 1)) * 430 / 38 * 1000;
+assert.ok(firstSegmentHardSpacingMs > 2000 && laterHardSpacingMs > 1200,
+  "even the densest route must leave more than the 900ms invulnerability window between gates");
 
 const hitboxSource = extractFunction(game, "spaceObstacleRocketHitbox");
 const collisionSource = extractFunction(game, "spaceObstacleCollides");
@@ -323,17 +423,152 @@ for (const token of ["!window.__PONO_TIER_LOCKED__", "driving", 'pending==="quiz
   assert.match(routeActive, new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `route collision guard missing: ${token}`);
 }
 const renderObstacle = extractFunction(game, "renderSpaceObstacleGate");
-assert.doesNotMatch(renderObstacle, /createElement|appendChild|replaceChildren/,
-  "the animation loop must only move the fixed obstacle pool");
+assert.doesNotMatch(renderObstacle, /createElement|appendChild|replaceChildren|querySelector|Math\.random|Date\./,
+  "the animation loop must only move and collide the fixed obstacle pool");
 assert.match(renderObstacle, /\(worldX-start\)\/Math\.max\(\.001,finish-start\)/);
-assert.match(renderObstacle, /spaceObstacleScreenX\(progress,viewportWidth\)/);
-assert.match(renderObstacle, /spaceObstacleHitSegments\.has\(qSeg\)/,
-  "each segment may damage the rocket at most once");
+assert.equal((renderObstacle.match(/getBoundingClientRect\(\)/g) || []).length, 1,
+  "the route may read the rocket rectangle once per frame, never one rectangle per gate");
+assert.match(renderObstacle, /prepareSpaceObstacleLayout\(viewportWidth,viewportHeight\)/);
+assert.match(renderObstacle, /for\(let gateIndex=0;gateIndex<SPACE_OBSTACLE_MAX_GATES;gateIndex\+\+\)/);
+assert.match(renderObstacle, /spaceObstacleScreenX\(progress,item\.anchor,viewportWidth\)/);
+assert.match(renderObstacle, /if\(spaceObstacleHitGates\.has\(item\.key\)\)continue/,
+  "a completed gate must be skipped without returning from the whole gate loop");
+assert.match(renderObstacle, /if\(now<spaceObstacleInvulnerableUntil\)continue/,
+  "an overlapping next gate must remain unregistered until global invulnerability ends");
+assert.match(renderObstacle, /visible=gateX<viewportWidth&&gateX\+item\.gateWidth>0/,
+  "fully offscreen gates must be culled before transform and collision work");
+assert.match(renderObstacle, /if\(!visible\)\{if\(item\.visible\)\{item\.visible=false;item\.node\.style\.visibility="hidden"/,
+  "a wrapper must return to hidden visibility as soon as it leaves the viewport");
 assert.match(renderObstacle, /spaceObstacleCollides/);
 assert.match(render, /renderSpaceObstacleGate\(now\)/,
-  "the main animation loop must position and collide the route gate");
+  "the main animation loop must position and collide the route gates");
+
+const prepareObstacle = extractFunction(game, "prepareSpaceObstacleLayout");
+assert.doesNotMatch(prepareObstacle, /querySelector|Math\.random|Date\./,
+  "segment configuration must use the startup pool and deterministic lane plan");
+assert.match(prepareObstacle, /spaceObstacleLayoutKey&&spaceObstacleSegment===qSeg/,
+  "unchanged segment geometry must return from the cache before rebuilding");
+assert.match(prepareObstacle, /vehicleSteerShell&&vehicleSteerShell\.offsetWidth/);
+assert.match(prepareObstacle, /vehicleSteerShell&&vehicleSteerShell\.offsetHeight/);
+assert.doesNotMatch(prepareObstacle, /rocketRect|getBoundingClientRect/,
+  "steering tilt must not invalidate geometry through its changing transformed AABB");
+for (const variable of ["--space-obstacle-width", "--space-obstacle-gap-top", "--space-obstacle-gap-bottom"]) {
+  assert.match(prepareObstacle, new RegExp(variable), `${variable} must be cached per gate wrapper`);
+}
+assert.match(game, /resize",\(\)=>\{invalidateSpaceObstacleLayout\(\)/,
+  "viewport changes must invalidate the route geometry cache");
+
+const invalidateObstacle = extractFunction(game, "invalidateSpaceObstacleLayout");
+const cacheSandbox = {
+  SPACE_OBSTACLE_MAX_GATES: 6,
+  SPACE_OBSTACLE_COUNT_TABLE: [[2, 2, 3, 3, 4], [2, 3, 4, 4, 5], [3, 4, 5, 6, 6]],
+  SPACE_OBSTACLE_ANCHOR_START: .22,
+  SPACE_OBSTACLE_ANCHOR_END: .78,
+  SPACE_OBSTACLE_GAP_CENTERS: [.38, .62, .44, .58, .36, .54, .66, .48, .60, .40, .56, .34],
+  SPACE_OBSTACLE_MIN_GAPS: [144, 126, 110],
+  SPACE_OBSTACLE_PLAYABLE_RATIOS: [.48, .42, .36],
+  SPACE_OBSTACLE_ROCKET_RATIOS: [1.90, 1.65, 1.45],
+  clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
+  Number,
+  Math,
+  Array,
+  qSeg: 4,
+  level: 2,
+  loop: 0,
+  stg: 5,
+  worldX: 215,
+  spaceObstacleSegment: -1,
+  spaceObstacleLayoutKey: "",
+  spaceObstacleCachedBounds: null,
+  spaceObstacleLayoutLevel: -1,
+  spaceObstacleLayoutLoop: -1,
+  spaceObstacleLayoutViewportWidth: 0,
+  spaceObstacleLayoutViewportHeight: 0,
+  spaceObstacleLayoutRocketWidth: 0,
+  spaceObstacleLayoutRocketHeight: 0,
+  spaceObstacleGateLayout: new Array(6),
+  spaceObstacleFrameHitbox: { left: 0, right: 0, top: 0, bottom: 0 },
+  spaceObstacleHitGates: new Set(),
+  spaceObstacleInvulnerableUntil: 0,
+  spaceObstacleFlashUntil: 0,
+  spaceObstacleGuideUntil: 0,
+  spaceObstacleGuide: { hidden: true, textContent: "" },
+  planCalls: 0,
+  geometryWrites: 0,
+  transformWrites: 0,
+  rectReads: 0,
+  maxTransformsInFrame: 0,
+  currentRect: { left: 100, top: 80, width: 200, height: 133 },
+  vehicleSteerShell: {
+    offsetWidth: 200,
+    offsetHeight: 133,
+    getBoundingClientRect() {
+      cacheSandbox.rectReads += 1;
+      return { ...cacheSandbox.currentRect };
+    }
+  },
+  veh: { offsetWidth: 200, offsetHeight: 133 },
+  window: { innerWidth: 568, innerHeight: 320 },
+  spaceObstacleLayer: { hidden: true, dataset: {} },
+  document: { body: { classList: { remove() {}, toggle() {}, add() {} } } },
+  origin() { return 0; },
+  stops(_origin, index) { return (index - 3) * 430; },
+  spaceObstacleRouteActive() { return true; },
+  spaceSteerBounds() { return { baseCenterY: 182, minY: -61.5, maxY: 61.5 }; },
+  spaceObstacleCollides() { return false; },
+  registerSpaceObstacleHit() { return false; }
+};
+cacheSandbox.spaceObstacleGatePool = Array.from({ length: 6 }, () => ({
+  hidden: true,
+  dataset: {},
+  removeAttribute() {},
+  style: {
+    visibility: "hidden",
+    setProperty(name) {
+      if (name === "--space-obstacle-x") cacheSandbox.transformWrites += 1;
+      else cacheSandbox.geometryWrites += 1;
+    }
+  }
+}));
+vm.createContext(cacheSandbox);
+vm.runInContext(`${gateCountSource}\n${anchorSource}\n${lanePlanSource}\n${gapGeometry}\n${screenX}\n${hitboxSource}\n${invalidateObstacle}\n${prepareObstacle}\n${renderObstacle}`, cacheSandbox);
+vm.runInContext(`
+ this.originalAnchors=spaceObstacleEncounterAnchors;
+ this.originalLanes=spaceObstacleLanePlan;
+ spaceObstacleEncounterAnchors=function(difficulty,segment){planCalls+=1;return originalAnchors(difficulty,segment);};
+ spaceObstacleLanePlan=function(difficulty,segment,journeyLoop){planCalls+=1;return originalLanes(difficulty,segment,journeyLoop);};
+`, cacheSandbox);
+cacheSandbox.renderSpaceObstacleGate(1000);
+assert.equal(cacheSandbox.geometryWrites, 18, "the first hard segment config writes three geometry values to six gates");
+assert.equal(cacheSandbox.planCalls, 2, "anchors and lanes allocate once at segment configuration");
+assert.ok(cacheSandbox.spaceObstacleGatePool.some(node => node.style.visibility === "hidden"),
+  "the fixed pool must leave fully offscreen wrappers hidden");
+cacheSandbox.geometryWrites = 0;
+cacheSandbox.transformWrites = 0;
+cacheSandbox.rectReads = 0;
+cacheSandbox.currentRect = { left: 94, top: 70, width: 213, height: 153 };
+for (let frame = 0; frame < 20; frame += 1) {
+  cacheSandbox.worldX = 430 * (.25 + frame * .025);
+  const beforeTransforms = cacheSandbox.transformWrites;
+  cacheSandbox.renderSpaceObstacleGate(1100 + frame * 16.7);
+  cacheSandbox.maxTransformsInFrame = Math.max(cacheSandbox.maxTransformsInFrame, cacheSandbox.transformWrites - beforeTransforms);
+}
+assert.equal(cacheSandbox.geometryWrites, 0,
+  "twenty tilted frames must not rebuild geometry or rewrite its CSS variables");
+assert.equal(cacheSandbox.planCalls, 2, "tilt frames must not allocate another anchor or lane plan");
+assert.equal(cacheSandbox.rectReads, 20, "collision may read exactly one transformed rocket rectangle per frame");
+assert.ok(cacheSandbox.maxTransformsInFrame <= 6, "a frame may transform at most the six fixed wrappers");
+cacheSandbox.geometryWrites = 0;
+cacheSandbox.invalidateSpaceObstacleLayout();
+cacheSandbox.renderSpaceObstacleGate(1500);
+assert.equal(cacheSandbox.geometryWrites, 18, "one resize invalidation must rebuild six cached gate geometries exactly once");
+cacheSandbox.geometryWrites = 0;
+cacheSandbox.renderSpaceObstacleGate(1517);
+assert.equal(cacheSandbox.geometryWrites, 0, "the frame after resize rebuild must reuse the new geometry cache");
 
 const registerHit = extractFunction(game, "registerSpaceObstacleHit");
+assert.match(registerHit, /spaceObstacleHitGates\.has\(gateKey\)/);
+assert.match(registerHit, /spaceObstacleHitGates\.add\(gateKey\)/);
 assert.match(registerHit, /spaceObstacleDamage=Math\.min\(3,spaceObstacleDamage\+1\)/);
 assert.match(registerHit, /SPACE_OBSTACLE_INVULNERABLE_MS/);
 assert.match(registerHit, /SPACE_OBSTACLE_FLASH_MS/);
@@ -342,6 +577,38 @@ assert.match(registerHit, /clamp\(desiredY-spaceSteerTargetY,-24,24\)/,
 assert.match(registerHit, /ぶつかった！ えきで なおそう/);
 assert.doesNotMatch(registerHit, /\b(?:vel|target|score|firstTry|stageMiss|missInQ)\b|onPick|addScore/,
   "route collisions are nonfatal and must not alter speed or quiz scoring");
+const hitSandbox = {
+  spaceObstacleHitGates: new Set(),
+  spaceObstacleDamage: 0,
+  spaceObstacleInvulnerableUntil: 0,
+  spaceObstacleFlashUntil: 0,
+  spaceObstacleGuideUntil: 0,
+  SPACE_OBSTACLE_INVULNERABLE_MS: 900,
+  SPACE_OBSTACLE_FLASH_MS: 240,
+  spaceSteerTargetY: 0,
+  clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
+  spaceObstacleGuide: { textContent: "", hidden: true },
+  document: { body: { classList: { add() {} } } },
+  tone() {},
+  Math
+};
+vm.createContext(hitSandbox);
+vm.runInContext(`${registerHit};this.hit=registerSpaceObstacleHit;`, hitSandbox);
+const hitGeometry = { center: 120 };
+const hitBounds = { baseCenterY: 100, minY: -80, maxY: 80 };
+assert.equal(hitSandbox.hit(1000, hitGeometry, hitBounds, "3:0"), true);
+assert.equal(hitSandbox.hit(1100, hitGeometry, hitBounds, "3:1"), false,
+  "invulnerability must not consume the next gate key");
+assert.equal(hitSandbox.spaceObstacleHitGates.has("3:1"), false);
+assert.equal(hitSandbox.hit(1900, hitGeometry, hitBounds, "3:1"), true,
+  "the still-overlapping gate may register when invulnerability expires");
+assert.equal(hitSandbox.hit(2800, hitGeometry, hitBounds, "3:1"), false,
+  "the same gate must remain exact-once after invulnerability expires");
+assert.equal(hitSandbox.hit(2800, hitGeometry, hitBounds, "3:2"), true);
+assert.equal(hitSandbox.hit(3700, hitGeometry, hitBounds, "3:3"), true);
+assert.equal(hitSandbox.hit(4600, hitGeometry, hitBounds, "3:4"), true);
+assert.equal(hitSandbox.spaceObstacleDamage, 3,
+  "four or more distinct accepted hits must never exceed the three-screw repair cap");
 assert.match(game, /const SPACE_OBSTACLE_INVULNERABLE_MS=900;/);
 assert.match(game, /const SPACE_OBSTACLE_FLASH_MS=240;/);
 assert.match(resetSteering, /resetSpaceObstacles\(\)/,

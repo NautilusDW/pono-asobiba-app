@@ -572,7 +572,11 @@ let futureCraneKeyboardSnapLatched=false;
 let futureCraneFollowX=0,futureCraneFollowY=0,futureCraneLifted=false,futureCraneCoreReady=false;
 let futureCraneSubmissionCommitted=false,futureCraneKeyboardActive=false,futureCraneGeometry=null,futureCraneGeometryDirty=true;
 let futureCraneGeometryFrame=0;
-const SPACE_OBSTACLE_GAP_CENTERS=[.36,.64,.43,.58,.50];
+const SPACE_OBSTACLE_MAX_GATES=6;
+const SPACE_OBSTACLE_COUNT_TABLE=[[2,2,3,3,4],[2,3,4,4,5],[3,4,5,6,6]];
+const SPACE_OBSTACLE_ANCHOR_START=.22;
+const SPACE_OBSTACLE_ANCHOR_END=.78;
+const SPACE_OBSTACLE_GAP_CENTERS=[.38,.62,.44,.58,.36,.54,.66,.48,.60,.40,.56,.34];
 const SPACE_OBSTACLE_MIN_GAPS=[144,126,110];
 const SPACE_OBSTACLE_PLAYABLE_RATIOS=[.48,.42,.36];
 const SPACE_OBSTACLE_ROCKET_RATIOS=[1.90,1.65,1.45];
@@ -591,7 +595,9 @@ let spaceRepairPointerId=null,spaceRepairPointerTarget=null,spaceRepairPointerSc
 let spaceRepairPointerX=0,spaceRepairPointerY=0,spaceRepairPointerDragged=false,spaceRepairSuppressClick=false;
 let spaceRepairSubmissionCommitted=false,spaceRepairTimer=0,spaceRepairEpoch=0;
 let spaceObstacleSegment=-1,spaceObstacleDamage=0,spaceObstacleInvulnerableUntil=0,spaceObstacleFlashUntil=0,spaceObstacleGuideUntil=0;
-const spaceObstacleHitSegments=new Set();
+let spaceObstacleLayoutKey="",spaceObstacleCachedBounds=null,spaceObstacleLayoutLevel=-1,spaceObstacleLayoutLoop=-1;
+let spaceObstacleLayoutViewportWidth=0,spaceObstacleLayoutViewportHeight=0,spaceObstacleLayoutRocketWidth=0,spaceObstacleLayoutRocketHeight=0;
+const spaceObstacleHitGates=new Set(),spaceObstacleGateLayout=new Array(SPACE_OBSTACLE_MAX_GATES),spaceObstacleFrameHitbox={left:0,right:0,top:0,bottom:0};
 let spaceSteerTargetX=0,spaceSteerX=0,spaceSteerTargetY=0,spaceSteerY=0,spaceSteerPointerId=null,spaceSteerUsed=false,spaceSteerFrameAt=0;
 const spaceMoveKeys=new Set();
 let nazonazoAdminPreviewMode=false;
@@ -734,11 +740,17 @@ const $=id=>document.getElementById(id);
 const world=$("world"),veh=$("veh"),horizon=$("horizon"),midT=$("midT"),groundT=$("groundT"),fgT=$("fgT"),seaFishLayer=$("seaFishLayer"),seaHabitatLayer=$("seaHabitatLayer"),smokeLayer=$("smokeLayer"),townHorizonLoop=$("townHorizonLoop"),townMidLoop=$("townMidLoop"),futureHorizonLoop=$("futureHorizonLoop"),futureMidLoop=$("futureMidLoop"),futureForegroundLoop=$("futureForegroundLoop"),spaceHorizonLoop=$("spaceHorizonLoop"),spaceForegroundLoop=$("spaceForegroundLoop"),jungleHabitatBack=$("jungleHabitatBack");
 const vehicleSteerShell=$("vehicleSteerShell"),seaSteerSurface=$("seaSteerSurface"),spaceSteerSurface=$("spaceSteerSurface"),seaAnswerLayer=$("seaAnswerLayer"),seaBossLayer=$("seaBossLayer"),seaRescueMessage=$("seaRescueMessage"),seaArenaShade=$("seaArenaShade"),seaRoundCountdown=$("seaRoundCountdown"),seaQuizGuide=$("seaQuizGuide"),seaSteerHint=$("seaSteerHint"),spaceSteerHint=$("spaceSteerHint");
 const futureCapsuleLayer=$("futureCapsuleLayer"),spaceGalaxyLayer=$("spaceGalaxyLayer");
+const spaceObstacleGatePool=[];
+let spaceObstacleGuide=null;
 const spaceObstacleLayer=(()=>{
- let layer=$("spaceObstacleLayer");if(layer)return layer;
+ let layer=$("spaceObstacleLayer");if(layer){spaceObstacleGatePool.push(...layer.querySelectorAll(".space-obstacle-gate"));spaceObstacleGuide=layer.querySelector(".space-obstacle-guide");return layer;}
  layer=document.createElement("div");layer.id="spaceObstacleLayer";layer.hidden=true;layer.setAttribute("aria-hidden","true");
- ["top","bottom"].forEach(side=>{const bank=document.createElement("div");bank.className="space-obstacle-bank is-"+side;for(let index=0;index<10;index++)bank.appendChild(document.createElement("i"));layer.appendChild(bank);});
- const guide=document.createElement("div");guide.className="space-obstacle-guide";guide.setAttribute("role","status");guide.setAttribute("aria-live","polite");guide.hidden=true;layer.appendChild(guide);
+ for(let gateIndex=0;gateIndex<SPACE_OBSTACLE_MAX_GATES;gateIndex++){
+  const gate=document.createElement("div");gate.className="space-obstacle-gate";gate.dataset.gate=String(gateIndex);gate.hidden=true;
+  ["top","bottom"].forEach(side=>{const bank=document.createElement("div");bank.className="space-obstacle-bank is-"+side;for(let index=0;index<10;index++)bank.appendChild(document.createElement("i"));gate.appendChild(bank);});
+  layer.appendChild(gate);spaceObstacleGatePool.push(gate);
+ }
+ spaceObstacleGuide=document.createElement("div");spaceObstacleGuide.className="space-obstacle-guide";spaceObstacleGuide.setAttribute("role","status");spaceObstacleGuide.setAttribute("aria-live","polite");spaceObstacleGuide.hidden=true;layer.appendChild(spaceObstacleGuide);
  const scene=$("scene");if(scene)scene.insertBefore(layer,spaceSteerSurface||null);return layer;
 })();
 const seaCompanionLayer=$("seaCompanionLayer"),seaShotLayer=$("seaShotLayer"),seaFireButton=$("seaFireButton");
@@ -4540,44 +4552,98 @@ function renderSpaceRepairGame(){
  bay.append(title,damage,screws);panel.append(answers,bay);board.append(guide,route,panel);spaceGalaxyLayer.appendChild(board);spaceRepairGuide("ただしい こたえを タッチしよう");updateSpaceRepairVisual();spaceRepairOptions[0]?.button.focus({preventScroll:true});
 }
 function spaceLandscapePlayable(){return (window.innerWidth||844)>=(window.innerHeight||390);}
-function spaceObstacleGapGeometry(playableTop,playableBottom,rocketHeight,difficulty,segment){
+function spaceObstacleGateCount(difficulty,segment){
+ const difficultyIndex=Math.floor(clamp(Number(difficulty)||0,0,SPACE_OBSTACLE_COUNT_TABLE.length-1)),row=SPACE_OBSTACLE_COUNT_TABLE[difficultyIndex];
+ const segmentIndex=Math.floor(clamp(Number(segment)||0,0,row.length-1));return row[segmentIndex];
+}
+function spaceObstacleEncounterAnchors(difficulty,segment){
+ const count=spaceObstacleGateCount(difficulty,segment),anchors=new Array(count),span=SPACE_OBSTACLE_ANCHOR_END-SPACE_OBSTACLE_ANCHOR_START;
+ for(let index=0;index<count;index++)anchors[index]=count===1?SPACE_OBSTACLE_ANCHOR_START:SPACE_OBSTACLE_ANCHOR_START+span*index/(count-1);
+ return anchors;
+}
+function spaceObstacleLanePlan(difficulty,segment,journeyLoop){
+ const count=spaceObstacleGateCount(difficulty,segment),lanes=new Array(count),length=SPACE_OBSTACLE_GAP_CENTERS.length;
+ const safeLoop=Math.max(0,Math.floor(Number(journeyLoop)||0)),safeSegment=Math.max(0,Math.floor(Number(segment)||0)),safeDifficulty=Math.max(0,Math.floor(Number(difficulty)||0));
+ const seed=(((safeLoop+1)*131+(safeSegment+1)*37+(safeDifficulty+1)*17)>>>0),phase=(seed>>>1)%length,direction=(seed&1)?1:-1;
+ for(let index=0;index<count;index++)lanes[index]=(phase+direction*index+length*count)%length;
+ return lanes;
+}
+function spaceObstacleGapGeometry(playableTop,playableBottom,rocketHeight,difficulty,laneIndex){
  const safeTop=Number(playableTop)||0,safeBottom=Math.max(safeTop+32,Number(playableBottom)||0),playable=safeBottom-safeTop,index=clamp(Number(difficulty)||0,0,2);
  const requested=Math.max(SPACE_OBSTACLE_MIN_GAPS[index],playable*SPACE_OBSTACLE_PLAYABLE_RATIOS[index],Math.max(1,Number(rocketHeight)||1)*SPACE_OBSTACLE_ROCKET_RATIOS[index]);
- const height=Math.min(Math.max(16,playable-16),requested),half=height*.5,rawCenter=safeTop+playable*SPACE_OBSTACLE_GAP_CENTERS[(Number(segment)||0)%SPACE_OBSTACLE_GAP_CENTERS.length];
+ const laneCount=SPACE_OBSTACLE_GAP_CENTERS.length,lane=((Math.floor(Number(laneIndex)||0)%laneCount)+laneCount)%laneCount;
+ const height=Math.min(Math.max(16,playable-16),requested),half=height*.5,rawCenter=safeTop+playable*SPACE_OBSTACLE_GAP_CENTERS[lane];
  const center=clamp(rawCenter,safeTop+half+8,safeBottom-half-8);return {top:center-half,bottom:center+half,center,height,playable};
 }
-function spaceObstacleScreenX(progress,viewportWidth){return (Number(viewportWidth)||844)*(1.10-(((Number(progress)||0)-.16)/.56)*1.42);}
-function spaceObstacleRocketHitbox(rect){
+function spaceObstacleScreenX(progress,anchor,viewportWidth){return (Number(viewportWidth)||844)*(.36+(1.42/.56)*((Number(anchor)||0)-(Number(progress)||0)));}
+function spaceObstacleRocketHitbox(rect,out){
  const width=Math.max(0,rect&&rect.width||0),height=Math.max(0,rect&&rect.height||0),left=rect&&rect.left||0,top=rect&&rect.top||0;
- return {left:left+width*.22,right:left+width*.78,top:top+height*.24,bottom:top+height*.76};
+ const hitbox=out||{};hitbox.left=left+width*.22;hitbox.right=left+width*.78;hitbox.top=top+height*.24;hitbox.bottom=top+height*.76;return hitbox;
 }
 function spaceObstacleCollides(hitbox,gateX,gateWidth,gapTop,gapBottom){
  const horizontal=hitbox.right>gateX+SPACE_OBSTACLE_EDGE_INSET&&hitbox.left<gateX+gateWidth-SPACE_OBSTACLE_EDGE_INSET;
  return horizontal&&(hitbox.top<gapTop-SPACE_OBSTACLE_EDGE_INSET||hitbox.bottom>gapBottom+SPACE_OBSTACLE_EDGE_INSET);
 }
+function invalidateSpaceObstacleLayout(){
+ spaceObstacleSegment=-1;spaceObstacleLayoutKey="";spaceObstacleCachedBounds=null;spaceObstacleLayoutLevel=-1;spaceObstacleLayoutLoop=-1;
+ spaceObstacleLayoutViewportWidth=0;spaceObstacleLayoutViewportHeight=0;spaceObstacleLayoutRocketWidth=0;spaceObstacleLayoutRocketHeight=0;
+}
+function prepareSpaceObstacleLayout(viewportWidth,viewportHeight){
+ if(spaceObstacleLayoutKey&&spaceObstacleSegment===qSeg&&spaceObstacleLayoutLevel===level&&spaceObstacleLayoutLoop===loop&&
+  spaceObstacleLayoutViewportWidth===viewportWidth&&spaceObstacleLayoutViewportHeight===viewportHeight)return;
+ const rocketWidth=Math.max(1,vehicleSteerShell&&vehicleSteerShell.offsetWidth||veh.offsetWidth||viewportWidth*.3),rocketHeight=Math.max(1,vehicleSteerShell&&vehicleSteerShell.offsetHeight||veh.offsetHeight||viewportHeight*.24);
+ const bounds=spaceSteerBounds(),playableTop=bounds.baseCenterY+bounds.minY-rocketHeight*.5,playableBottom=bounds.baseCenterY+bounds.maxY+rocketHeight*.5;
+ const count=spaceObstacleGateCount(level,qSeg),anchors=spaceObstacleEncounterAnchors(level,qSeg),lanes=spaceObstacleLanePlan(level,qSeg,loop);
+ const gateWidth=clamp(Math.min(viewportWidth,viewportHeight)*.28,92,138);
+ spaceObstacleSegment=qSeg;spaceObstacleLayoutLevel=level;spaceObstacleLayoutLoop=loop;spaceObstacleLayoutViewportWidth=viewportWidth;spaceObstacleLayoutViewportHeight=viewportHeight;
+ spaceObstacleLayoutRocketWidth=rocketWidth;spaceObstacleLayoutRocketHeight=rocketHeight;spaceObstacleCachedBounds=bounds;
+ spaceObstacleLayoutKey=[qSeg,level,loop,viewportWidth,viewportHeight,playableTop.toFixed(2),playableBottom.toFixed(2),rocketWidth.toFixed(2),rocketHeight.toFixed(2)].join(":");
+ for(let gateIndex=0;gateIndex<SPACE_OBSTACLE_MAX_GATES;gateIndex++){
+  const node=spaceObstacleGatePool[gateIndex];let item=spaceObstacleGateLayout[gateIndex];
+  if(!item){item={node:null,active:false,visible:false,key:"",anchor:0,gateWidth:0,geometry:null};spaceObstacleGateLayout[gateIndex]=item;}
+  item.node=node;item.active=gateIndex<count;item.visible=false;
+  if(!node)continue;
+  if(!item.active){node.hidden=true;node.style.visibility="hidden";node.removeAttribute("data-lane");continue;}
+  item.key=qSeg+":"+gateIndex;item.anchor=anchors[gateIndex];item.gateWidth=gateWidth;item.geometry=spaceObstacleGapGeometry(playableTop,playableBottom,rocketHeight,level,lanes[gateIndex]);
+  node.hidden=false;node.style.visibility="hidden";node.dataset.lane=String(lanes[gateIndex]);
+  node.style.setProperty("--space-obstacle-width",gateWidth.toFixed(2)+"px");node.style.setProperty("--space-obstacle-gap-top",item.geometry.top.toFixed(2)+"px");node.style.setProperty("--space-obstacle-gap-bottom",item.geometry.bottom.toFixed(2)+"px");
+ }
+ spaceObstacleLayer.dataset.segment=String(qSeg);spaceObstacleLayer.dataset.layout=spaceObstacleLayoutKey;
+}
 function spaceObstacleRouteActive(){
  return !window.__PONO_TIER_LOCKED__&&isSpaceStage()&&playing&&driving&&pending==="quiz"&&qSeg>=0&&qSeg<QN&&!tunnelInteriorMode&&
   !quiz.classList.contains("show")&&spaceLandscapePlayable()&&!document.body.classList.contains("tunnel-enter-run")&&!document.body.classList.contains("tunnel-exit-run");
 }
-function registerSpaceObstacleHit(now,geometry,bounds){
- if(spaceObstacleHitSegments.has(qSeg)||now<spaceObstacleInvulnerableUntil)return;spaceObstacleHitSegments.add(qSeg);spaceObstacleDamage=Math.min(3,spaceObstacleDamage+1);spaceObstacleInvulnerableUntil=now+SPACE_OBSTACLE_INVULNERABLE_MS;spaceObstacleFlashUntil=now+SPACE_OBSTACLE_FLASH_MS;spaceObstacleGuideUntil=now+SPACE_OBSTACLE_INVULNERABLE_MS;
+function registerSpaceObstacleHit(now,geometry,bounds,gateKey){
+ if(spaceObstacleHitGates.has(gateKey)||now<spaceObstacleInvulnerableUntil)return false;spaceObstacleHitGates.add(gateKey);spaceObstacleDamage=Math.min(3,spaceObstacleDamage+1);spaceObstacleInvulnerableUntil=now+SPACE_OBSTACLE_INVULNERABLE_MS;spaceObstacleFlashUntil=now+SPACE_OBSTACLE_FLASH_MS;spaceObstacleGuideUntil=now+SPACE_OBSTACLE_INVULNERABLE_MS;
  const desiredY=geometry.center-bounds.baseCenterY,correction=clamp(desiredY-spaceSteerTargetY,-24,24);spaceSteerTargetY=clamp(spaceSteerTargetY+correction,bounds.minY,bounds.maxY);
- const guide=spaceObstacleLayer&&spaceObstacleLayer.querySelector(".space-obstacle-guide");if(guide){guide.textContent="ぶつかった！ えきで なおそう";guide.hidden=false;}
+ if(spaceObstacleGuide){spaceObstacleGuide.textContent="ぶつかった！ えきで なおそう";spaceObstacleGuide.hidden=false;}
  document.body.classList.add("space-obstacle-hit");tone(196,0,.08,"square",.045);
+ return true;
 }
 function renderSpaceObstacleGate(now){
  if(!spaceObstacleLayer)return;if(!spaceObstacleRouteActive()){spaceObstacleLayer.hidden=true;document.body.classList.remove("space-obstacle-hit");return;}
  const stageOrigin=origin(stg),start=qSeg===0?stageOrigin:stops(stageOrigin,qSeg-1),finish=stops(stageOrigin,qSeg),progress=clamp((worldX-start)/Math.max(.001,finish-start),0,1);
- const viewportWidth=window.innerWidth||844,bounds=spaceSteerBounds(),rocketRect=vehicleSteerShell&&vehicleSteerShell.getBoundingClientRect(),rocketHeight=Math.max(1,rocketRect&&rocketRect.height||veh.offsetHeight||96);
- const playableTop=bounds.baseCenterY+bounds.minY-rocketHeight*.5,playableBottom=bounds.baseCenterY+bounds.maxY+rocketHeight*.5,geometry=spaceObstacleGapGeometry(playableTop,playableBottom,rocketHeight,level,qSeg);
- const gateWidth=clamp(Math.min(viewportWidth,window.innerHeight||390)*.28,92,138),gateX=spaceObstacleScreenX(progress,viewportWidth);spaceObstacleSegment=qSeg;spaceObstacleLayer.hidden=false;spaceObstacleLayer.dataset.segment=String(qSeg);
- spaceObstacleLayer.style.setProperty("--space-obstacle-x",gateX.toFixed(2)+"px");spaceObstacleLayer.style.setProperty("--space-obstacle-width",gateWidth.toFixed(2)+"px");spaceObstacleLayer.style.setProperty("--space-obstacle-gap-top",geometry.top.toFixed(2)+"px");spaceObstacleLayer.style.setProperty("--space-obstacle-gap-bottom",geometry.bottom.toFixed(2)+"px");
- const guide=spaceObstacleLayer.querySelector(".space-obstacle-guide");if(guide&&now>=spaceObstacleGuideUntil)guide.hidden=true;document.body.classList.toggle("space-obstacle-hit",now<spaceObstacleFlashUntil);
- if(!rocketRect||!rocketRect.width||spaceObstacleHitSegments.has(qSeg)||now<spaceObstacleInvulnerableUntil)return;const hitbox=spaceObstacleRocketHitbox(rocketRect);if(spaceObstacleCollides(hitbox,gateX,gateWidth,geometry.top,geometry.bottom))registerSpaceObstacleHit(now,geometry,bounds);
+ const viewportWidth=window.innerWidth||844,viewportHeight=window.innerHeight||390,rocketRect=vehicleSteerShell&&vehicleSteerShell.getBoundingClientRect();
+ if(!rocketRect||!rocketRect.width){spaceObstacleLayer.hidden=true;return;}
+ prepareSpaceObstacleLayout(viewportWidth,viewportHeight);spaceObstacleLayer.hidden=false;
+ if(spaceObstacleGuide&&now>=spaceObstacleGuideUntil)spaceObstacleGuide.hidden=true;document.body.classList.toggle("space-obstacle-hit",now<spaceObstacleFlashUntil);
+ const hitbox=spaceObstacleRocketHitbox(rocketRect,spaceObstacleFrameHitbox),bounds=spaceObstacleCachedBounds;
+ for(let gateIndex=0;gateIndex<SPACE_OBSTACLE_MAX_GATES;gateIndex++){
+  const item=spaceObstacleGateLayout[gateIndex];if(!item||!item.active||!item.node)continue;
+  const gateX=spaceObstacleScreenX(progress,item.anchor,viewportWidth),visible=gateX<viewportWidth&&gateX+item.gateWidth>0;
+  if(!visible){if(item.visible){item.visible=false;item.node.style.visibility="hidden";}continue;}
+  item.node.style.setProperty("--space-obstacle-x",gateX.toFixed(2)+"px");if(!item.visible){item.visible=true;item.node.style.visibility="visible";}
+  if(spaceObstacleHitGates.has(item.key))continue;
+  if(now<spaceObstacleInvulnerableUntil)continue;
+  if(spaceObstacleCollides(hitbox,gateX,item.gateWidth,item.geometry.top,item.geometry.bottom))registerSpaceObstacleHit(now,item.geometry,bounds,item.key);
+ }
 }
 function resetSpaceObstacles(){
- spaceObstacleSegment=-1;spaceObstacleDamage=0;spaceObstacleInvulnerableUntil=0;spaceObstacleFlashUntil=0;spaceObstacleGuideUntil=0;spaceObstacleHitSegments.clear();document.body.classList.remove("space-obstacle-hit");
- if(spaceObstacleLayer){spaceObstacleLayer.hidden=true;spaceObstacleLayer.removeAttribute("data-segment");const guide=spaceObstacleLayer.querySelector(".space-obstacle-guide");if(guide){guide.hidden=true;guide.textContent="";}}
+ invalidateSpaceObstacleLayout();spaceObstacleDamage=0;spaceObstacleInvulnerableUntil=0;spaceObstacleFlashUntil=0;spaceObstacleGuideUntil=0;spaceObstacleHitGates.clear();document.body.classList.remove("space-obstacle-hit");
+ for(let gateIndex=0;gateIndex<SPACE_OBSTACLE_MAX_GATES;gateIndex++){const item=spaceObstacleGateLayout[gateIndex],node=spaceObstacleGatePool[gateIndex];if(item){item.active=false;item.visible=false;}if(node){node.hidden=true;node.style.visibility="hidden";}}
+ if(spaceObstacleLayer){spaceObstacleLayer.hidden=true;spaceObstacleLayer.removeAttribute("data-segment");spaceObstacleLayer.removeAttribute("data-layout");}
+ if(spaceObstacleGuide){spaceObstacleGuide.hidden=true;spaceObstacleGuide.textContent="";}
 }
 function spaceControlAvailable(){
  return !window.__PONO_TIER_LOCKED__&&isSpaceStage()&&playing&&!tunnelInteriorMode&&
@@ -5097,7 +5163,7 @@ window.addEventListener("resize",scheduleRainParticleRebuild,{passive:true});
 window.addEventListener("resize",syncNumberCargoColumns,{passive:true});
 window.addEventListener("resize",handleSeaViewportChange,{passive:true});
 window.addEventListener("resize",handleFutureCraneViewportChange,{passive:true});
-window.addEventListener("resize",()=>{updateSpaceRepairVisual();clampSpaceSteerOffsets();},{passive:true});
+window.addEventListener("resize",()=>{invalidateSpaceObstacleLayout();updateSpaceRepairVisual();clampSpaceSteerOffsets();},{passive:true});
 quiz.addEventListener("transitionend",handleFutureCraneQuizTransitionEnd);
 window.addEventListener("pageshow",()=>{closeGameSettings();ensureAC();updateRainParticleVisibility(false);});
 window.addEventListener("focus",()=>{ensureAC();});
