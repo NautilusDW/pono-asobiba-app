@@ -10,11 +10,28 @@ const { chromium, webkit } = require("playwright");
 const root = path.resolve(__dirname, "..");
 const html = fs.readFileSync(path.join(root, "slide/index.html"), "utf8");
 
-/* World-board visual contract: no opaque double frame or repeated bitmap tiles. */
+/* World-board visual contract: no opaque double frame; generated road material
+   stays globally anchored instead of restarting inside every panel. */
 assert.match(html, /const THEMES = \{[\s\S]*?forest:[\s\S]*?cave:[\s\S]*?night:/);
 assert.doesNotMatch(html, /orangeForest|blankTextures|textureKey|const frameP/);
 assert.doesNotMatch(html, /ctx\.drawImage\(tex,/,
   "road panels must not repeat the same noisy bitmap texture in every cell");
+assert.match(html, /const ROAD_TEXTURE_SRCS = Object\.freeze\([\s\S]*?road_texture_forest\.webp[\s\S]*?road_texture_cave\.webp[\s\S]*?road_texture_night\.webp/,
+  "all three worlds use generated road-material assets");
+assert.match(html, /ctx\.createPattern\(image, 'repeat'\)[\s\S]*?pattern\.setTransform/,
+  "one generated road pattern is anchored across the whole board");
+assert.match(html, /ctx\.lineCap = 'butt'/,
+  "road arms end flat at shared panel boundaries");
+assert.match(html, /const seamOverlap = Math\.max\(0\.75, size \* 0\.008\)/,
+  "road arms overlap shared boundaries enough to remove antialias gaps");
+for (const asset of [
+  "road_texture_forest.webp", "road_texture_cave.webp", "road_texture_night.webp",
+  "goal_marker.webp", "fourway_charm.webp",
+]) {
+  const file = path.join(root, "assets/images/Slide/generated", asset);
+  assert.ok(fs.existsSync(file), `${asset} exists`);
+  assert.ok(fs.statSync(file).size < 3 * 1024 * 1024, `${asset} stays below 3MB`);
+}
 assert.match(html, /drawBoardAtmosphere\(now\)/,
   "the board must sit in a soft world clearing instead of an opaque frame");
 assert.match(html, /function drawEmptySlot\(now\)[\s\S]*?const rimInset[\s\S]*?const wellInset[\s\S]*?ctx\.shadowOffsetY = Math\.max/,
@@ -296,6 +313,37 @@ async function inspectLandscape(browserType, browserName, base, viewport, minimu
       assert.deepEqual(spriteDraws.walking, { world: 0, walk: 1 },
         `${browserName}: a clear frame replaces Pono with exactly one walking bear`);
     }
+
+    await page.evaluate(() => eval(`(() => {
+      stageIdx = 1;
+      showCutscene();
+    })()`));
+    await page.locator(".cutscene-img").evaluate(image => image.decode());
+    const storyLayout = await page.evaluate(() => {
+      const app = document.getElementById("app").getBoundingClientRect();
+      const card = document.querySelector(".cutscene-fullscreen").getBoundingClientRect();
+      const image = document.querySelector(".cutscene-img").getBoundingClientRect();
+      const title = document.getElementById("ov-title").getBoundingClientRect();
+      const button = document.getElementById("ov-btn").getBoundingClientRect();
+      return {
+        cardArea: card.width * card.height / (app.width * app.height),
+        imageArea: image.width * image.height / (app.width * app.height),
+        buttonHeight: button.height,
+        titleRight: title.right,
+        buttonLeft: button.left,
+        pauseVisibility: getComputedStyle(document.getElementById("btn-pause")).visibility,
+      };
+    });
+    assert.ok(storyLayout.cardArea >= 0.9,
+      `${browserName} ${viewport.width}x${viewport.height}: fullscreen story card fills the shell`);
+    assert.ok(storyLayout.imageArea >= 0.9,
+      `${browserName} ${viewport.width}x${viewport.height}: story illustration fills the shell`);
+    assert.ok(storyLayout.buttonHeight >= 48,
+      `${browserName} ${viewport.width}x${viewport.height}: next action remains at least 48px`);
+    assert.ok(storyLayout.titleRight <= storyLayout.buttonLeft + 1,
+      `${browserName} ${viewport.width}x${viewport.height}: caption does not overlap next action`);
+    assert.equal(storyLayout.pauseVisibility, "hidden",
+      `${browserName} ${viewport.width}x${viewport.height}: pause is hidden over story art`);
     assert.deepEqual(errors, [], `${browserName}: moving and resizing create no page errors`);
   } finally {
     await browser.close();
@@ -555,10 +603,17 @@ async function inspectJourneyTransitions(base) {
     const postcard = await page.evaluate(() => {
       const card = document.querySelector(".ov-card");
       const scene = card.querySelector(".cutscene-img");
-      const color = getComputedStyle(card).backgroundColor.match(/[\d.]+/g).map(Number);
+      const appRect = document.getElementById("app").getBoundingClientRect();
+      const cardRect = card.getBoundingClientRect();
+      const sceneRect = scene.getBoundingClientRect();
+      const buttonRect = document.getElementById("ov-btn").getBoundingClientRect();
       return {
         cutsceneMode: card.classList.contains("cutscene-mode"),
-        brightness: (color[0] + color[1] + color[2]) / 3,
+        fullscreenMode: card.classList.contains("cutscene-fullscreen"),
+        cardAreaRatio: cardRect.width * cardRect.height / (appRect.width * appRect.height),
+        imageAreaRatio: sceneRect.width * sceneRect.height / (appRect.width * appRect.height),
+        buttonHeight: buttonRect.height,
+        bodyCutsceneClass: document.body.classList.contains("slide-cutscene-open"),
         sceneSource: scene ? scene.getAttribute("src") : "",
         imageCount: card.querySelectorAll(".cutscene-img").length,
         title: document.getElementById("ov-title").textContent,
@@ -568,7 +623,11 @@ async function inspectJourneyTransitions(base) {
       };
     });
     assert.equal(postcard.cutsceneMode, true, "story postcard uses the dedicated landscape card mode");
-    assert.ok(postcard.brightness >= 245, "story postcard stays bright and child-friendly");
+    assert.equal(postcard.fullscreenMode, true, "mid-journey art uses its near-fullscreen reward mode");
+    assert.ok(postcard.cardAreaRatio >= 0.9, "story card fills at least 90% of the 16:9 shell");
+    assert.ok(postcard.imageAreaRatio >= 0.9, "the illustration itself fills at least 90% of the shell");
+    assert.ok(postcard.buttonHeight >= 48, "the fullscreen story action stays child-sized");
+    assert.equal(postcard.bodyCutsceneClass, true, "fullscreen art hides unrelated pause/menu controls");
     assert.match(postcard.sceneSource, /cutscene_1\.png/,
       "story postcard restores the earlier illustrated berry-gathering scene");
     assert.equal(postcard.imageCount, 1, "story postcard shows one complete illustration");
@@ -626,6 +685,7 @@ async function inspectJourneyTransitions(base) {
       "GAME_CLEAR canvas has no duplicate Pono while retaining the discovered mother");
     const reunion = await page.evaluate(() => ({
       cutsceneMode: document.querySelector(".ov-card").classList.contains("cutscene-mode"),
+      fullscreenMode: document.querySelector(".ov-card").classList.contains("cutscene-fullscreen"),
       title: document.getElementById("ov-title").textContent,
       action: document.getElementById("ov-btn").dataset.ovType,
       imageCount: document.querySelectorAll(".cutscene-img").length,
@@ -633,11 +693,13 @@ async function inspectJourneyTransitions(base) {
     }));
     assert.deepEqual({
       cutsceneMode: reunion.cutsceneMode,
+      fullscreenMode: reunion.fullscreenMode,
       title: reunion.title,
       action: reunion.action,
       imageCount: reunion.imageCount,
     }, {
       cutsceneMode: true,
+      fullscreenMode: false,
       title: "おかあさんと さいかい！",
       action: "gameclear",
       imageCount: 1,

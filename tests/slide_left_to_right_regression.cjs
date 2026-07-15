@@ -49,7 +49,7 @@ const dr = [-1, 0, 1, 0];
 const dc = [0, 1, 0, -1];
 const opposite = edge => (edge + 2) % 4;
 
-function findLeftToRightPath(level, board) {
+function findLeftToRightPath(level, board, magicIndex = -1) {
   const queue = [{ row: level.start.row, col: 0, fromEdge: 3, trail: [] }];
   const visited = new Set();
 
@@ -60,7 +60,9 @@ function findLeftToRightPath(level, board) {
     visited.add(key);
     if (current.row < 0 || current.row >= level.rows || current.col < 0 || current.col >= level.cols) continue;
 
-    const tile = board[current.row * level.cols + current.col];
+    const index = current.row * level.cols + current.col;
+    const baseTile = board[index];
+    const tile = index === magicIndex && baseTile && baseTile !== "BLANK" ? "CROSS" : baseTile;
     if (!tile || tile === "BLANK" || !tileEdges[tile][current.fromEdge]) continue;
     const trail = current.trail.concat({ row: current.row, col: current.col });
 
@@ -93,6 +95,14 @@ levels.forEach((level, index) => {
   assert.equal(level.solved.length, level.cols * level.rows, `stage ${index + 1}: board dimensions match data`);
   assert.deepEqual(level.start, { row: vertical.start.col, side: "left" });
   assert.deepEqual(level.goal, { row: vertical.goal.col, side: "right" });
+  assert.deepEqual(level.pickup,
+    vertical.pickup ? { row: vertical.pickup.col, col: vertical.pickup.row } : null,
+    `stage ${index + 1}: pickup metadata transposes with its tile`);
+  assert.deepEqual(level.magicCross && level.magicCross.target,
+    vertical.magicCross
+      ? { row: vertical.magicCross.target.col, col: vertical.magicCross.target.row }
+      : null,
+    `stage ${index + 1}: magic target metadata transposes with its tile`);
   assert.ok(level.start.row >= 0 && level.start.row < level.rows, `stage ${index + 1}: start row is in bounds`);
   assert.ok(level.goal.row >= 0 && level.goal.row < level.rows, `stage ${index + 1}: goal row is in bounds`);
   assert.equal(level.solved.filter(tile => tile === null).length, 1, `stage ${index + 1}: one empty cell`);
@@ -108,7 +118,14 @@ levels.forEach((level, index) => {
     }
   }
 
-  const pathToGoal = findLeftToRightPath(level, level.solved);
+  const magicIndex = level.magicCross
+    ? level.magicCross.target.row * level.cols + level.magicCross.target.col
+    : -1;
+  if (level.magicCross) {
+    assert.equal(findLeftToRightPath(level, level.solved), null,
+      `stage ${index + 1}: raw solution still needs the four-way charm`);
+  }
+  const pathToGoal = findLeftToRightPath(level, level.solved, magicIndex);
   assert.ok(pathToGoal, `stage ${index + 1}: solved board must connect left to right`);
   assert.deepEqual(pathToGoal[0], { row: level.start.row, col: -1 }, `stage ${index + 1}: path starts left of grid`);
   assert.deepEqual(pathToGoal.at(-1), { row: level.goal.row, col: level.cols }, `stage ${index + 1}: path exits right of grid`);
@@ -180,8 +197,8 @@ levels.forEach((level, levelIndex) => {
       `stage ${levelIndex + 1} shuffle ${sample}: reversing legal moves recovers the solution`);
   }
 });
-assert.match(html, /if \(checkWin\(\)\) \{\s*shuffleGrid\(level\);\s*return;\s*\}/,
-  "the runtime shuffle must retry rather than start on a connected path");
+assert.match(html, /if \(hasBareGoalRoute\(\)\) \{\s*shuffleGrid\(level\);\s*return;\s*\}/,
+  "the runtime shuffle must retry rather than start on a bare connected path");
 assert.match(html, /suggestedMoveIdx = lastMoved;[\s\S]*?hintDismissed = false;/,
   "the reversible shuffle must retain exactly one safe first-move suggestion");
 

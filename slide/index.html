@@ -113,6 +113,45 @@ body > #app {
 .btn-pause:active { transform: scale(0.9); }
 .btn-pause:disabled { opacity: 0.48; cursor: default; transform: none; }
 
+.magic-cross-btn {
+  position: absolute;
+  z-index: 9;
+  top: clamp(8px, 1.5%, 14px);
+  right: clamp(10px, 1.8%, 18px);
+  min-width: clamp(88px, 14vmin, 104px);
+  min-height: clamp(50px, 8vmin, 58px);
+  padding: 3px 8px 3px 5px;
+  border: 2px solid rgba(255,253,226,0.96);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(255,111,122,0.96), rgba(255,184,87,0.96));
+  box-shadow: 0 5px 16px rgba(81,45,23,0.3), inset 0 1px 0 rgba(255,255,255,0.45);
+  color: #fff;
+  font-family: inherit;
+  font-size: clamp(0.72rem, 1.5vmin, 0.8rem);
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  transition: transform 150ms ease, box-shadow 150ms ease, opacity 150ms ease;
+}
+.magic-cross-btn.hidden { display: none; }
+.magic-cross-btn:disabled { opacity: 0.48; cursor: default; }
+.magic-cross-btn:not(:disabled):active { transform: scale(0.94); }
+.magic-cross-btn.is-selecting {
+  transform: scale(1.06);
+  box-shadow: 0 0 0 4px rgba(255,246,166,0.82), 0 7px 22px rgba(255,111,122,0.48);
+}
+.magic-cross-btn.needs-attention:not(:disabled) img { animation: magicCharmGlow 900ms ease-in-out infinite alternate; }
+.magic-cross-btn img { width: clamp(36px, 6vmin, 44px); height: clamp(36px, 6vmin, 44px); object-fit: contain; }
+.magic-cross-btn span { min-width: 3.8em; text-align: center; text-shadow: 0 1px 2px rgba(92,45,29,0.3); }
+@keyframes magicCharmGlow {
+  from { filter: drop-shadow(0 0 1px rgba(255,255,255,0.2)); }
+  to { filter: drop-shadow(0 0 8px rgba(255,246,166,0.95)); }
+}
+
 /* common/menu.js injects these rules later; !important keeps the shared menu
    attached to this centered 16:9 shell instead of the browser corner. */
 .pono-menu-toggle {
@@ -277,6 +316,11 @@ body > #app {
   transition: transform 0.15s;
 }
 .ov-btn:active { transform: scale(0.95); }
+.ov-btn:focus-visible {
+  outline: 3px solid #FFF2A8;
+  outline-offset: -5px;
+  box-shadow: 0 0 0 2px rgba(25,65,70,0.72), 0 4px 16px rgba(76,175,80,0.4);
+}
 .ov-back {
   display: block; font-size: 0.85rem;
   color: #A89585; text-decoration: none; text-align: center; font-weight: 700;
@@ -376,11 +420,92 @@ body > #app {
   }
 }
 
+/* The three mid-journey illustrations are the reward itself: let the old
+   16:9 picture fill almost the whole shell, with only one caption/action row. */
+.ov-card.cutscene-mode.cutscene-fullscreen {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-areas: 'space space' 'title button';
+  width: calc(100% - 12px);
+  height: calc(100% - 8px);
+  max-width: none;
+  max-height: none;
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+  border-radius: clamp(14px, 2vmin, 22px);
+  background: #173a3d;
+}
+.ov-card.cutscene-mode.cutscene-fullscreen::after {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: min(42%, 152px);
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(14,42,43,0), rgba(14,42,43,0.9));
+}
+.cutscene-fullscreen .ov-icon {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.cutscene-fullscreen .cutscene-img {
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  aspect-ratio: auto;
+  border-radius: inherit;
+  box-shadow: none;
+  object-fit: cover;
+}
+.ov-card.cutscene-fullscreen .ov-title {
+  grid-area: title;
+  align-self: end;
+  z-index: 2;
+  min-width: 0;
+  padding: 10px 8px 10px 16px;
+  background: none;
+  color: #fffdf2;
+  -webkit-text-fill-color: currentColor;
+  font-size: clamp(0.78rem, 2vmin, 1.08rem);
+  line-height: 1.35;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  text-align: left;
+  text-shadow: 0 2px 5px rgba(0,0,0,0.68);
+}
+.ov-card.cutscene-fullscreen .ov-btn {
+  grid-area: button;
+  align-self: end;
+  z-index: 2;
+  min-width: 116px;
+  min-height: 48px;
+  margin: 8px 12px 8px 0;
+  padding: 10px 20px;
+}
+.cutscene-fullscreen .ov-msg,
+.cutscene-fullscreen .ov-back { display: none; }
+body.slide-cutscene-open #btn-pause,
+body.slide-cutscene-open .pono-menu-toggle,
+body.slide-cutscene-open #magic-cross-btn {
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   #landscape-notice .rotate-icon { animation: none; transform: rotate(-90deg); }
   .overlay { animation: none; }
   .journey-toast { transition: none; transform: translate(-50%, 0); }
   .confetti-piece, .tut-bubble { animation: none !important; }
+  .magic-cross-btn { transition: none; }
+  .magic-cross-btn img { animation: none !important; }
 }
 
 </style>
@@ -396,7 +521,7 @@ body > #app {
 <div class="tut-dim hidden" id="tut-dim"></div>
 <div class="tut-bubble hidden" id="tut-bubble"></div>
 
-<div id="landscape-notice">
+<div id="landscape-notice" role="dialog" aria-modal="true" aria-label="よこむきの おねがい" aria-hidden="true">
   <div class="rotate-icon">📱</div>
   <p>スマホを<br><strong>よこむき</strong>にしてね！</p>
   <a class="landscape-back" href="../play.html">ホームにもどる</a>
@@ -406,6 +531,10 @@ body > #app {
 
 <div id="app">
   <button id="btn-pause" class="btn-pause" aria-label="ポーズ">⏸</button>
+  <button id="magic-cross-btn" class="magic-cross-btn hidden" type="button" aria-label="ひかりの よつぼしを つかう" aria-pressed="false">
+    <img src="../assets/images/Slide/generated/fourway_charm.webp" alt="">
+    <span>つかう</span>
+  </button>
   <aside class="game-rail" aria-label="ゲームの じょうほう">
     <div class="header">
       <h1>おかあさん どこいったの？</h1>
@@ -427,7 +556,7 @@ body > #app {
   </div>
 
   <!-- overlay は game-wrap の外 -->
-  <div class="overlay" id="overlay">
+  <div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="ov-title" aria-describedby="ov-msg">
     <div class="ov-card">
       <div class="ov-icon" id="ov-icon"><img src="../assets/images/characters/pono/pono_face_circle.png" style="width:72px;height:72px;object-fit:contain;" alt="ポノ"></div>
       <div class="ov-title" id="ov-title">おかあさん どこいったの？</div>
@@ -487,6 +616,22 @@ const imgClueSheet = new Image();
 imgClueSheet.src = '../assets/images/Slide/adventure/clue_sheet_3x2.webp';
 const imgMoonClue = new Image();
 imgMoonClue.src = '../assets/images/Slide/adventure/moonlight_clue.webp';
+const imgGoalMarker = new Image();
+imgGoalMarker.src = '../assets/images/Slide/generated/goal_marker.webp';
+const imgFourwayCharm = new Image();
+imgFourwayCharm.src = '../assets/images/Slide/generated/fourway_charm.webp';
+const ROAD_TEXTURE_SRCS = Object.freeze({
+  forest: '../assets/images/Slide/generated/road_texture_forest.webp',
+  cave: '../assets/images/Slide/generated/road_texture_cave.webp',
+  night: '../assets/images/Slide/generated/road_texture_night.webp',
+});
+const roadTextureImgs = Object.keys(ROAD_TEXTURE_SRCS).reduce(function(images, key) {
+  const image = new Image();
+  image.src = ROAD_TEXTURE_SRCS[key];
+  images[key] = image;
+  return images;
+}, {});
+let roadPatternCache = Object.create(null);
 
 // ===== Tile types =====
 // edges: [top, right, bottom, left] — 1 = path exits this edge
@@ -564,6 +709,7 @@ const VERTICAL_LEVELS = [
     clueCell: [2, 0],
     start: { col: 0, side: 'top' },
     goal: { col: 1, side: 'bottom' },
+    pickup: { row: 1, col: 0 },
     // V→CROSS→CROSS→V (十字2個で確実に曲がれる)
     solved: ['V','BLANK','BLANK', 'CROSS','CROSS',null, 'BLANK','V','BLANK'],
     shuffleMoves: 4,
@@ -583,7 +729,10 @@ const VERTICAL_LEVELS = [
     },
     start: { col: 1, side: 'top' },
     goal: { col: 1, side: 'bottom' },
-    solved: ['BLANK','V','BLANK', 'BLANK','CROSS',null, 'BLANK','CROSS','BLANK', 'BLANK','V','BLANK'],
+    magicCross: { target: { row: 2, col: 1 } },
+    // 3つめの縦道は横へつながらない。前の面で拾ったよつぼしを
+    // この1枚へ付けると、はじめて左右がつながる。
+    solved: ['BLANK','V','BLANK', 'BLANK','CROSS',null, 'BLANK','H','BLANK', 'BLANK','V','BLANK'],
     shuffleMoves: 6,
   },
   {
@@ -676,11 +825,34 @@ function transposeVerticalLevelToLeftRight(level) {
     rows: nextRows,
     start: { row: level.start.col, side: 'left' },
     goal: { row: level.goal.col, side: 'right' },
+    pickup: level.pickup
+      ? { row: level.pickup.col, col: level.pickup.row }
+      : null,
+    magicCross: level.magicCross
+      ? {
+          ...level.magicCross,
+          target: {
+            row: level.magicCross.target.col,
+            col: level.magicCross.target.row,
+          },
+        }
+      : null,
     solved: nextSolved,
   };
 }
 
 const LEVELS = VERTICAL_LEVELS.map(transposeVerticalLevelToLeftRight);
+const cutscenePreloads = Object.create(null);
+function preloadStageReward(index) {
+  const level = LEVELS[index];
+  const source = level && level.cutscene
+    ? level.cutscene.img
+    : (index === LEVELS.length - 1 ? '../assets/images/Slide/cutscene_ending.png' : '');
+  if (!source || cutscenePreloads[source]) return;
+  const image = new Image();
+  image.src = source;
+  cutscenePreloads[source] = image;
+}
 
 // 左→右の3手チュートリアル。空きマスは 3 → 4 → 5 → 2 と移動する。
 const TUTORIAL_GRID = [
@@ -718,6 +890,13 @@ let hintDismissed = false;
 let hintReadyAt = 0;
 let journeyToastHideAt = 0;
 let gameClearQueued = false;
+let pickupTileIdx = -1;
+let pickupCollected = false;
+let pickupJourneyProgress = -1;
+let magicCharmOwned = false;
+let magicCrossTileIdx = -1;
+let magicCrossSelectMode = false;
+let mechanicGuideShown = false;
 
 // ===== Animation =====
 let animating = false;
@@ -741,6 +920,8 @@ let journeyActor = {
 const canvas = document.getElementById('gameCanvas');
 const ctx    = canvas.getContext('2d');
 const wrap   = document.getElementById('gameWrap');
+const magicCrossBtn = document.getElementById('magic-cross-btn');
+const magicCrossBtnLabel = magicCrossBtn.querySelector('span');
 let CW = 0, CH = 0;
 let cellSize = 0, gridOX = 0, gridOY = 0;
 
@@ -780,6 +961,7 @@ function calcLayout() {
   const gridH = cellSize * curRows;
   gridOX = Math.floor((CW - gridW) / 2);
   gridOY = Math.floor(contentTop + (availH - gridH) / 2);
+  roadPatternCache = Object.create(null);
 }
 
 window.addEventListener('resize', resize);
@@ -820,6 +1002,12 @@ function playGameClearSound() {
     [523,659,784,1047,784,1047,1319].forEach((f,i) => beep(ac, f, t + i*0.15, 0.3, 'sine', 0.22));
   });
 }
+function playCharmSound() {
+  withAudio(ac => {
+    const t = ac.currentTime;
+    [659, 880, 1175].forEach((f, i) => beep(ac, f, t + i * 0.07, 0.18, 'sine', 0.16));
+  });
+}
 
 // ===== Grid helpers =====
 function getAdjacentIndices(idx) {
@@ -832,11 +1020,69 @@ function getAdjacentIndices(idx) {
   return result;
 }
 
+function getLevelCellIndex(level, cell) {
+  if (!level || !cell) return -1;
+  return cell.row * level.cols + cell.col;
+}
+
+function syncMagicCrossButton() {
+  const level = LEVELS[stageIdx];
+  const available = Boolean(level && level.magicCross && magicCharmOwned);
+  const interactive = available && state === S.PLAYING && !animating &&
+    !journeyActor.active && !_slideTutActive;
+  magicCrossBtn.classList.toggle('hidden', !available || state === S.IDLE ||
+    state === S.TRAVELLING || state === S.GAME_CLEAR);
+  magicCrossBtn.disabled = !interactive;
+  magicCrossBtn.classList.toggle('is-selecting', magicCrossSelectMode && interactive);
+  magicCrossBtn.classList.toggle('needs-attention', interactive && magicCrossTileIdx < 0 &&
+    !magicCrossSelectMode);
+  magicCrossBtn.setAttribute('aria-pressed', magicCrossSelectMode ? 'true' : 'false');
+  magicCrossBtnLabel.textContent = magicCrossTileIdx >= 0 ? 'つけかえ' : 'つかう';
+  magicCrossBtn.setAttribute('aria-label', magicCrossTileIdx >= 0
+    ? 'ひかりの よつぼしを つけかえる'
+    : 'ひかりの よつぼしを つかう');
+}
+
+function resetStageMechanics(level) {
+  pickupTileIdx = getLevelCellIndex(level, level && level.pickup);
+  pickupCollected = pickupTileIdx < 0;
+  pickupJourneyProgress = -1;
+  magicCrossTileIdx = -1;
+  magicCrossSelectMode = false;
+  mechanicGuideShown = false;
+  if (level && level.magicCross) magicCharmOwned = true;
+  syncMagicCrossButton();
+}
+
+function moveTrackedTile(fromIdx, toIdx) {
+  if (pickupTileIdx === fromIdx) pickupTileIdx = toIdx;
+  if (magicCrossTileIdx === fromIdx) magicCrossTileIdx = toIdx;
+}
+
+function getEffectiveTileKeyAt(idx, useMagic) {
+  const tileKey = grid[idx];
+  if (useMagic !== false && idx === magicCrossTileIdx && tileKey && tileKey !== 'BLANK') {
+    return 'CROSS';
+  }
+  return tileKey;
+}
+
+function getTileEdgesAt(idx, useMagic) {
+  const tileKey = getEffectiveTileKeyAt(idx, useMagic);
+  return tileKey && TILE_TYPES[tileKey] ? TILE_TYPES[tileKey].edges : null;
+}
+
+function isMagicSelectableTile(idx) {
+  const tileKey = grid[idx];
+  return Boolean(tileKey && tileKey !== 'BLANK' && tileKey !== 'CROSS');
+}
+
 function shuffleGrid(level) {
   curCols = level.cols;
   curRows = level.rows;
   grid = [...level.solved];
   emptyIdx = grid.indexOf(null);
+  resetStageMechanics(level);
   const n = level.shuffleMoves;
   let lastMoved = -1;
   for (let i = 0; i < n; i++) {
@@ -844,12 +1090,14 @@ function shuffleGrid(level) {
     const candidates = neighbors.filter(idx => idx !== lastMoved);
     const pick = candidates[Math.floor(Math.random() * candidates.length)];
     lastMoved = emptyIdx;
+    moveTrackedTile(pick, emptyIdx);
     grid[emptyIdx] = grid[pick];
     grid[pick] = null;
     emptyIdx = pick;
   }
-  // Ensure not already solved
-  if (checkWin()) {
+  // A board that already reaches the goal is not a puzzle, even when a later
+  // mechanic would still withhold the clear state.
+  if (hasBareGoalRoute()) {
     shuffleGrid(level);
     return;
   }
@@ -867,8 +1115,7 @@ function getNeighborRC(row, col, edge) {
   return [row + dr[edge], col + dc[edge]];
 }
 
-function checkWin() {
-  const level = LEVELS[stageIdx];
+function getRouteEndpoints(level) {
   let startRow, startCol, startEdge;
   if (level.start.side === 'top')    { startRow = 0; startCol = level.start.col; startEdge = 0; }
   if (level.start.side === 'bottom') { startRow = curRows - 1; startCol = level.start.col; startEdge = 2; }
@@ -881,99 +1128,102 @@ function checkWin() {
   if (level.goal.side === 'left')   { goalRow = level.goal.row; goalCol = 0; goalExitEdge = 3; }
   if (level.goal.side === 'right')  { goalRow = level.goal.row; goalCol = curCols - 1; goalExitEdge = 1; }
 
-  const queue = [{ row: startRow, col: startCol, fromEdge: startEdge }];
+  return { startRow, startCol, startEdge, goalRow, goalCol, goalExitEdge };
+}
+
+function findGoalRoute(options) {
+  const opts = options || {};
+  const level = LEVELS[stageIdx];
+  const endpoints = getRouteEndpoints(level);
+  const requirePickup = Object.prototype.hasOwnProperty.call(opts, 'requirePickup')
+    ? Boolean(opts.requirePickup) : Boolean(level.pickup);
+  const requireMagic = Object.prototype.hasOwnProperty.call(opts, 'requireMagic')
+    ? Boolean(opts.requireMagic) : Boolean(level.magicCross);
+  const useMagic = opts.useMagic !== false;
+
+  if (requireMagic && magicCrossTileIdx < 0) return null;
+
+  const queue = [{
+    row: endpoints.startRow,
+    col: endpoints.startCol,
+    fromEdge: endpoints.startEdge,
+    hasPickup: pickupCollected,
+    trail: [],
+  }];
   const visited = new Set();
 
   while (queue.length > 0) {
-    const { row, col, fromEdge } = queue.shift();
-    const key = `${row},${col}`;
-    if (visited.has(key)) continue;
-    visited.add(key);
+    const current = queue.shift();
+    const row = current.row, col = current.col, fromEdge = current.fromEdge;
     if (row < 0 || row >= curRows || col < 0 || col >= curCols) continue;
 
     const idx = row * curCols + col;
     const tileKey = grid[idx];
     if (!tileKey || tileKey === 'BLANK') continue;
 
-    const edges = TILE_TYPES[tileKey].edges;
+    const edges = getTileEdgesAt(idx, useMagic);
     if (!edges[fromEdge]) continue;
+
+    const hasPickup = current.hasPickup || idx === pickupTileIdx;
+    const visitKey = `${row},${col},${fromEdge},${hasPickup ? 1 : 0}`;
+    if (visited.has(visitKey)) continue;
+    visited.add(visitKey);
+
+    const trail = current.trail.concat({ row: row, col: col, index: idx });
 
     for (let e = 0; e < 4; e++) {
       if (e === fromEdge || !edges[e]) continue;
-      if (row === goalRow && col === goalCol && e === goalExitEdge) return true;
+      if (row === endpoints.goalRow && col === endpoints.goalCol &&
+          e === endpoints.goalExitEdge && (!requirePickup || hasPickup)) {
+        return { trail: trail, goalEdge: e, hasPickup: hasPickup };
+      }
       const [nr, nc] = getNeighborRC(row, col, e);
       if (nr >= 0 && nr < curRows && nc >= 0 && nc < curCols) {
-        queue.push({ row: nr, col: nc, fromEdge: oppositeEdge(e) });
+        queue.push({
+          row: nr,
+          col: nc,
+          fromEdge: oppositeEdge(e),
+          hasPickup: hasPickup,
+          trail: trail,
+        });
       }
     }
   }
-  return false;
+  return null;
+}
+
+function hasBareGoalRoute() {
+  return Boolean(findGoalRoute({ requirePickup: false, requireMagic: false, useMagic: false }));
+}
+
+function checkWin() {
+  return Boolean(findGoalRoute());
 }
 
 // ===== Trace winning path (for celebration animation) =====
 function traceWinPath() {
   const level = LEVELS[stageIdx];
-  let startRow, startCol, startEdge;
-  if (level.start.side === 'top')    { startRow = 0; startCol = level.start.col; startEdge = 0; }
-  if (level.start.side === 'bottom') { startRow = curRows - 1; startCol = level.start.col; startEdge = 2; }
-  if (level.start.side === 'left')   { startRow = level.start.row; startCol = 0; startEdge = 3; }
-  if (level.start.side === 'right')  { startRow = level.start.row; startCol = curCols - 1; startEdge = 1; }
-
-  let goalRow, goalCol, goalExitEdge;
-  if (level.goal.side === 'top')    { goalRow = 0; goalCol = level.goal.col; goalExitEdge = 0; }
-  if (level.goal.side === 'bottom') { goalRow = curRows - 1; goalCol = level.goal.col; goalExitEdge = 2; }
-  if (level.goal.side === 'left')   { goalRow = level.goal.row; goalCol = 0; goalExitEdge = 3; }
-  if (level.goal.side === 'right')  { goalRow = level.goal.row; goalCol = curCols - 1; goalExitEdge = 1; }
-
+  const endpoints = getRouteEndpoints(level);
   const drDir = [-1, 0, 1, 0];
   const dcDir = [0, 1, 0, -1];
-
-  // BFS to find correct path through tiles (handles CROSS tiles)
-  // State: { row, col, fromEdge, path[] }
-  const queue = [{ row: startRow, col: startCol, fromEdge: startEdge, trail: [] }];
-  const visited = new Set();
-  let foundTrail = null;
-  let foundGoalEdge = -1;
-
-  while (queue.length > 0) {
-    const cur = queue.shift();
-    const r = cur.row, c = cur.col, fe = cur.fromEdge;
-    if (r < 0 || r >= curRows || c < 0 || c >= curCols) continue;
-    const vKey = `${r},${c},${fe}`;
-    if (visited.has(vKey)) continue;
-    visited.add(vKey);
-
-    const idx = r * curCols + c;
-    const tileKey = grid[idx];
-    if (!tileKey || tileKey === 'BLANK') continue;
-    const edges = TILE_TYPES[tileKey].edges;
-    if (!edges[fe]) continue;
-
-    const trail = cur.trail.concat({ row: r, col: c });
-
-    for (let e = 0; e < 4; e++) {
-      if (e === fe || !edges[e]) continue;
-      if (r === goalRow && c === goalCol && e === goalExitEdge) {
-        foundTrail = trail;
-        foundGoalEdge = e;
-        break;
-      }
-      const [nr, nc] = getNeighborRC(r, c, e);
-      queue.push({ row: nr, col: nc, fromEdge: oppositeEdge(e), trail: trail });
-    }
-    if (foundTrail) break;
-  }
+  const found = findGoalRoute();
 
   // Build final path: entry → cells → exit
   const path = [];
   // Entry point (one cell outside grid on start side)
-  path.push({ row: startRow - drDir[oppositeEdge(startEdge)],
-              col: startCol - dcDir[oppositeEdge(startEdge)] });
-  if (foundTrail) {
-    foundTrail.forEach(p => path.push(p));
+  path.push({
+    row: endpoints.startRow - drDir[oppositeEdge(endpoints.startEdge)],
+    col: endpoints.startCol - dcDir[oppositeEdge(endpoints.startEdge)],
+    index: -1,
+  });
+  if (found) {
+    found.trail.forEach(p => path.push(p));
     // Exit point (one cell beyond goal)
-    path.push({ row: goalRow + drDir[foundGoalEdge],
-                col: goalCol + dcDir[foundGoalEdge] });
+    path.push({
+      row: endpoints.goalRow + drDir[found.goalEdge],
+      col: endpoints.goalCol + dcDir[found.goalEdge],
+      index: -1,
+    });
   }
   return path;
 }
@@ -982,6 +1232,7 @@ function traceWinPath() {
 // テーマ: 森 / 洞窟 / 夜空
 const THEMES = {
   forest: {
+    key: 'forest',
     slabTop: 'rgba(177,205,147,0.76)', slabBottom: 'rgba(83,126,92,0.82)',
     slabBlankTop: 'rgba(141,180,118,0.58)', slabBlankBottom: 'rgba(63,105,76,0.72)',
     slabBorder: 'rgba(225,240,196,0.66)', slabShadow: 'rgba(14,45,33,0.42)',
@@ -993,6 +1244,7 @@ const THEMES = {
     mote: 'rgba(255,240,156,0.72)',
   },
   cave: {
+    key: 'cave',
     slabTop: 'rgba(100,132,145,0.78)', slabBottom: 'rgba(47,72,84,0.88)',
     slabBlankTop: 'rgba(87,116,130,0.62)', slabBlankBottom: 'rgba(38,61,73,0.78)',
     slabBorder: 'rgba(183,220,224,0.62)', slabShadow: 'rgba(5,20,28,0.52)',
@@ -1004,6 +1256,7 @@ const THEMES = {
     mote: 'rgba(158,239,235,0.7)',
   },
   night: {
+    key: 'night',
     slabTop: 'rgba(76,100,137,0.78)', slabBottom: 'rgba(34,48,78,0.9)',
     slabBlankTop: 'rgba(68,87,122,0.62)', slabBlankBottom: 'rgba(28,40,69,0.82)',
     slabBorder: 'rgba(184,205,236,0.62)', slabShadow: 'rgba(7,13,33,0.58)',
@@ -1037,6 +1290,28 @@ function getTheme() {
   return THEMES.forest;
 }
 
+function getRoadPattern() {
+  const th = getTheme();
+  const image = roadTextureImgs[th.key];
+  if (!image || !image.complete || image.naturalWidth <= 0) return null;
+  const cacheKey = [th.key, cellSize, gridOX, gridOY, curCols, curRows].join(':');
+  if (roadPatternCache[cacheKey]) return roadPatternCache[cacheKey];
+
+  const pattern = ctx.createPattern(image, 'repeat');
+  if (!pattern) return null;
+  if (typeof pattern.setTransform === 'function' && typeof DOMMatrix !== 'undefined') {
+    // Keep one generated image larger than the whole board. It stays globally
+    // anchored across every cell, so no texture repeat seam can enter the road.
+    const boardSpan = Math.max(curCols * cellSize, curRows * cellSize) + cellSize * 2;
+    const scale = boardSpan * 1.25 / image.naturalWidth;
+    const originX = gridOX - cellSize * 0.65;
+    const originY = gridOY - cellSize * 0.65;
+    pattern.setTransform(new DOMMatrix([scale, 0, 0, scale, originX, originY]));
+  }
+  roadPatternCache[cacheKey] = pattern;
+  return pattern;
+}
+
 const reducedMotionQuery = window.matchMedia
   ? window.matchMedia('(prefers-reduced-motion: reduce)')
   : { matches: false };
@@ -1063,7 +1338,7 @@ function getStartConnectedTileSet() {
     const idx = cur.row * curCols + cur.col;
     const tileKey = grid[idx];
     if (!tileKey || tileKey === 'BLANK') continue;
-    const edges = TILE_TYPES[tileKey].edges;
+    const edges = getTileEdgesAt(idx);
     if (!edges[cur.fromEdge]) continue;
     connected.add(idx);
 
@@ -1130,51 +1405,6 @@ function traceTileRoad(x, y, size, edges) {
   }
 }
 
-function drawRoadMaterial(x, y, size, edges, th) {
-  const cx = x + size / 2;
-  const cy = y + size / 2;
-  const openEdges = [];
-  for (let edge = 0; edge < 4; edge++) if (edges[edge]) openEdges.push(edge);
-
-  ctx.save();
-  ctx.globalAlpha = 0.28;
-  for (let i = 0; i < openEdges.length; i++) {
-    const point = edgePoint(x, y, size, openEdges[i]);
-    const mx = (cx + point.x) / 2;
-    const my = (cy + point.y) / 2;
-    const dx = point.x - cx;
-    const dy = point.y - cy;
-    const length = Math.hypot(dx, dy) || 1;
-    const nx = -dy / length;
-    const ny = dx / length;
-
-    if (th.roadStyle === 'wood') {
-      const half = size * 0.075;
-      ctx.strokeStyle = th.pathBorder;
-      ctx.lineWidth = Math.max(1, size * 0.018);
-      ctx.beginPath();
-      ctx.moveTo(mx - nx * half, my - ny * half);
-      ctx.lineTo(mx + nx * half, my + ny * half);
-      ctx.stroke();
-    } else if (th.roadStyle === 'stone') {
-      ctx.fillStyle = th.pathLight;
-      ctx.beginPath();
-      ctx.ellipse(mx + nx * size * 0.025, my + ny * size * 0.025,
-        Math.max(1.5, size * 0.028), Math.max(1, size * 0.016), i * 0.8, 0, Math.PI * 2);
-      ctx.fill();
-    } else {
-      const starR = Math.max(1.8, size * 0.027);
-      ctx.strokeStyle = th.pathLight;
-      ctx.lineWidth = Math.max(1, size * 0.014);
-      ctx.beginPath();
-      ctx.moveTo(mx - starR, my); ctx.lineTo(mx + starR, my);
-      ctx.moveTo(mx, my - starR); ctx.lineTo(mx, my + starR);
-      ctx.stroke();
-    }
-  }
-  ctx.restore();
-}
-
 function drawTile(x, y, size, tileKey, visualState) {
   const th = getTheme();
   const visual = visualState || {};
@@ -1220,9 +1450,11 @@ function drawTile(x, y, size, tileKey, visualState) {
     return;
   }
 
-  const edges = TILE_TYPES[tileKey].edges;
+  const effectiveTileKey = visual.effectiveTileKey || tileKey;
+  const edges = TILE_TYPES[effectiveTileKey].edges;
   const pathW = size * 0.235;
-  ctx.lineCap = 'round';
+  const roadPattern = getRoadPattern();
+  ctx.lineCap = 'butt';
   ctx.lineJoin = 'round';
 
   if (visual.connected) {
@@ -1241,28 +1473,62 @@ function drawTile(x, y, size, tileKey, visualState) {
   traceTileRoad(x, y, size, edges);
   ctx.stroke();
 
-  ctx.strokeStyle = th.path;
+  ctx.strokeStyle = roadPattern || th.path;
   ctx.lineWidth = pathW;
   traceTileRoad(x, y, size, edges);
   ctx.stroke();
 
-  ctx.strokeStyle = th.pathLight;
-  ctx.globalAlpha = 0.34;
+  ctx.strokeStyle = 'rgba(255,255,255,0.42)';
+  ctx.globalAlpha = 0.38;
   ctx.lineWidth = Math.max(1.5, size * 0.035);
   traceTileRoad(x, y, size, edges);
   ctx.stroke();
   ctx.globalAlpha = 1;
-  drawRoadMaterial(x, y, size, edges, th);
 
   if (visual.connected) {
     ctx.strokeStyle = th.connected;
     ctx.lineWidth = Math.max(2, size * 0.035);
-    ctx.setLineDash([Math.max(5, size * 0.09), Math.max(5, size * 0.09)]);
-    ctx.lineDashOffset = reducedMotionQuery.matches ? 0 : -(visual.now || 0) * 0.018;
+    ctx.globalAlpha = 0.78;
     traceTileRoad(x, y, size, edges);
     ctx.stroke();
-    ctx.setLineDash([]);
+    ctx.globalAlpha = 1;
   }
+  ctx.restore();
+}
+
+function drawCharmAt(centerX, centerY, size, now, applied) {
+  const pulse = reducedMotionQuery.matches ? 0 : (Math.sin(now * 0.006) + 1) * 0.5;
+  ctx.save();
+  ctx.shadowColor = applied ? 'rgba(255,235,117,0.82)' : 'rgba(255,184,87,0.86)';
+  ctx.shadowBlur = Math.max(8, size * (0.2 + pulse * 0.12));
+  if (imgFourwayCharm.complete && imgFourwayCharm.naturalWidth > 0) {
+    const scale = applied ? 0.94 : 1 + pulse * 0.06;
+    const drawSize = size * scale;
+    ctx.drawImage(imgFourwayCharm, centerX - drawSize / 2, centerY - drawSize / 2,
+      drawSize, drawSize);
+  } else {
+    ctx.fillStyle = '#FFD65A';
+    ctx.font = `900 ${Math.floor(size * 0.72)}px serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('✦', centerX, centerY);
+  }
+  ctx.restore();
+}
+
+function drawMagicSelectableFrame(x, y, size, now) {
+  const pulse = reducedMotionQuery.matches ? 0.9 : 0.72 + (Math.sin(now * 0.007) + 1) * 0.12;
+  const inset = Math.max(5, size * 0.07);
+  ctx.save();
+  ctx.globalAlpha = pulse;
+  ctx.strokeStyle = '#FFF2A8';
+  ctx.shadowColor = 'rgba(255,181,87,0.72)';
+  ctx.shadowBlur = Math.max(8, size * 0.12);
+  ctx.lineWidth = Math.max(3, size * 0.04);
+  ctx.setLineDash([Math.max(5, size * 0.08), Math.max(4, size * 0.06)]);
+  ctx.beginPath();
+  ctx.roundRect(x + inset, y + inset, size - inset * 2, size - inset * 2, size * 0.12);
+  ctx.stroke();
   ctx.restore();
 }
 
@@ -1346,11 +1612,11 @@ function drawMoveHint(index, now) {
 
 function edgePoint(x, y, size, edge) {
   const cx = x + size / 2, cy = y + size / 2;
-  const gap = 3;
-  if (edge === 0) return { x: cx, y: y + gap };      // top
-  if (edge === 1) return { x: x + size - gap, y: cy }; // right
-  if (edge === 2) return { x: cx, y: y + size - gap }; // bottom
-  if (edge === 3) return { x: x + gap, y: cy };        // left
+  const seamOverlap = Math.max(0.75, size * 0.008);
+  if (edge === 0) return { x: cx, y: y - seamOverlap };            // top
+  if (edge === 1) return { x: x + size + seamOverlap, y: cy };     // right
+  if (edge === 2) return { x: cx, y: y + size + seamOverlap };     // bottom
+  if (edge === 3) return { x: x - seamOverlap, y: cy };            // left
 }
 
 function drawGuideTrail(fromX, toX, y, active, now) {
@@ -1421,13 +1687,14 @@ function getJourneyGeometry() {
 }
 
 function getGoalBeaconBounds(geo) {
-  const radius = Math.max(22, Math.min(54, cellSize * 0.36));
+  const size = Math.max(62, Math.min(124, cellSize * 0.92));
+  const anchorY = 0.6;
   return {
-    radius: radius,
-    left: geo.goalX - radius * 0.82,
-    right: geo.goalX + radius * 0.98,
-    top: geo.goalY - radius * 1.06,
-    bottom: geo.goalY + radius * 0.78,
+    size: size,
+    left: geo.goalX - size * 0.5,
+    right: geo.goalX + size * 0.5,
+    top: geo.goalY - size * anchorY,
+    bottom: geo.goalY + size * (1 - anchorY),
     centerY: geo.goalY,
   };
 }
@@ -1435,11 +1702,7 @@ function getGoalBeaconBounds(geo) {
 function drawGoalBeacon(now, geo, active, discovered) {
   const th = getTheme();
   const bounds = getGoalBeaconBounds(geo);
-  const radius = bounds.radius;
-  const badgeX = geo.goalX - radius * 0.12;
-  const badgeR = radius * 0.56;
-  const poleX = geo.goalX - radius * 0.2;
-  const poleTop = geo.goalY - radius * 0.7;
+  const size = bounds.size;
   const pulse = reducedMotionQuery.matches || discovered
     ? 0 : (Math.sin(now * 0.0045) + 1) * 0.5;
 
@@ -1448,73 +1711,35 @@ function drawGoalBeacon(now, geo, active, discovered) {
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
-  // A short solid socket locks the marker to the exact exit row.
+  // The generated marker supplies the whole destination illustration. A short
+  // runtime socket only locks its wooden post to the exact goal row.
+  const postX = bounds.left + size * 0.22;
   ctx.beginPath();
   ctx.moveTo(geo.rightEdge - Math.max(4, cellSize * 0.035), geo.goalY);
-  ctx.lineTo(bounds.left + radius * 0.12, geo.goalY);
+  ctx.lineTo(postX, geo.goalY);
   ctx.strokeStyle = GOAL_STYLE.outline;
   ctx.lineWidth = Math.max(7, cellSize * 0.09);
   ctx.shadowColor = GOAL_STYLE.shadow;
-  ctx.shadowBlur = Math.max(5, radius * 0.22);
+  ctx.shadowBlur = Math.max(5, size * 0.08);
   ctx.stroke();
   ctx.shadowColor = 'transparent';
   ctx.strokeStyle = active ? th.connected : GOAL_STYLE.marker;
   ctx.lineWidth = Math.max(3.5, cellSize * 0.045);
   ctx.stroke();
 
-  // The right chevron communicates direction without adding another sentence.
-  const chevronX = bounds.left + radius * 0.12;
-  const chevron = Math.max(5, radius * 0.24);
-  ctx.beginPath();
-  ctx.moveTo(chevronX, geo.goalY - chevron);
-  ctx.lineTo(chevronX + chevron, geo.goalY);
-  ctx.lineTo(chevronX, geo.goalY + chevron);
-  ctx.strokeStyle = GOAL_STYLE.outline;
-  ctx.lineWidth = Math.max(3, radius * 0.15);
-  ctx.stroke();
-
-  // A circular white badge remains legible over forest, cave, and night art.
-  ctx.beginPath();
-  ctx.arc(badgeX, geo.goalY, badgeR, 0, Math.PI * 2);
-  ctx.fillStyle = GOAL_STYLE.cream;
-  ctx.shadowColor = active ? th.connectedGlow : GOAL_STYLE.shadow;
-  ctx.shadowBlur = Math.max(9, radius * (0.34 + pulse * 0.16));
-  ctx.fill();
-  ctx.shadowColor = 'transparent';
-  ctx.strokeStyle = GOAL_STYLE.outline;
-  ctx.lineWidth = Math.max(5, radius * 0.2);
-  ctx.stroke();
-  ctx.strokeStyle = GOAL_STYLE.marker;
-  ctx.lineWidth = Math.max(2.5, radius * 0.1);
-  ctx.stroke();
-
-  // Finish flag: fixed coral color, white outline, and two cream checks.
-  ctx.beginPath();
-  ctx.moveTo(poleX, geo.goalY + radius * 0.5);
-  ctx.lineTo(poleX, poleTop);
-  ctx.strokeStyle = GOAL_STYLE.outline;
-  ctx.lineWidth = Math.max(5, radius * 0.19);
-  ctx.stroke();
-  ctx.strokeStyle = GOAL_STYLE.markerDark;
-  ctx.lineWidth = Math.max(2.5, radius * 0.09);
-  ctx.stroke();
-
-  ctx.beginPath();
-  ctx.moveTo(poleX, poleTop);
-  ctx.lineTo(geo.goalX + radius * 0.76, poleTop + radius * 0.18);
-  ctx.lineTo(poleX, poleTop + radius * 0.52);
-  ctx.closePath();
-  ctx.fillStyle = GOAL_STYLE.marker;
-  ctx.fill();
-  ctx.strokeStyle = GOAL_STYLE.outline;
-  ctx.lineWidth = Math.max(2.5, radius * 0.1);
-  ctx.stroke();
-
-  const checkSize = Math.max(3, radius * 0.13);
-  ctx.fillStyle = GOAL_STYLE.cream;
-  ctx.fillRect(poleX + radius * 0.16, poleTop + radius * 0.12, checkSize, checkSize);
-  ctx.fillRect(poleX + radius * 0.16 + checkSize, poleTop + radius * 0.12 + checkSize,
-    checkSize, checkSize);
+  if (imgGoalMarker.complete && imgGoalMarker.naturalWidth > 0) {
+    ctx.shadowColor = active ? th.connectedGlow : GOAL_STYLE.shadow;
+    ctx.shadowBlur = Math.max(8, size * (0.1 + pulse * 0.035));
+    ctx.drawImage(imgGoalMarker, bounds.left, bounds.top, size, size);
+  } else {
+    ctx.beginPath();
+    ctx.arc(geo.goalX, geo.goalY, size * 0.23, 0, Math.PI * 2);
+    ctx.fillStyle = GOAL_STYLE.cream;
+    ctx.fill();
+    ctx.strokeStyle = GOAL_STYLE.marker;
+    ctx.lineWidth = Math.max(3, size * 0.045);
+    ctx.stroke();
+  }
   ctx.restore();
   return bounds;
 }
@@ -1556,8 +1781,10 @@ function drawStartGoal(now, connectedSet) {
 
   const goalIdx = level.goal.row * curCols + (curCols - 1);
   const goalTile = grid[goalIdx];
+  const goalEdges = getTileEdgesAt(goalIdx);
+  const routeComplete = Boolean(findGoalRoute());
   const goalActive = connectedSet.has(goalIdx) && goalTile && goalTile !== 'BLANK' &&
-    TILE_TYPES[goalTile].edges[1];
+    goalEdges && goalEdges[1] && routeComplete;
   drawGoalBeacon(now, geo, goalActive, clueDiscovered);
 
   // A solved board is only a road. The clue appears after Pono actually arrives.
@@ -1685,7 +1912,7 @@ function draw(now) {
   const hasBoard = emptyIdx >= 0 && grid.length === total;
   const connectedSet = hasBoard ? getStartConnectedTileSet() : new Set();
   const hintVisible = hasBoard && state === S.PLAYING && moveCount === 0 &&
-    !hintDismissed && !_slideTutActive && now >= hintReadyAt &&
+    !hintDismissed && !_slideTutActive && !magicCrossSelectMode && now >= hintReadyAt &&
     getAdjacentIndices(emptyIdx).includes(suggestedMoveIdx) && grid[suggestedMoveIdx] !== null;
   if (hasBoard) drawEmptySlot(now);
 
@@ -1710,10 +1937,21 @@ function draw(now) {
     drawTile(x, y, cellSize, tileKey, {
       index: i,
       now: now,
+      effectiveTileKey: getEffectiveTileKeyAt(i),
       connected: connectedSet.has(i),
       movable: hintVisible && i === suggestedMoveIdx && !animating,
       animating: animating && i === anim.idx,
     });
+
+    if (magicCrossSelectMode && isMagicSelectableTile(i) && !animating) {
+      drawMagicSelectableFrame(x, y, cellSize, now);
+    }
+    if (!pickupCollected && i === pickupTileIdx) {
+      drawCharmAt(x + cellSize / 2, y + cellSize / 2, cellSize * 0.54, now, false);
+    }
+    if (i === magicCrossTileIdx) {
+      drawCharmAt(x + cellSize / 2, y + cellSize / 2, cellSize * 0.3, now, true);
+    }
   }
 
   if (hintVisible && !animating) {
@@ -1745,15 +1983,19 @@ function updateAnim(now) {
 
   if (t >= 1) {
     const oldEmpty = emptyIdx;
+    moveTrackedTile(anim.idx, oldEmpty);
     grid[oldEmpty] = grid[anim.idx];
     grid[anim.idx] = null;
     emptyIdx = anim.idx;
     moveCount++;
     updateHUD();
     animating = false;
+    syncMagicCrossButton();
 
     if (!_slideTutActive && checkWin()) {
       onStageClear();
+    } else if (!_slideTutActive && LEVELS[stageIdx].pickup && hasBareGoalRoute()) {
+      showJourneyToast('ひかりも とおろう！', false);
     }
   }
 }
@@ -1806,6 +2048,10 @@ function updateJourneyPosition(now) {
     journeyActor.dx = to.x - from.x;
     journeyActor.dy = to.y - from.y;
   }
+  if (journeyActor.phase === JOURNEY_PHASE.EXIT && !pickupCollected &&
+      pickupJourneyProgress >= 0 && eased >= pickupJourneyProgress) {
+    collectJourneyPickup();
+  }
   return raw;
 }
 
@@ -1820,10 +2066,29 @@ function finishJourneyIntro(now) {
   prepauseState = S.PLAYING;
   hintReadyAt = now + 1500;
   setPauseAvailable(true);
+  syncMagicCrossButton();
+  if (!mechanicGuideShown && LEVELS[stageIdx].pickup) {
+    mechanicGuideShown = true;
+    showJourneyToast('ひかりを とおって ゴールへ！', false);
+  } else if (!mechanicGuideShown && LEVELS[stageIdx].magicCross) {
+    mechanicGuideShown = true;
+    hintDismissed = true;
+    showJourneyToast('ひかりの よつぼしを つかってみよう！', false);
+  }
+}
+
+function collectJourneyPickup() {
+  if (pickupCollected || pickupTileIdx < 0) return;
+  pickupCollected = true;
+  pickupJourneyProgress = -1;
+  magicCharmOwned = true;
+  playCharmSound();
+  showJourneyToast('ひかりの よつぼしを みつけた！', true);
 }
 
 function finishExitWithDiscovery(now) {
   if (journeyActor.phase !== JOURNEY_PHASE.EXIT) return;
+  if (!pickupCollected && pickupTileIdx >= 0) collectJourneyPickup();
   const geo = getJourneyGeometry();
   journeyActor.phase = JOURNEY_PHASE.DISCOVERY;
   journeyActor.active = true;
@@ -1929,6 +2194,21 @@ function handleTap(px, py) {
   const tappedIdx = row * curCols + col;
   if (grid[tappedIdx] === null) return false;
 
+  if (magicCrossSelectMode) {
+    if (!isMagicSelectableTile(tappedIdx)) {
+      showJourneyToast('ほかの みちを えらんでね', false);
+      return false;
+    }
+    magicCrossTileIdx = tappedIdx;
+    magicCrossSelectMode = false;
+    hintDismissed = true;
+    playCharmSound();
+    showJourneyToast('よつまたに なった！', false);
+    syncMagicCrossButton();
+    if (!_slideTutActive && checkWin()) onStageClear();
+    return true;
+  }
+
   const eRow = Math.floor(emptyIdx / curCols), eCol = emptyIdx % curCols;
   const dist = Math.abs(eRow - row) + Math.abs(eCol - col);
   if (dist !== 1) return false;
@@ -1944,9 +2224,22 @@ function handleTap(px, py) {
   anim.curY  = anim.fromY;
   anim.t0    = performance.now();
   hintDismissed = true;
+  syncMagicCrossButton();
   playSlideSound();
   return true;
 }
+
+magicCrossBtn.addEventListener('click', function(event) {
+  event.preventDefault();
+  event.stopPropagation();
+  if (magicCrossBtn.disabled) return;
+  magicCrossSelectMode = !magicCrossSelectMode;
+  hintDismissed = true;
+  syncMagicCrossButton();
+  showJourneyToast(magicCrossSelectMode
+    ? 'みちを ひとつ えらんでね'
+    : 'もういちど タッチで つかえるよ', false);
+});
 
 wrap.addEventListener('pointerdown', e => {
   if (state === S.PAUSED || _slideTutActive) return;
@@ -1960,10 +2253,18 @@ wrap.addEventListener('pointerdown', e => {
 // ===== Stage clear =====
 function onStageClear() {
   state = S.TRAVELLING;
+  magicCrossSelectMode = false;
+  syncMagicCrossButton();
   setPauseAvailable(false);
   playClearSound();
   if (window.incrementStat) window.incrementStat('slide_clears', 1);
   const route = traceWinPath();
+  const pickupPointIndex = route.findIndex(function(point) {
+    return point.index === pickupTileIdx;
+  });
+  pickupJourneyProgress = pickupPointIndex >= 0
+    ? pickupPointIndex / Math.max(1, route.length - 1)
+    : -1;
   const geo = getJourneyGeometry();
   const points = route.map(function(point) {
     return {
@@ -2013,9 +2314,11 @@ function showOverlay(type) {
   const back  = document.getElementById('ov-back');
   setPauseAvailable(false);
   overlay.classList.remove('hidden');
+  overlay.setAttribute('aria-hidden', 'false');
+  document.body.classList.remove('slide-cutscene-open');
   back.classList.add('hidden');
   title.style.whiteSpace = '';
-  document.querySelector('.ov-card').classList.remove('cutscene-mode');
+  document.querySelector('.ov-card').classList.remove('cutscene-mode', 'cutscene-fullscreen');
 
   var actionType = type;
   var ponoFaceTag = '<img src="../assets/images/characters/pono/pono_face_circle.png" style="width:72px;height:72px;object-fit:contain;" alt="ポノ">';
@@ -2037,13 +2340,15 @@ function showOverlay(type) {
     playGameClearSound();
     var card = document.querySelector('.ov-card');
     card.classList.add('cutscene-mode');
-    icon.innerHTML    = '<img src="../assets/images/Slide/cutscene_ending.png" class="cutscene-img" alt="おかあさんと いっしょ">';
+    icon.innerHTML    = '<img src="../assets/images/Slide/cutscene_ending.png" class="cutscene-img" alt="">';
     title.textContent = 'おかあさんと さいかい！';
     msg.textContent   = `「ポノの だいすきな きのみと\nキノコを とりにきたの。\nおそくなって ごめんね！\nいっしょに かえろう！」\nてかず${moveCount} でクリア！`;
     btn.textContent   = 'もういっかい ▶';
   }
 
   btn.dataset.ovType = actionType;
+  syncMagicCrossButton();
+  requestAnimationFrame(function() { btn.focus({ preventScroll: true }); });
 }
 
 function updateHUD() {
@@ -2062,7 +2367,10 @@ function updateHUD() {
 // ===== Start / Next =====
 function beginStage(index) {
   overlay.classList.add('hidden');
+  overlay.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('slide-cutscene-open');
   stageIdx = index;
+  preloadStageReward(stageIdx);
   moveCount = 0;
   clueDiscovered = false;
   hintDismissed = false;
@@ -2077,6 +2385,7 @@ function beginStage(index) {
   journeyActor.tutorial = false;
   state = S.TRAVELLING;
   prepauseState = S.TRAVELLING;
+  syncMagicCrossButton();
   setJourneyPath(JOURNEY_PHASE.INTRO, [
     { x: geo.entryX, y: geo.startY },
     { x: geo.startX, y: geo.startY },
@@ -2086,6 +2395,7 @@ function beginStage(index) {
 
 function startGame() {
   gameClearQueued = false;
+  magicCharmOwned = false;
   journeyActor.phase = JOURNEY_PHASE.INTRO;
   beginStage(0);
 }
@@ -2106,13 +2416,17 @@ function showCutscene() {
   var btn   = document.getElementById('ov-btn');
   setPauseAvailable(false);
   overlay.classList.remove('hidden');
-  card.classList.add('cutscene-mode');
-  icon.innerHTML = '<img src="' + level.cutscene.img + '" class="cutscene-img" alt="おかあさんの ものがたり">';
+  overlay.setAttribute('aria-hidden', 'false');
+  card.classList.add('cutscene-mode', 'cutscene-fullscreen');
+  document.body.classList.add('slide-cutscene-open');
+  icon.innerHTML = '<img src="' + level.cutscene.img + '" class="cutscene-img" alt="">';
   title.textContent = level.cutscene.text;
   title.style.whiteSpace = 'pre-line';
   msg.textContent = '';
   btn.textContent = 'つぎへ ▶';
   btn.dataset.ovType = 'cutscene-next';
+  syncMagicCrossButton();
+  requestAnimationFrame(function() { btn.focus({ preventScroll: true }); });
 }
 
 // ===== Overlay button =====
@@ -2145,11 +2459,14 @@ function togglePause() {
   if (state === S.PAUSED) {
     state = prepauseState;
     updatePauseButton(false);
+    syncMagicCrossButton();
     if (bgmEnabled) bgm.play().catch(() => {});
   } else if (state === S.PLAYING && !animating && !journeyActor.active) {
     prepauseState = state;
     state = S.PAUSED;
+    magicCrossSelectMode = false;
     updatePauseButton(true);
+    syncMagicCrossButton();
     bgm.pause();
   }
 }
@@ -2224,6 +2541,8 @@ function showTutorial() {
   curRows = 3;
   grid = tutGrid.slice();
   emptyIdx = tutEmpty;
+  magicCharmOwned = false;
+  resetStageMechanics(LEVELS[0]);
   animating = false;
   clueDiscovered = false;
   hintDismissed = true;
@@ -2232,6 +2551,7 @@ function showTutorial() {
   journeyActor.tutorial = true;
   state = S.PLAYING;
   prepauseState = S.PLAYING;
+  syncMagicCrossButton();
   updatePauseButton(false);
   if (bgmEnabled) bgm.play().catch(() => {});
   overlay.classList.add('hidden');
@@ -2402,8 +2722,18 @@ function updateLandscapeNotice() {
   if (!notice) return;
   const isPortrait = window.innerHeight >= window.innerWidth;
   notice.style.display = isPortrait ? 'flex' : 'none';
+  notice.setAttribute('aria-hidden', isPortrait ? 'false' : 'true');
+  const app = document.getElementById('app');
+  if (app) app.toggleAttribute('inert', isPortrait);
   // 横向きへ戻した時に、中央の16:9シェルへキャンバス実寸を同期する。
-  if (!isPortrait) resize();
+  if (!isPortrait) {
+    resize();
+    if (!overlay.classList.contains('hidden')) {
+      requestAnimationFrame(function() {
+        document.getElementById('ov-btn').focus({ preventScroll: true });
+      });
+    }
+  }
 }
 updateLandscapeNotice();
 window.addEventListener('orientationchange', () => {
