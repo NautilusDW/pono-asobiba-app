@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2193: なぞなぞトレインの宇宙駅間ゲートを区間・難易度に応じた2〜6個へ増やし、固定6個プール、ゲート単位の一度だけの接触判定、レイアウトキャッシュでiPadを含む毎フレーム負荷を抑えた (batch:1304-nazonazo-space-multi-gates)。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/テストのみ変更)。
 // v2192: みちつなぎの既存8ステージを縦盤面から左→右の横盤面へ変換し、入口／ゴール、正解経路、3手チュートリアル、開始・終了矢印、歩行方向を統一。上向き区間をなくして正面歩行の後退表示を防ぎ、短い横画面の左右マーカー／ラベル、かな文言も調整した (batch:1304-slide-left-right)。play.html PAGE_CACHE_VERSION と同期不要 (slide/index.html/テストのみ変更)。
 // v2191: なぞなぞトレインのミライシティを、ハンドルで位置を合わせて「おろす」「とめる」の2クリックで運ぶクレーンへ簡略化。宇宙は安全なすきまを抜けるゲートと、正しい答えを選んで3本のネジを締める修理ゲームへ刷新し、タッチ／キーボード、縦向き中断、短い横画面、誤答再挑戦を統合した (batch:1303-nazonazo-future-space-games)。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/テストのみ変更)。
 // v2190: みちつなぎを16:9横画面へ再構成し、最終ステージまでの盤面寸法、横向き案内、短い画面のダイアログ、チュートリアル再開を調整。最適化済み歩行スプライトの実寸から1フレームずつ切り出し、歩行中にポノが2〜3匹へ増える表示を修正した (batch:1303-slide-landscape)。play.html PAGE_CACHE_VERSION と同期不要 (slide/index.html/テストのみ変更)。
@@ -122,7 +123,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2192;
+const CACHE_VERSION = 2193;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。

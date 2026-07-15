@@ -57,10 +57,10 @@ for (const [name, expected] of Object.entries({
 
 assert.doesNotMatch(game, /\b(?:IOS|REDUCED)_SMOKE_(?:INTERVAL|LIFE|MAX)/,
   "desktop, iPad and reduced motion must not diverge in smoke density");
-assert.match(html, /styles\.css\?v=20260715-1303/);
-assert.match(html, /js\/game\.js\?v=20260715-1303/);
+assert.match(html, /styles\.css\?v=20260715-1304/);
+assert.match(html, /js\/game\.js\?v=20260715-1304/);
 assert.match(serviceWorker, /v2186: なぞなぞトレインの煙/);
-assert.ok(Number(serviceWorker.match(/const CACHE_VERSION = (\d+);/)?.[1]) >= 2191,
+assert.ok(Number(serviceWorker.match(/const CACHE_VERSION = (\d+);/)?.[1]) >= 2193,
   "later game releases may advance the global service-worker cache version");
 assert.match(css, /body\.tunnel-enter-run #veh \.puff,body\.tunnel-exit-run #veh \.puff\{opacity:0\}/);
 assert.match(css, /body\.tunnel-enter-run #smokeLayer,body\.tunnel-exit-run #smokeLayer\{display:none\}/);
