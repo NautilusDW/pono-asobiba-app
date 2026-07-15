@@ -149,6 +149,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-07-15T22:41:26Z - アプリ専用ログインボーナス・家具/私のおうち機能の復活 + アプリ専用LP枠組み新設 (アカウント本体は保留)
+- **タスク**: アプリ専用ログインボーナス・家具/私のおうち機能の復活 + アプリ専用LP枠組み新設 (アカウント本体は保留)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 0
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {}
+- **サマリ**: 行動ログが空のため分析できません。
+
+
 ### 2026-07-15T22:26:13Z - sw.js CACHE_VERSION統合バンプ(2208→2209)+play.htmlわたしのおうち導線のPlaywright検証
 - **タスク**: sw.js CACHE_VERSION統合バンプ(2208→2209)+play.htmlわたしのおうち導線のPlaywright検証
 - **結果**: 成功
@@ -242,19 +255,6 @@ wrangler deploy                  # master 内容を production に
 
 ### 2026-07-15T21:12:55Z - app tier限定でreward凍結解除する土台をcommon/mvp-flags.jsに追加(PonoMvpFlags.rewardsBlocked + tier.js data-tier sync)
 - **タスク**: app tier限定でreward凍結解除する土台をcommon/mvp-flags.jsに追加(PonoMvpFlags.rewardsBlocked + tier.js data-tier sync)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 0
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {}
-- **サマリ**: 行動ログが空のため分析できません。
-
-
-### 2026-07-15T01:26:43Z - analytics rollup/admin ブロッキング指摘4件の再検証
-- **タスク**: analytics rollup/admin ブロッキング指摘4件の再検証
 - **結果**: 成功
 - **理由**: N/A
 - **総アクション数**: 0
