@@ -250,7 +250,7 @@ check("the shown quiz is centered instead of anchored to the floor", () => {
   for (const rule of lowHeightQuizRules) {
     assert.doesNotMatch(rule, /bottom\s*:\s*(?!auto)[^;}]+/, "a responsive override moved the quiz back to the bottom");
   }
-  assert.match(css, /body\.st-sea\.sea-quiz-active #quiz[\s\S]*body\.st-future\.future-capsule-active #quiz[\s\S]*body\.st-space\.space-galaxy-active #quiz/,
+  assert.match(css, /body\.st-sea\.sea-quiz-active #quiz[\s\S]*body\.st-future\.future-capsule-active #quiz[\s\S]*body\.st-space\.space-repair-active #quiz/,
     "full-screen minigames must retain a dedicated question-bar layout instead of covering their center controls");
 });
 
@@ -310,10 +310,10 @@ check("future and space cleanup own their timers, classes and layers", () => {
   assert.match(future, /futureCapsuleTimers\.forEach\(clearTimeout\);futureCapsuleTimers\.clear\(\)/);
   assert.match(future, /classList\.remove\("future-capsule-active","future-capsule-complete"\)/);
   assert.match(future, /futureCapsuleLayer\.replaceChildren\(\);futureCapsuleLayer\.hidden=true/);
-  const space = extractFunction(game, "clearSpaceGalaxyGame");
-  assert.match(space, /clearTimeout\(spaceGalaxyTimer\);spaceGalaxyTimer=0/);
-  assert.match(space, /spaceGalaxyPointerId=null/);
-  assert.match(space, /classList\.remove\("space-galaxy-active","space-galaxy-complete"\)/);
+  const space = extractFunction(game, "clearSpaceRepairGame");
+  assert.match(space, /clearTimeout\(spaceRepairTimer\);spaceRepairTimer=0/);
+  assert.match(space, /releaseSpaceRepairPointer\(\)/);
+  assert.match(space, /classList\.remove\("space-repair-active","space-repair-complete"\)/);
   assert.match(space, /spaceGalaxyLayer\.replaceChildren\(\);spaceGalaxyLayer\.hidden=true/);
 });
 
@@ -322,7 +322,7 @@ check("every major lifecycle clears number, future and space games", () => {
     const source = extractFunction(game, lifecycle);
     assert.match(source, /resetNumberCargoGame\(\)/, `${lifecycle}: number cleanup missing`);
     assert.match(source, /clearFutureCapsuleGame\(\)/, `${lifecycle}: future cleanup missing`);
-    assert.match(source, /clearSpaceGalaxyGame\(\)/, `${lifecycle}: space cleanup missing`);
+    assert.match(source, /clearSpaceRepairGame\(\)/, `${lifecycle}: space cleanup missing`);
   }
 });
 

@@ -188,8 +188,14 @@ assert.match(game, /const spaceMoveKeys=new Set\(\);/);
 const controlAvailable = extractFunction(game, "spaceControlAvailable");
 assert.match(controlAvailable, /isSpaceStage\(\)/);
 assert.match(controlAvailable, /playing/);
-assert.match(controlAvailable, /driving|spaceGalaxyPlayable\(\)|space-galaxy-active/,
-  "rocket steering must be available during the forced scroll or the full-screen space game");
+assert.match(controlAvailable, /driving/,
+  "rocket steering must remain available during forced scrolling");
+assert.match(controlAvailable, /!quiz\.classList\.contains\("show"\)/,
+  "station repair must suspend route steering");
+assert.match(controlAvailable, /spaceLandscapePlayable\(\)/,
+  "the portrait rotate hint must suspend route input");
+assert.doesNotMatch(controlAvailable, /space-repair-active|spaceGalaxyPlayable/,
+  "repair controls and route steering must not compete for the same pointer");
 assert.match(controlAvailable, /tunnelInteriorMode/);
 assert.match(controlAvailable, /tunnel-enter-run/);
 assert.match(controlAvailable, /tunnel-exit-run/);
@@ -245,6 +251,101 @@ assert.match(resetSteering, /--space-steer-y","0px"/);
 assert.match(extractFunction(game, "startJourneyAt"), /resetSpaceSteering\(\)/);
 assert.match(extractFunction(game, "ending"), /resetSpaceSteering\(\)/);
 assert.match(extractFunction(game, "openMap"), /resetSpaceSteering\(\)/);
+
+/* One preallocated asteroid gate crosses each of the five route segments. */
+assert.match(game, /layer\.id="spaceObstacleLayer"/);
+assert.match(game, /\["top","bottom"\]\.forEach/);
+assert.match(game, /bank\.className="space-obstacle-bank is-"\+side/);
+assert.match(game, /for\(let index=0;index<10;index\+\+\)bank\.appendChild/,
+  "one top/bottom pair must be pooled at startup rather than allocated per frame");
+assert.match(cssRule("#spaceObstacleLayer"), /position:absolute/);
+assert.match(cssRule("#spaceObstacleLayer"), /pointer-events:none/);
+assert.match(css, /#spaceObstacleLayer\[hidden\]\{display:none!important\}/);
+assert.match(css, /\.space-obstacle-bank\.is-top\{[^}]*height:var\(--space-obstacle-gap-top/);
+assert.match(css, /\.space-obstacle-bank\.is-bottom\{[^}]*top:var\(--space-obstacle-gap-bottom/);
+
+const gapGeometry = extractFunction(game, "spaceObstacleGapGeometry");
+const geometrySandbox = {
+  SPACE_OBSTACLE_MIN_GAPS: [144, 126, 110],
+  SPACE_OBSTACLE_PLAYABLE_RATIOS: [.48, .42, .36],
+  SPACE_OBSTACLE_ROCKET_RATIOS: [1.90, 1.65, 1.45],
+  SPACE_OBSTACLE_GAP_CENTERS: [.36, .64, .43, .58, .50],
+  clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
+  Math,
+  Number
+};
+vm.createContext(geometrySandbox);
+vm.runInContext(`${gapGeometry};this.gap=spaceObstacleGapGeometry;`, geometrySandbox);
+for (const [label, top, bottom, rocketHeight] of [
+  ["568x320", 74, 286, 72],
+  ["844x390", 78, 350, 78],
+  ["1024x768", 94, 720, 112],
+  ["1366x768", 94, 720, 116]
+]) {
+  for (let difficulty = 0; difficulty < 3; difficulty += 1) {
+    const gap = geometrySandbox.gap(top, bottom, rocketHeight, difficulty, 0);
+    const playable = bottom - top;
+    assert.ok(gap.height >= Math.min(playable - 16, [144, 126, 110][difficulty]) - 0.001,
+      `${label} difficulty ${difficulty}: minimum gap was lost`);
+    assert.ok(gap.height <= playable - 16 + 0.001,
+      `${label} difficulty ${difficulty}: gap exceeds playable area`);
+    assert.ok(gap.top >= top - 0.001 && gap.bottom <= bottom + 0.001,
+      `${label} difficulty ${difficulty}: gate gap leaves the playable area`);
+  }
+}
+const qCenters = [0, 1, 2, 3, 4].map(segment => geometrySandbox.gap(80, 580, 96, 2, segment).center);
+assert.ok(qCenters[1] > qCenters[3] && qCenters[3] > qCenters[4] && qCenters[4] > qCenters[2] && qCenters[2] > qCenters[0],
+  "the five gates need the specified high/low route rhythm");
+
+const screenX = extractFunction(game, "spaceObstacleScreenX");
+const screenSandbox = { Number };
+vm.createContext(screenSandbox);
+vm.runInContext(`${screenX};this.x=spaceObstacleScreenX;`, screenSandbox);
+assert.ok(Math.abs(screenSandbox.x(.16, 1000) - 1100) < 0.001);
+assert.ok(Math.abs(screenSandbox.x(.72, 1000) + 320) < 0.001);
+
+const hitboxSource = extractFunction(game, "spaceObstacleRocketHitbox");
+const collisionSource = extractFunction(game, "spaceObstacleCollides");
+const collisionSandbox = { SPACE_OBSTACLE_EDGE_INSET: 8, Math };
+vm.createContext(collisionSandbox);
+vm.runInContext(`${hitboxSource}\n${collisionSource}\nthis.hitbox=spaceObstacleRocketHitbox;this.collides=spaceObstacleCollides;`, collisionSandbox);
+assert.deepEqual(
+  JSON.parse(JSON.stringify(collisionSandbox.hitbox({ left: 100, top: 50, width: 200, height: 100 }))),
+  { left: 144, right: 256, top: 74, bottom: 126 },
+  "rocket collision box must inset 22% horizontally and 24% vertically"
+);
+assert.equal(collisionSandbox.collides({ left: 144, right: 256, top: 85, bottom: 160 }, 180, 100, 90, 170), false);
+assert.equal(collisionSandbox.collides({ left: 144, right: 256, top: 70, bottom: 122 }, 180, 100, 90, 170), true,
+  "collision starts only after crossing eight pixels inside the visual edge");
+
+const routeActive = extractFunction(game, "spaceObstacleRouteActive");
+for (const token of ["!window.__PONO_TIER_LOCKED__", "driving", 'pending==="quiz"', "qSeg<QN", "!tunnelInteriorMode", "spaceLandscapePlayable()", '!quiz.classList.contains("show")']) {
+  assert.match(routeActive, new RegExp(token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")), `route collision guard missing: ${token}`);
+}
+const renderObstacle = extractFunction(game, "renderSpaceObstacleGate");
+assert.doesNotMatch(renderObstacle, /createElement|appendChild|replaceChildren/,
+  "the animation loop must only move the fixed obstacle pool");
+assert.match(renderObstacle, /\(worldX-start\)\/Math\.max\(\.001,finish-start\)/);
+assert.match(renderObstacle, /spaceObstacleScreenX\(progress,viewportWidth\)/);
+assert.match(renderObstacle, /spaceObstacleHitSegments\.has\(qSeg\)/,
+  "each segment may damage the rocket at most once");
+assert.match(renderObstacle, /spaceObstacleCollides/);
+assert.match(render, /renderSpaceObstacleGate\(now\)/,
+  "the main animation loop must position and collide the route gate");
+
+const registerHit = extractFunction(game, "registerSpaceObstacleHit");
+assert.match(registerHit, /spaceObstacleDamage=Math\.min\(3,spaceObstacleDamage\+1\)/);
+assert.match(registerHit, /SPACE_OBSTACLE_INVULNERABLE_MS/);
+assert.match(registerHit, /SPACE_OBSTACLE_FLASH_MS/);
+assert.match(registerHit, /clamp\(desiredY-spaceSteerTargetY,-24,24\)/,
+  "a collision may guide the target toward the gap by at most 24px");
+assert.match(registerHit, /ぶつかった！ えきで なおそう/);
+assert.doesNotMatch(registerHit, /\b(?:vel|target|score|firstTry|stageMiss|missInQ)\b|onPick|addScore/,
+  "route collisions are nonfatal and must not alter speed or quiz scoring");
+assert.match(game, /const SPACE_OBSTACLE_INVULNERABLE_MS=900;/);
+assert.match(game, /const SPACE_OBSTACLE_FLASH_MS=240;/);
+assert.match(resetSteering, /resetSpaceObstacles\(\)/,
+  "leaving or restarting space must clear damage and the fixed gate");
 
 const generatedAssets = [
   { file: assetNames.sky, width: 1983, height: 793, alpha: false },

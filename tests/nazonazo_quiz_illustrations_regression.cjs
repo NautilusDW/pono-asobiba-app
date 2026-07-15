@@ -159,7 +159,7 @@ const routeExpectations = new Map([
   ["renderChoiceCards", /createQuizArt\(o\.e,o\.t\)/],
   ["renderSeaBubbleGame", /createQuizArt\(o\.e,o\.t,"sea-captive"\)/],
   ["renderFutureCapsuleGame", /createQuizArt\(o\.e,o\.t\)/],
-  ["renderSpaceGalaxyGame", /createQuizArt\(o\.e,o\.t\)/],
+  ["renderSpaceRepairGame", /createQuizArt\(o\.e,o\.t\)/],
   ["renderNumberCargoGame", /createQuizArt\(theme\.e,theme\.name,"number-cargo-art"\)[\s\S]*createQuizArt\(theme\.e,theme\.name,"number-cargo-load-art"\)/],
   ["animateNumberCargoToWagon", /createQuizArt\(theme\.e,theme\.name,"number-cargo-fly"\)/],
   ["renderQuizQuestion", /for\(let index=0;index<count;index\+\+\)grid\.appendChild\(createQuizArt\(cur\.pe\[0\],cur\.pe\[1\],"number-count-art"\)\)/],
@@ -181,7 +181,7 @@ assert.doesNotMatch(extractFunction(game, "renderChoiceCards"), /innerHTML|textC
 /* Stable holders prevent layout shift across normal, mini-game, and count contexts. */
 for (const selector of [
   ".quiz-art-image", ".choice>.quiz-art", ".sea-answer-bubble .quiz-art", ".future-capsule .quiz-art",
-  ".space-galaxy-planet-choice>.quiz-art", ".number-cargo-art", ".number-cargo-slot>.number-cargo-load-art",
+  ".space-repair-answer .quiz-art", ".number-cargo-art", ".number-cargo-slot>.number-cargo-load-art",
   ".number-cargo-fly", ".number-count-grid", ".number-count-art", ".zkCell .ze.quiz-art"
 ]) assert.ok(css.includes(`${selector}{`), `${selector}: illustration sizing rule missing`);
 assert.match(css, /\.quiz-art-fallback\[hidden\]\{display:none!important\}/,

@@ -34,12 +34,6 @@ function extractFunction(source, name) {
   assert.fail(`${name}: function is not closed`);
 }
 
-function extractFirstFunction(source, names) {
-  const name = names.find(candidate => new RegExp(`function\\s+${candidate}\\s*\\(`).test(source));
-  assert.ok(name, `expected one function: ${names.join(", ")}`);
-  return { name, source: extractFunction(source, name) };
-}
-
 function cssRule(pattern) {
   const match = new RegExp(`${pattern}\\s*\\{([^}]+)\\}`).exec(css);
   assert.ok(match, `CSS rule missing: ${pattern}`);
@@ -53,160 +47,175 @@ function assertNoChildFacingKanji(source, label) {
   }
 }
 
-/* Full-screen game: fixed answer selection and a separate circular engine. */
+/* The station game is now answer selection followed by three physical screw repairs. */
 assert.match(html, /id="spaceGalaxyLayer"[^>]*role="group"[^>]*aria-labelledby="qText"[^>]*hidden/);
-assert.doesNotMatch(html, /id="spaceGravityLayer"|id="spaceConstellationLayer"/);
-assert.doesNotMatch(game, /SPACE_GRAVITY|spaceGravity|startSpaceGravityHold|releaseSpaceGravityHold/);
-const layerRule = cssRule("#spaceGalaxyLayer");
-assert.match(layerRule, /position:fixed/);
-assert.match(layerRule, /inset:0/);
-assert.match(css, /#spaceGalaxyLayer\[hidden\]\{display:none!important\}/);
-const boardRule = cssRule("\\.space-galaxy-board");
-assert.match(boardRule, /position:absolute/);
-assert.match(boardRule, /inset:0/);
-const planetRule = cssRule("\\.space-galaxy-planet-choice");
-assert.match(planetRule, /position:absolute/);
-assert.match(planetRule, /pointer-events:auto/);
-assert.doesNotMatch(planetRule, /will-change:left,top/,
-  "answer choices must remain fixed while the independent engine turns");
-assert.match(css, /\.space-galaxy-planet-choice\.is-selected|\.space-galaxy-planet-choice\[aria-pressed="true"\]/,
-  "the selected answer needs a persistent visual state");
-const engineRule = cssRule("\\.space-galaxy-engine(?:,\\.space-galaxy-star-engine)?");
-assert.match(engineRule, /pointer-events:auto/);
-assert.match(engineRule, /touch-action:none/);
-assert.match(engineRule, /border-radius:50%/);
-assert.doesNotMatch(css, /\.space-galaxy-dock|spaceGalaxyDock|>ドック</,
-  "the rejected dock metaphor must not remain visible or executable");
+assert.doesNotMatch(game, /SPACE_GALAXY_WIND_GOAL|advanceSpaceGalaxyWind|windSpaceGalaxy|resolveSpaceGalaxySelection|renderSpaceGalaxyGame/,
+  "the former 3.25-turn star engine must not remain executable");
+assert.doesNotMatch(game, /space-galaxy-engine|space-galaxy-dock/,
+  "the abstract engine and dock controls must not be rendered");
+assert.match(game, /const SPACE_REPAIR_SCREW_GOALS=\[Math\.PI\*1\.10,Math\.PI\*1\.40,Math\.PI\*1\.70\];/);
+assert.match(game, /const SPACE_REPAIR_SCREW_COUNT=3;/);
+assert.match(game, /const SPACE_REPAIR_POINTER_SAMPLE_CAP=\.50;/);
+assert.match(game, /const SPACE_REPAIR_POINTER_DEADZONE_RATIO=\.18;/);
+assert.match(game, /const SPACE_REPAIR_CLICK_STEP=Math\.PI\/2;/);
+assert.match(game, /const SPACE_REPAIR_KEY_STEP=Math\.PI\/6;/);
 
 const optionFn = extractFunction(game, "spaceQuestionOptions");
 const optionSandbox = { shuffle: values => values.slice().reverse() };
 vm.createContext(optionSandbox);
 vm.runInContext(`${optionFn};this.spaceQuestionOptions=spaceQuestionOptions;`, optionSandbox);
-const options = optionSandbox.spaceQuestionOptions({ a: ["✅", "せいかい"], d: [["1️⃣", "ひとつ"], ["2️⃣", "ふたつ"]] });
+const options = optionSandbox.spaceQuestionOptions({ a: ["ok", "せいかい"], d: [["one", "ひとつ"], ["two", "ふたつ"]] });
 assert.equal(options.length, 2);
 assert.equal(options.filter(option => option.ok).length, 1);
 assert.equal(options.filter(option => !option.ok).length, 1);
 
-assert.match(game, /const SPACE_GALAXY_WIND_GOAL=Math\.PI\*2\*3\.25;/,
-  "the engine needs 3.25 full turns instead of the former 1.15-turn shortcut");
-assert.doesNotMatch(game, /SPACE_GALAXY_PLANET_ANGLES|SPACE_GALAXY_DOCK_WINDOW|dockSpaceGalaxy/);
-assert.match(game, /rocket:"\.\.\/assets\/images\/nazonazo-tunnel\/space_vehicle_exploration_rocket_pono_20260713\.png"/);
+const renderRepair = extractFunction(game, "renderSpaceRepairGame");
+assert.match(renderRepair, /className="space-repair-board"/);
+assert.match(renderRepair, /className="choice space-repair-answer"/);
+assert.match(renderRepair, /selectSpaceRepairAnswer/);
+assert.match(renderRepair, /className="space-repair-bay"/);
+assert.match(renderRepair, /className="space-repair-screws"/);
+assert.match(renderRepair, /index<SPACE_REPAIR_SCREW_COUNT/);
+assert.match(renderRepair, /setAttribute\("role","slider"\)/);
+assert.match(renderRepair, /for\(let lamp=0;lamp<4;lamp\+\+\)/,
+  "each screw needs four quarter-progress lamps");
+assert.match(renderRepair, /pointerdown",handleSpaceRepairPointerDown/);
+assert.match(renderRepair, /lostpointercapture",finishSpaceRepairPointer/);
+assert.match(renderRepair, /advanceSpaceRepairScrew\(SPACE_REPAIR_CLICK_STEP\)/,
+  "a simple tap must advance the active screw by a half turn");
 
-const renderGalaxy = extractFunction(game, "renderSpaceGalaxyGame");
-assert.match(renderGalaxy, /className="space-galaxy-board/);
-assert.match(renderGalaxy, /button\.className="choice space-galaxy-planet-choice"/);
-assert.match(renderGalaxy, /setAttribute\("aria-pressed","false"\)/);
-assert.match(renderGalaxy, /selectSpaceGalaxyAnswer/);
-assert.match(renderGalaxy, /className="space-galaxy-engine"/);
-assert.match(renderGalaxy, /engine\.disabled=true/,
-  "the engine must not confirm anything before an answer is selected");
-assert.match(renderGalaxy, /engine\.addEventListener\("pointerdown",handleSpaceGalaxyPointerDown\)/,
-  "only the engine, not the whole board, should capture circular gestures");
-assert.doesNotMatch(renderGalaxy, /board\.addEventListener\("pointerdown",handleSpaceGalaxyPointerDown\)/,
-  "answer taps must not bubble into the circular gesture");
-assert.match(renderGalaxy, /for\(let index=0;index<12;index\+\+\)/,
-  "the long wind-up needs twelve visible progress notches");
-assert.match(renderGalaxy, /className="space-galaxy-meter"/);
-assert.match(renderGalaxy, /setAttribute\("role","progressbar"\)/);
-assert.match(renderGalaxy, /className="space-galaxy-rocket"/);
+const selectAnswer = extractFunction(game, "selectSpaceRepairAnswer");
+assert.equal((selectAnswer.match(/onPick\(entry\.button,\{ok:false,mode:"space"\}\)/g) || []).length, 1,
+  "one wrong answer tap must be submitted exactly once");
+assert.doesNotMatch(selectAnswer, /onPick\(entry\.button,\{ok:true/,
+  "the correct answer must not be graded before all three screws are repaired");
+assert.match(selectAnswer, /spaceRepairPhase="repair"/);
+assert.match(selectAnswer, /spaceRepairActiveScrew=0/);
+assert.match(selectAnswer, /spaceRepairOptions\.forEach\([^;]+button\.disabled=true/,
+  "answer buttons must stop accepting input during repair");
+assert.match(selectAnswer, /},620\)/,
+  "wrong-answer recovery should return to selection after the shared 520ms unlock");
+assert.doesNotMatch(selectAnswer, /sndNG\(\)|sndOK\(\)/,
+  "the shared onPick path owns wrong/correct jingles");
 
-const selectAnswer = extractFunction(game, "selectSpaceGalaxyAnswer");
-assert.match(selectAnswer, /spaceGalaxySelectedIndex=index/);
-assert.match(selectAnswer, /setAttribute\("aria-pressed",(?:item\.index===index|selected\?"true":"false")/);
-assert.match(selectAnswer, /spaceGalaxyPhase="wind"|spaceGalaxyPhase="armed"/);
-assert.match(selectAnswer, /engine\.disabled=false|\.disabled=false/);
-assert.doesNotMatch(selectAnswer, /onPick\(|resolveSpaceGalaxy/,
-  "choosing an answer must never grade it before the engine is wound");
+const finishScrew = extractFunction(game, "finishSpaceRepairScrew");
+assert.match(finishScrew, /index<SPACE_REPAIR_SCREW_COUNT-1/);
+assert.match(finishScrew, /spaceRepairActiveScrew=index\+1/);
+assert.match(finishScrew, /},120\)/,
+  "focus should advance 120ms after a completed screw");
+assert.equal((finishScrew.match(/onPick\(entry\.button,\{ok:true,mode:"space"\}\)/g) || []).length, 1,
+  "the third screw must submit one correct result");
+assert.match(finishScrew, /futureReducedMotion\(\)\?120:420/);
+assert.match(finishScrew, /spaceRepairSubmissionCommitted=true/);
+assert.doesNotMatch(finishScrew, /sndNG\(\)|sndOK\(\)/,
+  "completion must not duplicate the shared success jingle");
 
-const pointerAngle = extractFunction(game, "spaceGalaxyPointerAngleFor");
-assert.match(pointerAngle, /event\.clientX-geo\.cx/);
-assert.match(pointerAngle, /event\.clientY-geo\.cy/);
-assert.match(pointerAngle, /Math\.atan2\(y,x\)/);
-const pointerMove = extractFunction(game, "handleSpaceGalaxyPointerMove");
-assert.match(pointerMove, /normalizeSpaceGalaxyAngle\(angle-spaceGalaxyPointerAngle\)/);
-assert.match(pointerMove, /windSpaceGalaxy\(|advanceSpaceGalaxyWind\(/);
-const pointerEnd = extractFunction(game, "finishSpaceGalaxyPointer");
-assert.doesNotMatch(pointerEnd, /onPick|resolveSpaceGalaxy/,
-  "lifting or cancelling a pointer must not grade an incomplete turn");
+const advance = extractFunction(game, "advanceSpaceRepairScrew");
+assert.match(advance, /spaceRepairProgress\[index\]=Math\.min\(goal,before\+Math\.abs\(amount\)\)/,
+  "clockwise and counter-clockwise turning must both repair");
+const advanceSandbox = {
+  spaceRepairPhase: "repair",
+  spaceRepairResolving: false,
+  spaceRepairActiveScrew: 0,
+  spaceRepairProgress: [0, 0, 0],
+  spaceRepairRotations: [0, 0, 0],
+  spaceRepairGoal: () => 4,
+  clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
+  tone: () => {},
+  updateSpaceRepairVisual: () => {},
+  finishSpaceRepairScrew: () => { advanceSandbox.finished = true; },
+  finished: false,
+  Math,
+  Number
+};
+vm.createContext(advanceSandbox);
+vm.runInContext(`${advance};this.advance=advanceSpaceRepairScrew;`, advanceSandbox);
+advanceSandbox.advance(-0.5);
+assert.equal(advanceSandbox.spaceRepairProgress[0], 0.5);
+assert.equal(advanceSandbox.spaceRepairRotations[0], -0.5);
 
-const windGesture = extractFunction(game, "windSpaceGalaxy");
-assert.match(windGesture, /advanceSpaceGalaxyWind\(Math\.abs\(delta\)\)/);
-const wind = extractFunction(game, "advanceSpaceGalaxyWind");
-assert.match(wind, /spaceGalaxyWind\+clamp\(Math\.abs\(amount\)/);
-assert.match(wind, /spaceGalaxyWind>=SPACE_GALAXY_WIND_GOAL-.001/);
-assert.match(wind, /SPACE_GALAXY_WIND_GOAL/);
-assert.match(wind, /spaceGalaxyTurnsAnnounced|Math\.floor\(spaceGalaxyWind\/\(Math\.PI\*2\)\)/,
-  "whole-turn milestones must be tracked for pleasurable feedback");
-assert.match(extractFunction(game, "updateSpaceGalaxyVisual"), /--galaxy-power/);
-assert.match(extractFunction(game, "updateSpaceGalaxyVisual"), /querySelectorAll\("\.space-galaxy-meter i"\)/);
+const pointerAngle = extractFunction(game, "spaceRepairPointerAngleFor");
+assert.match(pointerAngle, /geometry\.radius\*SPACE_REPAIR_POINTER_DEADZONE_RATIO/);
+const pointerMove = extractFunction(game, "handleSpaceRepairPointerMove");
+assert.match(pointerMove, /normalizeSpaceRepairAngle\(angle-spaceRepairPointerAngle\)/);
+assert.match(pointerMove, /clamp\(delta,-SPACE_REPAIR_POINTER_SAMPLE_CAP,SPACE_REPAIR_POINTER_SAMPLE_CAP\)/);
+assert.match(pointerMove, /advanceSpaceRepairScrew\(delta\)/);
+const pointerEnd = extractFunction(game, "finishSpaceRepairPointer");
+assert.doesNotMatch(pointerEnd, /spaceRepairProgress\s*=|onPick/,
+  "cancel and lost capture must preserve screw progress and never grade");
+assert.match(pointerEnd, /spaceRepairSuppressClick=true/,
+  "the click after a real circular drag must be suppressed");
 
-const resolve = extractFirstFunction(game, ["resolveSpaceGalaxySelection", "resolveSpaceGalaxyChoice", "resolveSpaceGalaxyCorrect"]);
-assert.match(resolve.source, /spaceGalaxySelectedIndex/,
-  "the final grade must use the explicitly selected fixed answer");
-assert.match(resolve.source, /onPick\(entry\.button,\{ok:false,mode:"space"/,
-  "a fully wound wrong answer must enter the shared retry flow");
-assert.equal((resolve.source.match(/onPick\(entry\.button,\{ok:false,mode:"space"/g) || []).length, 1,
-  "one completed wrong wind-up must be scored once");
-assert.match(resolve.source, /onPick\(entry\.button,\{ok:true,mode:"space"/);
-assert.match(resolve.source, /classList\.add\("is-bursting"\)/);
-assert.doesNotMatch(resolve.source, /tone\((?:180|220|247)\b/,
-  "success must not begin with a low note resembling the wrong-answer cue");
-const immediateOkSounds = (resolve.source.match(/sndOK\(\)/g) || []).length;
-assert.ok(immediateOkSounds <= 1, "space completion must not layer multiple correct jingles");
-if (immediateOkSounds === 1) {
-  assert.match(resolve.source, /(?:skipOkSound|soundPlayed|silentOk):true/,
-    "an immediate success jingle must tell shared onPick not to play it twice");
-}
-assert.match(resolve.source, /spaceGalaxyWind=0/,
-  "a wrong result must reset the engine for the remaining answer");
-assert.match(resolve.source, /spaceGalaxySelectedIndex=-1/,
-  "a wrong result must return to explicit answer selection");
+const keyHandler = extractFunction(game, "handleSpaceRepairKeyDown");
+assert.match(keyHandler, /if\(!spaceRepairPlayable\(\)\|\|event\.defaultPrevented\)return;/,
+  "portrait repair keys must return before preventDefault or any progress mutation");
+assert.match(keyHandler, /ArrowLeft/);
+assert.match(keyHandler, /ArrowRight/);
+assert.match(keyHandler, /SPACE_REPAIR_KEY_STEP/);
+assert.match(keyHandler, /Space/);
+assert.match(keyHandler, /Enter/);
+assert.match(keyHandler, /!event\.repeat/,
+  "Space/Enter must add only one half-turn per physical press");
+assert.doesNotMatch(keyHandler.match(/if\(event\.key==="ArrowLeft"[\s\S]*?return;/)?.[0] || "", /event\.repeat/,
+  "Left/Right key repeat should keep turning the active screw");
 
-const onPick = extractFunction(game, "onPick");
-assert.equal((onPick.match(/sndOK\(\)/g) || []).length, 1,
-  "the shared success path must contain one correct jingle call");
-if (immediateOkSounds === 1) {
-  assert.match(onPick, /if\s*\(\s*!o\.skipOkSound\s*\)\s*\{?\s*sndOK\(\)/,
-    "the shared path must honor skipOkSound after the space finale already played sndOK");
-}
-assert.match(onPick, /classList\.contains\("space-galaxy-planet-choice"\)/);
-
-const help = extractFunction(game, "assistSpaceGalaxyGame");
+const help = extractFunction(game, "assistSpaceRepairGame");
 assert.match(help, /wrong\.button\.disabled=true/);
-assert.match(help, /selectSpaceGalaxyAnswer\(correct\.index/,
-  "help should explicitly select the revealed correct answer");
-assert.match(help, /(?:windSpaceGalaxy|advanceSpaceGalaxyWind)\(Math\.PI\*2\)/,
-  "help contributes one turn, leaving more than two turns for the child");
-assert.doesNotMatch(help, /resolveSpaceGalaxy|onPick\(/,
-  "help must not auto-confirm the selected answer");
+assert.match(help, /correct\.button\.classList\.add\("glow"\)/);
+assert.match(help, /spaceRepairGoal\(\)-spaceRepairProgress\[spaceRepairActiveScrew\]/,
+  "help during repair completes only the currently active screw");
+assert.doesNotMatch(help, /onPick\(/,
+  "help must not grade or complete the whole three-screw sequence");
+const guide = extractFunction(game, "spaceRepairGuide");
+assert.match(guide, /illustratedText\(hintText,"space",message,"hint-inline-art"\)/,
+  "every repair phase instruction must stay visible in the question bar");
 
-const keyHandler = extractFunction(game, "handleSpaceGalaxyKeyDown");
-assert.match(keyHandler, /space-galaxy-planet-choice/);
-assert.match(keyHandler, /space-galaxy-engine/);
-assert.match(keyHandler, /Space|Enter/);
-assert.match(keyHandler, /windSpaceGalaxy|advanceSpaceGalaxyWind/);
-
-const clear = extractFunction(game, "clearSpaceGalaxyGame");
-assert.match(clear, /spaceGalaxyEpoch\+\+;clearTimeout\(spaceGalaxyTimer\)/);
-assert.match(clear, /spaceGalaxyPointerId=null/);
-assert.match(clear, /spaceGalaxySelectedIndex=-1/);
-assert.match(clear, /spaceGalaxyPhase="idle"/);
+const clear = extractFunction(game, "clearSpaceRepairGame");
+assert.match(clear, /spaceRepairEpoch\+\+;clearTimeout\(spaceRepairTimer\)/);
+assert.match(clear, /releaseSpaceRepairPointer\(\)/);
+assert.match(clear, /spaceRepairProgress=\[0,0,0\]/);
+assert.match(clear, /classList\.remove\("space-repair-active","space-repair-complete"\)/);
 assert.match(clear, /spaceGalaxyLayer\.replaceChildren\(\);spaceGalaxyLayer\.hidden=true/);
 for (const lifecycle of ["startJourneyAt", "showQuiz", "ending", "openMap", "nazonazoAdminPreviewArm"]) {
-  assert.match(extractFunction(game, lifecycle), /clearSpaceGalaxyGame\(\)/, `${lifecycle}: galaxy state must be cleared`);
+  assert.match(extractFunction(game, lifecycle), /clearSpaceRepairGame\(\)/, `${lifecycle}: repair state must be cleared`);
 }
-assert.match(extractFunction(game, "showQuiz"), /isSpaceStage\(\)\)renderSpaceGalaxyGame\(\)/);
-assert.match(extractFunction(game, "activeChoiceButtons"), /space-galaxy-active[\s\S]*space-galaxy-planet-choice/);
-assert.match(extractFunction(game, "useHelp"), /spaceGalaxyPointerId!==null/);
+assert.match(extractFunction(game, "showQuiz"), /isSpaceStage\(\)\)renderSpaceRepairGame\(\)/);
+assert.match(extractFunction(game, "activeChoiceButtons"), /space-repair-active[\s\S]*space-repair-answer/);
+assert.match(extractFunction(game, "spaceRepairPlayable"), /!window\.__PONO_TIER_LOCKED__/);
+assert.match(extractFunction(game, "spaceRepairPlayable"), /spaceLandscapePlayable\(\)/,
+  "portrait rotation hint must suspend repair input without clearing progress");
+assert.match(extractFunction(game, "updateSpaceRepairVisual"), /active=spaceLandscapePlayable\(\)&&spaceRepairPhase==="repair"/,
+  "the active screw must become disabled while the portrait hint covers the game");
+assert.match(renderRepair, /click",event=>\{[^}]*spaceRepairSuppressClick[\s\S]*if\(!spaceRepairPlayable\(\)\)\{event\.preventDefault\(\);return;\}/,
+  "native Space/Enter click fallback must not advance a screw behind the portrait hint");
 
-/* Reduced motion keeps discrete progress and a visible static success rocket. */
-assert.match(css, /@media \(prefers-reduced-motion:reduce\)[\s\S]*\.space-galaxy-engine[\s\S]*animation:none!important/);
-assert.match(css, /prefers-reduced-motion:reduce[\s\S]*\.space-galaxy-board\.is-bursting \.space-galaxy-rocket\{[^}]*(?:opacity:1|display:block)/,
-  "reduced motion must not leave the success rocket at its base opacity zero");
-assert.match(css, /\.space-galaxy-board\.is-constellation-complete \.space-galaxy-finale/);
+/* Guided responsive UI: one active screw, 64px+ controls, and a short-landscape row. */
+assert.match(cssRule("\\.space-repair-panel"), /width:min\(calc\(100vw - 20px\),760px\)/);
+assert.match(cssRule("\\.space-repair-panel"), /touch-action:none/);
+assert.match(cssRule("\\.space-repair-screw"), /min-width:64px/);
+assert.match(cssRule("\\.space-repair-screw"), /min-height:64px/);
+assert.match(css, /\.space-repair-screw\.is-active\{/);
+assert.match(css, /@media \(orientation:landscape\) and \(max-height:360px\)[\s\S]*\.space-repair-screws\{[^}]*grid-template-columns:repeat\(3/,
+  "568x320 and 844x390 need all three screws in one row");
+assert.match(css, /max-height:360px[\s\S]*\.space-repair-board\{--space-repair-panel-top:124px;--space-repair-panel-bottom:8px\}/);
+assert.match(css, /body\.st-space\.space-repair-active #quiz\{[^}]*top:calc\(54px/);
+assert.match(cssRule("\\.space-repair-guide"), /top:calc\(var\(--space-repair-panel-top\) - 29px\)/,
+  "tall screens must keep the standalone guide between the question bar and repair panel");
+assert.match(css, /@media \(orientation:landscape\) and \(max-height:640px\)\{[\s\S]*\.space-repair-guide\{display:none\}/,
+  "short landscape must use the synced question-bar hint instead of an occluded guide");
+assert.match(css, /body\.ios-device #quiz:not\(\.sea-quiz\):not\(\.future-capsule-quiz\):not\(\.space-galaxy-quiz\):not\(\.space-repair-quiz\)/,
+  "iPad's centered ordinary-quiz override must not cover the Space repair panel");
+assert.match(css, /body\.ios-device #quiz\.show:not\(\.sea-quiz\):not\(\.future-capsule-quiz\):not\(\.space-galaxy-quiz\):not\(\.space-repair-quiz\)/,
+  "the shown iPad override must leave the Space repair question bar at the top");
+assert.match(css, /@media \(prefers-reduced-motion:reduce\)[\s\S]*\.space-repair-screw[\s\S]*animation:none!important/);
+assert.match(css, /prefers-reduced-motion:reduce[\s\S]*\.space-repair-board\.is-complete \.space-repair-bay/,
+  "reduced motion needs a visible static completion state");
 
-assertNoChildFacingKanji(renderGalaxy, "renderSpaceGalaxyGame");
-assertNoChildFacingKanji(selectAnswer, "selectSpaceGalaxyAnswer");
-assertNoChildFacingKanji(resolve.source, resolve.name);
+for (const [name, source] of [
+  ["renderSpaceRepairGame", renderRepair],
+  ["selectSpaceRepairAnswer", selectAnswer],
+  ["finishSpaceRepairScrew", finishScrew],
+  ["assistSpaceRepairGame", help]
+]) assertNoChildFacingKanji(source, name);
 
-console.log("Nazonazo selected-answer galaxy engine regression checks passed.");
+console.log("Nazonazo space three-screw repair regression checks passed.");
