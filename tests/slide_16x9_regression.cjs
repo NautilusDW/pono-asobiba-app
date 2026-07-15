@@ -43,53 +43,68 @@ assert.match(html, /notice\.style\.display = isPortrait \? 'flex' : 'none'/);
 assert.match(html, /new ResizeObserver\(function\(\) \{ resize\(\); \}\)/,
   "the canvas must follow the centered shell after viewport changes");
 
-/* The rotated 5x4 final stage fits between the left rail and both edge markers. */
+/* The compact top HUD leaves a centered world board and both edge characters in view. */
 function clamp(min, value, max) { return Math.max(min, Math.min(max, value)); }
 function landscapeLayout(viewportWidth, viewportHeight, cols, rows) {
   const shellWidth = Math.min(viewportWidth, viewportHeight * 16 / 9);
   const shellHeight = Math.min(viewportHeight, viewportWidth * 9 / 16);
   const safe = Math.max(8, Math.min(20, shellHeight * 0.025));
   const compact = viewportHeight <= 480 || viewportWidth <= 853;
-  const railLeft = compact ? 10 : clamp(10, shellWidth * 0.02, 28);
-  const railWidth = compact
-    ? clamp(142, shellWidth * 0.21, 166)
-    : clamp(142, shellWidth * 0.21, 220);
-  const railRight = railLeft + railWidth;
-  const contentLeft = Math.max(safe, Math.min(shellWidth * 0.42, railRight + safe));
-  const markerReserve = Math.max(46, Math.min(112, shellHeight * 0.15));
-  const availableWidth = Math.max(1, shellWidth - contentLeft - safe - markerReserve * 2);
+  const hudTop = compact ? 8 : clamp(8, shellHeight * 0.016, 14);
+  const hudHeight = compact ? 44 : clamp(44, Math.min(viewportWidth, viewportHeight) * 0.07, 52);
+  const hudBottom = hudTop + hudHeight;
+  const contentTop = Math.max(safe + 48, hudBottom + safe);
+  const markerReserve = Math.max(52, Math.min(118, shellHeight * 0.17));
+  const availableWidth = Math.max(1, shellWidth - (safe + markerReserve) * 2);
+  const availableHeight = Math.max(1, shellHeight - contentTop - safe);
   const cell = Math.floor(Math.min(
     availableWidth / cols,
-    (shellHeight - safe * 2) / (rows + 1.3),
-    shellHeight * 0.22,
+    availableHeight / (rows + 0.2),
+    shellHeight * 0.215,
   ));
   const gridWidth = cell * cols;
-  const gridX = Math.floor(contentLeft + markerReserve + (availableWidth - gridWidth) / 2);
-  const markerImageHalf = Math.max(30, Math.floor(cell * 0.45)) / 2;
+  const gridHeight = cell * rows;
+  const gridX = Math.floor((shellWidth - gridWidth) / 2);
+  const gridY = Math.floor(contentTop + (availableHeight - gridHeight) / 2);
+  const ponoHeight = Math.max(52, Math.min(132, cell * 0.88));
+  const ponoWidth = ponoHeight * 399 / 569;
+  const ponoX = gridX - Math.max(cell * 0.56, ponoWidth * 0.62 + 7);
+  const momHeight = Math.max(66, Math.min(160, cell * 1.15));
+  const momWidth = momHeight * 904 / 1200;
+  const goalX = gridX + gridWidth + cell * 0.56;
   return {
     cell,
-    railRight,
-    startMarkerLeft: gridX - cell * 0.52 - markerImageHalf,
-    goalMarkerRight: gridX + gridWidth + cell * 0.52 + markerImageHalf,
+    hudBottom,
+    gridY,
+    startMarkerLeft: ponoX - ponoWidth / 2,
+    goalMarkerRight: goalX + momWidth / 2,
     shellWidth,
   };
 }
-for (const [width, height, minimumCell] of [[568, 320, 57], [844, 390, 69], [1024, 768, 103]]) {
+for (const [width, height, minimumCell] of [[568, 320, 58], [667, 375, 71], [844, 390, 74], [1024, 768, 114]]) {
   const layout = landscapeLayout(width, height, 5, 4);
   assert.ok(layout.cell >= minimumCell, `${width}x${height}: stage 8 tiles stay child-sized`);
-  assert.ok(layout.startMarkerLeft >= layout.railRight + 8,
-    `${width}x${height}: the left Pono marker must clear the information rail`);
+  assert.ok(layout.gridY >= layout.hudBottom + 6,
+    `${width}x${height}: the board must clear the compact top HUD`);
+  assert.ok(layout.startMarkerLeft >= 0,
+    `${width}x${height}: the full-body Pono marker must stay inside the shell`);
   assert.ok(layout.goalMarkerRight <= layout.shellWidth,
-    `${width}x${height}: the right goal marker must stay inside the shell`);
+    `${width}x${height}: the full-body goal marker must stay inside the shell`);
 }
-assert.match(html, /const railRight = railRect \? railRect\.right - wrapRect\.left/,
-  "layout must measure the actual information rail before placing the horizontal board");
-assert.match(html, /const markerReserve = Math\.max\(46, Math\.min\(112, CH \* 0\.15\)\)/,
+assert.match(html, /const hudBottom = hudRect \? hudRect\.bottom - wrapRect\.top : 52/,
+  "layout must measure the actual compact HUD before placing the world board");
+assert.match(html, /const contentTop = Math\.max\(safe \+ 48, hudBottom \+ safe\)/,
+  "the board must begin below the compact top HUD");
+assert.match(html, /const markerReserve = Math\.max\(52, Math\.min\(118, CH \* 0\.17\)\)/,
   "layout must reserve room for left and right markers");
-assert.match(html, /const maxByHeight = \(CH - safe \* 2\) \/ \(curRows \+ 1\.3\)/,
-  "the implementation must reserve vertical breathing room around the stage grid");
-assert.match(html, /const maxByTouch = CH \* 0\.22/,
+assert.match(html, /const availW = Math\.max\(1, CW - \(safe \+ markerReserve\) \* 2\)/,
+  "the horizontal marker lanes must be symmetric");
+assert.match(html, /const maxByHeight = availH \/ \(curRows \+ 0\.2\)/,
+  "the implementation must reserve subtle vertical breathing room around the stage grid");
+assert.match(html, /const maxByTouch = CH \* 0\.215/,
   "the implementation must preserve the tested short-landscape tile cap");
+assert.match(html, /gridOX = Math\.floor\(\(CW - gridW\) \/ 2\)/,
+  "the board must remain centered in the 16:9 world");
 
 /* Sprite crops follow the optimized files instead of the deleted 128px-high originals. */
 const front = pngSize("assets/images/characters/pono/pono_walk_sheet.png");
@@ -121,7 +136,7 @@ assert.equal((html.match(/ctx\.drawImage\(imgWalkSheet,/g) || []).length, 1,
 assert.equal((html.match(/ctx\.drawImage\(imgWalkSideSheet,/g) || []).length, 2,
   "side walking has one mutually-exclusive draw for each facing direction");
 assert.match(html, /if \(!winAnim\.active && state === S\.PLAYING\)/,
-  "the stationary face must stay hidden while the walking sprite is active");
+  "the stationary full-body Pono must stay hidden while the walking sprite is active");
 
 /* Initial and tutorial-only frames stay error-free and avoid stacked completion UI. */
 assert.match(html, /const tileKey = grid\[i\];\s*if \(!tileKey\) continue/,

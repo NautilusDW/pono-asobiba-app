@@ -209,16 +209,22 @@ for (const step of tutorialSteps) {
 assert.deepEqual(tutorialGrid, levels[0].solved, "three tutorial taps must produce the stage-one horizontal solution");
 assert.ok(findLeftToRightPath(levels[0], tutorialGrid), "tutorial result must connect left to right");
 
-const markerDraw = html.match(/function drawStartGoal\(\) \{[\s\S]*?\n\}\n\nconst var_primary/);
+const markerDraw = html.match(/function drawStartGoal\(now, connectedSet\) \{[\s\S]*?\n\}\n\nfunction draw\(now\)/);
 assert.ok(markerDraw, "start/goal marker drawing must exist");
 assert.match(markerDraw[0], /level\.start\.row/);
 assert.match(markerDraw[0], /level\.goal\.row/);
 assert.match(markerDraw[0], /const leftEdge = gridOX/);
 assert.match(markerDraw[0], /const rightEdge = gridOX \+ curCols \* cellSize/);
-assert.match(markerDraw[0], /const imgSize = Math\.max\(30, Math\.floor\(cellSize \* 0\.45\)\)/,
-  "horizontal edge characters must remain readable on the shortest landscape screen");
-assert.match(markerDraw[0], /const markerLabelSize = Math\.max\(9, Math\.floor\(cellSize \* 0\.12\)\)/,
-  "Pono and mother labels must not collapse to six-pixel text");
+assert.match(markerDraw[0], /const ponoH = Math\.max\(52, Math\.min\(132, cellSize \* 0\.88\)\)/,
+  "the left marker must use a readable full-body Pono on the shortest landscape screen");
+assert.match(markerDraw[0], /imgPonoWorld\.naturalWidth \/ imgPonoWorld\.naturalHeight/,
+  "the full-body Pono marker must preserve its source aspect ratio");
+assert.match(markerDraw[0], /const momH = Math\.max\(66, Math\.min\(160, cellSize \* 1\.15\)\)/,
+  "the reunion marker must remain readable on the final stage");
+assert.match(markerDraw[0], /momH \* imgMomFull\.naturalWidth \/ imgMomFull\.naturalHeight/,
+  "the mother marker must preserve its source aspect ratio");
+assert.match(markerDraw[0], /drawWorldLabel\('ポノ'/);
+assert.match(markerDraw[0], /drawWorldLabel\('おかあさん'/);
 assert.doesNotMatch(markerDraw[0], /level\.start\.col|level\.goal\.col|bottomEdge/,
   "marker drawing must not fall back to the old top/bottom coordinates");
 
@@ -228,8 +234,8 @@ assert.match(html, /if \(level\.start\.side === 'left'\)[\s\S]*?startEdge = 3/);
 assert.match(html, /if \(level\.goal\.side === 'right'\)[\s\S]*?goalExitEdge = 1/);
 assert.match(html, /const isHorizontal = Math\.abs\(dCol\) > Math\.abs\(dRow\)/,
   "left-to-right walking must select the side sprite on horizontal segments");
-assert.match(html, /\.btn-bgm \{[\s\S]*?pointer-events: auto;/,
-  "the BGM button must remain tappable inside the non-interactive information rail");
+assert.match(html, /initMenu\(\{ bgmToggle: function\(\) \{/,
+  "the visible shared settings menu must retain the BGM toggle after the compact HUD hides its legacy header");
 assert.doesNotMatch(html, /もう一回/, "child-facing retry copy must use kana only");
 
 console.log("slide_left_to_right_regression: all assertions passed");

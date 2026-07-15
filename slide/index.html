@@ -62,40 +62,31 @@ body > #app {
   min-height: 0 !important;
 }
 
-/* ===== 16:9 information rail ===== */
+/* ===== Compact journey HUD ===== */
 .game-rail {
   position: absolute;
-  z-index: 4;
-  top: clamp(64px, 15%, 112px);
-  left: clamp(10px, 2%, 28px);
-  width: clamp(142px, 21%, 220px);
-  padding: clamp(9px, 1.5vmin, 16px);
-  border: 2px solid rgba(255,255,255,0.72);
-  border-radius: clamp(14px, 2vmin, 22px);
-  background: rgba(255,252,244,0.9);
-  box-shadow: 0 6px 22px rgba(67,52,35,0.18);
-  backdrop-filter: blur(8px);
+  z-index: 5;
+  top: clamp(8px, 1.6%, 14px);
+  left: clamp(122px, 16.5%, 188px);
+  width: clamp(252px, 42%, 440px);
+  min-height: clamp(44px, 7vmin, 52px);
+  padding: 6px clamp(10px, 1.5vmin, 16px);
+  border: 1.5px solid rgba(255,247,207,0.62);
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(24,63,53,0.9), rgba(42,86,67,0.84));
+  box-shadow: 0 6px 18px rgba(16,37,31,0.28), inset 0 1px 0 rgba(255,255,255,0.18);
+  backdrop-filter: blur(10px) saturate(1.12);
   pointer-events: none;
+  display: flex;
+  align-items: center;
 }
-.header { text-align: center; padding: 0; position: static; }
+.header { display: none; }
 .back-link {
   position: absolute; left: 0; top: 50%; transform: translateY(-50%);
   color: var(--primary); font-weight: 700; font-size: 0.85rem; text-decoration: none;
 }
-.header h1 {
-  font-size: clamp(0.92rem, 2.1vmin, 1.3rem); font-weight: 900;
-  line-height: 1.35;
-  background: linear-gradient(135deg, #4CAF50, #81C784);
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-}
-.subtitle {
-  font-size: clamp(0.62rem, 1.4vmin, 0.76rem);
-  color: #8A7665;
-  font-weight: 700;
-  line-height: 1.45;
-  text-align: center;
-  margin-top: 3px;
-}
+.header h1 { font-size: 0; }
+.subtitle { display: none; }
 .btn-bgm {
   position: absolute; right: 0; top: 50%; transform: translateY(-50%);
   width: 34px; height: 34px; border-radius: 50%;
@@ -120,6 +111,7 @@ body > #app {
   box-shadow: 0 2px 6px var(--shadow); z-index: 9988; transition: transform 0.15s;
 }
 .btn-pause:active { transform: scale(0.9); }
+.btn-pause:disabled { opacity: 0.48; cursor: default; transform: none; }
 
 /* common/menu.js injects these rules later; !important keeps the shared menu
    attached to this centered 16:9 shell instead of the browser corner. */
@@ -136,21 +128,41 @@ body > #app {
 
 /* ===== HUD ===== */
 .hud {
+  width: 100%;
   display: grid;
-  gap: 4px;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: clamp(5px, 1vmin, 10px);
   align-items: center;
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid rgba(93,78,55,0.14);
-  font-size: clamp(0.68rem, 1.55vmin, 0.85rem);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: clamp(0.66rem, 1.45vmin, 0.82rem);
   font-weight: 800;
+  text-align: left;
+  color: #fffaf0;
+  white-space: nowrap;
+}
+#hud-stage {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #FFF4B1;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.38);
+}
+#hud-moves {
+  min-width: clamp(50px, 8vmin, 68px);
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.13);
+  color: #fff;
   text-align: center;
 }
-#hud-stage { color: var(--primary); }
-#hud-moves { color: var(--text); }
 #stage-num {
-  color: var(--text-light);
-  font-size: clamp(0.72rem, 1.65vmin, 0.92rem);
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: rgba(255,244,177,0.13);
+  color: rgba(255,255,255,0.9);
+  font-size: clamp(0.62rem, 1.35vmin, 0.76rem);
   font-weight: 900;
 }
 
@@ -281,15 +293,15 @@ body > #app {
 @media (orientation: landscape) and (max-height: 480px),
        (orientation: landscape) and (max-width: 853px) {
   .game-rail {
-    top: 62px;
-    left: 10px;
-    width: clamp(142px, 21%, 166px);
-    padding: 9px 10px;
+    top: 8px;
+    left: 122px;
+    width: min(292px, calc(100% - 132px));
+    min-height: 44px;
+    padding: 5px 9px;
   }
-  .header h1 { font-size: 0.88rem; }
-  .subtitle { font-size: 0.6rem; }
-  .hud { margin-top: 6px; padding-top: 6px; gap: 2px; font-size: 0.66rem; }
-  #stage-num { font-size: 0.68rem; }
+  .hud { gap: 5px; font-size: 0.7rem; }
+  #hud-moves { min-width: 50px; padding: 3px 5px; }
+  #stage-num { padding: 3px 5px; font-size: 0.66rem; }
 
   .ov-card,
   .ov-card.cutscene-mode {
@@ -420,6 +432,8 @@ if (!CanvasRenderingContext2D.prototype.roundRect) {
 // ===== Preload character face images =====
 const imgPono = new Image();
 imgPono.src = '../assets/images/characters/pono/pono_face_circle.png';
+const imgPonoWorld = new Image();
+imgPonoWorld.src = '../assets/images/characters/pono/pono_001.png';
 const imgWalkSheet = new Image();
 imgWalkSheet.src = '../assets/images/characters/pono/pono_walk_sheet.png';
 const WALK_FRAMES = 25;
@@ -433,16 +447,6 @@ const imgMom = new Image();
 imgMom.src = '../assets/images/characters/pono/mom_face_circle.png';
 const imgMomFull = new Image();
 imgMomFull.src = '../assets/images/Slide/pono_mom_only.png';
-
-// BLANK タイル用テクスチャ（各テーマ1枚ずつ）
-const blankTextures = {
-  forest:       new Image(),
-  cave:         new Image(),
-  orangeForest: new Image(),
-};
-blankTextures.forest.src       = '../assets/images/Road/forestTile.png';
-blankTextures.cave.src         = '../assets/images/Road/caveTile.png';
-blankTextures.orangeForest.src = '../assets/images/Road/orangeForestTile.png';
 
 // ===== Tile types =====
 // edges: [top, right, bottom, left] — 1 = path exits this edge
@@ -654,19 +658,21 @@ function resize() {
 function calcLayout() {
   const safe = Math.max(8, Math.min(20, CH * 0.025));
   const wrapRect = wrap.getBoundingClientRect();
-  const rail = document.querySelector('.game-rail');
-  const railRect = rail ? rail.getBoundingClientRect() : null;
-  const railRight = railRect ? railRect.right - wrapRect.left : CW * 0.24;
-  const contentLeft = Math.max(safe, Math.min(CW * 0.42, railRight + safe));
-  const markerReserve = Math.max(46, Math.min(112, CH * 0.15));
-  const availW = Math.max(1, CW - contentLeft - safe - markerReserve * 2);
-  const maxByHeight = (CH - safe * 2) / (curRows + 1.3);
-  const maxByTouch = CH * 0.22;
+  const hud = document.querySelector('.game-rail');
+  const hudRect = hud ? hud.getBoundingClientRect() : null;
+  const hudBottom = hudRect ? hudRect.bottom - wrapRect.top : 52;
+  const contentTop = Math.max(safe + 48, hudBottom + safe);
+  const markerReserve = Math.max(52, Math.min(118, CH * 0.17));
+  const availW = Math.max(1, CW - (safe + markerReserve) * 2);
+  const bottomSafe = safe;
+  const availH = Math.max(1, CH - contentTop - bottomSafe);
+  const maxByHeight = availH / (curRows + 0.2);
+  const maxByTouch = CH * 0.215;
   cellSize = Math.floor(Math.min(availW / curCols, maxByHeight, maxByTouch));
   const gridW = cellSize * curCols;
   const gridH = cellSize * curRows;
-  gridOX = Math.floor(contentLeft + markerReserve + (availW - gridW) / 2);
-  gridOY = Math.floor((CH - gridH) / 2);
+  gridOX = Math.floor((CW - gridW) / 2);
+  gridOY = Math.floor(contentTop + (availH - gridH) / 2);
 }
 
 window.addEventListener('resize', resize);
@@ -863,127 +869,343 @@ function traceWinPath() {
 // テーマ: 森 / 洞窟 / 夜空
 const THEMES = {
   forest: {
-    tile: '#8AD460', tileBlank: '#7EC850', tileBorder: '#5DA83A',
-    path: '#C8956B', pathBorder: '#8B6B42', pathLight: '#DEB887',
-    empty: '#3D5A2E', blanks: ['🌼', '🍀', '🌿', '🍄'],
-    textureKey: 'forest',
+    slabTop: 'rgba(177,205,147,0.76)', slabBottom: 'rgba(83,126,92,0.82)',
+    slabBlankTop: 'rgba(141,180,118,0.58)', slabBlankBottom: 'rgba(63,105,76,0.72)',
+    slabBorder: 'rgba(225,240,196,0.66)', slabShadow: 'rgba(14,45,33,0.42)',
+    path: '#D5AD72', pathBorder: '#66503A', pathLight: '#F3D7A0',
+    roadStyle: 'wood', connected: '#DFFF91', connectedGlow: 'rgba(184,255,103,0.54)',
+    move: '#B8E9FF', moveGlow: 'rgba(111,211,255,0.5)',
+    emptyTop: 'rgba(19,55,44,0.82)', emptyBottom: 'rgba(7,31,29,0.9)',
+    emptyBorder: '#FFE49A', emptyText: '#FFF1B2', guide: '#D8E1C8',
+    mote: 'rgba(255,240,156,0.72)',
   },
   cave: {
-    tile: '#6B7B8D', tileBlank: '#5A6A7A', tileBorder: '#3E4E5E',
-    path: '#9E8E78', pathBorder: '#6E5E4A', pathLight: '#BEB0A0',
-    empty: '#2E3E4E', blanks: ['🍄', '💎', '🪨', '✨'],
-    textureKey: 'cave',
+    slabTop: 'rgba(100,132,145,0.78)', slabBottom: 'rgba(47,72,84,0.88)',
+    slabBlankTop: 'rgba(87,116,130,0.62)', slabBlankBottom: 'rgba(38,61,73,0.78)',
+    slabBorder: 'rgba(183,220,224,0.62)', slabShadow: 'rgba(5,20,28,0.52)',
+    path: '#B8A887', pathBorder: '#554F46', pathLight: '#E2D7BC',
+    roadStyle: 'stone', connected: '#91FFE1', connectedGlow: 'rgba(91,241,210,0.5)',
+    move: '#B9D9FF', moveGlow: 'rgba(113,174,255,0.5)',
+    emptyTop: 'rgba(23,48,61,0.88)', emptyBottom: 'rgba(7,24,34,0.94)',
+    emptyBorder: '#FFE49A', emptyText: '#FFF1B2', guide: '#B9CBCF',
+    mote: 'rgba(158,239,235,0.7)',
   },
-  orangeForest: {
-    tile: '#C87A3A', tileBlank: '#B86A2A', tileBorder: '#8B4A1A',
-    path: '#C8956B', pathBorder: '#8B6B42', pathLight: '#DEB887',
-    empty: '#5A2A10', blanks: ['🍂', '🍁', '🌰', '🍄'],
-    textureKey: 'orangeForest',
+  night: {
+    slabTop: 'rgba(76,100,137,0.78)', slabBottom: 'rgba(34,48,78,0.9)',
+    slabBlankTop: 'rgba(68,87,122,0.62)', slabBlankBottom: 'rgba(28,40,69,0.82)',
+    slabBorder: 'rgba(184,205,236,0.62)', slabShadow: 'rgba(7,13,33,0.58)',
+    path: '#BCA987', pathBorder: '#504A43', pathLight: '#E8D9B5',
+    roadStyle: 'starlight', connected: '#FFE995', connectedGlow: 'rgba(255,205,82,0.56)',
+    move: '#B9D9FF', moveGlow: 'rgba(111,167,255,0.5)',
+    emptyTop: 'rgba(28,36,68,0.9)', emptyBottom: 'rgba(10,16,39,0.96)',
+    emptyBorder: '#FFE49A', emptyText: '#FFF1B2', guide: '#AEBBD3',
+    mote: 'rgba(255,232,145,0.78)',
   },
 };
 function getTheme() {
   // stageIdx 0-based → ユーザー表示は stageIdx+1
   // ステージ1-3 (stageIdx 0-2): forest
   // ステージ4-7 (stageIdx 3-6): cave
-  // ステージ8+  (stageIdx 7+):  orangeForest
+  // ステージ8+  (stageIdx 7+): night
   if (stageIdx >= 3 && stageIdx <= 6) return THEMES.cave;
-  if (stageIdx >= 7) return THEMES.orangeForest;
+  if (stageIdx >= 7) return THEMES.night;
   return THEMES.forest;
 }
-// Legacy constants (for code that still references them)
-var GRASS_COLOR, GRASS_DARK, DIRT_COLOR, DIRT_BORDER, DIRT_LIGHT, EMPTY_COLOR;
 
-function drawTile(x, y, size, tileKey, isAnimating) {
+const reducedMotionQuery = window.matchMedia
+  ? window.matchMedia('(prefers-reduced-motion: reduce)')
+  : { matches: false };
+
+function getStartConnectedTileSet() {
+  const level = LEVELS[stageIdx];
+  let startRow, startCol, startEdge;
+  if (level.start.side === 'top')    { startRow = 0; startCol = level.start.col; startEdge = 0; }
+  if (level.start.side === 'bottom') { startRow = curRows - 1; startCol = level.start.col; startEdge = 2; }
+  if (level.start.side === 'left')   { startRow = level.start.row; startCol = 0; startEdge = 3; }
+  if (level.start.side === 'right')  { startRow = level.start.row; startCol = curCols - 1; startEdge = 1; }
+
+  const connected = new Set();
+  const visited = new Set();
+  const queue = [{ row: startRow, col: startCol, fromEdge: startEdge }];
+
+  while (queue.length > 0) {
+    const cur = queue.shift();
+    if (cur.row < 0 || cur.row >= curRows || cur.col < 0 || cur.col >= curCols) continue;
+    const visitKey = `${cur.row},${cur.col},${cur.fromEdge}`;
+    if (visited.has(visitKey)) continue;
+    visited.add(visitKey);
+
+    const idx = cur.row * curCols + cur.col;
+    const tileKey = grid[idx];
+    if (!tileKey || tileKey === 'BLANK') continue;
+    const edges = TILE_TYPES[tileKey].edges;
+    if (!edges[cur.fromEdge]) continue;
+    connected.add(idx);
+
+    for (let edge = 0; edge < 4; edge++) {
+      if (edge === cur.fromEdge || !edges[edge]) continue;
+      const next = getNeighborRC(cur.row, cur.col, edge);
+      if (next[0] >= 0 && next[0] < curRows && next[1] >= 0 && next[1] < curCols) {
+        queue.push({ row: next[0], col: next[1], fromEdge: oppositeEdge(edge) });
+      }
+    }
+  }
+  return connected;
+}
+
+function drawBoardAtmosphere(now) {
   const th = getTheme();
-  const r = size * 0.1;
-  const gap = 3;
+  const centerX = gridOX + curCols * cellSize / 2;
+  const centerY = gridOY + curRows * cellSize / 2;
+  const radius = Math.max(curCols * cellSize, curRows * cellSize) * 0.72;
 
-  // Tile background — テクスチャがあれば全タイル共通の下地として使用
-  const tex = blankTextures[th.textureKey];
-  const hasTex = tex && tex.complete && tex.naturalWidth > 0;
+  ctx.save();
+  const clearing = ctx.createRadialGradient(centerX, centerY, radius * 0.05,
+    centerX, centerY, radius);
+  clearing.addColorStop(0, 'rgba(255,248,211,0.12)');
+  clearing.addColorStop(0.58, 'rgba(255,248,211,0.03)');
+  clearing.addColorStop(1, 'rgba(5,23,27,0.22)');
+  ctx.fillStyle = clearing;
+  ctx.fillRect(0, 0, CW, CH);
+
+  const drift = reducedMotionQuery.matches ? 0 : now * 0.00018;
+  ctx.fillStyle = th.mote;
+  for (let i = 0; i < 12; i++) {
+    const px = gridOX - cellSize * 0.42 + ((i * 67) % 113) / 112 * (curCols * cellSize + cellSize * 0.84);
+    const baseY = gridOY - cellSize * 0.18 + ((i * 43) % 97) / 96 * (curRows * cellSize + cellSize * 0.36);
+    const py = baseY + Math.sin(drift * (8 + i) + i * 1.7) * Math.min(5, cellSize * 0.04);
+    ctx.globalAlpha = 0.14 + (i % 4) * 0.055;
+    ctx.beginPath();
+    ctx.arc(px, py, Math.max(1, cellSize * (0.009 + (i % 3) * 0.004)), 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+function traceTileRoad(x, y, size, edges) {
+  const cx = x + size / 2;
+  const cy = y + size / 2;
+  const openEdges = [];
+  for (let edge = 0; edge < 4; edge++) if (edges[edge]) openEdges.push(edge);
 
   ctx.beginPath();
-  ctx.roundRect(x + gap, y + gap, size - gap * 2, size - gap * 2, r);
-  if (hasTex) {
-    // 下地としてテクスチャを角丸クリップで貼る
-    ctx.save();
-    ctx.clip();
-    ctx.drawImage(tex, x + gap, y + gap, size - gap * 2, size - gap * 2);
-    ctx.restore();
-    // 枠線だけ再描画
-    ctx.beginPath();
-    ctx.roundRect(x + gap, y + gap, size - gap * 2, size - gap * 2, r);
-    ctx.strokeStyle = th.tileBorder;
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
+  if (openEdges.length === 2) {
+    const a = openEdges[0], b = openEdges[1];
+    const pa = edgePoint(x, y, size, a);
+    const pb = edgePoint(x, y, size, b);
+    ctx.moveTo(pa.x, pa.y);
+    if (Math.abs(a - b) === 2) ctx.lineTo(pb.x, pb.y);
+    else ctx.quadraticCurveTo(cx, cy, pb.x, pb.y);
   } else {
-    ctx.fillStyle = tileKey === 'BLANK' ? th.tileBlank : th.tile;
-    ctx.fill();
-    ctx.strokeStyle = th.tileBorder;
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-  }
-
-  if (tileKey === 'BLANK') {
-    // テクスチャ未ロード時のフォールバック絵文字
-    if (!hasTex) {
-      const seed = (x * 7 + y * 13) | 0;
-      ctx.font = `${Math.floor(size * 0.2)}px serif`;
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillText(th.blanks[((seed >> 3) & 3)], x + size / 2, y + size / 2);
+    for (const edge of openEdges) {
+      const p = edgePoint(x, y, size, edge);
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(p.x, p.y);
     }
+  }
+}
+
+function drawRoadMaterial(x, y, size, edges, th) {
+  const cx = x + size / 2;
+  const cy = y + size / 2;
+  const openEdges = [];
+  for (let edge = 0; edge < 4; edge++) if (edges[edge]) openEdges.push(edge);
+
+  ctx.save();
+  ctx.globalAlpha = 0.28;
+  for (let i = 0; i < openEdges.length; i++) {
+    const point = edgePoint(x, y, size, openEdges[i]);
+    const mx = (cx + point.x) / 2;
+    const my = (cy + point.y) / 2;
+    const dx = point.x - cx;
+    const dy = point.y - cy;
+    const length = Math.hypot(dx, dy) || 1;
+    const nx = -dy / length;
+    const ny = dx / length;
+
+    if (th.roadStyle === 'wood') {
+      const half = size * 0.075;
+      ctx.strokeStyle = th.pathBorder;
+      ctx.lineWidth = Math.max(1, size * 0.018);
+      ctx.beginPath();
+      ctx.moveTo(mx - nx * half, my - ny * half);
+      ctx.lineTo(mx + nx * half, my + ny * half);
+      ctx.stroke();
+    } else if (th.roadStyle === 'stone') {
+      ctx.fillStyle = th.pathLight;
+      ctx.beginPath();
+      ctx.ellipse(mx + nx * size * 0.025, my + ny * size * 0.025,
+        Math.max(1.5, size * 0.028), Math.max(1, size * 0.016), i * 0.8, 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      const starR = Math.max(1.8, size * 0.027);
+      ctx.strokeStyle = th.pathLight;
+      ctx.lineWidth = Math.max(1, size * 0.014);
+      ctx.beginPath();
+      ctx.moveTo(mx - starR, my); ctx.lineTo(mx + starR, my);
+      ctx.moveTo(mx, my - starR); ctx.lineTo(mx, my + starR);
+      ctx.stroke();
+    }
+  }
+  ctx.restore();
+}
+
+function drawTile(x, y, size, tileKey, visualState) {
+  const th = getTheme();
+  const visual = visualState || {};
+  const inset = Math.max(2, size * 0.038);
+  const radius = size * 0.13;
+  const pulse = reducedMotionQuery.matches ? 0 : Math.sin((visual.now || 0) * 0.005 + (visual.index || 0));
+  const lift = visual.movable && !visual.animating ? Math.max(0, pulse) * Math.min(1.5, size * 0.018) : 0;
+  y -= lift;
+
+  ctx.save();
+  const slab = ctx.createLinearGradient(x, y + inset, x, y + size - inset);
+  const isBlank = tileKey === 'BLANK';
+  slab.addColorStop(0, isBlank ? th.slabBlankTop : th.slabTop);
+  slab.addColorStop(1, isBlank ? th.slabBlankBottom : th.slabBottom);
+
+  ctx.shadowColor = visual.movable ? th.moveGlow : th.slabShadow;
+  ctx.shadowBlur = visual.movable ? Math.max(9, size * 0.17) : Math.max(4, size * 0.08);
+  ctx.shadowOffsetY = Math.max(2, size * 0.035);
+  ctx.beginPath();
+  ctx.roundRect(x + inset, y + inset, size - inset * 2, size - inset * 2, radius);
+  ctx.fillStyle = slab;
+  ctx.fill();
+  ctx.shadowColor = 'transparent';
+  ctx.strokeStyle = visual.movable ? th.move : th.slabBorder;
+  ctx.lineWidth = visual.movable ? Math.max(2, size * 0.034) : Math.max(1, size * 0.018);
+  ctx.stroke();
+
+  // Repeated bitmap texture is intentionally replaced with a few stable flecks.
+  ctx.fillStyle = th.slabBorder;
+  for (let i = 0; i < 4; i++) {
+    const seed = (visual.index || 0) * 19 + i * 31;
+    const fx = x + size * (0.18 + ((seed * 7) % 57) / 100);
+    const fy = y + size * (0.18 + ((seed * 11) % 59) / 100);
+    ctx.globalAlpha = 0.09 + (i % 2) * 0.04;
+    ctx.beginPath();
+    ctx.arc(fx, fy, Math.max(1, size * (0.012 + (i % 3) * 0.004)), 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+
+  if (isBlank) {
+    ctx.restore();
     return;
   }
 
-  // Draw path
   const edges = TILE_TYPES[tileKey].edges;
-  const cx = x + size / 2;
-  const cy = y + size / 2;
-  const pathW = size * 0.30;
+  const pathW = size * 0.235;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
 
-  for (let pass = 0; pass < 2; pass++) {
-    ctx.strokeStyle = pass === 0 ? th.pathBorder : th.path;
-    ctx.lineWidth = pass === 0 ? pathW + 4 : pathW;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-
-    const openEdges = [];
-    for (let e = 0; e < 4; e++) if (edges[e]) openEdges.push(e);
-
-    if (openEdges.length === 2) {
-      const [a, b] = openEdges;
-      const pa = edgePoint(x, y, size, a);
-      const pb = edgePoint(x, y, size, b);
-
-      if (Math.abs(a - b) === 2) {
-        ctx.beginPath();
-        ctx.moveTo(pa.x, pa.y);
-        ctx.lineTo(pb.x, pb.y);
-        ctx.stroke();
-      } else {
-        ctx.beginPath();
-        ctx.moveTo(pa.x, pa.y);
-        ctx.quadraticCurveTo(cx, cy, pb.x, pb.y);
-        ctx.stroke();
-      }
-    } else {
-      for (const e of openEdges) {
-        const p = edgePoint(x, y, size, e);
-        ctx.beginPath();
-        ctx.moveTo(cx, cy);
-        ctx.lineTo(p.x, p.y);
-        ctx.stroke();
-      }
-    }
+  if (visual.connected) {
+    ctx.save();
+    ctx.shadowColor = th.connectedGlow;
+    ctx.shadowBlur = Math.max(10, size * 0.18);
+    ctx.strokeStyle = th.connectedGlow;
+    ctx.lineWidth = pathW + Math.max(8, size * 0.11);
+    traceTileRoad(x, y, size, edges);
+    ctx.stroke();
+    ctx.restore();
   }
 
-  // Light highlight on path center
-  ctx.fillStyle = th.pathLight;
-  ctx.globalAlpha = 0.3;
-  ctx.beginPath();
-  ctx.arc(cx, cy, pathW * 0.2, 0, Math.PI * 2);
-  ctx.fill();
+  ctx.strokeStyle = th.pathBorder;
+  ctx.lineWidth = pathW + Math.max(3, size * 0.052);
+  traceTileRoad(x, y, size, edges);
+  ctx.stroke();
+
+  ctx.strokeStyle = th.path;
+  ctx.lineWidth = pathW;
+  traceTileRoad(x, y, size, edges);
+  ctx.stroke();
+
+  ctx.strokeStyle = th.pathLight;
+  ctx.globalAlpha = 0.34;
+  ctx.lineWidth = Math.max(1.5, size * 0.035);
+  traceTileRoad(x, y, size, edges);
+  ctx.stroke();
   ctx.globalAlpha = 1;
+  drawRoadMaterial(x, y, size, edges, th);
+
+  if (visual.connected) {
+    ctx.strokeStyle = th.connected;
+    ctx.lineWidth = Math.max(2, size * 0.035);
+    ctx.setLineDash([Math.max(5, size * 0.09), Math.max(5, size * 0.09)]);
+    ctx.lineDashOffset = reducedMotionQuery.matches ? 0 : -(visual.now || 0) * 0.018;
+    traceTileRoad(x, y, size, edges);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  ctx.restore();
+}
+
+function drawEmptySlot(now) {
+  const th = getTheme();
+  const row = Math.floor(emptyIdx / curCols), col = emptyIdx % curCols;
+  const x = gridOX + col * cellSize, y = gridOY + row * cellSize;
+  const inset = Math.max(4, cellSize * 0.075);
+  const pulse = reducedMotionQuery.matches ? 0 : (Math.sin(now * 0.004) + 1) / 2;
+  const hollow = ctx.createLinearGradient(x, y, x, y + cellSize);
+  hollow.addColorStop(0, th.emptyTop);
+  hollow.addColorStop(1, th.emptyBottom);
+
+  ctx.save();
+  ctx.shadowColor = th.connectedGlow;
+  ctx.shadowBlur = Math.max(8, cellSize * (0.1 + pulse * 0.07));
+  ctx.beginPath();
+  ctx.roundRect(x + inset, y + inset, cellSize - inset * 2, cellSize - inset * 2, cellSize * 0.13);
+  ctx.fillStyle = hollow;
+  ctx.fill();
+  ctx.shadowColor = 'transparent';
+  ctx.strokeStyle = th.emptyBorder;
+  ctx.globalAlpha = 0.72 + pulse * 0.22;
+  ctx.lineWidth = Math.max(2, cellSize * 0.035);
+  ctx.setLineDash([Math.max(4, cellSize * 0.08), Math.max(4, cellSize * 0.065)]);
+  ctx.lineDashOffset = reducedMotionQuery.matches ? 0 : -now * 0.012;
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.globalAlpha = 0.9;
+  ctx.fillStyle = th.emptyText;
+  ctx.font = `900 ${Math.max(10, Math.min(16, Math.floor(cellSize * 0.15)))}px 'Zen Maru Gothic', sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('ここへ', x + cellSize / 2, y + cellSize / 2);
+  ctx.restore();
+}
+
+function drawMoveHint(index, now) {
+  const th = getTheme();
+  const row = Math.floor(index / curCols), col = index % curCols;
+  const emptyRow = Math.floor(emptyIdx / curCols), emptyCol = emptyIdx % curCols;
+  const dx = emptyCol - col, dy = emptyRow - row;
+  const cx = gridOX + (col + 0.5) * cellSize + dx * cellSize * 0.26;
+  const cy = gridOY + (row + 0.5) * cellSize + dy * cellSize * 0.26;
+  const length = Math.max(9, cellSize * 0.14);
+  const head = Math.max(4, cellSize * 0.065);
+  const pulse = reducedMotionQuery.matches ? 1 : 0.82 + Math.sin(now * 0.006 + index) * 0.12;
+
+  ctx.save();
+  ctx.globalAlpha = pulse;
+  ctx.strokeStyle = th.move;
+  ctx.fillStyle = th.move;
+  ctx.shadowColor = th.moveGlow;
+  ctx.shadowBlur = Math.max(6, cellSize * 0.09);
+  ctx.lineWidth = Math.max(2.5, cellSize * 0.04);
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(cx - dx * length * 0.55, cy - dy * length * 0.55);
+  ctx.lineTo(cx + dx * length * 0.45, cy + dy * length * 0.45);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx + dx * length * 0.7, cy + dy * length * 0.7);
+  ctx.lineTo(cx + dx * length * 0.25 - dy * head, cy + dy * length * 0.25 + dx * head);
+  ctx.lineTo(cx + dx * length * 0.25 + dy * head, cy + dy * length * 0.25 - dx * head);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
 }
 
 function edgePoint(x, y, size, edge) {
@@ -995,98 +1217,139 @@ function edgePoint(x, y, size, edge) {
   if (edge === 3) return { x: x + gap, y: cy };        // left
 }
 
-function drawStartGoal() {
+function drawGuideTrail(fromX, toX, y, active, now) {
+  const th = getTheme();
+  const direction = toX >= fromX ? 1 : -1;
+  const head = Math.max(5, Math.min(11, cellSize * 0.075));
+  ctx.save();
+  ctx.strokeStyle = active ? th.connected : th.guide;
+  ctx.fillStyle = active ? th.connected : th.guide;
+  ctx.globalAlpha = active ? 0.96 : 0.7;
+  ctx.shadowColor = active ? th.connectedGlow : 'transparent';
+  ctx.shadowBlur = active ? Math.max(8, cellSize * 0.11) : 0;
+  ctx.lineWidth = Math.max(2.5, cellSize * 0.032);
+  ctx.lineCap = 'round';
+  ctx.setLineDash([Math.max(5, cellSize * 0.08), Math.max(4, cellSize * 0.065)]);
+  ctx.lineDashOffset = reducedMotionQuery.matches ? 0 : -now * 0.012;
+  ctx.beginPath();
+  ctx.moveTo(fromX, y);
+  ctx.lineTo(toX - direction * head * 0.7, y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.moveTo(toX, y);
+  ctx.lineTo(toX - direction * head * 1.45, y - head * 0.82);
+  ctx.lineTo(toX - direction * head * 1.45, y + head * 0.82);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawWorldLabel(label, x, y) {
+  const fontSize = Math.max(9, Math.min(13, Math.floor(cellSize * 0.115)));
+  ctx.save();
+  ctx.font = `900 ${fontSize}px 'Zen Maru Gothic', sans-serif`;
+  const width = ctx.measureText(label).width + fontSize * 1.15;
+  const height = fontSize * 1.65;
+  ctx.beginPath();
+  ctx.roundRect(x - width / 2, y - height / 2, width, height, height / 2);
+  ctx.fillStyle = 'rgba(20,48,42,0.78)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,245,190,0.64)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.fillStyle = '#FFF8D5';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(label, x, y - 0.5);
+  ctx.restore();
+}
+
+function drawStartGoal(now, connectedSet) {
   const level = LEVELS[stageIdx];
-  const fontSize = Math.floor(cellSize * 0.38);
 
   // ===== Start marker (ポノ) at left =====
   const sr = level.start.row;
   const leftEdge = gridOX;
-  const sx = leftEdge - cellSize * 0.52;
   const sy = gridOY + sr * cellSize + cellSize / 2;
-  const imgSize = Math.max(30, Math.floor(cellSize * 0.45));
-  const markerLabelSize = Math.max(9, Math.floor(cellSize * 0.12));
-  const arrowReach = Math.max(10, Math.min(22, Math.floor(cellSize * 0.14)));
-  const arrowHead = Math.max(5, Math.min(10, Math.floor(cellSize * 0.07)));
-  const arrowLineWidth = Math.max(3, Math.min(5, Math.floor(cellSize * 0.035)));
-
-  function drawMarkerLabel(label, x, y) {
-    ctx.font = `900 ${markerLabelSize}px 'Zen Maru Gothic', sans-serif`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.lineJoin = 'round';
-    ctx.strokeStyle = 'rgba(255,255,255,0.94)';
-    ctx.lineWidth = Math.max(2, Math.floor(cellSize * 0.035));
-    ctx.strokeText(label, x, y);
-    ctx.fillStyle = '#5D4E37';
-    ctx.fillText(label, x, y);
-  }
+  const ponoH = Math.max(52, Math.min(132, cellSize * 0.88));
+  const ponoRatio = imgPonoWorld.naturalWidth > 0 && imgPonoWorld.naturalHeight > 0
+    ? imgPonoWorld.naturalWidth / imgPonoWorld.naturalHeight : 0.7;
+  const ponoW = ponoH * ponoRatio;
+  const sx = leftEdge - Math.max(cellSize * 0.56, ponoW * 0.62 + 7);
+  const startIdx = sr * curCols;
+  const startActive = connectedSet.has(startIdx);
 
   if (!winAnim.active && state === S.PLAYING) {
-    if (imgPono.complete && imgPono.naturalWidth > 0) {
-      ctx.drawImage(imgPono, sx - imgSize / 2, sy - imgSize / 2, imgSize, imgSize);
+    ctx.save();
+    ctx.fillStyle = 'rgba(10,30,28,0.3)';
+    ctx.beginPath();
+    ctx.ellipse(sx, sy + ponoH * 0.42, ponoW * 0.44, ponoH * 0.075, 0, 0, Math.PI * 2);
+    ctx.fill();
+    if (imgPonoWorld.complete && imgPonoWorld.naturalWidth > 0) {
+      ctx.shadowColor = startActive ? getTheme().connectedGlow : 'rgba(5,20,18,0.34)';
+      ctx.shadowBlur = startActive ? Math.max(10, cellSize * 0.14) : Math.max(4, cellSize * 0.06);
+      ctx.drawImage(imgPonoWorld, sx - ponoW / 2, sy - ponoH / 2, ponoW, ponoH);
     } else {
-      ctx.font = `${fontSize}px serif`;
+      ctx.font = `${Math.floor(cellSize * 0.46)}px serif`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillText('🐻', sx, sy);
     }
-    drawMarkerLabel('ポノ', sx, sy + imgSize / 2 + Math.floor(cellSize * 0.06));
+    ctx.restore();
+    drawWorldLabel('ポノ', sx, sy + ponoH * 0.5 + Math.max(6, cellSize * 0.05));
   }
 
-  // Left edge arrow pointing right into the grid
-  ctx.strokeStyle = var_primary;
-  ctx.lineWidth = arrowLineWidth;
-  ctx.setLineDash([arrowHead * 0.8, arrowHead * 0.8]);
-  ctx.beginPath();
-  ctx.moveTo(leftEdge - arrowReach, sy);
-  ctx.lineTo(leftEdge + 4, sy);
-  ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.beginPath();
-  ctx.moveTo(leftEdge, sy - arrowHead);
-  ctx.lineTo(leftEdge + arrowHead * 1.6, sy);
-  ctx.lineTo(leftEdge, sy + arrowHead);
-  ctx.fillStyle = var_primary;
-  ctx.fill();
+  drawGuideTrail(sx + ponoW * 0.34, leftEdge + Math.max(5, cellSize * 0.045), sy, startActive, now);
 
   // ===== Goal marker at right =====
   const gr = level.goal.row;
   const rightEdge = gridOX + curCols * cellSize;
-  const gx = rightEdge + cellSize * 0.52;
+  const gx = rightEdge + cellSize * 0.56;
   const gy = gridOY + gr * cellSize + cellSize / 2;
+  const goalIdx = gr * curCols + (curCols - 1);
+  const goalTile = grid[goalIdx];
+  const goalActive = connectedSet.has(goalIdx) && goalTile && goalTile !== 'BLANK' && TILE_TYPES[goalTile].edges[1];
+  const ringR = Math.max(21, Math.min(58, cellSize * 0.34));
+
+  ctx.save();
+  const goalGlow = ctx.createRadialGradient(gx, gy, ringR * 0.12, gx, gy, ringR);
+  goalGlow.addColorStop(0, goalActive ? 'rgba(255,246,171,0.58)' : 'rgba(245,239,210,0.26)');
+  goalGlow.addColorStop(0.72, goalActive ? getTheme().connectedGlow : 'rgba(211,231,218,0.13)');
+  goalGlow.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = goalGlow;
+  ctx.beginPath();
+  ctx.arc(gx, gy, ringR, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = goalActive ? getTheme().connected : 'rgba(255,247,211,0.58)';
+  ctx.lineWidth = Math.max(1.5, cellSize * 0.022);
+  ctx.beginPath();
+  ctx.arc(gx, gy, ringR * 0.76, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
 
   if (level.goalIcon === 'mom') {
     // 最終ステージ: お母さん全身画像
     if (imgMomFull.complete && imgMomFull.naturalWidth > 0) {
-      ctx.drawImage(imgMomFull, gx - imgSize / 2, gy - imgSize / 2, imgSize, imgSize);
+      const momH = Math.max(66, Math.min(160, cellSize * 1.15));
+      const momW = momH * imgMomFull.naturalWidth / imgMomFull.naturalHeight;
+      ctx.drawImage(imgMomFull, gx - momW / 2, gy - momH / 2, momW, momH);
+      drawWorldLabel('おかあさん', gx, gy + momH * 0.5 + Math.max(6, cellSize * 0.04));
     } else if (imgMom.complete && imgMom.naturalWidth > 0) {
-      ctx.drawImage(imgMom, gx - imgSize / 2, gy - imgSize / 2, imgSize, imgSize);
+      const faceSize = ringR * 1.2;
+      ctx.drawImage(imgMom, gx - faceSize / 2, gy - faceSize / 2, faceSize, faceSize);
+      drawWorldLabel('おかあさん', gx, gy + faceSize * 0.65);
     }
-    drawMarkerLabel('おかあさん', gx, gy + imgSize / 2 + Math.floor(cellSize * 0.06));
   } else {
     // 手がかりアイコン（絵文字）
-    ctx.font = `${Math.floor(cellSize * 0.4)}px serif`;
+    ctx.save();
+    ctx.font = `${Math.max(24, Math.floor(cellSize * 0.43))}px serif`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText(level.goalIcon, gx, gy);
+    ctx.restore();
   }
 
-  // Right edge arrow pointing out toward the goal
-  ctx.strokeStyle = var_primary;
-  ctx.lineWidth = arrowLineWidth;
-  ctx.setLineDash([arrowHead * 0.8, arrowHead * 0.8]);
-  ctx.beginPath();
-  ctx.moveTo(rightEdge - 4, gy);
-  ctx.lineTo(rightEdge + arrowReach, gy);
-  ctx.stroke();
-  ctx.setLineDash([]);
-  ctx.beginPath();
-  ctx.moveTo(rightEdge + arrowHead * 0.6, gy - arrowHead);
-  ctx.lineTo(rightEdge + arrowHead * 2.2, gy);
-  ctx.lineTo(rightEdge + arrowHead * 0.6, gy + arrowHead);
-  ctx.fillStyle = var_primary;
-  ctx.fill();
+  drawGuideTrail(rightEdge - Math.max(5, cellSize * 0.04), gx - ringR * 0.42, gy, goalActive, now);
 }
-
-const var_primary = '#4CAF50';
 
 function draw(now) {
   // Background image (stage-specific)
@@ -1102,31 +1365,25 @@ function draw(now) {
     ctx.fillRect(0, 0, CW, CH);
   }
 
-  // Grid background (frame — wood for forest, stone for cave)
-  var _th = getTheme();
-  var _isCave = (_th === THEMES.cave);
-  var _isOrangeForest = (_th === THEMES.orangeForest);
-  const frameP = 6;
-  ctx.fillStyle = _isCave ? '#4A5568' : _isOrangeForest ? '#6B3A18' : '#6D4C2A';
-  ctx.beginPath();
-  ctx.roundRect(gridOX - frameP, gridOY - frameP,
-    cellSize * curCols + frameP * 2, cellSize * curRows + frameP * 2, 12);
-  ctx.fill();
+  // Keep the portrait illustration as atmosphere while integrating the board
+  // into the world with a soft clearing instead of an opaque double frame.
+  const wash = ctx.createLinearGradient(0, 0, 0, CH);
+  wash.addColorStop(0, 'rgba(7,27,28,0.16)');
+  wash.addColorStop(0.35, 'rgba(7,27,28,0.02)');
+  wash.addColorStop(1, 'rgba(7,27,28,0.2)');
+  ctx.fillStyle = wash;
+  ctx.fillRect(0, 0, CW, CH);
+  drawBoardAtmosphere(now);
 
-  ctx.fillStyle = _isCave ? '#5A6A7A' : _isOrangeForest ? '#8B5A2A' : '#8B6B42';
-  ctx.beginPath();
-  ctx.roundRect(gridOX - frameP + 2, gridOY - frameP + 2,
-    cellSize * curCols + frameP * 2 - 4, cellSize * curRows + frameP * 2 - 4, 10);
-  ctx.fill();
-
-  // Empty space
-  const eRow = Math.floor(emptyIdx / curCols), eCol = emptyIdx % curCols;
-  const ex = gridOX + eCol * cellSize, ey = gridOY + eRow * cellSize;
-  ctx.fillStyle = getTheme().empty;
-  ctx.fillRect(ex + 2, ey + 2, cellSize - 4, cellSize - 4);
+  const total = curCols * curRows;
+  const hasBoard = emptyIdx >= 0 && grid.length === total;
+  const connectedSet = hasBoard ? getStartConnectedTileSet() : new Set();
+  const movableSet = hasBoard
+    ? new Set(getAdjacentIndices(emptyIdx).filter(index => grid[index] !== null))
+    : new Set();
+  if (hasBoard) drawEmptySlot(now);
 
   // Draw tiles
-  const total = curCols * curRows;
   for (let i = 0; i < total; i++) {
     const tileKey = grid[i];
     if (!tileKey) continue;
@@ -1139,11 +1396,21 @@ function draw(now) {
       y = anim.curY;
     }
 
-    drawTile(x, y, cellSize, tileKey);
+    drawTile(x, y, cellSize, tileKey, {
+      index: i,
+      now: now,
+      connected: connectedSet.has(i),
+      movable: movableSet.has(i) && !animating,
+      animating: animating && i === anim.idx,
+    });
+  }
+
+  if (!animating && state === S.PLAYING && !winAnim.active) {
+    movableSet.forEach(index => drawMoveHint(index, now));
   }
 
   // Start & Goal markers
-  drawStartGoal();
+  if (hasBoard) drawStartGoal(now, connectedSet);
 
   // Win celebration walk animation (direction-aware)
   if (winAnim.active && winAnim.path.length > 0) {
@@ -1275,18 +1542,18 @@ function loop(ts) {
 
 // ===== Input =====
 function handleTap(px, py) {
-  if (state !== S.PLAYING || animating || winAnim.active) return;
+  if (state !== S.PLAYING || animating || winAnim.active) return false;
 
   const col = Math.floor((px - gridOX) / cellSize);
   const row = Math.floor((py - gridOY) / cellSize);
-  if (col < 0 || col >= curCols || row < 0 || row >= curRows) return;
+  if (col < 0 || col >= curCols || row < 0 || row >= curRows) return false;
 
   const tappedIdx = row * curCols + col;
-  if (grid[tappedIdx] === null) return;
+  if (grid[tappedIdx] === null) return false;
 
   const eRow = Math.floor(emptyIdx / curCols), eCol = emptyIdx % curCols;
   const dist = Math.abs(eRow - row) + Math.abs(eCol - col);
-  if (dist !== 1) return;
+  if (dist !== 1) return false;
 
   // Start slide animation
   animating = true;
@@ -1299,6 +1566,7 @@ function handleTap(px, py) {
   anim.curY  = anim.fromY;
   anim.t0    = performance.now();
   playSlideSound();
+  return true;
 }
 
 wrap.addEventListener('pointerdown', e => {
@@ -1423,6 +1691,9 @@ function startGame() {
   shuffleGrid(LEVELS[stageIdx]);
   calcLayout();
   updateHUD();
+  state = S.IDLE;
+  prepauseState = S.IDLE;
+  updatePauseButton(false);
   showOverlay('stagestart');
 }
 
@@ -1433,6 +1704,9 @@ function nextStage() {
   shuffleGrid(LEVELS[stageIdx]);
   calcLayout();
   updateHUD();
+  state = S.IDLE;
+  prepauseState = S.IDLE;
+  updatePauseButton(false);
   showOverlay('stagestart');
 }
 
@@ -1468,6 +1742,8 @@ function showCutscene() {
     else if (t === 'stagestart') {
       overlay.classList.add('hidden');
       state = S.PLAYING;
+      prepauseState = S.PLAYING;
+      updatePauseButton(false);
     } else {
       if (!localStorage.getItem('slide_tut_seen')) {
         // チュートリアルから開始（ステージダイアログなし）
@@ -1502,6 +1778,7 @@ function updatePauseButton(isPaused) {
 }
 
 function togglePause() {
+  if (_slideTutActive) return;
   if (state === S.PAUSED) {
     state = prepauseState;
     updatePauseButton(false);
@@ -1556,10 +1833,13 @@ window.addEventListener('focus', () => { if (bgmEnabled) bgm.play().catch(() => 
 
 var _slideTutActive = false;
 function showTutorial() {
+  if (_slideTutActive) return;
   var dim = document.getElementById('tut-dim');
   var bubble = document.getElementById('tut-bubble');
   if (!dim || !bubble) return;
   _slideTutActive = true;
+  btnPause.disabled = true;
+  btnPause.setAttribute('aria-disabled', 'true');
 
   // チュートリアル用: 左から右へ3手で完成する固定配置。
   var tutGrid = TUTORIAL_GRID.slice();
@@ -1653,15 +1933,13 @@ function showTutorial() {
 
       ev.preventDefault();
       ev.stopPropagation();
-      // 正解タップ！
+      // 実際にパネルを動かす
+      if (!handleTap(px, py)) return;
+
+      // 正解タップ！ handleTap が安全に開始できてから案内を進める。
       document.removeEventListener('pointerdown', onTap, true);
       if (_tutOverlay) { _tutOverlay.remove(); _tutOverlay = null; }
       bubble.classList.add('hidden');
-
-      // 実際にパネルを動かす
-      handleTap(px, py);
-      // 次のステップまで操作をブロック（animatingフラグで）
-      animating = true;
 
       // アニメーション完了後にフィードバック→次のステップ
       setTimeout(function() {
@@ -1712,6 +1990,8 @@ function showTutorial() {
 
   function endTut() {
     _slideTutActive = false;
+    btnPause.disabled = false;
+    btnPause.removeAttribute('aria-disabled');
     if (_tutOverlay) { _tutOverlay.remove(); _tutOverlay = null; }
     dim.classList.add('hidden');
     bubble.classList.add('hidden');
