@@ -339,7 +339,7 @@ assert.match(js, /if\(!jungleAnimalSprites\.length\|\|tunnelInteriorMode\|\|!doc
 assert.match(js, /if\(renderKey===lastJungleAnimalRenderKey\)return;/, "stationary frames must not rewrite every animal transform");
 assert.match(js, /const JUNGLE_MID_TILE_ASPECT=2,JUNGLE_MID_TILE_SCALE=1\.16;/, "middle-forest tile dimensions must stay explicit");
 assert.match(js, /const midPeriod=\(\(window\.innerHeight\|\|1\)\*JUNGLE_MID_TILE_ASPECT\*JUNGLE_MID_TILE_SCALE\/\(window\.innerWidth\|\|1\)\)\*100;/, "tree animals must use the rendered 116% middle-forest tile width");
-assert.match(js, /renderSeaFish\(now\);\s*renderSeaHabitat\(\);\s*updateSeaBossVisual\(now\);\s*renderSeaSteering\(\);\s*renderSpaceSteering\(\);\s*renderSpaceObstacleGate\(now\);\s*updateFutureCapsuleVisual\(now\);\s*renderJungleAnimals\(\);/, "the shared render loop must preserve sea habitat, boss, both steering systems, the space gate, and future capsule motion before jungle wildlife");
+assert.match(js, /renderSeaFish\(now\);\s*renderSeaHabitat\(\);\s*updateSeaBossVisual\(now\);\s*renderSeaSteering\(\);\s*renderSpaceSteering\(\);\s*updateSpaceChase\(now\);\s*renderSpaceObstacleGate\(now\);\s*updateFutureCapsuleVisual\(now\);\s*renderJungleAnimals\(\);/, "the shared render loop must preserve sea habitat, boss, both steering systems, the space chase and gate, and future capsule motion before jungle wildlife");
 assert.match(js, /spec\.wCss\|\|spec\.w\+"vmin"/, "runtime must accept viewport-safe CSS widths for large animals");
 assert.match(js, /spec\.frames>1\?document\.createElement\("span"\):null/, "runtime must build a clipped frame sheet only for animated animals");
 assert.match(js, /animalAssets\[spec\.asset\]/, "all depth variants must reuse the keyed five-asset map");

@@ -236,8 +236,8 @@ assert.equal(normalWrites, 1, "ordinary play must retain its save path");
 assert.match(game, /const wasAdminPreview=document\.body\.classList\.contains\("nazonazo-admin-stage-preview"\);/);
 assert.match(game, /if\(wasAdminPreview\)document\.body\.classList\.add\("nazonazo-admin-stage-preview"\);/);
 assert.match(html, /id="adminStagePreviewLabel" hidden/);
-assert.match(html, /js\/game\.js\?v=20260716-1308/);
-assert.match(html, /styles\.css\?v=20260716-1308/);
+assert.match(html, /js\/game\.js\?v=20260716-1309/);
+assert.match(html, /styles\.css\?v=20260716-1309/);
 assert.match(styles, /body\.nazonazo-admin-stage-preview #gameSettings\{display:none!important\}/,
   "the public return menu must not cover the tiny authenticated stage preview");
 assert.match(styles, /@media \(orientation:landscape\) and \(max-height:180px\)[\s\S]*?body\.nazonazo-admin-stage-preview #title h1,[\s\S]*?#zkBtnTitle\{display:none\}/);

@@ -80,7 +80,7 @@
   else { document.addEventListener('DOMContentLoaded', showLock); }
 })();
 </script>
-<link rel="stylesheet" href="styles.css?v=20260716-1308">
+<link rel="stylesheet" href="styles.css?v=20260716-1309">
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
 <body class="st-town v-train" data-driver="pono" data-driver-mood="happy">
@@ -130,6 +130,32 @@
     <div id="seaRescueMessage" role="status" aria-live="polite" aria-atomic="true" hidden></div>
     <div id="futureCapsuleLayer" role="group" aria-labelledby="qText" hidden></div>
     <div id="spaceGalaxyLayer" role="group" aria-labelledby="qText" hidden></div>
+    <div id="spaceChaseLayer" role="group" aria-label="うちゅう おいかけっこ" hidden>
+      <div class="space-chase-board">
+        <div class="space-chase-camera" aria-hidden="true">
+          <div class="space-chase-star-stream"></div>
+          <div class="space-chase-route"></div>
+          <div class="space-chase-comet"><span class="ui-art" data-ui-art="fire" data-ui-art-eager="1"></span></div>
+          <img class="space-chase-rocket" src="../assets/images/nazonazo-tunnel/space_vehicle_exploration_rocket_pono_20260713.png" alt="" decoding="async" loading="eager" draggable="false">
+        </div>
+        <div class="space-chase-hud">
+          <h2>おおながれぼしを おいかけよう！</h2>
+          <div class="space-chase-rounds" role="progressbar" aria-label="おいつくまでの ブースト" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0"><i></i><i></i><i></i></div>
+          <strong id="spaceChaseRoundText">あと 3かい</strong>
+        </div>
+        <div class="space-chase-controls">
+          <div class="space-chase-readout">
+            <p id="spaceChaseGuide" role="status" aria-live="polite" aria-atomic="true">4かい タッチで ブースト！</p>
+            <div id="spaceChaseTapMeter" class="space-chase-tap-meter" role="progressbar" aria-label="ブースト パワー" aria-valuemin="0" aria-valuemax="4" aria-valuenow="0"><i></i><i></i><i></i><i></i></div>
+          </div>
+          <button id="spaceChaseBoostButton" type="button" aria-label="タッチして ブーストを ためる" disabled>
+            <span class="ui-art" data-ui-art="rocket" data-ui-art-eager="1" aria-hidden="true"></span>
+            <strong>ブースト！</strong>
+            <small>4かいで はっしゃ</small>
+          </button>
+        </div>
+      </div>
+    </div>
     <div id="seaRoundCountdown" role="status" aria-live="assertive" aria-atomic="true" hidden></div>
     <div id="seaQuizGuide" aria-hidden="true">ただしい ほうを えらんで たすけよう</div>
     <div id="seaSteerHint" role="status" aria-live="polite" hidden><span class="ui-art" data-ui-art="touch" aria-hidden="true"></span><span>タッチした ばしょへ うごくよ</span></div>
@@ -314,6 +340,6 @@
 <div id="rotateHint"><span class="ui-art" data-ui-art="smartphone" aria-hidden="true"></span><span class="rotate-arrow" aria-hidden="true">→</span><span>よこむきに してね</span></div>
 <script src="data/questions.js?v=20260713-1273"></script>
 <script src="data/quiz-art.js?v=20260714-1297"></script>
-<script src="js/game.js?v=20260716-1308"></script>
+<script src="js/game.js?v=20260716-1309"></script>
 </body>
 </html>

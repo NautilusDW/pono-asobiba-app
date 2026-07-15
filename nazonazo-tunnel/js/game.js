@@ -599,6 +599,12 @@ const SPACE_REPAIR_POINTER_SAMPLE_CAP=.50;
 const SPACE_REPAIR_POINTER_DEADZONE_RATIO=.18;
 const SPACE_REPAIR_CLICK_STEP=Math.PI/2;
 const SPACE_REPAIR_KEY_STEP=Math.PI/6;
+const SPACE_CHASE_TAPS_PER_BURST=4;
+const SPACE_CHASE_BURST_GOAL=3;
+const SPACE_CHASE_INTRO_MS=650;
+const SPACE_CHASE_BOOST_MS=900;
+const SPACE_CHASE_COAST_MS=420;
+const SPACE_CHASE_VICTORY_MS=950;
 let spaceRepairOptions=[],spaceRepairPhase="idle",spaceRepairSelectedIndex=-1,spaceRepairActiveScrew=-1;
 let spaceRepairProgress=[0,0,0],spaceRepairRotations=[0,0,0],spaceRepairCharge=0,spaceRepairChargeLastAt=0,spaceRepairResolving=false,spaceRepairAssisted=false;
 let spaceRepairPointerId=null,spaceRepairPointerTarget=null,spaceRepairPointerScrew=-1,spaceRepairPointerAngle=0;
@@ -611,6 +617,8 @@ let spaceObstacleLaneKey="",spaceObstacleLaneStart=0;
 const spaceObstacleHitGates=new Set(),spaceObstacleGateLayout=new Array(SPACE_OBSTACLE_MAX_GATES),spaceObstacleFrameHitbox={left:0,right:0,top:0,bottom:0};
 let spaceSteerTargetX=0,spaceSteerX=0,spaceSteerTargetY=0,spaceSteerY=0,spaceSteerPointerId=null,spaceSteerUsed=false,spaceSteerFrameAt=0,spaceStationSteerResume=null;
 const spaceMoveKeys=new Set();
+let spaceChasePhase="idle",spaceChaseTapCount=0,spaceChaseBurstCount=0,spaceChaseProgress=0,spaceChaseBoostStartProgress=0,spaceChaseBoostTargetProgress=0;
+let spaceChasePhaseElapsedMs=0,spaceChaseFrameAt=0,spaceChaseCompletionCommitted=false,spaceChaseDefeated=false;
 let nazonazoAdminPreviewMode=false;
 const NUMBER_CARGO_THEMES=[
  {e:"⭐",name:"おほしさま"},{e:"🎈",name:"ふうせん"},{e:"🌼",name:"おはな"},
@@ -751,6 +759,7 @@ const $=id=>document.getElementById(id);
 const world=$("world"),veh=$("veh"),horizon=$("horizon"),midT=$("midT"),groundT=$("groundT"),fgT=$("fgT"),seaFishLayer=$("seaFishLayer"),seaHabitatLayer=$("seaHabitatLayer"),smokeLayer=$("smokeLayer"),townHorizonLoop=$("townHorizonLoop"),townMidLoop=$("townMidLoop"),futureHorizonLoop=$("futureHorizonLoop"),futureMidLoop=$("futureMidLoop"),futureForegroundLoop=$("futureForegroundLoop"),spaceHorizonLoop=$("spaceHorizonLoop"),spaceForegroundLoop=$("spaceForegroundLoop"),jungleHabitatBack=$("jungleHabitatBack");
 const vehicleSteerShell=$("vehicleSteerShell"),seaSteerSurface=$("seaSteerSurface"),spaceSteerSurface=$("spaceSteerSurface"),seaAnswerLayer=$("seaAnswerLayer"),seaBossLayer=$("seaBossLayer"),seaRescueMessage=$("seaRescueMessage"),seaArenaShade=$("seaArenaShade"),seaRoundCountdown=$("seaRoundCountdown"),seaQuizGuide=$("seaQuizGuide"),seaSteerHint=$("seaSteerHint"),spaceSteerHint=$("spaceSteerHint");
 const futureCapsuleLayer=$("futureCapsuleLayer"),spaceGalaxyLayer=$("spaceGalaxyLayer");
+const spaceChaseLayer=$("spaceChaseLayer"),spaceChaseGuide=$("spaceChaseGuide"),spaceChaseTapMeter=$("spaceChaseTapMeter"),spaceChaseRoundText=$("spaceChaseRoundText"),spaceChaseBoostButton=$("spaceChaseBoostButton");
 const spaceObstacleGatePool=[];
 let spaceObstacleGuide=null;
 const spaceObstacleLayer=(()=>{
@@ -1662,6 +1671,7 @@ function buildQList(){
  const st=STAGES[stg];
  if(st.id==="number"){qList=[];for(let i=0;i<QN;i++)qList.push(Math.random()<0.6?genCount():genNext());return;}
  if(st.id==="sea"){seaBossDefeated=false;seaDecoysSeen.clear();qList=buildSeaRescueList(st);return;}
+ if(st.id==="space")spaceChaseDefeated=false;
  if(st.id==="jungle"){qList=buildJungleQuestionList(st);return;}
  let statics=shuffle(st.bank.filter(x=>(x.min||0)<=level));
  const gens=(st.gens||[]).filter(g=>GENS[g]);
@@ -3734,6 +3744,7 @@ function render(now){
  updateSeaBossVisual(now);
  renderSeaSteering();
  renderSpaceSteering();
+ updateSpaceChase(now);
  renderSpaceObstacleGate(now);
  updateFutureCapsuleVisual(now);
  renderJungleAnimals();
@@ -3903,6 +3914,7 @@ function gloop(t){
    }
    if(p==="quiz")showQuizAfterSettle();
    else if(p==="seaBoss")showSeaBossEncounter();
+   else if(p==="spaceChase")showSpaceChaseEncounter();
    else if(p==="dropoff")showDropoff();
    else if(p==="tunnelEntry")showTunnelRunIn();
    else if(p==="tunnelExit")startTunnelExitApproach();
@@ -4594,6 +4606,99 @@ function renderSpaceRepairGame(){
  bay.append(title,damage,screws,charge);panel.append(answers,bay);board.append(guide,route,panel);spaceGalaxyLayer.appendChild(board);spaceRepairGuide("ただしい こたえを タッチしよう");updateSpaceRepairVisual();spaceRepairOptions[0]?.button.focus({preventScroll:true});
 }
 function spaceLandscapePlayable(){return (window.innerWidth||844)>=(window.innerHeight||390);}
+function spaceChaseBoard(){return spaceChaseLayer&&spaceChaseLayer.querySelector(".space-chase-board");}
+function cancelSpaceSteerPointer(){
+ const pointerId=spaceSteerPointerId;spaceSteerPointerId=null;
+ if(pointerId===null||!spaceSteerSurface)return;
+ try{spaceSteerSurface.releasePointerCapture(pointerId);}catch(_){}
+}
+function spaceChaseRuntimeActive(){
+ return !window.__PONO_TIER_LOCKED__&&isSpaceStage()&&playing&&spaceChaseLayer&&!spaceChaseLayer.hidden&&
+  spaceLandscapePlayable()&&!document.hidden&&!gameSettingsMenuIsOpen();
+}
+function spaceChasePlayable(){return spaceChaseRuntimeActive()&&spaceChasePhase==="charge"&&!spaceChaseCompletionCommitted;}
+function setSpaceChaseGuide(message,shouldAnnounce){
+ const next=String(message||"");if(spaceChaseGuide&&spaceChaseGuide.textContent!==next)spaceChaseGuide.textContent=next;
+ if(shouldAnnounce)announce(next);
+}
+function focusSpaceChaseBoost(){
+ if(!spaceChasePlayable()||!spaceChaseBoostButton)return;
+ try{spaceChaseBoostButton.focus({preventScroll:true});}catch(_){spaceChaseBoostButton.focus();}
+}
+function updateSpaceChaseVisual(){
+ const board=spaceChaseBoard();if(!board||!spaceChaseLayer||spaceChaseLayer.hidden)return;
+ const portrait=!spaceLandscapePlayable();spaceChaseLayer.setAttribute("aria-hidden",portrait?"true":"false");if(portrait)spaceChaseLayer.setAttribute("inert","");else spaceChaseLayer.removeAttribute("inert");
+ const progress=clamp(spaceChaseProgress,0,1),cometX=78-progress*25.5,rocketX=19+progress*30;
+ const cometY=46+Math.sin(progress*Math.PI*1.5)*5,rocketY=59+(cometY-59)*progress;
+ board.style.setProperty("--space-chase-comet-x",cometX.toFixed(2)+"%");board.style.setProperty("--space-chase-comet-y",cometY.toFixed(2)+"%");
+ board.style.setProperty("--space-chase-rocket-x",rocketX.toFixed(2)+"%");board.style.setProperty("--space-chase-rocket-y",rocketY.toFixed(2)+"%");
+ board.classList.toggle("is-ready",spaceChasePhase==="charge"&&spaceChaseTapCount===0);board.classList.toggle("is-boosting",spaceChasePhase==="boost");board.classList.toggle("is-caught",spaceChasePhase==="victory");
+ const burstNow=clamp(spaceChaseBurstCount,0,SPACE_CHASE_BURST_GOAL),roundMeter=board.querySelector(".space-chase-rounds");
+ if(roundMeter){roundMeter.setAttribute("aria-valuenow",String(burstNow));roundMeter.setAttribute("aria-valuetext",SPACE_CHASE_BURST_GOAL+"かいの うち "+burstNow+"かい ブーストした");roundMeter.querySelectorAll("i").forEach((lamp,index)=>lamp.classList.toggle("is-on",index<burstNow));}
+ const tapNow=spaceChasePhase==="boost"?SPACE_CHASE_TAPS_PER_BURST:clamp(spaceChaseTapCount,0,SPACE_CHASE_TAPS_PER_BURST);
+ if(spaceChaseTapMeter){spaceChaseTapMeter.setAttribute("aria-valuenow",String(tapNow));spaceChaseTapMeter.setAttribute("aria-valuetext",SPACE_CHASE_TAPS_PER_BURST+"かいの うち "+tapNow+"かい");spaceChaseTapMeter.querySelectorAll("i").forEach((lamp,index)=>lamp.classList.toggle("is-on",index<tapNow));}
+ if(spaceChaseRoundText)spaceChaseRoundText.textContent=spaceChasePhase==="victory"?"おいついた！":"あと "+Math.max(0,SPACE_CHASE_BURST_GOAL-burstNow)+"かい";
+ if(spaceChaseBoostButton){
+  spaceChaseBoostButton.disabled=!spaceChasePlayable();spaceChaseBoostButton.setAttribute("aria-label",spaceChasePhase==="boost"?"ブーストちゅう":("ブースト パワー "+spaceChaseTapCount+" / "+SPACE_CHASE_TAPS_PER_BURST));
+  const label=spaceChaseBoostButton.querySelector("strong"),note=spaceChaseBoostButton.querySelector("small");if(label)label.textContent=spaceChasePhase==="boost"?"ブーストちゅう！":"ブースト！";if(note)note.textContent=spaceChasePhase==="boost"?"じどうで びゅーん":"4かいで はっしゃ";
+ }
+}
+function clearSpaceChaseEncounter(){
+ spaceChasePhase="idle";spaceChaseTapCount=0;spaceChaseBurstCount=0;spaceChaseProgress=0;spaceChaseBoostStartProgress=0;spaceChaseBoostTargetProgress=0;spaceChasePhaseElapsedMs=0;spaceChaseFrameAt=0;
+ document.body.classList.remove("space-chase-active");
+ const board=spaceChaseBoard();if(board){board.classList.remove("is-ready","is-boosting","is-caught");board.removeAttribute("style");}
+ if(spaceChaseBoostButton)spaceChaseBoostButton.disabled=true;
+ if(spaceChaseLayer){spaceChaseLayer.hidden=true;spaceChaseLayer.setAttribute("aria-hidden","true");spaceChaseLayer.setAttribute("inert","");}
+}
+function beginSpaceChaseCharge(){
+ if(spaceChasePhase!=="intro"&&spaceChasePhase!=="coast")return;
+ spaceChasePhase="charge";spaceChasePhaseElapsedMs=0;spaceChaseTapCount=0;
+ setSpaceChaseGuide(spaceChaseBurstCount?"つぎも 4かい！":"ボタンを 4かい おして ブースト！",true);updateSpaceChaseVisual();focusSpaceChaseBoost();
+}
+function finishSpaceChaseVictory(){
+ if(spaceChasePhase!=="boost"||spaceChaseCompletionCommitted)return;
+ spaceChasePhase="victory";spaceChaseDefeated=true;spaceChaseProgress=1;spaceChasePhaseElapsedMs=0;
+ setSpaceChaseGuide("おおながれぼしに おいついた！",true);showStamp("うちゅう だいせいこう！","clear");tone(784,0,.13,"triangle",.075);tone(1047,.1,.2,"sine",.07);confetti(24);updateSpaceChaseVisual();
+}
+function finishSpaceChaseBoost(){
+ if(spaceChasePhase!=="boost")return;
+ spaceChaseProgress=spaceChaseBoostTargetProgress;spaceChaseBurstCount=Math.min(SPACE_CHASE_BURST_GOAL,spaceChaseBurstCount+1);
+ if(spaceChaseBurstCount>=SPACE_CHASE_BURST_GOAL){finishSpaceChaseVictory();return;}
+ spaceChasePhase="coast";spaceChasePhaseElapsedMs=0;spaceChaseTapCount=0;setSpaceChaseGuide(spaceChaseBurstCount+"かいめ ちかづいた！ いったん ゆっくり",true);updateSpaceChaseVisual();
+}
+function chargeSpaceChaseBoost(){
+ if(!spaceChasePlayable())return false;ensureAC();
+ spaceChaseTapCount=Math.min(SPACE_CHASE_TAPS_PER_BURST,spaceChaseTapCount+1);tone(520+spaceChaseTapCount*92,0,.055,"triangle",.055);
+ if(spaceChaseTapCount<SPACE_CHASE_TAPS_PER_BURST){setSpaceChaseGuide("あと "+(SPACE_CHASE_TAPS_PER_BURST-spaceChaseTapCount)+"かい",false);updateSpaceChaseVisual();return true;}
+ spaceChasePhase="boost";spaceChasePhaseElapsedMs=0;spaceChaseBoostStartProgress=spaceChaseProgress;spaceChaseBoostTargetProgress=Math.min(SPACE_CHASE_BURST_GOAL,spaceChaseBurstCount+1)/SPACE_CHASE_BURST_GOAL;
+ setSpaceChaseGuide("パワー まんたん！ じどうで ブースト！",true);tone(820,0,.1,"sawtooth",.055);tone(1120,.08,.14,"triangle",.06);updateSpaceChaseVisual();return true;
+}
+function showSpaceChaseEncounter(){
+ if(window.__PONO_TIER_LOCKED__){completeCurrentStage(origin(stg));return;}
+ if(!isSpaceStage()||!playing||spaceChaseDefeated||!spaceChaseLayer)return;
+ clearSpaceChaseEncounter();clearRareEvent();resetSpaceObstacles();cancelSpaceSteerPointer();spaceMoveKeys.clear();answerLocked=false;
+ spaceChaseCompletionCommitted=false;spaceChasePhase="intro";spaceChasePhaseElapsedMs=0;spaceChaseFrameAt=0;spaceChaseLayer.hidden=false;document.body.classList.add("space-chase-active");
+ hydrateStaticUiArt(spaceChaseLayer);setSpaceChaseGuide("3かい ブーストで おいつこう！",true);showStamp("おおながれぼしだ！","new");tone(392,0,.14,"sine",.055);tone(587,.1,.18,"triangle",.05);updateSpaceChaseVisual();
+}
+function updateSpaceChase(now){
+ if(spaceChasePhase==="idle"||!spaceChaseLayer||spaceChaseLayer.hidden)return;
+ const frameNow=Number.isFinite(now)?now:_nowMs(),rawDt=spaceChaseFrameAt?clamp(frameNow-spaceChaseFrameAt,0,50):0;spaceChaseFrameAt=frameNow;
+ if(!spaceChaseRuntimeActive()){updateSpaceChaseVisual();return;}
+ const dt=rawDt*FAST;spaceChasePhaseElapsedMs+=dt;
+ if(spaceChasePhase==="intro"&&spaceChasePhaseElapsedMs>=(futureReducedMotion()?160:SPACE_CHASE_INTRO_MS))beginSpaceChaseCharge();
+ else if(spaceChasePhase==="boost"){
+  const duration=futureReducedMotion()?220:SPACE_CHASE_BOOST_MS,ratio=clamp(spaceChasePhaseElapsedMs/duration,0,1),ease=.5-Math.cos(Math.PI*ratio)*.5;
+  spaceChaseProgress=spaceChaseBoostStartProgress+(spaceChaseBoostTargetProgress-spaceChaseBoostStartProgress)*ease;if(ratio>=1)finishSpaceChaseBoost();
+ }else if(spaceChasePhase==="coast"&&spaceChasePhaseElapsedMs>=(futureReducedMotion()?100:SPACE_CHASE_COAST_MS))beginSpaceChaseCharge();
+ else if(spaceChasePhase==="victory"&&spaceChasePhaseElapsedMs>=(futureReducedMotion()?360:SPACE_CHASE_VICTORY_MS)&&!spaceChaseCompletionCommitted){
+  spaceChaseCompletionCommitted=true;const stageOrigin=origin(stg);clearSpaceChaseEncounter();completeCurrentStage(stageOrigin);return;
+ }
+ updateSpaceChaseVisual();
+}
+if(spaceChaseBoostButton){
+ bindTap(spaceChaseBoostButton,chargeSpaceChaseBoost);
+ spaceChaseBoostButton.addEventListener("keydown",event=>{if((event.key==="Enter"||event.key===" ")&&event.repeat)event.preventDefault();});
+}
 function spaceObstacleGateCount(difficulty,segment){
  const difficultyIndex=Math.floor(clamp(Number(difficulty)||0,0,SPACE_OBSTACLE_COUNT_TABLE.length-1)),row=SPACE_OBSTACLE_COUNT_TABLE[difficultyIndex];
  const segmentIndex=Math.floor(clamp(Number(segment)||0,0,row.length-1));return row[segmentIndex];
@@ -4767,7 +4872,7 @@ function renderSpaceSteering(){
  if(Math.abs(spaceSteerTargetX-spaceSteerX)<.08)spaceSteerX=spaceSteerTargetX;if(Math.abs(spaceSteerTargetY-spaceSteerY)<.08)spaceSteerY=spaceSteerTargetY;applySpaceSteerVisual();
 }
 function resetSpaceSteering(){
- spaceMoveKeys.clear();spaceSteerPointerId=null;spaceSteerTargetX=0;spaceSteerX=0;spaceSteerTargetY=0;spaceSteerY=0;spaceSteerUsed=false;spaceSteerFrameAt=0;spaceStationSteerResume=null;
+ clearSpaceChaseEncounter();spaceMoveKeys.clear();cancelSpaceSteerPointer();spaceSteerTargetX=0;spaceSteerX=0;spaceSteerTargetY=0;spaceSteerY=0;spaceSteerUsed=false;spaceSteerFrameAt=0;spaceStationSteerResume=null;
  document.body.classList.remove("space-steer-active");resetSpaceObstacles();
  if(vehicleSteerShell){vehicleSteerShell.style.setProperty("--space-steer-x","0px");vehicleSteerShell.style.setProperty("--space-steer-y","0px");vehicleSteerShell.style.setProperty("--space-steer-tilt","0deg");}
 }
@@ -4993,6 +5098,7 @@ function proceed(){
  const o=origin(stg);if(!rareSpawned)scheduleRareSpawn();
  if(qSeg<QN){sndGo();target=stops(o,qSeg);pending="quiz";driving=true;return;}
  if(isSeaStage()&&!seaBossDefeated){sndGo();target=stops(o,QN-1)+120;pending="seaBoss";driving=true;return;}
+ if(isSpaceStage()&&!spaceChaseDefeated&&!window.__PONO_TIER_LOCKED__){sndGo();target=stops(o,QN-1)+120;pending="spaceChase";driving=true;return;}
  completeCurrentStage(o);
 }
 function ending(){
@@ -5189,6 +5295,7 @@ bindTap(mapMenuBtn,()=>{
  closeGameSettings();
  if(quiz.classList.contains("show")){showStamp("いまは トンネルを あけよう","ng");return;}
  if(seaBossPhase!=="idle"){showStamp("いまは おおあわぬしを たおそう","ng");return;}
+ if(spaceChasePhase!=="idle"){showStamp("いまは おおながれぼしを おいかけよう","ng");return;}
  openMap();
 });
 bindTap($("spkBtn"),()=>{showHint();});
@@ -5212,9 +5319,11 @@ document.addEventListener("visibilitychange",()=>{
  if(document.hidden){
   closeGameSettings();
   hideWeatherNotice();
+  spaceChaseFrameAt=0;
   if(seaRoundPhase==="ready"||seaRoundPhase==="go"){clearTimeout(seaRoundCountdownTimer);seaRoundCountdownTimer=0;}
   pauseSeaInput();pauseFutureCraneInput();safeSuspend();
  }else{
+  spaceChaseFrameAt=0;
   ensureAC();
   if((seaRoundPhase==="ready"||seaRoundPhase==="go")&&!seaRoundCountdownTimer&&isSeaStage()&&quiz.classList.contains("show"))startSeaRoundCountdown();
  }
@@ -5223,11 +5332,11 @@ window.addEventListener("resize",scheduleRainParticleRebuild,{passive:true});
 window.addEventListener("resize",syncNumberCargoColumns,{passive:true});
 window.addEventListener("resize",handleSeaViewportChange,{passive:true});
 window.addEventListener("resize",handleFutureCraneViewportChange,{passive:true});
-window.addEventListener("resize",()=>{invalidateSpaceObstacleLayout();updateSpaceRepairVisual();if(!spaceStationSteerResume&&!quiz.classList.contains("show"))clampSpaceSteerOffsets();},{passive:true});
+window.addEventListener("resize",()=>{spaceChaseFrameAt=0;invalidateSpaceObstacleLayout();updateSpaceRepairVisual();updateSpaceChaseVisual();if(!spaceStationSteerResume&&!quiz.classList.contains("show"))clampSpaceSteerOffsets();},{passive:true});
 quiz.addEventListener("transitionend",handleFutureCraneQuizTransitionEnd);
 window.addEventListener("pageshow",()=>{closeGameSettings();ensureAC();updateRainParticleVisibility(false);});
 window.addEventListener("focus",()=>{ensureAC();});
-window.addEventListener("pagehide",()=>{closeGameSettings();hideWeatherNotice();pauseSeaInput();pauseFutureCraneInput();clearTimeout(rainParticleResizeTimer);safeSuspend();});
+window.addEventListener("pagehide",()=>{spaceChaseFrameAt=0;closeGameSettings();hideWeatherNotice();pauseSeaInput();pauseFutureCraneInput();clearTimeout(rainParticleResizeTimer);safeSuspend();});
 
 requestAnimationFrame(gloop);
 })();
