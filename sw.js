@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2200: みちつなぎの右端ゴールを全テーマ共通のコーラル色の旗と短い出口ラインへ変更し、4段／5×4盤面でも正しい段を常時判別可能にした。到着前の手がかり非表示は維持し、途中3枚・最終1枚・盤面上のおかあさんを以前の物語イラストへ正確に復帰。568×320を含む全8面の旗色／位置／範囲と旧挿し絵decodeをChromium／WebKitで回帰した (batch:1310-slide-goal-art-mechanics)。play.html PAGE_CACHE_VERSION と同期不要 (slide/index.html/テストのみ変更)。
 // v2199: なぞなぞトレイン宇宙面の全問後に、視点を引いた宇宙で小さなロケットがおおながれぼしを追う最終イベントを追加。4回タップで自動ブースト、減速を挟んで3セット進む失敗なしの構成とし、遅い入力の保持、設定・縦向き・バックグラウンド中断、二重クリア防止、reduced-motionへ対応した (batch:1309-nazonazo-space-chase-boss)。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/テストのみ変更)。
 // v2198: なぞなぞトレイン宇宙面で、駅到着時のロケット位置を発進直前まで保存・復元し、画面回転後も同じ比率で再開。後半ゲートを最大12本の連続路へ増やし、端の到着位置につながる固定レーンと発進猶予を追加。リペアは駅・ネジ別の2/3周＋停止角度、3チェック完了後の8/10/12回パワー連打へ拡張した (batch:1308-nazonazo-space-restart-repair-boss)。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/テストのみ変更)。
 // v2197: もじっこファームの文字練習へ「ことばの あな」と「きょうの 3もじ」を追加し、各課題の再開保存、複数タブでの原子的な報酬claim、IDB障害時のfail-closed fallback、途中報酬表示、縦向き中断と短い横画面の操作領域を回帰固定した (batch:1307-mojikko-writing-modes)。play.html PAGE_CACHE_VERSION と同期不要 (writing-mori/index.html/テストのみ変更)。
@@ -129,7 +130,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2199;
+const CACHE_VERSION = 2200;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
