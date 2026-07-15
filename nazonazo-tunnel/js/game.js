@@ -539,20 +539,32 @@ let seaBossPhase="idle",seaBossHp=0,seaBossMaxHp=0,seaBossX=0,seaBossY=0,seaBoss
 let seaBossEpoch=0,seaBossTimer=0,seaBossFlashUntil=0,seaBossSalvos=new Set(),seaBossThresholds=new Set(),seaBossDefeated=false;
 let seaBossEnemyShots=[],seaBossNextAttackAt=0,seaBossAttackAt=0,seaBossInvulnerableUntil=0,seaBossStunUntil=0;
 let seaRescueMessageTimer=0,seaDecoysSeen=new Set();
-const FUTURE_CRANE_PICKUP_MS=[80,110,140];
+const FUTURE_CRANE_RAIL_PER_TURN=[.80,.75,.70];
+const FUTURE_CRANE_DESCENT_SPEED=[120,130,140];
+const FUTURE_CRANE_SLOW_RADIUS=[28,24,20];
+const FUTURE_CRANE_SLOW_SPEED=[40,48,55];
+const FUTURE_CRANE_PICKUP_Y_TOLERANCE=[20,15,12];
+const FUTURE_CRANE_PICKUP_X_TOLERANCE=[32,24,18];
+const FUTURE_CRANE_CORE_SNAP_X=[34,26,20];
 const FUTURE_CRANE_CORE_TOLERANCE=[16,12,8];
-const FUTURE_CRANE_KEY_STEP=14;
-const FUTURE_CRANE_KEY_FAST_STEP=30;
+const FUTURE_CRANE_KEY_ANGLE=Math.PI/10;
+const FUTURE_CRANE_KEY_FAST_ANGLE=Math.PI/4;
+const FUTURE_CRANE_EVENT_ANGLE_CAP=Math.PI/3;
+const FUTURE_CRANE_CRANK_DEADZONE=14;
+const FUTURE_CRANE_GRIP_ARM_MS=120;
+const FUTURE_CRANE_GRIP_GOAL=3;
+const FUTURE_CRANE_AUTO_LIFT_MS=420;
 const FUTURE_CRANE_RETURN_MS=260;
 const FUTURE_CRANE_RETURN_REDUCED_MS=70;
 const FUTURE_CRANE_PULSE_MS=110;
 let futureCapsuleOptions=[],futureCapsuleResolving=false,futureCapsuleAssisted=false;
 let futureCapsuleSelectedIndex=-1,futureCapsuleEnergy=0,futureCapsuleTimers=new Set(),futureCapsuleEpoch=0;
-let futureCranePhase="idle",futureCranePointerId=null,futureCraneHeldIndex=-1,futureCraneHoverIndex=-1;
-let futureCranePickupTimer=0,futureCraneHoverSince=0,futureCraneX=0,futureCraneY=0;
-let futureCraneDragStartX=0,futureCraneDragStartY=0,futureCraneHookStartX=0,futureCraneHookStartY=0;
-let futureCraneLastPointerX=0,futureCraneLastPointerY=0;
-let futureCraneFollowX=0,futureCraneFollowY=0,futureCraneLatchPayloadY=0,futureCraneLifted=false,futureCraneCoreReady=false;
+let futureCranePhase="idle",futureCranePointerId=null,futureCranePointerRole="",futureCranePointerCaptureTarget=null;
+let futureCranePointerPhaseAtDown="",futureCraneHeldIndex=-1,futureCraneTargetIndex=-1,futureCraneX=0,futureCraneY=0;
+let futureCraneLastPointerX=0,futureCraneLastPointerY=0,futureCraneCrankLastAngle=null,futureCraneCrankRotation=0;
+let futureCraneActionHeld=false,futureCraneKeyboardActionHeld=false,futureCraneGripTapEligible=false;
+let futureCraneGripCount=0,futureCraneGripArmedAt=0,futureCraneLastTickAt=0,futureCraneSkipSnapKey="";
+let futureCraneFollowX=0,futureCraneFollowY=0,futureCraneLifted=false,futureCraneCoreReady=false;
 let futureCraneSubmissionCommitted=false,futureCraneKeyboardActive=false,futureCraneGeometry=null,futureCraneGeometryDirty=true;
 let futureCraneGeometryFrame=0;
 const SPACE_GALAXY_WIND_GOAL=Math.PI*2*3.25;
@@ -2609,32 +2621,36 @@ function handleFutureCapsuleKeyDown(event){
  if(!futureCraneScreenActive()||event.defaultPrevented)return;
  const target=event.target,board=target&&typeof target.closest==="function"?target.closest(".future-capsule-board"):null;
  const isArrow=event.key==="ArrowUp"||event.key==="ArrowDown"||event.key==="ArrowLeft"||event.key==="ArrowRight";
- const isAction=event.code==="Space"||event.key===" "||event.key==="Enter";
- if(event.key==="Escape"&&(futureCranePointerId!==null||futureCraneHeldIndex>=0||futureCranePhase!=="idle")){
+ const isAction=event.code==="Space"||event.key===" ";
+ if(event.key==="Escape"&&futureCranePhase!=="seek"){
   if(futureCapsuleResolving)return;
-  event.preventDefault();returnFutureCranePayload("だいじょうぶ。もう いちど！",true);return;
+  event.preventDefault();cancelFutureCraneInteraction("だいじょうぶ。もう いちど！");return;
  }
  if(!board)return;
- if(answerLocked||futureCapsuleResolving||futureCranePhase==="returning"||futureCranePhase==="resolving"||futureCranePhase==="complete"){
+ if(answerLocked||futureCapsuleResolving||futureCranePhase==="auto-lift"||futureCranePhase==="auto-rise"||futureCranePhase==="returning"||futureCranePhase==="resolving"||futureCranePhase==="complete"){
   if(isArrow||isAction)event.preventDefault();return;
  }
  if(isArrow){
   event.preventDefault();
-  const step=event.shiftKey?FUTURE_CRANE_KEY_FAST_STEP:FUTURE_CRANE_KEY_STEP;
-  moveFutureCraneHook((event.key==="ArrowRight"?step:event.key==="ArrowLeft"?-step:0),(event.key==="ArrowDown"?step:event.key==="ArrowUp"?-step:0));
-  if(futureCraneHeldIndex<0)setFutureCranePhase("keyboard-moving");
+  if(event.key==="ArrowUp"||event.key==="ArrowDown"){futureCapsuleGuide("ハンドルは ひだりと みぎで まわすよ");return;}
+  if(event.repeat)return;
+  const angle=event.shiftKey?FUTURE_CRANE_KEY_FAST_ANGLE:FUTURE_CRANE_KEY_ANGLE;
+  futureCraneKeyboardActive=true;prepareFutureCraneSnapDeparture();turnFutureCraneByAngle((event.key==="ArrowRight"?1:-1)*angle);
   return;
+ }
+ if(event.key==="Enter"&&!event.repeat&&futureCranePhase==="grip"){
+  event.preventDefault();performFutureCraneGripTap();return;
  }
  if(!isAction||event.repeat)return;
  event.preventDefault();
- if(futureCraneHeldIndex>=0){releaseFutureCranePayload(false);return;}
- if(!futureCapsulePlayable())return;
- if(futureCraneGeometryDirty||!futureCraneGeometry)syncFutureCraneGeometry();
- const index=futureCranePickupIndex(),entry=futureCapsuleOptions[index];
- if(entry&&!entry.button.disabled){ensureAC();futureCraneKeyboardActive=true;latchFutureCranePod(entry,true);}
- else futureCapsuleGuide("フックを ポッドの うえへ うごかそう");
+ futureCraneKeyboardActive=true;futureCraneKeyboardActionHeld=true;startFutureCraneAction("keyboard");
+}
+function handleFutureCapsuleKeyUp(event){
+ if((event.code!=="Space"&&event.key!==" ")||!futureCraneKeyboardActionHeld)return;
+ event.preventDefault();futureCraneKeyboardActionHeld=false;finishFutureCraneAction(false,"keyboard");
 }
 window.addEventListener("keydown",handleFutureCapsuleKeyDown);
+window.addEventListener("keyup",handleFutureCapsuleKeyUp);
 function handleSpaceGalaxyKeyDown(event){
  if(!spaceGalaxyPlayable()||event.defaultPrevented)return;
  const target=event.target,inside=target&&typeof target.closest==="function"?target.closest(".space-galaxy-planet-choice"):null;

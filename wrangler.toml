@@ -129,6 +129,10 @@ routes = []  # custom_domain 継承を回避（既存 staging と同じ理由）
 [env.staging-app.vars]
 APP_BUILD = "1"
 ANALYTICS_DATASET = "pono_events_stgapp"
+# 注意: Cloudflare の [vars] は [triggers] と異なり env に継承されない (dry-run 実行時に
+# wrangler の warning で判明)。 top-level [vars] の CF_ACCOUNT_ID を re-declare しないと
+# staging-app 側で WAE SQL API 読み出しが CF_ACCOUNT_ID 欠落になるため明示する。
+CF_ACCOUNT_ID = "f5788e90dd05047ab67ada1b6a6f2448"
 
 # Cloudflare の [env.XXX] では top-level [assets] が継承されないため、
 # staging-app では明示的に再宣言する必要がある。
@@ -164,6 +168,18 @@ id = "2140aaf48bde4db0a773d6418c9a43b6"
 [[env.staging-app.analytics_engine_datasets]]
 binding = "EVENTS"
 dataset = "pono_events_stgapp"
+
+# データ分析基盤 (App staging): 集計層 D1 (docs/data-analytics-plan.md §6-3)。production とは別 DB。
+[[env.staging-app.d1_databases]]
+binding = "ANALYTICS_DB"
+database_name = "pono-analytics-stgapp"
+database_id = "b416beb9-85b3-4dc7-b12d-6614a2d80f37"
+
+# データ分析基盤: 日次ロールアップ cron。cron はアカウント全体で production 一本化方針のため、
+# staging-app では手動トリガー (POST /api/admin/analytics/rollup) を主に使う想定だが、
+# 確定契約どおり top-level と同じ crons を明示しておく (継承ではなく明示、上の [triggers] コメント参照)。
+[env.staging-app.triggers]
+crons = ["0 19 * * *"]
 #
 # [[env.staging-app.unsafe.bindings]]
 # name = "SAVEDATA_RL_IP"
