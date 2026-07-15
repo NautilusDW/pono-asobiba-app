@@ -1,5 +1,17 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2208: アプリ専用「ログインボーナス」「わたしのおうち（家具）」機能を復活 (batch:1313、Foundation+3ストリーム統合)。
+// common/mvp-flags.js に app tier 限定で報酬凍結を解除する PonoMvpFlags.rewardsBlocked() ヘルパーを追加し、
+// common/tier.js は document.body.dataset.tier を同期する _syncTierBodyAttr() を新設。common/stickers.js
+// (checkDailyLogin) と common/achievements.js (incrementStat/setStatMax/checkAchievements/grantReward) の
+// PONO_MVP_NO_REWARDS 直参照を rewardsBlocked() 経由へ置換し、play.html に common/stickers.js の
+// <script src> (app tier 限定の起動トリガー付き) を追加。独立レビュー指摘を受け checkDailyLogin() 内部ゲートを
+// window.PonoTier.isApp() フォールバックで自己完結させ、common/mvp-flags.js 未読込ページでの fail-open を防止。
+// room/index.html は free tier のみブロックする tier ロックガードを新設し、play-all.html は card-room の
+// grayout 解除・lockedCards 登録・bn-room 常時表示・家具解放チェーン7箇所の rewardsBlocked() 置換で
+// 「わたしのおうち」を復活させた。アプリ専用ランディングページ index-app.html を新規追加し、index.html の
+// COMING SOON モーダルからリンクした。common/stickers.js は play.html が tier.js 直後に無条件読み込む
+// 必須スクリプトのため CRITICAL_ASSETS_SCRIPTS へ追加 precache。play.html PAGE_CACHE_VERSION と同期。
 // v2207: なぞなぞトレイン宇宙面の最終追跡で、彗星を最短の逃走ルートへ固定し、ロケット先着後に彗星を待つ逆転処理を削除。全188経路で彗星が画面右側を先行し、最後の共通路でだけロケットが追いつく状態を回帰固定した (batch:1314-nazonazo-comet-lead)。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/テストのみ変更)。
 // v2206: もじっこ文字書きのミルマルを、初期状態確定前は画像なし、確定後はタマゴ／赤ちゃん／よちよち／成長の排他的visual classで対応する1枚だけ読む構造へ変更。不要な成長画像のcancelをなくし、4状態それぞれの正しい1request・他状態0・request failure 0・成功演出の追加request 0を回帰固定した (batch:1311-mojikko-storybook-ui)。play.html PAGE_CACHE_VERSION と同期不要 (writing-mori/index.html/テストのみ変更)。
 // v2205: もじっこ文字書きの短い横画面で、実際のZen Maru Gothic読込時にもモード選択の見出しと補助文が重ならないよう間隔を拡張。667×375／844×390で正の文字間隔、枠内収容、2行以内、44px以上の操作領域を回帰固定した (batch:1311-mojikko-storybook-ui)。play.html PAGE_CACHE_VERSION と同期不要 (writing-mori/index.html/テストのみ変更)。
@@ -137,7 +149,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2207;
+const CACHE_VERSION = 2208;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
@@ -174,6 +186,10 @@ const CRITICAL_ASSETS_SCRIPTS = [
   '/common/acorns.js',
   '/common/data-export.js',
   '/common/mvp-flags.js',
+  // v2207: ログインボーナス復活 (batch:1313) — play.html が common/tier.js の直後に
+  // 無条件 <script src> で読む必須スクリプト (checkDailyLogin 等)。mvp-flags.js と
+  // 同じ理由で precache 対象 (asset 単位 try/catch のため未配備でも install 失敗にならない)。
+  '/common/stickers.js',
   '/common/acorn-modal-shared.css',
   '/common/acorn-modal.js',
   '/common/acorn-audio.js',

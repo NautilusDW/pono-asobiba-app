@@ -39,6 +39,19 @@
   window.PONO_MVP_NO_REWARDS = true;
   window.PONO_MVP_ENABLE_ACORNS = true;
 
+  // app tier は carve-out フラグなしで一律ブロック解除 (PONO_MVP_NO_REWARDS / 個別 carve-out の
+  // 挙動そのものは変更しない、app tier 判定を先頭に足すだけ)。
+  function rewardsBlocked(carveOutFlagName) {
+    try {
+      if (window.PonoTier && typeof window.PonoTier.isApp === 'function' && window.PonoTier.isApp()) return false;
+    } catch (e) {}
+    if (!window.PONO_MVP_NO_REWARDS) return false;
+    if (carveOutFlagName && window[carveOutFlagName] === true) return false;
+    return true;
+  }
+  window.PonoMvpFlags = window.PonoMvpFlags || {};
+  window.PonoMvpFlags.rewardsBlocked = rewardsBlocked;
+
   if (!window.PONO_MVP_NO_REWARDS) return;
 
   // バッジ・どんぐり関連 UI を CSS で一括非表示。
@@ -77,8 +90,6 @@
       '.mastery-target,',
       '.target-progress,',
       '.next-reward,',
-      '.login-streak,',
-      '.streak-banner,',
       '.milestone-banner,',
       '.daily-progress,',
       '.daily-progress-bar,',
@@ -87,6 +98,9 @@
       '.hud-mastery,',
       '.hud-target,',
       '.progress-banner',
+      '{ display: none !important; }',
+      'body:not([data-tier="app"]) .login-streak,',
+      'body:not([data-tier="app"]) .streak-banner',
       '{ display: none !important; }'
     ].join('\n');
     var s = document.createElement('style');

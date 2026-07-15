@@ -1,0 +1,214 @@
+"use strict";
+
+const assert = require("node:assert/strict");
+const fs = require("node:fs");
+const path = require("node:path");
+const vm = require("node:vm");
+
+const root = path.resolve(__dirname, "..");
+const achievementsSource = fs.readFileSync(path.join(root, "common/achievements.js"), "utf8");
+const playAll = fs.readFileSync(path.join(root, "play-all.html"), "utf8");
+const roomIndex = fs.readFileSync(path.join(root, "room/index.html"), "utf8");
+
+// ===== common/achievements.js gate =====
+assert.match(
+  achievementsSource,
+  /function _rewardsBlocked\(\) \{\s*\n\s*if \(window\.PonoMvpFlags && typeof window\.PonoMvpFlags\.rewardsBlocked === 'function'\) \{\s*\n\s*return window\.PonoMvpFlags\.rewardsBlocked\(\);\s*\n\s*\}\s*\n\s*return !!window\.PONO_MVP_NO_REWARDS;\s*\n\s*\}/,
+  "achievements.js must define a _rewardsBlocked() helper that routes through PonoMvpFlags when available and falls back to the legacy flag otherwise"
+);
+for (const fnMarker of [
+  "window.incrementStat = function (key, amount) {",
+  "window.setStatMax = function (key, value) {",
+  "window.checkAchievements = function () {",
+  "window.grantReward = function (reward) {",
+]) {
+  const start = achievementsSource.indexOf(fnMarker);
+  assert.ok(start >= 0, `achievements.js must still define: ${fnMarker}`);
+  const nextLines = achievementsSource.slice(start, start + 300);
+  assert.match(
+    nextLines,
+    /if \(_rewardsBlocked\(\)\)/,
+    `${fnMarker} must gate on _rewardsBlocked() instead of the raw PONO_MVP_NO_REWARDS flag`
+  );
+}
+
+// ===== play-all.html: card-room restored (grayout removed) =====
+assert.match(
+  playAll,
+  /<a href="room\/index\.html" class="card card-room locked" id="card-room">/,
+  "play-all.html card-room must have a real href and rely on the .locked class, not an inline grayout style"
+);
+assert.ok(
+  !/id="card-room" style="pointer-events:none;opacity:0\.45;filter:grayscale\(0\.8\);"/.test(playAll),
+  "card-room must no longer use the 2026-04-21 inline MVP grayout style"
+);
+// Sibling cards intentionally left untouched (out of scope for this batch).
+assert.match(
+  playAll,
+  /id="card-aquarium" style="pointer-events:none;opacity:0\.45;filter:grayscale\(0\.8\);"/,
+  "card-aquarium must remain grayed out (aquarium is out of scope for this batch)"
+);
+assert.match(
+  playAll,
+  /id="card-egg" style="pointer-events:none;opacity:0\.45;filter:grayscale\(0\.8\);"/,
+  "card-egg must remain grayed out (egg/pet is out of scope for this batch)"
+);
+
+// ===== play-all.html: card-room participates in the book/app unlock toggle =====
+assert.match(
+  playAll,
+  /const lockedCards = \[[^\]]*'card-room'[^\]]*\];/,
+  "card-room must be included in lockedCards so applyUnlockState() toggles .locked based on tier"
+);
+
+// ===== play-all.html: bn-room bottom-nav override survives mvp-flags.js's blanket hide =====
+assert.match(
+  playAll,
+  /body \.bottom-nav \.bn-item\[data-action="room"\] \{\s*\n\s*display: flex !important;\s*\n\s*\}/,
+  "play-all.html must override the mvp-flags.js blanket hide rule for the room bottom-nav button with higher CSS specificity"
+);
+
+// ===== play-all.html: reward-granting chain (furniture -> room) app-tier unblock =====
+assert.match(
+  playAll,
+  /function rewardsBlocked\(\) \{\s*\n\s*if \(window\.PonoMvpFlags && typeof window\.PonoMvpFlags\.rewardsBlocked === 'function'\) \{\s*\n\s*return window\.PonoMvpFlags\.rewardsBlocked\(\);\s*\n\s*\}\s*\n\s*return !!window\.PONO_MVP_NO_REWARDS;\s*\n\s*\}/,
+  "play-all.html must define the same rewardsBlocked() fallback pattern used elsewhere in the codebase"
+);
+for (const marker of [
+  "function checkSlotReward(total) {",
+  "window._initStampRally = function() {",
+]) {
+  const start = playAll.indexOf(marker);
+  assert.ok(start >= 0, `play-all.html must still define: ${marker}`);
+  const nextLines = playAll.slice(start, start + 400);
+  assert.match(
+    nextLines,
+    /if \(rewardsBlocked\(\)\) return/,
+    `${marker} must gate on rewardsBlocked() (this is the entry point that ultimately calls grantReward + unlocks the room card)`
+  );
+}
+
+// ===== room/index.html: free-tier page guard (book/app pass through) =====
+assert.ok(
+  roomIndex.indexOf("<title>わたしのおうち</title>") >= 0,
+  "room/index.html must keep its <title>"
+);
+assert.match(
+  roomIndex,
+  /locked = \(pt\.getTier\(\) === 'free'\)/,
+  "room/index.html guard must lock only the free tier (book keeps its existing 10-item partial access)"
+);
+assert.match(
+  roomIndex,
+  /window\.PonoDebugMode && window\.PonoDebugMode\.isAllowed\(\)/,
+  "room/index.html guard must respect the staging PonoDebugMode bypass like the rest of the codebase"
+);
+assert.match(
+  roomIndex,
+  /id = 'ponoTierLockScreen'/,
+  "room/index.html guard must render the lock screen overlay (bento/kitchen.html pattern)"
+);
+assert.match(
+  roomIndex,
+  /<script src="\.\.\/common\/tier\.js"><\/script>/,
+  "room/index.html must load common/tier.js"
+);
+
+// ===== Behavioral smoke test via vm sandbox (mirrors login_bonus_app_tier_regression.cjs) =====
+function makeDocumentStub() {
+  function makeEl() {
+    var _text = "";
+    return {
+      style: {},
+      classList: { add() {}, remove() {}, toggle() {}, contains() { return false; } },
+      appendChild() {},
+      setAttribute() {},
+      addEventListener() {},
+      removeEventListener() {},
+      set textContent(v) { _text = v; },
+      get textContent() { return _text; },
+    };
+  }
+  return {
+    readyState: "complete",
+    createElement: () => makeEl(),
+    head: { appendChild() {} },
+    body: { appendChild() {} },
+    getElementById: () => null,
+    addEventListener() {},
+  };
+}
+
+function runInAchievementsSandbox(windowExtras, fn) {
+  const store = {};
+  const localStorage = {
+    getItem: (k) => (Object.prototype.hasOwnProperty.call(store, k) ? store[k] : null),
+    setItem: (k, v) => { store[k] = String(v); },
+    removeItem: (k) => { delete store[k]; },
+  };
+  const sandbox = {
+    window: Object.assign({}, windowExtras),
+    document: makeDocumentStub(),
+    localStorage,
+    console,
+    Math,
+    Date,
+    JSON,
+    setTimeout,
+    clearTimeout,
+  };
+  sandbox.window.localStorage = localStorage;
+  vm.createContext(sandbox);
+  vm.runInContext(achievementsSource, sandbox, { timeout: 1000, filename: "common/achievements.js" });
+  return fn(sandbox, store);
+}
+
+// 1) No PonoMvpFlags / raw PONO_MVP_NO_REWARDS=true (legacy pages without mvp-flags.js) -> blocked.
+runInAchievementsSandbox({ PONO_MVP_NO_REWARDS: true }, (sandbox, store) => {
+  const result = sandbox.window.incrementStat("login_first", 1);
+  assert.equal(result, 0, "legacy PONO_MVP_NO_REWARDS=true path must still block incrementStat when PonoMvpFlags is absent");
+  assert.equal(store.pono_unlocked_furn, undefined, "no furniture should be granted while blocked");
+});
+
+// 2) PonoMvpFlags present, app tier -> must NOT block; first_login achievement grants ach_small_chair furniture.
+runInAchievementsSandbox(
+  { PONO_MVP_NO_REWARDS: true, PonoMvpFlags: { rewardsBlocked: () => false } },
+  (sandbox, store) => {
+    const result = sandbox.window.incrementStat("login_first", 1);
+    assert.equal(result, 1, "app tier (rewardsBlocked()===false) must let incrementStat run normally");
+    const furn = JSON.parse(store.pono_unlocked_furn || "[]");
+    assert.ok(
+      furn.indexOf("ach_small_chair") !== -1,
+      "reaching the first_login achievement target on app tier must unlock ach_small_chair furniture (feeds room/index.html's inventory merge)"
+    );
+  }
+);
+
+// 3) PonoMvpFlags present, non-app tier, no carve-out -> blocked (book/free/Web must stay frozen).
+runInAchievementsSandbox(
+  { PONO_MVP_NO_REWARDS: true, PonoMvpFlags: { rewardsBlocked: () => true } },
+  (sandbox, store) => {
+    const result = sandbox.window.incrementStat("login_first", 1);
+    assert.equal(result, 0, "non-app tier must remain blocked (book/free/Web 版の凍結を維持)");
+    assert.equal(store.pono_unlocked_furn, undefined, "no furniture should be granted while blocked");
+  }
+);
+
+// 4) window.grantReward (external entry point used by play-all.html's checkSlotReward) respects the same gate.
+runInAchievementsSandbox(
+  { PONO_MVP_NO_REWARDS: true, PonoMvpFlags: { rewardsBlocked: () => false } },
+  (sandbox, store) => {
+    sandbox.window.grantReward({ type: "furn", id: "furn_bed_blue_boy" });
+    const furn = JSON.parse(store.pono_unlocked_furn || "[]");
+    assert.ok(furn.indexOf("furn_bed_blue_boy") !== -1, "app tier grantReward() must write the item id to pono_unlocked_furn");
+  }
+);
+runInAchievementsSandbox(
+  { PONO_MVP_NO_REWARDS: true, PonoMvpFlags: { rewardsBlocked: () => true } },
+  (sandbox, store) => {
+    sandbox.window.grantReward({ type: "furn", id: "furn_bed_blue_boy" });
+    assert.equal(store.pono_unlocked_furn, undefined, "non-app tier grantReward() must stay a no-op");
+  }
+);
+
+console.log("room_furniture_app_tier_regression: all assertions passed");

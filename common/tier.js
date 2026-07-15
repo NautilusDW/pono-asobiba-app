@@ -144,6 +144,17 @@
   function isBook() { return getTier() === 'book'; }
   function isApp()  { return getTier() === 'app';  }
 
+  // 他モジュール (mvp-flags.js 等) が CSS だけで tier 分岐できるよう body に反映する。
+  // tier.js は常に <head> 内 <body> 出現前に読まれるため DOMContentLoaded を待つ。
+  function _syncTierBodyAttr() {
+    try { document.body.dataset.tier = getTier(); } catch (e) {}
+  }
+  if (document.body) {
+    _syncTierBodyAttr();
+  } else {
+    document.addEventListener('DOMContentLoaded', _syncTierBodyAttr);
+  }
+
   // ---- 絵本購入者に解放する海の生き物 (aquarium) 8種 ----
   // 代表的なカラフルな魚 + アクセント生物をバランスよく配置。
   // 残りの生き物はサブスクで順次解放される想定。

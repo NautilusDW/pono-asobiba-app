@@ -1327,6 +1327,10 @@
     .cs-modal-list li .b{flex:none;width:22px;height:22px;border-radius:50%;background:var(--cs-primary);
       color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;}
     .cs-modal-foot{font-weight:700;font-size:clamp(12px,3vw,14px);color:var(--cs-text-light);line-height:1.7;margin:18px 0 0;}
+    .cs-modal-cta{display:inline-flex;align-items:center;gap:.4em;margin-top:16px;padding:11px 22px;
+      background:var(--cs-primary-deep);color:#fff;font-weight:900;font-size:14px;text-decoration:none;
+      border-radius:999px;box-shadow:0 4px 12px rgba(201,106,46,.3);transition:background .2s ease;}
+    .cs-modal-cta:hover,.cs-modal-cta:focus-visible{background:var(--cs-primary);}
     @media (prefers-reduced-motion:reduce){
       .cs-banner{transform:rotate(-1deg);transition-duration:.01s;}
       .cs-banner:hover{transform:rotate(-1deg);}
@@ -2243,6 +2247,7 @@
             <li><span class="b">✓</span>ホーム画面に おける アプリアイコン</li>
           </ul>
           <p class="cs-modal-foot">じゅんびが できたら、 ここで おしらせするね。</p>
+          <a class="cs-modal-cta" href="index-app.html">アプリ版の くわしい ページを 見る →</a>
         </div>
       </div>
     </section>

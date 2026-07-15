@@ -94,7 +94,18 @@
   window.checkDailyLogin = function () {
     // MVP: ログインボーナス・シール抽選・マイルストーン処理を全部スキップ。
     // pono_login_days / pono_stickers / pono_login_streak 等の LS は触らない。
-    if (window.PONO_MVP_NO_REWARDS) return null;
+    // app tier のみ common/mvp-flags.js の rewardsBlocked() 経由でブロック解除 (Web 版は従来通り凍結)。
+    if (window.PonoMvpFlags && typeof window.PonoMvpFlags.rewardsBlocked === 'function') {
+      if (window.PonoMvpFlags.rewardsBlocked('PONO_MVP_ENABLE_LOGIN_STREAK')) return null;
+    } else if (window.PONO_MVP_NO_REWARDS) {
+      return null;
+    } else if (!(window.PonoTier && typeof window.PonoTier.isApp === 'function' && window.PonoTier.isApp())) {
+      // common/mvp-flags.js 未読込のページ (play.html は production app shell の都合で
+      // 意図的に未読込) では上の2分岐がどちらも成立せず fail-open してしまうため、
+      // tier 判定だけで自己完結してブロックする保険。呼び出し元 (play.html の
+      // Login Bonus Trigger) 側の isApp() チェックが将来外れても Web 版の凍結を守る。
+      return null;
+    }
     var today = new Date().toDateString();
     var lastLogin = localStorage.getItem(LS_LOGIN_LAST);
 

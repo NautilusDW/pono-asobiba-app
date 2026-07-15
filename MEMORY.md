@@ -149,6 +149,71 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-07-15T21:59:22Z - レビュー指摘対応: checkDailyLogin gateのtier fallback追加 (Stream A)
+- **タスク**: レビュー指摘対応: checkDailyLogin gateのtier fallback追加 (Stream A)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 0
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {}
+- **サマリ**: 行動ログが空のため分析できません。
+
+
+### 2026-07-15T21:44:48Z - sw.js CACHE_VERSION一括バンプ (batch:1313統合: ログインボーナス/わたしのおうち/アプリ専用LP)
+- **タスク**: sw.js CACHE_VERSION一括バンプ (batch:1313統合: ログインボーナス/わたしのおうち/アプリ専用LP)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 0
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {}
+- **サマリ**: 行動ログが空のため分析できません。
+
+
+### 2026-07-15T21:39:23Z - app tier限定 家具・私のおうち機能の復活 (Stream B)
+- **タスク**: app tier限定 家具・私のおうち機能の復活 (Stream B)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 0
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {}
+- **サマリ**: 行動ログが空のため分析できません。
+
+
+### 2026-07-15T21:20:40Z - アプリ専用ログインボーナス機能の復活 (common/stickers.js gate + play.html 移植)
+- **タスク**: アプリ専用ログインボーナス機能の復活 (common/stickers.js gate + play.html 移植)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 0
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {}
+- **サマリ**: 行動ログが空のため分析できません。
+
+
+### 2026-07-15T21:12:55Z - app tier限定でreward凍結解除する土台をcommon/mvp-flags.jsに追加(PonoMvpFlags.rewardsBlocked + tier.js data-tier sync)
+- **タスク**: app tier限定でreward凍結解除する土台をcommon/mvp-flags.jsに追加(PonoMvpFlags.rewardsBlocked + tier.js data-tier sync)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 0
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {}
+- **サマリ**: 行動ログが空のため分析できません。
+
+
 ### 2026-07-15T01:26:43Z - analytics rollup/admin ブロッキング指摘4件の再検証
 - **タスク**: analytics rollup/admin ブロッキング指摘4件の再検証
 - **結果**: 成功
@@ -190,71 +255,6 @@ wrangler deploy                  # master 内容を production に
 
 ### 2026-07-15T01:05:05Z - analytics rollup engine: src/api/analytics-rollup.js 新規実装 (WAE SQL API 読み出し + D1 daily_events/daily_clients/clients/rollup_log 集計、graceful skip、handleScheduledRollup/runRollupForDate エントリポイント) + 静的regressionテスト
 - **タスク**: analytics rollup engine: src/api/analytics-rollup.js 新規実装 (WAE SQL API 読み出し + D1 daily_events/daily_clients/clients/rollup_log 集計、graceful skip、handleScheduledRollup/runRollupForDate エントリポイント) + 静的regressionテスト
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 0
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {}
-- **サマリ**: 行動ログが空のため分析できません。
-
-
-### 2026-07-15T01:04:47Z - admin分析タブ(C班): /api/admin/analytics/* を呼ぶ📊ぶんせきタブUI実装
-- **タスク**: admin分析タブ(C班): /api/admin/analytics/* を呼ぶ📊ぶんせきタブUI実装
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 0
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {}
-- **サマリ**: 行動ログが空のため分析できません。
-
-
-### 2026-07-15T01:03:36Z - analytics admin API: worker.js scheduled handler + /api/admin/analytics/* 5エンドポイント実装 (B班)
-- **タスク**: analytics admin API: worker.js scheduled handler + /api/admin/analytics/* 5エンドポイント実装 (B班)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 0
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {}
-- **サマリ**: 行動ログが空のため分析できません。
-
-
-### 2026-07-15T00:53:05Z - analytics D1 provisioning: pono-analytics-prod/stgapp 作成 + wrangler.toml binding/vars/cron 追加
-- **タスク**: analytics D1 provisioning: pono-analytics-prod/stgapp 作成 + wrangler.toml binding/vars/cron 追加
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 0
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {}
-- **サマリ**: 行動ログが空のため分析できません。
-
-
-### 2026-07-15T00:42:57Z - データ分析基盤 Phase 0+1 実装完了 + staging 実機検証確定 (Umami 33ページ/api/e+WAE/telemetry.js/privacy.html/P0計装、AE有効化ブロッカーと/privacyループを解消、HANDOFF記帳+claim削除)
-- **タスク**: データ分析基盤 Phase 0+1 実装完了 + staging 実機検証確定 (Umami 33ページ/api/e+WAE/telemetry.js/privacy.html/P0計装、AE有効化ブロッカーと/privacyループを解消、HANDOFF記帳+claim削除)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 0
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {}
-- **サマリ**: 行動ログが空のため分析できません。
-
-
-### 2026-07-14T22:50:37Z - GK/KK比較リサーチ統合レポート執筆(経営アドバイザー統合フェーズ)
-- **タスク**: GK/KK比較リサーチ統合レポート執筆(経営アドバイザー統合フェーズ)
 - **結果**: 成功
 - **理由**: N/A
 - **総アクション数**: 0

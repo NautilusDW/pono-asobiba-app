@@ -11043,6 +11043,8 @@
   </script>
   <!-- v1581: 重複 <script src="common/debug-mode.js"> を削除 (L3768 で既に読込済) -->
   <script src="common/tier.js"></script>
+  <!-- ログインボーナス・シール帳 (window.checkDailyLogin 等)。 app tier 限定で発火 (下部の Login Bonus Trigger 参照)。 -->
+  <script src="common/stickers.js"></script>
   <script src="js/game-stickers.js"></script>
   <!-- お題 (daily-quest) + どんぐりショップ phase 4 統合 (v1570) -->
   <script src="common/acorns.js"></script>
@@ -11528,7 +11530,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2187; // sw.js CACHE_VERSION と同期 (batch:gacha-lever-touch + batch:gacha-tour-note: レバー当たり判定拡張 + ガチャチュートリアル2ステップ化)
+    const PAGE_CACHE_VERSION = 2208; // sw.js CACHE_VERSION と同期 (batch:1313: checkDailyLogin gate の tier fallback 修正)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -11537,7 +11539,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v2187'; // batch:gacha-lever-touch + batch:gacha-tour-note: PAGE_CACHE_VERSION/sw.js CACHE_VERSION と同期
+    window.PONO_SW_VERSION = 'v2208'; // batch:1313: PAGE_CACHE_VERSION/sw.js CACHE_VERSION と同期
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
@@ -18624,6 +18626,17 @@
       s.src = '/common/sw-update.js?v=' + encodeURIComponent(String(PAGE_CACHE_VERSION));
       s.defer = true;
       document.head.appendChild(s);
+    })();
+
+    // ===== Login Bonus Trigger (app tier limited) =====
+    // Web 版の「登録不要」訴求と矛盾させないため、app tier 以外では一切発火しない (play-all.html 移植)。
+    (function () {
+      if (!(window.PonoTier && typeof window.PonoTier.isApp === 'function' && window.PonoTier.isApp())) return;
+      if (!window.checkDailyLogin) return;
+      var loginResult = window.checkDailyLogin();
+      if (loginResult && window.showLoginBonusPopup) {
+        setTimeout(function () { window.showLoginBonusPopup(loginResult); }, 800);
+      }
     })();
 
     // ===== (v2049 削除) First-visit SW catch-up overlay =====
