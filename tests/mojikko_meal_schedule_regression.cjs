@@ -647,10 +647,11 @@ for (const [relative, expectedWidth, expectedHeight] of bitmapCases) {
 }
 
 assert.match(pages.care, /--care-icon-gohan:\s*url\('\.\.\/assets\/images\/mojikko\/care\/icon_moji_gohan_onigiri\.png'\)/);
-assert.match(pages.writing, /--moji-icon-gohan:\s*url\('\.\.\/assets\/images\/mojikko\/care\/icon_moji_gohan_onigiri\.png'\)/);
+assert.match(pages.writing, /--story-gohan:\s*url\('\.\.\/assets\/images\/nazonazo-tunnel\/quiz-art\/quiz_onigiri_20260714\.webp'\)/);
 assert.doesNotMatch(pages.care, /icon_moji_gohan\.png/, 'care must not keep serving the bowl-shaped meal icon');
 assert.doesNotMatch(pages.writing, /icon_moji_gohan\.png/, 'writing must not keep serving the bowl-shaped meal icon');
-assert.match(pages.writing, /--moji-reward-box:\s*url\('\.\.\/assets\/images\/mojikko\/writing\/reward_box_blank\.png'\)/);
+assert.doesNotMatch(pages.writing, /icon_moji_gohan_onigiri\.png/, 'writing must use the watercolor storybook onigiri');
+assert.match(pages.writing, /\.reward-box\s*\{[^}]*border-image-source:\s*var\(--story-frame-wide\)/s);
 assert.match(pages.writing, /\.reward-box \.food-pixel\s*\{\s*display: block;/);
 
 console.log('Mojikko meal schedule regression: PASS');

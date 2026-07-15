@@ -354,6 +354,7 @@ check('setItem failures do not block completion or its reward path', () => {
     resultRewardWrap: { hidden: false },
     starCountEl: { textContent: '' },
     resultOverlay: { classList: { add() { calls.overlay = (calls.overlay || 0) + 1; } } },
+    openResultOverlay() { calls.overlay = (calls.overlay || 0) + 1; },
     pendingNextAction: null,
     pendingModeAdvanceTimer: null,
     pendingResultOverlayTimer: null,

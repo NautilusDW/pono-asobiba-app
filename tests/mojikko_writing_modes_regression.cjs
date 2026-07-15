@@ -53,7 +53,8 @@ vm.runInContext(
       WORD_HOLE_MAX_ORDINAL,
       DAILY_THREE_SIZE,
       WORD_HOLE_CLEAR_KANA,
-      WORD_HOLE_BLUEPRINTS
+      WORD_HOLE_BLUEPRINTS,
+      WORD_HOLE_STORYBOOK_ART
     };`,
   constantsContext,
   { filename: 'mojikko-writing-mode-constants.js' }
@@ -659,7 +660,7 @@ check('only final tasks show the modal; intermediate answers advance after 900ms
   assert.equal(final.action.showOverlay, true);
 
   const completeSource = between(html, 'function completeWriting(', 'function onWritingComplete(');
-  assert.match(completeSource, /if \(pendingNextAction\.showOverlay\)[\s\S]*?resultOverlay\.classList\.add\('show'\)[\s\S]*?else[\s\S]*?}, 900\);/);
+  assert.match(completeSource, /if \(pendingNextAction\.showOverlay\)[\s\S]*?openResultOverlay\(\)[\s\S]*?else[\s\S]*?}, 900\);/);
 });
 
 check('accepted characters save global progress and grant the existing reward exactly once', () => {

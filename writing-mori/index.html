@@ -79,7 +79,7 @@
 <script src="../common/vendor/hanzi-writer.min.js"></script>
 <script src="../common/achievements.js"></script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=DotGothic16&family=Zen+Maru+Gothic:wght@500;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap');
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -101,49 +101,23 @@
   --blue: #64abd2;
   --green: #75b96f;
   --shadow: rgba(70, 42, 18, 0.25);
-  --pixel-font: 'DotGothic16', 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', sans-serif;
   --round-font: 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', sans-serif;
-  --moji-writing-board: url('../assets/images/mojikko/writing/board_frame.png');
-  --moji-panel-plain: url('../assets/images/mojikko/writing/panel_plain.png');
-  --moji-panel-leaf: url('../assets/images/mojikko/writing/panel_leaf.png');
-  --moji-prompt-sign: url('../assets/images/mojikko/writing/prompt_sign_wide.png');
-  --moji-star-counter: url('../assets/images/mojikko/writing/star_counter.png');
-  --moji-settings-button: url('../assets/images/mojikko/writing/settings_button.png');
-  --moji-companion-normal: url('../assets/images/mojikko/writing/companion_card_normal.png');
-  --moji-companion-reward: url('../assets/images/mojikko/writing/companion_card_reward.png');
-  --moji-milmaru-wave: url('../assets/images/mojikko/writing/milmaru_wave.png');
-  --moji-milmaru-cookie: url('../assets/images/mojikko/writing/milmaru_cookie.png');
-  --moji-milmaru-cheer: url('../assets/images/mojikko/writing/milmaru_cheer.png');
-  --moji-milmaru-egg: url('../assets/images/mojikko/care/milmaru_egg_idle.png');
-  --moji-milmaru-baby: url('../assets/images/mojikko/care/milmaru_shell_baby_idle_pose.png');
-  --moji-milmaru-yochiyochi: url('../assets/images/mojikko/care/milmaru_yochiyochi_front_happy.png');
-  --moji-reward-box: url('../assets/images/mojikko/writing/reward_box_blank.png');
-  --moji-button-success: url('../assets/images/mojikko/writing/button_success_normal.png');
-  --moji-button-success-pressed: url('../assets/images/mojikko/writing/button_success_pressed.png');
-  --moji-button-retry: url('../assets/images/mojikko/writing/button_retry_wide_normal.png');
-  --moji-button-retry-pressed: url('../assets/images/mojikko/writing/button_retry_wide_pressed.png');
-  --moji-button-care: url('../assets/images/mojikko/writing/button_care_normal.png');
-  --moji-button-care-pressed: url('../assets/images/mojikko/writing/button_care_pressed.png');
-  --moji-button-small-success: url('../assets/images/mojikko/writing/button_small_success_normal.png');
-  --moji-button-small-success-pressed: url('../assets/images/mojikko/writing/button_small_success_pressed.png');
-  --moji-button-small-retry: url('../assets/images/mojikko/writing/button_small_retry_normal.png');
-  --moji-button-small-retry-pressed: url('../assets/images/mojikko/writing/button_small_retry_pressed.png');
-  --moji-button-modal-care: url('../assets/images/mojikko/writing/button_modal_care_clean_normal.png');
-  --moji-button-modal-care-pressed: url('../assets/images/mojikko/writing/button_modal_care_clean_pressed.png');
-  --moji-button-modal-next: url('../assets/images/mojikko/writing/button_modal_next_clean_normal.png');
-  --moji-button-modal-next-pressed: url('../assets/images/mojikko/writing/button_modal_next_clean_pressed.png');
-  --moji-icon-cookie: url('../assets/images/mojikko/writing/icon_cookie.png');
-  --moji-icon-cookie-glow: url('../assets/images/mojikko/writing/icon_cookie_glow.png');
-  --moji-icon-gohan: url('../assets/images/mojikko/care/icon_moji_gohan_onigiri.png');
-  --moji-icon-alert: url('../assets/images/mojikko/writing/icon_alert.png');
-  --moji-icon-star: url('../assets/images/mojikko/writing/icon_star.png');
-  --moji-icon-pencil: url('../assets/images/mojikko/writing/icon_pencil.png');
-  --moji-bg-garden: url('../assets/images/mojikko/care/yard_background_wide_v2.png');
-  --moji-kana-tab-normal: url('../assets/images/mojikko/writing/kana_tab_normal.png');
-  --moji-kana-tab-active: url('../assets/images/mojikko/writing/kana_tab_active.png');
-  --moji-char-button-normal: url('../assets/images/mojikko/writing/char_button_normal.png');
-  --moji-char-button-active: url('../assets/images/mojikko/writing/char_button_active.png');
-  --moji-char-button-done: url('../assets/images/mojikko/writing/char_button_done.png');
+  --moji-font: 'Yu Mincho', 'Hiragino Mincho ProN', 'Hiragino Mincho Pro', serif;
+  --story-bg: url('../assets/images/quizland/stage-bg.webp');
+  --story-frame-large: url('../assets/images/quizland/Fukuro_frame_001.webp');
+  --story-frame-grid: url('../assets/images/quizland/Fukuro_frame_002.webp');
+  --story-frame-wide: url('../assets/images/quizland/Fukuro_frame_003.webp');
+  --story-frame-leaf: url('../assets/images/quizland/Fukuro_frame_004.webp');
+  --story-settings: url('../assets/_legacy/preview-placeholders/ctrl-btn-settings.png');
+  --story-star: url('../assets/images/quizland/quizland_difficulty_star_gold_gpt_image2_20260623.png');
+  --story-cookie: url('../assets/images/Bento_parts/cookie.webp');
+  --story-gohan: url('../assets/images/nazonazo-tunnel/quiz-art/quiz_onigiri_20260714.webp');
+  --story-pencil: url('../assets/images/nazonazo-tunnel/quiz-art/quiz_pencil_20260714.webp');
+  --story-milk: url('../assets/images/mojikko/writing/storybook/icon_moji_milk_20260716.webp');
+  --story-milmaru-grown: url('../assets/images/mojikko/writing/storybook/milmaru_grown_wave_20260716.webp');
+  --story-milmaru-yochiyochi: url('../assets/images/mojikko/writing/storybook/milmaru_yochiyochi_front_20260716.webp');
+  --story-milmaru-baby: url('../assets/images/mojikko/writing/storybook/milmaru_shell_baby_idle_20260716.webp');
+  --story-milmaru-egg: url('../assets/images/mojikko/writing/storybook/milmaru_egg_idle_20260716.webp');
 }
 
 html, body {
@@ -164,7 +138,7 @@ html, body {
 #stage-wrap {
   position: fixed;
   inset: 0;
-  overflow: hidden;
+  overflow: clip;
   background:
     linear-gradient(180deg, #233f53 0%, #12222b 100%);
 }
@@ -177,18 +151,15 @@ html, body {
   height: 900px;
   transform-origin: 0 0;
   overflow: hidden;
-  background: var(--moji-bg-garden) right center / cover no-repeat;
-  image-rendering: pixelated;
+  image-rendering: auto;
 }
 
 #stage::before {
   content: '';
   position: absolute;
   inset: 0;
-  background:
-    repeating-linear-gradient(0deg, rgba(255,255,255,0.035) 0 2px, transparent 2px 8px),
-    repeating-linear-gradient(90deg, rgba(255,255,255,0.03) 0 2px, transparent 2px 8px);
-  mix-blend-mode: soft-light;
+  background: none;
+  mix-blend-mode: normal;
   pointer-events: none;
 }
 
@@ -210,7 +181,7 @@ html, body {
     justify-content: center;
     background: #1f2e2b;
     color: #ffe59d;
-    font-family: var(--pixel-font);
+    font-family: var(--round-font);
     font-size: clamp(1.2rem, 6vw, 2.2rem);
     letter-spacing: 0.16em;
     text-align: center;
@@ -337,7 +308,7 @@ html, body {
   min-height: 48px;
   padding: 8px 18px 10px;
   border-width: 3px;
-  font-family: var(--pixel-font);
+  font-family: var(--round-font);
   font-size: 24px;
   font-weight: 700;
   color: var(--ink);
@@ -345,7 +316,7 @@ html, body {
     linear-gradient(180deg, #fff6d7 0%, #f3cd8a 100%);
   cursor: pointer;
   transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.15s ease;
-  image-rendering: pixelated;
+  image-rendering: auto;
 }
 
 .pixel-button:active {
@@ -403,7 +374,7 @@ html, body {
   height: 66px;
   align-items: center;
   justify-content: center;
-  font-family: var(--pixel-font);
+  font-family: var(--round-font);
   font-size: 32px;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -453,14 +424,13 @@ html, body {
   justify-content: center;
   gap: 10px;
   padding-left: 52px;
-  font-family: var(--pixel-font);
+  font-family: var(--round-font);
   font-size: 27px;
   color: #6a4528;
   border: 0;
   border-radius: 0;
-  background: var(--moji-star-counter) center / contain no-repeat;
   box-shadow: none;
-  image-rendering: pixelated;
+  image-rendering: auto;
 }
 
 .star-icon {
@@ -474,11 +444,10 @@ html, body {
   font-size: 30px;
   border: 0;
   border-radius: 0;
-  background: var(--moji-settings-button) center / contain no-repeat;
   box-shadow: none;
   color: transparent;
   text-shadow: none;
-  image-rendering: pixelated;
+  image-rendering: auto;
 }
 
 .layout {
@@ -521,7 +490,7 @@ html, body {
   align-items: center;
   justify-content: center;
   border-bottom: 4px solid rgba(83, 112, 66, 0.28);
-  font-family: var(--pixel-font);
+  font-family: var(--round-font);
   font-size: 24px;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -548,7 +517,7 @@ html, body {
   box-shadow:
     0 6px 0 #4f321e,
     inset 0 0 0 4px rgba(255, 255, 255, 0.28);
-  image-rendering: pixelated;
+  image-rendering: auto;
 }
 
 .character-panel {
@@ -583,7 +552,7 @@ html, body {
   border: 3px solid #9a704c;
   border-radius: 8px;
   background: #fff7d9;
-  font-family: var(--pixel-font);
+  font-family: var(--round-font);
   font-size: 21px;
   color: #65452e;
 }
@@ -690,7 +659,7 @@ html, body {
   border-radius: 50%;
   background: #fff8e7;
   color: #6b4b32;
-  font-family: var(--pixel-font);
+  font-family: var(--round-font);
   font-size: 14px;
 }
 
@@ -717,18 +686,16 @@ html, body {
   height: 36px;
   border: 0;
   border-radius: 0;
-  background: var(--moji-kana-tab-normal) center / 100% 100% no-repeat;
   color: #4f3825;
-  font-family: var(--pixel-font);
+  font-family: var(--round-font);
   font-size: 15px;
   font-weight: 700;
   box-shadow: none;
   cursor: pointer;
-  image-rendering: pixelated;
+  image-rendering: auto;
 }
 
 .kana-tab.active {
-  background-image: var(--moji-kana-tab-active);
   filter: drop-shadow(0 0 4px rgba(255, 223, 96, 0.42));
 }
 
@@ -758,14 +725,13 @@ html, body {
   padding: 0 4px;
   border: 0;
   border-radius: 0;
-  background: var(--moji-char-button-normal) center / 100% 100% no-repeat;
   color: var(--ink);
   font-family: var(--round-font);
   font-size: 23px;
   font-weight: 900;
   cursor: pointer;
   box-shadow: none;
-  image-rendering: pixelated;
+  image-rendering: auto;
 }
 
 .char-button .cursor {
@@ -785,7 +751,6 @@ html, body {
 }
 
 .char-button.active {
-  background-image: var(--moji-char-button-active);
   filter: drop-shadow(0 0 4px rgba(255, 224, 101, 0.48));
 }
 
@@ -799,11 +764,9 @@ html, body {
 }
 
 .char-button.done {
-  background-image: var(--moji-char-button-done);
 }
 
 .char-button.done.active {
-  background-image: var(--moji-char-button-active);
 }
 
 .companion-card {
@@ -828,7 +791,7 @@ html, body {
   box-shadow:
     0 6px 0 #4f321e,
     inset 0 0 0 4px rgba(255, 255, 255, 0.28);
-  image-rendering: pixelated;
+  image-rendering: auto;
   transition: transform 0.12s ease, filter 0.18s ease, box-shadow 0.18s ease;
 }
 
@@ -865,9 +828,8 @@ html, body {
   justify-content: center;
   border: 0;
   border-radius: 0;
-  background: var(--moji-icon-alert) center / contain no-repeat;
   color: transparent;
-  font-family: var(--pixel-font);
+  font-family: var(--round-font);
   font-size: 24px;
   box-shadow: none;
   text-shadow: none;
@@ -886,7 +848,6 @@ html, body {
   display: none;
   border: 0;
   border-radius: 0;
-  background: var(--moji-icon-cookie-glow) center / contain no-repeat;
   box-shadow: none;
 }
 
@@ -895,17 +856,15 @@ html, body {
 }
 
 .companion-cookie.gohan {
-  background-image: var(--moji-icon-gohan);
 }
 
 .companion-cookie.star {
-  background-image: var(--moji-icon-star);
 }
 
 .companion-cookie.milk {
-  border: 2px solid #9f7655;
-  border-radius: 4px 4px 6px 6px;
-  background: linear-gradient(180deg, #fffdf5 0 22%, #dff8f3 22% 42%, #fffdf5 42% 100%);
+  border: 0;
+  border-radius: 0;
+  background: var(--story-milk) center / contain no-repeat;
 }
 
 .companion-name {
@@ -913,7 +872,7 @@ html, body {
   left: 16px;
   right: auto;
   top: 17px;
-  font-family: var(--pixel-font);
+  font-family: var(--round-font);
   font-size: 19px;
   font-weight: 700;
   line-height: 1;
@@ -927,7 +886,7 @@ html, body {
   right: 14px;
   top: 18px;
   margin-top: 0;
-  font-family: var(--pixel-font);
+  font-family: var(--round-font);
   font-size: 15px;
   color: var(--ink-soft);
   text-align: left;
@@ -942,9 +901,8 @@ html, body {
   width: 152px;
   height: 142px;
   transform: translateX(-50%);
-  background: var(--moji-milmaru-wave) center bottom / contain no-repeat;
   animation: creatureIdle 1.9s ease-in-out infinite;
-  image-rendering: pixelated;
+  image-rendering: auto;
 }
 
 .pixel-creature .body,
@@ -954,7 +912,6 @@ html, body {
 }
 
 .companion-card.reward-ready .pixel-creature {
-  background-image: var(--moji-milmaru-cookie);
 }
 
 .companion-card.egg-state .pixel-creature,
@@ -962,31 +919,25 @@ html, body {
   top: 126px;
   width: 124px;
   height: 154px;
-  background-image: var(--moji-milmaru-egg);
 }
 
 .companion-card.hatched-state .pixel-creature {
-  background-image: var(--moji-milmaru-baby);
 }
 
 .companion-card.yochiyochi-state .pixel-creature {
   top: 118px;
   width: 154px;
   height: 154px;
-  background-image: var(--moji-milmaru-yochiyochi);
 }
 
 .companion-card.celebrate .pixel-creature {
-  background-image: var(--moji-milmaru-cheer);
   animation: creatureCheer 0.55s ease-in-out 5;
 }
 
 .companion-card.yochiyochi-state.celebrate .pixel-creature {
-  background-image: var(--moji-milmaru-yochiyochi);
 }
 
 .companion-card.egg-state.celebrate .pixel-creature {
-  background-image: var(--moji-milmaru-egg);
 }
 
 @keyframes creatureIdle {
@@ -1015,7 +966,7 @@ html, body {
   border-radius: 8px;
   background: rgba(255, 253, 245, 0.82);
   box-shadow: inset 0 0 0 3px rgba(255,255,255,0.35);
-  font-family: var(--pixel-font);
+  font-family: var(--round-font);
   font-size: 15px;
   line-height: 1.28;
   text-align: center;
@@ -1054,9 +1005,8 @@ html, body {
   overflow: hidden;
   border: 0;
   border-radius: 0;
-  background: var(--moji-prompt-sign) center / 100% 100% no-repeat;
   box-shadow: none;
-  font-family: var(--pixel-font);
+  font-family: var(--round-font);
   font-size: 28px;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -1064,7 +1014,7 @@ html, body {
   text-shadow:
     2px 2px 0 rgba(255, 255, 255, 0.78),
     0 2px 0 rgba(89, 131, 82, 0.18);
-  image-rendering: pixelated;
+  image-rendering: auto;
 }
 
 .prompt-bar::before,
@@ -1093,12 +1043,11 @@ html, body {
   position: relative;
   width: min(640px, 100%);
   aspect-ratio: 551 / 494;
-  background: var(--moji-writing-board) center / 100% 100% no-repeat;
   border: 0;
   border-radius: 0;
   box-shadow: none;
   overflow: visible;
-  image-rendering: pixelated;
+  image-rendering: auto;
 }
 
 .writing-board::before,
@@ -1170,7 +1119,7 @@ html, body {
 #pixelTrailCanvas {
   z-index: 4;
   pointer-events: none;
-  image-rendering: pixelated;
+  image-rendering: auto;
 }
 
 .stroke-number-overlay {
@@ -1201,7 +1150,7 @@ html, body {
     0 4px 0 #6f462c,
     inset 0 3px rgba(255, 255, 255, 0.58);
   color: #5b3b29;
-  font-family: var(--pixel-font);
+  font-family: var(--round-font);
   font-size: 23px;
   font-weight: 700;
   line-height: 1;
@@ -1273,13 +1222,12 @@ html, body {
   background-position: center;
   background-size: 100% 100%;
   background-repeat: no-repeat;
-  image-rendering: pixelated;
+  image-rendering: auto;
 }
 
 #doneBtn {
   width: 220px;
   color: #fffdf0;
-  background-image: var(--moji-button-success);
   text-shadow: 2px 2px 0 rgba(41, 101, 132, 0.58);
 }
 
@@ -1288,11 +1236,9 @@ html, body {
   width: 36px;
   height: 36px;
   flex: 0 0 36px;
-  background: var(--moji-icon-pencil) center / contain no-repeat;
 }
 
 #doneBtn:active {
-  background-image: var(--moji-button-success-pressed);
   filter: brightness(0.96);
 }
 
@@ -1301,7 +1247,6 @@ html, body {
   padding-left: 84px;
   padding-right: 24px;
   color: #5f3c22;
-  background-image: var(--moji-button-retry);
 }
 
 #resetBtn::before {
@@ -1309,7 +1254,6 @@ html, body {
 }
 
 #resetBtn:active {
-  background-image: var(--moji-button-retry-pressed);
   filter: brightness(0.96);
 }
 
@@ -1318,7 +1262,7 @@ html, body {
   min-height: 56px;
   align-items: center;
   padding: 10px 20px;
-  font-family: var(--pixel-font);
+  font-family: var(--round-font);
   font-size: 24px;
   line-height: 1.35;
 }
@@ -1372,7 +1316,7 @@ html, body {
   border: 3px solid #8b6042;
   border-radius: 50%;
   background: #fff4d8;
-  font-family: var(--pixel-font);
+  font-family: var(--round-font);
   font-size: 21px;
   font-weight: 700;
 }
@@ -1446,7 +1390,7 @@ html, body {
 
 .stroke-label {
   margin-top: 4px;
-  font-family: var(--pixel-font);
+  font-family: var(--round-font);
   font-size: 15px;
   color: var(--ink-soft);
 }
@@ -1458,15 +1402,14 @@ html, body {
   display: grid;
   gap: 6px;
   align-content: center;
-  background: var(--moji-reward-box) center / 100% 100% no-repeat;
   border: 0;
   border-radius: 0;
   box-shadow: none;
-  image-rendering: pixelated;
+  image-rendering: auto;
 }
 
 .reward-title {
-  font-family: var(--pixel-font);
+  font-family: var(--round-font);
   font-size: 18px;
   color: var(--ink-soft);
 }
@@ -1500,39 +1443,27 @@ html, body {
   height: 42px;
   border: 0;
   border-radius: 0;
-  background: var(--moji-icon-cookie) center / contain no-repeat;
   box-shadow: none;
-  image-rendering: pixelated;
+  image-rendering: auto;
 }
 
 .food-pixel.milk {
-  width: 34px;
-  height: 46px;
-  border: 3px solid #9f7655;
-  border-radius: 7px 7px 10px 10px;
-  background: linear-gradient(180deg, #fffdf5 0 22%, #dff8f3 22% 42%, #fffdf5 42% 100%);
-  box-shadow: inset 0 3px rgba(255,255,255,0.75), 0 2px 0 rgba(111,70,44,0.25);
+  width: 42px;
+  height: 42px;
+  border: 0;
+  border-radius: 0;
+  background: var(--story-milk) center / contain no-repeat;
+  box-shadow: none;
 }
 
 .food-pixel.milk::before {
-  content: '';
-  position: absolute;
-  left: 6px;
-  right: 6px;
-  top: -8px;
-  height: 10px;
-  border: 3px solid #9f7655;
-  border-bottom: 0;
-  border-radius: 5px 5px 0 0;
-  background: #d7f1ed;
+  display: none;
 }
 
 .food-pixel.gohan {
-  background-image: var(--moji-icon-gohan);
 }
 
 .food-pixel.star {
-  background-image: var(--moji-icon-star);
 }
 
 .food-pixel.none {
@@ -1573,7 +1504,7 @@ html, body {
 }
 
 .mode-choice-title {
-  font-family: var(--pixel-font);
+  font-family: var(--round-font);
   font-size: 39px;
   font-weight: 700;
   color: #9d552f;
@@ -1599,7 +1530,7 @@ html, body {
 }
 
 .mode-choice-button strong {
-  font-family: var(--pixel-font);
+  font-family: var(--round-font);
   font-size: 27px;
   line-height: 1.15;
 }
@@ -1644,8 +1575,53 @@ html, body {
     height: 108px;
   }
 
+  .header-right {
+    align-items: center;
+  }
+
+  .star-box {
+    width: 180px;
+    min-width: 180px;
+    height: 108px;
+  }
+
   .back-btn,
   .mode-switch-btn {
+    height: 108px;
+    min-height: 108px;
+  }
+
+  .settings-btn {
+    width: 108px;
+    height: 108px;
+    min-height: 108px;
+  }
+
+  .character-panel:not(.mode-task-panel) {
+    grid-template-rows: 48px 108px minmax(0, 1fr);
+  }
+
+  .kana-tabs {
+    align-items: center;
+  }
+
+  .kana-tab,
+  .char-button,
+  .char-spacer {
+    height: 108px;
+    min-height: 108px;
+  }
+
+  .char-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .center-stage {
+    grid-template-rows: 78px minmax(0, 1fr) 108px;
+  }
+
+  #doneBtn,
+  #resetBtn {
     height: 108px;
     min-height: 108px;
   }
@@ -1709,14 +1685,14 @@ html, body {
 .result-overlay.show .result-card { transform: scale(1); }
 
 .result-title {
-  font-family: var(--pixel-font);
+  font-family: var(--round-font);
   font-size: 46px;
   color: #b85f31;
   letter-spacing: 0.12em;
 }
 
 .result-copy {
-  font-family: var(--pixel-font);
+  font-family: var(--round-font);
   font-size: 28px;
   font-weight: 400;
   line-height: 1.4;
@@ -1733,7 +1709,7 @@ html, body {
   border: 3px solid #a8794f;
   border-radius: 8px;
   background: #fff8e8;
-  font-family: var(--pixel-font);
+  font-family: var(--round-font);
   font-size: 23px;
 }
 
@@ -1765,7 +1741,7 @@ html, body {
   background-position: center;
   background-size: contain;
   background-repeat: no-repeat;
-  image-rendering: pixelated;
+  image-rendering: auto;
   white-space: nowrap;
   line-height: 1;
   font-size: 22px;
@@ -1773,7 +1749,6 @@ html, body {
 
 #careBtn {
   width: 430px;
-  background-image: var(--moji-button-modal-care);
 }
 
 #careBtn::before,
@@ -1788,43 +1763,35 @@ html, body {
 }
 
 #careBtn::before {
-  background-image: var(--moji-icon-cookie);
 }
 
 #careBtn.reward-milk::before {
-  background-image: none;
-  width: 34px;
-  height: 46px;
-  flex-basis: 34px;
-  border: 3px solid #9f7655;
-  border-radius: 7px 7px 10px 10px;
-  background: linear-gradient(180deg, #fffdf5 0 22%, #dff8f3 22% 42%, #fffdf5 42% 100%);
+  width: 42px;
+  height: 42px;
+  flex-basis: 42px;
+  border: 0;
+  border-radius: 0;
+  background: var(--story-milk) center / contain no-repeat;
 }
 
 #careBtn.reward-gohan::before {
-  background-image: var(--moji-icon-gohan);
 }
 
 #careBtn.reward-none::before {
-  background-image: var(--moji-icon-star);
 }
 
 #careBtn:active {
   transform: translateY(3px);
-  background-image: var(--moji-button-modal-care-pressed);
 }
 
 #modalRetryBtn {
-  background-image: var(--moji-button-modal-next);
 }
 
 #modalRetryBtn::before {
-  background-image: var(--moji-icon-pencil);
 }
 
 #modalRetryBtn:active {
   transform: translateY(3px);
-  background-image: var(--moji-button-modal-next-pressed);
 }
 
 .result-burst {
@@ -1849,12 +1816,1136 @@ html, body {
   0% { opacity: 1; transform: translate(-50%, -50%) rotate(0deg) scale(0.6); }
   100% { opacity: 0; transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) rotate(220deg) scale(1.25); }
 }
+
+/* --------------------------------------------------------------------------
+   Storybook surface (batch:1311)
+   The handwriting canvas, stroke masks, medians and HanziWriter geometry stay
+   untouched above.  This layer only replaces the surrounding retro chrome.
+   -------------------------------------------------------------------------- */
+
+#stage,
+#stage button,
+#stage [role='button'] {
+  font-family: var(--round-font);
+}
+
+#stage-wrap {
+  background:
+    linear-gradient(180deg, rgba(255, 251, 224, 0.08), rgba(236, 247, 216, 0.18)),
+    radial-gradient(circle at 50% 42%, rgba(255, 255, 238, 0.26), transparent 47%),
+    var(--story-bg) center / cover no-repeat;
+}
+
+#stage {
+  background: transparent;
+  image-rendering: auto;
+}
+
+#stage::before {
+  display: none;
+  background: none;
+}
+
+@media (orientation: portrait) {
+  body::before {
+    background:
+      linear-gradient(rgba(255, 252, 232, 0.9), rgba(239, 248, 222, 0.92)),
+      var(--story-bg) center / cover no-repeat;
+    color: #5d482f;
+    font-family: var(--round-font);
+    font-weight: 900;
+    letter-spacing: 0.08em;
+  }
+}
+
+.pixel-panel,
+.wood-panel {
+  border: 22px solid transparent;
+  border-image-source: var(--story-frame-large);
+  border-image-slice: 74 82 fill;
+  border-image-width: 24px;
+  border-image-repeat: stretch;
+  border-radius: 0;
+  background: rgba(255, 249, 228, 0.94);
+  box-shadow: 0 10px 24px rgba(69, 49, 25, 0.2);
+  image-rendering: auto;
+}
+
+.pixel-button {
+  min-height: 52px;
+  padding: 7px 22px 9px;
+  border: 14px solid transparent;
+  border-image-source: var(--story-frame-wide);
+  border-image-slice: 28 62 fill;
+  border-image-width: 14px 24px;
+  border-image-repeat: stretch;
+  border-radius: 0;
+  background: #fff8df;
+  box-shadow: 0 5px 10px rgba(73, 48, 23, 0.22);
+  color: #5d432b;
+  font-family: var(--round-font);
+  font-size: 23px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9);
+  image-rendering: auto;
+}
+
+.pixel-button:hover:not(:disabled),
+.pixel-button:focus-visible {
+  filter: brightness(1.045) saturate(1.03);
+}
+
+.pixel-button:focus-visible {
+  outline: 5px solid rgba(94, 165, 102, 0.8);
+  outline-offset: 3px;
+}
+
+.pixel-button:active:not(:disabled) {
+  transform: translateY(3px);
+  box-shadow: 0 2px 6px rgba(73, 48, 23, 0.2);
+  filter: brightness(0.97);
+}
+
+.pixel-button.primary,
+.pixel-button.mint,
+.pixel-button.ghost {
+  color: #5d432b;
+  background: #fff8df;
+  border-color: transparent;
+}
+
+.stage-header {
+  left: 38px;
+  right: 38px;
+  top: 22px;
+  height: 82px;
+  grid-template-columns: 210px 1fr 300px;
+  gap: 18px;
+}
+
+.back-btn,
+.mode-switch-btn {
+  height: 64px;
+  min-height: 64px;
+}
+
+.back-btn {
+  justify-self: start;
+  min-width: 194px;
+}
+
+.mode-switch-btn {
+  width: min(440px, 100%);
+  padding-inline: 28px;
+  gap: 15px;
+  font-size: 21px;
+}
+
+.current-mode-name {
+  min-width: 126px;
+  padding: 6px 14px 7px;
+  border: 2px solid rgba(92, 139, 79, 0.54);
+  border-radius: 999px;
+  background: rgba(235, 249, 218, 0.92);
+  color: #416b3c;
+  font-family: var(--round-font);
+  font-size: 17px;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.8);
+}
+
+.header-right {
+  gap: 13px;
+}
+
+.star-box {
+  width: 190px;
+  min-width: 190px;
+  height: 60px;
+  aspect-ratio: auto;
+  gap: 11px;
+  padding: 5px 22px 6px;
+  border: 3px solid #9a6a38;
+  border-radius: 999px;
+  background: rgba(255, 249, 221, 0.96);
+  box-shadow:
+    0 5px 0 rgba(100, 65, 29, 0.38),
+    inset 0 0 0 3px rgba(255, 255, 255, 0.72);
+  color: #644525;
+  font-family: var(--round-font);
+  font-size: 27px;
+  image-rendering: auto;
+}
+
+.star-icon {
+  display: block;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  background: var(--story-star) center / contain no-repeat;
+}
+
+.settings-btn {
+  width: 64px;
+  height: 64px;
+  min-height: 64px;
+  padding: 0;
+  border: 0;
+  background: none;
+  box-shadow: 0 5px 9px rgba(73, 48, 23, 0.18);
+  image-rendering: auto;
+}
+
+.settings-btn img {
+  image-rendering: auto;
+}
+
+.layout {
+  left: 52px;
+  right: 52px;
+  top: 122px;
+  bottom: 22px;
+  grid-template-columns: 300px minmax(0, 1fr) 270px;
+  gap: 24px;
+}
+
+#stage.compact .stage-header {
+  left: 210px;
+  right: 210px;
+  top: 16px;
+}
+
+#stage.compact .layout {
+  left: 210px;
+  right: 210px;
+  top: 102px;
+  bottom: 14px;
+  grid-template-columns: 292px minmax(0, 1fr) 264px;
+  gap: 18px;
+}
+
+.side-stack {
+  grid-template-rows: 438px minmax(0, 1fr);
+  gap: 18px;
+}
+
+.character-panel,
+.stroke-panel,
+.companion-card {
+  border: 24px solid transparent;
+  border-image-source: var(--story-frame-large);
+  border-image-slice: 76 86 fill;
+  border-image-width: 25px;
+  border-image-repeat: stretch;
+  border-radius: 0;
+  background: rgba(255, 249, 229, 0.97);
+  box-shadow: 0 9px 22px rgba(65, 45, 23, 0.2);
+  image-rendering: auto;
+}
+
+.panel-title {
+  height: 48px;
+  border: 0;
+  border-bottom: 2px solid rgba(108, 126, 67, 0.3);
+  background: rgba(229, 241, 201, 0.62);
+  color: #5a4930;
+  font-family: var(--round-font);
+  font-size: 23px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px rgba(255, 255, 255, 0.9);
+}
+
+.character-panel {
+  grid-template-rows: 48px 58px minmax(0, 1fr);
+}
+
+.character-panel.mode-task-panel {
+  grid-template-rows: 48px minmax(0, 1fr);
+}
+
+.kana-tabs {
+  gap: 8px;
+  padding: 9px 14px 4px;
+}
+
+.kana-tab {
+  height: 52px;
+  border: 2px solid #ad8351;
+  border-radius: 999px;
+  background: rgba(255, 249, 225, 0.94);
+  color: #5a452d;
+  font-family: var(--round-font);
+  font-size: 15px;
+  font-weight: 900;
+  box-shadow: inset 0 1px rgba(255, 255, 255, 0.8);
+  image-rendering: auto;
+}
+
+.kana-tab.active {
+  border-color: #688e55;
+  background: #dfeec4;
+  color: #3f653a;
+  box-shadow: 0 0 0 3px rgba(108, 154, 80, 0.18);
+  filter: none;
+}
+
+.char-list {
+  padding: 9px 12px 12px;
+  gap: 7px;
+  scrollbar-color: #9f784b rgba(255, 255, 255, 0.35);
+}
+
+.char-row {
+  gap: 7px;
+}
+
+.char-button {
+  height: 52px;
+  border: 2px solid #b18b5f;
+  border-radius: 12px;
+  background: rgba(255, 252, 236, 0.96);
+  color: #53412d;
+  font-family: var(--round-font);
+  font-size: 23px;
+  font-weight: 900;
+  box-shadow:
+    0 2px 0 rgba(114, 77, 39, 0.28),
+    inset 0 0 0 2px rgba(255, 255, 255, 0.66);
+  image-rendering: auto;
+}
+
+.char-spacer {
+  min-height: 52px;
+}
+
+.char-button:hover,
+.char-button:focus-visible {
+  border-color: #759b63;
+  background: #f2f8dc;
+}
+
+.char-button:focus-visible {
+  outline: 4px solid rgba(101, 159, 86, 0.54);
+  outline-offset: 2px;
+}
+
+.char-button.active,
+.char-button.done.active {
+  border-color: #d0824d;
+  background: #ffe5ad;
+  box-shadow:
+    0 2px 0 rgba(124, 72, 35, 0.34),
+    0 0 0 3px rgba(234, 157, 79, 0.24);
+  filter: none;
+}
+
+.char-button.done {
+  border-color: #75a26f;
+  background: #e0f0d3;
+}
+
+.char-button.active .cursor {
+  border-left-color: #c96e3e;
+  filter: none;
+}
+
+.mode-progress {
+  gap: 10px;
+  padding: 15px 14px 14px;
+}
+
+.mode-progress-count {
+  min-width: 108px;
+  padding: 6px 14px 7px;
+  border: 2px solid #9b7448;
+  border-radius: 999px;
+  background: rgba(255, 247, 215, 0.94);
+  font-family: var(--round-font);
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.mode-clue {
+  gap: 9px;
+}
+
+.word-clue-emoji,
+.word-clue-image {
+  width: 112px;
+  height: 100px;
+  flex: 0 0 100px;
+  object-fit: contain;
+  font-size: 68px;
+  line-height: 1;
+  filter: drop-shadow(0 4px 4px rgba(74, 53, 28, 0.16));
+}
+
+.word-clue-cell {
+  width: 48px;
+  height: 52px;
+  border-bottom: 3px solid #947047;
+  color: #4f3c29;
+  font-family: var(--round-font);
+  font-size: 33px;
+}
+
+.word-clue-cell.blank {
+  border: 3px dashed #cf7950;
+  border-radius: 12px;
+  background: #fff0c5;
+  color: #c96440;
+}
+
+.daily-clue-cell {
+  height: 74px;
+  border: 3px solid #a88153;
+  border-radius: 14px;
+  background: rgba(255, 250, 231, 0.96);
+  font-family: var(--round-font);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.65);
+}
+
+.daily-clue-cell.current {
+  border-color: #d27a4a;
+  background: #ffedbd;
+  box-shadow: 0 0 0 4px rgba(227, 156, 77, 0.23);
+}
+
+.daily-clue-cell.done {
+  border-color: #699666;
+  background: #e2f1d6;
+  color: #3f7144;
+}
+
+.mode-progress-dot {
+  border: 2px solid #9d754e;
+  background: #fff9e7;
+  font-family: var(--round-font);
+  font-weight: 900;
+}
+
+.mode-progress-dot.current {
+  border-color: #c96e42;
+  background: #ffe2a3;
+}
+
+.mode-progress-dot.done {
+  border-color: #5c8d5f;
+  background: #bcdca9;
+  color: #3f663f;
+}
+
+.companion-card {
+  min-height: 0;
+  padding: 18px 18px 16px;
+  text-align: center;
+  transition: transform 0.12s ease, filter 0.18s ease;
+}
+
+.companion-card:hover {
+  filter: brightness(1.025);
+}
+
+.companion-card.reward-ready {
+  animation: careCardGlow 1.6s ease-in-out infinite;
+}
+
+.companion-name {
+  left: 20px;
+  right: 20px;
+  top: 21px;
+  color: #5a452e;
+  font-family: var(--round-font);
+  font-size: 21px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.companion-level {
+  left: 22px;
+  right: 22px;
+  top: auto;
+  bottom: 20px;
+  color: #6c6f45;
+  font-family: var(--round-font);
+  font-size: 16px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.companion-alert {
+  display: none !important;
+}
+
+.pixel-creature {
+  display: block;
+  left: 50%;
+  top: auto;
+  bottom: 35px;
+  width: 116px;
+  height: 116px;
+  z-index: 1;
+  background: var(--story-milmaru-grown) center / contain no-repeat;
+  image-rendering: auto;
+}
+
+.companion-card.egg-state .pixel-creature,
+.companion-card.egg-state.reward-ready .pixel-creature {
+  top: auto;
+  bottom: 35px;
+  width: 94px;
+  height: 116px;
+  background-image: var(--story-milmaru-egg);
+}
+
+.companion-card.baby-state .pixel-creature {
+  top: auto;
+  bottom: 35px;
+  width: 120px;
+  height: 120px;
+  background-image: var(--story-milmaru-baby);
+}
+
+.companion-card.yochiyochi-state .pixel-creature {
+  top: auto;
+  bottom: 35px;
+  width: 118px;
+  height: 118px;
+  background-image: var(--story-milmaru-yochiyochi);
+}
+
+.companion-cookie {
+  display: none !important;
+  left: auto;
+  right: 25px;
+  top: auto;
+  bottom: 44px;
+  width: 42px;
+  height: 42px;
+  z-index: 3;
+  background: var(--story-cookie) center / contain no-repeat;
+  image-rendering: auto;
+  filter: drop-shadow(0 3px 3px rgba(74, 50, 25, 0.2));
+}
+
+.companion-card.reward-ready .companion-cookie {
+  display: block !important;
+}
+
+.companion-cookie.gohan {
+  background-image: var(--story-gohan);
+}
+
+.companion-cookie.star {
+  background-image: var(--story-star);
+}
+
+.companion-cookie.milk {
+  border: 0;
+  border-radius: 0;
+  background: var(--story-milk) center / contain no-repeat;
+}
+
+.companion-speech {
+  left: 21px;
+  right: 21px;
+  top: 59px;
+  bottom: auto;
+  min-height: 66px;
+  padding: 10px 16px 11px;
+  border: 3px solid #a67848;
+  border-radius: 20px;
+  background: rgba(255, 251, 232, 0.95);
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 255, 255, 0.65),
+    0 4px 8px rgba(83, 57, 29, 0.12);
+  color: #58442f;
+  font-family: var(--round-font);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.companion-speech::after {
+  bottom: -12px;
+  border-color: #a67848;
+  background: #fffbea;
+}
+
+.center-stage {
+  grid-template-rows: 78px 1fr 76px;
+  gap: 8px;
+}
+
+.prompt-bar {
+  width: min(820px, 100%);
+  height: 76px;
+  padding: 8px 52px 10px;
+  border: 18px solid transparent;
+  border-image-source: var(--story-frame-leaf);
+  border-image-slice: 30 62 fill;
+  border-image-width: 18px 30px;
+  border-image-repeat: stretch;
+  background: #fff8df;
+  color: #59442d;
+  font-family: var(--round-font);
+  font-size: 28px;
+  font-weight: 900;
+  letter-spacing: 0.035em;
+  text-shadow: 0 1px rgba(255, 255, 255, 0.9);
+  image-rendering: auto;
+}
+
+.writing-board {
+  width: min(640px, 100%);
+  aspect-ratio: 551 / 494;
+  border: 0;
+  background: rgba(255, 251, 235, 0.98);
+  box-shadow: 0 12px 26px rgba(67, 46, 23, 0.19);
+  image-rendering: auto;
+}
+
+.writing-board::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: block;
+  border: 38px solid transparent;
+  border-image-source: var(--story-frame-large);
+  border-image-slice: 78 88 fill;
+  border-image-width: 40px;
+  border-image-repeat: stretch;
+  background: none;
+  box-shadow: none;
+  pointer-events: none;
+}
+
+#writerTarget {
+  font-family: var(--moji-font);
+}
+
+/* The intentionally blocky trail is the only remaining pixel-rendered layer. */
+#pixelTrailCanvas {
+  image-rendering: pixelated;
+}
+
+.guide-stroke-number {
+  border: 3px solid #8c683f;
+  border-radius: 50%;
+  background: #fff7d9;
+  box-shadow: 0 3px 0 rgba(99, 65, 31, 0.34);
+  color: #5b452f;
+  font-family: var(--round-font);
+  font-weight: 900;
+  text-shadow: none;
+}
+
+.guide-stroke-number.current {
+  border-color: #cb7045;
+  background: #ffdf9e;
+  box-shadow: 0 3px 0 rgba(127, 69, 35, 0.34), 0 0 0 4px rgba(237, 161, 80, 0.23);
+}
+
+.guide-stroke-number.done {
+  border-color: #638e5f;
+  background: #dceecf;
+  box-shadow: 0 3px 0 rgba(64, 101, 61, 0.28);
+}
+
+.feedback-row .pixel-button {
+  font-family: var(--round-font);
+  font-size: 22px;
+}
+
+.feedback-row {
+  grid-template-columns: 220px 352px;
+}
+
+.message-box {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  z-index: 10;
+  width: min(820px, 100%);
+  height: 76px;
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 44px 10px;
+  transform: translateX(-50%);
+  border: 15px solid transparent;
+  border-image-source: var(--story-frame-wide);
+  border-image-slice: 28 62 fill;
+  border-image-width: 15px 26px;
+  border-image-repeat: stretch;
+  background: rgba(255, 249, 226, 0.98);
+  box-shadow: 0 5px 12px rgba(73, 48, 23, 0.18);
+  color: #5a432d;
+  font-family: var(--round-font);
+  font-size: 21px;
+  font-weight: 900;
+  line-height: 1.25;
+  text-align: center;
+  pointer-events: none;
+  image-rendering: auto;
+}
+
+.prompt-bar.feedback-hidden {
+  visibility: hidden;
+}
+
+.message-box[hidden],
+.message-box:empty {
+  display: none;
+}
+
+#doneBtn,
+#resetBtn {
+  height: 72px;
+  min-height: 72px;
+  border: 17px solid transparent;
+  border-image-source: var(--story-frame-wide);
+  border-image-slice: 28 62 fill;
+  border-image-width: 17px 28px;
+  border-image-repeat: stretch;
+  background: #fff8df;
+  box-shadow: 0 5px 10px rgba(73, 48, 23, 0.2);
+  color: #5c432c;
+  text-shadow: none;
+  image-rendering: auto;
+}
+
+#doneBtn {
+  width: 352px;
+  color: #426c3e;
+  background: #f2f6d7;
+}
+
+#doneBtn::before {
+  width: 38px;
+  height: 38px;
+  flex-basis: 38px;
+  background: var(--story-pencil) center / contain no-repeat;
+}
+
+#resetBtn {
+  width: 220px;
+  padding-left: 32px;
+  padding-right: 32px;
+  color: #6a4d31;
+  background: #fff2cf;
+}
+
+#doneBtn:active,
+#resetBtn:active {
+  background-image: none;
+}
+
+.stroke-panel {
+  grid-template-rows: 48px 1fr 154px;
+}
+
+.stroke-list {
+  padding: 14px;
+  gap: 11px;
+}
+
+.stroke-card {
+  height: 104px;
+  border: 2px solid #aa8354;
+  border-radius: 16px;
+  background: rgba(255, 250, 232, 0.94);
+  box-shadow: 0 3px 0 rgba(105, 72, 37, 0.25);
+}
+
+.stroke-card.current {
+  border-color: #cf7749;
+  background: #fff0c8;
+  box-shadow: 0 3px 0 rgba(119, 68, 34, 0.25), 0 0 0 3px rgba(228, 151, 72, 0.18);
+}
+
+.stroke-card.done {
+  border-color: #669363;
+  background: #e7f2dc;
+}
+
+.stroke-num {
+  border: 2px solid #8f6a43;
+  background: #fff5d6;
+  font-family: var(--round-font);
+  font-weight: 900;
+}
+
+.stroke-preview {
+  border: 2px solid rgba(137, 101, 61, 0.28);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.56);
+  color: rgba(66, 54, 42, 0.22);
+  font-family: var(--moji-font);
+  font-weight: 700;
+  text-shadow: none;
+}
+
+.stroke-mini svg {
+  border: 2px solid rgba(137, 101, 61, 0.28);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.56);
+}
+
+.stroke-label {
+  font-family: var(--round-font);
+  font-weight: 700;
+}
+
+.reward-box {
+  margin: 0 14px 14px;
+  height: 96px;
+  padding: 12px 14px 10px 70px;
+  border: 13px solid transparent;
+  border-image-source: var(--story-frame-wide);
+  border-image-slice: 28 62 fill;
+  border-image-width: 13px 22px;
+  border-image-repeat: stretch;
+  background: #fff8df;
+  box-shadow: none;
+  image-rendering: auto;
+}
+
+.reward-title {
+  color: #6c573c;
+  font-family: var(--round-font);
+  font-weight: 900;
+}
+
+.reward-item,
+.reward-box .reward-item {
+  color: #55432f;
+  font-family: var(--round-font);
+  font-weight: 900;
+}
+
+.food-pixel {
+  width: 46px;
+  height: 46px;
+  border: 0;
+  background: var(--story-cookie) center / contain no-repeat;
+  box-shadow: none;
+  image-rendering: auto;
+}
+
+.food-pixel.gohan {
+  background-image: var(--story-gohan);
+}
+
+.food-pixel.star {
+  background-image: var(--story-star);
+}
+
+.food-pixel.milk {
+  width: 46px;
+  height: 46px;
+  border: 0;
+  border-radius: 0;
+  background: var(--story-milk) center / contain no-repeat;
+  box-shadow: none;
+}
+
+.food-pixel.milk::before {
+  display: none;
+}
+
+.mode-choice-overlay,
+.result-overlay {
+  background: rgba(57, 70, 42, 0.55);
+}
+
+.mode-choice-card,
+.result-card {
+  border: 32px solid transparent;
+  border-image-source: var(--story-frame-large);
+  border-image-slice: 76 86 fill;
+  border-image-width: 34px;
+  border-image-repeat: stretch;
+  background: rgba(255, 249, 226, 0.98);
+  box-shadow: 0 18px 42px rgba(48, 39, 22, 0.28);
+  image-rendering: auto;
+}
+
+.mode-choice-title,
+.result-title {
+  color: #6a4b2f;
+  font-family: var(--round-font);
+  font-weight: 900;
+  letter-spacing: 0.06em;
+}
+
+.mode-choice-button {
+  height: 144px;
+  border-image-source: var(--story-frame-wide);
+  background: #fff8df;
+}
+
+.mode-choice-button strong,
+.mode-choice-button span {
+  font-family: var(--round-font);
+  font-weight: 900;
+}
+
+.mode-choice-button.active {
+  border-color: transparent;
+  background: #eaf1ce;
+  box-shadow: 0 5px 0 rgba(77, 105, 57, 0.3), 0 0 0 4px rgba(110, 154, 79, 0.2);
+}
+
+.mode-choice-button:disabled {
+  filter: grayscale(0.55);
+}
+
+.mode-choice-close {
+  height: 64px;
+}
+
+.result-copy,
+.reward-large {
+  color: #5a432d;
+  font-family: var(--round-font);
+  font-weight: 700;
+}
+
+.reward-large {
+  border: 2px solid #a77c4b;
+  border-radius: 18px;
+  background: rgba(255, 249, 226, 0.92);
+  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.6);
+}
+
+#careBtn,
+#modalRetryBtn {
+  height: 84px;
+  min-height: 84px;
+  border: 18px solid transparent;
+  border-image-source: var(--story-frame-wide);
+  border-image-slice: 28 62 fill;
+  border-image-width: 18px 30px;
+  border-image-repeat: stretch;
+  background: #fff8df;
+  box-shadow: 0 5px 10px rgba(73, 48, 23, 0.2);
+  color: #58412b;
+  font-family: var(--round-font);
+  font-weight: 900;
+  image-rendering: auto;
+}
+
+#careBtn {
+  width: 430px;
+}
+
+#modalRetryBtn {
+  background: #eff4d3;
+  color: #426c3e;
+}
+
+#careBtn::before {
+  background-image: var(--story-cookie);
+}
+
+#careBtn.reward-milk::before {
+  width: 42px;
+  height: 42px;
+  flex-basis: 42px;
+  border: 0;
+  border-radius: 0;
+  background: var(--story-milk) center / contain no-repeat;
+}
+
+#careBtn.reward-gohan::before {
+  background-image: var(--story-gohan);
+}
+
+#careBtn.reward-none::before {
+  background-image: var(--story-star);
+}
+
+#modalRetryBtn::before {
+  background-image: var(--story-pencil);
+}
+
+#careBtn:active,
+#modalRetryBtn:active {
+  background-image: none;
+}
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .stage-header {
+    top: 6px;
+    height: 108px;
+  }
+
+  .header-right {
+    align-items: center;
+  }
+
+  .star-box {
+    width: 180px;
+    min-width: 180px;
+    height: 108px;
+  }
+
+  .back-btn,
+  .mode-switch-btn {
+    height: 108px;
+    min-height: 108px;
+    font-size: 33px;
+    line-height: 1;
+  }
+
+  .back-btn {
+    padding: 0 12px;
+  }
+
+  .mode-switch-btn {
+    flex-direction: column;
+    gap: 0;
+    padding: 0 12px;
+  }
+
+  .current-mode-name {
+    min-width: 190px;
+    padding: 1px 8px 2px;
+    line-height: 1;
+  }
+
+  .current-mode-name,
+  .star-box,
+  .mode-progress-count,
+  .mode-progress-dot,
+  .companion-name,
+  .companion-level,
+  .companion-speech,
+  .reward-title,
+  .reward-item,
+  .reward-box .reward-item {
+    font-size: 29px;
+  }
+
+  .settings-btn {
+    width: 108px;
+    height: 108px;
+    min-height: 108px;
+  }
+
+  .character-panel:not(.mode-task-panel) {
+    grid-template-rows: 48px 108px minmax(0, 1fr);
+  }
+
+  .panel-title,
+  .char-button,
+  .prompt-bar,
+  .message-box {
+    font-size: 34px;
+  }
+
+  .panel-title,
+  .char-button {
+    line-height: 1;
+  }
+
+  .prompt-bar,
+  .message-box {
+    padding: 2px 36px;
+    border-width: 12px;
+    border-image-width: 12px 22px;
+    line-height: 1.1;
+  }
+
+  .companion-speech {
+    padding: 4px 8px;
+    line-height: 1.2;
+  }
+
+  .reward-box {
+    padding-left: 64px;
+  }
+
+  .kana-tabs {
+    align-items: center;
+  }
+
+  .kana-tab,
+  .char-button,
+  .char-spacer {
+    height: 108px;
+    min-height: 108px;
+  }
+
+  .char-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .center-stage {
+    grid-template-rows: 78px minmax(0, 1fr) 108px;
+  }
+
+  #doneBtn,
+  #resetBtn {
+    height: 108px;
+    min-height: 108px;
+    padding: 0 8px;
+    font-size: 33px;
+    line-height: 1;
+  }
+
+  .kana-tab,
+  .mode-choice-button span,
+  .mode-choice-message,
+  .result-copy,
+  .reward-large {
+    font-size: 29px;
+  }
+
+  .mode-choice-title,
+  .result-title {
+    font-size: 38px;
+  }
+
+  .mode-choice-button strong {
+    font-size: 33px;
+  }
+
+  .mode-choice-button strong,
+  .mode-choice-button span {
+    word-break: keep-all;
+    overflow-wrap: normal;
+  }
+
+  .mode-choice-button {
+    height: 200px;
+    gap: 4px;
+    padding: 4px 6px;
+  }
+
+  .mode-choice-close {
+    height: 116px;
+    min-height: 116px;
+    font-size: 33px;
+  }
+
+  #stage #careBtn,
+  #stage #modalRetryBtn {
+    height: 124px;
+    min-height: 124px;
+    font-size: 33px;
+  }
+}
 </style>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
 <body>
 <div id="stage-wrap">
-  <main id="stage" aria-label="もじっこファーム 文字書き画面">
+  <main id="stage" aria-label="もじっこファーム もじかき がめん">
     <div class="bg-cloud c1" style="--x:130px;--y:120px;--w:210px"></div>
     <div class="bg-cloud c2" style="--x:1160px;--y:92px;--w:178px"></div>
     <div class="bg-cloud c3" style="--x:1010px;--y:245px;--w:260px"></div>
@@ -1893,7 +2984,7 @@ html, body {
           </div>
         </aside>
 
-        <button class="pixel-panel companion-card" id="companionCard" type="button" aria-label="ミルマルのお世話へ">
+        <button class="pixel-panel companion-card" id="companionCard" type="button" aria-label="ミルマルの おせわへ">
           <div class="companion-alert" id="companionAlert" aria-hidden="true">!</div>
           <div class="companion-cookie" id="companionCookieIcon" aria-hidden="true"></div>
           <div class="companion-name">ミルマル</div>
@@ -1908,17 +2999,17 @@ html, body {
         </button>
       </div>
 
-      <section class="center-stage" aria-label="文字なぞりエリア">
+      <section class="center-stage" aria-label="もじを なぞる ところ">
         <div class="wood-panel prompt-bar" id="promptText">「あ」を かいてみよう！</div>
         <div class="writing-board-wrap">
           <div class="writing-board" id="writingBoard">
-            <div id="writerTarget" aria-label="文字を書くキャンバス"></div>
+            <div id="writerTarget" aria-label="もじを かく ところ"></div>
             <canvas id="pixelTrailCanvas" width="1000" height="1000" aria-hidden="true"></canvas>
             <div class="stroke-number-overlay" id="strokeNumberOverlay" aria-hidden="true"></div>
           </div>
         </div>
         <div class="feedback-row">
-          <div class="pixel-panel message-box" id="messageBox">うすい もじを なぞってね</div>
+          <div class="pixel-panel message-box" id="messageBox" role="status" aria-live="polite" aria-atomic="true" hidden></div>
           <button class="pixel-button ghost" id="resetBtn" type="button">もういっかい</button>
           <button class="pixel-button primary" id="doneBtn" type="button">できた！</button>
         </div>
@@ -1937,7 +3028,7 @@ html, body {
       </aside>
     </section>
 
-    <div class="result-overlay" id="resultOverlay" role="dialog" aria-modal="true" aria-label="かんせい">
+    <div class="result-overlay" id="resultOverlay" role="dialog" aria-modal="true" aria-label="かんせい" aria-hidden="true" inert>
       <div class="result-burst" id="resultBurst"></div>
       <div class="pixel-panel result-card">
         <div class="result-title" id="resultTitle">すごい！</div>
@@ -2057,6 +3148,7 @@ const resultReward = document.getElementById('resultReward');
 const resultRewardWrap = document.getElementById('resultRewardWrap');
 const resultBurst = document.getElementById('resultBurst');
 const modalRetryBtn = document.getElementById('modalRetryBtn');
+const doneBtn = document.getElementById('doneBtn');
 const companionCard = document.getElementById('companionCard');
 const companionCookieIcon = document.getElementById('companionCookieIcon');
 const companionSpeech = document.getElementById('companionSpeech');
@@ -2145,6 +3237,26 @@ const WORD_HOLE_BLUEPRINTS = Object.freeze([
   { word: 'らいおん', blankIndex: 2 },
   { word: 'ひまわり', blankIndex: 2 }
 ]);
+const WORD_HOLE_STORYBOOK_ART = Object.freeze({
+  'ねこ': '../assets/images/quizland/illust/choice/neko.webp',
+  'いぬ': '../assets/images/nazonazo-tunnel/quiz-art/quiz_dog_20260714.webp',
+  'くま': '../assets/images/nazonazo-tunnel/quiz-art/quiz_bear_20260714.webp',
+  'ほし': '../assets/images/nazonazo-tunnel/quiz-art/quiz_star_20260714.webp',
+  'はな': '../assets/images/nazonazo-tunnel/quiz-art/quiz_flower_20260714.webp',
+  'ふね': '../assets/images/nazonazo-tunnel/quiz-art/quiz_sailboat_20260714.webp',
+  'かに': '../assets/images/nazonazo-tunnel/quiz-art/quiz_crab_20260714.webp',
+  'たこ': '../assets/images/nazonazo-tunnel/quiz-art/quiz_octopus_20260714.webp',
+  'つき': '../assets/images/nazonazo-tunnel/quiz-art/quiz_crescent_moon_20260714.webp',
+  'くるま': '../assets/images/nazonazo-tunnel/quiz-art/quiz_car_20260714.webp',
+  'さかな': '../assets/images/nazonazo-tunnel/quiz-art/quiz_fish_20260714.webp',
+  'みかん': '../assets/images/word/mikan.png',
+  'とけい': '../assets/images/nazonazo-tunnel/quiz-art/quiz_clock_20260714.webp',
+  'きりん': '../assets/images/nazonazo-tunnel/quiz-art/quiz_giraffe_20260714.webp',
+  'こあら': '../assets/images/nazonazo-tunnel/quiz-art/quiz_koala_20260714.webp',
+  'ひこうき': '../assets/images/nazonazo-tunnel/quiz-art/quiz_airplane_20260714.webp',
+  'らいおん': '../assets/images/nazonazo-tunnel/quiz-art/quiz_lion_20260714.webp',
+  'ひまわり': '../assets/images/mojikko/writing/storybook/word_himawari_20260716.webp'
+});
 const FOOD_SYSTEM_VERSION = 2;
 const DAILY_FEEDING_SLOTS = [
   { id: 'morning', foodId: 'moji_gohan' },
@@ -2197,6 +3309,8 @@ let wordHoleState = null;
 let dailyThreeState = null;
 let writingModesInitialized = false;
 let modeChoiceReturnFocus = null;
+let resultReturnFocus = null;
+let resultBackgroundInertState = [];
 const completedCharacters = new Set();
 const guideSvgMaskCache = new Map();
 
@@ -2836,6 +3950,7 @@ function buildValidatedWordHoleCatalog(wordData) {
       id: `word:${blueprint.word}:${blueprint.blankIndex}`,
       word: blueprint.word,
       emoji: source.emoji,
+      art: WORD_HOLE_STORYBOOK_ART[blueprint.word] || '',
       blankIndex: blueprint.blankIndex,
       answer,
       characterId
@@ -3380,6 +4495,8 @@ function fitStage() {
 function refreshWritingLayoutAndModeRuntime() {
   fitStage();
   if (isWritingModeRuntimeBlocked()) {
+    if (isResultOverlayOpen()) closeResultOverlay({ restoreFocus: false });
+    if (modeChoiceOverlay.classList.contains('show')) closeModeChoice();
     if (pendingAutoCompleteTimer !== null || complete || completionQueued || writingCompletionInFlight) {
       clearPendingWritingCompletionTimers();
       complete = false;
@@ -3592,8 +4709,89 @@ function initializeWritingModesIfAllowed() {
   return true;
 }
 
+function isResultOverlayOpen() {
+  return resultOverlay.classList.contains('show');
+}
+
+function getResultBackgroundElements() {
+  return Array.from(stageEl.children).filter((element) => element !== resultOverlay);
+}
+
+function focusElementWithoutScroll(element) {
+  if (!element || typeof element.focus !== 'function') return;
+  try {
+    element.focus({ preventScroll: true });
+  } catch (_) {
+    element.focus();
+  }
+}
+
+function openResultOverlay() {
+  if (isResultOverlayOpen() || isWritingModeRuntimeBlocked()) return false;
+  pendingModeChoiceOpen = false;
+  if (modeChoiceOverlay.classList.contains('show')) closeModeChoice();
+  const activeElement = document.activeElement;
+  resultReturnFocus = activeElement instanceof HTMLElement
+    && activeElement !== document.body
+    && !resultOverlay.contains(activeElement)
+    ? activeElement
+    : doneBtn;
+  resultBackgroundInertState = getResultBackgroundElements().map((element) => ({
+    element,
+    inert: element.inert
+  }));
+  resultBackgroundInertState.forEach(({ element }) => { element.inert = true; });
+  resultOverlay.inert = false;
+  resultOverlay.setAttribute('aria-hidden', 'false');
+  resultOverlay.classList.add('show');
+  requestAnimationFrame(() => {
+    if (isResultOverlayOpen()) focusElementWithoutScroll(modalRetryBtn);
+  });
+  return true;
+}
+
+function closeResultOverlay(options = {}) {
+  const wasOpen = isResultOverlayOpen();
+  resultOverlay.classList.remove('show');
+  resultOverlay.setAttribute('aria-hidden', 'true');
+  resultOverlay.inert = true;
+  resultBackgroundInertState.forEach(({ element, inert }) => {
+    if (element && element.isConnected) element.inert = inert;
+  });
+  resultBackgroundInertState = [];
+  const shouldRestoreFocus = options.restoreFocus !== false && wasOpen;
+  const returnTarget = resultReturnFocus && resultReturnFocus.isConnected
+    ? resultReturnFocus
+    : doneBtn;
+  resultReturnFocus = null;
+  if (shouldRestoreFocus) {
+    requestAnimationFrame(() => {
+      if (!isResultOverlayOpen() && !returnTarget.inert) focusElementWithoutScroll(returnTarget);
+    });
+  }
+  return wasOpen;
+}
+
+function trapFocusWithin(event, container) {
+  const focusable = Array.from(container.querySelectorAll('button:not(:disabled), [href], [tabindex]:not([tabindex="-1"])'))
+    .filter((element) => !element.inert && element.getAttribute('aria-hidden') !== 'true');
+  if (!focusable.length) return;
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (!container.contains(document.activeElement)) {
+    event.preventDefault();
+    focusElementWithoutScroll(event.shiftKey ? last : first);
+  } else if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    focusElementWithoutScroll(last);
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    focusElementWithoutScroll(first);
+  }
+}
+
 function openModeChoice() {
-  if (!writingModesInitialized || isWritingModeRuntimeBlocked()) return;
+  if (!writingModesInitialized || isWritingModeRuntimeBlocked() || isResultOverlayOpen()) return;
   if (writingCompletionInFlight && !pendingNextAction) {
     pendingModeChoiceOpen = true;
     return;
@@ -3613,7 +4811,7 @@ function openModeChoice() {
   modeChoiceOverlay.setAttribute('aria-hidden', 'false');
   const activeButton = modeChoiceOverlay.querySelector('[data-writing-mode].active:not(:disabled)')
     || modeChoiceOverlay.querySelector('[data-writing-mode]:not(:disabled)');
-  if (activeButton) activeButton.focus();
+  if (activeButton) focusElementWithoutScroll(activeButton);
 }
 
 function closeModeChoice() {
@@ -3623,7 +4821,7 @@ function closeModeChoice() {
     const returnTarget = modeChoiceReturnFocus && typeof modeChoiceReturnFocus.focus === 'function'
       ? modeChoiceReturnFocus
       : modeSwitchBtn;
-    returnTarget.focus();
+    focusElementWithoutScroll(returnTarget);
   }
   modeChoiceOverlay.inert = true;
   modeChoiceReturnFocus = null;
@@ -3644,17 +4842,26 @@ function renderWordHolePanel(revealTaskId) {
   const taskIndex = wordHoleState.tasks.indexOf(currentTaskId);
   modeProgressCount.textContent = `${taskIndex + 1} / ${WORD_HOLE_SESSION_SIZE}`;
   modeClue.innerHTML = '';
-  const emoji = document.createElement('div');
-  emoji.className = 'word-clue-emoji';
-  emoji.textContent = currentTask.emoji;
-  emoji.setAttribute('aria-hidden', 'true');
+  const clueArt = currentTask.art
+    ? document.createElement('img')
+    : document.createElement('div');
+  if (currentTask.art) {
+    clueArt.className = 'word-clue-image';
+    clueArt.src = currentTask.art;
+    clueArt.alt = '';
+    clueArt.decoding = 'async';
+  } else {
+    clueArt.className = 'word-clue-emoji';
+    clueArt.textContent = currentTask.emoji;
+    clueArt.setAttribute('aria-hidden', 'true');
+  }
   const row = document.createElement('div');
   row.className = 'word-clue-row';
   Array.from(currentTask.word).forEach((char, index) => {
     const isBlank = index === currentTask.blankIndex && revealTaskId !== currentTaskId;
     row.appendChild(createWordClueCell(isBlank ? '□' : char, isBlank ? 'blank' : ''));
   });
-  modeClue.append(emoji, row);
+  modeClue.append(clueArt, row);
   modeClue.setAttribute('aria-label', revealTaskId ? currentTask.word : `${currentTask.word}の あいている もじ`);
   renderModeProgressDots(wordHoleState.tasks, wordHoleState.completedTaskIds, currentTaskId);
 }
@@ -3818,8 +5025,8 @@ function configureModeCompletion(action, item, reward, isNewCompletion) {
         ? `${completedCopy} ${rewardFeedback}`
         : `${completedCopy} クリアずみだよ`;
       modalRetryBtn.textContent = 'つぎの ことば';
-      setMessage(isNewCompletion ? rewardFeedback : 'この ことばは できていたよ', 'つぎへ すすむよ');
     }
+    setMessage('', 'つぎへ すすむよ');
     return;
   }
   if (action.mode === WRITING_MODES.dailyThree) {
@@ -3836,8 +5043,8 @@ function configureModeCompletion(action, item, reward, isNewCompletion) {
         ? `${completedCopy} ${rewardFeedback}`
         : `${completedCopy} クリアずみだよ`;
       modalRetryBtn.textContent = 'つぎの もじ';
-      setMessage(isNewCompletion ? rewardFeedback : 'この もじは できていたよ', 'つぎへ すすむよ');
     }
+    setMessage('', 'つぎへ すすむよ');
     return;
   }
   const pendingNextCharacter = writingCharacters[pendingNextWritingIndex] || writingCharacters[0];
@@ -3904,7 +5111,11 @@ function updateCharacterButtons() {
 }
 
 function setMessage(text, speech) {
-  messageBox.textContent = text;
+  const nextMessage = typeof text === 'string' ? text.trim() : '';
+  messageBox.textContent = nextMessage;
+  messageBox.hidden = !nextMessage;
+  promptText.classList.toggle('feedback-hidden', Boolean(nextMessage));
+  promptText.setAttribute('aria-hidden', nextMessage ? 'true' : 'false');
   updateCompanionCard();
 }
 
@@ -4724,7 +5935,7 @@ function resetWriting(options = {}) {
   clearPixelTrail();
   clearStrokeNumbers();
   writingBoard.classList.remove('success');
-  resultOverlay.classList.remove('show');
+  closeResultOverlay();
   companionCard.classList.remove('celebrate');
   const item = getCurrentCharacter();
   const reward = getCurrentWritingReward();
@@ -4733,7 +5944,7 @@ function resetWriting(options = {}) {
   resultRewardWrap.hidden = false;
   renderWritingModePrompt(item);
   renderRewardPreview(reward);
-  setMessage('ドットの もじを なぞってね', 'ゆっくりで だいじょうぶ');
+  setMessage('', 'ゆっくりで だいじょうぶ');
   renderStrokeOrder();
   if (activeMode === WRITING_MODES.sequence) buildCharacterList();
   renderModePanel();
@@ -5484,7 +6695,7 @@ async function completeWriting(manual, summary) {
         if (isWritingModeRuntimeBlocked()) writingNeedsResetAfterRuntimeBlock = true;
         return;
       }
-      resultOverlay.classList.add('show');
+      openResultOverlay();
     }, 520);
   } else {
     const advanceToken = writingCompletionToken;
@@ -5600,19 +6811,13 @@ modeChoiceOverlay.querySelectorAll('[data-writing-mode]').forEach((button) => {
   });
 });
 window.addEventListener('keydown', (event) => {
+  if (isResultOverlayOpen()) {
+    if (event.key === 'Tab') trapFocusWithin(event, resultOverlay);
+    if (event.key === 'Escape') event.preventDefault();
+    return;
+  }
   if (event.key === 'Tab' && modeChoiceOverlay.classList.contains('show')) {
-    const focusable = Array.from(modeChoiceOverlay.querySelectorAll('button:not(:disabled)'));
-    if (focusable.length) {
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    }
+    trapFocusWithin(event, modeChoiceOverlay);
   }
   if (event.key === 'Escape' && modeChoiceOverlay.classList.contains('show')) {
     event.preventDefault();

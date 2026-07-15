@@ -258,6 +258,7 @@ function makeCompleteContext(currentIndex, readiness = true) {
     modalRetryBtn: { textContent: '' },
     starCountEl: { textContent: '' },
     resultOverlay: { classList: { add() { calls.overlay += 1; } } },
+    openResultOverlay() { calls.overlay += 1; },
     getCurrentCharacter() { return characters[context.currentIndex]; },
     getWritingReadiness() {
       return readiness
