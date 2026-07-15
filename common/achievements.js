@@ -96,12 +96,14 @@
     localStorage.setItem(key, JSON.stringify(val));
   }
 
-  // common/stickers.js checkDailyLogin と同じ app-tier フォールバックパターン
+  // common/stickers.js checkDailyLogin と同じ 3段フォールバックパターン
+  // (PonoMvpFlags有無 → PONO_MVP_NO_REWARDS有無 → PonoTier.isApp()単独判定)
   function _rewardsBlocked() {
     if (window.PonoMvpFlags && typeof window.PonoMvpFlags.rewardsBlocked === 'function') {
       return window.PonoMvpFlags.rewardsBlocked();
     }
-    return !!window.PONO_MVP_NO_REWARDS;
+    if (window.PONO_MVP_NO_REWARDS) return true;
+    return !(window.PonoTier && typeof window.PonoTier.isApp === 'function' && window.PonoTier.isApp());
   }
 
   // ═══ 統計インクリメント（グローバル）══════════════════════════════

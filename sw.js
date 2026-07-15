@@ -1,5 +1,17 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2209: batch:1313 の app tier 報酬解除作業 (Foundation: common/tier.js の _syncTierBodyAttr() /
+// common/mvp-flags.js の rewardsBlocked() ヘルパー、Stream A: common/stickers.js checkDailyLogin
+// のログインボーナス復活、Stream B: room/index.html・play-all.html の「わたしのおうち」家具復活、
+// Stream D: index-app.html 新設 + index.html 導線、Fix Round1 (v2208): stickers.js checkDailyLogin
+// の fail-closed 自己完結化) を統合する最終ラウンド。play.html の設定モーダルに「🏠 わたしのおうち」
+// ボタン (isRoomTierLocked/updateSettingsRoomAction) を新設し、room/index.html への実導線を追加した。
+// あわせて common/achievements.js の _rewardsBlocked() も common/stickers.js checkDailyLogin と同じ
+// 3段フォールバック (PonoMvpFlags有無 → PONO_MVP_NO_REWARDS有無 → PonoTier.isApp()単独判定) へ揃え、
+// common/mvp-flags.js を読み込まない room/index.html などのページで bubble/breakout 側が無条件に
+// 報酬付与していた fail-open の実在バグを修正した。tests/room_furniture_app_tier_regression.cjs に
+// room/index.html 相当 (PonoMvpFlags/PONO_MVP_NO_REWARDS 両方未定義、PonoTierのみ存在) の3段
+// フォールバック回帰ケースを追加。play.html PAGE_CACHE_VERSION と同期 (2209)。
 // v2208: アプリ専用「ログインボーナス」「わたしのおうち（家具）」機能を復活 (batch:1313、Foundation+3ストリーム統合)。
 // common/mvp-flags.js に app tier 限定で報酬凍結を解除する PonoMvpFlags.rewardsBlocked() ヘルパーを追加し、
 // common/tier.js は document.body.dataset.tier を同期する _syncTierBodyAttr() を新設。common/stickers.js
@@ -149,7 +161,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2208;
+const CACHE_VERSION = 2209;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。

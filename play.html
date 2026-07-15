@@ -10011,6 +10011,15 @@
             <span class="settings-action__sub" id="settingsBookUnlockSub">あいことばを いれる</span>
           </span>
         </button>
+        <!-- わたしのおうち (room/index.html): free は tier-locked 表示のまま案内モーダルへ、
+             book/app は通常リンク。 ロック判定は room/index.html 側のガード (free のみロック) と一致させる。 -->
+        <button class="settings-action" id="settingsRoomBtn" type="button">
+          <span class="settings-action__icon" aria-hidden="true">🏠</span>
+          <span class="settings-action__text">
+            <span class="settings-action__main">わたしのおうち</span>
+            <span class="settings-action__sub" id="settingsRoomSub">かぐを かざりに いく</span>
+          </span>
+        </button>
         <button class="settings-action" id="settingsProfileBtn" type="button">
           <span class="settings-action__icon" aria-hidden="true">👤</span>
           <span class="settings-action__text">
@@ -11530,7 +11539,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2208; // sw.js CACHE_VERSION と同期 (batch:1313: checkDailyLogin gate の tier fallback 修正)
+    const PAGE_CACHE_VERSION = 2209; // sw.js CACHE_VERSION と同期 (batch:1313: わたしのおうち導線 + achievements.js fail-closed 修正)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -11539,7 +11548,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v2208'; // batch:1313: PAGE_CACHE_VERSION/sw.js CACHE_VERSION と同期
+    window.PONO_SW_VERSION = 'v2209'; // batch:1313: PAGE_CACHE_VERSION/sw.js CACHE_VERSION と同期
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
@@ -15670,10 +15679,53 @@
     const bookUnlockEntry = document.getElementById('bookUnlockEntry');
     const settingsBookUnlockBtn = document.getElementById('settingsBookUnlockBtn');
     const settingsBookUnlockSub = document.getElementById('settingsBookUnlockSub');
+    const settingsRoomBtn = document.getElementById('settingsRoomBtn');
+    const settingsRoomSub = document.getElementById('settingsRoomSub');
 
     function isBookBenefitUnlocked() {
       try { return localStorage.getItem('pono_premium') === '1'; } catch (e) { return false; }
     }
+
+    // わたしのおうち: room/index.html 側のガード (free のみロック、 book/app は通過、
+    // デバッグ許可時は常に通過) と同一条件をここで再現する。
+    function isRoomTierLocked() {
+      try {
+        if (window.PonoDebugMode && typeof window.PonoDebugMode.isAllowed === 'function' && window.PonoDebugMode.isAllowed()) return false;
+      } catch (e) {}
+      try {
+        if (window.PonoTier && typeof window.PonoTier.isFree === 'function') return window.PonoTier.isFree();
+      } catch (e) {}
+      return !isBookBenefitUnlocked();
+    }
+
+    function updateSettingsRoomAction() {
+      if (!settingsRoomBtn) return;
+      const locked = isRoomTierLocked();
+      settingsRoomBtn.classList.toggle('tier-locked', locked);
+      settingsRoomBtn.dataset.tierLocked = locked ? '1' : '0';
+      settingsRoomBtn.setAttribute('aria-disabled', locked ? 'true' : 'false');
+      if (settingsRoomSub) settingsRoomSub.textContent = locked ? 'えほん・アプリで あそべるよ' : 'かぐを かざりに いく';
+      settingsRoomBtn.setAttribute(
+        'aria-label',
+        locked ? 'わたしのおうち えほん・アプリで あそべるよ' : 'わたしのおうち かぐを かざりに いく'
+      );
+    }
+    if (settingsRoomBtn) {
+      settingsRoomBtn.addEventListener('click', () => {
+        if (isRoomTierLocked()) {
+          try {
+            window.PonoTier && typeof window.PonoTier.showTierLockPromo === 'function' && window.PonoTier.showTierLockPromo({
+              freeTag: 'アプリばん・えほん げんてい',
+              freeTitle: 'わたしのおうちは とくべつな バージョンで あそべるよ！',
+              freeBody: 'アプリばんか えほんを てにいれると、じぶんだけの おへやが つくれるよ'
+            });
+          } catch (e) {}
+          return;
+        }
+        location.href = 'room/index.html';
+      });
+    }
+    updateSettingsRoomAction();
 
     /**
      * 成功時の success-tag / success-body コピーを mode で切替える。
@@ -16321,6 +16373,7 @@
       if (successEl) successEl.hidden = false;
       if (method === 'debug' && typeof refreshDeveloperAccessUI === 'function') refreshDeveloperAccessUI();
       updateBookUnlockEntry();
+      updateSettingsRoomAction();
     }
 
     /**
@@ -16446,6 +16499,7 @@
           const curSub = localStorage.getItem('pono_sub_active');
           if (curPremium !== pwSnapshot.premium || curSub !== pwSnapshot.sub) {
             updateBookUnlockEntry();
+            updateSettingsRoomAction();
           }
         }
       } catch (e) {}

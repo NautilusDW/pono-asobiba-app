@@ -149,6 +149,45 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-07-15T22:26:13Z - sw.js CACHE_VERSION統合バンプ(2208→2209)+play.htmlわたしのおうち導線のPlaywright検証
+- **タスク**: sw.js CACHE_VERSION統合バンプ(2208→2209)+play.htmlわたしのおうち導線のPlaywright検証
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 0
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {}
+- **サマリ**: 行動ログが空のため分析できません。
+
+
+### 2026-07-15T22:11:46Z - play.html にわたしのおうち(room/index.html)への実導線を追加
+- **タスク**: play.html にわたしのおうち(room/index.html)への実導線を追加
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 0
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {}
+- **サマリ**: 行動ログが空のため分析できません。
+
+
+### 2026-07-15T22:05:56Z - achievements.js _rewardsBlocked() fail-open修正 (stickers.js checkDailyLoginと同じ3段fail-closedパターンへ統一)
+- **タスク**: achievements.js _rewardsBlocked() fail-open修正 (stickers.js checkDailyLoginと同じ3段fail-closedパターンへ統一)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 0
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {}
+- **サマリ**: 行動ログが空のため分析できません。
+
+
 ### 2026-07-15T21:59:22Z - レビュー指摘対応: checkDailyLogin gateのtier fallback追加 (Stream A)
 - **タスク**: レビュー指摘対応: checkDailyLogin gateのtier fallback追加 (Stream A)
 - **結果**: 成功
@@ -216,45 +255,6 @@ wrangler deploy                  # master 内容を production に
 
 ### 2026-07-15T01:26:43Z - analytics rollup/admin ブロッキング指摘4件の再検証
 - **タスク**: analytics rollup/admin ブロッキング指摘4件の再検証
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 0
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {}
-- **サマリ**: 行動ログが空のため分析できません。
-
-
-### 2026-07-15T01:22:41Z - analytics rollupの2日分再集計欠落とadmin診断バーlastRollup文字列/オブジェクト不一致のblocking指摘4件を修正
-- **タスク**: analytics rollupの2日分再集計欠落とadmin診断バーlastRollup文字列/オブジェクト不一致のblocking指摘4件を修正
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 0
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {}
-- **サマリ**: 行動ログが空のため分析できません。
-
-
-### 2026-07-15T01:08:40Z - analytics rollup/admin-api/worker.js のセキュリティクロスレビュー
-- **タスク**: analytics rollup/admin-api/worker.js のセキュリティクロスレビュー
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 0
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {}
-- **サマリ**: 行動ログが空のため分析できません。
-
-
-### 2026-07-15T01:05:05Z - analytics rollup engine: src/api/analytics-rollup.js 新規実装 (WAE SQL API 読み出し + D1 daily_events/daily_clients/clients/rollup_log 集計、graceful skip、handleScheduledRollup/runRollupForDate エントリポイント) + 静的regressionテスト
-- **タスク**: analytics rollup engine: src/api/analytics-rollup.js 新規実装 (WAE SQL API 読み出し + D1 daily_events/daily_clients/clients/rollup_log 集計、graceful skip、handleScheduledRollup/runRollupForDate エントリポイント) + 静的regressionテスト
 - **結果**: 成功
 - **理由**: N/A
 - **総アクション数**: 0

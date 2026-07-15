@@ -59,7 +59,7 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
-- 2026-07-16 05:30 - by Claude - [batch:1313-app-account-loginbonus-furniture-myhouse] - 実装中 (common/mvp-flags.js, common/stickers.js, play.html, room/index.html, play-all.html, index-app.html 新規, native/content-manifest.json, native/scripts/stage-www.mjs, sw.js, AGENTS_CLAIMS.md, HANDOFF.md) - アプリ専用ログインボーナス・家具/私のおうち機能の復活 + アプリ専用LP枠組み (sonnet5並列実装+エージェント相互クロスレビュー、オーケストレータは実装非従事)。アカウント/ログインシステム本体(C)はユーザー未確定のため今回スコープ外・保留 (account/** は触らない)
+- 2026-07-16 07:15 - by Claude - [batch:1313-app-account-loginbonus-furniture-myhouse] - 検証完了・push待ち (common/mvp-flags.js, common/tier.js, common/stickers.js, common/achievements.js, play.html, room/index.html, play-all.html, index-app.html 新規, index.html, sw.js, tests/login_bonus_app_tier_regression.cjs 新規, tests/room_furniture_app_tier_regression.cjs 新規, AGENTS_CLAIMS.md, HANDOFF.md) - アプリ専用ログインボーナス・家具/私のおうち機能の復活 + アプリ専用LP枠組み (sonnet5並列実装+エージェント相互クロスレビュー2巡、オーケストレータは実装非従事)。クロスレビューでcommon/achievements.jsのfail-open実バグ(bubble/breakout未読込)も発見・修正。CACHE_VERSION 2209まで同期済み。アカウント/ログインシステム本体(C)はユーザー未確定のため今回スコープ外・保留 (account/** は触らない)
 
 - 2026-06-28 09:27 - by Codex - [batch:877-gacha-tray-mask-lower] - play.html, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - ガチャ受け皿マスクが上すぎるため奥壁ラインを下げて再調整 [overlap: batch:860-data-export-import]
 - 2026-06-28 13:00 - by Claude - [batch:885-difficulty-label-phase3-fix] - quizland/index.html, puzzle/partner-select.js, bento/index.html - クロスレビュー Critical/High 修正 (quizland「かんたん」UI 露出 / puzzle partner「かんたん」/ bento aria-label hardcode) [overlap: batch:884-maze-water-line-skate]

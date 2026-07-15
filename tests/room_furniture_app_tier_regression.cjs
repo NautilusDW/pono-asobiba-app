@@ -11,10 +11,12 @@ const playAll = fs.readFileSync(path.join(root, "play-all.html"), "utf8");
 const roomIndex = fs.readFileSync(path.join(root, "room/index.html"), "utf8");
 
 // ===== common/achievements.js gate =====
+// 3段フォールバック (PonoMvpFlags有無 → PONO_MVP_NO_REWARDS有無 → PonoTier.isApp()単独判定) を
+// common/stickers.js checkDailyLogin と揃える fail-closed パターン。
 assert.match(
   achievementsSource,
-  /function _rewardsBlocked\(\) \{\s*\n\s*if \(window\.PonoMvpFlags && typeof window\.PonoMvpFlags\.rewardsBlocked === 'function'\) \{\s*\n\s*return window\.PonoMvpFlags\.rewardsBlocked\(\);\s*\n\s*\}\s*\n\s*return !!window\.PONO_MVP_NO_REWARDS;\s*\n\s*\}/,
-  "achievements.js must define a _rewardsBlocked() helper that routes through PonoMvpFlags when available and falls back to the legacy flag otherwise"
+  /function _rewardsBlocked\(\) \{\s*\n\s*if \(window\.PonoMvpFlags && typeof window\.PonoMvpFlags\.rewardsBlocked === 'function'\) \{\s*\n\s*return window\.PonoMvpFlags\.rewardsBlocked\(\);\s*\n\s*\}\s*\n\s*if \(window\.PONO_MVP_NO_REWARDS\) return true;\s*\n\s*return !\(window\.PonoTier && typeof window\.PonoTier\.isApp === 'function' && window\.PonoTier\.isApp\(\)\);\s*\n\s*\}/,
+  "achievements.js must define a _rewardsBlocked() helper that routes through PonoMvpFlags when available, falls back to the legacy flag, and finally fails closed via PonoTier.isApp() when neither is defined"
 );
 for (const fnMarker of [
   "window.incrementStat = function (key, amount) {",
@@ -208,6 +210,34 @@ runInAchievementsSandbox(
   (sandbox, store) => {
     sandbox.window.grantReward({ type: "furn", id: "furn_bed_blue_boy" });
     assert.equal(store.pono_unlocked_furn, undefined, "non-app tier grantReward() must stay a no-op");
+  }
+);
+
+// 5) room/index.html production shape: common/mvp-flags.js is not guaranteed loaded there, so
+// BOTH window.PonoMvpFlags and window.PONO_MVP_NO_REWARDS can be undefined (unlike case 1, which
+// still sets PONO_MVP_NO_REWARDS=true). Only window.PonoTier (common/tier.js) is guaranteed.
+// Non-app tier must still be blocked in this exact shape, or the gate fails open.
+runInAchievementsSandbox(
+  { PonoTier: { isApp: () => false } },
+  (sandbox, store) => {
+    const result = sandbox.window.incrementStat("login_first", 1);
+    assert.equal(result, 0, "room/index.html production shape (no PonoMvpFlags, no PONO_MVP_NO_REWARDS) must still block non-app tier via the PonoTier fallback");
+    assert.equal(store.pono_unlocked_furn, undefined, "no furniture should be granted while blocked");
+  }
+);
+
+// 6) Same production shape, app tier -> must NOT block, so achievements keep working on pages
+// that never load common/mvp-flags.js but do load common/tier.js.
+runInAchievementsSandbox(
+  { PonoTier: { isApp: () => true } },
+  (sandbox, store) => {
+    const result = sandbox.window.incrementStat("login_first", 1);
+    assert.equal(result, 1, "room/index.html production shape (no PonoMvpFlags, no PONO_MVP_NO_REWARDS), app tier must let incrementStat run normally");
+    const furn = JSON.parse(store.pono_unlocked_furn || "[]");
+    assert.ok(
+      furn.indexOf("ach_small_chair") !== -1,
+      "app tier via PonoTier fallback must still unlock ach_small_chair furniture"
+    );
   }
 );
 
