@@ -659,10 +659,7 @@ const SPACE_CHASE_JUNCTIONS=Object.freeze({
  J9:{at:[1250,620],fallbackIndex:0,choices:[{edge:"j9Sling",slot:"up",label:"うえの みち",note:"スリング",kind:"steady"},{edge:"j9Garden",slot:"down",label:"したの みち",note:"スター 4こ",kind:"power"}]}
 });
 const SPACE_CHASE_COMET_PLANS=Object.freeze([
- {J0:1,JN:0,JC:0,JS:0,J4:0,J5:0,J6:1,J7:0,J8:1,J9:0},
- {J0:0,JN:1,JC:1,JS:1,J4:1,J5:1,J6:0,J7:1,J8:0,J9:1},
- {J0:2,JN:0,JC:2,JS:0,J4:2,J5:0,J6:2,J7:0,J8:1,J9:0},
- {J0:1,JN:1,JC:2,JS:1,J4:0,J5:1,J6:2,J7:1,J8:0,J9:1}
+ Object.freeze({J0:1,JC:1,J4:1,J6:1,J8:1})
 ]);
 function createSpaceChaseRacer(kind){return {kind,edgeId:"launch",distance:0,finished:false,progress:0,visitedJunctions:new Set()};}
 function createSpaceChaseState(){return {phase:"idle",phaseElapsedMs:0,frameAt:0,raceElapsedMs:0,rocket:null,comet:null,playerChoices:Object.create(null),cometChoices:Object.create(null),activeJunction:"",boostCharges:1,boostRemainingMs:0,collectedBoosts:new Set(),releasedKnots:new Set(),completionCommitted:false};}
@@ -4780,7 +4777,6 @@ function advanceSpaceChaseRacer(racer,travel){
   if(racer.distance<metric.length-.001)break;
   if(edge.finish){racer.finished=true;break;}
   const next=nextSpaceChaseEdge(racer,edge);if(!next){racer.finished=true;break;}racer.edgeId=next;racer.distance=0;const nextMetric=spaceChaseRouteMetrics.get(next);if(nextMetric)racer.progress=Math.max(racer.progress,nextMetric.edge.checkpoint||0);markSpaceChaseRoute(next,racer.kind);
-  if(racer.kind==="rocket"&&next==="finish"&&spaceChaseState.comet&&spaceChaseState.comet.edgeId!=="finish"&&!spaceChaseState.comet.finished)remaining=0;
  }
 }
 function updateSpaceChaseChoiceRouteHighlights(junctionId){
@@ -4811,8 +4807,7 @@ function chooseSpaceChaseRoute(choiceIndex){
  spaceChaseState.playerChoices[junctionId]=choiceIndex;spaceChaseState.activeJunction="";markSpaceChaseRoute(choice.edge,"rocket");setSpaceChaseGuide(choice.kind==="short"?"ちかみち みつけた！":(choice.kind==="power"?"スターを とりに いこう！":"くねくね すすもう！"),true);tone(choice.kind==="short"?880:650,0,.1,"triangle",.055);updateSpaceChaseRouteChoiceControls();updateSpaceChaseVisual();return true;
 }
 function spaceChaseBoostPlayable(){
- const rocket=spaceChaseState.rocket,comet=spaceChaseState.comet,waitingForComet=rocket&&comet&&rocket.edgeId==="finish"&&!rocket.finished&&comet.edgeId!=="finish"&&!comet.finished;
- return spaceChaseRuntimeActive()&&spaceChaseState.phase==="race"&&!spaceChaseState.activeJunction&&!waitingForComet&&spaceChaseState.boostCharges>0&&spaceChaseState.boostRemainingMs<=0;
+ return spaceChaseRuntimeActive()&&spaceChaseState.phase==="race"&&!spaceChaseState.activeJunction&&spaceChaseState.boostCharges>0&&spaceChaseState.boostRemainingMs<=0;
 }
 function useSpaceChaseBoost(){
  if(!spaceChaseBoostPlayable())return false;ensureAC();spaceChaseState.boostCharges--;spaceChaseState.boostRemainingMs=SPACE_CHASE_BOOST_MS;setSpaceChaseGuide("びゅーん！",true);tone(820,0,.11,"sawtooth",.055);tone(1160,.08,.16,"triangle",.06);updateSpaceChaseVisual();return true;
@@ -4894,15 +4889,14 @@ function updateSpaceChase(now){
  const dt=rawDt*FAST;spaceChaseState.phaseElapsedMs+=dt;
  if(spaceChaseState.phase==="intro"&&spaceChaseState.phaseElapsedMs>=(futureReducedMotion()?260:SPACE_CHASE_INTRO_MS))beginSpaceChaseRace();
  else if(spaceChaseState.phase==="race"){
-  spaceChaseState.raceElapsedMs+=dt;const choosingRoute=!!spaceChaseState.activeJunction,comet=spaceChaseState.comet,rocket=spaceChaseState.rocket,waitingForComet=rocket.edgeId==="finish"&&!rocket.finished&&comet.edgeId!=="finish"&&!comet.finished,pausingBoost=choosingRoute||waitingForComet,boostTravelMs=pausingBoost?0:Math.min(dt,spaceChaseState.boostRemainingMs);if(!pausingBoost)spaceChaseState.boostRemainingMs=Math.max(0,spaceChaseState.boostRemainingMs-dt);
+  spaceChaseState.raceElapsedMs+=dt;const choosingRoute=!!spaceChaseState.activeJunction,comet=spaceChaseState.comet,rocket=spaceChaseState.rocket,boostTravelMs=choosingRoute?0:Math.min(dt,spaceChaseState.boostRemainingMs);if(!choosingRoute)spaceChaseState.boostRemainingMs=Math.max(0,spaceChaseState.boostRemainingMs-dt);
   const cometSpeed=comet.edgeId==="finish"?54:(choosingRoute?SPACE_CHASE_CHOICE_SPEED:SPACE_CHASE_COMET_SPEED);
   advanceSpaceChaseRacer(comet,cometSpeed*dt/1000);
   const baseTravelMs=dt-boostTravelMs;
-  let rocketTravel=choosingRoute?SPACE_CHASE_CHOICE_SPEED*dt/1000:(waitingForComet?0:(SPACE_CHASE_BOOST_SPEED*boostTravelMs+SPACE_CHASE_ROCKET_SPEED*baseTravelMs)/1000);
-  if(rocket.edgeId==="finish"&&!rocket.finished&&comet.edgeId!=="finish"&&!comet.finished)rocketTravel=0;
-  else if(rocket.edgeId==="finish"&&comet.edgeId==="finish")rocketTravel=Math.min(rocketTravel,Math.max(0,comet.distance-SPACE_CHASE_CATCH_DISTANCE-rocket.distance));
+  let rocketTravel=choosingRoute?SPACE_CHASE_CHOICE_SPEED*dt/1000:(SPACE_CHASE_BOOST_SPEED*boostTravelMs+SPACE_CHASE_ROCKET_SPEED*baseTravelMs)/1000;
+  if(rocket.edgeId==="finish"&&comet.edgeId==="finish")rocketTravel=Math.min(rocketTravel,Math.max(0,comet.distance-SPACE_CHASE_CATCH_DISTANCE-rocket.distance));
   advanceSpaceChaseRacer(rocket,rocketTravel);promptSpaceChaseBranch();
-  if(rocket.edgeId==="finish"&&comet.edgeId==="finish"&&comet.distance-rocket.distance<=SPACE_CHASE_CATCH_DISTANCE+.01)beginSpaceChaseCaught();
+  const catchGap=comet.distance-rocket.distance;if(rocket.edgeId==="finish"&&comet.edgeId==="finish"&&catchGap>=-.01&&catchGap<=SPACE_CHASE_CATCH_DISTANCE+.01)beginSpaceChaseCaught();
  }else if(spaceChaseState.phase==="caught"&&spaceChaseState.phaseElapsedMs>=(futureReducedMotion()?180:SPACE_CHASE_CAUGHT_MS))beginSpaceChaseRescue();
  else if(spaceChaseState.phase==="victory"&&spaceChaseState.phaseElapsedMs>=(futureReducedMotion()?360:SPACE_CHASE_VICTORY_MS)&&!spaceChaseState.completionCommitted){
   spaceChaseState.completionCommitted=true;const stageOrigin=origin(stg);clearSpaceChaseEncounter();completeCurrentStage(stageOrigin);return;

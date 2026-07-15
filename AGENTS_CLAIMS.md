@@ -59,6 +59,8 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
+- 2026-07-16 06:00 - by Codex - [batch:1314-nazonazo-comet-lead] - nazonazo-tunnel/**, tests/nazonazo_*.cjs, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - 宇宙最終追跡でロケットが彗星より前へ出る逆転を防ぎ、最後まで彗星先行の追いかけっこへ修正 [overlap: batch:1313-app-account-loginbonus-furniture-myhouse (sw.js)]
+
 - 2026-07-16 05:08 - by Claude - [batch:1313-app-account-loginbonus-furniture-myhouse] - 調査中 (login-bonus/**, furniture/**, my-house/** 該当箇所, account/**, index-app.html 等 新規LP, docs/**, AGENTS_CLAIMS.md, HANDOFF.md) - アプリ専用ログインボーナス・家具・私のおうち機能の復活 + アプリ用アカウント/ログインシステム新設計・アプリ専用LP (fable設計調査→ユーザー確認→sonnet5並列実装+エージェント相互クロスレビュー、オーケストレータは実装非従事)
 
 - 2026-06-28 09:27 - by Codex - [batch:877-gacha-tray-mask-lower] - play.html, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - ガチャ受け皿マスクが上すぎるため奥壁ラインを下げて再調整 [overlap: batch:860-data-export-import]
