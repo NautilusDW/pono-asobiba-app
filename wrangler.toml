@@ -45,6 +45,24 @@ id = "45b26dbf2d7a4f40907517e826e48ed8"
 binding = "EVENTS"
 dataset = "pono_events"
 
+# データ分析基盤: WAE SQL API 読み出し用のアカウント ID と、ロールアップ対象 dataset 名。
+# トークン本体 (WAE_SQL_TOKEN) は secret のみで管理し、ここには置かない。
+[vars]
+CF_ACCOUNT_ID = "f5788e90dd05047ab67ada1b6a6f2448"
+ANALYTICS_DATASET = "pono_events"
+
+# データ分析基盤 (production): 集計層 D1 (docs/data-analytics-plan.md §6-3)。
+# LP staging (env.staging) にはデータが無いため binding を付けない。
+[[d1_databases]]
+binding = "ANALYTICS_DB"
+database_name = "pono-analytics-prod"
+database_id = "93e021e9-054a-4f4b-b7ac-e5f2925af274"
+
+# データ分析基盤: 日次ロールアップ cron (JST 4時 = UTC 19時)。
+# [triggers] は env に継承されるため、env.staging / env.staging-app 側で明示上書きする。
+[triggers]
+crons = ["0 19 * * *"]
+
 # ---------------------------------------------------------------------------
 # Step C: 合言葉型クラウド同期 (production)。
 # 手順は src/api/SETUP.md を参照。 namespace 作成 + secret 登録が済むまでは
@@ -93,6 +111,11 @@ id = "0c58144b7fe9479e9781ddb1d9b44dc9"
 binding = "EVENTS"
 dataset = "pono_events_stg"
 
+# データ分析基盤: LP staging は集計対象外 (D1 binding も ANALYTICS_DATASET も付けない)。
+# top-level [triggers] の継承を明示的に打ち消す (継承させると LP staging でも cron が走ってしまう)。
+[env.staging.triggers]
+crons = []
+
 # Staging (アプリ版) = develop-app branch からのデプロイ用、別 worker。
 # URL: https://pono-asobiba-app-staging.ndw.workers.dev/
 # 既存 staging とは別 worker name で並走させ、APP_BUILD=1 により
@@ -105,6 +128,7 @@ routes = []  # custom_domain 継承を回避（既存 staging と同じ理由）
 
 [env.staging-app.vars]
 APP_BUILD = "1"
+ANALYTICS_DATASET = "pono_events_stgapp"
 
 # Cloudflare の [env.XXX] では top-level [assets] が継承されないため、
 # staging-app では明示的に再宣言する必要がある。
