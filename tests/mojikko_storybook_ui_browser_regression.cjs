@@ -679,6 +679,7 @@ function sha256(value) {
             ['close', '#modeChoiceCloseBtn']
           ].map(([name, selector]) => [name, parseFloat(getComputedStyle(document.querySelector(selector)).fontSize)
             * (stageEl.getBoundingClientRect().height / 900)])),
+          choiceGap: parseFloat(getComputedStyle(document.querySelector('.mode-choice-button')).gap),
           choices: Array.from(document.querySelectorAll('.mode-choice-button')).map((button) => ({
             button: compactRect(button.getBoundingClientRect()),
             title: contentRect(button.querySelector('strong')),
@@ -692,6 +693,7 @@ function sha256(value) {
       assert.ok(Math.abs(chooser.stageGeometry.top - initial.stageGeometry.top) < 0.1, `${viewport.name}: chooser focus shifted the stage vertically`);
       assert.equal(chooser.stageGeometry.transform, initial.stageGeometry.transform, `${viewport.name}: chooser focus changed the stage transform`);
       if (viewport.height <= 500) {
+        assert.ok(chooser.choiceGap >= 8, `${viewport.name}: chooser title/copy gap is below 8px`);
         assert.ok(chooser.fonts.choiceCopy >= 12, `${viewport.name}: chooser supporting text is below 12px`);
         for (const name of ['title', 'choiceTitle', 'close']) {
           assert.ok(chooser.fonts[name] >= 13.5, `${viewport.name}:chooser-${name} primary text is below 13.5px`);
