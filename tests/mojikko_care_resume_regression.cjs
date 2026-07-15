@@ -166,9 +166,11 @@ assert.equal(secondaryContext.activePetPointerId, 21);
 assert.equal(secondaryContext.petStrokeDistance, 44, 'secondary contact must not reset accumulated progress');
 
 assert.match(writingHtml, /const WRITING_CURSOR_KEY = 'mojikkoFarmWritingCursorV1';/);
-const cursorSource = between(writingHtml, 'function saveWritingCursor(', 'function fitStage(');
+assert.match(writingHtml, /const WRITING_PROGRESS_KEY = 'mojikkoFarmWritingProgressV2';/);
+const cursorSource = between(writingHtml, 'function normalizeWritingCompletedIds(', 'function fitStage(');
 const cursorStore = new Map();
 const cursorWarnings = [];
+const cursorListeners = {};
 const cursorContext = {
   writingCharacters: [
     { id: 'hiragana_3042', char: 'あ' },
@@ -176,28 +178,49 @@ const cursorContext = {
     { id: 'katakana_30dd', char: 'ポ' }
   ],
   WRITING_CURSOR_KEY: 'mojikkoFarmWritingCursorV1',
+  WRITING_PROGRESS_KEY: 'mojikkoFarmWritingProgressV2',
+  WRITING_COMPLETED_MARKER_PREFIX: 'mojikkoFarmWritingCompletedV1:',
+  completedCharacters: new Set(),
   localStorage: {
+    get length() { return cursorStore.size; },
+    key(index) { return Array.from(cursorStore.keys())[index] ?? null; },
     getItem(key) { return cursorStore.has(key) ? cursorStore.get(key) : null; },
     setItem(key, value) { cursorStore.set(key, value); }
   },
-  window: { location: { search: '' } },
+  window: {
+    location: { search: '' },
+    addEventListener(type, handler) { cursorListeners[type] = handler; }
+  },
+  updateCharacterButtons() {},
+  pendingNextWritingIndex: null,
+  complete: false,
+  modalRetryBtn: { textContent: '' },
   URLSearchParams,
   console: { warn(...args) { cursorWarnings.push(args); } }
 };
 vm.createContext(cursorContext);
 vm.runInContext(cursorSource, cursorContext, { filename: 'mojikko-writing-cursor.js' });
-cursorContext.saveWritingCursor(1);
-assert.deepEqual(JSON.parse(cursorStore.get(cursorContext.WRITING_CURSOR_KEY)), { characterId: 'hiragana_3044' });
-assert.equal(cursorContext.getInitialWritingIndex(), 0, 'a direct visit must retain the familiar initial あ');
+assert.equal(cursorContext.saveWritingCursor('hiragana_3042'), 1);
+assert.deepEqual(JSON.parse(cursorStore.get(cursorContext.WRITING_PROGRESS_KEY)), {
+  version: 2,
+  cursorId: 'hiragana_3044',
+  completedIds: ['hiragana_3042']
+});
+assert.deepEqual(JSON.parse(cursorStore.get(cursorContext.WRITING_CURSOR_KEY)), {
+  characterId: 'hiragana_3044'
+});
+assert.equal(cursorContext.getInitialWritingIndex(), 1, 'a direct visit must resume the saved character');
 cursorContext.window.location.search = '?from=care';
 assert.equal(cursorContext.getInitialWritingIndex(), 1, 'returning from care must resume the saved character');
-cursorStore.set(cursorContext.WRITING_CURSOR_KEY, '{broken');
-assert.equal(cursorContext.getInitialWritingIndex(), 0, 'broken cursor state must fall back safely');
-cursorStore.set(cursorContext.WRITING_CURSOR_KEY, JSON.stringify({ characterId: 'unknown' }));
-assert.equal(cursorContext.getInitialWritingIndex(), 0, 'unknown character ids must fall back safely');
+cursorContext.window.location.search = '?from=play';
+assert.equal(cursorContext.getInitialWritingIndex(), 1, 'returning from play must resume the saved character');
+cursorStore.set(cursorContext.WRITING_PROGRESS_KEY, '{broken');
+assert.equal(cursorContext.getInitialWritingIndex(), 1, 'broken V2 must fall back to the dual-written V1 cursor');
+cursorStore.set(cursorContext.WRITING_PROGRESS_KEY, JSON.stringify({ version: 2, cursorId: 'unknown', completedIds: [] }));
+assert.equal(cursorContext.getInitialWritingIndex(), 1, 'unknown V2 cursor ids must fall back to V1 safely');
 
-function makeCompleteContext(currentIndex) {
-  const calls = { cursor: [], completed: [], overlay: 0 };
+function makeCompleteContext(currentIndex, readiness = true) {
+  const calls = { cursor: [], completed: [], overlay: 0, messages: [] };
   const characters = [
     { id: 'hiragana_3042', char: 'あ', group: 'hiragana', strokes: 1 },
     { id: 'katakana_30dd', char: 'ポ', group: 'katakana', strokes: 1 }
@@ -208,6 +231,7 @@ function makeCompleteContext(currentIndex) {
     writingCharacters: characters,
     complete: false,
     completionQueued: false,
+    pendingNextWritingIndex: null,
     writer: null,
     strokesCompleted: 1,
     currentStrokeIndex: 0,
@@ -223,16 +247,24 @@ function makeCompleteContext(currentIndex) {
     starCountEl: { textContent: '' },
     resultOverlay: { classList: { add() { calls.overlay += 1; } } },
     getCurrentCharacter() { return characters[context.currentIndex]; },
-    getWritingReadiness() { return { ready: true }; },
+    getWritingReadiness() {
+      return readiness
+        ? { ready: true }
+        : { ready: false, message: 'まだだよ', subMessage: 'なぞってね' };
+    },
     playSfx() {},
     stopTrail() {},
     fillAllLetterPixels() {},
     renderPixelLetter() {},
     renderCanvasStrokeNumbers() {},
-    saveWritingCursor(index) { calls.cursor.push(index); },
+    saveWritingCursor(characterId) {
+      calls.cursor.push(characterId);
+      context.completedCharacters.add(characterId);
+      return (context.currentIndex + 1) % characters.length;
+    },
     renderStrokeOrder() {},
     updateCharacterButtons() {},
-    setMessage() {},
+    setMessage(...args) { calls.messages.push(args); },
     getCurrentWritingReward() { return { id: 'moji_cookie', name: 'もじクッキー' }; },
     setFoodIconClass() {},
     launchBurst() {},
@@ -251,13 +283,24 @@ function makeCompleteContext(currentIndex) {
 
 const firstComplete = makeCompleteContext(0);
 firstComplete.completeWriting(false, { totalStrokes: 1 });
-assert.deepEqual(firstComplete.calls.cursor, [1], 'completing あ must save the following character');
+assert.deepEqual(firstComplete.calls.cursor, ['hiragana_3042'], 'completing あ must save that stable ID');
+assert.equal(firstComplete.pendingNextWritingIndex, 1);
+assert.equal(firstComplete.modalRetryBtn.textContent, 'つぎは「ポ」');
 assert.equal(firstComplete.calls.completed.length, 1);
 
 const lastComplete = makeCompleteContext(1);
 lastComplete.completeWriting(false, { totalStrokes: 1 });
-assert.deepEqual(lastComplete.calls.cursor, [0], 'the final character must wrap to あ');
+assert.deepEqual(lastComplete.calls.cursor, ['katakana_30dd'], 'the final character must save its stable ID');
+assert.equal(lastComplete.pendingNextWritingIndex, 0, 'the final character must wrap to あ');
 
-assert.match(writingHtml, /currentIndex = getInitialWritingIndex\(\);\s*syncCurrentGroupFromCharacter\(\);\s*resetWriting\(\);/);
+const notReadyComplete = makeCompleteContext(0, false);
+notReadyComplete.completeWriting(false, { totalStrokes: 1 });
+assert.deepEqual(notReadyComplete.calls.cursor, [], 'readiness failure must not save progress');
+assert.deepEqual(Array.from(notReadyComplete.completedCharacters), [], 'readiness failure must not mutate completed IDs');
+assert.equal(notReadyComplete.calls.completed.length, 0, 'readiness failure must not grant a reward');
+assert.equal(notReadyComplete.stars, 0);
+assert.equal(notReadyComplete.complete, false);
+
+assert.match(writingHtml, /const initialWritingProgress = loadWritingProgress\(\);[\s\S]*?completedCharacters\.add\(id\)[\s\S]*?currentIndex = getInitialWritingIndex\(initialWritingProgress\);\s*syncCurrentGroupFromCharacter\(\);\s*resetWriting\(\);/);
 
 console.log('Mojikko care and resume regression: PASS');

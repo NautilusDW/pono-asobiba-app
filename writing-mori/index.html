@@ -1739,6 +1739,8 @@ const VISIBLE_GUIDE_CLOSED_ENDPOINT_TOLERANCE = 1;
 const CARE_STATE_KEY = 'mojikkoFarmCareStateV1';
 const PENDING_REWARD_KEY = 'mojikkoFarmPendingWritingReward';
 const WRITING_CURSOR_KEY = 'mojikkoFarmWritingCursorV1';
+const WRITING_PROGRESS_KEY = 'mojikkoFarmWritingProgressV2';
+const WRITING_COMPLETED_MARKER_PREFIX = 'mojikkoFarmWritingCompletedV1:';
 const FOOD_SYSTEM_VERSION = 2;
 const DAILY_FEEDING_SLOTS = [
   { id: 'morning', foodId: 'moji_gohan' },
@@ -1774,6 +1776,7 @@ let currentStrokeIndex = 0;
 let mistakeCount = 0;
 let complete = false;
 let completionQueued = false;
+let pendingNextWritingIndex = null;
 const completedCharacters = new Set();
 const guideSvgMaskCache = new Map();
 
@@ -2129,31 +2132,218 @@ function navigateToCareScreen() {
   window.location.href = 'care.html?from=writing';
 }
 
-function saveWritingCursor(index) {
-  const item = writingCharacters[index];
-  if (!item) return;
+function normalizeWritingCompletedIds(value) {
+  if (!Array.isArray(value)) return [];
+  const requestedIds = new Set(value.filter((id) => typeof id === 'string'));
+  return writingCharacters
+    .filter((item) => requestedIds.has(item.id))
+    .map((item) => item.id);
+}
+
+function getWritingCharacterIndex(characterId) {
+  return writingCharacters.findIndex((item) => item.id === characterId);
+}
+
+function findFirstIncompleteWritingIndex(startIndex, completedIds) {
+  if (!writingCharacters.length) return 0;
+  const completedIdSet = new Set(normalizeWritingCompletedIds(completedIds));
+  if (completedIdSet.size >= writingCharacters.length) return 0;
+  const numericStart = Number.isInteger(startIndex) ? startIndex : 0;
+  const normalizedStart = ((numericStart % writingCharacters.length) + writingCharacters.length)
+    % writingCharacters.length;
+  for (let offset = 0; offset < writingCharacters.length; offset += 1) {
+    const index = (normalizedStart + offset) % writingCharacters.length;
+    if (!completedIdSet.has(writingCharacters[index].id)) return index;
+  }
+  return 0;
+}
+
+function getNormalizedWritingCursorIndex(cursorId, completedIds) {
+  const storedIndex = getWritingCharacterIndex(cursorId);
+  return findFirstIncompleteWritingIndex(storedIndex >= 0 ? storedIndex : 0, completedIds);
+}
+
+function writeWritingCompletedMarker(characterId) {
+  if (getWritingCharacterIndex(characterId) < 0) return;
   try {
-    localStorage.setItem(WRITING_CURSOR_KEY, JSON.stringify({ characterId: item.id }));
+    localStorage.setItem(`${WRITING_COMPLETED_MARKER_PREFIX}${characterId}`, '1');
   } catch (error) {
-    console.warn('Could not save writing cursor:', error);
+    console.warn('Could not save writing completion marker:', error);
   }
 }
 
-function getInitialWritingIndex() {
-  const params = new URLSearchParams(window.location.search);
-  if (params.get('from') !== 'care') return 0;
+function readWritingCompletedMarkers() {
+  const markerIds = [];
   try {
-    const raw = localStorage.getItem(WRITING_CURSOR_KEY);
-    if (!raw) return 0;
-    const parsed = JSON.parse(raw);
-    const characterId = typeof parsed === 'string' ? parsed : parsed && parsed.characterId;
-    const index = writingCharacters.findIndex((item) => item.id === characterId);
-    return index >= 0 ? index : 0;
+    if (typeof localStorage.key !== 'function') return markerIds;
+    for (let index = 0; index < localStorage.length; index += 1) {
+      const key = localStorage.key(index);
+      if (typeof key !== 'string' || !key.startsWith(WRITING_COMPLETED_MARKER_PREFIX)) continue;
+      const characterId = key.slice(WRITING_COMPLETED_MARKER_PREFIX.length);
+      if (getWritingCharacterIndex(characterId) < 0 || localStorage.getItem(key) !== '1') continue;
+      markerIds.push(characterId);
+    }
   } catch (error) {
-    console.warn('Could not load writing cursor:', error);
-    return 0;
+    console.warn('Could not load writing completion markers:', error);
+  }
+  return normalizeWritingCompletedIds(markerIds);
+}
+
+function readWritingProgressV2() {
+  try {
+    const raw = localStorage.getItem(WRITING_PROGRESS_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed) || parsed.version !== 2) return null;
+    const cursorId = typeof parsed.cursorId === 'string'
+      && writingCharacters.some((item) => item.id === parsed.cursorId)
+      ? parsed.cursorId
+      : '';
+    return {
+      version: 2,
+      cursorId,
+      completedIds: normalizeWritingCompletedIds(parsed.completedIds)
+    };
+  } catch (error) {
+    console.warn('Could not load writing progress:', error);
+    return null;
   }
 }
+
+function readLegacyWritingCursor() {
+  try {
+    const raw = localStorage.getItem(WRITING_CURSOR_KEY);
+    if (!raw) return '';
+    let parsed = raw;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (_) {
+      // Some early builds stored the stable ID without JSON encoding.
+    }
+    const cursorId = typeof parsed === 'string'
+      ? parsed
+      : parsed && typeof parsed.characterId === 'string' ? parsed.characterId : '';
+    return writingCharacters.some((item) => item.id === cursorId) ? cursorId : '';
+  } catch (error) {
+    console.warn('Could not load legacy writing cursor:', error);
+    return '';
+  }
+}
+
+function getMergedWritingCompletedIds(storedProgress) {
+  const mergedCompletedIds = new Set(storedProgress ? storedProgress.completedIds : []);
+  readWritingCompletedMarkers().forEach((id) => mergedCompletedIds.add(id));
+  completedCharacters.forEach((id) => mergedCompletedIds.add(id));
+  return normalizeWritingCompletedIds(Array.from(mergedCompletedIds));
+}
+
+function getStoredWritingCursorId(storedProgress) {
+  if (storedProgress && storedProgress.cursorId) return storedProgress.cursorId;
+  return readLegacyWritingCursor() || (writingCharacters[0] ? writingCharacters[0].id : '');
+}
+
+function writeWritingProgress(cursorIndex, completedIds) {
+  const item = writingCharacters[cursorIndex] || writingCharacters[0];
+  if (!item) return 0;
+  const normalizedCompletedIds = normalizeWritingCompletedIds(completedIds);
+  try {
+    localStorage.setItem(WRITING_PROGRESS_KEY, JSON.stringify({
+      version: 2,
+      cursorId: item.id,
+      completedIds: normalizedCompletedIds
+    }));
+  } catch (error) {
+    console.warn('Could not save writing progress:', error);
+  }
+  // Keep the old cursor readable by builds that have not learned the V2 schema yet.
+  // This is deliberately independent from the V2 write so a quota/privacy failure
+  // on either key cannot prevent the other fallback from being attempted.
+  try {
+    localStorage.setItem(WRITING_CURSOR_KEY, JSON.stringify({ characterId: item.id }));
+  } catch (error) {
+    console.warn('Could not save legacy writing cursor:', error);
+  }
+  return getWritingCharacterIndex(item.id);
+}
+
+function saveWritingCursor(completedCharacterId) {
+  if (getWritingCharacterIndex(completedCharacterId) >= 0) {
+    completedCharacters.add(completedCharacterId);
+    // Per-character keys are idempotent and cannot overwrite another tab's success.
+    // V2 remains a compact cache rebuilt from these durable facts on every load.
+    writeWritingCompletedMarker(completedCharacterId);
+  }
+  const storedProgress = readWritingProgressV2();
+  const completedIds = getMergedWritingCompletedIds(storedProgress);
+  completedIds.forEach((id) => completedCharacters.add(id));
+  const cursorIndex = getNormalizedWritingCursorIndex(
+    getStoredWritingCursorId(storedProgress),
+    completedIds
+  );
+  writeWritingProgress(cursorIndex, completedIds);
+  return cursorIndex;
+}
+
+function loadWritingProgress() {
+  const storedProgress = readWritingProgressV2();
+  const completedIds = getMergedWritingCompletedIds(storedProgress);
+  const cursorIndex = getNormalizedWritingCursorIndex(
+    getStoredWritingCursorId(storedProgress),
+    completedIds
+  );
+  return {
+    version: 2,
+    cursorId: writingCharacters[cursorIndex] ? writingCharacters[cursorIndex].id : '',
+    completedIds
+  };
+}
+
+function getInitialWritingIndex(progress = loadWritingProgress()) {
+  const index = writingCharacters.findIndex((item) => item.id === progress.cursorId);
+  return index >= 0 ? index : 0;
+}
+
+function writingProgressMatches(storedProgress, cursorId, completedIds) {
+  if (!storedProgress || storedProgress.cursorId !== cursorId) return false;
+  if (storedProgress.completedIds.length !== completedIds.length) return false;
+  return storedProgress.completedIds.every((id, index) => id === completedIds[index]);
+}
+
+function reconcileWritingProgressFromStorage() {
+  const storedProgress = readWritingProgressV2();
+  const completedIds = getMergedWritingCompletedIds(storedProgress);
+  completedIds.forEach((id) => completedCharacters.add(id));
+  const cursorIndex = getNormalizedWritingCursorIndex(
+    getStoredWritingCursorId(storedProgress),
+    completedIds
+  );
+  const cursorId = writingCharacters[cursorIndex] ? writingCharacters[cursorIndex].id : '';
+  if (!writingProgressMatches(storedProgress, cursorId, completedIds)) {
+    writeWritingProgress(cursorIndex, completedIds);
+  }
+  if (typeof updateCharacterButtons === 'function') updateCharacterButtons();
+  if (complete && Number.isInteger(pendingNextWritingIndex)) {
+    pendingNextWritingIndex = cursorIndex;
+    if (modalRetryBtn && writingCharacters[cursorIndex]) {
+      modalRetryBtn.textContent = `つぎは「${writingCharacters[cursorIndex].char}」`;
+    }
+  }
+  return { version: 2, cursorId, completedIds };
+}
+
+function handleWritingProgressStorageEvent(event) {
+  if (event.storageArea && event.storageArea !== localStorage) return;
+  if (event.key === WRITING_PROGRESS_KEY) {
+    reconcileWritingProgressFromStorage();
+    return;
+  }
+  if (typeof event.key !== 'string' || !event.key.startsWith(WRITING_COMPLETED_MARKER_PREFIX)) return;
+  const characterId = event.key.slice(WRITING_COMPLETED_MARKER_PREFIX.length);
+  if (event.newValue !== '1' || getWritingCharacterIndex(characterId) < 0) return;
+  reconcileWritingProgressFromStorage();
+}
+
+window.addEventListener('storage', handleWritingProgressStorageEvent);
 
 function fitStage() {
   const aspect = window.innerWidth / Math.max(1, window.innerHeight);
@@ -3041,6 +3231,7 @@ function startWriterQuiz(startStrokeNum) {
 }
 
 function resetWriting() {
+  pendingNextWritingIndex = null;
   syncCurrentGroupFromCharacter();
   trailDrawing = false;
   lastTrailPoint = null;
@@ -3724,8 +3915,7 @@ function completeWriting(manual, summary) {
   fillAllLetterPixels();
   renderPixelLetter();
   renderCanvasStrokeNumbers();
-  completedCharacters.add(item.id);
-  saveWritingCursor((currentIndex + 1) % writingCharacters.length);
+  pendingNextWritingIndex = saveWritingCursor(item.id);
   renderStrokeOrder();
   updateCharacterButtons();
   writingBoard.classList.add('success');
@@ -3740,7 +3930,8 @@ function completeWriting(manual, summary) {
       : `スター +${WRITING_STAR_REWARD}を ゲット！`;
     setFoodIconClass(resultRewardIcon, reward);
   }
-  modalRetryBtn.textContent = `つぎは「${writingCharacters[(currentIndex + 1) % writingCharacters.length].char}」`;
+  const pendingNextCharacter = writingCharacters[pendingNextWritingIndex] || writingCharacters[0];
+  modalRetryBtn.textContent = `つぎは「${pendingNextCharacter.char}」`;
   stars += WRITING_STAR_REWARD;
   starCountEl.textContent = String(stars);
   launchBurst();
@@ -3813,8 +4004,10 @@ function launchBurst() {
 }
 
 function nextCharacter() {
-  currentIndex = (currentIndex + 1) % writingCharacters.length;
-  saveWritingCursor(currentIndex);
+  currentIndex = Number.isInteger(pendingNextWritingIndex)
+    && writingCharacters[pendingNextWritingIndex]
+    ? pendingNextWritingIndex
+    : getInitialWritingIndex();
   syncCurrentGroupFromCharacter();
   resetWriting();
 }
@@ -3859,7 +4052,9 @@ window.MojikkoWritingGame = {
 };
 
 starCountEl.textContent = String(stars);
-currentIndex = getInitialWritingIndex();
+const initialWritingProgress = loadWritingProgress();
+initialWritingProgress.completedIds.forEach((id) => completedCharacters.add(id));
+currentIndex = getInitialWritingIndex(initialWritingProgress);
 syncCurrentGroupFromCharacter();
 resetWriting();
 </script>
