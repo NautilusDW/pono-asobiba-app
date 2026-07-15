@@ -120,7 +120,11 @@ assert.match(
   /\.mode-choice-card,\s*\.result-card\s*\{[^}]*border-radius:\s*50px;[^}]*background-color:\s*rgba\(255, 249, 226, 0\.94\);[^}]*background-clip:\s*padding-box;/s,
   'modal paper must remain inside its transparent frame instead of forming a second white rectangle'
 );
-assert.match(html, /\.companion-name\s*\{\s*top:\s*-5px;\s*\}/, 'Milmaru title must stay centered in its wooden sign');
+assert.match(
+  html,
+  /\.companion-name\s*\{[^}]*top:\s*-24px;[^}]*height:\s*58px;[^}]*display:\s*flex;[^}]*align-items:\s*center;[^}]*justify-content:\s*center;[^}]*line-height:\s*1;/s,
+  'Milmaru title must use the wooden sign as a fixed centered layout box'
+);
 assert.match(html, /\.writing-board\s*\{[^}]*border:\s*0;/s, 'the story frame must not shrink the writer containing block');
 assert.match(
   html,

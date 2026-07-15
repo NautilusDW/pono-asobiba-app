@@ -188,6 +188,97 @@ async function assertNoWhiteCornerRectangles(screenshot, rects, label) {
   }
 }
 
+async function auditCompanionFallbackLayout(browser, base) {
+  const context = await browser.newContext({ viewport: { width: 844, height: 390 } });
+  await context.addInitScript(() => {
+    window.__APP_BUILD__ = 1;
+    localStorage.setItem('pono_bgm_enabled', 'off');
+  });
+  const page = await context.newPage();
+  const pageErrors = [];
+  const localFailures = [];
+  const localHttpErrors = [];
+  page.on('pageerror', (error) => pageErrors.push(error.message));
+  page.on('requestfailed', (request) => {
+    if (request.url().startsWith(base)) localFailures.push(request.url());
+  });
+  page.on('response', (response) => {
+    if (response.url().startsWith(base) && response.status() >= 400) {
+      localHttpErrors.push(`${response.status()} ${response.url()}`);
+    }
+  });
+  await context.route('**/*', (route) => {
+    const url = route.request().url();
+    if (url.startsWith('https://fonts.googleapis.com/') || url.startsWith('https://fonts.gstatic.com/')) {
+      route.abort();
+      return;
+    }
+    if (url.includes('cdn.jsdelivr.net') && decodeURIComponent(new URL(url).pathname).endsWith('/あ.json')) {
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json; charset=utf-8',
+        headers: { 'access-control-allow-origin': '*' },
+        body: JSON.stringify(kanaAFixture)
+      });
+      return;
+    }
+    if (url.startsWith(base) || url.startsWith('data:') || url.startsWith('blob:')) {
+      route.continue();
+    } else {
+      route.abort();
+    }
+  });
+
+  try {
+    await page.goto(`${base}/writing-mori/`, { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => window.MojikkoWritingGame && document.querySelector('.companion-name'));
+    const fallback = await page.evaluate(() => {
+      const stageScale = document.querySelector('#stage').getBoundingClientRect().height / 900;
+      const name = document.querySelector('.companion-name');
+      const cardRect = document.querySelector('#companionCard').getBoundingClientRect();
+      const boxRect = name.getBoundingClientRect();
+      const range = document.createRange();
+      range.selectNodeContents(name);
+      const glyphRect = range.getBoundingClientRect();
+      const style = getComputedStyle(name);
+      return {
+        boxTop: (boxRect.top - cardRect.top) / stageScale,
+        boxBottom: (boxRect.bottom - cardRect.top) / stageScale,
+        boxHeight: boxRect.height / stageScale,
+        glyphTop: (glyphRect.top - cardRect.top) / stageScale,
+        glyphBottom: (glyphRect.bottom - cardRect.top) / stageScale,
+        glyphBottomAbsolute: glyphRect.bottom,
+        speechTop: document.querySelector('.companion-speech').getBoundingClientRect().top,
+        creatureTop: document.querySelector('.pixel-creature').getBoundingClientRect().top,
+        display: style.display,
+        alignItems: style.alignItems,
+        justifyContent: style.justifyContent,
+        fontSize: parseFloat(style.fontSize),
+        lineHeight: parseFloat(style.lineHeight),
+        visualFontSize: parseFloat(style.fontSize) * stageScale
+      };
+    });
+    assert.ok(Math.abs(fallback.boxTop) <= 0.1, 'font-offline: companion title box did not start at wooden sign top');
+    assert.ok(Math.abs(fallback.boxBottom - 58) <= 0.1, 'font-offline: companion title box did not end at wooden sign bottom');
+    assert.ok(Math.abs(fallback.boxHeight - 58) <= 0.1, 'font-offline: companion title box height drifted');
+    assert.ok(fallback.glyphTop >= 4, 'font-offline: companion title lacks top safety');
+    assert.ok(fallback.glyphBottom <= 54, 'font-offline: companion title lacks bottom safety');
+    assert.ok(Math.abs((fallback.glyphTop + fallback.glyphBottom) / 2 - 29) <= 1, 'font-offline: companion title is not centered');
+    assert.equal(fallback.display, 'flex', 'font-offline: companion title lost fixed flex layout');
+    assert.equal(fallback.alignItems, 'center', 'font-offline: companion title lost vertical centering');
+    assert.equal(fallback.justifyContent, 'center', 'font-offline: companion title lost horizontal centering');
+    assert.ok(Math.abs(fallback.lineHeight / fallback.fontSize - 1) <= 0.01, 'font-offline: companion title line-height drifted from 1');
+    assert.ok(fallback.visualFontSize >= 12, 'font-offline: companion title fell below the short-landscape font floor');
+    assert.ok(fallback.glyphBottomAbsolute < fallback.speechTop, 'font-offline: companion title overlaps its speech');
+    assert.ok(fallback.glyphBottomAbsolute < fallback.creatureTop, 'font-offline: companion title overlaps Milmaru');
+    assert.deepEqual(pageErrors, [], 'font-offline: page errors');
+    assert.deepEqual(localFailures, [], 'font-offline: local request failures');
+    assert.deepEqual(localHttpErrors, [], 'font-offline: local HTTP errors');
+  } finally {
+    await context.close();
+  }
+}
+
 async function auditMilmaruInitialNetwork(browser, base, state) {
   const context = await browser.newContext({ viewport: { width: 844, height: 390 } });
   await context.addInitScript(({ care }) => {
@@ -225,6 +316,10 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
         headers: { 'access-control-allow-origin': '*' },
         body: JSON.stringify(kanaAFixture)
       });
+      return;
+    }
+    if (url.startsWith('https://fonts.googleapis.com/') || url.startsWith('https://fonts.gstatic.com/')) {
+      route.continue();
       return;
     }
     if (url.startsWith(base) || url.startsWith('data:') || url.startsWith('blob:')) {
@@ -346,6 +441,10 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
           });
           return;
         }
+        if (url.startsWith('https://fonts.googleapis.com/') || url.startsWith('https://fonts.gstatic.com/')) {
+          route.continue();
+          return;
+        }
         if (url.startsWith(base) || url.startsWith('data:') || url.startsWith('blob:')) {
           route.continue();
         } else {
@@ -355,7 +454,26 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
 
       await page.goto(`${base}/writing-mori/`, { waitUntil: 'domcontentloaded' });
       await page.waitForFunction(() => window.MojikkoWritingGame);
-      await page.evaluate(() => document.fonts && document.fonts.ready);
+      const zenFontAudit = await page.evaluate(async () => {
+        if (!document.fonts) return { loaded: false, check: false, faces: [] };
+        try {
+          const defaultFaces = await document.fonts.load('16px "Zen Maru Gothic"', 'あ');
+          const companionFaces = await document.fonts.load('900 16px "Zen Maru Gothic"', 'あ');
+          await document.fonts.ready;
+          const faces = [...defaultFaces, ...companionFaces].map((face) => ({
+            family: face.family,
+            weight: face.weight,
+            status: face.status
+          }));
+          return {
+            loaded: companionFaces.some((face) => /Zen Maru Gothic/.test(face.family) && face.status === 'loaded'),
+            check: document.fonts.check('900 16px "Zen Maru Gothic"', 'あ'),
+            faces
+          };
+        } catch (error) {
+          return { loaded: false, check: false, faces: [], error: String(error) };
+        }
+      });
 
       assert.deepEqual(pageErrors, [], `${viewport.name}: page errors`);
       assert.deepEqual(localFailures, [], `${viewport.name}: local request failures`);
@@ -424,6 +542,7 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
         const companionNameRange = document.createRange();
         companionNameRange.selectNodeContents(companionName);
         const companionNameRect = companionNameRange.getBoundingClientRect();
+        const companionNameBoxRect = companionName.getBoundingClientRect();
         const companionSpeechRect = document.querySelector('.companion-speech').getBoundingClientRect();
         const companionCreatureRect = document.querySelector('.pixel-creature').getBoundingClientRect();
         const cornerSelectors = Object.freeze({
@@ -520,11 +639,19 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
             return { name, clip: style.backgroundClip, radius: style.borderRadius };
           }),
           companionTitle: {
+            boxRelativeTop: (companionNameBoxRect.top - companionCardRect.top) / stageScale,
+            boxRelativeBottom: (companionNameBoxRect.bottom - companionCardRect.top) / stageScale,
+            boxRelativeHeight: companionNameBoxRect.height / stageScale,
             relativeTop: (companionNameRect.top - companionCardRect.top) / stageScale,
             relativeBottom: (companionNameRect.bottom - companionCardRect.top) / stageScale,
             bottom: companionNameRect.bottom,
             speechTop: companionSpeechRect.top,
-            creatureTop: companionCreatureRect.top
+            creatureTop: companionCreatureRect.top,
+            display: getComputedStyle(companionName).display,
+            alignItems: getComputedStyle(companionName).alignItems,
+            justifyContent: getComputedStyle(companionName).justifyContent,
+            fontSize: parseFloat(getComputedStyle(companionName).fontSize),
+            lineHeight: parseFloat(getComputedStyle(companionName).lineHeight)
           },
           frameCornerRects: Object.fromEntries(
             Object.entries(cornerSelectors).map(([name, selector]) => [name, compactRect(document.querySelector(selector).getBoundingClientRect())])
@@ -591,8 +718,25 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
         assert.equal(surface.clip, 'padding-box', `${viewport.name}:${surface.name} paints paper into its transparent border`);
         assert.notEqual(surface.radius, '0px', `${viewport.name}:${surface.name} lacks an inner-corner radius`);
       }
-      assert.ok(initial.companionTitle.relativeTop >= 18.5, `${viewport.name}: companion title rose above its wooden sign`);
-      assert.ok(initial.companionTitle.relativeBottom <= 48.1, `${viewport.name}: companion title crossed the wooden sign bottom`);
+      assert.ok(Math.abs(initial.companionTitle.boxRelativeTop) <= 0.1, `${viewport.name}: companion title box did not start at its wooden sign top`);
+      assert.ok(Math.abs(initial.companionTitle.boxRelativeBottom - 58) <= 0.1, `${viewport.name}: companion title box did not end at its wooden sign bottom`);
+      assert.ok(Math.abs(initial.companionTitle.boxRelativeHeight - 58) <= 0.1, `${viewport.name}: companion title box height drifted from its wooden sign`);
+      assert.equal(initial.companionTitle.display, 'flex', `${viewport.name}: companion title lost its fixed flex box`);
+      assert.equal(initial.companionTitle.alignItems, 'center', `${viewport.name}: companion title lost vertical centering`);
+      assert.equal(initial.companionTitle.justifyContent, 'center', `${viewport.name}: companion title lost horizontal centering`);
+      assert.ok(
+        Math.abs(initial.companionTitle.lineHeight / initial.companionTitle.fontSize - 1) <= 0.01,
+        `${viewport.name}: companion title line-height drifted from 1`
+      );
+      if (zenFontAudit.loaded) {
+        assert.equal(zenFontAudit.check, true, `${viewport.name}: loaded Zen Maru Gothic did not pass FontFaceSet.check`);
+        assert.ok(initial.companionTitle.relativeTop >= 4, `${viewport.name}: Zen companion title lacks top safety inside its wooden sign`);
+        assert.ok(initial.companionTitle.relativeBottom <= 54, `${viewport.name}: Zen companion title lacks bottom safety inside its wooden sign`);
+        assert.ok(
+          Math.abs((initial.companionTitle.relativeTop + initial.companionTitle.relativeBottom) / 2 - 29) <= 1,
+          `${viewport.name}: Zen companion title is not vertically centered in its wooden sign`
+        );
+      }
       assert.ok(initial.companionTitle.bottom < initial.companionTitle.speechTop, `${viewport.name}: companion title overlaps its speech`);
       assert.ok(initial.companionTitle.bottom < initial.companionTitle.creatureTop, `${viewport.name}: companion title overlaps Milmaru`);
       assert.match(initial.companionArt, /milmaru_egg_idle_20260716\.webp/);
@@ -1200,6 +1344,7 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
       }
       await context.close();
     }
+    await auditCompanionFallbackLayout(browser, base);
     for (const state of milmaruVisualStates) {
       await auditMilmaruInitialNetwork(browser, base, state);
     }
