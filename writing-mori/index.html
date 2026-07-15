@@ -103,11 +103,18 @@
   --shadow: rgba(70, 42, 18, 0.25);
   --round-font: 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', sans-serif;
   --moji-font: 'Yu Mincho', 'Hiragino Mincho ProN', 'Hiragino Mincho Pro', serif;
-  --story-bg: url('../assets/images/quizland/stage-bg.webp');
-  --story-frame-large: url('../assets/images/quizland/Fukuro_frame_001.webp');
-  --story-frame-grid: url('../assets/images/quizland/Fukuro_frame_002.webp');
-  --story-frame-wide: url('../assets/images/quizland/Fukuro_frame_003.webp');
-  --story-frame-leaf: url('../assets/images/quizland/Fukuro_frame_004.webp');
+  --story-yard-bg: url('../assets/images/mojikko/care/yard_background_wide_v2.png');
+  --story-frame-character: url('../assets/zukan/ui/hint_panel_empty.webp');
+  --story-frame-companion: url('../assets/zukan/ui/discovery_popup_empty.webp');
+  --story-frame-board: url('../assets/zukan/ui/investigation_window_frame_16x9.png');
+  --story-frame-stroke: url('../assets/zukan/ui/map_guide_note_empty_220x780.png');
+  --story-frame-prompt: url('../assets/images/quizland/Fukuro_frame_004.webp');
+  --story-frame-result: url('../assets/images/quizland/Fukuro_frame_001.webp');
+  --story-frame-chooser: url('../assets/images/quizland/Fukuro_frame_002.webp');
+  --story-menu-back: url('../assets/ui/menu_card_base_01.webp');
+  --story-menu-mode: url('../assets/ui/menu_card_base_02.webp');
+  --story-menu-reset: url('../assets/ui/menu_card_base_03.webp');
+  --story-menu-done: url('../assets/ui/menu_card_base_04.webp');
   --story-settings: url('../assets/_legacy/preview-placeholders/ctrl-btn-settings.png');
   --story-star: url('../assets/images/quizland/quizland_difficulty_star_gold_gpt_image2_20260623.png');
   --story-cookie: url('../assets/images/Bento_parts/cookie.webp');
@@ -1830,14 +1837,11 @@ html, body {
 }
 
 #stage-wrap {
-  background:
-    linear-gradient(180deg, rgba(255, 251, 224, 0.08), rgba(236, 247, 216, 0.18)),
-    radial-gradient(circle at 50% 42%, rgba(255, 255, 238, 0.26), transparent 47%),
-    var(--story-bg) center / cover no-repeat;
+  background: #243b33;
 }
 
 #stage {
-  background: transparent;
+  background: var(--story-yard-bg) right center / cover no-repeat;
   image-rendering: auto;
 }
 
@@ -1848,10 +1852,8 @@ html, body {
 
 @media (orientation: portrait) {
   body::before {
-    background:
-      linear-gradient(rgba(255, 252, 232, 0.9), rgba(239, 248, 222, 0.92)),
-      var(--story-bg) center / cover no-repeat;
-    color: #5d482f;
+    background: rgba(31, 46, 43, 0.97);
+    color: #ffe8aa;
     font-family: var(--round-font);
     font-weight: 900;
     letter-spacing: 0.08em;
@@ -1860,14 +1862,11 @@ html, body {
 
 .pixel-panel,
 .wood-panel {
-  border: 22px solid transparent;
-  border-image-source: var(--story-frame-large);
-  border-image-slice: 74 82 fill;
-  border-image-width: 24px;
-  border-image-repeat: stretch;
+  border: 0;
+  border-image: none;
   border-radius: 0;
-  background: rgba(255, 249, 228, 0.94);
-  box-shadow: 0 10px 24px rgba(69, 49, 25, 0.2);
+  background: transparent;
+  box-shadow: none;
   image-rendering: auto;
 }
 
@@ -1875,8 +1874,8 @@ html, body {
   min-height: 52px;
   padding: 7px 22px 9px;
   border: 14px solid transparent;
-  border-image-source: var(--story-frame-wide);
-  border-image-slice: 28 62 fill;
+  border-image-source: var(--story-menu-back);
+  border-image-slice: 42 82;
   border-image-width: 14px 24px;
   border-image-repeat: stretch;
   border-radius: 0;
@@ -2033,14 +2032,12 @@ html, body {
 .stroke-panel,
 .companion-card {
   border: 24px solid transparent;
-  border-image-source: var(--story-frame-large);
-  border-image-slice: 76 86 fill;
-  border-image-width: 25px;
   border-image-repeat: stretch;
   border-radius: 0;
-  background: rgba(255, 249, 229, 0.97);
+  background: rgba(248, 227, 174, 0.8);
   box-shadow: 0 9px 22px rgba(65, 45, 23, 0.2);
   image-rendering: auto;
+  opacity: 1;
 }
 
 .panel-title {
@@ -2058,6 +2055,9 @@ html, body {
 
 .character-panel {
   grid-template-rows: 48px 58px minmax(0, 1fr);
+  border-image-source: var(--story-frame-character);
+  border-image-slice: 250 150 120;
+  border-image-width: 58px 28px 27px;
 }
 
 .character-panel.mode-task-panel {
@@ -2239,6 +2239,9 @@ html, body {
 .companion-card {
   min-height: 0;
   padding: 18px 18px 16px;
+  border-image-source: var(--story-frame-companion);
+  border-image-slice: 250 78 78;
+  border-image-width: 58px 27px 27px;
   text-align: center;
   transition: transform 0.12s ease, filter 0.18s ease;
 }
@@ -2396,8 +2399,8 @@ html, body {
   height: 76px;
   padding: 8px 52px 10px;
   border: 18px solid transparent;
-  border-image-source: var(--story-frame-leaf);
-  border-image-slice: 30 62 fill;
+  border-image-source: var(--story-frame-prompt);
+  border-image-slice: 34 70;
   border-image-width: 18px 30px;
   border-image-repeat: stretch;
   background: #fff8df;
@@ -2414,7 +2417,7 @@ html, body {
   width: min(640px, 100%);
   aspect-ratio: 551 / 494;
   border: 0;
-  background: rgba(255, 251, 235, 0.98);
+  background: transparent;
   box-shadow: 0 12px 26px rgba(67, 46, 23, 0.19);
   image-rendering: auto;
 }
@@ -2426,12 +2429,25 @@ html, body {
   z-index: 1;
   display: block;
   border: 38px solid transparent;
-  border-image-source: var(--story-frame-large);
-  border-image-slice: 78 88 fill;
+  border-image-source: var(--story-frame-board);
+  border-image-slice: 108;
   border-image-width: 40px;
   border-image-repeat: stretch;
   background: none;
   box-shadow: none;
+  pointer-events: none;
+}
+
+.writing-board::after {
+  content: '';
+  position: absolute;
+  inset: 22px;
+  z-index: 0;
+  display: block;
+  border-radius: 36px;
+  background: rgba(255, 251, 235, 0.97);
+  box-shadow: inset 0 0 24px rgba(107, 72, 36, 0.1);
+  opacity: 1;
   pointer-events: none;
 }
 
@@ -2490,8 +2506,8 @@ html, body {
   padding: 8px 44px 10px;
   transform: translateX(-50%);
   border: 15px solid transparent;
-  border-image-source: var(--story-frame-wide);
-  border-image-slice: 28 62 fill;
+  border-image-source: var(--story-frame-prompt);
+  border-image-slice: 34 70;
   border-image-width: 15px 26px;
   border-image-repeat: stretch;
   background: rgba(255, 249, 226, 0.98);
@@ -2520,8 +2536,7 @@ html, body {
   height: 72px;
   min-height: 72px;
   border: 17px solid transparent;
-  border-image-source: var(--story-frame-wide);
-  border-image-slice: 28 62 fill;
+  border-image-slice: 42 82;
   border-image-width: 17px 28px;
   border-image-repeat: stretch;
   background: #fff8df;
@@ -2533,6 +2548,7 @@ html, body {
 
 #doneBtn {
   width: 352px;
+  border-image-source: var(--story-menu-done);
   color: #426c3e;
   background: #f2f6d7;
 }
@@ -2546,6 +2562,7 @@ html, body {
 
 #resetBtn {
   width: 220px;
+  border-image-source: var(--story-menu-reset);
   padding-left: 32px;
   padding-right: 32px;
   color: #6a4d31;
@@ -2559,6 +2576,9 @@ html, body {
 
 .stroke-panel {
   grid-template-rows: 48px 1fr 154px;
+  border-image-source: var(--story-frame-stroke);
+  border-image-slice: 72 20 52;
+  border-image-width: 42px 22px 30px;
 }
 
 .stroke-list {
@@ -2617,12 +2637,9 @@ html, body {
   margin: 0 14px 14px;
   height: 96px;
   padding: 12px 14px 10px 70px;
-  border: 13px solid transparent;
-  border-image-source: var(--story-frame-wide);
-  border-image-slice: 28 62 fill;
-  border-image-width: 13px 22px;
-  border-image-repeat: stretch;
-  background: #fff8df;
+  border: 2px solid rgba(139, 100, 58, 0.52);
+  border-radius: 16px;
+  background: rgba(255, 246, 215, 0.8);
   box-shadow: none;
   image-rendering: auto;
 }
@@ -2678,13 +2695,21 @@ html, body {
 .mode-choice-card,
 .result-card {
   border: 32px solid transparent;
-  border-image-source: var(--story-frame-large);
-  border-image-slice: 76 86 fill;
   border-image-width: 34px;
   border-image-repeat: stretch;
   background: rgba(255, 249, 226, 0.98);
   box-shadow: 0 18px 42px rgba(48, 39, 22, 0.28);
   image-rendering: auto;
+}
+
+.mode-choice-card {
+  border-image-source: var(--story-frame-chooser);
+  border-image-slice: 38;
+}
+
+.result-card {
+  border-image-source: var(--story-frame-result);
+  border-image-slice: 54 72;
 }
 
 .mode-choice-title,
@@ -2697,8 +2722,16 @@ html, body {
 
 .mode-choice-button {
   height: 144px;
-  border-image-source: var(--story-frame-wide);
+  border-image-source: var(--story-menu-back);
   background: #fff8df;
+}
+
+.mode-choice-button:nth-child(2) {
+  border-image-source: var(--story-menu-mode);
+}
+
+.mode-choice-button:nth-child(3) {
+  border-image-source: var(--story-menu-reset);
 }
 
 .mode-choice-button strong,
@@ -2719,6 +2752,7 @@ html, body {
 
 .mode-choice-close {
   height: 64px;
+  border-image-source: var(--story-menu-done);
 }
 
 .result-copy,
@@ -2740,8 +2774,7 @@ html, body {
   height: 84px;
   min-height: 84px;
   border: 18px solid transparent;
-  border-image-source: var(--story-frame-wide);
-  border-image-slice: 28 62 fill;
+  border-image-slice: 42 82;
   border-image-width: 18px 30px;
   border-image-repeat: stretch;
   background: #fff8df;
@@ -2754,9 +2787,11 @@ html, body {
 
 #careBtn {
   width: 430px;
+  border-image-source: var(--story-menu-back);
 }
 
 #modalRetryBtn {
+  border-image-source: var(--story-menu-done);
   background: #eff4d3;
   color: #426c3e;
 }
@@ -2789,6 +2824,134 @@ html, body {
 #careBtn:active,
 #modalRetryBtn:active {
   background-image: none;
+}
+
+/* --------------------------------------------------------------------------
+   Frame correction (batch:1315)
+   Baked paper centers stay out of the three peripheral frames. Their single
+   warm CSS surface lets the restored yard remain visible; the writing board
+   keeps its opaque paper so the Mincho exemplar and tracing mask stay clear.
+   -------------------------------------------------------------------------- */
+
+.back-btn {
+  border-image-source: var(--story-menu-back);
+}
+
+.mode-switch-btn {
+  border-image-source: var(--story-menu-mode);
+}
+
+.character-panel,
+.companion-card,
+.stroke-panel {
+  border-radius: 28px;
+  background-color: rgba(248, 227, 174, 0.76);
+  background-clip: padding-box;
+  opacity: 1;
+}
+
+.prompt-bar,
+.message-box {
+  border-radius: 28px;
+  background-clip: padding-box;
+}
+
+.pixel-button,
+.pixel-button.primary,
+.pixel-button.mint,
+.pixel-button.ghost,
+.mode-choice-button,
+.mode-choice-button.active {
+  border-radius: 24px;
+  background-clip: padding-box;
+}
+
+#doneBtn,
+#resetBtn,
+#careBtn,
+#modalRetryBtn {
+  border-radius: 26px;
+  background-clip: padding-box;
+}
+
+.mode-choice-card,
+.result-card {
+  border-radius: 50px;
+  background-color: rgba(255, 249, 226, 0.94);
+  background-clip: padding-box;
+}
+
+.companion-name {
+  top: -5px;
+}
+
+.character-panel,
+.companion-card,
+.stroke-panel,
+.prompt-bar,
+.message-box,
+.writing-board::before,
+.mode-choice-card,
+.result-card,
+.pixel-button {
+  border-image-slice: var(--frame-slice);
+}
+
+.character-panel {
+  --frame-slice: 250 150 120;
+}
+
+.companion-card {
+  --frame-slice: 250 78 78;
+}
+
+.stroke-panel {
+  --frame-slice: 72 20 52;
+}
+
+.writing-board::before {
+  --frame-slice: 108;
+}
+
+.prompt-bar,
+.message-box {
+  --frame-slice: 34 70;
+}
+
+.result-card {
+  --frame-slice: 54 72;
+}
+
+.mode-choice-card {
+  --frame-slice: 38;
+}
+
+.pixel-button {
+  --frame-slice: 42 82;
+}
+
+.kana-tab,
+.char-button,
+.daily-clue-cell,
+.mode-progress-count,
+.mode-progress-dot,
+.companion-speech,
+.stroke-card,
+.reward-box {
+  background-color: rgba(255, 246, 215, 0.82);
+  opacity: 1;
+}
+
+.word-clue-cell.blank,
+.daily-clue-cell.current,
+.char-button.active,
+.char-button.done.active {
+  background-color: rgba(255, 226, 163, 0.84);
+}
+
+.daily-clue-cell.done,
+.char-button.done {
+  background-color: rgba(224, 240, 211, 0.82);
 }
 
 @media (max-height: 500px) and (orientation: landscape) {

@@ -7,6 +7,7 @@ const fs = require('node:fs');
 const http = require('node:http');
 const path = require('node:path');
 const { chromium } = require('playwright');
+const sharp = require('sharp');
 
 const root = path.resolve(__dirname, '..');
 const generatedStoryAssets = [
@@ -17,6 +18,24 @@ const generatedStoryAssets = [
   '/assets/images/mojikko/writing/storybook/milmaru_shell_baby_idle_20260716.webp',
   '/assets/images/mojikko/writing/storybook/milmaru_egg_idle_20260716.webp'
 ];
+const frameAssets = [
+  '/assets/images/mojikko/care/yard_background_wide_v2.png',
+  '/assets/zukan/ui/hint_panel_empty.webp',
+  '/assets/zukan/ui/discovery_popup_empty.webp',
+  '/assets/zukan/ui/investigation_window_frame_16x9.png',
+  '/assets/zukan/ui/map_guide_note_empty_220x780.png',
+  '/assets/images/quizland/Fukuro_frame_001.webp',
+  '/assets/images/quizland/Fukuro_frame_002.webp',
+  '/assets/images/quizland/Fukuro_frame_004.webp',
+  '/assets/ui/menu_card_base_01.webp',
+  '/assets/ui/menu_card_base_02.webp',
+  '/assets/ui/menu_card_base_03.webp',
+  '/assets/ui/menu_card_base_04.webp'
+];
+const publishedWarmPaperBaselines = Object.freeze({
+  'mobile-landscape': 0.4584761210353627,
+  desktop: 0.5578473874450952
+});
 const milmaruVisualStates = Object.freeze([
   {
     id: 'egg',
@@ -121,6 +140,52 @@ function rectanglesOverlap(first, second) {
 
 function sha256(value) {
   return crypto.createHash('sha256').update(value).digest('hex');
+}
+
+async function getWarmPaperRatio(screenshot) {
+  const { data, info } = await sharp(screenshot).raw().toBuffer({ resolveWithObject: true });
+  let warmPaperPixels = 0;
+  for (let index = 0; index < data.length; index += info.channels) {
+    const red = data[index];
+    const green = data[index + 1];
+    const blue = data[index + 2];
+    if (red >= 230 && green >= 218 && blue >= 180 && red - blue <= 75) {
+      warmPaperPixels += 1;
+    }
+  }
+  return warmPaperPixels / (info.width * info.height);
+}
+
+async function assertNoWhiteCornerRectangles(screenshot, rects, label) {
+  const { data, info } = await sharp(screenshot).raw().toBuffer({ resolveWithObject: true });
+  for (const [name, rect] of Object.entries(rects)) {
+    const sampleSize = Math.max(2, Math.min(8, Math.floor(Math.min(rect.width, rect.height) * 0.09)));
+    const samples = [
+      [Math.floor(rect.left) + 1, Math.floor(rect.top) + 1],
+      [Math.ceil(rect.right) - sampleSize - 1, Math.floor(rect.top) + 1],
+      [Math.floor(rect.left) + 1, Math.ceil(rect.bottom) - sampleSize - 1],
+      [Math.ceil(rect.right) - sampleSize - 1, Math.ceil(rect.bottom) - sampleSize - 1]
+    ];
+    for (const [cornerIndex, [startX, startY]] of samples.entries()) {
+      let warmPaperPixels = 0;
+      let sampledPixels = 0;
+      for (let y = startY; y < startY + sampleSize; y += 1) {
+        for (let x = startX; x < startX + sampleSize; x += 1) {
+          if (x < 0 || y < 0 || x >= info.width || y >= info.height) continue;
+          const index = (y * info.width + x) * info.channels;
+          const red = data[index];
+          const green = data[index + 1];
+          const blue = data[index + 2];
+          if (red >= 230 && green >= 218 && blue >= 180 && red - blue <= 75) {
+            warmPaperPixels += 1;
+          }
+          sampledPixels += 1;
+        }
+      }
+      const coverage = sampledPixels > 0 ? warmPaperPixels / sampledPixels : 0;
+      assert.ok(coverage < 0.85, `${label}:${name}: corner ${cornerIndex + 1} retained a white rectangle (${coverage})`);
+    }
+  }
 }
 
 async function auditMilmaruInitialNetwork(browser, base, state) {
@@ -354,6 +419,24 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
         const visibleImages = Array.from(document.images)
           .filter((image) => image.getBoundingClientRect().width > 0 && image.getBoundingClientRect().height > 0)
           .map((image) => ({ src: image.currentSrc || image.src, complete: image.complete, width: image.naturalWidth }));
+        const companionCardRect = document.querySelector('#companionCard').getBoundingClientRect();
+        const companionName = document.querySelector('.companion-name');
+        const companionNameRange = document.createRange();
+        companionNameRange.selectNodeContents(companionName);
+        const companionNameRect = companionNameRange.getBoundingClientRect();
+        const companionSpeechRect = document.querySelector('.companion-speech').getBoundingClientRect();
+        const companionCreatureRect = document.querySelector('.pixel-creature').getBoundingClientRect();
+        const cornerSelectors = Object.freeze({
+          back: '#backBtn',
+          mode: '#modeSwitchBtn',
+          prompt: '#promptText',
+          characters: '.character-panel',
+          companion: '#companionCard',
+          board: '#writingBoard',
+          strokes: '.stroke-panel',
+          reset: '#resetBtn',
+          done: '#doneBtn'
+        });
         return {
           overflowX: document.documentElement.scrollWidth > window.innerWidth + 1,
           overflowY: document.documentElement.scrollHeight > window.innerHeight + 1,
@@ -361,6 +444,9 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
           writerFont: getComputedStyle(document.querySelector('#writerTarget')).fontFamily,
           wrapBackground: getComputedStyle(document.querySelector('#stage-wrap')).backgroundImage,
           stageBackground: getComputedStyle(document.querySelector('#stage')).backgroundImage,
+          stageBackgroundPosition: getComputedStyle(document.querySelector('#stage')).backgroundPosition,
+          stageBackgroundSize: getComputedStyle(document.querySelector('#stage')).backgroundSize,
+          stageBackgroundRepeat: getComputedStyle(document.querySelector('#stage')).backgroundRepeat,
           scanlineBackground: getComputedStyle(document.querySelector('#stage'), '::before').backgroundImage,
           stageScale,
           stageGeometry: {
@@ -390,6 +476,59 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
           ].map(([name, selector]) => [name, textAudit(selector)])),
           boardFrame: getComputedStyle(document.querySelector('#writingBoard'), '::before').borderImageSource,
           promptFrame: getComputedStyle(document.querySelector('#promptText')).borderImageSource,
+          peripheralFrames: ['.character-panel', '#companionCard', '.stroke-panel'].map((selector) => {
+            const style = getComputedStyle(document.querySelector(selector));
+            return {
+              selector,
+              source: style.borderImageSource,
+              slice: style.borderImageSlice,
+              surface: style.backgroundColor,
+              opacity: style.opacity
+            };
+          }),
+          mainFrameSources: [
+            getComputedStyle(document.querySelector('.character-panel')).borderImageSource,
+            getComputedStyle(document.querySelector('#companionCard')).borderImageSource,
+            getComputedStyle(document.querySelector('#writingBoard'), '::before').borderImageSource,
+            getComputedStyle(document.querySelector('.stroke-panel')).borderImageSource,
+            getComputedStyle(document.querySelector('#promptText')).borderImageSource,
+            getComputedStyle(document.querySelector('#backBtn')).borderImageSource,
+            getComputedStyle(document.querySelector('#modeSwitchBtn')).borderImageSource,
+            getComputedStyle(document.querySelector('#resetBtn')).borderImageSource,
+            getComputedStyle(document.querySelector('#doneBtn')).borderImageSource
+          ],
+          resultFrame: getComputedStyle(document.querySelector('.result-card')).borderImageSource,
+          chooserFrame: getComputedStyle(document.querySelector('.mode-choice-card')).borderImageSource,
+          alphaFrameSurfaces: [
+            ['characters', '.character-panel'],
+            ['companion', '#companionCard'],
+            ['strokes', '.stroke-panel'],
+            ['prompt', '#promptText'],
+            ['message', '#messageBox'],
+            ['back', '#backBtn'],
+            ['mode', '#modeSwitchBtn'],
+            ['reset', '#resetBtn'],
+            ['done', '#doneBtn'],
+            ['chooser', '.mode-choice-card'],
+            ['choice', '.mode-choice-button'],
+            ['choiceClose', '#modeChoiceCloseBtn'],
+            ['result', '.result-card'],
+            ['care', '#careBtn'],
+            ['retry', '#modalRetryBtn']
+          ].map(([name, selector]) => {
+            const style = getComputedStyle(document.querySelector(selector));
+            return { name, clip: style.backgroundClip, radius: style.borderRadius };
+          }),
+          companionTitle: {
+            relativeTop: (companionNameRect.top - companionCardRect.top) / stageScale,
+            relativeBottom: (companionNameRect.bottom - companionCardRect.top) / stageScale,
+            bottom: companionNameRect.bottom,
+            speechTop: companionSpeechRect.top,
+            creatureTop: companionCreatureRect.top
+          },
+          frameCornerRects: Object.fromEntries(
+            Object.entries(cornerSelectors).map(([name, selector]) => [name, compactRect(document.querySelector(selector).getBoundingClientRect())])
+          ),
           companionArt: getComputedStyle(document.querySelector('.pixel-creature')).backgroundImage,
           companionArtDisplay: getComputedStyle(document.querySelector('.pixel-creature')).display,
           rects: Object.fromEntries([
@@ -425,11 +564,37 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
       assert.deepEqual(initial.wrapScroll, { left: 0, top: 0 }, `${viewport.name}: stage wrapper started scrolled`);
       assert.match(initial.uiFont, /Zen Maru Gothic/);
       assert.match(initial.writerFont, /Yu Mincho/);
-      assert.match(initial.wrapBackground, /stage-bg\.webp/);
-      assert.equal(initial.stageBackground, 'none');
+      assert.equal(initial.wrapBackground, 'none');
+      assert.match(initial.stageBackground, /yard_background_wide_v2\.png/);
+      assert.equal(initial.stageBackgroundPosition, '100% 50%');
+      assert.equal(initial.stageBackgroundSize, 'cover');
+      assert.equal(initial.stageBackgroundRepeat, 'no-repeat');
       assert.doesNotMatch(initial.scanlineBackground, /repeating-linear-gradient/);
-      assert.match(initial.boardFrame, /Fukuro_frame_001\.webp/);
+      assert.match(initial.boardFrame, /investigation_window_frame_16x9\.png/);
       assert.match(initial.promptFrame, /Fukuro_frame_004\.webp/);
+      assert.deepEqual(
+        initial.peripheralFrames.map((frame) => path.basename(new URL(frame.source.slice(5, -2)).pathname)),
+        ['hint_panel_empty.webp', 'discovery_popup_empty.webp', 'map_guide_note_empty_220x780.png'],
+        `${viewport.name}: peripheral frames are not role-specific`
+      );
+      for (const frame of initial.peripheralFrames) {
+        assert.doesNotMatch(frame.slice, /fill/, `${viewport.name}:${frame.selector} restored a baked paper center`);
+        const alpha = Number(frame.surface.match(/[\d.]+(?=\)$)/)?.[0] || 1);
+        assert.ok(alpha >= 0.72 && alpha <= 0.84, `${viewport.name}:${frame.selector} surface alpha ${alpha}`);
+        assert.equal(frame.opacity, '1', `${viewport.name}:${frame.selector} faded its contents`);
+      }
+      assert.ok(new Set(initial.mainFrameSources).size >= 7, `${viewport.name}: main screen frame sources repeat too much`);
+      assert.ok(initial.mainFrameSources.every((source) => !/Fukuro_frame_001\.webp/.test(source)), `${viewport.name}: result frame leaked onto the main screen`);
+      assert.match(initial.resultFrame, /Fukuro_frame_001\.webp/);
+      assert.match(initial.chooserFrame, /Fukuro_frame_002\.webp/);
+      for (const surface of initial.alphaFrameSurfaces) {
+        assert.equal(surface.clip, 'padding-box', `${viewport.name}:${surface.name} paints paper into its transparent border`);
+        assert.notEqual(surface.radius, '0px', `${viewport.name}:${surface.name} lacks an inner-corner radius`);
+      }
+      assert.ok(initial.companionTitle.relativeTop >= 18.5, `${viewport.name}: companion title rose above its wooden sign`);
+      assert.ok(initial.companionTitle.relativeBottom <= 48.1, `${viewport.name}: companion title crossed the wooden sign bottom`);
+      assert.ok(initial.companionTitle.bottom < initial.companionTitle.speechTop, `${viewport.name}: companion title overlaps its speech`);
+      assert.ok(initial.companionTitle.bottom < initial.companionTitle.creatureTop, `${viewport.name}: companion title overlaps Milmaru`);
       assert.match(initial.companionArt, /milmaru_egg_idle_20260716\.webp/);
       assert.equal(initial.companionArtDisplay, 'block');
       for (const [name, rect] of Object.entries(initial.rects)) {
@@ -470,8 +635,24 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
       }
       assert.ok(initial.rects.done.width >= initial.rects.reset.width, `${viewport.name}: primary done action is smaller than reset`);
       assert.ok(initial.visibleImages.every((image) => image.complete && image.width > 0), `${viewport.name}: visible image failed to decode`);
-      ['stage-bg.webp', 'Fukuro_frame_001.webp', 'Fukuro_frame_003.webp', 'Fukuro_frame_004.webp', 'milmaru_egg_idle_20260716.webp']
+      await assertNoWhiteCornerRectangles(await page.screenshot(), initial.frameCornerRects, `${viewport.name}:main`);
+      [
+        'yard_background_wide_v2.png',
+        'hint_panel_empty.webp',
+        'discovery_popup_empty.webp',
+        'investigation_window_frame_16x9.png',
+        'map_guide_note_empty_220x780.png',
+        'Fukuro_frame_001.webp',
+        'Fukuro_frame_002.webp',
+        'Fukuro_frame_004.webp',
+        'menu_card_base_01.webp',
+        'menu_card_base_02.webp',
+        'menu_card_base_03.webp',
+        'menu_card_base_04.webp',
+        'milmaru_egg_idle_20260716.webp'
+      ]
         .forEach((asset) => assert.ok(initial.resources.some((url) => url.includes(asset)), `${viewport.name}: ${asset} was not loaded`));
+      assert.equal(initial.resources.some((url) => url.includes('stage-bg.webp')), false, `${viewport.name}: QuizLand background was requested`);
       const initialMilmaruResources = initial.resources
         .filter((url) => /\/assets\/images\/mojikko\/writing\/storybook\/milmaru_[^/?]+\.webp(?:[?#]|$)/.test(url))
         .map((url) => path.basename(new URL(url).pathname));
@@ -481,12 +662,36 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
         `${viewport.name}: fresh egg state requested unrelated Milmaru art`
       );
       assert.equal(
-        initial.resources.some((url) => /assets\/images\/mojikko\/(?:writing\/(?!storybook\/)|care\/)/.test(url)),
+        initial.resources.some((url) => /assets\/images\/mojikko\/(?:writing\/(?!storybook\/)|care\/(?!yard_background_wide_v2\.png))/.test(url)),
         false,
         `${viewport.name}: former pixel UI asset was requested`
       );
 
+      if (Object.hasOwn(publishedWarmPaperBaselines, viewport.name)) {
+        const ratio = await getWarmPaperRatio(await page.screenshot());
+        assert.ok(
+          ratio < publishedWarmPaperBaselines[viewport.name] * 0.78,
+          `${viewport.name}: warm paper ratio ${ratio} did not clearly improve over published ${publishedWarmPaperBaselines[viewport.name]}`
+        );
+      }
+
       if (viewport.name === 'desktop') {
+        const frameAudit = await page.evaluate(async (sources) => Promise.all(sources.map(async (src) => {
+          const image = new Image();
+          image.src = src;
+          await image.decode();
+          return {
+            src,
+            complete: image.complete,
+            width: image.naturalWidth,
+            height: image.naturalHeight
+          };
+        })), frameAssets);
+        for (const asset of frameAudit) {
+          assert.equal(asset.complete, true, `${asset.src}: frame decode did not complete`);
+          assert.ok(asset.width > 0 && asset.height > 0, `${asset.src}: frame has no pixels`);
+        }
+
         const generatedAudit = await page.evaluate(async (sources) => Promise.all(sources.map(async (src) => {
           const image = new Image();
           image.src = src;
@@ -737,6 +942,22 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
       assert.ok(Math.abs(openedResult.stageGeometry.left - initial.stageGeometry.left) < 0.1, `${viewport.name}: result focus shifted the stage horizontally`);
       assert.ok(Math.abs(openedResult.stageGeometry.top - initial.stageGeometry.top) < 0.1, `${viewport.name}: result focus shifted the stage vertically`);
       assert.equal(openedResult.stageGeometry.transform, initial.stageGeometry.transform, `${viewport.name}: result focus changed the stage transform`);
+      await page.waitForTimeout(260);
+      const settledResultCard = await page.locator('.result-card').boundingBox();
+      await assertNoWhiteCornerRectangles(
+        await page.screenshot(),
+        {
+          result: {
+            left: settledResultCard.x,
+            top: settledResultCard.y,
+            right: settledResultCard.x + settledResultCard.width,
+            bottom: settledResultCard.y + settledResultCard.height,
+            width: settledResultCard.width,
+            height: settledResultCard.height
+          }
+        },
+        `${viewport.name}:result`
+      );
       for (const name of ['title', 'copy', 'reward']) {
         assertRectContained(openedResult.text[name], openedResult.card, `${viewport.name}:result-${name}`);
       }
@@ -839,6 +1060,11 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
       assert.ok(Math.abs(chooser.stageGeometry.left - initial.stageGeometry.left) < 0.1, `${viewport.name}: chooser focus shifted the stage horizontally`);
       assert.ok(Math.abs(chooser.stageGeometry.top - initial.stageGeometry.top) < 0.1, `${viewport.name}: chooser focus shifted the stage vertically`);
       assert.equal(chooser.stageGeometry.transform, initial.stageGeometry.transform, `${viewport.name}: chooser focus changed the stage transform`);
+      await assertNoWhiteCornerRectangles(
+        await page.screenshot(),
+        { chooser: chooser.card },
+        `${viewport.name}:chooser`
+      );
       if (viewport.height <= 500) {
         assert.ok(chooser.choiceGap >= 8, `${viewport.name}: chooser title/copy gap is below 8px`);
         assert.ok(chooser.fonts.choiceCopy >= 12, `${viewport.name}: chooser supporting text is below 12px`);

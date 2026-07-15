@@ -651,7 +651,16 @@ assert.match(pages.writing, /--story-gohan:\s*url\('\.\.\/assets\/images\/nazona
 assert.doesNotMatch(pages.care, /icon_moji_gohan\.png/, 'care must not keep serving the bowl-shaped meal icon');
 assert.doesNotMatch(pages.writing, /icon_moji_gohan\.png/, 'writing must not keep serving the bowl-shaped meal icon');
 assert.doesNotMatch(pages.writing, /icon_moji_gohan_onigiri\.png/, 'writing must use the watercolor storybook onigiri');
-assert.match(pages.writing, /\.reward-box\s*\{[^}]*border-image-source:\s*var\(--story-frame-wide\)/s);
+assert.doesNotMatch(pages.writing, /\.reward-box\s*\{[^}]*border-image-source:\s*var\(--story-frame-wide\)/s);
+assert.doesNotMatch(pages.writing, /\.reward-box\s*\{[^}]*border-image-slice:[^;}]*\bfill\b/s);
+assert.match(
+  pages.writing,
+  /\.reward-box\s*\{[^}]*border:\s*2px solid rgba\(139, 100, 58, 0\.52\);[^}]*background:\s*rgba\(255, 246, 215, 0\.8\);/s
+);
+assert.match(
+  pages.writing,
+  /\.kana-tab,\s*\.char-button,\s*\.daily-clue-cell,\s*\.mode-progress-count,\s*\.mode-progress-dot,\s*\.companion-speech,\s*\.stroke-card,\s*\.reward-box\s*\{[^}]*background-color:\s*rgba\(255, 246, 215, 0\.82\);[^}]*opacity:\s*1;/s
+);
 assert.match(pages.writing, /\.reward-box \.food-pixel\s*\{\s*display: block;/);
 
 console.log('Mojikko meal schedule regression: PASS');
