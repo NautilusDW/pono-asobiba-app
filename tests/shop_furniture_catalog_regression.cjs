@@ -205,4 +205,67 @@ const ROOM_ITEMS_BY_ID = new Map(ROOM_ITEMS.map((it) => [it.id, it]));
   console.log("  (info) room/items.js breakdown:", JSON.stringify(counts), "/ total", ROOM_ITEMS.length);
 })();
 
+// ===== 6) computeAchievementOnlyIds(): window.PonoStampRally のスタンプラリー報酬も含むこと =====
+// stamp-rally.js 本体は fetch/DOM/AudioContext に依存し vm sandbox 単体実行に不向きなため、
+// common/stamp-rally.js が Object.defineProperty で公開する形状 (CARD_SLOT_REWARDS /
+// CARD_COMPLETE_REWARDS、非gendered直値 or {gendered:true,boy,girl}) だけを模した stub を使う。
+(function testStampRallyRewardsAreAchievementOnly() {
+  sandbox.window.PonoStampRally = {
+    CARD_SLOT_REWARDS: {
+      1: { icon: "🎁", name: "おもちゃばこ", type: "deco", id: "deco_box_boy" },
+      5: { icon: "🛏️", name: "あおいベッド", type: "furn", id: "furn_bed_blue_boy" },
+      10: { icon: "🧸", name: "くまのぬいぐるみ", type: "deco", id: "furn_bear_1" },
+      15: { icon: "⭐", name: "カードかんせい！", type: "special" },
+      20: {
+        icon: "⭐", name: "つくえ", gendered: true,
+        boy: { type: "furn", id: "imp_furn_45b11a5f" },
+        girl: { type: "deco", id: "deco_bear_ribbon" },
+      },
+    },
+    CARD_COMPLETE_REWARDS: [
+      { icon: "🐠", name: "さかな", type: "sea", id: "medaka" },
+      { icon: "🖼️", name: "かべがみ", type: "wall", id: "wall_mizutama" },
+      {
+        icon: "🎳", name: "ボウリング", gendered: true,
+        boy: { type: "bg", id: "bg_bowling_dinasour" },
+        girl: { type: "bg", id: "bg_bowling_unicorn" },
+      },
+    ],
+  };
+
+  const ids = Array.from(catalog.computeAchievementOnlyIds());
+
+  // furn/deco (非gendered直値 と gendered.boy/girl の両方) は実績専用集合に入ること
+  ["deco_box_boy", "furn_bed_blue_boy", "furn_bear_1", "imp_furn_45b11a5f", "deco_bear_ribbon"].forEach((id) => {
+    assert.ok(ids.indexOf(id) !== -1, `stamp-rally furn/deco reward id "${id}" must be achievement-only`);
+    assert.equal(
+      catalog.resolveFurnitureRarity(ROOM_ITEMS_BY_ID.get(id)),
+      null,
+      `stamp-rally furn/deco reward id "${id}" must resolve to null in the real catalog`
+    );
+  });
+
+  // wall はroom/items.jsのwallカテゴリに実在するため対象に含めるべき
+  assert.ok(ids.indexOf("wall_mizutama") !== -1, "stamp-rally wall reward id 'wall_mizutama' must be achievement-only");
+  assert.equal(catalog.resolveFurnitureRarity(ROOM_ITEMS_BY_ID.get("wall_mizutama")), null);
+
+  // sea/bg はroom家具カタログ(furn/deco/wall/floor)とは別物なので対象外
+  ["medaka", "bg_bowling_dinasour", "bg_bowling_unicorn"].forEach((id) => {
+    assert.ok(ids.indexOf(id) === -1, `stamp-rally reward id "${id}" (sea/bg) must NOT be achievement-only`);
+  });
+
+  // type:'special' (id無し) は例外を出さず単に無視されること
+  assert.ok(ids.indexOf(undefined) === -1);
+
+  delete sandbox.window.PonoStampRally;
+})();
+
+// ===== 7) computeAchievementOnlyIds(): window.PonoStampRally 未読込ページでは no-op (例外なし) =====
+(function testStampRallyMissingIsNoOp() {
+  assert.equal(sandbox.window.PonoStampRally, undefined, "previous test must clean up PonoStampRally");
+  assert.doesNotThrow(() => catalog.computeAchievementOnlyIds());
+  const ids = Array.from(catalog.computeAchievementOnlyIds());
+  assert.ok(ids.indexOf("wall_mizutama") === -1, "stamp-rally-only id must disappear once PonoStampRally is gone");
+})();
+
 console.log("shop_furniture_catalog_regression: all assertions passed");

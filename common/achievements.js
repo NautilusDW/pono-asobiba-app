@@ -426,6 +426,7 @@
       var a = ACHIEVEMENTS[i];
       if (a.stat !== statKey) continue;
       if (unlocked[a.id]) continue;
+      if (a.archived) continue;
       if (!best || a.target < best.target) best = a;
     }
     if (!best) return null;
@@ -461,6 +462,7 @@
       var a = ACHIEVEMENTS[i];
       if (a.game !== game) continue;
       if (unlocked[a.id]) continue;
+      if (a.archived) continue;
       if (!best || a.target < best.target) best = a;
     }
     if (!best) return null;

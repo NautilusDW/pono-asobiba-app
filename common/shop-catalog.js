@@ -5,6 +5,21 @@
 (function (window) {
   'use strict';
 
+  // room/items.js の cat と1対1対応 (wall=壁紙 / floor=床 / furn=家具 / deco=かざり)。
+  // stamp-rally.js の reward.type は sea/bg 等ショップ家具カタログと無関係な値も取るため、
+  // ここに列挙した型だけを実績(スタンプ)専用idの収集対象にする。
+  var ROOM_CATALOG_REWARD_TYPES = { furn: true, deco: true, wall: true, floor: true };
+
+  function _addRoomCatalogRewardId(ids, entry) {
+    if (!entry) return;
+    if (entry.gendered) {
+      _addRoomCatalogRewardId(ids, entry.boy);
+      _addRoomCatalogRewardId(ids, entry.girl);
+      return;
+    }
+    if (entry.id && ROOM_CATALOG_REWARD_TYPES[entry.type]) ids.add(entry.id);
+  }
+
   function computeAchievementOnlyIds() {
     var ids = new Set();
     try {
@@ -21,6 +36,18 @@
       var premiumFurn = (window.PonoTier && Array.isArray(window.PonoTier.BOOK_ROOM_ITEM_IDS))
         ? window.PonoTier.BOOK_ROOM_ITEM_IDS : [];
       for (var j = 0; j < premiumFurn.length; j++) ids.add(premiumFurn[j]);
+    } catch (e) {}
+    // window.PonoStampRally 未読込のページ (どんぐりショップ等) では no-op。
+    try {
+      var rally = window.PonoStampRally;
+      if (rally) {
+        var slotRewards = rally.CARD_SLOT_REWARDS || {};
+        for (var sk in slotRewards) {
+          if (Object.prototype.hasOwnProperty.call(slotRewards, sk)) _addRoomCatalogRewardId(ids, slotRewards[sk]);
+        }
+        var completeRewards = rally.CARD_COMPLETE_REWARDS || [];
+        for (var ci = 0; ci < completeRewards.length; ci++) _addRoomCatalogRewardId(ids, completeRewards[ci]);
+      }
     } catch (e) {}
     return ids;
   }
