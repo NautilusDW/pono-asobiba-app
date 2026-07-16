@@ -1479,7 +1479,8 @@ function shuffleGrid(level) {
       lastMoved = applySlideMove(pick);
     }
     // A ready-made goal or checkpoint would skip the child's first decision.
-    accepted = !hasBareGoalRoute() && (!level.checkpoint || !findCheckpointRoute());
+    accepted = !hasBareGoalRoute() && (!level.checkpoint || !findCheckpointRoute()) &&
+      lastMoved >= 0 && grid[lastMoved] && grid[lastMoved] !== 'BLANK';
   }
   if (!accepted && level.checkpoint) {
     setCheckpointFallbackBoard(level);

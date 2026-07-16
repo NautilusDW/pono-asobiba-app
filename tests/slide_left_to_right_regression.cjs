@@ -198,7 +198,7 @@ levels.forEach((level, levelIndex) => {
   }
 });
 assert.match(html,
-  /for \(let attempt = 0; attempt < 64 && !accepted; attempt\+\+\)[\s\S]*?accepted = !hasBareGoalRoute\(\)/,
+  /for \(let attempt = 0; attempt < 64 && !accepted; attempt\+\+\)[\s\S]*?accepted = !hasBareGoalRoute\(\)[\s\S]*?grid\[lastMoved\] !== 'BLANK'/,
   "the runtime shuffle retries with a bound rather than starting on a bare connected path");
 assert.match(html, /suggestedMoveIdx = lastMoved;[\s\S]*?hintDismissed = false;/,
   "the reversible shuffle must retain exactly one safe first-move suggestion");
