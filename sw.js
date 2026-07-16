@@ -1,5 +1,11 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2217: みちつなぎの一本旅バーを16:9 shellの左右いっぱいへ拡張し、おかあさんの赤線と
+// ポノの緑線を面ごとの時間予算に沿ってプレイ中も連続前進させた。時間予算は盤面サイズ・
+// 保証shuffle手数・pickup／よつまた学習時間から算出。初回時間切れは同じ初期盤面へ戻し、
+// 再挑戦は時間制限なしにする。ポーズ／共有メニュー／確認／背景化／縦向き／物語／練習／
+// 短い操作案内中は時計を止め、復帰時の案内と待ち時間も同期した
+// (batch:1318-slide-realtime-chase)。play.html PAGE_CACHE_VERSION と同期不要 (slide/index.html／テストのみ変更)。
 // v2216: なぞなぞトレイン宇宙面の最終追跡を、横スクロールで現在の2本だけを選ぶ3分岐へ刷新。
 // 描画距離と実走距離を同じ比率に揃え、スターみちほど追いつきやすい全8経路、分岐中の低速化、
 // 光る道の直接タッチ、3スターの手動／安全自動ブーストを追加。捕捉後は大写しの彗星の尾を3本
@@ -198,7 +204,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2216;
+const CACHE_VERSION = 2217;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
