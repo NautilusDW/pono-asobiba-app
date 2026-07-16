@@ -197,13 +197,149 @@ body > #app {
   text-align: center;
 }
 #stage-num {
-  padding: 4px 7px;
+  --pono-progress: 0;
+  --mother-progress: 0.25;
+  position: relative;
+  width: clamp(120px, 18vmin, 160px);
+  height: 34px;
+  padding: 0 9px;
   border-radius: 999px;
   background: rgba(255,244,177,0.13);
-  color: rgba(255,255,255,0.9);
-  font-size: clamp(0.62rem, 1.35vmin, 0.76rem);
+  color: rgba(255,255,255,0.96);
+}
+.journey-progress-track {
+  position: relative;
+  width: 100%;
+  height: 34px;
+}
+.journey-progress-track::before {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 10px;
+  border: 1px solid rgba(255,255,255,0.48);
+  border-radius: 999px;
+  background: rgba(8,36,34,0.56);
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.34), 0 1px 0 rgba(255,255,255,0.14);
+  transform: translateY(-50%);
+}
+.journey-progress-fill {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 100%;
+  border-radius: 999px;
+  transform-origin: left center;
+}
+.journey-progress-fill--mother {
+  z-index: 1;
+  height: 8px;
+  background: linear-gradient(90deg, #FF9C9C, #FF5967);
+  box-shadow: 0 0 5px rgba(255,89,103,0.48);
+  transform: translateY(-50%) scaleX(var(--mother-progress));
+  transition: transform 300ms cubic-bezier(0.22, 0.72, 0.24, 1);
+}
+.journey-progress-fill--pono {
+  z-index: 2;
+  height: 4px;
+  background: linear-gradient(90deg, #9AF29B, #4ED36C);
+  box-shadow: 0 0 4px rgba(78,211,108,0.82);
+  transform: translateY(-50%) scaleX(var(--pono-progress));
+}
+.journey-progress-checkpoint {
+  position: absolute;
+  z-index: 3;
+  top: 9px;
+  left: calc(var(--checkpoint) * 100%);
+  width: 2px;
+  height: 16px;
+  border-radius: 2px;
+  background: rgba(255,250,220,0.78);
+  box-shadow: 0 0 0 1px rgba(17,53,48,0.22);
+  transform: translateX(-50%);
+}
+.journey-progress-marker {
+  position: absolute;
+  z-index: 5;
+  width: clamp(18px, 3vmin, 22px);
+  height: clamp(18px, 3vmin, 22px);
+  border: 2px solid;
+  border-radius: 50%;
+  background: #fff8ec;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.42);
+  overflow: hidden;
+  transform: translate(-50%, -50%);
+}
+.journey-progress-marker img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.journey-progress-marker--mother {
+  top: 26px;
+  left: calc(var(--mother-progress) * 100%);
+  border-color: #FF5967;
+  transition: left 300ms cubic-bezier(0.22, 0.72, 0.24, 1);
+}
+.journey-progress-marker--pono {
+  top: 8px;
+  left: calc(var(--pono-progress) * 100%);
+  border-color: #4ED36C;
+}
+.journey-progress.is-together .journey-progress-marker--mother {
+  transform: translate(calc(-50% + 4px), -50%);
+}
+.journey-progress.is-together .journey-progress-marker--pono {
+  transform: translate(calc(-50% - 4px), -50%);
+}
+.journey-progress.is-instant .journey-progress-fill--mother,
+.journey-progress.is-instant .journey-progress-marker--mother {
+  transition: none;
+}
+.journey-progress-a11y {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0 0 0 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+.journey-progress-tutorial-label {
+  display: none;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  color: #fff4b1;
+  font-size: 0.72rem;
   font-weight: 900;
-  letter-spacing: 0.08em;
+}
+.journey-progress.is-tutorial .journey-progress-track,
+.journey-progress.is-tutorial .journey-progress-a11y { display: none; }
+.journey-progress.is-tutorial .journey-progress-tutorial-label { display: flex; }
+
+/* The paper-story cards are the checkpoints. Keep the one shared bar visible
+   above the illustration, while the stage name and move count step aside. */
+body.slide-cutscene-open .game-rail {
+  z-index: 22;
+  left: 50%;
+  width: clamp(146px, 25%, 184px);
+  min-height: 42px;
+  padding: 5px 12px;
+  transform: translateX(-50%);
+}
+body.slide-cutscene-open .hud { grid-template-columns: minmax(0, 1fr); }
+body.slide-cutscene-open #hud-stage,
+body.slide-cutscene-open #hud-moves { display: none; }
+body.slide-cutscene-open #stage-num {
+  width: min(100%, 148px);
+  margin: 0 auto;
 }
 
 /* ===== Game area ===== */
@@ -374,13 +510,13 @@ body > #app {
   .game-rail {
     top: 8px;
     left: 122px;
-    width: min(292px, calc(100% - 132px));
+    width: min(308px, calc(100% - 132px));
     min-height: 44px;
     padding: 5px 9px;
   }
   .hud { gap: 5px; font-size: 0.7rem; }
   #hud-moves { min-width: 50px; padding: 3px 5px; }
-  #stage-num { padding: 3px 5px; font-size: 0.66rem; }
+  #stage-num { width: 120px; padding-inline: 9px; }
 
   .ov-card,
   .ov-card.cutscene-mode {
@@ -506,6 +642,8 @@ body.slide-cutscene-open #magic-cross-btn {
   .confetti-piece, .tut-bubble { animation: none !important; }
   .magic-cross-btn { transition: none; }
   .magic-cross-btn img { animation: none !important; }
+  .journey-progress-fill--mother,
+  .journey-progress-marker--mother { transition: none; }
 }
 
 </style>
@@ -544,7 +682,25 @@ body.slide-cutscene-open #magic-cross-btn {
 
     <div class="hud">
       <div id="hud-stage">はじめてのみち</div>
-      <div id="stage-num"></div>
+      <div id="stage-num" class="journey-progress" role="group" aria-label="ポノと おかあさんの ばしょ">
+        <div class="journey-progress-track" aria-hidden="true">
+          <span class="journey-progress-fill journey-progress-fill--mother"></span>
+          <span class="journey-progress-fill journey-progress-fill--pono"></span>
+          <i class="journey-progress-checkpoint" style="--checkpoint:0.25"></i>
+          <i class="journey-progress-checkpoint" style="--checkpoint:0.5"></i>
+          <i class="journey-progress-checkpoint" style="--checkpoint:0.75"></i>
+          <i class="journey-progress-checkpoint" style="--checkpoint:1"></i>
+          <span class="journey-progress-marker journey-progress-marker--mother">
+            <img src="../assets/images/characters/pono/mom_face_circle.png" alt="">
+          </span>
+          <span class="journey-progress-marker journey-progress-marker--pono">
+            <img src="../assets/images/characters/pono/pono_face_circle.png" alt="">
+          </span>
+        </div>
+        <span id="journey-pono-progress" class="journey-progress-a11y" role="progressbar" aria-label="ポノ" aria-valuemin="0" aria-valuemax="8" aria-valuenow="0"></span>
+        <span id="journey-mother-progress" class="journey-progress-a11y" role="progressbar" aria-label="おかあさん" aria-valuemin="0" aria-valuemax="8" aria-valuenow="2"></span>
+        <span class="journey-progress-tutorial-label" aria-hidden="true">れんしゅう</span>
+      </div>
       <div id="hud-moves">てかず: 0</div>
     </div>
   </aside>
@@ -2036,6 +2192,12 @@ function updateJourneyPosition(now) {
   const raw = Math.max(0, Math.min((now - journeyActor.t0) / duration, 1));
   const eased = raw < 0.5 ? 2 * raw * raw : 1 - Math.pow(-2 * raw + 2, 2) / 2;
   journeyActor.progress = eased;
+  if (journeyActor.phase === JOURNEY_PHASE.EXIT && !journeyActor.tutorial) {
+    syncJourneyProgress(
+      (stageIdx + eased) / LEVELS.length,
+      getMotherJourneyProgress(stageIdx)
+    );
+  }
   const exact = eased * (points.length - 1);
   const fromIndex = Math.min(Math.floor(exact), points.length - 1);
   const toIndex = Math.min(fromIndex + 1, points.length - 1);
@@ -2088,6 +2250,12 @@ function collectJourneyPickup() {
 
 function finishExitWithDiscovery(now) {
   if (journeyActor.phase !== JOURNEY_PHASE.EXIT) return;
+  if (!journeyActor.tutorial) {
+    syncJourneyProgress(
+      Math.min(1, (stageIdx + 1) / LEVELS.length),
+      getMotherJourneyProgress(stageIdx)
+    );
+  }
   if (!pickupCollected && pickupTileIdx >= 0) collectJourneyPickup();
   const geo = getJourneyGeometry();
   journeyActor.phase = JOURNEY_PHASE.DISCOVERY;
@@ -2351,16 +2519,74 @@ function showOverlay(type) {
   requestAnimationFrame(function() { btn.focus({ preventScroll: true }); });
 }
 
-function updateHUD() {
+function getMotherJourneyProgress(index) {
+  return Math.min(1, (Math.floor(index / 2) + 1) * 0.25);
+}
+
+function getPonoStageStartProgress(index) {
+  return Math.max(0, Math.min(1, index / LEVELS.length));
+}
+
+function journeyPositionText(progress) {
+  var scaled = Math.max(0, Math.min(LEVELS.length, progress * LEVELS.length));
+  var nearest = Math.round(scaled);
+  if (Math.abs(scaled - nearest) < 0.015) {
+    if (nearest === 0) return 'しゅっぱつちてん';
+    if (nearest === LEVELS.length) return 'さいごの ばしょ';
+    return nearest + 'ばんめの ばしょ';
+  }
+  return (Math.floor(scaled) + 1) + 'ばんめへ すすんでいる';
+}
+
+function syncJourneyProgress(ponoProgress, motherProgress, options) {
+  var stageNum = document.getElementById('stage-num');
+  if (!stageNum) return;
+  var pono = Math.max(0, Math.min(1, Number(ponoProgress) || 0));
+  var mother = Math.max(0, Math.min(1, Number(motherProgress) || 0));
+  var instant = Boolean(options && options.instant);
+  if (instant) stageNum.classList.add('is-instant');
+  stageNum.classList.remove('is-tutorial');
+  stageNum.style.setProperty('--pono-progress', String(pono));
+  stageNum.style.setProperty('--mother-progress', String(mother));
+  stageNum.classList.toggle('is-together', Math.abs(pono - mother) < 0.002);
+
+  var ponoNode = document.getElementById('journey-pono-progress');
+  var motherNode = document.getElementById('journey-mother-progress');
+  var ponoValue = pono * LEVELS.length;
+  var motherValue = mother * LEVELS.length;
+  if (ponoNode) {
+    ponoNode.removeAttribute('aria-hidden');
+    ponoNode.setAttribute('aria-valuenow', ponoValue.toFixed(2));
+    ponoNode.setAttribute('aria-valuetext', journeyPositionText(pono));
+  }
+  if (motherNode) {
+    motherNode.removeAttribute('aria-hidden');
+    motherNode.setAttribute('aria-valuenow', motherValue.toFixed(2));
+    motherNode.setAttribute('aria-valuetext', journeyPositionText(mother));
+  }
+
+  if (Math.abs(pono - mother) < 0.002) {
+    stageNum.setAttribute('aria-label', 'ポノと おかあさんは おなじ ばしょ');
+  } else {
+    var remaining = Math.max(0, Math.ceil((mother - pono) * LEVELS.length - 0.001));
+    stageNum.setAttribute('aria-label',
+      'ポノは ' + journeyPositionText(pono) + '。おかあさんは ' +
+      journeyPositionText(mother) + '。あと ' + remaining + 'こ');
+  }
+
+  if (instant) {
+    requestAnimationFrame(function() { stageNum.classList.remove('is-instant'); });
+  }
+}
+
+function updateHUD(options) {
   document.getElementById('hud-stage').textContent = LEVELS[stageIdx].name;
   document.getElementById('hud-moves').textContent = `てかず: ${moveCount}`;
-  var stageNum = document.getElementById('stage-num');
-  if (stageNum) {
-    stageNum.textContent = LEVELS.map(function(_, index) {
-      return index === stageIdx ? '●' : '•';
-    }).join(' ');
-    stageNum.setAttribute('aria-label', 'たび ' + (stageIdx + 1) + ' / ' + LEVELS.length);
-  }
+  syncJourneyProgress(
+    getPonoStageStartProgress(stageIdx),
+    getMotherJourneyProgress(stageIdx),
+    options
+  );
 }
 
 
@@ -2377,7 +2603,7 @@ function beginStage(index) {
   animating = false;
   shuffleGrid(LEVELS[stageIdx]);
   calcLayout();
-  updateHUD();
+  updateHUD({ instant: index === 0 });
   updatePauseButton(false);
   setPauseAvailable(false);
   const now = performance.now();
@@ -2419,6 +2645,11 @@ function showCutscene() {
   overlay.setAttribute('aria-hidden', 'false');
   card.classList.add('cutscene-mode', 'cutscene-fullscreen');
   document.body.classList.add('slide-cutscene-open');
+  syncJourneyProgress(
+    Math.min(1, (stageIdx + 1) / LEVELS.length),
+    getMotherJourneyProgress(stageIdx),
+    { instant: true }
+  );
   icon.innerHTML = '<img src="' + level.cutscene.img + '" class="cutscene-img" alt="">';
   title.textContent = level.cutscene.text;
   title.style.whiteSpace = 'pre-line';
@@ -2559,7 +2790,13 @@ function showTutorial() {
   document.getElementById('hud-stage').textContent = 'れんしゅう';
   document.getElementById('hud-moves').textContent = '';
   var stageNum = document.getElementById('stage-num');
-  if (stageNum) stageNum.textContent = 'チュートリアル';
+  if (stageNum) {
+    stageNum.classList.add('is-tutorial');
+    stageNum.classList.remove('is-together');
+    stageNum.setAttribute('aria-label', 'れんしゅう');
+    var progressNodes = stageNum.querySelectorAll('[role="progressbar"]');
+    progressNodes.forEach(function(node) { node.setAttribute('aria-hidden', 'true'); });
+  }
 
   // Step 0: 導入
   dim.classList.remove('hidden');
@@ -2713,7 +2950,7 @@ initMenu({ bgmToggle: function() {
 curCols = LEVELS[0].cols;
 curRows = LEVELS[0].rows;
 resize();
-updateHUD();
+updateHUD({ instant: true });
 showOverlay('start');
 requestAnimationFrame(loop);
 

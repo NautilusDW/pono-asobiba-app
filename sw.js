@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2213: みちつなぎ上部の8点表示を、一本の旅バー上でおかあさん=あか／ポノ=みどりの位置と近づき具合が分かる表示へ変更。2／4／6面の紙芝居を25／50／75%の節目として同期し、次面ではおかあさんだけ先行、8面到着で100%再会する。既存の顔画像、色以外の線幅／上下配置、reduced-motion、練習中の非表示、568×320〜1366×768とChromium／WebKit回帰を追加した (batch:1317-slide-chase-progress)。play.html PAGE_CACHE_VERSION と同期不要 (slide/index.html/テストのみ変更)。
 // v2212: なぞなぞトレイン宇宙面の最終追跡を3区間×3択の27経路と共通S字追込路へ整理。彗星86／ロケット90／ブースト410×0.6秒、1スター=192距離の計算へ統一し、約3倍の5スター遠回りが近道より速くなる配分、少数の軽い罠、走行中の彗星へ13.6〜17.25秒で追いつく全経路、ブースト連打予約と受付数、各道の秒数／スター数表示を追加した (batch:1315-nazonazo-route-balance)。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/テストのみ変更)。
 // v2211: もじっこファーム文字書きの相棒名を、実Zen Maru Gothicでも木札のdesign y=0〜58へ固定して中央配置。Google Fonts onlineとoffline fallbackの両方でbox／glyph中心／安全余白／短横12px下限／吹き出し・ミルマル非重複を回帰固定した (batch:1315-mojikko-frame-correction)。play.html PAGE_CACHE_VERSION と同期不要 (writing-mori/index.html/テストのみ変更)。
 // v2210: もじっこファーム文字書きの背景を元の庭へ戻し、左／相棒／書字盤／書き順へ異なる既存絵本枠を割り当てた。透過枠の中心fillと外周の白矩形を撤去し、周辺は庭が見える暖色surface、中央書字盤だけ明朝体のお手本を読みやすい紙面として維持。main／chooser／resultの白矩形、相棒名の木札収容、6 viewport、4成長状態、LP lock／portrait保存非破壊を回帰固定した (batch:1315-mojikko-frame-correction)。play.html PAGE_CACHE_VERSION と同期不要 (writing-mori/index.html/テストのみ変更)。
@@ -164,7 +165,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2212;
+const CACHE_VERSION = 2213;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
