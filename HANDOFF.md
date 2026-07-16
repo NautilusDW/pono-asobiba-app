@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-07-17 - [batch:1328c-mojikko-settings-gauge-frame-family] Codex: 正本settings 120x120を基準に枠厚再生成・戻るを設定内へ、過去成果物1328b確認済み→差替え着手。最新`origin/develop-app`から隔離worktree `/tmp/pono-1328c-mojikko-settings-gauge-frame-family`／branch `codex/1328c-mojikko-settings-gauge-frame-family`を作成し、claim登録済み。現時点ではclaim／HANDOFFのみで、コード・asset・SWは未変更。 (by Codex)
+
 - 2026-07-17 - [batch:1335-kitchen-ninjin-ingen-stir] Codex: DONE — にんじんいんげんの炒め工程を、既存のにんじん9種＋いんげん9種の個別切れ端をCanvas上に散らす2.5D操作へ変更。PC／タッチでヘラをドラッグすると近くの切れ端が押され、回転・跳ね・楕円内バウンドし、移動距離と触れた切れ端数で完成。透明な塩レイヤーが入力を覆う問題をz順で回避し、キーボード操作も追加。Playwright関連9件、inline JS構文、diff check PASS。sw v2254。 (by Codex)
 
 - 2026-07-17 - [batch:1328b-mojikko-unified-frame-implementation] Codex: ユーザーの「では実装してください」を受領。Photoshop加工済み16 PNGの所在を確認中。見つかり次第、最新`origin/develop-app`由来の隔離worktree `/tmp/pono-1328b-mojikko-unified-frame-implementation` で `writing-mori/` へ接続する。`tmp/alpha_pending/1328-mojikko-unified-frame-family/raw/` の未加工rawは直接利用しない。現時点ではコード／assets／SWは未編集。 (by Codex)
