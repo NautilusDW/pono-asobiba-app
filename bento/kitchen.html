@@ -9333,6 +9333,10 @@ body.layout-editor-on .bowl-fill-mask::after {
       showToast(ing.name + 'は じゅんびちゅう！');
       return;
     }
+    if (state.kitchenMode === 'prep' && ing.prepActions && ing.prepActions[0] && ing.prepActions[0].type === 'workshop') {
+      startWorkshopIngredientPrep(ing);
+      return;
+    }
     if (state.kitchenMode === 'prep' && ing.cookFromRaw) {
       state.kitchenMode = 'cook';
       setSpeech(ing.name + 'は フライパンで わって やこう！', 'select');
@@ -9440,6 +9444,24 @@ body.layout-editor-on .bowl-fill-mask::after {
     roll: '↔️', mash: '🥔', squeeze: '✊', stir: '🥄', portion: '🥄', wrap: '🤲', water: '💧',
     steam: '♨️', seal: '☝️', fry: '♨️', measure: '🥛', cook: '🍚', fluff: '🥄', sprinkle: '✨'
   };
+  const WORKSHOP_PREP_RECIPES = {
+    broccoli: { id: 'broccoli-prep', ingredientId: 'broccoli', prepOnly: true, name: 'ブロッコリーの したごしらえ', img: '../assets/images/bento/free-layout/okazu_broccoli.png', preparedImg: '../assets/images/bento/cooking/boil/boil_broccoli_raw.png', ingredients: [], steps: [
+      { kind: 'wash', label: 'おおきな ブロッコリーを あらおう', count: 3 },
+      { kind: 'divide', label: 'ゆでやすい こぶさに わけよう', count: 4 },
+    ]},
+    edamame: { id: 'edamame-prep', ingredientId: 'edamame', prepOnly: true, name: 'えだまめの したごしらえ', img: '../assets/images/bento/cooking/boil/boil_edamame_raw.png', preparedImg: '../assets/images/bento/cooking/boil/boil_edamame_raw.png', ingredients: [], steps: [
+      { kind: 'wash', label: 'えだまめを みずで あらおう', count: 3 },
+      { kind: 'rub', label: 'しおで もみもみ しよう', count: 4 },
+    ]},
+  };
+
+  function startWorkshopIngredientPrep(ing) {
+    const recipe = WORKSHOP_PREP_RECIPES[ing.id];
+    if (!recipe) return;
+    state.current = ing;
+    startWorkshopRecipe(recipe);
+  }
+
   const WORKSHOP_BOIL_FOODS = {
     broccoli: {
       raw: '../assets/images/bento/cooking/boil/boil_broccoli_raw.png',
@@ -9538,6 +9560,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     els.workshopScene.setAttribute('aria-label', step.label);
     els.workshopMotion.textContent = WORKSHOP_CUES[step.kind] || '☝️';
     els.workshopMotion.hidden = step.kind === 'choose' || specializedBoil;
+    if (recipe.prepOnly && recipe.preparedImg && state.workshopStepIndex > 0) els.workshopFood.src = recipe.preparedImg;
     els.workshopMeterFill.style.width = '0%';
     els.workshopDots.innerHTML = recipe.steps.map(function (_, index) {
       const cls = index < state.workshopStepIndex ? ' done' : (index === state.workshopStepIndex ? ' current' : '');
@@ -9580,9 +9603,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     const stage = Math.min(step.count, state.workshopProgress);
     const cooked = step.kind === 'drain' || stage >= 2;
     els.workshopBoilGame.dataset.stage = String(stage);
-    els.workshopBoilPot.src = stage >= 2
-      ? '../assets/images/bento/cooking/boil/boil_pot_hot.png'
-      : '../assets/images/bento/cooking/boil/boil_pot_cold.png';
+    els.workshopBoilPot.src = '../assets/images/bento/cooking/boil/boil_pot_cold.png';
     els.workshopBoilFood.src = cooked ? config.cooked : config.raw;
     els.workshopBoilFood.alt = '';
     if (step.kind === 'boil') {
@@ -9623,6 +9644,24 @@ body.layout-editor-on .bowl-fill-mask::after {
 
   function finishWorkshopRecipe() {
     const recipe = state.workshopRecipe;
+    if (recipe.prepOnly) {
+      const ing = findIngredientById(recipe.ingredientId);
+      if (ing) unlockIngredient(ing);
+      els.workshopStepCount.textContent = 'したごしらえ できた';
+      els.workshopInstruction.textContent = ing.name + 'を れいぞうこに いれよう！';
+      els.workshopHint.textContent = 'つぎは コンロで ゆでられるよ';
+      els.workshopDots.innerHTML = recipe.steps.map(function () { return '<span class="workshop-dot done"></span>'; }).join('');
+      els.workshopIngredients.innerHTML = '';
+      els.workshopMotion.hidden = true;
+      els.workshopScene.classList.add('is-done');
+      els.workshopFinishImg.src = recipe.preparedImg || recipe.img;
+      els.workshopFinishImg.alt = ing.name;
+      els.workshopFinishLabel.textContent = ing.name + 'の じゅんび できた！';
+      els.workshopFinish.classList.add('show');
+      setSpeech('じょうずに したごしらえ できたね！', 'workshop');
+      showToast(ing.name + 'を れいぞうこに いれたよ！');
+      return;
+    }
     state.unlockedRecipes.add(recipe.id);
     saveUnlockedRecipes();
     els.workshopStepCount.textContent = 'できあがり';
@@ -9643,6 +9682,13 @@ body.layout-editor-on .bowl-fill-mask::after {
   function startCookFromRecipe(rec) {
     if (!rec) return;
     if (rec.workshop) {
+      const ready = !!rec.startFromRaw || (rec.needs || []).every(function (id) { return state.unlocked.has(id); });
+      if (!ready) {
+        const firstNeed = findIngredientById((rec.needs || [])[0]);
+        setSpeech('まずは ' + (firstNeed ? firstNeed.name : 'ざいりょう') + 'を したごしらえしよう！', 'fridge');
+        showToast('まだ ざいりょうが たりないよ');
+        return;
+      }
       startWorkshopRecipe(rec);
       return;
     }

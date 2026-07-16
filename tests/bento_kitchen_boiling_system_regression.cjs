@@ -15,7 +15,14 @@ for (const file of assets) {
 }
 assert.match(source, /id="workshop-boil-game"/);
 assert.match(source, /const WORKSHOP_BOIL_FOODS = \{[\s\S]*?broccoli:[\s\S]*?edamame:/);
-assert.match(source, /function updateWorkshopBoilVisual\(step\)[\s\S]*?boil_pot_hot\.png/);
+assert.match(source, /function updateWorkshopBoilVisual\(step\)[\s\S]*?boil_pot_cold\.png/);
+assert.doesNotMatch(source.match(/function updateWorkshopBoilVisual\(step\)[\s\S]*?\n  function advanceWorkshopProgress/)[0], /boil_pot_hot\.png/);
+assert.match(source, /class="workshop-boil-bubbles"/);
+assert.match(source, /@keyframes workshopBoilBubble/);
+assert.match(source, /stove_base\.webp/);
+assert.match(source, /const WORKSHOP_PREP_RECIPES = \{[\s\S]*?broccoli:[\s\S]*?edamame:/);
+assert.match(source, /needs: \['broccoli'\], startFromRaw: false/);
+assert.match(source, /needs: \['edamame'\], startFromRaw: false/);
 assert.match(source, /classList\.toggle\('is-boil-step', specializedBoil\)/);
 assert.match(source, /step\.kind === 'boil' \|\| step\.kind === 'drain'/);
 
