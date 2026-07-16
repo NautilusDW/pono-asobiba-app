@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-07-16 - [batch:1324-kitchen-menu-phase1] Codex: ユーザー承認により標準26品＋ごはん3種を提案順で実装開始。Phase 1は既存9品をお弁当正本へ一致。監査でミートボール／やきざけカードが旧Bento_parts、にんじんいんげん／きんぴらが同一carrot grillの最終画像を共有してカード選択が調理結果へ伝播しない、コロッケカードがpotato全工程ではなく`korokke_raw`衣付けから開始する不一致を確認。レシピ選択IDをcook image variantへ渡し、2副菜を分岐、カード現行画像化、コロッケをpotato全工程へ接続する。共有mainは別作業dirtyのため最新origin `99acc46f`から隔離worktree `/tmp/pono-kitchen-menu-phase1`を使用。旧メニュー16品、凍結develop／master／productionは変更しない。 (by Codex)
+
 - 2026-07-16 - [batch:1323-kitchen-potato-cut-only] Codex: ユーザー実機評価「じゃがいもの下ごしらえが切った後マッシャーまで一連になるため、切るだけも残したい」を受領。重複監査で同修正なし。現行potatoは`cookingActions`と`prepActions`の両方が chop→mash→mix→shape→bread で同一のため、下ごしらえモードもコロッケ全工程へ自動連結していた。主操作は下ごしらえモードでは切り終えたら冷蔵庫へ保存、おかずづくりモードでは既存コロッケ工程を維持。共有mainは別作業dirtyかつorigin aheadのため最新origin `6aa4454d`から隔離worktree `/tmp/pono-kitchen-potato-1323`を使用。凍結develop／master／productionは変更しない。 (by Codex)
 
 - 2026-07-16 - [batch:1323-kitchen-potato-cut-only] Codex: **DONE** — feature `74ecd8be`＋SW v2227 `a81c2dba`をdevelop-appへpush。じゃがいも`prepActions`はchopのみ、`cookingActions`はchop→mash→mix→shape→bread→fryを維持。新規route回帰、既存motion/mix/warp・手／ミートボール・蓋／皿回帰、SW構文、diff check PASS。Actions `29480048738`はApp staging→LP stagingともsuccess、App公開HTMLでprepにmash等なし／cookにmashあり、公開SW v2227を確認。LPは同一commitだがAPP_BUILD未注入。共有mainの並行dirtyを含めず、凍結develop／master／production未変更。 (by Codex)

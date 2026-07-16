@@ -6390,6 +6390,20 @@ body.layout-editor-on .bowl-fill-mask::after {
           stages: ['carrot/carrot_pieces_mid', 'ninjin_ingen/ninjin_ingen_mid', 'kinpira/kinpira_mid'],
           fallback: '../assets/images/Bento_parts/ninjin_ingen2.webp',
         },
+        recipeVariants: {
+          ninjin_ingen: {
+            grill: {
+              stages: ['carrot/carrot_pieces_mid', 'ninjin_ingen/ninjin_ingen_mid', 'ninjin_ingen/ninjin_ingen_mid'],
+              fallback: '../assets/images/bento/free-layout/okazu_ninjin_ingen.png',
+            },
+          },
+          kinpira: {
+            grill: {
+              stages: ['carrot/carrot_pieces_mid', 'kinpira/kinpira_mid', 'kinpira/kinpira_mid'],
+              fallback: '../assets/images/bento/cooking/kinpira/kinpira_mid.png',
+            },
+          },
+        },
       },
       imageBase: 'carrot/carrot_001.webp',
       imagePieces: {
@@ -6808,8 +6822,8 @@ body.layout-editor-on .bowl-fill-mask::after {
   const RECIPES = [
     { id: 'medamayaki',   name: 'めだまやき',        img: '../assets/images/bento/cooking/egg/egg_002_mid.png', needs: ['egg'], startFromRaw: true },
     { id: 'hamburg',      name: 'ハンバーグ',        img: '../assets/images/bento/cooking/mince_patty/patty_003_done.png', needs: ['mince_patty', 'onion'], cookIngredientId: 'mince_patty' },
-    { id: 'meatball',     name: 'ミートボール',      img: '../assets/images/Bento_parts/meatball2.webp',     needs: ['mince_patty', 'onion'], cookIngredientId: 'meatball' },
-    { id: 'yakizake',     name: 'やきざけ',          img: '../assets/images/Bento_parts/yakizake2.webp',     needs: ['salmon'], startFromRaw: true },
+    { id: 'meatball',     name: 'ミートボール',      img: '../assets/images/bento/cooking/meatball/meatball_003_done.png', needs: ['mince_patty', 'onion'], cookIngredientId: 'meatball' },
+    { id: 'yakizake',     name: 'やきざけ',          img: '../assets/images/bento/cooking/salmon/salmon_half_003_done.png', needs: ['salmon'], startFromRaw: true },
     { id: 'tako_wiener',  name: 'タコウインナー',    img: '../assets/images/bento/cooking/wiener/wiener_003_done.png', needs: ['wiener'], startFromRaw: true, clusterImages: [
       { img: '../assets/images/bento/cooking/wiener/wiener_003_done.png', x: 14, y: -3, w: 61, rotation: 8 },
       { img: '../assets/images/bento/cooking/wiener/wiener_003_done.png', x: -13, y: 3, w: 68, rotation: -11 },
@@ -6819,7 +6833,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       { img: '../assets/images/bento/cooking/chicken/fry/chicken_fry_piece_02_done.png', x: 14, y: 6, w: 67, rotation: 8 },
     ] },
     { id: 'ebi_fry',      name: 'エビフライ',        img: '../assets/images/bento/cooking/shrimp/shrimp_003_done.png', needs: ['shrimp_breaded'], startFromRaw: true },
-    { id: 'korokke',      name: 'コロッケ',          img: '../assets/images/bento/cooking/korokke/korokke_003_done.png', needs: ['potato'], cookIngredientId: 'korokke_raw' },
+    { id: 'korokke',      name: 'コロッケ',          img: '../assets/images/bento/cooking/korokke/korokke_003_done.png', needs: ['potato'], cookIngredientId: 'potato' },
     { id: 'cabbage_shreds', name: 'キャベツ',        img: '../assets/images/bento/cooking/cabbage/cabbage_002.png', needs: ['cabbage'] },
     { id: 'ninjin_ingen', name: 'にんじんいんげん',  img: '../assets/images/bento/free-layout/okazu_ninjin_ingen.png', needs: ['carrot'] },
     { id: 'kinpira',      name: 'きんぴらごぼう',    img: '../assets/images/Bento_parts/kinpira2.webp',      needs: ['carrot'] },
@@ -7487,6 +7501,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     newBadges: loadNewBadges(),
     unlockedRecipes: loadUnlockedRecipes(),
     current: null,
+    activeRecipeId: '',
     actionIndex: 0,
     kitchenMode: 'prep',
     prepProgress: 0,
@@ -9015,8 +9030,9 @@ body.layout-editor-on .bowl-fill-mask::after {
     });
   }
 
-  function startIngredientAction(ing, actionIndex) {
+  function startIngredientAction(ing, actionIndex, recipeId) {
     state.current = ing;
+    state.activeRecipeId = recipeId || '';
     state.actionIndex = Math.max(0, actionIndex || 0);
     state.prepProgress = 0;
     state.prepAnimating = false;
@@ -9161,7 +9177,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     } else {
       setSpeech(ing.name + 'で おかずを つくろう！', 'fridge');
     }
-    startIngredientAction(ing, cookActionIndex);
+    startIngredientAction(ing, cookActionIndex, rec && rec.id);
   }
 
   function startCookFromRecipe(rec) {
@@ -14842,6 +14858,9 @@ body.layout-editor-on .bowl-fill-mask::after {
 
   function getCookImageConfig(ing, action) {
     if (!ing || !action || !ing.cookImages) return null;
+    const recipeVariants = ing.cookImages.recipeVariants;
+    const recipeConfig = recipeVariants && state.activeRecipeId && recipeVariants[state.activeRecipeId];
+    if (recipeConfig && recipeConfig[action.type]) return recipeConfig[action.type];
     return ing.cookImages[action.type] || null;
   }
 
