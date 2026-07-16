@@ -5967,6 +5967,9 @@ body.layout-editor-on .bowl-fill-mask::after {
     //   per-ingredient と読み替えること。
     perQuestionSelectors: ['.chopY-marker', '.ingredient-bbox-marker', '.startX-marker', '.endX-marker'],
     ghPath: 'bento/kitchen/saved-layout.json',
+    // develop は凍結済み。共通エディターの旧既定値へ落とさず、現行の単一開発
+    // トランクへ保存する。これが無いと新規材料の @<ingredientId> 座標が反映されない。
+    ghBranch: 'develop-app',
     // v430: saved-layout fetch が食材ロードより後に完了した場合でも、
     // hidden marker の保存値を通常プレイ用 chopMechanics へ再同期する。
     onReady: function () {

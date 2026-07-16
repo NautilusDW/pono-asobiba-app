@@ -52,3 +52,40 @@ test('green beans can be chopped into individual pieces and stored', async ({ pa
     JSON.parse(localStorage.getItem('bentoUnlockedIngredients') || '[]') as string[]
   ))).toContain('green_bean');
 });
+
+test('kitchen layout editor targets develop-app and exposes the new ingredient scope', async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await enterAppKitchen(page);
+  const config = await page.evaluate(() => (window as Window & {
+    EditorBootstrapConfig?: { ghBranch?: string; perQuestionSelectors?: string[] };
+  }).EditorBootstrapConfig);
+  expect(config?.ghBranch).toBe('develop-app');
+  expect(config?.perQuestionSelectors).toEqual(expect.arrayContaining([
+    '.ingredient-bbox-marker', '.startX-marker', '.endX-marker', '.chopY-marker',
+  ]));
+
+  await page.locator('#mode-prep-btn').click();
+  await page.locator('.ingredient-btn[data-id="green_bean"]').click();
+  await expect(page.locator('#ingredient-on-board')).toHaveAttribute('data-ingredient', 'green_bean');
+  await expect.poll(() => page.evaluate(() => {
+    const getter = (window as Window & { QUIZLAND_GET_CURRENT_QID?: () => string | null }).QUIZLAND_GET_CURRENT_QID;
+    return getter ? getter() : null;
+  })).toBe('green_bean');
+});
+
+test('all newly added cutting and fruit assets are available', async ({ request }) => {
+  const fruitIds = ['ichigo', 'mikan', 'ringo', 'kiwi', 'melon', 'pineapple', 'momo'];
+  const paths = fruitIds.flatMap((id) => [
+    `/assets/images/bento/cooking/workshop/fruit/${id}_whole.png`,
+    `/assets/images/bento/cooking/workshop/fruit/${id}_cut.png`,
+  ]).concat([
+    '/assets/images/bento/cooking/ninjin_ingen/cutting/green_beans_whole.png',
+    '/assets/images/bento/cooking/ninjin_ingen/cutting/green_beans_pieces.png',
+    '/assets/images/bento/cooking/ninjin_ingen/cutting/carrot_pieces.png',
+    '/assets/images/bento/cooking/boil/boil_broccoli_whole.png',
+  ]);
+  for (const path of paths) {
+    const response = await request.get(path);
+    expect(response.ok(), path).toBeTruthy();
+  }
+});
