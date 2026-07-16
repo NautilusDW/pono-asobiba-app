@@ -1,5 +1,9 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2224: トントンキッチンのめだまやき蓋を鍋中心へ少し上げ、完成卵がpan位置に残る
+// CSS詳細度競合を解消して皿中央へ配置。冷蔵庫カード7品をお弁当箱本体と同じ現行画像へ
+// 差し替え、タコウインナー／からあげは2枚cluster表示へ統一した
+// (batch:1321-kitchen-egg-align-recipe-art)。play.html PAGE_CACHE_VERSION と同期不要。
 // v2223: トントンキッチンのめだまやき蓋へtouch-action:noneを追加し、タッチドラッグを
 // ブラウザーpanへ奪われるpointercancelを防止。cancel時もclientX/Y=0を配置座標へ使わず、
 // 左端へ飛んでから戻る動きを封鎖した (batch:1320-kitchen-lid-touch-cancel)。
@@ -229,7 +233,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2223;
+const CACHE_VERSION = 2224;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
