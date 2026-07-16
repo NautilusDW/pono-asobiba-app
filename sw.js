@@ -1,5 +1,9 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2226: みちつなぎの途中紙芝居では、おかあさんを25／50／75%、ポノを各6%後方へ残し、
+// 次章導入もポノを瞬間移動させず母だけ先行。開始画面から母を先に置き、最終面の実経路を
+// 歩き切った完全一致時だけ再会扱いにした (batch:1320-slide-no-early-catch)。
+// play.html PAGE_CACHE_VERSION と同期不要 (slide/index.html／テストのみ変更)。
 // v2225: トントンキッチンの肉分け／丸め案内の絵文字手を、既存のGPT Image 2製
 // チュートリアル手画像へ統一。ミートボールは球を正確につかまなくても、フライパン内の
 // 空いている場所から最寄りの球を選んでころころできるよう操作範囲を広げた
@@ -237,7 +241,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2225;
+const CACHE_VERSION = 2226;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
