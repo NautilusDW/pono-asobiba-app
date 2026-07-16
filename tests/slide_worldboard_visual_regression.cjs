@@ -356,6 +356,79 @@ async function inspectLandscape(browserType, browserName, base, viewport, minimu
       `${browserName} ${viewport.width}x${viewport.height}: caption does not overlap next action`);
     assert.equal(storyLayout.pauseVisibility, "hidden",
       `${browserName} ${viewport.width}x${viewport.height}: pause is hidden over story art`);
+
+    await page.evaluate(() => eval(`(() => {
+      moveCount = 12;
+      showOverlay('gameclear');
+    })()`));
+    await page.locator(".cutscene-img").evaluate(image => image.decode());
+    const reunionLayout = await page.evaluate(() => {
+      const app = document.getElementById("app").getBoundingClientRect();
+      const cardNode = document.querySelector(".ov-card");
+      const imageNode = cardNode.querySelector(".cutscene-img");
+      const titleNode = document.getElementById("ov-title");
+      const messageNode = document.getElementById("ov-msg");
+      const buttonNode = document.getElementById("ov-btn");
+      const card = cardNode.getBoundingClientRect();
+      const image = imageNode.getBoundingClientRect();
+      const title = titleNode.getBoundingClientRect();
+      const message = messageNode.getBoundingClientRect();
+      const button = buttonNode.getBoundingClientRect();
+      return {
+        fullscreen: cardNode.classList.contains("cutscene-fullscreen"),
+        reunion: cardNode.classList.contains("reunion-fullscreen"),
+        bodyCutscene: document.body.classList.contains("slide-cutscene-open"),
+        cardArea: card.width * card.height / (app.width * app.height),
+        imageArea: image.width * image.height / (app.width * app.height),
+        imageSource: imageNode.getAttribute("src"),
+        imageCount: cardNode.querySelectorAll(".cutscene-img").length,
+        messageDisplay: getComputedStyle(messageNode).display,
+        messageText: messageNode.textContent,
+        titleRight: title.right,
+        messageRight: message.right,
+        messageBottom: message.bottom,
+        buttonLeft: button.left,
+        buttonRight: button.right,
+        buttonBottom: button.bottom,
+        buttonHeight: button.height,
+        cardRight: card.right,
+        cardBottom: card.bottom,
+        pauseVisibility: getComputedStyle(document.getElementById("btn-pause")).visibility,
+        ponoProgress: document.getElementById("journey-pono-progress").getAttribute("aria-valuenow"),
+        motherProgress: document.getElementById("journey-mother-progress").getAttribute("aria-valuenow"),
+        together: document.getElementById("stage-num").classList.contains("is-together"),
+      };
+    });
+    assert.equal(reunionLayout.fullscreen, true,
+      `${browserName} ${viewport.width}x${viewport.height}: reunion uses the fullscreen story mode`);
+    assert.equal(reunionLayout.reunion, true,
+      `${browserName} ${viewport.width}x${viewport.height}: final-only caption layout is active`);
+    assert.equal(reunionLayout.bodyCutscene, true,
+      `${browserName} ${viewport.width}x${viewport.height}: unrelated game controls stay hidden`);
+    assert.ok(reunionLayout.cardArea >= 0.98 && reunionLayout.imageArea >= 0.98,
+      `${browserName} ${viewport.width}x${viewport.height}: reunion art fills the 16:9 shell`);
+    assert.match(reunionLayout.imageSource, /cutscene_ending\.png/,
+      `${browserName}: reunion keeps the preferred parent-and-child illustration`);
+    assert.equal(reunionLayout.imageCount, 1, `${browserName}: reunion shows one complete illustration`);
+    assert.equal(reunionLayout.messageDisplay, "block",
+      `${browserName}: fullscreen mode does not drop the mother's dialogue`);
+    assert.match(reunionLayout.messageText, /てかず12 でクリア/,
+      `${browserName}: the final move count remains visible`);
+    assert.ok(reunionLayout.titleRight <= reunionLayout.buttonLeft + 1 &&
+      reunionLayout.messageRight <= reunionLayout.buttonLeft + 1,
+      `${browserName} ${viewport.width}x${viewport.height}: reunion text does not overlap replay`);
+    assert.ok(reunionLayout.buttonHeight >= 48 &&
+      reunionLayout.buttonRight <= reunionLayout.cardRight + 1 &&
+      reunionLayout.buttonBottom <= reunionLayout.cardBottom + 1 &&
+      reunionLayout.messageBottom <= reunionLayout.cardBottom + 1,
+      `${browserName} ${viewport.width}x${viewport.height}: reunion actions and copy stay inside the shell`);
+    assert.equal(reunionLayout.pauseVisibility, "hidden",
+      `${browserName}: pause stays hidden over the reunion`);
+    assert.deepEqual(
+      [reunionLayout.ponoProgress, reunionLayout.motherProgress, reunionLayout.together],
+      ["8.00", "8.00", true],
+      `${browserName}: the journey bar shows Pono and mother reunited at the destination`,
+    );
     assert.deepEqual(errors, [], `${browserName}: moving and resizing create no page errors`);
   } finally {
     await browser.close();
@@ -698,6 +771,8 @@ async function inspectJourneyTransitions(base) {
     const reunion = await page.evaluate(() => ({
       cutsceneMode: document.querySelector(".ov-card").classList.contains("cutscene-mode"),
       fullscreenMode: document.querySelector(".ov-card").classList.contains("cutscene-fullscreen"),
+      reunionMode: document.querySelector(".ov-card").classList.contains("reunion-fullscreen"),
+      bodyCutsceneClass: document.body.classList.contains("slide-cutscene-open"),
       title: document.getElementById("ov-title").textContent,
       action: document.getElementById("ov-btn").dataset.ovType,
       imageCount: document.querySelectorAll(".cutscene-img").length,
@@ -706,12 +781,16 @@ async function inspectJourneyTransitions(base) {
     assert.deepEqual({
       cutsceneMode: reunion.cutsceneMode,
       fullscreenMode: reunion.fullscreenMode,
+      reunionMode: reunion.reunionMode,
+      bodyCutsceneClass: reunion.bodyCutsceneClass,
       title: reunion.title,
       action: reunion.action,
       imageCount: reunion.imageCount,
     }, {
       cutsceneMode: true,
-      fullscreenMode: false,
+      fullscreenMode: true,
+      reunionMode: true,
+      bodyCutsceneClass: true,
       title: "おかあさんと さいかい！",
       action: "gameclear",
       imageCount: 1,
@@ -757,6 +836,15 @@ async function main() {
       })()`));
       assert.equal(identicalFrames, true,
         "reduced-motion world-board pixels remain static across distant timestamps");
+      const reducedReunion = await reduced.page.evaluate(() => eval(`(() => {
+        showOverlay('gameclear');
+        return {
+          fullscreen: document.querySelector('.ov-card').classList.contains('reunion-fullscreen'),
+          overlayAnimation: getComputedStyle(overlay).animationName,
+        };
+      })()`));
+      assert.deepEqual(reducedReunion, { fullscreen: true, overlayAnimation: "none" },
+        "reduced-motion keeps the full reunion without a forced entrance animation");
     } finally {
       await reduced.browser.close();
     }
