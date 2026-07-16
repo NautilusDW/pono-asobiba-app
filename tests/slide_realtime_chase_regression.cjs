@@ -34,7 +34,7 @@ const suspensionFunction = html.match(
 );
 assert.ok(suspensionFunction, "the clock has an explicit suspension contract");
 for (const signal of ["_slideTutActive", "document.hidden", "slideWindowFocused",
-  "pono-dropdown.show", "pono-confirm-overlay.show", "journeyHudMessageHideAt"]) {
+  "pono-dropdown.show", "pono-confirm-overlay.show", "journeyHudPausesClock"]) {
   assert.ok(suspensionFunction[0].includes(signal), `${signal} suspends active time`);
 }
 assert.match(html, /window\.innerHeight\s*>=\s*window\.innerWidth/,
@@ -43,8 +43,32 @@ assert.match(html,
   /id="journey-hud-status"[^>]*role="status"[^>]*aria-live="polite"[^>]*aria-atomic="true"/,
   "board-safe HUD guidance keeps an equivalent polite live announcement");
 assert.match(html,
-  /function showJourneyToast\(message, discovery, retry\)[\s\S]*?hudStatus\.textContent = String\(message\)/,
+  /function showJourneyToast\(message, discovery, retry, pauseClock\)[\s\S]*?hudStatus\.textContent = String\(message\)/,
   "each visual HUD guide is mirrored to the live status region");
+assert.match(html,
+  /function getJourneyPaceMs\(budgetMs\)[\s\S]*?26000[\s\S]*?55000/,
+  "visual travel uses an expected-play pace instead of the generous timeout ceiling");
+assert.match(html,
+  /function getJourneyPacingRatio\(elapsedMs, budgetMs\)[\s\S]*?JOURNEY_PACE_TARGET[\s\S]*?JOURNEY_PLAY_MAX/,
+  "the realtime chase covers most of each segment before the clear walk");
+assert.match(html,
+  /function restartTimedOutStage\(now\)[\s\S]*?preservedProgress[\s\S]*?startCurrentStageIntro\(now, true, preservedProgress\)/,
+  "a same-board retry does not make the journey bar run backwards");
+const journeySuspensionFunction = html.match(
+  /function isJourneyEnvironmentSuspended\(\) \{[\s\S]*?\n\}/
+);
+assert.ok(journeySuspensionFunction, "intro and exit walking have an explicit suspension contract");
+for (const signal of ["document.hidden", "slideWindowFocused", "pono-dropdown.show",
+  "pono-confirm-overlay.show", "window.innerHeight >= window.innerWidth"]) {
+  assert.ok(journeySuspensionFunction[0].includes(signal),
+    `${signal} also freezes journey walking without a resume jump`);
+}
+assert.match(html,
+  /function updateJourney\(now\)[\s\S]*?syncJourneyTimelineSuspension\(now\)/,
+  "journey phases shift their timeline across environment suspensions");
+assert.match(html,
+  /rail\.toggleAttribute\('inert', isPortrait\)[\s\S]*?rail\.setAttribute\('aria-hidden'/,
+  "the viewport-level journey rail also leaves the accessibility tree in portrait");
 
 assert.match(html,
   /function getMotherStageStartProgress\(index\)[\s\S]*?function getMotherStageEndProgress\(index\)/,

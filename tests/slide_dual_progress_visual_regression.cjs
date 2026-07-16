@@ -78,8 +78,9 @@ async function inspectGame(browserType, name, base, viewport) {
         return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom,
           width: rect.width, height: rect.height };
       }
-      return { app: box("#app"), rail: box(".game-rail"), stage: box("#hud-stage"),
-        progress: box("#stage-num"), time: box("#hud-time"),
+      return { app: box("#app"), rail: box(".game-rail"), track: box(".journey-progress-track"),
+        stage: box("#hud-stage"), progress: box("#stage-num"), time: box("#hud-time"),
+        viewportWidth: window.innerWidth,
         moves: box("#hud-moves"), pause: box("#btn-pause"), menu: box(".pono-menu-toggle") };
     });
     assert.ok(boxes.stage.bottom <= boxes.progress.top + 0.5,
@@ -90,10 +91,12 @@ async function inspectGame(browserType, name, base, viewport) {
       `${name}: move count sits above the journey bar`);
     assert.ok(boxes.progress.left >= boxes.rail.left && boxes.progress.right <= boxes.rail.right,
       `${name}: faces and track stay inside the HUD width`);
-    assert.ok(boxes.rail.width >= boxes.app.width * 0.94,
-      `${name}: the HUD uses almost all of the 16:9 shell width`);
-    assert.ok(boxes.progress.width >= boxes.rail.width * 0.92,
-      `${name}: the actual track, not empty chrome, receives the width`);
+    assert.ok(boxes.rail.width >= boxes.viewportWidth * 0.995,
+      `${name}: the HUD reaches the actual viewport edges, including wide-phone letterbox space`);
+    assert.ok(boxes.track.width >= boxes.viewportWidth * 0.99,
+      `${name}: the actual track, not empty chrome, receives essentially the whole screen`);
+    assert.ok(boxes.rail.left <= 0.5 && boxes.rail.right >= boxes.viewportWidth - 0.5,
+      `${name}: the rail is visually edge-to-edge`);
     assert.ok(boxes.pause.top >= boxes.rail.bottom - 0.5,
       `${name}: pause moves below the full-width journey HUD (${JSON.stringify(boxes)})`);
     assert.ok(boxes.menu.top >= boxes.rail.bottom - 0.5,
@@ -107,13 +110,90 @@ async function inspectGame(browserType, name, base, viewport) {
       ponoNow: Number(document.querySelector("#journey-pono-progress").getAttribute("aria-valuenow")),
       motherNow: Number(document.querySelector("#journey-mother-progress").getAttribute("aria-valuenow")),
     }));
-    assert.ok(initial.pono >= 0 && initial.pono < 0.002 &&
-      initial.mother >= initial.pono && initial.mother < 0.002,
-      `${name}: the live chase begins continuously at home without a stage jump`);
-    assert.deepEqual([initial.ponoNow, initial.motherNow], [0, 0],
-      `${name}: assistive progress starts at home and updates in calm buckets`);
+    assert.ok(initial.pono >= 0 && initial.pono < 0.005 &&
+      initial.mother > 0.055 && initial.mother < 0.07,
+      `${name}: the intro visibly sends mother ahead while Pono starts from home`);
+    assert.deepEqual([initial.ponoNow, initial.motherNow], [0, 0.48],
+      `${name}: assistive progress exposes the same initial distance without relying on colour`);
 
-    const expectedMother = [0, 0.1625, 0.25, 0.4125, 0.5, 0.6625, 0.75, 0.9125];
+    const liveMotion = await page.evaluate(() => {
+      const pono = document.querySelector('.journey-progress-marker--pono').getBoundingClientRect();
+      const mother = document.querySelector('.journey-progress-marker--mother').getBoundingClientRect();
+      const gap = getComputedStyle(document.querySelector('.journey-progress-gap'));
+      return {
+        ponoX: pono.left,
+        motherX: mother.left,
+        moving: document.querySelector('#stage-num').classList.contains('is-moving'),
+        gapAnimation: gap.animationName,
+        gapDuration: parseFloat(gap.animationDuration)
+      };
+    });
+    await page.waitForTimeout(1000);
+    const liveMotionAfter = await page.evaluate(() => ({
+      ponoX: document.querySelector('.journey-progress-marker--pono').getBoundingClientRect().left,
+      motherX: document.querySelector('.journey-progress-marker--mother').getBoundingClientRect().left
+    }));
+    assert.equal(liveMotion.moving, true, `${name}: the journey advertises active realtime motion`);
+    assert.equal(liveMotion.gapAnimation, 'journeyGapFlow', `${name}: the visible distance bridge flows`);
+    assert.ok(liveMotion.gapDuration <= 1, `${name}: motion is perceptible within one second`);
+    assert.ok(liveMotionAfter.ponoX - liveMotion.ponoX >= 1.8,
+      `${name}: Pono visibly changes position during one real second`);
+    assert.ok(liveMotionAfter.motherX - liveMotion.motherX >= 1.5,
+      `${name}: mother visibly changes position during one real second`);
+
+    const markerRange = await page.evaluate(() => eval(`(() => {
+      const node = document.querySelector('#stage-num');
+      syncJourneyProgress(0, 0, { instant: true });
+      const start = document.querySelector('.journey-progress-marker--pono').getBoundingClientRect();
+      syncJourneyProgress(1, 1, { instant: true });
+      const end = document.querySelector('.journey-progress-marker--pono').getBoundingClientRect();
+      syncJourneyProgress(0.5, 0.56, { instant: true });
+      const track = document.querySelector('.journey-progress-track').getBoundingClientRect();
+      const gap = document.querySelector('.journey-progress-gap').getBoundingClientRect();
+      return {
+        startLeft: start.left,
+        endRight: end.right,
+        travel: end.left - start.left,
+        gapRatio: gap.width / (track.width - 28)
+      };
+    })()`));
+    assert.ok(markerRange.startLeft >= -0.5 && markerRange.endRight <= boxes.viewportWidth + 0.5,
+      `${name}: both endpoint faces remain fully on screen (${JSON.stringify(markerRange)})`);
+    assert.ok(markerRange.travel >= boxes.viewportWidth * 0.94,
+      `${name}: the face has a genuinely screen-wide travel distance`);
+    assert.ok(Math.abs(markerRange.gapRatio - 0.06) < 0.002,
+      `${name}: the glowing bridge shows the exact logical distance`);
+
+    const nearButSeparate = await page.evaluate(() => eval(`(() => {
+      syncJourneyProgress(0.2482, 0.25, { instant: true });
+      const node = document.querySelector('#stage-num');
+      return {
+        chasing: node.classList.contains('is-chasing'),
+        together: node.classList.contains('is-together'),
+        label: node.getAttribute('aria-label')
+      };
+    })()`));
+    assert.equal(nearButSeparate.chasing, true,
+      `${name}: the distance bridge remains visible right up to the real reunion`);
+    assert.equal(nearButSeparate.together, false,
+      `${name}: a late timer position never pretends both travellers already met`);
+    assert.doesNotMatch(nearButSeparate.label, /おなじ ばしょ/,
+      `${name}: assistive text also waits for the actual checkpoint reunion`);
+
+    const retryEdge = await page.evaluate(() => eval(`(() => {
+      syncJourneyProgress(0.9999002, 1, { instant: true });
+      const node = document.querySelector('#stage-num');
+      return {
+        together: node.classList.contains('is-together'),
+        label: node.getAttribute('aria-label')
+      };
+    })()`));
+    assert.equal(retryEdge.together, false,
+      `${name}: even the final unlimited retry stays separate until actual arrival`);
+    assert.match(retryEdge.label, /あと 1こ/,
+      `${name}: the last visible sliver is never announced as zero distance`);
+
+    const expectedMother = [0.06, 0.1625, 0.31, 0.4125, 0.56, 0.6625, 0.81, 0.9125];
     for (let index = 0; index < 8; index++) {
       const positions = await page.evaluate(nextIndex => eval(`(() => {
         stageIdx = nextIndex;
@@ -148,9 +228,9 @@ async function inspectGame(browserType, name, base, viewport) {
         time: document.querySelector('#hud-time').textContent
       };
     })()`));
-    assert.equal(liveQuarter.pono, 0.125 * 0.75 * 0.25,
+    assert.equal(liveQuarter.pono, 0.125 * 0.5625,
       `${name}: Pono advances continuously during the puzzle`);
-    assert.equal(liveQuarter.mother, 0.1625 * 0.25,
+    assert.equal(liveQuarter.mother, 0.06 + (0.1625 - 0.06) * 0.5625,
       `${name}: mother advances continuously and stays a little ahead`);
     assert.equal(liveQuarter.elapsed, liveQuarter.budget * 0.25,
       `${name}: the bar is driven by active elapsed time`);
@@ -189,7 +269,7 @@ async function inspectGame(browserType, name, base, viewport) {
         railZ: Number(getComputedStyle(rail).zIndex),
         overlayZ: Number(getComputedStyle(overlayNode).zIndex),
         railWidth: rail.getBoundingClientRect().width,
-        appWidth: document.querySelector('#app').getBoundingClientRect().width,
+        viewportWidth: window.innerWidth,
         stageDisplay: getComputedStyle(document.querySelector('#hud-stage')).display,
         timeDisplay: getComputedStyle(document.querySelector('#hud-time')).display,
         movesDisplay: getComputedStyle(document.querySelector('#hud-moves')).display,
@@ -200,8 +280,8 @@ async function inspectGame(browserType, name, base, viewport) {
       { pono: 0.25, mother: 0.25, together: true },
       `${name}: stage 2 paper story shows both faces at the 25% checkpoint`);
     assert.ok(cutscene.railZ > cutscene.overlayZ, `${name}: checkpoint remains visible on the paper story`);
-    assert.ok(cutscene.railWidth >= cutscene.appWidth * 0.9,
-      `${name}: the paper-story checkpoint also uses almost the full shell width`);
+    assert.ok(cutscene.railWidth >= cutscene.viewportWidth * 0.995,
+      `${name}: the paper-story checkpoint also remains edge-to-edge`);
     assert.deepEqual([cutscene.stageDisplay, cutscene.timeDisplay, cutscene.movesDisplay],
       ["none", "none", "none"],
       `${name}: only the journey bar remains on the paper story`);
@@ -300,17 +380,45 @@ async function inspectReducedMotion(base) {
       journeyActor.phase = JOURNEY_PHASE.EXIT;
       finishExitWithDiscovery(performance.now());
       const node = document.querySelector('#stage-num');
+      node.classList.add('is-moving', 'is-chasing');
       return {
         reduced: reducedMotionQuery.matches,
         pono: Number(node.style.getPropertyValue('--pono-progress')),
         mother: Number(node.style.getPropertyValue('--mother-progress')),
-        transition: getComputedStyle(document.querySelector('.journey-progress-fill--mother')).transitionDuration
+        transition: getComputedStyle(document.querySelector('.journey-progress-fill--mother')).transitionDuration,
+        fillAnimation: getComputedStyle(document.querySelector('.journey-progress-fill--pono')).animationName,
+        gapAnimation: getComputedStyle(document.querySelector('.journey-progress-gap')).animationName,
+        faceAnimation: getComputedStyle(document.querySelector('.journey-progress-marker--pono img')).animationName
       };
     })()`));
     assert.equal(result.reduced, true, "reduced-motion query is active");
     assert.deepEqual([result.pono, result.mother], [0.5, 0.5],
       "reduced motion snaps both travellers to the stage 4 story checkpoint");
     assert.equal(result.transition, "0s", "the mother bar does not animate with reduced motion");
+    assert.deepEqual([result.fillAnimation, result.gapAnimation, result.faceAnimation],
+      ["none", "none", "none"],
+      "reduced motion removes flowing stripes and walking bob while keeping exact progress");
+
+    const reducedRetry = await page.evaluate(() => eval(`(() => {
+      _slideTutActive = false;
+      stageIdx = 7;
+      stageRetryCount = 1;
+      overlay.classList.add('hidden');
+      startCurrentStageIntro(1000, true, { pono: 0.997, mother: 0.999 });
+      const start = { pono: stageClock.ponoProgress, mother: stageClock.motherProgress };
+      updateJourney(1002);
+      const afterIntro = { pono: stageClock.ponoProgress, mother: stageClock.motherProgress };
+      updateStageClock(stageClock.lastTick + 1000);
+      const afterTick = { pono: stageClock.ponoProgress, mother: stageClock.motherProgress };
+      return { start, afterIntro, afterTick, phase: journeyActor.phase, active: stageClock.active };
+    })()`));
+    assert.deepEqual(reducedRetry.afterIntro, reducedRetry.start,
+      "reduced-motion retry also preserves its live position through the instant intro");
+    assert.ok(reducedRetry.afterTick.pono >= reducedRetry.afterIntro.pono &&
+      reducedRetry.afterTick.mother >= reducedRetry.afterIntro.mother,
+      "reduced-motion retry continues forward on its first active tick");
+    assert.deepEqual([reducedRetry.phase, reducedRetry.active], ["PLAYING", true],
+      "reduced-motion retry reaches normal play without a rewind");
 
     const reducedTutorial = await page.evaluate(() => eval(`(() => {
       _slideTutActive = false;

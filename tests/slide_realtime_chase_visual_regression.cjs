@@ -79,18 +79,29 @@ async function keepNetworkLocal(context, base) {
       showJourneyToast('みちを つないでみよう！', false);
       const hideAt = journeyHudMessageHideAt;
       updateStageClock(stageClock.lastTick + 1000);
-      const during = {
+      const normal = {
         elapsed: stageClock.elapsedMs,
         overlayToast: document.querySelector('#journey-toast').classList.contains('show'),
         hud: document.querySelector('#hud-stage').textContent
       };
       updateJourneyToast(hideAt + 1);
-      return { during, restored: document.querySelector('#hud-stage').textContent };
+      const restored = document.querySelector('#hud-stage').textContent;
+
+      stageClock.elapsedMs = 0;
+      stageClock.lastTick = performance.now();
+      showJourneyToast('ひかりも とおろう！', false, false, true);
+      updateStageClock(stageClock.lastTick + 1000);
+      const mechanic = {
+        elapsed: stageClock.elapsedMs,
+        hud: document.querySelector('#hud-stage').textContent
+      };
+      return { normal, mechanic, restored };
     })()`));
     assert.deepEqual(inlineGuide, {
-      during: { elapsed: 0, overlayToast: false, hud: 'みちを つないでみよう！' },
+      normal: { elapsed: 1000, overlayToast: false, hud: 'みちを つないでみよう！' },
+      mechanic: { elapsed: 0, hud: 'ひかりも とおろう！' },
       restored: 'おかあさん いないよ？'
-    }, "active guidance uses the HUD instead of covering the board, and pauses the clock while read");
+    }, "normal guidance keeps the chase moving while a new mechanic gets a short reading pause");
 
     const monotonic = await page.evaluate(() => eval(`(() => {
       stageIdx = 4;
@@ -155,6 +166,77 @@ async function keepNetworkLocal(context, base) {
     assert.deepEqual(suspension,
       { pause: 0, menu: 0, confirm: 0, focus: 0, hidden: 0, resume: 100 },
       "only active foreground puzzle time is accumulated");
+
+    const introSuspension = await page.evaluate(() => eval(`(() => {
+      stageIdx = 2;
+      stageRetryCount = 0;
+      overlay.classList.add('hidden');
+      startCurrentStageIntro(1000, true);
+      const node = document.querySelector('#stage-num');
+      const read = () => ({
+        pono: Number(node.style.getPropertyValue('--pono-progress')),
+        mother: Number(node.style.getPropertyValue('--mother-progress'))
+      });
+      const start = read();
+      const menu = document.querySelector('.pono-dropdown');
+      menu.classList.add('show');
+      updateJourney(1100);
+      updateJourney(5000);
+      const frozen = read();
+      menu.classList.remove('show');
+      updateJourney(5016);
+      const resumed = read();
+      const phaseAfterResume = journeyActor.phase;
+      journeyActor.suspendedAt = 0;
+      journeyActor.t0 = performance.now() - journeyActor.duration - 1;
+      updateJourney(performance.now());
+      return { start, frozen, resumed, phaseAfterResume, stateAfterCleanup: state };
+    })()`));
+    assert.deepEqual(introSuspension.frozen, introSuspension.start,
+      "an open menu freezes the actual intro positions, not only their decorative motion");
+    assert.ok(introSuspension.resumed.mother >= introSuspension.frozen.mother &&
+      introSuspension.resumed.mother - introSuspension.frozen.mother < 0.002,
+      "closing the menu resumes from the same intro instant without a visible jump");
+    assert.deepEqual([introSuspension.phaseAfterResume, introSuspension.stateAfterCleanup],
+      ["INTRO", 1], "the intro remains in progress while covered and can then finish normally");
+
+    const actualPause = await page.evaluate(() => eval(`(() => {
+      stageIdx = 0;
+      resetStageClock(0);
+      overlay.classList.add('hidden');
+      journeyActor.active = false;
+      state = S.PLAYING;
+      prepauseState = S.PLAYING;
+      slideWindowFocused = true;
+      animating = false;
+      journeyHudMessageHideAt = 0;
+      journeyHudPausesClock = false;
+      setPauseAvailable(true);
+      startStageClock(1000);
+      updateStageClock(2000);
+      updateJourneyMotionState();
+      const before = stageClock.elapsedMs;
+      document.getElementById('btn-pause').click();
+      updateJourneyMotionState();
+      const paused = {
+        state,
+        label: document.getElementById('btn-pause').getAttribute('aria-label'),
+        moving: document.querySelector('#stage-num').classList.contains('is-moving')
+      };
+      updateStageClock(12000);
+      const during = stageClock.elapsedMs;
+      document.getElementById('btn-pause').click();
+      const resumeTick = stageClock.lastTick;
+      updateStageClock(resumeTick + 500);
+      return { before, paused, during, after: stageClock.elapsedMs, state };
+    })()`));
+    assert.deepEqual(actualPause, {
+      before: 1000,
+      paused: { state: 4, label: 'さいかい', moving: false },
+      during: 1000,
+      after: 1500,
+      state: 1
+    }, "the real pause control freezes the clock and motion, then resumes without a time jump");
 
     const exit = await page.evaluate(() => eval(`(() => {
       stageIdx = 2;
@@ -266,9 +348,15 @@ async function keepNetworkLocal(context, base) {
         pending: stageClock.timeoutPending,
         text: document.querySelector('#journey-toast').textContent,
         stats: window.__timeoutClearStats,
-        state
+        state,
+        pono: stageClock.ponoProgress,
+        mother: stageClock.motherProgress
       };
       updateStageClock(stageClock.restartAt + 1);
+      const retryProgress = {
+        pono: stageClock.ponoProgress,
+        mother: stageClock.motherProgress
+      };
       const restored = JSON.stringify({
         grid,
         empty: emptyIdx,
@@ -276,7 +364,7 @@ async function keepNetworkLocal(context, base) {
         suggested: suggestedMoveIdx
       });
       return {
-        initial, restored, timedOut,
+        initial, restored, timedOut, retryProgress,
         stage: stageIdx, moves: moveCount, retryCount: stageRetryCount,
         budget: stageClock.budgetMs, firstBudget,
         unlimited: stageClock.unlimited,
@@ -290,6 +378,9 @@ async function keepNetworkLocal(context, base) {
     assert.match(retry.timedOut.text, /この みちを もういちど/,
       "timeout explains the same-road retry without failure language");
     assert.equal(retry.timedOut.stats, 0, "timeout never emits a clear statistic");
+    assert.deepEqual(retry.retryProgress,
+      { pono: retry.timedOut.pono, mother: retry.timedOut.mother },
+      "same-board retry keeps both live positions instead of visibly rewinding the chase");
     assert.equal(retry.initial, retry.restored, "retry restores the exact first arrangement and tracking");
     assert.deepEqual({ stage: retry.stage, moves: retry.moves, retryCount: retry.retryCount },
       { stage: 3, moves: 0, retryCount: 1 },
@@ -301,6 +392,23 @@ async function keepNetworkLocal(context, base) {
     assert.equal(retry.phase, "INTRO", "retry replays the same stage's gentle entry");
     assert.equal(retry.active, false, "retry time waits until that entry finishes");
     assert.equal(retry.magic, -1, "stage mechanic selection returns to its initial state");
+
+    const retryContinuity = await page.evaluate(() => eval(`(() => {
+      const start = { pono: stageClock.ponoProgress, mother: stageClock.motherProgress };
+      const introEnd = journeyActor.t0 + journeyActor.duration + 1;
+      updateJourney(introEnd);
+      const afterIntro = { pono: stageClock.ponoProgress, mother: stageClock.motherProgress };
+      updateStageClock(stageClock.lastTick + 1000);
+      const afterTick = { pono: stageClock.ponoProgress, mother: stageClock.motherProgress };
+      return { start, afterIntro, afterTick, phase: journeyActor.phase, active: stageClock.active };
+    })()`));
+    assert.deepEqual(retryContinuity.afterIntro, retryContinuity.start,
+      "the preserved retry position survives the whole intro");
+    assert.ok(retryContinuity.afterTick.pono >= retryContinuity.afterIntro.pono &&
+      retryContinuity.afterTick.mother >= retryContinuity.afterIntro.mother,
+      "the first retry clock tick continues forward from the preserved position");
+    assert.deepEqual([retryContinuity.phase, retryContinuity.active], ["PLAYING", true],
+      "the retry clock starts normally after its non-rewinding intro");
 
     const slowRetry = await page.evaluate(() => eval(`(() => {
       journeyActor.t0 -= 100000;
@@ -444,6 +552,7 @@ async function keepNetworkLocal(context, base) {
     }, "an open shared menu renews both the retry wait and its visible explanation");
 
     await page.setViewportSize({ width: 390, height: 844 });
+    await page.waitForFunction(() => document.querySelector('#app').hasAttribute('inert'));
     const portrait = await page.evaluate(() => eval(`(() => {
       overlay.classList.add('hidden');
       state = S.PLAYING;
@@ -454,12 +563,21 @@ async function keepNetworkLocal(context, base) {
       stageClock.elapsedMs = 500;
       stageClock.lastTick = 1000;
       updateStageClock(21000);
-      return { elapsed: stageClock.elapsedMs, suspended: isStageClockSuspended() };
+      const rail = document.querySelector('.game-rail');
+      return {
+        elapsed: stageClock.elapsedMs,
+        suspended: isStageClockSuspended(),
+        appInert: document.querySelector('#app').hasAttribute('inert'),
+        railInert: rail.hasAttribute('inert'),
+        railHidden: rail.getAttribute('aria-hidden')
+      };
     })()`));
-    assert.deepEqual(portrait, { elapsed: 500, suspended: true },
-      "portrait guidance freezes the attempt instead of consuming time");
+    assert.deepEqual(portrait, {
+      elapsed: 500, suspended: true, appInert: true, railInert: true, railHidden: 'true'
+    }, "portrait guidance freezes the attempt and hides both app and full-width rail semantically");
 
     await page.setViewportSize({ width: 844, height: 390 });
+    await page.waitForFunction(() => !document.querySelector('.game-rail').hasAttribute('inert'));
     const tutorialDuringRetry = await page.evaluate(() => eval(`(() => {
       _slideTutActive = false;
       beginStage(0);

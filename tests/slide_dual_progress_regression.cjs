@@ -31,8 +31,8 @@ assert.match(html,
   /function getMotherJourneyProgress\(index\)[\s\S]*?Math\.floor\(index \/ 2\)[\s\S]*?0\.25/,
   "the paper-story checkpoints remain stage 2, 4, 6, and 8");
 assert.match(html,
-  /function getMotherStageStartProgress\(index\)[\s\S]*?0\.25 \* 0\.65/,
-  "the mother begins each live stage where her previous continuous segment ended");
+  /function getMotherStageStartProgress\(index\)[\s\S]*?MOTHER_CHAPTER_LEAD[\s\S]*?0\.25 \* 0\.65/,
+  "the mother starts each new story chapter with a visible lead");
 assert.match(html,
   /function getMotherStageEndProgress\(index\)[\s\S]*?chapterStart \+ 0\.25/,
   "the mother reaches each paper-story checkpoint without a stage-start jump");
@@ -42,6 +42,16 @@ assert.match(html,
 assert.match(html,
   /function updateStageClock\(now\)[\s\S]*?ponoProgress[\s\S]*?motherProgress[\s\S]*?syncJourneyProgress/,
   "both travellers move during active puzzle time");
+assert.match(html,
+  /function updateJourneyPosition\(now\)[\s\S]*?JOURNEY_PHASE\.INTRO[\s\S]*?introMotherStart[\s\S]*?attemptMotherStart/,
+  "the mother's new lead is visibly walked during the stage intro instead of jumping");
+assert.match(html, /class="journey-progress-gap"[^>]*aria-hidden="true"/,
+  "the exact distance between both faces has a non-semantic moving bridge");
+assert.match(html, /\.journey-progress\.is-moving \.journey-progress-gap[\s\S]*?journeyGapFlow/,
+  "the distance bridge visibly flows during the live chase");
+assert.match(html,
+  /\.game-rail \{[\s\S]*?position:\s*fixed;[\s\S]*?left:\s*0;[\s\S]*?right:\s*0;/,
+  "the journey rail spans the viewport rather than the narrower 16:9 canvas on wide phones");
 assert.match(html,
   /function updateJourneyPosition\(now\)[\s\S]*?stageClock\.exitPonoStart[\s\S]*?stageClock\.exitMotherStart/,
   "the route-exit animation continues from both live positions without rewinding");
