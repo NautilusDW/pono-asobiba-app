@@ -100,8 +100,8 @@ assert.match(css, /@media \(prefers-reduced-motion:reduce\)[\s\S]*?\.space-chase
 assert.match(css, /body\.space-chase-active #veh[\s\S]*?visibility:hidden!important/);
 
 const cacheVersion = Number(sw.match(/const CACHE_VERSION = (\d+);/)?.[1]);
-assert.ok(cacheVersion >= 2233);
-assert.match(sw, /v2232:[\s\S]*?batch:1326-nazonazo-race-duel/);
+assert.equal(cacheVersion, 2236);
+assert.match(sw, /v2236:[\s\S]{0,700}batch:1327-nazonazo-cinematic-catch/);
 
 const constantsStart = game.indexOf("const SPACE_CHASE_WORLD_WIDTH");
 const constantsEnd = game.indexOf("\nlet spaceRepairOptions", constantsStart);
