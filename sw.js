@@ -1,5 +1,15 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2243: batch:1319-room-profile-move-puzzle-tutorial-fix。①「わたしのおうち」導線を
+// 設定モーダルからプロフィールハブへ完全移設 (play.html: #settingsRoomBtn 撤去、
+// #profileHubModal に #profileRoomBtn 新設。tier判定ロジック=isRoomTierLocked は不変)。
+// ②パズルのタイトル「みない」選択時、#loading の可視状態という不安定なシグナルに
+// 依存してタイトルベールが閉じずスタート不能になり得た構造的欠陥を修正
+// (puzzle/main.js: finishOpeningAndEnterGame() が新規ステージ読込を開始したかを
+// 明示的な戻り値で判定するよう変更 + 6秒フェイルセーフ timeout を追加)。
+// play.html PAGE_CACHE_VERSION / PONO_SW_VERSION を2243へ同期。puzzle/main.js は
+// CRITICAL_ASSETS precache対象外・network-first配信のため precache list 変更なし
+// (puzzle/index.html 側のローカル ?v= 資産バージョンは本batch対象外につき別途要確認)。
 // v2242: ブロッコリーのゆで工程を、点火→既存塩瓶で塩入れ→既存コンロ音で加熱待ち→
 // 水面上の泡・波紋・湯気で沸騰→形と角度が異なる小房5種を1個ずつ投入、へ変更。
 // 鍋の水面へ効果位置を合わせ、小房を左右・前後へ分散した
@@ -337,7 +347,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2242;
+const CACHE_VERSION = 2243;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。

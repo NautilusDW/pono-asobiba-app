@@ -7442,13 +7442,20 @@ function enterPuzzleAfterTitle(options) {
   // 透過してしまうため不可 (ベール自身にタップを吸収させる)。
   hideTitleGuideChoice();
   // perf 2026-07-10: タイトルを即 hide すると、練習ステージ等の JPG 読込中に
-  // 生の盤面が露出してしまう。finishOpeningAndEnterGame() がステージ読込を
-  // 開始した場合 (loading 表示中) は stage-ready コールバックが発火するまで
-  // タイトル画面を不透明ベールとして残す。読込が走らない経路では従来通り即 hide。
-  finishOpeningAndEnterGame(options);
-  var stageLoadInFlight = !!(loadingEl && !loadingEl.classList.contains('hidden'));
-  if (stageLoadInFlight) {
+  // 生の盤面が露出してしまう。finishOpeningAndEnterGame() が新規ステージ読込を
+  // 開始した場合 (=「見る」で練習ステージへ遷移) のみ、 stage-ready コールバックが
+  // 発火するまでタイトル画面を不透明ベールとして残す。
+  // 「見ない」はこの関数自身がステージ読込を開始しない (既存盤面をそのまま使う) ため、
+  // #loading の可視状態 (別ロードの残骸で真偽が揺れ得る不安定なシグナル) を見ずに
+  // 常に即 hide する。旧実装は loadingEl.hidden を見ていたが、これは
+  // 最初のページロード由来の loadStage(0) の完了タイミングにたまたま依存しており、
+  // それが遅延/失敗すると「見ない」でタイトルが閉じたまま進めなくなる不具合の温床だった。
+  var willLoadFreshStage = !!finishOpeningAndEnterGame(options);
+  if (willLoadFreshStage) {
     queueStageReadyCallback(hideTitleScreenNow);
+    // 保険: 何らかの理由で stage-ready コールバックが発火しなくても
+    // タイトルベールが恒久的に残ってスタート不能になることを防ぐ。
+    setTimeout(hideTitleScreenNow, 6000);
   } else {
     hideTitleScreenNow();
   }
@@ -7480,10 +7487,11 @@ function finishOpeningAndEnterGame(options) {
     showBasicPracticeIfNeeded(function () {
       maybeShowPartnerChoiceForCurrentStage();
     }, !!options.forceBasicPractice);
-    return;
+    return true; // 練習ステージへの新規 loadStage を開始した
   }
 
   maybeShowPartnerChoiceForCurrentStage();
+  return false; // 新規ステージ読込は開始していない (既存盤面のまま)
 }
 
 function getCurrentStageId() {
