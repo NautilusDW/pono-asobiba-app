@@ -149,6 +149,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-07-16T01:17:02Z - 家具入手経路のスタンプカード復活 + book tier家具付与ゼロ問題の修正 (batch:1315)
+- **タスク**: 家具入手経路のスタンプカード復活 + book tier家具付与ゼロ問題の修正 (batch:1315)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 0
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {}
+- **サマリ**: 行動ログが空のため分析できません。
+
+
 ### 2026-07-16T01:09:41Z - Holisticレビュー指摘2件(room_furniture_app_tier_regression.cjsのstamp-rally抽出未追従/ACHIEVEMENTS配列phantom furn id)を修正
 - **タスク**: Holisticレビュー指摘2件(room_furniture_app_tier_regression.cjsのstamp-rally抽出未追従/ACHIEVEMENTS配列phantom furn id)を修正
 - **結果**: 成功
@@ -242,19 +255,6 @@ wrangler deploy                  # master 内容を production に
 
 ### 2026-07-15T22:11:46Z - play.html にわたしのおうち(room/index.html)への実導線を追加
 - **タスク**: play.html にわたしのおうち(room/index.html)への実導線を追加
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 0
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {}
-- **サマリ**: 行動ログが空のため分析できません。
-
-
-### 2026-07-15T22:05:56Z - achievements.js _rewardsBlocked() fail-open修正 (stickers.js checkDailyLoginと同じ3段fail-closedパターンへ統一)
-- **タスク**: achievements.js _rewardsBlocked() fail-open修正 (stickers.js checkDailyLoginと同じ3段fail-closedパターンへ統一)
 - **結果**: 成功
 - **理由**: N/A
 - **総アクション数**: 0
