@@ -7,6 +7,7 @@ const source = fs.readFileSync(path.join(root, 'bento', 'kitchen.html'), 'utf8')
 const assets = [
   'boil_pot_cold.png', 'boil_pot_hot.png', 'boil_spoon.png', 'boil_drain_bowl.png',
   'boil_broccoli_raw.png', 'boil_broccoli_cooked.png',
+  'boil_broccoli_whole.png', 'broccoli_floret_001.png',
   'boil_edamame_raw.png', 'boil_edamame_cooked.png',
 ];
 
@@ -20,7 +21,12 @@ assert.doesNotMatch(source.match(/function updateWorkshopBoilVisual\(step\)[\s\S
 assert.match(source, /class="workshop-boil-bubbles"/);
 assert.match(source, /@keyframes workshopBoilBubble/);
 assert.match(source, /stove_base\.webp/);
-assert.match(source, /const WORKSHOP_PREP_RECIPES = \{[\s\S]*?broccoli:[\s\S]*?edamame:/);
+assert.match(source, /const WORKSHOP_PREP_RECIPES = \{[\s\S]*?edamame:/);
+assert.doesNotMatch(source.match(/const WORKSHOP_PREP_RECIPES = \{[\s\S]*?\n  \};/)[0], /broccoli:/);
+assert.match(source, /id: 'broccoli'[\s\S]*?imageBase: 'boil\/boil_broccoli_whole\.png'[\s\S]*?prepActions: \[\{ type: 'chop' \}\]/);
+assert.match(source, /pieceCount: 5/);
+assert.match(source, /class="workshop-boil-pieces"/);
+assert.match(source, /classList\.toggle\('is-boiling'/);
 assert.match(source, /needs: \['broccoli'\], startFromRaw: false/);
 assert.match(source, /needs: \['edamame'\], startFromRaw: false/);
 assert.match(source, /classList\.toggle\('is-boil-step', specializedBoil\)/);
