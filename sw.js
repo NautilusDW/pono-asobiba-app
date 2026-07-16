@@ -1,5 +1,10 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2215: もじっこファームの文字書きから旧 `menu_card_base_01〜04` を外し、左・相棒・書き順・結果の
+// 完成画像を、CSS の白い紙面や影を重ねない一層表示へ統一。モード選択 F002 は4分割の完成画像で
+// 3モード＋とじるを構成し、通常／押下画像の大きさを固定。Native 同梱には図鑑 UI 4素材と押下
+// ラベル1素材を追加し、文字書きが使う44画像を収録した (batch:1316-mojikko-image-only-controls)。
+// play.html PAGE_CACHE_VERSION と同期不要 (writing-mori/index.html／Native manifest／テストのみ変更)。
 // v2214: スタンプカード復活 + book tier家具付与配線 + ACHIEVEMENTS配列 phantom id 修正を統合
 // (batch:1315-furniture-stamp-card-revival)。play-all.html にインライン実装されていたスタンプ
 // ラリー/スタンプカード IIFE (1482行JS + 369行CSS) を common/stamp-rally.js・common/stamp-rally.css
@@ -188,7 +193,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2214;
+const CACHE_VERSION = 2215;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
