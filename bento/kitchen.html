@@ -18651,9 +18651,18 @@ body.layout-editor-on .bowl-fill-mask::after {
     if (!entry) return; // entry 無し → applyIngredientPlacement の chopMechanics 値に任せる
     var tx = (typeof entry.tx === 'number') ? entry.tx : 0;
     var ty = (typeof entry.ty === 'number') ? entry.ty : 0;
-    // w/h は "411.091px" の文字列。 数値抽出。 サイズ未編集 (空文字) なら no-op。
-    var wPx = parseFloat(entry.w);
-    var hPx = parseFloat(entry.h);
+    // 既存値は px だが、新規食材をコード既定の % 幅から初回保存すると w が
+    // "61.9983%" のように保存される。parseFloat だけだと 61.9983px と誤解して
+    // 食材が極端に縮むため、単位を見て board の実寸へ変換する。
+    function savedSizeToPx(value, axisSize) {
+      if (typeof value === 'number') return value;
+      if (typeof value !== 'string' || !value.trim()) return NaN;
+      var numeric = parseFloat(value);
+      if (!isFinite(numeric)) return NaN;
+      return value.indexOf('%') !== -1 ? axisSize * numeric / 100 : numeric;
+    }
+    var wPx = savedSizeToPx(entry.w, boardW);
+    var hPx = savedSizeToPx(entry.h, boardH);
     if (!isFinite(wPx) || wPx <= 0 || !isFinite(hPx) || hPx <= 0) return;
 
     var centerXPct = BBOX_LEFT_DEFAULT_PCT + 100 * (tx + wPx / 2) / boardW;

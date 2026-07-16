@@ -71,6 +71,12 @@ test('kitchen layout editor targets develop-app and exposes the new ingredient s
     const getter = (window as Window & { QUIZLAND_GET_CURRENT_QID?: () => string | null }).QUIZLAND_GET_CURRENT_QID;
     return getter ? getter() : null;
   })).toBe('green_bean');
+  await expect.poll(() => page.locator('#ingredient-on-board').evaluate((element: HTMLElement) => (
+    parseFloat(element.style.width)
+  ))).toBeGreaterThan(60);
+  await expect.poll(() => page.locator('#ingredient-on-board').evaluate((element: HTMLElement) => (
+    parseFloat(element.style.width)
+  ))).toBeLessThan(64);
 });
 
 test('all newly added cutting and fruit assets are available', async ({ request }) => {
