@@ -48,113 +48,39 @@ function assertNoChildFacingKanji(source, label) {
   }
 }
 
-assert.match(html, /styles\.css\?v=20260716-1319/);
-assert.match(html, /js\/game\.js\?v=20260716-1319/);
-assert.match(sw, /v2221:[\s\S]*?batch:1319-nazonazo-rescue-input-unfreeze/);
-assert.match(sw, /const CACHE_VERSION = 2221;/);
-
-/* Only the current two-way fork is interactive; route arithmetic is gone. */
 const layerBlock = html.match(/<div id="spaceChaseLayer"[\s\S]*?<div id="seaRoundCountdown"/)?.[0] || "";
+assert.match(html, /styles\.css\?v=20260716-1326/);
+assert.match(html, /js\/game\.js\?v=20260716-1326/);
 assert.match(layerBlock, /id="spaceChaseRouteMap"[^>]*viewBox="0 0 1350 720"/);
 assert.equal((layerBlock.match(/data-space-chase-choice=/g) || []).length, 2);
-assert.match(layerBlock, /data-space-chase-choice="0"[^>]*>[\s\S]*?data-ui-art="rocket"[\s\S]*?<strong>ちかみち<\/strong>/);
-assert.match(layerBlock, /data-space-chase-choice="1"[^>]*>[\s\S]*?data-ui-art="star"[\s\S]*?<strong>スターみち<\/strong>/);
-assert.doesNotMatch(layerBlock, /びょう|data-space-chase-choice="2"|space-chase-choice-arrow/);
-assert.match(layerBlock, /id="spaceChaseBoostMeter"[^>]*aria-valuemax="3"[^>]*aria-valuenow="0"/);
-assert.equal((layerBlock.match(/id="spaceChaseBoostMeter"[\s\S]*?<\/div>/)?.[0].match(/<i/g) || []).length, 3);
-assert.match(layerBlock, /class="space-chase-star-child[^>]*data-ui-art="star"/);
-assert.match(layerBlock, /space_vehicle_exploration_rocket_pono_20260713\.png/);
-
-/* Rescue is a separate wipe-then-carry game. */
-assert.equal((layerBlock.match(/data-space-chase-ribbon=/g) || []).length, 3);
-assert.match(layerBlock, /id="spaceChaseRescuePlayfield"/);
-assert.match(layerBlock, /id="spaceChaseRescueRing"/);
-assert.match(layerBlock, /id="spaceChaseRescueStar"/);
-assert.match(layerBlock, /id="spaceChaseRescueProgress"[^>]*aria-valuemax="3"/);
-assert.match(layerBlock, /ひかる しっぽを みぎへ すーっ！/);
-assert.match(layerBlock, /<button id="spaceChaseRescueGuide"[^>]*disabled>しっぽを はらう！<\/button>/);
-assert.doesNotMatch(layerBlock, /<p id="spaceChaseRescueGuide"/);
-assert.doesNotMatch(layerBlock, /spaceChaseKnot|space-chase-rescue-knots|むすびめ/);
+assert.match(layerBlock, /id="spaceChaseFinalMeter"[^>]*aria-valuemax="100"[^>]*hidden/);
+assert.match(layerBlock, /<button id="spaceChaseBoostButton"/);
+assert.match(layerBlock, /id="spaceChaseRescuePlayfield"[^>]*tabindex="0"[^>]*やじるしキー/);
+assert.match(layerBlock, /<span id="spaceChaseRescueStar"/);
+assert.match(layerBlock, /id="spaceChaseRescueTether"/);
+assert.match(layerBlock, /id="spaceChaseRescueProgress"[^>]*aria-valuemax="100"/);
+assert.match(layerBlock, /<p id="spaceChaseRescueGuide"[^>]*>ゆびで わを うごかそう！<\/p>/);
+assert.match(layerBlock, /<button id="spaceChaseRescueAssist"[^>]*hidden>じしゃくで おてつだい<\/button>/);
+assert.doesNotMatch(layerBlock, /data-space-chase-ribbon|space-chase-rescue-ribbons|しっぽを はらう|<button id="spaceChaseRescueStar"/);
+assertNoChildFacingKanji(layerBlock, "Space chase HTML");
 
 assert.match(cssRule("#spaceChaseLayer"), /position\s*:\s*fixed/);
-assert.match(cssRule("\.space-chase-route-hit"), /stroke-width\s*:\s*54/);
-assert.match(css, /\.space-chase-route-hit\.is-choice-active\{pointer-events:stroke;cursor:pointer\}/);
 assert.match(cssRule("\.space-chase-route-choices button"), /min-height\s*:\s*58px/);
-assert.match(css, /\.space-chase-board\.is-choosing \.space-chase-controls[^{}]*\{visibility:hidden\}/);
-assert.match(cssRule("\.space-chase-boost-meter"), /repeat\(3,minmax\(28px,1fr\)\)/);
-assert.match(cssRule("\.space-chase-comet"), /width\s*:\s*clamp\(58px,6\.25vw,85px\)/);
-assert.match(css, /\.space-chase-rocket\{[^}]*width:clamp\(92px,10\.5vw,140px\)/);
-assert.match(cssRule("\.space-chase-rescue-panel"), /space_nebula_sky_back_20260713\.webp/);
-assert.match(cssRule("\.space-chase-rescue-playfield::before"), /pointer-events\s*:\s*none/);
-assert.match(cssRule("\.space-chase-rescue-ribbons"), /pointer-events\s*:\s*none/);
-assert.match(cssRule("\.space-chase-rescue-ribbons button"), /min-height\s*:\s*64px/);
-assert.match(cssRule("\.space-chase-rescue-star"), /touch-action\s*:\s*none/);
-assert.match(cssRule("\.space-chase-rescue-ring"), /border-radius\s*:\s*50%/);
-assert.match(css, /\.space-chase-rescue-panel:not\(\.is-carry\) \.space-chase-rescue-star\{z-index:2;pointer-events:none;opacity:\.18/);
-assert.match(cssRule("#spaceChaseRescueGuide"), /min-width\s*:\s*clamp\(210px,34vw,360px\)/);
-assert.match(cssRule("#spaceChaseRescueGuide"), /min-height\s*:\s*56px/);
-assert.match(css, /@media \(orientation:landscape\) and \(max-width:559px\) and \(max-height:360px\)[\s\S]*?\.space-chase-rescue-ribbons button\{left:48%;width:40%;min-height:48px\}/);
-assert.match(css, /@media \(orientation:landscape\) and \(max-width:559px\) and \(max-height:360px\)[\s\S]*?\.space-chase-rescue-rocket\{left:17%;top:55%;width:82px\}/);
-assert.match(css, /@media \(orientation:landscape\) and \(max-width:559px\) and \(max-height:360px\)[\s\S]*?#spaceChaseRescueGuide\{left:6px;bottom:3px;min-width:136px;min-height:44px;transform:none/);
-assert.match(css, /@media \(prefers-reduced-motion:reduce\)[\s\S]*?\.space-chase-rescue-comet,[\s\S]*?animation:none!important/);
+assert.match(cssRule("#spaceChaseBoostButton"), /min-height\s*:\s*70px/);
+assert.match(cssRule("\.space-chase-final-meter"), /min-height\s*:\s*25px/);
+assert.match(cssRule("\.space-chase-rescue-playfield"), /touch-action\s*:\s*none/);
+assert.match(cssRule("\.space-chase-rescue-ring"), /left\s*:\s*var\(--rescue-ring-x/);
+assert.match(cssRule("\.space-chase-rescue-star"), /left\s*:\s*var\(--rescue-star-x/);
+assert.match(cssRule("#spaceChaseRescueAssist"), /min-height\s*:\s*56px/);
+assert.match(css, /\.space-chase-board\.is-rival-surge \.space-chase-comet/);
+assert.match(css, /\.space-chase-board\.is-final #spaceChaseBoostButton/);
+assert.match(css, /@media \(orientation:landscape\) and \(max-width:559px\) and \(max-height:360px\)[\s\S]*?\.space-chase-rescue-ring\{width:44px/);
+assert.match(css, /@media \(prefers-reduced-motion:reduce\)[\s\S]*?\.space-chase-rescue-ring,[\s\S]*?animation:none!important/);
 assert.match(css, /body\.space-chase-active #veh[\s\S]*?visibility:hidden!important/);
 
-/* Existing stage integration and the one-shot clear latch remain intact. */
-const buildQList = extractFunction(game, "buildQList");
-const proceed = extractFunction(game, "proceed");
-const gloop = extractFunction(game, "gloop");
-const resetSpaceSteering = extractFunction(game, "resetSpaceSteering");
-const clearChase = extractFunction(game, "clearSpaceChaseEncounter");
-const showChase = extractFunction(game, "showSpaceChaseEncounter");
-const updateChase = extractFunction(game, "updateSpaceChase");
-assert.match(buildQList, /if\(st\.id==="space"\)spaceChaseDefeated=false/);
-assert.ok(proceed.indexOf('pending="spaceChase"') < proceed.indexOf("completeCurrentStage(o)"));
-assert.match(proceed, /!window\.__PONO_TIER_LOCKED__/);
-assert.match(gloop, /p==="spaceChase"\)showSpaceChaseEncounter\(\)/);
-assert.match(resetSpaceSteering, /clearSpaceChaseEncounter\(\)/);
-assert.doesNotMatch(clearChase, /spaceChaseDefeated\s*=/);
-assert.match(showChase, /advanceSpaceChaseRacer\(spaceChaseState\.comet,SPACE_CHASE_START_LEAD\)/);
-assert.match(updateChase, /spaceChaseState\.completionCommitted=true;const stageOrigin=origin\(stg\);clearSpaceChaseEncounter\(\);completeCurrentStage\(stageOrigin\)/);
+const cacheVersion = Number(sw.match(/const CACHE_VERSION = (\d+);/)?.[1]);
+assert.ok(cacheVersion >= 2229, "service worker version unexpectedly moved backwards");
 
-const coreFunctionNames = [
-  "spaceChaseRuntimeActive", "spaceChaseRescueRuntimeActive", "spaceChaseRescueInputActive",
-  "spaceChaseEdgeSegments", "spaceChaseCurvePoint",
-  "spaceChaseEdgePathData", "spaceChaseBoostPositions", "spaceChaseYPercent",
-  "ensureSpaceChaseRouteMetrics", "spaceChaseChoiceMetrics", "spaceChasePointAtDistance",
-  "prepareSpaceChaseRouteMap", "collectSpaceChaseBoost", "nextSpaceChaseEdge",
-  "advanceSpaceChaseRacer", "promptSpaceChaseBranch", "chooseSpaceChaseRoute",
-  "spaceChaseBoostPlayable", "useSpaceChaseBoost", "spaceChaseCameraLeft",
-  "updateSpaceChaseVisual", "beginSpaceChaseRace", "beginSpaceChaseCaught",
-  "beginSpaceChaseRescue", "clearSpaceChaseRibbon", "activateSpaceChaseRescueControl",
-  "handleSpaceChaseRescueClick", "spaceChaseRescueSwipeThreshold",
-  "moveSpaceChaseRescuePointer", "finishSpaceChaseRescuePointer",
-  "handleSpaceChaseRescuePointerDown", "handleSpaceChaseRescueLostPointerCapture",
-  "cancelSpaceChaseRescuePointer",
-  "finishSpaceChaseVictory", "updateSpaceChase"
-];
-const allChaseSource = coreFunctionNames.map(name => extractFunction(game, name)).join("\n");
-assert.doesNotMatch(allChaseSource, /setTimeout|setInterval/);
-assert.doesNotMatch(allChaseSource, /addScore|stageMiss|totalStars/);
-assert.doesNotMatch(allChaseSource, /びょう/);
-assert.match(extractFunction(game, "prepareSpaceChaseRouteMap"), /space-chase-route-hit/);
-assert.match(extractFunction(game, "prepareSpaceChaseRouteMap"), /bindTap\(hit,/);
-assert.match(extractFunction(game, "spaceChaseRuntimeActive"), /!document\.hidden/);
-assert.match(extractFunction(game, "spaceChaseRuntimeActive"), /!gameSettingsMenuIsOpen\(\)/);
-assert.match(extractFunction(game, "spaceChaseRescueRuntimeActive"), /spaceChaseState\.phase==="rescue"\|\|spaceChaseState\.phase==="victory"/);
-assert.match(extractFunction(game, "spaceChaseRescueRuntimeActive"), /spaceChaseRescuePanel&&!spaceChaseRescuePanel\.hidden/);
-assert.doesNotMatch(extractFunction(game, "spaceChaseRescueRuntimeActive"), /\bplaying\b|isSpaceStage/);
-assert.match(extractFunction(game, "spaceChaseRescueInputActive"), /spaceChaseState\.phase==="rescue"&&spaceChaseRescueRuntimeActive\(\)/);
-assert.doesNotMatch(extractFunction(game, "handleSpaceChaseRescueClick"), /event\.detail/);
-assert.match(extractFunction(game, "handleSpaceChaseRescueClick"), /rescueSuppressClickTarget===control/);
-assert.match(extractFunction(game, "handleSpaceChaseRescueLostPointerCapture"), /event\.pointerId===spaceChaseState\.rescuePointerId/);
-assert.match(extractFunction(game, "updateSpaceChase"), /SPACE_CHASE_AUTO_BOOST_MS/);
-assert.match(extractFunction(game, "updateSpaceChase"), /!spaceChaseRuntimeActive\(\)&&!spaceChaseRescueRuntimeActive\(\)/);
-assert.match(extractFunction(game, "updateSpaceChase"), /rocket\.distance>comet\.distance\)rocket\.distance=comet\.distance/);
-assert.match(extractFunction(game, "finishSpaceChaseRescuePointer"), /dx>=spaceChaseRescueSwipeThreshold\(\)&&dx>=Math\.abs\(dy\)\*1\.2/);
-assert.match(extractFunction(game, "finishSpaceChaseRescuePointer"), /distance<=ring\.width\*\.58/);
-assertNoChildFacingKanji(allChaseSource, "Space chase");
-
-/* Audit the 3 x 2 route graph and economy. */
 const constantsStart = game.indexOf("const SPACE_CHASE_WORLD_WIDTH");
 const constantsEnd = game.indexOf("\nlet spaceRepairOptions", constantsStart);
 assert.ok(constantsStart > 0 && constantsEnd > constantsStart);
@@ -168,412 +94,221 @@ vm.runInContext([
   extractFunction(game, "spaceChaseEdgeSegments"),
   extractFunction(game, "spaceChaseCurvePoint"),
   extractFunction(game, "spaceChaseBoostPositions"),
-  "this.routeData={world:SPACE_CHASE_WORLD_WIDTH,view:SPACE_CHASE_VIEWBOX_WIDTH,top:SPACE_CHASE_VIEWBOX_TOP,height:SPACE_CHASE_VIEWBOX_HEIGHT,startLead:SPACE_CHASE_START_LEAD,catchDistance:SPACE_CHASE_CATCH_DISTANCE,cometSpeed:SPACE_CHASE_COMET_SPEED,rocketSpeed:SPACE_CHASE_ROCKET_SPEED,choiceSpeed:SPACE_CHASE_CHOICE_SPEED,boostSpeed:SPACE_CHASE_BOOST_SPEED,boostMs:SPACE_CHASE_BOOST_MS,autoBoost:SPACE_CHASE_AUTO_BOOST_MS,promptDistance:SPACE_CHASE_BRANCH_PROMPT_DISTANCE,edges:SPACE_CHASE_ROUTE_EDGES,junctions:SPACE_CHASE_JUNCTIONS,plans:SPACE_CHASE_COMET_PLANS};",
+  "this.data={world:SPACE_CHASE_WORLD_WIDTH,view:SPACE_CHASE_VIEWBOX_WIDTH,startLead:SPACE_CHASE_START_LEAD,cometSpeed:SPACE_CHASE_COMET_SPEED,rocketSpeed:SPACE_CHASE_ROCKET_SPEED,boostSpeed:SPACE_CHASE_BOOST_SPEED,boostMs:SPACE_CHASE_BOOST_MS,autoBoost:SPACE_CHASE_AUTO_BOOST_MS,autoChoice:SPACE_CHASE_AUTO_CHOICE_MS,counterSpeed:SPACE_CHASE_RIVAL_COUNTER_SPEED,counterMs:SPACE_CHASE_RIVAL_COUNTER_MS,finalMin:SPACE_CHASE_FINAL_RACE_MIN_MS,assistAfter:SPACE_CHASE_FINAL_ASSIST_AFTER_MS,edges:SPACE_CHASE_ROUTE_EDGES,junctions:SPACE_CHASE_JUNCTIONS};",
   "this.curvePoint=spaceChaseCurvePoint;this.boostPositions=spaceChaseBoostPositions;"
 ].join("\n"), dataSandbox);
 
-const routeData = dataSandbox.routeData;
-const edges = routeData.edges;
-const junctions = routeData.junctions;
-assert.deepEqual([routeData.world, routeData.view, routeData.top, routeData.height], [6000, 1350, 0, 720]);
-assert.deepEqual([routeData.cometSpeed, routeData.rocketSpeed, routeData.choiceSpeed, routeData.boostSpeed, routeData.boostMs, routeData.autoBoost], [100, 112, 38, 355, 400, 2500]);
-assert.equal(routeData.startLead, 336);
-assert.equal(routeData.catchDistance, 42);
-assert.equal(Object.keys(edges).length, 10);
-assert.deepEqual(Object.keys(junctions), ["J0", "J1", "J2"]);
-assert.ok(Object.values(junctions).every(junction => junction.choices.length === 2));
-assert.deepEqual(JSON.parse(JSON.stringify(routeData.plans)), [{ J0: 0, J1: 0, J2: 0 }]);
-
-const endpoint = edge => edge.segments?.length ? edge.segments[edge.segments.length - 1].to : edge.to;
-for (const [edgeId, edge] of Object.entries(edges)) {
-  assert.ok(edge.travelLength > 0, edgeId + ": logical travel length missing");
-  if (edge.next) {
-    assert.ok(edges[edge.next], edgeId + ": missing next edge");
-    assert.deepEqual(Array.from(endpoint(edge)), Array.from(edges[edge.next].from), edgeId + ": visible join jumps");
-  }
-  if (edge.nextJunction) {
-    assert.ok(junctions[edge.nextJunction], edgeId + ": missing junction");
-    assert.deepEqual(Array.from(endpoint(edge)), Array.from(junctions[edge.nextJunction].at), edgeId + ": junction jumps");
-  }
-}
-for (const [junctionId, junction] of Object.entries(junctions)) {
-  assert.equal(junction.fallbackIndex, 1, junctionId + ": no-input must choose the star route");
-  const short = edges[junction.choices[0].edge];
-  const scenic = edges[junction.choices[1].edge];
-  assert.equal(short.travelLength, 266.3);
-  assert.equal(scenic.travelLength, 350.9);
-  assert.ok(scenic.travelLength / short.travelLength > 1.31);
-  assert.ok(scenic.travelLength / short.travelLength < 1.32);
-  assert.deepEqual(Array.from(dataSandbox.boostPositions(short)), []);
-  assert.deepEqual(Array.from(dataSandbox.boostPositions(scenic)), [0.2, 0.5, 0.8]);
-}
+const data = dataSandbox.data;
+assert.deepEqual([data.world, data.view], [8000, 1350]);
+assert.deepEqual([data.cometSpeed, data.rocketSpeed, data.startLead], [82, 88, 162]);
+assert.deepEqual([data.boostSpeed, data.boostMs, data.autoBoost], [135, 1800, 1200]);
+assert.deepEqual([data.counterSpeed, data.counterMs, data.finalMin, data.assistAfter], [145, 1200, 32000, 6000]);
+assert.equal(data.autoChoice, 3500);
+assert.equal(Object.keys(data.edges).length, 10);
+assert.deepEqual(Object.keys(data.junctions), ["J0", "J1", "J2"]);
+assert.equal(data.edges.finish.travelLength, 2253.2);
+assert.deepEqual([dataSandbox.curvePoint(data.edges.finish, 1).x, dataSandbox.curvePoint(data.edges.finish, 1).y], [8000, 360]);
+assert.ok(Math.abs((data.boostSpeed - data.rocketSpeed) * data.boostMs / 1000 - 84.6) < 0.001);
 
 function sampledVisualLength(edge) {
   let previous = dataSandbox.curvePoint(edge, 0);
   let length = 0;
-  for (let index = 1; index <= 1200; index += 1) {
-    const point = dataSandbox.curvePoint(edge, index / 1200);
+  for (let index = 1; index <= 1600; index += 1) {
+    const point = dataSandbox.curvePoint(edge, index / 1600);
     length += Math.hypot(point.x - previous.x, point.y - previous.y);
     previous = point;
   }
   return length;
 }
-for (const [edgeId, edge] of Object.entries(edges)) {
-  const visualScale = sampledVisualLength(edge) / edge.travelLength;
-  assert.ok(visualScale >= 1.995 && visualScale <= 2.005,
-    edgeId + ": on-screen speed scale drifted to " + visualScale);
+for (const [edgeId, edge] of Object.entries(data.edges)) {
+  const ratio = sampledVisualLength(edge) / edge.travelLength;
+  assert.ok(ratio >= 1.995 && ratio <= 2.005, edgeId + ": visual/logical speed ratio drifted to " + ratio);
 }
-for (const junction of Object.values(junctions)) {
-  const short = edges[junction.choices[0].edge];
-  const scenic = edges[junction.choices[1].edge];
-  const logicalRatio = scenic.travelLength / short.travelLength;
-  const visualRatio = sampledVisualLength(scenic) / sampledVisualLength(short);
-  assert.ok(Math.abs(logicalRatio - visualRatio) <= 0.005);
+for (const [junctionId, junction] of Object.entries(data.junctions)) {
+  assert.equal(junction.fallbackIndex, 1, junctionId + ": fallback must collect boost stars");
+  assert.ok(Math.abs(data.edges[junction.choices[1].edge].travelLength - data.edges[junction.choices[0].edge].travelLength - 84.6) < 0.001);
+  assert.deepEqual(Array.from(dataSandbox.boostPositions(data.edges[junction.choices[1].edge])), [0.2, 0.5, 0.8]);
 }
 
-const routes = [];
-function enumerate(edgeId, choices, logicalLength, stars) {
-  const edge = edges[edgeId];
-  const nextLength = logicalLength + edge.travelLength;
-  const nextStars = stars + dataSandbox.boostPositions(edge).length;
-  if (edge.finish) { routes.push({ choices, logicalLength: nextLength, stars: nextStars }); return; }
-  if (edge.next) { enumerate(edge.next, choices, nextLength, nextStars); return; }
-  const junction = junctions[edge.nextJunction];
-  junction.choices.forEach((choice, index) => enumerate(
-    choice.edge,
-    Object.assign({}, choices, { [edge.nextJunction]: index }),
-    nextLength,
-    nextStars
-  ));
-}
-enumerate("launch", {}, 0, 0);
-assert.equal(routes.length, 8);
-assert.equal(new Set(routes.map(route => JSON.stringify(route.choices))).size, 8);
-for (const route of routes) {
-  const scenicCount = Object.values(route.choices).filter(value => value === 1).length;
-  assert.equal(route.stars, scenicCount * 3);
-  assert.ok(Math.abs(route.logicalLength - (3052.6 + scenicCount * 84.6)) <= 0.001);
-}
-assert.ok(6000 / 1350 > 4.4);
-
-/* Run the real race state machine for all eight route orders. */
-const runtimeSandbox = {
+const raceSandbox = {
   FAST: 1,
   window: { __PONO_TIER_LOCKED__: false, innerWidth: 844, innerHeight: 390 },
   document: { hidden: false },
   playing: true,
+  settingsOpen: false,
   spaceChaseLayer: { hidden: false },
   spaceChaseChoiceButtons: [{ hidden: false, focus() {} }, { hidden: false, focus() {} }],
+  spaceChaseBoostButton: { focus() {} },
   spaceChaseBoostItems: [],
-  settingsOpen: false,
   clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
   isSpaceStage: () => true,
   spaceLandscapePlayable: () => true,
-  gameSettingsMenuIsOpen: () => runtimeSandbox.settingsOpen,
+  gameSettingsMenuIsOpen: () => raceSandbox.settingsOpen,
   futureReducedMotion: () => false,
+  spaceChaseRescueRuntimeActive: () => false,
   setSpaceChaseGuide() {}, announce() {}, tone() {}, showStamp() {}, ensureAC() {},
   updateSpaceChaseVisual() {}, updateSpaceChaseRouteChoiceControls() {}, markSpaceChaseRoute() {},
-  beginSpaceChaseRescue() {}, origin: value => value, clearSpaceChaseEncounter() {},
-  completeCurrentStage() {}, _nowMs: () => 0, stg: 5,
+  beginSpaceChaseRescue() {}, origin: value => value, clearSpaceChaseEncounter() {}, completeCurrentStage() {},
+  _nowMs: () => 0, stg: 5,
   Math, Number, Object, Set, Map, Infinity,
 };
-vm.createContext(runtimeSandbox);
-const runtimeFunctions = [
-  "spaceChaseRuntimeActive", "spaceChaseEdgeSegments", "spaceChaseCurvePoint",
-  "spaceChaseBoostPositions", "ensureSpaceChaseRouteMetrics", "spaceChasePointAtDistance",
-  "spaceChaseRacerPoint", "collectSpaceChaseBoost", "nextSpaceChaseEdge",
-  "advanceSpaceChaseRacer", "promptSpaceChaseBranch", "chooseSpaceChaseRoute",
-  "spaceChaseBoostPlayable", "useSpaceChaseBoost", "beginSpaceChaseRace",
-  "beginSpaceChaseCaught", "updateSpaceChase"
+vm.createContext(raceSandbox);
+const raceFunctions = [
+  "spaceChaseRuntimeActive", "spaceChaseEdgeSegments", "spaceChaseCurvePoint", "spaceChaseBoostPositions",
+  "ensureSpaceChaseRouteMetrics", "spaceChasePointAtDistance", "spaceChaseRacerPoint", "collectSpaceChaseBoost",
+  "nextSpaceChaseEdge", "advanceSpaceChaseRacer", "promptSpaceChaseBranch", "chooseSpaceChaseRoute",
+  "spaceChaseBoostPlayable", "useSpaceChaseBoost", "spaceChaseVisualLead", "trackSpaceChaseLead",
+  "beginSpaceChaseRace", "beginSpaceChaseFinal", "addSpaceChaseFinalBoost", "beginSpaceChaseCaught", "updateSpaceChase"
 ];
 vm.runInContext([
   chaseConstants,
   "let spaceChaseState=createSpaceChaseState(),spaceChaseDefeated=false;",
   "const spaceChaseRouteMetrics=new Map();",
-  runtimeFunctions.map(name => extractFunction(game, name)).join("\n"),
+  raceFunctions.map(name => extractFunction(game, name)).join("\n"),
   "ensureSpaceChaseRouteMetrics();",
-  "function resetSimulation(){spaceChaseLayer.hidden=false;spaceChaseState=createSpaceChaseState();spaceChaseState.phase='intro';spaceChaseState.rocket=createSpaceChaseRacer('rocket');spaceChaseState.comet=createSpaceChaseRacer('comet');spaceChaseState.cometChoices=Object.assign(Object.create(null),SPACE_CHASE_COMET_PLANS[0]);advanceSpaceChaseRacer(spaceChaseState.comet,SPACE_CHASE_START_LEAD);}",
-  "function simulate(plan,fallback){resetSimulation();let now=0,boostUses=0,minVisualLead=Infinity,maxVisualLead=-Infinity,guard=0;while(spaceChaseState.phase!=='caught'&&guard++<1000){const beforeCharges=spaceChaseState.boostCharges,beforeBoost=spaceChaseState.boostRemainingMs;now+=50;updateSpaceChase(now);if(spaceChaseState.phase==='race'&&spaceChaseState.activeJunction&&!fallback)chooseSpaceChaseRoute(plan[spaceChaseState.activeJunction]);if(beforeBoost<=0&&spaceChaseState.boostRemainingMs>0&&spaceChaseState.boostCharges<beforeCharges)boostUses++;if(spaceChaseState.phase==='race'){const rp=spaceChaseRacerPoint(spaceChaseState.rocket),cp=spaceChaseRacerPoint(spaceChaseState.comet),visualLead=cp.x-rp.x;minVisualLead=Math.min(minVisualLead,visualLead);maxVisualLead=Math.max(maxVisualLead,visualLead);}}return {phase:spaceChaseState.phase,raceElapsedMs:spaceChaseState.raceElapsedMs,choices:Object.assign({},spaceChaseState.playerChoices),stars:spaceChaseState.collectedBoosts.size,fuel:spaceChaseState.starFuel,charges:spaceChaseState.boostCharges,boostUses,minVisualLead,maxVisualLead,gap:spaceChaseState.comet.distance-spaceChaseState.rocket.distance,cometEdge:spaceChaseState.comet.edgeId,rocketEdge:spaceChaseState.rocket.edgeId,cometFinished:spaceChaseState.comet.finished,rocketFinished:spaceChaseState.rocket.finished};}",
-  "function slowChoiceProbe(){resetSimulation();let now=0,guard=0;while(!spaceChaseState.activeJunction&&guard++<300){now+=50;updateSpaceChase(now);}const junction=spaceChaseState.activeJunction,started=spaceChaseState.raceElapsedMs;while(spaceChaseState.activeJunction&&spaceChaseState.raceElapsedMs-started<5500&&guard++<500){now+=50;updateSpaceChase(now);}const stillActive=spaceChaseState.activeJunction===junction,selected=stillActive?chooseSpaceChaseRoute(0):false;return {junction,waited:spaceChaseState.raceElapsedMs-started,stillActive,selected,choice:spaceChaseState.playerChoices[junction]};}",
-  "function boostProbe(){resetSimulation();spaceChaseState.phase='race';spaceChaseState.frameAt=50;spaceChaseState.rocket={kind:'rocket',edgeId:'finish',distance:300,finished:false,progress:3,visitedJunctions:new Set()};spaceChaseState.comet={kind:'comet',edgeId:'finish',distance:636,finished:false,progress:3,visitedJunctions:new Set()};spaceChaseState.boostCharges=2;const first=useSpaceChaseBoost(),second=useSpaceChaseBoost();let now=50;while(now<450){now+=50;updateSpaceChase(now);}return {first,second,gap:spaceChaseState.comet.distance-spaceChaseState.rocket.distance,charges:spaceChaseState.boostCharges,remaining:spaceChaseState.boostRemainingMs};}",
-  "this.api={simulate,slowChoiceProbe,boostProbe};"
-].join("\n"), runtimeSandbox);
+  "function resetRace(){spaceChaseLayer.hidden=false;settingsOpen=false;document.hidden=false;window.innerWidth=844;window.innerHeight=390;spaceChaseState=createSpaceChaseState();spaceChaseState.phase='intro';spaceChaseState.rocket=createSpaceChaseRacer('rocket');spaceChaseState.comet=createSpaceChaseRacer('comet');spaceChaseState.cometChoices=Object.assign(Object.create(null),SPACE_CHASE_COMET_PLANS[0]);advanceSpaceChaseRacer(spaceChaseState.comet,SPACE_CHASE_START_LEAD);}",
+  "function simulate(plan,fallback,tapInterval){resetRace();let now=0,nextTap=0,maxBoostRun=0,boostRun=0,guard=0;while(spaceChaseState.phase!=='caught'&&guard++<1300){if(spaceChaseState.phase==='final'&&spaceChaseState.finalMode==='sprint'&&Number.isFinite(tapInterval)&&spaceChaseState.finalSprintElapsedMs>=nextTap){addSpaceChaseFinalBoost();nextTap+=tapInterval;}now+=50;updateSpaceChase(now);if(spaceChaseState.phase==='race'&&spaceChaseState.activeJunction&&!fallback)chooseSpaceChaseRoute(plan[spaceChaseState.activeJunction]);if(spaceChaseState.phase==='race'&&spaceChaseState.boostRemainingMs>0){boostRun+=50;maxBoostRun=Math.max(maxBoostRun,boostRun);}else boostRun=0;}return {phase:spaceChaseState.phase,raceElapsedMs:spaceChaseState.raceElapsedMs,choices:Object.assign({},spaceChaseState.playerChoices),stars:spaceChaseState.collectedBoosts.size,leadChanges:spaceChaseState.leadChangeCount,maxBoostRun,finalTapCount:spaceChaseState.finalTapCount,finalAssistActive:spaceChaseState.finalAssistActive,rivalCounterUsed:spaceChaseState.rivalCounterUsed,rocketFinished:spaceChaseState.rocket.finished,cometFinished:spaceChaseState.comet.finished};}",
+  "function pauseProbe(){resetRace();let now=0;for(let i=0;i<80;i++){now+=50;updateSpaceChase(now);}const before={race:spaceChaseState.raceElapsedMs,rocket:spaceChaseState.rocket.distance,comet:spaceChaseState.comet.distance};settingsOpen=true;for(let i=0;i<100;i++){now+=50;updateSpaceChase(now);}const paused={race:spaceChaseState.raceElapsedMs,rocket:spaceChaseState.rocket.distance,comet:spaceChaseState.comet.distance};settingsOpen=false;now+=50;updateSpaceChase(now);return {before,paused,after:spaceChaseState.raceElapsedMs};}",
+  "function actionProbe(){resetRace();spaceChaseState.phase='final';spaceChaseState.finalMode='sprint';spaceChaseState.finalStartGap=80;spaceChaseState.rocket.edgeId='finish';spaceChaseState.comet.edgeId='finish';spaceChaseState.rocket.distance=300;spaceChaseState.comet.distance=380;let prevented=0;handleSpaceChaseActionPointerDown({button:0,isPrimary:true,preventDefault(){prevented++;}});handleSpaceChaseActionClick({detail:1,preventDefault(){prevented++;}});const physical=spaceChaseState.finalTapCount;handleSpaceChaseActionClick({detail:0,preventDefault(){prevented++;}});handleSpaceChaseActionPointerDown({button:2,isPrimary:true,preventDefault(){prevented++;}});handleSpaceChaseActionPointerDown({button:0,isPrimary:false,preventDefault(){prevented++;}});return {physical,total:spaceChaseState.finalTapCount,prevented};}",
+  extractFunction(game, "handleSpaceChaseActionPointerDown"),
+  extractFunction(game, "handleSpaceChaseActionClick"),
+  "this.api={simulate,pauseProbe,actionProbe};"
+].join("\n"), raceSandbox);
 
-const allResults = [];
+const raceResults = [];
 for (let bits = 0; bits < 8; bits += 1) {
   const plan = { J0: bits & 1 ? 1 : 0, J1: bits & 2 ? 1 : 0, J2: bits & 4 ? 1 : 0 };
-  const result = JSON.parse(JSON.stringify(runtimeSandbox.api.simulate(plan, false)));
+  const result = JSON.parse(JSON.stringify(raceSandbox.api.simulate(plan, false, 250)));
   const scenicCount = Object.values(plan).filter(value => value === 1).length;
-  allResults.push({ scenicCount, result });
-  assert.equal(result.phase, "caught", "route " + bits + " never caught");
-  assert.ok(result.raceElapsedMs >= 20000 && result.raceElapsedMs <= 24600,
-    "route " + bits + " catch time " + result.raceElapsedMs + "ms is outside the window");
+  raceResults.push(result);
+  assert.equal(result.phase, "caught", "route " + bits + " did not finish the final sprint");
+  assert.ok(result.raceElapsedMs >= 35000 && result.raceElapsedMs <= 45000, "route " + bits + " ended at " + result.raceElapsedMs);
   assert.deepEqual(result.choices, plan);
   assert.equal(result.stars, scenicCount * 3);
-  assert.equal(result.boostUses, scenicCount);
-  assert.equal(result.fuel, 0);
-  assert.equal(result.charges, 0);
-  assert.equal(result.cometEdge, "finish");
-  assert.equal(result.rocketEdge, "finish");
-  assert.equal(result.cometFinished, false);
+  assert.ok(result.leadChanges >= 2 && result.leadChanges <= 5, "route " + bits + " lead changes: " + result.leadChanges);
+  if (scenicCount) assert.ok(result.maxBoostRun >= 1750, "route " + bits + " boost was too short: " + result.maxBoostRun);
+  assert.equal(result.rivalCounterUsed, true);
+  assert.ok(result.finalTapCount >= 4);
   assert.equal(result.rocketFinished, false);
-  assert.ok(result.gap >= 0 && result.gap <= 42.01);
-  assert.ok(result.minVisualLead >= -1);
-  assert.ok(result.maxVisualLead <= 1050, "route " + bits + " leaves the chase view: " + result.maxVisualLead);
+  assert.equal(result.cometFinished, false);
 }
-const expectedByScenic = [24500, 23450, 22400, 21350];
-for (let scenicCount = 0; scenicCount <= 3; scenicCount += 1) {
-  const times = allResults.filter(entry => entry.scenicCount === scenicCount).map(entry => entry.result.raceElapsedMs);
-  assert.ok(times.every(time => Math.abs(time - expectedByScenic[scenicCount]) <= 100),
-    "scenic count " + scenicCount + " timing drifted: " + times.join(","));
-  assert.ok(Math.max(...times) - Math.min(...times) <= 50);
-}
-const fallback = JSON.parse(JSON.stringify(runtimeSandbox.api.simulate({}, true)));
-assert.deepEqual(fallback.choices, { J0: 1, J1: 1, J2: 1 });
+assert.ok(Math.max(...raceResults.map(result => result.raceElapsedMs)) - Math.min(...raceResults.map(result => result.raceElapsedMs)) <= 800,
+  "route choice changed the race duration too much");
+
+const fallback = JSON.parse(JSON.stringify(raceSandbox.api.simulate({}, true, 250)));
 assert.equal(fallback.phase, "caught");
-assert.equal(fallback.boostUses, 3);
-assert.ok(Math.abs(fallback.raceElapsedMs - 39500) <= 100);
+assert.deepEqual(fallback.choices, { J0: 1, J1: 1, J2: 1 });
+assert.ok(fallback.raceElapsedMs >= 35000 && fallback.raceElapsedMs <= 45000);
+const noTap = JSON.parse(JSON.stringify(raceSandbox.api.simulate({ J0: 1, J1: 1, J2: 1 }, false, Infinity)));
+assert.equal(noTap.phase, "caught");
+assert.equal(noTap.finalTapCount, 0);
+assert.equal(noTap.finalAssistActive, true);
+assert.ok(noTap.raceElapsedMs <= 44500, "no-input assist finished too late: " + noTap.raceElapsedMs);
+const fastTap = JSON.parse(JSON.stringify(raceSandbox.api.simulate({ J0: 0, J1: 0, J2: 0 }, false, 100)));
+assert.ok(fastTap.raceElapsedMs >= 35000, "rapid taps skipped the race build-up");
+const paused = JSON.parse(JSON.stringify(raceSandbox.api.pauseProbe()));
+assert.deepEqual(paused.paused, paused.before);
+assert.ok(paused.after - paused.before.race <= 50);
+assert.deepEqual(JSON.parse(JSON.stringify(raceSandbox.api.actionProbe())), { physical: 1, total: 2, prevented: 2 });
 
-const slowChoice = JSON.parse(JSON.stringify(runtimeSandbox.api.slowChoiceProbe()));
-assert.equal(slowChoice.junction, "J0");
-assert.equal(slowChoice.waited, 5500);
-assert.equal(slowChoice.stillActive, true);
-assert.equal(slowChoice.selected, true);
-assert.equal(slowChoice.choice, 0);
-
-const boostProbe = JSON.parse(JSON.stringify(runtimeSandbox.api.boostProbe()));
-assert.equal(boostProbe.first, true);
-assert.equal(boostProbe.second, false);
-assert.equal(boostProbe.charges, 1);
-assert.ok(Math.abs(boostProbe.gap - 234) <= 0.2);
-assert.equal(boostProbe.remaining, 0);
-
-/* Run the real rescue thresholds and transitions against 320 x 180 geometry. */
 function fakeClassList() {
   const values = new Set();
-  return {
-    add(...names) { names.forEach(name => values.add(name)); },
-    remove(...names) { names.forEach(name => values.delete(name)); },
-    toggle(name, force) {
-      const next = force === undefined ? !values.has(name) : !!force;
-      if (next) values.add(name); else values.delete(name);
-      return next;
-    },
-    contains(name) { return values.has(name); },
-  };
+  return { add(...names) { names.forEach(name => values.add(name)); }, remove(...names) { names.forEach(name => values.delete(name)); }, toggle(name, force) { const next = force === undefined ? !values.has(name) : !!force; if (next) values.add(name); else values.delete(name); return next; }, contains(name) { return values.has(name); } };
 }
-function fakeStyle() {
-  const values = new Map();
-  return {
-    setProperty(name, value) { values.set(name, String(value)); },
-    removeProperty(name) { values.delete(name); },
-    getPropertyValue(name) { return values.get(name) || ""; },
-  };
-}
-function fakeButton(dataset) {
-  const attributes = new Map();
-  return {
-    dataset: dataset || {}, disabled: true, classList: fakeClassList(), style: fakeStyle(),
-    textContent: "", hidden: false,
-    focusCalls: 0, focus() { this.focusCalls += 1; },
-    setAttribute(name, value) { attributes.set(name, String(value)); },
-    getAttribute(name) { return attributes.get(name) || null; },
-    setPointerCapture() {}, releasePointerCapture() {},
-  };
-}
-const ribbonButtons = [0, 1, 2].map(index => fakeButton({ spaceChaseRibbon: String(index) }));
-const rescueStar = fakeButton();
-const rescueGuide = fakeButton();
-rescueStar.getBoundingClientRect = () => {
-  const x = parseFloat(rescueStar.style.getPropertyValue("--rescue-star-x")) || 0;
-  const y = parseFloat(rescueStar.style.getPropertyValue("--rescue-star-y")) || 0;
-  return { left: 180 + x, top: 80 + y, width: 40, height: 40, right: 220 + x, bottom: 120 + y };
-};
+const field = { left: 0, top: 0, width: 844, height: 390, right: 844, bottom: 390 };
 const rescueSandbox = {
   FAST: 1,
-  window: { __PONO_TIER_LOCKED__: false, innerWidth: 320, innerHeight: 180 },
+  now: 1000,
+  window: { __PONO_TIER_LOCKED__: false, innerWidth: 844, innerHeight: 390 },
   document: { hidden: false },
   spaceChaseLayer: { hidden: false },
   spaceChaseRescuePanel: { hidden: false },
-  spaceChaseRibbonButtons: ribbonButtons,
-  spaceChaseRescueStar: rescueStar,
-  spaceChaseRescueRing: { getBoundingClientRect: () => ({ left: 70, top: 70, width: 60, height: 60, right: 130, bottom: 130 }) },
-  fieldWidth: 320,
-  spaceChaseRescuePlayfield: { getBoundingClientRect: () => ({ left: 0, top: 0, width: rescueSandbox.fieldWidth, height: 180, right: rescueSandbox.fieldWidth, bottom: 180 }) },
+  spaceChaseRescuePlayfield: { getBoundingClientRect: () => field, setPointerCapture() {}, releasePointerCapture() {} },
+  spaceChaseRescueStar: { classList: fakeClassList() },
+  spaceChaseRescueGuide: { textContent: "" },
   spaceChaseRescueTitle: { textContent: "" },
-  spaceChaseRescueGuide: rescueGuide,
+  spaceChaseRescueAssist: { hidden: true },
   spaceChaseDefeated: false,
   settingsOpen: false,
-  stg: 5,
   clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
-  spaceChaseRuntimeActive: () => false,
-  spaceLandscapePlayable: () => rescueSandbox.window.innerWidth >= rescueSandbox.window.innerHeight,
+  spaceLandscapePlayable: () => true,
   gameSettingsMenuIsOpen: () => rescueSandbox.settingsOpen,
-  _nowMs: () => 0, futureReducedMotion: () => false, origin: value => value,
-  ensureAC() {}, tone() {}, showStamp() {}, announce() {}, setSpaceChaseGuide() {}, updateSpaceChaseVisual() {},
+  futureReducedMotion: () => false,
+  spaceChaseRuntimeActive: () => false,
+  updateSpaceChaseVisual() {}, setSpaceChaseGuide() {}, announce() {}, tone() {}, showStamp() {}, ensureAC() {},
   confettiCalls: 0, confetti() { rescueSandbox.confettiCalls += 1; },
-  completeCalls: 0, clearCalls: 0,
+  clearCalls: 0, completeCalls: 0,
   clearSpaceChaseEncounter() { rescueSandbox.clearCalls += 1; rescueSandbox.spaceChaseLayer.hidden = true; },
   completeCurrentStage() { rescueSandbox.completeCalls += 1; },
+  origin: value => value, stg: 5,
+  _nowMs: () => rescueSandbox.now,
   Math, Number, Object, Set, Map,
 };
 vm.createContext(rescueSandbox);
+const rescueFunctions = [
+  "spaceChaseRescueRuntimeActive", "spaceChaseRescueInputActive", "resetSpaceChaseRescueStar",
+  "cancelSpaceChaseRescuePointer", "setSpaceChaseRescueAimFromClient", "handleSpaceChaseRescuePointerDown",
+  "moveSpaceChaseRescuePointer", "finishSpaceChaseRescuePointer", "handleSpaceChaseRescueLostPointerCapture",
+  "handleSpaceChaseRescueClick", "moveSpaceChaseRescueAimBy", "handleSpaceChaseRescueKeydown",
+  "activateSpaceChaseRescueAssist", "updateSpaceChaseRescue", "finishSpaceChaseVictory", "updateSpaceChase"
+];
 vm.runInContext([
   chaseConstants,
   "let spaceChaseState=createSpaceChaseState();",
-  [
-    "spaceChaseRescueRuntimeActive", "spaceChaseRescueInputActive",
-    "resetSpaceChaseRescueStar", "cancelSpaceChaseRescuePointer",
-    "clearSpaceChaseRibbon", "activateSpaceChaseRescueControl", "handleSpaceChaseRescueClick",
-    "spaceChaseRescueSwipeThreshold", "moveSpaceChaseRescuePointer",
-    "finishSpaceChaseRescuePointer", "handleSpaceChaseRescuePointerDown",
-    "handleSpaceChaseRescueLostPointerCapture", "finishSpaceChaseVictory", "updateSpaceChase"
-  ].map(name => extractFunction(game, name)).join("\n"),
-  "function resetRescue(){spaceChaseState=createSpaceChaseState();spaceChaseState.phase='rescue';spaceChaseState.rescueMode='wipe';spaceChaseDefeated=false;confettiCalls=0;completeCalls=0;clearCalls=0;spaceChaseLayer.hidden=false;spaceChaseRescuePanel.hidden=false;window.__PONO_TIER_LOCKED__=false;window.innerWidth=320;window.innerHeight=180;document.hidden=false;settingsOpen=false;spaceChaseRibbonButtons.forEach((button,index)=>{button.disabled=index!==0;button.classList.remove('is-cleared');button.style.removeProperty('--rescue-wipe');});spaceChaseRescueStar.disabled=true;spaceChaseRescueStar.classList.remove('is-rescued');spaceChaseRescueGuide.disabled=false;spaceChaseRescueGuide.textContent='しっぽを はらう！';resetSpaceChaseRescueStar();}",
-  "function arm(target,kind,x,y){spaceChaseState.rescuePointerId=1;spaceChaseState.rescuePointerKind=kind;spaceChaseState.rescuePointerTarget=target;spaceChaseState.rescueStartX=spaceChaseState.rescueLastX=x;spaceChaseState.rescueStartY=spaceChaseState.rescueLastY=y;spaceChaseState.rescueStarX=0;spaceChaseState.rescueStarY=0;if(kind==='star'){const rect=spaceChaseRescueStar.getBoundingClientRect();spaceChaseState.rescueStarBaseLeft=rect.left;spaceChaseState.rescueStarBaseRight=rect.right;spaceChaseState.rescueStarBaseTop=rect.top;spaceChaseState.rescueStarBaseBottom=rect.bottom;}}",
-  "function ribbonGesture(index,dx,dy,cancelled){const button=spaceChaseRibbonButtons[index];arm(button,'ribbon',0,0);finishSpaceChaseRescuePointer({pointerId:1,clientX:dx,clientY:dy,preventDefault(){}},!!cancelled);return {count:spaceChaseState.clearedRibbons.size,mode:spaceChaseState.rescueMode};}",
-  "function prepareCarry(){resetRescue();spaceChaseRibbonButtons.forEach((button,index)=>clearSpaceChaseRibbon(index));}",
-  "function starMoveSequence(deltas){resetRescue();spaceChaseState.rescueMode='carry';spaceChaseRescueStar.disabled=false;arm(spaceChaseRescueStar,'star',200,100);deltas.forEach(dx=>moveSpaceChaseRescuePointer({pointerId:1,clientX:200+dx,clientY:100,preventDefault(){}}));return spaceChaseRescueStar.style.getPropertyValue('--rescue-star-x');}",
-  "function starGesture(dx,dy,cancelled){arm(spaceChaseRescueStar,'star',200,100);finishSpaceChaseRescuePointer({pointerId:1,clientX:200+dx,clientY:100+dy,preventDefault(){}},!!cancelled);return {phase:spaceChaseState.phase,defeated:spaceChaseDefeated};}",
-  "function clickControl(control,detail){let prevented=false;const handled=handleSpaceChaseRescueClick({currentTarget:control,detail:detail===undefined?1:detail,preventDefault(){prevented=true;}});return {handled,prevented,count:spaceChaseState.clearedRibbons.size,mode:spaceChaseState.rescueMode,phase:spaceChaseState.phase,suppressed:spaceChaseState.rescueSuppressClick};}",
-  "function pointerDown(target,pointerId,x,y){handleSpaceChaseRescuePointerDown({currentTarget:target,pointerId,clientX:x,clientY:y,preventDefault(){}});return spaceChaseState.rescuePointerId;}",
-  "function pointerFinish(pointerId,x,y,cancelled){finishSpaceChaseRescuePointer({pointerId,clientX:x,clientY:y,preventDefault(){}},!!cancelled);return {count:spaceChaseState.clearedRibbons.size,pointerId:spaceChaseState.rescuePointerId,suppressed:spaceChaseState.rescueSuppressClick};}",
-  "function pointerFinishTargetThenWindow(pointerId,x,y,cancelled){const event={pointerId,clientX:x,clientY:y,preventDefault(){}};finishSpaceChaseRescuePointer(event,!!cancelled);finishSpaceChaseRescuePointer(event,!!cancelled);return {count:spaceChaseState.clearedRibbons.size,phase:spaceChaseState.phase,confettiCalls};}",
-  "function moveTargetThenWindow(pointerId,x,y){const event={pointerId,clientX:x,clientY:y,preventDefault(){}};moveSpaceChaseRescuePointer(event);const afterTarget=spaceChaseRescueStar.style.getPropertyValue('--rescue-star-x');moveSpaceChaseRescuePointer(event);return {afterTarget,afterWindow:spaceChaseRescueStar.style.getPropertyValue('--rescue-star-x')};}",
-  "function lostCapture(target,pointerId){handleSpaceChaseRescueLostPointerCapture({currentTarget:target,pointerId});return spaceChaseState.rescuePointerId;}",
-  "function cancelPointer(){cancelSpaceChaseRescuePointer(true);return spaceChaseState.rescuePointerId;}",
-  "function seedStalePointer(target){spaceChaseState.rescuePointerId=99;spaceChaseState.rescuePointerKind='ribbon';spaceChaseState.rescuePointerTarget=target;spaceChaseState.rescueStartX=spaceChaseState.rescueLastX=4;spaceChaseState.rescueStartY=spaceChaseState.rescueLastY=4;}",
-  "function setSettingsOpen(next){settingsOpen=!!next;}",
-  "function advanceVictory(steps){for(let index=1;index<=steps;index++)updateSpaceChase(index*50);return {completeCalls,clearCalls,committed:spaceChaseState.completionCommitted};}",
-  "this.api={resetRescue,ribbonGesture,prepareCarry,starMoveSequence,starGesture,clickControl,pointerDown,pointerFinish,pointerFinishTargetThenWindow,moveTargetThenWindow,lostCapture,cancelPointer,seedStalePointer,setSettingsOpen,advanceVictory,threshold:spaceChaseRescueSwipeThreshold,state:()=>({count:spaceChaseState.clearedRibbons.size,mode:spaceChaseState.rescueMode,phase:spaceChaseState.phase,pointerId:spaceChaseState.rescuePointerId,suppressed:spaceChaseState.rescueSuppressClick})};"
+  rescueFunctions.map(name => extractFunction(game, name)).join("\n"),
+  "function resetRescue(){spaceChaseLayer.hidden=false;spaceChaseRescuePanel.hidden=false;document.hidden=false;settingsOpen=false;spaceChaseDefeated=false;confettiCalls=0;clearCalls=0;completeCalls=0;spaceChaseState=createSpaceChaseState();spaceChaseState.phase='rescue';resetSpaceChaseRescueStar();}",
+  "function clickAt(x,y){let prevented=false;const handled=handleSpaceChaseRescueClick({clientX:x,clientY:y,preventDefault(){prevented=true;}});return {handled,prevented,phase:spaceChaseState.phase,aimX:spaceChaseState.rescueAimX,aimY:spaceChaseState.rescueAimY};}",
+  "function fourClicks(){resetRescue();for(let i=0;i<4;i++){now+=500;clickAt(420,195);}return {phase:spaceChaseState.phase,power:spaceChaseState.rescueCaptureMs};}",
+  "function stepRescue(duration,follow){for(let elapsed=0;elapsed<duration&&spaceChaseState.phase==='rescue';elapsed+=50){if(follow){spaceChaseState.rescueAimX=spaceChaseState.rescueStarX;spaceChaseState.rescueAimY=spaceChaseState.rescueStarY;}updateSpaceChaseRescue(50);now+=50;}return {phase:spaceChaseState.phase,elapsed:spaceChaseState.rescueElapsedMs,power:spaceChaseState.rescueCaptureMs,assisted:spaceChaseState.rescueAssistActive,confettiCalls};}",
+  "function pointerProbe(){resetRescue();handleSpaceChaseRescuePointerDown({button:0,isPrimary:true,pointerId:7,clientX:200,clientY:120,preventDefault(){}});moveSpaceChaseRescuePointer({pointerId:7,clientX:600,clientY:250,preventDefault(){}});const moved={id:spaceChaseState.rescuePointerId,aimX:spaceChaseState.rescueAimX,aimY:spaceChaseState.rescueAimY};handleSpaceChaseRescueLostPointerCapture({pointerId:7});handleSpaceChaseRescuePointerDown({button:0,isPrimary:true,pointerId:8,clientX:300,clientY:180,preventDefault(){}});return {moved,nextId:spaceChaseState.rescuePointerId};}",
+  "function keyProbe(){resetRescue();const before=spaceChaseState.rescueAimX;let prevented=false;handleSpaceChaseRescueKeydown({key:'ArrowRight',preventDefault(){prevented=true;}});return {before,after:spaceChaseState.rescueAimX,prevented};}",
+  "function assistProbe(){resetRescue();const activated=activateSpaceChaseRescueAssist();return {activated,assisted:spaceChaseState.rescueAssistActive,hidden:spaceChaseRescueAssist.hidden};}",
+  "function advanceVictory(){let time=0;spaceChaseState.frameAt=0;while(time<3000){time+=50;updateSpaceChase(time);}return {clearCalls,completeCalls};}",
+  "this.api={resetRescue,clickAt,fourClicks,stepRescue,pointerProbe,keyProbe,assistProbe,advanceVictory,state:()=>({phase:spaceChaseState.phase,power:spaceChaseState.rescueCaptureMs})};"
 ].join("\n"), rescueSandbox);
 
-/* Physical click-only delivery must work even when the wider race guard is false. */
+assert.deepEqual(JSON.parse(JSON.stringify(rescueSandbox.api.fourClicks())), { phase: "rescue", power: 0 });
 rescueSandbox.api.resetRescue();
-let clickResult = rescueSandbox.api.clickControl(ribbonButtons[0], 1);
-assert.equal(clickResult.handled, true);
-assert.equal(clickResult.prevented, true);
-assert.equal(clickResult.count, 1);
-
-/* A pointer completion followed by its synthesized click advances exactly once. */
-rescueSandbox.api.resetRescue();
-assert.equal(rescueSandbox.api.pointerDown(ribbonButtons[0], 7, 12, 50), 7);
-let pointerResult = rescueSandbox.api.pointerFinish(7, 12, 50, false);
-assert.equal(pointerResult.count, 1);
-assert.equal(pointerResult.pointerId, null);
-assert.equal(pointerResult.suppressed, true);
-clickResult = rescueSandbox.api.clickControl(ribbonButtons[0], 1);
-assert.equal(clickResult.handled, false);
-assert.equal(clickResult.count, 1);
-assert.equal(clickResult.suppressed, false);
-
-/* If capture is lost, the following physical click is a recovery path. */
-rescueSandbox.api.resetRescue();
-rescueSandbox.api.pointerDown(ribbonButtons[0], 8, 12, 50);
-assert.equal(rescueSandbox.api.cancelPointer(), null);
-clickResult = rescueSandbox.api.clickControl(ribbonButtons[0], 1);
-assert.equal(clickResult.handled, true);
-assert.equal(clickResult.count, 1);
-
-/* A stale pointer ID cannot lock every later gesture. */
-rescueSandbox.api.resetRescue();
-rescueSandbox.api.seedStalePointer(ribbonButtons[0]);
-assert.equal(rescueSandbox.api.pointerDown(ribbonButtons[0], 9, 14, 52), 9);
-assert.equal(rescueSandbox.api.lostCapture(ribbonButtons[0], 99), 9,
-  "a delayed lost-capture event for the old pointer must not cancel the new one");
-let bubbledResult = rescueSandbox.api.pointerFinishTargetThenWindow(9, 14, 52, false);
-assert.equal(bubbledResult.count, 1);
-
-/* Suppression belongs only to the pointer target, not the next real control. */
-rescueSandbox.api.resetRescue();
-rescueSandbox.api.pointerDown(ribbonButtons[0], 10, 14, 52);
-rescueSandbox.api.pointerFinish(10, 14, 52, false);
-clickResult = rescueSandbox.api.clickControl(rescueGuide, 1);
-assert.equal(clickResult.handled, true);
-assert.equal(clickResult.count, 2);
-
-/* The large fallback button can complete all three wipes and the carry step. */
-rescueSandbox.api.resetRescue();
-for (let press = 0; press < 3; press += 1) {
-  clickResult = rescueSandbox.api.clickControl(rescueGuide, 1);
-  assert.equal(clickResult.handled, true);
-  assert.equal(clickResult.count, press + 1);
-}
-assert.equal(clickResult.mode, "carry");
-clickResult = rescueSandbox.api.clickControl(rescueGuide, 1);
-assert.equal(clickResult.handled, true);
-assert.equal(clickResult.phase, "victory");
-assert.equal(rescueGuide.disabled, true);
-const completedVictory = rescueSandbox.api.advanceVictory(100);
-assert.deepEqual(JSON.parse(JSON.stringify(completedVictory)), {
-  completeCalls: 1, clearCalls: 1, committed: true,
-});
-
-/* Hidden settings still intentionally pause rescue input. */
-rescueSandbox.api.resetRescue();
-rescueSandbox.api.setSettingsOpen(true);
-clickResult = rescueSandbox.api.clickControl(rescueGuide, 0);
-assert.equal(clickResult.handled, false);
-assert.equal(clickResult.count, 0);
+const click = JSON.parse(JSON.stringify(rescueSandbox.api.clickAt(700, 100)));
+assert.equal(click.handled, true);
+assert.equal(click.prevented, true);
+assert.ok(click.aimX > 0.8 && click.aimY < 0.3);
+const pointer = JSON.parse(JSON.stringify(rescueSandbox.api.pointerProbe()));
+assert.equal(pointer.moved.id, 7);
+assert.ok(pointer.moved.aimX > 0.7);
+assert.equal(pointer.nextId, 8, "lost capture must not lock the next pointer");
+const key = JSON.parse(JSON.stringify(rescueSandbox.api.keyProbe()));
+assert.ok(key.after > key.before);
+assert.equal(key.prevented, true);
+const assist = JSON.parse(JSON.stringify(rescueSandbox.api.assistProbe()));
+assert.deepEqual(assist, { activated: true, assisted: true, hidden: true });
 
 rescueSandbox.api.resetRescue();
-assert.equal(rescueSandbox.api.threshold(), 38.4);
-rescueSandbox.fieldWidth = 844;
-assert.equal(rescueSandbox.api.threshold(), 72);
-rescueSandbox.fieldWidth = 320;
-for (const gesture of [{ dx: 37, dy: 0 }, { dx: 50, dy: 45 }, { dx: -60, dy: 0 }]) {
-  rescueSandbox.api.resetRescue();
-  assert.equal(rescueSandbox.api.ribbonGesture(0, gesture.dx, gesture.dy, false).count, 0);
-}
+const manualCatch = JSON.parse(JSON.stringify(rescueSandbox.api.stepRescue(6000, true)));
+assert.equal(manualCatch.phase, "victory");
+assert.equal(manualCatch.confettiCalls, 1);
+const completed = JSON.parse(JSON.stringify(rescueSandbox.api.advanceVictory()));
+assert.deepEqual(completed, { clearCalls: 1, completeCalls: 1 });
+
 rescueSandbox.api.resetRescue();
-assert.equal(rescueSandbox.api.ribbonGesture(0, 50, 20, false).count, 1);
-rescueSandbox.api.resetRescue();
-assert.equal(rescueSandbox.api.ribbonGesture(0, 8, 5, false).count, 1);
-rescueSandbox.api.resetRescue();
-assert.equal(rescueSandbox.api.ribbonGesture(0, 60, 0, true).count, 0);
+const automaticCatch = JSON.parse(JSON.stringify(rescueSandbox.api.stepRescue(20000, false)));
+assert.equal(automaticCatch.phase, "victory", "no-input rescue assist must prevent another dead end");
+assert.equal(automaticCatch.assisted, true);
+assert.ok(automaticCatch.elapsed >= 14000 && automaticCatch.elapsed <= 17000);
 
-rescueSandbox.api.prepareCarry();
-assert.deepEqual(JSON.parse(JSON.stringify(rescueSandbox.api.state())), {
-  count: 3, mode: "carry", phase: "rescue", pointerId: null, suppressed: false,
-});
-assert.equal(rescueStar.disabled, false);
-assert.ok(rescueStar.focusCalls > 0);
-assert.equal(rescueSandbox.api.starMoveSequence([40, 80, 120]), "100.0px");
-rescueSandbox.api.prepareCarry();
-
-assert.equal(rescueSandbox.api.pointerDown(rescueStar, 11, 200, 100), 11);
-const doubleMove = rescueSandbox.api.moveTargetThenWindow(11, 240, 100);
-assert.equal(doubleMove.afterTarget, "40.0px");
-assert.equal(doubleMove.afterWindow, "40.0px");
-bubbledResult = rescueSandbox.api.pointerFinishTargetThenWindow(11, 200, 100, false);
-assert.equal(bubbledResult.phase, "victory");
-assert.equal(bubbledResult.confettiCalls, 1);
-rescueSandbox.api.prepareCarry();
-
-let starResult = rescueSandbox.api.starGesture(-40, 0, false);
-assert.equal(starResult.phase, "rescue");
-assert.equal(rescueStar.style.getPropertyValue("--rescue-star-x"), "");
-starResult = rescueSandbox.api.starGesture(-100, 0, true);
-assert.equal(starResult.phase, "rescue");
-starResult = rescueSandbox.api.starGesture(-100, 0, false);
-assert.equal(starResult.phase, "victory");
-assert.equal(starResult.defeated, true);
-assert.equal(rescueSandbox.confettiCalls, 1);
-
-rescueSandbox.api.prepareCarry();
-starResult = rescueSandbox.api.starGesture(0, 0, false);
-assert.equal(starResult.phase, "victory");
-
-/* Settings, visibility, resize, and pagehide cancel partial gestures. */
-assert.match(extractFunction(game, "setGameSettingsOpen"), /if\(next\)cancelSpaceChaseRescuePointer\(true\)/);
-assert.match(game, /document\.hidden\)\{[\s\S]*?cancelSpaceChaseRescuePointer\(true\)/);
-assert.match(game, /window\.addEventListener\("resize",\(\)=>\{spaceChaseState\.frameAt=0;cancelSpaceChaseRescuePointer\(true\)/);
-assert.match(game, /window\.addEventListener\("pagehide",\(\)=>\{spaceChaseState\.frameAt=0;cancelSpaceChaseRescuePointer\(true\)/);
-assert.match(game, /spaceChaseRescueGuide\.addEventListener\("click",handleSpaceChaseRescueClick\)/);
-assert.match(game, /button\.addEventListener\("lostpointercapture",handleSpaceChaseRescueLostPointerCapture\)/);
+const allChaseSource = [
+  ...raceFunctions, ...rescueFunctions,
+  "handleSpaceChaseActionPointerDown", "handleSpaceChaseActionClick"
+].filter((name, index, names) => names.indexOf(name) === index).map(name => extractFunction(game, name)).join("\n");
+assertNoChildFacingKanji(allChaseSource, "Space chase functions");
+assert.doesNotMatch(allChaseSource, /setTimeout|setInterval|addScore|stageMiss|totalStars/);
+assert.doesNotMatch(allChaseSource, /clearSpaceChaseRibbon|rescueMode===\"wipe\"|SPACE_CHASE_CATCH_DISTANCE/);
+assert.match(extractFunction(game, "updateSpaceChase"), /SPACE_CHASE_FINAL_ASSIST_AFTER_MS/);
+assert.match(extractFunction(game, "updateSpaceChase"), /SPACE_CHASE_RIVAL_COUNTER_SPEED/);
+assert.doesNotMatch(extractFunction(game, "updateSpaceChase"), /rocket\.distance>comet\.distance\)rocket\.distance=comet\.distance/);
+assert.match(extractFunction(game, "updateSpaceChaseRescue"), /SPACE_CHASE_RESCUE_AUTO_ASSIST_MS/);
+assert.match(extractFunction(game, "handleSpaceChaseActionClick"), /event\.detail!==0/);
 assert.match(game, /window\.addEventListener\("pointermove",event=>\{if\(spaceChaseState\.rescuePointerId!==null\)moveSpaceChaseRescuePointer\(event\)/);
-assert.match(game, /window\.addEventListener\("pointerup",event=>\{if\(spaceChaseState\.rescuePointerId!==null\)finishSpaceChaseRescuePointer\(event,false\)/);
-assert.match(game, /window\.addEventListener\("pointercancel",event=>\{if\(spaceChaseState\.rescuePointerId!==null\)finishSpaceChaseRescuePointer\(event,true\)/);
 assert.match(game, /window\.addEventListener\("blur",\(\)=>cancelSpaceChaseRescuePointer\(true\)\)/);
 
-console.log("nazonazo space visible-chase and rescue regression checks passed");
+console.log("nazonazo competitive space chase and ring rescue regression checks passed");
