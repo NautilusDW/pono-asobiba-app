@@ -52,7 +52,7 @@ function makeStore() {
   return { store, localStorage };
 }
 
-function buildSandbox() {
+function buildSandbox(opts) {
   const { localStorage } = makeStore();
   const sandbox = {
     window: {},
@@ -65,10 +65,12 @@ function buildSandbox() {
     JSON,
     Set,
     Array,
+    Promise,
     setTimeout,
     clearTimeout,
     requestAnimationFrame: (fn) => fn(),
   };
+  if (opts && opts.fetch) sandbox.fetch = opts.fetch;
   sandbox.window.localStorage = localStorage;
   sandbox.window.sessionStorage = sandbox.sessionStorage;
   vm.createContext(sandbox);
@@ -268,4 +270,40 @@ const ROOM_ITEMS_BY_ID = new Map(ROOM_ITEMS.map((it) => [it.id, it]));
   assert.ok(ids.indexOf("wall_mizutama") === -1, "stamp-rally-only id must disappear once PonoStampRally is gone");
 })();
 
-console.log("shop_furniture_catalog_regression: all assertions passed");
+// ===== 8) computeAchievementOnlyIds(): rewards.json の firstClearRewards (furn/deco) も merge されること =====
+// shop-catalog.js は自前 fetch で firstClearRewards を取り込む (非同期) ため、専用サンドボックスに
+// fetch スタブを注入し、fetch の then チェーンが解決するのを待ってから判定する。
+function testFirstClearRewardsAreAchievementOnly() {
+  const fetchStub = () => Promise.resolve({
+    ok: true,
+    json: () => Promise.resolve({
+      firstClearRewards: {
+        maze: {
+          gendered: true,
+          boy: { type: "deco", id: "furn_bear_1" },
+          girl: { type: "furn", id: "imp_furn_6b47778a" },
+        },
+        quizland: { type: "sea", id: "medaka" },
+      },
+    }),
+  });
+  const fcSandbox = buildSandbox({ fetch: fetchStub });
+  loadRealRoomItems(fcSandbox);
+  const fcCatalog = fcSandbox.window.PonoShopCatalog;
+
+  return Promise.resolve().then(() => Promise.resolve()).then(() => Promise.resolve()).then(() => {
+    const ids = Array.from(fcCatalog.computeAchievementOnlyIds());
+    assert.ok(ids.indexOf("furn_bear_1") !== -1, "firstClearRewards furn/deco (gendered.boy) reward id must be achievement-only");
+    assert.ok(ids.indexOf("imp_furn_6b47778a") !== -1, "firstClearRewards furn/deco (gendered.girl) reward id must be achievement-only");
+    assert.ok(ids.indexOf("medaka") === -1, "firstClearRewards sea-type reward id must NOT be achievement-only");
+  });
+}
+
+testFirstClearRewardsAreAchievementOnly()
+  .then(() => {
+    console.log("shop_furniture_catalog_regression: all assertions passed");
+  })
+  .catch((err) => {
+    console.error(err);
+    process.exitCode = 1;
+  });

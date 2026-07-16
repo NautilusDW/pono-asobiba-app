@@ -20,6 +20,31 @@
     if (entry.id && ROOM_CATALOG_REWARD_TYPES[entry.type]) ids.add(entry.id);
   }
 
+  // rewards.json の firstClearRewards (各ゲーム初回クリア報酬) は
+  // window.PonoStampRally 経由では取得できない (stamp-rally.js の _loadRewardsJSON は
+  // slotRewards/cardCompleteRewards しか見ておらず、かつ相対パスが shop/やadmin/から
+  // 404 する既知の問題があるため実質フォールバックのまま)。ここで独立に fetch し、
+  // 取得できた分だけ実績専用集合へ足す。失敗時は空集合のまま (既存ロジックに影響なし)。
+  var _firstClearAchievementIds = new Set();
+  (function _loadFirstClearRewardIds() {
+    try {
+      var scriptEl = document.currentScript;
+      var url = (scriptEl && scriptEl.src)
+        ? scriptEl.src.replace(/common\/shop-catalog\.js(\?.*)?$/, 'assets/data/rewards.json')
+        : '../assets/data/rewards.json';
+      fetch(url)
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (data) {
+          if (!data || !data.firstClearRewards) return;
+          var fcr = data.firstClearRewards;
+          for (var gameKey in fcr) {
+            if (Object.prototype.hasOwnProperty.call(fcr, gameKey)) _addRoomCatalogRewardId(_firstClearAchievementIds, fcr[gameKey]);
+          }
+        })
+        .catch(function () {});
+    } catch (e) {}
+  })();
+
   function computeAchievementOnlyIds() {
     var ids = new Set();
     try {
@@ -48,6 +73,10 @@
         var completeRewards = rally.CARD_COMPLETE_REWARDS || [];
         for (var ci = 0; ci < completeRewards.length; ci++) _addRoomCatalogRewardId(ids, completeRewards[ci]);
       }
+    } catch (e) {}
+    // firstClearRewards は fetch 完了まで空集合 (呼び出しタイミング次第で反映が遅れうる)。
+    try {
+      _firstClearAchievementIds.forEach(function (id) { ids.add(id); });
     } catch (e) {}
     return ids;
   }
