@@ -1,5 +1,10 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2241: なぞなぞトレイン宇宙面の追いつき後を、同じ画面での余韻から、しっぽの
+// 5ゲート操縦、3つのひかりロック、3段階のタイミング連打へ続く約50〜62秒の
+// 「すいせいごと だいきゅうしゅつ」に再構成。救出後は彗星の尾が虹色の線路となり、
+// 全6駅が星でつながるエンディングを追加 (batch:1329-nazonazo-grand-rescue)。
+// play.html PAGE_CACHE_VERSION / PONO_SW_VERSION は2241へ同期 (読込クエリは変更なし)。
 // v2240: batch:1318-stamp-rally-daily-challenge-merge。「今日のチャレンジ」(お題,
 // js/daily-quest.js)と新設スタンプラリーが同一画面に別々の日替わりバナーとして並んでいた
 // UXを一本化。お題クリア(PonoDailyQuestClearedイベント)でガチャボーナスに加えスタンプラリー
@@ -328,7 +333,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2240;
+const CACHE_VERSION = 2241;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
