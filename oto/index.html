@@ -3339,8 +3339,14 @@
     /* v(fix-settings-during-result): rhythm-complete (z-index:19) の backdrop が
        右上の #oto-settings-btn を覆ってタップ不能になっていた問題の修正。
        sets-collapsed を rhythm-complete より上 (>=20) に上げて、結果画面表示中も
-       設定ボタンがタップ可能な状態を保つ。 */
-    z-index: 30;
+       設定ボタンがタップ可能な状態を保つ。
+       2026-07-16 緊急対応 (07-16 追記で原因を訂正): js/game-stickers.js の
+       showStickerToast()/#game-acorn-reward 等、body 直下に追加される全画面演出
+       (z-index:99997〜99998) が app tier で発火し、同じ理屈でせっていボタンを覆って
+       タップ不能にする事故が発生 (common/first-clear.js 経由の報酬演出は oto では
+       skipImmediate:true のため対象外、詳細は下方の #set-trigger fail-safe proxy
+       コメント参照)。common/menu.js の .pono-menu-toggle と同じ基準まで底上げする。 */
+    z-index: 999995;
     display: flex;
     align-items: center;
     gap: 6px;
@@ -16171,10 +16177,65 @@ document.querySelectorAll('.speed-btn').forEach(function(b) {
     e.stopPropagation();
     if (popover.classList.contains('open')) close(); else open();
   });
+
+  // fail-safe (2026-07-16 緊急対応、07-16 追記で原因を訂正): #set-trigger は
+  // #app > .stage (container-type:size で独自スタッキングコンテキストを生成) の内側に
+  // あるため、.sets-collapsed 側で z-index をどれだけ上げても body 直下に追加される
+  // 全画面オーバーレイに物理的に覆われてタップ不能になる (containment の仕様上 z-index が
+  // 親コンテキスト内に閉じ込められるため)。 oto の実コード経路では
+  // common/first-clear.js の triggerFirstClearReward は skipImmediate:true で呼ばれており
+  // showTreasure/_simpleAfterMsg は oto 上では発火しない (報酬演出は play.html に遅延) —
+  // 実際にこの構造上の穴を突く経路は js/game-stickers.js の showStickerToast()
+  // (#game-sticker-toast, z-index:99998) と #game-acorn-reward (z-index:99997) で、
+  // どちらも document.body.appendChild で .stage の外側に生成され、 oto 内で
+  // skipImmediate なしに即時発火する (例: L11048 付近のどんぐり/シール報酬)。
+  // Oto は initMenu() を呼ばない ため common/menu.js の .pono-menu-toggle は DOM 未挿入
+  // (再利用不可) — 代わりに body 直下 (.stage の外側 = containment の影響を受けない) に
+  // 専用の透明プロキシを生成し、#set-trigger と同じ画面座標に重ねる。 実タップはそちらで
+  // 受けて trigger.click() を合成発火する (下の「外側クリックで閉じる」判定にも proxy を
+  // 含める必要がある。 でないと合成 click 直後に発火するネイティブ click が
+  // 「外側タップ」と誤認されて即座に閉じてしまう)。
+  var _setTriggerProxy = document.createElement('button');
+  _setTriggerProxy.type = 'button';
+  _setTriggerProxy.setAttribute('aria-hidden', 'true');
+  _setTriggerProxy.tabIndex = -1;
+  _setTriggerProxy.style.cssText = 'position:fixed;z-index:999995;opacity:0;border:none;padding:0;background:none;cursor:pointer;-webkit-tap-highlight-color:transparent;';
+  (function() {
+    function syncProxyRect() {
+      var r = trigger.getBoundingClientRect();
+      if (!r.width || !r.height) return;
+      _setTriggerProxy.style.top = Math.round(r.top) + 'px';
+      _setTriggerProxy.style.left = Math.round(r.left) + 'px';
+      _setTriggerProxy.style.width = Math.round(r.width) + 'px';
+      _setTriggerProxy.style.height = Math.round(r.height) + 'px';
+    }
+    _setTriggerProxy.addEventListener('pointerdown', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      trigger.click();
+    });
+    document.body.appendChild(_setTriggerProxy);
+    syncProxyRect();
+    window.addEventListener('resize', syncProxyRect);
+    window.addEventListener('orientationchange', function() {
+      setTimeout(syncProxyRect, 200);
+      setTimeout(syncProxyRect, 600);
+    });
+    // 2026-07-16 追記: body.rhythm-layout / .free-mode / .free-stage-layout などの
+    // class トグルだけで .stage の position/size (inset:0 ⇔ 中央16:9ボックス、
+    // _setModeButtons() 参照) が変わり #set-trigger の画面座標が動くケースは
+    // resize/orientationchange が発火しない。 body の class 属性変化を直接監視して
+    // 追従させることで、将来増える class トグルにも個別配線せず対応する。
+    if (window.MutationObserver) {
+      var _bodyClassObserver = new MutationObserver(syncProxyRect);
+      _bodyClassObserver.observe(document.body, { attributes: true, attributeFilter: ['class'] });
+    }
+  })();
+
   // 外側クリックで閉じる
   document.addEventListener('click', function(e) {
     if (!popover.classList.contains('open')) return;
-    if (popover.contains(e.target) || trigger.contains(e.target)) return;
+    if (popover.contains(e.target) || trigger.contains(e.target) || e.target === _setTriggerProxy) return;
     close();
   });
   if (homeBtn) homeBtn.addEventListener('click', function(e) {

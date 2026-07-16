@@ -9444,6 +9444,53 @@ document.getElementById('result-cat-btn').addEventListener('click', function(e) 
     setTimeout(_ponoRepositionDropdown, 200);
     setTimeout(_ponoRepositionDropdown, 600);
   });
+
+  // fail-safe (2026-07-16 緊急対応): #hud-settings-btn は #stage (fitStage() が
+  // transform:scale を適用しスタッキングコンテキストを生成) の内側にあるため、
+  // common/treasure.js 未読込時のフォールバック _simpleAfterMsg 等、body 直下に
+  // 追加される全画面演出 (z-index:99999) に物理的に覆われてタップ不能になる
+  // (containing block の外の要素に z-index で追い付けない)。
+  // common/menu.js が body 直下に生成する .pono-menu-toggle (containment の
+  // 影響を受けない・z-index 底上げ済み) を隠し 1px から #hud-settings-btn と同じ
+  // 画面座標の透明ヒットエリアへ切り替え、実タップをそちらで受ける。
+  // toggle 自身の pointerdown ハンドラ (common/menu.js) が openMenu/closeMenu と
+  // stopPropagation を担うので、ここではドロップダウン位置合わせのみ追加する。
+  // .pono-menu-toggle は initMenu() (難易度確定後) まで DOM に存在しないため、
+  // 出現をポーリングしてから配線する。
+  (function() {
+    var wired = false;
+    function wireToggleHitArea(menuToggle) {
+      if (wired) return;
+      wired = true;
+      function syncToggleHitArea() {
+        var r = settingsBtn.getBoundingClientRect();
+        if (!r.width || !r.height) return;
+        menuToggle.style.setProperty('pointer-events', 'auto', 'important');
+        menuToggle.style.setProperty('top', Math.round(r.top) + 'px', 'important');
+        menuToggle.style.setProperty('left', Math.round(r.left) + 'px', 'important');
+        menuToggle.style.setProperty('width', Math.round(r.width) + 'px', 'important');
+        menuToggle.style.setProperty('height', Math.round(r.height) + 'px', 'important');
+      }
+      menuToggle.addEventListener('pointerdown', _ponoRepositionDropdown);
+      syncToggleHitArea();
+      window.addEventListener('resize', syncToggleHitArea);
+      window.addEventListener('orientationchange', function() {
+        setTimeout(syncToggleHitArea, 200);
+        setTimeout(syncToggleHitArea, 600);
+      });
+    }
+    var pollTries = 0;
+    var pollId = setInterval(function() {
+      pollTries++;
+      var mt = document.querySelector('.pono-menu-toggle');
+      if (mt) {
+        clearInterval(pollId);
+        wireToggleHitArea(mt);
+      } else if (pollTries > 200) { // 最大 ~60s (initMenu が呼ばれないページ状態は想定外)
+        clearInterval(pollId);
+      }
+    }, 300);
+  })();
 })();
 
 // ═══════════════════════════════════════════════════════════

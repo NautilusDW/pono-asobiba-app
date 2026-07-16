@@ -36,7 +36,10 @@
       filter: brightness(var(--pono-display-brightness));
     }
     .pono-menu-toggle {
-      position: fixed; z-index: 9990;
+      /* fail-safe: 他モジュール(共通報酬演出等)の全画面オーバーレイ(最大 z-index:99999)に
+         せっていボタンが物理的に覆われて反応しなくなる事故を防ぐため、既知の最大値より
+         十分高い値に固定する (2026-07-16 緊急対応、common/treasure.js 等の詳細は対象外)。 */
+      position: fixed; z-index: 999995;
       top: max(12px, env(safe-area-inset-top));
       left: max(16px, env(safe-area-inset-left));
       width: 56px; height: 56px;
@@ -57,7 +60,7 @@
 
     /* ── Dropdown ── */
     .pono-dropdown {
-      position: fixed; z-index: 9989;
+      position: fixed; z-index: 999994;
       top: calc(max(12px, env(safe-area-inset-top)) + 46px);
       left: max(16px, env(safe-area-inset-left));
       background: rgba(255,255,255,0.96);
@@ -118,7 +121,7 @@
 
     /* ── Confirm overlay ── */
     .pono-confirm-overlay {
-      position: fixed; inset: 0; z-index: 99999;
+      position: fixed; inset: 0; z-index: 999996;
       background: rgba(0,0,0,0.5);
       display: flex; align-items: center; justify-content: center;
       opacity: 0; pointer-events: none;

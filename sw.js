@@ -1,5 +1,18 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2245: batch:1320-settings-button-unresponsive-investigation。緊急report「設定ボタンが
+// 迷路含む複数ゲームで反応しない」の根本原因を特定。batch:1318の宝箱/初回クリア報酬tier判定
+// 修正で、app tierにおいて#treasure-overlay(common/treasure.js)/_simpleAfterMsg(common/
+// first-clear.js)という全画面オーバーレイ(z-index:99999, document.body直下に兄弟要素として
+// 生成)が史上初めて実際に発火するようになり、common/menu.jsの設定ボタン(.pono-menu-toggle,
+// 旧z-index:9990)を含む画面全体のクリックを透明に吸収するようになっていた。common/menu.jsの
+// z-index群を999994〜999996へ底上げしmaze/puzzle/bentoを解消。oto/quizlandは設定ボタンが
+// CSS containment/transform-scaleで確立されたスタッキングコンテキスト内にあり単純なz-index
+// 底上げが効かないため、body直下の透明プロキシ(oto #set-trigger)・既存.pono-menu-toggleの
+// 転用(quizland #hud-settings-btn)で個別対応。independent reviewでoto側の原因コメント誤記
+// (実際の穴はjs/game-stickers.jsのトースト/どんぐり報酬オーバーレイ)とsyncProxyRect()が
+// body class変化(resize/orientationchange以外)に追従できない回帰リスクを検出・修正
+// (MutationObserverでbody class変化を監視)。play.html PAGE_CACHE_VERSION と同期 (2245)。
 // v2244: ブロッコリー小房の待機場所を既存の調理皿へ統一し、皿から鍋へ1個ずつ移す。
 // 塩入れは焼き工程と同じく瓶を水面へドラッグして上下に振る操作へ変更。泡を水面楕円で
 // マスクし、波紋と泡を白・グレーの輪郭だけにしてパースと温度感を修正
@@ -351,7 +364,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2244;
+const CACHE_VERSION = 2245;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
