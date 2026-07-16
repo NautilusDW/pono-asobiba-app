@@ -149,6 +149,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-07-16T08:40:14Z - 実績/スタンプラリー全面リバランス + ハイブリッドショップ実装 (batch:1317)
+- **タスク**: 実績/スタンプラリー全面リバランス + ハイブリッドショップ実装 (batch:1317)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 0
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {}
+- **サマリ**: 行動ログが空のため分析できません。
+
+
 ### 2026-07-16T08:05:37Z - shop-catalog.js の実績専用id集合にスタンプラリー報酬id(furn/deco/wall)を追加
 - **タスク**: shop-catalog.js の実績専用id集合にスタンプラリー報酬id(furn/deco/wall)を追加
 - **結果**: 成功
@@ -242,19 +255,6 @@ wrangler deploy                  # master 内容を production に
 
 ### 2026-07-16T06:50:16Z - 新ゲーム4本+wordmatchへの実績計装追加(ストリーム1b): nazonazo_correct/nazonazo_stage_clears/cooking_ingredients/cooking_recipes/quiz_sound_correct/quiz_sound_clears/writing_mori_daily_three + pono_played_デイリーラリー登録
 - **タスク**: 新ゲーム4本+wordmatchへの実績計装追加(ストリーム1b): nazonazo_correct/nazonazo_stage_clears/cooking_ingredients/cooking_recipes/quiz_sound_correct/quiz_sound_clears/writing_mori_daily_three + pono_played_デイリーラリー登録
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 0
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {}
-- **サマリ**: 行動ログが空のため分析できません。
-
-
-### 2026-07-16T03:12:15Z - admin/index.html の家具/実績/スタンプ付与条件一覧の可視性を調査(読み取りのみ)
-- **タスク**: admin/index.html の家具/実績/スタンプ付与条件一覧の可視性を調査(読み取りのみ)
 - **結果**: 成功
 - **理由**: N/A
 - **総アクション数**: 0
