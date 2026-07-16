@@ -29,7 +29,16 @@ test('broccoli is prepped first, then boils with particles on the stove', async 
   await expect(page.locator('#workshop-boil-game')).toHaveClass(/is-heat-on/);
   await expect(page.locator('#workshop-instruction')).toHaveText('しおを いれよう');
   await expect(page.locator('#workshop-boil-salt')).toHaveAttribute('src', /salt_shaker_still\.png/);
-  for (let i = 0; i < 3; i += 1) await page.locator('#workshop-scene').press('Enter');
+  const sceneBox = await page.locator('#workshop-scene').boundingBox();
+  const saltBox = await page.locator('#workshop-boil-salt').boundingBox();
+  if (!sceneBox || !saltBox) throw new Error('boil scene and salt shaker must be visible');
+  await page.mouse.move(saltBox.x + saltBox.width / 2, saltBox.y + saltBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(sceneBox.x + sceneBox.width * .5, sceneBox.y + sceneBox.height * .4, { steps: 4 });
+  await page.mouse.move(sceneBox.x + sceneBox.width * .5, sceneBox.y + sceneBox.height * .3, { steps: 2 });
+  await page.mouse.move(sceneBox.x + sceneBox.width * .5, sceneBox.y + sceneBox.height * .5, { steps: 2 });
+  await page.mouse.move(sceneBox.x + sceneBox.width * .5, sceneBox.y + sceneBox.height * .3, { steps: 2 });
+  await page.mouse.up();
   await page.waitForTimeout(450);
   await expect(page.locator('#workshop-instruction')).toHaveText('おゆが わくまで まとう');
   await page.waitForTimeout(2100);
