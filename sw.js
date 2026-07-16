@@ -1,5 +1,9 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2230: みちつなぎ3面を「おかあさんのしるしまで→出口まで」の二段探索へ変更。
+// 中間到着でポノが実経路を歩き、通過済みの地形を固定して後半2手へ切替。GPT Image 2製の
+// 森地面／土道素材、地形一体型パネル、区間別の旅ゲージ／retryを追加した
+// (batch:1323-slide-checkpoint-prototype)。play.html PAGE_CACHE_VERSION と同期不要。
 // v2229: トントンキッチンの標準メニュー残り17品＋ごはん3種へ、食材選択、洗う／むく、
 // 指定の切り方、ゆでる／混ぜる、巻く／包む、炊飯／仕上げを順番に操作する共通調理画面を追加。
 // マウス／タッチ／キーボードに対応し、お弁当本体の現行完成画像へ統一した
@@ -253,7 +257,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2229;
+const CACHE_VERSION = 2230;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
