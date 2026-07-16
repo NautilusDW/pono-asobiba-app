@@ -59,8 +59,6 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
-- 2026-07-16 08:45 - by Codex - [batch:1315-nazonazo-route-balance] - nazonazo-tunnel/**, tests/nazonazo_*.cjs, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - 宇宙最終追跡の全経路を距離・秒速・スター加速後秒数で再計算し、遠回りが基本的に得になる追いつきバランスへ修正 [overlap: batch:1315-furniture-stamp-card-revival (sw.js)]
-
 - 2026-07-16 08:35 - by Claude - [batch:1315-furniture-stamp-card-revival] - 調査中 (play-all.html, play.html, room/index.html 該当箇所, AGENTS_CLAIMS.md, HANDOFF.md) - batch:1313の続き。家具の入手経路「スタンプカード」(_initStampRally/renderDailyRally/checkSlotReward) が本番play.htmlから到達可能か調査し、必要なら復活 (fable調査→sonnet5実装+クロスレビュー、オーケストレータは実装非従事)
 
 - 2026-06-28 09:27 - by Codex - [batch:877-gacha-tray-mask-lower] - play.html, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - ガチャ受け皿マスクが上すぎるため奥壁ラインを下げて再調整 [overlap: batch:860-data-export-import]
