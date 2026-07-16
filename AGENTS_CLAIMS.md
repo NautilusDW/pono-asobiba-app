@@ -59,8 +59,6 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
-- 2026-07-16 15:10 - by Codex - [batch:1320-slide-no-early-catch] - slide/index.html, tests/slide_*.cjs, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - 途中の紙芝居でポノと母が重なる誤進行を直し、最終面だけで再会させる [overlap: batch:1317-furniture-reward-rebalance (sw.js)]
-
 - 2026-07-16 15:04 - by Claude - [batch:1317-furniture-reward-rebalance] - 設計中 (common/achievements.js, common/stamp-rally.js, quiz-sound/index.html, nazonazo-tunnel/**, bento/kitchen.html, writing-mori/index.html, play.html, admin/index.html, shop/index.html, room/index.html, sw.js) - batch:1316の続き。旧ゲーム実績のアーカイブ化+報酬付け替え、新ゲーム3本への実績追加、デイリーラリーUI復活、PROFILE_GOALS二重管理解消、管理画面横断ビュー追加、案2ハイブリッドショップ実装 (fable設計→sonnet5並列実装+エージェント相互クロスレビュー、オーケストレータは実装非従事)
 
 - 2026-06-28 09:27 - by Codex - [batch:877-gacha-tray-mask-lower] - play.html, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - ガチャ受け皿マスクが上すぎるため奥壁ラインを下げて再調整 [overlap: batch:860-data-export-import]
