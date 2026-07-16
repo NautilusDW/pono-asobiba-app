@@ -639,7 +639,7 @@ const SPACE_CHASE_COMET_PLANS=Object.freeze([
  Object.freeze({J0:0,J1:0,J2:0})
 ]);
 function createSpaceChaseRacer(kind){return {kind,edgeId:"launch",distance:0,finished:false,progress:0,visitedJunctions:new Set()};}
-function createSpaceChaseState(){return {phase:"idle",phaseElapsedMs:0,frameAt:0,raceElapsedMs:0,rocket:null,comet:null,playerChoices:Object.create(null),cometChoices:Object.create(null),activeJunction:"",starFuel:0,boostCharges:0,boostRemainingMs:0,boostReadyElapsedMs:0,collectedBoosts:new Set(),rescueMode:"wipe",clearedRibbons:new Set(),rescuePointerId:null,rescuePointerKind:"",rescuePointerTarget:null,rescueStartX:0,rescueStartY:0,rescueLastX:0,rescueLastY:0,rescueStarX:0,rescueStarY:0,rescueStarBaseLeft:0,rescueStarBaseRight:0,rescueStarBaseTop:0,rescueStarBaseBottom:0,rescueSuppressClick:false,completionCommitted:false};}
+function createSpaceChaseState(){return {phase:"idle",phaseElapsedMs:0,frameAt:0,raceElapsedMs:0,rocket:null,comet:null,playerChoices:Object.create(null),cometChoices:Object.create(null),activeJunction:"",starFuel:0,boostCharges:0,boostRemainingMs:0,boostReadyElapsedMs:0,collectedBoosts:new Set(),rescueMode:"wipe",clearedRibbons:new Set(),rescuePointerId:null,rescuePointerKind:"",rescuePointerTarget:null,rescueStartX:0,rescueStartY:0,rescueLastX:0,rescueLastY:0,rescueStarX:0,rescueStarY:0,rescueStarBaseLeft:0,rescueStarBaseRight:0,rescueStarBaseTop:0,rescueStarBaseBottom:0,rescueSuppressClick:false,rescueSuppressClickTarget:null,completionCommitted:false};}
 let spaceRepairOptions=[],spaceRepairPhase="idle",spaceRepairSelectedIndex=-1,spaceRepairActiveScrew=-1;
 let spaceRepairProgress=[0,0,0],spaceRepairRotations=[0,0,0],spaceRepairCharge=0,spaceRepairChargeLastAt=0,spaceRepairResolving=false,spaceRepairAssisted=false;
 let spaceRepairPointerId=null,spaceRepairPointerTarget=null,spaceRepairPointerScrew=-1,spaceRepairPointerAngle=0;
@@ -4663,6 +4663,11 @@ function spaceChaseRuntimeActive(){
  return !window.__PONO_TIER_LOCKED__&&isSpaceStage()&&playing&&spaceChaseLayer&&!spaceChaseLayer.hidden&&
   spaceLandscapePlayable()&&!document.hidden&&!gameSettingsMenuIsOpen();
 }
+function spaceChaseRescueRuntimeActive(){
+ return !window.__PONO_TIER_LOCKED__&&(spaceChaseState.phase==="rescue"||spaceChaseState.phase==="victory")&&spaceChaseLayer&&!spaceChaseLayer.hidden&&
+  spaceChaseRescuePanel&&!spaceChaseRescuePanel.hidden&&spaceLandscapePlayable()&&!document.hidden&&!gameSettingsMenuIsOpen();
+}
+function spaceChaseRescueInputActive(){return spaceChaseState.phase==="rescue"&&spaceChaseRescueRuntimeActive();}
 function setSpaceChaseGuide(message,shouldAnnounce){
  const next=String(message||"");if(spaceChaseGuide&&spaceChaseGuide.textContent!==next)spaceChaseGuide.textContent=next;
  if(shouldAnnounce)announce(next);
@@ -4843,7 +4848,7 @@ function resetSpaceChaseRescueStar(){
  spaceChaseState.rescueStarX=0;spaceChaseState.rescueStarY=0;if(spaceChaseRescueStar){spaceChaseRescueStar.style.removeProperty("--rescue-star-x");spaceChaseRescueStar.style.removeProperty("--rescue-star-y");spaceChaseRescueStar.classList.remove("is-dragging","is-near");}
 }
 function cancelSpaceChaseRescuePointer(resetStar){
- const pointerId=spaceChaseState.rescuePointerId,target=spaceChaseState.rescuePointerTarget;spaceChaseState.rescuePointerId=null;spaceChaseState.rescuePointerKind="";spaceChaseState.rescuePointerTarget=null;
+ const pointerId=spaceChaseState.rescuePointerId,target=spaceChaseState.rescuePointerTarget;spaceChaseState.rescuePointerId=null;spaceChaseState.rescuePointerKind="";spaceChaseState.rescuePointerTarget=null;spaceChaseState.rescueSuppressClick=false;spaceChaseState.rescueSuppressClickTarget=null;
  if(target){target.style.removeProperty("--rescue-wipe");try{if(pointerId!==null)target.releasePointerCapture(pointerId);}catch(_){}}
  if(resetStar!==false)resetSpaceChaseRescueStar();
 }
@@ -4852,7 +4857,7 @@ function clearSpaceChaseEncounter(){
  spaceChaseState=createSpaceChaseState();document.body.classList.remove("space-chase-active");
  const board=spaceChaseBoard();if(board){board.classList.remove("is-boosting","has-boost","is-choosing","is-caught","is-rescuing","is-victory");board.removeAttribute("style");}
  resetSpaceChaseRouteVisuals();if(spaceChaseRouteChoices)spaceChaseRouteChoices.hidden=true;spaceChaseChoiceButtons.forEach(button=>{button.hidden=false;button.disabled=true;button.setAttribute("aria-pressed","false");button.removeAttribute("style");});
- spaceChaseRibbonButtons.forEach(button=>{button.classList.remove("is-cleared");button.disabled=true;button.style.removeProperty("--rescue-wipe");});if(spaceChaseRescueStar){spaceChaseRescueStar.classList.remove("is-rescued");spaceChaseRescueStar.disabled=true;}
+ spaceChaseRibbonButtons.forEach(button=>{button.classList.remove("is-cleared");button.disabled=true;button.style.removeProperty("--rescue-wipe");});if(spaceChaseRescueStar){spaceChaseRescueStar.classList.remove("is-rescued");spaceChaseRescueStar.disabled=true;}if(spaceChaseRescueGuide){spaceChaseRescueGuide.disabled=true;spaceChaseRescueGuide.textContent="しっぽを はらう！";spaceChaseRescueGuide.setAttribute("aria-label","いま ひかっている しっぽを はらう");}
  if(spaceChaseRescuePanel){spaceChaseRescuePanel.hidden=true;spaceChaseRescuePanel.setAttribute("aria-hidden","true");spaceChaseRescuePanel.setAttribute("inert","");spaceChaseRescuePanel.classList.remove("is-carry","is-victory");}
  if(spaceChaseBoostButton)spaceChaseBoostButton.disabled=true;if(spaceChaseLayer){spaceChaseLayer.hidden=true;spaceChaseLayer.setAttribute("aria-hidden","true");spaceChaseLayer.setAttribute("inert","");}
 }
@@ -4865,16 +4870,28 @@ function beginSpaceChaseCaught(){
 function beginSpaceChaseRescue(){
  if(spaceChaseState.phase!=="caught")return;spaceChaseState.phase="rescue";spaceChaseState.phaseElapsedMs=0;spaceChaseState.rescueMode="wipe";spaceChaseState.clearedRibbons.clear();cancelSpaceChaseRescuePointer(true);
  spaceChaseRibbonButtons.forEach((button,index)=>{button.classList.remove("is-cleared");button.disabled=index!==0;});if(spaceChaseRescueStar){spaceChaseRescueStar.disabled=true;spaceChaseRescueStar.classList.remove("is-rescued");}
- if(spaceChaseRescueTitle)spaceChaseRescueTitle.textContent="ひかる しっぽを みぎへ すーっ！";if(spaceChaseRescueGuide)spaceChaseRescueGuide.textContent="タッチでも すすむよ";setSpaceChaseGuide("ひかる しっぽを みぎへ すーっ！",true);updateSpaceChaseVisual();
+ if(spaceChaseRescueTitle)spaceChaseRescueTitle.textContent="ひかる しっぽを みぎへ すーっ！";if(spaceChaseRescueGuide){spaceChaseRescueGuide.disabled=false;spaceChaseRescueGuide.textContent="しっぽを はらう！";spaceChaseRescueGuide.setAttribute("aria-label","いま ひかっている しっぽを はらう");}setSpaceChaseGuide("ひかる しっぽを みぎへ すーっ！",true);updateSpaceChaseVisual();
  const first=spaceChaseRibbonButtons[0];if(first)try{first.focus({preventScroll:true});}catch(_){first.focus();}
 }
 function clearSpaceChaseRibbon(index){
- if(!spaceChaseRuntimeActive()||spaceChaseState.phase!=="rescue"||spaceChaseState.rescueMode!=="wipe"||index!==spaceChaseState.clearedRibbons.size)return false;
+ if(!spaceChaseRescueInputActive()||spaceChaseState.rescueMode!=="wipe"||index!==spaceChaseState.clearedRibbons.size)return false;
  const button=spaceChaseRibbonButtons[index];if(!button||spaceChaseState.clearedRibbons.has(index))return false;ensureAC();spaceChaseState.clearedRibbons.add(index);button.classList.add("is-cleared");button.disabled=true;button.style.removeProperty("--rescue-wipe");
  const remaining=spaceChaseRibbonButtons.length-spaceChaseState.clearedRibbons.size;tone(700+index*120,0,.09,"triangle",.055);showStamp(remaining?(remaining===1?"あと ひとつ":"あと ふたつ"):"しっぽが はれた！",remaining?"ok":"clear");
- if(remaining){const next=spaceChaseRibbonButtons[index+1];next.disabled=false;if(spaceChaseRescueGuide)spaceChaseRescueGuide.textContent=remaining===1?"あと ひとつ":"あと ふたつ";try{next.focus({preventScroll:true});}catch(_){next.focus();}}
- else{spaceChaseState.rescueMode="carry";if(spaceChaseRescueTitle)spaceChaseRescueTitle.textContent="ほしのこを ロケットの わへ！";if(spaceChaseRescueGuide)spaceChaseRescueGuide.textContent="つかんで はこぼう！";if(spaceChaseRescueStar){spaceChaseRescueStar.disabled=false;try{spaceChaseRescueStar.focus({preventScroll:true});}catch(_){spaceChaseRescueStar.focus();}}announce("ほしのこを ロケットの わへ！");}
+ if(remaining){const next=spaceChaseRibbonButtons[index+1];next.disabled=false;if(spaceChaseRescueGuide)spaceChaseRescueGuide.textContent="しっぽを はらう！";try{next.focus({preventScroll:true});}catch(_){next.focus();}}
+ else{spaceChaseState.rescueMode="carry";if(spaceChaseRescueTitle)spaceChaseRescueTitle.textContent="ほしのこを ロケットの わへ！";if(spaceChaseRescueGuide){spaceChaseRescueGuide.disabled=false;spaceChaseRescueGuide.textContent="ほしのこを たすける！";spaceChaseRescueGuide.setAttribute("aria-label","ほしのこを ロケットへ たすける");}if(spaceChaseRescueStar){spaceChaseRescueStar.disabled=false;try{spaceChaseRescueStar.focus({preventScroll:true});}catch(_){spaceChaseRescueStar.focus();}}announce("ほしのこを ロケットの わへ！");}
  updateSpaceChaseVisual();return true;
+}
+function activateSpaceChaseRescueControl(control){
+ if(!spaceChaseRescueInputActive())return false;ensureAC();
+ if(spaceChaseState.rescueMode==="wipe"){
+  const raw=control&&control.dataset?control.dataset.spaceChaseRibbon:undefined,index=raw===undefined?spaceChaseState.clearedRibbons.size:Number(raw);return clearSpaceChaseRibbon(index);
+ }
+ if(spaceChaseState.rescueMode==="carry"){finishSpaceChaseVictory();return spaceChaseState.phase==="victory";}
+ return false;
+}
+function handleSpaceChaseRescueClick(event){
+ const control=event.currentTarget,samePointerClick=spaceChaseState.rescueSuppressClick&&spaceChaseState.rescueSuppressClickTarget===control;
+ spaceChaseState.rescueSuppressClick=false;spaceChaseState.rescueSuppressClickTarget=null;event.preventDefault();if(samePointerClick)return false;return activateSpaceChaseRescueControl(control);
 }
 function spaceChaseRescueSwipeThreshold(){
  const width=spaceChaseRescuePlayfield&&spaceChaseRescuePlayfield.getBoundingClientRect?spaceChaseRescuePlayfield.getBoundingClientRect().width:(window.innerWidth||844);return clamp(width*.12,38,72);
@@ -4892,16 +4909,20 @@ function moveSpaceChaseRescuePointer(event){
 function finishSpaceChaseRescuePointer(event,cancelled){
  if(event.pointerId!==spaceChaseState.rescuePointerId)return;moveSpaceChaseRescuePointer(event);const kind=spaceChaseState.rescuePointerKind,target=spaceChaseState.rescuePointerTarget,dx=spaceChaseState.rescueLastX-spaceChaseState.rescueStartX,dy=spaceChaseState.rescueLastY-spaceChaseState.rescueStartY,index=target&&target.dataset.spaceChaseRibbon!==undefined?Number(target.dataset.spaceChaseRibbon):-1;
  spaceChaseState.rescuePointerId=null;spaceChaseState.rescuePointerKind="";spaceChaseState.rescuePointerTarget=null;if(target){try{target.releasePointerCapture(event.pointerId);}catch(_){}target.style.removeProperty("--rescue-wipe");}
- if(cancelled){resetSpaceChaseRescueStar();return;}spaceChaseState.rescueSuppressClick=true;
- if(kind==="ribbon"){const tap=Math.hypot(dx,dy)<=12,swipe=dx>=spaceChaseRescueSwipeThreshold()&&dx>=Math.abs(dy)*1.2;if(tap||swipe)clearSpaceChaseRibbon(index);}
- else if(kind==="star"&&spaceChaseRescueStar&&spaceChaseRescueRing){const tap=Math.hypot(dx,dy)<=12,star=spaceChaseRescueStar.getBoundingClientRect(),ring=spaceChaseRescueRing.getBoundingClientRect(),distance=Math.hypot(star.left+star.width/2-(ring.left+ring.width/2),star.top+star.height/2-(ring.top+ring.height/2));if(tap||distance<=ring.width*.58)finishSpaceChaseVictory();else resetSpaceChaseRescueStar();}
+ if(cancelled){resetSpaceChaseRescueStar();return;}let handled=false;
+ if(kind==="ribbon"){const tap=Math.hypot(dx,dy)<=12,swipe=dx>=spaceChaseRescueSwipeThreshold()&&dx>=Math.abs(dy)*1.2;if(tap||swipe)handled=clearSpaceChaseRibbon(index);}
+ else if(kind==="star"&&spaceChaseRescueStar&&spaceChaseRescueRing){const tap=Math.hypot(dx,dy)<=12,star=spaceChaseRescueStar.getBoundingClientRect(),ring=spaceChaseRescueRing.getBoundingClientRect(),distance=Math.hypot(star.left+star.width/2-(ring.left+ring.width/2),star.top+star.height/2-(ring.top+ring.height/2));if(tap||distance<=ring.width*.58){finishSpaceChaseVictory();handled=spaceChaseState.phase==="victory";}else resetSpaceChaseRescueStar();}
+ spaceChaseState.rescueSuppressClick=handled;spaceChaseState.rescueSuppressClickTarget=handled?target:null;
 }
 function handleSpaceChaseRescuePointerDown(event){
- if(!spaceChaseRuntimeActive()||spaceChaseState.phase!=="rescue"||spaceChaseState.rescuePointerId!==null)return;const ribbon=event.currentTarget.dataset.spaceChaseRibbon,index=ribbon===undefined?-1:Number(ribbon),isRibbon=index>=0&&spaceChaseState.rescueMode==="wipe"&&index===spaceChaseState.clearedRibbons.size,isStar=event.currentTarget===spaceChaseRescueStar&&spaceChaseState.rescueMode==="carry";if(!isRibbon&&!isStar)return;
- ensureAC();spaceChaseState.rescuePointerId=event.pointerId;spaceChaseState.rescuePointerKind=isRibbon?"ribbon":"star";spaceChaseState.rescuePointerTarget=event.currentTarget;spaceChaseState.rescueStartX=spaceChaseState.rescueLastX=event.clientX;spaceChaseState.rescueStartY=spaceChaseState.rescueLastY=event.clientY;spaceChaseState.rescueSuppressClick=false;if(isStar){spaceChaseState.rescueStarX=parseFloat(spaceChaseRescueStar.style.getPropertyValue("--rescue-star-x"))||0;spaceChaseState.rescueStarY=parseFloat(spaceChaseRescueStar.style.getPropertyValue("--rescue-star-y"))||0;const rect=spaceChaseRescueStar.getBoundingClientRect();spaceChaseState.rescueStarBaseLeft=rect.left-spaceChaseState.rescueStarX;spaceChaseState.rescueStarBaseRight=rect.right-spaceChaseState.rescueStarX;spaceChaseState.rescueStarBaseTop=rect.top-spaceChaseState.rescueStarY;spaceChaseState.rescueStarBaseBottom=rect.bottom-spaceChaseState.rescueStarY;}try{event.currentTarget.setPointerCapture(event.pointerId);}catch(_){}event.preventDefault();
+ if(!spaceChaseRescueInputActive())return;if(spaceChaseState.rescuePointerId!==null)cancelSpaceChaseRescuePointer(true);const ribbon=event.currentTarget.dataset.spaceChaseRibbon,index=ribbon===undefined?-1:Number(ribbon),isRibbon=index>=0&&spaceChaseState.rescueMode==="wipe"&&index===spaceChaseState.clearedRibbons.size,isStar=event.currentTarget===spaceChaseRescueStar&&spaceChaseState.rescueMode==="carry";if(!isRibbon&&!isStar)return;
+ ensureAC();spaceChaseState.rescuePointerId=event.pointerId;spaceChaseState.rescuePointerKind=isRibbon?"ribbon":"star";spaceChaseState.rescuePointerTarget=event.currentTarget;spaceChaseState.rescueStartX=spaceChaseState.rescueLastX=event.clientX;spaceChaseState.rescueStartY=spaceChaseState.rescueLastY=event.clientY;spaceChaseState.rescueSuppressClick=false;spaceChaseState.rescueSuppressClickTarget=null;if(isStar){spaceChaseState.rescueStarX=parseFloat(spaceChaseRescueStar.style.getPropertyValue("--rescue-star-x"))||0;spaceChaseState.rescueStarY=parseFloat(spaceChaseRescueStar.style.getPropertyValue("--rescue-star-y"))||0;const rect=spaceChaseRescueStar.getBoundingClientRect();spaceChaseState.rescueStarBaseLeft=rect.left-spaceChaseState.rescueStarX;spaceChaseState.rescueStarBaseRight=rect.right-spaceChaseState.rescueStarX;spaceChaseState.rescueStarBaseTop=rect.top-spaceChaseState.rescueStarY;spaceChaseState.rescueStarBaseBottom=rect.bottom-spaceChaseState.rescueStarY;}try{event.currentTarget.setPointerCapture(event.pointerId);}catch(_){}event.preventDefault();
+}
+function handleSpaceChaseRescueLostPointerCapture(event){
+ if(event.pointerId===spaceChaseState.rescuePointerId&&event.currentTarget===spaceChaseState.rescuePointerTarget)cancelSpaceChaseRescuePointer(true);
 }
 function finishSpaceChaseVictory(){
- if(spaceChaseState.phase!=="rescue"||spaceChaseState.rescueMode!=="carry"||spaceChaseState.completionCommitted)return;cancelSpaceChaseRescuePointer(false);spaceChaseState.phase="victory";spaceChaseState.phaseElapsedMs=0;spaceChaseDefeated=true;if(spaceChaseRescueStar){spaceChaseRescueStar.disabled=true;spaceChaseRescueStar.classList.add("is-rescued");}spaceChaseRibbonButtons.forEach(button=>button.disabled=true);if(spaceChaseRescueGuide)spaceChaseRescueGuide.textContent="ロケットに のれたよ！";if(spaceChaseRescueTitle)spaceChaseRescueTitle.textContent="ほしのこを たすけた！";setSpaceChaseGuide("ほしのこを たすけた！",true);showStamp("おたすけ だいせいこう！","clear");tone(784,0,.13,"triangle",.075);tone(1047,.1,.2,"sine",.07);confetti(24);updateSpaceChaseVisual();
+ if(spaceChaseState.phase!=="rescue"||spaceChaseState.rescueMode!=="carry"||spaceChaseState.completionCommitted)return;cancelSpaceChaseRescuePointer(false);spaceChaseState.phase="victory";spaceChaseState.phaseElapsedMs=0;spaceChaseDefeated=true;if(spaceChaseRescueStar){spaceChaseRescueStar.disabled=true;spaceChaseRescueStar.classList.add("is-rescued");}spaceChaseRibbonButtons.forEach(button=>button.disabled=true);if(spaceChaseRescueGuide){spaceChaseRescueGuide.disabled=true;spaceChaseRescueGuide.textContent="ロケットに のれたよ！";}if(spaceChaseRescueTitle)spaceChaseRescueTitle.textContent="ほしのこを たすけた！";setSpaceChaseGuide("ほしのこを たすけた！",true);showStamp("おたすけ だいせいこう！","clear");tone(784,0,.13,"triangle",.075);tone(1047,.1,.2,"sine",.07);confetti(24);updateSpaceChaseVisual();
 }
 function showSpaceChaseEncounter(){
  if(window.__PONO_TIER_LOCKED__){completeCurrentStage(origin(stg));return;}if(!isSpaceStage()||!playing||spaceChaseDefeated||!spaceChaseLayer)return;
@@ -4911,7 +4932,7 @@ function showSpaceChaseEncounter(){
 }
 function updateSpaceChase(now){
  if(spaceChaseState.phase==="idle"||!spaceChaseLayer||spaceChaseLayer.hidden)return;const frameNow=Number.isFinite(now)?now:_nowMs(),rawDt=spaceChaseState.frameAt?clamp(frameNow-spaceChaseState.frameAt,0,50):0;spaceChaseState.frameAt=frameNow;
- if(!spaceChaseRuntimeActive()){updateSpaceChaseVisual();return;}const dt=rawDt*FAST;spaceChaseState.phaseElapsedMs+=dt;
+ if(!spaceChaseRuntimeActive()&&!spaceChaseRescueRuntimeActive()){updateSpaceChaseVisual();return;}const dt=rawDt*FAST;spaceChaseState.phaseElapsedMs+=dt;
  if(spaceChaseState.phase==="intro"&&spaceChaseState.phaseElapsedMs>=(futureReducedMotion()?260:SPACE_CHASE_INTRO_MS))beginSpaceChaseRace();
  else if(spaceChaseState.phase==="race"){
   spaceChaseState.raceElapsedMs+=dt;const choosingRoute=!!spaceChaseState.activeJunction,comet=spaceChaseState.comet,rocket=spaceChaseState.rocket,boostTravelMs=choosingRoute?0:Math.min(dt,spaceChaseState.boostRemainingMs);if(!choosingRoute)spaceChaseState.boostRemainingMs=Math.max(0,spaceChaseState.boostRemainingMs-dt);
@@ -4926,10 +4947,15 @@ function updateSpaceChase(now){
 if(spaceChaseBoostButton){bindTap(spaceChaseBoostButton,useSpaceChaseBoost);spaceChaseBoostButton.addEventListener("keydown",event=>{if((event.key==="Enter"||event.key===" ")&&event.repeat)event.preventDefault();});}
 spaceChaseChoiceButtons.forEach(button=>{bindTap(button,()=>chooseSpaceChaseRoute(Number(button.dataset.spaceChaseChoice)));button.addEventListener("keydown",event=>{if((event.key==="Enter"||event.key===" ")&&event.repeat)event.preventDefault();});});
 [...spaceChaseRibbonButtons,spaceChaseRescueStar].filter(Boolean).forEach(button=>{
- button.addEventListener("pointerdown",handleSpaceChaseRescuePointerDown,{passive:false});button.addEventListener("pointermove",moveSpaceChaseRescuePointer,{passive:false});button.addEventListener("pointerup",event=>finishSpaceChaseRescuePointer(event,false),{passive:false});button.addEventListener("pointercancel",event=>finishSpaceChaseRescuePointer(event,true),{passive:false});button.addEventListener("lostpointercapture",()=>{if(spaceChaseState.rescuePointerTarget===button)cancelSpaceChaseRescuePointer(true);});
- button.addEventListener("click",event=>{if(spaceChaseState.rescueSuppressClick){spaceChaseState.rescueSuppressClick=false;event.preventDefault();return;}if(event.detail!==0){event.preventDefault();return;}ensureAC();if(button===spaceChaseRescueStar)finishSpaceChaseVictory();else clearSpaceChaseRibbon(Number(button.dataset.spaceChaseRibbon));});
+ button.addEventListener("pointerdown",handleSpaceChaseRescuePointerDown,{passive:false});button.addEventListener("pointermove",moveSpaceChaseRescuePointer,{passive:false});button.addEventListener("pointerup",event=>finishSpaceChaseRescuePointer(event,false),{passive:false});button.addEventListener("pointercancel",event=>finishSpaceChaseRescuePointer(event,true),{passive:false});button.addEventListener("lostpointercapture",handleSpaceChaseRescueLostPointerCapture);
+ button.addEventListener("click",handleSpaceChaseRescueClick);
  button.addEventListener("keydown",event=>{if((event.key==="Enter"||event.key===" ")&&event.repeat)event.preventDefault();});
 });
+if(spaceChaseRescueGuide)spaceChaseRescueGuide.addEventListener("click",handleSpaceChaseRescueClick);
+window.addEventListener("pointermove",event=>{if(spaceChaseState.rescuePointerId!==null)moveSpaceChaseRescuePointer(event);},{passive:false});
+window.addEventListener("pointerup",event=>{if(spaceChaseState.rescuePointerId!==null)finishSpaceChaseRescuePointer(event,false);},{passive:false});
+window.addEventListener("pointercancel",event=>{if(spaceChaseState.rescuePointerId!==null)finishSpaceChaseRescuePointer(event,true);},{passive:false});
+window.addEventListener("blur",()=>cancelSpaceChaseRescuePointer(true));
 if(spaceChaseLayer)spaceChaseLayer.addEventListener("keydown",event=>{
  if(spaceChaseState.phase!=="race"||!spaceChaseState.activeJunction)return;const junction=SPACE_CHASE_JUNCTIONS[spaceChaseState.activeJunction],slot=event.key==="ArrowUp"?"up":(event.key==="ArrowDown"?"down":"");let choiceIndex=slot?junction.choices.findIndex(choice=>choice.slot===slot):-1;if(choiceIndex<0&&/^[12]$/.test(event.key))choiceIndex=Number(event.key)-1;if(choiceIndex<0||!junction.choices[choiceIndex])return;event.preventDefault();chooseSpaceChaseRoute(choiceIndex);
 });
