@@ -14,6 +14,25 @@ const roomItemsSource = fs.readFileSync(path.join(root, "room/items.js"), "utf8"
 // (rewardsBlocked/checkSlotReward/_initStampRally)。play-all.html は
 // <script src="common/stamp-rally.js"></script> を読み込むだけになった。
 const stampRally = fs.readFileSync(path.join(root, "common/stamp-rally.js"), "utf8");
+const stampRallyCss = fs.readFileSync(path.join(root, "common/stamp-rally.css"), "utf8");
+
+// ===== stamp card visual: selected red rubber-stamp asset stays wired and shippable =====
+(function testStampCardUsesSelectedRedRubberStamp() {
+  const assetRelativePath = "assets/ui/stamp-card/pono_red_rubber_stamp_20260716.webp";
+  const assetPath = path.join(root, assetRelativePath);
+  assert.match(
+    stampRally,
+    /var PONO_ICON = 'assets\/ui\/stamp-card\/pono_red_rubber_stamp_20260716\.webp';/,
+    "stamp-rally.js must use the selected red rubber-stamp image"
+  );
+  assert.ok(fs.existsSync(assetPath), "selected red rubber-stamp image must exist");
+  assert.ok(fs.statSync(assetPath).size < 3 * 1024 * 1024, "stamp image must stay below the 3 MB repository limit");
+  assert.match(
+    stampRallyCss,
+    /\.stamp-card-slot\.stamped\s*\{[^}]*border:\s*2\.5px solid #E85A45;[^}]*background:\s*#FFFDF8;/s,
+    "stamped slots must use the red-ink border and paper-colored background"
+  );
+})();
 
 // ===== common/achievements.js: ACHIEVEMENTS[].reward.furn ids must all exist in room/items.js =====
 // phantom id 再発防止 (see also tests/room_furniture_book_tier_regression.cjs, which covers

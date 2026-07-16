@@ -79,7 +79,7 @@
   var LS_STAMP_LOG = 'pono_stamp_log';
   var LS_DAILY_RALLY = 'pono_daily_rally';
   var LS_STAMP_REWARDS_GIVEN = 'pono_stamp_rewards_given';
-  var PONO_ICON = 'assets/images/characters/pono/pono_face_circle.png';
+  var PONO_ICON = 'assets/ui/stamp-card/pono_red_rubber_stamp_20260716.webp';
   var SLOTS_PER_CARD = 15;
   var SLOTS_PER_ROW = 5;
 

@@ -1,5 +1,9 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2218: 家具スタンプカードの押印を、カラー顔写真からGPT Image 2製の赤い線画ゴム印へ差し替え。
+// 白背景を透過し、256px lossless WebPへ最適化。押印済みマスも赤枠＋紙色へ揃え、30px表示で
+// 外丸・顔・かすれが読める実物スタンプ調へ変更した (batch:1318-furniture-stamp-red-lineart)。
+// common/stamp-rally.js・common/stamp-rally.css・画像をprecacheし、play.html PAGE_CACHE_VERSIONと同期。
 // v2217: みちつなぎの一本旅バーを16:9 shellの左右いっぱいへ拡張し、おかあさんの赤線と
 // ポノの緑線を面ごとの時間予算に沿ってプレイ中も連続前進させた。時間予算は盤面サイズ・
 // 保証shuffle手数・pickup／よつまた学習時間から算出。初回時間切れは同じ初期盤面へ戻し、
@@ -204,7 +208,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2217;
+const CACHE_VERSION = 2218;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
@@ -283,6 +287,8 @@ const CRITICAL_ASSETS_SCRIPTS = [
   '/assets/audio/sfx/acorn/acorn_get_festive_20260628.mp3',
 ];
 const CRITICAL_ASSETS_IMAGES = [
+  // v2217: 家具スタンプカードの押印済みマスで使う赤い線画ゴム印。
+  '/assets/ui/stamp-card/pono_red_rubber_stamp_20260716.webp',
   // v1718: ごかんそう (rating) — PNG asset; CRITICAL_ASSETS_SCRIPTS から分離 (semantic 整理)。
   // v1750: 焼き込み済み 木枠アイコン (通常 + 押下) に差し替え。 :active で pressed 版へ即時切替するため
   //        両方を precache し初回 tap の網経路遅延を防ぐ。
