@@ -43,7 +43,7 @@ assert.match(html, /notice\.style\.display = isPortrait \? 'flex' : 'none'/);
 assert.match(html, /new ResizeObserver\(function\(\) \{ resize\(\); \}\)/,
   "the canvas must follow the centered shell after viewport changes");
 
-/* The compact top HUD leaves a centered world board and both edge characters in view. */
+/* The full-width top HUD leaves a centered world board and both edge characters in view. */
 function clamp(min, value, max) { return Math.max(min, Math.min(max, value)); }
 function landscapeLayout(viewportWidth, viewportHeight, cols, rows) {
   const shellWidth = Math.min(viewportWidth, viewportHeight * 16 / 9);
@@ -51,9 +51,10 @@ function landscapeLayout(viewportWidth, viewportHeight, cols, rows) {
   const safe = Math.max(8, Math.min(20, shellHeight * 0.025));
   const compact = viewportHeight <= 480 || viewportWidth <= 853;
   const hudTop = compact ? 8 : clamp(8, shellHeight * 0.016, 14);
-  const hudHeight = compact ? 44 : clamp(44, Math.min(viewportWidth, viewportHeight) * 0.07, 52);
+  const hudHeight = compact ? 52 : clamp(52, Math.min(viewportWidth, viewportHeight) * 0.075, 58);
   const hudBottom = hudTop + hudHeight;
-  const contentTop = Math.max(safe + 48, hudBottom + safe);
+  const hudGap = Math.max(4, Math.min(8, safe * 0.4));
+  const contentTop = Math.max(safe + 48, hudBottom + hudGap);
   const markerReserve = Math.max(52, Math.min(118, shellHeight * 0.17));
   const availableWidth = Math.max(1, shellWidth - (safe + markerReserve) * 2);
   const availableHeight = Math.max(1, shellHeight - contentTop - safe);
@@ -92,9 +93,11 @@ for (const [width, height, minimumCell] of [[568, 320, 58], [667, 375, 71], [844
     `${width}x${height}: the full-body goal marker must stay inside the shell`);
 }
 assert.match(html, /const hudBottom = hudRect \? hudRect\.bottom - wrapRect\.top : 52/,
-  "layout must measure the actual compact HUD before placing the world board");
-assert.match(html, /const contentTop = Math\.max\(safe \+ 48, hudBottom \+ safe\)/,
-  "the board must begin below the compact top HUD");
+  "layout must measure the actual full-width HUD before placing the world board");
+assert.match(html, /const hudGap = Math\.max\(4, Math\.min\(8, safe \* 0\.4\)\)/,
+  "the long HUD keeps a small explicit breathing gap without shrinking the final board");
+assert.match(html, /const contentTop = Math\.max\(safe \+ 48, hudBottom \+ hudGap\)/,
+  "the board must begin below the full-width top HUD");
 assert.match(html, /const markerReserve = Math\.max\(52, Math\.min\(118, CH \* 0\.17\)\)/,
   "layout must reserve room for left and right markers");
 assert.match(html, /const availW = Math\.max\(1, CW - \(safe \+ markerReserve\) \* 2\)/,

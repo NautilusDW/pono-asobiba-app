@@ -418,12 +418,12 @@ check("reduced motion preserves the journey order without long travel", () => {
 check("pause stays honest during travel and browser focus changes", () => {
   const introFinish = extractNamedFunction(script, "finishJourneyIntro");
   const onStageClear = extractNamedFunction(script, "onStageClear");
-  const beginStage = extractNamedFunction(script, "beginStage");
+  const stageIntro = extractNamedFunction(script, "startCurrentStageIntro");
   assert.match(introFinish, /setPauseAvailable\(true\)/,
     "pause becomes available when INTRO hands control to PLAYING");
   assert.match(onStageClear, /setPauseAvailable\(false\)/,
     "pause becomes unavailable before EXIT starts");
-  assert.match(beginStage, /setPauseAvailable\(false\)/,
+  assert.match(stageIntro, /setPauseAvailable\(false\)/,
     "the next INTRO visibly disables its non-operational pause control");
   assert.match(script,
     /visibilitychange[\s\S]*?bgmEnabled && state !== S\.PAUSED[\s\S]*?window\.addEventListener\('focus'[\s\S]*?bgmEnabled && state !== S\.PAUSED/,

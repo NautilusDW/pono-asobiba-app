@@ -110,14 +110,19 @@ async function inspectEngine(browserType, label, base, viewport = { width: 844, 
         collected: pickupCollected,
         draws: window.__charmDraws,
         buttonHidden: magicCrossBtn.classList.contains('hidden'),
-        toast: document.getElementById('journey-toast').textContent
+        guide: document.getElementById('hud-stage').textContent,
+        toastHidden: !document.getElementById('journey-toast').classList.contains('show'),
+        liveGuide: document.getElementById('journey-hud-status').textContent
       };
     })()`));
     assert.equal(stage3.pickupType, "CROSS", `${label} stage3: pickup stays attached to its shuffled road tile`);
     assert.equal(stage3.collected, false, `${label} stage3: the item is not granted before Pono walks through it`);
     assert.ok(stage3.draws >= 1, `${label} stage3: the generated charm is visibly drawn on the route`);
     assert.equal(stage3.buttonHidden, true, `${label} stage3: collecting needs no new control`);
-    assert.match(stage3.toast, /ひかりを とおって/, `${label} stage3: one short route instruction is shown`);
+    assert.match(stage3.guide, /ひかりを とおって/, `${label} stage3: one short route instruction is shown`);
+    assert.equal(stage3.toastHidden, true, `${label} stage3: the route instruction does not cover the board`);
+    assert.match(stage3.liveGuide, /ひかりを とおって/,
+      `${label} stage3: the board-safe instruction remains available to assistive technology`);
 
     const journeyPickup = await page.evaluate(() => eval(`(() => {
       grid = [...LEVELS[2].solved];
@@ -192,17 +197,29 @@ async function inspectEngine(browserType, label, base, viewport = { width: 844, 
       const rail = document.querySelector(".game-rail").getBoundingClientRect();
       return {
         buttonLeft: button.left,
+        buttonRight: button.right,
+        buttonTop: button.top,
+        buttonBottom: button.bottom,
         buttonWidth: button.width,
         buttonHeight: button.height,
+        railLeft: rail.left,
         railRight: rail.right,
+        railTop: rail.top,
+        railBottom: rail.bottom,
         emptySelectable: eval("isMagicSelectableTile(emptyIdx)"),
         selectableCount: eval("grid.filter((tile, index) => isMagicSelectableTile(index)).length"),
       };
     });
     assert.ok(compactLayout.buttonHeight >= 48 && compactLayout.buttonWidth >= 88,
       `${label} stage4: charm control remains a child-sized touch target`);
-    assert.ok(compactLayout.buttonLeft >= compactLayout.railRight,
-      `${label} stage4: charm control does not cover the story HUD`);
+    const buttonOverlapsRail = !(
+      compactLayout.buttonRight <= compactLayout.railLeft ||
+      compactLayout.buttonLeft >= compactLayout.railRight ||
+      compactLayout.buttonBottom <= compactLayout.railTop ||
+      compactLayout.buttonTop >= compactLayout.railBottom
+    );
+    assert.equal(buttonOverlapsRail, false,
+      `${label} stage4: the full-width story HUD and charm control do not overlap`);
     assert.equal(compactLayout.emptySelectable, false,
       `${label} stage4: the recessed empty well is never presented as a charm target`);
     assert.ok(compactLayout.selectableCount >= 3,

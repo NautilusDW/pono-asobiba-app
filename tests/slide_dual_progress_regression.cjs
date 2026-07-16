@@ -29,13 +29,22 @@ assert.doesNotMatch(html, /index === stageIdx \? '●' : '•'/,
 
 assert.match(html,
   /function getMotherJourneyProgress\(index\)[\s\S]*?Math\.floor\(index \/ 2\)[\s\S]*?0\.25/,
-  "the mother waits at the stage 2, 4, 6, and 8 story checkpoints");
+  "the paper-story checkpoints remain stage 2, 4, 6, and 8");
+assert.match(html,
+  /function getMotherStageStartProgress\(index\)[\s\S]*?0\.25 \* 0\.65/,
+  "the mother begins each live stage where her previous continuous segment ended");
+assert.match(html,
+  /function getMotherStageEndProgress\(index\)[\s\S]*?chapterStart \+ 0\.25/,
+  "the mother reaches each paper-story checkpoint without a stage-start jump");
 assert.match(html,
   /function getPonoStageStartProgress\(index\)[\s\S]*?index \/ LEVELS\.length/,
   "Pono begins each stage at the place reached by the previous stage");
 assert.match(html,
-  /function updateJourneyPosition\(now\)[\s\S]*?JOURNEY_PHASE\.EXIT[\s\S]*?syncJourneyProgress/,
-  "Pono's green layer follows the real route-exit animation");
+  /function updateStageClock\(now\)[\s\S]*?ponoProgress[\s\S]*?motherProgress[\s\S]*?syncJourneyProgress/,
+  "both travellers move during active puzzle time");
+assert.match(html,
+  /function updateJourneyPosition\(now\)[\s\S]*?stageClock\.exitPonoStart[\s\S]*?stageClock\.exitMotherStart/,
+  "the route-exit animation continues from both live positions without rewinding");
 assert.match(html,
   /function finishExitWithDiscovery\(now\)[\s\S]*?if \(!journeyActor\.tutorial\)[\s\S]*?syncJourneyProgress[\s\S]*?JOURNEY_PHASE\.DISCOVERY/,
   "reduced motion and normal motion both snap Pono to the reached checkpoint");
@@ -51,5 +60,7 @@ assert.match(html, /role="progressbar"[^>]*aria-label="おかあさん"/,
   "the mother's position is exposed without relying on colour");
 assert.match(html, /prefers-reduced-motion:[\s\S]*?journey-progress-fill--mother/,
   "journey-bar motion has a reduced-motion fallback");
+assert.match(html, /#stage-num[\s\S]*?grid-column:\s*1 \/ -1[\s\S]*?width:\s*100%/,
+  "the shared track receives the full second row of the HUD");
 
 console.log("slide dual progress regression: ok");

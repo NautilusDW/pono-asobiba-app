@@ -25,6 +25,7 @@
   --slide-shell-height: min(100dvh, calc(100vw * 9 / 16));
   --slide-shell-left: calc((100vw - var(--slide-shell-width)) / 2);
   --slide-shell-top: calc((100dvh - var(--slide-shell-height)) / 2);
+  --slide-control-top: clamp(80px, calc(var(--slide-shell-height) * 0.125), 96px);
 }
 
 html, body {
@@ -62,17 +63,18 @@ body > #app {
   min-height: 0 !important;
 }
 
-/* ===== Compact journey HUD ===== */
+/* ===== Full-width realtime journey HUD ===== */
 .game-rail {
   position: absolute;
   z-index: 5;
   top: clamp(8px, 1.6%, 14px);
-  left: clamp(122px, 16.5%, 188px);
-  width: clamp(252px, 42%, 440px);
-  min-height: clamp(44px, 7vmin, 52px);
-  padding: 6px clamp(10px, 1.5vmin, 16px);
+  left: clamp(8px, 1.4%, 18px);
+  right: clamp(8px, 1.4%, 18px);
+  width: auto;
+  min-height: clamp(52px, 7.5vmin, 58px);
+  padding: 3px clamp(10px, 1.5vmin, 18px);
   border: 1.5px solid rgba(255,247,207,0.62);
-  border-radius: 999px;
+  border-radius: clamp(17px, 2.5vmin, 24px);
   background: linear-gradient(135deg, rgba(24,63,53,0.9), rgba(42,86,67,0.84));
   box-shadow: 0 6px 18px rgba(16,37,31,0.28), inset 0 1px 0 rgba(255,255,255,0.18);
   backdrop-filter: blur(10px) saturate(1.12);
@@ -101,7 +103,7 @@ body > #app {
 .btn-pause {
   position: absolute;
   left: clamp(68px, 10%, 88px);
-  top: clamp(8px, 1.5%, 14px);
+  top: var(--slide-control-top);
   width: clamp(44px, 7vmin, 52px);
   height: clamp(44px, 7vmin, 52px);
   border-radius: 50%;
@@ -116,7 +118,7 @@ body > #app {
 .magic-cross-btn {
   position: absolute;
   z-index: 9;
-  top: clamp(8px, 1.5%, 14px);
+  top: var(--slide-control-top);
   right: clamp(10px, 1.8%, 18px);
   min-width: clamp(88px, 14vmin, 104px);
   min-height: clamp(50px, 8vmin, 58px);
@@ -155,13 +157,13 @@ body > #app {
 /* common/menu.js injects these rules later; !important keeps the shared menu
    attached to this centered 16:9 shell instead of the browser corner. */
 .pono-menu-toggle {
-  top: calc(var(--slide-shell-top) + 8px) !important;
+  top: calc(var(--slide-shell-top) + var(--slide-control-top)) !important;
   left: calc(var(--slide-shell-left) + 10px) !important;
   width: clamp(44px, 7vmin, 56px) !important;
   height: clamp(44px, 7vmin, 56px) !important;
 }
 .pono-dropdown {
-  top: calc(var(--slide-shell-top) + 54px) !important;
+  top: calc(var(--slide-shell-top) + var(--slide-control-top) + clamp(48px, 7vmin, 62px)) !important;
   left: calc(var(--slide-shell-left) + 10px) !important;
 }
 
@@ -170,18 +172,23 @@ body > #app {
   width: 100%;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
-  gap: clamp(5px, 1vmin, 10px);
+  grid-template-rows: 12px 30px;
+  column-gap: clamp(6px, 1.1vmin, 12px);
+  row-gap: 1px;
   align-items: center;
   margin: 0;
   padding: 0;
   border: 0;
-  font-size: clamp(0.66rem, 1.45vmin, 0.82rem);
+  font-size: clamp(0.75rem, 1.45vmin, 0.82rem);
   font-weight: 800;
+  line-height: 1;
   text-align: left;
   color: #fffaf0;
   white-space: nowrap;
 }
 #hud-stage {
+  grid-column: 1;
+  grid-row: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -189,19 +196,38 @@ body > #app {
   text-shadow: 0 1px 3px rgba(0,0,0,0.38);
 }
 #hud-moves {
+  grid-column: 3;
+  grid-row: 1;
   min-width: clamp(50px, 8vmin, 68px);
-  padding: 4px 7px;
+  padding: 0 6px;
   border-radius: 999px;
   background: rgba(255,255,255,0.13);
   color: #fff;
   text-align: center;
 }
+#hud-time {
+  grid-column: 2;
+  grid-row: 1;
+  min-width: 5.8em;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: rgba(255,244,177,0.16);
+  color: #fff8cf;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+#hud-time.is-urgent {
+  background: rgba(255,151,93,0.34);
+  color: #fff;
+}
 #stage-num {
   --pono-progress: 0;
-  --mother-progress: 0.25;
+  --mother-progress: 0;
   position: relative;
-  width: clamp(120px, 18vmin, 160px);
-  height: 34px;
+  grid-column: 1 / -1;
+  grid-row: 2;
+  width: 100%;
+  height: 30px;
   padding: 0 9px;
   border-radius: 999px;
   background: rgba(255,244,177,0.13);
@@ -210,7 +236,7 @@ body > #app {
 .journey-progress-track {
   position: relative;
   width: 100%;
-  height: 34px;
+  height: 30px;
 }
 .journey-progress-track::before {
   content: '';
@@ -240,7 +266,6 @@ body > #app {
   background: linear-gradient(90deg, #FF9C9C, #FF5967);
   box-shadow: 0 0 5px rgba(255,89,103,0.48);
   transform: translateY(-50%) scaleX(var(--mother-progress));
-  transition: transform 300ms cubic-bezier(0.22, 0.72, 0.24, 1);
 }
 .journey-progress-fill--pono {
   z-index: 2;
@@ -252,7 +277,7 @@ body > #app {
 .journey-progress-checkpoint {
   position: absolute;
   z-index: 3;
-  top: 9px;
+  top: 7px;
   left: calc(var(--checkpoint) * 100%);
   width: 2px;
   height: 16px;
@@ -280,13 +305,12 @@ body > #app {
   object-fit: cover;
 }
 .journey-progress-marker--mother {
-  top: 26px;
+  top: 22px;
   left: calc(var(--mother-progress) * 100%);
   border-color: #FF5967;
-  transition: left 300ms cubic-bezier(0.22, 0.72, 0.24, 1);
 }
 .journey-progress-marker--pono {
-  top: 8px;
+  top: 7px;
   left: calc(var(--pono-progress) * 100%);
   border-color: #4ED36C;
 }
@@ -313,7 +337,7 @@ body > #app {
 }
 .journey-progress-tutorial-label {
   display: none;
-  height: 34px;
+  height: 30px;
   align-items: center;
   justify-content: center;
   color: #fff4b1;
@@ -328,17 +352,23 @@ body > #app {
    above the illustration, while the stage name and move count step aside. */
 body.slide-cutscene-open .game-rail {
   z-index: 22;
-  left: 50%;
-  width: clamp(146px, 25%, 184px);
+  left: clamp(10px, 1.8%, 24px);
+  right: clamp(10px, 1.8%, 24px);
+  width: auto;
   min-height: 42px;
   padding: 5px 12px;
-  transform: translateX(-50%);
+  border-radius: 999px;
 }
-body.slide-cutscene-open .hud { grid-template-columns: minmax(0, 1fr); }
+body.slide-cutscene-open .hud {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: 30px;
+}
 body.slide-cutscene-open #hud-stage,
-body.slide-cutscene-open #hud-moves { display: none; }
+body.slide-cutscene-open #hud-moves,
+body.slide-cutscene-open #hud-time { display: none; }
 body.slide-cutscene-open #stage-num {
-  width: min(100%, 148px);
+  grid-row: 1;
+  width: 100%;
   margin: 0 auto;
 }
 
@@ -360,7 +390,7 @@ body.slide-cutscene-open #stage-num {
   position: absolute;
   z-index: 8;
   left: 50%;
-  top: clamp(60px, 12%, 82px);
+  top: clamp(76px, 13%, 98px);
   max-width: min(72%, 620px);
   min-height: 36px;
   padding: 7px 18px;
@@ -387,6 +417,11 @@ body.slide-cutscene-open #stage-num {
   background: rgba(79,72,132,0.88);
   border-color: rgba(255,241,164,0.9);
   color: #fffbd7;
+}
+.journey-toast.retry {
+  background: rgba(130,82,36,0.92);
+  border-color: rgba(255,238,176,0.96);
+  color: #fff8d8;
 }
 
 /* ===== Confetti ===== */
@@ -509,14 +544,16 @@ body.slide-cutscene-open #stage-num {
        (orientation: landscape) and (max-width: 853px) {
   .game-rail {
     top: 8px;
-    left: 122px;
-    width: min(308px, calc(100% - 132px));
-    min-height: 44px;
-    padding: 5px 9px;
+    left: 8px;
+    right: 8px;
+    width: auto;
+    min-height: 52px;
+    padding: 3px 9px;
   }
-  .hud { gap: 5px; font-size: 0.7rem; }
-  #hud-moves { min-width: 50px; padding: 3px 5px; }
-  #stage-num { width: 120px; padding-inline: 9px; }
+  .hud { column-gap: 5px; row-gap: 0; font-size: 0.75rem; }
+  #hud-moves { min-width: 50px; padding: 0 5px; }
+  #hud-time { min-width: 5.5em; padding: 0 5px; }
+  #stage-num { width: 100%; padding-inline: 9px; }
 
   .ov-card,
   .ov-card.cutscene-mode {
@@ -682,6 +719,7 @@ body.slide-cutscene-open #magic-cross-btn {
 
     <div class="hud">
       <div id="hud-stage">はじめてのみち</div>
+      <div id="hud-time" aria-label="のこり 65びょう">あと 1:05</div>
       <div id="stage-num" class="journey-progress" role="group" aria-label="ポノと おかあさんの ばしょ">
         <div class="journey-progress-track" aria-hidden="true">
           <span class="journey-progress-fill journey-progress-fill--mother"></span>
@@ -698,10 +736,11 @@ body.slide-cutscene-open #magic-cross-btn {
           </span>
         </div>
         <span id="journey-pono-progress" class="journey-progress-a11y" role="progressbar" aria-label="ポノ" aria-valuemin="0" aria-valuemax="8" aria-valuenow="0"></span>
-        <span id="journey-mother-progress" class="journey-progress-a11y" role="progressbar" aria-label="おかあさん" aria-valuemin="0" aria-valuemax="8" aria-valuenow="2"></span>
+        <span id="journey-mother-progress" class="journey-progress-a11y" role="progressbar" aria-label="おかあさん" aria-valuemin="0" aria-valuemax="8" aria-valuenow="0"></span>
         <span class="journey-progress-tutorial-label" aria-hidden="true">れんしゅう</span>
       </div>
       <div id="hud-moves">てかず: 0</div>
+      <span id="journey-hud-status" class="journey-progress-a11y" role="status" aria-live="polite" aria-atomic="true"></span>
     </div>
   </aside>
 
@@ -712,11 +751,12 @@ body.slide-cutscene-open #magic-cross-btn {
   </div>
 
   <!-- overlay は game-wrap の外 -->
-  <div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="ov-title" aria-describedby="ov-msg">
+  <div class="overlay" id="overlay" role="dialog" aria-modal="true" aria-labelledby="ov-title" aria-describedby="ov-msg cutscene-journey-status">
     <div class="ov-card">
       <div class="ov-icon" id="ov-icon"><img src="../assets/images/characters/pono/pono_face_circle.png" style="width:72px;height:72px;object-fit:contain;" alt="ポノ"></div>
       <div class="ov-title" id="ov-title">おかあさん どこいったの？</div>
       <div class="ov-msg" id="ov-msg">ひだりから みぎへ みちを つなげよう！</div>
+      <div id="cutscene-journey-status" class="journey-progress-a11y"></div>
       <button class="ov-btn" id="ov-btn">スタート ▶</button>
       <a class="ov-back" id="ov-back" href="../play.html">← ホームにもどる</a>
     </div>
@@ -998,6 +1038,20 @@ function transposeVerticalLevelToLeftRight(level) {
 }
 
 const LEVELS = VERTICAL_LEVELS.map(transposeVerticalLevelToLeftRight);
+
+// 盤面は shuffleMoves を逆にたどれば必ず元へ戻せる。その保証手数を
+// 1手8秒で見積もり、盤面の広さと新しい操作を覚える時間を足す。
+function calculateStageTimeBudgetSeconds(level) {
+  const extraCells = Math.max(0, level.cols * level.rows - 9);
+  const mechanicSeconds = (level.pickup ? 15 : 0) + (level.magicCross ? 20 : 0);
+  const rawSeconds = 30 + level.shuffleMoves * 8 + extraCells * 2 + mechanicSeconds;
+  return Math.ceil(rawSeconds / 5) * 5;
+}
+
+const STAGE_TIME_BUDGETS = LEVELS.map(calculateStageTimeBudgetSeconds);
+const RETRY_MESSAGE_MS = 4000;
+const RETRY_MESSAGE_TEXT = `この みちを もういちど！
+こんどは ゆっくり つなごう`;
 const cutscenePreloads = Object.create(null);
 function preloadStageReward(index) {
   const level = LEVELS[index];
@@ -1045,6 +1099,7 @@ let suggestedMoveIdx = -1;
 let hintDismissed = false;
 let hintReadyAt = 0;
 let journeyToastHideAt = 0;
+let journeyHudMessageHideAt = 0;
 let gameClearQueued = false;
 let pickupTileIdx = -1;
 let pickupCollected = false;
@@ -1053,6 +1108,27 @@ let magicCharmOwned = false;
 let magicCrossTileIdx = -1;
 let magicCrossSelectMode = false;
 let mechanicGuideShown = false;
+let stageRetryCount = 0;
+let stageAttemptSnapshot = null;
+let slideWindowFocused = document.hasFocus ? document.hasFocus() : true;
+
+// 時間はsetTimeoutではなく、実際に遊べる状態のrAF差分だけを足す。
+// これによりポーズ、紙芝居、バックグラウンド、縦向きでは進まない。
+let stageClock = {
+  active: false,
+  unlimited: false,
+  elapsedMs: 0,
+  budgetMs: STAGE_TIME_BUDGETS[0] * 1000,
+  lastTick: 0,
+  timeoutPending: false,
+  restartAt: 0,
+  ponoProgress: 0,
+  motherProgress: 0,
+  exitPonoStart: 0,
+  exitMotherStart: 0,
+  lastAriaBucket: -1,
+  lastShownSecond: -1,
+};
 
 // ===== Animation =====
 let animating = false;
@@ -1105,7 +1181,8 @@ function calcLayout() {
   const hud = document.querySelector('.game-rail');
   const hudRect = hud ? hud.getBoundingClientRect() : null;
   const hudBottom = hudRect ? hudRect.bottom - wrapRect.top : 52;
-  const contentTop = Math.max(safe + 48, hudBottom + safe);
+  const hudGap = Math.max(4, Math.min(8, safe * 0.4));
+  const contentTop = Math.max(safe + 48, hudBottom + hudGap);
   const markerReserve = Math.max(52, Math.min(118, CH * 0.17));
   const availW = Math.max(1, CW - (safe + markerReserve) * 2);
   const bottomSafe = safe;
@@ -2156,20 +2233,72 @@ function updateAnim(now) {
   }
 }
 
-function showJourneyToast(message, discovery) {
+function hideJourneyToastOverlay() {
+  const toast = document.getElementById('journey-toast');
+  if (toast) toast.classList.remove('show', 'discovery', 'retry');
+  journeyToastHideAt = 0;
+}
+
+function showJourneyToast(message, discovery, retry) {
   const toast = document.getElementById('journey-toast');
   if (!toast || !message) return;
+  const hudStatus = document.getElementById('journey-hud-status');
+  if (state === S.PLAYING && !discovery && !retry && !_slideTutActive) {
+    hideJourneyToastOverlay();
+    const stageNode = document.getElementById('hud-stage');
+    if (stageNode) {
+      stageNode.textContent = String(message).replace(/\s*\n\s*/g, ' ');
+      stageNode.classList.add('is-journey-message');
+      journeyHudMessageHideAt = performance.now() + 2400;
+    }
+    if (hudStatus) hudStatus.textContent = String(message).replace(/\s*\n\s*/g, ' ');
+    return;
+  }
+  if (hudStatus) hudStatus.textContent = '';
+  journeyHudMessageHideAt = 0;
+  const stageNode = document.getElementById('hud-stage');
+  if (stageNode && !_slideTutActive) {
+    stageNode.textContent = LEVELS[stageIdx].name;
+    stageNode.classList.remove('is-journey-message');
+  }
   toast.textContent = message;
   toast.classList.toggle('discovery', Boolean(discovery));
+  toast.classList.toggle('retry', Boolean(retry));
   toast.classList.add('show');
-  journeyToastHideAt = performance.now() + (discovery ? 2100 : 2400);
+  journeyToastHideAt = performance.now() + (retry ? RETRY_MESSAGE_MS + 400 : (discovery ? 2100 : 2400));
 }
 
 function updateJourneyToast(now) {
+  if (journeyHudMessageHideAt && now >= journeyHudMessageHideAt) {
+    journeyHudMessageHideAt = 0;
+    const hudStatus = document.getElementById('journey-hud-status');
+    if (hudStatus) hudStatus.textContent = '';
+    const stageNode = document.getElementById('hud-stage');
+    if (stageNode) {
+      stageNode.textContent = _slideTutActive ? 'れんしゅう' : LEVELS[stageIdx].name;
+      stageNode.classList.remove('is-journey-message');
+    }
+  }
   if (!journeyToastHideAt || now < journeyToastHideAt) return;
   const toast = document.getElementById('journey-toast');
   if (toast) toast.classList.remove('show');
   journeyToastHideAt = 0;
+}
+
+function renewPendingRetryBeat(now) {
+  const beatNow = Number.isFinite(now) ? now : performance.now();
+  stageClock.restartAt = beatNow + RETRY_MESSAGE_MS;
+  journeyHudMessageHideAt = 0;
+  const hudStatus = document.getElementById('journey-hud-status');
+  if (hudStatus) hudStatus.textContent = '';
+  const toast = document.getElementById('journey-toast');
+  if (!toast) return;
+  if (!toast.classList.contains('show') || toast.textContent !== RETRY_MESSAGE_TEXT) {
+    toast.textContent = RETRY_MESSAGE_TEXT;
+  }
+  toast.classList.remove('discovery');
+  toast.classList.add('show', 'retry');
+  journeyToastHideAt = stageClock.restartAt + 400;
 }
 
 function setJourneyPath(phase, points, duration, now) {
@@ -2193,10 +2322,14 @@ function updateJourneyPosition(now) {
   const eased = raw < 0.5 ? 2 * raw * raw : 1 - Math.pow(-2 * raw + 2, 2) / 2;
   journeyActor.progress = eased;
   if (journeyActor.phase === JOURNEY_PHASE.EXIT && !journeyActor.tutorial) {
+    const ponoTarget = getPonoStageEndProgress(stageIdx);
+    const motherTarget = getMotherStageEndProgress(stageIdx);
     syncJourneyProgress(
-      (stageIdx + eased) / LEVELS.length,
-      getMotherJourneyProgress(stageIdx)
+      stageClock.exitPonoStart + (ponoTarget - stageClock.exitPonoStart) * eased,
+      stageClock.exitMotherStart + (motherTarget - stageClock.exitMotherStart) * eased,
+      { updateA11y: Math.floor(eased * 20) !== stageClock.lastAriaBucket }
     );
+    stageClock.lastAriaBucket = Math.floor(eased * 20);
   }
   const exact = eased * (points.length - 1);
   const fromIndex = Math.min(Math.floor(exact), points.length - 1);
@@ -2219,6 +2352,10 @@ function updateJourneyPosition(now) {
 
 function finishJourneyIntro(now) {
   if (journeyActor.phase !== JOURNEY_PHASE.INTRO) return;
+  const introToast = document.getElementById('journey-toast');
+  const introMessage = introToast && introToast.classList.contains('show')
+    ? introToast.textContent : '';
+  hideJourneyToastOverlay();
   const geo = getJourneyGeometry();
   journeyActor.active = false;
   journeyActor.phase = JOURNEY_PHASE.PLAYING;
@@ -2229,6 +2366,7 @@ function finishJourneyIntro(now) {
   hintReadyAt = now + 1500;
   setPauseAvailable(true);
   syncMagicCrossButton();
+  startStageClock(now);
   if (!mechanicGuideShown && LEVELS[stageIdx].pickup) {
     mechanicGuideShown = true;
     showJourneyToast('ひかりを とおって ゴールへ！', false);
@@ -2236,6 +2374,8 @@ function finishJourneyIntro(now) {
     mechanicGuideShown = true;
     hintDismissed = true;
     showJourneyToast('ひかりの よつぼしを つかってみよう！', false);
+  } else if (introMessage) {
+    showJourneyToast(introMessage, false);
   }
 }
 
@@ -2252,8 +2392,8 @@ function finishExitWithDiscovery(now) {
   if (journeyActor.phase !== JOURNEY_PHASE.EXIT) return;
   if (!journeyActor.tutorial) {
     syncJourneyProgress(
-      Math.min(1, (stageIdx + 1) / LEVELS.length),
-      getMotherJourneyProgress(stageIdx)
+      getPonoStageEndProgress(stageIdx),
+      getMotherStageEndProgress(stageIdx)
     );
   }
   if (!pickupCollected && pickupTileIdx >= 0) collectJourneyPickup();
@@ -2347,6 +2487,7 @@ function loop(ts) {
   requestAnimationFrame(loop);
   updateAnim(ts);
   updateJourney(ts);
+  updateStageClock(ts);
   updateJourneyToast(ts);
   draw(ts);
 }
@@ -2420,6 +2561,17 @@ wrap.addEventListener('pointerdown', e => {
 
 // ===== Stage clear =====
 function onStageClear() {
+  const clearNow = performance.now();
+  stopStageClock(clearNow);
+  const timeNode = document.getElementById('hud-time');
+  if (timeNode) {
+    timeNode.textContent = 'つながった！';
+    timeNode.setAttribute('aria-label', 'みちが つながった');
+    timeNode.classList.remove('is-urgent');
+  }
+  stageClock.exitPonoStart = Math.min(getPonoStageEndProgress(stageIdx), stageClock.ponoProgress);
+  stageClock.exitMotherStart = Math.min(getMotherStageEndProgress(stageIdx), stageClock.motherProgress);
+  stageClock.lastAriaBucket = -1;
   state = S.TRAVELLING;
   magicCrossSelectMode = false;
   syncMagicCrossButton();
@@ -2446,7 +2598,7 @@ function onStageClear() {
   journeyActor.tutorial = false;
   setJourneyPath(JOURNEY_PHASE.EXIT, points,
     reducedMotionQuery.matches ? 1 : Math.max(900, (points.length - 1) * 260),
-    performance.now());
+    clearNow);
 }
 
 // ===== Confetti =====
@@ -2478,6 +2630,7 @@ function showOverlay(type) {
   const icon  = document.getElementById('ov-icon');
   const title = document.getElementById('ov-title');
   const msg   = document.getElementById('ov-msg');
+  const journeyStatus = document.getElementById('cutscene-journey-status');
   const btn   = document.getElementById('ov-btn');
   const back  = document.getElementById('ov-back');
   setPauseAvailable(false);
@@ -2489,6 +2642,7 @@ function showOverlay(type) {
   document.querySelector('.ov-card').classList.remove('cutscene-mode', 'cutscene-fullscreen');
 
   var actionType = type;
+  if (journeyStatus) journeyStatus.textContent = '';
   var ponoFaceTag = '<img src="../assets/images/characters/pono/pono_face_circle.png" style="width:72px;height:72px;object-fit:contain;" alt="ポノ">';
 
   if (type === 'start') {
@@ -2512,6 +2666,7 @@ function showOverlay(type) {
     title.textContent = 'おかあさんと さいかい！';
     msg.textContent   = `「ポノの だいすきな きのみと\nキノコを とりにきたの。\nおそくなって ごめんね！\nいっしょに かえろう！」\nてかず${moveCount} でクリア！`;
     btn.textContent   = 'もういっかい ▶';
+    if (journeyStatus) journeyStatus.textContent = 'ポノが おかあさんに おいつきました';
   }
 
   btn.dataset.ovType = actionType;
@@ -2525,6 +2680,67 @@ function getMotherJourneyProgress(index) {
 
 function getPonoStageStartProgress(index) {
   return Math.max(0, Math.min(1, index / LEVELS.length));
+}
+
+function getPonoStageEndProgress(index) {
+  return Math.max(0, Math.min(1, (index + 1) / LEVELS.length));
+}
+
+// おかあさんは紙芝居から次の紙芝居までを2面かけて進む。
+// 前半で65%、後半で35%進むため、ポノより少し先を歩きながら、
+// 2・4・6・8面の終わりだけ同じ節目で重なる。
+function getMotherStageStartProgress(index) {
+  const chapterStart = Math.floor(index / 2) * 0.25;
+  return index % 2 === 0 ? chapterStart : Math.min(1, chapterStart + 0.25 * 0.65);
+}
+
+function getMotherStageEndProgress(index) {
+  const chapterStart = Math.floor(index / 2) * 0.25;
+  return index % 2 === 0
+    ? Math.min(1, chapterStart + 0.25 * 0.65)
+    : Math.min(1, chapterStart + 0.25);
+}
+
+function getStageBudgetMs(index, retryCount) {
+  const retryAllowance = Math.min(1.75, 1 + retryCount * 0.25);
+  return Math.round(STAGE_TIME_BUDGETS[index] * retryAllowance) * 1000;
+}
+
+function formatStageTime(milliseconds) {
+  const totalSeconds = Math.max(0, Math.ceil(milliseconds / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return minutes > 0
+    ? 'あと ' + minutes + ':' + String(seconds).padStart(2, '0')
+    : 'あと ' + totalSeconds + 'びょう';
+}
+
+function stageTimeAriaText(milliseconds) {
+  const totalSeconds = Math.max(0, Math.ceil(milliseconds / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  if (minutes > 0 && seconds > 0) return 'のこり ' + minutes + 'ぷん ' + seconds + 'びょう';
+  if (minutes > 0) return 'のこり ' + minutes + 'ぷん';
+  return 'のこり ' + seconds + 'びょう';
+}
+
+function updateStageTimeDisplay(force) {
+  const node = document.getElementById('hud-time');
+  if (!node) return;
+  if (stageClock.unlimited) {
+    node.textContent = 'ゆっくり';
+    node.setAttribute('aria-label', 'じかん なしで ゆっくり');
+    node.classList.remove('is-urgent');
+    return;
+  }
+  const remaining = Math.max(0, stageClock.budgetMs - stageClock.elapsedMs);
+  const shownSecond = Math.ceil(remaining / 1000);
+  if (force || shownSecond !== stageClock.lastShownSecond) {
+    stageClock.lastShownSecond = shownSecond;
+    node.textContent = formatStageTime(remaining);
+    node.setAttribute('aria-label', stageTimeAriaText(remaining));
+  }
+  node.classList.toggle('is-urgent', stageClock.active && remaining <= stageClock.budgetMs * 0.2);
 }
 
 function journeyPositionText(progress) {
@@ -2545,29 +2761,32 @@ function syncJourneyProgress(ponoProgress, motherProgress, options) {
   var mother = Math.max(0, Math.min(1, Number(motherProgress) || 0));
   var instant = Boolean(options && options.instant);
   if (instant) stageNum.classList.add('is-instant');
-  stageNum.classList.remove('is-tutorial');
+  if (!_slideTutActive || (options && options.force)) stageNum.classList.remove('is-tutorial');
   stageNum.style.setProperty('--pono-progress', String(pono));
   stageNum.style.setProperty('--mother-progress', String(mother));
   stageNum.classList.toggle('is-together', Math.abs(pono - mother) < 0.002);
+  stageClock.ponoProgress = pono;
+  stageClock.motherProgress = mother;
 
   var ponoNode = document.getElementById('journey-pono-progress');
   var motherNode = document.getElementById('journey-mother-progress');
   var ponoValue = pono * LEVELS.length;
   var motherValue = mother * LEVELS.length;
-  if (ponoNode) {
+  var updateA11y = !options || options.updateA11y !== false;
+  if (ponoNode && updateA11y) {
     ponoNode.removeAttribute('aria-hidden');
     ponoNode.setAttribute('aria-valuenow', ponoValue.toFixed(2));
     ponoNode.setAttribute('aria-valuetext', journeyPositionText(pono));
   }
-  if (motherNode) {
+  if (motherNode && updateA11y) {
     motherNode.removeAttribute('aria-hidden');
     motherNode.setAttribute('aria-valuenow', motherValue.toFixed(2));
     motherNode.setAttribute('aria-valuetext', journeyPositionText(mother));
   }
 
-  if (Math.abs(pono - mother) < 0.002) {
+  if (updateA11y && Math.abs(pono - mother) < 0.002) {
     stageNum.setAttribute('aria-label', 'ポノと おかあさんは おなじ ばしょ');
-  } else {
+  } else if (updateA11y) {
     var remaining = Math.max(0, Math.ceil((mother - pono) * LEVELS.length - 0.001));
     stageNum.setAttribute('aria-label',
       'ポノは ' + journeyPositionText(pono) + '。おかあさんは ' +
@@ -2580,33 +2799,174 @@ function syncJourneyProgress(ponoProgress, motherProgress, options) {
 }
 
 function updateHUD(options) {
-  document.getElementById('hud-stage').textContent = LEVELS[stageIdx].name;
-  document.getElementById('hud-moves').textContent = `てかず: ${moveCount}`;
-  syncJourneyProgress(
-    getPonoStageStartProgress(stageIdx),
-    getMotherJourneyProgress(stageIdx),
-    options
-  );
+  if (_slideTutActive) {
+    document.getElementById('hud-stage').textContent = 'れんしゅう';
+    document.getElementById('hud-moves').textContent = '';
+    const timeNode = document.getElementById('hud-time');
+    if (timeNode) {
+      timeNode.textContent = 'じかん なし';
+      timeNode.setAttribute('aria-label', 'れんしゅうは じかん なし');
+      timeNode.classList.remove('is-urgent');
+    }
+  } else {
+    if (!journeyHudMessageHideAt) {
+      document.getElementById('hud-stage').textContent = LEVELS[stageIdx].name;
+    }
+    document.getElementById('hud-moves').textContent = `てかず: ${moveCount}`;
+    updateStageTimeDisplay(Boolean(options && options.forceTime));
+  }
+  if (options && options.resetProgress) {
+    syncJourneyProgress(
+      getPonoStageStartProgress(stageIdx),
+      getMotherStageStartProgress(stageIdx),
+      options
+    );
+  }
+}
+
+function resetStageClock(index) {
+  stageClock.active = false;
+  stageClock.unlimited = stageRetryCount > 0;
+  stageClock.elapsedMs = 0;
+  stageClock.budgetMs = getStageBudgetMs(index, stageRetryCount);
+  stageClock.lastTick = 0;
+  stageClock.timeoutPending = false;
+  stageClock.restartAt = 0;
+  stageClock.ponoProgress = getPonoStageStartProgress(index);
+  stageClock.motherProgress = getMotherStageStartProgress(index);
+  stageClock.exitPonoStart = stageClock.ponoProgress;
+  stageClock.exitMotherStart = stageClock.motherProgress;
+  stageClock.lastAriaBucket = -1;
+  stageClock.lastShownSecond = -1;
+  updateStageTimeDisplay(true);
+}
+
+function startStageClock(now) {
+  if (_slideTutActive) return;
+  stageClock.active = true;
+  stageClock.lastTick = now;
+  stageClock.lastAriaBucket = -1;
+  updateStageTimeDisplay(true);
+}
+
+function stopStageClock(now) {
+  stageClock.active = false;
+  stageClock.lastTick = Number.isFinite(now) ? now : performance.now();
+  updateStageTimeDisplay(true);
+}
+
+function resetStageClockTick(now) {
+  stageClock.lastTick = Number.isFinite(now) ? now : performance.now();
+  if (stageClock.timeoutPending) renewPendingRetryBeat(stageClock.lastTick);
+}
+
+function isStageClockEnvironmentSuspended(now) {
+  const menuOpen = Boolean(document.querySelector('.pono-dropdown.show'));
+  const confirmOpen = Boolean(document.querySelector('.pono-confirm-overlay.show'));
+  const portrait = window.innerHeight >= window.innerWidth;
+  const guideVisible = journeyHudMessageHideAt > (Number.isFinite(now) ? now : performance.now());
+  return _slideTutActive || document.hidden || !slideWindowFocused ||
+    menuOpen || confirmOpen || portrait || guideVisible || !overlay.classList.contains('hidden');
+}
+
+function isStageClockSuspended(now) {
+  return state !== S.PLAYING || isStageClockEnvironmentSuspended(now);
+}
+
+function handleStageTimeout(now) {
+  if (stageClock.timeoutPending || state !== S.PLAYING) return;
+  stopStageClock(now);
+  stageClock.timeoutPending = true;
+  state = S.TRAVELLING;
+  prepauseState = S.TRAVELLING;
+  magicCrossSelectMode = false;
+  setPauseAvailable(false);
+  syncMagicCrossButton();
+  renewPendingRetryBeat(now);
+  const timeNode = document.getElementById('hud-time');
+  if (timeNode) {
+    timeNode.textContent = 'もういちど';
+    timeNode.setAttribute('aria-label', 'おなじ みちを もういちど');
+    timeNode.classList.remove('is-urgent');
+  }
+}
+
+function updateStageClock(now) {
+  if (stageClock.timeoutPending) {
+    if (_slideTutActive) {
+      stageClock.timeoutPending = false;
+      stageClock.restartAt = 0;
+      return;
+    }
+    if (isStageClockEnvironmentSuspended(now)) {
+      resetStageClockTick(now);
+      return;
+    }
+    if (now >= stageClock.restartAt) restartTimedOutStage(now);
+    return;
+  }
+  if (!stageClock.active) return;
+  if (isStageClockSuspended(now)) {
+    resetStageClockTick(now);
+    return;
+  }
+  if (!stageClock.lastTick || now < stageClock.lastTick) {
+    resetStageClockTick(now);
+    return;
+  }
+
+  stageClock.elapsedMs = Math.min(stageClock.budgetMs,
+    stageClock.elapsedMs + Math.max(0, now - stageClock.lastTick));
+  stageClock.lastTick = now;
+  const ratio = Math.min(1, stageClock.elapsedMs / Math.max(1, stageClock.budgetMs));
+  const visualRatio = reducedMotionQuery.matches ? Math.floor(ratio * 20) / 20 : ratio;
+  const ponoStart = getPonoStageStartProgress(stageIdx);
+  const ponoEnd = getPonoStageEndProgress(stageIdx);
+  const motherStart = getMotherStageStartProgress(stageIdx);
+  const motherEnd = getMotherStageEndProgress(stageIdx);
+  const ponoProgress = ponoStart + (ponoEnd - ponoStart) * 0.75 * visualRatio;
+  const motherProgress = motherStart + (motherEnd - motherStart) * visualRatio;
+  const ariaBucket = Math.floor(ratio * 20);
+  const updateA11y = ariaBucket !== stageClock.lastAriaBucket;
+  if (updateA11y) stageClock.lastAriaBucket = ariaBucket;
+  syncJourneyProgress(ponoProgress, motherProgress, { updateA11y: updateA11y });
+  updateStageTimeDisplay(false);
+
+  // 受け付けた最後の1手は完了まで待ち、その手でつながれば成功を優先する。
+  if (!stageClock.unlimited && stageClock.elapsedMs >= stageClock.budgetMs && !animating) {
+    handleStageTimeout(now);
+  }
 }
 
 
 // ===== Start / Next =====
-function beginStage(index) {
+function captureStageAttemptSnapshot() {
+  stageAttemptSnapshot = {
+    stageIdx: stageIdx,
+    cols: curCols,
+    rows: curRows,
+    grid: grid.slice(),
+    emptyIdx: emptyIdx,
+    pickupTileIdx: pickupTileIdx,
+    pickupCollected: pickupCollected,
+    magicCharmOwned: magicCharmOwned,
+    magicCrossTileIdx: magicCrossTileIdx,
+    suggestedMoveIdx: suggestedMoveIdx,
+  };
+}
+
+function startCurrentStageIntro(now, instantProgress) {
+  journeyHudMessageHideAt = 0;
+  const stageNode = document.getElementById('hud-stage');
+  if (stageNode) stageNode.classList.remove('is-journey-message');
   overlay.classList.add('hidden');
   overlay.setAttribute('aria-hidden', 'true');
   document.body.classList.remove('slide-cutscene-open');
-  stageIdx = index;
-  preloadStageReward(stageIdx);
-  moveCount = 0;
-  clueDiscovered = false;
-  hintDismissed = false;
-  animating = false;
-  shuffleGrid(LEVELS[stageIdx]);
   calcLayout();
-  updateHUD({ instant: index === 0 });
+  resetStageClock(stageIdx);
+  updateHUD({ resetProgress: true, instant: Boolean(instantProgress), forceTime: true });
   updatePauseButton(false);
   setPauseAvailable(false);
-  const now = performance.now();
   const geo = getJourneyGeometry();
   journeyActor.tutorial = false;
   state = S.TRAVELLING;
@@ -2617,6 +2977,49 @@ function beginStage(index) {
     { x: geo.startX, y: geo.startY },
   ], reducedMotionQuery.matches ? 1 : 650, now);
   showJourneyToast(LEVELS[stageIdx].introMsg, false);
+}
+
+function beginStage(index) {
+  stageIdx = index;
+  preloadStageReward(stageIdx);
+  stageRetryCount = 0;
+  moveCount = 0;
+  clueDiscovered = false;
+  hintDismissed = false;
+  hintReadyAt = 0;
+  animating = false;
+  shuffleGrid(LEVELS[stageIdx]);
+  captureStageAttemptSnapshot();
+  startCurrentStageIntro(performance.now(), index === 0);
+}
+
+function restartTimedOutStage(now) {
+  if (!stageAttemptSnapshot || stageAttemptSnapshot.stageIdx !== stageIdx) {
+    beginStage(stageIdx);
+    return;
+  }
+  stageRetryCount += 1;
+  stageIdx = stageAttemptSnapshot.stageIdx;
+  moveCount = 0;
+  curCols = stageAttemptSnapshot.cols;
+  curRows = stageAttemptSnapshot.rows;
+  grid = stageAttemptSnapshot.grid.slice();
+  emptyIdx = stageAttemptSnapshot.emptyIdx;
+  pickupTileIdx = stageAttemptSnapshot.pickupTileIdx;
+  pickupCollected = stageAttemptSnapshot.pickupCollected;
+  pickupJourneyProgress = -1;
+  magicCharmOwned = stageAttemptSnapshot.magicCharmOwned;
+  magicCrossTileIdx = stageAttemptSnapshot.magicCrossTileIdx;
+  magicCrossSelectMode = false;
+  suggestedMoveIdx = stageAttemptSnapshot.suggestedMoveIdx;
+  clueDiscovered = false;
+  hintDismissed = false;
+  hintReadyAt = 0;
+  mechanicGuideShown = false;
+  animating = false;
+  anim.idx = -1;
+  stageClock.timeoutPending = false;
+  startCurrentStageIntro(now, true);
 }
 
 function startGame() {
@@ -2639,6 +3042,7 @@ function showCutscene() {
   var icon  = document.getElementById('ov-icon');
   var title = document.getElementById('ov-title');
   var msg   = document.getElementById('ov-msg');
+  var journeyStatus = document.getElementById('cutscene-journey-status');
   var btn   = document.getElementById('ov-btn');
   setPauseAvailable(false);
   overlay.classList.remove('hidden');
@@ -2654,6 +3058,7 @@ function showCutscene() {
   title.textContent = level.cutscene.text;
   title.style.whiteSpace = 'pre-line';
   msg.textContent = '';
+  if (journeyStatus) journeyStatus.textContent = 'ポノが おかあさんに おいつきました';
   btn.textContent = 'つぎへ ▶';
   btn.dataset.ovType = 'cutscene-next';
   syncMagicCrossButton();
@@ -2689,12 +3094,14 @@ function togglePause() {
   if (_slideTutActive) return;
   if (state === S.PAUSED) {
     state = prepauseState;
+    resetStageClockTick(performance.now());
     updatePauseButton(false);
     syncMagicCrossButton();
     if (bgmEnabled) bgm.play().catch(() => {});
   } else if (state === S.PLAYING && !animating && !journeyActor.active) {
     prepauseState = state;
     state = S.PAUSED;
+    resetStageClockTick(performance.now());
     magicCrossSelectMode = false;
     updatePauseButton(true);
     syncMagicCrossButton();
@@ -2741,11 +3148,18 @@ if (bgmEnabled) {
 updateBgmBtn();
 
 document.addEventListener('visibilitychange', () => {
+  resetStageClockTick(performance.now());
   if (document.hidden) { bgm.pause(); }
   else if (bgmEnabled && state !== S.PAUSED) { bgm.play().catch(() => {}); }
 });
-window.addEventListener('blur',  () => { if (!document.hidden) return; bgm.pause(); });
+window.addEventListener('blur',  () => {
+  slideWindowFocused = false;
+  resetStageClockTick(performance.now());
+  bgm.pause();
+});
 window.addEventListener('focus', () => {
+  slideWindowFocused = true;
+  resetStageClockTick(performance.now());
   if (bgmEnabled && state !== S.PAUSED) bgm.play().catch(() => {});
 });
 
@@ -2756,6 +3170,11 @@ function showTutorial() {
   var bubble = document.getElementById('tut-bubble');
   if (!dim || !bubble) return;
   _slideTutActive = true;
+  journeyHudMessageHideAt = 0;
+  hideJourneyToastOverlay();
+  stopStageClock(performance.now());
+  stageClock.timeoutPending = false;
+  stageClock.restartAt = 0;
   setPauseAvailable(false);
 
   // チュートリアル用: 左から右へ3手で完成する固定配置。
@@ -2789,6 +3208,8 @@ function showTutorial() {
   calcLayout();
   document.getElementById('hud-stage').textContent = 'れんしゅう';
   document.getElementById('hud-moves').textContent = '';
+  document.getElementById('hud-time').textContent = 'じかん なし';
+  document.getElementById('hud-time').setAttribute('aria-label', 'れんしゅうは じかん なし');
   var stageNum = document.getElementById('stage-num');
   if (stageNum) {
     stageNum.classList.add('is-tutorial');
@@ -2950,11 +3371,13 @@ initMenu({ bgmToggle: function() {
 curCols = LEVELS[0].cols;
 curRows = LEVELS[0].rows;
 resize();
-updateHUD({ instant: true });
+resetStageClock(0);
+updateHUD({ resetProgress: true, instant: true, forceTime: true });
 showOverlay('start');
 requestAnimationFrame(loop);
 
 function updateLandscapeNotice() {
+  resetStageClockTick(performance.now());
   const notice = document.getElementById('landscape-notice');
   if (!notice) return;
   const isPortrait = window.innerHeight >= window.innerWidth;
