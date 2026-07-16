@@ -1,5 +1,10 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2216: なぞなぞトレイン宇宙面の最終追跡を、横スクロールで現在の2本だけを選ぶ3分岐へ刷新。
+// 描画距離と実走距離を同じ比率に揃え、スターみちほど追いつきやすい全8経路、分岐中の低速化、
+// 光る道の直接タッチ、3スターの手動／安全自動ブーストを追加。捕捉後は大写しの彗星の尾を3本
+// 右へ払い、星の子をロケットの輪へ運ぶ失敗なしの救出へ切り替えた
+// (batch:1316-nazonazo-visible-chase-rescue)。play.html PAGE_CACHE_VERSION と同期不要。
 // v2215: もじっこファームの文字書きから旧 `menu_card_base_01〜04` を外し、左・相棒・書き順・結果の
 // 完成画像を、CSS の白い紙面や影を重ねない一層表示へ統一。モード選択 F002 は4分割の完成画像で
 // 3モード＋とじるを構成し、通常／押下画像の大きさを固定。Native 同梱には図鑑 UI 4素材と押下
@@ -193,7 +198,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2215;
+const CACHE_VERSION = 2216;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
