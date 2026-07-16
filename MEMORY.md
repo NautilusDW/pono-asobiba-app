@@ -149,6 +149,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-07-16T08:56:20Z - スタンプラリー機能のUI導線棚卸し調査 (play.html #stampRallySection / #settingsStampBtn / stamp-rally.js の加算条件確認)
+- **タスク**: スタンプラリー機能のUI導線棚卸し調査 (play.html #stampRallySection / #settingsStampBtn / stamp-rally.js の加算条件確認)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 0
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {}
+- **サマリ**: 行動ログが空のため分析できません。
+
+
 ### 2026-07-16T08:40:14Z - 実績/スタンプラリー全面リバランス + ハイブリッドショップ実装 (batch:1317)
 - **タスク**: 実績/スタンプラリー全面リバランス + ハイブリッドショップ実装 (batch:1317)
 - **結果**: 成功
@@ -242,19 +255,6 @@ wrangler deploy                  # master 内容を production に
 
 ### 2026-07-16T07:04:27Z - 家具のショップ販売化(案2ハイブリッド): common/shop-catalog.js新規+shop/index.htmlかぐタブ+room/index.html所持マージ
 - **タスク**: 家具のショップ販売化(案2ハイブリッド): common/shop-catalog.js新規+shop/index.htmlかぐタブ+room/index.html所持マージ
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 0
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {}
-- **サマリ**: 行動ログが空のため分析できません。
-
-
-### 2026-07-16T06:50:16Z - 新ゲーム4本+wordmatchへの実績計装追加(ストリーム1b): nazonazo_correct/nazonazo_stage_clears/cooking_ingredients/cooking_recipes/quiz_sound_correct/quiz_sound_clears/writing_mori_daily_three + pono_played_デイリーラリー登録
-- **タスク**: 新ゲーム4本+wordmatchへの実績計装追加(ストリーム1b): nazonazo_correct/nazonazo_stage_clears/cooking_ingredients/cooking_recipes/quiz_sound_correct/quiz_sound_clears/writing_mori_daily_three + pono_played_デイリーラリー登録
 - **結果**: 成功
 - **理由**: N/A
 - **総アクション数**: 0
