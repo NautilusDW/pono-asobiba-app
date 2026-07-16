@@ -5669,6 +5669,28 @@ body.layout-editor-on .bowl-fill-mask::after {
 @keyframes workshopCue { from { transform: translate(-38px, 12px) rotate(-10deg); } to { transform: translate(38px, -12px) rotate(10deg); } }
 .workshop-scene[data-mode="tap"] .workshop-motion { animation: workshopTap .75s ease-in-out infinite alternate; }
 @keyframes workshopTap { from { transform: translateY(-12px) scale(.95); } to { transform: translateY(12px) scale(1.08); } }
+.workshop-boil-game { position: absolute; inset: 0; z-index: 2; display: none; overflow: hidden; }
+.workshop-scene.is-boil-step .workshop-boil-game { display: block; }
+.workshop-scene.is-boil-step::after { display: none; }
+.workshop-boil-pot { position: absolute; width: 66%; left: 17%; top: 24%; object-fit: contain; pointer-events: none; filter: drop-shadow(0 8px 7px rgba(70,45,25,.18)); }
+.workshop-boil-food { position: absolute; width: 25%; left: 5%; top: 8%; object-fit: contain; pointer-events: none; transition: left .3s ease, top .3s ease, transform .3s ease, opacity .2s ease; }
+.workshop-boil-spoon { position: absolute; width: 38%; right: -4%; top: 4%; object-fit: contain; pointer-events: none; opacity: 0; transform: translate(45px,-20px) rotate(-10deg); transition: opacity .25s ease, transform .32s ease; }
+.workshop-boil-bowl { position: absolute; width: 48%; right: 4%; bottom: 2%; object-fit: contain; pointer-events: none; opacity: 0; filter: saturate(1.28) contrast(1.12) drop-shadow(0 7px 6px rgba(70,45,25,.18)); transition: opacity .25s ease; }
+.workshop-boil-game[data-stage="1"] .workshop-boil-food,
+.workshop-boil-game[data-stage="2"] .workshop-boil-food,
+.workshop-boil-game[data-stage="3"] .workshop-boil-food { left: 38%; top: 35%; transform: scale(.76); }
+.workshop-boil-game[data-stage="2"] .workshop-boil-food,
+.workshop-boil-game[data-stage="3"] .workshop-boil-food { animation: boilFoodBob .55s ease-in-out infinite alternate; }
+.workshop-boil-game[data-stage="3"] .workshop-boil-spoon { opacity: 1; transform: translate(0,0) rotate(-10deg); }
+.workshop-boil-game.is-drain .workshop-boil-pot { opacity: 0; }
+.workshop-boil-game.is-drain .workshop-boil-bowl,
+.workshop-boil-game.is-drain .workshop-boil-spoon { opacity: 1; }
+.workshop-boil-game.is-drain .workshop-boil-spoon { width: 34%; right: 24%; top: 12%; transform: rotate(-8deg); }
+.workshop-boil-game.is-drain .workshop-boil-food { left: 40%; top: 22%; transform: scale(.62); }
+.workshop-boil-game.is-drain[data-stage="2"] .workshop-boil-food,
+.workshop-boil-game.is-drain[data-stage="3"] .workshop-boil-food { left: 60%; top: 56%; transform: scale(.58); animation: none; }
+@keyframes boilFoodBob { from { transform: scale(.76) translateY(-3px); } to { transform: scale(.76) translateY(4px); } }
+@media (prefers-reduced-motion: reduce) { .workshop-boil-food { animation: none !important; transition-duration: .01ms; } }
 .workshop-instruction { text-align: center; font-size: 1.16rem; font-weight: 900; color: var(--text); padding: 10px 6px 4px; }
 .workshop-hint { text-align: center; font-size: .76rem; font-weight: 800; color: var(--text-soft); min-height: 1.3em; }
 .workshop-meter { height: 12px; border-radius: 999px; background: #eadfca; overflow: hidden; margin: 8px auto 0; width: min(78%, 560px); }
@@ -6290,6 +6312,12 @@ body.layout-editor-on .bowl-fill-mask::after {
       </div>
       <div class="workshop-dots" id="workshop-dots" aria-hidden="true"></div>
       <div class="workshop-scene" id="workshop-scene" role="button" tabindex="0">
+        <div class="workshop-boil-game" id="workshop-boil-game" data-stage="0" aria-hidden="true">
+          <img class="workshop-boil-pot" id="workshop-boil-pot" alt="" draggable="false">
+          <img class="workshop-boil-food" id="workshop-boil-food" alt="" draggable="false">
+          <img class="workshop-boil-spoon" id="workshop-boil-spoon" src="../assets/images/bento/cooking/boil/boil_spoon.png" alt="" draggable="false">
+          <img class="workshop-boil-bowl" id="workshop-boil-bowl" src="../assets/images/bento/cooking/boil/boil_drain_bowl.png" alt="" draggable="false">
+        </div>
         <img class="workshop-food" id="workshop-food" alt="" draggable="false">
         <div class="workshop-motion" id="workshop-motion" aria-hidden="true">☝️</div>
         <div class="workshop-ingredients" id="workshop-ingredients"></div>
@@ -8312,6 +8340,11 @@ body.layout-editor-on .bowl-fill-mask::after {
     workshopDots: document.getElementById('workshop-dots'),
     workshopScene: document.getElementById('workshop-scene'),
     workshopFood: document.getElementById('workshop-food'),
+    workshopBoilGame: document.getElementById('workshop-boil-game'),
+    workshopBoilPot: document.getElementById('workshop-boil-pot'),
+    workshopBoilFood: document.getElementById('workshop-boil-food'),
+    workshopBoilSpoon: document.getElementById('workshop-boil-spoon'),
+    workshopBoilBowl: document.getElementById('workshop-boil-bowl'),
     workshopMotion: document.getElementById('workshop-motion'),
     workshopIngredients: document.getElementById('workshop-ingredients'),
     workshopInstruction: document.getElementById('workshop-instruction'),
@@ -9378,6 +9411,16 @@ body.layout-editor-on .bowl-fill-mask::after {
     roll: '↔️', mash: '🥔', squeeze: '✊', stir: '🥄', portion: '🥄', wrap: '🤲', water: '💧',
     steam: '♨️', seal: '☝️', fry: '♨️', measure: '🥛', cook: '🍚', fluff: '🥄', sprinkle: '✨'
   };
+  const WORKSHOP_BOIL_FOODS = {
+    broccoli: {
+      raw: '../assets/images/bento/cooking/boil/boil_broccoli_raw.png',
+      cooked: '../assets/images/bento/cooking/boil/boil_broccoli_cooked.png',
+    },
+    edamame: {
+      raw: '../assets/images/bento/cooking/boil/boil_edamame_raw.png',
+      cooked: '../assets/images/bento/cooking/boil/boil_edamame_cooked.png',
+    },
+  };
 
   function setupWorkshopListeners() {
     if (!els.workshopScene) return;
@@ -9454,19 +9497,25 @@ body.layout-editor-on .bowl-fill-mask::after {
     els.workshopStepCount.textContent = (state.workshopStepIndex + 1) + ' / ' + recipe.steps.length;
     els.workshopInstruction.textContent = step.label;
     els.workshopHint.textContent = step.kind === 'choose' ? 'ぜんぶ えらんでね' : (drag ? 'ゆびや マウスで うごかそう' : 'タップして すすめよう');
+    const boilFood = WORKSHOP_BOIL_FOODS[recipe.id];
+    const specializedBoil = !!boilFood && (step.kind === 'boil' || step.kind === 'drain');
+    els.workshopScene.classList.toggle('is-boil-step', specializedBoil);
+    els.workshopBoilGame.classList.toggle('is-drain', specializedBoil && step.kind === 'drain');
+    els.workshopFood.hidden = specializedBoil;
     els.workshopFood.src = recipe.img;
     els.workshopFood.alt = recipe.name;
     els.workshopScene.dataset.mode = drag ? 'drag' : 'tap';
     els.workshopScene.classList.remove('is-done');
     els.workshopScene.setAttribute('aria-label', step.label);
     els.workshopMotion.textContent = WORKSHOP_CUES[step.kind] || '☝️';
-    els.workshopMotion.hidden = step.kind === 'choose';
+    els.workshopMotion.hidden = step.kind === 'choose' || specializedBoil;
     els.workshopMeterFill.style.width = '0%';
     els.workshopDots.innerHTML = recipe.steps.map(function (_, index) {
       const cls = index < state.workshopStepIndex ? ' done' : (index === state.workshopStepIndex ? ' current' : '');
       return '<span class="workshop-dot' + cls + '"></span>';
     }).join('');
     els.workshopIngredients.innerHTML = '';
+    if (specializedBoil) updateWorkshopBoilVisual(step);
     if (step.kind === 'choose') {
       recipe.ingredients.forEach(function (name) {
         const button = document.createElement('button');
@@ -9491,6 +9540,29 @@ body.layout-editor-on .bowl-fill-mask::after {
   function updateWorkshopMeter(step) {
     const max = step.kind === 'choose' ? state.workshopRecipe.ingredients.length : step.count;
     els.workshopMeterFill.style.width = Math.min(100, state.workshopProgress / Math.max(1, max) * 100) + '%';
+    if (WORKSHOP_BOIL_FOODS[state.workshopRecipe.id] && (step.kind === 'boil' || step.kind === 'drain')) {
+      updateWorkshopBoilVisual(step);
+    }
+  }
+
+  function updateWorkshopBoilVisual(step) {
+    const config = WORKSHOP_BOIL_FOODS[state.workshopRecipe.id];
+    if (!config || !els.workshopBoilGame) return;
+    const stage = Math.min(step.count, state.workshopProgress);
+    const cooked = step.kind === 'drain' || stage >= 2;
+    els.workshopBoilGame.dataset.stage = String(stage);
+    els.workshopBoilPot.src = stage >= 2
+      ? '../assets/images/bento/cooking/boil/boil_pot_hot.png'
+      : '../assets/images/bento/cooking/boil/boil_pot_cold.png';
+    els.workshopBoilFood.src = cooked ? config.cooked : config.raw;
+    els.workshopBoilFood.alt = '';
+    if (step.kind === 'boil') {
+      const messages = ['ちいさくした しょくざいを おなべへ', 'おなべに はいったよ', 'ぐつぐつ ゆでよう', 'ゆであがり！'];
+      els.workshopHint.textContent = messages[stage] || messages[messages.length - 1];
+    } else {
+      const messages = ['あなあきおたまで すくおう', 'みずを きろう', 'ボウルへ うつそう'];
+      els.workshopHint.textContent = messages[stage] || messages[messages.length - 1];
+    }
   }
 
   function advanceWorkshopProgress() {
