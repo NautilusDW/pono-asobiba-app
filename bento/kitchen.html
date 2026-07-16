@@ -5634,6 +5634,61 @@ body.layout-editor-on .bowl-fill-mask::after {
 /* =========================================================
    トースト & キラキラ
    ========================================================= */
+.workshop-wrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.55fr);
+  gap: 18px;
+  padding: 0 34px 18px;
+}
+.workshop-main, .workshop-side-card {
+  background: rgba(255,255,255,0.88);
+  border: 3px solid #fff;
+  border-radius: 24px;
+  box-shadow: 0 7px 18px rgba(93,78,55,0.13);
+}
+.workshop-main { padding: 16px 20px; display: flex; flex-direction: column; min-height: 0; }
+.workshop-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.workshop-title { font-size: 1.32rem; font-weight: 900; color: var(--text); }
+.workshop-step-count { font-size: 0.82rem; font-weight: 900; color: var(--text-soft); }
+.workshop-dots { display: flex; gap: 5px; margin: 8px 0 10px; }
+.workshop-dot { flex: 1 1 0; height: 8px; border-radius: 999px; background: #eadfca; }
+.workshop-dot.done { background: var(--green); }
+.workshop-dot.current { background: var(--primary); box-shadow: 0 0 0 3px rgba(244,140,44,0.16); }
+.workshop-scene {
+  position: relative; flex: 1 1 auto; min-height: 275px; overflow: hidden;
+  border-radius: 20px; background: radial-gradient(circle at 50% 46%, #fff 0 28%, #fff6da 58%, #f7e5bb 100%);
+  display: flex; align-items: center; justify-content: center; touch-action: none; user-select: none;
+}
+.workshop-scene::after { content: ''; position: absolute; inset: 12% 16%; border: 4px dashed rgba(244,140,44,0.28); border-radius: 50%; pointer-events: none; }
+.workshop-food { width: min(48%, 320px); max-height: 75%; object-fit: contain; filter: saturate(.72) opacity(.62); transition: filter .25s, transform .25s; pointer-events: none; z-index: 1; }
+.workshop-scene.is-done .workshop-food { filter: none; transform: scale(1.08); }
+.workshop-motion { position: absolute; z-index: 2; font-size: 3rem; animation: workshopCue 1.15s ease-in-out infinite alternate; pointer-events: none; }
+@keyframes workshopCue { from { transform: translate(-38px, 12px) rotate(-10deg); } to { transform: translate(38px, -12px) rotate(10deg); } }
+.workshop-scene[data-mode="tap"] .workshop-motion { animation: workshopTap .75s ease-in-out infinite alternate; }
+@keyframes workshopTap { from { transform: translateY(-12px) scale(.95); } to { transform: translateY(12px) scale(1.08); } }
+.workshop-instruction { text-align: center; font-size: 1.16rem; font-weight: 900; color: var(--text); padding: 10px 6px 4px; }
+.workshop-hint { text-align: center; font-size: .76rem; font-weight: 800; color: var(--text-soft); min-height: 1.3em; }
+.workshop-meter { height: 12px; border-radius: 999px; background: #eadfca; overflow: hidden; margin: 8px auto 0; width: min(78%, 560px); }
+.workshop-meter-fill { height: 100%; width: 0; background: linear-gradient(90deg, var(--green), #ffd35b, var(--primary)); border-radius: inherit; transition: width .16s ease; }
+.workshop-ingredients { position: absolute; inset: 12px; z-index: 3; display: flex; flex-wrap: wrap; align-content: center; justify-content: center; gap: 12px; }
+.workshop-ingredient { min-width: 125px; min-height: 58px; border: 3px solid #fff; border-radius: 18px; background: #fff; color: var(--text); font: 900 1rem/1.2 inherit; box-shadow: 0 5px 0 #e4cfa5; cursor: pointer; }
+.workshop-ingredient:active { transform: translateY(3px); box-shadow: 0 2px 0 #e4cfa5; }
+.workshop-ingredient.chosen { background: #dff3c8; border-color: var(--green); opacity: .62; }
+.workshop-side { display: flex; flex-direction: column; gap: 14px; min-height: 0; }
+.workshop-side-card { padding: 16px; }
+.workshop-pono { display: flex; align-items: flex-start; gap: 9px; }
+.workshop-finish { display: none; text-align: center; flex: 1 1 auto; align-items: center; justify-content: center; flex-direction: column; gap: 12px; }
+.workshop-finish.show { display: flex; }
+.workshop-finish-img { width: min(72%, 230px); max-height: 210px; object-fit: contain; filter: drop-shadow(0 7px 8px rgba(93,78,55,.18)); }
+@media (max-width: 760px) {
+  .workshop-wrap { grid-template-columns: 1fr; padding: 0 12px 12px; gap: 9px; }
+  .workshop-side { min-height: 96px; }
+  .workshop-main { padding: 10px 12px; }
+  .workshop-scene { min-height: 220px; }
+  .workshop-side-card { padding: 9px; }
+}
 .toast {
   position: fixed;
   left: 50%;
@@ -6215,6 +6270,42 @@ body.layout-editor-on .bowl-fill-mask::after {
       </div>
       <div class="side-card cook-done-card" id="fry-done-card">
         <div class="cook-done-tray" id="fry-done-tray" aria-hidden="true"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== 画面4: 料理ワークショップ ===================== -->
+<section class="screen" data-screen="workshop" id="screen-workshop" tabindex="-1" aria-labelledby="workshop-title" hidden>
+  <button type="button" class="screen-back" data-back="fridge">← もどる</button>
+  <div class="panel-head">
+    <span class="panel-pill panel--cook"><span class="pill-num">4</span>おかずを つくる</span>
+  </div>
+  <div class="workshop-wrap">
+    <div class="workshop-main">
+      <div class="workshop-head">
+        <div class="workshop-title" id="workshop-title">りょうりを しよう</div>
+        <div class="workshop-step-count" id="workshop-step-count"></div>
+      </div>
+      <div class="workshop-dots" id="workshop-dots" aria-hidden="true"></div>
+      <div class="workshop-scene" id="workshop-scene" role="button" tabindex="0">
+        <img class="workshop-food" id="workshop-food" alt="" draggable="false">
+        <div class="workshop-motion" id="workshop-motion" aria-hidden="true">☝️</div>
+        <div class="workshop-ingredients" id="workshop-ingredients"></div>
+      </div>
+      <div class="workshop-instruction" id="workshop-instruction"></div>
+      <div class="workshop-hint" id="workshop-hint"></div>
+      <div class="workshop-meter" aria-hidden="true"><div class="workshop-meter-fill" id="workshop-meter-fill"></div></div>
+    </div>
+    <div class="workshop-side">
+      <div class="workshop-side-card workshop-pono">
+        <img src="../assets/images/characters/pono/pono_face_circle.webp" class="pono-img" alt="ポノ">
+        <div class="speech-bubble" id="speech-workshop">じゅんばんに やってみよう！</div>
+      </div>
+      <div class="workshop-side-card workshop-finish" id="workshop-finish">
+        <img class="workshop-finish-img" id="workshop-finish-img" alt="">
+        <div class="cook-action-label" id="workshop-finish-label">できあがり！</div>
+        <button type="button" class="btn btn-primary" id="workshop-finish-btn">れいぞうこへ</button>
       </div>
     </div>
   </div>
@@ -6838,6 +6929,76 @@ body.layout-editor-on .bowl-fill-mask::after {
     { id: 'ninjin_ingen', name: 'にんじんいんげん',  img: '../assets/images/bento/free-layout/okazu_ninjin_ingen.png', needs: ['carrot'] },
     { id: 'kinpira',      name: 'きんぴらごぼう',    img: '../assets/images/Bento_parts/kinpira2.webp',      needs: ['carrot'] },
   ];
+
+  const WORKSHOP_RECIPES = [
+    { id: 'tomato', name: 'プチトマト', img: '../assets/images/bento/cooking/tomato/tomato_001.png', ingredients: ['プチトマト'], steps: [
+      ['choose','プチトマトを えらぼう',1], ['wash','みずで やさしく あらおう',3], ['trim','へたを とろう',2], ['serve','カップに いれよう',2]
+    ]},
+    { id: 'broccoli', name: 'ブロッコリー', img: '../assets/images/bento/free-layout/okazu_broccoli.png', ingredients: ['ブロッコリー','しお'], steps: [
+      ['choose','ざいりょうを えらぼう',2], ['wash','みずで よく あらおう',3], ['divide','こぶさに わけよう',4], ['boil','しおゆで しよう',3], ['drain','おゆを きろう',2]
+    ]},
+    { id: 'edamame', name: 'えだまめ', img: '../assets/images/bento/free-layout/okazu_edamame.png', ingredients: ['えだまめ','しお'], steps: [
+      ['choose','ざいりょうを えらぼう',2], ['wash','みずで あらおう',3], ['rub','しおで もみもみ しよう',4], ['boil','おなべで ゆでよう',3], ['drain','おゆを きろう',2]
+    ]},
+    { id: 'ichigo', name: 'いちご', img: '../assets/images/bento/free-layout/fruit_ichigo.png', ingredients: ['いちご'], steps: [
+      ['choose','いちごを えらぼう',1], ['wash','みずで やさしく あらおう',3], ['trim','へたを とろう',2], ['cut','たて はんぶんに きろう',2], ['serve','カップに いれよう',2]
+    ]},
+    { id: 'mikan', name: 'みかん', img: '../assets/images/bento/free-layout/fruit_mikan.png', ingredients: ['みかん'], steps: [
+      ['choose','みかんを えらぼう',1], ['peel','かわを むこう',4], ['divide','ふさに わけよう',4], ['serve','カップに いれよう',2]
+    ]},
+    { id: 'ringo', name: 'りんご', img: '../assets/images/bento/free-layout/fruit_ringo.png', ingredients: ['りんご'], steps: [
+      ['choose','りんごを えらぼう',1], ['wash','みずで よく あらおう',3], ['cut','8つの くしがたに きろう',4], ['core','しんを とろう',3], ['serve','カップに いれよう',2]
+    ]},
+    { id: 'kiwi', name: 'キウイ', img: '../assets/images/bento/free-layout/fruit_kiwi.png', ingredients: ['キウイ'], steps: [
+      ['choose','キウイを えらぼう',1], ['wash','みずで あらおう',3], ['cut','りょうはしを きろう',2], ['peel','かわを むこう',4], ['cut','はんげつぎりに しよう',4]
+    ]},
+    { id: 'melon', name: 'メロン', img: '../assets/images/bento/free-layout/fruit_melon.png', ingredients: ['メロン'], steps: [
+      ['choose','メロンを えらぼう',1], ['cut','くしがたに きろう',3], ['scoop','たねを とろう',3], ['peel','かわを はずそう',3], ['cut','ひとくちに きろう',4]
+    ]},
+    { id: 'tamagoyaki', name: 'たまごやき', img: '../assets/images/bento/cooking/egg/egg_003_done.png', ingredients: ['たまご','だし','あぶら'], steps: [
+      ['choose','ざいりょうを えらぼう',3], ['crack','たまごを わろう',2], ['mix','だしと まぜよう',4], ['oil','あぶらを ひこう',2], ['pour','たまごを ながそう',2], ['roll','くるくる まこう',4], ['pour','もういちど ながそう',2], ['roll','くるくる まこう',4], ['cut','はばを そろえて きろう',3]
+    ]},
+    { id: 'potato_salad', name: 'ポテトサラダ', img: '../assets/images/bento/free-layout/okazu_potato_salad.png', ingredients: ['じゃがいも','にんじん','きゅうり','マヨネーズ'], steps: [
+      ['choose','ざいりょうを えらぼう',4], ['cut','じゃがいもを らんぎりに しよう',4], ['cut','にんじんを いちょうぎりに しよう',4], ['cut','きゅうりを うすい わぎりに しよう',4], ['boil','じゃがいもと にんじんを ゆでよう',3], ['mash','あらく つぶそう',5], ['squeeze','きゅうりの みずを しぼろう',3], ['mix','マヨネーズと まぜよう',5]
+    ]},
+    { id: 'corn_spinach', name: 'コーンほうれんそう', img: '../assets/images/bento/free-layout/okazu_corn_spinach.png', ingredients: ['ほうれんそう','コーン','バター'], steps: [
+      ['choose','ざいりょうを えらぼう',3], ['wash','ほうれんそうを あらおう',3], ['cut','3センチに きろう',4], ['boil','さっと ゆでよう',3], ['squeeze','みずを しぼろう',3], ['stir','コーンと バターで いためよう',5]
+    ]},
+    { id: 'napolitan', name: 'ナポリタン', img: '../assets/images/bento/free-layout/okazu_napolitan.png', ingredients: ['スパゲッティ','たまねぎ','ウインナー','ピーマン','ケチャップ'], steps: [
+      ['choose','ざいりょうを えらぼう',5], ['cut','たまねぎを うすぎりに しよう',4], ['cut','ウインナーを ななめぎりに しよう',4], ['cut','ピーマンを ほそぎりに しよう',4], ['boil','スパゲッティを ゆでよう',3], ['stir','ぐざいを いためよう',5], ['mix','ケチャップと まぜよう',5]
+    ]},
+    { id: 'pineapple', name: 'パイナップル', img: '../assets/images/bento/free-layout/fruit_pineapple.png', ingredients: ['パイナップル'], steps: [
+      ['choose','パイナップルを えらぼう',1], ['cut','わぎりに しよう',4], ['peel','かわを はずそう',3], ['core','かたい しんを とろう',3], ['cut','ひとくちに きろう',4]
+    ]},
+    { id: 'momo', name: 'もも', img: '../assets/images/bento/free-layout/fruit_momo.png', ingredients: ['もも'], steps: [
+      ['choose','ももを えらぼう',1], ['wash','みずで やさしく あらおう',3], ['peel','かわを むこう',4], ['cut','たねに そって くしがたに きろう',4]
+    ]},
+    { id: 'gyoza', name: 'ぎょうざ', img: '../assets/images/bento/free-layout/okazu_gyoza.png', ingredients: ['ぶたひきにく','キャベツ','ニラ','ぎょうざの かわ'], steps: [
+      ['choose','ざいりょうを えらぼう',4], ['cut','キャベツを みじんぎりに しよう',5], ['cut','ニラを こぐちぎりに しよう',4], ['mix','あんを こねよう',5], ['portion','あんを のせよう',3], ['wrap','ひだを つけて つつもう',5], ['stir','フライパンで やこう',4], ['water','みずを いれよう',2], ['steam','ふたをして むしやきに しよう',3]
+    ]},
+    { id: 'harumaki', name: 'はるまき', img: '../assets/images/bento/free-layout/okazu_harumaki.png', ingredients: ['ぶたにく','たけのこ','にんじん','キャベツ','はるまきの かわ'], steps: [
+      ['choose','ざいりょうを えらぼう',5], ['cut','ぐざいを ほそぎりに しよう',5], ['stir','ぐざいを いためよう',5], ['mix','とろみを つけて まぜよう',4], ['portion','かわに ぐざいを のせよう',3], ['roll','はしから くるくる まこう',5], ['seal','はしを とめよう',2], ['fry','きつねいろに あげよう',4]
+    ]},
+    { id: 'bacon_maki', name: 'ベーコンまき', img: '../assets/images/bento/free-layout/okazu_bacon_maki.png', ingredients: ['ベーコン','スティックチーズ'], steps: [
+      ['choose','ざいりょうを えらぼう',2], ['cut','チーズを ぼうじょうに きろう',3], ['roll','ベーコンで くるくる まこう',5], ['stir','まきおわりを したにして やこう',4], ['roll','ころがして ぜんたいを やこう',4]
+    ]},
+    { id: 'rice_ume', name: 'うめぼしごはん', img: '../assets/images/Bento_parts/rice_umeboshi.webp', ingredients: ['おこめ','みず','うめぼし'], steps: [
+      ['choose','ざいりょうを えらぼう',3], ['wash','おこめを やさしく とごう',5], ['measure','みずを はかって いれよう',2], ['cook','ふっくら たこう',4], ['fluff','しゃもじで ほぐそう',4], ['portion','うめぼしを のせよう',2]
+    ]},
+    { id: 'rice_goma', name: 'ごまごはん', img: '../assets/images/Bento_parts/rice_goma.webp', ingredients: ['おこめ','みず','ごま'], steps: [
+      ['choose','ざいりょうを えらぼう',3], ['wash','おこめを やさしく とごう',5], ['measure','みずを はかって いれよう',2], ['cook','ふっくら たこう',4], ['fluff','しゃもじで ほぐそう',4], ['sprinkle','ごまを ぱらぱら かけよう',4]
+    ]},
+    { id: 'rice_furikake', name: 'ふりかけごはん', img: '../assets/images/Bento_parts/rice_furikake.webp', ingredients: ['おこめ','みず','ふりかけ'], steps: [
+      ['choose','ざいりょうを えらぼう',3], ['wash','おこめを やさしく とごう',5], ['measure','みずを はかって いれよう',2], ['cook','ふっくら たこう',4], ['fluff','しゃもじで ほぐそう',4], ['sprinkle','ふりかけを ぜんたいに かけよう',5]
+    ]},
+  ].map(function (recipe) {
+    recipe.steps = recipe.steps.map(function (step) { return { kind: step[0], label: step[1], count: step[2] }; });
+    recipe.workshop = true;
+    recipe.startFromRaw = true;
+    recipe.needs = [];
+    return recipe;
+  });
+  Array.prototype.push.apply(RECIPES, WORKSHOP_RECIPES);
 
   const PREP_SHEETS = {
     base: {
@@ -7502,6 +7663,15 @@ body.layout-editor-on .bowl-fill-mask::after {
     unlockedRecipes: loadUnlockedRecipes(),
     current: null,
     activeRecipeId: '',
+    workshopRecipe: null,
+    workshopStepIndex: 0,
+    workshopProgress: 0,
+    workshopChosen: new Set(),
+    workshopPointerId: null,
+    workshopLastX: 0,
+    workshopLastY: 0,
+    workshopDragDistance: 0,
+    workshopAdvancing: false,
     actionIndex: 0,
     kitchenMode: 'prep',
     prepProgress: 0,
@@ -8135,6 +8305,23 @@ body.layout-editor-on .bowl-fill-mask::after {
     fryRating: document.getElementById('fry-rating'),
     speechFry:     document.getElementById('speech-fry'),
 
+    // workshop screen
+    workshopTitle: document.getElementById('workshop-title'),
+    workshopStepCount: document.getElementById('workshop-step-count'),
+    workshopDots: document.getElementById('workshop-dots'),
+    workshopScene: document.getElementById('workshop-scene'),
+    workshopFood: document.getElementById('workshop-food'),
+    workshopMotion: document.getElementById('workshop-motion'),
+    workshopIngredients: document.getElementById('workshop-ingredients'),
+    workshopInstruction: document.getElementById('workshop-instruction'),
+    workshopHint: document.getElementById('workshop-hint'),
+    workshopMeterFill: document.getElementById('workshop-meter-fill'),
+    speechWorkshop: document.getElementById('speech-workshop'),
+    workshopFinish: document.getElementById('workshop-finish'),
+    workshopFinishImg: document.getElementById('workshop-finish-img'),
+    workshopFinishLabel: document.getElementById('workshop-finish-label'),
+    workshopFinishBtn: document.getElementById('workshop-finish-btn'),
+
     // fridge screen
     fridge:        document.getElementById('fridge'),
     shelves:       document.getElementById('fridge-shelves'),
@@ -8165,6 +8352,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       chop:   document.getElementById('screen-chop'),
       grill:  document.getElementById('screen-grill'),
       fry:    document.getElementById('screen-fry'),
+      workshop: document.getElementById('screen-workshop'),
       fridge: document.getElementById('screen-fridge'),
     },
   };
@@ -8177,6 +8365,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     chop:   'トントン きる がめんに なったよ',
     grill:  'フライパンで やく がめんに なったよ',
     fry:    'あぶらで あげる がめんに なったよ',
+    workshop: 'じゅんばんに りょうりする がめんに なったよ',
     fridge: 'れいぞうこ がめんに なったよ',
   };
 
@@ -8224,6 +8413,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     els.fridgeGotoBentoBtn.addEventListener('click', () => {
       location.href = './index.html';
     });
+    setupWorkshopListeners();
 
     // 戻るボタン群（select に戻る）
     // chop 画面からの戻りは、進捗があれば確認モーダルを挟む（誤タップ防止）
@@ -8813,7 +9003,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       stopKitchenAmbient('fry', 180);
     }
 
-    const stepMap = { mode: 1, select: 1, prep: 2, chop: 2, fridge: 3, grill: 4, fry: 4 };
+    const stepMap = { mode: 1, select: 1, prep: 2, chop: 2, fridge: 3, grill: 4, fry: 4, workshop: 4 };
     const targetStep = stepMap[name] || 1;
 
     const swap = () => {
@@ -9180,8 +9370,180 @@ body.layout-editor-on .bowl-fill-mask::after {
     startIngredientAction(ing, cookActionIndex, rec && rec.id);
   }
 
+  const WORKSHOP_DRAG_KINDS = new Set(['wash','peel','rub','mix','roll','wrap','stir','mash','squeeze','fluff']);
+  const WORKSHOP_CUES = {
+    choose: '👇', wash: '💧', trim: '☝️', serve: '👇', divide: '🤲', boil: '♨️', drain: '👇',
+    peel: '☝️', cut: '🔪', core: '🥄', scoop: '🥄', crack: '🥚', mix: '🥄', oil: '💧', pour: '🥣',
+    roll: '↔️', mash: '🥔', squeeze: '✊', stir: '🥄', portion: '🥄', wrap: '🤲', water: '💧',
+    steam: '♨️', seal: '☝️', fry: '♨️', measure: '🥛', cook: '🍚', fluff: '🥄', sprinkle: '✨'
+  };
+
+  function setupWorkshopListeners() {
+    if (!els.workshopScene) return;
+    els.workshopScene.addEventListener('pointerdown', function (event) {
+      const step = getWorkshopStep();
+      if (!step || step.kind === 'choose' || state.workshopAdvancing) return;
+      state.workshopPointerId = event.pointerId;
+      state.workshopLastX = event.clientX;
+      state.workshopLastY = event.clientY;
+      state.workshopDragDistance = 0;
+      els.workshopScene.setPointerCapture(event.pointerId);
+      event.preventDefault();
+    });
+    els.workshopScene.addEventListener('pointermove', function (event) {
+      const step = getWorkshopStep();
+      if (!step || state.workshopPointerId !== event.pointerId || !WORKSHOP_DRAG_KINDS.has(step.kind)) return;
+      const dx = event.clientX - state.workshopLastX;
+      const dy = event.clientY - state.workshopLastY;
+      state.workshopLastX = event.clientX;
+      state.workshopLastY = event.clientY;
+      state.workshopDragDistance += Math.hypot(dx, dy);
+      while (state.workshopDragDistance >= 48) {
+        state.workshopDragDistance -= 48;
+        advanceWorkshopProgress();
+      }
+      event.preventDefault();
+    });
+    const finishPointer = function (event) {
+      const step = getWorkshopStep();
+      if (!step || state.workshopPointerId !== event.pointerId) return;
+      const wasDrag = state.workshopDragDistance > 8;
+      state.workshopPointerId = null;
+      if (!WORKSHOP_DRAG_KINDS.has(step.kind) || !wasDrag) advanceWorkshopProgress();
+    };
+    els.workshopScene.addEventListener('pointerup', finishPointer);
+    els.workshopScene.addEventListener('pointercancel', function () { state.workshopPointerId = null; });
+    els.workshopScene.addEventListener('keydown', function (event) {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      const step = getWorkshopStep();
+      if (!step || step.kind === 'choose') return;
+      event.preventDefault();
+      advanceWorkshopProgress();
+    });
+    if (els.workshopFinishBtn) els.workshopFinishBtn.addEventListener('click', function () {
+      state.workshopRecipe = null;
+      renderRecipes();
+      setSpeech('つぎは なにを つくる？', 'fridge');
+      showScreen('fridge');
+    });
+  }
+
+  function getWorkshopStep() {
+    return state.workshopRecipe && state.workshopRecipe.steps[state.workshopStepIndex];
+  }
+
+  function startWorkshopRecipe(recipe) {
+    state.workshopRecipe = recipe;
+    state.workshopStepIndex = 0;
+    state.workshopProgress = 0;
+    state.workshopChosen = new Set();
+    state.workshopAdvancing = false;
+    state.workshopPointerId = null;
+    if (els.workshopFinish) els.workshopFinish.classList.remove('show');
+    renderWorkshopStep();
+    showScreen('workshop');
+  }
+
+  function renderWorkshopStep() {
+    const recipe = state.workshopRecipe;
+    const step = getWorkshopStep();
+    if (!recipe || !step) return;
+    const drag = WORKSHOP_DRAG_KINDS.has(step.kind);
+    els.workshopTitle.textContent = recipe.name;
+    els.workshopStepCount.textContent = (state.workshopStepIndex + 1) + ' / ' + recipe.steps.length;
+    els.workshopInstruction.textContent = step.label;
+    els.workshopHint.textContent = step.kind === 'choose' ? 'ぜんぶ えらんでね' : (drag ? 'ゆびや マウスで うごかそう' : 'タップして すすめよう');
+    els.workshopFood.src = recipe.img;
+    els.workshopFood.alt = recipe.name;
+    els.workshopScene.dataset.mode = drag ? 'drag' : 'tap';
+    els.workshopScene.classList.remove('is-done');
+    els.workshopScene.setAttribute('aria-label', step.label);
+    els.workshopMotion.textContent = WORKSHOP_CUES[step.kind] || '☝️';
+    els.workshopMotion.hidden = step.kind === 'choose';
+    els.workshopMeterFill.style.width = '0%';
+    els.workshopDots.innerHTML = recipe.steps.map(function (_, index) {
+      const cls = index < state.workshopStepIndex ? ' done' : (index === state.workshopStepIndex ? ' current' : '');
+      return '<span class="workshop-dot' + cls + '"></span>';
+    }).join('');
+    els.workshopIngredients.innerHTML = '';
+    if (step.kind === 'choose') {
+      recipe.ingredients.forEach(function (name) {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = 'workshop-ingredient';
+        button.textContent = name;
+        button.addEventListener('click', function (event) {
+          event.stopPropagation();
+          if (state.workshopChosen.has(name)) return;
+          state.workshopChosen.add(name);
+          button.classList.add('chosen');
+          state.workshopProgress = state.workshopChosen.size;
+          updateWorkshopMeter(step);
+          if (state.workshopChosen.size >= recipe.ingredients.length) completeWorkshopStep();
+        });
+        els.workshopIngredients.appendChild(button);
+      });
+    }
+    setSpeech(step.label, 'workshop');
+  }
+
+  function updateWorkshopMeter(step) {
+    const max = step.kind === 'choose' ? state.workshopRecipe.ingredients.length : step.count;
+    els.workshopMeterFill.style.width = Math.min(100, state.workshopProgress / Math.max(1, max) * 100) + '%';
+  }
+
+  function advanceWorkshopProgress() {
+    const step = getWorkshopStep();
+    if (!step || step.kind === 'choose' || state.workshopAdvancing) return;
+    state.workshopProgress += 1;
+    updateWorkshopMeter(step);
+    if (state.workshopProgress >= step.count) completeWorkshopStep();
+  }
+
+  function completeWorkshopStep() {
+    if (state.workshopAdvancing) return;
+    state.workshopAdvancing = true;
+    els.workshopMeterFill.style.width = '100%';
+    els.workshopScene.classList.add('is-done');
+    setSpeech('できた！ つぎへ すすもう！', 'workshop');
+    window.setTimeout(function () {
+      state.workshopStepIndex += 1;
+      state.workshopProgress = 0;
+      state.workshopChosen = new Set();
+      state.workshopAdvancing = false;
+      if (state.workshopStepIndex >= state.workshopRecipe.steps.length) {
+        finishWorkshopRecipe();
+      } else {
+        renderWorkshopStep();
+      }
+    }, 420);
+  }
+
+  function finishWorkshopRecipe() {
+    const recipe = state.workshopRecipe;
+    state.unlockedRecipes.add(recipe.id);
+    saveUnlockedRecipes();
+    els.workshopStepCount.textContent = 'できあがり';
+    els.workshopInstruction.textContent = recipe.name + 'が できたよ！';
+    els.workshopHint.textContent = '';
+    els.workshopDots.innerHTML = recipe.steps.map(function () { return '<span class="workshop-dot done"></span>'; }).join('');
+    els.workshopIngredients.innerHTML = '';
+    els.workshopMotion.hidden = true;
+    els.workshopScene.classList.add('is-done');
+    els.workshopFinishImg.src = recipe.img;
+    els.workshopFinishImg.alt = recipe.name;
+    els.workshopFinishLabel.textContent = recipe.name + ' できあがり！';
+    els.workshopFinish.classList.add('show');
+    setSpeech('じょうずに できたね！', 'workshop');
+    showToast(recipe.name + ' できあがり！');
+  }
+
   function startCookFromRecipe(rec) {
     if (!rec) return;
+    if (rec.workshop) {
+      startWorkshopRecipe(rec);
+      return;
+    }
     const ready = !!rec.startFromRaw || (rec.needs || []).every(function (id) {
       return state.unlocked.has(id);
     });
@@ -19557,6 +19919,10 @@ body.layout-editor-on .bowl-fill-mask::after {
     }
     if (target === 'fry' && els.speechFry) {
       els.speechFry.textContent = text;
+      return;
+    }
+    if (target === 'workshop' && els.speechWorkshop) {
+      els.speechWorkshop.textContent = text;
       return;
     }
     if (target === 'fridge' && els.speechFridge) {

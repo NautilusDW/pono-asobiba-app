@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-07-16 - [batch:1325-kitchen-menu-phases2-5] Codex: ユーザー指示「最後まで続けてください」により、Phase 2〜5（既存専用9品以外の標準17品＋ごはん3種）を連続実装する。現行お弁当アセットを完成画像の正本とし、食材選択・洗う／むく／指定の切り方・ゆでる／混ぜる・巻く／包む・炊飯／仕上げを操作できる共通料理ワークショップを追加する。単なる完成ボタンにはせず、マウス／タッチ／キーボードで各工程を完了できる構成とする。旧メニュー16品、凍結develop／master／productionは変更しない。隔離worktree `/tmp/pono-kitchen-menu-phase1` を継続使用。 (by Codex)
+
 - 2026-07-16 - [batch:1324-kitchen-menu-phase1] Codex: ユーザー承認により標準26品＋ごはん3種を提案順で実装開始。Phase 1は既存9品をお弁当正本へ一致。監査でミートボール／やきざけカードが旧Bento_parts、にんじんいんげん／きんぴらが同一carrot grillの最終画像を共有してカード選択が調理結果へ伝播しない、コロッケカードがpotato全工程ではなく`korokke_raw`衣付けから開始する不一致を確認。レシピ選択IDをcook image variantへ渡し、2副菜を分岐、カード現行画像化、コロッケをpotato全工程へ接続する。共有mainは別作業dirtyのため最新origin `99acc46f`から隔離worktree `/tmp/pono-kitchen-menu-phase1`を使用。旧メニュー16品、凍結develop／master／productionは変更しない。 (by Codex)
 
 - 2026-07-16 - [batch:1324-kitchen-menu-phase1] Codex: **PHASE 1 DONE** — feature `0ef514f2`＋SW v2228 `e782f317`をdevelop-appへpush。レシピIDを調理状態へ保持してcarrotのにんじんいんげん／きんぴら画像を分岐、コロッケをpotato chop→mash→mix→shape→bread→fryへ接続、ミートボール／やきざけカードをお弁当現行画像へ統一。新規static＋Chromium 4本、既存potato route／hand-meatball／motion-mix-warp、SW構文、diff check PASS。Actions `29481419123`はApp staging→LP stagingともsuccess、App公開HTMLとSW v2228確認。次はPhase 2（短工程8品＋洗う／むく／切る／ゆでる共通操作）。旧メニュー16品、凍結develop／master／production未変更。 (by Codex)
