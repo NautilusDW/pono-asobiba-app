@@ -2756,7 +2756,7 @@ body.layout-editor-on .fry-pot {
   display: none;
 }
 .stir-fry-canvas {
-  position: absolute; left: 32.5%; top: 24.5%; width: 37%; height: 32%;
+  position: absolute; left: 29.4%; top: 12.5%; width: 42.1%; height: 54%;
   z-index: 45; border-radius: 50%; touch-action: none; cursor: grab;
   opacity: 0; pointer-events: none; transition: opacity 0.24s ease;
 }
@@ -17895,7 +17895,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     ctx.clearRect(0, 0, surface.width, surface.height);
     ctx.save();
     ctx.beginPath();
-    ctx.ellipse(surface.width / 2, surface.height / 2, surface.width * .455, surface.height * .405, 0, 0, Math.PI * 2);
+    ctx.ellipse(surface.width / 2, surface.height / 2, surface.width * .49, surface.height * .49, 0, 0, Math.PI * 2);
     ctx.clip();
     state.stirFryPieces.forEach(function (piece) {
       piece.x += piece.vx;
@@ -17905,12 +17905,12 @@ body.layout-editor-on .bowl-fill-mask::after {
       piece.rot += piece.vr;
       piece.vr *= .9;
       piece.lift *= .82;
-      const nx = (piece.x - surface.width / 2) / (surface.width * .45);
-      const ny = (piece.y - surface.height / 2) / (surface.height * .40);
+      const nx = (piece.x - surface.width / 2) / (surface.width * .42);
+      const ny = (piece.y - surface.height / 2) / (surface.height * .42);
       const distance = Math.sqrt(nx * nx + ny * ny);
       if (distance > 1) {
-        piece.x = surface.width / 2 + nx / distance * surface.width * .44;
-        piece.y = surface.height / 2 + ny / distance * surface.height * .39;
+        piece.x = surface.width / 2 + nx / distance * surface.width * .415;
+        piece.y = surface.height / 2 + ny / distance * surface.height * .415;
         piece.vx *= -.38;
         piece.vy *= -.38;
       }

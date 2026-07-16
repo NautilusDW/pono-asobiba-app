@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-07-17 - [batch:1337-kitchen-stir-mask-fit] Codex: DONE — batch:1336後の実機評価「相変わらずフライパンとマスクが合わない」を再実測。旧Canvas 32.5/24.5/37/32%は内周より幅約12%狭く高さ約40%、上寄りだったため、内周bbox 29.4/12.5/42.1/54%へ置換。描画clip 49%楕円と物理中心境界41.5%を同じCanvasへ統一。844x390／1366x768実画面で両材料投入後を画像確認。専用Playwright、inline JS/SW構文、diff check PASS。sw v2256。 (by Codex)
+
 - 2026-07-17 - [batch:1336-kitchen-ninjin-ingen-sequence] Codex: DONE — batch:1335実機評価「マスクずれ／最初の皿が一枚レイヤー風／にんじん投入だけでいんげんが突然出る」を修正。最初の皿を個別にんじん7枚の散開表示にし、皿ごとドラッグ投入後に個別いんげん7枚へ交代、2回目の投入後だけ18切れ端の混ぜ操作を開始。Canvasを鍋肌へ左上補正し楕円clipで外側描画を遮断。キーボードもにんじん→いんげん→混ぜる順。関連Playwright 9件、inline JS/SW構文、diff check PASS。sw v2255。 (by Codex)
 
 - 2026-07-17 - [batch:1328c-mojikko-settings-gauge-frame-family] Codex: 正本settings 120x120を基準に枠厚再生成・戻るを設定内へ、過去成果物1328b確認済み→差替え着手。最新`origin/develop-app`から隔離worktree `/tmp/pono-1328c-mojikko-settings-gauge-frame-family`／branch `codex/1328c-mojikko-settings-gauge-frame-family`を作成し、claim登録済み。現時点ではclaim／HANDOFFのみで、コード・asset・SWは未変更。 (by Codex)
