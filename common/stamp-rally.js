@@ -119,6 +119,7 @@
     { icon: '🪼', name: 'クラゲ',       type: 'sea',  id: 'jellyfish',     img: 'assets/images/ocean/JellyFish/JellyFish_001.png' },
   ];
 
+  // レガシー: play.html の #stampRallySection は撤去済みのため実質no-op。play-all.html 専用
   var ALL_FREE_GAMES = [
     { key: 'oto',             emoji: '\uD83C\uDFB5', name: 'おとタッチ',        href: 'oto/index.html' },
     { key: 'quiz_sound',      emoji: '\uD83D\uDC3E', name: 'こだまのもりのこえさがし', href: 'quiz-sound/index.html' },
@@ -460,7 +461,7 @@
     }
   }
 
-  // ── 2. Daily Challenge (pick 2 games per day) ──
+  // ── 2. Daily Challenge (pick 2 games per day) [レガシー: play-all.html 専用、play.html では no-op] ──
   function seededRandom(seed) {
     var x = Math.sin(seed) * 10000;
     return x - Math.floor(x);
@@ -539,7 +540,7 @@
     return rally;
   }
 
-  // ── 3. UI Rendering ──
+  // ── 3. UI Rendering [レガシー: play-all.html 専用、play.html では no-op] ──
   function getGameInfo(key) {
     for (var i = 0; i < ALL_FREE_GAMES.length; i++) {
       if (ALL_FREE_GAMES[i].key === key) return ALL_FREE_GAMES[i];
@@ -1408,6 +1409,30 @@
     if (typeof window._scheduleFirstClearAfterStamps === 'function') window._scheduleFirstClearAfterStamps();
   });
 
+  // ── 5. Daily Quest Bonus Stamp (js/daily-quest.js の PonoDailyQuestCleared と1対1連携) ──
+  function grantDailyQuestBonusStamp(detail) {
+    if (rewardsBlocked()) return null;
+    var bonusKey = getTodayStr() + '_dailyquest_bonus';
+    var log = getStampLog();
+    if (log.dates.indexOf(bonusKey) !== -1) return null;
+    log.dates.push(bonusKey);
+    log.total = log.dates.length;
+    saveStampLog(log);
+
+    var questLabel = (detail && detail.questLabel) || 'きょうの チャレンジ';
+    var finalTotal = log.total;
+    // visibilitychange の汎用差分検出より先に確定させ、演出の取りこぼしを防ぐ
+    setTimeout(function() {
+      showStampBatch([{ total: finalTotal, text: '🎉「' + questLabel + '」\nクリアしたよ！' }], function() {
+        animateStamp(finalTotal);
+        setTimeout(function() { checkSlotReward(finalTotal); }, 150);
+      });
+    }, 500);
+    _stampTotalAfterInit = finalTotal;
+    localStorage.setItem('pono_stamp_before', String(finalTotal));
+    return { added: true, log: log };
+  }
+
   // ── Public API (window.PonoStampRally) ──
   window.PonoStampRally = {
     addStampToday: addStampToday,
@@ -1432,7 +1457,8 @@
     getFilledInCard: getFilledInCard,
     getCurrentRow: getCurrentRow,
     rewardsBlocked: rewardsBlocked,
-    initStampRally: window._initStampRally
+    initStampRally: window._initStampRally,
+    grantDailyQuestBonusStamp: grantDailyQuestBonusStamp
   };
   Object.defineProperty(window.PonoStampRally, 'CARD_SLOT_REWARDS', { get: function() { return CARD_SLOT_REWARDS; }, enumerable: true });
   Object.defineProperty(window.PonoStampRally, 'CARD_COMPLETE_REWARDS', { get: function() { return CARD_COMPLETE_REWARDS; }, enumerable: true });

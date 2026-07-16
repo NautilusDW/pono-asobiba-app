@@ -11,13 +11,19 @@
   function safeRemove(k) { try { window.localStorage && window.localStorage.removeItem(k); } catch (_) {} }
 
   function isBentoTutorialComplete() { return safeGet(BENTO_MARKER) === '1'; }
+  function isAppTier() {
+    try { return !!(window.PonoTier && typeof window.PonoTier.isApp === 'function' && window.PonoTier.isApp()); } catch (_) { return false; }
+  }
 
   var QUEST_POOL = [
-    { id: 'maze',     label: 'めいろ',       href: 'maze/',     eligible: function () { return true; } },
-    { id: 'quizland', label: 'クイズランド', href: 'quizland/', eligible: function () { return true; } },
-    { id: 'puzzle',   label: 'パズル',       href: 'puzzle/',   eligible: function () { return true; } },
-    { id: 'oto',      label: 'おとあそび',   href: 'oto/',      eligible: function () { return true; } },
-    { id: 'bento',    label: 'おべんとう',   href: 'bento/',    eligible: function () { return isBentoTutorialComplete(); } },
+    { id: 'maze',            label: 'めいろ',           href: 'maze/',              eligible: function () { return true; } },
+    { id: 'quizland',        label: 'クイズランド',     href: 'quizland/',          eligible: function () { return true; } },
+    { id: 'puzzle',          label: 'パズル',           href: 'puzzle/',            eligible: function () { return true; } },
+    { id: 'oto',             label: 'おとあそび',       href: 'oto/',               eligible: function () { return true; } },
+    { id: 'bento',           label: 'おべんとう',       href: 'bento/',             eligible: function () { return isBentoTutorialComplete(); } },
+    { id: 'nazonazo-tunnel', label: 'なぞなぞトレイン', href: 'nazonazo-tunnel/',   eligible: function () { return isAppTier(); } },
+    { id: 'cooking',         label: 'クッキング',       href: 'bento/kitchen.html', eligible: function () { return isAppTier(); } },
+    { id: 'writing-mori',    label: 'もじっこファーム', href: 'writing-mori/',      eligible: function () { return isAppTier(); } },
   ];
 
   function jstNow() { return new Date(Date.now() + 9 * 60 * 60 * 1000); }

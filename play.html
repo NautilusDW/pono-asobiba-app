@@ -9923,39 +9923,6 @@
     </nav>
   </div><!-- /.stage -->
 
-  <!-- batch:1317-furniture-reward-rebalance: デイリーラリー帯 (common/stamp-rally.js renderDailyRally() が
-       #stampRallyGames / #stampRallyBonus を参照)。 .stage は 1920x823 固定キャンバスで空き領域が無く
-       (card-list は「ちょうど4枚」でJS計算済み、brand-col の title-side-stack も余白ゼロ) 内部に置くと
-       他要素と衝突するため、.stage の外側に viewport 固定オーバーレイとして配置する。
-       表示可否は common/mvp-flags.js の body:not([data-tier="app"]) #stampRallySection{display:none} が
-       既に処理するため tier 分岐はここでは書かない。 -->
-  <style>
-    #stampRallySection {
-      position: fixed;
-      top: max(8px, env(safe-area-inset-top, 0px));
-      left: 50%;
-      transform: translateX(-50%);
-      z-index: 250;
-      width: auto;
-      max-width: min(320px, 90vw);
-      margin: 0;
-      padding: 8px 12px 6px;
-    }
-    #stampRallySection .stamp-rally-title { font-size: 0.82rem; margin-bottom: 4px; }
-    #stampRallySection .stamp-rally-games { gap: 8px; }
-    #stampRallySection .stamp-rally-game { width: 64px; padding: 6px 4px 5px; gap: 2px; }
-    #stampRallySection .stamp-rally-game-icon { font-size: 1.5rem; }
-    #stampRallySection .stamp-rally-game-name { font-size: 0.58rem; }
-    #stampRallySection .stamp-rally-bonus { font-size: 0.65rem; margin-top: 4px; }
-  </style>
-  <div class="stamp-rally-section" id="stampRallySection">
-    <div class="stamp-rally-title">🌟 きょうのスタンプラリー</div>
-    <div class="stamp-rally-games" id="stampRallyGames">
-      <!-- JS が2つのゲームカードを生成 -->
-    </div>
-    <div class="stamp-rally-bonus pending" id="stampRallyBonus">あと2つ あそんで ボーナススタンプ！</div>
-  </div>
-
   <div class="acorn-reward-modal" id="acornRewardModal" hidden role="dialog" aria-modal="true" aria-labelledby="acornRewardTitle">
     <div class="acorn-reward-card">
       <button class="acorn-reward-close" id="acornRewardClose" type="button" aria-label="とじる">×</button>
@@ -11104,6 +11071,7 @@
        grantReward/incrementStat の実装元 (実績一覧モーダル・報酬付与に必要)。 -->
   <script src="common/mvp-flags.js"></script>
   <script src="common/achievements.js"></script>
+  <script src="common/treasure.js?v=2231"></script>
   <script src="common/stamp-rally.js?v=2231"></script>
   <!-- ログインボーナス・シール帳 (window.checkDailyLogin 等)。 app tier 限定で発火 (下部の Login Bonus Trigger 参照)。 -->
   <script src="common/stickers.js"></script>
@@ -15498,9 +15466,14 @@
     });
 
     // PonoDailyQuestCleared: 情報バナーを再描画 (バッジ削除済み / v1575)
-    window.addEventListener('PonoDailyQuestCleared', function () {
+    window.addEventListener('PonoDailyQuestCleared', function (e) {
       try { renderDailyQuestInfoBanner(); } catch (_) {}
       window.setTimeout(function () { updateDailyGachaEntry(); }, 200);
+      try {
+        if (window.PonoStampRally && typeof window.PonoStampRally.grantDailyQuestBonusStamp === 'function') {
+          window.PonoStampRally.grantDailyQuestBonusStamp(e && e.detail);
+        }
+      } catch (_) {}
     });
 
     // 初回 play.html 訪問でフクロウ TTS 自動発話 (mp3 未生成のため graceful skip)
@@ -18821,8 +18794,8 @@
 
     // ===== Daily Stamp Rally Trigger (app tier limited) =====
     // スタンプカード (common/stamp-rally.js) も app tier 以外では一切発火しない (Login Bonus Trigger と同じパターン)。
-    // デイリーラリー (pono_daily_rally、 今日の2ゲームクリアでボーナススタンプ) の判定・
-    // 新規スタンプ演出はここで initStampRally() (= 旧 _initStampRally) を app tier 限定で起動する。
+    // initStampRally() (= 旧 _initStampRally) はログインボーナス付与・スタンプカード初期描画・
+    // 初回スタンプ演出を行う汎用初期化 (2ゲームデイリーラリーとは無関係、そちらは撤去済み)。
     (function () {
       if (!(window.PonoTier && typeof window.PonoTier.isApp === 'function' && window.PonoTier.isApp())) return;
       if (!window.PonoStampRally || typeof window.PonoStampRally.initStampRally !== 'function') return;

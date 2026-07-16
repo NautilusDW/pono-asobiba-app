@@ -5367,6 +5367,7 @@ function completeCurrentStage(o){
  stageCompletionHandled=true;
  cleared[stg]=true;
  if(typeof window.incrementStat==="function")window.incrementStat("nazonazo_stage_clears",1);
+ if(window.PonoGameStickers)window.PonoGameStickers.grant({gameId:"nazonazo-tunnel",event:"stage_clear"});
  (function(){var k="pono_played_"+new Date().toDateString();var a=JSON.parse(localStorage.getItem(k)||"[]");if(a.indexOf("nazonazo-tunnel")===-1){a.push("nazonazo-tunnel");localStorage.setItem(k,JSON.stringify(a));}})();
  if(!stageClearScoreGranted){
   addScore(SCORE_POINTS.stageClear,"clear");

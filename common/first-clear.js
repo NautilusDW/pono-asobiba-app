@@ -33,6 +33,16 @@
     try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) {}
   }
 
+  // common/achievements.js の _rewardsBlocked() と同じ3段フォールバックパターン
+  // (PonoMvpFlags有無 → PONO_MVP_NO_REWARDS有無 → PonoTier.isApp()単独判定)
+  function _rewardsBlocked() {
+    if (window.PonoMvpFlags && typeof window.PonoMvpFlags.rewardsBlocked === 'function') {
+      return window.PonoMvpFlags.rewardsBlocked();
+    }
+    if (window.PONO_MVP_NO_REWARDS) return true;
+    return !(window.PonoTier && typeof window.PonoTier.isApp === 'function' && window.PonoTier.isApp());
+  }
+
   // rewards.json のパス（ゲームページは ../assets/data/rewards.json）
   function _rewardsPath() {
     // このスクリプトが ../common/first-clear.js として読まれていればゲームページ
@@ -174,7 +184,7 @@
     // MVP: 報酬制度封印中は宝箱・afterMsg 連鎖を全部止める。
     // grantReward / _markGranted / _queuePending も呼ばないので、再公開時に
     // ゲームをもう一度クリアした時点でリワードが正規に発火する。
-    if (window.PONO_MVP_NO_REWARDS) {
+    if (_rewardsBlocked()) {
       try { if (typeof opts.onClose === 'function') opts.onClose(); } catch (e) {}
       _scheduleRatingPrompt(gameId);
       return Promise.resolve(false);

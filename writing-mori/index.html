@@ -11,6 +11,7 @@
 <!-- app (アプリばん) 専用 tier ガード。 tier.js 未読込/例外時は fail-open (従来通り表示)。 -->
 <script src="../common/debug-mode.js"></script>
 <script src="../common/tier.js"></script>
+<script src="../js/game-stickers.js"></script>
 <script>
 (function(){
   'use strict';
@@ -7521,6 +7522,7 @@ function onWritingComplete(result, options = {}) {
       try { lastStatDate = localStorage.getItem(statDateKey) || ''; } catch (error) { lastStatDate = ''; }
       if (lastStatDate !== todayKey) {
         window.incrementStat('writing_mori_daily_three', 1);
+        if (window.PonoGameStickers) window.PonoGameStickers.grant({ gameId: 'writing-mori', event: 'clear' });
         try { localStorage.setItem(statDateKey, todayKey); } catch (error) { /* noop */ }
       }
     }
