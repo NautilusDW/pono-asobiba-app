@@ -23,6 +23,8 @@
 
 - 2026-07-16 - [batch:1320-kitchen-lid-touch-cancel] DONE (App staging verified) — Codex: feature `8c9e3e65`＋cache `5564ef77`を最新originへrebase後`develop-app`へnon-force push。Actions `29475602559`は1m54sでproduction skip、App staging→LP staging直列success。App公開 `/bento/kitchen` で`touch-action:none`、pointercancel専用handler、座標をmoveへ渡さない中断処理、SW v2223を確認。LP SWもv2223、ゲーム本体はAPP_BUILD未注入のためアプリ専用ロック。凍結develop／master／production未変更。 (by Codex)
 
+- 2026-07-16 - [batch:1320-kitchen-lid-touch-cancel] Codex: 上記DONE行のrebase後feature SHAを訂正: `6698bb24`（cache `5564ef77`は正しい）。 (by Codex)
+
 - 2026-07-16 - [batch:1319-kitchen-lid-bowl-spread] Codex: ユーザー実機評価「めだまやきの蓋がドラッグ中に飛んでブーメランのように戻り閉められない。レタス／にんじん等の切れ端が受け皿の一部へ集中する」を受領。重複監査で直近20件に同修正なし、現行egg lidはsaved-layout由来のinline transformを残したままpointer座標のleft/topを重ねるため飛ぶ経路、切れ端は縮小後getBoundingClientRect寸法を縮小親内CSS pxへ再投入して散布範囲を二重縮小する共通原因を確認。主操作は蓋をつまんでフライパンへ置く、盛り付けは切れ端が受け皿全体へ自然に散ること。Operational方向を維持し、egg lid drag開始時だけ編集用inline poseを除去、受け皿散布は全食材でunscaled clientWidth/clientHeight基準へ統一し、回帰テスト追加後にSWを最新+1。既存dirty `CLAUDE.md`／`MEMORY.md`は触らず、凍結develop／master／productionは変更しない。 (by Codex)
 
 - 2026-07-16 - [batch:1319-kitchen-lid-bowl-spread] Codex: **LOCAL GREEN** — めだまやき蓋はpointerdownで見た目寸法を保存後、saved-layout由来のleft/top/width/height/transformをドラッグ中だけ除去し、指座標と二重合成される飛び／ブーメラン復帰を解消。受け皿切れ端は固定slotの有無や食材種別にかかわらずclientWidth/clientHeightのunscaled CSS座標へ統一し、レタス／にんじん／キャベツ／鶏肉／粒系を含む共通散布範囲の二重縮小を解消。新規static回帰、既存motion/mix/warp、SW構文、diff check PASS。Chromium実ブラウザー844×390／1024×768／1366×768で蓋close PASS、縦390×844は既存回転案内による操作停止を維持。SW v2220、最新origin v2219／behind 0確認済み。commit／push／両staging確認待ち。 (by Codex)
