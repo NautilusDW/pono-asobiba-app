@@ -599,67 +599,53 @@ const SPACE_REPAIR_POINTER_SAMPLE_CAP=.50;
 const SPACE_REPAIR_POINTER_DEADZONE_RATIO=.18;
 const SPACE_REPAIR_CLICK_STEP=Math.PI/2;
 const SPACE_REPAIR_KEY_STEP=Math.PI/6;
-const SPACE_CHASE_VIEWBOX_WIDTH=1600;
+const SPACE_CHASE_VIEWBOX_WIDTH=2200;
 const SPACE_CHASE_VIEWBOX_TOP=-70;
 const SPACE_CHASE_VIEWBOX_HEIGHT=1200;
 const SPACE_CHASE_COMPACT_TOP_PERCENT=16;
 const SPACE_CHASE_COMPACT_HEIGHT_PERCENT=38;
 const SPACE_CHASE_ROUTE_SAMPLE_COUNT=96;
-const SPACE_CHASE_PROGRESS_GOAL=5;
+const SPACE_CHASE_PROGRESS_GOAL=3;
 const SPACE_CHASE_INTRO_MS=1050;
 const SPACE_CHASE_CAUGHT_MS=650;
 const SPACE_CHASE_VICTORY_MS=1250;
-const SPACE_CHASE_COMET_SPEED=80;
-const SPACE_CHASE_ROCKET_SPEED=86;
-const SPACE_CHASE_CHOICE_SPEED=38;
-const SPACE_CHASE_BOOST_SPEED=145;
-const SPACE_CHASE_BOOST_MS=1250;
-const SPACE_CHASE_BOOST_MAX=4;
-const SPACE_CHASE_START_LEAD=320;
+const SPACE_CHASE_COMET_SPEED=86;
+const SPACE_CHASE_ROCKET_SPEED=90;
+const SPACE_CHASE_CHOICE_SPEED=28;
+const SPACE_CHASE_BOOST_SPEED=410;
+const SPACE_CHASE_BOOST_MS=600;
+const SPACE_CHASE_BOOST_MAX=6;
+const SPACE_CHASE_BOOST_QUEUE_MAX_MS=SPACE_CHASE_BOOST_MS*SPACE_CHASE_BOOST_MAX;
+const SPACE_CHASE_START_LEAD=500;
 const SPACE_CHASE_BRANCH_PROMPT_DISTANCE=170;
 const SPACE_CHASE_CATCH_DISTANCE=42;
 const SPACE_CHASE_ROUTE_EDGES=Object.freeze({
  launch:{from:[60,380],c1:[90,380],c2:[135,380],to:[170,380],nextJunction:"J0",checkpoint:0},
- j0North:{from:[170,380],segments:[{c1:[80,220],c2:[210,40],to:[320,120]},{c1:[410,190],c2:[500,20],to:[420,110]}],nextJunction:"JN",checkpoint:1,boostAt:[.30,.72],routeStyle:"loop"},
- j0Center:{from:[170,380],c1:[260,360],c2:[360,350],to:[455,355],nextJunction:"JC",checkpoint:1},
- j0South:{from:[170,380],segments:[{c1:[70,560],c2:[160,730],to:[250,650]},{c1:[380,740],c2:[470,580],to:[370,510]},{c1:[290,440],c2:[300,610],to:[370,650]}],nextJunction:"JS",checkpoint:1,boostAt:[.18,.40,.63,.84],routeStyle:"loop"},
- jnBridge:{from:[420,110],c1:[520,70],c2:[610,160],to:[690,295],nextJunction:"J4",checkpoint:2},
- jnNebula:{from:[420,110],segments:[{c1:[540,30],c2:[720,90],to:[650,230]},{c1:[560,360],c2:[780,400],to:[680,500]},{c1:[630,560],c2:[690,620],to:[720,580]}],nextJunction:"J5",checkpoint:2,boostAt:[.20,.52,.82],routeStyle:"twist"},
- jcWarp:{from:[455,355],c1:[525,330],c2:[610,305],to:[690,295],nextJunction:"J4",checkpoint:2},
- jcNorth:{from:[455,355],segments:[{c1:[560,280],c2:[520,140],to:[440,210]},{c1:[350,280],c2:[340,130],to:[420,110]}],nextJunction:"JN",checkpoint:2,routeStyle:"twist"},
- jcSouth:{from:[455,355],segments:[{c1:[560,430],c2:[520,590],to:[430,520]},{c1:[340,440],c2:[300,610],to:[370,650]}],nextJunction:"JS",checkpoint:2,boostAt:[.36,.76],routeStyle:"twist"},
- jsSling:{from:[370,650],segments:[{c1:[500,650],c2:[520,450],to:[600,430]},{c1:[690,410],c2:[600,330],to:[690,295]}],nextJunction:"J4",checkpoint:2,routeStyle:"twist"},
- jsOuter:{from:[370,650],segments:[{c1:[400,760],c2:[700,760],to:[760,650]},{c1:[840,590],c2:[760,500],to:[720,580]}],nextJunction:"J5",checkpoint:2,boostAt:[.14,.38,.64,.86],routeStyle:"loop"},
- j4Direct:{from:[690,295],c1:[790,235],c2:[900,220],to:[980,225],nextJunction:"J6",checkpoint:3},
- j4Figure8:{from:[690,295],segments:[{c1:[770,120],c2:[940,140],to:[870,295]},{c1:[800,450],c2:[1030,430],to:[950,290]},{c1:[880,160],c2:[930,150],to:[980,225]}],nextJunction:"J6",checkpoint:3,boostAt:[.16,.39,.64,.86],routeStyle:"overpass"},
- j4Curl:{from:[690,295],segments:[{c1:[610,360],c2:[650,520],to:[770,480]},{c1:[870,450],c2:[820,650],to:[720,580]}],nextJunction:"J5",checkpoint:3,boostAt:[.32,.74],routeStyle:"loop"},
- j5Rise:{from:[720,580],segments:[{c1:[800,520],c2:[760,350],to:[880,360]},{c1:[1010,370],c2:[880,240],to:[980,225]}],nextJunction:"J6",checkpoint:3,routeStyle:"twist"},
- j5Planet:{from:[720,580],segments:[{c1:[620,660],c2:[780,750],to:[900,660]},{c1:[1040,570],c2:[1030,430],to:[900,470]},{c1:[790,510],c2:[880,620],to:[985,575]}],nextJunction:"J7",checkpoint:3,boostAt:[.15,.38,.62,.84],routeStyle:"loop"},
- j6Zig:{from:[980,225],segments:[{c1:[1020,130],c2:[1050,90],to:[1070,120]},{c1:[1100,170],c2:[1110,360],to:[1140,350]},{c1:[1180,330],c2:[1200,290],to:[1240,290]}],nextJunction:"J8",checkpoint:4,routeStyle:"twist"},
- j6Direct:{from:[980,225],c1:[1060,225],c2:[1150,270],to:[1240,290],nextJunction:"J8",checkpoint:4},
- j6Twist:{from:[980,225],segments:[{c1:[1080,180],c2:[1120,330],to:[1030,350]},{c1:[920,390],c2:[900,530],to:[985,575]}],nextJunction:"J7",checkpoint:4,boostAt:[.34,.76],routeStyle:"twist"},
- j7Rise:{from:[985,575],c1:[1080,520],c2:[1130,350],to:[1240,290],nextJunction:"J8",checkpoint:4},
- j7Outer:{from:[985,575],segments:[{c1:[1040,700],c2:[1270,740],to:[1340,650]},{c1:[1400,560],c2:[1300,520],to:[1250,620]}],nextJunction:"J9",checkpoint:4,boostAt:[.14,.38,.64,.86],routeStyle:"loop"},
- j8Direct:{from:[1240,290],c1:[1310,300],c2:[1380,340],to:[1450,365],next:"finish",checkpoint:5},
- j8Loop:{from:[1240,290],segments:[{c1:[1320,130],c2:[1470,170],to:[1390,290]},{c1:[1330,400],c2:[1410,430],to:[1450,365]}],next:"finish",checkpoint:5,boostAt:[.30,.72],routeStyle:"loop"},
- j9Sling:{from:[1250,620],c1:[1330,590],c2:[1370,450],to:[1450,365],next:"finish",checkpoint:5},
- j9Garden:{from:[1250,620],segments:[{c1:[1180,710],c2:[1420,740],to:[1500,620]},{c1:[1580,510],c2:[1350,500],to:[1410,430]},{c1:[1370,390],c2:[1420,350],to:[1450,365]}],next:"finish",checkpoint:5,boostAt:[.15,.38,.62,.84],routeStyle:"loop"},
- finish:{from:[1450,365],c1:[1490,350],c2:[1535,380],to:[1570,365],finish:true,checkpoint:5}
+ j0North:{from:[170,380],segments:[{c1:[80,220],c2:[210,40],to:[320,120]},{c1:[410,190],c2:[500,20],to:[420,110]}],next:"jnBridge",checkpoint:1,boostAt:[.30,.72],routeStyle:"loop"},
+ jnBridge:{from:[420,110],c1:[520,70],c2:[610,160],to:[690,295],nextJunction:"J4",checkpoint:1},
+ j0Center:{from:[170,380],c1:[260,360],c2:[360,350],to:[455,355],next:"jcWarp",checkpoint:1},
+ jcWarp:{from:[455,355],c1:[525,330],c2:[610,305],to:[690,295],nextJunction:"J4",checkpoint:1},
+ j0South:{from:[170,380],segments:[{c1:[70,560],c2:[160,730],to:[250,650]},{c1:[380,740],c2:[470,580],to:[370,510]},{c1:[290,440],c2:[300,610],to:[370,650]}],next:"jsSling",checkpoint:1,boostAt:[.12,.30,.48,.66,.84],routeStyle:"loop"},
+ jsSling:{from:[370,650],segments:[{c1:[500,650],c2:[520,450],to:[600,430]},{c1:[690,410],c2:[600,330],to:[690,295]}],nextJunction:"J4",checkpoint:1,routeStyle:"twist"},
+ j4Figure8:{from:[690,295],segments:[{c1:[770,120],c2:[940,140],to:[870,295]},{c1:[800,450],c2:[1030,430],to:[950,290]},{c1:[880,160],c2:[930,150],to:[980,225]}],nextJunction:"J6",checkpoint:2,boostAt:[.10,.38,.66],routeStyle:"overpass"},
+ j4Direct:{from:[690,295],c1:[790,235],c2:[900,220],to:[980,225],nextJunction:"J6",checkpoint:2},
+ j4Curl:{from:[690,295],segments:[{c1:[610,360],c2:[650,520],to:[770,480]},{c1:[870,450],c2:[820,650],to:[720,580]}],next:"j5Rise",checkpoint:2,boostAt:[.05,.50,.95],routeStyle:"loop"},
+ j5Rise:{from:[720,580],segments:[{c1:[800,520],c2:[760,350],to:[880,360]},{c1:[1010,370],c2:[880,240],to:[980,225]}],nextJunction:"J6",checkpoint:2,boostAt:.42,routeStyle:"twist"},
+ j6Zig:{from:[980,225],segments:[{c1:[1020,130],c2:[1050,90],to:[1070,120]},{c1:[1100,170],c2:[1110,360],to:[1140,350]},{c1:[1180,330],c2:[1200,290],to:[1240,290]}],next:"j8Direct",checkpoint:3,boostAt:.35,routeStyle:"twist"},
+ j6Direct:{from:[980,225],c1:[1060,225],c2:[1150,270],to:[1240,290],next:"j8Direct",checkpoint:3},
+ j8Direct:{from:[1240,290],c1:[1310,300],c2:[1380,340],to:[1450,365],next:"finish",checkpoint:3},
+ j6Twist:{from:[980,225],segments:[{c1:[1080,180],c2:[1120,330],to:[1030,350]},{c1:[920,390],c2:[900,530],to:[985,575]}],next:"j7Rise",checkpoint:3,boostAt:[.20,.66],routeStyle:"twist"},
+ j7Rise:{from:[985,575],c1:[1080,520],c2:[1130,350],to:[1240,290],next:"j8Loop",checkpoint:3,boostAt:[.18,.78]},
+ j8Loop:{from:[1240,290],segments:[{c1:[1320,130],c2:[1470,170],to:[1390,290]},{c1:[1330,400],c2:[1410,430],to:[1450,365]}],next:"finish",checkpoint:3,boostAt:.30,routeStyle:"loop"},
+ finish:{from:[1450,365],segments:[{c1:[1510,120],c2:[1600,70],to:[1660,260]},{c1:[1710,470],c2:[1790,700],to:[1870,560]},{c1:[1920,410],c2:[2000,180],to:[2050,365]}],boostAt:[.08,.22],finish:true,checkpoint:3,routeStyle:"twist"}
 });
 const SPACE_CHASE_JUNCTIONS=Object.freeze({
- J0:{at:[170,380],fallbackIndex:1,choices:[{edge:"j0North",slot:"up",label:"うえの みち",note:"スター 2こ",kind:"power"},{edge:"j0Center",slot:"middle",label:"まんなかの みち",note:"ちかみち",kind:"short"},{edge:"j0South",slot:"down",label:"したの みち",note:"スター 4こ",kind:"power"}]},
- JN:{at:[420,110],fallbackIndex:0,choices:[{edge:"jnBridge",slot:"up",label:"うえの みち",note:"すいすい",kind:"steady"},{edge:"jnNebula",slot:"down",label:"したの みち",note:"スター 3こ",kind:"power"}]},
- JC:{at:[455,355],fallbackIndex:1,choices:[{edge:"jcNorth",slot:"up",label:"うえの みち",note:"くねくね",kind:"steady"},{edge:"jcWarp",slot:"middle",label:"まんなかの みち",note:"ちかみち",kind:"short"},{edge:"jcSouth",slot:"down",label:"したの みち",note:"スター 2こ",kind:"power"}]},
- JS:{at:[370,650],fallbackIndex:0,choices:[{edge:"jsSling",slot:"up",label:"うえの みち",note:"スリング",kind:"steady"},{edge:"jsOuter",slot:"down",label:"したの みち",note:"スター 4こ",kind:"power"}]},
- J4:{at:[690,295],fallbackIndex:1,choices:[{edge:"j4Figure8",slot:"up",label:"うえの みち",note:"8のじ スター 4こ",kind:"power"},{edge:"j4Direct",slot:"middle",label:"まんなかの みち",note:"ちかみち",kind:"short"},{edge:"j4Curl",slot:"down",label:"したの みち",note:"スター 2こ",kind:"power"}]},
- J5:{at:[720,580],fallbackIndex:0,choices:[{edge:"j5Rise",slot:"up",label:"うえの みち",note:"くねくね",kind:"steady"},{edge:"j5Planet",slot:"down",label:"したの みち",note:"スター 4こ",kind:"power"}]},
- J6:{at:[980,225],fallbackIndex:1,choices:[{edge:"j6Zig",slot:"up",label:"うえの みち",note:"ジグザグ",kind:"steady"},{edge:"j6Direct",slot:"middle",label:"まんなかの みち",note:"ちかみち",kind:"short"},{edge:"j6Twist",slot:"down",label:"したの みち",note:"スター 2こ",kind:"power"}]},
- J7:{at:[985,575],fallbackIndex:0,choices:[{edge:"j7Rise",slot:"up",label:"うえの みち",note:"ちかみち",kind:"short"},{edge:"j7Outer",slot:"down",label:"したの みち",note:"スター 4こ",kind:"power"}]},
- J8:{at:[1240,290],fallbackIndex:1,choices:[{edge:"j8Loop",slot:"up",label:"うえの みち",note:"スター 2こ",kind:"power"},{edge:"j8Direct",slot:"down",label:"したの みち",note:"ちかみち",kind:"short"}]},
- J9:{at:[1250,620],fallbackIndex:0,choices:[{edge:"j9Sling",slot:"up",label:"うえの みち",note:"スリング",kind:"steady"},{edge:"j9Garden",slot:"down",label:"したの みち",note:"スター 4こ",kind:"power"}]}
+ J0:{at:[170,380],fallbackIndex:1,choices:[{edge:"j0North",slot:"up",label:"うえの みち",kind:"steady"},{edge:"j0Center",slot:"middle",label:"まんなかの みち",kind:"short"},{edge:"j0South",slot:"down",label:"したの みち",kind:"power"}]},
+ J4:{at:[690,295],fallbackIndex:1,choices:[{edge:"j4Figure8",slot:"up",label:"うえの みち",kind:"power"},{edge:"j4Direct",slot:"middle",label:"まんなかの みち",kind:"short"},{edge:"j4Curl",slot:"down",label:"したの みち",kind:"power"}]},
+ J6:{at:[980,225],fallbackIndex:1,choices:[{edge:"j6Zig",slot:"up",label:"うえの みち",kind:"steady"},{edge:"j6Direct",slot:"middle",label:"まんなかの みち",kind:"short"},{edge:"j6Twist",slot:"down",label:"したの みち",kind:"power"}]}
 });
 const SPACE_CHASE_COMET_PLANS=Object.freeze([
- Object.freeze({J0:1,JC:1,J4:1,J6:1,J8:1})
+ Object.freeze({J0:1,J4:1,J6:1})
 ]);
 function createSpaceChaseRacer(kind){return {kind,edgeId:"launch",distance:0,finished:false,progress:0,visitedJunctions:new Set()};}
 function createSpaceChaseState(){return {phase:"idle",phaseElapsedMs:0,frameAt:0,raceElapsedMs:0,rocket:null,comet:null,playerChoices:Object.create(null),cometChoices:Object.create(null),activeJunction:"",boostCharges:1,boostRemainingMs:0,collectedBoosts:new Set(),releasedKnots:new Set(),completionCommitted:false};}
@@ -4709,6 +4695,14 @@ function ensureSpaceChaseRouteMetrics(){
   spaceChaseRouteMetrics.set(edgeId,{edge,length,samples});
  });
 }
+function spaceChaseChoiceMetrics(choice){
+ ensureSpaceChaseRouteMetrics();let edgeId=choice&&choice.edge,length=0,stars=0,guard=0;const edges=[];
+ while(edgeId&&guard++<Object.keys(SPACE_CHASE_ROUTE_EDGES).length+2){
+  const metric=spaceChaseRouteMetrics.get(edgeId);if(!metric)break;const edge=metric.edge;edges.push(edgeId);length+=metric.length;stars+=spaceChaseBoostPositions(edge).length;
+  if(edge.finish||edge.nextJunction||edge.next==="finish")break;edgeId=edge.next||"";
+ }
+ return {edges,length,stars,seconds:Math.max(1,Math.round(length/SPACE_CHASE_ROCKET_SPEED))};
+}
 function spaceChasePointAtDistance(edgeId,distance){
  ensureSpaceChaseRouteMetrics();const metric=spaceChaseRouteMetrics.get(edgeId);if(!metric)return {x:0,y:0};
  const target=clamp(Number(distance)||0,0,metric.length),samples=metric.samples;let upper=1;
@@ -4726,7 +4720,7 @@ function prepareSpaceChaseRouteMap(){
   });
  }
  if(spaceChaseJunctions&&!spaceChaseJunctions.childNodes.length){
-  const namespace="http://www.w3.org/2000/svg",points=Object.entries(SPACE_CHASE_JUNCTIONS).map(([id,junction])=>({id,at:junction.at}));points.push({id:"GOAL",at:SPACE_CHASE_ROUTE_EDGES.finish.from});
+  const namespace="http://www.w3.org/2000/svg",points=Object.entries(SPACE_CHASE_JUNCTIONS).map(([id,junction])=>({id,at:junction.at})),finishSegments=spaceChaseEdgeSegments(SPACE_CHASE_ROUTE_EDGES.finish);points.push({id:"GOAL",at:finishSegments[finishSegments.length-1].to});
   points.forEach(point=>{const circle=document.createElementNS(namespace,"circle");circle.setAttribute("cx",String(point.at[0]));circle.setAttribute("cy",String(point.at[1]));circle.setAttribute("r",point.id==="GOAL"?"12":"9");circle.dataset.spaceChaseJunction=point.id;spaceChaseJunctions.appendChild(circle);});
  }
  if(spaceChaseBoostItemsLayer&&!spaceChaseBoostItemsLayer.childElementCount){
@@ -4781,7 +4775,7 @@ function advanceSpaceChaseRacer(racer,travel){
 }
 function updateSpaceChaseChoiceRouteHighlights(junctionId){
  const key=junctionId||"-";if(spaceChaseChoiceHighlightKey===key)return;spaceChaseChoiceHighlightKey=key;spaceChaseRouteElements.forEach(path=>path.classList.remove("is-choice-option-0","is-choice-option-1","is-choice-option-2"));
- const junction=junctionId&&SPACE_CHASE_JUNCTIONS[junctionId];if(junction)junction.choices.forEach((choice,index)=>{const path=spaceChaseRouteElements.get(choice.edge);if(path)path.classList.add("is-choice-option-"+index);});
+ const junction=junctionId&&SPACE_CHASE_JUNCTIONS[junctionId];if(junction)junction.choices.forEach((choice,index)=>spaceChaseChoiceMetrics(choice).edges.forEach(edgeId=>{const path=spaceChaseRouteElements.get(edgeId);if(path)path.classList.add("is-choice-option-"+index);}));
 }
 function updateSpaceChaseRouteChoiceControls(){
  const active=spaceChaseState.phase==="race"?spaceChaseState.activeJunction:"",junction=active?SPACE_CHASE_JUNCTIONS[active]:null;
@@ -4789,9 +4783,9 @@ function updateSpaceChaseRouteChoiceControls(){
  const controls=spaceChaseLayer&&spaceChaseLayer.querySelector(".space-chase-controls");if(controls)controls.classList.toggle("is-choosing",!!junction);updateSpaceChaseChoiceRouteHighlights(active);
  spaceChaseChoiceButtons.forEach((button,index)=>{
   const choice=junction&&junction.choices[index];button.hidden=!choice;button.disabled=!choice;button.setAttribute("aria-pressed",choice&&spaceChaseState.playerChoices[active]===index?"true":"false");
-  if(!choice)return;const strong=button.querySelector("strong"),small=button.querySelector("small"),arrow=button.querySelector(".space-chase-choice-arrow");
-  if(strong)strong.textContent=choice.label;if(small)small.textContent=choice.note;if(arrow){arrow.classList.toggle("is-up",choice.slot==="up");arrow.classList.toggle("is-middle",choice.slot==="middle");arrow.classList.toggle("is-down",choice.slot==="down");}
-  button.setAttribute("aria-label",choice.label+"、"+choice.note+"へ すすむ");
+  if(!choice)return;const metrics=spaceChaseChoiceMetrics(choice),note=metrics.seconds+"びょう ★"+metrics.stars,strong=button.querySelector("strong"),small=button.querySelector("small"),arrow=button.querySelector(".space-chase-choice-arrow");
+  if(strong)strong.textContent=choice.label;if(small)small.textContent=note;if(arrow){arrow.classList.toggle("is-up",choice.slot==="up");arrow.classList.toggle("is-middle",choice.slot==="middle");arrow.classList.toggle("is-down",choice.slot==="down");}
+  button.setAttribute("aria-label",choice.label+"。だいたい "+metrics.seconds+"びょう。スター "+metrics.stars+"こ");
  });
 }
 function promptSpaceChaseBranch(){
@@ -4807,15 +4801,15 @@ function chooseSpaceChaseRoute(choiceIndex){
  spaceChaseState.playerChoices[junctionId]=choiceIndex;spaceChaseState.activeJunction="";markSpaceChaseRoute(choice.edge,"rocket");setSpaceChaseGuide(choice.kind==="short"?"ちかみち みつけた！":(choice.kind==="power"?"スターを とりに いこう！":"くねくね すすもう！"),true);tone(choice.kind==="short"?880:650,0,.1,"triangle",.055);updateSpaceChaseRouteChoiceControls();updateSpaceChaseVisual();return true;
 }
 function spaceChaseBoostPlayable(){
- return spaceChaseRuntimeActive()&&spaceChaseState.phase==="race"&&!spaceChaseState.activeJunction&&spaceChaseState.boostCharges>0&&spaceChaseState.boostRemainingMs<=0;
+ return spaceChaseRuntimeActive()&&spaceChaseState.phase==="race"&&!spaceChaseState.activeJunction&&spaceChaseState.boostCharges>0&&spaceChaseState.boostRemainingMs<=SPACE_CHASE_BOOST_QUEUE_MAX_MS-SPACE_CHASE_BOOST_MS;
 }
 function useSpaceChaseBoost(){
- if(!spaceChaseBoostPlayable())return false;ensureAC();spaceChaseState.boostCharges--;spaceChaseState.boostRemainingMs=SPACE_CHASE_BOOST_MS;setSpaceChaseGuide("びゅーん！",true);tone(820,0,.11,"sawtooth",.055);tone(1160,.08,.16,"triangle",.06);updateSpaceChaseVisual();return true;
+ if(!spaceChaseBoostPlayable())return false;ensureAC();const wasBoosting=spaceChaseState.boostRemainingMs>0;spaceChaseState.boostCharges--;spaceChaseState.boostRemainingMs=Math.min(SPACE_CHASE_BOOST_QUEUE_MAX_MS,spaceChaseState.boostRemainingMs+SPACE_CHASE_BOOST_MS);setSpaceChaseGuide(wasBoosting?"ブースト ついか！":"びゅーん！",true);tone(820,0,.11,"sawtooth",.055);tone(1160,.08,.16,"triangle",.06);updateSpaceChaseVisual();return true;
 }
 function updateSpaceChaseVisual(){
  const board=spaceChaseBoard();if(!board||!spaceChaseLayer||spaceChaseLayer.hidden)return;
  const portrait=!spaceLandscapePlayable();spaceChaseLayer.setAttribute("aria-hidden",portrait?"true":"false");if(portrait)spaceChaseLayer.setAttribute("inert","");else spaceChaseLayer.removeAttribute("inert");
- let rocketPose=spaceChaseRacerPose(spaceChaseState.rocket),cometPose=spaceChaseRacerPose(spaceChaseState.comet);if(["caught","rescue","victory"].includes(spaceChaseState.phase)){rocketPose={x:840,y:SPACE_CHASE_VIEWBOX_TOP+SPACE_CHASE_VIEWBOX_HEIGHT*.54,angle:-8};cometPose={x:1040,y:SPACE_CHASE_VIEWBOX_TOP+SPACE_CHASE_VIEWBOX_HEIGHT*.48,angle:-8};}
+ let rocketPose=spaceChaseRacerPose(spaceChaseState.rocket),cometPose=spaceChaseRacerPose(spaceChaseState.comet);if(["caught","rescue","victory"].includes(spaceChaseState.phase)){rocketPose={x:SPACE_CHASE_VIEWBOX_WIDTH*.525,y:SPACE_CHASE_VIEWBOX_TOP+SPACE_CHASE_VIEWBOX_HEIGHT*.54,angle:-8};cometPose={x:SPACE_CHASE_VIEWBOX_WIDTH*.65,y:SPACE_CHASE_VIEWBOX_TOP+SPACE_CHASE_VIEWBOX_HEIGHT*.48,angle:-8};}
  board.style.setProperty("--space-chase-comet-x",(cometPose.x/SPACE_CHASE_VIEWBOX_WIDTH*100).toFixed(2)+"%");board.style.setProperty("--space-chase-comet-y",spaceChaseYPercent(cometPose.y,false));board.style.setProperty("--space-chase-comet-y-compact",spaceChaseYPercent(cometPose.y,true));board.style.setProperty("--space-chase-comet-angle",cometPose.angle.toFixed(2)+"deg");
  board.style.setProperty("--space-chase-rocket-x",(rocketPose.x/SPACE_CHASE_VIEWBOX_WIDTH*100).toFixed(2)+"%");board.style.setProperty("--space-chase-rocket-y",spaceChaseYPercent(rocketPose.y,false));board.style.setProperty("--space-chase-rocket-y-compact",spaceChaseYPercent(rocketPose.y,true));board.style.setProperty("--space-chase-rocket-angle",rocketPose.angle.toFixed(2)+"deg");
  board.classList.toggle("is-boosting",spaceChaseState.phase==="race"&&spaceChaseState.boostRemainingMs>0);board.classList.toggle("has-boost",spaceChaseBoostPlayable());board.classList.toggle("is-caught",spaceChaseState.phase==="caught");board.classList.toggle("is-rescuing",spaceChaseState.phase==="rescue");board.classList.toggle("is-victory",spaceChaseState.phase==="victory");
@@ -4824,7 +4818,7 @@ function updateSpaceChaseVisual(){
  if(spaceChaseRoundText)spaceChaseRoundText.textContent=spaceChaseState.phase==="race"?(passed>=SPACE_CHASE_PROGRESS_GOAL?"もう すぐ！":"みちを えらぼう！"):(spaceChaseState.phase==="victory"?"たすけた！":"おいつこう！");
  if(spaceChaseTitle)spaceChaseTitle.textContent=spaceChaseState.phase==="intro"?"あっ！ ほしのこが ながされてる！":(spaceChaseState.phase==="race"?"ほしのこまで おいつこう！":(spaceChaseState.phase==="victory"?"ほしのこを たすけた！":"ほしのこを たすけよう！"));
  if(spaceChaseBoostMeter){spaceChaseBoostMeter.setAttribute("aria-valuenow",String(spaceChaseState.boostCharges));spaceChaseBoostMeter.setAttribute("aria-valuetext","ブースト スター "+spaceChaseState.boostCharges+"こ");spaceChaseBoostMeter.querySelectorAll("i").forEach((lamp,index)=>lamp.classList.toggle("is-on",index<spaceChaseState.boostCharges));}
- if(spaceChaseBoostButton){const boosting=spaceChaseState.boostRemainingMs>0;spaceChaseBoostButton.disabled=!spaceChaseBoostPlayable();spaceChaseBoostButton.setAttribute("aria-label",boosting?"ブーストちゅう":"ブーストを つかう。スター "+spaceChaseState.boostCharges+"こ");const label=spaceChaseBoostButton.querySelector("strong"),note=spaceChaseBoostButton.querySelector("small");if(label)label.textContent=boosting?"ブーストちゅう！":"ブースト！";if(note)note.textContent=boosting?"びゅーん！":"スター "+spaceChaseState.boostCharges+"こ";}
+ if(spaceChaseBoostButton){const boosting=spaceChaseState.boostRemainingMs>0,queuedBursts=Math.max(0,Math.ceil(spaceChaseState.boostRemainingMs/SPACE_CHASE_BOOST_MS));spaceChaseBoostButton.disabled=!spaceChaseBoostPlayable();spaceChaseBoostButton.setAttribute("aria-label",boosting?"ブーストを ついかする。いま "+queuedBursts+"かいぶん。スター "+spaceChaseState.boostCharges+"こ":"ブーストを つかう。スター "+spaceChaseState.boostCharges+"こ");const label=spaceChaseBoostButton.querySelector("strong"),note=spaceChaseBoostButton.querySelector("small");if(label)label.textContent="ブースト！";if(note)note.textContent=boosting?"つづけて ×"+queuedBursts:"スター "+spaceChaseState.boostCharges+"こ";}
  const rescueVisible=spaceChaseState.phase==="rescue"||spaceChaseState.phase==="victory";if(spaceChaseRescuePanel){spaceChaseRescuePanel.hidden=!rescueVisible;spaceChaseRescuePanel.setAttribute("aria-hidden",rescueVisible?"false":"true");}
  updateSpaceChaseRouteChoiceControls();
 }
@@ -4890,7 +4884,7 @@ function updateSpaceChase(now){
  if(spaceChaseState.phase==="intro"&&spaceChaseState.phaseElapsedMs>=(futureReducedMotion()?260:SPACE_CHASE_INTRO_MS))beginSpaceChaseRace();
  else if(spaceChaseState.phase==="race"){
   spaceChaseState.raceElapsedMs+=dt;const choosingRoute=!!spaceChaseState.activeJunction,comet=spaceChaseState.comet,rocket=spaceChaseState.rocket,boostTravelMs=choosingRoute?0:Math.min(dt,spaceChaseState.boostRemainingMs);if(!choosingRoute)spaceChaseState.boostRemainingMs=Math.max(0,spaceChaseState.boostRemainingMs-dt);
-  const cometSpeed=comet.edgeId==="finish"?54:(choosingRoute?SPACE_CHASE_CHOICE_SPEED:SPACE_CHASE_COMET_SPEED);
+  const cometSpeed=choosingRoute?SPACE_CHASE_CHOICE_SPEED:SPACE_CHASE_COMET_SPEED;
   advanceSpaceChaseRacer(comet,cometSpeed*dt/1000);
   const baseTravelMs=dt-boostTravelMs;
   let rocketTravel=choosingRoute?SPACE_CHASE_CHOICE_SPEED*dt/1000:(SPACE_CHASE_BOOST_SPEED*boostTravelMs+SPACE_CHASE_ROCKET_SPEED*baseTravelMs)/1000;
