@@ -8,6 +8,8 @@ const assets = [
   'boil_pot_cold.png', 'boil_pot_hot.png', 'boil_spoon.png', 'boil_drain_bowl.png',
   'boil_broccoli_raw.png', 'boil_broccoli_cooked.png',
   'boil_broccoli_whole.png', 'broccoli_floret_001.png',
+  'broccoli_floret_002.png', 'broccoli_floret_003.png',
+  'broccoli_floret_004.png', 'broccoli_floret_005.png',
   'boil_edamame_raw.png', 'boil_edamame_cooked.png',
 ];
 
@@ -25,11 +27,15 @@ assert.match(source, /const WORKSHOP_PREP_RECIPES = \{[\s\S]*?edamame:/);
 assert.doesNotMatch(source.match(/const WORKSHOP_PREP_RECIPES = \{[\s\S]*?\n  \};/)[0], /broccoli:/);
 assert.match(source, /id: 'broccoli'[\s\S]*?imageBase: 'boil\/boil_broccoli_whole\.png'[\s\S]*?prepActions: \[\{ type: 'chop' \}\]/);
 assert.match(source, /pieceCount: 5/);
+assert.match(source, /\['ignite','コンロの ひを つけよう',1\][\s\S]*?\['salt','しおを いれよう',3\][\s\S]*?\['heat','おゆが わくまで まとう',1\]/);
+assert.match(source, /startKitchenAmbient\('stove'\)/);
+assert.match(source, /salt_shaker_still\.png/);
+assert.match(source, /broccoli_floret_' \+ String\(n\)\.padStart\(3, '0'\)/);
 assert.match(source, /class="workshop-boil-pieces"/);
 assert.match(source, /classList\.toggle\('is-boiling'/);
 assert.match(source, /needs: \['broccoli'\], startFromRaw: false/);
 assert.match(source, /needs: \['edamame'\], startFromRaw: false/);
 assert.match(source, /classList\.toggle\('is-boil-step', specializedBoil\)/);
-assert.match(source, /step\.kind === 'boil' \|\| step\.kind === 'drain'/);
+assert.match(source, /\['ignite', 'salt', 'heat', 'boil', 'drain'\]\.includes\(step\.kind\)/);
 
 console.log('bento kitchen shared boiling system regression: PASS');
