@@ -1,5 +1,9 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2237: トントンキッチンのブロッコリー／えだまめを、ざいりょう選択→したごしらえ→
+// れいぞうこ→コンロでゆでる流れへ分離。沸騰鍋画像への切替をやめ、静水鍋の上へ泡と
+// 湯気のパーティクルを重ねる方式に変更した (batch:1326-kitchen-workshop-assets)。
+// play.html PAGE_CACHE_VERSION と同期不要 (bento/kitchen.html／テストのみ変更)。
 // v2236: なぞなぞトレイン宇宙面の接近・首位交代・最終連打へ、操作を止めない短い
 // カメラ寄り、漫画効果線、対決カットインを追加。星の子救出は発射デモ、指の追跡ガイド、
 // 入力地点の照準と点線、中心合わせ2倍の連続フィードバックで操作を明確にした
@@ -302,7 +306,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2236;
+const CACHE_VERSION = 2237;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
