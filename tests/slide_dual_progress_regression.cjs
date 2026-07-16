@@ -37,8 +37,29 @@ assert.match(html,
   /function getMotherStageEndProgress\(index\)[\s\S]*?chapterStart \+ 0\.25/,
   "the mother reaches each paper-story checkpoint without a stage-start jump");
 assert.match(html,
-  /function getPonoStageStartProgress\(index\)[\s\S]*?index \/ LEVELS\.length/,
-  "Pono begins each stage at the place reached by the previous stage");
+  /const PONO_STORY_GAP = 0\.06;/,
+  "intermediate paper stories keep one visible gap between Pono and mother");
+assert.match(html,
+  /function getPonoChapterWaypoint\(chapter\)[\s\S]*?chapter \* 0\.25 - PONO_STORY_GAP/,
+  "Pono's chapter checkpoints stay behind the mother's story checkpoints");
+assert.match(html,
+  /function getPonoStageStartProgress\(index\)[\s\S]*?chapterStart[\s\S]*?chapterEnd/,
+  "Pono begins each stage exactly where the previous stage ended");
+assert.match(html,
+  /function getPonoStagePlayEndProgress\(index\)[\s\S]*?1 - PONO_STORY_GAP/,
+  "the final live timer cannot visually catch mother before the solved-route walk");
+assert.match(html,
+  /function getMotherIntroStartProgress\(index\)[\s\S]*?index === 0[\s\S]*?getMotherStageStartProgress\(index\)/,
+  "the missing mother is already visibly ahead on the opening screen");
+assert.match(html,
+  /function resetStageClock\(index, preservedProgress\)[\s\S]*?getPonoStagePlayEndProgress\(index\)/,
+  "a retry also clamps Pono to the safe live-play endpoint");
+assert.match(html,
+  /function updateStageClock\(now\)[\s\S]*?getPonoStagePlayEndProgress\(stageIdx\)/,
+  "live progress uses the safe endpoint on every stage");
+assert.match(html,
+  /const isTogether = gapSize === 0;[\s\S]*?classList\.toggle\('is-together', isTogether\)/,
+  "only an exact shared endpoint announces the reunion");
 assert.match(html,
   /function updateStageClock\(now\)[\s\S]*?ponoProgress[\s\S]*?motherProgress[\s\S]*?syncJourneyProgress/,
   "both travellers move during active puzzle time");
@@ -58,9 +79,20 @@ assert.match(html,
 assert.match(html,
   /function finishExitWithDiscovery\(now\)[\s\S]*?if \(!journeyActor\.tutorial\)[\s\S]*?syncJourneyProgress[\s\S]*?JOURNEY_PHASE\.DISCOVERY/,
   "reduced motion and normal motion both snap Pono to the reached checkpoint");
+const showCutsceneFunction = html.match(
+  /function showCutscene\(\) \{[\s\S]*?\n\}/
+);
+assert.ok(showCutsceneFunction, "the paper-story function is present");
+assert.match(showCutsceneFunction[0],
+  /syncJourneyProgress\([\s\S]*?getPonoStageEndProgress\(stageIdx\)[\s\S]*?getMotherJourneyProgress\(stageIdx\)/,
+  "the paper story keeps Pono behind the mother's checkpoint");
+assert.match(showCutsceneFunction[0], /おかあさんは ポノより すこし さきに います/,
+  "the intermediate story describes the continuing chase");
+assert.doesNotMatch(showCutsceneFunction[0], /おいつきました/,
+  "an intermediate story never announces a reunion");
 assert.match(html,
-  /function showCutscene\(\)[\s\S]*?syncJourneyProgress/,
-  "the paper-story scene explicitly shows both travellers at its checkpoint");
+  /type === 'gameclear'[\s\S]*?ポノが おかあさんに おいつきました/,
+  "only the final reunion keeps the caught-up announcement");
 assert.match(html,
   /body\.slide-cutscene-open \.game-rail[\s\S]*?z-index:\s*2[12]/,
   "the checkpoint bar remains readable above the paper-story scene");

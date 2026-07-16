@@ -1094,9 +1094,9 @@ function calculateStageTimeBudgetSeconds(level) {
 const STAGE_TIME_BUDGETS = LEVELS.map(calculateStageTimeBudgetSeconds);
 const RETRY_MESSAGE_MS = 4000;
 const MOTHER_CHAPTER_LEAD = 0.06;
+const PONO_STORY_GAP = 0.06;
 const JOURNEY_PACE_TARGET = 0.90;
 const JOURNEY_PLAY_MAX = 0.95;
-const JOURNEY_TOGETHER_EPSILON = 0.000001;
 const RETRY_MESSAGE_TEXT = `この みちを もういちど！
 こんどは ゆっくり つなごう`;
 const cutscenePreloads = Object.create(null);
@@ -2783,16 +2783,36 @@ function getMotherJourneyProgress(index) {
   return Math.min(1, (Math.floor(index / 2) + 1) * 0.25);
 }
 
+function getPonoChapterWaypoint(chapter) {
+  const lastChapter = LEVELS.length / 2;
+  if (chapter <= 0) return 0;
+  if (chapter >= lastChapter) return 1;
+  return chapter * 0.25 - PONO_STORY_GAP;
+}
+
 function getPonoStageStartProgress(index) {
-  return Math.max(0, Math.min(1, index / LEVELS.length));
+  const chapter = Math.floor(index / 2);
+  const chapterStart = getPonoChapterWaypoint(chapter);
+  const chapterEnd = getPonoChapterWaypoint(chapter + 1);
+  return index % 2 === 0 ? chapterStart : (chapterStart + chapterEnd) / 2;
 }
 
 function getPonoStageEndProgress(index) {
-  return Math.max(0, Math.min(1, (index + 1) / LEVELS.length));
+  const chapter = Math.floor(index / 2);
+  const chapterStart = getPonoChapterWaypoint(chapter);
+  const chapterEnd = getPonoChapterWaypoint(chapter + 1);
+  return index % 2 === 0 ? (chapterStart + chapterEnd) / 2 : chapterEnd;
 }
 
-// 紙芝居で会ったあと、おかあさんは次の面の導入中に少し先へ出発する。
-// その後も2面を通して歩き続け、2・4・6・8面の終わりだけ同じ節目で重なる。
+function getPonoStagePlayEndProgress(index) {
+  return index >= LEVELS.length - 1
+    ? 1 - PONO_STORY_GAP
+    : getPonoStageEndProgress(index);
+}
+
+// 途中の紙芝居はおかあさん側の出来事で、ポノとの再会ではない。
+// ポノは2・4・6面の紙芝居と8面のプレイ中も6%以上後ろに残り、
+// 最後の道を実際に歩き終えた瞬間だけ同じ場所へ着く。
 function getMotherStageStartProgress(index) {
   const chapterStart = Math.floor(index / 2) * 0.25;
   return index % 2 === 0
@@ -2809,6 +2829,7 @@ function getMotherStageEndProgress(index) {
 
 function getMotherIntroStartProgress(index) {
   const chapterStart = Math.floor(index / 2) * 0.25;
+  if (index === 0) return getMotherStageStartProgress(index);
   return index % 2 === 0 ? chapterStart : getMotherStageStartProgress(index);
 }
 
@@ -2891,10 +2912,11 @@ function syncJourneyProgress(ponoProgress, motherProgress, options) {
   stageNum.style.setProperty('--mother-progress', String(mother));
   const gapStart = Math.min(pono, mother);
   const gapSize = Math.abs(mother - pono);
+  const isTogether = gapSize === 0;
   stageNum.style.setProperty('--gap-start', String(gapStart));
   stageNum.style.setProperty('--gap-size', String(gapSize));
-  stageNum.classList.toggle('is-chasing', gapSize > JOURNEY_TOGETHER_EPSILON);
-  stageNum.classList.toggle('is-together', gapSize < JOURNEY_TOGETHER_EPSILON);
+  stageNum.classList.toggle('is-chasing', !isTogether);
+  stageNum.classList.toggle('is-together', isTogether);
   stageClock.ponoProgress = pono;
   stageClock.motherProgress = mother;
 
@@ -2914,7 +2936,7 @@ function syncJourneyProgress(ponoProgress, motherProgress, options) {
     motherNode.setAttribute('aria-valuetext', journeyPositionText(mother));
   }
 
-  if (updateA11y && gapSize < JOURNEY_TOGETHER_EPSILON) {
+  if (updateA11y && isTogether) {
     stageNum.setAttribute('aria-label', 'ポノと おかあさんは おなじ ばしょ');
   } else if (updateA11y) {
     var remaining = mother > pono
@@ -2958,7 +2980,7 @@ function updateHUD(options) {
 
 function resetStageClock(index, preservedProgress) {
   const ponoStart = getPonoStageStartProgress(index);
-  const ponoEnd = getPonoStageEndProgress(index);
+  const ponoEnd = getPonoStagePlayEndProgress(index);
   const motherStart = getMotherStageStartProgress(index);
   const motherEnd = getMotherStageEndProgress(index);
   const preserve = preservedProgress && Number.isFinite(preservedProgress.pono) &&
@@ -3069,7 +3091,7 @@ function updateStageClock(now) {
   const pacingRatio = getJourneyPacingRatio(stageClock.elapsedMs, stageClock.budgetMs);
   const visualRatio = reducedMotionQuery.matches ? Math.floor(pacingRatio * 100) / 100 : pacingRatio;
   const ponoStart = stageClock.attemptPonoStart;
-  const ponoEnd = getPonoStageEndProgress(stageIdx);
+  const ponoEnd = getPonoStagePlayEndProgress(stageIdx);
   const motherStart = stageClock.attemptMotherStart;
   const motherEnd = getMotherStageEndProgress(stageIdx);
   const ponoProgress = ponoStart + (ponoEnd - ponoStart) * visualRatio;
@@ -3205,7 +3227,7 @@ function showCutscene() {
   card.classList.add('cutscene-mode', 'cutscene-fullscreen');
   document.body.classList.add('slide-cutscene-open');
   syncJourneyProgress(
-    Math.min(1, (stageIdx + 1) / LEVELS.length),
+    getPonoStageEndProgress(stageIdx),
     getMotherJourneyProgress(stageIdx),
     { instant: true }
   );
@@ -3213,7 +3235,7 @@ function showCutscene() {
   title.textContent = level.cutscene.text;
   title.style.whiteSpace = 'pre-line';
   msg.textContent = '';
-  if (journeyStatus) journeyStatus.textContent = 'ポノが おかあさんに おいつきました';
+  if (journeyStatus) journeyStatus.textContent = 'おかあさんは ポノより すこし さきに います';
   btn.textContent = 'つぎへ ▶';
   btn.dataset.ovType = 'cutscene-next';
   syncMagicCrossButton();

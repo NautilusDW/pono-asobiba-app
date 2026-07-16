@@ -131,6 +131,47 @@ async function keepNetworkLocal(context, base) {
         "mother remains visibly a little ahead during the search");
     }
 
+    const allStageLeads = await page.evaluate(() => eval(`(() => {
+      const samples = [];
+      for (let index = 0; index < LEVELS.length; index++) {
+        stageIdx = index;
+        stageRetryCount = 0;
+        resetStageClock(index);
+        overlay.classList.add('hidden');
+        state = S.PLAYING;
+        journeyActor.active = false;
+        slideWindowFocused = true;
+        journeyHudMessageHideAt = 0;
+        journeyHudPausesClock = false;
+        stageClock.active = true;
+        stageClock.unlimited = true;
+        stageClock.lastTick = 1000;
+        updateStageClock(1000 + stageClock.budgetMs);
+        const node = document.querySelector('#stage-num');
+        samples.push({
+          index,
+          pono: stageClock.ponoProgress,
+          mother: stageClock.motherProgress,
+          playEnd: getPonoStagePlayEndProgress(index),
+          together: node.classList.contains('is-together'),
+          label: node.getAttribute('aria-label')
+        });
+      }
+      return samples;
+    })()`));
+    for (const sample of allStageLeads) {
+      assert.ok(sample.mother > sample.pono,
+        `stage ${sample.index + 1} keeps mother strictly ahead throughout live play`);
+      assert.ok(sample.mother - sample.pono >= 0.055,
+        `stage ${sample.index + 1} keeps enough visual distance for separate face markers`);
+      assert.ok(sample.pono <= sample.playEnd,
+        `stage ${sample.index + 1} never passes its safe live-play target`);
+      assert.equal(sample.together, false,
+        `stage ${sample.index + 1} never announces an early reunion`);
+      assert.doesNotMatch(sample.label, /おなじ ばしょ|あと 0こ/,
+        `stage ${sample.index + 1} keeps the accessible distance nonzero`);
+    }
+
     const suspension = await page.evaluate(() => eval(`(() => {
       stageIdx = 0;
       resetStageClock(0);
@@ -261,8 +302,42 @@ async function keepNetworkLocal(context, base) {
       "Pono never rewinds when the real route walk begins");
     assert.ok(exit.middle.mother >= exit.before.mother && exit.end.mother >= exit.middle.mother,
       "mother never rewinds when the real route walk begins");
-    assert.deepEqual(exit.end, { pono: 0.375, mother: 0.4125 },
+    assert.deepEqual(exit.end, { pono: 0.315, mother: 0.4125 },
       "stage three reaches its own Pono endpoint while mother stays ahead toward the next story");
+
+    const finalExit = await page.evaluate(() => eval(`(() => {
+      stageIdx = LEVELS.length - 1;
+      resetStageClock(stageIdx);
+      overlay.classList.add('hidden');
+      state = S.TRAVELLING;
+      journeyActor.tutorial = false;
+      journeyActor.phase = JOURNEY_PHASE.EXIT;
+      journeyActor.path = [{ x: 0, y: 0 }, { x: 100, y: 0 }];
+      journeyActor.t0 = 1000;
+      journeyActor.duration = 1000;
+      stageClock.exitPonoStart = getPonoStagePlayEndProgress(stageIdx);
+      stageClock.exitMotherStart = getMotherStageEndProgress(stageIdx);
+      updateJourneyPosition(1999.99);
+      const node = document.querySelector('#stage-num');
+      const beforeArrival = {
+        pono: stageClock.ponoProgress,
+        mother: stageClock.motherProgress,
+        together: node.classList.contains('is-together')
+      };
+      updateJourneyPosition(2000);
+      const arrival = {
+        pono: stageClock.ponoProgress,
+        mother: stageClock.motherProgress,
+        together: node.classList.contains('is-together')
+      };
+      return { beforeArrival, arrival };
+    })()`));
+    assert.ok(finalExit.beforeArrival.mother > finalExit.beforeArrival.pono,
+      "even the last route frame keeps mother numerically ahead");
+    assert.equal(finalExit.beforeArrival.together, false,
+      "the journey does not announce reunion before the final route endpoint");
+    assert.deepEqual(finalExit.arrival, { pono: 1, mother: 1, together: true },
+      "only the completed final route joins both travellers at 100 percent");
 
     const deadlineClear = await page.evaluate(() => eval(`(() => {
       window.__deadlineClearStats = 0;

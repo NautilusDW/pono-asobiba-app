@@ -8,6 +8,10 @@ const path = require("node:path");
 const { chromium, webkit } = require("playwright");
 
 const root = path.resolve(__dirname, "..");
+function assertClose(actual, expected, message) {
+  assert.ok(Math.abs(actual - expected) < 1e-9,
+    `${message} (expected ${expected}, got ${actual})`);
+}
 const mime = {
   ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
   ".css": "text/css; charset=utf-8", ".png": "image/png", ".webp": "image/webp",
@@ -55,6 +59,23 @@ async function openGame(browserType, name, base, viewport, reducedMotion = "no-p
     localStorage.setItem("pono_bgm_enabled", "off");
   });
   await page.goto(`${base}/slide/`, { waitUntil: "domcontentloaded" });
+  const openingJourney = await page.evaluate(() => {
+    const node = document.querySelector("#stage-num");
+    return {
+      pono: Number(node.style.getPropertyValue("--pono-progress")),
+      mother: Number(node.style.getPropertyValue("--mother-progress")),
+      together: node.classList.contains("is-together"),
+      label: node.getAttribute("aria-label"),
+    };
+  });
+  assert.deepEqual({
+    pono: openingJourney.pono,
+    mother: openingJourney.mother,
+    together: openingJourney.together,
+  }, { pono: 0, mother: 0.06, together: false },
+  `${name}: mother is already ahead when the search story opens`);
+  assert.doesNotMatch(openingJourney.label, /おなじ ばしょ|あと 0こ/,
+    `${name}: the opening story never announces an early reunion`);
   await page.locator("#ov-btn").click();
   await page.waitForFunction(() => eval("state === S.PLAYING && !journeyActor.active"));
   assert.deepEqual(errors, [], `${name} ${viewport.width}x${viewport.height}: no page error`);
@@ -136,7 +157,7 @@ async function inspectGame(browserType, name, base, viewport) {
     assert.equal(liveMotion.moving, true, `${name}: the journey advertises active realtime motion`);
     assert.equal(liveMotion.gapAnimation, 'journeyGapFlow', `${name}: the visible distance bridge flows`);
     assert.ok(liveMotion.gapDuration <= 1, `${name}: motion is perceptible within one second`);
-    assert.ok(liveMotionAfter.ponoX - liveMotion.ponoX >= 1.8,
+    assert.ok(liveMotionAfter.ponoX - liveMotion.ponoX >= 1.5,
       `${name}: Pono visibly changes position during one real second`);
     assert.ok(liveMotionAfter.motherX - liveMotion.motherX >= 1.5,
       `${name}: mother visibly changes position during one real second`);
@@ -193,7 +214,11 @@ async function inspectGame(browserType, name, base, viewport) {
     assert.match(retryEdge.label, /あと 1こ/,
       `${name}: the last visible sliver is never announced as zero distance`);
 
+    const expectedPonoStart = [0, 0.095, 0.19, 0.315, 0.44, 0.565, 0.69, 0.845];
+    const expectedPonoEnd = [0.095, 0.19, 0.315, 0.44, 0.565, 0.69, 0.845, 1];
+    const expectedPonoPlayEnd = [0.095, 0.19, 0.315, 0.44, 0.565, 0.69, 0.845, 0.94];
     const expectedMother = [0.06, 0.1625, 0.31, 0.4125, 0.56, 0.6625, 0.81, 0.9125];
+    const expectedMotherEnd = [0.1625, 0.25, 0.4125, 0.5, 0.6625, 0.75, 0.9125, 1];
     for (let index = 0; index < 8; index++) {
       const positions = await page.evaluate(nextIndex => eval(`(() => {
         stageIdx = nextIndex;
@@ -202,12 +227,24 @@ async function inspectGame(browserType, name, base, viewport) {
         const node = document.querySelector('#stage-num');
         return {
           pono: Number(node.style.getPropertyValue('--pono-progress')),
-          mother: Number(node.style.getPropertyValue('--mother-progress'))
+          mother: Number(node.style.getPropertyValue('--mother-progress')),
+          ponoEnd: getPonoStageEndProgress(nextIndex),
+          ponoPlayEnd: getPonoStagePlayEndProgress(nextIndex),
+          motherEnd: getMotherStageEndProgress(nextIndex)
         };
       })()`), index);
-      assert.equal(positions.pono, index / 8, `${name}: stage ${index + 1} starts at Pono's real place`);
-      assert.equal(positions.mother, expectedMother[index],
+      assertClose(positions.pono, expectedPonoStart[index],
+        `${name}: stage ${index + 1} starts at Pono's real place`);
+      assertClose(positions.mother, expectedMother[index],
         `${name}: stage ${index + 1} continues the mother's live chapter segment`);
+      assertClose(positions.ponoEnd, expectedPonoEnd[index],
+        `${name}: stage ${index + 1} has a continuous solved-route endpoint`);
+      assertClose(positions.ponoPlayEnd, expectedPonoPlayEnd[index],
+        `${name}: stage ${index + 1} keeps its safe live-play target`);
+      assertClose(positions.motherEnd, expectedMotherEnd[index],
+        `${name}: stage ${index + 1} has the expected mother endpoint`);
+      assert.ok(positions.mother > positions.pono,
+        `${name}: mother is strictly ahead at stage ${index + 1} start`);
     }
 
     const liveQuarter = await page.evaluate(() => eval(`(() => {
@@ -228,9 +265,9 @@ async function inspectGame(browserType, name, base, viewport) {
         time: document.querySelector('#hud-time').textContent
       };
     })()`));
-    assert.equal(liveQuarter.pono, 0.125 * 0.5625,
+    assertClose(liveQuarter.pono, 0.095 * 0.5625,
       `${name}: Pono advances continuously during the puzzle`);
-    assert.equal(liveQuarter.mother, 0.06 + (0.1625 - 0.06) * 0.5625,
+    assertClose(liveQuarter.mother, 0.06 + (0.1625 - 0.06) * 0.5625,
       `${name}: mother advances continuously and stays a little ahead`);
     assert.equal(liveQuarter.elapsed, liveQuarter.budget * 0.25,
       `${name}: the bar is driven by active elapsed time`);
@@ -251,7 +288,7 @@ async function inspectGame(browserType, name, base, viewport) {
       const node = document.querySelector('#stage-num');
       return Number(node.style.getPropertyValue('--pono-progress'));
     })()`));
-    assert.equal(midRoute, 0.3375,
+    assertClose(midRoute, 0.3075,
       `${name}: green progress continues from its live clear position without rewinding`);
 
     const cutscene = await page.evaluate(() => eval(`(() => {
@@ -266,6 +303,12 @@ async function inspectGame(browserType, name, base, viewport) {
         pono: Number(node.style.getPropertyValue('--pono-progress')),
         mother: Number(node.style.getPropertyValue('--mother-progress')),
         together: node.classList.contains('is-together'),
+        chasing: node.classList.contains('is-chasing'),
+        faceGap: document.querySelector('.journey-progress-marker--mother').getBoundingClientRect().left -
+          document.querySelector('.journey-progress-marker--pono').getBoundingClientRect().left,
+        groupLabel: node.getAttribute('aria-label'),
+        ponoNow: Number(document.querySelector('#journey-pono-progress').getAttribute('aria-valuenow')),
+        motherNow: Number(document.querySelector('#journey-mother-progress').getAttribute('aria-valuenow')),
         railZ: Number(getComputedStyle(rail).zIndex),
         overlayZ: Number(getComputedStyle(overlayNode).zIndex),
         railWidth: rail.getBoundingClientRect().width,
@@ -276,17 +319,27 @@ async function inspectGame(browserType, name, base, viewport) {
         journeyStatus: document.querySelector('#cutscene-journey-status').textContent,
       };
     })()`));
-    assert.deepEqual({ pono: cutscene.pono, mother: cutscene.mother, together: cutscene.together },
-      { pono: 0.25, mother: 0.25, together: true },
-      `${name}: stage 2 paper story shows both faces at the 25% checkpoint`);
+    assert.deepEqual({
+      pono: cutscene.pono, mother: cutscene.mother,
+      together: cutscene.together, chasing: cutscene.chasing
+    }, { pono: 0.19, mother: 0.25, together: false, chasing: true },
+    `${name}: stage 2 paper story leaves Pono visibly behind mother's 25% checkpoint`);
+    assert.ok(cutscene.faceGap > 0 && cutscene.faceGap >= boxes.viewportWidth * 0.05,
+      `${name}: paper-story faces remain visibly separated (${cutscene.faceGap}px)`);
+    assert.deepEqual([cutscene.ponoNow, cutscene.motherNow], [1.52, 2],
+      `${name}: paper-story progress values expose the same six-percent gap`);
+    assert.match(cutscene.groupLabel, /あと 1こ/,
+      `${name}: the paper-story group announces one remaining stretch`);
+    assert.doesNotMatch(cutscene.groupLabel, /おなじ ばしょ/,
+      `${name}: the paper story is never described as a reunion`);
     assert.ok(cutscene.railZ > cutscene.overlayZ, `${name}: checkpoint remains visible on the paper story`);
     assert.ok(cutscene.railWidth >= cutscene.viewportWidth * 0.995,
       `${name}: the paper-story checkpoint also remains edge-to-edge`);
     assert.deepEqual([cutscene.stageDisplay, cutscene.timeDisplay, cutscene.movesDisplay],
       ["none", "none", "none"],
       `${name}: only the journey bar remains on the paper story`);
-    assert.equal(cutscene.journeyStatus, "ポノが おかあさんに おいつきました",
-      `${name}: the modal itself describes the paper-story reunion to assistive technology`);
+    assert.equal(cutscene.journeyStatus, "おかあさんは ポノより すこし さきに います",
+      `${name}: the modal describes mother's continuing lead to assistive technology`);
 
     const next = await page.evaluate(() => eval(`(() => {
       nextStage();
@@ -297,10 +350,35 @@ async function inspectGame(browserType, name, base, viewport) {
         cutscene: document.body.classList.contains('slide-cutscene-open')
       };
     })()`));
-    assert.deepEqual(next, { pono: 0.25, mother: 0.25, cutscene: false },
-      `${name}: after the story both begin together and the next chase starts smoothly`);
+    assert.deepEqual(next, { pono: 0.19, mother: 0.25, cutscene: false },
+      `${name}: after the story Pono stays put while mother begins the next lead`);
 
-    for (const [index, checkpoint] of [[3, 0.5], [5, 0.75]]) {
+    const nextIntro = await page.evaluate(() => eval(`(() => {
+      const node = document.querySelector('#stage-num');
+      const read = () => ({
+        pono: Number(node.style.getPropertyValue('--pono-progress')),
+        mother: Number(node.style.getPropertyValue('--mother-progress'))
+      });
+      const start = read();
+      updateJourneyPosition(journeyActor.t0 + journeyActor.duration * 0.5);
+      const middle = read();
+      updateJourneyPosition(journeyActor.t0 + journeyActor.duration);
+      const end = read();
+      return { start, middle, end };
+    })()`));
+    assertClose(nextIntro.start.pono, 0.19,
+      `${name}: Pono begins the next intro at the paper-story position`);
+    assertClose(nextIntro.middle.pono, 0.19,
+      `${name}: Pono does not jump while mother departs after the story`);
+    assertClose(nextIntro.end.pono, 0.19,
+      `${name}: Pono remains at the same point through the next intro`);
+    assert.ok(nextIntro.start.mother < nextIntro.middle.mother &&
+      nextIntro.middle.mother < nextIntro.end.mother,
+      `${name}: only mother walks ahead during the next intro`);
+    assertClose(nextIntro.end.mother, 0.31,
+      `${name}: mother reaches the next chapter lead smoothly`);
+
+    for (const [index, ponoCheckpoint, motherCheckpoint] of [[3, 0.44, 0.5], [5, 0.69, 0.75]]) {
       const laterStory = await page.evaluate(nextIndex => eval(`(() => {
         stageIdx = nextIndex;
         resetStageClock(nextIndex);
@@ -310,11 +388,24 @@ async function inspectGame(browserType, name, base, viewport) {
         return {
           pono: Number(node.style.getPropertyValue('--pono-progress')),
           mother: Number(node.style.getPropertyValue('--mother-progress')),
-          together: node.classList.contains('is-together')
+          together: node.classList.contains('is-together'),
+          chasing: node.classList.contains('is-chasing'),
+          label: node.getAttribute('aria-label')
         };
       })()`), index);
-      assert.deepEqual(laterStory, { pono: checkpoint, mother: checkpoint, together: true },
-        `${name}: stage ${index + 1} paper story joins both faces at ${checkpoint * 100}%`);
+      assert.deepEqual({
+        pono: laterStory.pono,
+        mother: laterStory.mother,
+        together: laterStory.together,
+        chasing: laterStory.chasing
+      }, {
+        pono: ponoCheckpoint, mother: motherCheckpoint,
+        together: false, chasing: true
+      }, `${name}: stage ${index + 1} paper story keeps the chase alive`);
+      assert.match(laterStory.label, /あと 1こ/,
+        `${name}: stage ${index + 1} paper story announces the remaining distance`);
+      assert.doesNotMatch(laterStory.label, /おなじ ばしょ/,
+        `${name}: stage ${index + 1} paper story is not a reunion`);
     }
 
     const reunion = await page.evaluate(() => eval(`(() => {
@@ -392,8 +483,8 @@ async function inspectReducedMotion(base) {
       };
     })()`));
     assert.equal(result.reduced, true, "reduced-motion query is active");
-    assert.deepEqual([result.pono, result.mother], [0.5, 0.5],
-      "reduced motion snaps both travellers to the stage 4 story checkpoint");
+    assert.deepEqual([result.pono, result.mother], [0.44, 0.5],
+      "reduced motion keeps Pono behind at the stage 4 paper story");
     assert.equal(result.transition, "0s", "the mother bar does not animate with reduced motion");
     assert.deepEqual([result.fillAnimation, result.gapAnimation, result.faceAnimation],
       ["none", "none", "none"],
@@ -404,7 +495,7 @@ async function inspectReducedMotion(base) {
       stageIdx = 7;
       stageRetryCount = 1;
       overlay.classList.add('hidden');
-      startCurrentStageIntro(1000, true, { pono: 0.997, mother: 0.999 });
+      startCurrentStageIntro(1000, true, { pono: 0.937, mother: 0.997 });
       const start = { pono: stageClock.ponoProgress, mother: stageClock.motherProgress };
       updateJourney(1002);
       const afterIntro = { pono: stageClock.ponoProgress, mother: stageClock.motherProgress };
