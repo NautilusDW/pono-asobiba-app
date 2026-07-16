@@ -9812,7 +9812,7 @@
        限定で開けるようにしたため、common/mvp-flags.js を body 内 script クラスタ (tier.js の直後)
        で読み込むよう変更 (旧: 「preview sandbox 404 回避のため未読込」だったが、
        stamp-rally.js の rewardsBlocked() が PonoMvpFlags 経由の判定に依存するため必須化)。 -->
-  <link rel="stylesheet" href="common/stamp-rally.css?v=2219">
+  <link rel="stylesheet" href="common/stamp-rally.css?v=2228">
 
   <!-- ごかんそう (rating) modal — common/rating-modal.{js,css} は別エージェント並列作成中。
        ファイル未配備でも tag だけ先行登録 (404 silent fallback)。 -->
@@ -9922,6 +9922,39 @@
       <button class="bn-item" data-action="settings" type="button" aria-label="せってい"><span class="bn-item__icon" aria-hidden="true">⚙</span><span class="bn-item__label">せってい</span></button>
     </nav>
   </div><!-- /.stage -->
+
+  <!-- batch:1317-furniture-reward-rebalance: デイリーラリー帯 (common/stamp-rally.js renderDailyRally() が
+       #stampRallyGames / #stampRallyBonus を参照)。 .stage は 1920x823 固定キャンバスで空き領域が無く
+       (card-list は「ちょうど4枚」でJS計算済み、brand-col の title-side-stack も余白ゼロ) 内部に置くと
+       他要素と衝突するため、.stage の外側に viewport 固定オーバーレイとして配置する。
+       表示可否は common/mvp-flags.js の body:not([data-tier="app"]) #stampRallySection{display:none} が
+       既に処理するため tier 分岐はここでは書かない。 -->
+  <style>
+    #stampRallySection {
+      position: fixed;
+      top: max(8px, env(safe-area-inset-top, 0px));
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 250;
+      width: auto;
+      max-width: min(320px, 90vw);
+      margin: 0;
+      padding: 8px 12px 6px;
+    }
+    #stampRallySection .stamp-rally-title { font-size: 0.82rem; margin-bottom: 4px; }
+    #stampRallySection .stamp-rally-games { gap: 8px; }
+    #stampRallySection .stamp-rally-game { width: 64px; padding: 6px 4px 5px; gap: 2px; }
+    #stampRallySection .stamp-rally-game-icon { font-size: 1.5rem; }
+    #stampRallySection .stamp-rally-game-name { font-size: 0.58rem; }
+    #stampRallySection .stamp-rally-bonus { font-size: 0.65rem; margin-top: 4px; }
+  </style>
+  <div class="stamp-rally-section" id="stampRallySection">
+    <div class="stamp-rally-title">🌟 きょうのスタンプラリー</div>
+    <div class="stamp-rally-games" id="stampRallyGames">
+      <!-- JS が2つのゲームカードを生成 -->
+    </div>
+    <div class="stamp-rally-bonus pending" id="stampRallyBonus">あと2つ あそんで ボーナススタンプ！</div>
+  </div>
 
   <div class="acorn-reward-modal" id="acornRewardModal" hidden role="dialog" aria-modal="true" aria-labelledby="acornRewardTitle">
     <div class="acorn-reward-card">
@@ -11071,7 +11104,7 @@
        grantReward/incrementStat の実装元 (実績一覧モーダル・報酬付与に必要)。 -->
   <script src="common/mvp-flags.js"></script>
   <script src="common/achievements.js"></script>
-  <script src="common/stamp-rally.js?v=2219"></script>
+  <script src="common/stamp-rally.js?v=2228"></script>
   <!-- ログインボーナス・シール帳 (window.checkDailyLogin 等)。 app tier 限定で発火 (下部の Login Bonus Trigger 参照)。 -->
   <script src="common/stickers.js"></script>
   <script src="js/game-stickers.js"></script>
@@ -11559,7 +11592,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2219; // sw.js CACHE_VERSION と同期 (batch:1318: 家具スタンプカードを赤い線画ゴム印へ差し替え＋参照cache bust)
+    const PAGE_CACHE_VERSION = 2228; // sw.js CACHE_VERSION と同期 (batch:1317: 実績リバランス+新ゲーム3本計装+デイリーラリーUI復活+PROFILE_GOALS動的化+管理画面横断ビュー+ハイブリッドショップ統合)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -11568,7 +11601,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v2219'; // PAGE_CACHE_VERSION/sw.js CACHE_VERSION と同期
+    window.PONO_SW_VERSION = 'v2228'; // PAGE_CACHE_VERSION/sw.js CACHE_VERSION と同期
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
@@ -16690,25 +16723,37 @@
       const profileHubEmpty = document.getElementById('profileHubEmpty');
       const STATS_KEY = 'pono_stats';
       const ACHIEVEMENTS_KEY = 'pono_achievements';
-      const PROFILE_GOALS = [
-        { id: 'first_profile', group: 'profile', groupLabel: 'プロフィール', title: 'なまえを きめた', stat: 'profile_set', target: 1, profile: true },
-        { id: 'first_quizland', group: 'quizland', groupLabel: 'なぞなぞ', title: 'クイズ 1もん', stat: 'quizland_correct', target: 1 },
-        { id: 'quizland_5', group: 'quizland', groupLabel: 'なぞなぞ', title: 'クイズ 5もん', stat: 'quizland_correct', target: 5 },
-        { id: 'quizland_15', group: 'quizland', groupLabel: 'なぞなぞ', title: 'クイズ 15もん', stat: 'quizland_correct', target: 15 },
-        { id: 'quizland_30', group: 'quizland', groupLabel: 'なぞなぞ', title: 'クイズ 30もん', stat: 'quizland_correct', target: 30 },
-        { id: 'first_maze', group: 'maze', groupLabel: 'めいろ', title: 'めいろ 1こ', stat: 'maze_clears', target: 1 },
-        { id: 'maze_4', group: 'maze', groupLabel: 'めいろ', title: 'めいろ 4こ', stat: 'maze_clears', target: 4 },
-        { id: 'maze_6', group: 'maze', groupLabel: 'めいろ', title: 'めいろ 6こ', stat: 'maze_clears', target: 6 },
-        { id: 'first_oto', group: 'oto', groupLabel: 'おと', title: 'おと 1かい', stat: 'oto_taps', target: 1 },
-        { id: 'oto_50', group: 'oto', groupLabel: 'おと', title: 'おと 50かい', stat: 'oto_taps', target: 50 },
-        { id: 'oto_300', group: 'oto', groupLabel: 'おと', title: 'おと 300かい', stat: 'oto_taps', target: 300 },
-        { id: 'first_bento', group: 'bento', groupLabel: 'おべんとう', title: 'おべんとう 1かい', stat: 'bento_complete', target: 1 },
-        { id: 'bento_3', group: 'bento', groupLabel: 'おべんとう', title: 'おべんとう 3かい', stat: 'bento_complete', target: 3 },
-        { id: 'bento_10', group: 'bento', groupLabel: 'おべんとう', title: 'おべんとう 10かい', stat: 'bento_complete', target: 10 },
-        { id: 'first_puzzle', group: 'puzzle', groupLabel: 'パズル', title: 'パズル 1こ', stat: 'puzzle_clears', target: 1 },
-        { id: 'puzzle_3', group: 'puzzle', groupLabel: 'パズル', title: 'パズル 3こ', stat: 'puzzle_clears', target: 3 },
-        { id: 'puzzle_20', group: 'puzzle', groupLabel: 'パズル', title: 'パズル 20こ', stat: 'puzzle_clears', target: 20 }
-      ];
+      const GOAL_GAME_LABELS = {
+        quizland: 'なぞなぞ',
+        maze: 'めいろ',
+        oto: 'おと',
+        bento: 'おべんとう',
+        puzzle: 'パズル',
+        quiz_sound: 'おとあて',
+        'nazonazo-tunnel': 'なぞなぞトレイン',
+        cooking: 'クッキング',
+        'writing-mori': 'もじっこファーム'
+      };
+      function buildProfileGoals() {
+        const achievements = (window.getActiveAchievements && window.getActiveAchievements()) || [];
+        const goals = [];
+        achievements.forEach((ach) => {
+          const isProfile = ach.stat === 'profile_set';
+          // first_login/all_games (game:'common') は play.html 側で計測されない集計スタッツのため除外
+          if (ach.game === 'common' && !isProfile) return;
+          goals.push({
+            id: ach.id,
+            group: isProfile ? 'profile' : ach.game,
+            groupLabel: isProfile ? 'プロフィール' : (GOAL_GAME_LABELS[ach.game] || ach.game),
+            title: ach.name,
+            stat: ach.stat,
+            target: ach.target,
+            profile: isProfile
+          });
+        });
+        return goals;
+      }
+      const PROFILE_GOALS = buildProfileGoals();
       const AVATAR_PRESETS = [
         { id: 'pono_kko', name: 'ポノっこ', kind: 'human', bg: '#fff1c4', skin: '#f2bf8a', hair: '#6b4226', shirt: '#6fc2d4', accent: '#f2a65a', hairStyle: 'round', markShape: 'leaf' },
         { id: 'leaf_kko', name: 'はっぱっこ', kind: 'human', bg: '#dff7ec', skin: '#d99b6b', hair: '#2f4a33', shirt: '#f5c84c', accent: '#75b86a', hairStyle: 'long', markShape: 'leaf' },

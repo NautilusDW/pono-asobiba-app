@@ -13811,6 +13811,11 @@ function onClear() {
   let _mazeGrantedAcorns = 0;
   if (!_isPreviewMode) {
     if (window.incrementStat) window.incrementStat('maze_clears', 1);
+    (function () {
+      var k = 'pono_played_' + new Date().toDateString();
+      var a = JSON.parse(localStorage.getItem(k) || '[]');
+      if (a.indexOf('maze') === -1) { a.push('maze'); localStorage.setItem(k, JSON.stringify(a)); }
+    })();
     if (window.addAcornsDaily) {
       _mazeGrantedAcorns = window.addAcornsDaily('maze', 5, 5, { reason: 'maze_clear', suppressRewardModal: true }) || 0;
     }

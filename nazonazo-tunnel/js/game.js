@@ -5295,6 +5295,7 @@ function onPick(el,o){
   setDriverMood("cheer");
   const seaRescue=isSeaStage()&&o.mode==="sea";
   const gained=addScore(SCORE_POINTS.correct+(missInQ===0?SCORE_POINTS.firstTry:0),"quiz");
+  if(typeof window.incrementStat==="function")window.incrementStat("nazonazo_correct",1);
   if(!o.skipOkSound)sndOK();showStamp("せいかい！ +"+gained+"てん","ok");
   quiz.classList.remove("show");
   // 数字ミニゲームの生成画像とdrift animationを画面外で動かし続けない。
@@ -5334,6 +5335,8 @@ function completeCurrentStage(o){
  if(!playing||stageCompletionHandled)return;
  stageCompletionHandled=true;
  cleared[stg]=true;
+ if(typeof window.incrementStat==="function")window.incrementStat("nazonazo_stage_clears",1);
+ (function(){var k="pono_played_"+new Date().toDateString();var a=JSON.parse(localStorage.getItem(k)||"[]");if(a.indexOf("nazonazo-tunnel")===-1){a.push("nazonazo-tunnel");localStorage.setItem(k,JSON.stringify(a));}})();
  if(!stageClearScoreGranted){
   addScore(SCORE_POINTS.stageClear,"clear");
   if(stageMiss===0)addScore(SCORE_POINTS.noMiss,"clear");

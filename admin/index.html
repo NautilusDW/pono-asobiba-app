@@ -519,6 +519,7 @@ tr:hover { background: #FFFAF0; }
   <button class="tab" data-panel="walls">🧱 壁紙・床</button>
   <button class="tab" data-panel="stamp">🎟 報酬管理</button>
   <button class="tab" data-panel="achievements">🏆 実績一覧</button>
+  <button class="tab" data-panel="furniture-crossview">🪑 家具クロスビュー</button>
   <button class="tab" data-panel="stats">📊 統計/状態</button>
   <button class="tab" data-panel="analytics">📊 ぶんせき</button>
   <button class="tab" data-panel="tools">🔧 ツール</button>
@@ -865,6 +866,35 @@ tr:hover { background: #FFFAF0; }
   <div class="section">
     <div class="section-title">👑 マスター系（tier 3）</div>
     <table id="ach-table-3"><tr><th>ID</th><th>名前</th><th>説明</th><th>進捗</th><th>報酬</th></tr></table>
+  </div>
+</div>
+
+<!-- ===== 🪑 家具クロスビュー ===== -->
+<div class="panel" id="panel-furniture-crossview">
+  <div class="section">
+    <div class="section-title">🪑 家具クロスビュー（room/items.js 横断ビュー・閲覧専用）</div>
+    <div style="font-size:0.78rem;color:#8B7355;margin-bottom:10px;">
+      room/items.js の全アイテムについて、実績報酬 / プレミアム特典 / スタンプ報酬(rewards.json) / どんぐりショップ販売 のどれで入手できるかを横断表示します。common/shop-catalog.js の判定ロジックをそのまま利用しています。
+    </div>
+    <div class="home-stat-grid" id="furniture-crossview-summary"></div>
+  </div>
+  <div class="section">
+    <div class="section-title">⚠️ 使い道なし・要検討（archived実績のreward idで、どこにも再配置されていないもの）</div>
+    <div id="furniture-crossview-orphans"></div>
+  </div>
+  <div class="section">
+    <div class="section-title">📋 アイテム一覧</div>
+    <div style="overflow-x:auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>プレビュー</th><th>ID</th><th>名前</th><th>カテゴリ</th><th>テーマ</th>
+            <th>対象ゲーム</th><th>入手経路</th><th>レアリティ</th><th>状態</th>
+          </tr>
+        </thead>
+        <tbody id="furniture-crossview-tbody"></tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -1731,6 +1761,8 @@ tr:hover { background: #FFFAF0; }
 <div class="toast" id="toast"></div>
 
 <script src="../common/achievements.js"></script>
+<script src="../common/tier.js"></script>
+<script src="../common/shop-catalog.js"></script>
 <script src="../quizland/data/questions.js"></script>
 <script>document.write('<script src="../room/items.js?v=' + Date.now() + '"><\/script>');</script>
 <script>
@@ -1903,6 +1935,7 @@ function switchTab(panelId) {
   if (panelId === 'roadmap') renderRoadmap();
   if (panelId === 'home')    renderHome();
   if (panelId === 'analytics') analyticsInitPanel();
+  if (panelId === 'furniture-crossview') renderFurnitureCrossview();
 }
 
 /* ===== 🚂 なぞなぞ 管理パネル ===== */
@@ -5660,6 +5693,7 @@ function fetchRewards(opts) {
       renderSlotRewards();
       renderCardRewards();
       renderFirstClearRewards();
+      if (document.getElementById('panel-furniture-crossview')) renderFurnitureCrossview();
     })
     .catch(function(e) {
       msg.textContent = '❌ 読み込み失敗: ' + e.message;
@@ -5674,6 +5708,7 @@ function fetchRewards(opts) {
           renderSlotRewards();
           renderCardRewards();
           renderFirstClearRewards();
+          if (document.getElementById('panel-furniture-crossview')) renderFurnitureCrossview();
         })
         .catch(function() { msg.textContent = '❌ rewards.json の読み込みに完全に失敗しました'; });
     });
@@ -10081,6 +10116,176 @@ ACHIEVEMENTS.forEach(function(ach) {
     '<td>' + (ach.reward ? '<span class="type-badge ' + typeClass + '">' + ach.reward.type + '</span> <code style="font-size:0.65rem;">' + ach.reward.id + '</code>' : '—') + '</td>';
   table.appendChild(tr);
 });
+
+// ════════════════════════════════════════════════════════════════
+// 🪑 家具クロスビュー Tab (閲覧専用: room/items.js × achievements.js ×
+// common/shop-catalog.js × rewards.json(スロット/カード報酬) を横断表示)
+// ════════════════════════════════════════════════════════════════
+var FURN_TYPE_COLORS = { sea: '#1565C0', furn: '#6D4C41', deco: '#7B1FA2', wall: '#00838F', floor: '#558B2F', bg: '#B91C1C' };
+function furnTypeBadge(type) {
+  var color = FURN_TYPE_COLORS[type] || '#6B7280';
+  return '<span class="type-badge" style="background:' + color + ';">' + type + '</span>';
+}
+function furnCrossviewStatCard(num, label) {
+  return '<div class="home-stat-card"><div class="home-stat-num">' + num + '</div><div class="home-stat-lbl">' + label + '</div></div>';
+}
+// rewards.json 使用箇所コード ('S7','C2','F:maze' 等、末尾 ♂♀含む) を人が読める説明に変換
+function furnDescribeRewardLocs(locs) {
+  var LOC_LABELS = { S: '🎟 スロット報酬', C: '🎁 カード完成報酬', F: '🥇 初回クリア報酬' };
+  var seenKind = {};
+  var kinds = [];
+  var games = [];
+  locs.forEach(function(loc) {
+    if (loc.charAt(0) === 'F') {
+      var g = loc.replace(/^F:/, '').replace(/[♂♀]$/, '');
+      if (games.indexOf(g) === -1) games.push(g);
+      if (!seenKind.F) { seenKind.F = true; kinds.push(LOC_LABELS.F); }
+    } else {
+      var kind = loc.charAt(0);
+      if (!seenKind[kind]) { seenKind[kind] = true; kinds.push(LOC_LABELS[kind] || loc); }
+    }
+  });
+  return { text: kinds.join(' / ') + ' (' + locs.join(', ') + ')', games: games };
+}
+function renderFurnitureCrossview() {
+  var tbody = document.getElementById('furniture-crossview-tbody');
+  var summaryEl = document.getElementById('furniture-crossview-summary');
+  var orphanEl = document.getElementById('furniture-crossview-orphans');
+  if (!tbody) return;
+  if (typeof ROOM_ITEMS === 'undefined') {
+    tbody.innerHTML = '<tr><td colspan="9">room/items.js を読み込み中…</td></tr>';
+    return;
+  }
+
+  var allAch = (typeof ACHIEVEMENTS !== 'undefined') ? ACHIEVEMENTS : (window.getAchievements ? window.getAchievements() : []);
+  var activeAch = allAch.filter(function(a) { return !a.archived; });
+  var archivedAch = allAch.filter(function(a) { return a.archived; });
+  var bookIds = (window.PonoTier && window.PonoTier.BOOK_ROOM_ITEM_IDS) || [];
+  var usage = (typeof _buildRewardsUsageMap === 'function') ? _buildRewardsUsageMap() : { byId: {}, byPath: {} };
+  var resolveRarity = (window.PonoShopCatalog && window.PonoShopCatalog.resolveFurnitureRarity) || function() { return null; };
+
+  var activeByFurnId = {};
+  activeAch.forEach(function(a) {
+    if (a.reward && a.reward.type === 'furn' && a.reward.id) {
+      (activeByFurnId[a.reward.id] = activeByFurnId[a.reward.id] || []).push(a);
+    }
+  });
+  var archivedByFurnId = {};
+  archivedAch.forEach(function(a) {
+    if (a.reward && a.reward.type === 'furn' && a.reward.id) {
+      (archivedByFurnId[a.reward.id] = archivedByFurnId[a.reward.id] || []).push(a);
+    }
+  });
+
+  var counts = { achievement: 0, premium: 0, rewardsJson: 0, shop: 0, warning: 0 };
+  var rows = ROOM_ITEMS.slice().sort(function(a, b) {
+    if (a.cat !== b.cat) return a.cat < b.cat ? -1 : 1;
+    return a.id < b.id ? -1 : (a.id > b.id ? 1 : 0);
+  }).map(function(item) {
+    var shopRarity = resolveRarity(item);
+    var activeList = activeByFurnId[item.id] || [];
+    var archivedList = archivedByFurnId[item.id] || [];
+    var usageLocs = usage.byId[item.id] || [];
+    var path, game, statusIcon, isWarning = false, rarity = null;
+
+    if (activeList.length > 0) {
+      counts.achievement++;
+      path = '🏆 実績: ' + activeList.map(function(a) { return a.name + '(' + a.id + ')'; }).join(', ');
+      game = Array.from(new Set(activeList.map(function(a) { return a.game; }))).join(', ');
+      statusIcon = '🟢';
+    } else if (bookIds.indexOf(item.id) !== -1) {
+      counts.premium++;
+      path = '📕 プレミアム特典（絵本購入・BOOK_ROOM_ITEM_IDS）';
+      game = '(共通)';
+      statusIcon = '🟢';
+    } else if (usageLocs.length > 0) {
+      counts.rewardsJson++;
+      var desc = furnDescribeRewardLocs(usageLocs);
+      path = desc.text;
+      game = desc.games.length > 0 ? desc.games.join(', ') : '(スタンプラリー共通)';
+      statusIcon = '🟢';
+      if (shopRarity) path += ' ／ ⚡ ショップでも販売中の可能性 (' + shopRarity + ')';
+    } else if (shopRarity) {
+      counts.shop++;
+      rarity = shopRarity;
+      path = '🛍 どんぐりショップ販売 (' + shopRarity + ')';
+      game = '(どんぐりショップ)';
+      statusIcon = '🟢';
+    } else if (archivedList.length > 0) {
+      counts.warning++;
+      isWarning = true;
+      path = '⚠️ 使い道なし・要検討（旧実績: ' + archivedList.map(function(a) { return a.name + '(' + a.id + ')'; }).join(', ') + '）';
+      game = archivedList.map(function(a) { return a.game; }).join(', ') + '（archived）';
+      statusIcon = '⚠️';
+    } else {
+      counts.warning++;
+      isWarning = true;
+      path = '❓ 未分類（入手経路が見つかりません・要調査）';
+      game = '—';
+      statusIcon = '❓';
+    }
+
+    return { item: item, path: path, game: game, statusIcon: statusIcon, isWarning: isWarning, rarity: rarity };
+  });
+
+  if (summaryEl) {
+    summaryEl.innerHTML =
+      furnCrossviewStatCard(ROOM_ITEMS.length, '総アイテム数') +
+      furnCrossviewStatCard(counts.achievement, '🏆 実績専用') +
+      furnCrossviewStatCard(counts.premium, '📕 プレミアム特典') +
+      furnCrossviewStatCard(counts.rewardsJson, '🎟 スタンプ報酬') +
+      furnCrossviewStatCard(counts.shop, '🛍 ショップ販売') +
+      furnCrossviewStatCard(counts.warning, '⚠️ 要確認/使い道なし');
+  }
+
+  tbody.innerHTML = rows.map(function(r) {
+    var it = r.item;
+    var img = it.roomImg
+      ? '<img src="' + it.roomImg + '" onerror="this.style.display=\'none\'">'
+      : (it.emoji || '');
+    var rowStyle = r.isWarning ? ' style="background:#FEF2F2;"' : '';
+    return '<tr' + rowStyle + '>' +
+      '<td class="img-cell">' + img + '</td>' +
+      '<td><code style="font-size:0.7rem;">' + it.id + '</code></td>' +
+      '<td>' + (it.name || '') + '</td>' +
+      '<td>' + furnTypeBadge(it.cat) + '</td>' +
+      '<td style="font-size:0.75rem;">' + (it.theme || '') + '</td>' +
+      '<td style="font-size:0.72rem;">' + r.game + '</td>' +
+      '<td style="font-size:0.72rem;">' + r.path + '</td>' +
+      '<td style="font-size:0.72rem;text-align:center;">' + (r.rarity || '—') + '</td>' +
+      '<td style="text-align:center;">' + r.statusIcon + '</td>' +
+      '</tr>';
+  }).join('');
+
+  if (orphanEl) {
+    var activeRewardKeys = {};
+    activeAch.forEach(function(a) { if (a.reward) activeRewardKeys[a.reward.type + ':' + a.reward.id] = true; });
+    var orphans = [];
+    archivedAch.forEach(function(a) {
+      if (!a.reward) return;
+      var key = a.reward.type + ':' + a.reward.id;
+      if (activeRewardKeys[key]) return; // 新実績に付け替え済み
+      if (a.reward.type === 'furn') {
+        var inBook = bookIds.indexOf(a.reward.id) !== -1;
+        var found = ROOM_ITEMS.filter(function(it) { return it.id === a.reward.id; })[0];
+        var sellable = found ? resolveRarity(found) : null;
+        var inRewardsJson = (usage.byId[a.reward.id] || []).length > 0;
+        if (inBook || sellable || inRewardsJson) return; // 他経路で入手可能
+      }
+      orphans.push(a);
+    });
+    if (orphans.length === 0) {
+      orphanEl.innerHTML = '<div style="color:#8B7355;font-size:0.8rem;">現在、使い道のない archived 実績の報酬 id はありません。</div>';
+    } else {
+      orphanEl.innerHTML = orphans.map(function(a) {
+        return '<div style="background:#FEF2F2;border:1px solid #FCA5A5;border-radius:8px;padding:8px 12px;margin-bottom:6px;font-size:0.78rem;">' +
+          '⚠️ <code>' + a.id + '</code>（' + a.name + ' / game=' + a.game + '）の報酬 ' +
+          furnTypeBadge(a.reward.type) + ' <code>' + a.reward.id + '</code> は現在どこにも再配置されておらず入手不能です。' +
+          '</div>';
+      }).join('');
+    }
+  }
+}
 
 // ════════════════════════════════════════════════════════════════
 // Stats Tab

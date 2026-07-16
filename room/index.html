@@ -1198,8 +1198,10 @@ function loadState() {
   }
   const migrate = id => ID_MIGRATION[id] || id;
 
-  // achievements.js/grantReward で獲得した家具・壁・床をマージ（マイグレーション前に実行）
-  const MERGE_KEYS = ['pono_unlocked_furn', 'pono_unlocked_wall', 'pono_unlocked_floor'];
+  // achievements.js/grantReward で獲得した家具・壁・床 + どんぐりショップで購入した家具を
+  // マージ（マイグレーション前に実行）。実績経由の所持ロジックは変更せず、購入済みリスト
+  // (pono_shop_furn_purchased, shop/index.html の🪑かぐタブが書き込む) を OR 条件で足すだけ。
+  const MERGE_KEYS = ['pono_unlocked_furn', 'pono_unlocked_wall', 'pono_unlocked_floor', 'pono_shop_furn_purchased'];
   MERGE_KEYS.forEach(key => {
     try {
       const arr = JSON.parse(localStorage.getItem(key) || '[]');

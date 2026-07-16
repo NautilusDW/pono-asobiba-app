@@ -7511,6 +7511,27 @@ function onWritingComplete(result, options = {}) {
   } catch (error) {
     console.warn('incrementStat failed for writing achievement:', error);
   }
+  try {
+    if (typeof window.incrementStat === 'function'
+      && result && result.mode === WRITING_MODES.dailyThree
+      && isDailyThreeStateComplete(dailyThreeState)) {
+      const todayKey = getLocalDateKey();
+      const statDateKey = 'mojikkoFarmDailyThreeStatDoneV1';
+      let lastStatDate = '';
+      try { lastStatDate = localStorage.getItem(statDateKey) || ''; } catch (error) { lastStatDate = ''; }
+      if (lastStatDate !== todayKey) {
+        window.incrementStat('writing_mori_daily_three', 1);
+        try { localStorage.setItem(statDateKey, todayKey); } catch (error) { /* noop */ }
+      }
+    }
+  } catch (error) {
+    console.warn('incrementStat failed for writing_mori_daily_three:', error);
+  }
+  (function () {
+    const k = 'pono_played_' + new Date().toDateString();
+    const a = JSON.parse(localStorage.getItem(k) || '[]');
+    if (a.indexOf('writing-mori') === -1) { a.push('writing-mori'); localStorage.setItem(k, JSON.stringify(a)); }
+  })();
 }
 
 function launchBurst() {

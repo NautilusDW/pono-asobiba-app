@@ -10,6 +10,7 @@
 <!-- app (アプリばん) 専用 tier ガード。 tier.js 未読込/例外時は fail-open (従来通り表示)。 -->
 <script src="../common/debug-mode.js"></script>
 <script src="../common/tier.js"></script>
+<script src="../common/achievements.js"></script>
 <script>
 (function(){
   'use strict';
@@ -19523,6 +19524,12 @@ body.layout-editor-on .bowl-fill-mask::after {
     if (wasNew) {
       state.newBadges.add(ing.id);
       saveNewBadges();
+      if (typeof window.incrementStat === 'function') window.incrementStat('cooking_ingredients', 1);
+      (function () {
+        var k = 'pono_played_' + new Date().toDateString();
+        var a = JSON.parse(localStorage.getItem(k) || '[]');
+        if (a.indexOf('cooking') === -1) { a.push('cooking'); localStorage.setItem(k, JSON.stringify(a)); }
+      })();
     }
     refreshUnlockedRecipes();
     renderFridge();
@@ -19540,6 +19547,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       if (ready && !state.unlockedRecipes.has(rec.id)) {
         state.unlockedRecipes.add(rec.id);
         changed = true;
+        if (typeof window.incrementStat === 'function') window.incrementStat('cooking_recipes', 1);
       }
     });
     if (changed) saveUnlockedRecipes();

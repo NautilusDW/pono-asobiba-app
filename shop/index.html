@@ -68,6 +68,73 @@
     font-size: 1.25rem; font-weight: 900; color: #5D2E08;
     text-shadow: 2px 2px 0 #FFF4D9;
   }
+
+  /* ===== Tabs (シール / かぐ) ===== */
+  .shop-tabs {
+    display: flex; justify-content: center; gap: 10px;
+    padding: 2px 12px 8px;
+  }
+  .shop-tab {
+    background: #fff;
+    border: 2.5px solid #D8B98A;
+    border-radius: 999px;
+    padding: 6px 18px;
+    font-size: 0.9rem; font-weight: 900; color: #A16207;
+    cursor: pointer;
+  }
+  .shop-tab.on {
+    background: linear-gradient(135deg,#FFD86B,#FFB74D);
+    border-color: #B97A3E; color: #5D2E08;
+    box-shadow: 0 3px 8px rgba(161,98,7,0.25);
+  }
+
+  /* ===== かぐタブ ===== */
+  .furn-area {
+    flex: 1; width: 100%;
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
+    padding: 0 10px 14px;
+  }
+  .furn-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+    gap: 10px;
+    max-width: 900px; margin: 0 auto;
+  }
+  .furn-cat-label {
+    grid-column: 1 / -1;
+    font-size: 0.82rem; font-weight: 900; color: #5D2E08;
+    padding: 10px 2px 2px;
+  }
+  .furn-card {
+    background: rgba(255,255,255,0.95);
+    border: 2.5px solid #B97A3E;
+    border-radius: 12px;
+    padding: 8px 6px 8px;
+    display: flex; flex-direction: column; align-items: center; gap: 5px;
+  }
+  .furn-card.owned { border-color: #4caf50; background: rgba(232,245,233,0.95); }
+  .furn-thumb {
+    width: 100%; aspect-ratio: 1;
+    border-radius: 8px; overflow: hidden;
+    background: #FFF6E6;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.8rem;
+  }
+  .furn-thumb img.thumb-contain { width: 100%; height: 100%; object-fit: contain; }
+  .furn-thumb img.thumb-cover   { width: 100%; height: 100%; object-fit: cover; }
+  .furn-name {
+    font-size: 0.7rem; font-weight: 900; color: #5D2E08;
+    text-align: center; line-height: 1.2; min-height: 2.1em;
+  }
+  .furn-price-btn {
+    width: 100%; border: none; border-radius: 999px;
+    padding: 6px 4px;
+    font-size: 0.76rem; font-weight: 900;
+    background: linear-gradient(135deg,#FFD86B,#FFB74D);
+    color: #7C4A02;
+    cursor: pointer;
+  }
+  .furn-price-btn.owned { background: #e8f5e9; color: #388e3c; cursor: default; }
   .acorn-wallet {
     position: absolute; top: 12px; right: 12px;
     background: #fff;
@@ -255,10 +322,19 @@
 
     <div class="shop-title">🌰 ポノのどんぐりショップ 🌰</div>
 
-    <div class="shelf-area">
+    <div class="shop-tabs">
+      <button class="shop-tab on" id="tabSticker" type="button">🌟 シール</button>
+      <button class="shop-tab" id="tabFurn" type="button">🪑 かぐ</button>
+    </div>
+
+    <div class="shelf-area" id="shelfArea">
       <div class="counter-wrap" id="counterWrap">
         <!-- スロット3つ（浮いてる家具） -->
       </div>
+    </div>
+
+    <div class="furn-area" id="furnArea" style="display:none;">
+      <div class="furn-grid" id="furnGrid"></div>
     </div>
   </div>
 
@@ -274,6 +350,10 @@
 <script src="../common/acorns.js"></script>
 <script src="../js/game-stickers.js"></script>
 <script src="../js/donguri-shop.js"></script>
+<script src="../common/tier.js"></script>
+<script src="../common/achievements.js"></script>
+<script src="../room/items.js"></script>
+<script src="../common/shop-catalog.js"></script>
 <script>
   // ===== どんぐりショップ (シール販売 + 配布) =====
   // 商品は js/donguri-shop.js が JST 朝/夕で回転させる 3 枠シール。
@@ -562,6 +642,162 @@
 
   renderCounter();
   updateAcorns();
+
+  // ===== 🪑 かぐタブ (案2ハイブリッド: 実績専用idを除いた家具をどんぐりで販売) =====
+  // common/shop-catalog.js の resolveFurnitureRarity() で normal/rare/super/null を判定。
+  // 購入記録は localStorage pono_shop_furn_purchased (id配列)、room/index.html 側で
+  // 既存の実績付与マージロジックと OR 条件でマージされる。
+  var FURN_LS_KEY = 'pono_shop_furn_purchased';
+  // 実績経由 (grantReward) で既に付与済みの家具/壁/床は room/index.html の MERGE_KEYS と
+  // 同じキーを見て「もってるよ」判定に含める。実績アーカイブ化で achievement-only 判定から
+  // 漏れてショップに再出現した id (例: furn_bookshelf_w, furn_desk) を、既に取得済みの
+  // 既存プレイヤーへ「未所持」として二重販売しないための安全策。
+  var FURN_ACHIEVEMENT_LS_KEYS = ['pono_unlocked_furn', 'pono_unlocked_wall', 'pono_unlocked_floor'];
+  var FURN_PRICE_BY_RARITY = { normal: 15, rare: 25, super: 35 };
+  var FURN_CAT_LABEL = { wall: '🖼️ かべがみ', floor: '🟫 ゆか', deco: '🎀 かざり', furn: '🪑 かぐ' };
+  var tabSticker = document.getElementById('tabSticker');
+  var tabFurn    = document.getElementById('tabFurn');
+  var shelfArea  = document.getElementById('shelfArea');
+  var furnArea   = document.getElementById('furnArea');
+  var furnGrid   = document.getElementById('furnGrid');
+  var furnBusy   = false;
+
+  function getPurchasedFurn() {
+    try {
+      var a = JSON.parse(localStorage.getItem(FURN_LS_KEY) || '[]');
+      return Array.isArray(a) ? a : [];
+    } catch (e) { return []; }
+  }
+  function addPurchasedFurn(id) {
+    var list = getPurchasedFurn();
+    if (list.indexOf(id) === -1) {
+      list.push(id);
+      try { localStorage.setItem(FURN_LS_KEY, JSON.stringify(list)); } catch (e) {}
+    }
+  }
+  function isAchievementGrantedFurn(id) {
+    for (var i = 0; i < FURN_ACHIEVEMENT_LS_KEYS.length; i++) {
+      try {
+        var arr = JSON.parse(localStorage.getItem(FURN_ACHIEVEMENT_LS_KEYS[i]) || '[]');
+        if (Array.isArray(arr) && arr.indexOf(id) !== -1) return true;
+      } catch (e) {}
+    }
+    return false;
+  }
+  function isFurnPurchased(id) {
+    return getPurchasedFurn().indexOf(id) !== -1 || isAchievementGrantedFurn(id);
+  }
+
+  function getSellableFurniture() {
+    if (typeof ROOM_ITEMS === 'undefined' || !window.PonoShopCatalog) return [];
+    var out = [];
+    for (var i = 0; i < ROOM_ITEMS.length; i++) {
+      var it = ROOM_ITEMS[i];
+      if (it.hidden) continue;
+      var rarity = window.PonoShopCatalog.resolveFurnitureRarity(it);
+      if (rarity) out.push({ item: it, rarity: rarity });
+    }
+    return out;
+  }
+
+  function makeFurnCard(item, rarity) {
+    var price = FURN_PRICE_BY_RARITY[rarity] || FURN_PRICE_BY_RARITY.normal;
+    var owned = isFurnPurchased(item.id);
+    var card = document.createElement('div');
+    card.className = 'furn-card' + (owned ? ' owned' : '');
+
+    var thumb = document.createElement('div');
+    thumb.className = 'furn-thumb';
+    var imgSrc = item.roomImg || item.img;
+    if (imgSrc) {
+      var img = document.createElement('img');
+      img.src = imgSrc;
+      img.alt = item.name || '';
+      // AR絶対遵守: 壁/床はcoverで模様を敷き詰め、かぐ/かざりはcontainで原寸比を保つ（stretch禁止）
+      img.className = (item.cat === 'wall' || item.cat === 'floor') ? 'thumb-cover' : 'thumb-contain';
+      img.addEventListener('error', function () { img.remove(); thumb.textContent = '🪑'; });
+      thumb.appendChild(img);
+    } else {
+      thumb.textContent = '🪑';
+    }
+
+    var name = document.createElement('div');
+    name.className = 'furn-name';
+    name.textContent = item.name || item.id;
+
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    if (owned) {
+      btn.className = 'furn-price-btn owned';
+      btn.textContent = 'もってるよ ✓';
+      btn.disabled = true;
+    } else {
+      btn.className = 'furn-price-btn';
+      btn.textContent = '🌰 ' + price;
+      btn.addEventListener('click', function () { tryBuyFurn(item, price); });
+    }
+
+    card.appendChild(thumb);
+    card.appendChild(name);
+    card.appendChild(btn);
+    return card;
+  }
+
+  function renderFurnGrid() {
+    if (!furnGrid) return;
+    furnGrid.innerHTML = '';
+    var entries = getSellableFurniture();
+    if (!entries.length) {
+      furnGrid.innerHTML = '<div style="grid-column:1/-1;color:#5D2E08;font-weight:900;padding:20px;text-align:center;">じゅんびちゅう…</div>';
+      return;
+    }
+    var lastCat = null;
+    entries.forEach(function (entry) {
+      var it = entry.item;
+      if (it.cat !== lastCat) {
+        lastCat = it.cat;
+        var label = document.createElement('div');
+        label.className = 'furn-cat-label';
+        label.textContent = FURN_CAT_LABEL[it.cat] || it.cat;
+        furnGrid.appendChild(label);
+      }
+      furnGrid.appendChild(makeFurnCard(it, entry.rarity));
+    });
+  }
+
+  function tryBuyFurn(item, price) {
+    if (furnBusy) return;
+    if (isFurnPurchased(item.id)) { showToast('🎀 もってるよ♪'); return; }
+    if (typeof window.spendAcorns !== 'function' || typeof window.getAcorns !== 'function') return;
+    var have = window.getAcorns();
+    if (have < price) {
+      showToast('🌰 たりないよ〜 (あと ' + (price - have) + 'こ)');
+      return;
+    }
+    furnBusy = true;
+    var ok = window.spendAcorns(price);
+    furnBusy = false;
+    if (!ok) {
+      showToast('🌰 たりないよ〜');
+      return;
+    }
+    addPurchasedFurn(item.id);
+    try { _shopClearInactiveGuard(); } catch (_) {}
+    try { playPurchaseSfx(price); } catch (_) {}
+    showToast('🎉 ' + (item.name || 'かぐ') + ' を ゲット！');
+    updateAcorns();
+    renderFurnGrid();
+  }
+
+  function setShopTab(tab) {
+    tabSticker.classList.toggle('on', tab === 'sticker');
+    tabFurn.classList.toggle('on', tab === 'furn');
+    shelfArea.style.display = (tab === 'sticker') ? '' : 'none';
+    furnArea.style.display  = (tab === 'furn') ? 'flex' : 'none';
+    if (tab === 'furn') renderFurnGrid();
+  }
+  tabSticker.addEventListener('click', function () { setShopTab('sticker'); });
+  tabFurn.addEventListener('click', function () { setShopTab('furn'); });
 </script>
 
 </body>

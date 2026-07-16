@@ -16,63 +16,82 @@
     { id: 'first_profile',   game: 'common',    name: 'なまえを きめた',       desc: 'プロフィールを せっていしよう',   target: 1, stat: 'profile_set',       tier: 1, reward: { type: 'furn', id: 'deco_box' } },
     // 無料ゲームの報酬は furn (お部屋のかざり) に統一 (水族館は有料コンテンツのため)
     { id: 'first_puzzle',    game: 'puzzle',    name: 'はじめてのパズル',      desc: 'パズルを 1めん クリアしよう',     target: 1, stat: 'puzzle_clears',     tier: 1, reward: { type: 'furn', id: 'deco_shelf_wall' } },
-    { id: 'first_writing',   game: 'writing',   name: 'はじめてのもじかき',    desc: '1もじ かんせいしよう',            target: 1, stat: 'writing_chars',     tier: 1, reward: { type: 'furn', id: 'furn_bookshelf_w' } },
-    { id: 'first_drawing',   game: 'drawing',   name: 'はじめてのおえかき',    desc: 'えを 1まい ほぞんしよう',         target: 1, stat: 'drawing_saves',     tier: 1, reward: { type: 'sea',  id: 'starfish' } },
+    { id: 'first_writing',   game: 'writing',   name: 'はじめてのもじかき',    desc: '1もじ かんせいしよう',            target: 1, stat: 'writing_chars',     tier: 1, reward: { type: 'furn', id: 'furn_bookshelf_w' }, archived: true },
+    { id: 'first_drawing',   game: 'drawing',   name: 'はじめてのおえかき',    desc: 'えを 1まい ほぞんしよう',         target: 1, stat: 'drawing_saves',     tier: 1, reward: { type: 'sea',  id: 'starfish' }, archived: true },
     { id: 'first_bento',     game: 'bento',     name: 'はじめてのおべんとう',  desc: 'おべんとうを 1かい つくろう',     target: 1, stat: 'bento_complete',    tier: 1, reward: { type: 'furn', id: 'deco_books' } },
-    { id: 'first_wordmatch', game: 'wordmatch', name: 'はじめてのことばあわせ',desc: '1もん せいかいしよう',            target: 1, stat: 'wordmatch_correct', tier: 1, reward: { type: 'furn', id: 'deco_tea' } },
-    { id: 'first_bowling',   game: 'bowling',   name: 'はじめてのボウリング',  desc: '1ラウンド あそぼう',              target: 1, stat: 'bowling_rounds',    tier: 1, reward: { type: 'sea',  id: 'neon_tetra' } },
-    { id: 'first_breakout',  game: 'breakout',  name: 'はじめてのブロックくずし',desc: 'ステージ1を クリアしよう',       target: 1, stat: 'breakout_stages',   tier: 1, reward: { type: 'sea',  id: 'goldfish' } },
-    { id: 'first_slide',     game: 'slide',     name: 'はじめてのみちつなぎ',  desc: 'ステージ1を クリアしよう',        target: 1, stat: 'slide_clears',      tier: 1, reward: { type: 'sea',  id: 'crab' } },
+    { id: 'first_wordmatch', game: 'wordmatch', name: 'はじめてのことばあわせ',desc: '1もん せいかいしよう',            target: 1, stat: 'wordmatch_correct', tier: 1, reward: { type: 'furn', id: 'deco_tea' }, archived: true },
+    { id: 'first_bowling',   game: 'bowling',   name: 'はじめてのボウリング',  desc: '1ラウンド あそぼう',              target: 1, stat: 'bowling_rounds',    tier: 1, reward: { type: 'sea',  id: 'neon_tetra' }, archived: true },
+    { id: 'first_breakout',  game: 'breakout',  name: 'はじめてのブロックくずし',desc: 'ステージ1を クリアしよう',       target: 1, stat: 'breakout_stages',   tier: 1, reward: { type: 'sea',  id: 'goldfish' }, archived: true },
+    { id: 'first_slide',     game: 'slide',     name: 'はじめてのみちつなぎ',  desc: 'ステージ1を クリアしよう',        target: 1, stat: 'slide_clears',      tier: 1, reward: { type: 'sea',  id: 'crab' }, archived: true },
     { id: 'first_maze',      game: 'maze',      name: 'はじめてのめいろ',      desc: 'ステージ1を クリアしよう',        target: 1, stat: 'maze_clears',       tier: 1, reward: { type: 'furn', id: 'deco_bunny' } },
     { id: 'first_quizland',  game: 'quizland',  name: 'はじめてのクイズ',      desc: '1もん せいかいしよう',            target: 1, stat: 'quizland_correct', tier: 1, reward: { type: 'furn', id: 'furn_pcdesk' } },
     { id: 'first_oto',         game: 'oto',        name: 'はじめてのおとタッチ', desc: 'ボタンを 1かい たたこう',         target: 1, stat: 'oto_taps',           tier: 1, reward: { type: 'furn', id: 'deco_box' } },
     { id: 'first_quiz_sound',  game: 'quiz_sound', name: 'はじめてのおとあて',   desc: '1もん せいかいしよう',            target: 1, stat: 'quiz_sound_correct', tier: 1, reward: { type: 'furn', id: 'furn_pcdesk' } },
-    { id: 'fossil_first',      game: 'fossil',     name: 'はつ かせき',          desc: 'かせきを 1たい はっけんしよう',    target: 1, stat: 'fossil_found',       tier: 1, reward: { type: 'furn', id: 'furn_pcdesk' } },
+    { id: 'fossil_first',      game: 'fossil',     name: 'はつ かせき',          desc: 'かせきを 1たい はっけんしよう',    target: 1, stat: 'fossil_found',       tier: 1, reward: { type: 'furn', id: 'furn_pcdesk' }, archived: true },
     { id: 'all_games',       game: 'common',    name: 'ぜんぶ あそんだ！',     desc: 'ぜんぶの ゲームを あそぼう',     target: 1, stat: 'all_games_played',  tier: 2, reward: { type: 'furn', id: 'deco_carousel' } },
 
     // ── 中間 ─────────────────────────────────────────────────────
-    { id: 'writing_20',    game: 'writing',   name: 'もじもじ がんばった',   desc: 'ひらがな 20もじ かこう',         target: 20, stat: 'writing_hiragana',  tier: 2, reward: { type: 'furn', id: 'furn_bookshelf_w' } },
+    { id: 'writing_20',    game: 'writing',   name: 'もじもじ がんばった',   desc: 'ひらがな 20もじ かこう',         target: 20, stat: 'writing_hiragana',  tier: 2, reward: { type: 'furn', id: 'furn_bookshelf_w' }, archived: true },
     { id: 'puzzle_3',      game: 'puzzle',    name: 'パズルずき',           desc: 'パズルを 3めん クリアしよう',     target: 3,  stat: 'puzzle_clears',     tier: 2, reward: { type: 'furn', id: 'deco_shelf_wall' } },
     { id: 'bento_3',       game: 'bento',     name: 'おべんとうずき',       desc: 'おべんとうを 3かい つくろう',     target: 3,  stat: 'bento_complete',    tier: 2, reward: { type: 'furn', id: 'deco_books' } },
-    { id: 'breakout_3',    game: 'breakout',  name: 'どんどんくずす',       desc: 'ステージ3まで クリアしよう',      target: 3,  stat: 'breakout_stages',   tier: 2, reward: { type: 'furn', id: 'deco_robot' } },
-    { id: 'slide_4',       game: 'slide',     name: 'みちつなぎずき',       desc: 'ステージ4まで クリアしよう',      target: 4,  stat: 'slide_clears',      tier: 2, reward: { type: 'furn', id: 'furn_bookshelf_wood' } },
+    { id: 'breakout_3',    game: 'breakout',  name: 'どんどんくずす',       desc: 'ステージ3まで クリアしよう',      target: 3,  stat: 'breakout_stages',   tier: 2, reward: { type: 'furn', id: 'deco_robot' }, archived: true },
+    { id: 'slide_4',       game: 'slide',     name: 'みちつなぎずき',       desc: 'ステージ4まで クリアしよう',      target: 4,  stat: 'slide_clears',      tier: 2, reward: { type: 'furn', id: 'furn_bookshelf_wood' }, archived: true },
     { id: 'maze_4',        game: 'maze',      name: 'めいろずき',           desc: 'ステージ4まで クリアしよう',      target: 4,  stat: 'maze_clears',       tier: 2, reward: { type: 'furn', id: 'deco_bunny' } },
-    { id: 'drawing_5',     game: 'drawing',   name: 'えかきさん',           desc: 'えを 5まい ほぞんしよう',         target: 5,  stat: 'drawing_saves',     tier: 2, reward: { type: 'furn', id: 'furn_desk' } },
-    { id: 'bowling_5',     game: 'bowling',   name: 'ボウリングはじまった', desc: '5ラウンド あそぼう',              target: 5,  stat: 'bowling_rounds',    tier: 2, reward: { type: 'bg',   id: 'bg_bowling_dinasour' } },
-    { id: 'bowling_10',    game: 'bowling',   name: 'ボウリングじょうず',   desc: '10ラウンド あそぼう',             target: 10, stat: 'bowling_rounds',    tier: 2, reward: { type: 'bg',   id: 'bg_bowling_neon_boy01' } },
-    { id: 'bowling_20',    game: 'bowling',   name: 'ボウリングずき',       desc: '20ラウンド あそぼう',             target: 20, stat: 'bowling_rounds',    tier: 2, reward: { type: 'furn', id: 'deco_sportscar' } },
-    { id: 'bowling_30',    game: 'bowling',   name: 'ボウリングプロ',       desc: '30ラウンド あそぼう',             target: 30, stat: 'bowling_rounds',    tier: 2, reward: { type: 'bg',   id: 'bg_bowling_pirates' } },
-    { id: 'wordmatch_15',  game: 'wordmatch', name: 'ことばずき',           desc: '15もん せいかいしよう',           target: 15, stat: 'wordmatch_correct', tier: 2, reward: { type: 'furn', id: 'deco_tea' } },
+    { id: 'drawing_5',     game: 'drawing',   name: 'えかきさん',           desc: 'えを 5まい ほぞんしよう',         target: 5,  stat: 'drawing_saves',     tier: 2, reward: { type: 'furn', id: 'furn_desk' }, archived: true },
+    { id: 'bowling_5',     game: 'bowling',   name: 'ボウリングはじまった', desc: '5ラウンド あそぼう',              target: 5,  stat: 'bowling_rounds',    tier: 2, reward: { type: 'bg',   id: 'bg_bowling_dinasour' }, archived: true },
+    { id: 'bowling_10',    game: 'bowling',   name: 'ボウリングじょうず',   desc: '10ラウンド あそぼう',             target: 10, stat: 'bowling_rounds',    tier: 2, reward: { type: 'bg',   id: 'bg_bowling_neon_boy01' }, archived: true },
+    { id: 'bowling_20',    game: 'bowling',   name: 'ボウリングずき',       desc: '20ラウンド あそぼう',             target: 20, stat: 'bowling_rounds',    tier: 2, reward: { type: 'furn', id: 'deco_sportscar' }, archived: true },
+    { id: 'bowling_30',    game: 'bowling',   name: 'ボウリングプロ',       desc: '30ラウンド あそぼう',             target: 30, stat: 'bowling_rounds',    tier: 2, reward: { type: 'bg',   id: 'bg_bowling_pirates' }, archived: true },
+    { id: 'wordmatch_15',  game: 'wordmatch', name: 'ことばずき',           desc: '15もん せいかいしよう',           target: 15, stat: 'wordmatch_correct', tier: 2, reward: { type: 'furn', id: 'deco_tea' }, archived: true },
     { id: 'quizland_5',    game: 'quizland',  name: 'クイズはじめたよ',    desc: '5もん せいかいしよう',            target: 5,  stat: 'quizland_correct',  tier: 2, reward: { type: 'furn', id: 'deco_rug_space' } },
     { id: 'quizland_15',   game: 'quizland',  name: 'クイズじょうず',       desc: '15もん せいかいしよう',           target: 15, stat: 'quizland_correct',  tier: 2, reward: { type: 'furn', id: 'deco_babycar' } },
     { id: 'quizland_30',   game: 'quizland',  name: 'クイズずき',           desc: '30もん せいかいしよう',           target: 30, stat: 'quizland_correct',  tier: 2, reward: { type: 'furn', id: 'deco_plasma_ball' } },
     { id: 'quizland_clear5', game: 'quizland',name: 'クイズ 5かいクリア',  desc: '5かい ぜんもん クリアしよう',     target: 5,  stat: 'quizland_clears',   tier: 2, reward: { type: 'furn', id: 'furn_bed_blue_boy' } },
-    { id: 'breakout_2',    game: 'breakout',  name: 'ブロック2だんめ',      desc: 'ステージ2まで クリアしよう',      target: 2,  stat: 'breakout_stages',   tier: 2, reward: { type: 'bg',   id: 'bg_breakout_forest_deep' } },
-    { id: 'breakout_4',    game: 'breakout',  name: 'ブロック4だんめ',      desc: 'ステージ4まで クリアしよう',      target: 4,  stat: 'breakout_stages',   tier: 2, reward: { type: 'bg',   id: 'bg_breakout_cave_mushroom' } },
+    { id: 'breakout_2',    game: 'breakout',  name: 'ブロック2だんめ',      desc: 'ステージ2まで クリアしよう',      target: 2,  stat: 'breakout_stages',   tier: 2, reward: { type: 'bg',   id: 'bg_breakout_forest_deep' }, archived: true },
+    { id: 'breakout_4',    game: 'breakout',  name: 'ブロック4だんめ',      desc: 'ステージ4まで クリアしよう',      target: 4,  stat: 'breakout_stages',   tier: 2, reward: { type: 'bg',   id: 'bg_breakout_cave_mushroom' }, archived: true },
     { id: 'oto_50',          game: 'oto',        name: 'おとあそびずき',     desc: 'ボタンを 50かい たたこう',        target: 50, stat: 'oto_taps',           tier: 2, reward: { type: 'furn', id: 'deco_rug_space' } },
     { id: 'quiz_sound_10',   game: 'quiz_sound', name: 'おとあてずき',       desc: '10もん せいかいしよう',           target: 10, stat: 'quiz_sound_correct', tier: 2, reward: { type: 'furn', id: 'deco_babycar' } },
     { id: 'quiz_sound_clear_3', game:'quiz_sound', name: 'おとあてくりかえし', desc: '5もんセットを 3かい クリア',    target: 3,  stat: 'quiz_sound_clears',  tier: 2, reward: { type: 'furn', id: 'deco_tea' } },
-    { id: 'fossil_hunter',   game: 'fossil',    name: 'かせきハンター',       desc: 'かせきを 5たい はっけんしよう',   target: 5,  stat: 'fossil_found',       tier: 2, reward: { type: 'furn', id: 'deco_rug_space' } },
-    { id: 'fossil_scholar',  game: 'fossil',    name: 'はかせ みならい',      desc: 'かせきを 10たい はっけんしよう',  target: 10, stat: 'fossil_found',       tier: 2, reward: { type: 'furn', id: 'deco_babycar' } },
-    { id: 'fossil_quiz_perfect', game:'fossil',name: 'クイズ まんてん',     desc: 'かせきクイズで ぜんもん せいかい', target: 1, stat: 'fossil_quiz_perfect', tier: 2, reward: { type: 'furn', id: 'deco_plasma_ball' } },
+    { id: 'fossil_hunter',   game: 'fossil',    name: 'かせきハンター',       desc: 'かせきを 5たい はっけんしよう',   target: 5,  stat: 'fossil_found',       tier: 2, reward: { type: 'furn', id: 'deco_rug_space' }, archived: true },
+    { id: 'fossil_scholar',  game: 'fossil',    name: 'はかせ みならい',      desc: 'かせきを 10たい はっけんしよう',  target: 10, stat: 'fossil_found',       tier: 2, reward: { type: 'furn', id: 'deco_babycar' }, archived: true },
+    { id: 'fossil_quiz_perfect', game:'fossil',name: 'クイズ まんてん',     desc: 'かせきクイズで ぜんもん せいかい', target: 1, stat: 'fossil_quiz_perfect', tier: 2, reward: { type: 'furn', id: 'deco_plasma_ball' }, archived: true },
 
     // ── マスター ─────────────────────────────────────────────────
     { id: 'puzzle_all',    game: 'puzzle',    name: 'パズルマスター',       desc: 'パズルを ぜんぶ クリアしよう',     target: 20, stat: 'puzzle_clears',     tier: 3, reward: { type: 'furn', id: 'furn_bookshelf_blue_boy' } },
-    { id: 'writing_hira',  game: 'writing',   name: 'ひらがなマスター',     desc: 'ひらがな ぜんぶ かこう',           target: 46, stat: 'writing_hiragana',  tier: 3, reward: { type: 'furn', id: 'deco_rocket_boy' } },
-    { id: 'writing_kata',  game: 'writing',   name: 'カタカナマスター',     desc: 'カタカナ ぜんぶ かこう',           target: 46, stat: 'writing_katakana',  tier: 3, reward: { type: 'furn', id: 'deco_plasma_ball' } },
-    { id: 'bowling_50',    game: 'bowling',   name: 'ボウリングマスター',   desc: '50ラウンド あそぼう',              target: 50, stat: 'bowling_rounds',    tier: 3, reward: { type: 'bg',   id: 'bg_bowling_space_boy01' } },
-    { id: 'breakout_all',  game: 'breakout',  name: 'ブロックマスター',     desc: 'ぜんぶ クリアしよう',              target: 5,  stat: 'breakout_stages',   tier: 3, reward: { type: 'sea',  id: 'crocodile_sea' } },
-    { id: 'breakout_all_bg', game: 'breakout', name: 'ブロックぜんせい',    desc: 'ぜんぶの ステージを クリアしよう', target: 5,  stat: 'breakout_stages',   tier: 3, reward: { type: 'bg',   id: 'bg_breakout_night_sky' } },
-    { id: 'slide_all',     game: 'slide',     name: 'みちつなぎマスター',   desc: 'ぜんぶ クリアしよう',              target: 8,  stat: 'slide_clears',      tier: 3, reward: { type: 'sea',  id: 'dolphin' } },
-    { id: 'maze_all',      game: 'maze',      name: 'めいろマスター',       desc: 'めいろを ぜんぶ クリアしよう',     target: 6,  stat: 'maze_clears',       tier: 3, reward: { type: 'furn', id: 'furn_bed_blue_boy' } },
-    { id: 'drawing_10',    game: 'drawing',   name: 'アーティスト',         desc: 'えを 10まい ほぞんしよう',         target: 10, stat: 'drawing_saves',     tier: 3, reward: { type: 'sea',  id: 'seal' } },
-    { id: 'wordmatch_all', game: 'wordmatch', name: 'ことばマスター',       desc: 'ぜんもん せいかいしよう',          target: 30, stat: 'wordmatch_correct', tier: 3, reward: { type: 'furn', id: 'furn_desk' } },
+    { id: 'writing_hira',  game: 'writing',   name: 'ひらがなマスター',     desc: 'ひらがな ぜんぶ かこう',           target: 46, stat: 'writing_hiragana',  tier: 3, reward: { type: 'furn', id: 'deco_rocket_boy' }, archived: true },
+    { id: 'writing_kata',  game: 'writing',   name: 'カタカナマスター',     desc: 'カタカナ ぜんぶ かこう',           target: 46, stat: 'writing_katakana',  tier: 3, reward: { type: 'furn', id: 'deco_plasma_ball' }, archived: true },
+    { id: 'bowling_50',    game: 'bowling',   name: 'ボウリングマスター',   desc: '50ラウンド あそぼう',              target: 50, stat: 'bowling_rounds',    tier: 3, reward: { type: 'bg',   id: 'bg_bowling_space_boy01' }, archived: true },
+    { id: 'breakout_all',  game: 'breakout',  name: 'ブロックマスター',     desc: 'ぜんぶ クリアしよう',              target: 5,  stat: 'breakout_stages',   tier: 3, reward: { type: 'sea',  id: 'crocodile_sea' }, archived: true },
+    { id: 'breakout_all_bg', game: 'breakout', name: 'ブロックぜんせい',    desc: 'ぜんぶの ステージを クリアしよう', target: 5,  stat: 'breakout_stages',   tier: 3, reward: { type: 'bg',   id: 'bg_breakout_night_sky' }, archived: true },
+    { id: 'slide_all',     game: 'slide',     name: 'みちつなぎマスター',   desc: 'ぜんぶ クリアしよう',              target: 8,  stat: 'slide_clears',      tier: 3, reward: { type: 'sea',  id: 'dolphin' }, archived: true },
+    { id: 'maze_all',      game: 'maze',      name: 'めいろマスター',       desc: 'めいろを ぜんぶ クリアしよう',     target: 7,  stat: 'maze_clears',       tier: 3, reward: { type: 'furn', id: 'furn_bed_blue_boy' } },
+    { id: 'drawing_10',    game: 'drawing',   name: 'アーティスト',         desc: 'えを 10まい ほぞんしよう',         target: 10, stat: 'drawing_saves',     tier: 3, reward: { type: 'sea',  id: 'seal' }, archived: true },
+    { id: 'wordmatch_all', game: 'wordmatch', name: 'ことばマスター',       desc: 'ぜんもん せいかいしよう',          target: 30, stat: 'wordmatch_correct', tier: 3, reward: { type: 'furn', id: 'furn_desk' }, archived: true },
     { id: 'quizland_all',  game: 'quizland',  name: 'クイズマスター',       desc: '50もん せいかいしよう',            target: 50, stat: 'quizland_correct',  tier: 3, reward: { type: 'furn', id: 'furn_bookshelf_blue_boy' } },
     { id: 'quizland_god',  game: 'quizland',  name: 'クイズのかみさま',     desc: '100もん せいかいしよう',           target: 100,stat: 'quizland_correct',  tier: 3, reward: { type: 'furn', id: 'deco_rocket_boy' } },
     { id: 'bento_10',      game: 'bento',     name: 'おべんとうマスター',   desc: 'おべんとうを 10かい つくろう',     target: 10, stat: 'bento_complete',    tier: 3, reward: { type: 'furn', id: 'furn_bookshelf_wood' } },
     { id: 'oto_300',       game: 'oto',       name: 'おとマスター',         desc: 'ボタンを 300かい たたこう',        target: 300, stat: 'oto_taps',           tier: 3, reward: { type: 'furn', id: 'deco_robot' } },
     { id: 'quiz_sound_50', game: 'quiz_sound',name: 'おとあてマスター',     desc: '50もん せいかいしよう',            target: 50,  stat: 'quiz_sound_correct', tier: 3, reward: { type: 'furn', id: 'deco_sportscar' } },
-    { id: 'fossil_master', game: 'fossil',    name: 'きょうりゅう はかせ',   desc: 'かせきを 14たい ぜんぶ あつめよう', target: 14, stat: 'fossil_found',       tier: 3, reward: { type: 'furn', id: 'furn_bookshelf_blue_boy' } },
+    { id: 'fossil_master', game: 'fossil',    name: 'きょうりゅう はかせ',   desc: 'かせきを 14たい ぜんぶ あつめよう', target: 14, stat: 'fossil_found',       tier: 3, reward: { type: 'furn', id: 'furn_bookshelf_blue_boy' }, archived: true },
+
+    // ── 新ゲーム追加 + 既存ゲーム拡張（archived分の報酬を1:1付け替え）───
+    { id: 'nazonazo_first',    game: 'nazonazo-tunnel', name: 'はじめてのなぞなぞ',   desc: '1もん せいかいしよう',        target: 1,  stat: 'nazonazo_correct',       tier: 1, reward: { type: 'sea',  id: 'neon_tetra' } },
+    { id: 'nazonazo_mid',      game: 'nazonazo-tunnel', name: 'なぞなぞずき',         desc: '20もん せいかいしよう',       target: 20, stat: 'nazonazo_correct',       tier: 2, reward: { type: 'furn', id: 'furn_shelf2' } },
+    { id: 'nazonazo_all',      game: 'nazonazo-tunnel', name: 'なぞなぞマスター',     desc: 'ぜんぶ クリアしよう',          target: 6,  stat: 'nazonazo_stage_clears',  tier: 3, reward: { type: 'sea',  id: 'dolphin' } },
+    { id: 'cooking_first',     game: 'cooking',         name: 'はじめてのクッキング', desc: 'ざいりょうを 1つ つかおう',     target: 1,  stat: 'cooking_ingredients',    tier: 1, reward: { type: 'sea',  id: 'goldfish' } },
+    { id: 'cooking_mid',       game: 'cooking',         name: 'クッキングずき',       desc: 'レシピを 5つ かんせいしよう',   target: 5,  stat: 'cooking_recipes',        tier: 2, reward: { type: 'furn', id: 'furn_shelf_toy' } },
+    { id: 'cooking_all',       game: 'cooking',         name: 'クッキングマスター',   desc: 'ざいりょうを ぜんぶ あつめよう', target: 13, stat: 'cooking_ingredients',    tier: 3, reward: { type: 'sea',  id: 'seal' } },
+    { id: 'writing_mori_first',game: 'writing-mori',    name: 'もりのもじかき はじめて', desc: '1もじ かんせいしよう',      target: 1,  stat: 'writing_chars',          tier: 1, reward: { type: 'sea',  id: 'crab' } },
+    { id: 'writing_mori_mid',  game: 'writing-mori',    name: 'もりのもじかきずき',   desc: 'ひらがな 20もじ かこう',       target: 20, stat: 'writing_hiragana',       tier: 2, reward: { type: 'furn', id: 'deco_lamp_floor' } },
+    { id: 'writing_mori_all',  game: 'writing-mori',    name: 'もりのまいにちマスター', desc: '1にち3もじを 3にち つづけよう', target: 3,  stat: 'writing_mori_daily_three', tier: 3, reward: { type: 'sea',  id: 'starfish' } },
+    { id: 'puzzle_10',         game: 'puzzle',          name: 'パズルれんしゅう',     desc: 'パズルを 10めん クリアしよう',  target: 10, stat: 'puzzle_clears',          tier: 2, reward: { type: 'furn', id: 'furn_bookshelf_pink' } },
+    { id: 'puzzle_repeat',     game: 'puzzle',          name: 'パズルたつじん',       desc: 'パズルを 40めん クリアしよう',  target: 40, stat: 'puzzle_clears',          tier: 3, reward: { type: 'furn', id: 'furn_chest_pink' } },
+    { id: 'bento_6',           game: 'bento',           name: 'おべんとうがんばった', desc: 'おべんとうを 6かい つくろう',   target: 6,  stat: 'bento_complete',         tier: 2, reward: { type: 'furn', id: 'furn_bookshelf_blue_round_boy' } },
+    { id: 'bento_25',          game: 'bento',           name: 'おべんとうたつじん',   desc: 'おべんとうを 25かい つくろう',  target: 25, stat: 'bento_complete',         tier: 3, reward: { type: 'furn', id: 'furn_pcdesk_blue_boy' } },
+    { id: 'oto_15',            game: 'oto',             name: 'おとタッチずき',       desc: 'ボタンを 15かい たたこう',      target: 15, stat: 'oto_taps',               tier: 2, reward: { type: 'furn', id: 'deco_doll' } },
+    { id: 'oto_150',           game: 'oto',             name: 'おとタッチたつじん',   desc: 'ボタンを 150かい たたこう',     target: 150,stat: 'oto_taps',               tier: 3, reward: { type: 'furn', id: 'deco_box_boy' } },
+    { id: 'maze_2',            game: 'maze',            name: 'めいろ2かいめ',        desc: 'ステージ2まで クリアしよう',    target: 2,  stat: 'maze_clears',            tier: 2, reward: { type: 'furn', id: 'deco_drone_white_boy' } },
+    { id: 'maze_repeat',       game: 'maze',            name: 'めいろたつじん',       desc: 'めいろを 12かい クリアしよう',  target: 12, stat: 'maze_clears',            tier: 3, reward: { type: 'furn', id: 'deco_vr_blue_boy' } },
   ];
 
   // ═══ プレミアム初期特典 ═════════════════════════════════════════════
@@ -151,6 +170,7 @@
     for (var i = 0; i < ACHIEVEMENTS.length; i++) {
       var ach = ACHIEVEMENTS[i];
       if (unlocked[ach.id]) continue; // already unlocked
+      if (ach.archived) continue;
       var val = stats[ach.stat] || 0;
       if (val >= ach.target) {
         unlocked[ach.id] = true;
@@ -255,6 +275,10 @@
   // ═══ 実績一覧取得（UI用）══════════════════════════════════════════
   window.getAchievements = function () {
     return ACHIEVEMENTS;
+  };
+
+  window.getActiveAchievements = function () {
+    return ACHIEVEMENTS.filter(function (a) { return !a.archived; });
   };
 
   window.getUnlockedAchievements = function () {

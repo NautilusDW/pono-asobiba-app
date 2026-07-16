@@ -526,6 +526,7 @@ function handleChoice(question, choice) {
 
   if (isCorrect) {
     state.correctCount += 1;
+    if (typeof window.incrementStat === "function") window.incrementStat("quiz_sound_correct", 1);
     unlockReward(question);
     refs.correctCounter.textContent = String(state.correctCount);
     refs.memoText.textContent = question.correctMemo;
@@ -648,6 +649,9 @@ function maybeTriggerFirstClearReward() {
 }
 
 function showResultScreen() {
+  if (typeof window.incrementStat === "function" && state.correctCount >= 4) {
+    window.incrementStat("quiz_sound_clears", 1);
+  }
   upsertCollectionRecord();
   refs.resultTitle.textContent = "ずかんに とうろくされたよ！";
   refs.resultCorrectLabel.textContent = "せいかい";

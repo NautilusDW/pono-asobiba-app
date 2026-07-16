@@ -120,13 +120,15 @@
   ];
 
   var ALL_FREE_GAMES = [
-    { key: 'oto',        emoji: '\uD83C\uDFB5', name: 'おとタッチ',    href: 'oto/index.html' },
-    { key: 'quiz_sound', emoji: '\uD83D\uDC3E', name: 'こだまのもりのこえさがし', href: 'quiz-sound/index.html' },
-    { key: 'puzzle',    emoji: '\uD83E\uDDE9', name: 'パズル',        href: 'puzzle/index.html' },
-    { key: 'writing',   emoji: '\u270F\uFE0F', name: 'もじかきクエスト', href: 'writing/index.html' },
-    { key: 'bento',     emoji: '\uD83C\uDF71', name: 'おべんとう',    href: 'bento/index.html' },
-    { key: 'wordmatch', emoji: '\uD83D\uDD24', name: 'あつめよう！ポノのもりのずかん',  href: 'wordmatch/index.html' },
-    { key: 'quizland',  emoji: '\uD83E\uDDE0', name: 'フクロウ博士のなぞなぞ',  href: 'quizland/index.html' },
+    { key: 'oto',             emoji: '\uD83C\uDFB5', name: 'おとタッチ',        href: 'oto/index.html' },
+    { key: 'quiz_sound',      emoji: '\uD83D\uDC3E', name: 'こだまのもりのこえさがし', href: 'quiz-sound/index.html' },
+    { key: 'puzzle',          emoji: '\uD83E\uDDE9', name: 'パズル',            href: 'puzzle/index.html' },
+    { key: 'bento',           emoji: '\uD83C\uDF71', name: 'おべんとう',        href: 'bento/index.html' },
+    { key: 'quizland',        emoji: '\uD83E\uDDE0', name: 'フクロウ博士のなぞなぞ', href: 'quizland/index.html' },
+    { key: 'maze',            emoji: '\uD83E\uDDED', name: 'めいろ',            href: 'maze/index.html' },
+    { key: 'nazonazo-tunnel', emoji: '\uD83D\uDE82', name: 'なぞなぞトレイン',  href: 'nazonazo-tunnel/index.html' },
+    { key: 'cooking',         emoji: '\uD83D\uDC69\u200D\uD83C\uDF73', name: 'クッキング', href: 'bento/kitchen.html' },
+    { key: 'writing-mori',    emoji: '\u270F\uFE0F', name: 'もじっこファーム',  href: 'writing-mori/index.html' },
   ];
 
   // ── Helpers ──
@@ -547,6 +549,11 @@
 
   function renderDailyRally() {
     var rally = checkDailyCompletion();
+    // rewardsBlocked() 時は checkDailyCompletion() が null を返す (free/book tier)。
+    // #stampRallyGames が存在しないページでは従来 container null チェックで早期 return
+    // していたが、 container が存在するページ (play.html 等) では rally.games で
+    // TypeError になっていたため、 container チェックより前に null ガードを追加。
+    if (!rally) return;
     var container = document.getElementById('stampRallyGames');
     if (!container) return;
     container.innerHTML = '';

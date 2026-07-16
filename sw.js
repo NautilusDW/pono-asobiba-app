@@ -1,5 +1,21 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2231: 実績リバランス+新ゲーム3本計装+デイリーラリーUI復活+PROFILE_GOALS動的化+
+// 管理画面横断ビュー+ハイブリッドショップの6ストリーム統合 (batch:1317-furniture-reward-rebalance)。
+// common/achievements.js の旧ゲーム(bowling/breakout/slide/drawing/fossil/writing/wordmatch)
+// 向け実績30件をarchived化し判定・PROFILE_GOALS生成から除外、新ゲーム3本(nazonazo-tunnel/
+// cooking/writing-mori)+既存ゲーム拡張の実績17件を追加。対象5ゲームへ実績計装(incrementStat)と
+// デイリーラリー(pono_played_)登録を追加。common/stamp-rally.js の ALL_FREE_GAMES を9件へ
+// 差し替え、play.html にデイリーラリー帯を復活 (renderDailyRally null guard 込み)。play.html の
+// PROFILE_GOALS ハードコードを common/achievements.js の getActiveAchievements() からの
+// 動的生成へ置換。common/shop-catalog.js を新設しshop/index.html へ🪑かぐタブ(どんぐり購入)を
+// 追加するハイブリッドショップを実装、room/index.html の MERGE_KEYS へ pono_shop_furn_purchased
+// を追加。admin/index.html へ家具クロスビュータブを追加。クロスレビューで発覚した実績既取得者
+// への家具二重販売・stamp-rally/first-clear報酬のショップ除外漏れ・cache-bustクエリ未更新を
+// 3ラウンドの修正で解消(shop/index.html・admin/index.html への common/stamp-rally.js 読込追加込み)。
+// common/shop-catalog.js は play.html から無条件 <script src> で読まれないため
+// CRITICAL_ASSETS_SCRIPTS 追加は不要(shop/index.html・admin/index.html のみが読み込み、
+// admin/ は SW 素通しのため precache 対象外)。play.html PAGE_CACHE_VERSION と同期 (2231)。
 // v2230: みちつなぎ3面を「おかあさんのしるしまで→出口まで」の二段探索へ変更。
 // 中間到着でポノが実経路を歩き、通過済みの地形を固定して後半2手へ切替。GPT Image 2製の
 // 森地面／土道素材、地形一体型パネル、区間別の旅ゲージ／retryを追加した
@@ -257,7 +273,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2230;
+const CACHE_VERSION = 2231;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
