@@ -1,5 +1,10 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2232: なぞなぞトレイン宇宙面の最終追跡を約35〜45秒の競争へ再設計。
+// 通常ブーストを1.8秒へ延長し、ロケット先行→彗星カウンター→最終連打で再逆転する
+// リード交代を追加。旧しっぽ3本＋星の子の4押し救出を廃止し、動く星の子へ救助リングを
+// 合わせ続ける空間キャッチへ変更した (batch:1326-nazonazo-race-duel)。
+// play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel／テストのみ変更)。
 // v2231: 実績リバランス+新ゲーム3本計装+デイリーラリーUI復活+PROFILE_GOALS動的化+
 // 管理画面横断ビュー+ハイブリッドショップの6ストリーム統合 (batch:1317-furniture-reward-rebalance)。
 // common/achievements.js の旧ゲーム(bowling/breakout/slide/drawing/fossil/writing/wordmatch)
@@ -273,7 +278,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2231;
+const CACHE_VERSION = 2232;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。

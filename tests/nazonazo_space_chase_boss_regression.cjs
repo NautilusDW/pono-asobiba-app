@@ -79,7 +79,8 @@ assert.match(css, /@media \(prefers-reduced-motion:reduce\)[\s\S]*?\.space-chase
 assert.match(css, /body\.space-chase-active #veh[\s\S]*?visibility:hidden!important/);
 
 const cacheVersion = Number(sw.match(/const CACHE_VERSION = (\d+);/)?.[1]);
-assert.ok(cacheVersion >= 2229, "service worker version unexpectedly moved backwards");
+assert.equal(cacheVersion, 2232);
+assert.match(sw, /v2232:[\s\S]*?batch:1326-nazonazo-race-duel/);
 
 const constantsStart = game.indexOf("const SPACE_CHASE_WORLD_WIDTH");
 const constantsEnd = game.indexOf("\nlet spaceRepairOptions", constantsStart);
@@ -206,6 +207,8 @@ assert.equal(noTap.finalAssistActive, true);
 assert.ok(noTap.raceElapsedMs <= 44500, "no-input assist finished too late: " + noTap.raceElapsedMs);
 const fastTap = JSON.parse(JSON.stringify(raceSandbox.api.simulate({ J0: 0, J1: 0, J2: 0 }, false, 100)));
 assert.ok(fastTap.raceElapsedMs >= 35000, "rapid taps skipped the race build-up");
+const slowTap = JSON.parse(JSON.stringify(raceSandbox.api.simulate({ J0: 1, J1: 1, J2: 1 }, false, 650)));
+assert.ok(slowTap.raceElapsedMs - fastTap.raceElapsedMs >= 1000, "faster tapping must produce an earlier comeback");
 const paused = JSON.parse(JSON.stringify(raceSandbox.api.pauseProbe()));
 assert.deepEqual(paused.paused, paused.before);
 assert.ok(paused.after - paused.before.race <= 50);
