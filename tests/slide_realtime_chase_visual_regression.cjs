@@ -63,7 +63,7 @@ async function keepNetworkLocal(context, base) {
       budgets: STAGE_TIME_BUDGETS.slice(),
       retry: LEVELS.map((_, index) => getStageBudgetMs(index, 1) / 1000)
     })`));
-    assert.deepEqual(budgets.budgets, [65, 80, 80, 105, 100, 125, 140, 180],
+    assert.deepEqual(budgets.budgets, [65, 80, 90, 105, 100, 125, 140, 180],
       "difficulty-derived limits include board size, shuffle guarantee, and mechanics");
     assert.deepEqual(budgets.retry, budgets.budgets.map(seconds => Math.round(seconds * 1.25)),
       "the first same-board retry receives 25 percent more time");

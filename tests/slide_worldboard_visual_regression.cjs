@@ -22,7 +22,7 @@ assert.match(html, /ctx\.createPattern\(image, 'repeat'\)[\s\S]*?pattern\.setTra
   "one generated road pattern is anchored across the whole board");
 assert.match(html, /ctx\.lineCap = 'butt'/,
   "road arms end flat at shared panel boundaries");
-assert.match(html, /const seamOverlap = Math\.max\(0\.75, size \* 0\.008\)/,
+assert.match(html, /const seamOverlap = Math\.max\(2, size \* 0\.025\)/,
   "road arms overlap shared boundaries enough to remove antialias gaps");
 for (const asset of [
   "road_texture_forest.webp", "road_texture_cave.webp", "road_texture_night.webp",
@@ -62,7 +62,9 @@ assert.match(html, /function getStartConnectedTileSet\(\)/);
 assert.match(html, /connected\.add\(idx\)/);
 assert.match(html, /const connectedSet = hasBoard \? getStartConnectedTileSet\(\) : new Set\(\)/);
 assert.match(html, /connected: connectedSet\.has\(i\)/);
-assert.match(html, /const hintVisible = hasBoard && state === S\.PLAYING && moveCount === 0[\s\S]*?getAdjacentIndices\(emptyIdx\)\.includes\(suggestedMoveIdx\)/);
+assert.match(html,
+  /const hintMoveBase = stageCheckpointReached[\s\S]*?const hintVisible = hasBoard && state === S\.PLAYING && moveCount === hintMoveBase[\s\S]*?getAdjacentIndices\(emptyIdx\)\.includes\(suggestedMoveIdx\)/,
+  "each checkpoint leg gets one reassuring first-move suggestion");
 assert.match(html, /if \(hintVisible && !animating\) \{\s*drawMoveHint\(suggestedMoveIdx, now\);\s*\}/);
 assert.match(html, /hintDismissed = true;[\s\S]*?playSlideSound\(\)/,
   "the first legal interaction permanently dismisses the suggestion for that stage");
@@ -71,7 +73,7 @@ assert.match(html, /ctx\.lineDashOffset = reducedMotionQuery\.matches \? 0/,
 assert.match(html, /roadStyle: 'wood'/);
 assert.match(html, /roadStyle: 'stone'/);
 assert.match(html, /roadStyle: 'starlight'/);
-assert.match(html, /visual\.movable \? th\.move : th\.slabBorder/,
+assert.match(html, /visual\.movable \? th\.move : 'rgba\(225,240,196,0\.34\)'/,
   "movable panels use a state color distinct from the connected route and empty hollow");
 
 /* Characters occupy the world, preserve aspect ratio, and render only once per frame. */

@@ -197,8 +197,9 @@ levels.forEach((level, levelIndex) => {
       `stage ${levelIndex + 1} shuffle ${sample}: reversing legal moves recovers the solution`);
   }
 });
-assert.match(html, /if \(hasBareGoalRoute\(\)\) \{\s*shuffleGrid\(level\);\s*return;\s*\}/,
-  "the runtime shuffle must retry rather than start on a bare connected path");
+assert.match(html,
+  /for \(let attempt = 0; attempt < 64 && !accepted; attempt\+\+\)[\s\S]*?accepted = !hasBareGoalRoute\(\)/,
+  "the runtime shuffle retries with a bound rather than starting on a bare connected path");
 assert.match(html, /suggestedMoveIdx = lastMoved;[\s\S]*?hintDismissed = false;/,
   "the reversible shuffle must retain exactly one safe first-move suggestion");
 

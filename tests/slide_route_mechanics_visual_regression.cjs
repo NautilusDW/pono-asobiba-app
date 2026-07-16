@@ -107,6 +107,7 @@ async function inspectEngine(browserType, label, base, viewport = { width: 844, 
       return {
         pickupTileIdx,
         pickupType: grid[pickupTileIdx],
+        checkpointIdx: getCheckpointCellIndex(LEVELS[2]),
         collected: pickupCollected,
         draws: window.__charmDraws,
         buttonHidden: magicCrossBtn.classList.contains('hidden'),
@@ -115,13 +116,14 @@ async function inspectEngine(browserType, label, base, viewport = { width: 844, 
         liveGuide: document.getElementById('journey-hud-status').textContent
       };
     })()`));
-    assert.equal(stage3.pickupType, "CROSS", `${label} stage3: pickup stays attached to its shuffled road tile`);
+    assert.equal(stage3.pickupTileIdx, stage3.checkpointIdx,
+      `${label} stage3: the clue stays at one forest checkpoint while panels move`);
     assert.equal(stage3.collected, false, `${label} stage3: the item is not granted before Pono walks through it`);
     assert.ok(stage3.draws >= 1, `${label} stage3: the generated charm is visibly drawn on the route`);
     assert.equal(stage3.buttonHidden, true, `${label} stage3: collecting needs no new control`);
-    assert.match(stage3.guide, /ひかりを とおって/, `${label} stage3: one short route instruction is shown`);
+    assert.match(stage3.guide, /おかあさんの しるしまで/, `${label} stage3: one short route instruction is shown`);
     assert.equal(stage3.toastHidden, true, `${label} stage3: the route instruction does not cover the board`);
-    assert.match(stage3.liveGuide, /ひかりを とおって/,
+    assert.match(stage3.liveGuide, /おかあさんの しるしまで/,
       `${label} stage3: the board-safe instruction remains available to assistive technology`);
 
     const journeyPickup = await page.evaluate(() => eval(`(() => {
@@ -131,26 +133,30 @@ async function inspectEngine(browserType, label, base, viewport = { width: 844, 
       state = S.PLAYING;
       journeyActor.active = false;
       calcLayout();
-      if (!checkWin()) throw new Error('stage3 solved route did not include pickup');
-      onStageClear();
-      const beforeProgress = pickupJourneyProgress;
-      updateJourneyPosition(journeyActor.t0);
+      const accepted = handleRouteCompletion(performance.now());
+      const checkpointPath = journeyActor.path.map(point => ({ x: point.x, y: point.y }));
       const before = pickupCollected;
-      updateJourneyPosition(journeyActor.t0 + journeyActor.duration);
+      updateJourney(journeyActor.t0 + journeyActor.duration + 2);
       window.__charmDraws = 0;
       draw(performance.now());
       return {
-        beforeProgress,
+        accepted,
+        checkpointPath,
+        phase: journeyActor.phase,
         before,
         after: pickupCollected,
         owned: magicCharmOwned,
         drawsAfter: window.__charmDraws,
       };
     })()`));
-    assert.ok(journeyPickup.beforeProgress > 0 && journeyPickup.beforeProgress < 1,
-      `${label} stage3: pickup has a real point inside the walking route`);
+    assert.equal(journeyPickup.accepted, true,
+      `${label} stage3: connecting the first leg starts the checkpoint journey`);
+    assert.ok(journeyPickup.checkpointPath.length >= 3,
+      `${label} stage3: the actor walks from the left marker through real route cells`);
+    assert.equal(journeyPickup.phase, "CHECKPOINT_DISCOVERY",
+      `${label} stage3: arrival pauses for one clear discovery beat`);
     assert.equal(journeyPickup.before, false, `${label} stage3: item remains before the actor reaches it`);
-    assert.equal(journeyPickup.after, true, `${label} stage3: actor crossing collects the item`);
+    assert.equal(journeyPickup.after, true, `${label} stage3: actor arrival collects the item`);
     assert.equal(journeyPickup.owned, true, `${label} stage3: collected item carries into the next rule`);
     assert.equal(journeyPickup.drawsAfter, 0, `${label} stage3: collected item disappears from its panel`);
 
@@ -164,6 +170,7 @@ async function inspectEngine(browserType, label, base, viewport = { width: 844, 
       pickupTileIdx = 8;
       pickupCollected = false;
       magicCrossTileIdx = -1;
+      stageCheckpointReached = false;
       return { bare: hasBareGoalRoute(), complete: checkWin() };
     })()`));
     assert.deepEqual(bypass, { bare: true, complete: false },

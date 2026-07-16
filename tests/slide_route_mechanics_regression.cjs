@@ -105,61 +105,21 @@ assert.equal(findRoute(magicLevel, magicLevel.solved, { magicIdx: wrongIdx, requ
 assert.deepEqual(magicLevel.solved, rawBefore,
   "testing and reassigning magic never mutates the underlying tile multiset");
 
-function seededRandom(seed) {
-  let state = seed >>> 0;
-  return () => {
-    state += 0x6D2B79F5;
-    let value = state;
-    value = Math.imul(value ^ value >>> 15, value | 1);
-    value ^= value + Math.imul(value ^ value >>> 7, value | 61);
-    return ((value ^ value >>> 14) >>> 0) / 4294967296;
-  };
-}
-
-function shuffleWithTrackedTile(level, trackedStart, seed) {
-  const random = seededRandom(seed);
-  const board = [...level.solved];
-  let empty = board.indexOf(null);
-  let tracked = trackedStart;
-  let lastMoved = -1;
-  const history = [];
-  for (let move = 0; move < level.shuffleMoves; move++) {
-    const row = Math.floor(empty / level.cols), col = empty % level.cols;
-    const neighbors = [];
-    if (row > 0) neighbors.push(empty - level.cols);
-    if (row < level.rows - 1) neighbors.push(empty + level.cols);
-    if (col > 0) neighbors.push(empty - 1);
-    if (col < level.cols - 1) neighbors.push(empty + 1);
-    const candidates = neighbors.filter(index => index !== lastMoved);
-    const picked = candidates[Math.floor(random() * candidates.length)];
-    history.push({ emptyBefore: empty, picked });
-    if (tracked === picked) tracked = empty;
-    lastMoved = empty;
-    board[empty] = board[picked];
-    board[picked] = null;
-    empty = picked;
-  }
-  return { board, tracked, history };
-}
-
-for (let seed = 1; seed <= 100; seed++) {
-  const result = shuffleWithTrackedTile(pickupLevel, pickupIdx, seed);
-  assert.equal(result.board[result.tracked], pickupLevel.solved[pickupIdx],
-    `stage3 seed ${seed}: the pickup identity follows its moving tile`);
-  assert.equal(result.board.filter(tile => tile === null).length, 1,
-    `stage3 seed ${seed}: shuffle retains one empty well`);
-}
-
-assert.match(html, /moveTrackedTile\(pick, emptyIdx\)/,
-  "shuffle moves the pickup identity with its panel");
+assert.deepEqual(pickupLevel.pickup, pickupLevel.checkpoint.cell,
+  "stage3 charm is now a fixed place in the forest rather than panel cargo");
+assert.match(html,
+  /!LEVELS\[stageIdx\]\.checkpoint && pickupTileIdx === fromIdx/,
+  "checkpoint pickup stays in the world while ordinary tracked panels remain supported");
+assert.match(html, /moveTrackedTile\(fromIdx, oldEmpty\)/,
+  "shuffle moves applied magic with its panel through the shared slide helper");
 assert.match(html, /moveTrackedTile\(anim\.idx, oldEmpty\)/,
   "player slides move pickup and applied magic with their panel");
 assert.match(html, /function getEffectiveTileKeyAt[\s\S]*?return 'CROSS'/,
   "magic supplies effective CROSS edges without rewriting grid data");
-assert.match(html, /if \(magicCrossSelectMode\)[\s\S]*?magicCrossTileIdx = tappedIdx[\s\S]*?if \(!_slideTutActive && checkWin\(\)\) onStageClear\(\)/,
+assert.match(html, /if \(magicCrossSelectMode\)[\s\S]*?magicCrossTileIdx = tappedIdx[\s\S]*?handleRouteCompletion\(performance\.now\(\)\)/,
   "assigning or reassigning the charm can itself complete the stage exactly once");
-assert.match(html, /pickupJourneyProgress[\s\S]*?collectJourneyPickup\(\)/,
-  "the route actor collects the item while physically crossing its tile");
+assert.match(html, /function finishCheckpointArrival[\s\S]*?pickupCollected = true[\s\S]*?magicCharmOwned = true/,
+  "the route actor collects the item only after physically reaching the checkpoint");
 assert.match(html, /stageIdx = 0;[\s\S]*?resetStageMechanics\(LEVELS\[0\]\)/,
   "the shared tutorial clears all later-stage mechanic state");
 assert.match(html, /ひかりを とおって ゴールへ！/);

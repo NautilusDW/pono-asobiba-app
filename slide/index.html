@@ -859,6 +859,10 @@ const imgGoalMarker = new Image();
 imgGoalMarker.src = '../assets/images/Slide/generated/goal_marker.webp';
 const imgFourwayCharm = new Image();
 imgFourwayCharm.src = '../assets/images/Slide/generated/fourway_charm.webp';
+const imgForestFloorTerrain = new Image();
+imgForestFloorTerrain.src = '../assets/images/Slide/generated/terrain_texture_forest_floor.webp';
+const imgCheckpointRoadTexture = new Image();
+imgCheckpointRoadTexture.src = '../assets/images/Slide/generated/road_texture_forest_checkpoint.webp';
 const ROAD_TEXTURE_SRCS = Object.freeze({
   forest: '../assets/images/Slide/generated/road_texture_forest.webp',
   cave: '../assets/images/Slide/generated/road_texture_cave.webp',
@@ -871,6 +875,7 @@ const roadTextureImgs = Object.keys(ROAD_TEXTURE_SRCS).reduce(function(images, k
   return images;
 }, {});
 let roadPatternCache = Object.create(null);
+let terrainPatternCache = Object.create(null);
 
 // ===== Tile types =====
 // edges: [top, right, bottom, left] — 1 = path exits this edge
@@ -949,6 +954,13 @@ const VERTICAL_LEVELS = [
     start: { col: 0, side: 'top' },
     goal: { col: 1, side: 'bottom' },
     pickup: { row: 1, col: 0 },
+    checkpoint: {
+      cell: { row: 1, col: 0 },
+      entryEdge: 0,
+      exitEdge: 1,
+      secondShuffle: [{ row: 1, col: 1 }, { row: 2, col: 1 }],
+      lockedCells: [{ row: 0, col: 0 }, { row: 1, col: 0 }],
+    },
     // V→CROSS→CROSS→V (十字2個で確実に曲がれる)
     solved: ['V','BLANK','BLANK', 'CROSS','CROSS',null, 'BLANK','V','BLANK'],
     shuffleMoves: 4,
@@ -1045,6 +1057,8 @@ const TRANSPOSE_TILE = {
 };
 
 function transposeVerticalLevelToLeftRight(level) {
+  const transposeEdge = [3, 2, 1, 0];
+  const transposeCell = function(cell) { return { row: cell.col, col: cell.row }; };
   const nextCols = level.rows;
   const nextRows = level.cols;
   const nextSolved = new Array(level.cols * level.rows);
@@ -1076,6 +1090,15 @@ function transposeVerticalLevelToLeftRight(level) {
           },
         }
       : null,
+    checkpoint: level.checkpoint
+      ? {
+          cell: transposeCell(level.checkpoint.cell),
+          entryEdge: transposeEdge[level.checkpoint.entryEdge],
+          exitEdge: transposeEdge[level.checkpoint.exitEdge],
+          secondShuffle: level.checkpoint.secondShuffle.map(transposeCell),
+          lockedCells: level.checkpoint.lockedCells.map(transposeCell),
+        }
+      : null,
     solved: nextSolved,
   };
 }
@@ -1086,7 +1109,8 @@ const LEVELS = VERTICAL_LEVELS.map(transposeVerticalLevelToLeftRight);
 // 1手8秒で見積もり、盤面の広さと新しい操作を覚える時間を足す。
 function calculateStageTimeBudgetSeconds(level) {
   const extraCells = Math.max(0, level.cols * level.rows - 9);
-  const mechanicSeconds = (level.pickup ? 15 : 0) + (level.magicCross ? 20 : 0);
+  const mechanicSeconds = (level.checkpoint ? 25 : (level.pickup ? 15 : 0)) +
+    (level.magicCross ? 20 : 0);
   const rawSeconds = 30 + level.shuffleMoves * 8 + extraCells * 2 + mechanicSeconds;
   return Math.ceil(rawSeconds / 5) * 5;
 }
@@ -1129,6 +1153,8 @@ const S = { IDLE: 0, PLAYING: 1, TRAVELLING: 2, GAME_CLEAR: 3, PAUSED: 4 };
 const JOURNEY_PHASE = Object.freeze({
   INTRO: 'INTRO',
   PLAYING: 'PLAYING',
+  CHECKPOINT: 'CHECKPOINT',
+  CHECKPOINT_DISCOVERY: 'CHECKPOINT_DISCOVERY',
   EXIT: 'EXIT',
   DISCOVERY: 'DISCOVERY',
   DEPARTING: 'DEPARTING',
@@ -1156,6 +1182,9 @@ let magicCharmOwned = false;
 let magicCrossTileIdx = -1;
 let magicCrossSelectMode = false;
 let mechanicGuideShown = false;
+let stageCheckpointReached = false;
+let stageCheckpointTrail = [];
+let stageCheckpointLockedCells = new Set();
 let stageRetryCount = 0;
 let stageAttemptSnapshot = null;
 let slideWindowFocused = document.hasFocus ? document.hasFocus() : true;
@@ -1178,6 +1207,8 @@ let stageClock = {
   attemptMotherStart: 0,
   introPonoStart: 0,
   introMotherStart: 0,
+  checkpointPonoStart: 0,
+  checkpointMotherStart: 0,
   lastAriaBucket: -1,
   lastShownSecond: -1,
 };
@@ -1248,6 +1279,7 @@ function calcLayout() {
   gridOX = Math.floor((CW - gridW) / 2);
   gridOY = Math.floor(contentTop + (availH - gridH) / 2);
   roadPatternCache = Object.create(null);
+  terrainPatternCache = Object.create(null);
 }
 
 window.addEventListener('resize', resize);
@@ -1311,6 +1343,21 @@ function getLevelCellIndex(level, cell) {
   return cell.row * level.cols + cell.col;
 }
 
+function getCheckpointCellIndex(level) {
+  return getLevelCellIndex(level, level && level.checkpoint && level.checkpoint.cell);
+}
+
+function getCheckpointLockedIndices(level) {
+  if (!level || !level.checkpoint) return [];
+  return level.checkpoint.lockedCells.map(function(cell) {
+    return getLevelCellIndex(level, cell);
+  }).filter(function(index) { return index >= 0; });
+}
+
+function isCheckpointLockedCell(index) {
+  return stageCheckpointReached && stageCheckpointLockedCells.has(index);
+}
+
 function syncMagicCrossButton() {
   const level = LEVELS[stageIdx];
   const available = Boolean(level && level.magicCross && magicCharmOwned);
@@ -1336,12 +1383,17 @@ function resetStageMechanics(level) {
   magicCrossTileIdx = -1;
   magicCrossSelectMode = false;
   mechanicGuideShown = false;
+  stageCheckpointReached = false;
+  stageCheckpointTrail = [];
+  stageCheckpointLockedCells = new Set();
   if (level && level.magicCross) magicCharmOwned = true;
   syncMagicCrossButton();
 }
 
 function moveTrackedTile(fromIdx, toIdx) {
-  if (pickupTileIdx === fromIdx) pickupTileIdx = toIdx;
+  // A checkpoint is a place in the forest, not cargo attached to a panel.
+  // Ordinary pickups still travel with their panel on later stages.
+  if (!LEVELS[stageIdx].checkpoint && pickupTileIdx === fromIdx) pickupTileIdx = toIdx;
   if (magicCrossTileIdx === fromIdx) magicCrossTileIdx = toIdx;
 }
 
@@ -1363,32 +1415,86 @@ function isMagicSelectableTile(idx) {
   return Boolean(tileKey && tileKey !== 'BLANK' && tileKey !== 'CROSS');
 }
 
+function applySlideMove(fromIdx) {
+  const oldEmpty = emptyIdx;
+  moveTrackedTile(fromIdx, oldEmpty);
+  grid[oldEmpty] = grid[fromIdx];
+  grid[fromIdx] = null;
+  emptyIdx = fromIdx;
+  return oldEmpty;
+}
+
+function setCheckpointFallbackBoard(level) {
+  grid = level.solved.slice();
+  emptyIdx = grid.indexOf(null);
+  // This reversible sequence leaves the first checkpoint connection unfinished.
+  [4, 1, 2, 5].forEach(function(index) { applySlideMove(index); });
+  // The reverse move is a real road panel, not a blank patch of ground.
+  suggestedMoveIdx = 2;
+}
+
+function findUnsolvedFallbackBoard(level) {
+  const startBoard = level.solved.slice();
+  const startEmpty = startBoard.indexOf(null);
+  const queue = [{ board: startBoard, empty: startEmpty, depth: 0, suggested: -1 }];
+  const visited = new Set([startBoard.map(String).join('|')]);
+  while (queue.length > 0 && visited.size <= 12000) {
+    const current = queue.shift();
+    grid = current.board;
+    emptyIdx = current.empty;
+    if (current.depth > 0 && !hasBareGoalRoute()) return current;
+    if (current.depth >= 12) continue;
+    getAdjacentIndices(current.empty).forEach(function(fromIdx) {
+      const nextBoard = current.board.slice();
+      nextBoard[current.empty] = nextBoard[fromIdx];
+      nextBoard[fromIdx] = null;
+      const key = nextBoard.map(String).join('|');
+      if (visited.has(key)) return;
+      visited.add(key);
+      queue.push({
+        board: nextBoard,
+        empty: fromIdx,
+        depth: current.depth + 1,
+        suggested: current.empty,
+      });
+    });
+  }
+  return null;
+}
+
 function shuffleGrid(level) {
   curCols = level.cols;
   curRows = level.rows;
-  grid = [...level.solved];
-  emptyIdx = grid.indexOf(null);
   resetStageMechanics(level);
-  const n = level.shuffleMoves;
+  let accepted = false;
   let lastMoved = -1;
-  for (let i = 0; i < n; i++) {
-    const neighbors = getAdjacentIndices(emptyIdx);
-    const candidates = neighbors.filter(idx => idx !== lastMoved);
-    const pick = candidates[Math.floor(Math.random() * candidates.length)];
-    lastMoved = emptyIdx;
-    moveTrackedTile(pick, emptyIdx);
-    grid[emptyIdx] = grid[pick];
-    grid[pick] = null;
-    emptyIdx = pick;
+  for (let attempt = 0; attempt < 64 && !accepted; attempt++) {
+    grid = level.solved.slice();
+    emptyIdx = grid.indexOf(null);
+    lastMoved = -1;
+    for (let i = 0; i < level.shuffleMoves; i++) {
+      const neighbors = getAdjacentIndices(emptyIdx);
+      const candidates = neighbors.filter(function(index) { return index !== lastMoved; });
+      const pick = candidates[Math.floor(Math.random() * candidates.length)];
+      lastMoved = applySlideMove(pick);
+    }
+    // A ready-made goal or checkpoint would skip the child's first decision.
+    accepted = !hasBareGoalRoute() && (!level.checkpoint || !findCheckpointRoute());
   }
-  // A board that already reaches the goal is not a puzzle, even when a later
-  // mechanic would still withhold the clear state.
-  if (hasBareGoalRoute()) {
-    shuffleGrid(level);
-    return;
+  if (!accepted && level.checkpoint) {
+    setCheckpointFallbackBoard(level);
+  } else if (!accepted) {
+    // A deterministic breadth-first fallback keeps even CROSS-heavy late stages
+    // unsolved instead of assuming that one displaced panel breaks every route.
+    const fallback = findUnsolvedFallbackBoard(level);
+    if (fallback) {
+      grid = fallback.board.slice();
+      emptyIdx = fallback.empty;
+      suggestedMoveIdx = fallback.suggested;
+    }
   }
   // The reverse of the last shuffle step is always a legal, reassuring first move.
-  suggestedMoveIdx = lastMoved;
+  if (accepted) suggestedMoveIdx = lastMoved;
   hintDismissed = false;
 }
 
@@ -1417,6 +1523,49 @@ function getRouteEndpoints(level) {
   return { startRow, startCol, startEdge, goalRow, goalCol, goalExitEdge };
 }
 
+function findCheckpointRoute() {
+  const level = LEVELS[stageIdx];
+  if (!level || !level.checkpoint) return null;
+  const endpoints = getRouteEndpoints(level);
+  const checkpoint = level.checkpoint;
+  const checkpointIdx = getCheckpointCellIndex(level);
+  const queue = [{
+    row: endpoints.startRow,
+    col: endpoints.startCol,
+    fromEdge: endpoints.startEdge,
+    trail: [],
+  }];
+  const visited = new Set();
+
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (current.row < 0 || current.row >= curRows ||
+        current.col < 0 || current.col >= curCols) continue;
+    const idx = current.row * curCols + current.col;
+    const tileKey = grid[idx];
+    if (!tileKey || tileKey === 'BLANK') continue;
+    const edges = getTileEdgesAt(idx, false);
+    if (!edges || !edges[current.fromEdge]) continue;
+    const visitKey = `${idx},${current.fromEdge}`;
+    if (visited.has(visitKey)) continue;
+    visited.add(visitKey);
+    const trail = current.trail.concat({ row: current.row, col: current.col, index: idx });
+    if (idx === checkpointIdx && current.fromEdge === checkpoint.entryEdge) {
+      return { trail: trail, checkpointEdge: checkpoint.entryEdge };
+    }
+    for (let edge = 0; edge < 4; edge++) {
+      if (edge === current.fromEdge || !edges[edge]) continue;
+      const next = getNeighborRC(current.row, current.col, edge);
+      if (next[0] >= 0 && next[0] < curRows && next[1] >= 0 && next[1] < curCols) {
+        queue.push({
+          row: next[0], col: next[1], fromEdge: oppositeEdge(edge), trail: trail,
+        });
+      }
+    }
+  }
+  return null;
+}
+
 function findGoalRoute(options) {
   const opts = options || {};
   const level = LEVELS[stageIdx];
@@ -1429,10 +1578,15 @@ function findGoalRoute(options) {
 
   if (requireMagic && magicCrossTileIdx < 0) return null;
 
-  const queue = [{
+  const checkpointStart = Boolean(level.checkpoint && stageCheckpointReached);
+  const routeStart = checkpointStart ? level.checkpoint.cell : {
     row: endpoints.startRow,
     col: endpoints.startCol,
-    fromEdge: endpoints.startEdge,
+  };
+  const queue = [{
+    row: routeStart.row,
+    col: routeStart.col,
+    fromEdge: checkpointStart ? -1 : endpoints.startEdge,
     hasPickup: pickupCollected,
     trail: [],
   }];
@@ -1448,7 +1602,7 @@ function findGoalRoute(options) {
     if (!tileKey || tileKey === 'BLANK') continue;
 
     const edges = getTileEdgesAt(idx, useMagic);
-    if (!edges[fromEdge]) continue;
+    if (fromEdge >= 0 && !edges[fromEdge]) continue;
 
     const hasPickup = current.hasPickup || idx === pickupTileIdx;
     const visitKey = `${row},${col},${fromEdge},${hasPickup ? 1 : 0}`;
@@ -1458,7 +1612,8 @@ function findGoalRoute(options) {
     const trail = current.trail.concat({ row: row, col: col, index: idx });
 
     for (let e = 0; e < 4; e++) {
-      if (e === fromEdge || !edges[e]) continue;
+      if ((fromEdge >= 0 && e === fromEdge) || !edges[e]) continue;
+      if (checkpointStart && fromEdge < 0 && e !== level.checkpoint.exitEdge) continue;
       if (row === endpoints.goalRow && col === endpoints.goalCol &&
           e === endpoints.goalExitEdge && (!requirePickup || hasPickup)) {
         return { trail: trail, goalEdge: e, hasPickup: hasPickup };
@@ -1483,6 +1638,7 @@ function hasBareGoalRoute() {
 }
 
 function checkWin() {
+  if (LEVELS[stageIdx].checkpoint && !stageCheckpointReached) return false;
   return Boolean(findGoalRoute());
 }
 
@@ -1496,12 +1652,14 @@ function traceWinPath() {
 
   // Build final path: entry → cells → exit
   const path = [];
-  // Entry point (one cell outside grid on start side)
-  path.push({
-    row: endpoints.startRow - drDir[oppositeEdge(endpoints.startEdge)],
-    col: endpoints.startCol - dcDir[oppositeEdge(endpoints.startEdge)],
-    index: -1,
-  });
+  // The second leg resumes at the checkpoint; other stages enter from outside.
+  if (!(level.checkpoint && stageCheckpointReached)) {
+    path.push({
+      row: endpoints.startRow - drDir[oppositeEdge(endpoints.startEdge)],
+      col: endpoints.startCol - dcDir[oppositeEdge(endpoints.startEdge)],
+      index: -1,
+    });
+  }
   if (found) {
     found.trail.forEach(p => path.push(p));
     // Exit point (one cell beyond goal)
@@ -1578,9 +1736,11 @@ function getTheme() {
 
 function getRoadPattern() {
   const th = getTheme();
-  const image = roadTextureImgs[th.key];
+  const checkpointMaterial = Boolean(LEVELS[stageIdx] && LEVELS[stageIdx].checkpoint);
+  const image = checkpointMaterial ? imgCheckpointRoadTexture : roadTextureImgs[th.key];
   if (!image || !image.complete || image.naturalWidth <= 0) return null;
-  const cacheKey = [th.key, cellSize, gridOX, gridOY, curCols, curRows].join(':');
+  const cacheKey = [checkpointMaterial ? 'checkpoint' : th.key,
+    cellSize, gridOX, gridOY, curCols, curRows].join(':');
   if (roadPatternCache[cacheKey]) return roadPatternCache[cacheKey];
 
   const pattern = ctx.createPattern(image, 'repeat');
@@ -1598,6 +1758,25 @@ function getRoadPattern() {
   return pattern;
 }
 
+function getTerrainPattern() {
+  const level = LEVELS[stageIdx];
+  if (!level || !level.checkpoint || !imgForestFloorTerrain.complete ||
+      imgForestFloorTerrain.naturalWidth <= 0) return null;
+  const cacheKey = [stageIdx, cellSize, gridOX, gridOY, curCols, curRows].join(':');
+  if (terrainPatternCache[cacheKey]) return terrainPatternCache[cacheKey];
+  const pattern = ctx.createPattern(imgForestFloorTerrain, 'repeat');
+  if (!pattern) return null;
+  if (typeof pattern.setTransform === 'function' && typeof DOMMatrix !== 'undefined') {
+    const boardSpan = Math.max(curCols * cellSize, curRows * cellSize) + cellSize;
+    const scale = boardSpan * 1.15 / imgForestFloorTerrain.naturalWidth;
+    pattern.setTransform(new DOMMatrix([
+      scale, 0, 0, scale, gridOX - cellSize * 0.4, gridOY - cellSize * 0.35,
+    ]));
+  }
+  terrainPatternCache[cacheKey] = pattern;
+  return pattern;
+}
+
 const reducedMotionQuery = window.matchMedia
   ? window.matchMedia('(prefers-reduced-motion: reduce)')
   : { matches: false };
@@ -1610,7 +1789,14 @@ function getStartConnectedTileSet() {
   if (level.start.side === 'left')   { startRow = level.start.row; startCol = 0; startEdge = 3; }
   if (level.start.side === 'right')  { startRow = level.start.row; startCol = curCols - 1; startEdge = 1; }
 
-  const connected = new Set();
+  const checkpointStart = Boolean(level.checkpoint && stageCheckpointReached);
+  if (checkpointStart) {
+    startRow = level.checkpoint.cell.row;
+    startCol = level.checkpoint.cell.col;
+    startEdge = -1;
+  }
+
+  const connected = new Set(stageCheckpointLockedCells);
   const visited = new Set();
   const queue = [{ row: startRow, col: startCol, fromEdge: startEdge }];
 
@@ -1625,11 +1811,12 @@ function getStartConnectedTileSet() {
     const tileKey = grid[idx];
     if (!tileKey || tileKey === 'BLANK') continue;
     const edges = getTileEdgesAt(idx);
-    if (!edges[cur.fromEdge]) continue;
+    if (cur.fromEdge >= 0 && !edges[cur.fromEdge]) continue;
     connected.add(idx);
 
     for (let edge = 0; edge < 4; edge++) {
-      if (edge === cur.fromEdge || !edges[edge]) continue;
+      if ((cur.fromEdge >= 0 && edge === cur.fromEdge) || !edges[edge]) continue;
+      if (checkpointStart && cur.fromEdge < 0 && edge !== level.checkpoint.exitEdge) continue;
       const next = getNeighborRC(cur.row, cur.col, edge);
       if (next[0] >= 0 && next[0] < curRows && next[1] >= 0 && next[1] < curCols) {
         queue.push({ row: next[0], col: next[1], fromEdge: oppositeEdge(edge) });
@@ -1691,94 +1878,121 @@ function traceTileRoad(x, y, size, edges) {
   }
 }
 
-function drawTile(x, y, size, tileKey, visualState) {
+function drawTileBase(x, y, size, tileKey, visualState) {
   const th = getTheme();
   const visual = visualState || {};
-  const inset = Math.max(2, size * 0.038);
-  const radius = size * 0.13;
-  const pulse = reducedMotionQuery.matches ? 0 : Math.sin((visual.now || 0) * 0.005 + (visual.index || 0));
-  const lift = visual.movable && !visual.animating ? Math.max(0, pulse) * Math.min(1.5, size * 0.018) : 0;
-  y -= lift;
-
+  const inset = visual.settled ? 0 : Math.max(0.65, size * 0.008);
+  const radius = Math.min(4, size * 0.025);
+  const isBlank = tileKey === 'BLANK';
   ctx.save();
   const slab = ctx.createLinearGradient(x, y + inset, x, y + size - inset);
-  const isBlank = tileKey === 'BLANK';
   slab.addColorStop(0, isBlank ? th.slabBlankTop : th.slabTop);
   slab.addColorStop(1, isBlank ? th.slabBlankBottom : th.slabBottom);
+  const terrainPattern = getTerrainPattern();
 
-  ctx.shadowColor = visual.movable ? th.moveGlow : th.slabShadow;
-  ctx.shadowBlur = visual.movable ? Math.max(9, size * 0.17) : Math.max(4, size * 0.08);
-  ctx.shadowOffsetY = Math.max(2, size * 0.035);
+  ctx.shadowColor = visual.movable ? th.moveGlow : 'transparent';
+  ctx.shadowBlur = visual.movable ? Math.max(8, size * 0.13) : 0;
+  ctx.shadowOffsetY = visual.movable ? Math.max(1, size * 0.018) : 0;
   ctx.beginPath();
   ctx.roundRect(x + inset, y + inset, size - inset * 2, size - inset * 2, radius);
-  ctx.fillStyle = slab;
+  ctx.fillStyle = terrainPattern || slab;
   ctx.fill();
-  ctx.shadowColor = 'transparent';
-  ctx.strokeStyle = visual.movable ? th.move : th.slabBorder;
-  ctx.lineWidth = visual.movable ? Math.max(2, size * 0.034) : Math.max(1, size * 0.018);
-  ctx.stroke();
-
-  // Repeated bitmap texture is intentionally replaced with a few stable flecks.
-  ctx.fillStyle = th.slabBorder;
-  for (let i = 0; i < 4; i++) {
-    const seed = (visual.index || 0) * 19 + i * 31;
-    const fx = x + size * (0.18 + ((seed * 7) % 57) / 100);
-    const fy = y + size * (0.18 + ((seed * 11) % 59) / 100);
-    ctx.globalAlpha = 0.09 + (i % 2) * 0.04;
-    ctx.beginPath();
-    ctx.arc(fx, fy, Math.max(1, size * (0.012 + (i % 3) * 0.004)), 0, Math.PI * 2);
+  if (terrainPattern && isBlank) {
+    ctx.fillStyle = 'rgba(23,64,45,0.22)';
     ctx.fill();
   }
-  ctx.globalAlpha = 1;
-
-  if (isBlank) {
-    ctx.restore();
-    return;
+  ctx.shadowColor = 'transparent';
+  if (!visual.settled) {
+    ctx.strokeStyle = visual.movable ? th.move : 'rgba(225,240,196,0.34)';
+    ctx.lineWidth = visual.movable ? Math.max(2, size * 0.026) : Math.max(1, size * 0.012);
+    ctx.stroke();
   }
+  if (!terrainPattern) {
+    ctx.fillStyle = th.slabBorder;
+    for (let i = 0; i < 3; i++) {
+      const seed = (visual.index || 0) * 19 + i * 31;
+      const fx = x + size * (0.2 + ((seed * 7) % 55) / 100);
+      const fy = y + size * (0.2 + ((seed * 11) % 55) / 100);
+      ctx.globalAlpha = 0.07 + (i % 2) * 0.035;
+      ctx.beginPath();
+      ctx.arc(fx, fy, Math.max(1, size * 0.014), 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+}
 
+function drawTileRoadUnderlay(x, y, size, tileKey, visualState) {
+  if (tileKey === 'BLANK') return;
+  const th = getTheme();
+  const visual = visualState || {};
   const effectiveTileKey = visual.effectiveTileKey || tileKey;
   const edges = TILE_TYPES[effectiveTileKey].edges;
-  const pathW = size * 0.235;
-  const roadPattern = getRoadPattern();
+  const pathW = size * 0.29;
+  ctx.save();
   ctx.lineCap = 'butt';
   ctx.lineJoin = 'round';
-
-  if (visual.connected) {
-    ctx.save();
+  if (visual.connected && !visual.settled) {
     ctx.shadowColor = th.connectedGlow;
-    ctx.shadowBlur = Math.max(10, size * 0.18);
-    ctx.strokeStyle = th.connectedGlow;
-    ctx.lineWidth = pathW + Math.max(8, size * 0.11);
-    traceTileRoad(x, y, size, edges);
-    ctx.stroke();
-    ctx.restore();
+    ctx.shadowBlur = Math.max(7, size * 0.11);
   }
-
-  ctx.strokeStyle = th.pathBorder;
-  ctx.lineWidth = pathW + Math.max(3, size * 0.052);
+  const checkpointTrail = Boolean(LEVELS[stageIdx] && LEVELS[stageIdx].checkpoint);
+  ctx.strokeStyle = visual.settled
+    ? 'rgba(71,76,48,0.42)'
+    : (checkpointTrail ? 'rgba(89,101,57,0.62)' : th.pathBorder);
+  ctx.lineWidth = pathW + Math.max(3, size * 0.055);
   traceTileRoad(x, y, size, edges);
   ctx.stroke();
+  ctx.restore();
+}
 
+function drawTileRoadSurface(x, y, size, tileKey, visualState) {
+  if (tileKey === 'BLANK') return;
+  const th = getTheme();
+  const visual = visualState || {};
+  const effectiveTileKey = visual.effectiveTileKey || tileKey;
+  const edges = TILE_TYPES[effectiveTileKey].edges;
+  const pathW = size * 0.29;
+  const roadPattern = getRoadPattern();
+  ctx.save();
+  ctx.lineCap = 'butt';
+  ctx.lineJoin = 'round';
   ctx.strokeStyle = roadPattern || th.path;
   ctx.lineWidth = pathW;
   traceTileRoad(x, y, size, edges);
   ctx.stroke();
 
-  ctx.strokeStyle = 'rgba(255,255,255,0.42)';
-  ctx.globalAlpha = 0.38;
-  ctx.lineWidth = Math.max(1.5, size * 0.035);
-  traceTileRoad(x, y, size, edges);
-  ctx.stroke();
-  ctx.globalAlpha = 1;
-
-  if (visual.connected) {
+  if (effectiveTileKey === 'CROSS') {
+    ctx.beginPath();
+    ctx.arc(x + size / 2, y + size / 2, pathW * 0.51, 0, Math.PI * 2);
+    ctx.fillStyle = roadPattern || th.path;
+    ctx.fill();
+  }
+  if (visual.connected && !visual.settled) {
     ctx.strokeStyle = th.connected;
-    ctx.lineWidth = Math.max(2, size * 0.035);
-    ctx.globalAlpha = 0.78;
+    ctx.lineWidth = Math.max(1.5, size * 0.022);
+    ctx.globalAlpha = 0.46;
     traceTileRoad(x, y, size, edges);
     ctx.stroke();
-    ctx.globalAlpha = 1;
   }
+  ctx.restore();
+}
+
+function drawSettledFootprints(x, y, size, index) {
+  const offset = (index % 2) * size * 0.045;
+  ctx.save();
+  ctx.translate(x + size * 0.5 + offset, y + size * 0.5);
+  ctx.rotate(-0.16);
+  ctx.fillStyle = 'rgba(83,58,36,0.48)';
+  [-1, 1].forEach(function(side) {
+    ctx.save();
+    ctx.translate(side * size * 0.11, side * size * 0.065);
+    ctx.rotate(side * 0.25);
+    ctx.beginPath();
+    ctx.ellipse(0, 0, size * 0.038, size * 0.062, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  });
   ctx.restore();
 }
 
@@ -1822,25 +2036,27 @@ function drawEmptySlot(now) {
   const th = getTheme();
   const row = Math.floor(emptyIdx / curCols), col = emptyIdx % curCols;
   const x = gridOX + col * cellSize, y = gridOY + row * cellSize;
-  const rimInset = Math.max(2, cellSize * 0.035);
-  const wellInset = Math.max(7, cellSize * 0.105);
+  const rimInset = Math.max(1, cellSize * 0.012);
+  const wellInset = Math.max(6, cellSize * 0.08);
+  const radius = Math.min(5, cellSize * 0.035);
   const rim = ctx.createLinearGradient(x, y, x, y + cellSize);
-  rim.addColorStop(0, 'rgba(255,255,232,0.72)');
-  rim.addColorStop(0.42, th.slabBorder);
-  rim.addColorStop(1, th.slabBottom);
+  const checkpointTrail = Boolean(LEVELS[stageIdx] && LEVELS[stageIdx].checkpoint);
+  rim.addColorStop(0, checkpointTrail ? 'rgba(181,198,111,0.72)' : 'rgba(255,255,232,0.72)');
+  rim.addColorStop(0.42, checkpointTrail ? 'rgba(96,128,72,0.78)' : th.slabBorder);
+  rim.addColorStop(1, checkpointTrail ? 'rgba(54,89,62,0.9)' : th.slabBottom);
   const depthWell = ctx.createLinearGradient(x, y + wellInset, x, y + cellSize - wellInset);
-  depthWell.addColorStop(0, th.emptyBottom);
-  depthWell.addColorStop(0.36, th.emptyTop);
-  depthWell.addColorStop(1, 'rgba(3,18,24,0.96)');
+  depthWell.addColorStop(0, checkpointTrail ? 'rgba(34,64,46,0.96)' : th.emptyBottom);
+  depthWell.addColorStop(0.36, checkpointTrail ? 'rgba(52,83,58,0.96)' : th.emptyTop);
+  depthWell.addColorStop(1, checkpointTrail ? 'rgba(24,48,37,0.98)' : 'rgba(3,18,24,0.96)');
 
   ctx.save();
-  // Raised lip: its drop shadow establishes the board surface above the hollow.
+  // A nearly square recessed cell reads as missing ground, not another button.
   ctx.shadowColor = 'rgba(5,24,26,0.42)';
-  ctx.shadowBlur = Math.max(5, cellSize * 0.07);
-  ctx.shadowOffsetY = Math.max(3, cellSize * 0.045);
+  ctx.shadowBlur = Math.max(4, cellSize * 0.055);
+  ctx.shadowOffsetY = Math.max(2, cellSize * 0.025);
   ctx.beginPath();
   ctx.roundRect(x + rimInset, y + rimInset,
-    cellSize - rimInset * 2, cellSize - rimInset * 2, cellSize * 0.14);
+    cellSize - rimInset * 2, cellSize - rimInset * 2, radius);
   ctx.fillStyle = rim;
   ctx.fill();
 
@@ -1849,11 +2065,11 @@ function drawEmptySlot(now) {
   ctx.shadowOffsetY = 0;
   ctx.beginPath();
   ctx.roundRect(x + wellInset, y + wellInset,
-    cellSize - wellInset * 2, cellSize - wellInset * 2, cellSize * 0.105);
+    cellSize - wellInset * 2, cellSize - wellInset * 2, radius);
   ctx.fillStyle = depthWell;
   ctx.fill();
-  ctx.strokeStyle = 'rgba(3,17,22,0.76)';
-  ctx.lineWidth = Math.max(3, cellSize * 0.052);
+  ctx.strokeStyle = checkpointTrail ? 'rgba(25,57,42,0.72)' : 'rgba(3,17,22,0.76)';
+  ctx.lineWidth = Math.max(2, cellSize * 0.032);
   ctx.stroke();
   ctx.beginPath();
   ctx.moveTo(x + wellInset * 1.35, y + cellSize - wellInset * 1.08);
@@ -1898,7 +2114,7 @@ function drawMoveHint(index, now) {
 
 function edgePoint(x, y, size, edge) {
   const cx = x + size / 2, cy = y + size / 2;
-  const seamOverlap = Math.max(0.75, size * 0.008);
+  const seamOverlap = Math.max(2, size * 0.025);
   if (edge === 0) return { x: cx, y: y - seamOverlap };            // top
   if (edge === 1) return { x: x + size + seamOverlap, y: cy };     // right
   if (edge === 2) return { x: cx, y: y + size + seamOverlap };     // bottom
@@ -1972,6 +2188,38 @@ function getJourneyGeometry() {
   };
 }
 
+function getCellCenter(index) {
+  return {
+    x: gridOX + (index % curCols + 0.5) * cellSize,
+    y: gridOY + (Math.floor(index / curCols) + 0.5) * cellSize,
+  };
+}
+
+function getCheckpointCenter() {
+  const index = getCheckpointCellIndex(LEVELS[stageIdx]);
+  return index >= 0 ? getCellCenter(index) : getJourneyGeometry();
+}
+
+function drawCheckpointMarker(now) {
+  const level = LEVELS[stageIdx];
+  if (!level || !level.checkpoint) return;
+  const center = getCheckpointCenter();
+  if (!stageCheckpointReached && journeyActor.phase !== JOURNEY_PHASE.CHECKPOINT_DISCOVERY) {
+    drawCharmAt(center.x, center.y, cellSize * 0.54, now, false);
+    return;
+  }
+  ctx.save();
+  ctx.beginPath();
+  ctx.arc(center.x, center.y, cellSize * 0.22, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,246,189,0.18)';
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,126,104,0.78)';
+  ctx.lineWidth = Math.max(2, cellSize * 0.026);
+  ctx.setLineDash([Math.max(3, cellSize * 0.04), Math.max(3, cellSize * 0.035)]);
+  ctx.stroke();
+  ctx.restore();
+}
+
 function getGoalBeaconBounds(geo) {
   const size = Math.max(62, Math.min(124, cellSize * 0.92));
   const anchorY = 0.6;
@@ -2033,8 +2281,11 @@ function drawGoalBeacon(now, geo, active, discovered) {
 function drawStartGoal(now, connectedSet) {
   const level = LEVELS[stageIdx];
   const geo = getJourneyGeometry();
-  const startIdx = level.start.row * curCols;
+  const checkpointHome = Boolean(level.checkpoint && stageCheckpointReached);
+  const checkpointIdx = getCheckpointCellIndex(level);
+  const startIdx = checkpointHome ? checkpointIdx : level.start.row * curCols;
   const startActive = connectedSet.has(startIdx);
+  const home = checkpointHome ? getCheckpointCenter() : { x: geo.startX, y: geo.startY };
   const ponoH = Math.max(52, Math.min(132, cellSize * 0.88));
   const ponoRatio = imgPonoWorld.naturalWidth > 0 && imgPonoWorld.naturalHeight > 0
     ? imgPonoWorld.naturalWidth / imgPonoWorld.naturalHeight : 0.7;
@@ -2044,31 +2295,33 @@ function drawStartGoal(now, connectedSet) {
     ctx.save();
     ctx.fillStyle = 'rgba(10,30,28,0.2)';
     ctx.beginPath();
-    ctx.ellipse(geo.startX, geo.startY + ponoH * 0.42,
+    ctx.ellipse(home.x, home.y + ponoH * 0.42,
       ponoW * 0.44, ponoH * 0.075, 0, 0, Math.PI * 2);
     ctx.fill();
     if (imgPonoWorld.complete && imgPonoWorld.naturalWidth > 0) {
       ctx.shadowColor = startActive ? getTheme().connectedGlow : 'rgba(5,20,18,0.22)';
       ctx.shadowBlur = startActive ? Math.max(10, cellSize * 0.14) : Math.max(4, cellSize * 0.05);
-      ctx.drawImage(imgPonoWorld, geo.startX - ponoW / 2, geo.startY - ponoH / 2, ponoW, ponoH);
+      ctx.drawImage(imgPonoWorld, home.x - ponoW / 2, home.y - ponoH / 2, ponoW, ponoH);
     } else {
       ctx.font = `${Math.floor(cellSize * 0.46)}px serif`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText('🐻', geo.startX, geo.startY);
+      ctx.fillText('🐻', home.x, home.y);
     }
     ctx.restore();
-    drawWorldLabel('ポノ', geo.startX,
-      geo.startY + ponoH * 0.5 + Math.max(6, cellSize * 0.05));
+    drawWorldLabel('ポノ', home.x,
+      home.y + ponoH * 0.5 + Math.max(6, cellSize * 0.05));
   }
 
-  drawGuideTrail(geo.startX + ponoW * 0.34,
-    geo.leftEdge + Math.max(5, cellSize * 0.045), geo.startY, startActive, now);
+  if (!checkpointHome) {
+    drawGuideTrail(geo.startX + ponoW * 0.34,
+      geo.leftEdge + Math.max(5, cellSize * 0.045), geo.startY, startActive, now);
+  }
 
   const goalIdx = level.goal.row * curCols + (curCols - 1);
   const goalTile = grid[goalIdx];
   const goalEdges = getTileEdgesAt(goalIdx);
-  const routeComplete = Boolean(findGoalRoute());
+  const routeComplete = (!level.checkpoint || stageCheckpointReached) && Boolean(findGoalRoute());
   const goalActive = connectedSet.has(goalIdx) && goalTile && goalTile !== 'BLANK' &&
     goalEdges && goalEdges[1] && routeComplete;
   drawGoalBeacon(now, geo, goalActive, clueDiscovered);
@@ -2126,7 +2379,8 @@ function drawJourneyActor(now) {
   const fy = journeyActor.y;
   const walkH = Math.floor(cellSize * 0.58);
   const spriteElapsed = Math.max(0, now - journeyActor.t0);
-  const isMoving = journeyActor.phase !== JOURNEY_PHASE.DISCOVERY;
+  const isMoving = journeyActor.phase !== JOURNEY_PHASE.DISCOVERY &&
+    journeyActor.phase !== JOURNEY_PHASE.CHECKPOINT_DISCOVERY;
   const frameClock = isMoving ? spriteElapsed : 0;
   const horizontal = Math.abs(journeyActor.dx || 1) >= Math.abs(journeyActor.dy || 0);
 
@@ -2197,12 +2451,18 @@ function draw(now) {
   const total = curCols * curRows;
   const hasBoard = emptyIdx >= 0 && grid.length === total;
   const connectedSet = hasBoard ? getStartConnectedTileSet() : new Set();
-  const hintVisible = hasBoard && state === S.PLAYING && moveCount === 0 &&
+  const hintMoveBase = stageCheckpointReached && stageAttemptSnapshot &&
+    stageAttemptSnapshot.stageIdx === stageIdx
+      ? stageAttemptSnapshot.moveCountBase : 0;
+  const hintVisible = hasBoard && state === S.PLAYING && moveCount === hintMoveBase &&
     !hintDismissed && !_slideTutActive && !magicCrossSelectMode && now >= hintReadyAt &&
     getAdjacentIndices(emptyIdx).includes(suggestedMoveIdx) && grid[suggestedMoveIdx] !== null;
   if (hasBoard) drawEmptySlot(now);
 
-  // Draw tiles
+  // Build one visual list, then paint ground and roads in separate passes. This
+  // lets every road cross the hairline between cells before another base can
+  // cover it, so the route reads as one forest trail instead of rounded buttons.
+  const tileVisuals = [];
   for (let i = 0; i < total; i++) {
     const tileKey = grid[i];
     if (!tileKey) continue;
@@ -2219,32 +2479,63 @@ function draw(now) {
       x += (emptyCol - col) * nudge;
       y += (emptyRow - row) * nudge;
     }
-
-    drawTile(x, y, cellSize, tileKey, {
+    const movable = hintVisible && i === suggestedMoveIdx && !animating;
+    if (movable && !reducedMotionQuery.matches) {
+      const pulse = Math.max(0, Math.sin(now * 0.005 + i));
+      y -= pulse * Math.min(1.5, cellSize * 0.018);
+    }
+    tileVisuals.push({
+      x: x,
+      y: y,
+      tileKey: tileKey,
       index: i,
       now: now,
       effectiveTileKey: getEffectiveTileKeyAt(i),
       connected: connectedSet.has(i),
-      movable: hintVisible && i === suggestedMoveIdx && !animating,
+      movable: movable,
       animating: animating && i === anim.idx,
+      settled: isCheckpointLockedCell(i),
     });
-
-    if (magicCrossSelectMode && isMagicSelectableTile(i) && !animating) {
-      drawMagicSelectableFrame(x, y, cellSize, now);
-    }
-    if (!pickupCollected && i === pickupTileIdx) {
-      drawCharmAt(x + cellSize / 2, y + cellSize / 2, cellSize * 0.54, now, false);
-    }
-    if (i === magicCrossTileIdx) {
-      drawCharmAt(x + cellSize / 2, y + cellSize / 2, cellSize * 0.3, now, true);
-    }
   }
+
+  const restingTiles = tileVisuals.filter(function(visual) { return !visual.animating; });
+  const movingTile = tileVisuals.find(function(visual) { return visual.animating; });
+  restingTiles.forEach(function(visual) {
+    drawTileBase(visual.x, visual.y, cellSize, visual.tileKey, visual);
+  });
+  restingTiles.forEach(function(visual) {
+    drawTileRoadUnderlay(visual.x, visual.y, cellSize, visual.tileKey, visual);
+  });
+  restingTiles.forEach(function(visual) {
+    drawTileRoadSurface(visual.x, visual.y, cellSize, visual.tileKey, visual);
+  });
+  if (movingTile) {
+    drawTileBase(movingTile.x, movingTile.y, cellSize, movingTile.tileKey, movingTile);
+    drawTileRoadUnderlay(movingTile.x, movingTile.y, cellSize, movingTile.tileKey, movingTile);
+    drawTileRoadSurface(movingTile.x, movingTile.y, cellSize, movingTile.tileKey, movingTile);
+  }
+
+  tileVisuals.forEach(function(visual) {
+    if (magicCrossSelectMode && isMagicSelectableTile(visual.index) && !animating) {
+      drawMagicSelectableFrame(visual.x, visual.y, cellSize, now);
+    }
+    if (!LEVELS[stageIdx].checkpoint && !pickupCollected && visual.index === pickupTileIdx) {
+      drawCharmAt(visual.x + cellSize / 2, visual.y + cellSize / 2,
+        cellSize * 0.54, now, false);
+    }
+    if (visual.index === magicCrossTileIdx) {
+      drawCharmAt(visual.x + cellSize / 2, visual.y + cellSize / 2,
+        cellSize * 0.3, now, true);
+    }
+    if (visual.settled) drawSettledFootprints(visual.x, visual.y, cellSize, visual.index);
+  });
 
   if (hintVisible && !animating) {
     drawMoveHint(suggestedMoveIdx, now);
   }
 
   // World markers and the single persistent actor are complementary layers.
+  if (hasBoard) drawCheckpointMarker(now);
   if (hasBoard) drawStartGoal(now, connectedSet);
   if (journeyActor.active) drawJourneyActor(now);
 
@@ -2278,11 +2569,7 @@ function updateAnim(now) {
     animating = false;
     syncMagicCrossButton();
 
-    if (!_slideTutActive && checkWin()) {
-      onStageClear();
-    } else if (!_slideTutActive && LEVELS[stageIdx].pickup && hasBareGoalRoute()) {
-      showJourneyToast('ひかりも とおろう！', false, false, true);
-    }
+    if (!_slideTutActive) handleRouteCompletion(performance.now());
   }
 }
 
@@ -2398,6 +2685,17 @@ function updateJourneyPosition(now) {
     );
     stageClock.lastAriaBucket = Math.floor(eased * 20);
   }
+  if (journeyActor.phase === JOURNEY_PHASE.CHECKPOINT && !journeyActor.tutorial) {
+    const target = getCheckpointJourneyTargets();
+    syncJourneyProgress(
+      stageClock.checkpointPonoStart +
+        (target.pono - stageClock.checkpointPonoStart) * eased,
+      stageClock.checkpointMotherStart +
+        (target.mother - stageClock.checkpointMotherStart) * eased,
+      { updateA11y: Math.floor(eased * 20) !== stageClock.lastAriaBucket }
+    );
+    stageClock.lastAriaBucket = Math.floor(eased * 20);
+  }
   const exact = eased * (points.length - 1);
   const fromIndex = Math.min(Math.floor(exact), points.length - 1);
   const toIndex = Math.min(fromIndex + 1, points.length - 1);
@@ -2435,7 +2733,10 @@ function finishJourneyIntro(now) {
   setPauseAvailable(true);
   syncMagicCrossButton();
   startStageClock(now);
-  if (!mechanicGuideShown && LEVELS[stageIdx].pickup) {
+  if (!mechanicGuideShown && LEVELS[stageIdx].checkpoint) {
+    mechanicGuideShown = true;
+    showJourneyToast('おかあさんの しるしまで みちを つなごう！', false, false, true);
+  } else if (!mechanicGuideShown && LEVELS[stageIdx].pickup) {
     mechanicGuideShown = true;
     showJourneyToast('ひかりを とおって ゴールへ！', false, false, true);
   } else if (!mechanicGuideShown && LEVELS[stageIdx].magicCross) {
@@ -2445,6 +2746,132 @@ function finishJourneyIntro(now) {
   } else if (introMessage) {
     showJourneyToast(introMessage, false);
   }
+}
+
+function getCheckpointJourneyTargets() {
+  return {
+    pono: Math.max(stageClock.checkpointPonoStart, getPonoCheckpointProgress(stageIdx)),
+    mother: Math.max(stageClock.checkpointMotherStart, getMotherCheckpointProgress(stageIdx)),
+  };
+}
+
+function onCheckpointReached(route, now) {
+  const level = LEVELS[stageIdx];
+  if (!level.checkpoint || stageCheckpointReached || journeyActor.active) return;
+  const checkpointNow = Number.isFinite(now) ? now : performance.now();
+  stopStageClock(checkpointNow);
+  state = S.TRAVELLING;
+  prepauseState = S.TRAVELLING;
+  magicCrossSelectMode = false;
+  setPauseAvailable(false);
+  syncMagicCrossButton();
+  stageCheckpointTrail = route.trail.slice();
+  stageClock.checkpointPonoStart = stageClock.ponoProgress;
+  stageClock.checkpointMotherStart = stageClock.motherProgress;
+  stageClock.lastAriaBucket = -1;
+  const geo = getJourneyGeometry();
+  const points = [{ x: geo.startX, y: geo.startY }].concat(route.trail.map(function(point) {
+    return getCellCenter(point.index);
+  }));
+  journeyActor.tutorial = false;
+  setJourneyPath(JOURNEY_PHASE.CHECKPOINT, points,
+    reducedMotionQuery.matches ? 1 : Math.max(620, (points.length - 1) * 260),
+    checkpointNow);
+}
+
+function finishCheckpointArrival(now) {
+  if (journeyActor.phase !== JOURNEY_PHASE.CHECKPOINT) return;
+  const target = getCheckpointJourneyTargets();
+  syncJourneyProgress(target.pono, target.mother);
+  if (!pickupCollected) {
+    pickupCollected = true;
+    pickupJourneyProgress = -1;
+    magicCharmOwned = true;
+    playCharmSound();
+  }
+  const center = getCheckpointCenter();
+  journeyActor.phase = JOURNEY_PHASE.CHECKPOINT_DISCOVERY;
+  journeyActor.active = true;
+  journeyActor.path = [{ x: center.x, y: center.y }];
+  journeyActor.x = center.x;
+  journeyActor.y = center.y;
+  journeyActor.t0 = now;
+  journeyActor.duration = reducedMotionQuery.matches ? 1 : 1100;
+  state = S.PLAYING;
+  prepauseState = S.PLAYING;
+  setPauseAvailable(false);
+  syncMagicCrossButton();
+  showJourneyToast('おかあさんの しるしを みつけた！\nつぎの みちを つなごう！',
+    false, false, true);
+}
+
+function setupCheckpointSecondLeg(now) {
+  const level = LEVELS[stageIdx];
+  const checkpoint = level.checkpoint;
+  grid = level.solved.slice();
+  emptyIdx = grid.indexOf(null);
+  checkpoint.secondShuffle.forEach(function(cell) {
+    applySlideMove(getLevelCellIndex(level, cell));
+  });
+  stageCheckpointReached = true;
+  stageCheckpointLockedCells = new Set(getCheckpointLockedIndices(level));
+  pickupTileIdx = getCheckpointCellIndex(level);
+  pickupCollected = true;
+  magicCharmOwned = true;
+  magicCrossTileIdx = -1;
+  magicCrossSelectMode = false;
+  suggestedMoveIdx = getLevelCellIndex(level, checkpoint.secondShuffle[0]);
+  hintDismissed = false;
+  hintReadyAt = now + 650;
+  mechanicGuideShown = true;
+  animating = false;
+  anim.idx = -1;
+}
+
+function finishCheckpointDiscovery(now) {
+  if (journeyActor.phase !== JOURNEY_PHASE.CHECKPOINT_DISCOVERY) return;
+  const preservedProgress = {
+    pono: stageClock.ponoProgress,
+    mother: stageClock.motherProgress,
+  };
+  setupCheckpointSecondLeg(now);
+  const center = getCheckpointCenter();
+  journeyActor.active = false;
+  journeyActor.phase = JOURNEY_PHASE.PLAYING;
+  journeyActor.x = center.x;
+  journeyActor.y = center.y;
+  resetStageClock(stageIdx, preservedProgress);
+  state = S.PLAYING;
+  prepauseState = S.PLAYING;
+  updateHUD({ resetProgress: true, forceTime: true });
+  setPauseAvailable(true);
+  syncMagicCrossButton();
+  captureStageAttemptSnapshot();
+  startStageClock(now);
+}
+
+function handleRouteCompletion(now) {
+  if (_slideTutActive || state !== S.PLAYING || journeyActor.active) return false;
+  const level = LEVELS[stageIdx];
+  if (level.checkpoint && !stageCheckpointReached) {
+    const checkpointRoute = findCheckpointRoute();
+    if (checkpointRoute) {
+      onCheckpointReached(checkpointRoute, now);
+      return true;
+    }
+    if (hasBareGoalRoute()) {
+      showJourneyToast('まずは おかあさんの しるしまで！', false, false, true);
+    }
+    return false;
+  }
+  if (checkWin()) {
+    onStageClear();
+    return true;
+  }
+  if (level.pickup && hasBareGoalRoute()) {
+    showJourneyToast('ひかりも とおろう！', false, false, true);
+  }
+  return false;
 }
 
 function collectJourneyPickup() {
@@ -2549,6 +2976,20 @@ function updateJourney(now) {
     return;
   }
 
+  if (journeyActor.phase === JOURNEY_PHASE.CHECKPOINT) {
+    if (reducedMotionQuery.matches) {
+      finishCheckpointArrival(now);
+      return;
+    }
+    if (updateJourneyPosition(now) >= 1) finishCheckpointArrival(now);
+    return;
+  }
+
+  if (journeyActor.phase === JOURNEY_PHASE.CHECKPOINT_DISCOVERY) {
+    if (now - journeyActor.t0 >= journeyActor.duration) finishCheckpointDiscovery(now);
+    return;
+  }
+
   if (journeyActor.phase === JOURNEY_PHASE.EXIT) {
     if (reducedMotionQuery.matches) {
       finishExitWithDiscovery(now);
@@ -2579,7 +3020,9 @@ function updateJourneyMotionState() {
   const menuOpen = Boolean(document.querySelector('.pono-dropdown.show'));
   const confirmOpen = Boolean(document.querySelector('.pono-confirm-overlay.show'));
   const actorMoving = journeyActor.active &&
-    (journeyActor.phase === JOURNEY_PHASE.INTRO || journeyActor.phase === JOURNEY_PHASE.EXIT);
+    (journeyActor.phase === JOURNEY_PHASE.INTRO ||
+      journeyActor.phase === JOURNEY_PHASE.CHECKPOINT ||
+      journeyActor.phase === JOURNEY_PHASE.EXIT);
   const puzzleMoving = stageClock.active && state === S.PLAYING;
   const motionAllowed = !reducedMotionQuery.matches && !_slideTutActive &&
     !document.hidden && slideWindowFocused && window.innerWidth > window.innerHeight &&
@@ -2607,6 +3050,10 @@ function handleTap(px, py) {
 
   const tappedIdx = row * curCols + col;
   if (grid[tappedIdx] === null) return false;
+  if (isCheckpointLockedCell(tappedIdx)) {
+    showJourneyToast('ここは もう とおった みちだよ', false);
+    return false;
+  }
 
   if (magicCrossSelectMode) {
     if (!isMagicSelectableTile(tappedIdx)) {
@@ -2619,7 +3066,7 @@ function handleTap(px, py) {
     playCharmSound();
     showJourneyToast('よつまたに なった！', false);
     syncMagicCrossButton();
-    if (!_slideTutActive && checkWin()) onStageClear();
+    if (!_slideTutActive) handleRouteCompletion(performance.now());
     return true;
   }
 
@@ -2666,6 +3113,7 @@ wrap.addEventListener('pointerdown', e => {
 
 // ===== Stage clear =====
 function onStageClear() {
+  if (state !== S.PLAYING || journeyActor.active) return false;
   const clearNow = performance.now();
   stopStageClock(clearNow);
   const timeNode = document.getElementById('hud-time');
@@ -2697,8 +3145,14 @@ function onStageClear() {
       y: gridOY + (point.row + 0.5) * cellSize,
     };
   });
-  if (points.length === 0) points.push({ x: geo.startX, y: geo.startY });
-  points[0] = { x: geo.startX, y: geo.startY };
+  if (points.length === 0) points.push(
+    LEVELS[stageIdx].checkpoint && stageCheckpointReached
+      ? getCheckpointCenter()
+      : { x: geo.startX, y: geo.startY }
+  );
+  if (!(LEVELS[stageIdx].checkpoint && stageCheckpointReached)) {
+    points[0] = { x: geo.startX, y: geo.startY };
+  }
   points[points.length - 1] = { x: geo.discoverX, y: geo.goalY };
   journeyActor.tutorial = false;
   setJourneyPath(JOURNEY_PHASE.EXIT, points,
@@ -2810,6 +3264,18 @@ function getPonoStagePlayEndProgress(index) {
     : getPonoStageEndProgress(index);
 }
 
+function getPonoCheckpointProgress(index) {
+  return getPonoStageStartProgress(index) +
+    (getPonoStagePlayEndProgress(index) - getPonoStageStartProgress(index)) * 0.5;
+}
+
+function getActivePonoPlayTarget(index) {
+  const level = LEVELS[index];
+  return level && level.checkpoint && !stageCheckpointReached
+    ? getPonoCheckpointProgress(index)
+    : getPonoStagePlayEndProgress(index);
+}
+
 // 途中の紙芝居はおかあさん側の出来事で、ポノとの再会ではない。
 // ポノは2・4・6面の紙芝居と8面のプレイ中も6%以上後ろに残り、
 // 最後の道を実際に歩き終えた瞬間だけ同じ場所へ着く。
@@ -2825,6 +3291,18 @@ function getMotherStageEndProgress(index) {
   return index % 2 === 0
     ? Math.min(1, chapterStart + 0.25 * 0.65)
     : Math.min(1, chapterStart + 0.25);
+}
+
+function getMotherCheckpointProgress(index) {
+  return getMotherStageStartProgress(index) +
+    (getMotherStageEndProgress(index) - getMotherStageStartProgress(index)) * 0.5;
+}
+
+function getActiveMotherPlayTarget(index) {
+  const level = LEVELS[index];
+  return level && level.checkpoint && !stageCheckpointReached
+    ? getMotherCheckpointProgress(index)
+    : getMotherStageEndProgress(index);
 }
 
 function getMotherIntroStartProgress(index) {
@@ -2980,9 +3458,9 @@ function updateHUD(options) {
 
 function resetStageClock(index, preservedProgress) {
   const ponoStart = getPonoStageStartProgress(index);
-  const ponoEnd = getPonoStagePlayEndProgress(index);
+  const ponoEnd = getActivePonoPlayTarget(index);
   const motherStart = getMotherStageStartProgress(index);
-  const motherEnd = getMotherStageEndProgress(index);
+  const motherEnd = getActiveMotherPlayTarget(index);
   const preserve = preservedProgress && Number.isFinite(preservedProgress.pono) &&
     Number.isFinite(preservedProgress.mother);
   const attemptPonoStart = preserve
@@ -3004,6 +3482,8 @@ function resetStageClock(index, preservedProgress) {
   stageClock.motherProgress = stageClock.introMotherStart;
   stageClock.exitPonoStart = stageClock.ponoProgress;
   stageClock.exitMotherStart = stageClock.motherProgress;
+  stageClock.checkpointPonoStart = stageClock.ponoProgress;
+  stageClock.checkpointMotherStart = stageClock.motherProgress;
   stageClock.lastAriaBucket = -1;
   stageClock.lastShownSecond = -1;
   updateStageTimeDisplay(true);
@@ -3091,9 +3571,9 @@ function updateStageClock(now) {
   const pacingRatio = getJourneyPacingRatio(stageClock.elapsedMs, stageClock.budgetMs);
   const visualRatio = reducedMotionQuery.matches ? Math.floor(pacingRatio * 100) / 100 : pacingRatio;
   const ponoStart = stageClock.attemptPonoStart;
-  const ponoEnd = getPonoStagePlayEndProgress(stageIdx);
+  const ponoEnd = getActivePonoPlayTarget(stageIdx);
   const motherStart = stageClock.attemptMotherStart;
-  const motherEnd = getMotherStageEndProgress(stageIdx);
+  const motherEnd = getActiveMotherPlayTarget(stageIdx);
   const ponoProgress = ponoStart + (ponoEnd - ponoStart) * visualRatio;
   const motherProgress = motherStart + (motherEnd - motherStart) * visualRatio;
   const ariaBucket = Math.floor(ratio * 20);
@@ -3122,6 +3602,10 @@ function captureStageAttemptSnapshot() {
     magicCharmOwned: magicCharmOwned,
     magicCrossTileIdx: magicCrossTileIdx,
     suggestedMoveIdx: suggestedMoveIdx,
+    moveCountBase: moveCount,
+    stageCheckpointReached: stageCheckpointReached,
+    stageCheckpointTrail: stageCheckpointTrail.map(function(point) { return { ...point }; }),
+    checkpointLockedCells: Array.from(stageCheckpointLockedCells),
   };
 }
 
@@ -3166,6 +3650,31 @@ function beginStage(index) {
   startCurrentStageIntro(performance.now(), index === 0);
 }
 
+function resumeCheckpointLeg(now, preservedProgress) {
+  journeyHudMessageHideAt = 0;
+  journeyHudPausesClock = false;
+  hideJourneyToastOverlay();
+  overlay.classList.add('hidden');
+  overlay.setAttribute('aria-hidden', 'true');
+  document.body.classList.remove('slide-cutscene-open');
+  calcLayout();
+  resetStageClock(stageIdx, preservedProgress);
+  updateHUD({ resetProgress: true, instant: true, forceTime: true });
+  updatePauseButton(false);
+  const center = getCheckpointCenter();
+  journeyActor.active = false;
+  journeyActor.phase = JOURNEY_PHASE.PLAYING;
+  journeyActor.tutorial = false;
+  journeyActor.x = center.x;
+  journeyActor.y = center.y;
+  state = S.PLAYING;
+  prepauseState = S.PLAYING;
+  setPauseAvailable(true);
+  syncMagicCrossButton();
+  showJourneyToast('しるしの つづきから みちを つなごう！', false, false, true);
+  startStageClock(now);
+}
+
 function restartTimedOutStage(now) {
   if (!stageAttemptSnapshot || stageAttemptSnapshot.stageIdx !== stageIdx) {
     beginStage(stageIdx);
@@ -3177,7 +3686,8 @@ function restartTimedOutStage(now) {
   };
   stageRetryCount += 1;
   stageIdx = stageAttemptSnapshot.stageIdx;
-  moveCount = 0;
+  moveCount = Number.isFinite(stageAttemptSnapshot.moveCountBase)
+    ? stageAttemptSnapshot.moveCountBase : 0;
   curCols = stageAttemptSnapshot.cols;
   curRows = stageAttemptSnapshot.rows;
   grid = stageAttemptSnapshot.grid.slice();
@@ -3189,14 +3699,23 @@ function restartTimedOutStage(now) {
   magicCrossTileIdx = stageAttemptSnapshot.magicCrossTileIdx;
   magicCrossSelectMode = false;
   suggestedMoveIdx = stageAttemptSnapshot.suggestedMoveIdx;
+  stageCheckpointReached = Boolean(stageAttemptSnapshot.stageCheckpointReached);
+  stageCheckpointTrail = (stageAttemptSnapshot.stageCheckpointTrail || []).map(function(point) {
+    return { ...point };
+  });
+  stageCheckpointLockedCells = new Set(stageAttemptSnapshot.checkpointLockedCells || []);
   clueDiscovered = false;
   hintDismissed = false;
   hintReadyAt = 0;
-  mechanicGuideShown = false;
+  mechanicGuideShown = stageCheckpointReached;
   animating = false;
   anim.idx = -1;
   stageClock.timeoutPending = false;
-  startCurrentStageIntro(now, true, preservedProgress);
+  if (stageCheckpointReached) {
+    resumeCheckpointLeg(now, preservedProgress);
+  } else {
+    startCurrentStageIntro(now, true, preservedProgress);
+  }
 }
 
 function startGame() {

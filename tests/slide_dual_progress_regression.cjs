@@ -52,11 +52,14 @@ assert.match(html,
   /function getMotherIntroStartProgress\(index\)[\s\S]*?index === 0[\s\S]*?getMotherStageStartProgress\(index\)/,
   "the missing mother is already visibly ahead on the opening screen");
 assert.match(html,
-  /function resetStageClock\(index, preservedProgress\)[\s\S]*?getPonoStagePlayEndProgress\(index\)/,
+  /function resetStageClock\(index, preservedProgress\)[\s\S]*?getActivePonoPlayTarget\(index\)/,
   "a retry also clamps Pono to the safe live-play endpoint");
 assert.match(html,
-  /function updateStageClock\(now\)[\s\S]*?getPonoStagePlayEndProgress\(stageIdx\)/,
+  /function updateStageClock\(now\)[\s\S]*?getActivePonoPlayTarget\(stageIdx\)/,
   "live progress uses the safe endpoint on every stage");
+assert.match(html,
+  /function getActivePonoPlayTarget\(index\)[\s\S]*?level\.checkpoint && !stageCheckpointReached[\s\S]*?getPonoCheckpointProgress/,
+  "a two-part stage reserves the second half of Pono's bar for the second route leg");
 assert.match(html,
   /const isTogether = gapSize === 0;[\s\S]*?classList\.toggle\('is-together', isTogether\)/,
   "only an exact shared endpoint announces the reunion");
