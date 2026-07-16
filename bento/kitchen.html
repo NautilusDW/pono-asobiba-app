@@ -5666,6 +5666,27 @@ body.layout-editor-on .bowl-fill-mask::after {
 .workshop-scene::after { content: ''; position: absolute; inset: 12% 16%; border: 4px dashed rgba(244,140,44,0.28); border-radius: 50%; pointer-events: none; }
 .workshop-food { width: min(48%, 320px); max-height: 75%; object-fit: contain; filter: saturate(.72) opacity(.62); transition: filter .25s, transform .25s; pointer-events: none; z-index: 1; }
 .workshop-scene.is-done .workshop-food { filter: none; transform: scale(1.08); }
+.workshop-scene.has-step-art .workshop-food { filter: none; width: min(54%, 360px); max-height: 78%; }
+.workshop-scene.is-cut-step {
+  background: #d8a262 url('../assets/images/bento/cooking/kitchen_bg.webp') center 70% / cover no-repeat;
+}
+.workshop-scene.is-cut-step::after {
+  display: none;
+}
+.workshop-scene.is-cut-step .workshop-food {
+  width: min(46%, 330px);
+  max-height: 58%;
+  transform: translateY(12%);
+  filter: drop-shadow(0 8px 7px rgba(91,55,25,.2));
+}
+.workshop-scene.is-cut-step .workshop-food.is-cut-impact {
+  animation: workshopFoodCutImpact .2s ease-out;
+}
+@keyframes workshopFoodCutImpact {
+  0% { transform: translateY(12%) scale(1); }
+  45% { transform: translateY(15%) scale(.96) rotate(-1deg); }
+  100% { transform: translateY(12%) scale(1); }
+}
 .workshop-motion { position: absolute; z-index: 2; font-size: 3rem; animation: workshopCue 1.15s ease-in-out infinite alternate; pointer-events: none; }
 @keyframes workshopCue { from { transform: translate(-38px, 12px) rotate(-10deg); } to { transform: translate(38px, -12px) rotate(10deg); } }
 .workshop-scene[data-mode="tap"] .workshop-motion { animation: workshopTap .75s ease-in-out infinite alternate; }
@@ -6577,13 +6598,13 @@ body.layout-editor-on .bowl-fill-mask::after {
       ],
       cookImages: {
         grill: {
-          stages: ['carrot/carrot_pieces_mid', 'ninjin_ingen/ninjin_ingen_mid', 'kinpira/kinpira_mid'],
+          stages: ['ninjin_ingen/cutting/carrot_pieces', 'ninjin_ingen/ninjin_ingen_mid', 'kinpira/kinpira_mid'],
           fallback: '../assets/images/Bento_parts/ninjin_ingen2.webp',
         },
         recipeVariants: {
           ninjin_ingen: {
             grill: {
-              stages: ['carrot/carrot_pieces_mid', 'ninjin_ingen/ninjin_ingen_mid', 'ninjin_ingen/ninjin_ingen_mid'],
+              stages: ['ninjin_ingen/cutting/carrot_pieces', 'ninjin_ingen/ninjin_ingen_mid', 'ninjin_ingen/ninjin_ingen_mid'],
               fallback: '../assets/images/bento/free-layout/okazu_ninjin_ingen.png',
             },
           },
@@ -6597,11 +6618,12 @@ body.layout-editor-on .bowl-fill-mask::after {
       },
       imageBase: 'carrot/carrot_001.webp',
       imagePieces: {
-        dir: 'carrot',
-        from: 2,
+        dir: 'ninjin_ingen/pieces',
+        prefix: 'carrot_baton_',
+        from: 1,
         to: 11,
-        pad: 3,
-        sequence: [3, 2, 4, 5, 6, 7, 9, 8, 11, 10],
+        pad: 2,
+        sequence: [1, 5, 9, 3, 7, 11, 2, 6, 10, 4, 8],
       },
       chopMechanics: {
         startX_pct: 87, endX_pct: 13,
@@ -6620,6 +6642,35 @@ body.layout-editor-on .bowl-fill-mask::after {
         ingredientLeft_pct:  55,
         ingredientTop_pct:   36,
         ingredientWidth_pct: null,
+      },
+    },
+    {
+      id: 'green_bean', name: 'いんげん', emoji: '🫛', piece: '🫛',
+      chopCount: 5, implemented: true,
+      prepActions: [{ type: 'chop' }],
+      cookingActions: [],
+      imageBase: 'ninjin_ingen/cutting/green_beans_whole.png',
+      fridgeImage: '../assets/images/bento/cooking/ninjin_ingen/cutting/green_beans_pieces.png',
+      imagePieces: {
+        dir: 'ninjin_ingen/pieces',
+        prefix: 'green_bean_piece_',
+        from: 1,
+        to: 10,
+        pad: 2,
+        sequence: [1, 6, 3, 8, 5, 10, 2, 7, 4, 9],
+        burstStride: 2,
+      },
+      pieceBurstCount: 2,
+      bowlPieceLimit: 30,
+      bowlPieceSize: 54,
+      chopMechanics: {
+        startX_pct: 78, endX_pct: 24,
+        liftY_pct: 0, chopY_pct: 50,
+        maskAxis: 'right-to-left',
+        bladeTipOffsetX_pct: -39,
+        ingredientLeft_pct: 51,
+        ingredientTop_pct: 39,
+        ingredientWidth_pct: 62,
       },
     },
     {
@@ -7025,7 +7076,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     { id: 'ebi_fry',      name: 'エビフライ',        img: '../assets/images/bento/cooking/shrimp/shrimp_003_done.png', needs: ['shrimp_breaded'], startFromRaw: true },
     { id: 'korokke',      name: 'コロッケ',          img: '../assets/images/bento/cooking/korokke/korokke_003_done.png', needs: ['potato'], cookIngredientId: 'potato' },
     { id: 'cabbage_shreds', name: 'キャベツ',        img: '../assets/images/bento/cooking/cabbage/cabbage_002.png', needs: ['cabbage'] },
-    { id: 'ninjin_ingen', name: 'にんじんいんげん',  img: '../assets/images/bento/free-layout/okazu_ninjin_ingen.png', needs: ['carrot'] },
+    { id: 'ninjin_ingen', name: 'にんじんいんげん',  img: '../assets/images/bento/free-layout/okazu_ninjin_ingen.png', needs: ['carrot', 'green_bean'], cookIngredientId: 'carrot' },
     { id: 'kinpira',      name: 'きんぴらごぼう',    img: '../assets/images/Bento_parts/kinpira2.webp',      needs: ['carrot'] },
   ];
 
@@ -9487,6 +9538,33 @@ body.layout-editor-on .bowl-fill-mask::after {
     roll: '↔️', mash: '🥔', squeeze: '✊', stir: '🥄', portion: '🥄', wrap: '🤲', water: '💧',
     steam: '♨️', seal: '☝️', fry: '♨️', measure: '🥛', cook: '🍚', fluff: '🥄', sprinkle: '✨'
   };
+  const WORKSHOP_STEP_ART = {
+    ichigo: { whole: 'ichigo_whole.png', cut: 'ichigo_cut.png', revealAt: 3 },
+    mikan: { whole: 'mikan_whole.png', cut: 'mikan_cut.png', revealAt: 2 },
+    ringo: { whole: 'ringo_whole.png', cut: 'ringo_cut.png', revealAt: 2 },
+    kiwi: { whole: 'kiwi_whole.png', cut: 'kiwi_cut.png', revealAt: 4 },
+    melon: { whole: 'melon_whole.png', cut: 'melon_cut.png', revealAt: 1 },
+    pineapple: { whole: 'pineapple_whole.png', cut: 'pineapple_cut.png', revealAt: 1 },
+    momo: { whole: 'momo_whole.png', cut: 'momo_cut.png', revealAt: 3 },
+  };
+
+  function updateWorkshopStepArt(step, animateImpact) {
+    const recipe = state.workshopRecipe;
+    const art = recipe && WORKSHOP_STEP_ART[recipe.id];
+    const hasArt = !!art;
+    const isCutStep = hasArt && step.kind === 'cut';
+    els.workshopScene.classList.toggle('has-step-art', hasArt);
+    els.workshopScene.classList.toggle('is-cut-step', isCutStep);
+    if (!hasArt) return;
+    const prepared = state.workshopStepIndex > art.revealAt ||
+      (state.workshopStepIndex === art.revealAt && state.workshopProgress > 0);
+    els.workshopFood.src = '../assets/images/bento/cooking/workshop/fruit/' + (prepared ? art.cut : art.whole);
+    if (animateImpact && isCutStep) {
+      els.workshopFood.classList.remove('is-cut-impact');
+      void els.workshopFood.offsetWidth;
+      els.workshopFood.classList.add('is-cut-impact');
+    }
+  }
   const WORKSHOP_PREP_RECIPES = {
     edamame: { id: 'edamame-prep', ingredientId: 'edamame', prepOnly: true, name: 'えだまめの したごしらえ', img: '../assets/images/bento/cooking/boil/boil_edamame_raw.png', preparedImg: '../assets/images/bento/cooking/boil/boil_edamame_raw.png', ingredients: [], steps: [
       { kind: 'wash', label: 'えだまめを みずで あらおう', count: 3 },
@@ -9657,6 +9735,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     els.workshopScene.setAttribute('aria-label', step.label);
     els.workshopMotion.textContent = WORKSHOP_CUES[step.kind] || '☝️';
     els.workshopMotion.hidden = step.kind === 'choose' || specializedBoil;
+    updateWorkshopStepArt(step, false);
     if (recipe.prepOnly && recipe.preparedImg && state.workshopStepIndex > 0) els.workshopFood.src = recipe.preparedImg;
     els.workshopMeterFill.style.width = '0%';
     els.workshopDots.innerHTML = recipe.steps.map(function (_, index) {
@@ -9700,6 +9779,7 @@ body.layout-editor-on .bowl-fill-mask::after {
   function updateWorkshopMeter(step) {
     const max = step.kind === 'choose' ? state.workshopRecipe.ingredients.length : step.count;
     els.workshopMeterFill.style.width = Math.min(100, state.workshopProgress / Math.max(1, max) * 100) + '%';
+    updateWorkshopStepArt(step, step.kind === 'cut');
     if (WORKSHOP_BOIL_FOODS[state.workshopRecipe.id] && ['ignite', 'salt', 'heat', 'boil', 'drain'].includes(step.kind)) {
       updateWorkshopBoilVisual(step);
     }
