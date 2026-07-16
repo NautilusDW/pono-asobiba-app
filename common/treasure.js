@@ -8,7 +8,17 @@
 
   // MVP フラグ: 報酬制度を封印中は宝箱演出をスキップ (onClose だけ呼ぶ)。
   // 切替は common/mvp-flags.js を参照。
-  function _isRewardsDisabled() { return !!window.PONO_MVP_NO_REWARDS; }
+  // common/first-clear.js の _rewardsBlocked() / common/achievements.js と同じ3段フォールバック
+  // (PonoMvpFlags有無 → PONO_MVP_NO_REWARDS有無 → PonoTier.isApp()単独判定)。
+  // window.PONO_MVP_NO_REWARDS 単独判定は tier を見ないため、app tier でも常に true になり
+  // 宝箱演出が never 表示されない事故があった (2026-07-16)。
+  function _isRewardsDisabled() {
+    if (window.PonoMvpFlags && typeof window.PonoMvpFlags.rewardsBlocked === 'function') {
+      return window.PonoMvpFlags.rewardsBlocked();
+    }
+    if (window.PONO_MVP_NO_REWARDS) return true;
+    return !(window.PonoTier && typeof window.PonoTier.isApp === 'function' && window.PonoTier.isApp());
+  }
 
   var _overlay = null;
   var _container = null;   // .treasure-container (video はここに都度 append)

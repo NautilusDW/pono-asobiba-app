@@ -501,6 +501,12 @@
     // pono_stamp_pending にも書き込まない。section 自体も CSS で非表示。
     // renderDailyRally() が rally.games を参照するため app tier では null を返せない
     if (rewardsBlocked()) return null;
+    // レガシー2ゲーム版デイリーラリーは play.html から撤去済み (#stampRallyGames が無い)。
+    // container が無いページでは判定・LS書き込み・ボーナススタンプ付与を一切行わない
+    // 完全 no-op にする (play-all.html は container が存在するため従来通り動作する)。
+    // ※ renderDailyRally() 側の container チェックだけでは checkDailyCompletion() 単体呼び出し
+    //   (pageshow / visibilitychange リスナー) の副作用を防げないため、ここでもガードする。
+    if (!document.getElementById('stampRallyGames')) return null;
     var rally = getDailyRally();
     var today = new Date().toDateString();
     var played = [];

@@ -1,5 +1,19 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2240: batch:1318-stamp-rally-daily-challenge-merge。「今日のチャレンジ」(お題,
+// js/daily-quest.js)と新設スタンプラリーが同一画面に別々の日替わりバナーとして並んでいた
+// UXを一本化。お題クリア(PonoDailyQuestClearedイベント)でガチャボーナスに加えスタンプラリー
+// のボーナススタンプも同時付与するcommon/stamp-rally.jsのgrantDailyQuestBonusStamp()を新設し、
+// お題プールになぞなぞトレイン/クッキング/もじっこファームを追加(3ゲームへPonoGameStickers.grant
+// 計装も追加)。2ゲーム版デイリーラリー帯(#stampRallySection)はplay.htmlから撤去。独立レビュー指摘
+// で見つかった3件を修正: ①common/treasure.jsのshowTreasure()がtier無視でPONO_MVP_NO_REWARDSを
+// 直読みし宝箱演出がapp tierでも非表示だったバグ(common/first-clear.jsと同じ3段フォールバックへ
+// 統一)、②common/stamp-rally.jsのcheckDailyCompletion()がcontainer不在でも実行され続け旧2ゲーム
+// ボーナスを二重付与していたバグ(container存在ガード追加で完全no-op化)、③クッキングのお題達成
+// シグナルがページ読込/モード切替だけで誤発火する(操作ゼロで達成扱いになる)バグ(fromGameplay引数で
+// 実プレイ完了時のみ発火するようゲート)。common/first-clear.jsのtier判定漏れ(window.PONO_MVP_NO_REWARDS
+// 直読みで初回クリア報酬が全tier停止していた)も同3段フォールバックへ修正。
+// play.html PAGE_CACHE_VERSION と同期 (2240)。
 // v2239: ブロッコリーを生成した大きな一株から、まな板で5回トントンして小房へ
 // 分ける下ごしらえに変更。小房は1個ずつ鍋へ入れ、全投入後に泡12個・水面波紋・湯気の
 // パーティクルで沸騰させる。鍋位置と操作を塞いでいた透明レイヤーも修正
@@ -27,7 +41,7 @@
 // <script src>読込を追加して宝箱演出を復旧。common/first-clear.jsのtier判定漏れ
 // (window.PONO_MVP_NO_REWARDS直読みでapp tierでも報酬ブロックされていたバグ)を
 // common/achievements.jsと同じ3段フォールバックの_rewardsBlocked()へ修正
-// (batch:1327-daily-quest-unification)。play.html PAGE_CACHE_VERSION と同期 (2235)。
+// (batch:1318-stamp-rally-daily-challenge-merge)。play.html PAGE_CACHE_VERSION と同期 (2235)。
 // v2234: みちつなぎの中央に重なっていた水色の移動矢印を撤去し、押せるパネルの穴側エッジ、
 // 推奨パネル自体の予告移動、360msの持ち上がり／滑走、移動元の穴、着地後の新しい穴を
 // 暖色で順に見せる操作フィードバックへ変更。App版では `?stage=3` で二段探索を直接確認
@@ -314,7 +328,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2239;
+const CACHE_VERSION = 2240;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
