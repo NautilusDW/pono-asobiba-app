@@ -1,5 +1,9 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2223: トントンキッチンのめだまやき蓋へtouch-action:noneを追加し、タッチドラッグを
+// ブラウザーpanへ奪われるpointercancelを防止。cancel時もclientX/Y=0を配置座標へ使わず、
+// 左端へ飛んでから戻る動きを封鎖した (batch:1320-kitchen-lid-touch-cancel)。
+// play.html PAGE_CACHE_VERSION と同期不要 (bento/kitchen.html／テストのみ変更)。
 // v2222: みちつなぎの旅バーを16:9 shell外のviewport端まで広げ、赤いおかあさんと
 // 緑のポノを26〜55秒の期待ペースで視認できる速さへ変更。流れる距離bridgeと顔の歩行motion、
 // 紙芝居後の6%先行、同一盤面再挑戦での位置維持を追加し、メニュー／非表示／縦向き中は
@@ -225,7 +229,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2222;
+const CACHE_VERSION = 2223;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
