@@ -1,5 +1,9 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2229: トントンキッチンの標準メニュー残り17品＋ごはん3種へ、食材選択、洗う／むく、
+// 指定の切り方、ゆでる／混ぜる、巻く／包む、炊飯／仕上げを順番に操作する共通調理画面を追加。
+// マウス／タッチ／キーボードに対応し、お弁当本体の現行完成画像へ統一した
+// (batch:1325-kitchen-menu-phases2-5)。play.html PAGE_CACHE_VERSION と同期不要。
 // v2228: トントンキッチン標準メニューPhase 1。にんじんいんげん／きんぴらの選択結果を
 // 調理画像へ伝播し、コロッケをじゃがいもの切る工程から開始。ミートボール／やきざけの
 // カードをお弁当本体と同じ現行画像へ統一した (batch:1324-kitchen-menu-phase1)。
@@ -249,7 +253,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2228;
+const CACHE_VERSION = 2229;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
