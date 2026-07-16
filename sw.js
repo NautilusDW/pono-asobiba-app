@@ -1,5 +1,16 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2235: 今日のチャレンジ(デイリークエスト)への一本化統合 (4ストリーム並走)。
+// common/stamp-rally.js の2ゲームデイリーラリーをレガシー化しno-op化、新たに
+// grantDailyQuestBonusStamp() を追加して今日のチャレンジ達成(PonoDailyQuestCleared)時に
+// スタンプ1個を冪等付与。js/daily-quest.js の QUEST_POOL へ新ゲーム3本
+// (nazonazo-tunnel/cooking/writing-mori) を追加しisAppTierガード付きで出題対象化、
+// 各ゲームへPonoGameStickerGranted計装を追加。play.html は #stampRallySection を撤去し
+// PonoDailyQuestClearedリスナーからgrantDailyQuestBonusStamp配線、common/treasure.jsの
+// <script src>読込を追加して宝箱演出を復旧。common/first-clear.jsのtier判定漏れ
+// (window.PONO_MVP_NO_REWARDS直読みでapp tierでも報酬ブロックされていたバグ)を
+// common/achievements.jsと同じ3段フォールバックの_rewardsBlocked()へ修正
+// (batch:1327-daily-quest-unification)。play.html PAGE_CACHE_VERSION と同期 (2235)。
 // v2234: みちつなぎの中央に重なっていた水色の移動矢印を撤去し、押せるパネルの穴側エッジ、
 // 推奨パネル自体の予告移動、360msの持ち上がり／滑走、移動元の穴、着地後の新しい穴を
 // 暖色で順に見せる操作フィードバックへ変更。App版では `?stage=3` で二段探索を直接確認
@@ -286,7 +297,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2234;
+const CACHE_VERSION = 2235;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。

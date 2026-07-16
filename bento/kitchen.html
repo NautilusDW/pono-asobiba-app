@@ -5672,11 +5672,25 @@ body.layout-editor-on .bowl-fill-mask::after {
 @keyframes workshopTap { from { transform: translateY(-12px) scale(.95); } to { transform: translateY(12px) scale(1.08); } }
 .workshop-boil-game { position: absolute; inset: 0; z-index: 2; display: none; overflow: hidden; }
 .workshop-scene.is-boil-step .workshop-boil-game { display: block; }
+.workshop-scene.is-boil-step { background: #c9c5bd url('../assets/images/bento/cooking/stove_base.webp') center 72% / 128% auto no-repeat; }
 .workshop-scene.is-boil-step::after { display: none; }
 .workshop-boil-pot { position: absolute; width: 66%; left: 17%; top: 24%; object-fit: contain; pointer-events: none; filter: drop-shadow(0 8px 7px rgba(70,45,25,.18)); }
 .workshop-boil-food { position: absolute; width: 25%; left: 5%; top: 8%; object-fit: contain; pointer-events: none; transition: left .3s ease, top .3s ease, transform .3s ease, opacity .2s ease; }
 .workshop-boil-spoon { position: absolute; width: 38%; right: -4%; top: 4%; object-fit: contain; pointer-events: none; opacity: 0; transform: translate(45px,-20px) rotate(-10deg); transition: opacity .25s ease, transform .32s ease; }
 .workshop-boil-bowl { position: absolute; width: 48%; right: 4%; bottom: 2%; object-fit: contain; pointer-events: none; opacity: 0; filter: saturate(1.28) contrast(1.12) drop-shadow(0 7px 6px rgba(70,45,25,.18)); transition: opacity .25s ease; }
+.workshop-boil-bubbles { position: absolute; z-index: 3; left: 34%; top: 38%; width: 32%; height: 25%; opacity: 0; pointer-events: none; overflow: hidden; border-radius: 50%; transition: opacity .2s ease; }
+.workshop-boil-bubble { position: absolute; bottom: 5%; width: 10px; height: 10px; border: 2px solid rgba(255,255,255,.92); border-radius: 50%; background: rgba(212,244,255,.32); animation: workshopBoilBubble 1.05s ease-in infinite; }
+.workshop-boil-bubble:nth-child(1) { left: 9%; animation-delay: -.18s; }
+.workshop-boil-bubble:nth-child(2) { left: 25%; width: 7px; height: 7px; animation-delay: -.72s; }
+.workshop-boil-bubble:nth-child(3) { left: 43%; width: 12px; height: 12px; animation-delay: -.42s; }
+.workshop-boil-bubble:nth-child(4) { left: 62%; width: 8px; height: 8px; animation-delay: -.88s; }
+.workshop-boil-bubble:nth-child(5) { left: 78%; width: 11px; height: 11px; animation-delay: -.57s; }
+.workshop-boil-bubble:nth-child(6) { left: 91%; width: 6px; height: 6px; animation-delay: -.05s; }
+.workshop-boil-steam { position: absolute; z-index: 2; left: 39%; top: 22%; width: 22%; height: 25%; opacity: 0; pointer-events: none; background: radial-gradient(ellipse at 35% 75%, rgba(255,255,255,.7), transparent 55%), radial-gradient(ellipse at 65% 45%, rgba(255,255,255,.55), transparent 58%); filter: blur(5px); animation: workshopBoilSteam 1.5s ease-in-out infinite alternate; transition: opacity .2s ease; }
+.workshop-boil-game[data-stage="2"] .workshop-boil-bubbles,
+.workshop-boil-game[data-stage="3"] .workshop-boil-bubbles { opacity: 1; }
+.workshop-boil-game[data-stage="2"] .workshop-boil-steam,
+.workshop-boil-game[data-stage="3"] .workshop-boil-steam { opacity: .85; }
 .workshop-boil-game[data-stage="1"] .workshop-boil-food,
 .workshop-boil-game[data-stage="2"] .workshop-boil-food,
 .workshop-boil-game[data-stage="3"] .workshop-boil-food { left: 38%; top: 35%; transform: scale(.76); }
@@ -5691,7 +5705,9 @@ body.layout-editor-on .bowl-fill-mask::after {
 .workshop-boil-game.is-drain[data-stage="2"] .workshop-boil-food,
 .workshop-boil-game.is-drain[data-stage="3"] .workshop-boil-food { left: 60%; top: 56%; transform: scale(.58); animation: none; }
 @keyframes boilFoodBob { from { transform: scale(.76) translateY(-3px); } to { transform: scale(.76) translateY(4px); } }
-@media (prefers-reduced-motion: reduce) { .workshop-boil-food { animation: none !important; transition-duration: .01ms; } }
+@keyframes workshopBoilBubble { 0% { transform: translateY(8px) scale(.45); opacity: 0; } 24% { opacity: 1; } 100% { transform: translateY(-55px) scale(1.18); opacity: 0; } }
+@keyframes workshopBoilSteam { from { transform: translate(-3px,6px) scale(.92); } to { transform: translate(4px,-8px) scale(1.08); } }
+@media (prefers-reduced-motion: reduce) { .workshop-boil-food, .workshop-boil-bubble, .workshop-boil-steam { animation: none !important; transition-duration: .01ms; } }
 .workshop-instruction { text-align: center; font-size: 1.16rem; font-weight: 900; color: var(--text); padding: 10px 6px 4px; }
 .workshop-hint { text-align: center; font-size: .76rem; font-weight: 800; color: var(--text-soft); min-height: 1.3em; }
 .workshop-meter { height: 12px; border-radius: 999px; background: #eadfca; overflow: hidden; margin: 8px auto 0; width: min(78%, 560px); }
@@ -6316,6 +6332,8 @@ body.layout-editor-on .bowl-fill-mask::after {
         <div class="workshop-boil-game" id="workshop-boil-game" data-stage="0" aria-hidden="true">
           <img class="workshop-boil-pot" id="workshop-boil-pot" alt="" draggable="false">
           <img class="workshop-boil-food" id="workshop-boil-food" alt="" draggable="false">
+          <div class="workshop-boil-bubbles"><i class="workshop-boil-bubble"></i><i class="workshop-boil-bubble"></i><i class="workshop-boil-bubble"></i><i class="workshop-boil-bubble"></i><i class="workshop-boil-bubble"></i><i class="workshop-boil-bubble"></i></div>
+          <div class="workshop-boil-steam"></div>
           <img class="workshop-boil-spoon" id="workshop-boil-spoon" src="../assets/images/bento/cooking/boil/boil_spoon.png" alt="" draggable="false">
           <img class="workshop-boil-bowl" id="workshop-boil-bowl" src="../assets/images/bento/cooking/boil/boil_drain_bowl.png" alt="" draggable="false">
         </div>
@@ -6494,6 +6512,16 @@ body.layout-editor-on .bowl-fill-mask::after {
   //   imagePieces = { dir, prefix, from, to, pad, sequence } で
   //   carrot_002〜carrot_011 / cabbage_002〜cabbage_014 / chicken_chop_002〜013 を生成する。
   const INGREDIENTS = [
+    {
+      id: 'broccoli', name: 'ブロッコリー', emoji: '🥦', piece: '🥦', implemented: true,
+      imageBase: 'boil/boil_broccoli_raw.png',
+      prepActions: [{ type: 'workshop' }], cookingActions: [],
+    },
+    {
+      id: 'edamame', name: 'えだまめ', emoji: '🫛', piece: '🫛', implemented: true,
+      imageBase: 'boil/boil_edamame_raw.png',
+      prepActions: [{ type: 'workshop' }], cookingActions: [],
+    },
     {
       id: 'carrot', name: 'にんじん', emoji: '🥕', piece: '🥕',
       // chopCount = 切り口の数 (モデル B)。 startX → endX の間を等分して切る。
@@ -6964,11 +6992,11 @@ body.layout-editor-on .bowl-fill-mask::after {
     { id: 'tomato', name: 'プチトマト', img: '../assets/images/bento/cooking/tomato/tomato_001.png', ingredients: ['プチトマト'], steps: [
       ['choose','プチトマトを えらぼう',1], ['wash','みずで やさしく あらおう',3], ['trim','へたを とろう',2], ['serve','カップに いれよう',2]
     ]},
-    { id: 'broccoli', name: 'ブロッコリー', img: '../assets/images/bento/free-layout/okazu_broccoli.png', ingredients: ['ブロッコリー','しお'], steps: [
-      ['choose','ざいりょうを えらぼう',2], ['wash','みずで よく あらおう',3], ['divide','こぶさに わけよう',4], ['boil','しおゆで しよう',3], ['drain','おゆを きろう',2]
+    { id: 'broccoli', name: 'ブロッコリー', img: '../assets/images/bento/free-layout/okazu_broccoli.png', ingredients: ['ブロッコリー','しお'], needs: ['broccoli'], startFromRaw: false, steps: [
+      ['boil','コンロで しおゆで しよう',3], ['drain','おゆを きろう',2]
     ]},
-    { id: 'edamame', name: 'えだまめ', img: '../assets/images/bento/free-layout/okazu_edamame.png', ingredients: ['えだまめ','しお'], steps: [
-      ['choose','ざいりょうを えらぼう',2], ['wash','みずで あらおう',3], ['rub','しおで もみもみ しよう',4], ['boil','おなべで ゆでよう',3], ['drain','おゆを きろう',2]
+    { id: 'edamame', name: 'えだまめ', img: '../assets/images/bento/free-layout/okazu_edamame.png', ingredients: ['えだまめ','しお'], needs: ['edamame'], startFromRaw: false, steps: [
+      ['boil','コンロで ぐつぐつ ゆでよう',3], ['drain','おゆを きろう',2]
     ]},
     { id: 'ichigo', name: 'いちご', img: '../assets/images/bento/free-layout/fruit_ichigo.png', ingredients: ['いちご'], steps: [
       ['choose','いちごを えらぼう',1], ['wash','みずで やさしく あらおう',3], ['trim','へたを とろう',2], ['cut','たて はんぶんに きろう',2], ['serve','カップに いれよう',2]
@@ -7024,8 +7052,8 @@ body.layout-editor-on .bowl-fill-mask::after {
   ].map(function (recipe) {
     recipe.steps = recipe.steps.map(function (step) { return { kind: step[0], label: step[1], count: step[2] }; });
     recipe.workshop = true;
-    recipe.startFromRaw = true;
-    recipe.needs = [];
+    if (typeof recipe.startFromRaw !== 'boolean') recipe.startFromRaw = true;
+    if (!Array.isArray(recipe.needs)) recipe.needs = [];
     return recipe;
   });
   Array.prototype.push.apply(RECIPES, WORKSHOP_RECIPES);
