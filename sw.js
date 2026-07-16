@@ -1,5 +1,10 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2222: みちつなぎの旅バーを16:9 shell外のviewport端まで広げ、赤いおかあさんと
+// 緑のポノを26〜55秒の期待ペースで視認できる速さへ変更。流れる距離bridgeと顔の歩行motion、
+// 紙芝居後の6%先行、同一盤面再挑戦での位置維持を追加し、メニュー／非表示／縦向き中は
+// 導入・退出も停止して復帰時のjumpを防いだ (batch:1319-slide-fullbleed-motion)。
+// play.html PAGE_CACHE_VERSION と同期不要 (slide/index.html／テストのみ変更)。
 // v2221: なぞなぞトレイン宇宙面の最終救出で、画面外pointerup／cancel／blurと遅延capture喪失を
 // 安全に回収し、物理clickを代替入力として復旧。下の案内を尾3本と星の子救出まで進められる
 // 実buttonへ変更し、通常race guardがずれた場合も勝利後の完了timerまで進めるようにした
@@ -220,7 +225,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2221;
+const CACHE_VERSION = 2222;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
