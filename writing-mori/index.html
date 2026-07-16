@@ -105,22 +105,22 @@
   --round-font: 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', sans-serif;
   --moji-font: 'Yu Mincho', 'Hiragino Mincho ProN', 'Hiragino Mincho Pro', serif;
   --story-yard-bg: url('../assets/images/mojikko/care/yard_background_wide_v2.png');
-  --story-frame-character: url('../assets/zukan/ui/hint_panel_empty.webp');
-  --story-frame-companion: url('../assets/zukan/ui/discovery_popup_empty.webp');
-  --story-frame-board: url('../assets/zukan/ui/investigation_window_frame_16x9.png');
-  --story-frame-stroke: url('../assets/zukan/ui/map_guide_note_empty_220x780.png');
-  --story-frame-prompt: url('../assets/images/quizland/Fukuro_frame_004.webp');
-  --story-frame-result: url('../assets/images/quizland/Fukuro_frame_001.webp');
-  --story-frame-chooser: url('../assets/images/quizland/Fukuro_frame_002.webp');
-  --story-button-primary: url('../assets/images/quizland/quizland_difficulty_button_normal_gpt_image2_20260622.png');
-  --story-button-primary-pressed: url('../assets/images/quizland/quizland_difficulty_button_pressed_gpt_image2_20260622.png');
-  --story-button-secondary: url('../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_page_label_wood_canvas_20260623.png');
-  --story-button-secondary-pressed: url('../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_page_label_pressed_gpt_image2_20260713.png');
-  --story-choice-pressed-tl: url('../assets/images/quizland/Fukuro_frame_002_pressed_TL.png');
-  --story-choice-pressed-tr: url('../assets/images/quizland/Fukuro_frame_002_pressed_TR.png');
-  --story-choice-pressed-bl: url('../assets/images/quizland/Fukuro_frame_002_pressed_BL.png');
-  --story-choice-pressed-br: url('../assets/images/quizland/Fukuro_frame_002_pressed_BR.png');
-  --story-settings: url('../assets/_legacy/preview-placeholders/ctrl-btn-settings.png');
+  --story-frame-board: url('../assets/images/mojikko/writing/storybook/frame-family/01_mojikko_unified_board_frame.png');
+  --story-frame-character: url('../assets/images/mojikko/writing/storybook/frame-family/02_mojikko_character_list_frame.png');
+  --story-frame-companion: url('../assets/images/mojikko/writing/storybook/frame-family/03_mojikko_companion_frame.png');
+  --story-frame-stroke: url('../assets/images/mojikko/writing/storybook/frame-family/04_mojikko_stroke_order_frame.png');
+  --story-frame-prompt: url('../assets/images/mojikko/writing/storybook/frame-family/05_mojikko_message_frame.png');
+  --story-frame-chooser: url('../assets/images/mojikko/writing/storybook/frame-family/06_mojikko_mode_chooser_base.png');
+  --story-frame-result: url('../assets/images/mojikko/writing/storybook/frame-family/07_mojikko_result_frame.png');
+  --story-button-secondary: url('../assets/images/mojikko/writing/storybook/frame-family/10_mojikko_secondary_button_normal.png');
+  --story-button-primary: url('../assets/images/mojikko/writing/storybook/frame-family/11_mojikko_primary_button_normal.png');
+  --story-star-counter: url('../assets/images/mojikko/writing/storybook/frame-family/12_mojikko_star_counter_regular.png');
+  --story-star-counter-short: url('../assets/images/mojikko/writing/storybook/frame-family/12_mojikko_star_counter_short.png');
+  --story-settings: url('../assets/images/mojikko/writing/storybook/frame-family/13_mojikko_settings_button_normal.png');
+  --story-kana-tab: url('../assets/images/mojikko/writing/storybook/frame-family/14_mojikko_kana_tab_main_normal.png');
+  --story-kana-tab-short: url('../assets/images/mojikko/writing/storybook/frame-family/14_mojikko_kana_tab_short_normal.png');
+  --story-char-tile: url('../assets/images/mojikko/writing/storybook/frame-family/15_mojikko_character_tile_main_normal.png');
+  --story-char-tile-short: url('../assets/images/mojikko/writing/storybook/frame-family/15_mojikko_character_tile_short_normal.png');
   --story-star: url('../assets/images/quizland/quizland_difficulty_star_gold_gpt_image2_20260623.png');
   --story-cookie: url('../assets/images/Bento_parts/cookie.webp');
   --story-gohan: url('../assets/images/nazonazo-tunnel/quiz-art/quiz_onigiri_20260714.webp');
@@ -1232,7 +1232,7 @@ html, body {
   border-radius: 0;
   box-shadow: none;
   background-position: center;
-  background-size: 100% 100%;
+  background-size: contain;
   background-repeat: no-repeat;
   image-rendering: auto;
 }
@@ -3159,7 +3159,7 @@ html, body {
   background-color: transparent !important;
   background-repeat: no-repeat !important;
   background-position: center !important;
-  background-size: 100% 100% !important;
+  background-size: contain !important;
   background-clip: border-box !important;
   box-shadow: none !important;
   image-rendering: auto;
@@ -3306,7 +3306,7 @@ html, body {
   background-color: transparent !important;
   background-repeat: no-repeat !important;
   background-position: center !important;
-  background-size: 100% 100% !important;
+  background-size: contain !important;
   background-clip: border-box !important;
   box-shadow: none !important;
   filter: none;
@@ -3332,14 +3332,14 @@ html, body {
 #modeSwitchBtn:active:not(:disabled),
 #resetBtn:active:not(:disabled),
 #careBtn:active:not(:disabled) {
-  background-image: var(--story-button-secondary-pressed) !important;
-  transform: none;
+  transform: translateY(3px) scale(0.985);
+  filter: brightness(0.96) saturate(0.98);
 }
 
 #doneBtn:active:not(:disabled),
 #modalRetryBtn:active:not(:disabled) {
-  background-image: var(--story-button-primary-pressed) !important;
-  transform: none;
+  transform: translateY(3px) scale(0.985);
+  filter: brightness(0.96) saturate(0.98);
 }
 
 #backBtn:focus-visible,
@@ -3533,32 +3533,17 @@ html, body {
   background-image: none !important;
   background-position: center !important;
   background-repeat: no-repeat !important;
-  background-size: 100% 100% !important;
+  background-size: contain !important;
   box-shadow: none !important;
   filter: none;
   transform: none;
   color: #5d432b;
 }
 
-.mode-choice-button:nth-child(1):is(.active, :active) {
-  background-image: var(--story-choice-pressed-tl) !important;
-}
-
-.mode-choice-button:nth-child(2):is(.active, :active) {
-  background-image: var(--story-choice-pressed-tr) !important;
-}
-
-.mode-choice-button:nth-child(3):is(.active, :active) {
-  background-image: var(--story-choice-pressed-bl) !important;
-}
-
-.mode-choice-button:nth-child(4):active {
-  background-image: var(--story-choice-pressed-br) !important;
-}
-
 .mode-choice-button:active:not(:disabled),
 .mode-choice-close:active:not(:disabled) {
-  transform: none !important;
+  transform: scale(0.985) !important;
+  filter: brightness(0.97) !important;
 }
 
 .mode-choice-button:focus-visible {
@@ -3697,6 +3682,530 @@ html, body {
     padding: 48px 62px 38px;
   }
 }
+
+/* --------------------------------------------------------------------------
+   Unified frame family (batch:1328b)
+   Every visible window keeps the native ratio of its processed PNG. Normal
+   artwork is the fixed base; state feedback is clipped to the paper well.
+   -------------------------------------------------------------------------- */
+
+.character-panel,
+.companion-card,
+.stroke-panel,
+.prompt-bar,
+.message-box,
+.mode-choice-card,
+.result-card {
+  border: 0 !important;
+  border-image: none !important;
+  border-radius: 0 !important;
+  background-color: transparent !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-size: contain !important;
+  background-clip: border-box !important;
+  box-shadow: none !important;
+}
+
+.layout {
+  top: 108px;
+  bottom: 14px;
+}
+
+.side-stack {
+  grid-template-rows: 464px 270px;
+  gap: 16px;
+}
+
+.character-panel {
+  width: 292px;
+  height: auto;
+  aspect-ratio: 907 / 1442;
+  padding: 31px 30px 33px 28px;
+  grid-template-rows: 57px 70px minmax(0, 1fr);
+  background-image: var(--story-frame-character) !important;
+}
+
+.character-panel.mode-task-panel {
+  grid-template-rows: 57px minmax(0, 1fr);
+}
+
+.companion-card {
+  width: 292px;
+  height: auto;
+  min-height: 0;
+  aspect-ratio: 1128 / 1043;
+  padding: 31px 28px 27px 30px;
+  background-image: var(--story-frame-companion) !important;
+}
+
+.companion-name {
+  top: 31px;
+  left: 42px;
+  right: 42px;
+  height: 28px;
+}
+
+.companion-speech {
+  top: 62px;
+}
+
+.companion-level {
+  bottom: 29px;
+}
+
+.pixel-creature,
+.companion-card.egg-state .pixel-creature,
+.companion-card.egg-state.reward-ready .pixel-creature,
+.companion-card.baby-state .pixel-creature,
+.companion-card.yochiyochi-state .pixel-creature {
+  bottom: 48px;
+}
+
+.stroke-panel {
+  width: 212px;
+  height: auto;
+  aspect-ratio: 496 / 1759;
+  padding: 26px 23px 24px;
+  grid-template-rows: 52px 1fr 132px;
+  background-image: var(--story-frame-stroke) !important;
+}
+
+.panel-title,
+.companion-speech,
+.reward-box,
+.reward-large,
+.stroke-card,
+.stroke-card.current,
+.stroke-card.done,
+.stroke-preview,
+.stroke-mini svg {
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+.panel-title,
+.companion-speech,
+.reward-box,
+.reward-large {
+  border: 0 !important;
+  border-radius: 0 !important;
+}
+
+.kana-tab,
+.char-button {
+  position: relative;
+  isolation: isolate;
+  min-width: 44px;
+  min-height: 44px;
+  height: auto;
+  padding: 0 8px;
+  overflow: hidden;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background-color: transparent !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-size: contain !important;
+  box-shadow: none !important;
+  filter: none;
+}
+
+.kana-tabs {
+  align-items: center;
+  padding: 4px;
+  gap: 8px;
+}
+
+.kana-tab {
+  align-self: center;
+}
+
+.char-list {
+  padding: 6px 4px 8px;
+}
+
+.kana-tab {
+  aspect-ratio: 570 / 331;
+  background-image: var(--story-kana-tab) !important;
+}
+
+.char-button,
+.char-spacer {
+  aspect-ratio: 404 / 564;
+}
+
+.char-button {
+  background-image: var(--story-char-tile) !important;
+}
+
+.kana-tab::before,
+.char-button::before,
+.mode-choice-button::before {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  pointer-events: none;
+  background: transparent;
+}
+
+.kana-tab::before {
+  inset: 7.9% 4.4% 7.6%;
+  border-radius: 8px;
+}
+
+.char-button::before {
+  inset: 5.2% 6.2% 4.8% 6.9%;
+  border-radius: 6px;
+}
+
+.kana-tab.active::before,
+.char-button.active::before,
+.char-button.done.active::before {
+  background: rgba(247, 229, 167, 0.68);
+}
+
+.char-button.done:not(.active)::before {
+  background: rgba(222, 234, 200, 0.72);
+}
+
+.kana-tab:hover:not(:disabled),
+.char-button:hover:not(:disabled) {
+  filter: brightness(1.025);
+}
+
+.kana-tab:active:not(:disabled),
+.char-button:active:not(:disabled) {
+  transform: scale(0.97);
+  filter: brightness(0.97);
+}
+
+.kana-tab:focus-visible,
+.char-button:focus-visible {
+  outline: 5px solid rgba(82, 146, 79, 0.88);
+  outline-offset: 2px;
+}
+
+.kana-tab,
+.char-button,
+.char-button .done-mark {
+  color: #53412d;
+  text-shadow: 0 1px rgba(255, 255, 255, 0.82);
+}
+
+.char-button .cursor {
+  position: absolute;
+  z-index: 2;
+}
+
+.char-button .done-mark {
+  position: relative;
+  z-index: 1;
+}
+
+.center-stage {
+  grid-template-rows: 101px minmax(0, 1fr) 82px;
+}
+
+.prompt-bar,
+.message-box {
+  width: 627px;
+  height: auto;
+  min-height: 0;
+  aspect-ratio: 1751 / 282;
+  padding: 0 52px;
+  background-image: var(--story-frame-prompt) !important;
+}
+
+.writing-board {
+  width: auto;
+  height: 100%;
+  max-width: min(640px, 100%);
+  max-height: 575.104px;
+  aspect-ratio: 1203 / 1081;
+  background: transparent;
+  box-shadow: none;
+}
+
+.writing-board::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  display: block;
+  border: 0 !important;
+  border-image: none !important;
+  background: var(--story-frame-board) center / contain no-repeat;
+  box-shadow: none;
+  pointer-events: none;
+}
+
+.writing-board::after {
+  content: none !important;
+  display: none !important;
+  background: none !important;
+  opacity: 0 !important;
+}
+
+.star-box {
+  width: 190px;
+  min-width: 190px;
+  height: auto;
+  min-height: 44px;
+  aspect-ratio: 933 / 346;
+  padding: 0 22px 0 76px;
+  border: 0;
+  border-radius: 0;
+  background: var(--story-star-counter) center / contain no-repeat;
+  box-shadow: none;
+}
+
+.header-right {
+  align-items: center;
+}
+
+.star-icon {
+  display: none;
+}
+
+.settings-btn {
+  width: 64px;
+  min-width: 44px;
+  height: auto;
+  min-height: 44px;
+  aspect-ratio: 581 / 601;
+  padding: 0;
+  border: 0 !important;
+  border-image: none !important;
+  border-radius: 0 !important;
+  background: var(--story-settings) center / contain no-repeat !important;
+  box-shadow: none;
+}
+
+#backBtn,
+#modeSwitchBtn,
+#resetBtn,
+#careBtn,
+#doneBtn,
+#modalRetryBtn {
+  min-width: 44px;
+  min-height: 44px;
+  height: auto;
+  border: 0 !important;
+  border-image: none !important;
+  border-radius: 0 !important;
+  background-color: transparent !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-size: contain !important;
+  background-clip: border-box !important;
+  box-shadow: none !important;
+  transition: transform 0.08s ease, filter 0.08s ease;
+}
+
+#backBtn,
+#modeSwitchBtn,
+#resetBtn,
+#careBtn {
+  aspect-ratio: 1223 / 363;
+  background-image: var(--story-button-secondary) !important;
+}
+
+#doneBtn,
+#modalRetryBtn {
+  aspect-ratio: 1334 / 530;
+  background-image: var(--story-button-primary) !important;
+}
+
+#backBtn:active:not(:disabled),
+#modeSwitchBtn:active:not(:disabled),
+#resetBtn:active:not(:disabled),
+#careBtn:active:not(:disabled),
+#doneBtn:active:not(:disabled),
+#modalRetryBtn:active:not(:disabled),
+.settings-btn:active:not(:disabled) {
+  transform: translateY(3px) scale(0.985);
+  filter: brightness(0.96) saturate(0.98);
+}
+
+#backBtn:focus-visible,
+#modeSwitchBtn:focus-visible,
+#resetBtn:focus-visible,
+#careBtn:focus-visible,
+#doneBtn:focus-visible,
+#modalRetryBtn:focus-visible,
+.settings-btn:focus-visible {
+  outline: none;
+  filter:
+    drop-shadow(0 0 2px rgba(255, 251, 222, 0.98))
+    drop-shadow(0 0 5px rgba(63, 142, 105, 0.98))
+    drop-shadow(0 0 8px rgba(63, 142, 105, 0.84));
+}
+
+body #ach-next-hint {
+  width: min(500px, calc(100vw - 24px));
+  height: auto;
+  min-height: 0;
+  aspect-ratio: 1751 / 282;
+  bottom: 8px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 52px;
+  border: 0;
+  border-radius: 0;
+  background: var(--story-frame-prompt) center / contain no-repeat;
+  box-shadow: none;
+  color: #416b3c;
+  font-family: var(--round-font);
+  font-size: 16px;
+  line-height: 1.25;
+  text-align: center;
+  white-space: normal;
+}
+
+body #ach-next-hint.show {
+  transform: translateX(-50%) translateY(0);
+}
+
+.mode-choice-card {
+  width: 650px;
+  height: auto;
+  aspect-ratio: 1159 / 1079;
+  padding: 0;
+  overflow: hidden;
+  background-image: var(--story-frame-chooser) !important;
+  filter: drop-shadow(0 16px 20px rgba(48, 39, 22, 0.24));
+}
+
+.mode-choice-button,
+.mode-choice-button.active,
+.mode-choice-close {
+  position: relative;
+  overflow: hidden;
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+.mode-choice-button::before {
+  border-radius: 18px;
+}
+
+.mode-choice-button:nth-child(1)::before {
+  inset: 10.94% 4.40% 2.69% 9.66%;
+}
+
+.mode-choice-button:nth-child(2)::before {
+  inset: 10.94% 9.49% 2.69% 4.57%;
+}
+
+.mode-choice-button:nth-child(3)::before {
+  inset: 6.58% 4.40% 10.94% 9.66%;
+}
+
+.mode-choice-button:nth-child(4)::before {
+  inset: 6.58% 9.49% 10.94% 4.57%;
+}
+
+.mode-choice-button.active::before,
+.mode-choice-button:active:not(:disabled)::before {
+  background: #f7e5a7;
+  opacity: 0.72;
+}
+
+.mode-choice-button strong,
+.mode-choice-button span {
+  position: relative;
+  z-index: 1;
+}
+
+.result-card {
+  width: 920px;
+  height: auto;
+  aspect-ratio: 1597 / 763;
+  padding: 48px 78px 38px;
+  background-image: var(--story-frame-result) !important;
+  filter: drop-shadow(0 18px 24px rgba(48, 39, 22, 0.25));
+}
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .stage-header {
+    grid-template-columns: 352px minmax(0, 1fr) 334px;
+  }
+
+  .star-box {
+    width: 204px;
+    min-width: 204px;
+    height: auto;
+    aspect-ratio: 787 / 416;
+    padding-left: 72px;
+    background-image: var(--story-star-counter-short);
+  }
+
+  .settings-btn {
+    width: 104px;
+    height: auto;
+  }
+
+  .character-panel:not(.mode-task-panel) {
+    grid-template-rows: 52px 116px minmax(0, 1fr);
+  }
+
+  .kana-tab {
+    aspect-ratio: 723 / 720;
+    background-image: var(--story-kana-tab-short) !important;
+  }
+
+  .kana-tab::before {
+    inset: 4.6% 4.6% 4.5%;
+  }
+
+  .char-button,
+  .char-spacer {
+    height: auto;
+    aspect-ratio: 559 / 561;
+  }
+
+  .char-button {
+    background-image: var(--story-char-tile-short) !important;
+  }
+
+  .char-button::before {
+    inset: 7.5% 7.2% 7.3% 7.3%;
+    border-radius: 8px;
+  }
+
+  .center-stage {
+    grid-template-rows: 101px minmax(0, 1fr) 118px;
+  }
+
+  #stage .result-card {
+    width: 940px;
+    height: auto;
+    padding: 42px 62px 34px;
+  }
+
+  #stage #careBtn,
+  #stage #modalRetryBtn {
+    height: auto;
+    min-height: 44px;
+  }
+
+  #stage #backBtn,
+  #stage #modeSwitchBtn,
+  #stage #resetBtn {
+    width: 356px;
+  }
+
+  body #ach-next-hint {
+    width: min(420px, calc(100vw - 24px));
+    bottom: 6px;
+    padding: 0 40px;
+    font-size: 13px;
+  }
+}
 </style>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
@@ -3721,10 +4230,9 @@ html, body {
       </button>
       <div class="header-right">
         <div class="pixel-panel star-box" aria-label="スター">
-          <span class="star-icon" aria-hidden="true"></span>
           <span id="starCount">0</span>
         </div>
-        <button class="pixel-button settings-btn" type="button" aria-label="せってい"><img src="../assets/_legacy/preview-placeholders/ctrl-btn-settings.png" alt="" style="width:100%;height:100%;object-fit:contain;pointer-events:none;display:block"></button>
+        <button class="pixel-button settings-btn" type="button" aria-label="せってい"></button>
       </div>
     </header>
 

@@ -1,5 +1,9 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2252: もじっこファームの文字書き画面を、専用生成した絵本調フレーム16点へ統一。
+// すべて元画像の縦横比を維持し、選択・押下状態は画像差し替えではなく紙面内の色と
+// 動きで示す。庭背景・お手本文字の明朝体・3モード・進捗保存は維持
+// (batch:1328b-mojikko-unified-frame-implementation)。play.html同期不要。
 // v2251: 材料別に保存した包丁の切り始め/終わり位置を、旧にんじん共通基準
 // 87%/13%ではなく各材料固有のstartX/endXへ加算して復元。いんげん1打目の右ずれと
 // 切断間隔を修正 (batch:1333-kitchen-marker-material-base)。play.html同期不要。
@@ -400,7 +404,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2251;
+const CACHE_VERSION = 2252;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。

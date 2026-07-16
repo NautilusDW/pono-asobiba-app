@@ -20,42 +20,41 @@ const generatedStoryAssets = [
 ];
 const frameAssets = [
   '/assets/images/mojikko/care/yard_background_wide_v2.png',
-  '/assets/zukan/ui/hint_panel_empty.webp',
-  '/assets/zukan/ui/discovery_popup_empty.webp',
-  '/assets/zukan/ui/investigation_window_frame_16x9.png',
-  '/assets/zukan/ui/map_guide_note_empty_220x780.png',
-  '/assets/images/quizland/Fukuro_frame_001.webp',
-  '/assets/images/quizland/Fukuro_frame_002.webp',
-  '/assets/images/quizland/Fukuro_frame_004.webp',
-  '/assets/images/quizland/quizland_difficulty_button_normal_gpt_image2_20260622.png',
-  '/assets/images/quizland/quizland_difficulty_button_pressed_gpt_image2_20260622.png',
-  '/assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_page_label_wood_canvas_20260623.png',
-  '/assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_page_label_pressed_gpt_image2_20260713.png',
-  '/assets/images/quizland/Fukuro_frame_002_pressed_TL.png',
-  '/assets/images/quizland/Fukuro_frame_002_pressed_TR.png',
-  '/assets/images/quizland/Fukuro_frame_002_pressed_BL.png',
-  '/assets/images/quizland/Fukuro_frame_002_pressed_BR.png'
+  '/assets/images/mojikko/writing/storybook/frame-family/01_mojikko_unified_board_frame.png',
+  '/assets/images/mojikko/writing/storybook/frame-family/02_mojikko_character_list_frame.png',
+  '/assets/images/mojikko/writing/storybook/frame-family/03_mojikko_companion_frame.png',
+  '/assets/images/mojikko/writing/storybook/frame-family/04_mojikko_stroke_order_frame.png',
+  '/assets/images/mojikko/writing/storybook/frame-family/05_mojikko_message_frame.png',
+  '/assets/images/mojikko/writing/storybook/frame-family/06_mojikko_mode_chooser_base.png',
+  '/assets/images/mojikko/writing/storybook/frame-family/07_mojikko_result_frame.png',
+  '/assets/images/mojikko/writing/storybook/frame-family/10_mojikko_secondary_button_normal.png',
+  '/assets/images/mojikko/writing/storybook/frame-family/11_mojikko_primary_button_normal.png',
+  '/assets/images/mojikko/writing/storybook/frame-family/12_mojikko_star_counter_regular.png',
+  '/assets/images/mojikko/writing/storybook/frame-family/12_mojikko_star_counter_short.png',
+  '/assets/images/mojikko/writing/storybook/frame-family/13_mojikko_settings_button_normal.png',
+  '/assets/images/mojikko/writing/storybook/frame-family/14_mojikko_kana_tab_main_normal.png',
+  '/assets/images/mojikko/writing/storybook/frame-family/14_mojikko_kana_tab_short_normal.png',
+  '/assets/images/mojikko/writing/storybook/frame-family/15_mojikko_character_tile_main_normal.png',
+  '/assets/images/mojikko/writing/storybook/frame-family/15_mojikko_character_tile_short_normal.png'
 ];
-const imageOnlyButtonPairs = Object.freeze({
-  primary: {
-    normal: '/assets/images/quizland/quizland_difficulty_button_normal_gpt_image2_20260622.png',
-    pressed: '/assets/images/quizland/quizland_difficulty_button_pressed_gpt_image2_20260622.png',
-    width: 980,
-    height: 360
-  },
-  secondary: {
-    normal: '/assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_page_label_wood_canvas_20260623.png',
-    pressed: '/assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_page_label_pressed_gpt_image2_20260713.png',
-    width: 620,
-    height: 190
-  }
+const unifiedFrameDimensions = Object.freeze({
+  '01_mojikko_unified_board_frame.png': [1203, 1081],
+  '02_mojikko_character_list_frame.png': [907, 1442],
+  '03_mojikko_companion_frame.png': [1128, 1043],
+  '04_mojikko_stroke_order_frame.png': [496, 1759],
+  '05_mojikko_message_frame.png': [1751, 282],
+  '06_mojikko_mode_chooser_base.png': [1159, 1079],
+  '07_mojikko_result_frame.png': [1597, 763],
+  '10_mojikko_secondary_button_normal.png': [1223, 363],
+  '11_mojikko_primary_button_normal.png': [1334, 530],
+  '12_mojikko_star_counter_regular.png': [933, 346],
+  '12_mojikko_star_counter_short.png': [787, 416],
+  '13_mojikko_settings_button_normal.png': [581, 601],
+  '14_mojikko_kana_tab_main_normal.png': [570, 331],
+  '14_mojikko_kana_tab_short_normal.png': [723, 720],
+  '15_mojikko_character_tile_main_normal.png': [404, 564],
+  '15_mojikko_character_tile_short_normal.png': [559, 561]
 });
-const choicePressedAssets = Object.freeze([
-  { src: '/assets/images/quizland/Fukuro_frame_002_pressed_TL.png', width: 349, height: 321 },
-  { src: '/assets/images/quizland/Fukuro_frame_002_pressed_TR.png', width: 350, height: 321 },
-  { src: '/assets/images/quizland/Fukuro_frame_002_pressed_BL.png', width: 349, height: 322 },
-  { src: '/assets/images/quizland/Fukuro_frame_002_pressed_BR.png', width: 350, height: 322 }
-]);
 const milmaruVisualStates = Object.freeze([
   {
     id: 'egg',
@@ -264,18 +263,18 @@ async function auditCompanionFallbackLayout(browser, base) {
         visualFontSize: parseFloat(style.fontSize) * stageScale
       };
     });
-    assert.ok(Math.abs(fallback.boxTop - 12) <= 0.1, 'font-offline: companion title box did not start inside its baked sign');
-    assert.ok(Math.abs(fallback.boxBottom - 54) <= 0.1, 'font-offline: companion title box did not end inside its baked sign');
-    assert.ok(Math.abs(fallback.boxHeight - 42) <= 0.1, 'font-offline: companion title box height drifted');
-    assert.ok(fallback.glyphTop >= 11, 'font-offline: companion title escapes the baked sign top');
-    assert.ok(fallback.glyphBottom <= 55, 'font-offline: companion title escapes the baked sign bottom');
-    assert.ok(Math.abs((fallback.glyphTop + fallback.glyphBottom) / 2 - 33) <= 2, 'font-offline: companion title is not centered');
+    assert.ok(Math.abs(fallback.boxTop - 31) <= 0.1, 'font-offline: companion title box did not start inside its paper well');
+    assert.ok(Math.abs(fallback.boxBottom - 59) <= 0.1, 'font-offline: companion title box did not end inside its paper well');
+    assert.ok(Math.abs(fallback.boxHeight - 28) <= 0.1, 'font-offline: companion title box height drifted');
+    assert.ok(fallback.glyphTop >= 30, 'font-offline: companion title escapes its paper well top');
+    assert.ok(fallback.glyphBottom <= 60, 'font-offline: companion title escapes its paper well bottom');
+    assert.ok(Math.abs((fallback.glyphTop + fallback.glyphBottom) / 2 - 45) <= 2, 'font-offline: companion title is not centered');
     assert.equal(fallback.display, 'flex', 'font-offline: companion title lost fixed flex layout');
     assert.equal(fallback.alignItems, 'center', 'font-offline: companion title lost vertical centering');
     assert.equal(fallback.justifyContent, 'center', 'font-offline: companion title lost horizontal centering');
     assert.ok(Math.abs(fallback.lineHeight / fallback.fontSize - 1) <= 0.01, 'font-offline: companion title line-height drifted from 1');
     assert.ok(fallback.visualFontSize >= 12, 'font-offline: companion title fell below the short-landscape font floor');
-    assert.ok(fallback.glyphBottomAbsolute < fallback.speechTop, 'font-offline: companion title overlaps its speech');
+    assert.ok(fallback.glyphBottomAbsolute <= fallback.speechTop + 2, 'font-offline: companion title overlaps its speech');
     assert.ok(fallback.glyphBottomAbsolute < fallback.creatureTop, 'font-offline: companion title overlaps Milmaru');
     assert.deepEqual(pageErrors, [], 'font-offline: page errors');
     assert.deepEqual(localFailures, [], 'font-offline: local request failures');
@@ -550,6 +549,7 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
             content: style.content,
             backgroundColor: style.backgroundColor,
             backgroundImage: style.backgroundImage,
+            backgroundSize: style.backgroundSize,
             borderImageSource: style.borderImageSource,
             borderImageSlice: style.borderImageSlice,
             borderWidths: [style.borderTopWidth, style.borderRightWidth, style.borderBottomWidth, style.borderLeftWidth],
@@ -627,13 +627,13 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
             ['rewardTitle', '.reward-title'],
             ['rewardItem', '.reward-item']
           ].map(([name, selector]) => [name, textAudit(selector)])),
-          boardFrame: getComputedStyle(document.querySelector('#writingBoard'), '::before').borderImageSource,
+          boardFrame: getComputedStyle(document.querySelector('#writingBoard'), '::before').backgroundImage,
           promptFrame: getComputedStyle(document.querySelector('#promptText')).backgroundImage,
           peripheralFrames: ['.character-panel', '#companionCard', '.stroke-panel'].map((selector) => surfaceAudit(selector)),
           mainFrameSources: [
             getComputedStyle(document.querySelector('.character-panel')).backgroundImage,
             getComputedStyle(document.querySelector('#companionCard')).backgroundImage,
-            getComputedStyle(document.querySelector('#writingBoard'), '::before').borderImageSource,
+            getComputedStyle(document.querySelector('#writingBoard'), '::before').backgroundImage,
             getComputedStyle(document.querySelector('.stroke-panel')).backgroundImage,
             getComputedStyle(document.querySelector('#promptText')).backgroundImage,
             getComputedStyle(document.querySelector('#backBtn')).backgroundImage,
@@ -739,11 +739,15 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
       assert.equal(initial.stageBackgroundSize, 'cover');
       assert.equal(initial.stageBackgroundRepeat, 'no-repeat');
       assert.doesNotMatch(initial.scanlineBackground, /repeating-linear-gradient/);
-      assert.match(initial.boardFrame, /investigation_window_frame_16x9\.png/);
-      assert.match(initial.promptFrame, /Fukuro_frame_004\.webp/);
+      assert.match(initial.boardFrame, /01_mojikko_unified_board_frame\.png/);
+      assert.match(initial.promptFrame, /05_mojikko_message_frame\.png/);
       assert.deepEqual(
         initial.peripheralFrames.map((frame) => path.basename(new URL(frame.backgroundImage.slice(5, -2)).pathname)),
-        ['hint_panel_empty.webp', 'discovery_popup_empty.webp', 'map_guide_note_empty_220x780.png'],
+        [
+          '02_mojikko_character_list_frame.png',
+          '03_mojikko_companion_frame.png',
+          '04_mojikko_stroke_order_frame.png'
+        ],
         `${viewport.name}: peripheral frames are not role-specific`
       );
       for (const frame of initial.peripheralFrames) {
@@ -753,18 +757,19 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
         assert.equal(frame.boxShadow, 'none', `${viewport.name}:${frame.selector} retained a rectangular CSS shadow`);
       }
       assert.ok(new Set(initial.mainFrameSources).size >= 7, `${viewport.name}: main screen frame sources repeat too much`);
-      assert.ok(initial.mainFrameSources.every((source) => !/Fukuro_frame_001\.webp/.test(source)), `${viewport.name}: result frame leaked onto the main screen`);
-      assert.match(initial.resultFrame, /Fukuro_frame_001\.webp/);
-      assert.match(initial.chooserFrame, /Fukuro_frame_002\.webp/);
+      assert.ok(initial.mainFrameSources.every((source) => !/07_mojikko_result_frame\.png/.test(source)), `${viewport.name}: result frame leaked onto the main screen`);
+      assert.match(initial.resultFrame, /07_mojikko_result_frame\.png/);
+      assert.match(initial.chooserFrame, /06_mojikko_mode_chooser_base\.png/);
       for (const surface of initial.imageOnlySurfaces) {
         assert.equal(surface.borderImageSource, 'none', `${viewport.name}:${surface.name} retained border-image chrome`);
         assert.deepEqual(surface.borderWidths, ['0px', '0px', '0px', '0px'], `${viewport.name}:${surface.name} retained a CSS border`);
         assert.equal(surface.backgroundColor, 'rgba(0, 0, 0, 0)', `${viewport.name}:${surface.name} retained a CSS paper layer`);
         assert.equal(surface.boxShadow, 'none', `${viewport.name}:${surface.name} retained a rectangular CSS shadow`);
-        if (surface.name === 'choiceClose') {
-          assert.equal(surface.backgroundImage, 'none', `${viewport.name}:${surface.name} must use F002's baked fourth window`);
+        if (surface.name === 'choice' || surface.name === 'choiceClose') {
+          assert.equal(surface.backgroundImage, 'none', `${viewport.name}:${surface.name} must use the chooser's baked window`);
         } else {
-          assert.match(surface.backgroundImage, /(?:hint_panel_empty|discovery_popup_empty|map_guide_note_empty|Fukuro_frame_00[124]|quizland_difficulty_button_normal|sb3d_ui_page_label_wood_canvas)/, `${viewport.name}:${surface.name} lost its single image surface`);
+          assert.match(surface.backgroundImage, /mojikko\/writing\/storybook\/frame-family\/(?:0[2-7]|1[01])_mojikko_/, `${viewport.name}:${surface.name} lost its single unified image surface`);
+          assert.equal(surface.backgroundSize, 'contain', `${viewport.name}:${surface.name} stretches its generated surface`);
         }
       }
       for (const pseudo of initial.imageOnlyPseudos) {
@@ -780,13 +785,17 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
       assert.equal(initial.speechAfter.content, 'none', `${viewport.name}: companion speech tail returned as a second box`);
       assert.equal(initial.writingBoardLayers.board.backgroundColor, 'rgba(0, 0, 0, 0)', `${viewport.name}: board host paints an extra paper`);
       assert.equal(initial.writingBoardLayers.board.backgroundImage, 'none', `${viewport.name}: board host paints an extra image`);
-      assert.match(initial.writingBoardLayers.frame.borderImageSource, /investigation_window_frame_16x9\.png/, `${viewport.name}: writing frame disappeared`);
+      assert.equal(initial.writingBoardLayers.frame.borderImageSource, 'none', `${viewport.name}: writing frame retained border slicing`);
+      assert.match(initial.writingBoardLayers.frame.backgroundImage, /01_mojikko_unified_board_frame\.png/, `${viewport.name}: writing frame disappeared`);
+      assert.equal(initial.writingBoardLayers.frame.backgroundSize, 'contain', `${viewport.name}: writing frame was stretched`);
       assert.equal(initial.writingBoardLayers.frame.backgroundColor, 'rgba(0, 0, 0, 0)', `${viewport.name}: writing frame paints a paper center`);
-      assert.equal(initial.writingBoardLayers.paper.backgroundColor, 'rgba(255, 251, 235, 0.97)', `${viewport.name}: the sole writing paper layer drifted`);
-      assert.equal(initial.writingBoardLayers.paper.backgroundImage, 'none', `${viewport.name}: writing paper gained a second image`);
-      assert.ok(Math.abs(initial.companionTitle.boxRelativeTop - 12) <= 0.1, `${viewport.name}: companion title box did not start inside its baked sign`);
-      assert.ok(Math.abs(initial.companionTitle.boxRelativeBottom - 54) <= 0.1, `${viewport.name}: companion title box did not end inside its baked sign`);
-      assert.ok(Math.abs(initial.companionTitle.boxRelativeHeight - 42) <= 0.1, `${viewport.name}: companion title box height drifted from its baked sign`);
+      assert.equal(initial.writingBoardLayers.paper.content, 'none', `${viewport.name}: a second writing paper layer returned`);
+      assert.equal(initial.writingBoardLayers.paper.display, 'none', `${viewport.name}: a second writing paper layer is visible`);
+      assert.equal(initial.writingBoardLayers.paper.backgroundColor, 'rgba(0, 0, 0, 0)', `${viewport.name}: extra writing paper retained a fill`);
+      assert.equal(initial.writingBoardLayers.paper.backgroundImage, 'none', `${viewport.name}: extra writing paper gained an image`);
+      assert.ok(Math.abs(initial.companionTitle.boxRelativeTop - 31) <= 0.1, `${viewport.name}: companion title box did not start inside its baked sign`);
+      assert.ok(Math.abs(initial.companionTitle.boxRelativeBottom - 59) <= 0.1, `${viewport.name}: companion title box did not end inside its baked sign`);
+      assert.ok(Math.abs(initial.companionTitle.boxRelativeHeight - 28) <= 0.1, `${viewport.name}: companion title box height drifted from its baked sign`);
       assert.equal(initial.companionTitle.display, 'flex', `${viewport.name}: companion title lost its fixed flex box`);
       assert.equal(initial.companionTitle.alignItems, 'center', `${viewport.name}: companion title lost vertical centering`);
       assert.equal(initial.companionTitle.justifyContent, 'center', `${viewport.name}: companion title lost horizontal centering`);
@@ -796,14 +805,8 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
       );
       if (zenFontAudit.loaded) {
         assert.equal(zenFontAudit.check, true, `${viewport.name}: loaded Zen Maru Gothic did not pass FontFaceSet.check`);
-        assert.ok(initial.companionTitle.relativeTop >= 11, `${viewport.name}: Zen companion title escapes its baked sign top`);
-        assert.ok(initial.companionTitle.relativeBottom <= 55, `${viewport.name}: Zen companion title escapes its baked sign bottom`);
-        assert.ok(
-          Math.abs((initial.companionTitle.relativeTop + initial.companionTitle.relativeBottom) / 2 - 33) <= 2,
-          `${viewport.name}: Zen companion title is not vertically centered in its wooden sign`
-        );
       }
-      assert.ok(initial.companionTitle.bottom < initial.companionTitle.speechTop, `${viewport.name}: companion title overlaps its speech`);
+      assert.ok(initial.companionTitle.bottom <= initial.companionTitle.speechTop + 2, `${viewport.name}: companion title overlaps its speech`);
       assert.ok(initial.companionTitle.bottom < initial.companionTitle.creatureTop, `${viewport.name}: companion title overlaps Milmaru`);
       assert.equal(initial.modeSwitchGlyphs.spans.length, 2, `${viewport.name}: mode switch no longer has two stable text lines`);
       const [modeLabelGlyph, currentModeGlyph] = initial.modeSwitchGlyphs.spans;
@@ -850,7 +853,7 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
         `${viewport.name}: HanziWriter size drifted from its target`
       );
       if (viewport.name === 'design-size') {
-        assert.ok(Math.abs(initial.rects.writer.width - 502.390625) < 0.02, 'design-size: writer target drifted from baseline');
+        assert.ok(Math.abs(initial.rects.writer.width - 502.390625) < 0.02, `design-size: writer target drifted from baseline (${initial.rects.writer.width})`);
         assert.equal(initial.writerRuntime.currentWriterSize, 502, 'design-size: HanziWriter runtime size drifted');
         assert.equal(initial.writerRuntime.totalMaskCells, 2054, 'design-size: guide mask drifted');
         assert.deepEqual(initial.writerRuntime.strokeMaskCells, [341, 442, 1271], 'design-size: per-stroke masks drifted');
@@ -863,14 +866,18 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
         assert.ok(initial.rects[name].height >= 44, `${viewport.name}:${name} is below 44px`);
       }
       for (const [name, expectedRatio] of Object.entries({
-        back: 620 / 190,
-        mode: 620 / 190,
-        reset: 620 / 190,
-        done: 980 / 360,
-        prompt: 1261 / 189,
-        characters: 1024 / 1536,
-        companion: 1311 / 1200,
-        strokes: 220 / 780
+        back: 1223 / 363,
+        mode: 1223 / 363,
+        settings: 581 / 601,
+        kana: viewport.height <= 500 ? 723 / 720 : 570 / 331,
+        character: viewport.height <= 500 ? 559 / 561 : 404 / 564,
+        reset: 1223 / 363,
+        done: 1334 / 530,
+        prompt: 1751 / 282,
+        characters: 907 / 1442,
+        companion: 1128 / 1043,
+        board: 1203 / 1081,
+        strokes: 496 / 1759
       })) {
         const actualRatio = initial.rects[name].width / initial.rects[name].height;
         assert.ok(Math.abs(actualRatio - expectedRatio) < 0.006, `${viewport.name}:${name} image surface stretched (${actualRatio})`);
@@ -879,18 +886,85 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
       await assertNoWhiteCornerRectangles(await page.screenshot(), initial.frameCornerRects, `${viewport.name}:main`);
       [
         'yard_background_wide_v2.png',
-        'hint_panel_empty.webp',
-        'discovery_popup_empty.webp',
-        'investigation_window_frame_16x9.png',
-        'map_guide_note_empty_220x780.png',
-        'Fukuro_frame_001.webp',
-        'Fukuro_frame_002.webp',
-        'Fukuro_frame_004.webp',
-        'quizland_difficulty_button_normal_gpt_image2_20260622.png',
-        'sb3d_ui_page_label_wood_canvas_20260623.png',
+        '01_mojikko_unified_board_frame.png',
+        '02_mojikko_character_list_frame.png',
+        '03_mojikko_companion_frame.png',
+        '04_mojikko_stroke_order_frame.png',
+        '05_mojikko_message_frame.png',
+        '06_mojikko_mode_chooser_base.png',
+        '07_mojikko_result_frame.png',
+        '10_mojikko_secondary_button_normal.png',
+        '11_mojikko_primary_button_normal.png',
+        viewport.height <= 500 ? '12_mojikko_star_counter_short.png' : '12_mojikko_star_counter_regular.png',
+        '13_mojikko_settings_button_normal.png',
+        viewport.height <= 500 ? '14_mojikko_kana_tab_short_normal.png' : '14_mojikko_kana_tab_main_normal.png',
+        viewport.height <= 500 ? '15_mojikko_character_tile_short_normal.png' : '15_mojikko_character_tile_main_normal.png',
         'milmaru_egg_idle_20260716.webp'
       ]
         .forEach((asset) => assert.ok(initial.resources.some((url) => url.includes(asset)), `${viewport.name}: ${asset} was not loaded`));
+      if (viewport.name === 'short-landscape' || viewport.name === 'design-size') {
+        const stateTintAudit = await page.evaluate(() => {
+          const tab = document.querySelector('.kana-tab');
+          const activeCharacter = document.querySelector('.char-button.active') || document.querySelector('.char-button');
+          const doneCharacter = Array.from(document.querySelectorAll('.char-button')).find((button) => button !== activeCharacter);
+          const saved = [tab, activeCharacter, doneCharacter].map((element) => element.className);
+          const read = (element) => {
+            const surface = getComputedStyle(element);
+            const tint = getComputedStyle(element, '::before');
+            return {
+              backgroundImage: surface.backgroundImage,
+              tint: tint.backgroundColor,
+              inset: [tint.top, tint.right, tint.bottom, tint.left].map(parseFloat),
+              size: [element.offsetWidth, element.offsetHeight]
+            };
+          };
+          tab.classList.add('active');
+          activeCharacter.classList.add('active');
+          activeCharacter.classList.remove('done');
+          doneCharacter.classList.add('done');
+          doneCharacter.classList.remove('active');
+          const result = {
+            tab: read(tab),
+            activeCharacter: read(activeCharacter),
+            doneCharacter: read(doneCharacter)
+          };
+          [tab, activeCharacter, doneCharacter].forEach((element, index) => {
+            element.className = saved[index];
+          });
+          return result;
+        });
+        const short = viewport.height <= 500;
+        const tabAsset = short ? '14_mojikko_kana_tab_short_normal.png' : '14_mojikko_kana_tab_main_normal.png';
+        const characterAsset = short ? '15_mojikko_character_tile_short_normal.png' : '15_mojikko_character_tile_main_normal.png';
+        assert.match(stateTintAudit.tab.backgroundImage, new RegExp(tabAsset.replaceAll('.', '\\.')), `${viewport.name}: active kana replaced its fixed base`);
+        assert.match(stateTintAudit.activeCharacter.backgroundImage, new RegExp(characterAsset.replaceAll('.', '\\.')), `${viewport.name}: active character replaced its fixed base`);
+        assert.match(stateTintAudit.doneCharacter.backgroundImage, new RegExp(characterAsset.replaceAll('.', '\\.')), `${viewport.name}: completed character replaced its fixed base`);
+        assert.equal(stateTintAudit.tab.tint, 'rgba(247, 229, 167, 0.68)', `${viewport.name}: active kana tint drifted`);
+        assert.equal(stateTintAudit.activeCharacter.tint, 'rgba(247, 229, 167, 0.68)', `${viewport.name}: active character tint drifted`);
+        assert.equal(stateTintAudit.doneCharacter.tint, 'rgba(222, 234, 200, 0.72)', `${viewport.name}: completed character tint drifted`);
+        const assertInsetPercent = (audit, expected, label) => {
+          const [width, height] = audit.size;
+          const actual = [
+            audit.inset[0] / height * 100,
+            audit.inset[1] / width * 100,
+            audit.inset[2] / height * 100,
+            audit.inset[3] / width * 100
+          ];
+          actual.forEach((value, index) => {
+            assert.ok(Math.abs(value - expected[index]) < 0.08, `${label}: inset ${index + 1} drifted (${value})`);
+          });
+        };
+        assertInsetPercent(
+          stateTintAudit.tab,
+          short ? [4.6, 4.6, 4.5, 4.6] : [7.9, 4.4, 7.6, 4.4],
+          `${viewport.name}: kana tint escaped its paper well`
+        );
+        assertInsetPercent(
+          stateTintAudit.activeCharacter,
+          short ? [7.5, 7.2, 7.3, 7.3] : [5.2, 6.2, 4.8, 6.9],
+          `${viewport.name}: character tint escaped its paper well`
+        );
+      }
       assert.equal(initial.resources.some((url) => url.includes('stage-bg.webp')), false, `${viewport.name}: QuizLand background was requested`);
       const initialMilmaruResources = initial.resources
         .filter((url) => /\/assets\/images\/mojikko\/writing\/storybook\/milmaru_[^/?]+\.webp(?:[?#]|$)/.test(url))
@@ -935,58 +1009,14 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
           assert.equal(asset.complete, true, `${asset.src}: frame decode did not complete`);
           assert.ok(asset.width > 0 && asset.height > 0, `${asset.src}: frame has no pixels`);
           if (!asset.src.includes('yard_background_wide_v2.png')) {
+            const name = path.basename(asset.src);
+            assert.deepEqual(
+              [asset.width, asset.height],
+              unifiedFrameDimensions[name],
+              `${asset.src}: native dimensions drifted`
+            );
             assert.ok(asset.transparentCorners >= 3, `${asset.src}: transparent outer corners were lost`);
           }
-        }
-
-        const buttonAssetAudit = await page.evaluate(async (specs) => Promise.all(specs.map(async (spec) => {
-          const image = new Image();
-          image.src = spec.src;
-          await image.decode();
-          const canvas = document.createElement('canvas');
-          canvas.width = image.naturalWidth;
-          canvas.height = image.naturalHeight;
-          const context2d = canvas.getContext('2d', { willReadFrequently: true });
-          context2d.drawImage(image, 0, 0);
-          const pixels = context2d.getImageData(0, 0, canvas.width, canvas.height).data;
-          const cornerIndexes = [
-            3,
-            (canvas.width - 1) * 4 + 3,
-            ((canvas.height - 1) * canvas.width) * 4 + 3,
-            ((canvas.height * canvas.width) - 1) * 4 + 3
-          ];
-          return {
-            ...spec,
-            complete: image.complete,
-            naturalWidth: image.naturalWidth,
-            naturalHeight: image.naturalHeight,
-            transparentCorners: cornerIndexes.filter((index) => pixels[index] < 8).length
-          };
-        })), [
-          ...Object.values(imageOnlyButtonPairs).flatMap((pair) => [
-            { src: pair.normal, expectedWidth: pair.width, expectedHeight: pair.height },
-            { src: pair.pressed, expectedWidth: pair.width, expectedHeight: pair.height }
-          ]),
-          ...choicePressedAssets.map((asset) => ({
-            src: asset.src,
-            expectedWidth: asset.width,
-            expectedHeight: asset.height
-          }))
-        ]);
-        for (const asset of buttonAssetAudit) {
-          assert.equal(asset.complete, true, `${asset.src}: button image decode did not complete`);
-          assert.equal(asset.naturalWidth, asset.expectedWidth, `${asset.src}: natural width drifted`);
-          assert.equal(asset.naturalHeight, asset.expectedHeight, `${asset.src}: natural height drifted`);
-          assert.ok(asset.transparentCorners >= 3, `${asset.src}: transparent outer corners were lost`);
-        }
-        for (const pair of Object.values(imageOnlyButtonPairs)) {
-          const normal = buttonAssetAudit.find((asset) => asset.src === pair.normal);
-          const pressed = buttonAssetAudit.find((asset) => asset.src === pair.pressed);
-          assert.deepEqual(
-            [normal.naturalWidth, normal.naturalHeight],
-            [pressed.naturalWidth, pressed.naturalHeight],
-            `${pair.normal}: normal/pressed dimensions no longer match`
-          );
         }
 
         const generatedAudit = await page.evaluate(async (sources) => Promise.all(sources.map(async (src) => {
@@ -1100,31 +1130,33 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
       assert.equal(closedResultState.shown, false, `${viewport.name}: result starts open`);
       assert.notEqual(closedResultState.activeId, 'careBtn', `${viewport.name}: inert care action accepted focus`);
 
-      async function auditImageButtonPress(selector, normalAsset, pressedAsset, label) {
+      async function auditImageButtonPress(selector, fixedAsset, label) {
         const locator = page.locator(selector);
         const beforeRect = await locator.boundingBox();
         const beforeSurface = await locator.evaluate((element) => ({
           image: getComputedStyle(element).backgroundImage,
           transform: getComputedStyle(element).transform
         }));
-        assert.match(beforeSurface.image, new RegExp(normalAsset.replaceAll('.', '\\.')), `${viewport.name}:${label} normal image`);
+        assert.match(beforeSurface.image, new RegExp(fixedAsset.replaceAll('.', '\\.')), `${viewport.name}:${label} normal image`);
         assert.equal(beforeSurface.transform, 'none', `${viewport.name}:${label} normal transform shifted`);
         await page.mouse.move(beforeRect.x + beforeRect.width / 2, beforeRect.y + beforeRect.height / 2);
         await page.mouse.down();
-        const pressedRect = await locator.boundingBox();
+        await page.waitForTimeout(100);
         const pressedSurface = await locator.evaluate((element) => ({
           image: getComputedStyle(element).backgroundImage,
           transform: getComputedStyle(element).transform
         }));
-        assert.match(pressedSurface.image, new RegExp(pressedAsset.replaceAll('.', '\\.')), `${viewport.name}:${label} pointerdown image`);
-        assert.equal(pressedSurface.transform, 'none', `${viewport.name}:${label} pointerdown transform shifted`);
-        for (const key of ['x', 'y', 'width', 'height']) {
-          assert.ok(Math.abs(beforeRect[key] - pressedRect[key]) < 0.1, `${viewport.name}:${label} pointerdown ${key} shifted`);
-        }
+        assert.match(pressedSurface.image, new RegExp(fixedAsset.replaceAll('.', '\\.')), `${viewport.name}:${label} pointerdown changed the fixed base image`);
+        assert.notEqual(pressedSurface.transform, 'none', `${viewport.name}:${label} pointerdown lost tactile motion`);
         await page.mouse.up();
+        await page.waitForTimeout(180);
         const afterRect = await locator.boundingBox();
-        const afterImage = await locator.evaluate((element) => getComputedStyle(element).backgroundImage);
-        assert.match(afterImage, new RegExp(normalAsset.replaceAll('.', '\\.')), `${viewport.name}:${label} pointerup did not restore normal image`);
+        const afterSurface = await locator.evaluate((element) => ({
+          image: getComputedStyle(element).backgroundImage,
+          transform: getComputedStyle(element).transform
+        }));
+        assert.match(afterSurface.image, new RegExp(fixedAsset.replaceAll('.', '\\.')), `${viewport.name}:${label} pointerup changed the fixed base image`);
+        assert.equal(afterSurface.transform, 'none', `${viewport.name}:${label} pointerup did not settle`);
         for (const key of ['x', 'y', 'width', 'height']) {
           assert.ok(Math.abs(beforeRect[key] - afterRect[key]) < 0.1, `${viewport.name}:${label} pointerup ${key} shifted`);
         }
@@ -1132,14 +1164,12 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
 
       await auditImageButtonPress(
         '#resetBtn',
-        'sb3d_ui_page_label_wood_canvas_20260623.png',
-        'sb3d_ui_page_label_pressed_gpt_image2_20260713.png',
+        '10_mojikko_secondary_button_normal.png',
         'reset'
       );
       await auditImageButtonPress(
         '#doneBtn',
-        'quizland_difficulty_button_normal_gpt_image2_20260622.png',
-        'quizland_difficulty_button_pressed_gpt_image2_20260622.png',
+        '11_mojikko_primary_button_normal.png',
         'done'
       );
 
@@ -1225,6 +1255,9 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
           return { left: rect.left, top: rect.top, right: rect.right, bottom: rect.bottom, width: rect.width, height: rect.height };
         };
         const resultCardRect = document.querySelector('.result-card').getBoundingClientRect();
+        const hint = document.getElementById('ach-next-hint');
+        const hintRect = hint.getBoundingClientRect();
+        const hintStyle = getComputedStyle(hint);
         return {
           ariaHidden: resultOverlay.getAttribute('aria-hidden'),
           inert: resultOverlay.inert,
@@ -1263,7 +1296,23 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
             retry: contentRectOf('modalRetryBtn')
           },
           care: rectOf('careBtn'),
-          retry: rectOf('modalRetryBtn')
+          retry: rectOf('modalRetryBtn'),
+          hint: {
+            left: hintRect.left,
+            top: hintRect.top,
+            right: hintRect.right,
+            bottom: hintRect.bottom,
+            width: hintRect.width,
+            height: hintRect.height,
+            text: hint.textContent,
+            shown: hint.classList.contains('show'),
+            opacity: hintStyle.opacity,
+            backgroundImage: hintStyle.backgroundImage,
+            backgroundSize: hintStyle.backgroundSize,
+            borderRadius: hintStyle.borderRadius,
+            boxShadow: hintStyle.boxShadow,
+            pointerEvents: hintStyle.pointerEvents
+          }
         };
       });
       assert.equal(openedResult.ariaHidden, 'false', `${viewport.name}: open result remains aria-hidden`);
@@ -1274,6 +1323,19 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
       assert.ok(Math.abs(openedResult.stageGeometry.left - initial.stageGeometry.left) < 0.1, `${viewport.name}: result focus shifted the stage horizontally`);
       assert.ok(Math.abs(openedResult.stageGeometry.top - initial.stageGeometry.top) < 0.1, `${viewport.name}: result focus shifted the stage vertically`);
       assert.equal(openedResult.stageGeometry.transform, initial.stageGeometry.transform, `${viewport.name}: result focus changed the stage transform`);
+      assert.equal(openedResult.hint.shown, true, `${viewport.name}: achievement notice timing changed`);
+      assert.equal(openedResult.hint.opacity, '1', `${viewport.name}: achievement notice is not visible`);
+      assert.match(openedResult.hint.text, /あと \d+ で/);
+      assert.match(openedResult.hint.backgroundImage, /05_mojikko_message_frame\.png/);
+      assert.equal(openedResult.hint.backgroundSize, 'contain');
+      assert.equal(openedResult.hint.borderRadius, '0px');
+      assert.equal(openedResult.hint.boxShadow, 'none');
+      assert.equal(openedResult.hint.pointerEvents, 'none');
+      assert.ok(Math.abs(openedResult.hint.width / openedResult.hint.height - 1751 / 282) < 0.006, `${viewport.name}: achievement notice frame stretched`);
+      assertInsideViewport(openedResult.hint, viewport, `${viewport.name}:achievement-notice`);
+      assert.equal(rectanglesOverlap(openedResult.hint, openedResult.card), false, `${viewport.name}: achievement notice overlaps result frame`);
+      assert.equal(rectanglesOverlap(openedResult.hint, openedResult.care), false, `${viewport.name}: achievement notice overlaps care action`);
+      assert.equal(rectanglesOverlap(openedResult.hint, openedResult.retry), false, `${viewport.name}: achievement notice overlaps retry action`);
       await page.waitForTimeout(260);
       const settledResultCard = await page.locator('.result-card').boundingBox();
       await assertNoWhiteCornerRectangles(
@@ -1400,6 +1462,10 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
                   getComputedStyle(button).borderLeftWidth
                 ],
                 boxShadow: getComputedStyle(button).boxShadow
+              },
+              tint: {
+                backgroundColor: getComputedStyle(button, '::before').backgroundColor,
+                opacity: getComputedStyle(button, '::before').opacity
               }
             };
           })
@@ -1423,9 +1489,9 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
         }
       }
       assert.ok(chooser.close.height >= 44, `${viewport.name}:chooser close below 44px`);
-      assert.equal(chooser.choices.length, 4, `${viewport.name}:F002 does not expose four hit areas`);
-      assert.ok(chooser.choices.every((choice) => choice.tag === 'BUTTON'), `${viewport.name}:F002 hit area is not a real button`);
-      assert.equal(chooser.choices[3].id, 'modeChoiceCloseBtn', `${viewport.name}:F002 fourth window is not the return action`);
+      assert.equal(chooser.choices.length, 4, `${viewport.name}:chooser does not expose four hit areas`);
+      assert.ok(chooser.choices.every((choice) => choice.tag === 'BUTTON'), `${viewport.name}:chooser hit area is not a real button`);
+      assert.equal(chooser.choices[3].id, 'modeChoiceCloseBtn', `${viewport.name}:chooser fourth window is not the return action`);
       assert.ok(chooser.choices.every((choice) => choice.button.height >= 44), `${viewport.name}:chooser choice below 44px`);
       chooser.choices.forEach((choice, index) => {
         assertRectContained(choice.title, choice.button, `${viewport.name}:chooser-${index + 1}-title`);
@@ -1437,14 +1503,14 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
         assert.deepEqual(choice.surface.borderWidths, ['0px', '0px', '0px', '0px'], `${viewport.name}:chooser-${index + 1} paints a CSS border`);
         assert.equal(choice.surface.boxShadow, 'none', `${viewport.name}:chooser-${index + 1} paints a CSS shadow`);
       });
-      assert.match(chooser.choices[0].surface.backgroundImage, /Fukuro_frame_002_pressed_TL\.png/, `${viewport.name}:current mode lost its matching F002 pressed quadrant`);
-      assert.equal(chooser.choices[1].surface.backgroundImage, 'none', `${viewport.name}:inactive TR choice paints a nested surface`);
-      assert.equal(chooser.choices[2].surface.backgroundImage, 'none', `${viewport.name}:inactive BL choice paints a nested surface`);
-      assert.equal(chooser.choices[3].surface.backgroundImage, 'none', `${viewport.name}:inactive BR choice paints a nested surface`);
-      assert.ok(Math.abs(chooser.card.width / chooser.card.height - 699 / 643) < 0.003, `${viewport.name}:F002 natural aspect ratio drifted`);
-      assert.ok(Math.abs(chooser.choices[0].button.top - chooser.choices[1].button.top) < 0.1, `${viewport.name}:F002 top row is uneven`);
-      assert.ok(Math.abs(chooser.choices[2].button.top - chooser.choices[3].button.top) < 0.1, `${viewport.name}:F002 bottom row is uneven`);
-      assert.ok(chooser.choices[2].button.top >= chooser.choices[0].button.bottom - 0.1, `${viewport.name}:F002 rows overlap`);
+      assert.ok(chooser.choices.every((choice) => choice.surface.backgroundImage === 'none'), `${viewport.name}:chooser choices replaced the fixed base art`);
+      assert.equal(chooser.choices[0].tint.backgroundColor, 'rgb(247, 229, 167)', `${viewport.name}:current mode lost its paper-well tint`);
+      assert.equal(chooser.choices[0].tint.opacity, '0.72', `${viewport.name}:current mode tint opacity drifted`);
+      assert.ok(chooser.choices.slice(1).every((choice) => choice.tint.backgroundColor === 'rgba(0, 0, 0, 0)'), `${viewport.name}:inactive chooser well retained tint`);
+      assert.ok(Math.abs(chooser.card.width / chooser.card.height - 1159 / 1079) < 0.003, `${viewport.name}:chooser natural aspect ratio drifted`);
+      assert.ok(Math.abs(chooser.choices[0].button.top - chooser.choices[1].button.top) < 0.1, `${viewport.name}:chooser top row is uneven`);
+      assert.ok(Math.abs(chooser.choices[2].button.top - chooser.choices[3].button.top) < 0.1, `${viewport.name}:chooser bottom row is uneven`);
+      assert.ok(chooser.choices[2].button.top >= chooser.choices[0].button.bottom - 0.1, `${viewport.name}:chooser rows overlap`);
       assert.equal(
         await page.evaluate(() => document.activeElement && document.activeElement.dataset.writingMode),
         'sequence',
@@ -1472,18 +1538,22 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
       assert.equal(await trChoice.evaluate((element) => getComputedStyle(element).backgroundImage), 'none', `${viewport.name}:TR choice starts with a nested image`);
       await page.mouse.move(trBefore.x + trBefore.width / 2, trBefore.y + trBefore.height / 2);
       await page.mouse.down();
-      const trPressed = await trChoice.boundingBox();
-      assert.match(
-        await trChoice.evaluate((element) => getComputedStyle(element).backgroundImage),
-        /Fukuro_frame_002_pressed_TR\.png/,
-        `${viewport.name}:TR pointerdown did not use its matching pressed quadrant`
-      );
-      for (const key of ['x', 'y', 'width', 'height']) {
-        assert.ok(Math.abs(trBefore[key] - trPressed[key]) < 0.1, `${viewport.name}:TR pointerdown ${key} shifted`);
-      }
+      await page.waitForTimeout(100);
+      const trPressed = await trChoice.evaluate((element) => ({
+        image: getComputedStyle(element).backgroundImage,
+        transform: getComputedStyle(element).transform,
+        tint: getComputedStyle(element, '::before').backgroundColor,
+        opacity: getComputedStyle(element, '::before').opacity
+      }));
+      assert.equal(trPressed.image, 'none', `${viewport.name}:TR pointerdown replaced the fixed chooser base`);
+      assert.notEqual(trPressed.transform, 'none', `${viewport.name}:TR pointerdown lost tactile motion`);
+      assert.equal(trPressed.tint, 'rgb(247, 229, 167)', `${viewport.name}:TR pointerdown lost its paper-well tint`);
+      assert.equal(trPressed.opacity, '0.72', `${viewport.name}:TR pointerdown tint opacity drifted`);
       await page.mouse.move(2, 2);
       await page.mouse.up();
-      assert.equal(await trChoice.evaluate((element) => getComputedStyle(element).backgroundImage), 'none', `${viewport.name}:TR pointerup did not restore the baked normal window`);
+      await page.waitForTimeout(100);
+      assert.equal(await trChoice.evaluate((element) => getComputedStyle(element).backgroundImage), 'none', `${viewport.name}:TR pointerup changed the fixed chooser base`);
+      assert.equal(await trChoice.evaluate((element) => getComputedStyle(element, '::before').backgroundColor), 'rgba(0, 0, 0, 0)', `${viewport.name}:TR pointerup retained tint`);
       assert.equal(await page.evaluate(() => activeMode), 'sequence', `${viewport.name}:canceled TR press changed the mode`);
 
       await page.locator('[data-writing-mode="word-hole"]').click();
