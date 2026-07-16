@@ -110,7 +110,7 @@ assert.ok(movingBlock.indexOf("drawTileBase") < movingBlock.indexOf("drawTileRoa
 assert.match(drawBlock, /settled: isCheckpointLockedCell\(i\)/,
   "checkpoint-locked cells feed the settled terrain state");
 assert.match(drawBlock,
-  /if \(visual\.settled\) drawSettledFootprints\(visual\.x, visual\.y, cellSize, visual\.index\)/,
+  /if \(visual\.settled\) drawSettledFootprints\(visual\.x, visual\.y, visual\.size, visual\.index\)/,
   "settled route cells retain Pono's footprints");
 
 const footprints = sliceBetween("function drawSettledFootprints(", "function drawCharmAt(",

@@ -1160,9 +1160,20 @@ const JOURNEY_PHASE = Object.freeze({
   DEPARTING: 'DEPARTING',
   DONE: 'DONE',
 });
+function readInitialStageIndex() {
+  if (!window.__APP_BUILD__) return 0;
+  try {
+    const requested = Number.parseInt(new URLSearchParams(location.search).get('stage'), 10);
+    if (Number.isInteger(requested) && requested >= 1 && requested <= LEVELS.length) {
+      return requested - 1;
+    }
+  } catch (_) {}
+  return 0;
+}
+const INITIAL_STAGE_IDX = readInitialStageIndex();
 let state = S.IDLE;
 let prepauseState = S.IDLE;
-let stageIdx = 0;
+let stageIdx = INITIAL_STAGE_IDX;
 let moveCount = 0;
 let grid = [];
 let emptyIdx = -1;
@@ -1215,8 +1226,25 @@ let stageClock = {
 
 // ===== Animation =====
 let animating = false;
-const SLIDE_DUR = 150;
-let anim = { idx: -1, fromX: 0, fromY: 0, toX: 0, toY: 0, curX: 0, curY: 0, t0: 0 };
+const SLIDE_DUR = 360;
+const REDUCED_SLIDE_DUR = 1;
+const MOVE_FEEDBACK_DUR = 560;
+let anim = {
+  idx: -1, targetIdx: -1,
+  fromX: 0, fromY: 0, toX: 0, toY: 0, curX: 0, curY: 0, t0: 0,
+  suspendedAt: 0,
+};
+let moveFeedback = { fromIdx: -1, toIdx: -1, t0: -Infinity };
+
+function getSlideDuration() {
+  return reducedMotionQuery.matches ? REDUCED_SLIDE_DUR : SLIDE_DUR;
+}
+
+function resetMoveFeedback() {
+  moveFeedback.fromIdx = -1;
+  moveFeedback.toIdx = -1;
+  moveFeedback.t0 = -Infinity;
+}
 
 // One persistent Pono actor owns scene entry, path travel, discovery, and departure.
 let journeyActor = {
@@ -1377,6 +1405,10 @@ function syncMagicCrossButton() {
 }
 
 function resetStageMechanics(level) {
+  resetMoveFeedback();
+  anim.idx = -1;
+  anim.targetIdx = -1;
+  anim.suspendedAt = 0;
   pickupTileIdx = getLevelCellIndex(level, level && level.pickup);
   pickupCollected = pickupTileIdx < 0;
   pickupJourneyProgress = -1;
@@ -1683,7 +1715,7 @@ const THEMES = {
     slabBorder: 'rgba(225,240,196,0.66)', slabShadow: 'rgba(14,45,33,0.42)',
     path: '#D5AD72', pathBorder: '#66503A', pathLight: '#F3D7A0',
     roadStyle: 'wood', connected: '#DFFF91', connectedGlow: 'rgba(184,255,103,0.54)',
-    move: '#B8E9FF', moveGlow: 'rgba(111,211,255,0.5)',
+    move: '#FFD45C', moveGlow: 'rgba(255,190,62,0.58)',
     emptyTop: 'rgba(19,55,44,0.82)', emptyBottom: 'rgba(7,31,29,0.9)',
     emptyBorder: '#FFE49A', emptyText: '#FFF1B2', guide: '#D8E1C8',
     mote: 'rgba(255,240,156,0.72)',
@@ -1695,7 +1727,7 @@ const THEMES = {
     slabBorder: 'rgba(183,220,224,0.62)', slabShadow: 'rgba(5,20,28,0.52)',
     path: '#B8A887', pathBorder: '#554F46', pathLight: '#E2D7BC',
     roadStyle: 'stone', connected: '#91FFE1', connectedGlow: 'rgba(91,241,210,0.5)',
-    move: '#B9D9FF', moveGlow: 'rgba(113,174,255,0.5)',
+    move: '#FFD96A', moveGlow: 'rgba(255,193,75,0.58)',
     emptyTop: 'rgba(23,48,61,0.88)', emptyBottom: 'rgba(7,24,34,0.94)',
     emptyBorder: '#FFE49A', emptyText: '#FFF1B2', guide: '#B9CBCF',
     mote: 'rgba(158,239,235,0.7)',
@@ -1707,7 +1739,7 @@ const THEMES = {
     slabBorder: 'rgba(184,205,236,0.62)', slabShadow: 'rgba(7,13,33,0.58)',
     path: '#BCA987', pathBorder: '#504A43', pathLight: '#E8D9B5',
     roadStyle: 'starlight', connected: '#FFE995', connectedGlow: 'rgba(255,205,82,0.56)',
-    move: '#B9D9FF', moveGlow: 'rgba(111,167,255,0.5)',
+    move: '#FFE27A', moveGlow: 'rgba(255,202,87,0.58)',
     emptyTop: 'rgba(28,36,68,0.9)', emptyBottom: 'rgba(10,16,39,0.96)',
     emptyBorder: '#FFE49A', emptyText: '#FFF1B2', guide: '#AEBBD3',
     mote: 'rgba(255,232,145,0.78)',
@@ -1882,6 +1914,9 @@ function traceTileRoad(x, y, size, edges) {
 function drawTileBase(x, y, size, tileKey, visualState) {
   const th = getTheme();
   const visual = visualState || {};
+  const isSuggested = Boolean(visual.suggested);
+  const isMoving = Boolean(visual.animating);
+  const isStrongCue = isSuggested || isMoving;
   const inset = visual.settled ? 0 : Math.max(0.65, size * 0.008);
   const radius = Math.min(4, size * 0.025);
   const isBlank = tileKey === 'BLANK';
@@ -1891,9 +1926,11 @@ function drawTileBase(x, y, size, tileKey, visualState) {
   slab.addColorStop(1, isBlank ? th.slabBlankBottom : th.slabBottom);
   const terrainPattern = getTerrainPattern();
 
-  ctx.shadowColor = visual.movable ? th.moveGlow : 'transparent';
-  ctx.shadowBlur = visual.movable ? Math.max(8, size * 0.13) : 0;
-  ctx.shadowOffsetY = visual.movable ? Math.max(1, size * 0.018) : 0;
+  ctx.shadowColor = isStrongCue ? th.moveGlow : 'transparent';
+  ctx.shadowBlur = isMoving ? Math.max(12, size * 0.18)
+    : (isSuggested ? Math.max(8, size * 0.13) : 0);
+  ctx.shadowOffsetY = isMoving ? Math.max(4, size * 0.055)
+    : (isSuggested ? Math.max(1, size * 0.018) : 0);
   ctx.beginPath();
   ctx.roundRect(x + inset, y + inset, size - inset * 2, size - inset * 2, radius);
   ctx.fillStyle = terrainPattern || slab;
@@ -1904,8 +1941,9 @@ function drawTileBase(x, y, size, tileKey, visualState) {
   }
   ctx.shadowColor = 'transparent';
   if (!visual.settled) {
-    ctx.strokeStyle = visual.movable ? th.move : 'rgba(225,240,196,0.34)';
-    ctx.lineWidth = visual.movable ? Math.max(2, size * 0.026) : Math.max(1, size * 0.012);
+    ctx.strokeStyle = isStrongCue ? th.move : 'rgba(225,240,196,0.34)';
+    ctx.lineWidth = isStrongCue ? Math.max(3, size * 0.035)
+      : Math.max(1, size * 0.012);
     ctx.stroke();
   }
   if (!terrainPattern) {
@@ -2033,9 +2071,12 @@ function drawMagicSelectableFrame(x, y, size, now) {
   ctx.restore();
 }
 
-function drawEmptySlot(now) {
+function drawEmptySlot(now, index, visualState) {
   const th = getTheme();
-  const row = Math.floor(emptyIdx / curCols), col = emptyIdx % curCols;
+  const slotIdx = Number.isInteger(index) ? index : emptyIdx;
+  if (slotIdx < 0 || slotIdx >= curCols * curRows) return;
+  const visual = visualState || {};
+  const row = Math.floor(slotIdx / curCols), col = slotIdx % curCols;
   const x = gridOX + col * cellSize, y = gridOY + row * cellSize;
   const rimInset = Math.max(1, cellSize * 0.012);
   const wellInset = Math.max(6, cellSize * 0.08);
@@ -2060,6 +2101,15 @@ function drawEmptySlot(now) {
     cellSize - rimInset * 2, cellSize - rimInset * 2, radius);
   ctx.fillStyle = rim;
   ctx.fill();
+  if (visual.target) {
+    const targetAlpha = reducedMotionQuery.matches
+      ? 0.92 : 0.76 + Math.sin(now * 0.007) * 0.12;
+    ctx.globalAlpha = targetAlpha;
+    ctx.strokeStyle = th.move;
+    ctx.lineWidth = Math.max(3, cellSize * 0.04);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
 
   // Recessed inner well: a darker top edge and lower highlight make the hole physical.
   ctx.shadowColor = 'transparent';
@@ -2081,35 +2131,78 @@ function drawEmptySlot(now) {
   ctx.restore();
 }
 
-function drawMoveHint(index, now) {
-  const th = getTheme();
-  const row = Math.floor(index / curCols), col = index % curCols;
+function getHintPreviewAmount(now, index) {
+  if (reducedMotionQuery.matches) return 0;
+  const cycle = 1500;
+  const movingPart = 0.62;
+  const phase = ((now + index * 79) % cycle) / cycle;
+  if (phase >= movingPart) return 0;
+  return Math.sin((phase / movingPart) * Math.PI) * 0.12;
+}
+
+function drawMovableEdgeCue(visual) {
+  if (!visual || !visual.movable) return;
+  const row = Math.floor(visual.index / curCols), col = visual.index % curCols;
   const emptyRow = Math.floor(emptyIdx / curCols), emptyCol = emptyIdx % curCols;
   const dx = emptyCol - col, dy = emptyRow - row;
-  const cx = gridOX + (col + 0.5) * cellSize + dx * cellSize * 0.26;
-  const cy = gridOY + (row + 0.5) * cellSize + dy * cellSize * 0.26;
-  const length = Math.max(9, cellSize * 0.14);
-  const head = Math.max(4, cellSize * 0.065);
-  const pulse = reducedMotionQuery.matches ? 1 : 0.82 + Math.sin(now * 0.006 + index) * 0.12;
+  if (Math.abs(dx) + Math.abs(dy) !== 1) return;
+  const x = visual.x, y = visual.y, size = visual.size;
+  const inset = Math.max(3, size * 0.035);
+  const th = getTheme();
 
   ctx.save();
-  ctx.globalAlpha = pulse;
   ctx.strokeStyle = th.move;
-  ctx.fillStyle = th.move;
-  ctx.shadowColor = th.moveGlow;
-  ctx.shadowBlur = Math.max(6, cellSize * 0.09);
-  ctx.lineWidth = Math.max(2.5, cellSize * 0.04);
+  ctx.globalAlpha = visual.suggested ? 1 : 0.78;
+  ctx.shadowColor = visual.suggested ? th.moveGlow : 'transparent';
+  ctx.shadowBlur = visual.suggested ? Math.max(5, size * 0.07) : 0;
+  ctx.lineWidth = Math.max(3, size * 0.035);
   ctx.lineCap = 'round';
   ctx.beginPath();
-  ctx.moveTo(cx - dx * length * 0.55, cy - dy * length * 0.55);
-  ctx.lineTo(cx + dx * length * 0.45, cy + dy * length * 0.45);
+  if (dx !== 0) {
+    const edgeX = dx > 0 ? x + size - inset : x + inset;
+    ctx.moveTo(edgeX, y + size * 0.18);
+    ctx.lineTo(edgeX, y + size * 0.32);
+    ctx.moveTo(edgeX, y + size * 0.68);
+    ctx.lineTo(edgeX, y + size * 0.82);
+  } else {
+    const edgeY = dy > 0 ? y + size - inset : y + inset;
+    ctx.moveTo(x + size * 0.18, edgeY);
+    ctx.lineTo(x + size * 0.32, edgeY);
+    ctx.moveTo(x + size * 0.68, edgeY);
+    ctx.lineTo(x + size * 0.82, edgeY);
+  }
   ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(cx + dx * length * 0.7, cy + dy * length * 0.7);
-  ctx.lineTo(cx + dx * length * 0.25 - dy * head, cy + dy * length * 0.25 + dx * head);
-  ctx.lineTo(cx + dx * length * 0.25 + dy * head, cy + dy * length * 0.25 - dx * head);
-  ctx.closePath();
-  ctx.fill();
+  ctx.restore();
+}
+
+function drawMoveFeedback(now) {
+  if (moveFeedback.fromIdx < 0 || moveFeedback.toIdx < 0) return;
+  const age = Math.max(0, now - moveFeedback.t0);
+  if (age > MOVE_FEEDBACK_DUR) {
+    resetMoveFeedback();
+    return;
+  }
+  const th = getTheme();
+  const progress = reducedMotionQuery.matches ? 0 : age / MOVE_FEEDBACK_DUR;
+  const alpha = reducedMotionQuery.matches ? 0.9 : Math.max(0, 1 - progress);
+  const expand = reducedMotionQuery.matches ? 0 : progress * cellSize * 0.075;
+
+  ctx.save();
+  ctx.globalAlpha = alpha;
+  ctx.strokeStyle = th.move;
+  ctx.shadowColor = th.moveGlow;
+  ctx.shadowBlur = reducedMotionQuery.matches ? 0 : Math.max(6, cellSize * 0.09);
+  ctx.lineWidth = Math.max(3, cellSize * 0.035);
+  [moveFeedback.fromIdx, moveFeedback.toIdx].forEach(function(index, order) {
+    const row = Math.floor(index / curCols), col = index % curCols;
+    const x = gridOX + col * cellSize;
+    const y = gridOY + row * cellSize;
+    const extra = order === 0 ? expand : expand * 0.45;
+    ctx.beginPath();
+    ctx.roundRect(x - extra, y - extra, cellSize + extra * 2,
+      cellSize + extra * 2, Math.max(5, cellSize * 0.055));
+    ctx.stroke();
+  });
   ctx.restore();
 }
 
@@ -2458,7 +2551,24 @@ function draw(now) {
   const hintVisible = hasBoard && state === S.PLAYING && moveCount === hintMoveBase &&
     !hintDismissed && !_slideTutActive && !magicCrossSelectMode && now >= hintReadyAt &&
     getAdjacentIndices(emptyIdx).includes(suggestedMoveIdx) && grid[suggestedMoveIdx] !== null;
-  if (hasBoard) drawEmptySlot(now);
+  const interactionReady = hasBoard && state === S.PLAYING && !animating &&
+    !journeyActor.active && !_slideTutActive && !magicCrossSelectMode;
+  const legalMovableSet = new Set(interactionReady
+    ? getAdjacentIndices(emptyIdx).filter(function(index) {
+      return grid[index] !== null && !isCheckpointLockedCell(index);
+    }) : []);
+  const hintPreviewAmount = hintVisible
+    ? getHintPreviewAmount(now, suggestedMoveIdx) : 0;
+  if (hasBoard) {
+    const destinationIdx = animating && anim.targetIdx >= 0 ? anim.targetIdx : emptyIdx;
+    drawEmptySlot(now, destinationIdx, { target: hintVisible || animating });
+    // Paint the source hollow underneath the same panel that moves. At rest the
+    // panel covers it; as the panel slides away, the new empty place is revealed.
+    if (animating && anim.idx >= 0) drawEmptySlot(now, anim.idx, { source: true });
+    else if (hintVisible && hintPreviewAmount > 0) {
+      drawEmptySlot(now, suggestedMoveIdx, { preview: true });
+    }
+  }
 
   // Build one visual list, then paint ground and roads in separate passes. This
   // lets every road cross the hairline between cells before another base can
@@ -2470,30 +2580,38 @@ function draw(now) {
     const row = Math.floor(i / curCols), col = i % curCols;
     let x = gridOX + col * cellSize;
     let y = gridOY + row * cellSize;
+    let drawSize = cellSize;
 
     if (animating && i === anim.idx) {
       x = anim.curX;
       y = anim.curY;
-    } else if (hintVisible && i === suggestedMoveIdx && !reducedMotionQuery.matches) {
+      if (!reducedMotionQuery.matches) {
+        const motionT = Math.max(0, Math.min(1,
+          (now - anim.t0) / Math.max(1, getSlideDuration())));
+        const lift = Math.sin(Math.PI * motionT);
+        drawSize = cellSize * (1 + lift * 0.055);
+        x -= (drawSize - cellSize) / 2;
+        y -= (drawSize - cellSize) / 2 + lift * cellSize * 0.035;
+      }
+    } else if (hintVisible && i === suggestedMoveIdx && hintPreviewAmount > 0) {
       const emptyRow = Math.floor(emptyIdx / curCols), emptyCol = emptyIdx % curCols;
-      const nudge = (Math.sin(now * 0.006) + 1) * cellSize * 0.018;
+      const nudge = hintPreviewAmount * cellSize;
       x += (emptyCol - col) * nudge;
       y += (emptyRow - row) * nudge;
     }
-    const movable = hintVisible && i === suggestedMoveIdx && !animating;
-    if (movable && !reducedMotionQuery.matches) {
-      const pulse = Math.max(0, Math.sin(now * 0.005 + i));
-      y -= pulse * Math.min(1.5, cellSize * 0.018);
-    }
+    const movable = legalMovableSet.has(i);
+    const suggested = hintVisible && i === suggestedMoveIdx && !animating;
     tileVisuals.push({
       x: x,
       y: y,
+      size: drawSize,
       tileKey: tileKey,
       index: i,
       now: now,
       effectiveTileKey: getEffectiveTileKeyAt(i),
-      connected: connectedSet.has(i),
+      connected: !(animating && i === anim.idx) && connectedSet.has(i),
       movable: movable,
+      suggested: suggested,
       animating: animating && i === anim.idx,
       settled: isCheckpointLockedCell(i),
     });
@@ -2502,38 +2620,36 @@ function draw(now) {
   const restingTiles = tileVisuals.filter(function(visual) { return !visual.animating; });
   const movingTile = tileVisuals.find(function(visual) { return visual.animating; });
   restingTiles.forEach(function(visual) {
-    drawTileBase(visual.x, visual.y, cellSize, visual.tileKey, visual);
+    drawTileBase(visual.x, visual.y, visual.size, visual.tileKey, visual);
   });
   restingTiles.forEach(function(visual) {
-    drawTileRoadUnderlay(visual.x, visual.y, cellSize, visual.tileKey, visual);
+    drawTileRoadUnderlay(visual.x, visual.y, visual.size, visual.tileKey, visual);
   });
   restingTiles.forEach(function(visual) {
-    drawTileRoadSurface(visual.x, visual.y, cellSize, visual.tileKey, visual);
+    drawTileRoadSurface(visual.x, visual.y, visual.size, visual.tileKey, visual);
   });
   if (movingTile) {
-    drawTileBase(movingTile.x, movingTile.y, cellSize, movingTile.tileKey, movingTile);
-    drawTileRoadUnderlay(movingTile.x, movingTile.y, cellSize, movingTile.tileKey, movingTile);
-    drawTileRoadSurface(movingTile.x, movingTile.y, cellSize, movingTile.tileKey, movingTile);
+    drawTileBase(movingTile.x, movingTile.y, movingTile.size, movingTile.tileKey, movingTile);
+    drawTileRoadUnderlay(movingTile.x, movingTile.y, movingTile.size, movingTile.tileKey, movingTile);
+    drawTileRoadSurface(movingTile.x, movingTile.y, movingTile.size, movingTile.tileKey, movingTile);
   }
 
   tileVisuals.forEach(function(visual) {
     if (magicCrossSelectMode && isMagicSelectableTile(visual.index) && !animating) {
-      drawMagicSelectableFrame(visual.x, visual.y, cellSize, now);
+      drawMagicSelectableFrame(visual.x, visual.y, visual.size, now);
     }
     if (!LEVELS[stageIdx].checkpoint && !pickupCollected && visual.index === pickupTileIdx) {
-      drawCharmAt(visual.x + cellSize / 2, visual.y + cellSize / 2,
-        cellSize * 0.54, now, false);
+      drawCharmAt(visual.x + visual.size / 2, visual.y + visual.size / 2,
+        visual.size * 0.54, now, false);
     }
     if (visual.index === magicCrossTileIdx) {
-      drawCharmAt(visual.x + cellSize / 2, visual.y + cellSize / 2,
-        cellSize * 0.3, now, true);
+      drawCharmAt(visual.x + visual.size / 2, visual.y + visual.size / 2,
+        visual.size * 0.3, now, true);
     }
-    if (visual.settled) drawSettledFootprints(visual.x, visual.y, cellSize, visual.index);
+    if (visual.settled) drawSettledFootprints(visual.x, visual.y, visual.size, visual.index);
+    drawMovableEdgeCue(visual);
   });
-
-  if (hintVisible && !animating) {
-    drawMoveHint(suggestedMoveIdx, now);
-  }
+  drawMoveFeedback(now);
 
   // World markers and the single persistent actor are complementary layers.
   if (hasBoard) drawCheckpointMarker(now);
@@ -2554,24 +2670,58 @@ function draw(now) {
 // ===== Update animation =====
 function updateAnim(now) {
   if (!animating) return;
-  const t = Math.min((now - anim.t0) / SLIDE_DUR, 1);
+  if (anim.idx < 0 || anim.targetIdx < 0 || anim.targetIdx !== emptyIdx ||
+      grid[anim.targetIdx] !== null || grid[anim.idx] === null) {
+    animating = false;
+    anim.idx = -1;
+    anim.targetIdx = -1;
+    anim.suspendedAt = 0;
+    syncMagicCrossButton();
+    return;
+  }
+  if (syncSlideAnimationSuspension(now)) return;
+  const fromRow = Math.floor(anim.idx / curCols), fromCol = anim.idx % curCols;
+  const targetRow = Math.floor(anim.targetIdx / curCols), targetCol = anim.targetIdx % curCols;
+  // Re-derive geometry every frame so a resize cannot leave the panel between cells.
+  anim.fromX = gridOX + fromCol * cellSize;
+  anim.fromY = gridOY + fromRow * cellSize;
+  anim.toX = gridOX + targetCol * cellSize;
+  anim.toY = gridOY + targetRow * cellSize;
+  const t = Math.min((now - anim.t0) / Math.max(1, getSlideDuration()), 1);
   const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
   anim.curX = anim.fromX + (anim.toX - anim.fromX) * ease;
   anim.curY = anim.fromY + (anim.toY - anim.fromY) * ease;
 
   if (t >= 1) {
-    const oldEmpty = emptyIdx;
+    const oldEmpty = anim.targetIdx;
     moveTrackedTile(anim.idx, oldEmpty);
     grid[oldEmpty] = grid[anim.idx];
     grid[anim.idx] = null;
     emptyIdx = anim.idx;
+    moveFeedback.fromIdx = anim.idx;
+    moveFeedback.toIdx = oldEmpty;
+    moveFeedback.t0 = now;
     moveCount++;
     updateHUD();
     animating = false;
+    anim.idx = -1;
+    anim.targetIdx = -1;
+    anim.suspendedAt = 0;
     syncMagicCrossButton();
 
     if (!_slideTutActive) handleRouteCompletion(performance.now());
   }
+}
+
+function waitForCurrentSlide(callback) {
+  function check() {
+    if (animating) {
+      requestAnimationFrame(check);
+      return;
+    }
+    callback();
+  }
+  requestAnimationFrame(check);
 }
 
 function hideJourneyToastOverlay() {
@@ -2827,6 +2977,8 @@ function setupCheckpointSecondLeg(now) {
   mechanicGuideShown = true;
   animating = false;
   anim.idx = -1;
+  anim.targetIdx = -1;
+  resetMoveFeedback();
 }
 
 function finishCheckpointDiscovery(now) {
@@ -2949,6 +3101,20 @@ function isJourneyEnvironmentSuspended() {
   const portrait = window.innerHeight >= window.innerWidth;
   return state === S.PAUSED || document.hidden || !slideWindowFocused ||
     menuOpen || confirmOpen || portrait || !overlay.classList.contains('hidden');
+}
+
+function syncSlideAnimationSuspension(now) {
+  if (!animating) return false;
+  const tick = Number.isFinite(now) ? now : performance.now();
+  if (isJourneyEnvironmentSuspended()) {
+    if (!anim.suspendedAt) anim.suspendedAt = tick;
+    return true;
+  }
+  if (anim.suspendedAt) {
+    anim.t0 += Math.max(0, tick - anim.suspendedAt);
+    anim.suspendedAt = 0;
+  }
+  return false;
 }
 
 function syncJourneyTimelineSuspension(now) {
@@ -3076,8 +3242,10 @@ function handleTap(px, py) {
   if (dist !== 1) return false;
 
   // Start slide animation
+  resetMoveFeedback();
   animating = true;
   anim.idx = tappedIdx;
+  anim.targetIdx = emptyIdx;
   anim.fromX = gridOX + col * cellSize;
   anim.fromY = gridOY + row * cellSize;
   anim.toX   = gridOX + eCol * cellSize;
@@ -3085,6 +3253,7 @@ function handleTap(px, py) {
   anim.curX  = anim.fromX;
   anim.curY  = anim.fromY;
   anim.t0    = performance.now();
+  anim.suspendedAt = 0;
   hintDismissed = true;
   syncMagicCrossButton();
   playSlideSound();
@@ -3207,7 +3376,7 @@ function showOverlay(type) {
 
   if (type === 'start') {
     icon.innerHTML    = ponoFaceTag;
-    if (!localStorage.getItem('slide_tut_seen')) {
+    if (!localStorage.getItem('slide_tut_seen') && INITIAL_STAGE_IDX === 0) {
       title.textContent = 'みちつなぎ';
       msg.textContent   = 'パネルを うごかして\nひだりから みぎへ つなげよう！\nまずは れんしゅうから！';
       btn.textContent   = 'やってみる ▶';
@@ -3711,6 +3880,8 @@ function restartTimedOutStage(now) {
   mechanicGuideShown = stageCheckpointReached;
   animating = false;
   anim.idx = -1;
+  anim.targetIdx = -1;
+  resetMoveFeedback();
   stageClock.timeoutPending = false;
   if (stageCheckpointReached) {
     resumeCheckpointLeg(now, preservedProgress);
@@ -3723,7 +3894,7 @@ function startGame() {
   gameClearQueued = false;
   magicCharmOwned = false;
   journeyActor.phase = JOURNEY_PHASE.INTRO;
-  beginStage(0);
+  beginStage(INITIAL_STAGE_IDX);
 }
 
 function nextStage() {
@@ -3845,6 +4016,7 @@ if (bgmEnabled) {
 updateBgmBtn();
 
 document.addEventListener('visibilitychange', () => {
+  syncSlideAnimationSuspension(performance.now());
   syncJourneyTimelineSuspension(performance.now());
   resetStageClockTick(performance.now());
   if (document.hidden) { bgm.pause(); }
@@ -3852,12 +4024,14 @@ document.addEventListener('visibilitychange', () => {
 });
 window.addEventListener('blur',  () => {
   slideWindowFocused = false;
+  syncSlideAnimationSuspension(performance.now());
   syncJourneyTimelineSuspension(performance.now());
   resetStageClockTick(performance.now());
   bgm.pause();
 });
 window.addEventListener('focus', () => {
   slideWindowFocused = true;
+  syncSlideAnimationSuspension(performance.now());
   syncJourneyTimelineSuspension(performance.now());
   resetStageClockTick(performance.now());
   if (bgmEnabled && state !== S.PAUSED) bgm.play().catch(() => {});
@@ -3992,8 +4166,9 @@ function showTutorial() {
       if (_tutOverlay) { _tutOverlay.remove(); _tutOverlay = null; }
       bubble.classList.add('hidden');
 
-      // アニメーション完了後にフィードバック→次のステップ
-      setTimeout(function() {
+      // 実際の着地完了を待ってからフィードバック→次のステップ。
+      // durationを調整しても案内だけ先に進まない。
+      waitForCurrentSlide(function() {
         tutStepIdx++;
         if (tutStepIdx < tutSteps.length) {
           // フィードバック表示
@@ -4035,7 +4210,7 @@ function showTutorial() {
                 document.getElementById('tut-next').addEventListener('pointerdown', function(ev2) {
                   ev2.preventDefault(); ev2.stopPropagation();
                   endTut();
-                  // ステージ1を直接開始（ダイアログなし）
+                  // 通常は1面、Appの確認URLでは指定面を直接開始（ダイアログなし）。
                   startGame();
                 });
               }
@@ -4045,7 +4220,7 @@ function showTutorial() {
             startGame();
           }
         }
-      }, 200);
+      });
     }
     document.addEventListener('pointerdown', onTap, true);
   }
@@ -4068,10 +4243,10 @@ initMenu({ bgmToggle: function() {
   updateBgmBtn();
   if (window._ponoMenuBgmBtn) window._ponoMenuBgmBtn.classList.toggle('bgm-off', !bgmEnabled);
 }, tutorial: showTutorial});
-curCols = LEVELS[0].cols;
-curRows = LEVELS[0].rows;
+curCols = LEVELS[INITIAL_STAGE_IDX].cols;
+curRows = LEVELS[INITIAL_STAGE_IDX].rows;
 resize();
-resetStageClock(0);
+resetStageClock(INITIAL_STAGE_IDX);
 updateHUD({ resetProgress: true, instant: true, forceTime: true });
 syncJourneyProgress(stageClock.introPonoStart, stageClock.introMotherStart, { instant: true });
 showOverlay('start');
@@ -4091,6 +4266,7 @@ function updateLandscapeNotice() {
     rail.toggleAttribute('inert', isPortrait);
     rail.setAttribute('aria-hidden', isPortrait ? 'true' : 'false');
   }
+  syncSlideAnimationSuspension(performance.now());
   syncJourneyTimelineSuspension(performance.now());
   // 横向きへ戻した時に、中央の16:9シェルへキャンバス実寸を同期する。
   if (!isPortrait) {

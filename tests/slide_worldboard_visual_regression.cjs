@@ -34,11 +34,11 @@ for (const asset of [
 }
 assert.match(html, /drawBoardAtmosphere\(now\)/,
   "the board must sit in a soft world clearing instead of an opaque frame");
-assert.match(html, /function drawEmptySlot\(now\)[\s\S]*?const rimInset[\s\S]*?const wellInset[\s\S]*?ctx\.shadowOffsetY = Math\.max/,
+assert.match(html, /function drawEmptySlot\(now, index, visualState\)[\s\S]*?const rimInset[\s\S]*?const wellInset[\s\S]*?ctx\.shadowOffsetY = Math\.max/,
   "the empty destination must read as a raised rim around a recessed physical well");
 assert.doesNotMatch(html, /['"`]ここへ['"`]|ctx\.fillText\([^\n]*ここへ/,
   "the ambiguous ここへ label must not return inside the physical hole");
-assert.doesNotMatch(html.match(/function drawEmptySlot\(now\) \{[\s\S]*?\n\}/)[0], /setLineDash|fillText/,
+assert.doesNotMatch(html.match(/function drawEmptySlot\(now, index, visualState\) \{[\s\S]*?\n\}/)[0], /setLineDash|fillText/,
   "the physical hole must not look like another dashed, labelled panel");
 
 /* The exact right-side row has a permanent marker before its reward appears. */
@@ -61,11 +61,19 @@ assert.ok(startGoalDraw[0].indexOf("drawGoalBeacon(") < startGoalDraw[0].indexOf
 assert.match(html, /function getStartConnectedTileSet\(\)/);
 assert.match(html, /connected\.add\(idx\)/);
 assert.match(html, /const connectedSet = hasBoard \? getStartConnectedTileSet\(\) : new Set\(\)/);
-assert.match(html, /connected: connectedSet\.has\(i\)/);
+assert.match(html, /connected: !\(animating && i === anim\.idx\) && connectedSet\.has\(i\)/,
+  "the moving panel drops its stale route glow until the board commits");
 assert.match(html,
   /const hintMoveBase = stageCheckpointReached[\s\S]*?const hintVisible = hasBoard && state === S\.PLAYING && moveCount === hintMoveBase[\s\S]*?getAdjacentIndices\(emptyIdx\)\.includes\(suggestedMoveIdx\)/,
   "each checkpoint leg gets one reassuring first-move suggestion");
-assert.match(html, /if \(hintVisible && !animating\) \{\s*drawMoveHint\(suggestedMoveIdx, now\);\s*\}/);
+assert.doesNotMatch(html, /function drawMoveHint\(|drawMoveHint\(/,
+  "a center arrow must not cover or resemble the road opening");
+assert.match(html, /function getHintPreviewAmount\(now, index\)[\s\S]*?return Math\.sin/,
+  "the suggested panel itself previews the source-to-hole motion");
+assert.match(html, /drawEmptySlot\(now, suggestedMoveIdx, \{ preview: true \}\)/,
+  "the hinted source hollow is revealed underneath the moving panel");
+assert.match(html, /const legalMovableSet = new Set[\s\S]*?!isCheckpointLockedCell\(index\)/,
+  "all legal neighboring panels keep a stable actionable edge while locked trail cells do not");
 assert.match(html, /hintDismissed = true;[\s\S]*?playSlideSound\(\)/,
   "the first legal interaction permanently dismisses the suggestion for that stage");
 assert.match(html, /ctx\.lineDashOffset = reducedMotionQuery\.matches \? 0/,
@@ -73,8 +81,10 @@ assert.match(html, /ctx\.lineDashOffset = reducedMotionQuery\.matches \? 0/,
 assert.match(html, /roadStyle: 'wood'/);
 assert.match(html, /roadStyle: 'stone'/);
 assert.match(html, /roadStyle: 'starlight'/);
-assert.match(html, /visual\.movable \? th\.move : 'rgba\(225,240,196,0\.34\)'/,
-  "movable panels use a state color distinct from the connected route and empty hollow");
+assert.match(html, /move: '#FFD45C'/,
+  "move affordances use warm gold rather than the connected-route cyan/green family");
+assert.match(html, /const isStrongCue = isSuggested \|\| isMoving[\s\S]*?ctx\.strokeStyle = isStrongCue \? th\.move/,
+  "the full selected panel keeps its motion outline while it moves");
 
 /* Characters occupy the world, preserve aspect ratio, and render only once per frame. */
 assert.match(html, /imgPonoWorld\.src = '\.\.\/assets\/images\/characters\/pono\/pono_003\.png'/);
@@ -199,11 +209,11 @@ async function inspectLandscape(browserType, browserName, base, viewport, minimu
       canvas.x + (before.gridOX + (col + 0.5) * before.cellSize) * canvas.width / before.CW,
       canvas.y + (before.gridOY + (row + 0.5) * before.cellSize) * canvas.height / before.CH,
     );
-    await page.waitForTimeout(220);
+    await page.waitForFunction(() => eval("!animating && moveCount === 1"));
     const after = await page.evaluate(() => eval("({ emptyIdx, moveCount, hintDismissed })"));
     assert.equal(after.emptyIdx, chosen, `${browserName}: tapping a hinted panel moves it into the hollow`);
     assert.equal(after.moveCount, 1, `${browserName}: a legal move increments the HUD once`);
-    assert.equal(after.hintDismissed, true, `${browserName}: no later move keeps an instructional arrow`);
+    assert.equal(after.hintDismissed, true, `${browserName}: no later move keeps the first-move cue`);
 
     const final = await page.evaluate(() => eval(`(() => {
       stageIdx = 7;
@@ -399,7 +409,7 @@ async function inspectFirstRunTutorial(base) {
         canvas.x + (target.gridOX + (target.col + 0.5) * target.cellSize) * canvas.width / target.CW,
         canvas.y + (target.gridOY + (target.row + 0.5) * target.cellSize) * canvas.height / target.CH,
       );
-      await page.waitForTimeout(240);
+      await page.waitForFunction(() => eval("!animating"));
     }
 
     await page.evaluate(() => eval(`(() => {
