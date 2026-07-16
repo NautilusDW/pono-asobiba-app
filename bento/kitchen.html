@@ -15654,6 +15654,19 @@ body.layout-editor-on .bowl-fill-mask::after {
     return ready;
   }
 
+  function clearEggLidEditorPoseForDrag() {
+    if (!els.eggGlassLid) return;
+    // saved-layout positions the resting lid with an inline translate/scale.
+    // Pointer movement writes stage-relative left/top values, so retaining that
+    // transform applies the offset a second time and makes the lid fly away.
+    els.eggGlassLid.style.removeProperty('left');
+    els.eggGlassLid.style.removeProperty('top');
+    els.eggGlassLid.style.removeProperty('width');
+    els.eggGlassLid.style.removeProperty('height');
+    els.eggGlassLid.style.removeProperty('transform');
+    delete els.eggGlassLid.dataset.lidDragInline;
+  }
+
   function isCookDropPoint(type, point) {
     if (!point) return false;
     if (type === 'grill' && isCurrentEggGrillAction() && !state.cookFoodPlaced) {
@@ -16141,6 +16154,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       widthPct: lidBounds ? lidBounds.width : NaN,
       heightPct: lidBounds ? lidBounds.height : NaN,
     };
+    clearEggLidEditorPoseForDrag();
     if (els.eggGlassLid && els.eggGlassLid.setPointerCapture) {
       try { els.eggGlassLid.setPointerCapture(evt.pointerId); } catch (e) { /* noop */ }
     }
@@ -18510,15 +18524,11 @@ body.layout-editor-on .bowl-fill-mask::after {
     const layer = getBowlPieceLayer();
     const rect = layer.getBoundingClientRect();
     const fixedSlots = ing && Array.isArray(ing.bowlPieceSlots) ? ing.bowlPieceSlots : [];
-    // Fixed potato slots are expressed in the bowl's unscaled CSS coordinate space.
-    // getBoundingClientRect() is already stage-scaled, so feeding it back into CSS
-    // left/top values shrinks the scatter twice on short landscape screens.
-    const w = fixedSlots.length
-      ? (layer.clientWidth || layer.offsetWidth || rect.width || 80)
-      : (rect.width || 80);
-    const h = fixedSlots.length
-      ? (layer.clientHeight || layer.offsetHeight || rect.height || 60)
-      : (rect.height || 60);
+    // Every cut piece is positioned in the layer's unscaled CSS coordinate space.
+    // getBoundingClientRect() is already stage-scaled; feeding that display size
+    // back into left/top shrinks the scatter twice and bunches pieces into one area.
+    const w = layer.clientWidth || layer.offsetWidth || rect.width || 80;
+    const h = layer.clientHeight || layer.offsetHeight || rect.height || 60;
     const cx = w * 0.5;
     const cy = h * 0.55;
     const configuredPieceSize = Number(ing && ing.bowlPieceSize);

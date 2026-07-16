@@ -1,5 +1,10 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2220: トントンキッチンのめだまやきで、配置エディター由来のinline transformを
+// ドラッグ開始時に除去し、蓋が指から飛んで元へ戻る問題を修正。切れ端配置は全食材で
+// 縮小後の見かけ寸法ではなく受け皿内のCSS寸法を使い、レタス・にんじん等が受け皿の
+// 一部へ集中せず全体へ散るよう統一した (batch:1319-kitchen-lid-bowl-spread)。
+// play.html PAGE_CACHE_VERSION と同期不要 (bento/kitchen.html／テストのみ変更)。
 // v2219: 家具スタンプカードのCSS/JS参照へ明示version queryを追加。初回v2218公開確認で裸URLの
 // CSSだけ旧緑枠がエッジキャッシュに残ったため、赤枠＋紙色を既存端末でも確実に取得させる
 // cache bustを追加した (batch:1318-furniture-stamp-red-lineart)。play.html PAGE_CACHE_VERSIONと同期。
@@ -211,7 +216,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2219;
+const CACHE_VERSION = 2220;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
