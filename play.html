@@ -9812,7 +9812,7 @@
        限定で開けるようにしたため、common/mvp-flags.js を body 内 script クラスタ (tier.js の直後)
        で読み込むよう変更 (旧: 「preview sandbox 404 回避のため未読込」だったが、
        stamp-rally.js の rewardsBlocked() が PonoMvpFlags 経由の判定に依存するため必須化)。 -->
-  <link rel="stylesheet" href="common/stamp-rally.css">
+  <link rel="stylesheet" href="common/stamp-rally.css?v=2219">
 
   <!-- ごかんそう (rating) modal — common/rating-modal.{js,css} は別エージェント並列作成中。
        ファイル未配備でも tag だけ先行登録 (404 silent fallback)。 -->
@@ -11071,7 +11071,7 @@
        grantReward/incrementStat の実装元 (実績一覧モーダル・報酬付与に必要)。 -->
   <script src="common/mvp-flags.js"></script>
   <script src="common/achievements.js"></script>
-  <script src="common/stamp-rally.js"></script>
+  <script src="common/stamp-rally.js?v=2219"></script>
   <!-- ログインボーナス・シール帳 (window.checkDailyLogin 等)。 app tier 限定で発火 (下部の Login Bonus Trigger 参照)。 -->
   <script src="common/stickers.js"></script>
   <script src="js/game-stickers.js"></script>
@@ -11559,7 +11559,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2218; // sw.js CACHE_VERSION と同期 (batch:1318: 家具スタンプカードを赤い線画ゴム印へ差し替え)
+    const PAGE_CACHE_VERSION = 2219; // sw.js CACHE_VERSION と同期 (batch:1318: 家具スタンプカードを赤い線画ゴム印へ差し替え＋参照cache bust)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -11568,7 +11568,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v2218'; // PAGE_CACHE_VERSION/sw.js CACHE_VERSION と同期
+    window.PONO_SW_VERSION = 'v2219'; // PAGE_CACHE_VERSION/sw.js CACHE_VERSION と同期
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.

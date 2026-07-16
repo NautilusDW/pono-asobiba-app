@@ -1,5 +1,8 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2219: 家具スタンプカードのCSS/JS参照へ明示version queryを追加。初回v2218公開確認で裸URLの
+// CSSだけ旧緑枠がエッジキャッシュに残ったため、赤枠＋紙色を既存端末でも確実に取得させる
+// cache bustを追加した (batch:1318-furniture-stamp-red-lineart)。play.html PAGE_CACHE_VERSIONと同期。
 // v2218: 家具スタンプカードの押印を、カラー顔写真からGPT Image 2製の赤い線画ゴム印へ差し替え。
 // 白背景を透過し、256px lossless WebPへ最適化。押印済みマスも赤枠＋紙色へ揃え、30px表示で
 // 外丸・顔・かすれが読める実物スタンプ調へ変更した (batch:1318-furniture-stamp-red-lineart)。
@@ -208,7 +211,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2218;
+const CACHE_VERSION = 2219;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
