@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-07-16 - [batch:1323-kitchen-potato-cut-only] Codex: ユーザー実機評価「じゃがいもの下ごしらえが切った後マッシャーまで一連になるため、切るだけも残したい」を受領。重複監査で同修正なし。現行potatoは`cookingActions`と`prepActions`の両方が chop→mash→mix→shape→bread で同一のため、下ごしらえモードもコロッケ全工程へ自動連結していた。主操作は下ごしらえモードでは切り終えたら冷蔵庫へ保存、おかずづくりモードでは既存コロッケ工程を維持。共有mainは別作業dirtyかつorigin aheadのため最新origin `6aa4454d`から隔離worktree `/tmp/pono-kitchen-potato-1323`を使用。凍結develop／master／productionは変更しない。 (by Codex)
+
 - 2026-07-16 - [batch:1322-kitchen-generated-hands-meatball-roll] Codex: ユーザー実機評価「トントンキッチンの手イラストをシール帳チュートリアル等の生成画像へ極力差替／PCでミートボールをフライパン内でなかなか転がせず一度だけ成功」を受領。重複監査で同修正なし。キッチン内の手は肉分け／丸めチュートリアル2箇所だけが絵文字✋／✊で、共通のGPT Image 2製 `hand_open_hover.png`／`hand_grip.png` が正本。ミートボールは球中心から8.8 stage%以内のpointerdownだけを許し、フライパン空き面から開始不能な狭い当たり判定が原因。主操作をフライパン内のどこからでも最寄りの球をつかんでころころ、球直接ドラッグも維持するOperational設計へ変更する。凍結develop／master／productionは変更しない。 (by Codex)
 
 - 2026-07-16 - [batch:1322-kitchen-generated-hands-meatball-roll] Codex: **DONE** — feature `7cae9efe`＋SW v2225 `2bd13dc7`をdevelop-appへpush。肉分け／丸めの手2状態を既存生成画像へ差替、フライパン面pointerdown時に最寄りのpan内ミートボールを選ぶ入力へ拡張し直接球ドラッグも維持。新規static回帰＋直前の蓋／皿回帰PASS、画像decode／公開HTML参照／公開SW v2225確認。既存motion/mix/warpは並行追加されたachievements scriptで旧固定数7→8となる別作業由来のassertのみFAIL。Actions `29478428792`はApp staging→LP stagingともsuccess。Appは修正版、LPは同一commitだがAPP_BUILD未注入。並行dirtyはcommitに含めず、凍結develop／master／production未変更。 (by Codex)
