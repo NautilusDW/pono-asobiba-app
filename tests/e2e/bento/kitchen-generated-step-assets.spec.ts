@@ -77,6 +77,30 @@ test('kitchen layout editor targets develop-app and exposes the new ingredient s
   await expect.poll(() => page.locator('#ingredient-on-board').evaluate((element: HTMLElement) => (
     parseFloat(element.style.width)
   ))).toBeLessThan(64);
+  await expect.poll(() => page.evaluate(() => {
+    const data = (window as Window & { _currentLayoutData?: Record<string, unknown> })._currentLayoutData;
+    const board = document.querySelector<HTMLElement>('#cutting-board');
+    return !!data?.['.startX-marker|0@green_bean'] && (board?.offsetWidth || 0) > 0;
+  })).toBeTruthy();
+  const markerAlignment = await page.evaluate(() => {
+    const state = (window as Window & {
+      __bentoState?: { current?: { chopMechanics?: { startX_pct: number; endX_pct: number } } };
+      _currentLayoutData?: Record<string, { tx?: number }>;
+    }).__bentoState;
+    const data = (window as Window & { _currentLayoutData?: Record<string, { tx?: number }> })._currentLayoutData || {};
+    const board = document.querySelector<HTMLElement>('#cutting-board');
+    const width = board?.offsetWidth || 0;
+    const startTx = data['.startX-marker|0@green_bean']?.tx || 0;
+    const endTx = data['.endX-marker|0@green_bean']?.tx || 0;
+    return {
+      actualStart: state?.current?.chopMechanics?.startX_pct,
+      actualEnd: state?.current?.chopMechanics?.endX_pct,
+      expectedStart: 78 + 100 * (startTx + 12) / width,
+      expectedEnd: 24 + 100 * (endTx + 12) / width,
+    };
+  });
+  expect(markerAlignment.actualStart).toBeCloseTo(markerAlignment.expectedStart, 3);
+  expect(markerAlignment.actualEnd).toBeCloseTo(markerAlignment.expectedEnd, 3);
 });
 
 test('all newly added cutting and fruit assets are available', async ({ request }) => {

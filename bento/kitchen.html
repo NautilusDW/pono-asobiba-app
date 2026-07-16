@@ -18574,6 +18574,21 @@ body.layout-editor-on .bowl-fill-mask::after {
     if (!boardW) return;
     var data = window._currentLayoutData;
     var ingId = ing.id;
+    var mechanics = ing.chopMechanics;
+    // saved-layout の tx は、その材料を表示した時点の inline marker left
+    // (= 各材料の startX/endX) を基準に保存される。旧処理は常にCSS既定の
+    // 87%/13%へ足していたため、78%/24%のいんげん等だけ最初の一打が右へずれた。
+    // apply は同一画面で複数回走るため、初回の材料固有値を固定して累積も防ぐ。
+    if (!isFinite(mechanics._layoutBaseStartX_pct)) {
+      mechanics._layoutBaseStartX_pct = Number(mechanics.startX_pct);
+    }
+    if (!isFinite(mechanics._layoutBaseEndX_pct)) {
+      mechanics._layoutBaseEndX_pct = Number(mechanics.endX_pct);
+    }
+    var startBasePct = isFinite(mechanics._layoutBaseStartX_pct)
+      ? mechanics._layoutBaseStartX_pct : STARTX_DEFAULT_PCT;
+    var endBasePct = isFinite(mechanics._layoutBaseEndX_pct)
+      ? mechanics._layoutBaseEndX_pct : ENDX_DEFAULT_PCT;
 
     function lookupTx(sel) {
       // 優先: per-ingredient (@<id>)、 fallback: base
@@ -18588,12 +18603,12 @@ body.layout-editor-on .bowl-fill-mask::after {
 
     var startTx = lookupTx('.startX-marker');
     if (startTx !== null) {
-      var startPct = STARTX_DEFAULT_PCT + 100 * (startTx + STARTX_MARKER_WIDTH / 2) / boardW;
+      var startPct = startBasePct + 100 * (startTx + STARTX_MARKER_WIDTH / 2) / boardW;
       if (isFinite(startPct)) ing.chopMechanics.startX_pct = startPct;
     }
     var endTx = lookupTx('.endX-marker');
     if (endTx !== null) {
-      var endPct = ENDX_DEFAULT_PCT + 100 * (endTx + ENDX_MARKER_WIDTH / 2) / boardW;
+      var endPct = endBasePct + 100 * (endTx + ENDX_MARKER_WIDTH / 2) / boardW;
       if (isFinite(endPct)) ing.chopMechanics.endX_pct = endPct;
     }
   }
