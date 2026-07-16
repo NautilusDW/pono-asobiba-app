@@ -59,7 +59,7 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
-- 2026-07-16 17:48 - by Claude - [batch:1318-stamp-rally-daily-challenge-merge] - 調査中 (play.html, common/stamp-rally.js 該当箇所) - batch:1317の続き。実機で「スタンプラリー」と「今日のチャレンジ」が別UIに分かれて見える件を調査し、統合案を設計 (fable調査→ユーザー確認→sonnet5実装、オーケストレータは実装非従事)
+- 2026-07-16 18:05 - by Claude - [batch:1318-stamp-rally-daily-challenge-merge] - 実装中 (play.html, common/stamp-rally.js, js/daily-quest.js, common/treasure.js, common/first-clear.js, nazonazo-tunnel/**, bento/kitchen.html, writing-mori/index.html, sw.js) - ユーザー承認済み: 「今日のチャレンジ」に一本化(クリアでガチャボーナス+スタンプ両方付与)、2ゲーム版デイリーラリー帯は撤去、新ゲーム3本を今日のチャレンジのプールに追加。ついでに宝箱演出未表示(common/treasure.js未読込)と初回クリア報酬の全tier停止(common/first-clear.jsのtier判定漏れ)も修正 (fable設計→sonnet5並列実装+クロスレビュー、オーケストレータは実装非従事)
 
 - 2026-06-28 09:27 - by Codex - [batch:877-gacha-tray-mask-lower] - play.html, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - ガチャ受け皿マスクが上すぎるため奥壁ラインを下げて再調整 [overlap: batch:860-data-export-import]
 - 2026-06-28 13:00 - by Claude - [batch:885-difficulty-label-phase3-fix] - quizland/index.html, puzzle/partner-select.js, bento/index.html - クロスレビュー Critical/High 修正 (quizland「かんたん」UI 露出 / puzzle partner「かんたん」/ bento aria-label hardcode) [overlap: batch:884-maze-water-line-skate]
