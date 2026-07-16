@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-07-17 - [batch:1335-kitchen-ninjin-ingen-stir] Codex: DONE — にんじんいんげんの炒め工程を、既存のにんじん9種＋いんげん9種の個別切れ端をCanvas上に散らす2.5D操作へ変更。PC／タッチでヘラをドラッグすると近くの切れ端が押され、回転・跳ね・楕円内バウンドし、移動距離と触れた切れ端数で完成。透明な塩レイヤーが入力を覆う問題をz順で回避し、キーボード操作も追加。Playwright関連9件、inline JS構文、diff check PASS。sw v2254。 (by Codex)
+
 - 2026-07-17 - [batch:1328b-mojikko-unified-frame-implementation] Codex: ユーザーの「では実装してください」を受領。Photoshop加工済み16 PNGの所在を確認中。見つかり次第、最新`origin/develop-app`由来の隔離worktree `/tmp/pono-1328b-mojikko-unified-frame-implementation` で `writing-mori/` へ接続する。`tmp/alpha_pending/1328-mojikko-unified-frame-family/raw/` の未加工rawは直接利用しない。現時点ではコード／assets／SWは未編集。 (by Codex)
 
 - 2026-07-16 - [batch:1328-mojikko-unified-frame-family] Codex: ユーザー指示「微妙にデザインがバラバラなので、全フレームを同じスタイルで出し直し、生成後の縦横比変更をできるだけ避けたい」を受領。既存のもじっこファーム用フレームは zukan／quizland／sticker 系素材の混成だが、今回は既存成果物の再利用ではなく明示的な統一 replacement。GPT Image 2 のみで、外側が純白背景の raw 15素材を `tmp/alpha_pending/1328-mojikko-unified-frame-family/raw/` へ生成する第一工程だけを行う。Codex側ではalpha抜き、crop、sheet分割、resize、最適化、assets配置、実装、SW更新を行わず、ユーザーがPhotoshopで処理して `tmp/alpha_pending/alpha/1328-mojikko-unified-frame-family/` へ返却後に別工程で実装する。現在の庭背景と、お手本文字の明朝体は変更しない。 (by Codex)

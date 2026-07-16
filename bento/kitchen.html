@@ -2755,6 +2755,27 @@ body.layout-editor-on .fry-pot {
 .cook-tool--pan::after {
   display: none;
 }
+.stir-fry-canvas {
+  position: absolute; left: 39.5%; top: 31%; width: 37%; height: 31%;
+  z-index: 45; border-radius: 50%; touch-action: none; cursor: grab;
+  opacity: 0; pointer-events: none; transition: opacity 0.24s ease;
+}
+#grill-stage.stir-fry-active .stir-fry-canvas { opacity: 1; pointer-events: auto; }
+#grill-stage.stir-fry-active .stir-fry-canvas:active { cursor: grabbing; }
+#grill-stage.stir-fry-active:not(.is-served) .cooking-food { opacity: 0; }
+.stir-fry-spatula {
+  position: absolute; left: 71%; top: 57%; width: 4.2%; height: 31%; z-index: 46;
+  border-radius: 45% 45% 28% 28%;
+  background: linear-gradient(90deg, #9b5b28, #e4a95d 48%, #8b4d22);
+  box-shadow: 0 4px 7px rgba(62,34,17,.28);
+  transform: translate(-50%,-16%) rotate(39deg); transform-origin: 50% 10%;
+  opacity: 0; pointer-events: none; transition: opacity .2s ease, transform .08s linear, left .08s linear, top .08s linear;
+}
+.stir-fry-spatula::before {
+  content: ''; position: absolute; left: -52%; bottom: -4%; width: 204%; height: 29%;
+  border-radius: 38% 38% 46% 46%; background: linear-gradient(90deg,#8a4d22,#df9b4c 48%,#7c421d);
+}
+#grill-stage.stir-fry-active .stir-fry-spatula { opacity: 1; }
 .cook-tool--pot {
   left: 30%;
   top: 14.2%;
@@ -6244,6 +6265,8 @@ body.layout-editor-on .bowl-fill-mask::after {
         <div class="cook-piece-bank" id="grill-piece-bank" aria-hidden="true"></div>
         <div class="finish-dish finish-dish--plate" aria-hidden="true"></div>
         <div class="cook-tool cook-tool--pan grill-pan" aria-hidden="true" data-le-keep-position="1"></div>
+        <canvas class="stir-fry-canvas" id="stir-fry-canvas" tabindex="0" role="application" aria-label="ヘラを うごかして にんじんと いんげんを まぜよう"></canvas>
+        <div class="stir-fry-spatula" id="stir-fry-spatula" aria-hidden="true"></div>
         <div class="grill-smoke" id="grill-smoke" aria-hidden="true">
           <i></i><i></i><i></i><i></i>
         </div>
@@ -7883,6 +7906,14 @@ body.layout-editor-on .bowl-fill-mask::after {
     cookPreheated: false,
     cookFoodPlaced: false,
     cookServed: false,
+    stirFryPieces: [],
+    stirFryActive: false,
+    stirFryPointerId: null,
+    stirFryLastX: 0,
+    stirFryLastY: 0,
+    stirFryDistance: 0,
+    stirFryMoved: new Set(),
+    stirFryRaf: 0,
     cookDragging: false,
     cookDragType: null,
     cookDragPointerId: null,
@@ -8417,6 +8448,8 @@ body.layout-editor-on .bowl-fill-mask::after {
     // grill screen
     grillStage:    document.getElementById('grill-stage'),
     grillPan:      document.querySelector('#grill-stage .grill-pan'),
+    stirFryCanvas: document.getElementById('stir-fry-canvas'),
+    stirFrySpatula: document.getElementById('stir-fry-spatula'),
     grillPieceBank: document.getElementById('grill-piece-bank'),
     grillDoneCard: document.getElementById('grill-done-card'),
     grillDoneTray: document.getElementById('grill-done-tray'),
@@ -8671,6 +8704,19 @@ body.layout-editor-on .bowl-fill-mask::after {
         if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
           e.preventDefault();
           onGrillTap();
+        }
+      });
+    }
+    if (els.stirFryCanvas) {
+      els.stirFryCanvas.addEventListener('pointerdown', onStirFryPointerDown);
+      els.stirFryCanvas.addEventListener('pointermove', onStirFryPointerMove);
+      els.stirFryCanvas.addEventListener('pointerup', onStirFryPointerEnd);
+      els.stirFryCanvas.addEventListener('pointercancel', onStirFryPointerEnd);
+      els.stirFryCanvas.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+          e.preventDefault();
+          e.stopPropagation();
+          keyboardStirFry();
         }
       });
     }
@@ -17773,10 +17819,189 @@ body.layout-editor-on .bowl-fill-mask::after {
     return type === 'fry' ? 'だいじょうぶ！ おいしく あがったよ！' : 'だいじょうぶ！ もういちど やこう！';
   }
 
+  function isNinjinIngenStirAction(ing, action) {
+    return !!(ing && ing.id === 'carrot' && action && action.type === 'grill' && state.activeRecipeId === 'ninjin_ingen');
+  }
+
+  function stopStirFry() {
+    state.stirFryActive = false;
+    state.stirFryPointerId = null;
+    if (state.stirFryRaf) cancelAnimationFrame(state.stirFryRaf);
+    state.stirFryRaf = 0;
+    if (els.grillStage) els.grillStage.classList.remove('stir-fry-active');
+  }
+
+  function sizeStirFryCanvas() {
+    const canvas = els.stirFryCanvas;
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    const width = Math.max(1, Math.round(rect.width * dpr));
+    const height = Math.max(1, Math.round(rect.height * dpr));
+    if (canvas.width !== width || canvas.height !== height) {
+      canvas.width = width;
+      canvas.height = height;
+    }
+    const ctx = canvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx: ctx, width: rect.width, height: rect.height, rect: rect };
+  }
+
+  function drawStirFry() {
+    if (!state.stirFryActive) return;
+    const surface = sizeStirFryCanvas();
+    if (!surface) return;
+    const ctx = surface.ctx;
+    ctx.clearRect(0, 0, surface.width, surface.height);
+    state.stirFryPieces.forEach(function (piece) {
+      piece.x += piece.vx;
+      piece.y += piece.vy;
+      piece.vx *= .91;
+      piece.vy *= .91;
+      piece.rot += piece.vr;
+      piece.vr *= .9;
+      piece.lift *= .82;
+      const nx = (piece.x - surface.width / 2) / (surface.width * .45);
+      const ny = (piece.y - surface.height / 2) / (surface.height * .40);
+      const distance = Math.sqrt(nx * nx + ny * ny);
+      if (distance > 1) {
+        piece.x = surface.width / 2 + nx / distance * surface.width * .44;
+        piece.y = surface.height / 2 + ny / distance * surface.height * .39;
+        piece.vx *= -.38;
+        piece.vy *= -.38;
+      }
+      if (!piece.image.complete || !piece.image.naturalWidth) return;
+      const depth = .82 + (piece.y / surface.height) * .28;
+      const w = piece.base * depth * (1 + piece.lift * .16);
+      const h = w * piece.image.naturalHeight / piece.image.naturalWidth;
+      ctx.save();
+      ctx.translate(piece.x, piece.y - piece.lift * 5);
+      ctx.rotate(piece.rot);
+      ctx.shadowColor = 'rgba(55,31,13,.32)';
+      ctx.shadowBlur = 4 + piece.lift * 3;
+      ctx.shadowOffsetY = 2 + piece.lift * 2;
+      ctx.filter = 'saturate(' + (1 + state.stirFryDistance / 5000) + ') brightness(' + Math.max(.9, 1.04 - state.stirFryDistance / 9000) + ')';
+      ctx.drawImage(piece.image, -w / 2, -h / 2, w, h);
+      ctx.restore();
+    });
+    state.stirFryRaf = requestAnimationFrame(drawStirFry);
+  }
+
+  function beginStirFry() {
+    const surface = sizeStirFryCanvas();
+    if (!surface) return;
+    stopStirFry();
+    state.stirFryDistance = 0;
+    state.stirFryMoved = new Set();
+    state.stirFryPieces = [];
+    const files = [];
+    for (let i = 1; i <= 9; i += 1) files.push('carrot_baton_' + String(i).padStart(2, '0') + '.png');
+    for (let i = 1; i <= 9; i += 1) files.push('green_bean_piece_' + String(i).padStart(2, '0') + '.png');
+    files.forEach(function (file, index) {
+      const image = new Image();
+      image.src = '../assets/images/bento/cooking/ninjin_ingen/pieces/' + file;
+      const angle = index * 2.39996;
+      const radius = .12 + ((index * 37) % 72) / 100;
+      state.stirFryPieces.push({
+        image: image,
+        x: surface.width / 2 + Math.cos(angle) * surface.width * .40 * radius,
+        y: surface.height / 2 + Math.sin(angle) * surface.height * .34 * radius,
+        vx: 0, vy: 0, vr: 0, rot: angle % 3.14, lift: 0,
+        base: file.indexOf('carrot') === 0 ? surface.width * .16 : surface.width * .18,
+      });
+    });
+    state.stirFryActive = true;
+    if (els.grillStage) els.grillStage.classList.add('stir-fry-active');
+    state.stirFryRaf = requestAnimationFrame(drawStirFry);
+  }
+
+  function finishNinjinIngenStirFry() {
+    if (!state.stirFryActive) return;
+    const ing = state.current;
+    stopStirFry();
+    state.cookProgress = 2;
+    state.cookServed = true;
+    state.cookAnimating = true;
+    stopKitchenAmbient('stove', 320);
+    updateCookView('grill', 2, 'burst');
+    updateCookStageState('grill');
+    if (els.grillBurst) els.grillBurst.textContent = 'できた！';
+    if (els.grillActionLabel) els.grillActionLabel.textContent = 'にんじんいんげん できあがり！';
+    setSpeech('にんじんと いんげんが まんべんなく まざったよ！', 'grill');
+    state.pendingTimers.push(setTimeout(function () {
+      state.cookAnimating = false;
+      completeCurrentAction(ing);
+    }, 1100));
+  }
+
+  function stirFryAt(clientX, clientY, dx, dy) {
+    if (!state.stirFryActive || !els.stirFryCanvas) return;
+    const rect = els.stirFryCanvas.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    const speed = Math.min(28, Math.hypot(dx, dy));
+    if (speed < 1) return;
+    state.stirFryDistance += speed;
+    state.stirFryPieces.forEach(function (piece, index) {
+      const dist = Math.hypot(piece.x - x, piece.y - y);
+      const reach = Math.max(74, rect.width * .34);
+      if (dist > reach) return;
+      const force = (.16 + (1 - dist / reach) * .52);
+      piece.vx += dx * force;
+      piece.vy += dy * force;
+      piece.vr += (dx - dy) * .0028 * force;
+      piece.lift = Math.min(1.5, piece.lift + speed * .035);
+      state.stirFryMoved.add(index);
+    });
+    if (els.stirFrySpatula && els.grillStage) {
+      const stageRect = els.grillStage.getBoundingClientRect();
+      els.stirFrySpatula.style.left = ((clientX - stageRect.left) / stageRect.width * 100) + '%';
+      els.stirFrySpatula.style.top = ((clientY - stageRect.top) / stageRect.height * 100) + '%';
+      els.stirFrySpatula.style.transform = 'translate(-50%,-16%) rotate(' + (34 + Math.max(-18, Math.min(18, dx))) + 'deg)';
+    }
+    const progress = Math.min(1, state.stirFryDistance / 900) * Math.min(1, state.stirFryMoved.size / 11);
+    updateCookDots('grill', progress < .5 ? 0 : 1);
+    if (els.grillActionLabel) els.grillActionLabel.textContent = progress < .45 ? 'ヘラで ぜんたいを まぜよう' : 'もうすこし まぜよう！';
+    if (progress >= 1) finishNinjinIngenStirFry();
+  }
+
+  function onStirFryPointerDown(evt) {
+    if (!state.stirFryActive) return;
+    evt.preventDefault(); evt.stopPropagation();
+    state.stirFryPointerId = evt.pointerId;
+    state.stirFryLastX = evt.clientX; state.stirFryLastY = evt.clientY;
+    els.stirFryCanvas.setPointerCapture(evt.pointerId);
+  }
+
+  function onStirFryPointerMove(evt) {
+    if (state.stirFryPointerId !== evt.pointerId) return;
+    evt.preventDefault(); evt.stopPropagation();
+    const dx = evt.clientX - state.stirFryLastX;
+    const dy = evt.clientY - state.stirFryLastY;
+    stirFryAt(evt.clientX, evt.clientY, dx, dy);
+    state.stirFryLastX = evt.clientX; state.stirFryLastY = evt.clientY;
+  }
+
+  function onStirFryPointerEnd(evt) {
+    if (state.stirFryPointerId !== evt.pointerId) return;
+    evt.preventDefault(); evt.stopPropagation();
+    state.stirFryPointerId = null;
+  }
+
+  function keyboardStirFry() {
+    if (!state.stirFryActive || !els.stirFryCanvas) return false;
+    const rect = els.stirFryCanvas.getBoundingClientRect();
+    for (let i = 0; i < 7; i += 1) {
+      stirFryAt(rect.left + rect.width * (.2 + i * .1), rect.top + rect.height * (.35 + (i % 2) * .3), 32, (i % 2 ? -13 : 13));
+    }
+    return true;
+  }
+
   function placeFoodForGrill() {
     const ing = state.current;
     const action = getCurrentAction();
     const eggGrill = isEggGrillAction(ing, action);
+    const stirFry = isNinjinIngenStirAction(ing, action);
     state.cookAnimating = true;
     state.cookFoodPlaced = true;
     state.cookServed = false;
@@ -17800,6 +18025,9 @@ body.layout-editor-on .bowl-fill-mask::after {
     if (eggGrill) {
       if (els.grillActionLabel) els.grillActionLabel.textContent = 'ふたを よういしよう';
       setSpeech('ぽとん！ たまごが フライパンに はいったよ！ ふたを つかむ じゅんびをしよう！', 'grill');
+    } else if (stirFry) {
+      if (els.grillActionLabel) els.grillActionLabel.textContent = 'ヘラで ぜんたいを まぜよう';
+      setSpeech('ジュッ！ ヘラを うごかして、にんじんと いんげんを まぜよう！', 'grill');
     } else if (isMultiPieceCookAction(action)) {
       const pieceText = getCookPieceText(action);
       if (els.grillActionLabel) els.grillActionLabel.textContent = pieceText + ' ゲージの あおで ころがそう';
@@ -17819,6 +18047,8 @@ body.layout-editor-on .bowl-fill-mask::after {
         if (els.grillActionLabel) els.grillActionLabel.textContent = 'ふたを ドラッグして しめよう';
         setSpeech('ふたを つかんで フライパンへ もっていこう！', 'grill');
         updateCookStageState('grill');
+      } else if (stirFry) {
+        beginStirFry();
       } else if (Array.isArray(action && action.subSteps) && action.subSteps.length) {
         // SubStep cinema mode (salmon Phase C): skip timing gauge — flow is driven
         // by cookFront/cookBack taps instead.
@@ -18023,6 +18253,12 @@ body.layout-editor-on .bowl-fill-mask::after {
     if (state.currentScreen !== 'grill') return;
     const action = getCurrentAction();
     if (!state.current || !action || action.type !== 'grill') return;
+    if (isNinjinIngenStirAction(state.current, action) && state.cookFoodPlaced) {
+      if (!state.stirFryActive) beginStirFry();
+      else if (!(evt && evt.type === 'click')) keyboardStirFry();
+      setSpeech('ヘラを つかんで、フライパンの ぜんたいを まぜよう！', 'grill');
+      return;
+    }
     // SubStep cinema cook (salmon Phase C): cookFront / cookBack taps drive flip/done.
     if (Array.isArray(action.subSteps) && action.subSteps.length) {
       if (isInSubStepCookMode()) {
@@ -20186,6 +20422,10 @@ body.layout-editor-on .bowl-fill-mask::after {
     state.cookPreheated = false;
     state.cookFoodPlaced = false;
     state.cookServed = false;
+    stopStirFry();
+    state.stirFryPieces = [];
+    state.stirFryDistance = 0;
+    state.stirFryMoved = new Set();
     state.cookDragging = false;
     state.cookDragType = null;
     state.cookDragPointerId = null;
