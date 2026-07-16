@@ -1,5 +1,9 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2234: みちつなぎの中央に重なっていた水色の移動矢印を撤去し、押せるパネルの穴側エッジ、
+// 推奨パネル自体の予告移動、360msの持ち上がり／滑走、移動元の穴、着地後の新しい穴を
+// 暖色で順に見せる操作フィードバックへ変更。App版では `?stage=3` で二段探索を直接確認
+// できるようにした (batch:1326-slide-motion-clarity)。play.html PAGE_CACHE_VERSION と同期不要。
 // v2233: トントンキッチンへ共通のゆでる操作を追加。専用鍋の静水／沸騰、食材レイヤー、
 // 穴あきおたま、水切りボウルを分離し、ブロッコリー／えだまめが同じ器具と進行を使う。
 // 網素材は使わずマスクしやすい太い輪郭へ統一した (batch:1326-kitchen-workshop-assets)。
@@ -282,7 +286,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2233;
+const CACHE_VERSION = 2234;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
