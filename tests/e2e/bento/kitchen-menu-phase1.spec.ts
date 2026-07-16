@@ -18,7 +18,16 @@ test('ninjin ingen pieces spread and move when the spatula is dragged', async ({
   await expect(page.locator('body')).toHaveAttribute('data-screen', 'grill');
   await expect.poll(() => page.evaluate(() => Boolean((window as Window & { __bentoState?: { cookPreheated?: boolean } }).__bentoState?.cookPreheated))).toBe(true);
 
-  await page.locator('#grilling-food-wrap').dragTo(page.locator('.grill-pan'), { force: true });
+  const tray = page.locator('#stir-fry-tray-pieces');
+  await expect(tray.locator('img')).toHaveCount(7);
+  await tray.dragTo(page.locator('.grill-pan'), { force: true });
+  await expect.poll(() => page.evaluate(() => (window as Window & { __bentoState?: { stirFryPhase?: string; stirFryPieces?: unknown[] } }).__bentoState && ({
+    phase: (window as Window & { __bentoState?: { stirFryPhase?: string } }).__bentoState?.stirFryPhase,
+    pieces: (window as Window & { __bentoState?: { stirFryPieces?: unknown[] } }).__bentoState?.stirFryPieces?.length,
+  }))).toEqual({ phase: 'green_bean', pieces: 9 });
+  await expect(tray.locator('img').first()).toHaveAttribute('src', /green_bean_piece_/);
+  await expect.poll(() => page.evaluate(() => !(window as Window & { __bentoState?: { stirFryPieces?: Array<{ image?: HTMLImageElement }> } }).__bentoState?.stirFryPieces?.some(piece => piece.image?.src.includes('green_bean_piece_')))).toBe(true);
+  await tray.dragTo(page.locator('.grill-pan'), { force: true });
   await expect(page.locator('#grill-stage')).toHaveClass(/stir-fry-active/);
   await expect.poll(() => page.evaluate(() => (window as Window & { __bentoState?: { stirFryPieces?: unknown[] } }).__bentoState?.stirFryPieces?.length || 0)).toBe(18);
 

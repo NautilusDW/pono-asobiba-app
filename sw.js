@@ -1,5 +1,9 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2255: にんじんいんげんの投入を個別切れ端のにんじん皿→いんげん皿→混ぜる
+// 3段階へ変更。投入前の合成レイヤ感といんげんの突然出現を解消し、フライパンの
+// 楕円描画範囲を左上へ補正して鍋肌に合わせたクリップを追加
+// (batch:1336-kitchen-ninjin-ingen-sequence)。play.html同期不要。
 // v2254: にんじんいんげんを、既存の個別切れ端18枚がフライパン内で散らばり、
 // PC/タッチのヘラドラッグで押す・回る・少し跳ねる2.5D炒め操作へ変更。
 // 透明な塩レイヤーによる入力遮断も回避し、全体を混ぜると完成する。
@@ -412,7 +416,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2254;
+const CACHE_VERSION = 2255;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
