@@ -94,6 +94,7 @@ const expectedStoryAssets = [
   'assets/images/mojikko/writing/storybook/frame-family/14_mojikko_kana_tab_short_normal.png',
   'assets/images/mojikko/writing/storybook/frame-family/15_mojikko_character_tile_main_normal.png',
   'assets/images/mojikko/writing/storybook/frame-family/15_mojikko_character_tile_short_normal.png',
+  'assets/_legacy/preview-placeholders/ctrl-btn-settings.png',
   'assets/images/quizland/quizland_difficulty_star_gold_gpt_image2_20260623.png',
   'assets/images/Bento_parts/cookie.webp',
   'assets/images/nazonazo-tunnel/quiz-art/quiz_onigiri_20260714.webp',
@@ -142,6 +143,14 @@ for (const [name, dimensions] of Object.entries(expectedFrameDimensions)) {
   assert.deepEqual([png.readUInt32BE(16), png.readUInt32BE(20)], dimensions, `${name}: dimensions drifted`);
   assert.equal(png[25], 6, `${name}: processed frame must remain RGBA`);
 }
+
+const canonicalSettingsPng = fs.readFileSync(path.join(root, 'assets/_legacy/preview-placeholders/ctrl-btn-settings.png'));
+assert.equal(canonicalSettingsPng.subarray(1, 4).toString('ascii'), 'PNG', 'canonical settings control is not a PNG');
+assert.deepEqual(
+  [canonicalSettingsPng.readUInt32BE(16), canonicalSettingsPng.readUInt32BE(20)],
+  [120, 120],
+  'canonical settings control must keep its square natural ratio'
+);
 
 assert.ok(Array.isArray(nativeManifest.entries), 'native content manifest entries are missing');
 const writingAssetLiterals = new Set();
@@ -262,11 +271,11 @@ assert.match(
 );
 assert.match(
   unifiedFrameCss,
-  /\.settings-btn\s*\{[^}]*aspect-ratio:\s*581\s*\/\s*601;[^}]*background:\s*var\(--story-settings\) center \/ contain no-repeat !important;/s
+  /\.settings-btn\s*\{[^}]*aspect-ratio:\s*1\s*\/\s*1;[^}]*background:\s*url\('\.\.\/assets\/_legacy\/preview-placeholders\/ctrl-btn-settings\.png'\) center \/ contain no-repeat !important;/s
 );
 assert.match(
   unifiedFrameCss,
-  /#backBtn,\s*#modeSwitchBtn,\s*#resetBtn,\s*#careBtn\s*\{[^}]*aspect-ratio:\s*1223\s*\/\s*363;[^}]*background-image:\s*var\(--story-button-secondary\) !important;/s
+  /#modeSwitchBtn,\s*#resetBtn,\s*#careBtn\s*\{[^}]*aspect-ratio:\s*1223\s*\/\s*363;[^}]*background-image:\s*var\(--story-button-secondary\) !important;/s
 );
 assert.match(
   unifiedFrameCss,
@@ -339,7 +348,60 @@ assert.match(
   'the generated board paper must not be covered by an extra opaque box'
 );
 assert.doesNotMatch(html, /class="star-icon"/, 'the generated star counter must not duplicate its baked icon');
-assert.doesNotMatch(html, /settings-btn[^>]*>\s*<img/, 'the generated settings button must not duplicate its baked icon');
+assert.doesNotMatch(html, /settings-btn[^>]*>\s*<img/, 'the canonical settings button must remain a single CSS image');
+assert.doesNotMatch(html, /\bid="backBtn"/, 'the standalone return button must stay inside settings');
+assert.match(
+  html,
+  /id="settingsBtn"[^>]*aria-haspopup="menu"[^>]*aria-controls="settingsPopover"[^>]*aria-expanded="false"/,
+  'the settings trigger must expose its menu relationship'
+);
+assert.match(
+  html,
+  /id="settingsPopover"[^>]*role="menu"[^>]*aria-label="せってい"[^>]*aria-hidden="true"[^>]*hidden/,
+  'the settings popover must start hidden from sight and assistive technology'
+);
+assert.match(
+  html,
+  /id="settingsBackBtn"[^>]*role="menuitem"[^>]*tabindex="-1"[^>]*>もどる<\/button>/,
+  'the first settings item must be the kana return action'
+);
+assert.match(
+  unifiedFrameCss,
+  /\.stage-header\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\) auto minmax\(0, 1fr\);/s,
+  'the mode switch must stay centered between equal header tracks'
+);
+assert.match(
+  html,
+  /function setSettingsMenuOpen\([^]*settingsPopover\.hidden\s*=\s*!next;[^]*settingsPopover\.setAttribute\('aria-hidden', next \? 'false' : 'true'\);[^]*settingsBtn\.setAttribute\('aria-expanded', next \? 'true' : 'false'\);[^]*item\.tabIndex\s*=\s*next \? 0 : -1;/s,
+  'the settings menu must keep hidden, ARIA, and tab stops synchronized'
+);
+assert.match(html, /event\.key === 'ArrowDown'[^]*event\.key === 'ArrowUp'[^]*event\.key === 'Home'[^]*event\.key === 'End'/s);
+assert.match(html, /event\.key === 'Escape'[^]*closeSettingsMenu\(\{ restoreFocus: true \}\)/s);
+assert.match(
+  html,
+  /document\.addEventListener\('pointerdown', \(event\) => \{[^]*settingsOutsideClickUntil = Date\.now\(\) \+ 500;[^]*event\.preventDefault\(\);[^]*event\.stopImmediatePropagation\(\);[^]*closeSettingsMenu\(\{ restoreFocus: true \}\);[^]*\}, true\);/s,
+  'outside pointer dismissal must stop tap-through and restore a valid focus target'
+);
+assert.match(
+  html,
+  /function refreshWritingLayoutAndModeRuntime\(\)[^]*isSettingsMenuOpen\(\)\) closeSettingsMenu\(\{ restoreFocus: false \}\);/s,
+  'portrait or tier lock must close settings before blocking the writing runtime'
+);
+assert.match(
+  html,
+  /function openResultOverlay\(\)[^]*isSettingsMenuOpen\(\)\) closeSettingsMenu\(\{ restoreFocus: true \}\);[^]*const activeElement = document\.activeElement;/s,
+  'the settings menu must close before result focus is captured'
+);
+assert.match(
+  html,
+  /function openModeChoice\(\)[^]*isSettingsMenuOpen\(\)\) closeSettingsMenu\(\{ restoreFocus: true \}\);/s,
+  'the settings menu must close before the mode chooser opens'
+);
+assert.match(
+  html,
+  /settingsBackBtn\.addEventListener\('click', \(event\) => \{[^]*clearPendingWritingCompletionTimers\(\);[^]*saveCareState\(\);[^]*window\.location\.href = '\.\.\/play\.html';/s,
+  'returning through settings must cancel completion work, save care, then navigate home'
+);
 
 assert.doesNotMatch(
   html,

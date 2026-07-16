@@ -777,7 +777,8 @@ check('intermediate feedback names the accepted reward and final summary covers 
 });
 
 check('short landscape key controls expose compact 44px-class hit areas and dialog traps Tab', () => {
-  assert.match(html, /@media \(max-height: 500px\) and \(orientation: landscape\)[\s\S]*?\.back-btn[\s\S]*?height:\s*108px/);
+  assert.match(html, /@media \(max-height: 500px\) and \(orientation: landscape\)[\s\S]*?\.settings-btn[\s\S]*?height:\s*108px/);
+  assert.match(html, /@media \(max-height: 500px\) and \(orientation: landscape\)[\s\S]*?\.settings-menu-item[\s\S]*?min-height:\s*108px/);
   assert.match(html, /@media \(max-height: 500px\) and \(orientation: landscape\)[\s\S]*?\.mode-switch-btn[\s\S]*?height:\s*108px/);
   assert.match(html, /event\.key === 'Tab'/);
   assert.match(html, /modeChoiceReturnFocus/);

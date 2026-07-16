@@ -580,7 +580,7 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
           };
         });
         const cornerSelectors = Object.freeze({
-          back: '#backBtn',
+          settings: '#settingsBtn',
           mode: '#modeSwitchBtn',
           prompt: '#promptText',
           characters: '.character-panel',
@@ -610,8 +610,19 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
             left: document.querySelector('#stage-wrap').scrollLeft,
             top: document.querySelector('#stage-wrap').scrollTop
           },
+          standaloneBackMissing: document.querySelector('#backBtn') === null,
+          settingsInitial: {
+            expanded: document.querySelector('#settingsBtn').getAttribute('aria-expanded'),
+            hidden: document.querySelector('#settingsPopover').hidden,
+            ariaHidden: document.querySelector('#settingsPopover').getAttribute('aria-hidden'),
+            itemTabIndex: document.querySelector('#settingsBackBtn').tabIndex,
+            itemText: document.querySelector('#settingsBackBtn').textContent.trim()
+          },
+          modeCenterDelta: Math.abs(
+            (modeSwitchRect.left + modeSwitchRect.right) / 2
+              - (stageRect.left + stageRect.right) / 2
+          ),
           textAudits: Object.fromEntries([
-            ['back', '#backBtn'],
             ['mode', '#modeSwitchBtn'],
             ['currentMode', '.current-mode-name'],
             ['stars', '.star-box'],
@@ -636,7 +647,6 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
             getComputedStyle(document.querySelector('#writingBoard'), '::before').backgroundImage,
             getComputedStyle(document.querySelector('.stroke-panel')).backgroundImage,
             getComputedStyle(document.querySelector('#promptText')).backgroundImage,
-            getComputedStyle(document.querySelector('#backBtn')).backgroundImage,
             getComputedStyle(document.querySelector('#modeSwitchBtn')).backgroundImage,
             getComputedStyle(document.querySelector('#resetBtn')).backgroundImage,
             getComputedStyle(document.querySelector('#doneBtn')).backgroundImage
@@ -649,7 +659,6 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
             ['strokes', '.stroke-panel'],
             ['prompt', '#promptText'],
             ['message', '#messageBox'],
-            ['back', '#backBtn'],
             ['mode', '#modeSwitchBtn'],
             ['reset', '#resetBtn'],
             ['done', '#doneBtn'],
@@ -660,8 +669,9 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
             ['care', '#careBtn'],
             ['retry', '#modalRetryBtn']
           ].map(([name, selector]) => ({ name, ...surfaceAudit(selector) })),
+          settingsSurface: surfaceAudit('#settingsBtn'),
           imageOnlyPseudos: [
-            '#backBtn', '#modeSwitchBtn', '#resetBtn', '#doneBtn', '#careBtn', '#modalRetryBtn',
+            '#modeSwitchBtn', '#resetBtn', '#doneBtn', '#careBtn', '#modalRetryBtn',
             '.character-panel', '#companionCard', '.stroke-panel', '#promptText', '#messageBox',
             '.mode-choice-card', '.result-card'
           ].flatMap((selector) => [surfaceAudit(selector, '::before'), surfaceAudit(selector, '::after')]),
@@ -701,9 +711,8 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
           companionArt: getComputedStyle(document.querySelector('.pixel-creature')).backgroundImage,
           companionArtDisplay: getComputedStyle(document.querySelector('.pixel-creature')).display,
           rects: Object.fromEntries([
-            ['back', '#backBtn'],
             ['mode', '#modeSwitchBtn'],
-            ['settings', '.settings-btn'],
+            ['settings', '#settingsBtn'],
             ['kana', '.kana-tab'],
             ['character', '.char-button'],
             ['characters', '.character-panel'],
@@ -731,6 +740,15 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
       assert.equal(initial.overflowX, false, `${viewport.name}: horizontal overflow`);
       assert.equal(initial.overflowY, false, `${viewport.name}: vertical overflow`);
       assert.deepEqual(initial.wrapScroll, { left: 0, top: 0 }, `${viewport.name}: stage wrapper started scrolled`);
+      assert.equal(initial.standaloneBackMissing, true, `${viewport.name}: standalone return button is still present`);
+      assert.deepEqual(initial.settingsInitial, {
+        expanded: 'false',
+        hidden: true,
+        ariaHidden: 'true',
+        itemTabIndex: -1,
+        itemText: 'もどる'
+      }, `${viewport.name}: settings menu did not start in a closed accessible state`);
+      assert.ok(initial.modeCenterDelta < 0.1, `${viewport.name}: mode switch is not centered in the header`);
       assert.match(initial.uiFont, /Zen Maru Gothic/);
       assert.match(initial.writerFont, /Yu Mincho/);
       assert.equal(initial.wrapBackground, 'none');
@@ -760,6 +778,11 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
       assert.ok(initial.mainFrameSources.every((source) => !/07_mojikko_result_frame\.png/.test(source)), `${viewport.name}: result frame leaked onto the main screen`);
       assert.match(initial.resultFrame, /07_mojikko_result_frame\.png/);
       assert.match(initial.chooserFrame, /06_mojikko_mode_chooser_base\.png/);
+      assert.match(initial.settingsSurface.backgroundImage, /assets\/_legacy\/preview-placeholders\/ctrl-btn-settings\.png/);
+      assert.deepEqual(initial.settingsSurface.borderWidths, ['0px', '0px', '0px', '0px'], `${viewport.name}: settings paints a CSS border`);
+      assert.equal(initial.settingsSurface.backgroundColor, 'rgba(0, 0, 0, 0)', `${viewport.name}: settings paints a CSS paper`);
+      assert.equal(initial.settingsSurface.boxShadow, 'none', `${viewport.name}: settings paints a rectangular CSS shadow`);
+      assert.equal(initial.settingsSurface.backgroundSize, 'contain', `${viewport.name}: settings image is stretched`);
       for (const surface of initial.imageOnlySurfaces) {
         assert.equal(surface.borderImageSource, 'none', `${viewport.name}:${surface.name} retained border-image chrome`);
         assert.deepEqual(surface.borderWidths, ['0px', '0px', '0px', '0px'], `${viewport.name}:${surface.name} retained a CSS border`);
@@ -840,7 +863,7 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
         for (const name of ['currentMode', 'stars', 'kana', 'companionName', 'companionLevel', 'companionSpeech', 'rewardTitle', 'rewardItem']) {
           assert.ok(initial.textAudits[name].visualFontSize >= 12, `${viewport.name}:${name} supporting text is below 12px`);
         }
-        for (const name of ['back', 'mode', 'panelTitle', 'character', 'prompt', 'reset', 'done']) {
+        for (const name of ['mode', 'panelTitle', 'character', 'prompt', 'reset', 'done']) {
           assert.ok(initial.textAudits[name].visualFontSize >= 13.5, `${viewport.name}:${name} primary text is below 13.5px`);
         }
       }
@@ -862,13 +885,12 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
         assert.equal(sha256(JSON.stringify(initial.writerRuntime.medians)), '2ae3ae6f7b3d38a66b2bcb8bcb14992d10eb02604e84888a54408fc2e1e86e70');
         assert.equal(sha256(JSON.stringify(initial.writerRuntime.svgPaths)), 'e525a8c2015d101afa8f809c7865ff44bc6c07d6fef233695db46b0f627cc330');
       }
-      for (const name of ['back', 'mode', 'settings', 'kana', 'character', 'reset', 'done']) {
+      for (const name of ['mode', 'settings', 'kana', 'character', 'reset', 'done']) {
         assert.ok(initial.rects[name].height >= 44, `${viewport.name}:${name} is below 44px`);
       }
       for (const [name, expectedRatio] of Object.entries({
-        back: 1223 / 363,
         mode: 1223 / 363,
-        settings: 581 / 601,
+        settings: 1,
         kana: viewport.height <= 500 ? 723 / 720 : 570 / 331,
         character: viewport.height <= 500 ? 559 / 561 : 404 / 564,
         reset: 1223 / 363,
@@ -896,12 +918,112 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
         '10_mojikko_secondary_button_normal.png',
         '11_mojikko_primary_button_normal.png',
         viewport.height <= 500 ? '12_mojikko_star_counter_short.png' : '12_mojikko_star_counter_regular.png',
-        '13_mojikko_settings_button_normal.png',
+        'ctrl-btn-settings.png',
         viewport.height <= 500 ? '14_mojikko_kana_tab_short_normal.png' : '14_mojikko_kana_tab_main_normal.png',
         viewport.height <= 500 ? '15_mojikko_character_tile_short_normal.png' : '15_mojikko_character_tile_main_normal.png',
         'milmaru_egg_idle_20260716.webp'
       ]
         .forEach((asset) => assert.ok(initial.resources.some((url) => url.includes(asset)), `${viewport.name}: ${asset} was not loaded`));
+
+      await page.locator('#settingsBtn').click();
+      await page.waitForFunction(() => !document.querySelector('#settingsPopover').hidden);
+      const pointerSettings = await page.evaluate(() => {
+        const rect = (selector) => {
+          const value = document.querySelector(selector).getBoundingClientRect();
+          return { left: value.left, top: value.top, right: value.right, bottom: value.bottom, width: value.width, height: value.height };
+        };
+        return {
+          expanded: settingsBtn.getAttribute('aria-expanded'),
+          hidden: settingsPopover.hidden,
+          ariaHidden: settingsPopover.getAttribute('aria-hidden'),
+          itemTabIndex: settingsBackBtn.tabIndex,
+          activeId: document.activeElement && document.activeElement.id,
+          popover: rect('#settingsPopover'),
+          item: rect('#settingsBackBtn')
+        };
+      });
+      assert.equal(pointerSettings.expanded, 'true', `${viewport.name}: pointer did not expand settings`);
+      assert.equal(pointerSettings.hidden, false, `${viewport.name}: pointer-open settings stayed hidden`);
+      assert.equal(pointerSettings.ariaHidden, 'false', `${viewport.name}: pointer-open settings stayed hidden from assistive tech`);
+      assert.equal(pointerSettings.itemTabIndex, 0, `${viewport.name}: open settings item stayed outside tab order`);
+      assert.equal(pointerSettings.activeId, 'settingsBtn', `${viewport.name}: pointer open moved focus unexpectedly`);
+      assertInsideViewport(pointerSettings.popover, viewport, `${viewport.name}:settings-popover`);
+      assertInsideViewport(pointerSettings.item, viewport, `${viewport.name}:settings-return`);
+      assert.ok(pointerSettings.item.width >= 44 && pointerSettings.item.height >= 44, `${viewport.name}: settings return is below 44px`);
+
+      await page.locator('#modeSwitchBtn').click();
+      await page.waitForFunction(() => document.querySelector('#settingsPopover').hidden);
+      const outsideDismissal = await page.evaluate(() => ({
+        expanded: settingsBtn.getAttribute('aria-expanded'),
+        ariaHidden: settingsPopover.getAttribute('aria-hidden'),
+        chooserOpen: modeChoiceOverlay.classList.contains('show'),
+        activeId: document.activeElement && document.activeElement.id
+      }));
+      assert.deepEqual(outsideDismissal, {
+        expanded: 'false',
+        ariaHidden: 'true',
+        chooserOpen: false,
+        activeId: 'settingsBtn'
+      }, `${viewport.name}: outside dismissal leaked its tap or lost focus`);
+
+      await page.locator('#settingsBtn').focus();
+      await page.keyboard.press('Enter');
+      await page.waitForFunction(() => document.activeElement && document.activeElement.id === 'settingsBackBtn');
+      for (const key of ['ArrowDown', 'ArrowUp', 'Home', 'End']) {
+        await page.keyboard.press(key);
+        assert.equal(await page.evaluate(() => document.activeElement && document.activeElement.id), 'settingsBackBtn', `${viewport.name}: settings ${key} lost its menu item`);
+      }
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(() => document.querySelector('#settingsPopover').hidden);
+      assert.equal(await page.evaluate(() => document.activeElement && document.activeElement.id), 'settingsBtn', `${viewport.name}: settings Escape did not restore focus`);
+
+      await page.keyboard.press('Enter');
+      await page.waitForFunction(() => document.activeElement && document.activeElement.id === 'settingsBackBtn');
+      await page.keyboard.press('Tab');
+      await page.waitForFunction(() => document.querySelector('#settingsPopover').hidden);
+      assert.notEqual(await page.evaluate(() => document.activeElement && document.activeElement.id), 'settingsBackBtn', `${viewport.name}: focus left a hidden settings item active`);
+
+      const chooserFromSettings = await page.evaluate(() => {
+        setSettingsMenuOpen(true);
+        focusElementWithoutScroll(settingsBackBtn);
+        openModeChoice();
+        return {
+          settingsHidden: settingsPopover.hidden,
+          settingsExpanded: settingsBtn.getAttribute('aria-expanded'),
+          chooserOpen: modeChoiceOverlay.classList.contains('show'),
+          activeMode: document.activeElement && document.activeElement.dataset.writingMode
+        };
+      });
+      assert.deepEqual(chooserFromSettings, {
+        settingsHidden: true,
+        settingsExpanded: 'false',
+        chooserOpen: true,
+        activeMode: 'sequence'
+      }, `${viewport.name}: mode chooser did not replace settings cleanly`);
+      await page.locator('#modeChoiceCloseBtn').click();
+      assert.equal(await page.evaluate(() => document.activeElement && document.activeElement.id), 'settingsBtn', `${viewport.name}: chooser did not return focus to settings`);
+
+      const resultFromSettings = await page.evaluate(() => {
+        setSettingsMenuOpen(true);
+        focusElementWithoutScroll(settingsBackBtn);
+        const opened = openResultOverlay();
+        return {
+          opened,
+          settingsHidden: settingsPopover.hidden,
+          settingsExpanded: settingsBtn.getAttribute('aria-expanded'),
+          resultOpen: resultOverlay.classList.contains('show')
+        };
+      });
+      assert.deepEqual(resultFromSettings, {
+        opened: true,
+        settingsHidden: true,
+        settingsExpanded: 'false',
+        resultOpen: true
+      }, `${viewport.name}: result overlay did not replace settings cleanly`);
+      await page.waitForFunction(() => document.activeElement && document.activeElement.id === 'modalRetryBtn');
+      await page.evaluate(() => closeResultOverlay());
+      await page.waitForFunction(() => document.activeElement && document.activeElement.id === 'settingsBtn');
+
       if (viewport.name === 'short-landscape' || viewport.name === 'design-size') {
         const stateTintAudit = await page.evaluate(() => {
           const tab = document.querySelector('.kana-tab');

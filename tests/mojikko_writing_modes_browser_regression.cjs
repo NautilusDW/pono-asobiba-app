@@ -348,7 +348,7 @@ async function runAtomicModeRace(browser, base, mode, trial, errors) {
     await portraitPage.setViewportSize({ width: 844, height: 390 });
     await portraitPage.waitForFunction(() => MojikkoWritingGame.getModeState().initialized);
     assert.equal(await portraitPage.evaluate(() => MojikkoWritingGame.getMode()), 'word-hole');
-    const keyRects = await portraitPage.evaluate(() => ['backBtn', 'modeSwitchBtn'].map((id) => {
+    const keyRects = await portraitPage.evaluate(() => ['settingsBtn', 'modeSwitchBtn'].map((id) => {
       const rect = document.getElementById(id).getBoundingClientRect();
       return { id, width: rect.width, height: rect.height };
     }));
@@ -418,8 +418,21 @@ async function runAtomicModeRace(browser, base, mode, trial, errors) {
       currentStrokeIndex = Math.max(0, item.strokes - 1);
       maybeFinishWritingAfterProgress({ totalStrokes: item.strokes });
     });
+    await runtimePage.locator('#settingsBtn').click();
+    assert.equal(await runtimePage.locator('#settingsPopover').getAttribute('aria-hidden'), 'false');
     await runtimePage.setViewportSize({ width: 390, height: 844 });
     await runtimePage.waitForTimeout(1000);
+    assert.deepEqual(await runtimePage.evaluate(() => ({
+      hidden: settingsPopover.hidden,
+      ariaHidden: settingsPopover.getAttribute('aria-hidden'),
+      expanded: settingsBtn.getAttribute('aria-expanded'),
+      itemTabIndex: settingsBackBtn.tabIndex
+    })), {
+      hidden: true,
+      ariaHidden: 'true',
+      expanded: 'false',
+      itemTabIndex: -1
+    }, 'portrait lock did not close settings accessibly');
     assert.deepEqual(await runtimePage.evaluate(() => ({
       storage: Object.keys(localStorage).sort().map((key) => [key, localStorage.getItem(key)]),
       modeState: MojikkoWritingGame.getModeState(),
@@ -694,10 +707,14 @@ async function runAtomicModeRace(browser, base, mode, trial, errors) {
       assert.equal(await page.locator('#modeSwitchBtn').isVisible(), true);
       assert.doesNotMatch(await page.locator('#stage').getAttribute('style'), /NaN|Infinity/);
       if (viewport.width === 667) {
-        for (const id of ['backBtn', 'modeSwitchBtn']) {
+        for (const id of ['settingsBtn', 'modeSwitchBtn']) {
           const rect = await page.locator(`#${id}`).boundingBox();
           assert.ok(rect && rect.height >= 44, `${id} at 667x375 was ${rect && rect.height}px high`);
         }
+        await page.locator('#settingsBtn').click();
+        const settingsBackRect = await page.locator('#settingsBackBtn').boundingBox();
+        assert.ok(settingsBackRect && settingsBackRect.width >= 44 && settingsBackRect.height >= 44, `settingsBackBtn at 667x375 was ${settingsBackRect && `${settingsBackRect.width}x${settingsBackRect.height}`}`);
+        await page.keyboard.press('Escape');
       }
       await page.close();
     }

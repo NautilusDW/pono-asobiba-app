@@ -372,7 +372,6 @@ html, body {
   z-index: 20;
 }
 
-.back-btn,
 .settings-btn {
   display: inline-flex;
   align-items: center;
@@ -1597,7 +1596,6 @@ html, body {
     height: 108px;
   }
 
-  .back-btn,
   .mode-switch-btn {
     height: 108px;
     min-height: 108px;
@@ -1928,15 +1926,9 @@ html, body {
   gap: 18px;
 }
 
-.back-btn,
 .mode-switch-btn {
   height: 64px;
   min-height: 64px;
-}
-
-.back-btn {
-  justify-self: start;
-  min-width: 194px;
 }
 
 .mode-switch-btn {
@@ -2838,10 +2830,6 @@ html, body {
    keeps its opaque paper so the Mincho exemplar and tracing mask stay clear.
    -------------------------------------------------------------------------- */
 
-.back-btn {
-  border-image-source: var(--story-button-secondary);
-}
-
 .mode-switch-btn {
   border-image-source: var(--story-button-secondary);
 }
@@ -2981,16 +2969,11 @@ html, body {
     height: 108px;
   }
 
-  .back-btn,
   .mode-switch-btn {
     height: 108px;
     min-height: 108px;
     font-size: 33px;
     line-height: 1;
-  }
-
-  .back-btn {
-    padding: 0 12px;
   }
 
   .mode-switch-btn {
@@ -3290,7 +3273,6 @@ html, body {
   gap: 20px;
 }
 
-#backBtn,
 #modeSwitchBtn,
 #resetBtn,
 #doneBtn,
@@ -3314,7 +3296,6 @@ html, body {
   text-shadow: 0 1px rgba(255, 255, 255, 0.74);
 }
 
-#backBtn,
 #modeSwitchBtn,
 #resetBtn,
 #careBtn {
@@ -3328,7 +3309,6 @@ html, body {
   background-image: var(--story-button-primary) !important;
 }
 
-#backBtn:active:not(:disabled),
 #modeSwitchBtn:active:not(:disabled),
 #resetBtn:active:not(:disabled),
 #careBtn:active:not(:disabled) {
@@ -3342,7 +3322,6 @@ html, body {
   filter: brightness(0.96) saturate(0.98);
 }
 
-#backBtn:focus-visible,
 #modeSwitchBtn:focus-visible,
 #resetBtn:focus-visible,
 #doneBtn:focus-visible,
@@ -3350,10 +3329,6 @@ html, body {
 #modalRetryBtn:focus-visible {
   outline: 6px solid rgba(82, 146, 79, 0.88);
   outline-offset: 3px;
-}
-
-#backBtn {
-  width: 202px;
 }
 
 #modeSwitchBtn {
@@ -3603,10 +3578,6 @@ html, body {
 }
 
 @media (max-height: 500px) and (orientation: landscape) {
-  #backBtn {
-    width: 352px;
-  }
-
   #modeSwitchBtn {
     width: 352px;
     padding: 0 24px;
@@ -3961,29 +3932,98 @@ html, body {
   box-shadow: none;
 }
 
+.stage-header {
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+}
+
 .header-right {
   align-items: center;
+  justify-self: end;
 }
 
 .star-icon {
   display: none;
 }
 
+.writing-settings {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
 .settings-btn {
-  width: 64px;
-  min-width: 44px;
-  height: auto;
-  min-height: 44px;
-  aspect-ratio: 581 / 601;
+  appearance: none;
+  -webkit-appearance: none;
+  width: 70px;
+  min-width: 70px;
+  height: 70px;
+  min-height: 70px;
+  aspect-ratio: 1 / 1;
   padding: 0;
   border: 0 !important;
   border-image: none !important;
   border-radius: 0 !important;
-  background: var(--story-settings) center / contain no-repeat !important;
+  background: url('../assets/_legacy/preview-placeholders/ctrl-btn-settings.png') center / contain no-repeat !important;
   box-shadow: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
-#backBtn,
+.settings-btn[aria-expanded='true'] {
+  transform: scale(1.035);
+}
+
+.settings-popover {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  display: grid;
+  width: 260px;
+  padding: 8px;
+  border: 3px solid rgba(154, 106, 56, 0.58);
+  border-radius: 18px;
+  background: rgba(255, 250, 229, 0.98);
+  box-shadow: 0 10px 22px rgba(57, 40, 23, 0.24);
+}
+
+.settings-popover[hidden] {
+  display: none;
+}
+
+.settings-menu-item {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  min-height: 70px;
+  padding: 8px 18px;
+  border: 0;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: inset 0 0 0 2px rgba(240, 194, 116, 0.34);
+  color: #5d4630;
+  font-family: var(--round-font);
+  font-size: 25px;
+  font-weight: 900;
+  line-height: 1.15;
+  text-align: center;
+  white-space: nowrap;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.settings-menu-item:hover,
+.settings-menu-item:focus-visible {
+  outline: 5px solid rgba(87, 193, 94, 0.68);
+  outline-offset: 2px;
+  background: #fff4cf;
+}
+
+.settings-menu-item:active {
+  transform: scale(0.97);
+}
+
 #modeSwitchBtn,
 #resetBtn,
 #careBtn,
@@ -4004,7 +4044,6 @@ html, body {
   transition: transform 0.08s ease, filter 0.08s ease;
 }
 
-#backBtn,
 #modeSwitchBtn,
 #resetBtn,
 #careBtn {
@@ -4018,7 +4057,6 @@ html, body {
   background-image: var(--story-button-primary) !important;
 }
 
-#backBtn:active:not(:disabled),
 #modeSwitchBtn:active:not(:disabled),
 #resetBtn:active:not(:disabled),
 #careBtn:active:not(:disabled),
@@ -4029,7 +4067,6 @@ html, body {
   filter: brightness(0.96) saturate(0.98);
 }
 
-#backBtn:focus-visible,
 #modeSwitchBtn:focus-visible,
 #resetBtn:focus-visible,
 #careBtn:focus-visible,
@@ -4132,7 +4169,7 @@ body #ach-next-hint.show {
 
 @media (max-height: 500px) and (orientation: landscape) {
   .stage-header {
-    grid-template-columns: 352px minmax(0, 1fr) 334px;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   }
 
   .star-box {
@@ -4145,8 +4182,22 @@ body #ach-next-hint.show {
   }
 
   .settings-btn {
-    width: 104px;
-    height: auto;
+    width: 108px;
+    min-width: 108px;
+    height: 108px;
+    min-height: 108px;
+  }
+
+  .settings-popover {
+    top: calc(100% + 10px);
+    width: 320px;
+    padding: 10px;
+  }
+
+  .settings-menu-item {
+    min-height: 108px;
+    padding: 10px 20px;
+    font-size: 32px;
   }
 
   .character-panel:not(.mode-task-panel) {
@@ -4193,7 +4244,6 @@ body #ach-next-hint.show {
     min-height: 44px;
   }
 
-  #stage #backBtn,
   #stage #modeSwitchBtn,
   #stage #resetBtn {
     width: 356px;
@@ -4222,7 +4272,6 @@ body #ach-next-hint.show {
     <div class="ground-strip"></div>
 
     <header class="stage-header">
-      <button class="pixel-button back-btn" id="backBtn" type="button" aria-label="もどる">← もどる</button>
       <div class="wood-panel title-plaque">ひらがなを かいてみよう！</div>
       <button class="pixel-button mode-switch-btn" id="modeSwitchBtn" type="button" aria-haspopup="dialog" aria-controls="modeChoiceOverlay">
         <span>あそびを かえる</span>
@@ -4232,7 +4281,12 @@ body #ach-next-hint.show {
         <div class="pixel-panel star-box" aria-label="スター">
           <span id="starCount">0</span>
         </div>
-        <button class="pixel-button settings-btn" type="button" aria-label="せってい"></button>
+        <div class="writing-settings" id="writingSettings">
+          <button class="pixel-button settings-btn" id="settingsBtn" type="button" aria-label="せってい" aria-haspopup="menu" aria-controls="settingsPopover" aria-expanded="false"></button>
+          <div class="settings-popover" id="settingsPopover" role="menu" aria-label="せってい" aria-hidden="true" hidden>
+            <button class="settings-menu-item" id="settingsBackBtn" type="button" role="menuitem" tabindex="-1">もどる</button>
+          </div>
+        </div>
       </div>
     </header>
 
@@ -4419,6 +4473,10 @@ const companionCookieIcon = document.getElementById('companionCookieIcon');
 const companionSpeech = document.getElementById('companionSpeech');
 const companionStatus = document.getElementById('companionStatus');
 const starCountEl = document.getElementById('starCount');
+const writingSettings = document.getElementById('writingSettings');
+const settingsBtn = document.getElementById('settingsBtn');
+const settingsPopover = document.getElementById('settingsPopover');
+const settingsBackBtn = document.getElementById('settingsBackBtn');
 const modeSwitchBtn = document.getElementById('modeSwitchBtn');
 const currentModeNameEl = document.getElementById('currentModeName');
 const modeChoiceOverlay = document.getElementById('modeChoiceOverlay');
@@ -4576,6 +4634,8 @@ let writingModesInitialized = false;
 let modeChoiceReturnFocus = null;
 let resultReturnFocus = null;
 let resultBackgroundInertState = [];
+let settingsOutsideClickUntil = 0;
+let settingsOutsideClickTarget = null;
 const completedCharacters = new Set();
 const guideSvgMaskCache = new Map();
 
@@ -5769,6 +5829,7 @@ function fitStage() {
 function refreshWritingLayoutAndModeRuntime() {
   fitStage();
   if (isWritingModeRuntimeBlocked()) {
+    if (isSettingsMenuOpen()) closeSettingsMenu({ restoreFocus: false });
     if (isResultOverlayOpen()) closeResultOverlay({ restoreFocus: false });
     if (modeChoiceOverlay.classList.contains('show')) closeModeChoice();
     if (pendingAutoCompleteTimer !== null || complete || completionQueued || writingCompletionInFlight) {
@@ -6000,10 +6061,47 @@ function focusElementWithoutScroll(element) {
   }
 }
 
+function getSettingsMenuItems() {
+  return [settingsBackBtn].filter((item) => item && item.isConnected && !item.disabled);
+}
+
+function isSettingsMenuOpen() {
+  return Boolean(settingsPopover && !settingsPopover.hidden);
+}
+
+function setSettingsMenuOpen(open, options = {}) {
+  if (!writingSettings || !settingsBtn || !settingsPopover) return false;
+  const wasOpen = isSettingsMenuOpen();
+  const next = Boolean(open)
+    && !isWritingModeRuntimeBlocked()
+    && !isResultOverlayOpen()
+    && !modeChoiceOverlay.classList.contains('show');
+  settingsPopover.hidden = !next;
+  settingsPopover.setAttribute('aria-hidden', next ? 'false' : 'true');
+  settingsBtn.setAttribute('aria-expanded', next ? 'true' : 'false');
+  document.body.classList.toggle('writing-settings-open', next);
+  getSettingsMenuItems().forEach((item) => {
+    item.tabIndex = next ? 0 : -1;
+  });
+  if (next && options.focusFirst) {
+    requestAnimationFrame(() => {
+      if (isSettingsMenuOpen()) focusElementWithoutScroll(getSettingsMenuItems()[0]);
+    });
+  } else if (!next && wasOpen && options.restoreFocus) {
+    focusElementWithoutScroll(settingsBtn);
+  }
+  return next;
+}
+
+function closeSettingsMenu(options = {}) {
+  return setSettingsMenuOpen(false, options);
+}
+
 function openResultOverlay() {
   if (isResultOverlayOpen() || isWritingModeRuntimeBlocked()) return false;
   pendingModeChoiceOpen = false;
   if (modeChoiceOverlay.classList.contains('show')) closeModeChoice();
+  if (isSettingsMenuOpen()) closeSettingsMenu({ restoreFocus: true });
   const activeElement = document.activeElement;
   resultReturnFocus = activeElement instanceof HTMLElement
     && activeElement !== document.body
@@ -6066,6 +6164,7 @@ function trapFocusWithin(event, container) {
 
 function openModeChoice() {
   if (!writingModesInitialized || isWritingModeRuntimeBlocked() || isResultOverlayOpen()) return;
+  if (isSettingsMenuOpen()) closeSettingsMenu({ restoreFocus: true });
   if (writingCompletionInFlight && !pendingNextAction) {
     pendingModeChoiceOpen = true;
     return;
@@ -8096,6 +8195,91 @@ document.addEventListener('pointerdown', (event) => {
   playSfx(button.classList.contains('char-button') || button.classList.contains('kana-tab') ? 'select' : 'button');
 }, true);
 
+setSettingsMenuOpen(false);
+
+settingsBtn.addEventListener('click', (event) => {
+  event.stopPropagation();
+  const opening = !isSettingsMenuOpen();
+  setSettingsMenuOpen(opening, {
+    focusFirst: opening && event.detail === 0,
+    restoreFocus: !opening
+  });
+});
+
+settingsBtn.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && isSettingsMenuOpen()) {
+    event.preventDefault();
+    event.stopPropagation();
+    closeSettingsMenu({ restoreFocus: true });
+    return;
+  }
+  if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!isSettingsMenuOpen()) setSettingsMenuOpen(true);
+    const items = getSettingsMenuItems();
+    focusElementWithoutScroll(event.key === 'ArrowUp' ? items[items.length - 1] : items[0]);
+    return;
+  }
+  if (event.key === 'Enter' || event.key === ' ') event.stopPropagation();
+});
+
+settingsPopover.addEventListener('keydown', (event) => {
+  event.stopPropagation();
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    closeSettingsMenu({ restoreFocus: true });
+    return;
+  }
+  const items = getSettingsMenuItems();
+  if (!items.length) return;
+  const current = Math.max(0, items.indexOf(document.activeElement));
+  let next = -1;
+  if (event.key === 'ArrowDown') next = (current + 1) % items.length;
+  else if (event.key === 'ArrowUp') next = (current - 1 + items.length) % items.length;
+  else if (event.key === 'Home') next = 0;
+  else if (event.key === 'End') next = items.length - 1;
+  if (next >= 0) {
+    event.preventDefault();
+    focusElementWithoutScroll(items[next]);
+  }
+});
+
+writingSettings.addEventListener('focusout', () => {
+  setTimeout(() => {
+    if (isSettingsMenuOpen() && !writingSettings.contains(document.activeElement)) {
+      closeSettingsMenu({ restoreFocus: false });
+    }
+  }, 0);
+});
+
+document.addEventListener('pointerdown', (event) => {
+  if (!isSettingsMenuOpen() || writingSettings.contains(event.target)) return;
+  settingsOutsideClickUntil = Date.now() + 500;
+  settingsOutsideClickTarget = event.target;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  closeSettingsMenu({ restoreFocus: true });
+}, true);
+
+document.addEventListener('click', (event) => {
+  if (event.detail === 0
+    || Date.now() > settingsOutsideClickUntil
+    || event.target !== settingsOutsideClickTarget) return;
+  settingsOutsideClickTarget = null;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+}, true);
+
+settingsBackBtn.addEventListener('click', (event) => {
+  event.preventDefault();
+  event.stopPropagation();
+  closeSettingsMenu({ restoreFocus: false });
+  clearPendingWritingCompletionTimers();
+  saveCareState();
+  window.location.href = '../play.html';
+});
+
 modeSwitchBtn.addEventListener('click', openModeChoice);
 modeChoiceCloseBtn.addEventListener('click', closeModeChoice);
 modeChoiceOverlay.addEventListener('pointerdown', (event) => {
@@ -8107,6 +8291,11 @@ modeChoiceOverlay.querySelectorAll('[data-writing-mode]').forEach((button) => {
   });
 });
 window.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && isSettingsMenuOpen()) {
+    event.preventDefault();
+    closeSettingsMenu({ restoreFocus: true });
+    return;
+  }
   if (isResultOverlayOpen()) {
     if (event.key === 'Tab') trapFocusWithin(event, resultOverlay);
     if (event.key === 'Escape') event.preventDefault();
@@ -8119,16 +8308,6 @@ window.addEventListener('keydown', (event) => {
     event.preventDefault();
     closeModeChoice();
   }
-});
-
-document.getElementById('backBtn').addEventListener('click', () => {
-  clearPendingWritingCompletionTimers();
-  saveCareState();
-  window.location.href = '../play.html';
-});
-
-document.querySelector('.settings-btn').addEventListener('click', () => {
-  setMessage('せっていは じゅんびちゅうだよ', 'あとでね');
 });
 
 document.getElementById('resetBtn').addEventListener('click', resetWriting);
