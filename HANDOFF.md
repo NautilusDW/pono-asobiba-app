@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-07-17 - [batch:1328b-mojikko-unified-frame-implementation] Codex: ユーザーの「では実装してください」を受領。Photoshop加工済み16 PNGの所在を確認中。見つかり次第、最新`origin/develop-app`由来の隔離worktree `/tmp/pono-1328b-mojikko-unified-frame-implementation` で `writing-mori/` へ接続する。`tmp/alpha_pending/1328-mojikko-unified-frame-family/raw/` の未加工rawは直接利用しない。現時点ではコード／assets／SWは未編集。 (by Codex)
+
 - 2026-07-16 - [batch:1328-mojikko-unified-frame-family] Codex: ユーザー指示「微妙にデザインがバラバラなので、全フレームを同じスタイルで出し直し、生成後の縦横比変更をできるだけ避けたい」を受領。既存のもじっこファーム用フレームは zukan／quizland／sticker 系素材の混成だが、今回は既存成果物の再利用ではなく明示的な統一 replacement。GPT Image 2 のみで、外側が純白背景の raw 15素材を `tmp/alpha_pending/1328-mojikko-unified-frame-family/raw/` へ生成する第一工程だけを行う。Codex側ではalpha抜き、crop、sheet分割、resize、最適化、assets配置、実装、SW更新を行わず、ユーザーがPhotoshopで処理して `tmp/alpha_pending/alpha/1328-mojikko-unified-frame-family/` へ返却後に別工程で実装する。現在の庭背景と、お手本文字の明朝体は変更しない。 (by Codex)
 
 - 2026-07-17 - [batch:1328-mojikko-unified-frame-family] Codex: **RAW DONE / PHOTOSHOP WAIT** — GPT Image 2 raw生成、エージェント間クロスレビュー、最終採用16 asset mapとPhotoshop手順を `tmp/alpha_pending/1328-mojikko-unified-frame-family/CODEX-DELIVERY.md` に完了。返却先 `tmp/alpha_pending/alpha/1328-mojikko-unified-frame-family/` の加工済み16 PNG待ち。code／assets／SWは未変更、実装未着手。 (by Codex)
