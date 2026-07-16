@@ -1,5 +1,9 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2239: ブロッコリーを生成した大きな一株から、まな板で5回トントンして小房へ
+// 分ける下ごしらえに変更。小房は1個ずつ鍋へ入れ、全投入後に泡12個・水面波紋・湯気の
+// パーティクルで沸騰させる。鍋位置と操作を塞いでいた透明レイヤーも修正
+// (batch:1326-kitchen-workshop-assets)。play.html PAGE_CACHE_VERSION と同期不要。
 // v2238: みちつなぎの最終「おかあさんと さいかい！」を、既存の再会イラストと
 // おかあさんの台詞／手数／もういちど操作を保ったまま16:9全画面の紙芝居へ変更。
 // 旅バーも二人が同じ終点へ着いた状態で表示する (batch:1327-slide-gameclear-fullscreen)。
@@ -310,7 +314,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2238;
+const CACHE_VERSION = 2239;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
