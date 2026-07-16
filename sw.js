@@ -1,5 +1,9 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2221: なぞなぞトレイン宇宙面の最終救出で、画面外pointerup／cancel／blurと遅延capture喪失を
+// 安全に回収し、物理clickを代替入力として復旧。下の案内を尾3本と星の子救出まで進められる
+// 実buttonへ変更し、通常race guardがずれた場合も勝利後の完了timerまで進めるようにした
+// (batch:1319-nazonazo-rescue-input-unfreeze)。play.html PAGE_CACHE_VERSION と同期不要。
 // v2220: トントンキッチンのめだまやきで、配置エディター由来のinline transformを
 // ドラッグ開始時に除去し、蓋が指から飛んで元へ戻る問題を修正。切れ端配置は全食材で
 // 縮小後の見かけ寸法ではなく受け皿内のCSS寸法を使い、レタス・にんじん等が受け皿の
@@ -216,7 +220,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2220;
+const CACHE_VERSION = 2221;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。

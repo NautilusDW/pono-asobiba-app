@@ -50,8 +50,8 @@ function assertNoChildFacingKanji(source, label) {
 
 assert.match(html, /styles\.css\?v=20260716-1319/);
 assert.match(html, /js\/game\.js\?v=20260716-1319/);
-assert.match(sw, /v2217:[\s\S]*?batch:1318-slide-realtime-chase/);
-assert.match(sw, /const CACHE_VERSION = 2217;/);
+assert.match(sw, /v2221:[\s\S]*?batch:1319-nazonazo-rescue-input-unfreeze/);
+assert.match(sw, /const CACHE_VERSION = 2221;/);
 
 /* Only the current two-way fork is interactive; route arithmetic is gone. */
 const layerBlock = html.match(/<div id="spaceChaseLayer"[\s\S]*?<div id="seaRoundCountdown"/)?.[0] || "";
