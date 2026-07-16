@@ -17,6 +17,10 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-07-16 - [batch:1320-kitchen-lid-touch-cancel] Codex: batch:1319公開後もユーザー実機で「蓋をドラッグすると左端の壁まで飛び、バウンドして戻る」と再報告。前回のinline transform除去だけでは未解決。再監査でegg lidに`touch-action:none`がなく、touch drag開始時にブラウザーpanへ奪われpointercancelが発生し、cancelをpointerupと同じ`onEggLidPointerEnd`へ渡してclientX/Y=0をstage左端1%へclamp後homeへtransitionするため、報告どおり左壁→ブーメラン復帰になる経路を特定。公開ブラウザー接続は0件で直接操作不可。主操作は蓋をつまんでフライパンへ置く。蓋へtouch-action/user-selectを追加し、pointercancelは座標評価せずcapture解放→drag state解除→home復帰する専用handlerへ分離、touch cancel回帰を追加する。凍結develop／master／productionは変更しない。 (by Codex)
+
+- 2026-07-16 - [batch:1320-kitchen-lid-touch-cancel] Codex: **LOCAL GREEN** — egg lidへ`touch-action:none`／user-select禁止を追加し、touch dragをブラウザーpanへ奪われないよう修正。pointercancelをpointerupから分離し、clientX/Y=0を一切move/drop判定へ渡さずcapture／drag stateだけ解除してhomeへ戻すため左端1%への瞬間移動を封鎖。新規touch cancel実ブラウザー回帰＋従来close 3 viewportの計4本、static回帰、既存motion/mix/warp、diff check PASS。公開ブラウザー接続は0件。originは7 commits先／SW v2222のため、feature commit後にrebaseしv2223へ採番する。 (by Codex)
+
 - 2026-07-16 - [batch:1319-kitchen-lid-bowl-spread] Codex: ユーザー実機評価「めだまやきの蓋がドラッグ中に飛んでブーメランのように戻り閉められない。レタス／にんじん等の切れ端が受け皿の一部へ集中する」を受領。重複監査で直近20件に同修正なし、現行egg lidはsaved-layout由来のinline transformを残したままpointer座標のleft/topを重ねるため飛ぶ経路、切れ端は縮小後getBoundingClientRect寸法を縮小親内CSS pxへ再投入して散布範囲を二重縮小する共通原因を確認。主操作は蓋をつまんでフライパンへ置く、盛り付けは切れ端が受け皿全体へ自然に散ること。Operational方向を維持し、egg lid drag開始時だけ編集用inline poseを除去、受け皿散布は全食材でunscaled clientWidth/clientHeight基準へ統一し、回帰テスト追加後にSWを最新+1。既存dirty `CLAUDE.md`／`MEMORY.md`は触らず、凍結develop／master／productionは変更しない。 (by Codex)
 
 - 2026-07-16 - [batch:1319-kitchen-lid-bowl-spread] Codex: **LOCAL GREEN** — めだまやき蓋はpointerdownで見た目寸法を保存後、saved-layout由来のleft/top/width/height/transformをドラッグ中だけ除去し、指座標と二重合成される飛び／ブーメラン復帰を解消。受け皿切れ端は固定slotの有無や食材種別にかかわらずclientWidth/clientHeightのunscaled CSS座標へ統一し、レタス／にんじん／キャベツ／鶏肉／粒系を含む共通散布範囲の二重縮小を解消。新規static回帰、既存motion/mix/warp、SW構文、diff check PASS。Chromium実ブラウザー844×390／1024×768／1366×768で蓋close PASS、縦390×844は既存回転案内による操作停止を維持。SW v2220、最新origin v2219／behind 0確認済み。commit／push／両staging確認待ち。 (by Codex)

@@ -3213,6 +3213,9 @@ body.layout-editor-on .fry-pot {
   opacity: 0;
   filter: drop-shadow(0 12px 15px rgba(50,38,28,0.16));
   transition: opacity 0.18s ease, transform 0.22s cubic-bezier(.18,.85,.2,1.02), left 0.2s ease, top 0.2s ease, width 0.2s ease;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
 }
 body.layout-editor-on .egg-glass-lid {
   opacity: 0.96;
@@ -8288,7 +8291,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       els.eggGlassLid.addEventListener('pointerdown', onEggLidPointerDown);
       els.eggGlassLid.addEventListener('pointermove', onEggLidPointerMove);
       els.eggGlassLid.addEventListener('pointerup', onEggLidPointerEnd);
-      els.eggGlassLid.addEventListener('pointercancel', onEggLidPointerEnd);
+      els.eggGlassLid.addEventListener('pointercancel', onEggLidPointerCancel);
     }
     if (els.cookSubStepSalt) {
       els.cookSubStepSalt.addEventListener('pointerdown', onSaltShakerTap);
@@ -16187,6 +16190,25 @@ body.layout-editor-on .bowl-fill-mask::after {
     resetEggLidToHome();
     updateCookStageState('grill');
     setSpeech('ふたを つかんで フライパンの まんなかへ もっていこう！', 'grill');
+  }
+
+  function onEggLidPointerCancel(evt) {
+    if (!state.cookDragging || state.cookDragType !== 'egg-lid' || state.cookDragPointerId !== evt.pointerId) return;
+    evt.preventDefault();
+    evt.stopPropagation();
+    // A cancelled pointer may report clientX/clientY as 0. Never feed those
+    // coordinates into moveEggLidToPoint, which would visibly throw the lid
+    // against the left edge before its home transition.
+    if (els.eggGlassLid && els.eggGlassLid.releasePointerCapture) {
+      try { els.eggGlassLid.releasePointerCapture(evt.pointerId); } catch (e) { /* noop */ }
+    }
+    state.cookDragging = false;
+    state.cookDragType = null;
+    state.cookDragPointerId = null;
+    state.cookEggLidDragging = false;
+    if (els.grillStage) els.grillStage.classList.remove('drop-ready');
+    resetEggLidToHome();
+    updateCookStageState('grill');
   }
 
   function getCookPieceCount(action) {

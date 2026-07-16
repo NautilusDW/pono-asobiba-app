@@ -65,3 +65,45 @@ for (const viewport of viewports) {
     })).toBe('');
   });
 }
+
+test('touch pointercancel never throws the egg lid to the left wall', async ({ page }) => {
+  await page.setViewportSize({ width: 844, height: 390 });
+  await page.addInitScript(() => {
+    (window as Window & { __APP_BUILD__?: number }).__APP_BUILD__ = 1;
+  });
+  await page.goto('/bento/kitchen.html', { waitUntil: 'domcontentloaded' });
+  await page.locator('#mode-cook-btn').click({ force: true });
+  await page.getByRole('button', { name: 'めだまやきを つくる' }).click({ force: true });
+  await expect(page.locator('#grill-stage')).toHaveClass(/is-preheated/);
+
+  const result = await page.evaluate(() => {
+    const state = (window as Window & { __bentoState?: Record<string, unknown> }).__bentoState!;
+    state.cookFoodPlaced = true;
+    state.cookEggLidReady = true;
+    state.cookEggLidClosed = false;
+    state.cookEggLidDragging = false;
+    state.cookServed = false;
+    state.cookProgress = 0;
+    state.cookAnimating = false;
+    const stage = document.querySelector<HTMLElement>('#grill-stage')!;
+    const lid = document.querySelector<HTMLElement>('#egg-glass-lid')!;
+    stage.dataset.ingredient = 'egg';
+    stage.classList.add('food-placed', 'egg-lid-ready');
+    const rect = lid.getBoundingClientRect();
+    const fire = (type: string, x: number, y: number) => lid.dispatchEvent(new PointerEvent(type, {
+      bubbles: true, cancelable: true, button: 0, buttons: type === 'pointercancel' ? 0 : 1,
+      pointerId: 77, pointerType: 'touch', clientX: x, clientY: y,
+    }));
+    fire('pointerdown', rect.left + rect.width / 2, rect.top + rect.height / 2);
+    fire('pointermove', rect.left + rect.width / 2 - 40, rect.top + rect.height / 2 + 20);
+    fire('pointercancel', 0, 0);
+    return {
+      left: lid.style.left,
+      top: lid.style.top,
+      dragging: state.cookEggLidDragging,
+      touchAction: getComputedStyle(lid).touchAction,
+    };
+  });
+
+  expect(result).toEqual({ left: '', top: '', dragging: false, touchAction: 'none' });
+});
