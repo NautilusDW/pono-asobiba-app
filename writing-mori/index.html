@@ -111,10 +111,14 @@
   --story-frame-prompt: url('../assets/images/quizland/Fukuro_frame_004.webp');
   --story-frame-result: url('../assets/images/quizland/Fukuro_frame_001.webp');
   --story-frame-chooser: url('../assets/images/quizland/Fukuro_frame_002.webp');
-  --story-menu-back: url('../assets/ui/menu_card_base_01.webp');
-  --story-menu-mode: url('../assets/ui/menu_card_base_02.webp');
-  --story-menu-reset: url('../assets/ui/menu_card_base_03.webp');
-  --story-menu-done: url('../assets/ui/menu_card_base_04.webp');
+  --story-button-primary: url('../assets/images/quizland/quizland_difficulty_button_normal_gpt_image2_20260622.png');
+  --story-button-primary-pressed: url('../assets/images/quizland/quizland_difficulty_button_pressed_gpt_image2_20260622.png');
+  --story-button-secondary: url('../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_page_label_wood_canvas_20260623.png');
+  --story-button-secondary-pressed: url('../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_page_label_pressed_gpt_image2_20260713.png');
+  --story-choice-pressed-tl: url('../assets/images/quizland/Fukuro_frame_002_pressed_TL.png');
+  --story-choice-pressed-tr: url('../assets/images/quizland/Fukuro_frame_002_pressed_TR.png');
+  --story-choice-pressed-bl: url('../assets/images/quizland/Fukuro_frame_002_pressed_BL.png');
+  --story-choice-pressed-br: url('../assets/images/quizland/Fukuro_frame_002_pressed_BR.png');
   --story-settings: url('../assets/_legacy/preview-placeholders/ctrl-btn-settings.png');
   --story-star: url('../assets/images/quizland/quizland_difficulty_star_gold_gpt_image2_20260623.png');
   --story-cookie: url('../assets/images/Bento_parts/cookie.webp');
@@ -1874,7 +1878,7 @@ html, body {
   min-height: 52px;
   padding: 7px 22px 9px;
   border: 14px solid transparent;
-  border-image-source: var(--story-menu-back);
+  border-image-source: var(--story-button-secondary);
   border-image-slice: 42 82;
   border-image-width: 14px 24px;
   border-image-repeat: stretch;
@@ -2548,7 +2552,7 @@ html, body {
 
 #doneBtn {
   width: 352px;
-  border-image-source: var(--story-menu-done);
+  border-image-source: var(--story-button-primary);
   color: #426c3e;
   background: #f2f6d7;
 }
@@ -2562,7 +2566,7 @@ html, body {
 
 #resetBtn {
   width: 220px;
-  border-image-source: var(--story-menu-reset);
+  border-image-source: var(--story-button-secondary);
   padding-left: 32px;
   padding-right: 32px;
   color: #6a4d31;
@@ -2722,16 +2726,16 @@ html, body {
 
 .mode-choice-button {
   height: 144px;
-  border-image-source: var(--story-menu-back);
+  border-image-source: var(--story-button-secondary);
   background: #fff8df;
 }
 
 .mode-choice-button:nth-child(2) {
-  border-image-source: var(--story-menu-mode);
+  border-image-source: var(--story-button-secondary);
 }
 
 .mode-choice-button:nth-child(3) {
-  border-image-source: var(--story-menu-reset);
+  border-image-source: var(--story-button-secondary);
 }
 
 .mode-choice-button strong,
@@ -2752,7 +2756,7 @@ html, body {
 
 .mode-choice-close {
   height: 64px;
-  border-image-source: var(--story-menu-done);
+  border-image-source: var(--story-button-primary);
 }
 
 .result-copy,
@@ -2787,11 +2791,11 @@ html, body {
 
 #careBtn {
   width: 430px;
-  border-image-source: var(--story-menu-back);
+  border-image-source: var(--story-button-secondary);
 }
 
 #modalRetryBtn {
-  border-image-source: var(--story-menu-done);
+  border-image-source: var(--story-button-primary);
   background: #eff4d3;
   color: #426c3e;
 }
@@ -2834,11 +2838,11 @@ html, body {
    -------------------------------------------------------------------------- */
 
 .back-btn {
-  border-image-source: var(--story-menu-back);
+  border-image-source: var(--story-button-secondary);
 }
 
 .mode-switch-btn {
-  border-image-source: var(--story-menu-mode);
+  border-image-source: var(--story-button-secondary);
 }
 
 .character-panel,
@@ -3122,6 +3126,576 @@ html, body {
     font-size: 33px;
   }
 }
+
+/* --------------------------------------------------------------------------
+   Image-only surfaces (batch:1316)
+   Completed picture-book windows already contain their paper. Keep each
+   window as one native-ratio image layer and place only text/hit areas above.
+   The investigation frame is the sole exception: its center is transparent,
+   so the single tracing-paper layer in .writing-board::after remains.
+   -------------------------------------------------------------------------- */
+
+.layout,
+#stage.compact .layout {
+  grid-template-columns: 292px minmax(0, 1fr) 212px;
+}
+
+.side-stack {
+  grid-template-rows: 438px 267px;
+  align-content: space-between;
+}
+
+.character-panel,
+.companion-card,
+.stroke-panel,
+.prompt-bar,
+.message-box,
+.mode-choice-card,
+.result-card {
+  border: 0 !important;
+  border-image: none !important;
+  border-radius: 0 !important;
+  background-color: transparent !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-size: 100% 100% !important;
+  background-clip: border-box !important;
+  box-shadow: none !important;
+  image-rendering: auto;
+}
+
+.character-panel {
+  width: 292px;
+  height: 438px;
+  padding: 22px 22px 25px;
+  grid-template-rows: 54px 58px minmax(0, 1fr);
+  background-image: var(--story-frame-character) !important;
+}
+
+.character-panel.mode-task-panel {
+  grid-template-rows: 54px minmax(0, 1fr);
+}
+
+.companion-card {
+  width: 292px;
+  height: 267px;
+  min-height: 267px;
+  padding: 15px 24px 20px;
+  background-image: var(--story-frame-companion) !important;
+  filter: none;
+}
+
+.companion-card:hover,
+.companion-card:active {
+  filter: none;
+  transform: none;
+}
+
+.companion-card:focus-visible {
+  outline: 6px solid rgba(84, 144, 83, 0.88);
+  outline-offset: 4px;
+}
+
+.stroke-panel {
+  width: 212px;
+  height: 752px;
+  align-self: center;
+  padding: 57px 17px 24px;
+  grid-template-rows: 52px 1fr 132px;
+  background-image: var(--story-frame-stroke) !important;
+}
+
+.panel-title {
+  height: 52px;
+  border: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #5a4930;
+  text-shadow: 0 1px rgba(255, 255, 255, 0.72);
+}
+
+.companion-name {
+  top: 12px;
+  left: 42px;
+  right: 42px;
+  height: 42px;
+}
+
+.companion-speech {
+  left: 34px;
+  right: 34px;
+  top: 61px;
+  min-height: 50px;
+  padding: 0;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  font-size: 17px;
+  line-height: 1.28;
+}
+
+.companion-speech::after {
+  content: none !important;
+  display: none !important;
+}
+
+.companion-level {
+  left: 30px;
+  right: 30px;
+  bottom: 17px;
+}
+
+.pixel-creature,
+.companion-card.egg-state .pixel-creature,
+.companion-card.egg-state.reward-ready .pixel-creature,
+.companion-card.baby-state .pixel-creature,
+.companion-card.yochiyochi-state .pixel-creature {
+  bottom: 31px;
+}
+
+.center-stage {
+  grid-template-rows: 94px minmax(0, 1fr) 76px;
+}
+
+.prompt-bar,
+.message-box {
+  width: 627px;
+  height: auto;
+  min-height: 0;
+  aspect-ratio: 1261 / 189;
+  padding: 0 54px;
+  background-image: var(--story-frame-prompt) !important;
+  font-size: 25px;
+  line-height: 1.15;
+  filter: none;
+}
+
+.message-box {
+  top: 0;
+}
+
+.prompt-bar::before,
+.prompt-bar::after,
+.message-box::before,
+.message-box::after {
+  content: none !important;
+  display: none !important;
+}
+
+.feedback-row {
+  grid-template-columns: 235px 196px;
+  justify-content: center;
+  gap: 20px;
+}
+
+#backBtn,
+#modeSwitchBtn,
+#resetBtn,
+#doneBtn,
+#careBtn,
+#modalRetryBtn {
+  min-width: 0;
+  min-height: 44px;
+  height: auto;
+  padding: 0 18px;
+  border: 0 !important;
+  border-image: none !important;
+  border-radius: 0 !important;
+  background-color: transparent !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-size: 100% 100% !important;
+  background-clip: border-box !important;
+  box-shadow: none !important;
+  filter: none;
+  transform: none;
+  text-shadow: 0 1px rgba(255, 255, 255, 0.74);
+}
+
+#backBtn,
+#modeSwitchBtn,
+#resetBtn,
+#careBtn {
+  aspect-ratio: 620 / 190;
+  background-image: var(--story-button-secondary) !important;
+}
+
+#doneBtn,
+#modalRetryBtn {
+  aspect-ratio: 980 / 360;
+  background-image: var(--story-button-primary) !important;
+}
+
+#backBtn:active:not(:disabled),
+#modeSwitchBtn:active:not(:disabled),
+#resetBtn:active:not(:disabled),
+#careBtn:active:not(:disabled) {
+  background-image: var(--story-button-secondary-pressed) !important;
+  transform: none;
+}
+
+#doneBtn:active:not(:disabled),
+#modalRetryBtn:active:not(:disabled) {
+  background-image: var(--story-button-primary-pressed) !important;
+  transform: none;
+}
+
+#backBtn:focus-visible,
+#modeSwitchBtn:focus-visible,
+#resetBtn:focus-visible,
+#doneBtn:focus-visible,
+#careBtn:focus-visible,
+#modalRetryBtn:focus-visible {
+  outline: 6px solid rgba(82, 146, 79, 0.88);
+  outline-offset: 3px;
+}
+
+#backBtn {
+  width: 202px;
+}
+
+#modeSwitchBtn {
+  width: 270px;
+  flex-direction: column;
+  gap: 0;
+  padding: 0 24px;
+  line-height: 1.05;
+}
+
+.current-mode-name {
+  min-width: 0;
+  padding: 2px 0 0;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #416b3c;
+  font-size: 16px;
+}
+
+#resetBtn {
+  width: 235px;
+  padding: 0 24px;
+}
+
+#doneBtn {
+  width: 196px;
+  padding: 0 13px;
+  color: #426c3e;
+}
+
+#doneBtn::before {
+  width: 31px;
+  height: 31px;
+  flex-basis: 31px;
+}
+
+#careBtn {
+  width: 340px;
+  padding: 0 26px;
+}
+
+#modalRetryBtn {
+  width: 284px;
+  gap: 8px;
+  padding: 0 30px 0 20px;
+  color: #426c3e;
+  font-size: 20px;
+}
+
+#modalRetryBtn::before {
+  width: 34px;
+  height: 34px;
+  flex-basis: 34px;
+}
+
+.mode-progress-count,
+.companion-speech,
+.reward-box,
+.reward-large,
+.stroke-card,
+.stroke-preview,
+.stroke-mini svg {
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+.mode-progress-count {
+  padding: 3px 0 5px;
+  border: 0;
+  border-bottom: 2px solid rgba(128, 91, 51, 0.35);
+  border-radius: 0;
+}
+
+.stroke-list {
+  padding: 5px 6px 8px;
+  gap: 2px;
+}
+
+.stroke-card,
+.stroke-card.current,
+.stroke-card.done {
+  height: 102px;
+  padding: 7px 4px 7px 7px;
+  border: 0;
+  border-left: 5px solid transparent;
+  border-bottom: 1px solid rgba(121, 87, 48, 0.2);
+  border-radius: 0;
+}
+
+.stroke-card.current {
+  border-left-color: #cf7749;
+  color: #9a512f;
+}
+
+.stroke-card.done {
+  border-left-color: #669363;
+  color: #477249;
+}
+
+.stroke-num {
+  border: 2px solid currentColor;
+  background: transparent;
+  box-shadow: none;
+}
+
+.stroke-preview,
+.stroke-mini svg {
+  border: 0;
+  border-radius: 0;
+}
+
+.reward-box {
+  margin: 0;
+  height: 126px;
+  padding: 20px 3px 8px 52px;
+  border: 0;
+  border-radius: 0;
+}
+
+.reward-box .reward-item {
+  font-size: 16px;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.reward-box .food-pixel {
+  left: -46px;
+}
+
+.mode-choice-card {
+  position: relative;
+  width: 650px;
+  max-width: calc(100% - 70px);
+  min-height: 0;
+  aspect-ratio: 699 / 643;
+  padding: 0;
+  display: block;
+  background-image: var(--story-frame-chooser) !important;
+  filter: drop-shadow(0 16px 20px rgba(48, 39, 22, 0.24));
+}
+
+.mode-choice-title {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.mode-choice-buttons {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  gap: 0;
+}
+
+.mode-choice-button,
+.mode-choice-button.active,
+.mode-choice-close {
+  position: relative;
+  width: auto;
+  height: auto;
+  min-width: 44px;
+  min-height: 44px;
+  margin: 0;
+  padding: 44px 34px 38px;
+  border: 0 !important;
+  border-image: none !important;
+  border-radius: 0 !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-size: 100% 100% !important;
+  box-shadow: none !important;
+  filter: none;
+  transform: none;
+  color: #5d432b;
+}
+
+.mode-choice-button:nth-child(1):is(.active, :active) {
+  background-image: var(--story-choice-pressed-tl) !important;
+}
+
+.mode-choice-button:nth-child(2):is(.active, :active) {
+  background-image: var(--story-choice-pressed-tr) !important;
+}
+
+.mode-choice-button:nth-child(3):is(.active, :active) {
+  background-image: var(--story-choice-pressed-bl) !important;
+}
+
+.mode-choice-button:nth-child(4):active {
+  background-image: var(--story-choice-pressed-br) !important;
+}
+
+.mode-choice-button:active:not(:disabled),
+.mode-choice-close:active:not(:disabled) {
+  transform: none !important;
+}
+
+.mode-choice-button:focus-visible {
+  outline: 6px solid rgba(82, 146, 79, 0.88);
+  outline-offset: -15px;
+}
+
+.mode-choice-button:disabled {
+  opacity: 0.55;
+}
+
+.mode-choice-button strong,
+.mode-choice-button span {
+  position: relative;
+  z-index: 1;
+}
+
+.mode-choice-button strong {
+  font-size: 26px;
+}
+
+.mode-choice-button span {
+  font-size: 16px;
+}
+
+.mode-choice-message {
+  position: absolute;
+  left: 40px;
+  right: 40px;
+  bottom: -38px;
+  min-height: 28px;
+  color: #fff8dc;
+  text-shadow: 0 2px 3px rgba(46, 36, 20, 0.72);
+}
+
+.result-card {
+  width: 920px;
+  max-width: calc(100% - 100px);
+  min-height: 0;
+  aspect-ratio: 1200 / 609;
+  padding: 58px 78px 44px;
+  grid-template-rows: auto auto auto 1fr;
+  gap: 10px;
+  background-image: var(--story-frame-result) !important;
+  filter: drop-shadow(0 18px 24px rgba(48, 39, 22, 0.25));
+}
+
+.reward-large {
+  min-width: 0;
+  padding: 4px 0;
+  border: 0;
+  border-radius: 0;
+}
+
+.result-actions {
+  align-items: center;
+}
+
+@media (max-height: 500px) and (orientation: landscape) {
+  #backBtn {
+    width: 352px;
+  }
+
+  #modeSwitchBtn {
+    width: 352px;
+    padding: 0 24px;
+  }
+
+  #stage .current-mode-name {
+    font-size: 29px;
+  }
+
+  #resetBtn {
+    width: 352px;
+  }
+
+  #doneBtn {
+    width: 294px;
+  }
+
+  .feedback-row {
+    grid-template-columns: 352px 294px;
+    gap: 18px;
+  }
+
+  #careBtn {
+    width: 405px;
+  }
+
+  #modalRetryBtn {
+    width: 338px;
+    padding: 0 50px 0 10px;
+  }
+
+  #stage #modalRetryBtn {
+    gap: 8px;
+    font-size: 33px;
+  }
+
+  #stage #modalRetryBtn::before {
+    width: 34px;
+    height: 34px;
+    flex-basis: 34px;
+  }
+
+  #stage .reward-box .reward-item {
+    font-size: 29px;
+    letter-spacing: -0.06em;
+  }
+
+  #stage .companion-speech {
+    font-size: 29px;
+  }
+
+  #stage .prompt-bar,
+  #stage .message-box {
+    font-size: 34px;
+  }
+
+  #stage .mode-choice-button strong {
+    font-size: 33px;
+  }
+
+  #stage .mode-choice-button span {
+    font-size: 29px;
+  }
+
+
+  .mode-choice-button {
+    padding: 36px 24px 32px;
+  }
+
+  #stage .result-card {
+    width: 940px;
+    min-height: 0;
+    padding: 48px 62px 38px;
+  }
+}
 </style>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
@@ -3242,9 +3816,9 @@ html, body {
             <strong>きょうの 3もじ</strong>
             <span>3つだけ かいてみよう</span>
           </button>
+          <button class="pixel-button ghost mode-choice-button mode-choice-close" id="modeChoiceCloseBtn" type="button">もどる</button>
         </div>
         <div class="mode-choice-message" id="modeChoiceMessage" aria-live="polite"></div>
-        <button class="pixel-button ghost mode-choice-close" id="modeChoiceCloseBtn" type="button">もどる</button>
       </div>
     </div>
   </main>

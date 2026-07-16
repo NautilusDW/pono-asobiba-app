@@ -27,15 +27,35 @@ const frameAssets = [
   '/assets/images/quizland/Fukuro_frame_001.webp',
   '/assets/images/quizland/Fukuro_frame_002.webp',
   '/assets/images/quizland/Fukuro_frame_004.webp',
-  '/assets/ui/menu_card_base_01.webp',
-  '/assets/ui/menu_card_base_02.webp',
-  '/assets/ui/menu_card_base_03.webp',
-  '/assets/ui/menu_card_base_04.webp'
+  '/assets/images/quizland/quizland_difficulty_button_normal_gpt_image2_20260622.png',
+  '/assets/images/quizland/quizland_difficulty_button_pressed_gpt_image2_20260622.png',
+  '/assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_page_label_wood_canvas_20260623.png',
+  '/assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_page_label_pressed_gpt_image2_20260713.png',
+  '/assets/images/quizland/Fukuro_frame_002_pressed_TL.png',
+  '/assets/images/quizland/Fukuro_frame_002_pressed_TR.png',
+  '/assets/images/quizland/Fukuro_frame_002_pressed_BL.png',
+  '/assets/images/quizland/Fukuro_frame_002_pressed_BR.png'
 ];
-const publishedWarmPaperBaselines = Object.freeze({
-  'mobile-landscape': 0.4584761210353627,
-  desktop: 0.5578473874450952
+const imageOnlyButtonPairs = Object.freeze({
+  primary: {
+    normal: '/assets/images/quizland/quizland_difficulty_button_normal_gpt_image2_20260622.png',
+    pressed: '/assets/images/quizland/quizland_difficulty_button_pressed_gpt_image2_20260622.png',
+    width: 980,
+    height: 360
+  },
+  secondary: {
+    normal: '/assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_page_label_wood_canvas_20260623.png',
+    pressed: '/assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_page_label_pressed_gpt_image2_20260713.png',
+    width: 620,
+    height: 190
+  }
 });
+const choicePressedAssets = Object.freeze([
+  { src: '/assets/images/quizland/Fukuro_frame_002_pressed_TL.png', width: 349, height: 321 },
+  { src: '/assets/images/quizland/Fukuro_frame_002_pressed_TR.png', width: 350, height: 321 },
+  { src: '/assets/images/quizland/Fukuro_frame_002_pressed_BL.png', width: 349, height: 322 },
+  { src: '/assets/images/quizland/Fukuro_frame_002_pressed_BR.png', width: 350, height: 322 }
+]);
 const milmaruVisualStates = Object.freeze([
   {
     id: 'egg',
@@ -142,20 +162,6 @@ function sha256(value) {
   return crypto.createHash('sha256').update(value).digest('hex');
 }
 
-async function getWarmPaperRatio(screenshot) {
-  const { data, info } = await sharp(screenshot).raw().toBuffer({ resolveWithObject: true });
-  let warmPaperPixels = 0;
-  for (let index = 0; index < data.length; index += info.channels) {
-    const red = data[index];
-    const green = data[index + 1];
-    const blue = data[index + 2];
-    if (red >= 230 && green >= 218 && blue >= 180 && red - blue <= 75) {
-      warmPaperPixels += 1;
-    }
-  }
-  return warmPaperPixels / (info.width * info.height);
-}
-
 async function assertNoWhiteCornerRectangles(screenshot, rects, label) {
   const { data, info } = await sharp(screenshot).raw().toBuffer({ resolveWithObject: true });
   for (const [name, rect] of Object.entries(rects)) {
@@ -183,7 +189,7 @@ async function assertNoWhiteCornerRectangles(screenshot, rects, label) {
         }
       }
       const coverage = sampledPixels > 0 ? warmPaperPixels / sampledPixels : 0;
-      assert.ok(coverage < 0.85, `${label}:${name}: corner ${cornerIndex + 1} retained a white rectangle (${coverage})`);
+      assert.ok(coverage < 0.98, `${label}:${name}: corner ${cornerIndex + 1} retained a uniform CSS-paper rectangle (${coverage})`);
     }
   }
 }
@@ -258,12 +264,12 @@ async function auditCompanionFallbackLayout(browser, base) {
         visualFontSize: parseFloat(style.fontSize) * stageScale
       };
     });
-    assert.ok(Math.abs(fallback.boxTop) <= 0.1, 'font-offline: companion title box did not start at wooden sign top');
-    assert.ok(Math.abs(fallback.boxBottom - 58) <= 0.1, 'font-offline: companion title box did not end at wooden sign bottom');
-    assert.ok(Math.abs(fallback.boxHeight - 58) <= 0.1, 'font-offline: companion title box height drifted');
-    assert.ok(fallback.glyphTop >= 4, 'font-offline: companion title lacks top safety');
-    assert.ok(fallback.glyphBottom <= 54, 'font-offline: companion title lacks bottom safety');
-    assert.ok(Math.abs((fallback.glyphTop + fallback.glyphBottom) / 2 - 29) <= 1, 'font-offline: companion title is not centered');
+    assert.ok(Math.abs(fallback.boxTop - 12) <= 0.1, 'font-offline: companion title box did not start inside its baked sign');
+    assert.ok(Math.abs(fallback.boxBottom - 54) <= 0.1, 'font-offline: companion title box did not end inside its baked sign');
+    assert.ok(Math.abs(fallback.boxHeight - 42) <= 0.1, 'font-offline: companion title box height drifted');
+    assert.ok(fallback.glyphTop >= 11, 'font-offline: companion title escapes the baked sign top');
+    assert.ok(fallback.glyphBottom <= 55, 'font-offline: companion title escapes the baked sign bottom');
+    assert.ok(Math.abs((fallback.glyphTop + fallback.glyphBottom) / 2 - 33) <= 2, 'font-offline: companion title is not centered');
     assert.equal(fallback.display, 'flex', 'font-offline: companion title lost fixed flex layout');
     assert.equal(fallback.alignItems, 'center', 'font-offline: companion title lost vertical centering');
     assert.equal(fallback.justifyContent, 'center', 'font-offline: companion title lost horizontal centering');
@@ -534,6 +540,24 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
             clip
           };
         };
+        const surfaceAudit = (selector, pseudo = null) => {
+          const element = document.querySelector(selector);
+          const style = getComputedStyle(element, pseudo);
+          return {
+            selector,
+            pseudo,
+            display: style.display,
+            content: style.content,
+            backgroundColor: style.backgroundColor,
+            backgroundImage: style.backgroundImage,
+            borderImageSource: style.borderImageSource,
+            borderImageSlice: style.borderImageSlice,
+            borderWidths: [style.borderTopWidth, style.borderRightWidth, style.borderBottomWidth, style.borderLeftWidth],
+            boxShadow: style.boxShadow,
+            filter: style.filter,
+            transform: style.transform
+          };
+        };
         const visibleImages = Array.from(document.images)
           .filter((image) => image.getBoundingClientRect().width > 0 && image.getBoundingClientRect().height > 0)
           .map((image) => ({ src: image.currentSrc || image.src, complete: image.complete, width: image.naturalWidth }));
@@ -545,6 +569,16 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
         const companionNameBoxRect = companionName.getBoundingClientRect();
         const companionSpeechRect = document.querySelector('.companion-speech').getBoundingClientRect();
         const companionCreatureRect = document.querySelector('.pixel-creature').getBoundingClientRect();
+        const modeSwitch = document.querySelector('#modeSwitchBtn');
+        const modeSwitchRect = modeSwitch.getBoundingClientRect();
+        const modeSwitchLines = Array.from(modeSwitch.children).filter((element) => element.tagName === 'SPAN').map((element) => {
+          const range = document.createRange();
+          range.selectNodeContents(element);
+          return {
+            glyph: compactRect(range.getBoundingClientRect()),
+            lineBox: compactRect(element.getBoundingClientRect())
+          };
+        });
         const cornerSelectors = Object.freeze({
           back: '#backBtn',
           mode: '#modeSwitchBtn',
@@ -594,31 +628,22 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
             ['rewardItem', '.reward-item']
           ].map(([name, selector]) => [name, textAudit(selector)])),
           boardFrame: getComputedStyle(document.querySelector('#writingBoard'), '::before').borderImageSource,
-          promptFrame: getComputedStyle(document.querySelector('#promptText')).borderImageSource,
-          peripheralFrames: ['.character-panel', '#companionCard', '.stroke-panel'].map((selector) => {
-            const style = getComputedStyle(document.querySelector(selector));
-            return {
-              selector,
-              source: style.borderImageSource,
-              slice: style.borderImageSlice,
-              surface: style.backgroundColor,
-              opacity: style.opacity
-            };
-          }),
+          promptFrame: getComputedStyle(document.querySelector('#promptText')).backgroundImage,
+          peripheralFrames: ['.character-panel', '#companionCard', '.stroke-panel'].map((selector) => surfaceAudit(selector)),
           mainFrameSources: [
-            getComputedStyle(document.querySelector('.character-panel')).borderImageSource,
-            getComputedStyle(document.querySelector('#companionCard')).borderImageSource,
+            getComputedStyle(document.querySelector('.character-panel')).backgroundImage,
+            getComputedStyle(document.querySelector('#companionCard')).backgroundImage,
             getComputedStyle(document.querySelector('#writingBoard'), '::before').borderImageSource,
-            getComputedStyle(document.querySelector('.stroke-panel')).borderImageSource,
-            getComputedStyle(document.querySelector('#promptText')).borderImageSource,
-            getComputedStyle(document.querySelector('#backBtn')).borderImageSource,
-            getComputedStyle(document.querySelector('#modeSwitchBtn')).borderImageSource,
-            getComputedStyle(document.querySelector('#resetBtn')).borderImageSource,
-            getComputedStyle(document.querySelector('#doneBtn')).borderImageSource
+            getComputedStyle(document.querySelector('.stroke-panel')).backgroundImage,
+            getComputedStyle(document.querySelector('#promptText')).backgroundImage,
+            getComputedStyle(document.querySelector('#backBtn')).backgroundImage,
+            getComputedStyle(document.querySelector('#modeSwitchBtn')).backgroundImage,
+            getComputedStyle(document.querySelector('#resetBtn')).backgroundImage,
+            getComputedStyle(document.querySelector('#doneBtn')).backgroundImage
           ],
-          resultFrame: getComputedStyle(document.querySelector('.result-card')).borderImageSource,
-          chooserFrame: getComputedStyle(document.querySelector('.mode-choice-card')).borderImageSource,
-          alphaFrameSurfaces: [
+          resultFrame: getComputedStyle(document.querySelector('.result-card')).backgroundImage,
+          chooserFrame: getComputedStyle(document.querySelector('.mode-choice-card')).backgroundImage,
+          imageOnlySurfaces: [
             ['characters', '.character-panel'],
             ['companion', '#companionCard'],
             ['strokes', '.stroke-panel'],
@@ -634,10 +659,22 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
             ['result', '.result-card'],
             ['care', '#careBtn'],
             ['retry', '#modalRetryBtn']
-          ].map(([name, selector]) => {
-            const style = getComputedStyle(document.querySelector(selector));
-            return { name, clip: style.backgroundClip, radius: style.borderRadius };
-          }),
+          ].map(([name, selector]) => ({ name, ...surfaceAudit(selector) })),
+          imageOnlyPseudos: [
+            '#backBtn', '#modeSwitchBtn', '#resetBtn', '#doneBtn', '#careBtn', '#modalRetryBtn',
+            '.character-panel', '#companionCard', '.stroke-panel', '#promptText', '#messageBox',
+            '.mode-choice-card', '.result-card'
+          ].flatMap((selector) => [surfaceAudit(selector, '::before'), surfaceAudit(selector, '::after')]),
+          nestedSurfaces: [
+            '.current-mode-name', '.panel-title', '.companion-speech', '.reward-box',
+            '.reward-large', '.stroke-card', '.stroke-preview', '.stroke-mini svg'
+          ].filter((selector) => document.querySelector(selector)).map((selector) => surfaceAudit(selector)),
+          speechAfter: surfaceAudit('.companion-speech', '::after'),
+          writingBoardLayers: {
+            board: surfaceAudit('#writingBoard'),
+            frame: surfaceAudit('#writingBoard', '::before'),
+            paper: surfaceAudit('#writingBoard', '::after')
+          },
           companionTitle: {
             boxRelativeTop: (companionNameBoxRect.top - companionCardRect.top) / stageScale,
             boxRelativeBottom: (companionNameBoxRect.bottom - companionCardRect.top) / stageScale,
@@ -652,6 +689,11 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
             justifyContent: getComputedStyle(companionName).justifyContent,
             fontSize: parseFloat(getComputedStyle(companionName).fontSize),
             lineHeight: parseFloat(getComputedStyle(companionName).lineHeight)
+          },
+          modeSwitchGlyphs: {
+            button: compactRect(modeSwitchRect),
+            spans: modeSwitchLines.map((line) => line.glyph),
+            lineBoxes: modeSwitchLines.map((line) => line.lineBox)
           },
           frameCornerRects: Object.fromEntries(
             Object.entries(cornerSelectors).map(([name, selector]) => [name, compactRect(document.querySelector(selector).getBoundingClientRect())])
@@ -700,27 +742,51 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
       assert.match(initial.boardFrame, /investigation_window_frame_16x9\.png/);
       assert.match(initial.promptFrame, /Fukuro_frame_004\.webp/);
       assert.deepEqual(
-        initial.peripheralFrames.map((frame) => path.basename(new URL(frame.source.slice(5, -2)).pathname)),
+        initial.peripheralFrames.map((frame) => path.basename(new URL(frame.backgroundImage.slice(5, -2)).pathname)),
         ['hint_panel_empty.webp', 'discovery_popup_empty.webp', 'map_guide_note_empty_220x780.png'],
         `${viewport.name}: peripheral frames are not role-specific`
       );
       for (const frame of initial.peripheralFrames) {
-        assert.doesNotMatch(frame.slice, /fill/, `${viewport.name}:${frame.selector} restored a baked paper center`);
-        const alpha = Number(frame.surface.match(/[\d.]+(?=\)$)/)?.[0] || 1);
-        assert.ok(alpha >= 0.72 && alpha <= 0.84, `${viewport.name}:${frame.selector} surface alpha ${alpha}`);
-        assert.equal(frame.opacity, '1', `${viewport.name}:${frame.selector} faded its contents`);
+        assert.equal(frame.borderImageSource, 'none', `${viewport.name}:${frame.selector} retained a sliced frame layer`);
+        assert.deepEqual(frame.borderWidths, ['0px', '0px', '0px', '0px'], `${viewport.name}:${frame.selector} retained a CSS border`);
+        assert.equal(frame.backgroundColor, 'rgba(0, 0, 0, 0)', `${viewport.name}:${frame.selector} retained a CSS paper layer`);
+        assert.equal(frame.boxShadow, 'none', `${viewport.name}:${frame.selector} retained a rectangular CSS shadow`);
       }
       assert.ok(new Set(initial.mainFrameSources).size >= 7, `${viewport.name}: main screen frame sources repeat too much`);
       assert.ok(initial.mainFrameSources.every((source) => !/Fukuro_frame_001\.webp/.test(source)), `${viewport.name}: result frame leaked onto the main screen`);
       assert.match(initial.resultFrame, /Fukuro_frame_001\.webp/);
       assert.match(initial.chooserFrame, /Fukuro_frame_002\.webp/);
-      for (const surface of initial.alphaFrameSurfaces) {
-        assert.equal(surface.clip, 'padding-box', `${viewport.name}:${surface.name} paints paper into its transparent border`);
-        assert.notEqual(surface.radius, '0px', `${viewport.name}:${surface.name} lacks an inner-corner radius`);
+      for (const surface of initial.imageOnlySurfaces) {
+        assert.equal(surface.borderImageSource, 'none', `${viewport.name}:${surface.name} retained border-image chrome`);
+        assert.deepEqual(surface.borderWidths, ['0px', '0px', '0px', '0px'], `${viewport.name}:${surface.name} retained a CSS border`);
+        assert.equal(surface.backgroundColor, 'rgba(0, 0, 0, 0)', `${viewport.name}:${surface.name} retained a CSS paper layer`);
+        assert.equal(surface.boxShadow, 'none', `${viewport.name}:${surface.name} retained a rectangular CSS shadow`);
+        if (surface.name === 'choiceClose') {
+          assert.equal(surface.backgroundImage, 'none', `${viewport.name}:${surface.name} must use F002's baked fourth window`);
+        } else {
+          assert.match(surface.backgroundImage, /(?:hint_panel_empty|discovery_popup_empty|map_guide_note_empty|Fukuro_frame_00[124]|quizland_difficulty_button_normal|sb3d_ui_page_label_wood_canvas)/, `${viewport.name}:${surface.name} lost its single image surface`);
+        }
       }
-      assert.ok(Math.abs(initial.companionTitle.boxRelativeTop) <= 0.1, `${viewport.name}: companion title box did not start at its wooden sign top`);
-      assert.ok(Math.abs(initial.companionTitle.boxRelativeBottom - 58) <= 0.1, `${viewport.name}: companion title box did not end at its wooden sign bottom`);
-      assert.ok(Math.abs(initial.companionTitle.boxRelativeHeight - 58) <= 0.1, `${viewport.name}: companion title box height drifted from its wooden sign`);
+      for (const pseudo of initial.imageOnlyPseudos) {
+        assert.equal(pseudo.backgroundColor, 'rgba(0, 0, 0, 0)', `${viewport.name}:${pseudo.selector}${pseudo.pseudo} paints a pseudo paper`);
+        assert.equal(pseudo.boxShadow, 'none', `${viewport.name}:${pseudo.selector}${pseudo.pseudo} paints a pseudo shadow`);
+        assert.deepEqual(pseudo.borderWidths, ['0px', '0px', '0px', '0px'], `${viewport.name}:${pseudo.selector}${pseudo.pseudo} paints a pseudo border`);
+      }
+      for (const surface of initial.nestedSurfaces) {
+        assert.equal(surface.backgroundColor, 'rgba(0, 0, 0, 0)', `${viewport.name}:${surface.selector} retained an extra white box`);
+        assert.equal(surface.backgroundImage, 'none', `${viewport.name}:${surface.selector} retained a nested image box`);
+        assert.equal(surface.boxShadow, 'none', `${viewport.name}:${surface.selector} retained a nested box shadow`);
+      }
+      assert.equal(initial.speechAfter.content, 'none', `${viewport.name}: companion speech tail returned as a second box`);
+      assert.equal(initial.writingBoardLayers.board.backgroundColor, 'rgba(0, 0, 0, 0)', `${viewport.name}: board host paints an extra paper`);
+      assert.equal(initial.writingBoardLayers.board.backgroundImage, 'none', `${viewport.name}: board host paints an extra image`);
+      assert.match(initial.writingBoardLayers.frame.borderImageSource, /investigation_window_frame_16x9\.png/, `${viewport.name}: writing frame disappeared`);
+      assert.equal(initial.writingBoardLayers.frame.backgroundColor, 'rgba(0, 0, 0, 0)', `${viewport.name}: writing frame paints a paper center`);
+      assert.equal(initial.writingBoardLayers.paper.backgroundColor, 'rgba(255, 251, 235, 0.97)', `${viewport.name}: the sole writing paper layer drifted`);
+      assert.equal(initial.writingBoardLayers.paper.backgroundImage, 'none', `${viewport.name}: writing paper gained a second image`);
+      assert.ok(Math.abs(initial.companionTitle.boxRelativeTop - 12) <= 0.1, `${viewport.name}: companion title box did not start inside its baked sign`);
+      assert.ok(Math.abs(initial.companionTitle.boxRelativeBottom - 54) <= 0.1, `${viewport.name}: companion title box did not end inside its baked sign`);
+      assert.ok(Math.abs(initial.companionTitle.boxRelativeHeight - 42) <= 0.1, `${viewport.name}: companion title box height drifted from its baked sign`);
       assert.equal(initial.companionTitle.display, 'flex', `${viewport.name}: companion title lost its fixed flex box`);
       assert.equal(initial.companionTitle.alignItems, 'center', `${viewport.name}: companion title lost vertical centering`);
       assert.equal(initial.companionTitle.justifyContent, 'center', `${viewport.name}: companion title lost horizontal centering`);
@@ -730,15 +796,34 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
       );
       if (zenFontAudit.loaded) {
         assert.equal(zenFontAudit.check, true, `${viewport.name}: loaded Zen Maru Gothic did not pass FontFaceSet.check`);
-        assert.ok(initial.companionTitle.relativeTop >= 4, `${viewport.name}: Zen companion title lacks top safety inside its wooden sign`);
-        assert.ok(initial.companionTitle.relativeBottom <= 54, `${viewport.name}: Zen companion title lacks bottom safety inside its wooden sign`);
+        assert.ok(initial.companionTitle.relativeTop >= 11, `${viewport.name}: Zen companion title escapes its baked sign top`);
+        assert.ok(initial.companionTitle.relativeBottom <= 55, `${viewport.name}: Zen companion title escapes its baked sign bottom`);
         assert.ok(
-          Math.abs((initial.companionTitle.relativeTop + initial.companionTitle.relativeBottom) / 2 - 29) <= 1,
+          Math.abs((initial.companionTitle.relativeTop + initial.companionTitle.relativeBottom) / 2 - 33) <= 2,
           `${viewport.name}: Zen companion title is not vertically centered in its wooden sign`
         );
       }
       assert.ok(initial.companionTitle.bottom < initial.companionTitle.speechTop, `${viewport.name}: companion title overlaps its speech`);
       assert.ok(initial.companionTitle.bottom < initial.companionTitle.creatureTop, `${viewport.name}: companion title overlaps Milmaru`);
+      assert.equal(initial.modeSwitchGlyphs.spans.length, 2, `${viewport.name}: mode switch no longer has two stable text lines`);
+      const [modeLabelGlyph, currentModeGlyph] = initial.modeSwitchGlyphs.spans;
+      assertRectContained(modeLabelGlyph, initial.modeSwitchGlyphs.button, `${viewport.name}:mode-label-glyph`);
+      assertRectContained(currentModeGlyph, initial.modeSwitchGlyphs.button, `${viewport.name}:current-mode-glyph`);
+      assert.ok(
+        modeLabelGlyph.top - initial.modeSwitchGlyphs.button.top >= 5,
+        `${viewport.name}: mode label lost its 5px screen-space top safety inset`
+      );
+      assert.ok(
+        initial.modeSwitchGlyphs.button.bottom - currentModeGlyph.bottom >= 5,
+        `${viewport.name}: current mode crossed the lower stitched 5px safety edge`
+      );
+      const [modeLabelLineBox, currentModeLineBox] = initial.modeSwitchGlyphs.lineBoxes;
+      assert.equal(
+        rectanglesOverlap(modeLabelLineBox, currentModeLineBox),
+        false,
+        `${viewport.name}: mode switch line boxes overlap`
+      );
+      assert.ok(modeLabelLineBox.bottom <= currentModeLineBox.top + 0.1, `${viewport.name}: mode switch text line order drifted`);
       assert.match(initial.companionArt, /milmaru_egg_idle_20260716\.webp/);
       assert.equal(initial.companionArtDisplay, 'block');
       for (const [name, rect] of Object.entries(initial.rects)) {
@@ -777,7 +862,19 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
       for (const name of ['back', 'mode', 'settings', 'kana', 'character', 'reset', 'done']) {
         assert.ok(initial.rects[name].height >= 44, `${viewport.name}:${name} is below 44px`);
       }
-      assert.ok(initial.rects.done.width >= initial.rects.reset.width, `${viewport.name}: primary done action is smaller than reset`);
+      for (const [name, expectedRatio] of Object.entries({
+        back: 620 / 190,
+        mode: 620 / 190,
+        reset: 620 / 190,
+        done: 980 / 360,
+        prompt: 1261 / 189,
+        characters: 1024 / 1536,
+        companion: 1311 / 1200,
+        strokes: 220 / 780
+      })) {
+        const actualRatio = initial.rects[name].width / initial.rects[name].height;
+        assert.ok(Math.abs(actualRatio - expectedRatio) < 0.006, `${viewport.name}:${name} image surface stretched (${actualRatio})`);
+      }
       assert.ok(initial.visibleImages.every((image) => image.complete && image.width > 0), `${viewport.name}: visible image failed to decode`);
       await assertNoWhiteCornerRectangles(await page.screenshot(), initial.frameCornerRects, `${viewport.name}:main`);
       [
@@ -789,10 +886,8 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
         'Fukuro_frame_001.webp',
         'Fukuro_frame_002.webp',
         'Fukuro_frame_004.webp',
-        'menu_card_base_01.webp',
-        'menu_card_base_02.webp',
-        'menu_card_base_03.webp',
-        'menu_card_base_04.webp',
+        'quizland_difficulty_button_normal_gpt_image2_20260622.png',
+        'sb3d_ui_page_label_wood_canvas_20260623.png',
         'milmaru_egg_idle_20260716.webp'
       ]
         .forEach((asset) => assert.ok(initial.resources.some((url) => url.includes(asset)), `${viewport.name}: ${asset} was not loaded`));
@@ -811,29 +906,87 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
         `${viewport.name}: former pixel UI asset was requested`
       );
 
-      if (Object.hasOwn(publishedWarmPaperBaselines, viewport.name)) {
-        const ratio = await getWarmPaperRatio(await page.screenshot());
-        assert.ok(
-          ratio < publishedWarmPaperBaselines[viewport.name] * 0.78,
-          `${viewport.name}: warm paper ratio ${ratio} did not clearly improve over published ${publishedWarmPaperBaselines[viewport.name]}`
-        );
-      }
-
       if (viewport.name === 'desktop') {
         const frameAudit = await page.evaluate(async (sources) => Promise.all(sources.map(async (src) => {
           const image = new Image();
           image.src = src;
           await image.decode();
+          const canvas = document.createElement('canvas');
+          canvas.width = image.naturalWidth;
+          canvas.height = image.naturalHeight;
+          const context2d = canvas.getContext('2d', { willReadFrequently: true });
+          context2d.drawImage(image, 0, 0);
+          const pixels = context2d.getImageData(0, 0, canvas.width, canvas.height).data;
+          const cornerIndexes = [
+            3,
+            (canvas.width - 1) * 4 + 3,
+            ((canvas.height - 1) * canvas.width) * 4 + 3,
+            ((canvas.height * canvas.width) - 1) * 4 + 3
+          ];
           return {
             src,
             complete: image.complete,
             width: image.naturalWidth,
-            height: image.naturalHeight
+            height: image.naturalHeight,
+            transparentCorners: cornerIndexes.filter((index) => pixels[index] < 8).length
           };
         })), frameAssets);
         for (const asset of frameAudit) {
           assert.equal(asset.complete, true, `${asset.src}: frame decode did not complete`);
           assert.ok(asset.width > 0 && asset.height > 0, `${asset.src}: frame has no pixels`);
+          if (!asset.src.includes('yard_background_wide_v2.png')) {
+            assert.ok(asset.transparentCorners >= 3, `${asset.src}: transparent outer corners were lost`);
+          }
+        }
+
+        const buttonAssetAudit = await page.evaluate(async (specs) => Promise.all(specs.map(async (spec) => {
+          const image = new Image();
+          image.src = spec.src;
+          await image.decode();
+          const canvas = document.createElement('canvas');
+          canvas.width = image.naturalWidth;
+          canvas.height = image.naturalHeight;
+          const context2d = canvas.getContext('2d', { willReadFrequently: true });
+          context2d.drawImage(image, 0, 0);
+          const pixels = context2d.getImageData(0, 0, canvas.width, canvas.height).data;
+          const cornerIndexes = [
+            3,
+            (canvas.width - 1) * 4 + 3,
+            ((canvas.height - 1) * canvas.width) * 4 + 3,
+            ((canvas.height * canvas.width) - 1) * 4 + 3
+          ];
+          return {
+            ...spec,
+            complete: image.complete,
+            naturalWidth: image.naturalWidth,
+            naturalHeight: image.naturalHeight,
+            transparentCorners: cornerIndexes.filter((index) => pixels[index] < 8).length
+          };
+        })), [
+          ...Object.values(imageOnlyButtonPairs).flatMap((pair) => [
+            { src: pair.normal, expectedWidth: pair.width, expectedHeight: pair.height },
+            { src: pair.pressed, expectedWidth: pair.width, expectedHeight: pair.height }
+          ]),
+          ...choicePressedAssets.map((asset) => ({
+            src: asset.src,
+            expectedWidth: asset.width,
+            expectedHeight: asset.height
+          }))
+        ]);
+        for (const asset of buttonAssetAudit) {
+          assert.equal(asset.complete, true, `${asset.src}: button image decode did not complete`);
+          assert.equal(asset.naturalWidth, asset.expectedWidth, `${asset.src}: natural width drifted`);
+          assert.equal(asset.naturalHeight, asset.expectedHeight, `${asset.src}: natural height drifted`);
+          assert.ok(asset.transparentCorners >= 3, `${asset.src}: transparent outer corners were lost`);
+        }
+        for (const pair of Object.values(imageOnlyButtonPairs)) {
+          const normal = buttonAssetAudit.find((asset) => asset.src === pair.normal);
+          const pressed = buttonAssetAudit.find((asset) => asset.src === pair.pressed);
+          assert.deepEqual(
+            [normal.naturalWidth, normal.naturalHeight],
+            [pressed.naturalWidth, pressed.naturalHeight],
+            `${pair.normal}: normal/pressed dimensions no longer match`
+          );
         }
 
         const generatedAudit = await page.evaluate(async (sources) => Promise.all(sources.map(async (src) => {
@@ -947,13 +1100,48 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
       assert.equal(closedResultState.shown, false, `${viewport.name}: result starts open`);
       assert.notEqual(closedResultState.activeId, 'careBtn', `${viewport.name}: inert care action accepted focus`);
 
-      const doneBeforePress = await page.locator('#doneBtn').boundingBox();
-      await page.mouse.move(doneBeforePress.x + doneBeforePress.width / 2, doneBeforePress.y + doneBeforePress.height / 2);
-      await page.mouse.down();
-      const doneWhilePressed = await page.locator('#doneBtn').boundingBox();
-      assert.ok(Math.abs(doneBeforePress.width - doneWhilePressed.width) < 0.1, `${viewport.name}: pressed done width shifted`);
-      assert.ok(Math.abs(doneBeforePress.height - doneWhilePressed.height) < 0.1, `${viewport.name}: pressed done height shifted`);
-      await page.mouse.up();
+      async function auditImageButtonPress(selector, normalAsset, pressedAsset, label) {
+        const locator = page.locator(selector);
+        const beforeRect = await locator.boundingBox();
+        const beforeSurface = await locator.evaluate((element) => ({
+          image: getComputedStyle(element).backgroundImage,
+          transform: getComputedStyle(element).transform
+        }));
+        assert.match(beforeSurface.image, new RegExp(normalAsset.replaceAll('.', '\\.')), `${viewport.name}:${label} normal image`);
+        assert.equal(beforeSurface.transform, 'none', `${viewport.name}:${label} normal transform shifted`);
+        await page.mouse.move(beforeRect.x + beforeRect.width / 2, beforeRect.y + beforeRect.height / 2);
+        await page.mouse.down();
+        const pressedRect = await locator.boundingBox();
+        const pressedSurface = await locator.evaluate((element) => ({
+          image: getComputedStyle(element).backgroundImage,
+          transform: getComputedStyle(element).transform
+        }));
+        assert.match(pressedSurface.image, new RegExp(pressedAsset.replaceAll('.', '\\.')), `${viewport.name}:${label} pointerdown image`);
+        assert.equal(pressedSurface.transform, 'none', `${viewport.name}:${label} pointerdown transform shifted`);
+        for (const key of ['x', 'y', 'width', 'height']) {
+          assert.ok(Math.abs(beforeRect[key] - pressedRect[key]) < 0.1, `${viewport.name}:${label} pointerdown ${key} shifted`);
+        }
+        await page.mouse.up();
+        const afterRect = await locator.boundingBox();
+        const afterImage = await locator.evaluate((element) => getComputedStyle(element).backgroundImage);
+        assert.match(afterImage, new RegExp(normalAsset.replaceAll('.', '\\.')), `${viewport.name}:${label} pointerup did not restore normal image`);
+        for (const key of ['x', 'y', 'width', 'height']) {
+          assert.ok(Math.abs(beforeRect[key] - afterRect[key]) < 0.1, `${viewport.name}:${label} pointerup ${key} shifted`);
+        }
+      }
+
+      await auditImageButtonPress(
+        '#resetBtn',
+        'sb3d_ui_page_label_wood_canvas_20260623.png',
+        'sb3d_ui_page_label_pressed_gpt_image2_20260713.png',
+        'reset'
+      );
+      await auditImageButtonPress(
+        '#doneBtn',
+        'quizland_difficulty_button_normal_gpt_image2_20260622.png',
+        'quizland_difficulty_button_pressed_gpt_image2_20260622.png',
+        'done'
+      );
 
       async function auditFeedback(expected, label) {
         await page.waitForFunction(() => !document.querySelector('#messageBox').hidden);
@@ -1165,7 +1353,7 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
         });
         const rect = (selector) => {
           const value = document.querySelector(selector).getBoundingClientRect();
-          return { left: value.left, top: value.top, right: value.right, bottom: value.bottom, height: value.height };
+          return { left: value.left, top: value.top, right: value.right, bottom: value.bottom, width: value.width, height: value.height };
         };
         const contentRect = (element) => {
           const range = document.createRange();
@@ -1192,11 +1380,29 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
           ].map(([name, selector]) => [name, parseFloat(getComputedStyle(document.querySelector(selector)).fontSize)
             * (stageEl.getBoundingClientRect().height / 900)])),
           choiceGap: parseFloat(getComputedStyle(document.querySelector('.mode-choice-button')).gap),
-          choices: Array.from(document.querySelectorAll('.mode-choice-button')).map((button) => ({
-            button: compactRect(button.getBoundingClientRect()),
-            title: contentRect(button.querySelector('strong')),
-            copy: contentRect(button.querySelector('span'))
-          }))
+          choices: Array.from(document.querySelectorAll('.mode-choice-button')).map((button) => {
+            const title = button.querySelector('strong') || button;
+            const copy = button.querySelector('span');
+            return {
+              tag: button.tagName,
+              id: button.id,
+              mode: button.dataset.writingMode || '',
+              button: compactRect(button.getBoundingClientRect()),
+              title: contentRect(title),
+              copy: copy ? contentRect(copy) : null,
+              surface: {
+                backgroundColor: getComputedStyle(button).backgroundColor,
+                backgroundImage: getComputedStyle(button).backgroundImage,
+                borderWidths: [
+                  getComputedStyle(button).borderTopWidth,
+                  getComputedStyle(button).borderRightWidth,
+                  getComputedStyle(button).borderBottomWidth,
+                  getComputedStyle(button).borderLeftWidth
+                ],
+                boxShadow: getComputedStyle(button).boxShadow
+              }
+            };
+          })
         };
       });
       assertInsideViewport(chooser.card, viewport, `${viewport.name}:chooser-card`);
@@ -1217,12 +1423,28 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
         }
       }
       assert.ok(chooser.close.height >= 44, `${viewport.name}:chooser close below 44px`);
+      assert.equal(chooser.choices.length, 4, `${viewport.name}:F002 does not expose four hit areas`);
+      assert.ok(chooser.choices.every((choice) => choice.tag === 'BUTTON'), `${viewport.name}:F002 hit area is not a real button`);
+      assert.equal(chooser.choices[3].id, 'modeChoiceCloseBtn', `${viewport.name}:F002 fourth window is not the return action`);
       assert.ok(chooser.choices.every((choice) => choice.button.height >= 44), `${viewport.name}:chooser choice below 44px`);
       chooser.choices.forEach((choice, index) => {
         assertRectContained(choice.title, choice.button, `${viewport.name}:chooser-${index + 1}-title`);
-        assertRectContained(choice.copy, choice.button, `${viewport.name}:chooser-${index + 1}-copy`);
-        assert.equal(rectanglesOverlap(choice.title, choice.copy), false, `${viewport.name}:chooser-${index + 1} title overlaps its copy`);
+        if (choice.copy) {
+          assertRectContained(choice.copy, choice.button, `${viewport.name}:chooser-${index + 1}-copy`);
+          assert.equal(rectanglesOverlap(choice.title, choice.copy), false, `${viewport.name}:chooser-${index + 1} title overlaps its copy`);
+        }
+        assert.equal(choice.surface.backgroundColor, 'rgba(0, 0, 0, 0)', `${viewport.name}:chooser-${index + 1} paints a CSS paper`);
+        assert.deepEqual(choice.surface.borderWidths, ['0px', '0px', '0px', '0px'], `${viewport.name}:chooser-${index + 1} paints a CSS border`);
+        assert.equal(choice.surface.boxShadow, 'none', `${viewport.name}:chooser-${index + 1} paints a CSS shadow`);
       });
+      assert.match(chooser.choices[0].surface.backgroundImage, /Fukuro_frame_002_pressed_TL\.png/, `${viewport.name}:current mode lost its matching F002 pressed quadrant`);
+      assert.equal(chooser.choices[1].surface.backgroundImage, 'none', `${viewport.name}:inactive TR choice paints a nested surface`);
+      assert.equal(chooser.choices[2].surface.backgroundImage, 'none', `${viewport.name}:inactive BL choice paints a nested surface`);
+      assert.equal(chooser.choices[3].surface.backgroundImage, 'none', `${viewport.name}:inactive BR choice paints a nested surface`);
+      assert.ok(Math.abs(chooser.card.width / chooser.card.height - 699 / 643) < 0.003, `${viewport.name}:F002 natural aspect ratio drifted`);
+      assert.ok(Math.abs(chooser.choices[0].button.top - chooser.choices[1].button.top) < 0.1, `${viewport.name}:F002 top row is uneven`);
+      assert.ok(Math.abs(chooser.choices[2].button.top - chooser.choices[3].button.top) < 0.1, `${viewport.name}:F002 bottom row is uneven`);
+      assert.ok(chooser.choices[2].button.top >= chooser.choices[0].button.bottom - 0.1, `${viewport.name}:F002 rows overlap`);
       assert.equal(
         await page.evaluate(() => document.activeElement && document.activeElement.dataset.writingMode),
         'sequence',
@@ -1244,6 +1466,25 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
         { left: 0, top: 0 },
         `${viewport.name}: chooser focus trap scrolled the stage wrapper`
       );
+
+      const trChoice = page.locator('[data-writing-mode="word-hole"]');
+      const trBefore = await trChoice.boundingBox();
+      assert.equal(await trChoice.evaluate((element) => getComputedStyle(element).backgroundImage), 'none', `${viewport.name}:TR choice starts with a nested image`);
+      await page.mouse.move(trBefore.x + trBefore.width / 2, trBefore.y + trBefore.height / 2);
+      await page.mouse.down();
+      const trPressed = await trChoice.boundingBox();
+      assert.match(
+        await trChoice.evaluate((element) => getComputedStyle(element).backgroundImage),
+        /Fukuro_frame_002_pressed_TR\.png/,
+        `${viewport.name}:TR pointerdown did not use its matching pressed quadrant`
+      );
+      for (const key of ['x', 'y', 'width', 'height']) {
+        assert.ok(Math.abs(trBefore[key] - trPressed[key]) < 0.1, `${viewport.name}:TR pointerdown ${key} shifted`);
+      }
+      await page.mouse.move(2, 2);
+      await page.mouse.up();
+      assert.equal(await trChoice.evaluate((element) => getComputedStyle(element).backgroundImage), 'none', `${viewport.name}:TR pointerup did not restore the baked normal window`);
+      assert.equal(await page.evaluate(() => activeMode), 'sequence', `${viewport.name}:canceled TR press changed the mode`);
 
       await page.locator('[data-writing-mode="word-hole"]').click();
       await page.waitForTimeout(230);

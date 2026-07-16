@@ -9,6 +9,7 @@ const vm = require('node:vm');
 
 const root = path.resolve(__dirname, '..');
 const html = fs.readFileSync(path.join(root, 'writing-mori/index.html'), 'utf8');
+const nativeManifest = JSON.parse(fs.readFileSync(path.join(root, 'native/content-manifest.json'), 'utf8'));
 
 function between(source, start, end) {
   const startIndex = source.indexOf(start);
@@ -19,6 +20,41 @@ function between(source, start, end) {
 
 function sha256(value) {
   return crypto.createHash('sha256').update(value).digest('hex');
+}
+
+function normalizeManifestSource(value) {
+  return path.posix.normalize(String(value || '').replaceAll('\\', '/').replace(/^\.\//, '')).replace(/\/$/, '');
+}
+
+function normalizeWritingAssetLiteral(value) {
+  const withoutQueryOrHash = value.split(/[?#]/, 1)[0];
+  return normalizeManifestSource(path.posix.join('writing-mori', withoutQueryOrHash));
+}
+
+function getManifestCoverage(entries) {
+  const exactFiles = new Set();
+  const directories = [];
+  for (const entry of entries) {
+    const source = normalizeManifestSource(entry.source);
+    if (entry.type === 'directory') {
+      directories.push(source);
+      continue;
+    }
+    if (entry.type === 'file') {
+      exactFiles.add(source);
+      continue;
+    }
+    if (entry.type === 'file-list') {
+      for (const file of entry.files || []) {
+        exactFiles.add(normalizeManifestSource(path.posix.join(source, file)));
+      }
+    }
+  }
+  return {
+    covers(source) {
+      return exactFiles.has(source) || directories.some((directory) => source.startsWith(`${directory}/`));
+    }
+  };
 }
 
 assert.doesNotMatch(html, /DotGothic16|--pixel-font/, 'retro dot font must not return');
@@ -49,10 +85,14 @@ const expectedStoryAssets = [
   'assets/images/quizland/Fukuro_frame_001.webp',
   'assets/images/quizland/Fukuro_frame_002.webp',
   'assets/images/quizland/Fukuro_frame_004.webp',
-  'assets/ui/menu_card_base_01.webp',
-  'assets/ui/menu_card_base_02.webp',
-  'assets/ui/menu_card_base_03.webp',
-  'assets/ui/menu_card_base_04.webp',
+  'assets/images/quizland/quizland_difficulty_button_normal_gpt_image2_20260622.png',
+  'assets/images/quizland/quizland_difficulty_button_pressed_gpt_image2_20260622.png',
+  'assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_page_label_wood_canvas_20260623.png',
+  'assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_page_label_pressed_gpt_image2_20260713.png',
+  'assets/images/quizland/Fukuro_frame_002_pressed_TL.png',
+  'assets/images/quizland/Fukuro_frame_002_pressed_TR.png',
+  'assets/images/quizland/Fukuro_frame_002_pressed_BL.png',
+  'assets/images/quizland/Fukuro_frame_002_pressed_BR.png',
   'assets/_legacy/preview-placeholders/ctrl-btn-settings.png',
   'assets/images/quizland/quizland_difficulty_star_gold_gpt_image2_20260623.png',
   'assets/images/Bento_parts/cookie.webp',
@@ -72,6 +112,38 @@ for (const relative of expectedStoryAssets) {
   assert.ok(fs.statSync(file).size < 3 * 1024 * 1024, `storybook asset exceeds 3MB: ${relative}`);
 }
 
+assert.ok(Array.isArray(nativeManifest.entries), 'native content manifest entries are missing');
+const writingAssetLiterals = new Set();
+for (const match of html.matchAll(/(['"])(\.\.\/assets\/[^'"\r\n]+)\1/g)) {
+  const literal = match[2];
+  if (literal.includes('${')) continue;
+  if (!/\.[a-z0-9]+(?:[?#].*)?$/i.test(literal)) continue;
+  const normalized = normalizeWritingAssetLiteral(literal);
+  assert.match(normalized, /^assets\//, `writing asset literal escaped the asset root: ${literal}`);
+  writingAssetLiterals.add(normalized);
+}
+assert.ok(writingAssetLiterals.size > 0, 'no literal writing assets were found for native coverage');
+
+const nativeCoverage = getManifestCoverage(nativeManifest.entries);
+const uncoveredWritingAssets = [...writingAssetLiterals].filter((source) => !nativeCoverage.covers(source)).sort();
+assert.deepEqual(
+  uncoveredWritingAssets,
+  [],
+  `native content manifest misses literal writing assets:\n${uncoveredWritingAssets.join('\n')}`
+);
+
+const nativeCoverageRegressions = [
+  'assets/zukan/ui/discovery_popup_empty.webp',
+  'assets/zukan/ui/hint_panel_empty.webp',
+  'assets/zukan/ui/investigation_window_frame_16x9.png',
+  'assets/zukan/ui/map_guide_note_empty_220x780.png',
+  'assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_page_label_pressed_gpt_image2_20260713.png'
+];
+for (const source of nativeCoverageRegressions) {
+  assert.ok(writingAssetLiterals.has(source), `${source}: native regression asset escaped literal extraction`);
+  assert.ok(nativeCoverage.covers(source), `${source}: native regression asset is not packaged`);
+}
+
 assert.match(html, /--story-yard-bg:\s*url\('\.\.\/assets\/images\/mojikko\/care\/yard_background_wide_v2\.png'\)/);
 assert.doesNotMatch(html, /stage-bg\.webp/, 'the QuizLand background must not return');
 assert.match(html, /--story-milk:\s*url\('\.\.\/assets\/images\/mojikko\/writing\/storybook\/icon_moji_milk_20260716\.webp'\)/);
@@ -89,42 +161,30 @@ assert.doesNotMatch(
   /repeating-linear-gradient/,
   'the old scanline overlay must stay removed'
 );
-for (const role of ['character', 'companion', 'board', 'stroke', 'prompt', 'result', 'chooser']) {
-  assert.match(html, new RegExp(`border-image-source:\\s*var\\(--story-frame-${role}\\)`), `${role}: missing frame role`);
+assert.doesNotMatch(html, /menu_card_base_0[1-4]\.webp/, 'rejected menu-card assets must not be referenced by writing-mori');
+const expectedImageOnlyVariables = Object.freeze({
+  '--story-button-primary': '../assets/images/quizland/quizland_difficulty_button_normal_gpt_image2_20260622.png',
+  '--story-button-primary-pressed': '../assets/images/quizland/quizland_difficulty_button_pressed_gpt_image2_20260622.png',
+  '--story-button-secondary': '../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_page_label_wood_canvas_20260623.png',
+  '--story-button-secondary-pressed': '../assets/_PonoSubmarine/Art/UI/StickerBook3D/sb3d_ui_page_label_pressed_gpt_image2_20260713.png',
+  '--story-choice-pressed-tl': '../assets/images/quizland/Fukuro_frame_002_pressed_TL.png',
+  '--story-choice-pressed-tr': '../assets/images/quizland/Fukuro_frame_002_pressed_TR.png',
+  '--story-choice-pressed-bl': '../assets/images/quizland/Fukuro_frame_002_pressed_BL.png',
+  '--story-choice-pressed-br': '../assets/images/quizland/Fukuro_frame_002_pressed_BR.png'
+});
+for (const [variable, source] of Object.entries(expectedImageOnlyVariables)) {
+  assert.match(
+    html,
+    new RegExp(`${variable.replaceAll('-', '\\-')}:\\s*url\\(['\"]${source.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')}['\"]\\)`),
+    `${variable}: image-only asset mapping drifted`
+  );
 }
-for (const role of ['back', 'mode', 'reset', 'done']) {
-  assert.match(html, new RegExp(`border-image-source:\\s*var\\(--story-menu-${role}\\)`), `${role}: missing menu frame role`);
-}
-assert.doesNotMatch(
-  html,
-  /border-image-slice:[^;]*\bfill\b/,
-  'baked paper centers must not be painted by border-image'
-);
 assert.match(
   html,
-  /\.character-panel,\s*\.companion-card,\s*\.stroke-panel\s*\{[^}]*background-color:\s*rgba\(248, 227, 174, 0\.76\);[^}]*background-clip:\s*padding-box;[^}]*opacity:\s*1;/s,
-  'the three peripheral frames must share one translucent warm surface without fading their contents'
+  /\.mode-choice-buttons\s*\{[^}]*grid-template-columns:\s*1fr 1fr;[^}]*grid-template-rows:\s*1fr 1fr;/s,
+  'F002 must expose its four baked windows as a 2x2 hit-area grid'
 );
-assert.match(html, /\.prompt-bar,\s*\.message-box\s*\{[^}]*border-radius:\s*28px;[^}]*background-clip:\s*padding-box;/s);
-assert.match(
-  html,
-  /\.pixel-button,\s*\.pixel-button\.primary,\s*\.pixel-button\.mint,\s*\.pixel-button\.ghost,\s*\.mode-choice-button,\s*\.mode-choice-button\.active\s*\{[^}]*border-radius:\s*24px;[^}]*background-clip:\s*padding-box;/s
-);
-assert.match(
-  html,
-  /#doneBtn,\s*#resetBtn,\s*#careBtn,\s*#modalRetryBtn\s*\{[^}]*border-radius:\s*26px;[^}]*background-clip:\s*padding-box;/s,
-  'ID-specific action rules must not repaint transparent menu-card corners'
-);
-assert.match(
-  html,
-  /\.mode-choice-card,\s*\.result-card\s*\{[^}]*border-radius:\s*50px;[^}]*background-color:\s*rgba\(255, 249, 226, 0\.94\);[^}]*background-clip:\s*padding-box;/s,
-  'modal paper must remain inside its transparent frame instead of forming a second white rectangle'
-);
-assert.match(
-  html,
-  /\.companion-name\s*\{[^}]*top:\s*-24px;[^}]*height:\s*58px;[^}]*display:\s*flex;[^}]*align-items:\s*center;[^}]*justify-content:\s*center;[^}]*line-height:\s*1;/s,
-  'Milmaru title must use the wooden sign as a fixed centered layout box'
-);
+assert.equal((html.match(/class="pixel-button[^\"]*mode-choice-button/g) || []).length, 4, 'F002 must contain exactly four real buttons');
 assert.match(html, /\.writing-board\s*\{[^}]*border:\s*0;/s, 'the story frame must not shrink the writer containing block');
 assert.match(
   html,
@@ -135,11 +195,6 @@ assert.match(
   html,
   /\.writing-board::after\s*\{[^}]*inset:\s*22px;[^}]*background:\s*rgba\(255, 251, 235, 0\.97\);[^}]*opacity:\s*1;/s,
   'only the inside of the handwriting board may retain an opaque paper surface'
-);
-assert.doesNotMatch(
-  html,
-  /background(?:-image)?:[^;]*(?:Fukuro_frame|--story-frame)[^;]*100%\s+100%/,
-  'storybook frames must use sliced borders instead of distorted full-image stretching'
 );
 
 assert.doesNotMatch(
@@ -155,8 +210,8 @@ assert.match(html, /id="messageBox"[^>]*role="status"[^>]*aria-live="polite"[^>]
 assert.match(html, /\.message-box\s*\{[^}]*top:\s*0;[^}]*width:\s*min\(820px, 100%\)[^}]*display:\s*flex/s);
 assert.match(html, /\.prompt-bar\.feedback-hidden\s*\{\s*visibility:\s*hidden/);
 assert.match(html, /function setMessage\([^]*messageBox\.hidden\s*=\s*!nextMessage;[^]*promptText\.classList\.toggle\('feedback-hidden'/);
-assert.match(html, /#doneBtn\s*\{[^}]*width:\s*352px/s);
-assert.match(html, /#resetBtn\s*\{[^}]*width:\s*220px/s);
+assert.match(html, /#doneBtn\s*\{[^}]*width:\s*196px/s);
+assert.match(html, /#resetBtn\s*\{[^}]*width:\s*235px/s);
 assert.match(html, /\.pixel-creature\s*\{[^}]*background:\s*none center \/ contain no-repeat/s);
 assert.match(html, /\.companion-card\.visual-grown \.pixel-creature\s*\{[^}]*background-image:\s*var\(--story-milmaru-grown\)/s);
 assert.match(html, /\.companion-card\.visual-egg \.pixel-creature\s*\{[^}]*background-image:\s*var\(--story-milmaru-egg\)/s);

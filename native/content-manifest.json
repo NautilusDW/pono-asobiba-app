@@ -489,6 +489,17 @@
       "type": "directory"
     },
     {
+      "source": "assets/zukan/ui",
+      "destination": "assets/zukan/ui",
+      "type": "file-list",
+      "files": [
+        "discovery_popup_empty.webp",
+        "hint_panel_empty.webp",
+        "investigation_window_frame_16x9.png",
+        "map_guide_note_empty_220x780.png"
+      ]
+    },
+    {
       "source": "assets/audio/stickerbook",
       "destination": "assets/audio/stickerbook",
       "type": "directory"
@@ -761,6 +772,7 @@
         "sb3d_ui_button_theme_ribbon_wood_gpt_image2_20260623.png",
         "sb3d_ui_button_theme_text_gpt_image2_20260623.png",
         "sb3d_ui_label_cover_text_gpt_image2_20260623.png",
+        "sb3d_ui_page_label_pressed_gpt_image2_20260713.png",
         "sb3d_ui_page_label_wood_canvas_20260623.png",
         "sb3d_zukan_thickness_strip_01_alpha.png",
         "sb3d_zukan_thickness_strip_02_alpha.png",
