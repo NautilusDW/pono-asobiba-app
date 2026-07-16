@@ -19745,16 +19745,14 @@ body.layout-editor-on .bowl-fill-mask::after {
         if (a.indexOf('cooking') === -1) { a.push('cooking'); localStorage.setItem(k, JSON.stringify(a)); }
       })();
     }
-    refreshUnlockedRecipes(true);
+    refreshUnlockedRecipes();
     renderFridge();
     renderRecipes();
     const btn = els.bar.querySelector('[data-id="' + ing.id + '"]');
     if (btn) btn.classList.add('unlocked');
   }
 
-  // fromGameplay=true の呼び出し(実際に食材を調理してレシピ解禁した時)のみお題クリアを発火。
-  // init()や画面遷移時の再計算(fromGameplay省略=false)は永続化済み state.unlocked を再走査するだけなので発火させない。
-  function refreshUnlockedRecipes(fromGameplay) {
+  function refreshUnlockedRecipes() {
     let changed = false;
     RECIPES.forEach(function (rec) {
       const ready = (rec.needs || []).every(function (id) {
@@ -19764,7 +19762,7 @@ body.layout-editor-on .bowl-fill-mask::after {
         state.unlockedRecipes.add(rec.id);
         changed = true;
         if (typeof window.incrementStat === 'function') window.incrementStat('cooking_recipes', 1);
-        if (fromGameplay && window.PonoGameStickers) window.PonoGameStickers.grant({ gameId: 'cooking', event: 'clear' });
+        if (window.PonoGameStickers) window.PonoGameStickers.grant({ gameId: 'cooking', event: 'clear' });
       }
     });
     if (changed) saveUnlockedRecipes();
