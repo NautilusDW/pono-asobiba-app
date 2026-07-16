@@ -1,5 +1,32 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2248: batch:1321-treasure-overlay-permanent-failsafe。宝箱(common/treasure.js
+// #treasure-overlay)/初回クリア報酬(common/first-clear.js _simpleAfterMsg)の全画面
+// オーバーレイに、将来また閉じるボタンが機能しない不具合が起きても画面が詰まない
+// よう恒久的な安全弁2種を追加。①自動タイムアウト閉じ: 両ファイルとも表示直後に
+// AUTO_CLOSE_MS/AFTER_MSG_AUTO_CLOSE_MS=10000ms のタイマーを仕込み、無操作でも
+// 10秒後に自動で閉じる (既存演出時間: treasure.js動画実測6.4秒、first-clear.jsは
+// 静的モーダルに対し十分な余裕)。②背景タップ閉じ: オーバーレイ背景 (子要素除く)
+// への直クリックで閉じる。treasure.jsは_finished===true (閉じるボタン表示済み=
+// 動画再生完了後)のみ、first-clear.jsは表示から500ms猶予後のみ有効化し、演出中の
+// 誤タップ・タップスルーを防止。③_closing/closedフラグでclose btn・背景タップ・
+// auto-closeの3経路が競合しても既存クローズ関数(_doClose()/_close())は1回だけ実行
+// され、onClose/onDoneの発火タイミングは不変。Playwrightで11ケース検証済み
+// (明示クローズ後の誤タイムアウト無し・演出初期の背景タップ無効・約10秒後の自動
+// クローズと背後UIクリック復帰、等)。play.html PAGE_CACHE_VERSION / PONO_SW_VERSION
+// を2248へ同期(2246→2247は並走セッションのbatch:1330-kitchen-required-step-assets
+// と競合したため2248へ繰り上げ)。common/treasure.js の <script src> 固定 ?v= クエリ
+// (play.html) も2248へ同期。independent reviewで、AUTO_CLOSE_MSの10秒タイマーが
+// 「タップして あけよう！」表示直後(オーバーレイ表示時)に開始され、タップまでの
+// 待ち時間を差し引かないままだった不具合を検出・修正: 動画6.4秒+演出だけで budget
+// を使い切り、タップまで数秒かかった通常の子供の反応速度でも動画再生中に強制
+// クローズされ得た。common/treasure.js の _onTapOpen(タップ直後)と_showCloseBtn
+// (閉じるボタン表示時)の2箇所で_scheduleAutoClose()を呼び直し、各フェーズ開始時点
+// から常にフルの10秒猶予を確保するよう変更。
+// v2247: トントンキッチンの果物7種へ丸ごと／切断後の工程画像を追加し、切る工程は
+// 現行まな板と同じ画角で表示。いんげんを独立した下ごしらえ材料として追加し、
+// にんじん・いんげんを個別の細い切れ端スプライトへ変更した
+// (batch:1330-kitchen-required-step-assets)。play.html PAGE_CACHE_VERSION と同期不要。
 // v2245: batch:1320-settings-button-unresponsive-investigation。緊急report「設定ボタンが
 // 迷路含む複数ゲームで反応しない」の根本原因を特定。batch:1318の宝箱/初回クリア報酬tier判定
 // 修正で、app tierにおいて#treasure-overlay(common/treasure.js)/_simpleAfterMsg(common/
@@ -364,7 +391,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2245;
+const CACHE_VERSION = 2248;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。

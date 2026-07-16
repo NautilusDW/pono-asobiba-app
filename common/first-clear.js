@@ -20,6 +20,11 @@
   var LS_GRANTED = 'pono_first_clear_granted';   // 付与済みゲームID配列
   var LS_PENDING = 'pono_pending_first_clear';    // ホーム帰還時に演出すべき項目
 
+  // past incident: オーバーレイが正常に閉じずページ全体のクリックを吸収した事故の再発防止 (batch:1320)
+  // common/treasure.js の #treasure-overlay と揃えたタイムアウト秒数
+  var AFTER_MSG_AUTO_CLOSE_MS = 10000;
+  var AFTER_MSG_BG_TAP_GRACE_MS = 500;
+
   function _getJSON(key, fallback) {
     try {
       var v = localStorage.getItem(key);
@@ -117,16 +122,34 @@
     m.style.cssText = 'font-size:0.9rem;font-weight:900;color:#5D4E37;line-height:1.7;white-space:pre-line;';
     m.textContent = msg;
     box.appendChild(m);
+
+    var closed = false;
+    var autoCloseTimer = null;
+    function _close() {
+      if (closed) return;
+      closed = true;
+      if (autoCloseTimer) { clearTimeout(autoCloseTimer); autoCloseTimer = null; }
+      ov.remove();
+      if (onDone) onDone();
+    }
+
     var btn = document.createElement('button');
     btn.textContent = 'わかった！';
     btn.style.cssText = 'margin-top:12px;padding:10px 28px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.9rem;font-weight:900;cursor:pointer;';
-    btn.addEventListener('click', function () {
-      ov.remove();
-      if (onDone) onDone();
-    });
+    btn.addEventListener('click', _close);
     box.appendChild(btn);
     ov.appendChild(box);
+
+    // 背景タップで閉じる。表示直後の誤タップでの早期クローズを避けるため短い猶予を置く。
+    var bgTapReady = false;
+    setTimeout(function () { bgTapReady = true; }, AFTER_MSG_BG_TAP_GRACE_MS);
+    ov.addEventListener('click', function (e) {
+      if (e.target !== ov || !bgTapReady) return;
+      _close();
+    });
+
     document.body.appendChild(ov);
+    autoCloseTimer = setTimeout(_close, AFTER_MSG_AUTO_CLOSE_MS);
   }
 
   // 付与済み判定

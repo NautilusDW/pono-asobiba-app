@@ -33,6 +33,11 @@
   var _pendingTimers = [];
   var _finished = false;
   var _fallbackStarted = false; // _fallbackCss 重複挿入ガード用
+  var _closing = false;         // _doClose 多重発火ガード (close btn / 背景タップ / auto-close が競合しても1回だけ実行)
+
+  // past incident: オーバーレイが正常に閉じずページ全体のクリックを吸収した事故の再発防止 (batch:1320)
+  var AUTO_CLOSE_MS = 10000;
+  var _autoCloseTimer = null;
 
   // ── パス判定 ────────────────────────────────────────────────────────────────
   function _getBasePath() {
@@ -62,6 +67,13 @@
     var id = setTimeout(fn, ms);
     _pendingTimers.push(id);
     return id;
+  }
+  function _clearAutoClose() {
+    if (_autoCloseTimer) { clearTimeout(_autoCloseTimer); _autoCloseTimer = null; }
+  }
+  function _scheduleAutoClose() {
+    _clearAutoClose();
+    _autoCloseTimer = setTimeout(function() { _autoCloseTimer = null; _doClose(); }, AUTO_CLOSE_MS);
   }
 
   // ── UI 構築（1回のみ）────────────────────────────────────────────────────────
@@ -188,6 +200,14 @@
     _closeBtn.addEventListener('click', function() {
       _doClose();
     });
+
+    // 背景タップで閉じる。演出のごく初期(フェードイン中/報酬表示前)の誤タップで
+    // 早期クローズしないよう、_finished (=閉じるボタン表示済み) になるまでは無効化する。
+    _overlay.addEventListener('click', function(e) {
+      if (e.target !== _overlay) return;
+      if (!_finished) return;
+      _doClose();
+    });
   }
 
   // ── メインBGM フェード制御 ──
@@ -245,6 +265,9 @@
   }
 
   function _doClose() {
+    if (_closing) return;
+    _closing = true;
+    _clearAutoClose();
     _clearPendingTimers();
     // タップオーバーレイが残っていたら除去
     if (_container) {
@@ -279,6 +302,7 @@
         _container.style.transition = 'transform 0.4s cubic-bezier(0.34,1.56,0.64,1)';
         _container.style.backgroundImage = '';
       }
+      _closing = false;
       if (_onClose) { var cb = _onClose; _onClose = null; cb(); }
     }, 350);
   }
@@ -374,6 +398,9 @@
     if (_finished) return;
     _finished = true;
     _clearPendingTimers();
+    // 報酬が見えた状態からさらに10秒、閉じるボタンをタップする猶予を確保する
+    // （オートクローズは「タップ待ち」の間に消費した時間を引き継がない）。
+    _scheduleAutoClose();
 
     // 動画は最後のフレーム（宝箱が開いた状態）で停止させて残す
     if (_video) { _video.pause(); }
@@ -412,6 +439,7 @@
     _finished = false;
     _fallbackStarted = false;
     _rewardShown = false;
+    _closing = false;
     // メインBGMをフェードアウト（演出中は静かに）
     _bgmFadeOut();
     // コンテナ背景をリセット（poster 読込失敗時の黒枠対策で茶系グラデを下敷きに）
@@ -453,6 +481,7 @@
 
     _overlay.classList.add('show');
     _overlay.classList.remove('visible');
+    _scheduleAutoClose();
 
     _video = document.createElement('video');
     _video.muted       = true;
@@ -491,6 +520,10 @@
     // ── タップで宝箱を開ける ──
     tapOverlay.addEventListener('click', function _onTapOpen() {
       tapOverlay.removeEventListener('click', _onTapOpen);
+
+      // タップまでに掛かった時間ぶんオートクローズの残り時間が食われないよう、
+      // ここで10秒の猶予を取り直す（動画(6s)+演出だけで budget を使い切らないため）。
+      _scheduleAutoClose();
 
       // AudioContextアンロック（ユーザージェスチャー内）→ 即座に音を再生
       _resumeAC();
