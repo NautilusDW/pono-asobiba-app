@@ -61,8 +61,6 @@
 
 - 2026-07-16 19:06 - by Codex - [batch:1329-nazonazo-grand-rescue] - nazonazo-tunnel/**, assets/images/nazonazo-tunnel/**, tmp/alpha_pending/1329-nazonazo-grand-rescue/**, tests/nazonazo_space_chase_boss_regression.cjs, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - 追いつき後を同一画面の余韻→しっぽゲート操縦→3光ロック→タイミング連打→全駅星座エンディングの約50〜70秒大救出へ再構成 [overlap: batch:1318-stamp-rally-daily-challenge-merge]
 
-- 2026-07-16 18:05 - by Claude - [batch:1318-stamp-rally-daily-challenge-merge] - 実装中 (play.html, common/stamp-rally.js, js/daily-quest.js, common/treasure.js, common/first-clear.js, nazonazo-tunnel/**, bento/kitchen.html, writing-mori/index.html, sw.js) - ユーザー承認済み: 「今日のチャレンジ」に一本化(クリアでガチャボーナス+スタンプ両方付与)、2ゲーム版デイリーラリー帯は撤去、新ゲーム3本を今日のチャレンジのプールに追加。ついでに宝箱演出未表示(common/treasure.js未読込)と初回クリア報酬の全tier停止(common/first-clear.jsのtier判定漏れ)も修正 (fable設計→sonnet5並列実装+クロスレビュー、オーケストレータは実装非従事)
-
 - 2026-06-28 09:27 - by Codex - [batch:877-gacha-tray-mask-lower] - play.html, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - ガチャ受け皿マスクが上すぎるため奥壁ラインを下げて再調整 [overlap: batch:860-data-export-import]
 - 2026-06-28 13:00 - by Claude - [batch:885-difficulty-label-phase3-fix] - quizland/index.html, puzzle/partner-select.js, bento/index.html - クロスレビュー Critical/High 修正 (quizland「かんたん」UI 露出 / puzzle partner「かんたん」/ bento aria-label hardcode) [overlap: batch:884-maze-water-line-skate]
 - 2026-06-28 13:30 - by Claude - [batch:886-difficulty-label-sw-bump-1736] - sw.js, play.html - 難易度ラベル統一 Phase 2+4 fix を v1735→v1736 でバンプ (maze HUD / oto タブ / puzzle album / bento title / quizland UI / partner-select / common/difficulty.js は既登録) [overlap: batch:885-difficulty-label-phase3-fix]
