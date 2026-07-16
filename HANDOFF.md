@@ -17,6 +17,10 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-07-16 - [batch:1321-kitchen-egg-align-recipe-art] Codex: ユーザー実機評価「閉じられるようになった蓋が上下に少しずれる／完成時めだまやきが皿に正しく乗らずずれる／冷蔵庫カードのハンバーグ・タコウインナー・エビフライ・にんじんいんげん・からあげ・コロッケ・キャベツを昔の画像から現在のお弁当箱で使う画像へ差替」を受領。重複監査で蓋touch cancelはbatch:1320で解消済みだが位置補正とカード旧参照は未対応。844×390実状態再現で蓋中心が鍋中心より約6px下、完成卵は`#grill-stage.food-placed`が汎用`.is-served`より高詳細度でpan位置を保持し、皿中心より約39px上に残る原因を確認。冷蔵庫7品は旧Bento_parts／旧まとめ画像参照、お弁当箱正本はcooking/free-layout現行アセット＋タコ／唐揚げ2枚cluster。蓋中心比35→32%とdrop中心を同期、egg served専用高詳細度CSS、7品参照統一＋2品cluster表示を実装する。凍結develop／master／productionは変更しない。 (by Codex)
+
+- 2026-07-16 - [batch:1321-kitchen-egg-align-recipe-art] Codex: **LOCAL GREEN** — 蓋の鍋内中心比とdrop中心を35→32%へ同期して844×390で約6px上げ、実close後の蓋中心と目標差2px未満。完成めだまやきはegg served専用高詳細度CSSで皿とX/Y中心差2px未満。冷蔵庫カードはハンバーグ／タコウインナー／唐揚げ／エビフライ／コロッケ／キャベツ／にんじんいんげんをお弁当箱正本のcooking/free-layoutへ統一し、タコ／唐揚げは本体同様2枚cluster。全画像200／fallback 0、static＋Chromium 6本（通常close 3 viewport／touch cancel／蓋皿中心／カード参照）、既存motion/mix/warp、JS/SW構文、diff check PASS。origin behind 0／SW v2223のためv2224予定。 (by Codex)
+
 - 2026-07-16 - [batch:1320-kitchen-lid-touch-cancel] Codex: batch:1319公開後もユーザー実機で「蓋をドラッグすると左端の壁まで飛び、バウンドして戻る」と再報告。前回のinline transform除去だけでは未解決。再監査でegg lidに`touch-action:none`がなく、touch drag開始時にブラウザーpanへ奪われpointercancelが発生し、cancelをpointerupと同じ`onEggLidPointerEnd`へ渡してclientX/Y=0をstage左端1%へclamp後homeへtransitionするため、報告どおり左壁→ブーメラン復帰になる経路を特定。公開ブラウザー接続は0件で直接操作不可。主操作は蓋をつまんでフライパンへ置く。蓋へtouch-action/user-selectを追加し、pointercancelは座標評価せずcapture解放→drag state解除→home復帰する専用handlerへ分離、touch cancel回帰を追加する。凍結develop／master／productionは変更しない。 (by Codex)
 
 - 2026-07-16 - [batch:1320-kitchen-lid-touch-cancel] Codex: **LOCAL GREEN** — egg lidへ`touch-action:none`／user-select禁止を追加し、touch dragをブラウザーpanへ奪われないよう修正。pointercancelをpointerupから分離し、clientX/Y=0を一切move/drop判定へ渡さずcapture／drag stateだけ解除してhomeへ戻すため左端1%への瞬間移動を封鎖。新規touch cancel実ブラウザー回帰＋従来close 3 viewportの計4本、static回帰、既存motion/mix/warp、diff check PASS。公開ブラウザー接続は0件。originは7 commits先／SW v2222のため、feature commit後にrebaseしv2223へ採番する。 (by Codex)

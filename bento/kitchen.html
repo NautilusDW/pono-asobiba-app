@@ -3116,6 +3116,11 @@ body.layout-editor-on .fry-pot {
   top: var(--grill-food-y, 52%);
   width: 29%;
 }
+#grill-stage[data-ingredient="egg"].is-served .cooking-food {
+  left: 50%;
+  top: 64%;
+  width: 24%;
+}
 .egg-target-cue {
   position: absolute;
   left: var(--egg-target-x, 28%);
@@ -5534,13 +5539,27 @@ body.layout-editor-on .bowl-fill-mask::after {
   100% { transform: scale(1); }
 }
 .recipe-img {
-  width: 78%;
-  aspect-ratio: 1.18/1;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
   border-radius: 10px;
   background: transparent;
-  margin-top: 8px;
   filter: drop-shadow(0 4px 5px rgba(80,55,35,0.12));
+}
+.recipe-art {
+  width: 78%;
+  aspect-ratio: 1.18 / 1;
+  position: relative;
+  margin-top: 8px;
+}
+.recipe-art.is-cluster .recipe-img {
+  position: absolute;
+  left: calc(50% + var(--recipe-cluster-x, 0%));
+  top: calc(50% + var(--recipe-cluster-y, 0%));
+  width: var(--recipe-cluster-w, 68%);
+  height: auto;
+  max-height: 92%;
+  transform: translate(-50%, -50%) rotate(var(--recipe-cluster-rotation, 0deg));
 }
 .recipe-name {
   margin-top: auto;
@@ -6785,15 +6804,21 @@ body.layout-editor-on .bowl-fill-mask::after {
   // 材料→解放されるレシピ
   const RECIPES = [
     { id: 'medamayaki',   name: 'めだまやき',        img: '../assets/images/bento/cooking/egg/egg_002_mid.png', needs: ['egg'], startFromRaw: true },
-    { id: 'hamburg',      name: 'ハンバーグ',        img: '../assets/images/Bento_parts/hamburg2.webp',      needs: ['mince_patty', 'onion'], cookIngredientId: 'mince_patty' },
+    { id: 'hamburg',      name: 'ハンバーグ',        img: '../assets/images/bento/cooking/mince_patty/patty_003_done.png', needs: ['mince_patty', 'onion'], cookIngredientId: 'mince_patty' },
     { id: 'meatball',     name: 'ミートボール',      img: '../assets/images/Bento_parts/meatball2.webp',     needs: ['mince_patty', 'onion'], cookIngredientId: 'meatball' },
     { id: 'yakizake',     name: 'やきざけ',          img: '../assets/images/Bento_parts/yakizake2.webp',     needs: ['salmon'], startFromRaw: true },
-    { id: 'tako_wiener',  name: 'タコウインナー',    img: '../assets/images/Bento_parts/tako_wiener2.webp',  needs: ['wiener'], startFromRaw: true },
-    { id: 'karaage',      name: 'からあげ',          img: '../assets/images/bento/free-layout/karaage_pieces_done.png', needs: ['chicken_marinated'] },
-    { id: 'ebi_fry',      name: 'エビフライ',        img: '../assets/images/Bento_parts/ebi_fry2.webp',      needs: ['shrimp_breaded'], startFromRaw: true },
-    { id: 'korokke',      name: 'コロッケ',          img: '../assets/images/Bento_parts/korokke2.webp',      needs: ['potato'], cookIngredientId: 'korokke_raw' },
-    { id: 'cabbage_shreds', name: 'キャベツ',        img: '../assets/images/bento/free-layout/cabbage_shreds_patch_medium.png', needs: ['cabbage'] },
-    { id: 'ninjin_ingen', name: 'にんじんいんげん',  img: '../assets/images/Bento_parts/ninjin_ingen2.webp', needs: ['carrot'] },
+    { id: 'tako_wiener',  name: 'タコウインナー',    img: '../assets/images/bento/cooking/wiener/wiener_003_done.png', needs: ['wiener'], startFromRaw: true, clusterImages: [
+      { img: '../assets/images/bento/cooking/wiener/wiener_003_done.png', x: 14, y: -3, w: 61, rotation: 8 },
+      { img: '../assets/images/bento/cooking/wiener/wiener_003_done.png', x: -13, y: 3, w: 68, rotation: -11 },
+    ] },
+    { id: 'karaage',      name: 'からあげ',          img: '../assets/images/bento/cooking/chicken/fry/chicken_fry_piece_01_done.png', needs: ['chicken_marinated'], clusterImages: [
+      { img: '../assets/images/bento/cooking/chicken/fry/chicken_fry_piece_01_done.png', x: -13, y: -3, w: 67, rotation: -9 },
+      { img: '../assets/images/bento/cooking/chicken/fry/chicken_fry_piece_02_done.png', x: 14, y: 6, w: 67, rotation: 8 },
+    ] },
+    { id: 'ebi_fry',      name: 'エビフライ',        img: '../assets/images/bento/cooking/shrimp/shrimp_003_done.png', needs: ['shrimp_breaded'], startFromRaw: true },
+    { id: 'korokke',      name: 'コロッケ',          img: '../assets/images/bento/cooking/korokke/korokke_003_done.png', needs: ['potato'], cookIngredientId: 'korokke_raw' },
+    { id: 'cabbage_shreds', name: 'キャベツ',        img: '../assets/images/bento/cooking/cabbage/cabbage_002.png', needs: ['cabbage'] },
+    { id: 'ninjin_ingen', name: 'にんじんいんげん',  img: '../assets/images/bento/free-layout/okazu_ninjin_ingen.png', needs: ['carrot'] },
     { id: 'kinpira',      name: 'きんぴらごぼう',    img: '../assets/images/Bento_parts/kinpira2.webp',      needs: ['carrot'] },
   ];
 
@@ -15350,7 +15375,7 @@ body.layout-editor-on .bowl-fill-mask::after {
 
     const foodY = ((toolRect.top + toolRect.height * 0.37 - stageRect.top) / stageRect.height) * 100;
     const heatY = ((toolRect.top + toolRect.height * 0.64 - stageRect.top) / stageRect.height) * 100;
-    const lidCenterY = ((toolRect.top + toolRect.height * 0.35 - stageRect.top) / stageRect.height) * 100;
+    const lidCenterY = ((toolRect.top + toolRect.height * 0.32 - stageRect.top) / stageRect.height) * 100;
     const lidW = (toolRect.width * 0.74 / stageRect.width) * 100;
     const lidH = (toolRect.width * 0.74 * (877 / 1162) / stageRect.height) * 100;
     const lidLeft = cx - lidW / 2;
@@ -15606,7 +15631,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     if (panBounds) {
       return {
         x: panBounds.left + panBounds.width * 0.50,
-        y: panBounds.top + panBounds.height * 0.35,
+        y: panBounds.top + panBounds.height * 0.32,
         rx: panBounds.width * 0.30,
         ry: panBounds.height * 0.24,
       };
@@ -19213,11 +19238,9 @@ body.layout-editor-on .bowl-fill-mask::after {
         card.setAttribute('aria-disabled', 'true');
       }
 
-      const img = document.createElement('img');
-      img.className = 'recipe-img';
-      img.src = rec.img;
-      img.alt = rec.name;
-      img.loading = 'lazy';
+      const art = document.createElement('div');
+      art.className = 'recipe-art' + (Array.isArray(rec.clusterImages) && rec.clusterImages.length ? ' is-cluster' : '');
+      const sources = Array.isArray(rec.clusterImages) && rec.clusterImages.length ? rec.clusterImages : [{ img: rec.img }];
 
       const fallback = document.createElement('div');
       fallback.className = 'recipe-img-fallback';
@@ -19225,11 +19248,31 @@ body.layout-editor-on .bowl-fill-mask::after {
       const needEmojis = (rec.needs || []).map(emojiFor).slice(0, 2).join('');
       fallback.textContent = needEmojis || '🍱';
 
-      img.onerror = function() {
-        this.style.display = 'none';
-        fallback.classList.add('show');
-      };
-      card.appendChild(img);
+      let failedImages = 0;
+      sources.forEach(function (source) {
+        const img = document.createElement('img');
+        img.className = 'recipe-img';
+        img.src = source.img;
+        img.alt = sources.length === 1 ? rec.name : '';
+        img.loading = 'lazy';
+        if (sources.length > 1) {
+          img.setAttribute('aria-hidden', 'true');
+          img.style.setProperty('--recipe-cluster-x', (source.x || 0) + '%');
+          img.style.setProperty('--recipe-cluster-y', (source.y || 0) + '%');
+          img.style.setProperty('--recipe-cluster-w', (source.w || 68) + '%');
+          img.style.setProperty('--recipe-cluster-rotation', (source.rotation || 0) + 'deg');
+        }
+        img.onerror = function() {
+          this.style.display = 'none';
+          failedImages += 1;
+          if (failedImages >= sources.length) {
+            art.style.display = 'none';
+            fallback.classList.add('show');
+          }
+        };
+        art.appendChild(img);
+      });
+      card.appendChild(art);
       card.appendChild(fallback);
 
       const name = document.createElement('div');
