@@ -82,7 +82,7 @@
   else { document.addEventListener('DOMContentLoaded', showLock); }
 })();
 </script>
-<link rel="stylesheet" href="styles.css?v=20260716-1326">
+<link rel="stylesheet" href="styles.css?v=20260716-1327">
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
 <body class="st-town v-train" data-driver="pono" data-driver-mood="happy">
@@ -135,17 +135,20 @@
     <div id="spaceChaseLayer" role="group" aria-label="うちゅう おいかけっこ" hidden>
       <div class="space-chase-board">
         <div class="space-chase-camera" aria-hidden="true">
-          <div class="space-chase-star-stream"></div>
-          <svg id="spaceChaseRouteMap" class="space-chase-route-map" viewBox="0 0 1350 720" preserveAspectRatio="none">
-            <g id="spaceChaseRoutePaths"></g>
-            <g id="spaceChaseJunctions" class="space-chase-junctions"></g>
-          </svg>
-          <div class="space-chase-danger-cloud"></div>
-          <div id="spaceChaseBoostItems" aria-hidden="true"></div>
-          <div class="space-chase-comet"><span class="ui-art" data-ui-art="fire" data-ui-art-eager="1"></span><span class="space-chase-star-child ui-art" data-ui-art="star" data-ui-art-eager="1"></span></div>
-          <img class="space-chase-rocket" src="../assets/images/nazonazo-tunnel/space_vehicle_exploration_rocket_pono_20260713.png" alt="" decoding="async" loading="eager" draggable="false">
-          <div class="space-chase-rescue-beam"></div>
+          <div class="space-chase-world">
+            <div class="space-chase-star-stream"></div>
+            <svg id="spaceChaseRouteMap" class="space-chase-route-map" viewBox="0 0 1350 720" preserveAspectRatio="none">
+              <g id="spaceChaseRoutePaths"></g>
+              <g id="spaceChaseJunctions" class="space-chase-junctions"></g>
+            </svg>
+            <div class="space-chase-danger-cloud"></div>
+            <div id="spaceChaseBoostItems" aria-hidden="true"></div>
+            <div class="space-chase-comet"><span class="ui-art" data-ui-art="fire" data-ui-art-eager="1"></span><span class="space-chase-star-child ui-art" data-ui-art="star" data-ui-art-eager="1"></span></div>
+            <img class="space-chase-rocket" src="../assets/images/nazonazo-tunnel/space_vehicle_exploration_rocket_pono_20260713.png" alt="" decoding="async" loading="eager" draggable="false">
+            <div class="space-chase-rescue-beam"></div>
+          </div>
         </div>
+        <div id="spaceChaseCinematic" class="space-chase-cinematic" aria-hidden="true"><i></i><strong id="spaceChaseCinematicText">デッドヒート！</strong></div>
         <div class="space-chase-hud">
           <h2 id="spaceChaseTitle">あっ！ ほしのこが ながされてる！</h2>
           <div class="space-chase-rounds" role="progressbar" aria-label="ゴールまでの みち" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0"><i></i><i></i><i></i></div>
@@ -168,17 +171,21 @@
           </button>
         </div>
         <div id="spaceChaseRescuePanel" class="space-chase-rescue-panel" role="group" aria-labelledby="spaceChaseRescueTitle" aria-hidden="true" hidden>
-          <div id="spaceChaseRescuePlayfield" class="space-chase-rescue-playfield" role="group" tabindex="0" aria-label="ゆびで わを うごかして ほしのこを キャッチ。やじるしキーでも うごく">
+          <div id="spaceChaseRescuePlayfield" class="space-chase-rescue-playfield" role="group" tabindex="0" aria-label="ほしのこを ゆびで おいかけて、ひかる わを かさねる。やじるしキーでも うごく">
             <div class="space-chase-rescue-comet" aria-hidden="true"><span class="ui-art" data-ui-art="fire" data-ui-art-eager="1"></span></div>
             <img class="space-chase-rescue-rocket" src="../assets/images/nazonazo-tunnel/space_vehicle_exploration_rocket_pono_20260713.png" alt="" decoding="async" loading="eager" draggable="false">
+            <div class="space-chase-rescue-orbit-guide" aria-hidden="true"><i></i><i></i></div>
             <div id="spaceChaseRescueTether" class="space-chase-rescue-tether" aria-hidden="true"><i></i></div>
+            <div id="spaceChaseRescueAimLine" class="space-chase-rescue-aim-line" aria-hidden="true"><i></i></div>
+            <div id="spaceChaseRescueAim" class="space-chase-rescue-aim" aria-hidden="true"><i></i></div>
             <div id="spaceChaseRescueRing" class="space-chase-rescue-ring" aria-hidden="true"><i></i></div>
             <span id="spaceChaseRescueStar" class="space-chase-rescue-star" aria-hidden="true"><span class="ui-art" data-ui-art="star" data-ui-art-eager="1"></span></span>
+            <div id="spaceChaseRescueDemo" class="space-chase-rescue-demo" aria-hidden="true"><span class="space-chase-rescue-demo-hand ui-art" data-ui-art="touch" data-ui-art-eager="1"></span><strong>ほしのこまで すーっ！</strong></div>
             <span class="space-chase-rescue-saved-star ui-art" data-ui-art="star" data-ui-art-eager="1" aria-hidden="true"></span>
           </div>
-          <h2 id="spaceChaseRescueTitle">ほしのこを わで キャッチ！</h2>
+          <h2 id="spaceChaseRescueTitle">ほしのこに わを あわせよう！</h2>
           <div id="spaceChaseRescueProgress" class="space-chase-rescue-progress" role="progressbar" aria-label="キャッチ パワー" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span></span></div>
-          <p id="spaceChaseRescueGuide" role="status" aria-live="polite" aria-atomic="true">ゆびで わを うごかそう！</p>
+          <p id="spaceChaseRescueGuide" role="status" aria-live="polite" aria-atomic="true">ほしのこを ゆびで おいかけよう！</p>
           <button id="spaceChaseRescueAssist" type="button" hidden>じしゃくで おてつだい</button>
         </div>
       </div>
@@ -367,6 +374,6 @@
 <div id="rotateHint"><span class="ui-art" data-ui-art="smartphone" aria-hidden="true"></span><span class="rotate-arrow" aria-hidden="true">→</span><span>よこむきに してね</span></div>
 <script src="data/questions.js?v=20260713-1273"></script>
 <script src="data/quiz-art.js?v=20260714-1297"></script>
-<script src="js/game.js?v=20260716-1326"></script>
+<script src="js/game.js?v=20260716-1327"></script>
 </body>
 </html>
