@@ -23,9 +23,9 @@ assert.match(html, /id="mapMenuBtn"[^>]*role="menuitem"[\s\S]{0,180}?data-ui-art
 assert.match(html, /id="returnHomeLink"[^>]*href="\.\.\/play\.html"[^>]*role="menuitem"[\s\S]{0,180}?data-ui-art="home"[^>]*data-ui-art-eager="1"[\s\S]{0,100}?ホームへ もどる/);
 const settingsMarkup = html.slice(html.indexOf('<div id="gameSettings"'), html.indexOf('<div id="rotateHint"'));
 assert.doesNotMatch(settingsMarkup, /\p{Extended_Pictographic}/u, "the new menu must not reintroduce platform emoji");
-assert.match(html, /styles\.css\?v=20260716-1315/);
+assert.match(html, /styles\.css\?v=20260716-1316/);
 assert.match(html, /data\/quiz-art\.js\?v=20260714-1297/);
-assert.match(html, /js\/game\.js\?v=20260716-1315/);
+assert.match(html, /js\/game\.js\?v=20260716-1316/);
 
 const artSandbox = { window: {} };
 vm.runInNewContext(artSource, artSandbox, { filename: "quiz-art.js" });

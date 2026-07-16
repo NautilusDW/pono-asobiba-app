@@ -599,56 +599,47 @@ const SPACE_REPAIR_POINTER_SAMPLE_CAP=.50;
 const SPACE_REPAIR_POINTER_DEADZONE_RATIO=.18;
 const SPACE_REPAIR_CLICK_STEP=Math.PI/2;
 const SPACE_REPAIR_KEY_STEP=Math.PI/6;
-const SPACE_CHASE_VIEWBOX_WIDTH=2200;
-const SPACE_CHASE_VIEWBOX_TOP=-70;
-const SPACE_CHASE_VIEWBOX_HEIGHT=1200;
-const SPACE_CHASE_COMPACT_TOP_PERCENT=16;
-const SPACE_CHASE_COMPACT_HEIGHT_PERCENT=38;
+const SPACE_CHASE_WORLD_WIDTH=6000;
+const SPACE_CHASE_VIEWBOX_WIDTH=1350;
+const SPACE_CHASE_VIEWBOX_TOP=0;
+const SPACE_CHASE_VIEWBOX_HEIGHT=720;
 const SPACE_CHASE_ROUTE_SAMPLE_COUNT=96;
 const SPACE_CHASE_PROGRESS_GOAL=3;
 const SPACE_CHASE_INTRO_MS=1050;
 const SPACE_CHASE_CAUGHT_MS=650;
 const SPACE_CHASE_VICTORY_MS=1250;
-const SPACE_CHASE_COMET_SPEED=86;
-const SPACE_CHASE_ROCKET_SPEED=90;
-const SPACE_CHASE_CHOICE_SPEED=28;
-const SPACE_CHASE_BOOST_SPEED=410;
-const SPACE_CHASE_BOOST_MS=600;
-const SPACE_CHASE_BOOST_MAX=6;
-const SPACE_CHASE_BOOST_QUEUE_MAX_MS=SPACE_CHASE_BOOST_MS*SPACE_CHASE_BOOST_MAX;
-const SPACE_CHASE_START_LEAD=500;
-const SPACE_CHASE_BRANCH_PROMPT_DISTANCE=170;
+const SPACE_CHASE_COMET_SPEED=100;
+const SPACE_CHASE_ROCKET_SPEED=112;
+const SPACE_CHASE_CHOICE_SPEED=38;
+const SPACE_CHASE_BOOST_SPEED=355;
+const SPACE_CHASE_BOOST_MS=400;
+const SPACE_CHASE_BOOST_MAX=3;
+const SPACE_CHASE_AUTO_BOOST_MS=2500;
+const SPACE_CHASE_START_LEAD=336;
+const SPACE_CHASE_BRANCH_PROMPT_DISTANCE=250;
 const SPACE_CHASE_CATCH_DISTANCE=42;
 const SPACE_CHASE_ROUTE_EDGES=Object.freeze({
- launch:{from:[60,380],c1:[90,380],c2:[135,380],to:[170,380],nextJunction:"J0",checkpoint:0},
- j0North:{from:[170,380],segments:[{c1:[80,220],c2:[210,40],to:[320,120]},{c1:[410,190],c2:[500,20],to:[420,110]}],next:"jnBridge",checkpoint:1,boostAt:[.30,.72],routeStyle:"loop"},
- jnBridge:{from:[420,110],c1:[520,70],c2:[610,160],to:[690,295],nextJunction:"J4",checkpoint:1},
- j0Center:{from:[170,380],c1:[260,360],c2:[360,350],to:[455,355],next:"jcWarp",checkpoint:1},
- jcWarp:{from:[455,355],c1:[525,330],c2:[610,305],to:[690,295],nextJunction:"J4",checkpoint:1},
- j0South:{from:[170,380],segments:[{c1:[70,560],c2:[160,730],to:[250,650]},{c1:[380,740],c2:[470,580],to:[370,510]},{c1:[290,440],c2:[300,610],to:[370,650]}],next:"jsSling",checkpoint:1,boostAt:[.12,.30,.48,.66,.84],routeStyle:"loop"},
- jsSling:{from:[370,650],segments:[{c1:[500,650],c2:[520,450],to:[600,430]},{c1:[690,410],c2:[600,330],to:[690,295]}],nextJunction:"J4",checkpoint:1,routeStyle:"twist"},
- j4Figure8:{from:[690,295],segments:[{c1:[770,120],c2:[940,140],to:[870,295]},{c1:[800,450],c2:[1030,430],to:[950,290]},{c1:[880,160],c2:[930,150],to:[980,225]}],nextJunction:"J6",checkpoint:2,boostAt:[.10,.38,.66],routeStyle:"overpass"},
- j4Direct:{from:[690,295],c1:[790,235],c2:[900,220],to:[980,225],nextJunction:"J6",checkpoint:2},
- j4Curl:{from:[690,295],segments:[{c1:[610,360],c2:[650,520],to:[770,480]},{c1:[870,450],c2:[820,650],to:[720,580]}],next:"j5Rise",checkpoint:2,boostAt:[.05,.50,.95],routeStyle:"loop"},
- j5Rise:{from:[720,580],segments:[{c1:[800,520],c2:[760,350],to:[880,360]},{c1:[1010,370],c2:[880,240],to:[980,225]}],nextJunction:"J6",checkpoint:2,boostAt:.42,routeStyle:"twist"},
- j6Zig:{from:[980,225],segments:[{c1:[1020,130],c2:[1050,90],to:[1070,120]},{c1:[1100,170],c2:[1110,360],to:[1140,350]},{c1:[1180,330],c2:[1200,290],to:[1240,290]}],next:"j8Direct",checkpoint:3,boostAt:.35,routeStyle:"twist"},
- j6Direct:{from:[980,225],c1:[1060,225],c2:[1150,270],to:[1240,290],next:"j8Direct",checkpoint:3},
- j8Direct:{from:[1240,290],c1:[1310,300],c2:[1380,340],to:[1450,365],next:"finish",checkpoint:3},
- j6Twist:{from:[980,225],segments:[{c1:[1080,180],c2:[1120,330],to:[1030,350]},{c1:[920,390],c2:[900,530],to:[985,575]}],next:"j7Rise",checkpoint:3,boostAt:[.20,.66],routeStyle:"twist"},
- j7Rise:{from:[985,575],c1:[1080,520],c2:[1130,350],to:[1240,290],next:"j8Loop",checkpoint:3,boostAt:[.18,.78]},
- j8Loop:{from:[1240,290],segments:[{c1:[1320,130],c2:[1470,170],to:[1390,290]},{c1:[1330,400],c2:[1410,430],to:[1450,365]}],next:"finish",checkpoint:3,boostAt:.30,routeStyle:"loop"},
- finish:{from:[1450,365],segments:[{c1:[1510,120],c2:[1600,70],to:[1660,260]},{c1:[1710,470],c2:[1790,700],to:[1870,560]},{c1:[1920,410],c2:[2000,180],to:[2050,365]}],boostAt:[.08,.22],finish:true,checkpoint:3,routeStyle:"twist"}
+ launch:{from:[0,360],c1:[180,350],c2:[420,370],to:[600,360],nextJunction:"J0",checkpoint:0,travelLength:300.1},
+ j0Short:{from:[600,360],c1:[745,255],c2:[950,255],to:[1100,360],next:"bridge0",checkpoint:1,travelLength:266.3,routeStyle:"short"},
+ j0Star:{from:[600,360],segments:[{c1:[700,590],c2:[860,610],to:[890,470]},{c1:[920,330],c2:[1010,500],to:[1100,360]}],next:"bridge0",checkpoint:1,travelLength:350.9,boostAt:[.20,.50,.80],routeStyle:"star"},
+ bridge0:{from:[1100,360],c1:[1320,330],c2:[1570,390],to:[1800,360],nextJunction:"J1",checkpoint:1,travelLength:350.6},
+ j1Short:{from:[1800,360],c1:[1945,465],c2:[2150,465],to:[2300,360],next:"bridge1",checkpoint:2,travelLength:266.3,routeStyle:"short"},
+ j1Star:{from:[1800,360],segments:[{c1:[1900,130],c2:[2060,110],to:[2090,250]},{c1:[2120,390],c2:[2210,220],to:[2300,360]}],next:"bridge1",checkpoint:2,travelLength:350.9,boostAt:[.20,.50,.80],routeStyle:"star"},
+ bridge1:{from:[2300,360],c1:[2520,390],c2:[2770,330],to:[3000,360],nextJunction:"J2",checkpoint:2,travelLength:350.6},
+ j2Short:{from:[3000,360],c1:[3145,255],c2:[3350,255],to:[3500,360],next:"finish",checkpoint:3,travelLength:266.3,routeStyle:"short"},
+ j2Star:{from:[3000,360],segments:[{c1:[3100,590],c2:[3260,610],to:[3290,470]},{c1:[3320,330],c2:[3410,500],to:[3500,360]}],next:"finish",checkpoint:3,travelLength:350.9,boostAt:[.20,.50,.80],routeStyle:"star"},
+ finish:{from:[3500,360],segments:[{c1:[4050,285],c2:[4550,435],to:[5050,360]},{c1:[5400,310],c2:[5750,390],to:[6000,360]}],finish:true,checkpoint:3,travelLength:1252.4,routeStyle:"finish"}
 });
 const SPACE_CHASE_JUNCTIONS=Object.freeze({
- J0:{at:[170,380],fallbackIndex:1,choices:[{edge:"j0North",slot:"up",label:"うえの みち",kind:"steady"},{edge:"j0Center",slot:"middle",label:"まんなかの みち",kind:"short"},{edge:"j0South",slot:"down",label:"したの みち",kind:"power"}]},
- J4:{at:[690,295],fallbackIndex:1,choices:[{edge:"j4Figure8",slot:"up",label:"うえの みち",kind:"power"},{edge:"j4Direct",slot:"middle",label:"まんなかの みち",kind:"short"},{edge:"j4Curl",slot:"down",label:"したの みち",kind:"power"}]},
- J6:{at:[980,225],fallbackIndex:1,choices:[{edge:"j6Zig",slot:"up",label:"うえの みち",kind:"steady"},{edge:"j6Direct",slot:"middle",label:"まんなかの みち",kind:"short"},{edge:"j6Twist",slot:"down",label:"したの みち",kind:"power"}]}
+ J0:{at:[600,360],fallbackIndex:1,choices:[{edge:"j0Short",slot:"up",label:"ちかみち",kind:"short",stars:0},{edge:"j0Star",slot:"down",label:"スターみち",kind:"star",stars:3}]},
+ J1:{at:[1800,360],fallbackIndex:1,choices:[{edge:"j1Short",slot:"down",label:"ちかみち",kind:"short",stars:0},{edge:"j1Star",slot:"up",label:"スターみち",kind:"star",stars:3}]},
+ J2:{at:[3000,360],fallbackIndex:1,choices:[{edge:"j2Short",slot:"up",label:"ちかみち",kind:"short",stars:0},{edge:"j2Star",slot:"down",label:"スターみち",kind:"star",stars:3}]}
 });
 const SPACE_CHASE_COMET_PLANS=Object.freeze([
- Object.freeze({J0:1,J4:1,J6:1})
+ Object.freeze({J0:0,J1:0,J2:0})
 ]);
 function createSpaceChaseRacer(kind){return {kind,edgeId:"launch",distance:0,finished:false,progress:0,visitedJunctions:new Set()};}
-function createSpaceChaseState(){return {phase:"idle",phaseElapsedMs:0,frameAt:0,raceElapsedMs:0,rocket:null,comet:null,playerChoices:Object.create(null),cometChoices:Object.create(null),activeJunction:"",boostCharges:1,boostRemainingMs:0,collectedBoosts:new Set(),releasedKnots:new Set(),completionCommitted:false};}
+function createSpaceChaseState(){return {phase:"idle",phaseElapsedMs:0,frameAt:0,raceElapsedMs:0,rocket:null,comet:null,playerChoices:Object.create(null),cometChoices:Object.create(null),activeJunction:"",starFuel:0,boostCharges:0,boostRemainingMs:0,boostReadyElapsedMs:0,collectedBoosts:new Set(),rescueMode:"wipe",clearedRibbons:new Set(),rescuePointerId:null,rescuePointerKind:"",rescuePointerTarget:null,rescueStartX:0,rescueStartY:0,rescueLastX:0,rescueLastY:0,rescueStarX:0,rescueStarY:0,rescueStarBaseLeft:0,rescueStarBaseRight:0,rescueStarBaseTop:0,rescueStarBaseBottom:0,rescueSuppressClick:false,completionCommitted:false};}
 let spaceRepairOptions=[],spaceRepairPhase="idle",spaceRepairSelectedIndex=-1,spaceRepairActiveScrew=-1;
 let spaceRepairProgress=[0,0,0],spaceRepairRotations=[0,0,0],spaceRepairCharge=0,spaceRepairChargeLastAt=0,spaceRepairResolving=false,spaceRepairAssisted=false;
 let spaceRepairPointerId=null,spaceRepairPointerTarget=null,spaceRepairPointerScrew=-1,spaceRepairPointerAngle=0;
@@ -662,7 +653,7 @@ const spaceObstacleHitGates=new Set(),spaceObstacleGateLayout=new Array(SPACE_OB
 let spaceSteerTargetX=0,spaceSteerX=0,spaceSteerTargetY=0,spaceSteerY=0,spaceSteerPointerId=null,spaceSteerUsed=false,spaceSteerFrameAt=0,spaceStationSteerResume=null;
 const spaceMoveKeys=new Set();
 let spaceChaseState=createSpaceChaseState(),spaceChaseDefeated=false;
-const spaceChaseRouteMetrics=new Map(),spaceChaseRouteElements=new Map();
+const spaceChaseRouteMetrics=new Map(),spaceChaseRouteElements=new Map(),spaceChaseRouteHitElements=new Map();
 let spaceChaseChoiceHighlightKey="";
 let nazonazoAdminPreviewMode=false,nazonazoAdminPreviewKind="stage";
 const NUMBER_CARGO_THEMES=[
@@ -804,10 +795,10 @@ const $=id=>document.getElementById(id);
 const world=$("world"),veh=$("veh"),horizon=$("horizon"),midT=$("midT"),groundT=$("groundT"),fgT=$("fgT"),seaFishLayer=$("seaFishLayer"),seaHabitatLayer=$("seaHabitatLayer"),smokeLayer=$("smokeLayer"),townHorizonLoop=$("townHorizonLoop"),townMidLoop=$("townMidLoop"),futureHorizonLoop=$("futureHorizonLoop"),futureMidLoop=$("futureMidLoop"),futureForegroundLoop=$("futureForegroundLoop"),spaceHorizonLoop=$("spaceHorizonLoop"),spaceForegroundLoop=$("spaceForegroundLoop"),jungleHabitatBack=$("jungleHabitatBack");
 const vehicleSteerShell=$("vehicleSteerShell"),seaSteerSurface=$("seaSteerSurface"),spaceSteerSurface=$("spaceSteerSurface"),seaAnswerLayer=$("seaAnswerLayer"),seaBossLayer=$("seaBossLayer"),seaRescueMessage=$("seaRescueMessage"),seaArenaShade=$("seaArenaShade"),seaRoundCountdown=$("seaRoundCountdown"),seaQuizGuide=$("seaQuizGuide"),seaSteerHint=$("seaSteerHint"),spaceSteerHint=$("spaceSteerHint");
 const futureCapsuleLayer=$("futureCapsuleLayer"),spaceGalaxyLayer=$("spaceGalaxyLayer");
-const spaceChaseLayer=$("spaceChaseLayer"),spaceChaseGuide=$("spaceChaseGuide"),spaceChaseTitle=$("spaceChaseTitle"),spaceChaseBoostMeter=$("spaceChaseBoostMeter"),spaceChaseRoundText=$("spaceChaseRoundText"),spaceChaseBoostButton=$("spaceChaseBoostButton"),spaceChaseRoutePaths=$("spaceChaseRoutePaths"),spaceChaseJunctions=$("spaceChaseJunctions"),spaceChaseBoostItemsLayer=$("spaceChaseBoostItems"),spaceChaseRouteChoices=$("spaceChaseRouteChoices"),spaceChaseRescuePanel=$("spaceChaseRescuePanel"),spaceChaseRescueGuide=$("spaceChaseRescueGuide");
+const spaceChaseLayer=$("spaceChaseLayer"),spaceChaseGuide=$("spaceChaseGuide"),spaceChaseTitle=$("spaceChaseTitle"),spaceChaseBoostMeter=$("spaceChaseBoostMeter"),spaceChaseRoundText=$("spaceChaseRoundText"),spaceChaseBoostButton=$("spaceChaseBoostButton"),spaceChaseRouteMap=$("spaceChaseRouteMap"),spaceChaseRoutePaths=$("spaceChaseRoutePaths"),spaceChaseJunctions=$("spaceChaseJunctions"),spaceChaseBoostItemsLayer=$("spaceChaseBoostItems"),spaceChaseRouteChoices=$("spaceChaseRouteChoices"),spaceChaseRescuePanel=$("spaceChaseRescuePanel"),spaceChaseRescuePlayfield=$("spaceChaseRescuePlayfield"),spaceChaseRescueTitle=$("spaceChaseRescueTitle"),spaceChaseRescueGuide=$("spaceChaseRescueGuide"),spaceChaseRescueProgress=$("spaceChaseRescueProgress"),spaceChaseRescueRing=$("spaceChaseRescueRing"),spaceChaseRescueStar=$("spaceChaseRescueStar");
 const spaceChaseChoiceButtons=spaceChaseRouteChoices?[...spaceChaseRouteChoices.querySelectorAll("button[data-space-chase-choice]")]:[];
 let spaceChaseBoostItems=[];
-const spaceChaseKnotButtons=spaceChaseRescuePanel?[...spaceChaseRescuePanel.querySelectorAll("button[data-space-chase-knot]")]:[];
+const spaceChaseRibbonButtons=spaceChaseRescuePanel?[...spaceChaseRescuePanel.querySelectorAll("button[data-space-chase-ribbon]")]:[];
 const spaceObstacleGatePool=[];
 let spaceObstacleGuide=null;
 const spaceObstacleLayer=(()=>{
@@ -1196,6 +1187,7 @@ function setGameSettingsOpen(open,options){
  settingsDropdown.setAttribute("aria-hidden",next?"false":"true");
  settingsBtn.setAttribute("aria-expanded",next?"true":"false");
  document.body.classList.toggle("game-settings-open",next);
+ if(next)cancelSpaceChaseRescuePointer(true);
  gameSettingsMenuItems().forEach(item=>{item.tabIndex=next?0:-1;});
  if(next&&opts.focusFirst){
   requestAnimationFrame(()=>{if(gameSettingsMenuIsOpen())focusGameSettingsItem(gameSettingsMenuItems()[0]);});
@@ -4683,16 +4675,16 @@ function spaceChaseCurvePoint(edge,t){
 }
 function spaceChaseEdgePathData(edge){return "M "+edge.from.join(" ")+" "+spaceChaseEdgeSegments(edge).map(segment=>"C "+segment.c1.join(" ")+" "+segment.c2.join(" ")+" "+segment.to.join(" ")).join(" ");}
 function spaceChaseBoostPositions(edge){if(!edge||edge.boostAt===undefined)return [];return (Array.isArray(edge.boostAt)?edge.boostAt:[edge.boostAt]).map(value=>clamp(Number(value)||0,0,1)).filter(value=>value>0&&value<1);}
-function spaceChaseYPercent(y,compact){const ratio=clamp(((Number(y)||0)-SPACE_CHASE_VIEWBOX_TOP)/SPACE_CHASE_VIEWBOX_HEIGHT,0,1),percent=compact?SPACE_CHASE_COMPACT_TOP_PERCENT+ratio*SPACE_CHASE_COMPACT_HEIGHT_PERCENT:ratio*100;return percent.toFixed(2)+"%";}
+function spaceChaseYPercent(y){return (clamp(((Number(y)||0)-SPACE_CHASE_VIEWBOX_TOP)/SPACE_CHASE_VIEWBOX_HEIGHT,0,1)*100).toFixed(2)+"%";}
 function ensureSpaceChaseRouteMetrics(){
  if(spaceChaseRouteMetrics.size===Object.keys(SPACE_CHASE_ROUTE_EDGES).length)return;
  spaceChaseRouteMetrics.clear();
  Object.entries(SPACE_CHASE_ROUTE_EDGES).forEach(([edgeId,edge])=>{
-  const samples=[];let length=0,previous=spaceChaseCurvePoint(edge,0);samples.push({t:0,x:previous.x,y:previous.y,d:0});
+  const samples=[];let visualLength=0,previous=spaceChaseCurvePoint(edge,0);samples.push({t:0,x:previous.x,y:previous.y,d:0});
   for(let index=1;index<=SPACE_CHASE_ROUTE_SAMPLE_COUNT;index++){
-   const t=index/SPACE_CHASE_ROUTE_SAMPLE_COUNT,point=spaceChaseCurvePoint(edge,t);length+=Math.hypot(point.x-previous.x,point.y-previous.y);samples.push({t,x:point.x,y:point.y,d:length});previous=point;
+   const t=index/SPACE_CHASE_ROUTE_SAMPLE_COUNT,point=spaceChaseCurvePoint(edge,t);visualLength+=Math.hypot(point.x-previous.x,point.y-previous.y);samples.push({t,x:point.x,y:point.y,d:visualLength});previous=point;
   }
-  spaceChaseRouteMetrics.set(edgeId,{edge,length,samples});
+  const length=Math.max(.001,Number(edge.travelLength)||visualLength);spaceChaseRouteMetrics.set(edgeId,{edge,length,visualLength,samples});
  });
 }
 function spaceChaseChoiceMetrics(choice){
@@ -4701,53 +4693,56 @@ function spaceChaseChoiceMetrics(choice){
   const metric=spaceChaseRouteMetrics.get(edgeId);if(!metric)break;const edge=metric.edge;edges.push(edgeId);length+=metric.length;stars+=spaceChaseBoostPositions(edge).length;
   if(edge.finish||edge.nextJunction||edge.next==="finish")break;edgeId=edge.next||"";
  }
- return {edges,length,stars,seconds:Math.max(1,Math.round(length/SPACE_CHASE_ROCKET_SPEED))};
+ return {edges,length,stars};
 }
 function spaceChasePointAtDistance(edgeId,distance){
  ensureSpaceChaseRouteMetrics();const metric=spaceChaseRouteMetrics.get(edgeId);if(!metric)return {x:0,y:0};
- const target=clamp(Number(distance)||0,0,metric.length),samples=metric.samples;let upper=1;
+ const ratio=clamp((Number(distance)||0)/metric.length,0,1),target=metric.visualLength*ratio,samples=metric.samples;let upper=1;
  while(upper<samples.length&&samples[upper].d<target)upper++;
- const b=samples[Math.min(upper,samples.length-1)],a=samples[Math.max(0,upper-1)],span=Math.max(.0001,b.d-a.d),ratio=clamp((target-a.d)/span,0,1);
- return {x:a.x+(b.x-a.x)*ratio,y:a.y+(b.y-a.y)*ratio};
+ const b=samples[Math.min(upper,samples.length-1)],a=samples[Math.max(0,upper-1)],span=Math.max(.0001,b.d-a.d),local=clamp((target-a.d)/span,0,1);
+ return {x:a.x+(b.x-a.x)*local,y:a.y+(b.y-a.y)*local};
 }
 function prepareSpaceChaseRouteMap(){
  ensureSpaceChaseRouteMetrics();if(!spaceChaseRoutePaths)return;
  if(!spaceChaseRouteElements.size){
   const namespace="http://www.w3.org/2000/svg";
   Object.entries(SPACE_CHASE_ROUTE_EDGES).forEach(([edgeId,edge])=>{
-   const path=document.createElementNS(namespace,"path");path.setAttribute("d",spaceChaseEdgePathData(edge));path.setAttribute("vector-effect","non-scaling-stroke");
-   path.setAttribute("class","space-chase-route-edge"+(spaceChaseBoostPositions(edge).length?" is-power-route":"")+(edge.routeStyle?" is-"+edge.routeStyle+"-route":""));path.dataset.spaceChaseEdge=edgeId;spaceChaseRoutePaths.appendChild(path);spaceChaseRouteElements.set(edgeId,path);
+   const path=document.createElementNS(namespace,"path"),hit=document.createElementNS(namespace,"path"),data=spaceChaseEdgePathData(edge);
+   path.setAttribute("d",data);path.setAttribute("vector-effect","non-scaling-stroke");path.setAttribute("aria-hidden","true");
+   path.setAttribute("class","space-chase-route-edge"+(spaceChaseBoostPositions(edge).length?" is-star-route":"")+(edge.routeStyle?" is-"+edge.routeStyle+"-route":""));path.dataset.spaceChaseEdge=edgeId;
+   hit.setAttribute("d",data);hit.setAttribute("vector-effect","non-scaling-stroke");hit.setAttribute("class","space-chase-route-hit");hit.setAttribute("aria-hidden","true");hit.dataset.spaceChaseEdge=edgeId;
+   spaceChaseRoutePaths.append(path,hit);spaceChaseRouteElements.set(edgeId,path);spaceChaseRouteHitElements.set(edgeId,hit);
   });
+  Object.entries(SPACE_CHASE_JUNCTIONS).forEach(([junctionId,junction])=>junction.choices.forEach((choice,index)=>{
+   const hit=spaceChaseRouteHitElements.get(choice.edge);if(!hit)return;hit.dataset.spaceChaseJunction=junctionId;hit.dataset.spaceChaseChoice=String(index);bindTap(hit,()=>{if(spaceChaseState.activeJunction===junctionId)chooseSpaceChaseRoute(index);});
+  }));
  }
  if(spaceChaseJunctions&&!spaceChaseJunctions.childNodes.length){
   const namespace="http://www.w3.org/2000/svg",points=Object.entries(SPACE_CHASE_JUNCTIONS).map(([id,junction])=>({id,at:junction.at})),finishSegments=spaceChaseEdgeSegments(SPACE_CHASE_ROUTE_EDGES.finish);points.push({id:"GOAL",at:finishSegments[finishSegments.length-1].to});
-  points.forEach(point=>{const circle=document.createElementNS(namespace,"circle");circle.setAttribute("cx",String(point.at[0]));circle.setAttribute("cy",String(point.at[1]));circle.setAttribute("r",point.id==="GOAL"?"12":"9");circle.dataset.spaceChaseJunction=point.id;spaceChaseJunctions.appendChild(circle);});
+  points.forEach(point=>{const circle=document.createElementNS(namespace,"circle");circle.setAttribute("cx",String(point.at[0]));circle.setAttribute("cy",String(point.at[1]));circle.setAttribute("r",point.id==="GOAL"?"16":"11");circle.dataset.spaceChaseJunction=point.id;spaceChaseJunctions.appendChild(circle);});
  }
  if(spaceChaseBoostItemsLayer&&!spaceChaseBoostItemsLayer.childElementCount){
   Object.entries(SPACE_CHASE_ROUTE_EDGES).forEach(([edgeId,edge])=>spaceChaseBoostPositions(edge).forEach((at,index)=>{
-   const item=document.createElement("div"),art=createUiArt("star");item.className="space-chase-boost-item";item.dataset.spaceChaseEdge=edgeId;item.dataset.spaceChaseBoostIndex=String(index);item.dataset.spaceChaseBoostKey=edgeId+":"+index;item.appendChild(art);spaceChaseBoostItemsLayer.appendChild(item);
+   const item=document.createElement("div"),art=createUiArt("star");item.className="space-chase-boost-item";item.dataset.spaceChaseEdge=edgeId;item.dataset.spaceChaseBoostIndex=String(index);item.dataset.spaceChaseBoostKey=edgeId+":"+index;item.appendChild(art);item.hidden=true;spaceChaseBoostItemsLayer.appendChild(item);
   }));
  }
  spaceChaseBoostItems=spaceChaseBoostItemsLayer?[...spaceChaseBoostItemsLayer.querySelectorAll(".space-chase-boost-item")]:[];
- spaceChaseBoostItems.forEach(item=>{
-  const edgeId=item.dataset.spaceChaseEdge,index=Number(item.dataset.spaceChaseBoostIndex)||0,metric=spaceChaseRouteMetrics.get(edgeId),positions=metric?spaceChaseBoostPositions(metric.edge):[],at=positions[index]||.5,point=spaceChasePointAtDistance(edgeId,metric?metric.length*at:0);
-  item.style.left=(point.x/SPACE_CHASE_VIEWBOX_WIDTH*100).toFixed(2)+"%";item.style.setProperty("--space-chase-item-y",spaceChaseYPercent(point.y,false));item.style.setProperty("--space-chase-item-y-compact",spaceChaseYPercent(point.y,true));
- });
 }
 function resetSpaceChaseRouteVisuals(){
- spaceChaseChoiceHighlightKey="";spaceChaseRouteElements.forEach(path=>path.classList.remove("is-comet-route","is-rocket-route","is-choice-option-0","is-choice-option-1","is-choice-option-2"));
- spaceChaseBoostItems.forEach(item=>item.classList.remove("is-collected"));
+ spaceChaseChoiceHighlightKey="";spaceChaseRouteElements.forEach(path=>path.classList.remove("is-comet-route","is-rocket-route","is-choice-option-0","is-choice-option-1"));
+ spaceChaseRouteHitElements.forEach(path=>path.classList.remove("is-choice-active"));spaceChaseBoostItems.forEach(item=>{item.classList.remove("is-collected");item.hidden=true;});
 }
 function markSpaceChaseRoute(edgeId,kind){const path=spaceChaseRouteElements.get(edgeId);if(path)path.classList.add(kind==="comet"?"is-comet-route":"is-rocket-route");}
 function spaceChaseRacerPoint(racer){return racer?spaceChasePointAtDistance(racer.edgeId,racer.distance):{x:0,y:0};}
 function spaceChaseRacerPose(racer){
- const point=spaceChaseRacerPoint(racer);if(!racer)return {...point,angle:0};const before=spaceChasePointAtDistance(racer.edgeId,racer.distance-6),after=spaceChasePointAtDistance(racer.edgeId,racer.distance+6),scaleX=(window.innerWidth||844)/SPACE_CHASE_VIEWBOX_WIDTH,scaleY=(window.innerHeight||390)/SPACE_CHASE_VIEWBOX_HEIGHT;
+ const point=spaceChaseRacerPoint(racer);if(!racer)return {...point,angle:0};const before=spaceChasePointAtDistance(racer.edgeId,racer.distance-4),after=spaceChasePointAtDistance(racer.edgeId,racer.distance+4),scaleX=(window.innerWidth||844)/SPACE_CHASE_VIEWBOX_WIDTH,scaleY=(window.innerHeight||390)/SPACE_CHASE_VIEWBOX_HEIGHT;
  return {...point,angle:Math.atan2((after.y-before.y)*scaleY,(after.x-before.x)*scaleX)*180/Math.PI};
 }
 function collectSpaceChaseBoost(edgeId,index){
- const key=edgeId+":"+index;if(spaceChaseState.collectedBoosts.has(key))return false;spaceChaseState.collectedBoosts.add(key);spaceChaseState.boostCharges=Math.min(SPACE_CHASE_BOOST_MAX,spaceChaseState.boostCharges+1);
+ const key=edgeId+":"+index;if(spaceChaseState.collectedBoosts.has(key))return false;spaceChaseState.collectedBoosts.add(key);spaceChaseState.starFuel++;
+ let unlocked=false;if(spaceChaseState.starFuel>=3&&spaceChaseState.boostCharges<SPACE_CHASE_BOOST_MAX){spaceChaseState.starFuel-=3;spaceChaseState.boostCharges++;spaceChaseState.boostReadyElapsedMs=0;unlocked=true;}
  const item=spaceChaseBoostItems.find(entry=>entry.dataset.spaceChaseBoostKey===key);if(item)item.classList.add("is-collected");
- setSpaceChaseGuide(spaceChaseState.boostCharges>=SPACE_CHASE_BOOST_MAX?"スター まんたん！":"ブースト スター！",true);tone(740,0,.08,"triangle",.055);tone(1040,.07,.13,"sine",.05);showStamp("ブースト スター！","new");return true;
+ const copy=unlocked?"ブースト じゅんび オーケー！":"スターを ゲット！";setSpaceChaseGuide(copy,true);tone(unlocked?940:740,0,.08,"triangle",.055);tone(unlocked?1240:1040,.07,.13,"sine",.05);showStamp(copy,unlocked?"new":"ok");return true;
 }
 function nextSpaceChaseEdge(racer,edge){
  if(edge.nextJunction){
@@ -4755,7 +4750,7 @@ function nextSpaceChaseEdge(racer,edge){
   if(racer.kind==="comet")choiceIndex=spaceChaseState.cometChoices[junctionId];
   else{
    choiceIndex=spaceChaseState.playerChoices[junctionId];
-   if(!Number.isInteger(choiceIndex)){choiceIndex=junction.fallbackIndex;spaceChaseState.playerChoices[junctionId]=choiceIndex;setSpaceChaseGuide("じどうで あんしんの みちへ すすむよ",true);}
+   if(!Number.isInteger(choiceIndex)){choiceIndex=junction.fallbackIndex;spaceChaseState.playerChoices[junctionId]=choiceIndex;setSpaceChaseGuide("スターみちへ すすむよ",true);}
    spaceChaseState.activeJunction="";updateSpaceChaseRouteChoiceControls();
   }
   if(!junction.choices[choiceIndex])choiceIndex=junction.fallbackIndex;racer.visitedJunctions.add(junctionId);return junction.choices[choiceIndex].edge;
@@ -4774,145 +4769,169 @@ function advanceSpaceChaseRacer(racer,travel){
  }
 }
 function updateSpaceChaseChoiceRouteHighlights(junctionId){
- const key=junctionId||"-";if(spaceChaseChoiceHighlightKey===key)return;spaceChaseChoiceHighlightKey=key;spaceChaseRouteElements.forEach(path=>path.classList.remove("is-choice-option-0","is-choice-option-1","is-choice-option-2"));
- const junction=junctionId&&SPACE_CHASE_JUNCTIONS[junctionId];if(junction)junction.choices.forEach((choice,index)=>spaceChaseChoiceMetrics(choice).edges.forEach(edgeId=>{const path=spaceChaseRouteElements.get(edgeId);if(path)path.classList.add("is-choice-option-"+index);}));
+ const key=junctionId||"-";if(spaceChaseChoiceHighlightKey===key)return;spaceChaseChoiceHighlightKey=key;
+ spaceChaseRouteElements.forEach(path=>path.classList.remove("is-choice-option-0","is-choice-option-1"));spaceChaseRouteHitElements.forEach(path=>path.classList.remove("is-choice-active"));
+ const junction=junctionId&&SPACE_CHASE_JUNCTIONS[junctionId];if(junction)junction.choices.forEach((choice,index)=>{
+  const path=spaceChaseRouteElements.get(choice.edge),hit=spaceChaseRouteHitElements.get(choice.edge);if(path)path.classList.add("is-choice-option-"+index);if(hit)hit.classList.add("is-choice-active");
+ });
 }
 function updateSpaceChaseRouteChoiceControls(){
  const active=spaceChaseState.phase==="race"?spaceChaseState.activeJunction:"",junction=active?SPACE_CHASE_JUNCTIONS[active]:null;
- if(spaceChaseRouteChoices){spaceChaseRouteChoices.hidden=!junction;spaceChaseRouteChoices.dataset.choiceCount=junction?String(junction.choices.length):"0";spaceChaseRouteChoices.style.setProperty("--space-choice-count",junction?String(junction.choices.length):"2");}
- const controls=spaceChaseLayer&&spaceChaseLayer.querySelector(".space-chase-controls");if(controls)controls.classList.toggle("is-choosing",!!junction);updateSpaceChaseChoiceRouteHighlights(active);
+ if(spaceChaseRouteChoices)spaceChaseRouteChoices.hidden=!junction;updateSpaceChaseChoiceRouteHighlights(active);
  spaceChaseChoiceButtons.forEach((button,index)=>{
   const choice=junction&&junction.choices[index];button.hidden=!choice;button.disabled=!choice;button.setAttribute("aria-pressed",choice&&spaceChaseState.playerChoices[active]===index?"true":"false");
-  if(!choice)return;const metrics=spaceChaseChoiceMetrics(choice),note=metrics.seconds+"びょう ★"+metrics.stars,strong=button.querySelector("strong"),small=button.querySelector("small"),arrow=button.querySelector(".space-chase-choice-arrow");
-  if(strong)strong.textContent=choice.label;if(small)small.textContent=note;if(arrow){arrow.classList.toggle("is-up",choice.slot==="up");arrow.classList.toggle("is-middle",choice.slot==="middle");arrow.classList.toggle("is-down",choice.slot==="down");}
-  button.setAttribute("aria-label",choice.label+"。だいたい "+metrics.seconds+"びょう。スター "+metrics.stars+"こ");
+  if(!choice)return;button.classList.toggle("is-up",choice.slot==="up");button.classList.toggle("is-down",choice.slot==="down");const label=button.querySelector("strong");if(label)label.textContent=choice.label;button.setAttribute("aria-label",choice.label+(choice.stars?"。スター "+choice.stars+"こ":"。スターは なし"));
  });
 }
 function promptSpaceChaseBranch(){
  if(spaceChaseState.phase!=="race"||!spaceChaseState.rocket)return;const metric=spaceChaseRouteMetrics.get(spaceChaseState.rocket.edgeId),edge=metric&&metric.edge;
  if(!edge||!edge.nextJunction||Object.prototype.hasOwnProperty.call(spaceChaseState.playerChoices,edge.nextJunction))return;
  if(metric.length-spaceChaseState.rocket.distance>SPACE_CHASE_BRANCH_PROMPT_DISTANCE)return;
- if(spaceChaseState.activeJunction===edge.nextJunction)return;spaceChaseState.activeJunction=edge.nextJunction;const junction=SPACE_CHASE_JUNCTIONS[edge.nextJunction];setSpaceChaseGuide(junction&&junction.choices.length===3?"どの みちに する？":"どっちの みちに する？",true);updateSpaceChaseRouteChoiceControls();
+ if(spaceChaseState.activeJunction===edge.nextJunction)return;spaceChaseState.activeJunction=edge.nextJunction;setSpaceChaseGuide("ひかる みちを タッチ！",true);updateSpaceChaseRouteChoiceControls();
  const first=spaceChaseChoiceButtons.find(button=>!button.hidden);if(first)try{first.focus({preventScroll:true});}catch(_){first.focus();}
 }
 function chooseSpaceChaseRoute(choiceIndex){
  if(!spaceChaseRuntimeActive()||spaceChaseState.phase!=="race"||!spaceChaseState.activeJunction)return false;
  const junctionId=spaceChaseState.activeJunction,junction=SPACE_CHASE_JUNCTIONS[junctionId],choice=junction&&junction.choices[choiceIndex];if(!choice)return false;
- spaceChaseState.playerChoices[junctionId]=choiceIndex;spaceChaseState.activeJunction="";markSpaceChaseRoute(choice.edge,"rocket");setSpaceChaseGuide(choice.kind==="short"?"ちかみち みつけた！":(choice.kind==="power"?"スターを とりに いこう！":"くねくね すすもう！"),true);tone(choice.kind==="short"?880:650,0,.1,"triangle",.055);updateSpaceChaseRouteChoiceControls();updateSpaceChaseVisual();return true;
+ spaceChaseState.playerChoices[junctionId]=choiceIndex;spaceChaseState.activeJunction="";markSpaceChaseRoute(choice.edge,"rocket");setSpaceChaseGuide(choice.kind==="short"?"ちかみちへ びゅん！":"スターを あつめよう！",true);tone(choice.kind==="short"?880:650,0,.1,"triangle",.055);updateSpaceChaseRouteChoiceControls();updateSpaceChaseVisual();return true;
 }
 function spaceChaseBoostPlayable(){
- return spaceChaseRuntimeActive()&&spaceChaseState.phase==="race"&&!spaceChaseState.activeJunction&&spaceChaseState.boostCharges>0&&spaceChaseState.boostRemainingMs<=SPACE_CHASE_BOOST_QUEUE_MAX_MS-SPACE_CHASE_BOOST_MS;
+ return spaceChaseRuntimeActive()&&spaceChaseState.phase==="race"&&!spaceChaseState.activeJunction&&spaceChaseState.boostCharges>0&&spaceChaseState.boostRemainingMs<=0;
 }
 function useSpaceChaseBoost(){
- if(!spaceChaseBoostPlayable())return false;ensureAC();const wasBoosting=spaceChaseState.boostRemainingMs>0;spaceChaseState.boostCharges--;spaceChaseState.boostRemainingMs=Math.min(SPACE_CHASE_BOOST_QUEUE_MAX_MS,spaceChaseState.boostRemainingMs+SPACE_CHASE_BOOST_MS);setSpaceChaseGuide(wasBoosting?"ブースト ついか！":"びゅーん！",true);tone(820,0,.11,"sawtooth",.055);tone(1160,.08,.16,"triangle",.06);updateSpaceChaseVisual();return true;
+ if(!spaceChaseBoostPlayable())return false;ensureAC();spaceChaseState.boostCharges--;spaceChaseState.boostRemainingMs=SPACE_CHASE_BOOST_MS;spaceChaseState.boostReadyElapsedMs=0;setSpaceChaseGuide("びゅーん！ ちかづいた！",true);tone(820,0,.11,"sawtooth",.055);tone(1160,.08,.16,"triangle",.06);updateSpaceChaseVisual();return true;
+}
+function spaceChaseCameraLeft(rocketPose,cometPose){
+ let left=rocketPose.x-SPACE_CHASE_VIEWBOX_WIDTH*.23;left=Math.max(left,cometPose.x-SPACE_CHASE_VIEWBOX_WIDTH*.86);left=Math.min(left,rocketPose.x-SPACE_CHASE_VIEWBOX_WIDTH*.12);return clamp(left,0,SPACE_CHASE_WORLD_WIDTH-SPACE_CHASE_VIEWBOX_WIDTH);
+}
+function spaceChaseProjectedPoint(point,cameraLeft){return {x:(point.x-cameraLeft)/SPACE_CHASE_VIEWBOX_WIDTH*100,y:(point.y-SPACE_CHASE_VIEWBOX_TOP)/SPACE_CHASE_VIEWBOX_HEIGHT*100};}
+function updateSpaceChaseChoiceProjection(cameraLeft){
+ if(!spaceChaseState.activeJunction)return;const junction=SPACE_CHASE_JUNCTIONS[spaceChaseState.activeJunction];if(!junction)return;
+ spaceChaseChoiceButtons.forEach((button,index)=>{const choice=junction.choices[index],metric=choice&&spaceChaseRouteMetrics.get(choice.edge);if(!metric)return;const point=spaceChasePointAtDistance(choice.edge,metric.length*.48),screen=spaceChaseProjectedPoint(point,cameraLeft);button.style.setProperty("--space-choice-x",clamp(screen.x,15,85).toFixed(2)+"%");button.style.setProperty("--space-choice-y",clamp(screen.y,18,78).toFixed(2)+"%");});
+}
+function updateSpaceChaseBoostItemProjection(cameraLeft){
+ const active=spaceChaseState.activeJunction,junction=active&&SPACE_CHASE_JUNCTIONS[active],activeEdges=new Set(junction?junction.choices.map(choice=>choice.edge):[]);
+ spaceChaseBoostItems.forEach(item=>{
+  const edgeId=item.dataset.spaceChaseEdge,index=Number(item.dataset.spaceChaseBoostIndex)||0,key=item.dataset.spaceChaseBoostKey,metric=spaceChaseRouteMetrics.get(edgeId),positions=metric?spaceChaseBoostPositions(metric.edge):[],point=spaceChasePointAtDistance(edgeId,metric?metric.length*(positions[index]||.5):0),screen=spaceChaseProjectedPoint(point,cameraLeft);
+  const relevant=active?activeEdges.has(edgeId):(spaceChaseState.rocket&&spaceChaseState.rocket.edgeId===edgeId),visible=relevant&&!spaceChaseState.collectedBoosts.has(key)&&screen.x>-4&&screen.x<104;item.hidden=!visible;
+  if(visible){item.style.left=screen.x.toFixed(2)+"%";item.style.top=clamp(screen.y,4,96).toFixed(2)+"%";}
+ });
+}
+function updateSpaceChaseRescueVisual(){
+ if(!spaceChaseRescuePanel)return;const visible=spaceChaseState.phase==="rescue"||spaceChaseState.phase==="victory";
+ spaceChaseRescuePanel.hidden=!visible;spaceChaseRescuePanel.setAttribute("aria-hidden",visible?"false":"true");if(visible)spaceChaseRescuePanel.removeAttribute("inert");else spaceChaseRescuePanel.setAttribute("inert","");
+ spaceChaseRescuePanel.classList.toggle("is-carry",spaceChaseState.rescueMode==="carry");spaceChaseRescuePanel.classList.toggle("is-victory",spaceChaseState.phase==="victory");
+ if(spaceChaseRescueProgress){const count=spaceChaseState.clearedRibbons.size;spaceChaseRescueProgress.setAttribute("aria-valuenow",String(count));spaceChaseRescueProgress.setAttribute("aria-valuetext",count+"ほん はらった");spaceChaseRescueProgress.querySelectorAll("i").forEach((lamp,index)=>lamp.classList.toggle("is-on",index<count));}
 }
 function updateSpaceChaseVisual(){
  const board=spaceChaseBoard();if(!board||!spaceChaseLayer||spaceChaseLayer.hidden)return;
  const portrait=!spaceLandscapePlayable();spaceChaseLayer.setAttribute("aria-hidden",portrait?"true":"false");if(portrait)spaceChaseLayer.setAttribute("inert","");else spaceChaseLayer.removeAttribute("inert");
- let rocketPose=spaceChaseRacerPose(spaceChaseState.rocket),cometPose=spaceChaseRacerPose(spaceChaseState.comet);if(["caught","rescue","victory"].includes(spaceChaseState.phase)){rocketPose={x:SPACE_CHASE_VIEWBOX_WIDTH*.525,y:SPACE_CHASE_VIEWBOX_TOP+SPACE_CHASE_VIEWBOX_HEIGHT*.54,angle:-8};cometPose={x:SPACE_CHASE_VIEWBOX_WIDTH*.65,y:SPACE_CHASE_VIEWBOX_TOP+SPACE_CHASE_VIEWBOX_HEIGHT*.48,angle:-8};}
- board.style.setProperty("--space-chase-comet-x",(cometPose.x/SPACE_CHASE_VIEWBOX_WIDTH*100).toFixed(2)+"%");board.style.setProperty("--space-chase-comet-y",spaceChaseYPercent(cometPose.y,false));board.style.setProperty("--space-chase-comet-y-compact",spaceChaseYPercent(cometPose.y,true));board.style.setProperty("--space-chase-comet-angle",cometPose.angle.toFixed(2)+"deg");
- board.style.setProperty("--space-chase-rocket-x",(rocketPose.x/SPACE_CHASE_VIEWBOX_WIDTH*100).toFixed(2)+"%");board.style.setProperty("--space-chase-rocket-y",spaceChaseYPercent(rocketPose.y,false));board.style.setProperty("--space-chase-rocket-y-compact",spaceChaseYPercent(rocketPose.y,true));board.style.setProperty("--space-chase-rocket-angle",rocketPose.angle.toFixed(2)+"deg");
- board.classList.toggle("is-boosting",spaceChaseState.phase==="race"&&spaceChaseState.boostRemainingMs>0);board.classList.toggle("has-boost",spaceChaseBoostPlayable());board.classList.toggle("is-caught",spaceChaseState.phase==="caught");board.classList.toggle("is-rescuing",spaceChaseState.phase==="rescue");board.classList.toggle("is-victory",spaceChaseState.phase==="victory");
+ const rocketPose=spaceChaseRacerPose(spaceChaseState.rocket),cometPose=spaceChaseRacerPose(spaceChaseState.comet),cameraLeft=spaceChaseCameraLeft(rocketPose,cometPose),rocketScreen=spaceChaseProjectedPoint(rocketPose,cameraLeft),cometScreen=spaceChaseProjectedPoint(cometPose,cameraLeft);
+ if(spaceChaseRouteMap)spaceChaseRouteMap.setAttribute("viewBox",cameraLeft.toFixed(2)+" "+SPACE_CHASE_VIEWBOX_TOP+" "+SPACE_CHASE_VIEWBOX_WIDTH+" "+SPACE_CHASE_VIEWBOX_HEIGHT);
+ board.style.setProperty("--space-chase-comet-x",clamp(cometScreen.x,8,89).toFixed(2)+"%");board.style.setProperty("--space-chase-comet-y",spaceChaseYPercent(cometPose.y));board.style.setProperty("--space-chase-comet-angle",cometPose.angle.toFixed(2)+"deg");
+ board.style.setProperty("--space-chase-rocket-x",clamp(rocketScreen.x,8,89).toFixed(2)+"%");board.style.setProperty("--space-chase-rocket-y",spaceChaseYPercent(rocketPose.y));board.style.setProperty("--space-chase-rocket-angle",rocketPose.angle.toFixed(2)+"deg");board.style.setProperty("--space-chase-camera-left",cameraLeft.toFixed(2));
+ board.classList.toggle("is-boosting",spaceChaseState.phase==="race"&&!spaceChaseState.activeJunction&&spaceChaseState.boostRemainingMs>0);board.classList.toggle("has-boost",spaceChaseBoostPlayable());board.classList.toggle("is-choosing",spaceChaseState.phase==="race"&&!!spaceChaseState.activeJunction);board.classList.toggle("is-caught",spaceChaseState.phase==="caught");board.classList.toggle("is-rescuing",spaceChaseState.phase==="rescue");board.classList.toggle("is-victory",spaceChaseState.phase==="victory");
  const passed=spaceChaseState.rocket?clamp(spaceChaseState.rocket.progress,0,SPACE_CHASE_PROGRESS_GOAL):0,roundMeter=board.querySelector(".space-chase-rounds");
  if(roundMeter){roundMeter.setAttribute("aria-valuenow",String(passed));roundMeter.setAttribute("aria-valuetext","ゴールまでの "+SPACE_CHASE_PROGRESS_GOAL+"この みちの うち "+passed+"こ すすんだ");roundMeter.querySelectorAll("i").forEach((lamp,index)=>lamp.classList.toggle("is-on",index<passed));}
  if(spaceChaseRoundText)spaceChaseRoundText.textContent=spaceChaseState.phase==="race"?(passed>=SPACE_CHASE_PROGRESS_GOAL?"もう すぐ！":"みちを えらぼう！"):(spaceChaseState.phase==="victory"?"たすけた！":"おいつこう！");
  if(spaceChaseTitle)spaceChaseTitle.textContent=spaceChaseState.phase==="intro"?"あっ！ ほしのこが ながされてる！":(spaceChaseState.phase==="race"?"ほしのこまで おいつこう！":(spaceChaseState.phase==="victory"?"ほしのこを たすけた！":"ほしのこを たすけよう！"));
- if(spaceChaseBoostMeter){spaceChaseBoostMeter.setAttribute("aria-valuenow",String(spaceChaseState.boostCharges));spaceChaseBoostMeter.setAttribute("aria-valuetext","ブースト スター "+spaceChaseState.boostCharges+"こ");spaceChaseBoostMeter.querySelectorAll("i").forEach((lamp,index)=>lamp.classList.toggle("is-on",index<spaceChaseState.boostCharges));}
- if(spaceChaseBoostButton){const boosting=spaceChaseState.boostRemainingMs>0,queuedBursts=Math.max(0,Math.ceil(spaceChaseState.boostRemainingMs/SPACE_CHASE_BOOST_MS));spaceChaseBoostButton.disabled=!spaceChaseBoostPlayable();spaceChaseBoostButton.setAttribute("aria-label",boosting?"ブーストを ついかする。いま "+queuedBursts+"かいぶん。スター "+spaceChaseState.boostCharges+"こ":"ブーストを つかう。スター "+spaceChaseState.boostCharges+"こ");const label=spaceChaseBoostButton.querySelector("strong"),note=spaceChaseBoostButton.querySelector("small");if(label)label.textContent="ブースト！";if(note)note.textContent=boosting?"つづけて ×"+queuedBursts:"スター "+spaceChaseState.boostCharges+"こ";}
- const rescueVisible=spaceChaseState.phase==="rescue"||spaceChaseState.phase==="victory";if(spaceChaseRescuePanel){spaceChaseRescuePanel.hidden=!rescueVisible;spaceChaseRescuePanel.setAttribute("aria-hidden",rescueVisible?"false":"true");}
- updateSpaceChaseRouteChoiceControls();
+ if(spaceChaseBoostMeter){const meterValue=spaceChaseState.boostCharges>0?3:spaceChaseState.starFuel;spaceChaseBoostMeter.setAttribute("aria-valuenow",String(meterValue));spaceChaseBoostMeter.setAttribute("aria-valuetext",spaceChaseState.boostCharges>0?"ブースト "+spaceChaseState.boostCharges+"かい":"スター "+spaceChaseState.starFuel+"こ");spaceChaseBoostMeter.querySelectorAll("i").forEach((lamp,index)=>lamp.classList.toggle("is-on",index<meterValue));}
+ if(spaceChaseBoostButton){const ready=spaceChaseState.boostCharges>0,boosting=spaceChaseState.boostRemainingMs>0;spaceChaseBoostButton.disabled=!spaceChaseBoostPlayable();spaceChaseBoostButton.setAttribute("aria-label",ready?"ブーストを つかう。あと "+spaceChaseState.boostCharges+"かい":"スターを 3こ あつめると ブースト");const label=spaceChaseBoostButton.querySelector("strong"),note=spaceChaseBoostButton.querySelector("small");if(label)label.textContent=boosting?"びゅーん！":"ブースト！";if(note)note.textContent=ready?"あと "+spaceChaseState.boostCharges+"かい":"スター "+spaceChaseState.starFuel+"こ";}
+ updateSpaceChaseRouteChoiceControls();updateSpaceChaseChoiceProjection(cameraLeft);updateSpaceChaseBoostItemProjection(cameraLeft);updateSpaceChaseRescueVisual();
+}
+function resetSpaceChaseRescueStar(){
+ spaceChaseState.rescueStarX=0;spaceChaseState.rescueStarY=0;if(spaceChaseRescueStar){spaceChaseRescueStar.style.removeProperty("--rescue-star-x");spaceChaseRescueStar.style.removeProperty("--rescue-star-y");spaceChaseRescueStar.classList.remove("is-dragging","is-near");}
+}
+function cancelSpaceChaseRescuePointer(resetStar){
+ const pointerId=spaceChaseState.rescuePointerId,target=spaceChaseState.rescuePointerTarget;spaceChaseState.rescuePointerId=null;spaceChaseState.rescuePointerKind="";spaceChaseState.rescuePointerTarget=null;
+ if(target){target.style.removeProperty("--rescue-wipe");try{if(pointerId!==null)target.releasePointerCapture(pointerId);}catch(_){}}
+ if(resetStar!==false)resetSpaceChaseRescueStar();
 }
 function clearSpaceChaseEncounter(){
- spaceChaseState=createSpaceChaseState();
- document.body.classList.remove("space-chase-active");
- const board=spaceChaseBoard();if(board){board.classList.remove("is-boosting","has-boost","is-caught","is-rescuing","is-victory");board.removeAttribute("style");}
- resetSpaceChaseRouteVisuals();
- if(spaceChaseRouteChoices)spaceChaseRouteChoices.hidden=true;
- spaceChaseChoiceButtons.forEach(button=>{button.hidden=false;button.disabled=true;button.setAttribute("aria-pressed","false");});
- if(spaceChaseRescuePanel){spaceChaseRescuePanel.hidden=true;spaceChaseRescuePanel.setAttribute("aria-hidden","true");}
- spaceChaseKnotButtons.forEach(button=>{button.classList.remove("is-released");button.disabled=true;});
- if(spaceChaseBoostButton)spaceChaseBoostButton.disabled=true;
- if(spaceChaseLayer){spaceChaseLayer.hidden=true;spaceChaseLayer.setAttribute("aria-hidden","true");spaceChaseLayer.setAttribute("inert","");}
+ cancelSpaceChaseRescuePointer(true);if(spaceChaseRescuePanel&&spaceChaseRescuePanel.contains(document.activeElement))try{document.activeElement.blur();}catch(_){}
+ spaceChaseState=createSpaceChaseState();document.body.classList.remove("space-chase-active");
+ const board=spaceChaseBoard();if(board){board.classList.remove("is-boosting","has-boost","is-choosing","is-caught","is-rescuing","is-victory");board.removeAttribute("style");}
+ resetSpaceChaseRouteVisuals();if(spaceChaseRouteChoices)spaceChaseRouteChoices.hidden=true;spaceChaseChoiceButtons.forEach(button=>{button.hidden=false;button.disabled=true;button.setAttribute("aria-pressed","false");button.removeAttribute("style");});
+ spaceChaseRibbonButtons.forEach(button=>{button.classList.remove("is-cleared");button.disabled=true;button.style.removeProperty("--rescue-wipe");});if(spaceChaseRescueStar){spaceChaseRescueStar.classList.remove("is-rescued");spaceChaseRescueStar.disabled=true;}
+ if(spaceChaseRescuePanel){spaceChaseRescuePanel.hidden=true;spaceChaseRescuePanel.setAttribute("aria-hidden","true");spaceChaseRescuePanel.setAttribute("inert","");spaceChaseRescuePanel.classList.remove("is-carry","is-victory");}
+ if(spaceChaseBoostButton)spaceChaseBoostButton.disabled=true;if(spaceChaseLayer){spaceChaseLayer.hidden=true;spaceChaseLayer.setAttribute("aria-hidden","true");spaceChaseLayer.setAttribute("inert","");}
 }
 function beginSpaceChaseRace(){
- if(spaceChaseState.phase!=="intro")return;
- spaceChaseState.phase="race";spaceChaseState.phaseElapsedMs=0;
- setSpaceChaseGuide("ロケットは じどうで すすむよ",true);promptSpaceChaseBranch();updateSpaceChaseVisual();
+ if(spaceChaseState.phase!=="intro")return;spaceChaseState.phase="race";spaceChaseState.phaseElapsedMs=0;setSpaceChaseGuide("ロケットは じどうで すすむよ",true);promptSpaceChaseBranch();updateSpaceChaseVisual();
 }
 function beginSpaceChaseCaught(){
- if(spaceChaseState.phase!=="race")return;
- spaceChaseState.phase="caught";spaceChaseState.phaseElapsedMs=0;spaceChaseState.boostRemainingMs=0;spaceChaseState.activeJunction="";
- updateSpaceChaseRouteChoiceControls();setSpaceChaseGuide("しっぽに ほしのこが ひっかかってる！",true);showStamp("おいついた！","new");tone(660,0,.09,"triangle",.055);tone(880,.07,.15,"sine",.05);updateSpaceChaseVisual();
+ if(spaceChaseState.phase!=="race")return;spaceChaseState.phase="caught";spaceChaseState.phaseElapsedMs=0;spaceChaseState.boostRemainingMs=0;spaceChaseState.activeJunction="";updateSpaceChaseRouteChoiceControls();setSpaceChaseGuide("しっぽに ほしのこが ひっかかってる！",true);showStamp("おいついた！","new");tone(660,0,.09,"triangle",.055);tone(880,.07,.15,"sine",.05);updateSpaceChaseVisual();
 }
 function beginSpaceChaseRescue(){
- if(spaceChaseState.phase!=="caught")return;
- spaceChaseState.phase="rescue";spaceChaseState.phaseElapsedMs=0;
- if(spaceChaseRescueGuide)spaceChaseRescueGuide.textContent="あと みっつ";
- spaceChaseKnotButtons.forEach(button=>{button.disabled=spaceChaseState.releasedKnots.has(Number(button.dataset.spaceChaseKnot));});
- setSpaceChaseGuide("ひかる むすびめを タッチ！",true);updateSpaceChaseVisual();
- const first=spaceChaseKnotButtons.find(button=>!button.disabled);if(first)try{first.focus({preventScroll:true});}catch(_){first.focus();}
+ if(spaceChaseState.phase!=="caught")return;spaceChaseState.phase="rescue";spaceChaseState.phaseElapsedMs=0;spaceChaseState.rescueMode="wipe";spaceChaseState.clearedRibbons.clear();cancelSpaceChaseRescuePointer(true);
+ spaceChaseRibbonButtons.forEach((button,index)=>{button.classList.remove("is-cleared");button.disabled=index!==0;});if(spaceChaseRescueStar){spaceChaseRescueStar.disabled=true;spaceChaseRescueStar.classList.remove("is-rescued");}
+ if(spaceChaseRescueTitle)spaceChaseRescueTitle.textContent="ひかる しっぽを みぎへ すーっ！";if(spaceChaseRescueGuide)spaceChaseRescueGuide.textContent="タッチでも すすむよ";setSpaceChaseGuide("ひかる しっぽを みぎへ すーっ！",true);updateSpaceChaseVisual();
+ const first=spaceChaseRibbonButtons[0];if(first)try{first.focus({preventScroll:true});}catch(_){first.focus();}
 }
-function releaseSpaceChaseKnot(button,index){
- if(!spaceChaseRuntimeActive()||spaceChaseState.phase!=="rescue"||spaceChaseState.releasedKnots.has(index))return false;
- ensureAC();spaceChaseState.releasedKnots.add(index);button.classList.add("is-released");button.disabled=true;
- const remaining=spaceChaseKnotButtons.length-spaceChaseState.releasedKnots.size,copy=remaining===2?"あと ふたつ":(remaining===1?"あと ひとつ":"ぜんぶ ほどけた！");
- if(spaceChaseRescueGuide)spaceChaseRescueGuide.textContent=copy;tone(690+spaceChaseState.releasedKnots.size*105,0,.09,"triangle",.055);showStamp(copy,remaining?"ok":"clear");
- if(!remaining){finishSpaceChaseVictory();return true;}
- const next=spaceChaseKnotButtons.find(entry=>!entry.disabled);if(next)try{next.focus({preventScroll:true});}catch(_){next.focus();}return true;
+function clearSpaceChaseRibbon(index){
+ if(!spaceChaseRuntimeActive()||spaceChaseState.phase!=="rescue"||spaceChaseState.rescueMode!=="wipe"||index!==spaceChaseState.clearedRibbons.size)return false;
+ const button=spaceChaseRibbonButtons[index];if(!button||spaceChaseState.clearedRibbons.has(index))return false;ensureAC();spaceChaseState.clearedRibbons.add(index);button.classList.add("is-cleared");button.disabled=true;button.style.removeProperty("--rescue-wipe");
+ const remaining=spaceChaseRibbonButtons.length-spaceChaseState.clearedRibbons.size;tone(700+index*120,0,.09,"triangle",.055);showStamp(remaining?(remaining===1?"あと ひとつ":"あと ふたつ"):"しっぽが はれた！",remaining?"ok":"clear");
+ if(remaining){const next=spaceChaseRibbonButtons[index+1];next.disabled=false;if(spaceChaseRescueGuide)spaceChaseRescueGuide.textContent=remaining===1?"あと ひとつ":"あと ふたつ";try{next.focus({preventScroll:true});}catch(_){next.focus();}}
+ else{spaceChaseState.rescueMode="carry";if(spaceChaseRescueTitle)spaceChaseRescueTitle.textContent="ほしのこを ロケットの わへ！";if(spaceChaseRescueGuide)spaceChaseRescueGuide.textContent="つかんで はこぼう！";if(spaceChaseRescueStar){spaceChaseRescueStar.disabled=false;try{spaceChaseRescueStar.focus({preventScroll:true});}catch(_){spaceChaseRescueStar.focus();}}announce("ほしのこを ロケットの わへ！");}
+ updateSpaceChaseVisual();return true;
+}
+function spaceChaseRescueSwipeThreshold(){
+ const width=spaceChaseRescuePlayfield&&spaceChaseRescuePlayfield.getBoundingClientRect?spaceChaseRescuePlayfield.getBoundingClientRect().width:(window.innerWidth||844);return clamp(width*.12,38,72);
+}
+function moveSpaceChaseRescuePointer(event){
+ if(event.pointerId!==spaceChaseState.rescuePointerId)return;spaceChaseState.rescueLastX=event.clientX;spaceChaseState.rescueLastY=event.clientY;const dx=event.clientX-spaceChaseState.rescueStartX,dy=event.clientY-spaceChaseState.rescueStartY;
+ if(spaceChaseState.rescuePointerKind==="ribbon"){const target=spaceChaseState.rescuePointerTarget;if(target)target.style.setProperty("--rescue-wipe",(clamp(dx/spaceChaseRescueSwipeThreshold(),0,1)*100).toFixed(1)+"%");}
+ else if(spaceChaseState.rescuePointerKind==="star"&&spaceChaseRescueStar&&spaceChaseRescuePlayfield){
+  const field=spaceChaseRescuePlayfield.getBoundingClientRect(),nextX=clamp(spaceChaseState.rescueStarX+dx,field.left-spaceChaseState.rescueStarBaseLeft,field.right-spaceChaseState.rescueStarBaseRight),nextY=clamp(spaceChaseState.rescueStarY+dy,field.top-spaceChaseState.rescueStarBaseTop,field.bottom-spaceChaseState.rescueStarBaseBottom);
+  spaceChaseRescueStar.style.setProperty("--rescue-star-x",nextX.toFixed(1)+"px");spaceChaseRescueStar.style.setProperty("--rescue-star-y",nextY.toFixed(1)+"px");spaceChaseRescueStar.classList.add("is-dragging");
+  const ring=spaceChaseRescueRing.getBoundingClientRect(),updated=spaceChaseRescueStar.getBoundingClientRect(),distance=Math.hypot(updated.left+updated.width/2-(ring.left+ring.width/2),updated.top+updated.height/2-(ring.top+ring.height/2));spaceChaseRescueStar.classList.toggle("is-near",distance<=ring.width*.85);
+ }
+ event.preventDefault();
+}
+function finishSpaceChaseRescuePointer(event,cancelled){
+ if(event.pointerId!==spaceChaseState.rescuePointerId)return;moveSpaceChaseRescuePointer(event);const kind=spaceChaseState.rescuePointerKind,target=spaceChaseState.rescuePointerTarget,dx=spaceChaseState.rescueLastX-spaceChaseState.rescueStartX,dy=spaceChaseState.rescueLastY-spaceChaseState.rescueStartY,index=target&&target.dataset.spaceChaseRibbon!==undefined?Number(target.dataset.spaceChaseRibbon):-1;
+ spaceChaseState.rescuePointerId=null;spaceChaseState.rescuePointerKind="";spaceChaseState.rescuePointerTarget=null;if(target){try{target.releasePointerCapture(event.pointerId);}catch(_){}target.style.removeProperty("--rescue-wipe");}
+ if(cancelled){resetSpaceChaseRescueStar();return;}spaceChaseState.rescueSuppressClick=true;
+ if(kind==="ribbon"){const tap=Math.hypot(dx,dy)<=12,swipe=dx>=spaceChaseRescueSwipeThreshold()&&dx>=Math.abs(dy)*1.2;if(tap||swipe)clearSpaceChaseRibbon(index);}
+ else if(kind==="star"&&spaceChaseRescueStar&&spaceChaseRescueRing){const tap=Math.hypot(dx,dy)<=12,star=spaceChaseRescueStar.getBoundingClientRect(),ring=spaceChaseRescueRing.getBoundingClientRect(),distance=Math.hypot(star.left+star.width/2-(ring.left+ring.width/2),star.top+star.height/2-(ring.top+ring.height/2));if(tap||distance<=ring.width*.58)finishSpaceChaseVictory();else resetSpaceChaseRescueStar();}
+}
+function handleSpaceChaseRescuePointerDown(event){
+ if(!spaceChaseRuntimeActive()||spaceChaseState.phase!=="rescue"||spaceChaseState.rescuePointerId!==null)return;const ribbon=event.currentTarget.dataset.spaceChaseRibbon,index=ribbon===undefined?-1:Number(ribbon),isRibbon=index>=0&&spaceChaseState.rescueMode==="wipe"&&index===spaceChaseState.clearedRibbons.size,isStar=event.currentTarget===spaceChaseRescueStar&&spaceChaseState.rescueMode==="carry";if(!isRibbon&&!isStar)return;
+ ensureAC();spaceChaseState.rescuePointerId=event.pointerId;spaceChaseState.rescuePointerKind=isRibbon?"ribbon":"star";spaceChaseState.rescuePointerTarget=event.currentTarget;spaceChaseState.rescueStartX=spaceChaseState.rescueLastX=event.clientX;spaceChaseState.rescueStartY=spaceChaseState.rescueLastY=event.clientY;spaceChaseState.rescueSuppressClick=false;if(isStar){spaceChaseState.rescueStarX=parseFloat(spaceChaseRescueStar.style.getPropertyValue("--rescue-star-x"))||0;spaceChaseState.rescueStarY=parseFloat(spaceChaseRescueStar.style.getPropertyValue("--rescue-star-y"))||0;const rect=spaceChaseRescueStar.getBoundingClientRect();spaceChaseState.rescueStarBaseLeft=rect.left-spaceChaseState.rescueStarX;spaceChaseState.rescueStarBaseRight=rect.right-spaceChaseState.rescueStarX;spaceChaseState.rescueStarBaseTop=rect.top-spaceChaseState.rescueStarY;spaceChaseState.rescueStarBaseBottom=rect.bottom-spaceChaseState.rescueStarY;}try{event.currentTarget.setPointerCapture(event.pointerId);}catch(_){}event.preventDefault();
 }
 function finishSpaceChaseVictory(){
- if(spaceChaseState.phase!=="rescue"||spaceChaseState.completionCommitted)return;
- spaceChaseState.phase="victory";spaceChaseState.phaseElapsedMs=0;spaceChaseDefeated=true;
- spaceChaseKnotButtons.forEach(button=>button.disabled=true);if(spaceChaseRescueGuide)spaceChaseRescueGuide.textContent="なかまの ところへ かえれたよ！";
- setSpaceChaseGuide("ほしのこを たすけた！",true);showStamp("おたすけ だいせいこう！","clear");tone(784,0,.13,"triangle",.075);tone(1047,.1,.2,"sine",.07);confetti(24);updateSpaceChaseVisual();
+ if(spaceChaseState.phase!=="rescue"||spaceChaseState.rescueMode!=="carry"||spaceChaseState.completionCommitted)return;cancelSpaceChaseRescuePointer(false);spaceChaseState.phase="victory";spaceChaseState.phaseElapsedMs=0;spaceChaseDefeated=true;if(spaceChaseRescueStar){spaceChaseRescueStar.disabled=true;spaceChaseRescueStar.classList.add("is-rescued");}spaceChaseRibbonButtons.forEach(button=>button.disabled=true);if(spaceChaseRescueGuide)spaceChaseRescueGuide.textContent="ロケットに のれたよ！";if(spaceChaseRescueTitle)spaceChaseRescueTitle.textContent="ほしのこを たすけた！";setSpaceChaseGuide("ほしのこを たすけた！",true);showStamp("おたすけ だいせいこう！","clear");tone(784,0,.13,"triangle",.075);tone(1047,.1,.2,"sine",.07);confetti(24);updateSpaceChaseVisual();
 }
 function showSpaceChaseEncounter(){
- if(window.__PONO_TIER_LOCKED__){completeCurrentStage(origin(stg));return;}
- if(!isSpaceStage()||!playing||spaceChaseDefeated||!spaceChaseLayer)return;
- clearSpaceChaseEncounter();clearRareEvent();resetSpaceObstacles();cancelSpaceSteerPointer();spaceMoveKeys.clear();answerLocked=false;
- prepareSpaceChaseRouteMap();resetSpaceChaseRouteVisuals();spaceChaseState=createSpaceChaseState();spaceChaseState.phase="intro";spaceChaseState.rocket=createSpaceChaseRacer("rocket");spaceChaseState.comet=createSpaceChaseRacer("comet");
- const planIndex=(loop+level+Math.floor(Math.random()*SPACE_CHASE_COMET_PLANS.length))%SPACE_CHASE_COMET_PLANS.length;spaceChaseState.cometChoices=Object.assign(Object.create(null),SPACE_CHASE_COMET_PLANS[planIndex]);
- markSpaceChaseRoute("launch","rocket");markSpaceChaseRoute("launch","comet");advanceSpaceChaseRacer(spaceChaseState.comet,SPACE_CHASE_START_LEAD);
- spaceChaseLayer.hidden=false;spaceChaseLayer.removeAttribute("inert");document.body.classList.add("space-chase-active");hydrateStaticUiArt(spaceChaseLayer);
- setSpaceChaseGuide("おいついて たすけよう！",true);showStamp("ほしのこが ながされてる！","new");tone(392,0,.14,"sine",.055);tone(587,.1,.18,"triangle",.05);updateSpaceChaseVisual();
+ if(window.__PONO_TIER_LOCKED__){completeCurrentStage(origin(stg));return;}if(!isSpaceStage()||!playing||spaceChaseDefeated||!spaceChaseLayer)return;
+ clearSpaceChaseEncounter();clearRareEvent();resetSpaceObstacles();cancelSpaceSteerPointer();spaceMoveKeys.clear();answerLocked=false;prepareSpaceChaseRouteMap();resetSpaceChaseRouteVisuals();spaceChaseState=createSpaceChaseState();spaceChaseState.phase="intro";spaceChaseState.rocket=createSpaceChaseRacer("rocket");spaceChaseState.comet=createSpaceChaseRacer("comet");
+ const planIndex=(loop+level+Math.floor(Math.random()*SPACE_CHASE_COMET_PLANS.length))%SPACE_CHASE_COMET_PLANS.length;spaceChaseState.cometChoices=Object.assign(Object.create(null),SPACE_CHASE_COMET_PLANS[planIndex]);markSpaceChaseRoute("launch","rocket");markSpaceChaseRoute("launch","comet");advanceSpaceChaseRacer(spaceChaseState.comet,SPACE_CHASE_START_LEAD);
+ spaceChaseLayer.hidden=false;spaceChaseLayer.removeAttribute("inert");document.body.classList.add("space-chase-active");hydrateStaticUiArt(spaceChaseLayer);setSpaceChaseGuide("おいついて たすけよう！",true);showStamp("ほしのこが ながされてる！","new");tone(392,0,.14,"sine",.055);tone(587,.1,.18,"triangle",.05);updateSpaceChaseVisual();
 }
 function updateSpaceChase(now){
- if(spaceChaseState.phase==="idle"||!spaceChaseLayer||spaceChaseLayer.hidden)return;
- const frameNow=Number.isFinite(now)?now:_nowMs(),rawDt=spaceChaseState.frameAt?clamp(frameNow-spaceChaseState.frameAt,0,50):0;spaceChaseState.frameAt=frameNow;
- if(!spaceChaseRuntimeActive()){updateSpaceChaseVisual();return;}
- const dt=rawDt*FAST;spaceChaseState.phaseElapsedMs+=dt;
+ if(spaceChaseState.phase==="idle"||!spaceChaseLayer||spaceChaseLayer.hidden)return;const frameNow=Number.isFinite(now)?now:_nowMs(),rawDt=spaceChaseState.frameAt?clamp(frameNow-spaceChaseState.frameAt,0,50):0;spaceChaseState.frameAt=frameNow;
+ if(!spaceChaseRuntimeActive()){updateSpaceChaseVisual();return;}const dt=rawDt*FAST;spaceChaseState.phaseElapsedMs+=dt;
  if(spaceChaseState.phase==="intro"&&spaceChaseState.phaseElapsedMs>=(futureReducedMotion()?260:SPACE_CHASE_INTRO_MS))beginSpaceChaseRace();
  else if(spaceChaseState.phase==="race"){
   spaceChaseState.raceElapsedMs+=dt;const choosingRoute=!!spaceChaseState.activeJunction,comet=spaceChaseState.comet,rocket=spaceChaseState.rocket,boostTravelMs=choosingRoute?0:Math.min(dt,spaceChaseState.boostRemainingMs);if(!choosingRoute)spaceChaseState.boostRemainingMs=Math.max(0,spaceChaseState.boostRemainingMs-dt);
-  const cometSpeed=choosingRoute?SPACE_CHASE_CHOICE_SPEED:SPACE_CHASE_COMET_SPEED;
-  advanceSpaceChaseRacer(comet,cometSpeed*dt/1000);
-  const baseTravelMs=dt-boostTravelMs;
-  let rocketTravel=choosingRoute?SPACE_CHASE_CHOICE_SPEED*dt/1000:(SPACE_CHASE_BOOST_SPEED*boostTravelMs+SPACE_CHASE_ROCKET_SPEED*baseTravelMs)/1000;
-  if(rocket.edgeId==="finish"&&comet.edgeId==="finish")rocketTravel=Math.min(rocketTravel,Math.max(0,comet.distance-SPACE_CHASE_CATCH_DISTANCE-rocket.distance));
-  advanceSpaceChaseRacer(rocket,rocketTravel);promptSpaceChaseBranch();
-  const catchGap=comet.distance-rocket.distance;if(rocket.edgeId==="finish"&&comet.edgeId==="finish"&&catchGap>=-.01&&catchGap<=SPACE_CHASE_CATCH_DISTANCE+.01)beginSpaceChaseCaught();
+  advanceSpaceChaseRacer(comet,(choosingRoute?SPACE_CHASE_CHOICE_SPEED:SPACE_CHASE_COMET_SPEED)*dt/1000);const baseTravelMs=dt-boostTravelMs,baseRocketSpeed=choosingRoute?SPACE_CHASE_CHOICE_SPEED:SPACE_CHASE_ROCKET_SPEED;let rocketTravel=(SPACE_CHASE_BOOST_SPEED*boostTravelMs+baseRocketSpeed*baseTravelMs)/1000;
+  if(rocket.edgeId==="finish"&&comet.edgeId==="finish")rocketTravel=Math.min(rocketTravel,Math.max(0,comet.distance-SPACE_CHASE_CATCH_DISTANCE-rocket.distance));advanceSpaceChaseRacer(rocket,rocketTravel);promptSpaceChaseBranch();
+  if(spaceChaseBoostPlayable()){spaceChaseState.boostReadyElapsedMs+=dt;if(spaceChaseState.boostReadyElapsedMs>=SPACE_CHASE_AUTO_BOOST_MS)useSpaceChaseBoost();}
+  const bothFinishing=rocket.edgeId==="finish"&&comet.edgeId==="finish";if(bothFinishing&&rocket.distance>comet.distance)rocket.distance=comet.distance;const catchGap=bothFinishing?comet.distance-rocket.distance:Infinity;if(bothFinishing&&catchGap>=0&&catchGap<=SPACE_CHASE_CATCH_DISTANCE+.01)beginSpaceChaseCaught();
  }else if(spaceChaseState.phase==="caught"&&spaceChaseState.phaseElapsedMs>=(futureReducedMotion()?180:SPACE_CHASE_CAUGHT_MS))beginSpaceChaseRescue();
- else if(spaceChaseState.phase==="victory"&&spaceChaseState.phaseElapsedMs>=(futureReducedMotion()?360:SPACE_CHASE_VICTORY_MS)&&!spaceChaseState.completionCommitted){
-  spaceChaseState.completionCommitted=true;const stageOrigin=origin(stg);clearSpaceChaseEncounter();completeCurrentStage(stageOrigin);return;
- }
+ else if(spaceChaseState.phase==="victory"&&spaceChaseState.phaseElapsedMs>=(futureReducedMotion()?360:SPACE_CHASE_VICTORY_MS)&&!spaceChaseState.completionCommitted){spaceChaseState.completionCommitted=true;const stageOrigin=origin(stg);clearSpaceChaseEncounter();completeCurrentStage(stageOrigin);return;}
  updateSpaceChaseVisual();
 }
-if(spaceChaseBoostButton){
- bindTap(spaceChaseBoostButton,useSpaceChaseBoost);
- spaceChaseBoostButton.addEventListener("keydown",event=>{if((event.key==="Enter"||event.key===" ")&&event.repeat)event.preventDefault();});
-}
-spaceChaseChoiceButtons.forEach(button=>{
- bindTap(button,()=>chooseSpaceChaseRoute(Number(button.dataset.spaceChaseChoice)));
- button.addEventListener("keydown",event=>{if((event.key==="Enter"||event.key===" ")&&event.repeat)event.preventDefault();});
-});
-spaceChaseKnotButtons.forEach(button=>{
- bindTap(button,()=>releaseSpaceChaseKnot(button,Number(button.dataset.spaceChaseKnot)));
+if(spaceChaseBoostButton){bindTap(spaceChaseBoostButton,useSpaceChaseBoost);spaceChaseBoostButton.addEventListener("keydown",event=>{if((event.key==="Enter"||event.key===" ")&&event.repeat)event.preventDefault();});}
+spaceChaseChoiceButtons.forEach(button=>{bindTap(button,()=>chooseSpaceChaseRoute(Number(button.dataset.spaceChaseChoice)));button.addEventListener("keydown",event=>{if((event.key==="Enter"||event.key===" ")&&event.repeat)event.preventDefault();});});
+[...spaceChaseRibbonButtons,spaceChaseRescueStar].filter(Boolean).forEach(button=>{
+ button.addEventListener("pointerdown",handleSpaceChaseRescuePointerDown,{passive:false});button.addEventListener("pointermove",moveSpaceChaseRescuePointer,{passive:false});button.addEventListener("pointerup",event=>finishSpaceChaseRescuePointer(event,false),{passive:false});button.addEventListener("pointercancel",event=>finishSpaceChaseRescuePointer(event,true),{passive:false});button.addEventListener("lostpointercapture",()=>{if(spaceChaseState.rescuePointerTarget===button)cancelSpaceChaseRescuePointer(true);});
+ button.addEventListener("click",event=>{if(spaceChaseState.rescueSuppressClick){spaceChaseState.rescueSuppressClick=false;event.preventDefault();return;}if(event.detail!==0){event.preventDefault();return;}ensureAC();if(button===spaceChaseRescueStar)finishSpaceChaseVictory();else clearSpaceChaseRibbon(Number(button.dataset.spaceChaseRibbon));});
  button.addEventListener("keydown",event=>{if((event.key==="Enter"||event.key===" ")&&event.repeat)event.preventDefault();});
 });
 if(spaceChaseLayer)spaceChaseLayer.addEventListener("keydown",event=>{
- if(spaceChaseState.phase!=="race"||!spaceChaseState.activeJunction)return;
- const junction=SPACE_CHASE_JUNCTIONS[spaceChaseState.activeJunction],slot=event.key==="ArrowUp"?"up":((event.key==="ArrowRight"||event.key==="ArrowLeft")?"middle":(event.key==="ArrowDown"?"down":""));let choiceIndex=slot?junction.choices.findIndex(choice=>choice.slot===slot):-1;
- if(choiceIndex<0&&/^[123]$/.test(event.key))choiceIndex=Number(event.key)-1;if(choiceIndex<0||!junction.choices[choiceIndex])return;event.preventDefault();chooseSpaceChaseRoute(choiceIndex);
+ if(spaceChaseState.phase!=="race"||!spaceChaseState.activeJunction)return;const junction=SPACE_CHASE_JUNCTIONS[spaceChaseState.activeJunction],slot=event.key==="ArrowUp"?"up":(event.key==="ArrowDown"?"down":"");let choiceIndex=slot?junction.choices.findIndex(choice=>choice.slot===slot):-1;if(choiceIndex<0&&/^[12]$/.test(event.key))choiceIndex=Number(event.key)-1;if(choiceIndex<0||!junction.choices[choiceIndex])return;event.preventDefault();chooseSpaceChaseRoute(choiceIndex);
 });
 function spaceObstacleGateCount(difficulty,segment){
  const difficultyIndex=Math.floor(clamp(Number(difficulty)||0,0,SPACE_OBSTACLE_COUNT_TABLE.length-1)),row=SPACE_OBSTACLE_COUNT_TABLE[difficultyIndex];
@@ -5539,6 +5558,7 @@ document.addEventListener("visibilitychange",()=>{
   closeGameSettings();
   hideWeatherNotice();
   spaceChaseState.frameAt=0;
+  cancelSpaceChaseRescuePointer(true);
   if(seaRoundPhase==="ready"||seaRoundPhase==="go"){clearTimeout(seaRoundCountdownTimer);seaRoundCountdownTimer=0;}
   pauseSeaInput();pauseFutureCraneInput();safeSuspend();
  }else{
@@ -5551,11 +5571,11 @@ window.addEventListener("resize",scheduleRainParticleRebuild,{passive:true});
 window.addEventListener("resize",syncNumberCargoColumns,{passive:true});
 window.addEventListener("resize",handleSeaViewportChange,{passive:true});
 window.addEventListener("resize",handleFutureCraneViewportChange,{passive:true});
-window.addEventListener("resize",()=>{spaceChaseState.frameAt=0;invalidateSpaceObstacleLayout();updateSpaceRepairVisual();updateSpaceChaseVisual();if(!spaceStationSteerResume&&!quiz.classList.contains("show"))clampSpaceSteerOffsets();},{passive:true});
+window.addEventListener("resize",()=>{spaceChaseState.frameAt=0;cancelSpaceChaseRescuePointer(true);invalidateSpaceObstacleLayout();updateSpaceRepairVisual();updateSpaceChaseVisual();if(!spaceStationSteerResume&&!quiz.classList.contains("show"))clampSpaceSteerOffsets();},{passive:true});
 quiz.addEventListener("transitionend",handleFutureCraneQuizTransitionEnd);
 window.addEventListener("pageshow",()=>{closeGameSettings();ensureAC();updateRainParticleVisibility(false);});
 window.addEventListener("focus",()=>{ensureAC();});
-window.addEventListener("pagehide",()=>{spaceChaseState.frameAt=0;closeGameSettings();hideWeatherNotice();pauseSeaInput();pauseFutureCraneInput();clearTimeout(rainParticleResizeTimer);safeSuspend();});
+window.addEventListener("pagehide",()=>{spaceChaseState.frameAt=0;cancelSpaceChaseRescuePointer(true);closeGameSettings();hideWeatherNotice();pauseSeaInput();pauseFutureCraneInput();clearTimeout(rainParticleResizeTimer);safeSuspend();});
 
 requestAnimationFrame(gloop);
 })();

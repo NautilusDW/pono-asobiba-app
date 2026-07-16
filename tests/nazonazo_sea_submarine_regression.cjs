@@ -12,9 +12,9 @@ const html = read("nazonazo-tunnel/index.html");
 const css = read("nazonazo-tunnel/styles.css");
 const js = read("nazonazo-tunnel/js/game.js");
 
-assert.match(html, /styles\.css\?v=20260716-1315/,
+assert.match(html, /styles\.css\?v=20260716-1316/,
   "the non-choice illustration pass needs a fresh stylesheet cache key");
-assert.match(html, /js\/game\.js\?v=20260716-1315/,
+assert.match(html, /js\/game\.js\?v=20260716-1316/,
   "the non-choice illustration pass needs a fresh script cache key");
 
 function extractFunction(source, name) {
@@ -977,7 +977,7 @@ assert.match(js, /seaRoundPhase==="ready"\|\|seaRoundPhase==="go"[\s\S]{0,180}cl
   "backgrounding during countdown must stop the unseen timer");
 assert.match(js, /!seaRoundCountdownTimer[\s\S]{0,180}startSeaRoundCountdown\(\)/,
   "foregrounding must replay an interrupted ようい / ドン！ sequence");
-assert.match(js, /window\.addEventListener\("pagehide",\(\)=>\{spaceChaseState\.frameAt=0;closeGameSettings\(\);hideWeatherNotice\(\);pauseSeaInput\(\)/);
+assert.match(js, /window\.addEventListener\("pagehide",\(\)=>\{spaceChaseState\.frameAt=0;cancelSpaceChaseRescuePointer\(true\);closeGameSettings\(\);hideWeatherNotice\(\);pauseSeaInput\(\)/);
 assert.match(js, /window\.addEventListener\("resize",handleSeaViewportChange/);
 
 /* Reduced motion and LP lock remain explicit. */
