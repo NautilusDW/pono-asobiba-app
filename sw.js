@@ -1,5 +1,9 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2244: ブロッコリー小房の待機場所を既存の調理皿へ統一し、皿から鍋へ1個ずつ移す。
+// 塩入れは焼き工程と同じく瓶を水面へドラッグして上下に振る操作へ変更。泡を水面楕円で
+// マスクし、波紋と泡を白・グレーの輪郭だけにしてパースと温度感を修正
+// (batch:1326-kitchen-workshop-assets)。play.html PAGE_CACHE_VERSION と同期不要。
 // v2243: batch:1319-room-profile-move-puzzle-tutorial-fix。①「わたしのおうち」導線を
 // 設定モーダルからプロフィールハブへ完全移設 (play.html: #settingsRoomBtn 撤去、
 // #profileHubModal に #profileRoomBtn 新設。tier判定ロジック=isRoomTierLocked は不変)。
@@ -347,7 +351,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2243;
+const CACHE_VERSION = 2244;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
