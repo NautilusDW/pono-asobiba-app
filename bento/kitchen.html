@@ -1135,13 +1135,14 @@ body[data-screen="prep"][data-prep-kind^="bread_"] #screen-prep .screen-back {
   transform: translate(-50%, -50%);
   filter: drop-shadow(0 7px 7px rgba(88,54,27,0.28));
 }
-.prep-tutorial__hand span {
+.prep-tutorial__hand img {
   position: absolute;
   inset: 0;
-  display: grid;
-  place-items: center;
-  font-size: 3rem;
-  line-height: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 .prep-tutorial__hand .closed {
   opacity: 0;
@@ -2858,6 +2859,12 @@ body.layout-editor-on .fry-pot {
 #grill-stage[data-ingredient="meatball"]:not(.is-served) .cook-piece-bank {
   display: block;
   pointer-events: auto;
+}
+#grill-stage[data-ingredient="meatball"].meatball-roll .cook-piece-bank {
+  cursor: grab;
+}
+#grill-stage[data-ingredient="meatball"].meatball-roll .cook-piece-bank:active {
+  cursor: grabbing;
 }
 .cook-piece-bank i {
   position: absolute;
@@ -9632,7 +9639,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       }
       html += '<div class="prep-tutorial prep-tutorial--round">'
         + '<div class="prep-tutorial__label">1こずつ まるめよう</div>'
-        + '<div class="prep-tutorial__hand"><span class="open">✋</span><span class="closed">✊</span></div>'
+        + '<div class="prep-tutorial__hand"><img class="open" src="../assets/images/puzzle/ui/tutorial/hand_open_hover.png" alt="" draggable="false"><img class="closed" src="../assets/images/puzzle/ui/tutorial/hand_grip.png" alt="" draggable="false"></div>'
         + '</div>';
       els.shapeBallGame.innerHTML = html;
       els.shapeBallGame.dataset.renderKey = renderKey;
@@ -9695,8 +9702,8 @@ body.layout-editor-on .bowl-fill-mask::after {
       }
       html += '<div class="shape-portion-dragger"><img src="' + activeSrc + '" alt="" draggable="false"></div>'
         + '<div class="prep-tutorial prep-tutorial--portion">'
-        + '<div class="prep-tutorial__label">ひき肉をつまもう</div>'
-        + '<div class="prep-tutorial__hand"><span class="open">✋</span><span class="closed">✊</span></div>'
+        + '<div class="prep-tutorial__label">ひきにくを つまもう</div>'
+        + '<div class="prep-tutorial__hand"><img class="open" src="../assets/images/puzzle/ui/tutorial/hand_open_hover.png" alt="" draggable="false"><img class="closed" src="../assets/images/puzzle/ui/tutorial/hand_grip.png" alt="" draggable="false"></div>'
         + '</div>';
       els.shapeBallGame.innerHTML = html;
       els.shapeBallGame.dataset.renderKey = renderKey;
@@ -15304,6 +15311,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     stageEl.classList.toggle('egg-lid-ready', eggGrill && state.cookFoodPlaced && state.cookEggLidReady && !state.cookEggLidClosed && !state.cookServed);
     stageEl.classList.toggle('egg-lid-dragging', eggGrill && state.cookEggLidDragging && !state.cookEggLidClosed);
     stageEl.classList.toggle('egg-lid-closed', eggGrill && state.cookEggLidClosed && !state.cookServed);
+    stageEl.classList.toggle('meatball-roll', isMeatballCookAction(state.current, action) && state.cookMeatballPhase === 'roll');
     stageEl.classList.toggle('meatball-serve', isMeatballCookAction(state.current, action) && state.cookMeatballPhase === 'serve');
     if (isMultiPieceCookAction(action)) {
       stageEl.dataset.cookPieceIndex = String(chickenFry ? getChickenFryDonePieces(action).length : (state.cookPieceIndex || 0));
@@ -15836,7 +15844,10 @@ body.layout-editor-on .bowl-fill-mask::after {
     const target = evt.target && evt.target.closest ? evt.target.closest('i[data-piece-index]') : null;
     if (!els.grillPieceBank || state.cutting || state.transitioning || state.cookAnimating) return;
     const point = getMeatballStagePoint(evt);
-    const nearestIndex = findMeatballPieceIndexAtPoint(point);
+    let nearestIndex = findMeatballPieceIndexAtPoint(point);
+    if (nearestIndex < 0 && state.cookMeatballPhase === 'roll' && isPointInMeatballPan(point)) {
+      nearestIndex = findNearestInPanMeatballIndex(point);
+    }
     if (!target && nearestIndex < 0) return;
     evt.preventDefault();
     evt.stopPropagation();
@@ -16367,6 +16378,33 @@ body.layout-editor-on .bowl-fill-mask::after {
       const dist = Math.hypot(point.x - ball.x, point.y - ball.y);
       const hit = ball.inPan ? 8.8 : 6.6;
       if (dist <= hit && dist < bestDist) {
+        bestDist = dist;
+        bestIndex = index;
+      }
+    });
+    return bestIndex;
+  }
+
+  function isPointInMeatballPan(point) {
+    if (!point) return false;
+    const panBounds = getElementBoundsPct(els.grillPan, els.grillStage);
+    const cx = panBounds ? panBounds.left + panBounds.width * 0.50 : 58;
+    const cy = panBounds ? panBounds.top + panBounds.height * 0.38 : 43;
+    const rx = panBounds ? panBounds.width * 0.44 : 23;
+    const ry = panBounds ? panBounds.height * 0.40 : 17;
+    const dx = point.x - cx;
+    const dy = point.y - cy;
+    return (dx * dx) / (rx * rx) + (dy * dy) / (ry * ry) <= 1;
+  }
+
+  function findNearestInPanMeatballIndex(point) {
+    if (!point) return -1;
+    let bestIndex = -1;
+    let bestDist = Infinity;
+    (state.cookMeatballs || []).forEach(function (ball, index) {
+      if (!ball || !ball.inPan || ball.served) return;
+      const dist = Math.hypot(point.x - ball.x, point.y - ball.y);
+      if (dist < bestDist) {
         bestDist = dist;
         bestIndex = index;
       }
