@@ -59,8 +59,6 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
-- 2026-07-16 08:35 - by Claude - [batch:1315-furniture-stamp-card-revival] - 調査中 (play-all.html, play.html, room/index.html 該当箇所, AGENTS_CLAIMS.md, HANDOFF.md) - batch:1313の続き。家具の入手経路「スタンプカード」(_initStampRally/renderDailyRally/checkSlotReward) が本番play.htmlから到達可能か調査し、必要なら復活 (fable調査→sonnet5実装+クロスレビュー、オーケストレータは実装非従事)
-
 - 2026-06-28 09:27 - by Codex - [batch:877-gacha-tray-mask-lower] - play.html, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - ガチャ受け皿マスクが上すぎるため奥壁ラインを下げて再調整 [overlap: batch:860-data-export-import]
 - 2026-06-28 13:00 - by Claude - [batch:885-difficulty-label-phase3-fix] - quizland/index.html, puzzle/partner-select.js, bento/index.html - クロスレビュー Critical/High 修正 (quizland「かんたん」UI 露出 / puzzle partner「かんたん」/ bento aria-label hardcode) [overlap: batch:884-maze-water-line-skate]
 - 2026-06-28 13:30 - by Claude - [batch:886-difficulty-label-sw-bump-1736] - sw.js, play.html - 難易度ラベル統一 Phase 2+4 fix を v1735→v1736 でバンプ (maze HUD / oto タブ / puzzle album / bento title / quizland UI / partner-select / common/difficulty.js は既登録) [overlap: batch:885-difficulty-label-phase3-fix]

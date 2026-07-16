@@ -21,8 +21,9 @@
        ※ どんぐり加算は v1592 で carve-out (上記参照)
      - 進捗系 LS (pono_stats / pono_stamp_log / pono_acorns / pono_thankyou /
        pono_stickers / pono_login_days 等) には書き込まない
-     - スタンプラリー / スタンプカード / ボトムナビの 📋 スタンプ・🏠 おうち
-       ボタンを CSS で非表示
+     - スタンプラリー / スタンプカード / ボトムナビの 📋 スタンプボタンを CSS で
+       非表示 (app tier は除外、common/stamp-rally.js が動作する)。
+       🏠 おうち ボタンは tier 問わず引き続き非表示
 
    ※ ゲームクリア時の confetti / モーダル / ポノの褒めは累積じゃないので維持。
    ※ 緊急封印したい時は PONO_MVP_NO_REWARDS = true に戻すだけで全機能が抑止。
@@ -72,13 +73,7 @@
       '.acorn-popup,',
       '.acorn-chip,',
       '.acorn-shop-hint,',
-      /* 進捗系セクションの非表示 */
-      '.stamp-rally-section,',
-      '.stamp-card-section,',
-      '#stampRallySection,',
-      '#stampCardSection,',
-      /* ボトムナビの 📋 スタンプ / 🏠 おうち ボタン */
-      '.bottom-nav .bn-item[data-action="stamp"],',
+      /* ボトムナビの 🏠 おうち ボタン */
       '.bottom-nav .bn-item[data-action="room"],',
       /* 達成・到達目標・進捗系の煽り UI ('あと N で〇〇マスター' など) */
       '#ach-next-hint,',
@@ -100,7 +95,13 @@
       '.progress-banner',
       '{ display: none !important; }',
       'body:not([data-tier="app"]) .login-streak,',
-      'body:not([data-tier="app"]) .streak-banner',
+      'body:not([data-tier="app"]) .streak-banner,',
+      /* 進捗系セクション / ボトムナビの 📋 スタンプ ボタン (app tier は common/stamp-rally.js を表示) */
+      'body:not([data-tier="app"]) .stamp-rally-section,',
+      'body:not([data-tier="app"]) .stamp-card-section,',
+      'body:not([data-tier="app"]) #stampRallySection,',
+      'body:not([data-tier="app"]) #stampCardSection,',
+      'body:not([data-tier="app"]) .bottom-nav .bn-item[data-action="stamp"]',
       '{ display: none !important; }'
     ].join('\n');
     var s = document.createElement('style');

@@ -9,6 +9,40 @@ const root = path.resolve(__dirname, "..");
 const achievementsSource = fs.readFileSync(path.join(root, "common/achievements.js"), "utf8");
 const playAll = fs.readFileSync(path.join(root, "play-all.html"), "utf8");
 const roomIndex = fs.readFileSync(path.join(root, "room/index.html"), "utf8");
+const roomItemsSource = fs.readFileSync(path.join(root, "room/items.js"), "utf8");
+// stamp-rally.js: play-all.html から抽出された (2026-07-16, Stage 1) reward-granting chain
+// (rewardsBlocked/checkSlotReward/_initStampRally)。play-all.html は
+// <script src="common/stamp-rally.js"></script> を読み込むだけになった。
+const stampRally = fs.readFileSync(path.join(root, "common/stamp-rally.js"), "utf8");
+
+// ===== common/achievements.js: ACHIEVEMENTS[].reward.furn ids must all exist in room/items.js =====
+// phantom id 再発防止 (see also tests/room_furniture_book_tier_regression.cjs, which covers
+// PREMIUM_BONUS.furn the same way): an id that isn't in the ROOM_ITEMS catalog gets silently
+// dropped from the inventory by room/index.html's `ROOM_ITEMS.some(...)` filter (line ~1224), so
+// a kid can "earn" an achievement and never actually receive any furniture for it.
+(function testAchievementFurnIdsExistInCatalog() {
+  const REAL_ROOM_ITEM_IDS = new Set(
+    Array.from(roomItemsSource.matchAll(/id:\s*'([^']+)'/g)).map((m) => m[1])
+  );
+  assert.ok(REAL_ROOM_ITEM_IDS.size > 0, "must be able to parse at least one id from room/items.js");
+
+  const start = achievementsSource.indexOf("var ACHIEVEMENTS");
+  const end = achievementsSource.indexOf("];", start) + 2;
+  assert.ok(start >= 0 && end > start, "achievements.js must still define var ACHIEVEMENTS = [...]");
+  const achievementsBlock = achievementsSource.slice(start, end);
+
+  const furnIds = Array.from(
+    achievementsBlock.matchAll(/reward:\s*\{\s*type:\s*'furn',\s*id:\s*'([^']+)'/g)
+  ).map((m) => m[1]);
+  assert.ok(furnIds.length > 0, "sanity check: ACHIEVEMENTS must contain at least one furn reward");
+
+  for (const id of furnIds) {
+    assert.ok(
+      REAL_ROOM_ITEM_IDS.has(id),
+      `ACHIEVEMENTS reward furn id "${id}" must exist in room/items.js ROOM_ITEMS catalog, otherwise room/index.html silently drops it from the inventory`
+    );
+  }
+})();
 
 // ===== common/achievements.js gate =====
 // 3段フォールバック (PonoMvpFlags有無 → PONO_MVP_NO_REWARDS有無 → PonoTier.isApp()単独判定) を
@@ -70,19 +104,29 @@ assert.match(
   "play-all.html must override the mvp-flags.js blanket hide rule for the room bottom-nav button with higher CSS specificity"
 );
 
-// ===== play-all.html: reward-granting chain (furniture -> room) app-tier unblock =====
+// ===== play-all.html: loads common/stamp-rally.js for the reward-granting chain =====
+// (Stage 1, 2026-07-16: rewardsBlocked()/checkSlotReward()/window._initStampRally were
+// extracted out of play-all.html into common/stamp-rally.js; play-all.html now just
+// includes the script tag, and stamp-rally.js reproduces the same fallback pattern.)
 assert.match(
   playAll,
+  /<script src="common\/stamp-rally\.js"><\/script>/,
+  "play-all.html must load common/stamp-rally.js, which now owns the reward-granting chain (furniture -> room)"
+);
+
+// ===== common/stamp-rally.js: reward-granting chain (furniture -> room) app-tier unblock =====
+assert.match(
+  stampRally,
   /function rewardsBlocked\(\) \{\s*\n\s*if \(window\.PonoMvpFlags && typeof window\.PonoMvpFlags\.rewardsBlocked === 'function'\) \{\s*\n\s*return window\.PonoMvpFlags\.rewardsBlocked\(\);\s*\n\s*\}\s*\n\s*return !!window\.PONO_MVP_NO_REWARDS;\s*\n\s*\}/,
-  "play-all.html must define the same rewardsBlocked() fallback pattern used elsewhere in the codebase"
+  "common/stamp-rally.js must define the same rewardsBlocked() fallback pattern used elsewhere in the codebase"
 );
 for (const marker of [
   "function checkSlotReward(total) {",
   "window._initStampRally = function() {",
 ]) {
-  const start = playAll.indexOf(marker);
-  assert.ok(start >= 0, `play-all.html must still define: ${marker}`);
-  const nextLines = playAll.slice(start, start + 400);
+  const start = stampRally.indexOf(marker);
+  assert.ok(start >= 0, `common/stamp-rally.js must still define: ${marker}`);
+  const nextLines = stampRally.slice(start, start + 400);
   assert.match(
     nextLines,
     /if \(rewardsBlocked\(\)\) return/,
@@ -172,7 +216,7 @@ runInAchievementsSandbox({ PONO_MVP_NO_REWARDS: true }, (sandbox, store) => {
   assert.equal(store.pono_unlocked_furn, undefined, "no furniture should be granted while blocked");
 });
 
-// 2) PonoMvpFlags present, app tier -> must NOT block; first_login achievement grants ach_small_chair furniture.
+// 2) PonoMvpFlags present, app tier -> must NOT block; first_login achievement grants furn_toyshelf2 furniture.
 runInAchievementsSandbox(
   { PONO_MVP_NO_REWARDS: true, PonoMvpFlags: { rewardsBlocked: () => false } },
   (sandbox, store) => {
@@ -180,8 +224,8 @@ runInAchievementsSandbox(
     assert.equal(result, 1, "app tier (rewardsBlocked()===false) must let incrementStat run normally");
     const furn = JSON.parse(store.pono_unlocked_furn || "[]");
     assert.ok(
-      furn.indexOf("ach_small_chair") !== -1,
-      "reaching the first_login achievement target on app tier must unlock ach_small_chair furniture (feeds room/index.html's inventory merge)"
+      furn.indexOf("furn_toyshelf2") !== -1,
+      "reaching the first_login achievement target on app tier must unlock furn_toyshelf2 furniture (feeds room/index.html's inventory merge)"
     );
   }
 );
@@ -235,8 +279,8 @@ runInAchievementsSandbox(
     assert.equal(result, 1, "room/index.html production shape (no PonoMvpFlags, no PONO_MVP_NO_REWARDS), app tier must let incrementStat run normally");
     const furn = JSON.parse(store.pono_unlocked_furn || "[]");
     assert.ok(
-      furn.indexOf("ach_small_chair") !== -1,
-      "app tier via PonoTier fallback must still unlock ach_small_chair furniture"
+      furn.indexOf("furn_toyshelf2") !== -1,
+      "app tier via PonoTier fallback must still unlock furn_toyshelf2 furniture"
     );
   }
 );

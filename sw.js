@@ -1,5 +1,28 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2214: スタンプカード復活 + book tier家具付与配線 + ACHIEVEMENTS配列 phantom id 修正を統合
+// (batch:1315-furniture-stamp-card-revival)。play-all.html にインライン実装されていたスタンプ
+// ラリー/スタンプカード IIFE (1482行JS + 369行CSS) を common/stamp-rally.js・common/stamp-rally.css
+// へ抽出し、common/mvp-flags.js の CSS一括非表示ルール (.stamp-rally-section 等) を
+// batch:1313 の .login-streak/.streak-banner と同じ `body:not([data-tier="app"])` スコープへ変更
+// (app tier では表示、free/bookは従来どおり非表示)。play.html (本番ハブ) の設定モーダルに
+// 「📋 スタンプカード」導線を新設 (#settingsStampBtn、isStampTierLocked/updateSettingsStampAction、
+// room ボタンと同型・app tier限定でbookは解除しない)。common/mvp-flags.js・common/achievements.js・
+// common/stamp-rally.js を common/tier.js 直後の script クラスタへ無条件追加 (stamp-rally.js の
+// rewardsBlocked() が PonoMvpFlags 有無のみを見る2段判定でmvp-flags.js未読込時にfail-openする
+// 実在バグをmvp-flags.js読込で是正)。common/achievements.js の grantPremiumBonus() が付与する
+// 家具ID (旧 ach_small_chair/ach_bookshelf) が room/items.js の ROOM_ITEMS カタログに存在しない
+// 幻のIDだったため book tier 購入者が家具を一切入手できない構造的欠落を発見・修正し、
+// common/tier.js の BOOK_ROOM_ITEM_IDS (10種) と一致させ、play.html の pwFinalizeSuccess()・
+// 初期化時・finishBookWelcome() に冪等な ensurePremiumFurnitureGranted() 呼び出しを追加
+// (既存book tier確定済みユーザーへの遡及救済含む、一発フラグの早期returnを外し内容ベースの
+// 冪等性へ修正)。あわせて common/achievements.js の ACHIEVEMENTS配列 (実績19種) が付与する
+// furn 報酬IDも同型の幻IDだったため実カタログの furn_*/deco_* id へ全19種置換し、
+// tests/room_furniture_app_tier_regression.cjs へ全furn報酬idをroom/items.jsカタログと突合する
+// 回帰チェックを追加。tests/room_furniture_book_tier_regression.cjs 新規。common/achievements.js・
+// common/stamp-rally.js・common/stamp-rally.css は play.html が common/tier.js の直後に無条件
+// <script src> で読む必須スクリプトのため CRITICAL_ASSETS_SCRIPTS へ追加 precache。
+// play.html PAGE_CACHE_VERSION と同期 (2214)。
 // v2213: みちつなぎ上部の8点表示を、一本の旅バー上でおかあさん=あか／ポノ=みどりの位置と近づき具合が分かる表示へ変更。2／4／6面の紙芝居を25／50／75%の節目として同期し、次面ではおかあさんだけ先行、8面到着で100%再会する。既存の顔画像、色以外の線幅／上下配置、reduced-motion、練習中の非表示、568×320〜1366×768とChromium／WebKit回帰を追加した (batch:1317-slide-chase-progress)。play.html PAGE_CACHE_VERSION と同期不要 (slide/index.html/テストのみ変更)。
 // v2212: なぞなぞトレイン宇宙面の最終追跡を3区間×3択の27経路と共通S字追込路へ整理。彗星86／ロケット90／ブースト410×0.6秒、1スター=192距離の計算へ統一し、約3倍の5スター遠回りが近道より速くなる配分、少数の軽い罠、走行中の彗星へ13.6〜17.25秒で追いつく全経路、ブースト連打予約と受付数、各道の秒数／スター数表示を追加した (batch:1315-nazonazo-route-balance)。play.html PAGE_CACHE_VERSION と同期不要 (nazonazo-tunnel/テストのみ変更)。
 // v2211: もじっこファーム文字書きの相棒名を、実Zen Maru Gothicでも木札のdesign y=0〜58へ固定して中央配置。Google Fonts onlineとoffline fallbackの両方でbox／glyph中心／安全余白／短横12px下限／吹き出し・ミルマル非重複を回帰固定した (batch:1315-mojikko-frame-correction)。play.html PAGE_CACHE_VERSION と同期不要 (writing-mori/index.html/テストのみ変更)。
@@ -165,7 +188,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2213;
+const CACHE_VERSION = 2214;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
@@ -206,6 +229,13 @@ const CRITICAL_ASSETS_SCRIPTS = [
   // 無条件 <script src> で読む必須スクリプト (checkDailyLogin 等)。mvp-flags.js と
   // 同じ理由で precache 対象 (asset 単位 try/catch のため未配備でも install 失敗にならない)。
   '/common/stickers.js',
+  // v2211: スタンプカード復活 (batch:1315) — play.html が common/tier.js の直後に無条件
+  // <script src> で読む必須スクリプト2本 (grantPremiumBonus/incrementStat 等の achievements.js、
+  // PonoStampRally 本体の stamp-rally.js)。stickers.js/mvp-flags.js と同じ理由で precache 対象
+  // (asset 単位 try/catch のため未配備でも install 失敗にならない)。
+  '/common/achievements.js',
+  '/common/stamp-rally.js',
+  '/common/stamp-rally.css',
   '/common/acorn-modal-shared.css',
   '/common/acorn-modal.js',
   '/common/acorn-audio.js',

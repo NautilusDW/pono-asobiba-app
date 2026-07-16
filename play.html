@@ -9808,8 +9808,11 @@
       .game-card[data-id="cooking"] .game-card__title { font-size: 32px; }
     }
   </style>
-  <!-- common/mvp-flags.js is part of the production app shell, not the preview.
-       Skip it here so the preview sandbox doesn't 404 on every reload. -->
+  <!-- batch:stamp-card-nav: スタンプカード (common/stamp-rally.js) を設定モーダルから app tier
+       限定で開けるようにしたため、common/mvp-flags.js を body 内 script クラスタ (tier.js の直後)
+       で読み込むよう変更 (旧: 「preview sandbox 404 回避のため未読込」だったが、
+       stamp-rally.js の rewardsBlocked() が PonoMvpFlags 経由の判定に依存するため必須化)。 -->
+  <link rel="stylesheet" href="common/stamp-rally.css">
 
   <!-- ごかんそう (rating) modal — common/rating-modal.{js,css} は別エージェント並列作成中。
        ファイル未配備でも tag だけ先行登録 (404 silent fallback)。 -->
@@ -10018,6 +10021,16 @@
           <span class="settings-action__text">
             <span class="settings-action__main">わたしのおうち</span>
             <span class="settings-action__sub" id="settingsRoomSub">かぐを かざりに いく</span>
+          </span>
+        </button>
+        <!-- スタンプカード (common/stamp-rally.js): app tier 限定。 ロック判定は
+             common/mvp-flags.js の rewardsBlocked() が前提とする PonoTier.isApp() と一致させる
+             (free/book はどちらもロック、 わたしのおうちと異なり book では解除しない)。 -->
+        <button class="settings-action" id="settingsStampBtn" type="button">
+          <span class="settings-action__icon" aria-hidden="true">📋</span>
+          <span class="settings-action__text">
+            <span class="settings-action__main">スタンプカード</span>
+            <span class="settings-action__sub" id="settingsStampSub">スタンプを あつめよう</span>
           </span>
         </button>
         <button class="settings-action" id="settingsProfileBtn" type="button">
@@ -11052,6 +11065,13 @@
   </script>
   <!-- v1581: 重複 <script src="common/debug-mode.js"> を削除 (L3768 で既に読込済) -->
   <script src="common/tier.js"></script>
+  <!-- batch:stamp-card-nav: スタンプカード (common/stamp-rally.js) の app tier 限定ゲート
+       (rewardsBlocked()) を成立させるため mvp-flags.js を必ず tier.js の直後で読み込む。
+       achievements.js は stamp-rally.js が参照する getAchievements/getUnlockedAchievements/
+       grantReward/incrementStat の実装元 (実績一覧モーダル・報酬付与に必要)。 -->
+  <script src="common/mvp-flags.js"></script>
+  <script src="common/achievements.js"></script>
+  <script src="common/stamp-rally.js"></script>
   <!-- ログインボーナス・シール帳 (window.checkDailyLogin 等)。 app tier 限定で発火 (下部の Login Bonus Trigger 参照)。 -->
   <script src="common/stickers.js"></script>
   <script src="js/game-stickers.js"></script>
@@ -11539,7 +11559,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2209; // sw.js CACHE_VERSION と同期 (batch:1313: わたしのおうち導線 + achievements.js fail-closed 修正)
+    const PAGE_CACHE_VERSION = 2214; // sw.js CACHE_VERSION と同期 (batch:1315: スタンプカード復活 + book tier家具付与配線 + ACHIEVEMENTS phantom id 修正)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -11548,7 +11568,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v2209'; // batch:1313: PAGE_CACHE_VERSION/sw.js CACHE_VERSION と同期
+    window.PONO_SW_VERSION = 'v2214'; // PAGE_CACHE_VERSION/sw.js CACHE_VERSION と同期
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.
@@ -15727,6 +15747,56 @@
     }
     updateSettingsRoomAction();
 
+    // スタンプカード (common/stamp-rally.js): app tier 限定機能。 わたしのおうちと違い
+    // book tier でも解除しない (common/mvp-flags.js の rewardsBlocked() が
+    // PonoTier.isApp() のみを carve-out 条件にしているのと一致させる)。
+    const settingsStampBtn = document.getElementById('settingsStampBtn');
+    const settingsStampSub = document.getElementById('settingsStampSub');
+
+    function isStampTierLocked() {
+      try {
+        if (window.PonoDebugMode && typeof window.PonoDebugMode.isAllowed === 'function' && window.PonoDebugMode.isAllowed()) return false;
+      } catch (e) {}
+      try {
+        if (window.PonoTier && typeof window.PonoTier.isApp === 'function') return !window.PonoTier.isApp();
+      } catch (e) {}
+      return true;
+    }
+
+    function updateSettingsStampAction() {
+      if (!settingsStampBtn) return;
+      const locked = isStampTierLocked();
+      settingsStampBtn.classList.toggle('tier-locked', locked);
+      settingsStampBtn.dataset.tierLocked = locked ? '1' : '0';
+      settingsStampBtn.setAttribute('aria-disabled', locked ? 'true' : 'false');
+      if (settingsStampSub) settingsStampSub.textContent = locked ? 'アプリばんで あそべるよ' : 'スタンプを あつめよう';
+      settingsStampBtn.setAttribute(
+        'aria-label',
+        locked ? 'スタンプカード アプリばんで あそべるよ' : 'スタンプカード スタンプを あつめよう'
+      );
+    }
+    if (settingsStampBtn) {
+      settingsStampBtn.addEventListener('click', () => {
+        if (isStampTierLocked()) {
+          try {
+            window.PonoTier && typeof window.PonoTier.showTierLockPromo === 'function' && window.PonoTier.showTierLockPromo({
+              freeTag: 'アプリばん げんてい',
+              freeTitle: 'スタンプカードは アプリばんだけの おたのしみだよ！',
+              freeBody: 'アプリばんを てにいれると、あそぶたびに スタンプが たまって ごほうびが もらえるよ',
+              appTag: 'アプリばん げんてい',
+              appTitle: 'スタンプカードは アプリばんだけの おたのしみだよ！',
+              appBody: 'アプリばんを てにいれると、あそぶたびに スタンプが たまって ごほうびが もらえるよ'
+            });
+          } catch (e) {}
+          return;
+        }
+        if (window.PonoStampRally && typeof window.PonoStampRally.showFullCardModal === 'function') {
+          window.PonoStampRally.showFullCardModal();
+        }
+      });
+    }
+    updateSettingsStampAction();
+
     /**
      * 成功時の success-tag / success-body コピーを mode で切替える。
      * 既存 'book' / 'debug' に加えて 'serial' / 'quiz' を追加。
@@ -15772,6 +15842,14 @@
       if (!api || typeof api.grantBookBonus !== 'function') return null;
       bookBonusStickerGrantPromise = api.grantBookBonus({ show: false }).catch(() => null);
       return bookBonusStickerGrantPromise;
+    }
+
+    // book tier 確定 (pono_premium==='1') の時だけ家具プレミアム特典を付与する。
+    // grantPremiumBonus 自体は tier 非依存の汎用関数 (app tier には呼ばない設計) で、
+    // 内部の pono_premium_bonus フラグにより多重呼び出しでも冪等。
+    function ensurePremiumFurnitureGranted() {
+      if (!isBookBenefitUnlocked()) return;
+      if (window.grantPremiumBonus) window.grantPremiumBonus();
     }
 
     // ===== v3: 「アプリで あそべる」 ゾーン誘導モーダル (feature_tier_v3 §5) =====
@@ -16088,6 +16166,7 @@
     if (settingsBookUnlockBtn) settingsBookUnlockBtn.addEventListener('click', openPasswordUnlockModal);
     updateBookUnlockEntry();
     ensureBookBonusStickersGranted();
+    ensurePremiumFurnitureGranted();
 
     // ===== v3: book welcome 演出シーケンサ (feature_tier_v3 §4.3) =====
     // LS pono_book_welcome_pending_v1 == '1' && pono_book_welcome_shown_v1 != '1' で発火。
@@ -16117,6 +16196,7 @@
       } catch (e) {}
       // skip でも grant は確定実行する (spec §4.3 「skip でも特典 grant 確定」)。
       ensureBookBonusStickersGranted();
+      ensurePremiumFurnitureGranted();
       const overlay = document.getElementById('bookWelcomeOverlay');
       if (overlay) {
         overlay.classList.remove('is-visible');
@@ -16357,6 +16437,7 @@
       if (errEl) errEl.hidden = true;
       if (method !== 'debug') {
         ensureBookBonusStickersGranted();
+        ensurePremiumFurnitureGranted();
       }
       // すべての panel を hidden に + すべての submit を非表示
       PW_TAB_IDS.forEach((id) => {
@@ -18691,6 +18772,16 @@
       if (loginResult && window.showLoginBonusPopup) {
         setTimeout(function () { window.showLoginBonusPopup(loginResult); }, 800);
       }
+    })();
+
+    // ===== Daily Stamp Rally Trigger (app tier limited) =====
+    // スタンプカード (common/stamp-rally.js) も app tier 以外では一切発火しない (Login Bonus Trigger と同じパターン)。
+    // デイリーラリー (pono_daily_rally、 今日の2ゲームクリアでボーナススタンプ) の判定・
+    // 新規スタンプ演出はここで initStampRally() (= 旧 _initStampRally) を app tier 限定で起動する。
+    (function () {
+      if (!(window.PonoTier && typeof window.PonoTier.isApp === 'function' && window.PonoTier.isApp())) return;
+      if (!window.PonoStampRally || typeof window.PonoStampRally.initStampRally !== 'function') return;
+      window.PonoStampRally.initStampRally();
     })();
 
     // ===== (v2049 削除) First-visit SW catch-up overlay =====
