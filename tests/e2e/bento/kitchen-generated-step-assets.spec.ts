@@ -95,12 +95,39 @@ test('kitchen layout editor targets develop-app and exposes the new ingredient s
     return {
       actualStart: state?.current?.chopMechanics?.startX_pct,
       actualEnd: state?.current?.chopMechanics?.endX_pct,
-      expectedStart: 78 + 100 * (startTx + 12) / width,
-      expectedEnd: 24 + 100 * (endTx + 12) / width,
+      expectedStart: 87 + 100 * (startTx + 12) / width,
+      expectedEnd: 13 + 100 * (endTx + 12) / width,
     };
   });
   expect(markerAlignment.actualStart).toBeCloseTo(markerAlignment.expectedStart, 3);
   expect(markerAlignment.actualEnd).toBeCloseTo(markerAlignment.expectedEnd, 3);
+
+  await page.evaluate(() => document.body.classList.add('layout-editor-on'));
+  await page.waitForTimeout(120);
+  const visibleStartX = await page.locator('#startX-marker').evaluate((element: HTMLElement) => {
+    const rect = element.getBoundingClientRect();
+    const board = document.querySelector<HTMLElement>('#cutting-board')!.getBoundingClientRect();
+    return {
+      pct: ((rect.left + rect.width / 2 - board.left) / board.width) * 100,
+      left: element.style.left,
+      transform: element.style.transform,
+      rectLeft: rect.left,
+      rectWidth: rect.width,
+      boardLeft: board.left,
+      boardWidth: board.width,
+      boardOffsetWidth: document.querySelector<HTMLElement>('#cutting-board')!.offsetWidth,
+    };
+  });
+  await page.evaluate(() => document.body.classList.remove('layout-editor-on'));
+  await page.waitForTimeout(120);
+  await page.locator('#cutting-board').press('Enter');
+  await page.waitForTimeout(115);
+  const firstBladeX = await page.locator('#knife').evaluate((element: HTMLElement) => {
+    const rect = element.getBoundingClientRect();
+    const board = document.querySelector<HTMLElement>('#cutting-board')!.getBoundingClientRect();
+    return ((rect.left + rect.width * 0.108 - board.left) / board.width) * 100;
+  });
+  expect(Math.abs(firstBladeX - visibleStartX.pct)).toBeLessThan(0.3);
 });
 
 test('all newly added cutting and fruit assets are available', async ({ request }) => {
