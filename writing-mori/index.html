@@ -4259,6 +4259,8 @@ body #ach-next-hint.show {
    message, writing and stroke-order surfaces each use a dedicated carved
    corner master. Every source remains a zero-layout 9-slice border image;
    per-source slice/width calibration keeps the visible wood rail consistent.
+   A same-host rounded white underlay sits behind each special image so a
+   transparent raster hairline cannot reveal the yard at the slice boundary.
    Inner labels and chooser quadrants stay unframed to avoid card-in-card UI.
    -------------------------------------------------------------------------- */
 
@@ -4299,12 +4301,16 @@ body #ach-next-hint {
   border-image-source: var(--story-frame-task) !important;
   border-image-slice: 242 fill !important;
   border-image-width: var(--story-frame-task-box) !important;
+  border-radius: var(--story-frame-task-box) !important;
+  background-color: #fdfcfb !important;
 }
 
 .companion-card {
   border-image-source: var(--story-frame-milmaru) !important;
   border-image-slice: 230 fill !important;
   border-image-width: var(--story-frame-milmaru-box) !important;
+  border-radius: var(--story-frame-milmaru-box) !important;
+  background-color: #fdfcfb !important;
 }
 
 .prompt-bar,
@@ -4312,6 +4318,8 @@ body #ach-next-hint {
   border-image-source: var(--story-frame-message) !important;
   border-image-slice: 139 fill !important;
   border-image-width: var(--story-frame-message-box) !important;
+  border-radius: var(--story-frame-message-box) !important;
+  background-color: #fdfcfb !important;
   box-sizing: border-box;
   padding-inline: 52px !important;
 }
@@ -4320,12 +4328,16 @@ body #ach-next-hint {
   border-image-source: var(--story-frame-writing) !important;
   border-image-slice: 230 fill !important;
   border-image-width: var(--story-frame-writing-box) !important;
+  border-radius: var(--story-frame-writing-box) !important;
+  background-color: #fdfcfb !important;
 }
 
 .stroke-panel {
   border-image-source: var(--story-frame-stroke) !important;
   border-image-slice: 240 fill !important;
   border-image-width: var(--story-frame-stroke-box) !important;
+  border-radius: var(--story-frame-stroke-box) !important;
+  background-color: #fdfcfb !important;
 }
 
 .writing-board::before,

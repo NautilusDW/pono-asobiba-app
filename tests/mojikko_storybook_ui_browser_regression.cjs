@@ -65,6 +65,14 @@ const surfaceFrameRoles = Object.freeze({
   care: 'generic',
   retry: 'generic'
 });
+const specialUnderlaySurfaceRoles = Object.freeze({
+  characters: 'task',
+  companion: 'milmaru',
+  strokes: 'stroke',
+  prompt: 'message',
+  message: 'message',
+  board: 'writing'
+});
 const milmaruVisualStates = Object.freeze([
   {
     id: 'egg',
@@ -263,6 +271,145 @@ async function assertNoWhiteCornerRectangles(screenshot, rects, label) {
       assert.ok(coverage < 0.98, `${label}:${name}: corner ${cornerIndex + 1} retained a uniform CSS-paper rectangle (${coverage})`);
     }
   }
+}
+
+async function auditSpecialFramePaperUnderlay(page, surfaces, stageScale, usesShortLandscapeFrame, label) {
+  const override = await page.addStyleTag({ content: `
+    .character-panel,
+    .companion-card,
+    .prompt-bar,
+    .message-box,
+    .writing-board,
+    .stroke-panel {
+      background-color: transparent !important;
+    }
+  ` });
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  const beforeBuffer = await page.screenshot({ animations: 'disabled' });
+  await override.evaluate((element) => element.remove());
+  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  const afterBuffer = await page.screenshot({ animations: 'disabled' });
+  const before = await sharp(beforeBuffer).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  const after = await sharp(afterBuffer).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  assert.deepEqual(
+    [before.info.width, before.info.height, before.info.channels],
+    [after.info.width, after.info.height, after.info.channels],
+    `${label}: underlay A/B screenshots changed geometry`
+  );
+
+  const clamp = (value, minimum, maximum) => Math.max(minimum, Math.min(maximum, value));
+  const pixel = (image, x, y) => {
+    const cx = clamp(Math.round(x), 0, image.info.width - 1);
+    const cy = clamp(Math.round(y), 0, image.info.height - 1);
+    const index = (cy * image.info.width + cx) * image.info.channels;
+    return [image.data[index], image.data[index + 1], image.data[index + 2]];
+  };
+  const rgbDiff = (first, second) => (
+    Math.abs(first[0] - second[0]) + Math.abs(first[1] - second[1]) + Math.abs(first[2] - second[2])
+  ) / 3;
+  const isPaper = ([red, green, blue]) => (
+    Math.min(red, green, blue) >= 225
+    && Math.max(red, green, blue) - Math.min(red, green, blue) <= 22
+  );
+  const isYard = ([red, green, blue]) => (
+    Math.max(red, green, blue) - Math.min(red, green, blue) >= 20
+    && Math.min(red, green, blue) < 225
+    && (green >= red + 8 || blue >= red + 8)
+  );
+
+  const report = {};
+  for (const [name, surface] of Object.entries(surfaces)) {
+    const calibration = frameCalibrations[surface.role];
+    const cssWidth = usesShortLandscapeFrame ? calibration.shortWidth : calibration.normalWidth;
+    const radius = cssWidth * stageScale;
+    const { rect } = surface;
+    const margin = Math.max(3, Math.min(radius + 3, Math.min(rect.width, rect.height) / 2 - 2));
+    const sides = [
+      {
+        orientation: 'vertical',
+        coordinate: rect.left + radius,
+        from: rect.top + margin,
+        to: rect.bottom - margin,
+        reference: (x, y) => [x + 4, y]
+      },
+      {
+        orientation: 'vertical',
+        coordinate: rect.right - radius,
+        from: rect.top + margin,
+        to: rect.bottom - margin,
+        reference: (x, y) => [x - 4, y]
+      },
+      {
+        orientation: 'horizontal',
+        coordinate: rect.top + radius,
+        from: rect.left + margin,
+        to: rect.right - margin,
+        reference: (x, y) => [x, y + 4]
+      },
+      {
+        orientation: 'horizontal',
+        coordinate: rect.bottom - radius,
+        from: rect.left + margin,
+        to: rect.right - margin,
+        reference: (x, y) => [x, y - 4]
+      }
+    ];
+    const repairedPaperContrasts = [];
+    let repairedPixels = 0;
+    let yardPixelsAfter = 0;
+    for (const side of sides) {
+      for (let delta = -2; delta <= 2; delta += 1) {
+        const cross = Math.round(side.coordinate) + delta;
+        for (let along = Math.ceil(side.from); along <= Math.floor(side.to); along += 1) {
+          const x = side.orientation === 'vertical' ? cross : along;
+          const y = side.orientation === 'vertical' ? along : cross;
+          const [referenceX, referenceY] = side.reference(x, y);
+          const beforeLine = pixel(before, x, y);
+          const afterLine = pixel(after, x, y);
+          if (rgbDiff(beforeLine, afterLine) <= 2) continue;
+          repairedPixels += 1;
+          if (isYard(afterLine)) yardPixelsAfter += 1;
+          const afterPaper = pixel(after, referenceX, referenceY);
+          if (isPaper(afterLine) && isPaper(afterPaper)) {
+            repairedPaperContrasts.push(rgbDiff(afterLine, afterPaper));
+          }
+        }
+      }
+    }
+
+    let outerCornerPixels = 0;
+    let outerCornerChanges = 0;
+    const corners = [
+      { xFrom: rect.left, xTo: rect.left + radius, yFrom: rect.top, yTo: rect.top + radius, cx: rect.left + radius, cy: rect.top + radius },
+      { xFrom: rect.right - radius, xTo: rect.right, yFrom: rect.top, yTo: rect.top + radius, cx: rect.right - radius, cy: rect.top + radius },
+      { xFrom: rect.left, xTo: rect.left + radius, yFrom: rect.bottom - radius, yTo: rect.bottom, cx: rect.left + radius, cy: rect.bottom - radius },
+      { xFrom: rect.right - radius, xTo: rect.right, yFrom: rect.bottom - radius, yTo: rect.bottom, cx: rect.right - radius, cy: rect.bottom - radius }
+    ];
+    for (const corner of corners) {
+      for (let y = Math.ceil(corner.yFrom); y < Math.floor(corner.yTo); y += 1) {
+        for (let x = Math.ceil(corner.xFrom); x < Math.floor(corner.xTo); x += 1) {
+          if (Math.hypot(x - corner.cx, y - corner.cy) <= radius + 1.25) continue;
+          outerCornerPixels += 1;
+          if (rgbDiff(pixel(before, x, y), pixel(after, x, y)) > 1) outerCornerChanges += 1;
+        }
+      }
+    }
+
+    const adjacentPaperDifference = repairedPaperContrasts.length
+      ? repairedPaperContrasts.reduce((sum, value) => sum + value, 0) / repairedPaperContrasts.length
+      : 0;
+    if (usesShortLandscapeFrame) {
+      assert.ok(repairedPixels > 0, `${label}:${name}: controlled A/B found no transparent slice pixels to back`);
+    }
+    assert.ok(
+      adjacentPaperDifference <= 3,
+      `${label}:${name}: repaired seam differs from adjacent paper by ${adjacentPaperDifference.toFixed(2)} RGB levels`
+    );
+    assert.equal(yardPixelsAfter, 0, `${label}:${name}: yard color still shows through the repaired slice hairline`);
+    assert.equal(outerCornerChanges, 0, `${label}:${name}: rounded same-host underlay leaked into an outer transparent corner`);
+    report[name] = { repairedPixels, adjacentPaperDifference, yardPixelsAfter, outerCornerPixels, outerCornerChanges };
+  }
+  return report;
 }
 
 async function auditCompanionFallbackLayout(browser, base) {
@@ -630,6 +777,7 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
             borderImageWidth: style.borderImageWidth,
             borderImageOutset: style.borderImageOutset,
             borderImageRepeat: style.borderImageRepeat,
+            borderRadius: style.borderRadius,
             borderWidths: [style.borderTopWidth, style.borderRightWidth, style.borderBottomWidth, style.borderLeftWidth],
             boxShadow: style.boxShadow,
             filter: style.filter,
@@ -805,6 +953,13 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
           frameCornerRects: Object.fromEntries(
             Object.entries(cornerSelectors).map(([name, selector]) => [name, compactRect(document.querySelector(selector).getBoundingClientRect())])
           ),
+          specialUnderlayRects: Object.fromEntries([
+            ['characters', '.character-panel', 'task'],
+            ['companion', '#companionCard', 'milmaru'],
+            ['prompt', '#promptText', 'message'],
+            ['board', '#writingBoard', 'writing'],
+            ['strokes', '.stroke-panel', 'stroke']
+          ].map(([name, selector, role]) => [name, { role, rect: rectOf(selector) }])),
           companionArt: getComputedStyle(document.querySelector('.pixel-creature')).backgroundImage,
           companionArtDisplay: getComputedStyle(document.querySelector('.pixel-creature')).display,
           rects: Object.fromEntries([
@@ -892,7 +1047,13 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
         assert.equal(surface.borderImageOutset, '0', `${viewport.name}:${surface.name} frame changed geometry`);
         assert.equal(surface.borderImageRepeat, 'stretch', `${viewport.name}:${surface.name} paper gained tiled seams`);
         assert.deepEqual(surface.borderWidths, ['0px', '0px', '0px', '0px'], `${viewport.name}:${surface.name} retained a CSS border`);
-        assert.equal(surface.backgroundColor, 'rgba(0, 0, 0, 0)', `${viewport.name}:${surface.name} retained a CSS paper layer`);
+        if (specialUnderlaySurfaceRoles[surface.name]) {
+          assert.equal(surface.backgroundColor, 'rgb(253, 252, 251)', `${viewport.name}:${surface.name} lost its seam-blocking paper underlay`);
+          assert.equal(surface.borderRadius, expectedFrameBox, `${viewport.name}:${surface.name} underlay lost its outer-corner clip`);
+        } else {
+          assert.equal(surface.backgroundColor, 'rgba(0, 0, 0, 0)', `${viewport.name}:${surface.name} retained a CSS paper layer`);
+          assert.equal(surface.borderRadius, '0px', `${viewport.name}:${surface.name} gained an unrelated rounded CSS layer`);
+        }
         assert.equal(surface.backgroundImage, 'none', `${viewport.name}:${surface.name} retained a whole-image frame`);
         assert.equal(surface.boxShadow, 'none', `${viewport.name}:${surface.name} retained a rectangular CSS shadow`);
       }
@@ -912,6 +1073,12 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
         initial.writingBoardLayers.board.borderImageWidth,
         `${usesShortLandscapeFrame ? frameCalibrations.writing.shortWidth : frameCalibrations.writing.normalWidth}px`,
         `${viewport.name}: writing board rail width drifted`
+      );
+      assert.equal(initial.writingBoardLayers.board.backgroundColor, 'rgb(253, 252, 251)', `${viewport.name}: writing board seam underlay disappeared`);
+      assert.equal(
+        initial.writingBoardLayers.board.borderRadius,
+        `${usesShortLandscapeFrame ? frameCalibrations.writing.shortWidth : frameCalibrations.writing.normalWidth}px`,
+        `${viewport.name}: writing board underlay outer clip drifted`
       );
       assert.equal(initial.writingBoardLayers.board.backgroundImage, 'none', `${viewport.name}: board host retained a whole image`);
       assert.equal(initial.writingBoardLayers.frame.content, 'none', `${viewport.name}: old writing pseudo-frame returned`);
@@ -992,7 +1159,15 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
       }
       assert.ok(Math.abs(initial.rects.settings.width / initial.rects.settings.height - 1) < 0.001, `${viewport.name}: canonical settings is not square`);
       assert.ok(initial.visibleImages.every((image) => image.complete && image.width > 0), `${viewport.name}: visible image failed to decode`);
-      await assertNoWhiteCornerRectangles(await page.screenshot(), initial.frameCornerRects, `${viewport.name}:main`);
+      const initialScreenshot = await page.screenshot();
+      await assertNoWhiteCornerRectangles(initialScreenshot, initial.frameCornerRects, `${viewport.name}:main`);
+      await auditSpecialFramePaperUnderlay(
+        page,
+        initial.specialUnderlayRects,
+        initial.stageScale,
+        usesShortLandscapeFrame,
+        `${viewport.name}:main`
+      );
       [
         'yard_background_wide_v2.png',
         ...Object.values(framePaths).map((source) => path.basename(source)),

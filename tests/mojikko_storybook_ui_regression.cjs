@@ -271,6 +271,16 @@ for (const [start, end, sourceVariable, slice, widthVariable] of roleFrameRules)
   assert.match(rule, new RegExp(`border-image-source:\\s*var\\(${sourceVariable}\\) !important;`));
   assert.match(rule, new RegExp(`border-image-slice:\\s*${slice.replace(' ', '\\s+')} !important;`));
   assert.match(rule, new RegExp(`border-image-width:\\s*var\\(${widthVariable}\\) !important;`));
+  assert.match(
+    rule,
+    new RegExp(`border-radius:\\s*var\\(${widthVariable}\\) !important;`),
+    `${sourceVariable}: same-host paper underlay lost its rounded outer clip`
+  );
+  assert.match(
+    rule,
+    /background-color:\s*#fdfcfb !important;/,
+    `${sourceVariable}: transparent slice hairline is no longer backed by white paper`
+  );
 }
 const messageFrameRule = between(ornateFrameCss, '.prompt-bar,', '.writing-board {');
 assert.match(messageFrameRule, /box-sizing:\s*border-box;/);
