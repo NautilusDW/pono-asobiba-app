@@ -564,8 +564,8 @@ const ROOM_ITEMS = [
     id: 'furn_bed_blue_boy', cat: 'furn', name: 'あおいベッド', theme: 'boy',
     roomImg: '../assets/images/Rooms/furnitures_final/furn_bed_blue_boy_A.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/furn_bed_blue_boy_B.png',
-    gridRow: 4, gridCol: 4, cellSize: 2.1, footprintSize: 2, pivotX: 10.5, pivotY: 11.9, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
-    angleB: { cellSize: 2.1, footprintSize: 2, pivotX: -12, pivotY: 11.9, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7                },
+    gridRow: 4, gridCol: 4, cellSize: 2.1, footprintSize: 2, pivotX: 10.5, pivotY: 11.9, minRow: 2, maxRow: 7, minCol: 1, maxCol: 7,
+    angleB: { cellSize: 2.1, footprintSize: 2, pivotX: -12, pivotY: 11.9, minRow: 1, maxRow: 7, minCol: 2, maxCol: 7                },
   },
   {
     id: 'furn_bookshelf_blue_boy', cat: 'furn', name: 'あおいほんだな', theme: 'boy',
