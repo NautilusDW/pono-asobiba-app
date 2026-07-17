@@ -29,6 +29,10 @@ for (const viewport of viewports) {
     const carousel = page.locator('#ingredient-bar');
     const rows = carousel.locator('.ingredient-carousel-row');
     const cards = carousel.locator('.ingredient-btn');
+    const stageBox = await page.locator('.select-stage').boundingBox();
+    expect(stageBox).not.toBeNull();
+    expect(stageBox!.width / stageBox!.height).toBeGreaterThan(1.55);
+    expect(stageBox!.width / stageBox!.height).toBeLessThan(1.65);
     await expect(rows).not.toHaveCount(0);
     expect(await rows.count()).toBeGreaterThan(3);
     expect(await cards.count()).toBeGreaterThan(9);
@@ -38,6 +42,8 @@ for (const viewport of viewports) {
     expect(firstNames).toHaveLength(3);
     expect(firstNames.every((name) => name.trim().length > 0)).toBeTruthy();
     await expect(rows.first().locator('.ingredient-name').first()).toBeVisible();
+    const artWidth = await rows.first().locator('.ingredient-art').first().evaluate((element) => element.getBoundingClientRect().width);
+    expect(artWidth).toBeLessThanOrEqual(121);
 
     const backdropFilter = await page.locator('.select-stage').evaluate((element) => getComputedStyle(element, '::before').filter);
     expect(backdropFilter).toContain('blur(4px)');
