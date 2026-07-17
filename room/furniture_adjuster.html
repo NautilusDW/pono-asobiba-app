@@ -37,6 +37,16 @@ body{font-family:sans-serif;background:#1a1a2e;color:#eee;display:flex;height:10
 #controls{width:360px;overflow-y:auto;background:#16213e;padding:12px;display:flex;flex-direction:column;gap:8px}
 #controls h2{font-size:14px;color:#ffd700;border-bottom:1px solid #333;padding-bottom:4px;margin:0}
 #item-list{max-height:none;overflow-y:visible;display:flex;flex-wrap:wrap;gap:3px}
+.pending-items-section{background:#3a2d12;border:2px solid #ffb300;border-radius:10px;padding:9px;box-shadow:0 0 0 1px rgba(255,179,0,.18) inset}
+.pending-items-header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px}
+.pending-items-title{color:#ffd54f;font-size:13px;font-weight:900}
+.pending-items-count{background:#ffb300;color:#1a1a2e;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:900}
+.pending-items-help{color:#d7c59a;font-size:10px;line-height:1.45;margin-bottom:7px}
+.pending-items-status{color:#ffe0a3;font-size:11px;line-height:1.4;padding:7px;border:1px dashed rgba(255,213,79,.45);border-radius:6px}
+#pending-item-list{display:flex;flex-wrap:wrap;gap:5px}
+#pending-item-list .item-btn{width:62px;height:62px;border-color:#ffb300!important;background:#211b10;box-shadow:0 0 0 2px rgba(255,179,0,.2)}
+#pending-item-list .item-btn::after{content:'NEW';position:absolute;top:1px;right:1px;background:#ffb300;color:#1a1a2e;border-radius:5px;padding:1px 3px;font-size:7px;font-weight:900;line-height:1.2}
+#pending-item-list .item-btn{position:relative}
 .item-btn{width:52px;height:52px;border:2px solid #444;border-radius:8px;cursor:pointer;background:#222;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:2px}
 .item-btn img{max-width:100%;max-height:100%;object-fit:contain}
 .item-btn.active{border-color:#ffd700}
@@ -211,6 +221,16 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
   </details>
 
   <div id="unsaved-banner">⚠️ <span id="unsaved-banner-text">未保存</span></div>
+  <section id="pending-items-section" class="pending-items-section" aria-labelledby="pending-items-title">
+    <div class="pending-items-header">
+      <div id="pending-items-title" class="pending-items-title">🆕 未調整家具</div>
+      <div id="pending-items-count" class="pending-items-count">確認中</div>
+    </div>
+    <div class="pending-items-help">新しく追加された画像です。選択して表示名・サイズ・A/Bピボット・配置範囲を調整してください。</div>
+    <div id="pending-items-status" class="pending-items-status" role="status">GitHubの家具画像を確認しています…</div>
+    <div id="pending-item-list" aria-label="未調整家具の一覧"></div>
+  </section>
+  <h2 style="margin-top:4px">登録済み家具</h2>
   <div id="item-list"></div>
 
   <div class="section" id="selected-info" style="display:none">
@@ -763,6 +783,7 @@ document.addEventListener('keydown', function(e) {
 
 // Build item list
 const listEl = document.getElementById('item-list');
+const pendingListEl = document.getElementById('pending-item-list');
 ITEMS.forEach(item => {
   const btn = document.createElement('div');
   btn.className = 'item-btn' + (item.roomImgB ? ' has-b' : '');
@@ -2567,6 +2588,16 @@ function refreshUnsavedBanner() {
   refreshAllUnsavedIndicators();
 }
 
+function setPendingDiscoveryStatus(state, count, detail) {
+  var status = document.getElementById('pending-items-status');
+  var countEl = document.getElementById('pending-items-count');
+  if (!status || !countEl) return;
+  countEl.textContent = state === 'ready' ? count + '件' : (state === 'empty' ? '0件' : '要確認');
+  status.style.display = state === 'ready' ? 'none' : '';
+  status.textContent = detail || '';
+  status.style.color = state === 'error' ? '#ffab91' : '#ffe0a3';
+}
+
 // ページ離脱時の警告
 window.addEventListener('beforeunload', function(e) {
   if (getUnsavedItems().length > 0) {
@@ -2582,7 +2613,10 @@ window.addEventListener('beforeunload', function(e) {
 //   として ITEMS に追加する。これで Clean Edge Studio で画像をアップロードして
 //   git pull / Netlify ビルドが終わっていれば、ピボットツールに自動で出現する。
 async function discoverPendingImports() {
-  if (typeof ghToken !== 'function' || !ghToken()) return; // PAT 未設定なら諦める
+  if (typeof ghToken !== 'function' || !ghToken()) {
+    setPendingDiscoveryStatus('error', 0, '管理画面でGitHubトークンを設定すると、新しい家具を自動検出できます。');
+    return;
+  }
   var url = '/api/gh/repos/' + GH_OWNER + '/' + GH_REPO +
             '/contents/assets/images/Rooms/furnitures_final?ref=' + GH_BRANCH +
             '&_=' + Date.now();
@@ -2599,6 +2633,7 @@ async function discoverPendingImports() {
         sb.textContent = '⚠ Discovery 失敗: ' + msg + ' (未調整インポートが検出できません)';
         sb.style.color = '#FFB74D';
       }
+      setPendingDiscoveryStatus('error', 0, '未調整家具の検出に失敗しました: ' + msg);
       return;
     }
     var files = await resp.json();
@@ -2678,9 +2713,13 @@ async function discoverPendingImports() {
     });
     if (added > 0) {
       console.info('[discoverPendingImports] GitHub から未調整 ' + added + ' 件を発見');
+      setPendingDiscoveryStatus('ready', added, '');
+    } else {
+      setPendingDiscoveryStatus('empty', 0, '未調整家具はありません。');
     }
   } catch (e) {
     console.warn('[discoverPendingImports] failed:', e);
+    setPendingDiscoveryStatus('error', 0, '未調整家具の検出中にエラーが発生しました。通信状態を確認してください。');
   }
 }
 
@@ -2741,7 +2780,7 @@ function ensureItemButton(imp) {
   btn.appendChild(img);
   // dataset.id から最新IDを取得 + Ctrl/Cmd+クリックで multi-select
   btn.onclick = function(e) { _onItemBtnClick(e, this.dataset.id); };
-  listEl.appendChild(btn);
+  (imp._discovered && pendingListEl ? pendingListEl : listEl).appendChild(btn);
 }
 
 // ─── Auto-naming dictionary (built from existing items.js patterns) ───
