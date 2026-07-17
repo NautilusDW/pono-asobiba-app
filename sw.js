@@ -1,5 +1,8 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2266: トントンキッチンの材料選択を、暗くぼかした冷蔵庫背景上の3枚1段
+// 縦スワイプカルーセルへ変更。素材名を白いかな名札で常時読みやすくした
+// (batch:1344-kitchen-ingredient-vertical-carousel)。play.html同期不要。
 // v2265: もじっこファーム文字書きを白紙面の木枠6種へ刷新。汎用枠に加え、
 // 文字リスト／ミルマル／メッセージ／書字盤／書き順へ葉・芽・どんぐり等の
 // 専用corner彫刻を割り当て、個別9-slice補正で直線レールを約6pxへ統一。
@@ -458,7 +461,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2265;
+const CACHE_VERSION = 2266;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
