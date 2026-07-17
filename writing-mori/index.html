@@ -105,22 +105,8 @@
   --round-font: 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', sans-serif;
   --moji-font: 'Yu Mincho', 'Hiragino Mincho ProN', 'Hiragino Mincho Pro', serif;
   --story-yard-bg: url('../assets/images/mojikko/care/yard_background_wide_v2.png');
-  --story-frame-board: url('../assets/images/mojikko/writing/storybook/frame-family/01_mojikko_unified_board_frame.png');
-  --story-frame-character: url('../assets/images/mojikko/writing/storybook/frame-family/02_mojikko_character_list_frame.png');
-  --story-frame-companion: url('../assets/images/mojikko/writing/storybook/frame-family/03_mojikko_companion_frame.png');
-  --story-frame-stroke: url('../assets/images/mojikko/writing/storybook/frame-family/04_mojikko_stroke_order_frame.png');
-  --story-frame-prompt: url('../assets/images/mojikko/writing/storybook/frame-family/05_mojikko_message_frame.png');
-  --story-frame-chooser: url('../assets/images/mojikko/writing/storybook/frame-family/06_mojikko_mode_chooser_base.png');
-  --story-frame-result: url('../assets/images/mojikko/writing/storybook/frame-family/07_mojikko_result_frame.png');
-  --story-button-secondary: url('../assets/images/mojikko/writing/storybook/frame-family/10_mojikko_secondary_button_normal.png');
-  --story-button-primary: url('../assets/images/mojikko/writing/storybook/frame-family/11_mojikko_primary_button_normal.png');
-  --story-star-counter: url('../assets/images/mojikko/writing/storybook/frame-family/12_mojikko_star_counter_regular.png');
-  --story-star-counter-short: url('../assets/images/mojikko/writing/storybook/frame-family/12_mojikko_star_counter_short.png');
-  --story-settings: url('../assets/images/mojikko/writing/storybook/frame-family/13_mojikko_settings_button_normal.png');
-  --story-kana-tab: url('../assets/images/mojikko/writing/storybook/frame-family/14_mojikko_kana_tab_main_normal.png');
-  --story-kana-tab-short: url('../assets/images/mojikko/writing/storybook/frame-family/14_mojikko_kana_tab_short_normal.png');
-  --story-char-tile: url('../assets/images/mojikko/writing/storybook/frame-family/15_mojikko_character_tile_main_normal.png');
-  --story-char-tile-short: url('../assets/images/mojikko/writing/storybook/frame-family/15_mojikko_character_tile_short_normal.png');
+  --story-frame-master: url('../assets/images/mojikko/writing/storybook/settings-gauge-family/mojikko_settings_gauge_frame_master.png');
+  --story-frame-box: 9px;
   --story-star: url('../assets/images/quizland/quizland_difficulty_star_gold_gpt_image2_20260623.png');
   --story-cookie: url('../assets/images/Bento_parts/cookie.webp');
   --story-gohan: url('../assets/images/nazonazo-tunnel/quiz-art/quiz_onigiri_20260714.webp');
@@ -4256,6 +4242,182 @@ body #ach-next-hint.show {
     font-size: 13px;
   }
 }
+
+/* --------------------------------------------------------------------------
+   Settings-gauge universal frame family (batch:1328c)
+   One sliced master supplies every outer gameplay surface. The real border
+   stays zero-width, so the rail never changes hit boxes or writer geometry.
+   Inner labels and chooser quadrants stay unframed to avoid card-in-card UI.
+   -------------------------------------------------------------------------- */
+
+.character-panel,
+.companion-card,
+.stroke-panel,
+.prompt-bar,
+.message-box,
+.writing-board,
+.star-box,
+#modeSwitchBtn,
+#resetBtn,
+#doneBtn,
+#careBtn,
+#modalRetryBtn,
+.kana-tab,
+.char-button,
+.word-clue-cell.blank,
+.daily-clue-cell,
+.settings-popover,
+.mode-choice-card,
+.result-card,
+body #ach-next-hint {
+  border: 0 solid transparent !important;
+  border-radius: 0 !important;
+  border-image-source: var(--story-frame-master) !important;
+  border-image-slice: 47 fill !important;
+  border-image-width: var(--story-frame-box) !important;
+  border-image-outset: 0 !important;
+  border-image-repeat: stretch !important;
+  background: none !important;
+  background-color: transparent !important;
+  box-shadow: none !important;
+  image-rendering: auto;
+}
+
+.writing-board::before,
+.writing-board::after {
+  content: none !important;
+  display: none !important;
+  background: none !important;
+  border: 0 !important;
+  border-image: none !important;
+  box-shadow: none !important;
+}
+
+.star-box {
+  padding: 8px 20px;
+  gap: 9px;
+}
+
+.star-icon {
+  display: block;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  background: var(--story-star) center / contain no-repeat;
+}
+
+.settings-menu-item {
+  border: 0 !important;
+  border-image: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.settings-menu-item:hover,
+.settings-menu-item:focus-visible {
+  background: rgba(255, 239, 183, 0.68) !important;
+}
+
+.mode-choice-buttons {
+  inset: var(--story-frame-box);
+}
+
+.mode-choice-button,
+.mode-choice-button.active,
+.mode-choice-close {
+  border: 0 solid transparent !important;
+  border-image: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.mode-choice-button:nth-child(odd) {
+  border-right: 1px solid rgba(130, 91, 49, 0.34) !important;
+}
+
+.mode-choice-button:nth-child(-n + 2) {
+  border-bottom: 1px solid rgba(130, 91, 49, 0.34) !important;
+}
+
+.mode-choice-button::before,
+.mode-choice-button:nth-child(1)::before,
+.mode-choice-button:nth-child(2)::before,
+.mode-choice-button:nth-child(3)::before,
+.mode-choice-button:nth-child(4)::before {
+  inset: 1px !important;
+  border-radius: 0 !important;
+}
+
+.kana-tab::before,
+.char-button::before {
+  inset: var(--story-frame-box) !important;
+  border-radius: 8px !important;
+}
+
+.panel-title,
+.current-mode-name,
+.companion-speech,
+.reward-box,
+.reward-large,
+.stroke-card,
+.stroke-card.current,
+.stroke-card.done,
+.stroke-preview,
+.stroke-mini svg,
+.mode-progress-count {
+  background-color: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+.word-clue-cell.blank::before,
+.daily-clue-cell::before {
+  content: '';
+  position: absolute;
+  inset: var(--story-frame-box);
+  z-index: 0;
+  pointer-events: none;
+  background: transparent;
+}
+
+.word-clue-cell.blank {
+  position: relative;
+  overflow: hidden;
+}
+
+.word-clue-cell.blank::before,
+.daily-clue-cell.current::before {
+  background: rgba(247, 217, 142, 0.48);
+}
+
+.daily-clue-cell.done::before {
+  background: rgba(191, 222, 173, 0.55);
+}
+
+.word-clue-cell.blank > *,
+.daily-clue-cell > * {
+  position: relative;
+  z-index: 1;
+}
+
+@media (max-height: 500px) and (orientation: landscape) {
+  :root {
+    --story-frame-box: 13px;
+  }
+
+  .star-box {
+    padding: 10px 22px;
+    gap: 10px;
+  }
+
+  .star-icon {
+    width: 54px;
+    height: 54px;
+    flex-basis: 54px;
+  }
+}
 </style>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
@@ -4279,6 +4441,7 @@ body #ach-next-hint.show {
       </button>
       <div class="header-right">
         <div class="pixel-panel star-box" aria-label="スター">
+          <span class="star-icon" aria-hidden="true"></span>
           <span id="starCount">0</span>
         </div>
         <div class="writing-settings" id="writingSettings">
