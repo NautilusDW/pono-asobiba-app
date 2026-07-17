@@ -27,6 +27,7 @@ test('broccoli is prepped first, then boils with particles on the stove', async 
   await page.locator('#workshop-scene').press('Enter');
   await page.waitForTimeout(450);
   await expect(page.locator('#workshop-boil-game')).toHaveClass(/is-heat-on/);
+  await expect(page.locator('.workshop-boil-flame')).toHaveCSS('opacity', '1');
   await expect(page.locator('#workshop-instruction')).toHaveText('しおを いれよう');
   await expect(page.locator('#workshop-boil-salt')).toHaveAttribute('src', /salt_shaker_still\.png/);
   const sceneBox = await page.locator('#workshop-scene').boundingBox();
@@ -49,12 +50,18 @@ test('broccoli is prepped first, then boils with particles on the stove', async 
   const boilSceneBounds = await page.locator('#workshop-scene').boundingBox();
   const potBounds = await page.locator('#workshop-boil-pot').boundingBox();
   const plateBounds = await page.locator('.workshop-boil-plate').boundingBox();
+  const waterBounds = await page.locator('#workshop-boil-water-mask').boundingBox();
+  const rippleRatio = await page.locator('.workshop-boil-bubbles').evaluate((element) => {
+    const style = getComputedStyle(element, '::before');
+    return parseFloat(style.width) / parseFloat(style.height);
+  });
   const bankBounds = await page.locator('.workshop-boil-piece:not(.is-in-pot)').evaluateAll((elements) => elements.map((element) => {
     const rect = element.getBoundingClientRect();
     return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
   }));
-  if (!boilSceneBounds || !potBounds || !plateBounds) throw new Error('boil layout must be measurable');
+  if (!boilSceneBounds || !potBounds || !plateBounds || !waterBounds) throw new Error('boil layout must be measurable');
   expect(potBounds.y + potBounds.height).toBeLessThanOrEqual(boilSceneBounds.y + boilSceneBounds.height - 8);
+  expect(Math.abs(waterBounds.width / waterBounds.height - rippleRatio)).toBeLessThan(.08);
   for (const bounds of bankBounds) {
     expect(bounds.left).toBeGreaterThanOrEqual(plateBounds.x);
     expect(bounds.right).toBeLessThanOrEqual(plateBounds.x + plateBounds.width);
@@ -91,6 +98,7 @@ test('broccoli is prepped first, then boils with particles on the stove', async 
   await page.mouse.down();
   await page.mouse.move(drainSceneBox.x + drainSceneBox.width * .74, drainSceneBox.y + drainSceneBox.height * .72, { steps: 8 });
   await page.mouse.up();
+  await expect(page.locator('#workshop-boil-food')).toHaveCSS('clip-path', /ellipse\(45% 27% at 50% 42%\)/);
   await page.waitForTimeout(600);
   await expect(page.locator('#workshop-finish')).toHaveClass(/show/);
 });
@@ -136,6 +144,18 @@ test('edamame pods take falling salt, mix separately, and enter boiling water on
   await expect(page.locator('body')).toHaveAttribute('data-screen', 'workshop');
   await expect(prepScene).toBeVisible();
   await expect(page.locator('.workshop-boil-piece:not(.is-in-pot)')).toHaveCount(8);
+  const edamamePlateBounds = await page.locator('.workshop-boil-plate').boundingBox();
+  const edamameBankBounds = await page.locator('.workshop-boil-piece:not(.is-in-pot)').evaluateAll((elements) => elements.map((element) => {
+    const rect = element.getBoundingClientRect();
+    return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
+  }));
+  if (!edamamePlateBounds) throw new Error('edamame plate must be measurable');
+  for (const bounds of edamameBankBounds) {
+    expect(bounds.left).toBeGreaterThanOrEqual(edamamePlateBounds.x);
+    expect(bounds.right).toBeLessThanOrEqual(edamamePlateBounds.x + edamamePlateBounds.width);
+    expect(bounds.top).toBeGreaterThanOrEqual(edamamePlateBounds.y);
+    expect(bounds.bottom).toBeLessThanOrEqual(edamamePlateBounds.y + edamamePlateBounds.height);
+  }
 
   const firstPod = page.locator('.workshop-boil-piece:not(.is-in-pot)').first();
   const podBox = await firstPod.boundingBox();
