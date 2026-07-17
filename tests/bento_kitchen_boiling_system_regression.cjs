@@ -47,7 +47,7 @@ assert.match(source, /broccoli_floret_' \+ String\(n\)\.padStart\(3, '0'\)/);
 assert.match(source, /class="workshop-boil-pieces"/);
 assert.match(source, /class="workshop-boil-plate"/);
 assert.match(source, /prep_plate\.png/);
-assert.match(source, /--boil-water-left: 30\.25%; --boil-water-top: 23%; --boil-water-width: 39\.5%; --boil-water-height: 31%/);
+assert.match(source, /--boil-water-left: 31%; --boil-water-top: 18\.5%; --boil-water-width: 38%; --boil-water-height: 25\.5%/);
 assert.match(source, /class="workshop-boil-water-mask"/);
 assert.match(source, /clip-path: ellipse\(50% 50% at 50% 50%\)/);
 assert.match(source, /@keyframes broccoliWaterDrift/);

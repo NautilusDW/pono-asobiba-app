@@ -18,6 +18,7 @@
 ## Active (進行中 / 未着手)
 
 - 2026-07-18 - [batch:1349-kitchen-complete-boil-pot] Codex: DONE — ユーザー指示「鍋画像を生成し直す」を受領。現行 `boil_pot_cold.png` を参照し、槌目の銅色胴・銀縁・木製取っ手・静水・水彩タッチとパースを維持しつつ、丸胴から短い平底まで下側が完全に閉じ、全輪郭に十分な余白がある鍋 raw を GPT Image 2 で生成。`tmp/alpha_pending/1349-kitchen-complete-boil-pot/boil_pot_complete_raw.png`（1672x941、1.8MB）と納品メモを保存。未透過・未トリミング・未最適化・未実装。既存 runtime／SW／未追跡 `.DS_Store` は未変更。 (by Codex)
+- 2026-07-18 - [batch:1349-kitchen-complete-boil-pot] Codex: IMPLEMENTATION DONE — 生成rawの外周と取っ手内側の閉じた穴からマゼンタを除去し、原寸alphaと836x471 runtimeを作成。`boil_pot_cold.png`を下側まで完全な新鍋へ差替え、表示70%／top0へ調整。新水面を31/18.5/38/25.5%としてmask・泡・波紋・鍋内食材を同一楕円へ統一。既存オレンジ2本炎`heat-glow`は形を変えずtop68%へ移し鍋底下へ表示。1366x768の点火後／沸騰時を目視し、横overflow 0、鍋底・取っ手・炎・泡を確認。static 2本、boiling E2E（broccoli 1366x768／edamame 844x390）2本、sw syntax、diff check PASS。SW v2273。未追跡 `.DS_Store` は未変更。 (by Codex)
 
 - 2026-07-17 - [batch:1344-room-window-final-sheet-replacement] Codex: ユーザー指示「さっきの6個を削除し、添付の新6種へ交換」。Downloads最新`hf_20260717_121111_...png`が添付と一致。現行items.jsには6 IDとユーザー調整済みピボットが登録済みのため、ID／ピボット／配置範囲を維持してA/B計12 PNGの内容だけ完全差替えする。roomImg/roomImgBは外部生URL混在をやめ全てローカルassetパスへ統一。既存dirty Bento／SW、common、master／productionは変更しない。 (by Codex)
 - 2026-07-17 - [batch:1344-room-window-final-sheet-replacement] Codex: DONE — 新シートを6分割しsoft matte／despill／edge contractで透過、A/B計12 PNGを旧6種の同IDへ完全差替え。全四隅alpha=0、強い緑残り0px、約253〜367KB。ユーザー調整済みピボット／範囲は維持。items.jsの6表示名をかなへ直し、A/B全参照をローカルassetへ統一。専用回帰、room app/book、shop catalog、inline JS、diff check PASS。既存dirty Bento／SW、common／master／productionは未変更。 (by Codex)

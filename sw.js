@@ -1,5 +1,10 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2273: 茹で鍋をGPT Image 2で生成し直し、欠けていた下側を丸胴から平底まで
+// 完全に描画。クロマ透過後の新しい鍋の実測に合わせて表示を70%へ調整し、
+// 水面mask／泡／波紋／鍋内食材を38×25.5%の同一楕円へ再配置。既存heat-glowは
+// 形を変えず鍋底の背後へ移動 (batch:1349-kitchen-complete-boil-pot)。
+// play.html同期不要。
 // v2272: おへやのベッドチュートリアルが既存配置を中央へ強制移動する処理と、
 // 家具衝突時に別の空きセルへ自動移動する処理を廃止。既存位置を維持し、
 // 置けないドラッグは元位置へ戻してユーザー指定外の移動を防止
@@ -491,7 +496,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2272;
+const CACHE_VERSION = 2273;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
