@@ -747,49 +747,49 @@ const ROOM_ITEMS = [
     angleB: { cellSize: 2, pivotX: -17.5, pivotY: 11.9, minRow: 0, maxRow: 7, minCol: 1, maxCol: 7      },
   },
   {
-    id: 'furn_window_blue_star', cat: 'furn', name: 'furn_window_blue_star', price: 15, theme: 'all',
-    roomImg: 'https://raw.githubusercontent.com/NautilusDW/pono-asobiba-app/develop-app/assets/images/Rooms/furnitures_final/furn_window_blue_star_A.png',
+    id: 'furn_window_blue_star', cat: 'furn', name: 'あおい ほしまど', price: 15, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures_final/furn_window_blue_star_A.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/furn_window_blue_star_B.png',
     gridRow: 4, gridCol: 4, cellSize: 1.5, pivotX: -70, pivotY: -50, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
   
     angleB: { cellSize: 1.5, pivotX: 56, pivotY: -50, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7  },
   },
   {
-    id: 'furn_window_pink_heart', cat: 'furn', name: 'furn_window_pink_heart', price: 15, theme: 'all',
-    roomImg: 'https://raw.githubusercontent.com/NautilusDW/pono-asobiba-app/develop-app/assets/images/Rooms/furnitures_final/furn_window_pink_heart_A.png',
-    roomImgB: 'https://raw.githubusercontent.com/NautilusDW/pono-asobiba-app/develop-app/assets/images/Rooms/furnitures_final/furn_window_pink_heart_B.png',
+    id: 'furn_window_pink_heart', cat: 'furn', name: 'ピンクの ハートまど', price: 15, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures_final/furn_window_pink_heart_A.png',
+    roomImgB: '../assets/images/Rooms/furnitures_final/furn_window_pink_heart_B.png',
     gridRow: 4, gridCol: 4, cellSize: 1.5, pivotX: -70, pivotY: -50, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
   
     angleB: { cellSize: 1.5, pivotX: 56, pivotY: -50, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7  },
   },
   {
-    id: 'furn_window_white_arch', cat: 'furn', name: 'furn_window_white_arch', price: 15, theme: 'all',
-    roomImg: 'https://raw.githubusercontent.com/NautilusDW/pono-asobiba-app/develop-app/assets/images/Rooms/furnitures_final/furn_window_white_arch_A.png',
-    roomImgB: 'https://raw.githubusercontent.com/NautilusDW/pono-asobiba-app/develop-app/assets/images/Rooms/furnitures_final/furn_window_white_arch_B.png',
+    id: 'furn_window_white_arch', cat: 'furn', name: 'しろい アーチまど', price: 15, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures_final/furn_window_white_arch_A.png',
+    roomImgB: '../assets/images/Rooms/furnitures_final/furn_window_white_arch_B.png',
     gridRow: 4, gridCol: 4, cellSize: 1, pivotX: 0, pivotY: 0, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
   
     angleB: { cellSize: 1, pivotX: 0, pivotY: 0, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7  },
   },
   {
-    id: 'furn_window_wood_curtain', cat: 'furn', name: 'furn_window_wood_curtain', price: 15, theme: 'all',
-    roomImg: 'https://raw.githubusercontent.com/NautilusDW/pono-asobiba-app/develop-app/assets/images/Rooms/furnitures_final/furn_window_wood_curtain_A.png',
-    roomImgB: 'https://raw.githubusercontent.com/NautilusDW/pono-asobiba-app/develop-app/assets/images/Rooms/furnitures_final/furn_window_wood_curtain_B.png',
+    id: 'furn_window_wood_curtain', cat: 'furn', name: 'カーテンつき まど', price: 15, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures_final/furn_window_wood_curtain_A.png',
+    roomImgB: '../assets/images/Rooms/furnitures_final/furn_window_wood_curtain_B.png',
     gridRow: 4, gridCol: 4, cellSize: 1.5, pivotX: -56, pivotY: -50, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
   
     angleB: { cellSize: 1.5, pivotX: 56, pivotY: -50, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7  },
   },
   {
-    id: 'furn_window_wood_round', cat: 'furn', name: 'furn_window_wood_round', price: 15, theme: 'all',
-    roomImg: 'https://raw.githubusercontent.com/NautilusDW/pono-asobiba-app/develop-app/assets/images/Rooms/furnitures_final/furn_window_wood_round_A.png',
-    roomImgB: 'https://raw.githubusercontent.com/NautilusDW/pono-asobiba-app/develop-app/assets/images/Rooms/furnitures_final/furn_window_wood_round_B.png',
+    id: 'furn_window_wood_round', cat: 'furn', name: 'きの まるまど', price: 15, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures_final/furn_window_wood_round_A.png',
+    roomImgB: '../assets/images/Rooms/furnitures_final/furn_window_wood_round_B.png',
     gridRow: 4, gridCol: 4, cellSize: 1, pivotX: 0, pivotY: 0, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
   
     angleB: { cellSize: 1, pivotX: 0, pivotY: 0, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7  },
   },
   {
-    id: 'furn_window_wood_square', cat: 'furn', name: 'furn_window_wood_square', price: 15, theme: 'all',
-    roomImg: 'https://raw.githubusercontent.com/NautilusDW/pono-asobiba-app/develop-app/assets/images/Rooms/furnitures_final/furn_window_wood_square_A.png',
-    roomImgB: 'https://raw.githubusercontent.com/NautilusDW/pono-asobiba-app/develop-app/assets/images/Rooms/furnitures_final/furn_window_wood_square_B.png',
+    id: 'furn_window_wood_square', cat: 'furn', name: 'きの しかくい まど', price: 15, theme: 'all',
+    roomImg: '../assets/images/Rooms/furnitures_final/furn_window_wood_square_A.png',
+    roomImgB: '../assets/images/Rooms/furnitures_final/furn_window_wood_square_B.png',
     gridRow: 4, gridCol: 4, cellSize: 1.5, pivotX: -62, pivotY: -50, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
   
     angleB: { cellSize: 1.5, pivotX: 56, pivotY: -50, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7  },
