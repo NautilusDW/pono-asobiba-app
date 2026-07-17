@@ -1,5 +1,9 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2261: えだまめをGPT Image 2生成の個別さや12枚へ刷新。器の中で洗う→
+// 塩を振る→個別に混ざる塩もみ、点火→沸騰→皿から8さやを1つずつ投入へ再構成。
+// 着水ごとの白い波紋／泡と、水流による個別の回転・揺れを追加
+// (batch:1341-kitchen-edamame-individual-pods)。play.html同期不要。
 // v2260: GPT Image 2で生成した長い木製菜箸を透過し、にんじんいんげん／
 // きんぴらの2.5D混ぜ操作をCSS製ヘラから菜箸へ変更。先端をpointerへ合わせ、
 // 子ども向け案内も「さいばし」へ統一
@@ -437,7 +441,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2260;
+const CACHE_VERSION = 2261;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。

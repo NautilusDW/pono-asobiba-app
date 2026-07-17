@@ -59,3 +59,66 @@ test('broccoli is prepped first, then boils with particles on the stove', async 
   await expect(page.locator('#workshop-boil-spoon')).toHaveAttribute('src', /boil_spoon\.png/);
   await expect(page.locator('#workshop-boil-bowl')).toHaveAttribute('src', /boil_drain_bowl\.png/);
 });
+
+test('edamame pods wash, take salt, mix separately, and enter boiling water one by one', async ({ page }) => {
+  await page.setViewportSize({ width: 844, height: 390 });
+  await page.addInitScript(() => {
+    (window as Window & { __APP_BUILD__?: number }).__APP_BUILD__ = 1;
+  });
+  await page.goto('/bento/kitchen.html', { waitUntil: 'domcontentloaded' });
+  await page.locator('#mode-prep-btn').click({ force: true });
+  await page.locator('.ingredient-btn[data-id="edamame"]').click();
+  await expect(page.locator('body')).toHaveAttribute('data-screen', 'workshop');
+  await expect(page.locator('#workshop-scene')).toHaveClass(/is-edamame-prep/);
+  await expect(page.locator('.workshop-edamame-pod')).toHaveCount(8);
+
+  const prepScene = page.locator('#workshop-scene');
+  const prepBox = await prepScene.boundingBox();
+  if (!prepBox) throw new Error('edamame prep scene must be visible');
+  await prepScene.press('Enter');
+  await prepScene.press('Enter');
+  await prepScene.press('Enter');
+  await page.waitForTimeout(500);
+  await expect(page.locator('#workshop-instruction')).toHaveText('しおを ぱらぱら かけよう');
+  await page.locator('#workshop-edamame-salt').click();
+  await page.locator('#workshop-edamame-salt').click();
+  await page.locator('#workshop-edamame-salt').click();
+  await page.waitForTimeout(500);
+  await expect(page.locator('#workshop-instruction')).toHaveText('しおで もみもみ しよう');
+  await expect(page.locator('#workshop-edamame-prep')).toHaveClass(/has-salt/);
+  await prepScene.press('Enter');
+  await prepScene.press('Enter');
+  await prepScene.press('Enter');
+  await prepScene.press('Enter');
+  await page.waitForTimeout(550);
+  await expect(page.locator('#workshop-finish')).toHaveClass(/show/);
+  await page.locator('#workshop-finish-btn').click();
+  await page.waitForTimeout(420);
+  await page.locator('[data-recipe-id="edamame"]').evaluate((element: HTMLElement) => element.click());
+  await expect(page.locator('#workshop-instruction')).toHaveText('コンロの ひを つけよう');
+  await expect(page.locator('body')).toHaveAttribute('data-screen', 'workshop');
+  await prepScene.press('Enter');
+  await page.waitForTimeout(500);
+  await expect(page.locator('#workshop-instruction')).toHaveText('おゆが わくまで まとう');
+  await page.waitForTimeout(2100);
+  await expect(page.locator('#workshop-instruction')).toHaveText('さやを 1つずつ おなべに いれよう');
+  await expect(page.locator('body')).toHaveAttribute('data-screen', 'workshop');
+  await expect(prepScene).toBeVisible();
+  await expect(page.locator('.workshop-boil-piece:not(.is-in-pot)')).toHaveCount(8);
+
+  const firstPod = page.locator('.workshop-boil-piece:not(.is-in-pot)').first();
+  const podBox = await firstPod.boundingBox();
+  const boilBox = await prepScene.boundingBox();
+  if (!podBox || !boilBox) throw new Error('pod and boiling scene must be visible');
+  await page.mouse.move(podBox.x + podBox.width / 2, podBox.y + podBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(boilBox.x + boilBox.width * .5, boilBox.y + boilBox.height * .42, { steps: 8 });
+  await page.mouse.up();
+  await expect(page.locator('.workshop-boil-piece.is-in-pot')).toHaveCount(1);
+  await expect(page.locator('.workshop-boil-entry-effect')).toHaveCount(1);
+  for (let count = 2; count <= 8; count += 1) {
+    await page.locator('.workshop-boil-piece:not(.is-in-pot)').first().click();
+    await expect(page.locator('.workshop-boil-piece.is-in-pot')).toHaveCount(count);
+  }
+  await expect(page.locator('#workshop-hint')).toContainText('ぜんぶ はいったよ');
+});
