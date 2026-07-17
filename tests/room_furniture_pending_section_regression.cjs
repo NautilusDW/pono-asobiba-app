@@ -3,6 +3,8 @@ const assert = require('assert');
 
 const html = fs.readFileSync('room/furniture_adjuster.html', 'utf8');
 
+assert(html.includes("GH_BRANCH = 'develop-app'"), 'pivot discovery and saves must target the active development trunk');
+assert(!html.includes("GH_BRANCH = 'develop';"), 'the frozen legacy branch must not be used by the pivot tool');
 assert(html.includes('id="pending-items-section"'), 'pending section must exist');
 assert(html.includes('id="pending-item-list"'), 'pending item list must exist');
 assert(html.includes('id="pending-items-status"'), 'discovery status must be visible');
