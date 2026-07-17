@@ -60,6 +60,7 @@ OK:
 | 新機能を新規実装する（3行以上の新規ロジック追加・新規ファイル作成・新ステージ/新ミニゲーム追加） | `everything-claude-code:tdd-workflow` | SHOULD |
 | 単一タスクで 100 行以上の変更が完了した | `everything-claude-code:simplify` → `everything-claude-code:verification-loop` の順で実施 | **MUST** |
 | ユーザーがブラウザ動作確認・回帰確認を求めた／ゲームの挙動を実機検証する必要が出た | `everything-claude-code:e2e-testing`（Playwright） | SHOULD |
+| `native/`（Capacitor）や `unity/`（PonoMarbleRun3D 等）の物理演算・ジェスチャー系変更を含むリリース前 | `everything-claude-code:verification-loop` ＋ **AGENTS.md §7.4 の実機（Android物理端末）確認 MUST を遂行**（Playwright は Unity/Capacitor 実機を代替できないため e2e-testing では不可） | **MUST** |
 | 画像素材 が必要になった (ゲーム素材、 UI枠、 シール絵、 表紙等)。 音声/動画は用途外 ([[policy_no_fal_ai_tts]]) | `everything-claude-code:fal-ai-media` | SHOULD |
 | JS/HTML/CSS を新規に書き始める／既存スタイルを大きく変える前 | `everything-claude-code:coding-standards` + `everything-claude-code:frontend-patterns` を参照 | SHOULD |
 | ゲームロジック（`maze/`, `quizland/`, `breakout/`, `bubble/`, `aquarium/` 等）を新規追加・大改修する前 | `everything-claude-code:frontend-patterns` + `everything-claude-code:tdd-workflow` | SHOULD |

@@ -103,6 +103,8 @@ assets/images/            ← ゲーム内画像 (Claude PostToolUse hook で自
 tmp/alpha_pending/        ← Codex から Claude への画像納品エリア (§5.1)
 docs/                     ← STORY_OPENING_ENDING.md 等の物語/設計ドキュメント
 scripts/                  ← orchestrator.py / auto_optimize_image.py 等 (Claude のみ)
+native/                   ← Capacitor ネイティブシェル (Android Phase 1 実装済み、 iOS 未着手 / §1.5)
+unity/                    ← Unity 製 3D/GPU ネイティブゲーム (Web 配信・CI から除外済み / §1.5)
 HANDOFF.md                ← Claude / Codex 共有の申し送りノート (§4 ルール 8)
 ```
 
@@ -114,6 +116,39 @@ HANDOFF.md                ← Claude / Codex 共有の申し送りノート (§4
 - 例: 「虫図鑑目次」「動物図鑑」「保存」「表紙」は、そのまま表示せず、「むしずかんもくじ」「どうぶつずかん」「ほぞん」「ひょうし」のように実装する。
 - 例外は、開発者向けドキュメント、コードコメント、内部 ID、外部固有名詞、管理者専用画面など、子ども向け UI として直接表示されないものに限る。
 - 迷った場合は、漢字を残すのではなく、かな表記に寄せる。読みが不自然になりそうな場合だけユーザーへ確認する。
+
+### 1.5 ★ネイティブアプリ配布 (Capacitor + Unity) の現状と方針 (2026-07-17 追加)
+
+Web (Cloudflare Workers) 配信とは別に、 ネイティブアプリ配布に向けた `native/` (Capacitor シェル) と `unity/` (Unity 製 3D/GPU ネイティブゲーム) の開発が進行中。 いずれも配信アセット集合からは除外済み (`.assetsignore` の `native/` / `unity/`、 §3 参照) で `develop`/`develop-app` の配信物には現れない。 ただし CI トリガの扱いは異なる: `unity/**` のみは `deploy.yml` の `paths-ignore` にも登録済みのため unity 単独 push はデプロイジョブごとスキップされるが、 `native/` は `paths-ignore` に含まれておらず、 native 単独 push でも通常通りデプロイジョブが走る (配信物には影響しないが CI 時間は消費する)。
+
+**現状ステータス (2026-07-17 時点、 リポジトリ内で確認できる事実のみ記載):**
+
+| 領域 | 現状 | 実装主体 |
+| --- | --- | --- |
+| `native/` (Capacitor) | Android Phase 1 実装済み (`native/package.json` の description に明記)。 `native/ios/` は未作成、 iOS 未着手 (ただし `src/api/savedata.js` の CORS allowlist に `capacitor://localhost` を先行追加済み・batch:1205、 動作検証は未) | Claude (初期 scaffold, batch:1204: package.json/capacitor.config.json/stage-www.mjs/verify-assets.mjs) + Codex (content-manifest allowlist 化・拡張, batch:1171 ほか) |
+| `unity/PonoMarbleRun3D` | 実物理 3D マーブルラン。 macOS app + Android APK (ARM64 IL2CPP, API25-36, v2 署名) ビルド済み | Codex |
+| `unity/PonoNativeGames` | GPU 流体シミュレーション「かくれんぼいきもの」実装済み。 同様に macOS app + Android APK ビルド済み | Codex |
+| Unity Android Build Support | 導入済み (約 8.29GB、 ユーザー許可済み、 batch:1173) | — |
+| Unity iOS Build Support / Apple Developer Program | リポジトリ内に導入や登録の記録なし (未着手と推定されるが断定はしない) | — |
+| `unity/` の Web 配信・CI からの除外 | 実装済み (`deploy.yml` の `paths-ignore` に `unity/**`、 `.assetsignore` に `unity/` を追加、 batch:1214) | Claude |
+| 実機での動作確認 | HANDOFF.md 記録上、 macOS プレビューでの確認はあるが、 Android 物理端末での実機確認は `unity/` 側・`native/` 側とも記録が見当たらない | — |
+
+**今回 (2026-07-17) 確定した3方針:**
+
+1. **iOS 対応は「開発着手」から先に進める**。 Apple Developer Program ($99/年) への加入前でも、 以下の範囲までは開発を進めてよい。
+   - Capacitor: `npx cap add ios` でプラットフォーム追加 → Xcode Simulator、 または無料 Apple ID の personal team 署名 (7日ごと再署名が必要) での個人実機インストールまで
+   - Unity: iOS Build Support モジュール追加 → Xcode プロジェクト書き出し → Simulator/個人端末での動作確認まで
+   - **TestFlight 配布・App Store 提出などの「配布」段階に進む時点で、 Apple Developer Program への加入が必須になる**。 加入タイミングはその直前でよい。
+   - Apple Kids カテゴリ特有の審査要件 (App Privacy ラベル、 ATT、 第三者アナリティクス/広告の契約・自己申告ベース制約) は `docs/data-analytics-plan.md` に既存の懸念事項として記録済み。 iOS 配布判断時に必ず再確認すること。
+2. **Unity 3D ゲームは将来「Unity as a Library」方式でアプリ本体へ統合する方針**。 現状はゲームごとに個別 app/apk としてビルドされている (PonoMarbleRun と PonoNativeGames が別々のビルド成果物) が、 将来的には Capacitor/Web 版シェルへ Unity as a Library として埋め込み、 1 つの統合アプリから遊べるようにする。 **★これは方針決定のみであり、 実装は未着手**。 着手時は別途タスクとして計画・HANDOFF.md でバッチ ID を切ること。
+3. **実機検証 MUST ルールの新設**。 `unity/` の物理演算・GPU 流体シミュレーション変更や `native/` の大きなジェスチャー系変更を含むリリース前は、 少なくとも Android 物理端末で実際に動作確認することを DoD に追加する。 詳細は §7.4。
+
+**正本の所在:**
+- Android Phase 1 実装の詳細: `native/README.md`, `native/content-manifest.json`
+- native/ 初期 scaffold の経緯: HANDOFF.md `batch:1204`
+- Unity 側の実装・検証記録: `HANDOFF.md` の該当バッチ ID (例: `batch:1175`, `batch:1175c`〜`batch:1175g`, `batch:1174`, `batch:1214`)
+- Web 配信からの除外設定: `.github/workflows/deploy.yml` の `paths-ignore`, `.assetsignore`
+- iOS 審査要件の懸念事項: `docs/data-analytics-plan.md` (Apple Kids カテゴリ / App Privacy ラベル / ATT 節)
 
 ---
 
@@ -188,6 +223,8 @@ HANDOFF.md                ← Claude / Codex 共有の申し送りノート (§4
 | `quizland/data/_review/codex-followup-*.md` | ✅ 読む側 (指示の受信) | ✅ 書く側 (指示の発信) | Claude → Codex への作業依頼ノート |
 | `quizland/data/_review/audit.html` 等のレビュー成果物 | ✅ メイン | レビュー側 | Codex 主導のオーディット |
 | `wrangler.toml`, `.github/workflows/`, `.git/hooks/` | ❌ | ✅ メイン | デプロイ設定 / CI / git hooks |
+| `native/` (Capacitor Android/iOS シェル) | ✅ content-manifest allowlist 化・拡張、 Android build (batch:1171, 1177, 1218 等) | ✅ 初期 scaffold 新設 (batch:1204: package.json/capacitor.config.json/stage-www.mjs/verify-assets.mjs) + native origin CORS (batch:1205) + tier 変更に伴う再同期 (batch:1216, 1300 等) | Android Phase 1 実装済み・iOS 未着手 (§1.5)。 実装は両者混在——「Codex 実装 / Claude レビューのみ」ではない点に注意 |
+| `unity/` (PonoMarbleRun3D, PonoNativeGames) | ✅ メイン (実装・ビルド・検証) | レビュー側 + Web 配信からの除外/CI 設定 | HANDOFF.md 記載の実装バッチはすべて Codex (`by Codex`)。 Claude は Web 配信/CI からの除外設定のみ担当 (batch:1214: `deploy.yml` の `paths-ignore` に `unity/**`、 `.assetsignore` に `unity/` を追加) |
 | `CLAUDE.md` | ❌ | ✅ | Claude Code 固有の運用ファイル |
 | `MEMORY.md`, `memory/*` | 読み取り専用 (参考のみ) | ✅ | Claude の知見蓄積。 Codex は編集禁止だが**読んで矛盾を見つけたら HANDOFF で共有**してよい |
 | `docs/STORY_OPENING_ENDING.md` 等の物語/設計 docs | レビュー側 | ✅ メイン | 物語フローの正本 |
@@ -501,6 +538,17 @@ const CACHE_VERSION = NNN;  // ← 変更ごとに +1
 ### 7.3 動作確認できない場合
 
 バックエンド設定・hook 改修・CI 変更等で staging では確認できない種類の変更は、 **「未確認」と明示**してユーザーに報告。 「動きました」と嘘の報告をしない。
+
+### 7.4 ★native/ (Capacitor) ・ unity/ 変更時の DoD (2026-07-17 追加)
+
+`native/` (Capacitor Android/iOS シェル) や `unity/` (PonoMarbleRun3D, PonoNativeGames) に対する大きめのジェスチャー系変更・物理演算変更・GPU 流体シミュレーション変更を含むリリース前は、 §7.1〜7.2 の Web staging 確認だけでは不十分。 以下を DoD に追加する。
+
+1. **実機確認 MUST**: 少なくとも Android 物理端末で実際に動作確認すること。 macOS プレビュー (Unity) や Xcode Simulator (iOS) だけでの確認は代替にならない。
+   - 理由: 物理演算・GPU 流体シミュレーションは実機の GPU 性能・発熱スロットリングで挙動が変わりやすい。 過去に iOS Safari 実機限定の `pointercancel` 挙動差でブラウザ版のドラッグ判定バグが実機でのみ発覚した前例がある (`[[feedback_ios_pointercancel_native_pan]]` memory 参照)。 Unity/native 側でも同様のクラスの不具合が実機でのみ顕在化するリスクを前提にする。
+   - HANDOFF.md の既存 Unity バッチ記録 (例: `batch:1175`, `batch:1175c`〜`batch:1175g`) は軒並み「macOS プレイヤーでの実走確認済み・Android 実機のみ未確認」で終わっている。 `batch:1174` (PonoNativeGames) のように実機確認の有無自体に触れていない記録もあるが、 いずれにせよ Android 物理端末での実機確認記録は `unity/` 側に見当たらない。 これは本ルール整備前の記録であり、 今後の native/unity リリース前タスクではこの状態を「完了」として報告しないこと。
+   - 実機が用意できない事情がある場合は、 §7.3 に従い「未確認」と明示してユーザーに報告する。
+2. 動作確認した実機の機種 / OS バージョンを完了報告に明記する。
+3. `unity/` は Web 配信・CI から除外済み (§1.5 参照) のため、 §7.1 の staging URL 確認は対象外。 `native/` (Capacitor) 側は `native/README.md` の `stage-www` → `verify-assets` → `verify-references` → `android:sync` パイプラインが Web 側 DoD に相当する。
 
 ---
 
