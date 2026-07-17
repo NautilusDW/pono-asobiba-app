@@ -1,5 +1,10 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2265: もじっこファーム文字書きを白紙面の木枠6種へ刷新。汎用枠に加え、
+// 文字リスト／ミルマル／メッセージ／書字盤／書き順へ葉・芽・どんぐり等の
+// 専用corner彫刻を割り当て、個別9-slice補正で直線レールを約6pxへ統一。
+// 101pxメッセージの左右safe area、庭背景、設定内の戻る、明朝体お手本を維持
+// (batch:1328d-mojikko-white-paper-ornate-frames)。play.html同期不要。
 // v2264: 茹で鍋を縮小・上寄せして底と五徳を画面内へ収め、ブロッコリー5房を
 // 皿内へ縮小再配置。全投入後の2.8秒加熱待ちと、穴あきおたまを鍋→水切り
 // ボウルへ2回ドラッグする湯切り操作を追加
@@ -453,7 +458,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2264;
+const CACHE_VERSION = 2265;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
