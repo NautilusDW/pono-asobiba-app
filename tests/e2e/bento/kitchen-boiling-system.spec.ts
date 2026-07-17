@@ -46,6 +46,21 @@ test('broccoli is prepped first, then boils with particles on the stove', async 
   await expect(page.locator('#workshop-boil-game')).toHaveClass(/is-boiling/);
   await expect(page.locator('.workshop-boil-bubbles')).toHaveCSS('opacity', '1');
   await expect(page.locator('#workshop-boil-food')).toBeHidden();
+  const boilSceneBounds = await page.locator('#workshop-scene').boundingBox();
+  const potBounds = await page.locator('#workshop-boil-pot').boundingBox();
+  const plateBounds = await page.locator('.workshop-boil-plate').boundingBox();
+  const bankBounds = await page.locator('.workshop-boil-piece:not(.is-in-pot)').evaluateAll((elements) => elements.map((element) => {
+    const rect = element.getBoundingClientRect();
+    return { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom };
+  }));
+  if (!boilSceneBounds || !potBounds || !plateBounds) throw new Error('boil layout must be measurable');
+  expect(potBounds.y + potBounds.height).toBeLessThanOrEqual(boilSceneBounds.y + boilSceneBounds.height - 8);
+  for (const bounds of bankBounds) {
+    expect(bounds.left).toBeGreaterThanOrEqual(plateBounds.x);
+    expect(bounds.right).toBeLessThanOrEqual(plateBounds.x + plateBounds.width);
+    expect(bounds.top).toBeGreaterThanOrEqual(plateBounds.y);
+    expect(bounds.bottom).toBeLessThanOrEqual(plateBounds.y + plateBounds.height);
+  }
   for (let i = 1; i <= 5; i += 1) {
     await page.locator('.workshop-boil-piece:not(.is-in-pot)').first().click();
     await expect(page.locator('.workshop-boil-piece.is-in-pot')).toHaveCount(i);
@@ -53,12 +68,31 @@ test('broccoli is prepped first, then boils with particles on the stove', async 
   }
   await expect(page.locator('#workshop-hint')).toContainText('ぜんぶ はいったよ');
   await expect(page.locator('#workshop-boil-pot')).toHaveAttribute('src', /boil_pot_cold\.png/);
-  await page.waitForTimeout(450);
+  await page.waitForTimeout(500);
+  await expect(page.locator('#workshop-instruction')).toHaveText('ぐつぐつ ゆでよう');
+  await expect(page.locator('#workshop-boil-game')).toHaveClass(/is-boiling/);
+  await page.waitForTimeout(3000);
 
-  await expect(page.locator('#workshop-instruction')).toHaveText('おゆを きろう');
+  await expect(page.locator('#workshop-instruction')).toHaveText('あなあきおたまで おゆを きろう');
   await expect(page.locator('#workshop-boil-game')).toHaveClass(/is-drain/);
   await expect(page.locator('#workshop-boil-spoon')).toHaveAttribute('src', /boil_spoon\.png/);
   await expect(page.locator('#workshop-boil-bowl')).toHaveAttribute('src', /boil_drain_bowl\.png/);
+  const drainSceneBox = await page.locator('#workshop-scene').boundingBox();
+  let spoonBox = await page.locator('#workshop-boil-spoon').boundingBox();
+  if (!drainSceneBox || !spoonBox) throw new Error('drain tools must be visible');
+  await page.mouse.move(spoonBox.x + spoonBox.width / 2, spoonBox.y + spoonBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(drainSceneBox.x + drainSceneBox.width * .5, drainSceneBox.y + drainSceneBox.height * .4, { steps: 8 });
+  await page.mouse.up();
+  await expect(page.locator('#workshop-hint')).toContainText('ボウルへ はこぼう');
+  spoonBox = await page.locator('#workshop-boil-spoon').boundingBox();
+  if (!spoonBox) throw new Error('drain spoon must remain visible');
+  await page.mouse.move(spoonBox.x + spoonBox.width / 2, spoonBox.y + spoonBox.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(drainSceneBox.x + drainSceneBox.width * .74, drainSceneBox.y + drainSceneBox.height * .72, { steps: 8 });
+  await page.mouse.up();
+  await page.waitForTimeout(600);
+  await expect(page.locator('#workshop-finish')).toHaveClass(/show/);
 });
 
 test('edamame pods take falling salt, mix separately, and enter boiling water one by one', async ({ page }) => {
@@ -118,4 +152,6 @@ test('edamame pods take falling salt, mix separately, and enter boiling water on
     await expect(page.locator('.workshop-boil-piece.is-in-pot')).toHaveCount(count);
   }
   await expect(page.locator('#workshop-hint')).toContainText('ぜんぶ はいったよ');
+  await page.waitForTimeout(500);
+  await expect(page.locator('#workshop-instruction')).toHaveText('ぐつぐつ ゆでよう');
 });
