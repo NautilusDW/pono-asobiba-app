@@ -17,11 +17,14 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-07-17 - [batch:1341-room-pending-furniture-section] Codex: ユーザー指示で `room/furniture_adjuster.html` に「未調整家具」専用セクションを追加する。batch:1340の窓6種を通常家具一覧末尾へ紛れさせず、GitHub discovery由来だけを上部へ分離し、検出中／0件／トークン未設定／API失敗も同じ場所へ表示する。既存dirty bento 3ファイル、common、凍結develop／master／productionは変更しない。 (by Codex)
+
 - 2026-07-17 - [batch:1340-room-window-six-pack] Codex: ユーザー提供の窓6種シートを個別透過PNGへ分割し、管理画面の家具クロスビュー／`room/furniture_adjuster.html` の未登録素材自動検出・ピボット調整フローへ接続する。過去の窓家具バッチなし、現行 `furnitures_final/<id>_A.png` → ピボットツール discovery → `items.js` 反映の既存導線を確認済み。GPT Image 2 built-inで背景のみクロマキー化し、形状・色・配置は維持。既存dirty `AGENTS.md`／`.DS_Store`、`common/`、凍結develop／master／productionは変更しない。 (by Codex)
 - 2026-07-17 - [batch:1340-room-window-six-pack] Codex: DONE — 窓6種をA/B計12個の個別透過PNGへ分割し `assets/images/Rooms/furnitures_final/furn_window_*_[AB].png` に配置。四隅alpha=0、強い緑残り0px、約100〜132KB。既存ピボットツールがGitHub上の未登録A/Bペアを自動検出するためコード変更なしで管理・調整可能。表示名／サイズ／A/Bピボット／配置範囲／items.js登録はツール側でユーザー調整待ち。raw・中間・手順は `tmp/alpha_pending/1340-room-window-six-pack/CODEX-DELIVERY.md`。room/items.js／SW／common／凍結develop／master／productionは未変更。 (by Codex)
 
 - 2026-07-17 - [batch:1341-kitchen-edamame-individual-pods] Codex: ユーザー実機評価「えだまめの洗う／塩／もみ込みが一枚絵のままで品質不足。個別のさやを重ねて混ざるようにする」を受領。重複監査でbatch:1326は`boil_edamame_raw.png`一枚を洗う／もむ／ゆでるへ共用し、現素材は左右下端でさやがクロップされているため今回の再生成・再実装は未対応と確認。枝から外れた生のさやを採用し、個別さや→器内洗浄→塩を目視できる散布→個別物理風もみ込み→火・塩・沸騰→個別投入→水切りへ再構成する。まず既存画風を参照した分割用rawシートをGPT Image 2で生成する。無関係な`assets/images/.DS_Store`は変更しない。 (by Codex)
 - 2026-07-17 - [batch:1341-kitchen-edamame-individual-pods] Codex: DONE — GPT Image 2生成シートをsoft matte／despill／edge contractで透過し、端切れなしの個別さや12枚＋新集合画像へ分割。枝から外れた生さやを器内で個別配置し、洗う（水面波紋）→塩瓶を3回振る（粒が残る）→各さやが別位相で混ざる塩もみへ変更。調理は点火→自動沸騰→皿の8さやをPC／touchドラッグまたはclick／Enterで1つずつ投入→水切り。投入ごとに白い波紋と2泡、水中では個別の遅延で回転・揺れ。クロマ処理の微小孤立点も除去。既存ブロッコリーclick投入回帰を維持。static回帰＋Chromium desktop broccoli／844x390 edamame 2件PASS、SW v2261。無関係な`assets/images/.DS_Store`は未変更・未追加。 (by Codex)
+- 2026-07-17 - [batch:1341-kitchen-edamame-individual-pods] Codex: FOLLOWUP DONE — ユーザー実機評価「水が見えない洗浄は不要／塩がグリッド状で振っている感がない」を反映。洗浄step／水面CSSを完全削除し、塩を振る→塩もみ→茹でるへ簡略化。固定radial-gradient塩を廃止し、瓶位置から1回20粒が異なる大きさ・遅延・弧で飛び、操作ごとに12粒ずつ個別さや上へ残るDOM粒へ変更。static＋Chromium desktop broccoli／844x390 edamame PASS、SW v2262。 (by Codex)
 
 - 2026-07-17 - [batch:1328d-mojikko-white-paper-ornate-frames] Codex: ユーザー実機評価「紙面が全面的に黄ばんで古紙に見えるため、基本を白ベースへ。ことばの穴と下の見る丸、中央メッセージ、文字を書くボックス、右の書き順は個別生成し、どんぐり彫刻などを時々入れた飾り枠にする」を受領。過去成果物1328b／1328cは実装済みだが、今回の白紙面化と5領域の専用装飾枠は未実装の明示的な再差し替えと確認。最新 `origin/develop-app` `cae73fcf` 由来の隔離worktree `/tmp/pono-1328d-mojikko-white-paper-ornate-frames`／branch `codex/1328d-mojikko-white-paper-ornate-frames`を使用し、共有worktreeのBento変更には触れない。主操作は中央の文字盤をなぞる、予備操作は既存設定内の「もどる」。庭背景、正本設定画像、お手本の明朝体、writer geometry、3モード／進捗／判定／保存／ARIAは維持する。現時点はclaim／HANDOFFのみで、UI・asset・test・SWは未変更。 (by Codex)
 

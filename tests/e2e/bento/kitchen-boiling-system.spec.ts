@@ -60,7 +60,7 @@ test('broccoli is prepped first, then boils with particles on the stove', async 
   await expect(page.locator('#workshop-boil-bowl')).toHaveAttribute('src', /boil_drain_bowl\.png/);
 });
 
-test('edamame pods wash, take salt, mix separately, and enter boiling water one by one', async ({ page }) => {
+test('edamame pods take falling salt, mix separately, and enter boiling water one by one', async ({ page }) => {
   await page.setViewportSize({ width: 844, height: 390 });
   await page.addInitScript(() => {
     (window as Window & { __APP_BUILD__?: number }).__APP_BUILD__ = 1;
@@ -73,14 +73,10 @@ test('edamame pods wash, take salt, mix separately, and enter boiling water one 
   await expect(page.locator('.workshop-edamame-pod')).toHaveCount(8);
 
   const prepScene = page.locator('#workshop-scene');
-  const prepBox = await prepScene.boundingBox();
-  if (!prepBox) throw new Error('edamame prep scene must be visible');
-  await prepScene.press('Enter');
-  await prepScene.press('Enter');
-  await prepScene.press('Enter');
-  await page.waitForTimeout(500);
   await expect(page.locator('#workshop-instruction')).toHaveText('しおを ぱらぱら かけよう');
   await page.locator('#workshop-edamame-salt').click();
+  await expect(page.locator('.workshop-edamame-salt-particle')).toHaveCount(20);
+  await expect(page.locator('#workshop-edamame-settled i')).toHaveCount(12);
   await page.locator('#workshop-edamame-salt').click();
   await page.locator('#workshop-edamame-salt').click();
   await page.waitForTimeout(500);

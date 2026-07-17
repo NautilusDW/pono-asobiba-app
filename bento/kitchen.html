@@ -5806,7 +5806,6 @@ body.layout-editor-on .bowl-fill-mask::after {
 .workshop-scene.is-edamame-prep .workshop-edamame-prep { display: block; }
 .workshop-scene.is-edamame-prep::after, .workshop-scene.is-edamame-prep .workshop-food, .workshop-scene.is-edamame-prep .workshop-motion { display: none; }
 .workshop-edamame-bowl { position: absolute; left: 50%; top: 51%; width: 58%; height: 69%; transform: translate(-50%,-50%); border-radius: 50%; background: radial-gradient(ellipse at 50% 42%, rgba(255,255,255,.25) 0 48%, rgba(190,219,216,.36) 49% 55%, rgba(249,244,222,.96) 56% 73%, #e6bd74 75% 78%, transparent 79%); filter: drop-shadow(0 9px 8px rgba(75,55,30,.2)); }
-.workshop-edamame-prep.is-wash .workshop-edamame-bowl::after { content: ''; position: absolute; inset: 15% 13%; border-radius: 50%; background: repeating-radial-gradient(ellipse at 50% 50%, transparent 0 16px, rgba(255,255,255,.58) 18px 20px, transparent 22px 35px); animation: edamameWashRipple 1.2s linear infinite; }
 .workshop-edamame-pod { position: absolute; z-index: 2; width: 18%; left: var(--pod-x); top: var(--pod-y); transform: translate(-50%,-50%) rotate(var(--pod-r)); filter: drop-shadow(0 3px 3px rgba(50,80,25,.16)); transition: left .2s ease, top .2s ease, transform .2s ease; pointer-events: none; }
 .workshop-edamame-prep.is-active .workshop-edamame-pod { left: var(--pod-mix-x); top: var(--pod-mix-y); transform: translate(-50%,-50%) rotate(var(--pod-mix-r)); }
 .workshop-edamame-prep.is-rub .workshop-edamame-pod { animation: edamameRubPod .48s ease-in-out infinite alternate; animation-delay: var(--pod-delay); }
@@ -5814,11 +5813,14 @@ body.layout-editor-on .bowl-fill-mask::after {
 .workshop-edamame-salt img { width: 100%; display: block; }
 .workshop-edamame-prep.is-salt .workshop-edamame-salt { display: block; }
 .workshop-edamame-prep.is-salt .workshop-edamame-salt:active { transform: rotate(-24deg) translateY(4px); }
-.workshop-edamame-grains { position: absolute; z-index: 4; inset: 31% 28% 25%; opacity: 0; pointer-events: none; background: radial-gradient(circle, #fff 0 2px, transparent 3px) 2px 5px / 22px 19px, radial-gradient(circle, #f5e9c5 0 1.5px, transparent 2.5px) 11px 2px / 25px 21px; }
-.workshop-edamame-prep.has-salt .workshop-edamame-grains { opacity: .9; }
-@keyframes edamameWashRipple { from { transform: scale(.82) rotate(0); opacity: .4; } to { transform: scale(1.08) rotate(8deg); opacity: .9; } }
+.workshop-edamame-salt-fall, .workshop-edamame-settled { position: absolute; inset: 0; z-index: 5; pointer-events: none; overflow: hidden; }
+.workshop-edamame-salt-particle { position: absolute; left: 79%; top: 25%; width: var(--grain-size); height: var(--grain-size); border-radius: 48% 52% 45% 55%; background: #fffdf3; box-shadow: 0 0 0 1px rgba(159,144,110,.32), 1px 1px 2px rgba(91,76,45,.18); opacity: 0; transform: translate(0,0) rotate(0); animation: edamameSaltScatter .72s cubic-bezier(.18,.62,.42,1) var(--grain-delay) forwards; }
+.workshop-edamame-settled { z-index: 4; }
+.workshop-edamame-settled i { position: absolute; left: var(--grain-x); top: var(--grain-y); width: var(--grain-size); height: var(--grain-size); border-radius: 50%; background: #fffdf3; box-shadow: 0 0 0 1px rgba(151,137,102,.25); transform: rotate(var(--grain-r)); opacity: 0; transition: opacity .2s ease; }
+.workshop-edamame-prep.has-salt .workshop-edamame-settled i { opacity: .96; }
+@keyframes edamameSaltScatter { 0% { opacity: 0; transform: translate(0,0) rotate(0); } 12% { opacity: 1; } 72% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--grain-dx),var(--grain-dy)) rotate(var(--grain-turn)); } }
 @keyframes edamameRubPod { from { margin-left: -3px; margin-top: 2px; } to { margin-left: 4px; margin-top: -3px; } }
-@media (prefers-reduced-motion: reduce) { .workshop-boil-piece, .workshop-boil-entry-effect, .workshop-edamame-bowl::after, .workshop-edamame-pod { animation: none !important; transition-duration: .01ms !important; } }
+@media (prefers-reduced-motion: reduce) { .workshop-boil-piece, .workshop-boil-entry-effect, .workshop-edamame-pod { animation: none !important; transition-duration: .01ms !important; } .workshop-edamame-salt-particle { animation-duration: .01ms !important; } }
 .workshop-instruction { text-align: center; font-size: 1.16rem; font-weight: 900; color: var(--text); padding: 10px 6px 4px; }
 .workshop-hint { text-align: center; font-size: .76rem; font-weight: 800; color: var(--text-soft); min-height: 1.3em; }
 .workshop-meter { height: 12px; border-radius: 999px; background: #eadfca; overflow: hidden; margin: 8px auto 0; width: min(78%, 560px); }
@@ -6462,7 +6464,8 @@ body.layout-editor-on .bowl-fill-mask::after {
         <div class="workshop-edamame-prep" id="workshop-edamame-prep" aria-hidden="true">
           <div class="workshop-edamame-bowl"></div>
           <div class="workshop-edamame-pods" id="workshop-edamame-pods"></div>
-          <div class="workshop-edamame-grains"></div>
+          <div class="workshop-edamame-settled" id="workshop-edamame-settled"></div>
+          <div class="workshop-edamame-salt-fall" id="workshop-edamame-salt-fall"></div>
           <button type="button" class="workshop-edamame-salt" id="workshop-edamame-salt" aria-label="しおを ふる"><img src="../assets/images/bento/cooking/salt/salt_shaker_still.png" alt="" draggable="false"></button>
         </div>
         <img class="workshop-food" id="workshop-food" alt="" draggable="false">
@@ -9684,7 +9687,6 @@ body.layout-editor-on .bowl-fill-mask::after {
   }
   const WORKSHOP_PREP_RECIPES = {
     edamame: { id: 'edamame-prep', ingredientId: 'edamame', prepOnly: true, name: 'えだまめの したごしらえ', img: '../assets/images/bento/cooking/boil/boil_edamame_raw_v2.png', preparedImg: '../assets/images/bento/cooking/boil/boil_edamame_raw_v2.png', ingredients: [], steps: [
-      { kind: 'wash', label: 'えだまめを みずで あらおう', count: 3 },
       { kind: 'sprinkle', label: 'しおを ぱらぱら かけよう', count: 3 },
       { kind: 'rub', label: 'しおで もみもみ しよう', count: 4 },
     ]},
@@ -9721,21 +9723,53 @@ body.layout-editor-on .bowl-fill-mask::after {
   function updateEdamamePrepVisual(step) {
     const prep = document.getElementById('workshop-edamame-prep');
     const layer = document.getElementById('workshop-edamame-pods');
+    const settled = document.getElementById('workshop-edamame-settled');
     if (!prep || !layer) return;
-    const active = !!step && ['wash', 'sprinkle', 'rub'].includes(step.kind);
-    prep.classList.toggle('is-wash', active && step.kind === 'wash');
+    const active = !!step && ['sprinkle', 'rub'].includes(step.kind);
     prep.classList.toggle('is-salt', active && step.kind === 'sprinkle');
     prep.classList.toggle('is-rub', active && step.kind === 'rub');
     prep.classList.toggle('is-active', active && state.workshopProgress > 0);
     prep.classList.toggle('has-salt', active && (step.kind === 'rub' || (step.kind === 'sprinkle' && state.workshopProgress > 0)));
     if (!active) {
       layer.innerHTML = '';
+      if (settled) settled.innerHTML = '';
       return;
     }
     layer.innerHTML = EDAMAME_PREP_POSITIONS.map(function (pos, index) {
       const src = '../assets/images/bento/cooking/boil/edamame_pods/edamame_pod_' + String(index + 1).padStart(2, '0') + '.png';
       return '<img class="workshop-edamame-pod" src="' + src + '" alt="" draggable="false" style="--pod-x:' + pos[0] + '%;--pod-y:' + pos[1] + '%;--pod-r:' + pos[2] + 'deg;--pod-mix-x:' + pos[3] + '%;--pod-mix-y:' + pos[4] + '%;--pod-mix-r:' + pos[5] + 'deg;--pod-delay:-' + (index * .07).toFixed(2) + 's">';
     }).join('');
+    if (settled) {
+      const grainCount = step.kind === 'rub' ? 36 : state.workshopProgress * 12;
+      settled.innerHTML = Array.from({ length: grainCount }, function (_, index) {
+        const pod = EDAMAME_PREP_POSITIONS[index % EDAMAME_PREP_POSITIONS.length];
+        const ring = Math.floor(index / EDAMAME_PREP_POSITIONS.length);
+        const x = pod[0] + ((index * 7 + ring * 3) % 13 - 6);
+        const y = pod[1] + ((index * 11 + ring * 5) % 11 - 5);
+        const size = 3 + ((index * 5) % 4);
+        return '<i style="--grain-x:' + x + '%;--grain-y:' + y + '%;--grain-size:' + size + 'px;--grain-r:' + ((index * 37) % 180) + 'deg"></i>';
+      }).join('');
+    }
+  }
+
+  function playEdamameSaltBurst() {
+    const fall = document.getElementById('workshop-edamame-salt-fall');
+    if (!fall) return;
+    const burstId = Date.now();
+    for (let index = 0; index < 20; index += 1) {
+      const grain = document.createElement('i');
+      grain.className = 'workshop-edamame-salt-particle';
+      grain.dataset.burst = String(burstId);
+      grain.style.setProperty('--grain-size', (3 + (index * 7) % 5) + 'px');
+      grain.style.setProperty('--grain-delay', ((index % 7) * .018) + 's');
+      grain.style.setProperty('--grain-dx', (-120 - (index * 43) % 210) + 'px');
+      grain.style.setProperty('--grain-dy', (80 + (index * 29) % 135) + 'px');
+      grain.style.setProperty('--grain-turn', ((index % 2 ? -1 : 1) * (90 + index * 23)) + 'deg');
+      fall.appendChild(grain);
+    }
+    window.setTimeout(function () {
+      fall.querySelectorAll('[data-burst="' + burstId + '"]').forEach(function (grain) { grain.remove(); });
+    }, 900);
   }
 
   function setupWorkshopListeners() {
@@ -9747,6 +9781,7 @@ body.layout-editor-on .bowl-fill-mask::after {
         const step = getWorkshopStep();
         if (!step || step.kind !== 'sprinkle' || state.workshopAdvancing) return;
         event.stopPropagation();
+        playEdamameSaltBurst();
         const img = edamameSalt.querySelector('img');
         if (img) {
           img.src = '../assets/images/bento/cooking/salt/salt_shaker_sprinkling.png';
@@ -9886,7 +9921,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     els.workshopHint.textContent = step.kind === 'choose' ? 'ぜんぶ えらんでね' : (drag ? 'ゆびや マウスで うごかそう' : 'タップして すすめよう');
     const boilFood = WORKSHOP_BOIL_FOODS[recipe.id];
     const specializedBoil = !!boilFood && ['ignite', 'salt', 'heat', 'boil', 'drain'].includes(step.kind);
-    const edamamePrep = recipe.id === 'edamame-prep' && ['wash', 'sprinkle', 'rub'].includes(step.kind);
+    const edamamePrep = recipe.id === 'edamame-prep' && ['sprinkle', 'rub'].includes(step.kind);
     els.workshopScene.classList.toggle('is-boil-step', specializedBoil);
     els.workshopScene.classList.toggle('is-edamame-prep', edamamePrep);
     els.workshopBoilGame.classList.toggle('is-drain', specializedBoil && step.kind === 'drain');
