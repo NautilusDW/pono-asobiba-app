@@ -1,5 +1,9 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2272: おへやのベッドチュートリアルが既存配置を中央へ強制移動する処理と、
+// 家具衝突時に別の空きセルへ自動移動する処理を廃止。既存位置を維持し、
+// 置けないドラッグは元位置へ戻してユーザー指定外の移動を防止
+// (batch:1349-room-no-forced-furniture-move)。play.html同期不要。
 // v2271: 茹で工程だけに新設してしまった青い円形flameを撤去。焼く・揚げる工程で
 // 既に使っている既存heat-glow（オレンジの2本炎）を同じclass／animationのまま
 // 鍋下中央へ配置し、火の形・色・動きをトントンキッチン内で統一
@@ -487,7 +491,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2271;
+const CACHE_VERSION = 2272;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。

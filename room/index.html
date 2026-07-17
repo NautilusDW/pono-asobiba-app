@@ -1712,19 +1712,13 @@ function _addDragHandlers(el, areaId) {
     const finalClamped = clampToGrid(item, row, col, el.dataset.angle);
     row = finalClamped.row; col = finalClamped.col;
     el.dataset.row = row; el.dataset.col = col;
-    // 衝突チェック: 他のアイテムと重なったら最寄り空きセルへ（見つからなければ元に戻す）
+    // 衝突チェック: 他のアイテムと重なった場合は元の位置へ戻す。
+    // 別の空きセルへ自動移動すると、ユーザーが指定していない場所で確定してしまう。
     if (isOverlapping(areaId, row, col, item, el.dataset.angle, el.dataset.itemId)) {
-      const empty = findNearestEmpty(areaId, row, col, el.dataset.itemId, item, el.dataset.angle);
-      if (isOverlapping(areaId, empty.row, empty.col, item, el.dataset.angle, el.dataset.itemId)) {
-        // 空きが見つからなかった → 元の位置に戻す
-        const cfg2 = state.config[areaId];
-        const orig = cfg2 && cfg2.placed ? cfg2.placed.find(q => q.id === el.dataset.itemId) : null;
-        if (orig) { row = orig.row; col = orig.col; }
-        showToast('ここには おけないよ！');
-      } else {
-        row = empty.row; col = empty.col;
-        showToast('ここには おけないよ！');
-      }
+      const cfg2 = state.config[areaId];
+      const orig = cfg2 && cfg2.placed ? cfg2.placed.find(q => q.id === el.dataset.itemId) : null;
+      if (orig) { row = orig.row; col = orig.col; }
+      showToast('ここには おけないよ！');
       el.dataset.row = row; el.dataset.col = col;
       _applyGridPos(el, row, col, areaId);
     }
@@ -3422,20 +3416,15 @@ function _showExtendedBedTutorial() {
   }
   if (!item) return false;
 
-  // チュートリアル用に強制中央配置（未配置 or 既存どこにあってもリセット）
+  // 既に配置済みならユーザーが決めた位置・向きを維持する。
+  // 未配置の場合だけ初期位置へ追加する。
   if (!state.config.living) state.config.living = {};
   var cfg = state.config.living;
   if (!cfg.placed) cfg.placed = getPlacedItems(cfg);
-  // 部屋の中央付近に固定（4x4 グリッド中央）
   var centerRow = 3;
   var centerCol = 3;
   var existing = cfg.placed.find(p => p.id === item.id);
-  if (existing) {
-    var pos = findNearestEmpty('living', centerRow, centerCol, item.id, item, 'A');
-    existing.row = pos.row;
-    existing.col = pos.col;
-    existing.angle = 'A';
-  } else {
+  if (!existing) {
     var pos2 = findNearestEmpty('living', centerRow, centerCol, item.id, item, 'A');
     cfg.placed.push({ id: item.id, row: pos2.row, col: pos2.col, angle: 'A' });
     delete cfg.furn; delete cfg.deco;
@@ -3446,22 +3435,6 @@ function _showExtendedBedTutorial() {
   _waitForLandscape(function() {
     var bedId = item.id;
     var cfg = state.config.living;
-
-    // ベッドを部屋の中央に強制配置
-    // 視覚的に中央に来るよう、A角度のときは row=3, col=2 がベスト（pivotXが正で右に寄るため）
-    function resetBedToCenter() {
-      var p = cfg.placed.find(x => x.id === bedId);
-      if (!p) return;
-      // 他の placed アイテムを一時的に退避（衝突防止）
-      var others = cfg.placed.filter(x => x.id !== bedId);
-      // チュートリアル中は他アイテムが邪魔しないよう、ベッドを直接中央に
-      p.row = 3;
-      p.col = 2;
-      p.angle = 'A';
-      saveState();
-      refreshArea('living');
-      if (typeof window._setEditMode === 'function') window._setEditMode(true);
-    }
 
     // 現在のベッド位置/角度スナップショット
     function bedSnapshot() {
@@ -3652,8 +3625,6 @@ function _showExtendedBedTutorial() {
           waitForMove(function() {
             setTutPhase(null);
             showToast2('うごかせたね！ ✨', function() {
-              // ベッドを中央に戻す
-              resetBedToCenter();
               setTimeout(function() {
                 // ── フェーズ3: 回転のやり方 ──
                 _showTutorialStepModal({
@@ -3662,8 +3633,6 @@ function _showExtendedBedTutorial() {
                   body: 'ベッドの したに ある\n\uD83D\uDD04 マークを おすと\nむきが かわるよ！\n\nいっしゅう まわしてみよう！',
                   btn: 'やってみる！'
                 }, function() {
-                  // 回転フェーズ開始時にも中央リセット
-                  resetBedToCenter();
                   setTutPhase('rotate');
                   waitForRotations(2, function() {
                     setTutPhase(null);
