@@ -292,6 +292,11 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
       <input type="number" id="num-cellSize" step="0.1">
     </label>
 
+    <label><span>占有セル</span>
+      <input type="range" id="sl-footprintSize" min="1" max="4" step="1">
+      <input type="number" id="num-footprintSize" min="1" max="4" step="1">
+    </label>
+
     <label><span>pivotX (%)</span>
       <input type="range" id="sl-pivotX" min="-100" max="100" step="0.5">
       <input type="number" id="num-pivotX" step="0.5">
@@ -317,7 +322,8 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
       <label><span>maxCol</span><input type="number" id="num-maxCol" min="0" max="7" step="1"></label>
     </div>
     <div style="font-size:11px;color:#888;margin-top:4px">
-      row↗右奥方向, col↖左奥方向
+      row↗右奥方向, col↖左奥方向<br>
+      緑＝基準セルを置ける範囲、橙＝家具が実際に占有するセル
     </div>
 
     <div id="surface-section" style="display:none;margin-top:8px;border-top:1px solid #444;padding-top:8px">
@@ -427,7 +433,8 @@ var ITEMS = (typeof ROOM_ITEMS !== 'undefined' ? ROOM_ITEMS : [])
       cat: ov.cat || it.cat,
       theme: ov.theme || it.theme || 'all',
       roomImg: it.roomImg, roomImgB: it.roomImgB || null,
-      cellSize: it.cellSize || 1, pivotX: it.pivotX || 0, pivotY: it.pivotY || 0,
+      cellSize: it.cellSize || 1, footprintSize: it.footprintSize,
+      pivotX: it.pivotX || 0, pivotY: it.pivotY || 0,
       surfaceY: it.surfaceY || 0,
       // ★ items.js の配置範囲 / B角度データも引き継ぐ
       //   これが無いと adjustments 初期化で auto-margin にフォールバックし、
@@ -478,6 +485,7 @@ ITEMS.forEach(item => {
   // 既存 items.js の値を優先（無ければ auto 計算）
   const base = {
     cellSize: item.cellSize,
+    footprintSize: item.footprintSize || Math.max(1, Math.ceil(item.cellSize || 1)),
     pivotX: item.pivotX,
     pivotY: item.pivotY,
     minRow: (item.minRow !== undefined ? item.minRow : autoMargin),
@@ -494,6 +502,7 @@ ITEMS.forEach(item => {
     var bBase = Object.assign({}, base);
     if (item.angleB) {
       if (item.angleB.cellSize !== undefined) bBase.cellSize = item.angleB.cellSize;
+      if (item.angleB.footprintSize !== undefined) bBase.footprintSize = item.angleB.footprintSize;
       if (item.angleB.pivotX !== undefined)   bBase.pivotX = item.angleB.pivotX;
       if (item.angleB.pivotY !== undefined)   bBase.pivotY = item.angleB.pivotY;
       if (item.angleB.minRow !== undefined)   bBase.minRow = item.angleB.minRow;
@@ -833,6 +842,7 @@ function selectItem(id) {
   }
 
   syncSlider('cellSize', adj.cellSize);
+  syncSlider('footprintSize', adj.footprintSize);
   syncSlider('pivotX', adj.pivotX);
   syncSlider('pivotY', adj.pivotY);
   document.getElementById('num-minRow').value = adj.minRow;
@@ -897,6 +907,7 @@ function reloadSliders(id) {
   document.getElementById('edit-item-id').value = id;
   document.getElementById('edit-item-name').value = item.name;
   syncSlider('cellSize', adj.cellSize);
+  syncSlider('footprintSize', adj.footprintSize);
   syncSlider('pivotX', adj.pivotX);
   syncSlider('pivotY', adj.pivotY);
   document.getElementById('num-minRow').value = adj.minRow;
@@ -1419,7 +1430,7 @@ document.getElementById('chk-stackable').onchange = function() {
 };
 
 // ─── Slider/number bindings ───
-['cellSize', 'pivotX', 'pivotY'].forEach(name => {
+['cellSize', 'footprintSize', 'pivotX', 'pivotY'].forEach(name => {
   const sl = document.getElementById('sl-' + name);
   const num = document.getElementById('num-' + name);
   let pushed = false;
@@ -1772,6 +1783,21 @@ function drawGrid() {
 
   // Current position marker
   if (adj) {
+    const span = Math.max(1, Math.ceil(adj.footprintSize || adj.cellSize || 1));
+    for (let dr = 0; dr < span; dr++) {
+      for (let dc = 0; dc < span; dc++) {
+        const rr = adj.row - dr, cc = adj.col - dc;
+        if (rr < 0 || rr >= n || cc < 0 || cc >= n) continue;
+        const p0 = isoGridPt(rr, cc), p1 = isoGridPt(rr + 1, cc);
+        const p2 = isoGridPt(rr + 1, cc + 1), p3 = isoGridPt(rr, cc + 1);
+        ctx.beginPath();
+        ctx.moveTo(p0.x*w, p0.y*h); ctx.lineTo(p1.x*w, p1.y*h);
+        ctx.lineTo(p2.x*w, p2.y*h); ctx.lineTo(p3.x*w, p3.y*h);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(255,165,0,0.42)';
+        ctx.fill();
+      }
+    }
     const cp = isoGridPt(adj.row + 0.5, adj.col + 0.5);
     ctx.beginPath();
     ctx.arc(cp.x*w, cp.y*h, 6, 0, Math.PI*2);
@@ -2131,7 +2157,7 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
   var idInput = document.getElementById('edit-item-id');
   if (idInput) idInput.dispatchEvent(new Event('change'));
   // ★ min/max/pivot 等の数値フィールドも強制コミット（blur 前に Deploy した場合の対策）
-  ['minRow','maxRow','minCol','maxCol','pivotX','pivotY','cellSize','surfaceY']
+  ['minRow','maxRow','minCol','maxCol','pivotX','pivotY','cellSize','footprintSize','surfaceY']
     .forEach(function(n) {
       var el = document.getElementById('num-' + n);
       if (el) { el.dispatchEvent(new Event('input')); el.dispatchEvent(new Event('change')); }
@@ -2288,6 +2314,8 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
       }
 
       newBlock = safeReplProp(newBlock, 'cellSize', adjA.cellSize);
+      if (/\bfootprintSize:/.test(newBlock)) newBlock = safeReplProp(newBlock, 'footprintSize', adjA.footprintSize);
+      else newBlock = newBlock.replace(/(cellSize:\s*-?[\d.]+,?)/, '$1 footprintSize: ' + adjA.footprintSize + ',');
       newBlock = safeReplProp(newBlock, 'pivotX', adjA.pivotX);
       newBlock = safeReplProp(newBlock, 'pivotY', adjA.pivotY);
 
@@ -2324,6 +2352,8 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
           var abInner = angleBMatch[1];
           if (/\bcellSize:/.test(abInner)) abInner = abInner.replace(/(cellSize:\s*)-?[\d.]+/, '$1' + adjB.cellSize);
           else abInner = ' cellSize: ' + adjB.cellSize + ',' + abInner;
+          if (/\bfootprintSize:/.test(abInner)) abInner = abInner.replace(/(footprintSize:\s*)-?[\d.]+/, '$1' + adjB.footprintSize);
+          else abInner = ' footprintSize: ' + adjB.footprintSize + ',' + abInner;
           if (/\bpivotX:/.test(abInner))   abInner = abInner.replace(/(pivotX:\s*)-?[\d.]+/, '$1' + adjB.pivotX);
           else abInner = ' pivotX: ' + adjB.pivotX + ',' + abInner;
           if (/\bpivotY:/.test(abInner))   abInner = abInner.replace(/(pivotY:\s*)-?[\d.]+/, '$1' + adjB.pivotY);
@@ -2341,7 +2371,7 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
           newBlock = newBlock.replace(angleBMatch[0], 'angleB: {' + abInner + ' }');
         } else {
           // angleB ブロックが存在しないので新規挿入（最後の `}` の前に追加）
-          var fields = ['cellSize: ' + adjB.cellSize, 'pivotX: ' + adjB.pivotX, 'pivotY: ' + adjB.pivotY];
+          var fields = ['cellSize: ' + adjB.cellSize, 'footprintSize: ' + adjB.footprintSize, 'pivotX: ' + adjB.pivotX, 'pivotY: ' + adjB.pivotY];
           if (adjB.minRow !== undefined && adjB.minRow !== null) {
             fields.push('minRow: ' + adjB.minRow, 'maxRow: ' + adjB.maxRow, 'minCol: ' + adjB.minCol, 'maxCol: ' + adjB.maxCol);
           }
@@ -2398,7 +2428,7 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
             entry += "    roomImgB: " + imgPathB + ",\n";
           }
           entry += "    gridRow: 4, gridCol: 4, cellSize: " + (adj.cellSize || 1) +
-            ", pivotX: " + (adj.pivotX || 0) + ", pivotY: " + (adj.pivotY || 0);
+            ", footprintSize: " + (adj.footprintSize || 1) + ", pivotX: " + (adj.pivotX || 0) + ", pivotY: " + (adj.pivotY || 0);
           if (adj.minRow != null) {
             entry += ", minRow: " + adj.minRow + ", maxRow: " + adj.maxRow +
               ", minCol: " + adj.minCol + ", maxCol: " + adj.maxCol;
