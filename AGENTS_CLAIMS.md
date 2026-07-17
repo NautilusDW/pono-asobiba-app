@@ -59,7 +59,6 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
-- 2026-07-17 08:06 - by Codex - [batch:1328c-mojikko-settings-gauge-frame-family] - writing-mori/index.html, tests/mojikko_storybook_ui_regression.cjs, tests/mojikko_storybook_ui_browser_regression.cjs, tests/mojikko_writing_modes_browser_regression.cjs, sw.js, tmp/alpha_pending/1328c-mojikko-settings-gauge-frame-family/**, assets/images/mojikko/writing/storybook/frame-family-v2/**, AGENTS_CLAIMS.md, HANDOFF.md - 正本settings 120x120を基準に枠厚再生成・戻るを設定内へ、過去成果物1328b確認済み→差替え着手
 
 - 2026-06-28 09:27 - by Codex - [batch:877-gacha-tray-mask-lower] - play.html, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - ガチャ受け皿マスクが上すぎるため奥壁ラインを下げて再調整 [overlap: batch:860-data-export-import]
 - 2026-06-28 13:00 - by Claude - [batch:885-difficulty-label-phase3-fix] - quizland/index.html, puzzle/partner-select.js, bento/index.html - クロスレビュー Critical/High 修正 (quizland「かんたん」UI 露出 / puzzle partner「かんたん」/ bento aria-label hardcode) [overlap: batch:884-maze-water-line-skate]
