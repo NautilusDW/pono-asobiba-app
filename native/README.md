@@ -1,7 +1,16 @@
 # Pono Native Shell
 
-`native/` は、既存ゲームを Capacitor の Android アプリへ組み込むための独立ワークスペースです。
+`native/` は、既存ゲームを Capacitor のネイティブアプリ（Android / iOS）へ組み込むための独立ワークスペースです。
 Web 配信用ファイルを直接コピーせず、[`content-manifest.json`](./content-manifest.json) に明示した実行時コンテンツだけから `native/www/` を生成します。
+
+## Platform status
+
+- **Android (Phase 1)**: 実装済み。`native/android/` に Gradle プロジェクトあり。
+- **iOS (Phase 2 / 着手中)**: `npx cap add ios` でプラットフォームの骨格のみ追加済み（`native/ios/` に Xcode プロジェクト一式が生成されている）。
+  - ⚠️ **このマシンには完全版 Xcode が入っていない**（`xcode-select -p` は `/Library/Developer/CommandLineTools` を指しており、`xcodebuild -version` はエラーになる。`/Applications/Xcode.app` も存在しない）。CocoaPods (`pod` コマンド) も未導入。
+  - そのため **ビルド・Simulator 起動・実機インストールのいずれも未検証**。「動作確認済み」ではなく、あくまで `cap add ios` によるプロジェクト生成が成功した段階。
+  - Xcode 導入後の想定手順: `npm run ios:sync`（`www/` の内容を `native/ios/App/App/public/` に同期）→ `npm run ios:open`（Xcode が `native/ios/App/App.xcodeproj` を開く）→ Simulator か実機を選んでビルド・実行。CocoaPods を使う構成に切り替わった場合は `cd native/ios/App && pod install` が別途必要になる可能性がある（現時点では未確認）。
+  - `native/ios/App/App/public/`（`cap sync` で再生成される `www/` の巨大コピー）や `Pods/`、`DerivedData/`、`xcuserdata/` などは Git 管理対象外（ルート `.gitignore` および `native/ios/.gitignore` 参照）。
 
 ## Content manifest
 
@@ -23,6 +32,7 @@ npm run stage-www
 npm run verify-assets
 npm run verify-references
 npm run android:sync
+npm run ios:sync    # 要 Xcode（Phase 2、このマシンでは未検証。上記 Platform status 参照）
 ```
 
 `stage-www` は全 preflight 完了後に一時ディレクトリへ出力し、内容検証に合格した場合だけ `www/` を入れ替えます。失敗時は直前の `www/` を保持します。生成した `www/` は Git 管理対象外です。
