@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-07-17 - [batch:1328d-mojikko-white-paper-ornate-frames] Codex: ユーザー実機評価「紙面が全面的に黄ばんで古紙に見えるため、基本を白ベースへ。ことばの穴と下の見る丸、中央メッセージ、文字を書くボックス、右の書き順は個別生成し、どんぐり彫刻などを時々入れた飾り枠にする」を受領。過去成果物1328b／1328cは実装済みだが、今回の白紙面化と5領域の専用装飾枠は未実装の明示的な再差し替えと確認。最新 `origin/develop-app` `cae73fcf` 由来の隔離worktree `/tmp/pono-1328d-mojikko-white-paper-ornate-frames`／branch `codex/1328d-mojikko-white-paper-ornate-frames`を使用し、共有worktreeのBento変更には触れない。主操作は中央の文字盤をなぞる、予備操作は既存設定内の「もどる」。庭背景、正本設定画像、お手本の明朝体、writer geometry、3モード／進捗／判定／保存／ARIAは維持する。現時点はclaim／HANDOFFのみで、UI・asset・test・SWは未変更。 (by Codex)
+
 - 2026-07-17 - [batch:1340-kitchen-saibashi] Codex: DONE — ユーザー指示「フライパンで混ぜる時は菜箸、菜箸イラストも生成」を実装。GPT Image 2 built-inで既存`frying_pan.png`／`knife.png`を参照し、木製菜箸一膳をシアン背景で生成。rawは`tmp/alpha_pending/1340-kitchen-saibashi/saibashi_raw.png`（1275x1234、1.2MB）、soft matte／despill／edge contract透過版を`assets/images/bento/cooking/tools/saibashi.png`（399KB）へ配置。CSS製ヘラを廃止し、pointer位置へ菜箸先端を合わせる表示へ変更。にんじんいんげん／きんぴらの案内5箇所とariaを「さいばし」へ統一。Playwright 7件、inline JS/SW構文、diff check PASS。sw v2260。無関係な未追跡`assets/images/.DS_Store`は未変更・未追加。 (by Codex)
 
 - 2026-07-17 - [batch:1339-kitchen-current-finals-kinpira] Codex: DONE — ユーザー実機評価「にんじんいんげん完成が旧絵／きんぴらが巨大な輪切り1枚を焼く」を修正。ninjin_ingen recipeVariant最終段を現行`free-layout/okazu_ninjin_ingen.png`へ変更。kinpiraカードを旧Bento_partsから現行`cooking/kinpira/kinpira_mid.png`へ変更し、汎用carrot grill表示を専用2.5D工程（個別にんじん9本→個別ごぼう9本→ヘラで混ぜる）へ分離。ごぼうは現行完成画像の茶系に合わせた専用透過`kinpira/pieces/gobo_matchstick_01..10.png`を追加し、実行時色フィルター依存を廃止。完成時はkinpira_mid。専用2品完了画像／順序テストを含むPlaywright 11件、inline JS/SW構文、diff check PASS。sw v2258。 (by Codex)
