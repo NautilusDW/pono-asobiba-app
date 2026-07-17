@@ -25,6 +25,7 @@
 - 2026-07-17 - [batch:1336-kitchen-ninjin-ingen-sequence] Codex: DONE — batch:1335実機評価「マスクずれ／最初の皿が一枚レイヤー風／にんじん投入だけでいんげんが突然出る」を修正。最初の皿を個別にんじん7枚の散開表示にし、皿ごとドラッグ投入後に個別いんげん7枚へ交代、2回目の投入後だけ18切れ端の混ぜ操作を開始。Canvasを鍋肌へ左上補正し楕円clipで外側描画を遮断。キーボードもにんじん→いんげん→混ぜる順。関連Playwright 9件、inline JS/SW構文、diff check PASS。sw v2255。 (by Codex)
 
 - 2026-07-17 - [batch:1328c-mojikko-settings-gauge-frame-family] Codex: 正本settings 120x120を基準に枠厚再生成・戻るを設定内へ、過去成果物1328b確認済み→差替え着手。最新`origin/develop-app`から隔離worktree `/tmp/pono-1328c-mojikko-settings-gauge-frame-family`／branch `codex/1328c-mojikko-settings-gauge-frame-family`を作成し、claim登録済み。現時点ではclaim／HANDOFFのみで、コード・asset・SWは未変更。 (by Codex)
+- 2026-07-17 - [batch:1328c-mojikko-settings-gauge-frame-family] Codex: **DONE / RELEASE READY** — 正本設定ボタンを基準に394×402 RGBAの共通9-sliceマスターを採用し、文字書きの外枠・主要ボタン・タブ・文字／課題タイルをslice47 fill、通常9px／短い横画面13px、stretchへ統一。設定ボタンは正本120×120を維持し、「もどる」を設定内へ移設。設定メニューとモード選択は外枠1つだけ、後者は1px区切り。庭背景・明朝体お手本・writer geometryを維持。6静的回帰、2ブラウザ回帰、6 viewport、Chromium／Firefox／WebKit、独立cross-review GREEN。master SHA256 `dd516322482e38399b1a523685beb0cb2b921d8df0365934a9c56d2809b0b402`、SW v2258、凍結develop／master／productionは変更しない。 (by Codex)
 
 - 2026-07-17 - [batch:1335-kitchen-ninjin-ingen-stir] Codex: DONE — にんじんいんげんの炒め工程を、既存のにんじん9種＋いんげん9種の個別切れ端をCanvas上に散らす2.5D操作へ変更。PC／タッチでヘラをドラッグすると近くの切れ端が押され、回転・跳ね・楕円内バウンドし、移動距離と触れた切れ端数で完成。透明な塩レイヤーが入力を覆う問題をz順で回避し、キーボード操作も追加。Playwright関連9件、inline JS構文、diff check PASS。sw v2254。 (by Codex)
 

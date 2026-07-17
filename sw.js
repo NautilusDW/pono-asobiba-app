@@ -1,5 +1,10 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2258: もじっこファーム文字書きの全外枠を、正本設定ボタンと同じ木枠厚へ
+// 揃えた単一9-sliceマスターへ統一。通常9px／短い横画面13px、
+// slice47 fill／stretchで紙面の反復継ぎ目を防止。設定は正本画像、
+// 戻るは設定内、モード選択は外枠1つ＋1px区切り。庭背景と明朝体お手本を維持
+// (batch:1328c-mojikko-settings-gauge-frame-family)。play.html同期不要。
 // v2257: にんじんいんげんの個別切れ端21枚に残っていた不透明な紫背景を除去。
 // にんじん11枚／いんげん10枚をsoft matte・despill付き透過PNGへ再処理し、
 // さらに透明余白10pxを加えて切れ端が画像端へ接するクロップ感も解消
@@ -424,7 +429,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2257;
+const CACHE_VERSION = 2258;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
@@ -503,6 +508,8 @@ const CRITICAL_ASSETS_SCRIPTS = [
   '/assets/audio/sfx/acorn/acorn_get_festive_20260628.mp3',
 ];
 const CRITICAL_ASSETS_IMAGES = [
+  // v2258: もじっこ文字書きの全外枠で共有する9-sliceマスター。
+  '/assets/images/mojikko/writing/storybook/settings-gauge-family/mojikko_settings_gauge_frame_master.png',
   // v2217: 家具スタンプカードの押印済みマスで使う赤い線画ゴム印。
   '/assets/ui/stamp-card/pono_red_rubber_stamp_20260716.webp',
   // v1718: ごかんそう (rating) — PNG asset; CRITICAL_ASSETS_SCRIPTS から分離 (semantic 整理)。
