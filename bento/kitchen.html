@@ -5812,8 +5812,8 @@ body.layout-editor-on .bowl-fill-mask::after {
 .workshop-scene.is-boil-step { background: #c9c5bd url('../assets/images/bento/cooking/stove_base.webp') center 72% / 128% auto no-repeat; }
 .workshop-scene.is-boil-step::after { display: none; }
 .workshop-boil-pot { position: absolute; z-index: 2; width: 56%; left: 22%; top: 4%; object-fit: contain; pointer-events: none; filter: drop-shadow(0 8px 7px rgba(70,45,25,.18)); }
-.workshop-boil-flame { position: absolute; z-index: 1; left: 44%; top: 68%; width: 12%; height: 9%; opacity: 0; border-radius: 50%; background: radial-gradient(ellipse, #d8f5ff 0 16%, rgba(74,190,255,.98) 20% 40%, rgba(32,102,255,.88) 48%, rgba(255,157,35,.62) 61%, transparent 74%); filter: blur(1.2px); transform: scale(.7); transition: opacity .22s ease, transform .22s ease; animation: workshopFlame 0.42s ease-in-out infinite alternate; }
-.workshop-boil-game.is-heat-on .workshop-boil-flame { opacity: 1; transform: scale(1); }
+.workshop-boil-flame { z-index: 1; left: 50%; top: 74%; width: 18%; height: 10%; opacity: 0; }
+.workshop-boil-game.is-heat-on .workshop-boil-flame { opacity: 1; animation: heatPulse 0.82s ease-in-out infinite alternate; }
 .workshop-boil-salt { position: absolute; z-index: 6; width: 16%; left: 75%; top: 40%; opacity: 0; pointer-events: none; transform: translate(-50%,-50%); transition: opacity .25s ease, left .45s ease, top .45s ease, transform .2s ease; filter: drop-shadow(0 8px 10px rgba(70,45,25,.2)); touch-action: none; }
 .workshop-boil-game.is-salt-step .workshop-boil-salt { opacity: 1; pointer-events: auto; cursor: grab; }
 .workshop-boil-game.is-salt-step .workshop-boil-salt.is-dragging { transition: none; cursor: grabbing; }
@@ -5891,7 +5891,6 @@ body.layout-editor-on .bowl-fill-mask::after {
 @keyframes edamameWaterDrift { from { transform: translate(-50%,-50%) rotate(calc(var(--piece-rot, 0deg) - 7deg)) translateX(-3px); } to { transform: translate(-50%,-50%) rotate(calc(var(--piece-rot, 0deg) + 9deg)) translateX(4px); } }
 @keyframes workshopEntryRipple { 0% { opacity: .95; transform: translate(-50%,-50%) scale(.2); } 100% { opacity: 0; transform: translate(-50%,-50%) scale(1.35); } }
 @keyframes workshopEntryBubble { 0% { opacity: 1; transform: translateY(5px) scale(.5); } 100% { opacity: 0; transform: translateY(-24px) scale(1.15); } }
-@keyframes workshopFlame { from { filter: blur(2px) brightness(.9); } to { filter: blur(3px) brightness(1.3); } }
 @keyframes workshopSaltFall { from { transform: translate(0,-8px) rotate(-12deg); } to { transform: translate(22px,38px) rotate(-12deg); } }
 @media (prefers-reduced-motion: reduce) { .workshop-boil-food, .workshop-boil-bubble, .workshop-boil-steam { animation: none !important; transition-duration: .01ms; } }
 .workshop-edamame-prep { position: absolute; inset: 0; z-index: 3; display: none; overflow: hidden; background: radial-gradient(circle at 50% 48%, #fffdf5 0 34%, #f2dfba 75%, #ddb879 100%); }
@@ -6542,7 +6541,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       <div class="workshop-dots" id="workshop-dots" aria-hidden="true"></div>
       <div class="workshop-scene" id="workshop-scene" role="button" tabindex="0">
         <div class="workshop-boil-game" id="workshop-boil-game" data-stage="0" aria-hidden="true">
-          <div class="workshop-boil-flame"></div>
+          <div class="heat-glow workshop-boil-flame"></div>
           <img class="workshop-boil-pot" id="workshop-boil-pot" alt="" draggable="false">
           <img class="workshop-boil-food" id="workshop-boil-food" alt="" draggable="false">
           <div class="workshop-boil-plate"></div>

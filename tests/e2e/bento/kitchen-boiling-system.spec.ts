@@ -27,7 +27,21 @@ test('broccoli is prepped first, then boils with particles on the stove', async 
   await page.locator('#workshop-scene').press('Enter');
   await page.waitForTimeout(450);
   await expect(page.locator('#workshop-boil-game')).toHaveClass(/is-heat-on/);
-  await expect(page.locator('.workshop-boil-flame')).toHaveCSS('opacity', '1');
+  await expect(page.locator('.workshop-boil-flame')).toHaveClass(/heat-glow/);
+  const visibleFlameOpacity = await page.locator('.workshop-boil-flame').evaluate((element) => parseFloat(getComputedStyle(element).opacity));
+  expect(visibleFlameOpacity).toBeGreaterThan(.5);
+  const flameMatchesExisting = await page.locator('.workshop-boil-flame').evaluate((element) => {
+    const existing = document.querySelector('#grill-stage .heat-glow');
+    if (!existing) return false;
+    const flame = getComputedStyle(element);
+    const base = getComputedStyle(existing);
+    const flameTongue = getComputedStyle(element, '::before');
+    const baseTongue = getComputedStyle(existing, '::before');
+    return flame.backgroundImage === base.backgroundImage
+      && flameTongue.backgroundImage === baseTongue.backgroundImage
+      && flameTongue.content === baseTongue.content;
+  });
+  expect(flameMatchesExisting).toBe(true);
   await expect(page.locator('#workshop-instruction')).toHaveText('しおを いれよう');
   await expect(page.locator('#workshop-boil-salt')).toHaveAttribute('src', /salt_shaker_still\.png/);
   const sceneBox = await page.locator('#workshop-scene').boundingBox();

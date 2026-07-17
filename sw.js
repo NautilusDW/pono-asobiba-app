@@ -1,5 +1,9 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2271: 茹で工程だけに新設してしまった青い円形flameを撤去。焼く・揚げる工程で
+// 既に使っている既存heat-glow（オレンジの2本炎）を同じclass／animationのまま
+// 鍋下中央へ配置し、火の形・色・動きをトントンキッチン内で統一
+// (batch:1348-kitchen-reuse-existing-flame)。play.html同期不要。
 // v2270: ブロッコリー／えだまめ茹で鍋を56%へ縮小し、鍋底・五徳・青い火を
 // 画面内表示。水面mask／泡／波紋を同一35.8×26.5%楕円へ統一し、皿上の房・
 // さやを実皿内へ再配置。湯切りボウルを縦方向へ起こし、完成食材を内側楕円で
@@ -483,7 +487,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2270;
+const CACHE_VERSION = 2271;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
