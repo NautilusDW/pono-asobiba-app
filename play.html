@@ -9194,6 +9194,12 @@
       display: block;
       position: relative;
       z-index: 1;
+      /* sw2267: 旧 .bn-item 定義 (L1341) の overflow:hidden がここでは
+         上書きされておらずカスケードで生き残り、.bn-badge (top:-7px/right:-7px
+         ではみ出す設計) の右上を四角くクリップしていた (Chromium/WebKit 両方で
+         再現・実機で「数字が欠けて見えない」の根本原因)。ここで明示的に
+         visible へ戻してクリップ源を断つ (batch:1345-bn-badge-clip-fix)。 */
+      overflow: visible;
       padding: 0;
       border: 0;
       border-radius: 18px;
@@ -11554,7 +11560,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2248; // sw.js CACHE_VERSION と同期 (batch:1321-treasure-overlay-permanent-failsafe: 宝箱/初回クリア報酬オーバーレイへ自動タイムアウト閉じ+背景タップ閉じの恒久対応、詳細はsw.js changelog参照)
+    const PAGE_CACHE_VERSION = 2267; // sw.js CACHE_VERSION と同期 (batch:1345-bn-badge-clip-fix: おしらせバッジ数字クリップ修正、詳細はsw.js changelog参照)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -11563,7 +11569,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v2248'; // PAGE_CACHE_VERSION/sw.js CACHE_VERSION と同期
+    window.PONO_SW_VERSION = 'v2267'; // PAGE_CACHE_VERSION/sw.js CACHE_VERSION と同期
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.

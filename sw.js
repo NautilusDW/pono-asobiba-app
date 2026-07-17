@@ -1,5 +1,14 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2267: 下部ナビ「おしらせ」ベルの未読件数バッジ (#bottomNavNewsBadge) の数字が
+// 実機で欠けて見える不具合を修正。原因は旧 .bn-item 定義 (play.html L1341) の
+// overflow:hidden が現行 .bn-item 定義 (L9189) で上書きされずカスケードで残存し、
+// .bn-badge の top:-7px/right:-7px はみ出し配置を四角くクリップしていたこと
+// (WebKit固有のmask×filterバグではなく、Chromium/WebKit両方で再現する素の
+// overflow:hidden起因と実機再現確認済み)。.bn-item に overflow:visible を明示
+// 追加してクリップ源を除去。バッジ自体の見た目は変更なし
+// (batch:1345-bn-badge-clip-fix)。play.html PAGE_CACHE_VERSION / PONO_SW_VERSION
+// を2267へ同期。
 // v2266: トントンキッチンの材料選択を、暗くぼかした冷蔵庫背景上の3枚1段
 // 縦スワイプカルーセルへ変更。素材名を白いかな名札で常時読みやすくした
 // (batch:1344-kitchen-ingredient-vertical-carousel)。play.html同期不要。
@@ -461,7 +470,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2266;
+const CACHE_VERSION = 2267;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
