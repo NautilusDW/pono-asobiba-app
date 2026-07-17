@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-07-17 - [batch:1340-kitchen-saibashi] Codex: DONE — ユーザー指示「フライパンで混ぜる時は菜箸、菜箸イラストも生成」を実装。GPT Image 2 built-inで既存`frying_pan.png`／`knife.png`を参照し、木製菜箸一膳をシアン背景で生成。rawは`tmp/alpha_pending/1340-kitchen-saibashi/saibashi_raw.png`（1275x1234、1.2MB）、soft matte／despill／edge contract透過版を`assets/images/bento/cooking/tools/saibashi.png`（399KB）へ配置。CSS製ヘラを廃止し、pointer位置へ菜箸先端を合わせる表示へ変更。にんじんいんげん／きんぴらの案内5箇所とariaを「さいばし」へ統一。Playwright 7件、inline JS/SW構文、diff check PASS。sw v2260。無関係な未追跡`assets/images/.DS_Store`は未変更・未追加。 (by Codex)
+
 - 2026-07-17 - [batch:1339-kitchen-current-finals-kinpira] Codex: DONE — ユーザー実機評価「にんじんいんげん完成が旧絵／きんぴらが巨大な輪切り1枚を焼く」を修正。ninjin_ingen recipeVariant最終段を現行`free-layout/okazu_ninjin_ingen.png`へ変更。kinpiraカードを旧Bento_partsから現行`cooking/kinpira/kinpira_mid.png`へ変更し、汎用carrot grill表示を専用2.5D工程（個別にんじん9本→個別ごぼう9本→ヘラで混ぜる）へ分離。ごぼうは現行完成画像の茶系に合わせた専用透過`kinpira/pieces/gobo_matchstick_01..10.png`を追加し、実行時色フィルター依存を廃止。完成時はkinpira_mid。専用2品完了画像／順序テストを含むPlaywright 11件、inline JS/SW構文、diff check PASS。sw v2258。 (by Codex)
 
 - 2026-07-17 - [batch:1338-kitchen-clean-cutout-alpha] Codex: DONE — ユーザー画像「皿のいんげんが包丁切りよりクロップ断片に見える」を調査し、個別PNGがalpha channelを持つだけで四隅alpha=255、紫背景が残った不完全処理と特定。形状自体は既存の切断面を再利用し、carrot 11枚＋green bean 10枚をborder key `#ef04e9`、soft matte／despill／edge contractで再透過。白背景合成と1366x768実画面の皿・鍋で紫矩形／フリンジ消失を確認。21枚四隅alpha=0テスト追加。sw v2257。 (by Codex)

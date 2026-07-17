@@ -29,6 +29,8 @@ test('ninjin ingen pieces spread and move when the spatula is dragged', async ({
   await expect.poll(() => page.evaluate(() => !(window as Window & { __bentoState?: { stirFryPieces?: Array<{ image?: HTMLImageElement }> } }).__bentoState?.stirFryPieces?.some(piece => piece.image?.src.includes('green_bean_piece_')))).toBe(true);
   await tray.dragTo(page.locator('.grill-pan'), { force: true });
   await expect(page.locator('#grill-stage')).toHaveClass(/stir-fry-active/);
+  await expect(page.locator('#stir-fry-spatula')).toHaveCSS('background-image', /tools\/saibashi\.png/);
+  await expect(page.locator('#stir-fry-canvas')).toHaveAttribute('aria-label', 'さいばしを うごかして ぐざいを まぜよう');
   await expect.poll(() => page.evaluate(() => (window as Window & { __bentoState?: { stirFryPieces?: unknown[] } }).__bentoState?.stirFryPieces?.length || 0)).toBe(18);
 
   const canvas = page.locator('#stir-fry-canvas');

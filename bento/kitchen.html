@@ -2765,16 +2765,11 @@ body.layout-editor-on .fry-pot {
 #grill-stage.stir-fry-active .stir-fry-canvas:active { cursor: grabbing; }
 #grill-stage.stir-fry-active:not(.is-served) .cooking-food { opacity: 0; }
 .stir-fry-spatula {
-  position: absolute; left: 71%; top: 57%; width: 4.2%; height: 31%; z-index: 46;
-  border-radius: 45% 45% 28% 28%;
-  background: linear-gradient(90deg, #9b5b28, #e4a95d 48%, #8b4d22);
-  box-shadow: 0 4px 7px rgba(62,34,17,.28);
-  transform: translate(-50%,-16%) rotate(39deg); transform-origin: 50% 10%;
-  opacity: 0; pointer-events: none; transition: opacity .2s ease, transform .08s linear, left .08s linear, top .08s linear;
-}
-.stir-fry-spatula::before {
-  content: ''; position: absolute; left: -52%; bottom: -4%; width: 204%; height: 29%;
-  border-radius: 38% 38% 46% 46%; background: linear-gradient(90deg,#8a4d22,#df9b4c 48%,#7c421d);
+  position: absolute; left: 58%; top: 35%; width: 31%; height: 55%; z-index: 46;
+  background: url('../assets/images/bento/cooking/tools/saibashi.png') center / contain no-repeat;
+  filter: drop-shadow(0 4px 5px rgba(62,34,17,.25));
+  transform: translate(-8%,-8%) rotate(0deg); transform-origin: 12% 12%;
+  opacity: 0; pointer-events: none; transition: opacity .2s ease, transform .06s linear, left .06s linear, top .06s linear;
 }
 #grill-stage.stir-fry-active .stir-fry-spatula { opacity: 1; }
 .stir-fry-tray-pieces {
@@ -6279,7 +6274,7 @@ body.layout-editor-on .bowl-fill-mask::after {
         <div class="cook-piece-bank" id="grill-piece-bank" aria-hidden="true"></div>
         <div class="finish-dish finish-dish--plate" aria-hidden="true"></div>
         <div class="cook-tool cook-tool--pan grill-pan" aria-hidden="true" data-le-keep-position="1"></div>
-        <canvas class="stir-fry-canvas" id="stir-fry-canvas" tabindex="0" role="application" aria-label="ヘラを うごかして にんじんと いんげんを まぜよう"></canvas>
+        <canvas class="stir-fry-canvas" id="stir-fry-canvas" tabindex="0" role="application" aria-label="さいばしを うごかして ぐざいを まぜよう"></canvas>
         <div class="stir-fry-spatula" id="stir-fry-spatula" aria-hidden="true"></div>
         <div class="stir-fry-tray-pieces" id="stir-fry-tray-pieces" role="button" tabindex="0" aria-label="にんじんを フライパンへ いれよう"></div>
         <div class="grill-smoke" id="grill-smoke" aria-hidden="true">
@@ -18035,8 +18030,8 @@ body.layout-editor-on .bowl-fill-mask::after {
       updateCookStageState('grill');
       if (els.grillBurst) els.grillBurst.textContent = 'ジュッ！';
       showCookBurst('grill');
-      if (els.grillActionLabel) els.grillActionLabel.textContent = 'ヘラで ぜんたいを まぜよう';
-      setSpeech(getStirSecondName() + 'も はいったよ！ ヘラで いっしょに まぜよう！', 'grill');
+      if (els.grillActionLabel) els.grillActionLabel.textContent = 'さいばしで ぜんたいを まぜよう';
+      setSpeech(getStirSecondName() + 'も はいったよ！ さいばしで いっしょに まぜよう！', 'grill');
     }
   }
 
@@ -18112,11 +18107,11 @@ body.layout-editor-on .bowl-fill-mask::after {
       const stageRect = els.grillStage.getBoundingClientRect();
       els.stirFrySpatula.style.left = ((clientX - stageRect.left) / stageRect.width * 100) + '%';
       els.stirFrySpatula.style.top = ((clientY - stageRect.top) / stageRect.height * 100) + '%';
-      els.stirFrySpatula.style.transform = 'translate(-50%,-16%) rotate(' + (34 + Math.max(-18, Math.min(18, dx))) + 'deg)';
+      els.stirFrySpatula.style.transform = 'translate(-8%,-8%) rotate(' + Math.max(-8, Math.min(8, dx * .35)) + 'deg)';
     }
     const progress = Math.min(1, state.stirFryDistance / 900) * Math.min(1, state.stirFryMoved.size / 11);
     updateCookDots('grill', progress < .5 ? 0 : 1);
-    if (els.grillActionLabel) els.grillActionLabel.textContent = progress < .45 ? 'ヘラで ぜんたいを まぜよう' : 'もうすこし まぜよう！';
+    if (els.grillActionLabel) els.grillActionLabel.textContent = progress < .45 ? 'さいばしで ぜんたいを まぜよう' : 'もうすこし まぜよう！';
     if (progress >= 1) finishNinjinIngenStirFry();
   }
 
@@ -18181,8 +18176,8 @@ body.layout-editor-on .bowl-fill-mask::after {
       if (els.grillActionLabel) els.grillActionLabel.textContent = 'ふたを よういしよう';
       setSpeech('ぽとん！ たまごが フライパンに はいったよ！ ふたを つかむ じゅんびをしよう！', 'grill');
     } else if (stirFry) {
-      if (els.grillActionLabel) els.grillActionLabel.textContent = 'ヘラで ぜんたいを まぜよう';
-      setSpeech('ジュッ！ ヘラを うごかして、にんじんと ' + getStirSecondName() + 'を まぜよう！', 'grill');
+      if (els.grillActionLabel) els.grillActionLabel.textContent = 'さいばしで ぜんたいを まぜよう';
+      setSpeech('ジュッ！ さいばしを うごかして、にんじんと ' + getStirSecondName() + 'を まぜよう！', 'grill');
     } else if (isMultiPieceCookAction(action)) {
       const pieceText = getCookPieceText(action);
       if (els.grillActionLabel) els.grillActionLabel.textContent = pieceText + ' ゲージの あおで ころがそう';
@@ -18416,7 +18411,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       }
       if (state.cookFoodPlaced) {
         if (!(evt && evt.type === 'click')) keyboardStirFry();
-        setSpeech('ヘラを つかんで、フライパンの ぜんたいを まぜよう！', 'grill');
+        setSpeech('さいばしを つかんで、フライパンの ぜんたいを まぜよう！', 'grill');
         return;
       }
     }
