@@ -112,11 +112,11 @@
   --story-frame-writing: url('../assets/images/mojikko/writing/storybook/white-ornate-frame-family/04_mojikko_writing_board_frame_master.png');
   --story-frame-stroke: url('../assets/images/mojikko/writing/storybook/white-ornate-frame-family/05_mojikko_stroke_order_frame_master.png');
   --story-frame-box: 8.7px;
-  --story-frame-task-box: 10.5px;
-  --story-frame-milmaru-box: 10.6px;
-  --story-frame-message-box: 10.5px;
-  --story-frame-writing-box: 10.9px;
-  --story-frame-stroke-box: 10.6px;
+  --story-frame-task-box: 34.2px;
+  --story-frame-milmaru-box: 32.9px;
+  --story-frame-message-box: 25.2px;
+  --story-frame-writing-box: 33px;
+  --story-frame-stroke-box: 35px;
   --story-star: url('../assets/images/quizland/quizland_difficulty_star_gold_gpt_image2_20260623.png');
   --story-cookie: url('../assets/images/Bento_parts/cookie.webp');
   --story-gohan: url('../assets/images/nazonazo-tunnel/quiz-art/quiz_onigiri_20260714.webp');
@@ -4297,32 +4297,34 @@ body #ach-next-hint {
 
 .character-panel {
   border-image-source: var(--story-frame-task) !important;
-  border-image-slice: 160 fill !important;
+  border-image-slice: 242 fill !important;
   border-image-width: var(--story-frame-task-box) !important;
 }
 
 .companion-card {
   border-image-source: var(--story-frame-milmaru) !important;
-  border-image-slice: 160 fill !important;
+  border-image-slice: 230 fill !important;
   border-image-width: var(--story-frame-milmaru-box) !important;
 }
 
 .prompt-bar,
 .message-box {
   border-image-source: var(--story-frame-message) !important;
-  border-image-slice: 160 fill !important;
+  border-image-slice: 139 fill !important;
   border-image-width: var(--story-frame-message-box) !important;
+  box-sizing: border-box;
+  padding-inline: 52px !important;
 }
 
 .writing-board {
   border-image-source: var(--story-frame-writing) !important;
-  border-image-slice: 166 fill !important;
+  border-image-slice: 230 fill !important;
   border-image-width: var(--story-frame-writing-box) !important;
 }
 
 .stroke-panel {
   border-image-source: var(--story-frame-stroke) !important;
-  border-image-slice: 160 fill !important;
+  border-image-slice: 240 fill !important;
   border-image-width: var(--story-frame-stroke-box) !important;
 }
 
@@ -4448,11 +4450,11 @@ body #ach-next-hint {
 @media (max-height: 500px) and (orientation: landscape) {
   :root {
     --story-frame-box: 12.57px;
-    --story-frame-task-box: 15.17px;
-    --story-frame-milmaru-box: 15.31px;
-    --story-frame-message-box: 15.17px;
-    --story-frame-writing-box: 15.74px;
-    --story-frame-stroke-box: 15.31px;
+    --story-frame-task-box: 49.4px;
+    --story-frame-milmaru-box: 47.52px;
+    --story-frame-message-box: 36.4px;
+    --story-frame-writing-box: 47.67px;
+    --story-frame-stroke-box: 50.56px;
   }
 
   .star-box {

@@ -32,19 +32,19 @@ const frameAssets = [
 ];
 const unifiedFrameDimensions = Object.freeze({
   '00_mojikko_white_frame_master.png': [473, 484],
-  '01_mojikko_task_frame_master.png': [1156, 1181],
-  '02_mojikko_milmaru_frame_master.png': [1155, 1180],
-  '03_mojikko_message_frame_master.png': [1155, 1179],
-  '04_mojikko_writing_board_frame_master.png': [1156, 1181],
-  '05_mojikko_stroke_order_frame_master.png': [1155, 1182]
+  '01_mojikko_task_frame_master.png': [1135, 1121],
+  '02_mojikko_milmaru_frame_master.png': [1147, 1140],
+  '03_mojikko_message_frame_master.png': [1069, 1070],
+  '04_mojikko_writing_board_frame_master.png': [1148, 1148],
+  '05_mojikko_stroke_order_frame_master.png': [1146, 1147]
 });
 const frameCalibrations = Object.freeze({
   generic: { slice: 55, normalWidth: 8.7, shortWidth: 12.57 },
-  task: { slice: 160, normalWidth: 10.5, shortWidth: 15.17 },
-  milmaru: { slice: 160, normalWidth: 10.6, shortWidth: 15.31 },
-  message: { slice: 160, normalWidth: 10.5, shortWidth: 15.17 },
-  writing: { slice: 166, normalWidth: 10.9, shortWidth: 15.74 },
-  stroke: { slice: 160, normalWidth: 10.6, shortWidth: 15.31 }
+  task: { slice: 242, normalWidth: 34.2, shortWidth: 49.4 },
+  milmaru: { slice: 230, normalWidth: 32.9, shortWidth: 47.52 },
+  message: { slice: 139, normalWidth: 25.2, shortWidth: 36.4 },
+  writing: { slice: 230, normalWidth: 33, shortWidth: 47.67 },
+  stroke: { slice: 240, normalWidth: 35, shortWidth: 50.56 }
 });
 const surfaceFrameRoles = Object.freeze({
   characters: 'task',
@@ -716,6 +716,21 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
             ['rewardTitle', '.reward-title'],
             ['rewardItem', '.reward-item']
           ].map(([name, selector]) => [name, textAudit(selector)])),
+          promptSafety: (() => {
+            const element = document.querySelector('#promptText');
+            const style = getComputedStyle(element);
+            const rect = element.getBoundingClientRect();
+            const range = document.createRange();
+            range.selectNodeContents(element);
+            return {
+              rect: compactRect(rect),
+              text: compactRect(range.getBoundingClientRect()),
+              normalizedHeight: rect.height / stageScale,
+              paddingLeft: parseFloat(style.paddingLeft),
+              paddingRight: parseFloat(style.paddingRight),
+              boxSizing: style.boxSizing
+            };
+          })(),
           boardFrame: getComputedStyle(document.querySelector('#writingBoard')).borderImageSource,
           promptFrame: getComputedStyle(document.querySelector('#promptText')).borderImageSource,
           peripheralFrames: ['.character-panel', '#companionCard', '.stroke-panel'].map((selector) => surfaceAudit(selector)),
@@ -839,6 +854,19 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
       assert.equal(initial.stageBackgroundSize, 'cover');
       assert.equal(initial.stageBackgroundRepeat, 'no-repeat');
       assert.doesNotMatch(initial.scanlineBackground, /repeating-linear-gradient/);
+      assert.ok(Math.abs(initial.promptSafety.normalizedHeight - 101) <= 0.1, `${viewport.name}: shallow message frame height drifted`);
+      assert.ok(initial.promptSafety.paddingLeft >= 32, `${viewport.name}: prompt lost its 32px left safety area`);
+      assert.ok(initial.promptSafety.paddingRight >= 32, `${viewport.name}: prompt lost its 32px right safety area`);
+      assert.equal(initial.promptSafety.boxSizing, 'border-box', `${viewport.name}: prompt safety padding changed geometry`);
+      const promptSafetyInset = 32 * initial.stageScale;
+      assert.ok(
+        initial.promptSafety.text.left >= initial.promptSafety.rect.left + promptSafetyInset - 1,
+        `${viewport.name}: prompt text entered the left corner motif`
+      );
+      assert.ok(
+        initial.promptSafety.text.right <= initial.promptSafety.rect.right - promptSafetyInset + 1,
+        `${viewport.name}: prompt text entered the right corner motif`
+      );
       assert.ok(initial.boardFrame.includes(path.basename(framePaths.writing)), `${viewport.name}: writing board lost its dedicated frame`);
       assert.ok(initial.promptFrame.includes(path.basename(framePaths.message)), `${viewport.name}: message strip lost its dedicated frame`);
       assert.ok(initial.resultFrame.includes(path.basename(framePaths.generic)), `${viewport.name}: result lost the generic frame`);
@@ -1371,15 +1399,22 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
           };
           const message = document.querySelector('#messageBox');
           const style = getComputedStyle(message);
+          const stageScale = document.querySelector('#stage').getBoundingClientRect().height / 900;
           const messageRange = document.createRange();
           messageRange.selectNodeContents(message);
+          const messageRect = message.getBoundingClientRect();
           return {
             text: message.textContent,
             hidden: message.hidden,
             display: style.display,
             visibility: style.visibility,
             opacity: style.opacity,
-            visualFontSize: parseFloat(style.fontSize) * (document.querySelector('#stage').getBoundingClientRect().height / 900),
+            visualFontSize: parseFloat(style.fontSize) * stageScale,
+            normalizedHeight: messageRect.height / stageScale,
+            stageScale,
+            paddingLeft: parseFloat(style.paddingLeft),
+            paddingRight: parseFloat(style.paddingRight),
+            boxSizing: style.boxSizing,
             messageText: rectOf('#messageBox'),
             textRect: (() => {
               const rect = messageRange.getBoundingClientRect();
@@ -1399,8 +1434,20 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
         assert.equal(feedback.display, 'flex', `${viewport.name}:${label} feedback display`);
         assert.equal(feedback.visibility, 'visible', `${viewport.name}:${label} feedback visibility`);
         assert.equal(feedback.opacity, '1', `${viewport.name}:${label} feedback opacity`);
+        assert.ok(Math.abs(feedback.normalizedHeight - 101) <= 0.1, `${viewport.name}:${label} shallow feedback height drifted`);
+        assert.ok(feedback.paddingLeft >= 32, `${viewport.name}:${label} feedback lost its left text safety area`);
+        assert.ok(feedback.paddingRight >= 32, `${viewport.name}:${label} feedback lost its right text safety area`);
+        assert.equal(feedback.boxSizing, 'border-box', `${viewport.name}:${label} feedback safety padding changed geometry`);
         assertInsideViewport(feedback.textRect, viewport, `${viewport.name}:${label}-feedback-text`);
         assertRectContained(feedback.textRect, feedback.messageText, `${viewport.name}:${label}-feedback-text`);
+        assert.ok(
+          feedback.textRect.left >= feedback.messageText.left + 32 * feedback.stageScale - 1,
+          `${viewport.name}:${label} feedback text entered the left corner motif`
+        );
+        assert.ok(
+          feedback.textRect.right <= feedback.messageText.right - 32 * feedback.stageScale + 1,
+          `${viewport.name}:${label} feedback text entered the right corner motif`
+        );
         if (viewport.height <= 500) {
           assert.ok(feedback.visualFontSize >= 13.5, `${viewport.name}:${label} feedback text is below 13.5px`);
         }

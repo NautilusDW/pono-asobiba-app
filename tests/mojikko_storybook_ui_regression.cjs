@@ -109,24 +109,24 @@ const frameAssetExpectations = Object.freeze({
     sha256: 'a852453bf7d341f2d2a886a4be0fe9a680905f25932346db96909151f239c362'
   },
   'assets/images/mojikko/writing/storybook/white-ornate-frame-family/01_mojikko_task_frame_master.png': {
-    dimensions: [1156, 1181],
-    sha256: '1b0fdbb3c52b23e9992117fad909641b90610f99f35720263fd061daee1d2c62'
+    dimensions: [1135, 1121],
+    sha256: '8329d6787ede21cc30b0ea472c5a1ffbae85055d1ca3e9809998df73491fe008'
   },
   'assets/images/mojikko/writing/storybook/white-ornate-frame-family/02_mojikko_milmaru_frame_master.png': {
-    dimensions: [1155, 1180],
-    sha256: 'bd71d4e04cc9f427dc09991d0389441894fcf0404f7947adbcee56b80ef238da'
+    dimensions: [1147, 1140],
+    sha256: '1bf31a81b44685cde388c6339e1a8400b72f2ffe4bdf4488ddfbc5e60e168da2'
   },
   'assets/images/mojikko/writing/storybook/white-ornate-frame-family/03_mojikko_message_frame_master.png': {
-    dimensions: [1155, 1179],
-    sha256: 'e3b05291abc3f882192785d1fc2e514a990b1498cf0797f079179e88a463f546'
+    dimensions: [1069, 1070],
+    sha256: '993ba6bd35a9d6f6c760ccb40a6490963e1e3bef212ecf6b73996ccc28365b23'
   },
   'assets/images/mojikko/writing/storybook/white-ornate-frame-family/04_mojikko_writing_board_frame_master.png': {
-    dimensions: [1156, 1181],
-    sha256: '2535f1a30742a359e3c32bb4dfa1901b51c43c7b4efc732570a4c5a442b3a4fa'
+    dimensions: [1148, 1148],
+    sha256: '923f717a1f854d3f386f587f2ed0d77c718b7692c717a43b6e3617b2dce4010b'
   },
   'assets/images/mojikko/writing/storybook/white-ornate-frame-family/05_mojikko_stroke_order_frame_master.png': {
-    dimensions: [1155, 1182],
-    sha256: 'aa79203d4a29aa4d5bc8d49efee319fdded8c9cc2b46e92605775f17b21d2c2a'
+    dimensions: [1146, 1147],
+    sha256: '787f40fd3c8e23c528822f8ad546c604048cbb7afc7bf72b9cd4381f2a021337'
   }
 });
 for (const [source, expected] of Object.entries(frameAssetExpectations)) {
@@ -200,11 +200,11 @@ assert.doesNotMatch(
 assert.doesNotMatch(html, /menu_card_base_0[1-4]\.webp/, 'rejected menu-card assets must not be referenced by writing-mori');
 const frameVariableExpectations = Object.freeze({
   master: ['00_mojikko_white_frame_master.png', '8.7px'],
-  task: ['01_mojikko_task_frame_master.png', '10.5px'],
-  milmaru: ['02_mojikko_milmaru_frame_master.png', '10.6px'],
-  message: ['03_mojikko_message_frame_master.png', '10.5px'],
-  writing: ['04_mojikko_writing_board_frame_master.png', '10.9px'],
-  stroke: ['05_mojikko_stroke_order_frame_master.png', '10.6px']
+  task: ['01_mojikko_task_frame_master.png', '34.2px'],
+  milmaru: ['02_mojikko_milmaru_frame_master.png', '32.9px'],
+  message: ['03_mojikko_message_frame_master.png', '25.2px'],
+  writing: ['04_mojikko_writing_board_frame_master.png', '33px'],
+  stroke: ['05_mojikko_stroke_order_frame_master.png', '35px']
 });
 for (const [role, [filename, width]] of Object.entries(frameVariableExpectations)) {
   const variable = role === 'master' ? '--story-frame-master' : `--story-frame-${role}`;
@@ -260,11 +260,11 @@ assert.match(genericSurfaceRule, /background:\s*none !important;/);
 assert.doesNotMatch(genericSurfaceRule, /\.settings-btn|\.settings-menu-item|\.mode-choice-button/, 'exceptions must not gain nested frames');
 
 const roleFrameRules = Object.freeze([
-  ['.character-panel {', '.companion-card {', '--story-frame-task', '160 fill', '--story-frame-task-box'],
-  ['.companion-card {', '.prompt-bar,', '--story-frame-milmaru', '160 fill', '--story-frame-milmaru-box'],
-  ['.prompt-bar,', '.writing-board {', '--story-frame-message', '160 fill', '--story-frame-message-box'],
-  ['.writing-board {', '.stroke-panel {', '--story-frame-writing', '166 fill', '--story-frame-writing-box'],
-  ['.stroke-panel {', '.writing-board::before,', '--story-frame-stroke', '160 fill', '--story-frame-stroke-box']
+  ['.character-panel {', '.companion-card {', '--story-frame-task', '242 fill', '--story-frame-task-box'],
+  ['.companion-card {', '.prompt-bar,', '--story-frame-milmaru', '230 fill', '--story-frame-milmaru-box'],
+  ['.prompt-bar,', '.writing-board {', '--story-frame-message', '139 fill', '--story-frame-message-box'],
+  ['.writing-board {', '.stroke-panel {', '--story-frame-writing', '230 fill', '--story-frame-writing-box'],
+  ['.stroke-panel {', '.writing-board::before,', '--story-frame-stroke', '240 fill', '--story-frame-stroke-box']
 ]);
 for (const [start, end, sourceVariable, slice, widthVariable] of roleFrameRules) {
   const rule = between(ornateFrameCss, start, end);
@@ -272,13 +272,16 @@ for (const [start, end, sourceVariable, slice, widthVariable] of roleFrameRules)
   assert.match(rule, new RegExp(`border-image-slice:\\s*${slice.replace(' ', '\\s+')} !important;`));
   assert.match(rule, new RegExp(`border-image-width:\\s*var\\(${widthVariable}\\) !important;`));
 }
+const messageFrameRule = between(ornateFrameCss, '.prompt-bar,', '.writing-board {');
+assert.match(messageFrameRule, /box-sizing:\s*border-box;/);
+assert.match(messageFrameRule, /padding-inline:\s*52px !important;/, 'the shallow message frame lost its 32px+ text safety area');
 assert.match(
   html,
   /\.settings-btn\s*\{[^}]*aspect-ratio:\s*1\s*\/\s*1;[^}]*background:\s*url\('\.\.\/assets\/_legacy\/preview-placeholders\/ctrl-btn-settings\.png'\) center \/ contain no-repeat !important;/s
 );
 assert.match(
   ornateFrameCss,
-  /@media \(max-height:\s*500px\)[^]*:root\s*\{[^}]*--story-frame-box:\s*12\.57px;[^}]*--story-frame-task-box:\s*15\.17px;[^}]*--story-frame-milmaru-box:\s*15\.31px;[^}]*--story-frame-message-box:\s*15\.17px;[^}]*--story-frame-writing-box:\s*15\.74px;[^}]*--story-frame-stroke-box:\s*15\.31px;/s,
+  /@media \(max-height:\s*500px\)[^]*:root\s*\{[^}]*--story-frame-box:\s*12\.57px;[^}]*--story-frame-task-box:\s*49\.4px;[^}]*--story-frame-milmaru-box:\s*47\.52px;[^}]*--story-frame-message-box:\s*36\.4px;[^}]*--story-frame-writing-box:\s*47\.67px;[^}]*--story-frame-stroke-box:\s*50\.56px;/s,
   'short landscape must preserve the calibrated visible rail for all six sources'
 );
 assert.match(
