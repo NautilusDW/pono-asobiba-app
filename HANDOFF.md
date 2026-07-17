@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-07-17 - [batch:1339-kitchen-current-finals-kinpira] Codex: DONE — ユーザー実機評価「にんじんいんげん完成が旧絵／きんぴらが巨大な輪切り1枚を焼く」を修正。ninjin_ingen recipeVariant最終段を現行`free-layout/okazu_ninjin_ingen.png`へ変更。kinpiraカードを旧Bento_partsから現行`cooking/kinpira/kinpira_mid.png`へ変更し、汎用carrot grill表示を専用2.5D工程（個別にんじん9本→個別ごぼう9本→ヘラで混ぜる）へ分離。ごぼうは現行完成画像の茶系に合わせた専用透過`kinpira/pieces/gobo_matchstick_01..10.png`を追加し、実行時色フィルター依存を廃止。完成時はkinpira_mid。専用2品完了画像／順序テストを含むPlaywright 11件、inline JS/SW構文、diff check PASS。sw v2258。 (by Codex)
+
 - 2026-07-17 - [batch:1338-kitchen-clean-cutout-alpha] Codex: DONE — ユーザー画像「皿のいんげんが包丁切りよりクロップ断片に見える」を調査し、個別PNGがalpha channelを持つだけで四隅alpha=255、紫背景が残った不完全処理と特定。形状自体は既存の切断面を再利用し、carrot 11枚＋green bean 10枚をborder key `#ef04e9`、soft matte／despill／edge contractで再透過。白背景合成と1366x768実画面の皿・鍋で紫矩形／フリンジ消失を確認。21枚四隅alpha=0テスト追加。sw v2257。 (by Codex)
 - 2026-07-17 - [batch:1338-kitchen-clean-cutout-alpha] Codex: FOLLOWUP — alpha検証で5枚は食材自体が元画像の四隅へ接していたため、全21枚へ透明余白10pxを追加。四隅alpha=0専用テストを含むPhase 1 Playwright 6件PASS。形状の再生成は不要と判断し、既存切断面を保持。 (by Codex)
 

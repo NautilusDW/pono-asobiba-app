@@ -1,5 +1,9 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2259: にんじんいんげん完成時を現行free-layout画像へ切替。きんぴらは旧カード／
+// 巨大な汎用焼き素材を廃止し、にんじん細切り→専用ごぼう細切り10枚→ヘラ炒めの
+// 順序操作と現行kinpira完成画像へ統一
+// (batch:1339-kitchen-current-finals-kinpira)。play.html同期不要。
 // v2258: もじっこファーム文字書きの全外枠を、正本設定ボタンと同じ木枠厚へ
 // 揃えた単一9-sliceマスターへ統一。通常9px／短い横画面13px、
 // slice47 fill／stretchで紙面の反復継ぎ目を防止。設定は正本画像、
@@ -429,7 +433,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2258;
+const CACHE_VERSION = 2259;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。

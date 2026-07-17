@@ -6645,7 +6645,7 @@ body.layout-editor-on .bowl-fill-mask::after {
         recipeVariants: {
           ninjin_ingen: {
             grill: {
-              stages: ['ninjin_ingen/cutting/carrot_pieces', 'ninjin_ingen/ninjin_ingen_mid', 'ninjin_ingen/ninjin_ingen_mid'],
+              stages: ['ninjin_ingen/cutting/carrot_pieces', 'ninjin_ingen/ninjin_ingen_mid', '../assets/images/bento/free-layout/okazu_ninjin_ingen.png'],
               fallback: '../assets/images/bento/free-layout/okazu_ninjin_ingen.png',
             },
           },
@@ -7118,7 +7118,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     { id: 'korokke',      name: 'コロッケ',          img: '../assets/images/bento/cooking/korokke/korokke_003_done.png', needs: ['potato'], cookIngredientId: 'potato' },
     { id: 'cabbage_shreds', name: 'キャベツ',        img: '../assets/images/bento/cooking/cabbage/cabbage_002.png', needs: ['cabbage'] },
     { id: 'ninjin_ingen', name: 'にんじんいんげん',  img: '../assets/images/bento/free-layout/okazu_ninjin_ingen.png', needs: ['carrot', 'green_bean'], cookIngredientId: 'carrot' },
-    { id: 'kinpira',      name: 'きんぴらごぼう',    img: '../assets/images/Bento_parts/kinpira2.webp',      needs: ['carrot'] },
+    { id: 'kinpira',      name: 'きんぴらごぼう',    img: '../assets/images/bento/cooking/kinpira/kinpira_mid.png', needs: ['carrot'], cookIngredientId: 'carrot' },
   ];
 
   const WORKSHOP_RECIPES = [
@@ -15632,12 +15632,12 @@ body.layout-editor-on .bowl-fill-mask::after {
         els.grillActionLabel.textContent = isEggGrillAction(ing, action)
           ? 'たまごを おさらのふちへ'
           : isMeatballCookAction(ing, action) ? '1こずつ フライパンへ'
-          : isNinjinIngenStirAction(ing, action) ? 'まず にんじんを いれよう' : label;
+          : isVegetableStirAction(ing, action) ? 'まず にんじんを いれよう' : label;
       }
       setSpeech(isEggGrillAction(ing, action)
         ? 'たまごを おさらのふちの 点線へ もっていって はなそう！'
         : isMeatballCookAction(ing, action) ? 'ミートボールを 1こずつ フライパンに のせよう！'
-        : isNinjinIngenStirAction(ing, action) ? 'まず おさらの にんじんを フライパンへ もっていこう！' : ing.name + 'は おさらで じゅんび！', 'grill');
+        : isVegetableStirAction(ing, action) ? 'まず おさらの にんじんを フライパンへ もっていこう！' : ing.name + 'は おさらで じゅんび！', 'grill');
       showScreen('grill');
       if (Array.isArray(action.subSteps) && action.subSteps.length) {
         startSubStepSequence(ing, action);
@@ -16163,9 +16163,9 @@ body.layout-editor-on .bowl-fill-mask::after {
     const stageEl = type === 'fry' ? els.fryStage : els.grillStage;
     if (!stageEl) return;
     const action = getCurrentAction();
-    const ninjinIngenStir = type === 'grill' && isNinjinIngenStirAction(state.current, action);
-    if (type === 'grill') stageEl.classList.toggle('stir-fry-recipe', ninjinIngenStir);
-    if (ninjinIngenStir && !state.stirFryPhase) beginStirFry();
+    const vegetableStir = type === 'grill' && isVegetableStirAction(state.current, action);
+    if (type === 'grill') stageEl.classList.toggle('stir-fry-recipe', vegetableStir);
+    if (vegetableStir && !state.stirFryPhase) beginStirFry();
     const chickenFry = type === 'fry' && isChickenFryAction(state.current, action);
     const chickenOilActive = chickenFry && getChickenFryOilPieces(action).length > 0;
     stageEl.classList.toggle('is-preheating', !state.cookPreheated);
@@ -17863,6 +17863,22 @@ body.layout-editor-on .bowl-fill-mask::after {
     return !!(ing && ing.id === 'carrot' && action && action.type === 'grill' && state.activeRecipeId === 'ninjin_ingen');
   }
 
+  function isKinpiraStirAction(ing, action) {
+    return !!(ing && ing.id === 'carrot' && action && action.type === 'grill' && state.activeRecipeId === 'kinpira');
+  }
+
+  function isVegetableStirAction(ing, action) {
+    return isNinjinIngenStirAction(ing, action) || isKinpiraStirAction(ing, action);
+  }
+
+  function getStirSecondKind() {
+    return state.activeRecipeId === 'kinpira' ? 'gobo' : 'green_bean';
+  }
+
+  function getStirSecondName() {
+    return state.activeRecipeId === 'kinpira' ? 'ごぼう' : 'いんげん';
+  }
+
   function stopStirFry() {
     state.stirFryActive = false;
     state.stirFryPointerId = null;
@@ -17938,9 +17954,10 @@ body.layout-editor-on .bowl-fill-mask::after {
     const files = [];
     if (kind === 'carrot') for (let i = 1; i <= 9; i += 1) files.push('carrot_baton_' + String(i).padStart(2, '0') + '.png');
     if (kind === 'green_bean') for (let i = 1; i <= 9; i += 1) files.push('green_bean_piece_' + String(i).padStart(2, '0') + '.png');
+    if (kind === 'gobo') for (let i = 1; i <= 9; i += 1) files.push('gobo_matchstick_' + String(i).padStart(2, '0') + '.png');
     files.forEach(function (file, index) {
       const image = new Image();
-      image.src = '../assets/images/bento/cooking/ninjin_ingen/pieces/' + file;
+      image.src = '../assets/images/bento/cooking/' + (kind === 'gobo' ? 'kinpira/pieces/' : 'ninjin_ingen/pieces/') + file;
       const absoluteIndex = state.stirFryPieces.length;
       const angle = absoluteIndex * 2.39996;
       const radius = .12 + ((absoluteIndex * 37) % 72) / 100;
@@ -17950,6 +17967,7 @@ body.layout-editor-on .bowl-fill-mask::after {
         y: surface.height / 2 + Math.sin(angle) * surface.height * .34 * radius,
         vx: 0, vy: 0, vr: 0, rot: angle % 3.14, lift: 0,
         base: file.indexOf('carrot') === 0 ? surface.width * .16 : surface.width * .18,
+        kind: kind,
       });
     });
   }
@@ -17977,10 +17995,11 @@ body.layout-editor-on .bowl-fill-mask::after {
     els.stirFryTray.textContent = '';
     els.stirFryTray.style.transform = '';
     const carrot = state.stirFryPhase === 'carrot';
-    const prefix = carrot ? 'carrot_baton_' : 'green_bean_piece_';
+    const gobo = state.stirFryPhase === 'gobo';
+    const prefix = carrot ? 'carrot_baton_' : (gobo ? 'gobo_matchstick_' : 'green_bean_piece_');
     for (let i = 1; i <= 7; i += 1) {
       const img = document.createElement('img');
-      img.src = '../assets/images/bento/cooking/ninjin_ingen/pieces/' + prefix + String(i).padStart(2, '0') + '.png';
+      img.src = '../assets/images/bento/cooking/' + (gobo ? 'kinpira/pieces/' : 'ninjin_ingen/pieces/') + prefix + String(i).padStart(2, '0') + '.png';
       img.alt = '';
       img.draggable = false;
       img.style.left = (27 + ((i * 29) % 48)) + '%';
@@ -17989,40 +18008,40 @@ body.layout-editor-on .bowl-fill-mask::after {
       img.style.setProperty('--piece-rot', (-34 + ((i * 41) % 69)) + 'deg');
       els.stirFryTray.appendChild(img);
     }
-    els.stirFryTray.setAttribute('aria-label', carrot ? 'にんじんを フライパンへ いれよう' : 'いんげんを フライパンへ いれよう');
+    els.stirFryTray.setAttribute('aria-label', carrot ? 'にんじんを フライパンへ いれよう' : getStirSecondName() + 'を フライパンへ いれよう');
   }
 
   function dropStirFryTrayIntoPan() {
-    if (!isNinjinIngenStirAction(state.current, getCurrentAction()) || !state.cookPreheated) {
+    if (!isVegetableStirAction(state.current, getCurrentAction()) || !state.cookPreheated) {
       setSpeech('フライパンが あったまるまで まってね！', 'grill');
       return;
     }
     if (state.stirFryPhase === 'carrot') {
       addStirFryPieces('carrot');
-      state.stirFryPhase = 'green_bean';
+      state.stirFryPhase = getStirSecondKind();
       if (els.grillStage) els.grillStage.classList.add('stir-fry-loading');
       if (!state.stirFryRaf) state.stirFryRaf = requestAnimationFrame(drawStirFry);
       renderStirFryTray();
       if (els.grillBurst) els.grillBurst.textContent = 'ジュッ！';
       showCookBurst('grill');
-      if (els.grillActionLabel) els.grillActionLabel.textContent = 'つぎは いんげんを いれよう';
-      setSpeech('にんじんが はいったよ！ つぎは いんげんを いれよう！', 'grill');
+      if (els.grillActionLabel) els.grillActionLabel.textContent = 'つぎは ' + getStirSecondName() + 'を いれよう';
+      setSpeech('にんじんが はいったよ！ つぎは ' + getStirSecondName() + 'を いれよう！', 'grill');
       return;
     }
-    if (state.stirFryPhase === 'green_bean') {
-      addStirFryPieces('green_bean');
+    if (state.stirFryPhase === 'green_bean' || state.stirFryPhase === 'gobo') {
+      addStirFryPieces(state.stirFryPhase);
       state.cookFoodPlaced = true;
       startStirFryMixing();
       updateCookStageState('grill');
       if (els.grillBurst) els.grillBurst.textContent = 'ジュッ！';
       showCookBurst('grill');
       if (els.grillActionLabel) els.grillActionLabel.textContent = 'ヘラで ぜんたいを まぜよう';
-      setSpeech('いんげんも はいったよ！ ヘラで いっしょに まぜよう！', 'grill');
+      setSpeech(getStirSecondName() + 'も はいったよ！ ヘラで いっしょに まぜよう！', 'grill');
     }
   }
 
   function onStirTrayPointerDown(evt) {
-    if (state.stirFryPhase !== 'carrot' && state.stirFryPhase !== 'green_bean') return;
+    if (state.stirFryPhase !== 'carrot' && state.stirFryPhase !== 'green_bean' && state.stirFryPhase !== 'gobo') return;
     evt.preventDefault(); evt.stopPropagation();
     state.stirTrayPointerId = evt.pointerId;
     state.stirTrayStartX = evt.clientX; state.stirTrayStartY = evt.clientY;
@@ -18062,8 +18081,8 @@ body.layout-editor-on .bowl-fill-mask::after {
     updateCookView('grill', 2, 'burst');
     updateCookStageState('grill');
     if (els.grillBurst) els.grillBurst.textContent = 'できた！';
-    if (els.grillActionLabel) els.grillActionLabel.textContent = 'にんじんいんげん できあがり！';
-    setSpeech('にんじんと いんげんが まんべんなく まざったよ！', 'grill');
+    if (els.grillActionLabel) els.grillActionLabel.textContent = state.activeRecipeId === 'kinpira' ? 'きんぴらごぼう できあがり！' : 'にんじんいんげん できあがり！';
+    setSpeech(state.activeRecipeId === 'kinpira' ? 'にんじんと ごぼうが まんべんなく まざったよ！' : 'にんじんと いんげんが まんべんなく まざったよ！', 'grill');
     state.pendingTimers.push(setTimeout(function () {
       state.cookAnimating = false;
       completeCurrentAction(ing);
@@ -18137,7 +18156,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     const ing = state.current;
     const action = getCurrentAction();
     const eggGrill = isEggGrillAction(ing, action);
-    const stirFry = isNinjinIngenStirAction(ing, action);
+    const stirFry = isVegetableStirAction(ing, action);
     state.cookAnimating = true;
     state.cookFoodPlaced = true;
     state.cookServed = false;
@@ -18163,7 +18182,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       setSpeech('ぽとん！ たまごが フライパンに はいったよ！ ふたを つかむ じゅんびをしよう！', 'grill');
     } else if (stirFry) {
       if (els.grillActionLabel) els.grillActionLabel.textContent = 'ヘラで ぜんたいを まぜよう';
-      setSpeech('ジュッ！ ヘラを うごかして、にんじんと いんげんを まぜよう！', 'grill');
+      setSpeech('ジュッ！ ヘラを うごかして、にんじんと ' + getStirSecondName() + 'を まぜよう！', 'grill');
     } else if (isMultiPieceCookAction(action)) {
       const pieceText = getCookPieceText(action);
       if (els.grillActionLabel) els.grillActionLabel.textContent = pieceText + ' ゲージの あおで ころがそう';
@@ -18389,10 +18408,10 @@ body.layout-editor-on .bowl-fill-mask::after {
     if (state.currentScreen !== 'grill') return;
     const action = getCurrentAction();
     if (!state.current || !action || action.type !== 'grill') return;
-    if (isNinjinIngenStirAction(state.current, action)) {
-      if (state.stirFryPhase === 'carrot' || state.stirFryPhase === 'green_bean') {
+    if (isVegetableStirAction(state.current, action)) {
+      if (state.stirFryPhase === 'carrot' || state.stirFryPhase === 'green_bean' || state.stirFryPhase === 'gobo') {
         if (!(evt && evt.type === 'click')) dropStirFryTrayIntoPan();
-        else setSpeech(state.stirFryPhase === 'carrot' ? 'おさらにある にんじんを フライパンへ もっていこう！' : 'おさらにある いんげんを フライパンへ もっていこう！', 'grill');
+        else setSpeech(state.stirFryPhase === 'carrot' ? 'おさらにある にんじんを フライパンへ もっていこう！' : 'おさらにある ' + getStirSecondName() + 'を フライパンへ もっていこう！', 'grill');
         return;
       }
       if (state.cookFoodPlaced) {
