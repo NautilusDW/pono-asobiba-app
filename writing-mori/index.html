@@ -105,8 +105,18 @@
   --round-font: 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', sans-serif;
   --moji-font: 'Yu Mincho', 'Hiragino Mincho ProN', 'Hiragino Mincho Pro', serif;
   --story-yard-bg: url('../assets/images/mojikko/care/yard_background_wide_v2.png');
-  --story-frame-master: url('../assets/images/mojikko/writing/storybook/settings-gauge-family/mojikko_settings_gauge_frame_master.png');
-  --story-frame-box: 9px;
+  --story-frame-master: url('../assets/images/mojikko/writing/storybook/white-ornate-frame-family/00_mojikko_white_frame_master.png');
+  --story-frame-task: url('../assets/images/mojikko/writing/storybook/white-ornate-frame-family/01_mojikko_task_frame_master.png');
+  --story-frame-milmaru: url('../assets/images/mojikko/writing/storybook/white-ornate-frame-family/02_mojikko_milmaru_frame_master.png');
+  --story-frame-message: url('../assets/images/mojikko/writing/storybook/white-ornate-frame-family/03_mojikko_message_frame_master.png');
+  --story-frame-writing: url('../assets/images/mojikko/writing/storybook/white-ornate-frame-family/04_mojikko_writing_board_frame_master.png');
+  --story-frame-stroke: url('../assets/images/mojikko/writing/storybook/white-ornate-frame-family/05_mojikko_stroke_order_frame_master.png');
+  --story-frame-box: 8.7px;
+  --story-frame-task-box: 10.5px;
+  --story-frame-milmaru-box: 10.6px;
+  --story-frame-message-box: 10.5px;
+  --story-frame-writing-box: 10.9px;
+  --story-frame-stroke-box: 10.6px;
   --story-star: url('../assets/images/quizland/quizland_difficulty_star_gold_gpt_image2_20260623.png');
   --story-cookie: url('../assets/images/Bento_parts/cookie.webp');
   --story-gohan: url('../assets/images/nazonazo-tunnel/quiz-art/quiz_onigiri_20260714.webp');
@@ -4244,9 +4254,11 @@ body #ach-next-hint.show {
 }
 
 /* --------------------------------------------------------------------------
-   Settings-gauge universal frame family (batch:1328c)
-   One sliced master supplies every outer gameplay surface. The real border
-   stays zero-width, so the rail never changes hit boxes or writer geometry.
+   White-paper ornate frame family (batch:1328d)
+   Generic controls share one clean white-paper master. The task, Milmaru,
+   message, writing and stroke-order surfaces each use a dedicated carved
+   corner master. Every source remains a zero-layout 9-slice border image;
+   per-source slice/width calibration keeps the visible wood rail consistent.
    Inner labels and chooser quadrants stay unframed to avoid card-in-card UI.
    -------------------------------------------------------------------------- */
 
@@ -4273,7 +4285,7 @@ body #ach-next-hint {
   border: 0 solid transparent !important;
   border-radius: 0 !important;
   border-image-source: var(--story-frame-master) !important;
-  border-image-slice: 47 fill !important;
+  border-image-slice: 55 fill !important;
   border-image-width: var(--story-frame-box) !important;
   border-image-outset: 0 !important;
   border-image-repeat: stretch !important;
@@ -4281,6 +4293,37 @@ body #ach-next-hint {
   background-color: transparent !important;
   box-shadow: none !important;
   image-rendering: auto;
+}
+
+.character-panel {
+  border-image-source: var(--story-frame-task) !important;
+  border-image-slice: 160 fill !important;
+  border-image-width: var(--story-frame-task-box) !important;
+}
+
+.companion-card {
+  border-image-source: var(--story-frame-milmaru) !important;
+  border-image-slice: 160 fill !important;
+  border-image-width: var(--story-frame-milmaru-box) !important;
+}
+
+.prompt-bar,
+.message-box {
+  border-image-source: var(--story-frame-message) !important;
+  border-image-slice: 160 fill !important;
+  border-image-width: var(--story-frame-message-box) !important;
+}
+
+.writing-board {
+  border-image-source: var(--story-frame-writing) !important;
+  border-image-slice: 166 fill !important;
+  border-image-width: var(--story-frame-writing-box) !important;
+}
+
+.stroke-panel {
+  border-image-source: var(--story-frame-stroke) !important;
+  border-image-slice: 160 fill !important;
+  border-image-width: var(--story-frame-stroke-box) !important;
 }
 
 .writing-board::before,
@@ -4404,7 +4447,12 @@ body #ach-next-hint {
 
 @media (max-height: 500px) and (orientation: landscape) {
   :root {
-    --story-frame-box: 13px;
+    --story-frame-box: 12.57px;
+    --story-frame-task-box: 15.17px;
+    --story-frame-milmaru-box: 15.31px;
+    --story-frame-message-box: 15.17px;
+    --story-frame-writing-box: 15.74px;
+    --story-frame-stroke-box: 15.31px;
   }
 
   .star-box {

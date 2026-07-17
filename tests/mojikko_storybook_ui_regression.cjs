@@ -78,7 +78,12 @@ assert.match(html, /\.stroke-preview\s*\{[^}]*font-family:\s*var\(--moji-font\)/
 
 const expectedStoryAssets = [
   'assets/images/mojikko/care/yard_background_wide_v2.png',
-  'assets/images/mojikko/writing/storybook/settings-gauge-family/mojikko_settings_gauge_frame_master.png',
+  'assets/images/mojikko/writing/storybook/white-ornate-frame-family/00_mojikko_white_frame_master.png',
+  'assets/images/mojikko/writing/storybook/white-ornate-frame-family/01_mojikko_task_frame_master.png',
+  'assets/images/mojikko/writing/storybook/white-ornate-frame-family/02_mojikko_milmaru_frame_master.png',
+  'assets/images/mojikko/writing/storybook/white-ornate-frame-family/03_mojikko_message_frame_master.png',
+  'assets/images/mojikko/writing/storybook/white-ornate-frame-family/04_mojikko_writing_board_frame_master.png',
+  'assets/images/mojikko/writing/storybook/white-ornate-frame-family/05_mojikko_stroke_order_frame_master.png',
   'assets/_legacy/preview-placeholders/ctrl-btn-settings.png',
   'assets/images/quizland/quizland_difficulty_star_gold_gpt_image2_20260623.png',
   'assets/images/Bento_parts/cookie.webp',
@@ -98,20 +103,43 @@ for (const relative of expectedStoryAssets) {
   assert.ok(fs.statSync(file).size < 3 * 1024 * 1024, `storybook asset exceeds 3MB: ${relative}`);
 }
 
-const masterFrameSource = 'assets/images/mojikko/writing/storybook/settings-gauge-family/mojikko_settings_gauge_frame_master.png';
-const masterFramePng = fs.readFileSync(path.join(root, masterFrameSource));
-assert.equal(masterFramePng.subarray(1, 4).toString('ascii'), 'PNG', 'universal frame master is not a PNG');
-assert.deepEqual(
-  [masterFramePng.readUInt32BE(16), masterFramePng.readUInt32BE(20)],
-  [394, 402],
-  'universal frame master dimensions drifted'
-);
-assert.equal(masterFramePng[25], 6, 'universal frame master must remain RGBA');
-assert.equal(
-  sha256(masterFramePng),
-  'dd516322482e38399b1a523685beb0cb2b921d8df0365934a9c56d2809b0b402',
-  'universal frame master pixels drifted'
-);
+const frameAssetExpectations = Object.freeze({
+  'assets/images/mojikko/writing/storybook/white-ornate-frame-family/00_mojikko_white_frame_master.png': {
+    dimensions: [473, 484],
+    sha256: 'a852453bf7d341f2d2a886a4be0fe9a680905f25932346db96909151f239c362'
+  },
+  'assets/images/mojikko/writing/storybook/white-ornate-frame-family/01_mojikko_task_frame_master.png': {
+    dimensions: [1156, 1181],
+    sha256: '1b0fdbb3c52b23e9992117fad909641b90610f99f35720263fd061daee1d2c62'
+  },
+  'assets/images/mojikko/writing/storybook/white-ornate-frame-family/02_mojikko_milmaru_frame_master.png': {
+    dimensions: [1155, 1180],
+    sha256: 'bd71d4e04cc9f427dc09991d0389441894fcf0404f7947adbcee56b80ef238da'
+  },
+  'assets/images/mojikko/writing/storybook/white-ornate-frame-family/03_mojikko_message_frame_master.png': {
+    dimensions: [1155, 1179],
+    sha256: 'e3b05291abc3f882192785d1fc2e514a990b1498cf0797f079179e88a463f546'
+  },
+  'assets/images/mojikko/writing/storybook/white-ornate-frame-family/04_mojikko_writing_board_frame_master.png': {
+    dimensions: [1156, 1181],
+    sha256: '2535f1a30742a359e3c32bb4dfa1901b51c43c7b4efc732570a4c5a442b3a4fa'
+  },
+  'assets/images/mojikko/writing/storybook/white-ornate-frame-family/05_mojikko_stroke_order_frame_master.png': {
+    dimensions: [1155, 1182],
+    sha256: 'aa79203d4a29aa4d5bc8d49efee319fdded8c9cc2b46e92605775f17b21d2c2a'
+  }
+});
+for (const [source, expected] of Object.entries(frameAssetExpectations)) {
+  const png = fs.readFileSync(path.join(root, source));
+  assert.equal(png.subarray(1, 4).toString('ascii'), 'PNG', `${source}: frame master is not a PNG`);
+  assert.deepEqual(
+    [png.readUInt32BE(16), png.readUInt32BE(20)],
+    expected.dimensions,
+    `${source}: dimensions drifted`
+  );
+  assert.equal(png[25], 6, `${source}: frame master must remain RGBA`);
+  assert.equal(sha256(png), expected.sha256, `${source}: pixels drifted`);
+}
 
 const canonicalSettingsPng = fs.readFileSync(path.join(root, 'assets/_legacy/preview-placeholders/ctrl-btn-settings.png'));
 assert.equal(canonicalSettingsPng.subarray(1, 4).toString('ascii'), 'PNG', 'canonical settings control is not a PNG');
@@ -146,7 +174,7 @@ assert.deepEqual(
   `native content manifest misses literal writing assets:\n${uncoveredWritingAssets.join('\n')}`
 );
 
-const nativeCoverageRegressions = [masterFrameSource];
+const nativeCoverageRegressions = Object.keys(frameAssetExpectations);
 for (const source of nativeCoverageRegressions) {
   assert.ok(writingAssetLiterals.has(source), `${source}: native regression asset escaped literal extraction`);
   assert.ok(nativeCoverage.covers(source), `${source}: native regression asset is not packaged`);
@@ -170,21 +198,32 @@ assert.doesNotMatch(
   'the old scanline overlay must stay removed'
 );
 assert.doesNotMatch(html, /menu_card_base_0[1-4]\.webp/, 'rejected menu-card assets must not be referenced by writing-mori');
-assert.match(
-  html,
-  /--story-frame-master:\s*url\('\.\.\/assets\/images\/mojikko\/writing\/storybook\/settings-gauge-family\/mojikko_settings_gauge_frame_master\.png'\)/,
-  'the one universal master must be a literal same-origin asset'
-);
-assert.match(html, /--story-frame-box:\s*9px;/, 'normal universal rail box width drifted');
+const frameVariableExpectations = Object.freeze({
+  master: ['00_mojikko_white_frame_master.png', '8.7px'],
+  task: ['01_mojikko_task_frame_master.png', '10.5px'],
+  milmaru: ['02_mojikko_milmaru_frame_master.png', '10.6px'],
+  message: ['03_mojikko_message_frame_master.png', '10.5px'],
+  writing: ['04_mojikko_writing_board_frame_master.png', '10.9px'],
+  stroke: ['05_mojikko_stroke_order_frame_master.png', '10.6px']
+});
+for (const [role, [filename, width]] of Object.entries(frameVariableExpectations)) {
+  const variable = role === 'master' ? '--story-frame-master' : `--story-frame-${role}`;
+  const widthVariable = role === 'master' ? '--story-frame-box' : `--story-frame-${role}-box`;
+  assert.ok(
+    html.includes(`${variable}: url('../assets/images/mojikko/writing/storybook/white-ornate-frame-family/${filename}');`),
+    `${role}: frame source must remain a literal same-origin asset`
+  );
+  assert.ok(html.includes(`${widthVariable}: ${width};`), `${role}: normal rail box width drifted`);
+}
 assert.doesNotMatch(html, /--story-settings\b/, 'the rejected settings-frame variable must not remain reusable');
 assert.doesNotMatch(
   html,
-  /assets\/images\/mojikko\/writing\/storybook\/frame-family\//,
-  'the rejected role-specific frame family must not be referenced at runtime'
+  /assets\/images\/mojikko\/writing\/storybook\/(?:frame-family|settings-gauge-family)\//,
+  'the superseded frame families must not be referenced at runtime'
 );
-const universalFrameCss = between(
+const ornateFrameCss = between(
   html,
-  'Settings-gauge universal frame family (batch:1328c)',
+  'White-paper ornate frame family (batch:1328d)',
   '</style>'
 );
 assert.doesNotMatch(
@@ -202,54 +241,68 @@ assert.doesNotMatch(
   /assets\/(?:zukan\/ui\/(?:hint|discovery|investigation|map)|images\/Fukuro_frame_|images\/StickerBook\/)/,
   'the writing screen must not mix legacy frame families back in'
 );
-const universalSurfaceRule = between(universalFrameCss, '.character-panel,', '\n}\n\n.writing-board::before');
+const genericSurfaceRule = between(ornateFrameCss, '.character-panel,', '\n}\n\n.character-panel {');
 for (const selector of [
   '.character-panel', '.companion-card', '.stroke-panel', '.prompt-bar', '.message-box',
   '.writing-board', '.star-box', '#modeSwitchBtn', '#resetBtn', '#doneBtn', '#careBtn',
   '#modalRetryBtn', '.kana-tab', '.char-button', '.word-clue-cell.blank', '.daily-clue-cell',
   '.settings-popover', '.mode-choice-card', '.result-card', 'body #ach-next-hint'
 ]) {
-  assert.ok(universalSurfaceRule.includes(selector), `${selector}: escaped the one universal surface rule`);
+  assert.ok(genericSurfaceRule.includes(selector), `${selector}: escaped the generic surface rule`);
 }
-assert.match(universalSurfaceRule, /border:\s*0 solid transparent !important;/);
-assert.match(universalSurfaceRule, /border-image-source:\s*var\(--story-frame-master\) !important;/);
-assert.match(universalSurfaceRule, /border-image-slice:\s*47 fill !important;/);
-assert.match(universalSurfaceRule, /border-image-width:\s*var\(--story-frame-box\) !important;/);
-assert.match(universalSurfaceRule, /border-image-outset:\s*0 !important;/);
-assert.match(universalSurfaceRule, /border-image-repeat:\s*stretch !important;/);
-assert.match(universalSurfaceRule, /background:\s*none !important;/);
-assert.doesNotMatch(universalSurfaceRule, /\.settings-btn|\.settings-menu-item|\.mode-choice-button/, 'exceptions must not gain nested universal frames');
+assert.match(genericSurfaceRule, /border:\s*0 solid transparent !important;/);
+assert.match(genericSurfaceRule, /border-image-source:\s*var\(--story-frame-master\) !important;/);
+assert.match(genericSurfaceRule, /border-image-slice:\s*55 fill !important;/);
+assert.match(genericSurfaceRule, /border-image-width:\s*var\(--story-frame-box\) !important;/);
+assert.match(genericSurfaceRule, /border-image-outset:\s*0 !important;/);
+assert.match(genericSurfaceRule, /border-image-repeat:\s*stretch !important;/);
+assert.match(genericSurfaceRule, /background:\s*none !important;/);
+assert.doesNotMatch(genericSurfaceRule, /\.settings-btn|\.settings-menu-item|\.mode-choice-button/, 'exceptions must not gain nested frames');
+
+const roleFrameRules = Object.freeze([
+  ['.character-panel {', '.companion-card {', '--story-frame-task', '160 fill', '--story-frame-task-box'],
+  ['.companion-card {', '.prompt-bar,', '--story-frame-milmaru', '160 fill', '--story-frame-milmaru-box'],
+  ['.prompt-bar,', '.writing-board {', '--story-frame-message', '160 fill', '--story-frame-message-box'],
+  ['.writing-board {', '.stroke-panel {', '--story-frame-writing', '166 fill', '--story-frame-writing-box'],
+  ['.stroke-panel {', '.writing-board::before,', '--story-frame-stroke', '160 fill', '--story-frame-stroke-box']
+]);
+for (const [start, end, sourceVariable, slice, widthVariable] of roleFrameRules) {
+  const rule = between(ornateFrameCss, start, end);
+  assert.match(rule, new RegExp(`border-image-source:\\s*var\\(${sourceVariable}\\) !important;`));
+  assert.match(rule, new RegExp(`border-image-slice:\\s*${slice.replace(' ', '\\s+')} !important;`));
+  assert.match(rule, new RegExp(`border-image-width:\\s*var\\(${widthVariable}\\) !important;`));
+}
 assert.match(
   html,
   /\.settings-btn\s*\{[^}]*aspect-ratio:\s*1\s*\/\s*1;[^}]*background:\s*url\('\.\.\/assets\/_legacy\/preview-placeholders\/ctrl-btn-settings\.png'\) center \/ contain no-repeat !important;/s
 );
 assert.match(
-  universalFrameCss,
-  /@media \(max-height:\s*500px\)[^]*:root\s*\{[^}]*--story-frame-box:\s*13px;/s,
-  'short landscape must enlarge every universal rail together'
+  ornateFrameCss,
+  /@media \(max-height:\s*500px\)[^]*:root\s*\{[^}]*--story-frame-box:\s*12\.57px;[^}]*--story-frame-task-box:\s*15\.17px;[^}]*--story-frame-milmaru-box:\s*15\.31px;[^}]*--story-frame-message-box:\s*15\.17px;[^}]*--story-frame-writing-box:\s*15\.74px;[^}]*--story-frame-stroke-box:\s*15\.31px;/s,
+  'short landscape must preserve the calibrated visible rail for all six sources'
 );
 assert.match(
-  universalFrameCss,
+  ornateFrameCss,
   /\.writing-board::before,\s*\.writing-board::after\s*\{[^}]*content:\s*none !important;[^}]*display:\s*none !important;[^}]*border-image:\s*none !important;/s,
-  'the direct universal board frame must not keep a pseudo-frame layer'
+  'the direct writing-board frame must not keep a pseudo-frame layer'
 );
 assert.match(
-  universalFrameCss,
+  ornateFrameCss,
   /\.settings-menu-item\s*\{[^}]*border-image:\s*none !important;[^}]*background:\s*transparent !important;[^}]*box-shadow:\s*none !important;/s,
   'settings must have one outer frame, not a nested return frame'
 );
 assert.match(
-  universalFrameCss,
+  ornateFrameCss,
   /\.mode-choice-buttons\s*\{[^}]*inset:\s*var\(--story-frame-box\);/s,
   'chooser hit areas must stay inside the one outer rail'
 );
 assert.match(
-  universalFrameCss,
+  ornateFrameCss,
   /\.mode-choice-button:nth-child\(odd\)\s*\{[^}]*border-right:\s*1px solid/s,
   'chooser columns must use only a one-pixel HTML separator'
 );
 assert.match(
-  universalFrameCss,
+  ornateFrameCss,
   /\.mode-choice-button:nth-child\(-n \+ 2\)\s*\{[^}]*border-bottom:\s*1px solid/s,
   'chooser rows must use only a one-pixel HTML separator'
 );
@@ -259,7 +312,7 @@ assert.match(
   'mode selection feedback must tint only its unframed quadrant'
 );
 assert.match(
-  universalFrameCss,
+  ornateFrameCss,
   /\.panel-title,[^}]*\.mode-progress-count\s*\{[^}]*background-color:\s*transparent !important;[^}]*background-image:\s*none !important;[^}]*box-shadow:\s*none !important;/s,
   'inner text surfaces must not add a second frame'
 );
