@@ -6,11 +6,14 @@ Web 配信用ファイルを直接コピーせず、[`content-manifest.json`](./
 ## Platform status
 
 - **Android (Phase 1)**: 実装済み。`native/android/` に Gradle プロジェクトあり。
-- **iOS (Phase 2 / 着手中)**: `npx cap add ios` でプラットフォームの骨格のみ追加済み（`native/ios/` に Xcode プロジェクト一式が生成されている）。
-  - ⚠️ **このマシンには完全版 Xcode が入っていない**（`xcode-select -p` は `/Library/Developer/CommandLineTools` を指しており、`xcodebuild -version` はエラーになる。`/Applications/Xcode.app` も存在しない）。CocoaPods (`pod` コマンド) も未導入。
-  - そのため **ビルド・Simulator 起動・実機インストールのいずれも未検証**。「動作確認済み」ではなく、あくまで `cap add ios` によるプロジェクト生成が成功した段階。
-  - Xcode 導入後の想定手順: `npm run ios:sync`（`www/` の内容を `native/ios/App/App/public/` に同期）→ `npm run ios:open`（Xcode が `native/ios/App/App.xcodeproj` を開く）→ Simulator か実機を選んでビルド・実行。CocoaPods を使う構成に切り替わった場合は `cd native/ios/App && pod install` が別途必要になる可能性がある（現時点では未確認）。
-  - `native/ios/App/App/public/`（`cap sync` で再生成される `www/` の巨大コピー）や `Pods/`、`DerivedData/`、`xcuserdata/` などは Git 管理対象外（ルート `.gitignore` および `native/ios/.gitignore` 参照）。
+- **iOS (Phase 2 / Simulator 検証済み・実機は未検証)**: `npx cap add ios` でプラットフォームの骨格を追加済み（`native/ios/` に Xcode プロジェクト一式）。2026-07-17 に完全版 Xcode 26.6 + iOS 26.5 Simulator runtime + CocoaPods 1.17.0 がこのマシンへ導入され、**Xcode 26.6 + iOS 26.5 Simulator (iPhone 17) でのビルド・インストール・起動・WebView描画まで実際に確認済み**。
+  - 依存管理は **CocoaPods ではなく Swift Package Manager (SPM)**。`native/ios/App/` に `Podfile` は存在せず、`native/ios/App/CapApp-SPM/Package.swift` が Capacitor ランタイム (`capacitor-swift-pm` 8.4.2) を解決する。そのため CocoaPods 導入済みでも `pod install` は実行されない・不要（`npm run ios:sync` = `npx cap sync ios` は Package.swift の更新のみ行う）。
+  - ビルドも CocoaPods 由来の `App.xcworkspace` は存在しないため、`xcodebuild -workspace App.xcworkspace ...` ではなく `xcodebuild -project App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 17,OS=26.5' build` で `** BUILD SUCCEEDED **` を確認。
+  - 検証手順: `npm run stage-www` → `npm run ios:sync` → 上記 `xcodebuild build` → `xcrun simctl install booted <App.app>` → `xcrun simctl launch booted com.kodamanomori.pono` → `xcrun simctl io booted screenshot`。ホーム画面上のアプリアイコン・表示名（「ポノのあそびば」）、タイトル画面（サインボード・「タップしてはじめよう」）、プロフィール/キャラクター選択画面（キャラアイコン・プライバシー通知モーダル）まで、フォント・画像とも正常描画をスクリーンショット目視で確認。
+  - ⚠️ **初回のみ**、SPM が `capacitor-swift-pm` を GitHub から取得する際に macOS Keychain の認証確認ダイアログ（GUI）が出ることがある。ヘッドレス/CI 実行では初回だけ人手（ログインパスワード入力）が必要になる可能性があるため、無人 CI に組み込む場合は事前に Package 解決を済ませておくか、別途対応を検討すること。
+  - ⚠️ **物理 iPhone 実機でのインストール・動作確認は今回もまだ未実施**。AGENTS.md §7.4 が求める「Android 物理端末」要件を iOS Simulator 確認では代替できない。実機検証は別途必要。
+  - 補足: タイトル画面のスクリーンショットはコンテンツが90度回転して写っているが、これは**このゲームが横向き専用で、プレイ時は端末を横向きに回転させる設計のため意図通り**（ユーザー確認済み）。Simulator側で端末を横向き回転させた状態のスクリーンショットのため、portrait のまま撮ると縦長フレームに横向きレイアウトが写り込む。ビルド不具合ではない。
+  - `native/ios/App/App/public/`（`cap sync` で再生成される `www/` の巨大コピー）や `Pods/`、`DerivedData/`、`xcuserdata/` などは Git 管理対象外（ルート `.gitignore` および `native/ios/.gitignore` 参照）。`App.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved`（SPM の依存バージョン pin）はどちらの gitignore にも該当せず、通常どおり追跡対象。
 
 ## Content manifest
 
@@ -32,7 +35,7 @@ npm run stage-www
 npm run verify-assets
 npm run verify-references
 npm run android:sync
-npm run ios:sync    # 要 Xcode（Phase 2、このマシンでは未検証。上記 Platform status 参照）
+npm run ios:sync    # 要 Xcode（Phase 2、Simulator ビルドまで検証済み。実機は未検証。上記 Platform status 参照）
 ```
 
 `stage-www` は全 preflight 完了後に一時ディレクトリへ出力し、内容検証に合格した場合だけ `www/` を入れ替えます。失敗時は直前の `www/` を保持します。生成した `www/` は Git 管理対象外です。
