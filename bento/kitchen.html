@@ -5739,7 +5739,8 @@ body.layout-editor-on .bowl-fill-mask::after {
 .workshop-boil-food { position: absolute; width: 25%; left: 5%; top: 8%; object-fit: contain; pointer-events: none; transition: left .3s ease, top .3s ease, transform .3s ease, opacity .2s ease; }
 .workshop-boil-spoon { position: absolute; width: 38%; right: -4%; top: 4%; object-fit: contain; pointer-events: none; opacity: 0; transform: translate(45px,-20px) rotate(-10deg); transition: opacity .25s ease, transform .32s ease; }
 .workshop-boil-bowl { position: absolute; width: 48%; right: 4%; bottom: 2%; object-fit: contain; pointer-events: none; opacity: 0; filter: saturate(1.28) contrast(1.12) drop-shadow(0 7px 6px rgba(70,45,25,.18)); transition: opacity .25s ease; }
-.workshop-boil-bubbles { position: absolute; z-index: 3; left: 29%; top: 28%; width: 42%; height: 27%; opacity: 0; pointer-events: none; overflow: hidden; clip-path: ellipse(48% 42% at 50% 48%); transition: opacity .2s ease; }
+.workshop-boil-game { --boil-water-left: 29%; --boil-water-top: 26.5%; --boil-water-width: 42%; --boil-water-height: 33%; }
+.workshop-boil-bubbles { position: absolute; z-index: 3; left: var(--boil-water-left); top: var(--boil-water-top); width: var(--boil-water-width); height: var(--boil-water-height); opacity: 0; pointer-events: none; overflow: hidden; clip-path: ellipse(50% 50% at 50% 50%); transition: opacity .2s ease; }
 .workshop-boil-bubble { position: absolute; bottom: 10%; width: 14px; height: 14px; border: 3px solid rgba(255,255,255,.9); border-radius: 50%; background: transparent; box-shadow: 0 0 0 1px rgba(85,85,85,.28), 0 0 5px rgba(255,255,255,.72); animation: workshopBoilBubble 1.05s ease-in infinite; }
 .workshop-boil-bubble:nth-child(1) { left: 9%; animation-delay: -.18s; }
 .workshop-boil-bubble:nth-child(2) { left: 25%; width: 7px; height: 7px; animation-delay: -.72s; }
@@ -5753,25 +5754,27 @@ body.layout-editor-on .bowl-fill-mask::after {
 .workshop-boil-bubble:nth-child(10) { left: 69%; width: 13px; height: 13px; animation-delay: -.11s; }
 .workshop-boil-bubble:nth-child(11) { left: 84%; width: 8px; height: 8px; animation-delay: -.79s; }
 .workshop-boil-bubble:nth-child(12) { left: 47%; width: 7px; height: 7px; animation-delay: -.98s; }
-.workshop-boil-bubbles::before, .workshop-boil-bubbles::after { content: ''; position: absolute; left: 50%; top: 58%; width: 70%; height: 18%; border: 3px solid rgba(255,255,255,.86); box-shadow: 0 0 0 1px rgba(80,80,80,.22); background: transparent; border-radius: 50%; transform: translate(-50%,-50%) scale(.45); opacity: 0; animation: workshopBoilRipple 1.15s ease-out infinite; }
+.workshop-boil-bubbles::before, .workshop-boil-bubbles::after { content: ''; position: absolute; left: 50%; top: 52%; width: 48%; height: 38%; border: 3px solid rgba(255,255,255,.86); box-shadow: 0 0 0 1px rgba(80,80,80,.22); background: transparent; border-radius: 50%; transform: translate(-50%,-50%) scale(.45); opacity: 0; animation: workshopBoilRipple 1.15s ease-out infinite; }
 .workshop-boil-bubbles::after { animation-delay: -.58s; }
 .workshop-boil-steam { position: absolute; z-index: 2; left: 39%; top: 12%; width: 22%; height: 25%; opacity: 0; pointer-events: none; background: radial-gradient(ellipse at 35% 75%, rgba(255,255,255,.7), transparent 55%), radial-gradient(ellipse at 65% 45%, rgba(255,255,255,.55), transparent 58%); filter: blur(5px); animation: workshopBoilSteam 1.5s ease-in-out infinite alternate; transition: opacity .2s ease; }
 .workshop-boil-pieces { position: absolute; inset: 0; z-index: 4; pointer-events: none; }
+.workshop-boil-water-mask { position: absolute; z-index: 4; left: var(--boil-water-left); top: var(--boil-water-top); width: var(--boil-water-width); height: var(--boil-water-height); overflow: hidden; clip-path: ellipse(50% 50% at 50% 50%); pointer-events: none; }
 .workshop-boil-plate { position: absolute; z-index: 3; left: 3%; top: 66%; width: 38%; height: 31%; opacity: 0; pointer-events: none; background: url('../assets/images/bento/cooking/prep_plate.png') center / contain no-repeat; filter: drop-shadow(0 7px 8px rgba(70,45,25,.18)); }
 .workshop-boil-game.is-piece-boil .workshop-boil-plate { opacity: 1; }
 .workshop-boil-piece { position: absolute; width: 15%; aspect-ratio: 1; padding: 0; border: 0; background: transparent; transform: translate(-50%,-50%) rotate(var(--piece-rot,0deg)); transition: left .3s ease, top .3s ease, transform .3s ease, opacity .2s ease; pointer-events: auto; cursor: pointer; filter: drop-shadow(0 4px 4px rgba(50,70,30,.18)); }
 .workshop-boil-piece img { width: 100%; height: 100%; object-fit: contain; pointer-events: none; }
-.workshop-boil-piece.is-in-pot { width: 12%; pointer-events: none; animation: boilFoodBob .55s ease-in-out infinite alternate; }
+.workshop-boil-piece.is-in-pot { width: 12%; pointer-events: none; animation: broccoliWaterDrift 1.35s ease-in-out infinite alternate; }
+.workshop-boil-water-mask .workshop-boil-piece.is-in-pot { width: 29%; }
 .workshop-boil-piece:not(.is-in-pot) { width: 8%; filter: drop-shadow(0 4px 4px rgba(50,70,30,.18)); }
 .workshop-boil-piece.is-dragging { z-index: 9; transition: none; width: 11%; filter: drop-shadow(0 10px 8px rgba(50,70,30,.28)); }
 .workshop-boil-piece.is-edamame { aspect-ratio: 1.55; }
 .workshop-boil-piece.is-edamame:not(.is-in-pot) { width: 9%; }
 .workshop-boil-piece.is-edamame.is-in-pot {
-  width: 9%;
+  width: 22%;
   animation: edamameWaterDrift 2.2s ease-in-out infinite alternate;
   animation-delay: var(--drift-delay, 0s);
 }
-.workshop-boil-entry-effect { position: absolute; z-index: 5; width: 11%; aspect-ratio: 2.2; border: 3px solid rgba(255,255,255,.9); border-radius: 50%; transform: translate(-50%,-50%) scale(.2); box-shadow: 0 0 0 1px rgba(80,80,80,.2); pointer-events: none; animation: workshopEntryRipple .72s ease-out forwards; }
+.workshop-boil-entry-effect { position: absolute; z-index: 5; width: 27%; aspect-ratio: 2.4; border: 3px solid rgba(255,255,255,.9); border-radius: 50%; transform: translate(-50%,-50%) scale(.2); box-shadow: 0 0 0 1px rgba(80,80,80,.2); pointer-events: none; animation: workshopEntryRipple .72s ease-out forwards; }
 .workshop-boil-entry-effect::before, .workshop-boil-entry-effect::after { content: ''; position: absolute; border: 2px solid rgba(255,255,255,.88); border-radius: 50%; background: transparent; animation: workshopEntryBubble .62s ease-out forwards; }
 .workshop-boil-entry-effect::before { width: 10px; height: 10px; left: 18%; top: 35%; }
 .workshop-boil-entry-effect::after { width: 7px; height: 7px; right: 17%; top: 10%; animation-delay: .08s; }
@@ -5793,6 +5796,7 @@ body.layout-editor-on .bowl-fill-mask::after {
 .workshop-boil-game.is-drain[data-stage="2"] .workshop-boil-food,
 .workshop-boil-game.is-drain[data-stage="3"] .workshop-boil-food { left: 60%; top: 56%; transform: scale(.58); animation: none; }
 @keyframes boilFoodBob { from { transform: scale(.76) translateY(-3px); } to { transform: scale(.76) translateY(4px); } }
+@keyframes broccoliWaterDrift { from { transform: translate(-50%,-50%) rotate(calc(var(--piece-rot, 0deg) - 4deg)) translate(-2px,-2px); } to { transform: translate(-50%,-50%) rotate(calc(var(--piece-rot, 0deg) + 5deg)) translate(3px,3px); } }
 @keyframes workshopBoilBubble { 0% { transform: translateY(8px) scale(.45); opacity: 0; } 24% { opacity: 1; } 100% { transform: translateY(-55px) scale(1.18); opacity: 0; } }
 @keyframes workshopBoilRipple { 0% { transform: translate(-50%,-50%) scale(.4); opacity: .95; } 100% { transform: translate(-50%,-50%) scale(1.2); opacity: 0; } }
 @keyframes workshopBoilSteam { from { transform: translate(-3px,6px) scale(.92); } to { transform: translate(4px,-8px) scale(1.08); } }
@@ -6454,6 +6458,7 @@ body.layout-editor-on .bowl-fill-mask::after {
           <img class="workshop-boil-food" id="workshop-boil-food" alt="" draggable="false">
           <div class="workshop-boil-plate"></div>
           <div class="workshop-boil-pieces" id="workshop-boil-pieces"></div>
+          <div class="workshop-boil-water-mask" id="workshop-boil-water-mask"></div>
           <img class="workshop-boil-salt" id="workshop-boil-salt" src="../assets/images/bento/cooking/salt/salt_shaker_still.png" alt="" draggable="false">
           <div class="workshop-boil-salt-grains"></div>
           <div class="workshop-boil-bubbles"><i class="workshop-boil-bubble"></i><i class="workshop-boil-bubble"></i><i class="workshop-boil-bubble"></i><i class="workshop-boil-bubble"></i><i class="workshop-boil-bubble"></i><i class="workshop-boil-bubble"></i><i class="workshop-boil-bubble"></i><i class="workshop-boil-bubble"></i><i class="workshop-boil-bubble"></i><i class="workshop-boil-bubble"></i><i class="workshop-boil-bubble"></i><i class="workshop-boil-bubble"></i></div>
@@ -10019,9 +10024,14 @@ body.layout-editor-on .bowl-fill-mask::after {
       }
     }
     const pieceLayer = document.getElementById('workshop-boil-pieces');
+    const waterLayer = document.getElementById('workshop-boil-water-mask');
     if (pieceLayer) {
       pieceLayer.innerHTML = '';
       pieceLayer.hidden = !pieceBoil;
+      if (waterLayer) {
+        waterLayer.innerHTML = '';
+        waterLayer.hidden = !pieceBoil;
+      }
       if (pieceBoil) {
         const placed = Math.min(config.pieceCount, stage);
         const bank = config.pieceKind === 'edamame'
@@ -10034,10 +10044,12 @@ body.layout-editor-on .bowl-fill-mask::after {
           const button = document.createElement('button');
           const inPot = i < placed;
           const pos = inPot ? pot[i] : bank[i];
+          const displayX = inPot ? (pos[0] - 29) / 42 * 100 : pos[0];
+          const displayY = inPot ? (pos[1] - 26.5) / 33 * 100 : pos[1];
           button.type = 'button';
           button.className = 'workshop-boil-piece' + (config.pieceKind === 'edamame' ? ' is-edamame' : '') + (inPot ? ' is-in-pot' : '');
-          button.style.left = pos[0] + '%';
-          button.style.top = pos[1] + '%';
+          button.style.left = displayX + '%';
+          button.style.top = displayY + '%';
           button.style.setProperty('--piece-rot', pos[2] + 'deg');
           button.style.setProperty('--drift-delay', '-' + (i * .21).toFixed(2) + 's');
           const pieceName = config.pieceKind === 'edamame' ? 'さや' : 'こぶさ';
@@ -10110,15 +10122,15 @@ body.layout-editor-on .bowl-fill-mask::after {
               advanceWorkshopProgress();
             });
           }
-          pieceLayer.appendChild(button);
+          (inPot && waterLayer ? waterLayer : pieceLayer).appendChild(button);
         }
-        if (placed > 0) {
+        if (placed > 0 && waterLayer) {
           const effectPos = pot[placed - 1];
           const effect = document.createElement('i');
           effect.className = 'workshop-boil-entry-effect';
-          effect.style.left = effectPos[0] + '%';
-          effect.style.top = effectPos[1] + '%';
-          pieceLayer.appendChild(effect);
+          effect.style.left = ((effectPos[0] - 29) / 42 * 100) + '%';
+          effect.style.top = ((effectPos[1] - 26.5) / 33 * 100) + '%';
+          waterLayer.appendChild(effect);
         }
       }
     }

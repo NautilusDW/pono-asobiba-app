@@ -1,5 +1,9 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2263: ブロッコリー／えだまめの茹で水面を鍋画像から計測した共通楕円へ統一。
+// 鍋内食材を専用水面マスクへ収め、波紋の極端な横長比とブロッコリーの
+// 中央基準が消える上下動を修正
+// (batch:1342-kitchen-boil-water-mask-perspective)。play.html同期不要。
 // v2262: えだまめの見えない洗浄工程を削除し、塩を振る→塩もみ→茹でるへ簡略化。
 // 固定グリッド状の塩を廃止し、瓶の穴から不規則な20粒が弧を描いて落下し、
 // 各さやの上へ段階的に残る粒レイヤーへ変更
@@ -445,7 +449,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2262;
+const CACHE_VERSION = 2263;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。

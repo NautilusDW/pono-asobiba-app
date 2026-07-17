@@ -49,6 +49,7 @@ test('broccoli is prepped first, then boils with particles on the stove', async 
   for (let i = 1; i <= 5; i += 1) {
     await page.locator('.workshop-boil-piece:not(.is-in-pot)').first().click();
     await expect(page.locator('.workshop-boil-piece.is-in-pot')).toHaveCount(i);
+    await expect(page.locator('#workshop-boil-water-mask .workshop-boil-piece.is-in-pot')).toHaveCount(i);
   }
   await expect(page.locator('#workshop-hint')).toContainText('ぜんぶ はいったよ');
   await expect(page.locator('#workshop-boil-pot')).toHaveAttribute('src', /boil_pot_cold\.png/);
