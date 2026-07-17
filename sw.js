@@ -1,5 +1,9 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2269: にんじんいんげんの旧いんげん短冊を、GPT Image 2生成の包丁切断面が
+// 見える個別10種へ差し替え。炒め操作は距離900→2200、接触11→14片、最低7秒へ
+// 延長し、急いで数回動かしただけでは完成しないようにした
+// (batch:1346-kitchen-green-bean-cut-pieces)。play.html同期不要。
 // v2268: 材料選択で冷蔵庫画像を縦長枠へcoverして拡大クロップしていた状態を
 // 元画像に近い8:5枠へ修正。素材カードの中央占有幅と画像寸法も抑え、背景の
 // 暗さ・ぼかし／かな名札／縦スワイプは維持
@@ -474,7 +478,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2268;
+const CACHE_VERSION = 2269;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。

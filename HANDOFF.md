@@ -17,10 +17,15 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-07-17 - [batch:1344-room-window-final-sheet-replacement] Codex: ユーザー指示「さっきの6個を削除し、添付の新6種へ交換」。Downloads最新`hf_20260717_121111_...png`が添付と一致。現行items.jsには6 IDとユーザー調整済みピボットが登録済みのため、ID／ピボット／配置範囲を維持してA/B計12 PNGの内容だけ完全差替えする。roomImg/roomImgBは外部生URL混在をやめ全てローカルassetパスへ統一。既存dirty Bento／SW、common、master／productionは変更しない。 (by Codex)
+- 2026-07-17 - [batch:1344-room-window-final-sheet-replacement] Codex: DONE — 新シートを6分割しsoft matte／despill／edge contractで透過、A/B計12 PNGを旧6種の同IDへ完全差替え。全四隅alpha=0、強い緑残り0px、約253〜367KB。ユーザー調整済みピボット／範囲は維持。items.jsの6表示名をかなへ直し、A/B全参照をローカルassetへ統一。専用回帰、room app/book、shop catalog、inline JS、diff check PASS。既存dirty Bento／SW、common／master／productionは未変更。 (by Codex)
+
 - 2026-07-17 - [batch:1344-kitchen-ingredient-vertical-carousel] Codex: ユーザー実機評価「材料選択で冷蔵庫背景が細かくカードが目立たず、素材名も読みにくい。縦スワイプで隠れたメニューを見るカルーセルへ」を受領。重複監査で現行は固定3列×3行grid、縦scroll／snap／行groupなし。同要望の既存実装なしを確認。背景だけ暗くblurし、カードは画像＋かな名を常時表示、3枚1行の縦scroll-snapへ変更する。 (by Codex)
 - 2026-07-17 - [batch:1344-kitchen-ingredient-vertical-carousel] Codex: DONE — 材料選択の冷蔵庫背景をbrightness 52%＋blur 4pxで抑え、素材カードを不透明に近い白面・大きい画像・常時表示のかな名札へ刷新。3枚1段の縦scroll-snapカルーセル、スワイプ案内、細いスクロールバーを追加。PC実画面で背景と文字を目視し、portraitは既存横向き案内、844×390／1024×768／1366×768は段数・3枚構成・縦スクロール・横overflow 0をPlaywright確認。static回帰PASS、SW v2266。 (by Codex)
 - 2026-07-17 - [batch:1344b-kitchen-carousel-no-zoom] Codex: ユーザー訂正「アップにしてとは言っていない」を受領。原因は冷蔵庫画像を約960×縦長の枠へcoverし、元画像より大きく左右クロップしたこと。表示枠を元画像に近い8:5・最大1200×750へ戻し、カード列を720px、素材画像を最大120×104pxへ抑える。暗いblur背景・かな名札・縦scroll-snapは維持する。 (by Codex)
 - 2026-07-17 - [batch:1344b-kitchen-carousel-no-zoom] Codex: DONE — 冷蔵庫の左右まで見える8:5画角へ戻し、カード列を中央720px、素材画像を最大120×104pxへ縮小。背景の暗さ・4px blur、かな名札、3枚1段の縦scroll-snapは維持。1366×768実画面を目視し、Playwright 4 viewportで枠比1.55〜1.65、素材幅121px以下、縦scroll、横overflow 0を確認。static／diff check PASS、SW v2268。 (by Codex)
+- 2026-07-17 - [batch:1346-kitchen-green-bean-cut-pieces] Codex: ユーザー実機評価「いんげんがクロップされたような不自然な切れ方／炒め時間が短い」を受領。既存10片は長い素材の切抜き由来で、自然長に対して132×84の透明枠が広く、重ねると切断面より画像端が強く見える。現行whole素材を参照し、GPT Image 2で両端の包丁切断面・曲がり・角度が異なる10片を生成、rawはtmp/alpha_pending/1346に保持して透過・分割実装する。炒めは最低7秒＋移動距離2200＋14片接触へ延長する。 (by Codex)
+- 2026-07-17 - [batch:1346-kitchen-green-bean-cut-pieces] Codex: DONE — GPT Image 2で現行whole素材を参照した包丁切断面つき10片を生成し、magenta rawを保持したままsoft-matte/despill透過、2×5分割、alpha bbox＋6px余白で264px以下の個別PNGへ差替え。旧132×84の太い透明枠を撤去し、全片ratio>1.8・四隅/外周alpha 0を回帰固定。炒めは距離900→2200、接触11→14片、最低7秒へ延長。実画面で鍋内の断面・長さを目視し、にんじんいんげん／きんぴら7 E2E PASS、SW v2269。raw/alpha/process/deliveryはtmp/alpha_pending/1346。 (by Codex)
 
 - 2026-07-17 - [batch:1343-room-window-angle-replacement] Codex: Downloadsの新規窓シート2枚を比較。`hf_20260717_034406_...png`は主要横辺約25.5°右下がりで部屋右壁基準線約25〜26°と一致、`hf_20260717_035841_...png`は約20°で正面向きが強い。前者を採用し、6分割・クロマ透過・A/Bペア化してbatch:1340の窓12 PNGを差し替える。後者は比較用として不採用、削除しない。items.js／ピボット値／common／master／productionは変更しない。 (by Codex)
 - 2026-07-17 - [batch:1343-room-window-angle-replacement] Codex: DONE — 25.5°候補シートを6分割し、soft matte／despill／edge contractで透過、A/B計12 PNGを既存`furn_window_*_[AB].png`へ差替え。全四隅alpha=0、強い緑残り0px、約181〜333KB。20°候補は比較用rawとして保持し不採用。新Aは部屋右壁、Bは水平反転で左壁用。QA checker確認済み。items.js／ピボット値／code／SW／common／master／productionは未変更。 (by Codex)

@@ -6683,6 +6683,9 @@ body.layout-editor-on .bowl-fill-mask::after {
   const NEW_BADGE_KEY = 'bentoNewIngredients';   // 「NEW!」表示中の材料
   const RECIPE_STORAGE_KEY = 'bentoUnlockedRecipes';
   const COOK_TIMING_DURATION_MS = 10000;
+  const STIR_FRY_MIN_DURATION_MS = 7000;
+  const STIR_FRY_REQUIRED_DISTANCE = 2200;
+  const STIR_FRY_REQUIRED_PIECES = 14;
   const COOK_TIMING_GOOD_MIN = 42;
   const COOK_TIMING_GOOD_MAX = 66;
   const COOK_TIMING_DANGER_MIN = 78;
@@ -8057,6 +8060,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     stirFryLastX: 0,
     stirFryLastY: 0,
     stirFryDistance: 0,
+    stirFryStartedAt: 0,
     stirFryMoved: new Set(),
     stirFryRaf: 0,
     stirFryPhase: '',
@@ -18340,6 +18344,7 @@ body.layout-editor-on .bowl-fill-mask::after {
   function beginStirFry() {
     stopStirFry();
     state.stirFryDistance = 0;
+    state.stirFryStartedAt = 0;
     state.stirFryMoved = new Set();
     state.stirFryPieces = [];
     state.stirFryPhase = 'carrot';
@@ -18350,6 +18355,7 @@ body.layout-editor-on .bowl-fill-mask::after {
   function startStirFryMixing() {
     state.stirFryActive = true;
     state.stirFryPhase = 'mix';
+    state.stirFryStartedAt = performance.now();
     if (els.grillStage) els.grillStage.classList.remove('stir-fry-loading');
     if (els.grillStage) els.grillStage.classList.add('stir-fry-active');
     state.stirFryRaf = requestAnimationFrame(drawStirFry);
@@ -18479,7 +18485,10 @@ body.layout-editor-on .bowl-fill-mask::after {
       els.stirFrySpatula.style.top = ((clientY - stageRect.top) / stageRect.height * 100) + '%';
       els.stirFrySpatula.style.transform = 'translate(-8%,-8%) rotate(' + Math.max(-8, Math.min(8, dx * .35)) + 'deg)';
     }
-    const progress = Math.min(1, state.stirFryDistance / 900) * Math.min(1, state.stirFryMoved.size / 11);
+    const elapsed = Math.max(0, performance.now() - state.stirFryStartedAt);
+    const progress = Math.min(1, state.stirFryDistance / STIR_FRY_REQUIRED_DISTANCE)
+      * Math.min(1, state.stirFryMoved.size / STIR_FRY_REQUIRED_PIECES)
+      * Math.min(1, elapsed / STIR_FRY_MIN_DURATION_MS);
     updateCookDots('grill', progress < .5 ? 0 : 1);
     if (els.grillActionLabel) els.grillActionLabel.textContent = progress < .45 ? 'さいばしで ぜんたいを まぜよう' : 'もうすこし まぜよう！';
     if (progress >= 1) finishNinjinIngenStirFry();
@@ -20951,6 +20960,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     stopStirFry();
     state.stirFryPieces = [];
     state.stirFryDistance = 0;
+    state.stirFryStartedAt = 0;
     state.stirFryMoved = new Set();
     state.stirFryPhase = '';
     state.stirTrayPointerId = null;

@@ -52,7 +52,10 @@ test('ninjin ingen pieces spread and move when the spatula is dragged', async ({
   const moved = await page.evaluate(() => (window as Window & { __bentoState?: { stirFryMoved?: Set<number> } }).__bentoState?.stirFryMoved?.size || 0);
   expect(moved).toBeGreaterThan(0);
   await canvas.focus();
-  for (let i = 0; i < 5; i += 1) await canvas.press('Space');
+  for (let i = 0; i < 12; i += 1) await canvas.press('Space');
+  await expect.poll(() => page.evaluate(() => Boolean((window as Window & { __bentoState?: { cookServed?: boolean } }).__bentoState?.cookServed))).toBe(false);
+  await page.waitForTimeout(7100);
+  await canvas.press('Space');
   await expect.poll(() => page.evaluate(() => Boolean((window as Window & { __bentoState?: { cookServed?: boolean } }).__bentoState?.cookServed))).toBe(true);
   await expect(page.locator('#grilling-food')).toHaveAttribute('src', '../assets/images/bento/free-layout/okazu_ninjin_ingen.png');
 });
@@ -78,19 +81,24 @@ test('kinpira adds carrot then gobo matchsticks before stirring', async ({ page 
   })).toEqual({ total: 18, gobo: 9 });
   const canvas = page.locator('#stir-fry-canvas');
   await canvas.focus();
-  for (let i = 0; i < 5; i += 1) await canvas.press('Space');
+  for (let i = 0; i < 12; i += 1) await canvas.press('Space');
+  await expect.poll(() => page.evaluate(() => Boolean((window as Window & { __bentoState?: { cookServed?: boolean } }).__bentoState?.cookServed))).toBe(false);
+  await page.waitForTimeout(7100);
+  await canvas.press('Space');
   await expect.poll(() => page.evaluate(() => Boolean((window as Window & { __bentoState?: { cookServed?: boolean } }).__bentoState?.cookServed))).toBe(true);
   await expect(page.locator('#grilling-food')).toHaveAttribute('src', /kinpira\/kinpira_mid\.png/);
 });
 
 test('ninjin ingen individual pieces have transparent corners', async ({ page }) => {
   await openCookMenu(page);
-  const opaqueCorners = await page.evaluate(async () => {
+  const assetAudit = await page.evaluate(async () => {
     const files = [
       ...Array.from({ length: 11 }, (_, i) => `carrot_baton_${String(i + 1).padStart(2, '0')}.png`),
       ...Array.from({ length: 10 }, (_, i) => `green_bean_piece_${String(i + 1).padStart(2, '0')}.png`),
     ];
     const bad: string[] = [];
+    const edgeTouches: string[] = [];
+    const beanRatios: number[] = [];
     for (const file of files) {
       const image = new Image();
       image.src = `/assets/images/bento/cooking/ninjin_ingen/pieces/${file}`;
@@ -107,10 +115,24 @@ test('ninjin ingen individual pieces have transparent corners', async ({ page })
         ctx.getImageData(canvas.width - 1, canvas.height - 1, 1, 1).data[3],
       ];
       if (corners.some(alpha => alpha !== 0)) bad.push(file);
+      if (file.startsWith('green_bean_')) {
+        beanRatios.push(canvas.width / canvas.height);
+        const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        let touches = false;
+        for (let x = 0; x < canvas.width && !touches; x += 1) {
+          touches = pixels[x * 4 + 3] !== 0 || pixels[((canvas.height - 1) * canvas.width + x) * 4 + 3] !== 0;
+        }
+        for (let y = 0; y < canvas.height && !touches; y += 1) {
+          touches = pixels[(y * canvas.width) * 4 + 3] !== 0 || pixels[(y * canvas.width + canvas.width - 1) * 4 + 3] !== 0;
+        }
+        if (touches) edgeTouches.push(file);
+      }
     }
-    return bad;
+    return { bad, edgeTouches, beanRatios };
   });
-  expect(opaqueCorners).toEqual([]);
+  expect(assetAudit.bad).toEqual([]);
+  expect(assetAudit.edgeTouches).toEqual([]);
+  expect(Math.min(...assetAudit.beanRatios)).toBeGreaterThan(1.8);
 });
 
 for (const recipeId of ['ninjin_ingen', 'kinpira']) {
