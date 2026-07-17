@@ -54,6 +54,36 @@ test('ninjin ingen pieces spread and move when the spatula is dragged', async ({
   await expect.poll(() => page.evaluate(() => Boolean((window as Window & { __bentoState?: { cookServed?: boolean } }).__bentoState?.cookServed))).toBe(true);
 });
 
+test('ninjin ingen individual pieces have transparent corners', async ({ page }) => {
+  await openCookMenu(page);
+  const opaqueCorners = await page.evaluate(async () => {
+    const files = [
+      ...Array.from({ length: 11 }, (_, i) => `carrot_baton_${String(i + 1).padStart(2, '0')}.png`),
+      ...Array.from({ length: 10 }, (_, i) => `green_bean_piece_${String(i + 1).padStart(2, '0')}.png`),
+    ];
+    const bad: string[] = [];
+    for (const file of files) {
+      const image = new Image();
+      image.src = `/assets/images/bento/cooking/ninjin_ingen/pieces/${file}`;
+      await image.decode();
+      const canvas = document.createElement('canvas');
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(image, 0, 0);
+      const corners = [
+        ctx.getImageData(0, 0, 1, 1).data[3],
+        ctx.getImageData(canvas.width - 1, 0, 1, 1).data[3],
+        ctx.getImageData(0, canvas.height - 1, 1, 1).data[3],
+        ctx.getImageData(canvas.width - 1, canvas.height - 1, 1, 1).data[3],
+      ];
+      if (corners.some(alpha => alpha !== 0)) bad.push(file);
+    }
+    return bad;
+  });
+  expect(opaqueCorners).toEqual([]);
+});
+
 for (const recipeId of ['ninjin_ingen', 'kinpira']) {
   test(`${recipeId} keeps its selected carrot result`, async ({ page }) => {
     await openCookMenu(page);

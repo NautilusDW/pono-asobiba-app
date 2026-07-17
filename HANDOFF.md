@@ -17,6 +17,9 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-07-17 - [batch:1338-kitchen-clean-cutout-alpha] Codex: DONE — ユーザー画像「皿のいんげんが包丁切りよりクロップ断片に見える」を調査し、個別PNGがalpha channelを持つだけで四隅alpha=255、紫背景が残った不完全処理と特定。形状自体は既存の切断面を再利用し、carrot 11枚＋green bean 10枚をborder key `#ef04e9`、soft matte／despill／edge contractで再透過。白背景合成と1366x768実画面の皿・鍋で紫矩形／フリンジ消失を確認。21枚四隅alpha=0テスト追加。sw v2257。 (by Codex)
+- 2026-07-17 - [batch:1338-kitchen-clean-cutout-alpha] Codex: FOLLOWUP — alpha検証で5枚は食材自体が元画像の四隅へ接していたため、全21枚へ透明余白10pxを追加。四隅alpha=0専用テストを含むPhase 1 Playwright 6件PASS。形状の再生成は不要と判断し、既存切断面を保持。 (by Codex)
+
 - 2026-07-17 - [batch:1337-kitchen-stir-mask-fit] Codex: DONE — batch:1336後の実機評価「相変わらずフライパンとマスクが合わない」を再実測。旧Canvas 32.5/24.5/37/32%は内周より幅約12%狭く高さ約40%、上寄りだったため、内周bbox 29.4/12.5/42.1/54%へ置換。描画clip 49%楕円と物理中心境界41.5%を同じCanvasへ統一。844x390／1366x768実画面で両材料投入後を画像確認。専用Playwright、inline JS/SW構文、diff check PASS。sw v2256。 (by Codex)
 
 - 2026-07-17 - [batch:1336-kitchen-ninjin-ingen-sequence] Codex: DONE — batch:1335実機評価「マスクずれ／最初の皿が一枚レイヤー風／にんじん投入だけでいんげんが突然出る」を修正。最初の皿を個別にんじん7枚の散開表示にし、皿ごとドラッグ投入後に個別いんげん7枚へ交代、2回目の投入後だけ18切れ端の混ぜ操作を開始。Canvasを鍋肌へ左上補正し楕円clipで外側描画を遮断。キーボードもにんじん→いんげん→混ぜる順。関連Playwright 9件、inline JS/SW構文、diff check PASS。sw v2255。 (by Codex)

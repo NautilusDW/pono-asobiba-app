@@ -1,5 +1,9 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2257: にんじんいんげんの個別切れ端21枚に残っていた不透明な紫背景を除去。
+// にんじん11枚／いんげん10枚をsoft matte・despill付き透過PNGへ再処理し、
+// さらに透明余白10pxを加えて切れ端が画像端へ接するクロップ感も解消
+// (batch:1338-kitchen-clean-cutout-alpha)。play.html同期不要。
 // v2256: にんじんいんげんのCanvasをフライパン内周の実測比率
 // left 29.4% / top 12.5% / width 42.1% / height 54%へ拡大・再配置。
 // 描画clipと物理境界も同じ楕円比率へ統一してマスクずれを修正
@@ -420,7 +424,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2256;
+const CACHE_VERSION = 2257;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
