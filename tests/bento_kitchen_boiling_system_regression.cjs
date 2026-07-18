@@ -23,6 +23,7 @@ for (let index = 1; index <= 12; index += 1) {
 assert.match(source, /id="workshop-boil-game"/);
 assert.match(source, /const WORKSHOP_BOIL_FOODS = \{[\s\S]*?broccoli:[\s\S]*?edamame:/);
 assert.match(source, /function updateWorkshopBoilVisual\(step\)[\s\S]*?boil_pot_cold\.png/);
+assert.match(source, /boil_pot_cold\.png\?v=1349/);
 assert.doesNotMatch(source.match(/function updateWorkshopBoilVisual\(step\)[\s\S]*?\n  function advanceWorkshopProgress/)[0], /boil_pot_hot\.png/);
 assert.match(source, /class="workshop-boil-bubbles"/);
 assert.match(source, /@keyframes workshopBoilBubble/);
