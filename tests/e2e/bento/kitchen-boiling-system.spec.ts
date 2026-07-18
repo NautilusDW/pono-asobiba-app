@@ -49,11 +49,17 @@ test('broccoli is prepped first, then boils with particles on the stove', async 
   if (!sceneBox || !saltBox) throw new Error('boil scene and salt shaker must be visible');
   await page.mouse.move(saltBox.x + saltBox.width / 2, saltBox.y + saltBox.height / 2);
   await page.mouse.down();
-  await page.mouse.move(sceneBox.x + sceneBox.width * .5, sceneBox.y + sceneBox.height * .4, { steps: 4 });
-  await page.mouse.move(sceneBox.x + sceneBox.width * .5, sceneBox.y + sceneBox.height * .3, { steps: 2 });
-  await page.mouse.move(sceneBox.x + sceneBox.width * .5, sceneBox.y + sceneBox.height * .5, { steps: 2 });
-  await page.mouse.move(sceneBox.x + sceneBox.width * .5, sceneBox.y + sceneBox.height * .3, { steps: 2 });
+  await page.mouse.move(sceneBox.x + sceneBox.width * .68, sceneBox.y + sceneBox.height * .28, { steps: 4 });
+  await page.mouse.move(sceneBox.x + sceneBox.width * .68, sceneBox.y + sceneBox.height * .14, { steps: 2 });
+  await page.mouse.move(sceneBox.x + sceneBox.width * .68, sceneBox.y + sceneBox.height * .3, { steps: 2 });
+  await page.mouse.move(sceneBox.x + sceneBox.width * .68, sceneBox.y + sceneBox.height * .14, { steps: 2 });
   await page.mouse.up();
+  const saltVectors = await page.locator('.workshop-boil-salt-particle').evaluateAll((particles) => particles.map((particle) => {
+    const style = (particle as HTMLElement).style;
+    return { dx: parseFloat(style.getPropertyValue('--salt-dx')), dy: parseFloat(style.getPropertyValue('--salt-dy')) };
+  }));
+  expect(saltVectors.length).toBeGreaterThan(0);
+  expect(saltVectors.every((vector) => vector.dx < 0 && vector.dy > 0)).toBe(true);
   await page.waitForTimeout(450);
   await expect(page.locator('#workshop-instruction')).toHaveText('おゆが わくまで まとう');
   await page.waitForTimeout(2100);
