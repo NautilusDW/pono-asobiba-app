@@ -57,6 +57,8 @@ assert.match(source, /\.workshop-boil-pot \{[^}]*top: 2%/);
 assert.match(source, /\.workshop-boil-salt \{[^}]*width: 11\.5%; left: 63%; top: 18%/);
 assert.match(source, /\.workshop-boil-piece\.is-broccoli:not\(\.is-in-pot\) \{ width: 10\.5%; \}/);
 assert.match(source, /\[\[12,69,-12\],\[20,69,8\],\[28,69,-5\],\[16,84,11\],\[24,84,-8\]\]/);
+assert.match(source, /\.workshop-boil-water-mask \.workshop-boil-piece\.is-in-pot \{ width: 23%; \}/);
+assert.match(source, /\[\[38,30,-24\],\[44,38,12\],\[50,28,-8\],\[56,38,27\],\[62,30,-18\]\]/);
 assert.match(source, /@keyframes broccoliWaterDrift/);
 assert.match(source, /workshopSalt\.addEventListener\('pointermove'/);
 assert.match(source, /classList\.toggle\('is-boiling'/);
@@ -67,5 +69,7 @@ assert.match(source, /\['ignite', 'salt', 'heat', 'boil', 'simmer', 'drain'\]\.i
 assert.match(source, /\['simmer','ぐつぐつ ゆでよう',1\]/);
 assert.match(source, /drainSpoon\.addEventListener\('pointermove'/);
 assert.match(source, /step\.kind === 'drain'[\s\S]*?return;/);
+assert.match(source, /id="workshop-boil-bowl" src="\.\.\/assets\/images\/bento\/cooking\/prep_plate\.png\?v=1353"/);
+assert.doesNotMatch(source, /is-drain\[data-stage="2"\][^}]*clip-path: ellipse/);
 
 console.log('bento kitchen shared boiling system regression: PASS');

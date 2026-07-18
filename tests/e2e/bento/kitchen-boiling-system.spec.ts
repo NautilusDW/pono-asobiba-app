@@ -103,7 +103,7 @@ test('broccoli is prepped first, then boils with particles on the stove', async 
   await expect(page.locator('#workshop-instruction')).toHaveText('あなあきおたまで おゆを きろう');
   await expect(page.locator('#workshop-boil-game')).toHaveClass(/is-drain/);
   await expect(page.locator('#workshop-boil-spoon')).toHaveAttribute('src', /boil_spoon\.png/);
-  await expect(page.locator('#workshop-boil-bowl')).toHaveAttribute('src', /boil_drain_bowl\.png/);
+  await expect(page.locator('#workshop-boil-bowl')).toHaveAttribute('src', /prep_plate\.png\?v=1353/);
   const drainSceneBox = await page.locator('#workshop-scene').boundingBox();
   let spoonBox = await page.locator('#workshop-boil-spoon').boundingBox();
   if (!drainSceneBox || !spoonBox) throw new Error('drain tools must be visible');
@@ -118,7 +118,7 @@ test('broccoli is prepped first, then boils with particles on the stove', async 
   await page.mouse.down();
   await page.mouse.move(drainSceneBox.x + drainSceneBox.width * .74, drainSceneBox.y + drainSceneBox.height * .72, { steps: 8 });
   await page.mouse.up();
-  await expect(page.locator('#workshop-boil-food')).toHaveCSS('clip-path', /ellipse\(45% 27% at 50% 42%\)/);
+  await expect(page.locator('#workshop-boil-food')).toHaveCSS('clip-path', 'none');
   await page.waitForTimeout(600);
   await expect(page.locator('#workshop-finish')).toHaveClass(/show/);
 });

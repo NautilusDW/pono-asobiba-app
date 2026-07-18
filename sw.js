@@ -1,5 +1,10 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2278: 水切り後の深い黄ボウルはコンロの見下ろし角度と合わず、前縁maskも
+// 不自然なため廃止。既存の白い浅皿 `prep_plate.png` を再利用し、穴あきおたまで
+// 湯を切った食材を内側へ置く配置へ変更。完成食材のclip-path maskを完全撤去。
+// 鍋内食材も水面mask幅29→23%へ縮小し、全房・さやを水面中央側へ寄せて端切れを防止
+// (batch:1353-kitchen-familiar-drain-plate)。play.html同期不要。
 // v2277: 茹で塩瓶を右上過ぎる69%→63%へ中央寄せ。瓶自体を右上→左下へ動かす
 // 専用shakeへ変更し、塩粒もstart x61〜65%からend x44〜52%へ必ず9%以上左下へ
 // 落ちる軌道に強化。縦長transparent canvasで小さく見えた皿上ブロッコリーを
@@ -513,7 +518,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2277;
+const CACHE_VERSION = 2278;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
