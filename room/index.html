@@ -1410,6 +1410,29 @@ function isOverlapping(areaId, row, col, item, angle, excludeId) {
   return false;
 }
 
+// グリッドセルが別でも画像外形が大きく重なるケースを検出する。
+// 透明余白や前後関係による僅かな交差は許容し、双方の小さい方の矩形に対して
+// 10%以上かつ縦横12px以上重なった場合だけ配置不可とする。
+function isVisuallyOverlapping(movingEl) {
+  if (!movingEl) return false;
+  const mine = movingEl.getBoundingClientRect();
+  const mineArea = mine.width * mine.height;
+  if (!mineArea) return false;
+  const area = movingEl.closest('.room-area');
+  if (!area) return false;
+  return Array.from(area.querySelectorAll('.item-placed')).some(otherEl => {
+    if (otherEl === movingEl) return false;
+    const otherId = otherEl.dataset.itemId;
+    if (otherId && PASSTHROUGH_IDS.has(otherId)) return false;
+    const other = otherEl.getBoundingClientRect();
+    const overlapW = Math.min(mine.right, other.right) - Math.max(mine.left, other.left);
+    const overlapH = Math.min(mine.bottom, other.bottom) - Math.max(mine.top, other.top);
+    if (overlapW < 12 || overlapH < 12) return false;
+    const otherArea = other.width * other.height;
+    return overlapW * overlapH >= Math.min(mineArea, otherArea) * 0.1;
+  });
+}
+
 // 空いている最寄りのセルを探す
 // フェーズ1: 元位置から同心リング状に最近傍を探す
 // フェーズ2: 見つからなければ配置可能範囲を全走査し、壁際優先でスコアリング
@@ -1731,7 +1754,8 @@ function _addDragHandlers(el, areaId) {
     el.dataset.row = row; el.dataset.col = col;
     // 衝突チェック: 他のアイテムと重なった場合は元の位置へ戻す。
     // 別の空きセルへ自動移動すると、ユーザーが指定していない場所で確定してしまう。
-    if (isOverlapping(areaId, row, col, item, el.dataset.angle, el.dataset.itemId)) {
+    if (isOverlapping(areaId, row, col, item, el.dataset.angle, el.dataset.itemId) ||
+        isVisuallyOverlapping(el)) {
       const cfg2 = state.config[areaId];
       const orig = cfg2 && cfg2.placed ? cfg2.placed.find(q => q.id === el.dataset.itemId) : null;
       if (orig) { row = orig.row; col = orig.col; }
@@ -1745,7 +1769,7 @@ function _addDragHandlers(el, areaId) {
     const p = cfg.placed.find(q => q.id === el.dataset.itemId);
     if (p) { p.row = row; p.col = col; }
     saveState();
-    suppressToyboxUntil = Date.now() + 700;
+    suppressToyboxUntil = Date.now() + 1000;
     dragging = false;
   }
 
@@ -1965,14 +1989,14 @@ function buildRoomArea(areaData) {
   const floor = document.createElement('div');
   floor.className = 'room-floor';
   floor.addEventListener('click', e => {
-    if (locked || !editMode) return;
+    if (locked || !editMode || Date.now() < suppressToyboxUntil) return;
     e.stopPropagation();
     openInventory('floor');
   });
 
   // 壁クリック: room-area自体で検出（wallはpointer-events:noneのため）
   div.addEventListener('click', e => {
-    if (locked || !editMode) return;
+    if (locked || !editMode || Date.now() < suppressToyboxUntil) return;
     // floor・家具・デコ・宝箱・回転ボタンをクリックした場合は無視
     if (e.target.closest('.room-floor') || e.target.closest('.item-placed')
         || e.target.closest('.btn-rotate') || e.target.closest('.btn-stow') || e.target.closest('.toybox-item')) return;
