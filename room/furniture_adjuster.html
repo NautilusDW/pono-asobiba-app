@@ -346,9 +346,19 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
     </div>
 
     <div id="deco-on-surface-section" style="display:none;margin-top:8px;border-top:1px solid #444;padding-top:8px">
-      <h3 style="color:#4CAF50">🪑 家具の上でプレビュー</h3>
-      <div style="font-size:11px;color:#888;margin-bottom:4px">家具を選んで配置の見た目を確認</div>
+      <h3 id="furn-preview-title" style="color:#4CAF50">🪑 家具の上でプレビュー</h3>
+      <div id="furn-preview-help" style="font-size:11px;color:#888;margin-bottom:4px">家具を選んで配置の見た目を確認</div>
+      <div id="wall-clearance-controls" style="display:none">
+        <label><span>窓下の重なり許可 (%)</span>
+          <input type="range" id="sl-wallFurnitureAllowance" min="0" max="80" step="1">
+          <input type="number" id="num-wallFurnitureAllowance" min="0" max="80" step="1">
+        </label>
+      </div>
       <select id="surface-furn-select" style="width:100%;background:#222;color:#eee;border:1px solid #555;border-radius:4px;padding:4px 6px;font-size:12px;margin-bottom:6px"></select>
+      <div style="display:flex;gap:4px;margin-bottom:6px">
+        <button id="btn-preview-furn-a" style="flex:1;padding:4px;border:1px solid #4CAF50;border-radius:4px;background:#4CAF50;color:#fff">家具 A</button>
+        <button id="btn-preview-furn-b" style="flex:1;padding:4px;border:1px solid #555;border-radius:4px;background:#333;color:#eee">家具 B</button>
+      </div>
       <div style="margin-top:4px">
         <button id="btn-deco-surface-preview" style="padding:4px 12px;border:1px solid #4CAF50;border-radius:4px;background:#333;color:#4CAF50;cursor:pointer;font-size:12px">🪑 プレビューON</button>
       </div>
@@ -440,6 +450,7 @@ var ITEMS = (typeof ROOM_ITEMS !== 'undefined' ? ROOM_ITEMS : [])
       cat: ov.cat || it.cat,
       theme: ov.theme || it.theme || 'all',
       placementLayer: ov.placementLayer || it.placementLayer || 'floor',
+      wallFurnitureAllowance: it.wallFurnitureAllowance || 0,
       roomImg: it.roomImg, roomImgB: it.roomImgB || null,
       gridRow: it.gridRow, gridCol: it.gridCol,
       cellSize: it.cellSize || 1, footprintSize: it.footprintSize,
@@ -504,6 +515,7 @@ ITEMS.forEach(item => {
     row: item.placementLayer === 'wall' ? 0 : (item.gridRow ?? 3),
     col: item.placementLayer === 'wall' ? 0 : (item.gridCol ?? 3),
     surfaceY: item.surfaceY || 0,
+    wallFurnitureAllowance: item.wallFurnitureAllowance || 0,
     stackable: isDecoItem(item.id),
   };
   adjustments[adjKey(item.id, 'A')] = Object.assign({}, base);
@@ -912,8 +924,14 @@ function selectItem(id) {
 
 function updateDecoSectionVisibility(id) {
   const decoSurfSec = document.getElementById('deco-on-surface-section');
-  if (isDecoItem(id)) {
+  const item = ITEMS.find(x => x.id === id);
+  const isWall = item && item.placementLayer === 'wall';
+  if (isDecoItem(id) || isWall) {
     decoSurfSec.style.display = '';
+    document.getElementById('wall-clearance-controls').style.display = isWall ? '' : 'none';
+    document.getElementById('furn-preview-title').textContent = isWall ? '🪟 窓の下で家具プレビュー' : '🪑 家具の上でプレビュー';
+    document.getElementById('furn-preview-help').textContent = isWall ? '比較する家具と、その家具のA/B角度を選択' : '家具を選んで配置の見た目を確認';
+    if (isWall) syncSlider('wallFurnitureAllowance', curAdj().wallFurnitureAllowance || 0);
     initDecoSurfaceSelect();
   } else {
     decoSurfSec.style.display = 'none';
@@ -1491,6 +1509,18 @@ document.getElementById('chk-stackable').onchange = function() {
   num.oninput = () => { sl.value = num.value; if (!selectedId) return; adjustments[adjKey(selectedId)][name] = parseFloat(num.value); placeItem(selectedId); drawGrid(); };
 });
 
+['wallFurnitureAllowance'].forEach(name => {
+  const sl = document.getElementById('sl-' + name);
+  const num = document.getElementById('num-' + name);
+  function update(val) {
+    if (!selectedId) return;
+    adjustments[adjKey(selectedId)][name] = Math.max(0, Math.min(80, parseFloat(val) || 0));
+    saveToStorage();
+  }
+  sl.oninput = () => { num.value = sl.value; update(sl.value); };
+  num.oninput = () => { sl.value = num.value; update(num.value); };
+});
+
 ['minRow', 'maxRow', 'minCol', 'maxCol'].forEach(name => {
   var inp = document.getElementById('num-' + name);
   function commit(val) {
@@ -1587,21 +1617,22 @@ document.getElementById('btn-surface-preview').onclick = () => {
 let _decoSurfFurnEl = null;  // furniture image shown behind deco
 let _decoSurfOn = false;
 let _decoSurfFurnId = null;  // which surface furniture is selected
+let _decoSurfFurnAngle = 'A';
 
 function initDecoSurfaceSelect() {
   const sel = document.getElementById('surface-furn-select');
-  if (sel.children.length > 0) {
-    // Already populated, just sync slider
-    syncDecoSurfSlider();
-    return;
-  }
-  SURFACE_ITEMS.forEach(it => {
+  const selected = ITEMS.find(x => x.id === selectedId);
+  const choices = selected && selected.placementLayer === 'wall'
+    ? ITEMS.filter(it => it.cat === 'furn' && it.placementLayer !== 'wall')
+    : SURFACE_ITEMS;
+  sel.innerHTML = '';
+  choices.forEach(it => {
     const opt = document.createElement('option');
     opt.value = it.id;
     opt.textContent = it.name;
     sel.appendChild(opt);
   });
-  _decoSurfFurnId = SURFACE_ITEMS.length > 0 ? SURFACE_ITEMS[0].id : null;
+  _decoSurfFurnId = choices.length > 0 ? choices[0].id : null;
   sel.onchange = () => {
     _decoSurfFurnId = sel.value;
     syncDecoSurfSlider();
@@ -1609,6 +1640,19 @@ function initDecoSurfaceSelect() {
   };
   syncDecoSurfSlider();
 }
+
+function setPreviewFurnitureAngle(angle) {
+  _decoSurfFurnAngle = angle;
+  const a = document.getElementById('btn-preview-furn-a');
+  const b = document.getElementById('btn-preview-furn-b');
+  a.style.background = angle === 'A' ? '#4CAF50' : '#333';
+  a.style.color = angle === 'A' ? '#fff' : '#eee';
+  b.style.background = angle === 'B' ? '#4CAF50' : '#333';
+  b.style.color = angle === 'B' ? '#fff' : '#eee';
+  if (_decoSurfOn) updateDecoSurfacePreview();
+}
+document.getElementById('btn-preview-furn-a').onclick = () => setPreviewFurnitureAngle('A');
+document.getElementById('btn-preview-furn-b').onclick = () => setPreviewFurnitureAngle('B');
 
 function syncDecoSurfSlider() {
   // no-op: surfaceYスライダー削除済み
@@ -1627,13 +1671,17 @@ function updateDecoSurfacePreview() {
   if (!_decoSurfOn || !_decoSurfFurnEl || !selectedId || !_decoSurfFurnId) return;
   const furnItem = ITEMS.find(x => x.id === _decoSurfFurnId);
   if (!furnItem) return;
-  const furnAdj = adjustments[adjKey(_decoSurfFurnId, currentAngle)] || adjustments[adjKey(_decoSurfFurnId, 'A')];
+  const furnAdj = adjustments[adjKey(_decoSurfFurnId, _decoSurfFurnAngle)] || adjustments[adjKey(_decoSurfFurnId, 'A')];
   if (!furnAdj) return;
 
-  // Place furniture at its own configured position
-  const cell = getGridCell(furnAdj.row, furnAdj.col);
+  // 壁家具の比較時は窓と同じ基準セルへ置き、「窓の下」を直接確認できるようにする。
+  const selectedItem = ITEMS.find(x => x.id === selectedId);
+  const selectedAdj = adjustments[adjKey(selectedId, currentAngle)];
+  const previewRow = selectedItem && selectedItem.placementLayer === 'wall' && selectedAdj ? selectedAdj.row : furnAdj.row;
+  const previewCol = selectedItem && selectedItem.placementLayer === 'wall' && selectedAdj ? selectedAdj.col : furnAdj.col;
+  const cell = getGridCell(previewRow, previewCol);
   const furnSize = (furnAdj.cellSize || 1) * GRID_CELL_PCT;
-  const furnImg = (currentAngle === 'B' && furnItem.roomImgB) ? furnItem.roomImgB : furnItem.roomImg;
+  const furnImg = (_decoSurfFurnAngle === 'B' && furnItem.roomImgB) ? furnItem.roomImgB : furnItem.roomImg;
   if (!_decoSurfFurnEl.src.endsWith(furnImg.replace('../', '/'))) {
     _decoSurfFurnEl.src = furnImg;
   }
@@ -1659,7 +1707,7 @@ document.getElementById('btn-deco-surface-preview').onclick = () => {
 
   const furnItem = ITEMS.find(x => x.id === _decoSurfFurnId);
   if (!furnItem) return;
-  const furnImg = (currentAngle === 'B' && furnItem.roomImgB) ? furnItem.roomImgB : furnItem.roomImg;
+  const furnImg = (_decoSurfFurnAngle === 'B' && furnItem.roomImgB) ? furnItem.roomImgB : furnItem.roomImg;
   const el = document.createElement('img');
   el.src = furnImg;
   el.style.position = 'absolute';
@@ -2201,7 +2249,7 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
   var idInput = document.getElementById('edit-item-id');
   if (idInput) idInput.dispatchEvent(new Event('change'));
   // ★ min/max/pivot 等の数値フィールドも強制コミット（blur 前に Deploy した場合の対策）
-  ['minRow','maxRow','minCol','maxCol','pivotX','pivotY','cellSize','footprintSize','surfaceY']
+  ['minRow','maxRow','minCol','maxCol','pivotX','pivotY','cellSize','footprintSize','surfaceY','wallFurnitureAllowance']
     .forEach(function(n) {
       var el = document.getElementById('num-' + n);
       if (el) { el.dispatchEvent(new Event('input')); el.dispatchEvent(new Event('change')); }
@@ -2366,6 +2414,10 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
       else newBlock = newBlock.replace(/(cellSize:\s*-?[\d.]+,?)/, '$1 footprintSize: ' + adjA.footprintSize + ',');
       newBlock = safeReplProp(newBlock, 'pivotX', adjA.pivotX);
       newBlock = safeReplProp(newBlock, 'pivotY', adjA.pivotY);
+      if (item.placementLayer === 'wall') {
+        if (/\bwallFurnitureAllowance:/.test(newBlock)) newBlock = safeReplProp(newBlock, 'wallFurnitureAllowance', adjA.wallFurnitureAllowance || 0);
+        else newBlock = newBlock.replace(/(\bplacementLayer:\s*'wall',)/, '$1 wallFurnitureAllowance: ' + (adjA.wallFurnitureAllowance || 0) + ',');
+      }
 
       // minRow〜maxCol（存在すれば更新、無ければ追記）
       if (adjA.minRow !== undefined && adjA.minRow !== null) {
@@ -2478,6 +2530,7 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
           entry += "    gridRow: 4, gridCol: 4, cellSize: " + (adj.cellSize || 1) +
             ", footprintSize: " + (adj.footprintSize || 1) + ", pivotX: " + (adj.pivotX || 0) + ", pivotY: " + (adj.pivotY || 0);
           entry += ", placementLayer: '" + (item.placementLayer || 'floor') + "'";
+          if (item.placementLayer === 'wall') entry += ", wallFurnitureAllowance: " + (adj.wallFurnitureAllowance || 0);
           if (adj.minRow != null) {
             entry += ", minRow: " + adj.minRow + ", maxRow: " + adj.maxRow +
               ", minCol: " + adj.minCol + ", maxCol: " + adj.maxCol;

@@ -1448,6 +1448,16 @@ function isVisuallyOverlapping(movingEl) {
       const overlapW = Math.min(mine.right, otherRect.right) - Math.max(mine.left, otherRect.left);
       const overlapH = Math.min(mine.bottom, otherRect.bottom) - Math.max(mine.top, otherRect.top);
       if (overlapW < 8 || overlapH < 8) return false;
+      // 窓と床家具: 窓ごとの許容率ぶんだけ、窓下側への家具の重なりを許可する。
+      if (movingLayer !== otherLayer) {
+        const wallRect = movingLayer === 'wall' ? mine : otherRect;
+        const floorRect = movingLayer === 'wall' ? otherRect : mine;
+        const wallItem = movingLayer === 'wall' ? movingItem : otherItem;
+        const allowance = Math.max(0, Math.min(80, wallItem.wallFurnitureAllowance || 0));
+        const cutoffY = wallRect.bottom - wallRect.height * allowance / 100;
+        return floorRect.top < cutoffY;
+      }
+      // 窓同士は画像矩形の大きな交差を拒否する。
       const mineArea = mine.width * mine.height;
       const otherArea = otherRect.width * otherRect.height;
       return overlapW * overlapH >= Math.min(mineArea, otherArea) * 0.05;
