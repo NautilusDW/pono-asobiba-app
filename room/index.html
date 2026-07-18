@@ -1420,6 +1420,45 @@ function isOverlapping(areaId, row, col, item, angle, excludeId) {
   return false;
 }
 
+const OPAQUE_BOUNDS_CACHE = new Map();
+function getOpaqueContentRect(itemEl) {
+  const img = itemEl && itemEl.querySelector('img');
+  const fallback = itemEl.getBoundingClientRect();
+  if (!img || !img.complete || !img.naturalWidth || !img.naturalHeight) return fallback;
+  const key = img.currentSrc || img.src;
+  let bounds = OPAQUE_BOUNDS_CACHE.get(key);
+  if (!bounds) {
+    try {
+      const maxSide = 128;
+      const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+      const w = Math.max(1, Math.round(img.naturalWidth * scale));
+      const h = Math.max(1, Math.round(img.naturalHeight * scale));
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(img, 0, 0, w, h);
+      const data = ctx.getImageData(0, 0, w, h).data;
+      let minX = w, minY = h, maxX = -1, maxY = -1;
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+        if (data[(y * w + x) * 4 + 3] < 16) continue;
+        minX = Math.min(minX, x); minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x); maxY = Math.max(maxY, y);
+      }
+      bounds = maxX >= minX ? { x: minX / w, y: minY / h, w: (maxX + 1 - minX) / w, h: (maxY + 1 - minY) / h } : { x: 0, y: 0, w: 1, h: 1 };
+      OPAQUE_BOUNDS_CACHE.set(key, bounds);
+    } catch (_) { return fallback; }
+  }
+  const rect = img.getBoundingClientRect();
+  return {
+    left: rect.left + rect.width * bounds.x,
+    right: rect.left + rect.width * (bounds.x + bounds.w),
+    top: rect.top + rect.height * bounds.y,
+    bottom: rect.top + rect.height * (bounds.y + bounds.h),
+    width: rect.width * bounds.w,
+    height: rect.height * bounds.h,
+  };
+}
+
 // グリッドセルが別でも、家具の「足元」が大きく重なるケースを検出する。
 // 背の高い家具は遠近表現で画像上部が重なるのが正常なので、画像全体ではなく
 // 下端から最大60px（高さの28%）だけを床接地帯として比較する。
@@ -1445,21 +1484,23 @@ function isVisuallyOverlapping(movingEl) {
     const otherLayer = getPlacementLayer(otherItem);
     // 壁レイヤーが関わる場合は窓枠そのものの交差だけを見る。
     if (movingLayer === 'wall' || otherLayer === 'wall') {
-      const overlapW = Math.min(mine.right, otherRect.right) - Math.max(mine.left, otherRect.left);
-      const overlapH = Math.min(mine.bottom, otherRect.bottom) - Math.max(mine.top, otherRect.top);
+      const visibleMine = getOpaqueContentRect(movingEl);
+      const visibleOther = getOpaqueContentRect(otherEl);
+      const overlapW = Math.min(visibleMine.right, visibleOther.right) - Math.max(visibleMine.left, visibleOther.left);
+      const overlapH = Math.min(visibleMine.bottom, visibleOther.bottom) - Math.max(visibleMine.top, visibleOther.top);
       if (overlapW < 8 || overlapH < 8) return false;
       // 窓と床家具: 窓ごとの許容率ぶんだけ、窓下側への家具の重なりを許可する。
       if (movingLayer !== otherLayer) {
-        const wallRect = movingLayer === 'wall' ? mine : otherRect;
-        const floorRect = movingLayer === 'wall' ? otherRect : mine;
+        const wallRect = movingLayer === 'wall' ? visibleMine : visibleOther;
+        const floorRect = movingLayer === 'wall' ? visibleOther : visibleMine;
         const wallItem = movingLayer === 'wall' ? movingItem : otherItem;
         const allowance = Math.max(0, Math.min(80, wallItem.wallFurnitureAllowance || 0));
         const cutoffY = wallRect.bottom - wallRect.height * allowance / 100;
         return floorRect.top < cutoffY;
       }
       // 窓同士は画像矩形の大きな交差を拒否する。
-      const mineArea = mine.width * mine.height;
-      const otherArea = otherRect.width * otherRect.height;
+      const mineArea = visibleMine.width * visibleMine.height;
+      const otherArea = visibleOther.width * visibleOther.height;
       return overlapW * overlapH >= Math.min(mineArea, otherArea) * 0.05;
     }
     const otherFloor = floorBand(otherRect);
