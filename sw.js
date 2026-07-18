@@ -1,5 +1,9 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2279: ブロッコリー／枝豆の鍋内アニメーションを全食材共通周期の往復から、
+// 房・さやごとに周期／位相／3区間の移動量／回転方向が異なる独立対流へ変更。
+// 湯切り時の完成食材を穴あきおたまの受け部と白い浅皿の中央へ再配置し、
+// 「ボウルへ」を「おさらへ」へ修正 (batch:1358-kitchen-independent-convection)。
 // v2278: 水切り後の深い黄ボウルはコンロの見下ろし角度と合わず、前縁maskも
 // 不自然なため廃止。既存の白い浅皿 `prep_plate.png` を再利用し、穴あきおたまで
 // 湯を切った食材を内側へ置く配置へ変更。完成食材のclip-path maskを完全撤去。
@@ -518,7 +522,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2278;
+const CACHE_VERSION = 2279;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。

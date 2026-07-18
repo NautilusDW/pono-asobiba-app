@@ -94,6 +94,11 @@ test('broccoli is prepped first, then boils with particles on the stove', async 
     await expect(page.locator('#workshop-boil-water-mask .workshop-boil-piece.is-in-pot')).toHaveCount(i);
   }
   await expect(page.locator('#workshop-hint')).toContainText('ぜんぶ はいったよ');
+  const convectionTiming = await page.locator('#workshop-boil-water-mask .workshop-boil-piece.is-in-pot').evaluateAll((pieces) => pieces.map((piece) => {
+    const style = getComputedStyle(piece);
+    return style.animationDuration + '/' + style.animationDelay;
+  }));
+  expect(new Set(convectionTiming).size).toBe(5);
   await expect(page.locator('#workshop-boil-pot')).toHaveAttribute('src', /boil_pot_cold\.png/);
   await page.waitForTimeout(500);
   await expect(page.locator('#workshop-instruction')).toHaveText('ぐつぐつ ゆでよう');
@@ -111,7 +116,8 @@ test('broccoli is prepped first, then boils with particles on the stove', async 
   await page.mouse.down();
   await page.mouse.move(drainSceneBox.x + drainSceneBox.width * .5, drainSceneBox.y + drainSceneBox.height * .4, { steps: 8 });
   await page.mouse.up();
-  await expect(page.locator('#workshop-hint')).toContainText('ボウルへ はこぼう');
+  await expect(page.locator('#workshop-hint')).toContainText('おさらへ はこぼう');
+  await page.waitForTimeout(500);
   spoonBox = await page.locator('#workshop-boil-spoon').boundingBox();
   if (!spoonBox) throw new Error('drain spoon must remain visible');
   await page.mouse.move(spoonBox.x + spoonBox.width / 2, spoonBox.y + spoonBox.height / 2);
@@ -119,6 +125,7 @@ test('broccoli is prepped first, then boils with particles on the stove', async 
   await page.mouse.move(drainSceneBox.x + drainSceneBox.width * .74, drainSceneBox.y + drainSceneBox.height * .72, { steps: 8 });
   await page.mouse.up();
   await expect(page.locator('#workshop-boil-food')).toHaveCSS('clip-path', 'none');
+  await page.waitForTimeout(500);
   await page.waitForTimeout(600);
   await expect(page.locator('#workshop-finish')).toHaveClass(/show/);
 });
