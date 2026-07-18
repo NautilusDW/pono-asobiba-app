@@ -340,8 +340,8 @@ const ROOM_ITEMS = [
     id: 'furn_bookshelf_w', cat: 'furn', name: 'しろいほんだな', theme: 'boy',
     roomImg: '../assets/images/Rooms/furnitures_final/BookShelf01_A.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/BookShelf01_B.png',
-    gridRow: 1, gridCol: 2, cellSize: 2.3, footprintSize: 1, pivotX: -16.5, pivotY: 8.2, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
-    angleB: { cellSize: 2.3, footprintSize: 1, pivotX: -28.5, pivotY: 20.3, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7                 },
+    gridRow: 1, gridCol: 2, cellSize: 2.3, footprintSize: 2, pivotX: -16.5, pivotY: 8.2, minRow: 0, maxRow: 7, minCol: 1, maxCol: 7,
+    angleB: { cellSize: 2.3, footprintSize: 2, pivotX: -28.5, pivotY: 20.3, minRow: 0, maxRow: 6, minCol: 0, maxCol: 7                 },
   },
   {
     id: 'furn_toyshelf', cat: 'furn', name: 'おもちゃだな', theme: 'all',

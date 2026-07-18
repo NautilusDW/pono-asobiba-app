@@ -1361,7 +1361,14 @@ const SURFACE_IDS = new Set([
 ]);
 // 乗せられるアイテム（cat==='deco' + 壁掛け家具）
 const STACKABLE_FURN = new Set(['furn_toyshelf']);
-function isStackableItem(item) { return item && (item.cat === 'deco' || STACKABLE_FURN.has(item.id)); }
+const STACKABLE_DECO_IDS = new Set([
+  'furn_bear_1', 'deco_bear_ribbon', 'deco_bunny', 'deco_doll',
+  'deco_tea', 'deco_sportscar', 'deco_robot', 'deco_books',
+  'deco_plasma_ball', 'deco_drone_white_boy', 'deco_vr_blue_boy', 'deco_rocket_boy',
+]);
+function isStackableItem(item) {
+  return item && (STACKABLE_DECO_IDS.has(item.id) || STACKABLE_FURN.has(item.id));
+}
 // surfaceYオフセットを受けるアイテム（壁掛けは除外）
 function getsSurfaceOffset(item) { return item && item.cat === 'deco' && !STACKABLE_FURN.has(item.id); }
 
@@ -1388,8 +1395,6 @@ function isOverlapping(areaId, row, col, item, angle, excludeId) {
       if (collides) break;
     }
     if (!collides) continue;
-    // デコ同士は衝突しない（家具の上に複数乗せられる）
-    if (iAmStackable && isStackableItem(other)) continue;
     // デコを家具の上に乗せる判定（複数デコ許可）
     if (iAmStackable && SURFACE_IDS.has(other.id)) continue;
     // 家具をデコの上に置こうとした場合も許可（デコ側が乗ってる扱い）
