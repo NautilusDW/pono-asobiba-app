@@ -362,6 +362,7 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
       <div style="margin-top:4px">
         <button id="btn-deco-surface-preview" style="padding:4px 12px;border:1px solid #4CAF50;border-radius:4px;background:#333;color:#4CAF50;cursor:pointer;font-size:12px">🪑 プレビューON</button>
       </div>
+      <div id="wall-preview-status" style="display:none;margin-top:6px;padding:6px;border-radius:6px;text-align:center;font-weight:bold;font-size:12px"></div>
     </div>
   </div>
 
@@ -1516,6 +1517,7 @@ document.getElementById('chk-stackable').onchange = function() {
     if (!selectedId) return;
     adjustments[adjKey(selectedId)][name] = Math.max(0, Math.min(80, parseFloat(val) || 0));
     saveToStorage();
+    updateWallPreviewStatus();
   }
   sl.oninput = () => { num.value = sl.value; update(sl.value); };
   num.oninput = () => { sl.value = num.value; update(num.value); };
@@ -1618,6 +1620,48 @@ let _decoSurfFurnEl = null;  // furniture image shown behind deco
 let _decoSurfOn = false;
 let _decoSurfFurnId = null;  // which surface furniture is selected
 let _decoSurfFurnAngle = 'A';
+let _previewFurnRow = 0, _previewFurnCol = 0;
+const _toolOpaqueCache = new Map();
+
+function toolOpaqueRect(img) {
+  const fallback = img.getBoundingClientRect();
+  if (!img.complete || !img.naturalWidth) return fallback;
+  const key = img.currentSrc || img.src;
+  let b = _toolOpaqueCache.get(key);
+  if (!b) {
+    try {
+      const scale = Math.min(1, 128 / Math.max(img.naturalWidth, img.naturalHeight));
+      const w = Math.max(1, Math.round(img.naturalWidth * scale)), h = Math.max(1, Math.round(img.naturalHeight * scale));
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(img, 0, 0, w, h);
+      const d = x.getImageData(0, 0, w, h).data;
+      let x0=w,y0=h,x1=-1,y1=-1;
+      for(let yy=0;yy<h;yy++) for(let xx=0;xx<w;xx++) if(d[(yy*w+xx)*4+3]>=16){x0=Math.min(x0,xx);y0=Math.min(y0,yy);x1=Math.max(x1,xx);y1=Math.max(y1,yy);}
+      b=x1>=x0?{x:x0/w,y:y0/h,w:(x1+1-x0)/w,h:(y1+1-y0)/h}:{x:0,y:0,w:1,h:1};
+      _toolOpaqueCache.set(key,b);
+    } catch(_){ return fallback; }
+  }
+  return {left:fallback.left+fallback.width*b.x,right:fallback.left+fallback.width*(b.x+b.w),top:fallback.top+fallback.height*b.y,bottom:fallback.top+fallback.height*(b.y+b.h),width:fallback.width*b.w,height:fallback.height*b.h};
+}
+
+function updateWallPreviewStatus() {
+  const status = document.getElementById('wall-preview-status');
+  const selectedItem = ITEMS.find(x => x.id === selectedId);
+  if (!status || !selectedItem || selectedItem.placementLayer !== 'wall' || !_placedEl || !_decoSurfFurnEl) {
+    if (status) status.style.display = 'none';
+    return;
+  }
+  const w = toolOpaqueRect(_placedEl), f = toolOpaqueRect(_decoSurfFurnEl);
+  const overlapW = Math.min(w.right,f.right)-Math.max(w.left,f.left);
+  const overlapH = Math.min(w.bottom,f.bottom)-Math.max(w.top,f.top);
+  const allowance = Math.max(0,Math.min(80,curAdj().wallFurnitureAllowance||0));
+  const blocked = overlapW>=8 && overlapH>=8 && f.top < w.bottom-w.height*allowance/100;
+  status.style.display = '';
+  status.textContent = blocked ? '🔴 ここには おけない' : '🟢 ここなら おける';
+  status.style.background = blocked ? '#5b1f28' : '#173f2a';
+  status.style.color = blocked ? '#ff9aa8' : '#8ff0ad';
+  _decoSurfFurnEl.style.filter = blocked ? 'drop-shadow(0 0 6px #f44336)' : 'drop-shadow(0 0 6px #4CAF50)';
+}
 
 function initDecoSurfaceSelect() {
   const sel = document.getElementById('surface-furn-select');
@@ -1677,8 +1721,8 @@ function updateDecoSurfacePreview() {
   // 壁家具の比較時は窓と同じ基準セルへ置き、「窓の下」を直接確認できるようにする。
   const selectedItem = ITEMS.find(x => x.id === selectedId);
   const selectedAdj = adjustments[adjKey(selectedId, currentAngle)];
-  const previewRow = selectedItem && selectedItem.placementLayer === 'wall' && selectedAdj ? selectedAdj.row : furnAdj.row;
-  const previewCol = selectedItem && selectedItem.placementLayer === 'wall' && selectedAdj ? selectedAdj.col : furnAdj.col;
+  const previewRow = selectedItem && selectedItem.placementLayer === 'wall' ? _previewFurnRow : furnAdj.row;
+  const previewCol = selectedItem && selectedItem.placementLayer === 'wall' ? _previewFurnCol : furnAdj.col;
   const cell = getGridCell(previewRow, previewCol);
   const furnSize = (furnAdj.cellSize || 1) * GRID_CELL_PCT;
   const furnImg = (_decoSurfFurnAngle === 'B' && furnItem.roomImgB) ? furnItem.roomImgB : furnItem.roomImg;
@@ -1691,6 +1735,7 @@ function updateDecoSurfacePreview() {
   _decoSurfFurnEl.style.width = 'auto';
   _decoSurfFurnEl.style.transform = `translate(calc(-50% - ${furnAdj.pivotX || 0}%), ${furnAdj.pivotY || 0}%)`;
   _decoSurfFurnEl.style.zIndex = 50;
+  requestAnimationFrame(updateWallPreviewStatus);
 }
 
 document.getElementById('btn-deco-surface-preview').onclick = () => {
@@ -1712,12 +1757,31 @@ document.getElementById('btn-deco-surface-preview').onclick = () => {
   el.src = furnImg;
   el.style.position = 'absolute';
   el.style.width = 'auto';
-  el.style.pointerEvents = 'none';
+  const selectedItem = ITEMS.find(x => x.id === selectedId);
+  const selectedAdj = adjustments[adjKey(selectedId, currentAngle)];
+  _previewFurnRow = selectedAdj && selectedAdj.previewFurnRow != null ? selectedAdj.previewFurnRow : (selectedAdj ? selectedAdj.row : 0);
+  _previewFurnCol = selectedAdj && selectedAdj.previewFurnCol != null ? selectedAdj.previewFurnCol : (selectedAdj ? selectedAdj.col : 0);
+  el.style.pointerEvents = selectedItem && selectedItem.placementLayer === 'wall' ? 'auto' : 'none';
+  el.style.cursor = 'grab';
   el.style.opacity = '0.6';
   el.style.filter = 'drop-shadow(0 0 4px #4CAF50)';
   el.style.transformOrigin = 'bottom center';
   document.getElementById('item-layer').appendChild(el);
   _decoSurfFurnEl = el;
+  el.onload = () => updateDecoSurfacePreview();
+  let dragging = false;
+  el.onpointerdown = e => { dragging = true; el.setPointerCapture(e.pointerId); el.style.cursor='grabbing'; e.preventDefault(); };
+  el.onpointermove = e => {
+    if (!dragging) return;
+    const rect = container.getBoundingClientRect();
+    const px=(e.clientX-rect.left)/rect.width, py=(e.clientY-rect.top)/rect.height;
+    let br=0,bc=0,bd=Infinity;
+    for(let r=0;r<8;r++) for(let c=0;c<8;c++){const p=isoGridPt(r+.5,c+.5),dx=px-p.x,dy=py-p.y,d=dx*dx+dy*dy;if(d<bd){bd=d;br=r;bc=c;}}
+    _previewFurnRow=br; _previewFurnCol=bc;
+    if(selectedAdj){selectedAdj.previewFurnRow=br;selectedAdj.previewFurnCol=bc;saveToStorage();}
+    updateDecoSurfacePreview();
+  };
+  el.onpointerup = () => { dragging=false; el.style.cursor='grab'; updateWallPreviewStatus(); };
   updateDecoSurfacePreview();
 };
 
