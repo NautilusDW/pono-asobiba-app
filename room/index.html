@@ -1410,25 +1410,30 @@ function isOverlapping(areaId, row, col, item, angle, excludeId) {
   return false;
 }
 
-// グリッドセルが別でも画像外形が大きく重なるケースを検出する。
-// 透明余白や前後関係による僅かな交差は許容し、双方の小さい方の矩形に対して
-// 10%以上かつ縦横12px以上重なった場合だけ配置不可とする。
+// グリッドセルが別でも、家具の「足元」が大きく重なるケースを検出する。
+// 背の高い家具は遠近表現で画像上部が重なるのが正常なので、画像全体ではなく
+// 下端から最大60px（高さの28%）だけを床接地帯として比較する。
 function isVisuallyOverlapping(movingEl) {
   if (!movingEl) return false;
   const mine = movingEl.getBoundingClientRect();
-  const mineArea = mine.width * mine.height;
-  if (!mineArea) return false;
+  if (!mine.width || !mine.height) return false;
+  const floorBand = rect => {
+    const height = Math.min(60, Math.max(18, rect.height * 0.28));
+    return { left: rect.left, right: rect.right, top: rect.bottom - height, bottom: rect.bottom, width: rect.width, height };
+  };
+  const mineFloor = floorBand(mine);
   const area = movingEl.closest('.room-area');
   if (!area) return false;
   return Array.from(area.querySelectorAll('.item-placed')).some(otherEl => {
     if (otherEl === movingEl) return false;
     const otherId = otherEl.dataset.itemId;
     if (otherId && PASSTHROUGH_IDS.has(otherId)) return false;
-    const other = otherEl.getBoundingClientRect();
-    const overlapW = Math.min(mine.right, other.right) - Math.max(mine.left, other.left);
-    const overlapH = Math.min(mine.bottom, other.bottom) - Math.max(mine.top, other.top);
-    if (overlapW < 12 || overlapH < 12) return false;
-    const otherArea = other.width * other.height;
+    const otherFloor = floorBand(otherEl.getBoundingClientRect());
+    const overlapW = Math.min(mineFloor.right, otherFloor.right) - Math.max(mineFloor.left, otherFloor.left);
+    const overlapH = Math.min(mineFloor.bottom, otherFloor.bottom) - Math.max(mineFloor.top, otherFloor.top);
+    if (overlapW < 12 || overlapH < 8) return false;
+    const mineArea = mineFloor.width * mineFloor.height;
+    const otherArea = otherFloor.width * otherFloor.height;
     return overlapW * overlapH >= Math.min(mineArea, otherArea) * 0.1;
   });
 }

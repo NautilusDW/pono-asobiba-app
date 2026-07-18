@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-07-18 - [batch:1351-kitchen-boil-salt-particles] Codex: DONE — ユーザーPC評価「鍋をもう少し下／塩瓶が大きい／塩が左上→右下で逆・grid状・鍋外へ向く／もっと上で振る／皿上ブロッコリーが小さい」を反映。鍋top -1→2%、既存heat-glow top69→72%、水面共通楕円top15.2→18.2%。塩瓶16→11.5%、初期69/19%、ドラッグ範囲x58〜76/y10〜32%の鍋右上だけへ限定。radial-gradient gridと`workshopSaltFall`を撤去し、1振り20粒が大きさ・遅延・速度・着地点を変えながら必ずdx<0/dy>0で右上→左下の水面へ落ちるDOM particle burstへ変更。皿上ブロッコリー6.5→8.5%。1366x768実画面で瓶103×106px、鍋3%下、40粒表示、全粒方向を確認。static／broccoli 1366x768＋edamame 844x390 E2E PASS、SW v2276。未追跡 `.DS_Store` は未変更。 (by Codex)
+
 - 2026-07-18 - [batch:1350-kitchen-pot-perspective-medium-depth] Codex: IMPLEMENTATION DONE — ユーザー実機評価「batch:1349鍋は底のパースがコンロと不一致」、初稿再生成への「底が浅い」を反映。`stove_base.webp`をカメラ／バーナー輪／五徳面の正本、旧鍋を材質・画風参照としてGPT Image 2で再生成し、浅鍋案から胴だけ約40%深くした中深さ案を採用。公式chroma helperのsoft-matte/despillで緑背景を透過し836x471 runtimeへ差替え。鍋76%/left12/top-1%、水面mask・泡・波紋・投入食材を31.5/15.2/36.6/33%共通楕円へ再計測、既存heat-glowはtop69%、URL `?v=1350`。1366x768沸騰画面で五徳への接地・鍋底・取っ手・泡・横overflow 0を目視。SW v2275。未追跡 `.DS_Store` は未変更。 (by Codex)
 
 - 2026-07-18 - [batch:1349-kitchen-complete-boil-pot] Codex: DONE — ユーザー指示「鍋画像を生成し直す」を受領。現行 `boil_pot_cold.png` を参照し、槌目の銅色胴・銀縁・木製取っ手・静水・水彩タッチとパースを維持しつつ、丸胴から短い平底まで下側が完全に閉じ、全輪郭に十分な余白がある鍋 raw を GPT Image 2 で生成。`tmp/alpha_pending/1349-kitchen-complete-boil-pot/boil_pot_complete_raw.png`（1672x941、1.8MB）と納品メモを保存。未透過・未トリミング・未最適化・未実装。既存 runtime／SW／未追跡 `.DS_Store` は未変更。 (by Codex)
@@ -2779,3 +2781,5 @@
 - 2026-07-18 - [batch:1352-room-strict-floor-collision] Codex: DONE — 白い本棚2×2、棚対ベッド=true、フロアランプ対机=true、小物同士=trueを確認。指定小物対机=false、ラグ対ベッド=falseで意図した卓上配置／敷物のみ維持。ページエラー0、items.js／HTML構文・diff check PASS。既存dirty Bento／sw.js／.DS_Store、common、凍結develop、master／productionは未変更。 (by Codex)
 - 2026-07-18 - [batch:1353-room-visual-overlap-modal-block] Codex: 実機画像で青いベッドと机／本棚が、占有セルは別でも画像外形として大きく重なることを確認。ドラッグ確定時にDOM矩形の交差（縦横12px以上かつ小さい側の10%以上）も拒否し元位置へ戻す。ドラッグ直後の抑止を1000msへ延長し、床・壁クリックから開く右側インベントリモーダルも抑止対象にする。既存dirty Bento／.DS_Store、common、master／productionは変更しない。 (by Codex)
 - 2026-07-18 - [batch:1353-room-visual-overlap-modal-block] Codex: DONE — DOM矩形の大交差=true、分離=false、ラグ交差=false。ドラッグ抑止中の床クリックはopenInventory 0回、通常時1回、ページエラー0、HTML構文・diff check PASS。既存dirty Bento／.DS_Store、common、凍結develop、master／productionは未変更。 (by Codex)
+- 2026-07-18 - [batch:1354-room-floor-band-collision] Codex: batch:1353の画像全体DOM矩形判定が、遠近表現で正常に上下が重なる本棚等まで拒否し「ほとんど置けない」状態を発生。視覚衝突判定を画像全体から、下端最大60px／高さ28%の床接地帯同士へ限定する。足元が実際に食い込む配置は拒否し、画像上部だけ重なる前後配置は許可する。既存dirty Bento／sw.js／tests／.DS_Store、common、master／productionは変更しない。 (by Codex)
+- 2026-07-18 - [batch:1354-room-floor-band-collision] Codex: DONE — 画像上部だけの交差=false、足元交差=true、分離=false、ラグ=false。ページエラー0、HTML構文・diff check PASS。既存dirty Bento／sw.js／tests／.DS_Store、common、凍結develop、master／productionは未変更。 (by Codex)
