@@ -1353,6 +1353,12 @@ function getFootprint(row, col, item, angle) {
 // 衝突を無視するアイテム（上に物を置ける）
 const PASSTHROUGH_IDS = new Set(['deco_rug_pink', 'deco_rug_space']);
 const TOYBOX_COLLISION_ITEM = { id: '__toybox', cat: 'furn', cellSize: 1, footprintSize: 1 };
+function getPlacementLayer(item) {
+  if (!item) return 'floor';
+  if (item.placementLayer) return item.placementLayer;
+  if (PASSTHROUGH_IDS.has(item.id)) return 'rug';
+  return 'floor';
+}
 // デコを上に乗せられる家具（3段棚は除外）
 const SURFACE_IDS = new Set([
   'furn_bed_wood', 'furn_desk', 'furn_toyshelf', 'furn_shelf2',
@@ -1377,6 +1383,7 @@ function isOverlapping(areaId, row, col, item, angle, excludeId) {
   const cfg = state.config[areaId] || {};
   const placed = cfg.placed || getPlacedItems(cfg);
   const myFoot = getFootprint(row, col, item, angle);
+  const myLayer = getPlacementLayer(item);
   const iAmStackable = isStackableItem(item);
   for (const p of placed) {
     if (p.id === excludeId) continue;
@@ -1386,6 +1393,9 @@ function isOverlapping(areaId, row, col, item, angle, excludeId) {
     if (PASSTHROUGH_IDS.has(other.id)) continue;
     // 自分がラグなら他と衝突しない
     if (PASSTHROUGH_IDS.has(item.id)) continue;
+    const otherLayer = getPlacementLayer(other);
+    // 壁掛けと床家具は別レイヤー。同じ壁レイヤー同士は従来どおり衝突する。
+    if ((myLayer === 'wall') !== (otherLayer === 'wall')) continue;
     const otherFoot = getFootprint(p.row, p.col, other, p.angle || 'A');
     let collides = false;
     for (const mc of myFoot) {
@@ -1402,7 +1412,7 @@ function isOverlapping(areaId, row, col, item, angle, excludeId) {
     return true;
   }
   // おもちゃばこは placed 配列とは別管理なので、家具側からも明示的に衝突判定する。
-  if (areaId === 'living' && item.id !== TOYBOX_COLLISION_ITEM.id) {
+  if (areaId === 'living' && myLayer !== 'wall' && item.id !== TOYBOX_COLLISION_ITEM.id) {
     const toyRow = cfg.toyboxRow ?? 7;
     const toyCol = cfg.toyboxCol ?? 1;
     if (myFoot.some(c => c.row === toyRow && c.col === toyCol)) return true;
@@ -1422,13 +1432,27 @@ function isVisuallyOverlapping(movingEl) {
     return { left: rect.left, right: rect.right, top: rect.bottom - height, bottom: rect.bottom, width: rect.width, height };
   };
   const mineFloor = floorBand(mine);
+  const movingItem = getItem(movingEl.dataset.itemId) || TOYBOX_COLLISION_ITEM;
+  const movingLayer = getPlacementLayer(movingItem);
   const area = movingEl.closest('.room-area');
   if (!area) return false;
   return Array.from(area.querySelectorAll('.item-placed')).some(otherEl => {
     if (otherEl === movingEl) return false;
     const otherId = otherEl.dataset.itemId;
     if (otherId && PASSTHROUGH_IDS.has(otherId)) return false;
-    const otherFloor = floorBand(otherEl.getBoundingClientRect());
+    const otherRect = otherEl.getBoundingClientRect();
+    const otherItem = getItem(otherId) || TOYBOX_COLLISION_ITEM;
+    const otherLayer = getPlacementLayer(otherItem);
+    // 壁レイヤーが関わる場合は窓枠そのものの交差だけを見る。
+    if (movingLayer === 'wall' || otherLayer === 'wall') {
+      const overlapW = Math.min(mine.right, otherRect.right) - Math.max(mine.left, otherRect.left);
+      const overlapH = Math.min(mine.bottom, otherRect.bottom) - Math.max(mine.top, otherRect.top);
+      if (overlapW < 8 || overlapH < 8) return false;
+      const mineArea = mine.width * mine.height;
+      const otherArea = otherRect.width * otherRect.height;
+      return overlapW * overlapH >= Math.min(mineArea, otherArea) * 0.05;
+    }
+    const otherFloor = floorBand(otherRect);
     const overlapW = Math.min(mineFloor.right, otherFloor.right) - Math.max(mineFloor.left, otherFloor.left);
     const overlapH = Math.min(mineFloor.bottom, otherFloor.bottom) - Math.max(mineFloor.top, otherFloor.top);
     if (overlapW < 12 || overlapH < 8) return false;
@@ -1581,7 +1605,8 @@ function _applyGridPos(el, row, col, areaId) {
   // デコ→家具の上に乗っている場合のみ+100（前後関係を維持しつつ家具の上に表示）
   //       床に直置きの場合は家具と同じdepthベース
   const isOnSurface = extraY !== 0;
-  el.style.zIndex    = PASSTHROUGH_IDS.has(itemId) ? 18
+  el.style.zIndex    = getPlacementLayer(item) === 'wall' ? 17
+                     : PASSTHROUGH_IDS.has(itemId) ? 18
                      : (item && item.cat === 'deco' && isOnSurface) ? 100 + cell.z
                      : cell.z;
 }

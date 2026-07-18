@@ -250,6 +250,13 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
         <option value="boy">boy</option>
         <option value="girl">girl</option>
       </select>
+      <span style="color:#aaa">設置:</span>
+      <select id="edit-item-layer" style="background:#222;color:#eee;border:1px solid #555;border-radius:4px;padding:2px 4px;font-size:12px">
+        <option value="floor">床</option>
+        <option value="wall">壁</option>
+        <option value="rug">敷物</option>
+        <option value="surface">家具上</option>
+      </select>
       <label style="cursor:pointer;color:#4CAF50;margin-left:4px">
         <input type="checkbox" id="chk-stackable"> 🪑 壁掛け
       </label>
@@ -432,6 +439,7 @@ var ITEMS = (typeof ROOM_ITEMS !== 'undefined' ? ROOM_ITEMS : [])
       name: ov.name || it.name,
       cat: ov.cat || it.cat,
       theme: ov.theme || it.theme || 'all',
+      placementLayer: ov.placementLayer || it.placementLayer || 'floor',
       roomImg: it.roomImg, roomImgB: it.roomImgB || null,
       cellSize: it.cellSize || 1, footprintSize: it.footprintSize,
       pivotX: it.pivotX || 0, pivotY: it.pivotY || 0,
@@ -863,6 +871,7 @@ function selectItem(id) {
   // cat/theme/stackableの同期
   document.getElementById('edit-item-cat').value = item.cat || 'deco';
   document.getElementById('edit-item-theme').value = item.theme || 'all';
+  document.getElementById('edit-item-layer').value = item.placementLayer || 'floor';
   const chkStack = document.getElementById('chk-stackable');
   chkStack.checked = adj.stackable || false;
 
@@ -906,6 +915,7 @@ function reloadSliders(id) {
   const item = ITEMS.find(x => x.id === id);
   document.getElementById('edit-item-id').value = id;
   document.getElementById('edit-item-name').value = item.name;
+  document.getElementById('edit-item-layer').value = item.placementLayer || 'floor';
   syncSlider('cellSize', adj.cellSize);
   syncSlider('footprintSize', adj.footprintSize);
   syncSlider('pivotX', adj.pivotX);
@@ -1020,6 +1030,15 @@ document.getElementById('edit-item-cat').addEventListener('change', function() {
   saveToStorage();
   if (item._imported) saveImports();
   else saveOverride(item.id, { cat: item.cat });
+});
+document.getElementById('edit-item-layer').addEventListener('change', function() {
+  if (!selectedId) return;
+  var item = ITEMS.find(function(x) { return x.id === selectedId; });
+  if (!item) return;
+  item.placementLayer = this.value;
+  saveToStorage();
+  if (item._imported) saveImports();
+  else saveOverride(item.id, { placementLayer: item.placementLayer });
 });
 document.getElementById('edit-item-theme').addEventListener('change', function() {
   if (!selectedId) return;
@@ -2286,6 +2305,10 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
         if (ov.cat) newBlock = replStrProp(newBlock, 'cat', ov.cat);
         if (ov.theme) newBlock = replStrProp(newBlock, 'theme', ov.theme);
         if (ov.name) newBlock = replStrProp(newBlock, 'name', ov.name);
+        if (ov.placementLayer) {
+          if (/\bplacementLayer:\s*'/.test(newBlock)) newBlock = replStrProp(newBlock, 'placementLayer', ov.placementLayer);
+          else newBlock = newBlock.replace(/(\btheme:\s*'[^']*',)/, "$1 placementLayer: '" + ov.placementLayer + "',");
+        }
       }
       // 数値プロパティ更新ヘルパー（undefined 防止）
       function safeReplProp(blk, prop, val) {
@@ -2429,6 +2452,7 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
           }
           entry += "    gridRow: 4, gridCol: 4, cellSize: " + (adj.cellSize || 1) +
             ", footprintSize: " + (adj.footprintSize || 1) + ", pivotX: " + (adj.pivotX || 0) + ", pivotY: " + (adj.pivotY || 0);
+          entry += ", placementLayer: '" + (item.placementLayer || 'floor') + "'";
           if (adj.minRow != null) {
             entry += ", minRow: " + adj.minRow + ", maxRow: " + adj.maxRow +
               ", minCol: " + adj.minCol + ", maxCol: " + adj.maxCol;
