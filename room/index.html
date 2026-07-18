@@ -1352,6 +1352,7 @@ function getFootprint(row, col, item, angle) {
 // ─── スタッキング定義 ─────────────────────────────────
 // 衝突を無視するアイテム（上に物を置ける）
 const PASSTHROUGH_IDS = new Set(['deco_rug_pink', 'deco_rug_space']);
+const TOYBOX_COLLISION_ITEM = { id: '__toybox', cat: 'furn', cellSize: 1, footprintSize: 1 };
 // デコを上に乗せられる家具（3段棚は除外）
 const SURFACE_IDS = new Set([
   'furn_bed_wood', 'furn_desk', 'furn_toyshelf', 'furn_shelf2',
@@ -1394,6 +1395,12 @@ function isOverlapping(areaId, row, col, item, angle, excludeId) {
     // 家具をデコの上に置こうとした場合も許可（デコ側が乗ってる扱い）
     if (isStackableItem(other) && SURFACE_IDS.has(item.id)) continue;
     return true;
+  }
+  // おもちゃばこは placed 配列とは別管理なので、家具側からも明示的に衝突判定する。
+  if (areaId === 'living' && item.id !== TOYBOX_COLLISION_ITEM.id) {
+    const toyRow = cfg.toyboxRow ?? 7;
+    const toyCol = cfg.toyboxCol ?? 1;
+    if (myFoot.some(c => c.row === toyRow && c.col === toyCol)) return true;
   }
   return false;
 }
@@ -1628,11 +1635,16 @@ function _makeGridItem(p, areaId, locked) {
 function _rotateItem(el, areaId) {
   const item = getItem(el.dataset.itemId);
   if (!item || !item.roomImgB) return;
+  const oldAngle = el.dataset.angle || 'A';
+  const oldRow = parseInt(el.dataset.row);
+  const oldCol = parseInt(el.dataset.col);
   const newAngle = el.dataset.angle === 'B' ? 'A' : 'B';
+  const clamped = clampToGrid(item, oldRow, oldCol, newAngle);
+  if (isOverlapping(areaId, clamped.row, clamped.col, item, newAngle, el.dataset.itemId)) {
+    showToast('ここでは まわせないよ！');
+    return;
+  }
   el.dataset.angle = newAngle;
-  const row = parseInt(el.dataset.row);
-  const col = parseInt(el.dataset.col);
-  const clamped = clampToGrid(item, row, col, newAngle);
   el.dataset.row = clamped.row;
   el.dataset.col = clamped.col;
   _applyGridPos(el, clamped.row, clamped.col, areaId);
@@ -1728,6 +1740,7 @@ function _addDragHandlers(el, areaId) {
     const p = cfg.placed.find(q => q.id === el.dataset.itemId);
     if (p) { p.row = row; p.col = col; }
     saveState();
+    suppressToyboxUntil = Date.now() + 700;
     dragging = false;
   }
 
@@ -2084,6 +2097,7 @@ function buildRoomArea(areaData) {
 
     // ドラッグ（editモード）+ タップ（通常モードのみメニュー）
     let tbStartX = 0, tbStartY = 0, tbDragging = false;
+    let tbStartRow = tbRow, tbStartCol = tbCol;
     let tbBusy = false;
 
     function tbOnMove(cx, cy) {
@@ -2110,10 +2124,22 @@ function buildRoomArea(areaData) {
       if (e) { e.preventDefault(); e.stopPropagation(); }
       toybox.classList.remove('dragging');
       if (tbDragging) {
+        var nextRow = parseInt(toybox.dataset.row);
+        var nextCol = parseInt(toybox.dataset.col);
+        if (isOverlapping('living', nextRow, nextCol, TOYBOX_COLLISION_ITEM, 'A', TOYBOX_COLLISION_ITEM.id)) {
+          nextRow = tbStartRow;
+          nextCol = tbStartCol;
+          toybox.dataset.row = nextRow;
+          toybox.dataset.col = nextCol;
+          tbApplyStyle(nextRow, nextCol);
+          toybox.appendChild(tbRotBtn);
+          showToast('ここには おけないよ！');
+        }
         if (!state.config.living) state.config.living = {};
-        state.config.living.toyboxRow = parseInt(toybox.dataset.row);
-        state.config.living.toyboxCol = parseInt(toybox.dataset.col);
+        state.config.living.toyboxRow = nextRow;
+        state.config.living.toyboxCol = nextCol;
         saveState();
+        suppressToyboxUntil = Date.now() + 700;
       }
       tbDragging = false;
       tbBusy = true;
@@ -2123,6 +2149,7 @@ function buildRoomArea(areaData) {
     toybox.addEventListener('touchstart', e => {
       e.stopPropagation();
       tbStartX = e.touches[0].clientX; tbStartY = e.touches[0].clientY;
+      tbStartRow = parseInt(toybox.dataset.row); tbStartCol = parseInt(toybox.dataset.col);
       tbDragging = false;
     }, { passive: true });
     toybox.addEventListener('touchmove', e => {
@@ -2135,7 +2162,7 @@ function buildRoomArea(areaData) {
     toybox.addEventListener('click', e => {
       e.stopPropagation();
       e.preventDefault();
-      if (editMode || tbBusy) return;
+      if (editMode || tbBusy || Date.now() < suppressToyboxUntil) return;
       openTakarabako();
     });
 
@@ -2144,6 +2171,7 @@ function buildRoomArea(areaData) {
       if (e.button !== 0) return;
       e.preventDefault(); e.stopPropagation();
       tbStartX = e.clientX; tbStartY = e.clientY;
+      tbStartRow = parseInt(toybox.dataset.row); tbStartCol = parseInt(toybox.dataset.col);
       tbDragging = false;
       function mm(ev) { tbOnMove(ev.clientX, ev.clientY); }
       function mu(ev) { window.removeEventListener('mousemove', mm); window.removeEventListener('mouseup', mu); tbOnEnd(ev); }
@@ -2189,6 +2217,7 @@ function refreshArea(areaId) {
 
 // ─── Shop ─────────────────────────────────────────────
 let editMode = false;
+let suppressToyboxUntil = 0;
 let currentShopCat = 'wall';
 let currentAreaId  = 'living';
 let shopMode       = 'bag'; // 'buy' | 'bag'（当面は買う/手持ち非表示のため bag 固定）
@@ -3910,7 +3939,10 @@ function init() {
   });
 
   // おもちゃばこ open (single button replaces shop/ach/sticker)
-  document.getElementById('ui-btn-takara').addEventListener('click', () => openTakarabako());
+  document.getElementById('ui-btn-takara').addEventListener('click', () => {
+    if (Date.now() < suppressToyboxUntil) return;
+    openTakarabako();
+  });
   document.getElementById('shop-close').addEventListener('click', () => {
     document.getElementById('shop-ov').classList.add('hidden');
     _shiftRoom(false);
