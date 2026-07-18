@@ -1,5 +1,10 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2277: 茹で塩瓶を右上過ぎる69%→63%へ中央寄せ。瓶自体を右上→左下へ動かす
+// 専用shakeへ変更し、塩粒もstart x61〜65%からend x44〜52%へ必ず9%以上左下へ
+// 落ちる軌道に強化。縦長transparent canvasで小さく見えた皿上ブロッコリーを
+// 8.5→12%へ拡大し、皿中央の2段へ集合配置 (batch:1352-kitchen-salt-direction-broccoli-bank)。
+// play.html同期不要。
 // v2276: 茹で鍋を3%下げ、塩瓶を16%→11.5%へ縮小して鍋右上の操作範囲へ限定。
 // 左上→右下の固定grid塩を撤去し、右上から左下の水面へ落ちる20粒の個別particle
 // burstへ変更。水面演出も鍋と一緒に3%下げ、皿上ブロッコリーを6.5%→8.5%へ拡大
@@ -508,7 +513,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2276;
+const CACHE_VERSION = 2277;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。

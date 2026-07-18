@@ -5814,10 +5814,10 @@ body.layout-editor-on .bowl-fill-mask::after {
 .workshop-boil-pot { position: absolute; z-index: 2; width: 76%; left: 12%; top: 2%; object-fit: contain; pointer-events: none; filter: drop-shadow(0 8px 7px rgba(70,45,25,.18)); }
 .workshop-boil-flame { z-index: 1; left: 50%; top: 72%; width: 18%; height: 10%; opacity: 0; }
 .workshop-boil-game.is-heat-on .workshop-boil-flame { opacity: 1; animation: heatPulse 0.82s ease-in-out infinite alternate; }
-.workshop-boil-salt { position: absolute; z-index: 6; width: 11.5%; left: 69%; top: 19%; opacity: 0; pointer-events: none; transform: translate(-50%,-50%); transition: opacity .25s ease, left .3s ease, top .3s ease, transform .2s ease; filter: drop-shadow(0 6px 8px rgba(70,45,25,.2)); touch-action: none; }
+.workshop-boil-salt { position: absolute; z-index: 6; width: 11.5%; left: 63%; top: 18%; opacity: 0; pointer-events: none; transform: translate(-50%,-50%); transition: opacity .25s ease, left .3s ease, top .3s ease, transform .2s ease; filter: drop-shadow(0 6px 8px rgba(70,45,25,.2)); touch-action: none; }
 .workshop-boil-game.is-salt-step .workshop-boil-salt { opacity: 1; pointer-events: auto; cursor: grab; }
 .workshop-boil-game.is-salt-step .workshop-boil-salt.is-dragging { transition: none; cursor: grabbing; }
-.workshop-boil-game.is-salt-step .workshop-boil-salt.is-sprinkling { animation: substepShake .4s ease-in-out; }
+.workshop-boil-game.is-salt-step .workshop-boil-salt.is-sprinkling { animation: workshopBoilSaltShake .42s ease-in-out; }
 .workshop-boil-salt-particles { position: absolute; inset: 0; z-index: 5; overflow: hidden; pointer-events: none; }
 .workshop-boil-salt-particle { position: absolute; left: var(--salt-x); top: var(--salt-y); width: var(--salt-size); height: var(--salt-size); border-radius: 50%; background: rgba(255,255,255,.96); box-shadow: 0 0 0 1px rgba(178,164,129,.28); opacity: 0; animation: workshopBoilSaltParticle var(--salt-duration) cubic-bezier(.2,.62,.42,1) forwards; animation-delay: var(--salt-delay); }
 .workshop-boil-food { position: absolute; width: 25%; left: 5%; top: 8%; object-fit: contain; pointer-events: none; transition: left .3s ease, top .3s ease, transform .3s ease, opacity .2s ease; }
@@ -5850,7 +5850,7 @@ body.layout-editor-on .bowl-fill-mask::after {
 .workshop-boil-piece.is-in-pot { width: 12%; pointer-events: none; animation: broccoliWaterDrift 1.35s ease-in-out infinite alternate; }
 .workshop-boil-water-mask .workshop-boil-piece.is-in-pot { width: 29%; }
 .workshop-boil-piece:not(.is-in-pot) { width: 8%; filter: drop-shadow(0 4px 4px rgba(50,70,30,.18)); }
-.workshop-boil-piece.is-broccoli:not(.is-in-pot) { width: 8.5%; }
+.workshop-boil-piece.is-broccoli:not(.is-in-pot) { width: 10.5%; }
 .workshop-boil-piece.is-dragging { z-index: 9; transition: none; width: 11%; filter: drop-shadow(0 10px 8px rgba(50,70,30,.28)); }
 .workshop-boil-piece.is-edamame { aspect-ratio: 1.55; }
 .workshop-boil-piece.is-edamame:not(.is-in-pot) { width: 8%; }
@@ -5890,6 +5890,7 @@ body.layout-editor-on .bowl-fill-mask::after {
 @keyframes workshopEntryRipple { 0% { opacity: .95; transform: translate(-50%,-50%) scale(.2); } 100% { opacity: 0; transform: translate(-50%,-50%) scale(1.35); } }
 @keyframes workshopEntryBubble { 0% { opacity: 1; transform: translateY(5px) scale(.5); } 100% { opacity: 0; transform: translateY(-24px) scale(1.15); } }
 @keyframes workshopBoilSaltParticle { 0% { opacity: 0; transform: translate(0,0) scale(.55); } 14% { opacity: 1; } 72% { opacity: 1; } 100% { opacity: 0; transform: translate(var(--salt-dx),var(--salt-dy)) scale(1); } }
+@keyframes workshopBoilSaltShake { 0%,100% { transform: translate(-50%,-50%) rotate(0deg); } 48% { transform: translate(calc(-50% - 16px),calc(-50% + 18px)) rotate(-18deg); } 72% { transform: translate(calc(-50% - 8px),calc(-50% + 9px)) rotate(-9deg); } }
 @media (prefers-reduced-motion: reduce) { .workshop-boil-food, .workshop-boil-bubble, .workshop-boil-steam { animation: none !important; transition-duration: .01ms; } .workshop-boil-salt-particle { animation-duration: .01ms !important; } }
 .workshop-edamame-prep { position: absolute; inset: 0; z-index: 3; display: none; overflow: hidden; background: radial-gradient(circle at 50% 48%, #fffdf5 0 34%, #f2dfba 75%, #ddb879 100%); }
 .workshop-scene.is-edamame-prep .workshop-edamame-prep { display: block; }
@@ -9966,9 +9967,9 @@ body.layout-editor-on .bowl-fill-mask::after {
         const rect = els.workshopScene.getBoundingClientRect();
         const x = (event.clientX - rect.left) / Math.max(1, rect.width) * 100;
         const y = (event.clientY - rect.top) / Math.max(1, rect.height) * 100;
-        workshopSalt.style.left = Math.max(58, Math.min(76, x)) + '%';
-        workshopSalt.style.top = Math.max(10, Math.min(32, y)) + '%';
-        const overPourZone = x >= 56 && x <= 78 && y >= 8 && y <= 34;
+        workshopSalt.style.left = Math.max(57, Math.min(68, x)) + '%';
+        workshopSalt.style.top = Math.max(10, Math.min(30, y)) + '%';
+        const overPourZone = x >= 55 && x <= 70 && y >= 8 && y <= 32;
         if (overPourZone && step && step.kind === 'salt' && !state.workshopAdvancing) {
           saltTravel += Math.abs(event.clientY - saltLastY);
           if (saltTravel >= 34) {
@@ -9984,8 +9985,8 @@ body.layout-editor-on .bowl-fill-mask::after {
         if (saltPointerId !== event.pointerId) return;
         saltPointerId = null;
         workshopSalt.classList.remove('is-dragging');
-        workshopSalt.style.left = '69%';
-        workshopSalt.style.top = '19%';
+        workshopSalt.style.left = '63%';
+        workshopSalt.style.top = '18%';
         const img = workshopSalt;
         window.setTimeout(function () { img.src = '../assets/images/bento/cooking/salt/salt_shaker_still.png'; }, 120);
         event.stopPropagation();
@@ -10157,10 +10158,10 @@ body.layout-editor-on .bowl-fill-mask::after {
     const rect = els.workshopScene.getBoundingClientRect();
     for (let index = 0; index < 20; index += 1) {
       const particle = document.createElement('i');
-      const startX = 62 + Math.random() * 6;
-      const startY = 18 + Math.random() * 5;
-      const endX = 46 + Math.random() * 14;
-      const endY = 31 + Math.random() * 11;
+      const startX = 61 + Math.random() * 4;
+      const startY = 20 + Math.random() * 4;
+      const endX = 44 + Math.random() * 8;
+      const endY = 36 + Math.random() * 8;
       particle.className = 'workshop-boil-salt-particle';
       particle.style.setProperty('--salt-x', startX.toFixed(2) + '%');
       particle.style.setProperty('--salt-y', startY.toFixed(2) + '%');
@@ -10223,7 +10224,7 @@ body.layout-editor-on .bowl-fill-mask::after {
         const placed = step.kind === 'boil' ? Math.min(config.pieceCount, stage) : config.pieceCount;
         const bank = config.pieceKind === 'edamame'
           ? [[10,69,-18],[18,67,8],[26,69,16],[31,73,-11],[11,82,22],[18,87,5],[26,84,-20],[31,88,10]]
-          : [[10,68,-12],[16,78,8],[22,68,-5],[28,79,11],[31,70,-8]];
+          : [[12,69,-12],[20,69,8],[28,69,-5],[16,84,11],[24,84,-8]];
         const pot = config.pieceKind === 'edamame'
           ? [[36,27,-24],[43,35,12],[49,25,-8],[56,34,27],[64,27,-18],[39,40,16],[52,39,-26],[62,40,7]]
           : [[36,27,-24],[44,36,12],[50,25,-8],[58,35,27],[64,27,-18]];

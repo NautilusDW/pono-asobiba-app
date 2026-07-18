@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-07-18 - [batch:1352-kitchen-salt-direction-broccoli-bank] Codex: DONE — ユーザー再評価「塩位置が右上過ぎ／方向も左上→右下に見える／皿上ブロッコリーの大きさが変わらず位置もまとめて」を反映。塩瓶を69/19→63/18%へ中央寄せし、drag x57〜68/y10〜30%。汎用往復shakeをやめ、瓶自体が右上→左下へ16×18px動く専用`workshopBoilSaltShake`へ変更。粒はstart x61〜65/y20〜24からend x44〜52/y36〜44へ、全粒が最低9%以上左下へ進む軌道へ固定。ブロッコリーPNGのvisible bboxが横69〜82%・縦44〜63%しかないことを実測し、枠8.5→10.5%、皿中央3房＋2房（12/20/28%と16/24%）へ集合。12%案は当たり枠が重なりPCクリックを遮ったため不採用。1366x768で塩軌道と皿配置を目視し、5房bboxが皿内・中心クリック可能、broccoli E2E PASS、edamameは直前同salt変更E2E PASS。SW v2277。未追跡 `.DS_Store` は未変更。 (by Codex)
+
 - 2026-07-18 - [batch:1351-kitchen-boil-salt-particles] Codex: DONE — ユーザーPC評価「鍋をもう少し下／塩瓶が大きい／塩が左上→右下で逆・grid状・鍋外へ向く／もっと上で振る／皿上ブロッコリーが小さい」を反映。鍋top -1→2%、既存heat-glow top69→72%、水面共通楕円top15.2→18.2%。塩瓶16→11.5%、初期69/19%、ドラッグ範囲x58〜76/y10〜32%の鍋右上だけへ限定。radial-gradient gridと`workshopSaltFall`を撤去し、1振り20粒が大きさ・遅延・速度・着地点を変えながら必ずdx<0/dy>0で右上→左下の水面へ落ちるDOM particle burstへ変更。皿上ブロッコリー6.5→8.5%。1366x768実画面で瓶103×106px、鍋3%下、40粒表示、全粒方向を確認。static／broccoli 1366x768＋edamame 844x390 E2E PASS、SW v2276。未追跡 `.DS_Store` は未変更。 (by Codex)
 
 - 2026-07-18 - [batch:1350-kitchen-pot-perspective-medium-depth] Codex: IMPLEMENTATION DONE — ユーザー実機評価「batch:1349鍋は底のパースがコンロと不一致」、初稿再生成への「底が浅い」を反映。`stove_base.webp`をカメラ／バーナー輪／五徳面の正本、旧鍋を材質・画風参照としてGPT Image 2で再生成し、浅鍋案から胴だけ約40%深くした中深さ案を採用。公式chroma helperのsoft-matte/despillで緑背景を透過し836x471 runtimeへ差替え。鍋76%/left12/top-1%、水面mask・泡・波紋・投入食材を31.5/15.2/36.6/33%共通楕円へ再計測、既存heat-glowはtop69%、URL `?v=1350`。1366x768沸騰画面で五徳への接地・鍋底・取っ手・泡・横overflow 0を目視。SW v2275。未追跡 `.DS_Store` は未変更。 (by Codex)
