@@ -11072,7 +11072,7 @@
   <script src="common/mvp-flags.js"></script>
   <script src="common/achievements.js"></script>
   <script src="common/treasure.js?v=2248"></script>
-  <script src="common/stamp-rally.js?v=2240"></script>
+  <script src="common/stamp-rally.js?v=2283"></script>
   <!-- ログインボーナス・シール帳 (window.checkDailyLogin 等)。 app tier 限定で発火 (下部の Login Bonus Trigger 参照)。 -->
   <script src="common/stickers.js"></script>
   <script src="js/game-stickers.js"></script>
@@ -11560,7 +11560,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2282; // sw.js CACHE_VERSION と同期 (廃止ゲーム実績のstamp-rally.js🏆一覧非表示修正)
+    const PAGE_CACHE_VERSION = 2283; // sw.js CACHE_VERSION と同期 (v2282回帰+横展開漏れ修正: stamp-rally分子分母/room/collection/stickers)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -11569,7 +11569,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v2282'; // PAGE_CACHE_VERSION/sw.js CACHE_VERSION と同期
+    window.PONO_SW_VERSION = 'v2283'; // PAGE_CACHE_VERSION/sw.js CACHE_VERSION と同期
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.

@@ -525,11 +525,20 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
+// v2283: v2282 の回帰 + 横展開漏れを修正。(1) common/stamp-rally.js showAchievementList()
+// の分子 doneCount が Object.keys(unlocked).length(未フィルタ)のままで分母(active実績数)と
+// 母集団が食い違い「73/43」のような破綻表示になっていたのを、allAch(active)でフィルタし直して解消。
+// (2) room/index.html renderTakaraAchievements()(おもちゃばこ→じっせきタブ)が
+// window.getAchievements()(全件)のままだったのを getActiveAchievements() へ差し替え、
+// 分子/分母とも active 母集団に統一。(3) collection/index.html(ずかんページ)のスタンプ一覧も
+// getAchievements() → getActiveAchievements() へ差し替え(未取得を隠さず見せる設計意図は維持)。
+// (4) 追加grepで common/stickers.js の window.showAchievementBoard()(現状どこからも未呼出だが
+// window公開の同型バグ)も発見し、同じくactiveへ差し替え。
 // v2282: スタンプカード🏆実績一覧が廃止済みゲーム(wordmatch/bowling/breakout/slide/fossil/旧writing)の
 // 実績を表示し続けるバグを修正。common/stamp-rally.js:906 showAchievementList() の window.getAchievements()
 // (全件・未フィルタ) を window.getActiveAchievements() (archived除外) へ差し替え。
 // v2281: プロフィール選択のキャラクター候補を、初回作成・編集の両画面で拡大。
-const CACHE_VERSION = 2282;
+const CACHE_VERSION = 2283;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。

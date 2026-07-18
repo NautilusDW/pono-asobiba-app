@@ -917,7 +917,10 @@
     box.style.cssText = 'background:#FFF8E8;border-radius:20px;padding:16px;max-width:340px;width:92%;max-height:75vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.3);';
 
     // タイトル + カウント
-    var doneCount = Object.keys(unlocked).length;
+    // 分子(doneCount)も分母(allAch)と同じ母集団(active=archived除外)に揃える。
+    // unlocked は全ゲーム分の生データ(廃止ゲーム分も残っている)なので、allAch に
+    // 含まれる id だけを対象にカウントし直す (「73 / 43 かいほう」のような分子>分母を防ぐ)。
+    var doneCount = allAch.filter(function (a) { return !!unlocked[a.id]; }).length;
     var titleDiv = document.createElement('div');
     titleDiv.style.cssText = 'text-align:center;margin-bottom:12px;';
     titleDiv.innerHTML = '<div style="font-size:1.05rem;font-weight:900;color:#5D4E37;">🏆 じっせき</div>' +

@@ -2475,7 +2475,9 @@ function renderTakaraStickers() {
 
 function renderTakaraAchievements() {
   const container = document.getElementById('takara-achievements');
-  const allAch = window.getAchievements ? window.getAchievements() : [];
+  // 廃止済みゲーム(archived:true)の実績を見せないよう getActiveAchievements を優先
+  // (common/achievements.js。旧 getAchievements() は全件＝廃止分も含む未フィルタ)
+  const allAch = window.getActiveAchievements ? window.getActiveAchievements() : (window.getAchievements ? window.getAchievements() : []);
   const unlocked = window.getUnlockedAchievements ? window.getUnlockedAchievements() : {};
 
   // Group by game
@@ -2490,7 +2492,8 @@ function renderTakaraAchievements() {
     groups[a.game].push(a);
   });
 
-  const unlockedCount = Object.keys(unlocked).length;
+  // 分子も allAch (active) と同じ母集団に揃える (unlocked は廃止ゲーム分も含む生データのため)
+  const unlockedCount = allAch.filter(a => unlocked[a.id]).length;
   let html = '<div class="takara-scroll">';
   html += `<div style="text-align:center;margin-bottom:12px;font-size:13px;color:#888;">
     たっせい <strong style="color:#e07800;">${unlockedCount}</strong>／${allAch.length}

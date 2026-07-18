@@ -398,7 +398,11 @@
   window.showAchievementBoard = function () {
     if (document.getElementById('ach-board-overlay')) return;
 
-    var achievements = window.getAchievements();
+    // 廃止済みゲーム(archived:true)の実績を見せないよう getActiveAchievements を優先
+    // (common/achievements.js。旧 getAchievements() は全件＝廃止分も含む未フィルタ。
+    // この関数自体は現状どこからも呼ばれていないが window 公開されており、他の
+    // 3箇所と同型のバグを内包していたため合わせて修正)
+    var achievements = window.getActiveAchievements ? window.getActiveAchievements() : window.getAchievements();
     var unlocked = window.getUnlockedAchievements();
 
     var overlay = document.createElement('div');
@@ -467,7 +471,8 @@
     }
 
     // Stats summary
-    var unlockedCount = Object.keys(unlocked).length;
+    // 分子も achievements(active) と同じ母集団に揃える (unlocked は廃止ゲーム分も含む生データ)
+    var unlockedCount = achievements.filter(function (a) { return !!unlocked[a.id]; }).length;
     html += '<div style="text-align:center;font-size:0.8rem;color:#8d6e63;margin:8px 0;">' + unlockedCount + ' / ' + achievements.length + ' クリア</div>';
 
     // Close

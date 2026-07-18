@@ -509,11 +509,13 @@ function showSeaDetailSimple(c) {
   var list = document.getElementById('stamp-list');
   if (!list || typeof getAchievements === 'undefined') return;
 
-  var allAch = getAchievements();
+  // 廃止済みゲーム(archived:true)の実績は一覧から除外する。getActiveAchievements
+  // (common/achievements.js) を優先し、無ければ旧 getAchievements() にフォールバック。
+  var allAch = typeof getActiveAchievements === 'function' ? getActiveAchievements() : getAchievements();
   var unlocked = {};
   try { unlocked = JSON.parse(localStorage.getItem('pono_achievements') || '{}'); } catch(e) {}
 
-  // スタンプラリーで名前・条件が全て見られるので、未取得でも隠さず表示
+  // スタンプラリーで名前・条件が全て見られるので、未取得でも隠さず表示 (ただし廃止ゲーム分は allAch から既に除外済み)
   allAch.forEach(function(ach) {
     var isUnlocked = !!unlocked[ach.id];
     var row = document.createElement('div');
