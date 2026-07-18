@@ -1622,6 +1622,7 @@ let _decoSurfFurnId = null;  // which surface furniture is selected
 let _decoSurfFurnAngle = 'A';
 let _previewFurnRow = 0, _previewFurnCol = 0;
 const _toolOpaqueCache = new Map();
+const _toolMaskCache = new Map();
 
 function toolOpaqueRect(img) {
   const fallback = img.getBoundingClientRect();
@@ -1644,6 +1645,51 @@ function toolOpaqueRect(img) {
   return {left:fallback.left+fallback.width*b.x,right:fallback.left+fallback.width*(b.x+b.w),top:fallback.top+fallback.height*b.y,bottom:fallback.top+fallback.height*(b.y+b.h),width:fallback.width*b.w,height:fallback.height*b.h};
 }
 
+function toolOpaqueMask(img) {
+  if (!img.complete || !img.naturalWidth) return null;
+  const key = img.currentSrc || img.src;
+  let mask = _toolMaskCache.get(key);
+  if (!mask) {
+    try {
+      const scale = Math.min(1, 192 / Math.max(img.naturalWidth, img.naturalHeight));
+      const width = Math.max(1, Math.round(img.naturalWidth * scale));
+      const height = Math.max(1, Math.round(img.naturalHeight * scale));
+      const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true }); ctx.drawImage(img, 0, 0, width, height);
+      const rgba = ctx.getImageData(0, 0, width, height).data;
+      const alpha = new Uint8Array(width * height);
+      for (let i = 0; i < alpha.length; i++) alpha[i] = rgba[i * 4 + 3];
+      mask = { width, height, alpha };
+      _toolMaskCache.set(key, mask);
+    } catch (_) { return null; }
+  }
+  return { ...mask, rect: img.getBoundingClientRect() };
+}
+
+function toolOpaqueAt(mask, x, y) {
+  const r = mask.rect;
+  if (!r.width || !r.height || x < r.left || x >= r.right || y < r.top || y >= r.bottom) return false;
+  const px = Math.max(0, Math.min(mask.width - 1, Math.floor((x - r.left) / r.width * mask.width)));
+  const py = Math.max(0, Math.min(mask.height - 1, Math.floor((y - r.top) / r.height * mask.height)));
+  return mask.alpha[py * mask.width + px] >= 16;
+}
+
+function toolPixelOverlap(wallImg, floorImg, allowance) {
+  const wall = toolOpaqueMask(wallImg), floor = toolOpaqueMask(floorImg);
+  if (!wall || !floor) return null;
+  const left = Math.max(wall.rect.left, floor.rect.left), right = Math.min(wall.rect.right, floor.rect.right);
+  const top = Math.max(wall.rect.top, floor.rect.top), bottom = Math.min(wall.rect.bottom, floor.rect.bottom);
+  if (right-left < 2 || bottom-top < 2) return false;
+  const checkBottom = Math.min(bottom, wall.rect.bottom-wall.rect.height*allowance/100);
+  if (checkBottom <= top) return false;
+  const step = Math.max(1, Math.min(3, Math.ceil(Math.max(right-left,checkBottom-top)/160)));
+  let hits = 0;
+  for(let y=top+step/2;y<checkBottom;y+=step) for(let x=left+step/2;x<right;x+=step) {
+    if(toolOpaqueAt(wall,x,y) && toolOpaqueAt(floor,x,y) && ++hits>=2) return true;
+  }
+  return false;
+}
+
 function updateWallPreviewStatus() {
   const status = document.getElementById('wall-preview-status');
   const selectedItem = ITEMS.find(x => x.id === selectedId);
@@ -1655,7 +1701,10 @@ function updateWallPreviewStatus() {
   const overlapW = Math.min(w.right,f.right)-Math.max(w.left,f.left);
   const overlapH = Math.min(w.bottom,f.bottom)-Math.max(w.top,f.top);
   const allowance = Math.max(0,Math.min(80,curAdj().wallFurnitureAllowance||0));
-  const blocked = overlapW>=8 && overlapH>=8 && f.top < w.bottom-w.height*allowance/100;
+  const pixelBlocked = toolPixelOverlap(_placedEl,_decoSurfFurnEl,allowance);
+  const blocked = pixelBlocked === null
+    ? overlapW>=8 && overlapH>=8 && f.top < w.bottom-w.height*allowance/100
+    : pixelBlocked;
   status.style.display = '';
   status.textContent = blocked ? '🔴 ここには おけない' : '🟢 ここなら おける';
   status.style.background = blocked ? '#5b1f28' : '#173f2a';

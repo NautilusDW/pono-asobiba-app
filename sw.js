@@ -1,5 +1,8 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2280: 窓と床家具の衝突判定をalpha外接長方形から実不透明ピクセルマスクへ変更。
+// カーテン中央やアーチ内側の透明領域へ家具を置ける一方、窓枠へ実際に食い込む
+// 配置は従来どおり拒否する (batch:1360-room-pixel-mask-window-collision)。
 // v2279: ブロッコリー／枝豆の鍋内アニメーションを全食材共通周期の往復から、
 // 房・さやごとに周期／位相／3区間の移動量／回転方向が異なる独立対流へ変更。
 // 湯切り時の完成食材を穴あきおたまの受け部と白い浅皿の中央へ再配置し、
@@ -522,7 +525,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2279;
+const CACHE_VERSION = 2280;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。

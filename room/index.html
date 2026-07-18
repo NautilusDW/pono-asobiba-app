@@ -1421,6 +1421,63 @@ function isOverlapping(areaId, row, col, item, angle, excludeId) {
 }
 
 const OPAQUE_BOUNDS_CACHE = new Map();
+const OPAQUE_MASK_CACHE = new Map();
+function getOpaqueMask(itemEl) {
+  const img = itemEl && itemEl.querySelector('img');
+  if (!img || !img.complete || !img.naturalWidth || !img.naturalHeight) return null;
+  const key = img.currentSrc || img.src;
+  let mask = OPAQUE_MASK_CACHE.get(key);
+  if (mask) return { ...mask, rect: img.getBoundingClientRect() };
+  try {
+    const maxSide = 192;
+    const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+    const width = Math.max(1, Math.round(img.naturalWidth * scale));
+    const height = Math.max(1, Math.round(img.naturalHeight * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = width; canvas.height = height;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(img, 0, 0, width, height);
+    const rgba = ctx.getImageData(0, 0, width, height).data;
+    const alpha = new Uint8Array(width * height);
+    for (let i = 0; i < alpha.length; i++) alpha[i] = rgba[i * 4 + 3];
+    mask = { width, height, alpha };
+    OPAQUE_MASK_CACHE.set(key, mask);
+    return { ...mask, rect: img.getBoundingClientRect() };
+  } catch (_) { return null; }
+}
+
+function opaqueAtScreenPoint(mask, x, y) {
+  const rect = mask.rect;
+  if (!rect.width || !rect.height || x < rect.left || x >= rect.right || y < rect.top || y >= rect.bottom) return false;
+  const px = Math.max(0, Math.min(mask.width - 1, Math.floor((x - rect.left) / rect.width * mask.width)));
+  const py = Math.max(0, Math.min(mask.height - 1, Math.floor((y - rect.top) / rect.height * mask.height)));
+  return mask.alpha[py * mask.width + px] >= 16;
+}
+
+// 壁家具と床家具は、外接長方形ではなく実際の不透明ピクセル同士で判定する。
+// カーテンの中央やアーチ内側など、画像内部の透明な空間には家具を置ける。
+function hasOpaquePixelOverlap(wallEl, floorEl, allowance) {
+  const wallMask = getOpaqueMask(wallEl);
+  const floorMask = getOpaqueMask(floorEl);
+  if (!wallMask || !floorMask) return null;
+  const left = Math.max(wallMask.rect.left, floorMask.rect.left);
+  const right = Math.min(wallMask.rect.right, floorMask.rect.right);
+  const top = Math.max(wallMask.rect.top, floorMask.rect.top);
+  const bottom = Math.min(wallMask.rect.bottom, floorMask.rect.bottom);
+  if (right - left < 2 || bottom - top < 2) return false;
+  const cutoffY = wallMask.rect.bottom - wallMask.rect.height * allowance / 100;
+  const checkBottom = Math.min(bottom, cutoffY);
+  if (checkBottom <= top) return false;
+  const step = Math.max(1, Math.min(3, Math.ceil(Math.max(right - left, checkBottom - top) / 160)));
+  let hits = 0;
+  for (let y = top + step / 2; y < checkBottom; y += step) {
+    for (let x = left + step / 2; x < right; x += step) {
+      if (opaqueAtScreenPoint(wallMask, x, y) && opaqueAtScreenPoint(floorMask, x, y) && ++hits >= 2) return true;
+    }
+  }
+  return false;
+}
+
 function getOpaqueContentRect(itemEl) {
   const img = itemEl && itemEl.querySelector('img');
   const fallback = itemEl.getBoundingClientRect();
@@ -1495,6 +1552,10 @@ function isVisuallyOverlapping(movingEl) {
         const floorRect = movingLayer === 'wall' ? visibleOther : visibleMine;
         const wallItem = movingLayer === 'wall' ? movingItem : otherItem;
         const allowance = Math.max(0, Math.min(80, wallItem.wallFurnitureAllowance || 0));
+        const wallEl = movingLayer === 'wall' ? movingEl : otherEl;
+        const floorEl = movingLayer === 'wall' ? otherEl : movingEl;
+        const pixelOverlap = hasOpaquePixelOverlap(wallEl, floorEl, allowance);
+        if (pixelOverlap !== null) return pixelOverlap;
         const cutoffY = wallRect.bottom - wallRect.height * allowance / 100;
         return floorRect.top < cutoffY;
       }
