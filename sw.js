@@ -1,5 +1,9 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2275: 茹で鍋をコンロの見下ろしパースへ合わせた中深さのGPT Image 2生成画像へ
+// 再差替え。表示76%／top -1%、水面mask・泡・波紋・投入食材を
+// 36.6×33%の新しい共通楕円へ再計測し、runtime URLを `?v=1350` へ更新
+// (batch:1350-kitchen-pot-perspective-medium-depth)。play.html同期不要。
 // v2274: batch:1349で差し替えた茹で鍋が、開いたままの旧クライアントで同一URLの
 // 画像cacheから表示され続けるため、runtime参照へ `?v=1349` を付けて新画像を
 // 必ず取得させる。配信済みPNGのSHA-256はローカルとApp stagingで一致確認済み。
@@ -500,7 +504,7 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
-const CACHE_VERSION = 2274;
+const CACHE_VERSION = 2275;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。

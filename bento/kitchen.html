@@ -5811,8 +5811,8 @@ body.layout-editor-on .bowl-fill-mask::after {
 .workshop-scene.is-boil-step .workshop-boil-game { display: block; }
 .workshop-scene.is-boil-step { background: #c9c5bd url('../assets/images/bento/cooking/stove_base.webp') center 72% / 128% auto no-repeat; }
 .workshop-scene.is-boil-step::after { display: none; }
-.workshop-boil-pot { position: absolute; z-index: 2; width: 70%; left: 15%; top: 0; object-fit: contain; pointer-events: none; filter: drop-shadow(0 8px 7px rgba(70,45,25,.18)); }
-.workshop-boil-flame { z-index: 1; left: 50%; top: 68%; width: 18%; height: 10%; opacity: 0; }
+.workshop-boil-pot { position: absolute; z-index: 2; width: 76%; left: 12%; top: -1%; object-fit: contain; pointer-events: none; filter: drop-shadow(0 8px 7px rgba(70,45,25,.18)); }
+.workshop-boil-flame { z-index: 1; left: 50%; top: 69%; width: 18%; height: 10%; opacity: 0; }
 .workshop-boil-game.is-heat-on .workshop-boil-flame { opacity: 1; animation: heatPulse 0.82s ease-in-out infinite alternate; }
 .workshop-boil-salt { position: absolute; z-index: 6; width: 16%; left: 75%; top: 40%; opacity: 0; pointer-events: none; transform: translate(-50%,-50%); transition: opacity .25s ease, left .45s ease, top .45s ease, transform .2s ease; filter: drop-shadow(0 8px 10px rgba(70,45,25,.2)); touch-action: none; }
 .workshop-boil-game.is-salt-step .workshop-boil-salt { opacity: 1; pointer-events: auto; cursor: grab; }
@@ -5825,7 +5825,7 @@ body.layout-editor-on .bowl-fill-mask::after {
 .workshop-boil-food { position: absolute; width: 25%; left: 5%; top: 8%; object-fit: contain; pointer-events: none; transition: left .3s ease, top .3s ease, transform .3s ease, opacity .2s ease; }
 .workshop-boil-spoon { position: absolute; width: 38%; right: -4%; top: 4%; object-fit: contain; pointer-events: none; opacity: 0; transform: translate(45px,-20px) rotate(-10deg); transition: opacity .25s ease, transform .32s ease; touch-action: none; }
 .workshop-boil-bowl { position: absolute; z-index: 6; width: 42%; right: 7%; bottom: 6%; object-fit: contain; pointer-events: none; opacity: 0; transform: scaleY(1.16); transform-origin: center bottom; filter: saturate(1.28) contrast(1.12) drop-shadow(0 7px 6px rgba(70,45,25,.18)); transition: opacity .25s ease; }
-.workshop-boil-game { --boil-water-left: 31%; --boil-water-top: 18.5%; --boil-water-width: 38%; --boil-water-height: 25.5%; }
+.workshop-boil-game { --boil-water-left: 31.5%; --boil-water-top: 15.2%; --boil-water-width: 36.6%; --boil-water-height: 33%; }
 .workshop-boil-bubbles { position: absolute; z-index: 3; left: var(--boil-water-left); top: var(--boil-water-top); width: var(--boil-water-width); height: var(--boil-water-height); opacity: 0; pointer-events: none; overflow: hidden; clip-path: ellipse(50% 50% at 50% 50%); transition: opacity .2s ease; }
 .workshop-boil-bubble { position: absolute; bottom: 10%; width: 14px; height: 14px; border: 3px solid rgba(255,255,255,.9); border-radius: 50%; background: transparent; box-shadow: 0 0 0 1px rgba(85,85,85,.28), 0 0 5px rgba(255,255,255,.72); animation: workshopBoilBubble 1.05s ease-in infinite; }
 .workshop-boil-bubble:nth-child(1) { left: 9%; animation-delay: -.18s; }
@@ -9820,7 +9820,7 @@ body.layout-editor-on .bowl-fill-mask::after {
       pieceKind: 'edamame',
     },
   };
-  const WORKSHOP_BOIL_WATER = { left: 31, top: 18.5, width: 38, height: 25.5 };
+  const WORKSHOP_BOIL_WATER = { left: 31.5, top: 15.2, width: 36.6, height: 33 };
 
   const EDAMAME_PREP_POSITIONS = [
     [38,35,-18,45,39,12],[50,31,8,55,42,-15],[61,38,19,62,52,21],[35,49,14,43,57,-9],
@@ -10170,7 +10170,7 @@ body.layout-editor-on .bowl-fill-mask::after {
     els.workshopBoilGame.classList.toggle('is-heat-on', !!state.workshopHeatOn);
     els.workshopBoilGame.classList.toggle('is-salt-step', step.kind === 'salt');
     els.workshopBoilGame.classList.toggle('is-boiling', boiling);
-    els.workshopBoilPot.src = '../assets/images/bento/cooking/boil/boil_pot_cold.png?v=1349';
+    els.workshopBoilPot.src = '../assets/images/bento/cooking/boil/boil_pot_cold.png?v=1350';
     els.workshopBoilFood.src = cooked ? config.cooked : config.raw;
     els.workshopBoilFood.alt = '';
     els.workshopBoilFood.hidden = !!config.pieceCount && step.kind !== 'drain';

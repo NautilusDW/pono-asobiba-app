@@ -23,7 +23,7 @@ for (let index = 1; index <= 12; index += 1) {
 assert.match(source, /id="workshop-boil-game"/);
 assert.match(source, /const WORKSHOP_BOIL_FOODS = \{[\s\S]*?broccoli:[\s\S]*?edamame:/);
 assert.match(source, /function updateWorkshopBoilVisual\(step\)[\s\S]*?boil_pot_cold\.png/);
-assert.match(source, /boil_pot_cold\.png\?v=1349/);
+assert.match(source, /boil_pot_cold\.png\?v=1350/);
 assert.doesNotMatch(source.match(/function updateWorkshopBoilVisual\(step\)[\s\S]*?\n  function advanceWorkshopProgress/)[0], /boil_pot_hot\.png/);
 assert.match(source, /class="workshop-boil-bubbles"/);
 assert.match(source, /@keyframes workshopBoilBubble/);
@@ -48,7 +48,7 @@ assert.match(source, /broccoli_floret_' \+ String\(n\)\.padStart\(3, '0'\)/);
 assert.match(source, /class="workshop-boil-pieces"/);
 assert.match(source, /class="workshop-boil-plate"/);
 assert.match(source, /prep_plate\.png/);
-assert.match(source, /--boil-water-left: 31%; --boil-water-top: 18\.5%; --boil-water-width: 38%; --boil-water-height: 25\.5%/);
+assert.match(source, /--boil-water-left: 31\.5%; --boil-water-top: 15\.2%; --boil-water-width: 36\.6%; --boil-water-height: 33%/);
 assert.match(source, /class="workshop-boil-water-mask"/);
 assert.match(source, /clip-path: ellipse\(50% 50% at 50% 50%\)/);
 assert.match(source, /@keyframes broccoliWaterDrift/);

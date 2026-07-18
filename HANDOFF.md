@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-07-18 - [batch:1350-kitchen-pot-perspective-medium-depth] Codex: IMPLEMENTATION DONE — ユーザー実機評価「batch:1349鍋は底のパースがコンロと不一致」、初稿再生成への「底が浅い」を反映。`stove_base.webp`をカメラ／バーナー輪／五徳面の正本、旧鍋を材質・画風参照としてGPT Image 2で再生成し、浅鍋案から胴だけ約40%深くした中深さ案を採用。公式chroma helperのsoft-matte/despillで緑背景を透過し836x471 runtimeへ差替え。鍋76%/left12/top-1%、水面mask・泡・波紋・投入食材を31.5/15.2/36.6/33%共通楕円へ再計測、既存heat-glowはtop69%、URL `?v=1350`。1366x768沸騰画面で五徳への接地・鍋底・取っ手・泡・横overflow 0を目視。SW v2275。未追跡 `.DS_Store` は未変更。 (by Codex)
+
 - 2026-07-18 - [batch:1349-kitchen-complete-boil-pot] Codex: DONE — ユーザー指示「鍋画像を生成し直す」を受領。現行 `boil_pot_cold.png` を参照し、槌目の銅色胴・銀縁・木製取っ手・静水・水彩タッチとパースを維持しつつ、丸胴から短い平底まで下側が完全に閉じ、全輪郭に十分な余白がある鍋 raw を GPT Image 2 で生成。`tmp/alpha_pending/1349-kitchen-complete-boil-pot/boil_pot_complete_raw.png`（1672x941、1.8MB）と納品メモを保存。未透過・未トリミング・未最適化・未実装。既存 runtime／SW／未追跡 `.DS_Store` は未変更。 (by Codex)
 - 2026-07-18 - [batch:1349-kitchen-complete-boil-pot] Codex: IMPLEMENTATION DONE — 生成rawの外周と取っ手内側の閉じた穴からマゼンタを除去し、原寸alphaと836x471 runtimeを作成。`boil_pot_cold.png`を下側まで完全な新鍋へ差替え、表示70%／top0へ調整。新水面を31/18.5/38/25.5%としてmask・泡・波紋・鍋内食材を同一楕円へ統一。既存オレンジ2本炎`heat-glow`は形を変えずtop68%へ移し鍋底下へ表示。1366x768の点火後／沸騰時を目視し、横overflow 0、鍋底・取っ手・炎・泡を確認。static 2本、boiling E2E（broccoli 1366x768／edamame 844x390）2本、sw syntax、diff check PASS。SW v2273。未追跡 `.DS_Store` は未変更。 (by Codex)
 
