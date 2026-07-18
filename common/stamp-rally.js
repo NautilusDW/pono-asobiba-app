@@ -10,7 +10,7 @@
    依存 (呼び出し側ページが用意するグローバル。無ければ defensive に skip):
      window.grantReward / window.showTreasure / window.incrementStat
      window.PonoMvpFlags / window.PONO_MVP_NO_REWARDS / window.PonoDebugMode
-     window.ponoProfile / window.getAchievements / window.getUnlockedAchievements
+     window.ponoProfile / window.getActiveAchievements (fallback: window.getAchievements) / window.getUnlockedAchievements
      window.PonoPromo / ROOM_ITEMS (room/items.js) / window._scheduleFirstClearAfterStamps
        (first-clear celebration は別系統のため未移設。呼び出し側に残置する場合はこの
         グローバルを実装すると showStampBatch 完了後などに連鎖起動される)
@@ -903,7 +903,9 @@
     var old = document.querySelector('.ach-list-ov');
     if (old) old.remove();
 
-    var allAch = window.getAchievements ? window.getAchievements() : [];
+    // 廃止済みゲーム(archived:true)の実績をユーザーに見せないよう getActiveAchievements を優先
+    // (achievements.js の archived フィルタ済み一覧。旧 getAchievements() は全件＝廃止分も含む)
+    var allAch = window.getActiveAchievements ? window.getActiveAchievements() : (window.getAchievements ? window.getAchievements() : []);
     var unlocked = window.getUnlockedAchievements ? window.getUnlockedAchievements() : {};
     var stats = JSON.parse(localStorage.getItem('pono_stats') || '{}');
 

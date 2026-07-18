@@ -525,8 +525,11 @@
 // update poll で再ダウンロードされていたため。 docs/ は .assetsignore で deploy 除外。
 // 新しいエントリは従来どおりこのファイル先頭 (L3、 newest-first) へ追記し、
 // 古いエントリ (目安: 最新 ~10 件超過分) は docs/sw-changelog-archive.md 先頭へ退避すること。
+// v2282: スタンプカード🏆実績一覧が廃止済みゲーム(wordmatch/bowling/breakout/slide/fossil/旧writing)の
+// 実績を表示し続けるバグを修正。common/stamp-rally.js:906 showAchievementList() の window.getAchievements()
+// (全件・未フィルタ) を window.getActiveAchievements() (archived除外) へ差し替え。
 // v2281: プロフィール選択のキャラクター候補を、初回作成・編集の両画面で拡大。
-const CACHE_VERSION = 2281;
+const CACHE_VERSION = 2282;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
