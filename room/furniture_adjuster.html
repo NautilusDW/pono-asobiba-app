@@ -441,6 +441,7 @@ var ITEMS = (typeof ROOM_ITEMS !== 'undefined' ? ROOM_ITEMS : [])
       theme: ov.theme || it.theme || 'all',
       placementLayer: ov.placementLayer || it.placementLayer || 'floor',
       roomImg: it.roomImg, roomImgB: it.roomImgB || null,
+      gridRow: it.gridRow, gridCol: it.gridCol,
       cellSize: it.cellSize || 1, footprintSize: it.footprintSize,
       pivotX: it.pivotX || 0, pivotY: it.pivotY || 0,
       surfaceY: it.surfaceY || 0,
@@ -500,7 +501,8 @@ ITEMS.forEach(item => {
     maxRow: (item.maxRow !== undefined ? item.maxRow : 7 - autoMargin),
     minCol: (item.minCol !== undefined ? item.minCol : autoMargin),
     maxCol: (item.maxCol !== undefined ? item.maxCol : 7 - autoMargin),
-    row: 3, col: 3,
+    row: item.placementLayer === 'wall' ? 0 : (item.gridRow ?? 3),
+    col: item.placementLayer === 'wall' ? 0 : (item.gridCol ?? 3),
     surfaceY: item.surfaceY || 0,
     stackable: isDecoItem(item.id),
   };
@@ -554,6 +556,29 @@ function loadFromStorage() {
   } catch(e) { return false; }
 }
 const hadSave = loadFromStorage();
+
+// wallレイヤー導入前に未調整窓の 0/0 ピボットが保存されたブラウザだけ補正する。
+// 0以外へ手動調整済みの値には触れない。
+(function migrateUnadjustedWallPivots() {
+  var changed = false;
+  ITEMS.forEach(function(item) {
+    if (item.placementLayer !== 'wall') return;
+    ['A', 'B'].forEach(function(angle) {
+      var adj = adjustments[item.id + '_' + angle];
+      var src = angle === 'B' ? (item.angleB || {}) : item;
+      if (!adj || adj.pivotX !== 0 || adj.pivotY !== 0) return;
+      if ((src.pivotX || 0) === 0 && (src.pivotY || 0) === 0) return;
+      adj.cellSize = src.cellSize ?? item.cellSize ?? adj.cellSize;
+      adj.footprintSize = src.footprintSize ?? item.footprintSize ?? adj.footprintSize;
+      adj.pivotX = src.pivotX;
+      adj.pivotY = src.pivotY;
+      adj.row = 0;
+      adj.col = 0;
+      changed = true;
+    });
+  });
+  if (changed) saveToStorage();
+})();
 
 // ─── localStorage に焼き付いた auto-margin バグ値のクリーンアップ ───
 // 過去に ITEMS マッピング不具合で auto-margin (1〜2周制限) が adjustments に

@@ -750,7 +750,7 @@ const ROOM_ITEMS = [
     id: 'furn_window_blue_star', cat: 'furn', name: 'あおい ほしまど', price: 15, theme: 'all', placementLayer: 'wall',
     roomImg: '../assets/images/Rooms/furnitures_final/furn_window_blue_star_A.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/furn_window_blue_star_B.png',
-    gridRow: 4, gridCol: 4, cellSize: 1.5, pivotX: -70, pivotY: -55, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
+    gridRow: 0, gridCol: 0, cellSize: 1.5, pivotX: -70, pivotY: -55, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
   
     angleB: { cellSize: 1.5, pivotX: 56, pivotY: -50, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7   },
   },
@@ -758,7 +758,7 @@ const ROOM_ITEMS = [
     id: 'furn_window_pink_heart', cat: 'furn', name: 'ピンクの ハートまど', price: 15, theme: 'all', placementLayer: 'wall',
     roomImg: '../assets/images/Rooms/furnitures_final/furn_window_pink_heart_A.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/furn_window_pink_heart_B.png',
-    gridRow: 4, gridCol: 4, cellSize: 1.5, pivotX: -70, pivotY: -50, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
+    gridRow: 0, gridCol: 0, cellSize: 1.5, pivotX: -70, pivotY: -50, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
   
     angleB: { cellSize: 1.5, pivotX: 56, pivotY: -50, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7   },
   },
@@ -766,15 +766,15 @@ const ROOM_ITEMS = [
     id: 'furn_window_white_arch', cat: 'furn', name: 'しろい アーチまど', price: 15, theme: 'all', placementLayer: 'wall',
     roomImg: '../assets/images/Rooms/furnitures_final/furn_window_white_arch_A.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/furn_window_white_arch_B.png',
-    gridRow: 4, gridCol: 4, cellSize: 1, pivotX: 0, pivotY: 0, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
+    gridRow: 0, gridCol: 0, cellSize: 1.5, pivotX: -70, pivotY: -55, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
   
-    angleB: { cellSize: 1, pivotX: 0, pivotY: 0, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7   },
+    angleB: { cellSize: 1.5, pivotX: 56, pivotY: -50, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7   },
   },
   {
     id: 'furn_window_wood_curtain', cat: 'furn', name: 'カーテンつき まど', price: 15, theme: 'all', placementLayer: 'wall',
     roomImg: '../assets/images/Rooms/furnitures_final/furn_window_wood_curtain_A.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/furn_window_wood_curtain_B.png',
-    gridRow: 4, gridCol: 4, cellSize: 1.5, pivotX: -65, pivotY: -55, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
+    gridRow: 0, gridCol: 0, cellSize: 1.5, pivotX: -65, pivotY: -55, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
   
     angleB: { cellSize: 1.5, pivotX: 56, pivotY: -55, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7   },
   },
@@ -782,15 +782,15 @@ const ROOM_ITEMS = [
     id: 'furn_window_wood_round', cat: 'furn', name: 'きの まるまど', price: 15, theme: 'all', placementLayer: 'wall',
     roomImg: '../assets/images/Rooms/furnitures_final/furn_window_wood_round_A.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/furn_window_wood_round_B.png',
-    gridRow: 4, gridCol: 4, cellSize: 1, pivotX: 0, pivotY: 0, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
+    gridRow: 0, gridCol: 0, cellSize: 1, pivotX: -70, pivotY: -80, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
   
-    angleB: { cellSize: 1, pivotX: 0, pivotY: 0, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7   },
+    angleB: { cellSize: 1, pivotX: 56, pivotY: -75, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7   },
   },
   {
     id: 'furn_window_wood_square', cat: 'furn', name: 'きの しかくい まど', price: 15, theme: 'all', placementLayer: 'wall',
     roomImg: '../assets/images/Rooms/furnitures_final/furn_window_wood_square_A.png',
     roomImgB: '../assets/images/Rooms/furnitures_final/furn_window_wood_square_B.png',
-    gridRow: 4, gridCol: 4, cellSize: 1.5, pivotX: -62, pivotY: -50, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
+    gridRow: 0, gridCol: 0, cellSize: 1.5, pivotX: -62, pivotY: -50, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7,
   
     angleB: { cellSize: 1.5, pivotX: 56, pivotY: -50, minRow: 0, maxRow: 7, minCol: 0, maxCol: 7   },
   },
