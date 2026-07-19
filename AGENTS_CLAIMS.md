@@ -59,7 +59,6 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
-- 2026-07-19 20:55 - by Codex - [batch:1372-lp-title-pono-white-belly] - assets/lp/hero/brand_logo*.png, index.html, index-app.html, sw.js, tmp/alpha_pending/1372-lp-title-pono-white-belly/**, AGENTS_CLAIMS.md, HANDOFF.md - LPタイトルのポノにオリジナル準拠の白いおなかを追加 [overlap: batch:1370-treasure-gender-choice]
 
 
 - 2026-07-17 10:08 - by Codex - [batch:1328d-mojikko-white-paper-ornate-frames] - writing-mori/index.html, assets/images/mojikko/writing/storybook/**, tmp/alpha_pending/1328d-mojikko-white-paper-ornate-frames/**, tests/mojikko_*.cjs, native/**, AGENTS_CLAIMS.md, HANDOFF.md - 紙面を白ベースへ補正し、ことばの穴・見る丸・メッセージ・文字盤・書き順を個別の装飾枠へ差し替える
