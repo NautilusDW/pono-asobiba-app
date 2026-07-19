@@ -1,0 +1,2045 @@
+{
+  "batch": "1371-room-furniture-repertoire-expansion",
+  "correctionBatch": "1371c-room-furniture-angle-correction",
+  "processor": "tmp/alpha_pending/1371c-room-furniture-angle-correction/build_final_assets.mjs",
+  "settings": {
+    "backgroundMaxDiff": 115,
+    "backgroundMinBrightness": 140,
+    "clearDiff": 5,
+    "opaqueDiff": 150,
+    "cropAlphaThreshold": 8,
+    "cropPadding": 16,
+    "panelEdgeClearMargin": 3,
+    "minComponentPixels": 64,
+    "minComponentFraction": 0.005
+  },
+  "summary": {
+    "assetCount": 24,
+    "outputCount": 48,
+    "allDecodedRgba": true,
+    "allCornersTransparent": true,
+    "allBPixelExactFlipOfA": true,
+    "allUnder3Mb": true,
+    "rawSourcesUnchanged": true
+  },
+  "rawSourcesBefore": {
+    "set01_sofa_beige_pink_raw.png": "b68729cf5194fdcaa98743632a0fd21203066ddbdcfed9cab922b0e6569ae47a",
+    "set01_sofa_beige_pink_v2_raw.png": "d6b3533a76c65e6245f552e8c4cdf3480e37bbdfc25e6b327c248eb42a200c0d",
+    "set01_sofa_beige_pink_v3_chest_raw.png": "f1f4aeeb0433b933f6ac011dadf49544e6b4fc043424727584422613d12becc3",
+    "set02_sofa_blue_floor_cushion_raw.png": "6ac7cf40ab88f0cc3dbfb673d455ace13a0ddfdcd3bbd88f66f55fb519166d2f",
+    "set02_sofa_blue_floor_cushion_v2_raw.png": "11a7e5920943f9c63234ee84f15d9facc7cd0126cc74cce15f52a72f1ed5256c",
+    "set02_sofa_blue_floor_cushion_v3_raw.png": "2180e9de9a40d8e237cd93dc1fb5fbe6b783215052570422880b4a451ca7c869",
+    "set02b_floor_cushion_raw.png": "ed56c3de524cfa8b0890ab73c92a91a58adb216129f4620072b633895aaf4457",
+    "set03_tv_counter_raw.png": "5a254f249549134ffd4b422db042b49ec1f6c9e8f13f0d6aa2c7d5458ebd6bf6",
+    "set03_tv_counter_v2_chest_raw.png": "fc7b9154a6696031ce564c1ce6042ffad9b04c56a62ca6bdc941caaa4c6d316d",
+    "set03_tv_counter_v2_desk_raw.png": "f520452a66c42e6f0212821f194f74cb9bb3f43fb536a051cee9a66214568345",
+    "set04_coffee_dining_raw.png": "bc62d3cea2af571a12ba4d8988324a445c7ac3434ec8a31c2e85db5923021b4d",
+    "set05_fridge_kitchen_cabinet_raw.png": "fc00c64bc04e543af31b1992b6ff9504c096ea2b864b5ea4d2d02ac0bbfb4c5d",
+    "set06_fruit_cookie_raw.png": "26e7635ad799a63fa869a599e14bc46704a2302f5adbc5028941c40f8e99086f",
+    "set07_bench_A_H2_classic_raw.png": "e5f85f713d68cb1948930d9344aace8300fc4ff70cc98d753e0e6d13d92adbf2",
+    "set07_bench_A_chairedit_J2_raw.png": "026352a4abad7cc40afc866b89d1f0515825816917a018aff87c244fdede80b0",
+    "set07_bench_A_gridguided_raw.png": "7996388cb0cb666a5205349e07cbfdec582cf148d46302985345253e923ee759",
+    "set07_bench_A_sofaedit_H_raw.png": "351c7f865ad54b998a2b48d1bdaff84c7e61aedae0bc212162df49c5f67e8567",
+    "set07_bench_sandbox_raw.png": "533a95bafbb783e00074a3910d855da005c7d4a9c751e8514698f30f13541624",
+    "set07_sandbox_v2_raw.png": "12a639515403daae2e9fd1ad8df7216406273dc529b57b727e5af451d50cce4d",
+    "set08_garden_table_planter_raw.png": "8c78f3c192485be39e4ad49ee7aef153a0424c5391eea4396c6bbb9cdb399c71",
+    "set09_watering_birdhouse_raw.png": "de2fc1cb321422dc8ca4230741c883abb983bfda733e69cbe2f19e6320cc2c6e",
+    "set09_watering_birdhouse_v2_raw.png": "1dc42d0e8ee99b6e2c65032e40d0dda62fc124bb6f51b0c7a7a52c667c8a43aa",
+    "set10_wardrobe_wood_pink_raw.png": "0b0990a10a1f8805ad87c8a7d038bb7432114eb89ad0afc05ea33e0094a70420",
+    "set11_wardrobe_blue_tanabata_raw.png": "afa1dfe33fb10b0b12c103cd2c62e29c25c162570362cd50b305d8b307163923",
+    "set11_wardrobe_blue_tanabata_v2_raw.png": "76705ed47c106c5a4203a27e4874bc491bb3cc7fff21353e82601afc374d570a",
+    "set11_wardrobe_blue_tanabata_v3_raw.png": "19fc7c835204eb41d8be9a4aa3bccf4bf5b5ab5ed18059f1d55d12a5a69ffdbb",
+    "set12_christmas_pumpkin_raw.png": "ac2a857900df788dab92b8ac0ecca03e2cc4d031de6e03c079ec1b1a9c54ac88"
+  },
+  "rawSourcesAfter": {
+    "set01_sofa_beige_pink_raw.png": "b68729cf5194fdcaa98743632a0fd21203066ddbdcfed9cab922b0e6569ae47a",
+    "set01_sofa_beige_pink_v2_raw.png": "d6b3533a76c65e6245f552e8c4cdf3480e37bbdfc25e6b327c248eb42a200c0d",
+    "set01_sofa_beige_pink_v3_chest_raw.png": "f1f4aeeb0433b933f6ac011dadf49544e6b4fc043424727584422613d12becc3",
+    "set02_sofa_blue_floor_cushion_raw.png": "6ac7cf40ab88f0cc3dbfb673d455ace13a0ddfdcd3bbd88f66f55fb519166d2f",
+    "set02_sofa_blue_floor_cushion_v2_raw.png": "11a7e5920943f9c63234ee84f15d9facc7cd0126cc74cce15f52a72f1ed5256c",
+    "set02_sofa_blue_floor_cushion_v3_raw.png": "2180e9de9a40d8e237cd93dc1fb5fbe6b783215052570422880b4a451ca7c869",
+    "set02b_floor_cushion_raw.png": "ed56c3de524cfa8b0890ab73c92a91a58adb216129f4620072b633895aaf4457",
+    "set03_tv_counter_raw.png": "5a254f249549134ffd4b422db042b49ec1f6c9e8f13f0d6aa2c7d5458ebd6bf6",
+    "set03_tv_counter_v2_chest_raw.png": "fc7b9154a6696031ce564c1ce6042ffad9b04c56a62ca6bdc941caaa4c6d316d",
+    "set03_tv_counter_v2_desk_raw.png": "f520452a66c42e6f0212821f194f74cb9bb3f43fb536a051cee9a66214568345",
+    "set04_coffee_dining_raw.png": "bc62d3cea2af571a12ba4d8988324a445c7ac3434ec8a31c2e85db5923021b4d",
+    "set05_fridge_kitchen_cabinet_raw.png": "fc00c64bc04e543af31b1992b6ff9504c096ea2b864b5ea4d2d02ac0bbfb4c5d",
+    "set06_fruit_cookie_raw.png": "26e7635ad799a63fa869a599e14bc46704a2302f5adbc5028941c40f8e99086f",
+    "set07_bench_A_H2_classic_raw.png": "e5f85f713d68cb1948930d9344aace8300fc4ff70cc98d753e0e6d13d92adbf2",
+    "set07_bench_A_chairedit_J2_raw.png": "026352a4abad7cc40afc866b89d1f0515825816917a018aff87c244fdede80b0",
+    "set07_bench_A_gridguided_raw.png": "7996388cb0cb666a5205349e07cbfdec582cf148d46302985345253e923ee759",
+    "set07_bench_A_sofaedit_H_raw.png": "351c7f865ad54b998a2b48d1bdaff84c7e61aedae0bc212162df49c5f67e8567",
+    "set07_bench_sandbox_raw.png": "533a95bafbb783e00074a3910d855da005c7d4a9c751e8514698f30f13541624",
+    "set07_sandbox_v2_raw.png": "12a639515403daae2e9fd1ad8df7216406273dc529b57b727e5af451d50cce4d",
+    "set08_garden_table_planter_raw.png": "8c78f3c192485be39e4ad49ee7aef153a0424c5391eea4396c6bbb9cdb399c71",
+    "set09_watering_birdhouse_raw.png": "de2fc1cb321422dc8ca4230741c883abb983bfda733e69cbe2f19e6320cc2c6e",
+    "set09_watering_birdhouse_v2_raw.png": "1dc42d0e8ee99b6e2c65032e40d0dda62fc124bb6f51b0c7a7a52c667c8a43aa",
+    "set10_wardrobe_wood_pink_raw.png": "0b0990a10a1f8805ad87c8a7d038bb7432114eb89ad0afc05ea33e0094a70420",
+    "set11_wardrobe_blue_tanabata_raw.png": "afa1dfe33fb10b0b12c103cd2c62e29c25c162570362cd50b305d8b307163923",
+    "set11_wardrobe_blue_tanabata_v2_raw.png": "76705ed47c106c5a4203a27e4874bc491bb3cc7fff21353e82601afc374d570a",
+    "set11_wardrobe_blue_tanabata_v3_raw.png": "19fc7c835204eb41d8be9a4aa3bccf4bf5b5ab5ed18059f1d55d12a5a69ffdbb",
+    "set12_christmas_pumpkin_raw.png": "ac2a857900df788dab92b8ac0ecca03e2cc4d031de6e03c079ec1b1a9c54ac88"
+  },
+  "usedRawSources": [
+    "set01_sofa_beige_pink_v3_chest_raw.png",
+    "set02_sofa_blue_floor_cushion_raw.png",
+    "set02b_floor_cushion_raw.png",
+    "set03_tv_counter_v2_chest_raw.png",
+    "set04_coffee_dining_raw.png",
+    "set05_fridge_kitchen_cabinet_raw.png",
+    "set06_fruit_cookie_raw.png",
+    "set07_bench_A_chairedit_J2_raw.png",
+    "set07_sandbox_v2_raw.png",
+    "set08_garden_table_planter_raw.png",
+    "set09_watering_birdhouse_v2_raw.png",
+    "set10_wardrobe_wood_pink_raw.png",
+    "set11_wardrobe_blue_tanabata_v3_raw.png",
+    "set12_christmas_pumpkin_raw.png"
+  ],
+  "assets": [
+    {
+      "id": "furn_sofa_beige",
+      "source": {
+        "raw": "tmp/alpha_pending/1371c-room-furniture-angle-correction/raw/set01_sofa_beige_pink_v3_chest_raw.png",
+        "rawSha256": "f1f4aeeb0433b933f6ac011dadf49544e6b4fc043424727584422613d12becc3",
+        "panel": "TL",
+        "panelRect": {
+          "left": 0,
+          "top": 0,
+          "width": 627,
+          "height": 627
+        },
+        "sourceOrientation": "A",
+        "backgroundRgb": [
+          254,
+          254,
+          254
+        ]
+      },
+      "crop": {
+        "left": 55,
+        "top": 92,
+        "width": 506,
+        "height": 479
+      },
+      "padding": 16,
+      "componentCleanup": {
+        "componentCount": 17,
+        "keepThreshold": 800,
+        "removedComponents": 16,
+        "removedPanelLines": 1,
+        "removedPixels": 90
+      },
+      "dimensions": {
+        "width": 538,
+        "height": 511
+      },
+      "A": {
+        "path": "assets/images/Rooms/furnitures_final/furn_sofa_beige_A.png",
+        "channels": 4,
+        "bytes": 268316,
+        "sha256": "157a1cea4ca8896780afbd9ef8401da30ae52bc58207bd212e73e6586a50818c",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 114064,
+          "partial": 14603,
+          "opaque": 146251,
+          "nonzeroCoverage": 0.585098,
+          "opaqueCoverage": 0.53198,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "B": {
+        "path": "assets/images/Rooms/furnitures_final/furn_sofa_beige_B.png",
+        "channels": 4,
+        "bytes": 268649,
+        "sha256": "27c0f4bdd845bcf6b36b6eae59cb3ad9d0ce49b70b5fdf81fb5234d80f1087df",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 114064,
+          "partial": 14603,
+          "opaque": 146251,
+          "nonzeroCoverage": 0.585098,
+          "opaqueCoverage": 0.53198,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "bIsPixelExactHorizontalFlipOfA": true
+    },
+    {
+      "id": "furn_sofa_pink",
+      "source": {
+        "raw": "tmp/alpha_pending/1371c-room-furniture-angle-correction/raw/set01_sofa_beige_pink_v3_chest_raw.png",
+        "rawSha256": "f1f4aeeb0433b933f6ac011dadf49544e6b4fc043424727584422613d12becc3",
+        "panel": "BL",
+        "panelRect": {
+          "left": 0,
+          "top": 627,
+          "width": 627,
+          "height": 627
+        },
+        "sourceOrientation": "A",
+        "backgroundRgb": [
+          254,
+          254,
+          254
+        ]
+      },
+      "crop": {
+        "left": 56,
+        "top": 46,
+        "width": 505,
+        "height": 489
+      },
+      "padding": 16,
+      "componentCleanup": {
+        "componentCount": 31,
+        "keepThreshold": 814,
+        "removedComponents": 30,
+        "removedPanelLines": 1,
+        "removedPixels": 160
+      },
+      "dimensions": {
+        "width": 537,
+        "height": 521
+      },
+      "A": {
+        "path": "assets/images/Rooms/furnitures_final/furn_sofa_pink_A.png",
+        "channels": 4,
+        "bytes": 257978,
+        "sha256": "8c6f31282fbcbf1b59acdd98d8362772d612f99721d96f4b6c990ba3bebe098c",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 115965,
+          "partial": 14145,
+          "opaque": 149667,
+          "nonzeroCoverage": 0.585509,
+          "opaqueCoverage": 0.534951,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "B": {
+        "path": "assets/images/Rooms/furnitures_final/furn_sofa_pink_B.png",
+        "channels": 4,
+        "bytes": 259338,
+        "sha256": "d135f17603920eb26154c6ee8cef77452cd7699575ba103e56440676197aa0ac",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 115965,
+          "partial": 14145,
+          "opaque": 149667,
+          "nonzeroCoverage": 0.585509,
+          "opaqueCoverage": 0.534951,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "bIsPixelExactHorizontalFlipOfA": true
+    },
+    {
+      "id": "furn_sofa_blue",
+      "source": {
+        "raw": "tmp/alpha_pending/1371c-room-furniture-angle-correction/raw/set02_sofa_blue_floor_cushion_raw.png",
+        "rawSha256": "6ac7cf40ab88f0cc3dbfb673d455ace13a0ddfdcd3bbd88f66f55fb519166d2f",
+        "panel": "TL",
+        "panelRect": {
+          "left": 0,
+          "top": 0,
+          "width": 627,
+          "height": 627
+        },
+        "sourceOrientation": "A",
+        "backgroundRgb": [
+          254,
+          254,
+          254
+        ]
+      },
+      "crop": {
+        "left": 57,
+        "top": 109,
+        "width": 540,
+        "height": 485
+      },
+      "padding": 16,
+      "componentCleanup": {
+        "componentCount": 27,
+        "keepThreshold": 835,
+        "removedComponents": 26,
+        "removedPanelLines": 1,
+        "removedPixels": 96
+      },
+      "dimensions": {
+        "width": 572,
+        "height": 517
+      },
+      "A": {
+        "path": "assets/images/Rooms/furnitures_final/furn_sofa_blue_A.png",
+        "channels": 4,
+        "bytes": 221783,
+        "sha256": "32b520ab73041ae5be5951e8730f3656b74875c06c39fc761136a8f8371278f9",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 127980,
+          "partial": 12830,
+          "opaque": 154914,
+          "nonzeroCoverage": 0.567232,
+          "opaqueCoverage": 0.523847,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "B": {
+        "path": "assets/images/Rooms/furnitures_final/furn_sofa_blue_B.png",
+        "channels": 4,
+        "bytes": 226313,
+        "sha256": "bc068ff2f89e243564efa4b7441c5d4601ef38ecd4c23274c7f0b9a5f0ae3263",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 127980,
+          "partial": 12830,
+          "opaque": 154914,
+          "nonzeroCoverage": 0.567232,
+          "opaqueCoverage": 0.523847,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "bIsPixelExactHorizontalFlipOfA": true
+    },
+    {
+      "id": "furn_tv_stand",
+      "source": {
+        "raw": "tmp/alpha_pending/1371c-room-furniture-angle-correction/raw/set03_tv_counter_v2_chest_raw.png",
+        "rawSha256": "fc7b9154a6696031ce564c1ce6042ffad9b04c56a62ca6bdc941caaa4c6d316d",
+        "panel": "TL",
+        "panelRect": {
+          "left": 0,
+          "top": 0,
+          "width": 627,
+          "height": 627
+        },
+        "sourceOrientation": "A",
+        "backgroundRgb": [
+          254,
+          254,
+          254
+        ]
+      },
+      "crop": {
+        "left": 111,
+        "top": 35,
+        "width": 442,
+        "height": 572
+      },
+      "padding": 16,
+      "componentCleanup": {
+        "componentCount": 25,
+        "keepThreshold": 825,
+        "removedComponents": 24,
+        "removedPanelLines": 1,
+        "removedPixels": 133
+      },
+      "dimensions": {
+        "width": 474,
+        "height": 604
+      },
+      "A": {
+        "path": "assets/images/Rooms/furnitures_final/furn_tv_stand_A.png",
+        "channels": 4,
+        "bytes": 274348,
+        "sha256": "7e91164eabe7df11869b8997b3571f6097009b171d539fc69c03077246851a66",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 120423,
+          "partial": 7345,
+          "opaque": 158528,
+          "nonzeroCoverage": 0.579376,
+          "opaqueCoverage": 0.553721,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "B": {
+        "path": "assets/images/Rooms/furnitures_final/furn_tv_stand_B.png",
+        "channels": 4,
+        "bytes": 278926,
+        "sha256": "66cdb033f59a06f7c8ea2201a4c11437ed3a28172f72679a898586eb7af16a3c",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 120423,
+          "partial": 7345,
+          "opaque": 158528,
+          "nonzeroCoverage": 0.579376,
+          "opaqueCoverage": 0.553721,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "bIsPixelExactHorizontalFlipOfA": true
+    },
+    {
+      "id": "furn_coffee_table",
+      "source": {
+        "raw": "tmp/alpha_pending/1371c-room-furniture-angle-correction/raw/set04_coffee_dining_raw.png",
+        "rawSha256": "bc62d3cea2af571a12ba4d8988324a445c7ac3434ec8a31c2e85db5923021b4d",
+        "panel": "TL",
+        "panelRect": {
+          "left": 0,
+          "top": 0,
+          "width": 627,
+          "height": 627
+        },
+        "sourceOrientation": "A",
+        "backgroundRgb": [
+          254,
+          254,
+          254
+        ]
+      },
+      "crop": {
+        "left": 48,
+        "top": 91,
+        "width": 520,
+        "height": 401
+      },
+      "padding": 16,
+      "componentCleanup": {
+        "componentCount": 37,
+        "keepThreshold": 636,
+        "removedComponents": 36,
+        "removedPanelLines": 0,
+        "removedPixels": 249
+      },
+      "dimensions": {
+        "width": 552,
+        "height": 433
+      },
+      "A": {
+        "path": "assets/images/Rooms/furnitures_final/furn_coffee_table_A.png",
+        "channels": 4,
+        "bytes": 239253,
+        "sha256": "9f940f6aabd3cd839c155ab23dcf6da0ed17b7cb6a633076a3a76898d1b5928f",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 109819,
+          "partial": 26375,
+          "opaque": 102822,
+          "nonzeroCoverage": 0.540537,
+          "opaqueCoverage": 0.430189,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "B": {
+        "path": "assets/images/Rooms/furnitures_final/furn_coffee_table_B.png",
+        "channels": 4,
+        "bytes": 237055,
+        "sha256": "0827ba3a5cae0128af67a96bae0c156e832c446df9081838f4f05e89eebd4f63",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 109819,
+          "partial": 26375,
+          "opaque": 102822,
+          "nonzeroCoverage": 0.540537,
+          "opaqueCoverage": 0.430189,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "bIsPixelExactHorizontalFlipOfA": true
+    },
+    {
+      "id": "deco_floor_cushion_stripe",
+      "source": {
+        "raw": "tmp/alpha_pending/1371c-room-furniture-angle-correction/raw/set02b_floor_cushion_raw.png",
+        "rawSha256": "ed56c3de524cfa8b0890ab73c92a91a58adb216129f4620072b633895aaf4457",
+        "panel": "LEFT_887",
+        "panelRect": {
+          "left": 0,
+          "top": 0,
+          "width": 887,
+          "height": 887
+        },
+        "sourceOrientation": "A",
+        "backgroundRgb": [
+          254,
+          254,
+          254
+        ]
+      },
+      "crop": {
+        "left": 85,
+        "top": 239,
+        "width": 724,
+        "height": 423
+      },
+      "padding": 16,
+      "componentCleanup": {
+        "componentCount": 19,
+        "keepThreshold": 1241,
+        "removedComponents": 18,
+        "removedPanelLines": 0,
+        "removedPixels": 33
+      },
+      "dimensions": {
+        "width": 756,
+        "height": 455
+      },
+      "A": {
+        "path": "assets/images/Rooms/furnitures_final/deco_floor_cushion_stripe_A.png",
+        "channels": 4,
+        "bytes": 323730,
+        "sha256": "2ecf7c539b0c2ea0ca5bac084c08f68ab71905ea2b067a66d34b2082c0d8ba7e",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 94739,
+          "partial": 17105,
+          "opaque": 232136,
+          "nonzeroCoverage": 0.72458,
+          "opaqueCoverage": 0.674853,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "B": {
+        "path": "assets/images/Rooms/furnitures_final/deco_floor_cushion_stripe_B.png",
+        "channels": 4,
+        "bytes": 319740,
+        "sha256": "95dc812bb9c3bc5b14303d404aa8d84fd1328287fb62d9ecbe250b4475b7e81d",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 94739,
+          "partial": 17105,
+          "opaque": 232136,
+          "nonzeroCoverage": 0.72458,
+          "opaqueCoverage": 0.674853,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "bIsPixelExactHorizontalFlipOfA": true
+    },
+    {
+      "id": "furn_kitchen_counter",
+      "source": {
+        "raw": "tmp/alpha_pending/1371c-room-furniture-angle-correction/raw/set03_tv_counter_v2_chest_raw.png",
+        "rawSha256": "fc7b9154a6696031ce564c1ce6042ffad9b04c56a62ca6bdc941caaa4c6d316d",
+        "panel": "BL",
+        "panelRect": {
+          "left": 0,
+          "top": 627,
+          "width": 627,
+          "height": 627
+        },
+        "sourceOrientation": "A",
+        "backgroundRgb": [
+          254,
+          254,
+          254
+        ]
+      },
+      "crop": {
+        "left": 101,
+        "top": 72,
+        "width": 452,
+        "height": 468
+      },
+      "padding": 16,
+      "componentCleanup": {
+        "componentCount": 29,
+        "keepThreshold": 717,
+        "removedComponents": 28,
+        "removedPanelLines": 0,
+        "removedPixels": 46
+      },
+      "dimensions": {
+        "width": 484,
+        "height": 500
+      },
+      "A": {
+        "path": "assets/images/Rooms/furnitures_final/furn_kitchen_counter_A.png",
+        "channels": 4,
+        "bytes": 234797,
+        "sha256": "fa220b8fea900c0c222586da6255ad80652e2cd08b377aec277cd5b90ca9fdc4",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 98268,
+          "partial": 6698,
+          "opaque": 137034,
+          "nonzeroCoverage": 0.593934,
+          "opaqueCoverage": 0.566256,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "B": {
+        "path": "assets/images/Rooms/furnitures_final/furn_kitchen_counter_B.png",
+        "channels": 4,
+        "bytes": 237728,
+        "sha256": "dae99323a27d447b847b6de2b3cf9312ee7b6d7280463d92ce5807c82990a2d1",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 98268,
+          "partial": 6698,
+          "opaque": 137034,
+          "nonzeroCoverage": 0.593934,
+          "opaqueCoverage": 0.566256,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "bIsPixelExactHorizontalFlipOfA": true
+    },
+    {
+      "id": "furn_fridge",
+      "source": {
+        "raw": "tmp/alpha_pending/1371c-room-furniture-angle-correction/raw/set05_fridge_kitchen_cabinet_raw.png",
+        "rawSha256": "fc00c64bc04e543af31b1992b6ff9504c096ea2b864b5ea4d2d02ac0bbfb4c5d",
+        "panel": "TL",
+        "panelRect": {
+          "left": 0,
+          "top": 0,
+          "width": 627,
+          "height": 627
+        },
+        "sourceOrientation": "A",
+        "backgroundRgb": [
+          254,
+          254,
+          254
+        ]
+      },
+      "crop": {
+        "left": 153,
+        "top": 9,
+        "width": 345,
+        "height": 574
+      },
+      "padding": 16,
+      "componentCleanup": {
+        "componentCount": 37,
+        "keepThreshold": 815,
+        "removedComponents": 36,
+        "removedPanelLines": 1,
+        "removedPixels": 127
+      },
+      "dimensions": {
+        "width": 377,
+        "height": 606
+      },
+      "A": {
+        "path": "assets/images/Rooms/furnitures_final/furn_fridge_A.png",
+        "channels": 4,
+        "bytes": 158668,
+        "sha256": "84a4e515d8c1d66911cf99992fd30bfdcbbb230a570975a66e7fa28d7b3c2509",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 65026,
+          "partial": 1917,
+          "opaque": 161519,
+          "nonzeroCoverage": 0.715375,
+          "opaqueCoverage": 0.706984,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "B": {
+        "path": "assets/images/Rooms/furnitures_final/furn_fridge_B.png",
+        "channels": 4,
+        "bytes": 161770,
+        "sha256": "89cba59f29ecf1df81919b40f63dfd0b2f6535a7a896e96d8878f4547f87b575",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 65026,
+          "partial": 1917,
+          "opaque": 161519,
+          "nonzeroCoverage": 0.715375,
+          "opaqueCoverage": 0.706984,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "bIsPixelExactHorizontalFlipOfA": true
+    },
+    {
+      "id": "furn_dining_table_set",
+      "source": {
+        "raw": "tmp/alpha_pending/1371c-room-furniture-angle-correction/raw/set04_coffee_dining_raw.png",
+        "rawSha256": "bc62d3cea2af571a12ba4d8988324a445c7ac3434ec8a31c2e85db5923021b4d",
+        "panel": "BL",
+        "panelRect": {
+          "left": 0,
+          "top": 590,
+          "width": 627,
+          "height": 664
+        },
+        "sourceOrientation": "A",
+        "backgroundRgb": [
+          254,
+          254,
+          254
+        ]
+      },
+      "crop": {
+        "left": 57,
+        "top": 26,
+        "width": 505,
+        "height": 523
+      },
+      "padding": 16,
+      "componentCleanup": {
+        "componentCount": 43,
+        "keepThreshold": 845,
+        "removedComponents": 42,
+        "removedPanelLines": 1,
+        "removedPixels": 248
+      },
+      "dimensions": {
+        "width": 537,
+        "height": 555
+      },
+      "A": {
+        "path": "assets/images/Rooms/furnitures_final/furn_dining_table_set_A.png",
+        "channels": 4,
+        "bytes": 343166,
+        "sha256": "73c4c0708f5268219af1bd35fcaaa4715e4b455ecd58df1688c78721f6424d8b",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 126567,
+          "partial": 34292,
+          "opaque": 137176,
+          "nonzeroCoverage": 0.575328,
+          "opaqueCoverage": 0.460268,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "B": {
+        "path": "assets/images/Rooms/furnitures_final/furn_dining_table_set_B.png",
+        "channels": 4,
+        "bytes": 338292,
+        "sha256": "a8169f630552ea95e141fad1b41945e13c25d2f4b6f9c4eb7e74546f474f9a23",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 126567,
+          "partial": 34292,
+          "opaque": 137176,
+          "nonzeroCoverage": 0.575328,
+          "opaqueCoverage": 0.460268,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "bIsPixelExactHorizontalFlipOfA": true
+    },
+    {
+      "id": "furn_kitchen_cabinet",
+      "source": {
+        "raw": "tmp/alpha_pending/1371c-room-furniture-angle-correction/raw/set05_fridge_kitchen_cabinet_raw.png",
+        "rawSha256": "fc00c64bc04e543af31b1992b6ff9504c096ea2b864b5ea4d2d02ac0bbfb4c5d",
+        "panel": "BL",
+        "panelRect": {
+          "left": 0,
+          "top": 627,
+          "width": 627,
+          "height": 627
+        },
+        "sourceOrientation": "A",
+        "backgroundRgb": [
+          254,
+          254,
+          254
+        ]
+      },
+      "crop": {
+        "left": 138,
+        "top": 3,
+        "width": 373,
+        "height": 601
+      },
+      "padding": 16,
+      "componentCleanup": {
+        "componentCount": 32,
+        "keepThreshold": 879,
+        "removedComponents": 31,
+        "removedPanelLines": 0,
+        "removedPixels": 69
+      },
+      "dimensions": {
+        "width": 405,
+        "height": 633
+      },
+      "A": {
+        "path": "assets/images/Rooms/furnitures_final/furn_kitchen_cabinet_A.png",
+        "channels": 4,
+        "bytes": 308647,
+        "sha256": "0ea39ffaeb97beb67a745ed667e78a6b93f3e840f6f39a3c070f8f689054cb09",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 79337,
+          "partial": 3080,
+          "opaque": 173948,
+          "nonzeroCoverage": 0.690531,
+          "opaqueCoverage": 0.678517,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "B": {
+        "path": "assets/images/Rooms/furnitures_final/furn_kitchen_cabinet_B.png",
+        "channels": 4,
+        "bytes": 316210,
+        "sha256": "178d99f897d23f9b88cf5630a77c258200539fc68f1dac96ef8772b61abd778a",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 79337,
+          "partial": 3080,
+          "opaque": 173948,
+          "nonzeroCoverage": 0.690531,
+          "opaqueCoverage": 0.678517,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "bIsPixelExactHorizontalFlipOfA": true
+    },
+    {
+      "id": "deco_fruit_basket",
+      "source": {
+        "raw": "tmp/alpha_pending/1371c-room-furniture-angle-correction/raw/set06_fruit_cookie_raw.png",
+        "rawSha256": "26e7635ad799a63fa869a599e14bc46704a2302f5adbc5028941c40f8e99086f",
+        "panel": "TL",
+        "panelRect": {
+          "left": 0,
+          "top": 0,
+          "width": 627,
+          "height": 627
+        },
+        "sourceOrientation": "A",
+        "backgroundRgb": [
+          254,
+          254,
+          254
+        ]
+      },
+      "crop": {
+        "left": 72,
+        "top": 94,
+        "width": 481,
+        "height": 443
+      },
+      "padding": 16,
+      "componentCleanup": {
+        "componentCount": 22,
+        "keepThreshold": 765,
+        "removedComponents": 21,
+        "removedPanelLines": 0,
+        "removedPixels": 64
+      },
+      "dimensions": {
+        "width": 513,
+        "height": 475
+      },
+      "A": {
+        "path": "assets/images/Rooms/furnitures_final/deco_fruit_basket_A.png",
+        "channels": 4,
+        "bytes": 291352,
+        "sha256": "bc82f5dd6d5a21982f44f669c5a728b25f49fa1b7d3f6111f41d913931580949",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 89681,
+          "partial": 12278,
+          "opaque": 141716,
+          "nonzeroCoverage": 0.631965,
+          "opaqueCoverage": 0.581578,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "B": {
+        "path": "assets/images/Rooms/furnitures_final/deco_fruit_basket_B.png",
+        "channels": 4,
+        "bytes": 290593,
+        "sha256": "06c2ca61fab03db47b7b07f9b57c77c922b5a5d99f2c4563c67170569758e664",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 89681,
+          "partial": 12278,
+          "opaque": 141716,
+          "nonzeroCoverage": 0.631965,
+          "opaqueCoverage": 0.581578,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "bIsPixelExactHorizontalFlipOfA": true
+    },
+    {
+      "id": "deco_cookie_jar",
+      "source": {
+        "raw": "tmp/alpha_pending/1371c-room-furniture-angle-correction/raw/set06_fruit_cookie_raw.png",
+        "rawSha256": "26e7635ad799a63fa869a599e14bc46704a2302f5adbc5028941c40f8e99086f",
+        "panel": "BL",
+        "panelRect": {
+          "left": 0,
+          "top": 627,
+          "width": 627,
+          "height": 627
+        },
+        "sourceOrientation": "A",
+        "backgroundRgb": [
+          254,
+          254,
+          254
+        ]
+      },
+      "crop": {
+        "left": 140,
+        "top": 46,
+        "width": 361,
+        "height": 474
+      },
+      "padding": 16,
+      "componentCleanup": {
+        "componentCount": 49,
+        "keepThreshold": 715,
+        "removedComponents": 48,
+        "removedPanelLines": 0,
+        "removedPixels": 306
+      },
+      "dimensions": {
+        "width": 393,
+        "height": 506
+      },
+      "A": {
+        "path": "assets/images/Rooms/furnitures_final/deco_cookie_jar_A.png",
+        "channels": 4,
+        "bytes": 239831,
+        "sha256": "03425b9ad7e1543509a55f78adb982a0b4b1f5126ba440155aa262bb8899dd08",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 55000,
+          "partial": 8051,
+          "opaque": 135807,
+          "nonzeroCoverage": 0.723421,
+          "opaqueCoverage": 0.682935,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "B": {
+        "path": "assets/images/Rooms/furnitures_final/deco_cookie_jar_B.png",
+        "channels": 4,
+        "bytes": 240048,
+        "sha256": "a9ed29ee9ce0e8a58a43510ad0d2d066938f868622ac1f442bf10ebf43bcc9e4",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 55000,
+          "partial": 8051,
+          "opaque": 135807,
+          "nonzeroCoverage": 0.723421,
+          "opaqueCoverage": 0.682935,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "bIsPixelExactHorizontalFlipOfA": true
+    },
+    {
+      "id": "furn_garden_bench",
+      "source": {
+        "raw": "tmp/alpha_pending/1371c-room-furniture-angle-correction/raw/set07_bench_A_chairedit_J2_raw.png",
+        "rawSha256": "026352a4abad7cc40afc866b89d1f0515825816917a018aff87c244fdede80b0",
+        "panel": "FULL",
+        "panelRect": {
+          "left": 0,
+          "top": 0,
+          "width": 1254,
+          "height": 1254
+        },
+        "sourceOrientation": "B",
+        "backgroundRgb": [
+          254,
+          254,
+          254
+        ]
+      },
+      "crop": {
+        "left": 148,
+        "top": 77,
+        "width": 958,
+        "height": 1104
+      },
+      "padding": 16,
+      "componentCleanup": {
+        "componentCount": 8,
+        "keepThreshold": 2269,
+        "removedComponents": 7,
+        "removedPanelLines": 0,
+        "removedPixels": 10
+      },
+      "dimensions": {
+        "width": 990,
+        "height": 1136
+      },
+      "A": {
+        "path": "assets/images/Rooms/furnitures_final/furn_garden_bench_A.png",
+        "channels": 4,
+        "bytes": 684357,
+        "sha256": "fac4ac3501ea9fcbba025f6c98afe3149126c1c57b25e09ac9823bf8f7334c83",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 667492,
+          "partial": 15708,
+          "opaque": 441440,
+          "nonzeroCoverage": 0.406484,
+          "opaqueCoverage": 0.392517,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "B": {
+        "path": "assets/images/Rooms/furnitures_final/furn_garden_bench_B.png",
+        "channels": 4,
+        "bytes": 696513,
+        "sha256": "c6bbaff72790e5d84b414ee42a60d27e349e859d650935e281703e2bf39873b0",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 667492,
+          "partial": 15708,
+          "opaque": 441440,
+          "nonzeroCoverage": 0.406484,
+          "opaqueCoverage": 0.392517,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "bIsPixelExactHorizontalFlipOfA": true
+    },
+    {
+      "id": "furn_sandbox",
+      "source": {
+        "raw": "tmp/alpha_pending/1371c-room-furniture-angle-correction/raw/set07_sandbox_v2_raw.png",
+        "rawSha256": "12a639515403daae2e9fd1ad8df7216406273dc529b57b727e5af451d50cce4d",
+        "panel": "LEFT_887",
+        "panelRect": {
+          "left": 0,
+          "top": 0,
+          "width": 887,
+          "height": 887
+        },
+        "sourceOrientation": "A",
+        "backgroundRgb": [
+          254,
+          254,
+          254
+        ]
+      },
+      "crop": {
+        "left": 64,
+        "top": 160,
+        "width": 765,
+        "height": 537
+      },
+      "padding": 16,
+      "componentCleanup": {
+        "componentCount": 21,
+        "keepThreshold": 1145,
+        "removedComponents": 20,
+        "removedPanelLines": 0,
+        "removedPixels": 26
+      },
+      "dimensions": {
+        "width": 797,
+        "height": 569
+      },
+      "A": {
+        "path": "assets/images/Rooms/furnitures_final/furn_sandbox_A.png",
+        "channels": 4,
+        "bytes": 403875,
+        "sha256": "5e4d6aa54ee0e19ed8c8dd23cb1d51550d31dba2de2b63135a1cc76cf16b73e2",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 223954,
+          "partial": 5390,
+          "opaque": 224149,
+          "nonzeroCoverage": 0.506158,
+          "opaqueCoverage": 0.494272,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "B": {
+        "path": "assets/images/Rooms/furnitures_final/furn_sandbox_B.png",
+        "channels": 4,
+        "bytes": 403846,
+        "sha256": "91e8d3f1c016497941d3c5ad3f159f8614cad5347a42da4a5717e46682d384eb",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 223954,
+          "partial": 5390,
+          "opaque": 224149,
+          "nonzeroCoverage": 0.506158,
+          "opaqueCoverage": 0.494272,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "bIsPixelExactHorizontalFlipOfA": true
+    },
+    {
+      "id": "furn_garden_table_parasol",
+      "source": {
+        "raw": "tmp/alpha_pending/1371c-room-furniture-angle-correction/raw/set08_garden_table_planter_raw.png",
+        "rawSha256": "8c78f3c192485be39e4ad49ee7aef153a0424c5391eea4396c6bbb9cdb399c71",
+        "panel": "TL",
+        "panelRect": {
+          "left": 0,
+          "top": 0,
+          "width": 627,
+          "height": 680
+        },
+        "sourceOrientation": "A",
+        "backgroundRgb": [
+          254,
+          254,
+          254
+        ]
+      },
+      "crop": {
+        "left": 118,
+        "top": 50,
+        "width": 419,
+        "height": 592
+      },
+      "padding": 16,
+      "componentCleanup": {
+        "componentCount": 98,
+        "keepThreshold": 824,
+        "removedComponents": 97,
+        "removedPanelLines": 0,
+        "removedPixels": 275
+      },
+      "dimensions": {
+        "width": 451,
+        "height": 624
+      },
+      "A": {
+        "path": "assets/images/Rooms/furnitures_final/furn_garden_table_parasol_A.png",
+        "channels": 4,
+        "bytes": 266295,
+        "sha256": "d28c3a26b6a0dc51867f1a2bf36305e0b1c231e33182326c373f19db62e71121",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 114547,
+          "partial": 17432,
+          "opaque": 149445,
+          "nonzeroCoverage": 0.592974,
+          "opaqueCoverage": 0.531031,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "B": {
+        "path": "assets/images/Rooms/furnitures_final/furn_garden_table_parasol_B.png",
+        "channels": 4,
+        "bytes": 265522,
+        "sha256": "54963a365ef75bb0727924646a97a60458faf57662e7be18198a77ba9db55a67",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 114547,
+          "partial": 17432,
+          "opaque": 149445,
+          "nonzeroCoverage": 0.592974,
+          "opaqueCoverage": 0.531031,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "bIsPixelExactHorizontalFlipOfA": true
+    },
+    {
+      "id": "deco_planter_flowers",
+      "source": {
+        "raw": "tmp/alpha_pending/1371c-room-furniture-angle-correction/raw/set08_garden_table_planter_raw.png",
+        "rawSha256": "8c78f3c192485be39e4ad49ee7aef153a0424c5391eea4396c6bbb9cdb399c71",
+        "panel": "BL",
+        "panelRect": {
+          "left": 0,
+          "top": 627,
+          "width": 627,
+          "height": 627
+        },
+        "sourceOrientation": "A",
+        "backgroundRgb": [
+          254,
+          254,
+          254
+        ]
+      },
+      "crop": {
+        "left": 100,
+        "top": 80,
+        "width": 454,
+        "height": 469
+      },
+      "padding": 16,
+      "componentCleanup": {
+        "componentCount": 36,
+        "keepThreshold": 781,
+        "removedComponents": 35,
+        "removedPanelLines": 1,
+        "removedPixels": 754
+      },
+      "dimensions": {
+        "width": 486,
+        "height": 501
+      },
+      "A": {
+        "path": "assets/images/Rooms/furnitures_final/deco_planter_flowers_A.png",
+        "channels": 4,
+        "bytes": 300534,
+        "sha256": "8c3675e0bb247b51ecfa3edbbdb71fb1412816475230125594ae3e8f743357f1",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 85621,
+          "partial": 15703,
+          "opaque": 142162,
+          "nonzeroCoverage": 0.648353,
+          "opaqueCoverage": 0.583861,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "B": {
+        "path": "assets/images/Rooms/furnitures_final/deco_planter_flowers_B.png",
+        "channels": 4,
+        "bytes": 296795,
+        "sha256": "2134be20bf23c5f68e62f02bf2cd87abee2f23f51d8e24e206fc870519921326",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 85621,
+          "partial": 15703,
+          "opaque": 142162,
+          "nonzeroCoverage": 0.648353,
+          "opaqueCoverage": 0.583861,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "bIsPixelExactHorizontalFlipOfA": true
+    },
+    {
+      "id": "deco_watering_can",
+      "source": {
+        "raw": "tmp/alpha_pending/1371c-room-furniture-angle-correction/raw/set09_watering_birdhouse_v2_raw.png",
+        "rawSha256": "1dc42d0e8ee99b6e2c65032e40d0dda62fc124bb6f51b0c7a7a52c667c8a43aa",
+        "panel": "TL",
+        "panelRect": {
+          "left": 0,
+          "top": 0,
+          "width": 627,
+          "height": 627
+        },
+        "sourceOrientation": "A",
+        "backgroundRgb": [
+          254,
+          254,
+          254
+        ]
+      },
+      "crop": {
+        "left": 107,
+        "top": 120,
+        "width": 454,
+        "height": 343
+      },
+      "padding": 16,
+      "componentCleanup": {
+        "componentCount": 52,
+        "keepThreshold": 456,
+        "removedComponents": 51,
+        "removedPanelLines": 1,
+        "removedPixels": 744
+      },
+      "dimensions": {
+        "width": 486,
+        "height": 375
+      },
+      "A": {
+        "path": "assets/images/Rooms/furnitures_final/deco_watering_can_A.png",
+        "channels": 4,
+        "bytes": 132123,
+        "sha256": "47193887fd65b15e78ea93b0ae459eea15040877f1d6e5780f3a99185027c832",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 90167,
+          "partial": 4436,
+          "opaque": 87647,
+          "nonzeroCoverage": 0.505257,
+          "opaqueCoverage": 0.480916,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "B": {
+        "path": "assets/images/Rooms/furnitures_final/deco_watering_can_B.png",
+        "channels": 4,
+        "bytes": 131950,
+        "sha256": "b44fe69ac346eb5987d50383cbcf26263ed09ce27cbc35f868c41028718d4f9f",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 90167,
+          "partial": 4436,
+          "opaque": 87647,
+          "nonzeroCoverage": 0.505257,
+          "opaqueCoverage": 0.480916,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "bIsPixelExactHorizontalFlipOfA": true
+    },
+    {
+      "id": "deco_birdhouse",
+      "source": {
+        "raw": "tmp/alpha_pending/1371c-room-furniture-angle-correction/raw/set09_watering_birdhouse_v2_raw.png",
+        "rawSha256": "1dc42d0e8ee99b6e2c65032e40d0dda62fc124bb6f51b0c7a7a52c667c8a43aa",
+        "panel": "BL",
+        "panelRect": {
+          "left": 0,
+          "top": 627,
+          "width": 627,
+          "height": 627
+        },
+        "sourceOrientation": "A",
+        "backgroundRgb": [
+          254,
+          254,
+          254
+        ]
+      },
+      "crop": {
+        "left": 114,
+        "top": 53,
+        "width": 399,
+        "height": 475
+      },
+      "padding": 16,
+      "componentCleanup": {
+        "componentCount": 18,
+        "keepThreshold": 621,
+        "removedComponents": 17,
+        "removedPanelLines": 0,
+        "removedPixels": 39
+      },
+      "dimensions": {
+        "width": 431,
+        "height": 507
+      },
+      "A": {
+        "path": "assets/images/Rooms/furnitures_final/deco_birdhouse_A.png",
+        "channels": 4,
+        "bytes": 185688,
+        "sha256": "0b308d4657b5730c861974d7de1f8f7b6ece97c5069a7e62566d90fa33104596",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 93559,
+          "partial": 4631,
+          "opaque": 120327,
+          "nonzeroCoverage": 0.571846,
+          "opaqueCoverage": 0.550653,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "B": {
+        "path": "assets/images/Rooms/furnitures_final/deco_birdhouse_B.png",
+        "channels": 4,
+        "bytes": 185980,
+        "sha256": "d5b7c143da7138f187a9969c11a3d2893ed0a6289852ac9bbbc9bd3a641fcff1",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 93559,
+          "partial": 4631,
+          "opaque": 120327,
+          "nonzeroCoverage": 0.571846,
+          "opaqueCoverage": 0.550653,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "bIsPixelExactHorizontalFlipOfA": true
+    },
+    {
+      "id": "furn_wardrobe_wood",
+      "source": {
+        "raw": "tmp/alpha_pending/1371c-room-furniture-angle-correction/raw/set10_wardrobe_wood_pink_raw.png",
+        "rawSha256": "0b0990a10a1f8805ad87c8a7d038bb7432114eb89ad0afc05ea33e0094a70420",
+        "panel": "TL",
+        "panelRect": {
+          "left": 0,
+          "top": 0,
+          "width": 627,
+          "height": 627
+        },
+        "sourceOrientation": "A",
+        "backgroundRgb": [
+          254,
+          254,
+          254
+        ]
+      },
+      "crop": {
+        "left": 146,
+        "top": 39,
+        "width": 393,
+        "height": 564
+      },
+      "padding": 16,
+      "componentCleanup": {
+        "componentCount": 29,
+        "keepThreshold": 862,
+        "removedComponents": 28,
+        "removedPanelLines": 0,
+        "removedPixels": 38
+      },
+      "dimensions": {
+        "width": 425,
+        "height": 596
+      },
+      "A": {
+        "path": "assets/images/Rooms/furnitures_final/furn_wardrobe_wood_A.png",
+        "channels": 4,
+        "bytes": 275745,
+        "sha256": "bfaa7847246b010907b0e4bd578ebb1ef7cac7ce64166d7b2ddd76a80b3a7088",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 79955,
+          "partial": 10447,
+          "opaque": 162898,
+          "nonzeroCoverage": 0.684347,
+          "opaqueCoverage": 0.643103,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "B": {
+        "path": "assets/images/Rooms/furnitures_final/furn_wardrobe_wood_B.png",
+        "channels": 4,
+        "bytes": 277686,
+        "sha256": "19d0887235b639d8e3974a9f937a12508b23ae83936867fb8a9d15e96a49d8f3",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 79955,
+          "partial": 10447,
+          "opaque": 162898,
+          "nonzeroCoverage": 0.684347,
+          "opaqueCoverage": 0.643103,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "bIsPixelExactHorizontalFlipOfA": true
+    },
+    {
+      "id": "furn_wardrobe_pink",
+      "source": {
+        "raw": "tmp/alpha_pending/1371c-room-furniture-angle-correction/raw/set10_wardrobe_wood_pink_raw.png",
+        "rawSha256": "0b0990a10a1f8805ad87c8a7d038bb7432114eb89ad0afc05ea33e0094a70420",
+        "panel": "BL",
+        "panelRect": {
+          "left": 0,
+          "top": 627,
+          "width": 627,
+          "height": 627
+        },
+        "sourceOrientation": "A",
+        "backgroundRgb": [
+          254,
+          254,
+          254
+        ]
+      },
+      "crop": {
+        "left": 147,
+        "top": 9,
+        "width": 389,
+        "height": 578
+      },
+      "padding": 16,
+      "componentCleanup": {
+        "componentCount": 12,
+        "keepThreshold": 876,
+        "removedComponents": 11,
+        "removedPanelLines": 0,
+        "removedPixels": 28
+      },
+      "dimensions": {
+        "width": 421,
+        "height": 610
+      },
+      "A": {
+        "path": "assets/images/Rooms/furnitures_final/furn_wardrobe_pink_A.png",
+        "channels": 4,
+        "bytes": 219839,
+        "sha256": "2b787fae6067e707dff8b71a08edfd87174698f0bb6c1fa01b91f48e0a550b89",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 81045,
+          "partial": 9933,
+          "opaque": 165832,
+          "nonzeroCoverage": 0.684416,
+          "opaqueCoverage": 0.645738,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "B": {
+        "path": "assets/images/Rooms/furnitures_final/furn_wardrobe_pink_B.png",
+        "channels": 4,
+        "bytes": 223681,
+        "sha256": "aec74841095d9b0c43eaf301491a1d599e8b48773faa4213d2f383b6f155feaa",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 81045,
+          "partial": 9933,
+          "opaque": 165832,
+          "nonzeroCoverage": 0.684416,
+          "opaqueCoverage": 0.645738,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "bIsPixelExactHorizontalFlipOfA": true
+    },
+    {
+      "id": "furn_wardrobe_blue",
+      "source": {
+        "raw": "tmp/alpha_pending/1371c-room-furniture-angle-correction/raw/set11_wardrobe_blue_tanabata_v3_raw.png",
+        "rawSha256": "19fc7c835204eb41d8be9a4aa3bccf4bf5b5ab5ed18059f1d55d12a5a69ffdbb",
+        "panel": "TR",
+        "panelRect": {
+          "left": 627,
+          "top": 0,
+          "width": 627,
+          "height": 627
+        },
+        "sourceOrientation": "A",
+        "backgroundRgb": [
+          254,
+          254,
+          254
+        ]
+      },
+      "crop": {
+        "left": 85,
+        "top": 33,
+        "width": 404,
+        "height": 591
+      },
+      "padding": 16,
+      "componentCleanup": {
+        "componentCount": 18,
+        "keepThreshold": 938,
+        "removedComponents": 17,
+        "removedPanelLines": 0,
+        "removedPixels": 47
+      },
+      "dimensions": {
+        "width": 436,
+        "height": 623
+      },
+      "A": {
+        "path": "assets/images/Rooms/furnitures_final/furn_wardrobe_blue_A.png",
+        "channels": 4,
+        "bytes": 221034,
+        "sha256": "ed43558ccc50dee3e81afb76582f317f37ffcd6f042dad742c33fff9d266787e",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 83359,
+          "partial": 10352,
+          "opaque": 177917,
+          "nonzeroCoverage": 0.693113,
+          "opaqueCoverage": 0.655002,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "B": {
+        "path": "assets/images/Rooms/furnitures_final/furn_wardrobe_blue_B.png",
+        "channels": 4,
+        "bytes": 224613,
+        "sha256": "4894ce87ff06c7381f1dce8c93669e20b187e799ec69823780dd7753791d6d0a",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 83359,
+          "partial": 10352,
+          "opaque": 177917,
+          "nonzeroCoverage": 0.693113,
+          "opaqueCoverage": 0.655002,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "bIsPixelExactHorizontalFlipOfA": true
+    },
+    {
+      "id": "deco_tanabata_bamboo",
+      "source": {
+        "raw": "tmp/alpha_pending/1371c-room-furniture-angle-correction/raw/set11_wardrobe_blue_tanabata_v3_raw.png",
+        "rawSha256": "19fc7c835204eb41d8be9a4aa3bccf4bf5b5ab5ed18059f1d55d12a5a69ffdbb",
+        "panel": "BL",
+        "panelRect": {
+          "left": 0,
+          "top": 627,
+          "width": 627,
+          "height": 627
+        },
+        "sourceOrientation": "A",
+        "backgroundRgb": [
+          254,
+          254,
+          254
+        ]
+      },
+      "crop": {
+        "left": 102,
+        "top": 46,
+        "width": 430,
+        "height": 534
+      },
+      "padding": 16,
+      "componentCleanup": {
+        "componentCount": 148,
+        "keepThreshold": 370,
+        "removedComponents": 147,
+        "removedPanelLines": 0,
+        "removedPixels": 525
+      },
+      "dimensions": {
+        "width": 462,
+        "height": 566
+      },
+      "A": {
+        "path": "assets/images/Rooms/furnitures_final/deco_tanabata_bamboo_A.png",
+        "channels": 4,
+        "bytes": 170745,
+        "sha256": "97fcee714f39321c4f84fd19e515bc7363a302e78a931d9618241477f9162409",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 185137,
+          "partial": 8045,
+          "opaque": 68310,
+          "nonzeroCoverage": 0.291997,
+          "opaqueCoverage": 0.261232,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "B": {
+        "path": "assets/images/Rooms/furnitures_final/deco_tanabata_bamboo_B.png",
+        "channels": 4,
+        "bytes": 172161,
+        "sha256": "d6b8a8110270e072f6f8fb84fcc21ab2b72d5fa62efe0dcf86b4f72cafd70251",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 185137,
+          "partial": 8045,
+          "opaque": 68310,
+          "nonzeroCoverage": 0.291997,
+          "opaqueCoverage": 0.261232,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "bIsPixelExactHorizontalFlipOfA": true
+    },
+    {
+      "id": "deco_christmas_tree_mini",
+      "source": {
+        "raw": "tmp/alpha_pending/1371c-room-furniture-angle-correction/raw/set12_christmas_pumpkin_raw.png",
+        "rawSha256": "ac2a857900df788dab92b8ac0ecca03e2cc4d031de6e03c079ec1b1a9c54ac88",
+        "panel": "TL",
+        "panelRect": {
+          "left": 0,
+          "top": 0,
+          "width": 627,
+          "height": 627
+        },
+        "sourceOrientation": "A",
+        "backgroundRgb": [
+          254,
+          254,
+          254
+        ]
+      },
+      "crop": {
+        "left": 164,
+        "top": 87,
+        "width": 318,
+        "height": 482
+      },
+      "padding": 16,
+      "componentCleanup": {
+        "componentCount": 31,
+        "keepThreshold": 452,
+        "removedComponents": 30,
+        "removedPanelLines": 0,
+        "removedPixels": 67
+      },
+      "dimensions": {
+        "width": 350,
+        "height": 514
+      },
+      "A": {
+        "path": "assets/images/Rooms/furnitures_final/deco_christmas_tree_mini_A.png",
+        "channels": 4,
+        "bytes": 158301,
+        "sha256": "1769a618e4d9a32f038bba88a39e6f790bd8eaf015d86c737262708ddd336088",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 88523,
+          "partial": 7174,
+          "opaque": 84203,
+          "nonzeroCoverage": 0.507932,
+          "opaqueCoverage": 0.468054,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "B": {
+        "path": "assets/images/Rooms/furnitures_final/deco_christmas_tree_mini_B.png",
+        "channels": 4,
+        "bytes": 158369,
+        "sha256": "557c112d52ac59cd8cb891f58c6092b3d06b51eda35587aae85a3444e413e2dd",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 88523,
+          "partial": 7174,
+          "opaque": 84203,
+          "nonzeroCoverage": 0.507932,
+          "opaqueCoverage": 0.468054,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "bIsPixelExactHorizontalFlipOfA": true
+    },
+    {
+      "id": "deco_pumpkin_lantern",
+      "source": {
+        "raw": "tmp/alpha_pending/1371c-room-furniture-angle-correction/raw/set12_christmas_pumpkin_raw.png",
+        "rawSha256": "ac2a857900df788dab92b8ac0ecca03e2cc4d031de6e03c079ec1b1a9c54ac88",
+        "panel": "BL",
+        "panelRect": {
+          "left": 0,
+          "top": 627,
+          "width": 627,
+          "height": 627
+        },
+        "sourceOrientation": "A",
+        "backgroundRgb": [
+          254,
+          254,
+          254
+        ]
+      },
+      "crop": {
+        "left": 162,
+        "top": 97,
+        "width": 350,
+        "height": 375
+      },
+      "padding": 16,
+      "componentCleanup": {
+        "componentCount": 31,
+        "keepThreshold": 491,
+        "removedComponents": 30,
+        "removedPanelLines": 0,
+        "removedPixels": 104
+      },
+      "dimensions": {
+        "width": 382,
+        "height": 407
+      },
+      "A": {
+        "path": "assets/images/Rooms/furnitures_final/deco_pumpkin_lantern_A.png",
+        "channels": 4,
+        "bytes": 153999,
+        "sha256": "2c2e5562f08d073d092819a43a165a068bccc11f1d6cdc6aec4a7af4795304ec",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 56486,
+          "partial": 10891,
+          "opaque": 88097,
+          "nonzeroCoverage": 0.636685,
+          "opaqueCoverage": 0.566635,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "B": {
+        "path": "assets/images/Rooms/furnitures_final/deco_pumpkin_lantern_B.png",
+        "channels": 4,
+        "bytes": 153084,
+        "sha256": "220cb50a1f03d2656f9892b98904262e1cd36f1ee0e0491379c2582c2b4ba30b",
+        "alpha": {
+          "min": 0,
+          "max": 255,
+          "zero": 56486,
+          "partial": 10891,
+          "opaque": 88097,
+          "nonzeroCoverage": 0.636685,
+          "opaqueCoverage": 0.566635,
+          "corners": [
+            0,
+            0,
+            0,
+            0
+          ]
+        }
+      },
+      "bIsPixelExactHorizontalFlipOfA": true
+    }
+  ]
+}

@@ -1,0 +1,2135 @@
+{
+  "generatedAt": "2026-07-19T15:26:54.563Z",
+  "summary": {
+    "status": "PASS",
+    "assetCount": 24,
+    "outputCount": 48,
+    "allBExactFlip": true,
+    "allSourceOpaqueExact": true,
+    "allCornersTransparent": true,
+    "allUnder3Mb": true,
+    "allRawShaStable": true,
+    "cacheVersion": "2292"
+  },
+  "failures": [],
+  "rawChecks": {
+    "set01_sofa_beige_pink_raw.png": {
+      "actual": "b68729cf5194fdcaa98743632a0fd21203066ddbdcfed9cab922b0e6569ae47a",
+      "recordedBefore": "b68729cf5194fdcaa98743632a0fd21203066ddbdcfed9cab922b0e6569ae47a",
+      "recordedAfter": "b68729cf5194fdcaa98743632a0fd21203066ddbdcfed9cab922b0e6569ae47a"
+    },
+    "set01_sofa_beige_pink_v2_raw.png": {
+      "actual": "d6b3533a76c65e6245f552e8c4cdf3480e37bbdfc25e6b327c248eb42a200c0d",
+      "recordedBefore": "d6b3533a76c65e6245f552e8c4cdf3480e37bbdfc25e6b327c248eb42a200c0d",
+      "recordedAfter": "d6b3533a76c65e6245f552e8c4cdf3480e37bbdfc25e6b327c248eb42a200c0d"
+    },
+    "set01_sofa_beige_pink_v3_chest_raw.png": {
+      "actual": "f1f4aeeb0433b933f6ac011dadf49544e6b4fc043424727584422613d12becc3",
+      "recordedBefore": "f1f4aeeb0433b933f6ac011dadf49544e6b4fc043424727584422613d12becc3",
+      "recordedAfter": "f1f4aeeb0433b933f6ac011dadf49544e6b4fc043424727584422613d12becc3"
+    },
+    "set02_sofa_blue_floor_cushion_raw.png": {
+      "actual": "6ac7cf40ab88f0cc3dbfb673d455ace13a0ddfdcd3bbd88f66f55fb519166d2f",
+      "recordedBefore": "6ac7cf40ab88f0cc3dbfb673d455ace13a0ddfdcd3bbd88f66f55fb519166d2f",
+      "recordedAfter": "6ac7cf40ab88f0cc3dbfb673d455ace13a0ddfdcd3bbd88f66f55fb519166d2f"
+    },
+    "set02_sofa_blue_floor_cushion_v2_raw.png": {
+      "actual": "11a7e5920943f9c63234ee84f15d9facc7cd0126cc74cce15f52a72f1ed5256c",
+      "recordedBefore": "11a7e5920943f9c63234ee84f15d9facc7cd0126cc74cce15f52a72f1ed5256c",
+      "recordedAfter": "11a7e5920943f9c63234ee84f15d9facc7cd0126cc74cce15f52a72f1ed5256c"
+    },
+    "set02_sofa_blue_floor_cushion_v3_raw.png": {
+      "actual": "2180e9de9a40d8e237cd93dc1fb5fbe6b783215052570422880b4a451ca7c869",
+      "recordedBefore": "2180e9de9a40d8e237cd93dc1fb5fbe6b783215052570422880b4a451ca7c869",
+      "recordedAfter": "2180e9de9a40d8e237cd93dc1fb5fbe6b783215052570422880b4a451ca7c869"
+    },
+    "set02b_floor_cushion_raw.png": {
+      "actual": "ed56c3de524cfa8b0890ab73c92a91a58adb216129f4620072b633895aaf4457",
+      "recordedBefore": "ed56c3de524cfa8b0890ab73c92a91a58adb216129f4620072b633895aaf4457",
+      "recordedAfter": "ed56c3de524cfa8b0890ab73c92a91a58adb216129f4620072b633895aaf4457"
+    },
+    "set03_tv_counter_raw.png": {
+      "actual": "5a254f249549134ffd4b422db042b49ec1f6c9e8f13f0d6aa2c7d5458ebd6bf6",
+      "recordedBefore": "5a254f249549134ffd4b422db042b49ec1f6c9e8f13f0d6aa2c7d5458ebd6bf6",
+      "recordedAfter": "5a254f249549134ffd4b422db042b49ec1f6c9e8f13f0d6aa2c7d5458ebd6bf6"
+    },
+    "set03_tv_counter_v2_chest_raw.png": {
+      "actual": "fc7b9154a6696031ce564c1ce6042ffad9b04c56a62ca6bdc941caaa4c6d316d",
+      "recordedBefore": "fc7b9154a6696031ce564c1ce6042ffad9b04c56a62ca6bdc941caaa4c6d316d",
+      "recordedAfter": "fc7b9154a6696031ce564c1ce6042ffad9b04c56a62ca6bdc941caaa4c6d316d"
+    },
+    "set03_tv_counter_v2_desk_raw.png": {
+      "actual": "f520452a66c42e6f0212821f194f74cb9bb3f43fb536a051cee9a66214568345",
+      "recordedBefore": "f520452a66c42e6f0212821f194f74cb9bb3f43fb536a051cee9a66214568345",
+      "recordedAfter": "f520452a66c42e6f0212821f194f74cb9bb3f43fb536a051cee9a66214568345"
+    },
+    "set04_coffee_dining_raw.png": {
+      "actual": "bc62d3cea2af571a12ba4d8988324a445c7ac3434ec8a31c2e85db5923021b4d",
+      "recordedBefore": "bc62d3cea2af571a12ba4d8988324a445c7ac3434ec8a31c2e85db5923021b4d",
+      "recordedAfter": "bc62d3cea2af571a12ba4d8988324a445c7ac3434ec8a31c2e85db5923021b4d"
+    },
+    "set05_fridge_kitchen_cabinet_raw.png": {
+      "actual": "fc00c64bc04e543af31b1992b6ff9504c096ea2b864b5ea4d2d02ac0bbfb4c5d",
+      "recordedBefore": "fc00c64bc04e543af31b1992b6ff9504c096ea2b864b5ea4d2d02ac0bbfb4c5d",
+      "recordedAfter": "fc00c64bc04e543af31b1992b6ff9504c096ea2b864b5ea4d2d02ac0bbfb4c5d"
+    },
+    "set06_fruit_cookie_raw.png": {
+      "actual": "26e7635ad799a63fa869a599e14bc46704a2302f5adbc5028941c40f8e99086f",
+      "recordedBefore": "26e7635ad799a63fa869a599e14bc46704a2302f5adbc5028941c40f8e99086f",
+      "recordedAfter": "26e7635ad799a63fa869a599e14bc46704a2302f5adbc5028941c40f8e99086f"
+    },
+    "set07_bench_A_H2_classic_raw.png": {
+      "actual": "e5f85f713d68cb1948930d9344aace8300fc4ff70cc98d753e0e6d13d92adbf2",
+      "recordedBefore": "e5f85f713d68cb1948930d9344aace8300fc4ff70cc98d753e0e6d13d92adbf2",
+      "recordedAfter": "e5f85f713d68cb1948930d9344aace8300fc4ff70cc98d753e0e6d13d92adbf2"
+    },
+    "set07_bench_A_chairedit_J2_raw.png": {
+      "actual": "026352a4abad7cc40afc866b89d1f0515825816917a018aff87c244fdede80b0",
+      "recordedBefore": "026352a4abad7cc40afc866b89d1f0515825816917a018aff87c244fdede80b0",
+      "recordedAfter": "026352a4abad7cc40afc866b89d1f0515825816917a018aff87c244fdede80b0"
+    },
+    "set07_bench_A_gridguided_raw.png": {
+      "actual": "7996388cb0cb666a5205349e07cbfdec582cf148d46302985345253e923ee759",
+      "recordedBefore": "7996388cb0cb666a5205349e07cbfdec582cf148d46302985345253e923ee759",
+      "recordedAfter": "7996388cb0cb666a5205349e07cbfdec582cf148d46302985345253e923ee759"
+    },
+    "set07_bench_A_sofaedit_H_raw.png": {
+      "actual": "351c7f865ad54b998a2b48d1bdaff84c7e61aedae0bc212162df49c5f67e8567",
+      "recordedBefore": "351c7f865ad54b998a2b48d1bdaff84c7e61aedae0bc212162df49c5f67e8567",
+      "recordedAfter": "351c7f865ad54b998a2b48d1bdaff84c7e61aedae0bc212162df49c5f67e8567"
+    },
+    "set07_bench_sandbox_raw.png": {
+      "actual": "533a95bafbb783e00074a3910d855da005c7d4a9c751e8514698f30f13541624",
+      "recordedBefore": "533a95bafbb783e00074a3910d855da005c7d4a9c751e8514698f30f13541624",
+      "recordedAfter": "533a95bafbb783e00074a3910d855da005c7d4a9c751e8514698f30f13541624"
+    },
+    "set07_sandbox_v2_raw.png": {
+      "actual": "12a639515403daae2e9fd1ad8df7216406273dc529b57b727e5af451d50cce4d",
+      "recordedBefore": "12a639515403daae2e9fd1ad8df7216406273dc529b57b727e5af451d50cce4d",
+      "recordedAfter": "12a639515403daae2e9fd1ad8df7216406273dc529b57b727e5af451d50cce4d"
+    },
+    "set08_garden_table_planter_raw.png": {
+      "actual": "8c78f3c192485be39e4ad49ee7aef153a0424c5391eea4396c6bbb9cdb399c71",
+      "recordedBefore": "8c78f3c192485be39e4ad49ee7aef153a0424c5391eea4396c6bbb9cdb399c71",
+      "recordedAfter": "8c78f3c192485be39e4ad49ee7aef153a0424c5391eea4396c6bbb9cdb399c71"
+    },
+    "set09_watering_birdhouse_raw.png": {
+      "actual": "de2fc1cb321422dc8ca4230741c883abb983bfda733e69cbe2f19e6320cc2c6e",
+      "recordedBefore": "de2fc1cb321422dc8ca4230741c883abb983bfda733e69cbe2f19e6320cc2c6e",
+      "recordedAfter": "de2fc1cb321422dc8ca4230741c883abb983bfda733e69cbe2f19e6320cc2c6e"
+    },
+    "set09_watering_birdhouse_v2_raw.png": {
+      "actual": "1dc42d0e8ee99b6e2c65032e40d0dda62fc124bb6f51b0c7a7a52c667c8a43aa",
+      "recordedBefore": "1dc42d0e8ee99b6e2c65032e40d0dda62fc124bb6f51b0c7a7a52c667c8a43aa",
+      "recordedAfter": "1dc42d0e8ee99b6e2c65032e40d0dda62fc124bb6f51b0c7a7a52c667c8a43aa"
+    },
+    "set10_wardrobe_wood_pink_raw.png": {
+      "actual": "0b0990a10a1f8805ad87c8a7d038bb7432114eb89ad0afc05ea33e0094a70420",
+      "recordedBefore": "0b0990a10a1f8805ad87c8a7d038bb7432114eb89ad0afc05ea33e0094a70420",
+      "recordedAfter": "0b0990a10a1f8805ad87c8a7d038bb7432114eb89ad0afc05ea33e0094a70420"
+    },
+    "set11_wardrobe_blue_tanabata_raw.png": {
+      "actual": "afa1dfe33fb10b0b12c103cd2c62e29c25c162570362cd50b305d8b307163923",
+      "recordedBefore": "afa1dfe33fb10b0b12c103cd2c62e29c25c162570362cd50b305d8b307163923",
+      "recordedAfter": "afa1dfe33fb10b0b12c103cd2c62e29c25c162570362cd50b305d8b307163923"
+    },
+    "set11_wardrobe_blue_tanabata_v2_raw.png": {
+      "actual": "76705ed47c106c5a4203a27e4874bc491bb3cc7fff21353e82601afc374d570a",
+      "recordedBefore": "76705ed47c106c5a4203a27e4874bc491bb3cc7fff21353e82601afc374d570a",
+      "recordedAfter": "76705ed47c106c5a4203a27e4874bc491bb3cc7fff21353e82601afc374d570a"
+    },
+    "set11_wardrobe_blue_tanabata_v3_raw.png": {
+      "actual": "19fc7c835204eb41d8be9a4aa3bccf4bf5b5ab5ed18059f1d55d12a5a69ffdbb",
+      "recordedBefore": "19fc7c835204eb41d8be9a4aa3bccf4bf5b5ab5ed18059f1d55d12a5a69ffdbb",
+      "recordedAfter": "19fc7c835204eb41d8be9a4aa3bccf4bf5b5ab5ed18059f1d55d12a5a69ffdbb"
+    },
+    "set12_christmas_pumpkin_raw.png": {
+      "actual": "ac2a857900df788dab92b8ac0ecca03e2cc4d031de6e03c079ec1b1a9c54ac88",
+      "recordedBefore": "ac2a857900df788dab92b8ac0ecca03e2cc4d031de6e03c079ec1b1a9c54ac88",
+      "recordedAfter": "ac2a857900df788dab92b8ac0ecca03e2cc4d031de6e03c079ec1b1a9c54ac88"
+    }
+  },
+  "records": [
+    {
+      "id": "furn_sofa_beige",
+      "raw": "set01_sofa_beige_pink_v3_chest_raw.png",
+      "panel": "TL",
+      "customRect": null,
+      "sourceOrientation": "A",
+      "dimensions": [
+        538,
+        511
+      ],
+      "bytes": {
+        "A": 268491,
+        "B": 268855
+      },
+      "sha256": {
+        "A": "633215d4fe0823a69004a602ced68d4e4de182949dc8dfba37a32946c979ec4d",
+        "B": "c63e119944b7ff6b3958bd9d3b6b7d3165566ba21a4286047018d88a4f0240d8"
+      },
+      "metadataHasAlpha": true,
+      "alpha": {
+        "zero": 113944,
+        "partial": 14723,
+        "opaque": 146251,
+        "coverage": 0.5855345957703751,
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "margins": [
+          16,
+          16,
+          16,
+          16
+        ],
+        "transparentRgbNonzero": 0,
+        "whiteFringe": 0,
+        "brightNeutralPartial": 0,
+        "brightOpaque": 0,
+        "borderStripFraction": 0
+      },
+      "bPixelExactFlip": true,
+      "sourceAlignment": {
+        "shift": [
+          39,
+          76
+        ],
+        "alignmentVotes": 458,
+        "searchMeanRgbDeltaSum": 0,
+        "totalOpaqueOutputPixels": 146251,
+        "comparedOpaquePixels": 146251,
+        "mappedOpaqueFraction": 1,
+        "exactOpaqueFraction": 1,
+        "maxChannelDelta": 0
+      },
+      "foregroundComponents": [
+        160023
+      ],
+      "enclosedTransparentComponents": [
+        3,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "furn_sofa_pink",
+      "raw": "set01_sofa_beige_pink_v3_chest_raw.png",
+      "panel": "BL",
+      "customRect": null,
+      "sourceOrientation": "A",
+      "dimensions": [
+        537,
+        521
+      ],
+      "bytes": {
+        "A": 258053,
+        "B": 259444
+      },
+      "sha256": {
+        "A": "37e6aa256bb832e706b7472dedd52eaf98f3d947011727209307f7c604ba7f09",
+        "B": "451b55e946861e8fea599f451db5f2f38caefe7b988273cc9e3045d629770d58"
+      },
+      "metadataHasAlpha": true,
+      "alpha": {
+        "zero": 115925,
+        "partial": 14185,
+        "opaque": 149667,
+        "coverage": 0.585652144386422,
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "margins": [
+          16,
+          16,
+          16,
+          16
+        ],
+        "transparentRgbNonzero": 0,
+        "whiteFringe": 0,
+        "brightNeutralPartial": 0,
+        "brightOpaque": 14,
+        "borderStripFraction": 0
+      },
+      "bPixelExactFlip": true,
+      "sourceAlignment": {
+        "shift": [
+          40,
+          30
+        ],
+        "alignmentVotes": 547,
+        "searchMeanRgbDeltaSum": 0,
+        "totalOpaqueOutputPixels": 149667,
+        "comparedOpaquePixels": 149667,
+        "mappedOpaqueFraction": 1,
+        "exactOpaqueFraction": 1,
+        "maxChannelDelta": 0
+      },
+      "foregroundComponents": [
+        162956
+      ],
+      "enclosedTransparentComponents": [
+        8,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "furn_sofa_blue",
+      "raw": "set02_sofa_blue_floor_cushion_raw.png",
+      "panel": "TL",
+      "customRect": null,
+      "sourceOrientation": "A",
+      "dimensions": [
+        572,
+        517
+      ],
+      "bytes": {
+        "A": 221876,
+        "B": 226376
+      },
+      "sha256": {
+        "A": "235e2a1fdae840f156232f3488e5f52cc5c0a47463b63e9af86d2e1ac8499d22",
+        "B": "e853010f411ac052827a1cb2b939abccedec67f883d3fb91a604ef8967d48fc0"
+      },
+      "metadataHasAlpha": true,
+      "alpha": {
+        "zero": 127922,
+        "partial": 12888,
+        "opaque": 154914,
+        "coverage": 0.5674277366733846,
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "margins": [
+          16,
+          16,
+          16,
+          16
+        ],
+        "transparentRgbNonzero": 0,
+        "whiteFringe": 0,
+        "brightNeutralPartial": 0,
+        "brightOpaque": 0,
+        "borderStripFraction": 0
+      },
+      "bPixelExactFlip": true,
+      "sourceAlignment": {
+        "shift": [
+          41,
+          93
+        ],
+        "alignmentVotes": 533,
+        "searchMeanRgbDeltaSum": 0,
+        "totalOpaqueOutputPixels": 154914,
+        "comparedOpaquePixels": 154914,
+        "mappedOpaqueFraction": 1,
+        "exactOpaqueFraction": 1,
+        "maxChannelDelta": 0
+      },
+      "foregroundComponents": [
+        167181
+      ],
+      "enclosedTransparentComponents": []
+    },
+    {
+      "id": "furn_tv_stand",
+      "raw": "set03_tv_counter_v2_chest_raw.png",
+      "panel": "TL",
+      "customRect": null,
+      "sourceOrientation": "A",
+      "dimensions": [
+        474,
+        604
+      ],
+      "bytes": {
+        "A": 274407,
+        "B": 279017
+      },
+      "sha256": {
+        "A": "7ac9e453abbbc9ff4831209f4856f41c660c128914bf662cb12c8a48c28a2f38",
+        "B": "a4b746ab2c2a3dd760957183bbf4fbdffa09f995c3eb23e514848357a7942dcb"
+      },
+      "metadataHasAlpha": true,
+      "alpha": {
+        "zero": 120401,
+        "partial": 7367,
+        "opaque": 158528,
+        "coverage": 0.5794527342331014,
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "margins": [
+          16,
+          16,
+          16,
+          16
+        ],
+        "transparentRgbNonzero": 0,
+        "whiteFringe": 0,
+        "brightNeutralPartial": 0,
+        "brightOpaque": 0,
+        "borderStripFraction": 0
+      },
+      "bPixelExactFlip": true,
+      "sourceAlignment": {
+        "shift": [
+          95,
+          19
+        ],
+        "alignmentVotes": 725,
+        "searchMeanRgbDeltaSum": 0,
+        "totalOpaqueOutputPixels": 158528,
+        "comparedOpaquePixels": 158528,
+        "mappedOpaqueFraction": 1,
+        "exactOpaqueFraction": 1,
+        "maxChannelDelta": 0
+      },
+      "foregroundComponents": [
+        165073
+      ],
+      "enclosedTransparentComponents": [
+        1
+      ]
+    },
+    {
+      "id": "furn_coffee_table",
+      "raw": "set04_coffee_dining_raw.png",
+      "panel": "TL",
+      "customRect": null,
+      "sourceOrientation": "A",
+      "dimensions": [
+        552,
+        433
+      ],
+      "bytes": {
+        "A": 239363,
+        "B": 237208
+      },
+      "sha256": {
+        "A": "fcf8dae7b72a84fd50bde33143301027ed95cec828920fb0798a32cd92a2a4bd",
+        "B": "e983af51099c34c07a0c33b9949733722e8ee7b69606d9d4fd3935e94a0047ca"
+      },
+      "metadataHasAlpha": true,
+      "alpha": {
+        "zero": 109782,
+        "partial": 26412,
+        "opaque": 102822,
+        "coverage": 0.540691836529772,
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "margins": [
+          16,
+          16,
+          16,
+          16
+        ],
+        "transparentRgbNonzero": 0,
+        "whiteFringe": 0,
+        "brightNeutralPartial": 0,
+        "brightOpaque": 0,
+        "borderStripFraction": 0
+      },
+      "bPixelExactFlip": true,
+      "sourceAlignment": {
+        "shift": [
+          32,
+          75
+        ],
+        "alignmentVotes": 432,
+        "searchMeanRgbDeltaSum": 0,
+        "totalOpaqueOutputPixels": 102822,
+        "comparedOpaquePixels": 102822,
+        "mappedOpaqueFraction": 1,
+        "exactOpaqueFraction": 1,
+        "maxChannelDelta": 0
+      },
+      "foregroundComponents": [
+        127393
+      ],
+      "enclosedTransparentComponents": [
+        577,
+        254,
+        56,
+        25,
+        16,
+        14,
+        8,
+        8,
+        7,
+        6,
+        6,
+        6,
+        5,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        3,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "deco_floor_cushion_stripe",
+      "raw": "set02b_floor_cushion_raw.png",
+      "panel": "LEFT_887",
+      "customRect": null,
+      "sourceOrientation": "A",
+      "dimensions": [
+        756,
+        455
+      ],
+      "bytes": {
+        "A": 323899,
+        "B": 320132
+      },
+      "sha256": {
+        "A": "c7e51b23c556c9366b81dadaea059b1e7263285e147f85b6bb020cadc77a4b65",
+        "B": "034dcd160e4d0418ea114315be1da8993cf122302ac112ef74a5beabf875e7c1"
+      },
+      "metadataHasAlpha": true,
+      "alpha": {
+        "zero": 94645,
+        "partial": 17199,
+        "opaque": 232136,
+        "coverage": 0.7248531891389034,
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "margins": [
+          16,
+          16,
+          16,
+          16
+        ],
+        "transparentRgbNonzero": 0,
+        "whiteFringe": 0,
+        "brightNeutralPartial": 0,
+        "brightOpaque": 45,
+        "borderStripFraction": 0
+      },
+      "bPixelExactFlip": true,
+      "sourceAlignment": {
+        "shift": [
+          69,
+          223
+        ],
+        "alignmentVotes": 707,
+        "searchMeanRgbDeltaSum": 0,
+        "totalOpaqueOutputPixels": 232136,
+        "comparedOpaquePixels": 232136,
+        "mappedOpaqueFraction": 1,
+        "exactOpaqueFraction": 1,
+        "maxChannelDelta": 0
+      },
+      "foregroundComponents": [
+        248222
+      ],
+      "enclosedTransparentComponents": [
+        2,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "furn_kitchen_counter",
+      "raw": "set03_tv_counter_v2_chest_raw.png",
+      "panel": "BL",
+      "customRect": null,
+      "sourceOrientation": "A",
+      "dimensions": [
+        484,
+        500
+      ],
+      "bytes": {
+        "A": 234861,
+        "B": 237786
+      },
+      "sha256": {
+        "A": "53b1dc5502c996973af08dafef83cd84e6b3c8bd4636b0b52e7cc2ba4e6440d2",
+        "B": "054760c23c7e04cf3c7c52f4ec56599dd694f2457a7a39928935c3f84ceb5c23"
+      },
+      "metadataHasAlpha": true,
+      "alpha": {
+        "zero": 98249,
+        "partial": 6717,
+        "opaque": 137034,
+        "coverage": 0.5940123966942149,
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "margins": [
+          16,
+          16,
+          16,
+          16
+        ],
+        "transparentRgbNonzero": 0,
+        "whiteFringe": 0,
+        "brightNeutralPartial": 0,
+        "brightOpaque": 61307,
+        "borderStripFraction": 0
+      },
+      "bPixelExactFlip": true,
+      "sourceAlignment": {
+        "shift": [
+          85,
+          56
+        ],
+        "alignmentVotes": 556,
+        "searchMeanRgbDeltaSum": 0,
+        "totalOpaqueOutputPixels": 137034,
+        "comparedOpaquePixels": 137034,
+        "mappedOpaqueFraction": 1,
+        "exactOpaqueFraction": 1,
+        "maxChannelDelta": 0
+      },
+      "foregroundComponents": [
+        143407
+      ],
+      "enclosedTransparentComponents": []
+    },
+    {
+      "id": "furn_fridge",
+      "raw": "set05_fridge_kitchen_cabinet_raw.png",
+      "panel": "TL",
+      "customRect": null,
+      "sourceOrientation": "A",
+      "dimensions": [
+        377,
+        599
+      ],
+      "bytes": {
+        "A": 158844,
+        "B": 161915
+      },
+      "sha256": {
+        "A": "aebe87724d58a76765b5360c8ceedc83e4253e2c2f0d83ad5c05795a807e20e9",
+        "B": "977da95bcd55e88ecfaff6d27b771e5aff6a42e0f79e5049b62db80724714e82"
+      },
+      "metadataHasAlpha": true,
+      "alpha": {
+        "zero": 62281,
+        "partial": 2023,
+        "opaque": 161519,
+        "coverage": 0.7242043547380028,
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "margins": [
+          16,
+          9,
+          16,
+          16
+        ],
+        "transparentRgbNonzero": 0,
+        "whiteFringe": 0,
+        "brightNeutralPartial": 0,
+        "brightOpaque": 435,
+        "borderStripFraction": 0
+      },
+      "bPixelExactFlip": true,
+      "sourceAlignment": {
+        "shift": [
+          137,
+          0
+        ],
+        "alignmentVotes": 395,
+        "searchMeanRgbDeltaSum": 0,
+        "totalOpaqueOutputPixels": 161519,
+        "comparedOpaquePixels": 161519,
+        "mappedOpaqueFraction": 1,
+        "exactOpaqueFraction": 1,
+        "maxChannelDelta": 0
+      },
+      "foregroundComponents": [
+        163048
+      ],
+      "enclosedTransparentComponents": []
+    },
+    {
+      "id": "furn_dining_table_set",
+      "raw": "set04_coffee_dining_raw.png",
+      "panel": "BL",
+      "customRect": {
+        "left": 0,
+        "top": 590,
+        "width": 627,
+        "height": 664
+      },
+      "sourceOrientation": "A",
+      "dimensions": [
+        537,
+        555
+      ],
+      "bytes": {
+        "A": 343227,
+        "B": 338340
+      },
+      "sha256": {
+        "A": "75171e75c4406ba19210dea87e19fe6a7496b949c53495fd03b1eff23aca83c2",
+        "B": "ff439be45c33e4181a9ecfeef8c09006121b556aa8bb375c781d578053722ef8"
+      },
+      "metadataHasAlpha": true,
+      "alpha": {
+        "zero": 126549,
+        "partial": 34310,
+        "opaque": 137176,
+        "coverage": 0.5753887966178469,
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "margins": [
+          16,
+          16,
+          16,
+          16
+        ],
+        "transparentRgbNonzero": 0,
+        "whiteFringe": 0,
+        "brightNeutralPartial": 0,
+        "brightOpaque": 0,
+        "borderStripFraction": 0
+      },
+      "bPixelExactFlip": true,
+      "sourceAlignment": {
+        "shift": [
+          41,
+          10
+        ],
+        "alignmentVotes": 891,
+        "searchMeanRgbDeltaSum": 0,
+        "totalOpaqueOutputPixels": 137176,
+        "comparedOpaquePixels": 137176,
+        "mappedOpaqueFraction": 1,
+        "exactOpaqueFraction": 1,
+        "maxChannelDelta": 0
+      },
+      "foregroundComponents": [
+        169116
+      ],
+      "enclosedTransparentComponents": [
+        1899,
+        772,
+        381,
+        126,
+        115,
+        112,
+        111,
+        86,
+        68,
+        61,
+        45,
+        38,
+        28,
+        13,
+        11,
+        9,
+        7,
+        7,
+        7,
+        7,
+        7,
+        6,
+        5,
+        5,
+        4,
+        4,
+        4,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "furn_kitchen_cabinet",
+      "raw": "set05_fridge_kitchen_cabinet_raw.png",
+      "panel": "BL",
+      "customRect": null,
+      "sourceOrientation": "A",
+      "dimensions": [
+        405,
+        620
+      ],
+      "bytes": {
+        "A": 308607,
+        "B": 316175
+      },
+      "sha256": {
+        "A": "2dd2ee25d2f8749448466418667f1acaacaef737f30bb6b74dae66889dd57b7b",
+        "B": "791bb5d694ea27009b4743daff56f53560f7ab14b2277f093049a0fd7bada850"
+      },
+      "metadataHasAlpha": true,
+      "alpha": {
+        "zero": 74059,
+        "partial": 3093,
+        "opaque": 173948,
+        "coverage": 0.7050617283950618,
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "margins": [
+          16,
+          3,
+          16,
+          16
+        ],
+        "transparentRgbNonzero": 0,
+        "whiteFringe": 0,
+        "brightNeutralPartial": 0,
+        "brightOpaque": 1,
+        "borderStripFraction": 0.10123456790123457
+      },
+      "bPixelExactFlip": true,
+      "sourceAlignment": {
+        "shift": [
+          122,
+          0
+        ],
+        "alignmentVotes": 1154,
+        "searchMeanRgbDeltaSum": 0,
+        "totalOpaqueOutputPixels": 173948,
+        "comparedOpaquePixels": 173948,
+        "mappedOpaqueFraction": 1,
+        "exactOpaqueFraction": 1,
+        "maxChannelDelta": 0
+      },
+      "foregroundComponents": [
+        175847
+      ],
+      "enclosedTransparentComponents": []
+    },
+    {
+      "id": "deco_fruit_basket",
+      "raw": "set06_fruit_cookie_raw.png",
+      "panel": "TL",
+      "customRect": null,
+      "sourceOrientation": "A",
+      "dimensions": [
+        513,
+        475
+      ],
+      "bytes": {
+        "A": 291486,
+        "B": 290714
+      },
+      "sha256": {
+        "A": "3f37067497215d3ae812e148194712da0d42f2e86de0b35acefd9e62168f3f4b",
+        "B": "508875a89b4ad78bdf6f7758b20bbc3100aef8387cf5fa59e3c4ab9dc9b1a010"
+      },
+      "metadataHasAlpha": true,
+      "alpha": {
+        "zero": 89621,
+        "partial": 12338,
+        "opaque": 141716,
+        "coverage": 0.6322109366984713,
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "margins": [
+          16,
+          16,
+          16,
+          16
+        ],
+        "transparentRgbNonzero": 0,
+        "whiteFringe": 0,
+        "brightNeutralPartial": 0,
+        "brightOpaque": 0,
+        "borderStripFraction": 0
+      },
+      "bPixelExactFlip": true,
+      "sourceAlignment": {
+        "shift": [
+          56,
+          78
+        ],
+        "alignmentVotes": 1266,
+        "searchMeanRgbDeltaSum": 0,
+        "totalOpaqueOutputPixels": 141716,
+        "comparedOpaquePixels": 141716,
+        "mappedOpaqueFraction": 1,
+        "exactOpaqueFraction": 1,
+        "maxChannelDelta": 0
+      },
+      "foregroundComponents": [
+        153061
+      ],
+      "enclosedTransparentComponents": [
+        2
+      ]
+    },
+    {
+      "id": "deco_cookie_jar",
+      "raw": "set06_fruit_cookie_raw.png",
+      "panel": "BL",
+      "customRect": null,
+      "sourceOrientation": "A",
+      "dimensions": [
+        393,
+        506
+      ],
+      "bytes": {
+        "A": 239878,
+        "B": 240087
+      },
+      "sha256": {
+        "A": "a8b7610b7f041713182c38c4c05b59540b4708c3f2c23841c773410a86a63541",
+        "B": "62d2d842327a512d1f9ed46020069a3cc5818f598a0fca2a78fc223452fa0960"
+      },
+      "metadataHasAlpha": true,
+      "alpha": {
+        "zero": 54967,
+        "partial": 8084,
+        "opaque": 135807,
+        "coverage": 0.7235866799424715,
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "margins": [
+          16,
+          16,
+          16,
+          16
+        ],
+        "transparentRgbNonzero": 0,
+        "whiteFringe": 0,
+        "brightNeutralPartial": 0,
+        "brightOpaque": 15789,
+        "borderStripFraction": 0
+      },
+      "bPixelExactFlip": true,
+      "sourceAlignment": {
+        "shift": [
+          124,
+          30
+        ],
+        "alignmentVotes": 1052,
+        "searchMeanRgbDeltaSum": 0,
+        "totalOpaqueOutputPixels": 135807,
+        "comparedOpaquePixels": 135807,
+        "mappedOpaqueFraction": 1,
+        "exactOpaqueFraction": 1,
+        "maxChannelDelta": 0
+      },
+      "foregroundComponents": [
+        143181
+      ],
+      "enclosedTransparentComponents": []
+    },
+    {
+      "id": "furn_garden_bench",
+      "raw": "set07_bench_A_chairedit_J2_raw.png",
+      "panel": "FULL",
+      "customRect": null,
+      "sourceOrientation": "B",
+      "dimensions": [
+        990,
+        1136
+      ],
+      "bytes": {
+        "A": 684514,
+        "B": 696683
+      },
+      "sha256": {
+        "A": "d4e2e1851c58055d5cd855d85317f285ec154105bfcea5bf545f025fb26b804a",
+        "B": "f770a7b0eb096ba028bfcfa88aa257ff0321b03fd1a42ab4e33b9181f880fc9e"
+      },
+      "metadataHasAlpha": true,
+      "alpha": {
+        "zero": 667414,
+        "partial": 15786,
+        "opaque": 441440,
+        "coverage": 0.40655320813771517,
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "margins": [
+          16,
+          16,
+          16,
+          16
+        ],
+        "transparentRgbNonzero": 0,
+        "whiteFringe": 0,
+        "brightNeutralPartial": 0,
+        "brightOpaque": 0,
+        "borderStripFraction": 0
+      },
+      "bPixelExactFlip": true,
+      "sourceAlignment": {
+        "shift": [
+          132,
+          61
+        ],
+        "alignmentVotes": 1774,
+        "searchMeanRgbDeltaSum": 0,
+        "totalOpaqueOutputPixels": 441440,
+        "comparedOpaquePixels": 441440,
+        "mappedOpaqueFraction": 1,
+        "exactOpaqueFraction": 1,
+        "maxChannelDelta": 0
+      },
+      "foregroundComponents": [
+        453802
+      ],
+      "enclosedTransparentComponents": [
+        65553,
+        10,
+        3,
+        3,
+        2,
+        2,
+        2,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "furn_sandbox",
+      "raw": "set07_sandbox_v2_raw.png",
+      "panel": "LEFT_887",
+      "customRect": null,
+      "sourceOrientation": "A",
+      "dimensions": [
+        797,
+        569
+      ],
+      "bytes": {
+        "A": 403989,
+        "B": 403928
+      },
+      "sha256": {
+        "A": "8df781bd2730cc6181d9b7c00e4e8ff4f6c342a5f5864c3bd755f3562fc555d8",
+        "B": "c3cd8614dce793a4e4717affb1f9f2dc411cd00032f2e8ae86e0a3666970f6a9"
+      },
+      "metadataHasAlpha": true,
+      "alpha": {
+        "zero": 223931,
+        "partial": 5413,
+        "opaque": 224149,
+        "coverage": 0.5062084751032541,
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "margins": [
+          16,
+          16,
+          16,
+          16
+        ],
+        "transparentRgbNonzero": 0,
+        "whiteFringe": 0,
+        "brightNeutralPartial": 0,
+        "brightOpaque": 393,
+        "borderStripFraction": 0
+      },
+      "bPixelExactFlip": true,
+      "sourceAlignment": {
+        "shift": [
+          48,
+          144
+        ],
+        "alignmentVotes": 804,
+        "searchMeanRgbDeltaSum": 0,
+        "totalOpaqueOutputPixels": 224149,
+        "comparedOpaquePixels": 224149,
+        "mappedOpaqueFraction": 1,
+        "exactOpaqueFraction": 1,
+        "maxChannelDelta": 0
+      },
+      "foregroundComponents": [
+        229023
+      ],
+      "enclosedTransparentComponents": [
+        4,
+        4,
+        4,
+        4,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "furn_garden_table_parasol",
+      "raw": "set08_garden_table_planter_raw.png",
+      "panel": "TL",
+      "customRect": {
+        "left": 0,
+        "top": 0,
+        "width": 627,
+        "height": 680
+      },
+      "sourceOrientation": "A",
+      "dimensions": [
+        451,
+        624
+      ],
+      "bytes": {
+        "A": 266395,
+        "B": 265620
+      },
+      "sha256": {
+        "A": "2694a98decd5be25505d3b121c78920a39066bd090bb5c32dc8990ccbe1d1629",
+        "B": "5937025d1b7885d4bc3279dcc17bb78f168b6345ed664f772f6394e7fab10a2b"
+      },
+      "metadataHasAlpha": true,
+      "alpha": {
+        "zero": 114508,
+        "partial": 17471,
+        "opaque": 149445,
+        "coverage": 0.5931121723804651,
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "margins": [
+          16,
+          16,
+          16,
+          16
+        ],
+        "transparentRgbNonzero": 0,
+        "whiteFringe": 0,
+        "brightNeutralPartial": 0,
+        "brightOpaque": 267,
+        "borderStripFraction": 0
+      },
+      "bPixelExactFlip": true,
+      "sourceAlignment": {
+        "shift": [
+          102,
+          34
+        ],
+        "alignmentVotes": 729,
+        "searchMeanRgbDeltaSum": 0,
+        "totalOpaqueOutputPixels": 149445,
+        "comparedOpaquePixels": 149445,
+        "mappedOpaqueFraction": 1,
+        "exactOpaqueFraction": 1,
+        "maxChannelDelta": 0
+      },
+      "foregroundComponents": [
+        164978
+      ],
+      "enclosedTransparentComponents": [
+        3,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "deco_planter_flowers",
+      "raw": "set08_garden_table_planter_raw.png",
+      "panel": "BL",
+      "customRect": null,
+      "sourceOrientation": "A",
+      "dimensions": [
+        486,
+        501
+      ],
+      "bytes": {
+        "A": 300585,
+        "B": 296848
+      },
+      "sha256": {
+        "A": "0f39934f9023e113d1903753b8c311148c88fe5c9dd3f45e8ec67e0435ccf89f",
+        "B": "6516c9d3e819121e873b2ccd3ab6e46818525f10474a2d8edc312e233de5b6b8"
+      },
+      "metadataHasAlpha": true,
+      "alpha": {
+        "zero": 85592,
+        "partial": 15732,
+        "opaque": 142162,
+        "coverage": 0.6484726021208611,
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "margins": [
+          16,
+          16,
+          16,
+          16
+        ],
+        "transparentRgbNonzero": 0,
+        "whiteFringe": 0,
+        "brightNeutralPartial": 0,
+        "brightOpaque": 234,
+        "borderStripFraction": 0
+      },
+      "bPixelExactFlip": true,
+      "sourceAlignment": {
+        "shift": [
+          84,
+          64
+        ],
+        "alignmentVotes": 1208,
+        "searchMeanRgbDeltaSum": 0,
+        "totalOpaqueOutputPixels": 142162,
+        "comparedOpaquePixels": 142162,
+        "mappedOpaqueFraction": 1,
+        "exactOpaqueFraction": 1,
+        "maxChannelDelta": 0
+      },
+      "foregroundComponents": [
+        156257
+      ],
+      "enclosedTransparentComponents": [
+        65,
+        3,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "deco_watering_can",
+      "raw": "set09_watering_birdhouse_v2_raw.png",
+      "panel": "TL",
+      "customRect": null,
+      "sourceOrientation": "A",
+      "dimensions": [
+        486,
+        375
+      ],
+      "bytes": {
+        "A": 132231,
+        "B": 132063
+      },
+      "sha256": {
+        "A": "b8c2b184e66888c27ab2e4ac58783e1101611b1d82c67d306a3b71dac730f129",
+        "B": "dc5789804ce292c948830dcefa499eee1825caa491eee10c59b60923320bdd7d"
+      },
+      "metadataHasAlpha": true,
+      "alpha": {
+        "zero": 90092,
+        "partial": 4511,
+        "opaque": 87647,
+        "coverage": 0.5056680384087792,
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "margins": [
+          16,
+          16,
+          16,
+          16
+        ],
+        "transparentRgbNonzero": 0,
+        "whiteFringe": 0,
+        "brightNeutralPartial": 0,
+        "brightOpaque": 78,
+        "borderStripFraction": 0
+      },
+      "bPixelExactFlip": true,
+      "sourceAlignment": {
+        "shift": [
+          91,
+          104
+        ],
+        "alignmentVotes": 397,
+        "searchMeanRgbDeltaSum": 0,
+        "totalOpaqueOutputPixels": 87647,
+        "comparedOpaquePixels": 87647,
+        "mappedOpaqueFraction": 1,
+        "exactOpaqueFraction": 1,
+        "maxChannelDelta": 0
+      },
+      "foregroundComponents": [
+        91281
+      ],
+      "enclosedTransparentComponents": [
+        1279,
+        5,
+        4,
+        2,
+        2,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "deco_birdhouse",
+      "raw": "set09_watering_birdhouse_v2_raw.png",
+      "panel": "BL",
+      "customRect": null,
+      "sourceOrientation": "A",
+      "dimensions": [
+        431,
+        507
+      ],
+      "bytes": {
+        "A": 185689,
+        "B": 186015
+      },
+      "sha256": {
+        "A": "f95e36f048eef4fe6fafb9b3e89cccf83b80b6958251f366dd52f44c8c822678",
+        "B": "fc3bc215b6a9d7d0c6275a7d3cbefb8fe7d9930b8393c621b2a94bef5009571d"
+      },
+      "metadataHasAlpha": true,
+      "alpha": {
+        "zero": 93537,
+        "partial": 4653,
+        "opaque": 120327,
+        "coverage": 0.5719463474237703,
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "margins": [
+          16,
+          16,
+          16,
+          16
+        ],
+        "transparentRgbNonzero": 0,
+        "whiteFringe": 0,
+        "brightNeutralPartial": 0,
+        "brightOpaque": 0,
+        "borderStripFraction": 0
+      },
+      "bPixelExactFlip": true,
+      "sourceAlignment": {
+        "shift": [
+          98,
+          37
+        ],
+        "alignmentVotes": 516,
+        "searchMeanRgbDeltaSum": 0,
+        "totalOpaqueOutputPixels": 120327,
+        "comparedOpaquePixels": 120327,
+        "mappedOpaqueFraction": 1,
+        "exactOpaqueFraction": 1,
+        "maxChannelDelta": 0
+      },
+      "foregroundComponents": [
+        124367
+      ],
+      "enclosedTransparentComponents": []
+    },
+    {
+      "id": "furn_wardrobe_wood",
+      "raw": "set10_wardrobe_wood_pink_raw.png",
+      "panel": "TL",
+      "customRect": null,
+      "sourceOrientation": "A",
+      "dimensions": [
+        425,
+        596
+      ],
+      "bytes": {
+        "A": 275806,
+        "B": 277746
+      },
+      "sha256": {
+        "A": "d8b9b437d68992639aa762ebe5582503fc7109e5c86afc0dbeafc052a2c744f6",
+        "B": "c47ee85d6a47fe2950d27dc0b110adb97562acae6f5dcc59af242f9526fc1ebc"
+      },
+      "metadataHasAlpha": true,
+      "alpha": {
+        "zero": 79939,
+        "partial": 10463,
+        "opaque": 162898,
+        "coverage": 0.6844097907619424,
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "margins": [
+          16,
+          16,
+          16,
+          16
+        ],
+        "transparentRgbNonzero": 0,
+        "whiteFringe": 0,
+        "brightNeutralPartial": 0,
+        "brightOpaque": 0,
+        "borderStripFraction": 0
+      },
+      "bPixelExactFlip": true,
+      "sourceAlignment": {
+        "shift": [
+          130,
+          23
+        ],
+        "alignmentVotes": 700,
+        "searchMeanRgbDeltaSum": 0,
+        "totalOpaqueOutputPixels": 162898,
+        "comparedOpaquePixels": 162898,
+        "mappedOpaqueFraction": 1,
+        "exactOpaqueFraction": 1,
+        "maxChannelDelta": 0
+      },
+      "foregroundComponents": [
+        172541
+      ],
+      "enclosedTransparentComponents": [
+        2,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "furn_wardrobe_pink",
+      "raw": "set10_wardrobe_wood_pink_raw.png",
+      "panel": "BL",
+      "customRect": null,
+      "sourceOrientation": "A",
+      "dimensions": [
+        421,
+        603
+      ],
+      "bytes": {
+        "A": 219842,
+        "B": 223716
+      },
+      "sha256": {
+        "A": "6df486660645df01bbe7a50e05f2f04b7de1b7bf7c2ee3fdcc9de70c5f9641de",
+        "B": "3caa76a89d434d7662fe8a5195b56f2f097b9e78ca278adf544539315be28acb"
+      },
+      "metadataHasAlpha": true,
+      "alpha": {
+        "zero": 78078,
+        "partial": 9953,
+        "opaque": 165832,
+        "coverage": 0.6924404107727397,
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "margins": [
+          16,
+          9,
+          16,
+          16
+        ],
+        "transparentRgbNonzero": 0,
+        "whiteFringe": 0,
+        "brightNeutralPartial": 0,
+        "brightOpaque": 2534,
+        "borderStripFraction": 0
+      },
+      "bPixelExactFlip": true,
+      "sourceAlignment": {
+        "shift": [
+          131,
+          0
+        ],
+        "alignmentVotes": 667,
+        "searchMeanRgbDeltaSum": 0,
+        "totalOpaqueOutputPixels": 165832,
+        "comparedOpaquePixels": 165832,
+        "mappedOpaqueFraction": 1,
+        "exactOpaqueFraction": 1,
+        "maxChannelDelta": 0
+      },
+      "foregroundComponents": [
+        175278
+      ],
+      "enclosedTransparentComponents": []
+    },
+    {
+      "id": "furn_wardrobe_blue",
+      "raw": "set11_wardrobe_blue_tanabata_v3_raw.png",
+      "panel": "TR",
+      "customRect": null,
+      "sourceOrientation": "A",
+      "dimensions": [
+        436,
+        610
+      ],
+      "bytes": {
+        "A": 221007,
+        "B": 224601
+      },
+      "sha256": {
+        "A": "5d253f1be5d99b3158e63009ed68278d44145c0b69e2b7fb3863e460674edd92",
+        "B": "1b95a8788507dc88af2eb6eb11f5b136a0a8245260ced3b792f83f80ea54e4fa"
+      },
+      "metadataHasAlpha": true,
+      "alpha": {
+        "zero": 77674,
+        "partial": 10369,
+        "opaque": 177917,
+        "coverage": 0.7079485636937886,
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "margins": [
+          16,
+          16,
+          16,
+          3
+        ],
+        "transparentRgbNonzero": 0,
+        "whiteFringe": 0,
+        "brightNeutralPartial": 0,
+        "brightOpaque": 578,
+        "borderStripFraction": 0.08486238532110092
+      },
+      "bPixelExactFlip": true,
+      "sourceAlignment": {
+        "shift": [
+          69,
+          17
+        ],
+        "alignmentVotes": 654,
+        "searchMeanRgbDeltaSum": 0,
+        "totalOpaqueOutputPixels": 177917,
+        "comparedOpaquePixels": 177917,
+        "mappedOpaqueFraction": 1,
+        "exactOpaqueFraction": 1,
+        "maxChannelDelta": 0
+      },
+      "foregroundComponents": [
+        187677
+      ],
+      "enclosedTransparentComponents": [
+        18,
+        3,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "deco_tanabata_bamboo",
+      "raw": "set11_wardrobe_blue_tanabata_v3_raw.png",
+      "panel": "BL",
+      "customRect": null,
+      "sourceOrientation": "A",
+      "dimensions": [
+        462,
+        566
+      ],
+      "bytes": {
+        "A": 170752,
+        "B": 172170
+      },
+      "sha256": {
+        "A": "dff4ac5573bb877d35ccbdce9b29180452956e103727a965bb7855b032b897af",
+        "B": "b003f1030f693966ef59c7f9e27264f080966bb4190dd9bf629897de8147697f"
+      },
+      "metadataHasAlpha": true,
+      "alpha": {
+        "zero": 185134,
+        "partial": 8048,
+        "opaque": 68310,
+        "coverage": 0.29200893335168954,
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "margins": [
+          16,
+          16,
+          16,
+          16
+        ],
+        "transparentRgbNonzero": 0,
+        "whiteFringe": 0,
+        "brightNeutralPartial": 0,
+        "brightOpaque": 4899,
+        "borderStripFraction": 0
+      },
+      "bPixelExactFlip": true,
+      "sourceAlignment": {
+        "shift": [
+          86,
+          30
+        ],
+        "alignmentVotes": 622,
+        "searchMeanRgbDeltaSum": 0,
+        "totalOpaqueOutputPixels": 68310,
+        "comparedOpaquePixels": 68310,
+        "mappedOpaqueFraction": 1,
+        "exactOpaqueFraction": 1,
+        "maxChannelDelta": 0
+      },
+      "foregroundComponents": [
+        74064
+      ],
+      "enclosedTransparentComponents": [
+        46,
+        5,
+        2,
+        2,
+        1,
+        1,
+        1,
+        1
+      ]
+    },
+    {
+      "id": "deco_christmas_tree_mini",
+      "raw": "set12_christmas_pumpkin_raw.png",
+      "panel": "TL",
+      "customRect": null,
+      "sourceOrientation": "A",
+      "dimensions": [
+        350,
+        514
+      ],
+      "bytes": {
+        "A": 158361,
+        "B": 158430
+      },
+      "sha256": {
+        "A": "c62b2af538e5fad49cea608f618990c5fc837b313ea578c534aa71fb83c41cbf",
+        "B": "ee5fa91bda4ea674e2a4e1c727b69de00c44fed1233d6d29b963f7f5c7a2a057"
+      },
+      "metadataHasAlpha": true,
+      "alpha": {
+        "zero": 88496,
+        "partial": 7201,
+        "opaque": 84203,
+        "coverage": 0.5080822679266259,
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "margins": [
+          16,
+          16,
+          16,
+          16
+        ],
+        "transparentRgbNonzero": 0,
+        "whiteFringe": 0,
+        "brightNeutralPartial": 0,
+        "brightOpaque": 666,
+        "borderStripFraction": 0
+      },
+      "bPixelExactFlip": true,
+      "sourceAlignment": {
+        "shift": [
+          148,
+          71
+        ],
+        "alignmentVotes": 673,
+        "searchMeanRgbDeltaSum": 0,
+        "totalOpaqueOutputPixels": 84203,
+        "comparedOpaquePixels": 84203,
+        "mappedOpaqueFraction": 1,
+        "exactOpaqueFraction": 1,
+        "maxChannelDelta": 0
+      },
+      "foregroundComponents": [
+        90566
+      ],
+      "enclosedTransparentComponents": []
+    },
+    {
+      "id": "deco_pumpkin_lantern",
+      "raw": "set12_christmas_pumpkin_raw.png",
+      "panel": "BL",
+      "customRect": null,
+      "sourceOrientation": "A",
+      "dimensions": [
+        382,
+        407
+      ],
+      "bytes": {
+        "A": 154059,
+        "B": 153178
+      },
+      "sha256": {
+        "A": "5843cd69080aca7a33859a87481cf4252ed5bbe6b095f090b69550c6896a6e8a",
+        "B": "43efeb54177f7b4f9e11e992488c0ea33c21e21b2d149b32eccca2e2aba214f4"
+      },
+      "metadataHasAlpha": true,
+      "alpha": {
+        "zero": 56463,
+        "partial": 10914,
+        "opaque": 88097,
+        "coverage": 0.6368331682467808,
+        "corners": [
+          0,
+          0,
+          0,
+          0
+        ],
+        "margins": [
+          16,
+          16,
+          16,
+          16
+        ],
+        "transparentRgbNonzero": 0,
+        "whiteFringe": 0,
+        "brightNeutralPartial": 0,
+        "brightOpaque": 0,
+        "borderStripFraction": 0
+      },
+      "bPixelExactFlip": true,
+      "sourceAlignment": {
+        "shift": [
+          146,
+          81
+        ],
+        "alignmentVotes": 782,
+        "searchMeanRgbDeltaSum": 0,
+        "totalOpaqueOutputPixels": 88097,
+        "comparedOpaquePixels": 88097,
+        "mappedOpaqueFraction": 1,
+        "exactOpaqueFraction": 1,
+        "maxChannelDelta": 0
+      },
+      "foregroundComponents": [
+        98365
+      ],
+      "enclosedTransparentComponents": []
+    }
+  ]
+}
