@@ -1,5 +1,13 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2287: スタンプカード境界(total=15,30,45,...)でスロット報酬(1/8/15マス目)が二重付与
+// される既存バグを修正。getCardNum(total)が境界ちょうどの時「次のカード」の番号を返して
+// いたため、getFilledInCard(total)(=満タンの15)と矛盾し、checkSlotReward()がスロット
+// 報酬キーを誤った次カード番号(例: card2_slot1)で組み立てて既付与分(おもちゃばこ/ベッド)
+// を再付与していた。getCardNum()を「直前に完成したカード」の番号を返すよう修正し境界で
+// 整合させた(common/stamp-rally.js)。total=1..45のシミュレーションで二重付与解消を検証
+// (tests/stamp_rally_slot_reward_boundary_regression.cjs)。play.html PAGE_CACHE_VERSION /
+// PONO_SW_VERSION / stamp-rally.js?v= と同期。
 // v2286: 管理ダッシュボードのなぞなぞトンネル パネル見出しを「🚂 ステージを試す」から
 // 「🚂 なぞなぞトンネル ステージセレクト（試遊）」へ変更し、App staging 管理画面
 // (https://pono-asobiba-app-staging.ndw.workers.dev/admin/) でのみ有効という説明を
@@ -559,7 +567,7 @@
 // v2285: スタンプカード スロット報酬(1/8/15マス目)の履歴表示にも、カード完成報酬と同じ
 // スナップショット方式(pono_stamp_rewards_detail)を適用。rewards.json のスロット報酬定義が
 // 後で変わっても、過去に付与済みの履歴表示が化けないようにする(common/stamp-rally.js)。
-const CACHE_VERSION = 2286;
+const CACHE_VERSION = 2287;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
