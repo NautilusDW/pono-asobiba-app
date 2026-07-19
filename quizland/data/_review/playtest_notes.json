@@ -1,0 +1,953 @@
+{
+  "session_started": "2026-05-05T07:20:37.569Z",
+  "notes": [
+    {
+      "idx": 0,
+      "category": "order_color",
+      "level": 1,
+      "type": "order_color",
+      "q": "まんなかは なにいろ？",
+      "comment": "ちょっと質問したいんだけど、これって本当にコードックスが生成したものなのかな？なんか以前のものと変わらない気がするんだけど。\n\nちゃんと調べてください。",
+      "screenshots": [
+        "quizland/data/_review/playtest_screenshots/0_1777965629876_1.jpg"
+      ],
+      "noted_at": "2026-05-05T07:20:37.569Z"
+    },
+    {
+      "idx": 1,
+      "category": "count_total",
+      "level": 1,
+      "type": "count_total",
+      "q": "いちごは いくつ？",
+      "comment": "リンゴが縦に潰れてます。",
+      "screenshots": [
+        "quizland/data/_review/playtest_screenshots/0_1777965788270_1.jpg"
+      ],
+      "noted_at": "2026-05-05T07:23:41.276Z"
+    },
+    {
+      "idx": 0,
+      "category": "order_color",
+      "level": 1,
+      "type": "order_color",
+      "q": "まんなかは なにいろ？",
+      "comment": "青の色が微妙に違うのが気になるなぁ。これ、同じ値でオーダーしてる？ちゃんと、あとは今新しく作った緑は、他と比べてなんかブラシで塗った感がない、ベタ塗りになってるんだけど。\n\nこの辺もなぜ合わせないのか。オーダーの仕方が甘いんじゃない？",
+      "screenshots": [
+        "quizland/data/_review/playtest_screenshots/0_1777975402607_1.jpg"
+      ],
+      "noted_at": "2026-05-05T10:04:10.846Z"
+    },
+    {
+      "idx": 1,
+      "category": "order_color",
+      "level": 1,
+      "type": "order_color",
+      "q": "ひだりから 1ばんめは なにいろ？",
+      "comment": "やっぱり、それぞれで色が微妙に違うのと、あとなんでこれら等間隔に四角並んでないのかな。\n\n生成する時には、多分全部一つのシートで行った方がいいと思うよ。四角と丸、全部全種類を一つのプロンプトで。",
+      "screenshots": [
+        "quizland/data/_review/playtest_screenshots/1_1777975472525_1.jpg"
+      ],
+      "noted_at": "2026-05-05T10:05:16.606Z"
+    },
+    {
+      "idx": 5,
+      "category": "order_color",
+      "level": 1,
+      "type": "order_color",
+      "q": "まんなかは なにいろ？",
+      "comment": "等間隔のものもあれば、右だけ真ん中に近づいているものや、全然ずれているものもあります。",
+      "screenshots": [
+        "quizland/data/_review/playtest_screenshots/5_1777975576602_1.jpg"
+      ],
+      "noted_at": "2026-05-05T10:06:21.998Z"
+    },
+    {
+      "idx": 7,
+      "category": "order_color",
+      "level": 1,
+      "type": "order_color",
+      "q": "ひだりから 1ばんめは なにいろ？",
+      "comment": "なんでこんなにずれるの。",
+      "screenshots": [
+        "quizland/data/_review/playtest_screenshots/7_1777975600110_1.jpg"
+      ],
+      "noted_at": "2026-05-05T10:06:50.498Z"
+    },
+    {
+      "idx": 9,
+      "category": "order_color",
+      "level": 2,
+      "type": "order_color",
+      "q": "みぎから 1ばんめは なにいろ？",
+      "comment": "これはいちいち全部、位置がおかしいのでスクショしていませんが、他にもありますので、ちゃんと全部チェックして直してください。",
+      "screenshots": [
+        "quizland/data/_review/playtest_screenshots/9_1777975629321_1.jpg"
+      ],
+      "noted_at": "2026-05-05T10:07:32.229Z"
+    },
+    {
+      "idx": 1,
+      "category": "shape_name",
+      "level": 1,
+      "type": "shape_name",
+      "q": "これは どんな かたち？",
+      "comment": "これは古いやつじゃない？角丸じゃない四角があるはずだから、それに差し替えて。",
+      "screenshots": [
+        "quizland/data/_review/playtest_screenshots/1_1777976007096_1.jpg"
+      ],
+      "noted_at": "2026-05-05T10:13:42.076Z"
+    },
+    {
+      "idx": 5,
+      "category": "shape_name",
+      "level": 1,
+      "type": "shape_name",
+      "q": "これは どんな かたち？",
+      "comment": "あれ？この問題って消さなかったっけ？長四角って何？長方形だと思うんだけど、長方形は難しいからダメだよ。\n\nちょっと違う問題を考えてくれ。",
+      "screenshots": [],
+      "noted_at": "2026-05-05T10:14:32.484Z"
+    },
+    {
+      "idx": 8,
+      "category": "shape_name",
+      "level": 2,
+      "type": "shape_name",
+      "q": "ほしの かどは なんこ？",
+      "comment": "ここもそうだけど、変更できてないでしょ。これ、古いやつでしょ。この辺の図形関係、全部洗ってくれる？多分古いのばっかりになってるから。で、広告してください。",
+      "screenshots": [],
+      "noted_at": "2026-05-05T10:17:04.005Z"
+    },
+    {
+      "idx": 22,
+      "category": "shape_name",
+      "level": 3,
+      "type": "shape_name",
+      "q": "とけいの かたちは ふつう なに？",
+      "comment": "全然四角い時計もあるし違う問題に変えたい。アイデアを出してください。",
+      "screenshots": [],
+      "noted_at": "2026-05-05T11:13:17.603Z"
+    },
+    {
+      "idx": 0,
+      "category": "trivia",
+      "level": 1,
+      "type": "trivia",
+      "q": "うれた バナナは なにいろ？",
+      "comment": "バナナはアルファで使っていたやつはありませんか？なければ作るので教えてください。",
+      "screenshots": [],
+      "noted_at": "2026-05-05T11:13:38.978Z"
+    },
+    {
+      "idx": 1,
+      "category": "trivia",
+      "level": 1,
+      "type": "trivia",
+      "q": "ねこは なんて なく？",
+      "comment": "猫もアルファがついてないです。",
+      "screenshots": [],
+      "noted_at": "2026-05-05T11:13:58.427Z"
+    },
+    {
+      "idx": 2,
+      "category": "trivia",
+      "level": 1,
+      "type": "trivia",
+      "q": "ぞうの からだで いちばん ながいのは どこ？",
+      "comment": "この辺はみんなついてないのか。じゃあ動物と果物系かな。ちょっとアルファがないリストを作れますか。オーディットの方全部1回せっかく作ったから、今の状況を反映してもらえますか。",
+      "screenshots": [],
+      "noted_at": "2026-05-05T11:15:01.427Z"
+    },
+    {
+      "idx": 6,
+      "category": "opposite",
+      "level": 1,
+      "type": "opposite",
+      "q": "「よる」の はんたいは？",
+      "comment": "この問題の画面の方の「よる」のテキストは不要なので、削除してください。",
+      "screenshots": [
+        "quizland/data/_review/playtest_screenshots/6_1778028335442_1.jpg"
+      ],
+      "noted_at": "2026-05-06T00:46:06.684Z"
+    },
+    {
+      "idx": 3,
+      "category": "opposite",
+      "level": 1,
+      "type": "opposite",
+      "q": "「たつ」の はんたいは？",
+      "comment": "ポケットに手を入れてない絵に変更。画像生成の指示が必要です。",
+      "screenshots": [],
+      "noted_at": "2026-05-06T01:29:54.673Z"
+    },
+    {
+      "idx": 10,
+      "category": "body",
+      "level": 2,
+      "type": "emoji_name",
+      "q": "これは からだの なに？",
+      "comment": "歯もないしちょっと怖い。このリアルな質感に見えてしまうなぁ。もうちょっと塗りをどうにかフラットな感じに持っていきたい。",
+      "screenshots": [],
+      "noted_at": "2026-05-06T10:30:04.277Z"
+    },
+    {
+      "idx": 11,
+      "category": "body",
+      "level": 2,
+      "type": "emoji_name",
+      "q": "これは からだの どこ？",
+      "comment": "クロップ失敗してるので修正リストに入れてください。",
+      "screenshots": [
+        "quizland/data/_review/playtest_screenshots/11_1778063450903_1.jpg"
+      ],
+      "noted_at": "2026-05-06T10:30:52.704Z"
+    },
+    {
+      "idx": 13,
+      "category": "body",
+      "level": 2,
+      "type": "trivia",
+      "q": "ちを からだじゅうに おくる ぽんぷは？",
+      "comment": "85%の大きさに変更します。",
+      "screenshots": [],
+      "noted_at": "2026-05-06T10:31:23.914Z"
+    },
+    {
+      "idx": 16,
+      "category": "body",
+      "level": 3,
+      "type": "trivia",
+      "q": "ねむっているとき からだは どうなっている？",
+      "comment": "クロップが失敗しているかもしれないので、要確認です。確認後、修正が必要であれば修正リストに加えてください。",
+      "screenshots": [],
+      "noted_at": "2026-05-06T10:32:08.360Z"
+    },
+    {
+      "idx": 17,
+      "category": "body",
+      "level": 3,
+      "type": "trivia",
+      "q": "からだで いちばん かたい ぶぶんは？",
+      "comment": "これはそもそも作るものを間違っています。なぜ歯と骨なんでしょうか? そもそも論なのでもう一度考え直す必要があります。",
+      "screenshots": [],
+      "noted_at": "2026-05-06T10:33:00.022Z"
+    },
+    {
+      "idx": 18,
+      "category": "body",
+      "level": 3,
+      "type": "trivia",
+      "q": "あかちゃんの ほねは おとなより おおい？ すくない？",
+      "comment": "ここもちょっと、すごくデフォルメした大人と赤ちゃんが透けて、それぞれのシルエットが透けてて、デフォルメされた骨が見えてる感じに変更します。",
+      "screenshots": [],
+      "noted_at": "2026-05-06T10:34:11.438Z"
+    },
+    {
+      "idx": 19,
+      "category": "body",
+      "level": 3,
+      "type": "trivia",
+      "q": "さむいとき からだが ふるえるのは なぜ？",
+      "comment": "体を震わせているイラストが必要です。",
+      "screenshots": [],
+      "noted_at": "2026-05-06T10:34:36.128Z"
+    },
+    {
+      "idx": 21,
+      "category": "body",
+      "level": 3,
+      "type": "trivia",
+      "q": "ゆびのさきの もようを なんという？",
+      "comment": "なぜ指先の模様の話でテキスタイルみたいな模様が出てきてるんでしょうか。指先の模様っていうのは指紋のことですよね。だとしたら、指紋の絵じゃないとダメなんじゃないですか。親指の指紋の絵にしてください。修正",
+      "screenshots": [],
+      "noted_at": "2026-05-06T10:35:31.713Z"
+    },
+    {
+      "idx": 22,
+      "category": "body",
+      "level": 3,
+      "type": "trivia",
+      "q": "まばたきは なんのために する？",
+      "comment": "瞬きなので目をつぶっている絵にしましょう。",
+      "screenshots": [],
+      "noted_at": "2026-05-06T10:35:45.709Z"
+    },
+    {
+      "idx": 23,
+      "category": "body",
+      "level": 3,
+      "type": "trivia",
+      "q": "けがを すると かさぶたが できるのは なぜ？",
+      "comment": "転んで膝を怪我している子供の絵にしましょう。傷がすでにかさぶたになっています。男の子がそれを人差し指で触ろうとしているところ、グロくならないように。",
+      "screenshots": [],
+      "noted_at": "2026-05-06T10:36:49.932Z"
+    },
+    {
+      "idx": 8,
+      "category": "trivia",
+      "level": 2,
+      "type": "trivia",
+      "q": "あしが 8ぽん あるのは どれ？",
+      "comment": "なぜ正解が出てしまっているんでしょうか？もし正解を出すのであらば、選択肢と同じ雲にしないとダメじゃないですか。\n\nそれと、ここ選択肢のちょうちょも間違っているので、雲も差し替えが必要です。ここはステージング画像で、要検討。",
+      "screenshots": [],
+      "noted_at": "2026-05-06T10:38:28.448Z"
+    },
+    {
+      "idx": 9,
+      "category": "trivia",
+      "level": 2,
+      "type": "trivia",
+      "q": "そらを とべない とりは どれ？",
+      "comment": "ステージングの画像については、一般的な鳥のデフォルメされたシルエットのみにしましょう。選択肢は空を飛べない鳥の話なのに、ツバメが思いっきり飛んでいます。飛んでいない絵に変更。",
+      "screenshots": [],
+      "noted_at": "2026-05-06T10:39:21.107Z"
+    },
+    {
+      "idx": 10,
+      "category": "trivia",
+      "level": 2,
+      "type": "trivia",
+      "q": "タコの あしは なんぼん？",
+      "comment": "クロップが失敗しているので修正",
+      "screenshots": [],
+      "noted_at": "2026-05-06T10:39:44.297Z"
+    },
+    {
+      "idx": 11,
+      "category": "trivia",
+      "level": 2,
+      "type": "trivia",
+      "q": "せかいで いちばん はやい りくの どうぶつは？",
+      "comment": "表示が小さいので、130%ぐらいにしてください。",
+      "screenshots": [],
+      "noted_at": "2026-05-06T10:40:05.029Z"
+    },
+    {
+      "idx": 12,
+      "category": "trivia",
+      "level": 2,
+      "type": "trivia",
+      "q": "ふじさんの あたまに あるのは なに？",
+      "comment": "選択肢のイラストを入れてください。",
+      "screenshots": [],
+      "noted_at": "2026-05-06T10:40:25.451Z"
+    },
+    {
+      "idx": 13,
+      "category": "trivia",
+      "level": 2,
+      "type": "trivia",
+      "q": "ふゆに ねむる（とうみん）どうぶつは どれ？",
+      "comment": "ステージングの絵を120%のスケールにしてください。",
+      "screenshots": [],
+      "noted_at": "2026-05-06T10:40:46.953Z"
+    },
+    {
+      "idx": 14,
+      "category": "trivia",
+      "level": 2,
+      "type": "trivia",
+      "q": "あめが ふると つちから でてくる いきものは？",
+      "comment": "ステージングの絵が答えになってしまっているので、雨が降った地面の絵に変更してください。できれば今のこの絵にミミズが入っていないものを再生成。",
+      "screenshots": [],
+      "noted_at": "2026-05-06T10:41:37.573Z"
+    },
+    {
+      "idx": 16,
+      "category": "trivia",
+      "level": 2,
+      "type": "trivia",
+      "q": "キリンが 1日に ねむる じかんは？",
+      "comment": "クロップ修正",
+      "screenshots": [],
+      "noted_at": "2026-05-06T10:42:08.933Z"
+    },
+    {
+      "idx": 17,
+      "category": "trivia",
+      "level": 3,
+      "type": "trivia",
+      "q": "せかいで いちばん おおきい さかなは？",
+      "comment": "ステージングの画像を一般的な魚のシルエットにします。生成リストに加えてください。",
+      "screenshots": [],
+      "noted_at": "2026-05-06T10:43:07.972Z"
+    },
+    {
+      "idx": 18,
+      "category": "trivia",
+      "level": 3,
+      "type": "trivia",
+      "q": "イルカは なにの なかま？",
+      "comment": "選択肢にイラストが入っていません。",
+      "screenshots": [],
+      "noted_at": "2026-05-06T10:43:22.559Z"
+    },
+    {
+      "idx": 19,
+      "category": "trivia",
+      "level": 3,
+      "type": "trivia",
+      "q": "ちきゅうで いちばん おおきい いきものは？",
+      "comment": "この4つ以外にも、いろんな動物、キリンとかサイとかカバとかクマとか、大きいと言われている動物たちのシルエットをたくさんランダムに並べたいに変更します。もちろんこの選択肢の4つもシルエットとしてランダムに入れ込んでください。大きさは全部同じ大きさのシルエットで、配置はランダムにします。",
+      "screenshots": [],
+      "noted_at": "2026-05-06T10:44:41.694Z"
+    },
+    {
+      "idx": 21,
+      "category": "trivia",
+      "level": 3,
+      "type": "trivia",
+      "q": "バナナの きは じつは なにの なかま？",
+      "comment": "選択肢がイラスト入っていません。",
+      "screenshots": [],
+      "noted_at": "2026-05-06T10:45:22.008Z"
+    },
+    {
+      "idx": 3,
+      "category": "weather",
+      "level": 1,
+      "type": "emoji_name",
+      "q": "この てんきは？",
+      "comment": "雪は結晶ではなく、雪が積もっている景色にしましょう。ただし、他の選択肢のイラストとテイスト、描写の細かさなどを揃えるようにします。",
+      "screenshots": [],
+      "noted_at": "2026-05-06T10:47:43.948Z"
+    },
+    {
+      "idx": 4,
+      "category": "weather",
+      "level": 1,
+      "type": "emoji_name",
+      "q": "これは なに？",
+      "comment": "クロップ失敗",
+      "screenshots": [],
+      "noted_at": "2026-05-06T10:47:58.408Z"
+    },
+    {
+      "idx": 7,
+      "category": "weather",
+      "level": 1,
+      "type": "trivia",
+      "q": "そらに ある しろい ふわふわは なに？",
+      "comment": "大きさを120%に変更。",
+      "screenshots": [],
+      "noted_at": "2026-05-06T10:48:29.102Z"
+    },
+    {
+      "idx": 8,
+      "category": "weather",
+      "level": 2,
+      "type": "emoji_name",
+      "q": "これは なに？",
+      "comment": "クロップ失敗。下に少し下げる",
+      "screenshots": [],
+      "noted_at": "2026-05-06T10:48:49.666Z"
+    },
+    {
+      "idx": 9,
+      "category": "weather",
+      "level": 2,
+      "type": "trivia",
+      "q": "あさ、しろい もやが でる てんきを なんという？",
+      "comment": "ちょっとわかりづらいので、もっと遠い景色で、山とかぐらいのレベルの霧にしましょう。",
+      "screenshots": [],
+      "noted_at": "2026-05-06T10:49:36.743Z"
+    },
+    {
+      "idx": 20,
+      "category": "weather",
+      "level": 3,
+      "type": "trivia",
+      "q": "ゆきが たくさん ふる ちほうを なんという？",
+      "comment": "ここまでイラストを細かくない方がいいかな。",
+      "screenshots": [],
+      "noted_at": "2026-05-06T10:50:58.399Z"
+    },
+    {
+      "idx": 21,
+      "category": "weather",
+      "level": 3,
+      "type": "trivia",
+      "q": "うみや かわの みずが そらに のぼっていくのを なんという？",
+      "comment": "ステージングの絵が必要です。川の方がわかりやすいんじゃないでしょうか。川から蒸気が上がっているような感じで、上方向の矢印追加で。",
+      "screenshots": [],
+      "noted_at": "2026-05-06T10:52:46.043Z"
+    },
+    {
+      "idx": 22,
+      "category": "weather",
+      "level": 3,
+      "type": "trivia",
+      "q": "ふゆに いきが しろく みえるのは なぜ？",
+      "comment": "ステージングの画像が必要です。冬の街の中で人の息が白くなっている絵。",
+      "screenshots": [],
+      "noted_at": "2026-05-06T10:53:20.070Z"
+    },
+    {
+      "idx": 23,
+      "category": "weather",
+      "level": 3,
+      "type": "trivia",
+      "q": "ゆきの けっしょうは どんな かたち？",
+      "comment": "答えが出ちゃってるので、空から雪が降っている絵にしてください。おそらくこれは、ちょっと前に頼んだのでそれを使いまわしで良い。",
+      "screenshots": [],
+      "noted_at": "2026-05-06T10:54:27.586Z"
+    },
+    {
+      "idx": 0,
+      "category": "opposite",
+      "level": 1,
+      "type": "opposite",
+      "q": "「おおきい」の はんたいは？",
+      "comment": "アルファチャンネル付きに差し替えてください。",
+      "screenshots": [],
+      "noted_at": "2026-05-06T10:54:49.455Z"
+    },
+    {
+      "idx": 1,
+      "category": "opposite",
+      "level": 1,
+      "type": "opposite",
+      "q": "「あつい」の はんたいは？",
+      "comment": "アルファチャンネル付きのに差し替えてください。",
+      "screenshots": [],
+      "noted_at": "2026-05-06T10:55:02.107Z"
+    },
+    {
+      "idx": 4,
+      "category": "opposite",
+      "level": 1,
+      "type": "opposite",
+      "q": "「あける」の はんたいは？",
+      "comment": "「しめる」の絵が間違っています。D:\\AppDevelopment\\pono-asobiba-app\\tmp\\alpha_pending\\alpha\\05の中のレイヤー 0_20260506-130640_001.pngに変更",
+      "screenshots": [],
+      "noted_at": "2026-05-06T10:58:28.661Z"
+    },
+    {
+      "idx": 5,
+      "category": "opposite",
+      "level": 1,
+      "type": "opposite",
+      "q": "「すき」の はんたいは？",
+      "comment": "アルファチャンネル付きに変更。",
+      "screenshots": [],
+      "noted_at": "2026-05-06T10:59:37.048Z"
+    },
+    {
+      "idx": 6,
+      "category": "opposite",
+      "level": 1,
+      "type": "opposite",
+      "q": "「よる」の はんたいは？",
+      "comment": "ステージングの絵を 110%に発揮してください。",
+      "screenshots": [],
+      "noted_at": "2026-05-06T11:01:16.193Z"
+    },
+    {
+      "idx": 7,
+      "category": "opposite",
+      "level": 1,
+      "type": "opposite",
+      "q": "「たくさん」の はんたいは？",
+      "comment": "アルファチャンネル付きに変更。",
+      "screenshots": [],
+      "noted_at": "2026-05-06T11:01:27.167Z"
+    },
+    {
+      "idx": 8,
+      "category": "opposite",
+      "level": 2,
+      "type": "opposite",
+      "q": "「はやい」の はんたいは？",
+      "comment": "アルファチャンネル付きに変更。",
+      "screenshots": [],
+      "noted_at": "2026-05-06T11:01:43.268Z"
+    },
+    {
+      "idx": 10,
+      "category": "opposite",
+      "level": 2,
+      "type": "opposite",
+      "q": "「ながい」の はんたいは？",
+      "comment": "動画チャンネル付きに変更。",
+      "screenshots": [],
+      "noted_at": "2026-05-06T11:02:03.578Z"
+    },
+    {
+      "idx": 11,
+      "category": "opposite",
+      "level": 2,
+      "type": "opposite",
+      "q": "「ふとい」の はんたいは？",
+      "comment": "基本的に反対語の時の正解は左右で表示して、下にテキストで「ふとい」「ほそい」みたいに書きましょう。",
+      "screenshots": [],
+      "noted_at": "2026-05-06T11:03:20.403Z"
+    },
+    {
+      "idx": 13,
+      "category": "opposite",
+      "level": 2,
+      "type": "opposite",
+      "q": "「つよい」の はんたいは？",
+      "comment": "さっきの強いパパを一生懸命押しているけど全然動かないっていう絵に変更。",
+      "screenshots": [],
+      "noted_at": "2026-05-06T11:04:08.329Z"
+    },
+    {
+      "idx": 16,
+      "category": "opposite",
+      "level": 3,
+      "type": "opposite",
+      "q": "「かるい」の はんたいは？",
+      "comment": "クロップ失敗",
+      "screenshots": [],
+      "noted_at": "2026-05-06T11:04:39.439Z"
+    },
+    {
+      "idx": 20,
+      "category": "opposite",
+      "level": 3,
+      "type": "opposite",
+      "q": "「たすける」の はんたいは？",
+      "comment": "助けるの絵が間違っています。転んでいるのを助けてる絵。",
+      "screenshots": [],
+      "noted_at": "2026-05-06T11:05:37.692Z"
+    },
+    {
+      "idx": 21,
+      "category": "opposite",
+      "level": 3,
+      "type": "opposite",
+      "q": "「でかける」の はんたいは？",
+      "comment": "出かけるとかえるの絵が逆です。",
+      "screenshots": [],
+      "noted_at": "2026-05-06T11:06:47.053Z"
+    },
+    {
+      "idx": 6,
+      "category": "opposite",
+      "level": 1,
+      "type": "opposite",
+      "q": "「よる」の はんたいは？",
+      "comment": "１２０％拡大",
+      "screenshots": [],
+      "noted_at": "2026-05-06T22:40:36.466Z"
+    },
+    {
+      "idx": 6,
+      "category": "opposite",
+      "level": 1,
+      "type": "opposite",
+      "q": "「よる」の はんたいは？",
+      "comment": "ステージングのスケールが変えられない。",
+      "screenshots": [],
+      "noted_at": "2026-05-06T23:14:41.390Z"
+    },
+    {
+      "idx": 11,
+      "category": "body",
+      "level": 2,
+      "type": "emoji_name",
+      "q": "これは からだの どこ？",
+      "comment": "",
+      "cropMiss": true,
+      "screenshots": [],
+      "noted_at": "2026-05-07T02:18:58.240Z"
+    },
+    {
+      "idx": 11,
+      "category": "body",
+      "level": 2,
+      "type": "emoji_name",
+      "q": "これは からだの どこ？",
+      "comment": "",
+      "cropMiss": true,
+      "screenshots": [],
+      "noted_at": "2026-05-07T08:18:45.961Z"
+    },
+    {
+      "idx": 3,
+      "category": "weather",
+      "level": 1,
+      "type": "emoji_name",
+      "q": "この てんきは？",
+      "comment": "",
+      "cropMiss": true,
+      "screenshots": [],
+      "noted_at": "2026-05-07T08:23:51.160Z"
+    },
+    {
+      "idx": 3,
+      "category": "weather",
+      "level": 1,
+      "type": "emoji_name",
+      "q": "この てんきは？",
+      "comment": "",
+      "cropMiss": true,
+      "screenshots": [],
+      "noted_at": "2026-05-07T08:30:42.674Z"
+    },
+    {
+      "idx": 4,
+      "category": "weather",
+      "level": 1,
+      "type": "emoji_name",
+      "q": "これは なに？",
+      "comment": "",
+      "cropMiss": true,
+      "screenshots": [],
+      "noted_at": "2026-05-07T08:32:49.593Z"
+    },
+    {
+      "idx": 4,
+      "category": "weather",
+      "level": 1,
+      "type": "emoji_name",
+      "q": "これは なに？",
+      "comment": "",
+      "cropMiss": true,
+      "screenshots": [],
+      "noted_at": "2026-05-07T08:34:16.710Z"
+    },
+    {
+      "idx": 3,
+      "category": "weather",
+      "level": 1,
+      "type": "emoji_name",
+      "q": "この てんきは？",
+      "comment": "",
+      "cropMiss": true,
+      "screenshots": [],
+      "noted_at": "2026-05-07T08:34:21.772Z"
+    },
+    {
+      "idx": 6,
+      "category": "trivia",
+      "level": 1,
+      "type": "trivia",
+      "q": "おひさまが でてくるのは どっち？",
+      "comment": "アルファチャンネルミス。",
+      "cropMiss": false,
+      "screenshots": [],
+      "noted_at": "2026-05-07T09:55:18.747Z"
+    },
+    {
+      "idx": 7,
+      "category": "trivia",
+      "level": 1,
+      "type": "trivia",
+      "q": "うさぎの みみは どんな かたち？",
+      "comment": "選択肢はすべて2行にしてください。",
+      "cropMiss": false,
+      "screenshots": [],
+      "noted_at": "2026-05-07T09:56:30.921Z"
+    },
+    {
+      "idx": 9,
+      "category": "trivia",
+      "level": 2,
+      "type": "trivia",
+      "q": "あしが 8ぽん あるのは どれ？",
+      "comment": "ここはちょっと相談したい。足が8本あるのはどれっていう問題で、思いっきりもう答えを見せちゃってる状態なので、どうしたらいいかな。選択肢の方はもう数えたらわかるけど、イラストを載せちゃう。\n\nで、ステージングの方はシルエットとか？ でもシルエットだとバレちゃうよね。 これが何の難易度かにもよるけど… レベル2か。難しいね。 ちょっとここを相談させてアイデアをもらいたいです。",
+      "cropMiss": false,
+      "screenshots": [],
+      "noted_at": "2026-05-07T09:59:04.404Z"
+    },
+    {
+      "idx": 10,
+      "category": "trivia",
+      "level": 2,
+      "type": "trivia",
+      "q": "そらを とべない とりは どれ？",
+      "comment": "ここも以前指摘したと思うんですが、空を飛べない鳥はどれ？っていう質問なのに、ツバメが思いっきり飛んじゃってるんで問題的にはアウトです。\\n\\n飛んでない状態のツバメじゃないと意味がありません。再生成リストに入れてください。",
+      "cropMiss": false,
+      "screenshots": [],
+      "noted_at": "2026-05-07T10:00:02.560Z"
+    },
+    {
+      "idx": 11,
+      "category": "trivia",
+      "level": 2,
+      "type": "trivia",
+      "q": "タコの あしは なんぼん？",
+      "comment": "アルファチャンネルミス。",
+      "cropMiss": true,
+      "screenshots": [],
+      "noted_at": "2026-05-07T10:00:23.726Z"
+    },
+    {
+      "idx": 8,
+      "category": "weather",
+      "level": 2,
+      "type": "emoji_name",
+      "q": "これは なに？",
+      "comment": "",
+      "cropMiss": true,
+      "screenshots": [],
+      "noted_at": "2026-05-08T11:54:29.092Z"
+    },
+    {
+      "idx": 14,
+      "category": "weather",
+      "level": 2,
+      "type": "emoji_name",
+      "q": "これは なに？",
+      "comment": "生成し直し",
+      "cropMiss": false,
+      "screenshots": [],
+      "noted_at": "2026-05-08T11:59:41.329Z"
+    },
+    {
+      "idx": 15,
+      "category": "weather",
+      "level": 2,
+      "type": "trivia",
+      "q": "1ねんで いちばん あつい きせつは？",
+      "comment": "イラストのテイストが他と合っていません。",
+      "cropMiss": false,
+      "screenshots": [],
+      "noted_at": "2026-05-08T12:00:13.527Z"
+    },
+    {
+      "idx": 18,
+      "category": "weather",
+      "level": 3,
+      "type": "trivia",
+      "q": "かみなりは たかい ものに よく おちる。どうして？",
+      "comment": "高いところに雷が落ちている絵の方が良いんじゃないでしょうか。",
+      "cropMiss": false,
+      "screenshots": [],
+      "noted_at": "2026-05-08T12:02:02.196Z"
+    },
+    {
+      "idx": 19,
+      "category": "weather",
+      "level": 3,
+      "type": "trivia",
+      "q": "きりは どんな てんきに できやすい？",
+      "comment": "画像が古いままです。別の問題で作った霧の画像に差し替え。",
+      "cropMiss": false,
+      "screenshots": [],
+      "noted_at": "2026-05-08T12:02:38.024Z"
+    },
+    {
+      "idx": 23,
+      "category": "weather",
+      "level": 3,
+      "type": "trivia",
+      "q": "ゆきの けっしょうは どんな かたち？",
+      "comment": "雪が降っている絵に差し替えてください。選択肢のクロップがおかしいので、やり直します。",
+      "cropMiss": false,
+      "screenshots": [],
+      "noted_at": "2026-05-08T12:04:20.408Z"
+    },
+    {
+      "idx": 16,
+      "category": "opposite",
+      "level": 3,
+      "type": "opposite",
+      "q": "「かるい」の はんたいは？",
+      "comment": "クロップミス",
+      "cropMiss": true,
+      "screenshots": [],
+      "noted_at": "2026-05-08T12:08:09.198Z"
+    },
+    {
+      "idx": 23,
+      "category": "opposite",
+      "level": 3,
+      "type": "opposite",
+      "q": "「おしえる」の はんたいは？",
+      "comment": "右の少年が切れている。",
+      "cropMiss": false,
+      "screenshots": [],
+      "noted_at": "2026-05-08T12:11:07.252Z"
+    },
+    {
+      "idx": 0,
+      "category": "body",
+      "level": 1,
+      "type": "emoji_name",
+      "q": "これは からだの どこ？",
+      "comment": "アルファが抜け切れていない。",
+      "cropMiss": false,
+      "screenshots": [],
+      "noted_at": "2026-05-08T12:11:32.557Z"
+    },
+    {
+      "idx": 16,
+      "category": "body",
+      "level": 3,
+      "type": "trivia",
+      "q": "ねむっているとき からだは どうなっている？",
+      "comment": "左右が切れている。",
+      "cropMiss": false,
+      "screenshots": [],
+      "noted_at": "2026-05-08T12:15:17.577Z"
+    },
+    {
+      "idx": 20,
+      "category": "shape_name",
+      "level": 3,
+      "type": "shape_name",
+      "q": "まんまるい ピザを ちょうど はんぶんに きると どれ？",
+      "comment": "ステージングのピザを差し替えます。",
+      "cropMiss": false,
+      "screenshots": [],
+      "noted_at": "2026-05-08T12:19:20.076Z"
+    },
+    {
+      "idx": 21,
+      "category": "shape_name",
+      "level": 3,
+      "type": "shape_name",
+      "q": "ノートの かたちは？",
+      "comment": "ノートのステージングが変わっていない。",
+      "cropMiss": false,
+      "screenshots": [],
+      "noted_at": "2026-05-08T12:19:35.180Z"
+    },
+    {
+      "idx": 14,
+      "category": "shape_name",
+      "level": 2,
+      "type": "shape_name",
+      "q": "ほしと まるでは どちらが かどが おおい？",
+      "comment": "〇も出した方が良い",
+      "cropMiss": false,
+      "screenshots": [],
+      "noted_at": "2026-05-08T12:20:44.571Z"
+    },
+    {
+      "idx": 6,
+      "category": "trivia",
+      "level": 1,
+      "type": "trivia",
+      "q": "おひさまが でてくるのは どっち？",
+      "comment": "夜と共に、イラストのテイストが合っていない。",
+      "cropMiss": false,
+      "screenshots": [],
+      "noted_at": "2026-05-08T12:22:40.441Z"
+    },
+    {
+      "idx": 10,
+      "category": "trivia",
+      "level": 2,
+      "type": "trivia",
+      "q": "そらを とべない とりは どれ？",
+      "comment": "何度言ったら先生リストに載せてもらえるんでしょうか。",
+      "cropMiss": false,
+      "screenshots": [],
+      "noted_at": "2026-05-08T12:23:46.345Z"
+    },
+    {
+      "idx": 11,
+      "category": "trivia",
+      "level": 2,
+      "type": "trivia",
+      "q": "タコの あしは なんぼん？",
+      "comment": "クロップミス",
+      "cropMiss": true,
+      "screenshots": [],
+      "noted_at": "2026-05-08T12:23:58.324Z"
+    }
+  ]
+}

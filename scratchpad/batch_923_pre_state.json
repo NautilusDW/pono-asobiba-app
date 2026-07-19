@@ -1,0 +1,215 @@
+[
+  {
+    "path": "flag/cmd_red_down_keep.mp3",
+    "exists": true,
+    "size": 20492,
+    "sha1": "c6c5d0706d3b52962b248ac11d4f35db01f11afe",
+    "expected": "しろは そのまま あか さげて！",
+    "kws": [
+      "しろ",
+      "そのまま",
+      "あか",
+      "さげ"
+    ],
+    "transcript": "白波そのまま赤下げて",
+    "kw_hit": [
+      "そのまま"
+    ],
+    "kw_all_match": false
+  },
+  {
+    "path": "truefalse/start.mp3",
+    "exists": true,
+    "size": 21308,
+    "sha1": "777d00d63f3a1536adbf856b6136586cd29dfd2f",
+    "expected": "○か ×か、 どっちかな？",
+    "kws": [
+      "どっち"
+    ],
+    "transcript": "○か×かどっちかな",
+    "kw_hit": [
+      "どっち"
+    ],
+    "kw_all_match": true
+  },
+  {
+    "path": "truefalse/correct.mp3",
+    "exists": true,
+    "size": 17708,
+    "sha1": "286f115ef88bcf6862f9317187d4cba94bed1167",
+    "expected": "せいかい！ すごいね！",
+    "kws": [
+      "せいかい",
+      "すごい"
+    ],
+    "transcript": "正解!すごいね!",
+    "kw_hit": [
+      "すごい"
+    ],
+    "kw_all_match": false
+  },
+  {
+    "path": "truefalse/wrong.mp3",
+    "exists": true,
+    "size": 13316,
+    "sha1": "cd20d1135589539add3fadd3c9b6e0b646660488",
+    "expected": "ざんねん、 ちがったよ",
+    "kws": [
+      "ざんねん",
+      "ちがっ"
+    ],
+    "transcript": "残念違ったよ",
+    "kw_hit": [],
+    "kw_all_match": false
+  },
+  {
+    "path": "simon/start.mp3",
+    "exists": true,
+    "size": 26252,
+    "sha1": "eba30cbb9ed86083053f79f7f5e7ce59cd049cdb",
+    "expected": "よく みててね、 おなじ じゅんで タップするよ",
+    "kws": [
+      "みてて",
+      "おなじ",
+      "じゅん"
+    ],
+    "transcript": "よく見ててね。同じ順でタップするよ。",
+    "kw_hit": [],
+    "kw_all_match": false
+  },
+  {
+    "path": "simon/your_turn.mp3",
+    "exists": true,
+    "size": 14300,
+    "sha1": "360db6f0a1929a54eab3711d829d13c3a29854c6",
+    "expected": "さあ、 きみの ばん！",
+    "kws": [
+      "きみ",
+      "ばん"
+    ],
+    "transcript": "さあ君の番",
+    "kw_hit": [],
+    "kw_all_match": false
+  },
+  {
+    "path": "simon/wrong.mp3",
+    "exists": true,
+    "size": 14996,
+    "sha1": "7842e6eeb9bef240c0dd1e5bc1a5a6d378d8075f",
+    "expected": "あれれ、 ちがう おとだった",
+    "kws": [
+      "あれれ",
+      "ちがう"
+    ],
+    "transcript": "あれれ?違う音だった。",
+    "kw_hit": [
+      "あれれ"
+    ],
+    "kw_all_match": false
+  },
+  {
+    "path": "silhouette/start.mp3",
+    "exists": true,
+    "size": 31124,
+    "sha1": "548342d271d792b451fb317bbf838bda7827ac95",
+    "expected": "ちらっと だけ みえる よ。 なんの え かな？",
+    "kws": [
+      "ちらっと",
+      "なんの"
+    ],
+    "transcript": "ちらっとだけ見えるよ。何の絵かな?",
+    "kw_hit": [
+      "ちらっと"
+    ],
+    "kw_all_match": false
+  },
+  {
+    "path": "silhouette/hint_more.mp3",
+    "exists": true,
+    "size": 30668,
+    "sha1": "b678f8badd8c7dbd4d7f15601f5fc707a655a69c",
+    "expected": "もうひとつ あなを あけたよ。 もう いちど みて？",
+    "kws": [
+      "もうひとつ",
+      "あな",
+      "もういちど"
+    ],
+    "transcript": "もう一つ穴を開けたよもう一度見て",
+    "kw_hit": [],
+    "kw_all_match": false
+  },
+  {
+    "path": "silhouette/correct.mp3",
+    "exists": true,
+    "size": 17804,
+    "sha1": "2c2ea2248d15b7c8a2a62c25a2bc7fddd03155dd",
+    "expected": "せいかい！ よく わかったね！",
+    "kws": [
+      "せいかい",
+      "わかっ"
+    ],
+    "transcript": "正解よくわかったね",
+    "kw_hit": [
+      "わかっ"
+    ],
+    "kw_all_match": false
+  },
+  {
+    "path": "silhouette/wrong.mp3",
+    "exists": true,
+    "size": 19412,
+    "sha1": "2abf23333d70ef3cb6067556804cd5acc3aab8d9",
+    "expected": "ざんねん、 ちがったみたい",
+    "kws": [
+      "ざんねん",
+      "ちがっ"
+    ],
+    "transcript": "残念違ったみたいだね",
+    "kw_hit": [],
+    "kw_all_match": false
+  },
+  {
+    "path": "oddone/start.mp3",
+    "exists": true,
+    "size": 23372,
+    "sha1": "282548b7e8253bc3910b19df983bcd02b7a365f8",
+    "expected": "なかま はずれは どれかな？",
+    "kws": [
+      "なかま",
+      "はずれ",
+      "どれ"
+    ],
+    "transcript": "仲間外れはどれかな?",
+    "kw_hit": [
+      "どれ"
+    ],
+    "kw_all_match": false
+  },
+  {
+    "path": "oddone/correct.mp3",
+    "exists": true,
+    "size": 31436,
+    "sha1": "d9ef05f8017a71fea2d133b83a71b5183bcb1d90",
+    "expected": "せいかい！ よく みつけたね！",
+    "kws": [
+      "せいかい",
+      "みつけ"
+    ],
+    "transcript": "正解!よく見つけたね!",
+    "kw_hit": [],
+    "kw_all_match": false
+  },
+  {
+    "path": "oddone/wrong.mp3",
+    "exists": true,
+    "size": 20204,
+    "sha1": "0b968dfba48f7a017f9d9242fe024ab5fd6c3f27",
+    "expected": "うーん、 ちがうかも",
+    "kws": [
+      "ちがう"
+    ],
+    "transcript": "んー違うかも",
+    "kw_hit": [],
+    "kw_all_match": false
+  }
+]

@@ -2,15 +2,24 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>ハリネズミちゃんをたすけにいこう！| ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<!-- FOUC guard: タイトル overlay が無いゲームなので #app を init 完了まで非表示 -->
+<style>html,body{background:#FFF8F0}#app{visibility:hidden}body.pono-game-ready #app{visibility:visible}</style>
+<script>document.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(function(){requestAnimationFrame(function(){document.body.classList.add('pono-game-ready')})})});</script>
+<script src="../common/preload-helper.js"></script>
+<script>window.addEventListener('DOMContentLoaded',function(){if(window.PonoPreload)window.PonoPreload.warmGameAssets('breakout');});</script>
 <script src="../common/achievements.js"></script>
 <script src="../common/acorns.js"></script>
 <script src="../common/menu.js"></script>
 <script src="../common/highscore.js"></script>
 <script src="../common/treasure.js"></script>
 <script src="../common/first-clear.js"></script>
+<script src="../common/debug-mode.js"></script>
+<script src="../common/tier.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
 
@@ -339,7 +348,7 @@ html, body {
   <p>スマホを<br><strong>たてむき</strong>にしてね！</p>
 </div>
 
-<audio id="bgm" loop src="../assets/audio/breakout_bgm.mp3" preload="auto"></audio>
+<audio id="bgm" loop src="../assets/audio/breakout_bgm.mp3" preload="none"></audio>
 <div id="app">
   <div class="header">
     <h1>ハリネズミちゃんをたすけにいこう！</h1>
@@ -390,7 +399,12 @@ html, body {
 
 <script>
 // ===== Premium Gate =====
-if (localStorage.getItem('pono_premium') !== '1') {
+// [[feedback_ponotier_propagation]]: raw localStorage.getItem('pono_premium') 直接参照は
+// tier v3 (free/book/sub 集合方式) から取り残される bypass になるため、PonoTier 経由に統一。
+// 旧仕様 (pono_premium==='1' で通過) と同義の「free tier のみブロック」を PonoTier.isFree() で再現。
+var __appBuild = window.__APP_BUILD__ === 1 || window.__APP_BUILD__ === '1';
+var __tierBlocksBreakout = !window.PonoTier || typeof window.PonoTier.isFree !== 'function' || window.PonoTier.isFree();
+if (!__appBuild && __tierBlocksBreakout) {
   location.replace('../play.html');
 }
 
@@ -1274,12 +1288,12 @@ btnPause.addEventListener('click', e => { e.stopPropagation(); togglePause(); })
 
 // ===== Background picker (Breakout) =====
 const BRK_BG_DEFS = [
-  { id: 'bg_breakout_forest_light',  src: '../assets/images/Block/stage1_forest_light.png',  label: 'あかるいもり',   unlockBy: null },
-  { id: 'bg_breakout_forest_deep',   src: '../assets/images/Block/stage2_forest_deep.png',   label: 'ふかいもり',     unlockBy: 'ステージ2クリアで解除' },
-  { id: 'bg_breakout_cave_entrance', src: '../assets/images/Block/stage3_cave_entrance.png', label: 'どうくつのいりぐち', unlockBy: 'ステージ3クリアで解除' },
-  { id: 'bg_breakout_cave_mushroom', src: '../assets/images/Block/stage4_cave_mushroom.png', label: 'きのこどうくつ', unlockBy: 'ステージ4クリアで解除' },
-  { id: 'bg_breakout_cave_deep',     src: '../assets/images/Block/stage5_cave_deep.png',     label: 'しんかいどうくつ', unlockBy: 'ステージ5クリアで解除' },
-  { id: 'bg_breakout_night_sky',     src: '../assets/images/Block/stage6_night_sky.png',     label: 'よるのそら',     unlockBy: 'ぜんクリアで解除' },
+  { id: 'bg_breakout_forest_light',  src: '../assets/images/Block/stage1_forest_light.webp',  label: 'あかるいもり',   unlockBy: null },
+  { id: 'bg_breakout_forest_deep',   src: '../assets/images/Block/stage2_forest_deep.webp',   label: 'ふかいもり',     unlockBy: 'ステージ2クリアで解除' },
+  { id: 'bg_breakout_cave_entrance', src: '../assets/images/Block/stage3_cave_entrance.webp', label: 'どうくつのいりぐち', unlockBy: 'ステージ3クリアで解除' },
+  { id: 'bg_breakout_cave_mushroom', src: '../assets/images/Block/stage4_cave_mushroom.webp', label: 'きのこどうくつ', unlockBy: 'ステージ4クリアで解除' },
+  { id: 'bg_breakout_cave_deep',     src: '../assets/images/Block/stage5_cave_deep.webp',     label: 'しんかいどうくつ', unlockBy: 'ステージ5クリアで解除' },
+  { id: 'bg_breakout_night_sky',     src: '../assets/images/Block/stage6_night_sky.webp',     label: 'よるのそら',     unlockBy: 'ぜんクリアで解除' },
 ];
 const BRK_DEFAULT_BG_IDS = ['bg_breakout_forest_light'];
 let brkSelectedBgId = localStorage.getItem('pono_last_bg_breakout') || 'bg_breakout_forest_light';
@@ -1475,26 +1489,26 @@ initMenu({
 const bgm    = document.getElementById('bgm');
 let bgmEnabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
 let bgmStarted = false;
-bgm.volume = 0.2;
+bgm.volume = 0.25;
 
 function tryStartBgm() {
   if (!bgmEnabled || bgmStarted) return;
+  if (bgm.preload === 'none') bgm.preload = 'auto'; // 初回ジェスチャで読み込み開始（ページ表示時の 914KB 先読み防止）
   bgm.play().then(() => { bgmStarted = true; }).catch(() => {});
 }
 
+// ページ表示時に play() するとダウンロードが走るため、初回ジェスチャまで待つ
 if (bgmEnabled) {
-  bgm.play().then(() => { bgmStarted = true; }).catch(() => {
-    document.addEventListener('touchstart', tryStartBgm, { once: true, passive: true });
-    document.addEventListener('pointerdown', tryStartBgm, { once: true });
-  });
+  document.addEventListener('touchstart', tryStartBgm, { once: true, passive: true });
+  document.addEventListener('pointerdown', tryStartBgm, { once: true });
 }
 
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) { bgm.pause(); }
-  else if (bgmEnabled) { bgm.play().catch(() => {}); }
+  else if (bgmEnabled && bgmStarted) { bgm.play().catch(() => {}); }
 });
-window.addEventListener('blur',  () => bgm.pause());
-window.addEventListener('focus', () => { if (bgmEnabled) bgm.play().catch(() => {}); });
+window.addEventListener('blur',  () => { if (!document.hidden) return; bgm.pause(); });
+window.addEventListener('focus', () => { if (bgmEnabled && bgmStarted) bgm.play().catch(() => {}); });
 
 function updateLandscapeNotice() {
   const notice = document.getElementById('landscape-notice');

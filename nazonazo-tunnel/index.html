@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="pono-build" content="nazonazo-space-finale-20260716-1329">
+<title>ポノの なぞなぞトンネル | ポノのあそびば</title>
+<!-- FOUC guard: 初回ペイント時の未スタイル表示を防ぐ -->
+<style>html,body{background:#000}#app{visibility:hidden}body.pono-game-ready #app{visibility:visible}</style>
+<script>document.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(function(){requestAnimationFrame(function(){if(!window.__PONO_TIER_LOCKED__)document.body.classList.add('pono-game-ready')})})});</script>
+<!-- app (アプリばん) 専用 tier ガード。 tier.js 未読込/例外時は fail-open (従来通り表示)。 -->
+<script src="../common/debug-mode.js"></script>
+<script src="../common/tier.js"></script>
+<script src="../js/game-stickers.js"></script>
+<script src="../common/achievements.js"></script>
+<script>
+(function(){
+  'use strict';
+  var locked = false;
+  try {
+    var pt = window.PonoTier;
+    if (pt && typeof pt.getTier === 'function') locked = (pt.getTier() !== 'app');
+  } catch (e) { locked = false; }
+  if (!locked) return;
+  window.__PONO_TIER_LOCKED__ = true;
+  // FOUC 防止: head 内同期実行なので初回ペイント前にゲーム側 DOM を不可視化
+  var st = document.createElement('style');
+  st.textContent = 'html{background:#FFF7E6 !important}body>*:not(#ponoTierLockScreen){visibility:hidden !important}';
+  (document.head || document.documentElement).appendChild(st);
+  // キーボード入力がゲームへ届かないよう capture 段階で遮断 (ロック中のみ)。
+  // ゲーム側 listener はガードより後に登録されるため stopImmediatePropagation だけで全て遮断できる。
+  // preventDefault はしない: Tab/Enter で「メニューへ もどる」リンクに到達する
+  // キーボード操作と、 ブラウザ既定動作 (F5 リロード等) を塞がないため。
+  var KEY_EVTS = ['keydown', 'keyup', 'keypress'];
+  for (var i = 0; i < KEY_EVTS.length; i++) {
+    window.addEventListener(KEY_EVTS[i], function(e){
+      if (window.__PONO_TIER_LOCKED__) e.stopImmediatePropagation();
+    }, true);
+  }
+  function showLock(){
+    if (!document.body || document.getElementById('ponoTierLockScreen')) return;
+    var ov = document.createElement('div');
+    ov.id = 'ponoTierLockScreen';
+    ov.setAttribute('role', 'dialog');
+    ov.style.cssText = 'position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(165deg,#FFF7E6 0%,#FFEDC2 45%,#D9EFD5 100%);font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN",sans-serif;text-align:center';
+    var card = document.createElement('div');
+    card.style.cssText = 'background:#fff;border-radius:26px;padding:28px 24px 26px;max-width:340px;width:100%;box-shadow:0 12px 40px rgba(93,78,55,0.22)';
+    var emo = document.createElement('div');
+    emo.setAttribute('aria-hidden', 'true');
+    emo.style.cssText = 'display:flex;align-items:center;justify-content:center;gap:4px;height:58px;margin-bottom:12px';
+    var owl = document.createElement('img');
+    owl.src = '../assets/images/nazonazo-tunnel/quiz-art/quiz_owl_20260714.webp';
+    owl.alt = '';
+    owl.style.cssText = 'display:block;width:58px;height:58px;object-fit:contain';
+    emo.appendChild(owl);
+    var star = document.createElement('img');
+    star.src = '../assets/images/nazonazo-tunnel/quiz-art/quiz_star_20260714.webp';
+    star.alt = '';
+    star.style.cssText = 'display:block;width:28px;height:28px;object-fit:contain';
+    emo.appendChild(star);
+    card.appendChild(emo);
+    var tag = document.createElement('div');
+    tag.style.cssText = 'display:inline-block;font-size:0.74rem;font-weight:900;color:#fff;background:linear-gradient(135deg,#34D399,#10B981);padding:4px 14px;border-radius:50px;letter-spacing:0.06em;margin-bottom:12px';
+    tag.textContent = 'アプリばん せんよう';
+    card.appendChild(tag);
+    var ttl = document.createElement('div');
+    ttl.style.cssText = 'font-size:1.12rem;font-weight:900;color:#5D4E37;line-height:1.5;margin-bottom:10px';
+    ttl.textContent = 'この ゲームは アプリばんで あそべるよ！';
+    card.appendChild(ttl);
+    var body = document.createElement('div');
+    body.style.cssText = 'font-size:0.92rem;font-weight:700;color:#8B7B60;line-height:1.6;margin-bottom:18px';
+    body.textContent = 'アプリばんに あたらしい あそびが まってるよ';
+    card.appendChild(body);
+    var btn = document.createElement('a');
+    btn.href = '../play.html';
+    btn.style.cssText = 'display:inline-block;padding:12px 34px;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-size:0.98rem;font-weight:900;text-decoration:none;box-shadow:0 4px 14px rgba(59,130,246,0.4)';
+    btn.textContent = 'メニューへ もどる';
+    card.appendChild(btn);
+    ov.appendChild(card);
+    document.body.appendChild(ov);
+  }
+  if (document.body) { showLock(); }
+  else { document.addEventListener('DOMContentLoaded', showLock); }
+})();
+</script>
+<link rel="stylesheet" href="styles.css?v=20260716-1329">
+<script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
+</head>
+<body class="st-town v-train" data-driver="pono" data-driver-mood="happy">
+<div id="app">
+  <div id="scene">
+    <div id="skyA"></div>
+    <div id="skyB"></div>
+    <div id="spaceStarFar" class="space-star-layer space-star-far" aria-hidden="true"></div>
+    <div id="horizon">
+      <div id="townHorizonLoop" class="town-loop-strip" aria-hidden="true">
+        <span class="town-loop-tile"></span><span class="town-loop-tile"></span><span class="town-loop-tile"></span><span class="town-loop-tile"></span>
+      </div>
+      <div id="jungleHorizonLoop" class="jungle-loop-strip" aria-hidden="true">
+        <span class="jungle-loop-tile"></span><span class="jungle-loop-tile"></span><span class="jungle-loop-tile"></span><span class="jungle-loop-tile"></span>
+      </div>
+      <div id="futureHorizonLoop" class="future-loop-strip" aria-hidden="true">
+        <span class="future-loop-tile"></span><span class="future-loop-tile"></span><span class="future-loop-tile"></span><span class="future-loop-tile"></span>
+      </div>
+      <div id="spaceHorizonLoop" class="space-loop-strip" aria-hidden="true">
+        <span class="space-loop-tile"></span><span class="space-loop-tile"></span><span class="space-loop-tile"></span><span class="space-loop-tile"></span>
+      </div>
+    </div>
+    <div id="jungleBirdFlightLayer" class="jungle-flight-layer" aria-hidden="true"></div>
+    <div id="jungleAnimalsFar" class="jungle-animal-layer" aria-hidden="true"></div>
+    <div id="midT">
+      <div id="townMidLoop" class="town-loop-strip" aria-hidden="true">
+        <span class="town-loop-tile"></span><span class="town-loop-tile"></span><span class="town-loop-tile"></span><span class="town-loop-tile"></span>
+      </div>
+      <div id="futureMidLoop" class="future-loop-strip" aria-hidden="true">
+        <span class="future-loop-tile"></span><span class="future-loop-tile"></span><span class="future-loop-tile"></span><span class="future-loop-tile"></span>
+      </div>
+    </div>
+    <div id="spaceStarMid" class="space-star-layer space-star-mid" aria-hidden="true"></div>
+    <div id="jungleButterflyFlightLayer" class="jungle-flight-layer" aria-hidden="true"></div>
+    <div id="jungleAnimalsMid" class="jungle-animal-layer" aria-hidden="true"></div>
+    <div id="seaFishLayer" aria-hidden="true"></div>
+    <div id="groundT"></div>
+    <div id="seaHabitatLayer" aria-hidden="true"></div>
+    <div id="spaceStarNear" class="space-star-layer space-star-near" aria-hidden="true"></div>
+    <div id="seaArenaShade" aria-hidden="true"></div>
+    <div id="seaCompanionLayer" aria-hidden="true"></div>
+    <div id="seaShotLayer" aria-hidden="true"></div>
+    <div id="seaSteerSurface" aria-hidden="true"></div>
+    <div id="spaceSteerSurface" aria-hidden="true"></div>
+    <div id="seaAnswerLayer" role="group" aria-labelledby="qText"></div>
+    <div id="seaBossLayer" role="group" aria-label="おおあわぬしとの たたかい" hidden></div>
+    <div id="seaRescueMessage" role="status" aria-live="polite" aria-atomic="true" hidden></div>
+    <div id="futureCapsuleLayer" role="group" aria-labelledby="qText" hidden></div>
+    <div id="spaceGalaxyLayer" role="group" aria-labelledby="qText" hidden></div>
+    <div id="spaceChaseLayer" role="group" aria-label="うちゅう おいかけっこ" hidden>
+      <div class="space-chase-board">
+        <div class="space-chase-camera" aria-hidden="true">
+          <div class="space-chase-world">
+            <div class="space-chase-star-stream"></div>
+            <svg id="spaceChaseRouteMap" class="space-chase-route-map" viewBox="0 0 1350 720" preserveAspectRatio="none">
+              <g id="spaceChaseRoutePaths"></g>
+              <g id="spaceChaseJunctions" class="space-chase-junctions"></g>
+            </svg>
+            <div class="space-chase-danger-cloud"></div>
+            <div id="spaceChaseBoostItems" aria-hidden="true"></div>
+            <div class="space-chase-comet"><span class="ui-art" data-ui-art="fire" data-ui-art-eager="1"></span><span class="space-chase-star-child ui-art" data-ui-art="star" data-ui-art-eager="1"></span></div>
+            <img class="space-chase-rocket" src="../assets/images/nazonazo-tunnel/space_vehicle_exploration_rocket_pono_20260713.png" alt="" decoding="async" loading="eager" draggable="false">
+            <div class="space-chase-rescue-beam"></div>
+          </div>
+        </div>
+        <div id="spaceChaseCinematic" class="space-chase-cinematic" aria-hidden="true"><i></i><strong id="spaceChaseCinematicText">デッドヒート！</strong></div>
+        <div class="space-chase-hud">
+          <h2 id="spaceChaseTitle">あっ！ ほしのこが ながされてる！</h2>
+          <div class="space-chase-rounds" role="progressbar" aria-label="ゴールまでの みち" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0"><i></i><i></i><i></i></div>
+          <strong id="spaceChaseRoundText">みちを えらぼう！</strong>
+        </div>
+        <div id="spaceChaseRouteChoices" class="space-chase-route-choices" role="group" aria-label="ひかる みちを えらぶ" hidden>
+          <button type="button" data-space-chase-choice="0" aria-pressed="false" disabled><span class="ui-art" data-ui-art="rocket" data-ui-art-eager="1" aria-hidden="true"></span><strong>ちかみち</strong></button>
+          <button type="button" data-space-chase-choice="1" aria-pressed="false" disabled><span class="ui-art" data-ui-art="star" data-ui-art-eager="1" aria-hidden="true"></span><strong>スターみち</strong></button>
+        </div>
+        <div class="space-chase-controls">
+          <div class="space-chase-readout">
+            <p id="spaceChaseGuide" role="status" aria-live="polite" aria-atomic="true">おいついて たすけよう！</p>
+            <div id="spaceChaseBoostMeter" class="space-chase-boost-meter" role="progressbar" aria-label="ブースト スター" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0"><i></i><i></i><i></i></div>
+            <div id="spaceChaseFinalMeter" class="space-chase-final-meter" role="progressbar" aria-label="さいごの ブースト" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" hidden><span></span><strong>0%</strong></div>
+          </div>
+          <button id="spaceChaseBoostButton" type="button" aria-label="スターを 3こ あつめると ブースト" disabled>
+            <span class="ui-art" data-ui-art="star" data-ui-art-eager="1" aria-hidden="true"></span>
+            <strong>ブースト！</strong>
+            <small>スター 0こ</small>
+          </button>
+        </div>
+        <div id="spaceChaseRescuePanel" class="space-chase-rescue-panel" role="group" aria-labelledby="spaceChaseRescueTitle" aria-hidden="true" hidden>
+          <img class="space-chase-finale-scene is-runaway" src="../assets/images/nazonazo-tunnel/space_finale_runaway_comet_20260716.webp" alt="" decoding="async" loading="eager" draggable="false" aria-hidden="true">
+          <img class="space-chase-finale-scene is-calm" src="../assets/images/nazonazo-tunnel/space_finale_rainbow_rail_20260716.webp" alt="" decoding="async" loading="eager" draggable="false" aria-hidden="true">
+          <div id="spaceChaseRescuePlayfield" class="space-chase-rescue-playfield" role="group" tabindex="0" aria-label="ひかる すきまへ ロケットを うごかす。うえと したの キーでも うごく">
+            <div id="spaceChaseTailGates" class="space-chase-tail-gates" aria-hidden="true">
+              <i class="space-chase-tail-gate" data-rescue-gate="0" style="--gate-y:30%"><b></b><b></b></i>
+              <i class="space-chase-tail-gate" data-rescue-gate="1" style="--gate-y:67%"><b></b><b></b></i>
+              <i class="space-chase-tail-gate" data-rescue-gate="2" style="--gate-y:42%"><b></b><b></b></i>
+              <i class="space-chase-tail-gate" data-rescue-gate="3" style="--gate-y:73%"><b></b><b></b></i>
+              <i class="space-chase-tail-gate" data-rescue-gate="4" style="--gate-y:35%"><b></b><b></b></i>
+            </div>
+            <div id="spaceChaseSealTargets" class="space-chase-seal-targets" aria-hidden="true">
+              <i data-rescue-lock="0"><b></b></i><i data-rescue-lock="1"><b></b></i><i data-rescue-lock="2"><b></b></i>
+            </div>
+            <img class="space-chase-rescue-rocket" src="../assets/images/nazonazo-tunnel/space_vehicle_exploration_rocket_pono_20260713.png" alt="" decoding="async" loading="eager" draggable="false">
+            <div id="spaceChaseRescueTether" class="space-chase-rescue-tether" aria-hidden="true"><i></i></div>
+            <div id="spaceChaseRescueAimLine" class="space-chase-rescue-aim-line" aria-hidden="true"><i></i></div>
+            <div id="spaceChaseRescueAim" class="space-chase-rescue-aim" aria-hidden="true"><i></i></div>
+            <div id="spaceChaseRescueRing" class="space-chase-rescue-ring" aria-hidden="true"><i></i></div>
+            <span id="spaceChaseRescueStar" class="space-chase-rescue-star" aria-hidden="true"><span class="ui-art" data-ui-art="star" data-ui-art-eager="1"></span></span>
+            <div id="spaceChaseTimingPulse" class="space-chase-timing-pulse" aria-hidden="true"><i></i><strong>いま！</strong><small>3ばい！</small></div>
+            <div id="spaceChaseConstellation" class="space-chase-constellation" aria-hidden="true">
+              <i data-station="0"><strong>まち</strong></i><i data-station="1"><strong>ジャングル</strong></i><i data-station="2"><strong>すうじ</strong></i><i data-station="3"><strong>うみ</strong></i><i data-station="4"><strong>みらい</strong></i><i data-station="5"><strong>うちゅう</strong></i>
+            </div>
+          </div>
+          <h2 id="spaceChaseRescueTitle">おいついた！</h2>
+          <div id="spaceChaseRescueProgress" class="space-chase-rescue-progress" role="progressbar" aria-label="だいきゅうしゅつ" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span></span></div>
+          <p id="spaceChaseRescueGuide" role="status" aria-live="polite" aria-atomic="true">でも すいせいが とまれない！</p>
+          <button id="spaceChaseRescueMashButton" type="button" aria-label="れんだして すいせいを ゆっくりに する" hidden><span class="ui-art" data-ui-art="star" data-ui-art-eager="1" aria-hidden="true"></span><strong>れんだ！</strong><small>いま！で 3ばい</small></button>
+        </div>
+      </div>
+    </div>
+    <div id="seaRoundCountdown" role="status" aria-live="assertive" aria-atomic="true" hidden></div>
+    <div id="seaQuizGuide" aria-hidden="true">ただしい ほうを えらんで たすけよう</div>
+    <div id="seaSteerHint" role="status" aria-live="polite" hidden><span class="ui-art" data-ui-art="touch" aria-hidden="true"></span><span>タッチした ばしょへ うごくよ</span></div>
+    <div id="spaceSteerHint" role="status" aria-live="polite" hidden><span class="ui-art" data-ui-art="rocket" aria-hidden="true"></span><span>タッチした ばしょへ うごくよ</span></div>
+    <button id="seaFireButton" type="button" aria-label="おしっぱなしで れんしゃ" hidden><span class="ui-art" data-ui-art="fire" aria-hidden="true"></span><strong>れんしゃ</strong></button>
+    <div id="jungleAnimalsNear" class="jungle-animal-layer" aria-hidden="true"></div>
+    <div id="jungleHabitatBack" aria-hidden="true"></div>
+    <div id="world"></div>
+    <div id="screenPortalBack" aria-hidden="true"><div class="screen-exit-gate"></div></div>
+    <div id="cars"></div>
+    <div id="veh">
+      <div id="vehicleSteerShell" class="vehicle-steer-shell">
+       <div class="vbody">
+        <div class="headlight"></div>
+        <div class="train-art" aria-hidden="true">
+          <div class="train-driver"></div>
+          <div class="train-wheel train-wheel-a"></div>
+          <div class="train-wheel train-wheel-b"></div>
+          <div class="train-wheel train-wheel-c"></div>
+          <div class="train-cylinder" aria-hidden="true"></div>
+          <div class="train-crosshead" aria-hidden="true"></div>
+          <div class="train-piston-rod" aria-hidden="true"></div>
+          <div class="train-wheel-rod train-wheel-rod-a" aria-hidden="true"></div>
+          <div class="train-wheel-rod train-wheel-rod-b" aria-hidden="true"></div>
+          <div class="train-main-rod" aria-hidden="true"></div>
+          <div class="train-wheel-pin train-wheel-pin-a" aria-hidden="true"></div>
+          <div class="train-wheel-pin train-wheel-pin-b" aria-hidden="true"></div>
+          <div class="train-body-img"></div>
+        </div>
+        <div class="tr-boiler"></div>
+        <div class="tr-chim"></div>
+        <div class="tr-cab"></div>
+        <div class="tr-win"></div>
+        <div class="wheel w1"></div>
+        <div class="wheel w2"></div>
+        <div class="wheel w3"></div>
+        <div class="puff" aria-hidden="true"></div>
+        <div class="submarine-art" aria-hidden="true"></div>
+        <div class="sb-hull"></div>
+        <div class="sb-peri"></div>
+        <div class="sb-fin"></div>
+        <div class="sb-win"></div>
+        <div class="rk-body"></div>
+        <div class="rk-nose"></div>
+        <div class="rk-finT"></div>
+        <div class="rk-finB"></div>
+        <div class="rk-win"></div>
+        <div class="rk-flame"></div>
+       </div>
+      </div>
+    </div>
+    <div id="smokeLayer" aria-hidden="true"></div>
+    <div id="portalMaskLayer" aria-hidden="true">
+      <div class="portal-occluder portal-occluder-in" data-portal="in"></div>
+      <div class="portal-occluder portal-occluder-out" data-portal="out"></div>
+    </div>
+    <div id="screenPortalFront" aria-hidden="true"><div class="screen-exit-gate"></div></div>
+    <div id="tunnelExitGlow" aria-hidden="true"></div>
+    <section id="tunnelFriendGame" aria-label="トンネルの かくれともだち" aria-hidden="true">
+      <div id="tunnelFriendPanel">
+        <h2 id="tunnelFriendTitle">トンネルの かくれともだち</h2>
+        <div id="tunnelScoreRow">
+          <div class="tunnel-score-box"><span>この めん</span><strong id="tunnelStageScore">0てん</strong></div>
+          <div class="tunnel-score-box is-total"><span>ぜんぶ</span><strong id="tunnelJourneyScore">0てん</strong></div>
+        </div>
+        <div id="tunnelFriendGuide">1にん +100てん　ぜんぶ +200てん</div>
+        <div id="tunnelFriendCounter" aria-live="polite">みつけた 0 / 3</div>
+      </div>
+      <div id="tunnelFriendLayer"></div>
+      <div id="tunnelFriendResult" role="status" aria-live="polite" hidden>
+        <strong id="tunnelResultStage"></strong>
+        <span id="tunnelResultBreakdown"></span>
+        <span id="tunnelResultTotal"></span>
+      </div>
+    </section>
+    <svg id="portalEditOverlay" aria-hidden="true"></svg>
+    <div id="tunnelFade" aria-hidden="true"></div>
+    <div id="fgT">
+      <div id="futureForegroundLoop" class="future-loop-strip" aria-hidden="true">
+        <span class="future-loop-tile"></span><span class="future-loop-tile"></span><span class="future-loop-tile"></span><span class="future-loop-tile"></span>
+        <span class="future-loop-tile"></span><span class="future-loop-tile"></span><span class="future-loop-tile"></span><span class="future-loop-tile"></span>
+      </div>
+      <div id="spaceForegroundLoop" class="space-loop-strip" aria-hidden="true">
+        <span class="space-loop-tile"></span><span class="space-loop-tile"></span><span class="space-loop-tile"></span><span class="space-loop-tile"></span>
+        <span class="space-loop-tile"></span><span class="space-loop-tile"></span><span class="space-loop-tile"></span><span class="space-loop-tile"></span>
+      </div>
+    </div>
+    <div id="rainFar" class="weather-rain-layer" aria-hidden="true"></div>
+    <div id="rainMid" class="weather-rain-layer" aria-hidden="true"></div>
+    <div id="weatherShade" aria-hidden="true"></div>
+    <div id="rainNear" class="weather-rain-layer" aria-hidden="true"></div>
+  </div>
+
+  <div id="hud">
+    <div id="dots"><span id="stgName"></span></div>
+    <div id="scoreHud">
+      <div id="scoreCurrentPill" class="score-hud-pill"><span>スコア</span><strong id="scoreHudValue">0</strong></div>
+      <div id="scoreHudTail">
+        <div id="highScorePill" class="score-hud-pill is-high"><span>ハイスコア</span><strong id="highScoreValue">0</strong></div>
+        <div id="helpBadge" aria-live="polite" aria-label="おたすけ 0こ"><span class="ui-art" data-ui-art="help" aria-hidden="true"></span><span class="hud-badge-count">×0</span></div>
+        <div id="carBadge" aria-live="polite" aria-label="ともだち 0にん"><span class="ui-art" data-ui-art="friends" aria-hidden="true"></span><span class="hud-badge-count">×0</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="weatherNotice" role="status" aria-live="polite" aria-atomic="true" hidden></div>
+
+  <div id="quiz">
+    <div id="qRow">
+      <div id="ponoFace"><span class="ui-art" data-ui-art="pono" aria-hidden="true"></span></div>
+      <div id="qBubble">
+        <div id="qText" aria-live="polite"></div>
+        <div id="hintText" aria-live="polite"></div>
+      </div>
+      <button id="spkBtn" type="button" aria-label="ヒント"><span class="ui-art" data-ui-art="hint" aria-hidden="true"></span></button>
+      <button id="helpBtn" type="button" aria-label="おたすけ"><span class="ui-art" data-ui-art="help" aria-hidden="true"></span><span class="help-button-count">×0</span></button>
+    </div>
+    <div id="choices" aria-label="こたえ"></div>
+  </div>
+
+  <div id="stamp" role="status" aria-live="polite"></div>
+  <div id="liveRegion" class="sr-only" aria-live="polite"></div>
+
+  <div id="map" class="ovl hidden">
+    <div id="mapTitle"><span class="ui-art" data-ui-art="map" aria-hidden="true"></span><span>ぼうけんちず</span></div>
+    <div id="loopBadge"><span class="ui-art" data-ui-art="rainbow" aria-hidden="true"></span><span>2しゅうめ</span></div>
+    <div id="mapRow"></div>
+    <div id="mapMsg"></div>
+    <div class="selRow">
+      <button class="bigBtn" id="goBtn" type="button">ここへ いく！</button>
+      <button class="bigBtn pur" id="zkBtnMap" type="button"><span class="ui-art" data-ui-art="book" aria-hidden="true"></span><span>ずかん</span></button>
+    </div>
+  </div>
+
+  <div id="result" class="ovl hidden">
+    <div id="resTitle"></div>
+    <div id="resStars"></div>
+    <div id="resMsg"></div>
+    <div class="selRow" id="resBtns">
+      <button class="bigBtn pur" id="loopBtn" type="button" style="display:none"><span class="ui-art" data-ui-art="rainbow" aria-hidden="true"></span><span>2しゅうめへ！</span></button>
+      <button class="bigBtn" id="againBtn" type="button">はじめから</button>
+      <button class="bigBtn alt" id="zkBtnRes" type="button"><span class="ui-art" data-ui-art="book" aria-hidden="true"></span><span>ずかん</span></button>
+    </div>
+  </div>
+
+  <div id="zukan" class="ovl hidden">
+    <div id="zkTitle"><span class="ui-art" data-ui-art="book" aria-hidden="true"></span><span>ともだち ずかん</span></div>
+    <div id="zkProg"></div>
+    <div id="zkBody"></div>
+    <button class="bigBtn" id="zkClose" type="button">とじる</button>
+  </div>
+
+  <div id="title" class="ovl">
+    <h1><span class="ui-art" data-ui-art="train" aria-hidden="true"></span><span>ポノの なぞなぞトンネル</span><span class="ui-art" data-ui-art="rocket" aria-hidden="true"></span></h1>
+    <div class="label" id="adminStagePreviewLabel" hidden></div>
+    <div class="label" id="titleGameGuide">トンネルを あけて ともだちを のせよう！ ずかんを ぜんぶ あつめよう</div>
+    <div class="label" id="difficultyLabel">むずかしさ</div>
+    <div class="selRow" id="lvSel">
+      <button class="selBtn sel" type="button" data-l="0"><span class="big ui-art" data-ui-art="sprout" aria-hidden="true"></span><span>かんたん</span></button>
+      <button class="selBtn" type="button" data-l="1"><span class="big ui-art" data-ui-art="flower" aria-hidden="true"></span><span>ふつう</span></button>
+      <button class="selBtn" type="button" data-l="2"><span class="big ui-art" data-ui-art="star" aria-hidden="true"></span><span>むずかしい</span></button>
+    </div>
+    <div class="selRow">
+      <button class="bigBtn" id="startBtn" type="button">はじめる！</button>
+      <button class="bigBtn pur" id="zkBtnTitle" type="button"><span class="ui-art" data-ui-art="book" aria-hidden="true"></span><span>ずかん</span></button>
+    </div>
+  </div>
+</div>
+<div id="gameSettings" aria-label="せってい">
+  <button id="settingsBtn" type="button" aria-label="せってい" aria-haspopup="menu" aria-controls="settingsDropdown" aria-expanded="false">
+    <img src="../assets/_legacy/preview-placeholders/ctrl-btn-settings.png" alt="" draggable="false">
+  </button>
+  <div id="settingsDropdown" role="menu" aria-label="せってい" aria-hidden="true" hidden>
+    <button id="mapMenuBtn" class="settings-menu-item" type="button" role="menuitem">
+      <span class="ui-art" data-ui-art="map" data-ui-art-eager="1" aria-hidden="true"></span><span>ちず</span>
+    </button>
+    <a id="returnHomeLink" class="settings-menu-item" href="../play.html" role="menuitem">
+      <span class="ui-art" data-ui-art="home" data-ui-art-eager="1" aria-hidden="true"></span><span>ホームへ もどる</span>
+    </a>
+  </div>
+</div>
+<div id="rotateHint"><span class="ui-art" data-ui-art="smartphone" aria-hidden="true"></span><span class="rotate-arrow" aria-hidden="true">→</span><span>よこむきに してね</span></div>
+<script src="data/questions.js?v=20260713-1273"></script>
+<script src="data/quiz-art.js?v=20260714-1297"></script>
+<script src="js/game.js?v=20260716-1329"></script>
+</body>
+</html>

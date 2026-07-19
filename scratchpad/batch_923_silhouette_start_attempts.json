@@ -1,0 +1,21 @@
+[
+  {
+    "attempt": 1,
+    "debug": {
+      "model": "gemini-3.1-flash-tts-preview",
+      "voice": "Aoede",
+      "status": 200,
+      "mime": "audio/l16; rate=24000; channels=1",
+      "finishReason": "STOP"
+    },
+    "transcript": "チラッとだけ見えるよ。何の絵かな?",
+    "kw_ok": true,
+    "kw_hits": [
+      "チラッと",
+      "何の"
+    ],
+    "sha1": "e96dd7fd844c422e0faa3bcce733d7bec858e8df",
+    "size": 32684,
+    "ok": true
+  }
+]

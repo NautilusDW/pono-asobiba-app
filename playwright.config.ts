@@ -1,0 +1,93 @@
+import { defineConfig, devices } from '@playwright/test';
+
+/**
+ * Playwright config for the pono-asobiba-app capture.js E2E harness.
+ *
+ * - Default project (`chromium-localhost`) runs against `python -m http.server 8000`.
+ *   capture.js's hostname guard always treats `localhost` as enabled, so no shim is
+ *   required for the local project.
+ * - `chromium-staging-smoke` runs only tests tagged `@smoke` against the app staging
+ *   worker. This project is opt-in (invoke with `--project=chromium-staging-smoke`)
+ *   and is intended for nightly use; do NOT enable it for the default test run.
+ * - `chromium-prod-shim` runs only tests tagged `@prod-shim`. It launches chromium
+ *   with `--host-resolver-rules=MAP <prod-host> 127.0.0.1, MAP <workers-dev-host>
+ *   127.0.0.1` so that `location.hostname` inside the page reports a real
+ *   production hostname while the socket lands on the local python http.server.
+ *   This is how we exercise capture.js's production hostname gate without an
+ *   `[Unforgeable]` location override. Invoke with
+ *   `--project=chromium-prod-shim`.
+ *
+ * The local `webServer` block boots `python -m http.server 8000` from the repo root.
+ * `reuseExistingServer: true` lets a long-running dev server be reused so iterative
+ * runs don't fight over port 8000.
+ */
+export default defineConfig({
+  testDir: './tests/e2e',
+  outputDir: 'test-results/',
+  fullyParallel: true,
+  workers: 4,
+  forbidOnly: !!process.env.CI,
+  retries: process.env.CI ? 1 : 0,
+  reporter: [['list'], ['html', { open: 'never' }]],
+
+  use: {
+    baseURL: 'http://localhost:8000',
+    trace: 'retain-on-failure',
+    screenshot: 'only-on-failure',
+    video: 'off',
+    actionTimeout: 10_000,
+    navigationTimeout: 30_000,
+  },
+
+  webServer: {
+    // capture.js is a pure-client module; `python -m http.server` is sufficient
+    // and avoids wrangler/SW interference in tests.
+    command: 'python -m http.server 8000',
+    port: 8000,
+    reuseExistingServer: true,
+    timeout: 60_000,
+    stdout: 'ignore',
+    stderr: 'pipe',
+  },
+
+  projects: [
+    {
+      name: 'chromium-localhost',
+      // Exclude tests tagged for the prod-shim project — they require chromium
+      // host-resolver-rules launchOptions and would fail against localhost.
+      grepInvert: /@prod-shim/,
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: 'http://localhost:8000',
+      },
+    },
+    {
+      name: 'chromium-staging-smoke',
+      grep: /@smoke/,
+      use: {
+        ...devices['Desktop Chrome'],
+        baseURL: 'https://pono-asobiba-app-staging.ndw.workers.dev',
+      },
+    },
+    {
+      name: 'chromium-prod-shim',
+      grep: /@prod-shim/,
+      use: {
+        ...devices['Desktop Chrome'],
+        // Default baseURL points the chromium-prod-shim project at the
+        // production canonical hostname. Tests that need the workers.dev
+        // hostname override per-call via page.goto('http://...').
+        baseURL: 'http://pono.kodama-no-mori.com:8000',
+        launchOptions: {
+          args: [
+            // DNS shim: production hostnames resolve to local http.server.
+            // location.hostname inside the page reports the real prod host,
+            // bytes come from python -m http.server 8000.
+            '--host-resolver-rules=MAP pono.kodama-no-mori.com 127.0.0.1, MAP pono-asobiba-app.ndw.workers.dev 127.0.0.1',
+            '--ignore-certificate-errors',
+          ],
+        },
+      },
+    },
+  ],
+});

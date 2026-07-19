@@ -3,9 +3,16 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>しゃぼんだまパーティー | ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<!-- FOUC guard: start-screen は z-index:9999 で visible、 canvas#c (game本体) を init 完了まで非表示にしてチラ見えを防ぐ -->
+<style>html,body{background:#000}canvas#c{visibility:hidden}body.pono-game-ready canvas#c{visibility:visible}</style>
+<script>document.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(function(){requestAnimationFrame(function(){document.body.classList.add('pono-game-ready')})})});</script>
+<script src="../common/preload-helper.js"></script>
+<script>window.addEventListener('DOMContentLoaded',function(){if(window.PonoPreload)window.PonoPreload.warmGameAssets('bubble');});</script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -364,7 +371,7 @@ let bgmCurrentTrack = 0;
 let bgmSource = null; // MediaElementAudioSourceNode
 let bgmGain = null;   // GainNode for volume
 let bgmAudio = null;  // underlying Audio element
-const BGM_VOLUME = 0.06; // controlled via GainNode — works on all platforms
+const BGM_VOLUME = 0.25; // controlled via GainNode — works on all platforms
 
 function initBGM() {
   if (bgmAudio) return;

@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>ポノのお店 🌰</title>
+<script src="../common/preload-helper.js"></script>
+<script>window.addEventListener('DOMContentLoaded',function(){if(window.PonoPreload)window.PonoPreload.warmGameAssets('shop');});</script>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   html, body { width: 100%; height: 100%; overflow: hidden; font-family: 'M PLUS Rounded 1c', system-ui, sans-serif; background: #1a0e05; }
@@ -66,6 +68,73 @@
     font-size: 1.25rem; font-weight: 900; color: #5D2E08;
     text-shadow: 2px 2px 0 #FFF4D9;
   }
+
+  /* ===== Tabs (シール / かぐ) ===== */
+  .shop-tabs {
+    display: flex; justify-content: center; gap: 10px;
+    padding: 2px 12px 8px;
+  }
+  .shop-tab {
+    background: #fff;
+    border: 2.5px solid #D8B98A;
+    border-radius: 999px;
+    padding: 6px 18px;
+    font-size: 0.9rem; font-weight: 900; color: #A16207;
+    cursor: pointer;
+  }
+  .shop-tab.on {
+    background: linear-gradient(135deg,#FFD86B,#FFB74D);
+    border-color: #B97A3E; color: #5D2E08;
+    box-shadow: 0 3px 8px rgba(161,98,7,0.25);
+  }
+
+  /* ===== かぐタブ ===== */
+  .furn-area {
+    flex: 1; width: 100%;
+    overflow-y: auto; -webkit-overflow-scrolling: touch;
+    padding: 0 10px 14px;
+  }
+  .furn-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+    gap: 10px;
+    max-width: 900px; margin: 0 auto;
+  }
+  .furn-cat-label {
+    grid-column: 1 / -1;
+    font-size: 0.82rem; font-weight: 900; color: #5D2E08;
+    padding: 10px 2px 2px;
+  }
+  .furn-card {
+    background: rgba(255,255,255,0.95);
+    border: 2.5px solid #B97A3E;
+    border-radius: 12px;
+    padding: 8px 6px 8px;
+    display: flex; flex-direction: column; align-items: center; gap: 5px;
+  }
+  .furn-card.owned { border-color: #4caf50; background: rgba(232,245,233,0.95); }
+  .furn-thumb {
+    width: 100%; aspect-ratio: 1;
+    border-radius: 8px; overflow: hidden;
+    background: #FFF6E6;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.8rem;
+  }
+  .furn-thumb img.thumb-contain { width: 100%; height: 100%; object-fit: contain; }
+  .furn-thumb img.thumb-cover   { width: 100%; height: 100%; object-fit: cover; }
+  .furn-name {
+    font-size: 0.7rem; font-weight: 900; color: #5D2E08;
+    text-align: center; line-height: 1.2; min-height: 2.1em;
+  }
+  .furn-price-btn {
+    width: 100%; border: none; border-radius: 999px;
+    padding: 6px 4px;
+    font-size: 0.76rem; font-weight: 900;
+    background: linear-gradient(135deg,#FFD86B,#FFB74D);
+    color: #7C4A02;
+    cursor: pointer;
+  }
+  .furn-price-btn.owned { background: #e8f5e9; color: #388e3c; cursor: default; }
   .acorn-wallet {
     position: absolute; top: 12px; right: 12px;
     background: #fff;
@@ -232,6 +301,7 @@
   }
   .toast.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 </style>
+<script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
 <body>
 
@@ -252,10 +322,19 @@
 
     <div class="shop-title">🌰 ポノのどんぐりショップ 🌰</div>
 
-    <div class="shelf-area">
+    <div class="shop-tabs">
+      <button class="shop-tab on" id="tabSticker" type="button">🌟 シール</button>
+      <button class="shop-tab" id="tabFurn" type="button">🪑 かぐ</button>
+    </div>
+
+    <div class="shelf-area" id="shelfArea">
       <div class="counter-wrap" id="counterWrap">
         <!-- スロット3つ（浮いてる家具） -->
       </div>
+    </div>
+
+    <div class="furn-area" id="furnArea" style="display:none;">
+      <div class="furn-grid" id="furnGrid"></div>
     </div>
   </div>
 
@@ -263,17 +342,25 @@
 
 <div class="toast" id="toast"></div>
 
+<!-- v1895: 購入 SE (rarity 別 preloaded、 new Audio() の GuardedAudio silent-reject 経路を回避) -->
+<audio id="shop-sfx-normal" src="../assets/audio/sfx/acorn/acorn_get_festive_20260628.mp3" preload="auto"></audio>
+<audio id="shop-sfx-rare"   src="../assets/audio/gacha/daily_gacha_sticker_sparkle.mp3"     preload="auto"></audio>
+<audio id="shop-sfx-super"  src="../assets/audio/gacha/daily_gacha_magic_sparkle_long.mp3"  preload="auto"></audio>
+
 <script src="../common/acorns.js"></script>
+<script src="../js/game-stickers.js"></script>
+<script src="../js/donguri-shop.js"></script>
+<script src="../common/tier.js"></script>
+<script src="../common/achievements.js"></script>
+<script src="../room/items.js"></script>
+<script src="../common/stamp-rally.js"></script>
+<script src="../common/shop-catalog.js"></script>
 <script>
-  // サンプル商品（家具）
-  const SHOP_ITEMS = [
-    { id: 'furn_bookshelf_w', name: 'しろい ほんだな', price: 30,
-      img: '../assets/images/Rooms/furnitures_final/BookShelf01_A.png' },
-    { id: 'furn_bed_wood',    name: 'きの ベッド',     price: 40,
-      img: '../assets/images/Rooms/furnitures_final/bed_A_01.png' },
-    { id: 'furn_desk',        name: 'あおい つくえ',   price: 25,
-      img: '../assets/images/Rooms/furnitures_final/desk_A_01.png' },
-  ];
+  // ===== どんぐりショップ (シール販売 + 配布) =====
+  // 商品は js/donguri-shop.js が JST 朝/夕で回転させる 3 枠シール。
+  // 旧 SHOP_ITEMS (家具) は launch までに room 配布ロジックが無いため UI から外す。
+  //   - 払い損絶対 NG ルール: spendAcorns 成功後に grant が null を返したら addAcorns で必ず refund。
+  //   - PonoDonguriShop.purchase() 内部で spendAcorns→grant 順に走るので、 grant null を検知して refund する。
 
   const exterior = document.getElementById('exterior');
   const interior = document.getElementById('interior');
@@ -282,28 +369,165 @@
   const acornEl  = document.getElementById('acornCount');
   const toast    = document.getElementById('toast');
 
+  let rotationCache = []; // [{ id, name, gameId, price, rarity, img, owned }]
+  let renderBusy = false;
+
+  // v1891→v1895: 購入時 SE (rarity 別、 既存 asset 再利用、 単調増加 volume)。 play.html shop v2 と同じマッピング。
+  //   normal (< 25) → shop-sfx-normal (acorn_get_festive_20260628.mp3)     @ 0.55
+  //   rare   (25-)  → shop-sfx-rare   (daily_gacha_sticker_sparkle.mp3)    @ 0.65
+  //   super  (35-)  → shop-sfx-super  (daily_gacha_magic_sparkle_long.mp3) @ 0.75
+  //   v1895: new Audio() 廃止 + preloaded 要素 + __nativePlay bypass + inactive guard 解除。
+  function _shopMuted() {
+    try { return localStorage.getItem('pono_sound_off') === '1'; } catch (_) { return false; }
+  }
+  function _shopNativePlay() {
+    try {
+      var proto = window.HTMLMediaElement && window.HTMLMediaElement.prototype;
+      return (proto && proto.play && proto.play.__nativePlay) || null;
+    } catch (_) { return null; }
+  }
+  function _shopClearInactiveGuard() {
+    try {
+      if (window.PonoVisibilityAudioGuard
+          && typeof window.PonoVisibilityAudioGuard.clearFocusInactiveIfVisible === 'function') {
+        window.PonoVisibilityAudioGuard.clearFocusInactiveIfVisible();
+      }
+    } catch (_) {}
+  }
+  // v1895 security-review Medium fix: __nativePlay bypass 時に guardedPlay の trackMedia が
+  //   走らないので、 明示的に mediaEls に登録して background-audio-stop guard を維持する。
+  function _shopTrackMediaEl(el) {
+    try {
+      if (el && window.PonoVisibilityAudioGuard
+          && typeof window.PonoVisibilityAudioGuard.trackMedia === 'function') {
+        window.PonoVisibilityAudioGuard.trackMedia(el);
+      }
+    } catch (_) {}
+  }
+  function playPurchaseSfx(price) {
+    try {
+      if (_shopMuted()) return;
+      var id, vol;
+      var p = price | 0;
+      if (p >= 35)      { id = 'shop-sfx-super';  vol = 0.75; }
+      else if (p >= 25) { id = 'shop-sfx-rare';   vol = 0.65; }
+      else              { id = 'shop-sfx-normal'; vol = 0.55; }
+      var el = document.getElementById(id);
+      if (!el) return;
+      _shopTrackMediaEl(el); // v1895 security fix: bypass 前に guard 追跡登録
+      try { el.pause(); el.currentTime = 0; el.volume = vol; } catch (_) {}
+      var np = _shopNativePlay();
+      var doPlay = function () {
+        try {
+          // v1895 code-review HIGH fix: bypass でも page-hidden 時は再生しない (policy 尊重)
+          if (document.hidden) return null;
+          return np ? np.call(el) : el.play();
+        } catch (_) { return null; }
+      };
+      var pr = doPlay();
+      if (pr && pr.catch) pr.catch(function () {
+        setTimeout(function () { try { doPlay(); } catch (_) {} }, 250);
+      });
+    } catch (_) {}
+  }
+
+  function _stickerImageFromCatalog(catalog, gameId, stickerId) {
+    try {
+      const page = catalog && catalog.pages && catalog.pages[gameId];
+      if (!page || !Array.isArray(page.stickers)) return '';
+      var s = page.stickers.find(function (x) { return x && x.id === stickerId; });
+      if (!s || !s.img) return '';
+      // game-stickers.js の resolveAsset と同じく shop/ から見ると ../ プレフィクス
+      if (/^(https?:|data:|\/|\.\.?\/)/.test(s.img)) return s.img;
+      return '../' + s.img;
+    } catch (e) { return ''; }
+  }
+
   function renderCounter() {
     counter.innerHTML = '';
-    SHOP_ITEMS.forEach((it, i) => {
-      const slot = document.createElement('div');
+    if (!window.PonoDonguriShop || !window.PonoGameStickers) {
+      counter.innerHTML = '<div style="color:#5D2E08;font-weight:900;padding:20px;text-align:center;">よみこみちゅう…</div>';
+      return;
+    }
+    Promise.all([
+      window.PonoGameStickers.loadCatalog(),
+      window.PonoDonguriShop.getCatalog()
+    ]).then(function (results) {
+      var catalog = results[0];
+      // getCatalog の戻り値は使わず、 rotation だけ参照 (3 枠ローテ)
+      var rot = window.PonoDonguriShop.getRotation();
+      var ids = (rot && rot.stickerIds) || [];
+      rotationCache = ids.map(function (sid) {
+        var owned = window.PonoDonguriShop.getOwnershipState(sid);
+        return {
+          id: sid,
+          price: window.PonoDonguriShop.getPrice(sid),
+          img: _stickerImageFromCatalog(catalog, _resolveGameId(catalog, sid), sid),
+          name: _resolveName(catalog, sid),
+          gameId: _resolveGameId(catalog, sid),
+          owned: !!(owned && owned.owned)
+        };
+      });
+      _paintSlots();
+    }).catch(function (err) {
+      try { console.warn('[shop] failed to load rotation:', err); } catch (e) {}
+      counter.innerHTML = '<div style="color:#5D2E08;font-weight:900;padding:20px;text-align:center;">よみこみに しっぱいしたよ</div>';
+    });
+  }
+
+  function _resolveName(catalog, stickerId) {
+    var pages = (catalog && catalog.pages) || {};
+    var keys = Object.keys(pages);
+    for (var i = 0; i < keys.length; i++) {
+      var list = (pages[keys[i]] && pages[keys[i]].stickers) || [];
+      for (var j = 0; j < list.length; j++) {
+        if (list[j] && list[j].id === stickerId) return list[j].name || stickerId;
+      }
+    }
+    return stickerId;
+  }
+  function _resolveGameId(catalog, stickerId) {
+    var pages = (catalog && catalog.pages) || {};
+    var keys = Object.keys(pages);
+    for (var i = 0; i < keys.length; i++) {
+      var list = (pages[keys[i]] && pages[keys[i]].stickers) || [];
+      for (var j = 0; j < list.length; j++) {
+        if (list[j] && list[j].id === stickerId) return keys[i];
+      }
+    }
+    return '';
+  }
+
+  function _paintSlots() {
+    counter.innerHTML = '';
+    if (!rotationCache.length) {
+      counter.innerHTML = '<div style="color:#5D2E08;font-weight:900;padding:20px;text-align:center;">きょうの シールは おやすみ</div>';
+      return;
+    }
+    rotationCache.forEach(function (it, i) {
+      var slot = document.createElement('div');
       slot.className = 'item-slot';
       slot.dataset.slot = i;
-      slot.innerHTML = `
-        <div class="item-float">
-          <img class="item-img" src="${it.img}" alt="${it.name}"
-               onerror="this.style.display='none';this.nextElementSibling && (this.nextElementSibling.style.display='block')">
-          <span class="item-emoji" style="display:none;">📦</span>
-          <div class="magic-disc"></div>
-          <div class="sparkle s1"></div>
-          <div class="sparkle s2"></div>
-          <div class="sparkle s3"></div>
-        </div>
-        <div class="item-card">
-          <div class="item-name">${it.name}</div>
-          <div class="item-price">🌰 ${it.price}</div>
-        </div>
-      `;
-      slot.addEventListener('click', () => tryBuy(it));
+      slot.dataset.stickerId = it.id;
+      var ownedTag = it.owned ? '<div class="item-name" style="color:#888;font-size:0.72rem;">こうかんしたよ♪</div>' : '';
+      var imgHtml = it.img
+        ? '<img class="item-img" src="' + it.img + '" alt="' + (it.name || '') + '" onerror="this.style.display=\'none\';this.nextElementSibling && (this.nextElementSibling.style.display=\'block\')">'
+        : '';
+      slot.innerHTML =
+        '<div class="item-float">' +
+          imgHtml +
+          '<span class="item-emoji"' + (it.img ? ' style="display:none;"' : '') + '>🌟</span>' +
+          '<div class="magic-disc"></div>' +
+          '<div class="sparkle s1"></div>' +
+          '<div class="sparkle s2"></div>' +
+          '<div class="sparkle s3"></div>' +
+        '</div>' +
+        '<div class="item-card">' +
+          '<div class="item-name">' + (it.name || 'シール') + '</div>' +
+          '<div class="item-price">🌰 ' + it.price + '</div>' +
+          ownedTag +
+        '</div>';
+      slot.addEventListener('click', function () { tryBuy(it); });
       counter.appendChild(slot);
     });
   }
@@ -317,41 +541,264 @@
   function showToast(msg) {
     toast.textContent = msg;
     toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 1800);
+    setTimeout(function () { toast.classList.remove('show'); }, 1800);
   }
 
   function tryBuy(item) {
-    if (typeof window.spendAcorns !== 'function') return;
-    const have = window.getAcorns();
-    if (have < item.price) {
-      showToast(`🌰 たりないよ〜 (あと ${item.price - have}こ)`);
+    if (renderBusy) return;
+    if (!item || !item.id) return;
+    if (!window.PonoDonguriShop || typeof window.PonoDonguriShop.purchase !== 'function') return;
+    if (typeof window.spendAcorns !== 'function' || typeof window.getAcorns !== 'function') return;
+
+    if (item.owned) {
+      showToast('🎀 こうかんしたよ♪');
       return;
     }
-    if (window.spendAcorns(item.price)) {
-      showToast(`🎉 ${item.name} を てにいれた！`);
-      // TODO: room 所持品に追加
+    var have = window.getAcorns();
+    if (have < item.price) {
+      showToast('🌰 たりないよ〜 (あと ' + (item.price - have) + 'こ)');
+      return;
     }
+
+    // PonoDonguriShop.purchase 内部:
+    //   1) spendAcorns(price)
+    //   2) PonoGameStickers.grant({gameId, stickerId, event:'donguri_shop', show:false})
+    // grant が null を返したら money は引かれたまま → ここで必ず addAcorns で refund。
+    renderBusy = true;
+    var preBalance = window.getAcorns();
+    var preDelta = preBalance; // refund 計算用 fallback (実 cost は item.price)
+
+    window.PonoDonguriShop.purchase(item.id).then(function (res) {
+      renderBusy = false;
+      if (!res || !res.success) {
+        // spend 自体に失敗 → 何もしない (money は無事)
+        var reason = (res && res.reason) || 'unknown';
+        if (reason === 'insufficient_acorns') {
+          showToast('🌰 たりないよ〜');
+        } else if (reason === 'invalid_sticker' || reason === 'not_in_rotation') {
+          showToast('🌀 きょうは うりきれ');
+        } else {
+          showToast('😢 かえなかった');
+        }
+        return;
+      }
+      // success かつ stickerResult が null/false → grant 失敗 (catalog エラー等)。 必ず refund。
+      if (!res.stickerResult) {
+        try {
+          if (typeof window.addAcorns === 'function') {
+            window.addAcorns(item.price, { reason: 'shop_refund', suppressRewardModal: true });
+          }
+        } catch (e) {}
+        showToast('😢 ふしぎなことが おきたよ。 どんぐりは もどしたよ');
+        updateAcorns();
+        renderCounter();
+        return;
+      }
+      // 正常購入完了
+      // v1891→v1895: 購入 SE (rarity 別、 preloaded)。 GuardedAudio inactive を先に解除。
+      try { _shopClearInactiveGuard(); } catch (_) {}
+      try { playPurchaseSfx(item.price); } catch (_) {}
+      showToast('🎉 ' + (item.name || 'シール') + ' を ゲット！');
+      // game-stickers.js の grant({show:false}) なので toast popup は出ない。
+      // 「ペタッとはる」 動線は別途 sticker book で。 ここでは shop 内で完結。
+      updateAcorns();
+      // 在庫表示更新 (owned=true に)
+      renderCounter();
+    }).catch(function (err) {
+      renderBusy = false;
+      try { console.warn('[shop] purchase failed:', err); } catch (e) {}
+      // purchase が throw した場合: spendAcorns 済かは不明。 安全側で残高差分から refund 推定。
+      try {
+        var nowBal = (typeof window.getAcorns === 'function') ? window.getAcorns() : preBalance;
+        var spent = preBalance - nowBal;
+        if (spent > 0 && typeof window.addAcorns === 'function') {
+          window.addAcorns(spent, { reason: 'shop_refund_exception', suppressRewardModal: true });
+        }
+      } catch (e2) {}
+      showToast('😢 エラー。 どんぐりは もどしたよ');
+      updateAcorns();
+    });
   }
 
   // 外観タップで店内へ
-  exterior.addEventListener('click', () => {
+  exterior.addEventListener('click', function () {
     exterior.classList.add('fade-out');
-    setTimeout(() => {
+    setTimeout(function () {
       interior.classList.add('show');
       updateAcorns();
+      renderCounter();
     }, 300);
   });
 
   // 戻る
-  backBtn.addEventListener('click', () => {
+  backBtn.addEventListener('click', function () {
     location.href = '../play.html';
   });
 
   // イベントで自動更新
   window.addEventListener('pono-acorns-changed', updateAcorns);
+  window.addEventListener('PonoDonguriShopPurchased', function () {
+    updateAcorns();
+  });
 
   renderCounter();
   updateAcorns();
+
+  // ===== 🪑 かぐタブ (案2ハイブリッド: 実績専用idを除いた家具をどんぐりで販売) =====
+  // common/shop-catalog.js の resolveFurnitureRarity() で normal/rare/super/null を判定。
+  // 購入記録は localStorage pono_shop_furn_purchased (id配列)、room/index.html 側で
+  // 既存の実績付与マージロジックと OR 条件でマージされる。
+  var FURN_LS_KEY = 'pono_shop_furn_purchased';
+  // 実績経由 (grantReward) で既に付与済みの家具/壁/床は room/index.html の MERGE_KEYS と
+  // 同じキーを見て「もってるよ」判定に含める。実績アーカイブ化で achievement-only 判定から
+  // 漏れてショップに再出現した id (例: furn_bookshelf_w, furn_desk) を、既に取得済みの
+  // 既存プレイヤーへ「未所持」として二重販売しないための安全策。
+  var FURN_ACHIEVEMENT_LS_KEYS = ['pono_unlocked_furn', 'pono_unlocked_wall', 'pono_unlocked_floor'];
+  var FURN_PRICE_BY_RARITY = { normal: 15, rare: 25, super: 35 };
+  var FURN_CAT_LABEL = { wall: '🖼️ かべがみ', floor: '🟫 ゆか', deco: '🎀 かざり', furn: '🪑 かぐ' };
+  var tabSticker = document.getElementById('tabSticker');
+  var tabFurn    = document.getElementById('tabFurn');
+  var shelfArea  = document.getElementById('shelfArea');
+  var furnArea   = document.getElementById('furnArea');
+  var furnGrid   = document.getElementById('furnGrid');
+  var furnBusy   = false;
+
+  function getPurchasedFurn() {
+    try {
+      var a = JSON.parse(localStorage.getItem(FURN_LS_KEY) || '[]');
+      return Array.isArray(a) ? a : [];
+    } catch (e) { return []; }
+  }
+  function addPurchasedFurn(id) {
+    var list = getPurchasedFurn();
+    if (list.indexOf(id) === -1) {
+      list.push(id);
+      try { localStorage.setItem(FURN_LS_KEY, JSON.stringify(list)); } catch (e) {}
+    }
+  }
+  function isAchievementGrantedFurn(id) {
+    for (var i = 0; i < FURN_ACHIEVEMENT_LS_KEYS.length; i++) {
+      try {
+        var arr = JSON.parse(localStorage.getItem(FURN_ACHIEVEMENT_LS_KEYS[i]) || '[]');
+        if (Array.isArray(arr) && arr.indexOf(id) !== -1) return true;
+      } catch (e) {}
+    }
+    return false;
+  }
+  function isFurnPurchased(id) {
+    return getPurchasedFurn().indexOf(id) !== -1 || isAchievementGrantedFurn(id);
+  }
+
+  function getSellableFurniture() {
+    if (typeof ROOM_ITEMS === 'undefined' || !window.PonoShopCatalog) return [];
+    var out = [];
+    for (var i = 0; i < ROOM_ITEMS.length; i++) {
+      var it = ROOM_ITEMS[i];
+      if (it.hidden) continue;
+      var rarity = window.PonoShopCatalog.resolveFurnitureRarity(it);
+      if (rarity) out.push({ item: it, rarity: rarity });
+    }
+    return out;
+  }
+
+  function makeFurnCard(item, rarity) {
+    var price = FURN_PRICE_BY_RARITY[rarity] || FURN_PRICE_BY_RARITY.normal;
+    var owned = isFurnPurchased(item.id);
+    var card = document.createElement('div');
+    card.className = 'furn-card' + (owned ? ' owned' : '');
+
+    var thumb = document.createElement('div');
+    thumb.className = 'furn-thumb';
+    var imgSrc = item.roomImg || item.img;
+    if (imgSrc) {
+      var img = document.createElement('img');
+      img.src = imgSrc;
+      img.alt = item.name || '';
+      // AR絶対遵守: 壁/床はcoverで模様を敷き詰め、かぐ/かざりはcontainで原寸比を保つ（stretch禁止）
+      img.className = (item.cat === 'wall' || item.cat === 'floor') ? 'thumb-cover' : 'thumb-contain';
+      img.addEventListener('error', function () { img.remove(); thumb.textContent = '🪑'; });
+      thumb.appendChild(img);
+    } else {
+      thumb.textContent = '🪑';
+    }
+
+    var name = document.createElement('div');
+    name.className = 'furn-name';
+    name.textContent = item.name || item.id;
+
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    if (owned) {
+      btn.className = 'furn-price-btn owned';
+      btn.textContent = 'もってるよ ✓';
+      btn.disabled = true;
+    } else {
+      btn.className = 'furn-price-btn';
+      btn.textContent = '🌰 ' + price;
+      btn.addEventListener('click', function () { tryBuyFurn(item, price); });
+    }
+
+    card.appendChild(thumb);
+    card.appendChild(name);
+    card.appendChild(btn);
+    return card;
+  }
+
+  function renderFurnGrid() {
+    if (!furnGrid) return;
+    furnGrid.innerHTML = '';
+    var entries = getSellableFurniture();
+    if (!entries.length) {
+      furnGrid.innerHTML = '<div style="grid-column:1/-1;color:#5D2E08;font-weight:900;padding:20px;text-align:center;">じゅんびちゅう…</div>';
+      return;
+    }
+    var lastCat = null;
+    entries.forEach(function (entry) {
+      var it = entry.item;
+      if (it.cat !== lastCat) {
+        lastCat = it.cat;
+        var label = document.createElement('div');
+        label.className = 'furn-cat-label';
+        label.textContent = FURN_CAT_LABEL[it.cat] || it.cat;
+        furnGrid.appendChild(label);
+      }
+      furnGrid.appendChild(makeFurnCard(it, entry.rarity));
+    });
+  }
+
+  function tryBuyFurn(item, price) {
+    if (furnBusy) return;
+    if (isFurnPurchased(item.id)) { showToast('🎀 もってるよ♪'); return; }
+    if (typeof window.spendAcorns !== 'function' || typeof window.getAcorns !== 'function') return;
+    var have = window.getAcorns();
+    if (have < price) {
+      showToast('🌰 たりないよ〜 (あと ' + (price - have) + 'こ)');
+      return;
+    }
+    furnBusy = true;
+    var ok = window.spendAcorns(price);
+    furnBusy = false;
+    if (!ok) {
+      showToast('🌰 たりないよ〜');
+      return;
+    }
+    addPurchasedFurn(item.id);
+    try { _shopClearInactiveGuard(); } catch (_) {}
+    try { playPurchaseSfx(price); } catch (_) {}
+    showToast('🎉 ' + (item.name || 'かぐ') + ' を ゲット！');
+    updateAcorns();
+    renderFurnGrid();
+  }
+
+  function setShopTab(tab) {
+    tabSticker.classList.toggle('on', tab === 'sticker');
+    tabFurn.classList.toggle('on', tab === 'furn');
+    shelfArea.style.display = (tab === 'sticker') ? '' : 'none';
+    furnArea.style.display  = (tab === 'furn') ? 'flex' : 'none';
+    if (tab === 'furn') renderFurnGrid();
+  }
+  tabSticker.addEventListener('click', function () { setShopTab('sticker'); });
+  tabFurn.addEventListener('click', function () { setShopTab('furn'); });
 </script>
 
 </body>

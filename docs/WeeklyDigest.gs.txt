@@ -1,0 +1,599 @@
+/**
+ * ============================================================================
+ *  ポノのあそびば アンケート週次ダイジェスト (Phase 1)
+ *  トリガ: 毎週月曜 09:00 JST → runWeeklyDigest()
+ * ============================================================================
+ */
+
+// ---------- 定数 ----------
+const WD_SHEET_ID = '1Gs79PHC8YUXGN2VpaHHH6edHH1BtfiOYvaCHxcbwXXI';
+const WD_PROD_TAB = 'production';
+const WD_SUMMARY_TAB = '週次サマリ';
+const WD_MVP_GAMES = ['quizland', 'maze', 'oto', 'bento', 'puzzle'];
+
+// フォーム側で日本語ラベルを送っている場合の英字正規化テーブル
+// (favoriteNet が全 0 になる silent failure を防止)
+const WD_GAME_ID_ALIASES = {
+  'クイズランド': 'quizland', 'クイズ': 'quizland', 'quiz': 'quizland',
+  'めいろ': 'maze', 'メイロ': 'maze', '迷路': 'maze',
+  'おと': 'oto', 'オト': 'oto', '音': 'oto',
+  'おべんとう': 'bento', 'お弁当': 'bento', '弁当': 'bento',
+  'パズル': 'puzzle', 'ぱずる': 'puzzle'
+};
+
+// 16 列スキーマ (0-based index)
+const WD_COL = {
+  timestamp: 0, environment: 1, anonSid: 2, starScore: 3, gameId: 4,
+  swVersion: 5, playDurationSec: 6, age: 7, engagement: 8,
+  positiveNotes: 9, stumbles: 10, favoriteGames: 11,
+  bookConnection: 12, pricePerception: 13, freeText: 14, email: 15
+};
+
+// GO/HOLD 閾値 (動かさない)
+const WD_THRESHOLDS = {
+  K1_STAR_AVG: 4.0, K2_HIGH_RATIO: 0.60, K3_LOW_RATIO: 0.15,
+  K4_ENGAGE_AVG: 3.8, N_MIN: 80, STREAK_WEEKS: 4
+};
+
+// Gemini
+const WD_GEMINI_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+
+// ★ Weekly_Summary は 12 列固定 (Sheets 側と厳密一致必須)
+const WD_SUMMARY_HEADERS = [
+  '週の終わり',      // A: 集計対象週の終日 (JST)
+  '実行時刻',        // B: 実行時刻
+  '回答数',          // C: サンプル数
+  '星スコア平均',    // D: 星平均
+  '★4-5 比率',      // E: ★4-5 比率
+  '★1-2 比率',      // F: ★1-2 比率
+  '熱中度平均',      // G: 熱中度平均
+  'GO/HOLD 判定',   // H: GO / HOLD / MARGINAL
+  'GO 連続週数',    // I: GO 連続週数 (数値)
+  'GO 準備完了',    // J: 4 週連続達成フラグ ('READY' or '')
+  'AI 週次要約',    // K: AI 生成 markdown 全文
+  'エラーログ'      // L: エラー時のみ
+];
+
+
+// ============================================================================
+//  メインエントリ
+// ============================================================================
+function runWeeklyDigest() {
+  const startTime = new Date();
+  let errorLog = '';
+
+  try {
+    const toDate = new Date();
+    const fromDate = new Date(toDate.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+    const rows = getWeekProductionRows_(fromDate, toDate);
+    Logger.log('Fetched %s rows from production', rows.length);
+
+    const stats = computeQuantitativeStats_(rows);
+    stats.periodFrom = Utilities.formatDate(fromDate, 'Asia/Tokyo', 'yyyy-MM-dd');
+    stats.periodTo   = Utilities.formatDate(toDate,   'Asia/Tokyo', 'yyyy-MM-dd');
+
+    const textBundle = bundleFreeTextForAI_(rows);
+
+    let digestMarkdown = '';
+    try {
+      const prompt = buildDigestPrompt_(stats, textBundle);
+      digestMarkdown = callGemini_(prompt);
+    } catch (e) {
+      errorLog = 'Gemini 呼び出し失敗: ' + e.message;
+      digestMarkdown = '## AI 要約失敗\n\n' + errorLog +
+        '\n\n(定量指標のみ以下に記載)\n\n' + formatQuantOnlyMarkdown_(stats);
+    }
+
+    const judgement = judgeGoHold_(stats);
+    const streakInfo = updateGoHoldStreak_(judgement.status);
+
+    writeToWeeklySummary_({
+      stats: stats, judgement: judgement, streakInfo: streakInfo,
+      digestMarkdown: digestMarkdown, errorLog: errorLog, runAt: startTime
+    });
+
+    sendGmailDigest_({
+      stats: stats, judgement: judgement, streakInfo: streakInfo,
+      digestMarkdown: digestMarkdown, errorLog: errorLog
+    });
+
+    Logger.log('runWeeklyDigest completed in %s ms', new Date() - startTime);
+
+  } catch (e) {
+    Logger.log('runWeeklyDigest FATAL: %s\n%s', e.message, e.stack);
+    try {
+      const to = PropertiesService.getScriptProperties().getProperty('DIGEST_EMAIL_TO');
+      if (to) {
+        MailApp.sendEmail(to,
+          '[ポノのあそびば 週次] FATAL エラー',
+          'runWeeklyDigest が例外で停止:\n\n' + e.message + '\n\n' + e.stack
+        );
+      }
+    } catch (_) { /* noop */ }
+    throw e;
+  }
+}
+
+
+// ============================================================================
+//  データ抽出
+// ============================================================================
+function getWeekProductionRows_(fromDate, toDate) {
+  const sheet = SpreadsheetApp.openById(WD_SHEET_ID).getSheetByName(WD_PROD_TAB);
+  if (!sheet) throw new Error('production タブが見つかりません');
+
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) return [];
+
+  const values = sheet.getRange(2, 1, lastRow - 1, 16).getValues();
+
+  return values.filter(row => {
+    const ts = row[WD_COL.timestamp];
+    if (!ts) return false;
+    const d = (ts instanceof Date) ? ts : new Date(ts);
+    if (isNaN(d.getTime())) return false;
+    return d >= fromDate && d <= toDate;
+  });
+}
+
+
+// ============================================================================
+//  gameId 正規化
+// ============================================================================
+function normalizeGameId_(raw) {
+  const s = String(raw || '').trim();
+  if (!s) return '';
+  if (WD_GAME_ID_ALIASES[s]) return WD_GAME_ID_ALIASES[s];
+  const lower = s.toLowerCase();
+  if (WD_MVP_GAMES.indexOf(lower) >= 0) return lower;
+  return lower; // 未知の gameId はそのまま返し、下流で除外
+}
+
+
+// ============================================================================
+//  定量集計
+// ============================================================================
+function computeQuantitativeStats_(rows) {
+  const N = rows.length;
+  const stats = {
+    N: N, starAvg: 0,
+    starDist: {1:0,2:0,3:0,4:0,5:0},
+    highRatio: 0, lowRatio: 0, engageAvg: 0,
+    engageDist: {1:0,2:0,3:0,4:0,5:0},
+    ageDist: {}, gameStats: {}, favoriteNet: {},
+    stumbleByGame: {}, priceDist: {}, bookConnectionDist: {},
+    playDurationAvg: 0
+  };
+
+  // MVP 5 ゲームの集計器を初期化 (N===0 でも空 stats を返せるよう early return より前で実施)
+  WD_MVP_GAMES.forEach(g => {
+    stats.gameStats[g] = { count: 0, starSum: 0, engageSum: 0, engageCount: 0, starAvg: 0, engageAvg: 0 };
+    stats.favoriteNet[g] = 0;
+    stats.stumbleByGame[g] = [];
+  });
+
+  if (N === 0) return stats;
+
+  let starSum = 0, engageSum = 0, engageCount = 0;
+  let durSum = 0, durCount = 0;
+
+  rows.forEach(row => {
+    // star
+    const star = Number(row[WD_COL.starScore]);
+    if (Number.isInteger(star) && star >= 1 && star <= 5) {
+      starSum += star;
+      stats.starDist[star]++;
+    }
+
+    // engagement
+    const eng = Number(row[WD_COL.engagement]);
+    if (Number.isInteger(eng) && eng >= 1 && eng <= 5) {
+      engageSum += eng; engageCount++;
+      stats.engageDist[eng]++;
+    }
+
+    // age
+    const age = String(row[WD_COL.age] || '不明').trim() || '不明';
+    stats.ageDist[age] = (stats.ageDist[age] || 0) + 1;
+
+    // gameId (プレイした 1 個)
+    const gid = normalizeGameId_(row[WD_COL.gameId]);
+    if (gid && stats.gameStats[gid]) {
+      stats.gameStats[gid].count++;
+      if (star >= 1) stats.gameStats[gid].starSum += star;
+      if (eng >= 1) {
+        stats.gameStats[gid].engageSum += eng;
+        stats.gameStats[gid].engageCount++;
+      }
+    }
+
+    // favoriteGames
+    const fav = String(row[WD_COL.favoriteGames] || '');
+    if (fav) {
+      fav.split(/[,、;|\s]+/).forEach(g => {
+        const gnorm = normalizeGameId_(g);
+        if (stats.favoriteNet.hasOwnProperty(gnorm)) {
+          stats.favoriteNet[gnorm]++;
+        }
+      });
+    }
+
+    // stumbles (ゲーム別に貯める)
+    const stumble = String(row[WD_COL.stumbles] || '').trim();
+    if (stumble && gid && stats.stumbleByGame[gid]) {
+      stats.stumbleByGame[gid].push(stumble);
+    }
+
+    // price
+    const price = String(row[WD_COL.pricePerception] || '不明').trim() || '不明';
+    stats.priceDist[price] = (stats.priceDist[price] || 0) + 1;
+
+    // bookConnection
+    const bc = String(row[WD_COL.bookConnection] || '不明').trim() || '不明';
+    stats.bookConnectionDist[bc] = (stats.bookConnectionDist[bc] || 0) + 1;
+
+    // playDuration
+    const dur = Number(row[WD_COL.playDurationSec]);
+    if (dur > 0) { durSum += dur; durCount++; }
+  });
+
+  const starN = stats.starDist[1] + stats.starDist[2] + stats.starDist[3] +
+                stats.starDist[4] + stats.starDist[5];
+  stats.starAvg  = starN > 0 ? starSum / starN : 0;
+  stats.highRatio = starN > 0 ? (stats.starDist[4] + stats.starDist[5]) / starN : 0;
+  stats.lowRatio  = starN > 0 ? (stats.starDist[1] + stats.starDist[2]) / starN : 0;
+  stats.engageAvg = engageCount > 0 ? engageSum / engageCount : 0;
+  stats.playDurationAvg = durCount > 0 ? durSum / durCount : 0;
+
+  Object.keys(stats.gameStats).forEach(g => {
+    const gs = stats.gameStats[g];
+    gs.starAvg   = gs.count > 0 ? gs.starSum / gs.count : 0;
+    gs.engageAvg = gs.engageCount > 0 ? gs.engageSum / gs.engageCount : 0;
+  });
+
+  return stats;
+}
+
+
+// ============================================================================
+//  freeText 束ね (層化サンプリング: freeText 150 / positive 75 / stumble 75)
+// ============================================================================
+function bundleFreeTextForAI_(rows) {
+  const freeItems = [], posItems = [], stumbleItems = [];
+
+  rows.forEach(row => {
+    const gid  = normalizeGameId_(row[WD_COL.gameId]) || '?';
+    const age  = String(row[WD_COL.age] || '?').trim() || '?';
+    const star = row[WD_COL.starScore] || '?';
+    const ft   = String(row[WD_COL.freeText] || '').trim();
+    const pos  = String(row[WD_COL.positiveNotes] || '').trim();
+    const stum = String(row[WD_COL.stumbles] || '').trim();
+    if (ft)   freeItems.push(`[${gid} / ${age} / ★${star}] ${ft}`);
+    if (pos)  posItems.push(`[${gid} / ${age} / ★${star}] (positive) ${pos}`);
+    if (stum) stumbleItems.push(`[${gid} / ${age} / ★${star}] (stumble) ${stum}`);
+  });
+
+  const CAPS = { free: 150, pos: 75, stum: 75 };
+  const cap = (arr, n) => arr.length > n ? arr.slice(0, n) : arr;
+  const items = cap(freeItems, CAPS.free)
+    .concat(cap(posItems, CAPS.pos))
+    .concat(cap(stumbleItems, CAPS.stum));
+
+  return {
+    itemCount: items.length,
+    truncated: freeItems.length > CAPS.free || posItems.length > CAPS.pos || stumbleItems.length > CAPS.stum,
+    text: items.join('\n')
+  };
+}
+
+
+// ============================================================================
+//  Gemini プロンプト (11 セクション出力)
+// ============================================================================
+function buildDigestPrompt_(stats, textBundle) {
+  const quantSummary = formatQuantOnlyMarkdown_(stats);
+  return `あなたは子供向け Web 知育アプリ「ポノのあそびば」のユーザーリサーチアナリストです。
+以下の週次アンケート結果を分析し、 プロダクトチーム向けの週次ダイジェストを **日本語 Markdown** で作成してください。
+
+# 集計対象期間
+${stats.periodFrom} 〜 ${stats.periodTo}
+サンプル数 N = ${stats.N}
+
+# 定量指標 (既に計算済)
+${quantSummary}
+
+# 定性データ (freeText / positiveNotes / stumbles ${textBundle.itemCount} 件${textBundle.truncated ? ' 上限で cap' : ''})
+各行フォーマット: [gameId / age / ★] コメント原文
+
+${textBundle.text}
+
+# 出力仕様 (以下の順で必ず記載、 見出し ## は保持)
+
+## 1. 母集団特性
+age 分布から読み取れる傾向を 2-3 行。
+
+## 2. 星スコア分布 (K1-K3)
+K1 星平均 / K2 ★4-5 比率 / K3 ★1-2 比率 の現状評価。 閾値 K1≥4.0, K2≥60%, K3≤15%。
+
+## 3. 熱中度分布 (K4)
+K4 平均。 閾値 ≥ 3.8。
+
+## 4. gameId 別評価
+5 ゲーム (quizland/maze/oto/bento/puzzle) それぞれの ★平均 / 熱中度 / サンプル数 / 特徴を 1 行ずつ。
+
+## 5. favoriteGames Net Score
+どのゲームがお気に入りとして最も選ばれているか、 上位 3 つ。
+
+## 6. stumbles top ゲーム別
+つまずきが多かったゲーム上位 3 つと、 その具体的内容 (原文引用可)。
+
+## 7. pricePerception 分布
+価格帯感の分布から読み取れる示唆。
+
+## 8. bookConnection 分布
+絵本との接続についての回答分布と示唆。
+
+## 9. 定性要約 (freeText)
+### positive top3
+上位 3 つのポジティブテーマ + 各テーマの原文引用 1 件。
+
+### 課題 top3
+上位 3 つの課題テーマ + 各テーマの原文引用 1 件。
+
+### 印象的な発話 3 件
+特筆すべきコメント 3 件を **原文そのまま引用** (改変禁止、 [gameId/age/★] タグ付き)。
+
+## 10. Action Item (優先度順)
+プロダクトチームが翌週着手すべき具体的アクションを優先度順に 3-5 個。 各アクションに:
+- 優先度 (高/中/低)
+- なぜ (根拠となる定量 or 定性データ)
+- 具体的な打ち手
+
+## 11. GO/HOLD 判定
+現在の指標が閾値 (K1≥4.0, K2≥60%, K3≤15%, K4≥3.8, N≥80) を全て満たしているか、 GO / HOLD / MARGINAL で判定。 満たしていない指標があれば列挙。
+
+# 禁則
+- 原文引用は改変禁止 (誤字も含めそのまま)。
+- 数字を捏造しない (提示された定量指標のみ使用)。
+- 冗長な前置き禁止、 いきなり "## 1." から始めてください。
+`;
+}
+
+
+function formatQuantOnlyMarkdown_(stats) {
+  const lines = [];
+  lines.push(`- K1 星平均: **${stats.starAvg.toFixed(2)}** / 5`);
+  lines.push(`- K2 ★4-5 比率: **${(stats.highRatio * 100).toFixed(1)}%**`);
+  lines.push(`- K3 ★1-2 比率: **${(stats.lowRatio * 100).toFixed(1)}%**`);
+  lines.push(`- K4 熱中度平均: **${stats.engageAvg.toFixed(2)}** / 5`);
+  lines.push(`- N: **${stats.N}**`);
+  lines.push(`- 平均プレイ時間: ${Math.round(stats.playDurationAvg)} 秒`);
+  lines.push('');
+  lines.push('星分布: ' + [1,2,3,4,5].map(s => `★${s}=${stats.starDist[s]}`).join(' / '));
+  lines.push('熱中度分布: ' + [1,2,3,4,5].map(s => `${s}=${stats.engageDist[s]}`).join(' / '));
+  lines.push('age 分布: ' + Object.keys(stats.ageDist).map(a => `${a}=${stats.ageDist[a]}`).join(' / '));
+  lines.push('価格分布: ' + Object.keys(stats.priceDist).map(p => `${p}=${stats.priceDist[p]}`).join(' / '));
+  lines.push('絵本接続分布: ' + Object.keys(stats.bookConnectionDist).map(b => `${b}=${stats.bookConnectionDist[b]}`).join(' / '));
+  lines.push('');
+  lines.push('### gameId 別');
+  WD_MVP_GAMES.forEach(g => {
+    const gs = stats.gameStats[g];
+    lines.push(`- ${g}: N=${gs.count}, ★avg=${gs.starAvg.toFixed(2)}, 熱中度avg=${gs.engageAvg.toFixed(2)}`);
+  });
+  lines.push('');
+  lines.push('### favoriteGames Net');
+  const favSorted = Object.entries(stats.favoriteNet).sort((a,b) => b[1] - a[1]);
+  favSorted.forEach(([g, n]) => lines.push(`- ${g}: ${n} 票`));
+  return lines.join('\n');
+}
+
+
+// ============================================================================
+//  Gemini API 呼び出し (exponential backoff 3 回)
+// ============================================================================
+function callGemini_(prompt) {
+  const apiKey = PropertiesService.getScriptProperties().getProperty('GEMINI_API_KEY');
+  if (!apiKey) throw new Error('GEMINI_API_KEY が PropertiesService に未設定');
+
+  const payload = {
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: {
+      temperature: 0.3,
+      maxOutputTokens: 8000,      // 11 セクション日本語出力に十分な余裕
+      topP: 0.95,
+      thinkingConfig: { thinkingBudget: 0 }  // Gemini 2.5 の thinking mode を切って本文出力を確保
+    }
+  };
+  const options = {
+    method: 'post', contentType: 'application/json',
+    payload: JSON.stringify(payload), muteHttpExceptions: true
+  };
+  const url = WD_GEMINI_ENDPOINT + '?key=' + encodeURIComponent(apiKey);
+
+  let lastCode = 0, lastBody = '';
+  for (let i = 0; i < 3; i++) {
+    const response = UrlFetchApp.fetch(url, options);
+    const code = response.getResponseCode();
+    const body = response.getContentText();
+    lastCode = code; lastBody = body;
+
+    if (code === 200) {
+      const parsed = JSON.parse(body);
+      const candidates = parsed.candidates || [];
+      if (candidates.length === 0) throw new Error('Gemini candidates 空: ' + body.substring(0, 500));
+      const parts = (candidates[0].content && candidates[0].content.parts) || [];
+      const text = parts.map(p => p.text || '').join('').trim();
+      if (!text) throw new Error('Gemini text 空: ' + body.substring(0, 500));
+      return text;
+    }
+    if (code === 429 || code >= 500) {
+      Utilities.sleep(Math.pow(2, i) * 2000); // 2s, 4s, 8s
+      continue;
+    }
+    throw new Error('Gemini HTTP ' + code + ': ' + body.substring(0, 500));
+  }
+  throw new Error('Gemini リトライ 3 回失敗: HTTP ' + lastCode + ': ' + lastBody.substring(0, 500));
+}
+
+
+// ============================================================================
+//  GO/HOLD 判定
+// ============================================================================
+function judgeGoHold_(stats) {
+  const checks = {
+    K1: stats.starAvg   >= WD_THRESHOLDS.K1_STAR_AVG,
+    K2: stats.highRatio >= WD_THRESHOLDS.K2_HIGH_RATIO,
+    K3: stats.lowRatio  <= WD_THRESHOLDS.K3_LOW_RATIO,
+    K4: stats.engageAvg >= WD_THRESHOLDS.K4_ENGAGE_AVG,
+    N:  stats.N         >= WD_THRESHOLDS.N_MIN
+  };
+  const allPass = Object.values(checks).every(v => v === true);
+  const critFail = !checks.K1 || !checks.N;
+  const status = allPass ? 'GO' : (critFail ? 'HOLD' : 'MARGINAL');
+  return { status: status, checks: checks };
+}
+
+
+// ============================================================================
+//  GO/HOLD 4 週連続カウント
+// ============================================================================
+function updateGoHoldStreak_(currentStatus) {
+  const ss = SpreadsheetApp.openById(WD_SHEET_ID);
+  const sheet = getOrCreateSummarySheet_(ss);
+  const lastRow = sheet.getLastRow();
+
+  let prevStreak = 0, prevStatus = '';
+  if (lastRow >= 2) {
+    const prev = sheet.getRange(lastRow, 1, 1, WD_SUMMARY_HEADERS.length).getValues()[0];
+    prevStatus = prev[7];              // H: goHoldStatus
+    prevStreak = Number(prev[8]) || 0; // I: streakCount
+  }
+
+  const streakCount = (currentStatus === 'GO')
+    ? (prevStatus === 'GO' ? prevStreak + 1 : 1)
+    : 0;
+  const goReady = (currentStatus === 'GO' && streakCount >= WD_THRESHOLDS.STREAK_WEEKS);
+  return { streakCount: streakCount, goReady: goReady, prevStatus: prevStatus };
+}
+
+
+// ============================================================================
+//  Weekly_Summary 書込
+// ============================================================================
+function writeToWeeklySummary_(bundle) {
+  const ss = SpreadsheetApp.openById(WD_SHEET_ID);
+  const sheet = getOrCreateSummarySheet_(ss);
+
+  const weekEndDate = bundle.stats.periodTo;   // periodTo と一致させる
+  const runAt = Utilities.formatDate(bundle.runAt, 'Asia/Tokyo', 'yyyy-MM-dd HH:mm:ss');
+
+  sheet.appendRow([
+    weekEndDate,                                // A weekEndDate
+    runAt,                                      // B runAt
+    bundle.stats.N,                             // C N
+    Number(bundle.stats.starAvg.toFixed(3)),    // D starAvg
+    Number(bundle.stats.highRatio.toFixed(4)),  // E highRatio
+    Number(bundle.stats.lowRatio.toFixed(4)),   // F lowRatio
+    Number(bundle.stats.engageAvg.toFixed(3)),  // G engageAvg
+    bundle.judgement.status,                    // H goHoldStatus
+    bundle.streakInfo.streakCount,              // I streakCount (数値)
+    bundle.streakInfo.goReady ? 'READY' : '',   // J goReady
+    bundle.digestMarkdown,                      // K digestMarkdown
+    bundle.errorLog || ''                       // L errorLog
+  ]);
+}
+
+function getOrCreateSummarySheet_(ss) {
+  let sheet = ss.getSheetByName(WD_SUMMARY_TAB);
+  if (!sheet) {
+    sheet = ss.insertSheet(WD_SUMMARY_TAB);
+    sheet.getRange(1, 1, 1, WD_SUMMARY_HEADERS.length).setValues([WD_SUMMARY_HEADERS]);
+    sheet.setFrozenRows(1);
+    sheet.getRange(1, 1, 1, WD_SUMMARY_HEADERS.length).setFontWeight('bold');
+  }
+  return sheet;
+}
+
+
+// ============================================================================
+//  Gmail 送信 (HTML)
+// ============================================================================
+function sendGmailDigest_(bundle) {
+  const to = PropertiesService.getScriptProperties().getProperty('DIGEST_EMAIL_TO');
+  if (!to) { Logger.log('DIGEST_EMAIL_TO 未設定'); return; }
+
+  const s = bundle.stats;
+  const subject = `[ポノのあそびば 週次] ${s.periodFrom}〜${s.periodTo} N=${s.N} ★avg=${s.starAvg.toFixed(2)} ${bundle.judgement.status}`;
+  const html = buildHtmlEmail_(bundle);
+  MailApp.sendEmail({ to: to, subject: subject, htmlBody: html });
+}
+
+function buildHtmlEmail_(bundle) {
+  const s = bundle.stats, j = bundle.judgement, streak = bundle.streakInfo;
+  const BRAND_ORANGE = '#E88F3F', BRAND_GREEN = '#6EA84A', BRAND_BROWN = '#5C3A1E';
+  const statusColor = j.status === 'GO' ? BRAND_GREEN
+                    : j.status === 'HOLD' ? '#C0392B' : '#E8B03F';
+
+  const kpiRow = (label, value, pass) => `
+    <tr>
+      <td style="padding:8px 12px;border-bottom:1px solid #eee;">${label}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:right;font-weight:bold;">${value}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #eee;text-align:center;color:${pass ? BRAND_GREEN : '#C0392B'};font-weight:bold;">${pass ? 'OK' : 'NG'}</td>
+    </tr>`;
+
+  const digestHtml = escapeHtml_(bundle.digestMarkdown)
+    .replace(/^### (.+)$/gm, '<h3 style="color:' + BRAND_BROWN + ';margin-top:20px;">$1</h3>')
+    .replace(/^## (.+)$/gm,  '<h2 style="color:' + BRAND_ORANGE + ';border-bottom:2px solid ' + BRAND_ORANGE + ';padding-bottom:4px;margin-top:24px;">$1</h2>')
+    .replace(/^# (.+)$/gm,   '<h1 style="color:' + BRAND_BROWN + ';">$1</h1>')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n/g, '<br>');
+
+  return `
+<div style="font-family:'Helvetica Neue',Arial,sans-serif;max-width:720px;margin:0 auto;color:#333;">
+  <div style="background:${BRAND_ORANGE};color:white;padding:24px;border-radius:8px 8px 0 0;">
+    <h1 style="margin:0;font-size:22px;">ポノのあそびば 週次ダイジェスト</h1>
+    <div style="margin-top:8px;opacity:0.9;">${s.periodFrom} 〜 ${s.periodTo}</div>
+  </div>
+  <div style="background:${statusColor};color:white;padding:16px 24px;font-size:20px;font-weight:bold;text-align:center;">
+    判定: ${j.status} ${streak.goReady ? '(4週連続達成 READY)' : `(連続 ${streak.streakCount} 週)`}
+  </div>
+  <div style="padding:24px;background:white;">
+    <h2 style="color:${BRAND_BROWN};">KPI サマリ</h2>
+    <table style="width:100%;border-collapse:collapse;background:#fafafa;border-radius:6px;overflow:hidden;">
+      <thead>
+        <tr style="background:${BRAND_BROWN};color:white;">
+          <th style="padding:10px 12px;text-align:left;">指標</th>
+          <th style="padding:10px 12px;text-align:right;">値</th>
+          <th style="padding:10px 12px;text-align:center;">判定</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${kpiRow('N (サンプル数)', s.N, j.checks.N)}
+        ${kpiRow('K1 星平均', s.starAvg.toFixed(2) + ' / 5', j.checks.K1)}
+        ${kpiRow('K2 ★4-5 比率', (s.highRatio * 100).toFixed(1) + '%', j.checks.K2)}
+        ${kpiRow('K3 ★1-2 比率', (s.lowRatio * 100).toFixed(1) + '%', j.checks.K3)}
+        ${kpiRow('K4 熱中度平均', s.engageAvg.toFixed(2) + ' / 5', j.checks.K4)}
+      </tbody>
+    </table>
+    ${bundle.errorLog ? `<div style="margin-top:16px;padding:12px;background:#ffe6e6;border-left:4px solid #C0392B;color:#C0392B;"><strong>エラー:</strong> ${escapeHtml_(bundle.errorLog)}</div>` : ''}
+    <div style="margin-top:32px;">${digestHtml}</div>
+    <div style="margin-top:32px;padding-top:16px;border-top:1px solid #eee;font-size:12px;color:#888;">
+      Sheet: <a href="https://docs.google.com/spreadsheets/d/${WD_SHEET_ID}" style="color:${BRAND_ORANGE};">週次サマリ タブを開く</a><br>
+      Generated by runWeeklyDigest() at ${Utilities.formatDate(new Date(), 'Asia/Tokyo', 'yyyy-MM-dd HH:mm:ss')} JST
+    </div>
+  </div>
+</div>`;
+}
+
+function escapeHtml_(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+
+// ============================================================================
+//  手動テスト用エントリ
+// ============================================================================
+function testRunWeeklyDigest() { runWeeklyDigest(); }

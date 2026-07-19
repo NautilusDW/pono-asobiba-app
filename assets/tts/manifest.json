@@ -1,5 +1,2769 @@
 {
   "version": 1,
   "voice": "Leda",
-  "entries": {}
+  "entries": {
+    "quizland:body:0:a": {
+      "file": "quiz/q162_a.wav"
+    },
+    "quizland:body:0:b": {
+      "file": "quiz/q158_b.wav"
+    },
+    "quizland:body:0:c": {
+      "file": "quiz/q159_c.wav"
+    },
+    "quizland:body:0:d": {
+      "file": "quiz/q164_c.wav"
+    },
+    "quizland:body:0:q": {
+      "file": "quiz/q158_q.wav"
+    },
+    "quizland:body:10:a": {
+      "file": "quiz/q168_a.wav"
+    },
+    "quizland:body:10:b": {
+      "file": "quiz/q168_b.wav"
+    },
+    "quizland:body:10:c": {
+      "file": "quiz/q164_c.wav"
+    },
+    "quizland:body:10:d": {
+      "file": "quiz/q168_d.wav"
+    },
+    "quizland:body:10:q": {
+      "file": "quiz/q168_q.wav"
+    },
+    "quizland:body:11:a": {
+      "file": "quiz/q158_b.wav"
+    },
+    "quizland:body:11:b": {
+      "file": "quiz/q162_a.wav"
+    },
+    "quizland:body:11:c": {
+      "file": "quiz/q169_c.wav"
+    },
+    "quizland:body:11:d": {
+      "file": "quiz/q159_c.wav"
+    },
+    "quizland:body:11:q": {
+      "file": "quiz/q169_q.wav"
+    },
+    "quizland:body:12:a": {
+      "file": "quiz/q170_a.wav"
+    },
+    "quizland:body:12:b": {
+      "file": "quiz/q170_b.wav"
+    },
+    "quizland:body:12:c": {
+      "file": "quiz/q170_c.wav"
+    },
+    "quizland:body:12:d": {
+      "file": "quiz/q170_d.wav"
+    },
+    "quizland:body:12:q": {
+      "file": "quiz/q170_q.wav"
+    },
+    "quizland:body:13:a": {
+      "file": "quiz/q171_a.wav"
+    },
+    "quizland:body:13:b": {
+      "file": "quiz/q171_b.wav"
+    },
+    "quizland:body:13:c": {
+      "file": "quiz/q171_c.wav"
+    },
+    "quizland:body:13:d": {
+      "file": "quiz/q171_d.wav"
+    },
+    "quizland:body:13:q": {
+      "file": "quiz/q171_q.wav"
+    },
+    "quizland:body:14:a": {
+      "file": "quiz/q172_a.wav"
+    },
+    "quizland:body:14:b": {
+      "file": "quiz/q164_c.wav"
+    },
+    "quizland:body:14:c": {
+      "file": "quiz/q158_b.wav"
+    },
+    "quizland:body:14:d": {
+      "file": "quiz/q172_d.wav"
+    },
+    "quizland:body:14:q": {
+      "file": "quiz/q172_q.wav"
+    },
+    "quizland:body:15:a": {
+      "file": "quiz/q173_a.wav"
+    },
+    "quizland:body:15:a_alt": {
+      "file": "quiz/q173_a_alt.wav"
+    },
+    "quizland:body:15:b": {
+      "file": "quiz/q173_b.wav"
+    },
+    "quizland:body:15:b_alt": {
+      "file": "quiz/q173_b_alt.wav"
+    },
+    "quizland:body:15:c": {
+      "file": "quiz/q173_c.wav"
+    },
+    "quizland:body:15:d": {
+      "file": "quiz/q173_d.wav"
+    },
+    "quizland:body:15:q": {
+      "file": "quiz/q173_q.wav"
+    },
+    "quizland:body:16:a": {
+      "file": "quiz/q174_a.wav"
+    },
+    "quizland:body:16:b": {
+      "file": "quiz/q174_b.wav"
+    },
+    "quizland:body:16:c": {
+      "file": "quiz/q174_c.wav"
+    },
+    "quizland:body:16:d": {
+      "file": "quiz/q174_d.wav"
+    },
+    "quizland:body:16:q": {
+      "file": "quiz/q174_q.wav"
+    },
+    "quizland:body:17:a": {
+      "file": "quiz/q175_a.wav"
+    },
+    "quizland:body:17:b": {
+      "file": "quiz/q175_b.wav"
+    },
+    "quizland:body:17:c": {
+      "file": "quiz/q175_c.wav"
+    },
+    "quizland:body:17:d": {
+      "file": "quiz/q175_d.wav"
+    },
+    "quizland:body:17:q": {
+      "file": "quiz/q175_q.wav"
+    },
+    "quizland:body:18:a": {
+      "file": "quiz/q176_a.wav"
+    },
+    "quizland:body:18:b": {
+      "file": "quiz/q149_b.wav"
+    },
+    "quizland:body:18:c": {
+      "file": "quiz/q176_c.wav"
+    },
+    "quizland:body:18:d": {
+      "file": "quiz/q176_d.wav"
+    },
+    "quizland:body:18:q": {
+      "file": "quiz/q176_q.wav"
+    },
+    "quizland:body:19:a": {
+      "file": "quiz/q177_a.wav"
+    },
+    "quizland:body:19:b": {
+      "file": "quiz/q177_b.wav"
+    },
+    "quizland:body:19:c": {
+      "file": "quiz/q177_c.wav"
+    },
+    "quizland:body:19:d": {
+      "file": "quiz/q177_d.wav"
+    },
+    "quizland:body:19:q": {
+      "file": "quiz/q177_q.wav"
+    },
+    "quizland:body:1:a": {
+      "file": "quiz/q158_b.wav"
+    },
+    "quizland:body:1:b": {
+      "file": "quiz/q164_c.wav"
+    },
+    "quizland:body:1:c": {
+      "file": "quiz/q159_c.wav"
+    },
+    "quizland:body:1:d": {
+      "file": "quiz/q162_a.wav"
+    },
+    "quizland:body:1:q": {
+      "file": "quiz/q159_q.wav"
+    },
+    "quizland:body:20:a": {
+      "file": "quiz/q178_a.wav"
+    },
+    "quizland:body:20:b": {
+      "file": "quiz/q178_b.wav"
+    },
+    "quizland:body:20:c": {
+      "file": "quiz/q178_c.wav"
+    },
+    "quizland:body:20:d": {
+      "file": "quiz/q178_d.wav"
+    },
+    "quizland:body:20:q": {
+      "file": "quiz/q178_q.wav"
+    },
+    "quizland:body:21:a": {
+      "file": "quiz/q179_a.wav"
+    },
+    "quizland:body:21:b": {
+      "file": "quiz/q179_b.wav"
+    },
+    "quizland:body:21:c": {
+      "file": "quiz/q179_c.wav"
+    },
+    "quizland:body:21:d": {
+      "file": "quiz/q179_d.wav"
+    },
+    "quizland:body:21:q": {
+      "file": "quiz/q179_q.wav"
+    },
+    "quizland:body:22:a": {
+      "file": "quiz/q180_a.wav"
+    },
+    "quizland:body:22:b": {
+      "file": "quiz/q180_b.wav"
+    },
+    "quizland:body:22:c": {
+      "file": "quiz/q180_c.wav"
+    },
+    "quizland:body:22:d": {
+      "file": "quiz/q180_d.wav"
+    },
+    "quizland:body:22:q": {
+      "file": "quiz/q180_q.wav"
+    },
+    "quizland:body:23:a": {
+      "file": "quiz/q181_a.wav"
+    },
+    "quizland:body:23:b": {
+      "file": "quiz/q181_b.wav"
+    },
+    "quizland:body:23:c": {
+      "file": "quiz/q181_c.wav"
+    },
+    "quizland:body:23:d": {
+      "file": "quiz/q181_d.wav"
+    },
+    "quizland:body:23:q": {
+      "file": "quiz/q181_q.wav"
+    },
+    "quizland:body:2:a": {
+      "file": "quiz/q161_a.wav"
+    },
+    "quizland:body:2:b": {
+      "file": "quiz/q160_b.wav"
+    },
+    "quizland:body:2:c": {
+      "file": "quiz/q160_c.wav"
+    },
+    "quizland:body:2:d": {
+      "file": "quiz/q160_d.wav"
+    },
+    "quizland:body:2:q": {
+      "file": "quiz/q160_q.wav"
+    },
+    "quizland:body:3:a": {
+      "file": "quiz/q161_a.wav"
+    },
+    "quizland:body:3:b": {
+      "file": "quiz/q160_c.wav"
+    },
+    "quizland:body:3:c": {
+      "file": "quiz/q161_c.wav"
+    },
+    "quizland:body:3:d": {
+      "file": "quiz/q161_d.wav"
+    },
+    "quizland:body:3:q": {
+      "file": "quiz/q161_q.wav"
+    },
+    "quizland:body:4:a": {
+      "file": "quiz/q162_a.wav"
+    },
+    "quizland:body:4:b": {
+      "file": "quiz/q159_c.wav"
+    },
+    "quizland:body:4:c": {
+      "file": "quiz/q158_b.wav"
+    },
+    "quizland:body:4:d": {
+      "file": "quiz/q162_d.wav"
+    },
+    "quizland:body:4:q": {
+      "file": "quiz/q162_q.wav"
+    },
+    "quizland:body:5:a": {
+      "file": "quiz/q159_c.wav"
+    },
+    "quizland:body:5:b": {
+      "file": "quiz/q163_b.wav"
+    },
+    "quizland:body:5:c": {
+      "file": "quiz/q163_c.wav"
+    },
+    "quizland:body:5:d": {
+      "file": "quiz/q163_d.wav"
+    },
+    "quizland:body:5:q": {
+      "file": "quiz/q163_q.wav"
+    },
+    "quizland:body:6:a": {
+      "file": "quiz/q158_b.wav"
+    },
+    "quizland:body:6:b": {
+      "file": "quiz/q159_c.wav"
+    },
+    "quizland:body:6:c": {
+      "file": "quiz/q164_c.wav"
+    },
+    "quizland:body:6:d": {
+      "file": "quiz/q162_a.wav"
+    },
+    "quizland:body:6:q": {
+      "file": "quiz/q164_q.wav"
+    },
+    "quizland:body:7:a": {
+      "file": "quiz/q165_a.wav"
+    },
+    "quizland:body:7:b": {
+      "file": "quiz/q165_b.wav"
+    },
+    "quizland:body:7:c": {
+      "file": "quiz/q165_c.wav"
+    },
+    "quizland:body:7:d": {
+      "file": "quiz/q165_d.wav"
+    },
+    "quizland:body:7:q": {
+      "file": "quiz/q165_q.wav"
+    },
+    "quizland:body:8:a": {
+      "file": "quiz/q166_a.wav"
+    },
+    "quizland:body:8:b": {
+      "file": "quiz/q159_c.wav"
+    },
+    "quizland:body:8:c": {
+      "file": "quiz/q158_b.wav"
+    },
+    "quizland:body:8:d": {
+      "file": "quiz/q166_d.wav"
+    },
+    "quizland:body:8:q": {
+      "file": "quiz/q166_q.wav"
+    },
+    "quizland:body:9:a": {
+      "file": "quiz/q167_a.wav"
+    },
+    "quizland:body:9:b": {
+      "file": "quiz/q167_b.wav"
+    },
+    "quizland:body:9:c": {
+      "file": "quiz/q167_c.wav"
+    },
+    "quizland:body:9:d": {
+      "file": "quiz/q167_d.wav"
+    },
+    "quizland:body:9:q": {
+      "file": "quiz/q167_q.wav"
+    },
+    "quizland:count_total:0:a": {
+      "file": "quiz/g_count_tsu_2.wav"
+    },
+    "quizland:count_total:0:b": {
+      "file": "quiz/g_count_tsu_3.wav"
+    },
+    "quizland:count_total:0:c": {
+      "file": "quiz/g_count_tsu_4.wav"
+    },
+    "quizland:count_total:0:d": {
+      "file": "quiz/g_count_tsu_5.wav"
+    },
+    "quizland:count_total:0:q": {
+      "file": "quiz/q025_q.wav"
+    },
+    "quizland:count_total:10:a": {
+      "file": "quiz/g_count_tsu_3.wav"
+    },
+    "quizland:count_total:10:b": {
+      "file": "quiz/g_count_tsu_4.wav"
+    },
+    "quizland:count_total:10:c": {
+      "file": "quiz/g_count_tsu_5.wav"
+    },
+    "quizland:count_total:10:d": {
+      "file": "quiz/g_count_tsu_6.wav"
+    },
+    "quizland:count_total:10:q": {
+      "file": "quiz/q035_q.wav"
+    },
+    "quizland:count_total:11:a": {
+      "file": "quiz/g_count_tsu_3.wav"
+    },
+    "quizland:count_total:11:b": {
+      "file": "quiz/g_count_tsu_4.wav"
+    },
+    "quizland:count_total:11:c": {
+      "file": "quiz/g_count_tsu_5.wav"
+    },
+    "quizland:count_total:11:d": {
+      "file": "quiz/g_count_tsu_6.wav"
+    },
+    "quizland:count_total:11:q": {
+      "file": "quiz/q036_q.wav"
+    },
+    "quizland:count_total:12:a": {
+      "file": "quiz/g_count_tsu_4.wav"
+    },
+    "quizland:count_total:12:b": {
+      "file": "quiz/g_count_tsu_5.wav"
+    },
+    "quizland:count_total:12:c": {
+      "file": "quiz/g_count_tsu_6.wav"
+    },
+    "quizland:count_total:12:d": {
+      "file": "quiz/g_count_tsu_7.wav"
+    },
+    "quizland:count_total:12:q": {
+      "file": "quiz/q037_q.wav"
+    },
+    "quizland:count_total:13:a": {
+      "file": "quiz/g_count_tsu_4.wav"
+    },
+    "quizland:count_total:13:b": {
+      "file": "quiz/g_count_tsu_5.wav"
+    },
+    "quizland:count_total:13:c": {
+      "file": "quiz/g_count_tsu_6.wav"
+    },
+    "quizland:count_total:13:d": {
+      "file": "quiz/g_count_tsu_7.wav"
+    },
+    "quizland:count_total:13:q": {
+      "file": "quiz/q038_q.wav"
+    },
+    "quizland:count_total:14:a": {
+      "file": "quiz/g_count_tsu_4.wav"
+    },
+    "quizland:count_total:14:b": {
+      "file": "quiz/g_count_tsu_5.wav"
+    },
+    "quizland:count_total:14:c": {
+      "file": "quiz/g_count_tsu_6.wav"
+    },
+    "quizland:count_total:14:d": {
+      "file": "quiz/g_count_tsu_7.wav"
+    },
+    "quizland:count_total:14:q": {
+      "file": "quiz/q039_q.wav"
+    },
+    "quizland:count_total:15:a": {
+      "file": "quiz/g_count_tsu_4.wav"
+    },
+    "quizland:count_total:15:b": {
+      "file": "quiz/g_count_tsu_5.wav"
+    },
+    "quizland:count_total:15:c": {
+      "file": "quiz/g_count_tsu_6.wav"
+    },
+    "quizland:count_total:15:d": {
+      "file": "quiz/g_count_tsu_7.wav"
+    },
+    "quizland:count_total:15:q": {
+      "file": "quiz/q040_q.wav"
+    },
+    "quizland:count_total:16:a": {
+      "file": "quiz/g_count_tsu_6.wav"
+    },
+    "quizland:count_total:16:b": {
+      "file": "quiz/g_count_tsu_7.wav"
+    },
+    "quizland:count_total:16:c": {
+      "file": "quiz/g_count_tsu_8.wav"
+    },
+    "quizland:count_total:16:d": {
+      "file": "quiz/g_count_tsu_9.wav"
+    },
+    "quizland:count_total:16:q": {
+      "file": "quiz/q041_q.wav"
+    },
+    "quizland:count_total:17:a": {
+      "file": "quiz/g_count_tsu_6.wav"
+    },
+    "quizland:count_total:17:b": {
+      "file": "quiz/g_count_tsu_7.wav"
+    },
+    "quizland:count_total:17:c": {
+      "file": "quiz/g_count_tsu_8.wav"
+    },
+    "quizland:count_total:17:d": {
+      "file": "quiz/g_count_tsu_9.wav"
+    },
+    "quizland:count_total:17:q": {
+      "file": "quiz/q042_q.wav"
+    },
+    "quizland:count_total:18:a": {
+      "file": "quiz/g_count_tsu_6.wav"
+    },
+    "quizland:count_total:18:b": {
+      "file": "quiz/g_count_tsu_7.wav"
+    },
+    "quizland:count_total:18:c": {
+      "file": "quiz/g_count_tsu_8.wav"
+    },
+    "quizland:count_total:18:d": {
+      "file": "quiz/g_count_tsu_9.wav"
+    },
+    "quizland:count_total:18:q": {
+      "file": "quiz/q043_q.wav"
+    },
+    "quizland:count_total:19:a": {
+      "file": "quiz/g_count_tsu_5.wav"
+    },
+    "quizland:count_total:19:b": {
+      "file": "quiz/g_count_tsu_6.wav"
+    },
+    "quizland:count_total:19:c": {
+      "file": "quiz/g_count_tsu_7.wav"
+    },
+    "quizland:count_total:19:d": {
+      "file": "quiz/g_count_tsu_8.wav"
+    },
+    "quizland:count_total:19:q": {
+      "file": "quiz/q044_q.wav"
+    },
+    "quizland:count_total:1:a": {
+      "file": "quiz/g_count_tsu_2.wav"
+    },
+    "quizland:count_total:1:b": {
+      "file": "quiz/g_count_tsu_3.wav"
+    },
+    "quizland:count_total:1:c": {
+      "file": "quiz/g_count_tsu_4.wav"
+    },
+    "quizland:count_total:1:d": {
+      "file": "quiz/g_count_tsu_5.wav"
+    },
+    "quizland:count_total:1:q": {
+      "file": "quiz/q026_q.wav"
+    },
+    "quizland:count_total:20:a": {
+      "file": "quiz/g_count_tsu_7.wav"
+    },
+    "quizland:count_total:20:b": {
+      "file": "quiz/g_count_tsu_8.wav"
+    },
+    "quizland:count_total:20:c": {
+      "file": "quiz/g_count_tsu_9.wav"
+    },
+    "quizland:count_total:20:d": {
+      "file": "quiz/g_num_10.wav"
+    },
+    "quizland:count_total:20:q": {
+      "file": "quiz/q045_q.wav"
+    },
+    "quizland:count_total:21:a": {
+      "file": "quiz/g_count_tsu_7.wav"
+    },
+    "quizland:count_total:21:b": {
+      "file": "quiz/g_count_tsu_8.wav"
+    },
+    "quizland:count_total:21:c": {
+      "file": "quiz/g_count_tsu_9.wav"
+    },
+    "quizland:count_total:21:d": {
+      "file": "quiz/g_num_10.wav"
+    },
+    "quizland:count_total:21:q": {
+      "file": "quiz/q046_q.wav"
+    },
+    "quizland:count_total:22:a": {
+      "file": "quiz/g_count_tsu_5.wav"
+    },
+    "quizland:count_total:22:b": {
+      "file": "quiz/g_count_tsu_6.wav"
+    },
+    "quizland:count_total:22:c": {
+      "file": "quiz/g_count_tsu_7.wav"
+    },
+    "quizland:count_total:22:d": {
+      "file": "quiz/g_count_tsu_8.wav"
+    },
+    "quizland:count_total:22:q": {
+      "file": "quiz/q047_q.wav"
+    },
+    "quizland:count_total:23:a": {
+      "file": "quiz/g_count_tsu_6.wav"
+    },
+    "quizland:count_total:23:b": {
+      "file": "quiz/g_count_tsu_7.wav"
+    },
+    "quizland:count_total:23:c": {
+      "file": "quiz/g_count_tsu_8.wav"
+    },
+    "quizland:count_total:23:d": {
+      "file": "quiz/g_count_tsu_9.wav"
+    },
+    "quizland:count_total:23:q": {
+      "file": "quiz/q048_q.wav"
+    },
+    "quizland:count_total:2:a": {
+      "file": "quiz/g_count_tsu_1.wav"
+    },
+    "quizland:count_total:2:b": {
+      "file": "quiz/g_count_tsu_2.wav"
+    },
+    "quizland:count_total:2:c": {
+      "file": "quiz/g_count_tsu_3.wav"
+    },
+    "quizland:count_total:2:d": {
+      "file": "quiz/g_count_tsu_4.wav"
+    },
+    "quizland:count_total:2:q": {
+      "file": "quiz/q027_q.wav"
+    },
+    "quizland:count_total:3:a": {
+      "file": "quiz/g_count_tsu_1.wav"
+    },
+    "quizland:count_total:3:b": {
+      "file": "quiz/g_count_tsu_2.wav"
+    },
+    "quizland:count_total:3:c": {
+      "file": "quiz/g_count_tsu_3.wav"
+    },
+    "quizland:count_total:3:d": {
+      "file": "quiz/g_count_tsu_4.wav"
+    },
+    "quizland:count_total:3:q": {
+      "file": "quiz/q028_q.wav"
+    },
+    "quizland:count_total:4:a": {
+      "file": "quiz/g_count_tsu_2.wav"
+    },
+    "quizland:count_total:4:b": {
+      "file": "quiz/g_count_tsu_3.wav"
+    },
+    "quizland:count_total:4:c": {
+      "file": "quiz/g_count_tsu_4.wav"
+    },
+    "quizland:count_total:4:d": {
+      "file": "quiz/g_count_tsu_5.wav"
+    },
+    "quizland:count_total:4:q": {
+      "file": "quiz/q029_q.wav"
+    },
+    "quizland:count_total:5:a": {
+      "file": "quiz/g_count_tsu_1.wav"
+    },
+    "quizland:count_total:5:b": {
+      "file": "quiz/g_count_tsu_2.wav"
+    },
+    "quizland:count_total:5:c": {
+      "file": "quiz/g_count_tsu_3.wav"
+    },
+    "quizland:count_total:5:d": {
+      "file": "quiz/g_count_tsu_4.wav"
+    },
+    "quizland:count_total:5:q": {
+      "file": "quiz/q030_q.wav"
+    },
+    "quizland:count_total:6:a": {
+      "file": "quiz/g_count_tsu_1.wav"
+    },
+    "quizland:count_total:6:b": {
+      "file": "quiz/g_count_tsu_2.wav"
+    },
+    "quizland:count_total:6:c": {
+      "file": "quiz/g_count_tsu_3.wav"
+    },
+    "quizland:count_total:6:d": {
+      "file": "quiz/g_count_tsu_4.wav"
+    },
+    "quizland:count_total:6:q": {
+      "file": "quiz/q031_q.wav"
+    },
+    "quizland:count_total:7:a": {
+      "file": "quiz/g_count_tsu_2.wav"
+    },
+    "quizland:count_total:7:b": {
+      "file": "quiz/g_count_tsu_3.wav"
+    },
+    "quizland:count_total:7:c": {
+      "file": "quiz/g_count_tsu_4.wav"
+    },
+    "quizland:count_total:7:d": {
+      "file": "quiz/g_count_tsu_5.wav"
+    },
+    "quizland:count_total:7:q": {
+      "file": "quiz/q032_q.wav"
+    },
+    "quizland:count_total:8:a": {
+      "file": "quiz/g_count_tsu_3.wav"
+    },
+    "quizland:count_total:8:b": {
+      "file": "quiz/g_count_tsu_4.wav"
+    },
+    "quizland:count_total:8:c": {
+      "file": "quiz/g_count_tsu_5.wav"
+    },
+    "quizland:count_total:8:d": {
+      "file": "quiz/g_count_tsu_6.wav"
+    },
+    "quizland:count_total:8:q": {
+      "file": "quiz/q033_q.wav"
+    },
+    "quizland:count_total:9:a": {
+      "file": "quiz/g_count_tsu_3.wav"
+    },
+    "quizland:count_total:9:b": {
+      "file": "quiz/g_count_tsu_4.wav"
+    },
+    "quizland:count_total:9:c": {
+      "file": "quiz/g_count_tsu_5.wav"
+    },
+    "quizland:count_total:9:d": {
+      "file": "quiz/g_count_tsu_6.wav"
+    },
+    "quizland:count_total:9:q": {
+      "file": "quiz/q034_q.wav"
+    },
+    "quizland:number_sequence:0:b": {
+      "file": "quiz/g_num_2.wav"
+    },
+    "quizland:number_sequence:0:q": {
+      "file": "quiz/q072_q.wav"
+    },
+    "quizland:number_sequence:10:c": {
+      "file": "quiz/g_num_3.wav"
+    },
+    "quizland:number_sequence:10:q": {
+      "file": "quiz/q082_q.wav"
+    },
+    "quizland:number_sequence:11:c": {
+      "file": "quiz/g_num_7.wav"
+    },
+    "quizland:number_sequence:11:q": {
+      "file": "quiz/q083_q.wav"
+    },
+    "quizland:number_sequence:1:b": {
+      "file": "quiz/g_num_3.wav"
+    },
+    "quizland:number_sequence:1:q": {
+      "file": "quiz/q073_q.wav"
+    },
+    "quizland:number_sequence:2:b": {
+      "file": "quiz/g_num_5.wav"
+    },
+    "quizland:number_sequence:2:q": {
+      "file": "quiz/q074_q.wav"
+    },
+    "quizland:number_sequence:3:b": {
+      "file": "quiz/g_num_7.wav"
+    },
+    "quizland:number_sequence:3:q": {
+      "file": "quiz/q075_q.wav"
+    },
+    "quizland:number_sequence:4:b": {
+      "file": "quiz/g_num_8.wav"
+    },
+    "quizland:number_sequence:4:q": {
+      "file": "quiz/q076_q.wav"
+    },
+    "quizland:number_sequence:5:c": {
+      "file": "quiz/g_num_10.wav"
+    },
+    "quizland:number_sequence:5:q": {
+      "file": "quiz/q077_q.wav"
+    },
+    "quizland:number_sequence:6:b": {
+      "file": "quiz/g_num_2.wav"
+    },
+    "quizland:number_sequence:6:q": {
+      "file": "quiz/q078_q.wav"
+    },
+    "quizland:number_sequence:7:b": {
+      "file": "quiz/g_num_4.wav"
+    },
+    "quizland:number_sequence:7:q": {
+      "file": "quiz/q079_q.wav"
+    },
+    "quizland:number_sequence:8:b": {
+      "file": "quiz/g_num_7.wav"
+    },
+    "quizland:number_sequence:8:q": {
+      "file": "quiz/q080_q.wav"
+    },
+    "quizland:number_sequence:9:b": {
+      "file": "quiz/g_num_9.wav"
+    },
+    "quizland:number_sequence:9:q": {
+      "file": "quiz/q081_q.wav"
+    },
+    "quizland:opposite:0:a": {
+      "file": "quiz/q134_a.wav"
+    },
+    "quizland:opposite:0:b": {
+      "file": "quiz/q134_b.wav"
+    },
+    "quizland:opposite:0:c": {
+      "file": "quiz/q134_c.wav"
+    },
+    "quizland:opposite:0:d": {
+      "file": "quiz/q134_d.wav"
+    },
+    "quizland:opposite:0:q": {
+      "file": "quiz/q134_q.wav"
+    },
+    "quizland:opposite:10:a": {
+      "file": "quiz/q144_a.wav"
+    },
+    "quizland:opposite:10:b": {
+      "file": "quiz/q144_b.wav"
+    },
+    "quizland:opposite:10:c": {
+      "file": "quiz/q146_b.wav"
+    },
+    "quizland:opposite:10:d": {
+      "file": "quiz/q144_d.wav"
+    },
+    "quizland:opposite:10:q": {
+      "file": "quiz/q144_q.wav"
+    },
+    "quizland:opposite:11:a": {
+      "file": "quiz/q150_c.wav"
+    },
+    "quizland:opposite:11:b": {
+      "file": "quiz/q134_c.wav"
+    },
+    "quizland:opposite:11:c": {
+      "file": "quiz/q145_c.wav"
+    },
+    "quizland:opposite:11:d": {
+      "file": "quiz/q144_b.wav"
+    },
+    "quizland:opposite:11:q": {
+      "file": "quiz/q145_q.wav"
+    },
+    "quizland:opposite:12:a": {
+      "file": "quiz/q146_a.wav"
+    },
+    "quizland:opposite:12:b": {
+      "file": "quiz/q146_b.wav"
+    },
+    "quizland:opposite:12:c": {
+      "file": "quiz/q146_c.wav"
+    },
+    "quizland:opposite:12:d": {
+      "file": "quiz/q146_d.wav"
+    },
+    "quizland:opposite:12:q": {
+      "file": "quiz/q146_q.wav"
+    },
+    "quizland:opposite:13:a": {
+      "file": "quiz/q147_a.wav"
+    },
+    "quizland:opposite:13:b": {
+      "file": "quiz/q150_c.wav"
+    },
+    "quizland:opposite:13:c": {
+      "file": "quiz/q134_c.wav"
+    },
+    "quizland:opposite:13:d": {
+      "file": "quiz/q142_a.wav"
+    },
+    "quizland:opposite:13:q": {
+      "file": "quiz/q147_q.wav"
+    },
+    "quizland:opposite:14:a": {
+      "file": "quiz/q148_a.wav"
+    },
+    "quizland:opposite:14:b": {
+      "file": "quiz/q148_b.wav"
+    },
+    "quizland:opposite:14:c": {
+      "file": "quiz/q148_c.wav"
+    },
+    "quizland:opposite:14:d": {
+      "file": "quiz/q148_d.wav"
+    },
+    "quizland:opposite:14:q": {
+      "file": "quiz/q148_q.wav"
+    },
+    "quizland:opposite:15:a": {
+      "file": "quiz/q149_a.wav"
+    },
+    "quizland:opposite:15:b": {
+      "file": "quiz/q149_b.wav"
+    },
+    "quizland:opposite:15:c": {
+      "file": "quiz/q134_c.wav"
+    },
+    "quizland:opposite:15:d": {
+      "file": "quiz/q147_a.wav"
+    },
+    "quizland:opposite:15:q": {
+      "file": "quiz/q149_q.wav"
+    },
+    "quizland:opposite:16:a": {
+      "file": "quiz/q150_a.wav"
+    },
+    "quizland:opposite:16:b": {
+      "file": "quiz/q153_c.wav"
+    },
+    "quizland:opposite:16:c": {
+      "file": "quiz/q150_c.wav"
+    },
+    "quizland:opposite:16:d": {
+      "file": "quiz/q134_c.wav"
+    },
+    "quizland:opposite:16:q": {
+      "file": "quiz/q150_q.wav"
+    },
+    "quizland:opposite:17:a": {
+      "file": "quiz/q151_a.wav"
+    },
+    "quizland:opposite:17:b": {
+      "file": "quiz/q151_b.wav"
+    },
+    "quizland:opposite:17:c": {
+      "file": "quiz/q151_c.wav"
+    },
+    "quizland:opposite:17:d": {
+      "file": "quiz/q134_c.wav"
+    },
+    "quizland:opposite:17:q": {
+      "file": "quiz/q151_q.wav"
+    },
+    "quizland:opposite:18:a": {
+      "file": "quiz/q152_a.wav"
+    },
+    "quizland:opposite:18:b": {
+      "file": "quiz/q152_b.wav"
+    },
+    "quizland:opposite:18:c": {
+      "file": "quiz/q152_c.wav"
+    },
+    "quizland:opposite:18:d": {
+      "file": "quiz/q152_d.wav"
+    },
+    "quizland:opposite:18:q": {
+      "file": "quiz/q152_q.wav"
+    },
+    "quizland:opposite:19:a": {
+      "file": "quiz/q153_a.wav"
+    },
+    "quizland:opposite:19:b": {
+      "file": "quiz/q150_c.wav"
+    },
+    "quizland:opposite:19:c": {
+      "file": "quiz/q153_c.wav"
+    },
+    "quizland:opposite:19:d": {
+      "file": "quiz/q153_d.wav"
+    },
+    "quizland:opposite:19:q": {
+      "file": "quiz/q153_q.wav"
+    },
+    "quizland:opposite:1:a": {
+      "file": "quiz/q146_b.wav"
+    },
+    "quizland:opposite:1:b": {
+      "file": "quiz/q135_b.wav"
+    },
+    "quizland:opposite:1:c": {
+      "file": "quiz/q135_c.wav"
+    },
+    "quizland:opposite:1:d": {
+      "file": "quiz/q151_a.wav"
+    },
+    "quizland:opposite:1:q": {
+      "file": "quiz/q135_q.wav"
+    },
+    "quizland:opposite:20:a": {
+      "file": "quiz/q154_a.wav"
+    },
+    "quizland:opposite:20:b": {
+      "file": "quiz/q154_b.wav"
+    },
+    "quizland:opposite:20:c": {
+      "file": "quiz/q154_c.wav"
+    },
+    "quizland:opposite:20:d": {
+      "file": "quiz/q154_d.wav"
+    },
+    "quizland:opposite:20:q": {
+      "file": "quiz/q154_q.wav"
+    },
+    "quizland:opposite:21:a": {
+      "file": "quiz/q155_a.wav"
+    },
+    "quizland:opposite:21:b": {
+      "file": "quiz/q155_b.wav"
+    },
+    "quizland:opposite:21:c": {
+      "file": "quiz/q155_c.wav"
+    },
+    "quizland:opposite:21:d": {
+      "file": "quiz/q155_d.wav"
+    },
+    "quizland:opposite:21:q": {
+      "file": "quiz/q155_q.wav"
+    },
+    "quizland:opposite:22:a": {
+      "file": "quiz/q156_a.wav"
+    },
+    "quizland:opposite:22:b": {
+      "file": "quiz/q156_b.wav"
+    },
+    "quizland:opposite:22:c": {
+      "file": "quiz/q156_c.wav"
+    },
+    "quizland:opposite:22:d": {
+      "file": "quiz/q156_d.wav"
+    },
+    "quizland:opposite:22:q": {
+      "file": "quiz/q156_q.wav"
+    },
+    "quizland:opposite:23:a": {
+      "file": "quiz/q157_a.wav"
+    },
+    "quizland:opposite:23:b": {
+      "file": "quiz/q157_b.wav"
+    },
+    "quizland:opposite:23:c": {
+      "file": "quiz/q157_c.wav"
+    },
+    "quizland:opposite:23:d": {
+      "file": "quiz/q157_d.wav"
+    },
+    "quizland:opposite:23:q": {
+      "file": "quiz/q157_q.wav"
+    },
+    "quizland:opposite:2:a": {
+      "file": "quiz/q136_a.wav"
+    },
+    "quizland:opposite:2:b": {
+      "file": "quiz/q136_b.wav"
+    },
+    "quizland:opposite:2:c": {
+      "file": "quiz/q136_c.wav"
+    },
+    "quizland:opposite:2:d": {
+      "file": "quiz/q136_d.wav"
+    },
+    "quizland:opposite:2:q": {
+      "file": "quiz/q136_q.wav"
+    },
+    "quizland:opposite:3:a": {
+      "file": "quiz/q137_a.wav"
+    },
+    "quizland:opposite:3:b": {
+      "file": "quiz/q137_b.wav"
+    },
+    "quizland:opposite:3:c": {
+      "file": "quiz/q137_c.wav"
+    },
+    "quizland:opposite:3:d": {
+      "file": "quiz/q137_d.wav"
+    },
+    "quizland:opposite:3:q": {
+      "file": "quiz/q137_q.wav"
+    },
+    "quizland:opposite:4:a": {
+      "file": "quiz/q138_a.wav"
+    },
+    "quizland:opposite:4:b": {
+      "file": "quiz/q138_b.wav"
+    },
+    "quizland:opposite:4:c": {
+      "file": "quiz/q138_c.wav"
+    },
+    "quizland:opposite:4:d": {
+      "file": "quiz/q138_d.wav"
+    },
+    "quizland:opposite:4:q": {
+      "file": "quiz/q138_q.wav"
+    },
+    "quizland:opposite:5:a": {
+      "file": "quiz/q139_a.wav"
+    },
+    "quizland:opposite:5:b": {
+      "file": "quiz/q139_b.wav"
+    },
+    "quizland:opposite:5:c": {
+      "file": "quiz/q139_c.wav"
+    },
+    "quizland:opposite:5:d": {
+      "file": "quiz/q139_d.wav"
+    },
+    "quizland:opposite:5:q": {
+      "file": "quiz/q139_q.wav"
+    },
+    "quizland:opposite:6:a": {
+      "file": "quiz/q140_a.wav"
+    },
+    "quizland:opposite:6:b": {
+      "file": "quiz/q140_b.wav"
+    },
+    "quizland:opposite:6:c": {
+      "file": "quiz/q140_c.wav"
+    },
+    "quizland:opposite:6:d": {
+      "file": "quiz/q140_d.wav"
+    },
+    "quizland:opposite:6:q": {
+      "file": "quiz/q140_q.wav"
+    },
+    "quizland:opposite:7:a": {
+      "file": "quiz/q141_a.wav"
+    },
+    "quizland:opposite:7:b": {
+      "file": "quiz/q141_b.wav"
+    },
+    "quizland:opposite:7:c": {
+      "file": "quiz/q141_c.wav"
+    },
+    "quizland:opposite:7:d": {
+      "file": "quiz/q141_d.wav"
+    },
+    "quizland:opposite:7:q": {
+      "file": "quiz/q141_q.wav"
+    },
+    "quizland:opposite:8:a": {
+      "file": "quiz/q142_a.wav"
+    },
+    "quizland:opposite:8:b": {
+      "file": "quiz/q142_b.wav"
+    },
+    "quizland:opposite:8:c": {
+      "file": "quiz/q142_c.wav"
+    },
+    "quizland:opposite:8:d": {
+      "file": "quiz/q142_d.wav"
+    },
+    "quizland:opposite:8:q": {
+      "file": "quiz/q142_q.wav"
+    },
+    "quizland:opposite:9:a": {
+      "file": "quiz/q150_c.wav"
+    },
+    "quizland:opposite:9:b": {
+      "file": "quiz/q143_b.wav"
+    },
+    "quizland:opposite:9:c": {
+      "file": "quiz/q151_a.wav"
+    },
+    "quizland:opposite:9:d": {
+      "file": "quiz/q143_d.wav"
+    },
+    "quizland:opposite:9:q": {
+      "file": "quiz/q143_q.wav"
+    },
+    "quizland:order_color:0:a": {
+      "file": "quiz/q003_a.wav"
+    },
+    "quizland:order_color:0:b": {
+      "file": "quiz/q001_b.wav"
+    },
+    "quizland:order_color:0:c": {
+      "file": "quiz/q004_c.wav"
+    },
+    "quizland:order_color:0:d": {
+      "file": "quiz/q002_d.wav"
+    },
+    "quizland:order_color:0:q": {
+      "file": "quiz/q001_q.wav"
+    },
+    "quizland:order_color:10:a": {
+      "file": "quiz/q002_d.wav"
+    },
+    "quizland:order_color:10:b": {
+      "file": "quiz/q011_b.wav"
+    },
+    "quizland:order_color:10:c": {
+      "file": "quiz/q003_a.wav"
+    },
+    "quizland:order_color:10:d": {
+      "file": "quiz/q001_b.wav"
+    },
+    "quizland:order_color:10:q": {
+      "file": "quiz/q011_q.wav"
+    },
+    "quizland:order_color:11:a": {
+      "file": "quiz/q012_a.wav"
+    },
+    "quizland:order_color:11:b": {
+      "file": "quiz/q007_c.wav"
+    },
+    "quizland:order_color:11:c": {
+      "file": "quiz/q006_a.wav"
+    },
+    "quizland:order_color:11:d": {
+      "file": "quiz/q003_a.wav"
+    },
+    "quizland:order_color:11:q": {
+      "file": "quiz/q012_q.wav"
+    },
+    "quizland:order_color:12:a": {
+      "file": "quiz/q001_b.wav"
+    },
+    "quizland:order_color:12:b": {
+      "file": "quiz/q013_b.wav"
+    },
+    "quizland:order_color:12:c": {
+      "file": "quiz/q004_c.wav"
+    },
+    "quizland:order_color:12:d": {
+      "file": "quiz/q006_a.wav"
+    },
+    "quizland:order_color:12:q": {
+      "file": "quiz/q013_q.wav"
+    },
+    "quizland:order_color:13:a": {
+      "file": "quiz/q003_a.wav"
+    },
+    "quizland:order_color:13:b": {
+      "file": "quiz/q002_d.wav"
+    },
+    "quizland:order_color:13:c": {
+      "file": "quiz/q014_c.wav"
+    },
+    "quizland:order_color:13:d": {
+      "file": "quiz/q001_b.wav"
+    },
+    "quizland:order_color:13:q": {
+      "file": "quiz/q014_q.wav"
+    },
+    "quizland:order_color:14:a": {
+      "file": "quiz/q023_c.wav"
+    },
+    "quizland:order_color:14:b": {
+      "file": "quiz/q015_b.wav"
+    },
+    "quizland:order_color:14:c": {
+      "file": "quiz/q015_c.wav"
+    },
+    "quizland:order_color:14:d": {
+      "file": "quiz/q003_a.wav"
+    },
+    "quizland:order_color:14:q": {
+      "file": "quiz/q015_q.wav"
+    },
+    "quizland:order_color:15:a": {
+      "file": "quiz/q023_c.wav"
+    },
+    "quizland:order_color:15:b": {
+      "file": "quiz/q016_b.wav"
+    },
+    "quizland:order_color:15:c": {
+      "file": "quiz/q004_c.wav"
+    },
+    "quizland:order_color:15:d": {
+      "file": "quiz/q002_d.wav"
+    },
+    "quizland:order_color:15:q": {
+      "file": "quiz/q016_q.wav"
+    },
+    "quizland:order_color:16:a": {
+      "file": "quiz/q003_a.wav"
+    },
+    "quizland:order_color:16:b": {
+      "file": "quiz/q001_b.wav"
+    },
+    "quizland:order_color:16:c": {
+      "file": "quiz/q017_c.wav"
+    },
+    "quizland:order_color:16:d": {
+      "file": "quiz/q004_c.wav"
+    },
+    "quizland:order_color:16:q": {
+      "file": "quiz/q017_q.wav"
+    },
+    "quizland:order_color:17:a": {
+      "file": "quiz/q018_a.wav"
+    },
+    "quizland:order_color:17:b": {
+      "file": "quiz/q003_a.wav"
+    },
+    "quizland:order_color:17:c": {
+      "file": "quiz/q004_c.wav"
+    },
+    "quizland:order_color:17:d": {
+      "file": "quiz/q007_c.wav"
+    },
+    "quizland:order_color:17:q": {
+      "file": "quiz/q018_q.wav"
+    },
+    "quizland:order_color:18:a": {
+      "file": "quiz/q006_a.wav"
+    },
+    "quizland:order_color:18:b": {
+      "file": "quiz/q004_c.wav"
+    },
+    "quizland:order_color:18:c": {
+      "file": "quiz/q019_c.wav"
+    },
+    "quizland:order_color:18:d": {
+      "file": "quiz/q023_c.wav"
+    },
+    "quizland:order_color:18:q": {
+      "file": "quiz/q019_q.wav"
+    },
+    "quizland:order_color:19:a": {
+      "file": "quiz/q004_c.wav"
+    },
+    "quizland:order_color:19:b": {
+      "file": "quiz/q020_b.wav"
+    },
+    "quizland:order_color:19:c": {
+      "file": "quiz/q001_b.wav"
+    },
+    "quizland:order_color:19:d": {
+      "file": "quiz/q002_d.wav"
+    },
+    "quizland:order_color:19:q": {
+      "file": "quiz/q020_q.wav"
+    },
+    "quizland:order_color:1:a": {
+      "file": "quiz/q003_a.wav"
+    },
+    "quizland:order_color:1:b": {
+      "file": "quiz/q004_c.wav"
+    },
+    "quizland:order_color:1:c": {
+      "file": "quiz/q001_b.wav"
+    },
+    "quizland:order_color:1:d": {
+      "file": "quiz/q002_d.wav"
+    },
+    "quizland:order_color:1:q": {
+      "file": "quiz/q002_q.wav"
+    },
+    "quizland:order_color:20:a": {
+      "file": "quiz/q007_c.wav"
+    },
+    "quizland:order_color:20:b": {
+      "file": "quiz/q001_b.wav"
+    },
+    "quizland:order_color:20:c": {
+      "file": "quiz/q021_c.wav"
+    },
+    "quizland:order_color:20:d": {
+      "file": "quiz/q023_c.wav"
+    },
+    "quizland:order_color:20:q": {
+      "file": "quiz/q021_q.wav"
+    },
+    "quizland:order_color:21:a": {
+      "file": "quiz/q022_a.wav"
+    },
+    "quizland:order_color:21:b": {
+      "file": "quiz/q001_b.wav"
+    },
+    "quizland:order_color:21:c": {
+      "file": "quiz/q004_c.wav"
+    },
+    "quizland:order_color:21:d": {
+      "file": "quiz/q002_d.wav"
+    },
+    "quizland:order_color:21:q": {
+      "file": "quiz/q022_q.wav"
+    },
+    "quizland:order_color:22:a": {
+      "file": "quiz/q001_b.wav"
+    },
+    "quizland:order_color:22:b": {
+      "file": "quiz/q003_a.wav"
+    },
+    "quizland:order_color:22:c": {
+      "file": "quiz/q023_c.wav"
+    },
+    "quizland:order_color:22:d": {
+      "file": "quiz/q002_d.wav"
+    },
+    "quizland:order_color:22:q": {
+      "file": "quiz/q023_q.wav"
+    },
+    "quizland:order_color:23:a": {
+      "file": "quiz/q024_a.wav"
+    },
+    "quizland:order_color:23:b": {
+      "file": "quiz/q001_b.wav"
+    },
+    "quizland:order_color:23:c": {
+      "file": "quiz/q007_c.wav"
+    },
+    "quizland:order_color:23:d": {
+      "file": "quiz/q003_a.wav"
+    },
+    "quizland:order_color:23:q": {
+      "file": "quiz/q024_q.wav"
+    },
+    "quizland:order_color:2:a": {
+      "file": "quiz/q003_a.wav"
+    },
+    "quizland:order_color:2:b": {
+      "file": "quiz/q001_b.wav"
+    },
+    "quizland:order_color:2:c": {
+      "file": "quiz/q004_c.wav"
+    },
+    "quizland:order_color:2:d": {
+      "file": "quiz/q002_d.wav"
+    },
+    "quizland:order_color:2:q": {
+      "file": "quiz/q003_q.wav"
+    },
+    "quizland:order_color:3:a": {
+      "file": "quiz/q003_a.wav"
+    },
+    "quizland:order_color:3:b": {
+      "file": "quiz/q001_b.wav"
+    },
+    "quizland:order_color:3:c": {
+      "file": "quiz/q004_c.wav"
+    },
+    "quizland:order_color:3:d": {
+      "file": "quiz/q002_d.wav"
+    },
+    "quizland:order_color:3:q": {
+      "file": "quiz/q004_q.wav"
+    },
+    "quizland:order_color:4:a": {
+      "file": "quiz/q003_a.wav"
+    },
+    "quizland:order_color:4:b": {
+      "file": "quiz/q005_b.wav"
+    },
+    "quizland:order_color:4:c": {
+      "file": "quiz/q004_c.wav"
+    },
+    "quizland:order_color:4:d": {
+      "file": "quiz/q002_d.wav"
+    },
+    "quizland:order_color:4:q": {
+      "file": "quiz/q005_q.wav"
+    },
+    "quizland:order_color:5:a": {
+      "file": "quiz/q006_a.wav"
+    },
+    "quizland:order_color:5:b": {
+      "file": "quiz/q007_c.wav"
+    },
+    "quizland:order_color:5:c": {
+      "file": "quiz/q001_b.wav"
+    },
+    "quizland:order_color:5:d": {
+      "file": "quiz/q002_d.wav"
+    },
+    "quizland:order_color:5:q": {
+      "file": "quiz/q006_q.wav"
+    },
+    "quizland:order_color:6:a": {
+      "file": "quiz/q002_d.wav"
+    },
+    "quizland:order_color:6:b": {
+      "file": "quiz/q004_c.wav"
+    },
+    "quizland:order_color:6:c": {
+      "file": "quiz/q007_c.wav"
+    },
+    "quizland:order_color:6:d": {
+      "file": "quiz/q006_a.wav"
+    },
+    "quizland:order_color:6:q": {
+      "file": "quiz/q007_q.wav"
+    },
+    "quizland:order_color:7:a": {
+      "file": "quiz/q008_a.wav"
+    },
+    "quizland:order_color:7:b": {
+      "file": "quiz/q002_d.wav"
+    },
+    "quizland:order_color:7:c": {
+      "file": "quiz/q004_c.wav"
+    },
+    "quizland:order_color:7:d": {
+      "file": "quiz/q001_b.wav"
+    },
+    "quizland:order_color:7:q": {
+      "file": "quiz/q008_q.wav"
+    },
+    "quizland:order_color:8:a": {
+      "file": "quiz/q003_a.wav"
+    },
+    "quizland:order_color:8:b": {
+      "file": "quiz/q009_b.wav"
+    },
+    "quizland:order_color:8:c": {
+      "file": "quiz/q001_b.wav"
+    },
+    "quizland:order_color:8:d": {
+      "file": "quiz/q002_d.wav"
+    },
+    "quizland:order_color:8:q": {
+      "file": "quiz/q009_q.wav"
+    },
+    "quizland:order_color:9:a": {
+      "file": "quiz/q007_c.wav"
+    },
+    "quizland:order_color:9:b": {
+      "file": "quiz/q001_b.wav"
+    },
+    "quizland:order_color:9:c": {
+      "file": "quiz/q010_c.wav"
+    },
+    "quizland:order_color:9:d": {
+      "file": "quiz/q006_a.wav"
+    },
+    "quizland:order_color:9:q": {
+      "file": "quiz/q010_q.wav"
+    },
+    "quizland:shape_name:0:a": {
+      "file": "quiz/q049_a.wav"
+    },
+    "quizland:shape_name:0:b": {
+      "file": "quiz/q050_b.wav"
+    },
+    "quizland:shape_name:0:c": {
+      "file": "quiz/q051_c.wav"
+    },
+    "quizland:shape_name:0:d": {
+      "file": "quiz/q053_c.wav"
+    },
+    "quizland:shape_name:0:q": {
+      "file": "quiz/q049_q.wav"
+    },
+    "quizland:shape_name:10:a": {
+      "file": "quiz/q049_a.wav"
+    },
+    "quizland:shape_name:10:b": {
+      "file": "quiz/q050_b.wav"
+    },
+    "quizland:shape_name:10:c": {
+      "file": "quiz/q051_c.wav"
+    },
+    "quizland:shape_name:10:d": {
+      "file": "quiz/q059_d.wav"
+    },
+    "quizland:shape_name:10:q": {
+      "file": "quiz/q059_q.wav"
+    },
+    "quizland:shape_name:11:a": {
+      "file": "quiz/q060_a.wav"
+    },
+    "quizland:shape_name:11:b": {
+      "file": "quiz/q060_b.wav"
+    },
+    "quizland:shape_name:11:c": {
+      "file": "quiz/q061_c.wav"
+    },
+    "quizland:shape_name:11:d": {
+      "file": "quiz/q056_a.wav"
+    },
+    "quizland:shape_name:11:q": {
+      "file": "quiz/q060_q.wav"
+    },
+    "quizland:shape_name:12:a": {
+      "file": "quiz/q060_b.wav"
+    },
+    "quizland:shape_name:12:b": {
+      "file": "quiz/q056_a.wav"
+    },
+    "quizland:shape_name:12:c": {
+      "file": "quiz/q061_c.wav"
+    },
+    "quizland:shape_name:12:d": {
+      "file": "quiz/q061_d.wav"
+    },
+    "quizland:shape_name:12:q": {
+      "file": "quiz/q061_q.wav"
+    },
+    "quizland:shape_name:13:a": {
+      "file": "quiz/q062_a.wav"
+    },
+    "quizland:shape_name:13:b": {
+      "file": "quiz/q049_a.wav"
+    },
+    "quizland:shape_name:13:c": {
+      "file": "quiz/q053_c.wav"
+    },
+    "quizland:shape_name:13:d": {
+      "file": "quiz/q052_a.wav"
+    },
+    "quizland:shape_name:13:q": {
+      "file": "quiz/q062_q.wav"
+    },
+    "quizland:shape_name:14:a": {
+      "file": "quiz/q063_a.wav"
+    },
+    "quizland:shape_name:14:b": {
+      "file": "quiz/q049_a.wav"
+    },
+    "quizland:shape_name:14:c": {
+      "file": "quiz/q063_c.wav"
+    },
+    "quizland:shape_name:14:d": {
+      "file": "quiz/q063_d.wav"
+    },
+    "quizland:shape_name:14:q": {
+      "file": "quiz/q063_q.wav"
+    },
+    "quizland:shape_name:15:a": {
+      "file": "quiz/q064_a.wav"
+    },
+    "quizland:shape_name:15:b": {
+      "file": "quiz/q064_b.wav"
+    },
+    "quizland:shape_name:15:c": {
+      "file": "quiz/q061_c.wav"
+    },
+    "quizland:shape_name:15:d": {
+      "file": "quiz/q064_d.wav"
+    },
+    "quizland:shape_name:15:q": {
+      "file": "quiz/q064_q.wav"
+    },
+    "quizland:shape_name:16:a": {
+      "file": "quiz/q060_b.wav"
+    },
+    "quizland:shape_name:16:b": {
+      "file": "quiz/q056_a.wav"
+    },
+    "quizland:shape_name:16:c": {
+      "file": "quiz/q065_c.wav"
+    },
+    "quizland:shape_name:16:d": {
+      "file": "quiz/q065_d.wav"
+    },
+    "quizland:shape_name:16:q": {
+      "file": "quiz/q065_q.wav"
+    },
+    "quizland:shape_name:17:a": {
+      "file": "quiz/q066_a.wav"
+    },
+    "quizland:shape_name:17:b": {
+      "file": "quiz/q066_b.wav"
+    },
+    "quizland:shape_name:17:c": {
+      "file": "quiz/q060_b.wav"
+    },
+    "quizland:shape_name:17:d": {
+      "file": "quiz/q061_c.wav"
+    },
+    "quizland:shape_name:17:q": {
+      "file": "quiz/q066_q.wav"
+    },
+    "quizland:shape_name:18:a": {
+      "file": "quiz/q049_a.wav"
+    },
+    "quizland:shape_name:18:b": {
+      "file": "quiz/q068_b.wav"
+    },
+    "quizland:shape_name:18:c": {
+      "file": "quiz/q068_c.wav"
+    },
+    "quizland:shape_name:18:d": {
+      "file": "quiz/q068_d.wav"
+    },
+    "quizland:shape_name:18:q": {
+      "file": "quiz/q068_q.wav"
+    },
+    "quizland:shape_name:19:a": {
+      "file": "quiz/q069_a.wav"
+    },
+    "quizland:shape_name:19:b": {
+      "file": "quiz/q069_b.wav"
+    },
+    "quizland:shape_name:19:c": {
+      "file": "quiz/q051_c.wav"
+    },
+    "quizland:shape_name:19:d": {
+      "file": "quiz/q050_b.wav"
+    },
+    "quizland:shape_name:19:q": {
+      "file": "quiz/q069_q.wav"
+    },
+    "quizland:shape_name:1:a": {
+      "file": "quiz/q049_a.wav"
+    },
+    "quizland:shape_name:1:b": {
+      "file": "quiz/q050_b.wav"
+    },
+    "quizland:shape_name:1:c": {
+      "file": "quiz/q051_c.wav"
+    },
+    "quizland:shape_name:1:d": {
+      "file": "quiz/q053_c.wav"
+    },
+    "quizland:shape_name:1:q": {
+      "file": "quiz/q050_q.wav"
+    },
+    "quizland:shape_name:20:a": {
+      "file": "quiz/q070_a.wav"
+    },
+    "quizland:shape_name:20:b": {
+      "file": "quiz/q049_a.wav"
+    },
+    "quizland:shape_name:20:c": {
+      "file": "quiz/q051_c.wav"
+    },
+    "quizland:shape_name:20:d": {
+      "file": "quiz/q053_c.wav"
+    },
+    "quizland:shape_name:20:q": {
+      "file": "quiz/q070_q.wav"
+    },
+    "quizland:shape_name:21:a": {
+      "file": "quiz/q071_a.wav"
+    },
+    "quizland:shape_name:21:b": {
+      "file": "quiz/q050_b.wav"
+    },
+    "quizland:shape_name:21:c": {
+      "file": "quiz/q051_c.wav"
+    },
+    "quizland:shape_name:21:d": {
+      "file": "quiz/q053_c.wav"
+    },
+    "quizland:shape_name:21:q": {
+      "file": "quiz/q071_q.wav"
+    },
+    "quizland:shape_name:22:a": {
+      "file": "quiz/q182_a.wav"
+    },
+    "quizland:shape_name:22:b": {
+      "file": "quiz/q182_b.wav"
+    },
+    "quizland:shape_name:22:c": {
+      "file": "quiz/q182_c.wav"
+    },
+    "quizland:shape_name:22:d": {
+      "file": "quiz/q182_d.wav"
+    },
+    "quizland:shape_name:22:q": {
+      "file": "quiz/q182_q.wav"
+    },
+    "quizland:shape_name:2:a": {
+      "file": "quiz/q049_a.wav"
+    },
+    "quizland:shape_name:2:b": {
+      "file": "quiz/q050_b.wav"
+    },
+    "quizland:shape_name:2:c": {
+      "file": "quiz/q051_c.wav"
+    },
+    "quizland:shape_name:2:d": {
+      "file": "quiz/q053_c.wav"
+    },
+    "quizland:shape_name:2:q": {
+      "file": "quiz/q051_q.wav"
+    },
+    "quizland:shape_name:3:a": {
+      "file": "quiz/q052_a.wav"
+    },
+    "quizland:shape_name:3:b": {
+      "file": "quiz/q049_a.wav"
+    },
+    "quizland:shape_name:3:c": {
+      "file": "quiz/q050_b.wav"
+    },
+    "quizland:shape_name:3:d": {
+      "file": "quiz/q051_c.wav"
+    },
+    "quizland:shape_name:3:q": {
+      "file": "quiz/q052_q.wav"
+    },
+    "quizland:shape_name:4:a": {
+      "file": "quiz/q049_a.wav"
+    },
+    "quizland:shape_name:4:b": {
+      "file": "quiz/q050_b.wav"
+    },
+    "quizland:shape_name:4:c": {
+      "file": "quiz/q053_c.wav"
+    },
+    "quizland:shape_name:4:d": {
+      "file": "quiz/q051_c.wav"
+    },
+    "quizland:shape_name:4:q": {
+      "file": "quiz/q053_q.wav"
+    },
+    "quizland:shape_name:5:a": {
+      "file": "quiz/q054_a.wav"
+    },
+    "quizland:shape_name:5:b": {
+      "file": "quiz/q049_a.wav"
+    },
+    "quizland:shape_name:5:c": {
+      "file": "quiz/q050_b.wav"
+    },
+    "quizland:shape_name:5:d": {
+      "file": "quiz/q052_a.wav"
+    },
+    "quizland:shape_name:5:q": {
+      "file": "quiz/q054_q.wav"
+    },
+    "quizland:shape_name:6:a": {
+      "file": "quiz/q049_a.wav"
+    },
+    "quizland:shape_name:6:b": {
+      "file": "quiz/q055_b.wav"
+    },
+    "quizland:shape_name:6:c": {
+      "file": "quiz/q053_c.wav"
+    },
+    "quizland:shape_name:6:d": {
+      "file": "quiz/q050_b.wav"
+    },
+    "quizland:shape_name:6:q": {
+      "file": "quiz/q055_q.wav"
+    },
+    "quizland:shape_name:7:a": {
+      "file": "quiz/q056_a.wav"
+    },
+    "quizland:shape_name:7:b": {
+      "file": "quiz/q061_c.wav"
+    },
+    "quizland:shape_name:7:c": {
+      "file": "quiz/q056_c.wav"
+    },
+    "quizland:shape_name:7:d": {
+      "file": "quiz/q060_b.wav"
+    },
+    "quizland:shape_name:7:q": {
+      "file": "quiz/q056_q.wav"
+    },
+    "quizland:shape_name:8:a": {
+      "file": "quiz/q053_c.wav"
+    },
+    "quizland:shape_name:8:b": {
+      "file": "quiz/q057_b.wav"
+    },
+    "quizland:shape_name:8:c": {
+      "file": "quiz/q051_c.wav"
+    },
+    "quizland:shape_name:8:d": {
+      "file": "quiz/q049_a.wav"
+    },
+    "quizland:shape_name:8:q": {
+      "file": "quiz/q057_q.wav"
+    },
+    "quizland:shape_name:9:a": {
+      "file": "quiz/q058_a.wav"
+    },
+    "quizland:shape_name:9:b": {
+      "file": "quiz/q049_a.wav"
+    },
+    "quizland:shape_name:9:c": {
+      "file": "quiz/q051_c.wav"
+    },
+    "quizland:shape_name:9:d": {
+      "file": "quiz/q050_b.wav"
+    },
+    "quizland:shape_name:9:q": {
+      "file": "quiz/q058_q.wav"
+    },
+    "quizland:trivia:0:a": {
+      "file": "quiz/q003_a.wav"
+    },
+    "quizland:trivia:0:b": {
+      "file": "quiz/q084_b.wav"
+    },
+    "quizland:trivia:0:c": {
+      "file": "quiz/q001_b.wav"
+    },
+    "quizland:trivia:0:d": {
+      "file": "quiz/q084_d.wav"
+    },
+    "quizland:trivia:0:q": {
+      "file": "quiz/q084_q.wav"
+    },
+    "quizland:trivia:10:a": {
+      "file": "quiz/q094_a.wav"
+    },
+    "quizland:trivia:10:b": {
+      "file": "quiz/q094_b.wav"
+    },
+    "quizland:trivia:10:c": {
+      "file": "quiz/q094_c.wav"
+    },
+    "quizland:trivia:10:d": {
+      "file": "quiz/q094_d.wav"
+    },
+    "quizland:trivia:10:q": {
+      "file": "quiz/q094_q.wav"
+    },
+    "quizland:trivia:11:a": {
+      "file": "quiz/q095_a.wav"
+    },
+    "quizland:trivia:11:b": {
+      "file": "quiz/q095_b.wav"
+    },
+    "quizland:trivia:11:c": {
+      "file": "quiz/q095_c.wav"
+    },
+    "quizland:trivia:11:d": {
+      "file": "quiz/q095_d.wav"
+    },
+    "quizland:trivia:11:q": {
+      "file": "quiz/q095_q.wav"
+    },
+    "quizland:trivia:12:a": {
+      "file": "quiz/q096_a.wav"
+    },
+    "quizland:trivia:12:b": {
+      "file": "quiz/q096_b.wav"
+    },
+    "quizland:trivia:12:c": {
+      "file": "quiz/q096_c.wav"
+    },
+    "quizland:trivia:12:d": {
+      "file": "quiz/q096_d.wav"
+    },
+    "quizland:trivia:12:q": {
+      "file": "quiz/q096_q.wav"
+    },
+    "quizland:trivia:13:a": {
+      "file": "quiz/q097_a.wav"
+    },
+    "quizland:trivia:13:b": {
+      "file": "quiz/q097_b.wav"
+    },
+    "quizland:trivia:13:c": {
+      "file": "quiz/q097_c.wav"
+    },
+    "quizland:trivia:13:d": {
+      "file": "quiz/q097_d.wav"
+    },
+    "quizland:trivia:13:q": {
+      "file": "quiz/q097_q.wav"
+    },
+    "quizland:trivia:14:a": {
+      "file": "quiz/q098_a.wav"
+    },
+    "quizland:trivia:14:b": {
+      "file": "quiz/q098_b.wav"
+    },
+    "quizland:trivia:14:c": {
+      "file": "quiz/q098_c.wav"
+    },
+    "quizland:trivia:14:d": {
+      "file": "quiz/q098_d.wav"
+    },
+    "quizland:trivia:14:q": {
+      "file": "quiz/q098_q.wav"
+    },
+    "quizland:trivia:15:a": {
+      "file": "quiz/q099_a.wav"
+    },
+    "quizland:trivia:15:b": {
+      "file": "quiz/q099_b.wav"
+    },
+    "quizland:trivia:15:c": {
+      "file": "quiz/q099_c.wav"
+    },
+    "quizland:trivia:15:d": {
+      "file": "quiz/q099_d.wav"
+    },
+    "quizland:trivia:15:q": {
+      "file": "quiz/q099_q.wav"
+    },
+    "quizland:trivia:16:a": {
+      "file": "quiz/q100_a.wav"
+    },
+    "quizland:trivia:16:b": {
+      "file": "quiz/q100_b.wav"
+    },
+    "quizland:trivia:16:c": {
+      "file": "quiz/q100_c.wav"
+    },
+    "quizland:trivia:16:d": {
+      "file": "quiz/q100_d.wav"
+    },
+    "quizland:trivia:16:q": {
+      "file": "quiz/q100_q.wav"
+    },
+    "quizland:trivia:17:a": {
+      "file": "quiz/q101_a.wav"
+    },
+    "quizland:trivia:17:b": {
+      "file": "quiz/q101_b.wav"
+    },
+    "quizland:trivia:17:c": {
+      "file": "quiz/q101_c.wav"
+    },
+    "quizland:trivia:17:d": {
+      "file": "quiz/q101_d.wav"
+    },
+    "quizland:trivia:17:q": {
+      "file": "quiz/q101_q.wav"
+    },
+    "quizland:trivia:18:a": {
+      "file": "quiz/q102_a.wav"
+    },
+    "quizland:trivia:18:b": {
+      "file": "quiz/q102_b.wav"
+    },
+    "quizland:trivia:18:c": {
+      "file": "quiz/q102_c.wav"
+    },
+    "quizland:trivia:18:d": {
+      "file": "quiz/q102_d.wav"
+    },
+    "quizland:trivia:18:q": {
+      "file": "quiz/q102_q.wav"
+    },
+    "quizland:trivia:19:a": {
+      "file": "quiz/q103_a.wav"
+    },
+    "quizland:trivia:19:b": {
+      "file": "quiz/q103_b.wav"
+    },
+    "quizland:trivia:19:c": {
+      "file": "quiz/q103_c.wav"
+    },
+    "quizland:trivia:19:d": {
+      "file": "quiz/q103_d.wav"
+    },
+    "quizland:trivia:19:q": {
+      "file": "quiz/q103_q.wav"
+    },
+    "quizland:trivia:1:a": {
+      "file": "quiz/q085_a.wav"
+    },
+    "quizland:trivia:1:b": {
+      "file": "quiz/q085_b.wav"
+    },
+    "quizland:trivia:1:c": {
+      "file": "quiz/q085_c.wav"
+    },
+    "quizland:trivia:1:d": {
+      "file": "quiz/q085_d.wav"
+    },
+    "quizland:trivia:1:q": {
+      "file": "quiz/q085_q.wav"
+    },
+    "quizland:trivia:20:a": {
+      "file": "quiz/q104_a.wav"
+    },
+    "quizland:trivia:20:b": {
+      "file": "quiz/q102_c.wav"
+    },
+    "quizland:trivia:20:c": {
+      "file": "quiz/q104_c.wav"
+    },
+    "quizland:trivia:20:d": {
+      "file": "quiz/q104_d.wav"
+    },
+    "quizland:trivia:20:q": {
+      "file": "quiz/q104_q.wav"
+    },
+    "quizland:trivia:21:a": {
+      "file": "quiz/q105_a.wav"
+    },
+    "quizland:trivia:21:b": {
+      "file": "quiz/q105_b.wav"
+    },
+    "quizland:trivia:21:c": {
+      "file": "quiz/q105_c.wav"
+    },
+    "quizland:trivia:21:d": {
+      "file": "quiz/q105_d.wav"
+    },
+    "quizland:trivia:21:q": {
+      "file": "quiz/q105_q.wav"
+    },
+    "quizland:trivia:22:a": {
+      "file": "quiz/q106_a.wav"
+    },
+    "quizland:trivia:22:b": {
+      "file": "quiz/q106_b.wav"
+    },
+    "quizland:trivia:22:c": {
+      "file": "quiz/q106_c.wav"
+    },
+    "quizland:trivia:22:d": {
+      "file": "quiz/q106_d.wav"
+    },
+    "quizland:trivia:22:q": {
+      "file": "quiz/q106_q.wav"
+    },
+    "quizland:trivia:23:a": {
+      "file": "quiz/q027_a.wav"
+    },
+    "quizland:trivia:23:b": {
+      "file": "quiz/q025_a.wav"
+    },
+    "quizland:trivia:23:c": {
+      "file": "quiz/q107_c.wav"
+    },
+    "quizland:trivia:23:d": {
+      "file": "quiz/q033_b.wav"
+    },
+    "quizland:trivia:23:q": {
+      "file": "quiz/q107_q.wav"
+    },
+    "quizland:trivia:24:a": {
+      "file": "quiz/q108_a.wav"
+    },
+    "quizland:trivia:24:b": {
+      "file": "quiz/q108_b.wav"
+    },
+    "quizland:trivia:24:c": {
+      "file": "quiz/q108_c.wav"
+    },
+    "quizland:trivia:24:d": {
+      "file": "quiz/q108_d.wav"
+    },
+    "quizland:trivia:24:q": {
+      "file": "quiz/q108_q.wav"
+    },
+    "quizland:trivia:25:a": {
+      "file": "quiz/q109_a.wav"
+    },
+    "quizland:trivia:25:b": {
+      "file": "quiz/q109_b.wav"
+    },
+    "quizland:trivia:25:c": {
+      "file": "quiz/q109_c.wav"
+    },
+    "quizland:trivia:25:d": {
+      "file": "quiz/q109_d.wav"
+    },
+    "quizland:trivia:25:q": {
+      "file": "quiz/q109_q.wav"
+    },
+    "quizland:trivia:2:a": {
+      "file": "quiz/q086_a.wav"
+    },
+    "quizland:trivia:2:b": {
+      "file": "quiz/q086_b.wav"
+    },
+    "quizland:trivia:2:c": {
+      "file": "quiz/q164_c.wav"
+    },
+    "quizland:trivia:2:d": {
+      "file": "quiz/q161_a.wav"
+    },
+    "quizland:trivia:2:q": {
+      "file": "quiz/q086_q.wav"
+    },
+    "quizland:trivia:3:a": {
+      "file": "quiz/q111_c.wav"
+    },
+    "quizland:trivia:3:b": {
+      "file": "quiz/q087_b.wav"
+    },
+    "quizland:trivia:3:c": {
+      "file": "quiz/q087_c.wav"
+    },
+    "quizland:trivia:3:d": {
+      "file": "quiz/q087_d.wav"
+    },
+    "quizland:trivia:3:q": {
+      "file": "quiz/q087_q.wav"
+    },
+    "quizland:trivia:4:a": {
+      "file": "quiz/q088_a.wav"
+    },
+    "quizland:trivia:4:b": {
+      "file": "quiz/q088_b.wav"
+    },
+    "quizland:trivia:4:c": {
+      "file": "quiz/q088_c.wav"
+    },
+    "quizland:trivia:4:d": {
+      "file": "quiz/q088_d.wav"
+    },
+    "quizland:trivia:4:q": {
+      "file": "quiz/q088_q.wav"
+    },
+    "quizland:trivia:5:a": {
+      "file": "quiz/q089_a.wav"
+    },
+    "quizland:trivia:5:b": {
+      "file": "quiz/q001_b.wav"
+    },
+    "quizland:trivia:5:c": {
+      "file": "quiz/q089_c.wav"
+    },
+    "quizland:trivia:5:d": {
+      "file": "quiz/q089_d.wav"
+    },
+    "quizland:trivia:5:q": {
+      "file": "quiz/q089_q.wav"
+    },
+    "quizland:trivia:6:a": {
+      "file": "quiz/q090_a.wav"
+    },
+    "quizland:trivia:6:b": {
+      "file": "quiz/q090_b.wav"
+    },
+    "quizland:trivia:6:c": {
+      "file": "quiz/q090_c.wav"
+    },
+    "quizland:trivia:6:d": {
+      "file": "quiz/q090_d.wav"
+    },
+    "quizland:trivia:6:q": {
+      "file": "quiz/q090_q.wav"
+    },
+    "quizland:trivia:7:a": {
+      "file": "quiz/q091_a.wav"
+    },
+    "quizland:trivia:7:b": {
+      "file": "quiz/q091_b.wav"
+    },
+    "quizland:trivia:7:c": {
+      "file": "quiz/q091_c.wav"
+    },
+    "quizland:trivia:7:d": {
+      "file": "quiz/q091_d.wav"
+    },
+    "quizland:trivia:7:q": {
+      "file": "quiz/q091_q.wav"
+    },
+    "quizland:trivia:8:a": {
+      "file": "quiz/q162_a.wav"
+    },
+    "quizland:trivia:8:b": {
+      "file": "quiz/q092_b.wav"
+    },
+    "quizland:trivia:8:c": {
+      "file": "quiz/q092_c.wav"
+    },
+    "quizland:trivia:8:d": {
+      "file": "quiz/q092_d.wav"
+    },
+    "quizland:trivia:8:q": {
+      "file": "quiz/q092_q.wav"
+    },
+    "quizland:trivia:9:a": {
+      "file": "quiz/q093_a.wav"
+    },
+    "quizland:trivia:9:b": {
+      "file": "quiz/q093_b.wav"
+    },
+    "quizland:trivia:9:c": {
+      "file": "quiz/q093_c.wav"
+    },
+    "quizland:trivia:9:d": {
+      "file": "quiz/q093_d.wav"
+    },
+    "quizland:trivia:9:q": {
+      "file": "quiz/q093_q.wav"
+    },
+    "quizland:weather:0:a": {
+      "file": "quiz/q110_a.wav"
+    },
+    "quizland:weather:0:b": {
+      "file": "quiz/q112_b.wav"
+    },
+    "quizland:weather:0:c": {
+      "file": "quiz/q111_c.wav"
+    },
+    "quizland:weather:0:d": {
+      "file": "quiz/q113_c.wav"
+    },
+    "quizland:weather:0:q": {
+      "file": "quiz/q110_q.wav"
+    },
+    "quizland:weather:10:a": {
+      "file": "quiz/q120_a.wav"
+    },
+    "quizland:weather:10:b": {
+      "file": "quiz/q120_b.wav"
+    },
+    "quizland:weather:10:c": {
+      "file": "quiz/q120_c.wav"
+    },
+    "quizland:weather:10:d": {
+      "file": "quiz/q120_d.wav"
+    },
+    "quizland:weather:10:q": {
+      "file": "quiz/q120_q.wav"
+    },
+    "quizland:weather:11:a": {
+      "file": "quiz/q121_a.wav"
+    },
+    "quizland:weather:11:b": {
+      "file": "quiz/q121_b.wav"
+    },
+    "quizland:weather:11:c": {
+      "file": "quiz/q121_c.wav"
+    },
+    "quizland:weather:11:d": {
+      "file": "quiz/q121_d.wav"
+    },
+    "quizland:weather:11:q": {
+      "file": "quiz/q121_q.wav"
+    },
+    "quizland:weather:12:a": {
+      "file": "quiz/q122_a.wav"
+    },
+    "quizland:weather:12:b": {
+      "file": "quiz/q122_b.wav"
+    },
+    "quizland:weather:12:c": {
+      "file": "quiz/q122_c.wav"
+    },
+    "quizland:weather:12:d": {
+      "file": "quiz/q122_d.wav"
+    },
+    "quizland:weather:12:q": {
+      "file": "quiz/q122_q.wav"
+    },
+    "quizland:weather:13:a": {
+      "file": "quiz/q123_a.wav"
+    },
+    "quizland:weather:13:b": {
+      "file": "quiz/q123_b.wav"
+    },
+    "quizland:weather:13:c": {
+      "file": "quiz/q123_c.wav"
+    },
+    "quizland:weather:13:d": {
+      "file": "quiz/q123_d.wav"
+    },
+    "quizland:weather:13:q": {
+      "file": "quiz/q123_q.wav"
+    },
+    "quizland:weather:14:a": {
+      "file": "quiz/q124_a.wav"
+    },
+    "quizland:weather:14:b": {
+      "file": "quiz/q124_b.wav"
+    },
+    "quizland:weather:14:c": {
+      "file": "quiz/q124_c.wav"
+    },
+    "quizland:weather:14:d": {
+      "file": "quiz/q124_d.wav"
+    },
+    "quizland:weather:14:q": {
+      "file": "quiz/q124_q.wav"
+    },
+    "quizland:weather:15:a": {
+      "file": "quiz/q125_a.wav"
+    },
+    "quizland:weather:15:b": {
+      "file": "quiz/q125_b.wav"
+    },
+    "quizland:weather:15:c": {
+      "file": "quiz/q125_c.wav"
+    },
+    "quizland:weather:15:d": {
+      "file": "quiz/q125_d.wav"
+    },
+    "quizland:weather:15:q": {
+      "file": "quiz/q125_q.wav"
+    },
+    "quizland:weather:16:a": {
+      "file": "quiz/q126_a.wav"
+    },
+    "quizland:weather:16:b": {
+      "file": "quiz/q118_a.wav"
+    },
+    "quizland:weather:16:c": {
+      "file": "quiz/q126_c.wav"
+    },
+    "quizland:weather:16:d": {
+      "file": "quiz/q126_d.wav"
+    },
+    "quizland:weather:16:q": {
+      "file": "quiz/q126_q.wav"
+    },
+    "quizland:weather:17:a": {
+      "file": "quiz/q127_a.wav"
+    },
+    "quizland:weather:17:b": {
+      "file": "quiz/q127_b.wav"
+    },
+    "quizland:weather:17:c": {
+      "file": "quiz/q127_c.wav"
+    },
+    "quizland:weather:17:d": {
+      "file": "quiz/q127_d.wav"
+    },
+    "quizland:weather:17:q": {
+      "file": "quiz/q127_q.wav"
+    },
+    "quizland:weather:18:a": {
+      "file": "quiz/q128_a.wav"
+    },
+    "quizland:weather:18:b": {
+      "file": "quiz/q128_b.wav"
+    },
+    "quizland:weather:18:c": {
+      "file": "quiz/q128_c.wav"
+    },
+    "quizland:weather:18:d": {
+      "file": "quiz/q128_d.wav"
+    },
+    "quizland:weather:18:q": {
+      "file": "quiz/q128_q.wav"
+    },
+    "quizland:weather:19:a": {
+      "file": "quiz/q129_a.wav"
+    },
+    "quizland:weather:19:b": {
+      "file": "quiz/q129_b.wav"
+    },
+    "quizland:weather:19:c": {
+      "file": "quiz/q129_c.wav"
+    },
+    "quizland:weather:19:d": {
+      "file": "quiz/q126_c.wav"
+    },
+    "quizland:weather:19:q": {
+      "file": "quiz/q129_q.wav"
+    },
+    "quizland:weather:1:a": {
+      "file": "quiz/q110_a.wav"
+    },
+    "quizland:weather:1:b": {
+      "file": "quiz/q112_b.wav"
+    },
+    "quizland:weather:1:c": {
+      "file": "quiz/q111_c.wav"
+    },
+    "quizland:weather:1:d": {
+      "file": "quiz/q113_c.wav"
+    },
+    "quizland:weather:1:q": {
+      "file": "quiz/q111_q.wav"
+    },
+    "quizland:weather:20:a": {
+      "file": "quiz/q130_a.wav"
+    },
+    "quizland:weather:20:b": {
+      "file": "quiz/q130_b.wav"
+    },
+    "quizland:weather:20:c": {
+      "file": "quiz/q130_c.wav"
+    },
+    "quizland:weather:20:d": {
+      "file": "quiz/q130_d.wav"
+    },
+    "quizland:weather:20:q": {
+      "file": "quiz/q130_q.wav"
+    },
+    "quizland:weather:21:a": {
+      "file": "quiz/q131_a.wav"
+    },
+    "quizland:weather:21:b": {
+      "file": "quiz/q131_b.wav"
+    },
+    "quizland:weather:21:c": {
+      "file": "quiz/q131_c.wav"
+    },
+    "quizland:weather:21:d": {
+      "file": "quiz/q131_d.wav"
+    },
+    "quizland:weather:21:q": {
+      "file": "quiz/q131_q.wav"
+    },
+    "quizland:weather:22:a": {
+      "file": "quiz/q132_a.wav"
+    },
+    "quizland:weather:22:b": {
+      "file": "quiz/q132_b.wav"
+    },
+    "quizland:weather:22:c": {
+      "file": "quiz/q132_c.wav"
+    },
+    "quizland:weather:22:d": {
+      "file": "quiz/q132_d.wav"
+    },
+    "quizland:weather:22:q": {
+      "file": "quiz/q132_q.wav"
+    },
+    "quizland:weather:23:a": {
+      "file": "quiz/q049_a.wav"
+    },
+    "quizland:weather:23:b": {
+      "file": "quiz/q053_c.wav"
+    },
+    "quizland:weather:23:c": {
+      "file": "quiz/q133_c.wav"
+    },
+    "quizland:weather:23:d": {
+      "file": "quiz/q050_b.wav"
+    },
+    "quizland:weather:23:q": {
+      "file": "quiz/q133_q.wav"
+    },
+    "quizland:weather:2:a": {
+      "file": "quiz/q110_a.wav"
+    },
+    "quizland:weather:2:b": {
+      "file": "quiz/q112_b.wav"
+    },
+    "quizland:weather:2:c": {
+      "file": "quiz/q111_c.wav"
+    },
+    "quizland:weather:2:d": {
+      "file": "quiz/q113_c.wav"
+    },
+    "quizland:weather:2:q": {
+      "file": "quiz/q112_q.wav"
+    },
+    "quizland:weather:3:a": {
+      "file": "quiz/q110_a.wav"
+    },
+    "quizland:weather:3:b": {
+      "file": "quiz/q111_c.wav"
+    },
+    "quizland:weather:3:c": {
+      "file": "quiz/q113_c.wav"
+    },
+    "quizland:weather:3:d": {
+      "file": "quiz/q112_b.wav"
+    },
+    "quizland:weather:3:q": {
+      "file": "quiz/q113_q.wav"
+    },
+    "quizland:weather:4:a": {
+      "file": "quiz/q115_a.wav"
+    },
+    "quizland:weather:4:b": {
+      "file": "quiz/q112_b.wav"
+    },
+    "quizland:weather:4:c": {
+      "file": "quiz/q114_c.wav"
+    },
+    "quizland:weather:4:d": {
+      "file": "quiz/q111_c.wav"
+    },
+    "quizland:weather:4:q": {
+      "file": "quiz/q114_q.wav"
+    },
+    "quizland:weather:5:a": {
+      "file": "quiz/q115_a.wav"
+    },
+    "quizland:weather:5:b": {
+      "file": "quiz/q110_a.wav"
+    },
+    "quizland:weather:5:c": {
+      "file": "quiz/q112_b.wav"
+    },
+    "quizland:weather:5:d": {
+      "file": "quiz/q114_c.wav"
+    },
+    "quizland:weather:5:q": {
+      "file": "quiz/q115_q.wav"
+    },
+    "quizland:weather:6:a": {
+      "file": "quiz/q111_c.wav"
+    },
+    "quizland:weather:6:b": {
+      "file": "quiz/q112_b.wav"
+    },
+    "quizland:weather:6:c": {
+      "file": "quiz/q116_c.wav"
+    },
+    "quizland:weather:6:d": {
+      "file": "quiz/q113_c.wav"
+    },
+    "quizland:weather:6:q": {
+      "file": "quiz/q116_q.wav"
+    },
+    "quizland:weather:7:a": {
+      "file": "quiz/q117_a.wav"
+    },
+    "quizland:weather:7:b": {
+      "file": "quiz/q117_b.wav"
+    },
+    "quizland:weather:7:c": {
+      "file": "quiz/q117_c.wav"
+    },
+    "quizland:weather:7:d": {
+      "file": "quiz/q053_c.wav"
+    },
+    "quizland:weather:7:q": {
+      "file": "quiz/q117_q.wav"
+    },
+    "quizland:weather:8:a": {
+      "file": "quiz/q118_a.wav"
+    },
+    "quizland:weather:8:b": {
+      "file": "quiz/q118_b.wav"
+    },
+    "quizland:weather:8:c": {
+      "file": "quiz/q118_c.wav"
+    },
+    "quizland:weather:8:d": {
+      "file": "quiz/q115_a.wav"
+    },
+    "quizland:weather:8:q": {
+      "file": "quiz/q118_q.wav"
+    },
+    "quizland:weather:9:a": {
+      "file": "quiz/q111_c.wav"
+    },
+    "quizland:weather:9:b": {
+      "file": "quiz/q119_b.wav"
+    },
+    "quizland:weather:9:c": {
+      "file": "quiz/q113_c.wav"
+    },
+    "quizland:weather:9:d": {
+      "file": "quiz/q112_b.wav"
+    },
+    "quizland:weather:9:q": {
+      "file": "quiz/q119_q.wav"
+    },
+    "monster_math:common:welcome": {
+      "file": "monster_math_common_welcome.wav"
+    },
+    "monster_math:common:continue": {
+      "file": "monster_math_common_continue.wav"
+    },
+    "monster_math:common:stage_select": {
+      "file": "monster_math_common_stage_select.wav"
+    },
+    "monster_math:common:miss_first": {
+      "file": "monster_math_common_miss_first.wav"
+    },
+    "monster_math:common:miss_repeat": {
+      "file": "monster_math_common_miss_repeat.wav"
+    },
+    "monster_math:common:stuck_undo": {
+      "file": "monster_math_common_stuck_undo.wav"
+    },
+    "monster_math:common:voluntary_undo": {
+      "file": "monster_math_common_voluntary_undo.wav"
+    },
+    "monster_math:common:round_clear": {
+      "file": "monster_math_common_round_clear.wav"
+    },
+    "monster_math:common:stage_clear": {
+      "file": "monster_math_common_stage_clear.wav"
+    },
+    "monster_math:common:perfect": {
+      "file": "monster_math_common_perfect.wav"
+    },
+    "monster_math:common:result_open": {
+      "file": "monster_math_common_result_open.wav"
+    },
+    "monster_math:common:back_confirm": {
+      "file": "monster_math_common_back_confirm.wav"
+    },
+    "monster_math:count:1": {
+      "file": "monster_math_count_1.wav"
+    },
+    "monster_math:count:2": {
+      "file": "monster_math_count_2.wav"
+    },
+    "monster_math:count:3": {
+      "file": "monster_math_count_3.wav"
+    },
+    "monster_math:count:4": {
+      "file": "monster_math_count_4.wav"
+    },
+    "monster_math:count:5": {
+      "file": "monster_math_count_5.wav"
+    },
+    "monster_math:count:6": {
+      "file": "monster_math_count_6.wav"
+    },
+    "monster_math:count:7": {
+      "file": "monster_math_count_7.wav"
+    },
+    "monster_math:count:8": {
+      "file": "monster_math_count_8.wav"
+    },
+    "monster_math:count:9": {
+      "file": "monster_math_count_9.wav"
+    },
+    "monster_math:count:10": {
+      "file": "monster_math_count_10.wav"
+    },
+    "monster_math:common:acorn_get": {
+      "file": "monster_math_common_acorn_get.wav"
+    },
+    "monster_math:ten:round_intro_lv1": {
+      "file": "monster_math_ten_round_intro_lv1.wav"
+    },
+    "monster_math:ten:round_intro_lv2": {
+      "file": "monster_math_ten_round_intro_lv2.wav"
+    },
+    "monster_math:ten:round_intro_lv3": {
+      "file": "monster_math_ten_round_intro_lv3.wav"
+    },
+    "monster_math:ten:eat_more": {
+      "file": "monster_math_ten_eat_more.wav"
+    },
+    "monster_math:ten:over_first": {
+      "file": "monster_math_ten_over_first.wav"
+    },
+    "monster_math:ten:over_repeat": {
+      "file": "monster_math_ten_over_repeat.wav"
+    },
+    "monster_math:ten:play_correct": {
+      "file": "monster_math_ten_play_correct.wav"
+    },
+    "monster_math:ten:clear_stage": {
+      "file": "monster_math_ten_clear_stage.wav"
+    },
+    "monster_math:ten:lv2_intro": {
+      "file": "monster_math_ten_lv2_intro.wav"
+    },
+    "monster_math:ten:lv3_intro": {
+      "file": "monster_math_ten_lv3_intro.wav"
+    },
+    "monster_math:ten:tut_intro": {
+      "file": "monster_math_ten_tut_intro.wav"
+    },
+    "monster_math:ten:tut_shelf_explain": {
+      "file": "monster_math_ten_tut_shelf_explain.wav"
+    },
+    "monster_math:ten:tut_frame_explain": {
+      "file": "monster_math_ten_tut_frame_explain.wav"
+    },
+    "monster_math:ten:tut_complete": {
+      "file": "monster_math_ten_tut_complete.wav"
+    },
+    "monster_math:kak:round_intro": {
+      "file": "monster_math_kak_round_intro.wav"
+    },
+    "monster_math:kak:count_up_done": {
+      "file": "monster_math_kak_count_up_done.wav"
+    },
+    "monster_math:kak:hide_reveal": {
+      "file": "monster_math_kak_hide_reveal.wav"
+    },
+    "monster_math:kak:ask": {
+      "file": "monster_math_kak_ask.wav"
+    },
+    "monster_math:kak:visible_hint": {
+      "file": "monster_math_kak_visible_hint.wav"
+    },
+    "monster_math:kak:miss1_full_number": {
+      "file": "monster_math_kak_miss1_full_number.wav"
+    },
+    "monster_math:kak:miss2_hint_from_v": {
+      "file": "monster_math_kak_miss2_hint_from_v.wav"
+    },
+    "monster_math:kak:play_correct": {
+      "file": "monster_math_kak_play_correct.wav"
+    },
+    "monster_math:kak:clear_stage": {
+      "file": "monster_math_kak_clear_stage.wav"
+    },
+    "monster_math:kak:lv2_intro": {
+      "file": "monster_math_kak_lv2_intro.wav"
+    },
+    "monster_math:kak:lv3_intro": {
+      "file": "monster_math_kak_lv3_intro.wav"
+    },
+    "monster_math:kak:tut_intro": {
+      "file": "monster_math_kak_tut_intro.wav"
+    },
+    "monster_math:kak:tut_complete": {
+      "file": "monster_math_kak_tut_complete.wav"
+    }
+  }
 }

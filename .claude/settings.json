@@ -12,7 +12,39 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"d:/AppDevelopment/storyboard generator/scripts/observe.py\" --hook"
+            "command": "python \"d:/AppDevelopment/pono-asobiba-app/scripts/observe.py\" --hook"
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"d:/AppDevelopment/pono-asobiba-app/scripts/auto_optimize_image.py\" --hook",
+            "timeout": 60
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"d:/AppDevelopment/pono-asobiba-app/scripts/docs_review_hook.py\" --mark",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"d:/AppDevelopment/pono-asobiba-app/scripts/docs_review_hook.py\" --check",
+            "timeout": 10
           }
         ]
       }

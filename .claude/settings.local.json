@@ -17,18 +17,50 @@
       "WebFetch(domain:ai.google.dev)",
       "WebFetch(domain:docs.cloud.google.com)",
       "WebFetch(domain:github.com)",
-      "WebFetch(domain:pono-dev--pono-asobiba.netlify.live)",
-      "WebFetch(domain:pono-asobiba.netlify.app)",
+      "WebFetch(domain:pono-asobiba-staging.ndw.workers.dev)",
+      "WebFetch(domain:pono-asobiba-app.ndw.workers.dev)",
+      "WebFetch(domain:pono.kodama-no-mori.com)",
       "Bash(mkdir -p ~/.claude/sessions)",
       "Read(//c/Users/surfe/.claude/sessions/**)",
-      "Bash(grep -Eq \"Ready on|ready on|Starting local server|error|Error|ERROR\" \"C:\\\\\\\\Users\\\\\\\\surfe\\\\\\\\AppData\\\\\\\\Local\\\\\\\\Temp\\\\\\\\claude\\\\\\\\d--AppDevelopment-kids-writing-app\\\\\\\\6ed78b96-8d01-45f6-be42-d5bd067a9438\\\\\\\\tasks\\\\\\\\bup5a39za.output\")",
       "WebFetch(domain:docs.spline.design)",
       "WebFetch(domain:www.npmjs.com)",
       "WebFetch(domain:cdn.jsdelivr.net)",
       "Bash(netstat -ano)",
       "WebFetch(domain:www.amnh.org)",
       "WebFetch(domain:pbskids.org)",
-      "WebFetch(domain:www.smithsonianmag.com)"
+      "WebFetch(domain:www.smithsonianmag.com)",
+      "Skill(update-config)",
+      "Skill(update-config:*)",
+      "Bash(mkdir -p .claude)",
+      "Bash(touch .claude/.docs-skip-once)",
+      "WebFetch(domain:code.visualstudio.com)",
+      "WebFetch(domain:community.openai.com)",
+      "WebFetch(domain:memu.pro)",
+      "WebFetch(domain:rajiv.com)",
+      "WebFetch(domain:help.figma.com)",
+      "WebFetch(domain:forum.figma.com)",
+      "WebFetch(domain:www.figma.com)",
+      "Bash(mkdir -p d:/AppDevelopment/pono-asobiba-app/.claude)",
+      "Bash(touch d:/AppDevelopment/pono-asobiba-app/.claude/.docs-skip-once)",
+      "Bash(git ls-remote *)",
+      "WebFetch(domain:www.ah-soft.com)",
+      "Bash(:)",
+      "Bash(mkdir -p \"d:/AppDevelopment/pono-asobiba-app/.claude\")",
+      "Bash(touch \"d:/AppDevelopment/pono-asobiba-app/.claude/.docs-skip-once\")",
+      "Bash(touch d:/AppDevelopment/pono-asobiba-app/.claude/.docs-skip-once && ls -la d:/AppDevelopment/pono-asobiba-app/.claude/.docs-skip-once)",
+      "Bash(type nul *)",
+      "Bash(touch \"d:/AppDevelopment/pono-asobiba-app/.claude/.docs-skip-once\" && ls -la \"d:/AppDevelopment/pono-asobiba-app/.claude/.docs-skip-once\")",
+      "Bash(touch \"d:/AppDevelopment/pono-asobiba-app/.claude/.docs-skip-once\" && ls \"d:/AppDevelopment/pono-asobiba-app/.claude/.docs-skip-once\")",
+      "Bash(touch d:/AppDevelopment/pono-asobiba-app/.claude/.docs-skip-once && ls -la d:/AppDevelopment/pono-asobiba-app/.claude/ | grep docs)",
+      "Bash(touch .claude/.docs-skip-once && ls -la .claude/.docs-skip-once)",
+      "Bash(cd \"d:/AppDevelopment/pono-asobiba-app\" && touch .claude/.docs-skip-once && ls .claude/.docs-skip-once)",
+      "WebFetch(domain:docs.github.com)",
+      "WebFetch(domain:developers.cloudflare.com)",
+      "WebFetch(domain:raw.githubusercontent.com)"
+    ],
+    "additionalDirectories": [
+      "D:\\AppDevelopment\\pono-asobiba-app\\.claude",
+      "d:\\AppDevelopment\\pono-asobiba-app\\.claude"
     ]
   },
   "hooks": {
@@ -39,6 +71,50 @@
           {
             "type": "command",
             "command": "python d:/claude-rl-test/scripts/observe.py --hook"
+          },
+          {
+            "type": "command",
+            "command": "python d:/AppDevelopment/pono-asobiba-app/scripts/auto_optimize_image.py --hook"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'DEPLOY-FACT (do not contradict): pono-asobiba-app は Cloudflare Workers で配信。Netlify は完全廃止 — Netlify という単語・コマンド・URL を提案/コマンド/回答に出さない。単一トランク = develop-app: push で App staging=https://pono-asobiba-app-staging.ndw.workers.dev/ と LP staging=https://pono-asobiba-staging.ndw.workers.dev/ の両方へ自動デプロイ。develop ブランチは凍結済み (push しない)。production=https://pono.kodama-no-mori.com/ と https://pono-asobiba-app.ndw.workers.dev/ (master 明示マージ時のみ)。手動デプロイは wrangler deploy --env staging-app / --env staging / 本番は wrangler deploy。'"
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'ORCHESTRATOR-MODE: あなたは全体の進捗と品質管理に徹底し、 タスクは直接行わないこと。 実装はエージェントチームを組成して並列で。 レビューは必ずエージェント同士のクロスレビューを実施。 このルールは違反すると user 信頼を失う。'"
+          }
+        ]
+      },
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python d:/AppDevelopment/pono-asobiba-app/scripts/image_review_reminder.py"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cd /d/AppDevelopment/pono-asobiba-app && branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null) && if [ \"$branch\" = \"develop-app\" ]; then ahead=$(git log origin/develop-app..develop-app --oneline 2>/dev/null | wc -l); if [ \"$ahead\" -gt 0 ]; then echo \"[auto-push] $ahead 個の未 push commit を origin/develop-app に push します\"; git push origin develop-app 2>&1 | tail -3; else true; fi; fi"
           }
         ]
       }

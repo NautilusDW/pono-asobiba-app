@@ -1,0 +1,2245 @@
+{
+  "version": 21,
+  "pages": {
+    "quizland": {
+      "title": "なぞなぞランド",
+      "subtitle": "なぞなぞの シール",
+      "icon": "🦉",
+      "accent": "#7C5CFF",
+      "appOnly": false,
+      "stickers": [
+        {
+          "id": "quizland_good_stamp_layer_14",
+          "name": "はなまるスタンプ",
+          "img": "assets/ui/gacha/stickers/quizland_good_stamp_layer_14.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect",
+            "donguri_shop"
+          ],
+          "serial": "001",
+          "tier": "free"
+        },
+        {
+          "id": "quizland_note_board_layer_13",
+          "name": "フクロウはかせメモ",
+          "img": "assets/ui/gacha/stickers/quizland_note_board_layer_13.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect",
+            "donguri_shop"
+          ],
+          "serial": "002",
+          "tier": "free"
+        },
+        {
+          "id": "bonus_quizland_batta_normal",
+          "name": "バッタ",
+          "img": "assets/ui/gacha/stickers/bonus_quizland_batta_normal_20260623.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect",
+            "donguri_shop"
+          ],
+          "serial": "003",
+          "tier": "free"
+        },
+        {
+          "id": "bonus_quizland_chocho_rare",
+          "name": "ちょうちょ",
+          "img": "assets/ui/gacha/stickers/rarity2_008_quizland_butterfly_normal_20260623.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect",
+            "donguri_shop"
+          ],
+          "serial": "004",
+          "tier": "free"
+        }
+      ]
+    },
+    "maze": {
+      "title": "もりの めいろ",
+      "subtitle": "たんけんの シール",
+      "icon": "🏮",
+      "accent": "#6C8E3F",
+      "appOnly": false,
+      "stickers": [
+        {
+          "id": "maze_kani_special_kira_001",
+          "name": "カニのたからもの",
+          "img": "assets/ui/gacha/stickers/maze_kani_special_kira_001.webp",
+          "rarity": "super",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect",
+            "donguri_shop"
+          ],
+          "serial": "005",
+          "tier": "free"
+        },
+        {
+          "id": "maze_kira_01_odoke_pyon_key_ladder_002",
+          "name": "ぴょんうさぎ",
+          "img": "assets/ui/gacha/stickers/rarity2_012_maze_rabbit_normal_20260623.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "006",
+          "tier": "free"
+        },
+        {
+          "id": "maze_kira_01_odoke_pyon_key_ladder_003",
+          "name": "おうごんのかぎ",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_013_maze_gold_key_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect",
+            "donguri_shop"
+          ],
+          "serial": "007",
+          "tier": "free"
+        },
+        {
+          "id": "maze_kira_01_odoke_pyon_key_ladder_004",
+          "name": "はしご",
+          "img": "assets/ui/gacha/stickers/rarity2_014_maze_ladder_normal_20260623.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "008",
+          "tier": "free"
+        },
+        {
+          "id": "maze_kira_02_kujira_glove_acorn_001",
+          "name": "にこにこくじら",
+          "img": "assets/ui/gacha/stickers/rarity2_015_maze_whale_normal_20260623.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "009",
+          "tier": "free"
+        },
+        {
+          "id": "maze_kira_02_kujira_glove_acorn_003",
+          "name": "どんぐりぶくろ",
+          "img": "assets/ui/gacha/stickers/rarity2_016_maze_acorns_normal_20260623.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "010",
+          "tier": "free"
+        },
+        {
+          "id": "maze_normal_lantern_lost_hachi_kabuto_amenbo_chocho_001",
+          "name": "にじいろちょうちょ",
+          "img": "assets/ui/gacha/stickers/maze_normal_lantern_lost_hachi_kabuto_amenbo_chocho_001.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect",
+            "donguri_shop"
+          ],
+          "serial": "011",
+          "tier": "free"
+        },
+        {
+          "id": "maze_normal_lantern_lost_hachi_kabuto_amenbo_chocho_002",
+          "name": "ブンブンムシ",
+          "img": "assets/ui/gacha/stickers/maze_normal_lantern_lost_hachi_kabuto_amenbo_chocho_002.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "012",
+          "tier": "free"
+        },
+        {
+          "id": "maze_normal_lantern_lost_hachi_kabuto_amenbo_chocho_003",
+          "name": "ランタンポノ",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_019_maze_lantern_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "013",
+          "tier": "free"
+        },
+        {
+          "id": "maze_normal_lantern_lost_hachi_kabuto_amenbo_chocho_004",
+          "name": "もじゃのこ",
+          "img": "assets/ui/gacha/stickers/maze_normal_lantern_lost_hachi_kabuto_amenbo_chocho_004.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "014",
+          "tier": "free"
+        },
+        {
+          "id": "maze_normal_lantern_lost_hachi_kabuto_amenbo_chocho_005",
+          "name": "コツコツムシ",
+          "img": "assets/ui/gacha/stickers/maze_normal_lantern_lost_hachi_kabuto_amenbo_chocho_005.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "015",
+          "tier": "free"
+        },
+        {
+          "id": "maze_normal_lantern_lost_hachi_kabuto_amenbo_chocho_006",
+          "name": "アメンボムシ",
+          "img": "assets/ui/gacha/stickers/maze_normal_lantern_lost_hachi_kabuto_amenbo_chocho_006.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "016",
+          "tier": "free"
+        },
+        {
+          "id": "maze_ojama_boss_special_kira_001",
+          "name": "おじゃまムシ",
+          "img": "assets/ui/gacha/stickers/maze_ojama_boss_special_kira_001.webp",
+          "rarity": "super",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "017",
+          "tier": "free"
+        },
+        {
+          "id": "maze_power_glove_item",
+          "name": "パワーグローブ",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_024_maze_power_glove_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "018",
+          "tier": "free"
+        },
+        {
+          "id": "bonus_maze_pyon_normal",
+          "name": "ぴょんぴょんムシ",
+          "img": "assets/ui/gacha/stickers/bonus_maze_pyon_normal_20260623.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect",
+            "donguri_shop"
+          ],
+          "serial": "019",
+          "tier": "free"
+        },
+        {
+          "id": "bonus_maze_mayoi_normal",
+          "name": "まよいムシ",
+          "img": "assets/ui/gacha/stickers/bonus_maze_mayoi_normal_20260623.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect",
+            "donguri_shop"
+          ],
+          "serial": "020",
+          "tier": "free"
+        },
+        {
+          "id": "bonus_maze_odoke_rare",
+          "name": "おどけムシ",
+          "img": "assets/ui/gacha/stickers/rarity2_027_maze_spider_normal_20260623.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "021",
+          "tier": "free"
+        },
+        {
+          "id": "bonus_maze_hachi_rare",
+          "name": "ブンブンムシ",
+          "img": "assets/ui/gacha/stickers/rarity2_028_maze_bee_normal_20260623.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "022",
+          "tier": "free"
+        },
+        {
+          "id": "bonus_maze_kabuto_super",
+          "name": "コツコツムシ",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_029_maze_kabuto_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "023",
+          "tier": "free"
+        }
+      ]
+    },
+    "oto": {
+      "title": "おとタッチ",
+      "subtitle": "おとの シール",
+      "icon": "🎵",
+      "accent": "#19A7CE",
+      "appOnly": false,
+      "stickers": [
+        {
+          "id": "oto_kira_highdo_chimes_taiko_animal_kero_001",
+          "name": "ケロッチボタン",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_030_oto_frog_button_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect",
+            "donguri_shop"
+          ],
+          "serial": "024",
+          "tier": "free"
+        },
+        {
+          "id": "oto_kira_highdo_chimes_taiko_animal_kero_002",
+          "name": "おうごんベル",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_031_oto_bell_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "025",
+          "tier": "free"
+        },
+        {
+          "id": "oto_kira_highdo_chimes_taiko_animal_kero_003",
+          "name": "たいこ",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_032_oto_taiko_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "026",
+          "tier": "free"
+        },
+        {
+          "id": "oto_kira_highdo_chimes_taiko_animal_kero_005",
+          "name": "あかいおんぷ",
+          "img": "assets/ui/gacha/stickers/rarity2_034_oto_note_normal_20260623.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "027",
+          "tier": "free"
+        },
+        {
+          "id": "oto_normal_do_re_mi_fa_so_la_si_frog_001",
+          "name": "ファのおんぷ",
+          "img": "assets/ui/gacha/stickers/oto_normal_do_re_mi_fa_so_la_si_frog_001.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect",
+            "donguri_shop"
+          ],
+          "serial": "028",
+          "tier": "free"
+        },
+        {
+          "id": "oto_normal_do_re_mi_fa_so_la_si_frog_002",
+          "name": "ドのおんぷ",
+          "img": "assets/ui/gacha/stickers/oto_normal_do_re_mi_fa_so_la_si_frog_002.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect",
+            "donguri_shop"
+          ],
+          "serial": "029",
+          "tier": "free"
+        },
+        {
+          "id": "oto_normal_do_re_mi_fa_so_la_si_frog_003",
+          "name": "レのおんぷ",
+          "img": "assets/ui/gacha/stickers/oto_normal_do_re_mi_fa_so_la_si_frog_003.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "030",
+          "tier": "free"
+        },
+        {
+          "id": "oto_normal_do_re_mi_fa_so_la_si_frog_004",
+          "name": "ソのおんぷ",
+          "img": "assets/ui/gacha/stickers/oto_normal_do_re_mi_fa_so_la_si_frog_004.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "031",
+          "tier": "free"
+        },
+        {
+          "id": "oto_normal_do_re_mi_fa_so_la_si_frog_005",
+          "name": "ラのおんぷ",
+          "img": "assets/ui/gacha/stickers/oto_normal_do_re_mi_fa_so_la_si_frog_005.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "032",
+          "tier": "free"
+        },
+        {
+          "id": "oto_normal_do_re_mi_fa_so_la_si_frog_007",
+          "name": "ミのおんぷ",
+          "img": "assets/ui/gacha/stickers/oto_normal_do_re_mi_fa_so_la_si_frog_007.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "033",
+          "tier": "free"
+        },
+        {
+          "id": "oto_normal_do_re_mi_fa_so_la_si_frog_008",
+          "name": "シのおんぷ",
+          "img": "assets/ui/gacha/stickers/oto_normal_do_re_mi_fa_so_la_si_frog_008.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "034",
+          "tier": "free"
+        },
+        {
+          "id": "oto_special_kira_robo_gaohn_crown_note_003",
+          "name": "おうかんおんぷ",
+          "img": "assets/ui/gacha/stickers/oto_special_kira_robo_gaohn_crown_note_003.webp",
+          "rarity": "super",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect",
+            "donguri_shop"
+          ],
+          "serial": "035",
+          "tier": "free"
+        },
+        {
+          "id": "bonus_oto_robot_laugh_normal",
+          "name": "ネジマエストロ",
+          "img": "assets/ui/gacha/stickers/bonus_oto_robot_laugh_normal_20260623.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "036",
+          "tier": "free"
+        },
+        {
+          "id": "bonus_oto_kero_laugh_normal",
+          "name": "ケロッチ",
+          "img": "assets/ui/gacha/stickers/bonus_oto_kero_laugh_normal_20260623.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect",
+            "donguri_shop"
+          ],
+          "serial": "037",
+          "tier": "free"
+        },
+        {
+          "id": "bonus_oto_lion_roar_rare",
+          "name": "ビートキング ガオーン",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_048_oto_lion_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "038",
+          "tier": "free"
+        },
+        {
+          "id": "bonus_oto_robot_gears_rare",
+          "name": "ネジマエストロ",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_049_oto_robot_conductor_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "039",
+          "tier": "free"
+        },
+        {
+          "id": "bonus_oto_lion_drums_super",
+          "name": "ビートキング ガオーン",
+          "img": "assets/ui/gacha/stickers/image2_super_050_oto_lion_drums_20260623.webp",
+          "rarity": "super",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "040",
+          "tier": "free"
+        }
+      ]
+    },
+    "puzzle": {
+      "title": "なかよしパズル",
+      "subtitle": "なかまの シール",
+      "icon": "🧩",
+      "accent": "#F2915A",
+      "appOnly": false,
+      "stickers": [
+        {
+          "id": "puzzle_kira_fox_crow_hedgehog_owl_raccoon_redpiece_001",
+          "name": "アライグマとピース",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_052_puzzle_raccoon_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "041",
+          "tier": "free"
+        },
+        {
+          "id": "puzzle_kira_fox_crow_hedgehog_owl_raccoon_redpiece_002",
+          "name": "キツネ",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_053_puzzle_fox_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect",
+            "donguri_shop"
+          ],
+          "serial": "042",
+          "tier": "free"
+        },
+        {
+          "id": "puzzle_kira_fox_crow_hedgehog_owl_raccoon_redpiece_003",
+          "name": "カラス",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_054_puzzle_crow_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "043",
+          "tier": "free"
+        },
+        {
+          "id": "puzzle_kira_fox_crow_hedgehog_owl_raccoon_redpiece_004",
+          "name": "フクロウはかせ",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_055_owl_professor_redo_20260625.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "044",
+          "tier": "free"
+        },
+        {
+          "id": "puzzle_kira_fox_crow_hedgehog_owl_raccoon_redpiece_005",
+          "name": "ハリネズミ",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_056_puzzle_hedgehog_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect",
+            "donguri_shop"
+          ],
+          "serial": "045",
+          "tier": "free"
+        },
+        {
+          "id": "puzzle_normal_usagi_risu_kojika_001",
+          "name": "こじかとピース",
+          "img": "assets/ui/gacha/stickers/puzzle_normal_usagi_risu_kojika_001.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect",
+            "donguri_shop"
+          ],
+          "serial": "046",
+          "tier": "free"
+        },
+        {
+          "id": "puzzle_normal_usagi_risu_kojika_002",
+          "name": "うさぎとピース",
+          "img": "assets/ui/gacha/stickers/puzzle_normal_usagi_risu_kojika_002.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect",
+            "donguri_shop"
+          ],
+          "serial": "047",
+          "tier": "free"
+        }
+      ]
+    },
+    "bento": {
+      "title": "いろどりべんとう",
+      "subtitle": "べんとうの シール",
+      "icon": "🍱",
+      "accent": "#F97316",
+      "appOnly": false,
+      "stickers": [
+        {
+          "id": "bento_best_lunch_special_kira_001",
+          "name": "ごちそうランチ",
+          "img": "assets/ui/gacha/stickers/bento_best_lunch_special_kira_001.webp",
+          "rarity": "super",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect",
+            "donguri_shop"
+          ],
+          "serial": "048",
+          "tier": "free"
+        },
+        {
+          "id": "bento_kira_bear_boxes_cat_bear_rice_002",
+          "name": "くまごはん",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_066_bento_bear_rice_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "049",
+          "tier": "free"
+        },
+        {
+          "id": "bento_kira_bear_boxes_cat_bear_rice_004",
+          "name": "ねこごはん",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_067_bento_cat_rice_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "050",
+          "tier": "free"
+        },
+        {
+          "id": "bento_kira_customers_risu_neko_inu_shika_ahiru_araiguma_001",
+          "name": "しかさん",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_068_bento_deer_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "051",
+          "tier": "free"
+        },
+        {
+          "id": "bento_kira_customers_risu_neko_inu_shika_ahiru_araiguma_002",
+          "name": "アライグマくん",
+          "img": "assets/ui/gacha/stickers/rarity3_069_bento_raccoon_normal_20260623.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "052",
+          "tier": "free"
+        },
+        {
+          "id": "bento_kira_customers_risu_neko_inu_shika_ahiru_araiguma_003",
+          "name": "わんちゃん",
+          "img": "assets/ui/gacha/stickers/rarity3_070_bento_dog_normal_alphafix_20260625.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "053",
+          "tier": "free"
+        },
+        {
+          "id": "bento_kira_customers_risu_neko_inu_shika_ahiru_araiguma_004",
+          "name": "りすちゃん",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_071_bento_squirrel_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "054",
+          "tier": "free"
+        },
+        {
+          "id": "bento_kira_customers_risu_neko_inu_shika_ahiru_araiguma_006",
+          "name": "あひるさん",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_073_bento_duck_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "055",
+          "tier": "free"
+        },
+        {
+          "id": "bento_kira_items_wiener_pick_ichigo_catboxes_003",
+          "name": "タコさんウインナー",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_076_bento_wiener_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect",
+            "donguri_shop"
+          ],
+          "serial": "056",
+          "tier": "free"
+        },
+        {
+          "id": "bento_kira_items_wiener_pick_ichigo_catboxes_004",
+          "name": "いちご",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_077_bento_strawberry_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "057",
+          "tier": "free"
+        },
+        {
+          "id": "bento_kira_items_wiener_pick_ichigo_catboxes_005",
+          "name": "ほしピック",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_078_bento_star_pick_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "058",
+          "tier": "free"
+        },
+        {
+          "id": "bento_kira_staff_child_friend_pono_001",
+          "name": "おんなのこスタッフ",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_079_bento_girl_staff_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "059",
+          "tier": "free"
+        },
+        {
+          "id": "bento_kira_staff_child_friend_pono_002",
+          "name": "おとこのこスタッフ",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_080_bento_boy_staff_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "060",
+          "tier": "free"
+        },
+        {
+          "id": "bento_kira_staff_child_friend_pono_003",
+          "name": "ポノ",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_081_bento_pono_staff_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "061",
+          "tier": "free"
+        },
+        {
+          "id": "bento_normal_food_rice_tamago_karaage_broccoli_001",
+          "name": "ごはん",
+          "img": "assets/ui/gacha/stickers/bento_normal_food_rice_tamago_karaage_broccoli_001.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect",
+            "donguri_shop"
+          ],
+          "serial": "062",
+          "tier": "free"
+        },
+        {
+          "id": "bento_normal_food_rice_tamago_karaage_broccoli_002",
+          "name": "たまごやき",
+          "img": "assets/ui/gacha/stickers/bento_normal_food_rice_tamago_karaage_broccoli_002.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "063",
+          "tier": "free"
+        },
+        {
+          "id": "bento_normal_food_rice_tamago_karaage_broccoli_003",
+          "name": "からあげ",
+          "img": "assets/ui/gacha/stickers/bento_normal_food_rice_tamago_karaage_broccoli_003.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "064",
+          "tier": "free"
+        },
+        {
+          "id": "bento_normal_food_rice_tamago_karaage_broccoli_004",
+          "name": "ブロッコリー",
+          "img": "assets/ui/gacha/stickers/bento_normal_food_rice_tamago_karaage_broccoli_004.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "065",
+          "tier": "free"
+        },
+        {
+          "id": "bonus_bento_shika_normal",
+          "name": "しかさん",
+          "img": "assets/ui/gacha/stickers/bonus_bento_shika_normal_20260623.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect",
+            "donguri_shop"
+          ],
+          "serial": "066",
+          "tier": "free"
+        },
+        {
+          "id": "bonus_bento_cup_star_normal",
+          "name": "ほしカップ",
+          "img": "assets/ui/gacha/stickers/bonus_bento_cup_star_normal_20260623.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "067",
+          "tier": "free"
+        },
+        {
+          "id": "bonus_bento_risu_happy_rare",
+          "name": "りすちゃん",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_089_bento_squirrel_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "068",
+          "tier": "free"
+        },
+        {
+          "id": "bonus_bento_neko_happy_rare",
+          "name": "ねこさん",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_090_bento_cat_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "069",
+          "tier": "free"
+        },
+        {
+          "id": "bonus_bento_ahiru_happy_rare",
+          "name": "あひるさん",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_091_bento_duck_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "070",
+          "tier": "free"
+        },
+        {
+          "id": "bonus_bento_pono_present_super",
+          "name": "ポノ",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_092_bento_pono_gift_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "071",
+          "tier": "free"
+        }
+      ]
+    },
+    "quiz-sound": {
+      "title": "おとクイズ",
+      "subtitle": "きくちからの シール",
+      "icon": "🔔",
+      "accent": "#38BDF8",
+      "appOnly": true,
+      "stickers": [
+        {
+          "id": "quiz_sound_bird_frog_bell_ear_badge_002",
+          "name": "うたうことり",
+          "img": "assets/ui/gacha/stickers/quiz_sound_bird_frog_bell_ear_badge_002.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "072",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "quiz_sound_bird_frog_bell_ear_badge_003",
+          "name": "うたうカエル",
+          "img": "assets/ui/gacha/stickers/quiz_sound_bird_frog_bell_ear_badge_003.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "073",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "quiz_sound_bird_frog_bell_ear_badge_004",
+          "name": "おみみ",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_095_quizsound_ear_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "074",
+          "tier": "app_exclusive"
+        }
+      ]
+    },
+    "sea-album": {
+      "title": "うみアルバム",
+      "subtitle": "しおだまりの シール",
+      "icon": "🐚",
+      "accent": "#0891B2",
+      "appOnly": true,
+      "stickers": [
+        {
+          "id": "sea_album_normal_yadokari_ebi_hitode_isoginchaku_shellkey_sandball_001",
+          "name": "ヤドカリ",
+          "img": "assets/ui/gacha/stickers/sea_album_normal_yadokari_ebi_hitode_isoginchaku_shellkey_sandball_001.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect",
+            "donguri_shop"
+          ],
+          "serial": "075",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "sea_album_normal_yadokari_ebi_hitode_isoginchaku_shellkey_sandball_002",
+          "name": "イソギンチャク",
+          "img": "assets/ui/gacha/stickers/sea_album_normal_yadokari_ebi_hitode_isoginchaku_shellkey_sandball_002.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "076",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "sea_album_normal_yadokari_ebi_hitode_isoginchaku_shellkey_sandball_003",
+          "name": "エビ",
+          "img": "assets/ui/gacha/stickers/sea_album_normal_yadokari_ebi_hitode_isoginchaku_shellkey_sandball_003.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "077",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "sea_album_normal_yadokari_ebi_hitode_isoginchaku_shellkey_sandball_004",
+          "name": "すなだま",
+          "img": "assets/ui/gacha/stickers/sea_album_normal_yadokari_ebi_hitode_isoginchaku_shellkey_sandball_004.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "078",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "sea_album_normal_yadokari_ebi_hitode_isoginchaku_shellkey_sandball_005",
+          "name": "ヒトデ",
+          "img": "assets/ui/gacha/stickers/sea_album_normal_yadokari_ebi_hitode_isoginchaku_shellkey_sandball_005.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "079",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "sea_album_normal_yadokari_ebi_hitode_isoginchaku_shellkey_sandball_006",
+          "name": "かいがらのかぎ",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_101_sea_shell_key_redo_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect",
+            "donguri_shop"
+          ],
+          "serial": "080",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "sea_album_special_kira_umigame_manta_001",
+          "name": "マンタ",
+          "img": "assets/ui/gacha/stickers/sea_album_special_kira_umigame_manta_001.webp",
+          "rarity": "super",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect",
+            "donguri_shop"
+          ],
+          "serial": "081",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "sea_album_special_kira_umigame_manta_002",
+          "name": "ウミガメ",
+          "img": "assets/ui/gacha/stickers/sea_album_special_kira_umigame_manta_002.webp",
+          "rarity": "super",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "082",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "bonus_sea_album_hermit_crab_normal",
+          "name": "ヤドカリ",
+          "img": "assets/ui/gacha/stickers/bonus_sea_album_hermit_crab_normal_20260623.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "083",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "bonus_sea_album_sea_star_normal",
+          "name": "ヒトデ",
+          "img": "assets/ui/gacha/stickers/bonus_sea_album_sea_star_normal_20260623.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect",
+            "donguri_shop"
+          ],
+          "serial": "084",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "bonus_sea_album_horseshoe_crab_rare",
+          "name": "カブトガニ",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_106_sea_horseshoe_crab_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "085",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "bonus_sea_album_sea_anemone_rare",
+          "name": "イソギンチャク",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_107_sea_anemone_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "086",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "bonus_sea_album_clownfish_super",
+          "name": "カクレクマノミ",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_108_sea_clownfish_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "087",
+          "tier": "app_exclusive"
+        }
+      ]
+    },
+    "starparodier": {
+      "title": "スターパロジャー",
+      "subtitle": "うちゅうの シール",
+      "icon": "🚀",
+      "accent": "#7C3AED",
+      "appOnly": true,
+      "stickers": [
+        {
+          "id": "starparodier_starboat_beam_mecha_planet_001",
+          "name": "うちゅうメカ",
+          "img": "assets/ui/gacha/stickers/starparodier_starboat_beam_mecha_planet_001.webp",
+          "rarity": "super",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "088",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "starparodier_starboat_beam_mecha_planet_002",
+          "name": "わくせいリング",
+          "img": "assets/ui/gacha/stickers/starparodier_starboat_beam_mecha_planet_002.webp",
+          "rarity": "super",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "089",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "starparodier_starboat_beam_mecha_planet_004",
+          "name": "ポノロケット",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_112_starparodier_ship_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "090",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "bonus_starparodier_ship_pono_normal",
+          "name": "ちびポノロケット",
+          "img": "assets/ui/gacha/stickers/bonus_starparodier_ship_pono_normal_20260623.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "091",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "bonus_starparodier_zako_enemy_rare",
+          "name": "ドローン",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_114_starparodier_drone_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "092",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "bonus_starparodier_power_star_rare",
+          "name": "パワースター",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_115_starparodier_power_star_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "093",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "bonus_starparodier_starbrain_super",
+          "name": "スターブレイン",
+          "img": "assets/ui/gacha/stickers/image2_super_116_starbrain_20260623.webp",
+          "rarity": "super",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "094",
+          "tier": "app_exclusive"
+        }
+      ]
+    },
+    "undersea-cave": {
+      "title": "かいていどうくつ",
+      "subtitle": "ひかりの シール",
+      "icon": "🌊",
+      "accent": "#0EA5E9",
+      "appOnly": true,
+      "stickers": [
+        {
+          "id": "undersea_cave_whale_lightfood_bubble_blueshell_001",
+          "name": "ひかるしんじゅ",
+          "img": "assets/ui/gacha/stickers/rarity2_117_undersea_shell_super_20260623.webp",
+          "rarity": "super",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect",
+            "donguri_shop"
+          ],
+          "serial": "095",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "undersea_cave_whale_lightfood_bubble_blueshell_004",
+          "name": "つきのたて",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_120_undersea_moon_shield_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "096",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "undersea_special_squid_layer_15",
+          "name": "ひかるイカ",
+          "img": "assets/ui/gacha/stickers/undersea_special_squid_layer_15.webp",
+          "rarity": "super",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "097",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "undersea_special_whale_layer_01",
+          "name": "ジンベエザメ",
+          "img": "assets/ui/gacha/stickers/undersea_special_whale_layer_01.webp",
+          "rarity": "super",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "098",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "bonus_undersea_cave_octopus_normal",
+          "name": "にこにこタコ",
+          "img": "assets/ui/gacha/stickers/bonus_undersea_cave_octopus_normal_20260623.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect",
+            "donguri_shop"
+          ],
+          "serial": "099",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "bonus_undersea_cave_pearl_shell_normal",
+          "name": "しんじゅのかい",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_124_undersea_pearl_shell_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect",
+            "donguri_shop"
+          ],
+          "serial": "100",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "bonus_undersea_cave_whale_rare",
+          "name": "ちびジンベエ",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_125_undersea_whale_shark_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "101",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "bonus_undersea_cave_bell_bubble_rare",
+          "name": "あわベル",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_126_undersea_bell_bubble_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "102",
+          "tier": "app_exclusive"
+        }
+      ]
+    },
+    "wordmatch": {
+      "title": "ことばあわせ",
+      "subtitle": "ことばの シール",
+      "icon": "🔤",
+      "accent": "#EC4899",
+      "appOnly": true,
+      "stickers": [
+        {
+          "id": "wordmatch_name_voice_shape_stamp_002",
+          "name": "どんぐりメモ",
+          "img": "assets/ui/gacha/stickers/wordmatch_name_voice_shape_stamp_002.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "103",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "wordmatch_name_voice_shape_stamp_003",
+          "name": "メガホン",
+          "img": "assets/ui/gacha/stickers/wordmatch_name_voice_shape_stamp_003.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "104",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "wordmatch_name_voice_shape_stamp_004",
+          "name": "スタンプ",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_130_wordmatch_stamp_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "105",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "bonus_wordmatch_ichigo_normal",
+          "name": "いちご",
+          "img": "assets/ui/gacha/stickers/bonus_wordmatch_ichigo_normal_20260623.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "106",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "bonus_wordmatch_hana_rare",
+          "name": "おはな",
+          "img": "assets/ui/gacha/stickers/rarity2_134_wordmatch_flower_normal_20260623.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "107",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "bonus_wordmatch_rocket_rare",
+          "name": "ロケット",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_135_wordmatch_rocket_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "108",
+          "tier": "app_exclusive"
+        }
+      ]
+    },
+    "writing-mori": {
+      "title": "もじのもり",
+      "subtitle": "もじの シール",
+      "icon": "✏️",
+      "accent": "#16A34A",
+      "appOnly": true,
+      "stickers": [
+        {
+          "id": "writing_mori_a_mirumaru_seed_flower_001",
+          "name": "おはなメダル",
+          "img": "assets/ui/gacha/stickers/rarity2_136_writing_flower_super_20260623.webp",
+          "rarity": "super",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "109",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "writing_mori_a_mirumaru_seed_flower_002",
+          "name": "ミルマル",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_137_writing_milmaru_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "110",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "writing_mori_a_mirumaru_seed_flower_003",
+          "name": "ふたば",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_138_writing_sprout_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "111",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "writing_mori_a_mirumaru_seed_flower_004",
+          "name": "あのもじ",
+          "img": "assets/ui/gacha/stickers/writing_mori_a_mirumaru_seed_flower_004.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "112",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "bonus_writing_mori_milmaru_wave_normal",
+          "name": "ミルマル",
+          "img": "assets/ui/gacha/stickers/bonus_writing_mori_milmaru_wave_normal_20260623.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "113",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "bonus_writing_mori_milmaru_relaxed_rare",
+          "name": "おやすみミルマル",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_141_writing_milmaru_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "114",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "bonus_writing_mori_milmaru_cookie_super",
+          "name": "おかしミルマル",
+          "img": "assets/ui/gacha/stickers/image2_super_142_milmaru_cookie_20260623.webp",
+          "rarity": "super",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "115",
+          "tier": "app_exclusive"
+        }
+      ]
+    },
+    "zukan": {
+      "title": "もりずかん",
+      "subtitle": "いきものの シール",
+      "icon": "🌿",
+      "accent": "#65A30D",
+      "appOnly": true,
+      "stickers": [
+        {
+          "id": "zukan_bear_layer_05",
+          "name": "ポノ",
+          "img": "assets/ui/gacha/stickers/rarity3_143_zukan_bear_normal_20260623.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "116",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "zukan_dog_layer_12",
+          "name": "いぬ",
+          "img": "assets/ui/gacha/stickers/zukan_dog_layer_12.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "117",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "zukan_giraffe_layer_08",
+          "name": "キリン",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_147_zukan_giraffe_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "118",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "zukan_lion_layer_03",
+          "name": "ライオン",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_148_zukan_lion_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "119",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "zukan_penguin_layer_04",
+          "name": "ペンギン",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_149_zukan_penguin_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "120",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "zukan_special_kabuto_layer_02",
+          "name": "カブトムシ",
+          "img": "assets/ui/gacha/stickers/zukan_special_kabuto_layer_02.webp",
+          "rarity": "super",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "121",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "zukan_squirrel_fox_mushroom_leaf_badge_001",
+          "name": "もりのバッジ",
+          "img": "assets/ui/gacha/stickers/rarity2_151_zukan_leaf_super_20260623.webp",
+          "rarity": "super",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "122",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "zukan_squirrel_fox_mushroom_leaf_badge_002",
+          "name": "キツネ",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_152_zukan_fox_redo_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "123",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "zukan_squirrel_fox_mushroom_leaf_badge_003",
+          "name": "キノコ",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_153_zukan_mushroom_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "124",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "zukan_squirrel_fox_mushroom_leaf_badge_004",
+          "name": "どんぐりリス",
+          "img": "assets/ui/gacha/stickers/zukan_squirrel_fox_mushroom_leaf_badge_004.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "125",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "zukan_squirrel_layer_11",
+          "name": "リス",
+          "img": "assets/ui/gacha/stickers/zukan_squirrel_layer_11.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "126",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "bonus_zukan_penguin_normal",
+          "name": "ペンギン",
+          "img": "assets/ui/gacha/stickers/bonus_zukan_penguin_normal_20260623.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "127",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "bonus_zukan_kabutomushi_rare",
+          "name": "カブトムシ",
+          "img": "assets/ui/gacha/stickers/rare_silverblue_157_zukan_kabuto_20260624.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "128",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "bonus_zukan_shika_super",
+          "name": "こじか",
+          "img": "assets/ui/gacha/stickers/rarity2_158_zukan_deer_normal_20260623.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "daily_gacha",
+            "clear",
+            "stage_clear",
+            "complete",
+            "perfect"
+          ],
+          "serial": "129",
+          "tier": "app_exclusive"
+        }
+      ]
+    },
+    "book-bonus": {
+      "title": "えほんとくてん",
+      "subtitle": "えほんの とくべつシール",
+      "icon": "📘",
+      "accent": "#D9A441",
+      "appOnly": false,
+      "bookOnly": true,
+      "note": "v20 (2026-07-06): 9→8枚化。book_bonus_duck_rare (serial 132) を廃止。serial は欠番のまま維持し、以降のシリアルは詰め直さない。",
+      "stickers": [
+        {
+          "id": "book_bonus_pono_book_rare",
+          "name": "ぽのとえほん",
+          "img": "assets/ui/gacha/stickers/book_bonus_pono_book_rare_20260701.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "book_bonus"
+          ],
+          "serial": "130",
+          "tier": "book_exclusive"
+        },
+        {
+          "id": "book_bonus_mama_pono_super",
+          "name": "ママとぽの",
+          "img": "assets/ui/gacha/stickers/book_bonus_mama_pono_super_20260701.webp",
+          "rarity": "super",
+          "unlockOn": [
+            "book_bonus"
+          ],
+          "serial": "131",
+          "tier": "book_exclusive"
+        },
+        {
+          "id": "book_bonus_hedgehog_rare",
+          "name": "ハリネズミ",
+          "img": "assets/ui/gacha/stickers/book_bonus_hedgehog_rare_20260701.webp",
+          "rarity": "rare",
+          "unlockOn": [
+            "book_bonus"
+          ],
+          "serial": "133",
+          "tier": "book_exclusive"
+        },
+        {
+          "id": "book_bonus_friends_super",
+          "name": "なかよし",
+          "img": "assets/ui/gacha/stickers/book_bonus_friends_super_20260701.webp",
+          "rarity": "super",
+          "unlockOn": [
+            "book_bonus"
+          ],
+          "serial": "134",
+          "tier": "book_exclusive"
+        },
+        {
+          "id": "book_bonus_ehon_medal_super",
+          "name": "えほんメダル",
+          "img": "assets/ui/gacha/stickers/book_bonus_ehon_medal_super_20260701.webp",
+          "rarity": "super",
+          "unlockOn": [
+            "book_bonus"
+          ],
+          "serial": "135",
+          "tier": "book_exclusive"
+        },
+        {
+          "id": "book_bonus_wave_greeting",
+          "name": "てをふるポノ",
+          "img": "assets/ui/gacha/stickers/bento_kira_staff_child_friend_pono_002.webp",
+          "imgAlt": "assets/ui/gacha/stickers/bento_kira_staff_child_friend_pono_002.webp",
+          "animated": true,
+          "rarity": "super",
+          "tier": "book_exclusive",
+          "unlockOn": [
+            "book_bonus"
+          ],
+          "serial": "136",
+          "note": "TEMP: Brand Kit 納品後に差し替え (book_bonus_wave_base/up_super_20260706 が未納品のため仮差し)"
+        },
+        {
+          "id": "book_bonus_family_photo",
+          "name": "みんなでしゃしん",
+          "img": "assets/ui/gacha/stickers/bento_kira_customers_risu_neko_inu_shika_ahiru_araiguma_001.webp",
+          "rarity": "super",
+          "tier": "book_exclusive",
+          "unlockOn": [
+            "book_bonus"
+          ],
+          "serial": "137",
+          "note": "TEMP: Brand Kit 納品後に差し替え (book_bonus_family_photo_super_20260706 が未納品のため仮差し)"
+        },
+        {
+          "id": "book_bonus_password_thanks",
+          "name": "あいことば ありがとう",
+          "img": "assets/ui/gacha/stickers/bonus_bento_pono_present_super_20260623.webp",
+          "rarity": "super",
+          "tier": "book_exclusive",
+          "unlockOn": [
+            "book_bonus"
+          ],
+          "serial": "138",
+          "note": "TEMP: Brand Kit 納品後に差し替え (book_bonus_password_thanks_super_20260706 が未納品のため仮差し)"
+        }
+      ]
+    },
+    "monster_math": {
+      "title": "モンスターさんすう",
+      "subtitle": "しょくどうの シール",
+      "icon": "🍽️",
+      "accent": "#8E5FD9",
+      "appOnly": true,
+      "stickers": [
+        {
+          "id": "mm_tenmegane",
+          "name": "テンメガネ",
+          "img": "monster-math/assets/sticker_mm_tenmegane.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "clear_ten"
+          ],
+          "serial": "139",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "mm_kakuren",
+          "name": "カクレン",
+          "img": "monster-math/assets/sticker_mm_kakuren.webp",
+          "rarity": "normal",
+          "unlockOn": [
+            "clear_kak"
+          ],
+          "serial": "140",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "mm_both_modes",
+          "name": "なかよし ツーショット",
+          "img": "monster-math/assets/sticker_mm_both_modes.webp",
+          "rarity": "super",
+          "unlockOn": [
+            "all_modes"
+          ],
+          "serial": "141",
+          "tier": "app_exclusive"
+        },
+        {
+          "id": "mm_perfect",
+          "name": "きんいろの ほしぼうし",
+          "img": "monster-math/assets/sticker_mm_perfect.webp",
+          "rarity": "super",
+          "unlockOn": [
+            "perfect_all"
+          ],
+          "serial": "142",
+          "tier": "app_exclusive"
+        }
+      ]
+    },
+    "app-bonus": {
+      "title": "アプリとくてん",
+      "subtitle": "アプリだけの とくべつシール",
+      "icon": "🌟",
+      "accent": "#7C3AED",
+      "appOnly": true,
+      "appBonusOnly": true,
+      "phase": 2,
+      "note": "TEMP: Phase 2 で実コンテンツ選定するまで stickers は意図的に空。 PLACEHOLDER_app_bonus.png が不存在のため壊れ表示を避ける (H2)。 2026-07-11 tier 名 'sub'→'app' リネームで旧 id 'sub-bonus' / 旧 field 'subOnly' から改名 (stickers 空のため owned 状態の後方互換不要)",
+      "stickers": []
+    }
+  }
+}

@@ -1,0 +1,1570 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>太鼓 譜面エディタ (Taiko Chart Editor)</title>
+<style>
+  /* ----------------------------------------------------------------
+   * 子供向けWeb知育アプリ用・リアルタイム太鼓譜面エディタ。
+   * 純JS / ビルド不要 / 外部CDNなし。ダークテーマは tools/ の兄弟ツールに合わせる。
+   * ---------------------------------------------------------------- */
+  :root {
+    --bg: #1a1d24;
+    --bg2: #14161c;
+    --bg3: #20242e;
+    --panel: #181b22;
+    --text: #e8eaf0;
+    --muted: #94a3b8;
+    --border: #2a2e3a;
+    --accent: #2563eb;
+    --accent-h: #1d4ed8;
+    --don: #ef4444;
+    --ka: #3b82f6;
+    --warn: #f59e0b;
+    --ok: #22c55e;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: var(--bg); color: var(--text);
+    font-family: 'Hiragino Sans','Yu Gothic UI',system-ui,sans-serif;
+    overflow: hidden;
+    font-size: 13px;
+  }
+  #app {
+    display: flex; flex-direction: column;
+    height: 100vh; width: 100vw;
+  }
+  header {
+    background: var(--bg2); border-bottom: 1px solid var(--border);
+    padding: 8px 12px; display: flex; flex-wrap: wrap; gap: 8px 14px;
+    align-items: center;
+  }
+  header h1 { font-size: 14px; margin: 0 12px 0 0; color: #f3f4f6; font-weight: 700; }
+  .row { display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; }
+  .field { display: flex; flex-direction: column; gap: 2px; }
+  .field > label { font-size: 10px; color: var(--muted); }
+  input, select, button {
+    font-family: inherit; font-size: 12px;
+  }
+  input[type=text], input[type=number], select {
+    background: var(--bg3); color: var(--text);
+    border: 1px solid var(--border); border-radius: 6px;
+    padding: 5px 7px; outline: none;
+  }
+  input[type=text] { min-width: 110px; }
+  input[type=number] { width: 78px; }
+  input:focus, select:focus { border-color: var(--accent); }
+  button {
+    background: var(--accent); color: #fff; border: none;
+    padding: 6px 11px; border-radius: 7px; cursor: pointer;
+  }
+  button:hover { background: var(--accent-h); }
+  button.ghost { background: transparent; border: 1px solid var(--border); color: #cbd5e1; }
+  button.ghost:hover { background: var(--bg3); }
+  button.warn { background: var(--warn); color: #1a1d24; }
+  button.danger { background: #7f1d1d; }
+  button.danger:hover { background: #991b1b; }
+  button.active { background: var(--ok); color: #07210f; }
+  button:disabled { opacity: 0.4; cursor: default; }
+  .sep { width: 1px; align-self: stretch; background: var(--border); margin: 0 2px; }
+
+  /* transport */
+  #transport {
+    background: var(--bg2); border-bottom: 1px solid var(--border);
+    padding: 7px 12px; display: flex; flex-wrap: wrap; gap: 6px 12px; align-items: center;
+  }
+  #seek { flex: 1; min-width: 180px; accent-color: var(--accent); }
+  #timeRead { font-variant-numeric: tabular-nums; font-size: 13px; min-width: 96px; color: #f3f4f6; }
+
+  /* main area */
+  #main { flex: 1; display: flex; min-height: 0; }
+  #timelineWrap {
+    flex: 1; min-width: 0; display: flex; flex-direction: column;
+    border-right: 1px solid var(--border);
+  }
+  #tapLanes {
+    display: flex; gap: 10px; padding: 8px 12px;
+    background: var(--bg2); border-bottom: 1px solid var(--border);
+  }
+  .tapBtn {
+    flex: 1; padding: 16px 0; border-radius: 12px; font-size: 20px; font-weight: 800;
+    border: 2px solid transparent; user-select: none;
+  }
+  .tapBtn.don { background: #4a1414; color: #fff; }
+  .tapBtn.ka  { background: #122a4a; color: #fff; }
+  .tapBtn.flash { filter: brightness(2.2); border-color: #fff; }
+  .tapBtn small { display: block; font-size: 10px; font-weight: 500; opacity: 0.75; }
+
+  #canvasScroll { flex: 1; overflow-x: auto; overflow-y: hidden; background: #0f1117; position: relative; }
+  #timeline { display: block; height: 220px; }
+
+  #inspector {
+    width: 320px; background: var(--panel); display: flex; flex-direction: column; min-height: 0;
+  }
+  #inspector .ipad { padding: 12px; border-bottom: 1px solid var(--border); }
+  #inspector h3 { margin: 0 0 8px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+  .counters { display: flex; gap: 8px; flex-wrap: wrap; font-size: 12px; }
+  .badge { background: var(--bg3); border-radius: 6px; padding: 3px 8px; }
+  .badge.don { color: #ff8585; }
+  .badge.ka { color: #85b4ff; }
+  .badge.warnbadge { background: var(--warn); color: #1a1d24; font-weight: 700; }
+  #noteList { flex: 1; overflow-y: auto; padding: 4px 0; }
+  .noteRow {
+    display: flex; gap: 8px; padding: 4px 12px; cursor: pointer; font-variant-numeric: tabular-nums;
+    border-left: 3px solid transparent;
+  }
+  .noteRow:hover { background: var(--bg3); }
+  .noteRow.sel { background: #1e2940; border-left-color: var(--accent); }
+  .noteRow.oow { color: var(--warn); }
+  .noteRow .idx { color: var(--muted); width: 28px; }
+  .noteRow .ty.don { color: #ff8585; }
+  .noteRow .ty.ka { color: #85b4ff; }
+  .selActions { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+  .selActions button { padding: 5px 8px; font-size: 11px; }
+
+  #status {
+    background: var(--bg2); border-top: 1px solid var(--border);
+    padding: 5px 12px; font-size: 11px; display: flex; gap: 16px; align-items: center;
+    color: var(--muted);
+  }
+  #autosaveDot { color: var(--ok); }
+  #valMsg.bad { color: var(--warn); }
+
+  /* modal */
+  .modalBack {
+    position: fixed; inset: 0; background: rgba(0,0,0,.6); display: none;
+    align-items: center; justify-content: center; z-index: 50;
+  }
+  .modalBack.show { display: flex; }
+  .modal { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 20px; max-width: 560px; width: 90%; max-height: 86vh; overflow: auto; }
+  .modal h2 { margin: 0 0 10px; font-size: 16px; }
+  .modal textarea { width: 100%; height: 170px; background: var(--bg3); color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 8px; font-family: ui-monospace,Consolas,monospace; font-size: 12px; }
+  .modal .mrow { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .hint { background: var(--bg3); border-left: 3px solid var(--accent); padding: 8px 10px; font-size: 11px; line-height: 1.5; margin-top: 10px; border-radius: 0 6px 6px 0; }
+  .menu { position: relative; }
+  .menu .menuList {
+    position: absolute; right: 0; top: 110%; background: var(--bg2); border: 1px solid var(--border);
+    border-radius: 8px; min-width: 200px; display: none; z-index: 30; max-height: 300px; overflow: auto;
+  }
+  .menu.open .menuList { display: block; }
+  .menu .menuList button { display: block; width: 100%; text-align: left; background: transparent; border: none; border-radius: 0; padding: 7px 12px; color: var(--text); }
+  .menu .menuList button:hover { background: var(--bg3); }
+  .menuList .mi { display: flex; justify-content: space-between; align-items: center; padding: 6px 12px; gap: 8px; }
+  .menuList .mi .ttl { cursor: pointer; flex: 1; }
+  .menuList .mi .del { color: #ff8585; cursor: pointer; font-size: 11px; }
+  .toast {
+    position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+    background: var(--ok); color: #07210f; padding: 8px 16px; border-radius: 20px; font-size: 12px;
+    opacity: 0; transition: opacity .25s; pointer-events: none; z-index: 60; font-weight: 600;
+  }
+  .toast.show { opacity: 1; }
+  #testPanel { position: fixed; inset: 0; background: #0d0f14; color: var(--text); z-index: 100; overflow: auto; padding: 24px; font-family: ui-monospace,Consolas,monospace; font-size: 13px; }
+  #testPanel h1 { font-size: 18px; }
+  .pass { color: var(--ok); }
+  .fail { color: var(--don); font-weight: 700; }
+  kbd { background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; font-size: 10px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <h1>太鼓 譜面エディタ</h1>
+    <div class="field">
+      <label>曲（リポジトリ）</label>
+      <select id="songSelect"></select>
+    </div>
+    <button class="ghost" id="loadFileBtn">ローカルmp3…</button>
+    <input type="file" id="fileInput" accept="audio/*" style="display:none">
+    <div class="sep"></div>
+    <div class="field"><label>key</label><input type="text" id="metaKey" placeholder="bell" style="min-width:80px"></div>
+    <div class="field"><label>id</label><input type="text" id="metaId" placeholder="song_id" style="min-width:100px"></div>
+    <div class="field"><label>title 曲名</label><input type="text" id="metaTitle"></div>
+    <div class="field"><label>audio ファイル名</label><input type="text" id="metaAudio"></div>
+    <div class="field"><label>startOffset</label><input type="number" id="metaStart" step="0.1" value="0"></div>
+    <div class="field"><label>endOffset</label><input type="number" id="metaEnd" step="0.1" value="40"></div>
+    <div class="sep"></div>
+    <div class="field"><label>BPM</label><input type="number" id="bpmIn" step="0.1" value="120"></div>
+    <button class="ghost" id="tapBpmBtn">タップでBPM</button>
+    <div class="field"><label>分割</label><select id="subSel"><option value="1">1/4</option><option value="2" selected>1/8</option><option value="4">1/16</option></select></div>
+    <div class="field"><label>gridOffset</label><input type="number" id="gridOffIn" step="0.01" value="0"></div>
+    <button class="ghost" id="gridToHereBtn">グリッドを現在位置に</button>
+    <div class="sep"></div>
+    <button id="exportBtn">エクスポート</button>
+    <button class="ghost" id="importBtn">インポート</button>
+    <button class="danger" id="clearBtn">クリア</button>
+    <div class="menu" id="projMenu">
+      <button class="ghost" id="projMenuBtn">プロジェクト ▾</button>
+      <div class="menuList" id="projMenuList"></div>
+    </div>
+    <button class="ghost" id="calibBtn">遅延調整</button>
+  </header>
+
+  <div id="transport">
+    <button id="playBtn">▶</button>
+    <button class="ghost" id="stopBtn">⏹</button>
+    <input type="range" id="seek" min="0" max="40" step="0.01" value="0">
+    <span id="timeRead">00:00.00</span>
+    <div class="field"><label>速度</label><select id="speedSel"><option value="0.5">0.5x</option><option value="0.75">0.75x</option><option value="1" selected>1.0x</option></select></div>
+    <div class="sep"></div>
+    <button class="ghost" id="metroBtn">メトロノーム</button>
+    <button class="ghost" id="countInBtn">カウントイン</button>
+    <button class="ghost" id="loopBtn">区間ループ</button>
+    <button class="ghost" id="previewBtn">音プレビュー</button>
+    <div class="sep"></div>
+    <button class="ghost" id="loopABtn">A=設定</button>
+    <button class="ghost" id="loopBBtn">B=設定</button>
+    <span id="abRead" style="color:var(--muted)"></span>
+    <div class="field"><label>遅延ms</label><input type="number" id="latIn" min="0" max="200" step="1" value="60" style="width:64px"></div>
+  </div>
+
+  <div id="main">
+    <div id="timelineWrap">
+      <div id="tapLanes">
+        <div class="tapBtn don" id="donBtn">ドン<small>D / J キー</small></div>
+        <div class="tapBtn ka" id="kaBtn">カッ<small>K / F キー</small></div>
+      </div>
+      <div id="canvasScroll"><canvas id="timeline" width="800" height="220"></canvas></div>
+    </div>
+    <div id="inspector">
+      <div class="ipad">
+        <h3>選択ノート</h3>
+        <div id="selInfo" style="color:var(--muted)">（未選択）クリックで選択 / 空きをクリックで追加</div>
+        <div class="selActions">
+          <button class="ghost" id="flipBtn">ドン⇄カッ</button>
+          <button class="ghost" id="nudgeLBtn">←1グリッド</button>
+          <button class="ghost" id="nudgeRBtn">1グリッド→</button>
+          <button class="danger" id="delBtn">削除</button>
+        </div>
+      </div>
+      <div class="ipad">
+        <h3>集計</h3>
+        <div class="counters" id="counters"></div>
+      </div>
+      <h3 style="padding:8px 12px 0;margin:0;font-size:11px;color:var(--muted)">ノート一覧</h3>
+      <div id="noteList"></div>
+    </div>
+  </div>
+
+  <div id="status">
+    <span id="autosaveDot">●</span>
+    <span id="autosaveTxt">保存済み</span>
+    <span id="lastAction">準備完了</span>
+    <span id="valMsg"></span>
+  </div>
+</div>
+
+<!-- Export modal -->
+<div class="modalBack" id="exportModal">
+  <div class="modal">
+    <h2>エクスポート</h2>
+    <div id="exportVal"></div>
+    <div style="margin-top:8px"><strong>notes 配列のみ</strong></div>
+    <textarea id="exportNotes" readonly></textarea>
+    <div class="mrow">
+      <button id="copyNotesBtn">notes をコピー</button>
+      <button class="ghost" id="dlNotesBtn">notes.json をDL</button>
+    </div>
+    <div style="margin-top:12px"><strong>RHYTHM_SONGS エントリ（貼り付け用）</strong></div>
+    <textarea id="exportEntry" readonly style="height:210px"></textarea>
+    <div class="mrow">
+      <button id="copyEntryBtn">エントリをコピー</button>
+      <button class="ghost" id="dlEntryBtn">エントリ.json をDL</button>
+      <button class="ghost" id="closeExportBtn">閉じる</button>
+    </div>
+    <div class="hint" id="installHint"></div>
+  </div>
+</div>
+
+<!-- Import modal -->
+<div class="modalBack" id="importModal">
+  <div class="modal">
+    <h2>インポート</h2>
+    <p style="color:var(--muted);font-size:12px">notes 配列、または RHYTHM_SONGS エントリ（JSON）を貼り付け / ファイル選択。各ノートを「スナップ済みの生タップ」として読み込み編集可能にします。</p>
+    <textarea id="importText" placeholder='{ "notes": [ { "time": 1.8, "type": "don" } ] }  または  [ { "time":1.8, "type":"don" } ]'></textarea>
+    <div class="mrow">
+      <button id="doImportBtn">読み込む</button>
+      <button class="ghost" id="importFileBtn">ファイル選択…</button>
+      <input type="file" id="importFileInput" accept="application/json,.json,.txt" style="display:none">
+      <button class="ghost" id="closeImportBtn">閉じる</button>
+    </div>
+    <div id="importMsg" style="margin-top:8px;color:var(--warn)"></div>
+  </div>
+</div>
+
+<!-- Calibration modal -->
+<div class="modalBack" id="calibModal">
+  <div class="modal">
+    <h2>遅延調整（キャリブレーション）</h2>
+    <p style="color:var(--muted);font-size:12px">100 BPM のメトロノームに合わせてビートで 8 回ほどタップ（<kbd>Space</kbd> または ボタン）。タップと最寄りクリックのズレ平均を遅延 ms とします（0〜250 でクランプ）。</p>
+    <div class="mrow">
+      <button id="calibStartBtn">開始</button>
+      <button class="ghost" id="calibTapBtn">タップ（テスト）</button>
+      <button class="ghost" id="calibStopBtn">停止</button>
+    </div>
+    <div style="margin-top:10px">サンプル: <span id="calibCount">0</span> / 推定遅延: <span id="calibResult">—</span> ms</div>
+    <div class="field" style="margin-top:10px"><label>手動 遅延 (ms)</label>
+      <input type="range" id="latSlider" min="0" max="200" step="1" value="60" style="width:100%">
+    </div>
+    <div class="mrow">
+      <button id="calibApplyBtn">適用</button>
+      <button class="ghost" id="closeCalibBtn">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* =====================================================================
+ * 太鼓 譜面エディタ — 純JS / ビルド不要 / 外部CDNなし
+ *
+ * 設計メモ: 本番ランタイム (writing-mori/play.html) は HTMLAudioElement を
+ * 使うが、本エディタは Web Audio (AudioContext + decodeAudioData +
+ * AudioBufferSourceNode) を使う。これは安全である ── エディタが書き出すのは
+ * 「絶対秒数の time 値」だけであり、再生方式は出力に影響しない。Web Audio は
+ * 正確な currentTime クロックとサンプル単位スケジューリングを提供するため、
+ * リアルタイムのタップ採譜・メトロノーム・プレビューに必須。
+ * ===================================================================== */
+
+/* =========================  PURE FUNCTIONS  =========================
+ * 以下はテスト可能な純関数。?test=1 で検証する。状態に依存しない。
+ * ================================================================== */
+
+// グリッド量子化。interval = 60/bpm/subdivision。
+function gridInterval(bpm, subdivision) {
+  return 60 / bpm / subdivision;
+}
+function snap(t, bpm, subdivision, gridOffset) {
+  const interval = gridInterval(bpm, subdivision);
+  if (!(interval > 0)) return t;
+  return gridOffset + Math.round((t - gridOffset) / interval) * interval;
+}
+// グリッドインデックス（量子化後の time → 整数 index）。overrides のキー。
+function gridIndex(t, bpm, subdivision, gridOffset) {
+  const interval = gridInterval(bpm, subdivision);
+  if (!(interval > 0)) return 0;
+  return Math.round((t - gridOffset) / interval);
+}
+
+// タップテンポ: ミリ秒間隔の配列 → BPM。
+function bpmFromIntervals(intervalsMs) {
+  if (!intervalsMs || !intervalsMs.length) return null;
+  const valid = intervalsMs.filter((x) => x > 0 && x < 2000); // 2s超のギャップは無効
+  if (!valid.length) return null;
+  const avg = valid.reduce((a, b) => a + b, 0) / valid.length;
+  if (!(avg > 0)) return null;
+  return 60000 / avg;
+}
+
+// 連続タップのデデュープ: window ms 以内に連続するタップを1つにまとめる。
+// 最も早い時刻を残し、type は多数決（同数なら最初）。
+function dedupe(taps, windowMs) {
+  const win = (windowMs == null ? 130 : windowMs) / 1000;
+  const sorted = taps.slice().sort((a, b) => a.t - b.t);
+  const out = [];
+  let cluster = [];
+  const flush = () => {
+    if (!cluster.length) return;
+    let don = 0, ka = 0;
+    for (const c of cluster) { if (c.type === 'ka') ka++; else don++; }
+    let type = cluster[0].type;
+    if (don > ka) type = 'don'; else if (ka > don) type = 'ka';
+    out.push({ t: cluster[0].t, type });
+    cluster = [];
+  };
+  for (const tp of sorted) {
+    if (!cluster.length) { cluster.push(tp); continue; }
+    if (tp.t - cluster[0].t <= win) cluster.push(tp);
+    else { flush(); cluster.push(tp); }
+  }
+  flush();
+  return out;
+}
+
+// 量子化パイプライン (純関数): rawTaps + bpm/offset/subdivision + overrides → notes昇順。
+// 非破壊: パラメータ変更で全体が再スナップされる。
+function deriveNotes(rawTaps, bpm, subdivision, gridOffset, overrides) {
+  overrides = overrides || {};
+  // (1) sort  (2) de-dupe 130ms
+  const merged = dedupe(rawTaps, 130);
+  // (3) snap each  → グリッドindexごとに集約
+  const byIndex = new Map();
+  for (const tp of merged) {
+    const idx = gridIndex(tp.t, bpm, subdivision, gridOffset);
+    if (!byIndex.has(idx)) byIndex.set(idx, []);
+    byIndex.get(idx).push(tp);
+  }
+  // (4) collapse collisions on same gridline (type多数決/最初)
+  const notes = [];
+  const interval = gridInterval(bpm, subdivision);
+  for (const [idx, group] of byIndex.entries()) {
+    let don = 0, ka = 0;
+    for (const g of group) { if (g.type === 'ka') ka++; else don++; }
+    let type = group[0].type;
+    if (don > ka) type = 'don'; else if (ka > don) type = 'ka';
+    // (5) overrides 適用
+    const ov = overrides[idx];
+    let timeNudge = 0;
+    if (ov) {
+      if (ov.deleted) continue;
+      if (ov.type === 'don' || ov.type === 'ka') type = ov.type;
+      if (typeof ov.timeNudge === 'number') timeNudge = ov.timeNudge;
+    }
+    const time = gridOffset + idx * interval + timeNudge;
+    notes.push({ time, type, idx });
+  }
+  // (6) 昇順
+  notes.sort((a, b) => a.time - b.time);
+  return notes;
+}
+
+// エクスポート前バリデーション (純関数)。time は呼び出し側で2dp丸め済みを想定。
+// returns { ok, errors:[], warnings:[] }
+function validateExport(notes, meta) {
+  const errors = [], warnings = [];
+  const start = Number(meta && meta.startOffset) || 0;
+  const end = (meta && Number.isFinite(Number(meta.endOffset))) ? Number(meta.endOffset) : Infinity;
+  if (!notes || !notes.length) errors.push('ノートが0件です。');
+  if (!meta || !meta.audio) errors.push('audio（ファイル名）が未設定です。');
+  if (!meta || !meta.title) errors.push('title（曲名）が未設定です。');
+  // sorted ascending assertion
+  let sorted = true;
+  for (let i = 1; i < (notes ? notes.length : 0); i++) {
+    if (notes[i].time < notes[i - 1].time) { sorted = false; break; }
+  }
+  if (!sorted) errors.push('ノートが昇順ではありません（内部エラー）。');
+  // type check + out-of-window
+  let oow = 0;
+  (notes || []).forEach((n) => {
+    if (n.type !== 'don' && n.type !== 'ka') errors.push('type が don/ka 以外: ' + n.type);
+    if (n.time < start || n.time > end) oow++;
+  });
+  if (oow > 0) warnings.push('⚠ ' + oow + ' 件が再生区間 [' + start + ', ' + end + '] の外です。ランタイムは静かに破棄します。');
+  return { ok: errors.length === 0, errors, warnings, outOfWindow: oow };
+}
+
+// 既知のスキーマに正規化（未知フィールドを除去）。import 用。
+function sanitizeNotes(arr) {
+  if (!Array.isArray(arr)) return [];
+  return arr
+    .filter((n) => n && Number.isFinite(Number(n.time)))
+    .map((n) => ({ time: Number(n.time), type: n.type === 'ka' ? 'ka' : 'don' }))
+    .sort((a, b) => a.time - b.time);
+}
+
+// notes → エクスポート用 ({time:2dp, type})
+function exportNotesArray(notes) {
+  return notes.map((n) => ({ time: +Number(n.time).toFixed(2), type: n.type === 'ka' ? 'ka' : 'don' }));
+}
+
+/* =========================  TEST HARNESS  ========================= */
+function runSelfTests() {
+  const results = [];
+  const assert = (name, cond, detail) => results.push({ name, ok: !!cond, detail: detail || '' });
+  const approx = (a, b, eps) => Math.abs(a - b) <= (eps == null ? 1e-9 : eps);
+
+  // snap(): bpm=120, sub=2, offset=0 → interval=0.25
+  assert('interval=0.25', approx(gridInterval(120, 2), 0.25), 'got ' + gridInterval(120, 2));
+  assert('snap(1.83)=1.75', approx(snap(1.83, 120, 2, 0), 1.75), 'got ' + snap(1.83, 120, 2, 0));
+  assert('snap(1.88)=2.00', approx(snap(1.88, 120, 2, 0), 2.00), 'got ' + snap(1.88, 120, 2, 0));
+  assert('snap(0)=0', approx(snap(0, 120, 2, 0), 0), 'got ' + snap(0, 120, 2, 0));
+
+  // tap-tempo: 500ms intervals → 120 BPM
+  assert('bpmFromIntervals([500,500,500])=120', approx(bpmFromIntervals([500, 500, 500]), 120), 'got ' + bpmFromIntervals([500, 500, 500]));
+
+  // de-dupe: 0.08s apart → 1; 0.20s apart → 2
+  const dd1 = dedupe([{ t: 1.00, type: 'don' }, { t: 1.08, type: 'don' }], 130);
+  assert('dedupe 0.08s → 1 note', dd1.length === 1, 'got ' + dd1.length);
+  const dd2 = dedupe([{ t: 1.00, type: 'don' }, { t: 1.20, type: 'don' }], 130);
+  assert('dedupe 0.20s → 2 notes', dd2.length === 2, 'got ' + dd2.length);
+
+  // deriveNotes determinism + bpm change moves a note
+  const raw = [{ t: 1.83, type: 'don' }, { t: 3.45, type: 'ka' }];
+  const d120a = deriveNotes(raw, 120, 2, 0, {});
+  const d120b = deriveNotes(raw, 120, 2, 0, {});
+  assert('deriveNotes deterministic', JSON.stringify(d120a.map((n) => [n.time, n.type])) === JSON.stringify(d120b.map((n) => [n.time, n.type])));
+  const d90 = deriveNotes(raw, 90, 2, 0, {});
+  assert('changing bpm moves a note', !approx(d120a[0].time, d90[0].time), '120→' + d120a[0].time + ' 90→' + d90[0].time);
+
+  // export round-trip
+  const expNotes = exportNotesArray(d120a);
+  const reimported = sanitizeNotes(JSON.parse(JSON.stringify(expNotes)));
+  let rtOk = reimported.length === expNotes.length;
+  for (let i = 0; i < reimported.length; i++) {
+    if (!approx(reimported[i].time, expNotes[i].time, 0.005)) rtOk = false;
+    if (reimported[i].type !== 'don' && reimported[i].type !== 'ka') rtOk = false;
+    if (i > 0 && reimported[i].time < reimported[i - 1].time) rtOk = false;
+  }
+  assert('export round-trip preserves time(<0.005) + type + ascending', rtOk);
+
+  // out-of-window detection
+  const v = validateExport([{ time: 1.0, type: 'don' }, { time: 99.0, type: 'ka' }], { audio: 'x.mp3', title: 't', startOffset: 0, endOffset: 40 });
+  assert('out-of-window flagged', v.outOfWindow === 1 && v.warnings.length >= 1, 'oow=' + v.outOfWindow);
+
+  // render
+  const pass = results.filter((r) => r.ok).length;
+  const panel = document.createElement('div');
+  panel.id = 'testPanel';
+  let html = '<h1>Self-Test ' + (pass === results.length ? '<span class="pass">ALL PASS</span>' : '<span class="fail">FAIL</span>') + ' (' + pass + '/' + results.length + ')</h1>';
+  results.forEach((r) => {
+    html += '<div class="' + (r.ok ? 'pass' : 'fail') + '">' + (r.ok ? 'PASS' : 'FAIL') + ' — ' + escapeHtml(r.name) + (r.detail ? '  [' + escapeHtml(r.detail) + ']' : '') + '</div>';
+    (r.ok ? console.log : console.error)((r.ok ? 'PASS' : 'FAIL') + ' — ' + r.name, r.detail);
+  });
+  html += '<p><a href="?" style="color:#85b4ff">← エディタへ戻る</a></p>';
+  panel.innerHTML = html;
+  document.body.appendChild(panel);
+  return results;
+}
+
+/* =========================  APP STATE  ========================= */
+const REPO_SONGS = [
+  'こころにぽっぽっぽ.mp3',
+  'Bubble Hop Playground.mp3',
+  'Candy Blocks and Bubble Pops.mp3',
+  'Soft Crayon Day.mp3',
+  'Sunny Little Steps.mp3',
+  'Cheery Strike Loop.mp3'
+];
+const AUDIO_PREFIX = '../assets/audio/';
+const DON_URL = '../assets/audio/sfx/quiz/don.mp3';
+const KA_URL = '../assets/audio/sfx/quiz/ka.mp3';
+const LS_INDEX = 'taikoEditor:projects';
+const LS_PROJECT = 'taikoEditor:project:';
+
+function defaultProject() {
+  return {
+    meta: { key: 'bell', id: 'song_id', title: '', audio: '', startOffset: 0, endOffset: 40 },
+    bpm: 120,
+    gridOffset: 0,
+    subdivision: 2,
+    latencyMs: 60,
+    rawTaps: [],
+    overrides: {}
+  };
+}
+let project = defaultProject();
+let derived = [];         // 派生ノート [{time,type,idx}]
+let selectedIdx = null;   // 選択中ノートの grid index
+let tapUndo = [];         // 直近のタップ undo スタック
+
+/* Audio engine state */
+let audioCtx = null;
+let songBuffer = null;
+let donBuffer = null, kaBuffer = null;
+let songSource = null;
+let isPlaying = false;
+let pauseSongTime = 0;    // 一時停止時の song-time（秒）
+let startCtxTime = 0;     // 再生開始時の audioCtx.currentTime
+let playbackRate = 1;
+let songDuration = 0;
+let countingIn = false;
+let countInEndCtx = 0;
+
+/* feature toggles */
+let metroOn = false, countInOn = false, loopOn = false, previewOn = true;
+let loopA = null, loopB = null;
+
+/* timeline render */
+let peaks = null;         // Float32 pairs [min,max] per second*PPS bucket → we cache raw and rebucket
+let PPS = 80;             // pixels per second
+const TL_H = 220;
+let canvas, ctx2d;
+
+/* scheduler bookkeeping */
+let schedTimer = null;
+let scheduledKeys = new Set();   // note key already scheduled this play session
+let metroScheduledBeats = new Set();
+
+/* DOM refs */
+const $ = (id) => document.getElementById(id);
+
+/* =========================  AUDIO  ========================= */
+function ensureCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  return audioCtx;
+}
+async function fetchDecode(url) {
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + url);
+  const arr = await res.arrayBuffer();
+  return await ensureCtx().decodeAudioData(arr);
+}
+async function loadDrumSamples() {
+  try { if (!donBuffer) donBuffer = await fetchDecode(DON_URL); } catch (e) { console.warn('don sample load fail', e); }
+  try { if (!kaBuffer) kaBuffer = await fetchDecode(KA_URL); } catch (e) { console.warn('ka sample load fail', e); }
+}
+async function loadRepoSong(filename) {
+  ensureCtx();
+  setAction('読込中: ' + filename);
+  try {
+    songBuffer = await fetchDecode(AUDIO_PREFIX + encodeURIComponent(filename));
+    onSongLoaded(filename);
+  } catch (e) {
+    setVal('曲の読込に失敗: ' + e.message + '（別の曲かローカルmp3を選んでください）', true);
+    setAction('読込失敗');
+  }
+}
+async function loadLocalFile(file) {
+  ensureCtx();
+  setAction('読込中: ' + file.name);
+  try {
+    const arr = await file.arrayBuffer();
+    songBuffer = await ensureCtx().decodeAudioData(arr);
+    onSongLoaded(file.name);
+  } catch (e) {
+    setVal('ローカルファイル読込失敗: ' + e.message, true);
+  }
+}
+function onSongLoaded(filename) {
+  songDuration = songBuffer.duration;
+  project.meta.audio = filename;
+  if (!project.meta.title) project.meta.title = filename.replace(/\.[^.]+$/, '');
+  $('metaAudio').value = project.meta.audio;
+  $('metaTitle').value = project.meta.title;
+  $('seek').max = songDuration.toFixed(2);
+  computePeaks();
+  pauseSongTime = 0;
+  resizeCanvas();
+  render();
+  setAction('読込完了: ' + filename + ' (' + songDuration.toFixed(1) + 's)');
+  loadDrumSamples();
+  scheduleSave();
+}
+
+/* clock */
+function songTime() {
+  if (!isPlaying || !audioCtx) return pauseSongTime;
+  return pauseSongTime + (audioCtx.currentTime - startCtxTime) * playbackRate;
+}
+function play() {
+  if (!songBuffer) { setVal('先に曲を読み込んでください。', true); return; }
+  ensureCtx();
+  if (isPlaying) return;
+  scheduledKeys.clear();
+  metroScheduledBeats.clear();
+  const ctx = audioCtx;
+  // count-in: 2小節分のメトロノームを先行スケジュール
+  let audioDelay = 0;
+  countingIn = false;
+  if (countInOn) {
+    const beatDur = 60 / project.bpm; // count-in は等倍テンポで
+    const bars = 2, beatsPerBar = 4;
+    const total = bars * beatsPerBar;
+    audioDelay = total * beatDur;
+    countingIn = true;
+    countInEndCtx = ctx.currentTime + audioDelay;
+    for (let i = 0; i < total; i++) {
+      scheduleClick(ctx.currentTime + i * beatDur, i % beatsPerBar === 0);
+    }
+  }
+  startCtxTime = ctx.currentTime + audioDelay;
+  songSource = ctx.createBufferSource(); // nodes are single-use; fresh each play
+  songSource.buffer = songBuffer;
+  songSource.playbackRate.value = playbackRate;
+  songSource.connect(ctx.destination);
+  songSource.start(startCtxTime, pauseSongTime);
+  songSource.onended = () => { /* natural end handled by raf loop */ };
+  isPlaying = true;
+  $('playBtn').textContent = '⏸';
+  startScheduler();
+  setAction('再生');
+}
+function pause() {
+  if (!isPlaying) return;
+  pauseSongTime = Math.max(0, songTime());
+  try { if (songSource) songSource.stop(); } catch (e) {}
+  songSource = null;
+  isPlaying = false;
+  countingIn = false;
+  $('playBtn').textContent = '▶';
+  stopScheduler();
+  setAction('一時停止 @' + fmtTime(pauseSongTime));
+}
+function stop() {
+  pause();
+  pauseSongTime = 0;
+  render();
+  setAction('停止');
+}
+function seek(t) {
+  const wasPlaying = isPlaying;
+  if (isPlaying) { try { if (songSource) songSource.stop(); } catch (e) {} songSource = null; isPlaying = false; stopScheduler(); }
+  pauseSongTime = Math.max(0, Math.min(t, songDuration || t));
+  if (wasPlaying) play(); else render();
+}
+function togglePlay() { if (isPlaying) pause(); else play(); }
+
+/* =========================  SCHEDULER (lookahead) =========================
+ * ~25ms ごとに次の ~120ms 以内に来るノート/ビートを正確な ctx 時刻でスケジュール。
+ * これで作者は音楽に対して譜面（ドン/カッ）を「聴いて」確認できる。
+ */
+const SCHED_INTERVAL = 25;   // ms
+const SCHED_AHEAD = 0.12;    // s
+function startScheduler() {
+  if (schedTimer) return;
+  schedTimer = setInterval(schedulerTick, SCHED_INTERVAL);
+}
+function stopScheduler() {
+  if (schedTimer) { clearInterval(schedTimer); schedTimer = null; }
+}
+function scheduleClick(ctxTime, accent) {
+  if (!audioCtx) return;
+  // 合成クリック（サンプル不要・軽量）
+  const osc = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  osc.frequency.value = accent ? 1500 : 1000;
+  g.gain.setValueAtTime(0.0001, ctxTime);
+  g.gain.exponentialRampToValueAtTime(accent ? 0.35 : 0.2, ctxTime + 0.001);
+  g.gain.exponentialRampToValueAtTime(0.0001, ctxTime + 0.05);
+  osc.connect(g); g.connect(audioCtx.destination);
+  osc.start(ctxTime); osc.stop(ctxTime + 0.06);
+}
+function scheduleSample(buffer, ctxTime) {
+  if (!audioCtx || !buffer) return;
+  const src = audioCtx.createBufferSource();
+  src.buffer = buffer;
+  src.connect(audioCtx.destination);
+  src.start(Math.max(ctxTime, audioCtx.currentTime));
+}
+// noteTime(song秒) → ctx時刻: startCtxTime + (noteTime - pauseSongTime)/playbackRate
+function ctxTimeForSong(noteTime) {
+  return startCtxTime + (noteTime - pauseSongTime) / playbackRate;
+}
+function schedulerTick() {
+  if (!isPlaying || !audioCtx) return;
+  const now = audioCtx.currentTime;
+  const horizonCtx = now + SCHED_AHEAD;
+  // 区間ループ: B を越えたら A へ
+  if (loopOn && loopA != null && loopB != null && loopB > loopA) {
+    if (songTime() >= loopB) { seek(loopA); return; }
+  }
+  // 自然終了
+  if (songTime() >= (songDuration || Infinity)) { pause(); return; }
+
+  const horizonSong = pauseSongTime + (horizonCtx - startCtxTime) * playbackRate;
+  const nowSong = songTime();
+
+  // preview ノート
+  if (previewOn) {
+    for (const n of derived) {
+      if (n.time < nowSong - 0.05) continue;
+      if (n.time > horizonSong) break;
+      const key = n.idx + ':' + n.time.toFixed(3);
+      if (scheduledKeys.has(key)) continue;
+      const ct = ctxTimeForSong(n.time);
+      if (ct >= now - 0.01 && ct <= horizonCtx) {
+        scheduleSample(n.type === 'ka' ? kaBuffer : donBuffer, ct);
+        scheduledKeys.add(key);
+      }
+    }
+  }
+  // metronome ビート
+  if (metroOn) {
+    const beatDur = 60 / project.bpm;
+    if (beatDur > 0) {
+      let b = Math.ceil((nowSong - project.gridOffset) / beatDur);
+      for (let i = 0; i < 64; i++) {
+        const beatTime = project.gridOffset + (b + i) * beatDur;
+        if (beatTime < nowSong - 0.02) continue;
+        if (beatTime > horizonSong) break;
+        if (metroScheduledBeats.has(b + i)) continue;
+        const ct = ctxTimeForSong(beatTime);
+        if (ct >= now - 0.01 && ct <= horizonCtx) {
+          scheduleClick(ct, ((b + i) % 4 + 4) % 4 === 0);
+          metroScheduledBeats.add(b + i);
+        }
+      }
+    }
+  }
+}
+
+/* =========================  WAVEFORM  ========================= */
+function computePeaks() {
+  peaks = null;
+  if (!songBuffer) return;
+  const ch = songBuffer.getChannelData(0);
+  const total = Math.ceil(songDuration * PPS);
+  if (total > 200000) { peaks = 'flat'; return; } // 巨大バッファはフラットに退避
+  const samplesPerCol = ch.length / total;
+  const arr = new Float32Array(total * 2);
+  for (let i = 0; i < total; i++) {
+    const s = Math.floor(i * samplesPerCol);
+    const e = Math.min(ch.length, Math.floor((i + 1) * samplesPerCol));
+    let mn = 1, mx = -1;
+    for (let j = s; j < e; j++) { const v = ch[j]; if (v < mn) mn = v; if (v > mx) mx = v; }
+    if (e <= s) { mn = 0; mx = 0; }
+    arr[i * 2] = mn; arr[i * 2 + 1] = mx;
+  }
+  peaks = arr;
+}
+
+/* =========================  RENDER  ========================= */
+function resizeCanvas() {
+  const w = Math.max(800, Math.ceil((songDuration || 40) * PPS));
+  canvas.width = w;
+  canvas.height = TL_H;
+  canvas.style.width = w + 'px';
+  canvas.style.height = TL_H + 'px';
+}
+function x2t(x) { return x / PPS; }
+function t2x(t) { return t * PPS; }
+
+function drawTimeline() {
+  if (!ctx2d) return;
+  const w = canvas.width, h = canvas.height;
+  ctx2d.clearRect(0, 0, w, h);
+  ctx2d.fillStyle = '#0f1117';
+  ctx2d.fillRect(0, 0, w, h);
+
+  const start = Number(project.meta.startOffset) || 0;
+  const end = Number(project.meta.endOffset);
+  const endV = Number.isFinite(end) ? end : (songDuration || 40);
+
+  // playable-window shading: 区間外を暗く
+  ctx2d.fillStyle = 'rgba(0,0,0,0.45)';
+  if (t2x(start) > 0) ctx2d.fillRect(0, 0, t2x(start), h);
+  ctx2d.fillRect(t2x(endV), 0, w - t2x(endV), h);
+
+  const mid = h * 0.42;
+  const wfH = h * 0.34;
+  // waveform peaks (gray)
+  ctx2d.strokeStyle = '#3a4150';
+  ctx2d.beginPath();
+  if (peaks === 'flat' || !peaks) {
+    ctx2d.moveTo(0, mid); ctx2d.lineTo(w, mid);
+  } else {
+    const cols = peaks.length / 2;
+    for (let i = 0; i < cols; i++) {
+      const mn = peaks[i * 2], mx = peaks[i * 2 + 1];
+      ctx2d.moveTo(i + 0.5, mid - mx * wfH);
+      ctx2d.lineTo(i + 0.5, mid - mn * wfH);
+    }
+  }
+  ctx2d.stroke();
+
+  // gridlines
+  const bpm = project.bpm, sub = project.subdivision, go = project.gridOffset;
+  const beatDur = 60 / bpm;
+  const interval = gridInterval(bpm, sub);
+  const maxT = x2t(w);
+  if (interval > 0) {
+    // subdivisions (thin)
+    ctx2d.strokeStyle = 'rgba(120,130,150,0.22)';
+    ctx2d.beginPath();
+    let n0 = Math.floor((0 - go) / interval);
+    for (let n = n0; ; n++) {
+      const t = go + n * interval; if (t > maxT) break; if (t < 0) continue;
+      const x = t2x(t); ctx2d.moveTo(x, h * 0.08); ctx2d.lineTo(x, h * 0.78);
+    }
+    ctx2d.stroke();
+    // beats (bold)
+    ctx2d.strokeStyle = 'rgba(150,165,190,0.55)';
+    ctx2d.lineWidth = 1.5;
+    ctx2d.beginPath();
+    let b0 = Math.floor((0 - go) / beatDur);
+    for (let n = b0; ; n++) {
+      const t = go + n * beatDur; if (t > maxT) break; if (t < 0) continue;
+      const x = t2x(t); ctx2d.moveTo(x, h * 0.04); ctx2d.lineTo(x, h * 0.82);
+    }
+    ctx2d.stroke();
+    ctx2d.lineWidth = 1;
+  }
+
+  // raw taps (faint ticks)
+  ctx2d.strokeStyle = 'rgba(230,230,160,0.5)';
+  ctx2d.beginPath();
+  for (const tp of project.rawTaps) {
+    const x = t2x(tp.t); ctx2d.moveTo(x, h * 0.82); ctx2d.lineTo(x, h * 0.94);
+  }
+  ctx2d.stroke();
+
+  // quantized notes (don=red, ka=blue) + ドン/カッ text
+  const noteY = h * 0.55;
+  ctx2d.textAlign = 'center';
+  ctx2d.font = 'bold 12px "Hiragino Sans","Yu Gothic UI",sans-serif';
+  for (const n of derived) {
+    const x = t2x(n.time);
+    const sel = (n.idx === selectedIdx);
+    const r = sel ? 13 : 10;
+    ctx2d.fillStyle = n.type === 'ka' ? '#3b82f6' : '#ef4444';
+    ctx2d.beginPath(); ctx2d.arc(x, noteY, r, 0, Math.PI * 2); ctx2d.fill();
+    if (sel) { ctx2d.strokeStyle = '#fff'; ctx2d.lineWidth = 2; ctx2d.stroke(); ctx2d.lineWidth = 1; }
+    // ALWAYS show text (color-blind safe)
+    ctx2d.fillStyle = '#fff';
+    ctx2d.fillText(n.type === 'ka' ? 'カッ' : 'ドン', x, noteY + r + 14);
+  }
+
+  // playhead
+  const ph = t2x(songTime());
+  ctx2d.strokeStyle = '#22d3ee';
+  ctx2d.lineWidth = 2;
+  ctx2d.beginPath(); ctx2d.moveTo(ph, 0); ctx2d.lineTo(ph, h); ctx2d.stroke();
+  ctx2d.lineWidth = 1;
+
+  // A/B markers
+  if (loopA != null) { ctx2d.strokeStyle = '#22c55e'; ctx2d.beginPath(); ctx2d.moveTo(t2x(loopA), 0); ctx2d.lineTo(t2x(loopA), h); ctx2d.stroke(); }
+  if (loopB != null) { ctx2d.strokeStyle = '#f59e0b'; ctx2d.beginPath(); ctx2d.moveTo(t2x(loopB), 0); ctx2d.lineTo(t2x(loopB), h); ctx2d.stroke(); }
+}
+
+function render() {
+  derived = deriveNotes(project.rawTaps, project.bpm, project.subdivision, project.gridOffset, project.overrides);
+  drawTimeline();
+  renderInspector();
+  renderTime();
+}
+function renderTime() {
+  const t = songTime();
+  $('timeRead').textContent = fmtTime(t);
+  if (!isPlaying) $('seek').value = t.toFixed(2);
+}
+function renderInspector() {
+  // counters
+  let don = 0, ka = 0, oow = 0;
+  const start = Number(project.meta.startOffset) || 0;
+  const end = Number.isFinite(Number(project.meta.endOffset)) ? Number(project.meta.endOffset) : Infinity;
+  derived.forEach((n) => {
+    if (n.type === 'ka') ka++; else don++;
+    if (n.time < start || n.time > end) oow++;
+  });
+  let chtml = '<span class="badge">合計 ' + derived.length + '</span>'
+    + '<span class="badge don">ドン ' + don + '</span>'
+    + '<span class="badge ka">カッ ' + ka + '</span>';
+  if (oow > 0) chtml += '<span class="badge warnbadge">区間外 ' + oow + '</span>';
+  $('counters').innerHTML = chtml;
+
+  // selected info
+  const sel = derived.find((n) => n.idx === selectedIdx);
+  $('selInfo').textContent = sel
+    ? '#' + (derived.indexOf(sel) + 1) + '  ' + sel.time.toFixed(2) + 's  ' + (sel.type === 'ka' ? 'カッ' : 'ドン')
+    : '（未選択）クリックで選択 / 空きをクリックで追加';
+
+  // note list
+  const list = $('noteList');
+  let html = '';
+  derived.forEach((n, i) => {
+    const out = (n.time < start || n.time > end);
+    html += '<div class="noteRow' + (n.idx === selectedIdx ? ' sel' : '') + (out ? ' oow' : '') + '" data-idx="' + n.idx + '">'
+      + '<span class="idx">' + (i + 1) + '</span>'
+      + '<span>' + n.time.toFixed(2) + 's</span>'
+      + '<span class="ty ' + n.type + '">' + (n.type === 'ka' ? 'カッ' : 'ドン') + '</span>'
+      + (out ? '<span style="margin-left:auto">⚠</span>' : '')
+      + '</div>';
+  });
+  list.innerHTML = html || '<div style="padding:10px;color:var(--muted)">ノートなし。再生して D/J=ドン, K/F=カッ で叩いてください。</div>';
+  list.querySelectorAll('.noteRow').forEach((row) => {
+    row.onclick = () => {
+      const idx = Number(row.dataset.idx);
+      selectedIdx = idx;
+      const n = derived.find((x) => x.idx === idx);
+      if (n) seek(n.time);
+      render();
+    };
+  });
+}
+
+/* =========================  EDITING  ========================= */
+function selectAtTime(t) {
+  // 最寄りノート（12px以内）を選択、なければ追加
+  let best = null, bestDx = Infinity;
+  for (const n of derived) {
+    const dx = Math.abs(t2x(n.time) - t2x(t));
+    if (dx < bestDx) { bestDx = dx; best = n; }
+  }
+  if (best && bestDx <= 14) {
+    selectedIdx = best.idx;
+  } else {
+    addNoteAt(t, 'don');
+  }
+  render();
+}
+function addNoteAt(t, type) {
+  // スナップ後の時刻を「スナップ済み生タップ」として投入 → パイプラインを通る
+  const snapped = snap(t, project.bpm, project.subdivision, project.gridOffset);
+  pushTap(snapped, type || 'don');
+  selectedIdx = gridIndex(snapped, project.bpm, project.subdivision, project.gridOffset);
+  setAction('ノート追加 @' + snapped.toFixed(2) + 's');
+}
+function flipType() {
+  if (selectedIdx == null) return;
+  const cur = derived.find((n) => n.idx === selectedIdx); if (!cur) return;
+  const ov = project.overrides[selectedIdx] || {};
+  ov.type = cur.type === 'ka' ? 'don' : 'ka';
+  project.overrides[selectedIdx] = ov;
+  setAction('タイプ変更');
+  render(); scheduleSave();
+}
+function nudge(dir) {
+  if (selectedIdx == null) return;
+  const interval = gridInterval(project.bpm, project.subdivision);
+  const ov = project.overrides[selectedIdx] || {};
+  ov.timeNudge = (ov.timeNudge || 0) + dir * interval;
+  project.overrides[selectedIdx] = ov;
+  setAction('ナッジ ' + (dir > 0 ? '+' : '') + (dir * interval).toFixed(3) + 's');
+  render(); scheduleSave();
+}
+function deleteSelected() {
+  if (selectedIdx == null) return;
+  const ov = project.overrides[selectedIdx] || {};
+  ov.deleted = true;
+  project.overrides[selectedIdx] = ov;
+  setAction('削除');
+  selectedIdx = null;
+  render(); scheduleSave();
+}
+function pushTap(t, type) {
+  project.rawTaps.push({ t, type });
+  tapUndo.push({ kind: 'tap', t, type });
+  render(); scheduleSave();
+}
+function undoLastTap() {
+  // 直近の生タップを取り消す
+  for (let i = project.rawTaps.length - 1; i >= 0; i--) {
+    project.rawTaps.splice(i, 1);
+    setAction('タップを取り消し');
+    render(); scheduleSave();
+    return;
+  }
+  setAction('取り消すタップがありません');
+}
+function clearAll() {
+  if (!confirm('全ノート（生タップ・編集）をクリアします。よろしいですか？')) return;
+  project.rawTaps = [];
+  project.overrides = {};
+  selectedIdx = null;
+  tapUndo = [];
+  setAction('クリア');
+  render(); scheduleSave();
+}
+
+// BPM/offset/subdivision 変更時: overrides を最寄り生存ノートへ半interval以内で再マップ、外れたら破棄
+// グリッド変更前に、失われそうなナッジ(微調整)件数を数えて警告する
+function warnNudgeLoss() {
+  let nudges = 0;
+  for (const key in project.overrides) {
+    const ov = project.overrides[key];
+    if (ov && typeof ov.timeNudge === 'number' && ov.timeNudge !== 0) nudges++;
+  }
+  if (nudges > 0) {
+    setVal('注意: BPM/グリッドを変えると微調整(ナッジ) ' + nudges + ' 件が一部失われることがあります。', true);
+  }
+}
+function remapOverrides(oldBpm, oldSub, oldOff) {
+  const oldInterval = gridInterval(oldBpm, oldSub);
+  const newInterval = gridInterval(project.bpm, project.subdivision);
+  const survivors = deriveNotes(project.rawTaps, project.bpm, project.subdivision, project.gridOffset, {});
+  const newOv = {};
+  let dropped = 0;
+  for (const key in project.overrides) {
+    const ov = project.overrides[key];
+    const oldTime = oldOff + Number(key) * oldInterval;
+    // 最寄り生存ノート
+    let best = null, bestDt = Infinity;
+    for (const s of survivors) { const dt = Math.abs(s.time - oldTime); if (dt < bestDt) { bestDt = dt; best = s; } }
+    if (best && bestDt <= newInterval / 2) {
+      newOv[best.idx] = ov;
+    } else { dropped++; }
+  }
+  project.overrides = newOv;
+  if (dropped > 0) setVal('再スナップで ' + dropped + ' 件の編集を破棄しました。', true);
+  else setVal('');
+}
+
+/* =========================  PERSISTENCE  ========================= */
+let saveTimer = null;
+function scheduleSave() {
+  $('autosaveDot').style.color = 'var(--warn)';
+  $('autosaveTxt').textContent = '保存中…';
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveProject, 500);
+}
+function saveProject() {
+  const key = project.meta.key || 'untitled';
+  try {
+    localStorage.setItem(LS_PROJECT + key, JSON.stringify(project));
+    // index
+    let index = [];
+    try { index = JSON.parse(localStorage.getItem(LS_INDEX) || '[]'); } catch (e) {}
+    index = index.filter((x) => x.key !== key);
+    index.push({ key, title: project.meta.title || key, savedAt: Date.now() });
+    localStorage.setItem(LS_INDEX, JSON.stringify(index));
+    $('autosaveDot').style.color = 'var(--ok)';
+    $('autosaveTxt').textContent = '保存済み';
+  } catch (e) {
+    // QuotaExceededError 等は握りつぶす
+    $('autosaveDot').style.color = 'var(--don)';
+    $('autosaveTxt').textContent = '保存失敗';
+  }
+}
+function loadProjectByKey(key) {
+  try {
+    const raw = localStorage.getItem(LS_PROJECT + key);
+    if (!raw) return;
+    const p = JSON.parse(raw);
+    project = sanitizeProject(p);
+    syncMetaInputs();
+    selectedIdx = null;
+    render();
+    setAction('プロジェクト読込: ' + key);
+  } catch (e) { setVal('プロジェクト読込失敗: ' + e.message, true); }
+}
+function sanitizeProject(p) {
+  const d = defaultProject();
+  if (!p || typeof p !== 'object') return d;
+  const m = p.meta || {};
+  return {
+    meta: {
+      key: String(m.key || d.meta.key),
+      id: String(m.id || d.meta.id),
+      title: String(m.title || ''),
+      audio: String(m.audio || ''),
+      startOffset: Number.isFinite(Number(m.startOffset)) ? Number(m.startOffset) : 0,
+      endOffset: Number.isFinite(Number(m.endOffset)) ? Number(m.endOffset) : 40
+    },
+    bpm: Number.isFinite(Number(p.bpm)) ? Number(p.bpm) : 120,
+    gridOffset: Number.isFinite(Number(p.gridOffset)) ? Number(p.gridOffset) : 0,
+    subdivision: [1, 2, 4].includes(Number(p.subdivision)) ? Number(p.subdivision) : 2,
+    latencyMs: Number.isFinite(Number(p.latencyMs)) ? Number(p.latencyMs) : 60,
+    rawTaps: Array.isArray(p.rawTaps) ? p.rawTaps.filter((x) => x && Number.isFinite(Number(x.t))).map((x) => ({ t: Number(x.t), type: x.type === 'ka' ? 'ka' : 'don' })) : [],
+    overrides: (p.overrides && typeof p.overrides === 'object') ? p.overrides : {}
+  };
+}
+function refreshProjMenu() {
+  let index = [];
+  try { index = JSON.parse(localStorage.getItem(LS_INDEX) || '[]'); } catch (e) {}
+  const list = $('projMenuList');
+  let html = '';
+  if (!index.length) html = '<div style="padding:8px 12px;color:var(--muted)">保存なし</div>';
+  index.sort((a, b) => b.savedAt - a.savedAt).forEach((x) => {
+    html += '<div class="mi"><span class="ttl" data-load="' + encodeURIComponent(x.key) + '">' + escapeHtml(x.title) + ' <small style="color:var(--muted)">(' + escapeHtml(x.key) + ')</small></span><span class="del" data-del="' + encodeURIComponent(x.key) + '">削除</span></div>';
+  });
+  list.innerHTML = html;
+  list.querySelectorAll('[data-load]').forEach((el) => el.onclick = () => { loadProjectByKey(decodeURIComponent(el.dataset.load)); $('projMenu').classList.remove('open'); });
+  list.querySelectorAll('[data-del]').forEach((el) => el.onclick = () => {
+    const k = decodeURIComponent(el.dataset.del);
+    try {
+      localStorage.removeItem(LS_PROJECT + k);
+      let index2 = JSON.parse(localStorage.getItem(LS_INDEX) || '[]').filter((y) => y.key !== k);
+      localStorage.setItem(LS_INDEX, JSON.stringify(index2));
+    } catch (e) {}
+    refreshProjMenu();
+  });
+}
+
+/* =========================  EXPORT / IMPORT  ========================= */
+function buildExport() {
+  const en = exportNotesArray(derived);
+  const v = validateExport(en, project.meta);
+  let vhtml = '';
+  if (v.errors.length) vhtml += '<div style="color:var(--don)"><strong>エラー（出力ブロック）:</strong><br>' + v.errors.map(escapeHtml).join('<br>') + '</div>';
+  if (v.warnings.length) vhtml += '<div style="color:var(--warn);margin-top:4px">' + v.warnings.map(escapeHtml).join('<br>') + '</div>';
+  if (v.ok && !v.warnings.length) vhtml = '<div style="color:var(--ok)">✓ 検証OK</div>';
+  $('exportVal').innerHTML = vhtml;
+  $('exportNotes').value = JSON.stringify(en, null, 2);
+
+  const m = project.meta;
+  const entry = {
+    id: m.id || 'song_id',
+    title: m.title || '曲名',
+    audio: m.audio || '',                 // bare filename — ランタイム側で encodeURIComponent するので二重encodeしない
+    startOffset: Number(m.startOffset) || 0,
+    endOffset: Number.isFinite(Number(m.endOffset)) ? Number(m.endOffset) : 40,
+    notes: en,
+    rounds: [{ label: m.title || '曲名' }]
+  };
+  const key = m.key || 'song';
+  const entryStr = 'RHYTHM_SONGS.' + key + ' = ' + JSON.stringify(entry, null, 2) + ';';
+  $('exportEntry').value = entryStr;
+
+  $('installHint').textContent =
+    'RHYTHM_SONGS を writing-mori/play.html (約2220行) に追記し config.song を ' + key + ' に。'
+    + 'mp3 が無ければ assets/audio/ に配置。play.html を編集したら sw.js の CACHE_VERSION をバンプ。';
+
+  // 重大エラー（notes空/audio/title欠落/未ソート/type不正）はブロック扱い → コピー無効化
+  const block = v.errors.length > 0;
+  $('copyNotesBtn').disabled = block;
+  $('copyEntryBtn').disabled = block;
+  $('dlNotesBtn').disabled = block;
+  $('dlEntryBtn').disabled = block;
+  return { en, entryStr, v };
+}
+function safeFileBase() { return String(project.meta.key || 'song').replace(/[^a-zA-Z0-9_\-]/g, '_'); }
+function downloadBlob(text, filename) {
+  const blob = new Blob([text], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); toast('コピーしました'); }
+  catch (e) { toast('コピー失敗（手動選択してください）'); }
+}
+function doImport(text) {
+  let obj;
+  try { obj = JSON.parse(text); }            // JSON.parse のみ（eval 禁止）
+  catch (e) { $('importMsg').textContent = 'JSON 解析失敗: ' + e.message; return; }
+  try {
+    let notesArr = null, meta = null;
+    if (Array.isArray(obj)) {
+      notesArr = obj;
+    } else if (obj && typeof obj === 'object') {
+      if (Array.isArray(obj.notes)) notesArr = obj.notes;
+      // メタ抽出（既知フィールドのみ）
+      meta = obj;
+    }
+    if (!Array.isArray(notesArr)) { $('importMsg').textContent = 'notes 配列が見つかりません。'; return; }
+    const clean = sanitizeNotes(notesArr);
+    if (meta) {
+      if (meta.id) project.meta.id = String(meta.id);
+      if (meta.title) project.meta.title = String(meta.title);
+      if (meta.audio) project.meta.audio = String(meta.audio);
+      if (Number.isFinite(Number(meta.startOffset))) project.meta.startOffset = Number(meta.startOffset);
+      if (Number.isFinite(Number(meta.endOffset))) project.meta.endOffset = Number(meta.endOffset);
+    }
+    // 各ノートを「スナップ済み生タップ」として投入 → 編集可能
+    project.rawTaps = clean.map((n) => ({ t: n.time, type: n.type }));
+    project.overrides = {};
+    selectedIdx = null;
+    syncMetaInputs();
+    render(); scheduleSave();
+    $('importModal').classList.remove('show');
+    setAction('インポート完了: ' + clean.length + ' ノート');
+    toast('インポート完了');
+  } catch (e) {
+    $('importMsg').textContent = '読込失敗: ' + e.message;
+  }
+}
+
+/* =========================  CALIBRATION  ========================= */
+let calibRunning = false, calibClicks = [], calibTaps = [], calibInterval = null, calibCtxStart = 0;
+const CALIB_BPM = 100;
+function calibStart() {
+  ensureCtx();
+  calibRunning = true; calibClicks = []; calibTaps = [];
+  $('calibCount').textContent = '0'; $('calibResult').textContent = '—';
+  const beatDur = 60 / CALIB_BPM;
+  calibCtxStart = audioCtx.currentTime + 0.2;
+  // 16 ビート分スケジュール、クリック時刻(ms, performance基準近似)を記録
+  const perfNow = performance.now();
+  const ctxNow = audioCtx.currentTime;
+  for (let i = 0; i < 16; i++) {
+    const ct = calibCtxStart + i * beatDur;
+    scheduleClick(ct, i % 4 === 0);
+    calibClicks.push(perfNow + (ct - ctxNow) * 1000);
+  }
+  setTimeout(() => { calibRunning = false; }, 16 * beatDur * 1000 + 400);
+}
+function calibTap() {
+  if (!calibRunning) return;
+  calibTaps.push(performance.now());
+  $('calibCount').textContent = String(calibTaps.length);
+  // 推定
+  let sum = 0, cnt = 0;
+  for (const tp of calibTaps) {
+    let best = Infinity;
+    for (const c of calibClicks) { const d = tp - c; if (Math.abs(d) < Math.abs(best)) best = d; }
+    if (Number.isFinite(best)) { sum += best; cnt++; }
+  }
+  if (cnt) {
+    const mean = sum / cnt;
+    const lat = Math.max(0, Math.min(250, mean));
+    $('calibResult').textContent = lat.toFixed(0);
+    $('latSlider').value = Math.min(200, Math.round(lat));
+  }
+}
+function calibStop() { calibRunning = false; }
+function calibApply() {
+  const lat = Number($('latSlider').value);
+  project.latencyMs = lat;
+  $('latIn').value = lat;
+  setAction('遅延 ' + lat + 'ms 適用');
+  scheduleSave();
+  $('calibModal').classList.remove('show');
+  toast('遅延 ' + lat + 'ms を適用');
+}
+
+/* =========================  UTIL  ========================= */
+function fmtTime(t) {
+  t = Math.max(0, t || 0);
+  const m = Math.floor(t / 60);
+  const s = Math.floor(t % 60);
+  const cc = Math.floor((t % 1) * 100);
+  return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0') + '.' + String(cc).padStart(2, '0');
+}
+function setAction(txt) { $('lastAction').textContent = txt; }
+function setVal(txt, bad) { const el = $('valMsg'); el.textContent = txt; el.className = bad ? 'bad' : ''; }
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+let toastTimer = null;
+function toast(msg) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+/* =========================  TAP-TEMPO  ========================= */
+let tapTimes = [];
+function tapTempo() {
+  const now = performance.now();
+  if (tapTimes.length && now - tapTimes[tapTimes.length - 1] > 2000) tapTimes = []; // 2sギャップでリセット
+  tapTimes.push(now);
+  if (tapTimes.length > 8) tapTimes.shift();
+  const intervals = [];
+  for (let i = 1; i < tapTimes.length; i++) intervals.push(tapTimes[i] - tapTimes[i - 1]);
+  const last = intervals.slice(-7); // 直近4-8間隔
+  const bpm = bpmFromIntervals(last);
+  if (bpm) {
+    const old = { bpm: project.bpm, sub: project.subdivision, off: project.gridOffset };
+    project.bpm = +bpm.toFixed(1);
+    $('bpmIn').value = project.bpm;
+    remapOverrides(old.bpm, old.sub, old.off);
+    setAction('BPM ' + project.bpm + '（タップ ' + tapTimes.length + '）');
+    render(); scheduleSave();
+  } else {
+    setAction('BPM タップ中… (' + tapTimes.length + ')');
+  }
+}
+
+/* =========================  LIVE TAP CAPTURE (CORE)  ========================= */
+function liveTap(type) {
+  if (!isPlaying) { setAction('再生中のみ採譜できます'); flashLane(type); return; }
+  const raw = songTime() - project.latencyMs / 1000; // 遅延補正済み
+  pushTap(raw, type);
+  flashLane(type);
+  // 即時フィードバック（プレビュー音）
+  if (previewOn && audioCtx) scheduleSample(type === 'ka' ? kaBuffer : donBuffer, audioCtx.currentTime + 0.005);
+}
+function flashLane(type) {
+  const el = type === 'ka' ? $('kaBtn') : $('donBtn');
+  el.classList.add('flash');
+  setTimeout(() => el.classList.remove('flash'), 90);
+}
+
+/* =========================  META SYNC  ========================= */
+function syncMetaInputs() {
+  $('metaKey').value = project.meta.key;
+  $('metaId').value = project.meta.id;
+  $('metaTitle').value = project.meta.title;
+  $('metaAudio').value = project.meta.audio;
+  $('metaStart').value = project.meta.startOffset;
+  $('metaEnd').value = project.meta.endOffset;
+  $('bpmIn').value = project.bpm;
+  $('subSel').value = String(project.subdivision);
+  $('gridOffIn').value = project.gridOffset;
+  $('latIn').value = project.latencyMs;
+  $('latSlider').value = Math.min(200, project.latencyMs);
+}
+
+/* =========================  WIRING  ========================= */
+function init() {
+  canvas = $('timeline'); ctx2d = canvas.getContext('2d');
+
+  // song select
+  const sel = $('songSelect');
+  sel.innerHTML = '<option value="">— 曲を選択 —</option>' + REPO_SONGS.map((s) => '<option value="' + escapeHtml(s) + '">' + escapeHtml(s) + '</option>').join('');
+  sel.onchange = () => { if (sel.value) loadRepoSong(sel.value); };
+
+  $('loadFileBtn').onclick = () => $('fileInput').click();
+  $('fileInput').onchange = (e) => { if (e.target.files[0]) loadLocalFile(e.target.files[0]); };
+
+  // drag-drop
+  const cs = $('canvasScroll');
+  ['dragover', 'dragenter'].forEach((ev) => document.body.addEventListener(ev, (e) => { e.preventDefault(); }));
+  document.body.addEventListener('drop', (e) => {
+    e.preventDefault();
+    const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+    if (f && f.type.startsWith('audio')) loadLocalFile(f);
+  });
+
+  // meta inputs
+  $('metaKey').oninput = (e) => { project.meta.key = e.target.value; scheduleSave(); };
+  $('metaId').oninput = (e) => { project.meta.id = e.target.value; scheduleSave(); };
+  $('metaTitle').oninput = (e) => { project.meta.title = e.target.value; scheduleSave(); };
+  $('metaAudio').oninput = (e) => { project.meta.audio = e.target.value; scheduleSave(); };
+  $('metaStart').oninput = (e) => { project.meta.startOffset = Number(e.target.value) || 0; render(); scheduleSave(); };
+  $('metaEnd').oninput = (e) => { project.meta.endOffset = Number(e.target.value); render(); scheduleSave(); };
+
+  // bpm / grid
+  $('bpmIn').onchange = (e) => {
+    warnNudgeLoss();
+    const old = { bpm: project.bpm, sub: project.subdivision, off: project.gridOffset };
+    const v = Number(e.target.value); if (v > 0) project.bpm = v;
+    remapOverrides(old.bpm, old.sub, old.off);
+    render(); scheduleSave();
+  };
+  $('tapBpmBtn').onclick = tapTempo;
+  $('subSel').onchange = (e) => {
+    warnNudgeLoss();
+    const old = { bpm: project.bpm, sub: project.subdivision, off: project.gridOffset };
+    project.subdivision = Number(e.target.value);
+    remapOverrides(old.bpm, old.sub, old.off);
+    render(); scheduleSave();
+  };
+  $('gridOffIn').onchange = (e) => {
+    warnNudgeLoss();
+    const old = { bpm: project.bpm, sub: project.subdivision, off: project.gridOffset };
+    project.gridOffset = Number(e.target.value) || 0;
+    remapOverrides(old.bpm, old.sub, old.off);
+    render(); scheduleSave();
+  };
+  $('gridToHereBtn').onclick = () => {
+    const old = { bpm: project.bpm, sub: project.subdivision, off: project.gridOffset };
+    const sel = derived.find((n) => n.idx === selectedIdx);
+    project.gridOffset = +(sel ? sel.time : songTime()).toFixed(3);
+    $('gridOffIn').value = project.gridOffset;
+    remapOverrides(old.bpm, old.sub, old.off);
+    setAction('グリッド原点を ' + project.gridOffset + 's に');
+    render(); scheduleSave();
+  };
+  $('latIn').onchange = (e) => { project.latencyMs = Math.max(0, Math.min(200, Number(e.target.value) || 0)); $('latSlider').value = project.latencyMs; scheduleSave(); };
+
+  // transport
+  $('playBtn').onclick = togglePlay;
+  $('stopBtn').onclick = stop;
+  $('seek').oninput = (e) => { seek(Number(e.target.value)); };
+  $('speedSel').onchange = (e) => {
+    playbackRate = Number(e.target.value);
+    if (isPlaying) { const t = songTime(); pause(); pauseSongTime = t; play(); }
+    setAction('速度 ' + playbackRate + 'x');
+  };
+  const toggleBtn = (id, getset) => {
+    $(id).onclick = () => { getset(); $(id).classList.toggle('active'); render(); };
+  };
+  toggleBtn('metroBtn', () => { metroOn = !metroOn; metroScheduledBeats.clear(); setAction('メトロノーム ' + (metroOn ? 'ON' : 'OFF')); });
+  toggleBtn('countInBtn', () => { countInOn = !countInOn; setAction('カウントイン ' + (countInOn ? 'ON' : 'OFF')); });
+  toggleBtn('loopBtn', () => { loopOn = !loopOn; setAction('区間ループ ' + (loopOn ? 'ON' : 'OFF')); });
+  $('previewBtn').classList.add('active'); // default on
+  toggleBtn('previewBtn', () => { previewOn = !previewOn; scheduledKeys.clear(); setAction('音プレビュー ' + (previewOn ? 'ON' : 'OFF')); });
+  $('loopABtn').onclick = () => { loopA = +songTime().toFixed(2); updateAB(); render(); };
+  $('loopBBtn').onclick = () => { loopB = +songTime().toFixed(2); updateAB(); render(); };
+
+  // inspector actions
+  $('flipBtn').onclick = flipType;
+  $('nudgeLBtn').onclick = () => nudge(-1);
+  $('nudgeRBtn').onclick = () => nudge(1);
+  $('delBtn').onclick = deleteSelected;
+
+  // export/import/clear
+  $('exportBtn').onclick = () => { buildExport(); $('exportModal').classList.add('show'); };
+  $('closeExportBtn').onclick = () => $('exportModal').classList.remove('show');
+  $('copyNotesBtn').onclick = () => copyText($('exportNotes').value);
+  $('copyEntryBtn').onclick = () => copyText($('exportEntry').value);
+  $('dlNotesBtn').onclick = () => downloadBlob($('exportNotes').value, safeFileBase() + '.notes.json');
+  $('dlEntryBtn').onclick = () => downloadBlob($('exportEntry').value, safeFileBase() + '.entry.json');
+
+  $('importBtn').onclick = () => { $('importMsg').textContent = ''; $('importModal').classList.add('show'); };
+  $('closeImportBtn').onclick = () => $('importModal').classList.remove('show');
+  $('doImportBtn').onclick = () => doImport($('importText').value);
+  $('importFileBtn').onclick = () => $('importFileInput').click();
+  $('importFileInput').onchange = (e) => { const f = e.target.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => doImport(String(r.result)); r.readAsText(f); };
+
+  $('clearBtn').onclick = clearAll;
+
+  // project menu
+  $('projMenuBtn').onclick = () => { refreshProjMenu(); $('projMenu').classList.toggle('open'); };
+  document.addEventListener('click', (e) => { if (!$('projMenu').contains(e.target)) $('projMenu').classList.remove('open'); });
+
+  // calibration
+  $('calibBtn').onclick = () => { $('calibModal').classList.add('show'); };
+  $('closeCalibBtn').onclick = () => { calibStop(); $('calibModal').classList.remove('show'); };
+  $('calibStartBtn').onclick = calibStart;
+  $('calibTapBtn').onclick = calibTap;
+  $('calibStopBtn').onclick = calibStop;
+  $('calibApplyBtn').onclick = calibApply;
+  $('latSlider').oninput = (e) => { $('calibResult').textContent = e.target.value; };
+
+  // tap lanes
+  const tapDown = (type) => (e) => { e.preventDefault(); liveTap(type); };
+  ['mousedown', 'touchstart'].forEach((ev) => {
+    $('donBtn').addEventListener(ev, tapDown('don'), { passive: false });
+    $('kaBtn').addEventListener(ev, tapDown('ka'), { passive: false });
+  });
+
+  // canvas interaction: click add/select, drag nudge
+  let dragging = null; // {idx}
+  cs.addEventListener('mousedown', (e) => {
+    // compute x in canvas coords
+    const cx = e.clientX - canvas.getBoundingClientRect().left;
+    const t = x2t(cx);
+    // hit test
+    let best = null, bestDx = Infinity;
+    for (const n of derived) { const dx = Math.abs(t2x(n.time) - cx); if (dx < bestDx) { bestDx = dx; best = n; } }
+    if (best && bestDx <= 14) { selectedIdx = best.idx; dragging = { idx: best.idx }; render(); }
+    else { addNoteAt(t); }
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (!dragging) return;
+    const cx = e.clientX - canvas.getBoundingClientRect().left;
+    const t = x2t(cx);
+    const snapped = snap(t, project.bpm, project.subdivision, project.gridOffset);
+    const baseIdx = dragging.idx;
+    const interval = gridInterval(project.bpm, project.subdivision);
+    const baseTime = project.gridOffset + baseIdx * interval;
+    const ov = project.overrides[baseIdx] || {};
+    ov.timeNudge = snapped - baseTime;
+    project.overrides[baseIdx] = ov;
+    render();
+  });
+  window.addEventListener('mouseup', () => { if (dragging) { dragging = null; scheduleSave(); } });
+
+  // keyboard
+  document.addEventListener('keydown', (e) => {
+    if ($('calibModal').classList.contains('show')) return;
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') {
+      if (e.code === 'Space' && e.target.tagName !== 'TEXTAREA') { /* allow space in inputs */ }
+      return;
+    }
+    const k = e.key.toLowerCase();
+    if (e.code === 'Space') { e.preventDefault(); togglePlay(); return; }
+    if (k === 'd' || k === 'j') { if (e.repeat) return; e.preventDefault(); liveTap('don'); return; }
+    if (k === 'k' || k === 'f') { if (e.repeat) return; e.preventDefault(); liveTap('ka'); return; }
+    if (k === 'z') { e.preventDefault(); undoLastTap(); return; }
+    if (e.code === 'Delete' || e.code === 'Backspace') { e.preventDefault(); deleteSelected(); return; }
+  });
+  // calibration space tap
+  document.addEventListener('keydown', (e) => {
+    if ($('calibModal').classList.contains('show') && e.code === 'Space') { e.preventDefault(); calibTap(); }
+  });
+
+  syncMetaInputs();
+  resizeCanvas();
+  render();
+  requestAnimationFrame(rafLoop);
+}
+function updateAB() {
+  $('abRead').textContent = (loopA != null ? 'A=' + loopA + 's ' : '') + (loopB != null ? 'B=' + loopB + 's' : '');
+}
+
+let lastRafSong = -1;
+function rafLoop() {
+  if (isPlaying) {
+    const t = songTime();
+    if (t !== lastRafSong) {
+      lastRafSong = t;
+      $('seek').value = Math.min(Number($('seek').max), t).toFixed(2);
+      drawTimeline();
+      $('timeRead').textContent = fmtTime(t);
+      // auto-scroll to keep playhead visible
+      const cs = $('canvasScroll');
+      const px = t2x(t);
+      if (px < cs.scrollLeft + 40 || px > cs.scrollLeft + cs.clientWidth - 80) {
+        cs.scrollLeft = Math.max(0, px - cs.clientWidth * 0.4);
+      }
+    }
+  }
+  requestAnimationFrame(rafLoop);
+}
+
+/* =========================  BOOT  ========================= */
+if (/[?&]test=1/.test(location.search)) {
+  document.addEventListener('DOMContentLoaded', runSelfTests);
+} else {
+  document.addEventListener('DOMContentLoaded', init);
+}
+</script>
+</body>
+</html>

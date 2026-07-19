@@ -1,0 +1,3932 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>もじっこファーム | ミルマル</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="../manifest.json">
+<!-- app (アプリばん) 専用 tier ガード。 tier.js 未読込/例外時は fail-open (従来通り表示)。 -->
+<script src="../common/debug-mode.js"></script>
+<script src="../common/tier.js"></script>
+<script>
+(function(){
+  'use strict';
+  var locked = false;
+  try {
+    var pt = window.PonoTier;
+    // ローンチ時はここを変更: book 開放時は locked = !['app','book'].includes(pt.getTier());
+    if (pt && typeof pt.getTier === 'function') locked = (pt.getTier() !== 'app');
+  } catch (e) { locked = false; }
+  if (!locked) return;
+  window.__PONO_TIER_LOCKED__ = true;
+  // FOUC 防止: head 内同期実行なので初回ペイント前にゲーム側 DOM を不可視化
+  var st = document.createElement('style');
+  st.textContent = 'html{background:#FFF7E6 !important}body>*:not(#ponoTierLockScreen){visibility:hidden !important}';
+  (document.head || document.documentElement).appendChild(st);
+  // キーボード入力がゲームへ届かないよう capture 段階で遮断 (ロック中のみ)。
+  // ゲーム側 listener はガードより後に登録されるため stopImmediatePropagation だけで全て遮断できる。
+  // preventDefault はしない: Tab/Enter で「メニューへ もどる」リンクに到達する
+  // キーボード操作と、 ブラウザ既定動作 (F5 リロード等) を塞がないため。
+  var KEY_EVTS = ['keydown', 'keyup', 'keypress'];
+  for (var i = 0; i < KEY_EVTS.length; i++) {
+    window.addEventListener(KEY_EVTS[i], function(e){
+      if (window.__PONO_TIER_LOCKED__) e.stopImmediatePropagation();
+    }, true);
+  }
+  function showLock(){
+    if (!document.body || document.getElementById('ponoTierLockScreen')) return;
+    var ov = document.createElement('div');
+    ov.id = 'ponoTierLockScreen';
+    ov.setAttribute('role', 'dialog');
+    ov.style.cssText = 'position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(165deg,#FFF7E6 0%,#FFEDC2 45%,#D9EFD5 100%);font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN",sans-serif;text-align:center';
+    var card = document.createElement('div');
+    card.style.cssText = 'background:#fff;border-radius:26px;padding:28px 24px 26px;max-width:340px;width:100%;box-shadow:0 12px 40px rgba(93,78,55,0.22)';
+    var emo = document.createElement('div');
+    emo.style.cssText = 'font-size:2.8rem;line-height:1;margin-bottom:12px';
+    emo.textContent = '🦉✨';
+    card.appendChild(emo);
+    var tag = document.createElement('div');
+    tag.style.cssText = 'display:inline-block;font-size:0.74rem;font-weight:900;color:#fff;background:linear-gradient(135deg,#34D399,#10B981);padding:4px 14px;border-radius:50px;letter-spacing:0.06em;margin-bottom:12px';
+    tag.textContent = 'アプリばん せんよう';
+    card.appendChild(tag);
+    var ttl = document.createElement('div');
+    ttl.style.cssText = 'font-size:1.12rem;font-weight:900;color:#5D4E37;line-height:1.5;margin-bottom:10px';
+    ttl.textContent = 'この ゲームは アプリばんで あそべるよ！';
+    card.appendChild(ttl);
+    var body = document.createElement('div');
+    body.style.cssText = 'font-size:0.92rem;font-weight:700;color:#8B7B60;line-height:1.6;margin-bottom:18px';
+    body.textContent = 'アプリばんに あたらしい あそびが まってるよ';
+    card.appendChild(body);
+    var btn = document.createElement('a');
+    btn.href = '../play.html';
+    btn.style.cssText = 'display:inline-block;padding:12px 34px;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-size:0.98rem;font-weight:900;text-decoration:none;box-shadow:0 4px 14px rgba(59,130,246,0.4)';
+    btn.textContent = 'メニューへ もどる';
+    card.appendChild(btn);
+    ov.appendChild(card);
+    document.body.appendChild(ov);
+  }
+  if (document.body) { showLock(); }
+  else { document.addEventListener('DOMContentLoaded', showLock); }
+})();
+</script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DotGothic16&family=Zen+Maru+Gothic:wght@500;700;900&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --ink: #4f3825;
+  --ink-soft: #806047;
+  --wood-dark: #6e4b2d;
+  --wood-mid: #a36b3c;
+  --wood-light: #d99a5e;
+  --paper: #fff8e8;
+  --paper-deep: #f1ddb7;
+  --mint: #86d7ac;
+  --mint-dark: #3c986f;
+  --coral: #ee7b6b;
+  --sky: #8ed2ec;
+  --blue: #6eb8df;
+  --gold: #f5be4f;
+  --shadow: rgba(70, 42, 18, 0.25);
+  --pixel-font: 'DotGothic16', 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', sans-serif;
+  --round-font: 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', sans-serif;
+  --care-yard-bg: url('../assets/images/mojikko/care/yard_background.png');
+  --care-yard-bg-wide: url('../assets/images/mojikko/care/yard_background_wide_v2.png');
+  --care-house: url('../assets/images/mojikko/care/house_front.png');
+  --care-rug: url('../assets/images/mojikko/care/pink_rug.png');
+  --care-doghouse: url('../assets/images/mojikko/care/doghouse_and_jar.png');
+  --care-cushion: url('../assets/images/mojikko/care/star_cushion.png');
+  --care-planter: url('../assets/images/mojikko/care/flower_planter.png');
+  --care-fence: url('../assets/images/mojikko/care/fence_piece.png');
+  --care-basket: url('../assets/images/mojikko/care/star_basket.png');
+  --care-bush: url('../assets/images/mojikko/care/flower_bush.png');
+  --care-watering: url('../assets/images/mojikko/care/watering_can.png');
+  --care-flowers-a: url('../assets/images/mojikko/care/flowers_yellow_pink.png');
+  --care-flowers-b: url('../assets/images/mojikko/care/flowers_pink_blue.png');
+  --care-flowers-c: url('../assets/images/mojikko/care/flowers_white.png');
+  --care-fx-heart: url('../assets/images/mojikko/care/fx_heart_cluster.png');
+  --care-fx-heart-small: url('../assets/images/mojikko/care/fx_heart_small.png');
+  --care-fx-sparkle: url('../assets/images/mojikko/care/fx_sparkle_cluster.png');
+  --care-milmaru-normal: url('../assets/images/mojikko/writing/milmaru_idle.png');
+  --care-milmaru-happy: url('../assets/images/mojikko/writing/milmaru_cheer.png');
+  --care-milmaru-eating: url('../assets/images/mojikko/writing/milmaru_cookie.png');
+  --care-milmaru-relaxed: url('../assets/images/mojikko/writing/milmaru_relaxed.png');
+  --care-egg-idle: url('../assets/images/mojikko/care/milmaru_egg_idle.png');
+  --care-egg-cracked: url('../assets/images/mojikko/care/milmaru_egg_cracked.png');
+  --care-egg-peek: url('../assets/images/mojikko/care/milmaru_egg_peek.png');
+  --care-shell-baby-happy: url('../assets/images/mojikko/care/milmaru_shell_baby_idle_pose.png');
+  --care-shell-baby-arms-up: url('../assets/images/mojikko/care/milmaru_shell_baby_arms_up.png');
+  --care-shell-baby-wiggle: url('../assets/images/mojikko/care/milmaru_shell_baby_wiggle.png');
+  --care-shell-baby-wave: url('../assets/images/mojikko/care/milmaru_shell_baby_wave.png');
+  --care-shell-baby-milk: url('../assets/images/mojikko/care/milmaru_shell_baby_milk_pose.png');
+  --care-shell-baby-sleep: url('../assets/images/mojikko/care/milmaru_shell_baby_sleep.png');
+  --care-shell-baby-left: url('../assets/images/mojikko/care/milmaru_shell_baby_left.png');
+  --care-shell-baby-right: url('../assets/images/mojikko/care/milmaru_shell_baby_right.png');
+  --care-shell-baby-cry: url('../assets/images/mojikko/care/milmaru_shell_baby_cry_pose.png');
+  --care-shell-baby-bigcry: url('../assets/images/mojikko/care/milmaru_shell_baby_cry_pose.png');
+  --care-shell-baby-angry: url('../assets/images/mojikko/care/milmaru_shell_baby_angry_pose.png');
+  --care-shell-baby-disappointed: url('../assets/images/mojikko/care/milmaru_shell_baby_disappointed.png');
+  --care-shell-baby-worried: url('../assets/images/mojikko/care/milmaru_shell_baby_worried_pose.png');
+  --care-headshell-baby-happy: url('../assets/images/mojikko/care/milmaru_headshell_baby_happy.png');
+  --care-headshell-baby-cry: url('../assets/images/mojikko/care/milmaru_headshell_baby_cry.png');
+  --care-headshell-baby-bigcry: url('../assets/images/mojikko/care/milmaru_headshell_baby_bigcry.png');
+  --care-headshell-baby-angry: url('../assets/images/mojikko/care/milmaru_headshell_baby_angry.png');
+  --care-headshell-baby-disappointed: url('../assets/images/mojikko/care/milmaru_headshell_baby_disappointed.png');
+  --care-headshell-baby-worried: url('../assets/images/mojikko/care/milmaru_headshell_baby_worried.png');
+  --care-yochiyochi-normal: url('../assets/images/mojikko/care/milmaru_yochiyochi_front_happy.png');
+  --care-yochiyochi-happy: url('../assets/images/mojikko/care/milmaru_yochiyochi_arms_up.png');
+  --care-yochiyochi-eating: url('../assets/images/mojikko/care/milmaru_yochiyochi_eating.png');
+  --care-yochiyochi-play-a: url('../assets/images/mojikko/care/milmaru_yochiyochi_walk_left.png');
+  --care-yochiyochi-play-b: url('../assets/images/mojikko/care/milmaru_yochiyochi_side_left.png');
+  --care-yochiyochi-play-c: url('../assets/images/mojikko/care/milmaru_yochiyochi_side_right.png');
+  --care-yochiyochi-sleep: url('../assets/images/mojikko/care/milmaru_yochiyochi_sleep.png');
+  --care-yochiyochi-cry: url('../assets/images/mojikko/care/milmaru_yochiyochi_cry.png');
+  --care-yochiyochi-angry: url('../assets/images/mojikko/care/milmaru_yochiyochi_angry.png');
+  --care-yochiyochi-disappointed: url('../assets/images/mojikko/care/milmaru_yochiyochi_disappointed.png');
+  --care-yochiyochi-worried: url('../assets/images/mojikko/care/milmaru_yochiyochi_worried.png');
+  --care-yochiyochi-crawl-1: url('../assets/images/mojikko/care/milmaru_yochiyochi_crawl_loop_01.png');
+  --care-yochiyochi-crawl-2: url('../assets/images/mojikko/care/milmaru_yochiyochi_crawl_loop_02.png');
+  --care-yochiyochi-crawl-3: url('../assets/images/mojikko/care/milmaru_yochiyochi_crawl_loop_03.png');
+  --care-yochiyochi-crawl-4: url('../assets/images/mojikko/care/milmaru_yochiyochi_crawl_loop_04.png');
+  --care-yochiyochi-crawl-5: url('../assets/images/mojikko/care/milmaru_yochiyochi_crawl_loop_05.png');
+  --care-yochiyochi-crawl-6: url('../assets/images/mojikko/care/milmaru_yochiyochi_crawl_loop_06.png');
+  --care-yochiyochi-walk-1: url('../assets/images/mojikko/care/milmaru_yochiyochi_walk_loop_01.png');
+  --care-yochiyochi-walk-2: url('../assets/images/mojikko/care/milmaru_yochiyochi_walk_loop_02.png');
+  --care-yochiyochi-walk-3: url('../assets/images/mojikko/care/milmaru_yochiyochi_walk_loop_03.png');
+  --care-yochiyochi-walk-4: url('../assets/images/mojikko/care/milmaru_yochiyochi_walk_loop_04.png');
+  --care-icon-cookie: url('../assets/images/mojikko/writing/icon_cookie.png');
+  --care-icon-heart: url('../assets/images/mojikko/writing/icon_heart.png');
+  --care-icon-pencil: url('../assets/images/mojikko/writing/icon_pencil.png');
+  --care-icon-warm: url('../assets/images/mojikko/care/icon_warm_large.png');
+  --care-icon-milk: url('../assets/images/mojikko/care/icon_milk_bottle.png');
+  --care-icon-gohan: url('../assets/images/mojikko/care/icon_moji_gohan_onigiri.png');
+  --care-icon-star: url('../assets/images/mojikko/writing/icon_star.png');
+  --care-star-counter: url('../assets/images/mojikko/writing/star_counter.png');
+  --care-settings: url('../assets/images/mojikko/writing/settings_button.png');
+  --care-title-plaque: url('../assets/images/mojikko/writing/wood_title_plaque.png');
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  color: var(--ink);
+  background: #243b33;
+  font-family: var(--round-font);
+  position: fixed;
+  inset: 0;
+}
+
+#stage-wrap {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #233f53 0%, #12222b 100%);
+}
+
+#stage-wrap::before {
+  content: '';
+  position: fixed;
+  inset: -72vmax;
+  z-index: 0;
+  opacity: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at center, rgba(255,255,255,0.84) 0 12%, rgba(255,255,255,0.26) 27%, rgba(255,255,255,0) 58%),
+    radial-gradient(circle at center, rgba(255,152,185,0) 0 44%, rgba(181,75,111,0.16) 100%),
+    repeating-conic-gradient(
+      from 0deg,
+      #fff1f6 0deg 9deg,
+      #ffc4d6 9deg 18deg,
+      #ff9fbd 18deg 27deg,
+      #ffdce8 27deg 36deg
+    );
+  transform-origin: center;
+  transition: opacity 0.18s ease;
+}
+
+#stage-wrap.hatch-active::before {
+  opacity: 0;
+  animation: hatchRaySpin 5.2s linear infinite;
+}
+
+#stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+  width: 1600px;
+  height: 900px;
+  transform-origin: 0 0;
+  overflow: hidden;
+  background: var(--care-yard-bg-wide) right center / cover no-repeat;
+  image-rendering: pixelated;
+}
+
+#stage.hatch-active {
+  overflow: visible;
+}
+
+#stage.hatch-active::before {
+  display: none;
+}
+
+#stage::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(90deg, rgba(255,255,255,0.12) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255,255,255,0.08) 1px, transparent 1px);
+  background-size: 8px 8px, 8px 8px;
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+}
+
+.pixel-panel,
+.wood-panel,
+.paper-panel {
+  border: 5px solid var(--wood-dark);
+  box-shadow: 0 6px 0 #4b321f, 0 10px 18px var(--shadow);
+  color: var(--ink);
+}
+
+.wood-panel {
+  background:
+    repeating-linear-gradient(90deg, rgba(87, 56, 31, 0.12) 0 10px, rgba(255,255,255,0.06) 10px 18px),
+    linear-gradient(180deg, #f7d79b, #d99a5e);
+}
+
+.paper-panel {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.42), transparent 30%),
+    linear-gradient(180deg, var(--paper), var(--paper-deep));
+}
+
+.pixel-button {
+  border: 4px solid #875b3b;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #fff0bd 0%, #f2bd6d 100%);
+  box-shadow: 0 5px 0 #6f462c, inset 0 3px rgba(255,255,255,0.55);
+  color: var(--ink);
+  font-family: var(--pixel-font);
+  font-size: 25px;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+  image-rendering: pixelated;
+}
+
+.pixel-button:active {
+  transform: translateY(4px);
+  box-shadow: 0 1px 0 #6f462c, inset 0 2px rgba(255,255,255,0.35);
+}
+
+.icon-btn {
+  width: 74px;
+  height: 66px;
+  border-radius: 10px;
+  font-size: 32px;
+}
+
+#settingsBtn {
+  border: 0;
+  border-radius: 0;
+  background: var(--care-settings) center / contain no-repeat;
+  box-shadow: none;
+  color: transparent;
+  text-shadow: none;
+}
+
+.care-header {
+  position: absolute;
+  left: 28px;
+  right: 28px;
+  top: 20px;
+  height: 84px;
+  display: grid;
+  grid-template-columns: 220px 1fr 280px 78px;
+  align-items: center;
+  gap: 24px;
+  z-index: 5;
+}
+
+.back-btn {
+  height: 62px;
+  text-align: left;
+  padding-left: 28px;
+}
+
+.title-board {
+  width: 570px;
+  aspect-ratio: 857 / 127;
+  justify-self: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 0;
+  background: var(--care-title-plaque) center / contain no-repeat;
+  box-shadow: none;
+  font-family: var(--pixel-font);
+  font-size: 40px;
+  letter-spacing: 0;
+  padding-bottom: 4px;
+  image-rendering: pixelated;
+}
+
+.star-box {
+  width: 198px;
+  min-width: 198px;
+  aspect-ratio: 291 / 91;
+  height: auto;
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding-left: 46px;
+  border: 0;
+  border-radius: 0;
+  font-family: var(--pixel-font);
+  font-size: 30px;
+  background: var(--care-star-counter) center / contain no-repeat;
+  box-shadow: none;
+  image-rendering: pixelated;
+}
+
+.star-icon {
+  display: none;
+}
+
+.gauges {
+  position: absolute;
+  top: 118px;
+  left: 480px;
+  right: 480px;
+  height: 112px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 28px;
+  z-index: 4;
+}
+
+.gauge-card {
+  padding: 16px 22px;
+  border-radius: 10px;
+}
+
+.gauge-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--pixel-font);
+  font-size: 24px;
+}
+
+.gauge-icon {
+  width: 38px;
+  height: 34px;
+  display: inline-block;
+}
+
+.gauge-icon.heart {
+  background: var(--coral);
+  clip-path: polygon(50% 18%, 58% 6%, 72% 2%, 87% 8%, 96% 22%, 96% 38%, 88% 55%, 50% 96%, 12% 55%, 4% 38%, 4% 22%, 13% 8%, 28% 2%, 42% 6%);
+}
+
+.gauge-icon.leaf {
+  background: var(--mint-dark);
+  border-radius: 70% 10% 70% 10%;
+  transform: rotate(-28deg);
+}
+
+.gauge-line {
+  margin-top: 10px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 16px;
+  align-items: center;
+  font-family: var(--pixel-font);
+  font-size: 23px;
+}
+
+.gauge-track {
+  height: 28px;
+  border: 4px solid #9f7655;
+  border-radius: 7px;
+  background: #f4dfbd;
+  overflow: hidden;
+}
+
+.gauge-fill {
+  width: 0%;
+  height: 100%;
+  border-right: 4px solid rgba(255,255,255,0.45);
+  transition: width 0.35s ease;
+}
+
+.gauge-fill.nakayoshi {
+  background: repeating-linear-gradient(90deg, #ff9aa5 0 22px, #f7798b 22px 42px);
+}
+
+.gauge-fill.sukusuku {
+  background: repeating-linear-gradient(90deg, #75d3a7 0 22px, #42b883 22px 42px);
+}
+
+.side-panel {
+  position: absolute;
+  top: 146px;
+  bottom: 70px;
+  width: 270px;
+  border-radius: 10px;
+  z-index: 3;
+  display: grid;
+  grid-template-rows: 58px 1fr;
+  overflow: hidden;
+}
+
+.side-panel.left { left: 28px; }
+.side-panel.right { right: 28px; }
+
+.panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #77d1b0, #56b98f);
+  color: #fffdf0;
+  font-family: var(--pixel-font);
+  font-size: 28px;
+  text-shadow: 2px 2px rgba(89, 61, 40, 0.35);
+}
+
+.panel-body {
+  padding: 18px;
+  display: grid;
+  gap: 16px;
+  align-content: start;
+}
+
+.item-card {
+  min-height: 86px;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 12px;
+  align-items: center;
+  border: 3px solid rgba(139, 96, 66, 0.38);
+  border-radius: 10px;
+  background: rgba(255,255,255,0.48);
+}
+
+.cookie-icon,
+.milk-icon,
+.gohan-icon,
+.power-icon {
+  position: relative;
+  width: 50px;
+  height: 50px;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  image-rendering: pixelated;
+}
+
+.cookie-icon {
+  background: var(--care-icon-cookie) center / contain no-repeat;
+}
+
+.milk-icon {
+  width: 42px;
+  height: 62px;
+  justify-self: center;
+  background: var(--care-icon-milk) center / contain no-repeat;
+}
+
+.milk-icon::before {
+  display: none;
+}
+
+.gohan-icon {
+  width: 58px;
+  height: 58px;
+  justify-self: center;
+  background: var(--care-icon-gohan) center / contain no-repeat;
+}
+
+.power-icon {
+  display: grid;
+  place-items: center;
+  border: 4px solid #d89140;
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fff6b5, #f2b65d);
+}
+
+.power-icon::before {
+  content: '✦';
+  color: #fff8db;
+  font-family: var(--pixel-font);
+  font-size: 31px;
+  line-height: 1;
+  text-shadow: 2px 2px #b96d34;
+}
+
+.item-name {
+  font-family: var(--round-font);
+  font-size: 18px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.item-count {
+  margin-top: 6px;
+  font-family: var(--pixel-font);
+  font-size: 20px;
+}
+
+.locked-slot {
+  height: 96px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px dashed rgba(139, 96, 66, 0.28);
+  border-radius: 10px;
+  color: rgba(94, 71, 52, 0.36);
+  font-size: 34px;
+}
+
+.center-yard {
+  position: absolute;
+  left: 326px;
+  right: 326px;
+  top: 248px;
+  bottom: 144px;
+  z-index: 2;
+}
+
+.yard-bg {
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02)),
+    var(--care-yard-bg) center / cover no-repeat;
+  box-shadow:
+    inset 0 0 0 4px rgba(255, 255, 255, 0.16),
+    inset 0 -20px 30px rgba(74, 118, 57, 0.1);
+  image-rendering: pixelated;
+}
+
+.yard-bg,
+.yard-prop {
+  display: none;
+}
+
+.yard-bg::before {
+  display: none;
+}
+
+.yard-bg::after {
+  display: none;
+}
+
+.yard-prop {
+  position: absolute;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+
+.yard-prop.house {
+  right: 62px;
+  top: 54px;
+  width: 300px;
+  height: 224px;
+  background-image: var(--care-house);
+  z-index: 1;
+}
+
+.yard-prop.fence {
+  left: 70px;
+  right: 76px;
+  top: 174px;
+  height: 74px;
+  background-image: var(--care-fence);
+  background-size: 100% 100%;
+  opacity: 0.86;
+  z-index: 0;
+}
+
+.yard-prop.rug {
+  left: 50%;
+  bottom: 52px;
+  width: 380px;
+  height: 152px;
+  transform: translateX(-50%);
+  background-image: var(--care-rug);
+  z-index: 2;
+}
+
+.yard-prop.doghouse {
+  left: 72px;
+  top: 128px;
+  width: 128px;
+  height: 188px;
+  background-image: var(--care-doghouse);
+  z-index: 2;
+}
+
+.yard-prop.cushion {
+  right: 114px;
+  bottom: 72px;
+  width: 144px;
+  height: 92px;
+  background-image: var(--care-cushion);
+  z-index: 3;
+}
+
+.yard-prop.basket {
+  left: 82px;
+  bottom: 74px;
+  width: 132px;
+  height: 132px;
+  background-image: var(--care-basket);
+  z-index: 3;
+}
+
+.yard-prop.planter {
+  right: 232px;
+  top: 205px;
+  width: 136px;
+  height: 80px;
+  background-image: var(--care-planter);
+  z-index: 2;
+}
+
+.yard-prop.watering {
+  right: 42px;
+  bottom: 124px;
+  width: 92px;
+  height: 68px;
+  background-image: var(--care-watering);
+  z-index: 3;
+}
+
+.yard-prop.bush {
+  left: 24px;
+  bottom: 38px;
+  width: 116px;
+  height: 96px;
+  background-image: var(--care-bush);
+  z-index: 2;
+}
+
+.yard-prop.flowers-a {
+  left: 242px;
+  bottom: 34px;
+  width: 82px;
+  height: 80px;
+  background-image: var(--care-flowers-a);
+  z-index: 3;
+}
+
+.yard-prop.flowers-b {
+  right: 306px;
+  bottom: 30px;
+  width: 90px;
+  height: 82px;
+  background-image: var(--care-flowers-b);
+  z-index: 3;
+}
+
+.yard-prop.flowers-c {
+  right: 20px;
+  bottom: 36px;
+  width: 76px;
+  height: 76px;
+  background-image: var(--care-flowers-c);
+  z-index: 3;
+}
+
+.speech-bubble {
+  position: absolute;
+  left: var(--speech-x, 50%);
+  top: 20px;
+  min-width: 320px;
+  max-width: 560px;
+  min-height: 82px;
+  padding: 20px 26px;
+  transform: translateX(-42%);
+  border-radius: 18px;
+  border: 5px solid #8b6042;
+  background: #fff8e8;
+  box-shadow: 0 5px 0 #6f462c;
+  font-family: var(--pixel-font);
+  font-size: 26px;
+  text-align: center;
+  z-index: 5;
+  transition: left var(--roam-duration, 4.8s) ease-in-out;
+}
+
+.speech-bubble::after {
+  content: '';
+  position: absolute;
+  left: 44%;
+  bottom: -24px;
+  width: 38px;
+  height: 38px;
+  background: #fff8e8;
+  border-right: 5px solid #8b6042;
+  border-bottom: 5px solid #8b6042;
+  transform: rotate(45deg);
+}
+
+.milmaru-wrap {
+  position: absolute;
+  left: var(--roam-x, 50%);
+  bottom: var(--roam-y, 42px);
+  width: 330px;
+  height: 328px;
+  transform: translateX(-50%) scaleX(var(--roam-dir, 1));
+  transform-origin: center bottom;
+  z-index: 5;
+  transition:
+    left var(--roam-duration, 4.8s) var(--roam-easing, ease-in-out),
+    bottom var(--roam-duration, 4.8s) var(--roam-easing, ease-in-out);
+  will-change: left, bottom, transform;
+  touch-action: none;
+}
+
+.milmaru-wrap.petting-ready {
+  cursor: grab;
+}
+
+.milmaru-wrap.petting-ready .milmaru {
+  cursor: grab;
+  filter: drop-shadow(0 0 12px rgba(255, 183, 198, 0.8));
+}
+
+.milmaru-wrap.petting-ready .milmaru:active {
+  cursor: grabbing;
+}
+
+.milmaru {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 300px;
+  height: 320px;
+  transform: translateX(-50%);
+  transform-origin: center bottom;
+  background: var(--care-milmaru-normal) center bottom / contain no-repeat;
+  image-rendering: pixelated;
+  transition: transform 0.2s ease;
+  backface-visibility: hidden;
+}
+
+.milmaru::before,
+.milmaru::after {
+  display: none;
+}
+
+.milmaru-body {
+  display: none;
+}
+
+.milmaru-body::before {
+  display: none;
+}
+
+.milmaru-body::after {
+  display: none;
+}
+
+.milmaru-arm,
+.milmaru-foot {
+  display: none;
+}
+
+.milmaru-tail {
+  display: none;
+}
+
+.milmaru.happy { animation: happyBounce 0.72s ease; }
+.milmaru.eating { animation: eatingWiggle 0.8s ease; }
+.milmaru.relaxed { animation: relaxedSway 1s ease; }
+.milmaru.play { animation: playHop 0.8s ease; }
+.milmaru.sleep { animation: relaxedSway 1.4s ease-in-out infinite; }
+
+.milmaru.egg {
+  bottom: 74px;
+  width: 180px;
+  height: 232px;
+  background-image: var(--care-egg-idle);
+}
+
+.milmaru.egg-cracked {
+  background-image: var(--care-egg-cracked);
+}
+
+.milmaru.egg-peek {
+  background-image: var(--care-egg-peek);
+}
+
+.milmaru.baby {
+  width: 318px;
+  height: 322px;
+  background-image: var(--care-shell-baby-happy);
+}
+
+.milmaru.baby.normal {
+  background-image: var(--care-shell-baby-happy);
+}
+
+.milmaru.baby.happy {
+  background-image: var(--care-shell-baby-arms-up);
+  animation: babyHappyFrames 0.82s step-end 2, happyBounce 0.72s ease;
+}
+
+.milmaru.baby.eating {
+  background-image: var(--care-shell-baby-milk);
+  animation: babyMilkFrames 0.9s step-end 2, eatingWiggle 0.8s ease;
+}
+
+.milmaru.baby.play {
+  background-image: var(--care-shell-baby-wiggle);
+  animation: babyPlayFrames 0.76s step-end 2, playHop 0.8s ease;
+}
+
+.milmaru.baby.birth {
+  background-image: var(--care-shell-baby-arms-up);
+}
+
+.milmaru.baby.relaxed {
+  background-image: var(--care-shell-baby-sleep);
+}
+
+.milmaru.baby.sleep {
+  background-image: var(--care-shell-baby-sleep);
+}
+
+.milmaru.baby.cry {
+  background-image: var(--care-shell-baby-cry);
+}
+
+.milmaru.baby.bigcry {
+  background-image: var(--care-shell-baby-bigcry);
+}
+
+.milmaru.baby.angry {
+  background-image: var(--care-shell-baby-angry);
+}
+
+.milmaru.baby.disappointed {
+  background-image: var(--care-shell-baby-disappointed);
+}
+
+.milmaru.baby.worried {
+  background-image: var(--care-shell-baby-worried);
+}
+
+.milmaru.yochiyochi {
+  bottom: 58px;
+  width: 360px;
+  height: 300px;
+  background-size: auto 218px;
+  background-image: var(--care-yochiyochi-normal);
+}
+
+.milmaru.yochiyochi.normal {
+  background-image: var(--care-yochiyochi-normal);
+}
+
+.milmaru.yochiyochi.happy {
+  background-image: var(--care-yochiyochi-happy);
+  animation: happyBounce 0.72s ease;
+}
+
+.milmaru.yochiyochi.eating {
+  background-image: var(--care-yochiyochi-eating);
+  animation: eatingWiggle 0.8s ease;
+}
+
+.milmaru.yochiyochi.play {
+  background-image: var(--care-yochiyochi-play-a);
+  animation: yochiyochiPlayFrames 0.82s step-end 2, playHop 0.8s ease;
+}
+
+.milmaru.yochiyochi.birth {
+  background-image: var(--care-yochiyochi-happy);
+}
+
+.milmaru.yochiyochi.relaxed,
+.milmaru.yochiyochi.sleep {
+  background-image: var(--care-yochiyochi-sleep);
+}
+
+.milmaru.yochiyochi.cry,
+.milmaru.yochiyochi.bigcry {
+  background-image: var(--care-yochiyochi-cry);
+}
+
+.milmaru.yochiyochi.angry {
+  background-image: var(--care-yochiyochi-angry);
+}
+
+.milmaru.yochiyochi.disappointed {
+  background-image: var(--care-yochiyochi-disappointed);
+}
+
+.milmaru.yochiyochi.worried {
+  background-image: var(--care-yochiyochi-worried);
+}
+
+.milmaru-wrap.roaming .milmaru.yochiyochi.normal.roaming-crawl {
+  background-size: auto 260px;
+  animation: yochiyochiCrawlFrames var(--roam-frame-duration, 1.9s) step-end infinite;
+}
+
+.milmaru-wrap.roaming .milmaru.yochiyochi.normal.roaming-walk {
+  background-size: auto 270px;
+  animation: yochiyochiWalkFrames var(--roam-frame-duration, 1.35s) step-end infinite;
+}
+
+.milmaru.egg.warm {
+  animation: eggWarm 0.9s ease;
+}
+
+.milmaru.egg.relaxed {
+  animation: eggPetWiggle 0.75s ease;
+}
+
+.milmaru.birth {
+  animation: birthPop 1.05s ease;
+}
+
+@keyframes happyBounce {
+  0%, 100% { transform: translateX(-50%) translateY(0) scale(1); }
+  30% { transform: translateX(-50%) translateY(-34px) scale(1.05); }
+  60% { transform: translateX(-50%) translateY(0) scale(0.98); }
+}
+@keyframes eatingWiggle {
+  0%, 100% { transform: translateX(-50%) rotate(0); }
+  25% { transform: translateX(-50%) rotate(-4deg) scale(1.03); }
+  55% { transform: translateX(-50%) rotate(4deg) scale(1.02); }
+}
+@keyframes relaxedSway {
+  0%, 100% { transform: translateX(-50%) rotate(0); }
+  50% { transform: translateX(-50%) rotate(3deg); }
+}
+@keyframes playHop {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  22% { transform: translateX(-70%) translateY(-18px); }
+  52% { transform: translateX(-30%) translateY(-28px); }
+}
+@keyframes babyHappyFrames {
+  0%, 100% { background-image: var(--care-shell-baby-arms-up); }
+  45% { background-image: var(--care-shell-baby-wave); }
+}
+@keyframes babyMilkFrames {
+  0%, 100% { background-image: var(--care-shell-baby-milk); }
+  48% { background-image: var(--care-shell-baby-wave); }
+}
+@keyframes babyPlayFrames {
+  0%, 100% { background-image: var(--care-shell-baby-wiggle); }
+  45% { background-image: var(--care-shell-baby-arms-up); }
+}
+@keyframes yochiyochiPlayFrames {
+  0%, 100% { background-image: var(--care-yochiyochi-play-a); }
+  35% { background-image: var(--care-yochiyochi-play-b); }
+  70% { background-image: var(--care-yochiyochi-play-c); }
+}
+@keyframes yochiyochiRoamFrames {
+  0%, 100% { background-image: var(--care-yochiyochi-play-a); }
+  50% { background-image: var(--care-yochiyochi-play-b); }
+}
+@keyframes yochiyochiCrawlFrames {
+  0%, 100% { background-image: var(--care-yochiyochi-crawl-1); }
+  16% { background-image: var(--care-yochiyochi-crawl-2); }
+  33% { background-image: var(--care-yochiyochi-crawl-3); }
+  50% { background-image: var(--care-yochiyochi-crawl-4); }
+  66% { background-image: var(--care-yochiyochi-crawl-5); }
+  83% { background-image: var(--care-yochiyochi-crawl-6); }
+}
+@keyframes yochiyochiWalkFrames {
+  0%, 100% { background-image: var(--care-yochiyochi-walk-1); }
+  25% { background-image: var(--care-yochiyochi-walk-2); }
+  50% { background-image: var(--care-yochiyochi-walk-3); }
+  75% { background-image: var(--care-yochiyochi-walk-4); }
+}
+@keyframes eggWarm {
+  0%, 100% { transform: translateX(-50%) scale(1); filter: brightness(1); }
+  38% { transform: translateX(-50%) scale(1.05); filter: brightness(1.12) drop-shadow(0 0 14px rgba(255, 218, 118, 0.7)); }
+  68% { transform: translateX(-50%) scale(0.98); }
+}
+@keyframes eggPetWiggle {
+  0%, 100% { transform: translateX(-50%) rotate(0); }
+  22% { transform: translateX(-50%) rotate(-5deg); }
+  48% { transform: translateX(-50%) rotate(5deg); }
+  72% { transform: translateX(-50%) rotate(-3deg); }
+}
+@keyframes birthPop {
+  0% { transform: translateX(-50%) translateY(0) scale(0.88); filter: brightness(1); }
+  42% { transform: translateX(-50%) translateY(-36px) scale(1.08); filter: brightness(1.18) drop-shadow(0 0 18px rgba(134, 215, 172, 0.8)); }
+  100% { transform: translateX(-50%) translateY(0) scale(1); filter: brightness(1); }
+}
+
+.fx-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 8;
+}
+
+.stage-notice {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(720px, 62vw);
+  min-height: 190px;
+  z-index: 36;
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 20px;
+  align-items: center;
+  padding: 28px 34px 28px 28px;
+  border: 6px solid #7d5133;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #fffaf0 0%, #ffeec9 100%);
+  box-shadow:
+    0 8px 0 #57331e,
+    inset 0 0 0 4px rgba(255, 255, 255, 0.68);
+  color: #4d3124;
+  font-family: var(--pixel-font);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(0.9);
+}
+
+.stage-notice.show {
+  animation: stageNoticePop 2.45s ease both;
+}
+
+.stage-notice-icon {
+  width: 78px;
+  height: 78px;
+  border-radius: 18px;
+  border: 4px solid #b9874d;
+  background:
+    var(--care-fx-sparkle) center / 54px 54px no-repeat,
+    linear-gradient(180deg, #fff6b7, #ffd980);
+  box-shadow: 0 5px 0 #805230;
+  image-rendering: pixelated;
+}
+
+.stage-notice-title {
+  margin-bottom: 10px;
+  color: #2f9d76;
+  font-size: 34px;
+  line-height: 1.2;
+  text-shadow: 0 2px 0 rgba(255, 255, 255, 0.8);
+}
+
+.stage-notice-text {
+  font-size: 24px;
+  line-height: 1.45;
+}
+
+@keyframes stageNoticePop {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.82); }
+  12% { opacity: 1; transform: translate(-50%, -50%) scale(1.03); }
+  18%, 78% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(0.96); }
+}
+
+.hatch-scene {
+  position: absolute;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  grid-template-rows: 170px 1fr 132px;
+  justify-items: center;
+  align-items: center;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  background: transparent;
+  transition: opacity 0.18s ease, visibility 0.18s ease;
+}
+
+.hatch-scene.show {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  overflow: visible;
+}
+
+.hatch-scene::before {
+  content: '';
+  position: absolute;
+  inset: -72%;
+  background:
+    repeating-conic-gradient(
+      from 0deg,
+      #fff1f6 0deg 9deg,
+      #ffc4d6 9deg 18deg,
+      #ff9fbd 18deg 27deg,
+      #ffdce8 27deg 36deg
+    );
+  transform-origin: center;
+  animation: hatchRaySpin 5.2s linear infinite;
+}
+
+.hatch-scene::after {
+  content: '';
+  position: absolute;
+  inset: -72%;
+  background:
+    radial-gradient(circle at center, rgba(255,255,255,0.84) 0 12%, rgba(255,255,255,0.26) 27%, rgba(255,255,255,0) 58%),
+    radial-gradient(circle at center, rgba(255,152,185,0) 0 44%, rgba(181,75,111,0.16) 100%);
+}
+
+.hatch-copy,
+.hatch-subcopy {
+  position: relative;
+  z-index: 4;
+  min-width: 560px;
+  padding: 18px 34px;
+  border: 5px solid #8b6042;
+  border-radius: 16px;
+  background: rgba(255, 248, 232, 0.94);
+  box-shadow: 0 6px 0 #6f462c;
+  color: #5a3d28;
+  font-family: var(--pixel-font);
+  text-align: center;
+}
+
+.hatch-copy {
+  align-self: end;
+  font-size: 38px;
+}
+
+.hatch-subcopy {
+  align-self: start;
+  font-size: 24px;
+}
+
+.hatch-sprite {
+  position: relative;
+  z-index: 3;
+  width: 370px;
+  height: 470px;
+  background: var(--care-egg-cracked) center / contain no-repeat;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 22px 0 rgba(95, 61, 38, 0.18));
+  transform-origin: center bottom;
+}
+
+.hatch-scene.phase-notice .hatch-sprite {
+  width: 340px;
+  height: 430px;
+  animation: hatchSlowPulse 1.15s ease-in-out infinite;
+}
+
+.hatch-scene.phase-ready .hatch-sprite {
+  width: 370px;
+  height: 470px;
+  animation: hatchEggShake 0.42s ease-in-out infinite;
+}
+
+.hatch-scene.phase-peek .hatch-sprite {
+  width: 430px;
+  height: 450px;
+  background-image: var(--care-egg-peek);
+  animation: hatchPopOpen 0.78s cubic-bezier(.2,1.5,.3,1) both;
+}
+
+.hatch-scene.phase-born .hatch-sprite {
+  width: 430px;
+  height: 430px;
+  background-image: var(--care-shell-baby-arms-up);
+  animation: hatchBabyBounce 0.9s cubic-bezier(.2,1.5,.3,1) both;
+}
+
+@keyframes hatchRaySpin {
+  0% { transform: rotate(0deg) scale(1.08); }
+  100% { transform: rotate(360deg) scale(1.08); }
+}
+
+@keyframes hatchSlowPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+
+@keyframes hatchEggShake {
+  0%, 100% { transform: translateX(0) rotate(0deg) scale(1.03); }
+  20% { transform: translateX(-14px) rotate(-5deg) scale(1.04); }
+  45% { transform: translateX(11px) rotate(5deg) scale(1.05); }
+  70% { transform: translateX(-7px) rotate(-3deg) scale(1.04); }
+}
+
+@keyframes hatchPopOpen {
+  0% { transform: translateY(24px) scale(0.86); filter: brightness(1.1) drop-shadow(0 22px 0 rgba(95,61,38,0.18)); }
+  32% { transform: translateY(-28px) scale(1.16); filter: brightness(1.28) drop-shadow(0 28px 0 rgba(95,61,38,0.16)); }
+  100% { transform: translateY(0) scale(1); filter: brightness(1.05) drop-shadow(0 22px 0 rgba(95,61,38,0.18)); }
+}
+
+@keyframes hatchBabyBounce {
+  0% { transform: translateY(58px) scale(0.78); opacity: 0; }
+  45% { transform: translateY(-34px) scale(1.12); opacity: 1; }
+  72% { transform: translateY(10px) scale(0.96); }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.fx-piece {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: 20px;
+  height: 20px;
+  opacity: 0;
+  animation: fxRise 1s ease-out forwards;
+}
+
+.fx-piece.heart {
+  width: 42px;
+  height: 42px;
+  background: var(--care-fx-heart) center / contain no-repeat;
+}
+
+.fx-piece.sparkle {
+  width: 32px;
+  height: 32px;
+  background: var(--care-fx-sparkle) center / contain no-repeat;
+}
+
+.food-fx {
+  position: absolute;
+  left: var(--mouth-x);
+  top: var(--mouth-y);
+  z-index: 10;
+  width: 60px;
+  height: 60px;
+  pointer-events: none;
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  transform: translate(-50%, -50%);
+  animation: foodOfferArc 0.94s cubic-bezier(.24,.86,.36,1) forwards;
+}
+
+.food-fx.cookie {
+  background-image: var(--care-icon-cookie);
+}
+
+.food-fx.gohan {
+  width: 70px;
+  height: 70px;
+  background-image: var(--care-icon-gohan);
+}
+
+.food-fx.milk {
+  width: 46px;
+  height: 76px;
+  background-image: var(--care-icon-milk);
+  animation-name: milkOfferNear;
+}
+
+.food-fx.milk::before {
+  display: none;
+}
+
+@keyframes foodOfferArc {
+  0% {
+    opacity: 0;
+    transform: translate(calc(-50% - 132px), calc(-50% + 20px)) scale(0.86) rotate(-10deg);
+  }
+  16% {
+    opacity: 1;
+    transform: translate(calc(-50% - 108px), calc(-50% + 4px)) scale(0.96) rotate(-6deg);
+  }
+  54% {
+    opacity: 1;
+    transform: translate(calc(-50% - 50px), calc(-50% - 74px)) scale(1.08) rotate(8deg);
+  }
+  82% {
+    opacity: 1;
+    transform: translate(calc(-50% - 8px), calc(-50% - 12px)) scale(0.95) rotate(2deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.72) rotate(0deg);
+  }
+}
+
+@keyframes milkOfferNear {
+  0% {
+    opacity: 0;
+    transform: translate(calc(-50% - 138px), calc(-50% + 28px)) scale(0.86) rotate(-7deg);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(calc(-50% - 112px), calc(-50% + 10px)) scale(0.96) rotate(-4deg);
+  }
+  58% {
+    opacity: 1;
+    transform: translate(calc(-50% - 62px), calc(-50% - 64px)) scale(1.04) rotate(5deg);
+  }
+  86% {
+    opacity: 1;
+    transform: translate(calc(-50% - 36px), calc(-50% + 8px)) scale(0.98) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(calc(-50% - 30px), calc(-50% + 8px)) scale(0.9) rotate(0deg);
+  }
+}
+
+@keyframes fxRise {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+  18% { opacity: 1; }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-100px + var(--dy))) scale(1.35); }
+}
+
+.info-block {
+  display: grid;
+  gap: 12px;
+  font-family: var(--pixel-font);
+  font-size: 20px;
+  line-height: 1.35;
+}
+
+.milmaru-name {
+  font-size: 28px;
+  font-family: var(--round-font);
+  font-weight: 900;
+}
+
+.profile-card {
+  min-height: 112px;
+}
+
+.mood-chip {
+  width: max-content;
+  min-width: 116px;
+  display: inline-grid;
+  grid-template-columns: 20px auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: 3px solid rgba(139, 96, 66, 0.32);
+  border-radius: 999px;
+  background: #fff6cf;
+  color: var(--ink);
+  font-family: var(--pixel-font);
+  font-size: 17px;
+}
+
+.mood-dot {
+  width: 18px;
+  height: 18px;
+  border: 3px solid rgba(120, 78, 48, 0.3);
+  border-radius: 999px;
+  background: #ff9aa5;
+  box-shadow: inset 0 2px rgba(255,255,255,0.62);
+}
+
+.mood-chip[data-mood="sparkly"] {
+  background: #fff1b8;
+}
+.mood-chip[data-mood="sparkly"] .mood-dot {
+  background: #ffd35e;
+}
+.mood-chip[data-mood="happy"] {
+  background: #e0f6d0;
+}
+.mood-chip[data-mood="happy"] .mood-dot {
+  background: #7edc9f;
+}
+.mood-chip[data-mood="normal"] {
+  background: #eef6d6;
+}
+.mood-chip[data-mood="normal"] .mood-dot {
+  background: #b9d86d;
+}
+.mood-chip[data-mood="lonely"] {
+  background: #e9efff;
+}
+.mood-chip[data-mood="lonely"] .mood-dot {
+  background: #8ea8e8;
+}
+.mood-chip[data-mood="sulky"] {
+  background: #ffe2cf;
+}
+.mood-chip[data-mood="sulky"] .mood-dot {
+  background: #ee8a61;
+}
+
+.growth-card {
+  min-height: 150px;
+  position: relative;
+  overflow: hidden;
+  border: 3px solid rgba(139, 96, 66, 0.35);
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.36), rgba(255,255,255,0.08)),
+    rgba(255,255,255,0.34);
+}
+
+.growth-card.mystery-card::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 82px;
+  height: 82px;
+  transform: translate(-50%, -50%);
+  background: var(--care-fx-sparkle) center / contain no-repeat;
+  opacity: 0.22;
+  image-rendering: pixelated;
+}
+
+.growth-card.mystery-card::after {
+  content: '';
+  position: absolute;
+  inset: 16px;
+  border: 3px dashed rgba(139, 96, 66, 0.16);
+  border-radius: 8px;
+}
+
+.memo-box {
+  margin-top: 2px;
+  padding-top: 14px;
+  border-top: 3px dashed rgba(139, 96, 66, 0.22);
+  font-size: 18px;
+  line-height: 1.6;
+}
+
+.album-btn {
+  align-self: end;
+  height: 58px;
+  font-size: 22px;
+}
+
+.care-actions {
+  position: absolute;
+  left: 300px;
+  right: 300px;
+  bottom: 72px;
+  height: 142px;
+  display: grid;
+  grid-template-rows: 66px 62px;
+  gap: 12px;
+  z-index: 6;
+}
+
+.meal-schedule {
+  position: absolute;
+  left: 344px;
+  right: 344px;
+  bottom: 222px;
+  height: 54px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  z-index: 6;
+  pointer-events: none;
+}
+
+.meal-schedule[hidden] {
+  display: none;
+}
+
+.meal-slot {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: 1fr 1fr;
+  column-gap: 8px;
+  align-items: center;
+  padding: 5px 10px;
+  border: 3px solid #947152;
+  border-radius: 10px;
+  background: rgba(255, 248, 232, 0.92);
+  box-shadow: 0 3px 0 rgba(91, 58, 34, 0.55);
+  font-family: var(--pixel-font);
+  line-height: 1;
+}
+
+.meal-slot::before {
+  content: '';
+  grid-row: 1 / 3;
+  width: 13px;
+  height: 13px;
+  border: 2px solid rgba(78, 57, 40, 0.3);
+  border-radius: 999px;
+  background: #d8c7ac;
+}
+
+.meal-slot-label {
+  overflow: hidden;
+  font-size: 18px;
+  font-weight: 900;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.meal-slot-status {
+  overflow: hidden;
+  color: #705640;
+  font-family: var(--round-font);
+  font-size: 14px;
+  font-weight: 900;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.meal-slot[data-state="current"] {
+  border-color: #b4653d;
+  background: linear-gradient(180deg, #fff7c6, #ffd786);
+  box-shadow: 0 3px 0 #865039, 0 0 0 4px rgba(255, 223, 102, 0.38);
+}
+
+.meal-slot[data-state="current"]::before {
+  background: #ff865f;
+  box-shadow: 0 0 0 3px rgba(255, 134, 95, 0.18);
+}
+
+.meal-slot[data-state="used"] {
+  border-color: #629d76;
+  background: rgba(220, 245, 218, 0.94);
+}
+
+.meal-slot[data-state="used"]::before {
+  content: '✓';
+  display: grid;
+  place-items: center;
+  background: #73c88e;
+  color: #fff;
+  font-family: var(--round-font);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.meal-slot[data-state="future"] {
+  opacity: 0.82;
+}
+
+.meal-slot[data-state="past"] {
+  opacity: 0.58;
+  filter: saturate(0.62);
+}
+
+.meal-slot[data-state="sleep"] {
+  border-color: #7885a3;
+  background: rgba(227, 232, 247, 0.92);
+}
+
+.meal-slot[data-state="sleep"]::before {
+  background: #8494bd;
+}
+
+.sub-action-row {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.action-btn {
+  position: relative;
+  display: grid;
+  grid-template-columns: 50px 1fr;
+  grid-template-rows: 1fr auto;
+  align-items: center;
+  column-gap: 10px;
+  padding: 7px 14px;
+  text-align: left;
+  font-size: 24px;
+}
+
+.write-main-btn {
+  display: grid;
+  grid-template-columns: 70px 1fr;
+  grid-template-rows: 1fr auto;
+  align-items: center;
+  column-gap: 16px;
+  padding: 7px 28px;
+  text-align: left;
+  font-size: 32px;
+  background: linear-gradient(180deg, #e4f7c9, #8ed067);
+  border-color: #6c8f3c;
+}
+
+.action-icon {
+  grid-row: 1 / 3;
+  width: 50px;
+  height: 50px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.38) center / 72% 72% no-repeat;
+  font-size: 30px;
+  color: transparent;
+  image-rendering: pixelated;
+}
+
+.write-main-btn .action-icon {
+  width: 62px;
+  height: 52px;
+  font-size: 34px;
+  background-image: var(--care-icon-pencil);
+}
+
+.write-main-btn.warm-main {
+  background: linear-gradient(180deg, #fff0bd, #f3b86d);
+  border-color: #ad7040;
+}
+
+.write-main-btn.warm-main .action-icon {
+  color: transparent;
+  background: rgba(255,255,255,0.45) var(--care-icon-warm) center / contain no-repeat;
+  text-shadow: none;
+}
+
+.write-main-btn.needs-power {
+  background: linear-gradient(180deg, #e4f7c9, #8ed067);
+  border-color: #6c8f3c;
+}
+
+.action-help {
+  font-family: var(--round-font);
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--ink-soft);
+}
+
+.write-main-btn .action-help {
+  display: none;
+}
+
+.meal-main-btn {
+  grid-template-columns: 70px 1fr;
+  grid-template-rows: 1fr auto;
+  padding: 7px 28px;
+  font-size: 30px;
+}
+
+.meal-main-btn .action-icon {
+  width: 62px;
+  height: 52px;
+}
+
+.care-actions:not(.egg-mode) .write-main-btn {
+  grid-template-columns: 50px 1fr;
+  grid-template-rows: 1fr auto;
+  column-gap: 10px;
+  padding: 7px 14px;
+  font-size: 24px;
+}
+
+.care-actions:not(.egg-mode) .write-main-btn .action-icon {
+  width: 50px;
+  height: 50px;
+}
+
+.action-btn.feed { background: linear-gradient(180deg, #fff0bd, #f0c16f); }
+.action-btn.play { background: linear-gradient(180deg, #cdeefe, #75c4e5); }
+.action-btn.write { background: linear-gradient(180deg, #e0f4c9, #9ed572); }
+
+.action-btn.power-empty {
+  filter: saturate(0.72) brightness(0.92);
+}
+
+.action-btn.feed.has-cookie {
+  background: linear-gradient(180deg, #ffe6a2, #f2a64f);
+  box-shadow: 0 5px 0 #6f462c, inset 0 3px rgba(255,255,255,0.55), 0 0 0 5px rgba(255, 219, 92, 0.45);
+}
+
+.action-btn.feed.has-cookie::after {
+  content: '!';
+  position: absolute;
+  left: 46px;
+  top: -18px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 3px solid #b35d48;
+  border-radius: 999px;
+  background: #ff8f94;
+  color: #fff7de;
+  font-family: var(--pixel-font);
+  font-size: 22px;
+  box-shadow: 0 3px 0 #8d4b3a;
+}
+
+.care-actions.egg-mode {
+  left: 480px;
+  right: 480px;
+  bottom: 86px;
+  height: 66px;
+  grid-template-rows: 66px;
+}
+
+.care-actions.egg-mode .meal-main-btn,
+.care-actions.egg-mode .action-btn.play {
+  display: none;
+}
+
+.care-actions.egg-mode .sub-action-row {
+  display: block;
+}
+
+.care-actions.egg-mode .write-main-btn {
+  width: 100%;
+  height: 66px;
+}
+
+.action-btn.feed .action-icon { background-image: var(--care-icon-cookie); }
+.action-btn.play .action-icon { background-image: var(--care-icon-star); }
+.action-btn.feed.milk .action-icon {
+  color: #4f3825;
+  background-image: var(--care-icon-milk);
+  background-size: contain;
+}
+
+.action-btn.feed.gohan .action-icon {
+  color: #4f3825;
+  background-image: var(--care-icon-gohan);
+  background-size: contain;
+}
+
+.action-btn.feed.cookie .action-icon {
+  background-image: var(--care-icon-cookie);
+}
+
+.action-btn.feed.meal-closed {
+  filter: saturate(0.62) brightness(0.96);
+  background: linear-gradient(180deg, #eee5d1, #d8c6a7);
+}
+
+.action-btn.feed.meal-closed .action-icon {
+  color: #655a67;
+  background-image: none;
+  font-size: 31px;
+}
+
+.name-modal {
+  position: absolute;
+  inset: 0;
+  z-index: 92;
+  display: none;
+  place-items: center;
+  background: rgba(55, 37, 23, 0.38);
+}
+
+.name-modal.show {
+  display: grid;
+}
+
+.name-dialog {
+  width: 620px;
+  padding: 28px 34px 30px;
+  border-radius: 12px;
+  display: grid;
+  gap: 18px;
+  justify-items: center;
+  text-align: center;
+}
+
+.name-dialog-title {
+  font-family: var(--pixel-font);
+  font-size: 34px;
+  color: #b9653e;
+}
+
+.name-dialog-copy {
+  font-family: var(--pixel-font);
+  font-size: 22px;
+  line-height: 1.5;
+}
+
+.name-input {
+  width: 420px;
+  height: 62px;
+  padding: 0 16px;
+  border: 4px solid #9f7655;
+  border-radius: 8px;
+  background: #fffdf5;
+  color: var(--ink);
+  font-family: var(--pixel-font);
+  font-size: 30px;
+  text-align: center;
+  outline: none;
+  touch-action: manipulation;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.name-save-btn {
+  min-width: 310px;
+  height: 62px;
+  font-size: 24px;
+}
+
+.bottom-message {
+  position: absolute;
+  left: 232px;
+  right: 232px;
+  bottom: 6px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 18px;
+  border: 4px solid #8b6042;
+  border-radius: 10px;
+  background: #fff8e8;
+  font-family: var(--pixel-font);
+  font-size: 20px;
+  z-index: 7;
+}
+
+.debug-panel {
+  position: absolute;
+  left: 318px;
+  top: 236px;
+  z-index: 82;
+  width: 300px;
+  display: none;
+  gap: 8px;
+  padding: 12px;
+  border: 4px solid #6e4b2d;
+  border-radius: 8px;
+  background: rgba(255, 248, 232, 0.94);
+  box-shadow: 0 5px 0 #4f321e;
+  font-family: var(--pixel-font);
+  color: #4f3825;
+}
+
+#stage.debug-mode .debug-panel {
+  display: grid;
+}
+
+.debug-title {
+  font-size: 18px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.debug-row {
+  display: grid;
+  grid-template-columns: 1fr 94px;
+  gap: 8px;
+  align-items: center;
+  font-size: 15px;
+}
+
+.debug-row input {
+  min-width: 0;
+  height: 30px;
+  padding: 2px 6px;
+  border: 2px solid #9f7655;
+  border-radius: 4px;
+  background: #fffdf5;
+  color: #4f3825;
+  font: inherit;
+}
+
+.debug-row.checkbox {
+  grid-template-columns: 1fr auto;
+}
+
+.debug-row.checkbox input {
+  width: 26px;
+}
+
+.debug-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.debug-actions button {
+  min-height: 31px;
+  border: 2px solid #875b3b;
+  border-radius: 5px;
+  background: #ffd78c;
+  color: #4f3825;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+</style>
+</head>
+<body>
+<div id="stage-wrap">
+  <main id="stage" aria-label="もじっこファーム お世話画面">
+    <header class="care-header">
+      <button class="pixel-button back-btn" id="backBtn">← もじへ</button>
+      <div class="title-board" id="titleName">ミルマル</div>
+      <div class="pixel-panel star-box"><span class="star-icon" aria-hidden="true"></span><span id="starCount">0</span></div>
+      <button class="pixel-button icon-btn" id="settingsBtn" aria-label="設定"><img src="../assets/_legacy/preview-placeholders/ctrl-btn-settings.png" alt="" style="width:100%;height:100%;object-fit:contain;pointer-events:none;display:block"></button>
+    </header>
+
+    <section class="gauges" aria-label="ステータス">
+      <div class="paper-panel gauge-card">
+        <div class="gauge-title"><span class="gauge-icon heart"></span><span>なかよし</span></div>
+        <div class="gauge-line">
+          <div class="gauge-track"><div class="gauge-fill nakayoshi" id="nakayoshiFill"></div></div>
+          <span id="nakayoshiText">0 / 100</span>
+        </div>
+      </div>
+    </section>
+
+    <aside class="paper-panel side-panel left" aria-label="もちもの">
+      <div class="panel-heading">もちもの</div>
+      <div class="panel-body">
+        <div class="item-card">
+          <div class="milk-icon" aria-hidden="true"></div>
+          <div>
+            <div class="item-name">もじミルク</div>
+            <div class="item-count">× <span id="milkCount">0</span></div>
+          </div>
+        </div>
+        <div class="item-card">
+          <div class="gohan-icon" aria-hidden="true"></div>
+          <div>
+            <div class="item-name">もじごはん</div>
+            <div class="item-count">× <span id="gohanCount">0</span></div>
+          </div>
+        </div>
+        <div class="item-card">
+          <div class="cookie-icon" aria-hidden="true"></div>
+          <div>
+            <div class="item-name">もじクッキー</div>
+            <div class="item-count">× <span id="cookieCount">1</span></div>
+          </div>
+        </div>
+        <button class="pixel-button album-btn" id="inventoryBtn">もちものをみる</button>
+      </div>
+    </aside>
+
+    <section class="center-yard" aria-label="ミルマル表示エリア">
+      <div class="yard-bg"></div>
+      <div class="yard-prop fence" aria-hidden="true"></div>
+      <div class="yard-prop house" aria-hidden="true"></div>
+      <div class="yard-prop doghouse" aria-hidden="true"></div>
+      <div class="yard-prop planter" aria-hidden="true"></div>
+      <div class="yard-prop basket" aria-hidden="true"></div>
+      <div class="yard-prop cushion" aria-hidden="true"></div>
+      <div class="yard-prop watering" aria-hidden="true"></div>
+      <div class="yard-prop bush" aria-hidden="true"></div>
+      <div class="yard-prop flowers-a" aria-hidden="true"></div>
+      <div class="yard-prop flowers-b" aria-hidden="true"></div>
+      <div class="yard-prop flowers-c" aria-hidden="true"></div>
+      <div class="yard-prop rug" aria-hidden="true"></div>
+      <div class="speech-bubble" id="speechBubble">いっしょに もじを かこう！</div>
+      <div class="fx-layer" id="fxLayer"></div>
+      <div class="stage-notice" id="stageNotice" aria-hidden="true">
+        <div class="stage-notice-icon" aria-hidden="true"></div>
+        <div>
+          <div class="stage-notice-title" id="stageNoticeTitle">すこし せいちょう！</div>
+          <div class="stage-notice-text" id="stageNoticeText">ミルマルが 新しいことを おぼえたよ。</div>
+        </div>
+      </div>
+      <div class="milmaru-wrap">
+        <div class="milmaru normal" id="milmaru">
+          <div class="milmaru-tail"></div>
+          <div class="milmaru-body"></div>
+          <div class="milmaru-arm left"></div>
+          <div class="milmaru-arm right"></div>
+          <div class="milmaru-foot left"></div>
+          <div class="milmaru-foot right"></div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="paper-panel side-panel right" aria-label="ミルマル情報">
+      <div class="panel-heading" id="sideNameHeading">ミルマル</div>
+      <div class="panel-body">
+        <div class="info-block profile-card">
+          <div class="milmaru-name" id="milmaruNameDisplay">ミルマル</div>
+          <div>Lv. <span id="milmaruLevel">1</span></div>
+          <div><span id="growthStageName">タマゴ</span></div>
+          <div class="mood-chip" id="moodChip" data-mood="normal"><span class="mood-dot" aria-hidden="true"></span><span id="moodLabel">すやすや</span></div>
+        </div>
+        <div class="growth-card mystery-card" aria-hidden="true"></div>
+        <div class="memo-box">
+          <div>メモ</div>
+          <div id="memoLine1">タマゴの なかで すやすや。</div>
+          <div id="memoLine2">ぽかぽかが だいすき！</div>
+        </div>
+        <button class="pixel-button album-btn" id="albumBtn">アルバム</button>
+      </div>
+    </aside>
+
+    <section class="meal-schedule" id="mealSchedule" aria-label="きょうの ごはん" hidden>
+      <div class="meal-slot" data-slot="morning" data-state="future">
+        <span class="meal-slot-label">あさ</span><span class="meal-slot-status">あとで</span>
+      </div>
+      <div class="meal-slot" data-slot="lunch" data-state="future">
+        <span class="meal-slot-label">ひる</span><span class="meal-slot-status">あとで</span>
+      </div>
+      <div class="meal-slot" data-slot="afternoon" data-state="future">
+        <span class="meal-slot-label">ごご</span><span class="meal-slot-status">あとで</span>
+      </div>
+      <div class="meal-slot" data-slot="dinner" data-state="future">
+        <span class="meal-slot-label">ばん</span><span class="meal-slot-status">あとで</span>
+      </div>
+    </section>
+
+    <nav class="care-actions" aria-label="お世話アクション">
+      <button class="pixel-button action-btn feed meal-main-btn" id="feedBtn">
+        <span class="action-icon">🍪</span><span id="feedActionText">あげる</span><span class="action-help" id="feedActionHelp">ごはんを あげる</span>
+      </button>
+      <div class="sub-action-row">
+        <button class="pixel-button write-main-btn" id="writeBtn">
+          <span class="action-icon" id="mainActionIcon">✏</span><span id="mainActionText">もじを かく！</span><span class="action-help" id="mainActionHelp">メインの もじかきへ もどる</span>
+        </button>
+        <button class="pixel-button action-btn play" id="playBtn">
+          <span class="action-icon">⚽</span><span>あそぶ</span><span class="action-help">いっしょにあそぶ</span>
+        </button>
+      </div>
+    </nav>
+
+    <div class="bottom-message" id="bottomMessage">いっしょに もじをかいて、すこしずつ げんきに そだてよう！</div>
+    <section class="debug-panel" id="debugPanel" aria-label="デバッグ調整">
+      <div class="debug-title">DEBUG</div>
+      <label class="debug-row">なかよし<input id="debugNakayoshi" type="number" min="0" max="100" step="1"></label>
+      <label class="debug-row">ごきげん<input id="debugGokigen" type="number" min="0" max="100" step="1"></label>
+      <label class="debug-row">すくすく<input id="debugSukusuku" type="number" min="0" max="100" step="1"></label>
+      <label class="debug-row">ぽかぽか<input id="debugEggWarmth" type="number" min="0" max="100" step="1"></label>
+      <label class="debug-row">ミルク<input id="debugMilkCount" type="number" min="0" max="99" step="1"></label>
+      <label class="debug-row">ごはん<input id="debugGohanCount" type="number" min="0" max="99" step="1"></label>
+      <label class="debug-row">クッキー<input id="debugCookieCount" type="number" min="0" max="99" step="1"></label>
+      <label class="debug-row">スター<input id="debugStars" type="number" min="0" max="99999" step="25"></label>
+      <label class="debug-row checkbox">うまれた<input id="debugHatched" type="checkbox"></label>
+      <div class="debug-actions">
+        <button type="button" id="debugApplyBtn">反映</button>
+        <button type="button" id="debugEgg75Btn">タマゴ75</button>
+        <button type="button" id="debugPreHatchBtn">孵化直前</button>
+        <button type="button" id="debugBabyBtn">ベビー</button>
+        <button type="button" id="debugYochiyochiBtn">よちよち</button>
+        <button type="button" id="debugAlmostKidsBtn">成長前</button>
+        <button type="button" id="debugResetBtn">初期化</button>
+        <button type="button" id="debugCloseBtn">隠す</button>
+      </div>
+    </section>
+    <div class="hatch-scene" id="hatchScene" aria-hidden="true">
+      <div class="hatch-copy" id="hatchCopy">おや...？</div>
+      <div class="hatch-sprite" id="hatchSprite" aria-hidden="true"></div>
+      <div class="hatch-subcopy" id="hatchSubcopy">タマゴの ようすが...</div>
+    </div>
+    <div class="name-modal" id="nameModal" aria-hidden="true">
+      <div class="paper-panel name-dialog" role="dialog" aria-modal="true" aria-labelledby="nameDialogTitle">
+        <div class="name-dialog-title" id="nameDialogTitle">なまえを つけよう！</div>
+        <div class="name-dialog-copy">うまれた ミルマルに<br>すきな なまえを つけてね。</div>
+        <input class="name-input" id="nameInput" maxlength="8" inputmode="text" value="ミルマル" aria-label="ミルマルのなまえ">
+        <button class="pixel-button name-save-btn" id="nameSaveBtn" type="button">この なまえにする</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+'use strict';
+
+const CARE_STATE_KEY = 'mojikkoFarmCareStateV1';
+const PENDING_REWARD_KEY = 'mojikkoFarmPendingWritingReward';
+const DEBUG_MODE_KEY = 'mojikkoFarmCareDebugMode';
+const FOOD_SYSTEM_VERSION = 2;
+const MEAL_SLOT_ORDER = ['morning', 'lunch', 'afternoon', 'dinner'];
+const MEAL_SLOTS = {
+  morning: { id: 'morning', label: 'あさ', start: 6, end: 11 },
+  lunch: { id: 'lunch', label: 'ひる', start: 11, end: 15 },
+  afternoon: { id: 'afternoon', label: 'ごご', start: 15, end: 18 },
+  dinner: { id: 'dinner', label: 'ばん', start: 18, end: 21 }
+};
+
+const defaultState = {
+  name: 'ミルマル',
+  named: false,
+  nakayoshi: 0,
+  gokigen: 78,
+  sukusuku: 0,
+  eggWarmth: 0,
+  hatched: false,
+  stars: 0,
+  foodSystemVersion: FOOD_SYSTEM_VERSION,
+  feedingDay: {
+    localDateKey: '',
+    claimed: {},
+    lastSeenAt: Date.now()
+  },
+  inventory: {
+    moji_milk: { id: 'moji_milk', name: 'もじミルク', count: 0, type: 'food' },
+    moji_gohan: { id: 'moji_gohan', name: 'もじごはん', count: 0, type: 'food' },
+    moji_cookie: { id: 'moji_cookie', name: 'もじクッキー', count: 0, type: 'food' }
+  },
+  reaction: 'normal',
+  speech: 'まだ タマゴだよ',
+  lastStageId: 'egg',
+  lastPetAt: 0,
+  lastWarmAt: 0,
+  lastMoodAt: Date.now(),
+  lastCareAt: Date.now()
+};
+
+const growthStages = [
+  { id: 'egg', name: 'タマゴ', icon: '🥚', min: 0, next: 10 },
+  { id: 'baby', name: 'ベビー', icon: '🐣', min: 10, next: 25 },
+  { id: 'yochiyochi', name: 'よちよち期', icon: '🐹', min: 25, next: 50 },
+  { id: 'kids', name: 'キッズ', icon: '⭐', min: 50, next: 80 },
+  { id: 'pre_evolution', name: 'しんかまえ', icon: '✨', min: 80, next: 100 }
+];
+
+const careFoods = {
+  moji_milk: { id: 'moji_milk', name: 'もじミルク', shortName: 'ミルク', gainNakayoshi: 3, gainSukusuku: 4, gainGokigen: 18 },
+  moji_gohan: { id: 'moji_gohan', name: 'もじごはん', shortName: 'ごはん', gainNakayoshi: 3, gainSukusuku: 4, gainGokigen: 18 },
+  moji_cookie: { id: 'moji_cookie', name: 'もじクッキー', shortName: 'クッキー', gainNakayoshi: 4, gainSukusuku: 0, gainGokigen: 20 }
+};
+
+const actionStarCost = {
+  warm: 10,
+  play: 20
+};
+
+const PET_STROKE_REQUIRED_DISTANCE = 90;
+const PET_TRACE_DISTANCE_STEP = 42;
+
+let state = loadState();
+const entryLastSeenAt = Number(state.feedingDay?.lastSeenAt) || Date.now();
+const entryOpenedAt = Date.now();
+
+const stageEl = document.getElementById('stage');
+const speechBubble = document.getElementById('speechBubble');
+const bottomMessage = document.getElementById('bottomMessage');
+const milmaruWrap = document.querySelector('.milmaru-wrap');
+const milmaru = document.getElementById('milmaru');
+const fxLayer = document.getElementById('fxLayer');
+const stageNotice = document.getElementById('stageNotice');
+const stageNoticeTitle = document.getElementById('stageNoticeTitle');
+const stageNoticeText = document.getElementById('stageNoticeText');
+const careActions = document.querySelector('.care-actions');
+const writeBtn = document.getElementById('writeBtn');
+const feedBtn = document.getElementById('feedBtn');
+const feedActionText = document.getElementById('feedActionText');
+const feedActionHelp = document.getElementById('feedActionHelp');
+const mealSchedule = document.getElementById('mealSchedule');
+const mainActionIcon = document.getElementById('mainActionIcon');
+const mainActionText = document.getElementById('mainActionText');
+const mainActionHelp = document.getElementById('mainActionHelp');
+const hatchScene = document.getElementById('hatchScene');
+const hatchCopy = document.getElementById('hatchCopy');
+const hatchSubcopy = document.getElementById('hatchSubcopy');
+const nameModal = document.getElementById('nameModal');
+const nameInput = document.getElementById('nameInput');
+const nameSaveBtn = document.getElementById('nameSaveBtn');
+const debugPanel = document.getElementById('debugPanel');
+const stageWrap = document.getElementById('stage-wrap');
+
+let hatchingNow = false;
+let hatchTimers = [];
+let debugMode = false;
+let pettingMode = false;
+let petStrokeActive = false;
+let petStrokeDistance = 0;
+let petLastPoint = null;
+let activePetPointerId = null;
+let petHintShown = false;
+let feedBusy = false;
+let lastMealHintKey = '';
+const roamState = {
+  x: 50,
+  y: 72,
+  dir: 1,
+  moving: false,
+  timer: null,
+  motionTimer: null,
+  duration: 5.2,
+  frameDuration: 1.9
+};
+
+const carePreloadImages = [
+  '../assets/images/mojikko/care/milmaru_yochiyochi_crawl_loop_01.png',
+  '../assets/images/mojikko/care/milmaru_yochiyochi_crawl_loop_02.png',
+  '../assets/images/mojikko/care/milmaru_yochiyochi_crawl_loop_03.png',
+  '../assets/images/mojikko/care/milmaru_yochiyochi_crawl_loop_04.png',
+  '../assets/images/mojikko/care/milmaru_yochiyochi_crawl_loop_05.png',
+  '../assets/images/mojikko/care/milmaru_yochiyochi_crawl_loop_06.png',
+  '../assets/images/mojikko/care/milmaru_yochiyochi_walk_loop_01.png',
+  '../assets/images/mojikko/care/milmaru_yochiyochi_walk_loop_02.png',
+  '../assets/images/mojikko/care/milmaru_yochiyochi_walk_loop_03.png',
+  '../assets/images/mojikko/care/milmaru_yochiyochi_walk_loop_04.png',
+  '../assets/images/mojikko/care/icon_moji_gohan_onigiri.png'
+];
+
+carePreloadImages.forEach((src) => {
+  const img = new Image();
+  img.decoding = 'async';
+  img.src = src;
+});
+
+function fitStage() {
+  const scale = Math.min(window.innerWidth / 1600, window.innerHeight / 900);
+  const ox = (window.innerWidth - 1600 * scale) / 2;
+  const oy = (window.innerHeight - 900 * scale) / 2;
+  stageEl.style.transform = `translate(${ox}px, ${oy}px) scale(${scale})`;
+}
+
+window.addEventListener('resize', fitStage);
+window.addEventListener('orientationchange', () => setTimeout(fitStage, 100));
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) return;
+  fitStage();
+  syncCareStateFromStorage(true);
+});
+window.addEventListener('storage', (event) => {
+  if (event.key === CARE_STATE_KEY) syncCareStateFromStorage(false);
+});
+fitStage();
+
+let audioCtx = null;
+
+function getAudioContext() {
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return null;
+  if (!audioCtx) audioCtx = new AudioContextClass();
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume().catch(() => {});
+  }
+  return audioCtx;
+}
+
+function playTone(frequency, duration = 0.06, type = 'square', volume = 0.035, delay = 0) {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  const start = ctx.currentTime + delay;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(frequency, start);
+  gain.gain.setValueAtTime(0.0001, start);
+  gain.gain.exponentialRampToValueAtTime(volume, start + 0.012);
+  gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(start);
+  osc.stop(start + duration + 0.02);
+}
+
+function playSfx(kind) {
+  try {
+    if (kind === 'warm') {
+      playTone(430, 0.055, 'triangle', 0.03);
+      playTone(540, 0.055, 'triangle', 0.024, 0.05);
+      return;
+    }
+    if (kind === 'pet') {
+      playTone(590, 0.04, 'sine', 0.026);
+      playTone(740, 0.05, 'sine', 0.022, 0.045);
+      return;
+    }
+    if (kind === 'feed') {
+      playTone(520, 0.045, 'square', 0.03);
+      playTone(780, 0.065, 'square', 0.028, 0.055);
+      return;
+    }
+    if (kind === 'play') {
+      [620, 760, 620].forEach((freq, i) => playTone(freq, 0.05, 'square', 0.026, i * 0.05));
+      return;
+    }
+    if (kind === 'hatch') {
+      [580, 760, 960, 1180].forEach((freq, i) => playTone(freq, 0.09, 'square', 0.032, i * 0.075));
+      return;
+    }
+    if (kind === 'mistake') {
+      playTone(210, 0.07, 'triangle', 0.024);
+      return;
+    }
+    if (kind === 'select') {
+      playTone(560, 0.045, 'square', 0.026);
+      playTone(720, 0.05, 'square', 0.022, 0.04);
+      return;
+    }
+    playTone(500, 0.045, 'square', 0.026);
+  } catch (_) {}
+}
+
+function cloneDefaultState() {
+  return JSON.parse(JSON.stringify(defaultState));
+}
+
+function getLocalDateKey(value = Date.now()) {
+  const date = value instanceof Date ? value : new Date(value);
+  const year = String(date.getFullYear());
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function makeFeedingDay(now = Date.now(), lastSeenAt = now) {
+  return {
+    localDateKey: getLocalDateKey(now),
+    claimed: {},
+    lastSeenAt: Number.isFinite(lastSeenAt) ? lastSeenAt : now
+  };
+}
+
+function sanitizeMealClaims(value, now = Date.now()) {
+  const claimed = {};
+  if (!value || typeof value !== 'object') return claimed;
+  MEAL_SLOT_ORDER.forEach((slotId) => {
+    const claim = value[slotId];
+    const activeLock = claim
+      && typeof claim === 'object'
+      && typeof claim.token === 'string'
+      && Number.isFinite(claim.at)
+      && now - claim.at < 15000;
+    if (claim === true || activeLock) {
+      claimed[slotId] = claim;
+    }
+  });
+  return claimed;
+}
+
+function ensureFeedingDayState(target, now = Date.now()) {
+  if (!target || typeof target !== 'object') return false;
+  const todayKey = getLocalDateKey(now);
+  const current = target.feedingDay;
+  const fallbackSeenAt = Number.isFinite(target.lastCareAt) ? target.lastCareAt : now;
+  if (!current || typeof current !== 'object' || current.localDateKey !== todayKey) {
+    const lastSeenAt = Number.isFinite(current?.lastSeenAt) ? current.lastSeenAt : fallbackSeenAt;
+    target.feedingDay = makeFeedingDay(now, lastSeenAt);
+    return true;
+  }
+  target.feedingDay = {
+    localDateKey: todayKey,
+    claimed: sanitizeMealClaims(current.claimed, now),
+    lastSeenAt: Number.isFinite(current.lastSeenAt) ? current.lastSeenAt : fallbackSeenAt
+  };
+  return false;
+}
+
+function sanitizeMilmaruName(value) {
+  const text = String(value || '').trim().replace(/\s+/g, '');
+  return text ? text.slice(0, 8) : 'ミルマル';
+}
+
+function getMilmaruName() {
+  return sanitizeMilmaruName(state.name || 'ミルマル');
+}
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem(CARE_STATE_KEY);
+    if (!saved) {
+      const fresh = cloneDefaultState();
+      ensureFeedingDayState(fresh);
+      return fresh;
+    }
+    const parsed = JSON.parse(saved);
+    const merged = cloneDefaultState();
+    merged.name = sanitizeMilmaruName(parsed.name || merged.name);
+    merged.named = parsed.named === true || (parsed.hatched === true && parsed.named !== false && !Object.prototype.hasOwnProperty.call(parsed, 'named'));
+    merged.nakayoshi = Number.isFinite(parsed.nakayoshi) ? parsed.nakayoshi : merged.nakayoshi;
+    merged.gokigen = Number.isFinite(parsed.gokigen) ? parsed.gokigen : merged.gokigen;
+    merged.sukusuku = Number.isFinite(parsed.sukusuku) ? parsed.sukusuku : merged.sukusuku;
+    merged.eggWarmth = Number.isFinite(parsed.eggWarmth) ? clamp(parsed.eggWarmth, 0, 100) : merged.eggWarmth;
+    merged.hatched = parsed.hatched === true;
+    merged.stars = Number.isFinite(parsed.stars) ? parsed.stars : merged.stars;
+    const previousFoodSystemVersion = Number(parsed.foodSystemVersion) || 0;
+    merged.foodSystemVersion = FOOD_SYSTEM_VERSION;
+    if (!merged.hatched && merged.eggWarmth === 0 && merged.stars >= 1000) {
+      merged.stars = 0;
+    }
+    merged.speech = merged.hatched ? (parsed.speech || 'うまれたての あかちゃんだよ') : 'まだ タマゴだよ';
+    merged.reaction = parsed.reaction || merged.reaction;
+    merged.lastStageId = parsed.lastStageId || (merged.hatched ? getGrowthStage(Math.max(10, merged.sukusuku)).id : 'egg');
+    merged.lastCareAt = Number.isFinite(parsed.lastCareAt) ? parsed.lastCareAt : Date.now();
+    merged.lastPetAt = Number.isFinite(parsed.lastPetAt) ? parsed.lastPetAt : 0;
+    merged.lastWarmAt = Number.isFinite(parsed.lastWarmAt) ? parsed.lastWarmAt : 0;
+    merged.lastMoodAt = Number.isFinite(parsed.lastMoodAt) ? parsed.lastMoodAt : merged.lastCareAt;
+    if (parsed.feedingDay && typeof parsed.feedingDay === 'object') {
+      merged.feedingDay = {
+        localDateKey: String(parsed.feedingDay.localDateKey || ''),
+        claimed: sanitizeMealClaims(parsed.feedingDay.claimed),
+        lastSeenAt: Number.isFinite(parsed.feedingDay.lastSeenAt) ? parsed.feedingDay.lastSeenAt : merged.lastCareAt
+      };
+    } else {
+      merged.feedingDay = makeFeedingDay(Date.now(), merged.lastCareAt);
+    }
+    if (parsed.inventory) {
+      Object.keys(merged.inventory).forEach((id) => {
+        if (parsed.inventory[id]) {
+          merged.inventory[id].count = Math.max(0, Number(parsed.inventory[id].count) || 0);
+        }
+      });
+    }
+    if (previousFoodSystemVersion < FOOD_SYSTEM_VERSION && merged.hatched && merged.sukusuku >= 38) {
+      merged.inventory.moji_gohan.count = clamp(merged.inventory.moji_gohan.count + 3, 0, 99);
+    }
+    ensureFeedingDayState(merged);
+    return merged;
+  } catch (error) {
+    console.warn('Could not load care state:', error);
+    const fresh = cloneDefaultState();
+    ensureFeedingDayState(fresh);
+    return fresh;
+  }
+}
+
+function saveState({ touchSeen = true } = {}) {
+  try {
+    state.foodSystemVersion = FOOD_SYSTEM_VERSION;
+    ensureFeedingDayState(state);
+    if (touchSeen) state.feedingDay.lastSeenAt = Date.now();
+    localStorage.setItem(CARE_STATE_KEY, JSON.stringify(state));
+  } catch (error) {
+    console.warn('Could not save care state:', error);
+  }
+}
+
+function syncCareStateFromStorage(touchSeen = false) {
+  if (feedBusy) return;
+  state = loadState();
+  ensureFeedingDayState(state);
+  if (touchSeen) saveState();
+  render();
+}
+
+function configureDebugModeFromQuery() {
+  const params = new URLSearchParams(window.location.search);
+  const value = params.get('debug');
+  if (value === '1') {
+    localStorage.setItem(DEBUG_MODE_KEY, '1');
+  } else if (value === '0') {
+    localStorage.removeItem(DEBUG_MODE_KEY);
+  }
+  debugMode = value === '1' || (value !== '0' && localStorage.getItem(DEBUG_MODE_KEY) === '1');
+  stageEl.classList.toggle('debug-mode', debugMode);
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function lerp(start, end, amount) {
+  return start + (end - start) * amount;
+}
+
+function getGrowthStage(sukusuku) {
+  if (sukusuku < 10) return growthStages[0];
+  if (sukusuku < 25) return growthStages[1];
+  if (sukusuku < 50) return growthStages[2];
+  if (sukusuku < 80) return growthStages[3];
+  return growthStages[4];
+}
+
+function getCareStage() {
+  if (!state.hatched) return growthStages[0];
+  return getGrowthStage(Math.max(10, state.sukusuku));
+}
+
+function getInventoryCount(id) {
+  const item = state.inventory[id];
+  return item ? Math.max(0, Number(item.count) || 0) : 0;
+}
+
+function changeInventory(id, delta) {
+  if (!state.inventory[id]) return 0;
+  state.inventory[id].count = clamp(getInventoryCount(id) + delta, 0, 99);
+  return state.inventory[id].count;
+}
+
+function getMealPeriod(now = Date.now()) {
+  const hour = new Date(now).getHours();
+  const slot = MEAL_SLOT_ORDER.find((slotId) => {
+    const range = MEAL_SLOTS[slotId];
+    return hour >= range.start && hour < range.end;
+  });
+  return slot ? { type: 'meal', slotId: slot } : { type: 'sleep', slotId: null };
+}
+
+function getFoodForMeal(slotId, targetState = state) {
+  if (!targetState.hatched) return null;
+  if (Number(targetState.sukusuku) < 38) return careFoods.moji_milk;
+  return slotId === 'afternoon' ? careFoods.moji_cookie : careFoods.moji_gohan;
+}
+
+function getPreferredFood(now = Date.now()) {
+  if (!state.hatched) return null;
+  if (Number(state.sukusuku) < 38) return careFoods.moji_milk;
+  const period = getMealPeriod(now);
+  return getFoodForMeal(period.slotId || 'morning');
+}
+
+function isMealClaimed(slotId, targetState = state) {
+  return Boolean(targetState.feedingDay?.claimed?.[slotId]);
+}
+
+function getMealSlotState(slotId, now = Date.now()) {
+  ensureFeedingDayState(state, now);
+  if (isMealClaimed(slotId)) return 'used';
+  const period = getMealPeriod(now);
+  if (period.type === 'sleep') return 'sleep';
+  if (period.slotId === slotId) return 'current';
+  const currentIndex = MEAL_SLOT_ORDER.indexOf(period.slotId);
+  return MEAL_SLOT_ORDER.indexOf(slotId) < currentIndex ? 'past' : 'future';
+}
+
+function getMealStatusLabel(status) {
+  if (status === 'current') return 'いま';
+  if (status === 'used') return 'すみ';
+  if (status === 'past') return 'おわり';
+  if (status === 'sleep') return 'すやすや';
+  return 'あとで';
+}
+
+function getMealFoodLabel(food, slotId) {
+  if (!food) return '';
+  if (food.id === 'moji_milk' && slotId === 'afternoon') return 'ごごの ミルク';
+  if (food.id === 'moji_cookie' && slotId === 'afternoon') return 'おやつ';
+  return food.name;
+}
+
+function markCareInteraction() {
+  state.lastCareAt = Date.now();
+}
+
+function applyGokigenDecay(now = Date.now()) {
+  const currentGokigen = Number(state.gokigen);
+  state.gokigen = Number.isFinite(currentGokigen) ? clamp(currentGokigen, 0, 100) : 78;
+  if (!state.hatched) {
+    state.gokigen = clamp(state.gokigen, 72, 100);
+    state.lastMoodAt = now;
+    return false;
+  }
+  // アプリを ひらかなかった時間や、食事をのがしたことでは下げない。
+  state.lastMoodAt = Number.isFinite(state.lastMoodAt) ? state.lastMoodAt : now;
+  return false;
+}
+
+function boostGokigen(amount) {
+  applyGokigenDecay();
+  state.gokigen = clamp(state.gokigen + amount, 0, 100);
+  state.lastMoodAt = Date.now();
+}
+
+function getWelcomeBackHours() {
+  return Math.max(0, (entryOpenedAt - entryLastSeenAt) / 3600000);
+}
+
+function getGokigenStatus() {
+  if (!state.hatched) return { id: 'sleepy', label: 'すやすや', reaction: 'normal' };
+  applyGokigenDecay();
+  if (getWelcomeBackHours() >= 24) return { id: 'welcome', label: 'おかえり', reaction: 'happy' };
+  if (state.gokigen >= 88) return { id: 'sparkly', label: 'きらきら', reaction: 'happy' };
+  if (state.gokigen >= 68) return { id: 'happy', label: 'にこにこ', reaction: 'happy' };
+  if (state.gokigen >= 46) return { id: 'normal', label: 'まったり', reaction: 'normal' };
+  if (state.gokigen >= 28) return { id: 'lonely', label: 'さみしい', reaction: 'worried' };
+  return { id: 'sulky', label: 'むぅ...', reaction: 'angry' };
+}
+
+function getFriendshipTier() {
+  const value = clamp(Number(state.nakayoshi) || 0, 0, 100);
+  if (value >= 85) return { level: 4, label: 'だいすき' };
+  if (value >= 65) return { level: 3, label: 'なかよし' };
+  if (value >= 40) return { level: 2, label: 'なれてきた' };
+  if (value >= 20) return { level: 1, label: 'すこしずつ' };
+  return { level: 0, label: 'これから なかよし' };
+}
+
+function getFriendshipBonus() {
+  if (!state.hatched) return null;
+  const tier = getFriendshipTier();
+  const mood = getGokigenStatus();
+  if (mood.id === 'lonely' || mood.id === 'sulky') return null;
+  if (tier.level >= 4) return { stars: 20, message: `${getMilmaruName()}の おうえん！スターを たくさん もらったよ。` };
+  if (tier.level >= 3) return { stars: 10, message: `${getMilmaruName()}が おうえんしてくれたよ。スターが すこし ふえた！` };
+  return null;
+}
+
+function getIdleMood(now = Date.now()) {
+  if (!state.hatched) return null;
+  const name = getMilmaruName();
+  const welcomeHours = getWelcomeBackHours(now);
+  if (welcomeHours >= 24) {
+    return {
+      reaction: 'happy',
+      speech: 'おかえり！',
+      message: welcomeHours >= 48
+        ? `${name}が まってたよ。きょうも ゆっくり あそぼう。`
+        : `${name}が うれしそうに おむかえしているよ。`
+    };
+  }
+  const mood = getGokigenStatus();
+  if (mood.id === 'sulky') {
+    return {
+      reaction: 'angry',
+      speech: 'むぅ〜...',
+      message: `${name}は ちょっと すねているみたい。もじを かいて、おせわしてあげよう。`
+    };
+  }
+  if (mood.id === 'lonely') {
+    return {
+      reaction: 'worried',
+      speech: 'くぅん...',
+      message: `${name}は すこし さみしかったみたい。なでると すぐ げんきになるよ。`
+    };
+  }
+  const hour = new Date(now).getHours();
+  if (hour >= 21 || hour < 6) {
+    return {
+      reaction: 'sleep',
+      speech: 'すぅ...すぅ...',
+      message: `${name}は ねむっているよ。あした また おせわしよう。`
+    };
+  }
+  return null;
+}
+
+function getDisplayReaction(reaction) {
+  const currentReaction = reaction || state.reaction || 'normal';
+  if (currentReaction !== 'normal') return currentReaction;
+  const idleMood = getIdleMood();
+  return idleMood ? idleMood.reaction : currentReaction;
+}
+
+function getBabySpeech(text) {
+  const raw = String(text || '');
+  if (/ない|たりない|まだ/.test(raw)) return 'ふぇ...？';
+  if (/ねむ|すや|すぅ/.test(raw)) return 'すぅ...すぅ...';
+  if (/怒|ぷん|まって|さみ|むぅ/.test(raw)) return 'むぅ〜...';
+  if (/おいしい|ごくごく|ミルク|ごはん|クッキー|おやつ|ほしい|もらった/.test(raw)) return 'みゅみゅ！';
+  if (/なで|うれしい|ありがとう|ぽかぽか/.test(raw)) return 'ふにゃ〜♪';
+  if (/あそ|たのしい|ぴょん/.test(raw)) return 'きゃっきゃ！';
+  if (/もじ|かこう|かき/.test(raw)) return 'あう〜？';
+  return 'ふにゃ？';
+}
+
+function getYochiyochiSpeech(text) {
+  const raw = String(text || '');
+  if (/ない|たりない/.test(raw)) return 'なぁい...？';
+  if (/ねむ|すや|すぅ/.test(raw)) return 'ねむねむ...';
+  if (/怒|ぷん|まって|さみ|むぅ/.test(raw)) return 'むーむー！';
+  if (/おいしい|ごくごく|ミルク|ごはん|クッキー|おやつ|ほしい|もらった/.test(raw)) return 'まんま、んま！';
+  if (/なで|うれしい|ありがとう|しっぽ|ふりふり/.test(raw)) return 'なで...すき';
+  if (/あそ|たのしい|ぴょん|おいかけ|たんけん/.test(raw)) return 'あしょぼ！';
+  if (/はいはい/.test(raw)) return 'はいはい...いく！';
+  if (/あんよ|歩|よちよち|せのび|たちあが/.test(raw)) return 'あんよ...できた！';
+  if (/もじ|かこう|かき/.test(raw)) return 'もじ...かく？';
+  return raw.length > 8 ? 'うにゃ？' : raw;
+}
+
+function getYochiyochiPhase() {
+  if (!state.hatched || getCareStage().id !== 'yochiyochi') return null;
+  if (state.sukusuku < 38) return 'crawl';
+  if (state.sukusuku < 45) return 'first_steps';
+  return 'almost_kids';
+}
+
+function getYochiyochiActionMessage(action) {
+  const phase = getYochiyochiPhase();
+  if (!phase) return '';
+  const name = getMilmaruName();
+  const messages = {
+    feed: {
+      crawl: `${name}が もぐもぐして、はいはいで ちょっと近づいてきたよ。`,
+      first_steps: `${name}が もぐもぐして、あんよを ふみふみしたよ。`,
+      almost_kids: `${name}が 背のびして、少し たくましく見えるよ。`
+    },
+    pet: {
+      crawl: `${name}が しっぽを ふりふりしているよ。`,
+      first_steps: `${name}が うれしくて、ちいさく たちあがったよ。`,
+      almost_kids: `${name}が えへへって じまんげだよ。`
+    },
+    play: {
+      crawl: `${name}と はいはいで おいかけっこしたよ。`,
+      first_steps: `${name}が よちよち歩きで ついてきたよ。`,
+      almost_kids: `${name}が ころばずに ぴょんと はねたよ。`
+    },
+    writing: {
+      crawl: `${name}が はいはいで そばにきて、おうえんしてるよ。`,
+      first_steps: `${name}が よちよち歩きで みにきたよ。`,
+      almost_kids: `${name}が 背のびして、もじを みているよ。`
+    }
+  };
+  return messages[action]?.[phase] || '';
+}
+
+function getStageUpCopy(stage) {
+  const name = getMilmaruName();
+  if (stage.id === 'yochiyochi') {
+    return {
+      title: 'はいはい できるようになったよ',
+      message: `${name}が はいはいで すすむように なったよ。おにわを たんけんできるね。`
+    };
+  }
+  if (stage.id === 'kids') {
+    return {
+      title: 'しっかり たてるようになったよ',
+      message: `${name}が しっかり たてるように なったよ。これから もっと いっしょに あそべそう。`
+    };
+  }
+  if (stage.id === 'pre_evolution') {
+    return {
+      title: 'からだが きらきらしているよ',
+      message: `${name}の からだが ほんのり ひかっているよ。`
+    };
+  }
+  return null;
+}
+
+function showCareNotice(title, message, duration = 2450) {
+  if (!stageNotice) return;
+  stageNoticeTitle.textContent = title || 'おしらせ';
+  stageNoticeText.textContent = message || '';
+  stageNotice.classList.remove('show');
+  stageNotice.setAttribute('aria-hidden', 'false');
+  void stageNotice.offsetWidth;
+  stageNotice.classList.add('show');
+  clearTimeout(showCareNotice._timer);
+  showCareNotice._timer = setTimeout(() => {
+    stageNotice.classList.remove('show');
+    stageNotice.setAttribute('aria-hidden', 'true');
+  }, duration);
+}
+
+function showStageNotice(copy) {
+  if (!copy) return;
+  showCareNotice(copy.title || 'すこし せいちょう！', copy.message || '', 2450);
+}
+
+function syncGrowthStageChange() {
+  if (!state.hatched) {
+    state.lastStageId = 'egg';
+    return false;
+  }
+  const stage = getCareStage();
+  const previousStageId = state.lastStageId || stage.id;
+  if (previousStageId === stage.id) return false;
+  state.lastStageId = stage.id;
+  const copy = getStageUpCopy(stage);
+  if (!copy) return false;
+  playSfx('hatch');
+  bottomMessage.textContent = copy.message;
+  showStageNotice(copy);
+  setReaction('happy', 2600);
+  spawnFx('sparkle');
+  return true;
+}
+
+function getStageSpeech(text) {
+  if (!state.hatched) return text;
+  const stage = getCareStage();
+  if (stage.id === 'baby') return getBabySpeech(text);
+  if (stage.id === 'yochiyochi') return getYochiyochiSpeech(text);
+  return text;
+}
+
+function getDisplaySpeech(text) {
+  const idleMood = (state.reaction || 'normal') === 'normal' ? getIdleMood() : null;
+  return getStageSpeech(idleMood ? idleMood.speech : text);
+}
+
+function getMilmaruVisualStage() {
+  if (!state.hatched) return 'egg';
+  return getCareStage().id === 'baby' ? 'baby' : 'yochiyochi';
+}
+
+function getYochiyochiMotionClass() {
+  return state.sukusuku < 38 ? 'roaming-crawl' : 'roaming-walk';
+}
+
+function getRoamMaturity() {
+  return clamp((Math.max(25, state.sukusuku) - 25) / 25, 0, 1);
+}
+
+function getRoamProfile(distance = 0) {
+  const maturity = getRoamMaturity();
+  const isCrawling = state.sukusuku < 38;
+  const jitter = 0.82 + Math.random() * 0.62;
+  const duration = clamp(
+    (lerp(6.8, 3.5, maturity) + distance * lerp(0.32, 0.15, maturity)) * jitter,
+    lerp(8.4, 4.4, maturity),
+    lerp(13.8, 7.2, maturity)
+  );
+  return {
+    minX: lerp(43, 36, maturity),
+    maxX: lerp(57, 64, maturity),
+    minY: 60,
+    maxY: lerp(100, 136, maturity),
+    duration,
+    frameDuration: (isCrawling ? lerp(2.35, 1.45, maturity) : lerp(1.72, 1.08, maturity)) * (0.92 + Math.random() * 0.18),
+    pause: lerp(2600, 1000, maturity) + Math.random() * lerp(2800, 1700, maturity)
+  };
+}
+
+function shouldRoam() {
+  return state.hatched
+    && getMilmaruVisualStage() === 'yochiyochi'
+    && getDisplayReaction(state.reaction) === 'normal'
+    && !pettingMode
+    && !hatchingNow;
+}
+
+function applyRoamStyles(resetCenter = false) {
+  const x = resetCenter ? 50 : roamState.x;
+  const y = resetCenter ? 42 : roamState.y;
+  milmaruWrap.style.setProperty('--roam-x', `${x}%`);
+  milmaruWrap.style.setProperty('--roam-y', `${y}px`);
+  milmaruWrap.style.setProperty('--roam-dir', String(resetCenter ? 1 : roamState.dir));
+  milmaruWrap.style.setProperty('--roam-duration', `${roamState.duration || 5.2}s`);
+  milmaruWrap.style.setProperty('--roam-frame-duration', `${roamState.frameDuration || 1.9}s`);
+  milmaruWrap.style.setProperty('--roam-easing', resetCenter ? 'ease-out' : 'cubic-bezier(.38, 0, .22, 1)');
+  speechBubble.style.setProperty('--speech-x', `${x}%`);
+}
+
+function freezeRoamPosition() {
+  if (!state.hatched || getMilmaruVisualStage() !== 'yochiyochi') return;
+  const yardRect = document.querySelector('.center-yard').getBoundingClientRect();
+  const wrapRect = milmaruWrap.getBoundingClientRect();
+  if (!yardRect.width || !yardRect.height || !wrapRect.width) return;
+  const currentX = clamp(((wrapRect.left + wrapRect.width / 2 - yardRect.left) / yardRect.width) * 100, 32, 68);
+  const currentY = clamp(yardRect.bottom - wrapRect.bottom, 42, 152);
+  roamState.x = currentX;
+  roamState.y = currentY;
+  roamState.duration = 0.01;
+  roamState.frameDuration = 1.8;
+  roamState.moving = false;
+  clearTimeout(roamState.timer);
+  clearTimeout(roamState.motionTimer);
+  roamState.timer = null;
+  roamState.motionTimer = null;
+  applyRoamStyles();
+}
+
+function scheduleRoam(delay = 1500) {
+  clearTimeout(roamState.timer);
+  roamState.timer = setTimeout(moveRoamTarget, delay);
+}
+
+function moveRoamTarget() {
+  if (!shouldRoam()) {
+    syncRoaming();
+    return;
+  }
+  const range = getRoamProfile();
+  const nextX = range.minX + Math.random() * (range.maxX - range.minX);
+  const nextY = range.minY + Math.random() * (range.maxY - range.minY);
+  const distance = Math.hypot(nextX - roamState.x, (nextY - roamState.y) / 4);
+  const profile = getRoamProfile(distance);
+  roamState.dir = nextX < roamState.x ? -1 : 1;
+  roamState.x = nextX;
+  roamState.y = nextY;
+  roamState.duration = profile.duration;
+  roamState.frameDuration = profile.frameDuration;
+  roamState.moving = true;
+  applyRoamStyles();
+  applyMilmaruClass(state.reaction);
+  clearTimeout(roamState.motionTimer);
+  roamState.motionTimer = setTimeout(() => {
+    roamState.moving = false;
+    applyMilmaruClass(state.reaction);
+  }, roamState.duration * 1000);
+  scheduleRoam((roamState.duration * 1000) + profile.pause);
+}
+
+function syncRoaming() {
+  const canRoam = shouldRoam();
+  milmaruWrap.classList.toggle('roaming', canRoam);
+  if (!canRoam) {
+    if (getMilmaruVisualStage() === 'yochiyochi' && roamState.moving) {
+      freezeRoamPosition();
+    }
+    clearTimeout(roamState.timer);
+    clearTimeout(roamState.motionTimer);
+    roamState.timer = null;
+    roamState.motionTimer = null;
+    roamState.moving = false;
+    applyRoamStyles(getMilmaruVisualStage() !== 'yochiyochi');
+    return;
+  }
+  applyRoamStyles();
+  if (!roamState.timer) scheduleRoam(1600 + Math.random() * 1600);
+}
+
+function hasStars(cost = 1) {
+  return (Number(state.stars) || 0) >= cost;
+}
+
+function showNeedWritingMessage(cost = 1) {
+  playSfx('mistake');
+  finishPettingMode();
+  const shortage = Math.max(1, cost - (Number(state.stars) || 0));
+  const message = `あと ${shortage}スター たりないよ。もじを かいて スターを あつめよう。`;
+  setSpeech('スターが たりないよ', message);
+  showCareNotice('もじを かこう！', message, 2600);
+  setReaction(state.hatched ? 'worried' : 'relaxed', 1200);
+  spawnFx('sparkle');
+  saveState();
+  render();
+}
+
+function spendStars(cost) {
+  if (!hasStars(cost)) {
+    showNeedWritingMessage(cost);
+    return false;
+  }
+  state.stars = clamp((Number(state.stars) || 0) - cost, 0, 99999);
+  return true;
+}
+
+function getNextGrowthProgress(sukusuku) {
+  const stage = getGrowthStage(sukusuku);
+  const max = stage.next;
+  return {
+    current: clamp(sukusuku, 0, max),
+    max,
+    percent: clamp((sukusuku / max) * 100, 0, 100)
+  };
+}
+
+function getHiddenGrowthHint() {
+  if (!state.hatched) {
+    if (state.eggWarmth >= 95) return 'タマゴが そわそわしているよ。もうすぐ うまれそう。';
+    if (state.eggWarmth >= 70) return 'タマゴの なかで、ちいさく コトコト うごいているよ。';
+    return '';
+  }
+  const yochiyochiPhase = getYochiyochiPhase();
+  if (yochiyochiPhase === 'almost_kids') {
+    return `${getMilmaruName()}が 背のびして、いつもより たくましく見えるよ。`;
+  }
+  const progress = getNextGrowthProgress(Math.max(10, state.sukusuku));
+  const remaining = progress.max - Math.max(10, state.sukusuku);
+  if (remaining <= 0) return `${getMilmaruName()}が なんだか そわそわしているよ。`;
+  if (remaining <= 6) return `${getMilmaruName()}が すこし 背のびしてるみたい。`;
+  return '';
+}
+
+function getMemoLines(stage, mood, friendship) {
+  if (!state.hatched) return ['タマゴの なかで すやすや。', 'ぽかぽかが だいすき！'];
+  if (mood.id === 'welcome') return ['おかえり！ きょうも いっしょ。', 'ゆっくり あそぼうね。'];
+  if (mood.id === 'sulky') return ['ちょっと すねているみたい。', 'もじをかいて おせわすると、すぐ げんきになるよ。'];
+  if (mood.id === 'lonely') return ['すこし さみしかったみたい。', 'なでると ほっとするよ。'];
+  if (friendship.level >= 4) return ['あなたの こえが だいすき！', 'もじをかくと、そばで おうえんするよ。'];
+  if (friendship.level >= 3) return ['いっしょにいると にこにこ。', 'もじれんしゅうを みるのが すき。'];
+  if (stage.id === 'baby') return ['ミルクのにおいが だいすき！', 'やさしくされると すぐ にこにこ。'];
+  if (stage.id === 'yochiyochi') {
+    const phase = getYochiyochiPhase();
+    if (phase === 'crawl') return ['はいはいで にわを たんけん中。', '呼ぶと、こっちを ちらっと見るよ。'];
+    if (phase === 'first_steps') return ['よちよち歩きが たのしいみたい。', 'ころばないように そっと見守ろう。'];
+    return ['背のびが じょうずに なってきた。', '新しいことが できそうな 予感。'];
+  }
+  return ['やさしくて、がんばりやさん。', 'いろんなものに きょうみしんしん。'];
+}
+
+function getEggVisualClass() {
+  if (state.eggWarmth >= 35) return 'egg-cracked';
+  return 'egg-idle';
+}
+
+function renderMealSchedule(now = Date.now()) {
+  mealSchedule.hidden = !state.hatched;
+  if (!state.hatched) return;
+  ensureFeedingDayState(state, now);
+  mealSchedule.querySelectorAll('.meal-slot').forEach((slotEl) => {
+    const status = getMealSlotState(slotEl.dataset.slot, now);
+    slotEl.dataset.state = status;
+    slotEl.querySelector('.meal-slot-status').textContent = getMealStatusLabel(status);
+  });
+}
+
+function renderActionMode(now = Date.now()) {
+  const stars = Number(state.stars) || 0;
+  const period = getMealPeriod(now);
+  const currentFood = period.slotId ? getFoodForMeal(period.slotId) : getPreferredFood(now);
+  const currentFoodCount = currentFood ? getInventoryCount(currentFood.id) : 0;
+  const mealUsed = period.slotId ? isMealClaimed(period.slotId) : false;
+  careActions.classList.toggle('egg-mode', !state.hatched);
+  writeBtn.classList.toggle('warm-main', !state.hatched && stars >= actionStarCost.warm);
+  writeBtn.classList.toggle('needs-power', !state.hatched && stars < actionStarCost.warm);
+  if (state.hatched) {
+    mainActionIcon.textContent = '';
+    mainActionText.textContent = 'もじを かく！';
+    mainActionHelp.textContent = 'もじを かいて スターと たべものを もらおう！';
+  } else {
+    mainActionIcon.textContent = stars >= actionStarCost.warm ? '' : '✏';
+    mainActionText.textContent = stars >= actionStarCost.warm ? 'あたためる！' : 'もじを かく！';
+    mainActionHelp.textContent = stars >= actionStarCost.warm ? `スター${actionStarCost.warm}で あたためる` : 'かくと スターが もらえるよ';
+  }
+  feedBtn.classList.toggle('milk', state.hatched && period.type === 'meal' && currentFood?.id === 'moji_milk');
+  feedBtn.classList.toggle('gohan', state.hatched && period.type === 'meal' && currentFood?.id === 'moji_gohan');
+  feedBtn.classList.toggle('cookie', state.hatched && period.type === 'meal' && currentFood?.id === 'moji_cookie');
+  feedBtn.classList.toggle('meal-closed', state.hatched && (period.type === 'sleep' || mealUsed));
+  feedBtn.classList.toggle('has-cookie', state.hatched && period.type === 'meal' && !mealUsed && currentFoodCount > 0);
+  feedBtn.dataset.mealState = period.type === 'sleep' ? 'sleep' : (mealUsed ? 'used' : 'current');
+  feedBtn.setAttribute('aria-disabled', state.hatched && (period.type === 'sleep' || mealUsed) ? 'true' : 'false');
+  feedBtn.querySelector('.action-icon').textContent = period.type === 'sleep' ? '☾' : (mealUsed ? '✓' : '');
+  if (!state.hatched) {
+    feedActionText.textContent = 'あげる';
+    feedActionHelp.textContent = 'うまれてから あげよう';
+  } else if (period.type === 'sleep') {
+    feedActionText.textContent = 'すやすや';
+    feedActionHelp.textContent = 'あさ 6じから';
+  } else if (mealUsed) {
+    feedActionText.textContent = 'ごちそうさま';
+    feedActionHelp.textContent = `${MEAL_SLOTS[period.slotId].label}は たべたよ`;
+  } else {
+    const foodLabel = getMealFoodLabel(currentFood, period.slotId);
+    feedActionText.textContent = `${foodLabel}を あげる`;
+    feedActionHelp.textContent = `${MEAL_SLOTS[period.slotId].label}の じかん`;
+  }
+  const playButton = document.getElementById('playBtn');
+  playButton.classList.toggle('power-empty', state.hatched && !hasStars(actionStarCost.play));
+  playButton.querySelector('.action-help').textContent = state.hatched && hasStars(actionStarCost.play)
+    ? `スター${actionStarCost.play}で あそぶ`
+    : 'あそびばへ いく';
+  renderMealSchedule(now);
+}
+
+function applyMilmaruClass(reaction) {
+  const currentReaction = getDisplayReaction(reaction);
+  const classes = ['milmaru'];
+  if (state.hatched) {
+    classes.push(getMilmaruVisualStage(), currentReaction);
+    if (getMilmaruVisualStage() === 'yochiyochi' && currentReaction === 'normal' && roamState.moving) {
+      classes.push(getYochiyochiMotionClass());
+    }
+  } else {
+    classes.push('egg', getEggVisualClass(), currentReaction);
+  }
+  milmaru.className = classes.join(' ');
+}
+
+function setSpeech(text, message) {
+  state.speech = text;
+  speechBubble.textContent = getDisplaySpeech(text);
+  if (message) bottomMessage.textContent = message;
+}
+
+function setReaction(reaction, duration = 950) {
+  state.reaction = reaction;
+  if (reaction !== 'normal') freezeRoamPosition();
+  applyMilmaruClass(reaction);
+  syncRoaming();
+  clearTimeout(setReaction._timer);
+  setReaction._timer = setTimeout(() => {
+    state.reaction = 'normal';
+    applyMilmaruClass('normal');
+    speechBubble.textContent = getDisplaySpeech(state.speech);
+    syncRoaming();
+    saveState();
+  }, duration);
+}
+
+function spawnFx(type) {
+  const count = type === 'sparkle' ? 18 : 14;
+  for (let i = 0; i < count; i++) {
+    const piece = document.createElement('div');
+    piece.className = `fx-piece ${i % 3 === 0 ? 'sparkle' : 'heart'}`;
+    piece.style.setProperty('--x', (45 + Math.random() * 18) + '%');
+    piece.style.setProperty('--y', (46 + Math.random() * 20) + '%');
+    piece.style.setProperty('--dx', ((Math.random() - 0.5) * 180) + 'px');
+    piece.style.setProperty('--dy', ((Math.random() - 0.5) * 40) + 'px');
+    piece.style.animationDelay = (Math.random() * 0.15) + 's';
+    fxLayer.appendChild(piece);
+    setTimeout(() => piece.remove(), 1200);
+  }
+}
+
+function getFoodOfferPoint(foodId) {
+  const yardRect = document.querySelector('.center-yard').getBoundingClientRect();
+  const wrapRect = milmaruWrap.getBoundingClientRect();
+  if (!yardRect.width || !yardRect.height || !wrapRect.width) {
+    return { x: 50, y: state.hatched ? 55 : 50 };
+  }
+  const visualStage = getMilmaruVisualStage();
+  const mouthOffsetY = visualStage === 'baby' ? 0.48 : 0.38;
+  const mouthOffsetX = visualStage === 'yochiyochi' ? 0.52 : 0.5;
+  const point = {
+    x: clamp(((wrapRect.left + wrapRect.width * mouthOffsetX - yardRect.left) / yardRect.width) * 100, 20, 80),
+    y: clamp(((wrapRect.top + wrapRect.height * mouthOffsetY - yardRect.top) / yardRect.height) * 100, 18, 82)
+  };
+  if (foodId === 'moji_milk') {
+    return {
+      x: clamp(point.x - 6, 20, 80),
+      y: clamp(point.y + 10, 18, 82)
+    };
+  }
+  return point;
+}
+
+function spawnFoodFx(foodId) {
+  const piece = document.createElement('div');
+  const foodClass = foodId === 'moji_cookie' ? 'cookie' : (foodId === 'moji_gohan' ? 'gohan' : 'milk');
+  piece.className = `food-fx ${foodClass}`;
+  const target = getFoodOfferPoint(foodId);
+  piece.style.setProperty('--mouth-x', `${target.x}%`);
+  piece.style.setProperty('--mouth-y', `${target.y}%`);
+  fxLayer.appendChild(piece);
+  setTimeout(() => piece.remove(), 1050);
+}
+
+function queueHatchStep(delay, fn) {
+  const timer = setTimeout(fn, delay);
+  hatchTimers.push(timer);
+}
+
+function clearHatchSceneTimers() {
+  hatchTimers.forEach((timer) => clearTimeout(timer));
+  hatchTimers = [];
+}
+
+function setHatchScenePhase(phase, copy, subcopy) {
+  stageWrap.classList.add('hatch-active');
+  stageEl.classList.add('hatch-active');
+  hatchScene.className = `hatch-scene show phase-${phase}`;
+  hatchScene.setAttribute('aria-hidden', 'false');
+  hatchCopy.textContent = copy;
+  hatchSubcopy.textContent = subcopy;
+}
+
+function hideHatchScene() {
+  stageWrap.classList.remove('hatch-active');
+  stageEl.classList.remove('hatch-active');
+  hatchScene.className = 'hatch-scene';
+  hatchScene.setAttribute('aria-hidden', 'true');
+}
+
+function renderNameModal() {
+  if (!nameModal) return;
+  const shouldShow = state.hatched && !state.named && !hatchingNow;
+  const wasShown = nameModal.classList.contains('show');
+  nameModal.classList.toggle('show', shouldShow);
+  nameModal.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
+  if (shouldShow && !wasShown) {
+    nameInput.value = getMilmaruName();
+    setTimeout(() => {
+      nameInput.focus();
+      nameInput.select();
+    }, 80);
+  }
+}
+
+function saveMilmaruName() {
+  const nextName = sanitizeMilmaruName(nameInput.value);
+  state.name = nextName;
+  state.named = true;
+  boostGokigen(10);
+  state.speech = 'ふにゃ〜♪';
+  bottomMessage.textContent = `${nextName}、よろしくね。もじミルクを あげてみよう。`;
+  playSfx('select');
+  saveState();
+  render();
+}
+
+function startHatchScene() {
+  clearHatchSceneTimers();
+  setHatchScenePhase('notice', 'おや...？', 'タマゴの ようすが...');
+  playSfx('warm');
+
+  queueHatchStep(900, () => {
+    setHatchScenePhase('ready', 'タマゴが かえりそうだぞ！', 'からが ぐらぐら ゆれているよ');
+    playSfx('warm');
+  });
+
+  queueHatchStep(1900, () => {
+    setHatchScenePhase('peek', 'パカッ！', 'ミルマルが でてきたよ！');
+    playSfx('hatch');
+    spawnFx('sparkle');
+  });
+
+  queueHatchStep(2800, () => {
+    state.hatched = true;
+    state.named = false;
+    state.name = sanitizeMilmaruName(state.name);
+    state.nakayoshi = 0;
+    state.gokigen = 86;
+    state.lastMoodAt = Date.now();
+    state.sukusuku = Math.max(10, state.sukusuku);
+    state.lastStageId = 'baby';
+    state.reaction = 'birth';
+    markCareInteraction();
+    setSpeech('うまれたよ！', 'なまえを つけてあげよう。');
+    setHatchScenePhase('born', 'ミルマルが うまれたよ！', 'なまえを つけてあげよう');
+    spawnFx('sparkle');
+    saveState();
+    render();
+  });
+
+  queueHatchStep(4300, () => {
+    hideHatchScene();
+    hatchingNow = false;
+    setReaction('birth', 1300);
+    render();
+  });
+
+  queueHatchStep(5900, () => {
+    if (state.reaction === 'normal' && state.named) {
+      setSpeech('いっしょに もじを かこう！', 'もじを かくと、もじミルクと スターが もらえるよ。');
+      saveState();
+      render();
+    }
+  });
+}
+
+function maybeHatchEgg() {
+  if (state.hatched || state.eggWarmth < 100) return false;
+  if (hatchingNow) return true;
+  playSfx('warm');
+  hatchingNow = true;
+  state.reaction = 'warm';
+  setSpeech('おや...？', 'タマゴの ようすが...');
+  spawnFx('sparkle');
+  saveState();
+  render();
+  clearHatchSceneTimers();
+  queueHatchStep(850, startHatchScene);
+  return true;
+}
+
+function warmEgg() {
+  const now = Date.now();
+  if (now - state.lastWarmAt < 650) return;
+  if (!spendStars(actionStarCost.warm)) return;
+  playSfx('warm');
+  state.lastWarmAt = now;
+  markCareInteraction();
+  state.eggWarmth = clamp(state.eggWarmth + 25, 0, 100);
+  state.nakayoshi = 0;
+  if (state.eggWarmth >= 100) {
+    maybeHatchEgg();
+    return;
+  }
+  if (state.eggWarmth >= 70) {
+    setSpeech('もうすぐ うまれそう！', 'タマゴの なかで ミルマルが うれしそうに うごいたよ。');
+  } else if (state.eggWarmth >= 35) {
+    setSpeech('ぽかぽか してきたよ', 'タマゴに ちいさな ひびが はいったみたい。');
+  } else {
+    setSpeech('あったかいね', 'やさしく あたためてあげよう。');
+  }
+  setReaction('warm', 900);
+  spawnFx('sparkle');
+  saveState();
+  render();
+}
+
+function render() {
+  state.nakayoshi = clamp(state.nakayoshi, 0, 100);
+  if (!state.hatched) state.nakayoshi = 0;
+  applyGokigenDecay();
+  state.gokigen = clamp(state.gokigen, 0, 100);
+  state.sukusuku = clamp(state.sukusuku, 0, 100);
+  state.eggWarmth = clamp(state.eggWarmth || 0, 0, 100);
+  state.name = sanitizeMilmaruName(state.name);
+  const displayName = getMilmaruName();
+  const stage = getCareStage();
+  const mood = getGokigenStatus();
+  const friendship = getFriendshipTier();
+  const memoLines = getMemoLines(stage, mood, friendship);
+
+  document.title = `もじっこファーム | ${displayName}`;
+  document.getElementById('titleName').textContent = displayName;
+  document.getElementById('sideNameHeading').textContent = displayName;
+  document.getElementById('milmaruNameDisplay').textContent = displayName;
+  document.getElementById('milmaruLevel').textContent = String(state.hatched ? Math.max(1, Math.floor(state.sukusuku / 20) + 1) : 1);
+  document.getElementById('growthStageName').textContent = stage.name;
+  document.getElementById('moodChip').dataset.mood = mood.id;
+  document.getElementById('moodLabel').textContent = mood.label;
+  document.getElementById('memoLine1').textContent = memoLines[0];
+  document.getElementById('memoLine2').textContent = memoLines[1];
+  document.getElementById('starCount').textContent = String(state.stars);
+  document.getElementById('nakayoshiText').textContent = `${state.nakayoshi} / 100`;
+  document.getElementById('nakayoshiFill').style.width = `${state.nakayoshi}%`;
+  document.getElementById('milkCount').textContent = String(getInventoryCount('moji_milk'));
+  document.getElementById('gohanCount').textContent = String(getInventoryCount('moji_gohan'));
+  document.getElementById('cookieCount').textContent = String(getInventoryCount('moji_cookie'));
+  speechBubble.textContent = getDisplaySpeech(state.speech);
+  const idleMood = (state.reaction || 'normal') === 'normal' ? getIdleMood() : null;
+  if (idleMood) {
+    bottomMessage.textContent = idleMood.message;
+  } else {
+    const hiddenGrowthHint = getHiddenGrowthHint();
+    if (hiddenGrowthHint) bottomMessage.textContent = hiddenGrowthHint;
+  }
+  renderActionMode();
+  applyMilmaruClass(state.reaction);
+  syncRoaming();
+  renderNameModal();
+  renderDebugPanel();
+}
+
+function renderDebugPanel() {
+  if (!debugMode || !debugPanel) return;
+  document.getElementById('debugNakayoshi').value = String(state.nakayoshi);
+  document.getElementById('debugGokigen').value = String(state.gokigen);
+  document.getElementById('debugSukusuku').value = String(state.sukusuku);
+  document.getElementById('debugEggWarmth').value = String(state.eggWarmth);
+  document.getElementById('debugMilkCount').value = String(getInventoryCount('moji_milk'));
+  document.getElementById('debugGohanCount').value = String(getInventoryCount('moji_gohan'));
+  document.getElementById('debugCookieCount').value = String(getInventoryCount('moji_cookie'));
+  document.getElementById('debugStars').value = String(state.stars);
+  document.getElementById('debugHatched').checked = state.hatched;
+}
+
+function readDebugNumber(id, min, max) {
+  const input = document.getElementById(id);
+  const value = Number(input.value);
+  if (!Number.isFinite(value)) return min;
+  return clamp(Math.round(value), min, max);
+}
+
+function stopHatchingCutscene() {
+  hatchingNow = false;
+  clearHatchSceneTimers();
+  hideHatchScene();
+}
+
+function applyDebugState(next = {}) {
+  stopHatchingCutscene();
+  if (Object.prototype.hasOwnProperty.call(next, 'name')) {
+    state.name = sanitizeMilmaruName(next.name);
+  }
+  state.nakayoshi = next.nakayoshi ?? readDebugNumber('debugNakayoshi', 0, 100);
+  state.gokigen = next.gokigen ?? readDebugNumber('debugGokigen', 0, 100);
+  state.sukusuku = next.sukusuku ?? readDebugNumber('debugSukusuku', 0, 100);
+  state.eggWarmth = next.eggWarmth ?? readDebugNumber('debugEggWarmth', 0, 100);
+  state.inventory.moji_milk.count = next.milk ?? readDebugNumber('debugMilkCount', 0, 99);
+  state.inventory.moji_gohan.count = next.gohan ?? readDebugNumber('debugGohanCount', 0, 99);
+  state.inventory.moji_cookie.count = next.cookies ?? readDebugNumber('debugCookieCount', 0, 99);
+  state.stars = next.stars ?? readDebugNumber('debugStars', 0, 99999);
+  state.hatched = next.hatched ?? document.getElementById('debugHatched').checked;
+  state.lastStageId = next.lastStageId || (state.hatched ? getCareStage().id : 'egg');
+  if (Object.prototype.hasOwnProperty.call(next, 'named')) {
+    state.named = next.named;
+  } else if (!state.hatched) {
+    state.named = false;
+  }
+  state.reaction = 'normal';
+  state.lastCareAt = Date.now();
+  state.lastMoodAt = Date.now();
+  state.lastWarmAt = 0;
+  state.lastPetAt = 0;
+  state.foodSystemVersion = FOOD_SYSTEM_VERSION;
+  state.feedingDay = makeFeedingDay();
+  state.speech = next.speech || (state.hatched ? 'いっしょに もじを かこう！' : 'まだ タマゴだよ');
+  bottomMessage.textContent = next.message || 'デバッグ値を 反映したよ。';
+  saveState();
+  render();
+}
+
+function resetDebugState() {
+  stopHatchingCutscene();
+  state = cloneDefaultState();
+  saveState();
+  bottomMessage.textContent = 'デバッグ値を 初期化したよ。';
+  render();
+}
+
+function consumePendingWritingReward() {
+  let pending = null;
+  try {
+    const raw = localStorage.getItem(PENDING_REWARD_KEY);
+    if (raw) pending = JSON.parse(raw);
+    localStorage.removeItem(PENDING_REWARD_KEY);
+  } catch (error) {
+    console.warn('Could not consume writing reward:', error);
+  }
+  if (!pending || !pending.result || !pending.result.success) return false;
+  const pendingReward = pending.result.reward;
+  const fallbackReward = getPreferredFood();
+  const reward = state.hatched
+    ? (pendingReward && state.inventory[pendingReward.id] ? pendingReward : fallbackReward)
+    : null;
+  if (reward && state.inventory[reward.id]) {
+    changeInventory(reward.id, 1);
+  }
+  state.stars = clamp((Number(state.stars) || 0) + 10, 0, 99999);
+  markCareInteraction();
+  if (state.hatched) {
+    boostGokigen(8);
+    const bonus = getFriendshipBonus();
+    if (bonus) {
+      state.stars = clamp((Number(state.stars) || 0) + bonus.stars, 0, 99999);
+    }
+    const stageMessage = getYochiyochiActionMessage('writing');
+    const rewardName = reward?.name || careFoods[reward?.id]?.name || 'たべもの';
+    setSpeech(`${rewardName}を もらったよ！`, bonus ? bonus.message : (stageMessage || `スターも ふえたよ。${getMilmaruName()}に おせわを してみよう！`));
+    setReaction('happy');
+  } else {
+    setSpeech('スターが ふえたよ！', 'スターで タマゴを あたためられるよ。ミルクは うまれてから あげよう。');
+    setReaction('warm');
+  }
+  spawnFx('sparkle');
+  saveState();
+  return true;
+}
+
+function applyEntrySpeech() {
+  const params = new URLSearchParams(window.location.search);
+  if (params.get('from') === 'play') {
+    if (params.get('result') === 'success') {
+      setSpeech('あそぶの たのしい！', `${getMilmaruName()}と ころころボールで あそんだよ。なかよしが ふえた！`);
+      setReaction('happy', 1500);
+      spawnFx('sparkle');
+    } else if (state.hatched) {
+      setSpeech('また あそぼうね', 'もじを かいて スターを ためると、また おもちゃで あそべるよ。');
+    }
+    saveState();
+    return;
+  }
+  if (params.get('from') !== 'writing') return;
+  if (!state.hatched) {
+    if (hasStars(actionStarCost.warm)) {
+      setSpeech('タマゴを あたためよう！', 'スターを つかって、ぽかぽか してあげよう。');
+    } else {
+      setSpeech('もじを かきにいこう！', 'もじを かくと、タマゴを あたためる スターが ふえるよ。');
+    }
+    saveState();
+    return;
+  }
+  const period = getMealPeriod();
+  if (period.type === 'sleep') {
+    setSpeech('すやすや...', 'いまは ねる じかん。あさ 6じから ごはんを あげられるよ。');
+    saveState();
+    return;
+  }
+  const food = getFoodForMeal(period.slotId);
+  if (isMealClaimed(period.slotId)) {
+    setSpeech('ごちそうさま！', `${MEAL_SLOTS[period.slotId].label}は もう たべたよ。`);
+    saveState();
+    return;
+  }
+  if (getInventoryCount(food.id) > 0) {
+    setSpeech(`${getMealFoodLabel(food, period.slotId)}の じかん！`, `${food.name}を あげたら、${getMilmaruName()}が よろこぶよ。`);
+  } else {
+    setSpeech('いっしょに もじを かこう！', getYochiyochiActionMessage('writing') || `もじを かくと、${food.name}と スターが もらえるよ。`);
+  }
+  saveState();
+}
+
+function announceMealHintOnce(key, speech, message) {
+  if (lastMealHintKey === key) return;
+  lastMealHintKey = key;
+  state.speech = speech;
+  speechBubble.textContent = getStageSpeech(speech);
+  bottomMessage.textContent = message;
+}
+
+async function feedCookie() {
+  if (feedBusy) return;
+  feedBusy = true;
+  try {
+    state = loadState();
+    const now = Date.now();
+    ensureFeedingDayState(state, now);
+    if (!state.hatched) {
+      render();
+      announceMealHintOnce('egg', 'まだ タマゴだよ', 'いまは スターで あたためてあげよう。');
+      return;
+    }
+    const period = getMealPeriod(now);
+    if (period.type === 'sleep') {
+      render();
+      announceMealHintOnce('sleep', 'すやすや...', 'いまは ねる じかん。あさ 6じから ごはんを あげられるよ。');
+      return;
+    }
+    const slotId = period.slotId;
+    const slot = MEAL_SLOTS[slotId];
+    if (isMealClaimed(slotId)) {
+      render();
+      announceMealHintOnce(`used-${slotId}`, 'ごちそうさま！', `${slot.label}は もう たべたよ。つぎの じかんを まってね。`);
+      return;
+    }
+    const food = getFoodForMeal(slotId);
+    if (getInventoryCount(food.id) <= 0) {
+      render();
+      announceMealHintOnce(`empty-${slotId}-${food.id}`, `${food.name}が ないみたい。`, `もじを かくと ${food.name}が もらえるよ。`);
+      return;
+    }
+
+    const lockToken = `${now}-${Math.random().toString(36).slice(2)}`;
+    state.feedingDay.claimed[slotId] = { token: lockToken, at: now };
+    saveState();
+    await new Promise((resolve) => setTimeout(resolve, 48));
+
+    const confirmedState = loadState();
+    const confirmedClaim = confirmedState.feedingDay?.claimed?.[slotId];
+    if (!confirmedClaim || confirmedClaim.token !== lockToken) {
+      state = confirmedState;
+      render();
+      announceMealHintOnce(`used-${slotId}`, 'ごちそうさま！', `${slot.label}は もう たべたよ。つぎの じかんを まってね。`);
+      return;
+    }
+
+    state = confirmedState;
+    if (getInventoryCount(food.id) <= 0) {
+      delete state.feedingDay.claimed[slotId];
+      saveState();
+      render();
+      announceMealHintOnce(`empty-${slotId}-${food.id}`, `${food.name}が ないみたい。`, `もじを かくと ${food.name}が もらえるよ。`);
+      return;
+    }
+
+    state.feedingDay.claimed[slotId] = true;
+    changeInventory(food.id, -1);
+    markCareInteraction();
+    boostGokigen(food.gainGokigen);
+    state.nakayoshi = clamp(state.nakayoshi + food.gainNakayoshi, 0, 100);
+    state.sukusuku = clamp(state.sukusuku + food.gainSukusuku, 0, 100);
+    const didStageUp = syncGrowthStageChange();
+    if (!didStageUp) {
+      const growthHint = getHiddenGrowthHint();
+      const stageMessage = getYochiyochiActionMessage('feed');
+      const eatingSpeech = food.id === 'moji_milk'
+        ? 'ごくごく おいしい！'
+        : (food.id === 'moji_gohan' ? 'もぐもぐ おいしい！' : 'おやつ おいしい！');
+      setSpeech(eatingSpeech, growthHint || stageMessage || `${food.name}を たべたよ。なかよしが ふえた！`);
+      setReaction('eating');
+    }
+    saveState();
+    lastMealHintKey = '';
+    playSfx('feed');
+    spawnFoodFx(food.id);
+    spawnFx('sparkle');
+    render();
+  } finally {
+    feedBusy = false;
+  }
+}
+
+function finishPettingMode() {
+  pettingMode = false;
+  petStrokeActive = false;
+  petStrokeDistance = 0;
+  petLastPoint = null;
+  activePetPointerId = null;
+  petHintShown = false;
+  clearTimeout(beginPetMilmaru._timer);
+  milmaruWrap.classList.remove('petting-ready');
+  syncRoaming();
+}
+
+function beginPetMilmaru(showGuide = true) {
+  const now = Date.now();
+  if (now - state.lastPetAt < 700) return false;
+  pettingMode = true;
+  petStrokeActive = false;
+  petStrokeDistance = 0;
+  petLastPoint = null;
+  activePetPointerId = null;
+  petHintShown = false;
+  freezeRoamPosition();
+  milmaruWrap.classList.add('petting-ready');
+  state.reaction = 'normal';
+  applyMilmaruClass('normal');
+  syncRoaming();
+  setSpeech('なでてね', state.hatched ? `${getMilmaruName()}の あたまを やさしく なでてあげよう。` : 'タマゴを やさしく なでてあげよう。');
+  if (showGuide) {
+    showCareNotice(
+      state.hatched ? 'なでなでしてね' : 'タマゴを なでてね',
+      state.hatched
+        ? `${getMilmaruName()}の あたまを、やさしく なでてあげよう。`
+        : 'タマゴの まんなかを、やさしく なでてあげよう。',
+      3000
+    );
+  }
+  clearTimeout(beginPetMilmaru._timer);
+  beginPetMilmaru._timer = setTimeout(() => {
+    if (!pettingMode) return;
+    finishPettingMode();
+    setSpeech(
+      'まってるよ',
+      state.hatched
+        ? `${getMilmaruName()}を さわると、いつでも なでられるよ。`
+        : 'タマゴを さわると、いつでも なでられるよ。'
+    );
+    render();
+  }, 9000);
+  return true;
+}
+
+function getPetPointerPoint(event) {
+  const rect = stageEl.getBoundingClientRect();
+  const scale = Math.max(0.01, rect.width / 1600);
+  return {
+    x: (event.clientX - rect.left) / scale,
+    y: (event.clientY - rect.top) / scale
+  };
+}
+
+function isPetPointOnHead(event) {
+  const rect = milmaruWrap.getBoundingClientRect();
+  if (!rect.width || !rect.height) return false;
+  const x = (event.clientX - rect.left) / rect.width;
+  const y = (event.clientY - rect.top) / rect.height;
+  if (!state.hatched) return x >= 0.16 && x <= 0.84 && y >= 0.08 && y <= 0.82;
+  return x >= 0.18 && x <= 0.82 && y >= 0.06 && y <= 0.58;
+}
+
+function spawnPetTrace(event) {
+  const yardRect = document.querySelector('.center-yard').getBoundingClientRect();
+  const piece = document.createElement('div');
+  piece.className = 'fx-piece heart';
+  piece.style.setProperty('--x', `${clamp(((event.clientX - yardRect.left) / yardRect.width) * 100, 0, 100)}%`);
+  piece.style.setProperty('--y', `${clamp(((event.clientY - yardRect.top) / yardRect.height) * 100, 0, 100)}%`);
+  piece.style.setProperty('--dx', `${(Math.random() - 0.5) * 70}px`);
+  piece.style.setProperty('--dy', `${-20 - Math.random() * 40}px`);
+  fxLayer.appendChild(piece);
+  setTimeout(() => piece.remove(), 1000);
+}
+
+function startPetStroke(event) {
+  if (event.pointerType === 'mouse' && event.button !== 0) return;
+  if (event.isPrimary === false || (petStrokeActive && event.pointerId !== activePetPointerId)) {
+    event.preventDefault();
+    event.stopImmediatePropagation?.();
+    return;
+  }
+  if (petStrokeActive) return;
+  if (!pettingMode && !beginPetMilmaru(false)) return;
+  if (!isPetPointOnHead(event)) {
+    if (!petHintShown) {
+      petHintShown = true;
+      setSpeech(
+        state.hatched ? 'あたまを なでてね' : 'タマゴを なでてね',
+        state.hatched
+          ? `${getMilmaruName()}の あたまのあたりを、やさしく なでてあげよう。`
+          : 'タマゴの まんなかを、やさしく なでてあげよう。'
+      );
+    }
+    return;
+  }
+  event.preventDefault();
+  petStrokeActive = true;
+  activePetPointerId = event.pointerId;
+  petLastPoint = getPetPointerPoint(event);
+  milmaruWrap.setPointerCapture?.(event.pointerId);
+  spawnPetTrace(event);
+}
+
+function addPetStrokePoint(event) {
+  if (!petStrokeActive || !petLastPoint) return false;
+  const point = getPetPointerPoint(event);
+  const distance = Math.hypot(point.x - petLastPoint.x, point.y - petLastPoint.y);
+  petStrokeDistance += distance;
+  petLastPoint = point;
+  if (
+    petStrokeDistance > PET_TRACE_DISTANCE_STEP
+    && Math.floor(petStrokeDistance / PET_TRACE_DISTANCE_STEP) !== Math.floor((petStrokeDistance - distance) / PET_TRACE_DISTANCE_STEP)
+  ) {
+    spawnPetTrace(event);
+  }
+  if (petStrokeDistance >= PET_STROKE_REQUIRED_DISTANCE) {
+    completePetMilmaru();
+    return true;
+  }
+  return false;
+}
+
+function movePetStroke(event) {
+  if (!pettingMode || !petStrokeActive || event.pointerId !== activePetPointerId) return;
+  event.preventDefault();
+  addPetStrokePoint(event);
+}
+
+function endPetStroke(event) {
+  if (!petStrokeActive || event.pointerId !== activePetPointerId) return;
+  event.preventDefault();
+  if (addPetStrokePoint(event)) return;
+  petStrokeActive = false;
+  petLastPoint = null;
+  activePetPointerId = null;
+  milmaruWrap.releasePointerCapture?.(event.pointerId);
+  if (pettingMode && petStrokeDistance < PET_STROKE_REQUIRED_DISTANCE && !petHintShown) {
+    petHintShown = true;
+    setSpeech(
+      'そのまま なでてね',
+      state.hatched
+        ? `${getMilmaruName()}の あたまを、やさしく なでてあげよう。`
+        : 'タマゴの まんなかを、やさしく なでてあげよう。'
+    );
+  }
+}
+
+function cancelPetStroke(event) {
+  if (!petStrokeActive || event.pointerId !== activePetPointerId) return;
+  petStrokeActive = false;
+  petLastPoint = null;
+  activePetPointerId = null;
+}
+
+function completePetMilmaru() {
+  const now = Date.now();
+  if (now - state.lastPetAt < 700) return;
+  playSfx('pet');
+  finishPettingMode();
+  state.lastPetAt = now;
+  markCareInteraction();
+  if (!state.hatched) {
+    state.nakayoshi = 0;
+    setSpeech('ゆらゆら うごいたよ', 'タマゴを やさしく なでたよ。もじを かくと、スターで ぽかぽか できるよ。');
+    setReaction('relaxed');
+    spawnFx('sparkle');
+    saveState();
+    render();
+    return;
+  }
+  boostGokigen(8);
+  state.nakayoshi = clamp(state.nakayoshi + 1, 0, 100);
+  setSpeech('なでてくれて うれしい！', getYochiyochiActionMessage('pet') || `${getMilmaruName()}が ほっとしているよ。`);
+  setReaction('relaxed');
+  spawnFx('heart');
+  saveState();
+  render();
+}
+
+function playWithMilmaru() {
+  if (!state.hatched) {
+    playSfx('mistake');
+    setSpeech('まだ タマゴだよ', 'いまは スターで あたためるのが いちばん だいじ。');
+    setReaction('warm');
+    spawnFx('sparkle');
+    return;
+  }
+  playSfx('select');
+  freezeRoamPosition();
+  setSpeech('あそびばに いこう！', hasStars(actionStarCost.play)
+    ? 'ころころボールの あそび画面へ いくよ。'
+    : 'スターが たりないときは、あそびばから もじを かきにいけるよ。');
+  saveState();
+  setTimeout(() => {
+    window.location.href = 'play.html?toy=ball&from=care';
+  }, 180);
+}
+
+function goWrite() {
+  if (!state.hatched) {
+    if (hasStars(actionStarCost.warm)) {
+      warmEgg();
+      return;
+    }
+    playSfx('select');
+    setSpeech('もじを かきにいこう！', 'もじを かくと、タマゴを あたためる スターが ふえるよ。');
+    saveState();
+    setTimeout(() => {
+      window.location.href = 'index.html?from=care';
+    }, 180);
+    return;
+  }
+  playSfx('select');
+  const period = getMealPeriod();
+  const food = period.slotId ? getFoodForMeal(period.slotId) : getPreferredFood();
+  setSpeech('もじを かきにいこう！', `かけたら ${food.name}が もらえるよ。`);
+  setReaction('happy');
+  saveState();
+  setTimeout(() => {
+    window.location.href = 'index.html?from=care';
+  }, 180);
+}
+
+function setupDebugControls() {
+  configureDebugModeFromQuery();
+  if (!debugPanel) return;
+  document.getElementById('debugApplyBtn').addEventListener('click', () => applyDebugState());
+  document.getElementById('debugEgg75Btn').addEventListener('click', () => applyDebugState({
+    hatched: false,
+    gokigen: 80,
+    eggWarmth: 75,
+    sukusuku: 0,
+    stars: Math.max(actionStarCost.warm, Number(state.stars) || 0),
+    speech: 'まだ タマゴだよ',
+    message: 'あと 1かい あたためると 孵化演出を確認できるよ。'
+  }));
+  document.getElementById('debugPreHatchBtn').addEventListener('click', () => applyDebugState({
+    hatched: false,
+    gokigen: 80,
+    eggWarmth: 99,
+    sukusuku: 0,
+    stars: Math.max(actionStarCost.warm, Number(state.stars) || 0),
+    speech: 'まだ タマゴだよ',
+    message: 'あたためると すぐ孵化演出に入るよ。'
+  }));
+  document.getElementById('debugBabyBtn').addEventListener('click', () => applyDebugState({
+    hatched: true,
+    named: true,
+    gokigen: Math.max(82, state.gokigen),
+    eggWarmth: 100,
+    sukusuku: Math.max(10, state.sukusuku),
+    milk: Math.max(1, getInventoryCount('moji_milk')),
+    stars: Math.max(actionStarCost.play, Number(state.stars) || 0),
+    speech: 'いっしょに もじを かこう！',
+    message: 'ベビー状態にしたよ。'
+  }));
+  document.getElementById('debugYochiyochiBtn').addEventListener('click', () => applyDebugState({
+    hatched: true,
+    named: true,
+    gokigen: Math.max(82, state.gokigen),
+    eggWarmth: 100,
+    sukusuku: 30,
+    milk: Math.max(1, getInventoryCount('moji_milk')),
+    stars: Math.max(actionStarCost.play, Number(state.stars) || 0),
+    speech: 'いっしょに もじを かこう！',
+    message: 'よちよち期の はいはい状態にしたよ。'
+  }));
+  document.getElementById('debugAlmostKidsBtn').addEventListener('click', () => applyDebugState({
+    hatched: true,
+    named: true,
+    gokigen: Math.max(86, state.gokigen),
+    eggWarmth: 100,
+    sukusuku: 46,
+    gohan: Math.max(3, getInventoryCount('moji_gohan')),
+    cookies: Math.max(1, getInventoryCount('moji_cookie')),
+    stars: Math.max(actionStarCost.play, Number(state.stars) || 0),
+    speech: 'いっしょに もじを かこう！',
+    message: '成長前の よちよち状態にしたよ。'
+  }));
+  document.getElementById('debugResetBtn').addEventListener('click', resetDebugState);
+  document.getElementById('debugCloseBtn').addEventListener('click', () => {
+    localStorage.removeItem(DEBUG_MODE_KEY);
+    debugMode = false;
+    stageEl.classList.remove('debug-mode');
+  });
+}
+
+document.addEventListener('pointerdown', (event) => {
+  const button = event.target.closest('button');
+  if (!button || !stageEl.contains(button)) return;
+  playSfx('button');
+}, true);
+
+document.getElementById('backBtn').addEventListener('click', () => {
+  saveState();
+  window.location.href = 'index.html?from=care';
+});
+document.getElementById('settingsBtn').addEventListener('click', () => {
+  setSpeech('せっていは じゅんびちゅうだよ', 'また あとで つかえるようにするね。');
+});
+document.getElementById('inventoryBtn').addEventListener('click', () => {
+  setSpeech('もちものは ここで みられるよ', 'もじを かくと、ミルク・ごはん・クッキー・スターが ふえるよ。');
+});
+document.getElementById('albumBtn').addEventListener('click', () => {
+  setSpeech('アルバムは じゅんびちゅう！', 'かいた もじを あとで ならべよう。');
+});
+nameSaveBtn.addEventListener('click', saveMilmaruName);
+nameInput.addEventListener('keydown', (event) => {
+  if (event.key === 'Enter') saveMilmaruName();
+});
+document.getElementById('feedBtn').addEventListener('click', feedCookie);
+document.getElementById('playBtn').addEventListener('click', playWithMilmaru);
+document.getElementById('writeBtn').addEventListener('click', goWrite);
+milmaruWrap.addEventListener('pointerdown', startPetStroke);
+milmaruWrap.addEventListener('pointermove', movePetStroke);
+milmaruWrap.addEventListener('pointerup', endPetStroke);
+milmaruWrap.addEventListener('pointercancel', cancelPetStroke);
+
+setupDebugControls();
+if (state.hatched && getWelcomeBackHours() >= 24) {
+  state.gokigen = Math.max(68, Number(state.gokigen) || 0);
+  state.lastMoodAt = Date.now();
+}
+const consumedPendingReward = consumePendingWritingReward();
+if (!consumedPendingReward) applyEntrySpeech();
+saveState();
+render();
+
+setInterval(() => {
+  if (document.hidden || feedBusy) return;
+  const startedNewDay = ensureFeedingDayState(state);
+  if (startedNewDay) saveState();
+  renderActionMode();
+}, 30000);
+
+window.MojikkoCareGame = {
+  getState: () => JSON.parse(JSON.stringify(state)),
+  feedCookie,
+  beginPetMilmaru,
+  completePetMilmaru,
+  playWithMilmaru,
+  goWrite,
+  warmEgg,
+  applyDebugState,
+  consumePendingWritingReward
+};
+</script>
+</body>
+</html>

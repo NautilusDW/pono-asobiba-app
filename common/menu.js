@@ -12,47 +12,55 @@
   'use strict';
 
   // ── PWA SW更新チェック（全ページ共通）──
-  // SW更新時に自動リロードし、ユーザーが古いコードを使い続けないようにする
-  // iOS ホーム画面 PWA では controllerchange が発火しにくいので postMessage も併用
-  if ('serviceWorker' in navigator) {
-    var _swRefreshing = false;
-    function _ponoSwReload() {
-      if (_swRefreshing) return;
-      _swRefreshing = true;
-      window.location.reload();
+  // SW更新時の自動リロード等の処理は common/sw-update.js に集約。
+  // sw-update.js が未ロードのページでも動作するよう動的注入する。
+  if ('serviceWorker' in navigator && !window._ponoSwUpdateInited) {
+    var _sup = document.querySelector('script[data-pono-sw-update], script[src*="/common/sw-update.js"], script[src$="common/sw-update.js"]');
+    if (!_sup) {
+      try {
+        var _s = document.createElement('script');
+        _s.src = '/common/sw-update.js';
+        _s.defer = true;
+        _s.setAttribute('data-pono-sw-update', '1');
+        (document.head || document.documentElement).appendChild(_s);
+      } catch (e) {}
     }
-    navigator.serviceWorker.addEventListener('controllerchange', _ponoSwReload);
-    navigator.serviceWorker.addEventListener('message', function(e) {
-      if (e && e.data && e.data.type === 'sw-updated') _ponoSwReload();
-    });
-    // ゲームページ起動時にSW更新チェック
-    navigator.serviceWorker.ready.then(function(reg) {
-      reg.update();
-    });
   }
 
   const style = document.createElement('style');
   style.textContent = `
+    :root {
+      --pono-display-brightness: 1;
+    }
+    body.pono-brightness-active > :not(.pono-menu-toggle):not(.pono-dropdown):not(.pono-confirm-overlay) {
+      filter: brightness(var(--pono-display-brightness));
+    }
     .pono-menu-toggle {
-      position: fixed; z-index: 9990;
+      /* fail-safe: 他モジュール(共通報酬演出等)の全画面オーバーレイ(最大 z-index:99999)に
+         せっていボタンが物理的に覆われて反応しなくなる事故を防ぐため、既知の最大値より
+         十分高い値に固定する (2026-07-16 緊急対応、common/treasure.js 等の詳細は対象外)。 */
+      position: fixed; z-index: 999995;
       top: max(12px, env(safe-area-inset-top));
       left: max(16px, env(safe-area-inset-left));
-      width: 40px; height: 40px; border-radius: 50%;
-      background: rgba(255,255,255,0.7); border: none;
-      font-size: 20px; cursor: pointer;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+      width: 56px; height: 56px;
+      background: url('/assets/_legacy/preview-placeholders/ctrl-btn-settings.png') center / contain no-repeat;
+      border: none;
+      padding: 0;
+      cursor: pointer;
       display: flex; align-items: center; justify-content: center;
-      transition: transform 0.2s, background 0.2s;
+      transition: transform 0.2s;
       -webkit-tap-highlight-color: transparent;
     }
     .pono-menu-toggle.open {
-      background: rgba(255,255,255,0.95);
-      transform: rotate(90deg);
+      transform: scale(1.08);
+    }
+    .pono-menu-toggle:active {
+      transform: scale(0.94);
     }
 
     /* ── Dropdown ── */
     .pono-dropdown {
-      position: fixed; z-index: 9989;
+      position: fixed; z-index: 999994;
       top: calc(max(12px, env(safe-area-inset-top)) + 46px);
       left: max(16px, env(safe-area-inset-left));
       background: rgba(255,255,255,0.96);
@@ -86,9 +94,34 @@
     .pono-dd-item.bgm-off .pono-dd-label { opacity: 0.5; }
     .pono-dd-label { white-space: nowrap; }
 
+    .pono-brightness-control {
+      display: flex; flex-direction: column; gap: 7px;
+      padding: 10px 14px 12px;
+      border-radius: 12px;
+      background: rgba(255, 246, 214, 0.8);
+      color: #5D4E37;
+      font-family: 'Zen Maru Gothic', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .pono-brightness-head {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      font-size: 0.82rem; font-weight: 900;
+      white-space: nowrap;
+    }
+    .pono-brightness-value {
+      color: #8A6F45;
+      font-variant-numeric: tabular-nums;
+    }
+    .pono-brightness-slider {
+      width: 100%;
+      margin: 0;
+      accent-color: #f2915a;
+      cursor: pointer;
+    }
+
     /* ── Confirm overlay ── */
     .pono-confirm-overlay {
-      position: fixed; inset: 0; z-index: 99999;
+      position: fixed; inset: 0; z-index: 999996;
       background: rgba(0,0,0,0.5);
       display: flex; align-items: center; justify-content: center;
       opacity: 0; pointer-events: none;
@@ -141,11 +174,18 @@
 
   // ── State ──
   let menuOpen = false;
+  const BRIGHTNESS_KEY = 'pono_display_brightness';
+  const BRIGHTNESS_MIN = 70;
+  const BRIGHTNESS_MAX = 120;
+  const BRIGHTNESS_STEP = 5;
+  const BRIGHTNESS_DEFAULT = 100;
+  let brightnessSliderEl = null;
+  let brightnessValueEl = null;
 
   // ── Create elements ──
   const toggle = document.createElement('button');
   toggle.className = 'pono-menu-toggle';
-  toggle.textContent = '⚙️';
+  // Visual is provided by the wooden settings PNG background (see .pono-menu-toggle CSS)
   toggle.setAttribute('aria-label', 'メニュー');
 
   const dropdown = document.createElement('div');
@@ -234,9 +274,67 @@
     return item;
   }
 
+  function normalizeBrightness(raw) {
+    let pct = parseInt(raw, 10);
+    if (!Number.isFinite(pct)) pct = BRIGHTNESS_DEFAULT;
+    pct = Math.round(pct / BRIGHTNESS_STEP) * BRIGHTNESS_STEP;
+    return Math.max(BRIGHTNESS_MIN, Math.min(BRIGHTNESS_MAX, pct));
+  }
+
+  function readStoredBrightness() {
+    try {
+      const raw = localStorage.getItem(BRIGHTNESS_KEY);
+      if (raw != null) return normalizeBrightness(raw);
+    } catch (_) {}
+    return BRIGHTNESS_DEFAULT;
+  }
+
+  function applyDisplayBrightness(value, persist) {
+    const pct = normalizeBrightness(value);
+    document.documentElement.style.setProperty('--pono-display-brightness', String(pct / 100));
+    if (document.body) {
+      document.body.classList.toggle('pono-brightness-active', pct !== BRIGHTNESS_DEFAULT);
+    }
+    if (brightnessSliderEl) brightnessSliderEl.value = String(pct);
+    if (brightnessValueEl) brightnessValueEl.textContent = pct + '%';
+    if (persist) {
+      try { localStorage.setItem(BRIGHTNESS_KEY, String(pct)); } catch (_) {}
+    }
+    return pct;
+  }
+
+  function createBrightnessControl() {
+    const control = document.createElement('div');
+    control.className = 'pono-brightness-control';
+    control.innerHTML = `
+      <div class="pono-brightness-head">
+        <span>☀️ あかるさ</span>
+        <span class="pono-brightness-value">100%</span>
+      </div>
+      <input class="pono-brightness-slider" type="range" min="${BRIGHTNESS_MIN}" max="${BRIGHTNESS_MAX}" step="${BRIGHTNESS_STEP}" value="${BRIGHTNESS_DEFAULT}" aria-label="あかるさ">
+    `;
+    control.addEventListener('pointerdown', e => e.stopPropagation());
+    control.addEventListener('click', e => e.stopPropagation());
+    brightnessSliderEl = control.querySelector('.pono-brightness-slider');
+    brightnessValueEl = control.querySelector('.pono-brightness-value');
+    brightnessSliderEl.addEventListener('input', function() {
+      applyDisplayBrightness(brightnessSliderEl.value, true);
+    });
+    applyDisplayBrightness(readStoredBrightness(), false);
+    return control;
+  }
+
+  function shouldShowBrightnessControl(options) {
+    if (options && options.brightness === true) return true;
+    if (options && options.displayBrightness === true) return true;
+    if (options && (options.brightness === false || options.displayBrightness === false)) return false;
+    return /\/maze(?:\/|$)/.test(location.pathname.replace(/\\/g, '/'));
+  }
+
   // ── Public API ──
   window.initMenu = function(options) {
     options = options || {};
+    const showBrightness = shouldShowBrightnessControl(options);
 
     // Clear previous items
     dropdown.innerHTML = '';
@@ -283,6 +381,13 @@
       dropdown.appendChild(narrItem);
     }
 
+    if (showBrightness) {
+      dropdown.appendChild(createBrightnessControl());
+    } else {
+      brightnessSliderEl = null;
+      brightnessValueEl = null;
+    }
+
     // ❓ Tutorial
     if (options.tutorial) {
       dropdown.appendChild(createItem('❓', 'あそびかた', () => {
@@ -313,6 +418,9 @@
     document.body.appendChild(toggle);
     document.body.appendChild(dropdown);
     document.body.appendChild(overlay);
+    if (showBrightness) {
+      applyDisplayBrightness(readStoredBrightness(), false);
+    }
 
     // ── iOS Safari: 画面回転後にposition:fixedのヒットテスト領域がずれるバグ対策 ──
     function forceMenuRelayout() {

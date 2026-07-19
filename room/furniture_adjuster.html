@@ -37,6 +37,16 @@ body{font-family:sans-serif;background:#1a1a2e;color:#eee;display:flex;height:10
 #controls{width:360px;overflow-y:auto;background:#16213e;padding:12px;display:flex;flex-direction:column;gap:8px}
 #controls h2{font-size:14px;color:#ffd700;border-bottom:1px solid #333;padding-bottom:4px;margin:0}
 #item-list{max-height:none;overflow-y:visible;display:flex;flex-wrap:wrap;gap:3px}
+.pending-items-section{background:#3a2d12;border:2px solid #ffb300;border-radius:10px;padding:9px;box-shadow:0 0 0 1px rgba(255,179,0,.18) inset}
+.pending-items-header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px}
+.pending-items-title{color:#ffd54f;font-size:13px;font-weight:900}
+.pending-items-count{background:#ffb300;color:#1a1a2e;border-radius:999px;padding:2px 8px;font-size:11px;font-weight:900}
+.pending-items-help{color:#d7c59a;font-size:10px;line-height:1.45;margin-bottom:7px}
+.pending-items-status{color:#ffe0a3;font-size:11px;line-height:1.4;padding:7px;border:1px dashed rgba(255,213,79,.45);border-radius:6px}
+#pending-item-list{display:flex;flex-wrap:wrap;gap:5px}
+#pending-item-list .item-btn{width:62px;height:62px;border-color:#ffb300!important;background:#211b10;box-shadow:0 0 0 2px rgba(255,179,0,.2)}
+#pending-item-list .item-btn::after{content:'NEW';position:absolute;top:1px;right:1px;background:#ffb300;color:#1a1a2e;border-radius:5px;padding:1px 3px;font-size:7px;font-weight:900;line-height:1.2}
+#pending-item-list .item-btn{position:relative}
 .item-btn{width:52px;height:52px;border:2px solid #444;border-radius:8px;cursor:pointer;background:#222;overflow:hidden;display:flex;align-items:center;justify-content:center;padding:2px}
 .item-btn img{max-width:100%;max-height:100%;object-fit:contain}
 .item-btn.active{border-color:#ffd700}
@@ -211,6 +221,16 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
   </details>
 
   <div id="unsaved-banner">⚠️ <span id="unsaved-banner-text">未保存</span></div>
+  <section id="pending-items-section" class="pending-items-section" aria-labelledby="pending-items-title">
+    <div class="pending-items-header">
+      <div id="pending-items-title" class="pending-items-title">🆕 未調整家具</div>
+      <div id="pending-items-count" class="pending-items-count">確認中</div>
+    </div>
+    <div class="pending-items-help">新しく追加された画像です。選択して表示名・サイズ・A/Bピボット・配置範囲を調整してください。</div>
+    <div id="pending-items-status" class="pending-items-status" role="status">GitHubの家具画像を確認しています…</div>
+    <div id="pending-item-list" aria-label="未調整家具の一覧"></div>
+  </section>
+  <h2 style="margin-top:4px">登録済み家具</h2>
   <div id="item-list"></div>
 
   <div class="section" id="selected-info" style="display:none">
@@ -229,6 +249,13 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
         <option value="all">all</option>
         <option value="boy">boy</option>
         <option value="girl">girl</option>
+      </select>
+      <span style="color:#aaa">設置:</span>
+      <select id="edit-item-layer" style="background:#222;color:#eee;border:1px solid #555;border-radius:4px;padding:2px 4px;font-size:12px">
+        <option value="floor">床</option>
+        <option value="wall">壁</option>
+        <option value="rug">敷物</option>
+        <option value="surface">家具上</option>
       </select>
       <label style="cursor:pointer;color:#4CAF50;margin-left:4px">
         <input type="checkbox" id="chk-stackable"> 🪑 壁掛け
@@ -272,6 +299,11 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
       <input type="number" id="num-cellSize" step="0.1">
     </label>
 
+    <label><span>占有セル</span>
+      <input type="range" id="sl-footprintSize" min="1" max="4" step="1">
+      <input type="number" id="num-footprintSize" min="1" max="4" step="1">
+    </label>
+
     <label><span>pivotX (%)</span>
       <input type="range" id="sl-pivotX" min="-100" max="100" step="0.5">
       <input type="number" id="num-pivotX" step="0.5">
@@ -297,7 +329,8 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
       <label><span>maxCol</span><input type="number" id="num-maxCol" min="0" max="7" step="1"></label>
     </div>
     <div style="font-size:11px;color:#888;margin-top:4px">
-      row↗右奥方向, col↖左奥方向
+      row↗右奥方向, col↖左奥方向<br>
+      緑＝基準セルを置ける範囲、橙＝家具が実際に占有するセル
     </div>
 
     <div id="surface-section" style="display:none;margin-top:8px;border-top:1px solid #444;padding-top:8px">
@@ -313,12 +346,23 @@ input[type=number]{width:60px;background:#222;color:#eee;border:1px solid #555;b
     </div>
 
     <div id="deco-on-surface-section" style="display:none;margin-top:8px;border-top:1px solid #444;padding-top:8px">
-      <h3 style="color:#4CAF50">🪑 家具の上でプレビュー</h3>
-      <div style="font-size:11px;color:#888;margin-bottom:4px">家具を選んで配置の見た目を確認</div>
+      <h3 id="furn-preview-title" style="color:#4CAF50">🪑 家具の上でプレビュー</h3>
+      <div id="furn-preview-help" style="font-size:11px;color:#888;margin-bottom:4px">家具を選んで配置の見た目を確認</div>
+      <div id="wall-clearance-controls" style="display:none">
+        <label><span>窓下の重なり許可 (%)</span>
+          <input type="range" id="sl-wallFurnitureAllowance" min="0" max="80" step="1">
+          <input type="number" id="num-wallFurnitureAllowance" min="0" max="80" step="1">
+        </label>
+      </div>
       <select id="surface-furn-select" style="width:100%;background:#222;color:#eee;border:1px solid #555;border-radius:4px;padding:4px 6px;font-size:12px;margin-bottom:6px"></select>
+      <div style="display:flex;gap:4px;margin-bottom:6px">
+        <button id="btn-preview-furn-a" style="flex:1;padding:4px;border:1px solid #4CAF50;border-radius:4px;background:#4CAF50;color:#fff">家具 A</button>
+        <button id="btn-preview-furn-b" style="flex:1;padding:4px;border:1px solid #555;border-radius:4px;background:#333;color:#eee">家具 B</button>
+      </div>
       <div style="margin-top:4px">
         <button id="btn-deco-surface-preview" style="padding:4px 12px;border:1px solid #4CAF50;border-radius:4px;background:#333;color:#4CAF50;cursor:pointer;font-size:12px">🪑 プレビューON</button>
       </div>
+      <div id="wall-preview-status" style="display:none;margin-top:6px;padding:6px;border-radius:6px;text-align:center;font-weight:bold;font-size:12px"></div>
     </div>
   </div>
 
@@ -406,8 +450,12 @@ var ITEMS = (typeof ROOM_ITEMS !== 'undefined' ? ROOM_ITEMS : [])
       name: ov.name || it.name,
       cat: ov.cat || it.cat,
       theme: ov.theme || it.theme || 'all',
+      placementLayer: ov.placementLayer || it.placementLayer || 'floor',
+      wallFurnitureAllowance: it.wallFurnitureAllowance || 0,
       roomImg: it.roomImg, roomImgB: it.roomImgB || null,
-      cellSize: it.cellSize || 1, pivotX: it.pivotX || 0, pivotY: it.pivotY || 0,
+      gridRow: it.gridRow, gridCol: it.gridCol,
+      cellSize: it.cellSize || 1, footprintSize: it.footprintSize,
+      pivotX: it.pivotX || 0, pivotY: it.pivotY || 0,
       surfaceY: it.surfaceY || 0,
       // ★ items.js の配置範囲 / B角度データも引き継ぐ
       //   これが無いと adjustments 初期化で auto-margin にフォールバックし、
@@ -458,14 +506,17 @@ ITEMS.forEach(item => {
   // 既存 items.js の値を優先（無ければ auto 計算）
   const base = {
     cellSize: item.cellSize,
+    footprintSize: item.footprintSize || Math.max(1, Math.ceil(item.cellSize || 1)),
     pivotX: item.pivotX,
     pivotY: item.pivotY,
     minRow: (item.minRow !== undefined ? item.minRow : autoMargin),
     maxRow: (item.maxRow !== undefined ? item.maxRow : 7 - autoMargin),
     minCol: (item.minCol !== undefined ? item.minCol : autoMargin),
     maxCol: (item.maxCol !== undefined ? item.maxCol : 7 - autoMargin),
-    row: 3, col: 3,
+    row: item.placementLayer === 'wall' ? 0 : (item.gridRow ?? 3),
+    col: item.placementLayer === 'wall' ? 0 : (item.gridCol ?? 3),
     surfaceY: item.surfaceY || 0,
+    wallFurnitureAllowance: item.wallFurnitureAllowance || 0,
     stackable: isDecoItem(item.id),
   };
   adjustments[adjKey(item.id, 'A')] = Object.assign({}, base);
@@ -474,6 +525,7 @@ ITEMS.forEach(item => {
     var bBase = Object.assign({}, base);
     if (item.angleB) {
       if (item.angleB.cellSize !== undefined) bBase.cellSize = item.angleB.cellSize;
+      if (item.angleB.footprintSize !== undefined) bBase.footprintSize = item.angleB.footprintSize;
       if (item.angleB.pivotX !== undefined)   bBase.pivotX = item.angleB.pivotX;
       if (item.angleB.pivotY !== undefined)   bBase.pivotY = item.angleB.pivotY;
       if (item.angleB.minRow !== undefined)   bBase.minRow = item.angleB.minRow;
@@ -517,6 +569,29 @@ function loadFromStorage() {
   } catch(e) { return false; }
 }
 const hadSave = loadFromStorage();
+
+// wallレイヤー導入前に未調整窓の 0/0 ピボットが保存されたブラウザだけ補正する。
+// 0以外へ手動調整済みの値には触れない。
+(function migrateUnadjustedWallPivots() {
+  var changed = false;
+  ITEMS.forEach(function(item) {
+    if (item.placementLayer !== 'wall') return;
+    ['A', 'B'].forEach(function(angle) {
+      var adj = adjustments[item.id + '_' + angle];
+      var src = angle === 'B' ? (item.angleB || {}) : item;
+      if (!adj || adj.pivotX !== 0 || adj.pivotY !== 0) return;
+      if ((src.pivotX || 0) === 0 && (src.pivotY || 0) === 0) return;
+      adj.cellSize = src.cellSize ?? item.cellSize ?? adj.cellSize;
+      adj.footprintSize = src.footprintSize ?? item.footprintSize ?? adj.footprintSize;
+      adj.pivotX = src.pivotX;
+      adj.pivotY = src.pivotY;
+      adj.row = 0;
+      adj.col = 0;
+      changed = true;
+    });
+  });
+  if (changed) saveToStorage();
+})();
 
 // ─── localStorage に焼き付いた auto-margin バグ値のクリーンアップ ───
 // 過去に ITEMS マッピング不具合で auto-margin (1〜2周制限) が adjustments に
@@ -763,6 +838,7 @@ document.addEventListener('keydown', function(e) {
 
 // Build item list
 const listEl = document.getElementById('item-list');
+const pendingListEl = document.getElementById('pending-item-list');
 ITEMS.forEach(item => {
   const btn = document.createElement('div');
   btn.className = 'item-btn' + (item.roomImgB ? ' has-b' : '');
@@ -812,6 +888,7 @@ function selectItem(id) {
   }
 
   syncSlider('cellSize', adj.cellSize);
+  syncSlider('footprintSize', adj.footprintSize);
   syncSlider('pivotX', adj.pivotX);
   syncSlider('pivotY', adj.pivotY);
   document.getElementById('num-minRow').value = adj.minRow;
@@ -832,6 +909,7 @@ function selectItem(id) {
   // cat/theme/stackableの同期
   document.getElementById('edit-item-cat').value = item.cat || 'deco';
   document.getElementById('edit-item-theme').value = item.theme || 'all';
+  document.getElementById('edit-item-layer').value = item.placementLayer || 'floor';
   const chkStack = document.getElementById('chk-stackable');
   chkStack.checked = adj.stackable || false;
 
@@ -847,8 +925,14 @@ function selectItem(id) {
 
 function updateDecoSectionVisibility(id) {
   const decoSurfSec = document.getElementById('deco-on-surface-section');
-  if (isDecoItem(id)) {
+  const item = ITEMS.find(x => x.id === id);
+  const isWall = item && item.placementLayer === 'wall';
+  if (isDecoItem(id) || isWall) {
     decoSurfSec.style.display = '';
+    document.getElementById('wall-clearance-controls').style.display = isWall ? '' : 'none';
+    document.getElementById('furn-preview-title').textContent = isWall ? '🪟 窓の下で家具プレビュー' : '🪑 家具の上でプレビュー';
+    document.getElementById('furn-preview-help').textContent = isWall ? '比較する家具と、その家具のA/B角度を選択' : '家具を選んで配置の見た目を確認';
+    if (isWall) syncSlider('wallFurnitureAllowance', curAdj().wallFurnitureAllowance || 0);
     initDecoSurfaceSelect();
   } else {
     decoSurfSec.style.display = 'none';
@@ -875,7 +959,9 @@ function reloadSliders(id) {
   const item = ITEMS.find(x => x.id === id);
   document.getElementById('edit-item-id').value = id;
   document.getElementById('edit-item-name').value = item.name;
+  document.getElementById('edit-item-layer').value = item.placementLayer || 'floor';
   syncSlider('cellSize', adj.cellSize);
+  syncSlider('footprintSize', adj.footprintSize);
   syncSlider('pivotX', adj.pivotX);
   syncSlider('pivotY', adj.pivotY);
   document.getElementById('num-minRow').value = adj.minRow;
@@ -988,6 +1074,15 @@ document.getElementById('edit-item-cat').addEventListener('change', function() {
   saveToStorage();
   if (item._imported) saveImports();
   else saveOverride(item.id, { cat: item.cat });
+});
+document.getElementById('edit-item-layer').addEventListener('change', function() {
+  if (!selectedId) return;
+  var item = ITEMS.find(function(x) { return x.id === selectedId; });
+  if (!item) return;
+  item.placementLayer = this.value;
+  saveToStorage();
+  if (item._imported) saveImports();
+  else saveOverride(item.id, { placementLayer: item.placementLayer });
 });
 document.getElementById('edit-item-theme').addEventListener('change', function() {
   if (!selectedId) return;
@@ -1398,7 +1493,7 @@ document.getElementById('chk-stackable').onchange = function() {
 };
 
 // ─── Slider/number bindings ───
-['cellSize', 'pivotX', 'pivotY'].forEach(name => {
+['cellSize', 'footprintSize', 'pivotX', 'pivotY'].forEach(name => {
   const sl = document.getElementById('sl-' + name);
   const num = document.getElementById('num-' + name);
   let pushed = false;
@@ -1413,6 +1508,19 @@ document.getElementById('chk-stackable').onchange = function() {
   sl.oninput = () => { num.value = sl.value; update(sl.value); };
   num.onfocus = () => { pushUndo(); };
   num.oninput = () => { sl.value = num.value; if (!selectedId) return; adjustments[adjKey(selectedId)][name] = parseFloat(num.value); placeItem(selectedId); drawGrid(); };
+});
+
+['wallFurnitureAllowance'].forEach(name => {
+  const sl = document.getElementById('sl-' + name);
+  const num = document.getElementById('num-' + name);
+  function update(val) {
+    if (!selectedId) return;
+    adjustments[adjKey(selectedId)][name] = Math.max(0, Math.min(80, parseFloat(val) || 0));
+    saveToStorage();
+    updateWallPreviewStatus();
+  }
+  sl.oninput = () => { num.value = sl.value; update(sl.value); };
+  num.oninput = () => { sl.value = num.value; update(num.value); };
 });
 
 ['minRow', 'maxRow', 'minCol', 'maxCol'].forEach(name => {
@@ -1511,21 +1619,113 @@ document.getElementById('btn-surface-preview').onclick = () => {
 let _decoSurfFurnEl = null;  // furniture image shown behind deco
 let _decoSurfOn = false;
 let _decoSurfFurnId = null;  // which surface furniture is selected
+let _decoSurfFurnAngle = 'A';
+let _previewFurnRow = 0, _previewFurnCol = 0;
+const _toolOpaqueCache = new Map();
+const _toolMaskCache = new Map();
+
+function toolOpaqueRect(img) {
+  const fallback = img.getBoundingClientRect();
+  if (!img.complete || !img.naturalWidth) return fallback;
+  const key = img.currentSrc || img.src;
+  let b = _toolOpaqueCache.get(key);
+  if (!b) {
+    try {
+      const scale = Math.min(1, 128 / Math.max(img.naturalWidth, img.naturalHeight));
+      const w = Math.max(1, Math.round(img.naturalWidth * scale)), h = Math.max(1, Math.round(img.naturalHeight * scale));
+      const c = document.createElement('canvas'); c.width = w; c.height = h;
+      const x = c.getContext('2d', { willReadFrequently: true }); x.drawImage(img, 0, 0, w, h);
+      const d = x.getImageData(0, 0, w, h).data;
+      let x0=w,y0=h,x1=-1,y1=-1;
+      for(let yy=0;yy<h;yy++) for(let xx=0;xx<w;xx++) if(d[(yy*w+xx)*4+3]>=16){x0=Math.min(x0,xx);y0=Math.min(y0,yy);x1=Math.max(x1,xx);y1=Math.max(y1,yy);}
+      b=x1>=x0?{x:x0/w,y:y0/h,w:(x1+1-x0)/w,h:(y1+1-y0)/h}:{x:0,y:0,w:1,h:1};
+      _toolOpaqueCache.set(key,b);
+    } catch(_){ return fallback; }
+  }
+  return {left:fallback.left+fallback.width*b.x,right:fallback.left+fallback.width*(b.x+b.w),top:fallback.top+fallback.height*b.y,bottom:fallback.top+fallback.height*(b.y+b.h),width:fallback.width*b.w,height:fallback.height*b.h};
+}
+
+function toolOpaqueMask(img) {
+  if (!img.complete || !img.naturalWidth) return null;
+  const key = img.currentSrc || img.src;
+  let mask = _toolMaskCache.get(key);
+  if (!mask) {
+    try {
+      const scale = Math.min(1, 192 / Math.max(img.naturalWidth, img.naturalHeight));
+      const width = Math.max(1, Math.round(img.naturalWidth * scale));
+      const height = Math.max(1, Math.round(img.naturalHeight * scale));
+      const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true }); ctx.drawImage(img, 0, 0, width, height);
+      const rgba = ctx.getImageData(0, 0, width, height).data;
+      const alpha = new Uint8Array(width * height);
+      for (let i = 0; i < alpha.length; i++) alpha[i] = rgba[i * 4 + 3];
+      mask = { width, height, alpha };
+      _toolMaskCache.set(key, mask);
+    } catch (_) { return null; }
+  }
+  return { ...mask, rect: img.getBoundingClientRect() };
+}
+
+function toolOpaqueAt(mask, x, y) {
+  const r = mask.rect;
+  if (!r.width || !r.height || x < r.left || x >= r.right || y < r.top || y >= r.bottom) return false;
+  const px = Math.max(0, Math.min(mask.width - 1, Math.floor((x - r.left) / r.width * mask.width)));
+  const py = Math.max(0, Math.min(mask.height - 1, Math.floor((y - r.top) / r.height * mask.height)));
+  return mask.alpha[py * mask.width + px] >= 16;
+}
+
+function toolPixelOverlap(wallImg, floorImg, allowance) {
+  const wall = toolOpaqueMask(wallImg), floor = toolOpaqueMask(floorImg);
+  if (!wall || !floor) return null;
+  const left = Math.max(wall.rect.left, floor.rect.left), right = Math.min(wall.rect.right, floor.rect.right);
+  const top = Math.max(wall.rect.top, floor.rect.top), bottom = Math.min(wall.rect.bottom, floor.rect.bottom);
+  if (right-left < 2 || bottom-top < 2) return false;
+  const checkBottom = Math.min(bottom, wall.rect.bottom-wall.rect.height*allowance/100);
+  if (checkBottom <= top) return false;
+  const step = Math.max(1, Math.min(3, Math.ceil(Math.max(right-left,checkBottom-top)/160)));
+  let hits = 0;
+  for(let y=top+step/2;y<checkBottom;y+=step) for(let x=left+step/2;x<right;x+=step) {
+    if(toolOpaqueAt(wall,x,y) && toolOpaqueAt(floor,x,y) && ++hits>=2) return true;
+  }
+  return false;
+}
+
+function updateWallPreviewStatus() {
+  const status = document.getElementById('wall-preview-status');
+  const selectedItem = ITEMS.find(x => x.id === selectedId);
+  if (!status || !selectedItem || selectedItem.placementLayer !== 'wall' || !_placedEl || !_decoSurfFurnEl) {
+    if (status) status.style.display = 'none';
+    return;
+  }
+  const w = toolOpaqueRect(_placedEl), f = toolOpaqueRect(_decoSurfFurnEl);
+  const overlapW = Math.min(w.right,f.right)-Math.max(w.left,f.left);
+  const overlapH = Math.min(w.bottom,f.bottom)-Math.max(w.top,f.top);
+  const allowance = Math.max(0,Math.min(80,curAdj().wallFurnitureAllowance||0));
+  const pixelBlocked = toolPixelOverlap(_placedEl,_decoSurfFurnEl,allowance);
+  const blocked = pixelBlocked === null
+    ? overlapW>=8 && overlapH>=8 && f.top < w.bottom-w.height*allowance/100
+    : pixelBlocked;
+  status.style.display = '';
+  status.textContent = blocked ? '🔴 ここには おけない' : '🟢 ここなら おける';
+  status.style.background = blocked ? '#5b1f28' : '#173f2a';
+  status.style.color = blocked ? '#ff9aa8' : '#8ff0ad';
+  _decoSurfFurnEl.style.filter = blocked ? 'drop-shadow(0 0 6px #f44336)' : 'drop-shadow(0 0 6px #4CAF50)';
+}
 
 function initDecoSurfaceSelect() {
   const sel = document.getElementById('surface-furn-select');
-  if (sel.children.length > 0) {
-    // Already populated, just sync slider
-    syncDecoSurfSlider();
-    return;
-  }
-  SURFACE_ITEMS.forEach(it => {
+  const selected = ITEMS.find(x => x.id === selectedId);
+  const choices = selected && selected.placementLayer === 'wall'
+    ? ITEMS.filter(it => it.cat === 'furn' && it.placementLayer !== 'wall')
+    : SURFACE_ITEMS;
+  sel.innerHTML = '';
+  choices.forEach(it => {
     const opt = document.createElement('option');
     opt.value = it.id;
     opt.textContent = it.name;
     sel.appendChild(opt);
   });
-  _decoSurfFurnId = SURFACE_ITEMS.length > 0 ? SURFACE_ITEMS[0].id : null;
+  _decoSurfFurnId = choices.length > 0 ? choices[0].id : null;
   sel.onchange = () => {
     _decoSurfFurnId = sel.value;
     syncDecoSurfSlider();
@@ -1533,6 +1733,19 @@ function initDecoSurfaceSelect() {
   };
   syncDecoSurfSlider();
 }
+
+function setPreviewFurnitureAngle(angle) {
+  _decoSurfFurnAngle = angle;
+  const a = document.getElementById('btn-preview-furn-a');
+  const b = document.getElementById('btn-preview-furn-b');
+  a.style.background = angle === 'A' ? '#4CAF50' : '#333';
+  a.style.color = angle === 'A' ? '#fff' : '#eee';
+  b.style.background = angle === 'B' ? '#4CAF50' : '#333';
+  b.style.color = angle === 'B' ? '#fff' : '#eee';
+  if (_decoSurfOn) updateDecoSurfacePreview();
+}
+document.getElementById('btn-preview-furn-a').onclick = () => setPreviewFurnitureAngle('A');
+document.getElementById('btn-preview-furn-b').onclick = () => setPreviewFurnitureAngle('B');
 
 function syncDecoSurfSlider() {
   // no-op: surfaceYスライダー削除済み
@@ -1551,13 +1764,17 @@ function updateDecoSurfacePreview() {
   if (!_decoSurfOn || !_decoSurfFurnEl || !selectedId || !_decoSurfFurnId) return;
   const furnItem = ITEMS.find(x => x.id === _decoSurfFurnId);
   if (!furnItem) return;
-  const furnAdj = adjustments[adjKey(_decoSurfFurnId, currentAngle)] || adjustments[adjKey(_decoSurfFurnId, 'A')];
+  const furnAdj = adjustments[adjKey(_decoSurfFurnId, _decoSurfFurnAngle)] || adjustments[adjKey(_decoSurfFurnId, 'A')];
   if (!furnAdj) return;
 
-  // Place furniture at its own configured position
-  const cell = getGridCell(furnAdj.row, furnAdj.col);
+  // 壁家具の比較時は窓と同じ基準セルへ置き、「窓の下」を直接確認できるようにする。
+  const selectedItem = ITEMS.find(x => x.id === selectedId);
+  const selectedAdj = adjustments[adjKey(selectedId, currentAngle)];
+  const previewRow = selectedItem && selectedItem.placementLayer === 'wall' ? _previewFurnRow : furnAdj.row;
+  const previewCol = selectedItem && selectedItem.placementLayer === 'wall' ? _previewFurnCol : furnAdj.col;
+  const cell = getGridCell(previewRow, previewCol);
   const furnSize = (furnAdj.cellSize || 1) * GRID_CELL_PCT;
-  const furnImg = (currentAngle === 'B' && furnItem.roomImgB) ? furnItem.roomImgB : furnItem.roomImg;
+  const furnImg = (_decoSurfFurnAngle === 'B' && furnItem.roomImgB) ? furnItem.roomImgB : furnItem.roomImg;
   if (!_decoSurfFurnEl.src.endsWith(furnImg.replace('../', '/'))) {
     _decoSurfFurnEl.src = furnImg;
   }
@@ -1567,6 +1784,7 @@ function updateDecoSurfacePreview() {
   _decoSurfFurnEl.style.width = 'auto';
   _decoSurfFurnEl.style.transform = `translate(calc(-50% - ${furnAdj.pivotX || 0}%), ${furnAdj.pivotY || 0}%)`;
   _decoSurfFurnEl.style.zIndex = 50;
+  requestAnimationFrame(updateWallPreviewStatus);
 }
 
 document.getElementById('btn-deco-surface-preview').onclick = () => {
@@ -1583,17 +1801,36 @@ document.getElementById('btn-deco-surface-preview').onclick = () => {
 
   const furnItem = ITEMS.find(x => x.id === _decoSurfFurnId);
   if (!furnItem) return;
-  const furnImg = (currentAngle === 'B' && furnItem.roomImgB) ? furnItem.roomImgB : furnItem.roomImg;
+  const furnImg = (_decoSurfFurnAngle === 'B' && furnItem.roomImgB) ? furnItem.roomImgB : furnItem.roomImg;
   const el = document.createElement('img');
   el.src = furnImg;
   el.style.position = 'absolute';
   el.style.width = 'auto';
-  el.style.pointerEvents = 'none';
+  const selectedItem = ITEMS.find(x => x.id === selectedId);
+  const selectedAdj = adjustments[adjKey(selectedId, currentAngle)];
+  _previewFurnRow = selectedAdj && selectedAdj.previewFurnRow != null ? selectedAdj.previewFurnRow : (selectedAdj ? selectedAdj.row : 0);
+  _previewFurnCol = selectedAdj && selectedAdj.previewFurnCol != null ? selectedAdj.previewFurnCol : (selectedAdj ? selectedAdj.col : 0);
+  el.style.pointerEvents = selectedItem && selectedItem.placementLayer === 'wall' ? 'auto' : 'none';
+  el.style.cursor = 'grab';
   el.style.opacity = '0.6';
   el.style.filter = 'drop-shadow(0 0 4px #4CAF50)';
   el.style.transformOrigin = 'bottom center';
   document.getElementById('item-layer').appendChild(el);
   _decoSurfFurnEl = el;
+  el.onload = () => updateDecoSurfacePreview();
+  let dragging = false;
+  el.onpointerdown = e => { dragging = true; el.setPointerCapture(e.pointerId); el.style.cursor='grabbing'; e.preventDefault(); };
+  el.onpointermove = e => {
+    if (!dragging) return;
+    const rect = container.getBoundingClientRect();
+    const px=(e.clientX-rect.left)/rect.width, py=(e.clientY-rect.top)/rect.height;
+    let br=0,bc=0,bd=Infinity;
+    for(let r=0;r<8;r++) for(let c=0;c<8;c++){const p=isoGridPt(r+.5,c+.5),dx=px-p.x,dy=py-p.y,d=dx*dx+dy*dy;if(d<bd){bd=d;br=r;bc=c;}}
+    _previewFurnRow=br; _previewFurnCol=bc;
+    if(selectedAdj){selectedAdj.previewFurnRow=br;selectedAdj.previewFurnCol=bc;saveToStorage();}
+    updateDecoSurfacePreview();
+  };
+  el.onpointerup = () => { dragging=false; el.style.cursor='grab'; updateWallPreviewStatus(); };
   updateDecoSurfacePreview();
 };
 
@@ -1751,6 +1988,21 @@ function drawGrid() {
 
   // Current position marker
   if (adj) {
+    const span = Math.max(1, Math.ceil(adj.footprintSize || adj.cellSize || 1));
+    for (let dr = 0; dr < span; dr++) {
+      for (let dc = 0; dc < span; dc++) {
+        const rr = adj.row - dr, cc = adj.col - dc;
+        if (rr < 0 || rr >= n || cc < 0 || cc >= n) continue;
+        const p0 = isoGridPt(rr, cc), p1 = isoGridPt(rr + 1, cc);
+        const p2 = isoGridPt(rr + 1, cc + 1), p3 = isoGridPt(rr, cc + 1);
+        ctx.beginPath();
+        ctx.moveTo(p0.x*w, p0.y*h); ctx.lineTo(p1.x*w, p1.y*h);
+        ctx.lineTo(p2.x*w, p2.y*h); ctx.lineTo(p3.x*w, p3.y*h);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(255,165,0,0.42)';
+        ctx.fill();
+      }
+    }
     const cp = isoGridPt(adj.row + 0.5, adj.col + 0.5);
     ctx.beginPath();
     ctx.arc(cp.x*w, cp.y*h, 6, 0, Math.PI*2);
@@ -2048,7 +2300,7 @@ document.getElementById('grid-export-btn').onclick = () => {
 syncGridSliders();
 
 // ─── GitHub Upload (reuse admin PAT) ───
-var GH_OWNER = 'NautilusDW', GH_REPO = 'pono-asobiba-app', GH_BRANCH = 'develop';
+var GH_OWNER = 'NautilusDW', GH_REPO = 'pono-asobiba-app', GH_BRANCH = 'develop-app';
 var FURN_PATH = 'assets/images/Rooms/furnitures_final/';
 
 function ghToken() { return 'cf-proxy-managed'; }
@@ -2110,7 +2362,7 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
   var idInput = document.getElementById('edit-item-id');
   if (idInput) idInput.dispatchEvent(new Event('change'));
   // ★ min/max/pivot 等の数値フィールドも強制コミット（blur 前に Deploy した場合の対策）
-  ['minRow','maxRow','minCol','maxCol','pivotX','pivotY','cellSize','surfaceY']
+  ['minRow','maxRow','minCol','maxCol','pivotX','pivotY','cellSize','footprintSize','surfaceY','wallFurnitureAllowance']
     .forEach(function(n) {
       var el = document.getElementById('num-' + n);
       if (el) { el.dispatchEvent(new Event('input')); el.dispatchEvent(new Event('change')); }
@@ -2239,6 +2491,10 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
         if (ov.cat) newBlock = replStrProp(newBlock, 'cat', ov.cat);
         if (ov.theme) newBlock = replStrProp(newBlock, 'theme', ov.theme);
         if (ov.name) newBlock = replStrProp(newBlock, 'name', ov.name);
+        if (ov.placementLayer) {
+          if (/\bplacementLayer:\s*'/.test(newBlock)) newBlock = replStrProp(newBlock, 'placementLayer', ov.placementLayer);
+          else newBlock = newBlock.replace(/(\btheme:\s*'[^']*',)/, "$1 placementLayer: '" + ov.placementLayer + "',");
+        }
       }
       // 数値プロパティ更新ヘルパー（undefined 防止）
       function safeReplProp(blk, prop, val) {
@@ -2267,8 +2523,14 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
       }
 
       newBlock = safeReplProp(newBlock, 'cellSize', adjA.cellSize);
+      if (/\bfootprintSize:/.test(newBlock)) newBlock = safeReplProp(newBlock, 'footprintSize', adjA.footprintSize);
+      else newBlock = newBlock.replace(/(cellSize:\s*-?[\d.]+,?)/, '$1 footprintSize: ' + adjA.footprintSize + ',');
       newBlock = safeReplProp(newBlock, 'pivotX', adjA.pivotX);
       newBlock = safeReplProp(newBlock, 'pivotY', adjA.pivotY);
+      if (item.placementLayer === 'wall') {
+        if (/\bwallFurnitureAllowance:/.test(newBlock)) newBlock = safeReplProp(newBlock, 'wallFurnitureAllowance', adjA.wallFurnitureAllowance || 0);
+        else newBlock = newBlock.replace(/(\bplacementLayer:\s*'wall',)/, '$1 wallFurnitureAllowance: ' + (adjA.wallFurnitureAllowance || 0) + ',');
+      }
 
       // minRow〜maxCol（存在すれば更新、無ければ追記）
       if (adjA.minRow !== undefined && adjA.minRow !== null) {
@@ -2303,6 +2565,8 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
           var abInner = angleBMatch[1];
           if (/\bcellSize:/.test(abInner)) abInner = abInner.replace(/(cellSize:\s*)-?[\d.]+/, '$1' + adjB.cellSize);
           else abInner = ' cellSize: ' + adjB.cellSize + ',' + abInner;
+          if (/\bfootprintSize:/.test(abInner)) abInner = abInner.replace(/(footprintSize:\s*)-?[\d.]+/, '$1' + adjB.footprintSize);
+          else abInner = ' footprintSize: ' + adjB.footprintSize + ',' + abInner;
           if (/\bpivotX:/.test(abInner))   abInner = abInner.replace(/(pivotX:\s*)-?[\d.]+/, '$1' + adjB.pivotX);
           else abInner = ' pivotX: ' + adjB.pivotX + ',' + abInner;
           if (/\bpivotY:/.test(abInner))   abInner = abInner.replace(/(pivotY:\s*)-?[\d.]+/, '$1' + adjB.pivotY);
@@ -2320,7 +2584,7 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
           newBlock = newBlock.replace(angleBMatch[0], 'angleB: {' + abInner + ' }');
         } else {
           // angleB ブロックが存在しないので新規挿入（最後の `}` の前に追加）
-          var fields = ['cellSize: ' + adjB.cellSize, 'pivotX: ' + adjB.pivotX, 'pivotY: ' + adjB.pivotY];
+          var fields = ['cellSize: ' + adjB.cellSize, 'footprintSize: ' + adjB.footprintSize, 'pivotX: ' + adjB.pivotX, 'pivotY: ' + adjB.pivotY];
           if (adjB.minRow !== undefined && adjB.minRow !== null) {
             fields.push('minRow: ' + adjB.minRow, 'maxRow: ' + adjB.maxRow, 'minCol: ' + adjB.minCol, 'maxCol: ' + adjB.maxCol);
           }
@@ -2377,7 +2641,9 @@ document.getElementById('deploy-btn').addEventListener('click', async function()
             entry += "    roomImgB: " + imgPathB + ",\n";
           }
           entry += "    gridRow: 4, gridCol: 4, cellSize: " + (adj.cellSize || 1) +
-            ", pivotX: " + (adj.pivotX || 0) + ", pivotY: " + (adj.pivotY || 0);
+            ", footprintSize: " + (adj.footprintSize || 1) + ", pivotX: " + (adj.pivotX || 0) + ", pivotY: " + (adj.pivotY || 0);
+          entry += ", placementLayer: '" + (item.placementLayer || 'floor') + "'";
+          if (item.placementLayer === 'wall') entry += ", wallFurnitureAllowance: " + (adj.wallFurnitureAllowance || 0);
           if (adj.minRow != null) {
             entry += ", minRow: " + adj.minRow + ", maxRow: " + adj.maxRow +
               ", minCol: " + adj.minCol + ", maxCol: " + adj.maxCol;
@@ -2567,6 +2833,16 @@ function refreshUnsavedBanner() {
   refreshAllUnsavedIndicators();
 }
 
+function setPendingDiscoveryStatus(state, count, detail) {
+  var status = document.getElementById('pending-items-status');
+  var countEl = document.getElementById('pending-items-count');
+  if (!status || !countEl) return;
+  countEl.textContent = state === 'ready' ? count + '件' : (state === 'empty' ? '0件' : '要確認');
+  status.style.display = state === 'ready' ? 'none' : '';
+  status.textContent = detail || '';
+  status.style.color = state === 'error' ? '#ffab91' : '#ffe0a3';
+}
+
 // ページ離脱時の警告
 window.addEventListener('beforeunload', function(e) {
   if (getUnsavedItems().length > 0) {
@@ -2582,7 +2858,10 @@ window.addEventListener('beforeunload', function(e) {
 //   として ITEMS に追加する。これで Clean Edge Studio で画像をアップロードして
 //   git pull / Netlify ビルドが終わっていれば、ピボットツールに自動で出現する。
 async function discoverPendingImports() {
-  if (typeof ghToken !== 'function' || !ghToken()) return; // PAT 未設定なら諦める
+  if (typeof ghToken !== 'function' || !ghToken()) {
+    setPendingDiscoveryStatus('error', 0, '管理画面でGitHubトークンを設定すると、新しい家具を自動検出できます。');
+    return;
+  }
   var url = '/api/gh/repos/' + GH_OWNER + '/' + GH_REPO +
             '/contents/assets/images/Rooms/furnitures_final?ref=' + GH_BRANCH +
             '&_=' + Date.now();
@@ -2599,6 +2878,7 @@ async function discoverPendingImports() {
         sb.textContent = '⚠ Discovery 失敗: ' + msg + ' (未調整インポートが検出できません)';
         sb.style.color = '#FFB74D';
       }
+      setPendingDiscoveryStatus('error', 0, '未調整家具の検出に失敗しました: ' + msg);
       return;
     }
     var files = await resp.json();
@@ -2678,9 +2958,13 @@ async function discoverPendingImports() {
     });
     if (added > 0) {
       console.info('[discoverPendingImports] GitHub から未調整 ' + added + ' 件を発見');
+      setPendingDiscoveryStatus('ready', added, '');
+    } else {
+      setPendingDiscoveryStatus('empty', 0, '未調整家具はありません。');
     }
   } catch (e) {
     console.warn('[discoverPendingImports] failed:', e);
+    setPendingDiscoveryStatus('error', 0, '未調整家具の検出中にエラーが発生しました。通信状態を確認してください。');
   }
 }
 
@@ -2741,7 +3025,7 @@ function ensureItemButton(imp) {
   btn.appendChild(img);
   // dataset.id から最新IDを取得 + Ctrl/Cmd+クリックで multi-select
   btn.onclick = function(e) { _onItemBtnClick(e, this.dataset.id); };
-  listEl.appendChild(btn);
+  (imp._discovered && pendingListEl ? pendingListEl : listEl).appendChild(btn);
 }
 
 // ─── Auto-naming dictionary (built from existing items.js patterns) ───

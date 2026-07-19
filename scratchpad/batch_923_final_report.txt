@@ -1,0 +1,119 @@
+=== Batch:923 Voice Re-Generation Report ===
+
+Total files: 14
+OK files: 14/14
+Total attempts: 20
+
+Per-file breakdown:
+
+--- flag/cmd_red_down_keep.mp3 ---
+  OLD: sha1=c6c5d0706d3b... size=20492 tx='白波そのまま赤下げて'
+       model: gemini-2.5 fallback or higgsfield (audit-flagged)
+  NEW: sha1=a8574f0fda14... size=25580 tx='白羽そのまま赤下げて'
+       model: gemini-3.1-flash-tts-preview voice=Aoede
+       on-disk-sha=a8574f0fda14... match=True
+  attempts: 2  ok: True
+
+--- truefalse/start.mp3 ---
+  OLD: sha1=777d00d63f3a... size=21308 tx='○か×かどっちかな'
+       model: gemini-2.5 fallback or higgsfield (audit-flagged)
+  NEW: sha1=6e2eb5dceff5... size=28268 tx='○か×かどっちかな'
+       model: gemini-3.1-flash-tts-preview voice=Aoede
+       on-disk-sha=6e2eb5dceff5... match=True
+  attempts: 1  ok: True
+
+--- truefalse/correct.mp3 ---
+  OLD: sha1=286f115ef88b... size=17708 tx='正解!すごいね!'
+       model: gemini-2.5 fallback or higgsfield (audit-flagged)
+  NEW: sha1=d1d5d4692776... size=19820 tx='正解すごいね'
+       model: gemini-3.1-flash-tts-preview voice=Aoede
+       on-disk-sha=d1d5d4692776... match=True
+  attempts: 1  ok: True
+
+--- truefalse/wrong.mp3 ---
+  OLD: sha1=cd20d1135589... size=13316 tx='残念違ったよ'
+       model: gemini-2.5 fallback or higgsfield (audit-flagged)
+  NEW: sha1=efb0d3aa0528... size=23660 tx='残念違ったよ'
+       model: gemini-3.1-flash-tts-preview voice=Aoede
+       on-disk-sha=efb0d3aa0528... match=True
+  attempts: 1  ok: True
+
+--- simon/start.mp3 ---
+  OLD: sha1=eba30cbb9ed8... size=26252 tx='よく見ててね。同じ順でタップするよ。'
+       model: gemini-2.5 fallback or higgsfield (audit-flagged)
+  NEW: sha1=ddd874106b78... size=32300 tx='よく見ててね。同じ順でタップするよ。'
+       model: gemini-3.1-flash-tts-preview voice=Aoede
+       on-disk-sha=ddd874106b78... match=True
+  attempts: 1  ok: True
+
+--- simon/your_turn.mp3 ---
+  OLD: sha1=360db6f0a192... size=14300 tx='さあ君の番'
+       model: gemini-2.5 fallback or higgsfield (audit-flagged)
+  NEW: sha1=da563c2a43d7... size=18668 tx='さあ君の番'
+       model: gemini-3.1-flash-tts-preview voice=Aoede
+       on-disk-sha=da563c2a43d7... match=True
+  attempts: 1  ok: True
+
+--- simon/wrong.mp3 ---
+  OLD: sha1=7842e6eeb9be... size=14996 tx='あれれ?違う音だった。'
+       model: gemini-2.5 fallback or higgsfield (audit-flagged)
+  NEW: sha1=74b6cfeb7f2e... size=32300 tx='あれれ違う音だった'
+       model: gemini-3.1-flash-tts-preview voice=Aoede
+       on-disk-sha=74b6cfeb7f2e... match=True
+  attempts: 1  ok: True
+
+--- silhouette/start.mp3 ---
+  OLD: sha1=548342d271d7... size=31124 tx='ちらっとだけ見えるよ。何の絵かな?'
+       model: gemini-2.5 fallback or higgsfield (audit-flagged)
+  NEW: sha1=e96dd7fd844c... size=32684 tx='チラッとだけ見えるよ。何の絵かな?'
+       model: gemini-3.1-flash-tts-preview voice=Aoede
+       on-disk-sha=e96dd7fd844c... match=True
+  attempts: 6  ok: True
+
+--- silhouette/hint_more.mp3 ---
+  OLD: sha1=b678f8badd8c... size=30668 tx='もう一つ穴を開けたよもう一度見て'
+       model: gemini-2.5 fallback or higgsfield (audit-flagged)
+  NEW: sha1=c94a28113e99... size=38828 tx='もう一つ穴を開けたよ。もう一度見て。'
+       model: gemini-3.1-flash-tts-preview voice=Aoede
+       on-disk-sha=c94a28113e99... match=True
+  attempts: 1  ok: True
+
+--- silhouette/correct.mp3 ---
+  OLD: sha1=2c2ea2248d15... size=17804 tx='正解よくわかったね'
+       model: gemini-2.5 fallback or higgsfield (audit-flagged)
+  NEW: sha1=4004215d9883... size=22700 tx='正解!よくわかったね。'
+       model: gemini-3.1-flash-tts-preview voice=Aoede
+       on-disk-sha=4004215d9883... match=True
+  attempts: 1  ok: True
+
+--- silhouette/wrong.mp3 ---
+  OLD: sha1=2abf23333d70... size=19412 tx='残念違ったみたいだね'
+       model: gemini-2.5 fallback or higgsfield (audit-flagged)
+  NEW: sha1=b9f302e3279a... size=25388 tx='残念違ったみたい'
+       model: gemini-3.1-flash-tts-preview voice=Aoede
+       on-disk-sha=b9f302e3279a... match=True
+  attempts: 1  ok: True
+
+--- oddone/start.mp3 ---
+  OLD: sha1=282548b7e825... size=23372 tx='仲間外れはどれかな?'
+       model: gemini-2.5 fallback or higgsfield (audit-flagged)
+  NEW: sha1=e3ed6febd7fd... size=21164 tx='仲間外れはどれかな?'
+       model: gemini-3.1-flash-tts-preview voice=Aoede
+       on-disk-sha=e3ed6febd7fd... match=True
+  attempts: 1  ok: True
+
+--- oddone/correct.mp3 ---
+  OLD: sha1=d9ef05f8017a... size=31436 tx='正解!よく見つけたね!'
+       model: gemini-2.5 fallback or higgsfield (audit-flagged)
+  NEW: sha1=933a63263d63... size=23468 tx='正解!よく見つけたね!'
+       model: gemini-3.1-flash-tts-preview voice=Aoede
+       on-disk-sha=933a63263d63... match=True
+  attempts: 1  ok: True
+
+--- oddone/wrong.mp3 ---
+  OLD: sha1=0b968dfba48f... size=20204 tx='んー違うかも'
+       model: gemini-2.5 fallback or higgsfield (audit-flagged)
+  NEW: sha1=bb1efb7a2949... size=26540 tx='んー、違うかも。'
+       model: gemini-3.1-flash-tts-preview voice=Aoede
+       on-disk-sha=bb1efb7a2949... match=True
+  attempts: 1  ok: True

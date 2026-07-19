@@ -1,0 +1,687 @@
+# AGENTS.md
+
+このファイルは、 このリポジトリで作業する **すべての AI エージェントが守るべき共通ルール** を集約した単一ソースです。
+
+OpenAI Codex (VS Code 拡張) は本ファイルを起動時に自動で読み込みます。 GitHub Copilot Chat は [.github/copilot-instructions.md](.github/copilot-instructions.md) から本ファイルへ誘導されます。 Claude Code は [CLAUDE.md](./CLAUDE.md) から本ファイルを参照します。
+
+> **DRY 原則**: 重複ルールは本ファイルにのみ書きます。 各 AI 固有の運用 (例: Claude の Self-Evolving Framework) はそれぞれの専用ファイルに残します。
+
+---
+
+## 0. 文字コード / 改行コード規約
+
+すべてのテキストファイルは **UTF-8 (BOM なし) / LF 改行** で保存します。
+
+- `.editorconfig` (リポジトリ直下) と `.vscode/settings.json` で自動適用。 これらが効いていれば自前で何もしなくて OK。
+- Windows 上のエディタは Japanese を含むファイルを **CP932 / Shift_JIS** と誤判定することがあります (Codex 拡張で発生実績あり)。 `.editorconfig` を尊重するエディタを使うか、 ファイルを明示的に **UTF-8 で開き直して** ください。
+- BOM (`EF BB BF`) は付けません (シェル / git で副作用が出るため)。
+- ファイル読込時に文字化けして見えた場合、 まずエディタの文字コード設定を確認。 ファイル本体は UTF-8 のままです。
+
+### 0.1 ★Windows + PowerShell でファイル内容を確認する時の必須手順 (2026-05-11 追加)
+
+**Windows + PowerShell 5.1 (Japanese ロケール) のデフォルト出力エンコーディングは CP932 / Shift_JIS** です。 そのため:
+
+- **PowerShell 5.1 で素の `Get-Content <file>` を使うと、 UTF-8 で正しく保存されているファイルでも画面表示が文字化けします** (例: 「・・」「ヒメ」「縺ゅ＞縺輔▽」 のような化け文字)。
+- これは**画面表示のレンダリング問題であって、 ファイル本体は壊れていません**。 「コンソールに化けて見えた = ファイルが破損している」ではない。
+
+★ ファイル内容を確認する時は **必ず以下のいずれか** を使うこと:
+
+1. **PowerShell 5.1**: `Get-Content -Encoding utf8 <file>` (`-Encoding utf8` を必ず付ける)
+2. **PowerShell 7+ (`pwsh`)**: デフォルトが UTF-8 なので素の `Get-Content <file>` で OK
+3. **VS Code エディタ**で直接開く (左下に検出された文字コードが表示される)
+4. **Codex / Claude の native ファイル読込 API** (`Read` ツール等) を使う ← 推奨。 Bash 経由のシェルコマンドより事故が少ない
+
+★ **絶対にやってはいけないこと**:
+- 素の `Get-Content` で画面に化けて見えた → 「文字化けしているから書き込めません」と判断停止する。 これは false positive です。 必ず `-Encoding utf8` か別の方法で読み直して**本体が UTF-8 として正しいか**を確認してから判断すること。 詳細は §4 ルール 8 を参照。
+
+---
+
+## 1. プロジェクト概要
+
+**ポノのあそびば** — 子ども向け Web 知育 PWA。
+
+- **言語/フレームワーク**: 純 JavaScript / HTML / CSS。 ビルドツールなし、 npm 不使用。
+- **配信**: **Cloudflare Workers** (`wrangler.toml` 参照)。
+- **ブランチ運用 (2026-07-10 単一トランク統合済み、 詳細は §1.1)**:
+  - `develop-app` = **唯一の開発トランク** → push 1 回で **App staging** (`https://pono-asobiba-app-staging.ndw.workers.dev/`) と **LP staging** (`https://pono-asobiba-staging.ndw.workers.dev/`) の**両方に自動デプロイ** (deploy.yml の 2 step 直列)
+  - `develop` → **凍結済み (2026-07-10、 凍結コミット `0dacb4e4`、 `BRANCH_FROZEN.md` 参照)。 以後 push しない**
+  - `master` → push で **production に自動デプロイ** (`https://pono.kodama-no-mori.com/`、 ユーザー明示指示時のみ)
+- **手動デプロイ**: `wrangler deploy --env staging-app` (App staging) / `wrangler deploy --env staging` (LP staging) / `wrangler deploy` (production)
+- **アプリ版限定機能の gating**: `env.APP_BUILD === "1"` のとき worker.js が HTML に `<script>window.__APP_BUILD__=1;</script>` を注入する。 各 JS は `if (window.__APP_BUILD__) { ... }` で分岐すること。 APP_BUILD=1 は **env 単位** (`[env.staging-app.vars]` のみ)。 LP staging / production は未設定 (= falsy)。 ブランチではなく配信 env で出し分ける (同一コミットが両 staging に配信される)。
+
+### 1.1 ★単一トランク運用ルール (2026-07-10 統合実装完了)
+
+> **【2026-07-10 実装完了】** `develop` / `develop-app` の 2 ブランチ並行開発は廃止され、**`develop-app` 単一トランク + 環境フラグ/tier による出し分け**に統合された（計画・実装記録: [`docs/branch-unification-plan.md`](docs/branch-unification-plan.md)。Phase 5 = 本番反映のみ未実施でユーザー指示待ち）。以下が**現行ルール**。旧「2系統 staging と共通コード同期ルール」(2026-06-16〜2026-07-10) は失効済み — 「両ブランチへ同期」「develop 同期待ち」等の記述を古いドキュメント/メモリで見かけても従わないこと。
+
+- **`develop-app` が唯一の開発トランク**。すべての開発（ゲーム本体・共通UI・LP `index.html` を含む）はここで行う。
+- `develop-app` への push 1 回で、GitHub Actions が **App staging (`--env staging-app`) と LP staging (`--env staging`) の両方へ直列デプロイ**する。ブランチ間同期作業は存在しない。
+- **`develop` は凍結済み**（凍結コミット `0dacb4e4`、リポジトリ直下の `BRANCH_FROZEN.md` 参照）。**push 禁止**。LP 緊急修正も `develop-app` で行う。
+- `master` は production。ユーザー明示指示時のみ。
+- **アプリ版だけに見せたい差分は、ブランチ差分ではなく `window.__APP_BUILD__` / tier 判定 (`common/tier.js`) / feature flag で隠す**。共通ファイルをアプリ版だけ別挙動にしたい場合も、まず flag 分岐で実装する（この原則は統合前から不変）。APP_BUILD=1 は `[env.staging-app.vars]` の env 単位注入であり、同一コミットが両 staging に配信される。
+
+**作業完了時の必須確認**:
+- staging で確認してほしい時は、 どのURLに反映済みかを必ず書く（app タスクは App staging、 LP タスクは LP staging の URL を案内。 どちらも同一コミットから配信される）。 未push/未デプロイの場合は、 staging URL を案内せず、 ローカルプレビューURLを案内する。
+- tier/APP_BUILD で出し分ける変更をしたら、 完了報告に「LP staging (free/book) と App staging (app) でそれぞれどう見えるか」を明記する。
+
+### 1.2 ★Staging / Production URL マトリクス (絶対に間違えないこと)
+
+> **本ファイルが共通ルールの正本**。 staging URL を口頭/チャットでユーザーに案内する直前に必ず読み返すこと。 過去に `develop-app` push 後の staging を LP staging URL (`pono-asobiba-staging.ndw.workers.dev`) と誤回答した事故あり (2026-06-19)。 正本は `wrangler.toml` と `.github/workflows/deploy.yml`。
+
+| ブランチ | 環境 | URL | 自動デプロイ手段 | 手動デプロイ |
+| --- | --- | --- | --- | --- |
+| `develop-app` | **App staging (アプリ版)** | `https://pono-asobiba-app-staging.ndw.workers.dev/` | GitHub Actions が `wrangler deploy --env staging-app` 実行 (push で LP staging と直列)。 APP_BUILD=1 が HTML に注入されて `window.__APP_BUILD__=1` 化、 app tier 全機能解放 | `wrangler deploy --env staging-app` |
+| `develop-app` (同一 push) | **LP staging (本版/絵本販売)** | `https://pono-asobiba-staging.ndw.workers.dev/` | 同じ push で GitHub Actions が続けて `wrangler deploy --env staging` 実行 (2026-07-10 単一トランク統合)。 APP_BUILD 未設定 (= falsy)、 free/book tier 体験。 **両 staging は常に同一コミット** | `wrangler deploy --env staging` |
+| `develop` | — **(凍結済み 2026-07-10)** | — | **凍結コミット `0dacb4e4` / `BRANCH_FROZEN.md` 参照。 push しない。 deploy トリガからも削除済み** | — |
+| `master` | **LP production** (custom domain) | `https://pono.kodama-no-mori.com/` | GitHub Actions が `wrangler deploy` 実行 (top-level `[assets]` + custom_domain route)。 ユーザー明示指示時のみ | `wrangler deploy` |
+| `master` (workers.dev) | **Web アプリ production** (workers.dev サブドメイン) | `https://pono-asobiba-app.ndw.workers.dev/` | 上記同時 (worker name = `pono-asobiba-app`)。 ネイティブアプリリリース後も workers.dev サブドメインを Web アプリ本番として常用 | 同上 |
+
+**配信実装の参照箇所 (2026-07-10 統合実装後の現物で確認済み):**
+- `wrangler.toml` 行 14-18: top-level `routes` (production の `pono.kodama-no-mori.com` custom_domain)
+- `wrangler.toml` 行 67-80: `[env.staging]` (LP staging, worker name `pono-asobiba-staging`、 `[env.staging.assets]` は行 73-76)
+- `wrangler.toml` 行 88-130: `[env.staging-app]` (App staging, worker name `pono-asobiba-app-staging`, `APP_BUILD = "1"` は行 92-93)
+- `.github/workflows/deploy.yml` 行 9: トリガ `branches: [develop-app, master]` (`develop` は削除済み) / 行 51-76: if ガード付き 3 step (master→production / develop-app→App staging→LP staging 直列)
+
+**運用ルール:**
+- ユーザーに staging URL を提示する前に、 必ずどちらの env (App or LP) を指しているか確認する
+- 本プロジェクトの app タスク (`play.html` 以降のゲーム本体、 `bento/`, `puzzle/`, `maze/`, `quizland/`, `oto/`, `bubble/`, `aquarium/` 等) の確認 URL は **App staging (`pono-asobiba-app-staging.ndw.workers.dev`)**
+- LP (`index.html`、 `message/`、 ランディング素材) タスクの確認 URL は LP staging (`pono-asobiba-staging.ndw.workers.dev`)。 **ただし開発ブランチはどちらのタスクでも `develop-app`** (単一トランク統合後、 LP の変更も develop-app で行い、 push すれば LP staging に自動反映される)
+- DEPLOY-FACT system reminder にある URL は文脈 (タスクが LP か app か) で判断。 機械的にコピペしない
+- 「staging」 とユーザーが言ったとき、 ambiguity があれば 「App staging (`...-app-staging...`) ですか、 LP staging (`pono-asobiba-staging...`) ですか?」 と 1 行で確認してから進める
+- ★ **間違えやすいポイント**: `pono-asobiba-staging.ndw.workers.dev` (LP) と `pono-asobiba-app-staging.ndw.workers.dev` (App) は `-app-` の差だけで見た目が酷似。 URL を貼るときは差分箇所を強調 (太字 / バッククォート) して目視確認しやすくする。 なお両者は同一コミットの配信であり、 差は APP_BUILD 注入の有無 (= tier) のみ
+
+### 1.3 ディレクトリ構造 (新規セッション向け概観)
+
+```
+play.html                 ← トップ画面 (ゲーム選択カード UI / Codex メイン)
+sw.js                     ← Service Worker (CACHE_VERSION バンプ規約 §6 / Claude のみ)
+wrangler.toml             ← Cloudflare Workers 配信設定 (Claude のみ)
+common/                   ← ゲーム横断の共通ライブラリ (layout-editor 等 / Claude メイン)
+quizland/                 ← クイズ系ゲーム本体 (questions.js / saved-layout.json)
+maze/                     ← 迷路ゲーム
+assets/ui/                ← UI 装飾画像 (Codex メイン、 PostToolUse hook 対象外)
+assets/images/            ← ゲーム内画像 (Claude PostToolUse hook で自動最適化)
+tmp/alpha_pending/        ← Codex から Claude への画像納品エリア (§5.1)
+docs/                     ← STORY_OPENING_ENDING.md 等の物語/設計ドキュメント
+scripts/                  ← orchestrator.py / auto_optimize_image.py 等 (Claude のみ)
+native/                   ← Capacitor ネイティブシェル (Android Phase 1 実装済み、 iOS 未着手 / §1.5)
+unity/                    ← Unity 製 3D/GPU ネイティブゲーム (Web 配信・CI から除外済み / §1.5)
+HANDOFF.md                ← Claude / Codex 共有の申し送りノート (§4 ルール 8)
+```
+
+### 1.4 ★アプリ内表示文言のかな表記ルール (2026-06-21 追加)
+
+子どもが直接見るアプリ内の日本語表示は、原則として **ひらがな / カタカナのみ** にする。漢字は使わない。
+
+- ユーザー指示に漢字が含まれていても、アプリに表示する文言として実装するときは音声入力や変換の混入とみなし、ひらがな / カタカナへ直す。
+- 例: 「虫図鑑目次」「動物図鑑」「保存」「表紙」は、そのまま表示せず、「むしずかんもくじ」「どうぶつずかん」「ほぞん」「ひょうし」のように実装する。
+- 例外は、開発者向けドキュメント、コードコメント、内部 ID、外部固有名詞、管理者専用画面など、子ども向け UI として直接表示されないものに限る。
+- 迷った場合は、漢字を残すのではなく、かな表記に寄せる。読みが不自然になりそうな場合だけユーザーへ確認する。
+
+### 1.5 ★ネイティブアプリ配布 (Capacitor + Unity) の現状と方針 (2026-07-17 追加)
+
+Web (Cloudflare Workers) 配信とは別に、 ネイティブアプリ配布に向けた `native/` (Capacitor シェル) と `unity/` (Unity 製 3D/GPU ネイティブゲーム) の開発が進行中。 いずれも配信アセット集合からは除外済み (`.assetsignore` の `native/` / `unity/`、 §3 参照) で `develop`/`develop-app` の配信物には現れない。 ただし CI トリガの扱いは異なる: `unity/**` のみは `deploy.yml` の `paths-ignore` にも登録済みのため unity 単独 push はデプロイジョブごとスキップされるが、 `native/` は `paths-ignore` に含まれておらず、 native 単独 push でも通常通りデプロイジョブが走る (配信物には影響しないが CI 時間は消費する)。
+
+**現状ステータス (2026-07-17 時点、 リポジトリ内で確認できる事実のみ記載):**
+
+| 領域 | 現状 | 実装主体 |
+| --- | --- | --- |
+| `native/` (Capacitor) | Android Phase 1 実装済み (`native/package.json` の description に明記)。 `native/ios/` は未作成、 iOS 未着手 (ただし `src/api/savedata.js` の CORS allowlist に `capacitor://localhost` を先行追加済み・batch:1205、 動作検証は未) | Claude (初期 scaffold, batch:1204: package.json/capacitor.config.json/stage-www.mjs/verify-assets.mjs) + Codex (content-manifest allowlist 化・拡張, batch:1171 ほか) |
+| `unity/PonoMarbleRun3D` | 実物理 3D マーブルラン。 macOS app + Android APK (ARM64 IL2CPP, API25-36, v2 署名) ビルド済み | Codex |
+| `unity/PonoNativeGames` | GPU 流体シミュレーション「かくれんぼいきもの」実装済み。 同様に macOS app + Android APK ビルド済み | Codex |
+| Unity Android Build Support | 導入済み (約 8.29GB、 ユーザー許可済み、 batch:1173) | — |
+| Unity iOS Build Support / Apple Developer Program | リポジトリ内に導入や登録の記録なし (未着手と推定されるが断定はしない) | — |
+| `unity/` の Web 配信・CI からの除外 | 実装済み (`deploy.yml` の `paths-ignore` に `unity/**`、 `.assetsignore` に `unity/` を追加、 batch:1214) | Claude |
+| 実機での動作確認 | HANDOFF.md 記録上、 macOS プレビューでの確認はあるが、 Android 物理端末での実機確認は `unity/` 側・`native/` 側とも記録が見当たらない | — |
+
+**今回 (2026-07-17) 確定した3方針:**
+
+1. **iOS 対応は「開発着手」から先に進める**。 Apple Developer Program ($99/年) への加入前でも、 以下の範囲までは開発を進めてよい。
+   - Capacitor: `npx cap add ios` でプラットフォーム追加 → Xcode Simulator、 または無料 Apple ID の personal team 署名 (7日ごと再署名が必要) での個人実機インストールまで
+   - Unity: iOS Build Support モジュール追加 → Xcode プロジェクト書き出し → Simulator/個人端末での動作確認まで
+   - **TestFlight 配布・App Store 提出などの「配布」段階に進む時点で、 Apple Developer Program への加入が必須になる**。 加入タイミングはその直前でよい。
+   - Apple Kids カテゴリ特有の審査要件 (App Privacy ラベル、 ATT、 第三者アナリティクス/広告の契約・自己申告ベース制約) は `docs/data-analytics-plan.md` に既存の懸念事項として記録済み。 iOS 配布判断時に必ず再確認すること。
+2. **Unity 3D ゲームは将来「Unity as a Library」方式でアプリ本体へ統合する方針**。 現状はゲームごとに個別 app/apk としてビルドされている (PonoMarbleRun と PonoNativeGames が別々のビルド成果物) が、 将来的には Capacitor/Web 版シェルへ Unity as a Library として埋め込み、 1 つの統合アプリから遊べるようにする。 **★これは方針決定のみであり、 実装は未着手**。 着手時は別途タスクとして計画・HANDOFF.md でバッチ ID を切ること。
+3. **実機検証 MUST ルールの新設**。 `unity/` の物理演算・GPU 流体シミュレーション変更や `native/` の大きなジェスチャー系変更を含むリリース前は、 少なくとも Android 物理端末で実際に動作確認することを DoD に追加する。 詳細は §7.4。
+
+**正本の所在:**
+- Android Phase 1 実装の詳細: `native/README.md`, `native/content-manifest.json`
+- native/ 初期 scaffold の経緯: HANDOFF.md `batch:1204`
+- Unity 側の実装・検証記録: `HANDOFF.md` の該当バッチ ID (例: `batch:1175`, `batch:1175c`〜`batch:1175g`, `batch:1174`, `batch:1214`)
+- Web 配信からの除外設定: `.github/workflows/deploy.yml` の `paths-ignore`, `.assetsignore`
+- iOS 審査要件の懸念事項: `docs/data-analytics-plan.md` (Apple Kids カテゴリ / App Privacy ラベル / ATT 節)
+
+---
+
+## 2. 絶対禁止 (Hard rules)
+
+下記は例外なし。 違反するとユーザーに迷惑がかかります。
+
+1. **「Netlify」というキーワードは出さない。** (旧基盤、 完全廃止済み。 提案/コマンド/コメント/コミットメッセージのいずれにも書かない)
+2. **`master` ブランチへの直接 push、 勝手なマージ、 勝手な production デプロイは禁止。** ユーザーが明示的に「本番に上げて」と指示した時のみ実行。
+3. **機密ファイルを git add しない。** `.env`, `.env.*`, `.dev.vars`, `credentials.json`, `secrets.yaml`, `wrangler.toml.local` 等 (`.gitignore` 済み + pre-commit が阻止)。
+4. **3MB を超える画像を git add しない。** pre-commit が阻止します。 大きい画像は `python scripts/auto_optimize_image.py <path>` で最適化してから add。
+5. **`--no-verify` で git hook をスキップしない。** hook が阻止する状況には正当な理由があります。
+6. **不明な権限・モデル・API キーを使わない。** 既に `wrangler` で設定済みのものだけ使用。
+7. **画像生成モデルは GPT Image 2 以外使わない。** (Codex 側の仕事。 DALL-E / Stable Diffusion / Imagen / Flux / Nano Banana 等は使用禁止) 既存アセットがすべて GPT Image 2 で生成されているため、 別モデルを混ぜると画風が揺らぐ。 §5.1.0 と整合。
+   - ユーザー指示に「生成」「生成して」「作って」などがあり、対象がボタン・表紙・背景・シール・テンプレート・UI枠・アイコン等の見た目素材なら、**SVG / Canvas / CSS / PIL / 手書きベクター等で代用しない**。必ず GPT Image 2 で画像アセットを生成する。
+   - 例外は、ユーザーが明示的に「SVGで」「Canvasで」「コードだけで」「実行時に描画」と指定した場合、またはゲームの当たり判定・グラフ・単純な幾何図形など画像生成ではない実装上の描画に限る。
+
+---
+
+## 2.5 音声/TTS 運用方針
+
+音声 (ナレーション / SE / キャラボイス) は画像と同格の絶対ルール領域として扱う。 過去の事故 (fal-ai TTS 誤採用、 別文脈音声の staging 流出、 ポノ一人称ナレの読み聞かせ視点崩壊) を防ぐため、 下記 4 条を厳守すること。
+
+> **本セクション §2.5 は音声/TTS 運用方針の Single Source of Truth (SSOT)**。 `CLAUDE.md` Base Rule 6-7 / `docs/STICKER_BOOK_ENGAGEMENT_PLAN.md` §0.5 / §8 音声禁則 は本セクションの要約参照であり、 矛盾が生じた場合は本セクションが正。 各ファイルの更新は本セクション改訂 → 下位ファイル同期 の順で行うこと。
+
+### 2.5.1 キャラクター音声禁止
+
+**ポノ・ふくろう博士・パートナー動物 (キツネ / ハリネズミ / タヌキ / リス / ウサギ / クマ など 全 8 種) の 「肉声」 は作らない・使わない**。
+
+- 一人称ナレ (例: 「わたし、 ポノ!」 「ぼくがおしえてあげる」 「わしがヒントを出そう」) は禁止。
+- キャラのモノローグ / 掛け合い / 褒め voice を音声化して再生するのも禁止 (メタデータ・字幕として扱うのは可)。
+- 声を使う場合は必ず**女性ナレ第三者視点** (読み聞かせ視点、 「ポノがりんごを見つけました」 のような叙述) に限定する。
+- 既存の `puzzle/partners.js` の `voiceTag` フィールドはメタデータ扱いのみ (2026-07-02 grep 済、 実行時再生ルートなし)。 今後もこの扱いを維持し、 partners.js 起点で音声を発火させる新規実装は入れない。
+
+### 2.5.2 fal-ai TTS 禁止
+
+**音声生成に fal.ai の TTS モデル (CSM-1B その他) は使わない**。
+
+- 音声生成用途で fal-ai MCP (`mcp__claude_ai_higgsfield_game__generate_audio` を含む音声系ツール) を叩かない。
+- 画像生成用途で fal-ai を使うのは §5 の別ポリシー扱いで、 本条項の禁止対象外。
+- ECC skill `everything-claude-code:fal-ai-media` の音声機能も同様に不使用。
+
+### 2.5.3 既存女性ナレ pipeline を現行に維持
+
+現行の女性ナレは **Gemini Leda voice (1.15x speed) の pipeline** で生成する。
+
+- 参照実装: `common/narration.js:39` (Gemini Leda 呼び出しの共通ヘルパ)。
+- 新規ナレを収録・追加する場合は必ずこの pipeline を経由し、 生成後に **faster-whisper で文字起こし → 台本キーワード照合** をパイプラインに組み込むこと (`[[feedback_tts_whisper_verify_required]]`)。 エージェント自己報告のみで staging に流さない (2026-06-20 sk_intro 別文脈音声流出事故の再発防止)。
+- 台本は必ずかな表記ルール (§1.4) に従う。
+
+### 2.5.4 partners.js voiceTag はメタデータ扱い
+
+`puzzle/partners.js` の `voiceTag` フィールドはキャラ属性メタデータであり、 **実行時の音声再生ルートは存在しない** (2026-07-02 grep 確認済)。 今後もこの前提を維持する。
+
+- `voiceTag` を読み取って音声ファイルをロード・再生する新規実装は禁止 (§2.5.1 の一人称ナレ禁止に反するため)。
+- 将来 voiceTag を使いたくなった場合は、 §2.5.1 の女性ナレ第三者視点へ変換するアダプタを挟むこと。
+
+---
+
+## 3. 担当領域マトリクス
+
+| 領域 | Codex | Claude Code | 備考 |
+|---|---|---|---|
+| `play.html` の CSS / HTML / アニメ | ✅ メイン | レビュー側 | カードレイアウト、 ホバー演出、 ボトムナビ装飾 |
+| `play.html` 内の hover/select 等の軽い JS | ✅ | レビュー側 | renderCards、 cardClick、 selectGame レベル |
+| `assets/ui/`, `assets/images/` の追加・差し替え | ✅ | レビュー側 | 画像最適化 (§5) を踏むこと |
+| `sw.js` (CACHE_VERSION バンプ含む) | ✅ バンプ OK (2026-05-21〜) | ✅ メイン | §6 のバンプ規約参照。 Codex も自分の変更分は自分でバンプして良い。 競合は §6 の手順で回避 |
+| `scripts/`, `common/` | ❌ | ✅ メイン | 共通ライブラリと自動化。 Claude が並走編集中の競合大 |
+| ゲーム本体 (`maze/`, `quizland/`, `bento/` 等) | ✅ | ✅ | 着手前に working tree / HANDOFF を確認し、同じファイルを並走編集中なら調整する |
+| `quizland/data/questions.js` | ✅ メイン (問題追加・文言調整) | レビュー側 | クイズデータ。 Codex は新規問題追加 OK、 既存問題の id 変更は禁止 |
+| `quizland/saved-layout.json` | ❌ 触らない | ✅ メイン | layout-editor 経由でのみ更新。 手書き編集禁止 (フォーマットが壊れる) |
+| `quizland/data/_review/codex-followup-*.md` | ✅ 読む側 (指示の受信) | ✅ 書く側 (指示の発信) | Claude → Codex への作業依頼ノート |
+| `quizland/data/_review/audit.html` 等のレビュー成果物 | ✅ メイン | レビュー側 | Codex 主導のオーディット |
+| `wrangler.toml`, `.github/workflows/`, `.git/hooks/` | ❌ | ✅ メイン | デプロイ設定 / CI / git hooks |
+| `native/` (Capacitor Android/iOS シェル) | ✅ content-manifest allowlist 化・拡張、 Android build (batch:1171, 1177, 1218 等) | ✅ 初期 scaffold 新設 (batch:1204: package.json/capacitor.config.json/stage-www.mjs/verify-assets.mjs) + native origin CORS (batch:1205) + tier 変更に伴う再同期 (batch:1216, 1300 等) | Android Phase 1 実装済み・iOS 未着手 (§1.5)。 実装は両者混在——「Codex 実装 / Claude レビューのみ」ではない点に注意 |
+| `unity/` (PonoMarbleRun3D, PonoNativeGames) | ✅ メイン (実装・ビルド・検証) | レビュー側 + Web 配信からの除外/CI 設定 | HANDOFF.md 記載の実装バッチはすべて Codex (`by Codex`)。 Claude は Web 配信/CI からの除外設定のみ担当 (batch:1214: `deploy.yml` の `paths-ignore` に `unity/**`、 `.assetsignore` に `unity/` を追加) |
+| `CLAUDE.md` | ❌ | ✅ | Claude Code 固有の運用ファイル |
+| `MEMORY.md`, `memory/*` | 読み取り専用 (参考のみ) | ✅ | Claude の知見蓄積。 Codex は編集禁止だが**読んで矛盾を見つけたら HANDOFF で共有**してよい |
+| `docs/STORY_OPENING_ENDING.md` 等の物語/設計 docs | レビュー側 | ✅ メイン | 物語フローの正本 |
+| `HANDOFF.md` | ✅ 自分のバッチ ID 行のみ | ✅ 自分のバッチ ID 行のみ | §4 ルール 8 に従い、 他バッチ行は触らない |
+| `AGENTS.md` (本ファイル) | 提案 OK / commit はユーザー承認後 | 同左 | ルール変更は両 AI が提案可 |
+
+**役割が重なる場合**は、 ユーザーが「いま誰が何を触っているか」口頭で伝える運用。 重なる懸念がある時は作業を始める前に確認すること。
+
+### 3.1 Codex 制限の最小化ポリシー (2026-05-21 追加)
+
+ユーザー方針として、 **Codex への禁止事項は「Claude Code の作業に直接支障が出るもの」 だけに絞る**。 上記マトリクスで Codex ❌ 印が付いているのは、 すべて以下の理由で技術的に競合・破損リスクがあるもののみ:
+
+- `scripts/`, `common/`: Claude が並走編集する頻度が極めて高い (orchestrator / layout-editor / 共通ライブラリ)
+- `quizland/saved-layout.json`: 手書き編集でフォーマットが壊れる (layout-editor 経由必須、 技術的制約)
+- `wrangler.toml` / `.github/workflows/` / `.git/hooks/`: デプロイ・CI 設定、 Claude が運用責任を持つ
+- `CLAUDE.md`: Claude Code 固有ファイル
+- `MEMORY.md`, `memory/*`: Claude の知見蓄積、 Codex が書くと学習ループが壊れる (※読むのは推奨)
+
+**上記マトリクスにない領域は、 Codex は基本的に自由**。 ドキュメント追記 (`docs/` 配下、 各種 `*-followup-*.md`)、 素材ファイル追加 (`assets/ui/`, `assets/images/`, `tmp/alpha_pending/`)、 `play.html` / `quizland/data/questions.js` 編集、 sw.js バンプ等は遠慮なくやって良い。 「迷ったらやらない」 ではなく 「迷ったらユーザーに 1 行確認」 で進めること。
+
+「Claude Code が同じファイルを編集中の場合のみ要注意」 という最小ルールに帰着する。 git status / git log で M 状態を確認、 大きな機能編集は HANDOFF.md でバッチ ID を切ってから着手。
+
+---
+
+## 4. すれ違い回避の最低限ルール
+
+0. **★着手前の重複チェック義務 (2026-05-06 追加)**: 新しい依頼を受けた瞬間に**自走を始める前**に、 同じ作業を過去スレッド/別 AI が既にやっていないか確認する。
+   - `HANDOFF.md` の Recent / Done を「該当領域 (例: `quizland/data/opposite/`)」でざっと検索
+   - `git log --oneline -20 -- <該当ディレクトリ>` で過去 20 件の commit を確認
+   - 該当ディレクトリの `ls` で既存ファイルの有無を確認 (画像生成タスクで特に重要)
+   - 既存成果物が見つかった場合: **再生成・再実装をせず**、 ユーザーに 「○○ は既に <commit hash> で対応済みのようですが、 追加で何が必要ですか?」 と確認
+   - 何も見つからなかった場合: HANDOFF に 「過去成果物無しと確認済 → 着手します」 を 1 行宣言してから進む
+   - **理由**: 「いや、 その辺さ、 すでに以前に出してない？」 のリワーク事故を防ぐ。
+
+1. **作業前に現在ブランチを確認し、 最新を取得**: `git branch --show-current` で対象ブランチを確認してから、 そのブランチに対して `git pull origin <current-branch>` を行う。 ただし未コミット変更がある場合は無理に pull せず、 先に `git status` で競合リスクを確認する。
+2. **作業後にコミット & push**: 対象ブランチへ `git push origin <current-branch>` (現状 post-commit は無効化されているため、 明示 push が必要)。 共通領域の変更は §1.1 に従い、 `develop-app` と `develop` の同期状態を確認してから完了報告する。
+3. **コミットメッセージの末尾に作者の AI 種別を入れる** (どっちが作業したか git log で追跡可能にする):
+   ```
+   ...通常のメッセージ...
+
+   Co-Authored-By: Codex <noreply@openai.com>
+   ```
+   または
+   ```
+   Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>
+   ```
+4. **同時編集中の領域を踏まない**: 担当領域マトリクス (§3) を尊重。 マトリクス外のファイルを触る必要が出たら、 ユーザーに事前確認。
+5. **AI 同士は直接通信しない**: 私 (Codex) と Claude Code は同じワークスペースを共有しているが、 互いの作業中状態は見えない。 git log と working tree で確認、 ユーザー口頭伝達で同期。
+6. **「auto-commit by Claude Code」名義のコミットの中身に注意**: このプロジェクトの自動化フローによって、 Codex / Claude Code どちらの編集も「auto-commit by Claude Code」というメッセージで自動コミットされ origin/develop に push されることがあります (作者欄はリポジトリ所有者の名前)。 つまり **コミット名義 ≠ 実作業者**。 git log で誰の作業か確認したいときは `git show <sha>` でファイル内容と時刻を見て判断してください。
+7. **共通修正の反映先を確認する**: OtoTouch / QuizLand / Maze / Bento / `play.html` / `sw.js` / 共通UIなど、 両系統に出るべき変更は「今どのブランチに入っているか」「もう片方へどう同期するか」を `HANDOFF.md` と完了報告に書く。 片方だけローカル未コミットの状態で staging 反映済みのように案内してはいけない。
+8. **`HANDOFF.md` を読む / 書く** (★必須ルーチン): リポジトリ直下の [`HANDOFF.md`](./HANDOFF.md) は Claude / Codex 共有の申し送りノート。
+
+   **★文字コード厳守 (2026-05-06 追加 / 2026-05-11 false positive 対策で大幅改訂)**: `HANDOFF.md` は**頻繁に文字化けが発生**してきましたが、 そのうち多くは **「画面表示が化けて見えただけでファイル本体は正常」 の false positive** です。 false positive で書込み拒否を連発する事故が直近で何度も起きており、 ユーザー信頼を損なっています。 以下の **2 段階判定** を厳守してください:
+
+   **★ 段階 1: 化けを疑ったら、 まず正しいエンコーディングで読み直す (false positive チェック)**
+
+   素の `Get-Content` / `cat` / シェル出力で化けて見えた時は、 **その時点では何も判断しない**。 **必ず正しい読み直し手段で再確認**すること (読み直し手順の詳細は §0.1 参照)。
+
+   ★ 読み直して正しく読めれば → **画面表示の false positive**。 ファイル本体は正常です。 **そのまま書込み OK**。 この段階で「化けてるから書きません」 と判断停止するのは禁止。
+
+   **★ 段階 2: 段階 1 で読み直しても化けていれば本物の破損**
+
+   - その時だけ書込み禁止 + ユーザーに即報告 (隠して放置しない)。
+   - 修復は git の以前の commit から `git show <sha>:HANDOFF.md` で復元可能。
+   - 自分の書込み直後に化けていれば、 自分の書込み手段 (使ったエディタ / 拡張) が CP932 で上書きしていないか調査。
+
+   **★ 書込み時のチェック (両段階共通)**:
+   - **UTF-8 (BOM なし) / LF 改行** で保存 (§0 と同じ)。
+   - Windows 上のエディタ (特に Codex VS Code 拡張) は HANDOFF.md を **CP932 / Shift_JIS と誤判定して上書き保存**するケースが過去に発生しているため、 編集前に `file HANDOFF.md` (or エディタの文字コード表示) で UTF-8 であることを確認。
+   - 自分が書き込んだ直後にもう一度開いて化けていないか目視確認 (読み直し手順は §0.1 参照)。
+
+   **★ 絶対 NG**:
+   - 素の `Get-Content` (引数なし) で化けて見えただけで「文字化けしているため書き込みません」 と書いて作業を止めること。 これは false positive で、 ユーザーが何度も困っています。 必ず §0.1 の手段で読み直して段階 2 まで確認してから判断する。
+
+   - **作業開始時** (新規セッション、 ユーザーから依頼を受けた時、 大きなタスクに着手する直前): 必ず最初に開いて 「Active」 セクションを読む。 相手 AI からの引き継ぎ・進行中タスクをここで把握する。
+   - **作業完了時 / 重要な情報を相手に伝えたい時**: 「Active」 のチェックを付けて 「Done」 に移動 + 1 行サマリを残す。 これにより、 ユーザーが同じ説明を 2 回繰り返さなくて済む。
+   - 自分の作業者名 (`by Claude` / `by Codex`) を必ず明記する。
+   - 古い Done エントリ (3 日以上前) は気付いた方が削除して衛生を保つ。
+
+   **★並列スレッド競合防止ルール (2026-05-06 追加)**: 複数の Codex/Claude スレッドが並行して同じバッチ作業をする場合 (例: 04/ alpha 抜き と 05/ 新規生成 を別スレッドで同時に進める) 、 HANDOFF.md の上書き合戦で報告が消える事故が起きやすい。 以下を厳守:
+   - **バッチ ID 必須**: ユーザーから依頼を受けた時点で、 そのタスクには `[batch:NN-topic]` 形式のバッチ ID が割り振られているはず (例: `[batch:05-opposite-new-pairs]`)。 ユーザー指示に明記がなければ自分で命名して**最初の HANDOFF エントリで宣言**する。
+   - **自分のバッチ ID のエントリだけを編集**: 他のバッチ ID のエントリは**絶対に触らない** (内容修正・削除・移動すべて NG)。 たとえ古く見えても、 別スレッドが進行中の可能性がある。
+   - **append-only**: 進捗更新は新しい行を**追加** (古い行を編集して上書きしない)。 状態遷移は「同じバッチ ID で複数行に連なる」形で表現:
+     ```
+     - 2026-05-06 - [batch:05] Codex: opposite 23 枚生成開始
+     - 2026-05-06 - [batch:05] Codex: 23 枚 → tmp/alpha_pending/alpha/05/ に納品完了
+     - 2026-05-06 - [batch:05] Claude: 配置・コード反映・sw v749 デプロイ完了
+     ```
+   - **掃除タイム**: 過去のバッチで全行 done になったものは、 1 つの「[batch:NN] DONE — 1 行サマリ」エントリに集約して Recent に移動して良い (同期のために必ず**そのバッチに関わった全エージェントの作業が done 済**であることを git log と working tree で確認すること)。
+   - **競合検出**: git push が rejected された場合は、 fetch + rebase してから再 push。 自分のエントリと衝突しているなら、 競合を解決する際に**他バッチのエントリは絶対変更しない** (rebase で他バッチの変更が混ざっても、 自分のバッチ部分だけ追記する)。
+
+   **★文字化け検知ヘッダ (2026-05-10 追加 / 2026-05-11 false positive 注記)**: 新規ハンドオフ md (`CODEX-*.md` / `HANDOFF.md` / `codex指示*.md` / `tmp/**/CODEX-*.md` など、 AI 同士が読み書きするすべての md) は **冒頭に以下の検知ヘッダを必ず入れる** (2 行構成):
+
+   ```
+   > ⚠️ **文字化けチェック**: この行が読めない場合、UTF-8 で開き直してください (VS Code: コマンドパレット → "Reopen with Encoding" → "UTF-8")。 詳細: AGENTS.md §0.1 / §4 ルール 8
+   > ℹ️ **PowerShell 5.1 注記**: 素の `Get-Content <file>` は CP932 解釈で化けて見えますが **false positive** (ファイル本体は UTF-8 で正常)。 読み直し手順は §0.1 参照。
+   ```
+
+   これは Markdown blockquote として可視化される (HTML コメント `<!-- -->` だとレンダリング時に消えてしまうため不可)。 化けていればこの行自体が壊れて即気付ける、 という早期検知の仕組み。 既存ハンドオフ md にも順次同じヘッダを差し込んでいく。
+
+   ★ **重要 (false positive 対策)**: 検知ヘッダは UTF-8 で正しく書かれていても、 **PowerShell 5.1 の素の `Get-Content` の出力では化けて見えます**。 「ヘッダが化けて見える = ファイル破損」 ではありません。 必ず §0.1 の手段で読み直して、 本体の正否を判定すること (上記の段階 1 / 段階 2 判定参照)。
+
+   加えて、 プロジェクト root の `.editorconfig` (`charset = utf-8`, `end_of_line = lf`) に従って Codex 側でも EditorConfig 拡張 (`EditorConfig.EditorConfig`) を有効化することを推奨。 EditorConfig が効いていれば Codex VS Code 拡張の Shift_JIS 誤判定 → 上書き化けを防げる。
+
+### 4.8 ★難易度・作業量があるタスクのクロスレビュー必須
+
+画像生成に限らず、 ある程度の難易度・作業量があるタスクは、 完了報告前に必ずクロスレビューを行う。
+
+対象目安:
+- 複数ファイルにまたがる変更
+- ユーザー-visible な UI / ゲーム挙動 / データ追加
+- 画像・音声・問題データなどのバッチ作業
+- `sw.js` / cache / デプロイ / hook / 共通処理に影響する変更
+- 30 分以上かかる、 または手戻り時の影響が大きい作業
+
+レビュー方法:
+- Claude Code は Agent / Subagent / 自身の hook 運用を使ってレビュー担当を分ける。
+- Codex には Claude 専用 hook は発火しないため、 自動強制に頼らず、 作業者が明示的にレビュー観点を立てて確認する。 可能なら別エージェント / 別スレッド / ユーザー指定レビューに回す。
+- レビュー結果は `HANDOFF.md` または完了報告に「何を誰が / どの観点で確認したか」を 1 行で残す。
+
+軽微な typo 修正、 1 行の文言変更、 調査だけでファイル変更がない場合は対象外でよい。
+
+### 4.9 ★アクティブ・クレーム・ボード (2026-06-27 追加)
+
+複数の AI セッション (Claude / Codex) や人間が並行で同じプロジェクトを触る前提なので、 リポジトリ直下の [`AGENTS_CLAIMS.md`](./AGENTS_CLAIMS.md) を **アクティブな編集スコープの可視化ボード** として運用する。 `HANDOFF.md` (履歴・申し送り) とは役割を分ける:
+
+| ファイル | 役割 | 寿命 |
+|---|---|---|
+| `AGENTS_CLAIMS.md` | **いま** 誰が何を触っているか (= 衝突予防の lock 相当) | 作業中だけ。 終わったら **行を削除** |
+| `HANDOFF.md` | 完了報告 / 引き継ぎ / 進捗ログ | append-only。 古い Done は気付いた人が掃除 |
+
+**MUST ルール:**
+
+1. **作業開始時 (新規バッチを切る瞬間)** — `AGENTS_CLAIMS.md` を読む → 衝突なしを確認 → 自分の行を追記 → `git pull --rebase origin <current-branch>` してから編集開始
+2. **作業終了時 (push 完了直後)** — 自分の claim 行を削除して commit (`chore(claims): remove finished claim (no sw)` 等)。 HANDOFF.md への完了報告は別途残す (役割が違う)
+3. **push 直前** — もう一度 `git pull --rebase origin <current-branch>` を実行。 `.git/hooks/pre-push` が behind を検出して block したら、 必ず pull --rebase してから再 push (`--no-verify` 禁止)
+4. **claim の衝突発見時** — 他者の active claim と自分のスコープが被っていたら、 ユーザーに 1 行 ping (「○○ と被るけど続行します」 と宣言) してから **作業を開始** する (返答待ちで止まらない)。 同時に自分の claim 行の末尾に `[overlap: <相手の batch ID>]` を付記。 物理衝突 (= 同じ行/関数の編集) は `.git/hooks/pre-push` の behind block と `git pull --rebase` 時の merge conflict で確実に検知されるので、 そこを最後の砦として運用する。 ユーザーから明示的に「待って」 と言われた時だけ停止
+5. **ゾンビ claim** — 以下の **両方** を満たす他者の claim を見つけたら、 ユーザーに「これまだ生きてる?」 と確認して削除して良い:
+   - claim のタイムスタンプが 4 時間以上前
+   - かつ、 そのタイムスタンプ以降の git log に当該作業者 (Claude / Codex / Human) の新規 commit がない
+
+`AGENTS_CLAIMS.md` の行フォーマットと例は同ファイル冒頭参照。
+
+**設計意図**: HANDOFF.md は履歴が積み上がるため「**今アクティブな**ものだけを瞬時に見る」 用途には不向きになった。 claim ボードを別ファイルにして **「常に短い」「常に最新」** を維持することで衝突検出を高速化する。
+
+---
+
+## 5. 画像追加・差し替え手順
+
+### 5.1 画像生成 ✕ 後処理 の役割分担 (2026-05-06c — 手作業に再帰)
+
+| 工程 | 担当 |
+|---|---|
+| **生成** (GPT Image 2 等で raw 画像生成) | Codex |
+| **アルファ抜き** (白/単色背景の透過化) | **ユーザー (ローカル)** ← Codex は**やらない** |
+| **切り抜き** (split / crop / 個別オブジェクト分離) | **ユーザー (ローカル)** ← Codex は**やらない** |
+| **配置** (`tmp/` から `assets/` への移動 + リネーム) | Claude |
+| **最適化** (`auto_optimize_image.py`) | Claude (PostToolUse hook 自動 or 手動) |
+| **questions.js / sw.js 反映** | Claude |
+
+**経緯 (alpha 抜き責務の遷移)**:
+- 〜2026-05-05: Codex 側で alpha 抜き → ばらつきあり
+- 2026-05-06a: ユーザーローカルで alpha 抜き (品質安定優先)
+- 2026-05-06b: 再び Codex に alpha 抜き任せる (チーム編成 + クロスレビューで担保しようとした)
+- **2026-05-06c (現行)**: ユーザー手作業に最終回帰。 Photoshop での手動制御の方が安定。 Codex 側のクロスレビューは品質を保証しきれない。
+
+**Codex は raw 画像 (生成 API のレスポンスそのまま、 白背景/単色背景含む) を保存するだけ**。 後処理は全部ユーザーがローカルで実施。
+
+納品先: `tmp/alpha_pending/<NN>/` 配下に raw 画像で。 ユーザーが Photoshop でアルファ抜き + 切り出し → `tmp/alpha_pending/alpha/<NN>/` に配置 → 「< NN/ 入れた」と Claude に伝達 → Claude が `assets/` に最終配置 + コード反映。
+
+### 5.1.0 ★Codex 依頼時の冒頭文言 (必須)
+
+ユーザーが Codex に画像生成を依頼するとき、 Claude が依頼文を準備する場合は**必ず以下の文言を一番最初に付け加える**:
+
+> あなたは全体の進捗と品質管理に徹底し、 今後タスクは行わないでください。 実装はエージェントチームを組成して、 なるべく並列で行ってください。 レビューは必ずエージェント同士のクロスレビューをしてください。
+>
+> **画像生成モデルはすべて GPT Image 2 を使用することを厳格に守ってください。**
+>
+> **ユーザー指示に「生成」「生成して」「作って」等があり、対象が見た目素材なら、SVG / Canvas / CSS / PIL / 手書きベクター等で代用せず、GPT Image 2 で画像アセットを生成してください。**
+>
+> **アルファチャンネル抜きと切り抜きは行わないでください。** 生成 API のレスポンスをそのまま raw 画像として保存。 後処理 (alpha 透過化、 個別 PNG 切り出し) はユーザーがローカルの Photoshop で手作業します (2026-05-06c ポリシー)。
+>
+> **背景は不必要に白以外の色にしないでください。** alpha 抜きで多少色が残っても白なら目立たないが、 ピンク/紫など濃色が残ると視覚的に強烈に気になる。 どうしても白だと色かぶりして alpha 抜きがうまくいかない場合 (例: 雪・氷・白い動物など被写体が白い) のみ、 別の色を許容するが、 **その場合もなるべく薄い色** (淡いグレー、 淡い水色など) にしてください。
+
+これは Codex に**オーケストレーター専任モード**で動いてもらうための指示。 Codex が単独で全部やろうとせず、 サブエージェントを組成して並列実装 + クロスレビューする体制を作るための前置き。 ただし alpha 抜き / crop は §5.1 の現行ルールどおり Codex では行わない。
+
+※ クロスレビュー義務の一般ルールは §4.8 を正とする。 本節は画像生成依頼時の追加テンプレであり、 クロスレビュー対象を画像生成に限定するものではない。
+
+**画像生成モデル統一**: GPT Image 2 以外のモデル (DALL-E / Stable Diffusion / Imagen / Flux / Nano Banana 等) を混ぜると画風が揺らぐ。 既存 quizland アセットは全て GPT Image 2 で生成されているので、 新規も同モデルで揃える (§2.7 で絶対禁止に格上げ済み)。 また、ユーザーが「生成」と言った見た目素材を SVG / Canvas / CSS / PIL などのコード生成で置き換えない。
+
+**コスト無制限ポリシー (★Codex 限定)**: **画像生成のコストは Codex 経由 GPT Image 2 ルートに限り**、 ユーザー側で「気にしなくてよい」体制が確保されている。 そのため Codex は:
+- 「コスト最小化のため枚数を絞る」「再利用してコスト節約」のような遠慮は不要
+- 教育的価値があれば 1 タスクで 20-30 枚生成も問題なし
+- 再利用は**整合性 / 一貫性**の理由のときだけ採用
+
+**Claude が他経路 (fal.ai MCP / Adobe Firefly 等) で画像生成する場合は、 このポリシーは適用されない**。 Claude は枚数・コストを事前にユーザーに確認すること。
+
+**背景色ポリシー**: デフォルトは**白 (#FFFFFF)**。 これは alpha 抜きの残り誤差を視覚的に隠すため。 被写体が白い (雪原・白い動物・氷など) で色かぶり問題が出る場合のみ、 **淡いグレー (#E5E5E5) や淡い水色 (#E0F0FF)** など主張しない色にフォールバック。 ピンク・紫・原色などの濃色背景は禁止。
+
+#### 5.1.0.1 画像縦横比 (Aspect Ratio) 絶対遵守ルール
+
+生成済み画像 (PNG/WebP) を CSS/HTML で **stretch して縦横比を変えるのは絶対禁止**。
+
+禁則 (どんな理由でもやらない):
+- `background-size: 100% 100%` (stretch)
+- `object-fit: fill` (stretch)
+- `<img width=N height=M>` で画像本来の AR と一致しない指定
+- container と画像 AR が一致しない時に画像を引き伸ばす
+
+OK:
+- `background-size: cover / contain / auto`
+- `object-fit: cover / contain`
+- `aspect-ratio: <w>/<h>` で container 側を画像 AR に合わせる
+- `border-image` (slice/repeat で AR を保ちつつ内側を拡張)
+- container と画像が同じ AR を持つよう明示的に width/height をセット
+
+画像を使う前に Read tool で実 PNG を visually view し、 AR を実測すること (画像レビュー必須ルールと連動)。 AR が container と合わない場合は (a) container 側を画像 AR に合わせる (推奨) / (b) 別の AR が合う画像を選ぶ / (c) GPT Image 2 で container AR に合わせた版を生成、 のいずれか。
+
+理由: 葉装飾やキャラ・木枠が歪んで子供向け絵本品質を毀損する。 ユーザーから複数回指摘済 (2026-06-28 Fukuro_frame_001.png AR 違反事故、 など)。
+
+### 5.1.1 ★アセットシート方式 (2026-05-06 追加 / 必須)
+
+**ペア対比やバリエーション (例: 同じドアの開/閉、 同じ棚の上/下、 同じ男の子の前/後、 「すき/きらい」等の表情対比) を Codex に依頼する場合は、 別々に複数枚生成しない**。 必ず以下のとおり:
+
+- **1 つのプロンプトで 1 枚の画像を生成** (= 1 枚のアセットシート)
+- その 1 枚に 2 つ (or 複数) のバリエーションを並べる:
+  - 横並び 2 パネル / 縦並び 2 パネル / 2×2 グリッド など
+  - パネル間にうっすら境界線 or 余白を入れる (ユーザーがクロップしやすいように)
+- **カメラ画角・ライティング・小道具の細部 (棚の木目、 ドアノブ、 服のディテール、 顔立ち等) を全パネルで完全に共通化**
+- ユーザーがローカルで `split_sprites.py` 等で個別 PNG に切り出す
+
+**理由**: 別々に生成すると**カメラ角度、 棚の詳細、 服の柄、 体格**などが微妙にズレる。 子どもにとってペアの**主旨 (上/下とか 開/閉とか) ではなく、 ズレ自体に視覚が引きずられて**学習が阻害される。 1 枚のシートで構図と素材を強制的に揃えれば、 対比したい属性 (位置・動作・表情 etc.) だけが差分として浮かび上がる。
+
+**例**: 「うえ/した」 → 同じ棚を 2 つ並べて、 左の棚にりんごが**上段に**、 右の棚にりんごが**下段に**置かれた絵を 1 枚のシートとして生成。 棚の木目・寸法・カメラ位置はピクセル単位で同一になる。
+
+**Codex への指示テンプレ**: 「**A と B の 2 種類のシーンを 1 枚の画像にアセットシートとして生成**してください。 A は左パネル / B は右パネル、 同じ X (背景・小道具・キャラ衣装) を完全共有、 違うのは Y (位置・動作・表情) だけです。」
+
+**解像度の最低条件 + フォールバック**:
+- アセットシート方式は、 **シートを切り出した後、 各パネルが必要解像度以上 (通常 ≥1024×1024 相当)** であることが最低条件。 例: 2 パネル横並びなら**シート全体で ≥2048×1024** が必要。
+- 生成 API のネイティブ出力サイズで上記を満たせない場合は**別々生成にフォールバック OK**。 ただしその際は:
+  - **1 つ目を生成した後、 その画像をリファレンスとして 2 つ目を生成**する (= image-to-image 連鎖)
+  - これにより 2 枚目が 1 枚目の構図・小道具・キャラデザを引き継ぐ
+  - 別々でも実質的にアセットシート相当の整合性が出る
+- **絶対 NG**: リファレンス無しの完全独立生成 2 回。 必ずシート方式 or リファレンス連鎖のどちらかにする。
+
+### 5.2 配置・最適化手順 (Claude 側)
+
+1. ファイルを **assets/ui/<name>.png** または **assets/images/<dir>/<name>.png** に置く。
+2. ファイルが大きい場合 (>3MB は pre-commit が必ず阻止、 1MB 超でも軽量化推奨):
+   ```bash
+   python scripts/auto_optimize_image.py <path>
+   ```
+3. 透過 (alpha) を持つ PNG は **常に PNG のまま** 圧縮 (透明部分が消えると `<img src="*.png">` の見た目が崩れるため)。
+4. 透過なし PNG → JPG への **拡張子変更** は **デフォルトでは行わない** (= 既存 `<img src="*.png">` 参照を勝手に壊さないため)。 JPG 化したい時だけ手動で `--allow-jpeg-rename` を opt-in:
+   ```bash
+   python scripts/auto_optimize_image.py --allow-jpeg-rename <path>
+   ```
+5. `assets/images/` 配下は Claude Code の PostToolUse hook で自動最適化されるが、 **`assets/ui/` 配下と Codex の編集は対象外**。 Codex はファイルを置く時、 自分で `auto_optimize_image.py` を実行するか、 後で Claude にバンプ依頼するついでに最適化チェックも依頼すること。
+
+---
+
+## 6. sw.js CACHE_VERSION バンプ規約
+
+**HTML / JS / CSS / 画像 / フォント** いずれかを変更したら、 `sw.js` の 4行目 `CACHE_VERSION` を **+1** すること。 これを忘れると、 PWA としてインストール済みのユーザー端末が古いキャッシュを掴み続けます。
+
+```js
+const CACHE_VERSION = NNN;  // ← 変更ごとに +1
+```
+
+**運用 (2026-05-21 更新: Codex もバンプ可)**:
+- **Codex も自分の変更分は自分でバンプして良い**。 ユーザーまたは Claude に依頼する必要なし。 §3 のマトリクスで `sw.js` が Codex ✅ になったのと整合。
+- Claude Code はコミット前に CACHE_VERSION バンプを習慣化。
+- **競合対策**: CACHE_VERSION は連番 (整数) なので、 同時編集が起きても **最新値 +1 で後勝ち** すれば整合性が崩れない。 ただし安全のため:
+  1. バンプ前に `git pull origin develop-app` で最新を取得 (単一トランク統合後の作業ブランチは develop-app)
+  2. `sw.js` 4 行目の現在値を確認 → +1 して書き込み
+  3. push が rejected されたら fetch + rebase + 再度 +1 して push (= 番号がさらに進んでいる可能性があるため)
+- コミットメッセージには `sw vNNN` を末尾括弧内に入れる (§8.1 と同じ)。
+- **ブランチ共通の単一カウンタ運用**: `develop-app` / `master` で CACHE_VERSION は**同一の連番**を共有する。 ブランチ別に独立カウントしない (merge 時に番号衝突 → 古いキャッシュ掴みっぱなしの事故を回避するため)。 (旧 `develop` は 2026-07-10 に凍結済みでカウンタ対象外。 単一トランク統合により両 staging は同一 sw.js を配信する)
+
+---
+
+## 7. タスク完了の定義 (DoD: Definition of Done)
+
+「実装した = 完了」ではない。 以下を満たして初めて「完了」と報告してよい。
+
+### 7.1 コード/CSS/画像変更の場合
+
+1. 変更を commit & push (現状 post-commit は無効化されているため、 明示 push が必要)
+2. **sw.js CACHE_VERSION バンプ** (§6)
+3. GitHub Actions の staging デプロイが緑になるのを待つ (1-2 分)。 ただし `.md` / `docs/` / `memory/` / `scripts/` のみを変更した push では Cloudflare 自動デプロイは起動しない (GitHub Actions の paths-ignore 設定)。 動作確認待ちでハマる典型なので、 該当ファイルのみの変更時はデプロイ完了を待たないこと。
+4. **シークレットウィンドウ** で staging URL を開いて**実際に動作確認** (どちらも develop-app push で同一コミットが配信される):
+   - 本版 (LP staging): `https://pono-asobiba-staging.ndw.workers.dev/`
+   - アプリ版 (App staging): `https://pono-asobiba-app-staging.ndw.workers.dev/`
+   - 通常ウィンドウだと PWA キャッシュを掴む。 必ずシークレット or `Ctrl+Shift+R` ハードリロード
+5. ユーザーに報告: 「staging で <具体的な確認内容> を確認済み」
+
+### 7.2 リグレッション防止の最低限チェック
+
+変更した領域に応じて、 隣接機能が壊れていないか確認:
+
+| 触った領域 | 最低限見るもの |
+|---|---|
+| `play.html` トップ画面 | 全カードが表示される / カードタップで該当ゲームに飛ぶ |
+| `quizland/` | クイズが普通に進行する (1 問解ける) / トップに戻れる |
+| `maze/` | チュートリアルが起動する / 1 ステージクリアできる |
+| `common/layout/` 編集 | layout-editor を開いて保存・読み込みが壊れていない |
+| `sw.js` | シークレットウィンドウで開いてリソースが 200 で取れている |
+
+「golden path (子どもが普通に遊ぶ流れ) を 1 周通す」が原則。
+
+### 7.3 動作確認できない場合
+
+バックエンド設定・hook 改修・CI 変更等で staging では確認できない種類の変更は、 **「未確認」と明示**してユーザーに報告。 「動きました」と嘘の報告をしない。
+
+### 7.4 ★native/ (Capacitor) ・ unity/ 変更時の DoD (2026-07-17 追加)
+
+`native/` (Capacitor Android/iOS シェル) や `unity/` (PonoMarbleRun3D, PonoNativeGames) に対する大きめのジェスチャー系変更・物理演算変更・GPU 流体シミュレーション変更を含むリリース前は、 §7.1〜7.2 の Web staging 確認だけでは不十分。 以下を DoD に追加する。
+
+1. **実機確認 MUST**: 少なくとも Android 物理端末で実際に動作確認すること。 macOS プレビュー (Unity) や Xcode Simulator (iOS) だけでの確認は代替にならない。
+   - 理由: 物理演算・GPU 流体シミュレーションは実機の GPU 性能・発熱スロットリングで挙動が変わりやすい。 過去に iOS Safari 実機限定の `pointercancel` 挙動差でブラウザ版のドラッグ判定バグが実機でのみ発覚した前例がある (`[[feedback_ios_pointercancel_native_pan]]` memory 参照)。 Unity/native 側でも同様のクラスの不具合が実機でのみ顕在化するリスクを前提にする。
+   - HANDOFF.md の既存 Unity バッチ記録 (例: `batch:1175`, `batch:1175c`〜`batch:1175g`) は軒並み「macOS プレイヤーでの実走確認済み・Android 実機のみ未確認」で終わっている。 `batch:1174` (PonoNativeGames) のように実機確認の有無自体に触れていない記録もあるが、 いずれにせよ Android 物理端末での実機確認記録は `unity/` 側に見当たらない。 これは本ルール整備前の記録であり、 今後の native/unity リリース前タスクではこの状態を「完了」として報告しないこと。
+   - 実機が用意できない事情がある場合は、 §7.3 に従い「未確認」と明示してユーザーに報告する。
+2. 動作確認した実機の機種 / OS バージョンを完了報告に明記する。
+3. `unity/` は Web 配信・CI から除外済み (§1.5 参照) のため、 §7.1 の staging URL 確認は対象外。 `native/` (Capacitor) 側は `native/README.md` の `stage-www` → `verify-assets` → `verify-references` → `android:sync` パイプラインが Web 側 DoD に相当する。
+
+---
+
+## 8. コミット規約
+
+### 8.1 メッセージフォーマット
+
+```
+<件名> (<理由 or 種別>、 sw vNNN)
+
+[本文 (任意)]
+
+Co-Authored-By: Claude Opus 4.7 <noreply@anthropic.com>   ← または Codex
+```
+
+例:
+- `chip-label を display: inline-block 化 (整列ズレ修正、 sw v772)`
+- `applyOne: tx/ty=0 でも transform を書き込む (chip preset リセット時の残留 transform バグ修正、 sw v771)`
+- `chore(layout): update saved layout (no sw)`  ← sw バンプ不要な変更
+
+### 8.2 ルール
+
+- 件名は日本語可、 50-70 文字目安
+- sw.js を触った場合は `sw vNNN` を末尾括弧内に入れる (検索性のため)
+- sw バンプ不要な変更 (docs / memory / `.gitignore` のみ等) は `(no sw)` で明示
+- Co-Authored-By は §4.3 のとおり、 作業した AI 種別を入れる
+- **複数の独立した変更を 1 commit に混ぜない** (例: バグ修正 + 新機能を分ける)
+
+---
+
+## 9. エラー時の振る舞い (正直報告プロトコル)
+
+過去に「動いた」と虚偽報告したり、 失敗を隠して別の方法に逃げたりする事故が繰り返し発生している。 以下を厳守:
+
+1. **ツール実行が失敗したら隠さず報告**: 「○○ コマンドが <エラー> で失敗しました。 推定原因: ××。 次に △△ を試します」
+2. **同じアプローチを 2 回失敗させない**: 1 回目失敗 → 別アプローチに切り替え。 同じことを繰り返してログを汚さない (CLAUDE.md base rule §3 と整合)。
+3. **「動作確認しました」は実際に挙動を見たときだけ言う**: コードを書いただけなら 「実装完了 / 動作未確認」 と書く。
+4. **docs_review_hook の警告などシステム側ブロックを無視しない**: 警告に書いてある選択肢 (A: docs 更新 / B: skip フラグ) のどちらかを実行してから次へ進む。
+5. **ユーザーから 「もう一回やってみて」 と言われた時**: 同じ方法を闇雲に再試行せず、 **直前の失敗内容を 1 行で説明してから**再試行に入る。
+
+---
+
+## 10. 仕様不明点はユーザーに確認する
+
+抽象指示レベル (CLAUDE.md 末尾参照) で運用しているが、 **データ構造を増やす / スキーマを変える / 既存ファイルの分裂を伴う** 系は自己解釈で進めず、 選択肢を 2-3 個挙げてユーザーに選んでもらう。
+
+**確認すべき場面の例**:
+- 「デフォルト保存」 を **イラストあり / なしで 2 つ持つ**ことになった (= JSON スキーマが変わる)
+- 1 つのファイルを**複数ファイルに分割**することになった (= 参照経路が変わる)
+- ユーザーが「○○ できるようにして」と言ったが、 **既存の類似機能と挙動が分岐**する余地がある
+- **後方互換性の判断**が必要 (例: 古い saved-layout.json を読み込んだとき)
+
+**確認テンプレ**:
+> ○○ について、 以下の選択肢が考えられます:
+> - 案 A: ... (メリット/デメリット)
+> - 案 B: ... (メリット/デメリット)
+> どちらで進めますか?
+
+自己解釈で進めて手戻りが出るより、 30 秒の確認の方が効率的。
+
+---
+
+## 11. 既存の自動化 (情報共有)
+
+知らずに発火させて慌てないように。
+
+| Hook / Script | 対象 | 動作 |
+|---|---|---|
+| `.git/hooks/pre-commit` | 全 commit | 機密ファイル・3MB超画像・Image2ルール違反につながる生成代用記述をブロック |
+| `.git/hooks/post-commit.disabled` | 無効 | 以前の自動 `git push origin develop` hook。 現状は自動発火しない |
+| Claude Code PostToolUse | Claude の Write/Edit | `auto_optimize_image.py --hook` (assets/images/ のみ) + `docs_review_hook.py --mark` |
+| Claude Code Stop | Claude セッション終了 | `docs_review_hook.py --check` (skip flag で逃げ可) + auto push |
+| GitHub Actions | develop-app / master push | develop-app → App staging + LP staging の 2 env 直列 / master → production に自動デプロイ (develop はトリガから削除済み 2026-07-10) |
+| `.git/hooks/pre-push` | 全 push (Claude / Codex / 手動) | 自分のローカルが origin より behind なら push を block + `git pull --rebase` を促す。 作業ツリーは触らない (§4.9 / 安全策) |
+
+**Codex 側は有効な git hook と GitHub Actions の恩恵を自動的に受けます。** Claude 専用の UserPromptSubmit / PostToolUse / Stop hook は Codex の編集に対しては発火しません。 したがって Codex のクロスレビューは hook 強制ではなく、 §4.8 の運用ルールとして明示的に実施します。
+
+### 11.1 git hooks の初回 install (2026-06-27 追加)
+
+`.git/hooks/` は git 管理外なので、 リポジトリ側に正本を置いている (`scripts/hooks/` 配下)。 新規 clone / hook 更新時は次のコマンドで `.git/hooks/` へコピーする:
+
+```bash
+bash scripts/install-git-hooks.sh
+```
+
+既存の `pre-commit` (機密ファイル / 3MB 超画像 / Image2 違反の block) は維持される。 新たに `pre-push` (behind block / §4.9) が追加される。
+
+---
+
+## 11.5 Agent tool 利用ルール (worktree 古化対策)
+
+Claude Code / Codex の Agent tool は子エージェント起動時に自動で git worktree を作成する。worktree は派生時点のコミットで固定され、トランク (develop-app) の追従更新は自動では行われない。当プロジェクトは develop-app が高頻度更新されるため、worktree がすぐ陳腐化し、エージェントが数十行のつもりで編集しても最新 develop-app と比較すると数千行差分になり最近の改修を巻き戻す事故が起きる。
+実例: 2026-05-23 quizland OP 短縮タスクで agent worktree のベースが古く quizland/index.html に 9301 行差分が発生してマージ不能だった。
+
+**子エージェントへの指示テンプレに必ず含める**:
+- 作業開始時に `git fetch origin develop-app && git rebase origin/develop-app` で最新ベースに揃える
+- 実装後は `git add` + `git commit` を作成し、commit ハッシュをオーケストレータに報告する
+- 完了前に `git log origin/develop-app..HEAD` で commits ahead を確認する
+
+**オーケストレータ側の責務**:
+- 完了後 `git log` / `git diff origin/develop-app` でベース妥当性をチェック
+- 陳腐化判明時は rebase より新規エージェント再起動を優先
+- 差分判定の目安: `--stat` で 1ファイルあたり想定行数 × 3 を超えたら陳腐化を疑い再起動を選択
+- 完了マージ後は `git worktree remove <path>` で worktree を必ず破棄し、次タスクの誤再利用を防ぐ
+- 並列起動時は対象ファイルパスを事前申告させ、衝突する場合は直列化する
+
+---
+
+## 12. AGENTS.md 自身の更新ルール
+
+- 内容を変えたい場合は提案コミットを作り、 ユーザー承認後にマージ。
+- Codex / Claude のどちらが提案しても可。
+- 変更時のチェックリスト:
+  1. `AGENTS.md` を編集
+  2. `CLAUDE.md` の参照箇所と矛盾しないか確認
+  3. `.github/copilot-instructions.md` (ポインタなので通常更新不要、 リンク切れだけ確認)
+  4. ユーザーに変更点を 1-2 行で報告
+
+---
+
+## クイックリファレンス
+
+```
+staging (本版)    : https://pono-asobiba-staging.ndw.workers.dev/
+staging (アプリ版): https://pono-asobiba-app-staging.ndw.workers.dev/
+production       : https://pono.kodama-no-mori.com/
+deploy   : git push origin develop-app  (App staging + LP staging の両方に自動、単一トランク)
+            git push origin master       (本番、ユーザー明示時のみ)
+            ※ develop は凍結済み (2026-07-10)。push しない (BRANCH_FROZEN.md)
+            wrangler deploy --env staging-app   (アプリ版 staging 手動)
+            wrangler deploy --env staging       (本版 staging 手動)
+            wrangler deploy                      (本番手動)
+gating   : window.__APP_BUILD__ === 1 (staging-app env のみ true。ブランチではなく env 単位)
+画像最適化: python scripts/auto_optimize_image.py <path>
+SW バンプ : sw.js 4行目 CACHE_VERSION を +1 (develop-app/master 共通カウンタ)
+```

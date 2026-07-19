@@ -1,0 +1,851 @@
+/* ===== PonoPartnerSelect — パートナー選択オーバーレイ =====
+   「もりのなかよし」MVP — Phase 1 UI
+   依存: partners.js (window.PonoPartners), bond.js (window.PonoBond)
+   z-index: 9999 (最上層)
+   タップ領域: 全インタラクション要素 >= 44px (アクセシビリティ)
+=============================================================== */
+
+.pono-pselect {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  box-sizing: border-box;
+  height: 100vh;
+  height: 100dvh;
+  background: rgba(20, 30, 40, 0.85);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
+  color: #F8F1E2;
+  padding: clamp(8px, 2.3dvh, 20px) clamp(8px, 1.8vw, 14px);
+  gap: clamp(4px, 1.3dvh, 12px);
+  overflow: hidden; /* 縦方向のはみ出しを禁止、横スクロールはトラックに委譲 */
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
+  animation: ponoPSelectFadeIn 220ms ease-out;
+}
+
+.pono-pselect * {
+  box-sizing: border-box;
+}
+
+.pono-pselect.is-hidden {
+  display: none;
+}
+
+@keyframes ponoPSelectFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* --- ヘッダ --- */
+.pono-pselect__header {
+  flex: 0 0 auto;
+  text-align: center;
+  padding: 0 12px;
+  pointer-events: none;
+}
+
+.pono-pselect__title {
+  font-size: clamp(1.1rem, 4.2vw, 1.7rem);
+  font-weight: 900;
+  color: #FFF6DC;
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.45), 0 0 18px rgba(247,201,72,0.35);
+  letter-spacing: 0;
+  line-height: 1.18;
+}
+
+.pono-pselect__title-stage {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 12px;
+  background: rgba(247, 201, 72, 0.85);
+  color: #5D3A00;
+  border-radius: 999px;
+  font-size: 0.78em;
+  vertical-align: middle;
+  text-shadow: none;
+}
+
+/* --- スクロールヒント (← よこに スクロール →) --- */
+.pono-pselect__scroll-hint {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0 auto;
+  padding: 4px 12px;
+  font-size: clamp(0.78rem, 2.6vw, 0.95rem);
+  font-weight: 700;
+  color: #FFF6DC;
+  opacity: 0.85;
+  text-shadow: 1px 1px 0 rgba(0,0,0,0.4);
+  animation: ponoPSelectHintPulse 1800ms ease-in-out infinite;
+}
+
+.pono-pselect__scroll-hint-arrow {
+  font-size: 1.1em;
+  color: #F7C948;
+}
+
+.pono-pselect__scroll-hint.is-hidden {
+  display: none;
+}
+
+@keyframes ponoPSelectHintPulse {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 0.95; }
+}
+
+/* --- カード横スクロール (1行 + scroll-snap) --- */
+.pono-pselect__scroller {
+  flex: 1 1 0;
+  min-height: 0;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x mandatory;
+  scroll-padding-left: 16px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(247,201,72,0.7) transparent;
+  /* スクロールバーが内側に来るぶんカード見切れ感を緩和 */
+  padding: 6px 4px 14px;
+  /* 端の余韻 */
+  scroll-snap-stop: always;
+}
+
+.pono-pselect__scroller::-webkit-scrollbar {
+  height: 8px;
+}
+.pono-pselect__scroller::-webkit-scrollbar-track {
+  background: transparent;
+}
+.pono-pselect__scroller::-webkit-scrollbar-thumb {
+  background: rgba(247,201,72,0.7);
+  border-radius: 999px;
+}
+
+.pono-pselect__track {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 14px;
+  height: 100%;
+  min-height: 0;
+  padding: 0 16px;
+  /* 末尾カードの右にも余白を確保 (scroll-snap 末端の見切れ防止) */
+  padding-right: 24px;
+}
+
+/* --- カード ---
+   横スクロール前提: カードは1行に固定し、高さは scroller の残り領域へ収める。
+   低い横長画面では下の media query で情報量を段階的に減らす。 */
+.pono-pselect__card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 0 0 auto;
+  width: clamp(176px, 22vw, 220px);
+  height: min(100%, 520px);
+  min-height: 0;
+  scroll-snap-align: start;
+  background: linear-gradient(180deg, #FFFDF5 0%, #FCEFD3 100%);
+  color: #5D4E37;
+  border: 3px solid #F2C16E;
+  border-radius: 18px;
+  padding: 12px 10px 14px;
+  padding-top: 32px; /* 難易度バッジ用余白 */
+  cursor: pointer;
+  overflow: hidden;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.35), inset 0 0 0 2px rgba(255,255,255,0.4);
+  transition: transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
+  text-align: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 狭い画面 (<=480px): カードをやや小さめに */
+@media (max-width: 480px) {
+  .pono-pselect__card {
+    width: clamp(152px, 42vw, 172px);
+  }
+  .pono-pselect__track {
+    gap: 12px;
+    padding: 0 12px 0 12px;
+    padding-right: 18px;
+  }
+}
+
+.pono-pselect__card:focus-visible {
+  outline: 3px solid #F7C948;
+  outline-offset: 3px;
+}
+
+.pono-pselect__card:hover,
+.pono-pselect__card:active {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 10px 22px rgba(0,0,0,0.42), inset 0 0 0 2px rgba(255,255,255,0.5);
+  border-color: #F2915A;
+}
+
+.pono-pselect__card.is-locked {
+  cursor: not-allowed;
+  filter: grayscale(0.7) brightness(0.78);
+  background: linear-gradient(180deg, #E5DCC9 0%, #BCB3A0 100%);
+}
+
+.pono-pselect__card.is-locked:hover,
+.pono-pselect__card.is-locked:active {
+  transform: none;
+  border-color: #8a8270;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+}
+
+.pono-pselect__card.is-selected {
+  border-color: #F2915A;
+  box-shadow: 0 0 0 4px rgba(247, 201, 72, 0.55), 0 10px 22px rgba(0,0,0,0.45);
+}
+
+.pono-pselect__card.is-challenge {
+  border-color: #D08B42;
+  background: linear-gradient(180deg, #FFF8EA 0%, #F9E1BD 100%);
+}
+
+.pono-pselect__card.is-challenge.is-selected {
+  border-color: #B45F33;
+  box-shadow: 0 0 0 4px rgba(242, 145, 90, 0.5), 0 10px 22px rgba(0,0,0,0.45);
+}
+
+.pono-pselect__card::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 9px;
+  background: var(--tier-color, #68B96B);
+  opacity: 0.88;
+  pointer-events: none;
+}
+
+.pono-pselect__card.is-tier-free {
+  --tier-color: #68B96B;
+}
+
+.pono-pselect__card.is-tier-book {
+  --tier-color: #5FA4E8;
+}
+
+.pono-pselect__card.is-tier-app {
+  --tier-color: #B77AE7;
+}
+
+/* --- カード: 立ち絵 ---
+   専用の 512px 正方形サムネイルを、画角に応じた正方形枠で表示する。 */
+.pono-pselect__portrait {
+  width: clamp(112px, 32dvh, 156px);
+  max-width: 100%;
+  aspect-ratio: 1 / 1;
+  height: auto;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #FFF8E8;
+  margin-bottom: 8px;
+  box-shadow: inset 0 0 0 2px rgba(0,0,0,0.08);
+  position: relative;
+}
+
+/* 狭い画面 (<=480px): 高さも縮める */
+@media (max-width: 480px) {
+  .pono-pselect__portrait {
+    width: clamp(104px, 31dvh, 136px);
+  }
+}
+
+.pono-pselect__portrait img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: var(--pos-default, 50% 50%);
+  display: block;
+  pointer-events: none;
+}
+
+/* アプリ版のロック中キャラは、顔・毛並み・色を一切見せない完全なグレー輪郭にする。
+   解放後は従来のパートナー画像へ戻るため、この状態は app tier の locked カードだけに限定。 */
+.pono-pselect__card.is-tier-app.is-locked .pono-pselect__portrait.is-app-silhouette {
+  background: #fff;
+}
+
+.pono-pselect__card.is-tier-app.is-locked .pono-pselect__portrait.is-app-silhouette img {
+  object-fit: contain;
+  object-position: 50% 50% !important;
+  padding: 6px;
+  filter: brightness(0) saturate(0);
+  opacity: 0.58;
+}
+
+/* カラス素材だけは白背景込み。強い二値化 + ごく小さいぼかしで内部の目や羽模様を
+   塗りつぶし、白背景は portrait の白へ溶け込ませる。 */
+.pono-pselect__card.is-tier-app.is-locked .pono-pselect__portrait.is-app-silhouette.is-light-background img {
+  padding: 4px;
+  filter: grayscale(1) contrast(1000%) blur(1.2px) contrast(1000%);
+  opacity: 0.58;
+}
+
+.pono-pselect__card.is-tier-app.is-locked .pono-pselect__portrait.is-app-silhouette .pono-pselect__lock {
+  background: rgba(72, 77, 82, 0.12);
+}
+
+.pono-pselect__lock {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(40, 30, 20, 0.55);
+  font-size: 2.4rem;
+  color: #FFE9A8;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.5);
+}
+
+/* --- カード: 名前 ---
+   tap target 兼可読性: 0-3yo でも見やすいよう 48px 以上を保証 */
+.pono-pselect__name {
+  font-size: clamp(1.0rem, 3.4vw, 1.2rem);
+  font-weight: 900;
+  color: #5D3A00;
+  margin: 2px 0 4px;
+  letter-spacing: 0.04em;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.2;
+}
+
+/* --- カード: とくぎ ---
+   技名は出さず、見出し + 子ども向けの短い説明だけを表示する。 */
+.pono-pselect__assist-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: rgba(247, 201, 72, 0.28);
+  color: #8a4d1a;
+  font-size: clamp(0.78rem, 2.4vw, 0.9rem);
+  font-weight: 900;
+  line-height: 1.15;
+  margin: 2px 0 4px;
+  word-break: keep-all;
+  white-space: nowrap;
+}
+
+.pono-pselect__card.is-challenge .pono-pselect__assist-label {
+  background: rgba(242, 145, 90, 0.22);
+  color: #9A4B22;
+}
+
+/* --- とくぎ説明 (子供向け 1〜3行のひらがな) --- */
+.pono-pselect__assist-desc {
+  font-size: 14px;
+  color: #5d4e37;
+  line-height: 1.4;
+  margin-top: 2px;
+  max-width: 200px;
+  margin-left: auto;
+  margin-right: auto;
+  word-break: keep-all;
+  overflow-wrap: normal;
+  line-break: strict;
+  text-wrap: balance;
+}
+
+/* --- カード: クリア進捗 --- */
+.pono-pselect__stats {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed rgba(140, 90, 30, 0.35);
+  width: 100%;
+}
+
+.pono-pselect__progress {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #5D3A00;
+  line-height: 1.2;
+}
+
+/* --- ロック理由 --- */
+.pono-pselect__lock-reason {
+  margin-top: 6px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #6B4A1F;
+  background: rgba(247, 201, 72, 0.7);
+  padding: 4px 10px;
+  border-radius: 10px;
+  line-height: 1.2;
+}
+
+/* --- 難易度ラベル (かんたん / ふつう / むずかしい) ---
+   カード最上部に横一文で表示。色は緑/黄/紫系で直感的に。
+   ユーザーFB (2026-06-05) により星マーク (★★★) と「おすすめ」バッジは廃止。
+   性格 (trait) と難易度ラベルは別軸として分離した。
+   tricky は現状未使用だが将来の追加キャラ用に残置。 */
+.pono-pselect__difficulty {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: clamp(0.62rem, 2.0vw, 0.74rem);
+  font-weight: 900;
+  padding: 3px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.03em;
+  line-height: 1;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.25);
+  pointer-events: none;
+  z-index: 2;
+  max-width: calc(100% - 12px);
+  white-space: nowrap;
+}
+
+.pono-pselect__difficulty--easy {
+  background: linear-gradient(180deg, #8BE08F 0%, #4FB55A 100%);
+  color: #1E4622;
+  border: 1px solid #3A9047;
+}
+
+.pono-pselect__difficulty--normal {
+  background: linear-gradient(180deg, #FFE27A 0%, #F2B900 100%);
+  color: #5A3D00;
+  border: 1px solid #C99500;
+}
+
+.pono-pselect__difficulty--tricky {
+  background: linear-gradient(180deg, #C99AE0 0%, #8E48B8 100%);
+  color: #2E0F4A;
+  border: 1px solid #6E2DA0;
+}
+
+/* --- 利用区分タグ ---
+   右上のタグとカード下端の色帯で、フリー / えほん / アプリを視覚的に分ける。 */
+.pono-pselect__tier {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  max-width: 47%;
+  min-height: 20px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  font-size: clamp(0.56rem, 1.7vw, 0.68rem);
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.24);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.pono-pselect__tier-icon {
+  font-size: 1.06em;
+  line-height: 1;
+}
+
+.pono-pselect__tier--free {
+  color: #1E4622;
+  background: linear-gradient(180deg, #DFF7CF 0%, #83D780 100%);
+  border: 1px solid #5AAA55;
+}
+
+.pono-pselect__tier--book {
+  color: #123F66;
+  background: linear-gradient(180deg, #E5F6FF 0%, #8DCBF6 100%);
+  border: 1px solid #5897CA;
+}
+
+.pono-pselect__tier--app {
+  color: #3A175B;
+  background: linear-gradient(180deg, #F8E9FF 0%, #D6A7F4 100%);
+  border: 1px solid #9E62C9;
+}
+
+/* --- フッタ: キャンセル --- */
+.pono-pselect__footer {
+  flex: 0 0 auto;
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+  padding-bottom: 4px;
+}
+
+.pono-pselect__cancel {
+  --puzzle-btn-bg: var(--puzzle-btn-cream);
+  --puzzle-btn-color: #5A3A18;
+  --puzzle-btn-border: rgba(255, 255, 255, 0.92);
+  min-height: 48px;
+  min-width: 140px;
+  padding: 10px 28px;
+  background: var(--puzzle-btn-bg);
+  color: var(--puzzle-btn-color);
+  border: 3px solid var(--puzzle-btn-border);
+  border-radius: 999px;
+  font-family: inherit;
+  font-size: clamp(0.95rem, 3vw, 1.1rem);
+  font-weight: 900;
+  cursor: pointer;
+  letter-spacing: 0.06em;
+  box-shadow: var(--puzzle-btn-shadow-soft);
+  text-shadow: var(--puzzle-btn-text-shadow);
+  transition: transform 120ms ease, box-shadow 120ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.pono-pselect__cancel:hover,
+.pono-pselect__cancel:active {
+  transform: translateY(-2px);
+  box-shadow: var(--puzzle-btn-shadow-pressed);
+}
+
+.pono-pselect__cancel:focus-visible {
+  outline: 3px solid #F7C948;
+  outline-offset: 3px;
+}
+
+/* プレイ途中の仲間変更だけに出す、ステージ再開の確認。 */
+.partner-restart-confirm {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  background: rgba(24, 31, 34, 0.78);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
+}
+
+.partner-restart-confirm__panel {
+  width: min(360px, calc(100vw - 36px));
+  padding: 20px 20px 18px;
+  border: 4px solid #F2C16E;
+  border-radius: 24px;
+  background: linear-gradient(180deg, #FFFDF5 0%, #FCEFD3 100%);
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.38), inset 0 0 0 2px rgba(255, 255, 255, 0.7);
+  color: #5D3A00;
+  text-align: center;
+}
+
+.partner-restart-confirm__icon {
+  font-size: 2.4rem;
+  line-height: 1;
+}
+
+.partner-restart-confirm__title {
+  margin-top: 6px;
+  font-size: clamp(1.25rem, 4.5vw, 1.55rem);
+  font-weight: 900;
+}
+
+.partner-restart-confirm__message {
+  margin-top: 8px;
+  font-size: clamp(0.94rem, 3.2vw, 1.06rem);
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.partner-restart-confirm__actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.partner-restart-confirm__button {
+  min-width: 118px;
+  min-height: 48px;
+  padding: 9px 18px;
+  border: 3px solid rgba(255, 255, 255, 0.94);
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 900;
+  color: #5A3A18;
+  cursor: pointer;
+  box-shadow: var(--puzzle-btn-shadow-soft);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.partner-restart-confirm__button--back {
+  background: var(--puzzle-btn-cream);
+}
+
+.partner-restart-confirm__button--confirm {
+  background: var(--puzzle-btn-green);
+  color: #244A25;
+}
+
+.partner-restart-confirm__button:focus-visible {
+  outline: 3px solid #F7C948;
+  outline-offset: 3px;
+}
+
+@media (max-height: 430px) {
+  .partner-restart-confirm__panel {
+    padding: 12px 18px;
+  }
+
+  .partner-restart-confirm__icon {
+    font-size: 1.8rem;
+  }
+
+  .partner-restart-confirm__title {
+    margin-top: 3px;
+    font-size: 1.15rem;
+  }
+
+  .partner-restart-confirm__message {
+    margin-top: 4px;
+    font-size: 0.88rem;
+  }
+
+  .partner-restart-confirm__actions {
+    margin-top: 9px;
+  }
+
+  .partner-restart-confirm__button {
+    min-height: 44px;
+    padding: 6px 16px;
+  }
+}
+
+/* 低い横長画面: カード下端が切れないよう情報量と余白を圧縮する。 */
+@media (max-height: 560px) {
+  .pono-pselect {
+    padding: 8px;
+    gap: 5px;
+  }
+
+  .pono-pselect__header {
+    padding: 0 6px;
+  }
+
+  .pono-pselect__title {
+    font-size: clamp(0.98rem, 3.2vw, 1.25rem);
+    line-height: 1.12;
+  }
+
+  .pono-pselect__title-stage {
+    margin-left: 6px;
+    padding: 1px 8px;
+  }
+
+  .pono-pselect__scroll-hint {
+    padding: 2px 10px;
+    font-size: clamp(0.72rem, 2.2vw, 0.86rem);
+    line-height: 1.1;
+  }
+
+  .pono-pselect__scroller {
+    padding: 3px 4px 8px;
+  }
+
+  .pono-pselect__track {
+    gap: 12px;
+    padding-left: 10px;
+    padding-right: 16px;
+  }
+
+  .pono-pselect__card {
+    width: clamp(168px, 22vw, 196px);
+    height: 100%;
+    border-width: 2px;
+    border-radius: 14px;
+    padding: 7px 8px 7px;
+    padding-top: 23px;
+  }
+
+  .pono-pselect__card:hover,
+  .pono-pselect__card:active {
+    transform: translateY(-2px) scale(1.01);
+  }
+
+  .pono-pselect__portrait {
+    width: clamp(112px, 30dvh, 140px);
+    border-radius: 10px;
+    margin-bottom: 4px;
+  }
+
+  .pono-pselect__name {
+    min-height: 0;
+    font-size: clamp(0.82rem, 2vw, 0.95rem);
+    line-height: 1.12;
+    margin: 0 0 2px;
+  }
+
+  .pono-pselect__assist-label,
+  .pono-pselect__assist-desc,
+  .pono-pselect__lock-reason {
+    font-size: clamp(0.64rem, 1.55vw, 0.76rem);
+    line-height: 1.2;
+    margin: 1px 0;
+  }
+
+  .pono-pselect__assist-label,
+  .pono-pselect__assist-desc {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .pono-pselect__assist-label {
+    min-height: 18px;
+    padding: 1px 8px;
+    -webkit-line-clamp: 1;
+  }
+
+  .pono-pselect__assist-desc {
+    -webkit-line-clamp: 2;
+    margin-top: 2px;
+    max-width: 100%;
+  }
+
+  .pono-pselect__stats {
+    gap: 1px;
+    margin-top: 2px;
+    padding-top: 2px;
+  }
+
+  .pono-pselect__difficulty {
+    top: 5px;
+    left: 5px;
+    padding: 2px 7px;
+    font-size: 0.62rem;
+  }
+
+  .pono-pselect__tier {
+    top: 5px;
+    right: 5px;
+    min-height: 18px;
+    padding: 2px 6px;
+    font-size: 0.58rem;
+  }
+
+  .pono-pselect__footer {
+    margin-top: 2px;
+    padding-bottom: 0;
+  }
+
+  .pono-pselect__cancel {
+    min-height: 40px;
+    min-width: 118px;
+    padding: 6px 20px;
+    font-size: 0.9rem;
+  }
+}
+
+/* さらに低い画面: キャラ選択に必要な最低情報だけ残す。 */
+@media (max-height: 420px) {
+  .pono-pselect {
+    padding: 6px 8px;
+    gap: 3px;
+  }
+
+  .pono-pselect__title {
+    font-size: 0.96rem;
+  }
+
+  .pono-pselect__scroll-hint {
+    padding: 1px 8px;
+    font-size: 0.7rem;
+  }
+
+  .pono-pselect__scroller {
+    padding: 2px 2px 6px;
+  }
+
+  .pono-pselect__card {
+    width: clamp(154px, 24vw, 178px);
+    border-radius: 12px;
+    padding: 5px 6px 5px;
+    padding-top: 20px;
+  }
+
+  .pono-pselect__portrait {
+    width: clamp(90px, 28dvh, 116px);
+    margin-bottom: 3px;
+  }
+
+  .pono-pselect__name {
+    font-size: 0.78rem;
+    line-height: 1.08;
+  }
+
+  .pono-pselect__assist-label,
+  .pono-pselect__assist-desc {
+    font-size: 0.6rem;
+    line-height: 1.12;
+    margin: 1px 0;
+    -webkit-line-clamp: 2;
+  }
+
+  .pono-pselect__stats {
+    display: none;
+  }
+
+  .pono-pselect__difficulty {
+    top: 4px;
+    left: 4px;
+    padding: 2px 6px;
+    font-size: 0.56rem;
+  }
+
+  .pono-pselect__tier {
+    top: 4px;
+    right: 4px;
+    max-width: 52%;
+    min-height: 16px;
+    padding: 2px 5px;
+    font-size: 0.52rem;
+  }
+
+  .pono-pselect__tier-icon {
+    display: none;
+  }
+
+  .pono-pselect__cancel {
+    min-height: 34px;
+    min-width: 104px;
+    padding: 4px 16px;
+    font-size: 0.82rem;
+  }
+}
+
+@media (max-height: 340px) {
+  .pono-pselect__scroll-hint,
+  .pono-pselect__footer {
+    display: none;
+  }
+}

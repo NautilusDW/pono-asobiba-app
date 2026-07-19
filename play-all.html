@@ -1,0 +1,2104 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>あそびば｜ポノのあそびば（ゲームメニュー）</title>
+  <meta name="description" content="ポノと一緒にひらがな・パズル・ぬりえなどのミニゲームで楽しく学ぼう！">
+  <meta name="author" content="ネモ先生">
+  <meta name="robots" content="noindex, follow">
+  <link rel="canonical" href="https://pono-asobiba-app.ndw.workers.dev/play.html">
+
+  <!-- Open Graph (あそびメニュー) -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://pono-asobiba-app.ndw.workers.dev/play.html">
+  <meta property="og:site_name" content="ポノのあそびば">
+  <meta property="og:title" content="ポノのあそびば（あそびメニュー）">
+  <meta property="og:description" content="ひらがな・パズル・ぬりえなどのミニゲームで楽しく学ぼう！">
+  <meta property="og:image" content="https://pono-asobiba-app.ndw.workers.dev/assets/images/A+用ヘッダー.jpg">
+  <meta property="og:locale" content="ja_JP">
+
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="ポノあそびば">
+  <meta name="theme-color" content="#F2915A">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #FFF8F0;
+      --primary: #F2915A;
+      --primary-light: #FDDCBF;
+      --text: #5D4E37;
+      --text-light: #A89880;
+      --shadow: rgba(93, 78, 55, 0.12);
+      --radius: 24px;
+    }
+
+    html, body {
+      min-height: 100dvh;
+      font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
+      background-color: var(--bg);
+      background-image: url('assets/images/BG_03.webp');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-attachment: local;
+      color: var(--text);
+      -webkit-user-select: none;
+      user-select: none;
+    }
+
+    .page {
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      padding: 0 16px calc(80px + env(safe-area-inset-bottom));
+      gap: 16px;
+    }
+
+    /* ===== Bottom Navigation Bar ===== */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      z-index: 90;
+      display: flex;
+      justify-content: space-around;
+      align-items: stretch;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      box-shadow: 0 -2px 12px rgba(93,78,55,0.15);
+      border-top: 2px solid #FDE68A;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+    .bn-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      padding: 8px 4px 10px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-family: inherit;
+      color: var(--text);
+      transition: transform 0.1s;
+    }
+    .bn-item:active {
+      transform: scale(0.9);
+    }
+    .bn-icon {
+      font-size: 1.5rem;
+      line-height: 1;
+    }
+    .bn-label {
+      font-size: 0.68rem;
+      font-weight: 900;
+      color: var(--primary);
+      letter-spacing: 0.02em;
+    }
+
+    /* common/mvp-flags.js の一括非表示ルールを specificity で上書き (常時表示に戻す) */
+    body .bottom-nav .bn-item[data-action="room"] {
+      display: flex !important;
+    }
+
+    /* ===== Header ===== */
+    .header {
+      width: 100%;
+      max-width: 540px;
+      text-align: center;
+    }
+
+    .header-img {
+      width: 100%;
+      display: block;
+      border-radius: 0 0 var(--radius) var(--radius);
+    }
+
+    .site-title {
+      font-size: 1.8rem;
+      font-weight: 900;
+      color: var(--primary);
+      text-shadow: 3px 3px 0 var(--primary-light);
+      letter-spacing: 0.05em;
+      margin-top: 10px;
+    }
+
+    .site-subtitle {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: var(--text-light);
+      margin-top: 3px;
+    }
+
+    /* ===== Menu ===== */
+    .menu {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 4px;
+      padding: 16px 8px 10px;
+      aspect-ratio: 1;
+      border-radius: var(--radius);
+      text-decoration: none;
+      color: #fff;
+      box-shadow: 0 6px 24px var(--shadow);
+      transition: transform 0.15s, box-shadow 0.15s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .card:active { transform: scale(0.95); box-shadow: 0 2px 8px var(--shadow); }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 45%;
+      background: rgba(255,255,255,0.18);
+      border-radius: var(--radius) var(--radius) 60% 60% / var(--radius) var(--radius) 30% 30%;
+      pointer-events: none;
+    }
+
+    .card-bento     { background: linear-gradient(135deg, #FB923C, #F59E0B); }
+    .card-puzzle    { background: linear-gradient(135deg, #F2915A, #F7C948); }
+    .card-writing   { background: linear-gradient(135deg, #C084FC, #60A5FA); }
+    .card-drawing   { background: linear-gradient(135deg, #34D399, #60A5FA); }
+    .card-breakout  { background: linear-gradient(135deg, #F97316, #EF4444); }
+    .card-coloring  { background: linear-gradient(135deg, #FBBF24, #FB923C); }
+    .card-stacking  { background: linear-gradient(135deg, #22C55E, #16A34A); }
+    .card-wordmatch { background: linear-gradient(135deg, #8B5CF6, #EC4899); }
+    .card-quizland  { background: linear-gradient(135deg, #F59E0B, #FBBF24); }
+    .card-maze      { background: linear-gradient(135deg, #6C8E3F, #A4C76D); }
+    .card-fossil    { background: linear-gradient(135deg, #F5C97A, #E8A85C); }
+    .card-message   { background: linear-gradient(135deg, #22D3EE, #3B82F6); }
+    .card-slide     { background: linear-gradient(135deg, #4CAF50, #81C784); }
+    .card-aquarium  { background: linear-gradient(135deg, #06B6D4, #1D4ED8); }
+    .card-room      { background: linear-gradient(135deg, #ff9a3c, #ff6347); }
+    .card-bubble    { background: linear-gradient(135deg, #7DD3FC, #A78BFA); }
+    .card-bowling   { background: linear-gradient(135deg, #34D399, #FBBF24); }
+    .card-egg       { background: linear-gradient(135deg, #A7F3D0, #FDE68A); }
+    .card-oto       { background: linear-gradient(135deg, #FFA5A5, #FFD84D); }
+    .card-quiz-sound{ background: linear-gradient(135deg, #FB923C, #F472B6); }
+
+    /* おとタッチ / おとあてクイズ: 文字（音符・足跡）を青系に着色して白カードでも視認できるように */
+    .card-oto .card-icon,
+    .card-quiz-sound .card-icon {
+      color: #1E5BC6;
+      text-shadow: 1px 2px 0 rgba(255,255,255,0.7);
+    }
+
+    /* ── Points badge (menu top) ── */
+    .pts-row {
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      margin: 0 0 8px; padding: 6px 16px;
+      background: linear-gradient(135deg, #fff3e0, #ffe0b2);
+      border-radius: 20px; font-weight: bold; font-size: 0.88rem; color: #e07800;
+      cursor: pointer; transition: transform 0.1s;
+    }
+    .pts-row:active { transform: scale(0.97); }
+
+    .card-icon  { font-size: 2.4rem; filter: drop-shadow(2px 2px 0 rgba(0,0,0,0.12)); display: flex; align-items: center; justify-content: center; height: 2.4rem; line-height: 1; flex-shrink: 0; }
+    .card-icon img { display: block; }
+    .card-body  { text-align: center; margin-top: 2px; }
+    .card-title { font-size: clamp(0.74rem, 2.6vw, 0.88rem); font-weight: 900; letter-spacing: 0.03em; text-shadow: 1px 1px 0 rgba(0,0,0,0.12); }
+    .card-desc  { font-size: 0.6rem; font-weight: 700; opacity: 0.88; margin-top: 2px; line-height: 1.3; }
+
+    /* ===== Lock ===== */
+    .card.locked { filter: grayscale(1); opacity: 0.5; pointer-events: none; }
+    /* おうちカードはロック中でもタップ可能（案内モーダルを出すため） */
+    #card-room.locked { pointer-events: auto; cursor: pointer; }
+    .card.locked::after {
+      content: '🔒';
+      position: absolute; top: 6px; right: 8px;
+      font-size: 1rem; filter: none;
+    }
+    .card.coming-soon {
+      filter: grayscale(1); opacity: 0.5; pointer-events: none;
+      position: relative;
+    }
+    .card.coming-soon::after {
+      content: 'つくってるよ！';
+      position: absolute; top: 6px; right: 6px;
+      font-size: 0.55rem; font-weight: 900;
+      background: linear-gradient(135deg, #FBBF24, #F59E0B);
+      color: #5C3A00; padding: 2px 8px; border-radius: 20px;
+      filter: none; letter-spacing: 0.03em;
+    }
+    .lock-banner {
+      grid-column: 1 / -1;
+      background: linear-gradient(135deg, #FFF8E1, #FFF3CD);
+      border: 2px dashed #F5C518;
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      text-align: center;
+      font-size: 0.78rem; font-weight: 900; color: #7A5C00;
+      display: flex; flex-direction: column; gap: 8px;
+    }
+    .lock-banner-title { font-size: 0.88rem; }
+    .lock-input-row { display: flex; gap: 8px; justify-content: center; }
+    .lock-input {
+      padding: 7px 12px; border: 2px solid #F5C518; border-radius: 50px;
+      font-family: inherit; font-size: 0.9rem; font-weight: 700;
+      width: 120px; text-align: center; outline: none;
+      letter-spacing: 0.15em;
+    }
+    .lock-btn {
+      padding: 7px 16px; border: none; border-radius: 50px;
+      background: linear-gradient(180deg, #FFD84D, #F5A800);
+      color: #5C3A00; font-family: inherit; font-size: 0.85rem; font-weight: 900;
+      cursor: pointer; box-shadow: 0 3px 0 #B87200;
+    }
+    .lock-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #B87200; }
+    .lock-unlocked { font-size: 0.88rem; color: #2D7A2D; font-weight: 900; display: none; }
+    .lock-error { font-size: 0.75rem; color: #E53E3E; display: none; }
+
+    /* ===== Site Heading ===== */
+    .site-heading {
+      font-size: clamp(1.5rem, 5.5vw, 2rem);
+      font-weight: 900;
+      color: var(--primary);
+      letter-spacing: 0.08em;
+      text-align: center;
+      background: rgba(255,255,255,0.65);
+      border: 3px solid var(--primary-light);
+      border-radius: 50px;
+      padding: 10px 24px;
+      box-shadow: 0 4px 16px var(--shadow);
+      width: fit-content;
+    }
+    .site-heading::before { content: '🌳 '; }
+    .site-heading::after  { content: ' 🌳'; }
+
+    /* ===== Music Toggle ===== */
+    .music-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      justify-content: center;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .music-label {
+      font-size: 1rem;
+      font-weight: 900;
+      color: var(--text);
+      letter-spacing: 0.05em;
+    }
+
+    .toggle {
+      position: relative;
+      width: 58px;
+      height: 30px;
+      flex-shrink: 0;
+    }
+
+    .toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+      position: absolute;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: #D0C8BE;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: background 0.3s;
+      box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);
+    }
+
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      left: 3px;
+      top: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    }
+
+    .toggle input:checked + .toggle-slider {
+      background: var(--primary);
+    }
+
+    .toggle input:checked + .toggle-slider::before {
+      transform: translateX(28px);
+    }
+
+    /* ===== Video Section ===== */
+    .video-section {
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .video-label {
+      font-size: 0.85rem;
+      font-weight: 900;
+      color: var(--primary);
+      text-align: center;
+      margin-bottom: 8px;
+      letter-spacing: 0.05em;
+    }
+
+    .video-wrap {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: 0 6px 24px var(--shadow);
+    }
+
+    .video-wrap iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      display: block;
+    }
+
+    /* ===== PC Layout ===== */
+    @media (min-width: 640px) {
+      .video-section { max-width: 580px; }
+      .menu          { max-width: 580px; }
+      .music-row     { max-width: 580px; }
+      .card-icon     { font-size: 3rem; height: 3rem; }
+      .card-title    { font-size: 1rem; }
+      .card-desc     { font-size: 0.7rem; }
+    }
+
+    /* ===== Hero Amazon Image ===== */
+    .hero-amazon {
+      align-self: stretch;
+      margin-left: -16px;
+      margin-right: -16px;
+      margin-top: -16px;
+      display: block;
+    }
+    .hero-amazon img {
+      width: 100%;
+      display: block;
+      max-width: 100%;
+    }
+
+    /* ===== Book Banner ===== */
+    .book-banner {
+      width: 100%;
+      max-width: 540px;
+      text-decoration: none;
+      display: block;
+      background: linear-gradient(160deg, #FFF8EE, #FFE8C8);
+      border: 2px solid #E8A04A;
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      box-shadow: 0 6px 24px var(--shadow), inset 0 1px 0 rgba(255,255,255,0.8);
+      transition: transform 0.15s, box-shadow 0.15s;
+      text-align: center;
+    }
+    .book-banner:active { transform: translateY(2px); box-shadow: 0 2px 8px var(--shadow); }
+    .book-kids {
+      font-size: 1.15rem;
+      font-weight: 900;
+      color: var(--primary);
+      letter-spacing: 0.05em;
+      text-shadow: 1px 1px 0 var(--primary-light);
+    }
+    .book-divider {
+      width: 40px; height: 2px;
+      background: var(--primary-light);
+      margin: 8px auto; border-radius: 2px;
+    }
+    .book-parents {
+      font-size: 0.8rem; font-weight: 700;
+      color: var(--text-light); line-height: 1.5;
+    }
+    .book-cta {
+      display: inline-block;
+      margin-top: 12px;
+      background: linear-gradient(180deg, #FFD84D, #F5A800);
+      color: #5C3A00;
+      font-size: 0.95rem; font-weight: 900;
+      padding: 8px 28px; border-radius: 50px;
+      letter-spacing: 0.05em;
+      box-shadow: 0 4px 0 #B87200, 0 6px 12px rgba(200,120,0,0.3);
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .book-banner:active .book-cta {
+      transform: translateY(3px);
+      box-shadow: 0 1px 0 #B87200, 0 2px 6px rgba(200,120,0,0.2);
+    }
+
+
+    /* ===== Author Block ===== */
+    .author-block {
+      width: 100%;
+      max-width: 400px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 20px;
+      background: linear-gradient(135deg, #E0F2FE, #DBEAFE);
+      border: 2px solid #93C5FD;
+      border-radius: var(--radius);
+      box-shadow: 0 4px 16px var(--shadow);
+      text-decoration: none;
+      color: var(--text);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .author-block:active { transform: scale(0.97); box-shadow: 0 2px 8px var(--shadow); }
+    .author-icon { font-size: 2rem; flex-shrink: 0; }
+    .author-title { font-size: 0.95rem; font-weight: 900; color: #3B82F6; }
+    .author-desc { font-size: 0.72rem; font-weight: 700; color: var(--text-light); margin-top: 2px; }
+
+    @media (min-width: 640px) {
+      .author-block { max-width: 580px; }
+    }
+
+    /* ===== PWA Banner ===== */
+    .pwa-banner {
+      width: 100%;
+      max-width: 400px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: linear-gradient(135deg, #FEF3C7, #FDE68A);
+      border: 2px solid #F59E0B;
+      border-radius: var(--radius);
+      box-shadow: 0 4px 16px var(--shadow);
+      position: relative;
+    }
+    .pwa-banner.hidden { display: none; }
+    .pwa-banner-icon { font-size: 2rem; flex-shrink: 0; }
+    .pwa-banner-title { font-size: 0.88rem; font-weight: 900; color: #92400E; }
+    .pwa-banner-desc { font-size: 0.7rem; font-weight: 700; color: #A16207; margin-top: 2px; }
+    .pwa-banner-how {
+      margin-top: 6px;
+      padding: 4px 14px; border: none; border-radius: 20px;
+      background: #F59E0B; color: #fff;
+      font-family: inherit; font-size: 0.75rem; font-weight: 900;
+      cursor: pointer;
+    }
+    .pwa-banner-how:active { transform: scale(0.95); }
+    .pwa-banner-close {
+      position: absolute; top: 6px; right: 8px;
+      background: none; border: none; font-size: 0.9rem; color: #A16207;
+      cursor: pointer; padding: 4px;
+    }
+
+    @media (min-width: 640px) {
+      .pwa-banner { max-width: 580px; }
+    }
+
+    /* ===== PWA Modal ===== */
+    .pwa-modal-overlay {
+      position: fixed; inset: 0; z-index: 99999;
+      background: rgba(0,0,0,0.5);
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.25s;
+    }
+    .pwa-modal-overlay.show {
+      opacity: 1; pointer-events: auto;
+    }
+    .pwa-modal {
+      background: #fff; border-radius: 24px;
+      padding: 24px 20px; max-width: 320px; width: 90%;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.25);
+      text-align: center;
+    }
+    .pwa-modal-title {
+      font-family: 'Zen Maru Gothic', sans-serif;
+      font-size: 1.05rem; font-weight: 900;
+      color: var(--text); margin-bottom: 16px;
+    }
+    .pwa-modal-section {
+      text-align: left;
+      margin-bottom: 14px;
+      padding: 10px 12px;
+      background: #F9FAFB;
+      border-radius: 12px;
+    }
+    .pwa-modal-device {
+      font-size: 0.82rem; font-weight: 900;
+      color: var(--primary); margin-bottom: 6px;
+    }
+    .pwa-modal-steps {
+      font-size: 0.78rem; font-weight: 700;
+      color: var(--text); line-height: 1.8;
+      padding-left: 20px; margin: 0;
+    }
+    .pwa-modal-note {
+      font-size: 0.8rem; font-weight: 900;
+      color: #059669; margin: 10px 0 14px;
+    }
+    .pwa-modal-close {
+      padding: 10px 32px; border: none; border-radius: 30px;
+      background: linear-gradient(135deg, var(--accent), #34D399);
+      color: #fff; font-family: inherit;
+      font-size: 0.95rem; font-weight: 900;
+      cursor: pointer;
+    }
+    .pwa-modal-close:active { transform: scale(0.95); }
+
+    /* ===== Profile Overlay ===== */
+    .profile-overlay {
+      position: fixed; inset: 0; z-index: 9970;
+      background: rgba(0,0,0,0.55);
+      display: flex; align-items: center; justify-content: center;
+      padding: 16px;
+      opacity: 1; transition: opacity 0.4s;
+    }
+    .profile-overlay.hidden {
+      opacity: 0; pointer-events: none;
+    }
+    .profile-card {
+      background: #fff;
+      border-radius: 28px;
+      padding: 28px 24px 24px;
+      max-width: 340px; width: 100%;
+      box-shadow: 0 12px 48px rgba(0,0,0,0.3);
+      text-align: center;
+      position: relative;
+      animation: profileBounceIn 0.5s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes profileBounceIn {
+      0% { transform: scale(0.7) translateY(30px); opacity: 0; }
+      100% { transform: scale(1) translateY(0); opacity: 1; }
+    }
+    .profile-pono {
+      width: 100px; height: 100px;
+      border-radius: 50%;
+      object-fit: contain;
+      margin: 0 auto 12px;
+      display: block;
+      filter: drop-shadow(0 4px 12px rgba(242,145,90,0.35));
+    }
+    .profile-title {
+      font-family: 'Zen Maru Gothic', sans-serif;
+      font-size: 1.4rem; font-weight: 900;
+      color: var(--primary);
+      letter-spacing: 0.08em;
+      margin-bottom: 18px;
+      text-shadow: 2px 2px 0 var(--primary-light);
+    }
+    .profile-section-label {
+      font-size: 0.82rem; font-weight: 900;
+      color: var(--text-light);
+      margin-bottom: 8px;
+      letter-spacing: 0.04em;
+    }
+    .profile-name-input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 3px solid var(--primary-light);
+      border-radius: 50px;
+      font-family: 'Zen Maru Gothic', sans-serif;
+      font-size: 1.1rem; font-weight: 700;
+      color: var(--text);
+      text-align: center;
+      outline: none;
+      transition: border-color 0.2s;
+      background: #FFF8F0;
+    }
+    .profile-name-input::placeholder {
+      color: #D0C0A8; font-weight: 400;
+    }
+    .profile-name-input:focus {
+      border-color: var(--primary);
+    }
+    .profile-age-row {
+      display: flex; gap: 10px; justify-content: center;
+      margin-top: 8px;
+    }
+    .profile-age-btn {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      border: 3px solid var(--primary-light);
+      background: #FFF8F0;
+      font-family: 'Zen Maru Gothic', sans-serif;
+      font-size: 1.3rem; font-weight: 900;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .profile-age-btn:active { transform: scale(0.92); }
+    .profile-age-btn.selected {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(242,145,90,0.4);
+      transform: scale(1.08);
+    }
+    .profile-gender-row {
+      display: flex; gap: 10px; justify-content: center;
+      margin-top: 8px;
+    }
+    .profile-gender-btn {
+      flex: 1; max-width: 140px;
+      padding: 12px 8px;
+      border-radius: 16px;
+      border: 3px solid var(--primary-light);
+      background: #FFF8F0;
+      font-family: 'Zen Maru Gothic', sans-serif;
+      font-size: 0.95rem; font-weight: 900;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .profile-gender-btn:active { transform: scale(0.95); }
+    .profile-gender-btn.selected {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(242,145,90,0.4);
+      transform: scale(1.05);
+    }
+    .profile-submit-btn {
+      margin-top: 20px;
+      width: 100%;
+      padding: 14px 0;
+      border: none;
+      border-radius: 50px;
+      background: linear-gradient(180deg, #FFD84D, #F5A800);
+      color: #5C3A00;
+      font-family: 'Zen Maru Gothic', sans-serif;
+      font-size: 1.2rem; font-weight: 900;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      box-shadow: 0 5px 0 #B87200, 0 8px 20px rgba(200,120,0,0.3);
+      transition: transform 0.1s, box-shadow 0.1s;
+    }
+    .profile-submit-btn:active {
+      transform: translateY(3px);
+      box-shadow: 0 2px 0 #B87200, 0 4px 10px rgba(200,120,0,0.2);
+    }
+    .profile-submit-btn:disabled {
+      opacity: 0.45; cursor: default;
+    }
+    .profile-error {
+      font-size: 0.78rem; font-weight: 700;
+      color: #E53E3E;
+      margin-top: 8px;
+      min-height: 1.2em;
+    }
+    .profile-section { margin-bottom: 16px; }
+
+    /* ===== Acorn badge (top-right fixed) ===== */
+    .acorn-badge-play {
+      position: fixed;
+      top: 12px; right: 12px;
+      z-index: 50;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 12px 6px 10px;
+      background: #fff;
+      border: 2.5px solid #A16207;
+      border-radius: 999px;
+      box-shadow: 0 3px 10px rgba(161,98,7,0.18);
+      color: #7C4A02;
+      font-weight: 900;
+      font-size: 0.95rem;
+      text-decoration: none;
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+    .acorn-badge-play:active { transform: scale(0.95); }
+    .acorn-badge-play .acorn-shop-hint {
+      font-size: 0.9rem;
+      margin-left: 2px;
+      padding-left: 6px;
+      border-left: 1.5px solid #E0C28A;
+    }
+    .acorn-badge-play .acorn-icon-play { font-size: 1.1rem; line-height: 1; }
+    .acorn-badge-play .acorn-count-play { min-width: 18px; text-align: center; }
+    .acorn-badge-play.pop { animation: acornPlayPop 0.35s cubic-bezier(0.34,1.56,0.64,1); }
+    @keyframes acornPlayPop {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.22); }
+      100% { transform: scale(1); }
+    }
+
+    /* ===== Thank-you (ありがとう) badge — v266 テーマ統合、どんぐりバッジの下に配置 ===== */
+    .thankyou-badge-play {
+      position: fixed;
+      top: 56px; right: 12px;
+      z-index: 50;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 12px 6px 10px;
+      background: #fff;
+      border: 2.5px solid #E91E63;
+      border-radius: 999px;
+      box-shadow: 0 3px 10px rgba(233,30,99,0.18);
+      color: #AD1457;
+      font-weight: 900;
+      font-size: 0.95rem;
+      pointer-events: none;
+    }
+    .thankyou-badge-play .thankyou-icon-play { font-size: 1.05rem; line-height: 1; }
+    .thankyou-badge-play .thankyou-count-play { min-width: 18px; text-align: center; }
+    .thankyou-badge-play.pop { animation: thankyouPlayPop 0.45s cubic-bezier(0.34,1.56,0.64,1); }
+    @keyframes thankyouPlayPop {
+      0%   { transform: scale(1); }
+      40%  { transform: scale(1.28) rotate(-6deg); }
+      70%  { transform: scale(1.08) rotate(4deg); }
+      100% { transform: scale(1) rotate(0); }
+    }
+
+  </style>
+  <script src="common/mvp-flags.js"></script>
+  <link rel="stylesheet" href="common/stamp-rally.css">
+  <script src="common/achievements.js"></script>
+  <script src="common/acorns.js"></script>
+  <script src="common/thankyou.js"></script>
+  <script src="room/items.js"></script>
+  <script src="common/treasure.js"></script>
+  <link rel="stylesheet" href="common/promo.css">
+  <script src="common/debug-mode.js"></script>
+  <script src="common/tier.js"></script>
+  <script src="common/promo.js"></script>
+<script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
+</head>
+<body>
+
+<a href="shop/index.html" class="acorn-badge-play" id="acornBadgePlay" aria-label="どんぐりショップへ">
+  <span class="acorn-icon-play">🌰</span><span class="acorn-count-play" id="acornCountPlay">0</span>
+  <span class="acorn-shop-hint">🛒</span>
+</a>
+
+<!-- v266: せいれい から もらった ありがとう の累計 -->
+<div class="thankyou-badge-play" id="thankyouBadgePlay" aria-label="もらった ありがとう">
+  <span class="thankyou-icon-play">💝</span><span class="thankyou-count-play" id="thankyouCountPlay">0</span>
+</div>
+
+<!-- 🎵 タップ解禁オーバーレイ: 初回起動時のみ表示。タップで BGM 開始 + sessionStorage 記録 -->
+<style>
+  #pono-tap-intro {
+    position: fixed; inset: 0; z-index: 9999;
+    background: linear-gradient(180deg, #FFE9C4 0%, #FFCEA0 60%, #FFB781 100%);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center; padding: 24px;
+    cursor: pointer;
+    animation: ponoTapIntroIn 0.5s ease-out;
+  }
+  #pono-tap-intro.fade { animation: ponoTapIntroOut 0.6s ease-out forwards; }
+  #pono-tap-intro h1 {
+    font-size: 1.8rem; font-weight: 900; color: #F2742A;
+    text-shadow: 2px 2px 0 #fff; margin: 0 0 8px;
+  }
+  #pono-tap-intro img {
+    width: 130px; height: 130px; border-radius: 50%;
+    object-fit: cover; background: #fff;
+    box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+    margin: 4px 0 12px;
+  }
+  #pono-tap-intro .welcome-body {
+    font-size: 0.92rem; font-weight: 700; color: #5D4E37;
+    margin: 8px 0 0; max-width: 360px; line-height: 1.85;
+    padding: 0 8px;
+  }
+  #pono-tap-intro .welcome-body p { margin: 0 0 10px; }
+  #pono-tap-intro .welcome-body p:last-child { margin-bottom: 0; }
+  #pono-tap-intro .bookname     { white-space: nowrap; display: inline-block; font-weight: 900; color: #F2742A; }
+  #pono-tap-intro .bookname-sub { display: inline-block; font-size: 0.92em; color: #888; }
+  #pono-tap-intro .welcome-sign {
+    font-size: 0.78rem; font-weight: 700; color: #888;
+    margin-top: 8px;
+  }
+  #pono-tap-intro .hint {
+    margin-top: 22px;
+    padding: 12px 32px; border-radius: 999px;
+    background: #FFD84D; color: #fff;
+    font-weight: 900; font-size: 1.1rem;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.18);
+    animation: ponoTapHint 1.2s ease-in-out infinite;
+  }
+  @keyframes ponoTapIntroIn  { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes ponoTapIntroOut { to { opacity: 0; transform: scale(1.05); } }
+  @keyframes ponoTapHint {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.08); }
+  }
+  #pono-tap-intro .trivia-tag {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: #FFD84D;
+    color: #7A4A00;
+    font-weight: 900;
+    font-size: 0.75rem;
+    margin-bottom: 8px;
+  }
+  #pono-tap-intro .preview-tag {
+    background: #FF9A5A;
+    color: #fff;
+  }
+  #pono-tap-intro .trivia-title {
+    font-size: 1.1rem;
+    font-weight: 900;
+    color: #F2742A;
+    margin-bottom: 6px;
+    line-height: 1.4;
+  }
+  #pono-tap-intro .preview-image {
+    display: block;
+    width: min(260px, 72vw);
+    height: auto;
+    max-height: 38vh;
+    margin: 8px auto 10px;
+    border-radius: 14px;
+    border: 3px solid #fff;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.18);
+    background: #fff;
+    object-fit: cover;
+  }
+  #pono-tap-intro .trivia-body {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #5D4E37;
+    line-height: 1.65;
+  }
+  @media (orientation: landscape) {
+    #pono-tap-intro { padding: 10px 24px; justify-content: center; }
+    #pono-tap-intro h1 { font-size: 1.35rem; margin: 0 0 4px; }
+    #pono-tap-intro img {
+      width: clamp(70px, 16vh, 100px);
+      height: clamp(70px, 16vh, 100px);
+      margin: 2px 0 6px;
+    }
+    #pono-tap-intro .welcome-body {
+      font-size: 0.85rem;
+      line-height: 1.55;
+      max-width: 520px;
+      margin-top: 4px;
+    }
+    #pono-tap-intro .welcome-body p { margin: 0 0 6px; }
+    #pono-tap-intro .welcome-sign { font-size: 0.7rem; margin-top: 4px; }
+    #pono-tap-intro .hint { margin-top: 10px; padding: 8px 26px; font-size: 1rem; }
+    #pono-tap-intro .trivia-title { font-size: 0.98rem; }
+    #pono-tap-intro .trivia-body  { font-size: 0.85rem; line-height: 1.5; }
+    #pono-tap-intro .preview-image {
+      width: clamp(140px, 26vh, 200px);
+      max-height: 28vh;
+      margin: 4px auto 6px;
+    }
+    #pono-tap-intro img.preview-image {
+      border-radius: 14px;
+      background: #fff;
+    }
+  }
+</style>
+<div id="pono-tap-intro" style="display:none;">
+  <h1>🌱 ようこそ！</h1>
+  <img src="assets/images/characters/pono/pono_face_circle.png" alt="" onerror="this.style.display='none'">
+
+  <div class="welcome-body" id="intro-welcome-first" style="display:none;">
+    <p>ようこそ！<br>
+    「ポノのあそびば」は、絵本<br>
+    <span class="bookname">『ありがとうって、うれしいね』</span><br>
+    <span class="bookname-sub">〜 くまのこ ポノ の ちいさな ものがたり 〜</span><br>
+    の主人公ポノと一緒に、<br>
+    小さなお子さまが楽しく学べる<br>
+    無料の知育サイトです。</p>
+
+    <p>ひらがな・カタカナの「もじかきクエスト」、<br>
+    パズル、クイズなど、<br>
+    いろんな遊びを少しずつ増やしていきます。<br>
+    親子でゆっくり楽しんでもらえたら嬉しいです。</p>
+  </div>
+
+  <div class="welcome-body" id="intro-welcome-trivia" style="display:none;">
+    <div class="trivia-tag"></div>
+    <div class="trivia-title"></div>
+    <div class="trivia-body"></div>
+  </div>
+
+  <div class="welcome-body" id="intro-welcome-preview" style="display:none;">
+    <div class="trivia-tag preview-tag">えほんをかったひと だけ</div>
+    <div class="trivia-title preview-title"></div>
+    <img class="preview-image" alt="" onerror="this.style.display='none'">
+    <div class="trivia-body preview-body"></div>
+  </div>
+
+  <div class="welcome-sign">— ネモ先生</div>
+  <div class="hint">▶ タップ</div>
+</div>
+<script>
+  // _rewardRelated:true のエントリは MVP で報酬制度封印中に除外される。
+  var PONO_INTRO_TRIVIA_ALL = [
+    { tag: 'つかいかた', title: '「なぞり」で じょうずに かけるよ',
+      body: 'ゆっくり ゆびを うごかすと、きれいに かけるよ。' },
+    { tag: 'つかいかた', title: 'あそぶと ごほうびが もらえるよ',
+      body: 'あつめた かざりで、おへやを かざれるよ。', _rewardRelated: true },
+    { tag: 'つかいかた', title: '「こだまのもりの こえさがし」って しってる？',
+      body: 'きこえた おとから どうぶつを えらぶ あそび だよ。' },
+    { tag: 'ことばのまめちしき', title: '「あ」は あいうえお の 1ばんめ',
+      body: 'ひらがな は ぜんぶで 46じ あるよ。' },
+    { tag: 'ことばのまめちしき', title: 'カタカナは がいこくの ことばに つかうよ',
+      body: 'アイス、パンダ、テレビ… みんな カタカナ！' },
+    { tag: 'ことばのまめちしき', title: '「ん」で おわる ことば を さがしてみよう',
+      body: 'ぱん、ほん、ねこ… あれ？「ねこ」は ちがうね！' }
+  ];
+  // MVP: 報酬制度封印中は ごほうび 系のトリビアを除外する。
+  var PONO_INTRO_TRIVIA = window.PONO_MVP_NO_REWARDS
+    ? PONO_INTRO_TRIVIA_ALL.filter(function(t) { return !t._rewardRelated; })
+    : PONO_INTRO_TRIVIA_ALL;
+
+  // 絵本/サブスクで遊べるプレミアムコンテンツの紹介定義。
+  // id は play.html のカード要素 id と 1:1 対応（promo.js の showLockedPreview から参照）。
+  // スクショは assets/images/previews/*.png に差し替えてください（未配置時は canvas 生成のダミー画像にフォールバック）。 ※ legacy fallback コメント、 GPT Image 2 ルール例外: 既存 dev 用ダミー (PNG 配置後は不要)
+  // L2024 付近の lockedCards 配列との対応:
+  //   lockedCards = ['card-writing','card-drawing','card-bowling','card-breakout','card-slide']
+  //   ↑ クリック遮断対象。coloring/room/aquarium は pointer-events:none なので遮断不要（タップが届かない）
+  var PONO_GAME_PREVIEWS = [
+    { id: 'card-writing',  title: 'もじかきクエスト',
+      image: 'assets/images/previews/writing.png',
+      body: 'ひらがな・カタカナ を なぞって かけるよ。' },
+    { id: 'card-drawing',  title: 'おえかき',
+      image: 'assets/images/previews/drawing.png',
+      body: 'じぶんで かいた え を、うみで およがせられるよ🐠' },
+    { id: 'card-slide',    title: 'みちつなぎ',
+      image: 'assets/images/previews/slide.png',
+      body: 'みちを つないで、ポノが おかあさんに あいに いくよ。' },
+    { id: 'card-bowling',  title: 'ボウリング',
+      image: 'assets/images/previews/bowling.png',
+      body: 'フリックで ピンを たおそう！' },
+    { id: 'card-breakout', title: 'ブロックくずし',
+      image: 'assets/images/previews/breakout.png',
+      body: 'ボールで ブロックを ぜんぶ くずしてみよう。' },
+    { id: 'card-coloring', title: 'ぬりえ',
+      image: 'assets/images/previews/coloring.png',
+      body: 'すきな いろ で ぬって あそぼう。' },
+    { id: 'card-aquarium', title: 'アクアリウム',
+      image: 'assets/images/previews/aquarium.png',
+      body: 'じぶんの おさかな を およがせて かんさつ しよう。' },
+    { id: 'card-room',     title: 'わたしのおうち',
+      image: 'assets/images/previews/room.png',
+      body: 'かぐ を おいて、じぶんだけの おへや を つくろう。' }
+  ];
+
+  // セッション内で既に音声解禁済みかチェック → 解禁済みなら overlay を出さずに即 BGM 試行
+  (function() {
+    var unlocked = sessionStorage.getItem('pono_audio_unlocked') === '1';
+    var bgmOff   = localStorage.getItem('pono_bgm_enabled') === 'off';
+    if (unlocked || bgmOff) return; // 表示しない (解禁済み or BGM オフ設定)
+    var el = document.getElementById('pono-tap-intro');
+    if (!el) return;
+
+    var firstTime = !localStorage.getItem('pono_intro_seen');
+    var firstEl   = document.getElementById('intro-welcome-first');
+    var triviaEl  = document.getElementById('intro-welcome-trivia');
+    var previewEl = document.getElementById('intro-welcome-preview');
+    if (firstTime) {
+      if (firstEl) firstEl.style.display = '';
+    } else {
+      // 2回目以降は 50/50 で 豆知識 / 絵本購入者限定コンテンツ紹介
+      var showPreview = Math.random() < 0.5;
+      if (showPreview && previewEl && PONO_GAME_PREVIEWS.length) {
+        var g = PONO_GAME_PREVIEWS[Math.floor(Math.random() * PONO_GAME_PREVIEWS.length)];
+        previewEl.querySelector('.preview-title').textContent = g.title;
+        previewEl.querySelector('.preview-body').textContent  = g.body;
+        var imgEl = previewEl.querySelector('.preview-image');
+        imgEl.style.display = '';
+        imgEl.src = g.image;
+        previewEl.style.display = '';
+      } else if (triviaEl) {
+        var t = PONO_INTRO_TRIVIA[Math.floor(Math.random() * PONO_INTRO_TRIVIA.length)];
+        triviaEl.querySelector('.trivia-tag').textContent   = t.tag;
+        triviaEl.querySelector('.trivia-title').textContent = t.title;
+        triviaEl.querySelector('.trivia-body').textContent  = t.body;
+        triviaEl.style.display = '';
+      }
+    }
+
+    el.style.display = 'flex';
+    function dismiss() {
+      sessionStorage.setItem('pono_audio_unlocked', '1');
+      // 2026-04-23: 初回登録時の有料コンテンツプロモ動画は撤去。
+      // 初めましての瞬間に宣伝を流さない方針に変更。
+      localStorage.setItem('pono_intro_seen', '1');
+      el.classList.add('fade');
+      // BGM を即座に開始
+      var bgm = document.getElementById('play-bgm');
+      if (bgm && localStorage.getItem('pono_bgm_enabled') !== 'off') {
+        try { bgm.play().catch(function(){}); } catch (e) {}
+      }
+      // フェードアウト完了後にオーバーレイ非表示化
+      setTimeout(function() {
+        el.style.display = 'none';
+      }, 600);
+      el.removeEventListener('pointerdown', dismiss);
+      el.removeEventListener('touchstart', dismiss);
+    }
+    el.addEventListener('pointerdown', dismiss, { passive: true });
+    el.addEventListener('touchstart',  dismiss, { passive: true });
+  })();
+</script>
+
+<!-- 🐻 おかえりモーダル: 戻ってきた時にポノが挨拶 → 1タップで BGM 再開 -->
+<style>
+  #pono-return-greet {
+    position: fixed; inset: 0; z-index: 9998;
+    background: radial-gradient(circle at 50% 40%, rgba(255,236,196,0.96) 0%, rgba(255,206,160,0.94) 60%, rgba(255,183,129,0.92) 100%);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center; padding: 24px;
+    cursor: pointer;
+    animation: ponoGreetIn 0.45s ease-out;
+  }
+  #pono-return-greet.fade { animation: ponoGreetOut 0.35s ease-out forwards; }
+  #pono-return-greet img.greet-pono {
+    width: 180px; height: auto;
+    filter: drop-shadow(3px 6px 10px rgba(0,0,0,0.18));
+    animation: ponoGreetWave 1.6s ease-in-out infinite;
+  }
+  #pono-return-greet .greet-title {
+    margin-top: 12px;
+    font-size: 2rem; font-weight: 900; color: #F2742A;
+    text-shadow: 2px 2px 0 #fff;
+  }
+  #pono-return-greet .greet-sub {
+    margin-top: 6px;
+    font-size: 1.05rem; font-weight: 700; color: #5D4E37;
+  }
+  #pono-return-greet .greet-card {
+    margin-top: 12px;
+    max-width: 340px;
+    padding: 0 12px;
+  }
+  #pono-return-greet .greet-tag {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: #FFD84D;
+    color: #7A4A00;
+    font-weight: 900;
+    font-size: 0.75rem;
+    margin-bottom: 6px;
+  }
+  #pono-return-greet .greet-tag.preview-tag { background: #FF9A5A; color: #fff; }
+  #pono-return-greet .greet-card-title {
+    font-size: 1rem;
+    font-weight: 900;
+    color: #F2742A;
+    margin-bottom: 4px;
+    line-height: 1.4;
+  }
+  #pono-return-greet .greet-card-image {
+    display: block;
+    width: min(240px, 70vw);
+    max-height: 32vh;
+    height: auto;
+    margin: 6px auto 8px;
+    border-radius: 14px;
+    border: 3px solid #fff;
+    box-shadow: 0 6px 14px rgba(0,0,0,0.18);
+    background: #fff;
+    object-fit: cover;
+  }
+  #pono-return-greet .greet-card-body {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #5D4E37;
+    line-height: 1.55;
+  }
+  #pono-return-greet .greet-hint {
+    margin-top: 22px;
+    padding: 12px 40px; border-radius: 999px;
+    background: #FFD84D; color: #fff;
+    font-weight: 900; font-size: 1.15rem;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.18);
+    animation: ponoGreetHintPulse 1.2s ease-in-out infinite;
+  }
+  @keyframes ponoGreetIn  { from { opacity: 0; transform: scale(1.04); } to { opacity: 1; transform: scale(1); } }
+  @keyframes ponoGreetOut { to   { opacity: 0; transform: scale(1.04); } }
+  @keyframes ponoGreetWave {
+    0%, 100% { transform: rotate(-3deg) translateY(0); }
+    50%      { transform: rotate(3deg)  translateY(-6px); }
+  }
+  @keyframes ponoGreetHintPulse {
+    0%, 100% { transform: scale(1); }
+    50%      { transform: scale(1.08); }
+  }
+  @media (orientation: landscape) {
+    #pono-return-greet { padding: 12px 24px; justify-content: center; }
+    #pono-return-greet img.greet-pono {
+      width: clamp(80px, 18vh, 110px);
+      margin-bottom: 2px;
+    }
+    #pono-return-greet .greet-title { margin-top: 6px; font-size: 1.5rem; }
+    #pono-return-greet .greet-sub   { margin-top: 4px; font-size: 0.95rem; }
+    #pono-return-greet .greet-card  { margin-top: 6px; max-width: 520px; }
+    #pono-return-greet .greet-card-title { font-size: 0.95rem; }
+    #pono-return-greet .greet-card-body  { font-size: 0.82rem; line-height: 1.45; }
+    #pono-return-greet .greet-card-image {
+      width: clamp(140px, 24vh, 200px);
+      max-height: 24vh;
+      margin: 4px auto 6px;
+    }
+    #pono-return-greet .greet-hint  {
+      margin-top: 10px;
+      padding: 8px 28px;
+      font-size: 1rem;
+    }
+  }
+</style>
+<div id="pono-return-greet" style="display:none;">
+  <img class="greet-pono" src="assets/images/characters/pono/dance/dance_wave.png" alt="ポノ" onerror="this.style.display='none'">
+  <div class="greet-title">おかえり！</div>
+  <div class="greet-sub" id="greet-sub-default">こんどは なにして あそぶ？</div>
+
+  <div class="greet-card" id="greet-card-trivia" style="display:none;">
+    <div class="greet-tag"></div>
+    <div class="greet-card-title"></div>
+    <div class="greet-card-body"></div>
+  </div>
+
+  <div class="greet-card" id="greet-card-preview" style="display:none;">
+    <div class="greet-tag preview-tag">えほんをかったひと だけ</div>
+    <div class="greet-card-title"></div>
+    <img class="greet-card-image" alt="" onerror="this.style.display='none'">
+    <div class="greet-card-body"></div>
+  </div>
+
+  <div class="greet-hint">▶ タップ</div>
+</div>
+
+
+  <!-- ===== First-Visit Profile Overlay ===== -->
+  <script>
+    // プロフィール設定済みなら最初から非表示（フラッシュ防止）
+    if (localStorage.getItem('pono_profile')) {
+      document.write('<div class="profile-overlay hidden" id="profileOverlay">');
+    } else {
+      document.write('<div class="profile-overlay" id="profileOverlay">');
+    }
+  </script>
+    <div class="profile-card">
+      <img src="assets/images/characters/pono/pono_face_circle.png" alt="ポノ" class="profile-pono">
+      <div class="profile-title">ポノと あそぼう！</div>
+
+      <div class="profile-section">
+        <div class="profile-section-label">なまえ（なくてもOK！）</div>
+        <input type="text" class="profile-name-input" id="profileName" placeholder="おなまえ" maxlength="12" autocomplete="off" autocorrect="off" spellcheck="false">
+      </div>
+
+      <div class="profile-section">
+        <div class="profile-section-label">なんさい？</div>
+        <div class="profile-age-row" id="profileAgeRow">
+          <button class="profile-age-btn" data-age="3">3</button>
+          <button class="profile-age-btn" data-age="4">4</button>
+          <button class="profile-age-btn" data-age="5">5</button>
+          <button class="profile-age-btn" data-age="6">6</button>
+        </div>
+      </div>
+
+      <div class="profile-section">
+        <div class="profile-section-label">どっち？</div>
+        <div class="profile-gender-row" id="profileGenderRow">
+          <button class="profile-gender-btn" data-gender="boy">おとこのこ👦</button>
+          <button class="profile-gender-btn" data-gender="girl">おんなのこ👧</button>
+        </div>
+      </div>
+
+      <div class="profile-error" id="profileError"></div>
+      <button class="profile-submit-btn" id="profileSubmit">あそぶ！</button>
+    </div>
+  </div>
+
+  <div class="page">
+
+    <h1 class="site-heading">ポノのあそびば</h1>
+
+
+    <!-- メイン BGM -->
+    <audio id="play-bgm" src="assets/audio/play_bgm.mp3" loop preload="auto"></audio>
+
+    <div class="music-row">
+      <label class="toggle">
+        <input type="checkbox" id="music-toggle">
+        <span class="toggle-slider"></span>
+      </label>
+      <span class="music-label" id="music-label">おとがでるよ</span>
+    </div>
+
+    <!-- ===== Stamp Rally Section (Daily Challenge) ===== -->
+    <div class="stamp-rally-section" id="stampRallySection">
+      <div class="stamp-rally-title">🌟 きょうのスタンプラリー</div>
+      <div class="stamp-rally-games" id="stampRallyGames">
+        <!-- JS が2つのゲームカードを生成 -->
+      </div>
+      <div class="stamp-rally-bonus pending" id="stampRallyBonus">あと2つ あそんで ボーナススタンプ！</div>
+    </div>
+
+    <!-- スタンプカードはボトムナビから表示 -->
+
+    <!-- ─── あそびば区切り ─── -->
+    <div style="
+      margin: 14px auto 6px;
+      max-width: 360px;
+      text-align: center;
+      padding: 12px 0 8px;
+      border-top: 2.5px dashed #FDE68A;
+    ">
+      <div style="font-size: 1.05rem; color: var(--primary); font-weight: 900;">🌟 むりょうで ゲームが あそべるよ！</div>
+    </div>
+
+    <nav class="menu">
+      <!-- 無料コンテンツ -->
+      <!-- おとタッチ (3歳〜) - 文字なしタップで音が鳴るシンプル遊び -->
+      <a href="oto/index.html" class="card card-oto">
+        <span class="card-icon">🎵</span>
+        <div class="card-body">
+          <div class="card-title">おとタッチ</div>
+          <div class="card-desc">タッチで おとが<br>なるよ！</div>
+        </div>
+      </a>
+
+      <a href="quiz-sound/index.html" class="card card-quiz-sound">
+        <span class="card-icon">🐾</span>
+        <div class="card-body">
+          <div class="card-title">こだまのもりの<br>こえさがし</div>
+          <div class="card-desc">なんの どうぶつ？<br>おとを あてよう</div>
+        </div>
+      </a>
+
+      <a href="puzzle/index.html" class="card card-puzzle">
+        <span class="card-icon">🧩</span>
+        <div class="card-body">
+          <div class="card-title">パズル</div>
+          <div class="card-desc">えを あわせよう</div>
+        </div>
+      </a>
+
+      <a href="bento/index.html" class="card card-bento">
+        <span class="card-icon">🍱</span>
+        <div class="card-body">
+          <div class="card-title">おべんとう</div>
+          <div class="card-desc">ポノに おべんとう<br>つくってあげよう</div>
+        </div>
+      </a>
+
+      <a href="wordmatch/index.html" class="card card-wordmatch">
+        <span class="card-icon">📖</span>
+        <div class="card-body">
+          <div class="card-title">あつめよう！<br>ポノのもりのずかん</div>
+          <div class="card-desc">えと ことばを<br>あわせよう</div>
+        </div>
+      </a>
+
+      <a href="quizland/index.html" class="card card-quizland" id="card-quizland">
+        <span class="card-icon">🦉</span>
+        <div class="card-body">
+          <div class="card-title">フクロウ博士のなぞなぞ</div>
+          <div class="card-desc">ひらめき と<br>ものしりクイズ</div>
+        </div>
+      </a>
+
+      <a href="maze/index.html" class="card card-maze" id="card-maze">
+        <span class="card-icon">🏮</span>
+        <div class="card-body">
+          <div class="card-title">ポノとランタンの<br>めいろ</div>
+          <div class="card-desc">ハリネズミくんを<br>たすけよう</div>
+        </div>
+      </a>
+
+      <!-- かせきはっくつ: MVP 外 → グレーアウト下部ゾーンに移動 (下記コメント参照) -->
+
+      <!-- 購入者限定バナー -->
+      <div class="lock-banner" id="lockBanner">
+        <div class="lock-banner-title">🔑 購入者限定コンテンツ</div>
+        <div style="font-size:0.72rem">ほんのなかのパスワードで もっとあそべるよ！</div>
+        <div class="lock-input-row" id="lockInputRow">
+          <input type="text" class="lock-input" id="lockInput" placeholder="パスワード" autocomplete="off" autocorrect="off" spellcheck="false">
+          <button class="lock-btn" id="lockBtn">かいじょ！</button>
+        </div>
+        <div class="lock-error" id="lockError">ちがうよ！もういちど！</div>
+        <div class="lock-unlocked" id="lockUnlocked">✅ かいじょずみ！</div>
+      </div>
+
+      <!-- 購入者限定コンテンツ -->
+      <!-- もじかきクエスト: 購入者限定セクションの先頭。
+           onclick で play.html 側 <audio id="bgm"> に play() を発火することで、
+           同一 origin の audio session を user gesture で再確認 → 遷移先
+           writing/index.html の Theme.mp3 が iOS Safari でも autoplay できるようにする。
+           primedTs は従来どおり writing/index.html L7693 の consumer が利用。 -->
+      <a href="writing/index.html" class="card card-writing locked" id="card-writing"
+         onclick="try{var _b=document.getElementById('bgm');if(_b){var _p=_b.play();if(_p&&_p.catch){_p.catch(function(){});}}sessionStorage.setItem('pono_audio_primed_ts',String(Date.now()));}catch(e){}">
+        <span class="card-icon"><img src="assets/images/icons/writing_quest.svg" alt="" style="width:2.4rem;height:2.4rem;display:block;"></span>
+        <div class="card-body">
+          <div class="card-title">もじかきクエスト</div>
+          <div class="card-desc">ひらがな・カタカナ</div>
+        </div>
+      </a>
+
+      <a href="drawing/index.html" class="card card-drawing locked" id="card-drawing">
+        <span class="card-icon">🎨</span>
+        <div class="card-body">
+          <div class="card-title">おえかき</div>
+          <div class="card-desc">かいた えは うみで<br>およがせられるよ🐠</div>
+        </div>
+      </a>
+
+      <a href="slide/index.html" class="card card-slide locked" id="card-slide">
+        <span class="card-icon"><img src="assets/images/characters/pono/pono_face_circle.png" style="width:48px;height:48px;object-fit:contain;" alt="ポノ"></span>
+        <div class="card-body">
+          <div class="card-title">みちつなぎ</div>
+          <div class="card-desc">おかあさんに<br>あいにいこう</div>
+        </div>
+      </a>
+
+      <a href="bowling/index.html" class="card card-bowling locked" id="card-bowling">
+        <span class="card-icon">🎳</span>
+        <div class="card-body">
+          <div class="card-title">ボウリング</div>
+          <div class="card-desc">フリックで<br>たおそう！</div>
+        </div>
+      </a>
+
+      <a href="breakout/index.html" class="card card-breakout locked" id="card-breakout">
+        <span class="card-icon">🧱</span>
+        <div class="card-body">
+          <div class="card-title">ブロックくずし</div>
+          <div class="card-desc">くずしてみよう</div>
+        </div>
+      </a>
+
+      <!-- 準備中（グレーアウト）-->
+      <!-- かせきはっくつ: MVP では追加コンテンツ整備中のため一時的にグレーアウト -->
+      <a class="card card-fossil locked" id="card-fossil" style="pointer-events:none;opacity:0.45;filter:grayscale(0.8);">
+        <span class="card-icon">🦕</span>
+        <div class="card-body">
+          <div class="card-title">かせきはっくつ</div>
+          <div class="card-desc">つくってるよ！</div>
+        </div>
+      </a>
+
+      <a class="card card-coloring locked" id="card-coloring" style="pointer-events:none;opacity:0.45;filter:grayscale(0.8);">
+        <span class="card-icon">🖍️</span>
+        <div class="card-body">
+          <div class="card-title">ぬりえ</div>
+          <div class="card-desc">つくってるよ！</div>
+        </div>
+      </a>
+
+      <a class="card card-sugoroku locked" style="pointer-events:none;opacity:0.45;filter:grayscale(0.8);background:linear-gradient(135deg,#8B5CF6,#EC4899);">
+        <span class="card-icon">🎲</span>
+        <div class="card-body">
+          <div class="card-title">すごろく</div>
+          <div class="card-desc">つくってるよ！</div>
+        </div>
+      </a>
+
+      <!-- ─── ごほうびを かざろう（購入者限定） ─── -->
+      <div style="
+        grid-column: 1 / -1;
+        margin: 14px auto 6px;
+        max-width: 360px;
+        width: 100%;
+        text-align: center;
+        padding: 12px 0 8px;
+        border-top: 2.5px dashed #A7D8F0;
+      ">
+        <div style="font-size: 1.05rem; color: #1E88E5; font-weight: 900;">🏠 ごほうびを かざろう！</div>
+      </div>
+
+      <!-- card-aquarium/card-egg は今回のスコープ外のため MVP グレーアウトのまま維持 -->
+      <a href="room/index.html" class="card card-room locked" id="card-room">
+        <span class="card-icon">🏠</span>
+        <div class="card-body">
+          <div class="card-title">わたしのおうち</div>
+          <div class="card-desc">かぐを あつめて<br>おへやを かざろう</div>
+        </div>
+      </a>
+
+      <a class="card card-aquarium" id="card-aquarium" style="pointer-events:none;opacity:0.45;filter:grayscale(0.8);">
+        <span class="card-icon">🐠</span>
+        <div class="card-body">
+          <div class="card-title">すいぞくかん</div>
+          <div class="card-desc">つくってるよ！</div>
+        </div>
+      </a>
+
+      <a class="card card-egg" id="card-egg" style="pointer-events:none;opacity:0.45;filter:grayscale(0.8);">
+        <span class="card-icon">🥚</span>
+        <div class="card-body">
+          <div class="card-title">そだてよう</div>
+          <div class="card-desc">つくってるよ！</div>
+        </div>
+      </a>
+
+      <!-- しゃぼんだま / つみき: 制作中のため一旦非表示
+      <a class="card card-bubble locked" id="card-bubble" style="pointer-events:none;opacity:0.45;filter:grayscale(0.8);">
+        <span class="card-icon">🫧</span>
+        <div class="card-body">
+          <div class="card-title">しゃぼんだま</div>
+          <div class="card-desc">つくってるよ！</div>
+        </div>
+      </a>
+
+      <a class="card card-stacking locked" id="card-stacking" style="pointer-events:none;opacity:0.45;filter:grayscale(0.8);">
+        <span class="card-icon">🏗️</span>
+        <div class="card-body">
+          <div class="card-title">つみき</div>
+          <div class="card-desc">つくってるよ！</div>
+        </div>
+      </a>
+      -->
+
+    </nav>
+
+    <!-- 作者より（独立ブロック） -->
+    <a href="message/index.html" class="author-block">
+      <span class="author-icon">📖</span>
+      <div class="author-text">
+        <div class="author-title">作者より</div>
+        <div class="author-desc">ネモ先生のひとりごと</div>
+      </div>
+    </a>
+
+    <!-- テスト用ボタン -->
+    <div style="text-align:center;margin:20px 0;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <button id="resetAllBtn" style="
+        padding:10px 24px; border:2px solid #EF4444; border-radius:50px;
+        background:#FEE2E2; color:#EF4444; font-family:inherit;
+        font-size:0.85rem; font-weight:900; cursor:pointer;
+      ">🔄 ぜんぶリセット</button>
+      <!-- v1581: pono_debug UI toggle button 削除 (商品ユーザーに見えないようにする / PonoDebugMode 経由に集約) -->
+      <a href="room/furniture_adjuster.html" style="
+        padding:10px 24px; border:2px solid #F59E0B; border-radius:50px;
+        background:#FEF3C7; color:#D97706; font-family:inherit;
+        font-size:0.85rem; font-weight:900; cursor:pointer; text-decoration:none;
+      ">🔧 ピボットツール</a>
+    </div>
+
+  </div>
+
+  <script>
+    // ===== Profile Overlay (first-visit) =====
+    window.ponoProfile = JSON.parse(localStorage.getItem('pono_profile') || 'null');
+
+    // はじめてのログイン実績
+    if (window.incrementStat) {
+      window.incrementStat('login_first', 1);
+    }
+
+    (function() {
+      var overlay = document.getElementById('profileOverlay');
+      if (!overlay) return;
+
+      // Already has profile → hide immediately
+      if (window.ponoProfile) {
+        overlay.classList.add('hidden');
+        return;
+      }
+
+      var selectedAge = null;
+      var selectedGender = null;
+
+      // Age buttons
+      var ageBtns = document.querySelectorAll('#profileAgeRow .profile-age-btn');
+      ageBtns.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          ageBtns.forEach(function(b) { b.classList.remove('selected'); });
+          btn.classList.add('selected');
+          selectedAge = parseInt(btn.getAttribute('data-age'));
+          document.getElementById('profileError').textContent = '';
+        });
+      });
+
+      // Gender buttons
+      var genderBtns = document.querySelectorAll('#profileGenderRow .profile-gender-btn');
+      genderBtns.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          genderBtns.forEach(function(b) { b.classList.remove('selected'); });
+          btn.classList.add('selected');
+          selectedGender = btn.getAttribute('data-gender');
+          document.getElementById('profileError').textContent = '';
+        });
+      });
+
+      // Submit
+      document.getElementById('profileSubmit').addEventListener('click', function() {
+        if (!selectedAge) {
+          document.getElementById('profileError').textContent = 'なんさいか おしえてね！';
+          return;
+        }
+        if (!selectedGender) {
+          document.getElementById('profileError').textContent = 'どっちか おしえてね！';
+          return;
+        }
+
+        var profile = {
+          name: document.getElementById('profileName').value.trim() || '',
+          age: selectedAge,
+          gender: selectedGender
+        };
+
+        localStorage.setItem('pono_profile', JSON.stringify(profile));
+        window.ponoProfile = profile;
+
+        // なまえをきめた実績
+        if (window.incrementStat) window.incrementStat('profile_set', 1);
+
+        overlay.classList.add('hidden');
+
+        // プロフィール設定後にスタンプ付与
+        if (window._initStampRally) window._initStampRally();
+      });
+    })();
+
+    // PWA Guide: 常時表示（削除済み）
+
+    // ===== Music Toggle + BGM =====
+    const toggle = document.getElementById('music-toggle');
+    const label  = document.getElementById('music-label');
+    const bgm    = document.getElementById('play-bgm');
+    if (bgm) bgm.volume = 0.25;
+    const enabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
+    toggle.checked = enabled;
+    label.textContent = enabled ? 'おとがでるよ' : 'おとがでないよ';
+
+    function tryPlayBgm() {
+      if (!bgm) return;
+      var p = bgm.play();
+      if (p && typeof p.then === 'function') {
+        p.then(function() {
+          // 成功したら以降のセッションは自動再生可能フラグを立てる
+          try { sessionStorage.setItem('pono_audio_unlocked', '1'); } catch (e) {}
+        }).catch(function() {});
+      }
+    }
+    function stopBgm() { if (bgm) bgm.pause(); }
+
+    if (enabled) {
+      // iOS Safari は最初のユーザー操作までブロックされるので、両方試す
+      tryPlayBgm();
+      var _bgmUnlock = function() {
+        if (localStorage.getItem('pono_bgm_enabled') !== 'off') tryPlayBgm();
+        document.removeEventListener('touchstart', _bgmUnlock);
+        document.removeEventListener('click', _bgmUnlock);
+      };
+      document.addEventListener('touchstart', _bgmUnlock, { passive: true });
+      document.addEventListener('click', _bgmUnlock);
+    }
+
+    toggle.addEventListener('change', () => {
+      const on = toggle.checked;
+      localStorage.setItem('pono_bgm_enabled', on ? 'on' : 'off');
+      label.textContent = on ? 'おとがでるよ' : 'おとがでないよ';
+      if (on) tryPlayBgm();
+      else stopBgm();
+    });
+
+    // タブが背景になったら一時停止、戻ったら再開
+    document.addEventListener('visibilitychange', function() {
+      if (document.hidden) stopBgm();
+      else if (localStorage.getItem('pono_bgm_enabled') !== 'off') tryPlayBgm();
+    });
+
+    // ===== 「おかえり」モーダル =====
+    // ゲームから戻ってきた時、ブラウザの autoplay policy で BGM が弾かれることがある。
+    // その時だけポノの挨拶モーダルを出し、1タップで BGM を自然に再開させる。
+    // 初回訪問 (pono-tap-intro) とは表示条件で分離。
+    function _showReturnGreeting() {
+      var gm = document.getElementById('pono-return-greet');
+      if (!gm) return;
+      if (gm.style.display === 'flex') return; // 既に表示中
+      // 50/50 で 豆知識 / 絵本購入者限定コンテンツ紹介 を差し込む
+      try {
+        var subEl     = document.getElementById('greet-sub-default');
+        var triviaCd  = document.getElementById('greet-card-trivia');
+        var previewCd = document.getElementById('greet-card-preview');
+        if (triviaCd)  triviaCd.style.display  = 'none';
+        if (previewCd) previewCd.style.display = 'none';
+        var TRIVIA   = (typeof PONO_INTRO_TRIVIA   !== 'undefined') ? PONO_INTRO_TRIVIA   : [];
+        var PREVIEWS = (typeof PONO_GAME_PREVIEWS  !== 'undefined') ? PONO_GAME_PREVIEWS  : [];
+        var showPrev = Math.random() < 0.5;
+        if (showPrev && PREVIEWS.length && previewCd) {
+          var g = PREVIEWS[Math.floor(Math.random() * PREVIEWS.length)];
+          previewCd.querySelector('.greet-card-title').textContent = g.title;
+          previewCd.querySelector('.greet-card-body').textContent  = g.body;
+          var pImg = previewCd.querySelector('.greet-card-image');
+          pImg.style.display = '';
+          pImg.src = g.image;
+          previewCd.style.display = '';
+          if (subEl) subEl.style.display = 'none';
+        } else if (TRIVIA.length && triviaCd) {
+          var t = TRIVIA[Math.floor(Math.random() * TRIVIA.length)];
+          triviaCd.querySelector('.greet-tag').textContent        = t.tag;
+          triviaCd.querySelector('.greet-card-title').textContent = t.title;
+          triviaCd.querySelector('.greet-card-body').textContent  = t.body;
+          triviaCd.style.display = '';
+          if (subEl) subEl.style.display = 'none';
+        } else {
+          if (subEl) subEl.style.display = '';
+        }
+      } catch (e) { /* フォールバック: 既定の greet-sub のまま */ }
+      gm.style.display = 'flex';
+      gm.classList.remove('fade');
+      var dismissed = false;
+      function _dismiss(e) {
+        if (e && e.preventDefault) e.preventDefault();
+        if (e && e.stopPropagation) e.stopPropagation();
+        if (dismissed) return;
+        dismissed = true;
+        // ゴーストクリック/透過タップ対策:
+        // dismiss 直後 ~500ms は document レベルで発火する全クリックを握りつぶす
+        var _shield = function(ev) {
+          ev.preventDefault();
+          ev.stopPropagation();
+          if (ev.stopImmediatePropagation) ev.stopImmediatePropagation();
+        };
+        document.addEventListener('click',      _shield, true);
+        document.addEventListener('touchend',   _shield, true);
+        document.addEventListener('mousedown',  _shield, true);
+        setTimeout(function() {
+          document.removeEventListener('click',     _shield, true);
+          document.removeEventListener('touchend',  _shield, true);
+          document.removeEventListener('mousedown', _shield, true);
+        }, 550);
+        gm.classList.add('fade');
+        // その時の user gesture で BGM を再開
+        if (localStorage.getItem('pono_bgm_enabled') !== 'off') tryPlayBgm();
+        // フェード中もクリックを受け止める（display:flex 継続）
+        setTimeout(function() { gm.style.display = 'none'; }, 500);
+        gm.removeEventListener('pointerdown', _dismiss);
+        gm.removeEventListener('touchstart',  _dismiss);
+        gm.removeEventListener('click',       _dismiss);
+      }
+      gm.addEventListener('pointerdown', _dismiss);
+      gm.addEventListener('touchstart',  _dismiss, { passive: false });
+      gm.addEventListener('click',       _dismiss);
+    }
+
+    // pageshow: ページが表示された時 (bfcache 復帰も含む)
+    // 初回 pono-tap-intro 未完了 (sessionStorage が未セット) の時は出さない。
+    window.addEventListener('pageshow', function() {
+      if (!bgm) return;
+      if (localStorage.getItem('pono_bgm_enabled') === 'off') return;
+      if (sessionStorage.getItem('pono_audio_unlocked') !== '1') return; // 初回は既存 intro が担当
+      var p = bgm.play();
+      if (p && typeof p.then === 'function') {
+        p.then(function(){}).catch(function() {
+          _showReturnGreeting();
+        });
+      }
+    });
+
+    // ===== Premium Unlock =====
+    // パスワード検証は common/tier.js の PonoTier.verifyBookPassword() に集約。
+    // 絵本を増刷/新シリーズ追加する時は tier.js の BOOK_PASSWORDS だけ編集する。
+    const lockedCards = ['card-writing', 'card-drawing', 'card-bowling', 'card-breakout', 'card-slide', 'card-room'];
+
+    function applyUnlockState() {
+      const unlocked = (window.PonoTier && typeof window.PonoTier.isFree === 'function')
+        ? !window.PonoTier.isFree()
+        : (localStorage.getItem('pono_premium') === '1');
+      lockedCards.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.toggle('locked', !unlocked);
+      });
+      document.getElementById('lockInputRow').style.display = unlocked ? 'none' : '';
+      document.getElementById('lockError').style.display = 'none';
+      document.getElementById('lockUnlocked').style.display = unlocked ? 'block' : 'none';
+    }
+
+    document.getElementById('lockBtn').addEventListener('click', () => {
+      const val = document.getElementById('lockInput').value;
+      const ok = !!(window.PonoTier
+        && typeof window.PonoTier.verifyBookPassword === 'function'
+        && window.PonoTier.verifyBookPassword(val));
+      if (ok) {
+        const firstTime = localStorage.getItem('pono_premium') !== '1';
+        localStorage.setItem('pono_premium', '1');
+        if (window.grantPremiumBonus) window.grantPremiumBonus();
+        applyUnlockState();
+        // 初回解錠のみ: 歓迎モーダルで「これから あそべる ゲーム」を紹介
+        if (firstTime
+            && !localStorage.getItem('pono_welcome_book_seen')
+            && window.PonoPromo
+            && typeof window.PonoPromo.showBookWelcome === 'function') {
+          try { window.PonoPromo.showBookWelcome(); } catch (e) {}
+        }
+      } else {
+        document.getElementById('lockError').style.display = 'block';
+        document.getElementById('lockInput').value = '';
+      }
+    });
+
+    document.getElementById('lockInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') document.getElementById('lockBtn').click();
+    });
+
+    applyUnlockState();
+
+    // わたしのおうち: MVP 外 → カード自体は HTML inline style で永続グレーアウト (2026-04-21)
+    // ここでは下部ナビのラベル切替のみ残す（購入者には 🏠 おうち、無料には 📓 てちょう）
+    (function() {
+      // 旧キーからのマイグレーション
+      if (!localStorage.getItem('pono_room_card_open') && localStorage.getItem('pono_room_unlocked')) {
+        var v = localStorage.getItem('pono_room_unlocked');
+        if (v === '1' || v === 'true') {
+          localStorage.setItem('pono_room_card_open', '1');
+          localStorage.removeItem('pono_room_unlocked');
+        }
+      }
+      // v1581: pono_debug 並列パスを PonoDebugMode に集約 (staging host + sessionStorage unlock のみ)
+      var _debugOn  = !!(window.PonoDebugMode && window.PonoDebugMode.isAllowed());
+      var _premium  = (window.PonoTier && typeof window.PonoTier.isFree === 'function')
+        ? !window.PonoTier.isFree()
+        : (localStorage.getItem('pono_premium') === '1');
+      var _hasRoom  = _debugOn || _premium;
+      // 下部ナビの「🏠 おうち」を、無料ユーザーには「📓 てちょう」として見せる
+      if (!_hasRoom) {
+        var bnIcon  = document.getElementById('bn-room-icon');
+        var bnLabel = document.getElementById('bn-room-label');
+        if (bnIcon)  bnIcon.textContent  = '📓';
+        if (bnLabel) bnLabel.textContent = 'てちょう';
+      }
+    })();
+
+    // ロック中の「わたしのおうち」をタップしたときの案内
+    function _showRoomLockedHint() {
+      // 多重表示防止
+      if (document.getElementById('_room-locked-hint')) return;
+      var ov = document.createElement('div');
+      ov.id = '_room-locked-hint';
+      ov.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;padding:20px;';
+      var box = document.createElement('div');
+      box.style.cssText = 'background:#fff;border-radius:20px;padding:22px 24px;text-align:center;max-width:300px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.3);transform:scale(0);transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1);';
+      box.innerHTML =
+        '<div style="font-size:2.6rem;line-height:1;margin-bottom:6px;">🔒🏠</div>' +
+        '<div style="font-size:1rem;font-weight:900;color:#F2915A;margin-bottom:8px;">もうすぐ あえるよ！</div>' +
+        '<div style="font-size:0.88rem;font-weight:700;color:#5D4E37;line-height:1.7;margin-bottom:14px;">ここでは あつめた かぐを<br>じぶんの おうちに<br>かざれるように なるよ！<br><span style="font-size:0.78rem;color:#A89880;">（いまは「てちょう」で<br>あつめた ものを みよう！）</span></div>' +
+        '<button id="_room-locked-ok" style="padding:10px 32px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-family:inherit;font-size:0.95rem;font-weight:900;cursor:pointer;box-shadow:0 4px 14px rgba(59,130,246,0.4);">わかった！</button>';
+      ov.appendChild(box);
+      document.body.appendChild(ov);
+      requestAnimationFrame(function() { box.style.transform = 'scale(1)'; });
+      function close() {
+        box.style.transition = 'transform 0.25s cubic-bezier(0.6,-0.28,0.74,0.05)';
+        box.style.transform = 'scale(0)';
+        setTimeout(function() { ov.remove(); }, 250);
+      }
+      document.getElementById('_room-locked-ok').addEventListener('click', close);
+      ov.addEventListener('click', function(e) { if (e.target === ov) close(); });
+    }
+
+    // #card-room.locked は pointer-events:auto なので click が発火する (案内モーダルへ差し替え)
+    (function() {
+      var roomCard = document.getElementById('card-room');
+      if (!roomCard) return;
+      roomCard.addEventListener('click', function(e) {
+        if (roomCard.classList.contains('locked')) {
+          e.preventDefault();
+          _showRoomLockedHint();
+        }
+      });
+    })();
+
+    // ===== Achievement Badge =====
+    if (window.getAchievements && window.getUnlockedAchievements) {
+      var total = window.getAchievements().length;
+      var done = Object.keys(window.getUnlockedAchievements()).length;
+      var badge = document.getElementById('ach-badge');
+      if (badge && done > 0) {
+        badge.textContent = '🏆 ' + done + '/' + total;
+      }
+    }
+
+    // ===== Login Bonus Trigger =====
+    if (window.checkDailyLogin) {
+      var loginResult = window.checkDailyLogin();
+      if (loginResult && window.showLoginBonusPopup) {
+        // Delay popup slightly so page renders first
+        setTimeout(function() { window.showLoginBonusPopup(loginResult); }, 800);
+      }
+    }
+
+    // ===== Premium bonus for already-unlocked users =====
+    (function() {
+      var _isPremium = (window.PonoTier && typeof window.PonoTier.isFree === 'function')
+        ? !window.PonoTier.isFree()
+        : (localStorage.getItem('pono_premium') === '1');
+      if (_isPremium && window.grantPremiumBonus) {
+        window.grantPremiumBonus();
+      }
+    })();
+
+    // ===== PWA Service Worker =====
+    // 登録 + 更新検知 + ユーザー明示タップでのみ切替 (トースト) を
+    // common/sw-update.js に集約。
+    (function () {
+      var s = document.createElement('script');
+      s.src = '/common/sw-update.js';
+      s.defer = true;
+      document.head.appendChild(s);
+    })();
+  </script>
+  <script src="common/stamp-rally.js"></script>
+  <script>
+    // first-clear celebration (common/first-clear.js の pending queue 表示側)。
+    // stamp-rally.js とは別システムのため未移設。showStampBatch 等から
+    // window._scheduleFirstClearAfterStamps 経由で defensive に呼ばれる。
+    (function() {
+      'use strict';
+
+      // スタンプ演出が走っている間は first-clear 祝賀を遅延実行。
+      // スタンプ完了時の onAllDone コールバックで呼び直される。
+      function _scheduleFirstClearAfterStamps() {
+        if (window._stampBatchBusy) return;
+        checkPendingFirstClear();
+      }
+
+      // ── ゲーム初回クリア報酬: ホーム帰還時の演出 ──
+      // common/first-clear.js が localStorage.pono_pending_first_clear に
+      // 配列で積んだ情報を順番に処理する。
+      function checkPendingFirstClear() {
+        // MVP: 報酬制度封印中は祝賀ポップアップをスキップ。
+        // pending キューはクリアして、再公開時に古い演出が突然出るのを防ぐ。
+        if (window.PONO_MVP_NO_REWARDS) {
+          try { localStorage.setItem('pono_pending_first_clear', '[]'); } catch (e) {}
+          return;
+        }
+        var pending;
+        try { pending = JSON.parse(localStorage.getItem('pono_pending_first_clear') || '[]'); }
+        catch(e) { pending = []; }
+        if (!Array.isArray(pending) || pending.length === 0) return;
+
+        // 先頭1件ずつ処理（複数あれば閉じた後に次を表示）
+        var item = pending.shift();
+        localStorage.setItem('pono_pending_first_clear', JSON.stringify(pending));
+        showFirstClearCelebration(item, function() {
+          // 祝賀モーダルを閉じた後、afterMsg があればそれを表示
+          var next = function() {
+            if (pending.length > 0) {
+              // 残りがあれば少し間を空けて次を表示
+              setTimeout(checkPendingFirstClear, 400);
+            }
+          };
+          if (item && item.afterMsg) {
+            window.showAfterMsgOverlay(item, next);
+          } else {
+            next();
+          }
+        });
+      }
+
+      // 祝賀モーダル（スタンプカード風の見た目だが、スタンプではなく達成バッジを見せる）
+      function showFirstClearCelebration(item, onDone) {
+        if (!item) { if (onDone) onDone(); return; }
+
+        var ov = document.createElement('div');
+        ov.style.cssText = 'position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;padding:20px;';
+
+        var box = document.createElement('div');
+        box.style.cssText = 'background:#FFF8E8;border-radius:20px;padding:24px 20px 18px;max-width:320px;width:100%;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.35);';
+
+        var title = document.createElement('div');
+        title.style.cssText = 'font-size:1.05rem;font-weight:900;color:#F2915A;margin-bottom:8px;';
+        title.textContent = '🏆 はじめての クリア！';
+        box.appendChild(title);
+
+        var sub = document.createElement('div');
+        sub.style.cssText = 'font-size:0.8rem;font-weight:700;color:#5D4E37;margin-bottom:14px;';
+        sub.textContent = 'ごほうびを ゲットしたよ！';
+        box.appendChild(sub);
+
+        // スタンプ風の丸いバッジ
+        var badge = document.createElement('div');
+        badge.style.cssText = 'width:110px;height:110px;margin:0 auto 12px;border-radius:50%;background:#FFF3CD;border:4px solid #FFD700;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 6px rgba(255,215,0,0.2);animation:stampSlotGlow 0.8s ease-out;';
+        if (item.img) {
+          var img = document.createElement('img');
+          img.src = item.img;
+          img.style.cssText = 'width:80px;height:80px;object-fit:contain;';
+          img.onerror = function() {
+            img.style.display = 'none';
+            var ic = document.createElement('div');
+            ic.style.cssText = 'font-size:3.5rem;';
+            ic.textContent = item.icon || '🎁';
+            badge.appendChild(ic);
+          };
+          badge.appendChild(img);
+        } else {
+          var ic = document.createElement('div');
+          ic.style.cssText = 'font-size:3.5rem;';
+          ic.textContent = item.icon || '🎁';
+          badge.appendChild(ic);
+        }
+        box.appendChild(badge);
+
+        // アイテム名
+        var nameEl = document.createElement('div');
+        nameEl.style.cssText = 'font-size:1.1rem;font-weight:900;color:#5D4E37;margin-bottom:4px;';
+        nameEl.textContent = item.name || '';
+        box.appendChild(nameEl);
+
+        var msgEl = document.createElement('div');
+        msgEl.style.cssText = 'font-size:0.75rem;color:#888;margin-bottom:16px;';
+        msgEl.textContent = 'あたらしい ともだちだよ！';
+        box.appendChild(msgEl);
+
+        var closeBtn = document.createElement('button');
+        closeBtn.textContent = 'やったー！';
+        closeBtn.style.cssText = 'padding:12px 36px;border:none;border-radius:50px;background:linear-gradient(135deg,#F2915A,#EC6A3C);color:#fff;font-family:inherit;font-size:0.95rem;font-weight:900;cursor:pointer;box-shadow:0 4px 12px rgba(242,145,90,0.4);';
+        closeBtn.addEventListener('click', function() {
+          ov.remove();
+          if (onDone) onDone();
+        });
+        box.appendChild(closeBtn);
+
+        ov.appendChild(box);
+        document.body.appendChild(ov);
+      }
+
+      window._scheduleFirstClearAfterStamps = _scheduleFirstClearAfterStamps;
+    })();
+
+    // テスト用リセット
+    document.getElementById('resetAllBtn').addEventListener('click', function() {
+      if (!confirm('ほんとうに ぜんぶ リセットしますか？\nすべてのデータが消えます。')) return;
+      localStorage.clear();
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(function(regs) {
+          for (var i = 0; i < regs.length; i++) regs[i].unregister();
+        });
+        caches.keys().then(function(keys) {
+          for (var i = 0; i < keys.length; i++) caches.delete(keys[i]);
+        });
+      }
+      alert('リセットしました！ページを再読み込みします。');
+      location.reload();
+    });
+
+    // v1581: pono_debug デバッグモードトグル削除 (PonoDebugMode に集約、 brand-sign click → promptUnlock 経由)
+
+  </script>
+
+  <!-- ===== Bottom Navigation Bar ===== -->
+  <nav class="bottom-nav" id="bottomNav">
+    <button class="bn-item" data-action="stamp">
+      <span class="bn-icon">📋</span>
+      <span class="bn-label">スタンプ</span>
+    </button>
+    <button class="bn-item" data-action="room" id="bn-room">
+      <span class="bn-icon" id="bn-room-icon">🏠</span>
+      <span class="bn-label" id="bn-room-label">おうち</span>
+    </button>
+    <button class="bn-item" data-action="play">
+      <span class="bn-icon">🎮</span>
+      <span class="bn-label">あそぶ</span>
+    </button>
+    <button class="bn-item" data-action="help">
+      <span class="bn-icon">❓</span>
+      <span class="bn-label">ヘルプ</span>
+    </button>
+    <button class="bn-item" data-action="top">
+      <span class="bn-icon">🌳</span>
+      <span class="bn-label">トップ</span>
+    </button>
+  </nav>
+
+  <script>
+    // ===== Bottom Navigation =====
+    (function() {
+      var nav = document.getElementById('bottomNav');
+      if (!nav) return;
+      nav.addEventListener('click', function(e) {
+        var btn = e.target.closest('.bn-item');
+        if (!btn) return;
+        var action = btn.dataset.action;
+        if (action === 'stamp') {
+          if (typeof window.showFullCardModal === 'function') {
+            window.showFullCardModal();
+          } else {
+            alert('スタンプカードの表示に失敗しました');
+          }
+        } else if (action === 'room') {
+          // v1581: pono_debug 並列パスを PonoDebugMode に集約
+          var debugOn = !!(window.PonoDebugMode && window.PonoDebugMode.isAllowed());
+          var premium = (window.PonoTier && typeof window.PonoTier.isFree === 'function')
+            ? !window.PonoTier.isFree()
+            : (localStorage.getItem('pono_premium') === '1');
+          if (debugOn || premium) {
+            location.href = 'room/index.html';
+          } else {
+            location.href = 'techo/index.html';
+          }
+        } else if (action === 'play') {
+          var menu = document.querySelector('.menu');
+          if (menu) menu.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else if (action === 'help') {
+          location.href = 'help.html';
+        } else if (action === 'top') {
+          location.href = 'index.html';
+        }
+      });
+    })();
+
+    // ===== Acorn badge display =====
+    (function(){
+      var countEl = document.getElementById('acornCountPlay');
+      var badge = document.getElementById('acornBadgePlay');
+      if (!countEl || !badge || typeof window.getAcorns !== 'function') return;
+      function update(n) {
+        countEl.textContent = String(n);
+        badge.classList.remove('pop');
+        void badge.offsetWidth;
+        badge.classList.add('pop');
+      }
+      countEl.textContent = String(window.getAcorns());
+      window.addEventListener('pono-acorns-changed', function(e) {
+        update((e.detail && e.detail.after) != null ? e.detail.after : window.getAcorns());
+      });
+    })();
+
+    // ===== Thank-you (ありがとう) badge display — v266 テーマ統合 =====
+    (function(){
+      var countEl = document.getElementById('thankyouCountPlay');
+      var badge = document.getElementById('thankyouBadgePlay');
+      if (!countEl || !badge || typeof window.getThankYou !== 'function') return;
+      function update(n) {
+        countEl.textContent = String(n);
+        badge.classList.remove('pop');
+        void badge.offsetWidth;
+        badge.classList.add('pop');
+      }
+      countEl.textContent = String(window.getThankYou());
+      window.addEventListener('pono-thankyou-changed', function(e) {
+        update((e.detail && e.detail.after) != null ? e.detail.after : window.getThankYou());
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,501 @@
+/* ===== もりのアルバム =====
+ * 8にんのなかまを、カードと太いバーで見わたせるシンプルな一覧。
+ */
+
+.album-body,
+.album-body * {
+  box-sizing: border-box;
+}
+
+.album-body {
+  display: block;
+  min-width: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0;
+  padding: clamp(8px, 2vw, 16px);
+  overflow-x: hidden;
+  color: #5d4e37;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  background-color: #efe2c2;
+  background-image:
+    linear-gradient(rgba(255, 250, 231, 0.08), rgba(255, 250, 231, 0.08)),
+    url('../assets/images/puzzle/bg_carpet_room.jpg');
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-attachment: fixed;
+}
+
+.album-wrapper {
+  width: min(960px, 100%);
+  max-height: calc(100dvh - clamp(16px, 4vw, 32px));
+  margin: 0 auto;
+  padding: clamp(10px, 1.8vw, 18px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: rgba(255, 249, 228, 0.95);
+  border: 3px solid rgba(255, 255, 255, 0.9);
+  border-radius: 24px;
+  box-shadow: 0 8px 28px rgba(86, 66, 38, 0.2);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(164, 126, 75, 0.45) transparent;
+}
+
+/* ===== Header ===== */
+.album-header {
+  display: grid;
+  grid-template-columns: minmax(104px, auto) 1fr minmax(104px, auto);
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  margin-bottom: 10px;
+}
+
+.album-header__spacer {
+  width: 104px;
+}
+
+.album-title {
+  min-width: 0;
+  margin: 0;
+  color: #5d4e37;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-size: clamp(1.45rem, 3.5vw, 2rem);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  line-height: 1.15;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.album-back {
+  appearance: none;
+  min-width: 104px;
+  min-height: 48px;
+  padding: 8px 15px;
+  border: 3px solid rgba(255, 255, 255, 0.94);
+  border-radius: 999px;
+  color: #5a3a18;
+  background: var(--puzzle-btn-cream, linear-gradient(#fffaf0, #f7ddb0));
+  box-shadow: var(--puzzle-btn-shadow-soft, 0 4px 0 #cfa870);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: var(--puzzle-btn-text-shadow, 0 1px #fff);
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.album-back:active {
+  transform: translateY(2px);
+  box-shadow: var(--puzzle-btn-shadow-pressed, 0 2px 0 #cfa870);
+}
+
+.album-back:focus-visible {
+  outline: 4px solid #3d8fd1;
+  outline-offset: 3px;
+}
+
+/* ===== Everyone summary ===== */
+.album-summary {
+  display: grid;
+  grid-template-columns: 44px minmax(86px, auto) minmax(110px, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-height: 66px;
+  margin-bottom: 10px;
+  padding: 9px 14px;
+  background: linear-gradient(135deg, #fff1d9, #ffe3b5);
+  border: 2px solid #efbb7d;
+  border-radius: 18px;
+}
+
+.album-summary__icon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 2px 6px rgba(121, 83, 37, 0.12);
+  font-size: 1.5rem;
+}
+
+.album-summary__copy {
+  min-width: 0;
+  line-height: 1.1;
+}
+
+.album-summary__label {
+  color: #80684a;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.album-summary__value {
+  margin-top: 3px;
+  color: #b95128;
+  font-family: 'DotGothic16', 'Zen Maru Gothic', sans-serif;
+  font-size: clamp(1.05rem, 2.6vw, 1.35rem);
+  font-weight: 900;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.album-summary__bar {
+  width: 100%;
+  height: 14px;
+  overflow: hidden;
+  border: 2px solid rgba(178, 133, 70, 0.2);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: inset 0 2px 3px rgba(93, 78, 55, 0.13);
+}
+
+.album-summary__bar-fill {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #f7c948, #f2915a 58%, #e85b83);
+}
+
+/* ===== Partner cards ===== */
+.album-main {
+  min-width: 0;
+}
+
+.album-partner-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.album-partner-card {
+  display: grid;
+  grid-template-columns: clamp(52px, 6vw, 64px) minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 112px;
+  padding: 10px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.9);
+  border: 3px solid #eccd83;
+  border-radius: 18px;
+  box-shadow: 0 3px 0 rgba(174, 132, 70, 0.22);
+}
+
+.album-partner-card.is-locked {
+  color: #6f6f6f;
+  background: rgba(234, 232, 226, 0.94);
+  border-color: #bebbb2;
+  box-shadow: 0 3px 0 rgba(105, 105, 105, 0.16);
+}
+
+.album-partner-card__portrait {
+  position: relative;
+  display: grid;
+  width: 100%;
+  aspect-ratio: 1;
+  place-items: center;
+  overflow: hidden;
+  border: 2px solid #ecd7a4;
+  border-radius: 15px;
+  background: #fff9e8;
+}
+
+.album-partner-card.is-locked .album-partner-card__portrait {
+  border-color: #c9c7c0;
+  background: #deddd8;
+}
+
+.album-partner-card__portrait-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.album-partner-card__portrait-img.is-silhouette {
+  padding: 4px;
+  object-fit: contain;
+  filter: brightness(0) saturate(0);
+  opacity: 0.58;
+}
+
+.album-partner-card__portrait-img.is-silhouette.is-light-background {
+  padding: 3px;
+  object-fit: contain;
+  filter: grayscale(1) contrast(1000%) blur(1px) contrast(1000%);
+  opacity: 0.58;
+}
+
+.album-partner-card__secret {
+  color: #888780;
+  font-family: 'DotGothic16', sans-serif;
+  font-size: clamp(2rem, 5vw, 3rem);
+  font-weight: 900;
+  line-height: 1;
+}
+
+.album-partner-card__lock {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border: 2px solid rgba(255, 255, 255, 0.88);
+  border-radius: 50%;
+  background: #77746f;
+  font-size: 0.72rem;
+  line-height: 1;
+}
+
+.album-partner-card__info {
+  min-width: 0;
+}
+
+.album-partner-card__name {
+  margin: 0;
+  overflow: hidden;
+  color: #5d4e37;
+  font-size: clamp(0.95rem, 1.7vw, 1.12rem);
+  font-weight: 900;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.album-partner-card.is-locked .album-partner-card__name {
+  color: #66645f;
+}
+
+.album-partner-card__status {
+  min-height: 2.5em;
+  margin-top: 5px;
+  color: #b85c2b;
+  font-size: clamp(0.72rem, 1.35vw, 0.86rem);
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.album-partner-card.is-locked .album-partner-card__status {
+  display: flex;
+  align-items: center;
+  color: #696762;
+}
+
+.album-partner-card__bar {
+  width: 100%;
+  height: 12px;
+  margin-top: 6px;
+  overflow: hidden;
+  border: 2px solid rgba(157, 126, 74, 0.16);
+  border-radius: 999px;
+  background: #ebe7dc;
+  box-shadow: inset 0 1px 2px rgba(93, 78, 55, 0.14);
+}
+
+.album-partner-card__bar-fill {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #7bc96f, #f3c64e 72%, #f0915c);
+}
+
+/* たて画面は2れつ。8にんを4だんで見せる。 */
+@media (max-width: 600px) {
+  .album-body {
+    padding: 8px;
+  }
+
+  .album-wrapper {
+    max-height: calc(100dvh - 16px);
+    padding: 10px;
+    border-radius: 20px;
+  }
+
+  .album-header {
+    grid-template-columns: 88px 1fr 88px;
+    gap: 5px;
+    margin-bottom: 8px;
+  }
+
+  .album-header__spacer {
+    width: 88px;
+  }
+
+  .album-back {
+    min-width: 88px;
+    min-height: 48px;
+    padding-inline: 5px;
+    font-size: 0.88rem;
+    white-space: nowrap;
+  }
+
+  .album-title {
+    font-size: clamp(1.05rem, 4.6vw, 1.35rem);
+    letter-spacing: 0.02em;
+  }
+
+  .album-summary {
+    grid-template-columns: 38px minmax(82px, auto) minmax(80px, 1fr);
+    gap: 7px;
+    min-height: 60px;
+    padding: 7px 9px;
+    border-radius: 15px;
+  }
+
+  .album-summary__icon {
+    width: 36px;
+    height: 36px;
+    font-size: 1.2rem;
+  }
+
+  .album-summary__value {
+    font-size: 1rem;
+  }
+
+  .album-summary__bar {
+    height: 13px;
+  }
+
+  .album-partner-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .album-partner-card {
+    grid-template-columns: 50px minmax(0, 1fr);
+    gap: 7px;
+    min-height: 108px;
+    padding: 8px;
+    border-width: 2px;
+    border-radius: 15px;
+  }
+
+  .album-partner-card__portrait {
+    border-radius: 12px;
+  }
+
+  .album-partner-card__name {
+    font-size: 0.94rem;
+  }
+
+  .album-partner-card__status {
+    font-size: 0.7rem;
+  }
+}
+
+/* せのひくい横画面では4×2を1画面におさめる。 */
+@media (orientation: landscape) and (max-height: 430px) {
+  .album-body {
+    padding: 6px;
+  }
+
+  .album-wrapper {
+    width: min(940px, 100%);
+    max-height: calc(100dvh - 12px);
+    padding: 7px 10px 9px;
+    border-radius: 18px;
+  }
+
+  .album-header {
+    grid-template-columns: 90px 1fr 90px;
+    min-height: 44px;
+    margin-bottom: 4px;
+  }
+
+  .album-header__spacer {
+    width: 90px;
+  }
+
+  .album-back {
+    min-width: 90px;
+    min-height: 44px;
+    padding: 6px 10px;
+    font-size: 0.88rem;
+    border-width: 2px;
+  }
+
+  .album-title {
+    font-size: 1.35rem;
+  }
+
+  .album-summary {
+    grid-template-columns: 34px minmax(105px, auto) minmax(140px, 1fr);
+    gap: 8px;
+    min-height: 48px;
+    margin-bottom: 6px;
+    padding: 5px 10px;
+    border-radius: 14px;
+  }
+
+  .album-summary__icon {
+    width: 32px;
+    height: 32px;
+    font-size: 1.05rem;
+  }
+
+  .album-summary__copy {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+
+  .album-summary__value {
+    margin-top: 0;
+    font-size: 1rem;
+  }
+
+  .album-summary__bar {
+    height: 12px;
+  }
+
+  .album-partner-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .album-partner-card {
+    grid-template-columns: 48px minmax(0, 1fr);
+    gap: 7px;
+    min-height: 96px;
+    padding: 7px;
+    border-width: 2px;
+    border-radius: 14px;
+    box-shadow: 0 2px 0 rgba(174, 132, 70, 0.2);
+  }
+
+  .album-partner-card__portrait {
+    border-radius: 11px;
+  }
+
+  .album-partner-card__name {
+    font-size: 0.9rem;
+  }
+
+  .album-partner-card__status {
+    min-height: 2.3em;
+    margin-top: 3px;
+    font-size: 0.67rem;
+  }
+
+  .album-partner-card__bar {
+    height: 10px;
+    margin-top: 4px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .album-back:active {
+    transform: none;
+  }
+}

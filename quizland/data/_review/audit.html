@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>Quizland イラスト監査 - 問題と選択肢の生成画像リスト</title>
+<style>
+:root {
+  --paper: #f5e9c4;
+  --paper-2: #e8d293;
+  --wood: #6e4520;
+  --wood-light: #b07a3a;
+  --text: #4a2d0a;
+  --ok: #10B981;
+  --miss: #EF4444;
+  --warn: #F59E0B;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; font-family: 'Hiragino Sans', 'Yu Gothic', sans-serif; color: var(--text); background: #faf6e8; }
+header { position: sticky; top: 0; background: var(--paper); border-bottom: 3px solid var(--wood); padding: 12px 20px; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+h1 { margin: 0 0 8px; font-size: 18px; }
+.stats { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; }
+.stat-pill { background: #fff; border: 2px solid var(--wood); border-radius: 14px; padding: 4px 12px; font-weight: 700; }
+.stat-pill.ok { color: var(--ok); border-color: var(--ok); }
+.stat-pill.miss { color: var(--miss); border-color: var(--miss); }
+.controls { margin-top: 8px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; font-size: 13px; }
+.controls input[type="search"], .controls select { padding: 4px 8px; border: 1.5px solid var(--wood); border-radius: 8px; font-family: inherit; font-size: 13px; }
+.controls label { font-weight: 700; }
+main { padding: 20px; max-width: 1400px; margin: 0 auto; }
+.cat-section { margin-bottom: 32px; }
+.cat-title { font-size: 16px; font-weight: 800; padding: 8px 14px; background: var(--wood-light); color: #fff; border-radius: 10px; margin-bottom: 12px; }
+.q-card { background: #fff; border: 2px solid var(--wood); border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; display: grid; grid-template-columns: 1fr 240px; gap: 16px; box-shadow: 0 2px 6px rgba(120,80,20,0.12); }
+.q-card.hide { display: none; }
+.q-meta { display: flex; gap: 8px; font-size: 12px; margin-bottom: 6px; flex-wrap: wrap; align-items: center; }
+.q-lv { background: var(--wood); color: #fff; padding: 2px 8px; border-radius: 6px; font-weight: 700; }
+.q-type { background: #fff3c4; border: 1px solid var(--wood-light); padding: 2px 8px; border-radius: 6px; }
+.q-img-flag { background: #DCFCE7; border: 1px solid var(--ok); color: var(--ok); padding: 2px 8px; border-radius: 6px; }
+.q-img-flag.miss { background: #FEE2E2; border-color: var(--miss); color: var(--miss); }
+.q-text { font-size: 17px; font-weight: 700; margin-bottom: 6px; line-height: 1.4; }
+.q-hint { font-size: 13px; color: #8A6A42; margin-bottom: 4px; }
+.q-detail { font-size: 12px; color: #888; margin-top: 4px; font-style: italic; }
+.choices { list-style: none; padding: 0; margin: 8px 0 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; }
+.choice { font-size: 14px; padding: 4px 8px; border-radius: 6px; background: #fafafa; display: flex; align-items: center; gap: 8px; }
+.choice.answer { background: #DCFCE7; font-weight: 700; }
+.choice .ans-mark { color: var(--ok); }
+.choice .c-text { flex: 1; min-width: 0; }
+.choice .c-fname { font-size: 10px; color: #888; }
+.choice-img { flex: 0 0 auto; width: 56px; height: 56px; border-radius: 6px; background: #fff; border: 1.5px solid #ddd; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+.choice-img img { width: 100%; height: 100%; object-fit: contain; }
+.choice-img.none { border: 2px dashed var(--miss); background: #FEF2F2; color: var(--miss); font-size: 9px; font-weight: 700; line-height: 1.1; text-align: center; padding: 4px; }
+.choice-img.unneeded { border: 1.5px dashed #aaa; background: #f5f5f5; color: #888; font-size: 9px; font-weight: 600; line-height: 1.1; text-align: center; padding: 4px; }
+.sheet-link { display: inline-block; font-size: 10px; color: #888; cursor: pointer; padding: 1px 5px; border: 1px solid #ddd; border-radius: 4px; margin-top: 2px; user-select: none; }
+.sheet-link:hover { background: #fffbeb; color: #b45309; border-color: #f59e0b; }
+.q-stage-img { display: flex; align-items: flex-start; justify-content: center; }
+.q-stage-img img {
+  display: block;
+  width: 100%;
+  max-width: 200px;
+  aspect-ratio: 1 / 1;            /* 縦横比固定: 中身のアスペクトは object-fit: contain で維持しつつ、コンテナは正方形 */
+  height: auto;
+  object-fit: contain;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  background: #fff;
+}
+.q-stage-img .nostage { color: #aaa; font-size: 12px; padding: 24px 0; }
+.gallery-section { margin-top: 40px; padding-top: 20px; border-top: 3px dashed var(--wood); }
+.gallery-section h2 { font-size: 16px; }
+.gallery-folder { margin-bottom: 24px; }
+.gallery-folder h3 { font-size: 14px; background: var(--paper); padding: 6px 10px; border-radius: 6px; }
+.gallery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+.gallery-item { background: #fff; border: 1.5px solid #ddd; border-radius: 6px; padding: 6px; text-align: center; cursor: pointer; transition: transform 0.1s; }
+.gallery-item:hover { transform: scale(1.05); border-color: var(--wood-light); }
+.gallery-item.miss { opacity: 0.4; border-style: dashed; border-color: var(--miss); }
+.gallery-item.off-manifest { background: #fffbeb; border-color: #f59e0b; }
+.gallery-item.off-manifest .filename { color: #b45309; }
+.gallery-item img { width: 100%; height: 80px; object-fit: contain; }
+.gallery-item .filename { font-size: 10px; word-break: break-all; margin-top: 4px; color: #555; }
+.gallery-item.miss .filename { color: var(--miss); }
+
+/* ===== Lightbox: クリックで画像拡大 ===== */
+.choice-img img, .q-stage-img img, .gallery-item img { cursor: zoom-in; }
+.lightbox { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 40px; cursor: zoom-out; }
+.lightbox.show { display: flex; }
+.lightbox-content { max-width: 100%; max-height: 100%; display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.lightbox img { max-width: 90vw; max-height: 80vh; object-fit: contain; background: #fff; border-radius: 8px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+.lightbox-caption { color: #fff; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 14px; background: rgba(0,0,0,0.6); padding: 6px 12px; border-radius: 6px; }
+.lightbox-close { position: fixed; top: 16px; right: 20px; color: #fff; font-size: 32px; background: rgba(0,0,0,0.5); width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; user-select: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Quizland イラスト監査 — 問題・選択肢と生成画像のリスト</h1>
+  <div class="stats" id="stats">読み込み中…</div>
+  <div class="controls">
+    <label>検索: <input type="search" id="q-search" placeholder="問題文・選択肢を検索"></label>
+    <label>カテゴリ: <select id="q-cat"><option value="">すべて</option></select></label>
+    <label>レベル: <select id="q-lv"><option value="">すべて</option><option value="1">Lv1</option><option value="2">Lv2</option><option value="3">Lv3</option></select></label>
+    <label><input type="checkbox" id="q-only-img-missing"> 画像未紐付けのみ</label>
+  </div>
+</header>
+
+<!-- Lightbox (クリックで拡大表示) -->
+<div class="lightbox" id="lightbox" role="dialog" aria-modal="true">
+  <div class="lightbox-close" id="lightbox-close" aria-label="閉じる">×</div>
+  <div class="lightbox-content">
+    <img id="lightbox-img" alt="">
+    <div class="lightbox-caption" id="lightbox-caption"></div>
+  </div>
+</div>
+
+<main>
+  <!-- 未生成リスト (Codex 次回依頼用) -->
+  <details id="missing-section" style="margin-bottom: 16px; background: #FEF2F2; border: 2px solid var(--miss); border-radius: 12px; padding: 12px 16px;">
+    <summary style="font-weight: 800; cursor: pointer; color: var(--miss);">📝 Codex 追加生成が必要な選択肢 <span id="missing-count">…</span> 件 — クリックで一覧 (画像不要な数字/長文は除外)</summary>
+    <div id="missing-list" style="margin-top: 10px; font-size: 13px;"></div>
+  </details>
+
+  <!-- 重複生成リスト (collapsible) -->
+  <details id="dup-section" style="margin-bottom: 24px; background: #fffbeb; border: 2px solid #f59e0b; border-radius: 12px; padding: 12px 16px;">
+    <summary style="font-weight: 800; cursor: pointer; color: #b45309;">⚠ 重複生成 <span id="dup-count">…</span> 件 (Codex が同じ画像を複数シートで再生成してる) — クリックで一覧</summary>
+    <div id="dup-list" style="margin-top: 10px; font-size: 13px;"></div>
+  </details>
+
+  <div id="questions"></div>
+
+  <section class="gallery-section">
+    <h2>📦 全生成画像 (illustration-list.json マニフェスト基準)</h2>
+    <p style="font-size:13px; color:#666;">マゼンタ点線 = ファイル不在 (まだ生成されてない or pathミスマッチ)。クリックでファイル名コピー。</p>
+    <div id="gallery"></div>
+  </section>
+</main>
+
+<script src="../questions.js"></script>
+<script>
+// ===== Lightbox: グローバルなクリック委譲で choice-img / stage / gallery 全部を拡大 =====
+(function() {
+  const lb = document.getElementById('lightbox');
+  const lbImg = document.getElementById('lightbox-img');
+  const lbCap = document.getElementById('lightbox-caption');
+  document.addEventListener('click', function(e) {
+    const target = e.target;
+    if (target.tagName === 'IMG' && target.closest('.choice-img, .q-stage-img, .gallery-item')) {
+      e.stopPropagation();
+      lbImg.src = target.src;
+      lbImg.alt = target.alt || '';
+      // caption: try to derive a useful path/id
+      let caption = target.alt || '';
+      const galleryItem = target.closest('.gallery-item');
+      if (galleryItem) {
+        const fn = galleryItem.querySelector('.filename');
+        if (fn) caption = fn.textContent;
+      } else {
+        // strip leading ../../../ for readability
+        caption = target.getAttribute('src').replace(/^\.\.\//g, '').replace(/^\.\//,'');
+      }
+      lbCap.textContent = caption;
+      lb.classList.add('show');
+    }
+  });
+  function close() { lb.classList.remove('show'); lbImg.src = ''; }
+  lb.addEventListener('click', function(e) { if (e.target === lb || e.target.id === 'lightbox-close') close(); });
+  document.addEventListener('keydown', function(e) { if (e.key === 'Escape') close(); });
+})();
+
+(async function() {
+  const ASSET_BASE = '../../../';
+
+  // 1) load all data sources
+  //   image_manifest.json (Codex 棚卸し後の正本) があれば最優先で使う。
+  //   無ければ legacy (_choice_jp_to_id + overrides + manifest sheets) にフォールバック。
+  const [manifest, handoffAudit, diskInventory, jpToIdData, sheetsIndex, jpOverrides, imageManifest] = await Promise.all([
+    fetch('./illustration-list.json').then(r => r.json()).catch(e => { console.error('manifest load failed', e); return { sheets: [], items: [] }; }),
+    fetch('./_handoff_audit.json').then(r => r.json()).catch(e => { console.warn('handoff audit not available'); return null; }),
+    fetch('./_disk_inventory.json').then(r => r.json()).catch(e => { console.warn('disk inventory not available'); return null; }),
+    fetch('./_choice_jp_to_id.json').then(r => r.json()).catch(e => { console.warn('JP-to-ID map not available'); return null; }),
+    fetch('./_sheets_index.json').then(r => r.json()).catch(e => { console.warn('sheets index not available'); return null; }),
+    fetch('./_choice_jp_to_id_overrides.json').then(r => r.json()).catch(e => { console.warn('JP overrides not available'); return null; }),
+    fetch('./image_manifest.json').then(r => r.ok ? r.json() : null).catch(() => null),
+  ]);
+  // imageManifest がある場合は jp_label → save_path の高速マップを優先生成。
+  // 無ければ legacy auto + overrides を使う。
+  //
+  // 戦略 (manifest schema 別):
+  // - v1.1 (context_tags 持ち): question type → 優先 context_tags を選んで lookup (推奨)
+  // - v1.0 (context_tags 無し): folder 名から推測する fallback (legacy)
+  // - 両方に該当しない場合: jp_label first-match-wins
+  const manifestByContext = {}; // context_tag → {jp_label → save_path}
+  const manifestByFolder = {};  // folder → {jp_label → save_path} (v1.0 互換)
+  const manifestJpToPath = {};  // 全体フォールバック
+  const manifestIdToSheet = {}; // id → sheet
+  function entryFolder(p) {
+    if (!p) return '(unknown)';
+    const m = p.match(/illust\/([^/]+)\//);
+    return m ? m[1] : '(other)';
+  }
+  let manifestSchemaVersion = '1.0';
+  if (imageManifest && Array.isArray(imageManifest.images)) {
+    // 第1パス: 個別 crop を context_tags 別 + folder 別にマップ
+    imageManifest.images.forEach(entry => {
+      if (!entry.save_path || entry.save_path.includes('/_sheets/')) return;
+      const folder = entryFolder(entry.save_path);
+      const ctxTags = Array.isArray(entry.context_tags) ? entry.context_tags : [];
+      if (ctxTags.length > 0) manifestSchemaVersion = '1.1';
+      if (!manifestByFolder[folder]) manifestByFolder[folder] = {};
+      ctxTags.forEach(tag => {
+        if (!manifestByContext[tag]) manifestByContext[tag] = {};
+      });
+      (entry.jp_labels || []).forEach(label => {
+        // jp_labels can be string or {label, context} (future-proofing)
+        const labelStr = typeof label === 'string' ? label : (label && label.label);
+        if (!labelStr) return;
+        if (!manifestByFolder[folder][labelStr]) manifestByFolder[folder][labelStr] = entry.save_path;
+        ctxTags.forEach(tag => {
+          if (!manifestByContext[tag][labelStr]) manifestByContext[tag][labelStr] = entry.save_path;
+        });
+        if (!manifestJpToPath[labelStr]) manifestJpToPath[labelStr] = entry.save_path;
+      });
+      if (entry.source_sheet) manifestIdToSheet[entry.id] = entry.source_sheet;
+    });
+    // 第2パス: シート (フォールバック)
+    imageManifest.images.forEach(entry => {
+      if (!entry.save_path || !entry.save_path.includes('/_sheets/')) return;
+      (entry.jp_labels || []).forEach(label => {
+        const labelStr = typeof label === 'string' ? label : (label && label.label);
+        if (labelStr && !manifestJpToPath[labelStr]) manifestJpToPath[labelStr] = entry.save_path;
+      });
+    });
+    console.info('[audit] image_manifest.json loaded: schema=v' + manifestSchemaVersion + ', ' + imageManifest.images.length + ' entries, ' + Object.keys(manifestJpToPath).length + ' jp_labels, contexts=[' + Object.keys(manifestByContext).join(',') + ']');
+  }
+  // v1.1: 質問 type ごとの context_tags 優先順位
+  const TYPE_CONTEXT_PREFERENCE = {
+    shape_name:  ['shape'],
+    order_color: ['color'],
+    count_total: [],
+    emoji_name:  ['nature', 'weather', 'body', 'object', 'animal', 'plant'],
+    body:        ['body', 'face'],
+    weather:     ['snowflake', 'weather', 'nature'],
+    trivia:      ['animal', 'bird', 'fish', 'bug', 'food', 'plant', 'nature', 'body', 'face'],
+    opposite:    ['emotion', 'face', 'posture', 'door', 'prop', 'time_of_day'],
+  };
+  // v1.0 互換: folder 優先順位
+  const TYPE_FOLDER_PREFERENCE = {
+    shape_name:  ['shape', 'choice'],
+    order_color: ['color', 'choice'],
+    count_total: ['choice'],
+    emoji_name:  ['stage', 'choice'],
+    body:        ['choice', 'stage'],
+    weather:     ['weather', 'stage', 'choice'],
+    trivia:      ['choice', 'animal', 'stage'],
+    opposite:    ['choice', 'stage'],
+  };
+  // type-aware lookup: v1.1 context → v1.0 folder → fallback の順に試す
+  function lookupByTypeAware(label, qType) {
+    // v1.1 context-based (preferred)
+    const ctxPrefs = TYPE_CONTEXT_PREFERENCE[qType] || [];
+    for (const tag of ctxPrefs) {
+      if (manifestByContext[tag] && manifestByContext[tag][label]) {
+        return manifestByContext[tag][label];
+      }
+    }
+    // v1.0 folder-based (legacy)
+    const folderPrefs = TYPE_FOLDER_PREFERENCE[qType] || [];
+    for (const f of folderPrefs) {
+      if (manifestByFolder[f] && manifestByFolder[f][label]) return manifestByFolder[f][label];
+    }
+    // 全体フォールバック
+    return manifestJpToPath[label] || null;
+  }
+  // overrides は最優先 (auto抽出を上書きできる)。manifest があれば legacy は補助扱い。
+  const externalJpMap = Object.assign(
+    {},
+    (jpToIdData && jpToIdData.jp_to_id) || {},
+    (jpOverrides && jpOverrides.jp_to_id) || {}
+  );
+  const sheetPaths = (sheetsIndex && sheetsIndex.sheet_paths) || {};
+  const idToSheets = (sheetsIndex && sheetsIndex.id_to_sheets) || {};
+  const duplicates = (sheetsIndex && sheetsIndex.duplicates) || {};
+
+  // build id -> save_path
+  const idToPath = {};
+  (manifest.sheets || []).forEach(s => (s.crops || []).forEach(c => { idToPath[c.id] = c.save_path; }));
+  (manifest.items || []).forEach(i => { idToPath[i.id] = i.save_path; });
+
+  // 2) test which paths exist on disk (HEAD probe)
+  // browser-only: we'll display all and rely on img onerror fallback for visualization
+  // (no node fs here)
+
+  // 3) flatten questions
+  const allQ = [];
+  Object.entries(QUIZLAND_QUESTIONS).forEach(([cat, arr]) => {
+    arr.forEach((q, i) => allQ.push({ ...q, _cat: cat, _idx: i }));
+  });
+
+  // category dropdown
+  const cats = Object.keys(QUIZLAND_QUESTIONS);
+  const catSel = document.getElementById('q-cat');
+  cats.forEach(c => { const o = document.createElement('option'); o.value = c; o.textContent = c; catSel.appendChild(o); });
+
+  // 4) try to map a choice text to an image
+  // 戦略:
+  //   1. 直接 id 一致 (choice="zou" → idToPath["zou"])
+  //   2. type 別プレフィクス試行 (order_color の "red" → "color_red")
+  //   3. ファイル名 (basename) 一致
+  //   4. 既知 Japanese→romaji マッピング (色, 数字 など)
+  //   5. assets/images/quizland/illust/choice/<choice>.png 直接プローブ (img onerror fallback)
+  const JP_TO_ID = {
+    // 色 (順番系・色問題の和名)
+    'あか': 'color_red', 'あお': 'color_blue', 'きいろ': 'color_yellow', 'みどり': 'color_green',
+    'ピンク': 'color_pink', 'オレンジ': 'color_orange', 'むらさき': 'color_purple', 'みずいろ': 'color_cyan',
+    // 形 (shape_name 和名)
+    'まる': 'shape_circle', 'しかく': 'shape_square', 'さんかく': 'shape_triangle', 'ほし': 'shape_star',
+    'ハート': 'shape_heart', 'ながしかく': 'shape_rectangle', 'ひしがた': 'shape_diamond', 'たまご': 'shape_oval',
+  };
+  function findChoiceImage(choiceText, qType) {
+    if (choiceText == null) return null;
+    const raw = String(choiceText);
+    const t = raw.toLowerCase();
+    // 0. image_manifest.json (Codex 棚卸し正本) を質問 type 別優先で参照
+    //    (例: shape_name の "まる" → shape/shape_circle、weather の "まる" → weather/snowflake_round)
+    const typeAware = lookupByTypeAware(raw, qType);
+    if (typeAware) return typeAware;
+    // 1. 直接 id 一致
+    if (idToPath[t]) return idToPath[t];
+    if (idToPath[raw]) return idToPath[raw];
+    // 2. type 別プレフィクス試行
+    const prefixes = [];
+    if (qType === 'order_color') prefixes.push('color_');
+    else if (qType === 'shape_name') prefixes.push('shape_');
+    else if (qType === 'weather') prefixes.push('weather_');
+    for (const p of prefixes) {
+      if (idToPath[p + t]) return idToPath[p + t];
+    }
+    // 3. basename 一致
+    for (const [id, path] of Object.entries(idToPath)) {
+      const fname = path.split('/').pop().replace('.png','').toLowerCase();
+      if (fname === t) return path;
+    }
+    // 4. JP→ID テーブル (内部 + assignment.json から抽出した拡張マップ)
+    const mapped = JP_TO_ID[raw] || externalJpMap[raw];
+    if (mapped) {
+      // try idToPath first; if not in manifest, build path heuristically
+      if (idToPath[mapped]) return idToPath[mapped];
+      // fallback: assume choice/ folder
+      return 'assets/images/quizland/illust/choice/' + mapped + '.png';
+    }
+    // 5. illust/choice/ にある画像を直接プローブ (manifest 外)
+    //    返り値は path で、img onerror で 404 fallback 表示
+    const candidates = [
+      'assets/images/quizland/illust/choice/' + t + '.png',
+      'assets/images/quizland/illust/choice/' + raw + '.png',
+    ];
+    return { probe: candidates };
+  }
+
+  // stage image path (for emoji_name etc)
+  function stageImagePath(q) {
+    if (q.img) return ASSET_BASE + 'assets/images/ocean/' + q.img;
+    if (q.type === 'count_total' && q.item) return ASSET_BASE + 'assets/images/word/' + q.item + '.png';
+    return null;
+  }
+
+  // 5) render questions grouped by category
+  const root = document.getElementById('questions');
+  let totalQ = 0, qWithStage = 0, qMissingImg = 0;
+  cats.forEach(cat => {
+    const sec = document.createElement('section');
+    sec.className = 'cat-section';
+    sec.dataset.cat = cat;
+    const title = document.createElement('div');
+    title.className = 'cat-title';
+    title.textContent = cat + ' (' + QUIZLAND_QUESTIONS[cat].length + ' 問)';
+    sec.appendChild(title);
+    QUIZLAND_QUESTIONS[cat].forEach((q, i) => {
+      totalQ++;
+      const card = document.createElement('div');
+      card.className = 'q-card';
+      card.dataset.searchText = (q.q + ' ' + (q.choices || []).join(' ') + ' ' + (q.hint || '') + ' ' + (q.detail || '')).toLowerCase();
+      card.dataset.cat = cat;
+      card.dataset.lv = q.level;
+
+      const left = document.createElement('div');
+      const meta = document.createElement('div');
+      meta.className = 'q-meta';
+      meta.innerHTML = '<span class="q-lv">Lv' + q.level + '</span><span class="q-type">' + q.type + '</span><span class="q-idx">#' + i + '</span>';
+      const stagePath = stageImagePath(q);
+      if (stagePath) {
+        meta.innerHTML += '<span class="q-img-flag">🖼 stage</span>';
+        qWithStage++;
+      } else if (q.type === 'emoji_name' || q.type === 'count_total') {
+        meta.innerHTML += '<span class="q-img-flag miss">🖼 stage 未指定</span>';
+        qMissingImg++;
+        card.dataset.imgMissing = '1';
+      }
+      left.appendChild(meta);
+
+      const text = document.createElement('div');
+      text.className = 'q-text';
+      text.textContent = q.q;
+      left.appendChild(text);
+
+      if (q.hint) {
+        const hint = document.createElement('div');
+        hint.className = 'q-hint';
+        hint.textContent = '💡 ' + q.hint;
+        left.appendChild(hint);
+      }
+
+      // miss badge placeholder (updated async as images resolve)
+      const missBadge = document.createElement('span');
+      missBadge.className = 'q-img-flag miss';
+      missBadge.style.marginLeft = '4px';
+      missBadge.style.display = 'none'; // shown only when missCount > 0
+      meta.appendChild(missBadge);
+
+      const ul = document.createElement('ul');
+      ul.className = 'choices';
+      let choiceMissCount = 0;
+      const totalChoices = (q.choices || []).length;
+      function updateMissBadge() {
+        if (choiceMissCount > 0) {
+          missBadge.style.display = '';
+          missBadge.textContent = '🖼 未生成 ' + choiceMissCount + '/' + totalChoices;
+          card.dataset.imgMissing = '1';
+        } else {
+          missBadge.style.display = 'none';
+          delete card.dataset.imgMissing;
+        }
+      }
+      // 画像不要かどうかの判定 (count_total数字 / 長文 / 短い和名)
+      function classifyChoice(choiceText, qType) {
+        const s = String(choiceText);
+        if (qType === 'count_total') return 'numeric';
+        // 数字+助数詞 (1つ, 3こ, 5ほん 等)
+        if (/^\d+[つ個本枚匹羽コこほん]/.test(s)) return 'numeric';
+        // 長文 (空白含むかつ長い、または長すぎる)
+        if (s.length >= 8) return 'longtext';
+        if (s.length >= 5 && /[ 　、]/.test(s)) return 'longtext';
+        return 'short'; // 本来 image があるべき短い和名
+      }
+      (q.choices || []).forEach((c, ci) => {
+        const li = document.createElement('li');
+        li.className = 'choice' + (ci === q.answer ? ' answer' : '');
+
+        // image slot (always present)
+        const slot = document.createElement('div');
+        slot.className = 'choice-img';
+        const matched = findChoiceImage(c, cat);
+        let resolvedPath = null;
+        const wrap = document.createElement('div');
+        wrap.className = 'c-text';
+        const mark = ci === q.answer ? '<span class="ans-mark">★ </span>' : '';
+        wrap.innerHTML = mark + escapeHtml(String(c));
+
+        function setMissing() {
+          slot.innerHTML = '';
+          const cls = classifyChoice(c, cat);
+          if (cls === 'numeric') {
+            slot.classList.add('unneeded');
+            slot.textContent = '数字';
+          } else if (cls === 'longtext') {
+            slot.classList.add('unneeded');
+            slot.textContent = '長文';
+          } else {
+            slot.classList.add('none');
+            slot.textContent = '未生成';
+            choiceMissCount++;  // 真に Codex 生成が必要なものだけカウント
+            updateMissBadge();
+          }
+        }
+        function setLoaded(path) {
+          resolvedPath = path;
+          // append filename below text
+          const fn = document.createElement('div');
+          fn.className = 'c-fname';
+          fn.textContent = path.split('/').pop();
+          wrap.appendChild(fn);
+          // sheet link: if this image is in a sheet, add a button
+          const id = path.split('/').pop().replace('.png','');
+          const sheetIds = idToSheets[id] || [];
+          sheetIds.forEach(sid => {
+            const link = document.createElement('span');
+            link.className = 'sheet-link';
+            link.textContent = '🗂 ' + sid;
+            link.title = 'シート画像を表示: ' + (sheetPaths[sid] || '?');
+            link.dataset.sheetSrc = sheetPaths[sid] || '';
+            link.dataset.sheetCaption = sid;
+            link.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const sheetSrc = link.dataset.sheetSrc;
+              if (!sheetSrc) return;
+              const lb = document.getElementById('lightbox');
+              const lbImg = document.getElementById('lightbox-img');
+              const lbCap = document.getElementById('lightbox-caption');
+              lbImg.src = ASSET_BASE + sheetSrc;
+              lbCap.textContent = sid + ' — ' + sheetSrc;
+              lb.classList.add('show');
+            });
+            wrap.appendChild(link);
+          });
+        }
+
+        if (matched && typeof matched === 'string') {
+          // confident match (manifest hit)
+          const img = document.createElement('img');
+          img.src = ASSET_BASE + matched;
+          img.alt = String(c);
+          img.onload = () => setLoaded(matched);
+          img.onerror = () => setMissing();
+          slot.appendChild(img);
+        } else if (matched && matched.probe) {
+          // try candidates one by one until one loads
+          let i = 0;
+          const tryNext = () => {
+            if (i >= matched.probe.length) { setMissing(); return; }
+            const p = matched.probe[i++];
+            const img = document.createElement('img');
+            img.src = ASSET_BASE + p;
+            img.alt = String(c);
+            img.onload = () => { slot.innerHTML = ''; slot.appendChild(img); setLoaded(p); };
+            img.onerror = tryNext;
+          };
+          tryNext();
+        } else {
+          setMissing();
+        }
+        li.appendChild(slot);
+        li.appendChild(wrap);
+
+        ul.appendChild(li);
+      });
+      left.appendChild(ul);
+      // (miss badge は updateMissBadge() で async 更新)
+
+      if (q.detail) {
+        const det = document.createElement('div');
+        det.className = 'q-detail';
+        det.textContent = '→ ' + q.detail;
+        left.appendChild(det);
+      }
+      card.appendChild(left);
+
+      // right column: stage image preview
+      const right = document.createElement('div');
+      right.className = 'q-stage-img';
+      if (stagePath) {
+        const img = document.createElement('img');
+        img.src = stagePath;
+        img.alt = q.q;
+        img.onerror = () => { img.replaceWith(Object.assign(document.createElement('div'), { className: 'nostage', textContent: '⚠ 画像 404\n' + stagePath.replace(ASSET_BASE,'') })); };
+        right.appendChild(img);
+      } else {
+        const ph = document.createElement('div');
+        ph.className = 'nostage';
+        ph.textContent = '(stage 画像なし)';
+        right.appendChild(ph);
+      }
+      card.appendChild(right);
+
+      sec.appendChild(card);
+    });
+    root.appendChild(sec);
+  });
+
+  // 6) gallery (disk inventory if available, else manifest fallback)
+  const gallery = document.getElementById('gallery');
+  const byFolder = {};
+  const manifestIds = new Set(Object.keys(idToPath));
+  if (diskInventory && diskInventory.items) {
+    diskInventory.items.forEach(it => {
+      const folder = it.folder || '(root)';
+      if (!byFolder[folder]) byFolder[folder] = [];
+      byFolder[folder].push({ id: it.id, path: it.save_path, inManifest: manifestIds.has(it.id) });
+    });
+    // also include manifest items NOT on disk (they should appear as missing)
+    Object.entries(idToPath).forEach(([id, path]) => {
+      const folder = path.replace(/^assets\/images\/quizland\/illust\//,'').split('/').slice(0,-1).join('/') || '(root)';
+      const exists = (byFolder[folder] || []).some(x => x.id === id);
+      if (!exists) {
+        if (!byFolder[folder]) byFolder[folder] = [];
+        byFolder[folder].push({ id, path, inManifest: true, onDisk: false });
+      }
+    });
+  } else {
+    Object.entries(idToPath).forEach(([id, path]) => {
+      const folder = path.replace(/^assets\/images\/quizland\/illust\//,'').split('/').slice(0,-1).join('/') || '(root)';
+      if (!byFolder[folder]) byFolder[folder] = [];
+      byFolder[folder].push({ id, path, inManifest: true });
+    });
+  }
+  Object.keys(byFolder).sort().forEach(folder => {
+    const sec = document.createElement('div');
+    sec.className = 'gallery-folder';
+    const offCount = byFolder[folder].filter(x => !x.inManifest).length;
+    const tag = offCount > 0 ? ' <small style="font-weight:400;color:#888;">+ ' + offCount + ' manifest 外</small>' : '';
+    sec.innerHTML = '<h3>' + folder + ' (' + byFolder[folder].length + ')' + tag + '</h3>';
+    const grid = document.createElement('div');
+    grid.className = 'gallery-grid';
+    byFolder[folder].forEach(({ id, path, inManifest, onDisk }) => {
+      const item = document.createElement('div');
+      item.className = 'gallery-item';
+      if (!inManifest) item.classList.add('off-manifest');
+      const img = document.createElement('img');
+      img.src = ASSET_BASE + path;
+      img.alt = id;
+      img.onerror = () => { item.classList.add('miss'); };
+      item.appendChild(img);
+      const fn = document.createElement('div');
+      fn.className = 'filename';
+      fn.textContent = id + (!inManifest ? ' ✱' : '');
+      item.appendChild(fn);
+      item.title = path + (inManifest ? '' : ' (manifest 外)') + ' (クリックでパスをコピー)';
+      item.addEventListener('click', () => {
+        navigator.clipboard.writeText(path).then(() => {
+          const orig = fn.textContent;
+          fn.textContent = '✓ コピー';
+          setTimeout(() => { fn.textContent = orig; }, 800);
+        });
+      });
+      grid.appendChild(item);
+    });
+    sec.appendChild(grid);
+    gallery.appendChild(sec);
+  });
+
+  // 6.4) missing list rendering (defer until questions rendered, scan card data)
+  setTimeout(() => {
+    const missingByType = {};
+    document.querySelectorAll('.q-card').forEach(card => {
+      card.querySelectorAll('.choice-img.none').forEach(slot => {
+        const li = slot.closest('.choice');
+        if (!li) return;
+        const txt = li.querySelector('.c-text');
+        if (!txt) return;
+        // extract choice text (strip ★ mark and filename divs)
+        const cleanTxt = (txt.cloneNode(true));
+        cleanTxt.querySelectorAll('.ans-mark, .c-fname, .sheet-link').forEach(n => n.remove());
+        const choice = cleanTxt.textContent.trim();
+        const type = card.dataset.cat || '?';
+        if (!missingByType[type]) missingByType[type] = new Set();
+        missingByType[type].add(choice);
+      });
+    });
+    const totalMissing = Object.values(missingByType).reduce((a, s) => a + s.size, 0);
+    document.getElementById('missing-count').textContent = totalMissing;
+    const ml = document.getElementById('missing-list');
+    if (totalMissing > 0) {
+      Object.entries(missingByType).sort().forEach(([type, set]) => {
+        const block = document.createElement('div');
+        block.style.marginBottom = '8px';
+        const arr = Array.from(set).sort();
+        block.innerHTML = '<strong style="color:#7f1d1d;">' + type + '</strong> (' + arr.length + '): <span style="font-family: ui-monospace, monospace; font-size: 12px;">' + arr.map(x => '"' + x + '"').join(', ') + '</span>';
+        ml.appendChild(block);
+      });
+      const help = document.createElement('p');
+      help.style.cssText = 'margin-top:10px; padding:8px 10px; background:#fff; border-radius:6px; font-size:12px; color:#7f1d1d;';
+      help.innerHTML = '次回 Codex 依頼時はカテゴリ単位で choice set を追加してください。例: <code>choice_trivia_morning_mist_set: [あめ, きり, ゆき, くもり]</code>';
+      ml.appendChild(help);
+    }
+  }, 0);
+
+  // 6.5) duplicate list rendering
+  const dupCountEl = document.getElementById('dup-count');
+  const dupListEl = document.getElementById('dup-list');
+  const dupEntries = Object.entries(duplicates);
+  dupCountEl.textContent = dupEntries.length;
+  if (dupEntries.length > 0) {
+    const tbl = document.createElement('table');
+    tbl.style.borderCollapse = 'collapse';
+    tbl.style.width = '100%';
+    tbl.innerHTML = '<thead><tr><th style="text-align:left;padding:4px 8px;border-bottom:1px solid #f59e0b;">ID</th><th style="text-align:left;padding:4px 8px;border-bottom:1px solid #f59e0b;">回数</th><th style="text-align:left;padding:4px 8px;border-bottom:1px solid #f59e0b;">含まれるシート</th></tr></thead>';
+    const tbody = document.createElement('tbody');
+    dupEntries.sort((a, b) => b[1].length - a[1].length).forEach(([id, shts]) => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = '<td style="padding:3px 8px; font-family: ui-monospace, monospace;">' + id + '</td><td style="padding:3px 8px; font-weight:700;">' + shts.length + '×</td><td style="padding:3px 8px; font-size:11px; color:#666;">' + shts.join(', ') + '</td>';
+      tbody.appendChild(tr);
+    });
+    tbl.appendChild(tbody);
+    dupListEl.appendChild(tbl);
+    const note = document.createElement('p');
+    note.style.cssText = 'margin-top:10px; font-size:12px; color:#92400e;';
+    note.textContent = '次回 Codex 依頼時には、これら ID は 1 シートだけで生成 → 他シートでは "reference: <sheet>" で参照させると無駄が無くなります。';
+    dupListEl.appendChild(note);
+  }
+
+  // 7) stats + filters
+  // truly_missing = ディスク上に無い画像 (handoff_audit ベース)
+  const trulyMissingCount = handoffAudit ? (handoffAudit.truly_missing || []).length : null;
+  const trulyMissingDetail = handoffAudit && handoffAudit.truly_missing
+    ? handoffAudit.truly_missing.map(x => x.id).join(', ')
+    : '';
+
+  const sourceLabel = imageManifest
+    ? '<span class="stat-pill ok" title="image_manifest.json from Codex audit">📦 manifest v' + manifestSchemaVersion + ': ' + imageManifest.images.length + ' entries</span>'
+    : '<span class="stat-pill" style="color:#888;">manifest 未配置 (legacy mode)</span>';
+  document.getElementById('stats').innerHTML =
+    '<span class="stat-pill">問題数: ' + totalQ + '</span>' +
+    '<span class="stat-pill ok">stage 画像有: ' + qWithStage + '</span>' +
+    sourceLabel +
+    (trulyMissingCount === null
+      ? '<span class="stat-pill">未生成 (handoff): 不明 (audit JSON 未配置)</span>'
+      : '<span class="stat-pill ' + (trulyMissingCount === 0 ? 'ok' : 'miss') + '" title="' + trulyMissingDetail + '">未生成 (handoff): ' + trulyMissingCount + '</span>');
+
+  function applyFilters() {
+    const term = document.getElementById('q-search').value.toLowerCase().trim();
+    const cat = document.getElementById('q-cat').value;
+    const lv = document.getElementById('q-lv').value;
+    const onlyMiss = document.getElementById('q-only-img-missing').checked;
+    document.querySelectorAll('.q-card').forEach(c => {
+      let show = true;
+      if (term && !c.dataset.searchText.includes(term)) show = false;
+      if (cat && c.dataset.cat !== cat) show = false;
+      if (lv && c.dataset.lv !== lv) show = false;
+      if (onlyMiss && !c.dataset.imgMissing) show = false;
+      c.classList.toggle('hide', !show);
+    });
+  }
+  ['q-search','q-cat','q-lv','q-only-img-missing'].forEach(id => {
+    document.getElementById(id).addEventListener('input', applyFilters);
+    document.getElementById(id).addEventListener('change', applyFilters);
+  });
+})();
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+</script>
+</body>
+</html>

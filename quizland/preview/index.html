@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Quizland Layout Preview</title>
+<style>
+:root {
+  --slot-size: 130px;
+  --slot-color: #E0E0E0;
+  --slot-radius: 16px;
+  --gap: 16px;
+  --padding: 16px;
+  --board-w: 810px;
+  --board-h: 450px;
+  --bg: #1E1E1E;
+  --text: #F0F0F0;
+  --label: #999;
+  --frame-border: rgba(138, 56, 245, 0.6);
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, "Hiragino Sans", "Yu Gothic", sans-serif;
+  font-size: 14px;
+}
+.page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+h1 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+h2 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 32px 0 12px;
+  color: #B7A8FF;
+}
+.note {
+  color: var(--label);
+  font-size: 12px;
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 16px 0 24px;
+  align-items: center;
+}
+.controls label {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  font-size: 12px;
+}
+.controls input[type="number"] {
+  width: 60px;
+  padding: 4px 6px;
+  background: #2a2a2a;
+  border: 1px solid #444;
+  color: #fff;
+  border-radius: 4px;
+}
+
+/* ───────── 問題ボード (810×450 frame) ───────── */
+.board-card {
+  margin-bottom: 36px;
+}
+.board-label {
+  font-size: 12px;
+  color: var(--label);
+  margin-bottom: 6px;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+}
+.board {
+  width: var(--board-w);
+  height: var(--board-h);
+  border: 1px dashed var(--frame-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: rgba(255, 255, 255, 0.02);
+}
+/* 親が viewport より広い場合のスクロール対応 */
+.board-wrap {
+  overflow: auto;
+  padding: 4px 4px 12px;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* ───────── ItemSlot ───────── */
+.slot {
+  width: var(--slot-size);
+  height: var(--slot-size);
+  background: var(--slot-color);
+  border-radius: var(--slot-radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #888;
+  font-size: 14px;
+  flex: 0 0 auto;
+}
+
+/* ───────── Row 系 (order_color 用) ───────── */
+.row {
+  display: flex;
+  gap: var(--gap);
+  align-items: center;
+  justify-content: center;
+}
+
+/* ───────── Grid 系 (count_total 用) ───────── */
+.grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  align-items: center;
+  justify-content: center;
+}
+.grid .row {
+  gap: var(--gap);
+}
+
+/* ───────── Section ───────── */
+.section {
+  margin-bottom: 48px;
+}
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 16px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.section-meta {
+  font-size: 12px;
+  color: var(--label);
+}
+
+/* ───────── Scale (small previews to fit screen) ───────── */
+.scale-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+.scaled-preview {
+  --scale: 0.5;
+  width: calc(var(--board-w) * var(--scale));
+  height: calc(var(--board-h) * var(--scale));
+  position: relative;
+}
+.scaled-preview .board {
+  transform: scale(var(--scale));
+  transform-origin: top left;
+}
+@media (max-width: 900px) {
+  .scaled-preview { --scale: 0.35; }
+}
+@media (max-width: 600px) {
+  .scaled-preview { --scale: 0.28; }
+}
+
+/* ───────── Toggle full-size view ───────── */
+.fullsize-section .board {
+  transform: none;
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>Quizland 問題ボード レイアウト確認</h1>
+<p class="note">
+ItemSlot = 130×130 (固定 / 角丸 16) ／ 問題ボード親 = 810×450 ／ gap 16 / padding 16<br>
+紫の点線が問題ボードの枠 (実際のゲームでは透明)。 灰色の四角がスロット (実装時はランドセル等のイラストに差替)。<br>
+スマホで確認するときはピンチでズームしてください。 サイズ調整が必要なら <code>--slot-size</code> や <code>--gap</code> を CSS で変更できます。
+</p>
+
+<!-- 全 Variant を実寸表示 -->
+
+<div class="section">
+  <div class="section-head">
+    <h2>横並び系 (order_color 問題ボード)</h2>
+    <div class="section-meta">Variants: count = 3 / 4 / 5</div>
+  </div>
+
+  <!-- count=3 -->
+  <div class="board-card">
+    <div class="board-label">count = 3 (横並び)</div>
+    <div class="board-wrap">
+      <div class="board">
+        <div class="row">
+          <div class="slot">slot</div>
+          <div class="slot">slot</div>
+          <div class="slot">slot</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- count=4 -->
+  <div class="board-card">
+    <div class="board-label">count = 4 (横並び)</div>
+    <div class="board-wrap">
+      <div class="board">
+        <div class="row">
+          <div class="slot">slot</div>
+          <div class="slot">slot</div>
+          <div class="slot">slot</div>
+          <div class="slot">slot</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- count=5 -->
+  <div class="board-card">
+    <div class="board-label">count = 5 (横並び)</div>
+    <div class="board-wrap">
+      <div class="board">
+        <div class="row">
+          <div class="slot">slot</div>
+          <div class="slot">slot</div>
+          <div class="slot">slot</div>
+          <div class="slot">slot</div>
+          <div class="slot">slot</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-head">
+    <h2>グリッド系 (count_total 問題ボード)</h2>
+    <div class="section-meta">Variants: count = 1〜9</div>
+  </div>
+
+  <!-- count=1 -->
+  <div class="board-card">
+    <div class="board-label">count = 1 (中央 1 個)</div>
+    <div class="board-wrap">
+      <div class="board">
+        <div class="row">
+          <div class="slot">slot</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- count=2 -->
+  <div class="board-card">
+    <div class="board-label">count = 2 (横 2 個)</div>
+    <div class="board-wrap">
+      <div class="board">
+        <div class="row">
+          <div class="slot">slot</div>
+          <div class="slot">slot</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- count=3 -->
+  <div class="board-card">
+    <div class="board-label">count = 3 (横 3 個)</div>
+    <div class="board-wrap">
+      <div class="board">
+        <div class="row">
+          <div class="slot">slot</div>
+          <div class="slot">slot</div>
+          <div class="slot">slot</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- count=4 -->
+  <div class="board-card">
+    <div class="board-label">count = 4 (2×2 グリッド)</div>
+    <div class="board-wrap">
+      <div class="board">
+        <div class="grid">
+          <div class="row">
+            <div class="slot">slot</div>
+            <div class="slot">slot</div>
+          </div>
+          <div class="row">
+            <div class="slot">slot</div>
+            <div class="slot">slot</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- count=5 -->
+  <div class="board-card">
+    <div class="board-label">count = 5 (上 3 + 下 2)</div>
+    <div class="board-wrap">
+      <div class="board">
+        <div class="grid">
+          <div class="row">
+            <div class="slot">slot</div>
+            <div class="slot">slot</div>
+            <div class="slot">slot</div>
+          </div>
+          <div class="row">
+            <div class="slot">slot</div>
+            <div class="slot">slot</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- count=6 -->
+  <div class="board-card">
+    <div class="board-label">count = 6 (3×2 グリッド)</div>
+    <div class="board-wrap">
+      <div class="board">
+        <div class="grid">
+          <div class="row">
+            <div class="slot">slot</div>
+            <div class="slot">slot</div>
+            <div class="slot">slot</div>
+          </div>
+          <div class="row">
+            <div class="slot">slot</div>
+            <div class="slot">slot</div>
+            <div class="slot">slot</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- count=7 -->
+  <div class="board-card">
+    <div class="board-label">count = 7 (上 4 + 下 3)</div>
+    <div class="board-wrap">
+      <div class="board">
+        <div class="grid">
+          <div class="row">
+            <div class="slot">slot</div>
+            <div class="slot">slot</div>
+            <div class="slot">slot</div>
+            <div class="slot">slot</div>
+          </div>
+          <div class="row">
+            <div class="slot">slot</div>
+            <div class="slot">slot</div>
+            <div class="slot">slot</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- count=8 -->
+  <div class="board-card">
+    <div class="board-label">count = 8 (4×2 グリッド)</div>
+    <div class="board-wrap">
+      <div class="board">
+        <div class="grid">
+          <div class="row">
+            <div class="slot">slot</div>
+            <div class="slot">slot</div>
+            <div class="slot">slot</div>
+            <div class="slot">slot</div>
+          </div>
+          <div class="row">
+            <div class="slot">slot</div>
+            <div class="slot">slot</div>
+            <div class="slot">slot</div>
+            <div class="slot">slot</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- count=9 -->
+  <div class="board-card">
+    <div class="board-label">count = 9 (3×3 グリッド)</div>
+    <div class="board-wrap">
+      <div class="board">
+        <div class="grid">
+          <div class="row">
+            <div class="slot">slot</div>
+            <div class="slot">slot</div>
+            <div class="slot">slot</div>
+          </div>
+          <div class="row">
+            <div class="slot">slot</div>
+            <div class="slot">slot</div>
+            <div class="slot">slot</div>
+          </div>
+          <div class="row">
+            <div class="slot">slot</div>
+            <div class="slot">slot</div>
+            <div class="slot">slot</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+</body>
+</html>

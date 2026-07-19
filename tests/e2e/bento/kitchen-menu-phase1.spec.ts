@@ -1,0 +1,170 @@
+import { expect, test } from '@playwright/test';
+
+async function openCookMenu(page: import('@playwright/test').Page) {
+  await page.setViewportSize({ width: 844, height: 390 });
+  await page.addInitScript(() => {
+    (window as Window & { __APP_BUILD__?: number }).__APP_BUILD__ = 1;
+    localStorage.setItem('bentoUnlockedIngredients', JSON.stringify(['carrot', 'green_bean', 'potato', 'mince_patty', 'onion']));
+    localStorage.setItem('bentoUnlockedRecipes', JSON.stringify(['ninjin_ingen', 'kinpira', 'korokke', 'meatball']));
+  });
+  await page.goto('/bento/kitchen.html', { waitUntil: 'domcontentloaded' });
+  await page.locator('#mode-cook-btn').click({ force: true });
+  await expect(page.locator('body')).toHaveAttribute('data-screen', 'fridge');
+}
+
+test('ninjin ingen pieces spread and move when the spatula is dragged', async ({ page }) => {
+  await openCookMenu(page);
+  await page.locator('.recipe-card[data-recipe-id="ninjin_ingen"]').click({ force: true });
+  await expect(page.locator('body')).toHaveAttribute('data-screen', 'grill');
+  await expect.poll(() => page.evaluate(() => Boolean((window as Window & { __bentoState?: { cookPreheated?: boolean } }).__bentoState?.cookPreheated))).toBe(true);
+
+  const tray = page.locator('#stir-fry-tray-pieces');
+  await expect(tray.locator('img')).toHaveCount(7);
+  await tray.dragTo(page.locator('.grill-pan'), { force: true });
+  await expect.poll(() => page.evaluate(() => (window as Window & { __bentoState?: { stirFryPhase?: string; stirFryPieces?: unknown[] } }).__bentoState && ({
+    phase: (window as Window & { __bentoState?: { stirFryPhase?: string } }).__bentoState?.stirFryPhase,
+    pieces: (window as Window & { __bentoState?: { stirFryPieces?: unknown[] } }).__bentoState?.stirFryPieces?.length,
+  }))).toEqual({ phase: 'green_bean', pieces: 9 });
+  await expect(tray.locator('img').first()).toHaveAttribute('src', /green_bean_piece_/);
+  await expect.poll(() => page.evaluate(() => !(window as Window & { __bentoState?: { stirFryPieces?: Array<{ image?: HTMLImageElement }> } }).__bentoState?.stirFryPieces?.some(piece => piece.image?.src.includes('green_bean_piece_')))).toBe(true);
+  await tray.dragTo(page.locator('.grill-pan'), { force: true });
+  await expect(page.locator('#grill-stage')).toHaveClass(/stir-fry-active/);
+  await expect(page.locator('#stir-fry-spatula')).toHaveCSS('background-image', /tools\/saibashi\.png/);
+  await expect(page.locator('#stir-fry-canvas')).toHaveAttribute('aria-label', 'さいばしを うごかして ぐざいを まぜよう');
+  await expect.poll(() => page.evaluate(() => (window as Window & { __bentoState?: { stirFryPieces?: unknown[] } }).__bentoState?.stirFryPieces?.length || 0)).toBe(18);
+
+  const canvas = page.locator('#stir-fry-canvas');
+  const box = await canvas.boundingBox();
+  expect(box).not.toBeNull();
+  if (!box) return;
+  await expect.poll(() => page.evaluate(({ x, y }) => (document.elementFromPoint(x, y) as HTMLElement | null)?.id || '', {
+    x: box.x + box.width * .5,
+    y: box.y + box.height * .5,
+  })).toBe('stir-fry-canvas');
+  await page.mouse.move(box.x + box.width * .2, box.y + box.height * .5);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * .75, box.y + box.height * .5, { steps: 8 });
+  await page.mouse.up();
+  await expect.poll(() => page.evaluate(() => {
+    const state = (window as Window & { __bentoState?: { stirFryDistance?: number; stirFryMoved?: Set<number> } }).__bentoState;
+    return { distance: Math.round(state?.stirFryDistance || 0), moved: state?.stirFryMoved?.size || 0 };
+  })).toMatchObject({ distance: expect.any(Number), moved: expect.any(Number) });
+  const moved = await page.evaluate(() => (window as Window & { __bentoState?: { stirFryMoved?: Set<number> } }).__bentoState?.stirFryMoved?.size || 0);
+  expect(moved).toBeGreaterThan(0);
+  await canvas.focus();
+  for (let i = 0; i < 12; i += 1) await canvas.press('Space');
+  await expect.poll(() => page.evaluate(() => Boolean((window as Window & { __bentoState?: { cookServed?: boolean } }).__bentoState?.cookServed))).toBe(false);
+  await page.waitForTimeout(7100);
+  await canvas.press('Space');
+  await expect.poll(() => page.evaluate(() => Boolean((window as Window & { __bentoState?: { cookServed?: boolean } }).__bentoState?.cookServed))).toBe(true);
+  await expect(page.locator('#grilling-food')).toHaveAttribute('src', '../assets/images/bento/free-layout/okazu_ninjin_ingen.png');
+});
+
+test('kinpira adds carrot then gobo matchsticks before stirring', async ({ page }) => {
+  await openCookMenu(page);
+  await page.locator('.recipe-card[data-recipe-id="kinpira"]').click({ force: true });
+  await expect(page.locator('body')).toHaveAttribute('data-screen', 'grill');
+  await expect.poll(() => page.evaluate(() => Boolean((window as Window & { __bentoState?: { cookPreheated?: boolean } }).__bentoState?.cookPreheated))).toBe(true);
+  const tray = page.locator('#stir-fry-tray-pieces');
+  await tray.dragTo(page.locator('.grill-pan'), { force: true });
+  await expect.poll(() => page.evaluate(() => (window as Window & { __bentoState?: { stirFryPhase?: string; stirFryPieces?: unknown[] } }).__bentoState && ({
+    phase: (window as Window & { __bentoState?: { stirFryPhase?: string } }).__bentoState?.stirFryPhase,
+    pieces: (window as Window & { __bentoState?: { stirFryPieces?: unknown[] } }).__bentoState?.stirFryPieces?.length,
+  }))).toEqual({ phase: 'gobo', pieces: 9 });
+  await expect(tray).toHaveAttribute('aria-label', 'ごぼうを フライパンへ いれよう');
+  await expect(tray.locator('img').first()).toHaveAttribute('src', /kinpira\/pieces\/gobo_matchstick_/);
+  await tray.dragTo(page.locator('.grill-pan'), { force: true });
+  await expect(page.locator('#grill-stage')).toHaveClass(/stir-fry-active/);
+  await expect.poll(() => page.evaluate(() => {
+    const pieces = (window as Window & { __bentoState?: { stirFryPieces?: Array<{ kind?: string }> } }).__bentoState?.stirFryPieces || [];
+    return { total: pieces.length, gobo: pieces.filter(piece => piece.kind === 'gobo').length };
+  })).toEqual({ total: 18, gobo: 9 });
+  const canvas = page.locator('#stir-fry-canvas');
+  await canvas.focus();
+  for (let i = 0; i < 12; i += 1) await canvas.press('Space');
+  await expect.poll(() => page.evaluate(() => Boolean((window as Window & { __bentoState?: { cookServed?: boolean } }).__bentoState?.cookServed))).toBe(false);
+  await page.waitForTimeout(7100);
+  await canvas.press('Space');
+  await expect.poll(() => page.evaluate(() => Boolean((window as Window & { __bentoState?: { cookServed?: boolean } }).__bentoState?.cookServed))).toBe(true);
+  await expect(page.locator('#grilling-food')).toHaveAttribute('src', /kinpira\/kinpira_mid\.png/);
+});
+
+test('ninjin ingen individual pieces have transparent corners', async ({ page }) => {
+  await openCookMenu(page);
+  const assetAudit = await page.evaluate(async () => {
+    const files = [
+      ...Array.from({ length: 11 }, (_, i) => `carrot_baton_${String(i + 1).padStart(2, '0')}.png`),
+      ...Array.from({ length: 10 }, (_, i) => `green_bean_piece_${String(i + 1).padStart(2, '0')}.png`),
+    ];
+    const bad: string[] = [];
+    const edgeTouches: string[] = [];
+    const beanRatios: number[] = [];
+    for (const file of files) {
+      const image = new Image();
+      image.src = `/assets/images/bento/cooking/ninjin_ingen/pieces/${file}`;
+      await image.decode();
+      const canvas = document.createElement('canvas');
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(image, 0, 0);
+      const corners = [
+        ctx.getImageData(0, 0, 1, 1).data[3],
+        ctx.getImageData(canvas.width - 1, 0, 1, 1).data[3],
+        ctx.getImageData(0, canvas.height - 1, 1, 1).data[3],
+        ctx.getImageData(canvas.width - 1, canvas.height - 1, 1, 1).data[3],
+      ];
+      if (corners.some(alpha => alpha !== 0)) bad.push(file);
+      if (file.startsWith('green_bean_')) {
+        beanRatios.push(canvas.width / canvas.height);
+        const pixels = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        let touches = false;
+        for (let x = 0; x < canvas.width && !touches; x += 1) {
+          touches = pixels[x * 4 + 3] !== 0 || pixels[((canvas.height - 1) * canvas.width + x) * 4 + 3] !== 0;
+        }
+        for (let y = 0; y < canvas.height && !touches; y += 1) {
+          touches = pixels[(y * canvas.width) * 4 + 3] !== 0 || pixels[(y * canvas.width + canvas.width - 1) * 4 + 3] !== 0;
+        }
+        if (touches) edgeTouches.push(file);
+      }
+    }
+    return { bad, edgeTouches, beanRatios };
+  });
+  expect(assetAudit.bad).toEqual([]);
+  expect(assetAudit.edgeTouches).toEqual([]);
+  expect(Math.min(...assetAudit.beanRatios)).toBeGreaterThan(1.8);
+});
+
+for (const recipeId of ['ninjin_ingen', 'kinpira']) {
+  test(`${recipeId} keeps its selected carrot result`, async ({ page }) => {
+    await openCookMenu(page);
+    await page.locator(`.recipe-card[data-recipe-id="${recipeId}"]`).click({ force: true });
+    await expect.poll(() => page.evaluate(() => {
+      const state = (window as Window & { __bentoState?: Record<string, unknown> }).__bentoState!;
+      return { recipe: state.activeRecipeId, ingredient: (state.current as { id?: string })?.id, action: state.actionIndex };
+    })).toEqual({ recipe: recipeId, ingredient: 'carrot', action: 1 });
+    await expect(page.locator('#grilling-food')).toHaveAttribute('src', recipeId === 'ninjin_ingen'
+      ? /ninjin_ingen\/cutting\/carrot_pieces\.png/
+      : /carrot\/carrot_pieces_mid\.png/);
+  });
+}
+
+test('korokke recipe starts from cutting potato', async ({ page }) => {
+  await openCookMenu(page);
+  await page.locator('.recipe-card[data-recipe-id="korokke"]').click({ force: true });
+  await expect.poll(() => page.evaluate(() => {
+    const state = (window as Window & { __bentoState?: Record<string, unknown> }).__bentoState!;
+    return { recipe: state.activeRecipeId, ingredient: (state.current as { id?: string })?.id, action: state.actionIndex };
+  })).toEqual({ recipe: 'korokke', ingredient: 'potato', action: 0 });
+  await expect(page.locator('body')).toHaveAttribute('data-screen', 'chop');
+});
+
+test('phase 1 recipe cards use current bento completion art', async ({ page }) => {
+  await openCookMenu(page);
+  await expect(page.locator('.recipe-card[data-recipe-id="meatball"] .recipe-img'))
+    .toHaveAttribute('src', '../assets/images/bento/cooking/meatball/meatball_003_done.png');
+  await expect(page.locator('.recipe-card[data-recipe-id="yakizake"] .recipe-img'))
+    .toHaveAttribute('src', '../assets/images/bento/cooking/salmon/salmon_half_003_done.png');
+  await expect(page.locator('.recipe-card[data-recipe-id="kinpira"] .recipe-img'))
+    .toHaveAttribute('src', '../assets/images/bento/cooking/kinpira/kinpira_mid.png');
+});

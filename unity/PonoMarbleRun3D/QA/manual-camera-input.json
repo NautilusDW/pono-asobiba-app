@@ -1,0 +1,46 @@
+{
+  "passed": true,
+  "platform": "macOS player",
+  "input": "CGEvent mouse drag, wheel, and button click",
+  "screen": "1280x720",
+  "mode": "starter",
+  "piece_count": 28,
+  "before": {
+    "state": "Running",
+    "camera_follow": true,
+    "camera_yaw": 34.00,
+    "camera_pitch": 48.00,
+    "camera_distance": 27.22
+  },
+  "after_drag": {
+    "state": "Running",
+    "camera_follow": true,
+    "camera_yaw": 55.00,
+    "camera_pitch": 56.48,
+    "camera_distance": 27.22
+  },
+  "after_wheel": {
+    "state": "Running",
+    "camera_follow": true,
+    "camera_yaw": 55.00,
+    "camera_pitch": 56.48,
+    "camera_distance": 17.00
+  },
+  "after_overview_click": {
+    "state": "Running",
+    "camera_follow": false,
+    "camera_distance": 43.91,
+    "status": "○  コースを みわたすよ"
+  },
+  "after_refollow_click": {
+    "state": "Running",
+    "camera_follow": true,
+    "camera_distance": 27.22,
+    "status": "○  たまを おいかけるよ"
+  },
+  "after_goal_return": {
+    "state": "Editing",
+    "edit_actions_visible": true,
+    "run_actions_visible": false
+  }
+}

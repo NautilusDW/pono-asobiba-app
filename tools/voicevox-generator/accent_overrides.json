@@ -1,0 +1,329 @@
+{
+  "schema_version": 1,
+  "speaker_id": 10,
+  "source": "docs/quizland-voicevox-order/COWORK-TEST-ORDER.md (漢字混じり、辞書 65 語、v4 辞書反映確認版)",
+  "generated_by": "Claude Code (4 サイクル目)",
+  "generated_at": "2026-05-11T11:19:48Z",
+  "items": [
+    {
+      "id": "q001_q",
+      "text": "真ん中は何色？",
+      "patches": [
+        {
+          "phrase_index": 0,
+          "mora_signature": "マンナカワ",
+          "accent": 0,
+          "confidence": "high",
+          "note": "平板 (5モーラ「真ん中は」、辞書「真ん中」反映、平板維持)"
+        },
+        {
+          "phrase_index": 1,
+          "mora_signature": "ナンショク",
+          "accent": 0,
+          "confidence": "low",
+          "note": "⚠ 辞書「何色 → ナニイロ」未反映 (まだ「ナンショク」と推定中)。暫定で平板化のみ実施。本来は「ナニイロ accent=0」にしたい"
+        }
+      ],
+      "needs_listen": false,
+      "warning": "⚠ 辞書「何色 → ナニイロ」が VOICEVOX に反映されていません (4 サイクル目でも「ナンショク」と推定中)。VOICEVOX エディタの「設定→読み方&アクセント辞書」で「何色」の登録状態を確認、または辞書再インポート/エディタ完全再起動が必要"
+    },
+    {
+      "id": "q001_a",
+      "text": "あか",
+      "patches": [
+        {
+          "phrase_index": 0,
+          "mora_signature": "アカ",
+          "accent": 0,
+          "confidence": "high",
+          "note": "平板 (NHK)"
+        }
+      ],
+      "needs_listen": false
+    },
+    {
+      "id": "q001_b",
+      "text": "あお",
+      "patches": [
+        {
+          "phrase_index": 0,
+          "mora_signature": "アオ",
+          "accent": 0,
+          "confidence": "high",
+          "note": "平板 (NHK)"
+        }
+      ],
+      "needs_listen": false
+    },
+    {
+      "id": "q001_c",
+      "text": "きいろ",
+      "patches": [
+        {
+          "phrase_index": 0,
+          "mora_signature": "キイロ",
+          "accent": 0,
+          "confidence": "high",
+          "note": "平板 (NHK 辞書整合)"
+        }
+      ],
+      "needs_listen": false
+    },
+    {
+      "id": "q001_d",
+      "text": "みどり",
+      "patches": [
+        {
+          "phrase_index": 0,
+          "mora_signature": "ミドリ",
+          "accent": 0,
+          "confidence": "high",
+          "note": "平板 (NHK 辞書整合)"
+        }
+      ],
+      "needs_listen": false
+    },
+    {
+      "id": "q024_q",
+      "text": "りんごはいくつ？",
+      "patches": [
+        {
+          "phrase_index": 0,
+          "mora_signature": "リンゴワ",
+          "accent": 0,
+          "confidence": "high",
+          "note": "平板 (4モーラ「りんごは」、平板維持)"
+        }
+      ],
+      "needs_listen": false
+    },
+    {
+      "id": "q024_a",
+      "text": "ふたつ",
+      "patches": [
+        {
+          "phrase_index": 0,
+          "mora_signature": "フタツ",
+          "accent": 2,
+          "confidence": "high",
+          "note": "中高 ふた'つ"
+        }
+      ],
+      "needs_listen": false
+    },
+    {
+      "id": "q024_b",
+      "text": "みっつ",
+      "patches": [],
+      "needs_listen": false
+    },
+    {
+      "id": "q024_c",
+      "text": "よっつ",
+      "patches": [],
+      "needs_listen": false
+    },
+    {
+      "id": "q024_d",
+      "text": "いつつ",
+      "patches": [],
+      "needs_listen": false
+    },
+    {
+      "id": "q095_q",
+      "text": "大きいの反対は？",
+      "patches": [
+        {
+          "phrase_index": 1,
+          "mora_signature": "ハンタイワ",
+          "accent": 0,
+          "confidence": "high",
+          "note": "平板 (5モーラ「反対は」、平板維持)"
+        }
+      ],
+      "needs_listen": false
+    },
+    {
+      "id": "q095_a",
+      "text": "赤い",
+      "patches": [
+        {
+          "phrase_index": 0,
+          "mora_signature": "アカイ",
+          "accent": 0,
+          "confidence": "high",
+          "note": "平板 (子供向け; NHK は 0 / 2 併存、平板を採用)"
+        }
+      ],
+      "needs_listen": false
+    },
+    {
+      "id": "q095_b",
+      "text": "丸い",
+      "patches": [
+        {
+          "phrase_index": 0,
+          "mora_signature": "マルイ",
+          "accent": 0,
+          "confidence": "high",
+          "note": "平板 (NHK)"
+        }
+      ],
+      "needs_listen": false
+    },
+    {
+      "id": "q095_c",
+      "text": "小さい",
+      "patches": [],
+      "needs_listen": false
+    },
+    {
+      "id": "q095_d",
+      "text": "優しい",
+      "patches": [
+        {
+          "phrase_index": 0,
+          "mora_signature": "ヤサシイ",
+          "accent": 0,
+          "confidence": "high",
+          "note": "平板 (NHK 標準は 0)"
+        }
+      ],
+      "needs_listen": false
+    },
+    {
+      "id": "q160_q",
+      "text": "息を吸うのは体のどこ？",
+      "patches": [
+        {
+          "phrase_index": 0,
+          "mora_signature": "イキオ",
+          "accent": 0,
+          "confidence": "high",
+          "note": "平板 いきお (3モーラ「息を」、子供向け平板)"
+        },
+        {
+          "phrase_index": 1,
+          "mora_signature": "スウ",
+          "accent": 1,
+          "confidence": "high",
+          "note": "頭高 す'う (動詞「吸う」)"
+        },
+        {
+          "phrase_index": 3,
+          "mora_signature": "カラダノ",
+          "accent": 0,
+          "confidence": "high",
+          "note": "平板 (4モーラ「体の」、平板維持)"
+        }
+      ],
+      "needs_listen": false
+    },
+    {
+      "id": "q160_a",
+      "text": "肺",
+      "patches": [
+        {
+          "phrase_index": 0,
+          "mora_signature": "ハイ",
+          "accent": 1,
+          "confidence": "high",
+          "note": "頭高 は'い (医学用語「肺」)"
+        }
+      ],
+      "needs_listen": true
+    },
+    {
+      "id": "q160_b",
+      "text": "胃",
+      "patches": [],
+      "needs_listen": true
+    },
+    {
+      "id": "q160_c",
+      "text": "心",
+      "patches": [],
+      "needs_listen": true
+    },
+    {
+      "id": "q160_d",
+      "text": "指",
+      "patches": [],
+      "needs_listen": true
+    },
+    {
+      "id": "q160_a_alt",
+      "text": "臓器の肺",
+      "patches": [
+        {
+          "phrase_index": 1,
+          "mora_signature": "ハイ",
+          "accent": 1,
+          "confidence": "high",
+          "note": "頭高 は'い (医学用語「肺」)"
+        }
+      ],
+      "needs_listen": true
+    },
+    {
+      "id": "q160_b_alt",
+      "text": "胃袋の胃",
+      "patches": [
+        {
+          "phrase_index": 0,
+          "mora_signature": "イブクロノ",
+          "accent": 0,
+          "confidence": "medium",
+          "note": "平板 (5モーラ「胃袋の」、子供向けは平板優勢)"
+        }
+      ],
+      "needs_listen": true
+    },
+    {
+      "id": "q170_q",
+      "text": "2の次は？",
+      "patches": [
+        {
+          "phrase_index": 1,
+          "mora_signature": "ツギワ",
+          "accent": 1,
+          "confidence": "high",
+          "note": "頭高 つ'ぎは (次は)"
+        }
+      ],
+      "needs_listen": false
+    },
+    {
+      "id": "q170_a",
+      "text": "2",
+      "patches": [],
+      "needs_listen": true
+    },
+    {
+      "id": "q170_b",
+      "text": "3",
+      "patches": [
+        {
+          "phrase_index": 0,
+          "mora_signature": "サン",
+          "accent": 1,
+          "confidence": "high",
+          "note": "頭高 さ'ん (撥音含む2モーラは頭高)"
+        }
+      ],
+      "needs_listen": true
+    },
+    {
+      "id": "q170_c",
+      "text": "4",
+      "patches": [],
+      "needs_listen": true
+    },
+    {
+      "id": "q170_d",
+      "text": "5",
+      "patches": [],
+      "needs_listen": true
+    }
+  ]
+}

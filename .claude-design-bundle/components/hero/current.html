@@ -1,0 +1,439 @@
+<!-- @dsCard group="Hero" -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BASELINE: 現状ヒーロー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FFF8F0;
+    --primary: #F2915A;
+    --primary-light: #FDDCBF;
+    --text: #5D4E37;
+    --text-light: #A89880;
+    --shadow: rgba(93, 78, 55, 0.12);
+    --radius: 24px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
+    color: var(--text);
+    background: #F1ECE4;
+    min-height: 100vh;
+  }
+
+  /* ===== Preview wrapper ===== */
+  .preview-stage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    padding: 32px 16px 48px;
+  }
+
+  .caption {
+    max-width: 480px;
+    width: 100%;
+    text-align: left;
+    color: var(--text);
+    font-weight: 900;
+  }
+
+  .caption-title {
+    display: inline-block;
+    font-size: 0.78rem;
+    letter-spacing: 0.12em;
+    background: #5D4E37;
+    color: #FFF8F0;
+    padding: 4px 10px;
+    border-radius: 999px;
+    margin-bottom: 10px;
+  }
+
+  .caption-main {
+    font-size: 1.15rem;
+    font-weight: 900;
+    margin: 0 0 12px;
+    color: var(--text);
+  }
+
+  .issue-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .issue-list li {
+    background: #FFF3F3;
+    border: 1px solid #E57373;
+    color: #D32F2F;
+    padding: 8px 12px;
+    border-radius: 10px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+
+  .issue-list li .num {
+    display: inline-block;
+    background: #D32F2F;
+    color: #fff;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 18px;
+    font-size: 0.7rem;
+    margin-right: 8px;
+    vertical-align: 1px;
+  }
+
+  /* ===== Device frame (mobile 390px) ===== */
+  .device-frame {
+    width: 390px;
+    max-width: 100%;
+    background: var(--bg);
+    border-radius: 36px;
+    border: 10px solid #2C2418;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25), 0 0 0 2px #44382A inset;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .device-notch {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 22px;
+    background: #2C2418;
+    border-radius: 0 0 16px 16px;
+    z-index: 10;
+  }
+
+  .device-scroll {
+    height: 760px;
+    overflow-y: auto;
+    background: var(--bg);
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(253,220,191,0.6), transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(253,230,138,0.4), transparent 60%);
+  }
+
+  /* ===== Original index.html hero styles (replicated) ===== */
+  .page {
+    padding: 28px 16px 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 540px;
+    margin: 0 auto;
+  }
+
+  /* Amazon banner */
+  .hero-amazon {
+    display: block;
+    width: 100%;
+    max-width: 540px;
+    margin: 0 auto;
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: 0 4px 16px var(--shadow);
+    text-decoration: none;
+  }
+  .hero-amazon img,
+  .hero-amazon picture {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  /* Placeholder for amazon image so preview shows something */
+  .hero-amazon .amazon-fallback {
+    background: linear-gradient(135deg, #FF9900 0%, #FFB84D 100%);
+    color: #1a1a1a;
+    text-align: center;
+    padding: 28px 16px;
+    font-weight: 900;
+    font-size: 1rem;
+    letter-spacing: 0.04em;
+    line-height: 1.4;
+  }
+  .hero-amazon .amazon-fallback small {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    margin-top: 6px;
+    opacity: 0.8;
+  }
+
+  /* Video */
+  .video-section {
+    max-width: 540px;
+    width: 100%;
+    margin: 0 auto;
+    text-align: center;
+  }
+  .video-label {
+    font-weight: 900;
+    font-size: 0.95rem;
+    color: var(--primary);
+    margin: 0 0 8px;
+  }
+  .video-wrap {
+    position: relative;
+    width: 100%;
+    padding-top: 56.25%;
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 16px var(--shadow);
+    background: #000;
+  }
+  .video-wrap iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
+
+  /* Enter button */
+  .enter-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    width: 100%;
+    max-width: 540px;
+    margin: 4px auto 0;
+    padding: 12px 32px;
+    background: rgba(255,255,255,0.92);
+    color: var(--primary);
+    border: 3px solid var(--primary-light);
+    border-radius: 28px;
+    text-decoration: none;
+    box-shadow: 0 6px 20px var(--shadow);
+    animation: enter-pulse 2.4s ease-in-out infinite;
+  }
+  .enter-btn-main {
+    font-weight: 900;
+    font-size: clamp(1.4rem, 5.2vw, 1.9rem);
+    letter-spacing: 0.08em;
+    line-height: 1.15;
+  }
+  .enter-btn-iri {
+    font-weight: 900;
+    font-size: clamp(1rem, 4vw, 1.3rem);
+    letter-spacing: 0.18em;
+  }
+  .enter-btn-sub {
+    text-align: center;
+    color: var(--text-light);
+    font-weight: 700;
+    font-size: 0.85rem;
+    margin-top: 2px;
+  }
+  @keyframes enter-pulse {
+    0%, 100% { box-shadow: 0 6px 20px var(--shadow); }
+    50%      { box-shadow: 0 10px 26px rgba(242,145,90,0.35); }
+  }
+
+  /* Author card */
+  .author-card {
+    max-width: 540px;
+    width: 100%;
+    margin: 0 auto;
+    background: rgba(255,255,255,0.9);
+    border: 1px solid #FDE68A;
+    border-radius: 18px;
+    padding: 18px 20px;
+    box-shadow: 0 4px 16px var(--shadow);
+  }
+  .author-card-title {
+    font-weight: 900;
+    font-size: 0.95rem;
+    color: var(--primary);
+    margin-bottom: 8px;
+  }
+  .author-card-body {
+    font-weight: 700;
+    font-size: 0.88rem;
+    line-height: 1.85;
+    color: var(--text);
+  }
+  .author-card-body p { margin: 0 0 12px; }
+  .author-card-body p:last-child { margin-bottom: 0; }
+  .bookname {
+    font-weight: 900;
+    color: var(--primary);
+  }
+  .bookname-sub {
+    color: #888;
+    font-size: 0.82rem;
+  }
+  .author-card-sign {
+    margin-top: 10px;
+    text-align: right;
+    color: var(--text-light);
+    font-weight: 700;
+    font-size: 0.8rem;
+  }
+
+  /* Annotation overlay markers (numbered red dots) */
+  .anno {
+    position: relative;
+  }
+  .anno::before {
+    content: attr(data-num);
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    width: 26px;
+    height: 26px;
+    background: #D32F2F;
+    color: #fff;
+    border-radius: 50%;
+    font-weight: 900;
+    font-size: 0.85rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+    z-index: 5;
+    font-family: 'Zen Maru Gothic', sans-serif;
+  }
+  .anno-amazon::before { background: #D32F2F; }
+  .anno-cta::before    { background: #D32F2F; }
+  .anno-h1::before     { background: #D32F2F; }
+
+  /* Above-the-fold hint line */
+  .fold-line {
+    position: relative;
+    max-width: 540px;
+    width: 100%;
+    margin: 4px auto;
+    border-top: 2px dashed #D32F2F;
+    height: 0;
+  }
+  .fold-line::after {
+    content: "↑ ファーストビュー (約600px) — CTA は下に隠れている";
+    position: absolute;
+    top: -10px;
+    right: 4px;
+    background: #FFF3F3;
+    color: #D32F2F;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+    border: 1px solid #E57373;
+  }
+
+  @media (max-width: 440px) {
+    .device-frame {
+      border-radius: 24px;
+      border-width: 6px;
+    }
+    .device-scroll {
+      height: 680px;
+    }
+  }
+</style>
+</head>
+<body>
+
+<div class="preview-stage">
+
+  <div class="caption">
+    <span class="caption-title">BASELINE</span>
+    <h2 class="caption-main">現状ヒーロー (改善前)</h2>
+    <ul class="issue-list">
+      <li><span class="num">1</span>Amazon バナーが最上段 — 子供向けアプリなのに広告が一番最初に視界に入る</li>
+      <li><span class="num">2</span>CTA「いりぐち」ボタンがスクロール下 — ファーストビューに収まらず離脱要因</li>
+      <li><span class="num">3</span>H1 見出しが無い — サイトの主題 (ポノのあそびば) が即座に伝わらない / SEO 不利</li>
+    </ul>
+  </div>
+
+  <div class="device-frame">
+    <div class="device-notch"></div>
+    <div class="device-scroll">
+
+      <div class="page">
+
+        <!-- Amazon ヒーローバナー -->
+        <a href="https://www.amazon.co.jp/dp/B0FFTBS9TM" class="hero-amazon anno anno-amazon" data-num="1" target="_blank" rel="noopener noreferrer" aria-label="Amazonで絵本を見る">
+          <picture>
+            <source media="(max-width:768px)" srcset="https://pono-asobiba-staging.ndw.workers.dev/assets/images/Amazon_mobile.webp" type="image/webp">
+            <source srcset="https://pono-asobiba-staging.ndw.workers.dev/assets/images/Amazon_pc.webp" type="image/webp">
+            <source media="(max-width:768px)" srcset="https://pono-asobiba-staging.ndw.workers.dev/assets/images/Amazon_mobile.png">
+            <img src="https://pono-asobiba-staging.ndw.workers.dev/assets/images/Amazonリンク.png" alt="Amazonで発売中" loading="eager" onerror="this.style.display='none';this.parentElement.parentElement.querySelector('.amazon-fallback').style.display='block';">
+          </picture>
+          <div class="amazon-fallback" style="display:none;">
+            Amazonで絵本「ありがとうって、うれしいね」発売中
+            <small>▶ Amazon.co.jp で見る</small>
+          </div>
+        </a>
+
+        <!-- ミュージックビデオ -->
+        <section class="video-section">
+          <p class="video-label">🎵 ポノのうた みてね！</p>
+          <div class="video-wrap">
+            <iframe
+              src="https://www.youtube.com/embed/p3pgMOmzMiw?rel=0&playsinline=1"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowfullscreen
+              title="ポノのうた">
+            </iframe>
+          </div>
+        </section>
+
+        <div class="fold-line"></div>
+
+        <!-- 入口ボタン (ようこその上に配置) -->
+        <a href="play.html" class="enter-btn anno anno-cta" data-num="2" id="enter-btn">
+          <span class="enter-btn-main">ポノのあそびば</span>
+          <span class="enter-btn-iri">いりぐち</span>
+        </a>
+        <div class="enter-btn-sub">⬆ ここから あそべるよ！</div>
+
+        <!-- 作者コメント -->
+        <div class="author-card anno anno-h1" data-num="3" id="welcome-card">
+          <div class="author-card-title">🌱 ようこそ！</div>
+          <div class="author-card-body">
+            <p>ようこそ！<br>
+            「ポノのあそびば」は、絵本<br>
+            <span class="bookname">『ありがとうって、うれしいね』</span><br>
+            <span class="bookname-sub">〜 くまのこ ポノ の ちいさな ものがたり 〜</span><br>
+            の主人公ポノと一緒に、<br>
+            小さなお子さまが楽しく学べる<br>
+            無料の知育サイトです。</p>
+
+            <p>ひらがな・カタカナのなぞり書き、<br>
+            ぬりえ、パズル、クイズなど、<br>
+            いろんな遊びを少しずつ増やしていきます。<br>
+            親子でゆっくり楽しんでもらえたら嬉しいです。</p>
+          </div>
+          <div class="author-card-sign">— ネモ先生</div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+</body>
+</html>

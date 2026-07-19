@@ -1,0 +1,1887 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=1280">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'self'; frame-ancestors 'none';">
+<title>迷路 OP レイアウトエディタ</title>
+<style>
+  /* 本番側 (maze runtime) と同じ Zen Maru Gothic を読み込み、ナレーション
+     プレビューと表示を一致させる。UI (header / sidebar) は OS 標準 sans-serif。 */
+  @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #1c1f26; color: #e5e7eb; overflow: hidden;
+  }
+
+  #app {
+    display: grid;
+    grid-template-columns: 220px 1fr 300px;
+    grid-template-rows: 48px 1fr;
+    grid-template-areas:
+      "header header header"
+      "left   center right";
+    height: 100vh;
+    width: 100vw;
+  }
+
+  header {
+    grid-area: header;
+    background: #14161c;
+    border-bottom: 1px solid #2a2e3a;
+    display: flex; align-items: center;
+    padding: 0 16px; gap: 12px;
+    z-index: 10;
+  }
+  header h1 { font-size: 14px; margin: 0; color: #f3f4f6; font-weight: 600; }
+  header .spacer { flex: 1; }
+  header button {
+    background: #2563eb; color: #fff;
+    border: none; padding: 6px 12px; border-radius: 4px;
+    cursor: pointer; font-size: 12px;
+  }
+  header button:hover { background: #1d4ed8; }
+  header button.ghost {
+    background: transparent; border: 1px solid #3a4050; color: #cbd5e1;
+  }
+  header button.ghost:hover { background: #20242e; }
+  header button.publish { background: #b45309; }
+  header button.publish:hover { background: #92400e; }
+
+  .panel {
+    background: #181b22;
+    overflow-y: auto;
+    padding: 12px;
+    font-size: 12px;
+    min-height: 0;
+    height: 100%;
+  }
+  #left  { grid-area: left;  border-right: 1px solid #2a2e3a; }
+  #right { grid-area: right; border-left:  1px solid #2a2e3a; }
+
+  .section { margin-bottom: 18px; }
+  .section h3 {
+    margin: 0 0 8px 0; font-size: 11px; color: #94a3b8;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+
+  /* Beat list */
+  .beat-list { display: flex; flex-direction: column; gap: 4px; }
+  .beat-item {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 8px;
+    background: #0f1218;
+    border: 1px solid #2a2e3a;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    color: #cbd5e1;
+  }
+  .beat-item:hover { border-color: #3a4050; }
+  .beat-item.active {
+    border-color: #10b981;
+    box-shadow: 0 0 0 2px #10b98144;
+    background: #122019;
+  }
+  .beat-item .beat-num {
+    flex: 0 0 auto; width: 28px;
+    font-weight: 700; color: #10b981;
+    font-size: 13px; text-align: center;
+  }
+  .beat-item .beat-preview {
+    flex: 1; min-width: 0;
+    color: #94a3b8; font-size: 11px;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+
+  .beat-actions { display: flex; gap: 6px; margin-top: 10px; }
+  .beat-actions button {
+    flex: 1; padding: 6px 8px;
+    font-size: 11px; border-radius: 4px;
+    border: 1px solid #3a4050; background: #20242e; color: #cbd5e1;
+    cursor: pointer;
+  }
+  .beat-actions button:hover { background: #2a3040; }
+  .beat-actions button.danger { color: #fca5a5; border-color: #5b1f1f; }
+  .beat-actions button.danger:hover { background: #3a1f1f; }
+  .beat-actions button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* Beat textarea (left pane bottom) */
+  .beat-edit-label { margin-top: 14px; }
+  .beat-edit-label .lbl {
+    font-size: 11px; color: #94a3b8;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    margin-bottom: 6px; display: block;
+  }
+  textarea#beatTextarea {
+    width: 100%; min-height: 160px;
+    padding: 8px; font-family: inherit; font-size: 12px;
+    background: #0f1218; color: #e5e7eb;
+    border: 1px solid #2a2e3a; border-radius: 4px;
+    resize: vertical;
+    line-height: 1.5;
+  }
+  textarea#beatTextarea:focus { outline: 1px solid #10b981; }
+
+  /* Center: stage preview */
+  #center {
+    grid-area: center;
+    background: #0a0c10;
+    overflow: auto;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 16px;
+  }
+  .stage-wrap {
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+  }
+  .stage {
+    position: relative;
+    width: 720px; height: 360px;
+    background-color: #000;
+    background-image: url('../assets/images/maze/OP/op_scale.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 10px 32px rgba(0,0,0,0.6);
+  }
+  .op-box {
+    position: absolute;
+    /* Center-anchor: xPct/yPct は box の中心点座標 (translate(-50%, -50%) で
+       left/top を box の中心に解釈し直す)。 widthPct/heightPct を変えても
+       中心位置が固定 → 左右上下対称に拡縮する。 */
+    transform: translate(-50%, -50%);
+    font-family: 'Zen Maru Gothic', sans-serif;
+    white-space: pre-wrap;
+    word-break: break-word;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .op-box .text { width: 100%; }
+
+  .step-nav {
+    display: flex; align-items: center; gap: 14px;
+    color: #cbd5e1; font-size: 13px;
+  }
+  .step-nav button {
+    background: #20242e; color: #e5e7eb;
+    border: 1px solid #3a4050; border-radius: 4px;
+    padding: 6px 14px; cursor: pointer; font-size: 13px;
+  }
+  .step-nav button:hover { background: #2a3040; }
+  .step-nav button:disabled { opacity: 0.35; cursor: not-allowed; }
+  .step-nav .indicator {
+    color: #10b981; font-weight: 700;
+    min-width: 50px; text-align: center;
+  }
+
+  /* Right pane */
+  .field-row {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 8px;
+  }
+  .field-row label {
+    flex: 0 0 70px; font-size: 11px; color: #94a3b8;
+  }
+  .field-row input[type="number"], .field-row input[type="text"] {
+    flex: 1; min-width: 0;
+    background: #0f1218; color: #e5e7eb;
+    border: 1px solid #2a2e3a; border-radius: 3px;
+    padding: 4px 6px; font-size: 11px; font-family: inherit;
+  }
+  .field-row input[type="range"] { flex: 1; }
+  .field-row input[type="color"] {
+    width: 36px; height: 22px; padding: 0;
+    background: #0f1218; border: 1px solid #2a2e3a; border-radius: 3px;
+    cursor: pointer;
+  }
+  .field-row .vnum {
+    width: 56px; text-align: right;
+    font-size: 11px; color: #cbd5e1;
+    font-variant-numeric: tabular-nums;
+  }
+  .field-row select {
+    flex: 1; background: #0f1218; color: #e5e7eb;
+    border: 1px solid #2a2e3a; border-radius: 3px;
+    padding: 4px 6px; font-size: 11px; font-family: inherit;
+  }
+
+  /* Toast */
+  #toast {
+    position: fixed; bottom: 16px; left: 50%;
+    transform: translateX(-50%);
+    background: #1f2937; color: #f3f4f6;
+    border: 1px solid #374151; border-radius: 4px;
+    padding: 10px 16px; font-size: 13px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.5);
+    z-index: 1000;
+    opacity: 0; transition: opacity 0.18s;
+    pointer-events: none;
+  }
+  #toast.show { opacity: 1; }
+  #toast.err { background: #4c1d1d; border-color: #7f1d1d; color: #fecaca; }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <header>
+    <h1>迷路 OP レイアウトエディタ</h1>
+    <span class="spacer"></span>
+    <button class="ghost" id="btnExport">📥 Export JSON</button>
+    <button class="ghost" id="btnImport">📤 Import JSON</button>
+    <button class="ghost" type="button" id="btnUndo" disabled title="取り消し (Ctrl+Z)">↶ 取り消し</button>
+    <button class="ghost" type="button" id="btnRedo" disabled title="やり直し (Ctrl+Shift+Z / Ctrl+Y)">↷ やり直し</button>
+    <button class="publish" id="btnPublish" style="display:none;">📡 配信</button>
+    <button class="ghost" id="btnGoMaze" title="ステージ編集 (maze-editor) に移動">🧭 ステージ編集へ</button>
+    <input type="file" id="importFile" accept="application/json,.json" style="display:none;">
+  </header>
+
+  <aside id="left" class="panel">
+    <div class="section">
+      <h3>ビート一覧</h3>
+      <div class="beat-list" id="beatList"></div>
+      <div class="beat-actions">
+        <button id="btnBeatAdd">＋ 追加</button>
+        <button id="btnBeatRemove" class="danger">－ 削除</button>
+      </div>
+    </div>
+
+    <div class="beat-edit-label">
+      <span class="lbl">選択中ビートのテキスト</span>
+      <textarea id="beatTextarea" spellcheck="false"
+                placeholder="ナレーション本文 (改行はそのまま反映)"></textarea>
+    </div>
+  </aside>
+
+  <main id="center">
+    <div class="stage-wrap">
+      <div class="stage" id="stage">
+        <div class="op-box" id="opBox">
+          <div class="text" id="opText"></div>
+        </div>
+      </div>
+      <div class="step-nav">
+        <button id="btnPrev">◀ 前</button>
+        <span class="indicator" id="stepIndicator">1/1</span>
+        <button id="btnNext">次 ▶</button>
+      </div>
+    </div>
+  </main>
+
+  <aside id="right" class="panel">
+
+    <div class="section">
+      <h3>Position (% of stage, center anchor)</h3>
+      <div class="field-row">
+        <label>xPct</label>
+        <input type="range" id="rXPct" min="0" max="100" step="0.5">
+        <span class="vnum" id="vXPct">0</span>
+      </div>
+      <div class="field-row">
+        <label>yPct</label>
+        <input type="range" id="rYPct" min="0" max="100" step="0.5">
+        <span class="vnum" id="vYPct">0</span>
+      </div>
+      <div class="field-row" style="margin-top:8px;">
+        <button type="button" id="btnCenter" style="padding:6px 12px; font-size:11px; background:#10b981; color:#fff; border:none; border-radius:3px; cursor:pointer; width:100%;">
+          🎯 中央にリセット
+        </button>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Size (% of stage)</h3>
+      <div class="field-row">
+        <label>widthPct</label>
+        <input type="range" id="rWPct" min="10" max="100" step="0.5">
+        <span class="vnum" id="vWPct">0</span>
+      </div>
+      <div class="field-row">
+        <label>heightPct</label>
+        <input type="range" id="rHPct" min="10" max="100" step="0.5">
+        <span class="vnum" id="vHPct">0</span>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>Text</h3>
+      <div class="field-row">
+        <label>fontSize</label>
+        <input type="range" id="rFontSize" min="10" max="60" step="1">
+        <span class="vnum" id="vFontSize">26</span>
+      </div>
+      <div class="field-row">
+        <label>lineHeight</label>
+        <input type="range" id="rLineHeight" min="1" max="2.4" step="0.05">
+        <span class="vnum" id="vLineHeight">1.6</span>
+      </div>
+      <div class="field-row">
+        <label>color</label>
+        <input type="color" id="cColor">
+        <input type="text" id="tColor" maxlength="7">
+      </div>
+      <div class="field-row">
+        <label>align</label>
+        <select id="sAlign">
+          <option value="left">left</option>
+          <option value="center">center</option>
+          <option value="right">right</option>
+        </select>
+      </div>
+      <div class="field-row">
+        <label>letterSpc</label>
+        <input type="range" id="rLetterSpacing" min="0" max="0.3" step="0.01">
+        <span class="vnum" id="vLetterSpacing">0</span>
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>🖼 フレーム画像</h3>
+      <div class="field-row">
+        <label><input type="checkbox" id="cFrameEnabled" style="flex:0 0 auto; margin-right:6px;">フレームを使う</label>
+      </div>
+      <div class="field-row">
+        <label>src</label>
+        <input type="text" id="tFrameSrc" placeholder="../assets/images/maze/OP/frame_s2.png">
+      </div>
+      <div style="margin-top:6px;">
+        <button type="button" id="btnFramePick" style="padding:6px 10px; font-size:11px; background:#2563eb; color:#fff; border:none; border-radius:3px; cursor:pointer;">📥 画像を選ぶ</button>
+        <input type="file" id="filFramePick" accept="image/png,image/jpeg,image/webp" style="display:none;">
+      </div>
+      <div class="field-row" style="margin-top:8px;">
+        <label style="cursor:pointer; display:flex; align-items:center; gap:6px; font-size:11px; color:#cbd5e1; flex:1 1 auto;">
+          <input type="checkbox" id="cFrameLock" style="flex:0 0 auto; margin:0;"> 縦横比を固定 (推奨)
+        </label>
+      </div>
+      <div style="font-size:11px; color:#f59e0b; margin-top:4px; line-height:1.4;">
+        ※ フレーム ON 時は背景色 / 角丸は無視されます (フレーム画像が背景に貼られます)<br>
+        ※ tools/ からの相対パスで指定 (<code>../assets/images/maze/OP/&lt;name&gt;.png</code> の形式)
+      </div>
+    </div>
+
+    <div class="section">
+      <h3>🎙 ナレーション音声</h3>
+      <div class="field-row">
+        <label>src</label>
+        <input type="text" id="tNarrationSrc" placeholder="../assets/sounds/maze/op/1.mp3">
+      </div>
+      <div style="margin-top:6px; display:flex; gap:6px; flex-wrap:wrap;">
+        <button type="button" id="btnNarrationPick" style="padding:6px 10px; font-size:11px; background:#2563eb; color:#fff; border:none; border-radius:3px; cursor:pointer;">📥 音声を選ぶ</button>
+        <button type="button" id="btnNarrationPlay" style="padding:6px 10px; font-size:11px; background:#10b981; color:#fff; border:none; border-radius:3px; cursor:pointer;">▶ 再生</button>
+        <button type="button" id="btnNarrationStop" style="padding:6px 10px; font-size:11px; background:#374151; color:#e5e7eb; border:none; border-radius:3px; cursor:pointer;">⏹ 停止</button>
+        <input type="file" id="filNarrationPick" accept="audio/mpeg,audio/wav,audio/ogg,audio/mp4" style="display:none;">
+      </div>
+      <div style="font-size:11px; color:#f59e0b; margin-top:6px; line-height:1.4;">
+        ※ tools/ からの相対パスで指定 (<code>../assets/sounds/maze/op/&lt;name&gt;.mp3</code> 形式)<br>
+        ※ 対応形式: mp3 / wav / ogg / m4a
+      </div>
+    </div>
+
+    <div class="section" id="bgSection">
+      <h3>Background</h3>
+      <div class="field-row">
+        <label>bgColor</label>
+        <input type="color" id="cBgColor">
+        <input type="text" id="tBgColor" maxlength="7">
+      </div>
+      <div class="field-row">
+        <label>bgAlpha</label>
+        <input type="range" id="rBgAlpha" min="0" max="1" step="0.01">
+        <span class="vnum" id="vBgAlpha">0.55</span>
+      </div>
+      <div class="field-row">
+        <label>radius</label>
+        <input type="range" id="rRadius" min="0" max="40" step="1">
+        <span class="vnum" id="vRadius">16</span>
+      </div>
+      <div class="field-row">
+        <label>padding</label>
+        <input type="range" id="rPadding" min="0" max="40" step="1">
+        <span class="vnum" id="vPadding">16</span>
+      </div>
+    </div>
+
+  </aside>
+</div>
+
+<div id="toast"></div>
+
+<script>
+'use strict';
+
+// ----------------------------------------------------------------------------
+// Schema / persistence keys
+// ----------------------------------------------------------------------------
+const SCHEMA = 'pono-maze-op-v1';
+const LS_KEY = 'pono-maze-op-layout-v1';
+const LS_SELECTED_KEY = 'pono-maze-op-selected-v1';
+
+// GitHub publish (worker proxy) — only enabled on allowed origins.
+const GH_OWNER  = 'NautilusDW';
+const GH_REPO   = 'pono-asobiba-app';
+const GH_BRANCH = 'develop';
+const GH_PATH   = 'maze/op-layout.json';
+
+// 配信ボタンを表示する origin。 worker の ALLOWED_GH_ORIGINS と同じ集合。
+// file:// (= location.origin === 'null') では非表示。
+const ALLOWED_GH_ORIGINS = [
+  'https://pono-asobiba-staging.ndw.workers.dev',
+  'https://pono-asobiba-app.ndw.workers.dev',
+  'https://pono.kodama-no-mori.com',
+  'http://localhost:8788',
+  'http://127.0.0.1:8788',
+];
+
+// ----------------------------------------------------------------------------
+// Defaults
+// ----------------------------------------------------------------------------
+const DEFAULT_BEATS = [
+  'よるの もりで、\nなかまたちが まいごに なったよ。',
+  'ポノと いっしょに\nランタンを もって、\nもりの みちを すすもう。',
+  'みんなを みつけて、\nあんしんさせて あげよう！'
+];
+
+// フレーム画像ソースの allowlist 正規表現 (XSS 対策の第一線):
+// 先頭 `../assets/images/` で始まる相対パス (png/jpg/jpeg/webp) のみ許可。
+// エディタは `/tools/` 配下に置かれており、 file:// / wrangler dev / Cloudflare Workers
+// で動作するため、 絶対パス (`/assets/...`) は環境依存で 404 になる場合がある。
+// 同居する `op_scale.png` の参照 convention (L143 の CSS) に合わせて相対パス `../assets/...`
+// に統一する。 値はここを通過したものだけ state.layout.frame.src に格納される。
+// renderStage で CSS に差し込む際にも追加の sanitize (`'`, `"`, `)`, `\\` を除去) を
+// 実行する 2 段防御。 旧形式 (相対 prefix なし `assets/...` / 絶対 `/assets/...`) は
+// mergeLayout 側で自動マイグレートする (`../assets/...` に統一)。
+// 後半 lookahead `(?!.*\.\.)` は先頭 `../` 以降の `..` 再出現を拒否し traversal を防止。
+// ✓ ../assets/images/maze/OP/frame_s2.png
+// ✗ ../assets/images/../../../etc/passwd.png  → 途中の `..` を後半 lookahead で reject
+// ✗ assets/images/maze/OP/frame_s2.png        → 先頭 `../` がない相対は reject
+// ✗ /assets/images/maze/OP/frame_s2.png       → 絶対 path は環境互換性のため reject
+const FRAME_SRC_RE = /^\.\.\/assets\/images\/(?!.*\.\.)[A-Za-z0-9_./-]+\.(png|jpe?g|webp)$/;
+
+// ナレーション音声ソースの allowlist 正規表現 (FRAME_SRC_RE と同じ思想):
+// 先頭 `../assets/sounds/` で始まる相対パス (mp3/wav/ogg/m4a) のみ許可。
+// 後半 lookahead `(?!.*\.\.)` で先頭 `../` 以降の `..` 再出現を拒否し traversal を防止。
+// 旧 path 形式 (`assets/sounds/...` / `/assets/sounds/...`) はマイグレートして `../assets/sounds/...` 形式に統一する。
+const AUDIO_SRC_RE = /^\.\.\/assets\/sounds\/(?!.*\.\.)[A-Za-z0-9_./-]+\.(mp3|wav|ogg|m4a)$/;
+
+const DEFAULT_LAYOUT = {
+  // フレーム画像 (パピルス板) を前提に、初期値はリーダブルなクリーム色対応に揃える:
+  //   - text.color: 濃茶 (#3a2818) でクリーム背景に読みやすく
+  //   - bg.alpha/radius: 0 (フレーム画像に背景描画を委譲)
+  //   - box.widthPct: 75 / heightPct: 28 (フレームが画面端で切れないように)
+  //   - box.xPct: 50 / yPct: 75 (center anchor、 横は中央、 縦は下寄り中央)
+  // _anchor: 'center' で「xPct/yPct は box の中心点」 を明示。 旧 top-left anchor の
+  // JSON (= _anchor 未指定) は mergeLayout 側で xPct + widthPct/2, yPct + heightPct/2 に
+  // 変換して center anchor に自動 migration する。
+  box:  { xPct: 50, yPct: 75, widthPct: 75, heightPct: 28, _anchor: 'center' },
+  text: { fontSize: 26, lineHeight: 1.6, color: '#3a2818', align: 'center', letterSpacing: 0 },
+  bg:   { color: '#000000', alpha: 0, radius: 0, padding: 16 },
+  // lockAspect: true (デフォルト ON) で、 box 矩形を frame 画像本来のアスペクト比に
+  // 自動合わせる (heightPct は無視される)。 OFF にすると従来通り widthPct/heightPct
+  // で box を自由に伸縮できる (= 画像が歪む可能性あり、 上級者向け)。
+  frame:{ enabled: true, src: '../assets/images/maze/OP/frame_s2.png', lockAspect: true }
+};
+
+// frame.src の画像をロードして得た naturalWidth/naturalHeight からアスペクト比 (CSS
+// `aspect-ratio` の `"W / H"` 形式文字列) を保持。 lockAspect=true 時に renderStage が
+// box.style.aspectRatio に適用する。 src 変更時に再算出、 ロード失敗時は null。
+let _frameAspectRatio = null;
+
+// ----------------------------------------------------------------------------
+// Undo / Redo history (module-level, NOT part of `state` to avoid recursive
+// serialization). snapshot は { layout, beats, selected } の deep clone。
+// _previewFrameDataUrl は transient なので含めない (data URL でスタックが肥大化、 かつ
+// 再生時は path に戻る想定で OK)。 applying flag は undo/redo 適用中の二重 push 防止。
+// HISTORY_LIMIT 超過時は古い順に切詰める。 redo branch (cursor より右) は push で破棄。
+// ----------------------------------------------------------------------------
+const HISTORY_LIMIT = 50;
+const _history = {
+  stack: [],      // Array<{ layout, beats, selected }>
+  cursor: -1,     // 現在位置 (= stack[cursor] が現在の state)
+  applying: false // undo/redo 中の二重 push 防止
+};
+
+function deepClone(o) { return JSON.parse(JSON.stringify(o)); }
+
+function pushHistory() {
+  if (_history.applying) return; // undo/redo 中は無視
+  const snap = {
+    layout: deepClone(state.layout),
+    beats:  deepClone(state.beats),
+    narrationAudio: deepClone(state.narrationAudio || []),
+    selected: state.selected
+  };
+  // 重複防止: 直近 snapshot と同一なら skip。
+  const top = _history.stack[_history.cursor];
+  if (top && JSON.stringify(top) === JSON.stringify(snap)) return;
+  // redo 分岐 (cursor より右) を破棄して新規 push。
+  _history.stack = _history.stack.slice(0, _history.cursor + 1);
+  _history.stack.push(snap);
+  // 上限超過時は古い順に削る。
+  if (_history.stack.length > HISTORY_LIMIT) {
+    _history.stack = _history.stack.slice(-HISTORY_LIMIT);
+  }
+  _history.cursor = _history.stack.length - 1;
+  updateUndoRedoButtons();
+}
+
+function undo() {
+  if (_history.cursor <= 0) return;
+  _history.applying = true;
+  _history.cursor--;
+  const snap = _history.stack[_history.cursor];
+  state.layout = deepClone(snap.layout);
+  state.beats  = deepClone(snap.beats);
+  state.narrationAudio = deepClone(snap.narrationAudio || []);
+  while (state.narrationAudio.length < state.beats.length) state.narrationAudio.push('');
+  state.narrationAudio.length = state.beats.length;
+  state.selected = snap.selected;
+  state._previewFrameDataUrl = null;
+  _stopCurrentNarrationAudio();
+  _history.applying = false;
+  saveToLocal();
+  // frame.src が変わっている可能性があるため aspect 再プローブ。
+  if (state.layout.frame && state.layout.frame.src) {
+    _probeFrameAspect(state.layout.frame.src);
+  } else {
+    _frameAspectRatio = null;
+  }
+  renderAll();
+  updateUndoRedoButtons();
+  toast('取り消しました');
+}
+
+function redo() {
+  if (_history.cursor >= _history.stack.length - 1) return;
+  _history.applying = true;
+  _history.cursor++;
+  const snap = _history.stack[_history.cursor];
+  state.layout = deepClone(snap.layout);
+  state.beats  = deepClone(snap.beats);
+  state.narrationAudio = deepClone(snap.narrationAudio || []);
+  while (state.narrationAudio.length < state.beats.length) state.narrationAudio.push('');
+  state.narrationAudio.length = state.beats.length;
+  state.selected = snap.selected;
+  state._previewFrameDataUrl = null;
+  _stopCurrentNarrationAudio();
+  _history.applying = false;
+  saveToLocal();
+  if (state.layout.frame && state.layout.frame.src) {
+    _probeFrameAspect(state.layout.frame.src);
+  } else {
+    _frameAspectRatio = null;
+  }
+  renderAll();
+  updateUndoRedoButtons();
+  toast('やり直しました');
+}
+
+function updateUndoRedoButtons() {
+  const u = document.getElementById('btnUndo');
+  const r = document.getElementById('btnRedo');
+  if (u) u.disabled = (_history.cursor <= 0);
+  if (r) r.disabled = (_history.cursor >= _history.stack.length - 1);
+}
+
+// ----------------------------------------------------------------------------
+// State
+// ----------------------------------------------------------------------------
+const state = {
+  beats: DEFAULT_BEATS.slice(),
+  layout: JSON.parse(JSON.stringify(DEFAULT_LAYOUT)),
+  selected: 0,
+  // session-only (NOT persisted): file picker / D&D で選択された画像の data URL を一時保持。
+  // セットされていれば renderStage が state.layout.frame.src よりも優先表示する (race 防止)。
+  // localStorage / Export JSON / GH PUT body のいずれにも含めない (super long base64 で容量
+  // 肥大化するため)。 init() 起動時は常に null から開始 (= リロード時 preview は自動消滅)。
+  _previewFrameDataUrl: null,
+  // ビート毎のナレーション音声 path 配列 (beats と並列、 index 対応)。 各要素は AUDIO_SRC_RE
+  // を満たす相対 path (`../assets/sounds/...`) または空文字。 beats.length と常に同期する
+  // (addBeat / removeBeat / loadFromLocal / importJsonFromFile で揃える)。
+  narrationAudio: ['', '', ''],
+};
+
+// 再生中の Audio オブジェクト (module-level、 selectBeat / stop / 次再生開始時に pause + 破棄)。
+// 同時複数再生を防ぐため常に最大 1 つに保つ。
+let _currentNarrationAudio = null;
+function _stopCurrentNarrationAudio() {
+  if (_currentNarrationAudio) {
+    try { _currentNarrationAudio.pause(); _currentNarrationAudio.currentTime = 0; } catch (e) {}
+    _currentNarrationAudio = null;
+  }
+}
+
+// ----------------------------------------------------------------------------
+// Utilities
+// ----------------------------------------------------------------------------
+function clone(x) { return JSON.parse(JSON.stringify(x)); }
+
+function toast(msg, kind) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.toggle('err', kind === 'err');
+  t.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function hexToRgba(hex, alpha) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex || '').trim());
+  if (!m) return 'rgba(0,0,0,' + (alpha == null ? 1 : alpha) + ')';
+  const n = parseInt(m[1], 16);
+  const r = (n >> 16) & 0xff;
+  const g = (n >> 8) & 0xff;
+  const b = n & 0xff;
+  return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+}
+
+function clampNum(v, lo, hi, fallback) {
+  const n = Number(v);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(hi, Math.max(lo, n));
+}
+
+function isHexColor(s) { return typeof s === 'string' && /^#[0-9a-fA-F]{6}$/.test(s); }
+
+// ----------------------------------------------------------------------------
+// Persistence (localStorage)
+// ----------------------------------------------------------------------------
+function loadFromLocal() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return;
+    const obj = JSON.parse(raw);
+    if (!obj || obj.schema !== SCHEMA) return;
+    if (Array.isArray(obj.beats) && obj.beats.length >= 1) {
+      state.beats = obj.beats.map(s => String(s || ''));
+    }
+    if (obj.layout) {
+      state.layout = mergeLayout(state.layout, obj.layout);
+    }
+    state.narrationAudio = normalizeNarrationAudio(obj.narrationAudio, state.beats.length);
+    const rawSel = localStorage.getItem(LS_SELECTED_KEY);
+    if (rawSel != null) {
+      state.selected = clampNum(parseInt(rawSel, 10), 0, state.beats.length - 1, 0);
+    }
+  } catch (e) {
+    console.warn('[maze-op-editor] localStorage load failed', e);
+  }
+}
+
+// narrationAudio 配列を beats.length と同じ長さに正規化する。
+// - 各要素が AUDIO_SRC_RE を通過する文字列ならそのまま、 通過しないか string でなければ空文字。
+// - 旧 path 形式 (`assets/sounds/...` / `/assets/sounds/...`) は `../assets/sounds/...` に自動マイグレート。
+// - 入力が array でなければ beats.length 個の空文字配列を返す。
+// - 入力が短ければ空文字で末尾を埋め、 長ければ切り詰める。
+function normalizeNarrationAudio(input, targetLen) {
+  const out = [];
+  const src = Array.isArray(input) ? input : [];
+  for (let i = 0; i < targetLen; i++) {
+    const raw = i < src.length ? src[i] : '';
+    if (typeof raw !== 'string') { out.push(''); continue; }
+    let s = raw.trim();
+    if (s === '') { out.push(''); continue; }
+    if      (/^\/assets\/sounds\//.test(s)) s = '..' + s;
+    else if (/^assets\/sounds\//.test(s))   s = '../' + s;
+    out.push(AUDIO_SRC_RE.test(s) ? s : '');
+  }
+  return out;
+}
+
+function saveToLocal() {
+  try {
+    const payload = {
+      schema: SCHEMA,
+      savedAt: new Date().toISOString(),
+      layout: state.layout,
+      beats: state.beats,
+      narrationAudio: state.narrationAudio || [],
+    };
+    localStorage.setItem(LS_KEY, JSON.stringify(payload));
+    localStorage.setItem(LS_SELECTED_KEY, String(state.selected));
+  } catch (e) {
+    console.warn('[maze-op-editor] localStorage save failed', e);
+  }
+}
+
+function mergeLayout(base, incoming) {
+  const out = clone(base);
+  // Defensive default: base が DEFAULT_LAYOUT 以外 (将来) に変わった場合の保険。
+  // incoming 側の旧 JSON 互換は L534-546 の frame 個別検証で対応。
+  out.frame = out.frame || { enabled: false, src: '', lockAspect: false };
+  if (!incoming || typeof incoming !== 'object') return out;
+  if (incoming.box && typeof incoming.box === 'object') {
+    // anchor migration: 旧 JSON (= _anchor 未指定) は top-left anchor で
+    // 保存されていた。 center anchor に変換するため xPct + widthPct/2,
+    // yPct + heightPct/2 を新しい中心座標として再計算する。 _anchor === 'center'
+    // で保存されたものはそのまま受け入れる (= 一度 migration されたら次回は no-op)。
+    const inAnchor = incoming.box._anchor;
+    const inX = clampNum(incoming.box.xPct,      0, 100, out.box.xPct);
+    const inY = clampNum(incoming.box.yPct,      0, 100, out.box.yPct);
+    const inW = clampNum(incoming.box.widthPct, 10, 100, out.box.widthPct);
+    const inH = clampNum(incoming.box.heightPct, 5, 100, out.box.heightPct);
+    if (inAnchor === 'center') {
+      out.box.xPct = inX;
+      out.box.yPct = inY;
+    } else {
+      // 旧 top-left → center 変換 (視覚的に同じ位置が維持される)。
+      out.box.xPct = clampNum(inX + inW / 2, 0, 100, out.box.xPct);
+      out.box.yPct = clampNum(inY + inH / 2, 0, 100, out.box.yPct);
+    }
+    out.box.widthPct  = inW;
+    out.box.heightPct = inH;
+    out.box._anchor   = 'center';  // 以降は常に center として永続化される
+  }
+  if (incoming.text && typeof incoming.text === 'object') {
+    out.text.fontSize      = clampNum(incoming.text.fontSize,      6,   120, out.text.fontSize);
+    out.text.lineHeight    = clampNum(incoming.text.lineHeight,    0.8, 3.0, out.text.lineHeight);
+    if (isHexColor(incoming.text.color)) out.text.color = incoming.text.color;
+    if (['left','center','right'].includes(incoming.text.align)) out.text.align = incoming.text.align;
+    out.text.letterSpacing = clampNum(incoming.text.letterSpacing, 0,   1.0, out.text.letterSpacing);
+  }
+  if (incoming.bg && typeof incoming.bg === 'object') {
+    if (isHexColor(incoming.bg.color)) out.bg.color = incoming.bg.color;
+    out.bg.alpha   = clampNum(incoming.bg.alpha,   0,   1,   out.bg.alpha);
+    out.bg.radius  = clampNum(incoming.bg.radius,  0, 100,   out.bg.radius);
+    out.bg.padding = clampNum(incoming.bg.padding, 0, 100,   out.bg.padding);
+  }
+  if (incoming.frame && typeof incoming.frame === 'object') {
+    if (typeof incoming.frame.enabled === 'boolean') {
+      out.frame.enabled = incoming.frame.enabled;
+    }
+    // lockAspect は boolean のみ受入。 未指定の旧 JSON は base 既定値 (= true) を維持。
+    if (typeof incoming.frame.lockAspect === 'boolean') {
+      out.frame.lockAspect = incoming.frame.lockAspect;
+    }
+    // 受入: string かつ allowlist 正規表現 (../assets/images/.../*.png|jpg|jpeg|webp) 通過のみ。
+    // 空文字列も許容 (= フレーム未指定状態を Export/Import で表現できるように)。
+    // 過去 3 形式の混在 localStorage / Export JSON を `../assets/...` の正規形に自動マイグレート:
+    //   - `assets/images/...`      (最初期、相対 prefix なし)        → `../assets/images/...`
+    //   - `/assets/images/...`     (絶対、 環境依存で 404 になりうる) → `../assets/images/...`
+    //   - `../assets/images/...`   (現行 正規形)                     → そのまま
+    // 既存ユーザの localStorage / Export JSON に旧値が残っていても、 リロード時に自動補正されて
+    // フレーム画像が現環境で表示されるようになる。
+    if (typeof incoming.frame.src === 'string') {
+      let s = incoming.frame.src.trim();
+      if      (/^\/assets\/images\//.test(s)) s = '..' + s;   // `/assets/...`  → `../assets/...`
+      else if (/^assets\/images\//.test(s))   s = '../' + s;  // `assets/...`   → `../assets/...`
+      if (s === '' || FRAME_SRC_RE.test(s)) {
+        out.frame.src = s;
+      }
+    }
+  }
+  return out;
+}
+
+// ----------------------------------------------------------------------------
+// Rendering
+// ----------------------------------------------------------------------------
+function renderBeatList() {
+  const list = document.getElementById('beatList');
+  list.innerHTML = '';
+  const total = state.beats.length;
+  state.beats.forEach((txt, i) => {
+    const it = document.createElement('div');
+    it.className = 'beat-item' + (i === state.selected ? ' active' : '');
+    const preview = (txt || '').split('\n')[0].slice(0, 24) || '(空)';
+    it.innerHTML = '';
+    const num = document.createElement('span'); num.className = 'beat-num';
+    num.textContent = (i + 1) + '/' + total;
+    const pv = document.createElement('span'); pv.className = 'beat-preview';
+    pv.textContent = preview;
+    it.appendChild(num);
+    it.appendChild(pv);
+    it.addEventListener('click', () => { selectBeat(i); });
+    list.appendChild(it);
+  });
+  document.getElementById('btnBeatRemove').disabled = state.beats.length <= 1;
+}
+
+function renderTextarea() {
+  document.getElementById('beatTextarea').value = state.beats[state.selected] || '';
+}
+
+function renderStage() {
+  const stage = document.getElementById('stage');
+  const box   = document.getElementById('opBox');
+  const text  = document.getElementById('opText');
+  const L = state.layout;
+
+  // Box position / size (% based, inline values; no transform translate).
+  box.style.left   = L.box.xPct + '%';
+  box.style.top    = L.box.yPct + '%';
+  box.style.width  = L.box.widthPct + '%';
+  box.style.padding         = L.bg.padding + 'px';
+
+  // フレーム画像 (パピルス板) が有効なときは、 角丸 / 半透明黒 を全て無効化して
+  // 装飾はフレーム PNG に完全委譲する。 enabled=false のときは従来通り bg.* を尊重。
+  if (L.frame && L.frame.enabled && L.frame.src) {
+    // XSS 2 段防御: mergeLayout 側の正規表現で allowlist を通したうえで、
+    // 念のため CSS injection に使われうる文字 (', ", \\, )) を除去する。
+    const safeSrc = String(L.frame.src).replace(/['"\\)]/g, '');
+    // 一時 preview (file picker / D&D 直後、 GH PUT 完了前) があれば優先表示。
+    // data URL も同等の char strip を通して CSS injection を防ぐ (base64+MIME 領域には
+    // 本来含まれないが、 呼出側を信頼しすぎないための保険)。
+    const previewSrc = state._previewFrameDataUrl
+      ? String(state._previewFrameDataUrl).replace(/['"\\)]/g, '')
+      : null;
+    const renderSrc = previewSrc || safeSrc;
+    box.style.backgroundImage    = "url('" + renderSrc + "')";
+    box.style.backgroundSize     = '100% 100%';
+    box.style.backgroundRepeat   = 'no-repeat';
+    box.style.backgroundColor    = 'transparent';
+    box.style.borderRadius       = '0';
+    // lockAspect=true: box の高さは widthPct から aspect-ratio 経由で自動算出される。
+    // heightPct スライダーは UI 側で disable されるが、 値自体は state に残しておく
+    // (= ユーザーが lockAspect を OFF にしたら元の heightPct 値が復活する設計)。
+    if (L.frame.lockAspect) {
+      box.style.aspectRatio = _frameAspectRatio || 'auto';
+      box.style.height      = 'auto';
+    } else {
+      box.style.aspectRatio = 'auto';
+      box.style.height      = L.box.heightPct + '%';
+    }
+  } else {
+    box.style.backgroundImage    = '';
+    box.style.backgroundColor    = hexToRgba(L.bg.color, L.bg.alpha);
+    box.style.borderRadius       = L.bg.radius  + 'px';
+    box.style.aspectRatio        = 'auto';
+    box.style.height             = L.box.heightPct + '%';
+  }
+
+  // Text style.
+  text.style.fontSize      = L.text.fontSize + 'px';
+  text.style.lineHeight    = L.text.lineHeight;
+  text.style.color         = L.text.color;
+  text.style.textAlign     = L.text.align;
+  text.style.letterSpacing = L.text.letterSpacing + 'em';
+  text.style.fontWeight    = '700';
+  // Soft drop shadow improves legibility against image.
+  text.style.textShadow    = '0 2px 4px rgba(0,0,0,0.6)';
+
+  // Beat content.
+  text.textContent = state.beats[state.selected] || '';
+
+  // Step indicator.
+  const ind = document.getElementById('stepIndicator');
+  ind.textContent = (state.selected + 1) + '/' + state.beats.length;
+  document.getElementById('btnPrev').disabled = state.beats.length <= 1 || state.selected === 0;
+  document.getElementById('btnNext').disabled = state.beats.length <= 1 || state.selected === state.beats.length - 1;
+}
+
+function renderRightPane() {
+  const L = state.layout;
+  // box
+  setField('rXPct', 'vXPct', L.box.xPct);
+  setField('rYPct', 'vYPct', L.box.yPct);
+  setField('rWPct', 'vWPct', L.box.widthPct);
+  setField('rHPct', 'vHPct', L.box.heightPct);
+  // text
+  setField('rFontSize',      'vFontSize',      L.text.fontSize);
+  setField('rLineHeight',    'vLineHeight',    L.text.lineHeight);
+  setField('rLetterSpacing', 'vLetterSpacing', L.text.letterSpacing);
+  document.getElementById('cColor').value = L.text.color;
+  document.getElementById('tColor').value = L.text.color;
+  document.getElementById('sAlign').value = L.text.align;
+  // bg
+  document.getElementById('cBgColor').value = L.bg.color;
+  document.getElementById('tBgColor').value = L.bg.color;
+  setField('rBgAlpha',  'vBgAlpha',  L.bg.alpha);
+  setField('rRadius',   'vRadius',   L.bg.radius);
+  setField('rPadding',  'vPadding',  L.bg.padding);
+  // frame
+  const fr = (L.frame || { enabled: false, src: '', lockAspect: false });
+  document.getElementById('cFrameEnabled').checked = !!fr.enabled;
+  document.getElementById('tFrameSrc').value       = fr.src || '';
+  const lockEl = document.getElementById('cFrameLock');
+  if (lockEl) lockEl.checked = !!fr.lockAspect;
+  applyFrameUIGuard();
+  // narrationAudio (selected ビート分のみ)
+  const tNarrationSrc = document.getElementById('tNarrationSrc');
+  if (tNarrationSrc) {
+    tNarrationSrc.value = (state.narrationAudio && state.narrationAudio[state.selected]) || '';
+  }
+}
+
+// フレーム ON 時は bg.color / bg.alpha / bg.radius は renderStage で上書きされ
+// 画面に反映されないため、対応する input を disabled にしてユーザー混乱を防ぐ。
+// さらに opacity を直接当てて視覚的にも「フレーム ON 中は BG 全体が無効」と一目で分かるように。
+function applyFrameUIGuard() {
+  const fr = state.layout.frame || { enabled: false, lockAspect: false };
+  const disabled = !!fr.enabled;
+  const lockOn   = disabled && !!fr.lockAspect;
+  ['cBgColor', 'tBgColor', 'rBgAlpha', 'rRadius'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.disabled = disabled;
+      // 親 .field-row 全体に opacity を当てて、 ラベル / vnum スパンも一緒に薄くする。
+      const row = el.closest && el.closest('.field-row');
+      if (row) row.style.opacity = disabled ? '0.4' : '1';
+    }
+  });
+  // BACKGROUND セクションヘッダ (h3) も同じ opacity を当てて、 ユーザーが「フレーム ON 中
+  // は BG 全体が無効」 と一目で分かるようにする。 padding row は frame ON でも有効
+  // (renderStage は frame と無関係に box.style.padding を反映) のため、 行単位の opacity
+  // は当てず、 ヘッダ h3 だけ薄くする。
+  const sec = document.getElementById('bgSection');
+  if (sec) {
+    const h3 = sec.querySelector('h3');
+    if (h3) h3.style.opacity = disabled ? '0.4' : '1';
+  }
+  // lockAspect=ON 時は heightPct スライダーが無視される (box.height は aspect-ratio
+  // 経由で自動算出) ため、 該当 range + 表示 vnum を含む .field-row を disable + 薄く。
+  // widthPct は依然として有効 (基準幅の調整に使う) ので触らない。
+  const rH = document.getElementById('rHPct');
+  if (rH) {
+    rH.disabled = lockOn;
+    const row = rH.closest && rH.closest('.field-row');
+    if (row) row.style.opacity = lockOn ? '0.4' : '1';
+  }
+}
+
+function setField(rangeId, displayId, value) {
+  document.getElementById(rangeId).value   = value;
+  document.getElementById(displayId).textContent =
+    (typeof value === 'number' && !Number.isInteger(value))
+      ? Number(value).toFixed(2)
+      : String(value);
+}
+
+function renderAll() {
+  renderBeatList();
+  renderTextarea();
+  renderRightPane();
+  renderStage();
+}
+
+// ----------------------------------------------------------------------------
+// Beat operations
+// ----------------------------------------------------------------------------
+function selectBeat(i) {
+  if (i < 0 || i >= state.beats.length) return;
+  state.selected = i;
+  // ビート切替時は再生中のナレ音声を停止 (ユーザ混乱防止)。
+  _stopCurrentNarrationAudio();
+  saveToLocal();
+  renderBeatList();
+  renderTextarea();
+  renderStage();
+  // 右ペインのナレ音声 src 入力欄にも切替後ビートの path を反映する。
+  const t = document.getElementById('tNarrationSrc');
+  if (t) t.value = state.narrationAudio[state.selected] || '';
+}
+
+function addBeat() {
+  state.beats.push('');
+  state.narrationAudio.push('');
+  state.selected = state.beats.length - 1;
+  saveToLocal();
+  renderAll();
+  pushHistory();
+}
+
+function removeBeat() {
+  if (state.beats.length <= 1) return;
+  state.beats.splice(state.selected, 1);
+  state.narrationAudio.splice(state.selected, 1);
+  state.selected = Math.min(state.selected, state.beats.length - 1);
+  _stopCurrentNarrationAudio();
+  saveToLocal();
+  renderAll();
+  pushHistory();
+}
+
+function stepPrev() {
+  if (state.beats.length <= 1) return;
+  if (state.selected > 0) {
+    selectBeat(state.selected - 1);
+  }
+}
+function stepNext() {
+  if (state.beats.length <= 1) return;
+  if (state.selected < state.beats.length - 1) {
+    selectBeat(state.selected + 1);
+  }
+}
+
+// ----------------------------------------------------------------------------
+// Export / Import
+// ----------------------------------------------------------------------------
+function buildPayload() {
+  return {
+    schema: SCHEMA,
+    savedAt: new Date().toISOString(),
+    layout: clone(state.layout),
+    beats: state.beats.slice(),
+    narrationAudio: clone(state.narrationAudio || []),
+  };
+}
+
+function exportJson() {
+  const payload = buildPayload();
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const ts   = new Date().toISOString().replace(/[:T]/g, '-').slice(0, 19);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'maze-op-layout-' + ts + '.json';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  toast('JSON エクスポート');
+}
+
+function importJsonFromFile(file) {
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const obj = JSON.parse(String(reader.result || ''));
+      if (!obj || obj.schema !== SCHEMA) {
+        toast('スキーマが違います (' + (obj && obj.schema) + ')', 'err');
+        return;
+      }
+      if (obj.layout) state.layout = mergeLayout(state.layout, obj.layout);
+      if (Array.isArray(obj.beats) && obj.beats.length >= 1) {
+        state.beats = obj.beats.map(s => String(s || ''));
+        state.selected = 0;
+      }
+      // beats.length に合わせて narrationAudio を再正規化 (空文字埋め / トリム / 不正値クリア)。
+      state.narrationAudio = normalizeNarrationAudio(obj.narrationAudio, state.beats.length);
+      _stopCurrentNarrationAudio();
+      saveToLocal();
+      renderAll();
+      pushHistory();
+      toast('JSON 取込完了');
+    } catch (e) {
+      console.warn('[maze-op-editor] import failed', e);
+      toast('JSON 読込失敗', 'err');
+    }
+  };
+  reader.onerror = () => toast('ファイル読込失敗', 'err');
+  reader.readAsText(file);
+}
+
+// ----------------------------------------------------------------------------
+// GitHub publish
+// ----------------------------------------------------------------------------
+function _ghContentsUrl(path) {
+  return '/api/gh/repos/' + GH_OWNER + '/' + GH_REPO + '/contents/' + encodeURI(path);
+}
+
+async function _ghGet() {
+  const url = _ghContentsUrl(GH_PATH) + '?ref=' + GH_BRANCH;
+  const r = await fetch(url, {
+    method: 'GET',
+    credentials: 'include',
+    headers: { 'Accept': 'application/vnd.github+json' },
+    cache: 'no-store',
+  });
+  if (r.status === 404) return { contents: null, sha: null };
+  if (!r.ok) throw new Error('GH GET ' + GH_PATH + ' → ' + r.status);
+  const j = await r.json();
+  const b64Raw = (j.content || '').replace(/\n/g, '');
+  let parsed = null;
+  try {
+    const bin   = atob(b64Raw);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    parsed = JSON.parse(new TextDecoder('utf-8').decode(bytes));
+  } catch (e) { parsed = null; }
+  if (!parsed && b64Raw.length > 0) {
+    throw new Error('GH GET: parse failed (content non-empty but parse failed)');
+  }
+  return { contents: parsed, sha: j.sha || null };
+}
+
+async function _ghPut(jsonObj, sha) {
+  const text  = JSON.stringify(jsonObj, null, 2);
+  const bytes = new TextEncoder().encode(text);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  const b64 = btoa(bin);
+  const body = {
+    message: 'chore(maze-op): update OP layout (' + GH_PATH + ')',
+    content: b64,
+    branch:  GH_BRANCH,
+  };
+  if (sha) body.sha = sha;
+  const r = await fetch(_ghContentsUrl(GH_PATH), {
+    method: 'PUT',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/vnd.github+json' },
+    body: JSON.stringify(body),
+  });
+  if (r.status === 409) {
+    const e = new Error('CONFLICT_409'); e.status = 409; throw e;
+  }
+  if (!r.ok) {
+    const txt = await r.text().catch(() => '');
+    throw new Error('GH PUT ' + r.status + ' ' + txt.slice(0, 200));
+  }
+  return true;
+}
+
+let _publishing = false;
+async function publishToGitHub() {
+  if (_publishing) return;
+  if (!confirm('全端末に配信されます。 続行しますか?')) return;
+  _publishing = true;
+  const btn = document.getElementById('btnPublish');
+  if (btn) btn.disabled = true;
+  try {
+    toast('GitHub に配信中…');
+    const got = await _ghGet();
+    await _ghPut(buildPayload(), got.sha);
+    toast('GitHub 配信完了 (' + GH_PATH + ')');
+  } catch (e) {
+    console.warn('[maze-op-editor] publish failed', e);
+    if (e && e.status === 409) {
+      toast('別エディタが先に保存しました。再試行してください', 'err');
+    } else {
+      toast('配信失敗: ' + (e && e.message ? e.message.slice(0, 80) : 'unknown'), 'err');
+    }
+  } finally {
+    _publishing = false;
+    if (btn) btn.disabled = false;
+  }
+}
+
+// ----------------------------------------------------------------------------
+// Frame image picker (新規: ボタン → ファイル選択 → 即時プレビュー + GH アップロード)
+// ----------------------------------------------------------------------------
+// GitHub に画像ファイルを PUT する。 path は `assets/images/maze/OP/<filename>`、
+// content は base64 エンコードしたバイナリ。 既存ファイル更新時のために GET で sha 取得。
+const GH_FRAME_DIR = 'assets/images/maze/OP';
+const FRAME_MAX_BYTES = 3 * 1024 * 1024;          // 3MB hard cap
+const FRAME_WARN_BYTES = 1024 * 1024;             // 1MB 推奨上限 (超過時 warning toast)
+
+function sanitizeFrameFilename(rawName) {
+  // 拡張子保持、 ベースは [^A-Za-z0-9_.-] を `_` に置換。
+  // 末尾 `..` は traversal guard で proxy 側が弾くが、 文字置換でも事実上ブロック。
+  const m = /^(.*)\.([A-Za-z0-9]+)$/.exec(String(rawName || ''));
+  if (!m) return null;
+  const baseRaw = m[1];
+  const extRaw  = m[2].toLowerCase();
+  if (!/^(png|jpe?g|webp)$/.test(extRaw)) return null;
+  let base = baseRaw.replace(/[^A-Za-z0-9_.-]/g, '_');
+  // 先頭/末尾 `.` を除去 (隠しファイル化防止)
+  base = base.replace(/^\.+/, '').replace(/\.+$/, '');
+  // 中間 `..` も `_` に置換 (worker traversal guard と一貫性確保)
+  base = base.replace(/\.\./g, '_');
+  if (!base) base = 'frame';
+  return base + '.' + extRaw;
+}
+
+// data URL でプレビューを直接 box.style.backgroundImage に書き込む (state.layout.frame.src
+// は schema 上 FRAME_SRC_RE を通る path のみ受け付けるため、 一時 data URL は state に入れない)。
+// 次の renderStage で path 値に戻る = アップロード成功後に path を更新して renderStage を呼ぶと
+// 自然にプレビューが新 path に切替わる。 失敗時はリロードで data URL 状態が消える (= 状態汚染なし)。
+// frame.src を非同期にロードして naturalWidth/Height から CSS aspect-ratio 文字列
+// (`"W / H"`) を算出し _frameAspectRatio に格納する。 lockAspect=true 時の
+// renderStage がこの値を box.style.aspectRatio に適用するため、 src 変更タイミング
+// ごとに呼び出す。 src 空/ロード失敗時は null を入れて、 renderStage 側で `auto`
+// にフォールバックする。 計算完了後に renderStage を再走させてプレビューを即更新。
+function _probeFrameAspect(src) {
+  if (!src) { _frameAspectRatio = null; renderStage(); return; }
+  const img = new Image();
+  img.onload = function() {
+    if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+      _frameAspectRatio = img.naturalWidth + ' / ' + img.naturalHeight;
+    } else {
+      _frameAspectRatio = null;
+    }
+    renderStage();
+  };
+  img.onerror = function() {
+    _frameAspectRatio = null;
+    renderStage();
+  };
+  img.src = src;
+}
+
+// previewFrameImage: file picker や D&D で選択された画像を data URL 化したものを
+// 受け取り、 state._previewFrameDataUrl にセットして renderStage を再呼出する。
+// renderStage は preview があれば優先表示する (URL ベースの frame.src を上書き)。
+// GH PUT 成功時に handleFramePicked が _previewFrameDataUrl を null に戻すことで
+// 永続化された path 経由の通常ロードに切り替わる。
+// 旧実装で DOM を直接書き換えていた版は、 _probeFrameAspect の onload race で
+// renderStage が state.layout.frame.src (= 古い path) を読み戻して preview を
+// 上書きしてしまい、 「古い画像が新画像のアスペクト比で表示」 されるバグの温床だった。
+// state-driven にすることで renderStage 一本に責務集約 = race 自体が消える。
+function previewFrameImage(dataUrl) {
+  state._previewFrameDataUrl = String(dataUrl || '') || null;
+  renderStage();
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const fr = new FileReader();
+    fr.onload  = () => resolve(String(fr.result || ''));
+    fr.onerror = () => reject(fr.error || new Error('FileReader error'));
+    fr.readAsDataURL(file);
+  });
+}
+
+async function readFileAsBase64(file) {
+  // ArrayBuffer → base64 (multi-byte safe; FileReader.readAsDataURL の base64 部分でも可だが
+  // バイナリの方が確実)。
+  const buf = await file.arrayBuffer();
+  const bytes = new Uint8Array(buf);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin);
+}
+
+async function detectImageMagicBytes(file) {
+  // 最初 16 byte を見て image format を判定
+  const head = await file.slice(0, 16).arrayBuffer();
+  const b = new Uint8Array(head);
+  // PNG: 89 50 4E 47 0D 0A 1A 0A
+  if (b[0]===0x89 && b[1]===0x50 && b[2]===0x4E && b[3]===0x47) return 'png';
+  // JPEG: FF D8 FF
+  if (b[0]===0xFF && b[1]===0xD8 && b[2]===0xFF) return 'jpeg';
+  // WebP: 'RIFF' (52 49 46 46) ... 'WEBP' (57 45 42 50) at offset 8
+  if (b[0]===0x52 && b[1]===0x49 && b[2]===0x46 && b[3]===0x46 &&
+      b[8]===0x57 && b[9]===0x45 && b[10]===0x42 && b[11]===0x50) return 'webp';
+  return null;
+}
+
+// 指定 path の sha を取得 (存在しなければ null)。 _ghContentsUrl は L808 で定義済。
+async function _ghGetFrameSha(path) {
+  const url = _ghContentsUrl(path) + '?ref=' + GH_BRANCH;
+  const r = await fetch(url, {
+    method: 'GET',
+    credentials: 'include',
+    headers: { 'Accept': 'application/vnd.github+json' },
+    cache: 'no-store',
+  });
+  if (r.status === 404) return null;
+  if (!r.ok) throw new Error('GH GET ' + path + ' → ' + r.status);
+  const j = await r.json();
+  return j.sha || null;
+}
+
+async function _ghPutFrameBinary(path, b64Content, sha) {
+  const body = {
+    message: 'chore(maze-op): upload frame image (' + path + ')',
+    content: b64Content,
+    branch:  GH_BRANCH,
+  };
+  if (sha) body.sha = sha;
+  const r = await fetch(_ghContentsUrl(path), {
+    method: 'PUT',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/vnd.github+json' },
+    body: JSON.stringify(body),
+  });
+  if (r.status === 409) {
+    const e = new Error('CONFLICT_409'); e.status = 409; throw e;
+  }
+  if (!r.ok) {
+    const txt = await r.text().catch(() => '');
+    throw new Error('GH PUT ' + r.status + ' ' + txt.slice(0, 200));
+  }
+  return true;
+}
+
+let _frameUploading = false;
+async function handleFramePicked(file) {
+  if (_frameUploading) {
+    toast('別のアップロードが進行中', 'err');
+    return;
+  }
+  // 1. サニタイズ済ファイル名 + 拡張子検証
+  const filename = sanitizeFrameFilename(file.name);
+  if (!filename) {
+    toast('対応形式は png / jpg / webp のみ', 'err');
+    return;
+  }
+  // 1-A. MIME type の即時チェック (軽量、 file.type は偽装可能なため二段防御)
+  const ALLOWED_MIME = new Set(['image/png', 'image/jpeg', 'image/webp']);
+  if (!ALLOWED_MIME.has(file.type)) {
+    toast('PNG / JPEG / WebP のみアップロード可能です (検出: ' + (file.type || '不明') + ')', 'err');
+    return;
+  }
+  // 2. サイズチェック
+  if (file.size > FRAME_MAX_BYTES) {
+    toast('ファイルが大きすぎます (上限 3MB)', 'err');
+    return;
+  }
+  // 2-A. magic byte 検証 (file.type 偽装にも対応; 拡張子と実コンテンツの不一致もチェック)
+  const detected = await detectImageMagicBytes(file);
+  if (!detected) {
+    toast('画像形式が認識できません (PNG / JPEG / WebP のみ対応)', 'err');
+    return;
+  }
+  const declaredExt = (filename.match(/\.([a-z]+)$/)||[])[1] || '';
+  const actualExt = detected === 'jpeg' ? 'jpg' : detected;
+  const matches = (declaredExt === actualExt) ||
+                  (declaredExt === 'jpeg' && actualExt === 'jpg') ||
+                  (declaredExt === 'jpg'  && actualExt === 'jpg');
+  if (!matches) {
+    toast('拡張子 (.' + declaredExt + ') と実際の画像形式 (' + detected + ') が一致しません', 'err');
+    return;
+  }
+  // 3. 即時プレビュー (data URL を直接 box に貼る)
+  let dataUrl;
+  try {
+    dataUrl = await readFileAsDataUrl(file);
+  } catch (e) {
+    toast('ファイル読込失敗', 'err');
+    return;
+  }
+  previewFrameImage(dataUrl);
+  // 新フレーム画像が確定する前に、 data URL からアスペクト比を先行プローブして
+  // lockAspect=ON 状態でも即時に box.aspectRatio が新画像比に追従するようにする。
+  // GH PUT 失敗時もここでセットした値が残るため、 ローカル試行段階で「縦横比固定」
+  // の振る舞いが体感できる。 GH PUT 成功後の path 設定で renderStage は再度走るが
+  // _frameAspectRatio は同じ画像由来のため再プローブ不要。
+  _probeFrameAspect(dataUrl);
+  if (file.size > FRAME_WARN_BYTES) {
+    toast('画像が大きめです (' + Math.round(file.size / 1024) + 'KB) — 1MB 以下推奨');
+  }
+
+  // 4. origin チェック — file:// / localhost ではアップロード不可
+  const here = location.origin;
+  if (ALLOWED_GH_ORIGINS.indexOf(here) < 0) {
+    // 非 GH origin (localhost / file:) では GH PUT は出来ないが、
+    // ユーザーが意図した path を state に反映する (Export JSON で使われる)。
+    // ファイル実体は別途 GH 経由でデプロイ済 / これからデプロイされる前提。
+    // バグ修正前は preview だけ表示して state.layout.frame.src は default の
+    // ままだったため、 Export JSON すると古い path が書き出されていた。
+    const intendedPath = '../' + GH_FRAME_DIR + '/' + filename;
+    if (FRAME_SRC_RE.test(intendedPath)) {
+      if (!state.layout.frame) state.layout.frame = { enabled: true, src: '' };
+      state.layout.frame.enabled = true;
+      state.layout.frame.src     = intendedPath;
+      saveToLocal();
+      renderRightPane();   // tFrameSrc input / checkbox を新値に同期
+      pushHistory();       // フレーム差し替え (path のみ) で 1 回 push
+      toast('📡 GH アップロード非対応 origin です。 src のみ更新 (ファイル実体は別途配置が必要)', 'info');
+    } else {
+      toast('📡 GH アップロード非対応 origin です。 一時プレビュー表示中', 'info');
+    }
+    return;
+  }
+
+  // 5. GH PUT (新規 or 上書き)
+  _frameUploading = true;
+  const btn = document.getElementById('btnFramePick');
+  if (btn) btn.disabled = true;
+  try {
+    toast('GitHub にアップロード中…');
+    const ghPath = GH_FRAME_DIR + '/' + filename;
+    const b64    = await readFileAsBase64(file);
+    let sha = null;
+    try { sha = await _ghGetFrameSha(ghPath); } catch (e) {
+      console.warn('[maze-op-editor] frame sha lookup failed', e);
+      // sha 取得失敗でも PUT 試行は継続 (新規作成扱い)
+    }
+    await _ghPutFrameBinary(ghPath, b64, sha);
+    // 成功: state.frame.src を新 path に更新 + persist + render
+    if (!state.layout.frame) state.layout.frame = { enabled: true, src: '' };
+    state.layout.frame.enabled = true;
+    state.layout.frame.src     = '../' + ghPath;  // `../assets/images/maze/OP/<filename>`
+    // 永続 path に切り替わったので一時 preview をクリア (= renderStage は URL ベースで描画)。
+    state._previewFrameDataUrl = null;
+    saveToLocal();
+    renderRightPane();   // tFrameSrc input / checkbox を新値に同期
+    renderStage();       // backgroundImage を path 値に戻す (data URL → path)
+    pushHistory();       // フレーム差し替え確定で 1 回 push
+    toast('フレーム画像を更新しました');
+  } catch (e) {
+    console.warn('[maze-op-editor] frame upload failed', e);
+    if (e && e.status === 409) {
+      toast('競合: 他で更新されています。再試行してください', 'err');
+    } else {
+      toast('アップロード失敗: ' + (e && e.message ? e.message.slice(0, 80) : 'unknown'), 'err');
+    }
+    // プレビューはそのまま残す (ユーザが「もう一度試す」 / 「path を別名にする」 判断できるように)。
+  } finally {
+    _frameUploading = false;
+    if (btn) btn.disabled = false;
+  }
+}
+
+// ----------------------------------------------------------------------------
+// Narration audio picker (新規: ボタン → ファイル選択 → magic byte 検証 → GH アップロード)
+// ----------------------------------------------------------------------------
+const GH_AUDIO_DIR = 'assets/sounds/maze/op';
+const AUDIO_MAX_BYTES = 5 * 1024 * 1024;          // 5MB hard cap (ナレ 1 ビート 〜30 秒想定)
+const AUDIO_WARN_BYTES = 2 * 1024 * 1024;         // 2MB 推奨上限
+const ALLOWED_AUDIO_MIME = new Set([
+  'audio/mpeg', 'audio/mp3',
+  'audio/wav', 'audio/wave', 'audio/x-wav',
+  'audio/ogg', 'application/ogg',
+  'audio/mp4', 'audio/x-m4a', 'audio/aac',
+]);
+
+function sanitizeAudioFilename(rawName) {
+  // 拡張子保持、 ベースは [^A-Za-z0-9_.-] を `_` に置換。 frame と同じ思想。
+  const m = /^(.*)\.([A-Za-z0-9]+)$/.exec(String(rawName || ''));
+  if (!m) return null;
+  const baseRaw = m[1];
+  const extRaw  = m[2].toLowerCase();
+  if (!/^(mp3|wav|ogg|m4a)$/.test(extRaw)) return null;
+  let base = baseRaw.replace(/[^A-Za-z0-9_.-]/g, '_');
+  base = base.replace(/^\.+/, '').replace(/\.+$/, '');
+  base = base.replace(/\.\./g, '_');
+  if (!base) base = 'narration';
+  return base + '.' + extRaw;
+}
+
+async function detectAudioMagicBytes(file) {
+  // 最初 16 byte を見て audio format を判定
+  const head = await file.slice(0, 16).arrayBuffer();
+  const b = new Uint8Array(head);
+  // MP3 with ID3v2 tag: 49 44 33 (= 'ID3')
+  if (b[0]===0x49 && b[1]===0x44 && b[2]===0x33) return 'mp3';
+  // MP3 raw frame sync: FF Ex/Fx (= MPEG audio frame)
+  if (b[0]===0xFF && (b[1] & 0xE0) === 0xE0) return 'mp3';
+  // WAV: 'RIFF' (52 49 46 46) ... 'WAVE' (57 41 56 45) at offset 8
+  if (b[0]===0x52 && b[1]===0x49 && b[2]===0x46 && b[3]===0x46 &&
+      b[8]===0x57 && b[9]===0x41 && b[10]===0x56 && b[11]===0x45) return 'wav';
+  // OGG: 'OggS' (4F 67 67 53)
+  if (b[0]===0x4F && b[1]===0x67 && b[2]===0x67 && b[3]===0x53) return 'ogg';
+  // M4A / MP4: 'ftyp' (66 74 79 70) at offset 4
+  if (b[4]===0x66 && b[5]===0x74 && b[6]===0x79 && b[7]===0x70) return 'm4a';
+  return null;
+}
+
+async function _ghGetAudioSha(path) {
+  const url = _ghContentsUrl(path) + '?ref=' + GH_BRANCH;
+  const r = await fetch(url, {
+    method: 'GET',
+    credentials: 'include',
+    headers: { 'Accept': 'application/vnd.github+json' },
+    cache: 'no-store',
+  });
+  if (r.status === 404) return null;
+  if (!r.ok) throw new Error('GH GET ' + path + ' → ' + r.status);
+  const j = await r.json();
+  return j.sha || null;
+}
+
+async function _ghPutAudioBinary(path, b64Content, sha) {
+  const body = {
+    message: 'chore(maze-op): upload narration audio (' + path + ')',
+    content: b64Content,
+    branch:  GH_BRANCH,
+  };
+  if (sha) body.sha = sha;
+  const r = await fetch(_ghContentsUrl(path), {
+    method: 'PUT',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/vnd.github+json' },
+    body: JSON.stringify(body),
+  });
+  if (r.status === 409) {
+    const e = new Error('CONFLICT_409'); e.status = 409; throw e;
+  }
+  if (!r.ok) {
+    const txt = await r.text().catch(() => '');
+    throw new Error('GH PUT ' + r.status + ' ' + txt.slice(0, 200));
+  }
+  return true;
+}
+
+let _audioUploading = false;
+async function handleNarrationPicked(file) {
+  if (_audioUploading) {
+    toast('別のアップロードが進行中', 'err');
+    return;
+  }
+  // 1. サニタイズ済ファイル名 + 拡張子検証
+  const filename = sanitizeAudioFilename(file.name);
+  if (!filename) {
+    toast('対応形式は mp3 / wav / ogg / m4a のみ', 'err');
+    return;
+  }
+  // 1-A. MIME type の即時チェック (file.type は偽装可能なため二段防御)
+  if (!ALLOWED_AUDIO_MIME.has(file.type)) {
+    toast('mp3 / wav / ogg / m4a のみアップロード可能です (検出: ' + (file.type || '不明') + ')', 'err');
+    return;
+  }
+  // 2. サイズチェック
+  if (file.size > AUDIO_MAX_BYTES) {
+    toast('ファイルが大きすぎます (上限 5MB)', 'err');
+    return;
+  }
+  // 2-A. magic byte 検証 (拡張子と実コンテンツの不一致もチェック)
+  const detected = await detectAudioMagicBytes(file);
+  if (!detected) {
+    toast('音声形式が認識できません (mp3 / wav / ogg / m4a のみ対応)', 'err');
+    return;
+  }
+  const declaredExt = (filename.match(/\.([a-z0-9]+)$/)||[])[1] || '';
+  if (declaredExt !== detected) {
+    toast('拡張子 (.' + declaredExt + ') と実際の音声形式 (' + detected + ') が一致しません', 'err');
+    return;
+  }
+  if (file.size > AUDIO_WARN_BYTES) {
+    toast('音声ファイルが大きめです (' + Math.round(file.size / 1024) + 'KB) — 2MB 以下推奨');
+  }
+
+  // 3. origin チェック — file:// / localhost ではアップロード不可
+  const here = location.origin;
+  if (ALLOWED_GH_ORIGINS.indexOf(here) < 0) {
+    // ローカル試行段階では path のみ state に書いて即時 src 反映、 再生も可能にする。
+    state.narrationAudio[state.selected] = '../' + GH_AUDIO_DIR + '/' + filename;
+    saveToLocal();
+    renderRightPane();
+    pushHistory();
+    toast('📡 GH アップロード非対応 origin です。 src のみ更新しました');
+    return;
+  }
+
+  // 4. GH PUT (新規 or 上書き)
+  _audioUploading = true;
+  const btn = document.getElementById('btnNarrationPick');
+  if (btn) btn.disabled = true;
+  try {
+    toast('GitHub にアップロード中…');
+    const ghPath = GH_AUDIO_DIR + '/' + filename;
+    const b64    = await readFileAsBase64(file);
+    let sha = null;
+    try { sha = await _ghGetAudioSha(ghPath); } catch (e) {
+      console.warn('[maze-op-editor] audio sha lookup failed', e);
+    }
+    await _ghPutAudioBinary(ghPath, b64, sha);
+    // 成功: state.narrationAudio[selected] を新 path に更新
+    state.narrationAudio[state.selected] = '../' + ghPath;
+    saveToLocal();
+    renderRightPane();
+    pushHistory();
+    toast('ナレーション音声を更新しました');
+  } catch (e) {
+    console.warn('[maze-op-editor] audio upload failed', e);
+    if (e && e.status === 409) {
+      toast('競合: 他で更新されています。再試行してください', 'err');
+    } else {
+      toast('アップロード失敗: ' + (e && e.message ? e.message.slice(0, 80) : 'unknown'), 'err');
+    }
+  } finally {
+    _audioUploading = false;
+    if (btn) btn.disabled = false;
+  }
+}
+
+// ----------------------------------------------------------------------------
+// Right-pane bindings
+// ----------------------------------------------------------------------------
+function bindRange(rangeId, displayId, getter, setter, precision) {
+  const r = document.getElementById(rangeId);
+  const d = document.getElementById(displayId);
+  // input: ドラッグ中の中間値はライブプレビューのみ。 履歴 push しない。
+  r.addEventListener('input', () => {
+    const v = Number(r.value);
+    setter(v);
+    d.textContent = (precision != null && !Number.isInteger(v)) ? v.toFixed(precision) : String(v);
+    saveToLocal();
+    renderStage();
+  });
+  // change: ドラッグ確定 (mouseup / Enter / blur) で 1 回だけ push。
+  r.addEventListener('change', () => {
+    pushHistory();
+  });
+}
+
+function bindColorPair(colorId, textId, getter, setter) {
+  const c = document.getElementById(colorId);
+  const t = document.getElementById(textId);
+  c.addEventListener('input', () => {
+    setter(c.value);
+    t.value = c.value;
+    saveToLocal();
+    renderStage();
+  });
+  // color picker のドラッグ確定で push。
+  c.addEventListener('change', () => {
+    pushHistory();
+  });
+  t.addEventListener('change', () => {
+    const v = String(t.value || '').trim();
+    if (isHexColor(v)) {
+      setter(v);
+      c.value = v;
+      saveToLocal();
+      renderStage();
+      pushHistory();
+    } else {
+      t.value = getter();
+      toast('色は #rrggbb 形式で', 'err');
+    }
+  });
+}
+
+function initRightPane() {
+  // Position
+  bindRange('rXPct', 'vXPct', () => state.layout.box.xPct, v => state.layout.box.xPct = v, 1);
+  bindRange('rYPct', 'vYPct', () => state.layout.box.yPct, v => state.layout.box.yPct = v, 1);
+  // 🎯 中央にリセット: box を stage 幾何中央 (xPct=50, yPct=50) に戻す。
+  // pushHistory() で 1 操作 1 履歴に積むため、 やり直したくなったら Ctrl+Z で復元できる。
+  const btnCenter = document.getElementById('btnCenter');
+  if (btnCenter) {
+    btnCenter.addEventListener('click', () => {
+      state.layout.box.xPct = 50;
+      state.layout.box.yPct = 50;
+      saveToLocal();
+      renderRightPane();
+      renderStage();
+      pushHistory();
+      toast('中央に配置しました');
+    });
+  }
+  // Size
+  bindRange('rWPct', 'vWPct', () => state.layout.box.widthPct,  v => state.layout.box.widthPct  = v, 1);
+  bindRange('rHPct', 'vHPct', () => state.layout.box.heightPct, v => state.layout.box.heightPct = v, 1);
+  // Text
+  bindRange('rFontSize',      'vFontSize',      () => state.layout.text.fontSize,      v => state.layout.text.fontSize      = v, 0);
+  bindRange('rLineHeight',    'vLineHeight',    () => state.layout.text.lineHeight,    v => state.layout.text.lineHeight    = v, 2);
+  bindRange('rLetterSpacing', 'vLetterSpacing', () => state.layout.text.letterSpacing, v => state.layout.text.letterSpacing = v, 2);
+  bindColorPair('cColor', 'tColor', () => state.layout.text.color, v => state.layout.text.color = v);
+  document.getElementById('sAlign').addEventListener('change', e => {
+    state.layout.text.align = e.target.value;
+    saveToLocal();
+    renderStage();
+    pushHistory();
+  });
+  // Background
+  bindColorPair('cBgColor', 'tBgColor', () => state.layout.bg.color, v => state.layout.bg.color = v);
+  bindRange('rBgAlpha', 'vBgAlpha', () => state.layout.bg.alpha,   v => state.layout.bg.alpha   = v, 2);
+  bindRange('rRadius',  'vRadius',  () => state.layout.bg.radius,  v => state.layout.bg.radius  = v, 0);
+  bindRange('rPadding', 'vPadding', () => state.layout.bg.padding, v => state.layout.bg.padding = v, 0);
+
+  // Frame (image-based background panel)
+  const frameEnabled = document.getElementById('cFrameEnabled');
+  const frameSrc     = document.getElementById('tFrameSrc');
+  const frameLock    = document.getElementById('cFrameLock');
+  frameEnabled.addEventListener('change', () => {
+    if (!state.layout.frame) state.layout.frame = { enabled: false, src: '', lockAspect: false };
+    state.layout.frame.enabled = !!frameEnabled.checked;
+    applyFrameUIGuard();
+    saveToLocal();
+    renderStage();
+    pushHistory();
+  });
+  // lockAspect トグル: 状態保存 + UI guard 更新 + renderStage で即時反映。
+  // 内部の aspect 値 (_frameAspectRatio) は既に init / src 変更時にロード済なので
+  // ここでは追加プローブは不要 (= 同じ src のままなら値は変わらない)。
+  if (frameLock) {
+    frameLock.addEventListener('change', () => {
+      if (!state.layout.frame) state.layout.frame = { enabled: false, src: '', lockAspect: false };
+      state.layout.frame.lockAspect = !!frameLock.checked;
+      applyFrameUIGuard();
+      saveToLocal();
+      renderStage();
+      pushHistory();
+    });
+  }
+  // change のみだとフォーカスアウト/Enter までライブプレビューが更新されないため、
+  // input イベントでも検証通過時は state 更新 + render してタイピング中もライブプレビュー反映する。
+  // ただし input で毎キーストロークの不正値に対し toast を出すと鬱陶しいので、
+  // toast は change (blur/Enter) のみで発火させる。 (タイピング中はサイレント受理、 確定時に
+  // 検証失敗フィードバック、 という UX)
+  const onFrameSrcInput = function() {
+    if (!state.layout.frame) state.layout.frame = { enabled: false, src: '', lockAspect: false };
+    const v = String(frameSrc.value || '').trim();
+    if (v === '' || FRAME_SRC_RE.test(v)) {
+      state.layout.frame.src = v;
+      // ユーザが path text input を直接編集した場合、 一時 preview (= file picker 経由の
+      // data URL) は意図と乖離するためクリアする (空文字にした場合も同様)。
+      state._previewFrameDataUrl = null;
+      saveToLocal();
+      // 新しい src で aspect 比を再計算 (非同期、 完了後に renderStage を再走させる)。
+      // 同期的にも renderStage を一度呼んで src 反映する (= aspect 算出前は _frameAspectRatio
+      // が古い値だが、 算出完了時に再 render される)。
+      _probeFrameAspect(v);
+      renderStage();
+    }
+    // 不正値はサイレント (input イベントでは toast を出さない)
+  };
+  const onFrameSrcChangeFinal = function() {
+    const v = String(frameSrc.value || '').trim();
+    if (v !== '' && !FRAME_SRC_RE.test(v)) {
+      // 確定 (blur/Enter) 時のみ、 検証失敗を 1 回だけ通知。
+      toast('frame.src は ../assets/images/.../*.png|jpg|webp 形式で指定してください', 'err');
+    } else {
+      // 有効値 (空文字 or allowlist 通過) で確定 → 履歴 push。
+      pushHistory();
+    }
+  };
+  frameSrc.addEventListener('input',  onFrameSrcInput);
+  frameSrc.addEventListener('change', onFrameSrcChangeFinal);
+
+  // Frame image picker (差し替えボタン)
+  const btnPick = document.getElementById('btnFramePick');
+  const filPick = document.getElementById('filFramePick');
+  if (btnPick && filPick) {
+    btnPick.addEventListener('click', () => filPick.click());
+    filPick.addEventListener('change', () => {
+      const file = filPick.files && filPick.files[0];
+      if (!file) return;
+      handleFramePicked(file);
+      filPick.value = ''; // reset for re-pick same file
+    });
+  }
+
+  // Narration audio src input + pick + play + stop
+  const narrSrc       = document.getElementById('tNarrationSrc');
+  const btnNarrPick   = document.getElementById('btnNarrationPick');
+  const filNarrPick   = document.getElementById('filNarrationPick');
+  const btnNarrPlay   = document.getElementById('btnNarrationPlay');
+  const btnNarrStop   = document.getElementById('btnNarrationStop');
+  if (narrSrc) {
+    // タイピング中はサイレント受理 + 検証通過なら state 更新 (frame と同じ思想)
+    narrSrc.addEventListener('input', () => {
+      const v = String(narrSrc.value || '').trim();
+      if (v === '' || AUDIO_SRC_RE.test(v)) {
+        state.narrationAudio[state.selected] = v;
+        // src 変更時は再生中音声を停止 (異なる src を再生してしまう事故防止)
+        _stopCurrentNarrationAudio();
+        saveToLocal();
+      }
+    });
+    narrSrc.addEventListener('change', () => {
+      const v = String(narrSrc.value || '').trim();
+      if (v !== '' && !AUDIO_SRC_RE.test(v)) {
+        toast('narrationAudio は ../assets/sounds/.../*.mp3|wav|ogg|m4a 形式で指定してください', 'err');
+      } else {
+        pushHistory();
+      }
+    });
+  }
+  if (btnNarrPick && filNarrPick) {
+    btnNarrPick.addEventListener('click', () => filNarrPick.click());
+    filNarrPick.addEventListener('change', () => {
+      const file = filNarrPick.files && filNarrPick.files[0];
+      if (!file) return;
+      handleNarrationPicked(file);
+      filNarrPick.value = ''; // reset for re-pick same file
+    });
+  }
+  if (btnNarrPlay) {
+    btnNarrPlay.addEventListener('click', () => {
+      const path = (state.narrationAudio && state.narrationAudio[state.selected]) || '';
+      if (!path || !AUDIO_SRC_RE.test(path)) {
+        toast('再生する音声が設定されていません', 'err');
+        return;
+      }
+      _stopCurrentNarrationAudio();
+      try {
+        _currentNarrationAudio = new Audio(path);
+        _currentNarrationAudio.onerror = () => toast('音声再生失敗 (ファイルが存在しない可能性)', 'err');
+        const p = _currentNarrationAudio.play();
+        if (p && typeof p.catch === 'function') {
+          p.catch(err => {
+            console.warn('[maze-op-editor] narration play failed', err);
+            toast('音声再生失敗: ' + (err && err.message ? err.message.slice(0, 60) : 'unknown'), 'err');
+          });
+        }
+      } catch (e) {
+        console.warn('[maze-op-editor] narration play threw', e);
+        toast('音声再生失敗', 'err');
+      }
+    });
+  }
+  if (btnNarrStop) {
+    btnNarrStop.addEventListener('click', () => {
+      _stopCurrentNarrationAudio();
+    });
+  }
+}
+
+// ----------------------------------------------------------------------------
+// Boot
+// ----------------------------------------------------------------------------
+function init() {
+  loadFromLocal();
+  state.selected = Math.min(state.selected, state.beats.length - 1);
+  // beats.length に narrationAudio を最終調整 (loadFromLocal が空でデフォルトのままなら no-op)。
+  state.narrationAudio = normalizeNarrationAudio(state.narrationAudio, state.beats.length);
+
+  // Header buttons
+  document.getElementById('btnExport').addEventListener('click', exportJson);
+  document.getElementById('btnImport').addEventListener('click', () => {
+    document.getElementById('importFile').click();
+  });
+  document.getElementById('importFile').addEventListener('change', e => {
+    const f = e.target.files && e.target.files[0];
+    if (f) importJsonFromFile(f);
+    e.target.value = '';
+  });
+  document.getElementById('btnGoMaze').addEventListener('click', () => {
+    location.href = 'maze-editor.html';
+  });
+
+  // Publish only when origin is allowed (worker.js gating).
+  const here = location.origin;
+  const publishVisible = ALLOWED_GH_ORIGINS.indexOf(here) >= 0;
+  const pubBtn = document.getElementById('btnPublish');
+  if (publishVisible) {
+    pubBtn.style.display = '';
+    pubBtn.addEventListener('click', publishToGitHub);
+  } else {
+    pubBtn.style.display = 'none';
+  }
+
+  // Beat list buttons
+  document.getElementById('btnBeatAdd').addEventListener('click', addBeat);
+  document.getElementById('btnBeatRemove').addEventListener('click', removeBeat);
+
+  // Step nav
+  document.getElementById('btnPrev').addEventListener('click', stepPrev);
+  document.getElementById('btnNext').addEventListener('click', stepNext);
+
+  // Beat textarea
+  const ta = document.getElementById('beatTextarea');
+  ta.addEventListener('input', () => {
+    state.beats[state.selected] = ta.value;
+    saveToLocal();
+    renderBeatList();
+    renderStage();
+    // タイピング毎に push せず、 blur で 1 回だけ push (= 1 編集セッション = 1 履歴)。
+  });
+  ta.addEventListener('blur', () => {
+    pushHistory();
+  });
+
+  // Undo/Redo buttons + keybinding
+  document.getElementById('btnUndo').addEventListener('click', undo);
+  document.getElementById('btnRedo').addEventListener('click', redo);
+  document.addEventListener('keydown', (e) => {
+    // テキスト入力中はブラウザネイティブの undo/redo を尊重 (上書きしない)。
+    const tag = (e.target && e.target.tagName) || '';
+    if (tag === 'TEXTAREA' || tag === 'INPUT') return;
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+      e.preventDefault();
+      undo();
+    } else if ((e.ctrlKey || e.metaKey) && (e.key === 'Z' || (e.key === 'z' && e.shiftKey) || e.key === 'y')) {
+      e.preventDefault();
+      redo();
+    }
+  });
+
+  initRightPane();
+  // 起動時に現在の frame.src からアスペクト比をロードする (デフォルトは frame_s2.png)。
+  // lockAspect=true (DEFAULT_LAYOUT の初期値) の状態でリロードした既存ユーザーも
+  // ここで naturalWidth/Height を取得 → box.style.aspectRatio に反映 → 葉飾りが歪まない。
+  // 旧 JSON (lockAspect 未定義) は mergeLayout の defensive default 経由でも base 既定の
+  // true が維持されるため、 既存 localStorage を保持したままリロードしても自動適用される。
+  if (state.layout.frame && state.layout.frame.src) {
+    _probeFrameAspect(state.layout.frame.src);
+  }
+  // 起動時 state を履歴の base 点として記録 → undo の最古到達点になる。
+  pushHistory();
+  renderAll();
+}
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+
+</body>
+</html>

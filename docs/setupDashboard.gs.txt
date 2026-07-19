@@ -1,0 +1,585 @@
+/**
+ * setupDashboard.gs
+ * ポノのあそびば アンケート分析 Phase 1 セットアップ (final rev.)
+ *
+ * 使い方:
+ *   Apps Script エディタで setupDashboard() を選択して▶実行するだけ。
+ *   6 タブ (_Helpers / Dashboard / Game_DeepDive / Trend_Weekly /
+ *   Weekly_Summary / Decision_Log) を冪等にセットアップする。
+ *
+ * 前提:
+ *   - 既存タブ staging / production / unknown が 16 列スキーマで存在
+ *   - production!A:P = timestamp, environment, anonSid, starScore, gameId,
+ *     swVersion, playDurationSec, age, engagement, positiveNotes, stumbles,
+ *     favoriteGames, bookConnection, pricePerception, freeText, email
+ *   - WeeklyDigest.gs が同一プロジェクトに追加済み (Weekly_Summary を append する)
+ *
+ * ─────────────────────────────────────────────────────────────
+ * 列マッピング表 (絶対に触る前に読む):
+ *   production!A..P  ⇔  _Helpers!P..AE (30 日スライス、 同順で 16 列コピー)
+ *
+ *   production列 | 内容              | _Helpers列
+ *   -------------+-------------------+-----------
+ *   A            | timestamp         | P
+ *   B            | environment       | Q
+ *   C            | anonSid           | R
+ *   D            | starScore         | S
+ *   E            | gameId            | T
+ *   F            | swVersion         | U
+ *   G            | playDurationSec   | V
+ *   H            | age               | W
+ *   I            | engagement        | X
+ *   J            | positiveNotes     | Y
+ *   K            | stumbles          | Z
+ *   L            | favoriteGames     | AA
+ *   M            | bookConnection    | AB
+ *   N            | pricePerception   | AC
+ *   O            | freeText          | AD   ← K9 はここ
+ *   P            | email             | AE   ← K10 はここ
+ *
+ *   CSV 展開表 (_Helpers 内、 スライスとは別領域):
+ *     A:D  = positiveNotes 展開 (ts / env / gameId / item)   ← D 列を使う
+ *     F:I  = stumbles 展開      (ts / env / gameId / item)   ← H=gameId, I=item
+ *     K:N  = favoriteGames 展開 (ts / env / gameId / item)   ← N 列を使う
+ * ─────────────────────────────────────────────────────────────
+ */
+
+// ============================================================
+// 定数
+// ============================================================
+const SETUP_SHEET_ID = '1Gs79PHC8YUXGN2VpaHHH6edHH1BtfiOYvaCHxcbwXXI';
+const MVP_GAMES = ['quizland', 'maze', 'oto', 'bento', 'puzzle'];
+
+// タブ名
+const TAB_HELPERS   = '_Helpers';
+const TAB_DASHBOARD = 'ダッシュボード';
+const TAB_DEEPDIVE  = 'ゲーム別詳細';
+const TAB_TREND     = '週次トレンド';
+const TAB_WEEKLY    = '週次サマリ';
+const TAB_DECISION  = '判断記録';
+
+// 既存空タブ (シート1 / Sheet1) を _Helpers にリネームして流用する
+const LEGACY_EMPTY_TAB_CANDIDATES = ['シート1', 'Sheet1'];
+
+// production スキーマ (H3 対応: setValues で確実にヘッダを敷く)
+const PRODUCTION_HEADERS = [
+  'timestamp','environment','anonSid','starScore','gameId','swVersion',
+  'playDurationSec','age','engagement','positiveNotes','stumbles',
+  'favoriteGames','bookConnection','pricePerception','freeText','email'
+];
+
+// ============================================================
+// メイン
+// ============================================================
+/**
+ * @param {{source?: 'production'|'staging'}} [opts]
+ *   source='staging' を渡すと _Helpers 30 日スライスと展開表が staging を読む。
+ *   Phase 1 初週の smoke test 用 (F11)。
+ */
+function setupDashboard(opts) {
+  opts = opts || {};
+  const source = opts.source === 'staging' ? 'staging' : 'production';
+  const ss = SpreadsheetApp.openById(SETUP_SHEET_ID);
+  try {
+    Logger.log('=== setupDashboard start (source=' + source + ') ===');
+    setup_Helpers(ss, source);
+    setup_Dashboard(ss);
+    setup_GameDeepDive(ss);
+    setup_Trend(ss, source);
+    setup_WeeklySummary(ss);
+    setup_DecisionLog(ss);
+
+    // 見た目: タブ順を整える (C3 対応: _Helpers はまだ表示状態のまま扱う)
+    reorderTabs(ss, [
+      TAB_DASHBOARD, TAB_DEEPDIVE, TAB_TREND, TAB_WEEKLY, TAB_DECISION,
+      'staging', 'production', 'unknown', TAB_HELPERS
+    ]);
+
+    // C3 対応: reorder が終わってから _Helpers を hide する
+    const helpers = ss.getSheetByName(TAB_HELPERS);
+    if (helpers) helpers.hideSheet();
+
+    Logger.log('=== 6 タブ全部準備完了 ===');
+  } catch (e) {
+    Logger.log('setupDashboard ERROR: ' + e + '\n' + (e.stack || ''));
+    Logger.log('※ 途中失敗した場合は setupDashboard() をもう一度実行すれば回復する。');
+    Logger.log('  週次サマリ / 判断記録 の既存データは保護される。');
+    throw e;
+  }
+}
+
+/** staging データで動作確認したい時の shortcut。 */
+function setupDashboard_staging() {
+  setupDashboard({ source: 'staging' });
+}
+
+// ============================================================
+// 汎用ユーティリティ
+// ============================================================
+
+/** 既存タブを取得、なければ新規作成。legacy 空タブは "完全に空" のときだけ rename して流用 (P7)。 */
+function getOrCreateSheet_(ss, name, opts) {
+  opts = opts || {};
+  let sheet = ss.getSheetByName(name);
+  if (sheet) return sheet;
+
+  if (opts.reuseLegacy) {
+    for (const legacy of LEGACY_EMPTY_TAB_CANDIDATES) {
+      const s = ss.getSheetByName(legacy);
+      // 完全に空 (見た目セル 1x1 以下 && データ 0 行) の時だけ流用する
+      if (s && s.getLastRow() <= 1 && s.getLastColumn() <= 1) {
+        s.setName(name);
+        Logger.log('renamed "' + legacy + '" -> "' + name + '"');
+        return s;
+      }
+      if (s) {
+        Logger.log('legacy "' + legacy + '" has content, keep as-is');
+      }
+    }
+  }
+  sheet = ss.insertSheet(name);
+  Logger.log('created new sheet "' + name + '"');
+  return sheet;
+}
+
+/** 内容をクリア (値・書式・数式・チャート・条件付き書式)。 タブ自体は残す。 */
+function clearSheet_(sheet) {
+  sheet.clear();
+  sheet.clearConditionalFormatRules();
+  dropAllCharts_(sheet);
+}
+
+function dropAllCharts_(sheet) {
+  const charts = sheet.getCharts();
+  charts.forEach(function (c) { sheet.removeChart(c); });
+}
+
+function reorderTabs(ss, orderedNames) {
+  orderedNames.forEach(function (name, idx) {
+    const s = ss.getSheetByName(name);
+    if (!s) return;
+    // 非表示シートは activate できないので、 一時的に表示してから move
+    const wasHidden = s.isSheetHidden();
+    if (wasHidden) s.showSheet();
+    ss.setActiveSheet(s);
+    ss.moveActiveSheet(idx + 1);
+    if (wasHidden) s.hideSheet();
+  });
+}
+
+// ============================================================
+// 1. _Helpers タブ
+// ============================================================
+function setup_Helpers(ss, source) {
+  const sheet = getOrCreateSheet_(ss, TAB_HELPERS, { reuseLegacy: true });
+  clearSheet_(sheet);
+
+  // 列数を確保 (P:AE = 31 列 + buffer)
+  // 「シート1」流用時は default 26 列しかなく、 後段の setColumnWidths(1, 32, 110)
+  // や P1:AE1 setValues が out-of-bounds で落ちるため、 先に拡張する。
+  const NEEDED_COLS = 32;
+  const currentCols = sheet.getMaxColumns();
+  if (currentCols < NEEDED_COLS) {
+    sheet.insertColumnsAfter(currentCols, NEEDED_COLS - currentCols);
+  }
+  // 行数も確保 (formula が row 5000 まで参照するため)
+  const NEEDED_ROWS = 5000;
+  const currentRows = sheet.getMaxRows();
+  if (currentRows < NEEDED_ROWS) {
+    sheet.insertRowsAfter(currentRows, NEEDED_ROWS - currentRows);
+  }
+
+  // --- ヘッダ ---
+  sheet.getRange('A1:D1').setValues([[
+    'timestamp', 'environment', 'gameId', 'positiveNote'
+  ]]).setFontWeight('bold');
+  sheet.getRange('F1:I1').setValues([[
+    'timestamp', 'environment', 'gameId', 'stumble'
+  ]]).setFontWeight('bold');
+  sheet.getRange('K1:N1').setValues([[
+    'timestamp', 'environment', 'gameId', 'favoriteGame'
+  ]]).setFontWeight('bold');
+
+  // --- 展開数式 (positiveNotes=J / stumbles=K / favoriteGames=L) ---
+  sheet.getRange('A2').setFormula(buildExpandFormula_(source, 'J'));
+  sheet.getRange('F2').setFormula(buildExpandFormula_(source, 'K'));
+  sheet.getRange('K2').setFormula(buildExpandFormula_(source, 'L'));
+
+  // --- 直近 30 日 slice (P:AE = 16 列)。 H3 対応: ヘッダは setValues で確実に敷く ---
+  sheet.getRange('P1:AE1').setValues([PRODUCTION_HEADERS]).setFontWeight('bold');
+  sheet.getRange('P2').setFormula(
+    '=IFERROR(FILTER(' + source + '!A2:P5000, ' +
+      source + '!A2:A5000>=TODAY()-30, ' +
+      source + '!A2:A5000<>""), "")'
+  );
+
+  // 見た目調整
+  sheet.setColumnWidths(1, 32, 110);
+  sheet.setFrozenRows(1);
+  // hide は setupDashboard の末尾で実施 (C3)
+}
+
+/**
+ * <source>!<csvCol> の CSV を展開する formula を組み立てる (H4 対応: space 連結)。
+ * 出力 4 列: timestamp / environment / gameId / <item>
+ */
+function buildExpandFormula_(source, csvCol) {
+  return [
+    '=IFERROR(LET(',
+    '  ts,   ' + source + '!A2:A5000,',
+    '  env,  ' + source + '!B2:B5000,',
+    '  gid,  ' + source + '!E2:E5000,',
+    '  csv,  ' + source + '!' + csvCol + '2:' + csvCol + '5000,',
+    '  keep, (ts<>"")*(csv<>""),',
+    '  ts2,  FILTER(ts,  keep),',
+    '  env2, FILTER(env, keep),',
+    '  gid2, FILTER(gid, keep),',
+    '  csv2, FILTER(csv, keep),',
+    '  parts,IFERROR(SPLIT(csv2, ",", TRUE, TRUE), csv2),',
+    '  HSTACK(',
+    '    FLATTEN(IF(parts="",,ts2)),',
+    '    FLATTEN(IF(parts="",,env2)),',
+    '    FLATTEN(IF(parts="",,gid2)),',
+    '    FLATTEN(IF(parts="",,TRIM(parts)))',
+    '  )',
+    '),"")'
+  ].join(' ');  // H4: newline ではなく space
+}
+
+// ============================================================
+// 2. Dashboard タブ
+// ============================================================
+function setup_Dashboard(ss) {
+  const sheet = getOrCreateSheet_(ss, TAB_DASHBOARD);
+  clearSheet_(sheet);
+
+  // --- 見出し ---
+  sheet.getRange('A1').setValue('ダッシュボード（直近 30 日）');
+  sheet.getRange('A1').setFontWeight('bold').setFontSize(16);
+  sheet.getRange('A1:D1').merge();
+
+  // --- KPI 11 セル (C1/P1 対応: 列マッピングを厳密化) ---
+  // _Helpers 30 日スライスの列: S=star, T=gameId, V=playSec, X=engage,
+  //   AB=bookConn, AC=price, AD=freeText, AE=email, P=timestamp
+  const kpi = [
+    // [label,                                  formula]
+    ['①星スコア平均',            '=IFERROR(AVERAGE(_Helpers!S2:S5000),0)'],
+    ['②★4-5 比率',              '=IFERROR(COUNTIF(_Helpers!S2:S5000,">=4")/COUNTA(_Helpers!S2:S5000),0)'],
+    ['③★1-2 比率',              '=IFERROR(COUNTIF(_Helpers!S2:S5000,"<=2")/COUNTA(_Helpers!S2:S5000),0)'],
+    ['④熱中度平均',              '=IFERROR(AVERAGE(_Helpers!X2:X5000),0)'],
+    ['回答数 (N)',              '=COUNTA(_Helpers!P2:P5000)'],
+    ['⑦絵本連動スコア平均',      '=IFERROR(AVERAGE(_Helpers!AB2:AB5000),0)'],
+    ['⑧価格 高評価率',           '=IFERROR(COUNTIF(_Helpers!AC2:AC5000,">=4")/COUNTA(_Helpers!AC2:AC5000),0)'],
+    ['⑨自由記述 記入率',         '=IFERROR(COUNTA(_Helpers!AD2:AD5000)/COUNTA(_Helpers!P2:P5000),0)'],  // AD=freeText
+    ['⑩メール提供率',            '=IFERROR(COUNTA(_Helpers!AE2:AE5000)/COUNTA(_Helpers!P2:P5000),0)'],  // AE=email
+    ['⑪よかった/つまづき 比',    '=IFERROR(COUNTA(_Helpers!D2:D5000)/COUNTA(_Helpers!I2:I5000),0)'],
+    ['⑫平均プレイ秒数',          '=IFERROR(AVERAGE(_Helpers!V2:V5000),0)']
+  ];
+  for (let i = 0; i < kpi.length; i++) {
+    sheet.getRange(3 + i, 1).setValue(kpi[i][0]).setFontWeight('bold');
+    sheet.getRange(3 + i, 2).setFormula(kpi[i][1]);
+  }
+  // 表示形式
+  sheet.getRange('B3').setNumberFormat('0.00');
+  sheet.getRange('B4:B5').setNumberFormat('0.0%');
+  sheet.getRange('B6').setNumberFormat('0.00');
+  sheet.getRange('B7').setNumberFormat('0');
+  sheet.getRange('B8').setNumberFormat('0.00');
+  sheet.getRange('B9:B11').setNumberFormat('0.0%');
+  sheet.getRange('B12').setNumberFormat('0.00');
+  sheet.getRange('B13').setNumberFormat('0');
+
+  // --- GO/HOLD 判定 ---
+  sheet.getRange('A15').setValue('🚦 GO/HOLD 判定').setFontWeight('bold');
+  sheet.getRange('B15').setFormula(
+    '=IF(AND(B3>=4,B4>=0.6,B5<=0.15,B6>=3.8,B7>=80),"GO","HOLD")'
+  );
+  sheet.getRange('A16').setValue('GO 連続週数');
+  // P2 対応: I2 (最古週) ではなく最新週を拾う
+  sheet.getRange('B16').setFormula(
+    '=IFERROR(INDEX(週次サマリ!I:I, COUNTA(週次サマリ!A:A)),0)'
+  );
+  sheet.getRange('A17').setValue('GO Ready（4 週連続?）');
+  sheet.getRange('B17').setFormula('=IF(B16>=4,"✅ GO Ready","🟡 継続監視")');
+
+  // --- 条件付き書式 (GO=緑 / HOLD=黄) ---
+  const rules = [];
+  rules.push(SpreadsheetApp.newConditionalFormatRule()
+    .whenTextEqualTo('GO')
+    .setBackground('#B7E1CD').setBold(true)
+    .setRanges([sheet.getRange('B15')]).build());
+  rules.push(SpreadsheetApp.newConditionalFormatRule()
+    .whenTextEqualTo('HOLD')
+    .setBackground('#FCE8B2').setBold(true)
+    .setRanges([sheet.getRange('B15')]).build());
+  rules.push(SpreadsheetApp.newConditionalFormatRule()
+    .whenTextContains('GO Ready')
+    .setBackground('#57BB8A').setFontColor('#FFFFFF').setBold(true)
+    .setRanges([sheet.getRange('B17')]).build());
+  sheet.setConditionalFormatRules(rules);
+
+  // --- チャート用集計テーブル (P4 対応: 列を分離してレイアウト衝突を防ぐ) ---
+  buildDashboardChartData_(sheet);
+  insertDashboardCharts_(sheet);
+
+  // 見た目
+  sheet.setColumnWidth(1, 210);
+  sheet.setColumnWidth(2, 140);
+  sheet.setFrozenRows(2);
+}
+
+/**
+ * P4 対応の新レイアウト:
+ *   P1:Q6    星分布       (bounded 6 行)
+ *   P8:Q13   favoriteGames (bounded 6 行)
+ *   R1:S1000 散布図        (unbounded FILTER 専用列に隔離)
+ *   T1:U6    価格 pie      (bounded 6 行、 隣接列 R:S と重ならない)
+ */
+function buildDashboardChartData_(sheet) {
+  // ★分布
+  sheet.getRange('P1:Q1').setValues([['星', '件数']]).setFontWeight('bold');
+  for (let s = 1; s <= 5; s++) {
+    sheet.getRange(1 + s, 16).setValue(s);
+    sheet.getRange(1 + s, 17).setFormula('=COUNTIF(_Helpers!S2:S5000,' + s + ')');
+  }
+  // favoriteGames カウント
+  sheet.getRange('P8:Q8').setValues([['ゲーム', 'お気に入り']]).setFontWeight('bold');
+  MVP_GAMES.forEach(function (g, i) {
+    sheet.getRange(9 + i, 16).setValue(g);
+    sheet.getRange(9 + i, 17).setFormula('=COUNTIF(_Helpers!N2:N5000,"' + g + '")');
+  });
+  // 散布図: bookConnection × starScore (R:S に隔離)
+  sheet.getRange('R1:S1').setValues([['絵本連動', '星']]).setFontWeight('bold');
+  sheet.getRange('R2').setFormula(
+    '=IFERROR(FILTER(_Helpers!AB2:AB5000, _Helpers!AB2:AB5000<>""),"")'
+  );
+  sheet.getRange('S2').setFormula(
+    '=IFERROR(FILTER(_Helpers!S2:S5000, _Helpers!AB2:AB5000<>""),"")'
+  );
+  // pricePerception 円グラフ (T:U)
+  sheet.getRange('T1:U1').setValues([['価格', '件数']]).setFontWeight('bold');
+  const priceLabels = ['1 高すぎる','2 やや高い','3 妥当','4 やや安い','5 安い'];
+  for (let i = 0; i < 5; i++) {
+    sheet.getRange(2 + i, 20).setValue(priceLabels[i]);
+    sheet.getRange(2 + i, 21).setFormula('=COUNTIF(_Helpers!AC2:AC5000,' + (i + 1) + ')');
+  }
+
+  // チャートデータ領域を薄グレーでマーク
+  sheet.getRange('P1:U1000').setBackground('#F3F3F3');
+}
+
+function insertDashboardCharts_(sheet) {
+  // C1: 星分布 (column)
+  sheet.insertChart(sheet.newChart()
+    .setChartType(Charts.ChartType.COLUMN)
+    .addRange(sheet.getRange('P1:Q6'))
+    .setPosition(3, 4, 0, 0)
+    .setOption('title', '①星スコア分布')
+    .setOption('legend', { position: 'none' })
+    .build());
+
+  // C2: favoriteGames (bar)
+  sheet.insertChart(sheet.newChart()
+    .setChartType(Charts.ChartType.BAR)
+    .addRange(sheet.getRange('P8:Q13'))
+    .setPosition(3, 9, 0, 0)
+    .setOption('title', 'お気に入りゲーム 集計')
+    .setOption('legend', { position: 'none' })
+    .build());
+
+  // C3: bookConnection × starScore 散布図 (R:S 隔離)
+  sheet.insertChart(sheet.newChart()
+    .setChartType(Charts.ChartType.SCATTER)
+    .addRange(sheet.getRange('R1:S1000'))
+    .setPosition(20, 4, 0, 0)
+    .setOption('title', '絵本連動 × 星スコア')
+    .setOption('hAxis', { title: '絵本連動' })
+    .setOption('vAxis', { title: '星スコア' })
+    .build());
+
+  // C4: pricePerception 円グラフ (T:U)
+  sheet.insertChart(sheet.newChart()
+    .setChartType(Charts.ChartType.PIE)
+    .addRange(sheet.getRange('T1:U6'))
+    .setPosition(20, 9, 0, 0)
+    .setOption('title', '価格感 分布')
+    .build());
+}
+
+// ============================================================
+// 3. Game_DeepDive タブ
+// ============================================================
+function setup_GameDeepDive(ss) {
+  const sheet = getOrCreateSheet_(ss, TAB_DEEPDIVE);
+  clearSheet_(sheet);
+
+  sheet.getRange('A1').setValue('ゲーム別詳細（直近 30 日 本番データ）')
+    .setFontWeight('bold').setFontSize(14);
+  sheet.getRange('A1:F1').merge();
+
+  sheet.getRange('A2:F2').setValues([[
+    'ゲーム', 'お気に入り数', 'つまづき数', '平均★', '平均熱中度', '純推奨スコア'
+  ]]).setFontWeight('bold').setBackground('#E8EAED');
+
+  // 5 ゲーム × 5 指標 (A3:F7)
+  // C2/P3 対応: stumble は展開表 (F:I) の gameId 列 H で直接カウントする
+  for (let i = 0; i < MVP_GAMES.length; i++) {
+    const row = 3 + i;
+    const g = MVP_GAMES[i];
+    sheet.getRange(row, 1).setValue(g);
+    sheet.getRange(row, 2).setFormula('=COUNTIF(_Helpers!N2:N5000, A' + row + ')');           // favorite (N=favoriteGame 展開)
+    sheet.getRange(row, 3).setFormula('=COUNTIF(_Helpers!H2:H5000, A' + row + ')');            // stumble (H=stumble 展開 gameId)
+    sheet.getRange(row, 4).setFormula('=IFERROR(AVERAGEIF(_Helpers!T2:T5000, A' + row + ', _Helpers!S2:S5000),0)');
+    sheet.getRange(row, 5).setFormula('=IFERROR(AVERAGEIF(_Helpers!T2:T5000, A' + row + ', _Helpers!X2:X5000),0)');
+    sheet.getRange(row, 6).setFormula('=B' + row + '-C' + row);
+  }
+  sheet.getRange('D3:E7').setNumberFormat('0.00');
+  sheet.getRange('B3:C7').setNumberFormat('0');
+  sheet.getRange('F3:F7').setNumberFormat('0');
+
+  // Net Score 条件付き書式
+  const rules = [
+    SpreadsheetApp.newConditionalFormatRule()
+      .whenNumberLessThan(0).setBackground('#F4CCCC')
+      .setRanges([sheet.getRange('F3:F7')]).build(),
+    SpreadsheetApp.newConditionalFormatRule()
+      .whenNumberGreaterThanOrEqualTo(3).setBackground('#B7E1CD')
+      .setRanges([sheet.getRange('F3:F7')]).build()
+  ];
+  sheet.setConditionalFormatRules(rules);
+
+  sheet.setColumnWidths(1, 6, 130);
+  sheet.setFrozenRows(2);
+}
+
+// ============================================================
+// 4. Trend_Weekly タブ (H1/P9 対応: 週次集約に修正)
+// ============================================================
+function setup_Trend(ss, source) {
+  const sheet = getOrCreateSheet_(ss, TAB_TREND);
+  clearSheet_(sheet);
+
+  sheet.getRange('A1').setValue('週次トレンド（時系列）')
+    .setFontWeight('bold').setFontSize(14);
+  sheet.getRange('A1:D1').merge();
+
+  // H1 対応: year*100 + weekNum で真の週次集約
+  // P9 対応: timestamp が string の場合に備え、 QUERY が失敗したら生 A も試す fallback
+  const queryStr =
+    "SELECT year(A)*100+weekNum(A), AVG(D), AVG(I), COUNT(A) " +
+    "WHERE B='" + source + "' AND A IS NOT NULL " +
+    "GROUP BY year(A)*100+weekNum(A) " +
+    "ORDER BY year(A)*100+weekNum(A) ASC " +
+    "LABEL year(A)*100+weekNum(A) '週(YYYYWW)', AVG(D) '★平均', " +
+    "AVG(I) '熱中度平均', COUNT(A) '回答数'";
+  sheet.getRange('A3').setFormula(
+    '=IFERROR(QUERY(' + source + '!A2:P5000, "' + queryStr + '"),' +
+    '"データがまだありません (production A 列が Date 型でない可能性)")'
+  );
+
+  // 折れ線 3 本
+  sheet.insertChart(sheet.newChart()
+    .setChartType(Charts.ChartType.LINE)
+    .addRange(sheet.getRange('A3:A200'))
+    .addRange(sheet.getRange('B3:B200'))
+    .setPosition(3, 6, 0, 0)
+    .setOption('title', '★平均 推移 (週次)')
+    .build());
+
+  sheet.insertChart(sheet.newChart()
+    .setChartType(Charts.ChartType.LINE)
+    .addRange(sheet.getRange('A3:A200'))
+    .addRange(sheet.getRange('C3:C200'))
+    .setPosition(21, 6, 0, 0)
+    .setOption('title', '熱中度 推移 (週次)')
+    .build());
+
+  sheet.insertChart(sheet.newChart()
+    .setChartType(Charts.ChartType.LINE)
+    .addRange(sheet.getRange('A3:A200'))
+    .addRange(sheet.getRange('D3:D200'))
+    .setPosition(39, 6, 0, 0)
+    .setOption('title', '回答数 推移（週次）')
+    .build());
+
+  sheet.setColumnWidths(1, 4, 130);
+  sheet.setFrozenRows(2);
+}
+
+// ============================================================
+// 5. Weekly_Summary タブ (ヘッダのみ / WeeklyDigest.gs が append)
+// ============================================================
+function setup_WeeklySummary(ss) {
+  const sheet = getOrCreateSheet_(ss, TAB_WEEKLY);
+  if (sheet.getLastRow() > 1) {
+    Logger.log('週次サマリ は既にデータあり、 ヘッダと条件付き書式のみ再セット');
+  } else {
+    clearSheet_(sheet);
+    sheet.getRange('A1:L1').setValues([[
+      '週の終わり', '実行時刻', '回答数', '星スコア平均', '★4-5 比率', '★1-2 比率',
+      '熱中度平均', 'GO/HOLD 判定', 'GO 連続週数', 'GO 準備完了',
+      'AI 週次要約', 'エラーログ'
+    ]]).setFontWeight('bold').setBackground('#E8EAED');
+    sheet.setFrozenRows(1);
+    sheet.setColumnWidths(1, 12, 120);
+    sheet.setColumnWidth(11, 400);  // digestMarkdown 幅広く
+  }
+
+  // 条件付き書式 (再セット)
+  // H2 対応: goReady はブール TRUE の可能性があるので whenFormulaSatisfied を使う
+  sheet.clearConditionalFormatRules();
+  const rules = [
+    SpreadsheetApp.newConditionalFormatRule()
+      .whenTextEqualTo('GO').setBackground('#B7E1CD')
+      .setRanges([sheet.getRange('H2:H')]).build(),
+    SpreadsheetApp.newConditionalFormatRule()
+      .whenTextEqualTo('HOLD').setBackground('#FCE8B2')
+      .setRanges([sheet.getRange('H2:H')]).build(),
+    SpreadsheetApp.newConditionalFormatRule()
+      .whenFormulaSatisfied('=$J2=TRUE')
+      .setBackground('#57BB8A').setFontColor('#FFFFFF').setBold(true)
+      .setRanges([sheet.getRange('J2:J')]).build()
+  ];
+  sheet.setConditionalFormatRules(rules);
+}
+
+// ============================================================
+// 6. Decision_Log タブ
+// ============================================================
+function setup_DecisionLog(ss) {
+  const sheet = getOrCreateSheet_(ss, TAB_DECISION);
+  if (sheet.getLastRow() > 1) {
+    Logger.log('判断記録 は既にデータあり、 skip');
+    return;
+  }
+  clearSheet_(sheet);
+
+  sheet.getRange('A1:F1').setValues([[
+    '日付', '判断', '理由', 'KPI スナップショット', '次のアクション', 'サンプル判定'
+  ]]).setFontWeight('bold').setBackground('#E8EAED');
+
+  sheet.getRange('A2:F3').setValues([
+    [
+      '2026-07-04',
+      'Phase 1 dashboard セットアップ完了',
+      '初回 setup、 データ蓄積待ち',
+      'N=3 (staging)',
+      '月曜 09:00 トリガ自動発火確認',
+      false
+    ],
+    [
+      '2026-07-05',
+      '[SAMPLE] quizland の star が低いのでチュートリアル改修',
+      '[SAMPLE] K1=3.2 と閾値割れ・ freeText で「むずかしい」多数',
+      '[SAMPLE] N=42, K1=3.2, K4=3.5',
+      '[SAMPLE] tutorial step 追加 → 翌週再計測',
+      true
+    ]
+  ]);
+
+  sheet.setColumnWidths(1, 5, 180);
+  sheet.setColumnWidth(3, 260);
+  sheet.setColumnWidth(5, 220);
+  sheet.setColumnWidth(6, 80);
+  sheet.setFrozenRows(1);
+}

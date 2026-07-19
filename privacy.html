@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>あそびの記録について（プライバシーポリシー） | ポノのあそびば</title>
+<meta name="description" content="ポノのあそびばが、あそびの記録（とうけい）としてなにを集め、なにを集めないかを保護者の方向けにご説明するページです。">
+<meta name="robots" content="noindex, follow">
+<link rel="canonical" href="https://pono.kodama-no-mori.com/privacy.html">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Zen Maru Gothic', sans-serif;
+  background: #FFF8F0;
+  color: #5D4E37;
+  padding: 60px 16px 40px;
+  line-height: 1.8;
+}
+.help-home-btn {
+  position: fixed; top: 12px; left: 16px; z-index: 100;
+  width: 40px; height: 40px; border-radius: 50%;
+  background: rgba(255,255,255,0.9); border: none;
+  font-size: 20px; cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  display: flex; align-items: center; justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  text-decoration: none;
+}
+.help-home-btn:active { transform: scale(0.9); }
+h1 { font-size: 1.3rem; font-weight: 900; color: #F2915A; margin-bottom: 6px; }
+.last-updated { font-size: 0.78rem; color: #7A6A4F; margin-bottom: 20px; }
+h2 { font-size: 1.05rem; font-weight: 900; color: #5D4E37; margin: 24px 0 10px; padding-bottom: 6px; border-bottom: 2px solid #FDE68A; }
+h3 { font-size: 0.9rem; font-weight: 900; margin: 14px 0 6px; color: #5D4E37; }
+p, li { font-size: 0.85rem; }
+ul, ol { padding-left: 20px; }
+li { margin-bottom: 6px; }
+.section {
+  background: #fff;
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(93,78,55,0.08);
+}
+.faq-q { font-weight: 900; font-size: 0.88rem; color: #F2915A; margin-top: 14px; }
+.faq-a { font-size: 0.82rem; margin-top: 4px; padding-left: 12px; border-left: 3px solid #FDE68A; }
+.faq-a p + p { margin-top: 8px; }
+
+/* ===== 冒頭の要約ボックス（help.html の greeting を踏襲） ===== */
+.intro-box {
+  background: linear-gradient(135deg, #FFF8EE, #FFF0E0);
+  border: 2px solid #FDD9A8;
+  border-radius: 18px;
+  padding: 18px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 16px rgba(242,145,90,0.12);
+}
+.intro-box p { font-size: 0.85rem; line-height: 1.9; color: #5D4E37; }
+.intro-box p + p { margin-top: 10px; }
+.intro-quote {
+  background: rgba(255,255,255,0.75);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-top: 10px;
+  font-size: 0.82rem;
+  line-height: 1.9;
+  color: #5D4E37;
+}
+
+/* ===== あつめる／あつめないリスト ===== */
+.record-list { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+.record-item {
+  display: flex; gap: 10px; align-items: flex-start;
+  background: #FFFBF0;
+  border: 1.5px solid #F6C9C9;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.record-item.collect {
+  background: #F3FBF0;
+  border-color: #BEE8B0;
+}
+.record-icon { flex-shrink: 0; font-size: 1.05rem; line-height: 1.5; }
+.record-body { flex: 1; }
+.record-label { font-weight: 900; font-size: 0.85rem; color: #5D4E37; margin-bottom: 2px; }
+.record-note { font-size: 0.78rem; color: #7A6A4F; line-height: 1.65; }
+
+/* ===== 3つのお約束 ===== */
+.promise-list { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+.promise-item {
+  background: #FFFBF0;
+  border: 1.5px solid #FDE68A;
+  border-radius: 10px;
+  padding: 12px;
+}
+.promise-num {
+  display: inline-block;
+  font-weight: 900;
+  color: #fff;
+  background: #F2915A;
+  border-radius: 50%;
+  width: 22px; height: 22px;
+  line-height: 22px;
+  text-align: center;
+  font-size: 0.78rem;
+  margin-right: 6px;
+}
+.promise-title { font-weight: 900; font-size: 0.88rem; color: #5D4E37; }
+.promise-body { font-size: 0.82rem; margin-top: 6px; line-height: 1.75; }
+.promise-body ul { margin-top: 6px; padding-left: 18px; }
+.promise-body li { font-size: 0.8rem; }
+
+.footer-links { text-align: center; margin-top: 24px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+.footer-links a {
+  display: inline-block;
+  padding: 10px 24px;
+  background: rgba(255,255,255,0.9);
+  border: 2px solid #FDE68A;
+  border-radius: 50px;
+  color: #F2915A;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 900;
+  text-decoration: none;
+  box-shadow: 0 2px 8px rgba(93,78,55,0.12);
+}
+.footer-links a:active { transform: scale(0.97); }
+.page-footnote { text-align: center; font-size: 0.72rem; color: #A0937A; margin-top: 20px; }
+</style>
+</head>
+<body>
+
+<a href="./" class="help-home-btn" aria-label="トップページへ">🏠</a>
+
+<h1>🔒 あそびの記録について（プライバシーポリシー）</h1>
+<div class="last-updated">最終更新日: 2026年7月13日</div>
+
+<div class="intro-box">
+  <p>このページは、「ポノのあそびば」が、お子さまが遊んでいる間にどんな記録（あそびの記録／とうけい）を集めていて、なにを集めていないかを、保護者の方にご説明するものです。</p>
+  <p>むずかしい言葉は使わず、できるだけそのままお読みいただける形でまとめています。ご不明な点があれば、下記の「よくある質問」もあわせてご覧ください。</p>
+  <div class="intro-quote">
+    「ポノのあそびばは、お子さまがどのゲームをどれくらい遊んだか（例:『めいろで3回あそんだ』）を、名前や生まれた日と結びつけない、ランダムな符号だけを使って記録しています。この符号は、あそび方に合わせてより楽しく遊べるようにする目的だけに使われ、お子さまを特定するためや広告のためには使いません。記録用の符号はいつでもリセットしたり、記録の送信自体をやめたりできます。詳しくは『⚙ 設定 → データかんり』からご確認・変更いただけます。」
+  </div>
+</div>
+
+<!-- あつめるもの・あつめないもの -->
+<div class="section">
+  <h2>📋 あつめるもの・あつめないもの</h2>
+
+  <h3>❌ あつめないもの</h3>
+  <div class="record-list">
+    <div class="record-item">
+      <span class="record-icon">🚫</span>
+      <div class="record-body">
+        <div class="record-label">お名前・生まれた日・性別</div>
+        <div class="record-note">これまでどおり、サーバーには送りません。</div>
+      </div>
+    </div>
+    <div class="record-item">
+      <span class="record-icon">🚫</span>
+      <div class="record-body">
+        <div class="record-label">ご住所・お電話番号</div>
+        <div class="record-note">そもそも入力欄自体がありません。</div>
+      </div>
+    </div>
+    <div class="record-item">
+      <span class="record-icon">🚫</span>
+      <div class="record-body">
+        <div class="record-label">メールアドレス</div>
+        <div class="record-note">あそびの記録にも、その送り先にも、メールアドレスは一切含まれません。感想アンケートで任意入力いただいたメールアドレスは、あそびの記録（符号付きデータ）とは別の送り先で管理されます。</div>
+      </div>
+    </div>
+    <div class="record-item">
+      <span class="record-icon">🚫</span>
+      <div class="record-body">
+        <div class="record-label">お顔の写真・お声</div>
+        <div class="record-note">カメラ・マイク機能はそもそもありません。</div>
+      </div>
+    </div>
+    <div class="record-item">
+      <span class="record-icon">🚫</span>
+      <div class="record-body">
+        <div class="record-label">正確な居場所（位置情報）</div>
+        <div class="record-note">GPS・位置情報の取得機能は使っていません。</div>
+      </div>
+    </div>
+    <div class="record-item">
+      <span class="record-icon">🚫</span>
+      <div class="record-body">
+        <div class="record-label">機械の背番号（広告用ID）</div>
+        <div class="record-note">広告ID・端末IDなどは取得しません。</div>
+      </div>
+    </div>
+    <div class="record-item">
+      <span class="record-icon">🚫</span>
+      <div class="record-body">
+        <div class="record-label">機械の特ちょうを組み合わせた見分け方の強化</div>
+        <div class="record-note">これ以上は強化せず、下記の「あつめるもの」にあるランダムな符号に一本化しています。</div>
+      </div>
+    </div>
+    <div class="record-item">
+      <span class="record-icon">🚫</span>
+      <div class="record-body">
+        <div class="record-label">インターネットの住所（生のIPアドレス）</div>
+        <div class="record-note">読み取れない形（ハッシュ化）にしてから扱います。</div>
+      </div>
+    </div>
+    <div class="record-item">
+      <span class="record-icon">🚫</span>
+      <div class="record-body">
+        <div class="record-label">お子さんが描いた絵そのもの</div>
+        <div class="record-note">絵の中身をサーバーに送ることはありません。</div>
+      </div>
+    </div>
+    <div class="record-item">
+      <span class="record-icon">🚫</span>
+      <div class="record-body">
+        <div class="record-label">広告会社のタグ・追跡のしくみ</div>
+        <div class="record-note">第三者の広告SDKや追跡ピクセルは使いません。</div>
+      </div>
+    </div>
+    <div class="record-item">
+      <span class="record-icon">🚫</span>
+      <div class="record-body">
+        <div class="record-label">他のアプリやサイトをまたいだ行動の見張り</div>
+        <div class="record-note">サイトやアプリをまたいだ行動の追跡は行いません。</div>
+      </div>
+    </div>
+    <div class="record-item">
+      <span class="record-icon">🚫</span>
+      <div class="record-body">
+        <div class="record-label">記録用の符号を使った広告や、お子さんへの直接連絡</div>
+        <div class="record-note">符号はあそびを良くする目的だけに使い、広告や連絡には使いません。</div>
+      </div>
+    </div>
+  </div>
+
+  <h3 style="margin-top:20px;">✅ あつめるもの</h3>
+  <div class="record-list">
+    <div class="record-item collect">
+      <span class="record-icon">📊</span>
+      <div class="record-body">
+        <div class="record-label">どのゲームでどれくらい遊んだか、の匿名のあそびの記録（とうけい）</div>
+        <div class="record-note">「めいろで3回あそんだ」のような、プレイ回数・クリアしたかどうかなど。</div>
+      </div>
+    </div>
+    <div class="record-item collect">
+      <span class="record-icon">🔑</span>
+      <div class="record-body">
+        <div class="record-label">名前と結びつかない「符号」（ランダムな番号）</div>
+        <div class="record-note">端末ごとに自動で作られる符号で、お名前・生まれた日・性別とは別の場所に保存します。メールアドレスと同じ場所に置かれることはありません。</div>
+      </div>
+    </div>
+    <div class="record-item collect">
+      <span class="record-icon">🧩</span>
+      <div class="record-body">
+        <div class="record-label">遊んだ日や、ブラウザ版／アプリ版などの技術的な情報</div>
+        <div class="record-note">記録を正しく集計するための最低限の情報です。</div>
+      </div>
+    </div>
+    <div class="record-item collect">
+      <span class="record-icon">✍️</span>
+      <div class="record-body">
+        <div class="record-label">（自分から書いてくださった場合のみ）★評価やアンケートのご感想</div>
+        <div class="record-note">完全に任意です。書かなくても、あそびば自体は今までどおり楽しめます。</div>
+      </div>
+    </div>
+  </div>
+
+  <p style="margin-top:14px; font-size:0.8rem; color:#7A6A4F;">ポノのあそびばは、あそびの記録（とうけい）を、名前と結びつかない符号だけで自動的に記録しています。この記録は、あそびばをもっと楽しくするためだけに使い、広告やお子さまへの連絡には使いません。感想アンケートの回答は、あそびの記録とは別の送り先で管理しています。</p>
+</div>
+
+<!-- 3つのお約束 (COPPA 内部運用支援の考え方を保護者向けに開示) -->
+<div class="section">
+  <h2>🤝 記録の使いかたについて（3つのお約束）</h2>
+  <p>ポノのあそびばは、名前と結びつかない符号（記録用の番号）をあつかうにあたって、次の3つをお約束します。</p>
+  <div class="promise-list">
+    <div class="promise-item">
+      <div class="promise-title"><span class="promise-num">1</span>目的を限定します</div>
+      <div class="promise-body">記録用の符号（あそびの記録をまとめるための番号）は、このページに書かれている「あそびの記録の集計」以外には使いません。広告のターゲティングや、お子さま本人への直接連絡、符号にもとづく不利益な取りあつかいなどには一切使用しません。</div>
+    </div>
+    <div class="promise-item">
+      <div class="promise-title"><span class="promise-num">2</span>外部に開示しません</div>
+      <div class="promise-body">符号やそれに結びつくあそびの記録は、運営者が管理する範囲の外には開示しません。このデータの保管・処理を行うインフラ提供者は次のとおりです。
+        <ul>
+          <li><strong>Cloudflare社</strong>: 符号（記録用の番号）が付いたあそびの記録データの保管・処理を担当しています。</li>
+          <li><strong>Google社（Google Apps Script／スプレッドシート）</strong>: ★評価やアンケートのご感想データの処理を委託しています。このデータには、あそびの記録用の符号は含まれません。</li>
+        </ul>
+      </div>
+    </div>
+    <div class="promise-item">
+      <div class="promise-title"><span class="promise-num">3</span>この方針をここに明記します</div>
+      <div class="promise-body">記録用の符号の種類、内部での利用目的の範囲、インフラ提供者の開示を、このプライバシーポリシーに記載しています（このページ自体がその開示です）。</div>
+    </div>
+  </div>
+  <p style="margin-top:12px; font-size:0.78rem; color:#7A6A4F;">なお、本ポリシーは主に日本にお住まいのご家族を対象としています。海外からのアクセスが検出された場合、あそびの記録の送信は行わない設計になっています。</p>
+</div>
+
+<!-- FAQ -->
+<div class="section">
+  <h2>❓ 保護者向けFAQ</h2>
+
+  <div class="faq-q">Q1. 結局なにか集めてるの？</div>
+  <div class="faq-a"><p>はい、集めています。ただし、お子さまのお名前や連絡先とは結びつかない「符号（ランダムな番号）」を使って、どのゲームをどれくらい遊んだかという「あそびの記録（とうけい）」を自動的に記録しています。何を集めて、何を集めないかは上の表のとおりです。</p></div>
+
+  <div class="faq-q">Q2. 名前と結びつく？</div>
+  <div class="faq-a"><p>いいえ。あそびの記録（自動で送られるデータ）にも、その送り先にも、お名前・生まれた日・メールアドレスは一切含まれません。記録に使う符号は、お名前などとは別の場所に保存されています。感想アンケートでメールアドレスを任意で書いていただいた場合も、そのメールはあそびの記録（符号付きデータ）とは別の送り先で管理され、結びつきません。</p></div>
+
+  <div class="faq-q">Q3. 消せる？</div>
+  <div class="faq-a">
+    <p>「符号のリセット」と「これからの送信を止めること」はすぐにできます。⚙設定 →「データかんり（保護者の方へ）」から、記録用の符号をいつでも新しく作り直せます。これにより、これまでの記録と、これから記録される内容とのつながりを断つことができます。また「あそびの記録を送らない」をONにすれば、これ以降の記録の送信そのものを止めることができます。</p>
+    <p>ただし、すでにお預かりした記録そのものを、その場で完全に消し去れるわけではありません。生の記録は送信から3か月で自動的に消える設計ですが、集計後のデータをいつまで保存するかは現時点でまだ決まっていません。この点はご不便をおかけしますが、正確にお伝えするため「消せる？」に一言で「はい」とはお答えしていません。保存期間の仕組みが固まり次第、この説明も更新します。</p>
+  </div>
+
+  <div class="faq-q">Q4. なぜ集めるの？</div>
+  <div class="faq-a"><p>どのゲームが楽しく遊ばれているか、遊びにくいところがないかを知って、あそびばをもっと良くするために使います。広告のためや、お子さまに直接連絡するためには一切使いません。</p></div>
+
+  <div class="faq-q">Q5. 会員登録が必要になったの？</div>
+  <div class="faq-a"><p>いいえ、必要ありません。今までどおり、会員登録やお名前・メールアドレスの入力なしでそのまま遊べます。あそびの記録は入力の手間なく、自動でつく記録です。</p></div>
+</div>
+
+<div class="footer-links">
+  <a href="help.html">📖 ヘルプページへ戻る</a>
+  <a href="./">🏠 トップページへ戻る</a>
+</div>
+
+<div class="page-footnote">© こだまのもり出版　ポノのあそびば</div>
+
+</body>
+</html>

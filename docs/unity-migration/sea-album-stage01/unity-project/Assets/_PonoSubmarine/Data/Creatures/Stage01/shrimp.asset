@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f65822b5c2ba76041b18b605fbccf910, type: 3}
+  m_Name: shrimp
+  m_EditorClassIdentifier: Assembly-CSharp::PonoSubmarine.SeaAlbum.CreatureData
+  creatureId: shrimp
+  displayName: "\u30A8\u30D3"
+  habitat: "\u5CA9\u9670\u3084\u6D45\u3044\u6D77"
+  food: "\u5C0F\u3055\u306A\u30D7\u30E9\u30F3\u30AF\u30C8\u30F3\u3084\u6709\u6A5F\u7269"
+  bodySecret: "\u7D30\u3044\u8DB3\u3068\u89E6\u89D2\u3067\u307E\u308F\u308A\u3092\u63A2\u308A\u306A\u304C\u3089\u3059\u3070\u3084\u304F\u52D5\u304F\u3002"
+  isBoss: 0
+  maxHp: 2
+  normalSprite: {fileID: 21300000, guid: 2b6f04f00a6927841a78d69c67d26d65, type: 3}
+  eatingSprite: {fileID: 21300000, guid: 41b2e3219096cb341a43d7ee89acea0a, type: 3}
+  happySprite: {fileID: 21300000, guid: ef9ab2e6121d1f14e8d1c6411b88bb99, type: 3}

@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f65822b5c2ba76041b18b605fbccf910, type: 3}
+  m_Name: tidepool_goby
+  m_EditorClassIdentifier: Assembly-CSharp::PonoSubmarine.SeaAlbum.CreatureData
+  creatureId: tidepool_goby
+  displayName: "\u30CF\u30BC"
+  habitat: "\u6D45\u3044\u6D77\u306E\u5E95\u3084\u7802\u5730"
+  food: "\u5C0F\u3055\u306A\u866B\u3084\u30D7\u30E9\u30F3\u30AF\u30C8\u30F3"
+  bodySecret: "\u6D77\u5E95\u306B\u8FD1\u3044\u3068\u3053\u308D\u3067\u6B62\u307E\u3063\u305F\u308A\u3001\u77ED\u304F\u6CF3\u3044\u3060\u308A\u3059\u308B\u3002"
+  isBoss: 0
+  maxHp: 3
+  normalSprite: {fileID: 21300000, guid: e997bf08fdc75094aaad55fd25b2fc5e, type: 3}
+  eatingSprite: {fileID: 21300000, guid: eb7f04e0bc55b644bbe31785d53bc0f8, type: 3}
+  happySprite: {fileID: 21300000, guid: 6bc3b5845285f424d90cf66f83a64368, type: 3}

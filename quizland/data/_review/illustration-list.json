@@ -1,0 +1,250 @@
+{
+  "common_style": "kid-friendly illustration for ages 3-6, hand-drawn watercolor style with subtle paper texture, warm wood/paper Japanese children's book aesthetic, soft drop shadow, transparent PNG, centered subject, no text, no labels",
+  "default_size": "1024x1024",
+  "sheets": [
+    {
+      "sheet_id": "sheet_colors",
+      "purpose": "8 color chips, 4x2 grid",
+      "output_path": "assets/images/quizland/illust/_sheets/sheet_colors.png",
+      "size": "2048x1024",
+      "prompt": "A 4 columns × 2 rows grid (total 2048x1024) of 8 simple kid-friendly square color chips, each cell 512x512. Each chip has solid color, rounded corners, soft drop shadow. Top row left-to-right: red (#EF4444), blue (#3B82F6), yellow (#FBBF24), green (#10B981). Bottom row left-to-right: pink (#EC4899), orange (#F97316), purple (#8B5CF6), cyan (#06B6D4). All chips share the same hand-drawn watercolor style with subtle paper texture, warm Japanese children's book aesthetic, white space between cells. Transparent PNG. No text, no labels.",
+      "crops": [
+        { "id": "color_red",    "save_path": "assets/images/quizland/illust/color/color_red.png",    "bbox": [0, 0, 512, 512] },
+        { "id": "color_blue",   "save_path": "assets/images/quizland/illust/color/color_blue.png",   "bbox": [512, 0, 512, 512] },
+        { "id": "color_yellow", "save_path": "assets/images/quizland/illust/color/color_yellow.png", "bbox": [1024, 0, 512, 512] },
+        { "id": "color_green",  "save_path": "assets/images/quizland/illust/color/color_green.png",  "bbox": [1536, 0, 512, 512] },
+        { "id": "color_pink",   "save_path": "assets/images/quizland/illust/color/color_pink.png",   "bbox": [0, 512, 512, 512] },
+        { "id": "color_orange", "save_path": "assets/images/quizland/illust/color/color_orange.png", "bbox": [512, 512, 512, 512] },
+        { "id": "color_purple", "save_path": "assets/images/quizland/illust/color/color_purple.png", "bbox": [1024, 512, 512, 512] },
+        { "id": "color_cyan",   "save_path": "assets/images/quizland/illust/color/color_cyan.png",   "bbox": [1536, 512, 512, 512] }
+      ]
+    },
+    {
+      "sheet_id": "sheet_shapes",
+      "purpose": "8 basic shapes, 4x2 grid, sharp corners on geometric shapes",
+      "output_path": "assets/images/quizland/illust/_sheets/sheet_shapes.png",
+      "size": "2048x1024",
+      "prompt": "A 4 columns × 2 rows grid (total 2048x1024) of 8 simple kid-friendly basic shapes, each cell 512x512. Top row left-to-right: yellow (#FBBF24) circle, blue (#60A5FA) square (with SHARP 90-degree corners, NOT rounded), green (#10B981) equilateral triangle pointing up (with SHARP corners), orange (#F97316) 5-pointed star. Bottom row left-to-right: pink (#EC4899) heart, purple (#8B5CF6) horizontal rectangle (3:2 ratio, SHARP 90-degree corners), red (#EF4444) diamond/rhombus oriented as kite (SHARP corners), teal (#14B8A6) oval/egg shape (slightly taller than wide). IMPORTANT: square/triangle/rectangle/diamond must have CLEARLY DEFINED SHARP CORNERS (this teaches kids 'how many corners does this shape have'). Circle/heart/oval naturally have curves. All in hand-drawn watercolor style with subtle paper texture, warm Japanese children's book aesthetic, soft drop shadow. Transparent PNG. No text, no labels.",
+      "crops": [
+        { "id": "shape_circle",    "save_path": "assets/images/quizland/illust/shape/shape_circle.png",    "bbox": [0, 0, 512, 512] },
+        { "id": "shape_square",    "save_path": "assets/images/quizland/illust/shape/shape_square.png",    "bbox": [512, 0, 512, 512] },
+        { "id": "shape_triangle",  "save_path": "assets/images/quizland/illust/shape/shape_triangle.png",  "bbox": [1024, 0, 512, 512] },
+        { "id": "shape_star",      "save_path": "assets/images/quizland/illust/shape/shape_star.png",      "bbox": [1536, 0, 512, 512] },
+        { "id": "shape_heart",     "save_path": "assets/images/quizland/illust/shape/shape_heart.png",     "bbox": [0, 512, 512, 512] },
+        { "id": "shape_rectangle", "save_path": "assets/images/quizland/illust/shape/shape_rectangle.png", "bbox": [512, 512, 512, 512] },
+        { "id": "shape_diamond",   "save_path": "assets/images/quizland/illust/shape/shape_diamond.png",   "bbox": [1024, 512, 512, 512] },
+        { "id": "shape_oval",      "save_path": "assets/images/quizland/illust/shape/shape_oval.png",      "bbox": [1536, 512, 512, 512] }
+      ]
+    },
+    {
+      "sheet_id": "sheet_weather",
+      "purpose": "4 weather scenes, 2x2 grid",
+      "output_path": "assets/images/quizland/illust/_sheets/sheet_weather.png",
+      "size": "1536x1024",
+      "prompt": "A 2 columns × 2 rows grid (total 1536x1024) of 4 weather/nature scenes for kids, each cell 768x512. Top-left: a clear 7-color rainbow over a hill (red, orange, yellow, green, blue, indigo, violet — clearly visible). Top-right: a small puddle on asphalt after rain, with soft reflection. Bottom-left: a single magnified hexagonal snowflake on dark blue background, intricate 6-fold symmetry clearly visible. Bottom-right: a typhoon spiral viewed from above, swirling clouds. All in hand-drawn watercolor children's book style with subtle paper texture, warm Japanese aesthetic, soft drop shadow. White space between cells. Transparent PNG. No text, no labels.",
+      "crops": [
+        { "id": "weather_rainbow_count", "save_path": "assets/images/quizland/illust/weather/weather_rainbow_count.png", "bbox": [0, 0, 768, 512] },
+        { "id": "weather_puddle",        "save_path": "assets/images/quizland/illust/weather/weather_puddle.png",        "bbox": [768, 0, 768, 512] },
+        { "id": "weather_snowflake",     "save_path": "assets/images/quizland/illust/weather/weather_snowflake.png",     "bbox": [0, 512, 768, 512] },
+        { "id": "weather_typhoon",       "save_path": "assets/images/quizland/illust/weather/weather_typhoon.png",       "bbox": [768, 512, 768, 512] }
+      ]
+    },
+    {
+      "sheet_id": "sheet_count_total",
+      "purpose": "5 fruits/objects, 5x1 grid (count_total set)",
+      "output_path": "assets/images/quizland/illust/_sheets/sheet_count_total.png",
+      "size": "2560x512",
+      "prompt": "A 5 columns × 1 row grid (total 2560x512) of 5 simple kid-friendly food/object illustrations for children's quiz, each cell 512x512 transparent. Left-to-right: a single red apple (りんご) with green leaf, a single red strawberry (いちご) with green stem and seed dots, a single pink-and-white flower (おはな) with yellow center, a single yellow 5-pointed twinkle star (ほし), a single orange tangerine/mikan (みかん) with green stem. Each item solid filled with hand-drawn watercolor style, subtle paper texture, warm Japanese children's book aesthetic, soft drop shadow. White space between cells. Transparent PNG. No text, no labels.",
+      "crops": [
+        { "id": "ringo",  "save_path": "assets/images/word/ringo.png",  "bbox": [0, 0, 512, 512] },
+        { "id": "ichigo", "save_path": "assets/images/word/ichigo.png", "bbox": [512, 0, 512, 512] },
+        { "id": "hana",   "save_path": "assets/images/word/hana.png",   "bbox": [1024, 0, 512, 512] },
+        { "id": "hoshi",  "save_path": "assets/images/word/hoshi.png",  "bbox": [1536, 0, 512, 512] },
+        { "id": "mikan",  "save_path": "assets/images/word/mikan.png",  "bbox": [2048, 0, 512, 512] }
+      ]
+    },
+    {
+      "sheet_id": "sheet_weather_emoji",
+      "purpose": "10 weather/element icons, 5x2 grid (ocean weather set)",
+      "output_path": "assets/images/quizland/illust/_sheets/sheet_weather_emoji.png",
+      "size": "2560x1024",
+      "prompt": "A 5 columns × 2 rows grid (total 2560x1024) of 10 simple kid-friendly weather/element icons, each cell 512x512 transparent. Top row left-to-right: bright yellow sun with friendly face (はれ), blue raindrops falling (あめ), soft grey-white clouds (くもり), white snowflake (ゆき), 7-color rainbow arch (にじ). Bottom row left-to-right: yellow lightning bolt with cloud (かみなり), blue swirling wind lines (かぜ), grey tornado funnel (たつまき), red typhoon hurricane spiral (たいふう), red mercury thermometer (おんどけい). All in hand-drawn watercolor style with subtle paper texture, warm Japanese children's book aesthetic, soft drop shadow, transparent PNG. White space between cells. No text, no labels.",
+      "crops": [
+        { "id": "Sun",         "save_path": "assets/images/ocean/Sun/Sun_normal_1.png",                 "bbox": [0, 0, 512, 512] },
+        { "id": "Rain",        "save_path": "assets/images/ocean/Rain/Rain_normal_1.png",               "bbox": [512, 0, 512, 512] },
+        { "id": "Cloud",       "save_path": "assets/images/ocean/Cloud/Cloud_normal_1.png",             "bbox": [1024, 0, 512, 512] },
+        { "id": "Snow",        "save_path": "assets/images/ocean/Snow/Snow_normal_1.png",               "bbox": [1536, 0, 512, 512] },
+        { "id": "Rainbow",     "save_path": "assets/images/ocean/Rainbow/Rainbow_normal_1.png",         "bbox": [2048, 0, 512, 512] },
+        { "id": "Thunder",     "save_path": "assets/images/ocean/Thunder/Thunder_normal_1.png",         "bbox": [0, 512, 512, 512] },
+        { "id": "Wind",        "save_path": "assets/images/ocean/Wind/Wind_normal_1.png",               "bbox": [512, 512, 512, 512] },
+        { "id": "Tornado",     "save_path": "assets/images/ocean/Tornado/Tornado_normal_1.png",         "bbox": [1024, 512, 512, 512] },
+        { "id": "Hurricane",   "save_path": "assets/images/ocean/Hurricane/Hurricane_normal_1.png",     "bbox": [1536, 512, 512, 512] },
+        { "id": "Thermometer", "save_path": "assets/images/ocean/Thermometer/Thermometer_normal_1.png", "bbox": [2048, 512, 512, 512] }
+      ]
+    },
+    {
+      "sheet_id": "sheet_body_emoji",
+      "purpose": "9 body part icons, 3x3 grid (ocean body set)",
+      "output_path": "assets/images/quizland/illust/_sheets/sheet_body_emoji.png",
+      "size": "1536x1536",
+      "prompt": "A 3 columns × 3 rows grid (total 1536x1536) of 9 simple kid-friendly body part illustrations, each cell 512x512 transparent. Top row left-to-right: a pair of friendly cartoon eyes (め), a smiling kid mouth showing teeth (くち), an open palm hand (て). Middle row left-to-right: a barefoot foot (あし), a bent forearm with hand (うで), a small button nose (はな). Bottom row left-to-right: 5 white teeth in a smile (は), a pink tongue sticking out (した), a cartoon ear (みみ). All in hand-drawn watercolor style with subtle paper texture, warm Japanese children's book aesthetic, soft drop shadow, transparent PNG. White space between cells. No text, no labels. Friendly and cute, not medical/scientific.",
+      "crops": [
+        { "id": "Eyes",       "save_path": "assets/images/ocean/Eyes/Eyes_normal_1.png",             "bbox": [0, 0, 512, 512] },
+        { "id": "Mouth_part", "save_path": "assets/images/ocean/Mouth_part/Mouth_part_normal_1.png", "bbox": [512, 0, 512, 512] },
+        { "id": "Palm",       "save_path": "assets/images/ocean/Palm/Palm_normal_1.png",             "bbox": [1024, 0, 512, 512] },
+        { "id": "Foot_part",  "save_path": "assets/images/ocean/Foot_part/Foot_part_normal_1.png",   "bbox": [0, 512, 512, 512] },
+        { "id": "Forearm",    "save_path": "assets/images/ocean/Forearm/Forearm_normal_1.png",       "bbox": [512, 512, 512, 512] },
+        { "id": "Nose_part",  "save_path": "assets/images/ocean/Nose_part/Nose_part_normal_1.png",   "bbox": [1024, 512, 512, 512] },
+        { "id": "Teeth",      "save_path": "assets/images/ocean/Teeth/Teeth_normal_1.png",           "bbox": [0, 1024, 512, 512] },
+        { "id": "Tongue",     "save_path": "assets/images/ocean/Tongue/Tongue_normal_1.png",         "bbox": [512, 1024, 512, 512] },
+        { "id": "Ear_part",   "save_path": "assets/images/ocean/Ear_part/Ear_part_normal_1.png",     "bbox": [1024, 1024, 512, 512] }
+      ]
+    }
+  ],
+  "items": [
+    {
+      "id": "animal_penguin",
+      "category": "animal",
+      "filename": "animal_penguin.png",
+      "save_path": "assets/images/quizland/illust/animal/animal_penguin.png",
+      "prompt": "A cute friendly Emperor penguin standing upright on white snow, big round eyes, slight smile, looking forward. Hand-drawn watercolor children's book style for ages 3-6, subtle paper texture, soft drop shadow, warm Japanese picture book aesthetic, transparent PNG 1024x1024, centered, no text.",
+      "size": "1024x1024"
+    },
+    {
+      "id": "animal_octopus",
+      "category": "animal",
+      "filename": "animal_octopus.png",
+      "save_path": "assets/images/quizland/illust/animal/animal_octopus.png",
+      "prompt": "A cute friendly red-pink octopus with 8 visible curly tentacles, big round friendly eyes, soft smile, sitting upright. Hand-drawn watercolor children's book style for ages 3-6, subtle paper texture, soft drop shadow, warm Japanese picture book aesthetic, transparent PNG 1024x1024, centered, no text.",
+      "size": "1024x1024"
+    },
+    {
+      "id": "animal_cheetah",
+      "category": "animal",
+      "filename": "animal_cheetah.png",
+      "save_path": "assets/images/quizland/illust/animal/animal_cheetah.png",
+      "prompt": "A cute friendly cheetah running, spotted golden-yellow fur, slim body, motion-blur dust trail behind, smiling. Hand-drawn watercolor children's book style for ages 3-6, subtle paper texture, soft drop shadow, warm Japanese picture book aesthetic, transparent PNG 1024x1024, centered, no text.",
+      "size": "1024x1024"
+    },
+    {
+      "id": "animal_earthworm",
+      "category": "animal",
+      "filename": "animal_earthworm.png",
+      "save_path": "assets/images/quizland/illust/animal/animal_earthworm.png",
+      "prompt": "A cute friendly pink earthworm with a small smile, segmented body curving slightly, on wet brown soil with a few rain droplets nearby. Hand-drawn watercolor children's book style for ages 3-6, subtle paper texture, soft drop shadow, warm Japanese picture book aesthetic, transparent PNG 1024x1024, centered, no text.",
+      "size": "1024x1024"
+    },
+    {
+      "id": "animal_koala",
+      "category": "animal",
+      "filename": "animal_koala.png",
+      "save_path": "assets/images/quizland/illust/animal/animal_koala.png",
+      "prompt": "A cute friendly grey koala hugging a eucalyptus branch, holding one eucalyptus leaf in mouth, big round nose, soft fur. Hand-drawn watercolor children's book style for ages 3-6, subtle paper texture, soft drop shadow, warm Japanese picture book aesthetic, transparent PNG 1024x1024, centered, no text.",
+      "size": "1024x1024"
+    },
+    {
+      "id": "animal_whaleshark",
+      "category": "animal",
+      "filename": "animal_whaleshark.png",
+      "save_path": "assets/images/quizland/illust/animal/animal_whaleshark.png",
+      "prompt": "A cute friendly large gentle whale shark with white-spotted blue-grey body, wide flat mouth slightly smiling, swimming horizontally. Hand-drawn watercolor children's book style for ages 3-6, subtle paper texture, soft drop shadow, warm Japanese picture book aesthetic, transparent PNG 1024x1024, centered, no text.",
+      "size": "1024x1024"
+    },
+    {
+      "id": "animal_bluewhale",
+      "category": "animal",
+      "filename": "animal_bluewhale.png",
+      "save_path": "assets/images/quizland/illust/animal/animal_bluewhale.png",
+      "prompt": "A cute friendly enormous blue whale, smooth blue-grey body, small visible flipper, gentle smile, water spout from blowhole. Hand-drawn watercolor children's book style for ages 3-6, subtle paper texture, soft drop shadow, warm Japanese picture book aesthetic, transparent PNG 1024x1024, centered, no text.",
+      "size": "1024x1024"
+    },
+    {
+      "id": "animal_spider",
+      "category": "animal",
+      "filename": "animal_spider.png",
+      "save_path": "assets/images/quizland/illust/animal/animal_spider.png",
+      "prompt": "A cute friendly cartoon spider with 8 round visible eyes and 8 thin legs, fuzzy round body, smiling. Not scary, kid-safe. Hand-drawn watercolor children's book style for ages 3-6, subtle paper texture, soft drop shadow, warm Japanese picture book aesthetic, transparent PNG 1024x1024, centered, no text.",
+      "size": "1024x1024"
+    },
+    {
+      "id": "animal_flamingo",
+      "category": "animal",
+      "filename": "animal_flamingo.png",
+      "save_path": "assets/images/quizland/illust/animal/animal_flamingo.png",
+      "prompt": "A cute friendly pink flamingo standing on one leg, S-curved neck, small smile, soft pink feathers. Hand-drawn watercolor children's book style for ages 3-6, subtle paper texture, soft drop shadow, warm Japanese picture book aesthetic, transparent PNG 1024x1024, centered, no text.",
+      "size": "1024x1024"
+    },
+    {
+      "id": "animal_chicken",
+      "category": "animal",
+      "filename": "animal_chicken.png",
+      "save_path": "assets/images/quizland/illust/animal/animal_chicken.png",
+      "prompt": "A cute friendly white hen chicken with red comb and yellow beak, sitting on a small egg in straw nest, small smile. Hand-drawn watercolor children's book style for ages 3-6, subtle paper texture, soft drop shadow, warm Japanese picture book aesthetic, transparent PNG 1024x1024, centered, no text.",
+      "size": "1024x1024"
+    },
+    {
+      "id": "animal_banana_tree",
+      "category": "animal",
+      "filename": "animal_banana_tree.png",
+      "save_path": "assets/images/quizland/illust/animal/animal_banana_tree.png",
+      "prompt": "A cute friendly banana plant (not a real tree, with soft herbaceous trunk) bearing a bunch of yellow bananas, large green leaves, slight smile on the trunk face. Hand-drawn watercolor children's book style for ages 3-6, subtle paper texture, soft drop shadow, warm Japanese picture book aesthetic, transparent PNG 1024x1024, centered, no text.",
+      "size": "1024x1024"
+    },
+    {
+      "id": "body_skin",
+      "category": "body",
+      "filename": "body_skin.png",
+      "save_path": "assets/images/quizland/illust/body/body_skin.png",
+      "prompt": "A friendly cute illustration showing skin surface (the body's protective covering): a soft warm-toned skin layer with subtle pores and a tiny smiling face, viewed as a gentle close-up. Suggesting \"skin is what wraps and protects the body.\" Hand-drawn watercolor children's book style for ages 3-6, subtle paper texture, soft drop shadow, warm Japanese picture book aesthetic, transparent PNG 1024x1024, centered, no text.",
+      "size": "1024x1024"
+    },
+    {
+      "id": "body_heart",
+      "category": "body",
+      "filename": "body_heart.png",
+      "save_path": "assets/images/quizland/illust/body/body_heart.png",
+      "prompt": "A cute friendly cartoon human heart organ (anatomical heart shape, not a Valentine heart), pinkish-red, with a small smiling face, with soft motion lines suggesting \"doki-doki\" pumping rhythm. Hand-drawn watercolor children's book style for ages 3-6, subtle paper texture, soft drop shadow, warm Japanese picture book aesthetic, transparent PNG 1024x1024, centered, no text.",
+      "size": "1024x1024"
+    },
+    {
+      "id": "body_lungs",
+      "category": "body",
+      "filename": "body_lungs.png",
+      "save_path": "assets/images/quizland/illust/body/body_lungs.png",
+      "prompt": "A cute friendly pair of cartoon human lungs, soft pink with branching airways visible, small smiling face, gentle puffs of air around them suggesting breathing. Hand-drawn watercolor children's book style for ages 3-6, subtle paper texture, soft drop shadow, warm Japanese picture book aesthetic, transparent PNG 1024x1024, centered, no text.",
+      "size": "1024x1024"
+    },
+    {
+      "id": "body_bones",
+      "category": "body",
+      "filename": "body_bones.png",
+      "save_path": "assets/images/quizland/illust/body/body_bones.png",
+      "prompt": "A cute friendly simplified human skeleton hand or torso bones, clean white, slightly cartoon-style with rounded edges (not scary, kid-safe), tiny smiling face on one bone. Hand-drawn watercolor children's book style for ages 3-6, subtle paper texture, soft drop shadow, warm Japanese picture book aesthetic, transparent PNG 1024x1024, centered, no text.",
+      "size": "1024x1024"
+    },
+    {
+      "id": "body_fingerprint",
+      "category": "body",
+      "filename": "body_fingerprint.png",
+      "save_path": "assets/images/quizland/illust/body/body_fingerprint.png",
+      "prompt": "A close-up of a single human fingertip showing the swirling fingerprint pattern clearly, soft skin tone, slightly cartoon style, optional tiny magnifying glass icon. Hand-drawn watercolor children's book style for ages 3-6, subtle paper texture, soft drop shadow, warm Japanese picture book aesthetic, transparent PNG 1024x1024, centered, no text.",
+      "size": "1024x1024"
+    },
+    {
+      "id": "body_blink",
+      "category": "body",
+      "filename": "body_blink.png",
+      "save_path": "assets/images/quizland/illust/body/body_blink.png",
+      "prompt": "A pair of cute kid eyes mid-blink (one slightly closed), with a single sparkly tear drop near the lower lid suggesting cleaning the eye. Friendly, no fear. Hand-drawn watercolor children's book style for ages 3-6, subtle paper texture, soft drop shadow, warm Japanese picture book aesthetic, transparent PNG 1024x1024, centered, no text.",
+      "size": "1024x1024"
+    },
+    {
+      "id": "body_chew",
+      "category": "body",
+      "filename": "body_chew.png",
+      "save_path": "assets/images/quizland/illust/body/body_chew.png",
+      "prompt": "A cute friendly close-up of an open kid's mouth showing white teeth biting a piece of food (e.g. an apple slice), small smile, gentle. Hand-drawn watercolor children's book style for ages 3-6, subtle paper texture, soft drop shadow, warm Japanese picture book aesthetic, transparent PNG 1024x1024, centered, no text.",
+      "size": "1024x1024"
+    }
+  ]
+}

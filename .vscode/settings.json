@@ -1,0 +1,6 @@
+{
+  "//": "Force UTF-8 for every file in this workspace so the OpenAI Codex extension and GitHub Copilot Chat don't auto-detect Shift_JIS / CP932 on Windows. Pairs with .editorconfig at repo root.",
+  "files.encoding": "utf8",
+  "files.autoGuessEncoding": false,
+  "files.eol": "\n"
+}

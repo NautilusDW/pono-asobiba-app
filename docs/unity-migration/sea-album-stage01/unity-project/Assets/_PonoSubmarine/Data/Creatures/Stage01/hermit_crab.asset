@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f65822b5c2ba76041b18b605fbccf910, type: 3}
+  m_Name: hermit_crab
+  m_EditorClassIdentifier: Assembly-CSharp::PonoSubmarine.SeaAlbum.CreatureData
+  creatureId: hermit_crab
+  displayName: "\u30E4\u30C9\u30AB\u30EA"
+  habitat: "\u6D45\u3044\u6D77\u306E\u5CA9\u5834\u3084\u8C9D\u6BBB"
+  food: "\u5C0F\u3055\u306A\u6709\u6A5F\u7269\u306A\u3069"
+  bodySecret: "\u304B\u3089\u3060\u3092\u5B88\u308B\u305F\u3081\u306B\u3001\u7A7A\u3044\u305F\u8C9D\u6BBB\u3092\u3059\u307F\u304B\u306B\u3059\u308B\u3002"
+  isBoss: 0
+  maxHp: 2
+  normalSprite: {fileID: 21300000, guid: 243f327d814ec9849a5d7c7dafb27c5f, type: 3}
+  eatingSprite: {fileID: 21300000, guid: f49637438c1d7174a809fb08e1f78ea4, type: 3}
+  happySprite: {fileID: 21300000, guid: 719ac0fc56f00074c9e3a1d165eaf614, type: 3}

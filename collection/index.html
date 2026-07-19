@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>ずかん｜ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<!-- FOUC guard: 初回ペイント時の未スタイル表示を防ぐ -->
+<style>html,body{background:#FFF8E7}.coll-main{visibility:hidden}body.pono-game-ready .coll-main{visibility:visible}</style>
+<script>document.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(function(){requestAnimationFrame(function(){document.body.classList.add('pono-game-ready')})})});</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
@@ -209,6 +212,7 @@ body {
   margin: 16px 0 6px; padding-bottom: 4px; border-bottom: 2px solid #FFF0F5;
 }
 </style>
+<script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
 <body>
 <div class="coll-main">
@@ -313,14 +317,19 @@ function _updateContentTitle(tabKey) {
   var el = document.getElementById('collContentTitle');
   if (el && TAB_TITLES[tabKey]) el.textContent = TAB_TITLES[tabKey];
 }
+function activateTab(tabKey) {
+  var tab = document.querySelector('.coll-tab[data-tab="' + tabKey + '"]');
+  if (!tab) return;
+  document.querySelectorAll('.coll-tab').forEach(function(t) { t.classList.remove('active'); });
+  document.querySelectorAll('.coll-section').forEach(function(s) { s.classList.remove('active'); });
+  tab.classList.add('active');
+  var sec = document.getElementById('sec-' + tabKey);
+  if (sec) sec.classList.add('active');
+  _updateContentTitle(tabKey);
+}
 document.querySelectorAll('.coll-tab').forEach(function(tab) {
   tab.addEventListener('click', function() {
-    document.querySelectorAll('.coll-tab').forEach(function(t) { t.classList.remove('active'); });
-    document.querySelectorAll('.coll-section').forEach(function(s) { s.classList.remove('active'); });
-    tab.classList.add('active');
-    var sec = document.getElementById('sec-' + tab.dataset.tab);
-    if (sec) sec.classList.add('active');
-    _updateContentTitle(tab.dataset.tab);
+    activateTab(tab.dataset.tab);
   });
 });
 
@@ -500,11 +509,13 @@ function showSeaDetailSimple(c) {
   var list = document.getElementById('stamp-list');
   if (!list || typeof getAchievements === 'undefined') return;
 
-  var allAch = getAchievements();
+  // 廃止済みゲーム(archived:true)の実績は一覧から除外する。getActiveAchievements
+  // (common/achievements.js) を優先し、無ければ旧 getAchievements() にフォールバック。
+  var allAch = typeof getActiveAchievements === 'function' ? getActiveAchievements() : getAchievements();
   var unlocked = {};
   try { unlocked = JSON.parse(localStorage.getItem('pono_achievements') || '{}'); } catch(e) {}
 
-  // スタンプラリーで名前・条件が全て見られるので、未取得でも隠さず表示
+  // スタンプラリーで名前・条件が全て見られるので、未取得でも隠さず表示 (ただし廃止ゲーム分は allAch から既に除外済み)
   allAch.forEach(function(ach) {
     var isUnlocked = !!unlocked[ach.id];
     var row = document.createElement('div');

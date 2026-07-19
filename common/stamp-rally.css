@@ -1,0 +1,385 @@
+/* ============================================================
+   common/stamp-rally.css
+   common/stamp-rally.js が使うスタイル定義。
+   - .stamp-rally-section / .stamp-rally-games 等: きょうのスタンプラリー帯
+   - .stamp-card-section / .stamp-card-slot 等: 15マススタンプカード (ページ側に
+     静的マークアップがあれば使われる。play-all.html は現状マークアップ無しで
+     renderStampCard() は事実上 no-op)
+   - .stamp-full-modal-* / .big-stamp-* / .sparkle 等: showFullCardModal() /
+     showStampBatch() が document.body 直下に動的生成するオーバーレイ用
+   play-all.html から抽出 (2026-07-16, Stage 1)。読み込み側は
+   <link rel="stylesheet" href="common/stamp-rally.css"> を追加するだけでよい。
+   ※ どんぐりバッジ(.acorn-badge-play)/ありがとうバッジ(.thankyou-badge-play)は
+     このファイルの元コメント見出し配下にあったが別システムのため対象外、
+     play-all.html 側の <style> に残置。
+   ============================================================ */
+
+.stamp-rally-section {
+  width: 100%;
+  max-width: 400px;
+  margin: 8px auto 10px;
+  padding: 14px 14px 12px;
+  background: linear-gradient(135deg, #FFF8E1, #FFE8C4);
+  border: 3px solid #FFB84D;
+  border-radius: 22px;
+  box-shadow: 0 6px 18px rgba(255,152,0,0.18);
+  position: relative;
+}
+.stamp-rally-section::before {
+  content: '';
+  position: absolute;
+  inset: -3px;
+  border-radius: 22px;
+  pointer-events: none;
+  animation: stampRallyGlow 2.6s ease-in-out infinite;
+}
+@keyframes stampRallyGlow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,184,77,0); }
+  50%      { box-shadow: 0 0 0 6px rgba(255,184,77,0.28); }
+}
+.stamp-rally-title {
+  font-size: 1.15rem;
+  font-weight: 900;
+  color: #D97706;
+  text-align: center;
+  margin-bottom: 10px;
+  letter-spacing: 0.02em;
+}
+.stamp-rally-games {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+.stamp-rally-game {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 96px;
+  padding: 12px 6px 10px;
+  background: #fff;
+  border: 2.5px solid var(--primary-light);
+  border-radius: 18px;
+  box-shadow: 0 3px 12px var(--shadow);
+  position: relative;
+  text-decoration: none;
+  color: var(--text);
+  transition: transform 0.12s;
+}
+.stamp-rally-game:active { transform: scale(0.95); }
+.stamp-rally-game-icon { font-size: 2.2rem; line-height: 1; }
+.stamp-rally-game-name {
+  font-size: 0.7rem;
+  font-weight: 900;
+  line-height: 1.2;
+  text-align: center;
+}
+.stamp-rally-game.completed {
+  background: linear-gradient(135deg, #E8F5E9, #C8E6C9);
+  border: 2px solid #66BB6A;
+}
+.stamp-rally-game.completed::after {
+  content: '\2705';
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  font-size: 0.9rem;
+}
+.stamp-rally-bonus {
+  text-align: center;
+  margin-top: 8px;
+  font-size: 0.78rem;
+  font-weight: 900;
+  color: #66BB6A;
+}
+.stamp-rally-bonus.pending {
+  color: var(--text-light);
+}
+
+/* ===== Stamp Card (15-slot, 5×3 card) ===== */
+.stamp-card-section {
+  width: 100%;
+  max-width: 400px;
+  margin: 6px auto 0;
+  background: linear-gradient(135deg, #FFFDF5, #FFF8E8);
+  border-radius: 18px;
+  padding: 10px 14px 12px;
+  box-shadow: 0 2px 10px var(--shadow);
+  border: 2px solid #FFE8B0;
+  cursor: pointer;
+}
+.stamp-card-header {
+  font-size: 0.82rem;
+  font-weight: 900;
+  color: var(--text);
+  text-align: center;
+  margin-bottom: 8px;
+}
+.stamp-card-header span {
+  color: var(--primary);
+}
+.stamp-card-row-label {
+  font-size: 0.6rem;
+  color: #C0B090;
+  text-align: center;
+  margin-bottom: 2px;
+  font-weight: 700;
+}
+.stamp-card {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+.stamp-card-slot {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 2.5px dashed #E0D6C8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: #FFF8F0;
+  flex-shrink: 0;
+  transition: transform 0.15s;
+}
+.stamp-card-slot .slot-num {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #D5CFC5;
+  position: absolute;
+  pointer-events: none;
+}
+.stamp-card-slot .slot-hint {
+  font-size: 0.7rem;
+  opacity: 0.25;
+  position: absolute;
+  bottom: -1px;
+}
+.stamp-card-slot.stamped {
+  border: 2.5px solid #E85A45;
+  background: #FFFDF8;
+}
+.stamp-card-slot.stamped img {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: contain;
+}
+.stamp-card-slot.current-slot {
+  border: 2.5px solid #FFD700;
+  background: #FFFDE7;
+  animation: slotPulse 1.5s ease-in-out infinite;
+}
+.stamp-card-slot.reward-slot {
+  border-color: #F2915A;
+  background: #FFF5EE;
+}
+@keyframes slotPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,215,0,0.4); }
+  50% { box-shadow: 0 0 8px 4px rgba(255,215,0,0.5); }
+}
+
+/* ===== Stamp Bounce Animation ===== */
+@keyframes stampBounce {
+  0%   { transform: scale(3) rotate(-20deg); opacity: 0; }
+  30%  { transform: scale(0.85) rotate(3deg); opacity: 1; }
+  50%  { transform: scale(1.2) rotate(-2deg); opacity: 1; }
+  70%  { transform: scale(0.95) rotate(1deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0); opacity: 1; }
+}
+@keyframes stampSlotGlow {
+  0%   { box-shadow: 0 0 0 0 rgba(255,215,0,0); }
+  40%  { box-shadow: 0 0 16px 8px rgba(255,215,0,0.7); }
+  100% { box-shadow: 0 0 4px 2px rgba(255,215,0,0.2); }
+}
+.stamp-bounce {
+  animation: stampBounce 0.6s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes stampBtnPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.08); }
+}
+
+/* ===== 大きなスタンプ演出 ===== */
+.big-stamp-wrap {
+  position: relative;
+  width: 200px; height: 200px;
+  display: flex; align-items: center; justify-content: center;
+  margin: 8px auto;
+}
+.big-stamp-icon {
+  width: 180px; height: 180px;
+  border-radius: 50%;
+  background: #FFF3CD;
+  border: 6px solid #FFD700;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 0 0 rgba(255,215,0,0);
+  transition: box-shadow 0.6s;
+}
+.big-stamp-icon.show {
+  animation: stampSlotGlow 1s ease-out forwards;
+}
+.big-stamp-icon img {
+  width: 150px; height: 150px;
+  border-radius: 50%;
+  opacity: 0;
+  transform: scale(3) rotate(-20deg);
+}
+.big-stamp-icon img.show {
+  opacity: 1;
+  transform: scale(1) rotate(0);
+  transition: transform 0.6s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s;
+}
+.sparkle {
+  position: absolute;
+  font-size: 1.8rem;
+  pointer-events: none;
+  opacity: 0;
+  animation: sparkleFloat 1.2s ease-out forwards;
+}
+@keyframes sparkleFloat {
+  0%   { opacity: 0; transform: scale(0.3) translate(0,0); }
+  30%  { opacity: 1; transform: scale(1.2) translate(var(--dx,0), var(--dy,0)); }
+  100% { opacity: 0; transform: scale(0.8) translate(calc(var(--dx,0) * 1.5), calc(var(--dy,0) * 1.5)); }
+}
+.big-stamp-counter {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #A89880;
+  margin-top: 6px;
+}
+.stamp-full-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  margin: 12px auto;
+  max-width: 280px;
+}
+.stamp-full-cell {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.6rem; font-weight: 700;
+}
+.stamp-full-cell.filled {
+  background: #E8F5E9;
+  border: 2px solid #66BB6A;
+}
+.stamp-full-cell.filled img {
+  width: 78%; height: 78%; border-radius: 50%;
+}
+.stamp-full-cell.new {
+  background: #FFF3CD;
+  border: 2.5px solid #FFD700;
+  animation: stampSlotGlow 0.8s ease-out forwards;
+}
+.stamp-full-cell.new img {
+  width: 78%; height: 78%; border-radius: 50%;
+}
+.stamp-full-cell.empty {
+  background: rgba(0,0,0,0.08);
+  border: 2px solid rgba(0,0,0,0.1);
+  color: #bbb;
+}
+
+/* ===== Card Complete Sparkle ===== */
+@keyframes cardSparkle {
+  0% { box-shadow: 0 0 0 0 rgba(255,215,0,0); border-color: #FFE8B0; }
+  30% { box-shadow: 0 0 20px 8px rgba(255,215,0,0.6); border-color: #FFD700; }
+  60% { box-shadow: 0 0 30px 12px rgba(255,215,0,0.3); border-color: #FFCC00; }
+  100% { box-shadow: 0 0 10px 4px rgba(255,215,0,0.15); border-color: #FFE8B0; }
+}
+.stamp-card-section.card-complete {
+  animation: cardSparkle 1s ease-out;
+}
+
+/* ===== Full Card Modal (tap to open 5×3 grid) ===== */
+.stamp-full-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99997;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+.stamp-full-modal {
+  background: linear-gradient(135deg, #FFFDF5, #FFF8E8);
+  border-radius: 20px;
+  padding: 18px 20px 16px;
+  max-width: 340px;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  border: 2px solid #FFE8B0;
+}
+.stamp-full-modal-title {
+  font-size: 0.9rem;
+  font-weight: 900;
+  color: #F2915A;
+  margin-bottom: 12px;
+}
+.stamp-full-modal-row {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.stamp-full-modal-slot {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 2.5px dashed #E0D6C8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  background: #FFF8F0;
+  flex-shrink: 0;
+}
+.stamp-full-modal-slot .slot-num {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #D5CFC5;
+  position: absolute;
+}
+.stamp-full-modal-slot .slot-hint {
+  font-size: 0.7rem;
+  opacity: 0.25;
+  position: absolute;
+  bottom: -1px;
+}
+.stamp-full-modal-slot.stamped {
+  border: 2.5px solid #66BB6A;
+  background: #F0FFF0;
+}
+.stamp-full-modal-slot.stamped img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+.stamp-full-modal-slot.reward-slot {
+  border-color: #F2915A;
+  background: #FFF5EE;
+}
+.stamp-full-modal-close {
+  margin-top: 10px;
+  font-size: 0.85rem;
+  font-weight: 900;
+  color: #fff;
+  background: var(--primary);
+  border: none;
+  border-radius: 20px;
+  padding: 8px 28px;
+  cursor: pointer;
+}
+@keyframes fadeIn {
+  from { opacity: 0; } to { opacity: 1; }
+}
+
+@media (min-width: 640px) {
+  .stamp-rally-section { max-width: 580px; }
+  .stamp-card-section { max-width: 580px; }
+}

@@ -32,6 +32,60 @@ run_worker_first = true
 [observability]
 enabled = true
 
+[[kv_namespaces]]
+binding = "BENTO_MASK_CONFIG"
+id = "45b26dbf2d7a4f40907517e826e48ed8"
+
+# データ分析基盤 (production, docs/data-analytics-plan.md §6-2)。
+# Workers Analytics Engine は KV/D1 と異なり id 事前発行が不要 (初回書き込み時に自動作成)。
+# BENTO_MASK_CONFIG の staging 共有事故 (KV を env 間で使い回して衝突した件) の教訓から、
+# env ごとに別 dataset にする (production=pono_events / staging=pono_events_stg /
+# staging-app=pono_events_stgapp)。
+[[analytics_engine_datasets]]
+binding = "EVENTS"
+dataset = "pono_events"
+
+# データ分析基盤: WAE SQL API 読み出し用のアカウント ID と、ロールアップ対象 dataset 名。
+# トークン本体 (WAE_SQL_TOKEN) は secret のみで管理し、ここには置かない。
+[vars]
+CF_ACCOUNT_ID = "f5788e90dd05047ab67ada1b6a6f2448"
+ANALYTICS_DATASET = "pono_events"
+
+# データ分析基盤 (production): 集計層 D1 (docs/data-analytics-plan.md §6-3)。
+# LP staging (env.staging) にはデータが無いため binding を付けない。
+[[d1_databases]]
+binding = "ANALYTICS_DB"
+database_name = "pono-analytics-prod"
+database_id = "93e021e9-054a-4f4b-b7ac-e5f2925af274"
+
+# データ分析基盤: 日次ロールアップ cron (JST 4時 = UTC 19時)。
+# [triggers] は env に継承されるため、env.staging / env.staging-app 側で明示上書きする。
+[triggers]
+crons = ["0 19 * * *"]
+
+# ---------------------------------------------------------------------------
+# Step C: 合言葉型クラウド同期 (production)。
+# 手順は src/api/SETUP.md を参照。 namespace 作成 + secret 登録が済むまでは
+# 下記をコメントのままにしておくこと (存在しない id を書くと deploy が失敗する)。
+# worker 側は env.SAVEDATA_KV / PASSCODE_HMAC_SECRET が無いと 503 を返すので安全。
+#
+#   1) wrangler kv namespace create SAVEDATA_KV
+#      -> 出力された id を下記に貼ってコメント解除
+#   2) wrangler secret put PASSCODE_HMAC_SECRET      (production の HMAC secret)
+#   (任意) wrangler secret put RL_IP_SALT            (IP ハッシュ用 salt。 未設定なら HMAC secret を流用)
+#
+# [[kv_namespaces]]
+# binding = "SAVEDATA_KV"
+# id = "REPLACE_WITH_PRODUCTION_SAVEDATA_KV_ID"
+#
+# 純正 Rate Limiting binding (任意の強化。 未設定でも KV counter で動作):
+# [[unsafe.bindings]]
+# name = "SAVEDATA_RL_IP"
+# type = "ratelimit"
+# namespace_id = "1001"
+# simple = { limit = 5, period = 60 }
+# ---------------------------------------------------------------------------
+
 # Staging (確認用) = develop branch からのデプロイ。
 # 独自ドメインは付けない。workers.dev サブドメインだけで十分。
 # URL: https://pono-asobiba-staging.ndw.workers.dev/
@@ -40,3 +94,96 @@ enabled = true
 [env.staging]
 name = "pono-asobiba-staging"
 routes = []
+
+# Cloudflare の [env.XXX] では top-level [assets] が継承されないため、
+# staging でも明示的に再宣言する（[env.staging-app.assets] と対称）。
+[env.staging.assets]
+directory = "./"
+binding = "ASSETS"
+run_worker_first = true
+
+[[env.staging.kv_namespaces]]
+binding = "BENTO_MASK_CONFIG"
+id = "0c58144b7fe9479e9781ddb1d9b44dc9"
+
+# データ分析基盤 (LP staging)。production とは別 dataset (env ごとの分離、上の注記参照)。
+[[env.staging.analytics_engine_datasets]]
+binding = "EVENTS"
+dataset = "pono_events_stg"
+
+# データ分析基盤: LP staging は集計対象外 (D1 binding も ANALYTICS_DATASET も付けない)。
+# top-level [triggers] の継承を明示的に打ち消す (継承させると LP staging でも cron が走ってしまう)。
+[env.staging.triggers]
+crons = []
+
+# Staging (アプリ版) = develop-app branch からのデプロイ用、別 worker。
+# URL: https://pono-asobiba-app-staging.ndw.workers.dev/
+# 既存 staging とは別 worker name で並走させ、APP_BUILD=1 により
+# HTML レスポンスへ window.__APP_BUILD__=1 を注入してアプリ版ビルドを識別する。
+# routes=[] で top-level routes の継承を明示的に打ち消す
+# (custom_domain の取り合いで失敗するのを防ぐ。既存 staging と同じ理由)
+[env.staging-app]
+name = "pono-asobiba-app-staging"
+routes = []  # custom_domain 継承を回避（既存 staging と同じ理由）
+
+[env.staging-app.vars]
+APP_BUILD = "1"
+ANALYTICS_DATASET = "pono_events_stgapp"
+# 注意: Cloudflare の [vars] は [triggers] と異なり env に継承されない (dry-run 実行時に
+# wrangler の warning で判明)。 top-level [vars] の CF_ACCOUNT_ID を re-declare しないと
+# staging-app 側で WAE SQL API 読み出しが CF_ACCOUNT_ID 欠落になるため明示する。
+CF_ACCOUNT_ID = "f5788e90dd05047ab67ada1b6a6f2448"
+
+# Cloudflare の [env.XXX] では top-level [assets] が継承されないため、
+# staging-app では明示的に再宣言する必要がある。
+# 再宣言しないと CF エッジが静的ファイルを直接 HIT で返してしまい、
+# worker が起動しない（= applyCacheHeaders の no-store も APP_BUILD 注入も効かない）。
+# run_worker_first は boolean true（配列 [true] にすると CF cache HIT 残留バグの罠あり）。
+[env.staging-app.assets]
+directory = "./"
+binding = "ASSETS"
+run_worker_first = true
+
+# KV は当面 staging と同一 namespace を共有する（後で分離可能）
+# 必要になったら wrangler kv:namespace create BENTO_MASK_CONFIG --env staging-app で別 ID を取得して差し替え
+# 注意: 同じ key (例: bento-mask-defaults-v1) を staging と staging-app の両方から同時に書き込むと
+# 互いに上書きしあう。 admin 操作は片側に寄せるか、 早めに別 namespace へ分離すること。
+[[env.staging-app.kv_namespaces]]
+binding = "BENTO_MASK_CONFIG"
+id = "0c58144b7fe9479e9781ddb1d9b44dc9"
+
+# ---------------------------------------------------------------------------
+# Step C: 合言葉型クラウド同期 (App staging)。 手順は src/api/SETUP.md 参照。
+# namespace 作成 + secret 登録が済むまでコメントのままにしておくこと。
+#   1) wrangler kv namespace create SAVEDATA_KV --env staging-app
+#      -> 出力された id を貼ってコメント解除
+#   2) wrangler secret put PASSCODE_HMAC_SECRET --env staging-app
+#   (任意) wrangler secret put RL_IP_SALT --env staging-app
+#
+[[env.staging-app.kv_namespaces]]
+binding = "SAVEDATA_KV"
+id = "2140aaf48bde4db0a773d6418c9a43b6"
+#
+# データ分析基盤 (App staging)。production/LP staging とは別 dataset (env ごとの分離、上の注記参照)。
+[[env.staging-app.analytics_engine_datasets]]
+binding = "EVENTS"
+dataset = "pono_events_stgapp"
+
+# データ分析基盤 (App staging): 集計層 D1 (docs/data-analytics-plan.md §6-3)。production とは別 DB。
+[[env.staging-app.d1_databases]]
+binding = "ANALYTICS_DB"
+database_name = "pono-analytics-stgapp"
+database_id = "b416beb9-85b3-4dc7-b12d-6614a2d80f37"
+
+# データ分析基盤: 日次ロールアップ cron。cron はアカウント全体で production 一本化方針のため、
+# staging-app では手動トリガー (POST /api/admin/analytics/rollup) を主に使う想定だが、
+# 確定契約どおり top-level と同じ crons を明示しておく (継承ではなく明示、上の [triggers] コメント参照)。
+[env.staging-app.triggers]
+crons = ["0 19 * * *"]
+#
+# [[env.staging-app.unsafe.bindings]]
+# name = "SAVEDATA_RL_IP"
+# type = "ratelimit"
+# namespace_id = "2001"
+# simple = { limit = 5, period = 60 }
+# ---------------------------------------------------------------------------

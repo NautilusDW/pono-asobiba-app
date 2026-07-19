@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>シールミュージアム</title>
+  <link rel="stylesheet" href="./styles.css?v=20260713-1286">
+</head>
+<body>
+  <div class="stage" id="app">
+    <div class="museum-bg" aria-hidden="true"></div>
+    <div class="museum-vignette" aria-hidden="true"></div>
+
+    <header class="topbar">
+      <div class="topbar-actions">
+        <button class="top-back" id="backToMap" type="button" hidden>マップ</button>
+        <button class="top-home" id="homeButton" type="button" aria-label="ホームへもどる">ホーム</button>
+      </div>
+      <div class="title-group">
+        <p id="screenKicker">マップ</p>
+        <h1 id="roomTitle">シールミュージアム</h1>
+      </div>
+      <div class="count-chip" id="countChip">-- / --</div>
+    </header>
+
+    <section class="map-screen" id="mapScreen" aria-label="へやをえらぶ">
+      <div class="map-board">
+        <img class="map-art" src="./assets/sticker-exhibition-map-cute-20260713.webp" alt="" draggable="false">
+        <div class="map-hit-layer" aria-hidden="false">
+          <button class="map-room map-room--creatures" data-room-id="creatures" type="button"></button>
+          <button class="map-room map-room--food" data-room-id="food" type="button"></button>
+          <button class="map-room map-room--sounds" data-room-id="sounds" type="button"></button>
+          <button class="map-room map-room--tools" data-room-id="tools" type="button"></button>
+          <button class="map-room map-room--characters" data-room-id="characters" type="button"></button>
+          <button class="map-room map-room--space" data-room-id="space" type="button"></button>
+          <button class="map-room map-room--special" data-room-id="special" type="button"></button>
+          <button class="map-floor map-floor--upstairs" data-floor-id="floor2" type="button"></button>
+        </div>
+        <div class="map-notice" id="mapNotice" role="status" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <main class="carousel-shell" id="carouselShell" aria-label="シールをみる" hidden>
+      <button class="nav-arrow nav-arrow--left" id="prevButton" type="button" aria-label="ひだりへ">‹</button>
+      <div class="carousel-viewport" id="carouselViewport" tabindex="0">
+        <div class="carousel-layer" id="carouselLayer"></div>
+      </div>
+      <button class="nav-arrow nav-arrow--right" id="nextButton" type="button" aria-label="みぎへ">›</button>
+    </main>
+
+    <footer class="bottom-bar" id="bottomBar" hidden>
+      <button class="mini-action" id="randomButton" type="button">おまかせ</button>
+      <div class="progress" aria-hidden="true">
+        <div class="progress__fill" id="progressFill"></div>
+      </div>
+      <div class="position-chip" id="positionChip">-- / --</div>
+    </footer>
+
+    <div class="detail-overlay" id="detailOverlay" hidden>
+      <section class="detail-panel" role="dialog" aria-modal="true" aria-labelledby="detailName">
+        <button class="detail-close" id="closeDetail" type="button" aria-label="とじる">×</button>
+        <div class="detail-frame" id="detailFrame">
+          <img id="detailImage" src="" alt="" draggable="false">
+        </div>
+        <div class="detail-copy">
+          <p id="detailSerial">000</p>
+          <h2 id="detailName">シール</h2>
+          <p id="detailDesc"></p>
+          <div class="detail-tags" id="detailTags"></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="loading" id="loading">よみこみちゅう</div>
+  </div>
+
+  <!-- v2127 batch:1254: スクショモード基盤。 debug-mode.js → capture.js の順で読み込み必須
+       (capture.js は PonoDebugMode.isFeatureEnabled('capture-mode') に単一ゲート委譲)。 -->
+  <script src="../../common/debug-mode.js"></script>
+  <script src="../../common/capture.js" defer></script>
+  <script src="./sticker-metrics.js?v=20260705-7"></script>
+  <script type="module" src="./main.js?v=20260713-1284"></script>
+</body>
+</html>

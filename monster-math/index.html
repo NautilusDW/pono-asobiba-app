@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>モンスターさんすう | ポノのあそびば</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+
+<!-- ===== FOUC GUARD (oto 型 4層マスキング: inline背景 + .page visibility + splash overlay + hard cut) ===== -->
+<!-- 1) inline 背景で CSS 取得前の白フラッシュを抑制 -->
+<!-- 2) .page を visibility:hidden、 body.pono-game-ready で解放 -->
+<!-- 3) #pono-game-splash overlay で main UI 露出までの間 完全遮蔽 (タップ=音声解禁、 engine.js が制御) -->
+<!-- 4) splash タップ/Enter で hidden=true (hard cut) -->
+<style id="pono-fouc-guard">
+  html, body { background: linear-gradient(180deg, #FFF3E0 0%, #FBD8A6 100%); }
+  .page { visibility: hidden; }
+  body.pono-game-ready .page { visibility: visible; }
+</style>
+<script>(function(){
+  function markReady(){ document.body && document.body.classList.add('pono-game-ready'); }
+  function whenDomReady(cb){ if(document.readyState==='loading'){ document.addEventListener('DOMContentLoaded',cb,{once:true}); } else { cb(); } }
+  whenDomReady(function(){ requestAnimationFrame(function(){ requestAnimationFrame(markReady); }); });
+})();</script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --mm-bg: #FFF3E0;
+  --mm-wood: #8B5E34;
+  --mm-wood-dark: #5D3A1E;
+  --mm-text: #5D4E37;
+  --mm-accent: #F2742A;
+  --mm-shadow: rgba(93,78,55,0.18);
+}
+
+html, body {
+  height: 100dvh;
+  font-family: 'Zen Maru Gothic', 'Hiragino Maru Gothic Pro', sans-serif;
+  color: var(--mm-text);
+  -webkit-user-select: none; user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+/* ── splash (レイヤー3/4) ── */
+#pono-game-splash {
+  position: fixed; inset: 0; z-index: 1000;
+  background: linear-gradient(180deg, #FFF3E0 0%, #FBD8A6 100%);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 18px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  outline: none;
+}
+#pono-game-splash[hidden] { display: none !important; }
+#pono-game-splash img {
+  width: min(70vw, 460px);
+  max-height: 46vh;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 22px var(--mm-shadow));
+}
+#pono-game-splash .pgs-title {
+  font-size: 1.5rem; font-weight: 900; color: var(--mm-wood-dark);
+  text-shadow: 2px 2px 0 #fff;
+}
+#pono-game-splash .pgs-btn {
+  padding: 14px 36px; border-radius: 999px; border: none;
+  background: #FFD84D; color: #7A4A00;
+  font-family: inherit; font-weight: 900; font-size: 1.1rem;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.18);
+  cursor: pointer;
+  animation: mmPulse 1.2s ease-in-out infinite;
+}
+@keyframes mmPulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+
+/* ── 1280x720 固定ステージ + fit-to-screen ── */
+.page { position: fixed; inset: 0; background: var(--mm-bg); }
+#mm-stage {
+  position: fixed; left: 50%; top: 50%;
+  width: 1280px; height: 720px;
+  transform-origin: center center;
+  background: linear-gradient(180deg, #FFF3E0 0%, #FBE0BC 100%);
+  overflow: hidden;
+}
+#mm-stage.mm-nav-guard { pointer-events: none; }
+
+.mm-screen { position: absolute; inset: 0; display: none; flex-direction: column; }
+.mm-screen.is-active { display: flex; }
+
+/* ── タイトル ── */
+#screen-title { align-items: center; justify-content: center; gap: 18px; padding: 24px; position: relative; }
+.mm-title-hero { text-align: center; }
+.mm-title-collage { width: min(56vw, 520px); max-height: 240px; object-fit: contain; display: block; margin: 0 auto 8px; }
+.mm-title-logo { font-size: 2rem; font-weight: 900; color: var(--mm-wood-dark); text-shadow: 2px 2px 0 #fff; }
+.mm-title-sub { font-size: 0.95rem; font-weight: 700; color: var(--mm-text); margin-top: 4px; }
+.mm-title-doors { display: flex; gap: 22px; }
+.mm-door {
+  width: 176px; padding: 16px 10px 14px;
+  border: 4px solid var(--mm-wood); border-radius: 22px;
+  background: rgba(255,255,255,0.85);
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  cursor: pointer; font-family: inherit;
+  box-shadow: 0 6px 14px var(--mm-shadow);
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.mm-door:active { transform: translateY(2px) scale(0.98); }
+.mm-door.is-selected { border-color: var(--mm-accent); box-shadow: 0 0 0 4px rgba(242,116,42,0.28), 0 8px 18px var(--mm-shadow); transform: scale(1.05); }
+.mm-door--stub { opacity: 0.55; }
+.mm-door-monster { width: 108px; height: 108px; object-fit: contain; }
+.mm-door-label { font-weight: 900; font-size: 1.05rem; color: var(--mm-wood-dark); }
+.mm-door-diff { font-size: 0.72rem; font-weight: 700; color: #fff; background: var(--mm-accent); padding: 2px 12px; border-radius: 999px; }
+.mm-continue-chip { position: absolute; top: 20px; right: 24px; }
+.mm-continue-chip button {
+  font-family: inherit; font-weight: 800; font-size: 0.85rem;
+  padding: 8px 18px; border-radius: 999px; border: 2px solid var(--mm-accent);
+  background: #fff; color: var(--mm-accent); cursor: pointer;
+  position: relative;
+}
+.mm-continue-chip button::after {
+  content: ''; position: absolute;
+  top: -18px; bottom: -38px; left: -10px; right: -10px;
+}
+.mm-back-link {
+  position: absolute; left: 20px; bottom: 18px;
+  font-size: 0.85rem; font-weight: 800; color: var(--mm-text);
+  text-decoration: none; padding: 8px 6px;
+}
+/* a11y: invisible hit-area expansion to ~88 stage px (見た目=文字/装飾は不変) */
+.mm-back-link::after {
+  content: ''; position: absolute;
+  top: -40px; bottom: -16px; left: -10px; right: -10px;
+}
+
+/* ── ステージ選択 ── */
+#screen-stageSelect { padding: 0; }
+.mm-topbar {
+  height: 72px; display: flex; align-items: center; gap: 14px;
+  padding: 0 20px; background: var(--mm-wood-dark); color: #fff; flex-shrink: 0;
+}
+.mm-topbar-back {
+  width: 46px; height: 46px; border-radius: 50%; border: none;
+  background: rgba(255,255,255,0.16); color: #fff; font-size: 1.3rem; font-weight: 900;
+  cursor: pointer;
+  position: relative;
+}
+/* a11y (Cross-Review B blocker#4): 見た目の円は46pxのまま、当たり判定のみ88 stage px相当に拡張 */
+.mm-topbar-back::after {
+  content: ''; position: absolute;
+  top: -13px; bottom: -29px; left: -21px; right: -21px;
+}
+.mm-topbar-title { font-weight: 900; font-size: 1.15rem; flex: 1; }
+.mm-topbar-spacer { width: 46px; }
+.mm-star-row { font-size: 1.2rem; letter-spacing: 2px; color: #FFD84D; }
+.mm-blackboard { background: #3B2A1E; box-shadow: inset 0 -4px 0 rgba(0,0,0,0.25); }
+.mm-stage-grid {
+  flex: 1; display: flex; flex-wrap: wrap; align-content: flex-start;
+  gap: 16px; padding: 24px; overflow-y: auto;
+}
+.mm-stage-card {
+  width: 190px; padding: 14px; border-radius: 16px; border: 3px solid var(--mm-wood);
+  background: #fff; font-family: inherit; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  box-shadow: 0 5px 10px var(--mm-shadow); position: relative;
+}
+.mm-stage-card.is-locked { opacity: 0.6; }
+.mm-stage-num { font-size: 1.6rem; font-weight: 900; color: var(--mm-accent); }
+.mm-stage-name { font-size: 0.85rem; font-weight: 800; text-align: center; }
+.mm-stage-stars { font-size: 0.95rem; color: #E4A11B; letter-spacing: 1px; }
+.mm-stage-lock { position: absolute; top: 8px; right: 10px; font-size: 1.1rem; }
+.mm-stage-placeholder {
+  margin: auto; font-size: 1rem; font-weight: 800; color: var(--mm-text);
+  background: #fff; padding: 20px 28px; border-radius: 18px; border: 3px dashed var(--mm-wood);
+}
+
+/* ── プレイ ── */
+#screen-play { padding: 0; }
+.mm-play-body { flex: 1; display: flex; padding: 20px 24px; gap: 20px; overflow: hidden; }
+.mm-shelf {
+  width: 420px; flex-shrink: 0; display: grid; grid-template-columns: 1fr 1fr;
+  gap: 12px; align-content: start; overflow-y: auto;
+}
+.mm-food-card {
+  border: 3px solid var(--mm-wood); border-radius: 14px; background: #fff;
+  padding: 10px; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  cursor: pointer; font-family: inherit;
+  position: relative;
+}
+/* a11y: grid gap(12px)の半分(6px)にキャップして隣接カードとの重複を防止しつつ 44px 未満を解消 */
+.mm-food-card::after {
+  content: ''; position: absolute;
+  inset: -6px;
+}
+.mm-food-emoji { font-size: 2rem; }
+.mm-food-label { font-size: 0.8rem; font-weight: 800; }
+.mm-monster-area {
+  flex: 1; position: relative; display: flex; flex-direction: column;
+  align-items: center; justify-content: flex-end; gap: 14px; padding-bottom: 10px;
+}
+.mm-monster-img { max-width: 60%; max-height: 46%; object-fit: contain; }
+.mm-frame {
+  display: grid; grid-template-columns: repeat(var(--mm-frame-cols, 5), 1fr);
+  gap: 8px; width: min(100%, 480px);
+}
+.mm-frame-cell {
+  aspect-ratio: 1 / 1; border-radius: 10px; border: 3px solid var(--mm-wood);
+  background: rgba(255,255,255,0.5);
+}
+.mm-frame-cell.is-filled { background: var(--mm-accent); }
+.mm-frame-cell--group2 { border-color: #3B82F6; }
+.mm-bubble {
+  background: #fff; border: 3px solid var(--mm-wood); border-radius: 16px;
+  padding: 10px 18px; font-weight: 800; font-size: 0.95rem; max-width: 90%;
+  text-align: center;
+}
+
+/* ── 汎用演出 ── */
+.mm-fly-clone { pointer-events: none; }
+.mm-shake-refuse { animation: mmShake 0.4s ease; }
+@keyframes mmShake { 0%,100%{transform:translateX(0);} 25%{transform:translateX(-6px);} 75%{transform:translateX(6px);} }
+.mm-spotlight-active { position: relative; z-index: 600; box-shadow: 0 0 0 6px rgba(255,216,77,0.85), 0 0 0 9999px rgba(0,0,0,0.45); border-radius: 14px; }
+.mm-confetti-piece {
+  position: fixed; top: -10px; width: 8px; height: 8px; border-radius: 2px;
+  animation: mmConfettiFall 1.5s ease-in forwards; z-index: 900; pointer-events: none;
+}
+@keyframes mmConfettiFall { to { transform: translateY(100vh) rotate(360deg); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .mm-fly-clone, .mm-shake-refuse, .mm-confetti-piece { animation: none !important; transition: none !important; }
+}
+
+/* ── 確認モーダル ── */
+.mm-confirm-modal {
+  position: fixed; inset: 0; z-index: 950; background: rgba(0,0,0,0.55);
+  display: flex; align-items: center; justify-content: center;
+}
+.mm-confirm-modal[hidden] { display: none; }
+.mm-confirm-card {
+  background: #fff; border-radius: 20px; padding: 24px 28px; text-align: center;
+  display: flex; flex-direction: column; gap: 16px; max-width: 320px;
+}
+.mm-confirm-actions { display: flex; gap: 10px; justify-content: center; }
+.mm-confirm-actions button {
+  font-family: inherit; font-weight: 800; padding: 10px 20px; border-radius: 999px; border: none; cursor: pointer;
+  position: relative;
+}
+/* a11y: 横並びなので隣ボタンとの重複防止のため left/right は gap(10px)の半分にキャップ */
+.mm-confirm-actions button::after {
+  content: ''; position: absolute;
+  top: -25px; bottom: -25px; left: -5px; right: -5px;
+}
+#mm-confirm-ok { background: var(--mm-accent); color: #fff; }
+#mm-confirm-cancel { background: #eee; color: var(--mm-text); }
+
+/* ── リザルト ── */
+.mm-result-overlay {
+  position: fixed; inset: 0; z-index: 900; background: rgba(0,0,0,0.5);
+  display: flex; align-items: center; justify-content: center;
+}
+.mm-result-overlay[hidden] { display: none; }
+.mm-result-card {
+  background: #fff; border-radius: 24px; padding: 28px 32px; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 16px; min-width: 320px;
+}
+.mm-result-stars { display: flex; gap: 8px; }
+.mm-star { width: 34px; height: 34px; border-radius: 50%; background: #E8E0D2; position: relative; }
+.mm-star.is-lit { background: #FFD84D; box-shadow: 0 0 0 4px rgba(255,216,77,0.35); }
+.mm-result-events { font-size: 0.85rem; font-weight: 700; color: var(--mm-text); }
+.mm-result-buttons { display: flex; flex-direction: column; gap: 14px; width: 100%; }
+.mm-result-buttons button {
+  font-family: inherit; font-weight: 900; font-size: 0.95rem; padding: 16px 12px; border-radius: 999px; border: none; cursor: pointer;
+  position: relative;
+}
+/* a11y: 縦積みボタンは隣接ボタンとの重複防止のため top/bottom は gap(14px)の半分(7px)にキャップ。
+   先頭/末尾ボタンは自由側 (カード余白のある側) をより大きく拡張。
+   3ボタン積み構造上、中央ボタンは物理的に88px相当までは届かないため既知の残課題として issues に記載 */
+.mm-result-buttons button::after {
+  content: ''; position: absolute;
+  top: -7px; bottom: -7px; left: -8px; right: -8px;
+}
+.mm-result-buttons button:first-child::after { top: -20px; }
+.mm-result-buttons button:last-child::after { bottom: -24px; }
+#mm-result-next { background: var(--mm-accent); color: #fff; }
+#mm-result-choose { background: #FFD84D; color: #7A4A00; }
+#mm-result-end { background: #eee; color: var(--mm-text); }
+
+/* ── 縦画面ローテートヒント (CSS のみで制御) ── */
+.mm-rotate-hint {
+  display: none; position: fixed; inset: 0; z-index: 2000;
+  background: linear-gradient(180deg, #3B2A1E 0%, #5D3A1E 100%); color: #fff;
+  flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+  text-align: center; font-weight: 800;
+}
+.mm-rotate-icon { font-size: 3.4rem; animation: mmRotateHint 1.6s ease-in-out infinite; }
+@keyframes mmRotateHint { 0%,100%{transform:rotate(0deg);} 50%{transform:rotate(90deg);} }
+@media (orientation: portrait) {
+  .mm-rotate-hint { display: flex; }
+}
+</style>
+<script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
+</head>
+<body data-game-id="monster_math">
+
+<!-- FOUC GUARD: splash overlay (hard cut on tap, engine.js が制御) -->
+<div id="pono-game-splash" role="button" tabindex="0" aria-label="はじめる">
+  <img src="assets/title_v2_composite.webp" alt="テンメガネ・カクレン" onerror="this.style.display='none'">
+  <p class="pgs-title">もりの しょくどう</p>
+  <button type="button" class="pgs-btn" tabindex="-1">タップして はじめる</button>
+</div>
+
+<div class="page">
+  <div id="mm-stage">
+
+    <!-- ===== [1] タイトル = モード選択 (3ドア) ===== -->
+    <section id="screen-title" class="mm-screen is-active">
+      <div class="mm-continue-chip" id="mm-continue-chip" hidden>
+        <button type="button" id="mm-continue-btn">つづきから</button>
+      </div>
+      <div class="mm-title-hero">
+        <img class="mm-title-collage" src="assets/title_v2_composite.webp" alt="" onerror="this.style.display='none'">
+        <div class="mm-title-logo">モンスターさんすう</div>
+        <div class="mm-title-sub">たべさせて、 かずと なかよくなろう！</div>
+      </div>
+      <div class="mm-title-doors" id="mm-title-doors"></div>
+      <a href="../play.html" class="mm-back-link">← メニューにもどる</a>
+    </section>
+
+    <!-- ===== [2] ステージ選択 ===== -->
+    <section id="screen-stageSelect" class="mm-screen">
+      <div class="mm-topbar">
+        <button type="button" id="mm-stage-back" class="mm-topbar-back" aria-label="もどる">←</button>
+        <div class="mm-topbar-title" id="mm-stage-mode-label">テンメガネ</div>
+        <div class="mm-topbar-spacer"></div>
+      </div>
+      <div class="mm-stage-grid" id="mm-stage-grid"></div>
+    </section>
+
+    <!-- ===== [3] プレイ ===== -->
+    <section id="screen-play" class="mm-screen">
+      <div class="mm-topbar mm-blackboard">
+        <button type="button" id="mm-play-back" class="mm-topbar-back" aria-label="もどる">←</button>
+        <div class="mm-topbar-title" id="mm-play-stage-label">ステージ</div>
+        <div class="mm-star-row" id="mm-play-stars">☆☆☆☆☆</div>
+      </div>
+      <div class="mm-play-body">
+        <div class="mm-shelf" id="mm-shelf"></div>
+        <div class="mm-monster-area">
+          <div class="mm-frame" id="mm-frame"></div>
+          <img id="mm-monster" class="mm-monster-img" src="" alt="" hidden>
+          <div class="mm-bubble" id="mm-bubble" hidden></div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- ===== [4] リザルト overlay ===== -->
+  <div class="mm-result-overlay" id="screen-result" hidden>
+    <div class="mm-result-card">
+      <div class="mm-result-stars" id="mm-result-stars"></div>
+      <div class="mm-result-events" id="mm-result-events"></div>
+      <div class="mm-result-buttons">
+        <button type="button" id="mm-result-next">つぎの おさら</button>
+        <button type="button" id="mm-result-choose">モンスターを えらぶ</button>
+        <button type="button" id="mm-result-end">おしまい</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 戻る確認モーダル (誤タップ防止) -->
+  <div class="mm-confirm-modal" id="mm-confirm-modal" hidden>
+    <div class="mm-confirm-card">
+      <p>やめて もどる？</p>
+      <div class="mm-confirm-actions">
+        <button type="button" id="mm-confirm-cancel">つづける</button>
+        <button type="button" id="mm-confirm-ok">もどる</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 縦持ち時のローテートヒント -->
+  <div class="mm-rotate-hint">
+    <div class="mm-rotate-icon">📱</div>
+    <p>スマホを<br><strong>よこむき</strong>に してね！</p>
+  </div>
+</div>
+
+<!-- ===== 共通スクリプト =====
+     SPEC §3.0 の必須4本 (menu/tier/narration/engine + mode-*) に加え、
+     T0 の時点で common/acorns.js と js/game-stickers.js も先置きする。
+     理由: Impl 2-4 (mode-*.js) は index.html を一切編集しない運用 (SPEC §4.2) のため、
+     M3 (こうぶつ/feast どんぐり報酬) や M5 (シール grant) で必要になった時点で
+     このファイルへの追記が発生しないよう、 依存を先に確定させておく。 -->
+<script src="../common/menu.js"></script>
+<script src="../common/tier.js"></script>
+<script src="../common/acorns.js"></script>
+<script src="../js/game-stickers.js"></script>
+<script src="../common/narration.js"></script>
+<script src="engine.js"></script>
+<script src="mode-tenmegane.js"></script>
+<script src="mode-kakuren.js"></script>
+</body>
+</html>

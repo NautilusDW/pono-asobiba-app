@@ -1,0 +1,754 @@
+/* =============================================================
+ * acorn-modal-shared.css
+ * -------------------------------------------------------------
+ * 全ゲーム共通の「どんぐり獲得モーダル」演出を担う共有スタイル。
+ *
+ * - 元 source: quizland/index.html L2230-L2454 の
+ *   .result-acorn-reward / .overlay.is-perfect 系 + @keyframes 5 個。
+ * - 1:1 で抽出し、 BEM (.pono-acorn-modal__*) と CSS Custom Properties
+ *   に再構成。 値そのものは変更しない (既存 quizland の挙動と完全互換)。
+ * - @keyframes は他ゲーム/他コンポーネントとの衝突回避のため
+ *   pono-acorn-* prefix を付与。
+ * - z-index は --acorn-z (=99999) を使い、 game-stickers.js の
+ *   game-acorn-reward (実装値 99997) よりも上、 quizland の
+ *   .result-acorn-reward (9999) よりも上に配置。 system toast 等が
+ *   さらに上に出る場合はそちら側で z-index を引き上げる方針。
+ *   ▼ stacking 検証メモ: quizland/index.html では本ファイル (link) が
+ *     先、 .result-acorn-reward (inline <style>) が後に load される。
+ *     セレクタは BEM prefix が違うので競合しないが、 同一 fixed root に
+ *     並んだとき --acorn-z (99999) > .result-acorn-reward (9999) のため
+ *     どんぐりモーダルは確実に Perfect 演出より上層に来る。 Perfect 演出
+ *     自体は acorn-modal が出ていない通常時は 9999 で従来通り表示される。
+ * - ゲーム別アクセントカラーは [data-game-id="..."] フックを ready しておく
+ *   (Phase 1 で各ゲームが上書きする)。
+ *
+ * IMPORTANT: 純 CSS のみ。 acorn-modal.js が実際に作成する class 名は以下:
+ *   .pono-acorn-modal              (overlay 兼コンテナ; fixed full-screen)
+ *   .pono-acorn-modal__panel       (中央の獲得表示パネル)
+ *   .pono-acorn-modal__dismiss     (右上 × 閉じるボタン; 44x44 確保)
+ *   .pono-acorn-modal__kicker      (上段の「やったね！」等のキャッチ)
+ *   .pono-acorn-modal__bottom      (label + amount 縦並びラッパ)
+ *   .pono-acorn-modal__label       (補足コピー; 例: 「ゲット！」)
+ *   .pono-acorn-modal__icon        (どんぐりアイコン)
+ *   .pono-acorn-modal__amount      (×N の数値ブロック)
+ *   .pono-acorn-modal__amount-text (×N をまとめる inline 親)
+ *   .pono-acorn-modal__amount-mult (「×」 半角記号)
+ *   .pono-acorn-modal__amount-num  (数値; data-acorn-amount 属性付き)
+ *   .pono-acorn-modal__progress    (「きょう N / M」 表記)
+ *   .pono-acorn-modal--armed       (表示開始: opacity 0 → アニメ前の初期姿勢)
+ *   .pono-acorn-modal--animated    (アニメ発火: keyframes 走る)
+ *   .pono-acorn-modal--static      (prefers-reduced-motion 時の静止表示)
+ *   .pono-acorn-modal--perfect     (Perfect 演出: 金色強発光 + スタンプ揺れ)
+ *   .pono-acorn-modal--capped      (デイリーキャップ到達状態; Phase 2 で styling)
+ *
+ * 旧 schema (__title / __copy) は acorn-copy.json の field 名で、 JS の
+ * normalizeCopy() が __kicker / __label に変換する。 CSS 側の
+ * .pono-acorn-modal__title / __copy ルールは旧 quizland 互換のため残存し、
+ * 現 DOM では未使用。 Phase 2 cleanup で削除予定。
+ * ============================================================= */
+
+:root {
+  /* ---------- カラートークン (どんぐりゴールド系) ---------- */
+  --acorn-gold: #ffef8a;
+  --acorn-gold-text-shadow-primary: 0 4px 0 #8b4b00;
+  --acorn-gold-text-shadow-secondary: 0 8px 16px rgba(40, 18, 0, 0.45);
+  --acorn-gold-text-shadow-glow: 0 0 18px rgba(255, 224, 92, 0.82);
+
+  /* ---------- ストローク (数値の縁取り) ---------- */
+  --acorn-stroke: rgba(89, 43, 0, 0.34);
+  --acorn-stroke-color: rgba(89, 43, 0, 0.34);
+  --acorn-stroke-width: 2px;
+
+  /* ---------- アイコン ---------- */
+  --acorn-icon-w: clamp(48px, 8vw, 78px);
+  --acorn-icon-width: clamp(48px, 8vw, 78px);
+  --acorn-icon-aspect: 85 / 103;
+  --acorn-icon-src: url('../assets/ui/shop/donguri_shop_acorn_icon_20260626.png');
+  --acorn-icon-shadow:
+    drop-shadow(0 5px 8px rgba(71, 38, 6, 0.34))
+    drop-shadow(0 0 10px rgba(255, 221, 105, 0.58));
+
+  /* ---------- コピー (補足テキスト) ---------- */
+  --acorn-copy-color: #6d3b07;
+  --acorn-copy-color-perfect: #fff7ca;
+  --acorn-copy-color-nonperfect: #6d3b07;
+  --acorn-copy-shadow-perfect:
+    0 3px 0 #7d4708,
+    0 6px 12px rgba(45, 20, 0, 0.45);
+  --acorn-copy-shadow-nonperfect:
+    0 2px 0 rgba(255, 244, 203, 0.96);
+
+  /* ---------- モーダル本体 ---------- */
+  --acorn-modal-bg-overlay: rgba(42, 27, 14, 0.26);
+  --acorn-modal-padding: clamp(40px, 6.8vw, 58px) clamp(48px, 8vw, 70px) clamp(34px, 5.8vw, 50px);
+  --acorn-modal-font: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "BIZ UDPGothic", sans-serif;
+  --acorn-modal-color-primary: #5a3515;
+  --acorn-modal-gap: clamp(8px, 1.8vw, 14px);
+  --acorn-textbox-bg: linear-gradient(180deg, #fffaf0 0%, #fff1c9 100%);
+  --acorn-textbox-border: rgba(196, 124, 48, 0.58);
+  --acorn-textbox-shadow:
+    0 12px 24px rgba(70, 40, 10, 0.22),
+    inset 0 0 0 2px rgba(255, 255, 255, 0.62);
+  --acorn-textbox-radius: clamp(22px, 4.2vw, 34px);
+
+  /* ---------- ゲーム別アクセント (フォールバック; ゲーム側で上書き想定) ---------- */
+  --acorn-accent: #c98b3a;
+
+  /* ---------- z-index ---------- */
+  /* 99999: game-stickers.js の game-acorn-reward (実装値 99997) と
+     quizland .result-acorn-reward (9999) のどちらよりも上に来る値。
+     system toast 等が更に上に来る場合は、 そちら側で引き上げる方針。 */
+  --acorn-z: 99999;
+  --acorn-zindex: 99997;
+  --acorn-zindex-sticker: 99998;
+
+  /* ---------- イージング ---------- */
+  --acorn-easing-bounce: cubic-bezier(.18, .86, .22, 1.08);
+  --acorn-easing-stamp: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --acorn-easing-ease-out: ease-out;
+
+  /* ---------- 動的タイミング ---------- */
+  --reward-settle-delay: 0.52s;
+  --reward-icon-delay: 0.62s;
+  --reward-amount-delay: 0.86s;
+  --reward-copy-delay: 1.08s;
+  --stamp-impact-duration: 0.65s;
+  --stamp-ring-duration: 0.9s;
+  --stamp-ring-delay: 0.12s;
+
+  /* ---------- 自動非表示 (Phase 1 で JS が読む値) ---------- */
+  /* 演出開始 → 自動 dismiss までの合計時間。 quizland の copy 表示
+     (1.08s + 0.24s = 1.32s) + 余韻 1.5s 程度を見込んだ既定値。 */
+  --acorn-auto-hide-duration: 2800ms;
+}
+
+/* =============================================================
+ * オーバーレイ本体
+ * ============================================================= */
+.pono-acorn-modal {
+  position: fixed;
+  inset: 0;
+  z-index: var(--acorn-z);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--acorn-modal-bg-overlay);
+  font-family: var(--acorn-modal-font);
+  color: var(--acorn-modal-color-primary);
+  pointer-events: none; /* 演出専用; ユーザー操作はブロックしない */
+  opacity: 1;
+}
+
+.pono-acorn-modal[hidden] {
+  display: none !important;
+}
+
+/* =============================================================
+ * パネル (獲得表示の中央コンテナ)
+ *  - quizland .result-acorn-reward を BEM 化
+ * ============================================================= */
+.pono-acorn-modal__panel {
+  box-sizing: border-box;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  color: var(--acorn-copy-color-nonperfect);
+  text-align: center;
+  line-height: 1;
+  padding: var(--acorn-modal-padding);
+  background: var(--acorn-textbox-bg);
+  border: 3px solid var(--acorn-textbox-border);
+  border-radius: var(--acorn-textbox-radius);
+  box-shadow: var(--acorn-textbox-shadow);
+  /* __dismiss を右上 absolute で固定するための基点 (全ゲーム共通)。
+     base-dismiss-css 統一フェーズ (v1731): grid centering の影響を受けず
+     右上に出すため、 全ゲームで panel を positioning context にする。 */
+  position: relative;
+  pointer-events: auto; /* パネル内のインタラクションを許可 */
+}
+
+/* =============================================================
+ * タイトル (任意; 「クリア！」 のような見出し)
+ * ============================================================= */
+.pono-acorn-modal__title {
+  display: inline-block;
+  margin: 0 0 var(--acorn-modal-gap);
+  color: var(--acorn-modal-color-primary);
+  font-weight: 900;
+  font-size: clamp(20px, 3.4vw, 32px);
+  line-height: 1.1;
+}
+
+/* =============================================================
+ * 「アイコン + 数値」 のメイン行
+ *  - quizland .result-acorn-reward__main 相当を BEM の素朴な並び木で表現
+ *  - 中で icon と amount を inline-flex で並べたい場合は親に
+ *    flex-direction: row; を上書きすればよい
+ * ============================================================= */
+.pono-acorn-modal__icon {
+  display: inline-block;
+  width: var(--acorn-icon-w);
+  aspect-ratio: var(--acorn-icon-aspect);
+  background: transparent var(--acorn-icon-src) center / contain no-repeat;
+  filter: var(--acorn-icon-shadow);
+}
+
+.pono-acorn-modal__amount {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  font-weight: 900;
+  color: var(--acorn-gold);
+  font-size: clamp(38px, 8.4vw, 78px);
+  letter-spacing: 0;
+  text-shadow:
+    var(--acorn-gold-text-shadow-primary),
+    var(--acorn-gold-text-shadow-secondary),
+    var(--acorn-gold-text-shadow-glow);
+  -webkit-text-stroke: var(--acorn-stroke-width) var(--acorn-stroke-color);
+}
+
+/* 「×」 記号は半角サイズ + 微オフセットでバランス取り (quizland 互換) */
+.pono-acorn-modal__amount > .pono-acorn-modal__times,
+.pono-acorn-modal__times {
+  font-size: .52em;
+  transform: translateY(-.08em);
+}
+
+.pono-acorn-modal__copy {
+  color: var(--acorn-copy-color-nonperfect);
+  font-size: clamp(18px, 3vw, 28px);
+  font-weight: 900;
+  line-height: 1.05;
+  text-shadow: var(--acorn-copy-shadow-nonperfect);
+  white-space: nowrap;
+}
+
+/* =============================================================
+ * 追加 BEM 要素 (acorn-modal.js が生成する DOM 構造に対応)
+ *  - __dismiss   閉じるボタン (×)
+ *  - __kicker    上段の「やったね！」等のキャッチ
+ *  - __bottom    label + amount を縦並びにする下段ラッパ
+ *  - __label     補足コピー (= __copy 相当)
+ *  - __amount-text  ×N をまとめる inline 親
+ *  - __amount-mult  「×」 半角記号
+ *  - __amount-num   数値 (例: 5)
+ *  - __progress     「きょう N / M」 表記
+ *
+ *  __dismiss は最低 44x44px (WCAG SC 2.5.5 / 子供向け誤タップ防止) で確保。
+ * ============================================================= */
+.pono-acorn-modal__dismiss {
+  position: absolute;
+  /* notched 端末 (iPhone notch / Dynamic Island) でも tap target が safe-area 内に
+     収まるよう env(safe-area-inset-*) と max() で下限を保証 (WCAG SC 1.4.11)。
+     env() が未対応な環境では fallback 0px が使われ、 既存の clamp 値が維持される。 */
+  top: max(clamp(8px, 1.2vw, 14px), env(safe-area-inset-top, 0px));
+  right: max(clamp(8px, 1.2vw, 14px), env(safe-area-inset-right, 0px));
+  /* base-dismiss-css 統一フェーズ (v1731): 全ゲーム共通仕様で右上固定を保証。
+     z-index: 3 で panel の ::before 装飾 (z-index: 0) と
+     content (z-index: 1) より確実に前面に出す (maze の葉飾り PNG / oto の
+     bubble 装飾 / 将来 puzzle/bento/starparodier の panel 装飾でも安全)。
+     justify-self/align-self は grid panel (aspect-ratio + align-content:center
+     を当てるゲーム) で absolute 要素が grid centering に巻き込まれて中央へ
+     飛ぶリスクを潰すための保険 (absolute なので通常は無視されるが、
+     一部ブラウザの古い実装で grid item 扱いされたときの fallback)。 */
+  z-index: 3;
+  justify-self: end;
+  align-self: start;
+  min-width: 44px;
+  min-height: 44px;
+  width: 44px;
+  height: 44px;
+  border: 3px solid rgba(117, 75, 27, 0.48);
+  border-radius: 50%;
+  background: linear-gradient(180deg, #fff8df, #f4c46a);
+  color: #6e3d09;
+  font: 900 24px/1 var(--acorn-modal-font);
+  box-shadow: 0 3px 0 rgba(118, 66, 0, 0.38);
+  cursor: pointer;
+  pointer-events: auto; /* overlay は pointer-events: none なので個別に復活 */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.pono-acorn-modal__dismiss:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 rgba(118, 66, 0, 0.38);
+}
+
+.pono-acorn-modal__kicker {
+  align-self: end;
+  color: #8b4e12;
+  font-size: clamp(22px, 5vw, 33px);
+  font-weight: 900;
+  line-height: 1.05;
+  text-shadow: 0 2px 0 rgba(255, 246, 214, 0.95);
+  white-space: nowrap;
+  margin-bottom: var(--acorn-modal-gap);
+}
+
+.pono-acorn-modal__bottom {
+  display: grid;
+  justify-items: center;
+  gap: clamp(7px, 1.5vw, 10px);
+}
+
+.pono-acorn-modal__label {
+  color: var(--acorn-copy-color-nonperfect);
+  font-size: clamp(16px, 3.6vw, 22px);
+  font-weight: 900;
+  line-height: 1.12;
+  text-shadow: var(--acorn-copy-shadow-nonperfect);
+  white-space: nowrap;
+}
+
+.pono-acorn-modal__amount-text {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.pono-acorn-modal__amount-mult {
+  font-size: 0.52em;
+  transform: translateY(-0.08em);
+}
+
+.pono-acorn-modal__amount-num {
+  display: inline-block;
+}
+
+.pono-acorn-modal__progress {
+  margin-top: var(--acorn-modal-gap);
+  color: #6d3b07;
+  font-size: clamp(12px, 2.4vw, 16px);
+  font-weight: 700;
+  opacity: 1;
+  text-shadow: 0 2px 0 rgba(255, 244, 203, 0.96);
+}
+
+.pono-acorn-modal--perfect .pono-acorn-modal__label,
+.pono-acorn-modal--perfect .pono-acorn-modal__progress {
+  color: var(--acorn-copy-color-perfect);
+  text-shadow: var(--acorn-copy-shadow-perfect);
+}
+
+/* =============================================================
+ * 状態モディファイア
+ * ============================================================= */
+/* armed: 表示開始したが、 keyframes はまだ走っていない初期姿勢。
+   JS から transition + class 追加で「フェードイン → animate」 と
+   段階的に進めたいときに使う。 */
+.pono-acorn-modal--armed .pono-acorn-modal__icon,
+.pono-acorn-modal--armed .pono-acorn-modal__amount,
+.pono-acorn-modal--armed .pono-acorn-modal__copy {
+  opacity: 0;
+}
+
+.pono-acorn-modal--armed .pono-acorn-modal__panel {
+  opacity: 0;
+  transform: translateY(8px) scale(.96);
+}
+
+/* static: prefers-reduced-motion 時に JS が付与する状態。
+   keyframes/transition を一切走らせず、 最終姿勢で静止表示する。
+   --animated とは排他で、 armed が残っていても上書き優先。 */
+.pono-acorn-modal--static,
+.pono-acorn-modal--static .pono-acorn-modal__panel,
+.pono-acorn-modal--static .pono-acorn-modal__icon,
+.pono-acorn-modal--static .pono-acorn-modal__amount,
+.pono-acorn-modal--static .pono-acorn-modal__amount-text,
+.pono-acorn-modal--static .pono-acorn-modal__copy,
+.pono-acorn-modal--static .pono-acorn-modal__label,
+.pono-acorn-modal--static .pono-acorn-modal__kicker,
+.pono-acorn-modal--static .pono-acorn-modal__progress,
+.pono-acorn-modal--static.pono-acorn-modal--perfect .pono-acorn-modal__panel::after {
+  animation: none !important;
+  animation-delay: 0s !important;
+  animation-duration: 0s !important;
+  transition: none !important;
+  transition-delay: 0s !important;
+  transform: none !important;
+  opacity: 1 !important;
+}
+
+.pono-acorn-modal--static.pono-acorn-modal--perfect .pono-acorn-modal__panel::after {
+  display: none !important;
+}
+
+/* animated: 実際に keyframes を発火 (quizland の is-animated 相当) */
+.pono-acorn-modal--animated .pono-acorn-modal__panel {
+  animation: pono-acorn-resultRewardSettle .32s var(--reward-settle-delay) var(--acorn-easing-bounce) both;
+}
+
+.pono-acorn-modal--animated .pono-acorn-modal__icon {
+  animation: pono-acorn-resultAcornPop .42s var(--reward-icon-delay) var(--acorn-easing-bounce) both;
+}
+
+.pono-acorn-modal--animated .pono-acorn-modal__amount {
+  animation: pono-acorn-resultNumberBoom .5s var(--reward-amount-delay) var(--acorn-easing-bounce) both;
+}
+
+.pono-acorn-modal--animated .pono-acorn-modal__copy {
+  animation: pono-acorn-resultCopyIn .24s var(--reward-copy-delay) var(--acorn-easing-ease-out) both;
+}
+
+/* =============================================================
+ * Perfect (Quizland 5/5 全問正解相当) — スタンプ系強発光
+ *  - Perfect 時は copy を金色 + 強影に切り替え、
+ *    panel に stampImpact / ringPulse を載せられるよう、
+ *    quizland の overlay.is-perfect 系の中身を BEM に再配線。
+ * ============================================================= */
+.pono-acorn-modal--perfect {
+  /* Perfect 時はバックドロップを少し暗く + ぼかし */
+  background: var(--acorn-modal-bg-overlay);
+  backdrop-filter: blur(2px);
+}
+
+.pono-acorn-modal--perfect .pono-acorn-modal__copy {
+  color: var(--acorn-copy-color-perfect);
+  text-shadow: var(--acorn-copy-shadow-perfect);
+}
+
+.pono-acorn-modal--perfect.pono-acorn-modal--animated .pono-acorn-modal__panel {
+  animation:
+    pono-acorn-stampImpact var(--stamp-impact-duration) var(--acorn-easing-stamp) both,
+    pono-acorn-resultRewardSettle .32s var(--reward-settle-delay) var(--acorn-easing-bounce) both;
+  transform-origin: center center;
+}
+
+/* Perfect 時の「押印リング (余韻)」 — panel の擬似要素として展開 */
+.pono-acorn-modal--perfect .pono-acorn-modal__panel::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(50vh, 560px);
+  height: min(50vh, 560px);
+  max-width: 84vw;
+  border: 8px solid rgba(220, 60, 50, 0.55);
+  border-radius: 50%;
+  transform: translate(-50%, -50%) scale(0.6);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pono-acorn-modal--perfect .pono-acorn-modal__panel {
+  position: relative; /* ::after 用 */
+  background: linear-gradient(180deg, #7a4313 0%, #a3651f 100%);
+  border-color: rgba(255, 226, 125, 0.76);
+  box-shadow:
+    0 14px 28px rgba(40, 18, 0, 0.38),
+    inset 0 0 0 2px rgba(255, 241, 170, 0.26),
+    0 0 24px rgba(255, 223, 104, 0.3);
+}
+
+.pono-acorn-modal--perfect.pono-acorn-modal--animated .pono-acorn-modal__panel::after {
+  animation: pono-acorn-stampRingPulse var(--stamp-ring-duration) var(--acorn-easing-ease-out) var(--stamp-ring-delay) both;
+}
+
+/* =============================================================
+ * @keyframes (quizland から prefix 付きで持ち込み)
+ *  - 値は 1:1 維持。 命名のみ pono-acorn-* に。
+ * ============================================================= */
+@keyframes pono-acorn-stampImpact {
+  0%   { transform: scale(0) rotate(-28deg); opacity: 0; }
+  55%  { transform: scale(1.35) rotate(8deg); opacity: 1; }
+  72%  { transform: scale(0.94) rotate(-4deg); }
+  86%  { transform: scale(1.06) rotate(2deg); }
+  100% { transform: scale(1) rotate(-3deg); opacity: 1; }
+}
+
+@keyframes pono-acorn-stampRingPulse {
+  0%   { transform: translate(-50%, -50%) scale(0.6); opacity: 0; }
+  20%  { opacity: 0.55; }
+  100% { transform: translate(-50%, -50%) scale(2.4); opacity: 0; }
+}
+
+@keyframes pono-acorn-resultAcornPop {
+  0%   { opacity: 0; transform: scale(.34) rotate(-16deg); }
+  68%  { opacity: 1; transform: scale(1.16) rotate(6deg); }
+  100% { opacity: 1; transform: scale(1) rotate(-3deg); }
+}
+
+@keyframes pono-acorn-resultNumberBoom {
+  0%   { opacity: 0; transform: scale(.28) rotate(8deg); }
+  62%  { opacity: 1; transform: scale(1.24) rotate(-3deg); }
+  82%  { opacity: 1; transform: scale(.94) rotate(1deg); }
+  100% { opacity: 1; transform: scale(1) rotate(0); }
+}
+
+@keyframes pono-acorn-resultCopyIn {
+  0%   { opacity: 0; transform: translateY(-4px) scale(.98); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* quizland の resultRewardSettle 互換 (panel フェードイン用) */
+@keyframes pono-acorn-resultRewardSettle {
+  0%   { opacity: 0; transform: translateY(8px) scale(.96); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* =============================================================
+ * ゲーム別アクセントカラー override 用フック
+ *  - Phase 1 で各ゲーム HTML が data-game-id を root/body に付与し、
+ *    --acorn-accent を上書きする想定。 ここでは maze の例を ready。
+ *  - 既定の amount/copy 色は変えず、 future-use 用に --acorn-accent
+ *    変数を晒すだけにとどめる (見た目変化なし)。
+ * ============================================================= */
+[data-game-id="maze"] {
+  --acorn-accent: #6c8e3f;
+}
+[data-game-id="quizland"] {
+  --acorn-accent: #c98b3a;
+}
+[data-game-id="breakout"] {
+  --acorn-accent: #d97a3e;
+}
+[data-game-id="bubble"] {
+  --acorn-accent: #4a9bb8;
+}
+[data-game-id="bowling"] {
+  --acorn-accent: #8c6a3f;
+}
+[data-game-id="bento"] {
+  --acorn-accent: #d96f49;
+}
+[data-game-id="puzzle"] {
+  --acorn-accent: #6a8fbf;
+}
+[data-game-id="oto"] {
+  --acorn-accent: #b87fbf;
+}
+
+/* =============================================================
+ * Reduced motion: 安全側に倒し、 animation/transition/delay を完全リセット
+ *  - quizland にはこの保護がなかったので、 共有化に合わせて追加。
+ *  - 仕様要件: 「animation も delay も完全リセット」
+ * ============================================================= */
+@media (prefers-reduced-motion: reduce) {
+  .pono-acorn-modal,
+  .pono-acorn-modal__panel,
+  .pono-acorn-modal__icon,
+  .pono-acorn-modal__amount,
+  .pono-acorn-modal__copy,
+  .pono-acorn-modal--armed,
+  .pono-acorn-modal--armed .pono-acorn-modal__panel,
+  .pono-acorn-modal--armed .pono-acorn-modal__icon,
+  .pono-acorn-modal--armed .pono-acorn-modal__amount,
+  .pono-acorn-modal--armed .pono-acorn-modal__copy,
+  .pono-acorn-modal--animated,
+  .pono-acorn-modal--animated .pono-acorn-modal__panel,
+  .pono-acorn-modal--animated .pono-acorn-modal__icon,
+  .pono-acorn-modal--animated .pono-acorn-modal__amount,
+  .pono-acorn-modal--animated .pono-acorn-modal__copy,
+  .pono-acorn-modal--perfect,
+  .pono-acorn-modal--perfect .pono-acorn-modal__panel,
+  .pono-acorn-modal--perfect.pono-acorn-modal--animated .pono-acorn-modal__panel,
+  .pono-acorn-modal--perfect.pono-acorn-modal--animated .pono-acorn-modal__panel::after {
+    animation: none !important;
+    animation-delay: 0s !important;
+    animation-duration: 0s !important;
+    transition: none !important;
+    transition-delay: 0s !important;
+    transform: none !important;
+    opacity: 1 !important;
+  }
+
+  /* Perfect の押印リングは reduce 時には完全に隠す (チラ見せ防止) */
+  .pono-acorn-modal--perfect .pono-acorn-modal__panel::after {
+    display: none !important;
+  }
+
+  /* maze override (quizland 問題ウィンドウ枠流用) の reduce 時静止化。
+     Phase 1.2 でキャラ重畳 (owl_professor_guide) を完全撤去、 quizland の
+     問題出題モーダル枠 (cream paper + 茶木枠 + 葉飾り PNG) を流用する方針へ
+     刷新。 ここでは panel 背景画像 / leaf ::before 装飾の motion 寄り効果
+     (glow / shimmer) を静止化し、 depth 表現の drop-shadow のみ残す。 */
+  [data-game-id="maze"] .pono-acorn-modal__panel {
+    box-shadow: none !important;
+  }
+  [data-game-id="maze"] .pono-acorn-modal__panel::before {
+    filter: drop-shadow(0 6px 10px rgba(71, 38, 6, 0.42)) !important;
+  }
+  /* maze kicker/label の text-shadow は base 継承 (#8b4e12 / #6d3b07) だが、
+     reduce 時は oto 同様に明示的に静止化して将来の override 漏れを防ぐ。 */
+  [data-game-id="maze"] .pono-acorn-modal__kicker {
+    text-shadow: none !important;
+  }
+  [data-game-id="maze"] .pono-acorn-modal__label {
+    text-shadow: none !important;
+  }
+  [data-game-id="maze"] .pono-acorn-modal__amount-num {
+    text-shadow: none !important;
+  }
+
+  /* oto override の motion 寄り装飾も reduce 時は静止/簡略化 (WCAG SC 2.3.3) */
+  [data-game-id="oto"] .pono-acorn-modal__panel {
+    background: #0D2547 !important;
+    box-shadow: none !important;
+  }
+  [data-game-id="oto"] .pono-acorn-modal__kicker {
+    text-shadow: none !important;
+  }
+  [data-game-id="oto"] .pono-acorn-modal__label {
+    text-shadow: none !important;
+  }
+  [data-game-id="oto"] .pono-acorn-modal__amount-num {
+    text-shadow: none !important;
+  }
+}
+
+/* ============================
+   Game-specific overrides
+   ============================ */
+/* -------------------------------------------------------------
+ * maze: quizland 「問題出題ウィンドウ枠」 流用方針 (Phase 1.2 改修)
+ *
+ * Phase 1.1 で試行した owl_professor_guide.webp のキャラ重畳は完全撤去。
+ * ユーザー意図は 「quizland のなぞなぞ問題提示ウィンドウの枠デザインを流用」 で
+ * あり、 キャラクター追加ではない。 ここでは quizland の question modal
+ * (`.q-text-card` / `.board` / `.answer-tray`) で使われている
+ * cream paper (#f5e9c4 → #e8d293) + 木枠 (#6e4520) + 葉飾り (Fukuro_frame_001.png)
+ * のビジュアル言語を [data-game-id="maze"] スコープ内で再現する。
+ *
+ * 流用したい視覚要素:
+ *   - cream → amber グラデ背景 (--paper / --paper-2 と同値)
+ *   - 木枠 5px border (--wood-dark と同値)
+ *   - 木枠下影 6px (box-shadow)
+ *   - 葉飾り PNG (Fukuro_frame_001.png; ボード枠 + 葉) を ::before に重畳
+ *
+ * 注意:
+ *   - quizland inline CSS (preview/full/index.html 等) は touch しない。
+ *     ここの override は [data-game-id="maze"] スコープのみ。
+ *   - 葉飾り PNG は素材の透明余白を活用するため margin で要素を超過配置
+ *     (quizland の sheet-on モード参考、 line 217-236 の board::before)。
+ *   - キャラ (くま/フクロウ博士/りす) は乗せない。 ユーザー明示要件。
+ * ============================================================= */
+[data-game-id="maze"].pono-acorn-modal {
+  --acorn-accent: #6C8E3F;
+
+  /* quizland question modal と同じカラートークン (流用のため値固定) */
+  --maze-paper: #f5e9c4;
+  --maze-paper-2: #e8d293;
+  --maze-paper-shadow: rgba(80, 50, 10, 0.3);
+  --maze-wood-dark: #6e4520;
+}
+[data-game-id="maze"] .pono-acorn-modal__panel {
+  /* AR 維持版 (2026-06-28): Fukuro_frame_001.png (1200x609, AR ≈ 1.97) を
+     ::before で contain 配置するため、 panel container 側を画像 AR に
+     合わせて aspect-ratio を明示。 background-size: 100% 100% による
+     stretch は禁止 (恒久ルール: 生成画像の AR を変えない)。
+     content (kicker/icon/amount/label) は align-content: center で
+     横長 paper 内に縦中央寄せ、 葉飾り PNG の左右透明余白には
+     padding-inline で余白を確保 (== 旧 margin: -4px -14px の逆)。
+     CSS で描いていた木枠 + 下影 + paper グラデは PNG に視覚情報が
+     完全に含まれるので border / background / box-shadow は撤去。 */
+  width: min(640px, 92vw);
+  max-width: min(720px, 92vw);
+  aspect-ratio: 1200 / 609;
+  align-content: center;
+  justify-items: center;
+  padding: clamp(28px, 4.8vw, 44px) clamp(64px, 10vw, 110px);
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+[data-game-id="maze"] .pono-acorn-modal__panel::before {
+  /* Fukuro_frame_001.png を contain (AR 維持) で配置。
+     container 側を画像 AR (1200/609) に揃えているので contain でも
+     panel 全域を埋め、 葉飾り PNG の透明余白がそのまま panel 内側
+     padding として機能する。 100% 100% / object-fit: fill は永久 NG。 */
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    url('../assets/images/quizland/Fukuro_frame_001.webp')
+    center / contain no-repeat;
+  pointer-events: none;
+  z-index: 0;
+  filter:
+    drop-shadow(0 6px 10px rgba(71, 38, 6, 0.32))
+    drop-shadow(0 0 14px rgba(255, 239, 138, 0.42));
+}
+/* 葉飾り ::before の上にコンテンツ (kicker / icon / amount / label) を出す */
+[data-game-id="maze"] .pono-acorn-modal__panel > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* dismiss (×) は base で position: absolute / z-index: 3 / 右上 clamp
+   配置が保証されているので、 maze override では Fukuro_frame_001.png の
+   右上葉装飾と重ならないよう top/right を base (clamp 16-24px /
+   20-32px) より内側に寄せる調整のみを行う (clamp 8-14px)。
+   base-dismiss-css 統一フェーズ (v1731) で position/z-index の再宣言は
+   削除済。 その他のゲーム (oto / quizland / undersea-cave 等) は base
+   ルールのまま右上固定が効く。 */
+[data-game-id="maze"] .pono-acorn-modal__dismiss {
+  position: absolute;
+  z-index: 3;
+  top: max(clamp(22px, 2.6vw, 30px), env(safe-area-inset-top, 0px));
+  right: max(clamp(28px, 3.4vw, 42px), env(safe-area-inset-right, 0px));
+}
+[data-game-id="maze"] .pono-acorn-modal__amount {
+  margin-top: -16px;
+}
+[data-game-id="maze"] .pono-acorn-modal__icon {
+  translate: 0 10px;
+}
+[data-game-id="maze"] .pono-acorn-modal__progress {
+  margin-top: clamp(14px, 2.3vw, 22px);
+}
+
+[data-game-id="oto"].pono-acorn-modal {
+  --acorn-accent: #66E9FF;
+  --acorn-modal-bg-overlay: rgba(8, 24, 56, 0.42);
+}
+[data-game-id="oto"] .pono-acorn-modal__panel {
+  background:
+    radial-gradient(ellipse at 50% 18%, #1d4a8f 0%, #163872 38%, #0d2547 70%, #051730 100%) padding-box,
+    /* TODO Phase 1.5: record_disc_underwater.png を ::before で中央配置 */
+    /* TODO Phase 1.5: bubble_s/m/l.png を周囲に float anim で配置 */
+    /* TODO Phase 1.5: underwater_light_shaft.png を上端から差し込み */
+    transparent border-box;
+  border: 3px solid rgba(102, 233, 255, 0.62);
+  border-radius: clamp(20px, 3.5vw, 32px);
+  box-shadow: 0 18px 28px rgba(0, 12, 32, 0.62), inset 0 0 22px rgba(102, 233, 255, 0.32);
+}
+[data-game-id="oto"] .pono-acorn-modal__kicker {
+  color: #BEF5FF;
+  text-shadow: 0 2px 0 rgba(0, 18, 45, 0.82), 0 0 18px rgba(102, 233, 255, 0.62);
+}
+[data-game-id="oto"] .pono-acorn-modal__label {
+  color: #FFF7CA;
+  text-shadow: 0 3px 0 #0c2a52, 0 0 14px rgba(102, 233, 255, 0.48);
+  background: rgba(13, 37, 71, 0.84);
+  padding: 0.32em 0.8em;
+  border-radius: 999px;
+  border: 1px solid rgba(102, 233, 255, 0.42);
+}
+[data-game-id="oto"] .pono-acorn-modal__amount-num {
+  color: #FFEF8A;
+  text-shadow: 0 0 22px rgba(255, 239, 138, 0.62), 0 4px 0 #0c2a52;
+}
+[data-game-id="oto"] .pono-acorn-modal__progress {
+  color: #BEF5FF;
+  text-shadow: 0 1px 2px rgba(0, 18, 45, 0.62);
+}
+
+/* =============================================================
+ * Dark-theme games progress override (Phase 2.8 extension)
+ *  - starparodier (#030614 space) / bowling (#1a5c3a deep green) /
+ *    bubble (#000 dark) は acorn-modal panel が base fallback だが
+ *    ゲーム背景が暗いため、 brown #6d3b07 progress では視認性不足の
+ *    可能性が高い。 oto と同様の bright cream で contrast を確保。
+ *  - label/kicker は base 既定 (#6d3b07 / #8b4e12 + cream shadow) のまま。
+ *    progress のみ panel から距離が出やすい位置のため個別 override。
+ * ============================================================= */
+[data-game-id="starparodier"] .pono-acorn-modal__progress,
+[data-game-id="bowling"] .pono-acorn-modal__progress,
+[data-game-id="bubble"] .pono-acorn-modal__progress {
+  color: #6d3b07;
+  text-shadow: 0 2px 0 rgba(255, 244, 203, 0.96);
+}

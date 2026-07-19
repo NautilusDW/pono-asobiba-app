@@ -141,9 +141,15 @@ body {
 }
 .split-divider:hover  { background: #f87171; }
 .split-divider.dragging { background: #ef4444; }
+/* multi-mode / timeline-mode 以外では composite タブを完全に非表示にする。
+   過去にマルチ合成 ON → OFF した残骸 (.active 残留) があってもデッドスペースを作らない。 */
+.right-panel.split-mode:not(.multi-mode):not(.timeline-mode) #tab-composite {
+  display: none !important;
+}
+
 /* マルチ合成中: composite は overlay ではなく、compare と sprites の間に
    inline で挟まる帯にする (中身の高さ ぶんだけ占める, 上下が広く見える) */
-.right-panel.split-mode #tab-composite.active {
+.right-panel.split-mode.multi-mode #tab-composite.active {
   display: flex !important;
   flex: 0 0 auto;
   flex-direction: column;
@@ -163,6 +169,43 @@ body {
   flex: var(--split-top, 1) 1 0 !important;
   max-height: none !important;
   overflow: hidden;
+}
+
+/* タイムラインモード ON: 比較・合成タブを完全に隠してタイムラインを上半分に伸ばす。
+   下半分は通常通りスプライトグリッド (並び替え・連番命名しながら再生確認できる)。 */
+.right-panel.split-mode.timeline-mode #tab-compare,
+.right-panel.split-mode.timeline-mode #tab-composite {
+  display: none !important;
+}
+.right-panel.split-mode.timeline-mode #tab-timeline {
+  display: flex !important;
+  /* timeline-mode 専用比率: 上 75% / 下 25% (split-divider をドラッグすると上書き可) */
+  flex: var(--tl-split-top, 0.75) 1 0 !important;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 120px;
+}
+.right-panel.split-mode.timeline-mode #tab-sprites {
+  flex: var(--tl-split-bot, 0.25) 1 0 !important;
+}
+/* timeline-mode 中のスプライトグリッドは横スクロール 1 段固定にしてコンパクト化。
+   並び替え + 連番付け + 🎯ジャンプの操作は維持しつつ、再生確認のメイン領域を圧迫しない。 */
+.right-panel.split-mode.timeline-mode .sprites-grid {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  overflow-y: hidden;
+  align-content: stretch;
+  padding: 8px 10px;
+}
+.right-panel.split-mode.timeline-mode .sprite-card {
+  width: 150px;
+  flex-shrink: 0;
+}
+.right-panel.split-mode.timeline-mode .card-preview {
+  height: 70px;
+}
+.right-panel.split-mode.timeline-mode .card-details {
+  display: none;  /* 「⚙ 生き物の設定」は通常モードで開けば良い */
 }
 
 .action-toolbar {
@@ -214,6 +257,17 @@ body {
   flex: 1; min-height: 60px;
   display: flex; align-items: center; justify-content: center;
   transition: background 0.2s;
+  position: relative;
+}
+.sprite-highlight {
+  position: absolute; pointer-events: none; z-index: 50;
+  border: 3px solid #f87171; border-radius: 4px;
+  box-shadow: 0 0 0 9999px rgba(0,0,0,0.55);
+  animation: spriteHighlightPulse 1.4s ease-in-out 3;
+}
+@keyframes spriteHighlightPulse {
+  0%,100% { opacity: 1; }
+  50%     { opacity: 0.45; }
 }
 /* fit modeのときだけ中央寄せ; zoom時はcanvasが大きくなるのでflex解除 */
 .compare-canvas-box.zoomed { display: block; }
@@ -246,12 +300,112 @@ body {
 }
 .empty-msg { padding: 20px; font-size: 0.78rem; color: #4b5563; }
 
+/* ── Timeline Tab ── */
+#tab-timeline { flex-direction: column; overflow: hidden; }
+#tab-timeline.active { display: flex; }
+.timeline-controls {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+  padding: 8px 12px; background: #1f2937; border-bottom: 1px solid #374151;
+  flex-shrink: 0;
+}
+.timeline-controls .tl-group {
+  display: flex; align-items: center; gap: 4px;
+  padding: 0 6px; border-left: 1px solid #374151;
+}
+.timeline-controls .tl-group:first-child { border-left: none; padding-left: 0; }
+.timeline-controls label { font-size: 0.68rem; color: #9ca3af; }
+.timeline-controls input[type="number"] {
+  width: 50px; padding: 3px 4px; background: #111827; border: 1px solid #374151;
+  border-radius: 4px; color: #f87171; font-size: 0.78rem; font-weight: 700;
+  text-align: center; font-family: inherit;
+}
+.timeline-controls select {
+  padding: 4px 8px; background: #1f2937; border: 1px solid #374151;
+  border-radius: 5px; color: #d1d5db; font-size: 0.72rem; font-family: inherit;
+}
+.tl-pbtn {
+  padding: 4px 9px; background: rgba(255,255,255,0.05); color: #d1d5db;
+  border: 1px solid #374151; border-radius: 5px; font-size: 0.78rem;
+  cursor: pointer; font-family: inherit; transition: all 0.12s;
+}
+.tl-pbtn:hover { background: rgba(255,255,255,0.12); }
+.tl-pbtn.primary { background: #f87171; color: #fff; border-color: #f87171; }
+.tl-pbtn.primary:hover { background: #ef4444; }
+.tl-pbtn.toggle.active { background: #22c55e; color: #fff; border-color: #22c55e; }
+
+.timeline-stage {
+  flex: 1; min-height: 180px; position: relative;
+  display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+}
+.timeline-stage[data-bg="checker"] {
+  background: repeating-conic-gradient(#2d2d2d 0% 25%, #1a1a1a 0% 50%) 0 0 / 14px 14px;
+}
+.timeline-stage[data-bg="black"] { background: #000; }
+.timeline-stage[data-bg="white"] { background: #fff; }
+#timeline-canvas { max-width: 100%; max-height: 100%; image-rendering: pixelated; }
+.tl-empty {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  color: #4b5563; font-size: 0.78rem; pointer-events: none;
+}
+
+.timeline-progress {
+  position: relative; height: 22px; background: #111827;
+  border-top: 1px solid #374151; border-bottom: 1px solid #374151;
+  cursor: pointer; flex-shrink: 0;
+}
+.timeline-progress-bar {
+  position: absolute; left: 0; top: 0; bottom: 0; width: 0;
+  background: linear-gradient(90deg, #f87171, #fbbf24);
+  pointer-events: none; transition: width 0.05s linear;
+}
+.timeline-progress-label {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 0.66rem; color: #d1d5db; font-weight: 700; pointer-events: none;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.7);
+}
+
+.timeline-strip {
+  display: flex; gap: 6px; padding: 8px 10px; overflow-x: auto;
+  background: #111827; flex-shrink: 0; min-height: 130px;
+  scrollbar-width: thin;
+}
+.timeline-strip-cell {
+  flex-shrink: 0; width: 92px; background: #1f2937;
+  border: 2px solid #374151; border-radius: 8px; overflow: hidden;
+  display: flex; flex-direction: column; transition: border-color 0.12s;
+}
+.timeline-strip-cell.active { border-color: #f87171; box-shadow: 0 0 0 1px #f87171; }
+.tl-cell-thumb {
+  background: repeating-conic-gradient(#2a2a2a 0% 25%, #1a1a1a 0% 50%) 0 0 / 8px 8px;
+  height: 60px; display: flex; align-items: center; justify-content: center;
+}
+.tl-cell-thumb canvas { max-width: 100%; max-height: 60px; }
+.tl-cell-meta {
+  display: flex; align-items: center; gap: 3px;
+  padding: 3px 5px; background: #111827; border-top: 1px solid #374151;
+}
+.tl-cell-num { font-size: 0.62rem; font-weight: 700; color: #9ca3af; flex: 1;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tl-cell-meta input[type="number"] {
+  width: 30px; padding: 1px 2px; background: #1f2937; border: 1px solid #374151;
+  border-radius: 3px; color: #f87171; font-size: 0.62rem; font-weight: 700;
+  text-align: center; font-family: inherit;
+}
+.tl-cell-jump {
+  background: none; border: none; cursor: pointer; padding: 1px 3px;
+  font-size: 0.7rem; color: #fbbf24;
+}
+.tl-cell-jump:hover { color: #fff; }
+
 /* ── Sprite Card ── */
 .sprite-card {
   background: #1f2937; border: 2px solid #374151; border-radius: 10px;
   width: 210px; overflow: hidden; transition: border-color 0.15s;
 }
 .sprite-card.selected { border-color: #22c55e; }
+.sprite-card.dragging { opacity: 0.4; }
+.sprite-card.drag-over { border-color: #f87171; box-shadow: 0 0 0 2px #f87171; }
 .card-hdr {
   display: flex; align-items: center; gap: 5px;
   padding: 5px 8px; background: #111827;
@@ -263,6 +417,12 @@ body {
   background: repeating-conic-gradient(#2a2a2a 0% 25%, #1a1a1a 0% 50%) 0 0 / 10px 10px;
   height: 110px; display: flex; align-items: center; justify-content: center;
   overflow: hidden;
+  cursor: grab; position: relative;
+}
+.card-preview:active { cursor: grabbing; }
+.card-preview[draggable="true"]::after {
+  content: "⠿"; position: absolute; top: 4px; right: 6px;
+  color: rgba(255,255,255,0.45); font-size: 0.8rem; pointer-events: none;
 }
 .card-preview canvas { max-width: 100%; max-height: 110px; }
 .card-body { padding: 6px 8px; display: flex; flex-direction: column; gap: 4px; }
@@ -544,6 +704,7 @@ body {
       </div>
       <div class="file-info" id="file-info"></div>
       <button class="btn btn-secondary" id="btn-multi-picker" style="margin-top:6px;font-size:0.7rem">📐 マルチ合成モード</button>
+      <button class="btn btn-secondary" id="btn-timeline-mode" style="margin-top:6px;font-size:0.7rem">🎞 タイムラインモード</button>
       <div id="multi-drop-zone" class="drop-zone" style="display:none">
         <div class="drop-icon">📐</div>
         <div class="drop-text">複数画像をドラッグ<br>またはクリック</div>
@@ -581,7 +742,7 @@ body {
         <input type="range" id="ablur" min="0" max="5" step="0.1" value="0">
       </div>
       <label style="display:flex;align-items:center;gap:5px;font-size:0.7rem;color:#9ca3af;margin-top:4px;cursor:pointer">
-        <input type="checkbox" id="auto-reprocess" style="accent-color:#f87171"> 自動リアルタイム更新
+        <input type="checkbox" id="auto-reprocess" style="accent-color:#f87171" checked> 自動リアルタイム更新
       </label>
     </div>
 
@@ -609,6 +770,20 @@ body {
       <div class="form-row">
         <label>結合距離 (px) <input type="number" class="val-input" id="merge-gap-val" value="0" min="0" max="100" step="1"></label>
         <input type="range" id="merge-gap" min="0" max="100" value="0" title="この距離以内のパーツを1つのスプライトとして結合（くっつけたいときはリンクツールを使用）">
+      </div>
+      <label style="display:flex;align-items:center;gap:5px;font-size:0.7rem;color:#9ca3af;margin-top:6px;cursor:pointer">
+        <input type="checkbox" id="force-square" style="accent-color:#f87171"> 縦横比を 1:1 (正方形) に揃える
+      </label>
+      <div id="force-square-help" style="display:none;font-size:0.62rem;color:#6b7280;margin-top:2px;line-height:1.4">被写体の bbox を含む正方形に拡張し、余白は透過で埋めます。</div>
+      <div class="form-row" id="force-square-size-row" style="display:none">
+        <label>出力サイズ
+          <select id="force-square-size" style="padding:2px 6px;background:#1f2937;border:1px solid #374151;border-radius:4px;color:#9ca3af;font-size:0.7rem;font-family:inherit;width:100%">
+            <option value="0">そのまま (bbox 拡張サイズ)</option>
+            <option value="256">256 × 256</option>
+            <option value="512">512 × 512</option>
+            <option value="1024">1024 × 1024</option>
+          </select>
+        </label>
       </div>
     </div>
 
@@ -681,6 +856,7 @@ body {
       <button class="tab-btn active" data-tab="compare">比較</button>
       <button class="tab-btn" data-tab="composite" id="tab-composite-btn" style="display:none">合成</button>
       <button class="tab-btn" data-tab="sprites" id="tab-sprites-btn">スプライト (0)</button>
+      <button class="tab-btn" data-tab="timeline" id="tab-timeline-btn">🎞 タイムライン (0)</button>
     </div>
 
     <!-- Compare tab -->
@@ -731,6 +907,7 @@ body {
           <div class="compare-label">処理後（背景除去済み）</div>
           <div class="compare-canvas-box" id="box-proc">
             <div class="compare-placeholder">「背景を消す」を実行すると表示されます</div>
+            <div class="sprite-highlight" id="sprite-highlight" style="display:none"></div>
           </div>
         </div>
       </div>
@@ -781,8 +958,50 @@ body {
       </div>
       <div class="composite-bottom">
         <div class="composite-preview-wrap" id="composite-preview"></div>
-        <button class="atbtn atbtn-primary" id="btn-compose" disabled style="width:100%;margin-top:6px">🔨 合成して読み込む</button>
+        <div style="display:flex;gap:6px;margin-top:6px">
+          <button class="atbtn" id="btn-compose-save-png" disabled style="flex:0 0 auto" title="今のレイアウトのままPNGとして保存（分割前のスクリーンショット）">💾 PNG保存</button>
+          <button class="atbtn atbtn-primary" id="btn-compose" disabled style="flex:1">🔨 合成して読み込む</button>
+        </div>
       </div>
+    </div>
+
+    <!-- Timeline tab (split-top 領域に配置: timeline-mode 時に上半分を占める) -->
+    <div class="tab-content" id="tab-timeline">
+      <div class="timeline-controls">
+        <div class="tl-group">
+          <button class="tl-pbtn primary" id="tl-play" title="再生">▶</button>
+          <button class="tl-pbtn" id="tl-pause" title="一時停止">⏸</button>
+          <button class="tl-pbtn" id="tl-stop" title="停止 (先頭へ)">⏹</button>
+        </div>
+        <div class="tl-group">
+          <button class="tl-pbtn toggle active" id="tl-loop" title="ループ">🔁 ループ</button>
+          <button class="tl-pbtn toggle" id="tl-pingpong" title="行って戻ってを繰り返す">🔂 ピンポン</button>
+        </div>
+        <div class="tl-group">
+          <label>FPS</label>
+          <input type="number" id="tl-fps" value="12" min="1" max="60" step="1">
+          <label>各コマ</label>
+          <input type="number" id="tl-frames" value="1" min="1" max="20" step="1">
+          <span style="font-size:0.6rem;color:#6b7280">fr</span>
+        </div>
+        <div class="tl-group">
+          <label>背景</label>
+          <select id="tl-bg">
+            <option value="checker">チェッカー</option>
+            <option value="black">黒</option>
+            <option value="white">白</option>
+          </select>
+        </div>
+      </div>
+      <div class="timeline-stage" id="timeline-stage" data-bg="checker">
+        <canvas id="timeline-canvas" width="640" height="400"></canvas>
+        <div class="tl-empty" id="tl-empty">「スプライトを分割」してから戻ってきてください。</div>
+      </div>
+      <div class="timeline-progress" id="tl-progress" title="クリックでシーク">
+        <div class="timeline-progress-bar" id="tl-progress-bar"></div>
+        <div class="timeline-progress-label" id="tl-progress-label">0 / 0</div>
+      </div>
+      <div class="timeline-strip" id="tl-strip"></div>
     </div>
 
     <!-- 上(比較)と下(分割)を分けるドラッグバー -->
@@ -796,6 +1015,12 @@ body {
         <button class="tbtn tbtn-ghost" id="btn-desel-all">全解除</button>
         <button class="tbtn tbtn-blue" id="btn-ai-group">🤖 AI命名</button>
         <button class="tbtn tbtn-ghost" id="btn-seq-name" title="先頭のカードに入れた名前を元に、残りに _001, _002, ... と連番で名付け">📝 連番</button>
+        <span style="border-left:1px solid #374151;height:18px;margin:0 4px"></span>
+        <select id="sel-set-select" title="保存済みのチェックセット" style="padding:4px 6px;background:#1f2937;border:1px solid #374151;border-radius:5px;color:#d1d5db;font-size:0.7rem;font-family:inherit;max-width:120px;">
+          <option value="">(チェックセット)</option>
+        </select>
+        <button class="tbtn tbtn-ghost" id="btn-sel-save"   title="今のチェック状態を名前を付けて保存">📌 保存</button>
+        <button class="tbtn tbtn-ghost" id="btn-sel-delete" title="選択中のセットを削除">🗑</button>
         <div style="flex:1"></div>
         <label style="font-size:0.7rem;color:#9ca3af;">保存先:</label>
         <select id="deploy-destination" style="padding:4px 8px;background:#1f2937;border:1px solid #374151;border-radius:6px;color:#d1d5db;font-size:0.75rem;font-family:inherit;">
@@ -822,6 +1047,7 @@ body {
       </div>
     </div>
 
+    <!-- Timeline tab -->
     <!-- Deploy status bar -->
     <div class="deploy-bar" id="deploy-bar">
       <span class="deploy-status" id="deploy-status"></span>
@@ -1045,6 +1271,10 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+    if (btn.dataset.tab === 'timeline' && typeof Timeline !== 'undefined') {
+      Timeline.bindEvents();
+      Timeline.refresh();
+    }
   });
 });
 
@@ -1629,6 +1859,21 @@ bgCustomInput.addEventListener('input', () => {
   valEl.addEventListener('input',  () => { slider.value = valEl.value; });
 });
 
+// 1:1 正方形強制チェックボックス: ON で説明 + 出力サイズ select を表示
+(function() {
+  const cb = document.getElementById('force-square');
+  const help = document.getElementById('force-square-help');
+  const row = document.getElementById('force-square-size-row');
+  if (!cb || !help || !row) return;
+  const sync = () => {
+    const on = cb.checked;
+    help.style.display = on ? '' : 'none';
+    row.style.display  = on ? '' : 'none';
+  };
+  cb.addEventListener('change', sync);
+  sync();
+})();
+
 // ════════════════════════════════════════════════════════════
 // プリセット: 背景除去 / スプライト分割 別々
 // ════════════════════════════════════════════════════════════
@@ -1724,6 +1969,8 @@ function _getSplitSettings() {
     padding:    document.getElementById('padding').value,
     alphaThresh:document.getElementById('alpha-thresh').value,
     mergeGap:   document.getElementById('merge-gap').value,
+    forceSquare:    !!document.getElementById('force-square')?.checked,
+    forceSquareSize:document.getElementById('force-square-size')?.value || '0',
   };
 }
 function _applySplitSettings(s) {
@@ -1736,6 +1983,14 @@ function _applySplitSettings(s) {
   set('padding',     s.padding,     'padding-val');
   set('alpha-thresh',s.alphaThresh, 'alpha-thresh-val');
   set('merge-gap',   s.mergeGap,    'merge-gap-val');
+  if (s.forceSquare !== undefined) {
+    const cb = document.getElementById('force-square');
+    if (cb) { cb.checked = !!s.forceSquare; cb.dispatchEvent(new Event('change')); }
+  }
+  if (s.forceSquareSize !== undefined) {
+    const sel = document.getElementById('force-square-size');
+    if (sel) sel.value = s.forceSquareSize;
+  }
 }
 document.getElementById('btn-split-preset-save').addEventListener('click', () => {
   const name = prompt('スプライト分割プリセット名:');
@@ -2065,6 +2320,32 @@ function runProcess(showUI) {
   processedRaw.width = processedCanvas.width;
   processedRaw.height = processedCanvas.height;
   processedRaw.getContext('2d').drawImage(processedCanvas, 0, 0);
+  // 透明化されたピクセルが見えるように、 比較表示の背景が画像 bg と
+  // 同色 (例: 白画像 + 白表示背景) なら自動的にチェッカー柄に切替える。
+  // これがないと「背景除去したのに何も変わらない」とユーザーに誤解される。
+  try {
+    const sel = document.getElementById('bg-mode-select');
+    if (sel) {
+      const od = originalCanvas.getContext('2d').getImageData(0, 0, originalCanvas.width, originalCanvas.height).data;
+      const [sr, sg, sb] = sampleBgColor(od, originalCanvas.width, originalCanvas.height);
+      const isSampledNearWhite   = sr > 235 && sg > 235 && sb > 235;
+      const isSampledNearBlack   = sr <  20 && sg <  20 && sb <  20;
+      const isSampledNearMagenta = sr > 220 && sg <  40 && sb > 220;
+      const isSampledNearGreen   = sr <  60 && sg > 200 && sb <  60;
+      const isSampledNearCyan    = sr <  60 && sg > 200 && sb > 200;
+      const conflict =
+        (sel.value === 'white'   && isSampledNearWhite)   ||
+        (sel.value === 'black'   && isSampledNearBlack)   ||
+        (sel.value === 'magenta' && isSampledNearMagenta) ||
+        (sel.value === 'green'   && isSampledNearGreen)   ||
+        (sel.value === 'cyan'    && isSampledNearCyan);
+      if (conflict) {
+        sel.value = 'checker';
+        bgMode = 'checker';
+        showToast('表示背景を「チェッカー」に切替えました（透過部分を見やすくするため）', true);
+      }
+    }
+  } catch (e) { /* non-fatal */ }
   redrawCompare();
   document.getElementById('btn-split').disabled = false;
   document.getElementById('btn-finish').disabled = false;
@@ -2483,14 +2764,40 @@ function blobToCanvas(blob) {
 }
 
 document.getElementById('btn-save-session').addEventListener('click', async () => {
-  if (!processedRaw && !originalCanvas) { showToast('保存するデータがありません', false); return; }
+  // マルチ合成 ON 中は pickerImages があれば保存対象とみなす
+  const hasPickerImages = multiPickerMode && pickerImages.length > 0;
+  if (!processedRaw && !originalCanvas && !hasPickerImages) {
+    showToast('保存するデータがありません', false); return;
+  }
   showLoading('セッションを保存中...');
   try {
     const spriteBlobs = await Promise.all(sprites.map(sp => canvasToBlob(sp.canvas)));
+    // マルチ合成中の各 picker 画像 (キャンバス + 選択矩形 + 各々の作業状態) も保存
+    const pickerBlobs = hasPickerImages ? await Promise.all(pickerImages.map(async (p, i) => {
+      // 現在アクティブな picker は作業状態がトップレベル変数側に居るので最新を反映
+      const pc = (i === activePickerIdx) ? processedCanvas : (p.processedCanvas || null);
+      const pr = (i === activePickerIdx) ? processedRaw    : (p.processedRaw    || null);
+      const cl = (i === activePickerIdx) ? cutLines        : (p.cutLines  || []);
+      const ll = (i === activePickerIdx) ? linkLines       : (p.linkLines || []);
+      const kb = (i === activePickerIdx) ? keepBackground  : (p.keepBackground || false);
+      return {
+        name: p.name,
+        blob: await canvasToBlob(p.canvas),
+        selections: (p.selections || []).slice(),
+        processedCanvasBlob: pc ? await canvasToBlob(pc) : null,
+        processedRawBlob:    pr ? await canvasToBlob(pr) : null,
+        cutLines: cl.slice(),
+        linkLines: ll.slice(),
+        keepBackground: kb
+      };
+    })) : null;
     const session = {
       ts: Date.now(),
+      multiMode: multiPickerMode,
+      activePickerIdx: activePickerIdx,
+      pickerImages: pickerBlobs,
       original: originalCanvas ? await canvasToBlob(originalCanvas) : null,
-      raw: await canvasToBlob(processedRaw),
+      raw: processedRaw ? await canvasToBlob(processedRaw) : null,
       links: linkLines,
       cuts: cutLines,
       keepBackground: keepBackground,
@@ -2555,6 +2862,32 @@ document.getElementById('btn-load-session').addEventListener('click', async () =
       set('merge-gap', s.mergeGap, 'merge-gap-val');
       set('erase-tolerance', s.eraseTol);
       if (s.eraseTol) document.getElementById('erase-tol-slider').value = s.eraseTol;
+    }
+
+    // マルチ合成モード復元 (single-image 復元より先に処理。
+    // multiPickerMode をトグルする際に pickerImages がクリアされるため)
+    const wantMultiMode = !!session.multiMode;
+    if (wantMultiMode !== multiPickerMode) {
+      // ボタンのクリックハンドラを再利用してUI状態を一括切り替え
+      document.getElementById('btn-multi-picker').click();
+    }
+    if (wantMultiMode && Array.isArray(session.pickerImages) && session.pickerImages.length) {
+      pickerImages = await Promise.all(session.pickerImages.map(async p => ({
+        canvas: await blobToCanvas(p.blob),
+        name: p.name || 'image',
+        selections: Array.isArray(p.selections) ? p.selections.slice() : [],
+        processedCanvas: p.processedCanvasBlob ? await blobToCanvas(p.processedCanvasBlob) : null,
+        processedRaw:    p.processedRawBlob    ? await blobToCanvas(p.processedRawBlob)    : null,
+        cutLines: Array.isArray(p.cutLines) ? p.cutLines.slice() : [],
+        linkLines: Array.isArray(p.linkLines) ? p.linkLines.slice() : [],
+        keepBackground: !!p.keepBackground
+      })));
+      activePickerIdx = -1; // activatePickerImage で正しい idx に設定し直す
+      const targetIdx = (typeof session.activePickerIdx === 'number'
+        && session.activePickerIdx >= 0
+        && session.activePickerIdx < pickerImages.length) ? session.activePickerIdx : 0;
+      activatePickerImage(targetIdx);
+      updateCompositePreview();
     }
 
     // 画像復元
@@ -2794,7 +3127,22 @@ function _cleanSpriteEdges(canvas, tolerance, bgColor) {
   if (changed) ctx.putImageData(imgData, 0, 0);
 }
 
-function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance, mergeGap, keepBg) {
+// bbox を中心とする max(w,h) サイズの正方形に拡張する
+// 元画像をはみ出す場合は (x,y) が負/超過のままになるが、出力 canvas は side×side で
+// drawImage が範囲外を勝手に塗らないので透過 padding がそのまま残る。
+function expandToSquare(bbox, srcW, srcH) {
+  const side = Math.max(bbox.w, bbox.h);
+  const cx = bbox.x + bbox.w / 2;
+  const cy = bbox.y + bbox.h / 2;
+  const x = Math.round(cx - side / 2);
+  const y = Math.round(cy - side / 2);
+  return { x, y, w: side, h: side };
+}
+
+function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance, mergeGap, keepBg, opts) {
+  opts = opts || {};
+  const forceSquare = !!opts.forceSquare;
+  const outputSize  = opts.outputSize | 0; // 0 = そのまま
   const w = canvas.width, h = canvas.height;
   const d = canvas.getContext('2d').getImageData(0, 0, w, h).data;
 
@@ -3063,7 +3411,31 @@ function splitSpritesFromCanvas(canvas, minSize, pad, alphaThr, bgTolerance, mer
       try { _keepLargestComponent(sc); } catch (e) {}
     }
 
-    result.push({ canvas: sc, srcX: sx, srcY: sy, w: sw2, h: sh2,
+    // ── 1:1 正方形強制 (オプション) ──
+    // 既存の tight crop (sc) はそのままに、 中心を保ったまま正方形 canvas へ再配置。
+    // はみ出し部分は透過のまま (drawImage は範囲外を塗らない)。
+    let outCanvas = sc;
+    let outSrcX = sx, outSrcY = sy, outW = sw2, outH = sh2;
+    if (forceSquare) {
+      const sq = expandToSquare({ x: sx, y: sy, w: sw2, h: sh2 }, w, h);
+      const finalSide = (outputSize > 0) ? outputSize : sq.w;
+      const sqCanvas = document.createElement('canvas');
+      sqCanvas.width = finalSide; sqCanvas.height = finalSide;
+      const sqCtx = sqCanvas.getContext('2d');
+      // tight crop (sc) を sq 内のオフセット位置に描画 (透過 padding は default で残る)
+      const offX = sx - sq.x;
+      const offY = sy - sq.y;
+      const scale = finalSide / sq.w;
+      sqCtx.imageSmoothingEnabled = true;
+      sqCtx.imageSmoothingQuality = 'high';
+      sqCtx.drawImage(sc, 0, 0, sw2, sh2,
+                          offX * scale, offY * scale,
+                          sw2 * scale, sh2 * scale);
+      outCanvas = sqCanvas;
+      outSrcX = sq.x; outSrcY = sq.y; outW = finalSide; outH = finalSide;
+    }
+
+    result.push({ canvas: outCanvas, srcX: outSrcX, srcY: outSrcY, w: outW, h: outH,
                   name: '', id: '', icon: '🐠', expr: 'normal',
                   facing: 'right', sizePx: 70, count: 3,
                   pattern: 'swim', reaction: 'jump',
@@ -3102,6 +3474,9 @@ document.getElementById('btn-split').addEventListener('click', async () => {
     const alphaThr  = parseInt(document.getElementById('alpha-thresh').value) || 10;
     const bgTol     = parseFloat(document.getElementById('tolerance').value) || 35;
     const mergeGap  = parseInt(document.getElementById('merge-gap').value) || 0;
+    const forceSquare = !!document.getElementById('force-square')?.checked;
+    const outputSize  = parseInt(document.getElementById('force-square-size')?.value || '0') || 0;
+    const splitOpts = { forceSquare, outputSize };
 
     sprites = [];
     const savedOrig = originalCanvas;
@@ -3119,7 +3494,7 @@ document.getElementById('btn-split').addEventListener('click', async () => {
       originalCanvas = pImg.canvas;
       let found = [];
       try {
-        found = splitSpritesFromCanvas(proc, minSize, padding, alphaThr, bgTol, mergeGap, keepBackground);
+        found = splitSpritesFromCanvas(proc, minSize, padding, alphaThr, bgTol, mergeGap, keepBackground, splitOpts);
       } catch (e) { console.warn('split failed for picker image:', e); }
 
       // 選択矩形があれば bbox 中心が選択内にある sprite だけ残す。なければ全部採用。
@@ -3153,8 +3528,10 @@ document.getElementById('btn-split').addEventListener('click', async () => {
   const alphaThr = parseInt(document.getElementById('alpha-thresh').value) || 10;
   const bgTol    = parseFloat(document.getElementById('tolerance').value) || 35;
   const mergeGap = parseInt(document.getElementById('merge-gap').value) || 0;
+  const forceSquare = !!document.getElementById('force-square')?.checked;
+  const outputSize  = parseInt(document.getElementById('force-square-size')?.value || '0') || 0;
 
-  sprites = splitSpritesFromCanvas(processedCanvas, minSize, padding, alphaThr, bgTol, mergeGap, keepBackground);
+  sprites = splitSpritesFromCanvas(processedCanvas, minSize, padding, alphaThr, bgTol, mergeGap, keepBackground, { forceSquare, outputSize });
   renderSpritesGrid();
 
   hideLoading();
@@ -3173,6 +3550,7 @@ function renderSpritesGrid() {
     grid.innerHTML = '<div class="empty-msg">「スプライトを分割」を実行してください。</div>';
     toolbar.style.display = 'none';
     document.getElementById('deploy-bar').classList.remove('show');
+    if (typeof Timeline !== 'undefined') Timeline.refresh();
     return;
   }
 
@@ -3182,6 +3560,8 @@ function renderSpritesGrid() {
 
   grid.innerHTML = '';
   sprites.forEach((sp, idx) => grid.appendChild(createSpriteCard(sp, idx)));
+
+  if (typeof Timeline !== 'undefined') Timeline.refresh();
 }
 
 function createSpriteCard(sp, idx) {
@@ -3207,9 +3587,9 @@ function createSpriteCard(sp, idx) {
     </div>
     <div class="card-preview" id="cpv-${idx}"></div>
     <div class="card-body">
-      <input type="text" class="card-name sp-name" placeholder="名前（同じ名前でグループ化）" value="${sp.name}">
+      <input type="text" class="card-name sp-name" placeholder="名前（同じ名前でグループ化）">
       <div style="position:relative">
-        <input type="text" class="card-id sp-id" placeholder="ID（英数）例: medaka" value="${sp.id}" autocomplete="off">
+        <input type="text" class="card-id sp-id" placeholder="ID（英数）例: medaka" autocomplete="off">
         <button class="sp-id-suggest-btn" title="既存IDから選ぶ" type="button">▼</button>
         <div class="sp-id-suggest-list"></div>
       </div>
@@ -3274,6 +3654,10 @@ function createSpriteCard(sp, idx) {
     </details>`;
 
   card.querySelector('.card-preview').appendChild(pv);
+
+  // 名前/ID は innerHTML に直接展開せず .value で代入 (XSS 対策)
+  card.querySelector('.sp-name').value = sp.name || '';
+  card.querySelector('.sp-id').value   = sp.id   || '';
 
   // チェックボックスのデフォルト動作を抑制（グリッドレベルで管理）
   card.querySelector('.sp-check').addEventListener('click', e => e.preventDefault());
@@ -3350,8 +3734,464 @@ function createSpriteCard(sp, idx) {
     btn.textContent = '🤖'; btn.disabled = false;
   });
 
+  // ── 並び替え (HTML5 DnD): プレビュー領域をハンドルにして card 全体を drop ターゲットに
+  const previewEl = card.querySelector('.card-preview');
+  previewEl.draggable = true;
+  previewEl.addEventListener('dragstart', e => {
+    e.dataTransfer.setData('text/plain', String(idx));
+    e.dataTransfer.effectAllowed = 'move';
+    card.classList.add('dragging');
+  });
+  previewEl.addEventListener('dragend', () => {
+    card.classList.remove('dragging');
+    document.querySelectorAll('.sprite-card.drag-over').forEach(c => c.classList.remove('drag-over'));
+  });
+  card.addEventListener('dragover', e => {
+    if (card.classList.contains('dragging')) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    card.classList.add('drag-over');
+  });
+  card.addEventListener('dragleave', e => {
+    if (!card.contains(e.relatedTarget)) card.classList.remove('drag-over');
+  });
+  card.addEventListener('drop', e => {
+    e.preventDefault();
+    card.classList.remove('drag-over');
+    const from = parseInt(e.dataTransfer.getData('text/plain'), 10);
+    const to = idx;
+    if (Number.isFinite(from) && from !== to
+        && from >= 0 && from < sprites.length
+        && to   >= 0 && to   < sprites.length) {
+      const [moved] = sprites.splice(from, 1);
+      sprites.splice(to, 0, moved);
+      renderSpritesGrid();
+    }
+  });
+
   return card;
 }
+
+// ════════════════════════════════════════════════════════════
+// Sprite Highlight (compare タブの該当矩形を一時的にパルス表示)
+// ════════════════════════════════════════════════════════════
+function highlightSpriteInCompare(idx) {
+  const sp = sprites[idx];
+  if (!sp || sp.srcX == null) {
+    showToast('元矩形の情報がありません', false);
+    return;
+  }
+  // 比較タブに切替
+  const compareBtn = document.querySelector('[data-tab="compare"]');
+  if (compareBtn) compareBtn.click();
+
+  const box = document.getElementById('box-proc');
+  const cv  = box && box.querySelector('canvas');
+  const hl  = document.getElementById('sprite-highlight');
+  if (!box || !cv || !hl) return;
+
+  // タブ切替直後で layout が安定していない可能性があるので RAF で待つ
+  requestAnimationFrame(() => {
+    if (cv.width === 0 || cv.height === 0) return;
+    // box の内側座標系に合わせて配置 (zoom/scroll 状態でも正しく重なる)
+    const cvR  = cv.getBoundingClientRect();
+    const boxR = box.getBoundingClientRect();
+    const scaleX = cv.clientWidth  / cv.width;
+    const scaleY = cv.clientHeight / cv.height;
+    const offX = cvR.left - boxR.left + box.scrollLeft;
+    const offY = cvR.top  - boxR.top  + box.scrollTop;
+    hl.style.left   = (offX + sp.srcX * scaleX) + 'px';
+    hl.style.top    = (offY + sp.srcY * scaleY) + 'px';
+    hl.style.width  = (sp.w * scaleX) + 'px';
+    hl.style.height = (sp.h * scaleY) + 'px';
+    hl.style.display = 'block';
+    hl.style.animation = 'none';
+    void hl.offsetWidth;
+    hl.style.animation = '';
+
+    try {
+      const cx = offX + (sp.srcX + sp.w / 2) * scaleX;
+      const cy = offY + (sp.srcY + sp.h / 2) * scaleY;
+      box.scrollTo({ left: Math.max(0, cx - box.clientWidth / 2),
+                     top:  Math.max(0, cy - box.clientHeight / 2),
+                     behavior: 'smooth' });
+    } catch {}
+  });
+
+  clearTimeout(highlightSpriteInCompare._t);
+  highlightSpriteInCompare._t = setTimeout(() => { hl.style.display = 'none'; }, 5000);
+}
+
+// ════════════════════════════════════════════════════════════
+// Timeline Player
+// 分割済み sprites を ID 末尾の連番昇順 (なければ配列順) で並べ、
+// FPS と各コマのフレーム数を指定して即時ループ再生する。
+// ════════════════════════════════════════════════════════════
+const Timeline = {
+  // 設定
+  fps: 12,
+  framesPerCell: 1,
+  loop: true,
+  pingPong: false,
+  bgMode: 'checker',
+  cellOverrides: {},      // sprite idx → frames
+
+  // 状態
+  playing: false,
+  rafId: null,
+  startTs: 0,
+  pausedFrame: 0,
+  bound: false,
+  wasPlayingBeforeHidden: false,
+
+  // ID / 名前末尾の数字を抽出。なければ Infinity → 配列順 fallback
+  _seqNum(sp) {
+    const m = (sp.id || sp.name || '').match(/(\d+)\s*$/);
+    return m ? parseInt(m[1], 10) : Infinity;
+  },
+
+  // チェック (selected) されている sprite idx だけ。カードがまだ無い間 (DOM 未生成) は全部含める。
+  _isChecked(i) {
+    const card = document.querySelector(`.sprite-card[data-idx="${i}"]`);
+    return !card || card.classList.contains('selected');
+  },
+
+  // 表示順の sprite idx 配列 (チェック済み → 連番昇順、無ければ配列順)
+  getOrder() {
+    return sprites.map((_, i) => i)
+      .filter(i => this._isChecked(i))
+      .sort((a, b) => {
+        const na = this._seqNum(sprites[a]);
+        const nb = this._seqNum(sprites[b]);
+        if (na === nb) return a - b;
+        return na - nb;
+      });
+  },
+
+  framesFor(idx) {
+    const v = this.cellOverrides[idx];
+    return Number.isFinite(v) && v > 0 ? v : this.framesPerCell;
+  },
+
+  getTotalFrames() {
+    return this.getOrder().reduce((s, i) => s + this.framesFor(i), 0);
+  },
+
+  spriteAtFrame(f) {
+    let acc = 0;
+    for (const i of this.getOrder()) {
+      const len = this.framesFor(i);
+      if (f < acc + len) return i;
+      acc += len;
+    }
+    return null;
+  },
+
+  play() {
+    if (this.playing) return;
+    const total = this.getTotalFrames();
+    if (total === 0) {
+      showToast('再生するコマがありません', false);
+      return;
+    }
+    this.playing = true;
+    this.startTs = performance.now() - (this.pausedFrame / this.fps) * 1000;
+    const tick = (ts) => {
+      if (!this.playing) return;
+      const elapsed = (ts - this.startTs) / 1000;
+      const total = this.getTotalFrames();
+      if (total === 0) { this.pause(); return; }
+      let frame = Math.floor(elapsed * this.fps);
+      if (this.pingPong) {
+        const cyc = Math.max(1, (total - 1) * 2);
+        frame = frame % cyc;
+        if (frame >= total) frame = cyc - frame;
+      } else if (this.loop) {
+        frame = frame % total;
+      } else if (frame >= total) {
+        this.playing = false;
+        this.pausedFrame = total - 1;
+        this.drawFrame(this.pausedFrame);
+        this.updateProgress(this.pausedFrame);
+        return;
+      }
+      this.drawFrame(frame);
+      this.updateProgress(frame);
+      this.rafId = requestAnimationFrame(tick);
+    };
+    this.rafId = requestAnimationFrame(tick);
+  },
+
+  pause() {
+    if (!this.playing) return;
+    this.playing = false;
+    if (this.rafId) cancelAnimationFrame(this.rafId);
+    this.rafId = null;
+    const total = Math.max(1, this.getTotalFrames());
+    const elapsed = (performance.now() - this.startTs) / 1000;
+    let frame = Math.floor(elapsed * this.fps);
+    if (this.pingPong) {
+      const cyc = Math.max(1, (total - 1) * 2);
+      frame = frame % cyc;
+      if (frame >= total) frame = cyc - frame;
+    } else {
+      frame = frame % total;
+    }
+    this.pausedFrame = Math.max(0, Math.min(total - 1, frame));
+  },
+
+  stop() {
+    this.pause();
+    this.pausedFrame = 0;
+    this.drawFrame(0);
+    this.updateProgress(0);
+  },
+
+  seek(frame) {
+    const total = this.getTotalFrames();
+    if (total === 0) return;
+    this.pausedFrame = Math.max(0, Math.min(total - 1, frame | 0));
+    this.drawFrame(this.pausedFrame);
+    this.updateProgress(this.pausedFrame);
+    if (this.playing) {
+      this.startTs = performance.now() - (this.pausedFrame / this.fps) * 1000;
+    }
+  },
+
+  drawFrame(frame) {
+    const cv  = document.getElementById('timeline-canvas');
+    if (!cv) return;
+    const ctx = cv.getContext('2d');
+    // ステージのCSSサイズに合わせて canvas 解像度を更新 (初回 / リサイズ対応)
+    const stage = document.getElementById('timeline-stage');
+    if (stage) {
+      const w = stage.clientWidth, h = stage.clientHeight;
+      if (w > 0 && h > 0 && (cv.width !== w || cv.height !== h)) {
+        cv.width = w; cv.height = h;
+      }
+    }
+    ctx.clearRect(0, 0, cv.width, cv.height);
+    const idx = this.spriteAtFrame(frame);
+    if (idx == null) { this.highlightCell(null); return; }
+    const sp = sprites[idx];
+    if (!sp || !sp.canvas) return;
+    const scale = Math.min(cv.width / sp.w, cv.height / sp.h, 4);
+    const w = sp.w * scale, h = sp.h * scale;
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(sp.canvas, (cv.width - w) / 2, (cv.height - h) / 2, w, h);
+    this.highlightCell(idx);
+  },
+
+  refresh() {
+    const btn = document.getElementById('tab-timeline-btn');
+    if (!btn) return;
+    btn.textContent = `🎞 タイムライン (${sprites.length})`;
+    const empty = document.getElementById('tl-empty');
+    if (empty) empty.style.display = sprites.length === 0 ? 'flex' : 'none';
+    // 再生フレームが範囲外になったら 0 に戻す
+    const total = this.getTotalFrames();
+    if (this.pausedFrame >= total) this.pausedFrame = 0;
+    this.renderStrip();
+    this.updateProgress(this.pausedFrame);
+    if (sprites.length === 0) {
+      this.pause(); this.pausedFrame = 0;
+      const cv = document.getElementById('timeline-canvas');
+      if (cv) cv.getContext('2d').clearRect(0, 0, cv.width, cv.height);
+    } else if (!this.playing) {
+      this.drawFrame(this.pausedFrame);
+    }
+  },
+
+  renderStrip() {
+    const strip = document.getElementById('tl-strip');
+    if (!strip) return;
+    strip.innerHTML = '';
+    const order = this.getOrder();
+    order.forEach((idx, displayIdx) => {
+      const sp = sprites[idx];
+      if (!sp) return;
+      const cell = document.createElement('div');
+      cell.className = 'timeline-strip-cell';
+      cell.dataset.idx = idx;
+
+      // サムネ
+      const thumbWrap = document.createElement('div');
+      thumbWrap.className = 'tl-cell-thumb';
+      const tcv = document.createElement('canvas');
+      const tw = 84, th = 60;
+      const s = Math.min(tw / sp.w, th / sp.h, 1);
+      tcv.width  = Math.max(1, Math.round(sp.w * s));
+      tcv.height = Math.max(1, Math.round(sp.h * s));
+      const tctx = tcv.getContext('2d');
+      tctx.imageSmoothingEnabled = false;
+      tctx.drawImage(sp.canvas, 0, 0, tcv.width, tcv.height);
+      thumbWrap.appendChild(tcv);
+
+      // メタ行
+      const meta = document.createElement('div');
+      meta.className = 'tl-cell-meta';
+      const numEl = document.createElement('span');
+      numEl.className = 'tl-cell-num';
+      const seq = this._seqNum(sp);
+      numEl.textContent = seq === Infinity ? `#${displayIdx + 1}` : `#${seq}`;
+      numEl.title = (sp.id || sp.name || '') + ' (元 idx: ' + idx + ')';
+      const framesIn = document.createElement('input');
+      framesIn.type = 'number';
+      framesIn.min = 1; framesIn.max = 20; framesIn.step = 1;
+      framesIn.value = this.framesFor(idx);
+      framesIn.title = '各コマのフレーム数 (尺)';
+      framesIn.addEventListener('click', e => e.stopPropagation());
+      framesIn.addEventListener('input', () => {
+        const v = parseInt(framesIn.value, 10);
+        if (Number.isFinite(v) && v > 0) {
+          this.cellOverrides[idx] = v;
+        } else {
+          delete this.cellOverrides[idx];
+        }
+        this.updateProgress(this.pausedFrame);
+      });
+      const jump = document.createElement('button');
+      jump.className = 'tl-cell-jump';
+      jump.textContent = '🎯';
+      jump.title = '比較タブで元矩形をハイライト';
+      jump.addEventListener('click', e => {
+        e.stopPropagation();
+        highlightSpriteInCompare(idx);
+      });
+      meta.appendChild(numEl);
+      meta.appendChild(framesIn);
+      meta.appendChild(jump);
+
+      cell.appendChild(thumbWrap);
+      cell.appendChild(meta);
+
+      // セルクリック: そのコマの先頭フレームへシーク
+      cell.addEventListener('click', () => {
+        let acc = 0;
+        for (const i of this.getOrder()) {
+          if (i === idx) { this.seek(acc); break; }
+          acc += this.framesFor(i);
+        }
+      });
+
+      strip.appendChild(cell);
+    });
+  },
+
+  updateProgress(frame) {
+    const total = this.getTotalFrames();
+    const bar   = document.getElementById('tl-progress-bar');
+    const label = document.getElementById('tl-progress-label');
+    if (!bar || !label) return;
+    const pct = total > 0 ? (frame / total) * 100 : 0;
+    bar.style.width = pct + '%';
+    const seconds = total / Math.max(1, this.fps);
+    label.textContent = `${frame + (total > 0 ? 1 : 0)} / ${total}  (${seconds.toFixed(2)}s, ${this.fps} fps)`;
+  },
+
+  highlightCell(idx) {
+    const strip = document.getElementById('tl-strip');
+    if (!strip) return;
+    let activeCell = null;
+    strip.querySelectorAll('.timeline-strip-cell').forEach(c => {
+      const isActive = parseInt(c.dataset.idx, 10) === idx;
+      c.classList.toggle('active', isActive);
+      if (isActive) activeCell = c;
+    });
+    if (activeCell && this.playing) {
+      // 自動スクロールはやり過ぎないよう、画面外のときだけ
+      const r = activeCell.getBoundingClientRect();
+      const sr = strip.getBoundingClientRect();
+      if (r.left < sr.left || r.right > sr.right) {
+        activeCell.scrollIntoView({ inline: 'center', block: 'nearest' });
+      }
+    }
+  },
+
+  bindEvents() {
+    if (this.bound) return;
+    this.bound = true;
+
+    document.getElementById('tl-play').addEventListener('click', () => this.play());
+    document.getElementById('tl-pause').addEventListener('click', () => this.pause());
+    document.getElementById('tl-stop').addEventListener('click', () => this.stop());
+
+    const loopBtn = document.getElementById('tl-loop');
+    loopBtn.addEventListener('click', () => {
+      this.loop = !this.loop;
+      loopBtn.classList.toggle('active', this.loop);
+    });
+    const ppBtn = document.getElementById('tl-pingpong');
+    ppBtn.addEventListener('click', () => {
+      this.pingPong = !this.pingPong;
+      ppBtn.classList.toggle('active', this.pingPong);
+    });
+
+    const fpsIn = document.getElementById('tl-fps');
+    fpsIn.addEventListener('input', () => {
+      const v = parseInt(fpsIn.value, 10);
+      if (Number.isFinite(v) && v >= 1 && v <= 60) {
+        // 再生中なら、新FPS適用前に「現在フレーム」を旧FPSで計算してから乗り換える
+        const oldFps = this.fps;
+        const wasPlaying = this.playing;
+        let curFrame = this.pausedFrame;
+        if (wasPlaying) {
+          const total = Math.max(1, this.getTotalFrames());
+          const elapsed = (performance.now() - this.startTs) / 1000;
+          curFrame = Math.floor(elapsed * oldFps) % total;
+        }
+        this.fps = v;
+        if (wasPlaying) {
+          this.startTs = performance.now() - (curFrame / this.fps) * 1000;
+        }
+        this.updateProgress(curFrame);
+      }
+    });
+
+    const framesIn = document.getElementById('tl-frames');
+    framesIn.addEventListener('input', () => {
+      const v = parseInt(framesIn.value, 10);
+      if (Number.isFinite(v) && v >= 1 && v <= 20) {
+        this.framesPerCell = v;
+        this.updateProgress(this.pausedFrame);
+      }
+    });
+
+    const bgSel = document.getElementById('tl-bg');
+    bgSel.addEventListener('change', () => {
+      this.bgMode = bgSel.value;
+      const stage = document.getElementById('timeline-stage');
+      if (stage) stage.dataset.bg = this.bgMode;
+    });
+
+    // プログレスバークリック → シーク
+    const prog = document.getElementById('tl-progress');
+    const seekFromEvent = (clientX) => {
+      const r = prog.getBoundingClientRect();
+      const ratio = Math.max(0, Math.min(1, (clientX - r.left) / r.width));
+      const total = this.getTotalFrames();
+      this.seek(Math.floor(ratio * total));
+    };
+    prog.addEventListener('click', e => seekFromEvent(e.clientX));
+
+    // タブ非表示で一時停止 → 戻ったら再開 (タイムラインタブ表示中のときだけ)
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        this.wasPlayingBeforeHidden = this.playing;
+        if (this.playing) this.pause();
+      } else if (this.wasPlayingBeforeHidden) {
+        this.wasPlayingBeforeHidden = false;
+        const tl = document.getElementById('tab-timeline');
+        if (tl && tl.classList.contains('active')) this.play();
+      }
+    });
+
+    // 初期サイズ調整
+    requestAnimationFrame(() => {
+      this.drawFrame(this.pausedFrame);
+    });
+  },
+};
 
 // ── 既存IDサジェストリスト ──
 // 管理ダッシュボードの制作リストと同期したマスターリスト
@@ -3428,7 +4268,13 @@ function _buildSuggestList(card, filter) {
   items.forEach(c => {
     const item = document.createElement('div');
     item.className = 'sp-id-suggest-item';
-    item.innerHTML = `<span>${c.id}</span><span class="suggest-name">${c.name}</span>`;
+    // textContent ベースで構築 (XSS 対策)
+    const sId   = document.createElement('span');
+    const sName = document.createElement('span');
+    sName.className = 'suggest-name';
+    sId.textContent   = c.id;
+    sName.textContent = c.name;
+    item.append(sId, sName);
     item.addEventListener('click', () => {
       idInput.value = c.id;
       idInput.dataset.manual = '1';
@@ -3509,13 +4355,121 @@ document.getElementById('btn-seq-name').addEventListener('click', () => {
 });
 
 // ════════════════════════════════════════════════════════════
+// Selection Sets (チェック状態の保存・呼出)
+// 同じシートで「前向き歩き」「後ろ向き歩き」など複数のチェックセットを切替できる
+// ════════════════════════════════════════════════════════════
+const SELECTION_SETS_KEY = 'creature_studio_selection_sets';
+
+function loadSelectionSets() {
+  try {
+    const raw = localStorage.getItem(SELECTION_SETS_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr : [];
+  } catch { return []; }
+}
+function saveSelectionSets(sets) {
+  try { localStorage.setItem(SELECTION_SETS_KEY, JSON.stringify(sets)); } catch {}
+}
+function captureCurrentSelectionIds() {
+  const ids = [];
+  document.querySelectorAll('.sprite-card.selected').forEach(c => {
+    const idx = parseInt(c.dataset.idx, 10);
+    const sp = sprites[idx];
+    // ID が無い場合は name を fallback (連番命名前でも復元できるように)
+    const key = (sp && (sp.id || sp.name)) || '';
+    if (key) ids.push(key);
+  });
+  return ids;
+}
+function applySelectionSet(ids) {
+  const wanted = new Set(ids);
+  let matched = 0;
+  document.querySelectorAll('.sprite-card').forEach(c => {
+    const idx = parseInt(c.dataset.idx, 10);
+    const sp = sprites[idx];
+    const key = (sp && (sp.id || sp.name)) || '';
+    const on = wanted.has(key);
+    setCardChecked(c, on);
+    if (on) matched++;
+  });
+  return matched;
+}
+function refreshSelectionSetSelect() {
+  const sel = document.getElementById('sel-set-select');
+  if (!sel) return;
+  const cur = sel.value;
+  const sets = loadSelectionSets();
+  sel.innerHTML = '';
+  const ph = document.createElement('option');
+  ph.value = ''; ph.textContent = '(チェックセット)';
+  sel.appendChild(ph);
+  sets.forEach(s => {
+    const o = document.createElement('option');
+    o.value = s.name;
+    o.textContent = `${s.name} (${(s.ids || []).length})`;
+    sel.appendChild(o);
+  });
+  if (cur && sets.find(s => s.name === cur)) sel.value = cur;
+}
+
+document.getElementById('btn-sel-save').addEventListener('click', () => {
+  const ids = captureCurrentSelectionIds();
+  if (ids.length === 0) {
+    showToast('チェックされたカードがありません', false);
+    return;
+  }
+  const name = (prompt('セット名を入力 (例: walk_front, walk_back):', '') || '').trim();
+  if (!name) return;
+  const sets = loadSelectionSets();
+  const existing = sets.findIndex(s => s.name === name);
+  const entry = { name, ids, savedAt: new Date().toISOString() };
+  if (existing >= 0) sets[existing] = entry; else sets.push(entry);
+  saveSelectionSets(sets);
+  refreshSelectionSetSelect();
+  document.getElementById('sel-set-select').value = name;
+  showToast(`📌 セット「${name}」(${ids.length}件) を保存`, true);
+});
+
+document.getElementById('sel-set-select').addEventListener('change', e => {
+  const name = e.target.value;
+  if (!name) return;
+  const sets = loadSelectionSets();
+  const set = sets.find(s => s.name === name);
+  if (!set) return;
+  const matched = applySelectionSet(set.ids || []);
+  showToast(`📂 「${name}」を呼び出し: ${matched}/${set.ids.length} 件マッチ`, true);
+});
+
+document.getElementById('btn-sel-delete').addEventListener('click', () => {
+  const sel = document.getElementById('sel-set-select');
+  const name = sel.value;
+  if (!name) { showToast('削除するセットを選択してください', false); return; }
+  if (!confirm(`セット「${name}」を削除しますか?`)) return;
+  const sets = loadSelectionSets().filter(s => s.name !== name);
+  saveSelectionSets(sets);
+  refreshSelectionSetSelect();
+  showToast(`🗑 セット「${name}」を削除`, true);
+});
+
+// 起動時に保存済みセット一覧を読み込み
+refreshSelectionSetSelect();
+
+// ════════════════════════════════════════════════════════════
 // Sprite Grid Selection (drag / shift+click / ctrl+click)
 // ════════════════════════════════════════════════════════════
 let lastClickedCardIdx = -1;
 
+let _tlRefreshTimer = null;
+function _scheduleTimelineRefresh() {
+  if (typeof Timeline === 'undefined') return;
+  clearTimeout(_tlRefreshTimer);
+  _tlRefreshTimer = setTimeout(() => Timeline.refresh(), 80);
+}
+
 function setCardChecked(card, selected) {
   card.classList.toggle('selected', selected);
   card.querySelector('.sp-check').checked = selected;
+  _scheduleTimelineRefresh();
 }
 
 (function() {
@@ -4475,6 +5429,47 @@ document.getElementById('btn-multi-picker').addEventListener('click', () => {
   }
 });
 
+// ── Toggle timeline mode (上半分にタイムライン、下半分にスプライトグリッド) ──
+document.getElementById('btn-timeline-mode').addEventListener('click', () => {
+  const rp  = document.querySelector('.right-panel');
+  const btn = document.getElementById('btn-timeline-mode');
+  if (!rp || !btn) return;
+  const turningOn = !rp.classList.contains('timeline-mode');
+
+  if (turningOn) {
+    // 他モードと完全排他: マルチ合成 ON 中なら先に OFF にして composite を閉じる
+    if (multiPickerMode) {
+      document.getElementById('btn-multi-picker').click();
+    }
+    // composite タブが active のまま残っていることがあるので強制で外す
+    const compEl = document.getElementById('tab-composite');
+    if (compEl) compEl.classList.remove('active');
+    rp.classList.remove('multi-mode');
+
+    // 通常モードの split 比率を退避し、timeline-mode 用比率 (上 75% / 下 25%) を反映
+    rp.dataset.savedSplitTop = rp.style.getPropertyValue('--split-top') || '';
+    rp.dataset.savedSplitBot = rp.style.getPropertyValue('--split-bot') || '';
+    rp.style.setProperty('--tl-split-top', '0.75');
+    rp.style.setProperty('--tl-split-bot', '0.25');
+
+    rp.classList.add('timeline-mode');
+    btn.textContent = '🎞 タイムライン ON';
+    btn.style.background = '#f87171';
+    btn.style.color = '#fff';
+    Timeline.bindEvents();
+    Timeline.refresh();
+  } else {
+    rp.classList.remove('timeline-mode');
+    // timeline-mode 用 CSS 変数を撤去 (元の --split-top/--split-bot は inline style に残ってる)
+    rp.style.removeProperty('--tl-split-top');
+    rp.style.removeProperty('--tl-split-bot');
+    btn.textContent = '🎞 タイムラインモード';
+    btn.style.background = '';
+    btn.style.color = '';
+    Timeline.pause();
+  }
+});
+
 // ── Multi drop zone ──
 const multiDz = document.getElementById('multi-drop-zone');
 const multiFileInput = document.getElementById('multi-file-input');
@@ -4962,6 +5957,8 @@ function updateCompositePreview() {
   const totalSels = pickerImages.reduce((s, p) => s + p.selections.length, 0);
   document.getElementById('composite-count').textContent = '選択: ' + totalSels;
   document.getElementById('btn-compose').disabled = totalSels === 0;
+  const savePngBtn = document.getElementById('btn-compose-save-png');
+  if (savePngBtn) savePngBtn.disabled = totalSels === 0;
   // マルチ合成中: 選択があれば「✂️ 分割」を有効化 (各矩形を1スプライトとして取り出し)
   if (multiPickerMode) {
     document.getElementById('btn-split').disabled = totalSels === 0;
@@ -4991,6 +5988,27 @@ document.getElementById('composite-unify').addEventListener('change', () => {
   updateCompositePreview();
 });
 document.getElementById('composite-unify-size').addEventListener('input', updateCompositePreview);
+
+// ── 合成PNG保存 (分割前のスクリーンショット) ──
+document.getElementById('btn-compose-save-png').addEventListener('click', () => {
+  const cv = composeSelections();
+  if (!cv) { showToast('選択がありません', false); return; }
+  cv.toBlob(blob => {
+    if (!blob) { showToast('PNG生成に失敗しました', false); return; }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const ts = new Date();
+    const stamp = `${ts.getFullYear()}${String(ts.getMonth()+1).padStart(2,'0')}${String(ts.getDate()).padStart(2,'0')}_${String(ts.getHours()).padStart(2,'0')}${String(ts.getMinutes()).padStart(2,'0')}${String(ts.getSeconds()).padStart(2,'0')}`;
+    a.href = url;
+    a.download = `composite_${stamp}_${cv.width}x${cv.height}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast(`合成PNG (${cv.width}×${cv.height}) を保存しました`, true);
+    cv.width = 0; cv.height = 0;
+  }, 'image/png');
+});
 
 // ── 合成して読み込む ──
 document.getElementById('btn-compose').addEventListener('click', () => {

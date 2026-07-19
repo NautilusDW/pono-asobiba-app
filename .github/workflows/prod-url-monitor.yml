@@ -1,0 +1,76 @@
+name: Production URL Monitor
+
+# 本番 URL (custom domain + workers.dev サブドメイン) の到達性を定期監視する。
+#
+# 背景: 2026-07-10、Cloudflare ダッシュボード側で本番 worker
+# `pono-asobiba-app` の workers.dev サブドメイン トグルが (原因調査中だが)
+# 無効化され、`pono-asobiba-app.ndw.workers.dev` が全パス 404 (error code: 1042)
+# になる事故が同日中に複数回発生した。deploy.yml (push トリガー) だけでは
+# 「デプロイしていないのに壊れる」系の事故を検知できないため、
+# 定期実行 (cron) で外形監視する。
+#
+# 注意:
+# - このワークフローは読み取り専用の外形監視のみを行う。deploy.yml には一切手を加えない。
+# - 失敗時の通知先 (GitHub 仕様): schedule 起動の失敗メールは「このファイルの cron 行を
+#   最後に変更した user」にのみ届く (リポジトリ watcher 全員ではない)。workflow_dispatch
+#   起動の失敗は実行した本人に届く。受信者側で Settings > Notifications > Actions の
+#   通知が有効であることが前提。
+# - ⚠️ schedule (cron) は「リポジトリの default branch」上のワークフローしか起動しない。
+#   本リポジトリの default branch は現在 `develop` (凍結予定) のため、このファイルが
+#   `develop-app` にしか存在しない場合 cron は一切発火しない。対応はどちらか:
+#   (a) GitHub 設定で default branch を `develop-app` へ変更する (単一トランク統合として推奨)
+#   (b) `develop` の凍結宣言コミットに本ファイルを同梱する
+#   workflow_dispatch は任意ブランチの版を選んで手動実行できるので動作確認には使える。
+# - 一過性のネットワークゆらぎで誤報しないよう、各 URL は 1 回だけ 30 秒後にリトライする。
+
+on:
+  schedule:
+    # 6時間ごと (UTC)。 cron は UTC 基準で解釈される。
+    # 分は 0 ちょうどを避ける: GitHub は毎時 0 分が最混雑で、schedule の遅延/スキップが
+    # 起きやすいと公式に案内しているため、任意のオフセット分を使う。
+    - cron: '23 */6 * * *'
+  workflow_dispatch:
+
+# curl による外形監視のみで GITHUB_TOKEN を一切使わない (checkout も無い) ため、
+# token の全スコープを無効化する。
+permissions: {}
+
+jobs:
+  check-production-urls:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check workers.dev subdomain (pono-asobiba-app.ndw.workers.dev)
+        run: |
+          url="https://pono-asobiba-app.ndw.workers.dev/"
+          echo "Checking $url"
+          if curl -sf -o /dev/null --max-time 15 "$url"; then
+            echo "OK: $url"
+          else
+            echo "First attempt failed for $url, retrying in 30s..."
+            sleep 30
+            if curl -sf -o /dev/null --max-time 15 "$url"; then
+              echo "OK on retry: $url"
+            else
+              echo "FAILED: $url is unreachable after retry (see error body below if any)"
+              curl -sS -o /dev/null -w 'HTTP status: %{http_code}\n' --max-time 15 "$url" || true
+              exit 1
+            fi
+          fi
+
+      - name: Check custom domain (pono.kodama-no-mori.com)
+        run: |
+          url="https://pono.kodama-no-mori.com/"
+          echo "Checking $url"
+          if curl -sf -o /dev/null --max-time 15 "$url"; then
+            echo "OK: $url"
+          else
+            echo "First attempt failed for $url, retrying in 30s..."
+            sleep 30
+            if curl -sf -o /dev/null --max-time 15 "$url"; then
+              echo "OK on retry: $url"
+            else
+              echo "FAILED: $url is unreachable after retry (see error body below if any)"
+              curl -sS -o /dev/null -w 'HTTP status: %{http_code}\n' --max-time 15 "$url" || true
+              exit 1
+            fi
+          fi

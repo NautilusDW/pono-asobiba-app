@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>treasure queue fixture</title>
+</head>
+<body>
+<!--
+  common/treasure.js の多重呼び出しキュー (batch:1371) を検証するためだけの
+  テスト専用固定ページ。common/stamp-rally.js の checkSlotReward(total) が
+  境界(total=15/30/45...)で「スロット報酬」「カード完成報酬」の2つの showTreasure()
+  を独立した setTimeout(200ms / 1200ms) で呼ぶ構造を模して、より厳しい条件
+  (待ち時間ゼロで同期的に2連続呼び出し)で検証する。この条件で正しく直列化できれば
+  実際の1000msギャップのケースは確実に安全。
+
+  window.PonoTier.isApp() = true にして _isRewardsDisabled() を無効化(=表示を有効化)。
+  choices の img は data: URI にして動画/画像アセットのネットワーク依存を排除。
+  TreasureBox_opt.mp4 は意図的に相対パスが解決できない場所からの読み込みになるため
+  404 する → 3秒の soft timeout で CSS フォールバック(🎁)経路に必ず入る。これにより
+  実動画の再生時間に依存しない決定的なタイミングでテストできる。
+-->
+<script>
+  window.PonoTier = { isApp: function () { return true; } };
+  window.__log = { onChoose: [], onClose: [], order: [] };
+</script>
+<script src="../../../common/treasure.js"></script>
+<script>
+  var TINY_PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
+
+  // 2つの showTreasure() を待ち時間ゼロで連続発火する
+  // (実運用の200ms/1200msギャップよりさらに厳しい = 待ち時間ゼロでも壊れないことを証明する)
+  window.__fireTwo = function () {
+    window.showTreasure({
+      label: 'CALL1',
+      choices: [
+        { name: 'A1', img: TINY_PNG },
+        { name: 'B1', img: TINY_PNG }
+      ],
+      onChoose: function (picked) {
+        window.__log.onChoose.push({ call: 1, name: picked.name });
+        window.__log.order.push('onChoose1');
+      },
+      onClose: function () {
+        window.__log.onClose.push(1);
+        window.__log.order.push('onClose1');
+      }
+    });
+    window.showTreasure({
+      label: 'CALL2',
+      choices: [
+        { name: 'A2', img: TINY_PNG },
+        { name: 'B2', img: TINY_PNG }
+      ],
+      onChoose: function (picked) {
+        window.__log.onChoose.push({ call: 2, name: picked.name });
+        window.__log.order.push('onChoose2');
+      },
+      onClose: function () {
+        window.__log.onClose.push(2);
+        window.__log.order.push('onClose2');
+      }
+    });
+  };
+
+  // オートクローズ(何もタップしない)経路の検証用: 1件だけ発火し、その裏でもう1件を
+  // キューに積む。1件目はユーザーが一切操作しない想定 (AUTO_CLOSE_MS 経過で自動選択+自動close)。
+  window.__fireTwoNoInteraction = function () {
+    window.showTreasure({
+      label: 'AUTO1',
+      choices: [
+        { name: 'AutoA', img: TINY_PNG },
+        { name: 'AutoB', img: TINY_PNG }
+      ],
+      onChoose: function (picked) {
+        window.__log.onChoose.push({ call: 'auto1', name: picked.name });
+        window.__log.order.push('onChoose-auto1');
+      },
+      onClose: function () {
+        window.__log.onClose.push('auto1');
+        window.__log.order.push('onClose-auto1');
+      }
+    });
+    window.showTreasure({
+      label: 'AUTO2',
+      choices: [
+        { name: 'AutoA2', img: TINY_PNG },
+        { name: 'AutoB2', img: TINY_PNG }
+      ],
+      onChoose: function (picked) {
+        window.__log.onChoose.push({ call: 'auto2', name: picked.name });
+        window.__log.order.push('onChoose-auto2');
+      },
+      onClose: function () {
+        window.__log.onClose.push('auto2');
+        window.__log.order.push('onClose-auto2');
+      }
+    });
+  };
+</script>
+</body>
+</html>

@@ -1,0 +1,168 @@
+---
+name: feature_maze_rough_maker
+description: 迷路ラフ作成ツール (tools/maze-rough.html) — 生成AIに渡す簡易レイアウトを32×18タイルグリッドで作成
+type: project
+---
+
+# 迷路ラフ作成ツール (maze-rough.html)
+
+## 背景
+従来は生成 AI に文章だけで「花のこみち迷路を作って…」と指示していたが、道のつながり/難易度/スタート位置などが毎回ブレた。**「迷路の構造はこちらで先に決め、生成 AI には装飾だけ任せる」**方針に変更。
+
+## ツール概要
+- パス: [`tools/maze-rough.html`](../tools/maze-rough.html) (SW キャッシュ対象外、常に最新が読み込まれる)
+- キャンバス固定 1920×1080 (16:9, 32×18 タイル, 1 タイル 60px)
+- 最終 PNG をそのまま生成 AI に渡す → 「白いところが道、緑が壁」と認識させて絵本風に仕上げる
+
+## 機能
+- **モード**: `🛤 道` (ドラッグで塗る) / `🧹 けす` (ドラッグで消す) / `🟦 スタート` / `🟥 ゴール` / `🐛 おじゃま虫` / `📍 中継地点`
+- **ブラシサイズ**: 1/2/3 タイル (推奨 2 = 約 120px、生成 AI が「ここが道」と認識しやすい太さ)
+- **グリッド表示** ON/OFF (PNG 書き出し時は自動で OFF)
+- **解の道筋表示** ON/OFF (BFS 最短経路を黄色で表示、検証用)
+- **統計**: 接続 OK/NG (BFS)、道タイル数、最短手数、分岐数、行き止まり数、おじゃま虫数
+- **🎲 ランダム生成** (sw v809 更新): 難易度 1〜100 を入れて生成ボタン → 再帰バックトラッカーで迷路を自動生成 + narrow / 2-panel tier (d≥50) では **行き止まり延伸** (短い枝を未訪問方向へ carve) + **合流ループ** (dead-end ↔ alive cell を `minDetour` 以上のグラフ距離だけ離して braid) + **軽量 sanity check** (短すぎる dead-end 比率が `maxShortDeadEndRatio` 超過なら最大 2 回再生成) を適用 + 直径(diameter)パスの両端を start/goal に + お邪魔虫を BFS 最短経路上に自動配置。wide tier (d<50) は旧挙動を維持 (低年齢層向けシンプル迷路の方針)
+- **PNG ダウンロード**: 1920×1080 PNG。グリッド線抜きでクリーンに書き出し
+- **JSON 保存/読み込み**: spec の `{width, height, tiles, start, goal, creatures}` 形式 (creatures はピクセル座標配列)
+- **AI プロンプト雛形コピー**: クリップボードに、PNG と一緒に AI に渡す指示文をコピー
+- **localStorage 自動保存**: `pono_maze_rough_draft_v1` キー、500ms debounce、リロードで自動復元
+- **リセット**: ぜんぶクリア + localStorage も削除
+
+## カラー凡例 (PNG 出力)
+- 緑 (`#7AB540` / `#6A9F36` 市松) = 草・壁
+- クリーム (`#FAF6E8`) = 歩ける道
+- 青円 (`#3B8DD9`) + 白縁 = スタート (1.4タイル半径 ≒ 84px)
+- 赤円 (`#D74E4E`) + 白縁 = ゴール (同上)
+- 紫小円 (`#A855E6`) + 白縁 + 白2点 = お邪魔虫 (0.7タイル半径 ≒ 42px)
+- 黄丸 (`#F2C94C`) = 中継ノード:分岐 (0.5タイル半径 ≒ 30px)
+- 水色丸 (`#56CCF2`) = 中継ノード:行き止まり (同上)
+- 緑丸 (`#27AE60`) = 中継ノード:手動配置 (同上)
+
+## ワークフロー
+1. `https://pono-asobiba-staging.ndw.workers.dev/tools/maze-rough.html` を開く
+2. 道モードで迷路を引く (ブラシ 2 マス推奨)
+3. スタート・ゴールを配置
+4. 「接続 ✓」を確認 (BFS で start→goal 到達可能か)
+5. **🖼 PNG ダウンロード** → 生成 AI に渡す
+6. **📋 AIプロンプト雛形をコピー** → AI チャットに貼って画像と一緒に投げる
+7. AI が絵本風に仕上げた画像を `tools/maze-editor.html` で読み込み → ノード/道/障害物配置 → 「💾 本番に保存」
+
+## AI プロンプト雛形
+- 白い道は形を変えない
+- 緑は草・茂み・低木の壁。道以外には木や草を生やして OK
+- 青/赤の丸は装飾 OK だが形を維持
+- 比率 16:9、1920×1080
+- 子ども向け絵本タッチ、自然光、道の上に切り株/石は置かない
+- 道脇に花や蝶 OK、ふちに枠/文字 NG
+
+## 内部データモデル
+```json
+{
+  "width": 32,
+  "height": 18,
+  "tiles": [["wall","wall","path",...], ...],
+  "start": { "x": 240, "y": 990 },
+  "goal":  { "x": 1740, "y": 150 },
+  "creatures": [{ "x": 600, "y": 540 }, { "x": 1200, "y": 720 }],
+  "waypoints": [{ "x": 360, "y": 240, "kind": "branch" }, { "x": 1500, "y": 660, "kind": "deadend" }]
+}
+```
+内部状態の `tiles[y][x]` は `'wall'|'path'` のみ。書き出し時に start/goal 位置を `'start'`/`'goal'` に書き換え (spec 準拠)。`start`/`goal`/`creatures` の座標はピクセル単位 (キャンバス 1920×1080 基準)。
+
+## ランダム生成アルゴリズム (難易度1-100スケール)
+
+ステージ番号 1〜N から **連続値の難易度 1〜100** に切り替え。難易度に応じて 3 つのモードを段階的に解放。**sw v809 以降は narrow / 2-panel tier に行き止まり延伸 + 合流ループ + sanity check が追加** (wide tier は無変更)。
+
+| 難易度 | tier | パネル | キャンバス | stride | グリッド | 直進バイアス | ループ率 | お邪魔虫 |
+|-------|------|-------|------------|--------|---------|------------|---------|---------|
+| 1〜49 | wide | 1 | 1920×1080 | 3 (path 2 + wall 1) | 10×5 (50セル) | 70% → 0% | 0% → 35% | 1 → 3 |
+| 50〜74 | narrow | 1 | 1920×1080 | 2 (1+1) | 15×8 (120セル) | 40% → 0% | 0 (代わりに braid) | 2 → 5 |
+| 75〜100 | 2-panel | 2 | 3840×1080 | 2 (1+1) | 31×8 (248セル) | 30% → 0% | 0 (代わりに braid) | 5 → 10 |
+
+**sw v809 新パラメータ表 (narrow / 2-panel tier のみ。tier 内で d とともに線形補間)**
+
+| tier | 難易度 | minBranchLen | minTurns | maxExtendOps | braidRate | minDetour | maxShortDeadEndRatio |
+|---|---|---|---|---|---|---|---|
+| wide | 1〜49 | (未使用) | (未使用) | (未使用) | (未使用) | (未使用) | (未使用) |
+| narrow | 50〜74 | 4→6 | 1 | 20 | 0.15→0.35 | 6→10 | 0.20 |
+| 2-panel | 75〜100 | 4→6 | 1→2 | 20 | 0.20→0.45 | 10→16 | 0.20 |
+
+**sw v809 新パイプライン (narrow / 2-panel のみ):**
+1. DFS で迷路生成
+2. **`_extendDeadEnds`** (設計案A): 短い行き止まり (cell数 < `minBranchLen` or 方向転換 < `minTurns`) を未訪問方向へ carve 延伸。perpendicular (角を曲げる) を優先。延伸不可枝は **skipTips セットで除外** して budget (`maxExtendOps`) 浪費を防止
+3. **`_braidDeadEnds`** (設計案B): dead-end と alive cell の間で、現グラフ上の **BFS 距離が `minDetour` 以上のペアだけ** 壁を抜いて合流ループ作成 (短絡防止 = 数マスで再合流する短絡は禁止)
+4. **軽量 sanity check** (`_shortDeadEndRatio`): 短すぎる dead-end 比率がしきい値 `maxShortDeadEndRatio` を超過したら最大 2 回再生成。3 回失敗時は最後の試行を採用
+
+**カーブ調整 (2回目) (sw v809 以前の値、現在は↑の表参照):** Tier 2/3 の開始バイアスを当初 0.95/0.50 から **0.40/0.30** に下げた。
+理由: tier 2 で d=50 が bias=0.95 だと d=52 あたりまで「ヘビ状の長い道」のままで「ただ歩くだけで難易度として機能していない」(ユーザーフィードバック)。 cellStride=2 + 120 セルは構造そのものが既に十分大きいので、bias は控えめにして DFS のランダム性で分岐を稼ぐ方が体感が出る。
+
+**設計方針:**
+- 道幅は wide(1〜49)=2タイル、それ以外=1タイル
+- **外周マージンは厳密に 1 タイル** (4辺すべて)。最終行/列セル+廊下を canvas 境界まで延長することで phantom 廊下を path として吸収
+- マーカー半径は stride 連動: narrow(stride=2)=0.75タイル / wide(stride=3)=1.4タイル / creature/waypoint も同様にスケール
+- start/goal 重なり保証: 直径ペアがピクセル距離で重なる場合、左上↔右下セルへフォールバック → さらにダメなら canvas 角に直接配置
+- 難易度の体感差は **DFS の直進バイアス + 行き止まり延伸 + 合流ループ** で出す (narrow / 2-panel)
+  - bias=95% → DFS が同じ方向に進み続ける → スネーク状の長い道、分岐ほぼなし
+  - bias=0% → 完全ランダム DFS → 分岐多数、行き止まり多数
+  - **同じセル数(98 or 210)でも構造が大きく変わる** = ヌルさと激ムズの差が出る
+  - 延伸/braid は「短すぎる飾り行き止まり」を減らし「意味のある分岐」を増やすため
+- 境界 (d=74↔75) は単パネル分岐多め(98セル) ↔ 双パネル中庸(210セル) で連続感あり
+
+**PNG 16:9 分割 (実装済 + 確認済):**
+- 1 画面モード (d<75): 1920×1080 PNG 1 枚
+- 2 画面モード (d≥75): `_L.png` (1920×1080) + `_R.png` (1920×1080) の自動分割
+- 3 画面以上は未サポート
+
+**お邪魔虫上限:** 1画面=5、2画面=10 (これより多いと画面が散らかる)。
+
+- **セル単位の再帰バックトラッカー**: cellStride = 4 (2-tile path + 2-tile wall) または cellStride = 2 (1-tile path + 1-tile wall)
+- **2画面モード(d≥75)**: GRID_W = 64 に拡張、キャンバスを 3840×1080 にリサイズ。PNG 出力時は `_L.png` (左1920) と `_R.png` (右1920) に**自動分割**して2枚保存
+- **start / goal**: 2-BFS で求めたグラフ直径(最遠ペア)を採用、左側のセルが start
+- **行き止まり剪定**: deadEndPrune=0 (難易度1から既に最大複雑度)、直径パス保護機構は残置
+- **お邪魔虫配置**: BFS 最短経路の中盤 (20〜85%) から 2x2ブロック中心スナップ込みでランダム抽出、最低 2.5 タイル間隔
+- **中継ノード(waypoints) 自動検出**: 剪定後のセル隣接グラフを走査し、次数≥3 のセル=分岐ノード(黄)、次数==1 のセル=行き止まりノード(水色)を自動配置。start/goal セルは除外
+- **手動配置**: 📍 モードでクリック→`kind:'manual'` (緑) として追加、ドラッグで移動、🧹で削除
+  - 配置/ドラッグ終了時に `_snapToBlockCenter()` で **クリックに最も近い 2x2 path ブロックの中心** にスナップ (お邪魔虫も同じ)
+
+## キャンバス可変サイズ (mutable GRID_W)
+
+- `let GRID_W = 32` (1パネル) または `64` (2パネル) を実行時に切り替え
+- `_resizeCanvas(targetGridW, panels)` を生成器・JSONロード・履歴 undo・リセットから呼ぶ
+- localStorage / 名前付き保存 / drop import / library import の永続化レイヤーすべてで `panels` + `gridW` フィールドを保持・復元
+- 旧形式 (panels なし) は `width >= 64` から自動推定、後方互換
+
+## 段階的吸収の方針 (Phase A — maze-editor の機能を rough に取り込む)
+
+maze-editor.html とは現状別ツールだが、**ノード/エッジ/障害物/背景画像差し替えを rough 側に順次取り込む**方針で進めている (option A)。
+
+- **Phase 1 (DONE)**: 中継ノード手動配置 + ランダム生成時の自動検出
+- **Phase 2 (DONE)**: ノード間の **エッジ** (`state.edges = [{polyline: [{x,y},...]}]`) — 自動生成 (cell adjacency → 隣接 cell 中心の polyline)、薄グレー破線で描画、PNG時は非表示、永続化全レイヤー対応。手動配置モードは Phase 2.5 で後回し
+- **Phase 2 完成 (2026-04-28 方針転換)**: BFS 経路化アプローチを廃止し、**maze-editor 風の手動 polyline 編集モデル**に方針転換。エッジは生成時 2 点直線 (= 隣接セル中心同士、`_edgesFromAdj`)、ノードドラッグで端点だけ追従、中間角点は不動。各 polyline 点 (端点 + 中間点) を独立にドラッグ移動可能 (= `_edgePointHitAt` を `_markerHitAt` の末尾で呼び、`{type:'edgePoint', edgeIdx, pointIdx}` で hit)。新モード「✏️ ライン編集」でエッジ線分上クリック → `_distPointToSegment` の投影点に中間点挿入 (距離 0.5 タイル以内)。🧹 モードで中間点クリック → 削除 (端点削除は不可、showBanner で警告)。`_routeEdgePolyline` / `e.broken` 関連は全削除。drawEdge は polyline + 各頂点に小白円 (CELL*0.18) のハンドル描画 (PNG 出力時は edges=[] swap で消える)。
+- **スナップモード 3 状態 (2026-04-28)**: `state.snapMode = 'cell' | 'cross' | 'none'` を新設。マーカー全種共通 (start/goal/中継地点/障害物/お邪魔虫/エッジ点)。UI: 2 つのトグルボタン (⬛ マス中心 / ✚ 交差点)、同じボタン再押下で OFF (→ 'none' = フリー)。`_snapMarker(x, y)` ヘルパーが既存の `_snapToBlockCenter` 呼び出しをユーザー操作系で全置換 (= 配置・ドラッグ後・エッジ点挿入)。creature 自動配置は path-aware 維持のため `_snapToBlockCenter` のまま。永続化全レイヤー (pushHistory/JSON/localStorage/library/autoLoad) に `snapMode` を追加、`_loadSnapMode` で whitelist 検証、`_syncSnapButtons` で UI 同期。
+- **Phase 2.5 (DONE)**: 「🔄 ノードと道を再計算」ボタン — 手動編集後、`state.cellLayout = {cellRowX, cellRowY, cw, ch}` を使って現在の tile 状態から adj を再構築 → waypoints/edges を再生成。手動配置 (kind: 'manual') は保持。`_validateCellLayout()` で永続化からの復元時に整数範囲を whitelist 検証 (cw/ch 1..100、row offset 0..4095)。`_edgesFromAdj()` ヘルパーで生成時と再計算時のエッジ生成ロジックを共通化
+- **Phase 3 (DONE)**: **障害物** (`state.obstacles = [{x, y, kind:'rock'|'tree'|'stump'|'hole'}]`) — 🪨 モードでクリック配置、ドラッグ移動、🧹で削除、永続化全レイヤー、PNG時は非表示。`_loadObstacles()` で kind whitelist 検証 + クランプ。マーカーは茶色丸+kind icon (🪨/🌳/🪵/⚫)
+- マーカーの hit area を最低 0.5 タイルに拡大 (narrow mode で waypoint が小さすぎてクリックしづらい問題への対応、視覚サイズは維持)
+- recompute ボタンは「⚠️ ノードを再計算 (試験的)」にダウングレード — 直線エッジが手動編集後に壁を貫通する問題があるので、複雑な編集後はドラッグで手動調整推奨
+- **Phase 3.5 (DONE 2026-04-29)**: **お邪魔虫 / 障害物の種類選択 UI** — モード行の下に kind サブパネル (`#kindPanelCreature` / `#kindPanelObstacle`) を追加。creature モード時は 4 種 (mayoi=じゃんけん / odoke=○×クイズ / nemuri=シルエットクイズ / pyon=リズム模倣)、obstacle モード時は 5 種 (rock / tree / stump / hole / **pond** ※pond は Phase 3 で kind whitelist に含まれていなかったが、 maze runtime の `OBSTACLE_KIND_IMG` には元々あったので Phase 3.5 で正式対応)。`state.selectedCreatureKind` / `state.selectedObstacleKind` を新設、初期値は 'mayoi' / 'rock'。配置時 (`state.creatures.push` / `state.obstacles.push`) は selected の kind を採用 (旧来は creature が `{x,y}` のみ・obstacle が `kind:'rock'` 固定だった)。`_updateKindPanelVisibility()` がモード切替に応じて該当パネルだけ表示する。`state.creatures[]` の要素は `{x,y}` から `{x,y,kind}` に拡張 (旧データは `_loadCreatures()` 等のフォールバックで kind='mayoi' を補完すれば後方互換)
+- **Phase 4 (DONE 2026-04-29)**: **本番画像差し替え + 「💾 本番に保存」** — 「🎨 Phase 4: 本番化」 セクションを左ペインに追加。 ① `📷 本番画像を読込` (file picker) で AI 生成画像を `state.prodImage` (HTMLImageElement) に保持、 ② 透過度スライダー (0..100%) でラフキャンバス上のオーバーレイ表示濃度を調整、 ③ ステージ名・ステージ番号 (1..99) 入力、 ④ story 入力 UI (animal セレクト 6 種 / animalLabel 自動補完 / intro / 救出セリフ / ポノひとこと)、 ⑤ `💾 本番に保存` ボタン (画像未取込時は disabled)。 保存ロジック (`buildImageStageDef`) はラフ → image-stage 形式変換: ノードを `{id:'start'\|'goal'\|'stop'+i, kind, x, y}` の `nodes[]` に再構成、 エッジは `polyline` 端点を `Math.hypot` で最寄りノードに紐付けて `{from, to, polyline}` に変換、 obstacles/creatures は kind 維持で座標変換のみ。 座標変換は `rough_px × (img.naturalWidth/CANVAS_W, img.naturalHeight/CANVAS_H)`。 story の `cryingIconUrl`/`reliefIconUrl` は `imageStages/animals/<animal>_02.png` / `_goal.png` を既定値に。 GitHub commit は maze-editor.html の流れをそのままコピー: `/api/gh/` (Cloudflare Worker GitHub プロキシ) 経由で `_index.json` 重複チェック → 1600w Q70 JPEG 圧縮 → 画像 PUT → JSON PUT → `_index.json.overrides[stageNum]` 更新。 `utf8Btoa` / `ghGet` / `ghPut` ヘルパーは maze-editor から複製 (DRY 化は今後の課題、 ツールが独立 HTML である事情を踏まえての許容)
+
+最終的に rough 1 ツールでステージ設計を完結させ、maze-editor.html はフォールバックとして残す。
+
+## Phase 3 (DONE 2026-05-14): シームレス handoff 実装済み
+
+ラフを編集すると裏で常時 localStorage (`pono_maze_rough_handoff_v1`) に nodes/edges/polyline を書き出し、 エディタタブを開くと自動取り込みされる連携を実装。 PNG インポート機能も追加。 詳細は [[feature_maze_rough_to_editor_workflow]] 参照 (sw v1000)。
+
+## sw v809 (2026-06-05): 行き止まり延伸 + 合流ループ + sanity check
+
+迷路ラフ ランダム生成を **narrow / 2-panel tier (d≥50) 限定** で強化 (wide tier は無変更)。
+
+- **`_extendDeadEnds`** (設計案A): DFS 直後の短い行き止まり (cell < `minBranchLen` or 方向転換 < `minTurns`) を未訪問方向へ carve 延伸。perpendicular (角を曲げる) を優先、`maxExtendOps` で budget 管理、延伸不可枝は **skipTips セット** で除外して budget 浪費防止
+- **`_braidDeadEnds`** (設計案B): dead-end ↔ alive cell の壁を抜いて合流ループ生成。ただし **現グラフ上の BFS 距離 `minDetour` 以上のペアだけ** 採用 (= 短絡防止)、`braidRate` で量を制御
+- **軽量 sanity check** (`_shortDeadEndRatio`): 短すぎる dead-end 比率が `maxShortDeadEndRatio` (=0.20) 超過なら最大 2 回再生成。3 回失敗時は最後の試行を採用
+- クロスレビュー (HIGH 1 / MED 6) 反映: skipTips セット導入、`_enumerateDeadEndBranches` の終端 push 位置修正、`_shortDeadEndRatio` 未使用引数 (`cw, ch`) 削除、インライン WHAT コメント削除 (CLAUDE.md ルール準拠)
+- 検証: `tools/test-maze-rough-quality.spec.js` (新規 Playwright、staging 向け、難易度 1/30/50/60/74/75/90/100 × 5 回ずつ生成して `#statBranches` / `#statDeadEnds` を計測)
+
+## 関連
+- `tools/maze-editor.html`: AI 出力画像を背景にしてノード/道を定義する次のステップ用エディタ
+- `maze/imageStages/_index.json`: 完成ステージのスロット割り当て
+- 物語設定: 「ポノと まよいの森の ランタン」(`D:\ポノのおへや\Maze\New\ポノの迷路ゲーム_ストーリーと設定まとめ.md`)
+- [[feature_maze_rough_to_editor_workflow]] — シームレス handoff + radius slider + edges 削除 + PNG インポート (Phase 3, 2026-05-14)

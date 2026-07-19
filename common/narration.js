@@ -34,7 +34,7 @@
   var manifest = null;
   var cache = {};                   // key → HTMLAudioElement
   var currentPlaying = null;        // 現在再生中の Audio（重複再生を止める）
-  var mode = 'tap';                 // auto | tap | off
+  var mode = 'auto';                // auto | tap | off
   var volume = 0.9;
   var rate = 1.15;                  // 既定 1.15x（Gemini TTS がやや遅めのため）
 

@@ -1,0 +1,20 @@
+{
+  "name": "Pono.ColorWaterDelivery.App",
+  "rootNamespace": "Pono.ColorWaterDelivery",
+  "references": [
+    "Pono.NativeShell",
+    "Pono.ColorWaterDelivery.Core",
+    "Pono.ColorWaterDelivery.Rendering",
+    "Unity.InputSystem",
+    "Unity.ugui"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# pono-asobiba-app pre-push hook
+#
+# 目的: ローカル HEAD が origin/<branch> より behind の状態で push を試みた時に
+#       「先に git pull --rebase してください」 と block するだけ。
+# 設計: 作業ツリーには一切手を加えない (rebase 自動化が暴走する事故を避けるため)。
+# 関連: AGENTS.md §4.9 / §11
+
+set -e
+
+remote="$1"
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+    # 削除 push は無視
+    if [ "$local_sha" = "0000000000000000000000000000000000000000" ]; then
+        continue
+    fi
+
+    branch="${remote_ref#refs/heads/}"
+    if [ -z "$branch" ] || [ "$branch" = "$remote_ref" ]; then
+        # tag や非 branch ref は対象外
+        continue
+    fi
+
+    # silent fetch。 オフラインなどで失敗したらチェックをスキップして push 続行
+    if ! git fetch --quiet "$remote" "$branch" 2>/dev/null; then
+        echo "[pre-push] WARNING: fetch 失敗 (オフライン?)。 behind チェックをスキップして push を続行します。" >&2
+        echo "[pre-push] オンライン復帰後、 必ず 'git pull --rebase origin $branch' で最新を取り込んでください。" >&2
+        continue
+    fi
+
+    remote_tip="$(git rev-parse --verify --quiet "$remote/$branch" 2>/dev/null || true)"
+    if [ -z "$remote_tip" ]; then
+        # 新規ブランチ (リモートに未存在)。 behind チェック不要
+        continue
+    fi
+
+    # behind = remote にあるが local にない commit 数
+    behind="$(git rev-list --count "${local_sha}..${remote_tip}" 2>/dev/null || echo 0)"
+    if [ "$behind" -gt 0 ]; then
+        cat <<EOF >&2
+
+============================================================
+  [pre-push] push を中止しました
+------------------------------------------------------------
+  ローカルブランチ '${branch}' は origin/${branch} より
+  ${behind} commit 遅れています。
+  別の AI セッションまたは別端末が新しい commit を push しています。
+
+  対処:
+    1. git fetch origin ${branch}
+    2. git pull --rebase origin ${branch}
+    3. conflict が出たら resolve → git rebase --continue
+    4. 再度 git push
+
+  --no-verify でこのチェックを skip するのは禁止 (AGENTS.md §2 / §4.9)
+============================================================
+
+EOF
+        exit 1
+    fi
+done
+
+exit 0

@@ -1,0 +1,1711 @@
+/* layout-editor.css — Phase 4 editor-only styles.
+   ALL rules are scoped under body.layout-editor-on so that this file is
+   safe to load without immediately affecting page styling. (LayoutSystem
+   ensures the body class is set when ?edit=1 is detected.) */
+
+/* === Toolbar === */
+body.layout-editor-on .le-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: rgba(20, 20, 20, 0.95);
+  border-bottom: 1px solid #333;
+  padding: 8px 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  font-size: 12px;
+  color: #eee;
+  user-select: none;
+}
+body.layout-editor-on .le-toolbar .le-tb-group {
+  display: inline-flex; gap: 6px; align-items: center;
+}
+body.layout-editor-on .le-toolbar button,
+body.layout-editor-on .le-toolbar select,
+body.layout-editor-on .le-toolbar input[type="text"],
+body.layout-editor-on .le-toolbar input[type="number"] {
+  background: #2a2a2a;
+  color: #fff;
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-family: inherit;
+  cursor: pointer;
+}
+body.layout-editor-on .le-toolbar button:hover { background: #3a3a3a; }
+body.layout-editor-on .le-toolbar button.active { background: #6a4ed4; border-color: #8a5ef0; }
+body.layout-editor-on .le-toolbar button.dirty { background: #d4824e; border-color: #f0ae5e; }
+body.layout-editor-on .le-toolbar button.dirty::after { content: " *"; color: #fff8d4; }
+
+/* Victor-2: 削除ボタン (toolbar) — 赤系のアクセントで destructive を示す */
+body.layout-editor-on .le-toolbar button.le-delete-btn {
+  background: rgba(220, 60, 60, 0.18);
+  border: 1px solid rgba(220, 60, 60, 0.5);
+  color: #fff;
+}
+body.layout-editor-on .le-toolbar button.le-delete-btn:hover {
+  background: rgba(220, 60, 60, 0.35);
+  border-color: rgba(255, 90, 90, 0.7);
+}
+body.layout-editor-on .le-toolbar button.le-delete-btn:disabled {
+  background: #1f1f1f;
+  border-color: #444;
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+body.layout-editor-on .le-toolbar button.le-delete-btn:disabled:hover {
+  background: #1f1f1f;
+}
+body.layout-editor-on .le-toolbar input[type="color"] {
+  width: 32px; height: 24px; padding: 0; border: 1px solid #444; cursor: pointer;
+}
+body.layout-editor-on .le-toolbar .le-chip-text-style {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: #eee;
+  white-space: nowrap;
+}
+body.layout-editor-on .le-toolbar .le-chip-text-style input[type="number"] {
+  width: 56px;
+  padding: 4px 5px;
+}
+
+body.layout-editor-on .le-anno-tools {
+  display: inline-flex; gap: 4px; align-items: center;
+  padding: 0 8px; border-left: 1px solid #444;
+}
+
+/* === Toast === */
+body.layout-editor-on .le-toast,
+.le-toast {
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(40, 200, 80, 0.95);
+  color: #fff;
+  padding: 8px 24px;
+  border-radius: 8px;
+  font-size: 13px;
+  z-index: 9999;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  pointer-events: none;
+  animation: le-toast-fade 1.6s ease-out forwards;
+}
+.le-toast.le-toast-error,
+body.layout-editor-on .le-toast.le-toast-error { background: rgba(220, 70, 70, 0.95); }
+.le-toast.le-toast-warn,
+body.layout-editor-on .le-toast.le-toast-warn {
+  background: rgba(230, 170, 40, 0.97);
+  color: #2a1d00;
+  font-weight: 700;
+}
+.le-toast.le-toast-success,
+body.layout-editor-on .le-toast.le-toast-success {
+  background: rgba(0, 170, 80, 0.95);
+  color: #fff;
+}
+@keyframes le-toast-fade {
+  0%   { opacity: 0; transform: translate(-50%, -8px); }
+  15%  { opacity: 1; transform: translate(-50%, 0); }
+  85%  { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, -8px); }
+}
+
+/* === Resize handles === */
+/*
+  .resizable はリサイズハンドル (position: absolute) の起点として
+  closest positioned ancestor を必要とするため position: relative を当てる。
+  ただし元から position: absolute / fixed で配置されているレイヤー
+  (絶対配置レイヤー) では relative 化されると座標系が崩壊する。
+  data-le-keep-position 属性を付ければ position 上書きを opt-out できる。
+  Wave 7 (2026-05-03) で発覚した絶対配置レイヤー消失バグの構造的解決。
+*/
+body.layout-editor-on .resizable {
+  /* Foxtrot-2: 未選択は控えめなグレー枠 (重なり時に選択中が映えるよう) */
+  outline: 2px dashed rgba(160, 160, 160, 0.45);
+  outline-offset: 2px;
+  cursor: move;
+}
+body.layout-editor-on .resizable:not([data-le-keep-position]) {
+  position: relative;
+}
+body.layout-editor-on .resizable.selected {
+  outline: 3px solid #ff8a3d !important;
+  outline-offset: 3px;
+}
+/* 2026-05-06: chip 関連要素が個別 override 持ちなら選択枠を赤に変える。
+   オレンジ (preset 通り) と区別して 「この chip は個別保存されてる」 を一目で分かる。 */
+body.layout-editor-on .resizable.selected.le-individual-override {
+  outline-color: #ff2a3d !important;
+}
+/* India-2: 選択中要素を一時的に最前面へ。
+   重なったレイヤーで親 stacking context が異なる場合、ハンドル単独の
+   z-index 上書きでは別の親 (より高い z-index) のハンドル背面に隠れる。
+   選択した .resizable 自身の z-index を boost すれば、Photoshop 等の
+   編集ツール慣習どおり「選択中の要素が最前面」になり、青ハンドルも
+   グレーハンドルより確実に手前に出る。
+   preferredTarget (要素一覧から選択) はさらに最前面に配置して、
+   selected かつ preferred の状態でも他レイヤーに隠されないようにする。
+   選択解除で元の z-index 序列に戻る (一時挙動)。 */
+body.layout-editor-on .resizable.selected {
+  z-index: 9998 !important;
+}
+body.layout-editor-on .resizable.le-preferred {
+  z-index: 9999 !important;
+}
+body.layout-editor-on .resizable.edge-linked {
+  outline: 3px solid #ffe24a !important;
+  outline-offset: 3px;
+}
+body.layout-editor-on .resizable.le-locked {
+  outline-color: rgba(180, 90, 200, 0.7);
+}
+/* Charlie-2: 要素一覧から選択された preferredTarget を強調表示。
+   重なっているレイヤーがあっても、直接ドラッグで動かせる優先ターゲットを示す。 */
+body.layout-editor-on .resizable.le-preferred {
+  outline: 3px solid #ffd000 !important;
+  outline-offset: 4px;
+  box-shadow: 0 0 0 2px rgba(255, 208, 0, 0.35), 0 0 14px rgba(255, 208, 0, 0.55);
+}
+/* Echo-2: preferredTarget が active の間、bbox が重なる他のレイヤーは
+   一時的に pointer-events を無効化して、preferredTarget の本体・ハンドルが
+   確実にクリック / ドラッグ可能になるようにする。
+   完全重なり (.field-bg ⇔ .window-frame など) のターゲット切り替えバグ対策。
+   解除条件: preferredTarget が null になった時 or 別要素が preferred になった時に
+   refreshPreferredTargetUI() 経由で外される。
+   別要素を選びたい場合は要素一覧パネルから選び直す。 */
+body.layout-editor-on .resizable.le-pointer-suppressed {
+  pointer-events: none !important;
+}
+body.layout-editor-on .resizable.le-pointer-suppressed > .resize-handle,
+body.layout-editor-on .resizable.le-pointer-suppressed > .resize-size-label,
+body.layout-editor-on .resizable.le-pointer-suppressed > .userbox-badge,
+body.layout-editor-on .resizable.le-pointer-suppressed > .userbox-del,
+body.layout-editor-on .resizable.le-pointer-suppressed > .le-lock-badge {
+  pointer-events: none !important;
+}
+body.layout-editor-on .resize-handle {
+  position: absolute;
+  /* Foxtrot-2: デフォルトは未選択を表すグレーで控えめに (z-index は維持) */
+  background: #888;
+  opacity: 0.55;
+  border: 2px solid #fff;
+  z-index: 60;
+  pointer-events: auto;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+/* Foxtrot-2: 選択中は青で目立たせる + 前面に。
+   Golf-2: preferredTarget であってもこの青を上書きしない。
+   preferredTarget はハンドル色を奪わず、outline (.le-preferred) と
+   要素一覧の ★ で識別する。要素一覧から選択した要素 (selected かつ preferred)
+   が「選択中なのに青ハンドルが見えない」状態を解消する。
+   Juliet-2 修正A: 子孫セレクタ + ハンドル直接クラス (.le-handle-selected) の
+   二重ガードで、stacking context や specificity 競合に依らず確実に青化する。 */
+body.layout-editor-on .resizable.selected > .resize-handle,
+body.layout-editor-on .resizable.selected .resize-handle,
+body.layout-editor-on .resize-handle.le-handle-selected {
+  background: #00d4ff !important;
+  opacity: 1 !important;
+  z-index: 62 !important;
+}
+body.layout-editor-on .resize-handle.edge-n,
+body.layout-editor-on .resize-handle.edge-s {
+  left: 50%; transform: translateX(-50%);
+  width: 28px; height: 14px;
+  cursor: ns-resize;
+}
+body.layout-editor-on .resize-handle.edge-e,
+body.layout-editor-on .resize-handle.edge-w {
+  top: 50%; transform: translateY(-50%);
+  width: 14px; height: 28px;
+  cursor: ew-resize;
+}
+body.layout-editor-on .resize-handle.edge-n { top: -8px; }
+body.layout-editor-on .resize-handle.edge-s { bottom: -8px; }
+body.layout-editor-on .resize-handle.edge-e { right: -8px; }
+body.layout-editor-on .resize-handle.edge-w { left: -8px; }
+body.layout-editor-on .resize-handle.corner-nw,
+body.layout-editor-on .resize-handle.corner-ne,
+body.layout-editor-on .resize-handle.corner-sw,
+body.layout-editor-on .resize-handle.corner-se {
+  width: 14px; height: 14px;
+}
+body.layout-editor-on .resize-handle.corner-nw { top: -8px; left: -8px; cursor: nwse-resize; }
+body.layout-editor-on .resize-handle.corner-ne { top: -8px; right: -8px; cursor: nesw-resize; }
+body.layout-editor-on .resize-handle.corner-sw { bottom: -8px; left: -8px; cursor: nesw-resize; }
+body.layout-editor-on .resize-handle.corner-se { bottom: -8px; right: -8px; cursor: nwse-resize; }
+
+body.layout-editor-on .resize-size-label {
+  position: absolute;
+  bottom: 6px; right: 6px;
+  background: rgba(0, 0, 0, 0.7);
+  color: #fff;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  z-index: 59;
+  pointer-events: none;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+}
+
+/* === Numeric panel === */
+body.layout-editor-on .numeric-panel {
+  position: fixed;
+  right: 8px;
+  top: calc(var(--le-toolbar-h, 0px) + 8px);
+  background: rgba(20, 20, 20, 0.94);
+  color: #fff;
+  border: 1px solid #555;
+  border-radius: 6px;
+  padding: 10px 12px;
+  z-index: 80;
+  font: 11px/1.4 system-ui, -apple-system, sans-serif;
+  display: none;
+  width: 260px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+body.layout-editor-on.has-selection .numeric-panel { display: block; }
+body.layout-editor-on .numeric-panel h4 {
+  margin: 0 0 8px 0; font-size: 12px; color: #ffba6b; font-weight: 600;
+}
+body.layout-editor-on .numeric-panel .np-targets {
+  color: #aaa;
+  margin-bottom: 8px;
+  max-height: 60px;
+  overflow-y: auto;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 10px;
+}
+body.layout-editor-on .numeric-panel .np-row { display: flex; gap: 6px; margin-bottom: 4px; }
+body.layout-editor-on .numeric-panel label {
+  display: inline-flex; align-items: center; gap: 4px; flex: 1; color: #ccc;
+}
+body.layout-editor-on .numeric-panel input[type="number"] {
+  width: 70px; padding: 3px 5px;
+  background: #1a1a1a; color: #fff; border: 1px solid #555; border-radius: 3px;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+}
+body.layout-editor-on .numeric-panel input[type="number"]:focus {
+  border-color: #ff8a3d; outline: none;
+}
+body.layout-editor-on .numeric-panel .np-spin {
+  width: 22px; height: 22px;
+  background: #2a2a2a; color: #fff;
+  border: 1px solid #555; border-radius: 3px;
+  font: 700 13px ui-monospace, monospace;
+  cursor: pointer; padding: 0;
+}
+body.layout-editor-on .numeric-panel .np-spin:hover { background: #3a3a3a; }
+body.layout-editor-on .numeric-panel .np-section-title {
+  margin-top: 10px; font-size: 11px; font-weight: 700; color: #ffba6b;
+  border-top: 1px solid #444; padding-top: 8px;
+}
+body.layout-editor-on .numeric-panel .np-align-row {
+  display: flex; gap: 4px; margin-bottom: 4px;
+}
+body.layout-editor-on .numeric-panel .np-align {
+  flex: 1; padding: 4px 6px;
+  background: #2a2a2a; color: #ddd;
+  border: 1px solid #555; border-radius: 3px;
+  cursor: pointer;
+  font: 600 12px ui-monospace, monospace;
+}
+body.layout-editor-on .numeric-panel .np-hint {
+  color: #888; font-size: 10px; margin-top: 6px; line-height: 1.3;
+}
+/* 2026-05-06: 絶対位置 + chip preset 値の常時表示エリア */
+/* 2026-05-07: 4-slot 構造になりパネルが縦長になるので、 上限を切ってスクロール可能にする */
+body.layout-editor-on .numeric-panel .np-info-section {
+  margin-top: 8px;
+  max-height: 40vh;
+  overflow-y: auto;
+}
+body.layout-editor-on .numeric-panel .np-abs-pos {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 11px;
+  color: #cfe;
+  padding: 4px 6px;
+  background: rgba(0, 80, 60, 0.25);
+  border-radius: 3px;
+  margin-top: 4px;
+}
+body.layout-editor-on .numeric-panel .np-preset-vals {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 10px;
+  color: #ddd;
+  padding: 4px 6px;
+  background: rgba(255, 138, 61, 0.08);
+  border-radius: 3px;
+  margin-top: 4px;
+  max-height: 240px;
+  overflow-y: auto;
+}
+body.layout-editor-on .numeric-panel .np-preset-empty {
+  color: #888; font-style: italic;
+}
+body.layout-editor-on .numeric-panel .np-preset-type {
+  color: #ffba6b; font-weight: 700; margin-top: 4px;
+}
+body.layout-editor-on .numeric-panel .np-preset-row {
+  display: flex; gap: 6px; padding: 1px 0 1px 8px;
+}
+body.layout-editor-on .numeric-panel .np-preset-row.np-preset-warn { color: #ff8a8a; }
+body.layout-editor-on .numeric-panel .np-preset-key {
+  color: #aaa; min-width: 56px;
+}
+body.layout-editor-on .numeric-panel .np-preset-num {
+  color: #cfe; font-size: 10px;
+}
+/* Foxtrot-2: 画像要素選択時の Natural サイズ + パーセント表示 */
+body.layout-editor-on .numeric-panel .np-natural-info {
+  font-size: 11px;
+  color: #aaa;
+  padding: 4px 6px;
+  margin-top: 6px;
+  border-top: 1px dashed #444;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  line-height: 1.3;
+}
+body.layout-editor-on .numeric-panel .np-natural-info b {
+  color: #ffba6b;
+  font-weight: 700;
+}
+body.layout-editor-on .numeric-panel .np-reset-100 {
+  margin-top: 4px;
+  padding: 4px 8px;
+  font-size: 11px;
+  background: #2a2a2a;
+  color: #ddd;
+  border: 1px solid #555;
+  border-radius: 3px;
+  cursor: pointer;
+  font-family: inherit;
+}
+body.layout-editor-on .numeric-panel .np-reset-100:hover {
+  background: #3a3a3a;
+  border-color: #ff8a3d;
+  color: #fff;
+}
+/* Romeo-2: 画像のアスペクト比に合わせるボタン (img / le-dropped-img / bg-image) */
+body.layout-editor-on .numeric-panel .np-aspect-fit {
+  display: none;
+  margin-top: 4px;
+  padding: 6px 12px;
+  background: rgba(80, 160, 220, 0.2);
+  border: 1px solid rgba(80, 160, 220, 0.5);
+  border-radius: 6px;
+  color: #fff;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
+}
+body.layout-editor-on .numeric-panel .np-aspect-fit:hover {
+  background: rgba(80, 160, 220, 0.35);
+}
+/* Aspect-ratio lock toggle (FEATURE: Yankee) — sits in the W row, links W/H. */
+body.layout-editor-on .numeric-panel .np-row.np-row-aspect {
+  position: relative;
+}
+body.layout-editor-on .numeric-panel .le-aspect-lock {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #fff;
+  padding: 0 6px;
+  height: 22px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+body.layout-editor-on .numeric-panel .le-aspect-lock:hover {
+  background: rgba(255,255,255,0.06);
+}
+body.layout-editor-on .numeric-panel .le-aspect-lock[data-aspect-locked="true"] {
+  background: rgba(255,138,61,0.3);
+  border-color: rgba(255,138,61,0.6);
+  color: #fff;
+}
+
+/* === Element list panel (NEW: FEATURE 21) === */
+body.layout-editor-on .le-list-panel {
+  position: fixed;
+  right: 8px;
+  bottom: 8px;
+  width: 240px;
+  max-height: 50vh;
+  background: rgba(20, 20, 20, 0.94);
+  color: #fff;
+  border: 1px solid #555;
+  border-radius: 6px;
+  z-index: 78;
+  font-size: 11px;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+/* Default-closed: panel hidden unless .open class is present (R1 fix) */
+body.layout-editor-on .le-list-panel:not(.open) { display: none; }
+body.layout-editor-on .le-list-head {
+  padding: 8px 10px;
+  background: #2a2a2a;
+  font-weight: 700;
+  color: #ffba6b;
+  border-bottom: 1px solid #444;
+  /* Uniform-2: ドラッグ可能ヘッダー */
+  cursor: move;
+  user-select: none;
+  -webkit-user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  touch-action: none;
+}
+body.layout-editor-on .le-list-head:hover {
+  background: #333;
+}
+/* Uniform-2: 数値パネルのドラッグヘッダー (le-list-head と同じ見た目) */
+body.layout-editor-on .numeric-head {
+  margin: -10px -12px 8px -12px;
+  padding: 8px 10px;
+  background: #2a2a2a;
+  font-weight: 700;
+  color: #ffba6b;
+  border-bottom: 1px solid #444;
+  border-radius: 6px 6px 0 0;
+  cursor: move;
+  user-select: none;
+  -webkit-user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  touch-action: none;
+}
+body.layout-editor-on .numeric-head:hover {
+  background: #333;
+}
+body.layout-editor-on .le-panel-drag-handle {
+  display: inline-block;
+  font-size: 14px;
+  line-height: 1;
+  color: #888;
+  font-weight: 700;
+  letter-spacing: -1px;
+}
+body.layout-editor-on .le-panel-title-text {
+  flex: 1;
+}
+/* === Whiskey-2: パネル右下リサイズハンドル === */
+body.layout-editor-on .le-panel-resize {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 16px;
+  height: 16px;
+  cursor: nwse-resize;
+  z-index: 100;
+  touch-action: none;
+  background: linear-gradient(
+    135deg,
+    transparent 0,
+    transparent 50%,
+    rgba(255, 255, 255, 0.4) 50%,
+    rgba(255, 255, 255, 0.4) 60%,
+    transparent 60%,
+    transparent 70%,
+    rgba(255, 255, 255, 0.4) 70%,
+    rgba(255, 255, 255, 0.4) 80%,
+    transparent 80%
+  );
+}
+body.layout-editor-on .le-panel-resize:hover {
+  background: linear-gradient(
+    135deg,
+    transparent 0,
+    transparent 50%,
+    rgba(255, 200, 100, 0.85) 50%,
+    rgba(255, 200, 100, 0.85) 60%,
+    transparent 60%,
+    transparent 70%,
+    rgba(255, 200, 100, 0.85) 70%,
+    rgba(255, 200, 100, 0.85) 80%,
+    transparent 80%
+  );
+}
+/* === Whiskey-2.5: パネル右辺の横幅専用リサイズハンドル === */
+body.layout-editor-on .le-panel-resize-width {
+  position: absolute;
+  right: -3px;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: ew-resize;
+  z-index: 100;
+  touch-action: none;
+  background: rgba(255, 200, 100, 0);
+  transition: background 0.2s;
+}
+body.layout-editor-on .le-panel-resize-width:hover {
+  background: rgba(255, 200, 100, 0.5);
+}
+/* le-list-panel は既に display: flex; overflow: hidden で .le-list-body が flex:1 + overflow-y:auto なので追加不要 */
+body.layout-editor-on .le-list-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+body.layout-editor-on .le-list-row {
+  display: flex;
+  align-items: center;
+  padding: 3px 8px;
+  gap: 4px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+body.layout-editor-on .le-list-row:hover { background: rgba(255, 255, 255, 0.05); }
+body.layout-editor-on .le-list-row.selected { background: rgba(255, 138, 61, 0.18); }
+body.layout-editor-on .le-list-row.preferred {
+  box-shadow: inset 3px 0 0 #ffd000;
+}
+body.layout-editor-on .le-list-row.preferred .le-row-label::before {
+  content: "★ ";
+  color: #ffd000;
+}
+body.layout-editor-on .le-row-btn {
+  background: transparent;
+  color: #ddd;
+  border: 0;
+  padding: 0;
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+  font-size: 13px;
+  border-radius: 3px;
+}
+body.layout-editor-on .le-row-btn:hover { background: rgba(255, 255, 255, 0.1); }
+/* Victor-2: 行末 🗑 削除アイコン — 赤系で destructive を伝える */
+body.layout-editor-on .le-row-btn.le-row-delete {
+  color: #c66;
+  margin-left: auto;
+  font-size: 13px;
+}
+body.layout-editor-on .le-row-btn.le-row-delete:hover {
+  color: #f66;
+  background: rgba(220, 60, 60, 0.20);
+}
+body.layout-editor-on .le-row-label {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+  color: #eee;
+}
+/* Mike-2 修正B: ダブルクリックでインライン rename。 */
+body.layout-editor-on .le-row-label[contenteditable="true"] {
+  background: #1a1a1a;
+  outline: 1px solid #ffba6b;
+  border-radius: 3px;
+  padding: 1px 4px;
+  white-space: nowrap;
+  overflow: visible;
+  text-overflow: clip;
+  cursor: text;
+  user-select: text;
+  -webkit-user-select: text;
+}
+body.layout-editor-on .le-row-key {
+  font-family: ui-monospace, monospace;
+  color: #888;
+  font-size: 9px;
+}
+/* Kilo-2 修正D / November-2 修正: 親子関係をインデントで可視化 —
+   depth>=1 にだけツリーマーカーを表示 (data-depth=0 は除外) */
+body.layout-editor-on .le-list-row[data-depth]:not([data-depth="0"]) .le-row-label::before {
+  content: "└ ";
+  color: #888;
+  margin-right: 2px;
+}
+body.layout-editor-on .le-list-row[data-depth]:not([data-depth="0"]).preferred .le-row-label::before {
+  content: "★ ";
+  color: #ffd000;
+}
+/* November-2 修正: 親要素 (depth=0) には控えめな上線を入れて
+   グルーピングの境界を視覚化する。 */
+body.layout-editor-on .le-list-row[data-depth="0"] {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  margin-top: 2px;
+}
+body.layout-editor-on .le-list-body > .le-list-row[data-depth="0"]:first-child {
+  border-top: 0;
+  margin-top: 0;
+}
+
+/* === Papa-2 修正2: 🔗 一時リンク解除トグル === */
+body.layout-editor-on .le-row-btn.le-link-toggle {
+  font-size: 12px;
+  opacity: 0.85;
+}
+body.layout-editor-on .le-row-btn.le-link-toggle:hover {
+  background: rgba(255, 208, 0, 0.18);
+}
+/* リンク解除中は行に控えめなマーカーを出す */
+body.layout-editor-on .le-list-row:has(.le-link-toggle:not(:empty))[data-depth]:not([data-depth="0"]) {
+  /* :has 未対応ブラウザでも問題ないよう全行は触らない */
+}
+/* unlinked 中の要素 row はラベルを薄黄に: data-le-unlinked は要素側、ボタンの絵文字で代替表示 */
+
+/* === Papa-2 修正3/4: 行ドラッグ並び替え + 再親子化 === */
+body.layout-editor-on .le-list-row {
+  /* draggable=true 行に grab カーソル */
+  cursor: grab;
+}
+body.layout-editor-on .le-list-row:active {
+  cursor: grabbing;
+}
+body.layout-editor-on .le-list-row.le-dragging {
+  opacity: 0.45;
+  background: rgba(255, 138, 61, 0.10);
+}
+body.layout-editor-on .le-list-row.le-drop-before {
+  box-shadow: inset 0 3px 0 0 #4ea3ff;
+  background: rgba(78, 163, 255, 0.08);
+}
+body.layout-editor-on .le-list-row.le-drop-after {
+  box-shadow: inset 0 -3px 0 0 #4ea3ff;
+  background: rgba(78, 163, 255, 0.08);
+}
+body.layout-editor-on .le-list-row.le-drop-into {
+  background: rgba(78, 163, 255, 0.18);
+  outline: 1px dashed #4ea3ff;
+  outline-offset: -2px;
+}
+
+/* === Alignment toolbar (NEW: FEATURE 20) === */
+body.layout-editor-on .le-align-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  margin-bottom: 4px;
+}
+body.layout-editor-on .le-align {
+  background: #2a2a2a;
+  color: #ddd;
+  border: 1px solid #555;
+  border-radius: 3px;
+  padding: 6px 4px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+body.layout-editor-on .le-align:hover { background: #3a3a3a; border-color: #ff8a3d; }
+
+/* === Comparison overlay (NEW: FEATURE 22) === */
+body.layout-editor-on .le-comparison-picker {
+  position: fixed;
+  top: calc(var(--le-toolbar-h, 0px) + 8px);
+  left: 8px;
+  background: rgba(20, 20, 20, 0.96);
+  color: #fff;
+  border: 1px solid #555;
+  border-radius: 8px;
+  padding: 14px;
+  z-index: 200;
+  width: 280px;
+  font-size: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+}
+body.layout-editor-on .le-comparison-picker h4 {
+  margin: 0 0 10px; color: #ffba6b; font-size: 13px;
+}
+body.layout-editor-on .le-comparison-picker label {
+  display: block; margin-bottom: 8px; color: #ccc;
+}
+body.layout-editor-on .le-comparison-picker input[type="text"],
+body.layout-editor-on .le-comparison-picker select,
+body.layout-editor-on .le-comparison-picker input[type="range"] {
+  width: 100%; margin-top: 4px;
+  background: #1a1a1a; color: #fff;
+  border: 1px solid #555; border-radius: 3px; padding: 3px 6px;
+}
+body.layout-editor-on .le-comparison-picker .le-comp-actions {
+  display: flex; gap: 8px; justify-content: flex-end; margin-top: 8px;
+}
+body.layout-editor-on .le-comparison-picker button {
+  padding: 6px 14px;
+  background: #2a2a2a; color: #fff;
+  border: 1px solid #555; border-radius: 4px;
+  cursor: pointer; font-size: 12px;
+}
+body.layout-editor-on .le-comparison-overlay {
+  position: absolute;
+  inset: 0;
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  z-index: 50;
+}
+body.layout-editor-on .le-comparison-onion {
+  mix-blend-mode: difference;
+}
+
+/* === Snap grid (NEW: FEATURE 23) === */
+body.layout-editor-on .grid-on {
+  background-image:
+    linear-gradient(to right, rgba(0, 212, 255, 0.12) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 212, 255, 0.12) 1px, transparent 1px);
+  background-size: var(--le-grid-size, 16px) var(--le-grid-size, 16px);
+}
+
+/* === Lock badge (NEW: FEATURE 24) === */
+body.layout-editor-on .le-lock-badge {
+  position: absolute;
+  top: 4px; left: 4px;
+  width: 22px; height: 22px;
+  background: rgba(140, 80, 200, 0.92);
+  color: #fff;
+  border-radius: 4px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 61;
+  pointer-events: none;
+  user-select: none;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+/* === Zoom UI (NEW: FEATURE 26) === */
+body.layout-editor-on .le-zoom-wrap {
+  display: inline-flex; align-items: center; gap: 6px; color: #ccc;
+}
+body.layout-editor-on .le-zoom-wrap input[type="range"] {
+  width: 110px;
+}
+body.layout-editor-on #le-zoom-label {
+  font-family: ui-monospace, monospace;
+  font-size: 11px;
+  color: #ffba6b;
+  width: 38px;
+  text-align: right;
+}
+body.layout-editor-on .stage-zoom {
+  overflow: visible;
+  position: relative;
+}
+
+/* === Annotation === */
+body.layout-editor-on .le-anno-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+}
+body.layout-editor-on .le-anno-layer svg {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+}
+body.layout-editor-on.anno-mode .le-anno-layer {
+  pointer-events: auto; cursor: crosshair;
+}
+body.layout-editor-on .anno-marker {
+  position: absolute;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: #ff3b6b;
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800;
+  font-size: 16px;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  cursor: move;
+  user-select: none;
+  pointer-events: auto;
+}
+body.layout-editor-on .anno-text {
+  position: absolute;
+  background: rgba(255, 240, 100, 0.95);
+  color: #222;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  transform: translate(-50%, -50%);
+  cursor: move;
+  user-select: none;
+  border: 2px solid #b89a3a;
+  max-width: 240px;
+  pointer-events: auto;
+}
+body.layout-editor-on .anno-arrow-line {
+  stroke: #ff3b6b;
+  stroke-width: 4;
+  fill: none;
+  cursor: move;
+  pointer-events: stroke;
+  stroke-linecap: round;
+}
+body.layout-editor-on .anno-arrow-line.with-head {
+  marker-end: url(#le-anno-arrow-head);
+}
+body.layout-editor-on .anno-rect {
+  fill: rgba(255, 59, 107, 0.05);
+  stroke: #ff3b6b;
+  stroke-width: 4;
+  stroke-dasharray: 8 4;
+  cursor: move;
+  pointer-events: all;
+}
+body.layout-editor-on .anno-selected { outline: 3px solid #00d4ff; outline-offset: 2px; }
+body.layout-editor-on line.anno-arrow-line.anno-selected,
+body.layout-editor-on rect.anno-rect.anno-selected {
+  stroke: #00d4ff !important; outline: none !important;
+}
+body.layout-editor-on .anno-handle {
+  fill: #00d4ff; stroke: #fff; stroke-width: 2;
+  cursor: nwse-resize; pointer-events: all;
+}
+body.layout-editor-on .anno-handle.endpoint { cursor: grab; }
+body.layout-editor-on .anno-handle-hit {
+  fill: rgba(0, 212, 255, 0.001);
+  stroke: none;
+  pointer-events: all;
+  cursor: grab;
+}
+body.layout-editor-on.eraser-mode .le-anno-layer { cursor: crosshair; }
+
+/* === Userbox === */
+body.layout-editor-on .userbox {
+  position: absolute;
+  background: rgba(255, 178, 86, 0.55);
+  border: 3px solid rgba(140, 75, 30, 0.95);
+  border-radius: 8px;
+  box-sizing: border-box;
+  pointer-events: auto;
+}
+body.layout-editor-on .userbox-badge {
+  position: absolute;
+  top: -22px; left: 0;
+  background: rgba(40, 30, 20, 0.92);
+  color: #ffe7a3;
+  padding: 1px 8px;
+  border-radius: 4px;
+  font: 600 11px ui-monospace, Menlo, Consolas, monospace;
+  cursor: text;
+  white-space: nowrap;
+  outline: none;
+  z-index: 30;
+}
+body.layout-editor-on .userbox-badge:focus {
+  background: #2c1c0c; outline: 2px solid #ff8a3d;
+}
+body.layout-editor-on .userbox-del {
+  position: absolute;
+  top: -22px; right: 0;
+  width: 20px; height: 20px;
+  background: rgba(180, 60, 60, 0.95);
+  color: #fff;
+  border-radius: 4px;
+  font: 700 14px/18px ui-monospace, Menlo, Consolas, monospace;
+  text-align: center;
+  cursor: pointer;
+  z-index: 31;
+  user-select: none;
+}
+body.layout-editor-on .userbox-del:hover { background: #d04040; }
+body.layout-editor-on.draw-mode .resizable { pointer-events: none; }
+body.layout-editor-on.draw-mode .resize-handle,
+body.layout-editor-on.draw-mode .userbox-badge,
+body.layout-editor-on.draw-mode .userbox-del {
+  pointer-events: none;
+}
+body.layout-editor-on .userbox-preview {
+  position: absolute;
+  background: rgba(255, 138, 61, 0.20);
+  border: 2px dashed #ff8a3d;
+  border-radius: 6px;
+  pointer-events: none;
+  z-index: 70;
+  box-sizing: border-box;
+}
+
+/* === Rulers + guides === */
+body.layout-editor-on .le-ruler {
+  position: fixed;
+  background: linear-gradient(180deg, #2a2a2a, #1a1a1a);
+  z-index: 70;
+  pointer-events: none;
+  color: #999;
+  font-size: 10px;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+}
+body.layout-editor-on .le-ruler.horizontal {
+  top: var(--le-toolbar-h, 0); left: 24px; right: 0;
+  height: 24px;
+  background-image:
+    repeating-linear-gradient(90deg,
+      transparent 0 49px,
+      rgba(255, 255, 255, 0.4) 49px 50px,
+      transparent 50px 99px,
+      rgba(255, 255, 255, 0.7) 99px 100px);
+  cursor: ns-resize;
+}
+body.layout-editor-on .le-ruler.vertical {
+  top: calc(var(--le-toolbar-h, 0) + 24px); left: 0; bottom: 0;
+  width: 24px;
+  background-image:
+    repeating-linear-gradient(180deg,
+      transparent 0 49px,
+      rgba(255, 255, 255, 0.4) 49px 50px,
+      transparent 50px 99px,
+      rgba(255, 255, 255, 0.7) 99px 100px);
+  cursor: ew-resize;
+}
+body.layout-editor-on .le-guide {
+  position: fixed;
+  background: rgba(0, 212, 255, 0.6);
+  z-index: 65;
+  pointer-events: auto;
+}
+body.layout-editor-on .le-guide.h {
+  left: 24px; right: 0; height: 1px; cursor: ns-resize;
+  box-shadow: 0 0 0 0.5px rgba(0, 212, 255, 0.6);
+}
+body.layout-editor-on .le-guide.v {
+  top: calc(var(--le-toolbar-h, 0) + 24px); bottom: 0;
+  width: 1px; cursor: ew-resize;
+  box-shadow: 0 0 0 0.5px rgba(0, 212, 255, 0.6);
+}
+body.layout-editor-on .le-guide.h::before {
+  content: ''; position: absolute;
+  left: 0; right: 0; top: -6px; bottom: -6px;
+  cursor: ns-resize; background: transparent;
+}
+body.layout-editor-on .le-guide.v::before {
+  content: ''; position: absolute;
+  top: 0; bottom: 0; left: -6px; right: -6px;
+  cursor: ew-resize; background: transparent;
+}
+body.layout-editor-on .le-guide:hover { background: #00d4ff; }
+body.layout-editor-on .le-guide-label {
+  position: absolute;
+  background: rgba(0, 212, 255, 0.95);
+  color: #000;
+  font-size: 10px;
+  padding: 1px 4px;
+  border-radius: 2px;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  pointer-events: none;
+}
+body.layout-editor-on .le-guide.h .le-guide-label { left: 4px; top: 2px; }
+body.layout-editor-on .le-guide.v .le-guide-label { top: 4px; left: 2px; }
+
+/* === Editable text === */
+body.layout-editor-on .editable-text {
+  cursor: text;
+  outline: 1px dashed transparent;
+  border-radius: 2px;
+  transition: outline-color 0.15s, background 0.15s;
+}
+body.layout-editor-on .editable-text:hover {
+  background: rgba(0, 212, 255, 0.08);
+  outline-color: rgba(0, 212, 255, 0.35);
+}
+body.layout-editor-on .editable-text:focus {
+  background: rgba(0, 212, 255, 0.15);
+  outline: 2px solid #00d4ff;
+  outline-offset: 1px;
+}
+
+/* === PNG menu === */
+body.layout-editor-on .le-png-menu {
+  background: rgba(20, 20, 20, 0.95);
+  border: 1px solid #555;
+  border-radius: 6px;
+  padding: 4px;
+  display: flex; flex-direction: column; gap: 2px;
+  z-index: 200;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  min-width: 220px;
+}
+body.layout-editor-on .le-png-menu button {
+  white-space: nowrap;
+  background: #2a2a2a; color: #ddd;
+  border: 1px solid #555; border-radius: 4px;
+  padding: 8px 12px; cursor: pointer;
+  font: 600 12px system-ui, sans-serif;
+  text-align: left;
+}
+body.layout-editor-on .le-png-menu button:hover {
+  background: #3a3a3a; border-color: #ff8a3d; color: #fff;
+}
+
+/* === Help modal (NEW: FEATURE 27) === */
+body.layout-editor-on .le-help-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 9000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+body.layout-editor-on .le-help-card {
+  background: #1a1a1a;
+  color: #fff;
+  border: 1px solid #555;
+  border-radius: 8px;
+  padding: 20px 24px;
+  width: 480px;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 6px 28px rgba(0, 0, 0, 0.6);
+}
+body.layout-editor-on .le-help-card h3 {
+  margin: 0 0 12px;
+  color: #ffba6b;
+}
+body.layout-editor-on .le-help-card table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+body.layout-editor-on .le-help-card td {
+  padding: 6px 8px;
+  border-bottom: 1px solid #333;
+}
+body.layout-editor-on .le-help-card td:first-child {
+  font-family: ui-monospace, monospace;
+  color: #ffba6b;
+  width: 40%;
+}
+body.layout-editor-on .le-help-close {
+  margin-top: 14px;
+  background: #2a2a2a;
+  color: #fff;
+  border: 1px solid #555;
+  border-radius: 4px;
+  padding: 6px 18px;
+  cursor: pointer;
+}
+
+/* === Preview mode (FEATURE 17) === */
+body.layout-editor-on.preview-mode .le-toolbar,
+body.layout-editor-on.preview-mode .numeric-panel,
+body.layout-editor-on.preview-mode .le-list-panel,
+body.layout-editor-on.preview-mode .le-ruler,
+body.layout-editor-on.preview-mode .le-guide,
+body.layout-editor-on.preview-mode .resize-handle,
+body.layout-editor-on.preview-mode .resize-size-label,
+body.layout-editor-on.preview-mode .userbox-badge,
+body.layout-editor-on.preview-mode .userbox-del {
+  display: none !important;
+}
+body.layout-editor-on.preview-mode {
+  background: #000;
+  overflow: hidden;
+}
+/* Preview-mode exit button (R2 fix) */
+body.layout-editor-on.preview-mode .le-preview-exit {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  z-index: 9500;
+  background: rgba(40, 40, 40, 0.92);
+  color: #fff;
+  border: 1px solid #888;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font: 600 13px system-ui, -apple-system, sans-serif;
+  cursor: pointer;
+  display: inline-flex !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+body.layout-editor-on.preview-mode .le-preview-exit:hover { background: #555; }
+
+/* Side-by-side comparison wrapper (R3 fix) */
+body.layout-comparison-on .stage-zoom,
+body.layout-comparison-on #stage {
+  /* width restored on exit; class handles scoping */
+}
+body.layout-editor-on .le-context-menu {
+  position: fixed;
+  z-index: 9100;
+  background: rgba(28, 28, 28, 0.96);
+  color: #fff;
+  border: 1px solid #555;
+  border-radius: 6px;
+  padding: 4px;
+  min-width: 160px;
+  font: 12px system-ui, -apple-system, sans-serif;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.55);
+}
+body.layout-editor-on .le-context-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  color: #eee;
+  border: 0;
+  padding: 6px 10px;
+  cursor: pointer;
+  border-radius: 4px;
+  font: inherit;
+}
+body.layout-editor-on .le-context-menu button:hover { background: #3a3a3a; color: #fff; }
+
+/* :active feedback on toolbar buttons */
+body.layout-editor-on .le-toolbar button:active,
+body.layout-editor-on .numeric-panel .np-spin:active,
+body.layout-editor-on .numeric-panel .np-align:active,
+body.layout-editor-on .le-align:active {
+  transform: scale(0.96);
+}
+
+/* Multi-select toggle button (U10) when active */
+body.layout-editor-on .le-toolbar #le-multi-select.active {
+  background: #6a4ed4; border-color: #8a5ef0;
+}
+
+/* ⏸ 一時停止 / ▶ 再開 トグルボタン (active = pause 中) */
+body.layout-editor-on .le-toolbar #le-pause-toggle.active {
+  background: #c4451c;
+  border-color: #ff7a45;
+  color: #fff8d4;
+}
+
+/* pause 中の視覚 hint オーバーレイ。
+   toolbar より z-index 高め、 pointer-events:none で操作を妨げない。
+   位置は画面右上 (toolbar の直下にかかる位置)。 */
+#le-paused-overlay {
+  position: fixed;
+  top: calc(var(--le-toolbar-h, 0px) + 12px);
+  right: 16px;
+  z-index: 999999;
+  pointer-events: none;
+  padding: 6px 14px;
+  background: rgba(196, 69, 28, 0.88);
+  color: #fff8d4;
+  font: 700 13px/1.2 system-ui, -apple-system, "Segoe UI", sans-serif;
+  letter-spacing: 0.08em;
+  border: 1px solid #ff7a45;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  /* 軽い pulse でユーザーに pause 中を伝える */
+  animation: le-paused-pulse 1.6s ease-in-out infinite;
+}
+@keyframes le-paused-pulse {
+  0%, 100% { opacity: 0.95; }
+  50%      { opacity: 0.55; }
+}
+
+/* Top-toolbar alignment cluster (U4) — same look as numeric-panel align bar */
+body.layout-editor-on .le-toolbar .le-align-tb {
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+}
+body.layout-editor-on .le-toolbar .le-align-tb button {
+  padding: 4px 7px;
+  font-size: 13px;
+  font-weight: 700;
+}
+body.layout-editor-on .le-toolbar .le-align-tb button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: #1f1f1f;
+}
+
+/* Lima-2: 全 toolbar ボタンに統一の disabled スタイルを適用 (新規 #le-replace-src
+   や #le-detach の disabled 表示が選択状況によって明確に伝わるように) */
+body.layout-editor-on .le-toolbar button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  background: #1f1f1f;
+}
+body.layout-editor-on .le-toolbar button:disabled:hover {
+  background: #1f1f1f;
+}
+
+/* Lima-2 修正C: 「🔓 取り出す」直後のゴールドフラッシュ。
+   独立化した要素を 0.6s 強調して「何が動いたか」をユーザーに伝える。
+   要素一覧の該当行も同時にフラッシュ。 */
+@keyframes le-detach-flash {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 208, 0, 0); }
+  50%      { box-shadow: 0 0 0 8px rgba(255, 208, 0, 0.6); }
+}
+body.layout-editor-on .le-detach-flash {
+  animation: le-detach-flash 0.6s ease-out;
+}
+@keyframes le-detach-flash-row {
+  0%, 100% { background-color: transparent; }
+  50%      { background-color: rgba(255, 208, 0, 0.35); }
+}
+body.layout-editor-on .le-detach-flash-row {
+  animation: le-detach-flash-row 0.6s ease-out;
+}
+
+/* === Touch handles (media query) (NEW: FEATURE 18) ===
+   On coarse-pointer devices (touch), enlarge handles for fingertip ergonomics. */
+@media (pointer: coarse) {
+  body.layout-editor-on .resize-handle.edge-n,
+  body.layout-editor-on .resize-handle.edge-s {
+    width: 36px; height: 18px;
+  }
+  body.layout-editor-on .resize-handle.edge-e,
+  body.layout-editor-on .resize-handle.edge-w {
+    width: 18px; height: 36px;
+  }
+  body.layout-editor-on .resize-handle.edge-n { top: -10px; }
+  body.layout-editor-on .resize-handle.edge-s { bottom: -10px; }
+  body.layout-editor-on .resize-handle.edge-e { right: -10px; }
+  body.layout-editor-on .resize-handle.edge-w { left: -10px; }
+  body.layout-editor-on .resize-handle.corner-nw,
+  body.layout-editor-on .resize-handle.corner-ne,
+  body.layout-editor-on .resize-handle.corner-sw,
+  body.layout-editor-on .resize-handle.corner-se {
+    width: 16px; height: 16px;
+  }
+  body.layout-editor-on .resize-handle.corner-nw { top: -10px; left: -10px; }
+  body.layout-editor-on .resize-handle.corner-ne { top: -10px; right: -10px; }
+  body.layout-editor-on .resize-handle.corner-sw { bottom: -10px; left: -10px; }
+  body.layout-editor-on .resize-handle.corner-se { bottom: -10px; right: -10px; }
+  /* Hit-area expansion via outline (visual stays at 16px-ish, hit at 28px) */
+  body.layout-editor-on .resize-handle::before {
+    content: '';
+    position: absolute;
+    inset: -8px;
+    background: transparent;
+  }
+  body.layout-editor-on .resize-size-label { font-size: 13px; }
+  body.layout-editor-on .le-row-btn { width: 28px; height: 28px; font-size: 16px; }
+  body.layout-editor-on .numeric-panel .np-spin { width: 28px; height: 28px; font-size: 15px; }
+  body.layout-editor-on .numeric-panel .le-aspect-lock { height: 28px; font-size: 16px; padding: 0 8px; }
+}
+
+/* === Image drag-and-drop (Team Oscar-2) === */
+/* Active drop zone — visible only while OS files are dragged.
+   Oscar-2: ドロップ判定を 4 ゾーンに整理。
+   - body.le-dropzone-active   : stage 外 (黒背景) → 新規挿入 (オレンジ枠)
+   - body.le-dropzone-replace  : 選択要素の bbox 内 → 差し替え (緑バナー)
+   - canvas.le-dropzone-replace: stage 側に緑リング (差し替え時のみ)
+   - 何も付かない                : stage 内 / bbox 外 → drop 時に警告トースト */
+body.layout-editor-on.le-dropzone-active {
+  outline: 4px dashed #ff8800;
+  outline-offset: -8px;
+}
+body.layout-editor-on.le-dropzone-active::before {
+  content: '画像をここにドロップして新規追加';
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 136, 0, 0.95);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 99999;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+body.layout-editor-on .le-dropzone-active {
+  outline: 4px dashed #ff8800;
+  outline-offset: -8px;
+  background-color: rgba(255, 136, 0, 0.05);
+}
+/* Oscar-2: 選択要素の bbox 内に hover 中 → 差し替えゾーンとして緑強調。 */
+body.layout-editor-on.le-dropzone-replace::before {
+  content: '選択中の画像を差し替え（Ctrl+Z で戻せます）';
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 180, 80, 0.95);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  z-index: 99999;
+  pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+body.layout-editor-on .le-dropzone-replace {
+  outline: 4px solid #00b450;
+  outline-offset: -8px;
+  background-color: rgba(0, 180, 80, 0.07);
+}
+/* Dropped image layer — placed via drag&drop, kept positioned absolute. */
+body.layout-editor-on .le-dropped-img {
+  pointer-events: auto;
+  user-select: none;
+  -webkit-user-drag: none;
+  max-width: none;
+  max-height: none;
+}
+
+/* === 🌐 Page navigation dropdown === */
+body.layout-editor-on .le-pages-btn[aria-expanded="true"] {
+  background: #6a4ed4;
+  border-color: #8a5ef0;
+}
+body.layout-editor-on .le-pages-dropdown {
+  position: fixed;
+  z-index: 9100;
+  min-width: 240px;
+  max-width: 360px;
+  background: #1a1a1a;
+  color: #fff;
+  border: 1px solid #555;
+  border-radius: 8px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55);
+  padding: 6px 0;
+  font: 12px system-ui, -apple-system, sans-serif;
+}
+body.layout-editor-on .le-pages-dropdown-title {
+  font-size: 11px;
+  color: #ffba6b;
+  padding: 6px 14px 8px;
+  border-bottom: 1px solid #333;
+  margin-bottom: 4px;
+  text-transform: none;
+  font-weight: 600;
+}
+body.layout-editor-on .le-pages-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+body.layout-editor-on .le-pages-list li {
+  margin: 0;
+}
+body.layout-editor-on .le-pages-list a,
+body.layout-editor-on .le-pages-list span {
+  display: block;
+  padding: 8px 14px;
+  color: #eee;
+  text-decoration: none;
+  font-size: 13px;
+  line-height: 1.3;
+  cursor: pointer;
+}
+body.layout-editor-on .le-pages-list a:hover {
+  background: #2a2a2a;
+  color: #ffba6b;
+}
+body.layout-editor-on .le-pages-list .le-pages-current span,
+body.layout-editor-on .le-pages-list li.le-pages-current > span {
+  color: #ffba6b;
+  background: rgba(106, 78, 212, 0.15);
+  cursor: default;
+  font-weight: 600;
+}
+
+/* === Team Victor: Marquee (rubber-band) selection + Alt drill-down ===
+   Marquee overlay is positioned in viewport (fixed), since we capture
+   clientX/clientY directly. Pointer events are passed through so the
+   underlying mouseup still resolves on whatever element is below. */
+body.layout-editor-on .le-marquee {
+  position: fixed;
+  z-index: 99999;
+  background: rgba(0, 150, 255, 0.15);
+  outline: 2px dashed #0096ff;
+  outline-offset: -1px;
+  pointer-events: none;
+  box-sizing: border-box;
+}
+/* While a marquee is active, freeze accidental text-selection on the page. */
+body.layout-editor-on.le-marquee-active {
+  user-select: none;
+  -webkit-user-select: none;
+}
+/* Visual hint: holding Alt over the canvas signals stack-pierce mode.
+   We use :where() to keep specificity low so editor toolbar etc. keep their cursor. */
+body.layout-editor-on.le-alt-down :where(.resizable, #stage, #safe-area) {
+  cursor: crosshair !important;
+}
+
+/* === India-2: Text-add tool (le-added-text) ============================ */
+/* Tool ON 時は canvas/stage 上でクロスヘア。 */
+body.layout-editor-on.le-text-tool-active,
+body.layout-editor-on.le-text-tool-active #stage,
+body.layout-editor-on.le-text-tool-active #safe-area {
+  cursor: crosshair !important;
+}
+
+/* 挿入テキストのデフォルトスタイル — 子供向けの丸ゴ + 半透明白背景。 */
+body.layout-editor-on .le-added-text,
+.le-added-text {
+  position: absolute;
+  font-family: 'Hiragino Maru Gothic ProN', 'M PLUS Rounded 1c',
+               'ヒラギノ丸ゴ ProN W4', 'Yu Gothic', 'メイリオ', sans-serif;
+  font-size: 24px;
+  line-height: 1.4;
+  color: #333;
+  background: rgba(255, 255, 255, 0.9);
+  padding: 8px 12px;
+  border-radius: 6px;
+  min-width: 60px;
+  min-height: 24px;
+  outline: none;
+  cursor: text;
+  word-break: break-word;
+  white-space: pre-wrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+/* selected の時は move カーソル (resizable と同じ感覚) */
+body.layout-editor-on .le-added-text.resizable.selected {
+  cursor: move;
+}
+/* 編集中はテキストが見やすくなるように padding を維持 */
+body.layout-editor-on .le-added-text:focus {
+  background: rgba(255, 255, 255, 0.98);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   4 択 chip テキスト編集 (Phase 2 / __chip_text_overrides)
+   - dblclick で contenteditable 化された label に .chip-text-editing。
+   - override を持つ label には data-chip-text-override="1" が付き、
+     編集モード中のみ青系の点線枠で「カスタムテキストあり」を可視化。
+   ───────────────────────────────────────────────────────────────────────── */
+body.layout-editor-on .chip [data-chip-text-override="1"] {
+  outline: 2px dashed rgba(0, 200, 255, 0.7);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+body.layout-editor-on .chip-text-editing {
+  outline: 2px dashed #00d4ff !important;
+  outline-offset: 3px;
+  background: rgba(0, 212, 255, 0.08);
+  cursor: text !important;
+  caret-color: #00d4ff;
+  white-space: pre-wrap;
+  min-width: 1em;
+  min-height: 1em;
+  /* v967: chip-label を編集 (contenteditable=true) する際、 通常表示用の
+     `display: flex` + `overflow: hidden` (quizland v964 で導入) のままだと、
+     テキストノードが anonymous flex item になり caret 位置が安定せず、
+     カーソル / 選択範囲が hidden 領域でクリップされて編集不能に近い状態になる。
+     編集中だけ `display: block` + `overflow: visible` に戻すことで、
+     通常時 (display:flex + center + hidden = 改行 wrap 位置ズレ fix v964) を
+     温存しつつ contenteditable の編集を復活させる。
+     対象は .chip .chip-label (および同クラスを兼ねる .chip-illust-label)、
+     count_total 用 .chip-count-num も同様に念のためカバー。 */
+  display: block !important;
+  overflow: visible !important;
+  /* flex 解除に伴い grow が消えるため、 高さ確保用の min-height を chip 内で
+     ある程度保つ (1em ではコンパクトすぎるので 1.2em に微調整)。 */
+  min-height: 1.2em;
+}
+/* 編集中の chip-label 内に resize-handle が居ると視覚的に邪魔なので隠す。
+   edit が終われば contenteditable=false に戻り、 hide も解除される。 */
+body.layout-editor-on .chip-text-editing .resize-handle,
+body.layout-editor-on .chip-text-editing .resize-size-label {
+  display: none !important;
+}
+body.layout-editor-on .chip-text-editing:focus {
+  outline-color: #00d4ff !important;
+}
+
+/* === S4: layout-editor モードでは .char-hint (フクロウ吹き出し) を 自由 resize 可能に ===
+   本番モード (= 非編集) では quizland/index.html の base + media-query で
+   aspect-ratio: 1983/793 が効いて元画像の 5:2 比を保つが、
+   editor (?edit=1) では 8 ハンドル drag で自由に W/H を変えたい。
+   aspect-ratio: auto で比率固定を解除し、 max-width/max-height は明示的に
+   none で打ち消す (もし将来 quizland 側で max-* が再導入されても効くように). */
+body.layout-editor-on .char-hint,
+body.layout-editor-on .char-hint.resizable {
+  aspect-ratio: auto !important;
+  max-width: none !important;
+  max-height: none !important;
+}
+
+/* === E1: 🦉 フクロウ博士セリフ編集パネル ===
+   - 既存 .le-list-panel を継承しつつ独自寸法・配色をオーバーライド。
+   - .le-list-panel:not(.open) { display: none } が効くため、 hakase 専用に
+     強制表示 / 強制サイズを上書き。
+*/
+body.layout-editor-on .hakase-dialogue-panel {
+  display: flex !important;
+  position: fixed;
+  top: 50px;
+  right: 50px;
+  bottom: auto;
+  width: 480px;
+  height: 600px;
+  max-height: none;
+  background: rgba(30, 30, 30, 0.97);
+  color: #eee;
+  z-index: 10000;
+  overflow: hidden;
+}
+/* E1-fix: .hidden が付いたら display:flex !important を確実に打ち消す */
+body.layout-editor-on .hakase-dialogue-panel.hidden {
+  display: none !important;
+}
+body.layout-editor-on .hakase-dialogue-panel .hakase-body {
+  overflow: auto;
+  flex: 1;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+body.layout-editor-on .hakase-dialogue-panel .le-panel-close {
+  background: transparent;
+  color: #ccc;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 4px;
+  margin-left: auto;
+  line-height: 1;
+}
+body.layout-editor-on .hakase-dialogue-panel .le-panel-close:hover {
+  color: #fff;
+}
+body.layout-editor-on .hakase-text-size-section {
+  padding: 8px 10px;
+  border-bottom: 1px solid #444;
+  background: rgba(0, 0, 0, 0.2);
+}
+body.layout-editor-on .hakase-text-size-section h4 {
+  margin: 0 0 6px 0;
+  font-size: 12px;
+  color: #ffba6b;
+  font-weight: 600;
+}
+body.layout-editor-on .hakase-text-size-section label {
+  display: block;
+  margin: 4px 0;
+  font-size: 11px;
+  color: #ccc;
+}
+body.layout-editor-on .hakase-text-size-section input[type=range] {
+  width: 200px;
+  vertical-align: middle;
+  margin: 0 4px;
+}
+body.layout-editor-on .hakase-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 8px 10px;
+  border-bottom: 1px solid #444;
+}
+body.layout-editor-on .hakase-tab {
+  background: #444;
+  color: #ddd;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 11px;
+}
+body.layout-editor-on .hakase-tab:hover {
+  background: #555;
+}
+body.layout-editor-on .hakase-tab.active {
+  background: #4a8;
+  color: #fff;
+}
+body.layout-editor-on .hakase-content {
+  padding: 8px 10px;
+  flex: 1;
+  overflow-y: auto;
+}
+body.layout-editor-on .hkz-empty {
+  color: #888;
+  font-style: italic;
+  padding: 8px 0;
+  font-size: 11px;
+}
+body.layout-editor-on .hkz-row {
+  margin-bottom: 8px;
+  display: flex;
+  gap: 4px;
+  align-items: flex-start;
+}
+body.layout-editor-on .hkz-row label {
+  font-size: 11px;
+  min-width: 120px;
+  padding-top: 4px;
+  color: #ccc;
+  word-break: break-all;
+}
+body.layout-editor-on .hkz-row textarea {
+  flex: 1;
+  min-height: 40px;
+  background: #1a1a1a;
+  color: #fff;
+  border: 1px solid #555;
+  border-radius: 4px;
+  padding: 4px;
+  font-size: 12px;
+  resize: vertical;
+  font-family: system-ui, -apple-system, sans-serif;
+}
+body.layout-editor-on .hkz-row textarea:focus {
+  outline: 1px solid #4a8;
+  border-color: #4a8;
+}
+body.layout-editor-on .hkz-row-reset {
+  background: #555;
+  color: #fff;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  align-self: flex-start;
+}
+body.layout-editor-on .hkz-row-reset:hover {
+  background: #666;
+}
+body.layout-editor-on .hakase-actions {
+  padding: 8px 10px;
+  border-top: 1px solid #444;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.2);
+}
+body.layout-editor-on .hakase-dialogue-panel .le-btn {
+  background: #555;
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+}
+body.layout-editor-on .hakase-dialogue-panel .le-btn:hover {
+  background: #666;
+}
+body.layout-editor-on .hakase-dialogue-panel .le-btn.primary {
+  background: #4a8;
+}
+body.layout-editor-on .hakase-dialogue-panel .le-btn.primary:hover {
+  background: #5b9;
+}
+body.layout-editor-on .hkz-dirty-indicator {
+  color: #fa5;
+  font-size: 11px;
+  margin-left: auto;
+}
+

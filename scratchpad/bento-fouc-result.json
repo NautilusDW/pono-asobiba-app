@@ -1,0 +1,1661 @@
+{
+  "scenario": "bento-cold",
+  "url": "https://pono-asobiba-app-staging.ndw.workers.dev/bento/",
+  "paintTimings": {
+    "firstPaintMs": 368,
+    "fcpMs": 368,
+    "loadEventMs": 1649
+  },
+  "imageWaterfall": [
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/title_logo.webp",
+      "contentType": "image/webp",
+      "sizeKB": 74.8,
+      "startMs": 1782582914747,
+      "endMs": -1,
+      "cacheHit": true
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/story/staff/shop_staff_bg_layered.png",
+      "contentType": "image/png",
+      "sizeKB": 2891.6,
+      "startMs": 1782582914748,
+      "endMs": -1,
+      "cacheHit": false
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/cooking/mince_patty/patty_003_done.png",
+      "contentType": "image/png",
+      "sizeKB": 299.3,
+      "startMs": 1782582914790,
+      "endMs": -1,
+      "cacheHit": true
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/cooking/salmon/salmon_003_done.png",
+      "contentType": "image/png",
+      "sizeKB": 170.3,
+      "startMs": 1782582914790,
+      "endMs": -1,
+      "cacheHit": true
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/cooking/egg/egg_003_done.png",
+      "contentType": "image/png",
+      "sizeKB": 283.8,
+      "startMs": 1782582914790,
+      "endMs": -1,
+      "cacheHit": true
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/free-layout/fruit_ichigo.png",
+      "contentType": "image/png",
+      "sizeKB": 231.5,
+      "startMs": 1782582914791,
+      "endMs": -1,
+      "cacheHit": true
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/Bento_parts/rice_umeboshi.webp",
+      "contentType": "image/webp",
+      "sizeKB": 25.5,
+      "startMs": 1782582914791,
+      "endMs": -1,
+      "cacheHit": true
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/free-layout/okazu_napolitan.png",
+      "contentType": "image/png",
+      "sizeKB": 283.6,
+      "startMs": 1782582914791,
+      "endMs": -1,
+      "cacheHit": true
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/cooking/korokke/korokke_003_done.png",
+      "contentType": "image/png",
+      "sizeKB": 392.7,
+      "startMs": 1782582914791,
+      "endMs": -1,
+      "cacheHit": true
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/free-layout/okazu_broccoli.png",
+      "contentType": "image/png",
+      "sizeKB": 211.9,
+      "startMs": 1782582914791,
+      "endMs": -1,
+      "cacheHit": true
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/cooking/tomato/tomato_001.png",
+      "contentType": "image/png",
+      "sizeKB": 94.7,
+      "startMs": 1782582914791,
+      "endMs": -1,
+      "cacheHit": true
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/characters/pono/pono_face_circle.webp",
+      "contentType": "image/webp",
+      "sizeKB": 15.7,
+      "startMs": 1782582914791,
+      "endMs": -1,
+      "cacheHit": true
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/ui/decor_pono_peek.png",
+      "contentType": "image/png",
+      "sizeKB": 98.3,
+      "startMs": 1782582914792,
+      "endMs": -1,
+      "cacheHit": true
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/story/shop_order_counter.png",
+      "contentType": "image/png",
+      "sizeKB": 2559.8,
+      "startMs": 1782582914792,
+      "endMs": -1,
+      "cacheHit": true
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/characters/pono/dance/dance_hooray.webp",
+      "contentType": "image/webp",
+      "sizeKB": 51,
+      "startMs": 1782582914792,
+      "endMs": -1,
+      "cacheHit": true
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/title_back.webp",
+      "contentType": "image/webp",
+      "sizeKB": 103.6,
+      "startMs": 1782582914903,
+      "endMs": -1,
+      "cacheHit": true
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/ui/favorite_star_button.png",
+      "contentType": "image/png",
+      "sizeKB": 9.1,
+      "startMs": 1782582914903,
+      "endMs": -1,
+      "cacheHit": true
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/ui/free_layout_background_21x9.webp",
+      "contentType": "image/webp",
+      "sizeKB": 43.6,
+      "startMs": 1782582914903,
+      "endMs": -1,
+      "cacheHit": true
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/ui/picker_panel_blank.webp",
+      "contentType": "image/webp",
+      "sizeKB": 4.4,
+      "startMs": 1782582914903,
+      "endMs": -1,
+      "cacheHit": true
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/ui/picker_header_pill.png",
+      "contentType": "image/png",
+      "sizeKB": 14.9,
+      "startMs": 1782582914903,
+      "endMs": -1,
+      "cacheHit": true
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/ui/picker_card_normal.png",
+      "contentType": "image/png",
+      "sizeKB": 43.7,
+      "startMs": 1782582914969,
+      "endMs": -1,
+      "cacheHit": true
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/_legacy/preview-placeholders/ctrl-btn-settings.png",
+      "contentType": "image/png",
+      "sizeKB": 27.8,
+      "startMs": 1782582914970,
+      "endMs": -1,
+      "cacheHit": true
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/ui/rect_bento_box_coral.webp",
+      "contentType": "image/webp",
+      "sizeKB": 35.5,
+      "startMs": 1782582914987,
+      "endMs": -1,
+      "cacheHit": true
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/ui/free_box_rect_split_lid.png",
+      "contentType": "image/png",
+      "sizeKB": 328.7,
+      "startMs": 1782582914987,
+      "endMs": -1,
+      "cacheHit": true
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/free-layout/box_rect_split_inside_mask.png",
+      "contentType": "image/png",
+      "sizeKB": 6.6,
+      "startMs": 1782582914987,
+      "endMs": -1,
+      "cacheHit": true
+    }
+  ],
+  "cssBackgroundLateLoads": [
+    "../assets/images/bento/title_back.webp (no-response-record - inline only or relative)",
+    "../assets/images/bento/ui/free_layout_background_21x9.webp (no-response-record - inline only or relative)",
+    "../assets/images/bento/ui/guide_modal_pono.webp (no-response-record - inline only or relative)",
+    "../assets/images/bento/ui/button_pink.png (no-response-record - inline only or relative)",
+    "../assets/images/bento/ui/button_green.png (no-response-record - inline only or relative)",
+    "../assets/images/bento/ui/picker_card_normal.png (no-response-record - inline only or relative)",
+    "../assets/images/bento/ui/picker_card_selected.png (no-response-record - inline only or relative)",
+    "../assets/images/bento/ui/picker_panel_blank.webp (no-response-record - inline only or relative)",
+    "../assets/images/bento/ui/picker_header_pill.png (no-response-record - inline only or relative)",
+    "../assets/images/bento/story/shop_order_counter.png (no-response-record - inline only or relative)",
+    "../assets/images/bento/ui/decor_star_yellow.png (no-response-record - inline only or relative)",
+    "../assets/images/bento/ui/favorite_star_button.png (no-response-record - inline only or relative)"
+  ],
+  "foucEvidence": {
+    "gameRootSelector": "#app",
+    "initialVisibility": "display=flex; visibility=hidden; opacity=1",
+    "becameVisibleAtMs": 19,
+    "readyClassAddedAtMs": 19,
+    "flashDetected": false
+  },
+  "observations": [
+    "DOMContentLoaded at 417ms; FCP=368ms; LCP=undefinedms",
+    "Chosen gameRoot selector: '#app'. Initial state: display=flex; visibility=hidden; opacity=1",
+    "gameRoot became visible at +19ms after DCL; pono-game-ready class added at +19ms",
+    "flashDetected = false",
+    "Inline <style> guard rules matching body: 2. Hiding-game candidates: 17.",
+    "  guard sel='.bento-delivery.hidden' decl='display: none !important;' matches=1",
+    "  guard sel='.bento-delivery__sparkles' decl='position: absolute;\n  inset: 0;\n  z-index: 5;\n  pointer-events: none;\n  opacity: 0;' matches=1",
+    "  guard sel='/* ===== タイトル ===== */\n.game-title' decl='position: fixed;\n  top: 6px; left: 50%; transform: translateX(-50%);\n  display: none;\n  align-items: center;\n  gap: 8px;\n  min-height: 30px;\n  max-width: min(86vw, 560px);\n  padding: 4px 10px 4px 12px' matches=1",
+    "  guard sel='.free-bento-shape.is-rice-covered' decl='opacity: 0;' matches=0",
+    "  guard sel='.free-bento-rice-layer' decl='z-index: 1;\n  opacity: 0;\n  pointer-events: none;' matches=0",
+    "  body-guard sel='body.bento-complete-open .tut-settings-btn,\nbody.bento-complete-open .fav-header-btn,\nbody.bento-complete-open .pono-menu-toggle,\nbody.bento-complete-open .pono-dropdown' decl='display: none !important;' matches=0",
+    "  body-guard sel='body.bento-complete-open #sk-intro' decl='display: none !important;\n  pointer-events: none;' matches=0",
+    "Any inline FOUC-guard selector actually matches current DOM? true"
+  ],
+  "responses": [
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/bento/",
+      "contentType": "text/html",
+      "sizeKB": 0,
+      "startMs": 1782582914644,
+      "endMs": -1,
+      "cacheHit": false,
+      "resourceType": "document",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/common/debug-mode.js",
+      "contentType": "text/javascript",
+      "sizeKB": 0,
+      "startMs": 1782582914740,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "script",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/common/tier.js",
+      "contentType": "text/javascript",
+      "sizeKB": 0,
+      "startMs": 1782582914740,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "script",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/common/mvp-flags.js",
+      "contentType": "text/javascript",
+      "sizeKB": 0,
+      "startMs": 1782582914740,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "script",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/common/achievements.js",
+      "contentType": "application/javascript",
+      "sizeKB": 0,
+      "startMs": 1782582914740,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "script",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/js/game-stickers.js",
+      "contentType": "text/javascript",
+      "sizeKB": 0,
+      "startMs": 1782582914740,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "script",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/common/acorns.js",
+      "contentType": "text/javascript",
+      "sizeKB": 0,
+      "startMs": 1782582914740,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "script",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/title_logo.webp",
+      "contentType": "image/webp",
+      "sizeKB": 74.8,
+      "startMs": 1782582914747,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/common/menu.js",
+      "contentType": "text/javascript",
+      "sizeKB": 0,
+      "startMs": 1782582914740,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "script",
+      "status": 200
+    },
+    {
+      "url": "https://fonts.googleapis.com/css2?family=DotGothic16&family=Zen+Maru+Gothic:wght@400;700;900&display=swap",
+      "contentType": "text/css; charset=utf-8",
+      "sizeKB": 0,
+      "startMs": 1782582914741,
+      "endMs": -1,
+      "cacheHit": false,
+      "resourceType": "stylesheet",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/free-layout/fruit_ichigo.png",
+      "contentType": "image/png",
+      "sizeKB": 231.5,
+      "startMs": 1782582914791,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/common/sw-update.js",
+      "contentType": "text/javascript",
+      "sizeKB": 0,
+      "startMs": 1782582914792,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "script",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/cooking/mince_patty/patty_003_done.png",
+      "contentType": "image/png",
+      "sizeKB": 299.3,
+      "startMs": 1782582914790,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/cooking/salmon/salmon_003_done.png",
+      "contentType": "image/png",
+      "sizeKB": 170.3,
+      "startMs": 1782582914790,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/cooking/egg/egg_003_done.png",
+      "contentType": "image/png",
+      "sizeKB": 283.8,
+      "startMs": 1782582914790,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/Bento_parts/rice_umeboshi.webp",
+      "contentType": "image/webp",
+      "sizeKB": 25.5,
+      "startMs": 1782582914791,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/free-layout/okazu_napolitan.png",
+      "contentType": "image/png",
+      "sizeKB": 283.6,
+      "startMs": 1782582914791,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/cooking/korokke/korokke_003_done.png",
+      "contentType": "image/png",
+      "sizeKB": 392.7,
+      "startMs": 1782582914791,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/free-layout/okazu_broccoli.png",
+      "contentType": "image/png",
+      "sizeKB": 211.9,
+      "startMs": 1782582914791,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/cooking/tomato/tomato_001.png",
+      "contentType": "image/png",
+      "sizeKB": 94.7,
+      "startMs": 1782582914791,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/ui/decor_pono_peek.png",
+      "contentType": "image/png",
+      "sizeKB": 98.3,
+      "startMs": 1782582914792,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/characters/pono/pono_face_circle.webp",
+      "contentType": "image/webp",
+      "sizeKB": 15.7,
+      "startMs": 1782582914791,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/story/shop_order_counter.png",
+      "contentType": "image/png",
+      "sizeKB": 2559.8,
+      "startMs": 1782582914792,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/characters/pono/dance/dance_hooray.webp",
+      "contentType": "image/webp",
+      "sizeKB": 51,
+      "startMs": 1782582914792,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/title_back.webp",
+      "contentType": "image/webp",
+      "sizeKB": 103.6,
+      "startMs": 1782582914903,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/ui/favorite_star_button.png",
+      "contentType": "image/png",
+      "sizeKB": 9.1,
+      "startMs": 1782582914903,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/ui/free_layout_background_21x9.webp",
+      "contentType": "image/webp",
+      "sizeKB": 43.6,
+      "startMs": 1782582914903,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/story/staff/shop_staff_bg_layered.png",
+      "contentType": "image/png",
+      "sizeKB": 2891.6,
+      "startMs": 1782582914748,
+      "endMs": -1,
+      "cacheHit": false,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://cloud.umami.is/script.js",
+      "contentType": "application/javascript; charset=utf-8",
+      "sizeKB": 0,
+      "startMs": 1782582914791,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "script",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/common/capture.js",
+      "contentType": "text/javascript",
+      "sizeKB": 0,
+      "startMs": 1782582914790,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "script",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/audio/bento_bgm.mp3",
+      "contentType": "audio/mpeg",
+      "sizeKB": 1110.1,
+      "startMs": 1782582914794,
+      "endMs": -1,
+      "cacheHit": false,
+      "resourceType": "media",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/ui/picker_panel_blank.webp",
+      "contentType": "image/webp",
+      "sizeKB": 4.4,
+      "startMs": 1782582914903,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/ui/picker_header_pill.png",
+      "contentType": "image/png",
+      "sizeKB": 14.9,
+      "startMs": 1782582914903,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/ui/picker_card_normal.png",
+      "contentType": "image/png",
+      "sizeKB": 43.7,
+      "startMs": 1782582914969,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/_legacy/preview-placeholders/ctrl-btn-settings.png",
+      "contentType": "image/png",
+      "sizeKB": 27.8,
+      "startMs": 1782582914970,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/common/preload-helper.js",
+      "contentType": "text/javascript",
+      "sizeKB": 0,
+      "startMs": 1782582914790,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "script",
+      "status": 200
+    },
+    {
+      "url": "https://fonts.gstatic.com/s/zenmarugothic/v19/o-0XIpIxzW5b-RxT-6A8jWAtCp-cUW1COfKK_7mX3yPCWUgO7n9RJZk8vDuG3WM.119.woff2",
+      "contentType": "font/woff2",
+      "sizeKB": 18.4,
+      "startMs": 1782582914991,
+      "endMs": -1,
+      "cacheHit": false,
+      "resourceType": "font",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/ui/rect_bento_box_coral.webp",
+      "contentType": "image/webp",
+      "sizeKB": 35.5,
+      "startMs": 1782582914987,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/ui/free_box_rect_split_lid.png",
+      "contentType": "image/png",
+      "sizeKB": 328.7,
+      "startMs": 1782582914987,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/free-layout/box_rect_split_inside_mask.png",
+      "contentType": "image/png",
+      "sizeKB": 6.6,
+      "startMs": 1782582914987,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://fonts.gstatic.com/s/zenmarugothic/v19/o-0SIpIxzW5b-RxT-6A8jWAtCp-U6khn.woff2",
+      "contentType": "font/woff2",
+      "sizeKB": 11.3,
+      "startMs": 1782582914991,
+      "endMs": -1,
+      "cacheHit": false,
+      "resourceType": "font",
+      "status": 200
+    },
+    {
+      "url": "https://fonts.gstatic.com/s/dotgothic16/v21/v6-QGYjBJFKgyw5nSoDAGE7Oi25aLSizIM9pT7D_QAno5281PZBz6w.81.woff2",
+      "contentType": "font/woff2",
+      "sizeKB": 5.1,
+      "startMs": 1782582914990,
+      "endMs": -1,
+      "cacheHit": false,
+      "resourceType": "font",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/free-layout/box_square.webp",
+      "contentType": "image/webp",
+      "sizeKB": 63.3,
+      "startMs": 1782582914987,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/free-layout/box_rect_split_rice.webp",
+      "contentType": "image/webp",
+      "sizeKB": 56.8,
+      "startMs": 1782582914987,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://fonts.gstatic.com/s/zenmarugothic/v19/o-0XIpIxzW5b-RxT-6A8jWAtCp-caW9COfKK_7mX3yPCWUgO7n9RJZk8vDuG3WM.116.woff2",
+      "contentType": "font/woff2",
+      "sizeKB": 11.2,
+      "startMs": 1782582914991,
+      "endMs": -1,
+      "cacheHit": false,
+      "resourceType": "font",
+      "status": 200
+    },
+    {
+      "url": "https://fonts.gstatic.com/s/zenmarugothic/v19/o-0XIpIxzW5b-RxT-6A8jWAtCp-cUW1yO5Cb.woff2",
+      "contentType": "font/woff2",
+      "sizeKB": 11.3,
+      "startMs": 1782582914991,
+      "endMs": -1,
+      "cacheHit": false,
+      "resourceType": "font",
+      "status": 200
+    },
+    {
+      "url": "https://fonts.gstatic.com/s/zenmarugothic/v19/o-0XIpIxzW5b-RxT-6A8jWAtCp-caW9COfKK_7mX3yPCWUgO7n9RJZk8vDuG3WM.117.woff2",
+      "contentType": "font/woff2",
+      "sizeKB": 8.7,
+      "startMs": 1782582914991,
+      "endMs": -1,
+      "cacheHit": false,
+      "resourceType": "font",
+      "status": 200
+    },
+    {
+      "url": "https://fonts.gstatic.com/s/dotgothic16/v21/v6-QGYjBJFKgyw5nSoDAGH7M6X8.woff2",
+      "contentType": "font/woff2",
+      "sizeKB": 10.3,
+      "startMs": 1782582914991,
+      "endMs": -1,
+      "cacheHit": false,
+      "resourceType": "font",
+      "status": 200
+    },
+    {
+      "url": "https://fonts.gstatic.com/s/dotgothic16/v21/v6-QGYjBJFKgyw5nSoDAGE7Oi25aLSizIM9pT7D_QAno5281PZBz6w.119.woff2",
+      "contentType": "font/woff2",
+      "sizeKB": 8.1,
+      "startMs": 1782582914991,
+      "endMs": -1,
+      "cacheHit": false,
+      "resourceType": "font",
+      "status": 200
+    },
+    {
+      "url": "https://fonts.gstatic.com/s/zenmarugothic/v19/o-0XIpIxzW5b-RxT-6A8jWAtCp-caW9yO5Cb.woff2",
+      "contentType": "font/woff2",
+      "sizeKB": 11.3,
+      "startMs": 1782582914991,
+      "endMs": -1,
+      "cacheHit": false,
+      "resourceType": "font",
+      "status": 200
+    },
+    {
+      "url": "https://fonts.gstatic.com/s/zenmarugothic/v19/o-0XIpIxzW5b-RxT-6A8jWAtCp-caW9COfKK_7mX3yPCWUgO7n9RJZk8vDuG3WM.119.woff2",
+      "contentType": "font/woff2",
+      "sizeKB": 17.9,
+      "startMs": 1782582914991,
+      "endMs": -1,
+      "cacheHit": false,
+      "resourceType": "font",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/free-layout/box_square_rice.webp",
+      "contentType": "image/webp",
+      "sizeKB": 54.5,
+      "startMs": 1782582914987,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/ui/free_box_square_lid.png",
+      "contentType": "image/png",
+      "sizeKB": 319.9,
+      "startMs": 1782582914987,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/free-layout/box_square_inside_mask.png",
+      "contentType": "image/png",
+      "sizeKB": 6.7,
+      "startMs": 1782582914988,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/free-layout/box_round.webp",
+      "contentType": "image/webp",
+      "sizeKB": 70.6,
+      "startMs": 1782582914988,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/ui/free_box_round_lid.png",
+      "contentType": "image/png",
+      "sizeKB": 301.3,
+      "startMs": 1782582914988,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://fonts.gstatic.com/s/zenmarugothic/v19/o-0SIpIxzW5b-RxT-6A8jWAtCp-k6Cp2NqD0lNmc0DbQUnIZ7kZUNZMp2Vc.81.woff2",
+      "contentType": "font/woff2",
+      "sizeKB": 12.7,
+      "startMs": 1782582915082,
+      "endMs": -1,
+      "cacheHit": false,
+      "resourceType": "font",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/free-layout/box_round_rice.webp",
+      "contentType": "image/webp",
+      "sizeKB": 61.3,
+      "startMs": 1782582914988,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/free-layout/box_round_inside_mask.png",
+      "contentType": "image/png",
+      "sizeKB": 11.1,
+      "startMs": 1782582914988,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/free-layout/box_bear.webp",
+      "contentType": "image/webp",
+      "sizeKB": 16.2,
+      "startMs": 1782582914988,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/free-layout/box_bear_rice.webp",
+      "contentType": "image/webp",
+      "sizeKB": 27.1,
+      "startMs": 1782582914988,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/free-layout/box_bear_lid.png",
+      "contentType": "image/png",
+      "sizeKB": 204.2,
+      "startMs": 1782582914989,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/free-layout/box_bear_pink.webp",
+      "contentType": "image/webp",
+      "sizeKB": 15,
+      "startMs": 1782582914989,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/free-layout/box_bear_pink_lid.png",
+      "contentType": "image/png",
+      "sizeKB": 201.1,
+      "startMs": 1782582914989,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/free-layout/box_cat_blue.webp",
+      "contentType": "image/webp",
+      "sizeKB": 19.9,
+      "startMs": 1782582914989,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/free-layout/box_cat_blue_rice.webp",
+      "contentType": "image/webp",
+      "sizeKB": 33.8,
+      "startMs": 1782582914989,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/free-layout/box_cat_blue_lid.png",
+      "contentType": "image/png",
+      "sizeKB": 287,
+      "startMs": 1782582914989,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/free-layout/box_character_inside_mask.png",
+      "contentType": "image/png",
+      "sizeKB": 7,
+      "startMs": 1782582914989,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/free-layout/box_cat_inside_mask.png",
+      "contentType": "image/png",
+      "sizeKB": 18.2,
+      "startMs": 1782582914990,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/free-layout/box_cat_rice.webp",
+      "contentType": "image/webp",
+      "sizeKB": 37.3,
+      "startMs": 1782582914990,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/free-layout/box_cat.webp",
+      "contentType": "image/webp",
+      "sizeKB": 22.2,
+      "startMs": 1782582914990,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/free-layout/box_bear_pink_rice.webp",
+      "contentType": "image/webp",
+      "sizeKB": 26.6,
+      "startMs": 1782582914989,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/bento/free-layout/box_cat_lid.png",
+      "contentType": "image/png",
+      "sizeKB": 320.6,
+      "startMs": 1782582914990,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/Bento_parts/hamburg2.webp",
+      "contentType": "image/webp",
+      "sizeKB": 8.1,
+      "startMs": 1782582915063,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/Bento_parts/karaage2.png",
+      "contentType": "image/png",
+      "sizeKB": 105.7,
+      "startMs": 1782582915063,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/Bento_parts/ebi_fry2.webp",
+      "contentType": "image/webp",
+      "sizeKB": 9.5,
+      "startMs": 1782582915063,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/Bento_parts/korokke2.webp",
+      "contentType": "image/webp",
+      "sizeKB": 7.6,
+      "startMs": 1782582915063,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/Bento_parts/fries2.webp",
+      "contentType": "image/webp",
+      "sizeKB": 8.8,
+      "startMs": 1782582915063,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/Bento_parts/broccoli2.webp",
+      "contentType": "image/webp",
+      "sizeKB": 10.3,
+      "startMs": 1782582915063,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/Bento_parts/mini_tomato2.webp",
+      "contentType": "image/webp",
+      "sizeKB": 8.2,
+      "startMs": 1782582915063,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/Bento_parts/ichigo2.webp",
+      "contentType": "image/webp",
+      "sizeKB": 11.5,
+      "startMs": 1782582915063,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/assets/images/characters/pono/pono_face_circle.png",
+      "contentType": "image/png",
+      "sizeKB": 130.8,
+      "startMs": 1782582915063,
+      "endMs": -1,
+      "cacheHit": true,
+      "resourceType": "image",
+      "status": 200
+    },
+    {
+      "url": "https://pono-asobiba-app-staging.ndw.workers.dev/api/bento/mask-defaults?_=1782582914968",
+      "contentType": "application/json",
+      "sizeKB": 0,
+      "startMs": 1782582914969,
+      "endMs": -1,
+      "cacheHit": false,
+      "resourceType": "fetch",
+      "status": 200
+    },
+    {
+      "url": "https://gateway.umami.is/api/send",
+      "contentType": "application/json",
+      "sizeKB": 0,
+      "startMs": 1782582916461,
+      "endMs": -1,
+      "cacheHit": false,
+      "resourceType": "fetch",
+      "status": 200
+    }
+  ],
+  "inlineStyleSelectors": [
+    {
+      "selector": "#app",
+      "declaration": "visibility:hidden",
+      "matchCount": 1
+    },
+    {
+      "selector": ".acorn-badge,\n.acorn-badge-play,\n.thankyou-badge,\n.thankyou-badge-play,\n#acornBadge,\n#acornBadgePlay,\n#thankyouBadge,\n#thankyouBadgePlay,\n.complete-acorns,\n.daily-acorn-status,\n#modalDailyAcorn,\n.acor",
+      "declaration": "display: none !important;",
+      "matchCount": 2
+    },
+    {
+      "selector": "/* ── Dropdown ── */\n    .pono-dropdown",
+      "declaration": "position: fixed; z-index: 9989;\n      top: calc(max(12px, env(safe-area-inset-top)) + 46px);\n      left: max(16px, env(safe-area-inset-left));\n      background: rgba(255,255,255,0.96);\n      border-ra",
+      "matchCount": 1
+    },
+    {
+      "selector": ".pono-dd-item.bgm-off .pono-dd-icon",
+      "declaration": "opacity: 0.35; filter: grayscale(1);",
+      "matchCount": 0
+    },
+    {
+      "selector": ".pono-dd-item.bgm-off .pono-dd-label",
+      "declaration": "opacity: 0.5;",
+      "matchCount": 0
+    },
+    {
+      "selector": "/* ── Confirm overlay ── */\n    .pono-confirm-overlay",
+      "declaration": "position: fixed; inset: 0; z-index: 99999;\n      background: rgba(0,0,0,0.5);\n      display: flex; align-items: center; justify-content: center;\n      opacity: 0; pointer-events: none;\n      transitio",
+      "matchCount": 1
+    },
+    {
+      "selector": "#title-screen.hidden",
+      "declaration": "display: none;",
+      "matchCount": 0
+    },
+    {
+      "selector": "0%, 100%",
+      "declaration": "opacity: 0.92; transform: scale(1);",
+      "matchCount": 0
+    },
+    {
+      "selector": ".shop-opening.hidden",
+      "declaration": "display: none !important;",
+      "matchCount": 1
+    },
+    {
+      "selector": ".shop-opening__customer",
+      "declaration": "position: absolute;\n  z-index: 3;\n  left: 50%;\n  bottom: 23%;\n  height: 40%;\n  max-width: 38%;\n  object-fit: contain;\n  transform: translateX(-50%);\n  filter: drop-shadow(0 8px 12px rgba(70, 40, 16, 0",
+      "matchCount": 1
+    },
+    {
+      "selector": ".shop-opening__staff",
+      "declaration": "position: absolute;\n  inset: 0;\n  z-index: 1;\n  opacity: 0;\n  pointer-events: none;",
+      "matchCount": 1
+    },
+    {
+      "selector": ".shop-opening__staff-counter-mask",
+      "declaration": "position: absolute;\n  inset: 0;\n  z-index: 2;\n  background-position: center;\n  background-size: 100% 100%;\n  background-repeat: no-repeat;\n  clip-path: inset(\n    var(--staff-counter-mask-top, 51%)\n  ",
+      "matchCount": 1
+    },
+    {
+      "selector": ".shop-opening__customer-counter-mask",
+      "declaration": "position: absolute;\n  inset: 0;\n  z-index: 4;\n  background-position: center;\n  background-size: 100% 100%;\n  background-repeat: no-repeat;\n  clip-path: inset(\n    var(--customer-counter-mask-top, 61%)",
+      "matchCount": 1
+    },
+    {
+      "selector": "from",
+      "declaration": "opacity: 0;",
+      "matchCount": 0
+    },
+    {
+      "selector": ".bento-delivery.hidden",
+      "declaration": "display: none !important;",
+      "matchCount": 1
+    },
+    {
+      "selector": ".bento-delivery__sparkles",
+      "declaration": "position: absolute;\n  inset: 0;\n  z-index: 5;\n  pointer-events: none;\n  opacity: 0;",
+      "matchCount": 1
+    },
+    {
+      "selector": "0%, 100%",
+      "declaration": "opacity: 0.35; transform: translateX(-50%) scale(0.95);",
+      "matchCount": 0
+    },
+    {
+      "selector": "/* ===== タイトル ===== */\n.game-title",
+      "declaration": "position: fixed;\n  top: 6px; left: 50%; transform: translateX(-50%);\n  display: none;\n  align-items: center;\n  gap: 8px;\n  min-height: 30px;\n  max-width: min(86vw, 560px);\n  padding: 4px 10px 4px 12px",
+      "matchCount": 1
+    },
+    {
+      "selector": ".free-bento-shape.is-rice-covered",
+      "declaration": "opacity: 0;",
+      "matchCount": 0
+    },
+    {
+      "selector": ".free-bento-rice-layer",
+      "declaration": "z-index: 1;\n  opacity: 0;\n  pointer-events: none;",
+      "matchCount": 0
+    },
+    {
+      "selector": ".free-bento-shape.has-image::before,\n.free-bento-shape.has-image::after",
+      "declaration": "display: none;",
+      "matchCount": 2
+    },
+    {
+      "selector": ".free-main-guide-pono",
+      "declaration": "display: none;",
+      "matchCount": 0
+    },
+    {
+      "selector": ".right-panel.free-guide-focus .pono-row",
+      "declaration": "display: none;",
+      "matchCount": 0
+    },
+    {
+      "selector": ".free-mask-actions button:disabled,\n.free-brush-actions button:disabled,\n.free-layer-actions button:disabled",
+      "declaration": "opacity: 0.38;\n  cursor: default;",
+      "matchCount": 0
+    },
+    {
+      "selector": ".free-context-toolbar button:disabled",
+      "declaration": "opacity: 0.38;\n  cursor: default;",
+      "matchCount": 0
+    },
+    {
+      "selector": ".free-guide-actions button:disabled",
+      "declaration": "opacity: 0.45;\n  cursor: default;",
+      "matchCount": 0
+    },
+    {
+      "selector": ".free-palette-item.tier-locked",
+      "declaration": "cursor: not-allowed;\n  filter: grayscale(1) saturate(0.3) brightness(0.92);\n  opacity: 0.55;",
+      "matchCount": 0
+    },
+    {
+      "selector": ".free-palette-item.tier-locked:hover",
+      "declaration": "opacity: 0.7;",
+      "matchCount": 0
+    },
+    {
+      "selector": ".free-palette-item.box-choice .free-palette-name",
+      "declaration": "display: none;",
+      "matchCount": 0
+    },
+    {
+      "selector": ".free-drag-ghost.nori-drag-ghost",
+      "declaration": "width: var(--free-drag-ghost-size, 44px);\n  height: var(--free-drag-ghost-size, 44px);\n  transform: translate(-50%, -50%);\n  opacity: 0.92;\n  transition: opacity 0.08s ease;",
+      "matchCount": 0
+    },
+    {
+      "selector": ".free-drag-ghost.nori-drag-ghost.is-over-stage",
+      "declaration": "opacity: 0;",
+      "matchCount": 0
+    },
+    {
+      "selector": ".free-complete-tier",
+      "declaration": "position: absolute;\n  left: 50%;\n  top: var(--tier-y, 0px);\n  width: min(100%, 820px);\n  opacity: 0;\n  transform: translateX(calc(-50% + var(--tier-x, 0px))) translateY(-18px) scale(0.92);\n  z-index: ",
+      "matchCount": 0
+    },
+    {
+      "selector": ".free-complete-tier-label",
+      "declaration": "display: none;",
+      "matchCount": 0
+    },
+    {
+      "selector": ".free-complete-editor-preview .free-complete-sparkle",
+      "declaration": "display: none;",
+      "matchCount": 0
+    },
+    {
+      "selector": ".free-complete-editor-preview .free-complete-lid-stage::after",
+      "declaration": "display: none;",
+      "matchCount": 0
+    },
+    {
+      "selector": ".free-mask-main-complete-preview .free-complete-sparkle",
+      "declaration": "display: none;",
+      "matchCount": 0
+    },
+    {
+      "selector": ".free-mask-main-complete-preview .free-complete-lid-stage::after",
+      "declaration": "display: none;",
+      "matchCount": 0
+    },
+    {
+      "selector": ".free-complete-lid-stage.is-closing::after",
+      "declaration": "display: none;",
+      "matchCount": 0
+    },
+    {
+      "selector": ".free-complete-sparkle",
+      "declaration": "position: absolute;\n  left: var(--spark-x, 50%);\n  top: var(--spark-y, 50%);\n  z-index: 40;\n  color: #FFE45C;\n  font-size: var(--spark-size, 1rem);\n  line-height: 1;\n  opacity: 0;\n  pointer-events: no",
+      "matchCount": 0
+    },
+    {
+      "selector": "0%",
+      "declaration": "opacity: 0;\n    transform: translateX(calc(-50% + var(--tier-x, 0px))) translateY(-24px) scale(0.88);",
+      "matchCount": 0
+    },
+    {
+      "selector": "0%",
+      "declaration": "opacity: 0;\n    transform: translateY(8px) scale(0.96);",
+      "matchCount": 0
+    },
+    {
+      "selector": "0%",
+      "declaration": "opacity: 0;\n    transform: translate(-50%, -50%) scale(0.18) rotate(-18deg);",
+      "matchCount": 0
+    },
+    {
+      "selector": "100%",
+      "declaration": "opacity: 0;\n    transform: translate(calc(-50% + var(--spark-dx, 0px)), calc(-50% + var(--spark-dy, 0px))) scale(0.78) rotate(220deg);",
+      "matchCount": 0
+    },
+    {
+      "selector": "from",
+      "declaration": "transform: scale(0); opacity: 0;",
+      "matchCount": 0
+    },
+    {
+      "selector": ".right-panel.free-layout-panel .pono-row",
+      "declaration": "display: none;",
+      "matchCount": 1
+    },
+    {
+      "selector": ".right-panel .pono-img",
+      "declaration": "display: none;",
+      "matchCount": 1
+    },
+    {
+      "selector": ".right-panel .speech-bubble::before",
+      "declaration": "display: none;",
+      "matchCount": 1
+    },
+    {
+      "selector": "#app > .free-bottom-guide",
+      "declaration": "position: absolute;\n  left: clamp(18px, 3vw, 38px);\n  bottom: 8px;\n  z-index: 4;\n  width: calc(100% - clamp(320px, 36%, 390px) - 48px);\n  height: 82px;\n  display: none;\n  align-items: center;\n  gap: 6",
+      "matchCount": 1
+    },
+    {
+      "selector": "#app.free-layout-active > .free-bottom-guide.tut-hide-speech .free-bottom-speech",
+      "declaration": "display: none;",
+      "matchCount": 0
+    },
+    {
+      "selector": ".bento-reminder.hidden",
+      "declaration": "display: none;",
+      "matchCount": 1
+    },
+    {
+      "selector": ".bento-reminder__group",
+      "declaration": "width: 26px;\n  height: 24px;\n  display: inline-flex;\n  align-items: center;\n  justify-content: center;\n  border: 2px dashed rgba(156, 105, 45, 0.32);\n  border-radius: 10px;\n  background: rgba(255,255,",
+      "matchCount": 0
+    },
+    {
+      "selector": "#app.free-layout-active > .free-bottom-guide.has-reminder .free-bottom-speech",
+      "declaration": "display: none;",
+      "matchCount": 0
+    },
+    {
+      "selector": ".food-item.used",
+      "declaration": "opacity: 0.2; pointer-events: none; transform: none;",
+      "matchCount": 0
+    },
+    {
+      "selector": "100%",
+      "declaration": "transform: scale(0.85); opacity: 0.2;",
+      "matchCount": 0
+    },
+    {
+      "selector": ".balance-item.is-missing",
+      "declaration": "opacity: 0.62; filter: grayscale(0.32);",
+      "matchCount": 0
+    },
+    {
+      "selector": ".complete-overlay.hidden",
+      "declaration": "display: none;",
+      "matchCount": 1
+    },
+    {
+      "selector": "body.bento-complete-open .tut-settings-btn,\nbody.bento-complete-open .fav-header-btn,\nbody.bento-complete-open .pono-menu-toggle,\nbody.bento-complete-open .pono-dropdown",
+      "declaration": "display: none !important;",
+      "matchCount": 0
+    },
+    {
+      "selector": "from",
+      "declaration": "opacity: 0;",
+      "matchCount": 0
+    },
+    {
+      "selector": ".npc-overlay.hidden",
+      "declaration": "display: none !important;",
+      "matchCount": 2
+    },
+    {
+      "selector": "to",
+      "declaration": "opacity: 0;",
+      "matchCount": 0
+    },
+    {
+      "selector": ".complete-card-wide.is-detail-page > .complete-close",
+      "declaration": "display: none;",
+      "matchCount": 0
+    },
+    {
+      "selector": "/* ===== Wrong toast ===== */\n.wrong-toast",
+      "declaration": "position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%);\n  background: rgba(255,255,255,0.95); border-radius: 50px;\n  padding: 6px 14px; font-size: 0.75rem; font-weight: 900;\n  color: va",
+      "matchCount": 1
+    },
+    {
+      "selector": "100%",
+      "declaration": "transform: translateY(105vh) rotate(720deg); opacity: 0;",
+      "matchCount": 0
+    },
+    {
+      "selector": "0%",
+      "declaration": "transform: translate(0,0) scale(0.3) rotate(0deg); opacity: 0;",
+      "matchCount": 0
+    },
+    {
+      "selector": "100%",
+      "declaration": "transform: translate(var(--dx), var(--dy)) scale(1.2) rotate(180deg); opacity: 0;",
+      "matchCount": 0
+    },
+    {
+      "selector": "0%",
+      "declaration": "transform: scale(0.2); opacity: 0.9; border-width: 5px;",
+      "matchCount": 0
+    },
+    {
+      "selector": "100%",
+      "declaration": "transform: scale(6); opacity: 0; border-width: 1px;",
+      "matchCount": 0
+    },
+    {
+      "selector": "0%",
+      "declaration": "transform: translateY(-10px); opacity: 0;",
+      "matchCount": 0
+    },
+    {
+      "selector": "15%",
+      "declaration": "opacity: 0.9;",
+      "matchCount": 0
+    },
+    {
+      "selector": "100%",
+      "declaration": "transform: translateY(var(--dy)); opacity: 0;",
+      "matchCount": 0
+    },
+    {
+      "selector": "/* ===== Portrait notice ===== */\n#portrait-notice",
+      "declaration": "display: none;\n  position: fixed; inset: 0; z-index: 9980;\n  background: #1a3a4a;\n  flex-direction: column; align-items: center; justify-content: center; gap: 20px;\n  color: white; text-align: center;",
+      "matchCount": 1
+    },
+    {
+      "selector": "#sk-intro.hidden",
+      "declaration": "display: none;",
+      "matchCount": 1
+    },
+    {
+      "selector": "body.bento-complete-open #sk-intro",
+      "declaration": "display: none !important;\n  pointer-events: none;",
+      "matchCount": 0
+    },
+    {
+      "selector": "#sk-intro.is-guiding .sk-intro-col.is-muted",
+      "declaration": "opacity: 0.46;\n  filter: saturate(0.72);\n  transform: scale(0.96);",
+      "matchCount": 0
+    },
+    {
+      "selector": ".nori-skip-confirm.hidden",
+      "declaration": "display: none;",
+      "matchCount": 0
+    },
+    {
+      "selector": ".tut-dim.hidden",
+      "declaration": "display:none;",
+      "matchCount": 1
+    },
+    {
+      "selector": ".tut-bubble.hidden",
+      "declaration": "display:none;",
+      "matchCount": 1
+    },
+    {
+      "selector": "from",
+      "declaration": "opacity:0",
+      "matchCount": 0
+    },
+    {
+      "selector": ".tut-pono-callout.hidden",
+      "declaration": "display: none;",
+      "matchCount": 0
+    },
+    {
+      "selector": "/* ===== Bento full-flow tutorial (v2: ✊✋ two-hand drag demo) ===== */\n.tut-finger",
+      "declaration": "position: fixed;\n  left: 0; top: 0;\n  width: 58px; height: 58px;\n  /* v3.2: overlay 系より確実に上 (9200)、 bubble 9997 より下を維持 */\n  z-index: 9200;\n  pointer-events: none;\n  user-select: none;\n  display: none;",
+      "matchCount": 0
+    },
+    {
+      "selector": "9%",
+      "declaration": "transform: translate(calc(var(--from-x) - 50%), calc(var(--from-y) - 50%)); opacity: 0;",
+      "matchCount": 0
+    },
+    {
+      "selector": "66%",
+      "declaration": "transform: translate(calc(var(--to-x) - 50%), calc(var(--to-y) - 50%)); opacity: 0;",
+      "matchCount": 0
+    },
+    {
+      "selector": "92%",
+      "declaration": "transform: translate(calc(var(--to-x) - 50%), calc(var(--to-y) - 50%)); opacity: 0.2;",
+      "matchCount": 0
+    },
+    {
+      "selector": "93%",
+      "declaration": "transform: translate(calc(var(--from-x) - 50%), calc(var(--from-y) - 50%)); opacity: 0;",
+      "matchCount": 0
+    },
+    {
+      "selector": "/* ✊: invisible at FROM (0-8%), travel FROM→TO (8-67%), then fade out */\n  0%",
+      "declaration": "transform: translate(calc(var(--from-x) - 50%), calc(var(--from-y) - 50%)); opacity: 0;",
+      "matchCount": 0
+    },
+    {
+      "selector": "8%",
+      "declaration": "transform: translate(calc(var(--from-x) - 50%), calc(var(--from-y) - 50%)); opacity: 0;",
+      "matchCount": 0
+    },
+    {
+      "selector": "67%",
+      "declaration": "transform: translate(calc(var(--to-x) - 50%), calc(var(--to-y) - 50%)); opacity: 0;",
+      "matchCount": 0
+    },
+    {
+      "selector": "100%",
+      "declaration": "transform: translate(calc(var(--from-x) - 50%), calc(var(--from-y) - 50%)); opacity: 0;",
+      "matchCount": 0
+    },
+    {
+      "selector": ".tut-finger.tut-finger--tap .tut-hand--grip",
+      "declaration": "display: none;",
+      "matchCount": 0
+    },
+    {
+      "selector": "50%",
+      "declaration": "transform: translate(calc(var(--tap-x) - 50%), calc(var(--tap-y) - 50%)) scale(0.78); opacity: 0.9;",
+      "matchCount": 0
+    },
+    {
+      "selector": "/* v2: locked palette button (other bento boxes during box step) */\n.free-palette-item.tut-locked,\n.free-palette-item.tut-locked:hover,\n.free-palette-item.tut-locked:active",
+      "declaration": "pointer-events: auto;\n  opacity: 0.55;\n  filter: grayscale(0.4);\n  cursor: not-allowed;",
+      "matchCount": 0
+    },
+    {
+      "selector": ".tut-skip-mini",
+      "declaration": "font-size: 0.62rem;\n  opacity: 0.72;\n  transform: scale(.92);\n  transform-origin: left center;\n  margin-top: 0.6rem;\n  display: flex;\n  align-items: center;\n  gap: 6px;\n  color: #5D4E37;\n  font-weight",
+      "matchCount": 0
+    },
+    {
+      "selector": "0%, 100%",
+      "declaration": "transform: scale(0.96); opacity: 0.72;",
+      "matchCount": 0
+    },
+    {
+      "selector": "0%, 100%",
+      "declaration": "opacity: 0.4;",
+      "matchCount": 0
+    },
+    {
+      "selector": "0%, 100%",
+      "declaration": "opacity: 0.3;",
+      "matchCount": 0
+    },
+    {
+      "selector": "50%",
+      "declaration": "opacity: 0.75;",
+      "matchCount": 0
+    },
+    {
+      "selector": "/* v2: settings (gear) re-enable tutorial */\n/* v1413: z-index 8 → 9500 (game-title=9400 を上回るので、 タイトル帯と重なっても\n   常に gear が見える)。 fav-header-btn (右上 ⭐) も同じ z-index 8 だったので一緒に底上げ。\n   背景も rgba 0.6 → 0.9 + ",
+      "declaration": "position: fixed;\n  top: 6px;\n  right: 56px;\n  z-index: 9500;\n  width: 36px; height: 36px;\n  border: none;\n  border-radius: 50%;\n  background: rgba(255,255,255,0.9);\n  box-shadow: 0 1px 3px rgba(93,78,",
+      "matchCount": 1
+    },
+    {
+      "selector": ".tut-settings-btn:active",
+      "declaration": "transform: translateY(1px); opacity: 0.95;",
+      "matchCount": 0
+    },
+    {
+      "selector": ".tut-settings-modal.hidden",
+      "declaration": "display: none;",
+      "matchCount": 1
+    },
+    {
+      "selector": ".complete-result-page.hidden,\n.complete-detail-page.hidden",
+      "declaration": "display: none;",
+      "matchCount": 1
+    },
+    {
+      "selector": ".complete-right::before",
+      "declaration": "content: '';\n  position: absolute;\n  inset: 0;\n  background:\n    linear-gradient(180deg, rgba(255,255,255,0.72), rgba(255,255,255,0.88)),\n    center / cover no-repeat url('../assets/images/bento/story",
+      "matchCount": 1
+    },
+    {
+      "selector": ".complete-group-card.is-missing",
+      "declaration": "opacity: 0.58;\n  filter: grayscale(0.28);",
+      "matchCount": 0
+    },
+    {
+      "selector": "0%",
+      "declaration": "transform: scale(0.2) rotate(-18deg); opacity: 0.2;",
+      "matchCount": 0
+    },
+    {
+      "selector": ".complete-pono-bubble.hidden-pre,\n.complete-trivia.hidden-pre,\n.complete-stars.hidden-pre,\n.complete-acorns.hidden-pre,\n.complete-detail-btn.hidden-pre",
+      "declaration": "opacity: 0;\n  transform: scale(0.7);\n  pointer-events: none;",
+      "matchCount": 3
+    },
+    {
+      "selector": ".complete-stars .star",
+      "declaration": "width: 34px;\n  height: 34px;\n  overflow: hidden;\n  color: transparent;\n  text-indent: -999px;\n  background: center / contain no-repeat url('../assets/images/bento/ui/decor_star_yellow.png');\n  filter:",
+      "matchCount": 3
+    },
+    {
+      "selector": "/* きょうの進捗 (N/5) */\n.daily-acorn-status",
+      "declaration": "margin-top: 10px;\n  font-size: 0.85rem;\n  font-weight: 700;\n  color: #7a5c2a;\n  letter-spacing: 0.02em;\n  opacity: 0.9;\n  transition: opacity 0.4s ease;",
+      "matchCount": 1
+    },
+    {
+      "selector": ".daily-acorn-status.hidden-pre",
+      "declaration": "opacity: 0;",
+      "matchCount": 1
+    },
+    {
+      "selector": ".save-fav-btn.hidden-pre",
+      "declaration": "opacity: 0;\n  transform: translateY(8px);\n  pointer-events: none;",
+      "matchCount": 0
+    },
+    {
+      "selector": ".complete-trivia",
+      "declaration": "display: none;",
+      "matchCount": 1
+    },
+    {
+      "selector": ".fav-overlay.hidden",
+      "declaration": "display: none;",
+      "matchCount": 1
+    },
+    {
+      "selector": "from",
+      "declaration": "transform:translateY(-100%);opacity:0",
+      "matchCount": 0
+    },
+    {
+      "selector": "to",
+      "declaration": "transform:translateY(-100%);opacity:0",
+      "matchCount": 0
+    },
+    {
+      "selector": "100%",
+      "declaration": "opacity:0;transform:translateY(-80px) scale(0)",
+      "matchCount": 0
+    },
+    {
+      "selector": "#ach-next-hint",
+      "declaration": "position:fixed;bottom:12px;left:50%;z-index:9502;transform:translateX(-50%) translateY(10px);background:linear-gradient(135deg,#e0f7fa,#b2ebf2);color:#00695c;font-size:0.82rem;font-weight:bold;padding",
+      "matchCount": 0
+    }
+  ]
+}

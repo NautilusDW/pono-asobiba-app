@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>ポノの もじもじクレーン | ポノのあそびば</title>
+<meta name="description" content="クレーンでかなブロックをあつめて、ことばをつくる横画面スマホ向け知育ゲーム。">
+<!-- FOUC guard: 初回ペイント時の未スタイル表示を防ぐ -->
+<style>html,body{background:#31294e}#app{visibility:hidden}body.pono-game-ready #app{visibility:visible}</style>
+<script>document.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(function(){requestAnimationFrame(function(){if(!window.__PONO_TIER_LOCKED__)document.body.classList.add('pono-game-ready')})})});</script>
+<!-- app (アプリばん) 専用 tier ガード。 tier.js 未読込/例外時は fail-open (従来通り表示)。 -->
+<script src="../common/debug-mode.js"></script>
+<script src="../common/tier.js"></script>
+<script>
+(function(){
+  'use strict';
+  var locked = false;
+  try {
+    var pt = window.PonoTier;
+    if (pt && typeof pt.getTier === 'function') locked = (pt.getTier() !== 'app');
+  } catch (e) { locked = false; }
+  if (!locked) return;
+  window.__PONO_TIER_LOCKED__ = true;
+  // FOUC 防止: head 内同期実行なので初回ペイント前にゲーム側 DOM を不可視化
+  var st = document.createElement('style');
+  st.textContent = 'html{background:#FFF7E6 !important}body>*:not(#ponoTierLockScreen){visibility:hidden !important}';
+  (document.head || document.documentElement).appendChild(st);
+  // キーボード入力がゲームへ届かないよう capture 段階で遮断 (ロック中のみ)。
+  // ゲーム側 listener はガードより後に登録されるため stopImmediatePropagation だけで全て遮断できる。
+  // preventDefault はしない: Tab/Enter で「メニューへ もどる」リンクに到達する
+  // キーボード操作と、 ブラウザ既定動作 (F5 リロード等) を塞がないため。
+  var KEY_EVTS = ['keydown', 'keyup', 'keypress'];
+  for (var i = 0; i < KEY_EVTS.length; i++) {
+    window.addEventListener(KEY_EVTS[i], function(e){
+      if (window.__PONO_TIER_LOCKED__) e.stopImmediatePropagation();
+    }, true);
+  }
+  function showLock(){
+    if (!document.body || document.getElementById('ponoTierLockScreen')) return;
+    var ov = document.createElement('div');
+    ov.id = 'ponoTierLockScreen';
+    ov.setAttribute('role', 'dialog');
+    ov.style.cssText = 'position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(165deg,#FFF7E6 0%,#FFEDC2 45%,#D9EFD5 100%);font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN",sans-serif;text-align:center';
+    var card = document.createElement('div');
+    card.style.cssText = 'background:#fff;border-radius:26px;padding:28px 24px 26px;max-width:340px;width:100%;box-shadow:0 12px 40px rgba(93,78,55,0.22)';
+    var emo = document.createElement('div');
+    emo.style.cssText = 'font-size:2.8rem;line-height:1;margin-bottom:12px';
+    emo.textContent = '🦉✨';
+    card.appendChild(emo);
+    var tag = document.createElement('div');
+    tag.style.cssText = 'display:inline-block;font-size:0.74rem;font-weight:900;color:#fff;background:linear-gradient(135deg,#34D399,#10B981);padding:4px 14px;border-radius:50px;letter-spacing:0.06em;margin-bottom:12px';
+    tag.textContent = 'アプリばん せんよう';
+    card.appendChild(tag);
+    var ttl = document.createElement('div');
+    ttl.style.cssText = 'font-size:1.12rem;font-weight:900;color:#5D4E37;line-height:1.5;margin-bottom:10px';
+    ttl.textContent = 'この ゲームは アプリばんで あそべるよ！';
+    card.appendChild(ttl);
+    var body = document.createElement('div');
+    body.style.cssText = 'font-size:0.92rem;font-weight:700;color:#8B7B60;line-height:1.6;margin-bottom:18px';
+    body.textContent = 'アプリばんに あたらしい あそびが まってるよ';
+    card.appendChild(body);
+    var btn = document.createElement('a');
+    btn.href = '../play.html';
+    btn.style.cssText = 'display:inline-block;padding:12px 34px;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-size:0.98rem;font-weight:900;text-decoration:none;box-shadow:0 4px 14px rgba(59,130,246,0.4)';
+    btn.textContent = 'メニューへ もどる';
+    card.appendChild(btn);
+    ov.appendChild(card);
+    document.body.appendChild(ov);
+  }
+  if (document.body) { showLock(); }
+  else { document.addEventListener('DOMContentLoaded', showLock); }
+})();
+</script>
+<link rel="stylesheet" href="styles.css?v=20260707-1600">
+<script src="js/vendor/matter.min.js?v=20260707-1600" defer></script>
+<script src="data/words.js?v=20260707-1600" defer></script>
+<script src="js/phys-matter.js?v=20260707-1600" defer></script>
+<script src="js/game.js?v=20260707-1600" defer></script>
+<script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
+</head>
+<body>
+<div id="app">
+  <div id="rotateNote" aria-live="polite">
+    <div class="rotate-card">
+      <div class="rotate-icon">📱</div>
+      <div class="rotate-title">よこにしてね</div>
+      <div class="rotate-text">クレーンで あそぶよ</div>
+      <a class="rotate-home" href="../play.html">もどる</a>
+    </div>
+  </div>
+
+  <main id="gameShell" aria-label="もじもじクレーン">
+    <canvas id="gameCanvas" width="960" height="540" aria-hidden="true"></canvas>
+
+    <div id="topControls">
+      <button id="homeBtn" class="icon-btn" type="button" aria-label="もどる">🏠</button>
+      <button id="soundBtn" class="icon-btn" type="button" aria-label="おと">🔊</button>
+      <button id="hintBtn" class="pill-btn" type="button">ヒント</button>
+    </div>
+
+    <button id="dropBtn" type="button" aria-label="おろす">
+      <span>おろす</span>
+      <b>▼</b>
+    </button>
+    <button id="chuteLeftBtn" class="chute-btn chute-left hidden" type="button" aria-label="もじへ おくる">⬅ もじ</button>
+    <button id="chuteRightBtn" class="chute-btn chute-right hidden" type="button" aria-label="かたづけへ おくる">かたづけ ➡</button>
+
+    <div id="titleOverlay" class="overlay">
+      <section class="panel title-panel" aria-labelledby="gameTitle">
+        <div class="mark">🏗️</div>
+        <h1 id="gameTitle">もじもじクレーン</h1>
+        <p>もじを あつめて じゃまを かたづけよう</p>
+        <div id="levelButtons" class="level-grid">
+          <button class="level-btn easy" type="button" data-level="easy">
+            <span>やさしい</span>
+            <small>2もじ</small>
+          </button>
+          <button class="level-btn normal" type="button" data-level="normal">
+            <span>ふつう</span>
+            <small>3もじ</small>
+          </button>
+          <button class="level-btn challenge" type="button" data-level="challenge">
+            <span>チャレンジ</span>
+            <small>4もじ</small>
+          </button>
+        </div>
+      </section>
+    </div>
+
+    <div id="confirmOverlay" class="overlay hidden">
+      <section class="panel confirm-panel">
+        <h2>やめる？</h2>
+        <p>いまの ことばは そのまま しまうよ</p>
+        <div class="panel-actions">
+          <button id="continueBtn" class="soft-btn" type="button">つづける</button>
+          <a id="quitBtn" class="soft-btn muted" href="../play.html">もどる</a>
+        </div>
+      </section>
+    </div>
+
+    <div id="resultOverlay" class="overlay hidden">
+      <section class="panel result-panel" aria-labelledby="resultTitle">
+        <h2 id="resultTitle">できたね</h2>
+        <div id="resultStars" class="stars">★★★</div>
+        <div id="wordCards" class="word-cards"></div>
+        <div class="panel-actions">
+          <button id="againBtn" class="soft-btn" type="button">もういちど</button>
+          <button id="levelsBtn" class="soft-btn muted" type="button">えらぶ</button>
+        </div>
+      </section>
+    </div>
+
+    <div id="liveRegion" class="sr-only" aria-live="polite"></div>
+  </main>
+</div>
+</body>
+</html>

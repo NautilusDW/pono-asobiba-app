@@ -1,0 +1,3551 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Quizland 全体プレビュー (21:9 + 16:9 セーフエリア)</title>
+<script src="../../../assets/lib/html2canvas.min.js" defer></script>
+<style>
+:root {
+  /* チューナブル */
+  --slot-size: 130px;
+  --slot-color: #E0E0E0;
+  --slot-radius: 16px;
+  --gap: 16px;
+  --padding: 16px;
+
+  /* キャンバス比率: 21:9 outer / 16:9 safe area inner */
+  --canvas-w: 2100px;
+  --canvas-h: 900px;
+  --safe-w: 1600px;
+  --safe-h: 900px;
+  /* side margins = (canvas-w - safe-w) / 2 = 250 */
+
+  --header-h: 150px;  /* 100 → 150 で 1.5x */
+  --bbox-bg: #d4be8a;
+  --bbox-border: rgba(110, 70, 32, 0.55);
+  --bbox-label: rgba(80, 50, 20, 0.65);
+
+  --bg: #1a1a1a;
+  --paper: #f5e9c4;
+  --paper-2: #e8d293;
+  --paper-shadow: rgba(80, 50, 10, 0.3);
+  --wood-dark: #6e4520;
+  --wood-mid: #8a5a2a;
+  --wood-light: #b07a3a;
+  --frame-border: rgba(138, 56, 245, 0.6);
+  --safe-border: rgba(0, 212, 255, 0.4);
+  --owl-bg: #b08acf;
+  --hint-bg: #fff3c4;
+  --text: #4a2d0a;
+  --text-light: #f0f0f0;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  background: #0c0c0c;
+  color: var(--text-light);
+  font-family: -apple-system, "Hiragino Sans", "Yu Gothic", sans-serif;
+  font-size: 14px;
+  overflow-x: hidden;
+}
+
+/* ───── Toolbar ───── */
+.toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(20,20,20,0.95);
+  border-bottom: 1px solid #333;
+  padding: 10px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  font-size: 12px;
+}
+.toolbar > div { display: inline-flex; gap: 6px; align-items: center; }
+.toolbar label { color: #aaa; }
+.toolbar select, .toolbar input[type="text"], .toolbar input[type="number"], .toolbar button {
+  background: #2a2a2a;
+  color: #fff;
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+.toolbar button { cursor: pointer; }
+.toolbar button:hover { background: #3a3a3a; }
+.toolbar button.active { background: #6a4ed4; border-color: #8a5ef0; }
+.toolbar button.dirty { background: #d4824e; border-color: #f0ae5e; }
+.toolbar button.dirty::after { content: " *"; color: #fff8d4; }
+.layout-toast {
+  position: fixed;
+  top: 60px; left: 50%;
+  transform: translateX(-50%);
+  background: rgba(40, 200, 80, 0.95);
+  color: #fff;
+  padding: 8px 24px;
+  border-radius: 8px;
+  font-size: 13px;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  pointer-events: none;
+  animation: layout-toast-fade 1.6s ease-out forwards;
+}
+@keyframes layout-toast-fade {
+  0%   { opacity: 0; transform: translate(-50%, -8px); }
+  15%  { opacity: 1; transform: translate(-50%, 0); }
+  85%  { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, -8px); }
+}
+.toolbar input[type="file"] { color: #aaa; font-size: 11px; }
+
+/* ───── Stage (21:9 outer) ───── */
+.stage-wrap {
+  padding: 20px;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.stage {
+  width: var(--canvas-w);
+  height: var(--canvas-h);
+  margin: 0 auto;
+  position: relative;
+  background: url('../../../assets/images/quizland/stage-bg.webp') center / cover no-repeat;
+  border: 1px dashed #555;
+  overflow: hidden;
+}
+
+/* ───── Safe Area (16:9) ───── */
+.safe-area {
+  position: absolute;
+  top: 0;
+  left: calc((var(--canvas-w) - var(--safe-w)) / 2);
+  width: var(--safe-w);
+  height: var(--safe-h);
+  display: grid;
+  grid-template-rows: var(--header-h) 1fr;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  padding: 14px;
+}
+
+/* セーフエリアの境界線 (オン/オフ可) */
+body.show-safe .safe-area::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 2px dashed var(--safe-border);
+  pointer-events: none;
+  z-index: 2;
+}
+body.show-safe .safe-area::after {
+  content: "16:9 safe area";
+  position: absolute;
+  top: 4px; left: 8px;
+  font-size: 11px;
+  color: var(--safe-border);
+  pointer-events: none;
+  z-index: 2;
+  background: rgba(0,0,0,0.4);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+/* ───── Header (top) — body と同じグリッド (1fr 700px) で左ピルを問題欄幅に揃える ───── */
+.hdr {
+  display: grid;
+  grid-template-columns: 1fr 700px;
+  gap: 16px;
+  align-items: center;
+  height: var(--header-h);
+}
+.hdr-pill {
+  display: inline-flex; align-items: center; gap: 12px;
+  background:
+    linear-gradient(180deg, var(--paper), var(--paper-2));
+  border: 4px solid var(--wood-dark);
+  border-radius: 50px;
+  padding: 6px 18px;
+  height: calc(100% - 14px);
+  box-shadow: 0 4px 0 var(--wood-dark), 0 6px 12px var(--paper-shadow);
+}
+.hdr-left {
+  gap: 16px;
+  padding: 6px 18px 6px 8px;
+  width: 100%;
+  justify-content: flex-start;
+}
+.hdr-left .owl-icon {
+  width: 64px; height: 64px;
+  background: linear-gradient(180deg, #f4e4c4, #d8b78a);
+  border: 3px solid var(--wood-dark);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px;
+  flex: 0 0 auto;
+}
+.hdr-left .title-card {
+  background: linear-gradient(180deg, #c97a3e, #8a4f1f);
+  border: 3px solid var(--wood-dark);
+  border-radius: 12px;
+  padding: 4px 14px;
+  color: #fff7d0;
+  font-weight: 800;
+  font-size: 18px;
+  text-shadow: 0 2px 0 rgba(0,0,0,0.4);
+  text-align: center;
+  line-height: 1.1;
+  flex: 0 0 auto;
+}
+.hdr-left .title-card small { font-size: 11px; display: block; }
+.hdr-left .progress-num {
+  background: linear-gradient(180deg, #fff8e0, #f0dfa6);
+  border: 2px solid var(--wood-dark);
+  border-radius: 16px;
+  padding: 4px 18px;
+  font-weight: 900;
+  font-size: 22px;
+  color: var(--text);
+  flex: 0 0 auto;
+}
+.hdr-left .progress-num { margin-left: auto; }  /* B 位置に移動 */
+.hdr-left .dots {
+  display: flex;
+  gap: 10px;
+  flex: 0 0 auto;
+  /* デフォルトサイズ。 リサイズすると中の dot も追従 */
+  height: 14px;
+  align-items: center;
+  justify-content: space-between;
+}
+.hdr-left .dot {
+  /* 正方形固定: 高さ = container 高さ、 幅 = aspect-ratio で同じ値
+     横方向の余りは justify-content: space-between でドット間に分配 */
+  height: 100%;
+  aspect-ratio: 1;
+  width: auto;
+  flex: 0 0 auto;
+  background: #d6b56a;
+  border: 2px solid var(--wood-mid);
+}
+.hdr-left .dot.done { background-color: #f3a330; }
+
+.hdr-center {
+  justify-self: center;
+  display: inline-flex; align-items: center; gap: 16px;
+  color: var(--text);
+}
+.hdr-center .progress-num {
+  background: linear-gradient(180deg, #fff8e0, #f0dfa6);
+  border: 2px solid var(--wood-dark);
+  border-radius: 16px;
+  padding: 4px 18px;
+  font-weight: 900;
+  font-size: 22px;
+}
+.hdr-center .dots {
+  display: inline-flex; gap: 10px;
+}
+.hdr-center .dot {
+  width: 16px; height: 16px; border-radius: 50%;
+  background: #d6b56a;
+  border: 2px solid var(--wood-mid);
+}
+.hdr-center .dot.done { background: #f3a330; }
+
+.hdr-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  justify-self: end;
+}
+.hdr-right .ctrl-btn {
+  /* ヘッダー 150px に合わせて 120×120 正方形 */
+  display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+  width: 120px;
+  height: 120px;
+  padding: 8px;
+  font-weight: 800;
+  font-size: 16px;
+  gap: 6px;
+}
+.hdr-right .ctrl-btn .icon { font-size: 40px; line-height: 1; }
+
+/* ───── Body ───── */
+.body {
+  display: grid;
+  grid-template-columns: 1fr 700px;
+  gap: 16px;
+  height: 100%;
+  align-items: stretch;
+}
+
+/* Question column (left) — 上下空間を均等に */
+.q-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  justify-content: center;
+}
+.q-text-card {
+  /* 想定サイズ: 1000×170 (アスペクト比 ≈ 6:1) */
+  background: linear-gradient(180deg, var(--paper), var(--paper-2));
+  border: 5px solid var(--wood-dark);
+  border-radius: 18px;
+  padding: 22px 80px 22px 32px;  /* 右は audio ボタン分の余白 */
+  display: flex; align-items: center; justify-content: center; gap: 16px;
+  color: var(--text);
+  font-weight: 800;
+  font-size: 32px;
+  min-height: 170px;  /* 最長 29 文字 (2 行折返) + 余裕 */
+  line-height: 1.4;
+  position: relative;
+  box-shadow: 0 6px 0 var(--wood-dark), 0 8px 16px var(--paper-shadow);
+}
+/* 問題文 span を resizable で動かせるように inline-block 化 (リサイズハンドルが付く) */
+#q-text {
+  display: inline-block;
+  padding: 4px 8px;
+}
+.q-text-card .audio {
+  /* 通常のフレックス子要素として右端に配置 (position: absolute はリサイズ時に挙動が
+     ややこしくなるので避ける) */
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, var(--wood-light), var(--wood-mid));
+  border: 3px solid var(--wood-dark);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  color: #fff;
+  flex: 0 0 auto;
+}
+
+.board {
+  /* 想定アスペクト比: ~1000×500 (約 2:1)、 画像差替時もこの比を保つこと */
+  background: linear-gradient(180deg, var(--paper), var(--paper-2));
+  border: 5px solid var(--wood-dark);
+  border-radius: 18px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-shadow: inset 0 -4px 0 rgba(120, 80, 20, 0.15), 0 4px 12px var(--paper-shadow);
+  height: 500px;
+  /* 中身がどれだけ大きくなっても外枠は伸びない */
+  overflow: hidden;
+}
+/* 列の伸び対策: q-col は親の grid 1fr 内に固定 */
+.q-col, .a-col { min-width: 0; }
+.board::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border: 1px dashed var(--frame-border);
+  border-radius: 12px;
+  pointer-events: none;
+  opacity: 0.0; /* デフォルト非表示、 デバッグ用 */
+}
+body.show-board-frame .board::before { opacity: 1; }
+
+.slot {
+  width: var(--slot-size);
+  height: var(--slot-size);
+  background: var(--slot-color);
+  border-radius: var(--slot-radius);
+  display: flex; align-items: center; justify-content: center;
+  color: #888;
+  font-size: 14px;
+  flex: 0 0 auto;
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  position: relative;
+}
+.slot.has-img { background-color: transparent; color: transparent; }
+.row { display: flex; gap: var(--gap); align-items: center; justify-content: center; }
+.grid {
+  display: flex; flex-direction: column;
+  gap: var(--gap);
+  align-items: center; justify-content: center;
+}
+.grid .row { gap: var(--gap); }
+
+/* Answer column (right) — 4 chips + bottom-right (hint+owl) を縦に。
+   q-col と同じ縦中央寄せ → bottom-right の下辺が board の下辺と揃う */
+.a-col {
+  display: flex; flex-direction: column;
+  gap: 18px;
+  height: 100%;
+  justify-content: center;
+}
+/* 答えチップ 4 個を囲うトレイ (土台)
+   想定アスペクト比: ~700×500 (約 7:5)、 画像差替時はそのまま 1 枚絵で置換 */
+.answer-tray {
+  background: #b07a3a;
+  border: 5px solid var(--wood-dark);
+  border-radius: 18px;
+  padding: 18px;
+  flex: 0 0 auto;
+}
+.answer-panel {
+  /* 想定: 各 chip ~322×220 (1.46:1) */
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 16px;
+}
+.bottom-right {
+  display: flex;
+  align-items: center;
+  /* flex-end + .hint に margin-right:auto で、 .hint を hide しても
+     char-hint と .character の位置がほぼ動かない (旧 space-between だと
+     .hint 削除時に右の 2 個が再配置されてレイアウトが大きく崩れていた) */
+  justify-content: flex-end;
+  gap: 14px;
+  margin-top: 8px;  /* 答えトレイの直下に置く、 余分な空間を作らない */
+}
+.bottom-right .hint {
+  flex: 1 1 auto;
+  margin: 0 auto 0 0;   /* 右の方の char-hint / character を右端に押しつける */
+  align-self: center;
+}
+.bottom-right .character {
+  flex: 0 0 auto;
+}
+.chip {
+  /* 想定アスペクト比: ~341×220 (≈1.55:1)、 画像差替時 background-size: contain で */
+  background: linear-gradient(180deg, var(--paper), var(--paper-2));
+  border: 5px solid var(--wood-dark);
+  border-radius: 18px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 12px;
+  color: var(--text);
+  font-weight: 800;
+  font-size: 28px;
+  box-shadow: 0 4px 0 var(--wood-dark), 0 6px 12px var(--paper-shadow);
+  position: relative;
+  height: 220px;
+}
+.chip .circle {
+  width: 110px; height: 110px;
+  border-radius: 50%;
+  background:
+    repeating-linear-gradient(135deg,
+      rgba(255,255,255,0.04) 0 4px,
+      rgba(0,0,0,0.06) 4px 8px),
+    var(--slot-color);
+  border: 3px solid rgba(0,0,0,0.1);
+}
+.chip[data-color="red"]    .circle { background:
+    repeating-linear-gradient(135deg, rgba(255,255,255,0.12) 0 5px, rgba(0,0,0,0.1) 5px 10px), #d23f3f; }
+.chip[data-color="blue"]   .circle { background:
+    repeating-linear-gradient(135deg, rgba(255,255,255,0.12) 0 5px, rgba(0,0,0,0.1) 5px 10px), #3d6dc7; }
+.chip[data-color="yellow"] .circle { background:
+    repeating-linear-gradient(135deg, rgba(255,255,255,0.12) 0 5px, rgba(0,0,0,0.1) 5px 10px), #e8c43a; }
+.chip[data-color="green"]  .circle { background:
+    repeating-linear-gradient(135deg, rgba(255,255,255,0.12) 0 5px, rgba(0,0,0,0.1) 5px 10px), #4ea84e; }
+
+/* (旧 footer-row は a-col 内へ移動、 ここはレガシー残し) */
+.footer-row { display: none; }
+.hint {
+  /* 想定アスペクト比: ~600×120 (5:1) */
+  background: linear-gradient(180deg, #fff8d4, var(--hint-bg));
+  border: 4px solid #b89a3a;
+  border-radius: 16px;
+  padding: 28px 32px;
+  color: var(--text);
+  font-size: 24px;
+  font-weight: 700;
+  max-width: 700px;
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 4px 0 #b89a3a, 0 6px 12px var(--paper-shadow);
+}
+.character {
+  width: 200px; height: 220px;
+  background:
+    radial-gradient(ellipse at 50% 30%, var(--owl-bg) 0%, #5a3a8a 100%);
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 96px;
+  border: 4px solid #5a3a8a;
+  position: relative;
+  margin-bottom: -8px;
+}
+/* Charlie-3 復活: char-hint はコンテンツ吹き出し (キャラのひとこと) なので
+   placeholder PNG を復活。 シート画像にはこの吹き出しは含まれていない。 */
+.char-hint {
+  flex: 0 0 auto;
+  position: relative;
+  width: 235px;
+  height: 63px;
+  background-image: url('../../../assets/_legacy/preview-placeholders/hint-60.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  color: #4a3a1a;
+  text-shadow: 0 1px 0 rgba(255,255,255,0.6);
+  cursor: text;
+  white-space: nowrap;
+}
+
+/* ───── Annotation overlay ───── */
+#anno-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+}
+#anno-svg {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+}
+.anno-mode #anno-layer { pointer-events: auto; cursor: crosshair; }
+.anno-marker {
+  position: absolute;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: #ff3b6b;
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800;
+  font-size: 16px;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  cursor: move;
+  user-select: none;
+}
+.anno-text {
+  position: absolute;
+  background: rgba(255, 240, 100, 0.95);
+  color: #222;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  transform: translate(-50%, -50%);
+  cursor: move;
+  user-select: none;
+  border: 2px solid #b89a3a;
+  max-width: 240px;
+}
+.anno-arrow-line {
+  stroke: #ff3b6b;
+  stroke-width: var(--arrow-stroke, 4);
+  fill: none;
+  cursor: move;
+  pointer-events: stroke;
+  stroke-linecap: round;
+}
+.anno-arrow-line.with-head { marker-end: url(#anno-arrow-head); }
+.anno-rect {
+  fill: rgba(255, 59, 107, 0.05);
+  stroke: #ff3b6b;
+  stroke-width: 4;
+  stroke-dasharray: 8 4;
+  cursor: move;
+  pointer-events: all;
+}
+.anno-marker, .anno-text { cursor: move; }
+.anno-selected { outline: 3px solid #00d4ff; outline-offset: 2px; }
+line.anno-arrow-line.anno-selected, rect.anno-rect.anno-selected {
+  stroke: #00d4ff !important; outline: none !important;
+}
+.anno-handle {
+  fill: #00d4ff; stroke: #fff; stroke-width: 2;
+  cursor: nwse-resize; pointer-events: all;
+}
+.anno-handle.endpoint { cursor: grab; }
+.anno-handle-hit {
+  fill: rgba(0, 212, 255, 0.001);
+  stroke: none;
+  pointer-events: all;
+  cursor: grab;
+}
+.anno-tip {
+  position: fixed;
+  bottom: 16px; left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.85);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  z-index: 200;
+  pointer-events: none;
+}
+body.eraser-mode #anno-layer { cursor: crosshair; }
+.tool-btn { font-size: 12px; }
+#anno-tools { display: none; gap: 6px; }
+body.anno-mode #anno-tools { display: inline-flex !important; }
+
+/* ───── Preview mode (端末サイズで見る) ───── */
+#preview-exit {
+  display: none;
+  position: fixed;
+  top: 12px; right: 12px;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.3);
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+}
+body.preview-mode #preview-exit { display: block; }
+body.preview-mode .toolbar { display: none; }
+body.preview-mode .anno-tip { display: none !important; }
+body.preview-mode .stage-wrap {
+  position: fixed;
+  inset: 0;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  background: #000;
+}
+body.preview-mode .stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 0;
+  /* transform set by JS で translate + scale */
+}
+
+/* ───── Wireframe mode (全要素を単純なバウンディングボックスに) ───── */
+.hdr-pill,
+.hdr-left .title-card,
+.hdr-left .progress-num,
+.hdr-right .ctrl-btn,
+.q-text-card,
+.board,
+.chip,
+.answer-tray,
+.hint,
+.character {
+  background: var(--bbox-bg) !important;
+  border: 1px dashed var(--bbox-border) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  color: var(--bbox-label) !important;
+}
+/* 内側パーツも矩形に — 丸を消して画像生成時に丸が焼き込まれないように */
+.hdr-left .owl-icon,
+.chip .circle,
+.q-text-card .audio {
+  background: var(--bbox-bg) !important;
+  border: 1px dashed var(--bbox-border) !important;
+  border-radius: 0 !important;
+}
+/* ドットも丸じゃなく小さい矩形に */
+.hdr-left .dot {
+  border-radius: 0 !important;
+  background: var(--bbox-bg) !important;
+  border: 1px dashed var(--bbox-border) !important;
+}
+/* shorthand `background:` を使うと `background-image: none` になって placeholder
+   画像が消えるので、 background-color のみで色付けする */
+.hdr-left .dot.done { background-color: #c89a4a !important; }
+/* キャラクター: 卵形をやめて単純な四角バウンディングボックス
+   width/height は !important を付けず、 リサイズドラッグの inline style を上書き許可 */
+.character {
+  border-radius: 0 !important;
+  width: 200px;
+  height: 168px;
+  font-size: 56px;
+}
+
+/* ───── Wave 47 (Charlie-3): コンテンツ画像は復活 / 木枠フレームのみ削除 ─────
+ * Wave 46 (Bravo-3) は frame と content の区別なく一括削除してしまったため、
+ * フクロウアバター・タイトル・進捗ドット・ボタンなどのコンテンツ画像まで消えた。
+ * Charlie-3 ではこれらコンテンツ系 PNG を復活させ、 シート画像 と重なって出現する
+ * 木枠系フレーム (.q-text-card, .board, .chip 外枠, .hint, .answer-tray, .slot,
+ * .hdr-pill) のみを削除維持する。
+ *
+ * ・KEEP: .stage (stage-bg.png), .stage::after (quizland-sheet-v1.png 本番フレーム)
+ * ・KEEP (コンテンツ復活): owl-icon, title-card, progress-num, dot, progress-mark,
+ *   ctrl-btn (news/settings), audio, character, char-hint (hint-60), chip .circle
+ * ・DELETE 維持 (legacy 木枠フレーム): hdr-pill, q-text-card, board, answer-tray,
+ *   chip 外枠, hint, slot (← シート画像が同等のフレームを提供する) */
+.hdr-pill,
+.hdr-left .owl-icon,
+.hdr-left .title-card,
+.hdr-left .progress-num,
+.hdr-left .dot,
+.hdr-right .ctrl-btn,
+.q-text-card,
+.q-text-card .audio,
+.board,
+.answer-tray,
+.chip,
+.chip .circle,
+.hint,
+.character,
+.slot {
+  background-position: center !important;
+  background-size: contain !important;
+  background-repeat: no-repeat !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+/* === コンテンツ/アイコン系 (復活): シート画像にも残るので個別 PNG を必ず描画 === */
+.hdr-left .owl-icon { background-image: url('../../../assets/_legacy/preview-placeholders/owl-icon.png') !important; }
+.hdr-left .title-card { background-image: url('../../../assets/_legacy/preview-placeholders/title-card.png') !important; }
+.hdr-left .progress-num { background-image: url('../../../assets/_legacy/preview-placeholders/progress-num.png') !important; }
+.hdr-left .dot { background-image: url('../../../assets/_legacy/preview-placeholders/dot.png') !important; }
+.hdr-right .ctrl-btn:nth-child(1) { background-image: url('../../../assets/_legacy/preview-placeholders/ctrl-btn-news.png') !important; }
+.hdr-right .ctrl-btn:nth-child(2) { background-image: url('../../../assets/_legacy/preview-placeholders/ctrl-btn-settings.png') !important; }
+.q-text-card .audio { background-image: url('../../../assets/_legacy/preview-placeholders/audio.png') !important; }
+.chip .circle { background-image: url('../../../assets/_legacy/preview-placeholders/circle.png') !important; }
+.character { background-image: url('../../../assets/_legacy/preview-placeholders/character.png') !important; }
+/* progress-mark.png は 1991x790 の縦長アートなので、 dots (デフォルト 28px 高さ) に
+   直接 background-image すると縦に潰れて見えなくなる。 ::before の絶対配置で
+   dots より大きな領域を確保 (上下に padding 拡張) して描画する */
+.hdr-left .dots { position: relative; }
+.hdr-left .dots::before {
+  content: "";
+  position: absolute;
+  left: -16px;
+  right: -16px;
+  top: -22px;
+  bottom: -22px;
+  background-image: url('../../../assets/_legacy/preview-placeholders/progress-mark.png');
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-position: center;
+  z-index: 0;
+  pointer-events: none;
+}
+/* dot 自体は ::before の上に重ねる */
+.hdr-left .dot { position: relative; z-index: 1; }
+/* === 木枠フレーム系 (削除維持): .hdr-pill, .q-text-card, .board, .answer-tray,
+   .chip 外枠, .hint, .slot は シート画像が提供するため個別 background-image なし === */
+
+.hdr-left .title-card small,
+.hdr-left .title-card span,
+.hdr-left .progress-num,
+.hdr-right .ctrl-btn > *,
+.q-text-card .audio,
+.character {
+  color: transparent !important;
+}
+
+/* ───── Resize mode (ドラッグで各バウンディングボックスを伸縮 + 移動 + ルーラー/ガイド) ───── */
+body.resize-mode .resizable {
+  position: relative;
+  outline: 2px dashed rgba(0, 212, 255, 0.6);
+  outline-offset: 2px;
+  cursor: move;  /* body ドラッグで移動 */
+}
+.resize-handle {
+  position: absolute;
+  background: #00d4ff;
+  border: 2px solid #fff;
+  z-index: 60;
+  pointer-events: auto;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+/* 辺ハンドル: 細長い四角 */
+.resize-handle.edge-n,
+.resize-handle.edge-s {
+  left: 50%; transform: translateX(-50%);
+  width: 28px; height: 14px;
+  cursor: ns-resize;
+}
+.resize-handle.edge-e,
+.resize-handle.edge-w {
+  top: 50%; transform: translateY(-50%);
+  width: 14px; height: 28px;
+  cursor: ew-resize;
+}
+.resize-handle.edge-n { top: -8px; }
+.resize-handle.edge-s { bottom: -8px; }
+.resize-handle.edge-e { right: -8px; }
+.resize-handle.edge-w { left: -8px; }
+/* 角ハンドル: 正方形 */
+.resize-handle.corner-nw,
+.resize-handle.corner-ne,
+.resize-handle.corner-sw,
+.resize-handle.corner-se {
+  width: 16px; height: 16px;
+}
+.resize-handle.corner-nw { top: -9px; left: -9px; cursor: nwse-resize; }
+.resize-handle.corner-ne { top: -9px; right: -9px; cursor: nesw-resize; }
+.resize-handle.corner-sw { bottom: -9px; left: -9px; cursor: nesw-resize; }
+.resize-handle.corner-se { bottom: -9px; right: -9px; cursor: nwse-resize; }
+
+.resize-size-label {
+  position: absolute;
+  bottom: 6px; right: 6px;
+  background: rgba(0,0,0,0.7);
+  color: #fff;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  z-index: 59;
+  pointer-events: none;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+}
+body:not(.resize-mode) .resize-handle,
+body:not(.resize-mode) .resize-size-label { display: none; }
+
+/* 複数選択中のリサイザブル */
+body.resize-mode .resizable.selected {
+  outline: 3px solid #ff8a3d !important;
+  outline-offset: 3px;
+}
+/* edge-link 中ハイライト (リサイズ中、 隣接して連動する辺) */
+body.resize-mode .resizable.edge-linked {
+  outline: 3px solid #ffe24a !important;
+  outline-offset: 3px;
+}
+
+/* 「隠す」 で付与: display:none で非表示、 saved-layout に永続化される */
+.user-hidden { display: none !important; }
+
+/* === userbox: ユーザーがドラッグで作る矩形フレーム (zukan からポート) === */
+.userbox {
+  position: absolute;
+  background: rgba(255, 178, 86, 0.55);
+  border: 3px solid rgba(140, 75, 30, 0.95);
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+.userbox-badge {
+  position: absolute;
+  top: -22px; left: 0;
+  background: rgba(40, 30, 20, 0.92);
+  color: #ffe7a3;
+  padding: 1px 8px;
+  border-radius: 4px;
+  font: 600 11px ui-monospace, Menlo, Consolas, monospace;
+  cursor: text;
+  white-space: nowrap;
+  outline: none;
+  z-index: 30;
+  pointer-events: auto;
+}
+.userbox-badge:focus { background: #2c1c0c; outline: 2px solid #ff8a3d; }
+.userbox-del {
+  position: absolute;
+  top: -22px; right: 0;
+  width: 20px; height: 20px;
+  background: rgba(180, 60, 60, 0.95);
+  color: #fff;
+  border-radius: 4px;
+  font: 700 14px/18px ui-monospace, Menlo, Consolas, monospace;
+  text-align: center;
+  cursor: pointer;
+  z-index: 31;
+  user-select: none;
+}
+.userbox-del:hover { background: #d04040; }
+body:not(.resize-mode):not(.draw-mode) .userbox-badge,
+body:not(.resize-mode):not(.draw-mode) .userbox-del { display: none; }
+body.resize-mode .stage { cursor: crosshair; }
+body.draw-mode .stage { cursor: crosshair; }
+body.draw-mode .resizable { pointer-events: none; }
+body.draw-mode .resize-handle, body.draw-mode .userbox-badge, body.draw-mode .userbox-del { pointer-events: none; }
+.userbox-preview {
+  position: absolute;
+  background: rgba(255, 138, 61, 0.20);
+  border: 2px dashed #ff8a3d;
+  border-radius: 6px;
+  pointer-events: none;
+  z-index: 70;
+  box-sizing: border-box;
+}
+
+/* === シート画像オーバーレイモード ===
+   ユーザー手描きの 1 枚画像 (assets/_legacy/preview-placeholders/quizland-sheet-v1.png) を
+   ステージに被せる。 個別の placeholder bg-image は非表示にして、 CSS-positioned な
+   テキスト/チップ円/ドット/ボタン中身などはそのまま上に重なって表示される。
+   bbox 位置との完全一致は不要 (ユーザー指示) — ざっくり載せるだけ。 */
+body.sheet-on .stage::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url('../../../assets/_legacy/preview-placeholders/quizland-sheet-v1.png') center / 100% 100% no-repeat;
+  pointer-events: none;
+  z-index: 5;  /* 背景の上、 CSS-positioned テキストより下 */
+}
+/* Wave Zulu-2: 統合フレーム画像 (.stage::after) だけを非表示にするトグル。
+   sheet-on / sheet-off は body class で排他制御し、 sheet-off の方を強制優先する。
+   将来は別々のフレーム画像 (進捗バー/タイトル札 等) に分割する予定なので、 その間だけの過渡期トグル。 */
+body.sheet-off .stage::after {
+  display: none !important;
+}
+/* Wave 46 (Bravo-3): legacy frame backgrounds は削除済のため background-image 上書きは
+   不要になったが、 box の color / border / shadow を sheet 画像と被らないように
+   透明化する処理は残す (将来の defensive cleanup として安全側)。 */
+body.sheet-on .hdr-pill,
+body.sheet-on .q-text-card,
+body.sheet-on .board,
+body.sheet-on .answer-tray,
+body.sheet-on .chip,
+body.sheet-on .slot {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+}
+/* progress-num の "1 / 5" テキストは sheet 画像の上に確実に表示する。
+   Wave 46 (Bravo-3): 旧 progress-num.png オーバーレイは削除済 (シート画像に統合)。 */
+body.sheet-on .hdr-left .progress-num {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
+  /* テキストを確実に枠の中央に表示 (シート画像の凹み部分にハマる) */
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  text-align: center;
+  color: #4a2d0a !important;
+  font-weight: 900;
+  font-size: 22px;
+  position: relative;
+  z-index: 7;   /* sheet (z-index 5) + hdr (z-index 6) の上 */
+}
+/* sheet-on でも slot は薄い破線で残す (シート画像にはスロットが描かれていないので
+   完全透明にすると編集できなくなる)。 違和感を出さないため非常に薄い色で */
+body.sheet-on .slot {
+  border: 1.5px dashed rgba(120, 80, 20, 0.35) !important;
+  border-radius: 12px;
+}
+/* (slot 位置の微調整は body.sheet-on .board の padding ハードコードを撤去。
+   user 側でサイズ調整ツールで .board を選択して tx/ty で動かす方針に変更。
+   saved-layout に永続化される) */
+/* sheet-on で .dot の背景色 / border を消す。 dot.png は透明部分のある丸画像
+   なので、 box の四角い背景色 + 茶色 border が透けて見えていた (= 1 個目だけ
+   四角く見える原因の 1 つ。 .dot.done を削除しても残っていた) */
+body.sheet-on .hdr-left .dot {
+  background-color: transparent !important;
+  border: none !important;
+}
+/* (フクロウアイコン関連の改変は user 指示の理解違いがあったので一旦戻し中) */
+/* テキスト・絵文字・チップ中身は前面に出す (sheet の z-index:5 より上) */
+body.sheet-on .safe-area > .hdr,
+body.sheet-on .safe-area > .body { position: relative; z-index: 6; }
+
+/* PNG export 選択メニュー (split button のドロップダウン) */
+.png-export-menu {
+  position: absolute;
+  top: calc(100% + 4px); left: 0;
+  background: rgba(20, 20, 20, 0.95);
+  border: 1px solid #555;
+  border-radius: 6px;
+  padding: 4px;
+  display: flex; flex-direction: column; gap: 2px;
+  z-index: 200;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  min-width: 240px;
+}
+.png-export-menu button {
+  white-space: nowrap;
+  background: #2a2a2a; color: #ddd;
+  border: 1px solid #555; border-radius: 4px;
+  padding: 8px 12px; cursor: pointer;
+  font: 600 12px system-ui, sans-serif;
+  text-align: left;
+}
+.png-export-menu button:hover {
+  background: #3a3a3a; border-color: #ff8a3d; color: #fff;
+}
+
+/* === ワイヤーフレーム表示モード === */
+/* 背景・装飾画像を消して bbox 線だけ残す。 Codex に渡す参照用 */
+body.wireframe-only .stage {
+  background: #ffffff !important;
+}
+/* Wave 46 (Bravo-3) 後: legacy frame backgrounds は削除済だが、
+   ワイヤー表示時は念のため background / 装飾を全消去して bbox 線だけ残す。 */
+body.wireframe-only .hdr-pill,
+body.wireframe-only .hdr-left,
+body.wireframe-only .hdr-left .owl-icon,
+body.wireframe-only .hdr-left .title-card,
+body.wireframe-only .hdr-left .progress-num,
+body.wireframe-only .hdr-left .dot,
+body.wireframe-only .hdr-right .ctrl-btn,
+body.wireframe-only .q-text-card,
+body.wireframe-only .q-text-card .audio,
+body.wireframe-only .board,
+body.wireframe-only .answer-tray,
+body.wireframe-only .chip,
+body.wireframe-only .chip .circle,
+body.wireframe-only .hint,
+body.wireframe-only .character,
+body.wireframe-only .slot {
+  background: transparent !important;
+  background-image: none !important;
+  background-color: transparent !important;
+  border: 2px solid #1a1a1a !important;
+  outline: none !important;
+  box-shadow: none !important;
+  color: #1a1a1a !important;
+  text-shadow: none !important;
+}
+/* CSS で塗ってる要素 (チップの円・色チップ等) も中身を消す */
+body.wireframe-only .chip[data-color] .circle {
+  background: transparent !important;
+}
+body.wireframe-only .resize-handle,
+body.wireframe-only .resize-size-label,
+body.wireframe-only .ruler,
+body.wireframe-only .resizable.selected,
+body.wireframe-only .resizable.edge-linked {
+  display: none !important;
+}
+body.wireframe-only .editable-text {
+  background: transparent !important;
+  outline: none !important;
+}
+/* 絵文字 (フクロウ博士のアイコン2つ) はワイヤー時に非表示 */
+body.wireframe-only .hdr-left .owl-icon,
+body.wireframe-only .character {
+  font-size: 0 !important;
+  color: transparent !important;
+}
+
+/* 数値入力パネル */
+.numeric-panel {
+  position: fixed;
+  right: 8px;
+  top: calc(var(--toolbar-h, 0px) + 8px);
+  background: rgba(20,20,20,0.94);
+  color: #fff;
+  border: 1px solid #555;
+  border-radius: 6px;
+  padding: 10px 12px;
+  z-index: 80;
+  font: 11px/1.4 system-ui, -apple-system, sans-serif;
+  display: none;
+  width: 240px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+}
+body.resize-mode.has-selection .numeric-panel { display: block; }
+.numeric-panel h4 { margin: 0 0 8px 0; font-size: 12px; color: #ffba6b; font-weight: 600; }
+.numeric-panel .np-targets {
+  color: #aaa;
+  margin-bottom: 8px;
+  max-height: 60px;
+  overflow-y: auto;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 10px;
+}
+.numeric-panel .np-row { display: flex; gap: 8px; margin-bottom: 4px; }
+.numeric-panel label { display: inline-flex; align-items: center; gap: 4px; flex: 1; color: #ccc; }
+.numeric-panel input[type="number"] {
+  width: 70px; padding: 3px 5px;
+  background: #1a1a1a; color: #fff; border: 1px solid #555; border-radius: 3px;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+}
+.numeric-panel input[type="number"]:focus { border-color: #ff8a3d; outline: none; }
+.numeric-panel input[type="number"]::placeholder { color: #555; font-style: italic; font-size: 10px; }
+.numeric-panel .np-hint { color: #888; font-size: 10px; margin-top: 6px; line-height: 1.3; }
+
+/* ─── ルーラー + ガイドライン ─── */
+.ruler {
+  position: absolute;
+  background:
+    linear-gradient(180deg, #2a2a2a, #1a1a1a);
+  z-index: 70;
+  pointer-events: auto;
+  display: none;
+  color: #999;
+  font-size: 10px;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+}
+body.resize-mode .ruler { display: block; }
+.ruler {
+  position: fixed;  /* fixed なら toolbar 直下 */
+}
+.ruler.horizontal {
+  top: var(--toolbar-h, 0); left: 24px; right: 0;
+  height: 24px;
+  background-image:
+    repeating-linear-gradient(90deg,
+      transparent 0 49px,
+      rgba(255,255,255,0.4) 49px 50px,
+      transparent 50px 99px,
+      rgba(255,255,255,0.7) 99px 100px);
+  cursor: ns-resize;
+}
+.ruler.vertical {
+  top: calc(var(--toolbar-h, 0) + 24px); left: 0; bottom: 0;
+  width: 24px;
+  background-image:
+    repeating-linear-gradient(180deg,
+      transparent 0 49px,
+      rgba(255,255,255,0.4) 49px 50px,
+      transparent 50px 99px,
+      rgba(255,255,255,0.7) 99px 100px);
+  cursor: ew-resize;
+}
+.guide {
+  position: fixed;
+  background: rgba(0, 212, 255, 0.6);
+  z-index: 65;
+  pointer-events: auto;
+}
+.guide.h { left: 24px; right: 0; height: 1px; cursor: ns-resize; box-shadow: 0 0 0 0.5px rgba(0, 212, 255, 0.6); }
+.guide.v { top: calc(var(--toolbar-h, 0) + 24px); bottom: 0; width: 1px; cursor: ew-resize; box-shadow: 0 0 0 0.5px rgba(0, 212, 255, 0.6); }
+/* 1px の見た目はそのままに、 hit 領域だけ ±6px に拡張 (掴みやすく) */
+.guide.h::before {
+  content: ''; position: absolute;
+  left: 0; right: 0; top: -6px; bottom: -6px;
+  cursor: ns-resize; background: transparent;
+}
+.guide.v::before {
+  content: ''; position: absolute;
+  top: 0; bottom: 0; left: -6px; right: -6px;
+  cursor: ew-resize; background: transparent;
+}
+.guide:hover { background: #00d4ff; }
+.guide-label {
+  position: absolute;
+  background: rgba(0, 212, 255, 0.95);
+  color: #000;
+  font-size: 10px;
+  padding: 1px 4px;
+  border-radius: 2px;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  pointer-events: none;
+}
+.guide.h .guide-label { left: 4px; top: 2px; }
+.guide.v .guide-label { top: 4px; left: 2px; }
+
+/* ───── Editable text ───── */
+.editable-text {
+  cursor: text;
+  outline: 1px dashed transparent;
+  border-radius: 2px;
+  transition: outline-color 0.15s, background 0.15s;
+}
+.editable-text:hover {
+  background: rgba(0, 212, 255, 0.08);
+  outline-color: rgba(0, 212, 255, 0.35);
+}
+.editable-text:focus {
+  background: rgba(0, 212, 255, 0.15);
+  outline: 2px solid #00d4ff;
+  outline-offset: 1px;
+}
+
+/* Debug bbox */
+.show-bbox .slot::after {
+  content: attr(data-bbox);
+  position: absolute;
+  bottom: 2px; right: 2px;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  font-size: 10px;
+  padding: 1px 4px;
+  border-radius: 2px;
+  pointer-events: none;
+}
+</style>
+<script>
+  // page-nav.js 用の編集ページ一覧 (全エディタで統一)
+  window.PageNavConfig = {
+    pages: [
+      { name: 'なぞなぞ', url: '/quizland/?edit=1' },
+      { name: 'なぞなぞ (旧サンドボックス) (このページ)', url: location.pathname, current: true },
+      { name: 'ずかん (ベジェ編集あり)', url: '/zukan/preview/full/' },
+      { name: 'ずかん (調査画面)', url: '/zukan/preview/investigation/?edit=1' },
+    ],
+  };
+
+  // ────────────────────────────────────────────────────────────
+  // editor-bootstrap.js / LayoutSystem 連携 (Wave: D&D 画像対応)
+  // --------------------------------------------------------------
+  // 旧サンドボックスの自前エディタはそのまま温存しつつ、 ?edit=1 が付いた
+  // ときだけ LayoutSystem の WYSIWYG エディタ (D&D 画像取り込み・要素一覧・
+  // 取り出し・整列・比較表示 等) を遅延ロードする。
+  //
+  //   - layout-shared.css   : 編集モード/再生モード共通の見た目
+  //   - editor-bootstrap.js : layout-applier → layout-system → page-nav を
+  //                            直列ロードし、 EditorBootstrapConfig で起動
+  //
+  // pages 省略時は window.PONO_PAGES (DEFAULT_PAGES) を自動採用する。
+  // 選択リストは PageNavConfig (legacy widget) と同等の 4 件。
+  // ────────────────────────────────────────────────────────────
+  // ─── 単一ソース: bootstrap (新エディタ) と legacy RESIZABLE_SPEC (line ~2251)
+  //     の両方が参照する。 重複防止 + Wave Zulu-2 追加分が要素一覧に確実に出るように、
+  //     window スコープに定義してから後段の <script> でも import する。
+  window.QUIZLAND_RESIZE_SPEC = [
+    ['.userbox',                 'wh', 'カスタム枠'],
+    ['.hdr-left',                'wh', 'ヘッダーピル'],
+    ['.hdr-left .owl-icon',      'wh', '博士アイコン'],
+    ['.hdr-left .title-card',    'wh', 'タイトル札'],
+    ['.hdr-left .progress-num',  'wh', '1/5 札'],
+    ['.hdr-left .dots',          'wh', '進捗ドット5個'],
+    ['.hdr-right .ctrl-btn',     'wh', '右コントロールボタン'],
+    ['.q-text-card',             'wh', '問題文カード'],
+    ['#q-text',                  'wh', '問題文テキスト'],
+    ['.q-text-card .audio',      'wh', '音声ボタン'],
+    ['.board',                   'wh', '問題ボード'],
+    ['.answer-tray',             'wh', '回答トレイ'],
+    ['.chip',                    'wh', '回答チップ'],
+    ['.chip .circle',            'wh', 'チップ丸'],
+    ['.hint',                    'wh', 'ヒント'],
+    ['.character',               'wh', 'キャラクター'],
+    ['.char-hint',               'wh', 'キャラ吹き出し'],
+    // ─── 背景・統合フレーム・大枠コンテナ (Wave Yankee-2 / Zulu-2) ───
+    ['.stage',                   'wh', '外側背景 (21:9 ステージ全体・stage-bg)'],
+    ['.safe-area',               'wh', '16:9 セーフエリア (統合フレーム土台)'],
+    ['.hdr',                     'wh', 'ヘッダー全体グリッド'],
+    ['.hdr-right',               'wh', '右ヘッダーグループ'],
+    ['.body',                    'wh', '本文グリッド (問題+回答)'],
+    ['.q-col',                   'wh', '問題カラム (左)'],
+    ['.a-col',                   'wh', '回答カラム (右)'],
+    ['.answer-panel',            'wh', '回答パネル (チップ4枠)'],
+    ['.bottom-right',            'wh', 'ヒント+キャラ枠'],
+    ['.slot',                    'wh', 'ボードスロット (画像枠)'],
+  ];
+  window.EditorBootstrapConfig = {
+    layoutUrl: './saved-layout.json',
+    canvas: '#stage',
+    // bootstrap (LayoutEditor) はこの配列を state.spec に流し込み、要素一覧に出す
+    editableSelectors: window.QUIZLAND_RESIZE_SPEC.slice(),
+    ghPath: 'quizland/preview/full/saved-layout.json',
+    // pages 省略 → window.PONO_PAGES (DEFAULT_PAGES) を自動採用
+  };
+</script>
+<link rel="stylesheet" href="../../../common/layout/layout-shared.css">
+<script src="../../../common/layout/editor-bootstrap.js" defer></script>
+</head>
+<body class="show-safe sheet-on">
+
+<div class="toolbar">
+  <div>
+    <label>レイアウト</label>
+    <select id="layout-select">
+      <optgroup label="横並び (order_color)">
+        <option value="row-3" selected>row count=3</option>
+        <option value="row-4">row count=4</option>
+        <option value="row-5">row count=5</option>
+      </optgroup>
+      <optgroup label="グリッド (count_total)">
+        <option value="grid-1">grid count=1</option>
+        <option value="grid-2">grid count=2</option>
+        <option value="grid-3">grid count=3</option>
+        <option value="grid-4">grid count=4 (2×2)</option>
+        <option value="grid-5">grid count=5 (3+2)</option>
+        <option value="grid-6">grid count=6 (3×2)</option>
+        <option value="grid-7">grid count=7 (4+3)</option>
+        <option value="grid-8">grid count=8 (4×2)</option>
+        <option value="grid-9">grid count=9 (3×3)</option>
+      </optgroup>
+    </select>
+  </div>
+
+  <div>
+    <label>スロット差替画像</label>
+    <input type="file" id="img-file" accept="image/png,image/jpeg,image/webp">
+    <button id="img-clear">クリア</button>
+  </div>
+
+  <div>
+    <label>スロット</label>
+    <input type="number" id="slot-size" value="130" min="40" max="300" step="2">px
+    <label>gap</label>
+    <input type="number" id="gap" value="16" min="0" max="48" step="2">px
+    <label>矢印太さ</label>
+    <input type="number" id="arrow-stroke" value="4" min="2" max="16" step="1">px
+  </div>
+
+  <div>
+    <label><input type="checkbox" id="show-bbox"> サイズ表示</label>
+    <label><input type="checkbox" id="show-safe" checked> 16:9 セーフエリア表示</label>
+  </div>
+
+  <div>
+    <button id="anno-toggle">📝 注釈モード OFF</button>
+  </div>
+
+  <div id="anno-tools">
+    <button class="tool-btn" data-tool="select">👆 選択/移動</button>
+    <button class="tool-btn" data-tool="marker">📍 マーカー</button>
+    <button class="tool-btn" data-tool="text">📝 テキスト</button>
+    <button class="tool-btn" data-tool="rect">▭ 矩形</button>
+    <button class="tool-btn" data-tool="arrow">↗ 矢印</button>
+    <button class="tool-btn" data-tool="line">─ 線</button>
+    <button class="tool-btn" data-tool="eraser">🧹 消しゴム</button>
+    <label title="新規注釈の色 / 選択中の要素にも反映" style="display:inline-flex;align-items:center;gap:4px;color:#aaa;">色 <input type="color" id="anno-color" value="#ff3b6b" style="width:32px;height:24px;border:none;background:transparent;padding:0;cursor:pointer;"></label>
+    <button id="anno-clear">🗑 全消去</button>
+    <button id="anno-reset" title="保存も含めて全部消す">♻ リセット</button>
+  </div>
+
+  <div>
+    <button id="resize-toggle" title="ドラッグで各バウンディングボックスをリサイズ">📐 サイズ調整 OFF</button>
+    <button id="userbox-add" title="重なった枠の上でも強制的に新規矩形を作るモード (既存枠はクリック無効)">🆕 矩形追加 OFF</button>
+    <button id="sheet-toggle" title="本番フレーム (シート画像 quizland-sheet-v1.png) を表示。 OFF にするとデバッグ用に素のレイアウトが見える (legacy v1 frame は削除済のため、 各要素は frame なし)。">🪟 シート画像 OFF</button>
+    <button id="frame-sheet-toggle" title="🔍 素のレイアウト確認 (デバッグ用): 本番フレームのシート画像を非表示。 各要素は frame なしの素のバウンディングボックスとして見える。 legacy v1 frame は削除済。">📄 シート ON</button>
+    <button id="wireframe-toggle" title="背景・色を消して bbox 線だけ表示するモード">👁 ワイヤー表示 OFF</button>
+    <span class="png-export-wrap" style="position:relative;display:inline-block;">
+      <button id="export-png" title="PNG として書き出し (ワイヤー or 現状そのまま を選択)">🖼 PNG</button>
+      <div class="png-export-menu" id="png-export-menu" style="display:none;">
+        <button data-mode="wireframe">🪟 ワイヤー (枠線のみ)</button>
+        <button data-mode="snapshot">📸 現状そのまま (見たまま)</button>
+      </div>
+    </span>
+    <button id="save-layout" title="現在のレイアウトを保存 (Ctrl+S)">💾 保存</button>
+    <button id="revert-layout" title="最後に保存した状態に戻す">⏮ 復元</button>
+    <button id="resize-reset" title="保存値も消して完全リセット">↺ サイズ初期化</button>
+  </div>
+
+  <div>
+    <button id="preview-mode" title="ツールバー非表示 + 画面に合わせてスケール">📱 端末サイズで見る</button>
+    <button id="grid-mode-toggle" title="(legacy) 旧グリッド placeholder への切替モード。 Wave 46 で legacy v1 frame backgrounds を削除済のため、 現在は body.grid-mode class を付けるだけで見た目は変化しない (将来再利用に備えて UI のみ残置)。">🔁 グリッド比較 OFF</button>
+  </div>
+
+  <div style="margin-left:auto;color:#666;">
+    <a href="../" style="color:#aaa;">← パーツ一覧</a>
+  </div>
+</div>
+<button id="preview-exit" title="編集モードに戻る (Esc でも戻れる)">✕ 編集に戻る</button>
+
+<!-- 複数選択時の数値入力パネル (resize-mode かつ has-selection の時のみ表示) -->
+<div class="numeric-panel" id="numeric-panel">
+  <h4>選択中: <span id="np-count">0</span> 個</h4>
+  <div class="np-targets" id="np-targets">(なし)</div>
+  <div class="np-row">
+    <label>W <input type="number" id="np-w" step="1"></label>
+    <label>H <input type="number" id="np-h" step="1"></label>
+  </div>
+  <div class="np-row">
+    <label>TX <input type="number" id="np-tx" step="1"></label>
+    <label>TY <input type="number" id="np-ty" step="1"></label>
+  </div>
+  <div class="np-section-title" style="margin-top:10px;font-size:11px;font-weight:700;color:#ffba6b;border-top:1px solid #444;padding-top:8px;">表示</div>
+  <div class="np-align-row" style="display:flex;gap:4px;margin-bottom:4px;">
+    <button class="np-align" id="np-hide" title="選択中の要素を非表示にする" style="flex:1;padding:4px 6px;background:#2a2a2a;color:#ddd;border:1px solid #555;border-radius:3px;cursor:pointer;font:600 12px ui-monospace,monospace;">🗑 隠す</button>
+    <button class="np-align" id="np-show-all" title="非表示にした要素を全て元に戻す" style="flex:1;padding:4px 6px;background:#2a2a2a;color:#ddd;border:1px solid #555;border-radius:3px;cursor:pointer;font:600 12px ui-monospace,monospace;">↺ 全て表示</button>
+  </div>
+  <div class="np-hint">
+    Shift+クリックで複数選択 / 値変更で全選択へ反映 / 隣接フレームの辺は自動リンク
+  </div>
+</div>
+
+<div class="anno-tip" id="anno-tip" style="display:none;">
+  <span id="anno-tip-text">注釈モード ON</span>
+</div>
+
+<div class="stage-wrap">
+  <div class="stage" id="stage">
+    <!-- 16:9 safe area inner -->
+    <div class="safe-area" id="safe-area">
+      <!-- Header: 左ピルが q-col と同じ幅 (1fr) -->
+      <div class="hdr">
+        <div class="hdr-left hdr-pill">
+          <!-- 🦉 emoji は user 指示で削除 (owl-icon.png の background-image だけが
+               表示される。 emoji と PNG の二重表示を解消) -->
+          <div class="owl-icon"></div>
+          <div class="title-card">
+            <small class="editable-text" contenteditable="true">フクロウはかせの</small>
+            <span class="editable-text" contenteditable="true">なぞなぞ</span>
+          </div>
+          <div class="progress-num editable-text" contenteditable="true">1 / 5</div>
+          <div class="dots">
+            <!-- 旧: 1 個目に "done" クラスが付いていて四角い background-color が
+                 はみ出して見えていた → user 指示で削除 (5 個全部同じ見た目に) -->
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+            <span class="dot"></span>
+          </div>
+        </div>
+
+        <div class="hdr-right">
+          <div class="ctrl-btn"><span class="icon">🔔</span><span class="editable-text" contenteditable="true">おしらせ</span></div>
+          <div class="ctrl-btn"><span class="icon"><img src="../../../assets/_legacy/preview-placeholders/ctrl-btn-settings.png" alt="" style="width:48px;height:48px;object-fit:contain;display:block"></span><span class="editable-text" contenteditable="true">せってい</span></div>
+        </div>
+      </div>
+
+      <!-- Body grid -->
+      <div class="body">
+        <div class="q-col">
+          <div class="q-text-card">
+            <span id="q-text" class="editable-text" contenteditable="true">まんなかは なにいろ？</span>
+            <span class="audio">🔊</span>
+          </div>
+          <div class="board" id="board"></div>
+        </div>
+
+        <div class="a-col">
+          <!-- 答えチップの土台 = 4 つを囲う木のトレイ枠 -->
+          <div class="answer-tray">
+            <div class="answer-panel">
+              <div class="chip" data-color="red"><div class="circle"></div><span class="editable-text" contenteditable="true">あか</span></div>
+              <div class="chip" data-color="blue"><div class="circle"></div><span class="editable-text" contenteditable="true">あお</span></div>
+              <div class="chip" data-color="yellow"><div class="circle"></div><span class="editable-text" contenteditable="true">きいろ</span></div>
+              <div class="chip" data-color="green"><div class="circle"></div><span class="editable-text" contenteditable="true">みどり</span></div>
+            </div>
+          </div>
+          <div class="bottom-right">
+            <div class="hint editable-text" contenteditable="true">💡 よく見て かんがえてみよう！</div>
+            <!-- 後付けのひとこと吹き出し (hint-60.png 235×63)。 user 要望で復活 -->
+            <div class="char-hint editable-text" contenteditable="true">ヒント！</div>
+            <!-- 🦉 emoji は user 指示で削除 (character.png の background-image / シート
+                 画像のフクロウ博士イラストだけが表示される) -->
+            <div class="character"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Annotation overlay -->
+    <div id="anno-layer">
+      <svg id="anno-svg" preserveAspectRatio="none">
+        <defs>
+          <marker id="anno-arrow-head" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+            <polygon points="0,0 10,5 0,10" fill="currentColor"></polygon>
+          </marker>
+        </defs>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<script>
+// ───── Per-variant slot sizes (個数ごとに最適なサイズを記憶) ─────
+const SLOT_SIZE_DEFAULTS = {
+  'row-3':  { slot: 220, gap: 16 },
+  'row-4':  { slot: 180, gap: 16 },
+  'row-5':  { slot: 140, gap: 16 },
+  'grid-1': { slot: 300, gap: 16 },
+  'grid-2': { slot: 240, gap: 16 },
+  'grid-3': { slot: 220, gap: 16 },
+  'grid-4': { slot: 200, gap: 16 },
+  'grid-5': { slot: 170, gap: 16 },
+  'grid-6': { slot: 160, gap: 16 },
+  'grid-7': { slot: 140, gap: 16 },
+  'grid-8': { slot: 130, gap: 16 },
+  'grid-9': { slot: 130, gap: 16 },
+};
+const PER_VARIANT_KEY = 'quizland_preview_per_variant_v1';
+function getPerVariantSizes() {
+  try { return JSON.parse(localStorage.getItem(PER_VARIANT_KEY)) || {}; }
+  catch(e) { return {}; }
+}
+function savePerVariantSize(variant, slot, gap) {
+  const data = getPerVariantSizes();
+  data[variant] = { slot, gap };
+  try { localStorage.setItem(PER_VARIANT_KEY, JSON.stringify(data)); } catch(e) {}
+}
+function applyVariantSize(variant) {
+  const data = getPerVariantSizes();
+  const s = data[variant] || SLOT_SIZE_DEFAULTS[variant] || { slot: 130, gap: 16 };
+  document.documentElement.style.setProperty('--slot-size', s.slot + 'px');
+  document.documentElement.style.setProperty('--gap', s.gap + 'px');
+  const slotInput = document.getElementById('slot-size');
+  const gapInput = document.getElementById('gap');
+  if (slotInput) slotInput.value = s.slot;
+  if (gapInput) gapInput.value = s.gap;
+}
+
+// ───── Layout rendering ─────
+// テスト用: スロットに wordmatch (ocean) のイラストを順番に入れる。
+// currentImg (image-upload で指定) が無い時のフォールバック。
+const TEST_SLOT_IMAGES = [
+  '../../../assets/images/ocean/Mushroom/Mushroom_normal_1.png',
+  '../../../assets/images/ocean/Butterfly/Butterfly_normal_1.png',
+  '../../../assets/images/ocean/Bee/Bee_normal_1.png',
+  '../../../assets/images/ocean/Ant/Ant_normal_1.png',
+  '../../../assets/images/ocean/Ladybird/Ladybird_normal_1.png',
+  '../../../assets/images/ocean/Cherry/Cherry_normal_1.png',
+  '../../../assets/images/ocean/Grapes/Grapes_normal_1.png',
+  '../../../assets/images/ocean/Lemon/Lemon_normal_1.png',
+  '../../../assets/images/ocean/Watermelon/Watermelon_normal_1.png',
+];
+let _slotIdxCursor = 0;
+
+function buildLayout(value) {
+  // 不正な value (空文字 / null / undefined / 'foo-' 等) で board が空のまま
+  // 表示される事故を防ぐため、 ここで row-3 にフォールバック。
+  // 「スロットに問題が入らない」 という長年のバグはこの guard 不在が原因
+  if (!value || typeof value !== 'string' || !/^(row|grid)-\d+$/.test(value)) {
+    console.warn('[buildLayout] invalid value', value, '→ fallback row-3');
+    value = 'row-3';
+    const sel = document.getElementById('layout-select');
+    if (sel) sel.value = value;
+  }
+  const [type, n] = value.split('-');
+  const count = parseInt(n, 10);
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  _slotIdxCursor = 0;  // レイアウト再構築時にリセット
+
+  function slot() {
+    const d = document.createElement('div');
+    d.className = 'slot';
+    d.textContent = 'slot';   // フォールバック表示 (画像が来るまでこれが見える)
+    const url = currentImg || TEST_SLOT_IMAGES[_slotIdxCursor % TEST_SLOT_IMAGES.length];
+    _slotIdxCursor += 1;
+    if (url) {
+      // 画像が実際にロード成功したときだけ has-img を付ける。
+      // 旧コード: URL を付けて即 has-img → 画像が 404 だと
+      //   .slot.has-img { background-color: transparent; color: transparent }
+      //   が効いて完全透明になり 「スロットが消えた」 ように見えていた。
+      const img = new Image();
+      img.onload = () => {
+        d.style.backgroundImage = `url(${url})`;
+        d.classList.add('has-img');
+        d.textContent = '';
+      };
+      img.onerror = () => {
+        console.warn('[slot] image load failed:', url);
+        // 'slot' テキストとデフォルト灰色のままにしておく
+      };
+      img.src = url;
+    }
+    return d;
+  }
+  function row(slotsCount) {
+    const r = document.createElement('div');
+    r.className = 'row';
+    for (let i = 0; i < slotsCount; i++) r.appendChild(slot());
+    return r;
+  }
+  function grid(rows) {
+    const g = document.createElement('div');
+    g.className = 'grid';
+    for (const n of rows) g.appendChild(row(n));
+    return g;
+  }
+
+  if (type === 'row') {
+    board.appendChild(row(count));
+  } else if (type === 'grid') {
+    const layouts = {
+      1: [1], 2: [2], 3: [3],
+      4: [2, 2], 5: [3, 2], 6: [3, 3],
+      7: [4, 3], 8: [4, 4], 9: [3, 3, 3]
+    };
+    board.appendChild(grid(layouts[count]));
+  }
+  // 個数ごとに保存されたサイズ (またはデフォルト) を反映
+  applyVariantSize(value);
+  // --slot-size が 0 や極小だとスロットが完全に潰れて見えないので最小 60px に強制
+  const sizePxRaw = getComputedStyle(document.documentElement).getPropertyValue('--slot-size').trim();
+  const sizePxNum = parseFloat(sizePxRaw) || 0;
+  if (sizePxNum < 60) {
+    console.warn('[buildLayout] --slot-size too small (' + sizePxRaw + ') → forcing 130px');
+    document.documentElement.style.setProperty('--slot-size', '130px');
+  }
+  updateBboxLabels();
+  // 診断 (画面右上に見える badge も出す):
+  const slots = board.querySelectorAll('.slot');
+  const r0 = slots[0]?.getBoundingClientRect();
+  const boardRect = board.getBoundingClientRect();
+  const finalSize = getComputedStyle(document.documentElement).getPropertyValue('--slot-size').trim();
+  const msg = `slots:${slots.length} size:${finalSize} firstW×H:${r0?Math.round(r0.width)+'×'+Math.round(r0.height):'-'} board:${Math.round(boardRect.width)}×${Math.round(boardRect.height)}`;
+  console.warn('[buildLayout]', value, '→', msg);
+  // 既存 badge を消して新規追加。 sheet-on はデフォルト ON が本番なので警告は出さず、
+  // 本当に異常 (slots:0 or サイズ < 20px) の時だけ赤い badge を出す。
+  document.querySelectorAll('.qz-debug-badge').forEach(e => e.remove());
+  if (slots.length === 0 || (r0 && r0.width < 20)) {
+    const badge = document.createElement('div');
+    badge.className = 'qz-debug-badge';
+    badge.style.cssText = 'position:fixed;top:60px;left:8px;background:#c00;color:#fff;padding:8px 12px;border-radius:6px;font:600 12px monospace;z-index:99999;max-width:380px;line-height:1.4;cursor:pointer;white-space:pre-wrap';
+    badge.textContent = '⚠ slot 異常: ' + msg + ' (clickで閉じる)';
+    badge.onclick = () => badge.remove();
+    document.body.appendChild(badge);
+  }
+}
+
+let currentImg = null;
+function setSlotImage(url) {
+  currentImg = url;
+  document.querySelectorAll('.slot').forEach(s => {
+    if (url) {
+      s.style.backgroundImage = `url(${url})`;
+      s.classList.add('has-img');
+    } else {
+      s.style.backgroundImage = '';
+      s.classList.remove('has-img');
+    }
+  });
+}
+
+function updateBboxLabels() {
+  document.querySelectorAll('.slot').forEach(s => {
+    const r = s.getBoundingClientRect();
+    s.dataset.bbox = `${Math.round(r.width)}×${Math.round(r.height)}`;
+  });
+}
+
+document.getElementById('layout-select').addEventListener('change', e => { buildLayout(e.target.value); scheduleSave(); });
+document.getElementById('img-file').addEventListener('change', e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = () => setSlotImage(reader.result);
+  reader.readAsDataURL(f);
+});
+document.getElementById('img-clear').addEventListener('click', () => {
+  setSlotImage(null);
+  document.getElementById('img-file').value = '';
+});
+document.getElementById('slot-size').addEventListener('input', e => {
+  const v = parseInt(e.target.value);
+  document.documentElement.style.setProperty('--slot-size', v + 'px');
+  // 現在の variant に紐付けて保存
+  const variant = document.getElementById('layout-select').value;
+  const gap = parseInt(document.getElementById('gap').value);
+  savePerVariantSize(variant, v, gap);
+  updateBboxLabels();
+  scheduleSave();
+});
+document.getElementById('gap').addEventListener('input', e => {
+  const v = parseInt(e.target.value);
+  document.documentElement.style.setProperty('--gap', v + 'px');
+  const variant = document.getElementById('layout-select').value;
+  const slot = parseInt(document.getElementById('slot-size').value);
+  savePerVariantSize(variant, slot, v);
+  updateBboxLabels();
+  scheduleSave();
+});
+document.getElementById('arrow-stroke').addEventListener('input', e => {
+  document.documentElement.style.setProperty('--arrow-stroke', e.target.value);
+  scheduleSave();
+});
+document.getElementById('show-bbox').addEventListener('change', e => {
+  document.body.classList.toggle('show-bbox', e.target.checked);
+  if (e.target.checked) updateBboxLabels();
+  scheduleSave();
+});
+document.getElementById('show-safe').addEventListener('change', e => {
+  document.body.classList.toggle('show-safe', e.target.checked);
+  scheduleSave();
+});
+
+// ───── Annotation system ─────
+const stage = document.getElementById('stage');
+const annoLayer = document.getElementById('anno-layer');
+const annoSvg = document.getElementById('anno-svg');
+const annoToggle = document.getElementById('anno-toggle');
+const annoClear = document.getElementById('anno-clear');
+const annoReset = document.getElementById('anno-reset');
+const annoTip = document.getElementById('anno-tip');
+const annoTipText = document.getElementById('anno-tip-text');
+
+let annoMode = false;
+let currentTool = 'select';
+const labelChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+let labelIdx = 0;
+let selectedEl = null;
+
+// ── localStorage 自動保存 ──
+const STORAGE_KEY = 'quizland_preview_state_v1';
+let saveTimer = null;
+function scheduleSave() {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveState, 300);
+}
+function collectState() {
+  return {
+    markers: [...annoLayer.querySelectorAll('.anno-marker')].map(m => ({
+      x: parseFloat(m.style.left), y: parseFloat(m.style.top), label: m.textContent,
+      color: m.dataset.annoColor || ''
+    })),
+    texts: [...annoLayer.querySelectorAll('.anno-text')].map(t => ({
+      x: parseFloat(t.style.left), y: parseFloat(t.style.top), content: t.textContent,
+      color: t.dataset.annoColor || ''
+    })),
+    rects: [...annoSvg.querySelectorAll('rect.anno-rect')].map(r => ({
+      x: +r.getAttribute('x'), y: +r.getAttribute('y'),
+      w: +r.getAttribute('width'), h: +r.getAttribute('height'),
+      color: r.dataset.annoColor || ''
+    })),
+    arrows: [...annoSvg.querySelectorAll('line.anno-arrow-line')].map(l => ({
+      x1: +l.getAttribute('x1'), y1: +l.getAttribute('y1'),
+      x2: +l.getAttribute('x2'), y2: +l.getAttribute('y2'),
+      head: l.classList.contains('with-head'),
+      color: l.dataset.annoColor || ''
+    })),
+    labelIdx,
+    settings: {
+      layout: document.getElementById('layout-select').value,
+      slotSize: document.getElementById('slot-size').value,
+      gap: document.getElementById('gap').value,
+      arrowStroke: document.getElementById('arrow-stroke').value,
+      showBbox: document.getElementById('show-bbox').checked,
+      showSafe: document.getElementById('show-safe').checked,
+    }
+  };
+}
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(collectState())); } catch(e) {}
+}
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+
+    // 設定を先に適用
+    const s = data.settings || {};
+    if (s.layout) {
+      document.getElementById('layout-select').value = s.layout;
+    }
+    if (s.slotSize) {
+      document.getElementById('slot-size').value = s.slotSize;
+      document.documentElement.style.setProperty('--slot-size', s.slotSize + 'px');
+    }
+    if (s.gap) {
+      document.getElementById('gap').value = s.gap;
+      document.documentElement.style.setProperty('--gap', s.gap + 'px');
+    }
+    if (s.arrowStroke) {
+      document.getElementById('arrow-stroke').value = s.arrowStroke;
+      document.documentElement.style.setProperty('--arrow-stroke', s.arrowStroke);
+    }
+    if (typeof s.showBbox === 'boolean') {
+      document.getElementById('show-bbox').checked = s.showBbox;
+      document.body.classList.toggle('show-bbox', s.showBbox);
+    }
+    if (typeof s.showSafe === 'boolean') {
+      document.getElementById('show-safe').checked = s.showSafe;
+      document.body.classList.toggle('show-safe', s.showSafe);
+    }
+
+    // 注釈を復元 (履歴には登録しない)
+    (data.markers || []).forEach(m => restoreMarker(m.x, m.y, m.label, m.color));
+    (data.texts || []).forEach(t => restoreText(t.x, t.y, t.content, t.color));
+    (data.rects || []).forEach(r => restoreRect(r.x, r.y, r.w, r.h, r.color));
+    (data.arrows || []).forEach(a => restoreArrow(a.x1, a.y1, a.x2, a.y2, a.head !== false, a.color));
+
+    if (typeof data.labelIdx === 'number') labelIdx = data.labelIdx;
+    return true;
+  } catch(e) { return false; }
+}
+function restoreMarker(x, y, label, color) {
+  const m = document.createElement('div');
+  m.className = 'anno-marker';
+  m.style.left = x + 'px'; m.style.top = y + 'px';
+  m.textContent = label;
+  if (color) applyAnnoColor(m, color);
+  annoLayer.appendChild(m);
+  attachDeleteHandlers(m);
+  m.addEventListener('dblclick', ev => {
+    ev.stopPropagation();
+    const t = prompt('ラベル', m.textContent);
+    if (t !== null) { m.textContent = t; scheduleSave(); }
+  });
+}
+function restoreText(x, y, content, color) {
+  const t = document.createElement('div');
+  t.className = 'anno-text';
+  t.style.left = x + 'px'; t.style.top = y + 'px';
+  t.textContent = content;
+  if (color) applyAnnoColor(t, color);
+  annoLayer.appendChild(t);
+  attachDeleteHandlers(t);
+  t.addEventListener('dblclick', ev => {
+    ev.stopPropagation();
+    const v = prompt('編集 (空で削除)', t.textContent);
+    if (v === null) return;
+    if (v === '') removeElWithHistory(t);
+    else { t.textContent = v; scheduleSave(); }
+  });
+}
+function restoreRect(x, y, w, h, color) {
+  const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  r.setAttribute('class', 'anno-rect'); r.setAttribute('rx', 6);
+  r.setAttribute('x', x); r.setAttribute('y', y);
+  r.setAttribute('width', w); r.setAttribute('height', h);
+  if (color) applyAnnoColor(r, color);
+  annoSvg.appendChild(r);
+  attachDeleteHandlers(r);
+}
+function restoreArrow(x1, y1, x2, y2, hasHead, color) {
+  const l = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  l.setAttribute('class', hasHead ? 'anno-arrow-line with-head' : 'anno-arrow-line');
+  l.setAttribute('x1', x1); l.setAttribute('y1', y1);
+  l.setAttribute('x2', x2); l.setAttribute('y2', y2);
+  if (color) applyAnnoColor(l, color);
+  annoSvg.appendChild(l);
+  attachDeleteHandlers(l);
+}
+function clearAllSavedState() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+  document.querySelectorAll('.anno-marker, .anno-text').forEach(el => el.remove());
+  annoSvg.querySelectorAll('.anno-arrow-line, .anno-rect, .anno-handle, .anno-handle-hit').forEach(el => el.remove());
+  selectedEl = null;
+  labelIdx = 0;
+  undoStack.length = 0;
+  redoStack.length = 0;
+}
+
+const undoStack = [];
+const redoStack = [];
+function pushHistory(op) {
+  undoStack.push(op);
+  if (undoStack.length > 100) undoStack.shift();
+  redoStack.length = 0;
+  scheduleSave();
+}
+function applyOp(op) {
+  if (op.type === 'add') op.parent.insertBefore(op.el, op.next || null);
+  else if (op.type === 'remove') op.el.remove();
+  else if (op.type === 'transform') { setGeometry(op.el, op.after); if (op.el === selectedEl) updateHandles(); }
+  else if (op.type === 'resize') { setResize(op.el, op.after); }
+  else if (op.type === 'guide-move') { setGuidePos(op.el, op.after); }
+  scheduleSave();
+}
+function applyInverse(op) {
+  if (op.type === 'add') { op.el.remove(); if (op.el === selectedEl) selectEl(null); }
+  else if (op.type === 'remove') op.parent.insertBefore(op.el, op.next || null);
+  else if (op.type === 'transform') { setGeometry(op.el, op.before); if (op.el === selectedEl) updateHandles(); }
+  else if (op.type === 'resize') { setResize(op.el, op.before); }
+  else if (op.type === 'guide-move') { setGuidePos(op.el, op.before); }
+  scheduleSave();
+}
+// リサイズ要素の状態適用
+function setResize(el, st) {
+  el.style.width = st.w || '';
+  el.style.height = st.h || '';
+  el._tx = st.tx || 0;
+  el._ty = st.ty || 0;
+  if (el._tx || el._ty) {
+    el.style.transform = `translate(${el._tx}px, ${el._ty}px)`;
+  } else {
+    el.style.transform = '';
+  }
+  if (el.matches('.hdr-left') && st.h) {
+    document.documentElement.style.setProperty('--header-h', st.h);
+  }
+  el._resizeUpdateLabel && el._resizeUpdateLabel();
+  saveResizeState();
+}
+function setGuidePos(el, pos) {
+  if (el.classList.contains('h')) el.style.top = pos + 'px';
+  else el.style.left = pos + 'px';
+  const lbl = el.querySelector('.guide-label');
+  if (lbl) lbl.textContent = (el.classList.contains('h') ? 'y: ' : 'x: ') + Math.round(pos) + 'px';
+  saveResizeState();
+}
+function undo() {
+  if (!undoStack.length) return;
+  const op = undoStack.pop(); applyInverse(op); redoStack.push(op);
+}
+function redo() {
+  if (!redoStack.length) return;
+  const op = redoStack.pop(); applyOp(op); undoStack.push(op);
+}
+
+function getGeometry(el) {
+  if (el.classList.contains('anno-marker') || el.classList.contains('anno-text')) {
+    return { kind: 'pos', left: parseFloat(el.style.left), top: parseFloat(el.style.top) };
+  }
+  if (el.tagName === 'line') {
+    return { kind: 'line',
+      x1: +el.getAttribute('x1'), y1: +el.getAttribute('y1'),
+      x2: +el.getAttribute('x2'), y2: +el.getAttribute('y2') };
+  }
+  if (el.tagName === 'rect') {
+    return { kind: 'rect',
+      x: +el.getAttribute('x'), y: +el.getAttribute('y'),
+      w: +el.getAttribute('width'), h: +el.getAttribute('height') };
+  }
+}
+function setGeometry(el, g) {
+  if (g.kind === 'pos') { el.style.left = g.left + 'px'; el.style.top = g.top + 'px'; }
+  else if (g.kind === 'line') { el.setAttribute('x1', g.x1); el.setAttribute('y1', g.y1); el.setAttribute('x2', g.x2); el.setAttribute('y2', g.y2); }
+  else if (g.kind === 'rect') { el.setAttribute('x', g.x); el.setAttribute('y', g.y); el.setAttribute('width', g.w); el.setAttribute('height', g.h); }
+}
+
+const TIP_TEXTS = {
+  select:  '選択/移動: 注釈をクリック→選択 / ドラッグ→移動 / ハンドルで伸縮 / Delete で削除',
+  marker:  'マーカー: クリックで A,B,C… 配置 (既存の上にも重ねられる) / 移動は選択ツールで',
+  text:    'テキスト: クリックで黄色付箋 (既存の上にも重ねられる) / 移動は選択ツールで',
+  rect:    '矩形: ドラッグで囲い枠 / 移動・伸縮は選択ツールで',
+  arrow:   '矢印: ドラッグで自由な矢印 (端に矢印先) / 移動・エンドポイント伸ばしは選択ツールで',
+  line:    '線: ドラッグで矢印先のないただの線 / 移動・エンドポイント伸ばしは選択ツールで',
+  eraser:  '消しゴム: 注釈をクリックして個別削除',
+};
+
+function nextLabelChar() { const c = labelChars[labelIdx % labelChars.length]; labelIdx++; return c; }
+function setAnnoMode(on) {
+  annoMode = on;
+  document.body.classList.toggle('anno-mode', on);
+  annoToggle.classList.toggle('active', on);
+  annoToggle.textContent = on ? '📝 注釈モード ON' : '📝 注釈モード OFF';
+  annoTip.style.display = on ? 'block' : 'none';
+  if (on) setTool(currentTool);
+  else selectEl(null);
+}
+function setTool(tool) {
+  currentTool = tool;
+  document.body.classList.toggle('eraser-mode', tool === 'eraser');
+  document.querySelectorAll('.tool-btn').forEach(b => b.classList.toggle('active', b.dataset.tool === tool));
+  annoTipText.textContent = TIP_TEXTS[tool] || '';
+}
+annoToggle.addEventListener('click', () => setAnnoMode(!annoMode));
+document.querySelectorAll('.tool-btn').forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
+annoClear.addEventListener('click', () => {
+  if (!confirm('全注釈を削除しますか？')) return;
+  const all = [...document.querySelectorAll('.anno-marker, .anno-text'),
+               ...annoSvg.querySelectorAll('.anno-arrow-line, .anno-rect')];
+  all.forEach(el => { pushHistory({ type: 'remove', el, parent: el.parentNode, next: el.nextSibling }); el.remove(); });
+  selectEl(null);
+});
+
+function selectEl(el) {
+  if (selectedEl) selectedEl.classList.remove('anno-selected');
+  clearHandles();
+  selectedEl = el;
+  if (el) {
+    el.classList.add('anno-selected');
+    updateHandles();
+    if (annoColorInput && el.dataset && el.dataset.annoColor) {
+      annoColorInput.value = el.dataset.annoColor;
+    }
+  }
+}
+function clearHandles() {
+  annoSvg.querySelectorAll('.anno-handle, .anno-handle-hit').forEach(h => h.remove());
+}
+function updateHandles() {
+  clearHandles();
+  if (!selectedEl) return;
+  const g = getGeometry(selectedEl);
+  if (g.kind === 'line') { addHandle(g.x1, g.y1, 'p1'); addHandle(g.x2, g.y2, 'p2'); }
+  else if (g.kind === 'rect') {
+    addHandle(g.x, g.y, 'tl'); addHandle(g.x + g.w, g.y, 'tr');
+    addHandle(g.x, g.y + g.h, 'bl'); addHandle(g.x + g.w, g.y + g.h, 'br');
+  }
+}
+function addHandle(x, y, role) {
+  const hit = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  hit.setAttribute('class', 'anno-handle anno-handle-hit');
+  hit.setAttribute('cx', x); hit.setAttribute('cy', y); hit.setAttribute('r', 18);
+  hit.dataset.role = role;
+  annoSvg.appendChild(hit);
+
+  const h = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  h.setAttribute('class', 'anno-handle endpoint');
+  h.setAttribute('cx', x); h.setAttribute('cy', y); h.setAttribute('r', 9);
+  h.dataset.role = role;
+  annoSvg.appendChild(h);
+
+  const handler = (ev) => {
+    ev.stopPropagation();
+    ev.preventDefault();
+    const before = getGeometry(selectedEl);
+    const target = selectedEl;
+    const onMove = (e2) => {
+      const p = getStageCoords(e2);
+      const g = getGeometry(target);
+      if (g.kind === 'line') {
+        if (role === 'p1') { g.x1 = p.x; g.y1 = p.y; } else { g.x2 = p.x; g.y2 = p.y; }
+      } else if (g.kind === 'rect') {
+        let x1 = g.x, y1 = g.y, x2 = g.x + g.w, y2 = g.y + g.h;
+        if (role === 'tl') { x1 = p.x; y1 = p.y; }
+        else if (role === 'tr') { x2 = p.x; y1 = p.y; }
+        else if (role === 'bl') { x1 = p.x; y2 = p.y; }
+        else if (role === 'br') { x2 = p.x; y2 = p.y; }
+        g.x = Math.min(x1, x2); g.y = Math.min(y1, y2);
+        g.w = Math.abs(x2 - x1); g.h = Math.abs(y2 - y1);
+      }
+      setGeometry(target, g); updateHandles();
+    };
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      const after = getGeometry(target);
+      if (JSON.stringify(after) !== JSON.stringify(before)) {
+        pushHistory({ type: 'transform', el: target, before, after });
+      }
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
+  hit.addEventListener('mousedown', handler);
+  h.addEventListener('mousedown', handler);
+  const stop = (ev) => ev.stopPropagation();
+  hit.addEventListener('click', stop);
+  h.addEventListener('click', stop);
+}
+
+function getStageCoords(e) {
+  const r = stage.getBoundingClientRect();
+  // scale 対応 (preview mode で stage が transform: scale されている場合に正しい内部座標にする)
+  const internalW = parseFloat(getComputedStyle(stage).width) || r.width;
+  const internalH = parseFloat(getComputedStyle(stage).height) || r.height;
+  const sx = r.width / internalW;
+  const sy = r.height / internalH;
+  return {
+    x: (e.clientX - r.left) / (sx || 1),
+    y: (e.clientY - r.top) / (sy || 1)
+  };
+}
+
+function removeElWithHistory(el) {
+  pushHistory({ type: 'remove', el, parent: el.parentNode, next: el.nextSibling });
+  el.remove();
+  if (el === selectedEl) selectEl(null);
+}
+function attachDeleteHandlers(el) {
+  el.addEventListener('contextmenu', ev => {
+    ev.preventDefault();
+    if (confirm('この注釈を削除しますか？')) removeElWithHistory(el);
+  });
+  el.addEventListener('click', ev => {
+    if (!annoMode) return;
+    if (currentTool === 'eraser') { ev.stopPropagation(); removeElWithHistory(el); }
+    // 他のツール (作成系) ではバブルさせる → annoLayer の click でマーカー/テキストが追加される
+  });
+  el.addEventListener('mousedown', ev => {
+    if (!annoMode) return;
+    // 選択ツールでのみ移動可能。 他のツール (マーカー/テキスト/矩形/矢印) はバブリングして新規作成
+    if (currentTool !== 'select') return;
+    if (ev.target.classList && (ev.target.classList.contains('anno-handle') || ev.target.classList.contains('anno-handle-hit'))) return;
+    ev.stopPropagation();
+    selectEl(el);
+    const startPt = getStageCoords(ev);
+    const beforeGeo = getGeometry(el);
+    let moved = false;
+    const onMove = (e2) => {
+      const p = getStageCoords(e2);
+      const dx = p.x - startPt.x, dy = p.y - startPt.y;
+      if (Math.abs(dx) > 2 || Math.abs(dy) > 2) moved = true;
+      if (!moved) return;
+      const g = JSON.parse(JSON.stringify(beforeGeo));
+      if (g.kind === 'pos') { g.left += dx; g.top += dy; }
+      else if (g.kind === 'line') { g.x1 += dx; g.y1 += dy; g.x2 += dx; g.y2 += dy; }
+      else if (g.kind === 'rect') { g.x += dx; g.y += dy; }
+      setGeometry(el, g); updateHandles();
+    };
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      if (moved) {
+        const afterGeo = getGeometry(el);
+        pushHistory({ type: 'transform', el, before: beforeGeo, after: afterGeo });
+      }
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  });
+}
+
+// ───── 注釈の色 (現在のピッカー値) ─────
+const annoColorInput = document.getElementById('anno-color');
+let currentAnnoColor = (annoColorInput && annoColorInput.value) || '#ff3b6b';
+function applyAnnoColor(el, color) {
+  if (!el || !color) return;
+  if (el.classList.contains('anno-marker')) {
+    el.style.backgroundColor = color;
+  } else if (el.classList.contains('anno-text')) {
+    el.style.borderColor = color;
+  } else if (el.classList.contains('anno-arrow-line')) {
+    el.style.color = color;
+    el.style.stroke = color;
+  } else if (el.classList.contains('anno-rect')) {
+    el.style.stroke = color;
+  }
+  el.dataset.annoColor = color;
+}
+annoColorInput && annoColorInput.addEventListener('input', e => {
+  currentAnnoColor = e.target.value;
+  if (selectedEl) {
+    applyAnnoColor(selectedEl, currentAnnoColor);
+    scheduleSave();
+  }
+});
+
+function addMarker(x, y, label) {
+  const m = document.createElement('div');
+  m.className = 'anno-marker';
+  m.style.left = x + 'px'; m.style.top = y + 'px';
+  m.textContent = label || nextLabelChar();
+  applyAnnoColor(m, currentAnnoColor);
+  annoLayer.appendChild(m);
+  attachDeleteHandlers(m);
+  m.addEventListener('dblclick', ev => {
+    ev.stopPropagation();
+    const t = prompt('ラベル', m.textContent);
+    if (t !== null) m.textContent = t;
+  });
+  pushHistory({ type: 'add', el: m, parent: annoLayer, next: null });
+  return m;
+}
+function addText(x, y) {
+  const text = prompt('テキスト', 'ここを修正');
+  if (!text) return null;
+  const t = document.createElement('div');
+  t.className = 'anno-text';
+  t.style.left = x + 'px'; t.style.top = y + 'px';
+  t.textContent = text;
+  applyAnnoColor(t, currentAnnoColor);
+  annoLayer.appendChild(t);
+  attachDeleteHandlers(t);
+  t.addEventListener('dblclick', ev => {
+    ev.stopPropagation();
+    const v = prompt('編集 (空で削除)', t.textContent);
+    if (v === null) return;
+    if (v === '') removeElWithHistory(t); else t.textContent = v;
+  });
+  pushHistory({ type: 'add', el: t, parent: annoLayer, next: null });
+  return t;
+}
+
+let dragStart = null;
+let tempShape = null;
+annoLayer.addEventListener('mousedown', e => {
+  if (!annoMode) return;
+  // ハンドルだけは早期 return (それ自身のドラッグハンドラに任せる)
+  if (e.target.classList && (e.target.classList.contains('anno-handle') ||
+                              e.target.classList.contains('anno-handle-hit'))) return;
+
+  // 選択ツール: 背景を押したら選択解除
+  if (currentTool === 'select') {
+    if (!e.target.closest('.anno-marker, .anno-text') &&
+        !(e.target.classList && (e.target.classList.contains('anno-arrow-line') || e.target.classList.contains('anno-rect')))) {
+      selectEl(null);
+    }
+    return;
+  }
+
+  if (currentTool === 'rect' || currentTool === 'arrow' || currentTool === 'line') {
+    e.preventDefault();
+    dragStart = getStageCoords(e);
+    if (currentTool === 'rect') {
+      tempShape = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      tempShape.setAttribute('class', 'anno-rect'); tempShape.setAttribute('rx', 6);
+    } else {
+      tempShape = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      // arrow ツールには .with-head クラスを付けて先端を出す。 line はクラス無しで素線
+      tempShape.setAttribute('class', currentTool === 'arrow' ? 'anno-arrow-line with-head' : 'anno-arrow-line');
+    }
+    applyAnnoColor(tempShape, currentAnnoColor);
+    annoSvg.appendChild(tempShape);
+    const onMove = (e2) => {
+      const p = getStageCoords(e2);
+      if (currentTool === 'rect') {
+        const x = Math.min(dragStart.x, p.x), y = Math.min(dragStart.y, p.y);
+        const w = Math.abs(p.x - dragStart.x), h = Math.abs(p.y - dragStart.y);
+        tempShape.setAttribute('x', x); tempShape.setAttribute('y', y);
+        tempShape.setAttribute('width', w); tempShape.setAttribute('height', h);
+      } else {
+        tempShape.setAttribute('x1', dragStart.x); tempShape.setAttribute('y1', dragStart.y);
+        tempShape.setAttribute('x2', p.x); tempShape.setAttribute('y2', p.y);
+      }
+    };
+    const onUp = (e2) => {
+      const p = getStageCoords(e2);
+      const dx = p.x - dragStart.x, dy = p.y - dragStart.y;
+      if (Math.abs(dx) < 4 && Math.abs(dy) < 4) { tempShape && tempShape.remove(); }
+      else { attachDeleteHandlers(tempShape); pushHistory({ type: 'add', el: tempShape, parent: annoSvg, next: null }); }
+      tempShape = null; dragStart = null;
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  }
+});
+annoLayer.addEventListener('click', e => {
+  if (!annoMode) return;
+  // ハンドルだけは無視
+  if (e.target.classList && (e.target.classList.contains('anno-handle') ||
+                              e.target.classList.contains('anno-handle-hit'))) return;
+  if (currentTool === 'eraser') return;
+  if (currentTool === 'select') return;
+  if (currentTool === 'rect' || currentTool === 'arrow') return; // ドラッグ専用
+  const p = getStageCoords(e);
+  if (currentTool === 'marker') addMarker(p.x, p.y);
+  else if (currentTool === 'text') addText(p.x, p.y);
+});
+annoSvg.addEventListener('click', e => {
+  if (!annoMode) return;
+  const t = e.target;
+  if (!t.classList) return;
+  if (t.classList.contains('anno-arrow-line') || t.classList.contains('anno-rect')) {
+    if (currentTool === 'eraser') { e.stopPropagation(); removeElWithHistory(t); }
+    else if (currentTool === 'select') { selectEl(t); }
+    // 作成系ツール: バブルさせる (annoLayer の click で新規作成される)
+  }
+});
+annoSvg.addEventListener('mousedown', e => {
+  if (!annoMode) return;
+  const t = e.target;
+  if (!t.classList) return;
+  if (!(t.classList.contains('anno-arrow-line') || t.classList.contains('anno-rect'))) return;
+  if (currentTool === 'eraser') return;
+  if (currentTool !== 'select') return;  // 移動は選択ツール限定
+  e.stopPropagation(); e.preventDefault();
+  selectEl(t);
+  const startPt = getStageCoords(e);
+  const beforeGeo = getGeometry(t);
+  let moved = false;
+  const onMove = (e2) => {
+    const p = getStageCoords(e2);
+    const dx = p.x - startPt.x, dy = p.y - startPt.y;
+    if (Math.abs(dx) > 2 || Math.abs(dy) > 2) moved = true;
+    if (!moved) return;
+    const g = JSON.parse(JSON.stringify(beforeGeo));
+    if (g.kind === 'line') { g.x1 += dx; g.y1 += dy; g.x2 += dx; g.y2 += dy; }
+    else if (g.kind === 'rect') { g.x += dx; g.y += dy; }
+    setGeometry(t, g); updateHandles();
+  };
+  const onUp = () => {
+    window.removeEventListener('mousemove', onMove);
+    window.removeEventListener('mouseup', onUp);
+    if (moved) {
+      const afterGeo = getGeometry(t);
+      pushHistory({ type: 'transform', el: t, before: beforeGeo, after: afterGeo });
+    }
+  };
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('mouseup', onUp);
+});
+
+window.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+  if ((e.key === 'Delete' || e.key === 'Backspace') && annoMode && selectedEl) {
+    e.preventDefault(); removeElWithHistory(selectedEl); return;
+  }
+  // Ctrl+Z / Cmd+Z: 注釈・リサイズ・移動・ガイド全部に効く
+  if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 'z' || e.key === 'Z')) { e.preventDefault(); undo(); return; }
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && (e.key === 'z' || e.key === 'Z')))) { e.preventDefault(); redo(); return; }
+  if (e.key === 'Escape') selectEl(null);
+});
+
+function resizeSvg() {
+  // 内部寸法 (transform 前) でビューボックスを設定 → 注釈は scale に追従する
+  const w = parseFloat(getComputedStyle(stage).width);
+  const h = parseFloat(getComputedStyle(stage).height);
+  annoSvg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  annoSvg.setAttribute('width', w);
+  annoSvg.setAttribute('height', h);
+}
+window.addEventListener('resize', resizeSvg);
+window.addEventListener('load', resizeSvg);
+window.addEventListener('resize', updateBboxLabels);
+
+// ───── Resize mode (各バウンディングボックスを辺別ハンドルで伸縮 + 移動 + ルーラー/ガイド) ─────
+// Wave Zulu-2: 単一ソース化。 bootstrap (新エディタ) と legacy が同じ配列を参照
+// するように window.QUIZLAND_RESIZE_SPEC から derive。 これがないと「要素一覧に
+// 背景/統合フレーム土台/.slot 等が出ない」事故が再発する。
+const RESIZABLE_SPEC = (window.QUIZLAND_RESIZE_SPEC && Array.isArray(window.QUIZLAND_RESIZE_SPEC))
+  ? window.QUIZLAND_RESIZE_SPEC.slice()
+  : [];
+const RESIZE_KEY = 'quizland_preview_sizes_v1';
+
+// 編集可能テキストの収集 / 復元
+// 動的に付加されるクラスはパス計算から除外 (再読込時の DOM と一致させる)
+const TRANSIENT_CLASSES = new Set([
+  'resizable', 'editable-text', 'anno-mode', 'preview-mode',
+  'show-bbox', 'show-safe', 'eraser-mode', 'dirty', 'active',
+  'selected', 'edge-linked', 'has-selection', 'grid-mode'
+]);
+function getCleanText(el) {
+  // resize ハンドルやサイズラベルは除外して純粋なテキストを取る
+  const clone = el.cloneNode(true);
+  clone.querySelectorAll('.resize-handle, .resize-handle-hit, .resize-size-label').forEach(c => c.remove());
+  return clone.textContent;
+}
+function collectEditableTexts() {
+  const data = {};
+  document.querySelectorAll('.editable-text').forEach(el => {
+    const path = getDomPath(el);
+    data[path] = getCleanText(el);
+  });
+  return data;
+}
+function applyEditableTexts(data) {
+  if (!data) return;
+  document.querySelectorAll('.editable-text').forEach(el => {
+    const path = getDomPath(el);
+    if (data[path] !== undefined) el.textContent = data[path];
+  });
+}
+function getDomPath(el) {
+  const parts = [];
+  let cur = el;
+  while (cur && cur.nodeType === 1 && cur !== document.body) {
+    let s = cur.tagName.toLowerCase();
+    if (cur.id) { s += '#' + cur.id; parts.unshift(s); break; }
+    if (cur.className && typeof cur.className === 'string') {
+      const cls = cur.className.trim().split(/\s+/).filter(c => c && !TRANSIENT_CLASSES.has(c));
+      if (cls.length) s += '.' + cls.join('.');
+    }
+    const parent = cur.parentElement;
+    if (parent) {
+      const sibs = [...parent.children].filter(c => c.tagName === cur.tagName);
+      if (sibs.length > 1) s += ':nth-of-type(' + (sibs.indexOf(cur) + 1) + ')';
+    }
+    parts.unshift(s);
+    cur = cur.parentElement;
+  }
+  return parts.join('>');
+}
+
+// 編集テキストが変更されたら dirty マーク
+document.addEventListener('blur', e => {
+  if (e.target.classList && e.target.classList.contains('editable-text')) {
+    markLayoutDirty();
+  }
+}, true);
+
+// レイアウトのスナップショット (現在の DOM 状態)
+function takeLayoutSnapshot() {
+  const data = {};
+  RESIZABLE_SPEC.forEach(([sel]) => {
+    if (sel === '.userbox') return;  // userbox は __userboxes に書く
+    document.querySelectorAll(sel).forEach((el, i) => {
+      data[`${sel}|${i}`] = {
+        w: el.style.width || '',
+        h: el.style.height || '',
+        tx: el._tx || 0,
+        ty: el._ty || 0,
+      };
+    });
+  });
+  data.__guides = collectGuides();
+  data.__headerH = document.documentElement.style.getPropertyValue('--header-h') || '';
+  data.__texts = collectEditableTexts();
+  data.__hidden = collectHiddenKeys();
+  data.__userboxes = collectUserboxes();
+  return data;
+}
+function collectHiddenKeys() {
+  return [...document.querySelectorAll('.user-hidden')].map(el => getElHideKey(el)).filter(Boolean);
+}
+function getElHideKey(el) {
+  for (const [sel] of RESIZABLE_SPEC) {
+    if (el.matches(sel)) {
+      const all = [...document.querySelectorAll(sel)];
+      const idx = all.indexOf(el);
+      if (idx >= 0) return sel + '|' + idx;
+    }
+  }
+  return null;
+}
+function applyHidden(key) {
+  const m = key && key.match(/^(.+)\|(\d+)$/);
+  if (!m) return;
+  const all = document.querySelectorAll(m[1]);
+  const el = all[parseInt(m[2], 10)];
+  if (el) el.classList.add('user-hidden');
+}
+function hideSelectedElements() {
+  const sel = [...selectedElements];
+  if (sel.length === 0) {
+    if (typeof showLayoutToast === 'function') showLayoutToast('隠す対象を選択してください');
+    return;
+  }
+  sel.forEach(el => el.classList.add('user-hidden'));
+  selectedElements.clear();
+  refreshSelectionUI && refreshSelectionUI();
+  saveResizeState && saveResizeState();
+  if (typeof showLayoutToast === 'function') showLayoutToast(`${sel.length} 個を隠しました (↺ 全て表示 で戻す)`);
+}
+function showAllHiddenElements() {
+  const hidden = document.querySelectorAll('.user-hidden');
+  if (hidden.length === 0) {
+    if (typeof showLayoutToast === 'function') showLayoutToast('隠してる枠はありません');
+    return;
+  }
+  hidden.forEach(el => el.classList.remove('user-hidden'));
+  saveResizeState && saveResizeState();
+  if (typeof showLayoutToast === 'function') showLayoutToast(`${hidden.length} 個を再表示`);
+}
+document.addEventListener('click', e => {
+  if (e.target && e.target.id === 'np-hide') hideSelectedElements();
+  if (e.target && e.target.id === 'np-show-all') showAllHiddenElements();
+});
+
+// 直近に保存した JSON (dirty 判定用)
+let lastSavedLayoutJson = null;
+
+// 「保存」ボタンが押された時だけ localStorage を更新
+function saveResizeState() {
+  // 後方互換: 既存呼び出しは「dirty マーク更新」のみに変更 (自動保存はしない)
+  markLayoutDirty();
+}
+// ── GitHub 同期 (PC で保存 → スマホでも見れる) ──
+const GH_REPO_OWNER = 'NautilusDW';
+const GH_REPO_NAME  = 'pono-asobiba-app';
+const GH_REPO_BRANCH = 'develop';
+const GH_LAYOUT_PATH = 'quizland/preview/full/saved-layout.json';
+const GH_LAYOUT_URL  = '/' + GH_LAYOUT_PATH;
+function utf8Btoa(s) { return btoa(unescape(encodeURIComponent(s))); }
+async function ghGetContents(path) {
+  const url = '/api/gh/repos/' + GH_REPO_OWNER + '/' + GH_REPO_NAME + '/contents/' +
+              encodeURI(path) + '?ref=' + GH_REPO_BRANCH;
+  const resp = await fetch(url, { method: 'GET', credentials: 'include',
+    headers: { 'Accept': 'application/vnd.github+json' }});
+  if (resp.status === 404) return null;
+  if (!resp.ok) throw new Error('GH GET ' + path + ' → ' + resp.status);
+  return await resp.json();
+}
+async function ghPutContents(path, contentB64, message, sha) {
+  const url = '/api/gh/repos/' + GH_REPO_OWNER + '/' + GH_REPO_NAME + '/contents/' + encodeURI(path);
+  const body = { message: message, content: contentB64, branch: GH_REPO_BRANCH };
+  if (sha) body.sha = sha;
+  const resp = await fetch(url, {
+    method: 'PUT', credentials: 'include',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/vnd.github+json' },
+    body: JSON.stringify(body),
+  });
+  if (!resp.ok) throw new Error('GH PUT ' + path + ' → ' + resp.status + ' ' + (await resp.text()).slice(0, 200));
+  return await resp.json();
+}
+async function loadSavedLayoutFromServer() {
+  // 静的ファイルとして直接 fetch (Basic Auth 不要)
+  try {
+    const resp = await fetch(GH_LAYOUT_URL + '?t=' + Date.now(), { cache: 'no-store' });
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch(e) { return null; }
+}
+
+async function explicitSaveLayout() {
+  const snapshot = takeLayoutSnapshot();
+  const compactJson = JSON.stringify(snapshot);          // 比較用 (updateDirtyUI と同形式)
+  const prettyJson  = JSON.stringify(snapshot, null, 2); // 保存用 (人間可読)
+  try { localStorage.setItem(RESIZE_KEY, prettyJson); } catch(e) {}
+  lastSavedLayoutJson = compactJson;
+  updateDirtyUI();
+  showLayoutToast('保存中…');
+  try {
+    const existing = await ghGetContents(GH_LAYOUT_PATH);
+    const sha = existing ? existing.sha : null;
+    await ghPutContents(GH_LAYOUT_PATH, utf8Btoa(prettyJson), 'chore(preview): update saved layout', sha);
+    showLayoutToast('保存しました (端末間共有 OK)');
+  } catch (e) {
+    showLayoutToast('GitHub 保存失敗: ローカルにのみ保存しました');
+    console.warn('GH save failed:', e);
+  }
+}
+function markLayoutDirty() {
+  updateDirtyUI();
+}
+function updateDirtyUI() {
+  const btn = document.getElementById('save-layout');
+  if (!btn) return;
+  const cur = JSON.stringify(takeLayoutSnapshot());
+  btn.classList.toggle('dirty', cur !== lastSavedLayoutJson);
+}
+function revertLayout() {
+  const cur = JSON.stringify(takeLayoutSnapshot());
+  if (cur !== lastSavedLayoutJson && !confirm('保存されている状態に戻しますか？ 未保存の変更は失われます。')) return;
+  // 全リセット
+  RESIZABLE_SPEC.forEach(([sel]) => {
+    document.querySelectorAll(sel).forEach(el => {
+      el.style.width = ''; el.style.height = ''; el.style.transform = '';
+      el._tx = 0; el._ty = 0;
+      el._resizeUpdateLabel && el._resizeUpdateLabel();
+    });
+  });
+  document.documentElement.style.removeProperty('--header-h');
+  document.querySelectorAll('.guide').forEach(g => g.remove());
+  // 保存値から再適用
+  loadResizeState();
+  // 履歴クリア (revert 後はクリーンスタート)
+  undoStack.length = 0;
+  redoStack.length = 0;
+  updateDirtyUI();
+  showLayoutToast('保存状態に戻しました');
+}
+function showLayoutToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'layout-toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 1700);
+}
+function loadResizeState() {
+  try {
+    const raw = localStorage.getItem(RESIZE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    // userbox は __userboxes が真実 (pipe-key より先に作る)
+    if (typeof restoreUserboxes === 'function' && data.__userboxes) restoreUserboxes(data.__userboxes);
+    RESIZABLE_SPEC.forEach(([sel]) => {
+      if (sel === '.userbox') return;  // 上で __userboxes から復元済み
+      document.querySelectorAll(sel).forEach((el, i) => {
+        const s = data[`${sel}|${i}`];
+        if (!s) return;
+        if (s.w) el.style.width = s.w;
+        if (s.h) el.style.height = s.h;
+        if (s.tx || s.ty) {
+          el._tx = s.tx || 0;
+          el._ty = s.ty || 0;
+          el.style.transform = `translate(${el._tx}px, ${el._ty}px)`;
+        }
+      });
+    });
+    if (data.__headerH) document.documentElement.style.setProperty('--header-h', data.__headerH);
+    if (data.__guides) restoreGuides(data.__guides);
+    if (data.__texts) applyEditableTexts(data.__texts);
+    if (Array.isArray(data.__hidden)) data.__hidden.forEach(applyHidden);
+  } catch(e) {}
+}
+function resetResizeState() {
+  if (!confirm('リサイズ・移動・ガイドを全てリセットしますか？')) return;
+  try { localStorage.removeItem(RESIZE_KEY); } catch(e) {}
+  RESIZABLE_SPEC.forEach(([sel]) => {
+    document.querySelectorAll(sel).forEach(el => {
+      el.style.width = '';
+      el.style.height = '';
+      el.style.transform = '';
+      el._tx = 0;
+      el._ty = 0;
+    });
+  });
+  document.documentElement.style.removeProperty('--header-h');
+  document.querySelectorAll('.guide').forEach(g => g.remove());
+  if (document.body.classList.contains('resize-mode')) {
+    disableResize();
+    enableResize();
+  }
+}
+
+// ───── Multi-selection state + UI ─────
+const selectedElements = new Set();
+
+function refreshSelectionUI() {
+  document.querySelectorAll('.resizable').forEach(e => e.classList.toggle('selected', selectedElements.has(e)));
+  document.body.classList.toggle('has-selection', selectedElements.size > 0);
+  updateNumericPanel();
+}
+function selectOnly(el) { selectedElements.clear(); if (el) selectedElements.add(el); refreshSelectionUI(); }
+function toggleSelect(el) { if (selectedElements.has(el)) selectedElements.delete(el); else selectedElements.add(el); refreshSelectionUI(); }
+function clearSelection() { selectedElements.clear(); refreshSelectionUI(); }
+
+function elementShortLabel(el) {
+  const cls = [...el.classList].filter(c => !['resizable','selected','edge-linked'].includes(c))[0] || el.tagName.toLowerCase();
+  // index among siblings with same first class
+  const sibs = el.parentElement ? [...el.parentElement.children].filter(c => c.classList.contains(cls)) : [el];
+  const idx = sibs.indexOf(el);
+  return '.' + cls + (sibs.length > 1 ? `[${idx}]` : '');
+}
+
+function updateNumericPanel() {
+  const panel = document.getElementById('numeric-panel');
+  if (!panel) return;
+  const sel = [...selectedElements];
+  document.getElementById('np-count').textContent = String(sel.length);
+  const tEl = document.getElementById('np-targets');
+  tEl.textContent = sel.length ? sel.map(elementShortLabel).join(', ') : '(なし)';
+  const getVal = (el, prop) => {
+    if (prop === 'w') return parseFloat(el.style.width) || el.offsetWidth;
+    if (prop === 'h') return parseFloat(el.style.height) || el.offsetHeight;
+    if (prop === 'tx') return Math.round(el._tx || 0);
+    if (prop === 'ty') return Math.round(el._ty || 0);
+  };
+  ['w','h','tx','ty'].forEach(prop => {
+    const input = document.getElementById('np-' + prop);
+    if (!input) return;
+    if (document.activeElement === input) return; // don't clobber while typing
+    if (sel.length === 0) { input.value = ''; input.placeholder = ''; return; }
+    const vals = sel.map(el => Math.round(getVal(el, prop)));
+    const allSame = vals.every(v => v === vals[0]);
+    if (allSame) { input.value = vals[0]; input.placeholder = ''; }
+    else { input.value = ''; input.placeholder = '異なる'; }
+  });
+}
+
+function applyNumericInput(prop, valueStr) {
+  const value = parseFloat(valueStr);
+  if (Number.isNaN(value)) return;
+  const sel = [...selectedElements];
+  if (sel.length === 0) return;
+  const beforeMap = new Map();
+  sel.forEach(el => beforeMap.set(el, getResizeState(el)));
+  sel.forEach(el => {
+    if (prop === 'w') {
+      el.style.width = value + 'px';
+    } else if (prop === 'h') {
+      el.style.height = value + 'px';
+      if (el.matches('.hdr-left')) {
+        document.documentElement.style.setProperty('--header-h', value + 'px');
+      }
+    } else if (prop === 'tx') {
+      el._tx = value;
+      el.style.transform = `translate(${el._tx}px, ${el._ty || 0}px)`;
+    } else if (prop === 'ty') {
+      el._ty = value;
+      el.style.transform = `translate(${el._tx || 0}px, ${el._ty}px)`;
+    }
+    el._resizeUpdateLabel && el._resizeUpdateLabel();
+  });
+  sel.forEach(el => {
+    const after = getResizeState(el);
+    const before = beforeMap.get(el);
+    if (JSON.stringify(after) !== JSON.stringify(before)) {
+      pushHistory({ type: 'resize', el, before, after });
+    }
+  });
+  saveResizeState();
+}
+
+// Numeric panel input wiring (one-time)
+['w','h','tx','ty'].forEach(prop => {
+  document.addEventListener('change', e => {
+    if (e.target && e.target.id === 'np-' + prop) {
+      applyNumericInput(prop, e.target.value);
+    }
+  });
+});
+
+// Click on stage background clears selection
+document.addEventListener('mousedown', e => {
+  if (!document.body.classList.contains('resize-mode')) return;
+  if (e.target.closest('.resizable')) return;
+  if (e.target.closest('.numeric-panel')) return;
+  if (e.target.closest('.toolbar')) return;
+  if (e.target.closest('.resize-handle')) return;
+  if (e.target.closest('.guide')) return;
+  if (e.target.closest('.ruler')) return;
+  if (selectedElements.size > 0) clearSelection();
+});
+
+// ───── Edge linking (adjacent frames share an edge) ─────
+function sidesFromHandlePos(pos) {
+  // Returns clean side array, avoiding the substring trap
+  if (pos === 'edge-e') return ['e'];
+  if (pos === 'edge-w') return ['w'];
+  if (pos === 'edge-n') return ['n'];
+  if (pos === 'edge-s') return ['s'];
+  if (pos === 'corner-ne') return ['n','e'];
+  if (pos === 'corner-nw') return ['n','w'];
+  if (pos === 'corner-se') return ['s','e'];
+  if (pos === 'corner-sw') return ['s','w'];
+  return [];
+}
+function oppositeSide(s) { return ({n:'s',s:'n',e:'w',w:'e'})[s]; }
+
+function getStageRectInfo() {
+  const stageRect = stage.getBoundingClientRect();
+  const stageW = parseFloat(getComputedStyle(stage).width);
+  const scale = stageRect.width / stageW || 1;
+  return { stageRect, scale };
+}
+function bcrInStage(el, stageRect, scale) {
+  const r = el.getBoundingClientRect();
+  return {
+    left: (r.left - stageRect.left) / scale,
+    top: (r.top - stageRect.top) / scale,
+    right: (r.right - stageRect.left) / scale,
+    bottom: (r.bottom - stageRect.top) / scale,
+  };
+}
+
+function findLinkedTargets(primaryEl, draggedSides) {
+  // Returns array of { el, sides: [...] } for each other resizable that has
+  // an edge touching one of the primary's dragged sides.
+  const EPS = 8;
+  const VERT_OVERLAP_MIN = 8;
+  const { stageRect, scale } = getStageRectInfo();
+  const primR = bcrInStage(primaryEl, stageRect, scale);
+  const all = [...document.querySelectorAll('.resizable')].filter(x => x !== primaryEl);
+  const linked = [];
+  for (const otherEl of all) {
+    const r = bcrInStage(otherEl, stageRect, scale);
+    const sides = [];
+    if (draggedSides.includes('e') && Math.abs(r.left - primR.right) < EPS &&
+        Math.min(primR.bottom, r.bottom) - Math.max(primR.top, r.top) > VERT_OVERLAP_MIN) {
+      sides.push('w');
+    }
+    if (draggedSides.includes('w') && Math.abs(r.right - primR.left) < EPS &&
+        Math.min(primR.bottom, r.bottom) - Math.max(primR.top, r.top) > VERT_OVERLAP_MIN) {
+      sides.push('e');
+    }
+    if (draggedSides.includes('s') && Math.abs(r.top - primR.bottom) < EPS &&
+        Math.min(primR.right, r.right) - Math.max(primR.left, r.left) > VERT_OVERLAP_MIN) {
+      sides.push('n');
+    }
+    if (draggedSides.includes('n') && Math.abs(r.bottom - primR.top) < EPS &&
+        Math.min(primR.right, r.right) - Math.max(primR.left, r.left) > VERT_OVERLAP_MIN) {
+      sides.push('s');
+    }
+    if (sides.length) linked.push({ el: otherEl, sides });
+  }
+  return linked;
+}
+
+// Apply a one-axis-per-side resize to a target, using BCR-fixup so the opposite
+// side stays anchored. Used for the primary AND each linked element.
+function performResize(target, sides, dx, dy, sym, axes, stageRect, scale) {
+  const { el, startRect, startW, startH, startTx, startTy } = target;
+  const factor = sym ? 2 : 1;
+  let newW = startW, newH = startH;
+  if (sides.includes('e')) newW = Math.max(20, startW + factor * dx);
+  if (sides.includes('w') && !sides.includes('e')) newW = Math.max(20, startW - factor * dx);
+  if (sides.includes('s')) newH = Math.max(20, startH + factor * dy);
+  if (sides.includes('n') && !sides.includes('s')) newH = Math.max(20, startH - factor * dy);
+  if (axes.includes('w') && (sides.includes('e') || sides.includes('w'))) {
+    el.style.width = newW + 'px';
+  }
+  if (axes.includes('h') && (sides.includes('s') || sides.includes('n'))) {
+    el.style.height = newH + 'px';
+    if (el.matches('.hdr-left')) {
+      document.documentElement.style.setProperty('--header-h', newH + 'px');
+    }
+  }
+  el._tx = startTx;
+  el._ty = startTy;
+  el.style.transform = `translate(${startTx}px, ${startTy}px)`;
+  const cur = bcrInStage(el, stageRect, scale);
+  let needTx = 0, needTy = 0;
+  if (sym) {
+    const cur_cx = (cur.left + cur.right) / 2;
+    const cur_cy = (cur.top + cur.bottom) / 2;
+    const start_cx = (startRect.left + startRect.right) / 2;
+    const start_cy = (startRect.top + startRect.bottom) / 2;
+    needTx = start_cx - cur_cx;
+    needTy = start_cy - cur_cy;
+  } else {
+    if (sides.includes('e') && !sides.includes('w')) needTx = startRect.left - cur.left;
+    if (sides.includes('w') && !sides.includes('e')) needTx = startRect.right - cur.right;
+    if (sides.includes('s') && !sides.includes('n')) needTy = startRect.top - cur.top;
+    if (sides.includes('n') && !sides.includes('s')) needTy = startRect.bottom - cur.bottom;
+  }
+  el._tx = startTx + needTx;
+  el._ty = startTy + needTy;
+  el.style.transform = `translate(${el._tx}px, ${el._ty}px)`;
+  el._resizeUpdateLabel && el._resizeUpdateLabel();
+}
+
+function attachHandle(el, axes) {
+  el.classList.add('resizable');
+  // 辺ハンドル: axes に応じて
+  const positions = [];
+  if (axes.includes('h')) positions.push('edge-n', 'edge-s');
+  if (axes.includes('w')) positions.push('edge-e', 'edge-w');
+  if (axes.includes('w') && axes.includes('h')) {
+    positions.push('corner-nw', 'corner-ne', 'corner-sw', 'corner-se');
+  }
+  positions.forEach(pos => makeHandle(el, pos, axes));
+  // body ドラッグで移動 (ハンドル以外をドラッグ)
+  attachMoveDrag(el);
+  // サイズ表示
+  const lbl = document.createElement('div');
+  lbl.className = 'resize-size-label';
+  el.appendChild(lbl);
+  el._resizeUpdateLabel = () => {
+    const r = el.getBoundingClientRect();
+    const sr = stage.getBoundingClientRect();
+    const stageW = parseFloat(getComputedStyle(stage).width);
+    const scale = sr.width / stageW || 1;
+    lbl.textContent = `${Math.round(r.width / scale)}×${Math.round(r.height / scale)}`;
+  };
+  el._resizeUpdateLabel();
+}
+
+function getResizeState(el) {
+  return {
+    w: el.style.width || '',
+    h: el.style.height || '',
+    tx: el._tx || 0,
+    ty: el._ty || 0,
+  };
+}
+
+function makeHandle(el, pos, axes) {
+  const h = document.createElement('div');
+  h.className = 'resize-handle ' + pos;
+  el.appendChild(h);
+  h.addEventListener('mousedown', e => {
+    e.stopPropagation();
+    e.preventDefault();
+    const primarySides = sidesFromHandlePos(pos);
+    const { stageRect, scale } = getStageRectInfo();
+    const startX = e.clientX, startY = e.clientY;
+    // Capture start state for primary
+    const captureTarget = (target) => {
+      target.startW = target.el.offsetWidth;
+      target.startH = target.el.offsetHeight;
+      target.startTx = target.el._tx || 0;
+      target.startTy = target.el._ty || 0;
+      target.aspect = target.startW / Math.max(1, target.startH);
+      target.startRect = bcrInStage(target.el, stageRect, scale);
+      target.before = getResizeState(target.el);
+    };
+    const primaryTarget = { el, sides: primarySides };
+    captureTarget(primaryTarget);
+
+    // ── グループ corner-drag 拡縮 (zukan からポート) ──
+    const isGroupCornerScale = primarySides.length === 2
+      && typeof selectedElements !== 'undefined'
+      && selectedElements.has(el)
+      && selectedElements.size >= 2;
+    let groupScale = null;
+    if (isGroupCornerScale) {
+      const sel = [...selectedElements];
+      const rects = sel.map(s => bcrInStage(s, stageRect, scale));
+      const minLeft = Math.min(...rects.map(r => r.left));
+      const maxRight = Math.max(...rects.map(r => r.right));
+      const minTop = Math.min(...rects.map(r => r.top));
+      const maxBottom = Math.max(...rects.map(r => r.bottom));
+      const gcx = (minLeft + maxRight) / 2;
+      const gcy = (minTop + maxBottom) / 2;
+      groupScale = {
+        gcx, gcy,
+        primaryOrigW: primaryTarget.startW,
+        primaryOrigH: primaryTarget.startH,
+        targets: sel.map((s, i) => ({
+          el: s,
+          origW: parseFloat(s.style.width) || s.offsetWidth,
+          origH: parseFloat(s.style.height) || s.offsetHeight,
+          origTx: s._tx || 0,
+          origTy: s._ty || 0,
+          origCx: (rects[i].left + rects[i].right) / 2,
+          origCy: (rects[i].top + rects[i].bottom) / 2,
+          before: getResizeState(s),
+        })),
+      };
+    }
+
+    const linkingDisabled = e.ctrlKey || e.metaKey;
+    const linkedTargets = (isGroupCornerScale || linkingDisabled) ? [] : findLinkedTargets(el, primarySides);
+    linkedTargets.forEach(t => captureTarget(t));
+    linkedTargets.forEach(t => t.el.classList.add('edge-linked'));
+
+    const onMove = (e2) => {
+      const dx = (e2.clientX - startX) / scale;
+      const dy = (e2.clientY - startY) / scale;
+      const sym = e2.altKey;
+
+      if (groupScale) {
+        let newW = groupScale.primaryOrigW, newH = groupScale.primaryOrigH;
+        if (primarySides.includes('e')) newW = Math.max(20, groupScale.primaryOrigW + dx);
+        if (primarySides.includes('w') && !primarySides.includes('e')) newW = Math.max(20, groupScale.primaryOrigW - dx);
+        if (primarySides.includes('s')) newH = Math.max(20, groupScale.primaryOrigH + dy);
+        if (primarySides.includes('n') && !primarySides.includes('s')) newH = Math.max(20, groupScale.primaryOrigH - dy);
+        const factor = (newW / groupScale.primaryOrigW + newH / groupScale.primaryOrigH) / 2;
+        groupScale.targets.forEach(t => {
+          t.el.style.width  = Math.round(t.origW * factor) + 'px';
+          t.el.style.height = Math.round(t.origH * factor) + 'px';
+          const newCx = groupScale.gcx + (t.origCx - groupScale.gcx) * factor;
+          const newCy = groupScale.gcy + (t.origCy - groupScale.gcy) * factor;
+          const sizeShiftX = (t.origW * factor - t.origW) / 2;
+          const sizeShiftY = (t.origH * factor - t.origH) / 2;
+          t.el._tx = t.origTx + (newCx - t.origCx) - sizeShiftX;
+          t.el._ty = t.origTy + (newCy - t.origCy) - sizeShiftY;
+          t.el.style.transform = `translate(${t.el._tx}px, ${t.el._ty}px)`;
+          t.el._resizeUpdateLabel && t.el._resizeUpdateLabel();
+        });
+        return;
+      }
+
+      performResize(primaryTarget, primarySides, dx, dy, sym, axes, stageRect, scale);
+      linkedTargets.forEach(t => {
+        performResize(t, t.sides, dx, dy, false, 'wh', stageRect, scale);
+      });
+    };
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      linkedTargets.forEach(t => t.el.classList.remove('edge-linked'));
+      const allTargets = groupScale ? groupScale.targets : [primaryTarget, ...linkedTargets];
+      allTargets.forEach(t => {
+        const after = getResizeState(t.el);
+        if (JSON.stringify(after) !== JSON.stringify(t.before)) {
+          pushHistory({ type: 'resize', el: t.el, before: t.before, after });
+        }
+      });
+      saveResizeState();
+      updateNumericPanel();
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  });
+  return h;
+}
+
+function attachMoveDrag(el) {
+  const handler = (e) => {
+    if (!document.body.classList.contains('resize-mode')) return;
+    if (e.target.classList.contains('resize-handle')) return;
+    if (e.target !== el && !el.contains(e.target)) return;
+    if (e.target.classList.contains('resize-handle') ||
+        e.target.classList.contains('resize-size-label')) return;
+    e.stopPropagation();
+    e.preventDefault();
+
+    // Selection logic:
+    //   Shift+click → toggle membership (no drag this gesture)
+    //   plain click on un-selected element → select-only
+    //   click on already-selected element → keep selection, prepare group drag
+    if (e.shiftKey) {
+      toggleSelect(el);
+      return;
+    }
+    if (!selectedElements.has(el)) {
+      selectOnly(el);
+    }
+
+    // Drag targets = all selected (always includes el at this point)
+    const targets = [...selectedElements];
+    if (targets.length === 0) targets.push(el);
+
+    const startX = e.clientX, startY = e.clientY;
+    const { scale } = getStageRectInfo();
+    const startStates = targets.map(t => ({
+      el: t,
+      tx: t._tx || 0,
+      ty: t._ty || 0,
+      before: getResizeState(t),
+    }));
+
+    const onMove = (e2) => {
+      let dx = (e2.clientX - startX) / scale;
+      let dy = (e2.clientY - startY) / scale;
+      if (e2.shiftKey) {
+        if (Math.abs(dx) >= Math.abs(dy)) dy = 0;
+        else dx = 0;
+      }
+      startStates.forEach(s => {
+        s.el._tx = s.tx + dx;
+        s.el._ty = s.ty + dy;
+        s.el.style.transform = `translate(${s.el._tx}px, ${s.el._ty}px)`;
+      });
+    };
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      startStates.forEach(s => {
+        const after = getResizeState(s.el);
+        if (JSON.stringify(after) !== JSON.stringify(s.before)) {
+          pushHistory({ type: 'resize', el: s.el, before: s.before, after });
+        }
+      });
+      saveResizeState();
+      updateNumericPanel();
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
+  el.addEventListener('mousedown', handler);
+}
+
+// ─── ルーラー + ガイド ───
+function adjustRulerPos() {
+  const tb = document.querySelector('.toolbar');
+  const toolbarH = (tb && getComputedStyle(tb).display !== 'none') ? tb.offsetHeight : 0;
+  document.documentElement.style.setProperty('--toolbar-h', toolbarH + 'px');
+}
+function setupRulers() {
+  if (document.querySelector('.ruler.horizontal')) {
+    adjustRulerPos();
+    return;
+  }
+  const rh = document.createElement('div'); rh.className = 'ruler horizontal';
+  const rv = document.createElement('div'); rv.className = 'ruler vertical';
+  document.body.appendChild(rh);
+  document.body.appendChild(rv);
+  rh.addEventListener('mousedown', e => createGuide(e, 'h'));
+  rv.addEventListener('mousedown', e => createGuide(e, 'v'));
+  adjustRulerPos();
+  window.addEventListener('resize', adjustRulerPos);
+}
+function createGuide(e, axis) {
+  e.preventDefault();
+  const g = document.createElement('div');
+  g.className = 'guide ' + axis;
+  const lbl = document.createElement('div');
+  lbl.className = 'guide-label';
+  g.appendChild(lbl);
+  document.body.appendChild(g);
+  attachGuideDrag(g, lbl, axis);
+  pushHistory({ type: 'add', el: g, parent: document.body, next: null });
+  // 即座にドラッグ開始
+  const evt = new MouseEvent('mousedown', { clientX: e.clientX, clientY: e.clientY, bubbles: true });
+  g.dispatchEvent(evt);
+}
+function attachGuideDrag(g, lbl, axis) {
+  const getCurPos = () => axis === 'h' ? parseFloat(g.style.top) || 0 : parseFloat(g.style.left) || 0;
+  const updatePos = (clientX, clientY) => {
+    if (axis === 'h') {
+      g.style.top = clientY + 'px';
+      lbl.textContent = `y: ${Math.round(clientY)}px`;
+    } else {
+      g.style.left = clientX + 'px';
+      lbl.textContent = `x: ${Math.round(clientX)}px`;
+    }
+  };
+  g.addEventListener('mousedown', e => {
+    e.stopPropagation();
+    e.preventDefault();
+    const before = getCurPos();
+    const onMove = (e2) => updatePos(e2.clientX, e2.clientY);
+    const onUp = (e2) => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      // ルーラーに戻したら削除
+      if (axis === 'h' && e2.clientY < 24) {
+        pushHistory({ type: 'remove', el: g, parent: document.body, next: g.nextSibling });
+        g.remove();
+      } else if (axis === 'v' && e2.clientX < 24) {
+        pushHistory({ type: 'remove', el: g, parent: document.body, next: g.nextSibling });
+        g.remove();
+      } else {
+        const after = getCurPos();
+        if (after !== before) pushHistory({ type: 'guide-move', el: g, before, after });
+      }
+      saveResizeState();
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    updatePos(e.clientX, e.clientY);
+  });
+  // 右クリックで削除
+  g.addEventListener('contextmenu', e => {
+    e.preventDefault();
+    pushHistory({ type: 'remove', el: g, parent: document.body, next: g.nextSibling });
+    g.remove();
+    saveResizeState();
+  });
+}
+function collectGuides() {
+  return [...document.querySelectorAll('.guide')].map(g => ({
+    axis: g.classList.contains('h') ? 'h' : 'v',
+    pos: g.classList.contains('h') ? parseFloat(g.style.top) : parseFloat(g.style.left),
+  }));
+}
+function restoreGuides(arr) {
+  document.querySelectorAll('.guide').forEach(g => g.remove());
+  arr.forEach(({axis, pos}) => {
+    const g = document.createElement('div');
+    g.className = 'guide ' + axis;
+    if (axis === 'h') g.style.top = pos + 'px';
+    else g.style.left = pos + 'px';
+    const lbl = document.createElement('div');
+    lbl.className = 'guide-label';
+    lbl.textContent = (axis === 'h' ? 'y: ' : 'x: ') + Math.round(pos) + 'px';
+    g.appendChild(lbl);
+    document.body.appendChild(g);
+    attachGuideDrag(g, lbl, axis);
+  });
+}
+
+function enableResize() {
+  document.body.classList.add('resize-mode');
+  document.getElementById('resize-toggle').textContent = '📐 サイズ調整 ON';
+  document.getElementById('resize-toggle').classList.add('active');
+  RESIZABLE_SPEC.forEach(([sel, axes]) => {
+    document.querySelectorAll(sel).forEach(el => attachHandle(el, axes));
+  });
+  setupRulers();
+}
+function disableResize() {
+  document.body.classList.remove('resize-mode');
+  document.getElementById('resize-toggle').textContent = '📐 サイズ調整 OFF';
+  document.getElementById('resize-toggle').classList.remove('active');
+  document.querySelectorAll('.resize-handle, .resize-size-label').forEach(el => el.remove());
+  document.querySelectorAll('.resizable').forEach(el => { el.classList.remove('resizable'); el.classList.remove('selected'); el.classList.remove('edge-linked'); delete el._resizeUpdateLabel; });
+  clearSelection();
+  if (typeof setDrawMode === 'function' && drawModeOn) setDrawMode(false);
+}
+document.getElementById('resize-toggle').addEventListener('click', () => {
+  if (document.body.classList.contains('resize-mode')) disableResize();
+  else enableResize();
+});
+document.getElementById('resize-reset').addEventListener('click', resetResizeState);
+document.getElementById('save-layout').addEventListener('click', explicitSaveLayout);
+document.getElementById('revert-layout').addEventListener('click', revertLayout);
+
+// グリッド比較トグル: 旧 grid placeholder (色付き正方形) と本物画像を切替
+const gridBtn = document.getElementById('grid-mode-toggle');
+function applyGridMode(on) {
+  document.body.classList.toggle('grid-mode', on);
+  gridBtn.textContent = on ? '🔁 グリッド比較 ON' : '🔁 グリッド比較 OFF';
+  gridBtn.classList.toggle('active', on);
+  try { localStorage.setItem('quizland_preview_grid_mode', on ? '1' : '0'); } catch(_) {}
+}
+gridBtn.addEventListener('click', () => applyGridMode(!document.body.classList.contains('grid-mode')));
+try { if (localStorage.getItem('quizland_preview_grid_mode') === '1') applyGridMode(true); } catch(_) {}
+
+// ───── 1 枚シート画像オーバーレイ ─────
+const sheetBtn = document.getElementById('sheet-toggle');
+function setSheetMode(on) {
+  document.body.classList.toggle('sheet-on', on);
+  if (sheetBtn) {
+    sheetBtn.textContent = on ? '🪟 シート画像 ON' : '🪟 シート画像 OFF';
+    sheetBtn.classList.toggle('active', on);
+  }
+  try { localStorage.setItem('quizland_sheet_mode', on ? '1' : '0'); } catch(_) {}
+}
+sheetBtn && sheetBtn.addEventListener('click', () => setSheetMode(!document.body.classList.contains('sheet-on')));
+// sheet-on は body class でデフォルト ON (本番モード)。 localStorage で明示的に
+// '0' (= ユーザーが一度 OFF にした) の時だけ OFF にして placeholder モードに戻す。
+// localStorage に何もない場合 (新規ユーザー / リセット後) は ON のまま。
+try {
+  const saved = localStorage.getItem('quizland_sheet_mode');
+  if (saved === '0') setSheetMode(false);
+  else setSheetMode(true);  // ON でボタンラベル / classList を整える
+} catch(_) {}
+
+// ───── Wave Zulu-2: 統合フレーム画像 (.stage::after) 専用トグル ─────
+//   ユーザー要望: 「統合フレーム画像を非表示にしたい (最終的には別々に分かれた
+//   フレームを当てるから、 今は下書きとして必要だけど、 最終的には削除したい)」
+//   sheet-off クラスを body に付ける CSS-only 制御。 既存の sheet-on (placeholder
+//   一括非表示モード) とは独立した過渡期トグル。 localStorage は user 指定の
+//   キー名 'quizland-sheet-on' を使用。
+const frameSheetBtn = document.getElementById('frame-sheet-toggle');
+function setFrameSheetMode(on) {
+  document.body.classList.toggle('sheet-on', on);
+  document.body.classList.toggle('sheet-off', !on);
+  if (frameSheetBtn) {
+    frameSheetBtn.textContent = on ? '📄 シート ON' : '📄 シート OFF';
+    frameSheetBtn.classList.toggle('active', !on);  // 非表示中 (= OFF) を強調
+  }
+  // 既存の 🪟 シート画像 トグルとも label / class を同期 (両者は sheet-on を共有)
+  if (typeof sheetBtn !== 'undefined' && sheetBtn) {
+    sheetBtn.textContent = on ? '🪟 シート画像 ON' : '🪟 シート画像 OFF';
+    sheetBtn.classList.toggle('active', on);
+  }
+  try { localStorage.setItem('quizland-sheet-on', on ? '1' : '0'); } catch(_) {}
+  // 旧キーも一応シンクさせて、 リロード時に二つの toggle が乖離しないように。
+  try { localStorage.setItem('quizland_sheet_mode', on ? '1' : '0'); } catch(_) {}
+}
+frameSheetBtn && frameSheetBtn.addEventListener('click', () => {
+  setFrameSheetMode(!document.body.classList.contains('sheet-on'));
+});
+// 復元: localStorage 'quizland-sheet-on' === '0' なら OFF にする (sheet-off クラス付与)。
+// それ以外 (未設定 / '1') は ON のまま (デフォルト = body.sheet-on)。
+try {
+  const stored = localStorage.getItem('quizland-sheet-on');
+  if (stored === '0') {
+    setFrameSheetMode(false);
+  } else {
+    // ボタンラベルだけ ON 状態に揃える (body class は HTML 既定値で既に sheet-on)
+    setFrameSheetMode(true);
+  }
+} catch(_) {}
+
+// ───── ワイヤーフレーム表示 + PNG 書き出し ─────
+const wireframeBtn = document.getElementById('wireframe-toggle');
+function setWireframeMode(on) {
+  document.body.classList.toggle('wireframe-only', on);
+  if (wireframeBtn) {
+    wireframeBtn.textContent = on ? '👁 ワイヤー表示 ON' : '👁 ワイヤー表示 OFF';
+    wireframeBtn.classList.toggle('active', on);
+  }
+}
+wireframeBtn && wireframeBtn.addEventListener('click', () => {
+  setWireframeMode(!document.body.classList.contains('wireframe-only'));
+});
+
+const exportPngBtn = document.getElementById('export-png');
+const pngExportMenu = document.getElementById('png-export-menu');
+exportPngBtn && exportPngBtn.addEventListener('click', e => {
+  e.stopPropagation();
+  if (pngExportMenu) pngExportMenu.style.display = (pngExportMenu.style.display === 'none' ? 'flex' : 'none');
+});
+document.addEventListener('click', e => {
+  if (pngExportMenu && !e.target.closest('.png-export-wrap')) pngExportMenu.style.display = 'none';
+});
+pngExportMenu && pngExportMenu.addEventListener('click', e => {
+  const btn = e.target.closest('button[data-mode]');
+  if (!btn) return;
+  pngExportMenu.style.display = 'none';
+  const mode = btn.dataset.mode;
+  if (mode === 'wireframe') {
+    quizlandExportWireframePng();
+  } else if (mode === 'snapshot') {
+    snapshotCurrentView('quizland');
+  }
+});
+
+// ───── userbox 機能 (zukan からポート) ─────
+const drawBtn = document.getElementById('userbox-add');
+let drawModeOn = false;
+function setDrawMode(on) {
+  drawModeOn = on;
+  document.body.classList.toggle('draw-mode', on);
+  if (drawBtn) {
+    drawBtn.textContent = on ? '🆕 矩形追加 ON' : '🆕 矩形追加 OFF';
+    drawBtn.classList.toggle('active', on);
+  }
+}
+drawBtn && drawBtn.addEventListener('click', () => {
+  if (!document.body.classList.contains('resize-mode')) enableResize();
+  setDrawMode(!drawModeOn);
+  if (typeof showLayoutToast === 'function') {
+    showLayoutToast(drawModeOn ? '矩形追加 ON: 空き領域をドラッグして矩形を作成' : '矩形追加 OFF');
+  }
+});
+window.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && drawModeOn) setDrawMode(false);
+  // Delete / Backspace で選択中の要素を隠す (input/contenteditable にフォーカス中は除外)
+  if ((e.key === 'Delete' || e.key === 'Backspace') &&
+      !e.target.matches('input, textarea, [contenteditable="true"]') &&
+      document.body.classList.contains('resize-mode') &&
+      typeof selectedElements !== 'undefined' && selectedElements.size > 0) {
+    e.preventDefault();
+    if (typeof hideSelectedElements === 'function') hideSelectedElements();
+  }
+});
+
+let userboxCounter = 0;
+function createUserbox(opts) {
+  // opts: { id?, label?, left, top, w, h, tx?, ty?, bgImage? }
+  userboxCounter += 1;
+  const id = opts.id || ('userbox-' + Date.now() + '-' + userboxCounter);
+  const label = opts.label || ('枠' + userboxCounter);
+  const div = document.createElement('div');
+  div.className = 'userbox';
+  div.dataset.userboxId = id;
+  div.dataset.userboxLabel = label;
+  if (opts.bgImage) {
+    div.dataset.bgImage = opts.bgImage;
+    div.style.backgroundImage = `url("${opts.bgImage}")`;
+    div.style.backgroundSize = 'contain';
+    div.style.backgroundRepeat = 'no-repeat';
+    div.style.backgroundPosition = 'center';
+    div.style.backgroundColor = 'transparent';
+  }
+  div.style.left = opts.left;
+  div.style.top = opts.top;
+  if (opts.w) div.style.width = opts.w;
+  if (opts.h) div.style.height = opts.h;
+  const badge = document.createElement('div');
+  badge.className = 'userbox-badge';
+  badge.contentEditable = 'true';
+  badge.textContent = label;
+  badge.spellcheck = false;
+  badge.addEventListener('mousedown', e => e.stopPropagation());
+  badge.addEventListener('blur', () => {
+    const newLabel = badge.textContent.trim() || ('枠' + userboxCounter);
+    badge.textContent = newLabel;
+    div.dataset.userboxLabel = newLabel;
+    saveResizeState();
+  });
+  badge.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); badge.blur(); }
+  });
+  div.appendChild(badge);
+  const del = document.createElement('div');
+  del.className = 'userbox-del';
+  del.textContent = '×';
+  del.title = '削除';
+  del.addEventListener('mousedown', e => { e.stopPropagation(); e.preventDefault(); });
+  del.addEventListener('click', e => {
+    e.stopPropagation();
+    if (confirm(`「${div.dataset.userboxLabel}」 を削除しますか？`)) {
+      selectedElements && selectedElements.delete(div);
+      div.remove();
+      saveResizeState();
+      refreshSelectionUI && refreshSelectionUI();
+    }
+  });
+  div.appendChild(del);
+  const target = document.getElementById('safe-area') || stage;
+  target.appendChild(div);
+  if (document.body.classList.contains('resize-mode')) {
+    attachHandle(div, 'wh');
+  }
+  if (opts.tx || opts.ty) {
+    div._tx = opts.tx || 0;
+    div._ty = opts.ty || 0;
+    div.style.transform = `translate(${div._tx}px, ${div._ty}px)`;
+  }
+  return div;
+}
+
+function collectUserboxes() {
+  return [...document.querySelectorAll('.userbox')].map(el => ({
+    id: el.dataset.userboxId,
+    label: el.dataset.userboxLabel,
+    left: el.style.left,
+    top: el.style.top,
+    w: el.style.width,
+    h: el.style.height,
+    tx: el._tx || 0,
+    ty: el._ty || 0,
+    bgImage: el.dataset.bgImage || '',
+  }));
+}
+function restoreUserboxes(arr) {
+  document.querySelectorAll('.userbox').forEach(el => el.remove());
+  if (!Array.isArray(arr)) return;
+  arr.forEach(box => createUserbox(box));
+}
+
+// ステージ mousedown でドラッグ → 新規 userbox 作成
+const _stageEl = document.getElementById('stage');
+_stageEl && _stageEl.addEventListener('mousedown', e => {
+  if (!document.body.classList.contains('resize-mode')) return;
+  if (e.target.closest('.toolbar, .ruler, .guide, .numeric-panel')) return;
+  if (!drawModeOn && e.target.closest('.resizable, .resize-handle, .userbox-badge, .userbox-del')) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const stageRect = _stageEl.getBoundingClientRect();
+  const stageW = parseFloat(getComputedStyle(_stageEl).width);
+  const scale = stageRect.width / stageW || 1;
+  const safe = document.getElementById('safe-area') || _stageEl;
+  const safeRect = safe.getBoundingClientRect();
+  const sx = (e.clientX - safeRect.left) / scale;
+  const sy = (e.clientY - safeRect.top) / scale;
+  const preview = document.createElement('div');
+  preview.className = 'userbox-preview';
+  preview.style.left = sx + 'px';
+  preview.style.top = sy + 'px';
+  preview.style.width = '0px';
+  preview.style.height = '0px';
+  safe.appendChild(preview);
+  const onMove = (e2) => {
+    const x = (e2.clientX - safeRect.left) / scale;
+    const y = (e2.clientY - safeRect.top) / scale;
+    const x0 = Math.min(sx, x), y0 = Math.min(sy, y);
+    const w = Math.abs(x - sx), h = Math.abs(y - sy);
+    preview.style.left = x0 + 'px';
+    preview.style.top = y0 + 'px';
+    preview.style.width = w + 'px';
+    preview.style.height = h + 'px';
+  };
+  const onUp = () => {
+    window.removeEventListener('mousemove', onMove);
+    window.removeEventListener('mouseup', onUp);
+    const w = parseFloat(preview.style.width);
+    const h = parseFloat(preview.style.height);
+    const left = preview.style.left;
+    const top = preview.style.top;
+    preview.remove();
+    if (w >= 20 && h >= 20) {
+      createUserbox({ left, top, w: w + 'px', h: h + 'px' });
+      saveResizeState();
+    }
+  };
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('mouseup', onUp);
+});
+
+async function snapshotCurrentView(prefix) {
+  if (typeof html2canvas !== 'function') {
+    alert('html2canvas が読み込めていません。 リロードして再試行してください');
+    return;
+  }
+  const safe = document.getElementById('safe-area');
+  if (!safe) return;
+  showLayoutToast && showLayoutToast('スナップショット生成中...');
+  try {
+    const canvas = await html2canvas(safe, {
+      width: 1600,
+      height: 900,
+      scale: 1,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: null,
+      logging: false,
+    });
+    canvas.toBlob(blob => {
+      if (!blob) { showLayoutToast && showLayoutToast('PNG 生成失敗'); return; }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      a.download = `${prefix}-snapshot-${ts}.png`;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+      showLayoutToast && showLayoutToast('現状 PNG を保存しました');
+    }, 'image/png');
+  } catch (err) {
+    console.error(err);
+    showLayoutToast && showLayoutToast('スナップショット失敗: ' + err.message);
+  }
+}
+function quizlandExportWireframePng() {
+  // 16:9 safe area サイズで出力 (21:9 outer のレターボックス部分は不要)
+  const cssRoot = getComputedStyle(document.documentElement);
+  const safeW = parseFloat(cssRoot.getPropertyValue('--safe-w')) || 1600;
+  const safeH = parseFloat(cssRoot.getPropertyValue('--safe-h')) || 900;
+  const canvasW = parseFloat(cssRoot.getPropertyValue('--canvas-w')) || 2100;
+  // safe-area の stage 座標オフセット (canvas 内座標から safe-area 内座標へ変換)
+  const safeOffsetX = (canvasW - safeW) / 2;
+
+  // RESIZABLE_SPEC からセレクタ→ラベルマップを作る
+  const labelMap = new Map();
+  RESIZABLE_SPEC.forEach(([sel, , label]) => labelMap.set(sel, label || ''));
+
+  const out = document.createElement('canvas');
+  out.width = safeW;
+  out.height = safeH;
+  const ctx = out.getContext('2d');
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, safeW, safeH);
+
+  // safe area の枠 (canvas 全体 = safe area なので 1px 内側に細く)
+  // 中央クロスヘア (マゼンタ) は書き出しでは描かない (ユーザー指示)
+  ctx.strokeStyle = 'rgba(0, 184, 224, 0.5)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([8, 4]);
+  ctx.strokeRect(1, 1, safeW - 2, safeH - 2);
+
+  // quizland は CSS-flow + tx/ty で配置されているので getBoundingClientRect で実位置を取る
+  const stageEl = document.getElementById('stage');
+  const stageRect = stageEl.getBoundingClientRect();
+  const stageW = parseFloat(getComputedStyle(stageEl).width);
+  const scale = stageRect.width / stageW || 1;
+
+  // 各 resizable を outline + label + size で描画
+  // BCR は stage 座標、 これを safe-area 座標に変換 (- safeOffsetX)
+  ctx.setLineDash([]);
+  RESIZABLE_SPEC.forEach(([sel]) => {
+    document.querySelectorAll(sel).forEach((el, idx) => {
+      const r = el.getBoundingClientRect();
+      const stageX = (r.left - stageRect.left) / scale;
+      const stageY = (r.top  - stageRect.top)  / scale;
+      const x = stageX - safeOffsetX;
+      const y = stageY;
+      const w = r.width  / scale;
+      const h = r.height / scale;
+      ctx.strokeStyle = '#1a1a1a';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(x, y, w, h);
+
+      // ラベル
+      const label = (labelMap.get(sel) || sel) + (document.querySelectorAll(sel).length > 1 ? ` ${idx + 1}` : '');
+      ctx.font = '700 18px system-ui, -apple-system, sans-serif';
+      const padX = 8;
+      const textW = ctx.measureText(label).width;
+      const badgeH = 24;
+      const badgeW = textW + padX * 2;
+      const badgeY = (y - badgeH - 4 >= 0) ? (y - badgeH - 4) : (y + 4);
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.88)';
+      ctx.fillRect(x, badgeY, badgeW, badgeH);
+      ctx.fillStyle = '#ffe8a8';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, x + padX, badgeY + badgeH / 2);
+
+      // 中央に W × H
+      const sizeText = `${Math.round(w)} × ${Math.round(h)}`;
+      ctx.font = '500 16px ui-monospace, Menlo, Consolas, monospace';
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(sizeText, x + w / 2, y + h / 2);
+      ctx.textAlign = 'start';
+      ctx.textBaseline = 'alphabetic';
+    });
+  });
+
+  // 凡例
+  ctx.font = '500 12px ui-monospace, Menlo, Consolas, monospace';
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+  ctx.textAlign = 'right';
+  ctx.fillText(`safe area ${safeW}×${safeH} (16:9)  生成 ${new Date().toLocaleString('ja-JP')}`, safeW - 12, safeH - 12);
+  ctx.textAlign = 'start';
+
+  out.toBlob(blob => {
+    if (!blob) { showLayoutToast && showLayoutToast('PNG 生成に失敗しました'); return; }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    a.download = `quizland-wireframe-${ts}.png`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    showLayoutToast && showLayoutToast('ワイヤー PNG を保存しました');
+  }, 'image/png');
+}
+/* 旧 #export-wireframe-png 直リスナーは split-button に統合済み */
+// Ctrl/Cmd+S で保存
+window.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+    e.preventDefault();
+    explicitSaveLayout();
+  }
+});
+
+// 起動時にサーバー (commit 済み) → ローカルストレージの順で復元
+(async () => {
+  const serverData = await loadSavedLayoutFromServer();
+  if (serverData && Object.keys(serverData).length > 0) {
+    // server snapshot を適用
+    try { localStorage.setItem(RESIZE_KEY, JSON.stringify(serverData)); } catch(e) {}
+    loadResizeState();
+  } else {
+    loadResizeState();
+  }
+  lastSavedLayoutJson = JSON.stringify(takeLayoutSnapshot());
+})();
+
+// ───── Preview mode (端末サイズで見る) ─────
+const previewBtn = document.getElementById('preview-mode');
+const previewExit = document.getElementById('preview-exit');
+function fitStage() {
+  const w = window.innerWidth, h = window.innerHeight;
+  const stageW = parseFloat(getComputedStyle(stage).width);
+  const stageH = parseFloat(getComputedStyle(stage).height);
+  const scale = Math.min(w / stageW, h / stageH);
+  const scaledW = stageW * scale;
+  const scaledH = stageH * scale;
+  const offsetX = (w - scaledW) / 2;
+  const offsetY = (h - scaledH) / 2;
+  // transform-origin 0 0 + 明示的な translate(px) で確実にレターボックス中央配置
+  stage.style.transformOrigin = '0 0';
+  stage.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
+}
+function enterPreview() {
+  document.body.classList.add('preview-mode');
+  fitStage();
+  window.addEventListener('resize', fitStage);
+  // 縦横対応: 端末を回転したらリフィット
+  window.addEventListener('orientationchange', () => setTimeout(fitStage, 100));
+}
+function exitPreview() {
+  document.body.classList.remove('preview-mode');
+  stage.style.transform = '';
+  window.removeEventListener('resize', fitStage);
+}
+previewBtn?.addEventListener('click', enterPreview);
+previewExit?.addEventListener('click', exitPreview);
+window.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.body.classList.contains('preview-mode')) {
+    exitPreview();
+  }
+});
+
+// URL ?preview=1 で直接プレビューモード
+if (new URLSearchParams(location.search).get('preview') === '1') {
+  setTimeout(enterPreview, 50);
+}
+
+// ── Reset button ──
+if (annoReset) {
+  annoReset.addEventListener('click', () => {
+    if (!confirm('保存された注釈と設定を全て削除します (元に戻せません)。よろしいですか？')) return;
+    clearAllSavedState();
+  });
+}
+
+// ── Init: load saved state, otherwise default layout ──
+const restored = loadState();
+if (!restored) {
+  buildLayout('row-3');
+} else {
+  buildLayout(document.getElementById('layout-select').value);
+}
+
+// ── Save before leaving ──
+window.addEventListener('beforeunload', saveState);
+window.addEventListener('visibilitychange', () => { if (document.hidden) saveState(); });
+</script>
+</body>
+</html>

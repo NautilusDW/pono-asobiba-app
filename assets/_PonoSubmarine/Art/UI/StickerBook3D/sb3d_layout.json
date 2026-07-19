@@ -1,0 +1,25 @@
+{
+  "pageWidthPx": 1024,
+  "pageHeightPx": 1536,
+  "gutterWidthPx": 192,
+  "spreadWidthPx": 2240,
+  "spreadHeightPx": 1536,
+  "hinge": {
+    "rightPageLocalX": 0,
+    "leftPageLocalX": 1024,
+    "spreadCenterX": 1120.0,
+    "note": "Bind the page mesh pivot to the physical spine line, then draw binding overlay above the page."
+  },
+  "unity": {
+    "pixelsPerUnit": 100,
+    "meshScale": 0.01,
+    "pageMeshForward": "+Z",
+    "recommendedCamera": "Orthographic"
+  },
+  "surfaces": {
+    "frontTexture": "sb3d_page_right_test.png or runtime RenderTexture",
+    "backTexture": "sb3d_page_back_blank.png or adjacent page RenderTexture",
+    "bindingOverlay": "sb3d_binding_overlay.png",
+    "spineUnderlay": "sb3d_spine_underlay.png"
+  }
+}

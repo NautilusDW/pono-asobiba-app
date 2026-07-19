@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>ぬりえ | ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<!-- FOUC guard: 初回ペイント時の未スタイル表示を防ぐ (#coloring-screen はデフォルト display:none) -->
+<style>html,body{background:#FFF8E7}#selection-screen{visibility:hidden}body.pono-game-ready #selection-screen{visibility:visible}</style>
+<script>document.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(function(){requestAnimationFrame(function(){document.body.classList.add('pono-game-ready')})})});</script>
+<script src="../common/preload-helper.js"></script>
+<script>window.addEventListener('DOMContentLoaded',function(){if(window.PonoPreload)window.PonoPreload.warmGameAssets('coloring');});</script>
 <script src="../common/achievements.js"></script>
 <script src="../common/menu.js"></script>
 <style>

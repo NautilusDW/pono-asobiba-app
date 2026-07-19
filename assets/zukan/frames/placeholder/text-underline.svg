@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Placeholder antique frame: text-underline
+  Aspect ratio ~15:2 (typical text field row, e.g. 600x80)
+  Bottom underline + small ornaments at both ends (no full enclosing border).
+  Replace with assets/zukan/frames/text-underline.png once finalized.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 80" fill="none" preserveAspectRatio="none">
+  <g stroke="#b07a3a" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- main bottom underline -->
+    <line x1="20" y1="64" x2="580" y2="64" stroke-width="3"/>
+    <!-- thin secondary line above (double-rule effect) -->
+    <line x1="40" y1="58" x2="560" y2="58" stroke-width="1" opacity="0.55" stroke-dasharray="2 3"/>
+    <!-- left ornament -->
+    <g transform="translate(20,64)" stroke-width="2">
+      <line x1="0" y1="-10" x2="0" y2="10"/>
+      <line x1="-8" y1="0" x2="8" y2="0"/>
+      <line x1="-5" y1="-5" x2="5" y2="5"/>
+      <line x1="-5" y1="5" x2="5" y2="-5"/>
+    </g>
+    <!-- right ornament -->
+    <g transform="translate(580,64)" stroke-width="2">
+      <line x1="0" y1="-10" x2="0" y2="10"/>
+      <line x1="-8" y1="0" x2="8" y2="0"/>
+      <line x1="-5" y1="-5" x2="5" y2="5"/>
+      <line x1="-5" y1="5" x2="5" y2="-5"/>
+    </g>
+    <!-- center small dot -->
+    <circle cx="300" cy="64" r="2.5" fill="#b07a3a" stroke="none"/>
+  </g>
+</svg>

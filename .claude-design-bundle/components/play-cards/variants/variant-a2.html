@@ -1,0 +1,162 @@
+<!-- @dsCard group="PlayCards-A" name="A2 雑誌見開き風" subtitle="大判ナンバリング・左右交互の編集レイアウト・特集マストヘッド / グラビアA案バリエ2 / 4枚" -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>あそびばで できること — A2 雑誌見開き風</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;-webkit-font-smoothing:antialiased;}
+
+  .play-cards{
+    --bg:#FFF8F0; --primary:#F2915A; --primary-deep:#C96A2E; --primary-light:#FDDCBF;
+    --text:#5D4E37; --text-light:#A89880; --shadow:rgba(93,78,55,.12); --line:rgba(93,78,55,.08);
+    font-family:'Zen Maru Gothic','Hiragino Maru Gothic Pro',sans-serif;color:var(--text);
+    background:var(--bg);padding:40px 18px 56px;
+  }
+  .play-cards *{box-sizing:border-box;}
+
+  /* マストヘッド */
+  .pc-mast{max-width:1000px;margin:0 auto 8px;border-top:3px solid var(--text);border-bottom:3px solid var(--text);
+    padding:14px 4px;display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+  .pc-kicker{font-weight:900;font-size:clamp(11px,2.6vw,13px);letter-spacing:.28em;color:var(--primary-deep);}
+  .pc-issue{font-weight:700;font-size:11px;letter-spacing:.16em;color:var(--text-light);}
+  .pc-h2{max-width:1000px;margin:18px auto 4px;font-weight:900;font-size:clamp(28px,6vw,52px);line-height:1.18;letter-spacing:.01em;}
+  .pc-h2 .em{color:var(--primary-deep);}
+  .pc-sub{max-width:1000px;margin:8px auto 0;font-weight:700;font-size:clamp(14px,3vw,18px);color:var(--text-light);}
+
+  .pc-feats{max-width:1000px;margin:30px auto 0;display:flex;flex-direction:column;gap:40px;}
+
+  .pc-feat{position:relative;display:flex;flex-direction:column;gap:16px;animation:pc-rise .6s ease both;}
+
+  .pc-visual{position:relative;width:100%;aspect-ratio:3/2;border-radius:18px;overflow:hidden;
+    background-size:cover;background-position:center;background-repeat:no-repeat;box-shadow:0 10px 28px var(--shadow);}
+  .pc-v-bento  {background-image:url('assets/images/bento/cooking/ui/recipe_card_frame.png'),linear-gradient(150deg,#F8CFA6,#F2A971);}
+  .pc-v-maze   {background-image:url('maze/imageStages/stage5.jpg'),linear-gradient(150deg,#B7A877,#8C9A6E);}
+  .pc-v-oto    {background-image:url('assets/images/oto/title_back.jpg'),linear-gradient(150deg,#F6D79E,#EFC06B);}
+  .pc-v-sticker{background-image:url('assets/images/sticker-book/sticker_book_base_kids_16x9.png'),linear-gradient(150deg,#FBD8C2,#F4B79A);}
+
+  /* 大判ナンバー */
+  .pc-num{position:absolute;left:-4px;top:-22px;font-weight:900;font-size:clamp(54px,14vw,104px);line-height:.8;
+    color:var(--bg);-webkit-text-stroke:3px var(--primary);text-stroke:3px var(--primary);z-index:2;letter-spacing:-.02em;}
+
+  .pc-ribbon{position:absolute;top:14px;right:14px;z-index:3;background:var(--primary-deep);color:#fff;
+    font-weight:900;font-size:.8rem;letter-spacing:.05em;padding:7px 14px;border-radius:999px;
+    box-shadow:0 4px 10px rgba(201,106,46,.35);}
+
+  .pc-body{padding:0 2px;}
+  .pc-rule{width:46px;height:5px;background:var(--primary);border-radius:3px;margin:0 0 12px;}
+  .pc-title{font-weight:900;font-size:clamp(23px,6vw,36px);line-height:1.22;margin:0;color:var(--text);}
+  .pc-title rt{font-size:.42em;font-weight:700;color:var(--text-light);}
+  .pc-play{font-weight:700;font-size:clamp(14px,3.6vw,17px);line-height:1.75;color:var(--text);margin:14px 0 0;max-width:40em;}
+  .pc-growth{margin:16px 0 0;padding:14px 16px;background:#FFFDF8;border:1px solid var(--line);border-left:5px solid var(--primary);
+    border-radius:0 12px 12px 0;font-weight:700;font-size:clamp(12.5px,3.2vw,14px);line-height:1.7;color:var(--text-light);max-width:40em;}
+  .pc-growth .lbl{display:block;font-size:11px;letter-spacing:.14em;color:var(--primary-deep);font-weight:900;margin-bottom:4px;}
+  .pc-growth b{color:var(--primary-deep);}
+  .pc-chips{display:flex;flex-wrap:wrap;gap:7px;margin:14px 0 0;}
+  .pc-chip{background:var(--primary-light);color:var(--text);font-weight:900;font-size:12px;padding:5px 12px;border-radius:999px;}
+
+  .pc-cta-wrap{display:flex;justify-content:center;margin:46px auto 0;}
+  .pc-cta{display:inline-flex;align-items:center;gap:.5em;min-height:56px;padding:14px 40px;background:var(--primary-deep);
+    color:#fff;font-weight:900;font-size:clamp(17px,4.4vw,22px);letter-spacing:.06em;text-decoration:none;border-radius:24px;
+    box-shadow:0 6px 20px rgba(201,106,46,.32);transition:transform .25s ease,box-shadow .25s ease;}
+  .pc-cta:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(201,106,46,.42);}
+
+  .play-cards a:focus-visible{outline:3px solid var(--primary);outline-offset:3px;}
+
+  @keyframes pc-rise{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:none;}}
+  @media (prefers-reduced-motion:reduce){.play-cards *{animation:none!important;}}
+
+  /* iPad / PC : 見開き2カラム交互 */
+  @media (min-width:768px){
+    .play-cards{padding:52px 32px 64px;}
+    .pc-feats{gap:54px;}
+    .pc-feat{display:grid;grid-template-columns:1.15fr 1fr;align-items:center;gap:34px;}
+    .pc-feat:nth-child(even) .pc-visual{order:2;}
+    .pc-feat:nth-child(even) .pc-body{order:1;}
+    .pc-visual{aspect-ratio:4/3;}
+  }
+  @media (min-width:1200px){
+    .pc-feats{gap:64px;}
+    .pc-feat{gap:48px;grid-template-columns:1.2fr 1fr;}
+  }
+</style>
+</head>
+<body>
+
+<section class="play-cards pc-mag" aria-labelledby="pc-h2">
+  <div class="pc-mast">
+    <span class="pc-kicker">ASOBIBA とくしゅう</span>
+    <span class="pc-issue">ポノと いっしょに あそぼう</span>
+  </div>
+  <h2 class="pc-h2" id="pc-h2">あそびばで <span class="em">できること</span></h2>
+  <p class="pc-sub">ポノと いっしょに、こんな あそびが まってるよ</p>
+
+  <div class="pc-feats">
+
+    <article class="pc-feat">
+      <div class="pc-visual pc-v-bento" role="img" aria-label="すきなおかずを選んで作る、いろどりお弁当の画面">
+        <span class="pc-num" aria-hidden="true">01</span>
+        <span class="pc-ribbon">いま にんき！</span>
+      </div>
+      <div class="pc-body">
+        <span class="pc-rule"></span>
+        <h3 class="pc-title"><ruby>彩<rt>いろど</rt></ruby>り<ruby>弁当<rt>べんとう</rt></ruby></h3>
+        <p class="pc-play">すきな おかずを えらんで、じぶんだけの おべんとうを つくろう！</p>
+        <p class="pc-growth"><span class="lbl">ここが そだつ</span>色の組み合わせや配置で <b>彩りのセンスと段取り力</b> が育ちます</p>
+        <div class="pc-chips"><span class="pc-chip">そうぞう</span><span class="pc-chip">いろ</span><span class="pc-chip">だんどり</span></div>
+      </div>
+    </article>
+
+    <article class="pc-feat">
+      <div class="pc-visual pc-v-maze" role="img" aria-label="ランタンを持って暗い森を探検するめいろの画面">
+        <span class="pc-num" aria-hidden="true">02</span>
+      </div>
+      <div class="pc-body">
+        <span class="pc-rule"></span>
+        <h3 class="pc-title">ランタンの <ruby>迷路<rt>めいろ</rt></ruby></h3>
+        <p class="pc-play">ランタンを もって、くらい もりを たんけん！ ゴールまで みちを みつけよう。</p>
+        <p class="pc-growth"><span class="lbl">ここが そだつ</span>先を見通す <b>空間認識力・意思決定力</b> と、暗闇でも進む <b>小さな勇気</b> が育ちます</p>
+        <div class="pc-chips"><span class="pc-chip">たんけん</span><span class="pc-chip">ゆうき</span><span class="pc-chip">かんがえる</span></div>
+      </div>
+    </article>
+
+    <article class="pc-feat">
+      <div class="pc-visual pc-v-oto" role="img" aria-label="タップでドレミが鳴る、ポノのおとタッチの画面">
+        <span class="pc-num" aria-hidden="true">03</span>
+      </div>
+      <div class="pc-body">
+        <span class="pc-rule"></span>
+        <h3 class="pc-title">ポノの おとタッチ</h3>
+        <p class="pc-play">タップで ドレミが なるよ！ どうぶつの こえや たいこも あそべるよ。</p>
+        <p class="pc-growth"><span class="lbl">ここが そだつ</span>音の高低・リズム遊びで <b>聴覚と音感、表現する楽しさ</b> が育ちます</p>
+        <div class="pc-chips"><span class="pc-chip">リズム</span><span class="pc-chip">おんがく</span><span class="pc-chip">ひょうげん</span></div>
+      </div>
+    </article>
+
+    <article class="pc-feat">
+      <div class="pc-visual pc-v-sticker" role="img" aria-label="集めたシールをアルバムに貼る、シールアルバムの画面">
+        <span class="pc-num" aria-hidden="true">04</span>
+      </div>
+      <div class="pc-body">
+        <span class="pc-rule"></span>
+        <h3 class="pc-title">シールアルバム</h3>
+        <p class="pc-play">あそんで あつめた シールを、じぶんの アルバムに ぺたぺた はろう！</p>
+        <p class="pc-growth"><span class="lbl">ここが そだつ</span>集めて並べる楽しさで <b>達成感とコレクション欲、整理する力</b> が育ちます</p>
+        <div class="pc-chips"><span class="pc-chip">あつめる</span><span class="pc-chip">せいり</span><span class="pc-chip">たっせいかん</span></div>
+      </div>
+    </article>
+
+  </div>
+
+  <div class="pc-cta-wrap">
+    <a href="play.html" class="pc-cta">ぜんぶ あそびに いく →</a>
+  </div>
+</section>
+
+</body>
+</html>

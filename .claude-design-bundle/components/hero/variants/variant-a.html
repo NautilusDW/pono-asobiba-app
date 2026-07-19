@@ -1,0 +1,125 @@
+<!-- @dsCard group="Hero" name="案A 世界観優先" subtitle="絵本の延長としてのあそびば / Amazonは中段に降格" -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>案A — 世界観優先 (World-First)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#FFF8F0; --primary:#F2915A; --primary-deep:#C96A2E; --primary-light:#FDDCBF;
+    --text:#5D4E37; --text-light:#A89880; --shadow:rgba(93,78,55,.12);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;font-family:'Zen Maru Gothic','Hiragino Maru Gothic Pro',sans-serif;color:var(--text);
+    background:var(--bg);
+    background-image:
+      radial-gradient(circle at 18% 8%, rgba(253,220,191,.55), transparent 46%),
+      radial-gradient(circle at 84% 92%, rgba(253,230,138,.32), transparent 52%);
+    -webkit-font-smoothing:antialiased;}
+
+  .heroa{max-width:1120px;margin:0 auto;padding:24px 18px 36px;}
+
+  /* --- 絵本見開き風 横長ビジュアル --- */
+  .heroa-visual{position:relative;width:100%;border-radius:26px;overflow:hidden;
+    box-shadow:0 4px 18px var(--shadow);aspect-ratio:16/9;background:var(--primary-light);
+    animation:heroa-rise .6s ease both;}
+  .heroa-visual img{display:block;width:100%;height:100%;object-fit:cover;}
+  .heroa-visual::after{content:"";position:absolute;inset:0;
+    background:linear-gradient(180deg,rgba(255,248,240,0) 55%,rgba(255,248,240,.55) 100%);pointer-events:none;}
+  .heroa-ph{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
+    background:
+      repeating-linear-gradient(135deg,rgba(255,255,255,.35) 0 14px,transparent 14px 28px),
+      linear-gradient(135deg,#FDDCBF,#F7C9A3);color:#9A6A3E;}
+  .heroa-ph b{font-size:clamp(.95rem,2.4vw,1.2rem);font-weight:900;letter-spacing:.04em;}
+  .heroa-ph code{font-family:'SF Mono',Menlo,Consolas,monospace;font-size:.74rem;background:rgba(255,255,255,.7);
+    padding:3px 9px;border-radius:8px;}
+
+  /* --- コピー --- */
+  .heroa-copy{text-align:center;margin:22px auto 0;max-width:660px;animation:heroa-rise .6s .08s ease both;}
+  .heroa-title{font-weight:900;font-size:clamp(28px,6vw,56px);line-height:1.2;letter-spacing:.02em;margin:0;color:var(--text);}
+  .heroa-title .accent{color:var(--primary-deep);}
+  .heroa-sub{font-weight:700;font-size:clamp(14px,3.4vw,19px);line-height:1.7;color:var(--text-light);margin:12px auto 0;max-width:30em;}
+
+  /* --- CTA --- */
+  .heroa-cta-wrap{display:flex;flex-direction:column;align-items:center;gap:8px;margin:24px auto 0;animation:heroa-rise .6s .16s ease both;}
+  .heroa-cta{display:inline-flex;align-items:center;justify-content:center;gap:.5em;min-height:56px;
+    padding:14px 36px;background:var(--primary-deep);color:#fff;font-weight:900;
+    font-size:clamp(18px,4.4vw,23px);letter-spacing:.06em;text-decoration:none;border-radius:24px;
+    box-shadow:0 6px 20px rgba(201,106,46,.32);transition:transform .25s ease,box-shadow .25s ease;}
+  .heroa-cta:hover{transform:translateY(-2px);box-shadow:0 10px 26px rgba(201,106,46,.4);}
+  .heroa-cta .arrow{font-weight:900;}
+  .heroa-free{font-weight:700;font-size:clamp(12px,3vw,14px);color:var(--text-light);letter-spacing:.04em;margin:0;}
+
+  /* --- 中段 Amazon (降格) --- */
+  .heroa-book{max-width:660px;margin:56px auto 0;text-align:center;animation:heroa-rise .6s .24s ease both;}
+  .heroa-book-h{font-weight:900;font-size:clamp(16px,4vw,21px);color:var(--text);margin:0 0 14px;letter-spacing:.02em;}
+  .heroa-amazon{display:block;width:100%;max-width:540px;margin:0 auto;border-radius:18px;overflow:hidden;
+    box-shadow:0 4px 14px var(--shadow);text-decoration:none;transition:transform .25s ease;}
+  .heroa-amazon:hover{transform:translateY(-2px);}
+  .heroa-amazon img{display:block;width:100%;height:auto;}
+  .heroa-amazon .fallback{display:none;background:linear-gradient(135deg,#FFB066,#FFD9A8);color:#5D3A14;
+    text-align:center;padding:26px 16px;font-weight:900;font-size:1rem;line-height:1.5;}
+  .heroa-amazon .fallback small{display:block;font-size:.74rem;font-weight:700;margin-top:6px;opacity:.85;}
+
+  @keyframes heroa-rise{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:none;}}
+  @media (prefers-reduced-motion:reduce){.heroa *{animation:none!important;}}
+
+  /* ===== iPad 縦 768 ===== */
+  @media (min-width:768px){
+    .heroa{padding:32px 32px 48px;}
+    .heroa-visual{aspect-ratio:21/9;}
+    .heroa-copy{margin-top:28px;}
+  }
+  /* ===== PC 1200 ===== */
+  @media (min-width:1200px){
+    .heroa{padding:44px 40px 56px;}
+    .heroa-visual{aspect-ratio:24/9;border-radius:30px;}
+    .heroa-cta-wrap{margin-top:30px;}
+  }
+</style>
+</head>
+<body>
+
+<section class="heroa" aria-labelledby="heroa-h">
+  <div class="heroa-visual">
+    <img src="https://pono-asobiba-staging.ndw.workers.dev/assets/images/A%2B%E7%94%A8%E3%83%98%E3%83%83%E3%83%80%E3%83%BC.jpg"
+         alt="くまのこポノが森であそぶ絵本の見開き"
+         loading="eager"
+         onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+    <div class="heroa-ph">
+      <b>えほん見開きビジュアル</b>
+      <code>assets/images/A+用ヘッダー.jpg</code>
+    </div>
+  </div>
+
+  <div class="heroa-copy">
+    <h1 class="heroa-title" id="heroa-h">えほんの ポノと<br>あそぼう</h1>
+    <p class="heroa-sub">ネモ先生がつくった<br class="heroa-smbr">ちいさな あそびばだよ 🌳</p>
+  </div>
+
+  <div class="heroa-cta-wrap">
+    <a href="play.html" class="heroa-cta">あそびばの いりぐち <span class="arrow">→</span></a>
+    <p class="heroa-free">きほんの あそびは むりょう</p>
+  </div>
+
+  <!-- Amazon バナーは中段に降格 (絵本販売はLPの主目的なので残す) -->
+  <div class="heroa-book">
+    <h2 class="heroa-book-h">えほんも あるよ 📖</h2>
+    <a href="https://www.amazon.co.jp/dp/B0FFTBS9TM" class="heroa-amazon" target="_blank" rel="noopener noreferrer" aria-label="Amazonで絵本を見る">
+      <picture>
+        <source media="(max-width:768px)" srcset="https://pono-asobiba-staging.ndw.workers.dev/assets/images/Amazon_mobile.webp" type="image/webp">
+        <source srcset="https://pono-asobiba-staging.ndw.workers.dev/assets/images/Amazon_pc.webp" type="image/webp">
+        <img src="https://pono-asobiba-staging.ndw.workers.dev/assets/images/Amazon%E3%83%AA%E3%83%B3%E3%82%AF.png" alt="Amazonで絵本『ありがとうって、うれしいね』発売中" loading="lazy"
+             onerror="this.style.display='none';this.closest('.heroa-amazon').querySelector('.fallback').style.display='block';">
+      </picture>
+      <div class="fallback">Amazonで絵本「ありがとうって、うれしいね」発売中<small>▶ Amazon.co.jp で見る</small></div>
+    </a>
+  </div>
+</section>
+
+</body>
+</html>

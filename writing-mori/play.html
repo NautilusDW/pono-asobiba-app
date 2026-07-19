@@ -1,0 +1,5086 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>もじっこファーム | おもちゃひろば</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="manifest" href="../manifest.json">
+<!-- app (アプリばん) 専用 tier ガード。 tier.js 未読込/例外時は fail-open (従来通り表示)。 -->
+<script src="../common/debug-mode.js"></script>
+<script src="../common/tier.js"></script>
+<script>
+(function(){
+  'use strict';
+  var locked = false;
+  try {
+    var pt = window.PonoTier;
+    // ローンチ時はここを変更: book 開放時は locked = !['app','book'].includes(pt.getTier());
+    if (pt && typeof pt.getTier === 'function') locked = (pt.getTier() !== 'app');
+  } catch (e) { locked = false; }
+  if (!locked) return;
+  window.__PONO_TIER_LOCKED__ = true;
+  // FOUC 防止: head 内同期実行なので初回ペイント前にゲーム側 DOM を不可視化
+  var st = document.createElement('style');
+  st.textContent = 'html{background:#FFF7E6 !important}body>*:not(#ponoTierLockScreen){visibility:hidden !important}';
+  (document.head || document.documentElement).appendChild(st);
+  // キーボード入力がゲームへ届かないよう capture 段階で遮断 (ロック中のみ)。
+  // ゲーム側 listener はガードより後に登録されるため stopImmediatePropagation だけで全て遮断できる。
+  // preventDefault はしない: Tab/Enter で「メニューへ もどる」リンクに到達する
+  // キーボード操作と、 ブラウザ既定動作 (F5 リロード等) を塞がないため。
+  var KEY_EVTS = ['keydown', 'keyup', 'keypress'];
+  for (var i = 0; i < KEY_EVTS.length; i++) {
+    window.addEventListener(KEY_EVTS[i], function(e){
+      if (window.__PONO_TIER_LOCKED__) e.stopImmediatePropagation();
+    }, true);
+  }
+  function showLock(){
+    if (!document.body || document.getElementById('ponoTierLockScreen')) return;
+    var ov = document.createElement('div');
+    ov.id = 'ponoTierLockScreen';
+    ov.setAttribute('role', 'dialog');
+    ov.style.cssText = 'position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(165deg,#FFF7E6 0%,#FFEDC2 45%,#D9EFD5 100%);font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN",sans-serif;text-align:center';
+    var card = document.createElement('div');
+    card.style.cssText = 'background:#fff;border-radius:26px;padding:28px 24px 26px;max-width:340px;width:100%;box-shadow:0 12px 40px rgba(93,78,55,0.22)';
+    var emo = document.createElement('div');
+    emo.style.cssText = 'font-size:2.8rem;line-height:1;margin-bottom:12px';
+    emo.textContent = '🦉✨';
+    card.appendChild(emo);
+    var tag = document.createElement('div');
+    tag.style.cssText = 'display:inline-block;font-size:0.74rem;font-weight:900;color:#fff;background:linear-gradient(135deg,#34D399,#10B981);padding:4px 14px;border-radius:50px;letter-spacing:0.06em;margin-bottom:12px';
+    tag.textContent = 'アプリばん せんよう';
+    card.appendChild(tag);
+    var ttl = document.createElement('div');
+    ttl.style.cssText = 'font-size:1.12rem;font-weight:900;color:#5D4E37;line-height:1.5;margin-bottom:10px';
+    ttl.textContent = 'この ゲームは アプリばんで あそべるよ！';
+    card.appendChild(ttl);
+    var body = document.createElement('div');
+    body.style.cssText = 'font-size:0.92rem;font-weight:700;color:#8B7B60;line-height:1.6;margin-bottom:18px';
+    body.textContent = 'アプリばんに あたらしい あそびが まってるよ';
+    card.appendChild(body);
+    var btn = document.createElement('a');
+    btn.href = '../play.html';
+    btn.style.cssText = 'display:inline-block;padding:12px 34px;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-size:0.98rem;font-weight:900;text-decoration:none;box-shadow:0 4px 14px rgba(59,130,246,0.4)';
+    btn.textContent = 'メニューへ もどる';
+    card.appendChild(btn);
+    ov.appendChild(card);
+    document.body.appendChild(ov);
+  }
+  if (document.body) { showLock(); }
+  else { document.addEventListener('DOMContentLoaded', showLock); }
+})();
+</script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DotGothic16&family=Zen+Maru+Gothic:wght@500;700;900&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --ink: #4f3825;
+  --ink-soft: #7a5b41;
+  --wood-dark: #6e4b2d;
+  --wood-mid: #a66e3f;
+  --paper: #fff8e8;
+  --paper-deep: #f1ddb7;
+  --mint: #7fcea5;
+  --mint-dark: #3c986f;
+  --coral: #ee7b6b;
+  --gold: #f5bd4e;
+  --blue: #70bde4;
+  --shadow: rgba(70, 42, 18, 0.26);
+  --pixel-font: 'DotGothic16', 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', sans-serif;
+  --round-font: 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', sans-serif;
+  --title-plaque: url('../assets/images/mojikko/writing/wood_title_plaque.png');
+  --star-counter: url('../assets/images/mojikko/writing/star_counter.png');
+  --settings-button: url('../assets/images/mojikko/writing/settings_button.png');
+  --button-success: url('../assets/images/mojikko/writing/button_success_normal.png');
+  --button-success-pressed: url('../assets/images/mojikko/writing/button_success_pressed.png');
+  --button-retry: url('../assets/images/mojikko/writing/button_retry_wide_normal.png');
+  --button-retry-pressed: url('../assets/images/mojikko/writing/button_retry_wide_pressed.png');
+  --button-next: url('../assets/images/mojikko/writing/button_next_normal.png');
+  --button-next-pressed: url('../assets/images/mojikko/writing/button_next_pressed.png');
+  --milmaru-baby: url('../assets/images/mojikko/care/milmaru_shell_baby_idle_pose.png');
+  --milmaru-baby-happy: url('../assets/images/mojikko/care/milmaru_shell_baby_arms_up.png');
+  --milmaru-yochi: url('../assets/images/mojikko/care/milmaru_yochiyochi_front_happy.png');
+  --milmaru-yochi-catch: url('../assets/images/mojikko/care/milmaru_yochiyochi_arms_up.png');
+  --milmaru-yochi-worried: url('../assets/images/mojikko/care/milmaru_yochiyochi_worried.png');
+  --milmaru-crawl-1: url('../assets/images/mojikko/care/milmaru_yochiyochi_crawl_loop_01.png');
+  --milmaru-crawl-2: url('../assets/images/mojikko/care/milmaru_yochiyochi_crawl_loop_02.png');
+  --milmaru-crawl-3: url('../assets/images/mojikko/care/milmaru_yochiyochi_crawl_loop_03.png');
+  --milmaru-crawl-4: url('../assets/images/mojikko/care/milmaru_yochiyochi_crawl_loop_04.png');
+  --milmaru-crawl-5: url('../assets/images/mojikko/care/milmaru_yochiyochi_crawl_loop_05.png');
+  --milmaru-crawl-6: url('../assets/images/mojikko/care/milmaru_yochiyochi_crawl_loop_06.png');
+  --icon-star: url('../assets/images/mojikko/writing/icon_star.png');
+  --fx-sparkle: url('../assets/images/mojikko/care/fx_sparkle_cluster.png');
+  --rolling-bg: url('../assets/images/mojikko/play/rolling_ball_ground_background.png');
+  --rolling-ball: url('../assets/images/mojikko/play/rolling_ball_orange_sprite_raw.png');
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
+  color: var(--ink);
+  background: #20394b;
+  font-family: var(--round-font);
+  position: fixed;
+  inset: 0;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+#stage-wrap {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #20394b;
+}
+
+#stage {
+  position: absolute;
+  width: 1600px;
+  height: 900px;
+  transform-origin: 0 0;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.12) 0 1px, transparent 1px 8px),
+    linear-gradient(90deg, rgba(255,255,255,0.10) 0 1px, transparent 1px 8px),
+    var(--rolling-bg) center / cover no-repeat,
+    linear-gradient(180deg, #a6dc7a, #bf8c52);
+  image-rendering: pixelated;
+}
+
+.pixel-button {
+  border: 0;
+  cursor: pointer;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 7px 0 rgba(61, 39, 24, 0.34));
+}
+
+.pixel-button:active {
+  transform: translateY(4px);
+  filter: drop-shadow(0 3px 0 rgba(61, 39, 24, 0.34));
+}
+
+.top-bar {
+  position: absolute;
+  left: 34px;
+  right: 34px;
+  top: 30px;
+  height: 92px;
+  display: grid;
+  grid-template-columns: 220px 1fr 290px 78px;
+  gap: 22px;
+  align-items: center;
+  z-index: 10;
+}
+
+.back-btn {
+  width: 220px;
+  height: 72px;
+  border: 5px solid var(--wood-dark);
+  border-radius: 8px;
+  background: linear-gradient(#fff1c9, #f2be64);
+  box-shadow: inset 0 0 0 6px rgba(255,255,255,0.28), 0 7px 0 #4b2f1e;
+  font-family: var(--pixel-font);
+  font-size: 30px;
+  font-weight: 900;
+}
+
+.title-board {
+  height: 90px;
+  min-width: 640px;
+  display: grid;
+  place-items: center;
+  background: var(--title-plaque) center / contain no-repeat;
+  font-family: var(--pixel-font);
+  font-size: 42px;
+  font-weight: 900;
+  letter-spacing: 0;
+  text-shadow: 0 2px 0 rgba(255,255,255,0.35);
+}
+
+.resource-box,
+.star-box {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border: 5px solid var(--wood-dark);
+  border-radius: 8px;
+  background: linear-gradient(#fff9e8, #f2dcaa);
+  box-shadow: inset 0 0 0 5px rgba(255,255,255,0.38), 0 6px 0 #4b2f1e;
+  font-family: var(--pixel-font);
+  font-size: 28px;
+  font-weight: 900;
+}
+
+.star-box {
+  width: 290px;
+  background: var(--star-counter) center / contain no-repeat;
+  border: 0;
+  box-shadow: none;
+  filter: drop-shadow(0 5px 0 rgba(61,39,24,0.3));
+}
+
+.star-icon {
+  width: 42px;
+  height: 42px;
+  background: var(--icon-star) center / contain no-repeat;
+}
+
+.icon-btn {
+  width: 74px;
+  height: 74px;
+  background: var(--settings-button) center / contain no-repeat;
+  overflow: hidden;
+  color: transparent;
+  white-space: nowrap;
+  text-indent: 120%;
+}
+
+.sub-sign {
+  position: absolute;
+  top: 120px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 470px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  border: 5px solid #4f8f67;
+  border-radius: 8px;
+  background: linear-gradient(#8ad6a8, #56b87b);
+  box-shadow: inset 0 0 0 5px rgba(255,255,255,0.22), 0 5px 0 #3b6849;
+  color: #fff;
+  font-family: var(--pixel-font);
+  font-size: 27px;
+  font-weight: 900;
+  text-shadow: 0 2px 0 rgba(57,85,55,0.45);
+  z-index: 9;
+}
+
+.panel {
+  position: absolute;
+  border: 5px solid var(--wood-dark);
+  border-radius: 9px;
+  background: linear-gradient(#fffaf0, #f5e5c2);
+  box-shadow: inset 0 0 0 5px rgba(255,255,255,0.4), 0 8px 0 #4b2f1e, 0 16px 22px var(--shadow);
+  overflow: hidden;
+}
+
+.panel-heading {
+  min-height: 58px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(#62c594, #45a773);
+  color: #fff;
+  border-bottom: 4px solid rgba(92, 61, 37, 0.3);
+  font-family: var(--pixel-font);
+  font-size: 31px;
+  font-weight: 900;
+  text-shadow: 0 2px 0 rgba(57,85,55,0.5);
+}
+
+.toy-panel {
+  left: 42px;
+  top: 168px;
+  width: 280px;
+  height: 538px;
+}
+
+.toy-grid {
+  padding: 20px 18px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.toy-help {
+  margin: 0 18px 18px;
+  padding: 14px 13px;
+  min-height: 142px;
+  border: 4px dashed #d5b27e;
+  border-radius: 8px;
+  background: rgba(255,250,235,0.74);
+  color: #5b3b28;
+  font-family: var(--pixel-font);
+  font-size: 17px;
+  font-weight: 900;
+  line-height: 1.34;
+  white-space: pre-line;
+}
+
+.toy-card {
+  position: relative;
+  height: 126px;
+  border: 4px solid #a0704c;
+  border-radius: 8px;
+  background: linear-gradient(#fff8e8, #efd6a7);
+  box-shadow: inset 0 0 0 4px rgba(255,255,255,0.38), 0 5px 0 #7b5736;
+  display: grid;
+  place-items: center;
+  gap: 4px;
+  font-family: var(--pixel-font);
+  font-size: 22px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.toy-card.selected {
+  background: linear-gradient(#ffe69a, #f4b944);
+  border-color: #c3742f;
+}
+
+.toy-card.locked {
+  opacity: 0.56;
+  filter: saturate(0.55);
+}
+
+.toy-icon {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border: 3px solid rgba(107,73,44,0.3);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.38);
+  font-size: 35px;
+}
+
+.how-panel {
+  right: 42px;
+  top: 168px;
+  width: 306px;
+  height: 538px;
+}
+
+.steps {
+  padding: 18px 16px 12px;
+  display: grid;
+  gap: 13px;
+}
+
+.step-card {
+  height: 82px;
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 4px solid #b48961;
+  border-radius: 8px;
+  background: rgba(255,252,241,0.75);
+  box-shadow: inset 0 0 0 3px rgba(255,255,255,0.36), 0 4px 0 rgba(103,72,45,0.35);
+  font-family: var(--pixel-font);
+  font-size: 23px;
+  font-weight: 900;
+}
+
+.step-num {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border: 4px solid #946747;
+  border-radius: 50%;
+  background: #fff2cc;
+}
+
+.reward-hint {
+  margin: 8px 18px 0;
+  padding: 16px 14px;
+  border: 4px dashed #d5b27e;
+  border-radius: 8px;
+  background: rgba(255,250,235,0.72);
+  font-family: var(--pixel-font);
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1.45;
+}
+
+.playfield {
+  position: absolute;
+  left: 350px;
+  top: 190px;
+  width: 900px;
+  height: 540px;
+  border: 7px solid var(--wood-dark);
+  border-radius: 10px;
+  background: var(--rolling-bg) center / cover no-repeat;
+  box-shadow: inset 0 0 0 7px rgba(255,255,255,0.38), 0 10px 0 #4b2f1e, 0 18px 28px var(--shadow);
+  overflow: hidden;
+}
+
+.playfield::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.18;
+  background:
+    linear-gradient(180deg, #fff 0 1px, transparent 1px 8px),
+    linear-gradient(90deg, #fff 0 1px, transparent 1px 8px);
+  pointer-events: none;
+}
+
+.playfield[data-toy]:not([data-toy="ball"]) .field-stars,
+.playfield[data-toy]:not([data-toy="ball"]) .launch-pad,
+.playfield[data-toy]:not([data-toy="ball"]) .target-ring,
+.playfield[data-toy]:not([data-toy="ball"]) .prediction-svg,
+.playfield[data-toy]:not([data-toy="ball"]) .landing-preview,
+.playfield[data-toy]:not([data-toy="ball"]) .aim-line {
+  display: none !important;
+}
+
+.playfield[data-toy]:not([data-toy="ball"]) .toy-ball {
+  display: none;
+}
+
+.playfield[data-toy="rattle"] .power-meter,
+.playfield[data-toy="blocks"] .power-meter {
+  display: none !important;
+}
+
+.playfield[data-toy="rattle"] .toy-mode-board {
+  left: 30px;
+  top: 62px;
+  width: 1148px;
+  height: 420px;
+  pointer-events: auto;
+}
+
+#stage[data-toy="rattle"] .how-panel {
+  display: none;
+}
+
+#stage[data-toy="rattle"] .playfield {
+  width: 1208px;
+}
+
+#stage[data-toy="rattle"] .status-strip {
+  right: 42px;
+}
+
+#stage[data-toy="rattle"] .message-bar {
+  right: 42px;
+}
+
+#stage[data-toy="rattle"] .bottom-actions {
+  display: none;
+}
+
+#stage[data-toy="rattle"] .milmaru {
+  left: 1032px;
+  top: 382px;
+  width: 70px;
+  height: 70px;
+  z-index: 2;
+  opacity: 0.92;
+}
+
+#stage[data-toy="rattle"] .milmaru-speech {
+  display: none;
+}
+
+.playfield[data-toy="blocks"] {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.55), transparent 34%),
+    linear-gradient(180deg, #dff1ef 0 58%, #d6ad72 58% 100%);
+}
+
+.playfield[data-toy="blocks"]::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 42%;
+  background:
+    repeating-linear-gradient(90deg, rgba(122,78,44,0.12) 0 3px, transparent 3px 70px),
+    repeating-linear-gradient(0deg, rgba(255,255,255,0.15) 0 4px, transparent 4px 54px);
+  pointer-events: none;
+}
+
+.playfield[data-toy="book"] .toy-ball {
+  width: 110px;
+  height: 82px;
+}
+
+.cloud {
+  position: absolute;
+  display: none;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.88);
+}
+
+.cloud.one { width: 150px; height: 34px; left: 110px; top: 72px; }
+.cloud.two { width: 205px; height: 42px; left: 568px; top: 92px; opacity: 0.74; }
+.cloud::before,
+.cloud::after {
+  content: '';
+  position: absolute;
+  border-radius: 50%;
+  background: inherit;
+}
+.cloud::before { width: 70px; height: 70px; left: 28px; bottom: 6px; }
+.cloud::after { width: 92px; height: 62px; left: 78px; bottom: 3px; }
+
+.ground-stripe {
+  position: absolute;
+  display: none;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 108px;
+  background:
+    linear-gradient(90deg, rgba(86, 54, 31, 0.13) 0 22px, transparent 22px 46px),
+    linear-gradient(#d8b46e, #a86d36);
+  border-top: 6px solid rgba(101,67,39,0.45);
+}
+
+.lane {
+  position: absolute;
+  display: none;
+  left: 80px;
+  right: 80px;
+  bottom: 100px;
+  height: 20px;
+  border: 4px solid rgba(120, 88, 52, 0.45);
+  border-radius: 999px;
+  background: repeating-linear-gradient(90deg, #fff7d5 0 25px, #ead09b 25px 42px);
+}
+
+.path-arc {
+  position: absolute;
+  display: none;
+  left: 116px;
+  top: 321px;
+  width: 660px;
+  height: 16px;
+  border: 0;
+  border-radius: 999px;
+  background: repeating-linear-gradient(90deg, rgba(77, 175, 117, 0.78) 0 20px, transparent 20px 36px);
+  opacity: 0.74;
+  pointer-events: none;
+  z-index: 2;
+  transform: rotate(-2deg);
+  transform-origin: left center;
+}
+
+.launch-pad {
+  position: absolute;
+  left: 46px;
+  top: 196px;
+  width: 156px;
+  height: 72px;
+  border: 5px solid #89603f;
+  border-radius: 10px;
+  background: rgba(255,248,225,0.75);
+  box-shadow: inset 0 0 0 5px rgba(255,255,255,0.35), 0 6px 0 rgba(80,54,33,0.34);
+  display: grid;
+  place-items: center;
+  font-family: var(--pixel-font);
+  font-size: 19px;
+  font-weight: 900;
+  text-align: center;
+  line-height: 1.25;
+}
+
+.target-ring {
+  position: absolute;
+  left: var(--target-x, 716px);
+  top: var(--target-y, 332px);
+  display: none;
+  width: var(--target-w, 84px);
+  height: var(--target-h, 84px);
+  border: 6px dashed rgba(82, 184, 121, 0.92);
+  border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  transform: translate(-50%, -50%);
+  animation: targetPulse 1.2s ease-in-out infinite;
+  z-index: 4;
+}
+
+.target-ring::after {
+  content: 'ねらい';
+  position: absolute;
+  left: -18px;
+  top: -42px;
+  padding: 4px 12px;
+  border: 3px solid #8b6040;
+  border-radius: 6px;
+  background: #fff4cf;
+  font-family: var(--pixel-font);
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.target-ring.show {
+  display: block;
+}
+
+@keyframes targetPulse {
+  50% { transform: translate(-50%, -50%) scale(1.07); opacity: 0.72; }
+}
+
+.target-ring.tight {
+  border-color: rgba(238, 123, 107, 0.92);
+}
+
+.target-ring.goal-hit {
+  border-color: #58b97a;
+  background: rgba(210, 255, 202, 0.38);
+  animation: targetHit 760ms steps(2) both;
+}
+
+@keyframes targetHit {
+  0% { transform: translate(-50%, -50%) scale(1); }
+  45% { transform: translate(-50%, -50%) scale(1.18); filter: brightness(1.15); }
+  100% { transform: translate(-50%, -50%) scale(1.03); }
+}
+
+.round-counter {
+  position: absolute;
+  left: 32px;
+  top: 24px;
+  min-width: 116px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border: 4px solid #8b6040;
+  border-radius: 8px;
+  background: #fff4cf;
+  box-shadow: inset 0 0 0 4px rgba(255,255,255,0.35), 0 4px 0 rgba(80,54,33,0.3);
+  font-family: var(--pixel-font);
+  font-size: 22px;
+  font-weight: 900;
+  z-index: 5;
+}
+
+.shot-pips {
+  position: absolute;
+  left: 168px;
+  top: 25px;
+  display: flex;
+  gap: 11px;
+  z-index: 5;
+}
+
+.shot-pip {
+  width: 32px;
+  height: 32px;
+  border: 4px solid #8b6040;
+  border-radius: 50%;
+  background: #fff4cf;
+  box-shadow: inset 0 0 0 4px rgba(255,255,255,0.35), 0 4px 0 rgba(80,54,33,0.28);
+}
+
+.shot-pip.used {
+  background: #ead0a0;
+}
+
+.shot-pip.hit {
+  background: #85dca7;
+}
+
+.field-stars {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.field-star {
+  position: absolute;
+  left: var(--star-x, 0px);
+  top: var(--star-y, 0px);
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  color: #ffd558;
+  font-family: var(--pixel-font);
+  font-size: 34px;
+  font-weight: 900;
+  text-shadow:
+    0 3px 0 #8e5b2e,
+    3px 0 0 #fff4b8,
+    -3px 0 0 #fff4b8,
+    0 -3px 0 #fff4b8;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 5px 0 rgba(83, 54, 30, 0.22));
+  animation: starBob 1.6s ease-in-out infinite;
+}
+
+.field-star::before {
+  content: '★';
+}
+
+.field-star.collected {
+  animation: starCollect 520ms steps(3) forwards;
+}
+
+.field-star.highlight {
+  transform: translate(-50%, -50%) scale(1.22);
+  filter: drop-shadow(0 0 10px rgba(255, 227, 98, 0.95));
+}
+
+@keyframes starBob {
+  50% { transform: translate(-50%, calc(-50% - 6px)); }
+}
+
+@keyframes starCollect {
+  0% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+  100% { opacity: 0; transform: translate(-50%, -92%) scale(0.3) rotate(25deg); }
+}
+
+.power-meter {
+  position: absolute;
+  left: 284px;
+  bottom: 28px;
+  width: 332px;
+  height: 68px;
+  display: grid;
+  grid-template-columns: 82px 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 9px;
+  border: 4px solid #8b6040;
+  border-radius: 8px;
+  background: rgba(255,248,225,0.86);
+  box-shadow: inset 0 0 0 4px rgba(255,255,255,0.32), 0 4px 0 rgba(80,54,33,0.28);
+  font-family: var(--pixel-font);
+  font-size: 20px;
+  font-weight: 900;
+  z-index: 5;
+}
+
+.power-meter.active {
+  background: rgba(255,251,231,0.96);
+  box-shadow:
+    inset 0 0 0 4px rgba(255,255,255,0.42),
+    0 4px 0 rgba(80,54,33,0.28),
+    0 0 0 5px rgba(255, 218, 99, 0.35);
+}
+
+.power-track {
+  position: relative;
+  height: 31px;
+  border: 3px solid #9b704b;
+  border-radius: 999px;
+  background:
+    linear-gradient(90deg, #b7d9f3 0 34%, #86d7ac 34% 61%, #ffd56e 61% 78%, #ee7b6b 78% 100%);
+  overflow: hidden;
+}
+
+.power-fill {
+  display: block;
+  width: var(--power, 0%);
+  height: 100%;
+  background: linear-gradient(90deg, #86d7ac, #f5bd4e, #ee7b6b);
+  transition: width 90ms linear;
+}
+
+.timing-marker {
+  position: absolute;
+  display: none;
+  left: var(--timing, 50%);
+  top: -10px;
+  width: 14px;
+  height: 45px;
+  border: 3px solid #6f462c;
+  border-radius: 5px;
+  background: #fffaf0;
+  box-shadow: 0 4px 0 rgba(74,48,30,0.28);
+  transform: translateX(-50%);
+}
+
+.power-meter.active .timing-marker {
+  display: block;
+}
+
+.milmaru-speech {
+  position: absolute;
+  left: var(--speech-x, 708px);
+  top: var(--speech-y, 154px);
+  min-width: 118px;
+  max-width: 210px;
+  padding: 10px 14px;
+  border: 4px solid #845b3d;
+  border-radius: 12px;
+  background: #fffaf0;
+  box-shadow: 0 6px 0 rgba(84,54,32,0.3);
+  font-family: var(--pixel-font);
+  font-size: 20px;
+  font-weight: 900;
+  text-align: center;
+  z-index: 9;
+  transform: translate(-50%, -100%);
+  transition: opacity 140ms ease;
+}
+
+.milmaru-speech.hide {
+  opacity: 0;
+}
+
+.milmaru-speech::after {
+  content: '';
+  position: absolute;
+  left: calc(50% - 13px);
+  bottom: -19px;
+  width: 28px;
+  height: 28px;
+  border-right: 4px solid #845b3d;
+  border-bottom: 4px solid #845b3d;
+  background: #fffaf0;
+  transform: rotate(45deg);
+}
+
+.milmaru {
+  position: absolute;
+  left: var(--milmaru-x, 652px);
+  top: var(--milmaru-y, 232px);
+  width: 92px;
+  height: 92px;
+  background: var(--milmaru-yochi) center bottom / contain no-repeat;
+  image-rendering: pixelated;
+  filter: drop-shadow(0 8px 0 rgba(92,60,35,0.18));
+  z-index: 3;
+  transform: scaleX(var(--milmaru-dir, 1));
+  transition:
+    left var(--milmaru-move-duration, 900ms) linear,
+    top var(--milmaru-move-duration, 900ms) linear;
+}
+
+.milmaru.baby {
+  width: 94px;
+  height: 94px;
+  background-image: var(--milmaru-baby);
+}
+
+.milmaru.catch {
+  animation: milmaruCatch 900ms ease both;
+  background-image: var(--milmaru-yochi-catch);
+}
+
+.milmaru.baby.catch {
+  background-image: var(--milmaru-baby-happy);
+}
+
+.milmaru.worried {
+  background-image: var(--milmaru-yochi-worried);
+}
+
+@keyframes milmaruCatch {
+  0%, 100% { transform: translateY(0) scale(1); }
+  35% { transform: translateY(-18px) scale(1.05); }
+}
+
+.milmaru.crawling {
+  animation: crawlFrames 2.15s steps(1, end) infinite;
+}
+
+@keyframes crawlFrames {
+  0% { background-image: var(--milmaru-crawl-1); }
+  16% { background-image: var(--milmaru-crawl-2); }
+  33% { background-image: var(--milmaru-crawl-3); }
+  50% { background-image: var(--milmaru-crawl-4); }
+  66% { background-image: var(--milmaru-crawl-5); }
+  83%, 100% { background-image: var(--milmaru-crawl-6); }
+}
+
+.toy-ball {
+  position: absolute;
+  left: var(--ball-x, 160px);
+  top: var(--ball-y, 354px);
+  width: 58px;
+  height: 58px;
+  border: 4px solid #8e5930;
+  border-radius: 50%;
+  background:
+    var(--rolling-ball) center / 150% no-repeat,
+    radial-gradient(circle at 32% 28%, #fff2ac 0 9px, transparent 10px),
+    linear-gradient(135deg, #ffe17b 0 32%, #ffb94c 32% 50%, #f08a43 50% 68%, #ffd96f 68%);
+  box-shadow: inset -6px -8px 0 rgba(150,83,35,0.2), 0 6px 0 rgba(85,54,32,0.22);
+  cursor: grab;
+  z-index: 6;
+  image-rendering: pixelated;
+  clip-path: circle(48% at 50% 50%);
+  transform: rotate(var(--ball-rotation, 0deg));
+  transition: left 120ms ease, top 120ms ease, transform 80ms linear;
+}
+
+.toy-ball::before,
+.toy-ball::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+}
+
+.toy-ball[data-toy="rattle"] {
+  border-radius: 18px;
+  clip-path: none;
+  background:
+    radial-gradient(circle at 50% 22%, #fff7cf 0 11px, #ffe18f 12px 24px, #cc7b3a 25px 29px, transparent 30px),
+    linear-gradient(#f9e8bf 0 0) 24px 29px / 10px 28px no-repeat,
+    linear-gradient(135deg, #9be0c4, #53b98b);
+}
+
+.toy-ball[data-toy="rattle"]::after {
+  content: '♪';
+  left: 34px;
+  top: -11px;
+  color: #f08a43;
+  font-family: var(--pixel-font);
+  font-size: 24px;
+  text-shadow: 0 2px 0 #fff4cf;
+}
+
+.toy-ball[data-toy="blocks"] {
+  border-radius: 9px;
+  clip-path: none;
+  background:
+    linear-gradient(#fff4b8, #f5bd4e) left top / 31px 31px no-repeat,
+    linear-gradient(#b7d9f3, #70bde4) right top / 31px 31px no-repeat,
+    linear-gradient(#ffb5bf, #ee7b6b) 13px 25px / 34px 34px no-repeat;
+}
+
+.toy-ball[data-toy="blocks"]::after {
+  content: 'A';
+  left: 10px;
+  top: 4px;
+  color: #8a5636;
+  font-family: var(--pixel-font);
+  font-size: 17px;
+  font-weight: 900;
+}
+
+.toy-ball[data-toy="book"] {
+  border-radius: 8px;
+  clip-path: none;
+  background:
+    linear-gradient(90deg, transparent 47%, rgba(137,86,54,0.5) 48% 52%, transparent 53%),
+    linear-gradient(#fff8e8, #ffe8bb);
+}
+
+.toy-ball[data-toy="book"]::before {
+  inset: 9px 8px;
+  border-left: 3px solid rgba(137,86,54,0.32);
+  border-right: 3px solid rgba(137,86,54,0.32);
+}
+
+.toy-ball[data-toy="book"]::after {
+  content: '本';
+  left: 17px;
+  top: 13px;
+  color: #58b97a;
+  font-family: var(--pixel-font);
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.toy-ball.dragging {
+  cursor: grabbing;
+  transform: scale(1.06);
+  transition: none;
+}
+
+.toy-ball.rolling {
+  transition: none;
+}
+
+.toy-mode-board {
+  position: absolute;
+  left: 176px;
+  top: 96px;
+  width: 548px;
+  height: 310px;
+  display: none;
+  place-items: center;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.playfield[data-toy]:not([data-toy="ball"]) .toy-mode-board {
+  display: grid;
+}
+
+.playfield[data-toy="blocks"] .toy-mode-board {
+  left: 44px;
+  top: 76px;
+  width: 812px;
+  height: 390px;
+}
+
+.toy-mode-card {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
+  border: 5px solid #8b6040;
+  border-radius: 12px;
+  background: rgba(255, 248, 225, 0.78);
+  box-shadow: inset 0 0 0 5px rgba(255,255,255,0.34), 0 6px 0 rgba(80,54,33,0.24);
+}
+
+.toy-mode-card.block-game {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.toy-mode-card.rattle-game {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.toy-mode-card.block-game.is-hit,
+.toy-mode-card.block-game.is-miss,
+.toy-mode-card.rattle-game.is-hit,
+.toy-mode-card.rattle-game.is-miss {
+  box-shadow: none;
+}
+
+.toy-mode-card.is-hit {
+  box-shadow:
+    inset 0 0 0 5px rgba(255,255,255,0.42),
+    0 6px 0 rgba(80,54,33,0.24),
+    0 0 0 7px rgba(132, 220, 167, 0.34);
+}
+
+.toy-mode-card.is-miss {
+  box-shadow:
+    inset 0 0 0 5px rgba(255,255,255,0.34),
+    0 6px 0 rgba(80,54,33,0.24),
+    0 0 0 7px rgba(255, 205, 112, 0.3);
+}
+
+.toy-mode-title {
+  position: absolute;
+  left: 24px;
+  top: 18px;
+  padding: 6px 16px;
+  border: 3px solid #8b6040;
+  border-radius: 8px;
+  background: #fff4cf;
+  font-family: var(--pixel-font);
+  font-size: 21px;
+  font-weight: 900;
+}
+
+.toy-mode-help {
+  position: absolute;
+  right: 24px;
+  bottom: 18px;
+  padding: 6px 14px;
+  border: 3px solid #8b6040;
+  border-radius: 8px;
+  background: #fffaf0;
+  font-family: var(--pixel-font);
+  font-size: 19px;
+  font-weight: 900;
+}
+
+.rattle-game .toy-mode-help {
+  right: auto;
+  left: 24px;
+  bottom: 82px;
+  font-size: 17px;
+}
+
+.toy-round-label {
+  position: absolute;
+  right: 24px;
+  top: 18px;
+  min-width: 94px;
+  padding: 6px 12px;
+  border: 3px solid #8b6040;
+  border-radius: 8px;
+  background: #d8f1c5;
+  font-family: var(--pixel-font);
+  font-size: 20px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.rattle-target {
+  position: absolute;
+  left: 24px;
+  top: 18px;
+  width: 310px;
+  display: flex;
+  justify-content: flex-start;
+  gap: 11px;
+  transform: none;
+}
+
+.rattle-note {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border: 4px solid #8b6040;
+  border-radius: 50%;
+  background: #fff4cf;
+  color: #58b97a;
+  font-family: var(--pixel-font);
+  font-size: 30px;
+  font-weight: 900;
+  box-shadow: 0 5px 0 rgba(80,54,33,0.24);
+}
+
+.rattle-note.active {
+  background: #ffe69a;
+  color: #e97955;
+  transform: translateY(-8px);
+}
+
+.rattle-note.hit {
+  background: #85dca7;
+  color: #fffaf0;
+}
+
+.rattle-note.miss {
+  background: #ead0a0;
+  color: #8a5636;
+}
+
+.rattle-countdown {
+  position: absolute;
+  left: 50%;
+  top: 48%;
+  min-width: 130px;
+  padding: 14px 22px;
+  transform: translate(-50%, -50%);
+  border: 5px solid #8b6040;
+  border-radius: 14px;
+  background: #fffaf0;
+  color: #e97955;
+  font-family: var(--pixel-font);
+  font-size: 58px;
+  font-weight: 900;
+  text-align: center;
+  box-shadow: inset 0 0 0 5px rgba(255,255,255,0.42), 0 8px 0 rgba(80,54,33,0.24);
+  z-index: 8;
+}
+
+.rattle-now {
+  position: absolute;
+  left: 50%;
+  top: 34px;
+  transform: translateX(-50%);
+  padding: 7px 18px;
+  border: 4px solid #8b6040;
+  border-radius: 999px;
+  background: #fffaf0;
+  color: #8a5636;
+  font-family: var(--pixel-font);
+  font-size: 24px;
+  font-weight: 900;
+  box-shadow: 0 5px 0 rgba(80,54,33,0.24);
+}
+
+.rattle-now.active {
+  background: #ffe69a;
+  color: #e97955;
+  transform: translateX(-50%) scale(1.12);
+}
+
+.rattle-tap-cue {
+  position: absolute;
+  left: 50%;
+  bottom: 26px;
+  transform: translateX(-50%);
+  min-width: 190px;
+  padding: 8px 20px;
+  border: 4px solid #8b6040;
+  border-radius: 10px;
+  background: #fff4cf;
+  color: #8a5636;
+  font-family: var(--pixel-font);
+  font-size: 23px;
+  font-weight: 900;
+  text-align: center;
+  box-shadow: inset 0 0 0 4px rgba(255,255,255,0.34), 0 6px 0 rgba(80,54,33,0.22);
+}
+
+.rattle-tap-cue.active {
+  background: #85dca7;
+  color: #fffaf0;
+  animation: cuePop 360ms steps(2, end) infinite;
+}
+
+@keyframes cuePop {
+  50% { transform: translateX(-50%) scale(1.08); }
+}
+
+.taiko-toy {
+  position: absolute;
+  left: 50%;
+  top: 51%;
+  width: 1128px;
+  height: 314px;
+  transform: translate(-50%, -50%);
+  z-index: 2;
+}
+
+.taiko-drum {
+  position: absolute;
+  left: 116px;
+  top: 162px;
+  width: 132px;
+  height: 132px;
+  border: 8px solid #8b6040;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 34% 30%, rgba(255,255,255,0.68) 0 12px, transparent 13px),
+    radial-gradient(circle at 50% 50%, #fffaf0 0 48%, #ffe3a2 49% 64%, #f2b956 65% 100%);
+  box-shadow:
+    inset 0 0 0 7px rgba(255,255,255,0.38),
+    inset 0 0 0 18px rgba(139,96,64,0.1),
+    0 10px 0 rgba(80,54,33,0.24);
+  transform: translate(-50%, -50%) scale(var(--taiko-scale, 1));
+  z-index: 5;
+}
+
+.taiko-drum::before {
+  content: '';
+  position: absolute;
+  inset: 22px;
+  border: 5px dashed rgba(139,96,64,0.24);
+  border-radius: 50%;
+}
+
+.taiko-drum::after {
+  content: '♪';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: #e97955;
+  font-family: var(--pixel-font);
+  font-size: 40px;
+  font-weight: 900;
+}
+
+.taiko-drum.active {
+  animation: taikoHitPop 300ms steps(2, end) infinite;
+  filter: drop-shadow(0 0 10px rgba(255, 214, 105, 0.82));
+}
+
+@keyframes taikoHitPop {
+  50% { transform: translate(-50%, -50%) scale(1.05); }
+}
+
+.taiko-stand {
+  position: absolute;
+  left: 61px;
+  top: 226px;
+  width: 110px;
+  height: 22px;
+  border: 5px solid #8b6040;
+  border-radius: 10px;
+  background: linear-gradient(#d5b27e, #a97948);
+  box-shadow: inset 0 0 0 4px rgba(255,255,255,0.22);
+  z-index: 3;
+}
+
+.taiko-bachi {
+  position: absolute;
+  top: var(--bachi-y, 74px);
+  width: 16px;
+  height: 88px;
+  border-radius: 999px;
+  border: 4px solid #8b6040;
+  background: linear-gradient(#ffe69a, #d5a35a);
+  box-shadow: inset 0 0 0 3px rgba(255,255,255,0.3), 0 6px 0 rgba(80,54,33,0.18);
+  transform-origin: 50% 92%;
+  z-index: 7;
+}
+
+.taiko-bachi::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -10px;
+  width: 28px;
+  height: 20px;
+  border: 3px solid #8b6040;
+  border-radius: 50%;
+  background: #fff4cf;
+  transform: translateX(-50%);
+}
+
+.taiko-bachi.left {
+  left: 72px;
+  transform: rotate(var(--bachi-left-angle, -26deg));
+}
+
+.taiko-bachi.right {
+  left: 150px;
+  transform: rotate(var(--bachi-right-angle, 26deg));
+}
+
+.taiko-bachi.active {
+  background: linear-gradient(#d8f1c5, #85dca7);
+  filter: drop-shadow(0 0 7px rgba(88,185,122,0.6));
+}
+
+.taiko-hit-splash {
+  position: absolute;
+  left: 116px;
+  top: 162px;
+  width: 94px;
+  height: 82px;
+  border-radius: 50%;
+  border: 8px solid rgba(255,230,154,0.9);
+  background: rgba(255,255,255,0.16);
+  opacity: 0;
+  transform: translate(-50%, -50%);
+  z-index: 8;
+}
+
+.taiko-hit-splash.active {
+  opacity: 1;
+  animation: taikoSplash 300ms steps(2, end) infinite;
+}
+
+@keyframes taikoSplash {
+  50% { transform: translate(-50%, -50%) scale(1.18); }
+}
+
+.taiko-lane {
+  position: absolute;
+  left: 204px;
+  top: 132px;
+  width: 872px;
+  height: 82px;
+  border: 6px solid #8b6040;
+  border-radius: 999px;
+  background:
+    linear-gradient(rgba(255,250,240,0.9), rgba(255,244,207,0.86)),
+    repeating-linear-gradient(90deg, rgba(213,178,126,0.35) 0 24px, rgba(255,255,255,0.16) 24px 48px);
+  box-shadow: inset 0 0 0 6px rgba(255,255,255,0.34), 0 8px 0 rgba(80,54,33,0.2);
+  overflow: hidden;
+  z-index: 2;
+}
+
+.taiko-song-label {
+  position: absolute;
+  left: 206px;
+  top: 82px;
+  min-width: 300px;
+  padding: 7px 18px;
+  border: 4px solid #8b6040;
+  border-radius: 999px;
+  background: rgba(255,250,240,0.94);
+  color: #5b3b28;
+  font-family: var(--pixel-font);
+  font-size: 21px;
+  font-weight: 900;
+  box-shadow: 0 5px 0 rgba(80,54,33,0.18);
+  z-index: 7;
+}
+
+.taiko-lane-track {
+  position: absolute;
+  left: 34px;
+  right: 28px;
+  top: 50%;
+  height: 8px;
+  border-radius: 999px;
+  background: repeating-linear-gradient(90deg, #d5b27e 0 16px, transparent 16px 28px);
+  transform: translateY(-50%);
+}
+
+.taiko-hit-line {
+  position: absolute;
+  left: var(--hit-x, 118px);
+  top: 50%;
+  width: 60px;
+  height: 60px;
+  border: 6px solid #58b97a;
+  border-radius: 50%;
+  background: rgba(216,241,197,0.42);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 6px rgba(88,185,122,0.2);
+  z-index: 4;
+}
+
+.taiko-hit-line.active {
+  border-color: #e97955;
+  background: rgba(255,230,154,0.62);
+  animation: cuePop 300ms steps(2, end) infinite;
+}
+
+.taiko-note {
+  position: absolute;
+  left: var(--note-x, 404px);
+  top: 50%;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border: 5px solid #8b6040;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 33% 30%, rgba(255,255,255,0.78) 0 8px, transparent 9px),
+    linear-gradient(#ffb68a, #e97955);
+  color: #fffaf0;
+  font-family: var(--pixel-font);
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1;
+  text-shadow: 0 2px 0 rgba(80,54,33,0.42);
+  transform: translate(-50%, -50%) scale(var(--note-scale, 1));
+  box-shadow: inset 0 0 0 5px rgba(255,255,255,0.26), 0 6px 0 rgba(80,54,33,0.22);
+  z-index: 5;
+}
+
+.taiko-note.active {
+  --note-scale: 1.16;
+  background:
+    radial-gradient(circle at 33% 30%, rgba(255,255,255,0.88) 0 8px, transparent 9px),
+    linear-gradient(#d8f1c5, #58b97a);
+}
+
+.taiko-note.accent {
+  width: 56px;
+  height: 56px;
+  background:
+    radial-gradient(circle at 33% 30%, rgba(255,255,255,0.82) 0 9px, transparent 10px),
+    linear-gradient(#ffdf7e, #e97955);
+}
+
+.taiko-note.don {
+  border-color: #f6f1e2;
+  background:
+    radial-gradient(circle at 33% 30%, rgba(255,255,255,0.85) 0 9px, transparent 10px),
+    linear-gradient(#ff6f6f, #e23a3a);
+  box-shadow: inset 0 0 0 5px rgba(255,255,255,0.32), 0 6px 0 rgba(120,30,30,0.32);
+}
+
+.taiko-note.ka {
+  border-color: #f6f1e2;
+  background:
+    radial-gradient(circle at 33% 30%, rgba(255,255,255,0.85) 0 9px, transparent 10px),
+    linear-gradient(#6f9bff, #3a6fe2);
+  box-shadow: inset 0 0 0 5px rgba(255,255,255,0.32), 0 6px 0 rgba(30,55,120,0.32);
+}
+
+.taiko-note.miss {
+  background:
+    radial-gradient(circle at 33% 30%, rgba(255,255,255,0.5) 0 8px, transparent 9px),
+    linear-gradient(#ead0a0, #c89a70);
+  opacity: 0.66;
+}
+
+.taiko-note-tail {
+  position: absolute;
+  left: calc(var(--note-x, 404px) + 28px);
+  top: 50%;
+  width: 96px;
+  height: 10px;
+  border-radius: 999px;
+  background: repeating-linear-gradient(90deg, rgba(233,121,85,0.32) 0 12px, transparent 12px 22px);
+  transform: translateY(-50%);
+  z-index: 3;
+}
+
+.taiko-beat-pips {
+  position: absolute;
+  left: 54%;
+  top: 86px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  z-index: 7;
+}
+
+.taiko-beat-pip {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 4px solid #8b6040;
+  border-radius: 50%;
+  background: #fff4cf;
+  color: #8a5636;
+  font-family: var(--pixel-font);
+  font-size: 16px;
+  font-weight: 900;
+  box-shadow: 0 4px 0 rgba(80,54,33,0.22);
+}
+
+.taiko-beat-pip.hit {
+  background: #85dca7;
+  color: #fffaf0;
+}
+
+.taiko-beat-pip.miss {
+  background: #ead0a0;
+  color: #8a5636;
+  opacity: 0.75;
+}
+
+.taiko-beat-pip.next {
+  background: #ffe69a;
+  color: #e97955;
+  transform: translateY(-5px);
+}
+
+.taiko-start-button,
+.taiko-pause-button {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  border: 5px solid #8b6040;
+  border-radius: 12px;
+  background: linear-gradient(#b7dff7, #64b7df);
+  color: #fffaf0;
+  font-family: var(--pixel-font);
+  font-weight: 900;
+  text-shadow: 0 3px 0 rgba(42,82,98,0.45);
+  box-shadow: inset 0 0 0 5px rgba(255,255,255,0.32), 0 7px 0 rgba(74,48,30,0.35);
+  cursor: pointer;
+  z-index: 12;
+}
+
+.taiko-start-button {
+  left: 50%;
+  bottom: 38px;
+  width: 330px;
+  height: 74px;
+  transform: translateX(-50%);
+  font-size: 34px;
+}
+
+.taiko-start-button:active,
+.taiko-pause-button:active {
+  transform: translateX(-50%) translateY(4px);
+  box-shadow: inset 0 0 0 5px rgba(255,255,255,0.32), 0 3px 0 rgba(74,48,30,0.35);
+}
+
+.taiko-pause-button {
+  right: 42px;
+  top: 22px;
+  width: 158px;
+  height: 52px;
+  background: linear-gradient(#fff1c9, #f2be64);
+  color: #5b3b28;
+  text-shadow: 0 2px 0 rgba(255,255,255,0.45);
+  font-size: 22px;
+}
+
+.taiko-pause-button:active {
+  transform: translateY(4px);
+}
+
+.taiko-paused-cover {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(84, 54, 32, 0.18);
+  z-index: 11;
+}
+
+.taiko-paused-card {
+  padding: 18px 34px;
+  border: 5px solid #8b6040;
+  border-radius: 12px;
+  background: #fffaf0;
+  color: #5b3b28;
+  font-family: var(--pixel-font);
+  font-size: 30px;
+  font-weight: 900;
+  box-shadow: inset 0 0 0 5px rgba(255,255,255,0.34), 0 8px 0 rgba(74,48,30,0.3);
+}
+
+.block-stack {
+  position: relative;
+  width: 760px;
+  /* Raised 314 -> 364 (+50px) in lockstep with MINI_STACK.stageH. The orange
+     floor (.block-base-line) stays pinned to bottom:0 so it drops 50px lower,
+     freeing more stacking headroom above. The crane/swing is anchored to the
+     top (spawn y = 42px) so it is unaffected. */
+  height: 364px;
+  overflow: hidden;
+}
+
+.block-base-line {
+  position: absolute;
+  left: 176px;
+  /* Lowered from 12px -> 0px so the floor sits at the very bottom of the board,
+     freeing more vertical space above for stacking blocks. baseBottom in
+     MINI_STACK is shifted in lockstep (36 -> 24) so visual + physics align. */
+  bottom: 0;
+  width: 408px;
+  height: 24px;
+  border: 5px solid #8b6040;
+  border-radius: 8px;
+  background: linear-gradient(#ffd16c, #f0a546);
+  box-shadow: inset 0 0 0 4px rgba(255,255,255,0.32);
+}
+
+.stack-swing-rail {
+  position: absolute;
+  left: 52px;
+  right: 52px;
+  top: 38px;
+  height: 8px;
+  border-radius: 999px;
+  background: repeating-linear-gradient(90deg, #8b6040 0 16px, #d5b27e 16px 30px);
+  opacity: 0.68;
+}
+
+.stack-block {
+  position: absolute;
+  width: var(--block-w, 96px);
+  height: var(--block-h, 34px);
+  left: var(--block-x, calc(50% - 48px));
+  bottom: var(--block-bottom, 36px);
+  display: grid;
+  place-items: center;
+  border: 4px solid #8b6040;
+  border-radius: 8px;
+  background: linear-gradient(#ffe69a, #f4b944);
+  color: #8a5636;
+  font-family: var(--pixel-font);
+  font-size: 24px;
+  font-weight: 900;
+  transform-origin: center center;
+  box-shadow: inset 0 0 0 4px rgba(255,255,255,0.32), 0 5px 0 rgba(80,54,33,0.24);
+}
+
+.stack-block.physics {
+  left: 0;
+  top: 0;
+  bottom: auto;
+  transform: translate(var(--block-x, 0px), var(--block-y, 0px)) rotate(var(--block-angle, 0rad));
+  transition: none;
+}
+
+.stack-block.physics.falling {
+  animation: none;
+}
+
+.stack-block.ghost {
+  left: var(--block-x, 144px);
+  top: 42px;
+  bottom: auto;
+  opacity: 0.95;
+  transition: none;
+}
+
+.stack-block.hit {
+  background: linear-gradient(#d8f1c5, #85dca7);
+}
+
+.stack-block.miss {
+  background: linear-gradient(#ead0a0, #d6a974);
+  transform: rotate(-6deg);
+}
+
+.stack-block.ghost.good {
+  filter: drop-shadow(0 0 8px rgba(88, 185, 122, 0.85));
+}
+
+.block-stack.wobble .stack-block.hit {
+  animation: towerWobble 360ms steps(3, end) 2;
+}
+
+.block-stack.collapse .stack-block.hit,
+.stack-block.collapse {
+  animation: towerCollapse 740ms cubic-bezier(.2,.72,.28,1) forwards;
+}
+
+.block-stack.wobble .stack-block.physics.hit,
+.block-stack.collapse .stack-block.physics.hit,
+.stack-block.physics.miss,
+.stack-block.physics.collapse {
+  animation: none;
+  transform: translate(var(--block-x, 0px), var(--block-y, 0px)) rotate(var(--block-angle, 0rad));
+}
+
+.stack-block.falling {
+  bottom: auto;
+  top: 42px;
+  animation: miniBlockDrop 820ms cubic-bezier(.18,.82,.24,1) both;
+}
+
+@keyframes miniBlockDrop {
+  from { top: 42px; }
+  to { top: var(--drop-to, 156px); }
+}
+
+@keyframes towerWobble {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  25% { transform: translateX(-5px) rotate(-2deg); }
+  50% { transform: translateX(4px) rotate(2deg); }
+  75% { transform: translateX(-2px) rotate(-1deg); }
+}
+
+@keyframes towerCollapse {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  45% { transform: translate(calc(var(--collapse-dir, 1) * 18px), 12px) rotate(calc(var(--collapse-dir, 1) * 12deg)); opacity: 1; }
+  100% { transform: translate(calc(var(--collapse-dir, 1) * 62px), 106px) rotate(calc(var(--collapse-dir, 1) * 36deg)); opacity: 0.35; }
+}
+
+.book-pages {
+  position: relative;
+  width: 360px;
+  height: 210px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border: 6px solid #8b6040;
+  border-radius: 10px;
+  background: #fff8e8;
+  box-shadow: inset 0 0 0 5px rgba(255,255,255,0.38);
+  overflow: hidden;
+}
+
+.book-pages::before {
+  content: '';
+  position: absolute;
+  left: calc(50% - 3px);
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  background: #d5b27e;
+}
+
+.book-page {
+  display: grid;
+  place-items: center;
+  font-family: var(--pixel-font);
+  font-size: 54px;
+  color: #58b97a;
+}
+
+.book-corner {
+  position: absolute;
+  right: 20px;
+  bottom: 18px;
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border: 4px solid #8b6040;
+  border-radius: 50%;
+  background: #fff4cf;
+  color: #f5bd4e;
+  font-family: var(--pixel-font);
+  font-size: 32px;
+  font-weight: 900;
+  box-shadow: 0 5px 0 rgba(80,54,33,0.24);
+}
+
+.book-corner.active {
+  animation: cornerGlow 620ms steps(2, end) infinite;
+}
+
+.book-corner.hit {
+  background: #85dca7;
+  color: #fffaf0;
+}
+
+.book-corner.miss {
+  background: #ead0a0;
+  color: #8a5636;
+}
+
+.book-page.done {
+  color: #e97955;
+}
+
+@keyframes cornerGlow {
+  50% { transform: scale(1.12); filter: brightness(1.15); }
+}
+
+.aim-line {
+  position: absolute;
+  left: 118px;
+  top: 330px;
+  height: 8px;
+  width: var(--aim-length, 0px);
+  transform-origin: left center;
+  transform: rotate(var(--aim-angle, 0deg));
+  border-radius: 999px;
+  background: repeating-linear-gradient(90deg, #ff8d58 0 14px, transparent 14px 24px);
+  opacity: 0;
+  z-index: 2;
+}
+
+.aim-line.show {
+  opacity: 0.92;
+}
+
+.prediction-svg {
+  position: absolute;
+  inset: 0;
+  overflow: visible;
+  opacity: 0;
+  transition: opacity 100ms linear;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.prediction-svg.show {
+  opacity: 1;
+}
+
+.prediction-svg path {
+  fill: none;
+  stroke: #ff8d58;
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: 16 13;
+  filter: drop-shadow(0 3px 0 rgba(115, 74, 45, 0.22));
+}
+
+.prediction-svg.safe path {
+  stroke: #58b97a;
+}
+
+.landing-preview {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 74px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  border: 5px dashed #e97955;
+  border-radius: 50%;
+  background: rgba(255, 245, 210, 0.78);
+  box-shadow: 0 5px 0 rgba(84,54,32,0.22);
+  color: #8a5636;
+  font-family: var(--pixel-font);
+  font-size: 18px;
+  font-weight: 900;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.landing-preview.show {
+  opacity: 1;
+}
+
+.landing-preview.safe {
+  border-color: #58b97a;
+  background: rgba(214, 255, 202, 0.82);
+  color: #2f7a54;
+}
+
+.landing-preview.miss {
+  border-color: #ee7b6b;
+  background: rgba(255, 236, 205, 0.9);
+  color: #9b5f3f;
+}
+
+.goal-burst {
+  position: absolute;
+  left: var(--burst-x, 700px);
+  top: var(--burst-y, 300px);
+  min-width: 150px;
+  padding: 10px 18px 12px;
+  border: 5px solid #8b6040;
+  border-radius: 10px;
+  background: #fff4cf;
+  box-shadow: inset 0 0 0 4px rgba(255,255,255,0.35), 0 6px 0 rgba(74,48,30,0.32);
+  color: #2f7a54;
+  font-family: var(--pixel-font);
+  font-size: 30px;
+  font-weight: 900;
+  text-align: center;
+  transform: translate(-50%, -50%) scale(0.72);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.goal-burst.show {
+  animation: goalBurstPop 900ms ease-out both;
+}
+
+.goal-burst.miss {
+  color: #a45b3f;
+}
+
+@keyframes goalBurstPop {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.55); }
+  20% { opacity: 1; transform: translate(-50%, -50%) scale(1.12); }
+  72% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -70%) scale(0.92); }
+}
+
+.spark-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 6;
+}
+
+.spark {
+  position: absolute;
+  width: 34px;
+  height: 34px;
+  background: var(--fx-sparkle) center / contain no-repeat;
+  animation: sparkPop 900ms ease-out forwards;
+}
+
+@keyframes sparkPop {
+  0% { opacity: 0; transform: translate(0, 12px) scale(0.4); }
+  20% { opacity: 1; }
+  100% { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(1.25); }
+}
+
+.status-strip {
+  position: absolute;
+  left: 350px;
+  right: 350px;
+  top: 732px;
+  height: 46px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0;
+  align-items: center;
+}
+
+.guide-panel,
+.friend-panel {
+  height: 46px;
+  border: 5px solid #8b6040;
+  border-radius: 9px;
+  background: rgba(255,248,232,0.9);
+  box-shadow: inset 0 0 0 5px rgba(255,255,255,0.34), 0 5px 0 rgba(74,48,30,0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--pixel-font);
+  font-weight: 900;
+  font-size: 24px;
+}
+
+.friend-panel {
+  display: none;
+  gap: 8px;
+  font-size: 23px;
+}
+
+.heart-pip {
+  width: 24px;
+  height: 24px;
+  border-radius: 5px;
+  background: #ff91a5;
+  border: 3px solid #a26847;
+  box-shadow: inset 0 0 0 3px rgba(255,255,255,0.28);
+}
+
+.heart-pip.empty {
+  background: #ead5b5;
+}
+
+.bottom-actions {
+  position: absolute;
+  left: 440px;
+  right: 440px;
+  bottom: 50px;
+  height: 64px;
+  display: grid;
+  grid-template-columns: 1.35fr 1fr 1fr;
+  gap: 18px;
+  align-items: center;
+}
+
+.main-btn,
+.secondary-btn {
+  position: relative;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  background: var(--button-success) center / 100% 100% no-repeat;
+  color: #fff;
+  font-family: var(--pixel-font);
+  font-size: 28px;
+  font-weight: 900;
+  text-shadow: 0 3px 0 rgba(38,71,91,0.55);
+}
+
+.main-btn:active {
+  background-image: var(--button-success-pressed);
+}
+
+.secondary-btn {
+  background-image: var(--button-retry);
+  color: var(--ink);
+  text-shadow: 0 2px 0 rgba(255,255,255,0.45);
+  font-size: 26px;
+}
+
+.secondary-btn.next {
+  background-image: var(--button-next);
+  color: #fff;
+  text-shadow: 0 3px 0 rgba(38,91,48,0.5);
+}
+
+.secondary-btn:active {
+  background-image: var(--button-retry-pressed);
+}
+
+.secondary-btn.next:active {
+  background-image: var(--button-next-pressed);
+}
+
+.message-bar {
+  position: absolute;
+  left: 250px;
+  right: 250px;
+  bottom: 8px;
+  min-height: 34px;
+  display: grid;
+  place-items: center;
+  border: 4px solid #8b6040;
+  border-radius: 8px;
+  background: rgba(255,250,235,0.92);
+  font-family: var(--pixel-font);
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.result-modal {
+  position: absolute;
+  inset: 0;
+  display: none;
+  place-items: center;
+  background: rgba(52, 75, 50, 0.32);
+  z-index: 30;
+}
+
+.result-modal.show {
+  display: grid;
+}
+
+.result-card {
+  width: 680px;
+  min-height: 330px;
+  padding: 36px 46px 32px;
+  border: 7px solid var(--wood-dark);
+  border-radius: 12px;
+  background: linear-gradient(#fffaf0, #f5e4bf);
+  box-shadow: inset 0 0 0 7px rgba(255,255,255,0.4), 0 11px 0 #4b2f1e, 0 20px 40px rgba(50,32,20,0.3);
+  text-align: center;
+}
+
+.result-title {
+  margin-bottom: 16px;
+  color: #c26038;
+  font-family: var(--pixel-font);
+  font-size: 48px;
+  font-weight: 900;
+}
+
+.result-text {
+  font-family: var(--pixel-font);
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1.45;
+}
+
+.result-actions {
+  margin-top: 28px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-aspect-ratio: 4/3) {
+  #stage {
+    background-position: center;
+  }
+}
+</style>
+</head>
+<body>
+<div id="stage-wrap">
+  <main id="stage" aria-label="もじっこファーム おもちゃひろば">
+    <header class="top-bar">
+      <button class="pixel-button back-btn" id="backBtn">← おせわへ</button>
+      <div class="title-board">ころころボール</div>
+      <div class="star-box"><span id="starCount">0</span></div>
+      <button class="pixel-button icon-btn" id="settingsBtn" aria-label="設定">設定</button>
+    </header>
+    <div class="sub-sign">ボールを ひっぱって はなそう！</div>
+
+    <aside class="panel toy-panel" aria-label="おもちゃ">
+      <div class="panel-heading">おもちゃ</div>
+      <div class="toy-grid">
+        <button class="toy-card selected" type="button" data-toy="ball"><span class="toy-icon">●</span><span>ボール</span></button>
+        <button class="toy-card" type="button" data-toy="rattle"><span class="toy-icon">♪</span><span>たいこ</span></button>
+        <button class="toy-card" type="button" data-toy="blocks"><span class="toy-icon">□</span><span>つみき</span></button>
+        <button class="toy-card" type="button" data-toy="book"><span class="toy-icon">本</span><span>えほん</span></button>
+      </div>
+      <div class="toy-help" id="toyHelp">ボールをひっぱって、むきとちからをきめよう。星の近くにころがすとミルマルがとりにいくよ。</div>
+    </aside>
+
+    <section class="playfield" id="playfield" aria-label="ころころボールのステージ">
+      <div class="cloud one" aria-hidden="true"></div>
+      <div class="cloud two" aria-hidden="true"></div>
+      <div class="path-arc" aria-hidden="true"></div>
+      <div class="lane" aria-hidden="true"></div>
+      <div class="ground-stripe" aria-hidden="true"></div>
+      <div class="round-counter" id="roundCounter">1 / 5</div>
+      <div class="shot-pips" id="shotPips" aria-hidden="true"></div>
+      <div class="field-stars" id="fieldStars" aria-hidden="true"></div>
+      <div class="launch-pad" id="launchPad">ここから<br>ころころ</div>
+      <div class="power-meter" id="powerMeter" aria-hidden="true">
+        <span>ちから</span>
+        <div class="power-track"><div class="power-fill" id="powerFill"></div><div class="timing-marker" id="timingMarker"></div></div>
+      </div>
+      <div class="target-ring" id="targetRing" aria-hidden="true"></div>
+      <div class="milmaru-speech" id="milmaruSpeech">みゅっ♪</div>
+      <div class="milmaru" id="milmaru" aria-hidden="true"></div>
+      <div class="toy-mode-board" id="toyModeBoard" aria-hidden="true"></div>
+      <svg class="prediction-svg" id="predictionSvg" viewBox="0 0 900 540" preserveAspectRatio="none" aria-hidden="true">
+        <path id="predictionPath" d=""></path>
+      </svg>
+      <div class="landing-preview" id="landingPreview" aria-hidden="true"><span>ここ</span></div>
+      <div class="goal-burst" id="goalBurst" aria-hidden="true">はいった！</div>
+      <div class="aim-line" id="aimLine" aria-hidden="true"></div>
+      <div class="toy-ball" id="ball" role="button" aria-label="ボール"></div>
+      <div class="spark-layer" id="sparkLayer" aria-hidden="true"></div>
+    </section>
+
+    <aside class="panel how-panel" aria-label="あそびかた">
+      <div class="panel-heading">あそびかた</div>
+      <div class="steps">
+        <div class="step-card"><span class="step-num">1</span><span>むき</span></div>
+        <div class="step-card"><span class="step-num">2</span><span>ちから</span></div>
+        <div class="step-card"><span class="step-num">3</span><span>とりにいく</span></div>
+      </div>
+      <div class="reward-hint">むきをきめて<br>ちからで とどけよう<br>5こで1セット</div>
+    </aside>
+
+    <div class="status-strip">
+      <div class="guide-panel" id="guideText">みどりの ところで おそう</div>
+      <div class="friend-panel"><span>なかよし</span><span class="heart-pip"></span><span class="heart-pip"></span><span class="heart-pip empty"></span></div>
+    </div>
+
+    <nav class="bottom-actions" aria-label="ゲーム操作">
+      <button class="pixel-button main-btn" id="playBtn">あそびなおす</button>
+      <button class="pixel-button secondary-btn" id="retryBtn">もういっかい</button>
+      <button class="pixel-button secondary-btn next" id="careBtn">おせわへ</button>
+    </nav>
+    <div class="message-bar" id="messageBar">ボールをひっぱると、どこへころがるか見えるよ。</div>
+
+    <div class="result-modal" id="resultModal" aria-hidden="true">
+      <div class="result-card" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
+        <div class="result-title" id="resultTitle">ころころ できたね！</div>
+        <div class="result-text" id="resultText">ミルマルが よろこんでいるよ。<br>なかよしが ふえた！</div>
+        <div class="result-actions">
+          <button class="pixel-button secondary-btn" id="modalRetryBtn">もういっかい</button>
+          <button class="pixel-button secondary-btn next" id="modalCareBtn">おせわへ</button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="../assets/lib/matter.min.js"></script>
+<script>
+'use strict';
+
+const CARE_STATE_KEY = 'mojikkoFarmCareStateV1';
+const FOOD_SYSTEM_VERSION = 2;
+const PLAY_STAR_COST = 0;
+const TOTAL_ROUNDS = 5;
+const BALL_SIZE = 58;
+const BALL_RADIUS = BALL_SIZE / 2;
+const MILMARU_SIZE = 92;
+const LAUNCH_CENTER = { x: 126, y: 332 };
+const MIN_ROLL = 110;
+const MAX_ROLL = 640;
+const STAR_COLLECT_RADIUS = 58;
+const STAR_ROUTE_RADIUS = 52;
+const MILMARU_FIELD = {
+  minX: 116,
+  maxX: 790,
+  minY: 118,
+  maxY: 396
+};
+const STAR_POINTS = [
+  { x: 286, y: 252 },
+  { x: 430, y: 190 },
+  { x: 552, y: 304 },
+  { x: 684, y: 234 },
+  { x: 768, y: 342 }
+];
+const MINI_STACK = {
+  stageW: 760,
+  // Raised 314 -> 364 (+50px) in lockstep with .block-stack { height: 364px }.
+  // Physics platform top = stageH - baseBottom = 364 - 24 = 340; visual floor
+  // top = stageH - bottom(0) - height(24) = 340. Aligned. The +50px lands
+  // entirely below the spawn point (top y = 42px), so it is pure extra
+  // stacking room and the crane/swing stays put.
+  stageH: 364,
+  baseLeft: 245,
+  baseW: 270,
+  visualBaseLeft: 176,
+  visualBaseW: 408,
+  // 24 == .block-base-line height with bottom:0, so physics platform top
+  // (stageH - baseBottom) stays exactly aligned with the visual floor top
+  // (stageH - 0 - 24). This invariant must hold: baseBottom == floor height.
+  baseBottom: 24,
+  minX: 44,
+  maxX: 660,
+  bonus: 8,
+  shapes: [
+    { w: 150, h: 40, r: 9 },
+    { w: 104, h: 62, r: 9 },
+    { w: 78, h: 82, r: 8 }
+  ]
+};
+const RHYTHM_LANE = {
+  startX: 830,
+  hitX: 126,
+  endX: 34,
+  leadMs: 2050,
+  exitMs: 780
+};
+const NOTE_FREQUENCIES = {
+  C4: 261.63,
+  D4: 293.66,
+  E4: 329.63,
+  F4: 349.23,
+  G4: 392.00,
+  A4: 440.00,
+  B4: 493.88,
+  C5: 523.25,
+  D5: 587.33,
+  E5: 659.25
+};
+// Audio-time-based rhythm chart.
+// `notes[i].time` is ABSOLUTE seconds from audio start.
+// `type` drives both the visual color (don=red, ka=blue) and the drum sample
+// (don.mp3 / ka.mp3) on a perfect hit.
+// `rounds` is kept for backward compatibility with code that pages through rounds,
+// but for the audio-driven flow there is ONE round = ONE song play-through.
+const RHYTHM_SONGS = {
+  bell: {
+    id: 'kokoro_ni_poppoppo',
+    title: 'こころに ぽっぽっぽ',
+    audio: 'こころにぽっぽっぽ.mp3',
+    startOffset: 0,
+    endOffset: 40,
+    // ~110 BPM child-song feel (0.545s/beat). One don on each measure downbeat
+    // (every ~2.18s) + beat 3 of the bar. A ka on the off-beat-of-bar 2 every two bars
+    // for color. Density: ~1 hit per 1-2s, ~25 notes total across 40s.
+    // First note at 1.8s gives a clean intro. Last at ~38s leaves a clean ending.
+    notes: [
+      { time: 1.80, type: 'don' },
+      { time: 2.90, type: 'don' },
+      { time: 3.45, type: 'ka' },
+      { time: 4.00, type: 'don' },
+      { time: 5.10, type: 'don' },
+      { time: 6.20, type: 'don' },
+      { time: 6.75, type: 'ka' },
+      { time: 7.30, type: 'don' },
+      { time: 8.40, type: 'don' },
+      { time: 9.50, type: 'don' },
+      { time: 10.60, type: 'don' },
+      { time: 11.15, type: 'ka' },
+      { time: 11.70, type: 'don' },
+      { time: 12.80, type: 'don' },
+      { time: 14.00, type: 'don' },
+      { time: 15.10, type: 'don' },
+      { time: 15.65, type: 'ka' },
+      { time: 16.20, type: 'don' },
+      { time: 17.30, type: 'don' },
+      { time: 18.40, type: 'don' },
+      { time: 19.50, type: 'don' },
+      { time: 20.60, type: 'don' },
+      { time: 21.70, type: 'don' },
+      { time: 22.25, type: 'ka' },
+      { time: 22.80, type: 'don' },
+      { time: 23.90, type: 'don' },
+      { time: 25.00, type: 'don' },
+      { time: 26.10, type: 'don' },
+      { time: 26.65, type: 'ka' },
+      { time: 27.20, type: 'don' },
+      { time: 28.30, type: 'don' },
+      { time: 29.40, type: 'don' },
+      { time: 30.50, type: 'don' },
+      { time: 31.60, type: 'don' },
+      { time: 32.15, type: 'ka' },
+      { time: 32.70, type: 'don' },
+      { time: 33.80, type: 'don' },
+      { time: 35.00, type: 'don' },
+      { time: 36.20, type: 'don' },
+      { time: 37.30, type: 'ka' },
+      { time: 38.00, type: 'don' }
+    ],
+    // Legacy compatibility: code that expects `rounds[]` still works. The runtime
+    // builds the chart from `notes` directly (see getRhythmTapNotes).
+    rounds: [
+      { label: 'こころに ぽっぽっぽ' }
+    ]
+  }
+};
+const TOY_CONFIGS = {
+  ball: {
+    mode: 'roll',
+    title: 'ころころボール',
+    label: 'ボール',
+    icon: '●',
+    subSign: 'むきをきめて、ちからでころがそう！',
+    launchLabel: 'ここから<br>ころころ',
+    guideVerb: 'ころがそう',
+    movingText: 'ころころ...',
+    resultTitle: 'ころころ できたね！',
+    steps: ['むき', 'ちから', 'とりにいく'],
+    rewardHint: 'むきをきめて<br>ちからで とどけよう<br>5こで1セット',
+    actionText: 'あそびなおす',
+    meterLabel: 'ちから',
+    sideHelp: 'ひっぱって むきをきめよう。\nちからを止めてころがすよ。\n星の近くにいくとミルマルがとりにいくよ。'
+  },
+  rattle: {
+    mode: 'rhythm',
+    title: 'たいこリズム',
+    label: 'たいこ',
+    icon: '♪',
+    subSign: 'きょくに あわせて たたこう！',
+    launchLabel: 'ここから<br>トントン',
+    guideVerb: 'たたこう',
+    movingText: 'ドンドン...',
+    resultTitle: 'たいこで あそべたね！',
+    steps: ['はじめる', '音符でドン', '5回リズム'],
+    rewardHint: '音をきいて<br>音符が丸にきたら<br>ドン！',
+    actionText: 'ドン！',
+    meterLabel: 'リズム',
+    goodMin: 0.36,
+    goodMax: 0.64,
+    meterSpeed: 0.58,
+    song: 'bell',
+    hitWindowMs: 150,
+    passWindowMs: 220,
+    passRatio: 0.5,
+    hitBurst: 'ドンドン！',
+    missBurst: 'おしい',
+    completeGuide: 'たいこを ならしたよ！',
+    sideHelp: 'はじめるを おすよ。\n曲をきいて ドン！\n5つのフレーズであそぶよ。'
+  },
+  blocks: {
+    mode: 'stack',
+    title: 'つみきあそび',
+    label: 'つみき',
+    icon: '□',
+    subSign: 'つみきを まんなかに のせよう！',
+    launchLabel: 'ここから<br>ころり',
+    guideVerb: 'ころがそう',
+    movingText: 'ころり...',
+    resultTitle: 'つみきで あそべたね！',
+    steps: ['まんなか', 'のせる', 'つみあげ'],
+    rewardHint: 'まんなかで<br>つみきを おこう<br>5こで1セット',
+    actionText: 'ここに おく！',
+    meterLabel: 'ばしょ',
+    goodMin: 0.42,
+    goodMax: 0.58,
+    meterSpeed: 0.74,
+    hitBurst: 'のった！',
+    missBurst: 'ゆらり',
+    completeGuide: 'つみきを つめたよ！',
+    sideHelp: '上でゆれるつみきを落とそう。\n土台のまんなかをねらうよ。\nはしっこはぐらぐらするよ。'
+  },
+  book: {
+    mode: 'page',
+    title: 'えほんタイム',
+    label: 'えほん',
+    icon: '本',
+    subSign: 'ひかる すみで ページを めくろう！',
+    launchLabel: 'ここから<br>すいー',
+    guideVerb: 'とどけよう',
+    movingText: 'すいー...',
+    resultTitle: 'えほんで あそべたね！',
+    steps: ['みる', 'めくる', 'よろこぶ'],
+    rewardHint: 'ひかるすみで<br>ページを めくろう<br>5ページで1セット',
+    actionText: 'めくる！',
+    meterLabel: 'ページ',
+    goodMin: 0.34,
+    goodMax: 0.62,
+    meterSpeed: 0.5,
+    hitBurst: 'ぺらり！',
+    missBurst: 'もういちど',
+    completeGuide: 'えほんを めくったよ！',
+    sideHelp: 'ページのすみが光ったらタップ。\nゆっくりめくって、\nミルマルに絵本を見せよう。'
+  }
+};
+
+const defaultState = {
+  name: 'ミルマル',
+  named: false,
+  nakayoshi: 0,
+  gokigen: 78,
+  sukusuku: 0,
+  eggWarmth: 0,
+  hatched: false,
+  stars: 0,
+  inventory: {
+    moji_milk: { id: 'moji_milk', name: 'もじミルク', count: 0, type: 'food' },
+    moji_gohan: { id: 'moji_gohan', name: 'もじごはん', count: 0, type: 'food' },
+    moji_cookie: { id: 'moji_cookie', name: 'もじクッキー', count: 0, type: 'food' }
+  },
+  foodSystemVersion: FOOD_SYSTEM_VERSION,
+  feedingDay: createFeedingDay(),
+  reaction: 'normal',
+  speech: 'いっしょに もじを かこう！',
+  lastStageId: 'egg',
+  lastPetAt: 0,
+  lastWarmAt: 0,
+  lastMoodAt: Date.now(),
+  lastCareAt: Date.now()
+};
+
+let state = loadState();
+let audioCtx = null;
+let playedThisRound = false;
+let isAiming = false;
+let gameComplete = false;
+let resultApplied = false;
+let currentRound = 1;
+let catches = 0;
+let lastSetHits = 0;
+let shotResults = [];
+let fieldStars = [];
+let milmaruPosition = { x: 690, y: 246 };
+let currentAim = null;
+let lockedAim = null;
+let controlPhase = 'aim';
+let selectedToyId = 'ball';
+let powerValue = 0;
+let powerDirection = 1;
+let powerFrame = null;
+let lastPowerFrameAt = 0;
+let toyStackCount = 0;
+let lastToyFeedback = '';
+let rhythmProgress = 0;
+let rhythmCuePlayed = false;
+let rhythmCueMarks = [];
+let rhythmNoteResults = [];
+let rhythmLastHitIndex = -1;
+let rhythmMeasureHits = 0;
+let rhythmPaused = false;
+let rhythmPauseStartedAt = 0;
+let rhythmBgmTimer = null;
+let rhythmBgmLastBeat = -1;
+let rhythmSongTimers = [];
+let miniRoundStartedAt = 0;
+// Rhythm v2: MP3-backed taiko. Backing track is an HTMLAudioElement and is the
+// single authoritative clock for visuals + hit detection. Drum samples are
+// pre-decoded AudioBuffers played via Web Audio (low latency, polyphonic).
+let rhythmAudio = null;
+let rhythmAudioStartedAt = 0; // performance.now() when audio.play() resolved (used as paused-fallback clock)
+let rhythmAudioPausedAt = 0;  // currentTime captured when pausing
+const drumBuffers = { don: null, ka: null };
+let drumPreloadPromise = null;
+let stackSwingX = 144;
+let stackBlocks = [];
+let currentStackShape = MINI_STACK.shapes[0];
+let rattleCountdownDone = false;
+let rattleCountdownValue = '';
+let rattleCountdownTimers = [];
+let stackDroppingBlock = null;
+let stackWobbleActive = false;
+let stackCollapseActive = false;
+let stackMatter = null;
+let stackEngine = null;
+let stackPhysicsFrame = null;
+let stackPhysicsStartedAt = 0;
+let stackSettleStartedAt = 0;
+let stackLastPhysicsAt = 0;
+let stackPreDropTarget = null;
+let stackPreDropSnapshot = [];
+let animationFrame = null;
+let roamTimer = null;
+let isMilmaruBusy = false;
+
+const stageEl = document.getElementById('stage');
+const ball = document.getElementById('ball');
+const playfield = document.getElementById('playfield');
+const launchPad = document.getElementById('launchPad');
+const aimLine = document.getElementById('aimLine');
+const guideText = document.getElementById('guideText');
+const messageBar = document.getElementById('messageBar');
+const milmaru = document.getElementById('milmaru');
+const milmaruSpeech = document.getElementById('milmaruSpeech');
+const resultModal = document.getElementById('resultModal');
+const resultTitle = document.getElementById('resultTitle');
+const resultText = document.getElementById('resultText');
+const sparkLayer = document.getElementById('sparkLayer');
+const targetRing = document.getElementById('targetRing');
+const roundCounter = document.getElementById('roundCounter');
+const powerMeter = document.getElementById('powerMeter');
+const powerMeterLabel = powerMeter.querySelector('span');
+const powerFill = document.getElementById('powerFill');
+const timingMarker = document.getElementById('timingMarker');
+const mainPlayBtn = document.getElementById('playBtn');
+const shotPips = document.getElementById('shotPips');
+const predictionSvg = document.getElementById('predictionSvg');
+const predictionPath = document.getElementById('predictionPath');
+const landingPreview = document.getElementById('landingPreview');
+const landingPreviewText = landingPreview.querySelector('span');
+const goalBurst = document.getElementById('goalBurst');
+const fieldStarsEl = document.getElementById('fieldStars');
+const toyModeBoard = document.getElementById('toyModeBoard');
+const toyHelp = document.getElementById('toyHelp');
+
+function fitStage() {
+  const scale = Math.min(window.innerWidth / 1600, window.innerHeight / 900);
+  const ox = (window.innerWidth - 1600 * scale) / 2;
+  const oy = (window.innerHeight - 900 * scale) / 2;
+  stageEl.style.transform = `translate(${ox}px, ${oy}px) scale(${scale})`;
+}
+
+window.addEventListener('resize', fitStage);
+window.addEventListener('orientationchange', () => setTimeout(fitStage, 100));
+fitStage();
+
+function cloneDefaultState() {
+  return JSON.parse(JSON.stringify(defaultState));
+}
+
+function getLocalDateKey(timestamp = Date.now()) {
+  const date = new Date(timestamp);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function createFeedingDay(timestamp = Date.now(), lastSeenAt = timestamp) {
+  return {
+    localDateKey: getLocalDateKey(timestamp),
+    claimed: {},
+    lastSeenAt: Number.isFinite(lastSeenAt) ? lastSeenAt : timestamp
+  };
+}
+
+function normalizeFeedingDay(value, timestamp = Date.now()) {
+  const todayKey = getLocalDateKey(timestamp);
+  const existingLastSeenAt = Number.isFinite(value && value.lastSeenAt) ? value.lastSeenAt : timestamp;
+  if (!value || value.localDateKey !== todayKey) return createFeedingDay(timestamp, existingLastSeenAt);
+  const rawClaims = value.claimed || {};
+  const claimed = {};
+  ['morning', 'lunch', 'afternoon', 'dinner'].forEach((slotId) => {
+    const claim = rawClaims[slotId];
+    if (claim === true) {
+      claimed[slotId] = true;
+    } else if (claim && typeof claim === 'object') {
+      claimed[slotId] = JSON.parse(JSON.stringify(claim));
+    }
+  });
+  return {
+    localDateKey: todayKey,
+    claimed,
+    lastSeenAt: existingLastSeenAt
+  };
+}
+
+function migrateFoodSystemV2(merged, parsed) {
+  const previousVersion = Number(parsed && parsed.foodSystemVersion) || 0;
+  if (previousVersion < FOOD_SYSTEM_VERSION && merged.hatched && merged.sukusuku >= 38) {
+    merged.inventory.moji_gohan.count = Math.min(99, merged.inventory.moji_gohan.count + 3);
+  }
+  merged.foodSystemVersion = FOOD_SYSTEM_VERSION;
+  merged.feedingDay = normalizeFeedingDay(parsed && parsed.feedingDay);
+}
+
+function sanitizeMilmaruName(value) {
+  const text = String(value || '').trim().replace(/\s+/g, '');
+  return text ? text.slice(0, 8) : 'ミルマル';
+}
+
+function loadState() {
+  try {
+    const saved = localStorage.getItem(CARE_STATE_KEY);
+    if (!saved) return cloneDefaultState();
+    const parsed = JSON.parse(saved);
+    const merged = cloneDefaultState();
+    merged.name = sanitizeMilmaruName(parsed.name || merged.name);
+    merged.named = parsed.named === true;
+    merged.nakayoshi = Number.isFinite(parsed.nakayoshi) ? parsed.nakayoshi : merged.nakayoshi;
+    merged.gokigen = Number.isFinite(parsed.gokigen) ? parsed.gokigen : merged.gokigen;
+    merged.sukusuku = Number.isFinite(parsed.sukusuku) ? parsed.sukusuku : merged.sukusuku;
+    merged.eggWarmth = Number.isFinite(parsed.eggWarmth) ? parsed.eggWarmth : merged.eggWarmth;
+    merged.hatched = parsed.hatched === true;
+    merged.stars = Number.isFinite(parsed.stars) ? parsed.stars : merged.stars;
+    if (!merged.hatched && merged.eggWarmth === 0 && merged.stars >= 1000) {
+      merged.stars = 0;
+    }
+    merged.speech = parsed.speech || merged.speech;
+    merged.reaction = parsed.reaction || merged.reaction;
+    merged.lastStageId = parsed.lastStageId || merged.lastStageId;
+    merged.lastCareAt = Number.isFinite(parsed.lastCareAt) ? parsed.lastCareAt : Date.now();
+    merged.lastMoodAt = Number.isFinite(parsed.lastMoodAt) ? parsed.lastMoodAt : merged.lastCareAt;
+    if (parsed.inventory) {
+      Object.keys(merged.inventory).forEach((id) => {
+        if (parsed.inventory[id]) merged.inventory[id].count = Math.max(0, Number(parsed.inventory[id].count) || 0);
+      });
+    }
+    migrateFoodSystemV2(merged, parsed);
+    return merged;
+  } catch (error) {
+    console.warn('Could not load care state:', error);
+    return cloneDefaultState();
+  }
+}
+
+function saveState() {
+  try {
+    state.foodSystemVersion = FOOD_SYSTEM_VERSION;
+    state.feedingDay = normalizeFeedingDay(state.feedingDay);
+    localStorage.setItem(CARE_STATE_KEY, JSON.stringify(state));
+  } catch (error) {
+    console.warn('Could not save care state:', error);
+  }
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
+}
+
+function getInventoryCount(id) {
+  return Math.max(0, Number(state.inventory[id]?.count) || 0);
+}
+
+function changeInventory(id, delta) {
+  if (!state.inventory[id]) return 0;
+  state.inventory[id].count = clamp(getInventoryCount(id) + delta, 0, 99);
+  return state.inventory[id].count;
+}
+
+function hasStars(cost = 1) {
+  return (Number(state.stars) || 0) >= cost;
+}
+
+function getCareStageId() {
+  if (!state.hatched) return 'egg';
+  if (state.sukusuku < 25) return 'baby';
+  if (state.sukusuku < 50) return 'yochiyochi';
+  if (state.sukusuku < 80) return 'kids';
+  return 'pre_evolution';
+}
+
+function getBabySpeech(text) {
+  const raw = String(text || '');
+  if (/キャッチ|やった|たのし|あそ/.test(raw)) return 'きゃっきゃ！';
+  if (/たりない|ない/.test(raw)) return 'ふぇ...？';
+  return 'みゅっ♪';
+}
+
+function getYochiyochiSpeech(text) {
+  const raw = String(text || '');
+  if (/キャッチ|やった|たのし|あそ/.test(raw)) return 'あしょぼ！';
+  if (/たりない|ない/.test(raw)) return 'なぁい...？';
+  return 'みゅっ♪';
+}
+
+function getStageSpeech(text) {
+  const stage = getCareStageId();
+  if (stage === 'baby') return getBabySpeech(text);
+  if (stage === 'yochiyochi') return getYochiyochiSpeech(text);
+  return text;
+}
+
+function getAudioContext() {
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return null;
+  if (!audioCtx) audioCtx = new AudioContextClass();
+  if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+  return audioCtx;
+}
+
+function playTone(frequency, duration = 0.06, type = 'square', volume = 0.035, delay = 0) {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  const start = ctx.currentTime + delay;
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = type;
+  osc.frequency.setValueAtTime(frequency, start);
+  gain.gain.setValueAtTime(0.0001, start);
+  gain.gain.exponentialRampToValueAtTime(volume, start + 0.012);
+  gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(start);
+  osc.stop(start + duration + 0.03);
+}
+
+function getNoteFrequency(noteName) {
+  return NOTE_FREQUENCIES[noteName] || NOTE_FREQUENCIES.A4;
+}
+
+function preloadDrumSamples() {
+  if (drumPreloadPromise) return drumPreloadPromise;
+  const ctx = getAudioContext();
+  if (!ctx) return Promise.resolve(false);
+  drumPreloadPromise = (async () => {
+    try {
+      const [donRes, kaRes] = await Promise.all([
+        fetch('../assets/audio/sfx/quiz/don.mp3').then((r) => {
+          if (!r.ok) throw new Error('don fetch ' + r.status);
+          return r.arrayBuffer();
+        }),
+        fetch('../assets/audio/sfx/quiz/ka.mp3').then((r) => {
+          if (!r.ok) throw new Error('ka fetch ' + r.status);
+          return r.arrayBuffer();
+        })
+      ]);
+      const [donBuf, kaBuf] = await Promise.all([
+        ctx.decodeAudioData(donRes.slice(0)),
+        ctx.decodeAudioData(kaRes.slice(0))
+      ]);
+      drumBuffers.don = donBuf;
+      drumBuffers.ka = kaBuf;
+      return true;
+    } catch (err) {
+      console.warn('Drum sample preload failed; falling back to synth.', err);
+      drumPreloadPromise = null; // allow retry
+      return false;
+    }
+  })();
+  return drumPreloadPromise;
+}
+
+function playSampleBuffer(buffer, volume = 0.85) {
+  const ctx = getAudioContext();
+  if (!ctx || !buffer) return false;
+  try {
+    const src = ctx.createBufferSource();
+    src.buffer = buffer;
+    const gain = ctx.createGain();
+    gain.gain.value = volume;
+    src.connect(gain);
+    gain.connect(ctx.destination);
+    src.start();
+    return true;
+  } catch (_) {
+    return false;
+  }
+}
+
+function playDonSynth() {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  try {
+    const start = ctx.currentTime;
+    // Body: sine with pitch drop 80Hz -> 50Hz over 0.06s
+    const osc = ctx.createOscillator();
+    const oscGain = ctx.createGain();
+    const lpf = ctx.createBiquadFilter();
+    lpf.type = 'lowpass';
+    lpf.frequency.setValueAtTime(220, start);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(80, start);
+    osc.frequency.exponentialRampToValueAtTime(50, start + 0.06);
+    oscGain.gain.setValueAtTime(0.0001, start);
+    oscGain.gain.exponentialRampToValueAtTime(0.55, start + 0.012);
+    oscGain.gain.exponentialRampToValueAtTime(0.0001, start + 0.16);
+    osc.connect(lpf);
+    lpf.connect(oscGain);
+    oscGain.connect(ctx.destination);
+    osc.start(start);
+    osc.stop(start + 0.2);
+    const click = ctx.createOscillator();
+    const clickGain = ctx.createGain();
+    click.type = 'triangle';
+    click.frequency.setValueAtTime(200, start);
+    clickGain.gain.setValueAtTime(0.0001, start);
+    clickGain.gain.exponentialRampToValueAtTime(0.18, start + 0.005);
+    clickGain.gain.exponentialRampToValueAtTime(0.0001, start + 0.05);
+    click.connect(clickGain);
+    clickGain.connect(ctx.destination);
+    click.start(start);
+    click.stop(start + 0.08);
+  } catch (_) {}
+}
+
+function playKaSynth() {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  try {
+    const start = ctx.currentTime;
+    const bufferSize = Math.floor(ctx.sampleRate * 0.12);
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+    const bpf = ctx.createBiquadFilter();
+    bpf.type = 'bandpass';
+    bpf.frequency.setValueAtTime(1700, start);
+    bpf.Q.setValueAtTime(2.2, start);
+    const noiseGain = ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.0001, start);
+    noiseGain.gain.exponentialRampToValueAtTime(0.4, start + 0.006);
+    noiseGain.gain.exponentialRampToValueAtTime(0.0001, start + 0.08);
+    noise.connect(bpf);
+    bpf.connect(noiseGain);
+    noiseGain.connect(ctx.destination);
+    noise.start(start);
+    noise.stop(start + 0.1);
+    const click = ctx.createOscillator();
+    const clickGain = ctx.createGain();
+    click.type = 'square';
+    click.frequency.setValueAtTime(600, start);
+    click.frequency.exponentialRampToValueAtTime(400, start + 0.05);
+    clickGain.gain.setValueAtTime(0.0001, start);
+    clickGain.gain.exponentialRampToValueAtTime(0.12, start + 0.005);
+    clickGain.gain.exponentialRampToValueAtTime(0.0001, start + 0.06);
+    click.connect(clickGain);
+    clickGain.connect(ctx.destination);
+    click.start(start);
+    click.stop(start + 0.08);
+  } catch (_) {}
+}
+
+function playDon(volume = 0.95) {
+  // Sample-backed when available; synth fallback otherwise.
+  // Kick a preload as a side effect for the next tap.
+  if (drumBuffers.don) {
+    if (playSampleBuffer(drumBuffers.don, volume)) return;
+  } else {
+    preloadDrumSamples();
+  }
+  playDonSynth();
+}
+
+function playKa(volume = 0.9) {
+  if (drumBuffers.ka) {
+    if (playSampleBuffer(drumBuffers.ka, volume)) return;
+  } else {
+    preloadDrumSamples();
+  }
+  playKaSynth();
+}
+
+function playSfx(kind) {
+  try {
+    if (kind === 'roll') {
+      [430, 470, 520].forEach((freq, i) => playTone(freq, 0.045, 'triangle', 0.024, i * 0.055));
+      return;
+    }
+    if (kind === 'success') {
+      [620, 780, 980].forEach((freq, i) => playTone(freq, 0.07, 'square', 0.03, i * 0.06));
+      return;
+    }
+    if (kind === 'drum') {
+      playTone(118, 0.13, 'sine', 0.115);
+      playTone(92, 0.15, 'sine', 0.086, 0.08);
+      playTone(180, 0.055, 'triangle', 0.042);
+      playTone(150, 0.055, 'triangle', 0.032, 0.08);
+      return;
+    }
+    if (kind === 'drumCue') {
+      playTone(128, 0.085, 'sine', 0.076);
+      playTone(190, 0.045, 'triangle', 0.028);
+      return;
+    }
+    if (kind === 'wood') {
+      playTone(310, 0.045, 'triangle', 0.032);
+      playTone(190, 0.06, 'triangle', 0.026, 0.045);
+      return;
+    }
+    if (kind === 'fall') {
+      [520, 430, 340].forEach((freq, i) => playTone(freq, 0.04, 'triangle', 0.022, i * 0.045));
+      return;
+    }
+    if (kind === 'mistake') {
+      playTone(220, 0.075, 'triangle', 0.024);
+      return;
+    }
+    playTone(560, 0.045, 'square', 0.026);
+  } catch (_) {}
+}
+
+function stopRhythmBgm() {
+  // Legacy Web-Audio timers (no longer scheduled but cleared defensively).
+  clearTimeout(rhythmBgmTimer);
+  rhythmBgmTimer = null;
+  rhythmBgmLastBeat = -1;
+  rhythmSongTimers.forEach((timer) => clearTimeout(timer));
+  rhythmSongTimers = [];
+  // Stop the MP3 backing track.
+  if (rhythmAudio) {
+    try { rhythmAudio.pause(); } catch (_) {}
+    try { rhythmAudio.currentTime = 0; } catch (_) {}
+    rhythmAudio.onended = null;
+    rhythmAudio = null;
+  }
+  rhythmAudioStartedAt = 0;
+  rhythmAudioPausedAt = 0;
+}
+
+function startRhythmBgm() {
+  const config = getToyConfig();
+  if (config.mode !== 'rhythm' || controlPhase !== 'toy' || rhythmPaused) return;
+  const song = getRhythmSong(config);
+  if (!song || !song.audio) return;
+  // Tear down any previous instance.
+  if (rhythmAudio) {
+    try { rhythmAudio.pause(); } catch (_) {}
+    rhythmAudio.onended = null;
+    rhythmAudio = null;
+  }
+  const audio = new Audio('../assets/audio/' + encodeURIComponent(song.audio));
+  audio.preload = 'auto';
+  audio.volume = 0.6;
+  audio.crossOrigin = 'anonymous';
+  if (typeof song.startOffset === 'number' && song.startOffset > 0) {
+    try { audio.currentTime = song.startOffset; } catch (_) {}
+  }
+  audio.onended = () => {
+    if (rhythmAudio === audio) rhythmAudio = null;
+  };
+  rhythmAudio = audio;
+  rhythmAudioStartedAt = performance.now();
+  rhythmAudioPausedAt = 0;
+  const playPromise = audio.play();
+  if (playPromise && typeof playPromise.catch === 'function') {
+    playPromise.catch((err) => {
+      console.warn('Rhythm BGM playback failed:', err);
+      // Keep rhythmAudioStartedAt so getRhythmAudioTime() falls back to the
+      // performance.now() clock and the round still progresses + ends normally
+      // even when autoplay is blocked or the file fails to decode.
+      if (rhythmAudio === audio) {
+        try { audio.pause(); } catch (_) {}
+        audio.onended = null;
+        rhythmAudio = null;
+      }
+    });
+  }
+}
+
+function pauseRhythmBgm() {
+  if (!rhythmAudio) return;
+  try {
+    rhythmAudioPausedAt = rhythmAudio.currentTime;
+    rhythmAudio.pause();
+  } catch (_) {}
+}
+
+function resumeRhythmBgm() {
+  if (!rhythmAudio) {
+    startRhythmBgm();
+    return;
+  }
+  try {
+    // No explicit seek: the browser preserves currentTime across pause/play.
+    // Seeking before play() on a slow/unbuffered stream can reset currentTime
+    // to 0 (readyState < HAVE_ENOUGH_DATA), restarting the song.
+    const p = rhythmAudio.play();
+    if (p && typeof p.catch === 'function') p.catch(() => {});
+  } catch (_) {}
+  rhythmAudioPausedAt = 0;
+}
+
+function getRhythmAudioTime() {
+  // SINGLE AUTHORITATIVE CLOCK for visual scroll + hit detection.
+  // Returns seconds since song-start. If the <audio> element is missing or
+  // unusable (autoplay blocked, decode error, mobile WebView), fall back to
+  // the performance.now() clock seeded at startRhythmBgm() so the chart still
+  // advances and the round can end on schedule.
+  const song = getRhythmSong(getToyConfig());
+  const startOffset = song && Number.isFinite(song.startOffset) ? song.startOffset : 0;
+  const fallback = () => {
+    if (!rhythmAudioStartedAt) return 0;
+    return startOffset + Math.max(0, (performance.now() - rhythmAudioStartedAt) / 1000);
+  };
+  if (!rhythmAudio) return fallback();
+  try {
+    const t = rhythmAudio.currentTime;
+    if (!Number.isFinite(t) || t <= 0) return fallback();
+    return t;
+  } catch (_) {
+    return fallback();
+  }
+}
+
+function getStackSurfaceY() {
+  return MINI_STACK.stageH - MINI_STACK.baseBottom;
+}
+
+function getStackPlatformLeft() {
+  return Number.isFinite(MINI_STACK.visualBaseLeft) ? MINI_STACK.visualBaseLeft : MINI_STACK.baseLeft;
+}
+
+function getStackPlatformWidth() {
+  return Number.isFinite(MINI_STACK.visualBaseW) ? MINI_STACK.visualBaseW : MINI_STACK.baseW;
+}
+
+function getStackTargetSurfaceY(target = getStackTarget()) {
+  return MINI_STACK.stageH - (target.surfaceBottom ?? target.bottom ?? MINI_STACK.baseBottom);
+}
+
+function getStackFlatTilt(angle = 0) {
+  const normalized = Math.atan2(Math.sin(angle), Math.cos(angle));
+  const abs = Math.abs(normalized);
+  return Math.min(abs, Math.abs(Math.PI - abs));
+}
+
+function stopStackPhysicsLoop() {
+  cancelAnimationFrame(stackPhysicsFrame);
+  stackPhysicsFrame = null;
+  stackLastPhysicsAt = 0;
+  stackSettleStartedAt = 0;
+}
+
+function createStackPhysicsWorld(resetBlocks = true) {
+  stopStackPhysicsLoop();
+  stackMatter = window.Matter || null;
+  stackEngine = null;
+  if (resetBlocks) stackBlocks = [];
+  if (!stackMatter) return false;
+
+  const { Engine, Bodies, World } = stackMatter;
+  stackEngine = Engine.create({ enableSleeping: true, gravity: { y: 1.0 } });
+  // Higher than Matter defaults (6/4/2) because the mini-stack drives the engine via
+  // requestAnimationFrame with variable delta instead of Runner.run's fixed step.
+  // velocityIterations bumped 8->12: edge-of-block hits need extra solver passes
+  // so a glancing contact resolves cleanly instead of being skipped, letting the
+  // new drop slip past the top block.
+  stackEngine.positionIterations = 10;
+  stackEngine.velocityIterations = 12;
+  stackEngine.constraintIterations = 4;
+  const platformTop = getStackSurfaceY();
+  const platformLeft = getStackPlatformLeft();
+  const platformW = getStackPlatformWidth();
+  const platform = Bodies.rectangle(
+    platformLeft + platformW / 2,
+    platformTop + 12,
+    platformW,
+    24,
+    { isStatic: true, label: 'stack-platform', friction: 1.2, render: { visible: false } }
+  );
+  const wallL = Bodies.rectangle(-25, MINI_STACK.stageH / 2, 50, MINI_STACK.stageH * 3, {
+    isStatic: true,
+    label: 'stack-wall',
+    render: { visible: false }
+  });
+  const wallR = Bodies.rectangle(MINI_STACK.stageW + 25, MINI_STACK.stageH / 2, 50, MINI_STACK.stageH * 3, {
+    isStatic: true,
+    label: 'stack-wall',
+    render: { visible: false }
+  });
+  World.add(stackEngine.world, [platform, wallL, wallR]);
+  return true;
+}
+
+function ensureStackPhysicsWorld() {
+  if (stackEngine && stackMatter) return true;
+  return createStackPhysicsWorld(false);
+}
+
+function createStackPhysicsBody(shape, centerX, centerY) {
+  if (!ensureStackPhysicsWorld()) return null;
+  const { Bodies } = stackMatter;
+  return Bodies.rectangle(centerX, centerY, shape.w, shape.h, {
+    restitution: 0.02,
+    friction: 1.4,
+    frictionStatic: 2.5,
+    frictionAir: 0.06,
+    label: 'mojikko-stack-block',
+    render: { visible: false }
+  });
+}
+
+function getStackBlockLeft(block) {
+  return block.body ? block.body.position.x - block.w / 2 : block.x;
+}
+
+function getStackBlockTop(block) {
+  return block.body ? block.body.position.y - block.h / 2 : MINI_STACK.stageH - (block.bottom || MINI_STACK.baseBottom) - block.h;
+}
+
+function takeStackSnapshot(block) {
+  return {
+    w: block.w,
+    h: block.h,
+    r: block.r,
+    round: block.round,
+    offset: block.offset || 0,
+    x: getStackBlockLeft(block),
+    y: getStackBlockTop(block),
+    angle: block.body ? block.body.angle : 0
+  };
+}
+
+function restoreStackSnapshot(snapshot) {
+  createStackPhysicsWorld(true);
+  if (!stackEngine || !stackMatter) {
+    stackBlocks = snapshot.map((block) => ({ ...block, x: block.x, body: null }));
+    return;
+  }
+  const { Body, World, Sleeping } = stackMatter;
+  // The TOP restored block must stay awake — see stabilizeStackPhysicsBodies
+  // for why (broad-phase pairing skips sleeping bodies on glancing edge hits).
+  const topIndex = snapshot.length - 1;
+  stackBlocks = snapshot.map((block, index) => {
+    const body = createStackPhysicsBody(block, block.x + block.w / 2, block.y + block.h / 2);
+    if (body) {
+      Body.setAngle(body, block.angle || 0);
+      Body.setVelocity(body, { x: 0, y: 0 });
+      Body.setAngularVelocity(body, 0);
+      // Keep restored blocks dynamic so subsequent drops can tilt/topple them.
+      // Park them via the sleep system instead of forcing static, except for
+      // the top block which must stay awake to catch edge-of-block drops.
+      if (Sleeping && typeof Sleeping.set === 'function') {
+        Sleeping.set(body, index !== topIndex);
+      }
+      World.add(stackEngine.world, body);
+    }
+    return { ...block, body, offset: block.offset || 0 };
+  });
+  toyStackCount = stackBlocks.length;
+}
+
+function stabilizeStackPhysicsBodies(includeDropping = false) {
+  if (!stackMatter) return;
+  const { Body, Sleeping } = stackMatter;
+  const blocks = includeDropping && stackDroppingBlock
+    ? [...stackBlocks, stackDroppingBlock]
+    : stackBlocks;
+  // The TOP block is the one a new drop will hit; keep it awake so Matter's
+  // broad-phase always pairs it with the falling body. A sleeping body's pair
+  // can be skipped when a fast new body only overlaps it at the edge/corner,
+  // letting the drop slip past unnoticed.
+  const topIndex = blocks.length - 1;
+  blocks.forEach((block, index) => {
+    if (!block.body) return;
+    // Zero residual motion but keep blocks DYNAMIC so a new dropping block can
+    // tilt/topple the existing stack. (Forcing setStatic(true) here turned the
+    // tower into a rigid brick wall.) Allow Matter's sleep system to park the
+    // body cheaply; collisions will wake it automatically.
+    Body.setVelocity(block.body, { x: 0, y: 0 });
+    Body.setAngularVelocity(block.body, 0);
+    if (Sleeping && typeof Sleeping.set === 'function') {
+      // Keep top block awake — broad-phase pairing fails on glancing edge hits
+      // with sleeping bodies, so drops near the corner would tunnel through.
+      Sleeping.set(block.body, index !== topIndex);
+    }
+  });
+}
+
+function removeStackPhysicsBlock(block) {
+  if (!stackMatter || !stackEngine || !block?.body) return;
+  stackMatter.World.remove(stackEngine.world, block.body);
+}
+
+function isStackBodyOut(body) {
+  return !body
+    || body.position.y > MINI_STACK.stageH + 112
+    || body.position.x < -90
+    || body.position.x > MINI_STACK.stageW + 90;
+}
+
+function getStackPhysicsOutcome() {
+  if (!stackDroppingBlock?.body) return getStackDropOutcome(true);
+  const target = stackPreDropTarget || getStackTarget();
+  const body = stackDroppingBlock.body;
+  const shape = stackDroppingBlock;
+  const targetCenter = target.left + target.width / 2;
+  const offset = body.position.x - targetCenter;
+  const allowed = getStackAllowedOffset(target, shape);
+  const edgeRatio = Math.abs(offset) / Math.max(1, allowed);
+  const initialEdgeRatio = Number.isFinite(stackDroppingBlock.initialEdgeRatio)
+    ? stackDroppingBlock.initialEdgeRatio
+    : edgeRatio;
+  const droppedTilt = getStackFlatTilt(body.angle);
+  const allBlocks = [...stackBlocks, stackDroppingBlock].filter((block) => block.body);
+  const maxTilt = allBlocks.reduce((max, block) => Math.max(max, getStackFlatTilt(block.body.angle)), 0);
+  const anyCollapsed = allBlocks.some((block) => isStackBodyOut(block.body) || getStackFlatTilt(block.body.angle) > 0.95);
+  const surfaceY = getStackTargetSurfaceY(target);
+  const bodyBottom = body.bounds.max.y;
+  const surfaceError = bodyBottom - surfaceY;
+  const surfaceTolerance = Math.max(12, Math.min(20, shape.h * 0.28));
+  const restedOnSurface = Math.abs(surfaceError) <= surfaceTolerance;
+  const piercedSurface = surfaceError > surfaceTolerance;
+  const landed = !isStackBodyOut(body) && restedOnSurface;
+  const collapse = anyCollapsed || piercedSurface || droppedTilt > 0.62 || edgeRatio > 1.08 || initialEdgeRatio > 1;
+  const success = stackDroppingBlock.initialDropHit !== false && landed && !collapse;
+  return {
+    physics: true,
+    landed,
+    success,
+    collapse,
+    wobble: success && (initialEdgeRatio > 0.52 || edgeRatio > 0.42 || droppedTilt > 0.12 || maxTilt > 0.15),
+    offset,
+    edgeRatio,
+    initialEdgeRatio,
+    surfaceError
+  };
+}
+
+function startStackPhysicsSettlement() {
+  if (!stackEngine || !stackMatter || !stackDroppingBlock?.body) {
+    finishStackRound(getStackDropOutcome(true));
+    return;
+  }
+  stopStackPhysicsLoop();
+  const { Engine } = stackMatter;
+  stackPhysicsStartedAt = performance.now();
+  const tick = (now) => {
+    if (controlPhase !== 'toy' || getToyConfig().mode !== 'stack' || gameComplete || !stackDroppingBlock) {
+      stopStackPhysicsLoop();
+      return;
+    }
+    // Clamp to a single fixed step (~16.67ms) to mirror Matter.Runner's fixed-timestep
+    // behaviour — variable deltas up to 34ms previously let small blocks tunnel.
+    const delta = stackLastPhysicsAt ? Math.min(now - stackLastPhysicsAt, 16.67) : 16.67;
+    stackLastPhysicsAt = now;
+    Engine.update(stackEngine, delta);
+    renderToyBoard();
+
+    const bodies = [...stackBlocks, stackDroppingBlock].map((block) => block.body).filter(Boolean);
+    const maxMotion = bodies.reduce((max, body) => Math.max(max, body.speed + body.angularSpeed * 24), 0);
+    const elapsed = now - stackPhysicsStartedAt;
+    const droppedOut = isStackBodyOut(stackDroppingBlock.body);
+    if (droppedOut && elapsed > 520) {
+      finishStackRound(getStackPhysicsOutcome());
+      return;
+    }
+    if (elapsed > 520 && maxMotion < 0.18) {
+      if (!stackSettleStartedAt) stackSettleStartedAt = now;
+      if (now - stackSettleStartedAt > 420) {
+        finishStackRound(getStackPhysicsOutcome());
+        return;
+      }
+    } else {
+      stackSettleStartedAt = 0;
+    }
+    if (elapsed > 3100) {
+      finishStackRound(getStackPhysicsOutcome());
+      return;
+    }
+    stackPhysicsFrame = requestAnimationFrame(tick);
+  };
+  stackPhysicsFrame = requestAnimationFrame(tick);
+}
+
+function setBallPosition(x, y) {
+  ball.style.setProperty('--ball-x', `${x}px`);
+  ball.style.setProperty('--ball-y', `${y}px`);
+}
+
+function setBallCenter(x, y) {
+  setBallPosition(x - BALL_SIZE / 2, y - BALL_SIZE / 2);
+}
+
+function updateRoundUi() {
+  roundCounter.textContent = getToyConfig().mode === 'rhythm'
+    ? `リズム ${Math.min(currentRound, TOTAL_ROUNDS)} / ${TOTAL_ROUNDS}`
+    : `${Math.min(currentRound, TOTAL_ROUNDS)} / ${TOTAL_ROUNDS}`;
+  renderShotPips();
+}
+
+function getToyConfig() {
+  return TOY_CONFIGS[selectedToyId] || TOY_CONFIGS.ball;
+}
+
+function isBallGame() {
+  return getToyConfig().mode === 'roll';
+}
+
+function updateToyUi() {
+  const config = getToyConfig();
+  stageEl.dataset.toy = selectedToyId;
+  document.querySelector('.title-board').textContent = config.title;
+  document.querySelector('.sub-sign').textContent = config.subSign;
+  launchPad.innerHTML = config.launchLabel;
+  playfield.dataset.toy = selectedToyId;
+  ball.dataset.toy = selectedToyId;
+  ball.setAttribute('aria-label', config.label);
+  powerMeterLabel.textContent = config.meterLabel || 'ちから';
+  const steps = document.querySelector('.steps');
+  if (steps) {
+    steps.innerHTML = (config.steps || []).map((label, index) =>
+      `<div class="step-card"><span class="step-num">${index + 1}</span><span>${label}</span></div>`
+    ).join('');
+  }
+  const rewardHint = document.querySelector('.reward-hint');
+  if (rewardHint) rewardHint.innerHTML = config.rewardHint || '';
+  if (toyHelp) toyHelp.textContent = config.sideHelp || config.rewardHint?.replace(/<br>/g, '') || '';
+  document.querySelectorAll('.toy-card').forEach((button) => {
+    button.classList.toggle('selected', button.dataset.toy === selectedToyId);
+  });
+}
+
+function resetPowerMeter() {
+  stopPowerMeter();
+  powerFill.style.setProperty('--power', '0%');
+  timingMarker.style.setProperty('--timing', '0%');
+  powerMeter.classList.remove('active');
+  powerValue = 0;
+}
+
+function renderShotPips() {
+  if (!shotPips) return;
+  shotPips.innerHTML = '';
+  for (let i = 1; i <= TOTAL_ROUNDS; i++) {
+    const pip = document.createElement('span');
+    pip.className = 'shot-pip';
+    const result = shotResults[i - 1];
+    if (result === 'hit') pip.classList.add('hit');
+    if (result === 'miss') pip.classList.add('used');
+    shotPips.appendChild(pip);
+  }
+}
+
+function setMilmaruPosition(point, options = {}) {
+  const x = clamp(point.x, MILMARU_FIELD.minX, MILMARU_FIELD.maxX);
+  const y = clamp(point.y, MILMARU_FIELD.minY, MILMARU_FIELD.maxY);
+  if (Number.isFinite(options.duration)) {
+    milmaru.style.setProperty('--milmaru-move-duration', `${Math.max(80, options.duration)}ms`);
+  }
+  if (x !== milmaruPosition.x) {
+    milmaru.style.setProperty('--milmaru-dir', x < milmaruPosition.x ? '-1' : '1');
+  }
+  milmaruPosition = { x, y };
+  milmaru.style.setProperty('--milmaru-x', `${x}px`);
+  milmaru.style.setProperty('--milmaru-y', `${y}px`);
+  if (options.updateSpeech !== false) {
+    positionSpeechToMilmaru();
+  }
+}
+
+function positionSpeechToMilmaru() {
+  milmaruSpeech.style.setProperty('--speech-x', `${milmaruPosition.x + MILMARU_SIZE / 2}px`);
+  milmaruSpeech.style.setProperty('--speech-y', `${Math.max(70, milmaruPosition.y - 8)}px`);
+}
+
+function getMilmaruCenter() {
+  return {
+    x: milmaruPosition.x + MILMARU_SIZE / 2,
+    y: milmaruPosition.y + MILMARU_SIZE / 2
+  };
+}
+
+function renderFieldStars() {
+  fieldStarsEl.innerHTML = '';
+  fieldStars.forEach((star, index) => {
+    const el = document.createElement('div');
+    el.className = 'field-star';
+    el.dataset.starIndex = String(index);
+    el.style.setProperty('--star-x', `${star.x}px`);
+    el.style.setProperty('--star-y', `${star.y}px`);
+    if (star.collected) el.classList.add('collected');
+    fieldStarsEl.appendChild(el);
+  });
+}
+
+function resetFieldStars() {
+  fieldStars = STAR_POINTS.map((star) => ({ ...star, collected: false }));
+  renderFieldStars();
+}
+
+function getRemainingStars() {
+  return fieldStars.filter((star) => !star.collected);
+}
+
+function getPlayfieldPoint(event) {
+  const rect = playfield.getBoundingClientRect();
+  const scale = rect.width / 900;
+  return {
+    x: clamp((event.clientX - rect.left) / scale, 28, 872),
+    y: clamp((event.clientY - rect.top) / scale, 48, 496)
+  };
+}
+
+function getAimDirection(point) {
+  const dx = point.x - LAUNCH_CENTER.x;
+  const dy = point.y - LAUNCH_CENTER.y;
+  const distance = Math.hypot(dx, dy);
+  if (distance < 18) return null;
+  return {
+    x: dx / distance,
+    y: dy / distance,
+    angle: Math.atan2(dy, dx)
+  };
+}
+
+function getDirectionalEnd(direction, rollDistance) {
+  return {
+    x: clamp(LAUNCH_CENTER.x + direction.x * rollDistance, 36, 850),
+    y: clamp(LAUNCH_CENTER.y + direction.y * rollDistance, 64, 470)
+  };
+}
+
+function buildAimPlan(point) {
+  const direction = getAimDirection(point);
+  if (!direction) return null;
+  const end = getDirectionalEnd(direction, MAX_ROLL);
+  return {
+    end,
+    direction,
+    power: 0,
+    routeHits: [],
+    angle: direction.angle,
+    aimingOnly: true
+  };
+}
+
+function buildPowerPlan(power = powerValue) {
+  const direction = lockedAim?.direction || { x: 1, y: 0, angle: 0 };
+  const rollDistance = MIN_ROLL + clamp(power, 0, 1) * (MAX_ROLL - MIN_ROLL);
+  const end = {
+    x: clamp(LAUNCH_CENTER.x + direction.x * rollDistance, 36, 850),
+    y: clamp(LAUNCH_CENTER.y + direction.y * rollDistance, 64, 470)
+  };
+  const routeHits = getStarsOnRoute(getMilmaruCenter(), end);
+  return {
+    end,
+    direction,
+    power,
+    routeHits,
+    angle: direction.angle,
+    aimingOnly: false
+  };
+}
+
+function getSegmentProgress(point, start, end) {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const len2 = dx * dx + dy * dy;
+  if (len2 === 0) return 0;
+  return clamp(((point.x - start.x) * dx + (point.y - start.y) * dy) / len2, 0, 1);
+}
+
+function distanceToSegment(point, start, end) {
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const len2 = dx * dx + dy * dy;
+  if (len2 === 0) return Math.hypot(point.x - start.x, point.y - start.y);
+  const t = clamp(((point.x - start.x) * dx + (point.y - start.y) * dy) / len2, 0, 1);
+  const px = start.x + dx * t;
+  const py = start.y + dy * t;
+  return Math.hypot(point.x - px, point.y - py);
+}
+
+function getStarsOnRoute(start, end) {
+  return fieldStars
+    .map((star, index) => ({ star, index, routeT: getSegmentProgress(star, start, end) }))
+    .filter(({ star }) => !star.collected)
+    .filter(({ star }) =>
+      distanceToSegment(star, start, end) <= STAR_ROUTE_RADIUS ||
+      Math.hypot(star.x - end.x, star.y - end.y) <= STAR_COLLECT_RADIUS
+    )
+    .sort((a, b) => a.routeT - b.routeT);
+}
+
+function hidePrediction() {
+  predictionSvg.classList.remove('show', 'safe');
+  predictionPath.setAttribute('d', '');
+  landingPreview.classList.remove('show', 'safe', 'miss');
+  goalBurst.classList.remove('show', 'miss');
+  targetRing.classList.remove('show', 'goal-hit');
+  document.querySelectorAll('.field-star.highlight').forEach((el) => el.classList.remove('highlight'));
+}
+
+function showAim(plan) {
+  currentAim = plan;
+  const safe = plan.routeHits.length > 0;
+  predictionSvg.classList.toggle('safe', safe);
+  predictionSvg.classList.add('show');
+  predictionPath.setAttribute('d', `M ${LAUNCH_CENTER.x} ${LAUNCH_CENTER.y} L ${plan.end.x} ${plan.end.y}`);
+  aimLine.classList.remove('show');
+  powerFill.style.setProperty('--power', `${Math.round(plan.power * 100)}%`);
+  timingMarker.style.setProperty('--timing', `${Math.round(plan.power * 100)}%`);
+  setLandingPreview(
+    plan.end,
+    plan.aimingOnly ? 'むき' : (safe ? '星へ' : 'ここ'),
+    !plan.aimingOnly && safe ? 'safe' : ''
+  );
+  targetRing.style.setProperty('--target-x', `${plan.end.x}px`);
+  targetRing.style.setProperty('--target-y', `${plan.end.y}px`);
+  targetRing.classList.add('show');
+  document.querySelectorAll('.field-star.highlight').forEach((el) => el.classList.remove('highlight'));
+  plan.routeHits.forEach(({ index }) => {
+    fieldStarsEl.querySelector(`[data-star-index="${index}"]`)?.classList.add('highlight');
+  });
+}
+
+function setLandingPreview(point, label, mode = '') {
+  landingPreview.style.left = `${point.x}px`;
+  landingPreview.style.top = `${point.y}px`;
+  landingPreviewText.textContent = label;
+  landingPreview.classList.remove('safe', 'miss');
+  if (mode) landingPreview.classList.add(mode);
+  landingPreview.classList.add('show');
+}
+
+function showGoalBurst(point, label, isGood = true) {
+  goalBurst.classList.remove('show', 'miss');
+  goalBurst.textContent = label;
+  goalBurst.style.setProperty('--burst-x', `${clamp(point.x, 120, 780)}px`);
+  goalBurst.style.setProperty('--burst-y', `${Math.max(72, point.y - 46)}px`);
+  goalBurst.classList.toggle('miss', !isGood);
+  void goalBurst.offsetWidth;
+  goalBurst.classList.add('show');
+}
+
+function stopPowerMeter() {
+  cancelAnimationFrame(powerFrame);
+  powerFrame = null;
+  lastPowerFrameAt = 0;
+  powerMeter?.classList.remove('active');
+}
+
+function startPowerMeter() {
+  stopPowerMeter();
+  controlPhase = 'power';
+  powerValue = 0.42;
+  powerDirection = 1;
+  powerMeter.classList.add('active');
+  mainPlayBtn.textContent = 'ここで おす！';
+  guideText.textContent = 'ちからを きめよう';
+  messageBar.textContent = 'ゲージを見て、ちょうどいいところで おしてね。';
+  playSfx('button');
+
+  const tick = (now) => {
+    if (controlPhase !== 'power') {
+      stopPowerMeter();
+      return;
+    }
+    if (!lastPowerFrameAt) lastPowerFrameAt = now;
+    const delta = Math.min(0.05, (now - lastPowerFrameAt) / 1000);
+    lastPowerFrameAt = now;
+    powerValue += powerDirection * delta * 0.78;
+    if (powerValue >= 1) {
+      powerValue = 1;
+      powerDirection = -1;
+    } else if (powerValue <= 0) {
+      powerValue = 0;
+      powerDirection = 1;
+    }
+    showAim(buildPowerPlan(powerValue));
+    powerFrame = requestAnimationFrame(tick);
+  };
+  showAim(buildPowerPlan(powerValue));
+  powerFrame = requestAnimationFrame(tick);
+}
+
+function confirmPower() {
+  if (controlPhase !== 'power' || playedThisRound || gameComplete) return;
+  const plan = buildPowerPlan(powerValue);
+  stopPowerMeter();
+  controlPhase = 'rolling';
+  launchBall(plan);
+}
+
+function startMilmaruRoam() {
+  stopMilmaruRoam();
+  if (!state.hatched || isMilmaruBusy || gameComplete) return;
+  const delay = 1800 + Math.random() * 2600;
+  roamTimer = setTimeout(() => {
+    if (isMilmaruBusy || isAiming || controlPhase !== 'aim' || playedThisRound || gameComplete) {
+      startMilmaruRoam();
+      return;
+    }
+    const next = {
+      x: MILMARU_FIELD.minX + Math.random() * (MILMARU_FIELD.maxX - MILMARU_FIELD.minX),
+      y: MILMARU_FIELD.minY + Math.random() * (MILMARU_FIELD.maxY - MILMARU_FIELD.minY)
+    };
+    moveMilmaruTo(next, {
+      speed: 20 + Math.random() * 16,
+      maxDuration: 8200,
+      after: startMilmaruRoam
+    });
+  }, delay);
+}
+
+function stopMilmaruRoam() {
+  clearTimeout(roamTimer);
+  roamTimer = null;
+}
+
+function moveMilmaruTo(point, options = {}) {
+  const target = {
+    x: clamp(point.x - MILMARU_SIZE / 2, MILMARU_FIELD.minX, MILMARU_FIELD.maxX),
+    y: clamp(point.y - MILMARU_SIZE / 2, MILMARU_FIELD.minY, MILMARU_FIELD.maxY)
+  };
+  const distance = Math.hypot(target.x - milmaruPosition.x, target.y - milmaruPosition.y);
+  const duration = clamp((distance / (options.speed || 34)) * 1000, 1200, options.maxDuration || 7000);
+  milmaru.classList.add('crawling');
+  milmaruSpeech.classList.add('hide');
+  setMilmaruPosition(target, { duration, updateSpeech: false });
+  setTimeout(() => {
+    milmaru.classList.remove('crawling');
+    positionSpeechToMilmaru();
+    milmaruSpeech.classList.remove('hide');
+    options.after?.();
+  }, duration + 80);
+  return duration;
+}
+
+function resetRound(options = {}) {
+  if (!isBallGame()) {
+    resetToyMiniGame(options);
+    return;
+  }
+  cancelAnimationFrame(animationFrame);
+  animationFrame = null;
+  stopPowerMeter();
+  isAiming = false;
+  controlPhase = 'aim';
+  currentAim = null;
+  lockedAim = null;
+  playedThisRound = false;
+  isMilmaruBusy = false;
+  ball.classList.remove('dragging', 'rolling');
+  milmaru.classList.remove('catch', 'worried', 'crawling');
+  milmaruSpeech.classList.remove('hide');
+  aimLine.classList.remove('show');
+  hidePrediction();
+  setBallCenter(LAUNCH_CENTER.x, LAUNCH_CENTER.y);
+  ball.style.setProperty('--ball-rotation', '0deg');
+  resetPowerMeter();
+  if (!options.keepModal) {
+    resultModal.classList.remove('show');
+    resultModal.setAttribute('aria-hidden', 'true');
+  }
+  updateToyUi();
+  updateRoundUi();
+  mainPlayBtn.textContent = 'あそびなおす';
+  guideText.textContent = `${currentRound}こめ：むきを きめよう`;
+  messageBar.textContent = `${getToyConfig().label}をひっぱって、まずは むきをきめよう。`;
+  milmaruSpeech.textContent = getStageSpeech('みゅっ♪');
+  startMilmaruRoam();
+}
+
+function getMiniResultText(result, index) {
+  if (result === 'hit') return '○';
+  if (result === 'miss') return '×';
+  return index === currentRound - 1 ? getToyConfig().icon : '';
+}
+
+function renderMiniRoundMarks() {
+  return Array.from({ length: TOTAL_ROUNDS }, (_, index) => {
+    const result = shotResults[index];
+    const className = [
+      'rattle-note',
+      result === 'hit' ? 'hit' : '',
+      result === 'miss' ? 'miss' : '',
+      !result && index === currentRound - 1 ? 'active' : ''
+    ].filter(Boolean).join(' ');
+    return `<span class="${className}">${getMiniResultText(result, index)}</span>`;
+  }).join('');
+}
+
+function getStackShapeForRound(round) {
+  if (round <= 2) return MINI_STACK.shapes[0];
+  if (round <= 4) return MINI_STACK.shapes[(round - 1) % 2];
+  return MINI_STACK.shapes[2];
+}
+
+function getStackHeight() {
+  return stackBlocks
+    .filter((block) => !block.body)
+    .reduce((sum, block) => sum + block.h - 3, 0);
+}
+
+function getStackTarget() {
+  if (!stackBlocks.length) {
+    return {
+      left: MINI_STACK.baseLeft,
+      width: MINI_STACK.baseW,
+      bottom: MINI_STACK.baseBottom,
+      height: 0,
+      surfaceBottom: MINI_STACK.baseBottom
+    };
+  }
+  const physicsTop = stackBlocks
+    .filter((block) => block.body && !isStackBodyOut(block.body))
+    .sort((a, b) => a.body.bounds.min.y - b.body.bounds.min.y)[0];
+  if (physicsTop) {
+    return {
+      left: physicsTop.body.position.x - physicsTop.w / 2,
+      width: physicsTop.w,
+      bottom: MINI_STACK.stageH - physicsTop.body.bounds.min.y,
+      height: 0,
+      surfaceBottom: MINI_STACK.stageH - physicsTop.body.bounds.min.y
+    };
+  }
+  const top = stackBlocks[stackBlocks.length - 1];
+  const surfaceBottom = MINI_STACK.baseBottom + getStackHeight();
+  return {
+    left: top.x,
+    width: top.w,
+    bottom: surfaceBottom - top.h,
+    height: top.h,
+    surfaceBottom
+  };
+}
+
+function isStackDropSuccess() {
+  if (getToyConfig().mode !== 'stack') return false;
+  const target = getStackTarget();
+  const shape = currentStackShape || MINI_STACK.shapes[0];
+  const blockCenter = stackSwingX + shape.w / 2;
+  const targetCenter = target.left + target.width / 2;
+  return Math.abs(blockCenter - targetCenter) <= getStackAllowedOffset(target, shape);
+}
+
+function getStackRequiredOverlap(target, shape) {
+  return Math.min(target.width, shape.w) * 0.68;
+}
+
+function getStackAllowedOffset(target, shape) {
+  const requiredOverlap = getStackRequiredOverlap(target, shape);
+  const overlapAllowed = (target.width + shape.w) / 2 - requiredOverlap;
+  return Math.max(28, overlapAllowed + MINI_STACK.bonus);
+}
+
+function getStackDropOutcome(landed) {
+  if (!landed) return { landed: false, success: false, collapse: false, wobble: false, offset: 0, edgeRatio: 0 };
+  const target = getStackTarget();
+  const shape = currentStackShape || MINI_STACK.shapes[0];
+  const blockCenter = stackSwingX + shape.w / 2;
+  const targetCenter = target.left + target.width / 2;
+  const offset = blockCenter - targetCenter;
+  const allowed = getStackAllowedOffset(target, shape);
+  const edgeRatio = Math.abs(offset) / allowed;
+  const previousLean = stackBlocks.reduce((sum, block) => sum + Math.abs(block.offset || 0) / Math.max(44, block.w * 0.5), 0);
+  const collapse = stackBlocks.length >= 1 && (edgeRatio > 0.88 || (stackBlocks.length >= 2 && previousLean + edgeRatio > 2.05));
+  return {
+    landed: true,
+    success: !collapse,
+    collapse,
+    wobble: edgeRatio > 0.52 || previousLean + edgeRatio > 1.18,
+    offset,
+    edgeRatio
+  };
+}
+
+function getStackDropTop(shape, success) {
+  if (!success) return MINI_STACK.stageH + 18;
+  const target = getStackTarget();
+  const landingBottom = target.bottom;
+  return clamp(MINI_STACK.stageH - landingBottom - shape.h, 52, MINI_STACK.stageH - shape.h - 6);
+}
+
+function getRhythmSong(config = getToyConfig()) {
+  return config.song ? RHYTHM_SONGS[config.song] : null;
+}
+
+function getRhythmRoundData(config = getToyConfig()) {
+  // Backward-compatible round metadata (for UI labels only). All timing now lives
+  // on the song.notes array, not on individual rounds.
+  const song = getRhythmSong(config);
+  if (!song) return { label: '' };
+  if (Array.isArray(song.rounds) && song.rounds.length) {
+    return song.rounds[(Math.max(1, currentRound) - 1) % song.rounds.length] || { label: '' };
+  }
+  return { label: song.title || '' };
+}
+
+function getRhythmActiveDurationMs(config = getToyConfig()) {
+  // Length of the playable window for a round, in ms.
+  const song = getRhythmSong(config);
+  if (!song) return 30000;
+  const start = Number.isFinite(song.startOffset) ? song.startOffset : 0;
+  const end = Number.isFinite(song.endOffset) ? song.endOffset : (start + 30);
+  return Math.max(1000, (end - start) * 1000);
+}
+
+function getRhythmAudioElapsedMs(config = getToyConfig()) {
+  // Audio playhead in ms, relative to the song.startOffset. Used by visuals.
+  const song = getRhythmSong(config);
+  const start = song && Number.isFinite(song.startOffset) ? song.startOffset : 0;
+  return Math.max(0, (getRhythmAudioTime() - start) * 1000);
+}
+
+function buildDrumChart(_round, config = getToyConfig()) {
+  // New schema: the song already IS the chart. Round arg is kept for callers'
+  // signature compatibility but ignored — every round plays the same song-driven chart.
+  const song = getRhythmSong(config);
+  if (!song || !Array.isArray(song.notes)) return [];
+  const start = Number.isFinite(song.startOffset) ? song.startOffset : 0;
+  const end = Number.isFinite(song.endOffset) ? song.endOffset : Infinity;
+  return song.notes
+    .filter((n) => n && Number.isFinite(n.time) && n.time >= start && n.time <= end)
+    .map((n) => ({
+      time: n.time,
+      // beat kept as alias for legacy reads; equals seconds-from-audio-start.
+      beat: n.time,
+      type: n.type === 'ka' ? 'ka' : 'don'
+    }));
+}
+
+function getRhythmTapNotes(config = getToyConfig()) {
+  const chart = buildDrumChart(null, config);
+  return chart.map((drum, index) => ({
+    index,
+    time: drum.time,
+    beat: drum.time, // legacy alias
+    type: drum.type,
+    accent: drum.type === 'don',
+    timeMs: Math.round(drum.time * 1000),
+    label: drum.type === 'don' ? 'ドン' : 'カッ'
+  }));
+}
+
+function getRhythmPattern(config = getToyConfig()) {
+  // Returns array of absolute-time-ms (matches legacy callers).
+  return buildDrumChart(null, config).map((d) => Math.round(d.time * 1000));
+}
+
+function getHittableRhythmNote() {
+  // Returns the index of the nearest unresolved note within the hit window
+  // measured against the audio playhead.
+  const config = getToyConfig();
+  const tNow = getRhythmAudioTime();
+  const hitWindowSec = (config.hitWindowMs || 150) / 1000;
+  const tapNotes = getRhythmTapNotes(config);
+  let best = { index: -1, distance: Infinity };
+  tapNotes.forEach((note, index) => {
+    if (rhythmNoteResults[index]) return;
+    const distance = Math.abs(note.time - tNow);
+    if (distance <= hitWindowSec && distance < best.distance) {
+      best = { index, distance };
+    }
+  });
+  return best.index;
+}
+
+function renderRhythmBeatPips(tapNotes) {
+  const nextIndex = tapNotes.findIndex((_, index) => !rhythmNoteResults[index]);
+  return tapNotes.map((note, index) => {
+    const result = rhythmNoteResults[index];
+    const className = [
+      'taiko-beat-pip',
+      result === 'hit' ? 'hit' : '',
+      result === 'miss' ? 'miss' : '',
+      !result && index === nextIndex ? 'next' : ''
+    ].filter(Boolean).join(' ');
+    return `<span class="${className}">${result === 'hit' ? '○' : result === 'miss' ? '×' : (note.accent ? '★' : index + 1)}</span>`;
+  }).join('');
+}
+
+function getTaikoMotion(config, isCountingDown) {
+  // Audio-time-driven scroll. Pixel speed is computed so the existing CSS lane
+  // geometry (RHYTHM_LANE.startX -> hitX -> endX) maps to ~lead/exit seconds.
+  const tapNotes = getRhythmTapNotes(config);
+  const tNow = controlPhase === 'toy' ? getRhythmAudioTime() : 0;
+  const hitWindowSec = (config.hitWindowMs || 150) / 1000;
+  const previewOnly = controlPhase === 'ready' || isCountingDown;
+  const notes = [];
+  let hitWave = 0;
+  const leadSec = (RHYTHM_LANE.leadMs || 2050) / 1000;
+  const exitSec = (RHYTHM_LANE.exitMs || 780) / 1000;
+  const approachPxPerSec = (RHYTHM_LANE.startX - RHYTHM_LANE.hitX) / Math.max(0.1, leadSec);
+  const exitPxPerSec = (RHYTHM_LANE.hitX - RHYTHM_LANE.endX) / Math.max(0.1, exitSec);
+
+  if (previewOnly) {
+    notes.push({ index: 0, x: RHYTHM_LANE.startX, state: 'preview', active: false, label: 'ドン', accent: true, type: 'don' });
+  } else {
+    tapNotes.forEach((tapNote, index) => {
+      const noteTime = tapNote.time;
+      const result = rhythmNoteResults[index];
+      const delta = tNow - noteTime; // negative = upcoming, positive = past
+      if (result === 'hit' || delta < -leadSec || delta > exitSec) return;
+      const x = delta <= 0
+        ? RHYTHM_LANE.hitX + (-delta) * approachPxPerSec
+        : RHYTHM_LANE.hitX - delta * exitPxPerSec;
+      const proximity = Math.max(0, 1 - Math.abs(delta) / hitWindowSec);
+      if (!result) hitWave = Math.max(hitWave, proximity);
+      notes.push({
+        index,
+        x: clamp(x, RHYTHM_LANE.endX, RHYTHM_LANE.startX),
+        state: result || '',
+        active: proximity > 0.3 && !result,
+        label: tapNote.label || 'ドン',
+        accent: !!tapNote.accent,
+        type: tapNote.type || 'don'
+      });
+    });
+  }
+
+  const hitReady = hitWave > 0.3;
+  const down = hitWave;
+  const idle = previewOnly ? 0 : Math.sin(tNow * Math.PI * 2) * 5;
+  const bachiY = 44 + down * 44 + idle * (1 - down);
+  return {
+    hitReady,
+    hitWave,
+    notes,
+    beatPips: renderRhythmBeatPips(tapNotes),
+    bachiStyle: [
+      `--bachi-y:${bachiY.toFixed(1)}px`,
+      `--bachi-left-angle:${(-25 + down * 16).toFixed(1)}deg`,
+      `--bachi-right-angle:${(25 - down * 16).toFixed(1)}deg`,
+      `--taiko-scale:${(1 + hitWave * 0.04).toFixed(3)}`,
+      `--hit-x:${RHYTHM_LANE.hitX}px`
+    ].join(';')
+  };
+}
+
+function renderStackBlockHtml(block, extraClasses = [], label = block.round || '') {
+  const classes = ['stack-block', ...extraClasses];
+  const style = [
+    `--block-w:${block.w}px`,
+    `--block-h:${block.h}px`,
+    `border-radius:${block.r}px`
+  ];
+  if (block.body) {
+    classes.push('physics');
+    style.push(`--block-x:${(block.body.position.x - block.w / 2).toFixed(1)}px`);
+    style.push(`--block-y:${(block.body.position.y - block.h / 2).toFixed(1)}px`);
+    style.push(`--block-angle:${block.body.angle.toFixed(3)}rad`);
+  } else {
+    style.push(`--block-x:${Math.round(block.x)}px`);
+    style.push(`--block-bottom:${Math.round(block.bottom || MINI_STACK.baseBottom)}px`);
+    if (Number.isFinite(block.dropTo)) style.push(`--drop-to:${Math.round(block.dropTo)}px`);
+  }
+  if (block.offset < 0) {
+    style.push('--collapse-dir:-1');
+  } else {
+    style.push('--collapse-dir:1');
+  }
+  return `<div class="${classes.join(' ')}" style="${style.join('; ')};">${label}</div>`;
+}
+
+function renderToyBoard(feedback = lastToyFeedback) {
+  if (!toyModeBoard) return;
+  if (isBallGame()) {
+    toyModeBoard.innerHTML = '';
+    return;
+  }
+  const config = getToyConfig();
+  const cardState = feedback === 'hit' ? ' is-hit' : feedback === 'miss' ? ' is-miss' : '';
+  const roundText = `${Math.min(currentRound, TOTAL_ROUNDS)} / ${TOTAL_ROUNDS}`;
+  const percent = Math.round(powerValue * 100);
+  const isGood = powerValue >= config.goodMin && powerValue <= config.goodMax;
+
+  if (config.mode === 'rhythm') {
+    const isCountingDown = controlPhase === 'countdown' && rattleCountdownValue;
+    const motion = getTaikoMotion(config, isCountingDown);
+    const hitReady = motion.hitReady;
+    const isReady = controlPhase === 'ready';
+    const readyButton = isReady ? '<button class="taiko-start-button" type="button" data-taiko-start="true">はじめる</button>' : '';
+    const pauseButton = controlPhase === 'toy'
+      ? `<button class="taiko-pause-button" type="button" data-taiko-pause="true">${rhythmPaused ? 'つづける' : 'ポーズ'}</button>`
+      : '';
+    const pauseCover = rhythmPaused ? '<div class="taiko-paused-cover"><div class="taiko-paused-card">おやすみ中</div></div>' : '';
+    const roundData = getRhythmRoundData(config);
+    const song = getRhythmSong(config);
+    const songLabel = song ? `${song.title}：${roundData.label || `${currentRound}回目`}` : `${currentRound}回目`;
+    const noteHtml = motion.notes.map((note) =>
+      `<div class="taiko-note ${note.type === 'ka' ? 'ka' : 'don'} ${note.active ? 'active' : ''} ${note.state === 'miss' ? 'miss' : ''}" style="--note-x:${note.x.toFixed(1)}px">${note.label || 'ドン'}</div>`
+    ).join('');
+    toyModeBoard.innerHTML = `
+      <div class="toy-mode-card rattle-game${cardState}" style="${motion.bachiStyle}">
+        ${isCountingDown ? `<div class="rattle-countdown">${rattleCountdownValue}</div>` : `<div class="rattle-now ${hitReady ? 'active' : ''}">${hitReady ? 'いま！ドン！' : isReady ? 'じゅんびOK' : rhythmPaused ? 'ポーズ中' : '音符をみて'}</div>`}
+        <div class="taiko-toy">
+          <div class="taiko-stand"></div>
+          <div class="taiko-bachi left ${hitReady ? 'active' : ''}"></div>
+          <div class="taiko-bachi right ${hitReady ? 'active' : ''}"></div>
+          <div class="taiko-drum ${hitReady ? 'active' : ''}"></div>
+          <div class="taiko-hit-splash ${hitReady ? 'active' : ''}"></div>
+          <div class="taiko-song-label">${songLabel}</div>
+          <div class="taiko-lane" aria-hidden="true">
+            <div class="taiko-lane-track"></div>
+            <div class="taiko-hit-line ${hitReady ? 'active' : ''}"></div>
+            <div class="taiko-note-tail"></div>
+            ${noteHtml}
+          </div>
+          <div class="taiko-beat-pips">${motion.beatPips}</div>
+        </div>
+        ${readyButton}
+        ${pauseButton}
+        ${pauseCover}
+        <div class="rattle-target">${renderMiniRoundMarks()}</div>
+        <div class="rattle-tap-cue ${hitReady ? 'active' : ''}">${hitReady ? 'ドン！' : isReady ? '音符が丸にきたら ドン！' : rhythmPaused ? 'つづけるを おそう' : 'まるに きたら ドン'}</div>
+      </div>
+    `;
+    return;
+  }
+
+  if (config.mode === 'stack') {
+    const target = getStackTarget();
+    let bottom = MINI_STACK.baseBottom;
+    const placedBlocks = stackBlocks.map((block, index) => {
+      if (!block.body) {
+        block.bottom = bottom;
+        bottom += block.h - 3;
+      }
+      const classes = ['hit'];
+      if (stackCollapseActive && !block.body) classes.push('collapse');
+      return renderStackBlockHtml(block, classes, index + 1);
+    }).join('');
+    const shape = currentStackShape || MINI_STACK.shapes[0];
+    const ghostLeft = Math.round(stackSwingX);
+    const successNow = isStackDropSuccess();
+    const ghost = currentRound <= TOTAL_ROUNDS && !playedThisRound && !stackDroppingBlock
+      ? `<div class="stack-block ghost ${successNow ? 'good' : ''}" style="--block-x:${ghostLeft}px; --block-w:${shape.w}px; --block-h:${shape.h}px; border-radius:${shape.r}px;">${currentRound}</div>`
+      : '';
+    const dropping = stackDroppingBlock
+      ? renderStackBlockHtml(
+          stackDroppingBlock,
+          [
+            // Skip 'falling' when in physics mode: the .stack-block.falling rule
+            // pins top:42px and runs miniBlockDrop keyframes that fight the
+            // physics-driven translate(--block-x, --block-y) and cause the block
+            // to visually pierce the floor. Physics ticks animate via transform.
+            stackDroppingBlock.body ? '' : 'falling',
+            stackDroppingBlock.success === false ? 'miss' : 'hit',
+            stackDroppingBlock.collapse ? 'collapse' : ''
+          ].filter(Boolean),
+          stackDroppingBlock.round
+        )
+      : '';
+    toyModeBoard.innerHTML = `
+      <div class="toy-mode-card block-game${cardState}">
+        <div class="toy-mode-title">ゆれる つみきを おとそう</div>
+        <div class="toy-round-label">${roundText}</div>
+        <div class="block-stack ${stackWobbleActive ? 'wobble' : ''} ${stackCollapseActive ? 'collapse' : ''}">
+          <div class="stack-swing-rail"></div>
+          <div class="block-base-line"></div>
+          ${placedBlocks}
+          ${ghost}
+          ${dropping}
+        </div>
+        <div class="toy-mode-help">タップで おとす</div>
+      </div>
+    `;
+    return;
+  }
+
+  const pages = ['あ', 'い', 'う', 'え', 'お'];
+  const page = pages[Math.min(currentRound - 1, pages.length - 1)];
+  const nextPage = pages[Math.min(currentRound, pages.length - 1)] || '☆';
+  const cornerState = feedback === 'hit' ? ' hit' : feedback === 'miss' ? ' miss' : ' active';
+  toyModeBoard.innerHTML = `
+    <div class="toy-mode-card book-game${cardState}">
+      <div class="toy-mode-title">ページを めくろう</div>
+      <div class="toy-round-label">${roundText}</div>
+      <div class="book-pages">
+        <div class="book-page done">${page}</div>
+        <div class="book-page">${nextPage}</div>
+        <div class="book-corner${cornerState}">↗</div>
+      </div>
+      <div class="toy-mode-help">ひかるときに タップ</div>
+    </div>
+  `;
+}
+
+function clearRattleCountdown() {
+  rattleCountdownTimers.forEach((timer) => clearTimeout(timer));
+  rattleCountdownTimers = [];
+  rattleCountdownValue = '';
+}
+
+function startRattleCountdown() {
+  const config = getToyConfig();
+  clearRattleCountdown();
+  // Tap "はじめる" is a user gesture; safe to unlock audio + start preloading drum samples.
+  getAudioContext();
+  preloadDrumSamples();
+  controlPhase = 'countdown';
+  rhythmProgress = 0;
+  rhythmCuePlayed = false;
+  rhythmCueMarks = [];
+  rhythmNoteResults = [];
+  rhythmLastHitIndex = -1;
+  rhythmMeasureHits = 0;
+  rhythmPaused = false;
+  rhythmPauseStartedAt = 0;
+  stopRhythmBgm();
+  lastToyFeedback = '';
+  rattleCountdownValue = '3';
+  document.querySelector('.sub-sign').textContent = '3・2・1で はじめるよ！';
+  mainPlayBtn.textContent = 'まってね';
+  guideText.textContent = '3・2・1で はじめるよ';
+  messageBar.textContent = 'カウントのあと、音楽にあわせてドン！';
+  powerMeter.classList.remove('active');
+  renderToyBoard();
+
+  ['2', '1', 'いくよ'].forEach((value, index) => {
+    const timer = setTimeout(() => {
+      rattleCountdownValue = value;
+      playSfx(value === 'いくよ' ? 'success' : 'button');
+      renderToyBoard();
+    }, (index + 1) * 650);
+    rattleCountdownTimers.push(timer);
+  });
+
+  const startTimer = setTimeout(() => {
+    rattleCountdownDone = true;
+    rattleCountdownValue = '';
+    startRhythmRound();
+  }, 2600);
+  rattleCountdownTimers.push(startTimer);
+}
+
+function startToyMeter() {
+  if (isBallGame() || gameComplete) return;
+  stopPowerMeter();
+  const config = getToyConfig();
+  controlPhase = 'toy';
+  rhythmProgress = 0;
+  rhythmCuePlayed = false;
+  miniRoundStartedAt = performance.now();
+  if (config.mode === 'rhythm') {
+    startRhythmRound();
+    return;
+  }
+  if (config.mode === 'stack') {
+    startStackRound();
+    return;
+  }
+  powerValue = 0.14;
+  powerDirection = 1;
+  lastPowerFrameAt = 0;
+  lastToyFeedback = '';
+  powerMeter.classList.add('active');
+  mainPlayBtn.textContent = config.actionText || 'おす！';
+  guideText.textContent = `${currentRound}かいめ：${config.actionText || 'おす！'}`;
+  messageBar.textContent = config.rewardHint.replace(/<br>/g, '。');
+  renderToyBoard();
+
+  const tick = (now) => {
+    if (controlPhase !== 'toy' || isBallGame() || gameComplete || playedThisRound) {
+      stopPowerMeter();
+      return;
+    }
+    if (!lastPowerFrameAt) lastPowerFrameAt = now;
+    const delta = Math.min(0.05, (now - lastPowerFrameAt) / 1000);
+    lastPowerFrameAt = now;
+    powerValue += powerDirection * delta * (config.meterSpeed || 0.5);
+    if (powerValue >= 1) {
+      powerValue = 1;
+      powerDirection = -1;
+    } else if (powerValue <= 0) {
+      powerValue = 0;
+      powerDirection = 1;
+    }
+    powerFill.style.setProperty('--power', `${Math.round(powerValue * 100)}%`);
+    timingMarker.style.setProperty('--timing', `${Math.round(powerValue * 100)}%`);
+    renderToyBoard();
+    powerFrame = requestAnimationFrame(tick);
+  };
+  powerFrame = requestAnimationFrame(tick);
+}
+
+function startRhythmRound() {
+  const config = getToyConfig();
+  const song = getRhythmSong(config);
+  const tapNotes = getRhythmTapNotes(config);
+  controlPhase = 'toy';
+  powerValue = 0;
+  rhythmProgress = 0;
+  rhythmCuePlayed = false;
+  rhythmCueMarks = Array(tapNotes.length).fill(false);
+  rhythmNoteResults = Array(tapNotes.length).fill('');
+  rhythmLastHitIndex = -1;
+  rhythmMeasureHits = 0;
+  rhythmPaused = false;
+  rhythmPauseStartedAt = 0;
+  miniRoundStartedAt = performance.now();
+  lastPowerFrameAt = 0;
+  lastToyFeedback = '';
+  powerMeter.classList.remove('active');
+  powerFill.style.setProperty('--power', '0%');
+  timingMarker.style.setProperty('--timing', '0%');
+  document.querySelector('.sub-sign').textContent = 'きょくに あわせて ドン！';
+  mainPlayBtn.textContent = config.actionText || 'ふる！';
+  guideText.textContent = `${currentRound}回目：きょくに あわせて ドン！`;
+  messageBar.textContent = 'メロディをきいて、音符がみどりの丸に重なったらドン！';
+  renderToyBoard();
+  startRhythmBgm();
+
+  const startOffset = song && Number.isFinite(song.startOffset) ? song.startOffset : 0;
+  const endOffset = song && Number.isFinite(song.endOffset) ? song.endOffset : Infinity;
+  const missWindowSec = (config.passWindowMs || 220) / 1000;
+
+  const tick = () => {
+    if (controlPhase !== 'toy' || getToyConfig().mode !== 'rhythm' || gameComplete || playedThisRound) {
+      stopRhythmBgm();
+      stopPowerMeter();
+      return;
+    }
+    if (rhythmPaused) {
+      powerFrame = requestAnimationFrame(tick);
+      return;
+    }
+    const tNow = getRhythmAudioTime();
+    const elapsedMs = getRhythmAudioElapsedMs(config);
+    const totalMs = getRhythmActiveDurationMs(config);
+    rhythmProgress = clamp(elapsedMs / Math.max(1, totalMs), 0, 1.05);
+    powerValue = clamp(rhythmProgress, 0, 1);
+    tapNotes.forEach((tapNote, index) => {
+      if (!rhythmNoteResults[index] && tNow - tapNote.time > missWindowSec) {
+        rhythmNoteResults[index] = 'miss';
+        lastToyFeedback = 'miss';
+      }
+    });
+    renderToyBoard();
+    const audioDone = !rhythmAudio || (rhythmAudio.ended === true);
+    if (tNow >= endOffset || (audioDone && elapsedMs > 200)) {
+      finishRhythmMeasure();
+      return;
+    }
+    powerFrame = requestAnimationFrame(tick);
+  };
+  powerFrame = requestAnimationFrame(tick);
+}
+
+function handleRhythmAction() {
+  const config = getToyConfig();
+  if (controlPhase === 'ready') {
+    startRattleCountdown();
+    return;
+  }
+  if (controlPhase !== 'toy' || rhythmPaused || playedThisRound || gameComplete) return;
+  const noteIndex = getHittableRhythmNote();
+  if (noteIndex < 0) {
+    // No note in window — quiet feedback ka so children still feel responsive.
+    playKa(0.32);
+    lastToyFeedback = 'miss';
+    guideText.textContent = 'まるに きたら ドン！';
+    messageBar.textContent = 'メロディをきいて、音符が丸にくるところをねらおう。';
+    renderToyBoard('miss');
+    setTimeout(() => {
+      if (controlPhase === 'toy' && !playedThisRound) {
+        lastToyFeedback = '';
+        renderToyBoard();
+      }
+    }, 240);
+    return;
+  }
+  rhythmNoteResults[noteIndex] = 'hit';
+  rhythmLastHitIndex = noteIndex;
+  rhythmMeasureHits += 1;
+  lastToyFeedback = 'hit';
+  // Play the drum sample matching the chart note type at full volume.
+  const tapNotes = getRhythmTapNotes(config);
+  const hitNote = tapNotes[noteIndex];
+  if (hitNote && hitNote.type === 'ka') {
+    playKa();
+  } else {
+    playDon();
+  }
+  guideText.textContent = 'ドンドン！';
+  messageBar.textContent = `${currentRound}回目：曲にのれてるよ！`;
+  renderToyBoard('hit');
+  spawnSparkles({ x: 440, y: 266 });
+}
+
+function toggleRhythmPause() {
+  if (getToyConfig().mode !== 'rhythm' || controlPhase !== 'toy' || playedThisRound || gameComplete) return;
+  if (!rhythmPaused) {
+    rhythmPaused = true;
+    rhythmPauseStartedAt = performance.now();
+    pauseRhythmBgm();
+    guideText.textContent = 'ポーズ中';
+    messageBar.textContent = 'つづけるを押すと、またリズムが動くよ。';
+    renderToyBoard();
+    playSfx('button');
+    return;
+  }
+  rhythmPaused = false;
+  rhythmPauseStartedAt = 0;
+  guideText.textContent = `${currentRound}回目：きょくに あわせて ドン！`;
+  messageBar.textContent = 'メロディをきいて、音符がみどりの丸に重なったらドン！';
+  renderToyBoard();
+  resumeRhythmBgm();
+  playSfx('success');
+}
+
+function finishRhythmMeasure() {
+  if (playedThisRound || controlPhase !== 'toy' || gameComplete) return;
+  const config = getToyConfig();
+  const pattern = getRhythmPattern(config);
+  stopRhythmBgm();
+  stopPowerMeter();
+  pattern.forEach((_, index) => {
+    if (!rhythmNoteResults[index]) rhythmNoteResults[index] = 'miss';
+  });
+  const hits = rhythmNoteResults.filter((result) => result === 'hit').length;
+  const success = hits / Math.max(1, pattern.length) >= (config.passRatio || 0.58);
+  playedThisRound = true;
+  lastToyFeedback = success ? 'hit' : 'miss';
+  shotResults.push(success ? 'hit' : 'miss');
+  if (success) catches += 1;
+  renderToyBoard();
+  updateRoundUi();
+
+  if (success) {
+    playSfx('success');
+    milmaru.classList.add('catch');
+    milmaruSpeech.textContent = getStageSpeech('きゃっきゃ！');
+    guideText.textContent = `${hits}/${pattern.length} できた！`;
+    messageBar.textContent = '曲にあわせて たいこを ならせたよ。';
+    showGoalBurst({ x: 610, y: 250 }, 'いいえんそう！', true);
+  } else {
+    playSfx('mistake');
+    milmaru.classList.add('worried');
+    milmaruSpeech.textContent = getStageSpeech('なぁい...？');
+    guideText.textContent = `${hits}/${pattern.length} もういちど`;
+    messageBar.textContent = 'メロディをきいて、次のフレーズでやってみよう。';
+    showGoalBurst({ x: 610, y: 250 }, config.missBurst || 'おしい', false);
+  }
+
+  currentRound += 1;
+  setTimeout(() => {
+    milmaru.classList.remove('catch', 'worried');
+    if (currentRound > TOTAL_ROUNDS) {
+      completeGame();
+      return;
+    }
+    playedThisRound = false;
+    lastToyFeedback = '';
+    updateRoundUi();
+    startToyMeter();
+  }, 820);
+}
+
+function startStackRound() {
+  const config = getToyConfig();
+  ensureStackPhysicsWorld();
+  controlPhase = 'toy';
+  currentStackShape = getStackShapeForRound(currentRound);
+  powerValue = 0.5;
+  powerDirection = 1;
+  lastPowerFrameAt = 0;
+  lastToyFeedback = '';
+  powerMeter.classList.add('active');
+  mainPlayBtn.textContent = config.actionText || 'おとす！';
+  guideText.textContent = `${currentRound}こめ：タップで おとす`;
+  messageBar.textContent = '上でゆれているつみきを、土台の上におとそう。';
+  renderToyBoard();
+
+  const tick = (now) => {
+    if (controlPhase !== 'toy' || getToyConfig().mode !== 'stack' || gameComplete || playedThisRound) {
+      stopPowerMeter();
+      return;
+    }
+    if (!lastPowerFrameAt) lastPowerFrameAt = now;
+    const delta = Math.min(0.05, (now - lastPowerFrameAt) / 1000);
+    lastPowerFrameAt = now;
+    powerValue += powerDirection * delta * (config.meterSpeed || 0.62);
+    if (powerValue >= 1) {
+      powerValue = 1;
+      powerDirection = -1;
+    } else if (powerValue <= 0) {
+      powerValue = 0;
+      powerDirection = 1;
+    }
+    const shape = currentStackShape || MINI_STACK.shapes[0];
+    stackSwingX = Math.round(MINI_STACK.minX + powerValue * (MINI_STACK.stageW - MINI_STACK.minX * 2 - shape.w));
+    powerFill.style.setProperty('--power', `${Math.round(powerValue * 100)}%`);
+    timingMarker.style.setProperty('--timing', `${Math.round(powerValue * 100)}%`);
+    renderToyBoard();
+    powerFrame = requestAnimationFrame(tick);
+  };
+  powerFrame = requestAnimationFrame(tick);
+}
+
+function resetToyMiniGame(options = {}) {
+  cancelAnimationFrame(animationFrame);
+  animationFrame = null;
+  clearRattleCountdown();
+  stopRhythmBgm();
+  stopStackPhysicsLoop();
+  stopMilmaruRoam();
+  stopPowerMeter();
+  isAiming = false;
+  controlPhase = 'toy';
+  currentAim = null;
+  lockedAim = null;
+  playedThisRound = false;
+  isMilmaruBusy = false;
+  lastToyFeedback = '';
+  toyStackCount = 0;
+  rhythmProgress = 0;
+  rhythmCuePlayed = false;
+  rhythmCueMarks = [];
+  rhythmNoteResults = [];
+  rhythmLastHitIndex = -1;
+  rhythmMeasureHits = 0;
+  rhythmPaused = false;
+  rhythmPauseStartedAt = 0;
+  rattleCountdownDone = false;
+  stackDroppingBlock = null;
+  stackWobbleActive = false;
+  stackCollapseActive = false;
+  stackPreDropTarget = null;
+  stackPreDropSnapshot = [];
+  if (getToyConfig().mode === 'stack') {
+    createStackPhysicsWorld(true);
+    stackBlocks = [];
+    currentStackShape = getStackShapeForRound(1);
+    stackSwingX = Math.round((MINI_STACK.stageW - currentStackShape.w) / 2);
+  }
+  fieldStars = [];
+  renderFieldStars();
+  ball.classList.remove('dragging', 'rolling');
+  milmaru.classList.remove('catch', 'worried', 'crawling');
+  milmaruSpeech.classList.remove('hide');
+  aimLine.classList.remove('show');
+  hidePrediction();
+  ball.style.setProperty('--ball-rotation', '0deg');
+  ball.style.setProperty('--toy-x', getToyConfig().mode === 'book' ? '394px' : '406px');
+  ball.style.setProperty('--toy-y', getToyConfig().mode === 'book' ? '300px' : '284px');
+  setMilmaruPosition({ x: 714, y: 314 }, { duration: 120 });
+  if (!options.keepModal) {
+    resultModal.classList.remove('show');
+    resultModal.setAttribute('aria-hidden', 'true');
+  }
+  updateToyUi();
+  updateRoundUi();
+  milmaruSpeech.textContent = getStageSpeech('みゅっ♪');
+  if (getToyConfig().mode === 'rhythm') {
+    const config = getToyConfig();
+    controlPhase = 'ready';
+    document.querySelector('.sub-sign').textContent = config.subSign || 'たいこを たたこう！';
+    mainPlayBtn.textContent = 'ドン！';
+    guideText.textContent = 'はじめるを おしてね';
+    messageBar.textContent = '大きい「はじめる」ボタンを押すと、3・2・1ではじまるよ。';
+    renderToyBoard();
+    return;
+  }
+  startToyMeter();
+}
+
+function resetGame() {
+  currentRound = 1;
+  catches = 0;
+  lastSetHits = 0;
+  shotResults = [];
+  gameComplete = false;
+  resultApplied = false;
+  updateToyUi();
+  if (isBallGame()) {
+    resetFieldStars();
+    setMilmaruPosition({ x: 640, y: 214 }, { duration: 120 });
+    resetRound();
+  } else {
+    resetToyMiniGame();
+  }
+}
+
+function beginAim(event) {
+  if (controlPhase === 'power') {
+    confirmPower();
+    return;
+  }
+  if (playedThisRound || gameComplete || controlPhase !== 'aim') return;
+  if (!state.hatched) {
+    showNeedCareMessage('まだ タマゴだよ', 'おせわ画面で タマゴを あたためてあげよう。');
+    return;
+  }
+  event?.preventDefault?.();
+  isAiming = true;
+  currentAim = null;
+  stopMilmaruRoam();
+  milmaruSpeech.classList.add('hide');
+  ball.classList.add('dragging');
+  playfield.setPointerCapture?.(event.pointerId);
+  updateAim(event);
+  guideText.textContent = 'むきを きめよう';
+  messageBar.textContent = 'まだ強さは決まらないよ。はなしたあとに ちからをきめよう。';
+}
+
+function updateAim(event) {
+  if (!isAiming || playedThisRound || gameComplete) return;
+  const plan = buildAimPlan(getPlayfieldPoint(event));
+  if (plan) showAim(plan);
+}
+
+function finishAim(event) {
+  if (!isAiming) return;
+  event?.preventDefault?.();
+  if (event?.pointerId != null) {
+    try { playfield.releasePointerCapture?.(event.pointerId); } catch (_) {}
+  }
+  isAiming = false;
+  ball.classList.remove('dragging');
+  if (!currentAim) {
+    hidePrediction();
+    resetPowerMeter();
+    milmaruSpeech.classList.remove('hide');
+    messageBar.textContent = '少しはなれたところへ ひっぱって、むきをきめよう。';
+    startMilmaruRoam();
+    return;
+  }
+  lockedAim = currentAim;
+  startPowerMeter();
+}
+
+function launchBall(plan) {
+  controlPhase = 'rolling';
+  playedThisRound = true;
+  isMilmaruBusy = true;
+  stopMilmaruRoam();
+  playSfx('roll');
+  ball.classList.add('rolling');
+  guideText.textContent = `${getToyConfig().label}が ${getToyConfig().movingText}`;
+  messageBar.textContent = 'ミルマルが とりにいくよ。';
+  const start = { ...LAUNCH_CENTER };
+  const end = plan.end;
+  const travel = Math.hypot(end.x - start.x, end.y - start.y);
+  const started = performance.now();
+  const duration = clamp(620 + travel * 1.15, 820, 1500);
+
+  const tick = (now) => {
+    const t = clamp((now - started) / duration, 0, 1);
+    const ease = 1 - Math.pow(1 - t, 2.2);
+    const x = start.x + (end.x - start.x) * ease;
+    const y = start.y + (end.y - start.y) * ease;
+    setBallCenter(x, y);
+    const rotation = (travel * ease / BALL_RADIUS) * (180 / Math.PI);
+    ball.style.setProperty('--ball-rotation', `${rotation.toFixed(1)}deg`);
+    if (t < 1) {
+      animationFrame = requestAnimationFrame(tick);
+      return;
+    }
+    resolveShot(plan);
+  };
+  animationFrame = requestAnimationFrame(tick);
+}
+
+function collectStarHit({ index, star }) {
+  if (fieldStars[index]?.collected) return false;
+  fieldStars[index].collected = true;
+  const el = fieldStarsEl.querySelector(`[data-star-index="${index}"]`);
+  el?.classList.add('collected');
+  spawnSparkles(star);
+  playSfx('success');
+  return true;
+}
+
+function collectStarsSequential(hits, interval = 220) {
+  hits.forEach((hit, order) => {
+    setTimeout(() => collectStarHit(hit), order * interval);
+  });
+  return Math.max(0, (hits.length - 1) * interval);
+}
+
+function resolveShot(plan) {
+  ball.classList.remove('rolling');
+  setBallCenter(plan.end.x, plan.end.y);
+  hidePrediction();
+  const hits = getStarsOnRoute(getMilmaruCenter(), plan.end);
+  const collectedCount = hits.length;
+  const duration = moveMilmaruTo(plan.end, {
+    speed: 32,
+    maxDuration: 7000,
+    after: () => {
+      if (collectedCount > 0) {
+        const collectDuration = collectStarsSequential(hits);
+        catches += collectedCount;
+        shotResults.push('hit');
+        milmaru.classList.add('catch');
+        milmaruSpeech.textContent = getStageSpeech('きゃっきゃ！');
+        guideText.textContent = `${collectedCount}こ ゲット！`;
+        messageBar.textContent = '通り道の星をひろえたよ。';
+        showGoalBurst(hits[hits.length - 1]?.star || plan.end, `★ ${collectedCount}`, true);
+        setTimeout(() => milmaru.classList.remove('catch'), 700);
+        setTimeout(() => {
+          currentRound += 1;
+          advanceAfterShot();
+        }, collectDuration + 360);
+        return;
+      } else {
+        shotResults.push('miss');
+        playSfx('mistake');
+        milmaru.classList.add('worried');
+        milmaruSpeech.textContent = getStageSpeech('なぁい...？');
+        guideText.textContent = '星のそばをねらおう';
+        messageBar.textContent = 'ミルマルの通り道に星がくるようにしてみよう。';
+        showGoalBurst(plan.end, 'おしい', false);
+        setTimeout(() => milmaru.classList.remove('worried'), 700);
+      }
+      currentRound += 1;
+      advanceAfterShot();
+    }
+  });
+}
+
+function advanceAfterShot() {
+  if (currentRound > TOTAL_ROUNDS || getRemainingStars().length === 0) {
+    completeGame();
+    return;
+  }
+  playedThisRound = false;
+  isMilmaruBusy = false;
+  setBallCenter(LAUNCH_CENTER.x, LAUNCH_CENTER.y);
+  ball.style.setProperty('--ball-rotation', '0deg');
+  resetRound({ keepModal: true });
+}
+
+function isToyMiniSuccess() {
+  const config = getToyConfig();
+  if (config.mode === 'rhythm') {
+    return getHittableRhythmNote() >= 0;
+  }
+  if (config.mode === 'stack') {
+    return isStackDropSuccess();
+  }
+  return powerValue >= config.goodMin && powerValue <= config.goodMax;
+}
+
+function handleToyAction() {
+  if (isBallGame()) return;
+  if (gameComplete) {
+    goCare('success');
+    return;
+  }
+  if (!state.hatched) {
+    showNeedCareMessage('まだ タマゴだよ', 'おせわ画面で タマゴを あたためてあげよう。');
+    return;
+  }
+  if (getToyConfig().mode === 'rhythm') {
+    handleRhythmAction();
+    return;
+  }
+  if (playedThisRound || controlPhase !== 'toy') return;
+
+  const success = isToyMiniSuccess();
+  resolveToyRound(success);
+}
+
+function resolveStackRoundFallback(landed) {
+  if (playedThisRound || controlPhase !== 'toy' || gameComplete) return;
+  const shape = currentStackShape || getStackShapeForRound(currentRound);
+  const stackOutcome = getStackDropOutcome(landed);
+  playedThisRound = true;
+  stopPowerMeter();
+  stackDroppingBlock = {
+    x: Math.round(stackSwingX),
+    w: shape.w,
+    h: shape.h,
+    r: shape.r,
+    round: currentRound,
+    landed: stackOutcome.landed,
+    success: stackOutcome.success,
+    collapse: stackOutcome.collapse,
+    wobble: stackOutcome.wobble,
+    offset: stackOutcome.offset || 0,
+    dropTo: getStackDropTop(shape, stackOutcome.landed)
+  };
+  stackWobbleActive = false;
+  stackCollapseActive = false;
+  playSfx('fall');
+  guideText.textContent = `${currentRound}こめ：おちてるよ`;
+  messageBar.textContent = 'つみきが落ちて、土台にのるまで見てみよう。';
+  renderToyBoard();
+  updateRoundUi();
+  setTimeout(() => finishStackRound(stackOutcome), stackOutcome.landed ? 900 : 620);
+}
+
+function resolveStackRound(landed) {
+  if (playedThisRound || controlPhase !== 'toy' || gameComplete) return;
+  if (!ensureStackPhysicsWorld()) {
+    resolveStackRoundFallback(landed);
+    return;
+  }
+
+  const shape = currentStackShape || getStackShapeForRound(currentRound);
+  const target = getStackTarget();
+  const blockCenter = stackSwingX + shape.w / 2;
+  const targetCenter = target.left + target.width / 2;
+  const initialOffset = blockCenter - targetCenter;
+  const initialAllowed = getStackAllowedOffset(target, shape);
+  const initialEdgeRatio = Math.abs(initialOffset) / Math.max(1, initialAllowed);
+  if (!landed) {
+    resolveStackRoundFallback(false);
+    return;
+  }
+
+  playedThisRound = true;
+  stopPowerMeter();
+  stackWobbleActive = false;
+  stackCollapseActive = false;
+  stackPreDropTarget = target;
+  stackPreDropSnapshot = stackBlocks.map(takeStackSnapshot);
+
+  const body = createStackPhysicsBody(shape, stackSwingX + shape.w / 2, 42 + shape.h / 2);
+  if (!body) {
+    resolveStackRoundFallback(landed);
+    return;
+  }
+  stackMatter.Body.setVelocity(body, { x: 0, y: 0 });
+  stackMatter.World.add(stackEngine.world, body);
+  stackDroppingBlock = {
+    body,
+    w: shape.w,
+    h: shape.h,
+    r: shape.r,
+    round: currentRound,
+    offset: 0,
+    initialDropHit: landed,
+    initialOffset,
+    initialEdgeRatio,
+    physics: true,
+    success: true,
+    collapse: false
+  };
+  playSfx('fall');
+  guideText.textContent = `${currentRound}こめ：おちてるよ`;
+  messageBar.textContent = 'つみきが落ちて、乗ったあとにぐらぐらするよ。';
+  renderToyBoard();
+  updateRoundUi();
+  startStackPhysicsSettlement();
+}
+
+function finishStackRound(stackOutcome) {
+  const config = getToyConfig();
+  if (config.mode !== 'stack' || !stackDroppingBlock) return;
+  if (stackOutcome.physics) stopStackPhysicsLoop();
+  const success = stackOutcome.success;
+  stackDroppingBlock.offset = stackOutcome.offset || 0;
+  stackDroppingBlock.success = success;
+  stackDroppingBlock.collapse = stackOutcome.collapse;
+  lastToyFeedback = success ? 'hit' : 'miss';
+  shotResults.push(success ? 'hit' : 'miss');
+  if (success) catches += 1;
+
+  if (stackOutcome.landed) {
+    if (success) {
+      stackBlocks.push(stackDroppingBlock);
+      stabilizeStackPhysicsBodies();
+      stackDroppingBlock = null;
+      toyStackCount = stackBlocks.length;
+    }
+  }
+
+  const didCollapse = stackOutcome.collapse;
+  stackWobbleActive = stackOutcome.wobble || didCollapse;
+  stackCollapseActive = didCollapse;
+  renderToyBoard();
+  updateRoundUi();
+
+  if (success) {
+    playSfx('wood');
+    milmaru.classList.add('catch');
+    milmaruSpeech.textContent = getStageSpeech('きゃっきゃ！');
+    guideText.textContent = stackOutcome.wobble ? 'ぐらぐら…のった！' : (config.hitBurst || 'いいね！');
+    messageBar.textContent = stackOutcome.wobble
+      ? '乗ってから少しゆれたよ。まんなかだともっと安定するよ。'
+      : `${config.label}で じょうずに あそべたよ。`;
+    showGoalBurst({ x: 450, y: 250 }, config.hitBurst || 'いいね！', true);
+    spawnSparkles({ x: 450, y: 246 });
+  } else {
+    playSfx('mistake');
+    milmaru.classList.add('worried');
+    milmaruSpeech.textContent = getStageSpeech('なぁい...？');
+    guideText.textContent = didCollapse ? 'ぐらぐら…くずれた！' : 'もういちど やってみよう';
+    messageBar.textContent = didCollapse
+      ? '乗ったけど、はしっこすぎてくずれちゃった。まんなかをねらおう。'
+      : '土台に届かなかったよ。まんなかをよく見て、おとしてみよう。';
+    showGoalBurst({ x: 450, y: 250 }, didCollapse ? 'くずれた' : (config.missBurst || 'おしい'), false);
+  }
+
+  currentRound += 1;
+  setTimeout(() => {
+    milmaru.classList.remove('catch', 'worried');
+    if (stackDroppingBlock) {
+      removeStackPhysicsBlock(stackDroppingBlock);
+      stackDroppingBlock = null;
+    }
+    if (!success && stackPreDropSnapshot.length) {
+      restoreStackSnapshot(stackPreDropSnapshot);
+    } else if (didCollapse && stackBlocks.length && !stackBlocks[stackBlocks.length - 1].body) {
+      stackBlocks.pop();
+      toyStackCount = stackBlocks.length;
+    }
+    stackPreDropTarget = null;
+    stackPreDropSnapshot = [];
+    stackWobbleActive = false;
+    stackCollapseActive = false;
+    renderToyBoard();
+    if (currentRound > TOTAL_ROUNDS) {
+      completeGame();
+      return;
+    }
+    playedThisRound = false;
+    updateRoundUi();
+    startToyMeter();
+  }, didCollapse ? 980 : 720);
+}
+
+function resolveToyRound(success) {
+  if (playedThisRound || controlPhase !== 'toy' || gameComplete) return;
+  const config = getToyConfig();
+  if (config.mode === 'stack') {
+    resolveStackRound(success);
+    return;
+  }
+  playedThisRound = true;
+  stopPowerMeter();
+  lastToyFeedback = success ? 'hit' : 'miss';
+  shotResults.push(success ? 'hit' : 'miss');
+  if (success) catches += 1;
+
+  renderToyBoard();
+  updateRoundUi();
+
+  if (success) {
+    playSfx(config.mode === 'rhythm' ? 'drum' : 'success');
+    milmaru.classList.add('catch');
+    milmaruSpeech.textContent = getStageSpeech('きゃっきゃ！');
+    guideText.textContent = config.hitBurst || 'いいね！';
+    messageBar.textContent = `${config.label}で じょうずに あそべたよ。`;
+    showGoalBurst({ x: 450, y: 250 }, config.hitBurst || 'いいね！', true);
+    spawnSparkles({ x: 450, y: 246 });
+  } else {
+    playSfx('mistake');
+    milmaru.classList.add('worried');
+    milmaruSpeech.textContent = getStageSpeech('なぁい...？');
+    guideText.textContent = 'もういちど やってみよう';
+    messageBar.textContent = 'みどりのところを よく見て、おしてみよう。';
+    showGoalBurst({ x: 450, y: 250 }, config.missBurst || 'おしい', false);
+  }
+
+  currentRound += 1;
+  const nextDelay = config.mode === 'rhythm' ? 520 : 860;
+  setTimeout(() => {
+    milmaru.classList.remove('catch', 'worried');
+    if (currentRound > TOTAL_ROUNDS) {
+      completeGame();
+      return;
+    }
+    playedThisRound = false;
+    updateRoundUi();
+    startToyMeter();
+  }, nextDelay);
+}
+
+function getPlaySummaryText() {
+  const config = getToyConfig();
+  if (config.mode === 'roll') return `星を ${lastSetHits}こ ひろったよ。`;
+  if (config.mode === 'rhythm') return `リズムよく ${lastSetHits}回 たたけたよ。`;
+  if (config.mode === 'stack') return `つみきを ${lastSetHits}こ のせられたよ。`;
+  return `ページを ${lastSetHits}まい めくれたよ。`;
+}
+
+function completeGame() {
+  gameComplete = true;
+  controlPhase = 'complete';
+  isMilmaruBusy = false;
+  stopMilmaruRoam();
+  stopPowerMeter();
+  stopRhythmBgm();
+  stopStackPhysicsLoop();
+  lastSetHits = catches;
+  applyPlayReward();
+  renderToyBoard();
+  guideText.textContent = getToyConfig().completeGuide || `星を ${catches}こ ひろったよ！`;
+  messageBar.textContent = 'ミルマルが うれしそう。おせわ画面で なでてあげてもいいね。';
+  mainPlayBtn.textContent = 'おせわへ';
+  setTimeout(showResult, 680);
+}
+
+function applyPlayReward() {
+  if (resultApplied) return;
+  resultApplied = true;
+  const starGain = lastSetHits * 5;
+  const friendGain = lastSetHits >= 3 ? 3 : lastSetHits >= 1 ? 2 : 1;
+  const growthGain = lastSetHits >= 3 ? 1 : 0;
+  state.stars = clamp((Number(state.stars) || 0) + starGain, 0, 99999);
+  state.nakayoshi = clamp((Number(state.nakayoshi) || 0) + friendGain, 0, 100);
+  state.sukusuku = clamp((Number(state.sukusuku) || 0) + growthGain, 0, 100);
+  state.gokigen = clamp((Number(state.gokigen) || 0) + 16, 0, 100);
+  state.lastCareAt = Date.now();
+  state.lastMoodAt = Date.now();
+  state.reaction = 'happy';
+  state.speech = lastSetHits >= 3 ? 'きゃっきゃ！' : 'ふにゃ〜♪';
+  saveState();
+  renderCounts();
+}
+
+function spawnSparkles(center = { x: 450, y: 260 }) {
+  for (let i = 0; i < 18; i++) {
+    const spark = document.createElement('div');
+    spark.className = 'spark';
+    spark.style.left = `${center.x - 90 + Math.random() * 180}px`;
+    spark.style.top = `${center.y - 80 + Math.random() * 130}px`;
+    spark.style.setProperty('--dx', `${(Math.random() - 0.5) * 160}px`);
+    spark.style.setProperty('--dy', `${-40 - Math.random() * 80}px`);
+    spark.style.animationDelay = `${Math.random() * 0.12}s`;
+    sparkLayer.appendChild(spark);
+    setTimeout(() => spark.remove(), 1050);
+  }
+}
+
+function showResult() {
+  const friendGain = lastSetHits >= 3 ? 3 : lastSetHits >= 1 ? 2 : 1;
+  const growthText = lastSetHits >= 3 ? 'すくすく +1' : 'すくすくは そのまま';
+  const starGain = lastSetHits * 5;
+  resultTitle.textContent = getToyConfig().resultTitle;
+  resultText.innerHTML = `${getPlaySummaryText()}<br>スター +${starGain}<br>なかよし +${friendGain}　${growthText}`;
+  resultModal.classList.add('show');
+  resultModal.setAttribute('aria-hidden', 'false');
+}
+
+function showNeedCareMessage(title, message) {
+  playSfx('mistake');
+  milmaru.classList.add('worried');
+  milmaruSpeech.textContent = getStageSpeech(title);
+  guideText.textContent = title;
+  messageBar.textContent = message;
+  setTimeout(() => milmaru.classList.remove('worried'), 900);
+}
+
+function goCare(result = '') {
+  saveState();
+  const suffix = result ? `?from=play&result=${encodeURIComponent(result)}` : '?from=play';
+  window.location.href = `care.html${suffix}`;
+}
+
+function goWriting() {
+  saveState();
+  window.location.href = 'index.html?from=play';
+}
+
+function renderCounts() {
+  document.getElementById('starCount').textContent = String(state.stars);
+  updateToyUi();
+  milmaru.classList.toggle('baby', getCareStageId() === 'baby');
+  updateRoundUi();
+}
+
+function selectToy(toyId) {
+  if (!TOY_CONFIGS[toyId]) return;
+  selectedToyId = toyId;
+  playSfx('button');
+  resetGame();
+}
+
+document.addEventListener('pointerdown', (event) => {
+  const button = event.target.closest('button');
+  if (!button || !stageEl.contains(button)) return;
+  playSfx('button');
+}, true);
+
+document.getElementById('backBtn').addEventListener('click', () => goCare());
+document.getElementById('careBtn').addEventListener('click', () => goCare());
+document.getElementById('modalCareBtn').addEventListener('click', () => goCare('success'));
+document.getElementById('retryBtn').addEventListener('click', () => {
+  resetGame();
+});
+document.getElementById('modalRetryBtn').addEventListener('click', () => {
+  resetGame();
+});
+mainPlayBtn.addEventListener('click', () => {
+  if (!isBallGame()) {
+    handleToyAction();
+    return;
+  }
+  if (controlPhase === 'power') {
+    confirmPower();
+    return;
+  }
+  if (gameComplete) {
+    goCare('success');
+    return;
+  }
+  if (!state.hatched) {
+    goCare();
+    return;
+  }
+  if (playedThisRound) {
+    return;
+  }
+  messageBar.textContent = `${getToyConfig().label}をドラッグして、まずは むきをきめてね。`;
+});
+document.getElementById('settingsBtn').addEventListener('click', () => {
+  messageBar.textContent = 'せっていは じゅんびちゅうだよ。';
+});
+document.querySelectorAll('.toy-card').forEach((button) => {
+  button.addEventListener('click', () => {
+    selectToy(button.dataset.toy);
+  });
+});
+
+document.addEventListener('pointerdown', (event) => {
+  if (!stageEl.contains(event.target)) return;
+  const startButton = event.target.closest('[data-taiko-start]');
+  if (startButton) {
+    event.preventDefault();
+    event.stopPropagation();
+    handleRhythmAction();
+    return;
+  }
+  const pauseButton = event.target.closest('[data-taiko-pause]');
+  if (pauseButton) {
+    event.preventDefault();
+    event.stopPropagation();
+    toggleRhythmPause();
+  }
+}, true);
+
+playfield.addEventListener('pointerdown', (event) => {
+  if (!isBallGame()) {
+    if (event.target.closest('button')) return;
+    if (event.target.closest('.round-counter, .shot-pips, .power-meter')) return;
+    if (controlPhase === 'ready') return;
+    event.preventDefault();
+    handleToyAction();
+    return;
+  }
+  if (controlPhase === 'power') {
+    event.preventDefault();
+    confirmPower();
+    return;
+  }
+  if (event.target.closest('.round-counter, .shot-pips, .power-meter')) return;
+  beginAim(event);
+});
+playfield.addEventListener('pointermove', updateAim);
+playfield.addEventListener('pointerup', finishAim);
+playfield.addEventListener('pointercancel', finishAim);
+
+if (!state.hatched) {
+  guideText.textContent = 'まだ あそべないよ';
+  messageBar.textContent = 'おせわ画面で タマゴを あたためてあげよう。';
+  milmaruSpeech.textContent = 'すぅ...';
+} else {
+  resetGame();
+}
+renderCounts();
+
+window.MojikkoToyPlayGame = {
+  getState: () => JSON.parse(JSON.stringify(state)),
+  resetRound,
+  resetGame,
+  beginAim,
+  confirmPower,
+  selectToy,
+  getPhase: () => controlPhase,
+  applyPlayReward,
+  goCare
+};
+</script>
+</body>
+</html>

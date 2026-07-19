@@ -1,0 +1,674 @@
+// ─── Quizland 問題データ ──────────────────────────────
+// type:
+//   order_color : 色チップ並び → 何色？
+//   count_total : 絵が N 個 → いくつ？
+//   shape_name  : 形 → なんの形？
+//   emoji_name  : 大きい emoji → 質問に答える（名前限らず特徴も可）
+//   opposite    : 単語 → 反対語は？
+//   trivia      : 💡 アイコン表示 → 知識問題
+// level: 1(やさしい) 2(ふつう) 3(むずかしい)
+
+const QUIZLAND_QUESTIONS = {
+
+  // ── 色の順番 ─────────────────────────────────────
+  order_color: [
+    // Level 1 (3色)
+    { level:1, type:'order_color', items:['red','blue','yellow'],
+      q:'まんなかは なにいろ？', answer:1, choices:['red','blue','yellow','green'] },
+    { level:1, type:'order_color', items:['green','red','yellow'],
+      q:'ひだりから 1ばんめは なにいろ？', answer:3, choices:['red','yellow','blue','green'] },
+    { level:1, type:'order_color', items:['red','yellow','blue'],
+      q:'ひだりから 1ばんめは なにいろ？', answer:0, choices:['red','blue','yellow','green'] },
+    { level:1, type:'order_color', items:['blue','red','yellow'],
+      q:'みぎから 1ばんめは なにいろ？', answer:2, choices:['red','blue','yellow','green'] },
+    { level:1, type:'order_color', items:['yellow','blue','red'],
+      q:'まんなかは なにいろ？', answer:1, choices:['red','blue','yellow','green'] },
+    { level:1, type:'order_color', items:['pink','orange','blue'],
+      q:'まんなかは なにいろ？', answer:0, choices:['orange','pink','blue','green'] },
+    { level:1, type:'order_color', items:['green','yellow','pink'],
+      q:'みぎから 1ばんめは なにいろ？', answer:2, choices:['green','yellow','pink','orange'] },
+    { level:1, type:'order_color', items:['orange','green','yellow'],
+      q:'ひだりから 1ばんめは なにいろ？', answer:0, choices:['orange','green','yellow','blue'] },
+
+    // Level 2 (4色)
+    { level:2, type:'order_color', items:['red','blue','yellow','green'],
+      q:'ひだりから 3ばんめは なにいろ？', hint:'1, 2, 3 と かぞえてみよう', answer:1, choices:['red','yellow','blue','green'] },
+    { level:2, type:'order_color', items:['pink','blue','orange','yellow'],
+      q:'みぎから 1ばんめは なにいろ？', answer:2, choices:['pink','blue','yellow','orange'] },
+    { level:2, type:'order_color', items:['green','yellow','red','blue'],
+      q:'ひだりから 2ばんめは なにいろ？', answer:1, choices:['green','yellow','red','blue'] },
+    { level:2, type:'order_color', items:['orange','pink','green','red'],
+      q:'みぎから 2ばんめは なにいろ？', answer:0, choices:['green','pink','orange','red'] },
+    { level:2, type:'order_color', items:['blue','yellow','pink','orange'],
+      q:'ひだりから 3ばんめは なにいろ？', hint:'1, 2, 3 と かぞえてみよう', answer:1, choices:['blue','pink','yellow','orange'] },
+    { level:2, type:'order_color', items:['red','green','blue','yellow'],
+      q:'みぎから 1ばんめは なにいろ？', answer:2, choices:['red','green','yellow','blue'] },
+    { level:2, type:'order_color', items:['purple','orange','cyan','red'],
+      q:'ひだりから 2ばんめは なにいろ？', answer:1, choices:['purple','orange','cyan','red'] },
+    { level:2, type:'order_color', items:['yellow','purple','red','green'],
+      q:'みぎから 2ばんめは なにいろ？', answer:1, choices:['purple','red','yellow','green'] },
+
+    // Level 3 (5色)
+    { level:3, type:'order_color', items:['purple','red','green','blue','yellow'],
+      q:'まんなかは なにいろ？', answer:2, choices:['red','blue','green','yellow'] },
+    { level:3, type:'order_color', items:['red','blue','yellow','green','pink'],
+      q:'ひだりから 2ばんめは なにいろ？', answer:0, choices:['blue','red','yellow','pink'] },
+    { level:3, type:'order_color', items:['orange','purple','red','cyan','yellow'],
+      q:'まんなかは なにいろ？', answer:2, choices:['orange','yellow','red','purple'] },
+    { level:3, type:'order_color', items:['blue','yellow','green','orange','red'],
+      q:'みぎから 2ばんめは なにいろ？', answer:1, choices:['yellow','orange','blue','green'] },
+    { level:3, type:'order_color', items:['green','pink','blue','yellow','purple'],
+      q:'みぎから 2ばんめは なにいろ？', answer:2, choices:['pink','blue','yellow','purple'] },
+    { level:3, type:'order_color', items:['red','blue','yellow','green','pink'],
+      q:'いちばん ひだりは なにいろ？', answer:0, choices:['red','blue','yellow','green'] },
+    { level:3, type:'order_color', items:['blue','red','yellow','green','purple'],
+      q:'いちばん みぎは なにいろ？', answer:2, choices:['blue','red','purple','green'] },
+    { level:3, type:'order_color', items:['pink','blue','yellow','red','green'],
+      q:'まんなかは なにいろ？', answer:0, choices:['yellow','blue','pink','red'] }
+  ],
+
+  // ── 数をかぞえよう ────────────────────────────────
+  count_total: [
+    // Level 1 (count 1-3)
+    { level:1, type:'count_total', item:'ringo',  count:2, q:'りんごは いくつ？',     answer:0, choices:['2つ','3つ','4つ','5つ'] },
+    { level:1, type:'count_total', item:'ichigo', count:3, q:'いちごは いくつ？',     answer:1, choices:['2つ','3つ','4つ','5つ'] },
+    { level:1, type:'count_total', item:'hana',   count:1, q:'おはなは いくつ？',     answer:0, choices:['1つ','2つ','3つ','4つ'] },
+    { level:1, type:'count_total', item:'hoshi',  count:2, q:'おほしさまは いくつ？', answer:1, choices:['1つ','2つ','3つ','4つ'] },
+    { level:1, type:'count_total', item:'mikan',  count:3, q:'みかんは いくつ？',     answer:1, choices:['2つ','3つ','4つ','5つ'] },
+    { level:1, type:'count_total', item:'ringo',  count:1, q:'りんごは いくつ？',     answer:0, choices:['1つ','2つ','3つ','4つ'] },
+    { level:1, type:'count_total', item:'ichigo', count:2, q:'いちごは いくつ？',     answer:1, choices:['1つ','2つ','3つ','4つ'] },
+    { level:1, type:'count_total', item:'hana',   count:3, q:'おはなは いくつ？',     answer:1, choices:['2つ','3つ','4つ','5つ'] },
+
+    // Level 2 (count 4-6)
+    { level:2, type:'count_total', item:'hoshi',  count:4, q:'おほしさまは いくつ？', answer:1, choices:['3つ','4つ','5つ','6つ'] },
+    { level:2, type:'count_total', item:'hana',   count:5, q:'おはなは いくつ？',     answer:2, choices:['3つ','4つ','5つ','6つ'] },
+    { level:2, type:'count_total', item:'ringo',  count:4, q:'りんごは いくつ？',     answer:1, choices:['3つ','4つ','5つ','6つ'] },
+    { level:2, type:'count_total', item:'ichigo', count:4, q:'いちごは いくつ？',     answer:1, choices:['3つ','4つ','5つ','6つ'] },
+    { level:2, type:'count_total', item:'mikan',  count:5, q:'みかんは いくつ？',     answer:1, choices:['4つ','5つ','6つ','7つ'] },
+    { level:2, type:'count_total', item:'hoshi',  count:6, q:'おほしさまは いくつ？', answer:2, choices:['4つ','5つ','6つ','7つ'] },
+    { level:2, type:'count_total', item:'ringo',  count:5, q:'りんごは いくつ？',     answer:1, choices:['4つ','5つ','6つ','7つ'] },
+    { level:2, type:'count_total', item:'ichigo', count:6, q:'いちごは いくつ？',     answer:2, choices:['4つ','5つ','6つ','7つ'] },
+
+    // Level 3 (count 6-9)
+    { level:3, type:'count_total', item:'mikan',  count:7, q:'みかんは いくつ？',     answer:1, choices:['6つ','7つ','8つ','9つ'] },
+    { level:3, type:'count_total', item:'hoshi',  count:7, q:'おほしさまは いくつ？', answer:1, choices:['6つ','7つ','8つ','9つ'] },
+    { level:3, type:'count_total', item:'ringo',  count:8, q:'りんごは いくつ？',     answer:2, choices:['6つ','7つ','8つ','9つ'] },
+    { level:3, type:'count_total', item:'hana',   count:6, q:'おはなは いくつ？',     answer:1, choices:['5つ','6つ','7つ','8つ'] },
+    { level:3, type:'count_total', item:'ichigo', count:8, q:'いちごは いくつ？',     answer:1, choices:['7つ','8つ','9つ','10こ'] },
+    { level:3, type:'count_total', item:'mikan',  count:9, q:'みかんは いくつ？',     answer:2, choices:['7つ','8つ','9つ','10こ'] },
+    { level:3, type:'count_total', item:'ringo',  count:6, q:'りんごは いくつ？',     answer:1, choices:['5つ','6つ','7つ','8つ'] },
+    { level:3, type:'count_total', item:'hoshi',  count:8, q:'おほしさまは いくつ？', answer:2, choices:['6つ','7つ','8つ','9つ'] }
+  ],
+
+  // ── かたち ────────────────────────────────────────
+  shape_name: [
+    // Level 1 (名前当て — 3歳児が答えられるレベル)
+    { level:1, type:'shape_name', shape:'circle',    q:'これは どんな かたち？', answer:0, choices:['まる','しかく','さんかく','ほし'] },
+    { level:1, type:'shape_name', shape:'square',    q:'これは どんな かたち？', answer:1, choices:['まる','しかく','さんかく','ほし'] },
+    { level:1, type:'shape_name', shape:'triangle',  q:'これは どんな かたち？', answer:2, choices:['まる','しかく','さんかく','ほし'] },
+    { level:1, type:'shape_name', shape:'heart',     q:'これは どんな かたち？', answer:0, choices:['ハート','まる','しかく','さんかく'] },
+    { level:1, type:'shape_name', shape:'star',      q:'これは どんな かたち？', answer:2, choices:['まる','しかく','ほし','さんかく'] },
+    /* Q111 rectangle: 「ながしかく」「ダイヤ」「しかく」全て他問題と重複 or 不適切のため削除 (2026-05-06 ユーザー判断) */
+    { level:1, type:'shape_name', shape:'oval',      q:'これは どんな かたち？', answer:0, choices:['たまごがた','まる','しかく','ハート'] },
+    { level:1, type:'shape_name', shape:'heart',     q:'ハートは どんな きもちの しるし？', answer:1, choices:['かなしい','だいすき','おこった','こわい'], detail:'ハートは だいすきの しるしとして よく つかわれるよ！' },
+
+    // Level 2 (名前当て＋性質問題)
+    { level:2, type:'shape_name', shape:'star',      q:'ほしの かどは なんこ？', answer:0, choices:['5こ','4こ','6こ','3こ'] },
+    { level:2, type:'shape_name', shape:'heart',     q:'ハートの したは どう なっている？', answer:1, choices:['まるい','とがっている','しかくい','ぎざぎざ'], detail:'ハートの したは すこし とがっているね！' },
+    { level:2, type:'shape_name', shape:'diamond',   q:'これは どんな かたち？', answer:0, choices:['ダイヤのかたち','まる','さんかく','しかく'] },
+    { level:2, type:'shape_name', shape:'oval',      q:'たまごがたは まるより どんな かたち？', answer:3, choices:['しかくい','とがっている','まるい','ながい'], detail:'たまごがたは、まるより すこし ながい かたちだよ！' },
+    { level:2, type:'shape_name', shape:'triangle',  q:'このかたちの かどは なんこ？', answer:1, choices:['2こ','3こ','4こ','5こ'] },
+    { level:2, type:'shape_name', shape:'square',    q:'このかたちの かどは なんこ？', answer:2, choices:['3こ','5こ','4こ','2こ'] },
+    // sprint-13 結線済み (2026-05-08): img=stage_shape_leaf.png
+    { level:2, type:'shape_name', shape:'leaf', img:'stage_shape_leaf.png', q:'これは なんの かたち？', answer:0, choices:['はっぱ','まる','ほし','ハート'], detail:'はっぱの かたち！' },
+    { level:2, type:'shape_name', shape:'star',      q:'ほしと まるでは どちらが かどが おおい？', answer:0, choices:['ほし','まる','おなじ','どちらも かどが ない'] },
+
+    // Level 3 (性質・知識問題)
+    { level:3, type:'shape_name', shape:'circle',    q:'このかたちに かどは いくつ？', answer:1, choices:['2こ','0こ（ない）','4こ','1こ'] },
+    { level:3, type:'shape_name', shape:'square',    q:'この かたち、どれに にている？', answer:0, choices:['まど','ボール','ほし','たまご'], detail:'しかくは まどに にているね！' },
+    { level:3, type:'shape_name', shape:'oval',      q:'たまごがたに かどは いくつ？', answer:0, choices:['0こ（ない）','2こ','3こ','4こ'] },
+    /* Q67 diamond 「ひしがたの かどは ぜんぶで いくつ？」 は 2026-05-16 削除 (ユーザー判断) */
+    { level:3, type:'shape_name', shape:'triangle',  q:'まると さんかくでは どちらが かどが おおい？', answer:1, choices:['まる','さんかく','おなじ','どちらも かどが ない'] },
+    { level:3, type:'shape_name', shape:'circle', choiceTextRevision:'20260608-no-choice-images', q:'まんまるい ピザを ちょうど はんぶんに きると どれ？', answer:0, choices:['はんぶんの まる','まんまるい','さんかく','しかく'], detail:'まるい ピザを はんぶんに きると、はんぶんの まる (はんげつ) に なるよ！' },
+    { level:3, type:'shape_name', shape:'square', choiceTextRevision:'20260608-note-pencil-question', img:'stage_shape_notebook.png', framed:true, q:'ノートの となりに あるものは？', answer:0, choices:['えんぴつ','ボール','くつ','コップ'], detail:'ノートの となりに えんぴつが あるね！' },
+    { level:3, type:'shape_name', shape:'circle',    img:'stage_shape_soccerball.png', framed:true, q:'サッカーボールの かたちは？', answer:0, choices:['まる','しかく','さんかく','ほし'] }
+  ],
+
+  // ── たべもの / のりもの は「ずかん (wordmatch)」へ移管済み (2026-04-28) ──
+
+  // ── てんき ────────────────────────────────────────
+  weather: [
+    // Level 1
+    { level:1, type:'emoji_name', category:'weather', img:'Sun/Sun_normal_1.png', q:'この てんきは？', answer:0, choices:['はれ','くもり','あめ','ゆき'] },
+    { level:1, type:'emoji_name', category:'weather', img:'Rain/Rain_normal_1.png', q:'この てんきは？', answer:2, choices:['はれ','くもり','あめ','ゆき'] },
+    { level:1, type:'emoji_name', category:'weather', img:'Cloud/Cloud_normal_1.png', q:'この てんきは？', answer:1, choices:['はれ','くもり','あめ','ゆき'] },
+    { level:1, type:'emoji_name', category:'weather', img:'Snow_cloud/Snow_cloud_normal_1.png', q:'この てんきは？', answer:2, choices:['はれ','あめ','ゆき','くもり'] },
+    { level:1, type:'emoji_name', category:'weather', img:'Rainbow/Rainbow_normal_1.png', q:'これは なに？', answer:2, choices:['かみなり','くもり','にじ','あめ'] },
+    { level:1, type:'emoji_name', category:'weather', img:'Thunder/Thunder_normal_1.png', q:'これは なに？', answer:0, choices:['かみなり','はれ','くもり','にじ'] },
+    { level:1, type:'emoji_name', category:'weather', img:'Wind/Wind_normal_1.png', q:'これは なに？', answer:2, choices:['あめ','くもり','かぜ','ゆき'] },
+    // sprint-14 結線済み (2026-05-08): reveal pair で出題=シルエット → 正解後=既存
+    { level:1, type:'trivia', category:'weather',
+      img:'stage_weather_sky_question.png', framed:true,
+      img_answer:'stage_weather_cloud_sky.png', framed_answer:true,
+      q:'そらに ある しろい ふわふわは なに？',
+      answer:0, choices:['くも','けむり','わた','ほし'] ,
+      detail:'くもは とっても ちいさな みずの つぶの あつまりだよ！'},
+
+    // Level 2
+    { level:2, type:'emoji_name', category:'weather', img:'Tornado/Tornado_normal_1.png', q:'これは なに？', answer:0, choices:['たつまき','つなみ','じしん','かみなり'] },
+    // sprint-14 結線済み (2026-05-08): reveal pair で出題=シルエット → 正解後=既存
+    { level:2, type:'trivia', category:'weather',
+      img:'stage_weather_morning_clear.png', framed:true,
+      img_answer:'stage_weather_distant_mist.png', framed_answer:true,
+      q:'あさ、しろい もやが でる てんきを なんという？', answer:1, choices:['あめ','きり','ゆき','くもり'] ,
+      detail:'きりは ちいさな みずの つぶが くうきに うかんでいる じょうたいだよ！'},
+    // sprint-13 結線済み (2026-05-08): stage_weather_rainbow_arc.png 7色版に再生成・差替済み
+    // framed: 画像自体に紙風の長方形フレームが焼き込まれているため共通 drop-shadow を抑止。
+    { level:2, type:'trivia', category:'weather',
+      img:'stage_weather_rainbow_arc.png', framed:true,
+      q:'にじは なんしょく？',
+      answer:1, choices:['5しょく','7しょく','3しょく','10しょく'] ,
+      detail:'あか・だいだい・きいろ・みどり・あお・あいいろ・むらさきの 7しょくだよ！'},
+    { level:2, type:'trivia', category:'weather',
+      choiceTextRevision:'20260609-puddle-rain-time',
+      img:'stage_weather_puddle.png', framed:true,
+      q:'みずたまりは いつ できる？',
+      answer:0, choices:['あめのとき','はれのとき','ゆきのとき','よるだけ'] ,
+      detail:'あめがふると みずがたまるよ！'},
+    { level:2, type:'trivia', category:'weather',
+      img:'stage_weather_thunder.png', framed:true,
+      q:'かみなりは なぜ なる？',
+      hint:'くもの なかで でんきが ピカッと！',
+      answer:0, choices:['くもの なかで でんきが たまるから','かみなりさまが たいこを たたくから','かわが かわくから','かぜが つよいから'] ,
+      detail:'くもの なかで こおりの つぶが ぶつかりあって でんきが たまるよ！'},
+    // sprint-14 結線済み (2026-05-08): reveal pair で出題=シルエット → 正解後=既存
+    { level:2, type:'trivia', category:'weather',
+      img:'stage_weather_rain_ground.png', framed:true,
+      img_answer:'stage_weather_rain_from_cloud.png', framed_answer:true,
+      q:'あめは どこから ふってくる？',
+      answer:0, choices:['くも','そら','やま','うみ'] ,
+      detail:'うみや かわの みずが くもになって、また あめになるよ！'},
+    { level:2, type:'emoji_name', category:'weather', img:'Thermometer/Thermometer_normal_1.png',
+      q:'これは なに？', answer:0, choices:['おんどけい','とけい','ものさし','コップ'] ,
+      detail:'おんどけいは あつい・さむいを はかる どうぐだよ！'},
+    { level:2, type:'trivia', category:'weather',
+      img:'sunny_time.png',
+      q:'1ねんで いちばん あつい きせつは？',
+      answer:1, choices:['はる','なつ','あき','ふゆ'] ,
+      detail:'にほんでは 7がつ〜8がつが いちばん あつくなるよ！'},
+
+    // Level 3
+    { level:3, type:'emoji_name', category:'weather', img:'Hurricane/Hurricane_normal_1.png', q:'これは なに？', answer:2, choices:['おおあめ','たつまき','たいふう','なみ'] },
+    { level:3, type:'trivia', category:'weather',
+      img:'stage_weather_rainbow_arc.png', framed:true,
+      q:'にじは いつ でる？',
+      answer:1, choices:['あめの まえ','あめの あと はれたとき','くもりのとき','ゆきのとき'] ,
+      detail:'たいようの ひかりが あめつぶに あたると にじが できるよ！'},
+    { level:3, type:'trivia', category:'weather',
+      img:'stage_weather_thunder.png', framed:true,
+      q:'かみなりは たかい ものに よく おちる。どうして？',
+      hint:'くもから いちばん ちかい ところへ！',
+      answer:1, choices:['ひくい ものが すき','たかい ものが いちばん ちかいから','まるい ものが すき','かたい ものが すき'] ,
+      detail:'でんきは いちばん ちかい ところに むかって おちるよ！'},
+    { level:3, type:'trivia', category:'weather',
+      img:'kiri.png',
+      q:'きりは どんな てんきに できやすい？',
+      answer:1, choices:['あつい ひる','すずしい あさ','つよい かぜ','たいふう'] ,
+      detail:'くうきが ひえると みずが つぶに なって きりに なるよ！'},
+    { level:3, type:'trivia', category:'weather',
+      img:'snow_country.png',
+      q:'ゆきが たくさん ふる ちほうを なんという？',
+      answer:0, choices:['ゆきぐに','ゆきやま','ふゆのくに','こおりのくに'] ,
+      detail:'にほんかいがわは ゆきが おおく「ゆきぐに」と よばれるよ！'},
+    { level:3, type:'trivia', category:'weather',
+      img:'stage_weather_river_steam.png', framed:true,
+      q:'うみや かわの みずが そらに のぼっていくのを なんという？',
+      hint:'みずが あつくなって きえるみたいに みえるよ！',
+      answer:0, choices:['じょうはつ','こおる','しずむ','とぶ'] ,
+      detail:'おひさまに あたためられた みずが くうきに なって のぼり、くもに なるよ！'},
+    { level:3, type:'trivia', category:'weather',
+      img:'stage_weather_winter_breath.png', framed:true,
+      q:'ふゆに いきが しろく みえるのは なぜ？',
+      answer:0, choices:['いきの なかの みずが ひえて つぶになるから','くちの なかが しろいから','ゆきが ふっているから','さむくて こおっているから'] ,
+      detail:'あったかい いきが つめたい くうきで ひえて、ちいさな みずの つぶに なるよ！'},
+    { level:3, type:'trivia', category:'weather',
+      choiceTextRevision:'20260608-no-choice-images',
+      img:'stage_weather_falling_snow.png',
+      img_answer:'stage_weather_snowflake_big.png',
+      q:'ゆきの けっしょうは どんな かたち？',
+      hint:'とても ちいさい こおりの かたち！',
+      answer:2,
+      choices:['まる','ほし','つの が 6つ ある かたち','しかく'],
+      detail:'ゆきの つぶは とても ちいさい けど 6つの かどが ある かたちを しているよ！'}
+  ],
+
+  // ── はんたいことば ────────────────────────────────
+  opposite: [
+    // Level 1
+    { level:1, type:'opposite', category:'opposite', word:'おおきい', q:'「おおきい」の はんたいは？', answer:2, choices:['あかい','まるい','ちいさい','やさしい'],
+      img_word:'opposite/ookii_chiisai.png' /* 1 枚に大小両方を含む統合絵 */ },
+    { level:1, type:'opposite', category:'opposite', word:'あつい',   q:'「あつい」の はんたいは？',   answer:1, choices:['やわらかい','つめたい','はやい','くらい'],
+      img_word:'opposite/atsui.png', img_answer:'opposite/tsumetai.png' },
+    { level:1, type:'opposite', category:'opposite', word:'まえ',     q:'「まえ」の はんたいは？',     answer:3, choices:['みぎ','ひだり','うえ','うしろ'],
+      img_word:'opposite/mae.png', img_answer:'opposite/ushiro.png' },
+    { level:1, type:'opposite', category:'opposite', word:'たつ',     q:'「たつ」の はんたいは？',     answer:1, choices:['あるく','すわる','ねる','とぶ'],
+      img_word:'opposite/tatsu.png', img_answer:'opposite/suwaru.png' },
+    { level:1, type:'opposite', category:'opposite', word:'あける',   q:'「あける」の はんたいは？',   answer:2, choices:['おす','ひく','しめる','まわす'],
+      img_word:'opposite/akeru.png', img_answer:'opposite/shimeru.png' },
+    { level:1, type:'opposite', category:'opposite', word:'すき',     q:'「すき」の はんたいは？',     answer:0, choices:['きらい','よい','わるい','おもしろい'],
+      img_word:'opposite/suki.png', img_answer:'opposite/kirai.png' },
+    { level:1, type:'opposite', category:'opposite', word:'よる',     q:'「よる」の つぎは どれ？',     answer:1, choices:['ゆうがた','あさ','ひる','まよなか'],
+      img_word:'opposite/yoru.png', img_answer:'opposite/asa.png',
+      detail:'よるの つぎに あさが くるよ！' },
+    { level:1, type:'opposite', category:'opposite', word:'たくさん', q:'「たくさん」の はんたいは？', answer:3, choices:['おおきい','おおい','はやい','すこし'],
+      img_word:'opposite/takusan.png', img_answer:'opposite/sukoshi.png' },
+
+    // Level 2
+    { level:2, type:'opposite', category:'opposite', word:'はやい',   q:'「はやい」の はんたいは？',   answer:0, choices:['おそい','かるい','やさしい','あかるい'],
+      img_word:'opposite/hayai.png', img_answer:'opposite/osoi.png' },
+    { level:2, type:'opposite', category:'opposite', word:'たかい',   q:'「たかい」の はんたいは？',   answer:3, choices:['おもい','かたい','くらい','ひくい'],
+      img_word:'opposite/takai_hikui.png' },
+    { level:2, type:'opposite', category:'opposite', word:'ながい',   q:'「ながい」の はんたいは？',   answer:1, choices:['かわいい','みじかい','やわらかい','かるい'],
+      img_word:'opposite/nagai.png', img_answer:'opposite/mijikai.png' },
+    { level:2, type:'opposite', category:'opposite', word:'ふとい',   q:'「ふとい」の はんたいは？',   answer:2, choices:['おもい','ちいさい','ほそい','みじかい'],
+      img_word:'opposite/futoi.png', img_answer:'opposite/hosoi.png' },
+    { level:2, type:'opposite', category:'opposite', word:'かたい',   q:'「かたい」の はんたいは？',   answer:1, choices:['かるい','やわらかい','やさしい','つよい'],
+      img_word:'opposite/katai.png', img_answer:'opposite/yawarakai.png' },
+    { level:2, type:'opposite', category:'opposite', word:'つよい',   q:'「つよい」の はんたいは？',   answer:0, choices:['よわい','おもい','ちいさい','おそい'],
+      img_word:'opposite/tsuyoi.png', img_answer:'opposite/yowai.png' },
+    { level:2, type:'opposite', category:'opposite', word:'なく',     q:'「なく」の はんたいは？',     answer:2, choices:['えがく','おこる','わらう','ねる'],
+      img_word:'opposite/naku.png', img_answer:'opposite/warau.png' },
+    { level:2, type:'opposite', category:'opposite', word:'おおい',   q:'「おおい」の はんたいは？',   answer:1, choices:['おおきい','すくない','ちいさい','よわい'],
+      img_word:'opposite/ooi.png', img_answer:'opposite/sukunai.png' },
+
+    // Level 3
+    { level:3, type:'opposite', category:'opposite', word:'かるい',     q:'「かるい」の はんたいは？',     answer:2, choices:['やさしい','ふるい','おもい','ちいさい'],
+      img_word:'opposite/karui.png', img_answer:'opposite/omoi.png' },
+    { level:3, type:'opposite', category:'opposite', word:'あかるい',   q:'「あかるい」の はんたいは？',   answer:0, choices:['くらい','やさしい','きつい','ちいさい'],
+      img_word:'opposite/akarui.png', img_answer:'opposite/kurai.png' },
+    { level:3, type:'opposite', category:'opposite', word:'うえ',       q:'「うえ」の はんたいは？',       answer:3, choices:['みぎ','まえ','ひだり','した'],
+      img_word:'opposite/ue.png', img_answer:'opposite/shita.png' },
+    { level:3, type:'opposite', category:'opposite', word:'あたらしい', q:'「あたらしい」の はんたいは？', answer:2, choices:['やすい','おもい','ふるい','かるい'],
+      img_word:'opposite/atarashii.png', img_answer:'opposite/furui.png' },
+    { level:3, type:'opposite', category:'opposite', word:'たすける',   q:'「たすける」の はんたいは？',   answer:1, choices:['いっしょに あそぶ','じゃまを する','なかよく する','なにも しない'],
+      img_word:'opposite/tasukeru.png', img_answer:'opposite/jamasuru.png' },
+    { level:3, type:'opposite', category:'opposite', word:'でかける',   q:'「でかける」の はんたいは？',   answer:3, choices:['あそぶ','たべる','ねる','かえる'],
+      img_word:'opposite/dekakeru.png', img_answer:'opposite/kaeru.png' },
+    { level:3, type:'opposite', category:'opposite', word:'ほめる',     q:'「ほめる」の はんたいは？',     answer:0, choices:['しかる','おこる','いう','にらむ'],
+      img_word:'opposite/homeru.png', img_answer:'opposite/shikaru.png' },
+    { level:3, type:'opposite', category:'opposite', word:'おしえる',   q:'「おしえる」の はんたいは？',   answer:2, choices:['はなす','きく','ならう','よむ'],
+      img_word:'opposite/oshieru.png', img_answer:'opposite/narau.png' }
+  ],
+
+  // ── どうぶつ・むし は「ずかん (wordmatch)」へ移管済み (絵+名前マッチ) (2026-04-28) ──
+  // ※ トリビアは下記 trivia / weather / body カテゴリで継続提供。
+
+  // ── トリビア（やさしい/ふつう/むずかしい） ────────
+  trivia: [
+    // Level 1
+    { level:1, type:'trivia', category:'trivia',
+      img:'stage_trivia_unripe_banana.png', framed:true,
+      img_answer:'stage_trivia_ripe_banana.png',
+      q:'うれた バナナは なにいろ？',
+      answer:1, choices:['あか','きいろ','あお','むらさき'] ,
+      detail:'バナナは みどりから きいろに なって、あまく おいしく なるよ！'},
+    { level:1, type:'trivia', category:'trivia',
+      img:'stage_trivia_meowing_cat.png',
+      q:'ねこは なんて なく？',
+      answer:2, choices:['ワンワン','モーモー','ニャーニャー','コケコッコー'] ,
+      detail:'ねこは「ニャー」と なくよ。きげんが いいと「ゴロゴロ」も するよ！'},
+    // sprint-14 結線済み (2026-05-08): reveal pair で出題=シルエット → 正解後=既存
+    { level:1, type:'trivia', category:'trivia',
+      img:'stage_trivia_elephant_silhouette.png', framed:true,
+      img_answer:'stage_trivia_long_nose_elephant.png',
+      q:'ぞうの からだで いちばん ながいのは どこ？',
+      answer:0, choices:['はな','しっぽ','みみ','あし'] ,
+      detail:'ぞうの ながい はなは「もの」を つかんだり、みずを のんだり できるよ！'},
+    // sprint-14 結線済み (2026-05-08): reveal pair で出題=シルエット → 正解後=既存
+    { level:1, type:'trivia', category:'trivia',
+      img:'stage_trivia_winter_sky_only.png', framed:true,
+      img_answer:'stage_trivia_snowy_landscape.png', framed_answer:true,
+      q:'ふゆに そらから ふってくる しろい ものは？',
+      answer:1, choices:['あめ','ゆき','すな','こおり'] ,
+      detail:'ゆきは くもの なかで みずが こおって おちてくるよ！'},
+    // sprint-14 結線済み (2026-05-08): reveal pair で出題=シルエット → 正解後=既存
+    { level:1, type:'trivia', category:'trivia',
+      img:'stage_trivia_egg_unhatched.png', framed:true,
+      img_answer:'stage_trivia_adult_chicken.png',
+      q:'たまごから うまれる いきものは どれ？',
+      answer:1, choices:['いぬ','にわとり','うし','ぶた'] ,
+      detail:'にわとりは たまごを うんで、その たまごから ひよこが うまれるよ！'},
+    // sprint-14 結線済み (2026-05-08): reveal pair で出題=シルエット → 正解後=既存
+    { level:1, type:'trivia', category:'trivia',
+      img:'stage_trivia_apple_silhouette.png',
+      img_answer:'stage_trivia_red_apple.png',
+      q:'ふつうの りんごは なにいろ？',
+      answer:0, choices:['あか','あお','くろ','しろ'] ,
+      detail:'りんごは あかい いろが おおいよ。みどりの りんごも あるんだ！'},
+    { level:1, type:'trivia', category:'trivia',
+      img:'sky_morning.png',
+      q:'おひさまが でてくるのは どっち？',
+      answer:0, choices:['あさ','よる','まよなか','ゆうがた'] ,
+      detail:'あさに おひさまが のぼって、よるは おつきさまが でてくるよ！'},
+    { level:1, type:'trivia', category:'trivia',
+      img:'stage_trivia_rabbit_no_ears_face_crop.png', framed:true,
+      img_answer:'stage_trivia_rabbit.png',
+      q:'うさぎの みみは どんな かたち？',
+      answer:1, choices:['まるくて みじかい','ながくて たっている','まるくて ちいさい','とがっていて ちいさい'] ,
+      detail:'うさぎは ながい みみで とおくの おとを よく きけるんだ！'},
+    // sprint-14 結線済み (2026-05-08): reveal pair で出題=シルエット → 正解後=既存
+    { level:1, type:'trivia', category:'trivia',
+      img:'stage_trivia_seed_in_dirt.png', framed:true,
+      img_answer:'stage_trivia_seed_germinate.png', framed_answer:true,
+      q:'たねを つちに うめると、 さいしょに なにが でてくる？',
+      answer:1, choices:['はな','め','みず','いし'] ,
+      detail:'たねから ちいさな みどりの めが でて、 だんだん おおきく そだっていくよ！'},
+
+    // Level 2
+    // sprint-14 結線済み (2026-05-08): reveal pair で出題=虫シルエット集合 → 正解後=蜘蛛アップ
+    { level:2, type:'trivia', category:'trivia',
+      choiceTextRevision:'20260608-no-choice-images',
+      img:'stage_trivia_bug_silhouettes.png', framed:true,
+      img_answer:'stage_trivia_spider_eyes.png',
+      q:'あしが 8ぽん あるのは どれ？',
+      answer:0,
+      choices:['クモ','カブトムシ','チョウチョ','バッタ'],
+      detail:'クモは あしが 8ぽん あるよ。 こんちゅうの なかまの カブトムシ・チョウチョ・バッタは 6ぽん だよ！'},
+    { level:2, type:'trivia', category:'trivia',
+      choiceTextRevision:'20260608-bird-choice-images-restored',
+      img:'stage_trivia_four_birds_silhouette.png',
+      q:'そらを とべない とりは どれ？',
+      answer:1,
+      choices:[
+        { text:'タカ',    image:'taka.png' },
+        { text:'ペンギン', image:'penguin.png' },
+        { text:'ハト',    image:'hato.png' },
+        { text:'ツバメ',  image:'tsubame.png' }
+      ],
+      detail:'ペンギンは とべないけど うみを およぐのが とくいだよ！'},
+    { level:2, type:'trivia', category:'trivia',
+      img:'stage_trivia_octopus_8legs_silhouette.png',
+      img_answer:'stage_trivia_octopus_8legs_color.png',
+      q:'タコの あしは なんぼん？',
+      answer:1, choices:['6ぽん','8ぽん','10ぽん','4ほん'] ,
+      detail:'8ぼんの うでで えものを つかまえたり あるいたりするよ！'},
+    { level:2, type:'trivia', category:'trivia',
+      img:'stage_trivia_speed_dust_side_pass.png',
+      img_answer:'stage_trivia_running_cheetah.png',
+      q:'せかいで いちばん はやい りくの どうぶつは？',
+      answer:2, choices:['ライオン','シマウマ','チーター','キリン'] ,
+      detail:'チーターは じそく 100キロ いじょうで はしれるよ！'},
+    { level:2, type:'trivia', category:'trivia',
+      img:'mt_fuji.png',
+      img_answer:'stage_weather_falling_snow.png',
+      q:'ふじさんの あたまに あるのは なに？',
+      answer:0, choices:['ゆき','けむり','くも','とり'] ,
+      detail:'たかい やまの うえは すずしいから、ゆきが ずっと とけずに のこるよ！'},
+    { level:2, type:'trivia', category:'trivia',
+      img:'stage_trivia_sleeping_bear_cave.png', framed:true,
+      img_word:'bear_winter_cave_entrance.png',
+      img_answer:'stage_trivia_sleeping_bear_cave.png', framed_answer:true,
+      q:'ふゆに ねむる（とうみん）どうぶつは どれ？',
+      answer:2, choices:['ゾウ','ライオン','クマ','キリン'] ,
+      detail:'クマは ふゆの あいだ たべものを さがさず ねむって すごすよ！'},
+    // sprint-14 結線済み (2026-05-08): reveal pair で出題=シルエット → 正解後=既存
+    { level:2, type:'trivia', category:'trivia',
+      img:'stage_trivia_earthworm_dirt_only.png', framed:true,
+      img_answer:'stage_trivia_earthworm_after_rain.png',
+      q:'あめが ふると つちから でてくる いきものは？',
+      answer:1, choices:['チョウチョ','ミミズ','カブトムシ','セミ'] ,
+      detail:'ミミズは みずが にがてで、あめが ふると じめんに でてくるよ！'},
+    { level:2, type:'trivia', category:'trivia',
+      img:'stage_trivia_koala_food_choices.png',
+      img_answer:'stage_trivia_koala_eucalyptus.png',
+      q:'コアラが たべるものは？',
+      answer:2, choices:['バナナ','たけのこ','ユーカリの は','りんご'] ,
+      detail:'ユーカリの はは どくが あるけど、コアラだけ たべられるよ！'},
+    // sprint-13 結線済み (2026-05-08): reveal pair (giraffe_full → neck_bones)
+    { level:2, type:'trivia', category:'trivia',
+      img:'stage_trivia_giraffe_full.png', framed:true,
+      img_answer:'stage_trivia_giraffe_neck_bones.png',
+      q:'キリンの くびの ほねは いくつ？',
+      answer:0,
+      choices:['7こ','15こ','20こ','5こ'],
+      hint:'にんげんと おなじ かずだよ！',
+      detail:'キリンも にんげんも、くびの ほねは 7こ。 にんげんの ほねを ながくしたのが キリンの くび！'},
+
+    // Level 3
+    { level:3, type:'trivia', category:'trivia',
+      img:'stage_trivia_fish_silhouette.png',
+      img_answer:'stage_trivia_jinbeizame_answer.png',
+      q:'せかいで いちばん おおきい さかなは？',
+      hint:'クジラは さかなじゃなくて ほにゅうるい！',
+      answer:2, choices:['マグロ','クジラ','ジンベイザメ','サメ'] ,
+      detail:'ジンベイザメは やさしい さかなで プランクトンを たべるよ！'},
+    { level:3, type:'trivia', category:'trivia',
+      img:'stage_trivia_dolphin.png',
+      img_answer:'stage_trivia_dolphin_whale_answer.png',
+      q:'イルカは なにの なかま？',
+      hint:'さかなに みえるけど ほにゅうるいだよ！',
+      answer:2, choices:['さかな','サメ','クジラ','タコ'] ,
+      detail:'イルカは ちいさい クジラの なかまで、おなじ ほにゅうるいだよ！'},
+    { level:3, type:'trivia', category:'trivia',
+      choiceTextRevision:'20260608-no-choice-images',
+      img:'stage_trivia_huge_creatures_compare.png',
+      img_answer:'stage_trivia_bluewhale_answer.png',
+      q:'ちきゅうで いちばん おおきい いきものは？',
+      answer:2,
+      choices:['ゾウ','ジンベイザメ','シロナガスクジラ','ダイオウイカ'],
+      detail:'シロナガスクジラは ながさ 30メートルにも なるよ！'},
+    // sprint-14 結線済み (2026-05-08): #81 と画像共用 (reveal pair: 虫シルエット集合 → 蜘蛛)
+    { level:3, type:'trivia', category:'trivia',
+      img:'stage_trivia_bug_silhouettes.png', framed:true,
+      img_answer:'stage_trivia_spider_eyes.png',
+      q:'めが 8つある いきものは？',
+      hint:'あしも 8ぽん あるよ！こんちゅう（むし）の なかまじゃないよ！',
+      answer:1, choices:['カブトムシ','クモ','チョウチョ','バッタ'] ,
+      detail:'クモは あしが 8ぽんで、こんちゅう（むし）とは ちがう なかまだよ！'},
+    { level:3, type:'trivia', category:'trivia',
+      img:'kusa.png',
+      img_word:'banana_tree_solo.png',
+      img_answer:'banana_kusa_compare.png',
+      q:'バナナの きは じつは なにの なかま？',
+      hint:'たかい きに みえるけど…',
+      answer:1, choices:['たけ','くさ','まつのき','さくら'] ,
+      detail:'バナナの きは「くさ」の なかまで、ほんとうは「き」じゃないんだよ！'},
+    { level:3, type:'trivia', category:'trivia',
+      img:'tako.png',
+      img_word:'tako_q.png',
+      img_answer:'tako_3hearts.png',
+      q:'タコの しんぞうは いくつ ある？',
+      hint:'タコは 3つも あるんじゃ！',
+      answer:2, choices:['1つ','2つ','3つ','4つ'] ,
+      detail:'2つは えらに ちを おくり、1つが からだに ちを おくるよ！'},
+    { level:3, type:'trivia', category:'trivia',
+      img:'stage_trivia_flamingo.png',
+      img_word:'stage_trivia_flamingo_alone.png',
+      img_answer:'stage_trivia_flamingo.png',
+      q:'フラミンゴが ピンクいろなのは なぜ？',
+      hint:'たべものの いろが からだに うつるよ！',
+      answer:1, choices:['そらの いろを すいこむ','あかい たべものを たべる','ペンキを ぬる','にっこうで やける'] ,
+      detail:'フラミンゴは あかい エビや ミジンコを たべるから ピンクに なるんだよ！'},
+    // sprint-13 結線済み (2026-05-08): silhouette → compare reveal pair + kiba/hige choice tiles 配置済
+    { level:3, type:'trivia', category:'trivia',
+      choiceTextRevision:'20260608-no-choice-images',
+      img:'stage_trivia_lion_osu_silhouette.png', framed:true,
+      img_word:'stage_trivia_lion_osu_silhouette.png',
+      img_answer:'stage_trivia_lion_osu_mesu_compare.png', framed_answer:true,
+      q:'ライオンの オスにだけ ある ものは？',
+      hint:'かおの まわりに もこもこ！',
+      answer:0,
+      choices:['たてがみ','きば','ひげ','つの'],
+      detail:'オスの ライオンには かおの まわりに たてがみが あるよ！メスには ないんだ！'}
+  ],
+
+  // ── からだのぶぶん ────────────────────────────────
+  body: [
+    // Level 1
+    { level:1, type:'emoji_name', category:'body', img:'Eyes/Eyes_normal_1.png', q:'これは からだの どこ？', answer:1, choices:['はな','め','くち','みみ'] },
+    { level:1, type:'emoji_name', category:'body', img:'Mouth_part/Mouth_part_normal_1.png', q:'これは からだの どこ？', answer:2, choices:['め','みみ','くち','はな'] },
+    { level:1, type:'emoji_name', category:'body', img:'Palm/Palm_normal_1.png', q:'これは からだの どこ？', answer:2, choices:['あし','かた','て','うで'] },
+    { level:1, type:'emoji_name', category:'body', img:'Foot_part/Foot_part_normal_1.png', q:'これは からだの どこ？', answer:0, choices:['あし','て','かた','おなか'] },
+    // sprint-14 結線済み (2026-05-08): 共通出題シルエット + 個別 reveal (face_nose|eye|ear)
+    { level:1, type:'trivia', category:'body',
+      img:'stage_body_boy_silhouette_question.png',
+      img_answer:'stage_body_boy_face_nose.png',
+      q:'においを かぐのは からだの どこ？', answer:0, choices:['はな','くち','め','ほほ'] ,
+      detail:'はなの おくに においを かんじる ばしょが あるよ！'},
+    // sprint-14 結線済み (2026-05-08): 共通出題シルエット + 個別 reveal (face_nose|eye|ear)
+    { level:1, type:'trivia', category:'body',
+      img:'stage_body_boy_silhouette_question.png',
+      img_answer:'stage_body_boy_face_eye.png',
+      q:'ものを みるのは からだの どこ？', answer:1, choices:['くち','め','ほほ','ひたい'] ,
+      detail:'めに はいった ひかりを のうが かたちに かえるよ！'},
+    // sprint-14 結線済み (2026-05-08): 共通出題シルエット + 個別 reveal (face_nose|eye|ear)
+    { level:1, type:'trivia', category:'body',
+      img:'stage_body_boy_silhouette_question.png',
+      img_answer:'stage_body_boy_face_ear.png',
+      q:'ものを きくのは からだの どこ？', answer:2, choices:['め','くち','みみ','はな'] ,
+      detail:'みみの なかの ちいさな ほねが おとを つたえるよ！'},
+    { level:1, type:'trivia', category:'body',
+      img:'finger.png',
+      img_answer:'stage_body_five_fingers_numbered.png',
+      q:'かたての ゆびは なんぼん？',
+      answer:1, choices:['4ほん','5ほん','6ぽん','3ぼん'] ,
+      detail:'おやゆび・ひとさしゆび・なかゆび・くすりゆび・こゆびの 5ほんだよ！'},
+
+    // Level 2
+    { level:2, type:'emoji_name', category:'body', img:'Nose_part/Nose_part_normal_1.png', q:'これは からだの どこ？', answer:0, choices:['はな','くち','め','ほほ'] },
+    { level:2, type:'emoji_name', category:'body', img:'Teeth/Teeth_normal_1.png', q:'これは からだの なに？', answer:1, choices:['ほね','は','つめ','かみ'] },
+    { level:2, type:'emoji_name', category:'body', img:'Tongue/Tongue_normal_1.png', q:'これは からだの なに？', answer:1, choices:['ゆび','した','みみ','おなか'] ,
+      detail:'したで あじを かんじているよ！'},
+    { level:2, type:'emoji_name', category:'body', img:'Ear_part/Ear_part_normal_1.png', q:'これは からだの どこ？', answer:2, choices:['め','はな','みみ','くち'] },
+    // sprint-14 結線済み (2026-05-08): reveal pair で出題=シルエット → 正解後=ひふ
+    { level:2, type:'trivia', category:'body',
+      img:'stage_body_boy_silhouette_question.png',
+      img_answer:'stage_body_skin_wrap.png',
+      q:'からだぜんたいを つつんで まもっているのは？',
+      hint:'からだの そとを おおっている ぶぶんだよ！',
+      answer:1, choices:['ふく','ひふ','ほね','け'] ,
+      detail:'ひふは からだぜんたいを つつんで まもっている ぶぶんだよ！'},
+    // sprint-14 結線済み (2026-05-08): reveal pair で出題=胸クラッチ → 正解後=しんぞう
+    { level:2, type:'trivia', category:'body',
+      img:'stage_body_chest_clutch.png',
+      img_answer:'stage_body_heart_pump.png',
+      q:'ちを からだじゅうに おくる ぽんぷは？',
+      hint:'むねの なかで どきどき している ところだよ！',
+      answer:0, choices:['しんぞう','のう','ひふ','い'] ,
+      detail:'しんぞうは どきどき と うごいて ち を おくっているよ！'},
+    { level:2, type:'trivia', category:'body',
+      img:'stage_body_munching.png', framed:true,
+      img_answer:'stage_body_chewing_teeth.png',
+      q:'たべものを かんで こなごなに するのは どこ？',
+      answer:0, choices:['は','みみ','め','かみのけ'] ,
+      detail:'は で たべものを かんでから のみこむと、おなかで しょうかしやすいよ！'},
+    // sprint-14 結線済み (2026-05-08): reveal pair で出題=深呼吸 → 正解後=はい
+    { level:2, type:'trivia', category:'body',
+      img:'stage_body_deep_breath.png', framed:true,
+      img_answer:'stage_body_lungs_breath.png',
+      q:'いきを すうのは からだの どこ？',
+      answer:0, choices:['はい','い','こころ','ゆび'] ,
+      detail:'はいで くうきを とりこんで、からだに さんそを おくるよ！'},
+
+    // Level 3
+    { level:3, type:'trivia', category:'body',
+      img:'pose_sleep.png',
+      q:'ねむっているとき からだは どうなっている？',
+      answer:0, choices:['やすんでいる','たべている','はしっている','うごけない'] ,
+      detail:'ねている あいだに からだは げんきを ためなおして、おおきく なっていくよ！'},
+    // sprint-13 結線済み (2026-05-08): stage_body_teeth_replacement.png 配置済み (子供の前歯が抜けた笑顔)
+    // framed: 紙風の長方形フレームが画像に焼き込まれているため共通 drop-shadow を抑止
+    { level:3, type:'trivia', category:'body',
+      img:'stage_body_teeth_replacement.png', framed:true,
+      q:'ぬけた はの あとには あたらしい はが はえる？',
+      answer:0,
+      choices:['はえる','はえない','ときどき はえる','わからない'],
+      hint:'こどもの はは おとなの はに かわるよ！',
+      detail:'こどもの はが ぬけても、あたらしい おとなの はが はえてくるよ！ しょうがっこうの あいだに ぜんぶ かわるよ。'},
+    { level:3, type:'trivia', category:'body',
+      img:'stage_body_baby_adult_bones.png',
+      q:'あかちゃんの ほねは おとなより おおい？ すくない？',
+      hint:'あかちゃんの ほねは あとで くっついて へっていく！',
+      answer:0, choices:['おおい','すくない','おなじ','わからない'] ,
+      detail:'あかちゃんの ほねは くっついて かずが すこしずつ へっていくよ！'},
+    { level:3, type:'trivia', category:'body',
+      img:'stage_body_shivering.png',
+      q:'さむいとき からだが ふるえるのは なぜ？',
+      answer:0, choices:['からだを あたためるため','こわいから','おなかが すいたから','ねむいから'] ,
+      detail:'きんにくを ふるわせて ねつを つくっているんだよ！'},
+    { level:3, type:'trivia', category:'body',
+      img:'stomach.png',
+      q:'おなかが すいたとき「グー」と なるのは なぜ？',
+      answer:0, choices:['おなかのなかで くうきが うごくから','ほねが なるから','きんにくが うごくから','ちが ながれるから'] ,
+      detail:'たべものが ないと いが くうきを おしだして「グー」と なるよ！'},
+    { level:3, type:'trivia', category:'body',
+      img:'stage_body_thumbprint.png',
+      q:'ゆびのさきの もようを なんという？',
+      answer:0, choices:['しもん','もよう','てもん','がら'] ,
+      detail:'しもんは ひとりひとり ちがう。ふたごでも ちがうんだよ！'},
+    { level:3, type:'trivia', category:'body',
+      img:'stage_body_eye_closed.png',
+      q:'まばたきは なんのために する？',
+      hint:'めを まもるため！',
+      answer:0, choices:['めを まもる','あそびの ため','こわい ため','ねむくなるため'] ,
+      detail:'まばたきで めに なみだを ながして、ほこりや ごみを ながしているよ！'},
+    { level:3, type:'trivia', category:'body',
+      img:'stage_body_kasabuta.png',
+      q:'けがを すると かさぶたが できるのは なぜ？',
+      answer:0, choices:['きずを まもって なおすため','いろを かえるため','かゆくするため','いろを つけるため'] ,
+      detail:'ちが かたまって フタの ように なって、きずを まもりながら なおしているよ！'}
+  ],
+
+  // ── かずのじゅん (3歳児向け / 1〜10 の前後・あいだ) ────────────────
+  // stageDisplay: ステージに表示する 「数字 + 矢印 + ◯ (答え位置)」 パターン (sw v974+)
+  //   - 「つぎ」: "N → ◯"   (◯ が答えの位置)
+  //   - 「まえ」: "◯ → N"   (◯ が答えの位置)
+  //   - 「あいだ」: "N → ◯ → M"
+  // renderNumberSequence が q.stageDisplay を優先参照 (なければ旧来の単一数字表示にフォールバック)
+  number_sequence: [
+    // Level 1: 「つぎ」(6問)
+    { level:1, type:'number_sequence', num:1, q:'1の つぎは？', stageDisplay:'1 → ◯', answer:1, choices:['1','2','3','4'] },
+    { level:1, type:'number_sequence', num:2, q:'2の つぎは？', stageDisplay:'2 → ◯', answer:1, choices:['2','3','4','5'] },
+    { level:1, type:'number_sequence', num:4, q:'4の つぎは？', stageDisplay:'4 → ◯', answer:1, choices:['4','5','6','7'] },
+    { level:1, type:'number_sequence', num:6, q:'6の つぎは？', stageDisplay:'6 → ◯', answer:1, choices:['6','7','8','9'] },
+    { level:1, type:'number_sequence', num:7, q:'7の つぎは？', stageDisplay:'7 → ◯', answer:1, choices:['7','8','9','10'] },
+    { level:1, type:'number_sequence', num:9, q:'9の つぎは？', stageDisplay:'9 → ◯', answer:2, choices:['8','9','10','7'] },
+    // Level 2: 「まえ」(4問)
+    { level:2, type:'number_sequence', num:3, q:'3の まえは？', stageDisplay:'◯ → 3', answer:1, choices:['1','2','3','4'] },
+    { level:2, type:'number_sequence', num:5, q:'5の まえは？', stageDisplay:'◯ → 5', answer:1, choices:['3','4','5','6'] },
+    { level:2, type:'number_sequence', num:8, q:'8の まえは？', stageDisplay:'◯ → 8', answer:1, choices:['6','7','8','9'] },
+    { level:2, type:'number_sequence', num:10, q:'10の まえは？', stageDisplay:'◯ → 10', answer:1, choices:['8','9','10','7'] },
+    // Level 3: 「あいだ」(2問)
+    // あいだ系は矢印なしの 「N ◯ M」 表記 (半角スペース区切り、 sw v975+)。
+    // renderNumberSequence は stageDisplay に `→` が含まれない場合は arrow span を出さず、 半角スペースで token 分割する。
+    { level:3, type:'number_sequence', nums:[2,4], q:'2と 4の あいだは？', stageDisplay:'2 ◯ 4', answer:2, choices:['1','2','3','4'] },
+    { level:3, type:'number_sequence', nums:[6,8], q:'6と 8の あいだは？', stageDisplay:'6 ◯ 8', answer:2, choices:['5','6','7','8'] }
+  ]
+};
+
+// ── カテゴリーメタデータ ──────────────────────────
+const QUIZLAND_CATEGORIES = {
+  order_color: { label: 'いろのじゅんばん', emoji: '🎨' },
+  count_total:  { label: 'かずをかぞえよう', emoji: '🔢' },
+  shape_name:   { label: 'かたち',           emoji: '⬛' },
+  number_sequence: { label: 'かずのじゅん',  emoji: '🔢' },
+  trivia:       { label: 'びっくり豆知識',   emoji: '💡' },
+  weather:      { label: 'てんき',           emoji: '☀️' },
+  opposite:     { label: 'はんたいことば',   emoji: '🔄' },
+  body:         { label: 'からだ',           emoji: '✋' }
+};
+
+// ── カラーパレット（CSS 描画用）────────────────────
+const QUIZLAND_COLORS = {
+  red:    { name: 'あか',     code: '#EF4444' },
+  blue:   { name: 'あお',     code: '#3B82F6' },
+  yellow: { name: 'きいろ',   code: '#FBBF24' },
+  green:  { name: 'みどり',   code: '#10B981' },
+  pink:   { name: 'ピンク',   code: '#EC4899' },
+  orange: { name: 'オレンジ', code: '#F97316' },
+  purple: { name: 'むらさき', code: '#8B5CF6' },
+  cyan:   { name: 'みずいろ', code: '#06B6D4' }
+};
+
+// ── 絵パス（count_total 用）─────────────────────────
+const QUIZLAND_WORD_IMG = '../assets/images/word/';

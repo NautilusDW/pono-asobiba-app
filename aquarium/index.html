@@ -8,6 +8,11 @@
   <meta name="mobile-web-app-capable" content="yes">
   <title>すいぞくかん｜ポノのあそびば</title>
   <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <!-- FOUC guard: intro-overlay は z-index:500 で visible のまま、 #pixi-canvas / #selection-screen を init 完了まで非表示 -->
+  <style>html,body{background:#0a1a3a}#pixi-canvas,#selection-screen{visibility:hidden}body.pono-game-ready #pixi-canvas,body.pono-game-ready #selection-screen{visibility:visible}</style>
+  <script>document.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(function(){requestAnimationFrame(function(){document.body.classList.add('pono-game-ready')})})});</script>
+  <script src="../common/preload-helper.js"></script>
+  <script>window.addEventListener('DOMContentLoaded',function(){if(window.PonoPreload)window.PonoPreload.warmGameAssets('aquarium');});</script>
   <script src="../common/achievements.js"></script>
   <script src="../common/menu.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -395,6 +400,7 @@
   </style>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 <!-- Phase 3: tier 判定 (絵本層は生き物8種に制限、サブスクは全種) -->
+<script src="../common/debug-mode.js"></script>
 <script src="../common/tier.js"></script>
 </head>
 <body>
@@ -506,7 +512,7 @@
   <script src="../common/museum-data.js"></script>
   <script src="../common/encyclopedia.js"></script>
   <script src="zone-boot.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/pixi.js@7/dist/pixi.min.js"></script>
+  <script src="../common/vendor/pixi7.min.js"></script>
   <script src="dynamic-creatures.js"></script>
   <script>
   (function() {
@@ -514,30 +520,37 @@
 
     // ─── BGM ───────────────────────────────────────────────
     let bgmEnabled = true, bgmStarted = false;
-    const bgm = new Audio('../assets/audio/Bubble Hop Playground.mp3');
-    bgm.loop = true;
-    bgm.volume = 0.45;
+    let bgm = null; // 初回ジェスチャまで Audio を生成しない（ページ表示時の 1.3MB ダウンロード防止）
+    function ensureBgm() {
+      if (!bgm) {
+        bgm = new Audio('../assets/audio/Bubble Hop Playground.mp3');
+        bgm.loop = true;
+        bgm.volume = 0.25;
+      }
+      return bgm;
+    }
     function tryStartBgm() {
       if (!bgmStarted && bgmEnabled) {
-        bgm.play().then(() => { bgmStarted = true; }).catch(() => {});
+        ensureBgm().play().then(() => { bgmStarted = true; }).catch(() => {});
       }
       SFX.init();
     }
     function toggleBgm() {
       bgmEnabled = !bgmEnabled;
-      if (bgmEnabled) { tryStartBgm(); bgm.play().catch(() => {}); }
-      else bgm.pause();
+      if (bgmEnabled) { tryStartBgm(); ensureBgm().play().catch(() => {}); }
+      else if (bgm) bgm.pause();
       if (window._ponoMenuBgmBtn) window._ponoMenuBgmBtn.classList.toggle('bgm-off', !bgmEnabled);
     }
     initMenu({ bgmToggle: toggleBgm, extraButtons: [
       { icon: '📖', label: 'ずかん', onClick: function () { Encyclopedia.open('..'); } }
     ] });
     document.addEventListener('visibilitychange', () => {
+      if (!bgm) return;
       if (document.hidden) bgm.pause();
       else if (bgmEnabled) bgm.play().catch(() => {});
     });
-    window.addEventListener('blur',  () => bgm.pause());
-    window.addEventListener('focus', () => { if (bgmEnabled) bgm.play().catch(() => {}); });
+    window.addEventListener('blur',  () => { if (!bgm || !document.hidden) return; bgm.pause(); });
+    window.addEventListener('focus', () => { if (bgm && bgmEnabled) bgm.play().catch(() => {}); });
     document.addEventListener('pointerdown', tryStartBgm, { once: true });
 
     // ─── SFX: Web Audio合成 ──────────────────────────────────
@@ -814,14 +827,14 @@
     const popBubbleGfx = new PIXI.Graphics();
     layerTop.addChild(popBubbleGfx);
 
-    // ─── Background: BG_A.png as PixiJS sprite so ripple filter covers it ──
+    // ─── Background: BG_A.webp as PixiJS sprite so ripple filter covers it ──
     let _bgSprite = null;
     function makeBackground() {
       layerBg.removeChildren();
 
       // Background image sprite (must be first — below light rays)
       if (!_bgSprite) {
-        _bgSprite = new PIXI.Sprite(PIXI.Texture.from('../assets/images/ocean/BG_A.png'));
+        _bgSprite = new PIXI.Sprite(PIXI.Texture.from('../assets/images/ocean/BG_A.webp'));
       }
       _bgSprite.width  = W();
       _bgSprite.height = H();
@@ -1067,17 +1080,17 @@
       '../assets/images/ocean/Fish_S01/Fish_S01_003.png',
     ]);
     const loadSubmarineTex = () => loadSpriteTex([
-      '../assets/images/ocean/Submarine/Submarine_001.png',
-      '../assets/images/ocean/Submarine/Submarine_002.png',
-      '../assets/images/ocean/Submarine/Submarine_003.png',
+      '../assets/images/ocean/Submarine/Submarine_001.webp',
+      '../assets/images/ocean/Submarine/Submarine_002.webp',
+      '../assets/images/ocean/Submarine/Submarine_003.webp',
     ]);
     const loadSunfishTex = () => loadSpriteTex([
       '../assets/images/ocean/Sunfish/Sunfish_001.png',
       '../assets/images/ocean/Sunfish/Sunfish_002.png',
     ]);
     const loadSharkTex = () => loadSpriteTex([
-      '../assets/images/ocean/Shark/Shark_001.png',
-      '../assets/images/ocean/Shark/Shark_002.png',
+      '../assets/images/ocean/Shark/Shark_001.webp',
+      '../assets/images/ocean/Shark/Shark_002.webp',
     ]);
 
     function addOctopusCreatures(n) {
@@ -3658,6 +3671,27 @@
       while (!_pixiReady) await new Promise(r => setTimeout(r, 50));
     }
 
+    // 背景テクスチャ (BG_A.webp) の読み込み完了を待つ。
+    // intro overlay は画面全体を覆っているので、 準備完了までこれを出したままにして
+    // 「空っぽの青い水槽」 を見せない (失敗時/長引く時は 4 秒で諦めて進む)。
+    function waitBgTexture() {
+      return new Promise(function(resolve) {
+        var bt = _bgSprite && _bgSprite.texture && _bgSprite.texture.baseTexture;
+        if (!bt || bt.valid) { resolve(); return; }
+        bt.on('loaded', resolve);
+        bt.on('error', resolve);
+        setTimeout(resolve, 4000);
+      });
+    }
+
+    // 保険: Pixi 初期化やテクスチャ読込が万一 stall しても intro を出しっぱなしにしない (最大 10 秒)
+    function waitReadyWithCap() {
+      return Promise.race([
+        waitPixiReady().then(waitBgTexture),
+        new Promise(function(resolve) { setTimeout(resolve, 10000); })
+      ]);
+    }
+
     let introHandled = false;
     let introReady = false;
     // ページ読み込み直後のタッチ誤爆を防ぐ（前画面のタップが伝搬する問題）
@@ -3665,14 +3699,13 @@
     function onIntroStart() {
       if (introHandled || !introReady) return;
       introHandled = true;
-      hideIntro();
-      waitPixiReady().then(() => quickStartAquarium());
+      // 背景 + 生き物テクスチャ (initRocks 内で読込) が揃ってから intro を外す
+      waitReadyWithCap().then(() => { hideIntro(); return quickStartAquarium(); });
     }
     function onIntroConfig() {
       if (introHandled || !introReady) return;
       introHandled = true;
-      hideIntro();
-      waitPixiReady().then(() => showSelectionScreen());
+      waitReadyWithCap().then(() => { hideIntro(); showSelectionScreen(); });
     }
     var startBtn = document.getElementById('introStartBtn');
     var configBtn = document.getElementById('introConfigBtn');

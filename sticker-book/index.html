@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>シールちょう｜ポノのあそびば</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<!--
+  シール帳 正本統一 (2026-06-26): 2D Canvas 版シール帳は廃止。
+  全動線を 3D book (Prototypes/StickerBookThreeJS) に統一。
+  既存ブックマーク / PWA SW キャッシュ持ち端末からの直接アクセスは
+  meta refresh + location.replace で 3D book へ自動転送。
+  ?game= 等の grant 動線 query は引継ぐ (3D book main.js が吸収)。
+  数バージョン安定後にこのファイル自体を git rm する予定。
+-->
+<meta http-equiv="refresh" content="0; url=../Prototypes/StickerBookThreeJS/?book=forest&surface=cover">
+<script>
+(function () {
+  var base = '../Prototypes/StickerBookThreeJS/';
+  var defaultQuery = '?book=forest&surface=cover';
+  var search = window.location.search || '';
+  var hash = window.location.hash || '';
+  var target;
+  if (search) {
+    // grant 動線の query (game / pasteId / firstEver 等) はそのまま引継ぐ。
+    // book / surface は既存値があれば優先、 無ければ default を merge。
+    try {
+      var current = new URLSearchParams(search);
+      if (!current.has('book')) current.set('book', 'forest');
+      if (!current.has('surface')) current.set('surface', 'cover');
+      target = base + '?' + current.toString() + hash;
+    } catch (e) {
+      target = base + defaultQuery + hash;
+    }
+  } else {
+    target = base + defaultQuery + hash;
+  }
+  try {
+    window.location.replace(target);
+  } catch (e) {
+    window.location.href = target;
+  }
+})();
+</script>
+<style>
+html, body { margin: 0; background: #26180f; color: #fff8da; font-family: "Hiragino Maru Gothic ProN", sans-serif; }
+.fallback { display: flex; min-height: 100vh; align-items: center; justify-content: center; padding: 24px; text-align: center; }
+.fallback a { color: #ffd86a; font-weight: 700; }
+</style>
+<script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
+</head>
+<body>
+<div class="fallback">
+  <p>シールちょうへ いどう しています...<br><a href="../Prototypes/StickerBookThreeJS/?book=forest&surface=cover">いどう しない ばあいは ここを タップ</a></p>
+</div>
+</body>
+</html>

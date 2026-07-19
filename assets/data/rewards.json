@@ -17,7 +17,10 @@
         "id": "deco_box",
         "img": "assets/images/Rooms/furnitures_final/box_A.png"
       },
-      "afterMsg": "あなただけの おもちゃばこ！\nスタンプで もらった たからものを\nここに いれられるよ。,スタンプを あつめて\nかぐを てに いれたら\n「わたしのおうち」で\nつかえるように なるよ！"
+      "afterMsg": [
+        "あなただけの おもちゃばこ！\nスタンプで もらった たからものを\nここに いれられるよ。",
+        "スタンプを あつめて\nかぐを てに いれたら\n「わたしのおうち」で\nつかえるように なるよ！"
+      ]
     },
     "8": {
       "name": "あおいベッド / ピンクベッド",
@@ -55,24 +58,6 @@
         "img": "assets/images/Rooms/furnitures_final/imp_furn_23d9a843_A.png"
       },
       "afterMsg": "ほんだなが もらえたよ！\nおへやに おいた ほんだなを\nタップすると ずかんが みられるよ！"
-    },
-    "20": {
-      "name": "あおいPCデスク＆チェア / ピンクつくえ",
-      "icon": "⭐",
-      "gendered": true,
-      "boy": {
-        "name": "あおいPCデスク＆チェア",
-        "type": "furn",
-        "id": "imp_furn_45b11a5f",
-        "img": "assets/images/Rooms/furnitures_final/imp_furn_45b11a5f_A.png"
-      },
-      "girl": {
-        "name": "ピンクつくえ",
-        "type": "furn",
-        "id": "imp_furn_13713cc8",
-        "img": "assets/images/Rooms/furnitures_final/imp_furn_13713cc8_A.png"
-      },
-      "afterMsg": "カードを ぜんぶ うめたね！\nすごい！つぎは もっと\nすてきな ごほうびが まってるよ！"
     }
   },
   "cardCompleteRewards": [
@@ -119,7 +104,7 @@
         "id": "bg_bowling_unicorn",
         "img": "assets/images/Bowling/BG/girl/unicorn.webp"
       },
-      "afterMsg": "ボウリングの はいけいが\nふえたよ！ボウリングで\nえらんで あそんでみてね！"
+      "afterMsg": "あたらしい はいけいを\nてに いれたよ！\nすてきな たからものが ふえたね！"
     },
     {
       "icon": "🖼️",

@@ -1,0 +1,438 @@
+[
+  {
+    "path": "flag/cmd_red_down_keep.mp3",
+    "attempts": [
+      {
+        "attempt": 1,
+        "ok": false,
+        "debug": {
+          "model": "gemini-3.1-flash-tts-preview",
+          "voice": "Aoede",
+          "status": 200,
+          "mime": "audio/l16; rate=24000; channels=1",
+          "finishReason": "STOP"
+        },
+        "transcript": "シロはそのまま赤下げて",
+        "kw_hit": [
+          null,
+          "そのまま",
+          "赤",
+          "下げ"
+        ],
+        "size_mp3": 21548,
+        "sha1_mp3": "caeec1de2f02b553d83e7011e94529aa4551c77e",
+        "kw_ok": false
+      },
+      {
+        "attempt": 2,
+        "ok": true,
+        "debug": {
+          "model": "gemini-3.1-flash-tts-preview",
+          "voice": "Aoede",
+          "status": 200,
+          "mime": "audio/l16; rate=24000; channels=1",
+          "finishReason": "STOP"
+        },
+        "transcript": "白羽そのまま赤下げて",
+        "kw_hit": [
+          "白",
+          "そのまま",
+          "赤",
+          "下げ"
+        ],
+        "size_mp3": 25580,
+        "sha1_mp3": "a8574f0fda148cd6df29f65e348ccc6bfb775094",
+        "kw_ok": true
+      }
+    ]
+  },
+  {
+    "path": "truefalse/start.mp3",
+    "attempts": [
+      {
+        "attempt": 1,
+        "ok": true,
+        "debug": {
+          "model": "gemini-3.1-flash-tts-preview",
+          "voice": "Aoede",
+          "status": 200,
+          "mime": "audio/l16; rate=24000; channels=1",
+          "finishReason": "STOP"
+        },
+        "transcript": "○か×かどっちかな",
+        "kw_hit": [
+          "どっち"
+        ],
+        "size_mp3": 28268,
+        "sha1_mp3": "6e2eb5dceff5459e5cc4ab8212c17811e4e1aa10",
+        "kw_ok": true
+      }
+    ]
+  },
+  {
+    "path": "truefalse/correct.mp3",
+    "attempts": [
+      {
+        "attempt": 1,
+        "ok": true,
+        "debug": {
+          "model": "gemini-3.1-flash-tts-preview",
+          "voice": "Aoede",
+          "status": 200,
+          "mime": "audio/l16; rate=24000; channels=1",
+          "finishReason": "STOP"
+        },
+        "transcript": "正解すごいね",
+        "kw_hit": [
+          "正解",
+          "すごい"
+        ],
+        "size_mp3": 19820,
+        "sha1_mp3": "d1d5d469277694c821aa431c91e9445f5184320f",
+        "kw_ok": true
+      }
+    ]
+  },
+  {
+    "path": "truefalse/wrong.mp3",
+    "attempts": [
+      {
+        "attempt": 1,
+        "ok": true,
+        "debug": {
+          "model": "gemini-3.1-flash-tts-preview",
+          "voice": "Aoede",
+          "status": 200,
+          "mime": "audio/l16; rate=24000; channels=1",
+          "finishReason": "STOP"
+        },
+        "transcript": "残念違ったよ",
+        "kw_hit": [
+          "残念",
+          "違っ"
+        ],
+        "size_mp3": 23660,
+        "sha1_mp3": "efb0d3aa05289e832cf44e00d7698706574c71a2",
+        "kw_ok": true
+      }
+    ]
+  },
+  {
+    "path": "simon/start.mp3",
+    "attempts": [
+      {
+        "attempt": 1,
+        "ok": true,
+        "debug": {
+          "model": "gemini-3.1-flash-tts-preview",
+          "voice": "Aoede",
+          "status": 200,
+          "mime": "audio/l16; rate=24000; channels=1",
+          "finishReason": "STOP"
+        },
+        "transcript": "よく見ててね。同じ順でタップするよ。",
+        "kw_hit": [
+          "見てて",
+          "同じ",
+          "順"
+        ],
+        "size_mp3": 32300,
+        "sha1_mp3": "ddd874106b78e20904921a7e89c57afad646fb6e",
+        "kw_ok": true
+      }
+    ]
+  },
+  {
+    "path": "simon/your_turn.mp3",
+    "attempts": [
+      {
+        "attempt": 1,
+        "ok": true,
+        "debug": {
+          "model": "gemini-3.1-flash-tts-preview",
+          "voice": "Aoede",
+          "status": 200,
+          "mime": "audio/l16; rate=24000; channels=1",
+          "finishReason": "STOP"
+        },
+        "transcript": "さあ君の番",
+        "kw_hit": [
+          "君",
+          "番"
+        ],
+        "size_mp3": 18668,
+        "sha1_mp3": "da563c2a43d7946286e496a7d4395a8411e09a10",
+        "kw_ok": true
+      }
+    ]
+  },
+  {
+    "path": "simon/wrong.mp3",
+    "attempts": [
+      {
+        "attempt": 1,
+        "ok": true,
+        "debug": {
+          "model": "gemini-3.1-flash-tts-preview",
+          "voice": "Aoede",
+          "status": 200,
+          "mime": "audio/l16; rate=24000; channels=1",
+          "finishReason": "STOP"
+        },
+        "transcript": "あれれ違う音だった",
+        "kw_hit": [
+          "あれれ",
+          "違う"
+        ],
+        "size_mp3": 32300,
+        "sha1_mp3": "74b6cfeb7f2e6fae23c3475100f411ca026c7d44",
+        "kw_ok": true
+      }
+    ]
+  },
+  {
+    "path": "silhouette/start.mp3",
+    "attempts": [
+      {
+        "attempt": 1,
+        "ok": false,
+        "debug": {
+          "model": "gemini-3.1-flash-tts-preview",
+          "voice": "Aoede",
+          "status": 200,
+          "mime": "audio/l16; rate=24000; channels=1",
+          "finishReason": "STOP"
+        },
+        "transcript": "チラッとだけ見えるよ。何の絵かな?",
+        "kw_hit": [
+          null,
+          "何の"
+        ],
+        "size_mp3": 36140,
+        "sha1_mp3": "726d9757cf72992761b5d52b904ad222dff0c1e9",
+        "kw_ok": false
+      },
+      {
+        "attempt": 2,
+        "ok": false,
+        "debug": {
+          "model": "gemini-3.1-flash-tts-preview",
+          "voice": "Aoede",
+          "status": 200,
+          "mime": "audio/l16; rate=24000; channels=1",
+          "finishReason": "STOP"
+        },
+        "transcript": "チラッとだけ見えるよ。何の絵かな?",
+        "kw_hit": [
+          null,
+          "何の"
+        ],
+        "size_mp3": 36908,
+        "sha1_mp3": "e2437ee140bc5081ed3f62940bd3ed30d1f74808",
+        "kw_ok": false
+      },
+      {
+        "attempt": 3,
+        "ok": false,
+        "debug": {
+          "model": "gemini-3.1-flash-tts-preview",
+          "voice": "Aoede",
+          "status": 200,
+          "mime": "audio/l16; rate=24000; channels=1",
+          "finishReason": "STOP"
+        },
+        "transcript": "チラッとだけ見えるよ。何の絵かな?",
+        "kw_hit": [
+          null,
+          "何の"
+        ],
+        "size_mp3": 37100,
+        "sha1_mp3": "33ac5a837d66a81669af3d98541a3289420a3478",
+        "kw_ok": false
+      },
+      {
+        "attempt": 4,
+        "ok": false,
+        "debug": {
+          "model": "gemini-3.1-flash-tts-preview",
+          "voice": "Aoede",
+          "status": 200,
+          "mime": "audio/l16; rate=24000; channels=1",
+          "finishReason": "STOP"
+        },
+        "transcript": "チラッとだけ見えるよ。何の絵かな?",
+        "kw_hit": [
+          null,
+          "何の"
+        ],
+        "size_mp3": 37484,
+        "sha1_mp3": "4fa8a0e00ab1ad58d074af190180aeb0e7caec63",
+        "kw_ok": false
+      },
+      {
+        "attempt": 5,
+        "ok": false,
+        "debug": {
+          "model": "gemini-3.1-flash-tts-preview",
+          "voice": "Aoede",
+          "status": 200,
+          "mime": "audio/l16; rate=24000; channels=1",
+          "finishReason": "STOP"
+        },
+        "transcript": "チラッとだけ見えるよ。何の絵かな?",
+        "kw_hit": [
+          null,
+          "何の"
+        ],
+        "size_mp3": 37100,
+        "sha1_mp3": "5e482b736e495c615249577ae217f06b19e7e717",
+        "kw_ok": false
+      }
+    ]
+  },
+  {
+    "path": "silhouette/hint_more.mp3",
+    "attempts": [
+      {
+        "attempt": 1,
+        "ok": true,
+        "debug": {
+          "model": "gemini-3.1-flash-tts-preview",
+          "voice": "Aoede",
+          "status": 200,
+          "mime": "audio/l16; rate=24000; channels=1",
+          "finishReason": "STOP"
+        },
+        "transcript": "もう一つ穴を開けたよ。もう一度見て。",
+        "kw_hit": [
+          "もう一つ",
+          "穴",
+          "もう一度"
+        ],
+        "size_mp3": 38828,
+        "sha1_mp3": "c94a28113e99b22a503ea55419593f1e60640f89",
+        "kw_ok": true
+      }
+    ]
+  },
+  {
+    "path": "silhouette/correct.mp3",
+    "attempts": [
+      {
+        "attempt": 1,
+        "ok": true,
+        "debug": {
+          "model": "gemini-3.1-flash-tts-preview",
+          "voice": "Aoede",
+          "status": 200,
+          "mime": "audio/l16; rate=24000; channels=1",
+          "finishReason": "STOP"
+        },
+        "transcript": "正解!よくわかったね。",
+        "kw_hit": [
+          "正解",
+          "わかっ"
+        ],
+        "size_mp3": 22700,
+        "sha1_mp3": "4004215d9883f4e016951c7ab8efc571504a2874",
+        "kw_ok": true
+      }
+    ]
+  },
+  {
+    "path": "silhouette/wrong.mp3",
+    "attempts": [
+      {
+        "attempt": 1,
+        "ok": true,
+        "debug": {
+          "model": "gemini-3.1-flash-tts-preview",
+          "voice": "Aoede",
+          "status": 200,
+          "mime": "audio/l16; rate=24000; channels=1",
+          "finishReason": "STOP"
+        },
+        "transcript": "残念違ったみたい",
+        "kw_hit": [
+          "残念",
+          "違っ"
+        ],
+        "size_mp3": 25388,
+        "sha1_mp3": "b9f302e3279a613acdda8020f70214809521f0d1",
+        "kw_ok": true
+      }
+    ]
+  },
+  {
+    "path": "oddone/start.mp3",
+    "attempts": [
+      {
+        "attempt": 1,
+        "ok": true,
+        "debug": {
+          "model": "gemini-3.1-flash-tts-preview",
+          "voice": "Aoede",
+          "status": 200,
+          "mime": "audio/l16; rate=24000; channels=1",
+          "finishReason": "STOP"
+        },
+        "transcript": "仲間外れはどれかな?",
+        "kw_hit": [
+          "仲間",
+          "外れ",
+          "どれ"
+        ],
+        "size_mp3": 21164,
+        "sha1_mp3": "e3ed6febd7fdd0b5bf5658256245b294bf678400",
+        "kw_ok": true
+      }
+    ]
+  },
+  {
+    "path": "oddone/correct.mp3",
+    "attempts": [
+      {
+        "attempt": 1,
+        "ok": true,
+        "debug": {
+          "model": "gemini-3.1-flash-tts-preview",
+          "voice": "Aoede",
+          "status": 200,
+          "mime": "audio/l16; rate=24000; channels=1",
+          "finishReason": "STOP"
+        },
+        "transcript": "正解!よく見つけたね!",
+        "kw_hit": [
+          "正解",
+          "見つけ"
+        ],
+        "size_mp3": 23468,
+        "sha1_mp3": "933a63263d63f4e0b98b1df3dc24dc7cbefa226e",
+        "kw_ok": true
+      }
+    ]
+  },
+  {
+    "path": "oddone/wrong.mp3",
+    "attempts": [
+      {
+        "attempt": 1,
+        "ok": true,
+        "debug": {
+          "model": "gemini-3.1-flash-tts-preview",
+          "voice": "Aoede",
+          "status": 200,
+          "mime": "audio/l16; rate=24000; channels=1",
+          "finishReason": "STOP"
+        },
+        "transcript": "んー、違うかも。",
+        "kw_hit": [
+          "違う"
+        ],
+        "size_mp3": 26540,
+        "sha1_mp3": "bb1efb7a2949d6baa71e50ff70fed4a75b1808e6",
+        "kw_ok": true
+      }
+    ]
+  }
+]

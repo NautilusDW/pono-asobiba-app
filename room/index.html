@@ -4,6 +4,69 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>わたしのおうち</title>
+  <!-- bento/kitchen.html と同パターン。free のみロック (book は isRoomItemUnlocked が別途10種制限) -->
+  <script src="../common/debug-mode.js"></script>
+  <script src="../common/tier.js"></script>
+  <script>
+  (function(){
+    'use strict';
+    var locked = false;
+    try {
+      var pt = window.PonoTier;
+      if (pt && typeof pt.getTier === 'function') locked = (pt.getTier() === 'free');
+    } catch (e) { locked = false; }
+    try {
+      if (locked && window.PonoDebugMode && window.PonoDebugMode.isAllowed()) locked = false;
+    } catch (e) {}
+    if (!locked) return;
+    window.__PONO_TIER_LOCKED__ = true;
+    // FOUC 防止: head 内同期実行なので初回ペイント前にゲーム側 DOM を不可視化
+    var st = document.createElement('style');
+    st.textContent = 'html{background:#FFF7E6 !important}body>*:not(#ponoTierLockScreen){visibility:hidden !important}';
+    (document.head || document.documentElement).appendChild(st);
+    // キーボード入力がゲームへ届かないよう capture 段階で遮断 (ロック中のみ)。
+    var KEY_EVTS = ['keydown', 'keyup', 'keypress'];
+    for (var i = 0; i < KEY_EVTS.length; i++) {
+      window.addEventListener(KEY_EVTS[i], function(e){
+        if (window.__PONO_TIER_LOCKED__) e.stopImmediatePropagation();
+      }, true);
+    }
+    function showLock(){
+      if (!document.body || document.getElementById('ponoTierLockScreen')) return;
+      var ov = document.createElement('div');
+      ov.id = 'ponoTierLockScreen';
+      ov.setAttribute('role', 'dialog');
+      ov.style.cssText = 'position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(165deg,#FFF7E6 0%,#FFEDC2 45%,#D9EFD5 100%);font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN",sans-serif;text-align:center';
+      var card = document.createElement('div');
+      card.style.cssText = 'background:#fff;border-radius:26px;padding:28px 24px 26px;max-width:340px;width:100%;box-shadow:0 12px 40px rgba(93,78,55,0.22)';
+      var emo = document.createElement('div');
+      emo.style.cssText = 'font-size:2.8rem;line-height:1;margin-bottom:12px';
+      emo.textContent = '🏠✨';
+      card.appendChild(emo);
+      var tag = document.createElement('div');
+      tag.style.cssText = 'display:inline-block;font-size:0.74rem;font-weight:900;color:#fff;background:linear-gradient(135deg,#34D399,#10B981);padding:4px 14px;border-radius:50px;letter-spacing:0.06em;margin-bottom:12px';
+      tag.textContent = 'アプリばん・えほん げんてい';
+      card.appendChild(tag);
+      var ttl = document.createElement('div');
+      ttl.style.cssText = 'font-size:1.12rem;font-weight:900;color:#5D4E37;line-height:1.5;margin-bottom:10px';
+      ttl.textContent = 'わたしのおうちは とくべつな バージョンで あそべるよ！';
+      card.appendChild(ttl);
+      var body = document.createElement('div');
+      body.style.cssText = 'font-size:0.92rem;font-weight:700;color:#8B7B60;line-height:1.6;margin-bottom:18px';
+      body.textContent = 'アプリばんか えほんを てにいれると、じぶんだけの おへやが つくれるよ';
+      card.appendChild(body);
+      var btn = document.createElement('a');
+      btn.href = '../play.html';
+      btn.style.cssText = 'display:inline-block;padding:12px 34px;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-size:0.98rem;font-weight:900;text-decoration:none;box-shadow:0 4px 14px rgba(59,130,246,0.4)';
+      btn.textContent = 'メニューへ もどる';
+      card.appendChild(btn);
+      ov.appendChild(card);
+      document.body.appendChild(ov);
+    }
+    if (document.body) { showLock(); }
+    else { document.addEventListener('DOMContentLoaded', showLock); }
+  })();
+  </script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -869,8 +932,7 @@
 <script src="../common/stickers.js"></script>
 <script src="../common/menu.js"></script>
 <script src="../common/highscore.js"></script>
-<!-- Phase 3: tier 判定 (絵本層は家具・かざり 10種に制限、サブスクは全種) -->
-<script src="../common/tier.js"></script>
+<!-- common/debug-mode.js / common/tier.js は head 先頭のロックガードで読込済み -->
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
 <body>
@@ -1051,7 +1113,7 @@
 const bgm = document.getElementById('bgm');
 let bgmEnabled = localStorage.getItem('pono_bgm_enabled') !== 'off';
 let bgmStarted = false;
-bgm.volume = 0.15;
+bgm.volume = 0.25;
 
 function tryStartBgm() {
   if (!bgmEnabled || bgmStarted) return;
@@ -1069,7 +1131,7 @@ document.addEventListener('visibilitychange', () => {
   if (document.hidden) { bgm.pause(); }
   else if (bgmEnabled) { bgm.play().catch(() => {}); }
 });
-window.addEventListener('blur',  () => bgm.pause());
+window.addEventListener('blur',  () => { if (!document.hidden) return; bgm.pause(); });
 window.addEventListener('focus', () => { if (bgmEnabled) bgm.play().catch(() => {}); });
 
 initMenu({
@@ -1136,8 +1198,10 @@ function loadState() {
   }
   const migrate = id => ID_MIGRATION[id] || id;
 
-  // achievements.js/grantReward で獲得した家具・壁・床をマージ（マイグレーション前に実行）
-  const MERGE_KEYS = ['pono_unlocked_furn', 'pono_unlocked_wall', 'pono_unlocked_floor'];
+  // achievements.js/grantReward で獲得した家具・壁・床 + どんぐりショップで購入した家具を
+  // マージ（マイグレーション前に実行）。実績経由の所持ロジックは変更せず、購入済みリスト
+  // (pono_shop_furn_purchased, shop/index.html の🪑かぐタブが書き込む) を OR 条件で足すだけ。
+  const MERGE_KEYS = ['pono_unlocked_furn', 'pono_unlocked_wall', 'pono_unlocked_floor', 'pono_shop_furn_purchased'];
   MERGE_KEYS.forEach(key => {
     try {
       const arr = JSON.parse(localStorage.getItem(key) || '[]');
@@ -1246,7 +1310,8 @@ function getRowColFromPoint(areaEl, clientX, clientY) {
 // ─── Item lookup ──────────────────────────────────────
 function getItem(id) { return ROOM_ITEMS.find(x => x.id === id); }
 
-const DEBUG_MODE = localStorage.getItem('pono_debug') === '1';
+// v1581: pono_debug 並列パスを PonoDebugMode に集約 (staging host + sessionStorage unlock 時のみ)
+const DEBUG_MODE = !!(window.PonoDebugMode && typeof window.PonoDebugMode.isAllowed === 'function' && window.PonoDebugMode.isAllowed());
 function isOwned(id)  { return DEBUG_MODE || state.inventory.includes(id); }
 function isPlaced(id) {
   return Object.values(state.config).some(cfg => {
@@ -1287,6 +1352,13 @@ function getFootprint(row, col, item, angle) {
 // ─── スタッキング定義 ─────────────────────────────────
 // 衝突を無視するアイテム（上に物を置ける）
 const PASSTHROUGH_IDS = new Set(['deco_rug_pink', 'deco_rug_space']);
+const TOYBOX_COLLISION_ITEM = { id: '__toybox', cat: 'furn', cellSize: 1, footprintSize: 1 };
+function getPlacementLayer(item) {
+  if (!item) return 'floor';
+  if (item.placementLayer) return item.placementLayer;
+  if (PASSTHROUGH_IDS.has(item.id)) return 'rug';
+  return 'floor';
+}
 // デコを上に乗せられる家具（3段棚は除外）
 const SURFACE_IDS = new Set([
   'furn_bed_wood', 'furn_desk', 'furn_toyshelf', 'furn_shelf2',
@@ -1295,7 +1367,14 @@ const SURFACE_IDS = new Set([
 ]);
 // 乗せられるアイテム（cat==='deco' + 壁掛け家具）
 const STACKABLE_FURN = new Set(['furn_toyshelf']);
-function isStackableItem(item) { return item && (item.cat === 'deco' || STACKABLE_FURN.has(item.id)); }
+const STACKABLE_DECO_IDS = new Set([
+  'furn_bear_1', 'deco_bear_ribbon', 'deco_bunny', 'deco_doll',
+  'deco_tea', 'deco_sportscar', 'deco_robot', 'deco_books',
+  'deco_plasma_ball', 'deco_drone_white_boy', 'deco_vr_blue_boy', 'deco_rocket_boy',
+]);
+function isStackableItem(item) {
+  return item && (STACKABLE_DECO_IDS.has(item.id) || STACKABLE_FURN.has(item.id));
+}
 // surfaceYオフセットを受けるアイテム（壁掛けは除外）
 function getsSurfaceOffset(item) { return item && item.cat === 'deco' && !STACKABLE_FURN.has(item.id); }
 
@@ -1304,6 +1383,7 @@ function isOverlapping(areaId, row, col, item, angle, excludeId) {
   const cfg = state.config[areaId] || {};
   const placed = cfg.placed || getPlacedItems(cfg);
   const myFoot = getFootprint(row, col, item, angle);
+  const myLayer = getPlacementLayer(item);
   const iAmStackable = isStackableItem(item);
   for (const p of placed) {
     if (p.id === excludeId) continue;
@@ -1313,6 +1393,9 @@ function isOverlapping(areaId, row, col, item, angle, excludeId) {
     if (PASSTHROUGH_IDS.has(other.id)) continue;
     // 自分がラグなら他と衝突しない
     if (PASSTHROUGH_IDS.has(item.id)) continue;
+    const otherLayer = getPlacementLayer(other);
+    // 壁掛けと床家具は別レイヤー。同じ壁レイヤー同士は従来どおり衝突する。
+    if ((myLayer === 'wall') !== (otherLayer === 'wall')) continue;
     const otherFoot = getFootprint(p.row, p.col, other, p.angle || 'A');
     let collides = false;
     for (const mc of myFoot) {
@@ -1322,15 +1405,173 @@ function isOverlapping(areaId, row, col, item, angle, excludeId) {
       if (collides) break;
     }
     if (!collides) continue;
-    // デコ同士は衝突しない（家具の上に複数乗せられる）
-    if (iAmStackable && isStackableItem(other)) continue;
     // デコを家具の上に乗せる判定（複数デコ許可）
     if (iAmStackable && SURFACE_IDS.has(other.id)) continue;
     // 家具をデコの上に置こうとした場合も許可（デコ側が乗ってる扱い）
     if (isStackableItem(other) && SURFACE_IDS.has(item.id)) continue;
     return true;
   }
+  // おもちゃばこは placed 配列とは別管理なので、家具側からも明示的に衝突判定する。
+  if (areaId === 'living' && myLayer !== 'wall' && item.id !== TOYBOX_COLLISION_ITEM.id) {
+    const toyRow = cfg.toyboxRow ?? 7;
+    const toyCol = cfg.toyboxCol ?? 1;
+    if (myFoot.some(c => c.row === toyRow && c.col === toyCol)) return true;
+  }
   return false;
+}
+
+const OPAQUE_BOUNDS_CACHE = new Map();
+const OPAQUE_MASK_CACHE = new Map();
+function getOpaqueMask(itemEl) {
+  const img = itemEl && itemEl.querySelector('img');
+  if (!img || !img.complete || !img.naturalWidth || !img.naturalHeight) return null;
+  const key = img.currentSrc || img.src;
+  let mask = OPAQUE_MASK_CACHE.get(key);
+  if (mask) return { ...mask, rect: img.getBoundingClientRect() };
+  try {
+    const maxSide = 192;
+    const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+    const width = Math.max(1, Math.round(img.naturalWidth * scale));
+    const height = Math.max(1, Math.round(img.naturalHeight * scale));
+    const canvas = document.createElement('canvas');
+    canvas.width = width; canvas.height = height;
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+    ctx.drawImage(img, 0, 0, width, height);
+    const rgba = ctx.getImageData(0, 0, width, height).data;
+    const alpha = new Uint8Array(width * height);
+    for (let i = 0; i < alpha.length; i++) alpha[i] = rgba[i * 4 + 3];
+    mask = { width, height, alpha };
+    OPAQUE_MASK_CACHE.set(key, mask);
+    return { ...mask, rect: img.getBoundingClientRect() };
+  } catch (_) { return null; }
+}
+
+function opaqueAtScreenPoint(mask, x, y) {
+  const rect = mask.rect;
+  if (!rect.width || !rect.height || x < rect.left || x >= rect.right || y < rect.top || y >= rect.bottom) return false;
+  const px = Math.max(0, Math.min(mask.width - 1, Math.floor((x - rect.left) / rect.width * mask.width)));
+  const py = Math.max(0, Math.min(mask.height - 1, Math.floor((y - rect.top) / rect.height * mask.height)));
+  return mask.alpha[py * mask.width + px] >= 16;
+}
+
+// 壁家具と床家具は、外接長方形ではなく実際の不透明ピクセル同士で判定する。
+// カーテンの中央やアーチ内側など、画像内部の透明な空間には家具を置ける。
+function hasOpaquePixelOverlap(wallEl, floorEl, allowance) {
+  const wallMask = getOpaqueMask(wallEl);
+  const floorMask = getOpaqueMask(floorEl);
+  if (!wallMask || !floorMask) return null;
+  const left = Math.max(wallMask.rect.left, floorMask.rect.left);
+  const right = Math.min(wallMask.rect.right, floorMask.rect.right);
+  const top = Math.max(wallMask.rect.top, floorMask.rect.top);
+  const bottom = Math.min(wallMask.rect.bottom, floorMask.rect.bottom);
+  if (right - left < 2 || bottom - top < 2) return false;
+  const cutoffY = wallMask.rect.bottom - wallMask.rect.height * allowance / 100;
+  const checkBottom = Math.min(bottom, cutoffY);
+  if (checkBottom <= top) return false;
+  const step = Math.max(1, Math.min(3, Math.ceil(Math.max(right - left, checkBottom - top) / 160)));
+  let hits = 0;
+  for (let y = top + step / 2; y < checkBottom; y += step) {
+    for (let x = left + step / 2; x < right; x += step) {
+      if (opaqueAtScreenPoint(wallMask, x, y) && opaqueAtScreenPoint(floorMask, x, y) && ++hits >= 2) return true;
+    }
+  }
+  return false;
+}
+
+function getOpaqueContentRect(itemEl) {
+  const img = itemEl && itemEl.querySelector('img');
+  const fallback = itemEl.getBoundingClientRect();
+  if (!img || !img.complete || !img.naturalWidth || !img.naturalHeight) return fallback;
+  const key = img.currentSrc || img.src;
+  let bounds = OPAQUE_BOUNDS_CACHE.get(key);
+  if (!bounds) {
+    try {
+      const maxSide = 128;
+      const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+      const w = Math.max(1, Math.round(img.naturalWidth * scale));
+      const h = Math.max(1, Math.round(img.naturalHeight * scale));
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(img, 0, 0, w, h);
+      const data = ctx.getImageData(0, 0, w, h).data;
+      let minX = w, minY = h, maxX = -1, maxY = -1;
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+        if (data[(y * w + x) * 4 + 3] < 16) continue;
+        minX = Math.min(minX, x); minY = Math.min(minY, y);
+        maxX = Math.max(maxX, x); maxY = Math.max(maxY, y);
+      }
+      bounds = maxX >= minX ? { x: minX / w, y: minY / h, w: (maxX + 1 - minX) / w, h: (maxY + 1 - minY) / h } : { x: 0, y: 0, w: 1, h: 1 };
+      OPAQUE_BOUNDS_CACHE.set(key, bounds);
+    } catch (_) { return fallback; }
+  }
+  const rect = img.getBoundingClientRect();
+  return {
+    left: rect.left + rect.width * bounds.x,
+    right: rect.left + rect.width * (bounds.x + bounds.w),
+    top: rect.top + rect.height * bounds.y,
+    bottom: rect.top + rect.height * (bounds.y + bounds.h),
+    width: rect.width * bounds.w,
+    height: rect.height * bounds.h,
+  };
+}
+
+// グリッドセルが別でも、家具の「足元」が大きく重なるケースを検出する。
+// 背の高い家具は遠近表現で画像上部が重なるのが正常なので、画像全体ではなく
+// 下端から最大60px（高さの28%）だけを床接地帯として比較する。
+function isVisuallyOverlapping(movingEl) {
+  if (!movingEl) return false;
+  const mine = movingEl.getBoundingClientRect();
+  if (!mine.width || !mine.height) return false;
+  const floorBand = rect => {
+    const height = Math.min(60, Math.max(18, rect.height * 0.28));
+    return { left: rect.left, right: rect.right, top: rect.bottom - height, bottom: rect.bottom, width: rect.width, height };
+  };
+  const mineFloor = floorBand(mine);
+  const movingItem = getItem(movingEl.dataset.itemId) || TOYBOX_COLLISION_ITEM;
+  const movingLayer = getPlacementLayer(movingItem);
+  const area = movingEl.closest('.room-area');
+  if (!area) return false;
+  return Array.from(area.querySelectorAll('.item-placed')).some(otherEl => {
+    if (otherEl === movingEl) return false;
+    const otherId = otherEl.dataset.itemId;
+    if (otherId && PASSTHROUGH_IDS.has(otherId)) return false;
+    const otherRect = otherEl.getBoundingClientRect();
+    const otherItem = getItem(otherId) || TOYBOX_COLLISION_ITEM;
+    const otherLayer = getPlacementLayer(otherItem);
+    // 壁レイヤーが関わる場合は窓枠そのものの交差だけを見る。
+    if (movingLayer === 'wall' || otherLayer === 'wall') {
+      const visibleMine = getOpaqueContentRect(movingEl);
+      const visibleOther = getOpaqueContentRect(otherEl);
+      const overlapW = Math.min(visibleMine.right, visibleOther.right) - Math.max(visibleMine.left, visibleOther.left);
+      const overlapH = Math.min(visibleMine.bottom, visibleOther.bottom) - Math.max(visibleMine.top, visibleOther.top);
+      if (overlapW < 8 || overlapH < 8) return false;
+      // 窓と床家具: 窓ごとの許容率ぶんだけ、窓下側への家具の重なりを許可する。
+      if (movingLayer !== otherLayer) {
+        const wallRect = movingLayer === 'wall' ? visibleMine : visibleOther;
+        const floorRect = movingLayer === 'wall' ? visibleOther : visibleMine;
+        const wallItem = movingLayer === 'wall' ? movingItem : otherItem;
+        const allowance = Math.max(0, Math.min(80, wallItem.wallFurnitureAllowance || 0));
+        const wallEl = movingLayer === 'wall' ? movingEl : otherEl;
+        const floorEl = movingLayer === 'wall' ? otherEl : movingEl;
+        const pixelOverlap = hasOpaquePixelOverlap(wallEl, floorEl, allowance);
+        if (pixelOverlap !== null) return pixelOverlap;
+        const cutoffY = wallRect.bottom - wallRect.height * allowance / 100;
+        return floorRect.top < cutoffY;
+      }
+      // 窓同士は画像矩形の大きな交差を拒否する。
+      const mineArea = visibleMine.width * visibleMine.height;
+      const otherArea = visibleOther.width * visibleOther.height;
+      return overlapW * overlapH >= Math.min(mineArea, otherArea) * 0.05;
+    }
+    const otherFloor = floorBand(otherRect);
+    const overlapW = Math.min(mineFloor.right, otherFloor.right) - Math.max(mineFloor.left, otherFloor.left);
+    const overlapH = Math.min(mineFloor.bottom, otherFloor.bottom) - Math.max(mineFloor.top, otherFloor.top);
+    if (overlapW < 12 || overlapH < 8) return false;
+    const mineArea = mineFloor.width * mineFloor.height;
+    const otherArea = otherFloor.width * otherFloor.height;
+    return overlapW * overlapH >= Math.min(mineArea, otherArea) * 0.1;
+  });
 }
 
 // 空いている最寄りのセルを探す
@@ -1476,7 +1717,8 @@ function _applyGridPos(el, row, col, areaId) {
   // デコ→家具の上に乗っている場合のみ+100（前後関係を維持しつつ家具の上に表示）
   //       床に直置きの場合は家具と同じdepthベース
   const isOnSurface = extraY !== 0;
-  el.style.zIndex    = PASSTHROUGH_IDS.has(itemId) ? 18
+  el.style.zIndex    = getPlacementLayer(item) === 'wall' ? 17
+                     : PASSTHROUGH_IDS.has(itemId) ? 18
                      : (item && item.cat === 'deco' && isOnSurface) ? 100 + cell.z
                      : cell.z;
 }
@@ -1563,11 +1805,16 @@ function _makeGridItem(p, areaId, locked) {
 function _rotateItem(el, areaId) {
   const item = getItem(el.dataset.itemId);
   if (!item || !item.roomImgB) return;
+  const oldAngle = el.dataset.angle || 'A';
+  const oldRow = parseInt(el.dataset.row);
+  const oldCol = parseInt(el.dataset.col);
   const newAngle = el.dataset.angle === 'B' ? 'A' : 'B';
+  const clamped = clampToGrid(item, oldRow, oldCol, newAngle);
+  if (isOverlapping(areaId, clamped.row, clamped.col, item, newAngle, el.dataset.itemId)) {
+    showToast('ここでは まわせないよ！');
+    return;
+  }
   el.dataset.angle = newAngle;
-  const row = parseInt(el.dataset.row);
-  const col = parseInt(el.dataset.col);
-  const clamped = clampToGrid(item, row, col, newAngle);
   el.dataset.row = clamped.row;
   el.dataset.col = clamped.col;
   _applyGridPos(el, clamped.row, clamped.col, areaId);
@@ -1647,19 +1894,14 @@ function _addDragHandlers(el, areaId) {
     const finalClamped = clampToGrid(item, row, col, el.dataset.angle);
     row = finalClamped.row; col = finalClamped.col;
     el.dataset.row = row; el.dataset.col = col;
-    // 衝突チェック: 他のアイテムと重なったら最寄り空きセルへ（見つからなければ元に戻す）
-    if (isOverlapping(areaId, row, col, item, el.dataset.angle, el.dataset.itemId)) {
-      const empty = findNearestEmpty(areaId, row, col, el.dataset.itemId, item, el.dataset.angle);
-      if (isOverlapping(areaId, empty.row, empty.col, item, el.dataset.angle, el.dataset.itemId)) {
-        // 空きが見つからなかった → 元の位置に戻す
-        const cfg2 = state.config[areaId];
-        const orig = cfg2 && cfg2.placed ? cfg2.placed.find(q => q.id === el.dataset.itemId) : null;
-        if (orig) { row = orig.row; col = orig.col; }
-        showToast('ここには おけないよ！');
-      } else {
-        row = empty.row; col = empty.col;
-        showToast('ここには おけないよ！');
-      }
+    // 衝突チェック: 他のアイテムと重なった場合は元の位置へ戻す。
+    // 別の空きセルへ自動移動すると、ユーザーが指定していない場所で確定してしまう。
+    if (isOverlapping(areaId, row, col, item, el.dataset.angle, el.dataset.itemId) ||
+        isVisuallyOverlapping(el)) {
+      const cfg2 = state.config[areaId];
+      const orig = cfg2 && cfg2.placed ? cfg2.placed.find(q => q.id === el.dataset.itemId) : null;
+      if (orig) { row = orig.row; col = orig.col; }
+      showToast('ここには おけないよ！');
       el.dataset.row = row; el.dataset.col = col;
       _applyGridPos(el, row, col, areaId);
     }
@@ -1669,6 +1911,7 @@ function _addDragHandlers(el, areaId) {
     const p = cfg.placed.find(q => q.id === el.dataset.itemId);
     if (p) { p.row = row; p.col = col; }
     saveState();
+    suppressToyboxUntil = Date.now() + 1000;
     dragging = false;
   }
 
@@ -1888,14 +2131,14 @@ function buildRoomArea(areaData) {
   const floor = document.createElement('div');
   floor.className = 'room-floor';
   floor.addEventListener('click', e => {
-    if (locked || !editMode) return;
+    if (locked || !editMode || Date.now() < suppressToyboxUntil) return;
     e.stopPropagation();
     openInventory('floor');
   });
 
   // 壁クリック: room-area自体で検出（wallはpointer-events:noneのため）
   div.addEventListener('click', e => {
-    if (locked || !editMode) return;
+    if (locked || !editMode || Date.now() < suppressToyboxUntil) return;
     // floor・家具・デコ・宝箱・回転ボタンをクリックした場合は無視
     if (e.target.closest('.room-floor') || e.target.closest('.item-placed')
         || e.target.closest('.btn-rotate') || e.target.closest('.btn-stow') || e.target.closest('.toybox-item')) return;
@@ -2025,6 +2268,7 @@ function buildRoomArea(areaData) {
 
     // ドラッグ（editモード）+ タップ（通常モードのみメニュー）
     let tbStartX = 0, tbStartY = 0, tbDragging = false;
+    let tbStartRow = tbRow, tbStartCol = tbCol;
     let tbBusy = false;
 
     function tbOnMove(cx, cy) {
@@ -2051,10 +2295,22 @@ function buildRoomArea(areaData) {
       if (e) { e.preventDefault(); e.stopPropagation(); }
       toybox.classList.remove('dragging');
       if (tbDragging) {
+        var nextRow = parseInt(toybox.dataset.row);
+        var nextCol = parseInt(toybox.dataset.col);
+        if (isOverlapping('living', nextRow, nextCol, TOYBOX_COLLISION_ITEM, 'A', TOYBOX_COLLISION_ITEM.id)) {
+          nextRow = tbStartRow;
+          nextCol = tbStartCol;
+          toybox.dataset.row = nextRow;
+          toybox.dataset.col = nextCol;
+          tbApplyStyle(nextRow, nextCol);
+          toybox.appendChild(tbRotBtn);
+          showToast('ここには おけないよ！');
+        }
         if (!state.config.living) state.config.living = {};
-        state.config.living.toyboxRow = parseInt(toybox.dataset.row);
-        state.config.living.toyboxCol = parseInt(toybox.dataset.col);
+        state.config.living.toyboxRow = nextRow;
+        state.config.living.toyboxCol = nextCol;
         saveState();
+        suppressToyboxUntil = Date.now() + 700;
       }
       tbDragging = false;
       tbBusy = true;
@@ -2064,6 +2320,7 @@ function buildRoomArea(areaData) {
     toybox.addEventListener('touchstart', e => {
       e.stopPropagation();
       tbStartX = e.touches[0].clientX; tbStartY = e.touches[0].clientY;
+      tbStartRow = parseInt(toybox.dataset.row); tbStartCol = parseInt(toybox.dataset.col);
       tbDragging = false;
     }, { passive: true });
     toybox.addEventListener('touchmove', e => {
@@ -2076,7 +2333,7 @@ function buildRoomArea(areaData) {
     toybox.addEventListener('click', e => {
       e.stopPropagation();
       e.preventDefault();
-      if (editMode || tbBusy) return;
+      if (editMode || tbBusy || Date.now() < suppressToyboxUntil) return;
       openTakarabako();
     });
 
@@ -2085,6 +2342,7 @@ function buildRoomArea(areaData) {
       if (e.button !== 0) return;
       e.preventDefault(); e.stopPropagation();
       tbStartX = e.clientX; tbStartY = e.clientY;
+      tbStartRow = parseInt(toybox.dataset.row); tbStartCol = parseInt(toybox.dataset.col);
       tbDragging = false;
       function mm(ev) { tbOnMove(ev.clientX, ev.clientY); }
       function mu(ev) { window.removeEventListener('mousemove', mm); window.removeEventListener('mouseup', mu); tbOnEnd(ev); }
@@ -2130,6 +2388,7 @@ function refreshArea(areaId) {
 
 // ─── Shop ─────────────────────────────────────────────
 let editMode = false;
+let suppressToyboxUntil = 0;
 let currentShopCat = 'wall';
 let currentAreaId  = 'living';
 let shopMode       = 'bag'; // 'buy' | 'bag'（当面は買う/手持ち非表示のため bag 固定）
@@ -2216,14 +2475,16 @@ function renderTakaraStickers() {
 
 function renderTakaraAchievements() {
   const container = document.getElementById('takara-achievements');
-  const allAch = window.getAchievements ? window.getAchievements() : [];
+  // 廃止済みゲーム(archived:true)の実績を見せないよう getActiveAchievements を優先
+  // (common/achievements.js。旧 getAchievements() は全件＝廃止分も含む未フィルタ)
+  const allAch = window.getActiveAchievements ? window.getActiveAchievements() : (window.getAchievements ? window.getAchievements() : []);
   const unlocked = window.getUnlockedAchievements ? window.getUnlockedAchievements() : {};
 
   // Group by game
   const GAME_NAMES = {
     bubble: '🫧 シャボン玉', bowling: '🎳 ボウリング', breakout: '🧱 ブロックくずし',
     writing: '✏️ もじ', drawing: '🎨 おえかき', puzzle: '🧩 パズル',
-    wordmatch: '📝 ことばあわせ', coloring: '🖍️ ぬりえ', stacking: '📦 つみあげ'
+    wordmatch: '📖 ポノのもりのずかん', coloring: '🖍️ ぬりえ', stacking: '📦 つみあげ'
   };
   const groups = {};
   allAch.forEach(a => {
@@ -2231,7 +2492,8 @@ function renderTakaraAchievements() {
     groups[a.game].push(a);
   });
 
-  const unlockedCount = Object.keys(unlocked).length;
+  // 分子も allAch (active) と同じ母集団に揃える (unlocked は廃止ゲーム分も含む生データのため)
+  const unlockedCount = allAch.filter(a => unlocked[a.id]).length;
   let html = '<div class="takara-scroll">';
   html += `<div style="text-align:center;margin-bottom:12px;font-size:13px;color:#888;">
     たっせい <strong style="color:#e07800;">${unlockedCount}</strong>／${allAch.length}
@@ -3357,20 +3619,15 @@ function _showExtendedBedTutorial() {
   }
   if (!item) return false;
 
-  // チュートリアル用に強制中央配置（未配置 or 既存どこにあってもリセット）
+  // 既に配置済みならユーザーが決めた位置・向きを維持する。
+  // 未配置の場合だけ初期位置へ追加する。
   if (!state.config.living) state.config.living = {};
   var cfg = state.config.living;
   if (!cfg.placed) cfg.placed = getPlacedItems(cfg);
-  // 部屋の中央付近に固定（4x4 グリッド中央）
   var centerRow = 3;
   var centerCol = 3;
   var existing = cfg.placed.find(p => p.id === item.id);
-  if (existing) {
-    var pos = findNearestEmpty('living', centerRow, centerCol, item.id, item, 'A');
-    existing.row = pos.row;
-    existing.col = pos.col;
-    existing.angle = 'A';
-  } else {
+  if (!existing) {
     var pos2 = findNearestEmpty('living', centerRow, centerCol, item.id, item, 'A');
     cfg.placed.push({ id: item.id, row: pos2.row, col: pos2.col, angle: 'A' });
     delete cfg.furn; delete cfg.deco;
@@ -3381,22 +3638,6 @@ function _showExtendedBedTutorial() {
   _waitForLandscape(function() {
     var bedId = item.id;
     var cfg = state.config.living;
-
-    // ベッドを部屋の中央に強制配置
-    // 視覚的に中央に来るよう、A角度のときは row=3, col=2 がベスト（pivotXが正で右に寄るため）
-    function resetBedToCenter() {
-      var p = cfg.placed.find(x => x.id === bedId);
-      if (!p) return;
-      // 他の placed アイテムを一時的に退避（衝突防止）
-      var others = cfg.placed.filter(x => x.id !== bedId);
-      // チュートリアル中は他アイテムが邪魔しないよう、ベッドを直接中央に
-      p.row = 3;
-      p.col = 2;
-      p.angle = 'A';
-      saveState();
-      refreshArea('living');
-      if (typeof window._setEditMode === 'function') window._setEditMode(true);
-    }
 
     // 現在のベッド位置/角度スナップショット
     function bedSnapshot() {
@@ -3587,8 +3828,6 @@ function _showExtendedBedTutorial() {
           waitForMove(function() {
             setTutPhase(null);
             showToast2('うごかせたね！ ✨', function() {
-              // ベッドを中央に戻す
-              resetBedToCenter();
               setTimeout(function() {
                 // ── フェーズ3: 回転のやり方 ──
                 _showTutorialStepModal({
@@ -3597,8 +3836,6 @@ function _showExtendedBedTutorial() {
                   body: 'ベッドの したに ある\n\uD83D\uDD04 マークを おすと\nむきが かわるよ！\n\nいっしゅう まわしてみよう！',
                   btn: 'やってみる！'
                 }, function() {
-                  // 回転フェーズ開始時にも中央リセット
-                  resetBedToCenter();
                   setTutPhase('rotate');
                   waitForRotations(2, function() {
                     setTutPhase(null);
@@ -3876,7 +4113,10 @@ function init() {
   });
 
   // おもちゃばこ open (single button replaces shop/ach/sticker)
-  document.getElementById('ui-btn-takara').addEventListener('click', () => openTakarabako());
+  document.getElementById('ui-btn-takara').addEventListener('click', () => {
+    if (Date.now() < suppressToyboxUntil) return;
+    openTakarabako();
+  });
   document.getElementById('shop-close').addEventListener('click', () => {
     document.getElementById('shop-ov').classList.add('hidden');
     _shiftRoom(false);

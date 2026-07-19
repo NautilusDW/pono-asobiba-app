@@ -1,0 +1,36 @@
+/* layout-shared.css — used by BOTH play (applier-only) and editor modes.
+   Keep this file < 50 lines. Editor-only styling lives in layout-editor.css. */
+
+/* `.user-hidden` is set by the applier when a key appears in `__hidden`. */
+.user-hidden { display: none !important; }
+
+/* `.userbox` is a custom rectangle drawn by the user in editor mode and
+   restored read-only in play mode. In play mode, no badges/handles render. */
+.userbox {
+  position: absolute;
+  border: 2px dashed rgba(120, 80, 20, 0.4);
+  background: transparent;
+  pointer-events: none;
+  z-index: 4;
+  box-sizing: border-box;
+  border-radius: 8px;
+}
+
+/* Optional label inside a userbox — hidden in play mode by default. */
+.userbox-badge {
+  position: absolute;
+  top: -22px; left: 0;
+  background: rgba(40, 30, 20, 0.92);
+  color: #ffe7a3;
+  padding: 1px 8px;
+  border-radius: 4px;
+  font: 600 11px ui-monospace, Menlo, Consolas, monospace;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 5;
+}
+body:not(.layout-editor-on) .userbox-badge { display: none; }
+
+/* `--header-h` is set dynamically by the applier from `__headerH`.
+   Pages reference it via `var(--header-h, <fallback>)`. */
+:root { /* --header-h is injected at runtime if saved-layout.json provides it */ }

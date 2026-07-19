@@ -1,0 +1,366 @@
+<!-- @dsCard group="Tokens" -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=800, initial-scale=1.0">
+<title>Pono Colors</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FFF8F0;
+    --primary: #F2915A;
+    --primary-light: #FDDCBF;
+    --text: #5D4E37;
+    --text-light: #A89880;
+    --shadow: rgba(93, 78, 55, 0.12);
+    --card-bg: #FFFDF8;
+    --swatch-border: rgba(93, 78, 55, 0.08);
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  body {
+    font-family: 'Zen Maru Gothic', sans-serif;
+    background-color: var(--bg);
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(253, 220, 191, 0.4) 0%, transparent 40%),
+      radial-gradient(circle at 80% 90%, rgba(253, 230, 138, 0.3) 0%, transparent 40%);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 32px 24px 48px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .header {
+    max-width: 600px;
+    margin: 0 auto 28px;
+    text-align: center;
+  }
+
+  .header h1 {
+    font-weight: 900;
+    font-size: 28px;
+    color: var(--primary);
+    letter-spacing: 0.04em;
+    margin-bottom: 8px;
+  }
+
+  .header p {
+    font-size: 14px;
+    color: var(--text-light);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  .header .underline {
+    display: block;
+    width: 64px;
+    height: 4px;
+    background: var(--primary-light);
+    border-radius: 2px;
+    margin: 12px auto 0;
+  }
+
+  .section-label {
+    max-width: 600px;
+    margin: 28px auto 12px;
+    font-size: 13px;
+    font-weight: 900;
+    color: var(--text-light);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding-left: 4px;
+  }
+
+  .grid {
+    max-width: 600px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  .swatch {
+    background: var(--card-bg);
+    border-radius: 20px;
+    box-shadow: 0 4px 16px var(--shadow);
+    overflow: hidden;
+    border: 1px solid var(--swatch-border);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .swatch:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px var(--shadow);
+  }
+
+  .swatch-color {
+    height: 80px;
+    width: 100%;
+    position: relative;
+    border-bottom: 1px solid var(--swatch-border);
+  }
+
+  /* Checker pattern under transparent colors */
+  .swatch-color.transparent::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(45deg, #EEE 25%, transparent 25%),
+      linear-gradient(-45deg, #EEE 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, #EEE 75%),
+      linear-gradient(-45deg, transparent 75%, #EEE 75%);
+    background-size: 16px 16px;
+    background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+    z-index: 0;
+  }
+
+  .swatch-color .overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+  }
+
+  .swatch-body {
+    padding: 14px 16px 16px;
+  }
+
+  .swatch-name {
+    font-weight: 900;
+    font-size: 13px;
+    color: var(--text);
+    margin-bottom: 4px;
+    word-break: break-all;
+    letter-spacing: 0.01em;
+  }
+
+  .swatch-value {
+    font-family: 'SF Mono', 'Menlo', 'Consolas', monospace;
+    font-size: 11px;
+    color: var(--primary);
+    background: var(--primary-light);
+    padding: 3px 8px;
+    border-radius: 8px;
+    display: inline-block;
+    margin-bottom: 8px;
+    font-weight: 700;
+    letter-spacing: 0;
+  }
+
+  .swatch-usage {
+    font-size: 11px;
+    color: var(--text-light);
+    line-height: 1.55;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+  }
+
+  /* Color swatches */
+  .c-bg            { background-color: #FFF8F0; }
+  .c-primary       { background-color: #F2915A; }
+  .c-primary-light { background-color: #FDDCBF; }
+  .c-text          { background-color: #5D4E37; }
+  .c-text-light    { background-color: #A89880; }
+  .c-shadow        { background-color: rgba(93, 78, 55, 0.12); }
+  .c-yellow        { background-color: #FDE68A; }
+  .c-pink          { background-color: #FFF3F3; }
+  .c-red-soft      { background-color: #E57373; }
+  .c-red-strong    { background-color: #D32F2F; }
+  .c-gray-888      { background-color: #888888; }
+  .c-white-92      { background-color: rgba(255, 255, 255, 0.92); }
+  .c-white-90      { background-color: rgba(255, 255, 255, 0.90); }
+  .c-orange-35     { background-color: rgba(242, 145, 90, 0.35); }
+  .c-brown-12      { background-color: rgba(93, 78, 55, 0.12); }
+
+  .footer {
+    max-width: 600px;
+    margin: 36px auto 0;
+    padding-top: 20px;
+    border-top: 1px solid rgba(93, 78, 55, 0.12);
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-light);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+</style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>Pono Colors</h1>
+    <p>あそびば の カラートークン</p>
+    <span class="underline"></span>
+  </div>
+
+  <div class="section-label">CSS Variables</div>
+
+  <div class="grid">
+
+    <div class="swatch">
+      <div class="swatch-color c-bg"></div>
+      <div class="swatch-body">
+        <div class="swatch-name">--bg</div>
+        <span class="swatch-value">#FFF8F0</span>
+        <div class="swatch-usage">ページ背景色 (背景画像 BG_03.webp の下地)</div>
+      </div>
+    </div>
+
+    <div class="swatch">
+      <div class="swatch-color c-primary"></div>
+      <div class="swatch-body">
+        <div class="swatch-name">--primary</div>
+        <span class="swatch-value">#F2915A</span>
+        <div class="swatch-usage">アクセント色 / 入口ボタン文字 / 見出し / theme-color</div>
+      </div>
+    </div>
+
+    <div class="swatch">
+      <div class="swatch-color c-primary-light"></div>
+      <div class="swatch-body">
+        <div class="swatch-name">--primary-light</div>
+        <span class="swatch-value">#FDDCBF</span>
+        <div class="swatch-usage">入口ボタンの 3px border</div>
+      </div>
+    </div>
+
+    <div class="swatch">
+      <div class="swatch-color c-text"></div>
+      <div class="swatch-body">
+        <div class="swatch-name">--text</div>
+        <span class="swatch-value">#5D4E37</span>
+        <div class="swatch-usage">本文テキスト (温かみのあるブラウン)</div>
+      </div>
+    </div>
+
+    <div class="swatch">
+      <div class="swatch-color c-text-light"></div>
+      <div class="swatch-body">
+        <div class="swatch-name">--text-light</div>
+        <span class="swatch-value">#A89880</span>
+        <div class="swatch-usage">サブテキスト / 署名 / footer / 注釈</div>
+      </div>
+    </div>
+
+    <div class="swatch">
+      <div class="swatch-color transparent">
+        <div class="overlay c-shadow"></div>
+      </div>
+      <div class="swatch-body">
+        <div class="swatch-name">--shadow</div>
+        <span class="swatch-value">rgba(93,78,55,.12)</span>
+        <div class="swatch-usage">カード/ボタン/ビデオの box-shadow</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="section-label">Literal Colors</div>
+
+  <div class="grid">
+
+    <div class="swatch">
+      <div class="swatch-color c-yellow"></div>
+      <div class="swatch-body">
+        <div class="swatch-name">literal yellow</div>
+        <span class="swatch-value">#FDE68A</span>
+        <div class="swatch-usage">author-card / help-link の border (淡い黄色)</div>
+      </div>
+    </div>
+
+    <div class="swatch">
+      <div class="swatch-color c-pink"></div>
+      <div class="swatch-body">
+        <div class="swatch-name">literal pink</div>
+        <span class="swatch-value">#FFF3F3</span>
+        <div class="swatch-usage">notice-card 背景 (淡いピンク)</div>
+      </div>
+    </div>
+
+    <div class="swatch">
+      <div class="swatch-color c-red-soft"></div>
+      <div class="swatch-body">
+        <div class="swatch-name">literal red-soft</div>
+        <span class="swatch-value">#E57373</span>
+        <div class="swatch-usage">notice-card border</div>
+      </div>
+    </div>
+
+    <div class="swatch">
+      <div class="swatch-color c-red-strong"></div>
+      <div class="swatch-body">
+        <div class="swatch-name">literal red-strong</div>
+        <span class="swatch-value">#D32F2F</span>
+        <div class="swatch-usage">notice タイトル / strong (警告赤)</div>
+      </div>
+    </div>
+
+    <div class="swatch">
+      <div class="swatch-color c-gray-888"></div>
+      <div class="swatch-body">
+        <div class="swatch-name">literal gray</div>
+        <span class="swatch-value">#888888</span>
+        <div class="swatch-usage">bookname-sub (絵本サブタイトル)</div>
+      </div>
+    </div>
+
+    <div class="swatch">
+      <div class="swatch-color transparent">
+        <div class="overlay c-white-92"></div>
+      </div>
+      <div class="swatch-body">
+        <div class="swatch-name">literal white 92%</div>
+        <span class="swatch-value">rgba(255,255,255,.92)</span>
+        <div class="swatch-usage">enter-btn 背景 (半透明白)</div>
+      </div>
+    </div>
+
+    <div class="swatch">
+      <div class="swatch-color transparent">
+        <div class="overlay c-white-90"></div>
+      </div>
+      <div class="swatch-body">
+        <div class="swatch-name">literal white 90%</div>
+        <span class="swatch-value">rgba(255,255,255,.90)</span>
+        <div class="swatch-usage">author-card / help-link 背景 (半透明白)</div>
+      </div>
+    </div>
+
+    <div class="swatch">
+      <div class="swatch-color transparent">
+        <div class="overlay c-orange-35"></div>
+      </div>
+      <div class="swatch-body">
+        <div class="swatch-name">literal orange 35%</div>
+        <span class="swatch-value">rgba(242,145,90,.35)</span>
+        <div class="swatch-usage">enter-btn パルス時の box-shadow (primary 由来)</div>
+      </div>
+    </div>
+
+    <div class="swatch">
+      <div class="swatch-color transparent">
+        <div class="overlay c-brown-12"></div>
+      </div>
+      <div class="swatch-body">
+        <div class="swatch-name">literal brown 12%</div>
+        <span class="swatch-value">rgba(93,78,55,.12)</span>
+        <div class="swatch-usage">rights-footer の border-top (text 由来)</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    Pono no Asobiba &middot; Design Tokens
+  </div>
+
+</body>
+</html>

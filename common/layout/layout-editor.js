@@ -1,0 +1,8995 @@
+// layout-editor.js — Phase 4 lazy-loaded editor module.
+// Public API: window.LayoutEditor
+//
+// Responsibilities:
+//   - Mount toolbar, numeric panel, element list, alignment toolbar, comparison overlay,
+//     snap-grid, lock badges, zoom UI, ruler/guides, annotation system, userbox, undo/redo.
+//   - Expose drag/resize for editableSelectors via 8 handles (4 edges + 4 corners).
+//   - Persist via localStorage (per-page key) + GitHub PUT through /api/gh/.
+//   - Generate saved-layout.json schema (additive __version, __locked, __zoom, __comparison, __grid).
+//
+// @version 1.1.0 (2026-05-07): Phase 2 / impl-A — per-question layout key support.
+//   - cfg.perQuestionSelectors whitelist: matched selectors save as `${sel}|${i}@${qid}`.
+//   - qid sourced from window.QUIZLAND_GET_CURRENT_QID(). Frozen at snapshot()
+//     start to avoid mid-save races.
+//   - save() merges with existing local + remote JSON so other questions'
+//     per-Q keys survive when the current question is saved alone.
+//   - Public confirmDiscardIfDirty() for impl-B (quizland index.html) to
+//     prompt before discarding unsaved per-question edits on next/prev nav.
+//
+// Source patterns extracted from quizland/preview/full/index.html (3468 lines).
+// All editor-specific styles must be scoped under body.layout-editor-on (see layout-editor.css).
+//
+// This module is loaded ONLY when LayoutSystem.init detects ?edit=1.
+// Page authors do not import it directly.
+
+(function () {
+  'use strict';
+  if (typeof window === 'undefined') return;
+  if (window.LayoutEditor && window.LayoutEditor.__full) return; // idempotent
+
+  // ====================================================================
+  //  Constants & helpers
+  // ====================================================================
+
+  var VERSION = '1.1.0'; // 2026-05-07: per-Q layout key support (Phase 2 / impl-A)
+  var SAVED_LAYOUT_VERSION = 2; // __version field in saved-layout.json
+  var HISTORY_LIMIT = 100;
+  // 2026-06-30 (batch:964): group corner scale (複数選択コーナードラッグでの均一 scale)
+  //   から除外する selector のリスト。 親 .q-text-card と一緒に選択された状態で
+  //   コーナーハンドルをドラッグしても、 ここに該当する要素は w/h/tx/ty を維持
+  //   (factor 不適用) し、 親側だけが拡縮される。 .q-text-card .audio (右上スピーカー) は
+  //   position:absolute; right:8px; top:50% で配置されているため、 親の伸縮に追従して
+  //   見かけ上は右上 anchor のまま固定サイズで残る (= 巻き込み解消)。
+  //   batch:962B の CSS 変数 --qz-tts-counter-scale (default 1, no-op) と組合せ可能。
+  //   注意: 個別 resize 経路 (performResize) は別ロジックなので、 単独選択して
+  //   ハンドルを掴むケースでは通常通り scale できる (= 編集自体は妨げない)。
+  var GROUP_SCALE_PROTECTED_SELECTORS = [
+    '.q-text-card .audio'
+  ];
+  var TRANSIENT_CLASSES = {
+    'resizable': 1, 'editable-text': 1, 'anno-mode': 1, 'preview-mode': 1,
+    'show-bbox': 1, 'show-safe': 1, 'eraser-mode': 1, 'dirty': 1, 'active': 1,
+    'selected': 1, 'edge-linked': 1, 'has-selection': 1, 'grid-mode': 1,
+    'user-hidden': 1, 'layout-editor-on': 1, 'le-locked': 1
+  };
+  var EDIT_MODE_BODY_CLASS = 'layout-editor-on';
+  var DEFAULT_GH_OWNER = 'NautilusDW';
+  var DEFAULT_GH_REPO  = 'pono-asobiba-app';
+  var DEFAULT_GH_BRANCH = 'develop';
+
+  function noop() {}
+  function $(sel, root) { return (root || document).querySelector(sel); }
+  function $$(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
+  function safeQueryAll(root, sel) {
+    try { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
+    catch (e) { return []; }
+  }
+  function utf8Btoa(s) { return btoa(unescape(encodeURIComponent(s))); }
+  function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+  function debounce(fn, ms) {
+    var t = null;
+    return function () {
+      var args = arguments, ctx = this;
+      if (t) clearTimeout(t);
+      t = setTimeout(function () { fn.apply(ctx, args); }, ms);
+    };
+  }
+  function nowIso() { return new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19); }
+
+  // 2026-05-12: rotation-aware drag — ancestor の cumulative rotation を計算
+  //   親 (祖先) が CSS rotate されている時に子をドラッグすると、 画面上の delta と
+  //   DOM 上の translate 方向がズレる。 mouse delta (Δsx, Δsy) を逆回転すれば
+  //   ユーザーの視覚と一致する。
+  //   戻り値: degrees (0..360 に normalize)
+  function getCumulativeRotation(el) {
+    var total = 0;
+    var current = el;
+    // el 自身も含める (自分が rotate していてもこのヘルパーの戻り値で扱える)
+    while (current && current !== document.body) {
+      var r = (current.dataset && parseFloat(current.dataset.rotate || '0')) || 0;
+      total += r;
+      current = current.parentElement;
+    }
+    return ((total % 360) + 360) % 360; // normalize 0..360
+  }
+
+  // (Δsx, Δsy) を deg の逆回転で変換して (Δdx, Δdy) を返す。
+  // CSS rotate(θ deg) は時計回りなので、 mouse → DOM の逆変換は:
+  //   Δdx =  cos(θ)·Δsx + sin(θ)·Δsy
+  //   Δdy = -sin(θ)·Δsx + cos(θ)·Δsy
+  function rotateDeltaInverse(deg, dx, dy) {
+    if (!deg || deg === 0) return { dx: dx, dy: dy };
+    var rad = deg * Math.PI / 180;
+    var cos = Math.cos(rad);
+    var sin = Math.sin(rad);
+    return {
+      dx:  cos * dx + sin * dy,
+      dy: -sin * dx + cos * dy
+    };
+  }
+
+  // getDomPath identical to layout-applier.js so __texts keys round-trip.
+  function getDomPath(el) {
+    var parts = [];
+    var cur = el;
+    while (cur && cur.nodeType === 1 && cur !== document.body) {
+      var s = cur.tagName.toLowerCase();
+      if (cur.id) { s += '#' + cur.id; parts.unshift(s); break; }
+      if (cur.className && typeof cur.className === 'string') {
+        var cls = cur.className.trim().split(/\s+/).filter(function (c) {
+          return c && !TRANSIENT_CLASSES[c];
+        });
+        if (cls.length) s += '.' + cls.join('.');
+      }
+      var parent = cur.parentElement;
+      if (parent) {
+        var sibs = Array.prototype.filter.call(parent.children, function (c) { return c.tagName === cur.tagName; });
+        if (sibs.length > 1) s += ':nth-of-type(' + (sibs.indexOf(cur) + 1) + ')';
+      }
+      parts.unshift(s);
+      cur = cur.parentElement;
+    }
+    return parts.join('>');
+  }
+
+  // ====================================================================
+  //  Module-level state (per-instance singleton — only one editor at a time)
+  // ====================================================================
+
+  var state = {
+    enabled: false,
+    config: null,
+    canvasEl: null,
+    spec: [],                  // [[selector, axes, label], ...]
+    selectedElements: null,    // Set
+    locked: null,              // Set of "selector|idx" keys
+    gridSize: 0,               // 0 = off, else 8/16/32
+    gridOn: false,
+    zoom: 1,                   // 1.0 = 100%
+    comparison: null,          // { image, mode, opacity }
+    listeners: {},             // event → [fn]
+    history: [], future: [],
+    lastSavedJson: null,
+    saveTimer: null,
+    drawModeOn: false,
+    annoMode: false,
+    annoTool: 'select',
+    annoSelected: null,
+    annoColor: '#ff3b6b',
+    labelIdx: 0,
+    rootScale: 1,              // effective stage scale (zoom + any preview scale)
+    toolbarEl: null,
+    numericPanelEl: null,
+    listPanelEl: null,
+    lastClickedListKey: null,  // Last clicked row key in element list (for Shift+Click range select)
+    helpModalEl: null,
+    rulerH: null, rulerV: null,
+    annoLayer: null,
+    annoSvg: null,
+    zoomWrapEl: null,
+    activeTool: 'move',        // move | annotate | draw
+    cleanupFns: [],            // C1: registered teardown callbacks
+    resizeObserver: null,      // C1: track ResizeObserver for disconnect on disable
+    originalCanvasWidth: null, // R3: remember stage width before comparison side-mode
+    multiSelectMode: false,    // U10: iPad-friendly multi-select toggle
+    previewExitBtn: null,      // R2: exit affordance during preview
+    pagesDropdownEl: null,     // 🌐 page navigation dropdown
+    pagesDocClickHandler: null,// outside-click handler for the dropdown
+    aspectLocked: false,       // Yankee: numeric-panel 縦横比ロックトグル
+    aspectRatios: null,        // WeakMap<el, ratio> — capture時の W/H 比率
+    cornerHandleFreeMode: false, // [zk-inv] 角ハンドル既定動作を「自由」に切替 (Photoshop 既定の逆)。
+                                 // OFF (既定): 角=自動ロック / Shift で解除 (従来挙動)
+                                 // ON       : 角=自由 / Shift で逆にロック
+                                 // state.aspectLocked が true なら本フラグに関わらず常にロック
+    preferredTarget: null,     // Charlie-2: 要素一覧から選択した要素を canvas 操作の優先ターゲットに
+    textToolOn: false,         // India-2: テキスト追加ツール ON/OFF
+    unlinkedChildren: null,    // Papa-2 修正2: 一時リンク解除中の子要素 (Set<element>)
+    individualOverrides: new Set(),  // 2026-05-06: chip 関連の個別 override キー集合
+                                     // (".chip|0", ".chip .chip-illust|2" 等)。
+                                     // この Set に入ってる key だけ snapshot() で書き出す。
+                                     // ドラッグや preset 適用では追加しない (= 暗黙個別化を防ぐ)。
+                                     // 💾 個別保存ボタンで明示的に追加、 🧹 個別設定クリアで削除。
+    _perQuestionSelectors: [],       // 2026-05-07: per-Q 化対象セレクタ whitelist。
+                                     // enable(cfg.perQuestionSelectors) で受け取る。
+                                     // 含まれるセレクタは保存キーが `${sel}|${i}@${qid}` になる。
+                                     // フクロウ (.character) のような「全問共通」要素は含めない。
+    _perQScopeToggleSelectors: [],   // 2026-06-11: 「🎯 この質問だけ / 🌐 すべての質問」 トグル対象
+                                     // (enable(cfg.perQuestionScopeToggleSelectors))。 ここに含まれる
+                                     // セレクタは perQScopeThisQ=true のときだけ per-Q キーで保存され、
+                                     // false (既定) では従来通り共通キー `${sel}|${i}` で保存される。
+    perQScopeThisQ: false,           // true = この質問だけ (per-Q 保存) / false = すべての質問 (共通保存)。
+                                     // enable 毎に false へ戻す (暗黙の per-Q 化事故を防ぐ)。
+    _perQDeletedKeys: new Set(),     // 2026-06-11 (critical fix): 🧹 「この質問の個別設定を削除」で
+                                     // 削除予約された @qid キー。 save() の GET→merge 後に適用して
+                                     // PUT する (merge が削除を打ち消すのを防ぐ)。 PUT 成功でクリア。
+    _perQWarnedQid: null,            // 2026-06-11: 🌐 モードで個別設定済み要素を選択した際の
+                                     // 「編集が反映されない」警告 toast を qid ごとに 1 回に抑えるガード。
+    _dirty: false,                   // 2026-05-07: 編集モードでの未保存変更フラグ。
+                                     // pushHistory / scheduleDirtyUpdate で更新。 save 成功で false。
+                                     // confirmDiscardIfDirty() の判定に使用 (impl-B から呼ばれる)。
+    lastSavedQid: null,              // 2026-05-07 (Phase 3.5 Fix 2): save 成功時の qid を記録。
+                                     // updateDirtyUI で「現在 qid != lastSavedQid」 の遷移直後を
+                                     // 検知し、 baseline (lastSavedJson) を新 qid で再計算して
+                                     // false-positive dirty (= confirm 誤発火) を防ぐ。
+  };
+
+  // C1 helper: register a teardown that runs on disable()
+  function registerCleanup(fn) {
+    if (typeof fn === 'function') state.cleanupFns.push(fn);
+  }
+  // Add an event listener and register its removal automatically
+  function addManagedListener(target, type, handler, opts) {
+    if (!target) return;
+    target.addEventListener(type, handler, opts);
+    registerCleanup(function () {
+      try { target.removeEventListener(type, handler, opts); } catch (e) {}
+    });
+  }
+
+  // ====================================================================
+  //  Event bus (LayoutEditor.on / off / emit)
+  // ====================================================================
+
+  function on(name, fn) {
+    if (!state.listeners[name]) state.listeners[name] = [];
+    state.listeners[name].push(fn);
+  }
+  function off(name, fn) {
+    var arr = state.listeners[name];
+    if (!arr) return;
+    state.listeners[name] = arr.filter(function (f) { return f !== fn; });
+  }
+  function emit(name, payload) {
+    var arr = state.listeners[name];
+    if (!arr) return;
+    arr.slice().forEach(function (fn) { try { fn(payload); } catch (e) { console.warn('[LayoutEditor]', name, e); } });
+  }
+
+  // ====================================================================
+  //  Toast notification (success / error)
+  // ====================================================================
+
+  function showToast(msg, kind) {
+    var t = document.createElement('div');
+    var cls = 'le-toast';
+    if (kind === 'error') cls += ' le-toast-error';
+    else if (kind === 'warn') cls += ' le-toast-warn';
+    else if (kind === 'success') cls += ' le-toast-success';
+    t.className = cls;
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(function () { t.remove(); }, 1700);
+  }
+
+  // ====================================================================
+  //  Storage / GH save
+  // ====================================================================
+
+  function storageKey() {
+    return (state.config && state.config.storageKey) || 'le_layout_' + (location.pathname || '/');
+  }
+  function ghPath() {
+    var cfg = state.config || {};
+    if (Object.prototype.hasOwnProperty.call(cfg, 'ghPath') && !cfg.ghPath) return '';
+    if (cfg.ghPath) return cfg.ghPath;
+    // Derive from layoutUrl — strip leading "./" or "/"
+    var lu = cfg.layoutUrl || '';
+    if (!lu) return '';
+    return lu.replace(/^\.\//, '').replace(/^\//, '');
+  }
+  function ghRepoOwner() { return (state.config && state.config.ghOwner) || DEFAULT_GH_OWNER; }
+  function ghRepoName()  { return (state.config && state.config.ghRepo)  || DEFAULT_GH_REPO; }
+  function ghBranch()    { return (state.config && state.config.ghBranch) || DEFAULT_GH_BRANCH; }
+  function isLocalStaticHost() {
+    var h = location.hostname;
+    return location.protocol === 'file:' || h === '127.0.0.1' || h === 'localhost' || h === '::1';
+  }
+
+  function ghGetContents(path) {
+    var url = '/api/gh/repos/' + ghRepoOwner() + '/' + ghRepoName() + '/contents/' +
+              encodeURI(path) + '?ref=' + ghBranch();
+    return fetch(url, {
+      method: 'GET',
+      credentials: 'include',
+      headers: { 'Accept': 'application/vnd.github+json' },
+      cache: 'no-store',
+    }).then(function (r) {
+      if (r.status === 404) return null;
+      if (!r.ok) throw new Error('GH GET ' + path + ' → ' + r.status);
+      return r.json();
+    });
+  }
+
+  // 2026-05-07 (Phase 3.5 Fix 1): 404 の中には「ファイル本当に無い (=初回作成)」と
+  //   「一時エラー (Cloudflare miss / レートリミット / プロキシ etc.)」 があり、
+  //   後者の null を merge ベースに使うと既存の他問題 per-Q キーが全消失する。
+  //   path が saved-layout.json のような既存想定パスの場合は、500ms 待ってもう 1 度
+  //   GET して二度連続 404 のときだけ「真の 404」とみなす。
+  //   戻り値: { contents: object|null, transient: boolean }
+  //     - contents: 1 度目 or リトライで取れた値 (取れなければ null)
+  //     - transient: 2 度連続 404 で「真の初回作成」とみなせる場合 false、
+  //                  それ以外 (= 5xx / 例外 / ネットワーク失敗 等の一時エラーの可能性) は true
+  //   呼び出し側 (callsite line ~928) は transient===true のときだけ localStorage
+  //   フォールバックを merge ベースに使う。 真の初回作成では transient:false を返し、
+  //   localStorage 由来の他問題 per-Q キーが意図せず remote に書き戻されないようにする。
+  function ghGetContentsWithRetry(path) {
+    return ghGetContents(path).then(function (first) {
+      if (first) return { contents: first, transient: false };
+      // 1 回目 null (= 404)。 一時エラーかもしれないので 500ms 待って再試行。
+      return new Promise(function (resolve) { setTimeout(resolve, 500); }).then(function () {
+        return ghGetContents(path).then(function (second) {
+          if (second) {
+            // 1 回目の 404 は一時エラーだった。
+            return { contents: second, transient: false };
+          }
+          // 2 度連続 404 = 真の「ファイル無し」(初回作成扱い)。
+          // transient:false を返し、 localStorage フォールバックは使わせない。
+          return { contents: null, transient: false };
+        }).catch(function () {
+          // リトライ中に他のエラー (5xx / ネットワーク失敗 等) が出た場合は一時エラー扱い。
+          // 1 回目は 404 だったが 2 回目で例外 → 一時障害の疑いが残るので transient:true。
+          return { contents: null, transient: true };
+        });
+      });
+    }).catch(function () {
+      // 1 回目の GET 自体が 5xx / ネットワーク例外で落ちた場合も一時エラー扱い。
+      return { contents: null, transient: true };
+    });
+  }
+  function ghPutContents(path, contentB64, message, sha) {
+    var url = '/api/gh/repos/' + ghRepoOwner() + '/' + ghRepoName() + '/contents/' + encodeURI(path);
+    var body = { message: message, content: contentB64, branch: ghBranch() };
+    if (sha) body.sha = sha;
+    return fetch(url, {
+      method: 'PUT',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/vnd.github+json' },
+      body: JSON.stringify(body),
+    }).then(function (r) {
+      if (r.status === 409) {
+        // C3: distinct conflict — sha mismatch (another editor saved first)
+        return r.text().then(function (txt) {
+          var err = new Error('GH PUT ' + path + ' → 409 ' + txt.slice(0, 200));
+          err.code = 'CONFLICT_409';
+          err.status = 409;
+          throw err;
+        });
+      }
+      if (!r.ok) return r.text().then(function (txt) {
+        var err = new Error('GH PUT ' + path + ' → ' + r.status + ' ' + txt.slice(0, 200));
+        err.status = r.status;
+        throw err;
+      });
+      return r.json();
+    });
+  }
+
+  function localSave(snapshotData) {
+    try { localStorage.setItem(storageKey(), JSON.stringify(snapshotData)); return true; }
+    catch (e) { return false; }
+  }
+  function localLoad() {
+    try {
+      var raw = localStorage.getItem(storageKey());
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  }
+
+  // 2026-06-30 (batch:962 ★1): 🎯/🌐 トグルの状態を localStorage に永続化する。
+  //   従来 enable() / disable() で false 固定だったため、 編集者が 🎯 に切替えても次回開く度に
+  //   🌐 に戻り、 個別レイアウトを上書きする事故が発生していた。 key は editor 全体で共通
+  //   (toggle はユーザーの「保存範囲の好み」 を表すフラグなので、 ページ別に分ける必要は無い)。
+  var PERQ_SCOPE_STORAGE_KEY = 'qz-layout-editor-per-q-scope-v1';
+  function loadPerQScopePref() {
+    try {
+      var raw = localStorage.getItem(PERQ_SCOPE_STORAGE_KEY);
+      return raw === '1';
+    } catch (e) { return false; }
+  }
+  function savePerQScopePref(on) {
+    try { localStorage.setItem(PERQ_SCOPE_STORAGE_KEY, on ? '1' : '0'); } catch (e) {}
+  }
+
+  // 2026-05-07 (Phase 2 / impl-A): 既存 JSON の上に snapshot をマージする。
+  //   per-Q キー (`${sel}|${i}@${qid}`) を含む snapshot で save する際、
+  //   他問題で書かれた per-Q キーを温存するためのユーティリティ。
+  //
+  //   挙動:
+  //     - existing が null/undefined のときは snap をそのまま返す。
+  //     - existing 側のキーをすべて拾い、 snap のキーで上書き (snap が真値)。
+  //     - 結果として「snap には無く existing にあるキー」は保持される
+  //       → 別問題の per-Q キーや、 別タブで先に書いたキーも消えない。
+  //     - __savedAt は呼び出し側で付け替える前提なのでここでは触らない。
+  function mergeSnapshotOver(existing, snap) {
+    if (!existing || typeof existing !== 'object') return snap;
+    var out = Object.assign({}, existing);
+    Object.keys(snap).forEach(function (k) { out[k] = snap[k]; });
+    return out;
+  }
+
+  // 2026-06-30 (batch:962 ★4): save() の wholesale overwrite を防ぐ deep-merge。
+  //   既存実装も snap で existing を上書きしていたが、 別端末 / 別タブが直前に書き込んだ
+  //   キーと「同じキー名 / 値が違う」 conflict を可視化していなかった。 ここでは
+  //   - existing にしか無いキー: そのまま温存 (= 他端末の per-Q キーが消えない)
+  //   - snap にしか無いキー: 追加
+  //   - 両方にあるが値が違うキー: snap (= ユーザーの意図) を勝たせ console.warn で可視化
+  //   conflict は per-entry の浅い JSON 比較で十分 (saved-layout の各値は {w,h,tx,ty} 等の
+  //   シンプル object なので、 stringify で identity を判定する)。
+  function deepMergeForSave(existing, snap) {
+    if (!existing || typeof existing !== 'object') return snap ? Object.assign({}, snap) : {};
+    if (!snap || typeof snap !== 'object') return Object.assign({}, existing);
+    var out = Object.assign({}, existing);
+    var conflicts = [];
+    Object.keys(snap).forEach(function (k) {
+      if (Object.prototype.hasOwnProperty.call(existing, k)) {
+        var ev, sv;
+        try { ev = JSON.stringify(existing[k]); } catch (e) { ev = String(existing[k]); }
+        try { sv = JSON.stringify(snap[k]); } catch (e) { sv = String(snap[k]); }
+        if (ev !== sv) conflicts.push(k);
+      }
+      out[k] = snap[k];
+    });
+    if (conflicts.length) {
+      try {
+        console.warn('[LayoutEditor] save merge conflict (snap wins) on ' + conflicts.length + ' key(s):',
+                     conflicts.slice(0, 12), conflicts.length > 12 ? '...(' + (conflicts.length - 12) + ' more)' : '');
+      } catch (e) { /* noop */ }
+    }
+    return out;
+  }
+
+  // 2026-06-11 (critical fix): 🧹 「この質問の個別設定を削除」で削除予約されたキーを
+  //   merge 結果から取り除く。 save() は GET→merge→PUT のため、 snapshot に無いキーは
+  //   merge で復活してしまう — 削除リストを merge **後** に適用して打ち消しを防ぐ。
+  function _applyPendingPerQDeletions(obj) {
+    if (!obj || typeof obj !== 'object') return obj;
+    var setRef = state._perQDeletedKeys;
+    if (!setRef || !setRef.size) return obj;
+    setRef.forEach(function (k) {
+      if (Object.prototype.hasOwnProperty.call(obj, k)) delete obj[k];
+    });
+    return obj;
+  }
+
+  // 2026-05-08: server (assets バンドル) と local の新旧を判定。
+  //   - local が __savedAt を持ち、 一定時間以内なら local 優先（deploy ラグ想定）
+  //   - それ以外は server 優先（別端末更新の伝播を尊重）
+  //   - 一方しか無ければ存在する方
+  // 2026-06-30 (batch:968): 「保存しても消える」 問題対策で 5 分 → 2 分に短縮。
+  //   別端末の保存反映を素早く拾えるようにする。 CF deploy ラグ実測は 30-90 秒なので 2 分で十分。
+  function pickFreshestData(server, local) {
+    if (!local) return server || null;
+    if (!server) return local;
+    if (typeof local.__savedAt !== 'number') return server;
+    var DEPLOY_LAG_WINDOW_MS = 2 * 60 * 1000;
+    var ageMs = Date.now() - local.__savedAt;
+    if (ageMs > DEPLOY_LAG_WINDOW_MS) return server;
+    return local;
+  }
+
+  // ====================================================================
+  //  Snapshot / takeLayoutSnapshot
+  // ====================================================================
+
+  // 2026-05-06: chip 関連 selector か判定。 .chip 自体 + .chip 内の子要素 (.chip .circle 等)。
+  function _isChipScopedSelector(sel) {
+    return /^\.chip(\s|$)/.test(sel);
+  }
+
+  // 2026-05-07: 現在の問題 ID を取得するヘルパー (Phase 2 / impl-A)。
+  //   Quizland 側が window.QUIZLAND_GET_CURRENT_QID を提供する想定。
+  //   未定義 / 戻り値が null/空文字 のときは null を返し、 per-Q キー化はしない (= base key のまま)。
+  function getCurrentQid() {
+    try {
+      if (typeof window.QUIZLAND_GET_CURRENT_QID === 'function') {
+        var q = window.QUIZLAND_GET_CURRENT_QID();
+        if (q && typeof q === 'string') return q;
+      }
+    } catch (e) { /* noop */ }
+    return null;
+  }
+
+  // 2026-05-07: per-Q whitelist 判定。 sel が perQuestionSelectors に含まれていれば true。
+  // 2026-06-11: scope トグル対応 — _perQScopeToggleSelectors に含まれるセレクタ
+  //   (質問バナー .q-text-card / 音声ボタン 等) は 「🎯 この質問だけ」 が ON
+  //   (state.perQScopeThisQ=true) のときだけ per-Q 保存し、 OFF (既定) では
+  //   従来通り共通キーで保存する。 読み取り側 (applier) は常に per-Q → 共通の
+  //   2 段 lookup なので、 ここは書き込みキーの形式だけを左右する。
+  function _isPerQSelector(sel) {
+    var tList = state._perQScopeToggleSelectors;
+    if (tList && tList.length && tList.indexOf(sel) !== -1) return !!state.perQScopeThisQ;
+    var list = state._perQuestionSelectors;
+    return !!(list && list.length && list.indexOf(sel) !== -1);
+  }
+
+  // 2026-06-11 (critical fix): toggle 対象セレクタ (sel, i) に対し、 現在 qid の
+  //   per-Q オーバーライドキー `${sel}|${i}@${qid}` が保存データ
+  //   (window._currentLayoutData) に存在すればそのキーを返す。 applier は per-Q キーを
+  //   優先適用するため、 存在する場合 DOM のジオメトリは「共通値」ではなく
+  //   「この質問の個別値」を反映している — snapshot の base キー出力可否判定に使う。
+  function _perQOverrideKeyIfAny(sel, i, qid) {
+    var tList = state._perQScopeToggleSelectors;
+    if (!tList || !tList.length || tList.indexOf(sel) === -1) return null;
+    var q = (qid !== undefined) ? qid : getCurrentQid();
+    if (!q) return null;
+    var key = sel + '|' + i + '@' + q;
+    try {
+      var d = window._currentLayoutData;
+      if (d && typeof d === 'object' && Object.prototype.hasOwnProperty.call(d, key)) return key;
+    } catch (e) { /* noop */ }
+    return null;
+  }
+
+  // 2026-06-11: 現在質問の toggle 対象 per-Q キーを保存データから全列挙する
+  //   (🧹 削除ボタンの対象収集 / 「⚠個別あり」バッジ判定に使用)。
+  function _collectPerQOverrideKeysForCurrentQ() {
+    var out = [];
+    var tList = state._perQScopeToggleSelectors;
+    var qid = getCurrentQid();
+    var d = window._currentLayoutData;
+    if (!tList || !tList.length || !qid || !d || typeof d !== 'object') return out;
+    var suffix = '@' + qid;
+    Object.keys(d).forEach(function (k) {
+      if (k.length <= suffix.length || k.slice(-suffix.length) !== suffix) return;
+      var prefix = k.slice(0, k.length - suffix.length); // `${sel}|${i}`
+      var pipe = prefix.lastIndexOf('|');
+      if (pipe === -1) return;
+      if (tList.indexOf(prefix.slice(0, pipe)) !== -1) out.push(k);
+    });
+    return out;
+  }
+
+  // 2026-06-11 (critical fix): 🎯/🌐 トグルと 🧹 ボタンの表示を、 現在質問の per-Q キー
+  //   保存状況に追従させる。 個別設定が存在する質問では「⚠個別あり」を表示し、
+  //   🌐 のままの編集がこの質問の表示に反映されないことを画面上で判別可能にする。
+  function updatePerQScopeUI() {
+    var tb = state.toolbarEl;
+    if (!tb) return;
+    if (!state._perQScopeToggleSelectors || !state._perQScopeToggleSelectors.length) return;
+    var btn = tb.querySelector('#le-perq-scope');
+    if (!btn) return;
+    var keys = _collectPerQOverrideKeysForCurrentQ();
+    var has = keys.length > 0;
+    // 2026-06-30 (batch:968): 現在質問が saved-layout-frozen.json でロック済みかを判定。
+    //   _qzFrozenLayoutData (quizland 側で fetch) に `*|*@qid` キーが 1 件以上あれば lock 済み。
+    var qid = getCurrentQid();
+    var frozenLocked = false;
+    try {
+      var frozen = (typeof window !== 'undefined') ? window._qzFrozenLayoutData : null;
+      if (frozen && typeof frozen === 'object' && qid) {
+        var suffix = '@' + qid;
+        var fks = Object.keys(frozen);
+        for (var fi = 0; fi < fks.length; fi++) {
+          if (fks[fi].length > suffix.length && fks[fi].slice(-suffix.length) === suffix) {
+            frozenLocked = true; break;
+          }
+        }
+      }
+    } catch (_) { /* noop */ }
+    if (!btn.dataset.baseTitle) btn.dataset.baseTitle = btn.title || '';
+    btn.textContent = (state.perQScopeThisQ ? '🎯 この質問だけ' : '🌐 すべての質問') +
+                      (has ? ' ⚠個別あり' : '') +
+                      (frozenLocked ? ' 🔒ロック済' : '');
+    btn.classList.toggle('active', state.perQScopeThisQ);
+    // 2026-06-30 (batch:962 ★5): 現在質問に per-Q キーが 1 つも無い場合、 🌐 のままだと
+    //   global キーへ流れて (= ユーザーが「保存したつもり」 でも実際は個別保存ゼロ) 個別 stub が
+    //   未生成のままになる。 強制切替はせず title で案内する。
+    var perQMissingHint = (!has && !state.perQScopeThisQ)
+      ? '\n\nℹ この質問には個別レイアウトが未保存です。 質問固有の配置にしたい場合は 🎯 に切替えて保存してください'
+      : '';
+    // 2026-06-30 (batch:968): frozen lock 状態を tooltip にも明示
+    var frozenHint = frozenLocked
+      ? '\n\n🔒 この質問のレイアウトは saved-layout-frozen.json で永続ロック済みです。 通常 💾 保存で編集しても disk-applied されません。 解除は frozen.json を直接編集してください。'
+      : '';
+    btn.title = btn.dataset.baseTitle + ((has && !state.perQScopeThisQ)
+      ? '\n\n⚠ この質問は個別レイアウト適用中です。🌐 のままの質問カード・音声ボタン編集は保存されません (個別値が優先表示)。🎯 に切替えて編集するか、🧹 で個別設定を削除してください'
+      : perQMissingHint) + frozenHint;
+    var clearBtn = tb.querySelector('#le-perq-clear');
+    if (clearBtn) {
+      clearBtn.style.display = '';
+      clearBtn.disabled = !has;
+      clearBtn.title = has
+        ? 'この質問の個別レイアウト (' + keys.length + ' 件) を削除して共通位置に戻し、そのまま保存します'
+        : 'この質問に個別レイアウト設定はありません';
+    }
+  }
+
+  function _phaseInfo(sel) {
+    var m = sel.match(/^(.*?)\.phase-(question|answer)$/);
+    if (!m) return { base: sel, phase: null };
+    return { base: m[1], phase: m[2] };
+  }
+
+  function _hasAnyPhaseClass(el) {
+    try {
+      return !!(el && el.classList && (
+        el.classList.contains('phase-question') ||
+        el.classList.contains('phase-answer')
+      ));
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function _hasPhaseSiblingSelector(sel) {
+    var info = _phaseInfo(sel);
+    if (info.phase !== null) return false;
+    for (var i = 0; i < state.spec.length; i++) {
+      var other = state.spec[i] && state.spec[i][0];
+      if (!other || other === sel) continue;
+      var otherInfo = _phaseInfo(other);
+      if (otherInfo.base === info.base && otherInfo.phase) return true;
+    }
+    return false;
+  }
+
+  // 2026-05-07: LayoutApplier.apply に渡す共通 cfg を構築 (Phase 2 / impl-A)。
+  //   editor 内の apply 呼び出しは selectors / qid / perQuestionSelectors を毎回揃える。
+  //   extra はマージ対象 (selectors を上書きしたいとき等)。
+  function _applierCfg(extra) {
+    var cfg = state.config || {};
+    var base = {
+      selectors: cfg.editableSelectors || cfg.selectors,
+      qid: getCurrentQid(),
+      perQuestionSelectors: state._perQuestionSelectors,
+    };
+    if (extra) {
+      Object.keys(extra).forEach(function (k) { base[k] = extra[k]; });
+    }
+    return base;
+  }
+
+  // 2026-05-07: (sel, i) と任意の qid から保存キーを生成する。
+  //   - perQuestionSelectors に含まれかつ qid が文字列のとき: `${sel}|${i}@${qid}`
+  //   - それ以外: `${sel}|${i}` (従来通り)
+  //   opts.qid を渡せば snapshot 時 freeze などの用途でも使える。
+  function makeElKey(sel, i, opts) {
+    var base = sel + '|' + i;
+    var q = (opts && Object.prototype.hasOwnProperty.call(opts, 'qid')) ? opts.qid : getCurrentQid();
+    if (_isPerQSelector(sel) && q) return base + '@' + q;
+    return base;
+  }
+
+  function snapshot() {
+    var data = { __version: SAVED_LAYOUT_VERSION };
+    // 2026-05-07: snapshot 開始時に qid を 1 度だけ固定 (race 対策)。
+    //   snapshot 構築中に Quizland 側で問題遷移が起きても、 ここで読んだ qid を
+    //   全エントリ生成に使うので key の不整合が起きない。
+    var frozenQid = getCurrentQid();
+    state.spec.forEach(function (entry) {
+      var sel = entry[0];
+      if (sel === '.userbox') return; // userbox saved in __userboxes
+      var shouldSkipPhaseElementsForBase = _hasPhaseSiblingSelector(sel);
+      var isChipScoped = _isChipScopedSelector(sel);
+      var isChipSelfSel = (sel === '.chip'); // chip 自体 (子要素 .chip .X は含まない)
+      $$(sel).forEach(function (el, i) {
+        if (shouldSkipPhaseElementsForBase && _hasAnyPhaseClass(el)) return;
+        // 2026-05-06 改: chip 自体 (.chip|N) は cell 配置として常に保存。
+        //   子要素 (.chip .X|N) は明示的に individualOverrides に入ってる場合のみ保存。
+        // override 判定は base key (qid 無し) で行う — chip preset は per-Q 化対象外なので
+        // 通常 frozenQid と無関係に base key になる。
+        // ただし per-Q selector として明示された chip 子要素は、問題別保存が目的なので
+        // 「個別保存」ボタンなしでも通常の保存 snapshot に含める。
+        var baseKey = sel + '|' + i;
+        var isPerQChipChild = isChipScoped && !isChipSelfSel && _isPerQSelector(sel);
+        if (isChipScoped && !isChipSelfSel && !isPerQChipChild && !state.individualOverrides.has(baseKey)) return;
+        // 2026-06-30 (batch:968 ★Fix #1): 旧コードは 🌐 モードで per-Q override が存在する
+        //   toggle 対象要素を snapshot から完全に skip していた。 ところがこれは
+        //   - 🌐 モードでユーザーが編集した変更 (drag/resize) を snapshot が捨てる
+        //   - その結果 save() の snap には新値を表す key が無いので、 deepMergeForSave で
+        //     base key も per-Q key も「既存値のまま」 → ユーザーの編集が永続化失敗
+        //     ＝ 「保存しても消える」 問題の主原因。
+        //   修正方針 (Option A): **snapshot は完全な状態を出す**。 base key を必ず出力し、
+        //   その値は現在の DOM (= per-Q 値を applier が当てた見た目) とする。 結果:
+        //     - 🌐 save 時、 base key には DOM の値 (= per-Q geometry) が書かれる
+        //     - per-Q key は disk 側で温存 (deepMergeForSave が existing を温存するため)
+        //     - 読み出し時、 applier の _lookupChain は per-Q を base より先に評価するので、
+        //       per-Q がある質問の表示は変わらない (per-Q 値が勝つ)
+        //     - per-Q が無い質問の表示は、 新しい base 値 (= 直前に編集した質問の per-Q 値)
+        //       に追従する。 これは「🌐 すべての質問の共通値として保存」 という UI 意図と
+        //       一致する (= ユーザーは今見ている位置を共通に焼くつもり)。
+        //   注意: 旧 skip が抑止していた「base 共通値汚染」 リスクは、 ユーザーが
+        //   🎯 / 🌐 トグルを意識的に切替える運用で吸収する想定。 save() 前段 (line 1726)
+        //   の confirm でも per-Q 存在質問の 🌐 保存はガード済。
+        var key = makeElKey(sel, i, { qid: frozenQid });
+        data[key] = {
+          w: el.style.width || '',
+          h: el.style.height || '',
+          tx: el._tx || 0,
+          ty: el._ty || 0,
+        };
+      });
+    });
+    data.__guides = collectGuides();
+    data.__headerH = document.documentElement.style.getPropertyValue('--header-h') || '';
+    data.__texts = collectEditableTexts();
+    data.__hidden = collectHiddenKeys();
+    data.__userboxes = collectUserboxes();
+    // 2026-05-13 (sw v983): drop&drop で追加された .le-dropped-img を snapshot に含める。
+    //   従来 localStorage のみで管理されていたため dirty flag が立たず、 add/delete が
+    //   GitHub の saved-layout.json に永続化されなかった。
+    data.__droppedImages = collectDroppedImages();
+    data.__locked = collectLockedKeys();
+    if (state.zoom !== 1) data.__zoom = state.zoom;
+    if (state.gridOn) data.__grid = { size: state.gridSize, on: true };
+    if (state.comparison) data.__comparison = state.comparison;
+    // chip preset: window._currentLayoutData.__chip_presets を保全 (saveChipPreset で書き込まれる)
+    if (window._currentLayoutData && window._currentLayoutData.__chip_presets) {
+      data.__chip_presets = window._currentLayoutData.__chip_presets;
+    }
+    // chip text override (Phase 2 / Quizland 4 択 chip 内テキスト編集): window._currentLayoutData
+    // .__chip_text_overrides を保全。 dblclick で contenteditable 化 → blur で保存される。
+    // schema: { "<qKey>": { "<slot>": "テキスト\n改行" } } / qKey = `${cat}|${level}|${idx}`
+    if (window._currentLayoutData && window._currentLayoutData.__chip_text_overrides) {
+      data.__chip_text_overrides = window._currentLayoutData.__chip_text_overrides;
+    }
+    // Quizland 4 択 chip 内テキストの個別スタイルを保全。
+    // schema: { "<qKey>": { "<slot>": { fontSizePx, trackingPx, scaleXPercent } } }
+    if (window._currentLayoutData && window._currentLayoutData.__chip_text_styles) {
+      data.__chip_text_styles = window._currentLayoutData.__chip_text_styles;
+    }
+    // 2026-05-06: 個別 override の明示リストを保存 (再ロード時の復元用)
+    if (state.individualOverrides && state.individualOverrides.size > 0) {
+      data.__individual_chip_overrides = Array.from(state.individualOverrides);
+    }
+    return data;
+  }
+
+  function currentLayoutDataWithLiveSnapshot() {
+    var data = window._currentLayoutData;
+    if (!data || typeof data !== 'object') return data;
+    try {
+      // Dynamic re-scan may run right after app DOM changes while the user has
+      // unsaved drag/resize edits. Merge the live DOM snapshot over the cached
+      // layout just before apply, so stale tx/ty cannot snap elements back.
+      data = mergeSnapshotOver(data, snapshot());
+      window._currentLayoutData = data;
+    } catch (e) { /* keep the existing cached data */ }
+    return data;
+  }
+
+  function collectEditableTexts() {
+    var data = {};
+    $$('.editable-text').forEach(function (el) {
+      data[getDomPath(el)] = el.textContent;
+    });
+    return data;
+  }
+  function collectHiddenKeys() {
+    // 2026-05-07: __hidden は applier 側が base key で参照する設計のため
+    //   per-Q 化せず base key で書き出す (Phase 2 impl-A スコープ外)。
+    return $$('.user-hidden').map(function (el) {
+      return getElKey(el, { baseOnly: true });
+    }).filter(Boolean);
+  }
+  function collectLockedKeys() {
+    var arr = [];
+    state.locked.forEach(function (k) { arr.push(k); });
+    return arr;
+  }
+  // 2026-05-07: per-Q キー対応 (Phase 2 / impl-A)。
+  //   - el を spec 順で matches し、 該当した sel の index を求める。
+  //   - sel が perQuestionSelectors に含まれかつ qid が取れれば `${sel}|${i}@${qid}` を返す。
+  //   - それ以外は従来通り `${sel}|${i}` を返す (後方互換)。
+  //   - opts.baseOnly === true で per-Q 化を無効化 (override 判定など base key 必須の用途)。
+  //   - opts.qid を渡せば外部から qid を固定して問い合わせできる (snapshot frozen qid 等)。
+  function getElKey(el, opts) {
+    for (var i = 0; i < state.spec.length; i++) {
+      var sel = state.spec[i][0];
+      try {
+        if (el.matches(sel)) {
+          var all = $$(sel);
+          var idx = all.indexOf(el);
+          if (idx < 0) continue;
+          if (opts && opts.baseOnly) return sel + '|' + idx;
+          return makeElKey(sel, idx, opts);
+        }
+      } catch (e) { /* invalid selector — skip */ }
+    }
+    return null;
+  }
+  function collectGuides() {
+    return $$('.le-guide').map(function (g) {
+      return {
+        axis: g.classList.contains('h') ? 'h' : 'v',
+        pos: g.classList.contains('h') ? parseFloat(g.style.top) : parseFloat(g.style.left),
+      };
+    });
+  }
+  // 2026-05-13 (sw v983): .le-dropped-img を saved-layout.json に統合。
+  //   従来 localStorage のみだったため snapshot 比較で dirty が立たず、
+  //   保存ボタンがオレンジにならない / GitHub に反映されない / 他ブラウザで消える
+  //   バグがあった。snapshot に __droppedImages を含めて永続化する。
+  //   localStorage 経路は fallback として残す。
+  function collectDroppedImages() {
+    return $$('.le-dropped-img').map(function (el) {
+      var src = '';
+      if (el.tagName === 'IMG') src = el.src || '';
+      else { var inner = el.querySelector('img'); src = inner ? inner.src : ''; }
+      var entry = {
+        id:    el.dataset.dropId  || '',
+        name:  el.dataset.dropName || '',
+        label: (el.dataset && el.dataset.leLabel) || '',
+        src:   src,
+        left:  el.style.left   || '',
+        top:   el.style.top    || '',
+        width: el.style.width  || '',
+        height:el.style.height || '',
+        tx: el._tx || 0,
+        ty: el._ty || 0,
+        z:  el.style.zIndex || ''
+      };
+      // 任意の ZK 拡張 (rotate / aspectLock / artScale / frameKind) — 値がある時だけ保存
+      // 旧 saved-layout.json と後方互換を保つために未設定なら entry に含めない。
+      var rot = parseFloat(el.dataset.rotate || '0');
+      if (rot && isFinite(rot)) entry.rotate = ((rot % 360) + 360) % 360;
+      if (el.dataset && el.dataset.aspectLock === '1') entry.aspectLock = '1';
+      if (el.dataset && el.dataset.artScale)   entry.artScale   = el.dataset.artScale;
+      if (el.dataset && el.dataset.frameKind)  entry.frameKind  = el.dataset.frameKind;
+      return entry;
+    });
+  }
+  function collectUserboxes() {
+    return $$('.userbox').map(function (el) {
+      var entry = {
+        id: el.dataset.userboxId || '',
+        label: el.dataset.userboxLabel || '',
+        left: el.style.left || '',
+        top: el.style.top || '',
+        w: el.style.width || '',
+        h: el.style.height || '',
+        tx: el._tx || 0,
+        ty: el._ty || 0,
+        bgImage: el.dataset.bgImage || '',
+      };
+      // [zk-inv] dataset.rotate (deg 単位 0/90/180/270) と dataset.aspectLock ('1' or 空)
+      //   を任意で保存。 未設定なら entry に含めない (旧 saved-layout.json と互換)。
+      var rot = parseFloat(el.dataset.rotate || '0');
+      if (rot && isFinite(rot)) entry.rotate = ((rot % 360) + 360) % 360;
+      if (el.dataset.aspectLock === '1') entry.aspectLock = '1';
+      return entry;
+    });
+  }
+
+  // ====================================================================
+  //  Chip preset (chip-type-with-image / chip-type-text-only)
+  //  Helper for `📌 chip preset 保存` / `🧹 個別設定クリア` toolbar buttons.
+  //  schema (2026-05-07: 4-slot 構造):
+  //    data.__chip_presets = {
+  //      withImage: { "0": { chip:{w,h}, circle:{...}, illust:{...}, label:{...} },
+  //                   "1": {...}, "2": {...}, "3": {...} },
+  //      textOnly:  { "0": { chip:{w,h}, label:{...}, countNum:{...} },
+  //                   "1": {...}, "2": {...}, "3": {...} }
+  //    }
+  //  各 chip の現在位置を slot 別に保存・適用。 slot index = querySelectorAll('.chip')
+  //  の順 = data-idx (0=TL, 1=TR, 2=BL, 3=BR)。
+  //  layout-applier の applyChipPresets が page render 時に slot 単位で適用する。
+  // ====================================================================
+
+  function _readElLayout(el) {
+    if (!el) return null;
+    return {
+      w: el.style.width || '',
+      h: el.style.height || '',
+      tx: el._tx || 0,
+      ty: el._ty || 0,
+    };
+  }
+  function _findSelectedChip() {
+    var sel = state.selectedElements ? Array.from(state.selectedElements) : [];
+    if (sel.length !== 1) return null;
+    var first = sel[0];
+    if (first.classList && first.classList.contains('chip')) return first;
+    // 子要素を選んでた場合は親 .chip に遡る
+    return first.closest ? first.closest('.chip') : null;
+  }
+  function _chipType(chip) {
+    if (!chip || !chip.classList) return null;
+    return chip.classList.contains('chip-type-with-image') ? 'withImage' :
+           chip.classList.contains('chip-type-text-only')  ? 'textOnly'  : null;
+  }
+
+  // 1 chip から chip preset (chip.w/h + 全子パーツ) を抽出。
+  // 2026-05-07 改 (v784): preset.chip に tx/ty も含める。 saveChipPreset で
+  //   対応する .chip|N 個別 entry を削除することで、 preset 値が「そのチップの真実」
+  //   になる (= 個別 entry が preset を上書きする問題を根治)。
+  // illust/countNum/circle/label は要素が存在すれば必ず保存。
+  // ラベルは width を保存しない (= 各ラベルの text content に応じて auto-size、
+  // 「あか」(2 chars) で保存した width を「オレンジ」(4 chars) のラベルに当てると
+  // クリップする問題への対策)。
+  function _buildPresetFromChip(chip) {
+    var preset = {
+      chip: {
+        w: chip.style.width || '',
+        h: chip.style.height || '',
+        tx: chip._tx || 0,
+        ty: chip._ty || 0,
+      },
+    };
+    var c = chip.querySelector('.circle');
+    if (c) preset.circle = _readElLayout(c);
+    // 2026-05-12 (v971): wrap が新 resize target。 wrap 優先で読み、
+    // 旧 DOM (wrap 無し) は .chip-illust に fallback。
+    var im = chip.querySelector('.chip-illust-wrap') || chip.querySelector('.chip-illust');
+    if (im) preset.illust = _readElLayout(im);
+    var lb = chip.querySelector('.chip-label');
+    if (lb) {
+      preset.label = _readElLayout(lb);
+      preset.label.w = ''; // text 量で auto-size、 固定幅にしない
+    }
+    var n = chip.querySelector('.chip-count-num');
+    if (n) preset.countNum = _readElLayout(n);
+    // 2026-05-07 v786: chip-label と chip-count-num を共通キー `text` で alias 化。
+    //   両者は同じ chip-type-text-only 内で排他に出現する (count_total なら
+    //   chip-count-num のみ、 plain text なら chip-label のみ) ため、 ユーザーが
+    //   一方の chip で位置を整えても他方は default のまま、という非対称が起きていた。
+    //   共通キーに保存しておけば applier 側で「存在する方」へ apply できる。
+    var textEl = chip.querySelector('.chip-label, .chip-count-num');
+    if (textEl) {
+      preset.text = _readElLayout(textEl);
+      preset.text.w = ''; // text 量で auto-size
+      // 互換: 旧 reader (label/countNum 個別読み) も同じ値を読めるようにしておく。
+      // 2026-05-07 (HIGH fix): shallow copy で参照共有を解消。 将来の preset.label.w =
+      //   ... のような書き換えで 3 者全員が変わるのを防ぐ。
+      preset.label = Object.assign({}, preset.text);
+      preset.countNum = Object.assign({}, preset.text);
+    }
+    return preset;
+  }
+
+  // 選択された chip の DOM index (#answer-panel スコープ内の `.chip` 順) = data-idx = slot index。
+  // 0..3 以外 (DOM に居ない / 5 個目以降) なら null。
+  // 2026-05-07 修正 (HIGH): document 全体ではなく chip の最寄りの answer-panel をスコープにする。
+  //   将来 quizland 外で `.chip` クラスが使われても slot index がズレないようにする。
+  function _findChipSlot(chip) {
+    if (!chip || !chip.closest) return null;
+    var scope = chip.closest('#answer-panel, .answer-panel') || chip.parentElement;
+    if (!scope) return null;
+    var idx = Array.from(scope.querySelectorAll('.chip')).indexOf(chip);
+    if (idx < 0 || idx > 3) return null;
+    return idx;
+  }
+
+  function saveChipPreset() {
+    // 2026-05-07: 4-slot 構造に拡張。 選択された chip それぞれの現在位置を、
+    //   (type, slot) ごとに別々の preset として保存。
+    var sel = state.selectedElements ? Array.from(state.selectedElements) : [];
+    var chips = sel.map(function (el) {
+      if (el.classList && el.classList.contains('chip')) return el;
+      return el.closest ? el.closest('.chip') : null;
+    }).filter(Boolean);
+    // dedupe (子要素を選んだら親 chip に遡るので重複しうる)
+    var seen = new Set();
+    chips = chips.filter(function (c) { if (seen.has(c)) return false; seen.add(c); return true; });
+    if (!chips.length) {
+      showToast('chip (または chip 内子要素) を 1 つ以上選択してください', 'warn');
+      return;
+    }
+    if (!window._currentLayoutData) window._currentLayoutData = {};
+    // 既存フラット形式を 4-slot 形式に in-memory 正規化
+    if (window.LayoutApplier && window.LayoutApplier._normalizeChipPresets) {
+      window._currentLayoutData.__chip_presets = window.LayoutApplier._normalizeChipPresets(
+        window._currentLayoutData.__chip_presets || {}
+      );
+    } else if (!window._currentLayoutData.__chip_presets) {
+      window._currentLayoutData.__chip_presets = {};
+    }
+    var data = window._currentLayoutData;
+    // 各 chip を (type, slot) でグルーピング
+    var saved = []; // [{ type, slot }]
+    var skipped = 0;
+    chips.forEach(function (chip) {
+      var t = _chipType(chip);
+      var slot = _findChipSlot(chip);
+      if (!t || slot == null) {
+        skipped++;
+        console.warn('[layout-editor] chip preset 保存: type/slot 不明', chip, 'type=', t, 'slot=', slot);
+        return;
+      }
+      if (!data.__chip_presets[t]) data.__chip_presets[t] = {};
+      data.__chip_presets[t][String(slot)] = _buildPresetFromChip(chip);
+      saved.push({ type: t, slot: slot });
+    });
+    if (!saved.length) {
+      showToast('chip 種別/slot が判定できません (chip-type-* class なし or DOM 順 4 個超過)', 'warn');
+      return;
+    }
+    // 2026-05-07 v785: 📌 で preset 保存した chip の個別 entry を削除する。
+    //   個別 entry (= .chip|N および .chip .circle|N 等) は preset を上書きするため、
+    //   残ったままだと「保存しても他問題に反映しない」「同じ問題に戻ったら元に戻る」
+    //   状態になる (preset → 個別 entry の順で apply され後勝ち)。
+    //
+    //   2026-05-07 v785 fix: 削除対象を「今回保存した preset に含まれる part のみ」
+    //   に限定する。 textOnly (count_total) chip 保存時に image+text 専用の
+    //   `.chip .chip-illust|N` を消してしまうと、 同じ slot を共有する withImage
+    //   問題に戻ったときに illust の個別位置が失われ、 chip が右下にずれる
+    //   (= preset 旧値や CSS default が顔を出す) クロス汚染が起きていた。
+    //   slotPreset には _buildPresetFromChip でその chip type に存在する part だけ
+    //   が含まれるので、 part → key prefix を引いて該当 entry のみ削除する。
+    var PART_TO_KEY_PREFIX = {
+      chip:     '.chip|',
+      circle:   '.chip .circle|',
+      illust:   '.chip .chip-illust-wrap|',
+      label:    '.chip .chip-label|',
+      countNum: '.chip .chip-count-num|',
+      // text は chip-label / chip-count-num の alias key (v786 追加)。
+      // 個別 prefix を持たないので、 削除ループ側で両方 (label + countNum) を消す。
+      text:     null,
+    };
+    // 保存対象 chip の個別 entry を data + state.individualOverrides から削除 (type 別 part 限定)
+    saved.forEach(function (s) {
+      var slotPreset = data.__chip_presets[s.type] && data.__chip_presets[s.type][String(s.slot)];
+      if (!slotPreset) return;
+      Object.keys(slotPreset).forEach(function (part) {
+        if (part === 'text') {
+          // text alias: chip-label と chip-count-num の個別 entry を両方消す。
+          // どちらか片方の chip 種別で保存しても、 もう一方の chip 種別の個別 entry が
+          // 残っていると preset.text が上書きされて非対称が再発するので両方一掃する。
+          ['.chip .chip-label|', '.chip .chip-count-num|'].forEach(function (pfx) {
+            var key = pfx + s.slot;
+            if (data.hasOwnProperty(key)) delete data[key];
+            if (state.individualOverrides) state.individualOverrides.delete(key);
+          });
+          return;
+        }
+        var prefix = PART_TO_KEY_PREFIX[part];
+        if (!prefix) return;
+        var key = prefix + s.slot;
+        if (data.hasOwnProperty(key)) delete data[key];
+        if (state.individualOverrides) state.individualOverrides.delete(key);
+      });
+    });
+    var savedSlots = {}; // { N: true } — 保存した chip の slot index 集合 (後段の他 chip 同期用)
+    saved.forEach(function (s) { savedSlots[s.slot] = true; });
+    // 2026-05-06 fix (維持): 保存対象**外**の chip については、 ドラッグで更新された
+    //   位置を _currentLayoutData に同期する (個別 entry を維持)。 これをしないと
+    //   apply() が stale な JSON 値で chip transform を巻き戻す → 続く save() で
+    //   その chip のドラッグが消える。
+    Array.from(document.querySelectorAll('.chip')).forEach(function (chip, idx) {
+      if (savedSlots[idx]) return; // 保存対象 chip は個別 entry を作らない
+      var key = '.chip|' + idx;
+      data[key] = {
+        w: chip.style.width || '',
+        h: chip.style.height || '',
+        tx: chip._tx || 0,
+        ty: chip._ty || 0,
+      };
+    });
+    // 即時反映: chip 自体の絶対位置は個別 entry で保護されているので、 他 chip が動かない。
+    if (window.LayoutApplier && state.config) {
+      window.LayoutApplier.apply(window._currentLayoutData, document, _applierCfg());
+    }
+    // toast: 保存した (type, slot) を一覧表示
+    var SLOT_LABELS = ['TL', 'TR', 'BL', 'BR'];
+    var byType = {};
+    saved.forEach(function (s) {
+      if (!byType[s.type]) byType[s.type] = [];
+      byType[s.type].push(s.slot);
+    });
+    var msg = 'preset 保存: ' + Object.keys(byType).map(function (t) {
+      return t + ' slot ' + byType[t].sort().map(function (sl) {
+        return sl + '(' + SLOT_LABELS[sl] + ')';
+      }).join(',');
+    }).join(' / ');
+    if (skipped) msg += ' (' + skipped + ' 件 skip)';
+    showToast(msg, 'success');
+    save();
+    refreshSelectionUI();
+    updateNumericPanel();
+  }
+
+  function clearChipOverridesForType() {
+    var chip = _findSelectedChip();
+    if (!chip) {
+      showToast('対象 chip を 1 つ選択してください', 'warn');
+      return;
+    }
+    var type = _chipType(chip);
+    if (!type) {
+      showToast('chip 種別が判定できません', 'warn');
+      return;
+    }
+    if (!window._currentLayoutData) {
+      showToast('layout データが読み込まれていません', 'warn');
+      return;
+    }
+    // 2026-05-07: 4-slot 形式に in-memory 正規化してから参照
+    if (window.LayoutApplier && window.LayoutApplier._normalizeChipPresets) {
+      window._currentLayoutData.__chip_presets = window.LayoutApplier._normalizeChipPresets(
+        window._currentLayoutData.__chip_presets || {}
+      );
+    }
+    var presets = window._currentLayoutData.__chip_presets;
+    if (!presets || !presets[type]) {
+      showToast(type + ' preset が未定義です。 まず 📌 で preset 保存してください', 'warn');
+      return;
+    }
+    // 2026-05-07 改: 4-slot 化に伴い、 chip ごとに「自分の slot の preset」が
+    //   どの parts (circle/illust/label/countNum) を持つかで個別 entry の削除可否を判定。
+    //   slot に preset が無い chip はスキップ。
+    // 2026-05-06 維持: .chip|N (chip 自体の cell 配置) は **絶対に削除しない**。
+    //   preset.chip は w/h のみで tx/ty を持たないので、 .chip|N を消すと cell 配置が
+    //   失われて chip が flex 自然位置 (重なる等) に飛ぶ。
+    var allChips = Array.from(document.querySelectorAll('.chip'));
+    var deleted = 0;
+    var skipped = 0;
+    allChips.forEach(function (ch, i) {
+      if (_chipType(ch) !== type) return;
+      var slot = _findChipSlot(ch);
+      if (slot == null) return;
+      var slotPreset = presets[type][String(slot)];
+      if (!slotPreset) return; // この slot は未保存 → 何も削除しない
+      var prefixCoverage = {
+        '.chip .circle|':        !!slotPreset.circle,
+        '.chip .chip-illust-wrap|': !!slotPreset.illust,
+        '.chip .chip-label|':    !!slotPreset.label,
+        '.chip .chip-count-num|':!!slotPreset.countNum,
+      };
+      Object.keys(prefixCoverage).forEach(function (p) {
+        var key = p + i;
+        if (window._currentLayoutData.hasOwnProperty(key)) {
+          if (prefixCoverage[p]) {
+            delete window._currentLayoutData[key];
+            state.individualOverrides.delete(key);
+            deleted++;
+          } else {
+            skipped++;
+          }
+        }
+      });
+    });
+    // 2026-05-06 fix: ドラッグで更新された chip 位置を _currentLayoutData に同期。
+    //   これをしないと apply() が stale な JSON 値で chip transform を巻き戻す → 続く save() で
+    //   ユーザーのドラッグが消える。
+    Array.from(document.querySelectorAll('.chip')).forEach(function (chip, idx) {
+      var key = '.chip|' + idx;
+      window._currentLayoutData[key] = {
+        w: chip.style.width || '',
+        h: chip.style.height || '',
+        tx: chip._tx || 0,
+        ty: chip._ty || 0,
+      };
+    });
+    if (window.LayoutApplier && state.config) {
+      window.LayoutApplier.apply(window._currentLayoutData, document, _applierCfg());
+    }
+    var msg = type + ' chip の個別設定 ' + deleted + ' 件を削除、 preset 適用';
+    if (skipped) msg += ' (' + skipped + ' 件は preset 未定義のため保留: 📌 で preset を完備すれば次回クリアできます)';
+    showToast(msg, 'success');
+    save();
+    refreshSelectionUI();
+    updateNumericPanel();
+  }
+
+  // 2026-05-06 新規: 「💾 個別保存」 ボタン。
+  //   選択された chip 関連要素 (chip 自体 or chip 内子要素) を個別 override として登録。
+  //   ドラッグ時の自動個別保存を廃止した代替経路 (能動的な個別化)。
+  function saveIndividualOverrides() {
+    var sel = state.selectedElements ? Array.from(state.selectedElements) : [];
+    if (!sel.length) {
+      showToast('対象を選択してください (chip または chip 内子要素)', 'warn');
+      return;
+    }
+    var added = [];
+    var skipped = 0;
+    sel.forEach(function (el) {
+      // 2026-05-07: individualOverrides は base key で管理 (chip 系は per-Q 化対象外なので
+      //   通常 baseOnly 不要だが、 安全側に明示)。
+      var key = getElKey(el, { baseOnly: true });
+      if (!key) { skipped++; return; }
+      var m = key.match(/^(.+)\|\d+$/);
+      if (!m || !_isChipScopedSelector(m[1])) { skipped++; return; }
+      if (!state.individualOverrides.has(key)) {
+        state.individualOverrides.add(key);
+        added.push(key);
+      }
+    });
+    if (!added.length) {
+      var msg = (skipped > 0)
+        ? '対象に chip 関連要素がありません (chip / .circle / .chip-illust / .chip-label / .chip-count-num のみ)'
+        : '選択中の chip は既に個別保存済みです';
+      showToast(msg, 'warn');
+      return;
+    }
+    showToast(added.length + ' 件を個別保存に追加', 'success');
+    save();
+    refreshSelectionUI();
+    updateNumericPanel();
+  }
+
+  // ====================================================================
+  //  Chip text override (per-question 4 択テキスト直接編集)
+  //  - dblclick で chip-label / chip-illust-label / chip-count-num を
+  //    contenteditable 化 → blur で saved-layout.__chip_text_overrides に保存。
+  //  - Enter = 改行 (<br> 挿入) / Shift+Enter = デフォルト改行 / Ctrl+Enter = 確定 / Esc = 破棄。
+  //  - 保存キー = window.QUIZLAND_GET_CURRENT_QKEY() (`${cat}|${level}|${idx}`)。
+  //  - quizland index.html 側の renderChoices が _qzApplyChipText で override を読んで
+  //    innerHTML 描画 (XSS 対策で escape 済み、 \n のみ <br> に変換)。
+  // ====================================================================
+
+  // 編集対象判定: chip-label / chip-illust-label (chip-label を兼ねる) / chip-count-num
+  function _isChipTextEditTarget(el) {
+    if (!el || !el.classList) return false;
+    return el.classList.contains('chip-label') ||
+           el.classList.contains('chip-illust-label') ||
+           el.classList.contains('chip-count-num');
+  }
+
+  // 現在の qKey を取得 (= __chip_text_overrides の最上位キー)
+  function _getCurrentQKey() {
+    try {
+      if (typeof window.QUIZLAND_GET_CURRENT_QKEY === 'function') {
+        var k = window.QUIZLAND_GET_CURRENT_QKEY();
+        if (k && typeof k === 'string') return k;
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  // dblclick → contenteditable 起動 / blur で保存 / Esc で破棄
+  function _onChipTextDblclick(e) {
+    if (!document.body.classList.contains(EDIT_MODE_BODY_CLASS)) return;
+    var el = e.target;
+    // chip-label の中にある span 等を dblclick した場合に親 chip-label に遡る
+    while (el && el !== document.body && !_isChipTextEditTarget(el)) {
+      el = el.parentElement;
+    }
+    if (!el || !_isChipTextEditTarget(el)) return;
+    if (el.isContentEditable) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    // v968 critical fix: `.chip-label` は QZ_RESIZABLE_SELECTORS に登録されており
+    // attachHandle() で `.resize-handle` × 8 + `.resize-size-label` (`288×240` 等) が
+    // 子要素として append されている (layout-editor.js 内 1715-1717 行)。
+    // この状態で contenteditable=true にすると、 commit 時に innerHTML を取得すると
+    // resize 子要素の DOM (空 div × 8 + size label div) もテキストに混入し、
+    // 8 個の `\n` (空 div は </div> 変換) + size label の `288×240` テキストが
+    // override に保存される (= ユーザー報告の症状)。 CSS の display:none では
+    // textContent/innerHTML 抽出は防げないため、 編集開始時に物理的に DOM から
+    // 子の overlay 要素を退避し、 commit/cancel 後に元位置へ戻す。
+    var detachedOverlays = [];
+    Array.prototype.forEach.call(
+      el.querySelectorAll(':scope > .resize-handle, :scope > .resize-size-label'),
+      function (child) {
+        // 順序は復元せず単純 push のみ (handle は CSS の position:absolute で
+        // 配置されるため DOM 順は描画に影響しない。reattach 時は単純 appendChild)。
+        detachedOverlays.push({ node: child });
+        child.remove();
+      }
+    );
+    function reattachOverlays() {
+      detachedOverlays.forEach(function (item) {
+        try { el.appendChild(item.node); } catch (err) {}
+      });
+      detachedOverlays = [];
+      // size-label テキスト (288×240) を即時 refresh
+      if (typeof el._resizeUpdateLabel === 'function') {
+        try { el._resizeUpdateLabel(); } catch (err) {}
+      }
+    }
+
+    // 編集前の値を data-original-html に保存 (Esc で復元)。
+    //   ここで innerHTML を取る時点で overlay は既に detach 済みなので、
+    //   originalHtml にも overlay は含まれない (Esc で cancel しても残骸が出ない)。
+    el.dataset.originalHtml = el.innerHTML;
+    el.contentEditable = 'true';
+    el.classList.add('chip-text-editing');
+    el.focus();
+
+    // dblclick 時点の qKey をクロージャにキャプチャ。
+    //   blur が発火する頃には「⏭ 次の問題」 等で currentQ が次の問題に
+    //   切り替わっている可能性があり、 _getCurrentQKey() 経由だと別問題に
+    //   override が保存される (MEDIUM 1 修正)。
+    var capturedQKey = _getCurrentQKey();
+
+    // 全選択
+    try {
+      var range = document.createRange();
+      range.selectNodeContents(el);
+      var sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    } catch (err) { /* noop */ }
+
+    // paste をサニタイズ (HIGH 1): rich HTML 貼り付けを plain text に強制し、
+    //   contenteditable DOM に外部 HTML が残るのを防ぐ。
+    function onPaste(ev) {
+      ev.preventDefault();
+      var cd = ev.clipboardData || window.clipboardData;
+      var plain = cd ? cd.getData('text') : '';
+      if (typeof plain !== 'string') plain = '';
+      try { document.execCommand('insertText', false, plain); }
+      catch (err) { /* legacy fallback: 大半のブラウザで動く */ }
+    }
+
+    // v968 followup (cross-reviewer HIGH): Escape → cancel() 内で
+    //   `el.contentEditable = 'false'` を set すると、多くのブラウザで
+    //   focused element からの contenteditable 解除が同期 blur を発火する。
+    //   その時点では removeEventListener('blur', commit) 未実行のため、
+    //   commit() が二重発火し、cancel したはずが override が save されてしまう
+    //   (= localStorage + GitHub 書き込み = データ汚染)。
+    //   idempotency guard で commit/cancel 双方の冒頭で no-op 化する。
+    var _done = false;
+    function commit() {
+      if (_done) return;
+      _done = true;
+      el.contentEditable = 'false';
+      el.classList.remove('chip-text-editing');
+      delete el.dataset.originalHtml;
+      el.removeEventListener('blur', commit);
+      el.removeEventListener('keydown', onKey);
+      el.removeEventListener('paste', onPaste);
+      // v968: override 保存は overlay が detach されたピュアな innerHTML で行う。
+      _saveChipTextOverride(el, capturedQKey);
+      // overlay を元位置へ戻す (resize ハンドル / size label を編集後も使えるように)
+      reattachOverlays();
+    }
+    function cancel() {
+      if (_done) return;
+      _done = true;
+      // 編集破棄: 元の HTML に戻して contenteditable を解除 (保存はしない)
+      el.innerHTML = el.dataset.originalHtml || '';
+      el.contentEditable = 'false';
+      el.classList.remove('chip-text-editing');
+      delete el.dataset.originalHtml;
+      el.removeEventListener('blur', commit);
+      el.removeEventListener('keydown', onKey);
+      el.removeEventListener('paste', onPaste);
+      // v968: cancel 時も overlay を元に戻す
+      reattachOverlays();
+    }
+    function onKey(ev) {
+      if (ev.key === 'Escape') {
+        ev.preventDefault();
+        cancel();
+      } else if (ev.key === 'Enter' && ev.ctrlKey) {
+        // Ctrl+Enter = 確定
+        ev.preventDefault();
+        el.blur();
+      } else if (ev.key === 'Enter' && !ev.shiftKey) {
+        // Enter = 改行 (<br> 挿入)。 contenteditable のデフォルト (<div>/<p> 増殖) を抑止。
+        ev.preventDefault();
+        try { document.execCommand('insertHTML', false, '<br>'); }
+        catch (err) { /* legacy 経路、 大半のブラウザで動く */ }
+      }
+      // Shift+Enter は browser default (= <br> 等) に任せる
+    }
+    el.addEventListener('blur', commit);
+    el.addEventListener('keydown', onKey);
+    el.addEventListener('paste', onPaste);
+  }
+
+  // contenteditable で編集された innerHTML を plain text + \n に変換し、
+  // window._currentLayoutData.__chip_text_overrides[qKey][slot] に保存。
+  // qKey 引数省略時は _getCurrentQKey() で fallback (後方互換)。
+  // 通常は dblclick 時点で capture した qKey を渡す (MEDIUM 1: blur 時点では
+  // currentQ が次の問題に進んでしまっている可能性があるため)。
+  function _saveChipTextOverride(el, qKey) {
+    var chip = el.closest ? el.closest('.chip') : null;
+    if (!chip) {
+      showToast('chip 親要素が見つかりません', 'warn');
+      return;
+    }
+    var slot = _findChipSlot(chip);
+    if (slot == null) {
+      showToast('slot index が判定できません (DOM 順 4 個超過 or scope 外)', 'warn');
+      return;
+    }
+    // qKey 省略時は現在値で fallback (後方互換)。
+    if (qKey == null) qKey = _getCurrentQKey();
+    if (!qKey) {
+      showToast('現在の問題 ID (qKey) が取得できません。 Quizland 以外では無効です', 'warn');
+      // 編集前値に戻す
+      if (typeof el.dataset !== 'undefined' && el.dataset.originalHtml != null) {
+        el.innerHTML = el.dataset.originalHtml;
+      }
+      return;
+    }
+    // innerHTML → plain text + \n 変換
+    // v972 fix: contenteditable で Enter キーを押すと、 browser が `<div>line2</div>`
+    // を挿入する (Chrome 等の default 挙動)。 v970 までの broad strip
+    // (`<br>` 以外の全 element を remove → regex で </div> → \n) は、
+    // remove() が **要素の中身ごと削除** してしまうため、 `<div>` 内のテキスト + 改行が
+    // 両方とも消えるリグレッションを発生させていた (旧 v968 は </div> → \n 変換だったので OK)。
+    //
+    // 対策: regex chain を捨てて DOM walk による text 抽出に切り替える。
+    //   - BR / 既知 block element 末尾で \n を挿入
+    //   - 既知 overlay class (.resize-handle, .resize-size-label, .le-lock-badge,
+    //     .userbox-badge, .userbox-del) を持つ subtree は完全に skip
+    //   - text node の textContent はそのまま採用 (entity decode は browser がやる)
+    //   - 連続 3 つ以上の \n は 2 つに圧縮 (意図しない多重空行)、 末尾 \n は trim
+    // これにより `あ<div>い</div>` → `あ\nい`、 `あ<br>い` → `あ\nい` が両方とも保たれる。
+    // 後段の DIM_RE_MID / DIM_RE_TAIL sanitizer はそのまま適用 (寸法ラベル除去用)。
+    function _extractChipLabelText(rootClone) {
+      var SKIP_CLASSES = ['resize-handle', 'resize-size-label', 'le-lock-badge', 'userbox-badge', 'userbox-del'];
+      var BLOCK_TAGS = /^(DIV|P|H[1-6]|LI|UL|OL|BLOCKQUOTE)$/i;
+      var out = [];
+      function shouldSkip(el2) {
+        if (!el2 || !el2.classList) return false;
+        for (var ci = 0; ci < SKIP_CLASSES.length; ci++) {
+          if (el2.classList.contains(SKIP_CLASSES[ci])) return true;
+        }
+        return false;
+      }
+      function walk(node) {
+        if (node.nodeType === 3 /* TEXT_NODE */) {
+          out.push(node.nodeValue);
+          return;
+        }
+        if (node.nodeType !== 1 /* ELEMENT_NODE */) return;
+        if (shouldSkip(node)) return;
+        if (node.tagName === 'BR') {
+          out.push('\n');
+          return;
+        }
+        var isBlock = BLOCK_TAGS.test(node.tagName);
+        // v973 fix: leading \n (HIGH cross-review): `あ<div>い</div>` 形式で改行が消失する
+        // バグを修正。 iOS Safari や Shift+Enter で挿入される <div> ブロック開始時にも
+        // 改行を補完 (重複防止は trailing と同じ条件で実施)。
+        if (isBlock && out.length > 0 && out[out.length - 1] !== '\n') {
+          out.push('\n');
+        }
+        for (var ci = 0; ci < node.childNodes.length; ci++) {
+          walk(node.childNodes[ci]);
+        }
+        if (isBlock && out.length > 0 && out[out.length - 1] !== '\n') {
+          out.push('\n');
+        }
+      }
+      walk(rootClone);
+      return out.join('').replace(/\n{3,}/g, '\n\n').replace(/\n+$/, '');
+    }
+    var text;
+    try {
+      var clone = el.cloneNode(true);
+      text = _extractChipLabelText(clone);
+    } catch (e) {
+      // fallback: 最低限の HTML 剥がし (DOM walk 失敗時)
+      text = String(el.innerHTML || '')
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/(div|p)>/gi, '\n')
+        .replace(/<[^>]+>/g, '');
+    }
+    // v968 / v969: 既に saved-layout.json に書き込まれてしまった
+    // 「テキスト + \n × N + 寸法ラベル」 形式の壊れた値を runtime save 経由で自己治癒。
+    // v969 強化:
+    //   (a) 半角 (288×240) だけでなく全角 (２８８×２４０) digit にも対応 [0-9０-９]
+    //   (b) `×` だけでなく `x` `X` `*` 区切りも吸収
+    //   (c) 2-pass: mid-string (\n+前置き) を全部消した後、 さらに末尾の
+    //       「数字×数字」 を tail-anchored で再走 (前段で `\n+` 全消費後の
+    //       「\n 無し + 288×240」 trailing case を救済 — 例:
+    //       「はえる\n×8 ２８８×２４０ \n×8 288×240」 が pass A 後
+    //       「はえる288×240」 となる現象を pass B で吸収して 「はえる」 に戻す)
+    //   (d) 固定点反復で連続出現にも対応
+    var DIM_RE_MID  = /\n+[\s]*[0-9０-９]+\s*[×xX*]\s*[0-9０-９]+\s*/g;
+    var DIM_RE_TAIL = /\s*[0-9０-９]+\s*[×xX*]\s*[0-9０-９]+\s*$/;
+    var prev;
+    do { prev = text; text = text.replace(DIM_RE_MID, ''); } while (text !== prev);
+    for (var ti = 0; ti < 5; ti++) {
+      var nxt = text.replace(DIM_RE_TAIL, '');
+      if (nxt === text) break;
+      text = nxt;
+    }
+    text = text.replace(/\n+$/g, '').replace(/[ \t]+$/g, ''); // 末尾改行・末尾空白最終トリム
+    // 空文字 = override 削除扱い
+    if (!window._currentLayoutData) window._currentLayoutData = {};
+    if (!window._currentLayoutData.__chip_text_overrides) {
+      window._currentLayoutData.__chip_text_overrides = {};
+    }
+    var bucket = window._currentLayoutData.__chip_text_overrides;
+    if (!bucket[qKey]) bucket[qKey] = {};
+    if (text.length === 0) {
+      delete bucket[qKey][String(slot)];
+      if (Object.keys(bucket[qKey]).length === 0) delete bucket[qKey];
+    } else {
+      bucket[qKey][String(slot)] = text;
+    }
+    // 視覚マークと表示を即時更新するため renderChoices をやり直す代わりに
+    // この el だけ data-attr 更新 + 改行入りで innerHTML 上書き (renderChoices と同等)。
+    if (text.length > 0) {
+      el.setAttribute('data-chip-text-override', '1');
+    } else {
+      el.removeAttribute('data-chip-text-override');
+    }
+    // editor 中なら全 chip マーク refresh
+    _refreshChipTextOverrideMarks();
+    // save() で localStorage + GitHub に永続化
+    if (typeof save === 'function') {
+      try { save(); } catch (e) { console.warn('[LayoutEditor] save after chip text edit failed', e); }
+    }
+    showToast('テキスト保存: slot ' + slot + (text.length === 0 ? ' (クリア)' : ' (Enter=改行 / Ctrl+Enter=確定)'), 'success');
+  }
+
+  // 選択中の chip の override を削除 → 元テキストに復元するため renderChoices を再実行。
+  function clearChipTextOverrideForSelected() {
+    var chip = _findSelectedChip();
+    if (!chip) {
+      showToast('対象 chip を 1 つ選択してください', 'warn');
+      return;
+    }
+    var slot = _findChipSlot(chip);
+    if (slot == null) {
+      showToast('slot index が判定できません', 'warn');
+      return;
+    }
+    var qKey = _getCurrentQKey();
+    if (!qKey) {
+      showToast('現在の問題 ID が取得できません', 'warn');
+      return;
+    }
+    var bucket = window._currentLayoutData && window._currentLayoutData.__chip_text_overrides;
+    if (!bucket || !bucket[qKey] || !Object.prototype.hasOwnProperty.call(bucket[qKey], String(slot))) {
+      showToast('この chip には override が設定されていません', 'warn');
+      return;
+    }
+    delete bucket[qKey][String(slot)];
+    if (Object.keys(bucket[qKey]).length === 0) delete bucket[qKey];
+    // 元テキストを取り戻すため renderChoices を再実行 (currentQ 経由)。
+    try {
+      var currentQ = (typeof window.QUIZLAND_GET_CURRENT_Q === 'function')
+        ? window.QUIZLAND_GET_CURRENT_Q() : null;
+      if (currentQ && typeof window.renderChoices === 'function') {
+        window.renderChoices(currentQ);
+      }
+    } catch (e) { console.warn('[LayoutEditor] renderChoices after clear failed', e); }
+    _refreshChipTextOverrideMarks();
+    if (typeof save === 'function') {
+      try { save(); } catch (e) { console.warn('[LayoutEditor] save after chip text clear failed', e); }
+    }
+    showToast('テキスト override クリア: slot ' + slot, 'success');
+  }
+
+  function _getChipTextStyleControls() {
+    if (!state.toolbarEl) return null;
+    return {
+      font: state.toolbarEl.querySelector('#le-chip-font-size'),
+      tracking: state.toolbarEl.querySelector('#le-chip-tracking'),
+      scale: state.toolbarEl.querySelector('#le-chip-scale-x'),
+      clear: state.toolbarEl.querySelector('#le-chip-text-style-clear'),
+    };
+  }
+
+  function _selectedChipTextTarget(chip) {
+    if (!chip || !chip.querySelector) return null;
+    return chip.querySelector('.chip-label, .chip-illust-label, .chip-count-num');
+  }
+
+  function _getChipTextStyle(qKey, slot) {
+    var bucket = window._currentLayoutData && window._currentLayoutData.__chip_text_styles;
+    var byQ = bucket && qKey ? bucket[qKey] : null;
+    var st = byQ ? byQ[String(slot)] : null;
+    return (st && typeof st === 'object') ? st : null;
+  }
+
+  function _hasChipTextStyle(st) {
+    return !!(st && (
+      Number.isFinite(Number(st.fontSizePx)) ||
+      Number.isFinite(Number(st.trackingPx)) ||
+      Number.isFinite(Number(st.scaleXPercent))
+    ));
+  }
+
+  function _applyChipTextStyleToEl(el, qKey, slot) {
+    if (!el) return;
+    if (typeof window._qzApplyChipTextStyle === 'function') {
+      try { window._qzApplyChipTextStyle(el, qKey, slot); return; } catch (e) {}
+    }
+    var st = _getChipTextStyle(qKey, slot);
+    if (!st) {
+      el.style.removeProperty('--chip-text-font-size');
+      el.style.removeProperty('--chip-text-letter-spacing');
+      el.style.removeProperty('--chip-text-scale-x');
+      el.removeAttribute('data-chip-text-style');
+      return;
+    }
+    var has = false;
+    if (Number.isFinite(Number(st.fontSizePx)) && Number(st.fontSizePx) > 0) {
+      el.style.setProperty('--chip-text-font-size', Number(st.fontSizePx) + 'px');
+      has = true;
+    } else {
+      el.style.removeProperty('--chip-text-font-size');
+    }
+    if (Number.isFinite(Number(st.trackingPx))) {
+      el.style.setProperty('--chip-text-letter-spacing', Number(st.trackingPx) + 'px');
+      has = true;
+    } else {
+      el.style.removeProperty('--chip-text-letter-spacing');
+    }
+    if (Number.isFinite(Number(st.scaleXPercent)) && Number(st.scaleXPercent) > 0) {
+      el.style.setProperty('--chip-text-scale-x', Number(st.scaleXPercent) / 100);
+      has = true;
+    } else {
+      el.style.removeProperty('--chip-text-scale-x');
+    }
+    if (has) el.setAttribute('data-chip-text-style', '1');
+    else el.removeAttribute('data-chip-text-style');
+  }
+
+  function _readChipTextStyleInputs() {
+    var c = _getChipTextStyleControls();
+    if (!c) return null;
+    function readNumber(input) {
+      if (!input || input.value === '') return null;
+      var n = Number(input.value);
+      return Number.isFinite(n) ? n : null;
+    }
+    var st = {};
+    var fs = readNumber(c.font);
+    var tr = readNumber(c.tracking);
+    var sx = readNumber(c.scale);
+    if (fs != null && fs > 0) st.fontSizePx = fs;
+    if (tr != null) st.trackingPx = tr;
+    if (sx != null && sx > 0) st.scaleXPercent = sx;
+    return st;
+  }
+
+  function saveChipTextStyleForSelected() {
+    if (state._chipTextStyleRefreshing) return;
+    var chip = _findSelectedChip();
+    if (!chip) {
+      showToast('文字設定する chip を 1 つ選択してください', 'warn');
+      return;
+    }
+    var slot = _findChipSlot(chip);
+    var qKey = _getCurrentQKey();
+    if (slot == null || !qKey) {
+      showToast('現在の問題 ID / slot が取得できません', 'warn');
+      return;
+    }
+    var st = _readChipTextStyleInputs();
+    if (!window._currentLayoutData) window._currentLayoutData = {};
+    if (!window._currentLayoutData.__chip_text_styles) window._currentLayoutData.__chip_text_styles = {};
+    var bucket = window._currentLayoutData.__chip_text_styles;
+    if (!bucket[qKey]) bucket[qKey] = {};
+    if (_hasChipTextStyle(st)) {
+      bucket[qKey][String(slot)] = st;
+    } else {
+      delete bucket[qKey][String(slot)];
+      if (Object.keys(bucket[qKey]).length === 0) delete bucket[qKey];
+    }
+    _applyChipTextStyleToEl(_selectedChipTextTarget(chip), qKey, slot);
+    if (typeof save === 'function') {
+      try { save(); } catch (e) { console.warn('[LayoutEditor] save after chip text style failed', e); }
+    }
+  }
+
+  function clearChipTextStyleForSelected() {
+    var chip = _findSelectedChip();
+    if (!chip) {
+      showToast('文字設定をクリアする chip を 1 つ選択してください', 'warn');
+      return;
+    }
+    var slot = _findChipSlot(chip);
+    var qKey = _getCurrentQKey();
+    if (slot == null || !qKey) {
+      showToast('現在の問題 ID / slot が取得できません', 'warn');
+      return;
+    }
+    var bucket = window._currentLayoutData && window._currentLayoutData.__chip_text_styles;
+    if (bucket && bucket[qKey]) {
+      delete bucket[qKey][String(slot)];
+      if (Object.keys(bucket[qKey]).length === 0) delete bucket[qKey];
+    }
+    _applyChipTextStyleToEl(_selectedChipTextTarget(chip), qKey, slot);
+    refreshChipTextStyleControls();
+    if (typeof save === 'function') {
+      try { save(); } catch (e) { console.warn('[LayoutEditor] save after chip text style clear failed', e); }
+    }
+    showToast('文字設定クリア: slot ' + slot, 'success');
+  }
+
+  function refreshChipTextStyleControls() {
+    var c = _getChipTextStyleControls();
+    if (!c) return;
+    var chip = _findSelectedChip();
+    var slot = chip ? _findChipSlot(chip) : null;
+    var qKey = _getCurrentQKey();
+    var enabled = !!(chip && slot != null && qKey);
+    var target = enabled ? _selectedChipTextTarget(chip) : null;
+    var st = enabled ? _getChipTextStyle(qKey, slot) : null;
+    state._chipTextStyleRefreshing = true;
+    [c.font, c.tracking, c.scale, c.clear].forEach(function (el) {
+      if (el) el.disabled = !enabled;
+    });
+    if (c.font) {
+      c.font.value = (st && Number.isFinite(Number(st.fontSizePx))) ? String(st.fontSizePx) : '';
+      c.font.placeholder = target ? String(Math.round(parseFloat(getComputedStyle(target).fontSize) || 32)) : '';
+    }
+    if (c.tracking) {
+      c.tracking.value = (st && Number.isFinite(Number(st.trackingPx))) ? String(st.trackingPx) : '';
+      c.tracking.placeholder = '0';
+    }
+    if (c.scale) {
+      c.scale.value = (st && Number.isFinite(Number(st.scaleXPercent))) ? String(st.scaleXPercent) : '';
+      c.scale.placeholder = '100';
+    }
+    state._chipTextStyleRefreshing = false;
+  }
+
+  // 全 chip を walk して、 override を持つラベルに data-chip-text-override="1" を付ける。
+  // CSS 側で body.layout-editor-on .chip [data-chip-text-override="1"] に外枠を当てる。
+  function _refreshChipTextOverrideMarks() {
+    var qKey = _getCurrentQKey();
+    var bucket = (window._currentLayoutData && window._currentLayoutData.__chip_text_overrides) || null;
+    var byQ = (qKey && bucket) ? bucket[qKey] : null;
+    Array.from(document.querySelectorAll('.chip')).forEach(function (chip, i) {
+      var has = !!(byQ && Object.prototype.hasOwnProperty.call(byQ, String(i)));
+      // chip 内のテキスト要素 (label / illust-label / count-num) を全て対象に
+      var els = chip.querySelectorAll('.chip-label, .chip-illust-label, .chip-count-num');
+      els.forEach(function (el) {
+        if (has) el.setAttribute('data-chip-text-override', '1');
+        else el.removeAttribute('data-chip-text-override');
+      });
+    });
+  }
+
+  // editor enable 時に dblclick リスナーを 1 回だけアタッチ。
+  // addManagedListener で disable 時に自動 remove される。
+  function _enableChipTextEditOnDblclick() {
+    addManagedListener(document, 'dblclick', _onChipTextDblclick, true);
+  }
+
+  // ====================================================================
+  //  Save / revert / reset
+  // ====================================================================
+
+  // 2026-05-07 (Phase 2 / impl-A): GitHub から取得した contents.content (base64) を
+  //   JSON.parse して返す。 失敗時は null。 save() のマージで使用。
+  function _decodeGhJson(existing) {
+    if (!existing || !existing.content) return null;
+    try {
+      // GitHub content は改行入り base64。 atob は改行を許容するブラウザ多いが
+      // 念のため除去。 utf8 復号は decodeURIComponent(escape(...)) パターン。
+      var b64 = String(existing.content).replace(/\s+/g, '');
+      var bin = atob(b64);
+      var json = decodeURIComponent(escape(bin));
+      return JSON.parse(json);
+    } catch (e) {
+      console.warn('[LayoutEditor] failed to decode existing GH layout JSON', e);
+      return null;
+    }
+  }
+
+  function save() {
+    // 2026-06-30 (batch:962 ★2): toggle が 🌐 のまま、 現在質問に per-Q キーが既存する場合、
+    //   global キーで上書きすると個別レイアウトと矛盾する状態が永続化される。 確認 confirm で
+    //   止めて、 ユーザーに 🎯 への切替を促す (Cancel で abort)。
+    if (!state.perQScopeThisQ && state._perQScopeToggleSelectors && state._perQScopeToggleSelectors.length) {
+      try {
+        var existingPerQ = _collectPerQOverrideKeysForCurrentQ();
+        if (existingPerQ && existingPerQ.length) {
+          var msg = 'この質問には個別レイアウトが既に ' + existingPerQ.length + ' 件あります。\n' +
+                    '🌐 すべての質問 のまま保存すると、 個別レイアウトと矛盾する可能性があります。\n' +
+                    '(キャンセル推奨 → 🎯 この質問だけ に切替えてから保存してください)\n\n' +
+                    '本当にこのまま 🌐 で保存しますか？';
+          if (!confirm(msg)) {
+            emit('save:cancelled', { reason: 'per-q-mismatch' });
+            return Promise.resolve({ cancelled: true, reason: 'per-q-mismatch' });
+          }
+        }
+      } catch (e) { /* guard 失敗時は従来通り save 続行 */ }
+    }
+    emit('save:start');
+    var data = snapshot();
+    // 2026-05-07 (Phase 3.5 Fix 2): snapshot 開始時の qid を保持。
+    //   save 成功時に state.lastSavedQid に書き込み、 dirty baseline と qid をペアで管理する。
+    var frozenQid = getCurrentQid();
+    // 2026-05-07 (Phase 2 / impl-A): per-Q キー導入により snapshot は「現在問題分のみ」を
+    //   含む。 既存 JSON (localStorage / GitHub) を盲目的に上書きすると別問題の per-Q キーが
+    //   消失するため、 save 時は GET → merge → PUT する。
+    //   - localStorage 側はここで先に merge して書く (GH へは別経路で merge 済みを送る)。
+    //   - GitHub 側は ghGetContents で取得した内容を decode してから merge → PUT。
+    var existingLocal = localLoad();
+    // __savedAt は merge 後に上書きするのでここでは existingLocal から落としておく
+    var existingLocalForMerge = existingLocal ? Object.assign({}, existingLocal) : null;
+    if (existingLocalForMerge) delete existingLocalForMerge.__savedAt;
+    var mergedLocal = mergeSnapshotOver(existingLocalForMerge, data);
+    _applyPendingPerQDeletions(mergedLocal); // 2026-06-11: 🧹 削除予約を merge 後に適用
+    var localData = Object.assign({}, mergedLocal, { __savedAt: Date.now() });
+    localSave(localData);
+    // 2026-05-07 fix: 保存した data で window._currentLayoutData を即時に上書きする。
+    //   per-Q マージ後の merged 値を使う (= 他問題の per-Q キーも保持して MutationObserver
+    //   経由 apply で問題遷移後に他問題の per-Q が消えないようにする)。
+    //   症状: ?edit=1 で ステージ画像 (.emoji-display / .emoji-main-img) を移動・拡大 →
+    //         💾 を押す → 次の MutationObserver 発火で位置が元に戻り、 続く save() で
+    //         戻った位置が GitHub に書かれる (= ユーザーの操作が消える)。
+    if (window._currentLayoutData !== undefined) {
+      window._currentLayoutData = mergedLocal;
+    }
+    // dirty 判定の lastSavedJson 比較は 「現在問題分の snapshot」 ベースに揃える
+    // (mergedLocal を使うと他問題分の差分でも常に dirty 検知してしまう)。
+    var compact = JSON.stringify(data);
+    // C2: do NOT clear dirty flag yet — wait for remote success.
+    showToast('保存中…');
+
+    var path = ghPath();
+    if (!path) {
+      // No GH path → local is the source of truth, mark as saved.
+      state.lastSavedJson = compact;
+      state.lastSavedQid = frozenQid; // Phase 3.5 Fix 2
+      state._dirty = false;
+      // 2026-06-11: GH path 無し = local が真実。 削除予約は localSave で反映済みなのでクリア。
+      if (state._perQDeletedKeys) state._perQDeletedKeys.clear();
+      updateDirtyUI();
+      showToast('ローカルに保存しました', isLocalStaticHost() ? 'warn' : 'error');
+      emit('save:success', { local: true, remote: false });
+      return Promise.resolve({ local: true, remote: false });
+    }
+    // 2026-05-07 (Phase 3.5 Fix 1): 単発 ghGetContents の 404 を盲信せず、
+    //   ghGetContentsWithRetry で「真の初回作成」と「一時エラー」を区別する。
+    //   transient (= 2 度連続 404) の場合は localStorage の最新値を merge ベースに使い、
+    //   既存 per-Q キーがクライアント側に残っていればそれを保護する。
+    var putResultMergedRemote = null; // Fix 3: PUT 成功後に _currentLayoutData を再同期するため保持
+    return ghGetContentsWithRetry(path).then(function (result) {
+      var existing = result.contents;
+      var transient = result.transient;
+      var sha = existing ? existing.sha : null;
+      var existingRemote = _decodeGhJson(existing);
+      // 2026-05-07 (Phase 3.5 Fix 1): existingRemote が null かつ transient のとき、
+      //   localStorage の最新値 (existingLocal) を merge ベースとして使う。
+      //   これによりサーバが一時 404 を返しても、 クライアントが知る per-Q キーは保持される。
+      if (!existingRemote && transient && existingLocal) {
+        var localFallback = Object.assign({}, existingLocal);
+        delete localFallback.__savedAt;
+        existingRemote = localFallback;
+        console.warn('[LayoutEditor] GH GET returned 404 twice; using localStorage fallback as merge base to protect per-Q keys');
+      }
+      // 2026-05-07: 既存 JSON と snapshot を merge してから PUT (他問題の per-Q キーを保持)。
+      //   __savedAt は GitHub 用 payload には書き込まない (差分最小化のため)。
+      // 2026-06-30 (batch:962 ★4): wholesale overwrite を防ぐ deep-merge を採用。
+      //   同一キーで値が違う場合 console.warn で conflict を可視化 (snap が勝つ)。
+      var mergedRemote = deepMergeForSave(existingRemote, data);
+      _applyPendingPerQDeletions(mergedRemote); // 2026-06-11: 🧹 削除予約を merge 後・PUT 前に適用
+      if (mergedRemote && Object.prototype.hasOwnProperty.call(mergedRemote, '__savedAt')) {
+        delete mergedRemote.__savedAt;
+      }
+      putResultMergedRemote = mergedRemote;
+      var pretty = JSON.stringify(mergedRemote, null, 2);
+      return ghPutContents(path, utf8Btoa(pretty), 'chore(layout): update saved layout', sha);
+    }).then(function () {
+      // C2: only clear dirty after remote write succeeds
+      state.lastSavedJson = compact;
+      state.lastSavedQid = frozenQid; // Phase 3.5 Fix 2
+      state._dirty = false;
+      // 2026-06-11: 削除予約は PUT 成功で確定 (失敗時は保持され、 retry で再適用される)。
+      if (state._perQDeletedKeys) state._perQDeletedKeys.clear();
+      // 2026-05-07 (Phase 3.5 Fix 3): PUT 成功後、 window._currentLayoutData を
+      //   remote merge 結果で再同期する。 ローカル merge と remote merge は
+      //   存在キー集合が divergent しうるため (= localStorage には無いが remote にはある別タブ
+      //   の per-Q キー等) 、 真実値である mergedRemote に揃える。
+      if (window._currentLayoutData !== undefined && putResultMergedRemote) {
+        window._currentLayoutData = putResultMergedRemote;
+      }
+      updateDirtyUI();
+      showToast('保存しました');
+      emit('save:success', { local: true, remote: true });
+      return { local: true, remote: true };
+    }).catch(function (err) {
+      console.warn('[LayoutEditor] GH save failed', err);
+      // C3: surface 409 conflict distinctly
+      if (err && (err.code === 'CONFLICT_409' || err.status === 409)) {
+        showToast('別エディタが先に保存しました。再読み込みして再保存してください', 'error');
+        emit('save:conflict', err);
+      } else {
+        if (isLocalStaticHost()) {
+          state.lastSavedJson = compact;
+          state.lastSavedQid = frozenQid;
+          state._dirty = false;
+          if (state._perQDeletedKeys) state._perQDeletedKeys.clear();
+          updateDirtyUI();
+          showToast('ローカルに保存しました', 'warn');
+          emit('save:success', { local: true, remote: false, localOnly: true });
+          return { local: true, remote: false, localOnly: true };
+        }
+        showToast('GitHub 保存失敗: ローカルにのみ保存', 'error');
+      }
+      emit('save:error', err);
+      // dirty flag remains true so user can retry
+      return { local: true, remote: false, error: err };
+    });
+  }
+
+  // 2026-06-30 (batch:968): saved-layout-frozen.json への「🔒 ロック」転記。
+  //   現在質問の per-Q キー (`${sel}|${i}@${qid}`) を saved-layout-frozen.json に
+  //   merge して GH PUT する。 frozen 層は LayoutApplier 側 (quizland では beforeApply
+  //   経由) で base layer の上に優先 merge されるので、 通常 save では絶対に書き換わらない
+  //   「凍結値」 として永続化される。
+  //   - 対象は state._perQScopeToggleSelectors の per-Q キーのみ (base key は対象外)
+  //   - 個別 chip override 等は対象外 (頻繁に編集される性質のため)
+  //   - 既存 frozen JSON は merge ベースに使い、 他質問の lock 済みキーを温存
+  function lockToFrozen() {
+    var qid = getCurrentQid();
+    if (!qid) {
+      showToast('現在の問題 ID が取れません (lock を中止)', 'error');
+      return Promise.resolve({ ok: false, reason: 'no-qid' });
+    }
+    var perQKeys = _collectPerQOverrideKeysForCurrentQ();
+    if (!perQKeys || !perQKeys.length) {
+      showToast('この質問には per-Q レイアウト (🎯 個別保存) がありません。 まず 🎯 で個別保存してから 🔒 ロックしてください', 'warn');
+      return Promise.resolve({ ok: false, reason: 'no-perq' });
+    }
+    if (!confirm('この質問のレイアウト ' + perQKeys.length + ' 件を saved-layout-frozen.json に転記して永続ロックします。\n\n'
+                 + 'ロック後は通常の💾保存では変更できなくなります。\n'
+                 + '(後で解除したい場合は saved-layout-frozen.json をテキストエディタで直接編集してください)\n\n'
+                 + '続けますか？')) {
+      return Promise.resolve({ ok: false, reason: 'user-cancel' });
+    }
+    var srcData = window._currentLayoutData;
+    if (!srcData || typeof srcData !== 'object') {
+      showToast('現在のレイアウトデータが空です (lock を中止)', 'error');
+      return Promise.resolve({ ok: false, reason: 'no-data' });
+    }
+    // 凍結する key/value を抽出
+    var freezeSnap = {};
+    perQKeys.forEach(function (k) {
+      if (Object.prototype.hasOwnProperty.call(srcData, k)) {
+        freezeSnap[k] = srcData[k];
+      }
+    });
+    if (!Object.keys(freezeSnap).length) {
+      showToast('ロック対象のキーが見つかりません', 'error');
+      return Promise.resolve({ ok: false, reason: 'no-keys' });
+    }
+    // saved-layout-frozen.json のパスは saved-layout.json と兄弟 (同ディレクトリ)。
+    //   ghPath() = 'quizland/saved-layout.json' から拡張子前を差し替えて派生させる。
+    var path = ghPath();
+    if (!path) {
+      showToast('GH path 未設定のためロックできません', 'error');
+      return Promise.resolve({ ok: false, reason: 'no-gh-path' });
+    }
+    var frozenPath = path.replace(/saved-layout\.json$/i, 'saved-layout-frozen.json');
+    if (frozenPath === path) {
+      showToast('frozen path 派生失敗 (ghPath が saved-layout.json で終わっていません)', 'error');
+      return Promise.resolve({ ok: false, reason: 'bad-path-derive' });
+    }
+    showToast('🔒 ロック中…');
+    return ghGetContentsWithRetry(frozenPath).then(function (result) {
+      var existing = result.contents;
+      var sha = existing ? existing.sha : null;
+      var existingFrozen = _decodeGhJson(existing) || {};
+      // frozen の merge: 既存 frozen のキーを保持しつつ、 今回 lock したキーで上書き
+      var mergedFrozen = Object.assign({}, existingFrozen);
+      Object.keys(freezeSnap).forEach(function (k) { mergedFrozen[k] = freezeSnap[k]; });
+      // __savedAt 等の冗長メタは frozen には書かない (純粋なロックレジストリ)
+      if (Object.prototype.hasOwnProperty.call(mergedFrozen, '__savedAt')) delete mergedFrozen.__savedAt;
+      var pretty = JSON.stringify(mergedFrozen, null, 2) + '\n';
+      var msg = 'chore(layout-frozen): lock per-Q layout for ' + qid + ' (' + Object.keys(freezeSnap).length + ' keys)';
+      return ghPutContents(frozenPath, utf8Btoa(pretty), msg, sha).then(function () {
+        // ローカルキャッシュ (window._qzFrozenLayoutData) も同期して、 即時 lock 反映を演出
+        try {
+          if (typeof window !== 'undefined') {
+            window._qzFrozenLayoutData = mergedFrozen;
+          }
+        } catch (_) {}
+        showToast('🔒 ロックしました (' + Object.keys(freezeSnap).length + ' 件)', 'success');
+        emit('lock:success', { qid: qid, count: Object.keys(freezeSnap).length });
+        return { ok: true, count: Object.keys(freezeSnap).length };
+      });
+    }).catch(function (err) {
+      console.warn('[LayoutEditor] lockToFrozen failed', err);
+      showToast('🔒 ロック失敗: ' + (err && err.message ? err.message.slice(0, 80) : 'unknown'), 'error');
+      emit('lock:error', err);
+      return { ok: false, reason: 'gh-error', error: err };
+    });
+  }
+
+  function revert() {
+    var cur = JSON.stringify(snapshot());
+    if (cur !== state.lastSavedJson && !confirm('保存されている状態に戻しますか？ 未保存の変更は失われます。')) return;
+    // Wipe geometry on every spec element
+    state.spec.forEach(function (entry) {
+      $$(entry[0]).forEach(function (el) {
+        el.style.width = '';
+        el.style.height = '';
+        el.style.transform = '';
+        el._tx = 0;
+        el._ty = 0;
+        el._resizeUpdateLabel && el._resizeUpdateLabel();
+      });
+    });
+    document.documentElement.style.removeProperty('--header-h');
+    $$('.le-guide').forEach(function (g) { g.remove(); });
+    state.history.length = 0;
+    state.future.length = 0;
+    // Re-apply saved layout (prefer local cache; fall back to applier fetch)
+    var local = localLoad();
+    if (local) applySavedData(local);
+    else if (window.LayoutApplier && state.config) {
+      window.LayoutApplier.fetch(state.config.layoutUrl).then(function (data) {
+        if (data) applySavedData(data);
+      });
+    }
+    updateDirtyUI();
+    showToast('保存状態に戻しました');
+  }
+
+  function reset() {
+    if (!confirm('レイアウト・移動・ガイドを全てリセットしますか？')) return;
+    try { localStorage.removeItem(storageKey()); } catch (e) {}
+    state.spec.forEach(function (entry) {
+      $$(entry[0]).forEach(function (el) {
+        el.style.width = '';
+        el.style.height = '';
+        el.style.transform = '';
+        el._tx = 0;
+        el._ty = 0;
+        el._resizeUpdateLabel && el._resizeUpdateLabel();
+      });
+    });
+    document.documentElement.style.removeProperty('--header-h');
+    $$('.le-guide').forEach(function (g) { g.remove(); });
+    $$('.userbox').forEach(function (b) { b.remove(); });
+    $$('.user-hidden').forEach(function (e) { e.classList.remove('user-hidden'); });
+    state.locked.clear();
+    state.history.length = 0;
+    state.future.length = 0;
+    refreshElementList();
+    refreshSelectionUI();
+    showToast('リセットしました');
+  }
+
+  function applySavedData(data) {
+    if (!data) return;
+    if (window.LayoutApplier && state.config) {
+      try { window.LayoutApplier.apply(data, null, _applierCfg({ selectors: state.spec })); }
+      catch (e) { console.warn('[LayoutEditor] applier.apply failed', e); }
+    } else {
+      // Fallback: minimal apply
+      state.spec.forEach(function (entry) {
+        var sel = entry[0];
+        $$(sel).forEach(function (el, i) {
+          var s = data[sel + '|' + i];
+          if (!s) return;
+          if (s.w) el.style.width = s.w;
+          if (s.h) el.style.height = s.h;
+          if (s.tx || s.ty) {
+            el._tx = s.tx || 0;
+            el._ty = s.ty || 0;
+            el.style.transform = 'translate(' + el._tx + 'px, ' + el._ty + 'px)';
+          }
+        });
+      });
+    }
+    // Restore locked
+    state.locked.clear();
+    if (Array.isArray(data.__locked)) data.__locked.forEach(function (k) { state.locked.add(k); });
+    // 2026-05-06: chip 関連の個別 override 集合を復元。
+    //   __individual_chip_overrides が明示されていればそれを使う。
+    //   未定義 (= レガシー saved-layout.json) は data 内の chip 関連 key 全部を override 扱いに。
+    state.individualOverrides.clear();
+    if (Array.isArray(data.__individual_chip_overrides)) {
+      data.__individual_chip_overrides.forEach(function (k) { state.individualOverrides.add(k); });
+    } else {
+      Object.keys(data).forEach(function (k) {
+        var m = k.match(/^(.+)\|\d+$/);
+        if (m && _isChipScopedSelector(m[1])) state.individualOverrides.add(k);
+      });
+    }
+    // Restore zoom
+    if (typeof data.__zoom === 'number') setZoom(data.__zoom);
+    // Restore grid
+    if (data.__grid && typeof data.__grid === 'object') {
+      state.gridSize = data.__grid.size || 0;
+      if (data.__grid.on) toggleGrid(true);
+    }
+    // Restore comparison
+    if (data.__comparison) state.comparison = data.__comparison;
+    // Restore guides
+    if (Array.isArray(data.__guides)) restoreGuides(data.__guides);
+    // 2026-05-13 (sw v983): saved-layout.json に統合された .le-dropped-img を復元。
+    //   旧 saved-layout.json (__droppedImages 無し) は localStorage fallback (restoreDroppedImages)
+    //   が引き続き拾うので後方互換を維持する。
+    if (Array.isArray(data.__droppedImages)) {
+      try { applyDroppedImages(data.__droppedImages); }
+      catch (e) { console.warn('[LayoutEditor] applyDroppedImages failed', e); }
+    }
+    refreshLockBadges();
+  }
+
+  // 2026-05-13 (sw v983): saved-layout.json の __droppedImages 配列から .le-dropped-img
+  //   を再生成する。 state-reset で既存をクリアしてから配列順に再構築する。
+  //   canvas が無いと再生成できないので state.canvasEl を必須にする (= 編集モード有効後)。 例外: DOM canvas 操作で画像素材生成ではない。
+  function applyDroppedImages(arr) {
+    if (!Array.isArray(arr)) return;
+    var canvas = state.canvasEl;
+    if (!canvas) return;
+    // 既存の .le-dropped-img を全削除 (state-reset)
+    $$('.le-dropped-img').forEach(function (el) {
+      try { el.remove(); } catch (e) {}
+    });
+    arr.forEach(function (item) {
+      if (!item || !item.src) return;
+      var wrap = buildDroppedWrapper(item.src, item.name, { label: item.label || '' });
+      if (item.id) wrap.dataset.dropId = item.id;
+      if (item.label) wrap.dataset.leLabel = item.label;
+      wrap.style.position = 'absolute';
+      if (item.left)   wrap.style.left   = item.left;
+      if (item.top)    wrap.style.top    = item.top;
+      if (item.width)  wrap.style.width  = item.width;
+      if (item.height) wrap.style.height = item.height;
+      if (item.z)      wrap.style.zIndex = item.z;
+      var tx = parseFloat(item.tx) || 0, ty = parseFloat(item.ty) || 0;
+      if (tx || ty) {
+        wrap._tx = tx; wrap._ty = ty;
+        wrap.style.transform = 'translate(' + tx + 'px, ' + ty + 'px)';
+      }
+      // ZK 拡張 (任意) — 値があれば dataset に復元
+      if (item.rotate && isFinite(item.rotate)) {
+        wrap.dataset.rotate = String(((item.rotate % 360) + 360) % 360);
+        if (window.__zk_inv_applyRotate) {
+          try { window.__zk_inv_applyRotate(wrap); } catch (e) {}
+        }
+      }
+      if (item.aspectLock === '1' || item.aspectLock === true) wrap.dataset.aspectLock = '1';
+      if (item.artScale)  wrap.dataset.artScale  = String(item.artScale);
+      if (item.frameKind) wrap.dataset.frameKind = String(item.frameKind);
+      wrap.setAttribute('data-le-keep-position', '1');
+      canvas.appendChild(wrap);
+      try { attachHandle(wrap, 'wh'); } catch (e) {}
+    });
+    // localStorage fallback も同期 (オフライン / 他ブラウザでの初回 fallback 用)
+    try { saveDroppedImages(); } catch (e) {}
+  }
+
+  // ====================================================================
+  //  Dirty tracking
+  // ====================================================================
+
+  function updateDirtyUI() {
+    // 2026-05-07 (Phase 3.5 Fix 2): 問題遷移で qid が変わると snapshot のキー名 (`...|i@qid`)
+    //   が変わるので、 lastSavedJson との比較は必ず false になり _dirty が false-positive で
+    //   true に上がってしまっていた。 結果、 confirmDiscardIfDirty が問題遷移ごとに confirm を
+    //   出してしまい UX が破壊されていた (impl-B が next/prev 4 箇所で呼ぶため特に深刻)。
+    //   修正: 「現在 qid != lastSavedQid」 = 操作なしで qid だけ変わったケースを検知し、
+    //         baseline を新 qid 基準で再計算して _dirty を false 維持する。
+    //         同 qid 内での編集 (= ユーザー操作) は従来通り snapshotDirty で true 化される。
+    var currentQid = getCurrentQid();
+    if (state.lastSavedQid !== null && state.lastSavedQid !== currentQid && !state._dirty) {
+      // qid だけ変わったケース: baseline を再ベース化して dirty 誤発火を防ぐ。
+      try {
+        state.lastSavedJson = JSON.stringify(snapshot());
+        state.lastSavedQid = currentQid;
+      } catch (e) { /* noop */ }
+      var btn0 = $('#le-save');
+      if (btn0) btn0.classList.toggle('dirty', state._dirty);
+      emit('dirty', state._dirty);
+      return;
+    }
+    var cur = JSON.stringify(snapshot());
+    var snapshotDirty = cur !== state.lastSavedJson;
+    // 2026-05-07: state._dirty は「ユーザー操作起点の未保存変更」を表す。
+    //   - snapshot 比較 (snapshotDirty) は問題遷移で qid が変わっただけでも true になりうるため
+    //     **dirty を false から true に上げる根拠**としてのみ使い、 false に下げる権限は持たせない。
+    //   - false への遷移は save 成功 / disable / 明示クリアでのみ行う。
+    if (snapshotDirty) state._dirty = true;
+    var btn = $('#le-save');
+    if (btn) btn.classList.toggle('dirty', state._dirty);
+    emit('dirty', state._dirty);
+  }
+  var scheduleDirtyUpdate = debounce(updateDirtyUI, 100);
+
+  // 2026-05-07 (Phase 2 / impl-A): 公開 API。
+  //   impl-B (quizland/index.html の前へ/次へボタン) から呼ばれて
+  //   未保存の編集があれば confirm を出す。
+  //   戻り値:
+  //     true  — 続行 OK (clean か、ユーザーが破棄を承認した)
+  //     false — キャンセル (ユーザーが続行を取り止めた)
+  //   編集モード OFF や enable 前は常に true (= 何も妨げない)。
+  function confirmDiscardIfDirty() {
+    if (!state.enabled) return true;
+    if (!state._dirty) return true;
+    var msg = '未保存の変更があります。 破棄して移動しますか？\n\n' +
+              '(キャンセルしてから 💾 で保存できます)';
+    try {
+      return !!window.confirm(msg);
+    } catch (e) {
+      // confirm が使えない環境では安全側 (移動を許可しない)。
+      return false;
+    }
+  }
+
+  // ====================================================================
+  //  Undo / redo
+  // ====================================================================
+
+  function pushHistory(op) {
+    state.history.push(op);
+    if (state.history.length > HISTORY_LIMIT) state.history.shift();
+    state.future.length = 0;
+    scheduleDirtyUpdate();
+  }
+  // Kilo-2 修正A: 複数要素のバッチ操作を 1 つの history op に束ねるヘルパー。
+  //   ops が空 → push せず、1個 → そのまま、2個以上 → { type: 'batch', ops } で
+  //   束ねる。これで複数選択ドラッグなどが Ctrl+Z 1 回で全部 revert できる。
+  function pushHistoryBatch(ops) {
+    if (!ops || !ops.length) return;
+    if (ops.length === 1) pushHistory(ops[0]);
+    else pushHistory({ type: 'batch', ops: ops });
+  }
+  function undo() {
+    if (!state.history.length) return;
+    var op = state.history.pop();
+    applyInverse(op);
+    state.future.push(op);
+    refreshSelectionUI();
+    scheduleDirtyUpdate();
+  }
+  function redo() {
+    if (!state.future.length) return;
+    var op = state.future.pop();
+    applyForward(op);
+    state.history.push(op);
+    refreshSelectionUI();
+    scheduleDirtyUpdate();
+  }
+  function applyForward(op) {
+    // Kilo-2 修正A: バッチ op は内部 ops を順方向に再適用
+    if (op.type === 'batch') {
+      (op.ops || []).forEach(function (sub) { applyForward(sub); });
+      return;
+    }
+    if (op.type === 'add') op.parent.insertBefore(op.el, op.next || null);
+    else if (op.type === 'remove') op.el.remove();
+    else if (op.type === 'resize') setResize(op.el, op.after);
+    else if (op.type === 'transform') { setAnnoGeometry(op.el, op.after); updateAnnoHandles(); }
+    else if (op.type === 'guide-move') setGuidePos(op.el, op.after);
+    else if (op.type === 'lock') op.after ? state.locked.add(op.key) : state.locked.delete(op.key);
+    else if (op.type === 'hide') op.el.classList.add('user-hidden');
+    else if (op.type === 'show') op.el.classList.remove('user-hidden');
+    else if (op.type === 'text') op.el.textContent = op.after;
+    else if (op.type === 'image-swap') { op.el.src = op.after; if (op._afterSave) try { saveDroppedImages(); } catch (e) {} }
+    else if (op.type === 'bg-image-swap') {
+      op.el.style.backgroundImage = op.after;
+      // 2026-05-13 fix (userbox save bug): dataset.bgImage を redo 値で揃える。
+      //   旧 history (afterDataset 未保持) は touch しない (前回挙動維持)。
+      if (op.el.dataset && Object.prototype.hasOwnProperty.call(op, 'afterDataset')) {
+        if (op.afterDataset) op.el.dataset.bgImage = op.afterDataset;
+        else delete op.el.dataset.bgImage;
+      }
+    }
+    // sw v952: 外部 (ZK 投資画面エディタ等) から登録された任意の undo/redo 可能 op。
+    //   { type: 'zk-custom', _undo: fn, _redo: fn, _label: string } 形式。
+    //   既存 op type には影響しない (zk-custom は pushHistory を外部から呼んだ時だけ流入)。
+    else if (op.type === 'zk-custom') {
+      if (typeof op._redo === 'function') {
+        try { op._redo(); } catch (e) { console.warn('[layout-editor] zk-custom redo failed:', op._label, e); }
+      }
+    }
+    // Papa-2 修正3: z-index 並び替え
+    else if (op.type === 'z-index') {
+      if (op.after === '' || op.after == null) op.el.style.removeProperty('z-index');
+      else op.el.style.zIndex = String(op.after);
+    }
+    // Mike-2 修正B: rename (要素一覧ラベル)
+    else if (op.type === 'rename') {
+      if (op.mode === 'spec') {
+        setSpecLabelOverride(op.key, op.newLabel || '');
+      } else if (op.mode === 'dataset' && op.el) {
+        op.el.dataset.leLabel = op.newLabel || '';
+        try {
+          if (op.el.classList && op.el.classList.contains('le-dropped-img')) saveDroppedImages();
+          else if (op.el.classList && op.el.classList.contains('le-added-text')) saveAddedTexts();
+        } catch (e) {}
+      }
+      try { refreshElementList(); } catch (e) {}
+    }
+    // Kilo-2 修正C: 親から取り出し (forward = stage 直下に移動 + 新位置適用)
+    else if (op.type === 'reparent') {
+      var newParent = op.newParent || state.canvasEl;
+      newParent.appendChild(op.el);
+      if (op.newStyles) {
+        var ns = op.newStyles;
+        if (ns.position !== undefined) op.el.style.position = ns.position;
+        if (ns.left !== undefined) op.el.style.left = ns.left;
+        if (ns.top !== undefined) op.el.style.top = ns.top;
+        if (ns.width !== undefined) op.el.style.width = ns.width;
+        if (ns.height !== undefined) op.el.style.height = ns.height;
+      }
+      if (op.el.dataset) op.el.dataset.leKeepPosition = '1';
+      try { refreshElementList(); } catch (e) {}
+    }
+    // India-2: le-added-text の add/remove 後は localStorage を再同期
+    try {
+      if (op.el && op.el.classList && op.el.classList.contains('le-added-text')) saveAddedTexts();
+    } catch (e) {}
+    // Juliet-2 修正B: add/remove 系の op 後は要素一覧も再描画 (動的要素の出現/消滅を反映)
+    // Papa-2 修正3: z-index 変更後も並び順が変わるので再描画
+    if (op.type === 'add' || op.type === 'remove' || op.type === 'z-index') {
+      try { refreshElementList(); } catch (e) {}
+    }
+    refreshLockBadges();
+  }
+  function applyInverse(op) {
+    // Kilo-2 修正A: バッチ op は ops を逆順に逆適用
+    if (op.type === 'batch') {
+      (op.ops || []).slice().reverse().forEach(function (sub) { applyInverse(sub); });
+      return;
+    }
+    if (op.type === 'add') op.el.remove();
+    else if (op.type === 'remove') op.parent.insertBefore(op.el, op.next || null);
+    else if (op.type === 'resize') setResize(op.el, op.before);
+    else if (op.type === 'transform') { setAnnoGeometry(op.el, op.before); updateAnnoHandles(); }
+    else if (op.type === 'guide-move') setGuidePos(op.el, op.before);
+    else if (op.type === 'lock') op.before ? state.locked.add(op.key) : state.locked.delete(op.key);
+    else if (op.type === 'hide') op.el.classList.remove('user-hidden');
+    else if (op.type === 'show') op.el.classList.add('user-hidden');
+    else if (op.type === 'text') op.el.textContent = op.before;
+    else if (op.type === 'image-swap') { op.el.src = op.before; if (op._afterSave) try { saveDroppedImages(); } catch (e) {} }
+    else if (op.type === 'bg-image-swap') {
+      op.el.style.backgroundImage = op.before;
+      // 2026-05-13 fix (userbox save bug): dataset.bgImage を before 値で復元。
+      //   旧 history (beforeDataset 未保持) は touch しない (前回挙動維持)。
+      if (op.el.dataset && Object.prototype.hasOwnProperty.call(op, 'beforeDataset')) {
+        if (op.beforeDataset) op.el.dataset.bgImage = op.beforeDataset;
+        else delete op.el.dataset.bgImage;
+      }
+    }
+    // sw v952: 外部 (ZK 投資画面エディタ等) から登録された任意の undo/redo 可能 op の inverse。
+    else if (op.type === 'zk-custom') {
+      if (typeof op._undo === 'function') {
+        try { op._undo(); } catch (e) { console.warn('[layout-editor] zk-custom undo failed:', op._label, e); }
+      }
+    }
+    // Papa-2 修正3: z-index 並び替え inverse
+    else if (op.type === 'z-index') {
+      if (op.before === '' || op.before == null) op.el.style.removeProperty('z-index');
+      else op.el.style.zIndex = String(op.before);
+    }
+    // Mike-2 修正B: rename の inverse — 旧ラベルへ戻す
+    else if (op.type === 'rename') {
+      if (op.mode === 'spec') {
+        setSpecLabelOverride(op.key, op.oldLabel || '');
+      } else if (op.mode === 'dataset' && op.el) {
+        op.el.dataset.leLabel = op.oldLabel || '';
+        try {
+          if (op.el.classList && op.el.classList.contains('le-dropped-img')) saveDroppedImages();
+          else if (op.el.classList && op.el.classList.contains('le-added-text')) saveAddedTexts();
+        } catch (e) {}
+      }
+      try { refreshElementList(); } catch (e) {}
+    }
+    // Kilo-2 修正C: 親から取り出しの逆 (inverse = 元の親に戻す + 旧位置/旧スタイル復元)
+    else if (op.type === 'reparent') {
+      if (op.oldParent) {
+        op.oldParent.insertBefore(op.el, op.oldNext || null);
+      }
+      if (op.oldStyles) {
+        var os = op.oldStyles;
+        op.el.style.position = os.position || '';
+        op.el.style.left = os.left || '';
+        op.el.style.top = os.top || '';
+        op.el.style.width = os.width || '';
+        op.el.style.height = os.height || '';
+      }
+      if (op.oldKeepPosition) {
+        if (op.el.dataset) op.el.dataset.leKeepPosition = op.oldKeepPosition;
+      } else {
+        if (op.el.dataset) delete op.el.dataset.leKeepPosition;
+      }
+      try { refreshElementList(); } catch (e) {}
+    }
+    // India-2: le-added-text の undo 後にも save
+    try {
+      if (op.el && op.el.classList && op.el.classList.contains('le-added-text')) saveAddedTexts();
+    } catch (e) {}
+    // Juliet-2 修正B: add/remove 系の op 後は要素一覧も再描画
+    if (op.type === 'add' || op.type === 'remove') {
+      try { refreshElementList(); } catch (e) {}
+    }
+    refreshLockBadges();
+  }
+
+  function setResize(el, st) {
+    // Sierra-2: applyOnePropToEl と整合させ、undo/redo/apply 経路でも
+    // width/height を !important で復元する (空文字列なら removeProperty)。
+    if (st.w) el.style.setProperty('width', st.w, 'important');
+    else el.style.removeProperty('width');
+    if (st.h) el.style.setProperty('height', st.h, 'important');
+    else el.style.removeProperty('height');
+    el._tx = st.tx || 0;
+    el._ty = st.ty || 0;
+    if (el._tx || el._ty) {
+      el.style.transform = 'translate(' + el._tx + 'px, ' + el._ty + 'px)';
+    } else {
+      el.style.transform = '';
+    }
+    if (el.matches('.hdr-left') && st.h) {
+      document.documentElement.style.setProperty('--header-h', st.h);
+    }
+    // Tango-2: flex 親要素配下では width/height だけでは flex-basis: 0% が
+    //   勝ってしまうので、適用時に flex を inline で上書きする。空値時は除去
+    //   して原状復帰させる (undo/redo 整合)。
+    if (st.w) overrideFlexIfChild(el, 'w', parseFloat(st.w));
+    else clearFlexOverrideIfChild(el, 'w');
+    if (st.h) overrideFlexIfChild(el, 'h', parseFloat(st.h));
+    else clearFlexOverrideIfChild(el, 'h');
+    el._resizeUpdateLabel && el._resizeUpdateLabel();
+  }
+  function getResizeState(el) {
+    return {
+      w: el.style.width || '',
+      h: el.style.height || '',
+      tx: el._tx || 0,
+      ty: el._ty || 0,
+    };
+  }
+
+  // ====================================================================
+  //  Stage scale helpers
+  // ====================================================================
+
+  function getStageRectInfo() {
+    var stage = state.canvasEl;
+    if (!stage) return { stageRect: { left: 0, top: 0, width: 0, height: 0 }, scale: 1 };
+    var stageRect = stage.getBoundingClientRect();
+    var stageW = parseFloat(getComputedStyle(stage).width) || stageRect.width;
+    var scale = stageRect.width / stageW || 1;
+    return { stageRect: stageRect, scale: scale };
+  }
+  function bcrInStage(el, stageRect, scale) {
+    var r = el.getBoundingClientRect();
+    return {
+      left: (r.left - stageRect.left) / scale,
+      top: (r.top - stageRect.top) / scale,
+      right: (r.right - stageRect.left) / scale,
+      bottom: (r.bottom - stageRect.top) / scale,
+    };
+  }
+  function snapValue(v) {
+    if (!state.gridOn || !state.gridSize) return v;
+    return Math.round(v / state.gridSize) * state.gridSize;
+  }
+
+  // ====================================================================
+  //  Drag / resize: handles, edge linking, group corner scale
+  // ====================================================================
+
+  function attachHandle(el, axes) {
+    el.classList.add('resizable');
+    var positions = [];
+    if (axes.indexOf('h') >= 0) positions.push('edge-n', 'edge-s');
+    if (axes.indexOf('w') >= 0) positions.push('edge-e', 'edge-w');
+    if (axes.indexOf('w') >= 0 && axes.indexOf('h') >= 0) {
+      positions.push('corner-nw', 'corner-ne', 'corner-sw', 'corner-se');
+    }
+    positions.forEach(function (pos) { makeHandle(el, pos, axes); });
+    attachMoveDrag(el);
+    // U5: right-click → context menu (lock/hide/duplicate/delete)
+    el.addEventListener('contextmenu', function (ev) {
+      if (!state.enabled) return;
+      // Skip if click landed on annotations / guides (they have their own handlers)
+      if (ev.target.closest('.le-anno-layer, .le-guide')) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      if (!state.selectedElements.has(el)) selectOnly(el);
+      showElementContextMenu(ev.clientX, ev.clientY, el);
+    });
+    // U10: long-press alternative for iPad multi-select
+    var lpTimer = null;
+    el.addEventListener('touchstart', function (ev) {
+      if (!state.enabled) return;
+      if (ev.touches && ev.touches.length > 1) return;
+      if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; }
+      lpTimer = setTimeout(function () {
+        lpTimer = null;
+        toggleSelect(el);
+        showToast('長押し: 選択を切り替え');
+      }, 500);
+    }, { passive: true });
+    var clearLp = function () { if (lpTimer) { clearTimeout(lpTimer); lpTimer = null; } };
+    el.addEventListener('touchmove', clearLp, { passive: true });
+    el.addEventListener('touchend', clearLp, { passive: true });
+    el.addEventListener('touchcancel', clearLp, { passive: true });
+    var lbl = document.createElement('div');
+    lbl.className = 'resize-size-label';
+    el.appendChild(lbl);
+    el._resizeUpdateLabel = function () {
+      var r = el.getBoundingClientRect();
+      var info = getStageRectInfo();
+      lbl.textContent = Math.round(r.width / info.scale) + '×' + Math.round(r.height / info.scale);
+    };
+    el._resizeUpdateLabel();
+  }
+
+  // U5: shared context menu for resizable elements
+  function showElementContextMenu(x, y, el) {
+    var existing = $('#le-context-menu');
+    if (existing) existing.remove();
+    var locked = isLocked(el);
+    var hidden = el.classList.contains('user-hidden');
+    var menu = document.createElement('div');
+    menu.id = 'le-context-menu';
+    menu.className = 'le-context-menu';
+    menu.innerHTML =
+      '<button data-act="lock">' + (locked ? '🔓 ロック解除' : '🔒 ロック') + '</button>' +
+      '<button data-act="vis">' + (hidden ? '👁 表示' : '🚫 非表示') + '</button>' +
+      '<button data-act="dup">📋 複製</button>' +
+      '<button data-act="del">🗑 削除 (隠す)</button>';
+    document.body.appendChild(menu);
+    var vw = window.innerWidth, vh = window.innerHeight;
+    menu.style.left = Math.min(x, vw - 180) + 'px';
+    menu.style.top = Math.min(y, vh - 180) + 'px';
+    var dismiss = function () {
+      menu.remove();
+      document.removeEventListener('mousedown', onDocDown, true);
+      document.removeEventListener('keydown', onKey, true);
+    };
+    var onDocDown = function (ev) { if (!menu.contains(ev.target)) dismiss(); };
+    var onKey = function (ev) { if (ev.key === 'Escape') dismiss(); };
+    setTimeout(function () {
+      document.addEventListener('mousedown', onDocDown, true);
+      document.addEventListener('keydown', onKey, true);
+    }, 0);
+    menu.addEventListener('click', function (ev) {
+      var btn = ev.target.closest('button[data-act]');
+      if (!btn) return;
+      var act = btn.dataset.act;
+      dismiss();
+      if (act === 'lock') {
+        toggleLock(el);
+        refreshElementList();
+        showToast(isLocked(el) ? 'ロックしました' : 'ロックを解除しました');
+      } else if (act === 'vis') {
+        if (el.classList.contains('user-hidden')) {
+          el.classList.remove('user-hidden');
+          pushHistory({ type: 'show', el: el });
+        } else {
+          el.classList.add('user-hidden');
+          pushHistory({ type: 'hide', el: el });
+        }
+        refreshElementList();
+      } else if (act === 'dup') {
+        if (!state.selectedElements.has(el)) selectOnly(el);
+        duplicateSelected();
+      } else if (act === 'del') {
+        if (!state.selectedElements.has(el)) selectOnly(el);
+        hideSelectedElements();
+      }
+    });
+  }
+
+  function sidesFromHandlePos(pos) {
+    if (pos === 'edge-e') return ['e'];
+    if (pos === 'edge-w') return ['w'];
+    if (pos === 'edge-n') return ['n'];
+    if (pos === 'edge-s') return ['s'];
+    if (pos === 'corner-ne') return ['n', 'e'];
+    if (pos === 'corner-nw') return ['n', 'w'];
+    if (pos === 'corner-se') return ['s', 'e'];
+    if (pos === 'corner-sw') return ['s', 'w'];
+    return [];
+  }
+
+  function findLinkedTargets(primaryEl, draggedSides) {
+    var EPS = 8, OVERLAP_MIN = 8;
+    var info = getStageRectInfo();
+    var primR = bcrInStage(primaryEl, info.stageRect, info.scale);
+    var all = $$('.resizable').filter(function (x) { return x !== primaryEl && !isLocked(x); });
+    var linked = [];
+    all.forEach(function (otherEl) {
+      var r = bcrInStage(otherEl, info.stageRect, info.scale);
+      var sides = [];
+      if (draggedSides.indexOf('e') >= 0 && Math.abs(r.left - primR.right) < EPS &&
+          Math.min(primR.bottom, r.bottom) - Math.max(primR.top, r.top) > OVERLAP_MIN) sides.push('w');
+      if (draggedSides.indexOf('w') >= 0 && Math.abs(r.right - primR.left) < EPS &&
+          Math.min(primR.bottom, r.bottom) - Math.max(primR.top, r.top) > OVERLAP_MIN) sides.push('e');
+      if (draggedSides.indexOf('s') >= 0 && Math.abs(r.top - primR.bottom) < EPS &&
+          Math.min(primR.right, r.right) - Math.max(primR.left, r.left) > OVERLAP_MIN) sides.push('n');
+      if (draggedSides.indexOf('n') >= 0 && Math.abs(r.bottom - primR.top) < EPS &&
+          Math.min(primR.right, r.right) - Math.max(primR.left, r.left) > OVERLAP_MIN) sides.push('s');
+      if (sides.length) linked.push({ el: otherEl, sides: sides });
+    });
+    return linked;
+  }
+
+  function performResize(target, sides, dx, dy, sym, axes, stageRect, scale, aspectLock) {
+    var el = target.el;
+    var startW = target.startW, startH = target.startH;
+    var startTx = target.startTx, startTy = target.startTy;
+    var startRect = target.startRect;
+    var factor = sym ? 2 : 1;
+    var newW = startW, newH = startH;
+    if (sides.indexOf('e') >= 0) newW = Math.max(20, startW + factor * dx);
+    if (sides.indexOf('w') >= 0 && sides.indexOf('e') < 0) newW = Math.max(20, startW - factor * dx);
+    if (sides.indexOf('s') >= 0) newH = Math.max(20, startH + factor * dy);
+    if (sides.indexOf('n') >= 0 && sides.indexOf('s') < 0) newH = Math.max(20, startH - factor * dy);
+    // Yankee: aspect-ratio lock — force partner axis to follow.
+    if (aspectLock && target.aspect && isFinite(target.aspect) && target.aspect > 0) {
+      var hasW = sides.indexOf('e') >= 0 || sides.indexOf('w') >= 0;
+      var hasH = sides.indexOf('s') >= 0 || sides.indexOf('n') >= 0;
+      if (hasW && hasH) {
+        // Corner drag: pick axis with larger relative change as the driver.
+        var rW = Math.abs(newW - startW) / Math.max(1, startW);
+        var rH = Math.abs(newH - startH) / Math.max(1, startH);
+        if (rW >= rH) newH = Math.max(20, newW / target.aspect);
+        else newW = Math.max(20, newH * target.aspect);
+      } else if (hasW) {
+        newH = Math.max(20, newW / target.aspect);
+      } else if (hasH) {
+        newW = Math.max(20, newH * target.aspect);
+      }
+    }
+    // Snap to grid
+    newW = snapValue(newW);
+    newH = snapValue(newH);
+    var wActive = sides.indexOf('e') >= 0 || sides.indexOf('w') >= 0;
+    var hActive = sides.indexOf('s') >= 0 || sides.indexOf('n') >= 0;
+    if (aspectLock && target.aspect) { wActive = true; hActive = true; }
+    if (axes.indexOf('w') >= 0 && wActive) {
+      el.style.width = newW + 'px';
+    }
+    if (axes.indexOf('h') >= 0 && hActive) {
+      el.style.height = newH + 'px';
+      if (el.matches('.hdr-left')) {
+        document.documentElement.style.setProperty('--header-h', newH + 'px');
+      }
+    }
+    el._tx = startTx;
+    el._ty = startTy;
+    el.style.transform = 'translate(' + startTx + 'px, ' + startTy + 'px)';
+    var cur = bcrInStage(el, stageRect, scale);
+    var needTx = 0, needTy = 0;
+    if (sym) {
+      var cur_cx = (cur.left + cur.right) / 2;
+      var cur_cy = (cur.top + cur.bottom) / 2;
+      var start_cx = (startRect.left + startRect.right) / 2;
+      var start_cy = (startRect.top + startRect.bottom) / 2;
+      needTx = start_cx - cur_cx;
+      needTy = start_cy - cur_cy;
+    } else {
+      if (sides.indexOf('e') >= 0 && sides.indexOf('w') < 0) needTx = startRect.left - cur.left;
+      if (sides.indexOf('w') >= 0 && sides.indexOf('e') < 0) needTx = startRect.right - cur.right;
+      if (sides.indexOf('s') >= 0 && sides.indexOf('n') < 0) needTy = startRect.top - cur.top;
+      if (sides.indexOf('n') >= 0 && sides.indexOf('s') < 0) needTy = startRect.bottom - cur.bottom;
+    }
+    el._tx = startTx + needTx;
+    el._ty = startTy + needTy;
+    el.style.transform = 'translate(' + el._tx + 'px, ' + el._ty + 'px)';
+    el._resizeUpdateLabel && el._resizeUpdateLabel();
+  }
+
+  function makeHandle(el, pos, axes) {
+    var h = document.createElement('div');
+    h.className = 'resize-handle ' + pos;
+    el.appendChild(h);
+    h.addEventListener('mousedown', function (e) { startResize(e, el, pos, axes); });
+    h.addEventListener('touchstart', function (e) { startResize(touchToMouse(e), el, pos, axes); }, { passive: false });
+    return h;
+  }
+
+  // Convert touch events to mouse-like (we capture relevant clientX/Y)
+  function touchToMouse(e) {
+    if (e.touches && e.touches[0]) {
+      var t = e.touches[0];
+      return {
+        clientX: t.clientX, clientY: t.clientY,
+        shiftKey: false, altKey: false, ctrlKey: false, metaKey: false,
+        target: e.target,
+        preventDefault: function () { e.preventDefault && e.preventDefault(); },
+        stopPropagation: function () { e.stopPropagation && e.stopPropagation(); },
+        _isTouch: true,
+      };
+    }
+    return e;
+  }
+
+  function startResize(e, el, pos, axes) {
+    if (isLocked(el)) return;
+    e.stopPropagation && e.stopPropagation();
+    e.preventDefault && e.preventDefault();
+    var primarySides = sidesFromHandlePos(pos);
+    var info = getStageRectInfo();
+    var startX = e.clientX, startY = e.clientY;
+    // Juliet-2 修正D: Photoshop 風 — 角ハンドルはデフォルトで縦横比固定、
+    //   Shift 押下中は解除。辺ハンドルは逆 (Shift 押下中のみ縦横比固定)。
+    //   Yankee の永続トグル state.aspectLocked が true ならこの判定に関わらず常に固定。
+    var isCornerHandle = (pos && pos.indexOf('corner-') === 0);
+    var captureTarget = function (target) {
+      target.startW = target.el.offsetWidth;
+      target.startH = target.el.offsetHeight;
+      target.startTx = target.el._tx || 0;
+      target.startTy = target.el._ty || 0;
+      target.aspect = target.startW / Math.max(1, target.startH);
+      target.startRect = bcrInStage(target.el, info.stageRect, info.scale);
+      target.before = getResizeState(target.el);
+    };
+    var primaryTarget = { el: el, sides: primarySides };
+    captureTarget(primaryTarget);
+
+    // Group corner scale (multi-select corner-drag scales uniformly)
+    var isGroupCornerScale = primarySides.length === 2 &&
+      state.selectedElements.has(el) && state.selectedElements.size >= 2;
+    var groupScale = null;
+    if (isGroupCornerScale) {
+      var sel = Array.from(state.selectedElements).filter(function (s) { return !isLocked(s); });
+      // 2026-06-30 (batch:964): group corner scale から除外する要素を hard skip。
+      //   GROUP_SCALE_PROTECTED_SELECTORS に match した要素は targets に含めない
+      //   → w/h/tx/ty が factor 倍されずそのまま残る。 親要素 (例: .q-text-card) は
+      //   通常通り scale され、 子の speaker (position:absolute; right; top) は
+      //   親に追従しつつ固定サイズで残る (= 巻き込み解消)。
+      //   bounding box (gcx/gcy) 計算には含めて、 視覚的な group bbox 中心を保つ。
+      var rects = sel.map(function (s) { return bcrInStage(s, info.stageRect, info.scale); });
+      var minLeft = Math.min.apply(null, rects.map(function (r) { return r.left; }));
+      var maxRight = Math.max.apply(null, rects.map(function (r) { return r.right; }));
+      var minTop = Math.min.apply(null, rects.map(function (r) { return r.top; }));
+      var maxBottom = Math.max.apply(null, rects.map(function (r) { return r.bottom; }));
+      var gcx = (minLeft + maxRight) / 2;
+      var gcy = (minTop + maxBottom) / 2;
+      var scaleTargets = [];
+      sel.forEach(function (s, i) {
+        var isProtected = false;
+        for (var pi = 0; pi < GROUP_SCALE_PROTECTED_SELECTORS.length; pi++) {
+          try {
+            if (s.matches && s.matches(GROUP_SCALE_PROTECTED_SELECTORS[pi])) {
+              isProtected = true;
+              break;
+            }
+          } catch (eMatches) { /* invalid selector — skip */ }
+        }
+        if (isProtected) return; // skip — keep w/h/tx/ty unchanged
+        scaleTargets.push({
+          el: s,
+          origW: parseFloat(s.style.width) || s.offsetWidth,
+          origH: parseFloat(s.style.height) || s.offsetHeight,
+          origTx: s._tx || 0,
+          origTy: s._ty || 0,
+          origCx: (rects[i].left + rects[i].right) / 2,
+          origCy: (rects[i].top + rects[i].bottom) / 2,
+          before: getResizeState(s),
+        });
+      });
+      groupScale = {
+        gcx: gcx, gcy: gcy,
+        primaryOrigW: primaryTarget.startW,
+        primaryOrigH: primaryTarget.startH,
+        targets: scaleTargets,
+      };
+    }
+
+    var linkingDisabled = e.ctrlKey || e.metaKey;
+    var linkedTargets = (isGroupCornerScale || linkingDisabled) ? [] : findLinkedTargets(el, primarySides);
+    // 2026-06-30 (batch:966): 個別 resize 経路でも GROUP_SCALE_PROTECTED_SELECTORS を
+    //   尊重する。 batch:964 は group corner scale (multi-select) のみを対象として
+    //   いたので、 単一要素のコーナードラッグだと findLinkedTargets が
+    //   .q-text-card .audio (右上スピーカー) を「右辺/上辺隣接」として拾い、
+    //   performResize ループで一緒に伸縮させていた (= 「相変わらず巻き込まれる」 の根本)。
+    //   ここで selector match した要素を hard skip。
+    linkedTargets = linkedTargets.filter(function (t) {
+      if (!t || !t.el) return false;
+      for (var pi = 0; pi < GROUP_SCALE_PROTECTED_SELECTORS.length; pi++) {
+        try {
+          if (t.el.matches && t.el.matches(GROUP_SCALE_PROTECTED_SELECTORS[pi])) {
+            return false;
+          }
+        } catch (eMatches) { /* invalid selector — skip */ }
+      }
+      return true;
+    });
+    // 2026-06-30 (batch:966): 親子 (祖先・子孫) 関係にある要素も linked から除外。
+    //   findLinkedTargets のエッジ隣接検出 (EPS=8px) は「隣接した別要素」 を想定して
+    //   いるが、 .q-text-card のように親 rect の辺と子 (.audio 等) rect の辺が偶然
+    //   一致するケースで親自体を拾ってしまう。 画像 (.emoji-display.phase-question)
+    //   のコーナードラッグで .q-text-card 親が一緒に scale するのはユーザー意図と
+    //   合わないので除外。 兄弟の隣接 link (例: 質問テキスト と background) は
+    //   contains 関係にないので影響を受けない。
+    linkedTargets = linkedTargets.filter(function (t) {
+      if (!t || !t.el) return false;
+      if (el && (el.contains(t.el) || t.el.contains(el))) return false;
+      return true;
+    });
+    linkedTargets.forEach(captureTarget);
+    linkedTargets.forEach(function (t) { t.el.classList.add('edge-linked'); });
+
+    var onMove = function (e2) {
+      if (e2.touches && e2.touches[0]) e2 = touchToMouse(e2);
+      var dx = (e2.clientX - startX) / info.scale;
+      var dy = (e2.clientY - startY) / info.scale;
+      var sym = e2.altKey;
+
+      if (groupScale) {
+        var newW = groupScale.primaryOrigW, newH = groupScale.primaryOrigH;
+        if (primarySides.indexOf('e') >= 0) newW = Math.max(20, groupScale.primaryOrigW + dx);
+        if (primarySides.indexOf('w') >= 0 && primarySides.indexOf('e') < 0) newW = Math.max(20, groupScale.primaryOrigW - dx);
+        if (primarySides.indexOf('s') >= 0) newH = Math.max(20, groupScale.primaryOrigH + dy);
+        if (primarySides.indexOf('n') >= 0 && primarySides.indexOf('s') < 0) newH = Math.max(20, groupScale.primaryOrigH - dy);
+        var factor = (newW / groupScale.primaryOrigW + newH / groupScale.primaryOrigH) / 2;
+        groupScale.targets.forEach(function (t) {
+          t.el.style.width  = Math.round(t.origW * factor) + 'px';
+          t.el.style.height = Math.round(t.origH * factor) + 'px';
+          var newCx = groupScale.gcx + (t.origCx - groupScale.gcx) * factor;
+          var newCy = groupScale.gcy + (t.origCy - groupScale.gcy) * factor;
+          var sizeShiftX = (t.origW * factor - t.origW) / 2;
+          var sizeShiftY = (t.origH * factor - t.origH) / 2;
+          t.el._tx = t.origTx + (newCx - t.origCx) - sizeShiftX;
+          t.el._ty = t.origTy + (newCy - t.origCy) - sizeShiftY;
+          t.el.style.transform = 'translate(' + t.el._tx + 'px, ' + t.el._ty + 'px)';
+          t.el._resizeUpdateLabel && t.el._resizeUpdateLabel();
+        });
+        emit('transform', { kind: 'group-resize' });
+        return;
+      }
+
+      // Juliet-2 修正D: aspectLock 判定 (毎フレーム e2.shiftKey をサンプル)
+      //   - state.aspectLocked が true (Yankee 永続トグル) → 常に固定
+      //   - 角ハンドル + Shift OFF → 固定 (Photoshop 既定)
+      //   - 辺ハンドル + Shift ON  → 固定
+      //   - それ以外 → 自由
+      // [zk-inv] state.cornerHandleFreeMode が true なら角ハンドルの既定動作を「自由」に反転
+      //   (Shift で逆にロックする)。 永続トグル state.aspectLocked は本フラグより優先 (常にロック)。
+      var shiftHeld = !!e2.shiftKey;
+      var cornerFree = !!state.cornerHandleFreeMode;
+      var cornerLockCondition = cornerFree
+        ? (isCornerHandle && shiftHeld)
+        : (isCornerHandle && !shiftHeld);
+      var aspectLock = !!state.aspectLocked
+        || cornerLockCondition
+        || (!isCornerHandle && shiftHeld);
+      performResize(primaryTarget, primarySides, dx, dy, sym, axes, info.stageRect, info.scale, aspectLock);
+      linkedTargets.forEach(function (t) {
+        performResize(t, t.sides, dx, dy, false, 'wh', info.stageRect, info.scale, false);
+      });
+      emit('transform', { kind: 'resize', el: el });
+    };
+    var onUp = function () {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      window.removeEventListener('touchmove', onMove);
+      window.removeEventListener('touchend', onUp);
+      linkedTargets.forEach(function (t) { t.el.classList.remove('edge-linked'); });
+      var allTargets = groupScale ? groupScale.targets : [primaryTarget].concat(linkedTargets);
+      // Kilo-2 修正A: グループ/エッジリンクの同時リサイズも 1 op にまとめて undo 一括化
+      var ops = [];
+      allTargets.forEach(function (t) {
+        var after = getResizeState(t.el);
+        if (JSON.stringify(after) !== JSON.stringify(t.before)) {
+          ops.push({ type: 'resize', el: t.el, before: t.before, after: after });
+        }
+      });
+      pushHistoryBatch(ops);
+      updateNumericPanel();
+      // Echo-2: リサイズ後にも bbox 重なり再評価
+      applyPreferredPointerSuppression();
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    window.addEventListener('touchmove', onMove, { passive: false });
+    window.addEventListener('touchend', onUp);
+  }
+
+  function attachMoveDrag(el) {
+    var handler = function (e) {
+      if (!state.enabled) return;
+      if (isLocked(el)) {
+        // Locked: still allow selection (so numeric panel is editable for review),
+        // but no drag.
+        if (e.shiftKey || state.multiSelectMode) { toggleSelect(el); }
+        else {
+          selectOnly(el);
+          // Charlie-2: canvas 由来の単独選択は preferred を解除
+          if (state.preferredTarget !== el) {
+            state.preferredTarget = null;
+            refreshPreferredTargetUI();
+          }
+        }
+        return;
+      }
+      var tgt = e.target;
+      if (tgt && tgt.classList && (tgt.classList.contains('resize-handle') ||
+          tgt.classList.contains('resize-size-label') ||
+          tgt.classList.contains('userbox-badge') ||
+          tgt.classList.contains('userbox-del') ||
+          tgt.classList.contains('le-lock-badge'))) return;
+      // Skip if clicking inside an editable text and editing is active
+      if (tgt && (tgt.isContentEditable || tgt.closest('[contenteditable="true"]')) &&
+          document.activeElement === tgt) return;
+      if (tgt !== el && !el.contains(tgt)) return;
+      e.stopPropagation();
+      e.preventDefault();
+
+      // U10: Shift-click OR multi-select toggle mode → extend selection
+      if (e.shiftKey || state.multiSelectMode) { toggleSelect(el); return; }
+      if (!state.selectedElements.has(el)) {
+        selectOnly(el);
+        // Charlie-2: canvas で別要素を直接クリック → preferred 解除
+        if (state.preferredTarget !== el) {
+          state.preferredTarget = null;
+          refreshPreferredTargetUI();
+        }
+      }
+
+      var targets = Array.from(state.selectedElements).filter(function (t) { return !isLocked(t); });
+      if (targets.length === 0) return;
+
+      var startX = e.clientX, startY = e.clientY;
+      var info = getStageRectInfo();
+      var startStates = targets.map(function (t) {
+        return { el: t, tx: t._tx || 0, ty: t._ty || 0, before: getResizeState(t) };
+      });
+      // Papa-2 修正2: ドラッグ対象 (parent) の unlinked 子孫を集めて counter-transform 用
+      //   start state を保存。ドラッグ対象自身に既に含まれる要素は除外して二重適用を防ぐ。
+      var movedSet = new Set(targets);
+      var unlinkedStates = []; // {el, parent, tx, ty, before}
+      var unlinkedSeen = new Set();
+      function addUnlinkedChild(parent, child) {
+        if (!child || movedSet.has(child) || parent === child || !parent.contains(child) || unlinkedSeen.has(child)) return;
+        unlinkedSeen.add(child);
+        unlinkedStates.push({
+          el: child,
+          parent: parent,
+          tx: child._tx || 0,
+          ty: child._ty || 0,
+          before: getResizeState(child)
+        });
+      }
+      targets.forEach(function (parent) {
+        try {
+          Array.prototype.forEach.call(parent.querySelectorAll('[data-le-keep-position]'), function (child) {
+            addUnlinkedChild(parent, child);
+          });
+        } catch (err) {}
+      });
+      if (state.unlinkedChildren && state.unlinkedChildren.size) {
+        targets.forEach(function (parent) {
+          state.unlinkedChildren.forEach(function (child) {
+            addUnlinkedChild(parent, child);
+          });
+        });
+      }
+
+      var onMove = function (e2) {
+        if (e2.touches && e2.touches[0]) e2 = touchToMouse(e2);
+        var dx = (e2.clientX - startX) / info.scale;
+        var dy = (e2.clientY - startY) / info.scale;
+        if (e2.shiftKey) {
+          if (Math.abs(dx) >= Math.abs(dy)) dy = 0; else dx = 0;
+        }
+        // 2026-05-12: rotation-aware drag — ancestor (親側) が回転している場合、
+        //   mouse delta を逆回転して DOM translate に渡す。 これにより親 90° / 180°
+        //   / 270° 回転中でも子要素が「画面上のマウス方向」 と一致して動く。
+        //   要素ごとに親が異なり得るので per-target で算出 (rot===0 は早期 return)。
+        //   自身の rotate は drag delta に影響しない (translate の前段に出る) ので除外。
+        startStates.forEach(function (s) {
+          var rotDeg = getCumulativeRotation(s.el.parentElement);
+          var corrected = rotateDeltaInverse(rotDeg, dx, dy);
+          var nx = snapValue(s.tx + corrected.dx);
+          var ny = snapValue(s.ty + corrected.dy);
+          s.el._tx = nx;
+          s.el._ty = ny;
+          s.el.style.transform = 'translate(' + nx + 'px, ' + ny + 'px)';
+        });
+        // Papa-2 修正2: unlinked 子に counter-transform を当て、視覚的に動かないようにする
+        // 2026-05-12: 親が回転している場合は、 counter-transform 側も同じ rotation で補正する
+        unlinkedStates.forEach(function (u) {
+          var rotDeg = getCumulativeRotation(u.el.parentElement);
+          var corrected = rotateDeltaInverse(rotDeg, dx, dy);
+          var nx = u.tx - corrected.dx;
+          var ny = u.ty - corrected.dy;
+          u.el._tx = nx;
+          u.el._ty = ny;
+          u.el.style.transform = 'translate(' + nx + 'px, ' + ny + 'px)';
+        });
+        emit('transform', { kind: 'move' });
+      };
+      var onUp = function () {
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onUp);
+        window.removeEventListener('touchmove', onMove);
+        window.removeEventListener('touchend', onUp);
+        // Kilo-2 修正A: 複数要素の同時ドラッグは 1 op (batch) にまとめる
+        var ops = [];
+        startStates.forEach(function (s) {
+          var after = getResizeState(s.el);
+          if (JSON.stringify(after) !== JSON.stringify(s.before)) {
+            ops.push({ type: 'resize', el: s.el, before: s.before, after: after });
+          }
+        });
+        // Papa-2 修正2: unlinked 子の counter-transform も同じ batch で undo できるよう積む
+        unlinkedStates.forEach(function (u) {
+          var after = getResizeState(u.el);
+          if (JSON.stringify(after) !== JSON.stringify(u.before)) {
+            ops.push({ type: 'resize', el: u.el, before: u.before, after: after });
+          }
+        });
+        pushHistoryBatch(ops);
+        updateNumericPanel();
+        // Echo-2: 移動後に preferredTarget 周辺の bbox 関係が変わるので再評価
+        applyPreferredPointerSuppression();
+      };
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+      window.addEventListener('touchmove', onMove, { passive: false });
+      window.addEventListener('touchend', onUp);
+    };
+    el.addEventListener('mousedown', handler);
+    el.addEventListener('touchstart', function (e) {
+      if (e.touches && e.touches.length > 1) return; // ignore multi-touch
+      handler(touchToMouse(e));
+    }, { passive: false });
+  }
+
+  function isLocked(el) {
+    // 2026-05-07: lock 集合は base key で管理 (per-Q 化対象外)。
+    var k = getElKey(el, { baseOnly: true });
+    return k && state.locked.has(k);
+  }
+
+  // ====================================================================
+  //  Selection state
+  // ====================================================================
+
+  function refreshSelectionUI() {
+    $$('.resizable').forEach(function (e) {
+      var sel = state.selectedElements.has(e);
+      e.classList.toggle('selected', sel);
+      // 2026-05-06: chip 関連要素で個別 override 持ちなら .le-individual-override を付与
+      //   (CSS で選択枠を赤に変える)。 preset 通りの状態なら通常のオレンジ枠。
+      // 2026-05-07: individualOverrides は base key で管理されているので baseOnly で問い合わせる。
+      var key = getElKey(e, { baseOnly: true });
+      var isOverridden = !!(key && state.individualOverrides && state.individualOverrides.has(key));
+      // 2026-06-11 (critical fix): toggle 対象要素にこの質問の per-Q キーが保存されている
+      //   場合も .le-individual-override (赤い選択枠) を流用して個別設定の存在を可視化する。
+      var perQOverrideKey = null;
+      if (key) {
+        var km = key.match(/^(.*)\|(\d+)$/);
+        if (km) {
+          try { perQOverrideKey = _perQOverrideKeyIfAny(km[1], parseInt(km[2], 10)); }
+          catch (err) { perQOverrideKey = null; }
+        }
+      }
+      e.classList.toggle('le-individual-override', isOverridden || !!perQOverrideKey);
+      // 🌐 モード中に個別設定済み要素を選択したら、 編集が反映されない旨を qid ごとに 1 回警告
+      if (perQOverrideKey && sel && !state.perQScopeThisQ) {
+        var warnQid = getCurrentQid();
+        if (warnQid && state._perQWarnedQid !== warnQid) {
+          state._perQWarnedQid = warnQid;
+          showToast('⚠ この質問は個別レイアウト適用中 — 🌐 のままの編集は保存に反映されません (🎯 に切替 or 🧹 で個別設定を削除)', 'warn');
+        }
+      }
+      // Juliet-2 修正A: ハンドル個別にもクラスを付与し、子孫/specificity 競合に
+      // 依らず確実に青化する。CSS 子孫セレクタが効かないケース(stacking context・
+      // 別ルールの specificity 上書き等) のフォールバック。
+      try {
+        var handles = e.querySelectorAll('.resize-handle');
+        for (var i = 0; i < handles.length; i++) {
+          handles[i].classList.toggle('le-handle-selected', sel);
+        }
+      } catch (err) {}
+    });
+    document.body.classList.toggle('has-selection', state.selectedElements.size > 0);
+    // Yankee: when aspect-lock is on, re-capture ratios for the new selection so
+    // editing W/H from this point forward respects each element's current ratio.
+    if (state.aspectLocked) captureAspectRatios();
+    updateNumericPanel();
+    // Charlie-2: preferred は selection に依存して reconcile されるので先に走らせる
+    refreshPreferredTargetUI();
+    refreshElementListSelection();
+    refreshTopToolbarAlign();
+    // Lima-2 修正B/C: src 差し替え / 取り出すボタンの enable 状態を選択に応じて更新
+    refreshSelectionDependentButtons();
+    refreshChipTextStyleControls();
+    emit('select', Array.from(state.selectedElements));
+  }
+
+  // Lima-2: toolbar の選択依存ボタン (📥 src 差し替え / 🔓 取り出す) の
+  //   disabled 状態と tooltip を選択状況に応じて更新する。
+  function refreshSelectionDependentButtons() {
+    if (!state.toolbarEl) return;
+    var n = state.selectedElements ? state.selectedElements.size : 0;
+    var sel = (n === 1) ? state.selectedElements.values().next().value : null;
+
+    var replaceBtn = state.toolbarEl.querySelector('#le-replace-src');
+    if (replaceBtn) {
+      if (n !== 1) {
+        replaceBtn.disabled = true;
+        replaceBtn.title = '差し替えるには要素を1つ選択してください';
+      } else {
+        // 画像差し替え可能な要素か簡易チェック (img / bg / 単一内側 img)
+        var canReplace = false;
+        try { canReplace = !!(sel && isImageElement(sel)); } catch (e) { canReplace = false; }
+        replaceBtn.disabled = !canReplace;
+        replaceBtn.title = canReplace
+          ? '選択した要素の画像を差し替え（ファイル選択ダイアログ）'
+          : '差し替え対象が見つかりません（img / 背景画像 / 単一内側img の要素を選択してください）';
+      }
+    }
+
+    var detachBtn = state.toolbarEl.querySelector('#le-detach');
+    if (detachBtn) {
+      if (n !== 1) {
+        detachBtn.disabled = true;
+        detachBtn.title = '単一選択時のみ取り出せます';
+      } else {
+        var stage = state.canvasEl;
+        var parent = sel ? sel.parentNode : null;
+        var atTop = !parent || parent === stage;
+        detachBtn.disabled = atTop;
+        detachBtn.title = atTop
+          ? '既に独立しています'
+          : '選択中のレイヤーを親グループから取り出して独立編集可能にします';
+      }
+    }
+
+    // Victor-2: 🗑️ 削除ボタン — 単一/複数選択中のみ enabled
+    var deleteBtn = state.toolbarEl.querySelector('#le-delete');
+    if (deleteBtn) {
+      if (n === 0) {
+        deleteBtn.disabled = true;
+        deleteBtn.title = '削除するには要素を選択してください';
+      } else {
+        deleteBtn.disabled = false;
+        deleteBtn.title = (n === 1
+          ? '選択中の要素を削除'
+          : ('選択中の ' + n + ' 個を削除')) + ' (Delete / Backspace、Ctrl+Z で復活)';
+      }
+    }
+  }
+  // Charlie-2: preferredTarget が selection 外になったら自動解除し、
+  // 視覚フィードバック (.le-preferred) を描画する。
+  function refreshPreferredTargetUI() {
+    if (state.preferredTarget && !state.selectedElements.has(state.preferredTarget)) {
+      state.preferredTarget = null;
+    }
+    $$('.resizable').forEach(function (e) {
+      e.classList.toggle('le-preferred', e === state.preferredTarget);
+    });
+    // 要素一覧の preferred マーカーも更新 (refreshSelectionUI 経由でない単発呼び出し用)
+    if (state.listPanelEl) {
+      var rows = state.listPanelEl.querySelectorAll('.le-list-row');
+      rows.forEach(function (row) {
+        var key = row.dataset.key;
+        var m = key && key.match(/^(.+)\|(\d+)$/);
+        if (!m) return;
+        var all = $$(m[1]);
+        var el = all[parseInt(m[2], 10)];
+        row.classList.toggle('preferred', !!(el && el === state.preferredTarget));
+      });
+    }
+    // Echo-2: 完全重なりレイヤーの pointer-events 抑止 — preferredTarget 以外で
+    // bbox が重なっている要素は一時的に pointer-events: none にして、
+    // 「青い四角を直接ドラッグしても手前のレイヤーに掴まれる」問題を解消する。
+    applyPreferredPointerSuppression();
+  }
+
+  // Echo-2: preferredTarget set 時、それと bbox が重なる他 .resizable に
+  // .le-pointer-suppressed を付与し、CSS で pointer-events: none にする。
+  // preferredTarget 自身とそのハンドル / 子孫はそのままクリック可能。
+  // preferredTarget が解除されたら全要素から外す。
+  function applyPreferredPointerSuppression() {
+    var pt = state.preferredTarget;
+    var all = $$('.resizable');
+    if (!pt) {
+      all.forEach(function (el) { el.classList.remove('le-pointer-suppressed'); });
+      return;
+    }
+    var ptRect = pt.getBoundingClientRect();
+    var ptOk = ptRect.width > 0 && ptRect.height > 0;
+    all.forEach(function (el) {
+      if (el === pt || (pt.contains && pt.contains(el)) || (el.contains && el.contains(pt))) {
+        // 自分自身 / 親子関係は抑止しない (子孫のクリック→pt にバブル可能にするため)
+        el.classList.remove('le-pointer-suppressed');
+        return;
+      }
+      if (!ptOk) { el.classList.remove('le-pointer-suppressed'); return; }
+      var r = el.getBoundingClientRect();
+      if (r.width <= 0 || r.height <= 0) {
+        el.classList.remove('le-pointer-suppressed');
+        return;
+      }
+      if (rectsIntersect(r, ptRect)) {
+        el.classList.add('le-pointer-suppressed');
+      } else {
+        el.classList.remove('le-pointer-suppressed');
+      }
+    });
+  }
+  function selectOnly(el) {
+    state.selectedElements.clear();
+    if (el) state.selectedElements.add(el);
+    refreshSelectionUI();
+  }
+  function toggleSelect(el) {
+    if (state.selectedElements.has(el)) state.selectedElements.delete(el);
+    else state.selectedElements.add(el);
+    refreshSelectionUI();
+  }
+  function clearSelection() {
+    state.selectedElements.clear();
+    // Charlie-2: 全選択解除時は preferred も解除
+    state.preferredTarget = null;
+    refreshSelectionUI();
+  }
+  function addToSelection(el) {
+    if (!el) return;
+    state.selectedElements.add(el);
+    refreshSelectionUI();
+  }
+  function selectMultiple(els) {
+    state.selectedElements.clear();
+    (els || []).forEach(function (el) { if (el) state.selectedElements.add(el); });
+    refreshSelectionUI();
+  }
+
+  // ====================================================================
+  //  Team Victor — Stack-pierce (Alt+Click) + Marquee (Shift+Drag)
+  //
+  //  Goal: when layers are stacked (e.g. a frame on top of a picture), the
+  //  user must be able to select the layer below the topmost one. Standard
+  //  click only hits the top-most element; Alt+Click cycles through the
+  //  stack at the cursor, and Shift+Drag on empty canvas draws a rubber-band
+  //  selection rectangle that selects every editable element it intersects.
+  // ====================================================================
+
+  // Return all .resizable elements whose bounding rect contains (clientX, clientY),
+  // sorted top-most first (DOM later = visually higher in CSS stacking when no
+  // explicit z-index, so we reverse DOM order; if z-index is set it wins).
+  function getEditableElementsAtPoint(clientX, clientY) {
+    var all = $$('.resizable');
+    var hits = [];
+    for (var i = 0; i < all.length; i++) {
+      var el = all[i];
+      // Skip hidden / disabled
+      if (el.classList.contains('user-hidden')) continue;
+      var cs = window.getComputedStyle ? getComputedStyle(el) : null;
+      if (cs && (cs.display === 'none' || cs.visibility === 'hidden')) continue;
+      var r = el.getBoundingClientRect();
+      if (r.width <= 0 || r.height <= 0) continue;
+      if (clientX < r.left || clientX > r.right) continue;
+      if (clientY < r.top || clientY > r.bottom) continue;
+      hits.push({ el: el, dom: i, z: zIndexOf(el) });
+    }
+    // Sort: higher z-index first; on ties, later DOM order = higher.
+    hits.sort(function (a, b) {
+      if (b.z !== a.z) return b.z - a.z;
+      return b.dom - a.dom;
+    });
+    return hits.map(function (h) { return h.el; });
+  }
+  function zIndexOf(el) {
+    // Walk up the chain so a child of a positioned z-index parent inherits effective stacking.
+    var z = 0;
+    var cur = el;
+    while (cur && cur !== document.body) {
+      var cs = window.getComputedStyle ? getComputedStyle(cur) : null;
+      if (cs) {
+        var v = parseInt(cs.zIndex, 10);
+        if (!isNaN(v)) { z = v; break; }
+      }
+      cur = cur.parentElement;
+    }
+    return z;
+  }
+  function rectsIntersect(a, b) {
+    return !(a.right < b.left || a.left > b.right || a.bottom < b.top || a.top > b.bottom);
+  }
+
+  // Document-level capture-phase mousedown handler that runs BEFORE per-element
+  // handlers (which call e.stopPropagation). It implements two new behaviors:
+  //   1. Alt+Click           — drill-down through stacked editable elements
+  //   2. Shift+Drag on bg    — rubber-band marquee selection
+  // Other modifier combinations fall through to the existing handlers.
+  function attachStackPierceAndMarquee() {
+    var handler = function (e) {
+      if (!state.enabled) return;
+      if (e.button !== undefined && e.button !== 0) return;
+      // Skip clicks on editor chrome (toolbar, panels, handles, overlays, etc.)
+      if (e.target.closest && e.target.closest(
+        '.le-toolbar, .numeric-panel, .le-list-panel, .le-help-modal, ' +
+        '.le-comparison-picker, .le-context-menu, .le-pages-dropdown, ' +
+        '.le-ruler, .le-guide, .resize-handle, .resize-size-label, ' +
+        '.le-anno-layer, .userbox-badge, .userbox-del, .le-lock-badge, ' +
+        '.le-marquee'
+      )) return;
+      // Skip while drawing (userbox add) or while in annotation mode
+      if (state.drawModeOn) return;
+      if (state.annoMode && state.annoTool && state.annoTool !== 'select') return;
+      // Skip when editing text inline
+      if (e.target.isContentEditable || (e.target.closest && e.target.closest('[contenteditable="true"]') && document.activeElement === e.target)) return;
+
+      // --- Feature A: Alt+Click stack-pierce -------------------------------
+      if (e.altKey) {
+        var stack = getEditableElementsAtPoint(e.clientX, e.clientY);
+        if (!stack.length) return;
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+
+        if (e.shiftKey) {
+          // Alt+Shift+Click: add the next un-selected layer in the stack to the selection.
+          var added = false;
+          for (var i = 0; i < stack.length; i++) {
+            if (!state.selectedElements.has(stack[i])) {
+              addToSelection(stack[i]);
+              added = true;
+              break;
+            }
+          }
+          if (!added) {
+            // All in-stack already selected — toggle the topmost off as feedback.
+            toggleSelect(stack[0]);
+          }
+        } else {
+          // Alt+Click: cycle through the stack. If the currently-selected element
+          // is in the stack, advance to the next layer below it; else pick top.
+          var cur = (state.selectedElements && state.selectedElements.size === 1)
+            ? state.selectedElements.values().next().value : null;
+          var idx = cur ? stack.indexOf(cur) : -1;
+          var nextIdx = idx === -1 ? 0 : (idx + 1) % stack.length;
+          selectOnly(stack[nextIdx]);
+          showToast('レイヤー ' + (nextIdx + 1) + ' / ' + stack.length);
+        }
+        // Charlie-2: Alt+Click 系は明示的なレイヤードリル操作なので preferred 解除
+        state.preferredTarget = null;
+        refreshPreferredTargetUI();
+        return;
+      }
+
+      // --- Feature B: Shift+Drag marquee ----------------------------------
+      // Only start marquee on empty canvas (NOT on an existing .resizable),
+      // so that Shift+Click on an element keeps its existing additive-toggle behavior.
+      if (e.shiftKey && !(e.target.closest && e.target.closest('.resizable'))) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+        // Charlie-2: マーキー由来の選択は preferred 上書きしない (リスト由来でない)
+        state.preferredTarget = null;
+        refreshPreferredTargetUI();
+        startMarquee(e.clientX, e.clientY, e.shiftKey);
+        return;
+      }
+
+      // --- Charlie-2 機能B: preferredTarget 優先ターゲット pierce-through ---
+      // 要素一覧で選んだ要素が現在選択中で、クリック位置がその要素の bbox 内に
+      // あるなら、上に重なっている他要素のハンドラを抑止して preferredTarget の
+      // ドラッグハンドラだけを走らせる。Shift/Ctrl/Meta 等の修飾は通常動作優先。
+      if (!e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        var pt = state.preferredTarget;
+        if (pt && state.selectedElements && state.selectedElements.has(pt) &&
+            !pt.classList.contains('user-hidden') && !isLocked(pt)) {
+          var rect = pt.getBoundingClientRect();
+          if (rect.width > 0 && rect.height > 0 &&
+              e.clientX >= rect.left && e.clientX <= rect.right &&
+              e.clientY >= rect.top && e.clientY <= rect.bottom) {
+            // クリック先が pt 自身 / その子孫なら、通常通り pt.attachMoveDrag が掴む
+            // ので何もしない (multi-select 維持のため)。
+            // クリック先が pt を含まない (= 上に重なる別 .resizable など) 場合、
+            // 他要素の handler を捕食して pt のハンドラを直接呼ぶ。
+            var inPt = (e.target === pt) || (pt.contains && pt.contains(e.target));
+            if (!inPt) {
+              e.stopPropagation();
+              if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+              // pt 上で発火したかのように同じ MouseEvent をディスパッチ。
+              // attachMoveDrag は el.addEventListener('mousedown', handler) で
+              // 登録済みなので、新しい MouseEvent を pt に対して dispatch すると
+              // 同じ handler が実行される。
+              var fake = new MouseEvent('mousedown', {
+                bubbles: true, cancelable: true,
+                clientX: e.clientX, clientY: e.clientY,
+                button: e.button, buttons: e.buttons,
+                shiftKey: e.shiftKey, ctrlKey: e.ctrlKey,
+                altKey: e.altKey, metaKey: e.metaKey,
+                view: window
+              });
+              pt.dispatchEvent(fake);
+              return;
+            }
+          }
+        }
+      }
+    };
+    addManagedListener(document, 'mousedown', handler, true /* capture */);
+
+    // Visual hint: while Alt is held, signal stack-pierce mode via body class.
+    var keyDown = function (ev) {
+      if (ev.altKey) document.body.classList.add('le-alt-down');
+    };
+    var keyUp = function (ev) {
+      if (!ev.altKey) document.body.classList.remove('le-alt-down');
+    };
+    var blur = function () { document.body.classList.remove('le-alt-down'); };
+    addManagedListener(window, 'keydown', keyDown);
+    addManagedListener(window, 'keyup', keyUp);
+    addManagedListener(window, 'blur', blur);
+    registerCleanup(function () { document.body.classList.remove('le-alt-down', 'le-marquee-active'); });
+  }
+
+  function startMarquee(originX, originY, additive) {
+    var overlay = document.createElement('div');
+    overlay.className = 'le-marquee';
+    overlay.style.left = originX + 'px';
+    overlay.style.top = originY + 'px';
+    overlay.style.width = '0px';
+    overlay.style.height = '0px';
+    document.body.appendChild(overlay);
+    document.body.classList.add('le-marquee-active');
+
+    var moved = false;
+    var lastRect = { left: originX, top: originY, right: originX, bottom: originY };
+
+    var onMove = function (ev) {
+      var x = ev.clientX, y = ev.clientY;
+      var l = Math.min(originX, x), t = Math.min(originY, y);
+      var w = Math.abs(x - originX), h = Math.abs(y - originY);
+      overlay.style.left = l + 'px';
+      overlay.style.top = t + 'px';
+      overlay.style.width = w + 'px';
+      overlay.style.height = h + 'px';
+      lastRect = { left: l, top: t, right: l + w, bottom: t + h };
+      if (w >= 3 || h >= 3) moved = true;
+    };
+    var onUp = function () {
+      window.removeEventListener('mousemove', onMove, true);
+      window.removeEventListener('mouseup', onUp, true);
+      overlay.remove();
+      document.body.classList.remove('le-marquee-active');
+      if (!moved) {
+        // Treat as a plain shift-click on background → preserve old "clear selection"
+        // behavior only if not additive (additive shift-click on bg = no-op).
+        if (!additive && state.selectedElements.size > 0) clearSelection();
+        return;
+      }
+      var hits = $$('.resizable').filter(function (el) {
+        if (el.classList.contains('user-hidden')) return false;
+        var cs = window.getComputedStyle ? getComputedStyle(el) : null;
+        if (cs && (cs.display === 'none' || cs.visibility === 'hidden')) return false;
+        var r = el.getBoundingClientRect();
+        if (r.width <= 0 || r.height <= 0) return false;
+        return rectsIntersect(r, lastRect);
+      });
+      if (additive) {
+        hits.forEach(function (el) { state.selectedElements.add(el); });
+        refreshSelectionUI();
+      } else {
+        selectMultiple(hits);
+      }
+      if (hits.length) showToast(hits.length + ' 個を選択');
+    };
+    window.addEventListener('mousemove', onMove, true);
+    window.addEventListener('mouseup', onUp, true);
+  }
+
+  function elementShortLabel(el) {
+    var cls = (Array.from(el.classList).filter(function (c) {
+      return ['resizable', 'selected', 'edge-linked', 'le-locked'].indexOf(c) < 0;
+    })[0]) || el.tagName.toLowerCase();
+    var sibs = el.parentElement ? Array.from(el.parentElement.children).filter(function (c) { return c.classList.contains(cls); }) : [el];
+    var idx = sibs.indexOf(el);
+    var label = '.' + cls + (sibs.length > 1 ? '[' + idx + ']' : '');
+    // 2026-05-07 (Phase 2 / impl-A): per-Q 化対象の要素なら現在 qid をラベルに併記。
+    //   例: ".emoji-display [body_lv1_002]". 共通要素 (.character 等) は付かない。
+    try {
+      var key = getElKey(el);
+      if (key && key.indexOf('@') !== -1) {
+        var qid = key.split('@').pop();
+        if (qid) label += ' [' + qid + ']';
+      }
+    } catch (e) { /* noop */ }
+    return label;
+  }
+
+  // ====================================================================
+  //  Numeric panel with +/- spinners (FEATURE 19)
+  // ====================================================================
+
+  function buildNumericPanel() {
+    var panel = document.createElement('div');
+    panel.className = 'numeric-panel';
+    panel.id = 'numeric-panel';
+    panel.innerHTML =
+      // Uniform-2: ドラッグ用ヘッダー (≡ アイコン + タイトル)。
+      //   h4 (選択数表示) は body 側に残し、ヘッダーのみをドラッグハンドルにする。
+      '<div class="numeric-head" title="ドラッグで移動 / ダブルクリックで初期位置に戻す">' +
+        '<span class="le-panel-drag-handle">&#x2261;</span>' +
+        '<span class="le-panel-title-text">数値パネル</span>' +
+      '</div>' +
+      '<h4>選択中: <span id="np-count">0</span> 個</h4>' +
+      '<div class="np-targets" id="np-targets">(なし)</div>' +
+      makeSpinnerRow('w', 'W', { aspect: true }) + makeSpinnerRow('h', 'H') +
+      makeSpinnerRow('tx', 'TX') + makeSpinnerRow('ty', 'TY') +
+      // Foxtrot-2: 単一画像選択時に natural size とパーセントを表示
+      '<div class="np-natural-info" id="np-natural-info" style="display:none"></div>' +
+      '<button class="np-reset-100" id="np-reset-100" type="button" style="display:none" title="自然サイズ (100%) に戻す">100% に戻す</button>' +
+      // Romeo-2: 画像のアスペクト比に合わせて H を再計算するボタン (img / .le-dropped-img / bg-image)
+      '<button class="np-aspect-fit" id="np-aspect-fit" type="button" style="display:none" title="画像のアスペクト比に合わせて高さを再計算">📐 画像の比率に合わせる</button>' +
+      '<div class="np-section-title">表示</div>' +
+      '<div class="np-align-row">' +
+      '  <button class="np-align" id="np-hide" title="選択中の要素を非表示">🗑 隠す</button>' +
+      '  <button class="np-align" id="np-show-all" title="非表示要素を全て元に戻す">↺ 全て表示</button>' +
+      '</div>' +
+      '<div class="np-section-title">整列</div>' +
+      buildAlignmentToolbarHtml() +
+      '<div class="np-hint">Shift+クリック=追加選択 / Shift+ドラッグ=範囲選択 / Alt+クリック=下のレイヤー / Alt+Shift+クリック=下のレイヤー追加 / Shift+Arrow ±10</div>' +
+      // 2026-05-06: 絶対位置 + chip preset 値の常時表示エリア (パネル最下部)
+      '<div class="np-info-section" id="np-info-section">' +
+        '<div class="np-section-title">絶対位置 (viewport)</div>' +
+        '<div class="np-abs-pos" id="np-abs-pos">(選択なし)</div>' +
+        '<div class="np-section-title">chip preset 現値</div>' +
+        '<div class="np-preset-vals" id="np-preset-vals">(なし)</div>' +
+      '</div>';
+    document.body.appendChild(panel);
+    state.numericPanelEl = panel;
+    wireSpinners(panel);
+    wireAlignmentToolbar(panel);
+    panel.querySelector('#np-hide').addEventListener('click', hideSelectedElements);
+    panel.querySelector('#np-show-all').addEventListener('click', showAllHiddenElements);
+    var resetBtn = panel.querySelector('#np-reset-100');
+    if (resetBtn) resetBtn.addEventListener('click', resetImageTo100Pct);
+    // Romeo-2: 「📐 画像の比率に合わせる」ボタン
+    var aspectFitBtn = panel.querySelector('#np-aspect-fit');
+    if (aspectFitBtn) aspectFitBtn.addEventListener('click', fitElementToImageAspect);
+    syncAspectLockButton();
+    // Uniform-2: パネル位置をドラッグ可能にし、保存位置を復元
+    makePanelDraggable(panel, 'numeric');
+    restorePanelPosition('numeric', panel);
+    // Whiskey-2: パネルサイズも変更可能 + 保存サイズ復元
+    makePanelResizable(panel, 'numeric');
+    restorePanelSize(panel, 'numeric');
+  }
+
+  // ====================================================================
+  //  Romeo-2: 画像のアスペクト比に合わせる (Quebec-2 で削除した bg-image
+  //    natural-size probe ロジックを部分的に復活。用途は aspect ratio 取得のみ。
+  //    img / .le-dropped-img / 任意 bg-image 要素に対応。)
+  // ====================================================================
+  var bgImgNaturalCache = new Map(); // url → { status, w, h, callbacks }
+
+  function getBgImageUrl(el) {
+    if (!el || !el.nodeType || el.nodeType !== 1) return null;
+    var bg;
+    try {
+      bg = (el.style && el.style.backgroundImage) || '';
+      if (!bg || bg === 'none') bg = getComputedStyle(el).backgroundImage || '';
+    } catch (e) { return null; }
+    if (!bg || bg === 'none') return null;
+    var m = bg.match(/url\(["']?([^"')]+)["']?\)/);
+    return m ? m[1] : null;
+  }
+
+  function probeBgImgNaturalSize(url, onLoad) {
+    if (!url) return null;
+    var cached = bgImgNaturalCache.get(url);
+    if (cached && cached.status === 'loaded') return { w: cached.w, h: cached.h };
+    if (cached && cached.status === 'error') return null;
+    if (cached && cached.status === 'loading') {
+      if (onLoad) cached.callbacks.push(onLoad);
+      return null;
+    }
+    var entry = { status: 'loading', callbacks: onLoad ? [onLoad] : [] };
+    bgImgNaturalCache.set(url, entry);
+    var probe = new Image();
+    probe.onload = function () {
+      var cbs = (bgImgNaturalCache.get(url) || {}).callbacks || [];
+      bgImgNaturalCache.set(url, { status: 'loaded', w: probe.naturalWidth, h: probe.naturalHeight });
+      cbs.forEach(function (cb) { try { cb && cb(); } catch (e) {} });
+    };
+    probe.onerror = function () {
+      bgImgNaturalCache.set(url, { status: 'error' });
+    };
+    probe.src = url;
+    return null;
+  }
+
+  // Romeo-2: 要素から画像のアスペクト比 (w/h) を取得。
+  //   - <img> 直接: img.naturalWidth / naturalHeight
+  //   - .le-dropped-img wrapper: 内側 img の natural
+  //   - bg-image を持つ要素: URL を probe して natural を取得 (キャッシュ)
+  // 取得不能な場合は null を返す。bg-image probe 中の場合は updateNumericPanel
+  // を onLoad として渡しておくと load 完了後に再描画される。
+  function getImageAspectRatio(el, onLoad) {
+    if (!el) return null;
+    if (el.tagName === 'IMG') {
+      if (el.naturalWidth > 0 && el.naturalHeight > 0) {
+        return el.naturalWidth / el.naturalHeight;
+      }
+      return null;
+    }
+    if (el.classList && el.classList.contains('le-dropped-img')) {
+      var innerImg = el.querySelector('img');
+      if (innerImg && innerImg.naturalWidth > 0 && innerImg.naturalHeight > 0) {
+        return innerImg.naturalWidth / innerImg.naturalHeight;
+      }
+      // wrapper だが natural 未確定 → load 完了で再描画させる
+      if (innerImg && innerImg.naturalWidth === 0 && onLoad && !innerImg._romeo2NaturalListen) {
+        innerImg._romeo2NaturalListen = true;
+        innerImg.addEventListener('load', function () {
+          innerImg._romeo2NaturalListen = false;
+          try { onLoad(); } catch (e) {}
+        }, { once: true });
+      }
+      return null;
+    }
+    // 任意要素の bg-image
+    var url = getBgImageUrl(el);
+    if (url) {
+      var bg = probeBgImgNaturalSize(url, onLoad);
+      if (bg && bg.w > 0 && bg.h > 0) return bg.w / bg.h;
+      return null;
+    }
+    return null;
+  }
+
+  // Romeo-2: アスペクト比取得対象になりうるか (UI の表示条件判定用)。
+  //   実際のアスペクト比が取れるかは別 (probe 中など) — UI はボタンを表示し、
+  //   クリック時にアスペクト比が取れなければトーストで通知する。
+  // Tango-2 修正B: ボタン表示条件を「単一選択ならとりあえず表示」に緩和。
+  //   .pono-bubble などで bg-image が computed で取れず非表示になるケースを
+  //   救う。クリック時にアスペクト取得失敗ならトーストで具体的な理由を出す。
+  function elementHasAspectSource(el) {
+    if (!el) return false;
+    return true;
+  }
+
+  function fitElementToImageAspect() {
+    if (!state.selectedElements || state.selectedElements.size !== 1) {
+      showToast('単一選択時のみ使用できます', 'warn');
+      return;
+    }
+    var sel = Array.from(state.selectedElements)[0];
+    if (!sel) return;
+    // Tango-2 修正B: 詳細デバッグログ。ユーザーが console を見て原因特定できるように。
+    try {
+      var bgUrlDbg = getBgImageUrl(sel);
+      var natW = (sel.tagName === 'IMG') ? sel.naturalWidth : null;
+      console.log('[layout-editor][aspect-fit] selected:', sel,
+        'tag=', sel.tagName,
+        'class=', sel.className,
+        'bg-image-url=', bgUrlDbg,
+        'naturalWidth=', natW,
+        'inner-img=', (sel.querySelector && sel.querySelector('img')) || null
+      );
+    } catch (e) {}
+    // Sierra-2 修正: probe 中なら load 完了で fitElementToImageAspect を自動再試行する。
+    // これで .pono-bubble のような bg-image 要素を初回クリックしたときに probe が
+    // 開始され、完了次第そのまま比率合わせが実行される。
+    var aspect = getImageAspectRatio(sel, function () {
+      // 再試行時、選択が同じ要素のままなら自動で実行する
+      if (state.selectedElements && state.selectedElements.has(sel)) {
+        try { fitElementToImageAspect(); } catch (e) {}
+      } else {
+        updateNumericPanel();
+      }
+    });
+    if (aspect == null) {
+      // Tango-2 修正B: 失敗理由を具体的に出す
+      var reasonParts = [];
+      if (sel.tagName === 'IMG') {
+        reasonParts.push('img naturalWidth=' + sel.naturalWidth);
+      } else if (sel.classList && sel.classList.contains('le-dropped-img')) {
+        var iimg = sel.querySelector('img');
+        reasonParts.push('le-dropped-img inner=' + (iimg ? ('naturalWidth=' + iimg.naturalWidth) : 'none'));
+      } else {
+        var bgUrl = getBgImageUrl(sel);
+        if (!bgUrl) {
+          reasonParts.push('bg-image: 検出なし');
+        } else {
+          var cached = bgImgNaturalCache.get(bgUrl);
+          if (!cached) reasonParts.push('bg-image probe 開始 (load 完了で再試行します)');
+          else if (cached.status === 'loading') reasonParts.push('bg-image probe 中');
+          else if (cached.status === 'error') reasonParts.push('bg-image 読込エラー: ' + bgUrl);
+          else reasonParts.push('bg-image: ' + bgUrl);
+        }
+      }
+      showToast('比率取得待ち / ' + reasonParts.join(' / '), 'warn');
+      return;
+    }
+    if (!isFinite(aspect) || aspect <= 0) {
+      showToast('画像のアスペクト比を取得できません (画像の読込に失敗した可能性があります)', 'warn');
+      return;
+    }
+    // 現在の W を維持し、H を W / aspect で再計算 (aspect = w/h)
+    var currentW = parseFloat(sel.style.width) || sel.offsetWidth;
+    if (!currentW || currentW <= 0) {
+      showToast('現在の幅が取得できません', 'warn');
+      return;
+    }
+    var newH = Math.max(1, Math.round(currentW / aspect));
+    var before = getResizeState(sel);
+    applyOnePropToEl(sel, 'h', newH);
+    var after = getResizeState(sel);
+    if (JSON.stringify(after) !== JSON.stringify(before)) {
+      pushHistory({ type: 'resize', el: sel, before: before, after: after });
+    }
+    if (state.aspectLocked) captureAspectRatios();
+    updateNumericPanel();
+    showToast('画像の比率 ' + aspect.toFixed(2) + ' に合わせました (Ctrl+Z で戻せます)', 'success');
+  }
+
+  // Golf-2: 「100% に戻す」と自然サイズ表示を、選択要素そのものが <img> の場合
+  // だけに限定する。Foxtrot-2 ではラッパ内に img が 1 個ならその img の natural
+  // を返していたが、ユーザー視点では「ラッパ (例: .hint-panel) を選択したのに
+  // 中の silhouette img の natural にラッパごとリサイズされる」誤誘導になるため
+  // 廃止。wrapper を 100% に戻したい場合はその wrapper 内の img を直接選択する。
+  // Quebec-2: 100% 表示対象を img / le-dropped-img wrapper に限定。
+  //   Hotel-2 で追加した CSS background-image 経路 (panel/frame の natural) は
+  //   `.pono-bubble` 等 (cover/contain で fit する装飾枠) で natural サイズに
+  //   リサイズすると枠が壊れるため削除。bg 差し替え機能は replaceImageSrc 側で
+  //   独立に維持される (elementHasBackgroundImage / swapBackgroundImageUndoable)。
+  // Papa-2 修正1: target フィールドを追加。リサイズすべき要素は
+  //   wrapper (.le-dropped-img) なら wrapper、それ以外は el 自身。
+  //   getImgNaturalSize に <img> を渡したとき、その親が .le-dropped-img wrapper
+  //   なら target = wrapper を返す (内側 img だけリサイズして wrapper と不一致に
+  //   なる問題を解消)。逆に wrapper を渡されたときは内側 img の natural を返す。
+  function getImgNaturalSize(el, onLoad) {
+    if (!el) return null;
+    if (el.tagName === 'IMG') {
+      if (el.naturalWidth > 0 && el.naturalHeight > 0) {
+        // Papa-2 修正1: 親が .le-dropped-img なら wrapper を target にする
+        var parentWrap = el.parentNode;
+        var isInDropWrap = parentWrap && parentWrap.classList &&
+          parentWrap.classList.contains('le-dropped-img');
+        return {
+          w: el.naturalWidth,
+          h: el.naturalHeight,
+          img: el,
+          target: isInDropWrap ? parentWrap : el
+        };
+      }
+      return null;
+    }
+    // Papa-2 修正1: wrapper を渡されたら内側 img の natural を返す
+    if (el.classList && el.classList.contains('le-dropped-img')) {
+      var innerImg = el.querySelector('img');
+      if (innerImg && innerImg.naturalWidth > 0 && innerImg.naturalHeight > 0) {
+        return {
+          w: innerImg.naturalWidth,
+          h: innerImg.naturalHeight,
+          img: innerImg,
+          target: el
+        };
+      }
+      // wrapper だが natural 未確定 → load 完了で再描画させる
+      if (innerImg && innerImg.naturalWidth === 0 && onLoad && !innerImg._papa2NaturalListen) {
+        innerImg._papa2NaturalListen = true;
+        innerImg.addEventListener('load', function () {
+          innerImg._papa2NaturalListen = false;
+          try { onLoad(); } catch (e) {}
+        }, { once: true });
+      }
+      return null;
+    }
+    // Quebec-2: bg-image / その他要素は 100% 対象外 (panel/frame の natural は
+    //   表示意味を持たないため UI 側で row 自体を非表示にする)。
+    return null;
+  }
+
+  // Foxtrot-2: 「100% に戻す」ボタン — 単一画像選択時に natural size を W/H に流し込む
+  // Papa-2 修正1: ns.target を使って wrapper / 内側 img どちらが選択されていても
+  //   wrapper のサイズが新画像の natural size になるようにする。
+  function resetImageTo100Pct() {
+    if (!state.selectedElements || state.selectedElements.size !== 1) return;
+    var sel = Array.from(state.selectedElements)[0];
+    var ns = getImgNaturalSize(sel);
+    if (!sel || !ns) return;
+    // Papa-2 修正1: wrapper があれば wrapper をリサイズ対象にする (差し替え後の
+    //   内側 img の naturalSize に wrapper を追従させ、はみ出し/ずれを解消)
+    var target = ns.target || sel;
+    // 縦横比ロックの有無に関わらず natural の正確な W,H を直接流し込む。
+    var before = getResizeState(target);
+    applyOnePropToEl(target, 'w', ns.w);
+    applyOnePropToEl(target, 'h', ns.h);
+    var after = getResizeState(target);
+    if (JSON.stringify(after) !== JSON.stringify(before)) {
+      pushHistory({ type: 'resize', el: target, before: before, after: after });
+    }
+    // ロック中なら新サイズで比率をキャプチャし直す (1:1 リセット後の意図に揃える)
+    if (state.aspectLocked) captureAspectRatios();
+    updateNumericPanel();
+    showToast('自然サイズ (' + ns.w + '×' + ns.h + ') に戻しました');
+  }
+
+  function makeSpinnerRow(prop, label, opts) {
+    var rowCls = 'np-row' + (opts && opts.aspect ? ' np-row-aspect' : '');
+    var aspectBtn = (opts && opts.aspect)
+      ? '<button class="le-aspect-lock" id="np-aspect-lock" type="button"' +
+        ' data-aspect-locked="false" aria-label="縦横比をロック"' +
+        ' title="縦横比をロック (W と H を比例して連動)">🔓</button>'
+      : '';
+    return '<div class="' + rowCls + '">' +
+      '<label>' + label +
+      '  <button class="np-spin np-minus" data-prop="' + prop + '" data-dir="-1" tabindex="-1">−</button>' +
+      '  <input type="number" id="np-' + prop + '" step="1">' +
+      '  <button class="np-spin np-plus" data-prop="' + prop + '" data-dir="+1" tabindex="-1">+</button>' +
+      aspectBtn +
+      '</label>' +
+      '</div>';
+  }
+
+  function wireSpinners(root) {
+    ['w', 'h', 'tx', 'ty'].forEach(function (prop) {
+      var input = $('#np-' + prop, root);
+      if (!input) return;
+      input.addEventListener('change', function (e) {
+        applyNumericInput(prop, e.target.value);
+      });
+      input.addEventListener('keydown', function (e) {
+        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+          e.preventDefault();
+          var step = e.shiftKey ? 10 : (e.altKey ? 0.5 : 1);
+          var dir = e.key === 'ArrowUp' ? 1 : -1;
+          stepNumeric(prop, dir * step);
+        }
+      });
+    });
+    root.querySelectorAll('.np-spin').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        var dir = parseInt(btn.dataset.dir, 10);
+        var step = e.shiftKey ? 10 : (e.altKey ? 0.5 : 1);
+        stepNumeric(btn.dataset.prop, dir * step);
+      });
+    });
+    var lockBtn = $('#np-aspect-lock', root);
+    if (lockBtn) {
+      lockBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleAspectLock();
+      });
+    }
+  }
+
+  // ====================================================================
+  //  Aspect ratio lock (Yankee) — link W <-> H in the numeric panel
+  // ====================================================================
+
+  function captureAspectRatios() {
+    var map = new WeakMap();
+    if (!state.selectedElements) { state.aspectRatios = map; return; }
+    state.selectedElements.forEach(function (el) {
+      var w = parseFloat(el.style.width) || el.offsetWidth;
+      var h = parseFloat(el.style.height) || el.offsetHeight;
+      if (w > 0 && h > 0) map.set(el, w / h);
+    });
+    state.aspectRatios = map;
+  }
+
+  function syncAspectLockButton() {
+    if (!state.numericPanelEl) return;
+    var btn = state.numericPanelEl.querySelector('#np-aspect-lock');
+    if (!btn) return;
+    var locked = !!state.aspectLocked;
+    btn.dataset.aspectLocked = locked ? 'true' : 'false';
+    btn.textContent = locked ? '🔒' : '🔓';
+    btn.setAttribute('aria-label', locked ? '縦横比のロックを解除' : '縦横比をロック');
+    btn.setAttribute('aria-pressed', locked ? 'true' : 'false');
+  }
+
+  function toggleAspectLock() {
+    state.aspectLocked = !state.aspectLocked;
+    if (state.aspectLocked) {
+      captureAspectRatios();
+    } else {
+      state.aspectRatios = null;
+    }
+    syncAspectLockButton();
+    showToast(state.aspectLocked ? '縦横比をロックしました' : '縦横比のロックを解除');
+  }
+
+  function getAspectRatioFor(el) {
+    if (!state.aspectLocked || !state.aspectRatios) return 0;
+    var r = state.aspectRatios.get(el);
+    if (r && isFinite(r) && r > 0) return r;
+    // Fallback: capture on the fly if missing (e.g. selection changed but
+    // re-capture didn't run yet).
+    var w = parseFloat(el.style.width) || el.offsetWidth;
+    var h = parseFloat(el.style.height) || el.offsetHeight;
+    if (w > 0 && h > 0) {
+      r = w / h;
+      try { state.aspectRatios.set(el, r); } catch (e) {}
+      return r;
+    }
+    return 0;
+  }
+
+  function stepNumeric(prop, delta) {
+    var sel = Array.from(state.selectedElements).filter(function (el) { return !isLocked(el); });
+    if (!sel.length) return;
+    var beforeMap = new Map();
+    sel.forEach(function (el) { beforeMap.set(el, getResizeState(el)); });
+    sel.forEach(function (el) {
+      var cur;
+      if (prop === 'w') cur = parseFloat(el.style.width) || el.offsetWidth;
+      else if (prop === 'h') cur = parseFloat(el.style.height) || el.offsetHeight;
+      else if (prop === 'tx') cur = el._tx || 0;
+      else cur = el._ty || 0;
+      var nv = cur + delta;
+      applyOnePropToEl(el, prop, nv);
+      applyAspectLinkedProp(el, prop, nv);
+    });
+    // Kilo-2 修正A: 数値スピナーの一括変更も batch 化
+    var ops = [];
+    sel.forEach(function (el) {
+      var after = getResizeState(el);
+      var before = beforeMap.get(el);
+      if (JSON.stringify(after) !== JSON.stringify(before)) {
+        ops.push({ type: 'resize', el: el, before: before, after: after });
+      }
+    });
+    pushHistoryBatch(ops);
+    updateNumericPanel();
+  }
+
+  // If aspectLocked is on and prop is 'w' or 'h', also apply the partner axis
+  // for the given element using the captured ratio.
+  function applyAspectLinkedProp(el, prop, value) {
+    if (!state.aspectLocked) return;
+    if (prop !== 'w' && prop !== 'h') return;
+    var ratio = getAspectRatioFor(el);
+    if (!ratio) return;
+    if (prop === 'w') {
+      var newH = Math.max(1, Math.round(value / ratio));
+      applyOnePropToEl(el, 'h', newH);
+    } else {
+      var newW = Math.max(1, Math.round(value * ratio));
+      applyOnePropToEl(el, 'w', newW);
+    }
+  }
+
+  function applyOnePropToEl(el, prop, value) {
+    if (state.gridOn) value = snapValue(value);
+    // Sierra-2 修正: width/height は !important で設定し、CSS の !important
+    // 付き制約 (メディアクエリの width / flex 等) を inline style で確実に
+    // 上書きできるようにする。これは編集モードでの明示操作なので副作用は許容。
+    if (prop === 'w') {
+      el.style.setProperty('width', value + 'px', 'important');
+      // Tango-2 修正A: flex 親配下では flex-basis 0% が勝つので flex 自体を上書き
+      overrideFlexIfChild(el, 'w', value);
+    } else if (prop === 'h') {
+      el.style.setProperty('height', value + 'px', 'important');
+      if (el.matches('.hdr-left')) document.documentElement.style.setProperty('--header-h', value + 'px');
+      // Tango-2 修正A: 同上 (column flex の cross axis 含む)
+      overrideFlexIfChild(el, 'h', value);
+    } else if (prop === 'tx') {
+      el._tx = value;
+      el.style.transform = 'translate(' + el._tx + 'px, ' + (el._ty || 0) + 'px)';
+    } else if (prop === 'ty') {
+      el._ty = value;
+      el.style.transform = 'translate(' + (el._tx || 0) + 'px, ' + el._ty + 'px)';
+    }
+    el._resizeUpdateLabel && el._resizeUpdateLabel();
+  }
+
+  // Uniform-2 修正: flex 制約を main/cross 区別なく **常に解除**する強制対応。
+  //   .pono-bubble の W が変わらない症状 (Wave 37/38 で未解決) は、
+  //   flex-direction の判定が間違っているケースがあると思われる (column 親で
+  //   W=cross axis になってしまい、cross 軸処理だけでは flex-shrink/grow/basis が
+  //   そのまま残って効かない)。
+  //   そこで axis に関わらず flex / align-self / flex-shrink / flex-grow / flex-basis
+  //   を全て inline !important で固定する。これで main/cross 両方カバーできる。
+  function overrideFlexIfChild(el, axis, val) {
+    if (!el || el.nodeType !== 1) return;
+    var parent = el.parentNode;
+    if (!parent || parent.nodeType !== 1) return;
+    var parentDisplay;
+    try { parentDisplay = getComputedStyle(parent).display || ''; }
+    catch (e) { return; }
+    if (parentDisplay.indexOf('flex') < 0) return;
+    // axis に関わらず両方解除 (手堅い)
+    el.style.setProperty('flex', '0 0 auto', 'important');
+    el.style.setProperty('align-self', 'flex-start', 'important');
+    el.style.setProperty('flex-shrink', '0', 'important');
+    el.style.setProperty('flex-grow', '0', 'important');
+    el.style.setProperty('flex-basis', 'auto', 'important');
+    // width/height 自体は applyOnePropToEl 側で setProperty 済み
+  }
+
+  // Uniform-2 修正: undo/redo で空値に戻すときは flex 系プロパティを全て除去して
+  //   原状復帰させる。axis に関わらず両軸の inline 値が空になった時のみ削除する。
+  function clearFlexOverrideIfChild(el, axis) {
+    if (!el || el.nodeType !== 1) return;
+    var parent = el.parentNode;
+    if (!parent || parent.nodeType !== 1) return;
+    var parentDisplay;
+    try { parentDisplay = getComputedStyle(parent).display || ''; }
+    catch (e) { return; }
+    if (parentDisplay.indexOf('flex') < 0) return;
+    // 反対軸 (w↔h) がまだ inline で width/height を持っている場合は override 維持。
+    // 両方とも空になって初めて flex 系を全て removeProperty する。
+    var otherInline = (axis === 'w') ? el.style.height : el.style.width;
+    if (otherInline) return;
+    el.style.removeProperty('flex');
+    el.style.removeProperty('align-self');
+    el.style.removeProperty('flex-shrink');
+    el.style.removeProperty('flex-grow');
+    el.style.removeProperty('flex-basis');
+  }
+
+  // ====================================================================
+  //  Uniform-2: 数値パネル / 要素一覧パネルをヘッダーでドラッグ移動
+  //    - localStorage に位置を保存 (キー: le-panel-position:<pathname>:<id>)
+  //    - 画面外に出ないよう clamp (最低 50px は viewport 内)
+  //    - ヘッダーをダブルクリックで初期位置に戻す
+  //    - ドラッグハンドラ重複登録防止のため _leDragWired フラグでガード
+  // ====================================================================
+  function panelPositionKey(panelId) {
+    var path = '';
+    try { path = location.pathname || ''; } catch (e) { path = ''; }
+    return 'le-panel-position:' + path + ':' + panelId;
+  }
+
+  function savePanelPosition(panelId, panel) {
+    try {
+      var r = panel.getBoundingClientRect();
+      localStorage.setItem(panelPositionKey(panelId), JSON.stringify({ left: r.left, top: r.top }));
+    } catch (e) {}
+  }
+
+  function restorePanelPosition(panelId, panel) {
+    try {
+      var json = localStorage.getItem(panelPositionKey(panelId));
+      if (!json) return;
+      var data = JSON.parse(json);
+      if (typeof data.left !== 'number' || typeof data.top !== 'number') return;
+      // 復元時も画面外には出さない (リロード後にウィンドウ縮小されたケース対策)
+      var left = clamp(data.left, -200, window.innerWidth - 50);
+      var top = clamp(data.top, getPanelMinTop(), window.innerHeight - 50);
+      panel.style.position = 'fixed';
+      panel.style.left = left + 'px';
+      panel.style.top = top + 'px';
+      panel.style.right = 'auto';
+      panel.style.bottom = 'auto';
+    } catch (e) {}
+  }
+
+  function getPanelMinTop() {
+    var toolbar = document.querySelector('.le-toolbar');
+    if (!toolbar) return 0;
+    var rect = toolbar.getBoundingClientRect();
+    return Math.max(0, Math.ceil(rect.bottom + 8));
+  }
+
+  function makePanelDraggable(panel, panelId) {
+    if (!panel || panel._leDragWired) return;
+    panel._leDragWired = true;
+    var header = panel.querySelector('.le-list-head, .numeric-head');
+    if (!header) return;
+
+    var dragStart = null;
+    var panelStart = null;
+
+    function onMove(e) {
+      if (!dragStart) return;
+      var dx = e.clientX - dragStart.x;
+      var dy = e.clientY - dragStart.y;
+      var w = panel.offsetWidth || 200;
+      var newLeft = clamp(panelStart.left + dx, -w + 50, window.innerWidth - 50);
+      var newTop = clamp(panelStart.top + dy, getPanelMinTop(), window.innerHeight - 50);
+      panel.style.position = 'fixed';
+      panel.style.left = newLeft + 'px';
+      panel.style.top = newTop + 'px';
+      panel.style.right = 'auto';
+      panel.style.bottom = 'auto';
+    }
+
+    function onUp() {
+      document.removeEventListener('pointermove', onMove);
+      var wasDragging = !!dragStart;
+      dragStart = null;
+      panelStart = null;
+      if (wasDragging) savePanelPosition(panelId, panel);
+    }
+
+    header.addEventListener('pointerdown', function (e) {
+      // ボタン / input / contenteditable の上ではドラッグしない
+      if (e.target.closest('button, input, select, textarea, [contenteditable="true"]')) return;
+      e.preventDefault();
+      dragStart = { x: e.clientX, y: e.clientY };
+      var r = panel.getBoundingClientRect();
+      panelStart = { left: r.left, top: r.top };
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp, { once: true });
+      document.addEventListener('pointercancel', onUp, { once: true });
+    });
+
+    // ダブルクリックで初期位置 (CSS デフォルト) に戻す
+    header.addEventListener('dblclick', function (e) {
+      if (e.target.closest('button, input, select, textarea, [contenteditable="true"]')) return;
+      panel.style.left = '';
+      panel.style.top = '';
+      panel.style.right = '';
+      panel.style.bottom = '';
+      panel.style.position = '';
+      try { localStorage.removeItem(panelPositionKey(panelId)); } catch (err) {}
+    });
+  }
+
+  // ====================================================================
+  //  Whiskey-2: パネルリサイズ機能
+  //    - 右下角のハンドル (.le-panel-resize) をドラッグで W/H 更新
+  //    - 制約: W [200, min(600, vw*0.8)], H [200, vh*0.9]
+  //    - localStorage キー: le-panel-size:<pathname>:<panelId>
+  //    - 重複登録防止のため _leResizeWired フラグでガード
+  // ====================================================================
+  function panelSizeKey(panelId) {
+    var path = '';
+    try { path = location.pathname || ''; } catch (e) { path = ''; }
+    return 'le-panel-size:' + path + ':' + panelId;
+  }
+
+  function makePanelResizable(panel, panelId) {
+    if (!panel || panel._leResizeWired) return;
+    panel._leResizeWired = true;
+    var handle = document.createElement('div');
+    handle.className = 'le-panel-resize';
+    handle.title = 'ドラッグでパネルサイズ変更 / ダブルクリックで初期サイズに戻す';
+    panel.appendChild(handle);
+
+    var start = null;
+
+    function maxW() { return Math.min(600, Math.floor(window.innerWidth * 0.8)); }
+    function maxH() { return Math.floor(window.innerHeight * 0.9); }
+
+    function onMove(e) {
+      if (!start) return;
+      var newW = clamp(start.w + (e.clientX - start.x), 200, maxW());
+      var newH = clamp(start.h + (e.clientY - start.y), 200, maxH());
+      panel.style.width = newW + 'px';
+      panel.style.height = newH + 'px';
+      // numeric-panel には max-height が無いので明示的に維持
+      panel.style.maxHeight = 'none';
+    }
+
+    function onUp() {
+      document.removeEventListener('pointermove', onMove);
+      var wasResizing = !!start;
+      start = null;
+      if (wasResizing) {
+        try {
+          var r = panel.getBoundingClientRect();
+          localStorage.setItem(panelSizeKey(panelId), JSON.stringify({ width: r.width, height: r.height }));
+        } catch (err) {}
+      }
+    }
+
+    handle.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var r = panel.getBoundingClientRect();
+      start = { x: e.clientX, y: e.clientY, w: r.width, h: r.height };
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp, { once: true });
+      document.addEventListener('pointercancel', onUp, { once: true });
+    });
+
+    // ダブルクリックで初期サイズに戻す
+    handle.addEventListener('dblclick', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      panel.style.width = '';
+      panel.style.height = '';
+      panel.style.maxHeight = '';
+      try { localStorage.removeItem(panelSizeKey(panelId)); } catch (err) {}
+    });
+  }
+
+  // ====================================================================
+  //  Whiskey-2.5: 横幅専用リサイズハンドル
+  //    - 右辺の細い帯 (.le-panel-resize-width) をドラッグで W のみ更新
+  //    - 要素一覧パネルの要素名見切れ対策
+  //    - 制約: W [180, min(600, vw*0.8)]
+  //    - 既存の panelSizeKey と同じスキーマ {width, height} で保存
+  // ====================================================================
+  function makePanelWidthResizable(panel, panelId) {
+    if (!panel || panel._leWidthResizeWired) return;
+    panel._leWidthResizeWired = true;
+    var handle = document.createElement('div');
+    handle.className = 'le-panel-resize-width';
+    handle.title = 'ドラッグで横幅を変更';
+    panel.appendChild(handle);
+
+    var start = null;
+    function maxW() { return Math.min(600, Math.floor(window.innerWidth * 0.8)); }
+
+    function onMove(e) {
+      if (!start) return;
+      var newW = Math.max(180, Math.min(maxW(), start.w + (e.clientX - start.x)));
+      panel.style.width = newW + 'px';
+    }
+    function onUp() {
+      document.removeEventListener('pointermove', onMove);
+      var wasResizing = !!start;
+      start = null;
+      if (wasResizing) {
+        try {
+          var r = panel.getBoundingClientRect();
+          localStorage.setItem(panelSizeKey(panelId), JSON.stringify({
+            width: r.width,
+            height: r.height
+          }));
+        } catch (err) {}
+      }
+    }
+    handle.addEventListener('pointerdown', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var r = panel.getBoundingClientRect();
+      start = { x: e.clientX, w: r.width };
+      document.addEventListener('pointermove', onMove);
+      document.addEventListener('pointerup', onUp, { once: true });
+      document.addEventListener('pointercancel', onUp, { once: true });
+    });
+  }
+
+  function restorePanelSize(panel, panelId) {
+    try {
+      var json = localStorage.getItem(panelSizeKey(panelId));
+      if (!json) return;
+      var data = JSON.parse(json);
+      if (typeof data.width !== 'number' || typeof data.height !== 'number') return;
+      var w = clamp(data.width, 200, Math.min(600, Math.floor(window.innerWidth * 0.8)));
+      var h = clamp(data.height, 200, Math.floor(window.innerHeight * 0.9));
+      panel.style.width = w + 'px';
+      panel.style.height = h + 'px';
+      panel.style.maxHeight = 'none';
+    } catch (e) {}
+  }
+
+  function applyNumericInput(prop, valueStr) {
+    var value = parseFloat(valueStr);
+    if (Number.isNaN(value)) return;
+    // U6: Numeric input is an explicit override — applies even to locked elements.
+    var sel = Array.from(state.selectedElements);
+    if (!sel.length) return;
+    var hadLocked = sel.some(isLocked);
+    var beforeMap = new Map();
+    sel.forEach(function (el) { beforeMap.set(el, getResizeState(el)); });
+    sel.forEach(function (el) {
+      applyOnePropToEl(el, prop, value);
+      applyAspectLinkedProp(el, prop, value);
+    });
+    // Kilo-2 修正A: 数値直接入力の一括反映も batch 化
+    var ops = [];
+    sel.forEach(function (el) {
+      var after = getResizeState(el);
+      var before = beforeMap.get(el);
+      if (JSON.stringify(after) !== JSON.stringify(before)) {
+        ops.push({ type: 'resize', el: el, before: before, after: after });
+      }
+    });
+    pushHistoryBatch(ops);
+    if (hadLocked) showToast('ロック中の要素にも数値入力を反映しました');
+    updateNumericPanel();
+  }
+
+  function updateNumericPanel() {
+    var panel = state.numericPanelEl;
+    if (!panel) return;
+    var sel = Array.from(state.selectedElements);
+    var countEl = $('#np-count');
+    if (countEl) countEl.textContent = String(sel.length);
+    var tEl = $('#np-targets');
+    if (tEl) tEl.textContent = sel.length ? sel.map(elementShortLabel).join(', ') : '(なし)';
+    var getVal = function (el, prop) {
+      if (prop === 'w') return parseFloat(el.style.width) || el.offsetWidth;
+      if (prop === 'h') return parseFloat(el.style.height) || el.offsetHeight;
+      if (prop === 'tx') return Math.round(el._tx || 0);
+      if (prop === 'ty') return Math.round(el._ty || 0);
+      return 0;
+    };
+    ['w', 'h', 'tx', 'ty'].forEach(function (prop) {
+      var input = $('#np-' + prop);
+      if (!input) return;
+      if (document.activeElement === input) return;
+      if (sel.length === 0) { input.value = ''; input.placeholder = ''; return; }
+      var vals = sel.map(function (el) { return Math.round(getVal(el, prop)); });
+      var allSame = vals.every(function (v) { return v === vals[0]; });
+      if (allSame) { input.value = vals[0]; input.placeholder = ''; }
+      else { input.value = ''; input.placeholder = '異なる'; }
+    });
+
+    // Foxtrot-2: 単一選択かつ画像ならば、自然サイズと現在の表示比率 (%) を表示。
+    // 非画像 / 複数選択 / 画像未ロード時は非表示。
+    // Quebec-2: 対象は <img> と .le-dropped-img wrapper のみ (panel/frame の
+    //   bg-image は自然サイズに意味が無いため row 自体を非表示にする)。
+    var infoEl = panel.querySelector('#np-natural-info');
+    var resetBtn = panel.querySelector('#np-reset-100');
+    var ns = null;
+    if (sel.length === 1) {
+      ns = getImgNaturalSize(sel[0], function () { updateNumericPanel(); });
+    }
+    // 画像未ロードのケース: 1個選択 & 選択要素自身が img で naturalWidth=0 なら、
+    // load 完了時に再描画する one-shot リスナを張る (再選択不要にする)。
+    // Golf-2: wrapper 内 img は対象外 (getImgNaturalSize と一貫させる)。
+    if (!ns && sel.length === 1) {
+      var single0 = sel[0];
+      var probe = (single0.tagName === 'IMG') ? single0 : null;
+      if (probe && probe.naturalWidth === 0 && !probe._foxtrot2NaturalListen) {
+        probe._foxtrot2NaturalListen = true;
+        probe.addEventListener('load', function () {
+          probe._foxtrot2NaturalListen = false;
+          updateNumericPanel();
+        }, { once: true });
+      }
+    }
+    if (infoEl && resetBtn) {
+      if (ns) {
+        // Papa-2 修正1: % 計算は ns.target (wrapper 優先) のサイズに基づく。
+        //   内側 img を選んだ場合 single.style.width は "100%" で誤計算になるため、
+        //   target を使って wrapper の実寸を見る。
+        var measureEl = ns.target || sel[0];
+        var realW = parseFloat(measureEl.style.width) || measureEl.offsetWidth || 0;
+        var realH = parseFloat(measureEl.style.height) || measureEl.offsetHeight || 0;
+        var pctW = (realW / ns.w * 100);
+        var pctH = (realH / ns.h * 100);
+        var fmt = function (n) {
+          // 整数なら小数なし、それ以外は小数1桁
+          return (Math.abs(n - Math.round(n)) < 0.05) ? String(Math.round(n)) : n.toFixed(1);
+        };
+        // Quebec-2: bg-image 経路は廃止したのでラベルは常に「自然」
+        infoEl.innerHTML =
+          '自然: ' + ns.w + '×' + ns.h +
+          ' &nbsp;<b>' + fmt(pctW) + '% × ' + fmt(pctH) + '%</b>';
+        infoEl.style.display = '';
+        resetBtn.style.display = '';
+      } else {
+        infoEl.style.display = 'none';
+        resetBtn.style.display = 'none';
+      }
+    }
+
+    // Romeo-2: 「📐 画像の比率に合わせる」ボタンの表示制御。
+    //   単一選択 & img / .le-dropped-img / bg-image 要素のいずれかなら表示。
+    //   100% リセットと違い bg-image 経路も対象に含める (panel/frame の比率合わせ用途)。
+    var aspectBtn = panel.querySelector('#np-aspect-fit');
+    if (aspectBtn) {
+      var showAspectBtn = (sel.length === 1) && elementHasAspectSource(sel[0]);
+      aspectBtn.style.display = showAspectBtn ? '' : 'none';
+    }
+    // 2026-05-06: 絶対位置 (viewport) 表示 — getBoundingClientRect ベース。
+    //   選択中 chip と preset 値を比較できるように常時表示。
+    var absPosEl = panel.querySelector('#np-abs-pos');
+    if (absPosEl) {
+      if (sel.length === 0) {
+        absPosEl.textContent = '(選択なし)';
+      } else if (sel.length === 1) {
+        var rect = sel[0].getBoundingClientRect();
+        absPosEl.textContent = 'x=' + Math.round(rect.x) + 'px  y=' + Math.round(rect.y) +
+                               'px  (W=' + Math.round(rect.width) + ' H=' + Math.round(rect.height) + ')';
+      } else {
+        var xs = sel.map(function (e) { return Math.round(e.getBoundingClientRect().x); });
+        var ys = sel.map(function (e) { return Math.round(e.getBoundingClientRect().y); });
+        absPosEl.textContent = sel.length + ' 個選択 — x:' +
+                               Math.min.apply(null, xs) + '〜' + Math.max.apply(null, xs) +
+                               '  y:' + Math.min.apply(null, ys) + '〜' + Math.max.apply(null, ys);
+      }
+    }
+    // 2026-05-07: chip preset 現値の常時表示 (4-slot 構造対応)。
+    //   __chip_presets を type × slot のネストで一覧表示。
+    var presetEl = panel.querySelector('#np-preset-vals');
+    if (presetEl) {
+      // 表示時に in-memory を 4-slot 形式に正規化 (read-only normalize)
+      var presets = window._currentLayoutData && window._currentLayoutData.__chip_presets;
+      if (presets && window.LayoutApplier && window.LayoutApplier._normalizeChipPresets) {
+        presets = window.LayoutApplier._normalizeChipPresets(presets);
+      }
+      if (!presets || (!presets.withImage && !presets.textOnly)) {
+        presetEl.innerHTML = '<span class="np-preset-empty">(未保存) 📌 で保存してください</span>';
+      } else {
+        var SLOT_LABELS = ['TL', 'TR', 'BL', 'BR'];
+        var lines = [];
+        ['withImage', 'textOnly'].forEach(function (type) {
+          if (!presets[type]) return;
+          [0, 1, 2, 3].forEach(function (slot) {
+            var slotPreset = presets[type][String(slot)];
+            if (!slotPreset) {
+              lines.push('<div class="np-preset-type np-preset-empty">' + type +
+                         ' / slot ' + slot + ' (' + SLOT_LABELS[slot] + '): 未保存</div>');
+              return;
+            }
+            lines.push('<div class="np-preset-type">' + type +
+                       ' / slot ' + slot + ' (' + SLOT_LABELS[slot] + '):</div>');
+            var parts = ['chip', 'circle', 'illust', 'label', 'countNum'];
+            parts.forEach(function (k) {
+              if (slotPreset[k]) {
+                lines.push('<div class="np-preset-row"><span class="np-preset-key">' + k + '</span>' +
+                           '<span class="np-preset-num">tx=' + Math.round(slotPreset[k].tx || 0) +
+                           ' ty=' + Math.round(slotPreset[k].ty || 0) +
+                           (slotPreset[k].w ? ' W=' + parseInt(slotPreset[k].w, 10) : '') +
+                           (slotPreset[k].h ? ' H=' + parseInt(slotPreset[k].h, 10) : '') +
+                           '</span></div>');
+              } else if (k === 'illust' && type === 'withImage') {
+                lines.push('<div class="np-preset-row np-preset-warn"><span class="np-preset-key">' + k + '</span>' +
+                           '<span class="np-preset-num">⚠ 未設定</span></div>');
+              } else if (k === 'countNum') {
+                lines.push('<div class="np-preset-row np-preset-warn"><span class="np-preset-key">' + k + '</span>' +
+                           '<span class="np-preset-num">⚠ 未設定</span></div>');
+              }
+            });
+          });
+        });
+        presetEl.innerHTML = lines.join('');
+      }
+    }
+  }
+
+  // ====================================================================
+  //  Hide / Show (FEATURE 12)
+  // ====================================================================
+
+  function hideSelectedElements() {
+    var sel = Array.from(state.selectedElements);
+    if (!sel.length) { showToast('隠す対象を選択してください', 'error'); return; }
+    // Kilo-2 修正A: 複数同時 hide も batch にまとめる
+    var ops = [];
+    sel.forEach(function (el) {
+      el.classList.add('user-hidden');
+      ops.push({ type: 'hide', el: el });
+    });
+    pushHistoryBatch(ops);
+    state.selectedElements.clear();
+    refreshSelectionUI();
+    refreshElementList();
+    showToast(sel.length + ' 個を隠しました');
+  }
+  function showAllHiddenElements() {
+    var hidden = $$('.user-hidden');
+    if (!hidden.length) { showToast('隠してる枠はありません', 'error'); return; }
+    // Kilo-2 修正A: 複数同時 show も batch にまとめる
+    var ops = [];
+    hidden.forEach(function (el) {
+      el.classList.remove('user-hidden');
+      ops.push({ type: 'show', el: el });
+    });
+    pushHistoryBatch(ops);
+    refreshElementList();
+    showToast(hidden.length + ' 個を再表示');
+  }
+
+  // ====================================================================
+  //  Victor-2: 削除 (Delete)
+  //    spec 由来要素 (= RESIZABLE_SPEC に登録された .hint-panel / .pono-bubble /
+  //    .field-bg / .window-frame 等) は DOM から取り除く代わりに `user-hidden`
+  //    クラスを付与する (= hide と等価)。 こうすることで snapshot の
+  //    `collectHiddenKeys()` が key を拾い、 saved-layout.json の `__hidden` に
+  //    永続化される。 リロード後は applier の `applyHidden` が再度 user-hidden を
+  //    当てて CSS で display:none になる。 (sw v984 修正)
+  //
+  //    動的要素 (.le-dropped-img / .le-added-text / .userbox) は引き続き DOM から
+  //    完全に取り除く — それぞれ __droppedImages / __added_texts / __userboxes の
+  //    配列に「現在 DOM にあるもの」 だけが書き出されるため、 削除＝配列から
+  //    抜けて永続化される。
+  //
+  //    Ctrl+Z でいずれの操作も復活可能 (hide op の inverse / remove op の inverse)。
+  // ====================================================================
+  // 2026-05-13 (sw v984): spec 要素か否かを判定するヘルパー。
+  //   - state.spec に登録された selector のいずれかにマッチする
+  //   - かつ、 別経路で永続化されている動的/特殊クラス (.userbox / .le-dropped-img
+  //     / .le-added-text) では「ない」
+  //   を満たすものを true と判定する。 true = hide 経路で永続化、 false = DOM remove。
+  function _isSpecRegisteredElement(el) {
+    if (!el || el.nodeType !== 1 || !el.classList) return false;
+    // 別経路で永続化される特殊クラスは spec マッチでも除外
+    if (el.classList.contains('userbox')) return false;
+    if (el.classList.contains('le-dropped-img')) return false;
+    if (el.classList.contains('le-added-text')) return false;
+    // state.spec のいずれかにマッチすれば spec 要素
+    if (!state.spec || !state.spec.length) return false;
+    for (var i = 0; i < state.spec.length; i++) {
+      var sel = state.spec[i] && state.spec[i][0];
+      if (!sel) continue;
+      try { if (el.matches(sel)) return true; } catch (e) { /* invalid sel — skip */ }
+    }
+    return false;
+  }
+  function deleteSelected() {
+    if (!state.selectedElements || state.selectedElements.size === 0) {
+      showToast('削除する対象を選択してください', 'error');
+      return;
+    }
+    var els = Array.from(state.selectedElements);
+    // 2026-05-13 (sw v984): spec 要素は hide 経路へ、 それ以外 (.userbox / 動的要素) は
+    //   従来通り DOM remove。 ops は 1 つの batch にまとめて Ctrl+Z で一括復活可能。
+    var ops = [];
+    var hideCount = 0, removeCount = 0;
+    els.forEach(function (el) {
+      if (!el) return;
+      if (_isSpecRegisteredElement(el)) {
+        if (!el.classList.contains('user-hidden')) {
+          el.classList.add('user-hidden');
+          ops.push({ type: 'hide', el: el });
+        }
+        hideCount++;
+      } else {
+        if (el.parentNode) {
+          ops.push({ type: 'remove', el: el, parent: el.parentNode, next: el.nextSibling });
+          el.parentNode.removeChild(el);
+        }
+        removeCount++;
+      }
+    });
+    // 選択 / 優先ターゲット解除
+    state.selectedElements.clear();
+    state.preferredTarget = null;
+    // history に積む (1個 → 単独 op、複数 → batch)
+    pushHistoryBatch(ops);
+    // 動的要素の永続化を更新 (削除を localStorage に反映)
+    try { saveDroppedImages(); } catch (e) {}
+    try { saveAddedTexts(); } catch (e) {}
+    refreshElementList();
+    refreshSelectionUI();
+    // spec 要素 hide と dyn 要素 remove が混在する場合も総数で表示
+    var total = hideCount + removeCount;
+    showToast(total + ' 個を削除しました（Ctrl+Z で復活）', 'success');
+  }
+  // 単一要素を削除する補助 (要素一覧の行 🗑 ボタン用)。
+  // 選択状態を上書きしてから deleteSelected を呼び、結果として
+  // batch / 単独 op どちらも自然に history に乗るようにする。
+  function deleteOne(el) {
+    if (!el || !el.parentNode) return;
+    state.selectedElements.clear();
+    state.selectedElements.add(el);
+    state.preferredTarget = el;
+    deleteSelected();
+  }
+
+  // ====================================================================
+  //  Alignment toolbar (FEATURE 20)
+  // ====================================================================
+
+  function buildAlignmentToolbarHtml() {
+    return '<div class="le-align-bar">' +
+      '<button class="le-align" data-align="left"     title="左揃え">⇤</button>' +
+      '<button class="le-align" data-align="center-h" title="水平中央">⇔</button>' +
+      '<button class="le-align" data-align="right"    title="右揃え">⇥</button>' +
+      '<button class="le-align" data-align="top"      title="上揃え">⤒</button>' +
+      '<button class="le-align" data-align="center-v" title="垂直中央">⇕</button>' +
+      '<button class="le-align" data-align="bottom"   title="下揃え">⤓</button>' +
+      '<button class="le-align" data-align="dist-h"   title="水平等間隔">⇋</button>' +
+      '<button class="le-align" data-align="dist-v"   title="垂直等間隔">⇌</button>' +
+      '</div>';
+  }
+  function wireAlignmentToolbar(root) {
+    root.querySelectorAll('.le-align').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        applyAlignment(btn.dataset.align);
+      });
+    });
+  }
+  function applyAlignment(kind) {
+    var sel = Array.from(state.selectedElements).filter(function (el) { return !isLocked(el); });
+    if (sel.length < 2) { showToast('整列するには 2 個以上選択', 'error'); return; }
+    var info = getStageRectInfo();
+    var rects = sel.map(function (el) { return bcrInStage(el, info.stageRect, info.scale); });
+    var beforeMap = new Map();
+    sel.forEach(function (el) { beforeMap.set(el, getResizeState(el)); });
+    var minLeft = Math.min.apply(null, rects.map(function (r) { return r.left; }));
+    var maxRight = Math.max.apply(null, rects.map(function (r) { return r.right; }));
+    var minTop  = Math.min.apply(null, rects.map(function (r) { return r.top; }));
+    var maxBottom = Math.max.apply(null, rects.map(function (r) { return r.bottom; }));
+    var cx = (minLeft + maxRight) / 2, cy = (minTop + maxBottom) / 2;
+
+    if (kind === 'dist-h' || kind === 'dist-v') {
+      // distribute: keep first/last in place, equalize gaps for middle items
+      var sorted = sel.slice().sort(function (a, b) {
+        var ra = bcrInStage(a, info.stageRect, info.scale);
+        var rb = bcrInStage(b, info.stageRect, info.scale);
+        return kind === 'dist-h' ? (ra.left - rb.left) : (ra.top - rb.top);
+      });
+      if (sorted.length < 3) { showToast('等間隔は 3 個以上必要', 'error'); return; }
+      var first = bcrInStage(sorted[0], info.stageRect, info.scale);
+      var last  = bcrInStage(sorted[sorted.length - 1], info.stageRect, info.scale);
+      if (kind === 'dist-h') {
+        var totalSpan = last.left - first.left;
+        var step = totalSpan / (sorted.length - 1);
+        sorted.forEach(function (el, i) {
+          if (i === 0 || i === sorted.length - 1) return;
+          var r = bcrInStage(el, info.stageRect, info.scale);
+          var targetLeft = first.left + step * i;
+          var dx = targetLeft - r.left;
+          el._tx = (el._tx || 0) + dx;
+          el.style.transform = 'translate(' + el._tx + 'px, ' + (el._ty || 0) + 'px)';
+        });
+      } else {
+        var totalSpanV = last.top - first.top;
+        var stepV = totalSpanV / (sorted.length - 1);
+        sorted.forEach(function (el, i) {
+          if (i === 0 || i === sorted.length - 1) return;
+          var r = bcrInStage(el, info.stageRect, info.scale);
+          var targetTop = first.top + stepV * i;
+          var dy = targetTop - r.top;
+          el._ty = (el._ty || 0) + dy;
+          el.style.transform = 'translate(' + (el._tx || 0) + 'px, ' + el._ty + 'px)';
+        });
+      }
+    } else {
+      sel.forEach(function (el, i) {
+        var r = rects[i];
+        var dx = 0, dy = 0;
+        if (kind === 'left') dx = minLeft - r.left;
+        else if (kind === 'right') dx = maxRight - r.right;
+        else if (kind === 'center-h') dx = cx - (r.left + r.right) / 2;
+        else if (kind === 'top') dy = minTop - r.top;
+        else if (kind === 'bottom') dy = maxBottom - r.bottom;
+        else if (kind === 'center-v') dy = cy - (r.top + r.bottom) / 2;
+        if (dx) el._tx = (el._tx || 0) + dx;
+        if (dy) el._ty = (el._ty || 0) + dy;
+        if (dx || dy) el.style.transform = 'translate(' + (el._tx || 0) + 'px, ' + (el._ty || 0) + 'px)';
+      });
+    }
+
+    // Kilo-2 修正A: 整列/分布も全要素を 1 つの batch にまとめる
+    var ops = [];
+    sel.forEach(function (el) {
+      var after = getResizeState(el);
+      var before = beforeMap.get(el);
+      if (JSON.stringify(after) !== JSON.stringify(before)) {
+        ops.push({ type: 'resize', el: el, before: before, after: after });
+      }
+      el._resizeUpdateLabel && el._resizeUpdateLabel();
+    });
+    pushHistoryBatch(ops);
+    updateNumericPanel();
+  }
+
+  // ====================================================================
+  //  Element list panel (FEATURE 21)
+  //   Mike-2 修正B: 要素一覧 row を dblclick → インライン rename。
+  //   - 動的要素 (.le-dropped-img / .le-added-text) は dataset.leLabel に直接書く
+  //   - spec 要素 (.pono-guide 等) は spec の元ラベルを破壊しないように
+  //     localStorage の override マップに保存
+  // ====================================================================
+
+  function specLabelOverridesStorageKey() {
+    return 'le-spec-labels:' + (location.pathname || '/');
+  }
+  function loadSpecLabelOverrides() {
+    try {
+      var raw = localStorage.getItem(specLabelOverridesStorageKey());
+      var obj = raw ? JSON.parse(raw) : null;
+      return (obj && typeof obj === 'object') ? obj : {};
+    } catch (e) { return {}; }
+  }
+  function saveSpecLabelOverrides(map) {
+    try {
+      localStorage.setItem(specLabelOverridesStorageKey(), JSON.stringify(map || {}));
+    } catch (e) { console.warn('[LayoutEditor] saveSpecLabelOverrides failed', e); }
+  }
+  // spec 要素の表示ラベルを解決 (override → spec の素のラベル)
+  function getSpecLabelOverride(key) {
+    if (!key) return '';
+    var map = loadSpecLabelOverrides();
+    return (map && typeof map[key] === 'string') ? map[key] : '';
+  }
+  function setSpecLabelOverride(key, label) {
+    if (!key) return;
+    var map = loadSpecLabelOverrides();
+    if (label && label.length) map[key] = label;
+    else delete map[key];
+    saveSpecLabelOverrides(map);
+  }
+
+  function buildElementListPanel() {
+    var panel = document.createElement('div');
+    panel.className = 'le-list-panel';
+    panel.id = 'le-list-panel';
+    // Uniform-2: ヘッダーに drag handle (≡) を追加。
+    panel.innerHTML =
+      '<div class="le-list-head" title="ドラッグで移動 / ダブルクリックで初期位置に戻す">' +
+        '<span class="le-panel-drag-handle">&#x2261;</span>' +
+        '<span class="le-panel-title-text">📋 要素一覧</span>' +
+      '</div>' +
+      '<div class="le-list-body"></div>';
+    document.body.appendChild(panel);
+    state.listPanelEl = panel;
+    // Uniform-2: パネル位置をドラッグ可能にし、保存位置を復元
+    makePanelDraggable(panel, 'list');
+    restorePanelPosition('list', panel);
+    // Whiskey-2: パネルサイズも変更可能 + 保存サイズ復元
+    makePanelResizable(panel, 'list');
+    // Whiskey-2.5: 横幅専用ハンドル (要素名見切れ対策)
+    makePanelWidthResizable(panel, 'list');
+    restorePanelSize(panel, 'list');
+    refreshElementList();
+  }
+
+  // ====================================================================
+  //  E1: 🦉 フクロウ博士セリフ編集パネル
+  //   - quizland 等で window.HAKASE_DIALOGUE (= 既定セリフ辞書) を公開している
+  //     ことを前提に、 タブ別に文字列を上書きできる UI を提供する。
+  //   - 上書き値は window._currentLayoutData.__hakase_dialogue_overrides に、
+  //     文字サイズは window._currentLayoutData.__hakase_dialogue_text_size に
+  //     保存される。 保存は既存 LayoutEditor.save() 経由 (= GitHub/local 両方)。
+  //   - 文字サイズスライダーは window._applyHakaseTextSize(textSize) が
+  //     定義されていればライブプレビューを呼ぶ (E2 担当)。
+  // ====================================================================
+  function _hkzGetPath(obj, path) {
+    if (!obj || !path) return null;
+    return path.split('.').reduce(function (o, p) {
+      return (o && o[p] !== undefined && o[p] !== null) ? o[p] : null;
+    }, obj);
+  }
+
+  function _hkzEscapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+    // textarea 内では \n はそのまま改行で表示されるのでエスケープ不要
+  }
+
+  function buildHakaseDialoguePanel() {
+    var panel = document.createElement('div');
+    panel.className = 'le-list-panel hakase-dialogue-panel';
+    panel.id = 'hakase-dialogue-panel';
+    panel.innerHTML =
+      '<div class="le-list-head" title="ドラッグで移動 / ダブルクリックで初期位置に戻す">' +
+        '<span class="le-panel-drag-handle">&#x2261;</span>' +
+        '<span class="le-panel-title-text">🦉 セリフ編集</span>' +
+        '<button class="le-panel-close" title="閉じる" aria-label="閉じる">×</button>' +
+      '</div>' +
+      '<div class="le-panel-body hakase-body">' +
+        '<div class="hakase-text-size-section">' +
+          '<h4>📏 吹き出し文字サイズ</h4>' +
+          '<label>文字サイズ: <input type="range" id="hkz-size-base" min="10" max="24" step="1" value="16"> <span id="hkz-size-base-val">16</span>px</label>' +
+          '<button id="hkz-size-reset" class="le-btn" type="button">リセット</button>' +
+        '</div>' +
+        '<div class="hakase-tabs">' +
+          '<button class="hakase-tab active" data-cat="problem.general" type="button">問題</button>' +
+          '<button class="hakase-tab" data-cat="problem.byCategory" type="button">問題カテゴリ別</button>' +
+          '<button class="hakase-tab" data-cat="hint1" type="button">ヒント1</button>' +
+          '<button class="hakase-tab" data-cat="hint2FallbackByCategory" type="button">ヒント2 カテゴリ</button>' +
+          '<button class="hakase-tab" data-cat="hint2FallbackGeneric" type="button">ヒント2 汎用</button>' +
+          '<button class="hakase-tab" data-cat="correct" type="button">正解</button>' +
+          '<button class="hakase-tab" data-cat="rarePraise" type="button">レア褒め</button>' +
+          '<button class="hakase-tab" data-cat="wrong" type="button">不正解</button>' +
+          '<button class="hakase-tab" data-cat="consecutiveMiss" type="button">連続ミス</button>' +
+          '<button class="hakase-tab" data-cat="clear.perfect" type="button">完璧クリア</button>' +
+          '<button class="hakase-tab" data-cat="clear.good" type="button">良クリア</button>' +
+          '<button class="hakase-tab" data-cat="clear.okay" type="button">普通クリア</button>' +
+          '<button class="hakase-tab" data-cat="clear.tryAgain" type="button">再挑戦</button>' +
+        '</div>' +
+        '<div class="hakase-content" id="hkz-content"></div>' +
+        '<div class="hakase-actions">' +
+          '<button id="hkz-save" class="le-btn primary" type="button">💾 保存</button>' +
+          '<button id="hkz-reset-all" class="le-btn" type="button">🔄 すべてデフォルトに</button>' +
+          '<span class="hkz-dirty-indicator" id="hkz-dirty"></span>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(panel);
+    makePanelDraggable(panel, 'hakase-dialogue');
+    restorePanelPosition('hakase-dialogue', panel);
+    makePanelResizable(panel, 'hakase-dialogue');
+    restorePanelSize(panel, 'hakase-dialogue');
+
+    initHakaseDialoguePanel(panel);
+    return panel;
+  }
+
+  function initHakaseDialoguePanel(panel) {
+    var dialogue = (typeof window.HAKASE_DIALOGUE !== 'undefined') ? window.HAKASE_DIALOGUE : null;
+    if (!dialogue) {
+      var content = panel.querySelector('#hkz-content');
+      if (content) content.innerHTML = '<div class="hkz-empty">HAKASE_DIALOGUE が読み込まれていません</div>';
+      // 閉じるボタンだけは効くようにしておく
+      var closeBtn0 = panel.querySelector('.le-panel-close');
+      if (closeBtn0) closeBtn0.addEventListener('click', function () { panel.classList.add('hidden'); });
+      return;
+    }
+
+    var overrides = (window._currentLayoutData && window._currentLayoutData.__hakase_dialogue_overrides)
+      ? JSON.parse(JSON.stringify(window._currentLayoutData.__hakase_dialogue_overrides)) : {};
+    var textSize = (window._currentLayoutData && window._currentLayoutData.__hakase_dialogue_text_size)
+      ? JSON.parse(JSON.stringify(window._currentLayoutData.__hakase_dialogue_text_size)) : {};
+    var dirty = false;
+    var currentTab = 'problem.general';
+
+    function setDirty(b) {
+      dirty = b;
+      var dEl = panel.querySelector('#hkz-dirty');
+      if (dEl) dEl.textContent = b ? '● 未保存' : '';
+    }
+
+    function renderTab(category) {
+      currentTab = category;
+      panel.querySelectorAll('.hakase-tab').forEach(function (btn) {
+        btn.classList.toggle('active', btn.dataset.cat === category);
+      });
+      var contentEl = panel.querySelector('#hkz-content');
+      contentEl.innerHTML = '';
+
+      var obj = _hkzGetPath(dialogue, category);
+      if (obj == null) {
+        contentEl.innerHTML = '<div class="hkz-empty">このカテゴリには項目がありません</div>';
+        return;
+      }
+
+      function appendRow(labelText, ovKey, originalText) {
+        var current = overrides[ovKey] !== undefined ? overrides[ovKey] : originalText;
+        var row = document.createElement('div');
+        row.className = 'hkz-row';
+        row.innerHTML =
+          '<label>' + _hkzEscapeHtml(labelText) + ':</label>' +
+          '<textarea data-key="' + _hkzEscapeHtml(ovKey) + '">' + _hkzEscapeHtml(current) + '</textarea>' +
+          '<button class="hkz-row-reset" data-key="' + _hkzEscapeHtml(ovKey) + '" type="button" title="この項目をデフォルトに戻す">↺</button>';
+        contentEl.appendChild(row);
+      }
+
+      if (Array.isArray(obj)) {
+        // 文字列配列 (= problem.general / hint1 / correct ...)
+        obj.forEach(function (text, idx) {
+          var ovKey = category + '.' + idx;
+          appendRow(category + ' [' + idx + ']', ovKey, text);
+        });
+      } else if (typeof obj === 'object') {
+        // ネストオブジェクト (= problem.byCategory / hint2FallbackByCategory)
+        Object.keys(obj).forEach(function (subKey) {
+          var sub = obj[subKey];
+          if (Array.isArray(sub)) {
+            sub.forEach(function (text, idx) {
+              var ovKey = category + '.' + subKey + '.' + idx;
+              appendRow(subKey + ' [' + idx + ']', ovKey, text);
+            });
+          } else if (typeof sub === 'string') {
+            var ovKey2 = category + '.' + subKey;
+            appendRow(subKey, ovKey2, sub);
+          }
+        });
+      }
+
+      // textarea change で overrides 更新 + ライブプレビュー
+      // E3 (2026-05-16, sw v1027): ライブプレビュー — 実機の吹き出しに即時反映。
+      //   v1022 で window.setHakaseDialogue 経由にしたが、 quizland/index.html の
+      //   主スクリプトが IIFE で包まれているため、 編集パネルが先にロードされて
+      //   `typeof window.setHakaseDialogue === 'function'` が false になるタイミング
+      //   (= 主スクリプト評価がまだ終わっていない / 別 page で未公開) が存在し、
+      //   結果として textarea を編集しても吹き出しが「ヒント！」のまま動かなかった。
+      //   修正方針: setHakaseDialogue が居れば呼んで PonoBabble.cancelAll 等の副作用も
+      //   走らせる + 居なくても #char-hint-text を**直接** textContent で書き換える
+      //   フォールバックを必ず通す。 これでどんな読み込み順でもライブプレビューが効く。
+      // E4 (2026-05-16, sw v1028): focus でも同じプレビュー処理を流すため
+      //   ヘルパ `_previewToBubble` に切り出して input / focus 両方から呼ぶ。
+      //   focus 時に即プレビュー → どの行を編集中か実機で確認できるようにする。
+      function _previewToBubble(value) {
+        var v = value == null ? '' : String(value);
+        try {
+          if (typeof window.setHakaseDialogue === 'function') {
+            window.setHakaseDialogue(v);
+            return;
+          }
+          var hintEl = document.getElementById('char-hint-text');
+          if (hintEl) hintEl.textContent = v;
+        } catch (e) {
+          // 最終フォールバック: setHakaseDialogue 内で例外が出ても直書きは試す
+          try {
+            var hintEl2 = document.getElementById('char-hint-text');
+            if (hintEl2) hintEl2.textContent = v;
+          } catch (_) {}
+        }
+      }
+      contentEl.querySelectorAll('textarea').forEach(function (ta) {
+        ta.addEventListener('input', function () {
+          var k = ta.dataset.key;
+          var orig = _hkzGetPath(dialogue, k);
+          // 文字列でない (= 配列要素は index 経由でしか取れない) パスは getPath で
+          //   取り直せないので、保存時の比較用にも個別評価。 reduce 経由でも数値 index は通る。
+          if (orig != null && ta.value === String(orig)) {
+            delete overrides[k];
+          } else {
+            overrides[k] = ta.value;
+          }
+          setDirty(true);
+          _previewToBubble(ta.value);
+        });
+        // E4 (sw v1028): フォーカス時に「この行をプレビュー中」として吹き出しを切替。
+        //   保存処理 (_persistOverride 等) には触らず、 純粋に表示更新のみ。
+        ta.addEventListener('focus', function () {
+          _previewToBubble(ta.value);
+        });
+      });
+
+      // 個別リセット
+      contentEl.querySelectorAll('.hkz-row-reset').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          var k = btn.dataset.key;
+          delete overrides[k];
+          renderTab(currentTab);
+          setDirty(true);
+        });
+      });
+    }
+
+    // タブクリック
+    panel.querySelectorAll('.hakase-tab').forEach(function (btn) {
+      btn.addEventListener('click', function () { renderTab(btn.dataset.cat); });
+    });
+
+    // テキストサイズスライダー (16:9 単一: base のみ。旧 14:9/4:3 キーは無視して壊さない)
+    (function () {
+      var slider = panel.querySelector('#hkz-size-base');
+      var valSpan = panel.querySelector('#hkz-size-base-val');
+      // 初期値復元
+      if (textSize.base) {
+        var v = parseInt(textSize.base, 10);
+        if (!isNaN(v)) {
+          slider.value = v;
+          valSpan.textContent = v;
+        }
+      }
+      slider.addEventListener('input', function () {
+        valSpan.textContent = slider.value;
+        textSize.base = slider.value + 'px';
+        if (typeof window._applyHakaseTextSize === 'function') {
+          try { window._applyHakaseTextSize(textSize); } catch (e) { console.warn('[HakaseDialogue] _applyHakaseTextSize failed', e); }
+        }
+        setDirty(true);
+      });
+    })();
+
+    panel.querySelector('#hkz-size-reset').addEventListener('click', function () {
+      textSize = {};
+      var slider = panel.querySelector('#hkz-size-base');
+      var valSpan = panel.querySelector('#hkz-size-base-val');
+      slider.value = 16;
+      valSpan.textContent = 16;
+      if (typeof window._applyHakaseTextSize === 'function') {
+        try { window._applyHakaseTextSize({}); } catch (e) {}
+      }
+      setDirty(true);
+    });
+
+    // 💾 保存
+    panel.querySelector('#hkz-save').addEventListener('click', function () {
+      if (!window._currentLayoutData) window._currentLayoutData = {};
+      window._currentLayoutData.__hakase_dialogue_overrides = JSON.parse(JSON.stringify(overrides));
+      window._currentLayoutData.__hakase_dialogue_text_size = JSON.parse(JSON.stringify(textSize));
+      try {
+        var p = (window.LayoutEditor && typeof window.LayoutEditor.save === 'function')
+          ? window.LayoutEditor.save() : null;
+        if (p && typeof p.then === 'function') {
+          p.then(function () {
+            setDirty(false);
+            try { showToast('セリフ + 文字サイズを保存', 'success'); } catch (_) {}
+          }).catch(function (err) {
+            console.warn('[HakaseDialogue] save failed', err);
+            try { showToast('保存に失敗しました', 'error'); } catch (_) {}
+          });
+        } else {
+          setDirty(false);
+          try { showToast('セリフ + 文字サイズを保存', 'success'); } catch (_) {}
+        }
+      } catch (e) {
+        console.warn('[HakaseDialogue] save error', e);
+        try { showToast('保存に失敗しました: ' + (e && e.message || e), 'error'); } catch (_) {}
+      }
+    });
+
+    // 🔄 すべてリセット
+    panel.querySelector('#hkz-reset-all').addEventListener('click', function () {
+      if (!confirm('すべてのセリフ上書きと文字サイズをデフォルトに戻しますか?')) return;
+      overrides = {};
+      textSize = {};
+      var slider = panel.querySelector('#hkz-size-base');
+      var valSpan = panel.querySelector('#hkz-size-base-val');
+      slider.value = 16;
+      valSpan.textContent = 16;
+      if (typeof window._applyHakaseTextSize === 'function') {
+        try { window._applyHakaseTextSize({}); } catch (e) {}
+      }
+      renderTab(currentTab);
+      setDirty(true);
+    });
+
+    // 閉じるボタン (E1-fix: CSS の display:flex !important を打ち消すため .hidden クラスで制御)
+    var closeBtn = panel.querySelector('.le-panel-close');
+    if (closeBtn) closeBtn.addEventListener('click', function () { panel.classList.add('hidden'); });
+
+    // 初期タブ描画
+    renderTab(currentTab);
+  }
+
+  function refreshElementList() {
+    if (!state.listPanelEl) return;
+    var body = state.listPanelEl.querySelector('.le-list-body');
+    body.innerHTML = '';
+    // Charlie-2 機能A:
+    // 要素一覧は Photoshop/Figma 慣習に倣い、視覚的に手前のレイヤー
+    // (z-index 高い) を上位に出す。spec 全件分の row 情報をいったん集めてから
+    // z-index 降順でソートして描画する。
+    var rowEntries = [];
+    var seen = new Set();
+    // Mike-2 修正B: spec 要素の rename override を一括ロード
+    var specOverrides = loadSpecLabelOverrides();
+    state.spec.forEach(function (entry) {
+      var sel = entry[0], baseLabel = entry[2] || sel;
+      $$(sel).forEach(function (el, idx) {
+        var key = sel + '|' + idx;
+        var label = (specOverrides && typeof specOverrides[key] === 'string' && specOverrides[key])
+          ? specOverrides[key]
+          : baseLabel;
+        rowEntries.push({ el: el, sel: sel, idx: idx, label: label, dynamic: false });
+        seen.add(el);
+      });
+    });
+    // Juliet-2 修正B: 動的に追加された要素 (.le-dropped-img / .le-added-text) を
+    // 要素一覧に列挙する。spec ベースでは追跡されないため明示的に集める。
+    // key は "dynamic|<dropId>" / "dynamic|<textId>" の専用名前空間で衝突を避ける。
+    var dynList = [];
+    try {
+      $$('.le-dropped-img').forEach(function (el) {
+        if (seen.has(el)) return;
+        var did = el.dataset && el.dataset.dropId ? el.dataset.dropId : '';
+        var nm = el.dataset && el.dataset.dropName ? el.dataset.dropName : '';
+        // Mike-2 修正B: dataset.leLabel (rename / 自動連番) を最優先で表示
+        var lbl = el.dataset && el.dataset.leLabel ? el.dataset.leLabel : '';
+        var label = '🖼 ' + (lbl || nm || did || '画像');
+        dynList.push({ el: el, sel: '.le-dropped-img', idx: did || dynList.length, label: label, dynamic: true, dynKey: 'dynamic-img|' + (did || dynList.length) });
+      });
+    } catch (e) {}
+    try {
+      $$('.le-added-text').forEach(function (el) {
+        if (seen.has(el)) return;
+        var tid = el.dataset && el.dataset.textId ? el.dataset.textId : '';
+        var lbl = el.dataset && el.dataset.leLabel ? el.dataset.leLabel : '';
+        // Mike-2 修正B: rename 済みなら leLabel を優先、未 rename なら本文スニペットにフォールバック
+        var snippet = (el.textContent || '').trim().slice(0, 12);
+        var label = '📝 ' + (lbl || snippet || tid || 'テキスト');
+        dynList.push({ el: el, sel: '.le-added-text', idx: tid || dynList.length, label: label, dynamic: true, dynKey: 'dynamic-text|' + (tid || dynList.length) });
+      });
+    } catch (e) {}
+    rowEntries = rowEntries.concat(dynList);
+    // November-2 修正: 親要素の直後に子要素を連続配置する木構造順 (DFS) に並べる。
+    //   旧: flat z-index 降順ソート → "└" 付き子要素が直前の任意 row の子に見える誤解を生む
+    //       (例: シルエット枠が hint-panel の子なのに、ポノ案内 (.pono-guide) の直後に描画されると
+    //        "ポノ案内の子" に見えてしまう)
+    //   新: 親 → その子 (z-index 降順) → 次の親 の DFS 順。これで indent depth が
+    //       「直前の親の子」と必ず対応する。サイブリング間順序は z-index 降順を維持する。
+    var allEditableSet = new Set(rowEntries.map(function (re) { return re.el; }));
+    function getEditableDepth(el) {
+      var depth = 0;
+      var p = el && el.parentNode;
+      while (p && p !== state.canvasEl && p.nodeType === 1) {
+        if (allEditableSet.has(p)) depth++;
+        p = p.parentNode;
+      }
+      return depth;
+    }
+    function findEditableAncestor(el) {
+      var p = el && el.parentNode;
+      while (p && p !== state.canvasEl && p.nodeType === 1) {
+        if (allEditableSet.has(p)) return p;
+        p = p.parentNode;
+      }
+      return null;
+    }
+    function buildTreeOrder(entries) {
+      var entryByEl = new Map();
+      entries.forEach(function (e) { entryByEl.set(e.el, e); });
+      var childrenMap = new Map(); // parentEl -> [entries]
+      var roots = [];
+      entries.forEach(function (e) {
+        var par = findEditableAncestor(e.el);
+        if (!par) {
+          roots.push(e);
+        } else {
+          if (!childrenMap.has(par)) childrenMap.set(par, []);
+          childrenMap.get(par).push(e);
+        }
+      });
+      function sortByZ(arr) {
+        return arr.slice().sort(function (a, b) {
+          var zA = zIndexOf(a.el);
+          var zB = zIndexOf(b.el);
+          if (zB !== zA) return zB - zA;
+          // 同 z-index 内は DOM 後ろ = 視覚的に手前 → 上位
+          var pos = a.el.compareDocumentPosition(b.el);
+          if (pos & Node.DOCUMENT_POSITION_FOLLOWING) return 1;
+          if (pos & Node.DOCUMENT_POSITION_PRECEDING) return -1;
+          return 0;
+        });
+      }
+      roots = sortByZ(roots);
+      childrenMap.forEach(function (kids, par) {
+        childrenMap.set(par, sortByZ(kids));
+      });
+      var result = [];
+      function visit(entry) {
+        result.push(entry);
+        var kids = childrenMap.get(entry.el) || [];
+        kids.forEach(visit);
+      }
+      roots.forEach(visit);
+      // 安全網: なんらかの理由で取りこぼしが出たら末尾に追加 (data 損失防止)
+      if (result.length < entries.length) {
+        var seenEl = new Set(result.map(function (r) { return r.el; }));
+        entries.forEach(function (e) { if (!seenEl.has(e.el)) result.push(e); });
+      }
+      return result;
+    }
+    rowEntries = buildTreeOrder(rowEntries);
+    rowEntries.forEach(function (re) {
+      var el = re.el, sel = re.sel, idx = re.idx, label = re.label;
+      // Juliet-2 修正B: 動的要素は専用 key、それ以外は従来の sel|idx
+      var key = re.dynamic ? re.dynKey : (sel + '|' + idx);
+      var hidden = el.classList.contains('user-hidden');
+      var locked = state.locked.has(key);
+      var row = document.createElement('div');
+      row.className = 'le-list-row';
+      row.dataset.key = key;
+      // Kilo-2 修正D: 深さ * 16px だけ左パディングを追加 (CSS 既定 8px はそのまま)
+      var depth = getEditableDepth(el);
+      // November-2 修正: depth=0 でも data-depth を設定し、CSS で親 row の境界線を強調できるようにする
+      row.dataset.depth = String(depth);
+      if (depth > 0) {
+        row.style.paddingLeft = (8 + 16 * depth) + 'px';
+      }
+      // November-2 修正: 親要素ラベルを ツールチップに含める (子のホバーで親が分かる)
+      var parentEntry = null;
+      if (depth > 0) {
+        var parEl = findEditableAncestor(el);
+        if (parEl) {
+          for (var __i = 0; __i < rowEntries.length; __i++) {
+            if (rowEntries[__i].el === parEl) { parentEntry = rowEntries[__i]; break; }
+          }
+        }
+      }
+      var rowTitle = (parentEntry ? '親: ' + parentEntry.label + ' / ' : '') + 'セレクタ: ' + sel;
+      row.title = rowTitle;
+      // Papa-2 修正2: 子要素のみ 🔗 トグルを表示。OFF (⛓️‍💥) で親移動から独立
+      var unlinked = (el.dataset && el.dataset.leUnlinked === '1');
+      var linkBtnHtml = '';
+      if (depth > 0) {
+        linkBtnHtml = '<button class="le-row-btn le-link-toggle" title="' +
+          (unlinked ? '親と独立中（クリックで再リンク）' : '親と連動中（クリックで一時独立）') + '">' +
+          (unlinked ? '⛓️‍💥' : '🔗') + '</button>';
+      }
+      row.innerHTML =
+        '<button class="le-row-btn le-vis" title="表示/非表示">' + (hidden ? '🚫' : '👁') + '</button>' +
+        '<button class="le-row-btn le-lock" title="ロック">' + (locked ? '🔒' : '🔓') + '</button>' +
+        linkBtnHtml +
+        '<span class="le-row-label" title="ダブルクリックで名前変更"></span>' +
+        '<span class="le-row-key"></span>' +
+        // Victor-2: 行末の 🗑 削除アイコン (この行の要素のみ削除)
+        '<button class="le-row-btn le-row-delete" title="この要素を削除 (Ctrl+Z で復活)">🗑</button>';
+      // Papa-2 修正4: ドラッグで並び替え/再親子化 (詳細は下のリスナで設定)
+      row.draggable = true;
+      row.dataset.rowEl = ''; // marker
+      // hold reference for D&D
+      row._leTargetEl = el;
+      row._leDepth = depth;
+      // Mike-2 修正B: textContent で安全に流し込む (XSS 防御)
+      var labelSpan = row.querySelector('.le-row-label');
+      var keySpan = row.querySelector('.le-row-key');
+      if (labelSpan) {
+        labelSpan.textContent = label;
+        // Whiskey-2: ellipsis で切れた時のために、ラベルの title にフルテキストを入れる
+        // (ダブルクリック説明と併記)
+        labelSpan.title = label + ' (ダブルクリックで名前変更)';
+      }
+      if (keySpan) keySpan.textContent = key;
+      // 2026-06-11 (critical fix): この質問の per-Q オーバーライドが保存済みの要素に
+      //   🎯 バッジを表示し、 個別設定の存在を要素一覧から判別可能にする。
+      if (!re.dynamic && _perQOverrideKeyIfAny(sel, idx)) {
+        var perqBadge = document.createElement('span');
+        perqBadge.className = 'le-row-perq-badge';
+        perqBadge.textContent = '🎯';
+        perqBadge.title = 'この質問の個別レイアウトが保存されています (個別値が共通値より優先表示)。🧹 ボタンで削除できます';
+        if (keySpan) keySpan.insertAdjacentElement('afterend', perqBadge);
+        else row.appendChild(perqBadge);
+      }
+      // Mike-2 修正B: dblclick → インライン rename
+      if (labelSpan) {
+        labelSpan.addEventListener('dblclick', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          startInlineRename(labelSpan, el, re);
+        });
+      }
+        // Prevent text selection caused by Shift+Click across list rows
+        row.addEventListener('mousedown', function (e) {
+          // Mike-2 修正B: rename 中は mousedown を素通しさせる (テキスト選択を許可)
+          if (e.target && e.target.getAttribute && e.target.getAttribute('contenteditable') === 'true') return;
+          if (e.shiftKey || e.ctrlKey || e.metaKey) e.preventDefault();
+        });
+        row.addEventListener('click', function (e) {
+          // Mike-2 修正B: rename 編集中の label への click は無視 (select に流さない)
+          if (e.target && e.target.getAttribute && e.target.getAttribute('contenteditable') === 'true') return;
+          if (e.target.classList.contains('le-vis')) {
+            if (hidden) {
+              el.classList.remove('user-hidden');
+              pushHistory({ type: 'show', el: el });
+            } else {
+              el.classList.add('user-hidden');
+              pushHistory({ type: 'hide', el: el });
+            }
+            refreshElementList();
+          } else if (e.target.classList.contains('le-lock')) {
+            toggleLock(el);
+            refreshElementList();
+          } else if (e.target.classList.contains('le-link-toggle')) {
+            // Papa-2 修正2: 親子リンクの一時解除トグル
+            e.stopPropagation();
+            toggleChildLink(el);
+          } else if (e.target.classList.contains('le-row-delete')) {
+            // Victor-2: 行末 🗑 — この行の要素のみ削除
+            e.stopPropagation();
+            deleteOne(el);
+          } else {
+            // Multi-select support in element list panel
+            // - Shift+Click: range select between last clicked and current row
+            // - Ctrl/Meta+Click: toggle current row in selection
+            // - Plain click: single-select (existing behaviour)
+            if (e.shiftKey && state.lastClickedListKey) {
+              var rows = state.listPanelEl
+                ? Array.prototype.slice.call(state.listPanelEl.querySelectorAll('.le-list-row'))
+                : [];
+              var startIdx = -1, endIdx = -1;
+              for (var ri = 0; ri < rows.length; ri++) {
+                if (rows[ri].dataset.key === state.lastClickedListKey) startIdx = ri;
+                if (rows[ri] === row) endIdx = ri;
+              }
+              if (startIdx === -1 || endIdx === -1) {
+                selectOnly(el);
+              } else {
+                var from = Math.min(startIdx, endIdx);
+                var to = Math.max(startIdx, endIdx);
+                var targets = [];
+                for (var rj = from; rj <= to; rj++) {
+                  var r = rows[rj];
+                  var rk = r.dataset.key;
+                  var rel = resolveListKeyToElement(rk);
+                  if (rel) targets.push(rel);
+                }
+                if (targets.length) selectMultiple(targets);
+                else selectOnly(el);
+              }
+              // Charlie-2: 範囲選択時は最終クリック要素を優先ターゲットに
+              state.preferredTarget = el;
+              refreshPreferredTargetUI();
+              // Do NOT update lastClickedListKey on shift-click, anchor stays put
+            } else if (e.ctrlKey || e.metaKey) {
+              toggleSelect(el);
+              state.lastClickedListKey = key;
+              // Charlie-2: list 由来 toggle でも優先ターゲットに昇格
+              state.preferredTarget = state.selectedElements.has(el) ? el : null;
+              refreshPreferredTargetUI();
+            } else {
+              selectOnly(el);
+              state.lastClickedListKey = key;
+              // Charlie-2: 単一選択時は明示的にこの要素を優先ターゲットに
+              state.preferredTarget = el;
+              refreshPreferredTargetUI();
+            }
+          }
+        });
+      // Papa-2 修正3/4: 行ドラッグ — 並び替え (z-index) と再親子化 (DOM 移動)
+      attachListRowDragHandlers(row, el, key);
+      body.appendChild(row);
+    });
+    // Defensive: if anchor row no longer exists (element deleted), drop the anchor
+    if (state.lastClickedListKey) {
+      var still = state.listPanelEl.querySelector(
+        '.le-list-row[data-key="' + state.lastClickedListKey.replace(/"/g, '\\"') + '"]'
+      );
+      if (!still) state.lastClickedListKey = null;
+    }
+    // 2026-06-11: 問題遷移 (DOM 変異 → rescan → refreshElementList) でも 🎯/🌐 トグルと
+    //   🧹 ボタンの「⚠個別あり」表示を現在質問の per-Q キー有無に追従させる。
+    try { updatePerQScopeUI(); } catch (e) { /* noop */ }
+  }
+
+  // ====================================================================
+  //  Papa-2 修正3/4: 要素一覧ドラッグ (並び替え + 再親子化)
+  // ====================================================================
+  // - top 25%   → before (兄弟挿入: 視覚的に手前 = z-index 上昇)
+  // - middle 50% → into (DOM 親子化: target.appendChild(source))
+  // - bottom 25% → after (兄弟挿入: 視覚的に奥 = z-index 低下)
+  // 並び替えは z-index を 100 刻みで再番号して安定化させる。
+  function clearListDropMarkers(root) {
+    if (!root) return;
+    root.querySelectorAll('.le-drop-before, .le-drop-after, .le-drop-into').forEach(function (r) {
+      r.classList.remove('le-drop-before', 'le-drop-after', 'le-drop-into');
+    });
+  }
+  function attachListRowDragHandlers(row, el, key) {
+    if (!row) return;
+    row.addEventListener('dragstart', function (e) {
+      try {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/x-le-row-key', key || '');
+        // Some browsers need any data to start a drag
+        e.dataTransfer.setData('text/plain', key || '');
+      } catch (err) {}
+      row.classList.add('le-dragging');
+      // Use a closure-shared marker so dragover knows the source element
+      state._listDragSourceEl = el;
+      state._listDragSourceKey = key;
+    });
+    row.addEventListener('dragend', function () {
+      row.classList.remove('le-dragging');
+      if (state.listPanelEl) clearListDropMarkers(state.listPanelEl);
+      state._listDragSourceEl = null;
+      state._listDragSourceKey = null;
+    });
+    row.addEventListener('dragover', function (e) {
+      // Self-drop / 子孫への drop は禁止 (循環防止)
+      var src = state._listDragSourceEl;
+      if (!src) return;
+      if (src === el) return;
+      try { if (src.contains && src.contains(el)) return; } catch (err) {}
+      e.preventDefault();
+      try { e.dataTransfer.dropEffect = 'move'; } catch (err) {}
+      var rect = row.getBoundingClientRect();
+      var y = e.clientY - rect.top;
+      var ratio = y / rect.height;
+      if (state.listPanelEl) clearListDropMarkers(state.listPanelEl);
+      if (ratio < 0.25) row.classList.add('le-drop-before');
+      else if (ratio > 0.75) row.classList.add('le-drop-after');
+      else row.classList.add('le-drop-into');
+    });
+    row.addEventListener('dragleave', function (e) {
+      row.classList.remove('le-drop-before', 'le-drop-after', 'le-drop-into');
+    });
+    row.addEventListener('drop', function (e) {
+      e.preventDefault();
+      var src = state._listDragSourceEl;
+      if (!src || src === el) return;
+      try { if (src.contains && src.contains(el)) return; } catch (err) {}
+      var rect = row.getBoundingClientRect();
+      var y = e.clientY - rect.top;
+      var ratio = y / rect.height;
+      var mode = (ratio < 0.25) ? 'before' : ((ratio > 0.75) ? 'after' : 'into');
+      row.classList.remove('le-drop-before', 'le-drop-after', 'le-drop-into');
+      if (mode === 'into') {
+        reparentListItem(src, el);
+      } else {
+        reorderListItem(src, el, mode);
+      }
+    });
+  }
+
+  // 兄弟並び替え: source の z-index を target の隣 (上または下) に挿入する。
+  // source と target の親が異なる場合は、まず source を target の親に DOM 移動してから
+  // z-index を調整する (= 「兄弟として挿入」を実現)。
+  function reorderListItem(source, target, mode) {
+    if (!source || !target || source === target) return;
+    var ops = [];
+    var srcOldParent = source.parentNode;
+    var srcOldNext = source.nextSibling;
+    var srcOldStyles = {
+      position: source.style.position || '',
+      left: source.style.left || '',
+      top: source.style.top || '',
+      width: source.style.width || '',
+      height: source.style.height || ''
+    };
+    var srcOldKeep = (source.dataset && source.dataset.leKeepPosition) || '';
+    var targetParent = target.parentNode;
+    var movedDom = false;
+    if (srcOldParent !== targetParent && targetParent) {
+      // 親揃え: target の親にぶら下げる
+      targetParent.insertBefore(source, target);
+      if (source.dataset) source.dataset.leKeepPosition = '1';
+      movedDom = true;
+    }
+    // z-index 計算: target の現在 z を参照し、before なら +1、after なら -1
+    // ただし兄弟全体を 10 刻みで再採番して安定化する
+    var siblings = Array.prototype.slice.call(targetParent ? targetParent.children : []);
+    // 既存 z をベースに、対象 source/target の前後関係を決める
+    var orderedSibs = siblings.filter(function (n) {
+      return n.nodeType === 1 && n !== source;
+    });
+    // target を基準に、before/after で source を挿入
+    var insertIdx = orderedSibs.indexOf(target);
+    if (insertIdx < 0) return;
+    if (mode === 'before') orderedSibs.splice(insertIdx, 0, source);
+    else orderedSibs.splice(insertIdx + 1, 0, source);
+    // sibling を視覚的順序で並べ替え (現状の z-index 降順を保ちつつ source を挿入)
+    // 「視覚的に手前 = z-index 大」になるように、配列の先頭ほど z 大の順序にする。
+    // ここで配列順序は「先頭=手前」を採用する。Photoshop と同じ感覚。
+    // しかし requirements は要素一覧で「上=手前」なので、要素一覧の DOM 配置とは独立して z を割り当てる。
+    // siblings の orderedSibs は現状 DOM 順 (= 後ろほど DOM 後ろ)。
+    // ⇒ 要素一覧では DOM ベースで render しているわけではなく、z-index 降順の DFS で
+    //    並んでいる。ここでは「target の隣に source が並ぶ」ことを保証するため、
+    //    target と source の z-index が逆転していないようにスタックする。
+    // 簡潔策: siblings の 配列 index に応じて zIndex を高い→低い に振り直す
+    //   (先頭ほど高い)。ただし現状の相対順序は DOM 配置で復元される一覧順序と一致する
+    //   ように、target.zIndex を中心に配列順を再構成する。
+    var baseZ = parseInt(target.style.zIndex, 10);
+    if (isNaN(baseZ)) {
+      var cs = window.getComputedStyle ? getComputedStyle(target) : null;
+      baseZ = (cs && parseInt(cs.zIndex, 10)) || 100;
+    }
+    // 再採番: orderedSibs を先頭 (= 手前 = 高 z) から baseZ + N*10 ... 降順で割り当てる
+    // target の z を保ちつつ source をその直前/直後に置く
+    var targetIdx = orderedSibs.indexOf(target);
+    orderedSibs.forEach(function (n, i) {
+      var newZ = baseZ + (targetIdx - i) * 10;
+      var oldZ = n.style.zIndex || '';
+      n.style.zIndex = String(newZ);
+      // 専用 'z-index' op (applyForward/applyInverse で対応)
+      ops.push({ type: 'z-index', el: n, before: oldZ, after: String(newZ) });
+    });
+    if (movedDom) {
+      ops.push({
+        type: 'reparent',
+        el: source,
+        oldParent: srcOldParent,
+        oldNext: srcOldNext,
+        oldStyles: srcOldStyles,
+        oldKeepPosition: srcOldKeep,
+        newParent: targetParent,
+        newStyles: { /* 並び替えのみは位置上書きしない */ }
+      });
+    }
+    pushHistoryBatch(ops);
+    try { refreshElementList(); } catch (e) {}
+    showToast('順序を変更しました');
+  }
+
+  // 再親子化: source を target の子にする。座標は新親基準に変換する。
+  function reparentListItem(source, target) {
+    if (!source || !target || source === target) return;
+    try { if (source.contains && source.contains(target)) return; } catch (e) {}
+    var oldParent = source.parentNode;
+    var oldNext = source.nextSibling;
+    var oldStyles = {
+      position: source.style.position || '',
+      left: source.style.left || '',
+      top: source.style.top || '',
+      width: source.style.width || '',
+      height: source.style.height || ''
+    };
+    var oldKeep = (source.dataset && source.dataset.leKeepPosition) || '';
+    // 視覚位置を維持するため、ドロップ前後で client 座標が変わらないよう left/top を補正する
+    var srcRect = null, tgtRect = null;
+    try { srcRect = source.getBoundingClientRect(); } catch (e) {}
+    target.appendChild(source);
+    try { tgtRect = target.getBoundingClientRect(); } catch (e) {}
+    var newStyles = {};
+    if (srcRect && tgtRect) {
+      // 親が position:static の場合は relative にしないと left/top が効かない
+      var tgtCs = window.getComputedStyle ? getComputedStyle(target) : null;
+      if (tgtCs && tgtCs.position === 'static') {
+        target.style.position = 'relative';
+      }
+      var newLeft = Math.round(srcRect.left - tgtRect.left);
+      var newTop = Math.round(srcRect.top - tgtRect.top);
+      // _tx/_ty で動かしている分はそのまま残し、left/top のみ親基準に書き換える
+      var tx = source._tx || 0, ty = source._ty || 0;
+      source.style.position = 'absolute';
+      source.style.left = (newLeft - tx) + 'px';
+      source.style.top = (newTop - ty) + 'px';
+      newStyles.position = 'absolute';
+      newStyles.left = source.style.left;
+      newStyles.top = source.style.top;
+    }
+    if (source.dataset) source.dataset.leKeepPosition = '1';
+    pushHistory({
+      type: 'reparent',
+      el: source,
+      oldParent: oldParent,
+      oldNext: oldNext,
+      oldStyles: oldStyles,
+      oldKeepPosition: oldKeep,
+      newParent: target,
+      newStyles: newStyles
+    });
+    try { refreshElementList(); } catch (e) {}
+    showToast('「' + (target.dataset && target.dataset.leLabel ? target.dataset.leLabel : 'レイヤー') + '」の子にしました');
+  }
+
+  function refreshElementListSelection() {
+    if (!state.listPanelEl) return;
+    var rows = state.listPanelEl.querySelectorAll('.le-list-row');
+    rows.forEach(function (row) {
+      var key = row.dataset.key;
+      var el = resolveListKeyToElement(key);
+      row.classList.toggle('selected', !!(el && state.selectedElements.has(el)));
+      // Charlie-2: 優先ターゲットに行マーカー
+      row.classList.toggle('preferred', !!(el && el === state.preferredTarget));
+    });
+  }
+
+  // Mike-2 修正B: 要素一覧 row のラベルをインライン編集する。
+  //   - 動的要素 (.le-dropped-img / .le-added-text) は dataset.leLabel を直接書き換え、
+  //     localStorage (saveDroppedImages / saveAddedTexts) で永続化。
+  //   - spec 要素 (.pono-guide 等) は spec の元ラベルを破壊しないよう、
+  //     localStorage の override マップ (le-spec-labels:<path>) に保存。
+  //   - undo: 'rename' op で巻き戻し。
+  //   - 確定: Enter / blur,  キャンセル: Esc。
+  function startInlineRename(labelEl, targetEl, rowEntry) {
+    if (!labelEl || !targetEl) return;
+    if (labelEl.getAttribute('contenteditable') === 'true') return; // 二重起動防止
+
+    var isDroppedImg = !!(targetEl.classList && targetEl.classList.contains('le-dropped-img'));
+    var isAddedText  = !!(targetEl.classList && targetEl.classList.contains('le-added-text'));
+
+    // 旧ラベル (rename 前)
+    var oldLabel;
+    if (isDroppedImg || isAddedText) {
+      oldLabel = (targetEl.dataset && targetEl.dataset.leLabel) || (labelEl.textContent || '');
+    } else if (rowEntry && !rowEntry.dynamic) {
+      var rk = (rowEntry.sel + '|' + rowEntry.idx);
+      oldLabel = getSpecLabelOverride(rk) || (labelEl.textContent || '');
+    } else {
+      oldLabel = labelEl.textContent || '';
+    }
+    var oldText = labelEl.textContent || '';
+
+    labelEl.setAttribute('contenteditable', 'true');
+    // Plain-text 編集に強制 (リッチテキストペーストを抑止)
+    labelEl.spellcheck = false;
+    // Papa-2 修正3/4: rename 中は親 row の draggable を一時 OFF
+    var ownerRow = labelEl.closest && labelEl.closest('.le-list-row');
+    var prevDraggable = ownerRow ? ownerRow.draggable : null;
+    if (ownerRow) ownerRow.draggable = false;
+    // 視覚的に編集中であることを示すため、表示中のテキストはそのまま (新規/spec の prefix 含む)
+    // ただし Drop/Text 系で先頭に絵文字 prefix が付いているので、それを取り除いた純粋ラベルだけ編集対象にする
+    var prefix = '';
+    var editableText = oldText;
+    if (isDroppedImg && oldText.indexOf('🖼 ') === 0) { prefix = '🖼 '; editableText = oldText.slice(prefix.length); }
+    else if (isAddedText && oldText.indexOf('📝 ') === 0) { prefix = '📝 '; editableText = oldText.slice(prefix.length); }
+    labelEl.textContent = editableText;
+    labelEl.focus();
+
+    // 全選択
+    try {
+      var range = document.createRange();
+      range.selectNodeContents(labelEl);
+      var selObj = window.getSelection();
+      if (selObj) { selObj.removeAllRanges(); selObj.addRange(range); }
+    } catch (e) {}
+
+    var done = false;
+    function finish(commit) {
+      if (done) return;
+      done = true;
+      labelEl.removeAttribute('contenteditable');
+      // Papa-2 修正3/4: rename 終了時に row.draggable を元に戻す
+      if (ownerRow && prevDraggable !== null) {
+        try { ownerRow.draggable = prevDraggable; } catch (e) {}
+      }
+      var typed = (labelEl.textContent || '').trim();
+      if (!commit || !typed) {
+        // キャンセル: 元の表示テキストに戻す
+        labelEl.textContent = oldText;
+        return;
+      }
+      // commit
+      var newLabel = typed;
+      // 表示テキスト (prefix 付き) を確定
+      labelEl.textContent = prefix + newLabel;
+
+      if (isDroppedImg) {
+        targetEl.dataset.leLabel = newLabel;
+        try { saveDroppedImages(); } catch (e) {}
+        pushHistory({
+          type: 'rename', el: targetEl, mode: 'dataset',
+          oldLabel: oldLabel || '', newLabel: newLabel
+        });
+      } else if (isAddedText) {
+        targetEl.dataset.leLabel = newLabel;
+        try { saveAddedTexts(); } catch (e) {}
+        pushHistory({
+          type: 'rename', el: targetEl, mode: 'dataset',
+          oldLabel: oldLabel || '', newLabel: newLabel
+        });
+      } else if (rowEntry && !rowEntry.dynamic) {
+        var rk = (rowEntry.sel + '|' + rowEntry.idx);
+        setSpecLabelOverride(rk, newLabel);
+        pushHistory({
+          type: 'rename', el: targetEl, mode: 'spec',
+          key: rk, oldLabel: oldLabel || '', newLabel: newLabel
+        });
+      }
+      // 一覧を再描画してソート/インデント/絵文字 prefix を反映
+      try { refreshElementList(); } catch (e) {}
+    }
+
+    function onKey(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        labelEl.removeEventListener('keydown', onKey);
+        labelEl.blur(); // → blur ハンドラで finish(true)
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        labelEl.removeEventListener('keydown', onKey);
+        finish(false);
+        labelEl.blur();
+      }
+    }
+    function onBlur() {
+      labelEl.removeEventListener('blur', onBlur);
+      labelEl.removeEventListener('keydown', onKey);
+      finish(true);
+    }
+    labelEl.addEventListener('keydown', onKey);
+    labelEl.addEventListener('blur', onBlur);
+  }
+
+  // Juliet-2 修正B: 要素一覧の data-key から要素を解決する。
+  // - "<selector>|<idx>" : spec ベース (従来)
+  // - "dynamic-img|<dropId>" : ドロップ画像
+  // - "dynamic-text|<textId>" : 追加テキスト
+  function resolveListKeyToElement(key) {
+    if (!key) return null;
+    if (key.indexOf('dynamic-img|') === 0) {
+      var did = key.slice('dynamic-img|'.length);
+      try {
+        // CSS.escape が無い古いブラウザ向けに簡易エスケープ
+        var safeDid = did.replace(/"/g, '\\"');
+        return document.querySelector('.le-dropped-img[data-drop-id="' + safeDid + '"]');
+      } catch (e) { return null; }
+    }
+    if (key.indexOf('dynamic-text|') === 0) {
+      var tid = key.slice('dynamic-text|'.length);
+      try {
+        var safeTid = tid.replace(/"/g, '\\"');
+        return document.querySelector('.le-added-text[data-text-id="' + safeTid + '"]');
+      } catch (e) { return null; }
+    }
+    var m = key.match(/^(.+)\|(\d+)$/);
+    if (!m) return null;
+    try {
+      var all = $$(m[1]);
+      return all[parseInt(m[2], 10)] || null;
+    } catch (e) { return null; }
+  }
+
+  // ====================================================================
+  //  Lock / unlock (FEATURE 24)
+  // ====================================================================
+
+  function toggleLock(el) {
+    // 2026-05-07: lock は base key で管理 (per-Q 化対象外)。
+    var key = getElKey(el, { baseOnly: true });
+    if (!key) return;
+    var was = state.locked.has(key);
+    if (was) state.locked.delete(key);
+    else state.locked.add(key);
+    pushHistory({ type: 'lock', key: key, before: was, after: !was });
+    refreshLockBadges();
+  }
+  function refreshLockBadges() {
+    $$('.resizable').forEach(function (el) {
+      var k = getElKey(el, { baseOnly: true });
+      var locked = k && state.locked.has(k);
+      el.classList.toggle('le-locked', !!locked);
+      var existing = el.querySelector(':scope > .le-lock-badge');
+      if (locked && !existing) {
+        var b = document.createElement('div');
+        b.className = 'le-lock-badge';
+        b.textContent = '🔒';
+        el.appendChild(b);
+      } else if (!locked && existing) {
+        existing.remove();
+      }
+    });
+  }
+
+  // ====================================================================
+  //  Papa-2 修正2: 一時リンク解除トグル (Photoshop 風: 親子関係を一時的に切る)
+  // ====================================================================
+  // 親をドラッグしても子を visual に動かさない (counter-transform で打ち消す)。
+  // 永続的な切り離し (取り出す) と異なり DOM 階層は維持し、見た目だけ独立させる。
+  function isChildOfEditableParent(el) {
+    if (!el || !el.parentNode) return false;
+    // canvas 直下、または body/document に直結する root レベルなら親なし扱い
+    if (el.parentNode === state.canvasEl) return false;
+    // 親が編集対象 ('.resizable' class が付与されている、または .le-dropped-img / .le-added-text wrapper、
+    //   または canvas より子側のいずれかの spec 一致要素) であるかをゆるく判定
+    var p = el.parentNode;
+    while (p && p !== state.canvasEl && p.nodeType === 1) {
+      if (p.classList && (p.classList.contains('resizable') ||
+          p.classList.contains('le-dropped-img') ||
+          p.classList.contains('le-added-text'))) {
+        return true;
+      }
+      // spec 一致もチェック
+      for (var i = 0; i < state.spec.length; i++) {
+        try { if (p.matches && p.matches(state.spec[i][0])) return true; } catch (e) {}
+      }
+      p = p.parentNode;
+    }
+    return false;
+  }
+  function toggleChildLink(el) {
+    if (!el) return;
+    if (!state.unlinkedChildren) state.unlinkedChildren = new Set();
+    if (el.dataset.leUnlinked === '1') {
+      delete el.dataset.leUnlinked;
+      state.unlinkedChildren.delete(el);
+    } else {
+      el.dataset.leUnlinked = '1';
+      state.unlinkedChildren.add(el);
+    }
+    try { refreshElementList(); } catch (e) {}
+  }
+
+  // ====================================================================
+  //  Copy / duplicate (FEATURE 25)
+  // ====================================================================
+
+  function duplicateSelected() {
+    var sel = Array.from(state.selectedElements);
+    if (!sel.length) { showToast('複製する要素を選択', 'error'); return; }
+    var newOnes = [];
+    // Kilo-2 修正A: 複数複製も 1 batch op にまとめて undo 一発で全部消えるように
+    var ops = [];
+    sel.forEach(function (el) {
+      var clone = el.cloneNode(true);
+      // Strip editor-only chrome
+      Array.prototype.forEach.call(clone.querySelectorAll('.resize-handle, .resize-size-label, .le-lock-badge'), function (c) { c.remove(); });
+      clone.classList.remove('selected', 'edge-linked', 'le-locked');
+      clone._tx = (el._tx || 0) + 16;
+      clone._ty = (el._ty || 0) + 16;
+      clone.style.transform = 'translate(' + clone._tx + 'px, ' + clone._ty + 'px)';
+      el.parentNode.insertBefore(clone, el.nextSibling);
+      newOnes.push(clone);
+      ops.push({ type: 'add', el: clone, parent: el.parentNode, next: el.nextSibling });
+    });
+    pushHistoryBatch(ops);
+    // re-attach handles for new clones
+    var spec = state.spec;
+    newOnes.forEach(function (clone) {
+      for (var i = 0; i < spec.length; i++) {
+        try { if (clone.matches(spec[i][0])) { attachHandle(clone, spec[i][1]); break; } }
+        catch (e) {}
+      }
+    });
+    state.selectedElements.clear();
+    newOnes.forEach(function (n) { state.selectedElements.add(n); });
+    refreshSelectionUI();
+    refreshElementList();
+    showToast(newOnes.length + ' 個複製');
+  }
+
+  // ====================================================================
+  //  Kilo-2 修正C: Detach from parent (親レイヤーから取り出して stage 直下へ)
+  // ====================================================================
+
+  function detachSelectedFromParent() {
+    if (!state.selectedElements || state.selectedElements.size !== 1) {
+      showToast('1 個だけ選択してから取り出してください', 'error');
+      return;
+    }
+    var sel = Array.from(state.selectedElements)[0];
+    var stage = state.canvasEl;
+    if (!sel || !stage) return;
+    var parent = sel.parentNode;
+    if (!parent || parent === stage) {
+      showToast('既に最上位レイヤーです', 'error');
+      return;
+    }
+
+    // 視覚位置を維持するため、移動前に stage 相対座標を計算しておく
+    var beforeRect = sel.getBoundingClientRect();
+    var info = getStageRectInfo();
+    var stageRect = info.stageRect;
+    var scale = info.scale || 1;
+
+    var oldParent = parent;
+    var oldNext = sel.nextSibling;
+    var oldStyles = {
+      position: sel.style.position || '',
+      left: sel.style.left || '',
+      top: sel.style.top || '',
+      width: sel.style.width || '',
+      height: sel.style.height || ''
+    };
+    var oldKeepPosition = (sel.dataset && sel.dataset.leKeepPosition) ? sel.dataset.leKeepPosition : '';
+
+    // 移動: stage 直下へ
+    stage.appendChild(sel);
+    // transform は temp に解いて、純粋な左上を新位置として固定する
+    sel.style.position = 'absolute';
+    sel.style.left = ((beforeRect.left - stageRect.left) / scale) + 'px';
+    sel.style.top  = ((beforeRect.top  - stageRect.top)  / scale) + 'px';
+    sel.style.width  = (beforeRect.width  / scale) + 'px';
+    sel.style.height = (beforeRect.height / scale) + 'px';
+    // 取り出し後は独立配置 — applier で位置を上書きされないように
+    if (sel.dataset) sel.dataset.leKeepPosition = '1';
+    // 取り出し後は累積 translate もリセットする (left/top で位置を確定したため)
+    sel._tx = 0;
+    sel._ty = 0;
+    sel.style.transform = '';
+    if (sel._resizeUpdateLabel) try { sel._resizeUpdateLabel(); } catch (e) {}
+
+    var newStyles = {
+      position: 'absolute',
+      left: sel.style.left,
+      top: sel.style.top,
+      width: sel.style.width,
+      height: sel.style.height
+    };
+
+    pushHistory({
+      type: 'reparent',
+      el: sel,
+      oldParent: oldParent,
+      oldNext: oldNext,
+      oldStyles: oldStyles,
+      oldKeepPosition: oldKeepPosition,
+      newParent: stage,
+      newStyles: newStyles
+    });
+    refreshSelectionUI();
+    refreshElementList();
+    applyPreferredPointerSuppression();
+    // Lima-2 修正C: 視覚フィードバック — ゴールドフラッシュで「何が独立したか」を強調
+    try {
+      sel.classList.add('le-detach-flash');
+      setTimeout(function () {
+        try { sel.classList.remove('le-detach-flash'); } catch (e) {}
+      }, 600);
+    } catch (e) {}
+    // 要素一覧の該当行も一瞬ハイライト
+    try {
+      if (state.listPanelEl) {
+        var rows = state.listPanelEl.querySelectorAll('.le-list-row');
+        for (var r = 0; r < rows.length; r++) {
+          var key = rows[r].dataset.key;
+          var m = key && key.match(/^(.+)\|(\d+)$/);
+          if (!m) continue;
+          var all = $$(m[1]);
+          if (all[parseInt(m[2], 10)] === sel) {
+            (function (row) {
+              row.classList.add('le-detach-flash-row');
+              setTimeout(function () {
+                try { row.classList.remove('le-detach-flash-row'); } catch (e) {}
+              }, 600);
+            })(rows[r]);
+            break;
+          }
+        }
+      }
+    } catch (e) {}
+    showToast('親グループから独立しました（Ctrl+Z で戻せます）');
+  }
+
+  // ====================================================================
+  //  Zoom (FEATURE 26)
+  // ====================================================================
+
+  function setZoom(z) {
+    z = clamp(z, 0.25, 2);
+    state.zoom = z;
+    var stage = state.canvasEl;
+    if (!stage) return;
+    var wrap = state.zoomWrapEl;
+    if (!wrap) {
+      // Wrap the stage in .stage-zoom on first call
+      wrap = document.createElement('div');
+      wrap.className = 'stage-zoom';
+      stage.parentNode.insertBefore(wrap, stage);
+      wrap.appendChild(stage);
+      state.zoomWrapEl = wrap;
+    }
+    stage.style.transformOrigin = '0 0';
+    stage.style.transform = 'scale(' + z + ')';
+    wrap.style.width = (stage.offsetWidth * z) + 'px';
+    wrap.style.height = (stage.offsetHeight * z) + 'px';
+    // Update zoom slider label
+    var lbl = $('#le-zoom-label');
+    if (lbl) lbl.textContent = Math.round(z * 100) + '%';
+    var sl = $('#le-zoom-slider');
+    if (sl) sl.value = String(Math.round(z * 100));
+    // Update labels on resizable elements
+    $$('.resizable').forEach(function (el) { el._resizeUpdateLabel && el._resizeUpdateLabel(); });
+    emit('zoom', z);
+  }
+
+  function zoomFit() { setZoom(1); }
+
+  function attachZoomShortcuts() {
+    var wheelHandler = function (e) {
+      if (!state.enabled) return;
+      if (!(e.ctrlKey || e.metaKey)) return;
+      e.preventDefault();
+      var delta = e.deltaY < 0 ? 0.05 : -0.05;
+      setZoom(state.zoom + delta);
+    };
+    addManagedListener(window, 'wheel', wheelHandler, { passive: false });
+  }
+
+  // ====================================================================
+  //  Snap-to-grid (FEATURE 23)
+  // ====================================================================
+
+  function toggleGrid(forceState) {
+    if (typeof forceState === 'boolean') state.gridOn = forceState;
+    else state.gridOn = !state.gridOn;
+    if (state.gridOn && !state.gridSize) state.gridSize = 16;
+    var stage = state.canvasEl;
+    if (stage) {
+      stage.classList.toggle('grid-on', state.gridOn);
+      if (state.gridOn) {
+        stage.style.setProperty('--le-grid-size', state.gridSize + 'px');
+      } else {
+        stage.style.removeProperty('--le-grid-size');
+      }
+    }
+    var btn = $('#le-grid');
+    if (btn) {
+      btn.classList.toggle('active', state.gridOn);
+      btn.textContent = state.gridOn ? ('🔳 ' + state.gridSize) : '🔳 グリッド';
+    }
+  }
+
+  function setGridSize(sz) {
+    state.gridSize = sz;
+    if (state.gridOn) toggleGrid(true);
+  }
+
+  // ====================================================================
+  //  Comparison mode (FEATURE 22)
+  // ====================================================================
+
+  function toggleComparison() {
+    if (state.comparison && state.comparison.active) {
+      hideComparison();
+    } else {
+      showComparisonPicker();
+    }
+  }
+
+  function showComparisonPicker() {
+    var existing = $('#le-comparison-picker');
+    if (existing) { existing.remove(); return; }
+    var pop = document.createElement('div');
+    pop.id = 'le-comparison-picker';
+    pop.className = 'le-comparison-picker';
+    // U9: pre-fill picker with persisted state (image / mode / opacity).
+    var imgPath = (state.comparison && state.comparison.image) || '';
+    var savedMode = (state.comparison && state.comparison.mode) ||
+      (function () { try { return localStorage.getItem('pono_layout_comparison_mode') || 'side'; } catch (e) { return 'side'; } })();
+    var savedOpacityPct = (state.comparison && typeof state.comparison.opacity === 'number')
+      ? Math.round(state.comparison.opacity * 100)
+      : (function () {
+          try {
+            var v = parseInt(localStorage.getItem('pono_layout_comparison_opacity'), 10);
+            return Number.isFinite(v) ? v : 50;
+          } catch (e) { return 50; }
+        })();
+    var modeOpt = function (val, label) {
+      return '<option value="' + val + '"' + (val === savedMode ? ' selected' : '') + '>' + label + '</option>';
+    };
+    pop.innerHTML =
+      '<h4>比較モード</h4>' +
+      '<label>画像 <input type="text" id="le-comp-img" value="' + imgPath + '" placeholder="path/to/ref.png"></label>' +
+      '<input type="file" id="le-comp-file" accept="image/*">' +
+      '<label>モード <select id="le-comp-mode">' +
+      modeOpt('side', 'Side-by-side') +
+      modeOpt('overlay', 'Overlay') +
+      modeOpt('onion', 'Onion-skin') +
+      '</select></label>' +
+      '<label>透過 <input type="range" id="le-comp-opacity" min="0" max="100" value="' + savedOpacityPct + '"></label>' +
+      '<div class="le-comp-actions">' +
+      '  <button id="le-comp-apply">適用</button>' +
+      '  <button id="le-comp-cancel">閉じる</button>' +
+      '</div>';
+    document.body.appendChild(pop);
+    pop.querySelector('#le-comp-cancel').addEventListener('click', function () { pop.remove(); });
+    pop.querySelector('#le-comp-file').addEventListener('change', function (e) {
+      var f = e.target.files && e.target.files[0];
+      if (!f) return;
+      var reader = new FileReader();
+      reader.onload = function () { pop.querySelector('#le-comp-img').value = reader.result; };
+      reader.readAsDataURL(f);
+    });
+    pop.querySelector('#le-comp-apply').addEventListener('click', function () {
+      var img = pop.querySelector('#le-comp-img').value;
+      var mode = pop.querySelector('#le-comp-mode').value;
+      var opacityPct = parseInt(pop.querySelector('#le-comp-opacity').value, 10);
+      var opacity = opacityPct / 100;
+      state.comparison = { image: img, mode: mode, opacity: opacity, active: true };
+      // U9: persist last-used mode & opacity
+      try {
+        localStorage.setItem('pono_layout_comparison_mode', mode);
+        localStorage.setItem('pono_layout_comparison_opacity', String(opacityPct));
+      } catch (e) {}
+      applyComparison();
+      pop.remove();
+    });
+  }
+
+  function applyComparison() {
+    var c = state.comparison;
+    if (!c || !c.image) return;
+    hideComparison(false);
+    var stage = state.canvasEl;
+    if (!stage) return;
+    document.body.classList.add('le-compare-' + c.mode);
+    var overlay = document.createElement('div');
+    overlay.id = 'le-comparison-overlay';
+    overlay.className = 'le-comparison-overlay le-comparison-' + c.mode;
+    overlay.style.backgroundImage = 'url("' + c.image + '")';
+    overlay.style.opacity = String(c.opacity);
+    if (c.mode === 'side') {
+      // R3: capture original inline width before we mutate, so we can restore on hide/disable.
+      if (state.originalCanvasWidth === null) {
+        state.originalCanvasWidth = stage.style.width || '';
+      }
+      document.body.classList.add('layout-comparison-on');
+      stage.style.width = '50%';
+      overlay.style.left = '50%';
+      overlay.style.right = '0';
+      overlay.style.top = '0';
+      overlay.style.bottom = '0';
+      overlay.style.opacity = '1';
+    }
+    (state.zoomWrapEl || stage.parentNode).appendChild(overlay);
+    var btn = $('#le-comparison');
+    if (btn) btn.classList.add('active');
+  }
+  function hideComparison(clearState) {
+    if (clearState !== false) {
+      if (state.comparison) state.comparison.active = false;
+    }
+    var existing = $('#le-comparison-overlay');
+    if (existing) existing.remove();
+    document.body.classList.remove('le-compare-side', 'le-compare-overlay', 'le-compare-onion', 'layout-comparison-on');
+    // R3: restore original canvas width (captured at side-mode entry)
+    var stage = state.canvasEl;
+    if (stage) {
+      if (state.originalCanvasWidth !== null) {
+        stage.style.width = state.originalCanvasWidth;
+        state.originalCanvasWidth = null;
+      } else {
+        stage.style.width = '';
+      }
+    }
+    var btn = $('#le-comparison');
+    if (btn) btn.classList.remove('active');
+  }
+
+  // ====================================================================
+  //  Annotation system (FEATURE 6)
+  // ====================================================================
+
+  function ensureAnnoLayer() {
+    var stage = state.canvasEl;
+    if (!stage) return null;
+    var layer = stage.querySelector('#le-anno-layer');
+    if (layer) {
+      state.annoLayer = layer;
+      state.annoSvg = layer.querySelector('svg');
+      return layer;
+    }
+    layer = document.createElement('div');
+    layer.id = 'le-anno-layer';
+    layer.className = 'le-anno-layer';
+    layer.innerHTML =
+      '<svg id="le-anno-svg" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">' +
+      '<defs>' +
+      '<marker id="le-anno-arrow-head" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">' +
+      '<polygon points="0,0 10,5 0,10" fill="currentColor"></polygon></marker>' +
+      '</defs></svg>';
+    stage.appendChild(layer);
+    state.annoLayer = layer;
+    state.annoSvg = layer.querySelector('svg');
+    resizeAnnoSvg();
+    wireAnnoLayer();
+    return layer;
+  }
+  function resizeAnnoSvg() {
+    var stage = state.canvasEl;
+    if (!state.annoSvg || !stage) return;
+    var w = parseFloat(getComputedStyle(stage).width) || stage.offsetWidth;
+    var h = parseFloat(getComputedStyle(stage).height) || stage.offsetHeight;
+    state.annoSvg.setAttribute('viewBox', '0 0 ' + w + ' ' + h);
+    state.annoSvg.setAttribute('width', w);
+    state.annoSvg.setAttribute('height', h);
+  }
+  function getStageCoords(e) {
+    var stage = state.canvasEl;
+    var r = stage.getBoundingClientRect();
+    var internalW = parseFloat(getComputedStyle(stage).width) || r.width;
+    var internalH = parseFloat(getComputedStyle(stage).height) || r.height;
+    var sx = r.width / internalW || 1;
+    var sy = r.height / internalH || 1;
+    return { x: (e.clientX - r.left) / sx, y: (e.clientY - r.top) / sy };
+  }
+  function nextLabelChar() {
+    var L = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    var c = L.charAt(state.labelIdx % L.length);
+    state.labelIdx++;
+    return c;
+  }
+  function applyAnnoColor(el, color) {
+    if (!el || !color) return;
+    if (el.classList && el.classList.contains('anno-marker')) el.style.backgroundColor = color;
+    else if (el.classList && el.classList.contains('anno-text')) el.style.borderColor = color;
+    else if (el.classList && el.classList.contains('anno-arrow-line')) { el.style.color = color; el.style.stroke = color; }
+    else if (el.classList && el.classList.contains('anno-rect')) el.style.stroke = color;
+    el.dataset.annoColor = color;
+  }
+  function setAnnoMode(on) {
+    state.annoMode = on;
+    document.body.classList.toggle('anno-mode', on);
+    if (on) ensureAnnoLayer();
+    var btn = $('#le-anno-toggle');
+    if (btn) {
+      btn.classList.toggle('active', on);
+      btn.textContent = on ? '📝 注釈 ON' : '📝 注釈 OFF';
+    }
+    var tools = $('#le-anno-tools');
+    if (tools) tools.style.display = on ? 'inline-flex' : 'none';
+  }
+  function setAnnoTool(tool) {
+    state.annoTool = tool;
+    document.body.classList.toggle('eraser-mode', tool === 'eraser');
+    document.querySelectorAll('.le-tool-btn').forEach(function (b) {
+      b.classList.toggle('active', b.dataset.tool === tool);
+    });
+  }
+
+  function annoSelectEl(el) {
+    if (state.annoSelected) state.annoSelected.classList.remove('anno-selected');
+    clearAnnoHandles();
+    state.annoSelected = el;
+    if (el) {
+      el.classList.add('anno-selected');
+      updateAnnoHandles();
+    }
+  }
+  function clearAnnoHandles() {
+    if (!state.annoSvg) return;
+    state.annoSvg.querySelectorAll('.anno-handle, .anno-handle-hit').forEach(function (h) { h.remove(); });
+  }
+  function getAnnoGeometry(el) {
+    if (!el) return null;
+    if (el.classList && (el.classList.contains('anno-marker') || el.classList.contains('anno-text'))) {
+      return { kind: 'pos', left: parseFloat(el.style.left), top: parseFloat(el.style.top) };
+    }
+    if (el.tagName === 'line') {
+      return { kind: 'line', x1: +el.getAttribute('x1'), y1: +el.getAttribute('y1'), x2: +el.getAttribute('x2'), y2: +el.getAttribute('y2') };
+    }
+    if (el.tagName === 'rect') {
+      return { kind: 'rect', x: +el.getAttribute('x'), y: +el.getAttribute('y'), w: +el.getAttribute('width'), h: +el.getAttribute('height') };
+    }
+    return null;
+  }
+  function setAnnoGeometry(el, g) {
+    if (!el || !g) return;
+    if (g.kind === 'pos') { el.style.left = g.left + 'px'; el.style.top = g.top + 'px'; }
+    else if (g.kind === 'line') {
+      el.setAttribute('x1', g.x1); el.setAttribute('y1', g.y1);
+      el.setAttribute('x2', g.x2); el.setAttribute('y2', g.y2);
+    } else if (g.kind === 'rect') {
+      el.setAttribute('x', g.x); el.setAttribute('y', g.y);
+      el.setAttribute('width', g.w); el.setAttribute('height', g.h);
+    }
+  }
+  function updateAnnoHandles() {
+    clearAnnoHandles();
+    if (!state.annoSelected) return;
+    var g = getAnnoGeometry(state.annoSelected);
+    if (!g) return;
+    if (g.kind === 'line') { addAnnoHandle(g.x1, g.y1, 'p1'); addAnnoHandle(g.x2, g.y2, 'p2'); }
+    else if (g.kind === 'rect') {
+      addAnnoHandle(g.x, g.y, 'tl'); addAnnoHandle(g.x + g.w, g.y, 'tr');
+      addAnnoHandle(g.x, g.y + g.h, 'bl'); addAnnoHandle(g.x + g.w, g.y + g.h, 'br');
+    }
+  }
+  function addAnnoHandle(x, y, role) {
+    var svg = state.annoSvg;
+    if (!svg) return;
+    var hit = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    hit.setAttribute('class', 'anno-handle anno-handle-hit');
+    hit.setAttribute('cx', x); hit.setAttribute('cy', y); hit.setAttribute('r', 18);
+    hit.dataset.role = role;
+    svg.appendChild(hit);
+    var h = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    h.setAttribute('class', 'anno-handle endpoint');
+    h.setAttribute('cx', x); h.setAttribute('cy', y); h.setAttribute('r', 9);
+    h.dataset.role = role;
+    svg.appendChild(h);
+    var handler = function (ev) {
+      ev.stopPropagation();
+      ev.preventDefault();
+      var target = state.annoSelected;
+      var before = getAnnoGeometry(target);
+      var onMove = function (e2) {
+        var p = getStageCoords(e2);
+        var g = getAnnoGeometry(target);
+        if (g.kind === 'line') {
+          if (role === 'p1') { g.x1 = p.x; g.y1 = p.y; } else { g.x2 = p.x; g.y2 = p.y; }
+        } else if (g.kind === 'rect') {
+          var x1 = g.x, y1 = g.y, x2 = g.x + g.w, y2 = g.y + g.h;
+          if (role === 'tl') { x1 = p.x; y1 = p.y; }
+          else if (role === 'tr') { x2 = p.x; y1 = p.y; }
+          else if (role === 'bl') { x1 = p.x; y2 = p.y; }
+          else if (role === 'br') { x2 = p.x; y2 = p.y; }
+          g.x = Math.min(x1, x2); g.y = Math.min(y1, y2);
+          g.w = Math.abs(x2 - x1); g.h = Math.abs(y2 - y1);
+        }
+        setAnnoGeometry(target, g); updateAnnoHandles();
+      };
+      var onUp = function () {
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onUp);
+        var after = getAnnoGeometry(target);
+        if (JSON.stringify(after) !== JSON.stringify(before)) {
+          pushHistory({ type: 'transform', el: target, before: before, after: after });
+        }
+      };
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+    };
+    hit.addEventListener('mousedown', handler);
+    h.addEventListener('mousedown', handler);
+  }
+
+  function attachAnnoDelete(el) {
+    el.addEventListener('contextmenu', function (ev) {
+      ev.preventDefault();
+      if (confirm('この注釈を削除しますか？')) {
+        pushHistory({ type: 'remove', el: el, parent: el.parentNode, next: el.nextSibling });
+        el.remove();
+        if (el === state.annoSelected) annoSelectEl(null);
+      }
+    });
+    el.addEventListener('click', function (ev) {
+      if (!state.annoMode) return;
+      if (state.annoTool === 'eraser') {
+        ev.stopPropagation();
+        pushHistory({ type: 'remove', el: el, parent: el.parentNode, next: el.nextSibling });
+        el.remove();
+        if (el === state.annoSelected) annoSelectEl(null);
+      }
+    });
+    el.addEventListener('mousedown', function (ev) {
+      if (!state.annoMode || state.annoTool !== 'select') return;
+      if (ev.target.classList && (ev.target.classList.contains('anno-handle') || ev.target.classList.contains('anno-handle-hit'))) return;
+      ev.stopPropagation();
+      annoSelectEl(el);
+      var startPt = getStageCoords(ev);
+      var beforeGeo = getAnnoGeometry(el);
+      var moved = false;
+      var onMove = function (e2) {
+        var p = getStageCoords(e2);
+        var dx = p.x - startPt.x, dy = p.y - startPt.y;
+        if (Math.abs(dx) > 2 || Math.abs(dy) > 2) moved = true;
+        if (!moved) return;
+        var g = JSON.parse(JSON.stringify(beforeGeo));
+        if (g.kind === 'pos') { g.left += dx; g.top += dy; }
+        else if (g.kind === 'line') { g.x1 += dx; g.y1 += dy; g.x2 += dx; g.y2 += dy; }
+        else if (g.kind === 'rect') { g.x += dx; g.y += dy; }
+        setAnnoGeometry(el, g); updateAnnoHandles();
+      };
+      var onUp = function () {
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onUp);
+        if (moved) {
+          var afterGeo = getAnnoGeometry(el);
+          pushHistory({ type: 'transform', el: el, before: beforeGeo, after: afterGeo });
+        }
+      };
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+    });
+  }
+
+  function addAnnoMarker(x, y) {
+    var m = document.createElement('div');
+    m.className = 'anno-marker';
+    m.style.left = x + 'px'; m.style.top = y + 'px';
+    m.textContent = nextLabelChar();
+    applyAnnoColor(m, state.annoColor);
+    state.annoLayer.appendChild(m);
+    attachAnnoDelete(m);
+    pushHistory({ type: 'add', el: m, parent: state.annoLayer, next: null });
+  }
+  function addAnnoText(x, y) {
+    var text = prompt('テキスト', 'ここを修正');
+    if (!text) return;
+    var t = document.createElement('div');
+    t.className = 'anno-text';
+    t.style.left = x + 'px'; t.style.top = y + 'px';
+    t.textContent = text;
+    applyAnnoColor(t, state.annoColor);
+    state.annoLayer.appendChild(t);
+    attachAnnoDelete(t);
+    pushHistory({ type: 'add', el: t, parent: state.annoLayer, next: null });
+  }
+
+  function wireAnnoLayer() {
+    var layer = state.annoLayer;
+    var svg = state.annoSvg;
+    if (!layer || !svg) return;
+    layer.addEventListener('mousedown', function (e) {
+      if (!state.annoMode) return;
+      if (e.target.classList && (e.target.classList.contains('anno-handle') || e.target.classList.contains('anno-handle-hit'))) return;
+      if (state.annoTool === 'select') {
+        if (!e.target.closest('.anno-marker, .anno-text') &&
+            !(e.target.classList && (e.target.classList.contains('anno-arrow-line') || e.target.classList.contains('anno-rect')))) {
+          annoSelectEl(null);
+        }
+        return;
+      }
+      if (state.annoTool === 'rect' || state.annoTool === 'arrow' || state.annoTool === 'line') {
+        e.preventDefault();
+        var dragStart = getStageCoords(e);
+        var tempShape;
+        if (state.annoTool === 'rect') {
+          tempShape = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+          tempShape.setAttribute('class', 'anno-rect'); tempShape.setAttribute('rx', 6);
+        } else {
+          tempShape = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          tempShape.setAttribute('class', state.annoTool === 'arrow' ? 'anno-arrow-line with-head' : 'anno-arrow-line');
+        }
+        applyAnnoColor(tempShape, state.annoColor);
+        svg.appendChild(tempShape);
+        var onMove = function (e2) {
+          var p = getStageCoords(e2);
+          if (state.annoTool === 'rect') {
+            var x = Math.min(dragStart.x, p.x), y = Math.min(dragStart.y, p.y);
+            var w = Math.abs(p.x - dragStart.x), h = Math.abs(p.y - dragStart.y);
+            tempShape.setAttribute('x', x); tempShape.setAttribute('y', y);
+            tempShape.setAttribute('width', w); tempShape.setAttribute('height', h);
+          } else {
+            tempShape.setAttribute('x1', dragStart.x); tempShape.setAttribute('y1', dragStart.y);
+            tempShape.setAttribute('x2', p.x); tempShape.setAttribute('y2', p.y);
+          }
+        };
+        var onUp = function (e2) {
+          var p = getStageCoords(e2);
+          var dx = p.x - dragStart.x, dy = p.y - dragStart.y;
+          if (Math.abs(dx) < 4 && Math.abs(dy) < 4) tempShape.remove();
+          else { attachAnnoDelete(tempShape); pushHistory({ type: 'add', el: tempShape, parent: svg, next: null }); }
+          window.removeEventListener('mousemove', onMove);
+          window.removeEventListener('mouseup', onUp);
+        };
+        window.addEventListener('mousemove', onMove);
+        window.addEventListener('mouseup', onUp);
+      }
+    });
+    layer.addEventListener('click', function (e) {
+      if (!state.annoMode) return;
+      if (e.target.classList && (e.target.classList.contains('anno-handle') || e.target.classList.contains('anno-handle-hit'))) return;
+      if (state.annoTool === 'eraser' || state.annoTool === 'select') return;
+      if (state.annoTool === 'rect' || state.annoTool === 'arrow' || state.annoTool === 'line') return;
+      var p = getStageCoords(e);
+      if (state.annoTool === 'marker') addAnnoMarker(p.x, p.y);
+      else if (state.annoTool === 'text') addAnnoText(p.x, p.y);
+    });
+  }
+
+  // ====================================================================
+  //  Rulers + guides (FEATURE 7)
+  // ====================================================================
+
+  function setupRulers() {
+    if ($('#le-ruler-h')) return;
+    var rh = document.createElement('div'); rh.id = 'le-ruler-h'; rh.className = 'le-ruler horizontal';
+    var rv = document.createElement('div'); rv.id = 'le-ruler-v'; rv.className = 'le-ruler vertical';
+    document.body.appendChild(rh);
+    document.body.appendChild(rv);
+    state.rulerH = rh; state.rulerV = rv;
+    rh.addEventListener('mousedown', function (e) { createGuide(e, 'h'); });
+    rv.addEventListener('mousedown', function (e) { createGuide(e, 'v'); });
+    adjustRulerPos();
+    addManagedListener(window, 'resize', adjustRulerPos);
+  }
+  function adjustRulerPos() {
+    var tb = state.toolbarEl;
+    var toolbarH = tb && getComputedStyle(tb).display !== 'none' ? tb.offsetHeight : 0;
+    document.documentElement.style.setProperty('--le-toolbar-h', toolbarH + 'px');
+  }
+  function createGuide(e, axis) {
+    e.preventDefault();
+    var g = document.createElement('div');
+    g.className = 'le-guide ' + axis;
+    var lbl = document.createElement('div');
+    lbl.className = 'le-guide-label';
+    g.appendChild(lbl);
+    document.body.appendChild(g);
+    attachGuideDrag(g, lbl, axis);
+    pushHistory({ type: 'add', el: g, parent: document.body, next: null });
+    var evt = new MouseEvent('mousedown', { clientX: e.clientX, clientY: e.clientY, bubbles: true });
+    g.dispatchEvent(evt);
+  }
+  function setGuidePos(g, pos) {
+    if (g.classList.contains('h')) g.style.top = pos + 'px';
+    else g.style.left = pos + 'px';
+    var lbl = g.querySelector('.le-guide-label');
+    if (lbl) lbl.textContent = (g.classList.contains('h') ? 'y: ' : 'x: ') + Math.round(pos) + 'px';
+  }
+  function attachGuideDrag(g, lbl, axis) {
+    var getCurPos = function () {
+      return axis === 'h' ? (parseFloat(g.style.top) || 0) : (parseFloat(g.style.left) || 0);
+    };
+    var updatePos = function (clientX, clientY) {
+      if (axis === 'h') { g.style.top = clientY + 'px'; lbl.textContent = 'y: ' + Math.round(clientY) + 'px'; }
+      else { g.style.left = clientX + 'px'; lbl.textContent = 'x: ' + Math.round(clientX) + 'px'; }
+    };
+    g.addEventListener('mousedown', function (e) {
+      e.stopPropagation();
+      e.preventDefault();
+      var before = getCurPos();
+      var onMove = function (e2) { updatePos(e2.clientX, e2.clientY); };
+      var onUp = function (e2) {
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onUp);
+        if (axis === 'h' && e2.clientY < 24) {
+          pushHistory({ type: 'remove', el: g, parent: document.body, next: g.nextSibling });
+          g.remove();
+        } else if (axis === 'v' && e2.clientX < 24) {
+          pushHistory({ type: 'remove', el: g, parent: document.body, next: g.nextSibling });
+          g.remove();
+        } else {
+          var after = getCurPos();
+          if (after !== before) pushHistory({ type: 'guide-move', el: g, before: before, after: after });
+        }
+      };
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+      updatePos(e.clientX, e.clientY);
+    });
+    g.addEventListener('contextmenu', function (e) {
+      e.preventDefault();
+      pushHistory({ type: 'remove', el: g, parent: document.body, next: g.nextSibling });
+      g.remove();
+    });
+  }
+  function restoreGuides(arr) {
+    $$('.le-guide').forEach(function (g) { g.remove(); });
+    arr.forEach(function (item) {
+      var g = document.createElement('div');
+      g.className = 'le-guide ' + item.axis;
+      if (item.axis === 'h') g.style.top = item.pos + 'px';
+      else g.style.left = item.pos + 'px';
+      var lbl = document.createElement('div');
+      lbl.className = 'le-guide-label';
+      lbl.textContent = (item.axis === 'h' ? 'y: ' : 'x: ') + Math.round(item.pos) + 'px';
+      g.appendChild(lbl);
+      document.body.appendChild(g);
+      attachGuideDrag(g, lbl, item.axis);
+    });
+  }
+
+  // ====================================================================
+  //  Userbox (FEATURE 8)
+  // ====================================================================
+
+  var userboxCounter = 0;
+  function createUserbox(opts) {
+    userboxCounter += 1;
+    var id = opts.id || ('userbox-' + Date.now() + '-' + userboxCounter);
+    var label = opts.label || ('枠' + userboxCounter);
+    var div = document.createElement('div');
+    div.className = 'userbox';
+    div.dataset.userboxId = id;
+    div.dataset.userboxLabel = label;
+    if (opts.bgImage) {
+      div.dataset.bgImage = opts.bgImage;
+      div.style.backgroundImage = 'url("' + opts.bgImage + '")';
+      div.style.backgroundSize = 'contain';
+      div.style.backgroundRepeat = 'no-repeat';
+      div.style.backgroundPosition = 'center';
+      div.style.backgroundColor = 'transparent';
+    }
+    if (opts.left) div.style.left = opts.left;
+    if (opts.top)  div.style.top = opts.top;
+    if (opts.w)    div.style.width = opts.w;
+    if (opts.h)    div.style.height = opts.h;
+    var badge = document.createElement('div');
+    badge.className = 'userbox-badge';
+    badge.contentEditable = 'true';
+    badge.textContent = label;
+    badge.spellcheck = false;
+    badge.addEventListener('mousedown', function (e) { e.stopPropagation(); });
+    badge.addEventListener('blur', function () {
+      var newLabel = badge.textContent.trim() || ('枠' + userboxCounter);
+      badge.textContent = newLabel;
+      div.dataset.userboxLabel = newLabel;
+      scheduleDirtyUpdate();
+    });
+    badge.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); badge.blur(); }
+    });
+    div.appendChild(badge);
+    var del = document.createElement('div');
+    del.className = 'userbox-del';
+    del.textContent = '×';
+    del.title = '削除';
+    del.addEventListener('mousedown', function (e) { e.stopPropagation(); e.preventDefault(); });
+    del.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (confirm('「' + div.dataset.userboxLabel + '」 を削除しますか？')) {
+        // U7: undoable delete — push history before removing
+        pushHistory({ type: 'remove', el: div, parent: div.parentNode, next: div.nextSibling });
+        state.selectedElements && state.selectedElements.delete(div);
+        div.remove();
+        refreshSelectionUI();
+        scheduleDirtyUpdate();
+      }
+    });
+    div.appendChild(del);
+    var target = $('#safe-area') || state.canvasEl || document.body;
+    target.appendChild(div);
+    attachHandle(div, 'wh');
+    if (opts.tx || opts.ty) {
+      div._tx = opts.tx || 0;
+      div._ty = opts.ty || 0;
+      div.style.transform = 'translate(' + div._tx + 'px, ' + div._ty + 'px)';
+    }
+    // [zk-inv] rotate / aspectLock の復元。 ページ側 ZK_INV ライブラリが
+    //   class="zk-rotated" の CSS rule で transform: rotate を内側 img に当てる。
+    if (opts.rotate && isFinite(opts.rotate)) {
+      div.dataset.rotate = String(((opts.rotate % 360) + 360) % 360);
+      if (window.__zk_inv_applyRotate) window.__zk_inv_applyRotate(div);
+    }
+    if (opts.aspectLock === '1' || opts.aspectLock === true) {
+      div.dataset.aspectLock = '1';
+    }
+    return div;
+  }
+
+  function setDrawMode(on) {
+    state.drawModeOn = on;
+    document.body.classList.toggle('draw-mode', on);
+    var btn = $('#le-userbox-add');
+    if (btn) {
+      btn.classList.toggle('active', on);
+      btn.textContent = on ? '🆕 矩形追加 ON' : '🆕 矩形追加 OFF';
+    }
+  }
+
+  function attachUserboxDraw() {
+    if (!state.canvasEl) return;
+    state.canvasEl.addEventListener('mousedown', function (e) {
+      if (!state.enabled) return;
+      if (e.target.closest('.le-toolbar, .le-ruler, .le-guide, .numeric-panel, .le-list-panel, .le-help-modal, .le-comparison-picker, .le-pages-dropdown')) return;
+      if (!state.drawModeOn && e.target.closest('.resizable, .resize-handle, .userbox-badge, .userbox-del')) return;
+      if (!state.drawModeOn) return;
+      e.preventDefault(); e.stopPropagation();
+      var info = getStageRectInfo();
+      var safe = $('#safe-area') || state.canvasEl;
+      var safeRect = safe.getBoundingClientRect();
+      var sx = (e.clientX - safeRect.left) / info.scale;
+      var sy = (e.clientY - safeRect.top) / info.scale;
+      var preview = document.createElement('div');
+      preview.className = 'userbox-preview';
+      preview.style.left = sx + 'px';
+      preview.style.top = sy + 'px';
+      preview.style.width = '0px';
+      preview.style.height = '0px';
+      safe.appendChild(preview);
+      var onMove = function (e2) {
+        var x = (e2.clientX - safeRect.left) / info.scale;
+        var y = (e2.clientY - safeRect.top) / info.scale;
+        var x0 = Math.min(sx, x), y0 = Math.min(sy, y);
+        var w = Math.abs(x - sx), h = Math.abs(y - sy);
+        preview.style.left = x0 + 'px';
+        preview.style.top = y0 + 'px';
+        preview.style.width = w + 'px';
+        preview.style.height = h + 'px';
+      };
+      var onUp = function () {
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onUp);
+        var w = parseFloat(preview.style.width);
+        var h = parseFloat(preview.style.height);
+        var left = preview.style.left;
+        var top = preview.style.top;
+        preview.remove();
+        if (w >= 20 && h >= 20) {
+          var box = createUserbox({ left: left, top: top, w: w + 'px', h: h + 'px' });
+          pushHistory({ type: 'add', el: box, parent: box.parentNode, next: null });
+        }
+      };
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+    });
+  }
+
+  // ====================================================================
+  //  Text-add tool (India-2)
+  // ====================================================================
+  // ユーザがツールを ON にして canvas をクリックすると、その位置に
+  //   <div class="le-added-text resizable" contenteditable="true">テキスト</div>
+  // を absolute 配置で挿入。直後にフォーカスして即編集可。Esc またはツール
+  // ボタン再クリックで OFF。永続化はドロップ画像と同パターン (localStorage)。
+
+  function addedTextStorageKey() {
+    return 'le-added-texts:' + (location.pathname || '/');
+  }
+
+  function nextTextId() {
+    return 'text_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+  }
+
+  function buildAddedText(html, opts) {
+    opts = opts || {};
+    var div = document.createElement('div');
+    // editable-text クラスを併用して既存の text-undo インフラに乗せる
+    div.className = 'le-added-text editable-text';
+    div.dataset.textId = opts.id || nextTextId();
+    div.setAttribute('data-le-keep-position', '1');
+    div.setAttribute('contenteditable', 'true');
+    div.setAttribute('data-le-label', opts.label || 'テキスト');
+    div.spellcheck = false;
+    div.innerHTML = (typeof html === 'string' && html !== '') ? html : 'テキスト';
+    return div;
+  }
+
+  function saveAddedTexts() {
+    try {
+      var list = $$('.le-added-text').map(function (el) {
+        return {
+          id: el.dataset.textId || '',
+          html: el.innerHTML,
+          // Mike-2 修正B: 要素一覧ラベルを永続化
+          label: (el.dataset && el.dataset.leLabel) || '',
+          left: el.style.left || '',
+          top: el.style.top || '',
+          width: el.style.width || '',
+          height: el.style.height || '',
+          tx: el._tx || 0,
+          ty: el._ty || 0,
+          z: el.style.zIndex || ''
+        };
+      });
+      localStorage.setItem(addedTextStorageKey(), JSON.stringify(list));
+    } catch (e) {
+      console.warn('[LayoutEditor] saveAddedTexts failed', e);
+    }
+  }
+
+  function restoreAddedTexts(canvas) {
+    if (!canvas) return;
+    var list = [];
+    try {
+      var raw = localStorage.getItem(addedTextStorageKey());
+      list = raw ? JSON.parse(raw) : [];
+    } catch (e) { list = []; }
+    if (!Array.isArray(list) || list.length === 0) {
+      $$('.le-added-text').forEach(function (el) {
+        if (!el.classList.contains('resizable')) {
+          el.setAttribute('data-le-keep-position', '1');
+          try { attachHandle(el, 'wh'); } catch (e) {}
+        }
+      });
+      return;
+    }
+    list.forEach(function (item) {
+      if (!item) return;
+      if (item.id) {
+        var existing = canvas.querySelector('.le-added-text[data-text-id="' + item.id + '"]');
+        if (existing) {
+          if (!existing.classList.contains('resizable')) {
+            existing.setAttribute('data-le-keep-position', '1');
+            try { attachHandle(existing, 'wh'); } catch (e) {}
+          }
+          return;
+        }
+      }
+      var div = buildAddedText(item.html, { id: item.id, label: item.label || '' });
+      div.style.position = 'absolute';
+      if (item.left)   div.style.left = item.left;
+      if (item.top)    div.style.top = item.top;
+      if (item.width)  div.style.width = item.width;
+      if (item.height) div.style.height = item.height;
+      if (item.z)      div.style.zIndex = item.z;
+      var tx = parseFloat(item.tx) || 0, ty = parseFloat(item.ty) || 0;
+      if (tx || ty) {
+        div._tx = tx; div._ty = ty;
+        div.style.transform = 'translate(' + tx + 'px, ' + ty + 'px)';
+      }
+      canvas.appendChild(div);
+      try { attachHandle(div, 'wh'); } catch (e) {}
+    });
+    $$('.le-added-text').forEach(function (el) {
+      if (!el.classList.contains('resizable')) {
+        el.setAttribute('data-le-keep-position', '1');
+        try { attachHandle(el, 'wh'); } catch (e) {}
+      }
+    });
+  }
+
+  function setTextToolMode(on) {
+    state.textToolOn = !!on;
+    document.body.classList.toggle('le-text-tool-active', state.textToolOn);
+    var btn = $('#le-text-add');
+    if (btn) {
+      btn.classList.toggle('active', state.textToolOn);
+      btn.textContent = state.textToolOn ? '📝 テキスト ON' : '📝 テキスト OFF';
+    }
+    if (state.textToolOn) {
+      showToast('テキスト追加モード ON — canvas をクリックで挿入');
+    }
+  }
+
+  function insertNewTextAt(canvas, clientX, clientY) {
+    if (!canvas) return null;
+    var info = getStageRectInfo();
+    var rect = info.stageRect;
+    var scale = info.scale || 1;
+    var defaultW = 200, defaultH = 48;
+    var localX = (clientX - rect.left) / scale - defaultW / 2;
+    var localY = (clientY - rect.top) / scale - defaultH / 2;
+
+    // Mike-2 修正B: 新規テキストに「テキストN」連番ラベルを付与
+    var div = buildAddedText('テキスト', { label: getNextTextLabel() });
+    div.style.position = 'absolute';
+    div.style.left = Math.max(0, Math.round(localX)) + 'px';
+    div.style.top  = Math.max(0, Math.round(localY)) + 'px';
+    div.style.width  = defaultW + 'px';
+    div.style.minHeight = defaultH + 'px';
+    div.style.zIndex = '50';
+
+    canvas.appendChild(div);
+    try { attachHandle(div, 'wh'); } catch (e) { console.warn('[LayoutEditor] attachHandle on added-text failed', e); }
+
+    pushHistory({ type: 'add', el: div, parent: canvas, next: null });
+
+    // Persist on edit / blur
+    div.addEventListener('input', debouncedSaveAddedTexts);
+    div.addEventListener('blur', saveAddedTexts);
+
+    selectOnly(div);
+    saveAddedTexts();
+    scheduleDirtyUpdate();
+    // Juliet-2 修正B: 要素一覧を最新化
+    try { refreshElementList(); } catch (e) {}
+
+    // 直後にフォーカス & 全選択して即タイプ可能に
+    try {
+      div.focus();
+      var range = document.createRange();
+      range.selectNodeContents(div);
+      var selObj = window.getSelection();
+      if (selObj) { selObj.removeAllRanges(); selObj.addRange(range); }
+    } catch (e) {}
+
+    return div;
+  }
+
+  var debouncedSaveAddedTexts;
+
+  function attachTextTool(canvas) {
+    if (!canvas) return;
+    debouncedSaveAddedTexts = debounce(saveAddedTexts, 200);
+
+    // canvas クリックでテキスト挿入 (テキストツール ON 時のみ)
+    var onClick = function (e) {
+      if (!state.enabled || !state.textToolOn) return;
+      // ツールバー / パネル / 既存リサイザブル要素・ハンドル上では発火しない
+      if (e.target.closest(
+        '.le-toolbar, .le-ruler, .le-guide, .numeric-panel, .le-list-panel, ' +
+        '.le-help-modal, .le-comparison-picker, .le-pages-dropdown, ' +
+        '.resize-handle, .userbox-badge, .userbox-del, .le-anno-layer, ' +
+        '.le-added-text'
+      )) return;
+      e.preventDefault();
+      e.stopPropagation();
+      insertNewTextAt(canvas, e.clientX, e.clientY);
+      // 1回挿入したらモードを抜ける (Photoshop 等の慣習)
+      setTextToolMode(false);
+    };
+    addManagedListener(canvas, 'click', onClick, true /* capture */);
+
+    // Esc でモード OFF (キャプチャ phase で先取り)
+    var onKey = function (e) {
+      if (e.key === 'Escape' && state.textToolOn) {
+        setTextToolMode(false);
+      }
+    };
+    addManagedListener(window, 'keydown', onKey);
+
+    // Persist on transform of any added-text
+    var onTransform = function () {
+      var hit = false;
+      try {
+        if (state.selectedElements && state.selectedElements.size) {
+          state.selectedElements.forEach(function (el) {
+            if (el && el.classList && el.classList.contains('le-added-text')) hit = true;
+          });
+        }
+      } catch (e) {}
+      if (hit) debouncedSaveAddedTexts();
+    };
+    on('transform', onTransform);
+    registerCleanup(function () { off('transform', onTransform); });
+  }
+
+  // ====================================================================
+  //  Toolbar
+  // ====================================================================
+
+  // ⏸ 一時停止 / ▶ 再開 状態を一括反映するヘルパ。
+  //   - body.layout-editor-paused class を on/off
+  //   - window._quizlandPaused (boolean) を同期 expose (quizland 側 guard が参照)
+  //   - toolbar ボタンのラベル + .active class を更新
+  //   - 視覚 hint オーバーレイ (#le-paused-overlay) を作成 / 表示切替
+  //   - silent=true の場合は toast 抑制 (初期化時に呼ぶため)
+  function applyPauseState(paused, btn, silent) {
+    document.body.classList.toggle('layout-editor-paused', !!paused);
+    try { window._quizlandPaused = !!paused; } catch (_) {}
+    if (btn) {
+      btn.textContent = paused ? '▶ 再開' : '⏸ 一時停止';
+      btn.classList.toggle('active', !!paused);
+    }
+    // pause 中の視覚 hint オーバーレイ。 toolbar より上、 pointer-events:none で
+    // 操作の邪魔をしない。 CSS 側で表示制御するが、 DOM の有無も保証する。
+    var overlay = document.getElementById('le-paused-overlay');
+    if (paused && !overlay) {
+      overlay = document.createElement('div');
+      overlay.id = 'le-paused-overlay';
+      overlay.textContent = '⏸ EDIT PAUSED';
+      document.body.appendChild(overlay);
+    } else if (!paused && overlay) {
+      overlay.remove();
+    }
+    if (!silent && typeof showToast === 'function') {
+      showToast(paused ? '一時停止' : '再開', 'success');
+    }
+  }
+
+  function buildToolbar() {
+    var tb = document.createElement('div');
+    tb.className = 'le-toolbar';
+    tb.id = 'le-toolbar';
+    tb.innerHTML =
+      '<div class="le-tb-group">' +
+      '<button id="le-save" title="保存 (Ctrl+S)" aria-label="保存">💾 保存</button>' +
+      '<button id="le-revert" title="保存値に戻す" aria-label="保存値に戻す">⏮ 復元</button>' +
+      '<button id="le-reset" title="完全リセット" aria-label="完全リセット">↺ リセット</button>' +
+      '</div>' +
+      '<div class="le-tb-group">' +
+      '<button id="le-undo" title="Undo (Ctrl+Z)" aria-label="Undo">↶</button>' +
+      '<button id="le-redo" title="Redo (Ctrl+Y)" aria-label="Redo">↷</button>' +
+      '<button id="le-duplicate" title="複製 (Ctrl+D)" aria-label="複製">⧉ 複製</button>' +
+      // Lima-2 修正B: 選択した要素の画像 (img / 背景画像 / 単一内側 img) を
+      //   ファイル選択ダイアログで差し替える明示ボタン。単一選択時のみ有効。
+      //   2026-05-09: regulation を tooltip に明示 (PNG/JPEG/WebP, 長辺 1600px, 推奨 1MB / 上限 3MB)
+      '<button id="le-replace-src" title="選択した要素の画像を差し替え（ファイル選択ダイアログ）&#10;形式: PNG / JPEG / WebP（SVG 不可）&#10;解像度: 長辺 1600px 以下を推奨（超えても自動縮小）&#10;容量: 推奨 1MB / 上限 3MB（超過分は再圧縮）&#10;※ ステージ画像 (.emoji-main-img) はプレビュー差し替えのみで保存非対応。本差し替えは assets/images/quizland/illust/stage/ に画像ファイルを直接 commit してください。" aria-label="画像を差し替え" disabled>📥 src 差し替え</button>' +
+      // Kilo-2 修正C → Lima-2 修正C: 選択要素を親レイヤーから取り出して stage 直下に配置する
+      '<button id="le-detach" title="選択中のレイヤーを親グループから取り出して独立編集可能にします" aria-label="親レイヤーから取り出す" disabled>🔓 取り出す</button>' +
+      // Victor-2: 削除ボタン。選択中のみ enabled。Ctrl+Z で復活可能なので確認なし。
+      '<button id="le-delete" class="le-delete-btn" title="選択中の要素を削除 (Delete / Backspace、Ctrl+Z で復活)" aria-label="選択中を削除" disabled>🗑️ 削除</button>' +
+      '<button id="le-multi-select" title="マルチセレクト ON/OFF (タッチ用)" aria-label="マルチセレクト切替">👆+ 複数選択</button>' +
+      '</div>' +
+      // U4: alignment toolbar promoted to top toolbar (always discoverable).
+      '<div class="le-tb-group le-align-tb" id="le-align-tb">' +
+      '<button class="le-align-tb-btn" data-align="left"     title="左揃え"   aria-label="左揃え" disabled>⇤</button>' +
+      '<button class="le-align-tb-btn" data-align="center-h" title="水平中央" aria-label="水平中央" disabled>⇔</button>' +
+      '<button class="le-align-tb-btn" data-align="right"    title="右揃え"   aria-label="右揃え" disabled>⇥</button>' +
+      '<button class="le-align-tb-btn" data-align="top"      title="上揃え"   aria-label="上揃え" disabled>⤒</button>' +
+      '<button class="le-align-tb-btn" data-align="center-v" title="垂直中央" aria-label="垂直中央" disabled>⇕</button>' +
+      '<button class="le-align-tb-btn" data-align="bottom"   title="下揃え"   aria-label="下揃え" disabled>⤓</button>' +
+      '<button class="le-align-tb-btn" data-align="dist-h"   title="水平等間隔" aria-label="水平等間隔" disabled>⇋</button>' +
+      '<button class="le-align-tb-btn" data-align="dist-v"   title="垂直等間隔" aria-label="垂直等間隔" disabled>⇌</button>' +
+      '</div>' +
+      '<div class="le-tb-group">' +
+      '<button id="le-chip-preset-save" title="選択中 chip を chip 種別ごとの preset (デフォルト) として保存。 マルチセレクト時は種別ごとに最初の 1 個を採用。 同種別で個別設定の無い他 chip に自動適用される" aria-label="chip preset 保存">📌 chip preset 保存</button>' +
+      '<button id="le-chip-individual-save" title="選択中の chip 関連要素 (chip 自体 / circle / illust / label / countNum) を個別設定 (override) として保存。 個別設定された要素は preset を上書きする" aria-label="個別保存">💾 個別保存</button>' +
+      '<button id="le-chip-preset-clear-overrides" title="選択 chip と同種別の個別設定エントリを削除し、 preset 値を全 chip に強制反映 (preset 未定義のパーツはスキップ)" aria-label="個別設定クリア">🧹 個別設定クリア</button>' +
+      '<button id="le-chip-text-clear" title="選択 chip のテキスト override (__chip_text_overrides) を削除し、 元テキストに戻す。 chip-label / chip-illust-label / chip-count-num の dblclick で編集された改行入りテキストをリセット" aria-label="テキスト初期化">🔡 テキスト初期化</button>' +
+      '<label class="le-chip-text-style" title="選択中 chip の文字サイズをこの問題・この選択肢だけに保存 (px)">文字 <input id="le-chip-font-size" type="number" min="8" max="140" step="1" aria-label="選択肢文字サイズ" disabled></label>' +
+      '<label class="le-chip-text-style" title="選択中 chip のトラッキングをこの問題・この選択肢だけに保存 (px)">字間 <input id="le-chip-tracking" type="number" min="-12" max="20" step="0.5" aria-label="選択肢トラッキング" disabled></label>' +
+      '<label class="le-chip-text-style" title="選択中 chip の長体/平体をこの問題・この選択肢だけに保存 (100=等倍、90=横90%)">長体 <input id="le-chip-scale-x" type="number" min="50" max="140" step="1" aria-label="選択肢長体" disabled></label>' +
+      '<button id="le-chip-text-style-clear" title="選択 chip の文字サイズ・字間・長体を初期化" aria-label="文字設定クリア" disabled>🔤 文字設定クリア</button>' +
+      '<button id="le-next-question" title="次の問題へ (quizland のみ、 editor 中も問題切替可能に)" aria-label="次の問題へ">⏭ 次の問題</button>' +
+      // ⏸ 一時停止 / ▶ 再開: editor 中も普通にプレイ可能にしつつ、
+      //   調整したい瞬間 (例: 正解画面の位置を確認したい) だけ任意に
+      //   問題進行を停止する。 停止中も chip タップ・正解判定・SE・
+      //   アニメは継続し、 nextQuestion() への自動遷移だけ guard する。
+      //   状態は body.layout-editor-paused class + window._quizlandPaused で
+      //   外部 (quizland/index.html 側) に同期 expose。
+      '<button id="le-pause-toggle" title="問題進行を一時停止 / 再開 (chip タップ・正解判定・SE は継続、 次問題への自動遷移のみ止まる)" aria-label="一時停止トグル">⏸ 一時停止</button>' +
+      // 🎯/🌐 per-Q 保存範囲トグル (2026-06-11): perQuestionScopeToggleSelectors 対象
+      //   (質問バナー / 音声ボタン) の保存先を 「この質問だけ (@qid キー)」 ⇔
+      //   「すべての質問 (共通キー)」 で切替。 対象セレクタ未設定のページでは非表示。
+      '<button id="le-perq-scope" title="質問カード・音声ボタンの保存範囲を切替&#10;🌐 すべての質問: 全問題共通の位置として保存 (従来動作)&#10;🎯 この質問だけ: いま表示中の問題だけの位置として保存 (他の問題は共通位置のまま)&#10;※ 個別保存済みの問題では個別値が共通値より優先表示されます" aria-label="保存範囲トグル" style="display:none;">🌐 すべての質問</button>' +
+      // 🧹 この質問の個別設定を削除 (2026-06-11 critical fix: 🎯 保存の片道ドア解消)。
+      //   @qid キーを保存データから削除し、 共通位置へ戻して即保存する。
+      //   個別設定が無い質問では disabled (updatePerQScopeUI が管理)。
+      '<button id="le-perq-clear" title="この質問の個別レイアウト設定 (@qid キー) を削除し、共通位置に戻して保存します" aria-label="この質問の個別設定を削除" style="display:none;" disabled>🧹 この質問の個別設定を削除</button>' +
+      // 🔒 このレイアウトをロック (2026-06-30 batch:968): 現在質問の per-Q キーを read-only
+      //   saved-layout-frozen.json に転記。 通常 save では絶対に上書きされない「凍結層」
+      //   として永続保護する。 frozen ファイルが空 ({}) または当該質問の per-Q が無いときは disabled。
+      //   ※ saved-layout-frozen.json の存在を前提とするため、 quizland 以外では未対応 (display:none 既定)。
+      '<button id="le-perq-lock" title="この質問の現在のレイアウト (per-Q キー) を saved-layout-frozen.json に転記して永続ロック&#10;ロック後は通常の💾保存では変更できなくなります" aria-label="この質問のレイアウトをロック" style="display:none;">🔒 このレイアウトをロック</button>' +
+      // 🧪 Playtest toggle: editor mode で quizland の playtest UI (コメント / キャプチャ /
+      //   添付 / 前へ次へ / カテゴリ・Lv ジャンプ) を ON/OFF。 quizland 専用機能で、
+      //   他ページでは非表示。
+      '<button id="le-playtest-toggle" title="Playtest モード ON/OFF (debug UI を editor 内で表示)" aria-label="Playtest toggle" style="display:none;">🧪 Playtest OFF</button>' +
+      '</div>' +
+      '<div class="le-tb-group">' +
+      '<button id="le-userbox-add" title="矩形追加" aria-label="矩形追加">🆕 矩形追加 OFF</button>' +
+      // India-2: テキスト追加ツール — クリック → モード ON → canvas クリックで挿入
+      '<button id="le-text-add" title="テキスト追加 (クリックでモード ON、再度クリックまたは Esc で OFF)" aria-label="テキスト追加">📝 テキスト OFF</button>' +
+      '<button id="le-anno-toggle" title="注釈モード" aria-label="注釈モード切替">📝 注釈 OFF</button>' +
+      '<span id="le-anno-tools" class="le-anno-tools" style="display:none;">' +
+      '<button class="le-tool-btn" data-tool="select" title="選択 (V)" aria-label="選択ツール">👆</button>' +
+      '<button class="le-tool-btn" data-tool="marker" title="マーカー (M)" aria-label="マーカーツール">📍</button>' +
+      '<button class="le-tool-btn" data-tool="text"   title="テキスト (T)" aria-label="テキストツール">📝</button>' +
+      '<button class="le-tool-btn" data-tool="rect"   title="矩形 (R)" aria-label="矩形ツール">▭</button>' +
+      '<button class="le-tool-btn" data-tool="arrow"  title="矢印 (A)" aria-label="矢印ツール">↗</button>' +
+      '<button class="le-tool-btn" data-tool="line"   title="線 (L)" aria-label="線ツール">─</button>' +
+      '<button class="le-tool-btn" data-tool="eraser" title="消しゴム (E)" aria-label="消しゴムツール">🧹</button>' +
+      '<input type="color" id="le-anno-color" value="#ff3b6b" aria-label="注釈の色">' +
+      '</span>' +
+      '</div>' +
+      '<div class="le-tb-group">' +
+      '<button id="le-grid" title="スナップグリッド" aria-label="スナップグリッド">🔳 グリッド</button>' +
+      '<select id="le-grid-size" title="グリッド間隔" aria-label="グリッド間隔">' +
+      '<option value="8">8</option><option value="16" selected>16</option><option value="32">32</option>' +
+      '</select>' +
+      '<button id="le-comparison" title="比較モード" aria-label="比較モード">🆚 比較</button>' +
+      '<button id="le-list-toggle" title="要素一覧" aria-label="要素一覧パネル切替">📋 要素</button>' +
+      // E1: 🦉 フクロウ博士セリフ編集パネルの開閉
+      '<button id="le-hakase-toggle" title="🦉 フクロウ博士セリフ編集" aria-label="セリフ編集パネル切替">🦉 セリフ</button>' +
+      '<button id="le-pages" class="le-pages-btn" title="他の編集ページへ移動" aria-label="ページ移動" aria-haspopup="true" aria-expanded="false">🌐 ページ</button>' +
+      '<button id="le-help" title="?: ヘルプ" aria-label="ヘルプ">❓</button>' +
+      '</div>' +
+      '<div class="le-tb-group">' +
+      '<label class="le-zoom-wrap">🔍 <input type="range" id="le-zoom-slider" min="25" max="200" value="100" step="5" aria-label="ズーム"><span id="le-zoom-label">100%</span></label>' +
+      '<button id="le-zoom-fit" title="100% に戻す (Ctrl+0)" aria-label="ズーム100%">⌂</button>' +
+      '</div>' +
+      '<div class="le-tb-group">' +
+      '<button id="le-png-export" title="PNG 書き出し" aria-label="PNG書き出し">🖼 PNG</button>' +
+      '<button id="le-preview" title="端末サイズで見る" aria-label="プレビューモード">📱</button>' +
+      '<button id="le-disable" title="編集モード OFF" aria-label="編集モード終了">✕ 編集終了</button>' +
+      '</div>';
+    document.body.insertBefore(tb, document.body.firstChild);
+    state.toolbarEl = tb;
+    wireToolbar(tb);
+  }
+
+  function wireToolbar(tb) {
+    tb.querySelector('#le-save').addEventListener('click', save);
+    tb.querySelector('#le-revert').addEventListener('click', revert);
+    tb.querySelector('#le-reset').addEventListener('click', reset);
+    tb.querySelector('#le-undo').addEventListener('click', undo);
+    tb.querySelector('#le-redo').addEventListener('click', redo);
+    tb.querySelector('#le-duplicate').addEventListener('click', duplicateSelected);
+    // Lima-2 修正B: 「📥 src 差し替え」ボタン — 選択要素にファイルダイアログ経由で
+    //   画像を差し替える明示操作。drag&drop の偶発的差し替えを廃止した代替経路。
+    var replaceBtn = tb.querySelector('#le-replace-src');
+    if (replaceBtn) replaceBtn.addEventListener('click', openReplaceDialog);
+    // Kilo-2 修正C: 親から取り出すボタン
+    var detachBtn = tb.querySelector('#le-detach');
+    if (detachBtn) detachBtn.addEventListener('click', detachSelectedFromParent);
+    // Victor-2: 🗑️ 削除ボタン
+    var deleteBtn = tb.querySelector('#le-delete');
+    if (deleteBtn) deleteBtn.addEventListener('click', deleteSelected);
+    // 📌 chip preset 保存: 選択中の chip の現在のレイアウト (chip + 子要素 circle/illust/label/countNum)
+    //   を data.__chip_presets[type] に保存。 type は chip 自体の class (chip-type-with-image /
+    //   chip-type-text-only) で自動判定。 LayoutApplier が次回 render 時に同種別 chip にも適用。
+    var presetSaveBtn = tb.querySelector('#le-chip-preset-save');
+    if (presetSaveBtn) presetSaveBtn.addEventListener('click', saveChipPreset);
+    // 💾 個別保存: 選択 chip 関連要素を個別 override に明示登録。 ドラッグでは個別化せず、
+    //   このボタンを押した時のみ snapshot() で書き出される (= 保存先を能動的に選ぶ設計)。
+    var indivSaveBtn = tb.querySelector('#le-chip-individual-save');
+    if (indivSaveBtn) indivSaveBtn.addEventListener('click', saveIndividualOverrides);
+    // 🧹 個別設定クリア: 選択 chip と同種別の他 chip の個別 chip|N エントリを全削除して preset
+    //   値を強制反映。 chip|N が「保存した preset と異なる値」を持ってる場合の救済操作。
+    var presetClearBtn = tb.querySelector('#le-chip-preset-clear-overrides');
+    if (presetClearBtn) presetClearBtn.addEventListener('click', clearChipOverridesForType);
+    // 🔡 テキスト初期化: 選択 chip の __chip_text_overrides[qKey][slot] を削除して
+    //   元テキスト (questions.js) に戻す (renderChoices 再実行)。
+    var chipTextClearBtn = tb.querySelector('#le-chip-text-clear');
+    if (chipTextClearBtn) chipTextClearBtn.addEventListener('click', clearChipTextOverrideForSelected);
+    ['#le-chip-font-size', '#le-chip-tracking', '#le-chip-scale-x'].forEach(function (sel) {
+      var input = tb.querySelector(sel);
+      if (!input) return;
+      input.addEventListener('change', saveChipTextStyleForSelected);
+      input.addEventListener('keydown', function (ev) {
+        if (ev.key === 'Enter') {
+          ev.preventDefault();
+          saveChipTextStyleForSelected();
+          try { input.blur(); } catch (e) {}
+        }
+      });
+    });
+    var chipTextStyleClearBtn = tb.querySelector('#le-chip-text-style-clear');
+    if (chipTextStyleClearBtn) chipTextStyleClearBtn.addEventListener('click', clearChipTextStyleForSelected);
+    // ⏭ 次の問題へ: editor 中でも quizland の nextQuestion() を呼んで問題切替。
+    //   chip 種別 (with-image / text-only) を切り替えて preset を 2 種類保存可能に。
+    var nextQBtn = tb.querySelector('#le-next-question');
+    if (nextQBtn) nextQBtn.addEventListener('click', function () {
+      if (typeof window.nextQuestion === 'function') {
+        try { window.nextQuestion(); showToast('次の問題へ', 'success'); }
+        catch (e) { showToast('次の問題に進めませんでした: ' + e.message, 'warn'); }
+      } else {
+        showToast('nextQuestion() がこのページで定義されていません', 'warn');
+      }
+    });
+
+    // ⏸ 一時停止 / ▶ 再開 トグル
+    //   - body.layout-editor-paused class と window._quizlandPaused (boolean) を
+    //     同期して切り替える。 これは quizland/index.html 側の pause guard
+    //     (nextQuestion / _doNextQuestion) から参照される共通 interface。
+    //   - 状態は localStorage ('le-quiz-paused') に永続化。 リロード後も
+    //     pause 中なら pause 状態のまま editor を起動する。
+    //   - 視覚 hint オーバーレイ (#le-paused-overlay) も同時に表示/非表示する。
+    var pauseBtn = tb.querySelector('#le-pause-toggle');
+    if (pauseBtn) {
+      // quizland 専用機能 — playtest トグルと同じ判定で非 quizland では非表示にする
+      // (誤操作で body.layout-editor-paused / window._quizlandPaused / localStorage が
+      //  立ってしまうのを防ぐ)
+      var isQuizlandForPause = (typeof window._qzPtBuildPanel === 'function' &&
+                                typeof window._qzBuildDebugNavDOM === 'function');
+      if (!isQuizlandForPause) {
+        pauseBtn.style.display = 'none';
+      } else {
+        // Initialize window flag (always defined while editor is loaded, even when not paused)
+        try { window._quizlandPaused = false; } catch (_) {}
+        // Restore persisted pause state from previous session
+        var pausedInit = false;
+        try { pausedInit = localStorage.getItem('le-quiz-paused') === '1'; } catch (_) {}
+        applyPauseState(pausedInit, pauseBtn, /*silent*/ true);
+
+        pauseBtn.addEventListener('click', function () {
+          var next = !document.body.classList.contains('layout-editor-paused');
+          applyPauseState(next, pauseBtn, /*silent*/ false);
+          try { localStorage.setItem('le-quiz-paused', next ? '1' : '0'); } catch (_) {}
+        });
+      }
+    }
+
+    // 🎯/🌐 per-Q 保存範囲トグル (2026-06-11)
+    //   enable(cfg.perQuestionScopeToggleSelectors) が空のページでは非表示のまま。
+    //   切替は書き込みキー形式のみに作用 (geometry は不変) なので、 未編集なら
+    //   dirty baseline をトグル後のキー形式で取り直し、 誤 dirty 検知を防ぐ。
+    var perqScopeBtn = tb.querySelector('#le-perq-scope');
+    var perqClearBtn = tb.querySelector('#le-perq-clear');
+    var perqLockBtn  = tb.querySelector('#le-perq-lock');
+    if (perqScopeBtn && state._perQScopeToggleSelectors && state._perQScopeToggleSelectors.length) {
+      perqScopeBtn.style.display = '';
+      perqScopeBtn.addEventListener('click', function () {
+        state.perQScopeThisQ = !state.perQScopeThisQ;
+        // 2026-06-30 (batch:962 ★1): トグル状態を localStorage に永続化
+        savePerQScopePref(state.perQScopeThisQ);
+        if (!state._dirty) {
+          try {
+            state.lastSavedJson = JSON.stringify(snapshot());
+            state.lastSavedQid = getCurrentQid();
+          } catch (e) { /* noop */ }
+        }
+        // ボタン表示 (⚠個別あり バッジ含む) と選択ラベル / 要素一覧の [qid]・🎯 バッジを最新化
+        updatePerQScopeUI();
+        try { refreshSelectionUI(); } catch (e) { /* noop */ }
+        try { refreshElementList(); } catch (e) { /* noop */ }
+        showToast(state.perQScopeThisQ
+          ? '🎯 質問カード・音声ボタンを「この質問だけ」に保存します'
+          : '🌐 質問カード・音声ボタンを「すべての質問」共通で保存します', 'success');
+      });
+      // 🧹 この質問の個別設定を削除 (2026-06-11 critical fix: 片道ドア解消)
+      if (perqClearBtn) {
+        perqClearBtn.addEventListener('click', function () {
+          var keys = _collectPerQOverrideKeysForCurrentQ();
+          if (!keys.length) { showToast('この質問に個別レイアウト設定はありません'); return; }
+          if (!confirm('この質問の個別レイアウト (' + keys.length + ' 件) を削除して、共通位置に戻しますか？\n\n削除はこのまま保存されます。')) return;
+          var d = window._currentLayoutData;
+          keys.forEach(function (k) {
+            if (d && Object.prototype.hasOwnProperty.call(d, k)) delete d[k];
+            if (state._perQDeletedKeys) state._perQDeletedKeys.add(k);
+          });
+          // per-Q 値で当たっていたジオメトリを一旦素に戻してから共通値を再適用する
+          // (applyOne は w/h が falsy だと style を残すため、 wipe しないと
+          //  per-Q の width/height が残留する)。
+          (state._perQScopeToggleSelectors || []).forEach(function (sel) {
+            $$(sel).forEach(function (el) {
+              el.style.width = ''; el.style.height = ''; el.style.transform = '';
+              el._tx = 0; el._ty = 0;
+              if (el._resizeUpdateLabel) { try { el._resizeUpdateLabel(); } catch (e) {} }
+            });
+          });
+          try {
+            if (window.LayoutApplier && d) {
+              window.LayoutApplier.apply(d, document, _applierCfg({
+                selectors: state.spec.map(function (e2) { return e2[0]; })
+              }));
+            }
+          } catch (e) { /* noop */ }
+          // 🎯 のまま 💾 すると snapshot が @qid キーを即再生成してしまうため 🌐 に戻す
+          state.perQScopeThisQ = false;
+          savePerQScopePref(false); // 2026-06-30 (batch:962 ★1): localStorage も同期
+          updatePerQScopeUI();
+          try { refreshSelectionUI(); } catch (e) { /* noop */ }
+          try { refreshElementList(); } catch (e) { /* noop */ }
+          save(); // GET→merge→削除キー適用→PUT で削除を永続化
+        });
+      }
+      // 🔒 このレイアウトをロック (2026-06-30 batch:968): per-Q キーを saved-layout-frozen.json
+      //   に転記して永続保護する。 quizland 以外では非表示のまま (saved-layout-frozen.json 未対応)。
+      //   有効化条件: saved-layout-frozen.json をサポートする quizland 文脈 (ghPath が
+      //   `quizland/saved-layout.json` で終わる) のときだけ表示。
+      if (perqLockBtn) {
+        try {
+          var gp = (state.config && state.config.ghPath) || (function () {
+            var lu = (state.config && state.config.layoutUrl) || '';
+            return lu.replace(/^\.\//, '').replace(/^\//, '');
+          })();
+          var frozenSupported = /saved-layout\.json$/i.test(gp || '');
+          if (frozenSupported) {
+            perqLockBtn.style.display = '';
+            perqLockBtn.addEventListener('click', function () { lockToFrozen(); });
+          }
+        } catch (_) { /* 表示しないだけ — fatal にしない */ }
+      }
+      // 保存成功 (🎯 保存で @qid キーが増えた / 🧹 で減った) に ⚠個別あり バッジを追従
+      var perqSaveListener = function () { updatePerQScopeUI(); };
+      on('save:success', perqSaveListener);
+      registerCleanup(function () { off('save:success', perqSaveListener); });
+      updatePerQScopeUI();
+    }
+
+    // 🧪 Playtest toggle: editor 内 playtest UI (debug=all モードと同じ playtest UI:
+    //   コメント / 自動キャプチャ / 添付 / 前へ次へ / ジャンプ select) の ON/OFF。
+    //   quizland のみ機能 — window._qzPtBuildPanel が定義されていれば quizland とみなして
+    //   ボタンを表示し、 そうでなければ非表示にする。 状態は localStorage 保存
+    //   (キー: 'qz-playtest-in-editor', 値: '0' / '1') し、 リロード後も維持される。
+    var playtestBtn = tb.querySelector('#le-playtest-toggle');
+    if (playtestBtn) {
+      var isQuizland = (typeof window._qzPtBuildPanel === 'function' &&
+                        typeof window._qzBuildDebugNavDOM === 'function');
+      if (!isQuizland) {
+        playtestBtn.style.display = 'none';
+      } else {
+        playtestBtn.style.display = '';
+        var initOn = (function () {
+          try { return localStorage.getItem('qz-playtest-in-editor') === '1'; }
+          catch (_) { return false; }
+        })();
+        playtestBtn.textContent = initOn ? '🧪 Playtest ON' : '🧪 Playtest OFF';
+        playtestBtn.classList.toggle('active', initOn);
+
+        playtestBtn.addEventListener('click', function () {
+          var cur = (function () {
+            try { return localStorage.getItem('qz-playtest-in-editor') === '1'; }
+            catch (_) { return false; }
+          })();
+          var next = !cur;
+          try { localStorage.setItem('qz-playtest-in-editor', next ? '1' : '0'); } catch (_) {}
+          playtestBtn.textContent = next ? '🧪 Playtest ON' : '🧪 Playtest OFF';
+          playtestBtn.classList.toggle('active', next);
+
+          // 即時反映: window フラグ更新 + body.debug-mode 切替 + 必要なら DOM 構築
+          try { window.QZ_PLAYTEST_IN_EDITOR = next; } catch (_) {}
+          var hasDebugAll = !!window.QZ_DEBUG_ALL;
+          if (next || hasDebugAll) {
+            document.body.classList.add('debug-mode');
+          } else {
+            document.body.classList.remove('debug-mode');
+          }
+          if (next) {
+            try {
+              if (typeof window._qzBuildDebugNavDOM === 'function') window._qzBuildDebugNavDOM();
+              if (typeof window._qzPtBuildPanel === 'function' &&
+                  !document.getElementById('qz-playtest-panel')) {
+                window._qzPtBuildPanel();
+              }
+              // editor の通常セッションは 5 問 playlist のままなので、 全 169 問に
+              // 構築し直す。 _qzInitFullPlaylist は現在の問題の index を新 playlist
+              // 内で再特定して滑らかに切替える (画面のチラつき防止)。
+              if (typeof window._qzInitFullPlaylist === 'function' &&
+                  !window.QZ_DEBUG_ALL) {
+                window._qzInitFullPlaylist();
+              }
+              if (typeof window.updateDebugNav === 'function') window.updateDebugNav();
+            } catch (e) { console.warn('[playtest] build failed', e); }
+          }
+          showToast(next ? '🧪 Playtest UI ON' : '🧪 Playtest UI OFF', 'success');
+        });
+      }
+    }
+
+    // U10: iPad-friendly multi-select toggle
+    var msBtn = tb.querySelector('#le-multi-select');
+    if (msBtn) {
+      msBtn.addEventListener('click', function () {
+        state.multiSelectMode = !state.multiSelectMode;
+        msBtn.classList.toggle('active', state.multiSelectMode);
+        msBtn.textContent = state.multiSelectMode ? '👆+ 複数選択 ON' : '👆+ 複数選択';
+        showToast(state.multiSelectMode ? 'マルチセレクトモード ON' : 'マルチセレクトモード OFF');
+      });
+    }
+    tb.querySelector('#le-userbox-add').addEventListener('click', function () { setDrawMode(!state.drawModeOn); });
+    // India-2: text-add tool
+    var textAddBtn = tb.querySelector('#le-text-add');
+    if (textAddBtn) textAddBtn.addEventListener('click', function () { setTextToolMode(!state.textToolOn); });
+    tb.querySelector('#le-anno-toggle').addEventListener('click', function () { setAnnoMode(!state.annoMode); });
+    tb.querySelectorAll('.le-tool-btn').forEach(function (b) {
+      b.addEventListener('click', function () { setAnnoTool(b.dataset.tool); });
+    });
+    // U4: top-toolbar alignment buttons (delegate to applyAlignment).
+    tb.querySelectorAll('.le-align-tb-btn').forEach(function (b) {
+      b.addEventListener('click', function () {
+        if (b.disabled) return;
+        applyAlignment(b.dataset.align);
+      });
+    });
+    var colorInp = tb.querySelector('#le-anno-color');
+    if (colorInp) colorInp.addEventListener('input', function (e) {
+      state.annoColor = e.target.value;
+      if (state.annoSelected) applyAnnoColor(state.annoSelected, state.annoColor);
+    });
+    tb.querySelector('#le-grid').addEventListener('click', function () { toggleGrid(); });
+    tb.querySelector('#le-grid-size').addEventListener('change', function (e) {
+      setGridSize(parseInt(e.target.value, 10));
+    });
+    tb.querySelector('#le-comparison').addEventListener('click', toggleComparison);
+    tb.querySelector('#le-list-toggle').addEventListener('click', function () {
+      if (!state.listPanelEl) buildElementListPanel();
+      var nowOpen = state.listPanelEl.classList.toggle('open');
+      // R1: persist open/closed state
+      try { localStorage.setItem('pono_layout_panel_open', nowOpen ? '1' : '0'); } catch (e) {}
+    });
+    // E1: 🦉 セリフ編集パネル開閉
+    var hakaseBtn = tb.querySelector('#le-hakase-toggle');
+    if (hakaseBtn) {
+      hakaseBtn.addEventListener('click', function () {
+        if (!state.hakasePanelEl) {
+          state.hakasePanelEl = buildHakaseDialoguePanel();
+        }
+        var p = state.hakasePanelEl;
+        // E1-fix: CSS の display:flex !important を打ち消すため .hidden で制御
+        p.classList.toggle('hidden');
+      });
+    }
+    // 🌐 Page navigation: hide button when no pages configured.
+    var pagesBtn = tb.querySelector('#le-pages');
+    if (pagesBtn) {
+      var pages = state.config && state.config.pages;
+      if (!pages || !pages.length) {
+        pagesBtn.style.display = 'none';
+      } else {
+        pagesBtn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          togglePagesDropdown(pagesBtn);
+        });
+      }
+    }
+    tb.querySelector('#le-help').addEventListener('click', showHelpModal);
+    tb.querySelector('#le-zoom-slider').addEventListener('input', function (e) {
+      setZoom(parseInt(e.target.value, 10) / 100);
+    });
+    tb.querySelector('#le-zoom-fit').addEventListener('click', zoomFit);
+    tb.querySelector('#le-png-export').addEventListener('click', showPngMenu);
+    tb.querySelector('#le-preview').addEventListener('click', enterPreview);
+    tb.querySelector('#le-disable').addEventListener('click', disable);
+  }
+
+  // U4: refresh enabled/disabled state of top-toolbar alignment buttons
+  function refreshTopToolbarAlign() {
+    if (!state.toolbarEl) return;
+    var n = state.selectedElements ? state.selectedElements.size : 0;
+    state.toolbarEl.querySelectorAll('.le-align-tb-btn').forEach(function (b) {
+      var kind = b.dataset.align;
+      var need = (kind === 'dist-h' || kind === 'dist-v') ? 3 : 2;
+      b.disabled = n < need;
+    });
+  }
+
+  // ====================================================================
+  //  PNG export (FEATURE 17)
+  // ====================================================================
+
+  function showPngMenu() {
+    var existing = $('#le-png-menu');
+    if (existing) { existing.remove(); return; }
+    var menu = document.createElement('div');
+    menu.id = 'le-png-menu';
+    menu.className = 'le-png-menu';
+    menu.innerHTML =
+      '<button data-mode="snapshot">📸 現状そのまま</button>' +
+      '<button data-mode="wireframe">🪟 ワイヤー (枠線のみ)</button>';
+    var anchor = $('#le-png-export');
+    if (!anchor) return;
+    var rect = anchor.getBoundingClientRect();
+    menu.style.position = 'fixed';
+    menu.style.top = (rect.bottom + 4) + 'px';
+    menu.style.left = rect.left + 'px';
+    document.body.appendChild(menu);
+    menu.addEventListener('click', function (e) {
+      var btn = e.target.closest('button[data-mode]');
+      if (!btn) return;
+      menu.remove();
+      if (btn.dataset.mode === 'snapshot') exportPngSnapshot();
+      else if (btn.dataset.mode === 'wireframe') exportPngWireframe();
+    });
+    setTimeout(function () {
+      document.addEventListener('click', function clickOff(ev) {
+        if (!menu.contains(ev.target)) { menu.remove(); document.removeEventListener('click', clickOff); }
+      }, { once: true });
+    }, 50);
+  }
+
+  function exportPngSnapshot() {
+    if (typeof window.html2canvas !== 'function') {
+      showToast('html2canvas が未ロードです (snapshot モード)', 'error');
+      return;
+    }
+    var safe = $('#safe-area') || state.canvasEl;
+    if (!safe) return;
+    showToast('スナップショット生成中...');
+    window.html2canvas(safe, {
+      scale: 1, useCORS: true, allowTaint: true, backgroundColor: null, logging: false,
+    }).then(function (canvas) {
+      canvas.toBlob(function (blob) {
+        if (!blob) { showToast('PNG 生成失敗', 'error'); return; }
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = 'layout-snapshot-' + nowIso() + '.png';
+        document.body.appendChild(a); a.click(); a.remove();
+        URL.revokeObjectURL(url);
+        showToast('PNG を保存しました');
+      }, 'image/png');
+    }).catch(function (err) {
+      showToast('スナップショット失敗: ' + err.message, 'error');
+    });
+  }
+
+  function exportPngWireframe() {
+    var stage = state.canvasEl;
+    if (!stage) return;
+    var info = getStageRectInfo();
+    var W = parseFloat(getComputedStyle(stage).width) || stage.offsetWidth;
+    var H = parseFloat(getComputedStyle(stage).height) || stage.offsetHeight;
+    var labelMap = {};
+    state.spec.forEach(function (entry) { labelMap[entry[0]] = entry[2] || ''; });
+    var out = document.createElement('canvas');
+    out.width = W; out.height = H;
+    var ctx = out.getContext('2d');
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = 'rgba(0,184,224,0.5)';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([8, 4]);
+    ctx.strokeRect(1, 1, W - 2, H - 2);
+    ctx.setLineDash([]);
+    state.spec.forEach(function (entry) {
+      var sel = entry[0];
+      $$(sel).forEach(function (el, idx) {
+        var r = el.getBoundingClientRect();
+        var x = (r.left - info.stageRect.left) / info.scale;
+        var y = (r.top - info.stageRect.top) / info.scale;
+        var w = r.width / info.scale, h = r.height / info.scale;
+        ctx.strokeStyle = '#1a1a1a';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(x, y, w, h);
+        var label = (labelMap[sel] || sel) + ($$(sel).length > 1 ? ' ' + (idx + 1) : '');
+        ctx.font = '700 18px system-ui, -apple-system, sans-serif';
+        var pad = 8;
+        var textW = ctx.measureText(label).width;
+        var bH = 24, bW = textW + pad * 2;
+        var bY = (y - bH - 4 >= 0) ? (y - bH - 4) : (y + 4);
+        ctx.fillStyle = 'rgba(0,0,0,0.88)';
+        ctx.fillRect(x, bY, bW, bH);
+        ctx.fillStyle = '#ffe8a8';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, x + pad, bY + bH / 2);
+        ctx.font = '500 16px ui-monospace, Menlo, Consolas, monospace';
+        ctx.fillStyle = 'rgba(0,0,0,0.45)';
+        ctx.textAlign = 'center';
+        ctx.fillText(Math.round(w) + ' × ' + Math.round(h), x + w / 2, y + h / 2);
+        ctx.textAlign = 'start';
+        ctx.textBaseline = 'alphabetic';
+      });
+    });
+    out.toBlob(function (blob) {
+      if (!blob) { showToast('PNG 生成失敗', 'error'); return; }
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = 'layout-wireframe-' + nowIso() + '.png';
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+      showToast('ワイヤー PNG を保存');
+    }, 'image/png');
+  }
+
+  // ====================================================================
+  //  Preview mode (FEATURE 17 / 28)
+  // ====================================================================
+
+  function enterPreview() {
+    document.body.classList.add('preview-mode');
+    fitStage();
+    window.addEventListener('resize', fitStage);
+    // R2: visible exit affordance — small fixed button top-right while in preview
+    if (!state.previewExitBtn) {
+      var btn = document.createElement('button');
+      btn.className = 'le-preview-exit';
+      btn.type = 'button';
+      btn.textContent = '✕ プレビュー終了';
+      btn.title = 'Esc でも終了できます';
+      btn.setAttribute('aria-label', 'プレビューを終了');
+      btn.addEventListener('click', exitPreview);
+      document.body.appendChild(btn);
+      state.previewExitBtn = btn;
+    }
+    // R2: strip ?preview=1 from URL if present
+    try {
+      if (window.location && window.location.search.indexOf('preview=1') >= 0 &&
+          window.history && typeof window.history.replaceState === 'function') {
+        var u = new URL(window.location.href);
+        u.searchParams.delete('preview');
+        window.history.replaceState(null, '', u.pathname + (u.search ? u.search : '') + u.hash);
+      }
+    } catch (e) {}
+  }
+  function exitPreview() {
+    if (!document.body.classList.contains('preview-mode')) return;
+    document.body.classList.remove('preview-mode');
+    var stage = state.canvasEl;
+    if (stage) stage.style.transform = 'scale(' + state.zoom + ')';
+    window.removeEventListener('resize', fitStage);
+    if (state.previewExitBtn) {
+      state.previewExitBtn.remove();
+      state.previewExitBtn = null;
+    }
+    // R2: clear ?preview=1 from URL on exit too
+    try {
+      if (window.location && window.location.search.indexOf('preview=1') >= 0 &&
+          window.history && typeof window.history.replaceState === 'function') {
+        var u = new URL(window.location.href);
+        u.searchParams.delete('preview');
+        window.history.replaceState(null, '', u.pathname + (u.search ? u.search : '') + u.hash);
+      }
+    } catch (e) {}
+  }
+  function fitStage() {
+    var stage = state.canvasEl;
+    if (!stage) return;
+    var stageW = parseFloat(getComputedStyle(stage).width);
+    var stageH = parseFloat(getComputedStyle(stage).height);
+    var w = window.innerWidth, h = window.innerHeight;
+    var scale = Math.min(w / stageW, h / stageH);
+    var ox = (w - stageW * scale) / 2;
+    var oy = (h - stageH * scale) / 2;
+    stage.style.transformOrigin = '0 0';
+    stage.style.transform = 'translate(' + ox + 'px, ' + oy + 'px) scale(' + scale + ')';
+  }
+
+  // ====================================================================
+  //  Help modal (FEATURE 27)
+  // ====================================================================
+
+  // ====================================================================
+  //  🌐 Page navigation dropdown
+  // ====================================================================
+  function togglePagesDropdown(anchorBtn) {
+    if (state.pagesDropdownEl) { closePagesDropdown(); return; }
+    var pages = (state.config && state.config.pages) || [];
+    if (!pages.length) return;
+
+    var dd = document.createElement('div');
+    dd.className = 'le-pages-dropdown';
+    var rect = anchorBtn.getBoundingClientRect();
+    dd.style.top  = (rect.bottom + 4) + 'px';
+    dd.style.left = Math.max(8, rect.left) + 'px';
+
+    var html = '<div class="le-pages-dropdown-title">編集可能なページ</div><ul class="le-pages-list">';
+    pages.forEach(function (p) {
+      if (!p || !p.name) return;
+      var name = String(p.name);
+      var url  = p.url ? String(p.url) : '';
+      if (p.current) {
+        html += '<li class="le-pages-current"><span>📍 ' + escHtml(name) + '</span></li>';
+      } else if (url) {
+        html += '<li><a href="' + escAttr(url) + '">' + escHtml(name) + '</a></li>';
+      } else {
+        html += '<li><span>' + escHtml(name) + '</span></li>';
+      }
+    });
+    html += '</ul>';
+    dd.innerHTML = html;
+    document.body.appendChild(dd);
+    state.pagesDropdownEl = dd;
+    if (anchorBtn) anchorBtn.setAttribute('aria-expanded', 'true');
+
+    // Click outside closes.
+    var docHandler = function (e) {
+      if (!state.pagesDropdownEl) return;
+      if (state.pagesDropdownEl.contains(e.target)) return;
+      if (anchorBtn && anchorBtn.contains(e.target)) return;
+      closePagesDropdown();
+    };
+    state.pagesDocClickHandler = docHandler;
+    // Defer attaching to avoid catching the same click that opened the menu.
+    setTimeout(function () {
+      document.addEventListener('click', docHandler, true);
+    }, 0);
+  }
+
+  function closePagesDropdown() {
+    if (state.pagesDropdownEl) {
+      state.pagesDropdownEl.remove();
+      state.pagesDropdownEl = null;
+    }
+    if (state.pagesDocClickHandler) {
+      try { document.removeEventListener('click', state.pagesDocClickHandler, true); } catch (e) {}
+      state.pagesDocClickHandler = null;
+    }
+    var btn = state.toolbarEl && state.toolbarEl.querySelector('#le-pages');
+    if (btn) btn.setAttribute('aria-expanded', 'false');
+  }
+
+  function escHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return c === '&' ? '&amp;' : c === '<' ? '&lt;' : c === '>' ? '&gt;' : c === '"' ? '&quot;' : '&#39;';
+    });
+  }
+  function escAttr(s) { return escHtml(s); }
+
+  function showHelpModal() {
+    if (state.helpModalEl) { state.helpModalEl.remove(); state.helpModalEl = null; return; }
+    var modal = document.createElement('div');
+    modal.className = 'le-help-modal';
+    modal.innerHTML =
+      '<div class="le-help-card">' +
+      '<h3>ショートカット</h3>' +
+      '<table>' +
+      '<tr><td>Ctrl+S</td><td>保存</td></tr>' +
+      '<tr><td>Ctrl+Z / Ctrl+Y</td><td>Undo / Redo</td></tr>' +
+      '<tr><td>Ctrl+D</td><td>選択中を複製</td></tr>' +
+      '<tr><td>Ctrl+L</td><td>選択中をロック</td></tr>' +
+      '<tr><td>Ctrl + 0 / + / -</td><td>ズーム リセット / 拡大 / 縮小</td></tr>' +
+      '<tr><td>Ctrl + ホイール</td><td>ズーム</td></tr>' +
+      '<tr><td>Arrow ↑↓ / Shift+Arrow</td><td>±1 / ±10</td></tr>' +
+      '<tr><td>Alt+クリック</td><td>±0.5 ステップ</td></tr>' +
+      '<tr><td>Shift+クリック</td><td>複数選択 (toggle)</td></tr>' +
+      '<tr><td>Delete / Backspace</td><td>選択中を削除 (Ctrl+Z で復活 / 注釈モードでは注釈削除)</td></tr>' +
+      '<tr><td>Esc</td><td>選択解除</td></tr>' +
+      '<tr><td>?</td><td>ヘルプ表示</td></tr>' +
+      '</table>' +
+      '<button class="le-help-close">閉じる</button>' +
+      '</div>';
+    document.body.appendChild(modal);
+    state.helpModalEl = modal;
+    modal.querySelector('.le-help-close').addEventListener('click', function () {
+      modal.remove();
+      state.helpModalEl = null;
+    });
+    modal.addEventListener('click', function (e) {
+      if (e.target === modal) {
+        modal.remove();
+        state.helpModalEl = null;
+      }
+    });
+  }
+
+  // ====================================================================
+  //  Keyboard (FEATURE 27)
+  // ====================================================================
+
+  function attachKeyboard() {
+    var keydownHandler = function (e) {
+      if (!state.enabled) return;
+      var inField = e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' ||
+                                  e.target.tagName === 'SELECT' || e.target.isContentEditable);
+      // Ctrl+S: save
+      if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+        e.preventDefault(); save(); return;
+      }
+      // Ctrl+Z / Ctrl+Y
+      if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 'z' || e.key === 'Z')) {
+        e.preventDefault(); undo(); return;
+      }
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && (e.key === 'z' || e.key === 'Z')))) {
+        e.preventDefault(); redo(); return;
+      }
+      // Ctrl+D: duplicate
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'd' || e.key === 'D')) {
+        e.preventDefault(); duplicateSelected(); return;
+      }
+      // Ctrl+L: lock toggle
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'l' || e.key === 'L')) {
+        e.preventDefault();
+        var sel = Array.from(state.selectedElements);
+        sel.forEach(function (el) { toggleLock(el); });
+        refreshElementList();
+        return;
+      }
+      // Ctrl+0 / + / -
+      if ((e.ctrlKey || e.metaKey) && e.key === '0') {
+        e.preventDefault(); zoomFit(); return;
+      }
+      if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '=')) {
+        e.preventDefault(); setZoom(state.zoom + 0.1); return;
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === '-') {
+        e.preventDefault(); setZoom(state.zoom - 0.1); return;
+      }
+      if (inField) return;
+      // Plain keys
+      if (e.key === '?') { e.preventDefault(); showHelpModal(); return; }
+      if (e.key === 'Escape') {
+        // R2: Esc exits preview mode first
+        if (document.body.classList.contains('preview-mode')) { exitPreview(); return; }
+        if (state.helpModalEl) { state.helpModalEl.remove(); state.helpModalEl = null; return; }
+        var ctxMenu = $('#le-context-menu');
+        if (ctxMenu) { ctxMenu.remove(); return; }
+        if (state.drawModeOn) { setDrawMode(false); return; }
+        if (state.annoMode && state.annoSelected) { annoSelectEl(null); return; }
+        clearSelection();
+        return;
+      }
+      // U8: single-key annotation tool shortcuts (only while annotation mode is on)
+      if (state.annoMode && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
+        var annoMap = { m: 'marker', t: 'text', r: 'rect', a: 'arrow', l: 'line', e: 'eraser', v: 'select' };
+        var k = e.key && e.key.toLowerCase ? e.key.toLowerCase() : '';
+        if (annoMap[k]) {
+          e.preventDefault();
+          setAnnoTool(annoMap[k]);
+          return;
+        }
+      }
+      if ((e.key === 'Delete' || e.key === 'Backspace')) {
+        if (state.annoMode && state.annoSelected) {
+          e.preventDefault();
+          var el = state.annoSelected;
+          pushHistory({ type: 'remove', el: el, parent: el.parentNode, next: el.nextSibling });
+          el.remove();
+          annoSelectEl(null);
+          return;
+        }
+        // Victor-2: contenteditable / INPUT / TEXTAREA は上の inField guard で
+        // 既に return 済み。ここに来るのは canvas focus / body focus 時のみ。
+        // 「隠す (hide)」ではなく「削除 (delete)」に切り替え (Ctrl+Z で復活可能)。
+        if (state.selectedElements.size > 0) {
+          e.preventDefault();
+          deleteSelected();
+        }
+      }
+      // Arrow keys nudge selected elements
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        if (!state.selectedElements.size) return;
+        e.preventDefault();
+        var step = e.shiftKey ? 10 : 1;
+        var dx = e.key === 'ArrowLeft' ? -step : (e.key === 'ArrowRight' ? step : 0);
+        var dy = e.key === 'ArrowUp' ? -step : (e.key === 'ArrowDown' ? step : 0);
+        var beforeMap = new Map();
+        Array.from(state.selectedElements).filter(function (el) { return !isLocked(el); }).forEach(function (el) {
+          beforeMap.set(el, getResizeState(el));
+          el._tx = (el._tx || 0) + dx;
+          el._ty = (el._ty || 0) + dy;
+          el.style.transform = 'translate(' + el._tx + 'px, ' + el._ty + 'px)';
+        });
+        // Kilo-2 修正A: Arrow / Shift+Arrow nudge も batch にまとめる
+        var ops = [];
+        beforeMap.forEach(function (before, el) {
+          var after = getResizeState(el);
+          if (JSON.stringify(after) !== JSON.stringify(before)) {
+            ops.push({ type: 'resize', el: el, before: before, after: after });
+          }
+        });
+        pushHistoryBatch(ops);
+        updateNumericPanel();
+      }
+    };
+    addManagedListener(window, 'keydown', keydownHandler);
+  }
+
+  // ====================================================================
+  //  Click on background → clear selection
+  // ====================================================================
+
+  function attachBackgroundClickClear() {
+    var bgHandler = function (e) {
+      if (!state.enabled) return;
+      if (e.target.closest('.resizable')) return;
+      if (e.target.closest('.numeric-panel')) return;
+      if (e.target.closest('.le-toolbar')) return;
+      if (e.target.closest('.le-list-panel')) return;
+      if (e.target.closest('.resize-handle')) return;
+      if (e.target.closest('.le-guide')) return;
+      if (e.target.closest('.le-ruler')) return;
+      if (e.target.closest('.le-help-modal')) return;
+      if (e.target.closest('.le-comparison-picker')) return;
+      if (e.target.closest('.le-context-menu')) return;
+      if (e.target.closest('.le-pages-dropdown')) return;
+      if (state.selectedElements.size > 0) clearSelection();
+    };
+    addManagedListener(document, 'mousedown', bgHandler);
+  }
+
+  // ====================================================================
+  //  Editable text wiring (FEATURE 13)
+  // ====================================================================
+
+  function wireEditableTexts() {
+    var focusHandler = function (e) {
+      if (e.target.classList && e.target.classList.contains('editable-text')) {
+        e.target._beforeText = e.target.textContent;
+      }
+    };
+    var blurHandler = function (e) {
+      if (e.target.classList && e.target.classList.contains('editable-text')) {
+        var before = e.target._beforeText;
+        var after = e.target.textContent;
+        if (before !== undefined && before !== after) {
+          pushHistory({ type: 'text', el: e.target, before: before, after: after });
+        }
+        scheduleDirtyUpdate();
+      }
+    };
+    addManagedListener(document, 'focus', focusHandler, true);
+    addManagedListener(document, 'blur', blurHandler, true);
+  }
+
+  // ====================================================================
+  //  Image drag-and-drop (Team Uniform: drop OS image files into editor)
+  // ====================================================================
+
+  var DROP_MAX_BYTES = 10 * 1024 * 1024; // 10MB hard cap before data-URL conversion
+  // Max long-side after resize (matches scripts/auto_optimize_image.py).
+  // 4K-class drops get auto-shrunk so localStorage doesn't blow its 5–10MB quota.
+  var MAX_DIMENSION = 1600;
+
+  function droppedImagesStorageKey() {
+    return 'le-dropped-images:' + (location.pathname || '/');
+  }
+
+  function readAsDataURL(file) {
+    return new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function () { resolve(reader.result); };
+      reader.onerror = function (err) { reject(err); };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function loadImage(src) {
+    return new Promise(function (resolve, reject) {
+      var img = new Image();
+      img.onload = function () { resolve(img); };
+      img.onerror = function (err) { reject(err); };
+      img.src = src;
+    });
+  }
+
+  // Read a file and resize it to MAX_DIMENSION on the long side, preserving
+  // aspect ratio and (where possible) original format/transparency.
+  // Returns { dataUrl, width, height, resized, requantized, finalBytes }.
+  // Falls back to the raw data URL if anything goes wrong (e.g. decode failure
+  // on a corrupt file).
+  //
+  // 2026-05-09 規制: 推奨 1MB (RECOMMEND_BYTES) / 上限 3MB (HARD_BYTES)。
+  //   1MB を超えた場合は JPEG 化 + quality を段階的に下げて再圧縮 (q=0.85, 0.7, 0.55)。
+  //   PNG / WebP も透過維持できないと判断したら最終手段で JPEG にフォールバック。
+  function _approxBytesFromDataUrl(u) {
+    if (!u) return 0;
+    var i = u.indexOf(',');
+    var b64 = i >= 0 ? u.slice(i + 1) : u;
+    return Math.round(b64.length * 0.75); // base64 → bytes
+  }
+  var RECOMMEND_BYTES = 1 * 1024 * 1024;  // 1MB 推奨ライン
+  var HARD_BYTES = 3 * 1024 * 1024;       // 3MB 上限
+  function readAndResizeImage(file) {
+    return readAsDataURL(file).then(function (dataUrl) {
+      return loadImage(dataUrl).then(function (img) {
+        var nw = img.naturalWidth || img.width;
+        var nh = img.naturalHeight || img.height;
+        var longSide = Math.max(nw, nh);
+        var needsResize = longSide > MAX_DIMENSION;
+        var targetW = nw, targetH = nh;
+        if (needsResize) {
+          var scale = MAX_DIMENSION / longSide;
+          targetW = Math.max(1, Math.round(nw * scale));
+          targetH = Math.max(1, Math.round(nh * scale));
+        }
+
+        // Decide whether we even need to re-encode.
+        // - Resize required → must re-encode.
+        // - Original > RECOMMEND_BYTES → re-encode to try to fit regulation.
+        // - Otherwise → pass through.
+        var rawBytes = file ? file.size : _approxBytesFromDataUrl(dataUrl);
+        if (!needsResize && rawBytes <= RECOMMEND_BYTES) {
+          return { dataUrl: dataUrl, width: nw, height: nh, resized: false, requantized: false, finalBytes: rawBytes };
+        }
+
+        var canvasEl = document.createElement('canvas');
+        canvasEl.width = targetW;
+        canvasEl.height = targetH;
+        var ctx = canvasEl.getContext('2d');
+        if (!ctx) {
+          return { dataUrl: dataUrl, width: nw, height: nh, resized: false, requantized: false, finalBytes: rawBytes };
+        }
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(img, 0, 0, targetW, targetH);
+        var mime = (file && file.type) || '';
+        var outputDataUrl;
+        var requantized = false;
+        try {
+          if (mime === 'image/png' || mime === 'image/webp') {
+            // Preserve transparency / lossless formats first.
+            outputDataUrl = canvasEl.toDataURL(mime);
+            // Size guard: if the lossless output is over RECOMMEND_BYTES, retry as
+            // WebP @ q=0.9 → 0.8 → 0.7. WebP keeps alpha, so it's preferable to
+            // JPEG fallback for transparent assets.
+            if (_approxBytesFromDataUrl(outputDataUrl) > RECOMMEND_BYTES) {
+              var webpQs = [0.9, 0.8, 0.7];
+              for (var wi = 0; wi < webpQs.length; wi++) {
+                try {
+                  var attempt = canvasEl.toDataURL('image/webp', webpQs[wi]);
+                  if (attempt && attempt.indexOf('data:image/webp') === 0) {
+                    if (_approxBytesFromDataUrl(attempt) < _approxBytesFromDataUrl(outputDataUrl)) {
+                      outputDataUrl = attempt;
+                      requantized = true;
+                    }
+                    if (_approxBytesFromDataUrl(outputDataUrl) <= RECOMMEND_BYTES) break;
+                  }
+                } catch (e) { /* WebP not supported in this browser, skip */ }
+              }
+            }
+          } else {
+            // JPEG (default) and any unknown raster type → JPEG @ 0.9.
+            outputDataUrl = canvasEl.toDataURL('image/jpeg', 0.9);
+            // Size guard: walk down the quality ladder until under RECOMMEND_BYTES
+            // (or we run out of steps).
+            if (_approxBytesFromDataUrl(outputDataUrl) > RECOMMEND_BYTES) {
+              var qLadder = [0.85, 0.7, 0.55];
+              for (var qi = 0; qi < qLadder.length; qi++) {
+                var attempt2 = canvasEl.toDataURL('image/jpeg', qLadder[qi]);
+                if (_approxBytesFromDataUrl(attempt2) < _approxBytesFromDataUrl(outputDataUrl)) {
+                  outputDataUrl = attempt2;
+                  requantized = true;
+                }
+                if (_approxBytesFromDataUrl(outputDataUrl) <= RECOMMEND_BYTES) break;
+              }
+            }
+          }
+        } catch (err) {
+          console.warn('[LayoutEditor] canvas.toDataURL failed; using original', err);
+          return { dataUrl: dataUrl, width: nw, height: nh, resized: false, requantized: false, finalBytes: rawBytes };
+        }
+        var finalBytes = _approxBytesFromDataUrl(outputDataUrl);
+        // Size delta log (base64 → bytes is ~3/4)
+        try {
+          var beforeKB = Math.round(rawBytes / 1024);
+          var afterKB = Math.round(finalBytes / 1024);
+          var saved = beforeKB > 0 ? Math.round(100 - (afterKB / beforeKB) * 100) : 0;
+          console.log('[LayoutEditor] Drop image: ' + nw + 'x' + nh +
+            ' (' + beforeKB + 'KB) -> ' + targetW + 'x' + targetH +
+            ' (' + afterKB + 'KB, ' + saved + '% reduction' +
+            (requantized ? ', requantized' : '') + ')');
+        } catch (e) {}
+        return { dataUrl: outputDataUrl, width: targetW, height: targetH, resized: needsResize, requantized: requantized, finalBytes: finalBytes };
+      }).catch(function (err) {
+        console.warn('[LayoutEditor] image decode failed; using original data URL', err);
+        return { dataUrl: dataUrl, width: 0, height: 0, resized: false, requantized: false, finalBytes: _approxBytesFromDataUrl(dataUrl) };
+      });
+    });
+  }
+
+  function elementHasBackgroundImage(el) {
+    if (!el || !el.nodeType || el.nodeType !== 1) return false;
+    try {
+      var bg = getComputedStyle(el).backgroundImage;
+      return !!(bg && bg !== 'none' && bg.indexOf('url(') >= 0);
+    } catch (e) { return false; }
+  }
+
+  function isImageElement(el) {
+    if (!el) return false;
+    if (el.tagName === 'IMG') return true;
+    if (elementHasBackgroundImage(el)) return true;
+    try {
+      var inner = el.querySelectorAll('img');
+      return inner && inner.length === 1;
+    } catch (e) { return false; }
+  }
+
+  // Lima-2 修正A: isParentLayoutElement / decideDropAction は廃止。
+  //   ドロップは常に新規挿入をデフォルトとする方針に変更したため、
+  //   親レイアウト判定や条件分岐は不要 (Kilo-2 / Juliet-2 で導入したロジックを撤去)。
+
+  // Lima-2 修正B: 「📥 src 差し替え」ボタンのクリックハンドラ。
+  //   <input type="file"> ダイアログを動的生成して選択要素の画像を差し替える。
+  //   drag&drop の暗黙差し替えを廃止した代替経路 (明示的・誤動作なし)。
+  // 2026-05-09: 「保存対応の差し替え」 (= .le-dropped-img 配下) かどうかを判定。
+  //   true ならファイル選択ダイアログ後の swap が localStorage に永続化される。
+  //   false (例: .emoji-main-img) は in-session preview のみ。
+  function _isPersistedReplaceTarget(el) {
+    if (!el) return false;
+    if (el.classList && el.classList.contains('le-dropped-img')) return true;
+    // 2026-05-13 fix (userbox save bug): userbox 自身も saved-layout.json の
+    //   __userboxes[].bgImage 経由で永続化される (= プレビューのみではない)。
+    //   旧コードでは userbox が除外されており、 ユーザーに「ページ再読み込みで戻ります」
+    //   と誤った警告が出ていた。
+    if (el.classList && el.classList.contains('userbox')) return true;
+    var p = el.parentNode;
+    if (p && p.classList && p.classList.contains('le-dropped-img')) return true;
+    return false;
+  }
+
+  // 2026-05-10: ステージ画像 (= GitHub に画像バイナリを PUT して恒久化する対象) を判定。
+  //   対象: <img class="emoji-main-img | shape-img | color-chip | chip-illust">
+  //   非対象: 動的に追加された .le-dropped-img (= localStorage で永続化済み)
+  //           キャラ等の共通画像 (.character / pono-img 等は今回スコープ外)
+  var STAGE_IMG_CLASSES = ['emoji-main-img', 'shape-img', 'color-chip', 'chip-illust'];
+  function _isStageImg(el) {
+    if (!el || el.tagName !== 'IMG' || !el.classList) return false;
+    for (var i = 0; i < STAGE_IMG_CLASSES.length; i++) {
+      if (el.classList.contains(STAGE_IMG_CLASSES[i])) return true;
+    }
+    return false;
+  }
+  // replaceImageSrc が返した swap 種別と sel から、 実際に src が変更された <img> を取得。
+  function _getSwappedImgEl(sel, swapResult) {
+    if (!sel) return null;
+    if (swapResult === 'img') return sel.tagName === 'IMG' ? sel : null;
+    if (swapResult === 'inner-img') {
+      try {
+        var inner = sel.querySelectorAll('img');
+        return (inner && inner.length === 1) ? inner[0] : null;
+      } catch (e) { return null; }
+    }
+    return null;
+  }
+  // data URL から base64 部分のみを抽出 (ghPutContents が要求する形式)。
+  function _dataUrlToBase64(dataUrl) {
+    if (!dataUrl || typeof dataUrl !== 'string') return null;
+    var i = dataUrl.indexOf(',');
+    if (i < 0) return null;
+    return dataUrl.slice(i + 1);
+  }
+  // <img src="../assets/images/.../foo.png?v=..."> から repo 内パスを逆引き。
+  // 失敗時は null。
+  function _extractRepoPathFromSrc(src) {
+    if (!src) return null;
+    // クエリ文字列を落としてから match
+    var clean = String(src).split('?')[0].split('#')[0];
+    var m = clean.match(/assets\/images\/[^\s'"]+?\.(png|jpe?g|webp)$/i);
+    return m ? m[0] : null;
+  }
+
+  // 2026-05-10: ステージ画像の GitHub 永続化。
+  //   - imgEl: 差し替え後の <img> (src は data URL になっている)
+  //   - dataUrl: 差し替えに使った data URL (base64 抽出元)
+  //   - originalSrc: 差し替え前の src (repo パス逆引き用)
+  //   既存ファイルがあれば SHA を取って overwrite、 無ければ新規作成。
+  //   PUT 成功後は ?v=<timestamp> 付きの本来の repo パスに img.src を書き戻して
+  //   ブラウザキャッシュをバイパス、 GitHub 由来の本物の画像が読み込まれることを確認させる。
+  //   注意: PWA の sw キャッシュには古い画像が残っている可能性があるので、
+  //         CACHE_VERSION バンプ後 reload するよう toast で案内する。
+  function persistStageImage(imgEl, dataUrl, originalSrc) {
+    var repoPath = _extractRepoPathFromSrc(originalSrc);
+    if (!repoPath) {
+      showToast('画像パスが特定できませんでした (assets/images/.../*.png 形式が必要)', 'error');
+      return Promise.resolve(false);
+    }
+    var b64 = _dataUrlToBase64(dataUrl);
+    if (!b64) {
+      showToast('画像データの base64 変換に失敗', 'error');
+      return Promise.resolve(false);
+    }
+    showToast('GitHub に保存中… ' + repoPath);
+    // SHA 取得 (既存ファイル overwrite には必須、 無ければ新規)。
+    // 2026-05-10 LOW 修正: 一時的な 404 (Cloudflare miss / レートリミット) で sha=null
+    //   と誤判定して新規作成扱いになり、 既存ファイルを SHA なしで PUT して 422 になるのを避けるため
+    //   ghGetContentsWithRetry を使う (2 連続 404 のときだけ「真の新規」とみなす)。
+    return ghGetContentsWithRetry(repoPath).then(function (res) {
+      var existing = res && res.contents;
+      var sha = existing ? existing.sha : null;
+      var msg = 'chore(stage-image): editor から ' + repoPath + ' を差し替え';
+      return ghPutContents(repoPath, b64, msg, sha);
+    }).then(function () {
+      // 2026-05-10 (v882) BUGFIX: PUT 成功後に src を ../assets/images/... へ書き戻すと、
+      //   Cloudflare Workers の [assets] バンドルが GH Actions の `wrangler deploy --env staging`
+      //   完了 (~30-90s) まで stale なため、 古い画像バイトが返ってきて
+      //   「OK 押した瞬間に元画像へ戻った」 という現象になる。
+      //   修正方針: editor session 中は data URL のまま残して preview を維持する。
+      //   reload 後 (= deploy 完了 + SW 更新後) には repo パスから本物の新画像が読まれる。
+      //   data URL は imgEl.src に既に入っている (replaceImageSrc 直後に上書き済み) ので
+      //   ここでは触らない。
+      showToast('画像を ' + repoPath + ' に保存しました (staging へは数十秒〜数分で反映。 完全反映は SW 更新後に reload)', 'success');
+      return true;
+    }).catch(function (err) {
+      console.warn('[LayoutEditor] persistStageImage failed', err);
+      var msg = (err && err.status === 401) ? '認証エラー: ログインし直してください'
+              : (err && err.status === 409) ? 'GitHub 上で別の更新があります。 reload してから再試行してください'
+              : 'GitHub PUT 失敗: ' + ((err && err.message) || 'unknown');
+      showToast(msg, 'error');
+      return false;
+    });
+  }
+
+  // ステージ画像差し替え時の confirm + PUT 共通処理。
+  //   sel: ユーザーが選択した要素 (img かそのラッパ)
+  //   swapResult: replaceImageSrc の戻り値 ('img' / 'bg' / 'inner-img')
+  //   dataUrl: 差し替えに使った data URL
+  //   originalSrc: 差し替え前の元 src (repo パス逆引き用)
+  // 2026-05-10: 戻り値を Promise<boolean> に統一 (HIGH 1 修正)。
+  //   - true (resolved): persist 開始 (= confirm OK + 実際に PUT 走った)
+  //   - false (resolved): stage 対象外 / confirm キャンセル
+  //   - persistStageImage 内のエラーは catch して false を返す (toast は中で出る)
+  //   caller (= openReplaceDialog 等) は await できる。
+  function maybePersistStageImageAfterSwap(sel, swapResult, dataUrl, originalSrc) {
+    var imgEl = _getSwappedImgEl(sel, swapResult);
+    if (!imgEl || !_isStageImg(imgEl)) return Promise.resolve(false);
+    // 2026-05-10 (MEDIUM): confirm に repoPath を表示し、 ユーザーが想定外の画像で
+    //   commit を進めないようにする。 path が取れなければ「保留」して preview-only に倒す。
+    var repoPath = _extractRepoPathFromSrc(originalSrc);
+    if (!repoPath) {
+      showToast('画像パスが特定できませんでした (preview のみで保留します)', 'warn');
+      return Promise.resolve(false);
+    }
+    var confirmMsg = 'この画像をリポジトリに恒久的に保存しますか？\n\n'
+      + '対象ファイル: ' + repoPath + '\n\n'
+      + '・GitHub の develop ブランチに新しい commit が作られます (元に戻すには git revert が必要です)\n'
+      + '・staging に数十秒〜数分で反映されます\n'
+      + '・他端末/PWA キャッシュは sw 更新まで古い画像を表示する可能性があります\n'
+      + '・キャンセルするとプレビューのみ (再読み込みで消えます)';
+    var ok;
+    try { ok = window.confirm(confirmMsg); } catch (e) { ok = false; }
+    if (!ok) {
+      showToast('プレビューのみで保留しました (再読み込みで消えます)', 'warn');
+      return Promise.resolve(false);
+    }
+    return persistStageImage(imgEl, dataUrl, originalSrc);
+  }
+
+  function openReplaceDialog() {
+    var sel = (state.selectedElements && state.selectedElements.size === 1)
+      ? Array.from(state.selectedElements)[0] : null;
+    if (!sel) {
+      showToast('差し替えるには要素を1つ選択してください', 'error');
+      return;
+    }
+    var input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/png,image/jpeg,image/webp';
+    input.style.display = 'none';
+    input.addEventListener('change', function () {
+      var file = input.files && input.files[0];
+      if (!file) { input.remove(); return; }
+      // Validate type/size (mirror drop-handler safety rails)
+      if (!file.type || file.type.indexOf('image/') !== 0) {
+        showToast('画像ファイルではありません', 'error');
+        input.remove();
+        return;
+      }
+      if (file.type.indexOf('svg') >= 0) {
+        showToast('SVG は安全のため除外しました', 'error');
+        input.remove();
+        return;
+      }
+      if (file.size > DROP_MAX_BYTES) {
+        showToast('10MB 超の画像はスキップ', 'error');
+        input.remove();
+        return;
+      }
+      readAndResizeImage(file).then(function (result) {
+        // 1MB 推奨ライン超で再圧縮を案内 / 3MB 超は警告
+        if (result.resized) {
+          showToast('画像を ' + result.width + '×' + result.height + ' に縮小しました');
+        }
+        if (result.requantized) {
+          var afterKB = Math.round((result.finalBytes || 0) / 1024);
+          showToast('1MB 超のため画質を下げて再圧縮しました (' + afterKB + 'KB)', 'warn');
+        }
+        if (result.finalBytes && result.finalBytes > HARD_BYTES) {
+          var overKB = Math.round(result.finalBytes / 1024);
+          showToast('警告: 圧縮後も ' + overKB + 'KB (上限 3MB 超過)。表示は可能ですが推奨範囲外です', 'warn');
+        }
+        // 2026-05-10: 差し替え前に元 <img> の src を捕捉 (repo パス逆引き用)。
+        //   replaceImageSrc は img.src を data URL で上書きするため、 後からは取れない。
+        var preSwapImg = (sel.tagName === 'IMG') ? sel
+          : (function () { try { var ii = sel.querySelectorAll('img'); return ii && ii.length === 1 ? ii[0] : null; } catch (e) { return null; } })();
+        var preSwapSrc = preSwapImg ? (preSwapImg.getAttribute('src') || preSwapImg.src || '') : '';
+        var swapResult = replaceImageSrc(sel, result.dataUrl);
+        if (swapResult === null || swapResult === undefined || swapResult === false) {
+          showToast('差し替え対象が見つかりません（img / 背景画像 / 単一内側img の要素を選択してください）', 'error');
+          return null;
+        }
+        if (!result.resized && !result.requantized) {
+          if (swapResult === 'bg') {
+            showToast('背景画像を差し替えました (Ctrl+Z で戻せます)');
+          } else {
+            showToast('画像を差し替えました (Ctrl+Z で戻せます)');
+          }
+        }
+        // 2026-05-10: ステージ画像 (.emoji-main-img 等) は GitHub PUT で恒久化を提案。
+        //   confirm でユーザーが OK したら commit。 キャンセルなら preview のみ。
+        //   HIGH 1 修正: maybePersistStageImageAfterSwap は Promise を返すので
+        //   Promise chain に乗せて、 PUT エラーが unhandled rejection にならないようにする。
+        var swappedImg = _getSwappedImgEl(sel, swapResult);
+        var isStage = swappedImg && _isStageImg(swappedImg);
+        var persistP = null;
+        if (isStage) {
+          // chain の末尾で待つ (input.remove() より先に解決)。
+          persistP = maybePersistStageImageAfterSwap(sel, swapResult, result.dataUrl, preSwapSrc);
+        } else if (!_isPersistedReplaceTarget(sel)) {
+          // 永続化対応外 (= stage でも dropped でもない) は従来通り preview-only である旨を案内
+          showToast('注意: この差し替えはプレビューのみ。ページ再読み込みで戻ります。本差し替えは画像ファイル自体を assets/images/ に commit してください', 'warn');
+        }
+        scheduleDirtyUpdate();
+        return persistP; // Promise をチェーンに返す
+      }).catch(function (err) {
+        console.warn('[LayoutEditor] readAndResizeImage / persist failed', err);
+        showToast('画像の読み込みに失敗', 'error');
+      }).then(function () { input.remove(); });
+    });
+    document.body.appendChild(input);
+    input.click();
+  }
+
+
+  function swapImgSrcUndoable(img, newSrc, opts) {
+    var oldSrc = img.src;
+    if (oldSrc === newSrc) return true;
+    img.src = newSrc;
+    var afterSave = !!(opts && opts.afterSave);
+    pushHistory({ type: 'image-swap', el: img, before: oldSrc, after: newSrc, _afterSave: afterSave });
+    if (afterSave) try { saveDroppedImages(); } catch (e) {}
+    return true;
+  }
+
+  function swapBackgroundImageUndoable(el, newSrc) {
+    var current = el.style.backgroundImage;
+    if (!current || current === '') {
+      try { current = getComputedStyle(el).backgroundImage || ''; } catch (e) { current = ''; }
+    }
+    var newBg = 'url("' + newSrc + '")';
+    if (current === newBg) return true;
+    // 2026-05-13 fix (userbox save bug): userbox は dataset.bgImage を saved-layout.json
+    //   に persist する設計。 style.backgroundImage しか更新しないと collectUserboxes が
+    //   旧/空の dataset.bgImage を拾い、 「保存しても画像が部分的にしか反映されない」
+    //   症状になる。 dataset.bgImage を style と一緒に同期する。 undo/redo も併せて保持。
+    var beforeDataset = el.dataset && el.dataset.bgImage ? el.dataset.bgImage : '';
+    el.style.backgroundImage = newBg;
+    if (el.dataset) {
+      if (newSrc) el.dataset.bgImage = newSrc;
+      else delete el.dataset.bgImage;
+    }
+    pushHistory({
+      type: 'bg-image-swap',
+      el: el,
+      before: current,
+      after: newBg,
+      beforeDataset: beforeDataset,
+      afterDataset: newSrc || '',
+    });
+    return true;
+  }
+
+  // Strict swap: returns 'img' | 'bg' | 'inner-img' if swap happened (truthy),
+  //   null if ambiguous (caller falls back to insert).
+  // Decision order:
+  //   1. element is <img>            → swap its src
+  //   2. element has background-image → swap that
+  //   3. element contains exactly one inner <img> → swap that
+  //   4. otherwise (0 or >=2 inner imgs, no bg) → null (ambiguous, fall back)
+  function replaceImageSrc(element, dataUrl) {
+    if (!element) return null;
+    if (element.tagName === 'IMG') {
+      var isDropped = element.parentNode && element.parentNode.classList && element.parentNode.classList.contains('le-dropped-img');
+      return swapImgSrcUndoable(element, dataUrl, { afterSave: isDropped }) ? 'img' : null;
+    }
+    if (elementHasBackgroundImage(element)) {
+      return swapBackgroundImageUndoable(element, dataUrl) ? 'bg' : null;
+    }
+    var innerImgs;
+    try { innerImgs = element.querySelectorAll('img'); } catch (e) { innerImgs = null; }
+    if (innerImgs && innerImgs.length === 1) {
+      var dropWrap = element.classList && element.classList.contains('le-dropped-img');
+      return swapImgSrcUndoable(innerImgs[0], dataUrl, { afterSave: dropWrap }) ? 'inner-img' : null;
+    }
+    return null;
+  }
+
+  function nextDropId() {
+    return 'drop_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+  }
+
+  // Mike-2 修正B: 新規画像/テキスト用の自動連番ラベル。
+  //   既存 dataset.leLabel を集めて未使用の最小番号を採用 (削除耐性)。
+  function getNextImageLabel() {
+    var existing = $$('.le-dropped-img').map(function (el) {
+      return (el.dataset && el.dataset.leLabel) || '';
+    });
+    var n = 1;
+    while (existing.indexOf('新規画像' + n) >= 0) n++;
+    return '新規画像' + n;
+  }
+  function getNextTextLabel() {
+    var existing = $$('.le-added-text').map(function (el) {
+      return (el.dataset && el.dataset.leLabel) || '';
+    });
+    var n = 1;
+    while (existing.indexOf('テキスト' + n) >= 0) n++;
+    return 'テキスト' + n;
+  }
+
+  function buildDroppedWrapper(dataUrl, fileName, opts) {
+    // <img> is a void element and cannot contain resize handles. Wrap it in a
+    // <div> so attachHandle can appendChild() handles safely.
+    opts = opts || {};
+    var wrap = document.createElement('div');
+    wrap.className = 'le-dropped-img';
+    wrap.dataset.dropId = nextDropId();
+    if (fileName) wrap.dataset.dropName = fileName;
+    // Mike-2 修正B: 自動連番ラベルを付与 (要素一覧で識別しやすく + rename 起点)
+    if (opts.label) wrap.dataset.leLabel = opts.label;
+    wrap.setAttribute('data-le-keep-position', '1');
+    var img = document.createElement('img');
+    img.src = dataUrl;
+    img.alt = fileName || 'dropped image';
+    img.draggable = false;
+    img.style.cssText = 'width:100%;height:100%;display:block;pointer-events:none;-webkit-user-drag:none;user-select:none;';
+    wrap.appendChild(img);
+    return wrap;
+  }
+
+  function insertNewImageLayer(canvas, clientX, clientY, dataUrl, fileName) {
+    if (!canvas) return null;
+    var info = getStageRectInfo();
+    var rect = info.stageRect;
+    var scale = info.scale || 1;
+    // Default size 200x200; replaced with natural size on load (clamped).
+    var defaultW = 200, defaultH = 200;
+    var localX = (clientX - rect.left) / scale - defaultW / 2;
+    var localY = (clientY - rect.top) / scale - defaultH / 2;
+
+    // Mike-2 修正B: 新規画像に「新規画像N」連番ラベルを付与
+    var wrap = buildDroppedWrapper(dataUrl, fileName, { label: getNextImageLabel() });
+    wrap.style.position = 'absolute';
+    wrap.style.left = Math.max(0, Math.round(localX)) + 'px';
+    wrap.style.top  = Math.max(0, Math.round(localY)) + 'px';
+    wrap.style.width  = defaultW + 'px';
+    wrap.style.height = defaultH + 'px';
+    wrap.style.zIndex = '40';
+
+    canvas.appendChild(wrap);
+    try { attachHandle(wrap, 'wh'); } catch (e) { console.warn('[LayoutEditor] attachHandle on dropped image failed', e); }
+
+    // Make the insert undoable. On undo the wrapper is removed; on redo it is
+    // re-inserted into the canvas (parent/next captured at history-push time).
+    pushHistory({ type: 'add', el: wrap, parent: canvas, next: null });
+
+    var innerImg = wrap.querySelector('img');
+    if (innerImg) {
+      innerImg.addEventListener('load', function () {
+        if (wrap.dataset.dropFitted === '1') return;
+        wrap.dataset.dropFitted = '1';
+        var nw = innerImg.naturalWidth || defaultW;
+        var nh = innerImg.naturalHeight || defaultH;
+        if (nw > 0 && nh > 0) {
+          var maxDim = 600;
+          var k = Math.min(1, maxDim / Math.max(nw, nh));
+          var w = Math.round(nw * k);
+          var h = Math.round(nh * k);
+          wrap.style.width = w + 'px';
+          wrap.style.height = h + 'px';
+          if (wrap._resizeUpdateLabel) try { wrap._resizeUpdateLabel(); } catch (e) {}
+        }
+        saveDroppedImages();
+      }, { once: true });
+    }
+
+    selectOnly(wrap);
+    saveDroppedImages();
+    scheduleDirtyUpdate();
+    // Juliet-2 修正B: 要素一覧を最新化
+    try { refreshElementList(); } catch (e) {}
+    return wrap;
+  }
+
+  function saveDroppedImages() {
+    try {
+      var list = $$('.le-dropped-img').map(function (el) {
+        var src = '';
+        if (el.tagName === 'IMG') src = el.src || '';
+        else { var inner = el.querySelector('img'); src = inner ? inner.src : ''; }
+        return {
+          id: el.dataset.dropId || '',
+          name: el.dataset.dropName || '',
+          // Mike-2 修正B: rename した要素一覧ラベルを永続化
+          label: (el.dataset && el.dataset.leLabel) || '',
+          src: src,
+          left: el.style.left || '',
+          top: el.style.top || '',
+          width: el.style.width || '',
+          height: el.style.height || '',
+          tx: el._tx || 0,
+          ty: el._ty || 0,
+          z: el.style.zIndex || ''
+        };
+      });
+      localStorage.setItem(droppedImagesStorageKey(), JSON.stringify(list));
+    } catch (e) {
+      // Quota exceeded or other error — log and continue (in-memory state remains).
+      console.warn('[LayoutEditor] saveDroppedImages failed', e);
+    }
+  }
+
+  function restoreDroppedImages(canvas) {
+    if (!canvas) return;
+    var list = [];
+    try {
+      var raw = localStorage.getItem(droppedImagesStorageKey());
+      list = raw ? JSON.parse(raw) : [];
+    } catch (e) { list = []; }
+    if (!Array.isArray(list) || list.length === 0) {
+      // Still attach handles to any pre-existing .le-dropped-img elements
+      // (e.g. inserted by other means) so they remain editable.
+      $$('.le-dropped-img').forEach(function (el) {
+        if (!el.classList.contains('resizable')) {
+          el.setAttribute('data-le-keep-position', '1');
+          try { attachHandle(el, 'wh'); } catch (e) {}
+        }
+      });
+      return;
+    }
+    list.forEach(function (item) {
+      if (!item || !item.src) return;
+      // Skip if an element with the same dropId already exists (e.g. SSR / re-enable)
+      if (item.id) {
+        var existing = canvas.querySelector('.le-dropped-img[data-drop-id="' + item.id + '"]');
+        if (existing) {
+          if (!existing.classList.contains('resizable')) {
+            existing.setAttribute('data-le-keep-position', '1');
+            try { attachHandle(existing, 'wh'); } catch (e) {}
+          }
+          return;
+        }
+      }
+      var wrap = buildDroppedWrapper(item.src, item.name, { label: item.label || '' });
+      wrap.dataset.dropId = item.id || wrap.dataset.dropId;
+      // Mike-2 修正B: 永続化された rename ラベルを復元
+      if (item.label) wrap.dataset.leLabel = item.label;
+      wrap.style.position = 'absolute';
+      if (item.left)   wrap.style.left   = item.left;
+      if (item.top)    wrap.style.top    = item.top;
+      if (item.width)  wrap.style.width  = item.width;
+      if (item.height) wrap.style.height = item.height;
+      if (item.z)      wrap.style.zIndex = item.z;
+      var tx = parseFloat(item.tx) || 0, ty = parseFloat(item.ty) || 0;
+      if (tx || ty) {
+        wrap._tx = tx; wrap._ty = ty;
+        wrap.style.transform = 'translate(' + tx + 'px, ' + ty + 'px)';
+      }
+      canvas.appendChild(wrap);
+      try { attachHandle(wrap, 'wh'); } catch (e) {}
+    });
+    // Already-present .le-dropped-img elements without dropId metadata also need handles.
+    $$('.le-dropped-img').forEach(function (el) {
+      if (!el.classList.contains('resizable')) {
+        el.setAttribute('data-le-keep-position', '1');
+        try { attachHandle(el, 'wh'); } catch (e) {}
+      }
+    });
+  }
+
+  function enableImageDragDrop(canvas) {
+    if (!canvas) return;
+
+    // Oscar-2: ドロップロジックを直感的に再構築。
+    //   - stage 外 (黒背景)        → 新規画像を canvas 中央に挿入
+    //   - stage 内 / 選択要素 bbox 内 → 選択要素を差し替え
+    //   - stage 内 / 選択要素 bbox 外 → 警告トースト「選択した画像の上にドロップ」
+    //   - stage 内 / 選択なし        → 警告トースト「黒背景に新規 or 要素選択して差し替え」
+    //   preferredTarget (要素一覧から選択した要素) も同じく bbox 判定の対象に含める
+    //   (z-index 関係なく list 選択を優先)。Shift+drop の特別ロジックは廃止。
+    function isInStage(clientX, clientY) {
+      if (!canvas) return false;
+      var r = canvas.getBoundingClientRect();
+      return clientX >= r.left && clientX <= r.right
+          && clientY >= r.top && clientY <= r.bottom;
+    }
+    // 差し替えターゲット候補の取得: preferredTarget を最優先、その後 単一選択要素。
+    function getReplaceCandidate() {
+      if (state.preferredTarget) return state.preferredTarget;
+      if (state.selectedElements && state.selectedElements.size === 1) {
+        return state.selectedElements.values().next().value;
+      }
+      return null;
+    }
+    // 候補要素の bbox 内に座標があれば候補を返す。なければ null。
+    function isInsideSelection(clientX, clientY) {
+      var cand = getReplaceCandidate();
+      if (!cand || typeof cand.getBoundingClientRect !== 'function') return null;
+      var r = cand.getBoundingClientRect();
+      if (clientX >= r.left && clientX <= r.right
+          && clientY >= r.top && clientY <= r.bottom) {
+        return cand;
+      }
+      return null;
+    }
+    function dataTransferHasFiles(dt) {
+      if (!dt) return false;
+      var types = dt.types;
+      if (!types) return false;
+      if (types.indexOf) return types.indexOf('Files') >= 0;
+      if (types.contains) return types.contains('Files');
+      return false;
+    }
+    function clearDropzoneClasses() {
+      document.body.classList.remove('le-dropzone-active');
+      document.body.classList.remove('le-dropzone-replace');
+      canvas.classList.remove('le-dropzone-active');
+      canvas.classList.remove('le-dropzone-replace');
+    }
+
+    var dragover = function (e) {
+      if (!dataTransferHasFiles(e.dataTransfer)) return;
+      e.preventDefault();
+      try { e.dataTransfer.dropEffect = 'copy'; } catch (err) {}
+      var inStage = isInStage(e.clientX, e.clientY);
+      if (!inStage) {
+        // 黒背景 → 新規挿入ゾーン
+        document.body.classList.add('le-dropzone-active');
+        document.body.classList.remove('le-dropzone-replace');
+        canvas.classList.remove('le-dropzone-active');
+        canvas.classList.remove('le-dropzone-replace');
+      } else {
+        var target = isInsideSelection(e.clientX, e.clientY);
+        if (target) {
+          // 選択要素の bbox 内 → 差し替えゾーン
+          document.body.classList.remove('le-dropzone-active');
+          document.body.classList.add('le-dropzone-replace');
+          canvas.classList.add('le-dropzone-replace');
+          canvas.classList.remove('le-dropzone-active');
+        } else {
+          // stage 内かつ bbox 外 → 何もしない（drop 時に警告）
+          clearDropzoneClasses();
+        }
+      }
+    };
+    var dragleave = function (e) {
+      // ウィンドウ外に抜けた時に消す。要素間の遷移では消さない。
+      var rt = e.relatedTarget;
+      if (rt) return;
+      clearDropzoneClasses();
+    };
+    var dragend = function () {
+      clearDropzoneClasses();
+    };
+    var drop = function (e) {
+      if (!dataTransferHasFiles(e.dataTransfer)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      clearDropzoneClasses();
+
+      var rawFiles = (e.dataTransfer && e.dataTransfer.files) ? Array.from(e.dataTransfer.files) : [];
+      var images = rawFiles.filter(function (f) { return f && f.type && f.type.indexOf('image/') === 0; });
+      if (images.length === 0) {
+        showToast('画像ファイルではありません', 'error');
+        return;
+      }
+      // SVG XSS risk → exclude
+      var svgCount = 0;
+      var safe = images.filter(function (f) {
+        if (f.type.indexOf('svg') >= 0) { svgCount++; return false; }
+        return true;
+      });
+      if (svgCount > 0) {
+        console.warn('[LayoutEditor] SVG はセキュリティ上スキップされます (' + svgCount + ' 件)');
+        showToast('SVG は安全のため除外しました', 'error');
+      }
+      // Size cap — warn but allow up to MAX. Skip ones over.
+      var oversize = 0;
+      safe = safe.filter(function (f) {
+        if (f.size > DROP_MAX_BYTES) { oversize++; return false; }
+        return true;
+      });
+      if (oversize > 0) {
+        showToast('10MB 超の画像はスキップ (' + oversize + ' 件)', 'error');
+      }
+      if (safe.length === 0) return;
+
+      var inStage = isInStage(e.clientX, e.clientY);
+      var cr = canvas.getBoundingClientRect();
+      var centerX = cr.left + cr.width / 2;
+      var centerY = cr.top + cr.height / 2;
+
+      // ---- ケース1: 黒背景 (stage 外) → 新規挿入 (canvas 中央, 複数は少しずらす) ----
+      if (!inStage) {
+        safe.reduce(function (chain, file, i) {
+          return chain.then(function () {
+            return readAndResizeImage(file).then(function (result) {
+              if (result.resized) {
+                showToast('画像を ' + result.width + '×' + result.height + ' に縮小しました');
+              }
+              var ox = centerX + i * 18;
+              var oy = centerY + i * 18;
+              insertNewImageLayer(canvas, ox, oy, result.dataUrl, file.name);
+              if (i === safe.length - 1 && !result.resized) {
+                showToast('画像を ' + safe.length + '枚 新規挿入しました（Ctrl+Z で戻せます）', 'success');
+              }
+            }).catch(function (err) {
+              console.warn('[LayoutEditor] readAndResizeImage failed', err);
+              showToast('画像の読み込みに失敗', 'error');
+            });
+          });
+        }, Promise.resolve());
+        return;
+      }
+
+      // ---- ケース2: stage 内 ----
+      var target = isInsideSelection(e.clientX, e.clientY);
+      if (!target) {
+        var cand = getReplaceCandidate();
+        if (cand) {
+          showToast('差し替える場合は、選択した画像の上にドロップしてください', 'warn');
+        } else {
+          showToast('新規追加は黒い背景にドロップ、差し替えは要素を選択してから', 'warn');
+        }
+        return;
+      }
+
+      // ---- ケース3: 選択要素の bbox 内 → 差し替え (1 ファイル目のみ) ----
+      safe.reduce(function (chain, file, i) {
+        return chain.then(function () {
+          return readAndResizeImage(file).then(function (result) {
+            var dataUrl = result.dataUrl;
+            if (result.resized) {
+              showToast('画像を ' + result.width + '×' + result.height + ' に縮小しました');
+            }
+            if (result.requantized) {
+              var afterKB = Math.round((result.finalBytes || 0) / 1024);
+              showToast('1MB 超のため画質を下げて再圧縮しました (' + afterKB + 'KB)', 'warn');
+            }
+            if (result.finalBytes && result.finalBytes > HARD_BYTES) {
+              var overKB = Math.round(result.finalBytes / 1024);
+              showToast('警告: 圧縮後も ' + overKB + 'KB (上限 3MB 超過)', 'warn');
+            }
+            if (i === 0) {
+              // 2026-05-10: 差し替え前に元 <img> の src を捕捉 (repo パス逆引き用)。
+              var preSwapImg = (target.tagName === 'IMG') ? target
+                : (function () { try { var ii = target.querySelectorAll('img'); return ii && ii.length === 1 ? ii[0] : null; } catch (e) { return null; } })();
+              var preSwapSrc = preSwapImg ? (preSwapImg.getAttribute('src') || preSwapImg.src || '') : '';
+              var swapResult = replaceImageSrc(target, dataUrl);
+              if (swapResult !== null && swapResult !== undefined && swapResult !== false) {
+                if (!result.resized && !result.requantized) {
+                  if (swapResult === 'bg') {
+                    showToast('背景画像を差し替えました（Ctrl+Z で戻せます）', 'success');
+                  } else {
+                    showToast('画像を差し替えました（Ctrl+Z で戻せます）', 'success');
+                  }
+                }
+                // 2026-05-10: ステージ画像なら GitHub PUT で恒久化を提案。
+                //   HIGH 1 修正: maybePersistStageImageAfterSwap の Promise を chain に乗せて
+                //   PUT エラーが unhandled rejection にならないようにする。
+                var swappedImg = _getSwappedImgEl(target, swapResult);
+                var isStage = swappedImg && _isStageImg(swappedImg);
+                var persistP = null;
+                if (isStage) {
+                  persistP = maybePersistStageImageAfterSwap(target, swapResult, dataUrl, preSwapSrc);
+                } else if (!_isPersistedReplaceTarget(target)) {
+                  showToast('注意: この差し替えはプレビューのみ。ページ再読み込みで戻ります。本差し替えは assets/images/ に画像ファイル自体を commit してください', 'warn');
+                }
+                scheduleDirtyUpdate();
+                return persistP; // chain に Promise を返す (null の場合は即解決扱い)
+              }
+              // 差し替え不能 → 警告のみ (新規にはフォールバックせず、ユーザー意図を尊重)
+              showToast('差し替え対象が見つかりません（img / 背景画像 / 単一内側img の要素を選択してください）', 'warn');
+              return;
+            }
+            // 2 枚目以降: 差し替えは 1 枚目のみなので、追加分は警告のみ
+            if (i === 1) {
+              showToast('差し替えは 1 枚目のみ。追加分はスキップしました', 'warn');
+            }
+          }).catch(function (err) {
+            console.warn('[LayoutEditor] readAndResizeImage failed', err);
+            showToast('画像の読み込みに失敗', 'error');
+          });
+        });
+      }, Promise.resolve());
+    };
+
+    // dragover/drop は document に張る。stage 内ガードは isInStage で判定。
+    addManagedListener(document, 'dragover', dragover);
+    addManagedListener(document, 'dragleave', dragleave);
+    addManagedListener(document, 'dragend', dragend);
+    addManagedListener(document, 'drop', drop);
+
+    // Persist position/size changes on dropped images (debounced) so reload
+    // restores the latest geometry. Uses the editor's own event bus.
+    var debouncedSave = debounce(saveDroppedImages, 200);
+    var onTransform = function () {
+      // Only save if at least one selected/edited element is a dropped image.
+      var hit = false;
+      try {
+        if (state.selectedElements && state.selectedElements.size) {
+          state.selectedElements.forEach(function (el) {
+            if (el && el.classList && el.classList.contains('le-dropped-img')) hit = true;
+          });
+        }
+      } catch (e) {}
+      if (hit) debouncedSave();
+    };
+    on('transform', onTransform);
+    registerCleanup(function () { off('transform', onTransform); });
+  }
+
+  // ====================================================================
+  //  Public API: enable / disable
+  // ====================================================================
+
+  function enable(config) {
+    if (state.enabled) return;
+    config = config || {};
+    state.config = config;
+    state.canvasEl = (typeof config.canvas === 'string')
+      ? document.querySelector(config.canvas)
+      : (config.canvas || $('#stage') || document.body);
+    state.spec = normalizeSpec(config.editableSelectors || []);
+    // 2026-05-07: per-Q 化対象セレクタ whitelist (Phase 2 / impl-A)。
+    //   Quizland 側からは ['.emoji-display', '.emoji-main-img'] 等を想定。
+    //   ここに無いセレクタは従来通り `${sel}|${i}` で base 保存される (フクロウ等)。
+    state._perQuestionSelectors = Array.isArray(config.perQuestionSelectors)
+      ? config.perQuestionSelectors.slice() : [];
+    // 2026-06-11: 保存範囲トグル対象 (質問バナー / 音声ボタン等)。
+    //   perQuestionSelectors に含まれるものだけ有効化する — applier の読み取り whitelist に
+    //   無いセレクタを per-Q 書き込みすると誰も読まないキーが生まれるため、 設定ミスを弾く。
+    state._perQScopeToggleSelectors = Array.isArray(config.perQuestionScopeToggleSelectors)
+      ? config.perQuestionScopeToggleSelectors.filter(function (s) {
+          return typeof s === 'string' && state._perQuestionSelectors.indexOf(s) !== -1;
+        })
+      : [];
+    // 2026-06-30 (batch:962 ★1): トグル状態を localStorage から復元 (なければ 🌐 既定)。
+    //   従来は false 固定だったため 🎯 にして閉じても次回 🌐 に戻り、 ユーザーが気付かず
+    //   global キーを上書きして個別レイアウトを毀損する事故が出ていた。
+    state.perQScopeThisQ = loadPerQScopePref();
+    state._perQDeletedKeys = new Set(); // 2026-06-11: 削除予約は enable 毎にリセット
+    state._perQWarnedQid = null;        // 2026-06-11: 警告 toast ガードもリセット
+    state.selectedElements = new Set();
+    state.locked = new Set();
+    state.unlinkedChildren = new Set(); // Papa-2 修正2
+    state.history = [];
+    state.future = [];
+    state.cleanupFns = [];          // C1: reset cleanup registry per session
+    state.originalCanvasWidth = null;
+    state.multiSelectMode = false;
+    state._dirty = false;            // 2026-05-07: 編集セッション開始時は clean
+
+    document.body.classList.add(EDIT_MODE_BODY_CLASS, 'resize-mode');
+
+    buildToolbar();
+    buildNumericPanel();
+    buildElementListPanel();
+    setupRulers();
+    ensureAnnoLayer();
+    attachUserboxDraw();
+    attachKeyboard();
+    attachZoomShortcuts();
+    attachStackPierceAndMarquee();
+    attachBackgroundClickClear();
+    wireEditableTexts();
+    // 4 択 chip テキストの dblclick → contenteditable → blur 保存ハンドラ。
+    // disable() 時に addManagedListener 経由で自動 remove される。
+    _enableChipTextEditOnDblclick();
+
+    // Attach handles to all spec-matched elements
+    state.spec.forEach(function (entry) {
+      var sel = entry[0], axes = entry[1];
+      $$(sel).forEach(function (el) { attachHandle(el, axes); });
+    });
+
+    // Restore previously-dropped images (data URLs persisted in localStorage)
+    // and enable OS file drag&drop onto the canvas.
+    try { restoreDroppedImages(state.canvasEl); } catch (e) { console.warn('[LayoutEditor] restoreDroppedImages failed', e); }
+    try { enableImageDragDrop(state.canvasEl); } catch (e) { console.warn('[LayoutEditor] enableImageDragDrop failed', e); }
+    // India-2: テキスト追加ツール — 永続化済みテキストを復元 + tool を canvas にアタッチ
+    try { restoreAddedTexts(state.canvasEl); } catch (e) { console.warn('[LayoutEditor] restoreAddedTexts failed', e); }
+    try { attachTextTool(state.canvasEl); } catch (e) { console.warn('[LayoutEditor] attachTextTool failed', e); }
+
+    // Pull saved data + restore extras
+    var serverData = window._currentLayoutData || null;
+    var local = localLoad();
+    // 2026-05-08 fix: server (Cloudflare [assets] バンドル) は GitHub PUT 後の deploy 完了 (~30-90s) まで stale。
+    //   直前 save の正解値は localStorage に __savedAt 付きで持っているので、5 分以内の local を優先。
+    var initialData = pickFreshestData(serverData, local);
+    if (initialData) {
+      // Re-apply (applier already did basic apply, but we want extras like __locked, __zoom, etc.)
+      try { applySavedData(initialData); } catch (e) { console.warn('[LayoutEditor] applySavedData failed', e); }
+    }
+    // 2026-05-08 fix: 後続 Mutation/renderChoices 経由 apply が server stale 値で
+    //   ユーザー直前 save をまた巻き戻すのを防ぐため、_currentLayoutData も local 優先で揃える。
+    if (initialData && window._currentLayoutData !== initialData) {
+      // 2026-05-08: __savedAt は localStorage 専用メタ。_currentLayoutData に残ると
+      // applier や saveChipPreset がキー列挙時に余計なキーとして拾うため除去。
+      var cleaned = Object.assign({}, initialData);
+      delete cleaned.__savedAt;
+      window._currentLayoutData = cleaned;
+    }
+    state.lastSavedJson = JSON.stringify(snapshot());
+    state.lastSavedQid = getCurrentQid(); // Phase 3.5 Fix 2: baseline qid
+
+    state.enabled = true;
+    // chip text override の視覚マークを初回反映 (data-chip-text-override 属性は
+    // renderChoices 経由でも付くが、 enable 時に既に DOM に居る chip にも当てる)。
+    try { _refreshChipTextOverrideMarks(); } catch (e) {}
+    adjustRulerPos();
+    refreshLockBadges();
+    refreshElementList();
+    updateNumericPanel();
+    refreshTopToolbarAlign();
+    refreshChipTextStyleControls();
+
+    // R1: restore persisted element list panel open/closed state. Default = closed.
+    try {
+      var savedOpen = localStorage.getItem('pono_layout_panel_open');
+      if (state.listPanelEl && savedOpen === '1') {
+        state.listPanelEl.classList.add('open');
+      }
+    } catch (e) {}
+
+    // Setup ResizeObserver to redraw anno svg when stage size changes (C1: trackable)
+    if (window.ResizeObserver && state.canvasEl) {
+      try {
+        var ro = new ResizeObserver(debounce(resizeAnnoSvg, 100));
+        ro.observe(state.canvasEl);
+        state.resizeObserver = ro;
+        registerCleanup(function () {
+          try { ro.disconnect(); } catch (e) {}
+        });
+      } catch (e) {}
+    }
+
+    // Whiskey-1: 動的に挿入される spec-matched 要素 (例: quizland の renderChoices で
+    // 後から作られる .chip) にも自動でハンドルを付け直す。
+    // enable() 時には DOM 上に存在しなかった要素もエディタで掴めるようにする。
+    if (window.MutationObserver) {
+      try {
+        var moRoot = state.canvasEl || document.body;
+        var rescan = debounce(function () {
+          try {
+            state.spec.forEach(function (entry) {
+              var sel = entry[0], axes = entry[1];
+              $$(sel).forEach(function (el) {
+                if (!el.classList.contains('resizable')) {
+                  try { attachHandle(el, axes); } catch (e) {}
+                }
+              });
+            });
+            // 新しく要素が増えた場合、要素一覧 / saved-layout の再適用も追従させる
+            try { refreshElementList(); } catch (e) {}
+            try {
+              if (window._currentLayoutData && window.LayoutApplier) {
+                window.LayoutApplier.apply(currentLayoutDataWithLiveSnapshot(), moRoot, _applierCfg({
+                  selectors: state.spec.map(function (e) { return e[0]; })
+                }));
+              }
+            } catch (e) {}
+          } catch (e) {}
+        }, 80);
+        // 2026-05-07 fix: editor 内部要素 (resize-size-label の textContent 更新で
+        //   発生する text node 追加 / numeric panel / element list の DOM 更新等) を
+        //   トリガから除外する。 これらをトリガに残すと、 chip ドラッグ中に発火する
+        //   resize-size-label の text 更新で rescan() がデバウンスされ、 mouseup 後に
+        //   LayoutApplier.apply(_currentLayoutData) が走って ユーザーのドラッグを
+        //   stale な saved-layout で巻き戻す致命バグになる
+        //   (再現: ?edit=1 で chip を resize → mouseup でサイズが元に戻る)。
+        // 判定: 以下の **どちらか** の場合は無視:
+        //   (a) mut.target が editor-chrome (.resize-handle/.resize-size-label/.le-*/...)
+        //       の内部 — 例: lbl.textContent='WxH' 更新時の lbl=mut.target ケース
+        //   (b) mut.addedNodes の **全て** が editor-chrome (resize-handle, resize-size-label
+        //       など) — 例: attachHandle が `.emoji-main-img` (img は void element) や
+        //       `.emoji-display` 等のコンテンツ要素に handle div を append したケース。
+        //       (a) だけでは target = コンテンツ要素となり skip されず、 続く apply() が
+        //       _currentLayoutData の古い tx/ty で element を巻き戻す致命バグになる
+        //       (= 2026-05-07 の「保存しても位置やスケールが戻る」報告の根本原因)。
+        // 通常コンテンツの addedNodes (renderChoices で作られる .chip 等) は (b) を満たさない
+        //   ので引き続き rescan を発火する。
+        var EDITOR_CHROME_SEL = '.resize-handle, .resize-size-label, .le-toolbar, .le-list-panel, .le-anno-layer, .le-context-menu, .le-pages-dropdown, .le-help-modal, .le-comparison-picker, .le-marquee, .le-guide, .le-ruler, .numeric-panel, .userbox-badge, .userbox-del, .le-lock-badge';
+        var isChromeNode = function (n) {
+          if (!n) return false;
+          // Text node — chrome の textContent 更新で生じる text node も無視
+          if (n.nodeType === 3) {
+            var p = n.parentNode;
+            return !!(p && p.nodeType === 1 && p.closest && p.closest(EDITOR_CHROME_SEL));
+          }
+          if (n.nodeType !== 1) return false;
+          try { return !!(n.matches && (n.matches(EDITOR_CHROME_SEL) || (n.closest && n.closest(EDITOR_CHROME_SEL)))); }
+          catch (e) { return false; }
+        };
+        var isEditorChromeMutation = function (mut) {
+          // (a) mut.target が editor-chrome の中
+          var t = mut.target;
+          if (t && t.closest) {
+            try { if (t.closest(EDITOR_CHROME_SEL)) return true; } catch (e) {}
+          }
+          // (b) addedNodes が全部 editor-chrome (handle / size label 等)
+          var added = mut.addedNodes;
+          if (added && added.length) {
+            for (var k = 0; k < added.length; k++) {
+              if (!isChromeNode(added[k])) return false;
+            }
+            return true;
+          }
+          return false;
+        };
+        var dynMo = new MutationObserver(function (muts) {
+          for (var i = 0; i < muts.length; i++) {
+            if (muts[i].addedNodes && muts[i].addedNodes.length) {
+              if (isEditorChromeMutation(muts[i])) continue;
+              rescan(); return;
+            }
+          }
+        });
+        dynMo.observe(moRoot, { childList: true, subtree: true });
+        registerCleanup(function () { try { dynMo.disconnect(); } catch (e) {} });
+      } catch (e) { console.warn('[LayoutEditor] dynamic MutationObserver failed', e); }
+    }
+
+    showToast('編集モード ON');
+    emit('ready');
+    emit('mode', 'edit');
+  }
+
+  function disable() {
+    if (!state.enabled) return;
+    // C1+R3: tidy preview + comparison side-mode before tearing down DOM
+    if (document.body.classList.contains('preview-mode')) {
+      try { exitPreview(); } catch (e) {}
+    }
+    if (state.comparison && state.comparison.active) {
+      try { hideComparison(); } catch (e) {}
+    } else if (state.originalCanvasWidth !== null && state.canvasEl) {
+      // Defensive: if originalCanvasWidth was captured but never restored
+      state.canvasEl.style.width = state.originalCanvasWidth;
+      state.originalCanvasWidth = null;
+    }
+    document.body.classList.remove(EDIT_MODE_BODY_CLASS, 'resize-mode', 'anno-mode', 'draw-mode',
+                                    'eraser-mode', 'has-selection', 'preview-mode', 'layout-comparison-on',
+                                    'layout-editor-paused');
+    // editor 終了時は pause 状態と pause hint overlay も解除して、
+    //   通常プレイ側に副作用を残さない (window._quizlandPaused は flag そのまま
+    //   消えるとガード側で undefined チェックが要るので false に明示する)。
+    try { window._quizlandPaused = false; } catch (_) {}
+    var _pausedOverlay = document.getElementById('le-paused-overlay');
+    if (_pausedOverlay) _pausedOverlay.remove();
+    // Remove handles + size labels but KEEP applied styles
+    $$('.resize-handle, .resize-size-label').forEach(function (el) { el.remove(); });
+    $$('.resizable').forEach(function (el) {
+      el.classList.remove('resizable', 'selected', 'edge-linked', 'le-locked', 'le-preferred', 'le-pointer-suppressed');
+      delete el._resizeUpdateLabel;
+    });
+    $$('.le-lock-badge').forEach(function (b) { b.remove(); });
+    if (state.toolbarEl) state.toolbarEl.remove();
+    if (state.numericPanelEl) state.numericPanelEl.remove();
+    if (state.listPanelEl) state.listPanelEl.remove();
+    // E1: 🦉 セリフ編集パネルも cleanup
+    if (state.hakasePanelEl) state.hakasePanelEl.remove();
+    if (state.rulerH) state.rulerH.remove();
+    if (state.rulerV) state.rulerV.remove();
+    if (state.helpModalEl) state.helpModalEl.remove();
+    closePagesDropdown();
+    if (state.previewExitBtn) { state.previewExitBtn.remove(); state.previewExitBtn = null; }
+    var ctxMenu = $('#le-context-menu');
+    if (ctxMenu) ctxMenu.remove();
+    $$('.le-guide').forEach(function (g) { g.remove(); });
+    $$('.le-toast').forEach(function (t) { t.remove(); });
+    $$('.le-comparison-overlay').forEach(function (c) { c.remove(); });
+    if (state.zoomWrapEl) {
+      // unwrap stage
+      var stage = state.canvasEl;
+      var wrap = state.zoomWrapEl;
+      if (stage && wrap.parentNode) {
+        wrap.parentNode.insertBefore(stage, wrap);
+        stage.style.transform = '';
+        wrap.remove();
+      }
+      state.zoomWrapEl = null;
+    }
+    if (state.annoLayer) {
+      // Note: we keep anno data on the stage so ?edit=1 next time still has it.
+      // But annotations live in saved-layout via special future schema; for now leave them.
+    }
+    // C1: run all registered cleanup callbacks (listeners + observers)
+    if (state.cleanupFns && state.cleanupFns.length) {
+      state.cleanupFns.slice().forEach(function (fn) { try { fn(); } catch (e) {} });
+      state.cleanupFns = [];
+    }
+    if (state.resizeObserver) {
+      try { state.resizeObserver.disconnect(); } catch (e) {}
+      state.resizeObserver = null;
+    }
+    state.enabled = false;
+    state._dirty = false;            // 2026-05-07: edit セッション終了時はクリア
+    state.lastSavedQid = null;       // Phase 3.5 Fix 2: 次回 enable で取り直す
+    state._perQuestionSelectors = []; // 2026-05-07: 次回 enable で受け取り直す
+    state._perQScopeToggleSelectors = []; // 2026-06-11: 保存範囲トグルも次回 enable で受け取り直す
+    // 2026-06-30 (batch:962 ★1): perQScopeThisQ は localStorage 永続値が正本。
+    //   ここで false 強制すると次回 enable() で false スタートとなり (= 復元前に再書きされ)、
+    //   🎯 にしたままセッションを閉じても次回 🌐 に戻る片道ドアになる。 reset を削除。
+    state._perQDeletedKeys = new Set(); // 2026-06-11: 未保存の削除予約はセッション終了で破棄
+    state._perQWarnedQid = null;
+    state.toolbarEl = null;
+    state.numericPanelEl = null;
+    state.listPanelEl = null;
+    state.hakasePanelEl = null;
+    state.rulerH = null;
+    state.rulerV = null;
+    state.aspectLocked = false;
+    state.aspectRatios = null;
+    // Charlie-2: editor disable で preferredTarget もリセット
+    state.preferredTarget = null;
+    $$('.le-preferred').forEach(function (e) { e.classList.remove('le-preferred'); });
+    // Echo-2: pointer-events 抑止クラスも cleanup
+    document.querySelectorAll('.le-pointer-suppressed').forEach(function (e) {
+      e.classList.remove('le-pointer-suppressed');
+    });
+    // India-2: テキスト追加ツールも cleanup
+    state.textToolOn = false;
+    document.body.classList.remove('le-text-tool-active');
+    emit('mode', 'play');
+  }
+
+  function normalizeSpec(spec) {
+    if (!Array.isArray(spec)) return [];
+    return spec.map(function (entry) {
+      if (typeof entry === 'string') return [entry, 'wh', entry];
+      if (Array.isArray(entry)) {
+        return [entry[0], entry[1] || 'wh', entry[2] || entry[0]];
+      }
+      if (entry && typeof entry === 'object') {
+        return [entry.selector, entry.axes || 'wh', entry.label || entry.selector];
+      }
+      return null;
+    }).filter(Boolean);
+  }
+
+  function setTool(tool) { state.activeTool = tool; emit('tool', tool); }
+
+  // 2026-05-08 fix: SPA 問題切替 (renderChoices 等) で apply を呼ぶ直前に
+  //   _currentLayoutData を localStorage の最新値で refresh する公開 API。
+  //   enable() が再度呼ばれない経路で server (stale) data が残り続け、
+  //   直前 save が巻き戻る症状を防ぐ。
+  // 2026-05-07 (Phase 2 / impl-A): per-Q キー導入後は問題遷移で snapshot 内容が
+  //   変わるので、 state.lastSavedJson を「新しい問題に揃えた snapshot」 で取り直す。
+  //   _dirty が clean (= ユーザー操作なし) のときに限ってリセットする。
+  //   未保存編集中 (= _dirty true) は遷移しても dirty を維持する (impl-B 側で
+  //   confirmDiscardIfDirty を呼ぶ前提)。
+  function refreshCurrentFromLocal() {
+    try {
+      var server = window._currentLayoutData || null;
+      var local = localLoad();
+      var fresh = pickFreshestData(server, local);
+      if (fresh && fresh !== server) {
+        var cleaned = Object.assign({}, fresh);
+        delete cleaned.__savedAt;
+        window._currentLayoutData = cleaned;
+      }
+      if (state.enabled && !state._dirty) {
+        // clean なら新 qid 基準で lastSavedJson を取り直し、 dirty 誤判定を防ぐ。
+        try {
+          state.lastSavedJson = JSON.stringify(snapshot());
+          state.lastSavedQid = getCurrentQid(); // Phase 3.5 Fix 2: baseline と qid をペアで更新
+        } catch (e2) {}
+      }
+    } catch (e) { /* noop */ }
+  }
+
+  // ====================================================================
+  //  Export
+  // ====================================================================
+
+  window.LayoutEditor = {
+    __full: true,
+    version: VERSION,
+    enable: enable,
+    disable: disable,
+    get isEnabled() { return state.enabled; },
+    get isDirty() { return !!state._dirty; },
+    on: on, off: off, emit: emit,
+    save: save,
+    revert: revert,
+    reset: reset,
+    snapshot: snapshot,
+    undo: undo,
+    redo: redo,
+    // sw v952: 外部 (ZK 投資画面エディタ等) が独自操作を undo/redo に統合できるよう公開。
+    // op = { type: 'zk-custom', _undo: fn, _redo: fn, _label?: string }
+    pushHistory: pushHistory,
+    setTool: setTool,
+    setZoom: setZoom,
+    toggleComparison: toggleComparison,
+    toggleGrid: toggleGrid,
+    refreshCurrentFromLocal: refreshCurrentFromLocal,
+    // chip text override (Phase 2 / __chip_text_overrides)。
+    // quizland renderChoices から呼ばれて、 編集モード中の visual mark を最新化。
+    _refreshChipTextOverrideMarks: _refreshChipTextOverrideMarks,
+    // 2026-05-07 (Phase 2 / impl-A): per-Q layout API
+    confirmDiscardIfDirty: confirmDiscardIfDirty,
+    getCurrentQid: getCurrentQid,
+    // Test/diagnostic accessors
+    _state: state,
+    _spec: function () { return state.spec.slice(); },
+  };
+})();

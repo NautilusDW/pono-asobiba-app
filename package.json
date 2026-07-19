@@ -6,7 +6,10 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:smoke": "playwright test --project=chromium-staging-smoke"
   },
   "repository": {
     "type": "git",
@@ -22,5 +25,11 @@
   "homepage": "https://github.com/NautilusDW/pono-asobiba-app#readme",
   "dependencies": {
     "headbreaker": "^3.0.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.0",
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0",
+    "wrangler": "^4.85.0"
   }
 }

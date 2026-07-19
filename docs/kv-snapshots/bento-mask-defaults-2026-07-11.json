@@ -1,0 +1,3918 @@
+{
+  "snapshotAt": "2026-07-11T01:40:15Z",
+  "source": "staging KV (staging/staging-app 共有 namespace)",
+  "note": "batch:1058-tut2-hotfix5 時点のオーナー再調整値。2026-07-02 の KV 直接上書き事故 (batch:1046/1047) を受けた初回スナップショット",
+  "data": {
+    "ok": true,
+    "exists": true,
+    "version": 1,
+    "updatedAt": "2026-07-11T01:26:42.541Z",
+    "maskBounds": {
+      "box_bear": {
+        "rel": {
+          "x": 0.0395,
+          "y": 0.0373,
+          "w": 0.921,
+          "h": 0.8487
+        }
+      },
+      "box_cat_blue": {
+        "rel": {
+          "x": 0.045,
+          "y": 0.0313,
+          "w": 0.91,
+          "h": 0.8643
+        }
+      },
+      "box_round": {
+        "rel": {
+          "x": 0.045,
+          "y": 0.0336,
+          "w": 0.91,
+          "h": 0.7798
+        }
+      },
+      "box_square": {
+        "rel": {
+          "x": 0.043,
+          "y": 0.0404,
+          "w": 0.914,
+          "h": 0.7876
+        }
+      }
+    },
+    "completeLayout": {
+      "box_bear:lid": {
+        "lid": {
+          "x": 0,
+          "y": 136.4,
+          "w": 100
+        }
+      },
+      "box_bear:tier2": {
+        "layout": {
+          "x": 0,
+          "y": 164.1,
+          "w": 100
+        }
+      },
+      "box_cat_blue:lid": {
+        "lid": {
+          "x": 0,
+          "y": 147.1,
+          "w": 100
+        }
+      },
+      "box_cat_blue:tier2": {
+        "layout": {
+          "x": 0,
+          "y": 169.1,
+          "w": 100
+        }
+      },
+      "box_round:lid": {
+        "lid": {
+          "x": 0,
+          "y": 70.3,
+          "w": 104.4
+        }
+      },
+      "box_round:tier2": {
+        "layout": {
+          "x": 0,
+          "y": 140.6,
+          "w": 100.3
+        }
+      },
+      "box_round:tier2:mask": {
+        "rel": {
+          "x": 0.047,
+          "y": 0.0336,
+          "w": 0.91,
+          "h": 0.7798
+        }
+      },
+      "box_square:lid": {
+        "lid": {
+          "x": 0,
+          "y": 56.1,
+          "w": 109.8
+        }
+      },
+      "box_square:tier2": {
+        "layout": {
+          "x": 0,
+          "y": 138.1,
+          "w": 101.9
+        }
+      },
+      "box_square:tier2:mask": {
+        "rel": {
+          "x": 0.051,
+          "y": 0.0404,
+          "w": 0.9,
+          "h": 0.7876
+        }
+      }
+    },
+    "slotLayout": {
+      "box_rect_split": {
+        "main-food": [
+          {
+            "x": 476,
+            "y": 351,
+            "size": 153,
+            "sampleId": "hamburger",
+            "sampleOverrides": {
+              "bacon_maki": {
+                "x": 492,
+                "y": 117.1,
+                "size": 137
+              },
+              "gyoza": {
+                "x": 495,
+                "y": 117.1,
+                "size": 156
+              },
+              "hamburger": {
+                "x": 476,
+                "y": 351,
+                "size": 153
+              },
+              "harumaki": {
+                "x": 494,
+                "y": 117.1,
+                "size": 149
+              },
+              "karaage": {
+                "x": 490.8,
+                "y": 103.4,
+                "size": 134
+              },
+              "korokke": {
+                "x": 478,
+                "y": 103.4,
+                "size": 128
+              },
+              "salmon": {
+                "x": 486,
+                "y": 102.1,
+                "size": 170
+              },
+              "shrimp": {
+                "x": 490.8,
+                "y": 103.4,
+                "size": 129
+              },
+              "tako_wiener": {
+                "x": 492.7,
+                "y": 340,
+                "size": 126
+              }
+            }
+          },
+          {
+            "x": 613,
+            "y": 348,
+            "size": 153,
+            "sampleId": "hamburger",
+            "sampleOverrides": {
+              "bacon_maki": {
+                "x": 600.2,
+                "y": 116,
+                "size": 137
+              },
+              "gyoza": {
+                "x": 582.6,
+                "y": 120.3,
+                "size": 156
+              },
+              "hamburger": {
+                "x": 613,
+                "y": 348,
+                "size": 153
+              },
+              "harumaki": {
+                "x": 600.2,
+                "y": 124.9,
+                "size": 149
+              },
+              "karaage": {
+                "x": 603.5,
+                "y": 104,
+                "size": 134
+              },
+              "korokke": {
+                "x": 614.6,
+                "y": 109.9,
+                "size": 128
+              },
+              "salmon": {
+                "x": 592,
+                "y": 110,
+                "size": 170
+              },
+              "shrimp": {
+                "x": 603.5,
+                "y": 104,
+                "size": 129
+              },
+              "tako_wiener": {
+                "x": 600.2,
+                "y": 124.9,
+                "size": 126
+              }
+            }
+          }
+        ],
+        "side-food": [
+          {
+            "x": 474.5,
+            "y": 323.6,
+            "markerX": 469.5,
+            "markerY": 107,
+            "size": 118,
+            "sampleId": "egg",
+            "sampleOverrides": {
+              "broccoli": {
+                "x": 474.5,
+                "y": 323.6,
+                "size": 119
+              },
+              "corn_spinach": {
+                "x": 474.5,
+                "y": 323.6,
+                "size": 121
+              },
+              "edamame": {
+                "x": 474.5,
+                "y": 323.6,
+                "size": 121
+              },
+              "egg": {
+                "x": 474.5,
+                "y": 323.6,
+                "size": 118
+              },
+              "ichigo": {
+                "x": 474.5,
+                "y": 323.6,
+                "size": 122
+              },
+              "meatball": {
+                "x": 471.2,
+                "y": 319.7,
+                "size": 126
+              },
+              "mikan": {
+                "x": 469.4,
+                "y": 342.5,
+                "size": 125
+              },
+              "napolitan": {
+                "x": 474.5,
+                "y": 323.6,
+                "size": 139
+              },
+              "ninjin_ingen": {
+                "x": 474.5,
+                "y": 323.6,
+                "size": 118
+              },
+              "potato_salad": {
+                "x": 474.5,
+                "y": 323.6,
+                "size": 121
+              },
+              "tomato": {
+                "x": 469.9,
+                "y": 321,
+                "size": 64
+              }
+            }
+          },
+          {
+            "x": 614.8,
+            "y": 345.4,
+            "markerX": 605,
+            "markerY": 323,
+            "size": 126,
+            "sampleId": "meatball",
+            "sampleOverrides": {
+              "broccoli": {
+                "x": 597.3,
+                "y": 320.6,
+                "size": 119
+              },
+              "corn_spinach": {
+                "x": 597.3,
+                "y": 320.6,
+                "size": 121
+              },
+              "edamame": {
+                "x": 597.3,
+                "y": 320.6,
+                "size": 121
+              },
+              "egg": {
+                "x": 614.8,
+                "y": 345.4,
+                "size": 118
+              },
+              "ichigo": {
+                "x": 597.3,
+                "y": 320.6,
+                "size": 122
+              },
+              "meatball": {
+                "x": 614.8,
+                "y": 345.4,
+                "size": 126
+              },
+              "mikan": {
+                "x": 597.3,
+                "y": 320.6,
+                "size": 125
+              },
+              "napolitan": {
+                "x": 597.3,
+                "y": 320.6,
+                "size": 139
+              },
+              "ninjin_ingen": {
+                "x": 597.3,
+                "y": 320.6,
+                "size": 118
+              },
+              "potato_salad": {
+                "x": 597.3,
+                "y": 320.6,
+                "size": 121
+              },
+              "tomato": {
+                "x": 597.3,
+                "y": 320.6,
+                "size": 64
+              }
+            }
+          },
+          {
+            "x": 473.3,
+            "y": 221.4,
+            "markerX": 472,
+            "markerY": 227,
+            "size": 119,
+            "sampleId": "broccoli",
+            "sampleOverrides": {
+              "broccoli": {
+                "x": 473.3,
+                "y": 221.4,
+                "size": 119
+              },
+              "corn_spinach": {
+                "x": 529.2,
+                "y": 225.9,
+                "size": 121
+              },
+              "edamame": {
+                "x": 529.2,
+                "y": 225.9,
+                "size": 121
+              },
+              "egg": {
+                "x": 473.3,
+                "y": 221.4,
+                "size": 118
+              },
+              "ichigo": {
+                "x": 529.2,
+                "y": 225.9,
+                "size": 122
+              },
+              "meatball": {
+                "x": 529.5,
+                "y": 202.5,
+                "size": 126
+              },
+              "mikan": {
+                "x": 529.2,
+                "y": 225.9,
+                "size": 125
+              },
+              "napolitan": {
+                "x": 529.2,
+                "y": 225.9,
+                "size": 139
+              },
+              "ninjin_ingen": {
+                "x": 529.2,
+                "y": 225.9,
+                "size": 118
+              },
+              "potato_salad": {
+                "x": 529.2,
+                "y": 225.9,
+                "size": 121
+              },
+              "tomato": {
+                "x": 529.5,
+                "y": 202.5,
+                "size": 64
+              }
+            }
+          },
+          {
+            "x": 613.8,
+            "y": 233,
+            "markerX": 605,
+            "markerY": 216,
+            "size": 64,
+            "sampleId": "tomato",
+            "sampleOverrides": {
+              "broccoli": {
+                "x": 612,
+                "y": 221.3,
+                "size": 119
+              },
+              "corn_spinach": {
+                "x": 541.5,
+                "y": 324.3,
+                "size": 121
+              },
+              "edamame": {
+                "x": 541.5,
+                "y": 324.3,
+                "size": 121
+              },
+              "egg": {
+                "x": 613.8,
+                "y": 233,
+                "size": 118
+              },
+              "ichigo": {
+                "x": 541.5,
+                "y": 324.3,
+                "size": 122
+              },
+              "meatball": {
+                "x": 541.5,
+                "y": 324.3,
+                "size": 126
+              },
+              "mikan": {
+                "x": 541.5,
+                "y": 324.3,
+                "size": 125
+              },
+              "napolitan": {
+                "x": 541.5,
+                "y": 324.3,
+                "size": 139
+              },
+              "ninjin_ingen": {
+                "x": 541.5,
+                "y": 324.3,
+                "size": 118
+              },
+              "potato_salad": {
+                "x": 541.5,
+                "y": 324.3,
+                "size": 121
+              },
+              "tomato": {
+                "x": 613.8,
+                "y": 233,
+                "size": 64
+              }
+            }
+          }
+        ],
+        "cup": [
+          {
+            "x": 482,
+            "y": 113,
+            "size": 150,
+            "sampleId": "cup_blue_dot",
+            "sampleOverrides": {
+              "cup_blue_dot": {
+                "x": 482,
+                "y": 113,
+                "size": 150,
+                "positionOverride": true
+              }
+            }
+          },
+          {
+            "x": 606,
+            "y": 113,
+            "size": 150,
+            "sampleId": "cup_blue_dot",
+            "sampleOverrides": {
+              "cup_blue_dot": {
+                "x": 606,
+                "y": 113,
+                "size": 150,
+                "positionOverride": true
+              }
+            }
+          },
+          {
+            "x": 482,
+            "y": 235,
+            "size": 150,
+            "sampleId": "cup_blue_dot",
+            "sampleOverrides": {
+              "cup_blue_dot": {
+                "x": 482,
+                "y": 235,
+                "size": 150,
+                "positionOverride": true
+              }
+            }
+          },
+          {
+            "x": 606,
+            "y": 235,
+            "size": 150,
+            "sampleId": "cup_blue_dot",
+            "sampleOverrides": {
+              "cup_blue_dot": {
+                "x": 606,
+                "y": 235,
+                "size": 150,
+                "positionOverride": true
+              }
+            }
+          }
+        ],
+        "leaf": [
+          {
+            "x": 488,
+            "y": 131.3,
+            "size": 150,
+            "sampleId": "leaf_cabbage",
+            "sampleOverrides": {
+              "leaf_cabbage": {
+                "x": 488,
+                "y": 131.3,
+                "size": 150
+              },
+              "leaf_lettuce": {
+                "x": 488,
+                "y": 131.3,
+                "size": 190
+              }
+            }
+          }
+        ],
+        "divider": [
+          {
+            "x": 546,
+            "y": 90,
+            "size": 42,
+            "sampleId": "divider_wave_vertical_back",
+            "sampleOverrides": {
+              "divider_wave": {
+                "x": 488,
+                "y": 131.3,
+                "size": 184
+              },
+              "divider_wave_vertical_back": {
+                "x": 546,
+                "y": 90,
+                "size": 42,
+                "positionOverride": true
+              },
+              "divider_wave_vertical_front": {
+                "x": 488,
+                "y": 131.3,
+                "size": 50
+              },
+              "divider_wave_vertical_mid": {
+                "x": 488,
+                "y": 131.3,
+                "size": 46
+              },
+              "divider_wood": {
+                "x": 488,
+                "y": 131.3,
+                "size": 178
+              },
+              "divider_wood_vertical_front": {
+                "x": 488,
+                "y": 131.3,
+                "size": 50
+              }
+            }
+          },
+          {
+            "x": 552.9,
+            "y": 219.6,
+            "size": 46,
+            "sampleId": "divider_wave_vertical_mid",
+            "sampleOverrides": {
+              "divider_wave": {
+                "x": 483,
+                "y": 165,
+                "size": 184,
+                "positionOverride": true
+              },
+              "divider_wave_vertical_back": {
+                "x": 596,
+                "y": 131.3,
+                "size": 42
+              },
+              "divider_wave_vertical_front": {
+                "x": 596,
+                "y": 131.3,
+                "size": 50
+              },
+              "divider_wave_vertical_mid": {
+                "x": 552.9,
+                "y": 219.6,
+                "size": 46,
+                "positionOverride": true
+              },
+              "divider_wood": {
+                "x": 596,
+                "y": 131.3,
+                "size": 178
+              },
+              "divider_wood_vertical_front": {
+                "x": 596,
+                "y": 131.3,
+                "size": 50
+              }
+            }
+          },
+          {
+            "x": 558.4,
+            "y": 341.5,
+            "size": 50,
+            "sampleId": "divider_wave_vertical_front",
+            "sampleOverrides": {
+              "divider_wave": {
+                "x": 488,
+                "y": 219.5,
+                "size": 184
+              },
+              "divider_wave_vertical_back": {
+                "x": 488,
+                "y": 219.5,
+                "size": 42
+              },
+              "divider_wave_vertical_front": {
+                "x": 558.4,
+                "y": 341.5,
+                "size": 50,
+                "positionOverride": true
+              },
+              "divider_wave_vertical_mid": {
+                "x": 546.8,
+                "y": 214,
+                "size": 46,
+                "positionOverride": true
+              },
+              "divider_wood": {
+                "x": 488,
+                "y": 219.5,
+                "size": 178
+              },
+              "divider_wood_vertical_front": {
+                "x": 488,
+                "y": 219.5,
+                "size": 50
+              }
+            }
+          },
+          {
+            "x": 485.1,
+            "y": 166.9,
+            "size": 184,
+            "sampleId": "divider_wave",
+            "sampleOverrides": {
+              "divider_wave": {
+                "x": 485.1,
+                "y": 166.9,
+                "size": 184,
+                "positionOverride": true
+              },
+              "divider_wave_vertical_back": {
+                "x": 596,
+                "y": 219.5,
+                "size": 42
+              },
+              "divider_wave_vertical_front": {
+                "x": 596,
+                "y": 219.5,
+                "size": 50
+              },
+              "divider_wave_vertical_mid": {
+                "x": 596,
+                "y": 219.5,
+                "size": 46
+              },
+              "divider_wood": {
+                "x": 485.1,
+                "y": 157,
+                "size": 178,
+                "positionOverride": true
+              },
+              "divider_wood_vertical_front": {
+                "x": 596,
+                "y": 219.5,
+                "size": 50
+              }
+            }
+          },
+          {
+            "x": 610.9,
+            "y": 171.7,
+            "size": 184,
+            "sampleId": "divider_wave",
+            "sampleOverrides": {
+              "divider_wave": {
+                "x": 610.9,
+                "y": 171.7,
+                "size": 184,
+                "positionOverride": true
+              },
+              "divider_wave_vertical_back": {
+                "x": 488,
+                "y": 307.8,
+                "size": 42
+              },
+              "divider_wave_vertical_front": {
+                "x": 619.4,
+                "y": 175,
+                "size": 50,
+                "positionOverride": true
+              },
+              "divider_wave_vertical_mid": {
+                "x": 488,
+                "y": 307.8,
+                "size": 46
+              },
+              "divider_wood": {
+                "x": 488,
+                "y": 307.8,
+                "size": 178
+              },
+              "divider_wood_vertical_front": {
+                "x": 488,
+                "y": 307.8,
+                "size": 50
+              }
+            }
+          },
+          {
+            "x": 485.6,
+            "y": 278.6,
+            "size": 184,
+            "sampleId": "divider_wave",
+            "sampleOverrides": {
+              "divider_wave": {
+                "x": 485.6,
+                "y": 278.6,
+                "size": 184,
+                "positionOverride": true
+              },
+              "divider_wave_vertical_back": {
+                "x": 596,
+                "y": 307.8,
+                "size": 42
+              },
+              "divider_wave_vertical_front": {
+                "x": 596,
+                "y": 307.8,
+                "size": 50
+              },
+              "divider_wave_vertical_mid": {
+                "x": 596,
+                "y": 307.8,
+                "size": 46
+              },
+              "divider_wood": {
+                "x": 596,
+                "y": 307.8,
+                "size": 178
+              },
+              "divider_wood_vertical_front": {
+                "x": 596,
+                "y": 307.8,
+                "size": 50
+              }
+            }
+          },
+          {
+            "x": 542,
+            "y": 219.5,
+            "size": 50,
+            "sampleId": "divider_wave_vertical_front",
+            "sampleOverrides": {
+              "divider_wave": {
+                "x": 542,
+                "y": 219.5,
+                "size": 184
+              },
+              "divider_wave_vertical_back": {
+                "x": 542,
+                "y": 219.5,
+                "size": 42
+              },
+              "divider_wave_vertical_front": {
+                "x": 641,
+                "y": 283.2,
+                "size": 50,
+                "positionOverride": true
+              },
+              "divider_wave_vertical_mid": {
+                "x": 641,
+                "y": 219.5,
+                "size": 46,
+                "positionOverride": true
+              },
+              "divider_wood": {
+                "x": 542,
+                "y": 219.5,
+                "size": 178
+              },
+              "divider_wood_vertical_front": {
+                "x": 550,
+                "y": 219.5,
+                "size": 50,
+                "positionOverride": true
+              }
+            }
+          }
+        ],
+        "other": [
+          {
+            "x": 610,
+            "y": 280.6,
+            "size": 66,
+            "sampleId": "pick_flag",
+            "sampleOverrides": {
+              "pick_flag": {
+                "x": 610,
+                "y": 280.6,
+                "size": 66
+              }
+            }
+          }
+        ]
+      },
+      "box_square": {
+        "globalScale": 1.3,
+        "slotCounts": {
+          "side-food": 4
+        },
+        "main-food": [
+          {
+            "x": 286,
+            "y": 326.1,
+            "size": 153,
+            "sampleId": "hamburger",
+            "sampleOverrides": {
+              "bacon_maki": {
+                "x": 286,
+                "y": 326.1,
+                "size": 137
+              },
+              "gyoza": {
+                "x": 286,
+                "y": 326.1,
+                "size": 156
+              },
+              "hamburger": {
+                "x": 286,
+                "y": 326.1,
+                "size": 153,
+                "positionOverride": true
+              },
+              "harumaki": {
+                "x": 286,
+                "y": 326.1,
+                "size": 149
+              },
+              "karaage": {
+                "x": 286,
+                "y": 326.1,
+                "size": 134
+              },
+              "korokke": {
+                "x": 286,
+                "y": 326.1,
+                "size": 128
+              },
+              "salmon": {
+                "x": 286,
+                "y": 326.1,
+                "size": 170
+              },
+              "shrimp": {
+                "x": 286,
+                "y": 326.1,
+                "size": 129
+              },
+              "tako_wiener": {
+                "x": 286,
+                "y": 326.1,
+                "size": 126
+              }
+            }
+          },
+          {
+            "x": 480,
+            "y": 323.3,
+            "size": 134,
+            "sampleId": "karaage",
+            "sampleOverrides": {
+              "bacon_maki": {
+                "x": 480,
+                "y": 323.3,
+                "size": 137
+              },
+              "gyoza": {
+                "x": 480,
+                "y": 323.3,
+                "size": 156
+              },
+              "hamburger": {
+                "x": 480,
+                "y": 323.3,
+                "size": 153,
+                "positionOverride": true
+              },
+              "harumaki": {
+                "x": 480,
+                "y": 323.3,
+                "size": 149
+              },
+              "karaage": {
+                "x": 480,
+                "y": 323.3,
+                "size": 134
+              },
+              "korokke": {
+                "x": 483,
+                "y": 323.3,
+                "size": 128,
+                "positionOverride": true
+              },
+              "salmon": {
+                "x": 480,
+                "y": 323.3,
+                "size": 170
+              },
+              "shrimp": {
+                "x": 480,
+                "y": 323.3,
+                "size": 129
+              },
+              "tako_wiener": {
+                "x": 480,
+                "y": 323.3,
+                "size": 126
+              }
+            }
+          }
+        ],
+        "side-food": [
+          {
+            "x": 296.2,
+            "y": 125,
+            "markerX": 289,
+            "markerY": 121,
+            "size": 118,
+            "sampleId": "egg",
+            "sampleOverrides": {
+              "broccoli": {
+                "x": 296.2,
+                "y": 125,
+                "size": 119
+              },
+              "corn_spinach": {
+                "x": 296.2,
+                "y": 125,
+                "size": 121
+              },
+              "edamame": {
+                "x": 296.2,
+                "y": 125,
+                "size": 121
+              },
+              "egg": {
+                "x": 296.2,
+                "y": 125,
+                "size": 118
+              },
+              "ichigo": {
+                "x": 296.2,
+                "y": 125,
+                "size": 122
+              },
+              "meatball": {
+                "x": 296.2,
+                "y": 125,
+                "size": 126
+              },
+              "mikan": {
+                "x": 296.2,
+                "y": 125,
+                "size": 125
+              },
+              "napolitan": {
+                "x": 296.2,
+                "y": 125,
+                "size": 139
+              },
+              "ninjin_ingen": {
+                "x": 296.2,
+                "y": 125,
+                "size": 118
+              },
+              "potato_salad": {
+                "x": 296.2,
+                "y": 125,
+                "size": 121
+              },
+              "tomato": {
+                "x": 296.2,
+                "y": 125,
+                "size": 64
+              }
+            }
+          },
+          {
+            "x": 463.7,
+            "y": 125,
+            "size": 64,
+            "sampleId": "tomato",
+            "sampleOverrides": {
+              "broccoli": {
+                "x": 463.7,
+                "y": 125,
+                "size": 119
+              },
+              "corn_spinach": {
+                "x": 463.7,
+                "y": 125,
+                "size": 121
+              },
+              "edamame": {
+                "x": 463.7,
+                "y": 125,
+                "size": 121
+              },
+              "egg": {
+                "x": 463.7,
+                "y": 125,
+                "size": 118
+              },
+              "ichigo": {
+                "x": 463.7,
+                "y": 125,
+                "size": 122
+              },
+              "meatball": {
+                "x": 463.7,
+                "y": 125,
+                "size": 126
+              },
+              "mikan": {
+                "x": 463.7,
+                "y": 125,
+                "size": 125
+              },
+              "napolitan": {
+                "x": 463.7,
+                "y": 125,
+                "size": 139
+              },
+              "ninjin_ingen": {
+                "x": 463.7,
+                "y": 125,
+                "size": 118
+              },
+              "potato_salad": {
+                "x": 463.7,
+                "y": 125,
+                "size": 121
+              },
+              "tomato": {
+                "x": 463.7,
+                "y": 125,
+                "size": 64
+              }
+            }
+          },
+          {
+            "x": 289,
+            "y": 235,
+            "markerX": 292,
+            "markerY": 240,
+            "size": 119,
+            "sampleId": "broccoli",
+            "sampleOverrides": {
+              "broccoli": {
+                "x": 289,
+                "y": 235,
+                "size": 119
+              },
+              "corn_spinach": {
+                "x": 289,
+                "y": 235,
+                "size": 121
+              },
+              "edamame": {
+                "x": 289,
+                "y": 235,
+                "size": 121
+              },
+              "egg": {
+                "x": 289,
+                "y": 235,
+                "size": 118
+              },
+              "ichigo": {
+                "x": 289,
+                "y": 235,
+                "size": 122
+              },
+              "meatball": {
+                "x": 289,
+                "y": 235,
+                "size": 126
+              },
+              "mikan": {
+                "x": 289,
+                "y": 235,
+                "size": 125
+              },
+              "napolitan": {
+                "x": 289,
+                "y": 235,
+                "size": 139
+              },
+              "ninjin_ingen": {
+                "x": 289,
+                "y": 235,
+                "size": 118
+              },
+              "potato_salad": {
+                "x": 289,
+                "y": 235,
+                "size": 121
+              },
+              "tomato": {
+                "x": 289,
+                "y": 235,
+                "size": 64
+              }
+            }
+          },
+          {
+            "x": 472,
+            "y": 235,
+            "markerX": 480,
+            "markerY": 240,
+            "size": 119,
+            "sampleId": "broccoli",
+            "sampleOverrides": {
+              "broccoli": {
+                "x": 472,
+                "y": 235,
+                "size": 119
+              },
+              "corn_spinach": {
+                "x": 472,
+                "y": 235,
+                "size": 121
+              },
+              "edamame": {
+                "x": 472,
+                "y": 235,
+                "size": 121
+              },
+              "egg": {
+                "x": 472,
+                "y": 235,
+                "size": 118
+              },
+              "ichigo": {
+                "x": 472,
+                "y": 235,
+                "size": 122
+              },
+              "meatball": {
+                "x": 472,
+                "y": 235,
+                "size": 126
+              },
+              "mikan": {
+                "x": 472,
+                "y": 235,
+                "size": 125
+              },
+              "napolitan": {
+                "x": 472,
+                "y": 235,
+                "size": 139
+              },
+              "ninjin_ingen": {
+                "x": 472,
+                "y": 235,
+                "size": 118
+              },
+              "potato_salad": {
+                "x": 472,
+                "y": 235,
+                "size": 121
+              },
+              "tomato": {
+                "x": 472,
+                "y": 235,
+                "size": 64
+              }
+            }
+          }
+        ],
+        "cup": [
+          {
+            "x": 296.2,
+            "y": 125,
+            "size": 150,
+            "sampleId": "cup_blue_dot",
+            "sampleOverrides": {
+              "cup_blue_dot": {
+                "x": 296.2,
+                "y": 125,
+                "size": 150,
+                "positionOverride": true
+              }
+            }
+          },
+          {
+            "x": 463.7,
+            "y": 125,
+            "size": 150,
+            "sampleId": "cup_blue_dot",
+            "sampleOverrides": {
+              "cup_blue_dot": {
+                "x": 463.7,
+                "y": 125,
+                "size": 150,
+                "positionOverride": true
+              }
+            }
+          },
+          {
+            "x": 289,
+            "y": 235,
+            "size": 150,
+            "sampleId": "cup_blue_dot",
+            "sampleOverrides": {
+              "cup_blue_dot": {
+                "x": 289,
+                "y": 235,
+                "size": 150,
+                "positionOverride": true
+              }
+            }
+          },
+          {
+            "x": 472,
+            "y": 235,
+            "size": 150,
+            "sampleId": "cup_blue_dot",
+            "sampleOverrides": {
+              "cup_blue_dot": {
+                "x": 472,
+                "y": 235,
+                "size": 150,
+                "positionOverride": true
+              }
+            }
+          }
+        ],
+        "leaf": [
+          {
+            "x": 296.2,
+            "y": 121.3,
+            "size": 150,
+            "sampleId": "leaf_cabbage",
+            "sampleOverrides": {
+              "leaf_cabbage": {
+                "x": 296.2,
+                "y": 121.3,
+                "size": 150
+              },
+              "leaf_lettuce": {
+                "x": 296.2,
+                "y": 121.3,
+                "size": 190
+              }
+            }
+          }
+        ],
+        "divider": [
+          {
+            "x": 296.2,
+            "y": 121.3,
+            "size": 42,
+            "sampleId": "divider_wave_vertical_back",
+            "sampleOverrides": {
+              "divider_wave": {
+                "x": 296.2,
+                "y": 121.3,
+                "size": 184
+              },
+              "divider_wave_vertical_back": {
+                "x": 296.2,
+                "y": 121.3,
+                "size": 42
+              },
+              "divider_wave_vertical_front": {
+                "x": 296.2,
+                "y": 121.3,
+                "size": 50
+              },
+              "divider_wave_vertical_mid": {
+                "x": 296.2,
+                "y": 121.3,
+                "size": 46
+              },
+              "divider_wood": {
+                "x": 296.2,
+                "y": 121.3,
+                "size": 178
+              },
+              "divider_wood_vertical_front": {
+                "x": 296.2,
+                "y": 121.3,
+                "size": 50
+              }
+            }
+          },
+          {
+            "x": 463.7,
+            "y": 121.3,
+            "size": 184,
+            "sampleId": "divider_wave",
+            "sampleOverrides": {
+              "divider_wave": {
+                "x": 463.7,
+                "y": 121.3,
+                "size": 184
+              },
+              "divider_wave_vertical_back": {
+                "x": 463.7,
+                "y": 121.3,
+                "size": 42
+              },
+              "divider_wave_vertical_front": {
+                "x": 463.7,
+                "y": 121.3,
+                "size": 50
+              },
+              "divider_wave_vertical_mid": {
+                "x": 463.7,
+                "y": 121.3,
+                "size": 46
+              },
+              "divider_wood": {
+                "x": 463.7,
+                "y": 121.3,
+                "size": 178
+              },
+              "divider_wood_vertical_front": {
+                "x": 463.7,
+                "y": 121.3,
+                "size": 50
+              }
+            }
+          },
+          {
+            "x": 296.2,
+            "y": 203.5,
+            "size": 46,
+            "sampleId": "divider_wave_vertical_mid",
+            "sampleOverrides": {
+              "divider_wave": {
+                "x": 296.2,
+                "y": 203.5,
+                "size": 184
+              },
+              "divider_wave_vertical_back": {
+                "x": 296.2,
+                "y": 203.5,
+                "size": 42
+              },
+              "divider_wave_vertical_front": {
+                "x": 296.2,
+                "y": 203.5,
+                "size": 50
+              },
+              "divider_wave_vertical_mid": {
+                "x": 296.2,
+                "y": 203.5,
+                "size": 46
+              },
+              "divider_wood": {
+                "x": 296.2,
+                "y": 203.5,
+                "size": 178
+              },
+              "divider_wood_vertical_front": {
+                "x": 296.2,
+                "y": 203.5,
+                "size": 50
+              }
+            }
+          },
+          {
+            "x": 463.7,
+            "y": 203.5,
+            "size": 178,
+            "sampleId": "divider_wood",
+            "sampleOverrides": {
+              "divider_wave": {
+                "x": 463.7,
+                "y": 203.5,
+                "size": 184
+              },
+              "divider_wave_vertical_back": {
+                "x": 463.7,
+                "y": 203.5,
+                "size": 42
+              },
+              "divider_wave_vertical_front": {
+                "x": 463.7,
+                "y": 203.5,
+                "size": 50
+              },
+              "divider_wave_vertical_mid": {
+                "x": 463.7,
+                "y": 203.5,
+                "size": 46
+              },
+              "divider_wood": {
+                "x": 463.7,
+                "y": 203.5,
+                "size": 178
+              },
+              "divider_wood_vertical_front": {
+                "x": 463.7,
+                "y": 203.5,
+                "size": 50
+              }
+            }
+          },
+          {
+            "x": 296.2,
+            "y": 285.8,
+            "size": 50,
+            "sampleId": "divider_wave_vertical_front",
+            "sampleOverrides": {
+              "divider_wave": {
+                "x": 296.2,
+                "y": 285.8,
+                "size": 184
+              },
+              "divider_wave_vertical_back": {
+                "x": 296.2,
+                "y": 285.8,
+                "size": 42
+              },
+              "divider_wave_vertical_front": {
+                "x": 296.2,
+                "y": 285.8,
+                "size": 50
+              },
+              "divider_wave_vertical_mid": {
+                "x": 296.2,
+                "y": 285.8,
+                "size": 46
+              },
+              "divider_wood": {
+                "x": 296.2,
+                "y": 285.8,
+                "size": 178
+              },
+              "divider_wood_vertical_front": {
+                "x": 296.2,
+                "y": 285.8,
+                "size": 50
+              }
+            }
+          },
+          {
+            "x": 463.7,
+            "y": 285.8,
+            "size": 184,
+            "sampleId": "divider_wave",
+            "sampleOverrides": {
+              "divider_wave": {
+                "x": 463.7,
+                "y": 285.8,
+                "size": 184
+              },
+              "divider_wave_vertical_back": {
+                "x": 463.7,
+                "y": 285.8,
+                "size": 42
+              },
+              "divider_wave_vertical_front": {
+                "x": 463.7,
+                "y": 285.8,
+                "size": 50
+              },
+              "divider_wave_vertical_mid": {
+                "x": 463.7,
+                "y": 285.8,
+                "size": 46
+              },
+              "divider_wood": {
+                "x": 463.7,
+                "y": 285.8,
+                "size": 178
+              },
+              "divider_wood_vertical_front": {
+                "x": 463.7,
+                "y": 285.8,
+                "size": 50
+              }
+            }
+          },
+          {
+            "x": 380,
+            "y": 203.5,
+            "size": 50,
+            "sampleId": "divider_wood_vertical_front",
+            "sampleOverrides": {
+              "divider_wave": {
+                "x": 380,
+                "y": 203.5,
+                "size": 184
+              },
+              "divider_wave_vertical_back": {
+                "x": 380,
+                "y": 203.5,
+                "size": 42
+              },
+              "divider_wave_vertical_front": {
+                "x": 380,
+                "y": 203.5,
+                "size": 50
+              },
+              "divider_wave_vertical_mid": {
+                "x": 380,
+                "y": 203.5,
+                "size": 46
+              },
+              "divider_wood": {
+                "x": 380,
+                "y": 203.5,
+                "size": 178
+              },
+              "divider_wood_vertical_front": {
+                "x": 380,
+                "y": 203.5,
+                "size": 50
+              }
+            }
+          }
+        ],
+        "other": [
+          {
+            "x": 357,
+            "y": 257.2,
+            "size": 66,
+            "sampleId": "pick_flag",
+            "sampleOverrides": {
+              "pick_flag": {
+                "x": 357,
+                "y": 257.2,
+                "size": 66
+              }
+            }
+          }
+        ]
+      },
+      "box_round": {
+        "globalScale": 1.18,
+        "slotCounts": {
+          "side-food": 4
+        },
+        "main-food": [
+          {
+            "x": 293,
+            "y": 225.4,
+            "size": 126,
+            "sampleId": "tako_wiener",
+            "sampleOverrides": {
+              "bacon_maki": {
+                "x": 305,
+                "y": 225.4,
+                "size": 137,
+                "positionOverride": true
+              },
+              "gyoza": {
+                "x": 306,
+                "y": 225.4,
+                "size": 156,
+                "positionOverride": true
+              },
+              "hamburger": {
+                "x": 293,
+                "y": 225.4,
+                "size": 153,
+                "positionOverride": true
+              },
+              "harumaki": {
+                "x": 306,
+                "y": 225.4,
+                "size": 149,
+                "positionOverride": true
+              },
+              "karaage": {
+                "x": 299,
+                "y": 225.4,
+                "size": 134,
+                "positionOverride": true
+              },
+              "korokke": {
+                "x": 304,
+                "y": 225.4,
+                "size": 128,
+                "positionOverride": true
+              },
+              "salmon": {
+                "x": 304,
+                "y": 225.4,
+                "size": 170,
+                "positionOverride": true
+              },
+              "shrimp": {
+                "x": 305,
+                "y": 196,
+                "size": 129,
+                "positionOverride": true
+              },
+              "tako_wiener": {
+                "x": 293,
+                "y": 225.4,
+                "size": 126
+              }
+            }
+          },
+          {
+            "x": 452,
+            "y": 234,
+            "size": 126,
+            "sampleId": "tako_wiener",
+            "sampleOverrides": {
+              "bacon_maki": {
+                "x": 463,
+                "y": 226,
+                "size": 137,
+                "positionOverride": true
+              },
+              "gyoza": {
+                "x": 452,
+                "y": 234,
+                "size": 156
+              },
+              "hamburger": {
+                "x": 465.3,
+                "y": 228.3,
+                "size": 153,
+                "positionOverride": true
+              },
+              "harumaki": {
+                "x": 452,
+                "y": 234,
+                "size": 149
+              },
+              "karaage": {
+                "x": 459,
+                "y": 224,
+                "size": 134,
+                "positionOverride": true
+              },
+              "korokke": {
+                "x": 452,
+                "y": 234,
+                "size": 128
+              },
+              "salmon": {
+                "x": 460,
+                "y": 227,
+                "size": 170,
+                "positionOverride": true
+              },
+              "shrimp": {
+                "x": 462.8,
+                "y": 203.7,
+                "size": 129,
+                "positionOverride": true
+              },
+              "tako_wiener": {
+                "x": 452,
+                "y": 234,
+                "size": 126,
+                "positionOverride": true
+              }
+            }
+          }
+        ],
+        "side-food": [
+          {
+            "x": 309,
+            "y": 138.3,
+            "size": 64,
+            "sampleId": "tomato",
+            "sampleOverrides": {
+              "broccoli": {
+                "x": 309,
+                "y": 138.3,
+                "size": 119
+              },
+              "corn_spinach": {
+                "x": 309,
+                "y": 138.3,
+                "size": 121
+              },
+              "edamame": {
+                "x": 309,
+                "y": 138.3,
+                "size": 121
+              },
+              "egg": {
+                "x": 309,
+                "y": 138.3,
+                "size": 118
+              },
+              "ichigo": {
+                "x": 309,
+                "y": 138.3,
+                "size": 122
+              },
+              "meatball": {
+                "x": 309,
+                "y": 138.3,
+                "size": 126
+              },
+              "mikan": {
+                "x": 309,
+                "y": 138.3,
+                "size": 125
+              },
+              "napolitan": {
+                "x": 309,
+                "y": 138.3,
+                "size": 139
+              },
+              "ninjin_ingen": {
+                "x": 309,
+                "y": 138.3,
+                "size": 118
+              },
+              "potato_salad": {
+                "x": 309,
+                "y": 138.3,
+                "size": 121
+              },
+              "tomato": {
+                "x": 309,
+                "y": 138.3,
+                "size": 64
+              }
+            }
+          },
+          {
+            "x": 451,
+            "y": 138.3,
+            "size": 126,
+            "sampleId": "meatball",
+            "sampleOverrides": {
+              "broccoli": {
+                "x": 451,
+                "y": 138.3,
+                "size": 119
+              },
+              "corn_spinach": {
+                "x": 451,
+                "y": 138.3,
+                "size": 121
+              },
+              "edamame": {
+                "x": 451,
+                "y": 138.3,
+                "size": 121
+              },
+              "egg": {
+                "x": 451,
+                "y": 138.3,
+                "size": 118
+              },
+              "ichigo": {
+                "x": 451,
+                "y": 138.3,
+                "size": 122
+              },
+              "meatball": {
+                "x": 451,
+                "y": 138.3,
+                "size": 126
+              },
+              "mikan": {
+                "x": 451,
+                "y": 138.3,
+                "size": 125
+              },
+              "napolitan": {
+                "x": 451,
+                "y": 138.3,
+                "size": 139
+              },
+              "ninjin_ingen": {
+                "x": 451,
+                "y": 138.3,
+                "size": 118
+              },
+              "potato_salad": {
+                "x": 451,
+                "y": 138.3,
+                "size": 121
+              },
+              "tomato": {
+                "x": 451,
+                "y": 138.3,
+                "size": 64
+              }
+            }
+          },
+          {
+            "x": 309,
+            "y": 317,
+            "size": 119,
+            "sampleId": "broccoli",
+            "sampleOverrides": {
+              "broccoli": {
+                "x": 309,
+                "y": 317,
+                "size": 119
+              },
+              "corn_spinach": {
+                "x": 309,
+                "y": 317,
+                "size": 121
+              },
+              "edamame": {
+                "x": 309,
+                "y": 317,
+                "size": 121
+              },
+              "egg": {
+                "x": 309,
+                "y": 317,
+                "size": 118
+              },
+              "ichigo": {
+                "x": 309,
+                "y": 317,
+                "size": 122
+              },
+              "meatball": {
+                "x": 309,
+                "y": 317,
+                "size": 126
+              },
+              "mikan": {
+                "x": 309,
+                "y": 317,
+                "size": 125
+              },
+              "napolitan": {
+                "x": 309,
+                "y": 317,
+                "size": 139
+              },
+              "ninjin_ingen": {
+                "x": 309,
+                "y": 317,
+                "size": 118
+              },
+              "potato_salad": {
+                "x": 309,
+                "y": 317,
+                "size": 121
+              },
+              "tomato": {
+                "x": 309,
+                "y": 317,
+                "size": 64
+              }
+            }
+          },
+          {
+            "x": 451,
+            "y": 317,
+            "markerX": 458.7,
+            "markerY": 233,
+            "size": 119,
+            "sampleId": "broccoli",
+            "sampleOverrides": {
+              "broccoli": {
+                "x": 451,
+                "y": 317,
+                "size": 119
+              },
+              "corn_spinach": {
+                "x": 451,
+                "y": 317,
+                "size": 121
+              },
+              "edamame": {
+                "x": 451,
+                "y": 317,
+                "size": 121
+              },
+              "egg": {
+                "x": 451,
+                "y": 317,
+                "size": 118
+              },
+              "ichigo": {
+                "x": 451,
+                "y": 317,
+                "size": 122
+              },
+              "meatball": {
+                "x": 451,
+                "y": 317,
+                "size": 126
+              },
+              "mikan": {
+                "x": 451,
+                "y": 317,
+                "size": 125
+              },
+              "napolitan": {
+                "x": 451,
+                "y": 317,
+                "size": 139
+              },
+              "ninjin_ingen": {
+                "x": 451,
+                "y": 317,
+                "size": 118
+              },
+              "potato_salad": {
+                "x": 451,
+                "y": 317,
+                "size": 121
+              },
+              "tomato": {
+                "x": 451,
+                "y": 317,
+                "size": 64
+              }
+            }
+          }
+        ],
+        "cup": [
+          {
+            "x": 301.2,
+            "y": 106.7,
+            "size": 150,
+            "sampleId": "cup_blue_dot"
+          },
+          {
+            "x": 464.1,
+            "y": 106.7,
+            "size": 150,
+            "sampleId": "cup_blue_dot"
+          },
+          {
+            "x": 309,
+            "y": 317,
+            "size": 150,
+            "sampleId": "cup_blue_dot",
+            "sampleOverrides": {
+              "cup_blue_dot": {
+                "x": 309,
+                "y": 317,
+                "size": 150,
+                "positionOverride": true
+              }
+            }
+          },
+          {
+            "x": 451,
+            "y": 317,
+            "size": 150,
+            "sampleId": "cup_blue_dot",
+            "sampleOverrides": {
+              "cup_blue_dot": {
+                "x": 451,
+                "y": 317,
+                "size": 150,
+                "positionOverride": true
+              }
+            }
+          }
+        ],
+        "leaf": [
+          {
+            "x": 309,
+            "y": 122.8,
+            "size": 150,
+            "sampleId": "leaf_cabbage",
+            "sampleOverrides": {
+              "leaf_cabbage": {
+                "x": 309,
+                "y": 122.8,
+                "size": 150
+              },
+              "leaf_lettuce": {
+                "x": 309,
+                "y": 122.8,
+                "size": 190
+              }
+            }
+          }
+        ],
+        "divider": [
+          {
+            "x": 309,
+            "y": 122.8,
+            "size": 42,
+            "sampleId": "divider_wave_vertical_back",
+            "sampleOverrides": {
+              "divider_wave": {
+                "x": 309,
+                "y": 122.8,
+                "size": 184
+              },
+              "divider_wave_vertical_back": {
+                "x": 309,
+                "y": 122.8,
+                "size": 42
+              },
+              "divider_wave_vertical_front": {
+                "x": 309,
+                "y": 122.8,
+                "size": 50
+              },
+              "divider_wave_vertical_mid": {
+                "x": 309,
+                "y": 122.8,
+                "size": 46
+              },
+              "divider_wood": {
+                "x": 309,
+                "y": 122.8,
+                "size": 178
+              },
+              "divider_wood_vertical_front": {
+                "x": 309,
+                "y": 122.8,
+                "size": 50
+              }
+            }
+          },
+          {
+            "x": 451,
+            "y": 122.8,
+            "size": 184,
+            "sampleId": "divider_wave",
+            "sampleOverrides": {
+              "divider_wave": {
+                "x": 451,
+                "y": 122.8,
+                "size": 184
+              },
+              "divider_wave_vertical_back": {
+                "x": 451,
+                "y": 122.8,
+                "size": 42
+              },
+              "divider_wave_vertical_front": {
+                "x": 451,
+                "y": 122.8,
+                "size": 50
+              },
+              "divider_wave_vertical_mid": {
+                "x": 451,
+                "y": 122.8,
+                "size": 46
+              },
+              "divider_wood": {
+                "x": 451,
+                "y": 122.8,
+                "size": 178
+              },
+              "divider_wood_vertical_front": {
+                "x": 451,
+                "y": 122.8,
+                "size": 50
+              }
+            }
+          },
+          {
+            "x": 309,
+            "y": 200.5,
+            "size": 46,
+            "sampleId": "divider_wave_vertical_mid",
+            "sampleOverrides": {
+              "divider_wave": {
+                "x": 309,
+                "y": 200.5,
+                "size": 184
+              },
+              "divider_wave_vertical_back": {
+                "x": 309,
+                "y": 200.5,
+                "size": 42
+              },
+              "divider_wave_vertical_front": {
+                "x": 309,
+                "y": 200.5,
+                "size": 50
+              },
+              "divider_wave_vertical_mid": {
+                "x": 309,
+                "y": 200.5,
+                "size": 46
+              },
+              "divider_wood": {
+                "x": 309,
+                "y": 200.5,
+                "size": 178
+              },
+              "divider_wood_vertical_front": {
+                "x": 309,
+                "y": 200.5,
+                "size": 50
+              }
+            }
+          },
+          {
+            "x": 451,
+            "y": 200.5,
+            "size": 178,
+            "sampleId": "divider_wood",
+            "sampleOverrides": {
+              "divider_wave": {
+                "x": 451,
+                "y": 200.5,
+                "size": 184
+              },
+              "divider_wave_vertical_back": {
+                "x": 451,
+                "y": 200.5,
+                "size": 42
+              },
+              "divider_wave_vertical_front": {
+                "x": 451,
+                "y": 200.5,
+                "size": 50
+              },
+              "divider_wave_vertical_mid": {
+                "x": 451,
+                "y": 200.5,
+                "size": 46
+              },
+              "divider_wood": {
+                "x": 451,
+                "y": 200.5,
+                "size": 178
+              },
+              "divider_wood_vertical_front": {
+                "x": 451,
+                "y": 200.5,
+                "size": 50
+              }
+            }
+          },
+          {
+            "x": 309,
+            "y": 278.3,
+            "size": 50,
+            "sampleId": "divider_wave_vertical_front",
+            "sampleOverrides": {
+              "divider_wave": {
+                "x": 309,
+                "y": 278.3,
+                "size": 184
+              },
+              "divider_wave_vertical_back": {
+                "x": 309,
+                "y": 278.3,
+                "size": 42
+              },
+              "divider_wave_vertical_front": {
+                "x": 309,
+                "y": 278.3,
+                "size": 50
+              },
+              "divider_wave_vertical_mid": {
+                "x": 309,
+                "y": 278.3,
+                "size": 46
+              },
+              "divider_wood": {
+                "x": 309,
+                "y": 278.3,
+                "size": 178
+              },
+              "divider_wood_vertical_front": {
+                "x": 309,
+                "y": 278.3,
+                "size": 50
+              }
+            }
+          },
+          {
+            "x": 451,
+            "y": 278.3,
+            "size": 184,
+            "sampleId": "divider_wave",
+            "sampleOverrides": {
+              "divider_wave": {
+                "x": 451,
+                "y": 278.3,
+                "size": 184
+              },
+              "divider_wave_vertical_back": {
+                "x": 451,
+                "y": 278.3,
+                "size": 42
+              },
+              "divider_wave_vertical_front": {
+                "x": 451,
+                "y": 278.3,
+                "size": 50
+              },
+              "divider_wave_vertical_mid": {
+                "x": 451,
+                "y": 278.3,
+                "size": 46
+              },
+              "divider_wood": {
+                "x": 451,
+                "y": 278.3,
+                "size": 178
+              },
+              "divider_wood_vertical_front": {
+                "x": 451,
+                "y": 278.3,
+                "size": 50
+              }
+            }
+          },
+          {
+            "x": 380,
+            "y": 200.5,
+            "size": 50,
+            "sampleId": "divider_wood_vertical_front",
+            "sampleOverrides": {
+              "divider_wave": {
+                "x": 380,
+                "y": 200.5,
+                "size": 184
+              },
+              "divider_wave_vertical_back": {
+                "x": 380,
+                "y": 200.5,
+                "size": 42
+              },
+              "divider_wave_vertical_front": {
+                "x": 380,
+                "y": 200.5,
+                "size": 50
+              },
+              "divider_wave_vertical_mid": {
+                "x": 380,
+                "y": 200.5,
+                "size": 46
+              },
+              "divider_wood": {
+                "x": 380,
+                "y": 200.5,
+                "size": 178
+              },
+              "divider_wood_vertical_front": {
+                "x": 380,
+                "y": 200.5,
+                "size": 50
+              }
+            }
+          }
+        ],
+        "other": [
+          {
+            "x": 294,
+            "y": 248,
+            "size": 66,
+            "sampleId": "pick_flag",
+            "sampleOverrides": {
+              "pick_flag": {
+                "x": 294,
+                "y": 248,
+                "size": 66
+              }
+            }
+          }
+        ]
+      },
+      "box_bear": {
+        "globalScale": 1.35,
+        "slotCounts": {
+          "side-food": 4
+        },
+        "main-food": [
+          {
+            "x": 287.2,
+            "y": 224.8,
+            "size": 137,
+            "sampleId": "bacon_maki",
+            "sampleOverrides": {
+              "bacon_maki": {
+                "x": 287.2,
+                "y": 224.8,
+                "size": 137
+              },
+              "gyoza": {
+                "x": 287.2,
+                "y": 224.8,
+                "size": 156
+              },
+              "hamburger": {
+                "x": 287.2,
+                "y": 224.8,
+                "size": 153,
+                "positionOverride": true
+              },
+              "harumaki": {
+                "x": 287.2,
+                "y": 224.8,
+                "size": 149
+              },
+              "karaage": {
+                "x": 287.2,
+                "y": 224.8,
+                "size": 134
+              },
+              "korokke": {
+                "x": 287.2,
+                "y": 224.8,
+                "size": 128
+              },
+              "salmon": {
+                "x": 287.2,
+                "y": 224.8,
+                "size": 170
+              },
+              "shrimp": {
+                "x": 287.2,
+                "y": 224.8,
+                "size": 129
+              },
+              "tako_wiener": {
+                "x": 287.2,
+                "y": 224.8,
+                "size": 126
+              }
+            }
+          },
+          {
+            "x": 485.1,
+            "y": 229,
+            "size": 126,
+            "sampleId": "tako_wiener",
+            "sampleOverrides": {
+              "bacon_maki": {
+                "x": 494.1,
+                "y": 232.5,
+                "size": 137,
+                "positionOverride": true
+              },
+              "gyoza": {
+                "x": 493.2,
+                "y": 241.7,
+                "size": 156,
+                "positionOverride": true
+              },
+              "hamburger": {
+                "x": 496.9,
+                "y": 240,
+                "size": 153,
+                "positionOverride": true
+              },
+              "harumaki": {
+                "x": 494.2,
+                "y": 239.8,
+                "size": 149,
+                "positionOverride": true
+              },
+              "karaage": {
+                "x": 486,
+                "y": 227,
+                "size": 134,
+                "positionOverride": true
+              },
+              "korokke": {
+                "x": 491.4,
+                "y": 226.1,
+                "size": 128,
+                "positionOverride": true
+              },
+              "salmon": {
+                "x": 484.2,
+                "y": 232.6,
+                "size": 170,
+                "positionOverride": true
+              },
+              "shrimp": {
+                "x": 479.5,
+                "y": 207,
+                "size": 129,
+                "positionOverride": true
+              },
+              "tako_wiener": {
+                "x": 485.1,
+                "y": 229,
+                "size": 126,
+                "positionOverride": true
+              }
+            }
+          }
+        ],
+        "side-food": [
+          {
+            "x": 289.8,
+            "y": 133.1,
+            "markerX": 288.9,
+            "markerY": 144.3,
+            "size": 64,
+            "sampleId": "tomato",
+            "sampleOverrides": {
+              "broccoli": {
+                "x": 289.8,
+                "y": 133.1,
+                "size": 119
+              },
+              "corn_spinach": {
+                "x": 289.8,
+                "y": 133.1,
+                "size": 121
+              },
+              "edamame": {
+                "x": 289.8,
+                "y": 133.1,
+                "size": 121
+              },
+              "egg": {
+                "x": 289.8,
+                "y": 133.1,
+                "size": 118
+              },
+              "ichigo": {
+                "x": 289.8,
+                "y": 133.1,
+                "size": 122
+              },
+              "meatball": {
+                "x": 289.8,
+                "y": 133.1,
+                "size": 126
+              },
+              "mikan": {
+                "x": 289.8,
+                "y": 133.1,
+                "size": 125
+              },
+              "napolitan": {
+                "x": 289.8,
+                "y": 133.1,
+                "size": 139
+              },
+              "ninjin_ingen": {
+                "x": 289.8,
+                "y": 133.1,
+                "size": 118
+              },
+              "potato_salad": {
+                "x": 289.8,
+                "y": 133.1,
+                "size": 121
+              },
+              "tomato": {
+                "x": 289.8,
+                "y": 133.1,
+                "size": 64
+              }
+            }
+          },
+          {
+            "x": 470.2,
+            "y": 133.1,
+            "size": 126,
+            "sampleId": "meatball",
+            "sampleOverrides": {
+              "broccoli": {
+                "x": 470.2,
+                "y": 133.1,
+                "size": 119
+              },
+              "corn_spinach": {
+                "x": 470.2,
+                "y": 133.1,
+                "size": 121
+              },
+              "edamame": {
+                "x": 470.2,
+                "y": 133.1,
+                "size": 121
+              },
+              "egg": {
+                "x": 470.2,
+                "y": 133.1,
+                "size": 118
+              },
+              "ichigo": {
+                "x": 470.2,
+                "y": 133.1,
+                "size": 122
+              },
+              "meatball": {
+                "x": 470.2,
+                "y": 133.1,
+                "size": 126
+              },
+              "mikan": {
+                "x": 470.2,
+                "y": 133.1,
+                "size": 125
+              },
+              "napolitan": {
+                "x": 470.2,
+                "y": 133.1,
+                "size": 139
+              },
+              "ninjin_ingen": {
+                "x": 470.2,
+                "y": 133.1,
+                "size": 118
+              },
+              "potato_salad": {
+                "x": 470.2,
+                "y": 133.1,
+                "size": 121
+              },
+              "tomato": {
+                "x": 470.2,
+                "y": 133.1,
+                "size": 64
+              }
+            }
+          },
+          {
+            "x": 289.8,
+            "y": 330,
+            "size": 119,
+            "sampleId": "broccoli",
+            "sampleOverrides": {
+              "broccoli": {
+                "x": 289.8,
+                "y": 330,
+                "size": 119
+              },
+              "corn_spinach": {
+                "x": 289.8,
+                "y": 330,
+                "size": 121
+              },
+              "edamame": {
+                "x": 289.8,
+                "y": 330,
+                "size": 121
+              },
+              "egg": {
+                "x": 289.8,
+                "y": 330,
+                "size": 118
+              },
+              "ichigo": {
+                "x": 289.8,
+                "y": 330,
+                "size": 122
+              },
+              "meatball": {
+                "x": 289.8,
+                "y": 330,
+                "size": 126
+              },
+              "mikan": {
+                "x": 289.8,
+                "y": 330,
+                "size": 125
+              },
+              "napolitan": {
+                "x": 289.8,
+                "y": 330,
+                "size": 139
+              },
+              "ninjin_ingen": {
+                "x": 289.8,
+                "y": 330,
+                "size": 118
+              },
+              "potato_salad": {
+                "x": 289.8,
+                "y": 330,
+                "size": 121
+              },
+              "tomato": {
+                "x": 289.8,
+                "y": 330,
+                "size": 64
+              }
+            }
+          },
+          {
+            "x": 470.2,
+            "y": 330,
+            "size": 119,
+            "sampleId": "broccoli",
+            "sampleOverrides": {
+              "broccoli": {
+                "x": 470.2,
+                "y": 330,
+                "size": 119
+              },
+              "corn_spinach": {
+                "x": 470.2,
+                "y": 330,
+                "size": 121
+              },
+              "edamame": {
+                "x": 470.2,
+                "y": 330,
+                "size": 121
+              },
+              "egg": {
+                "x": 470.2,
+                "y": 330,
+                "size": 118
+              },
+              "ichigo": {
+                "x": 470.2,
+                "y": 330,
+                "size": 122
+              },
+              "meatball": {
+                "x": 470.2,
+                "y": 330,
+                "size": 126
+              },
+              "mikan": {
+                "x": 470.2,
+                "y": 330,
+                "size": 125
+              },
+              "napolitan": {
+                "x": 470.2,
+                "y": 330,
+                "size": 139
+              },
+              "ninjin_ingen": {
+                "x": 470.2,
+                "y": 330,
+                "size": 118
+              },
+              "potato_salad": {
+                "x": 470.2,
+                "y": 330,
+                "size": 121
+              },
+              "tomato": {
+                "x": 470.2,
+                "y": 330,
+                "size": 64
+              }
+            }
+          }
+        ],
+        "cup": [
+          {
+            "x": 279.7,
+            "y": 93.7,
+            "size": 150,
+            "sampleId": "cup_blue_dot"
+          },
+          {
+            "x": 487,
+            "y": 93.7,
+            "size": 150,
+            "sampleId": "cup_blue_dot"
+          },
+          {
+            "x": 289.8,
+            "y": 330,
+            "size": 150,
+            "sampleId": "cup_blue_dot",
+            "sampleOverrides": {
+              "cup_blue_dot": {
+                "x": 289.8,
+                "y": 330,
+                "size": 150,
+                "positionOverride": true
+              }
+            }
+          },
+          {
+            "x": 470.2,
+            "y": 330,
+            "size": 150,
+            "sampleId": "cup_blue_dot",
+            "sampleOverrides": {
+              "cup_blue_dot": {
+                "x": 470.2,
+                "y": 330,
+                "size": 150,
+                "positionOverride": true
+              }
+            }
+          }
+        ],
+        "leaf": [
+          {
+            "x": 289.8,
+            "y": 113.8,
+            "size": 150,
+            "sampleId": "leaf_cabbage",
+            "sampleOverrides": {
+              "leaf_cabbage": {
+                "x": 289.8,
+                "y": 113.8,
+                "size": 150
+              },
+              "leaf_lettuce": {
+                "x": 289.8,
+                "y": 113.8,
+                "size": 190
+              }
+            }
+          }
+        ],
+        "divider": [
+          {
+            "x": 289.8,
+            "y": 113.8,
+            "size": 42,
+            "sampleId": "divider_wave_vertical_back",
+            "sampleOverrides": {
+              "divider_wave": {
+                "x": 289.8,
+                "y": 113.8,
+                "size": 184
+              },
+              "divider_wave_vertical_back": {
+                "x": 289.8,
+                "y": 113.8,
+                "size": 42
+              },
+              "divider_wave_vertical_front": {
+                "x": 289.8,
+                "y": 113.8,
+                "size": 50
+              },
+              "divider_wave_vertical_mid": {
+                "x": 289.8,
+                "y": 113.8,
+                "size": 46
+              },
+              "divider_wood": {
+                "x": 289.8,
+                "y": 113.8,
+                "size": 178
+              },
+              "divider_wood_vertical_front": {
+                "x": 289.8,
+                "y": 113.8,
+                "size": 50
+              }
+            }
+          },
+          {
+            "x": 470.2,
+            "y": 113.8,
+            "size": 184,
+            "sampleId": "divider_wave",
+            "sampleOverrides": {
+              "divider_wave": {
+                "x": 470.2,
+                "y": 113.8,
+                "size": 184
+              },
+              "divider_wave_vertical_back": {
+                "x": 470.2,
+                "y": 113.8,
+                "size": 42
+              },
+              "divider_wave_vertical_front": {
+                "x": 470.2,
+                "y": 113.8,
+                "size": 50
+              },
+              "divider_wave_vertical_mid": {
+                "x": 470.2,
+                "y": 113.8,
+                "size": 46
+              },
+              "divider_wood": {
+                "x": 470.2,
+                "y": 113.8,
+                "size": 178
+              },
+              "divider_wood_vertical_front": {
+                "x": 470.2,
+                "y": 113.8,
+                "size": 50
+              }
+            }
+          },
+          {
+            "x": 289.8,
+            "y": 210.5,
+            "size": 46,
+            "sampleId": "divider_wave_vertical_mid",
+            "sampleOverrides": {
+              "divider_wave": {
+                "x": 289.8,
+                "y": 210.5,
+                "size": 184
+              },
+              "divider_wave_vertical_back": {
+                "x": 289.8,
+                "y": 210.5,
+                "size": 42
+              },
+              "divider_wave_vertical_front": {
+                "x": 289.8,
+                "y": 210.5,
+                "size": 50
+              },
+              "divider_wave_vertical_mid": {
+                "x": 289.8,
+                "y": 210.5,
+                "size": 46
+              },
+              "divider_wood": {
+                "x": 289.8,
+                "y": 210.5,
+                "size": 178
+              },
+              "divider_wood_vertical_front": {
+                "x": 289.8,
+                "y": 210.5,
+                "size": 50
+              }
+            }
+          },
+          {
+            "x": 470.2,
+            "y": 210.5,
+            "size": 178,
+            "sampleId": "divider_wood",
+            "sampleOverrides": {
+              "divider_wave": {
+                "x": 470.2,
+                "y": 210.5,
+                "size": 184
+              },
+              "divider_wave_vertical_back": {
+                "x": 470.2,
+                "y": 210.5,
+                "size": 42
+              },
+              "divider_wave_vertical_front": {
+                "x": 470.2,
+                "y": 210.5,
+                "size": 50
+              },
+              "divider_wave_vertical_mid": {
+                "x": 470.2,
+                "y": 210.5,
+                "size": 46
+              },
+              "divider_wood": {
+                "x": 470.2,
+                "y": 210.5,
+                "size": 178
+              },
+              "divider_wood_vertical_front": {
+                "x": 470.2,
+                "y": 210.5,
+                "size": 50
+              }
+            }
+          },
+          {
+            "x": 289.8,
+            "y": 307.3,
+            "size": 50,
+            "sampleId": "divider_wave_vertical_front",
+            "sampleOverrides": {
+              "divider_wave": {
+                "x": 289.8,
+                "y": 307.3,
+                "size": 184
+              },
+              "divider_wave_vertical_back": {
+                "x": 289.8,
+                "y": 307.3,
+                "size": 42
+              },
+              "divider_wave_vertical_front": {
+                "x": 289.8,
+                "y": 307.3,
+                "size": 50
+              },
+              "divider_wave_vertical_mid": {
+                "x": 289.8,
+                "y": 307.3,
+                "size": 46
+              },
+              "divider_wood": {
+                "x": 289.8,
+                "y": 307.3,
+                "size": 178
+              },
+              "divider_wood_vertical_front": {
+                "x": 289.8,
+                "y": 307.3,
+                "size": 50
+              }
+            }
+          },
+          {
+            "x": 470.2,
+            "y": 307.3,
+            "size": 184,
+            "sampleId": "divider_wave",
+            "sampleOverrides": {
+              "divider_wave": {
+                "x": 470.2,
+                "y": 307.3,
+                "size": 184
+              },
+              "divider_wave_vertical_back": {
+                "x": 470.2,
+                "y": 307.3,
+                "size": 42
+              },
+              "divider_wave_vertical_front": {
+                "x": 470.2,
+                "y": 307.3,
+                "size": 50
+              },
+              "divider_wave_vertical_mid": {
+                "x": 470.2,
+                "y": 307.3,
+                "size": 46
+              },
+              "divider_wood": {
+                "x": 470.2,
+                "y": 307.3,
+                "size": 178
+              },
+              "divider_wood_vertical_front": {
+                "x": 470.2,
+                "y": 307.3,
+                "size": 50
+              }
+            }
+          },
+          {
+            "x": 380,
+            "y": 210.5,
+            "size": 50,
+            "sampleId": "divider_wood_vertical_front",
+            "sampleOverrides": {
+              "divider_wave": {
+                "x": 380,
+                "y": 210.5,
+                "size": 184
+              },
+              "divider_wave_vertical_back": {
+                "x": 380,
+                "y": 210.5,
+                "size": 42
+              },
+              "divider_wave_vertical_front": {
+                "x": 380,
+                "y": 210.5,
+                "size": 50
+              },
+              "divider_wave_vertical_mid": {
+                "x": 380,
+                "y": 210.5,
+                "size": 46
+              },
+              "divider_wood": {
+                "x": 380,
+                "y": 210.5,
+                "size": 178
+              },
+              "divider_wood_vertical_front": {
+                "x": 380,
+                "y": 210.5,
+                "size": 50
+              }
+            }
+          }
+        ],
+        "other": [
+          {
+            "x": 284,
+            "y": 270,
+            "size": 66,
+            "sampleId": "pick_flag",
+            "sampleOverrides": {
+              "pick_flag": {
+                "x": 284,
+                "y": 270,
+                "size": 66
+              }
+            }
+          }
+        ]
+      },
+      "box_cat_blue": {
+        "globalScale": 1.3,
+        "slotCounts": {
+          "side-food": 4
+        },
+        "main-food": [
+          {
+            "x": 282.8,
+            "y": 225.9,
+            "size": 126,
+            "sampleId": "tako_wiener",
+            "sampleOverrides": {
+              "bacon_maki": {
+                "x": 282.8,
+                "y": 225.9,
+                "size": 137
+              },
+              "gyoza": {
+                "x": 282.8,
+                "y": 225.9,
+                "size": 156
+              },
+              "hamburger": {
+                "x": 282.8,
+                "y": 225.9,
+                "size": 153
+              },
+              "harumaki": {
+                "x": 282.8,
+                "y": 225.9,
+                "size": 149
+              },
+              "karaage": {
+                "x": 282.8,
+                "y": 225.9,
+                "size": 134
+              },
+              "korokke": {
+                "x": 282.8,
+                "y": 225.9,
+                "size": 128
+              },
+              "salmon": {
+                "x": 282.8,
+                "y": 225.9,
+                "size": 170
+              },
+              "shrimp": {
+                "x": 282.8,
+                "y": 225.9,
+                "size": 129
+              },
+              "tako_wiener": {
+                "x": 282.8,
+                "y": 225.9,
+                "size": 126
+              }
+            }
+          },
+          {
+            "x": 486,
+            "y": 241.6,
+            "size": 170,
+            "sampleId": "salmon",
+            "sampleOverrides": {
+              "bacon_maki": {
+                "x": 486,
+                "y": 241.6,
+                "size": 137
+              },
+              "gyoza": {
+                "x": 486,
+                "y": 241.6,
+                "size": 156
+              },
+              "hamburger": {
+                "x": 486,
+                "y": 241.6,
+                "size": 153
+              },
+              "harumaki": {
+                "x": 486,
+                "y": 241.6,
+                "size": 149
+              },
+              "karaage": {
+                "x": 486,
+                "y": 241.6,
+                "size": 134
+              },
+              "korokke": {
+                "x": 486,
+                "y": 241.6,
+                "size": 128
+              },
+              "salmon": {
+                "x": 486,
+                "y": 241.6,
+                "size": 170,
+                "positionOverride": true
+              },
+              "shrimp": {
+                "x": 482.1,
+                "y": 226.9,
+                "size": 129,
+                "positionOverride": true
+              },
+              "tako_wiener": {
+                "x": 486,
+                "y": 241.6,
+                "size": 126
+              }
+            }
+          }
+        ],
+        "side-food": [
+          {
+            "x": 285.5,
+            "y": 130.6,
+            "markerX": 290.2,
+            "markerY": 142.2,
+            "size": 118,
+            "sampleId": "egg",
+            "sampleOverrides": {
+              "broccoli": {
+                "x": 285.5,
+                "y": 130.6,
+                "size": 119
+              },
+              "corn_spinach": {
+                "x": 285.5,
+                "y": 130.6,
+                "size": 121
+              },
+              "edamame": {
+                "x": 285.5,
+                "y": 130.6,
+                "size": 121
+              },
+              "egg": {
+                "x": 285.5,
+                "y": 130.6,
+                "size": 118
+              },
+              "ichigo": {
+                "x": 285.5,
+                "y": 130.6,
+                "size": 122
+              },
+              "meatball": {
+                "x": 285.5,
+                "y": 130.6,
+                "size": 126
+              },
+              "mikan": {
+                "x": 285.5,
+                "y": 130.6,
+                "size": 125
+              },
+              "napolitan": {
+                "x": 285.5,
+                "y": 130.6,
+                "size": 139
+              },
+              "ninjin_ingen": {
+                "x": 285.5,
+                "y": 130.6,
+                "size": 118
+              },
+              "potato_salad": {
+                "x": 285.5,
+                "y": 130.6,
+                "size": 121
+              },
+              "tomato": {
+                "x": 285.5,
+                "y": 130.6,
+                "size": 64
+              }
+            }
+          },
+          {
+            "x": 474.5,
+            "y": 130.6,
+            "markerX": 529,
+            "markerY": 157,
+            "size": 126,
+            "sampleId": "meatball",
+            "sampleOverrides": {
+              "broccoli": {
+                "x": 474.5,
+                "y": 130.6,
+                "size": 119
+              },
+              "corn_spinach": {
+                "x": 474.5,
+                "y": 130.6,
+                "size": 121
+              },
+              "edamame": {
+                "x": 474.5,
+                "y": 130.6,
+                "size": 121
+              },
+              "egg": {
+                "x": 474.5,
+                "y": 130.6,
+                "size": 118
+              },
+              "ichigo": {
+                "x": 474.5,
+                "y": 130.6,
+                "size": 122
+              },
+              "meatball": {
+                "x": 474.5,
+                "y": 130.6,
+                "size": 126
+              },
+              "mikan": {
+                "x": 474.5,
+                "y": 130.6,
+                "size": 125
+              },
+              "napolitan": {
+                "x": 474.5,
+                "y": 130.6,
+                "size": 139
+              },
+              "ninjin_ingen": {
+                "x": 474.5,
+                "y": 130.6,
+                "size": 118
+              },
+              "potato_salad": {
+                "x": 474.5,
+                "y": 130.6,
+                "size": 121
+              },
+              "tomato": {
+                "x": 474.5,
+                "y": 130.6,
+                "size": 64
+              }
+            }
+          },
+          {
+            "x": 285.5,
+            "y": 335.1,
+            "markerX": 267,
+            "markerY": 309,
+            "size": 119,
+            "sampleId": "broccoli",
+            "sampleOverrides": {
+              "broccoli": {
+                "x": 285.5,
+                "y": 335.1,
+                "size": 119
+              },
+              "corn_spinach": {
+                "x": 285.5,
+                "y": 335.1,
+                "size": 121
+              },
+              "edamame": {
+                "x": 285.5,
+                "y": 335.1,
+                "size": 121
+              },
+              "egg": {
+                "x": 285.5,
+                "y": 335.1,
+                "size": 118
+              },
+              "ichigo": {
+                "x": 285.5,
+                "y": 335.1,
+                "size": 122
+              },
+              "meatball": {
+                "x": 285.5,
+                "y": 335.1,
+                "size": 126
+              },
+              "mikan": {
+                "x": 285.5,
+                "y": 335.1,
+                "size": 125
+              },
+              "napolitan": {
+                "x": 285.5,
+                "y": 335.1,
+                "size": 139
+              },
+              "ninjin_ingen": {
+                "x": 285.5,
+                "y": 335.1,
+                "size": 118
+              },
+              "potato_salad": {
+                "x": 285.5,
+                "y": 335.1,
+                "size": 121
+              },
+              "tomato": {
+                "x": 285.5,
+                "y": 335.1,
+                "size": 64
+              }
+            }
+          },
+          {
+            "x": 474.5,
+            "y": 335.1,
+            "markerX": 492,
+            "markerY": 309,
+            "size": 119,
+            "sampleId": "broccoli",
+            "sampleOverrides": {
+              "broccoli": {
+                "x": 474.5,
+                "y": 335.1,
+                "size": 119
+              },
+              "corn_spinach": {
+                "x": 474.5,
+                "y": 335.1,
+                "size": 121
+              },
+              "edamame": {
+                "x": 474.5,
+                "y": 335.1,
+                "size": 121
+              },
+              "egg": {
+                "x": 474.5,
+                "y": 335.1,
+                "size": 118
+              },
+              "ichigo": {
+                "x": 474.5,
+                "y": 335.1,
+                "size": 122
+              },
+              "meatball": {
+                "x": 474.5,
+                "y": 335.1,
+                "size": 126
+              },
+              "mikan": {
+                "x": 474.5,
+                "y": 335.1,
+                "size": 125
+              },
+              "napolitan": {
+                "x": 474.5,
+                "y": 335.1,
+                "size": 139
+              },
+              "ninjin_ingen": {
+                "x": 474.5,
+                "y": 335.1,
+                "size": 118
+              },
+              "potato_salad": {
+                "x": 474.5,
+                "y": 335.1,
+                "size": 121
+              },
+              "tomato": {
+                "x": 474.5,
+                "y": 335.1,
+                "size": 64
+              }
+            }
+          }
+        ],
+        "cup": [
+          {
+            "x": 274.9,
+            "y": 89.7,
+            "size": 150,
+            "sampleId": "cup_blue_dot"
+          },
+          {
+            "x": 492.1,
+            "y": 89.7,
+            "size": 150,
+            "sampleId": "cup_blue_dot"
+          },
+          {
+            "x": 285.5,
+            "y": 335.1,
+            "size": 150,
+            "sampleId": "cup_blue_dot"
+          },
+          {
+            "x": 474.5,
+            "y": 335.1,
+            "size": 150,
+            "sampleId": "cup_blue_dot"
+          }
+        ],
+        "leaf": [
+          {
+            "x": 285.5,
+            "y": 110.5,
+            "size": 150,
+            "sampleId": "leaf_cabbage",
+            "sampleOverrides": {
+              "leaf_cabbage": {
+                "x": 285.5,
+                "y": 110.5,
+                "size": 150
+              },
+              "leaf_lettuce": {
+                "x": 285.5,
+                "y": 110.5,
+                "size": 190
+              }
+            }
+          }
+        ],
+        "divider": [
+          {
+            "x": 285.5,
+            "y": 110.5,
+            "size": 42,
+            "sampleId": "divider_wave_vertical_back",
+            "sampleOverrides": {
+              "divider_wave": {
+                "x": 285.5,
+                "y": 110.5,
+                "size": 184
+              },
+              "divider_wave_vertical_back": {
+                "x": 285.5,
+                "y": 110.5,
+                "size": 42
+              },
+              "divider_wave_vertical_front": {
+                "x": 285.5,
+                "y": 110.5,
+                "size": 50
+              },
+              "divider_wave_vertical_mid": {
+                "x": 285.5,
+                "y": 110.5,
+                "size": 46
+              },
+              "divider_wood": {
+                "x": 285.5,
+                "y": 110.5,
+                "size": 178
+              },
+              "divider_wood_vertical_front": {
+                "x": 285.5,
+                "y": 110.5,
+                "size": 50
+              }
+            }
+          },
+          {
+            "x": 474.5,
+            "y": 110.5,
+            "size": 184,
+            "sampleId": "divider_wave",
+            "sampleOverrides": {
+              "divider_wave": {
+                "x": 474.5,
+                "y": 110.5,
+                "size": 184
+              },
+              "divider_wave_vertical_back": {
+                "x": 474.5,
+                "y": 110.5,
+                "size": 42
+              },
+              "divider_wave_vertical_front": {
+                "x": 474.5,
+                "y": 110.5,
+                "size": 50
+              },
+              "divider_wave_vertical_mid": {
+                "x": 474.5,
+                "y": 110.5,
+                "size": 46
+              },
+              "divider_wood": {
+                "x": 474.5,
+                "y": 110.5,
+                "size": 178
+              },
+              "divider_wood_vertical_front": {
+                "x": 474.5,
+                "y": 110.5,
+                "size": 50
+              }
+            }
+          },
+          {
+            "x": 285.5,
+            "y": 211,
+            "size": 46,
+            "sampleId": "divider_wave_vertical_mid",
+            "sampleOverrides": {
+              "divider_wave": {
+                "x": 285.5,
+                "y": 211,
+                "size": 184
+              },
+              "divider_wave_vertical_back": {
+                "x": 285.5,
+                "y": 211,
+                "size": 42
+              },
+              "divider_wave_vertical_front": {
+                "x": 285.5,
+                "y": 211,
+                "size": 50
+              },
+              "divider_wave_vertical_mid": {
+                "x": 285.5,
+                "y": 211,
+                "size": 46
+              },
+              "divider_wood": {
+                "x": 285.5,
+                "y": 211,
+                "size": 178
+              },
+              "divider_wood_vertical_front": {
+                "x": 285.5,
+                "y": 211,
+                "size": 50
+              }
+            }
+          },
+          {
+            "x": 474.5,
+            "y": 211,
+            "size": 178,
+            "sampleId": "divider_wood",
+            "sampleOverrides": {
+              "divider_wave": {
+                "x": 474.5,
+                "y": 211,
+                "size": 184
+              },
+              "divider_wave_vertical_back": {
+                "x": 474.5,
+                "y": 211,
+                "size": 42
+              },
+              "divider_wave_vertical_front": {
+                "x": 474.5,
+                "y": 211,
+                "size": 50
+              },
+              "divider_wave_vertical_mid": {
+                "x": 474.5,
+                "y": 211,
+                "size": 46
+              },
+              "divider_wood": {
+                "x": 474.5,
+                "y": 211,
+                "size": 178
+              },
+              "divider_wood_vertical_front": {
+                "x": 474.5,
+                "y": 211,
+                "size": 50
+              }
+            }
+          },
+          {
+            "x": 285.5,
+            "y": 311.5,
+            "size": 50,
+            "sampleId": "divider_wave_vertical_front",
+            "sampleOverrides": {
+              "divider_wave": {
+                "x": 285.5,
+                "y": 311.5,
+                "size": 184
+              },
+              "divider_wave_vertical_back": {
+                "x": 285.5,
+                "y": 311.5,
+                "size": 42
+              },
+              "divider_wave_vertical_front": {
+                "x": 285.5,
+                "y": 311.5,
+                "size": 50
+              },
+              "divider_wave_vertical_mid": {
+                "x": 285.5,
+                "y": 311.5,
+                "size": 46
+              },
+              "divider_wood": {
+                "x": 285.5,
+                "y": 311.5,
+                "size": 178
+              },
+              "divider_wood_vertical_front": {
+                "x": 285.5,
+                "y": 311.5,
+                "size": 50
+              }
+            }
+          },
+          {
+            "x": 474.5,
+            "y": 311.5,
+            "size": 184,
+            "sampleId": "divider_wave",
+            "sampleOverrides": {
+              "divider_wave": {
+                "x": 474.5,
+                "y": 311.5,
+                "size": 184
+              },
+              "divider_wave_vertical_back": {
+                "x": 474.5,
+                "y": 311.5,
+                "size": 42
+              },
+              "divider_wave_vertical_front": {
+                "x": 474.5,
+                "y": 311.5,
+                "size": 50
+              },
+              "divider_wave_vertical_mid": {
+                "x": 474.5,
+                "y": 311.5,
+                "size": 46
+              },
+              "divider_wood": {
+                "x": 474.5,
+                "y": 311.5,
+                "size": 178
+              },
+              "divider_wood_vertical_front": {
+                "x": 474.5,
+                "y": 311.5,
+                "size": 50
+              }
+            }
+          },
+          {
+            "x": 380,
+            "y": 211,
+            "size": 50,
+            "sampleId": "divider_wood_vertical_front",
+            "sampleOverrides": {
+              "divider_wave": {
+                "x": 380,
+                "y": 211,
+                "size": 184
+              },
+              "divider_wave_vertical_back": {
+                "x": 380,
+                "y": 211,
+                "size": 42
+              },
+              "divider_wave_vertical_front": {
+                "x": 380,
+                "y": 211,
+                "size": 50
+              },
+              "divider_wave_vertical_mid": {
+                "x": 380,
+                "y": 211,
+                "size": 46
+              },
+              "divider_wood": {
+                "x": 380,
+                "y": 211,
+                "size": 178
+              },
+              "divider_wood_vertical_front": {
+                "x": 380,
+                "y": 211,
+                "size": 50
+              }
+            }
+          }
+        ],
+        "other": [
+          {
+            "x": 286,
+            "y": 268,
+            "size": 66,
+            "sampleId": "pick_flag",
+            "sampleOverrides": {
+              "pick_flag": {
+                "x": 286,
+                "y": 268,
+                "size": 66
+              }
+            }
+          }
+        ]
+      }
+    },
+    "npcPositions": {
+      "staffboy_hands": {
+        "x": 25,
+        "y": 46.8,
+        "scale": 1,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": 1
+      },
+      "staffboy_idle": {
+        "x": 25,
+        "y": 46.8,
+        "scale": 1,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": 1
+      },
+      "staffboy_present": {
+        "x": 23,
+        "y": 46.8,
+        "scale": 1,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": 1
+      },
+      "staffboy_wave": {
+        "x": 23.5,
+        "y": 46.8,
+        "scale": 1,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": 1
+      },
+      "staffboy_wave_alt": {
+        "x": 23.5,
+        "y": 46.8,
+        "scale": 1,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": 1
+      },
+      "staffgirl_hands": {
+        "x": 35,
+        "y": 46.8,
+        "scale": 1,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": 1
+      },
+      "staffgirl_idle": {
+        "x": 35,
+        "y": 46.8,
+        "scale": 1,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": 1
+      },
+      "staffgirl_present": {
+        "x": 33,
+        "y": 46.8,
+        "scale": 1,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": 1
+      },
+      "staffgirl_wave": {
+        "x": 34,
+        "y": 46.8,
+        "scale": 1,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": 1
+      },
+      "staffgirl_wave_alt": {
+        "x": 34,
+        "y": 46.8,
+        "scale": 1,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": 1
+      },
+      "staffpono_idle": {
+        "x": 13.6,
+        "y": 46,
+        "scale": 1.15,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": 1
+      },
+      "staffpono_listen": {
+        "x": 13.6,
+        "y": 46,
+        "scale": 1.15,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": 1
+      },
+      "staffpono_present": {
+        "x": 13.6,
+        "y": 46,
+        "scale": 1.15,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": 1
+      },
+      "staffpono_wave": {
+        "x": 13.6,
+        "y": 46,
+        "scale": 1.15,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": 1
+      },
+      "staffpono_wave_alt": {
+        "x": 13.6,
+        "y": 46,
+        "scale": 1.15,
+        "scaleX": 1,
+        "scaleY": 1,
+        "rotation": 0,
+        "opacity": 1
+      }
+    },
+    "npcUpdatedAt": "2026-06-28T18:22:13.305Z",
+    "staffCounterMask": {
+      "x": 0,
+      "y": 44.7,
+      "width": 100,
+      "height": 38,
+      "opacity": 1
+    },
+    "customerCounterMask": {
+      "x": 0,
+      "y": 73,
+      "width": 100,
+      "height": 27,
+      "opacity": 1
+    }
+  }
+}

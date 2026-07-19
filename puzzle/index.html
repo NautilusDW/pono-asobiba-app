@@ -3,30 +3,86 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>ポノのパズル | ポノのあそびば</title>
+  <title>ポノのなかよしパズル | ポノのあそびば</title>
   <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <!-- FOUC guard: .page-wrapper 全体を init 完了まで非表示にしてパズル画面のチラ見えを防ぐ -->
+  <style>html,body{background:#FFF8F0}.page-wrapper{visibility:hidden}body.pono-game-ready .page-wrapper{visibility:visible}</style>
+  <script>document.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(function(){requestAnimationFrame(function(){document.body.classList.add('pono-game-ready')})})});</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+  <!-- perf 2026-07-10: opening cutscene の cut01-03.webp preload (計841KB) を削除。
+       runOpeningCutscene は現在どこからも呼ばれていない (orphaned — main.js 参照)。復活時に preload も戻すこと -->
+  <!-- perf 2026-07-10: タイトル背景を preload — jpg デコード前に盤面が透けるのを防ぐ (style.css .title-screen と対) -->
+  <link rel="preload" as="image" href="../assets/images/puzzle/title_back2.jpg">
+  <link rel="stylesheet" href="style.css?v=1329">
+  <link rel="stylesheet" href="partner-select.css?v=1329">
+  <script src="../common/mvp-flags.js"></script>
   <script src="../common/achievements.js"></script>
   <script src="../common/acorns.js"></script>
   <script src="../common/menu.js"></script>
   <script src="../common/treasure.js"></script>
   <script src="../common/first-clear.js"></script>
+  <script src="../common/preload-helper.js"></script>
+  <script>window.addEventListener('DOMContentLoaded',function(){if(window.PonoPreload)window.PonoPreload.warmGameAssets('puzzle');});</script>
+  <script src="../js/game-stickers.js"></script>
+  <script src="../common/debug-mode.js"></script>
+  <script src="../common/tier.js"></script>
+  <script src="../common/difficulty.js"></script>
+  <script src="../common/telemetry.js"></script>
+  <script src="../common/capture.js" defer></script>
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
+  <link rel="stylesheet" href="../common/acorn-modal-shared.css">
+  <script src="../common/acorn-audio.js" defer></script>
+  <script src="../common/acorn-copy-loader.js" defer></script>
+  <script src="../common/acorn-modal.js" defer></script>
 </head>
-<body>
+<body data-game-id="puzzle">
   <div id="landscape-notice">
     <div class="rotate-icon">📱</div>
-    <p>スマホを<br><strong>たてむき</strong>にしてね！</p>
+    <p>スマホを<br><strong>よこむき</strong>にしてね！</p>
   </div>
-  <audio id="bgm" loop src="../assets/audio/Cheery Strike Loop2.mp3" preload="auto"></audio>
+  <!-- perf 2026-07-10: preload="none" — 1.1MB の mp3 を parse 時に一括 DL しない。再生直前に main.js tryStartBgm() が 'auto' へ昇格 -->
+  <audio id="bgm" loop src="../assets/audio/Cheery Strike Loop2.mp3" preload="none"></audio>
+  <div id="title-screen" class="title-screen" role="button" aria-label="タップしてスタート" data-umami-event="game_title_tap" data-umami-event-game="puzzle">
+    <div class="title-screen__veil"></div>
+    <div class="title-screen__content">
+      <img class="title-screen__logo" src="../assets/images/puzzle/title_logo.png" alt="ポノのなかよしパズル">
+      <div class="title-screen__start">▶ タップしてスタート</div>
+    </div>
+  </div>
+  <div id="title-guide-choice" class="title-guide-choice hidden" role="dialog" aria-modal="true" aria-labelledby="title-guide-choice-title" aria-hidden="true">
+    <div class="title-guide-choice__panel">
+      <h2 id="title-guide-choice-title" class="title-guide-choice__title">パズルの やりかたを</h2>
+      <div class="title-guide-choice__actions">
+        <button type="button" id="title-guide-show" class="title-guide-choice__btn title-guide-choice__btn--learn">みる</button>
+        <button type="button" id="title-guide-start" class="title-guide-choice__btn title-guide-choice__btn--play">みない</button>
+      </div>
+      <label class="title-guide-choice__skip">
+        <input type="checkbox" id="title-guide-skip">
+        <span>つぎから とばす</span>
+      </label>
+    </div>
+  </div>
+
+  <!-- Opening cutscene overlay (owl-doctor style: wooden-frame narration + per-cut audio) -->
+  <!-- NOTE (perf 2026-07-10): runOpeningCutscene (main.js) は現在未使用 (orphaned)。復活の可能性があるため
+       マークアップは温存し、 loading="lazy" で cut01.jpg (440KB) の parse 時 DL だけ抑止 (overlay は display:none) -->
+  <div id="puzzle-opening" class="puzzle-op hidden" aria-hidden="true">
+    <div class="puzzle-op__stage">
+      <img class="puzzle-op__img is-active" id="puzzle-op-img-a" src="../assets/images/puzzle/opening/cut01.jpg" loading="lazy" alt="">
+      <img class="puzzle-op__img" id="puzzle-op-img-b" src="" alt="">
+    </div>
+    <div class="puzzle-op__narration" id="puzzle-op-narration"></div>
+    <button type="button" id="op-skip" class="puzzle-op__skip" aria-label="スキップ">スキップ ▶︎</button>
+    <div class="puzzle-op__fade" id="puzzle-op-fade"></div>
+    <audio id="op-narration" preload="auto"></audio>
+  </div>
+
   <div class="tut-dim hidden" id="tut-dim"></div>
   <div class="tut-bubble hidden" id="tut-bubble"></div>
   <div class="page-wrapper">
     <header class="header">
-      <h1 class="title">ポノのパズル</h1>
-      <p class="subtitle">えを あわせて みよう!</p>
+      <h1 class="title">ポノのなかよしパズル</h1>
       <p id="stage-label" class="stage-label">ステージ 1 / 4</p>
     </header>
 
@@ -41,13 +97,16 @@
 
       <div class="sidebar">
         <div class="controls">
-          <button id="btn-shuffle" class="btn btn-shuffle">まぜる</button>
+          <button id="btn-peek" class="btn btn-peek" aria-pressed="false">👁 みる</button>
           <button id="btn-hint" class="btn btn-hint">ヒント</button>
+          <button id="btn-partner-select" class="btn btn-partner-select" aria-haspopup="dialog" aria-label="なかまを えらぶ">🐾 なかま</button>
         </div>
+
+        <div id="challenge-status" class="challenge-status hidden" aria-live="polite"></div>
 
         <div class="progress-bar">
           <div class="progress-fill" id="progress-fill"></div>
-          <span class="progress-text" id="progress-text">0 / 6</span>
+          <span class="progress-text" id="progress-text">0 / 4</span>
         </div>
       </div>
     </main>
@@ -60,6 +119,7 @@
       <div class="modal-emoji">🎉</div>
       <h2 class="modal-title">できたね!</h2>
       <p id="modal-stage-info" class="modal-stage-info">ステージ 1 クリア！</p>
+      <p id="modal-challenge-info" class="modal-challenge-info hidden"></p>
       <p id="modal-daily-acorn" class="modal-daily-acorn"></p>
       <button id="btn-next-stage" class="btn btn-next">つぎへ →</button>
     </div>
@@ -68,14 +128,27 @@
   <!-- Confetti container -->
   <div id="confetti-container" class="confetti-container"></div>
 
-  <script src="main.js"></script>
+  <script src="voice.js?v=1329"></script>
+  <!-- なかよし MVP (Phase 1): partner / bond / assists / UI モジュール -->
+  <!-- 順序: hooks-init(レジストリ) → データ(partners → bond) → assist 群 → UI(partner-select → bond-ui) → main.js -->
+  <script src="assists/_hooks-init.js"></script>
+  <script src="partners.js?v=1329"></script>
+  <script src="bond.js"></script>
+  <script src="assists/kitsune.js"></script>
+  <script src="assists/kojika.js"></script>
+  <script src="assists/araiguma.js"></script>
+  <script src="assists/usagi.js"></script>
+  <script src="assists/fukurou.js"></script>
+  <script src="partner-select.js?v=1329"></script>
+  <script src="bond-ui.js"></script>
+  <script src="main.js?v=1330"></script>
   <script>
     function updateLandscapeNotice() {
       const notice = document.getElementById('landscape-notice');
       if (!notice) return;
       const isLandscape = window.innerWidth > window.innerHeight;
       const isTouch = matchMedia('(pointer: coarse)').matches;
-      notice.style.display = (isLandscape && isTouch) ? 'flex' : 'none';
+      notice.style.display = (!isLandscape && isTouch) ? 'flex' : 'none';
     }
     updateLandscapeNotice();
     window.addEventListener('orientationchange', () => {
@@ -83,6 +156,59 @@
       setTimeout(updateLandscapeNotice, 500);
     });
     window.addEventListener('resize', updateLandscapeNotice);
+  </script>
+  <script>
+  (function() {
+    function regCapture() {
+      if (!window.PonoCapture) return;
+      window.PonoCapture.register({
+        gameId: "puzzle",
+        build: async function(opts) {
+          // v1353: .page-wrapper だけだと body 直下の overlay 群
+          // (#title-screen / #title-guide-choice / #puzzle-opening /
+          //  #tut-dim / #tut-bubble、 main.js が body.appendChild する
+          //  coach / overlay / prompt 各種) が含まれず、 タイトル / オープニング /
+          //  チュートリアル中のスクショが空白になる。 body 全体を撮影し、
+          //  不要要素は ignoreElements ([data-capture-hide]) で除外する。
+          var container = document.body;
+          if (!container) return null;
+          try {
+            var mod = await import("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/+esm");
+            var html2canvas = (mod && (mod.default || mod)) || window.html2canvas;
+            if (typeof html2canvas !== "function") {
+              console.warn("[PonoCapture/puzzle] html2canvas not callable after import");
+              return null;
+            }
+            var h2cOpts = (window.PonoCapture && typeof window.PonoCapture.html2canvasOptions === "function")
+              ? window.PonoCapture.html2canvasOptions()
+              : {
+                  backgroundColor: null,
+                  scale: 2,
+                  useCORS: true,
+                  allowTaint: false,
+                  logging: false,
+                  imageTimeout: 30000,
+                  removeContainer: true,
+                  ignoreElements: function(el) {
+                    try {
+                      if (!el) return false;
+                      if (el.hasAttribute && el.hasAttribute("data-capture-hide")) return true;
+                      if (el.classList && el.classList.contains && el.classList.contains("pono-capture-overlay")) return true;
+                    } catch (e) {}
+                    return false;
+                  }
+                };
+            return await html2canvas(container, h2cOpts);
+          } catch (e) {
+            console.warn("[PonoCapture/puzzle] html2canvas import failed", e);
+            return null;
+          }
+        }
+      });
+    }
+    if (window.PonoCapture) regCapture();
+    else window.addEventListener("DOMContentLoaded", regCapture, { once: true });
+  })();
   </script>
 </body>
 </html>

@@ -1,3 +1,4 @@
+.git
 .git/
 .github/
 .claude/
@@ -9,6 +10,7 @@ memory/
 scripts/
 src/
 docs/
+native/
 myfolder/
 others/
 test_treasure.html
@@ -29,6 +31,16 @@ fishtest.png
 fishtest_clean.png
 assets/_orig_audio_backup/
 assets/_orig_image_backup/
+assets/_archive/
+
+# 診断・一時ファイル（staging への混入防止）
+_tmp*
+_tmp_*
+tmp/
+*.diff
+le-*.diff
+_scratch*
+_debug*
 
 # 機密・テスト成果物 (staging leak fix 2026-07-06)
 .dev.vars
@@ -38,3 +50,44 @@ test-results/
 scratchpad/
 __pycache__/
 *.pyc
+
+# deploy 重量削減 (2026-07-10 perf audit)
+# - assets/_legacy_png/: webp 化前の PNG rollback 退避 (~32MB)。 コメント以外の参照ゼロを grep 確認済。
+# - StickerBookThreeJS/screenshots/: 開発用スクショ (~75MB)。 参照ゼロを grep 確認済。
+# - assets/_legacy/ は quizland ほか複数ページの preview-placeholders 参照が残るため除外しない。
+assets/_legacy_png/
+Prototypes/StickerBookThreeJS/screenshots/
+
+# unity/ 全体 (Unity ネイティブゲームのソース) は Web (Cloudflare Workers) 配信と無関係
+# なため除外 (.cs 等は git 管理下だが staging URL では配信させない、2026-07-11)。
+# 下の unity/**/Library/ 等の個別パターン (batch:1210b, git 追跡外のローカル生成物) は
+# 本パターンに包含されるが、ローカル専用生成物であることの明示のため残す。
+unity/
+
+# ローカル専用 Unity 生成物 (.gitignore と同じ集合。 git 追跡外なので CI checkout には
+# 存在せず、 これを足しても CI デプロイのアセット集合と同一のまま)。
+# ローカルからの手動 `wrangler deploy` 時、 アセット走査が 25MiB 超ファイル
+# (unity/**/Library/ArtifactDB 35.4MiB 等) で失敗するのを防ぐ (2026-07-10)。
+unity/**/Library/
+unity/**/library/
+unity/**/Temp/
+unity/**/temp/
+unity/**/Obj/
+unity/**/obj/
+unity/**/Logs/
+unity/**/logs/
+unity/**/UserSettings/
+unity/**/Builds/
+unity/**/builds/
+unity/**/MemoryCaptures/
+unity/**/.utmp/
+unity/**/Recordings/
+unity/**/sysinfo.txt
+unity/**/*.csproj
+unity/**/*.sln
+unity/**/*.slnx
+unity/**/*.user
+unity/**/.vscode/
+unity/**/.idea/
+unity/**/.vs/
+.DS_Store

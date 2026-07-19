@@ -1,0 +1,928 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>シール リスト</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #2f3d42;
+      --muted: #6b7d82;
+      --line: #d8cda9;
+      --paper: #fbf7e7;
+      --paper-strong: #fffdf4;
+      --sea: #2d8da0;
+      --forest: #6fa64e;
+      --item: #d9922c;
+      --food: #d56b4b;
+      --sound: #8367c7;
+      --letter: #c56aa2;
+      --badge: #c49a31;
+      --place: #557fb2;
+      --locked: #8d9696;
+      font-family: "Hiragino Maru Gothic ProN", "Yu Gothic", "Meiryo", system-ui, sans-serif;
+      background: #eff6f5;
+      color: var(--ink);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        linear-gradient(180deg, rgba(239, 246, 245, 0.96), rgba(249, 245, 224, 0.92)),
+        radial-gradient(circle at 18% 12%, rgba(71, 152, 170, 0.18), transparent 34rem);
+    }
+
+    main {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0 48px;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: flex-end;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 46px);
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    .sub {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .json-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 0 14px;
+      border: 1px solid rgba(47, 61, 66, 0.2);
+      border-radius: 6px;
+      color: var(--ink);
+      text-decoration: none;
+      background: rgba(255, 255, 255, 0.74);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .metric,
+    .panel {
+      border: 1px solid rgba(131, 118, 76, 0.22);
+      border-radius: 8px;
+      background: rgba(255, 253, 244, 0.88);
+      box-shadow: 0 10px 26px rgba(31, 53, 59, 0.08);
+    }
+
+    .metric {
+      padding: 14px;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 28px;
+      line-height: 1;
+    }
+
+    .metric span {
+      display: block;
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .toolbar {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr 0.9fr 0.9fr 0.9fr 1.2fr;
+      gap: 10px;
+      padding: 12px;
+      margin-bottom: 14px;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    select,
+    input {
+      width: 100%;
+      min-height: 40px;
+      border: 1px solid rgba(47, 61, 66, 0.22);
+      border-radius: 6px;
+      padding: 0 10px;
+      background: #fffdf7;
+      color: var(--ink);
+      font: inherit;
+      font-weight: 700;
+    }
+
+    .game-rail {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .game-card {
+      appearance: none;
+      border: 1px solid rgba(47, 61, 66, 0.18);
+      border-radius: 8px;
+      padding: 12px;
+      background: rgba(255, 253, 244, 0.9);
+      color: var(--ink);
+      text-align: left;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(31, 53, 59, 0.06);
+    }
+
+    .game-card.is-active {
+      border-color: rgba(45, 141, 160, 0.7);
+      outline: 3px solid rgba(45, 141, 160, 0.14);
+    }
+
+    .game-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+      font-size: 15px;
+      font-weight: 900;
+      line-height: 1.25;
+    }
+
+    .game-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .pill,
+    .view-chip,
+    .idea {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 22px;
+      padding: 0 8px;
+      border-radius: 999px;
+      background: rgba(47, 61, 66, 0.08);
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .pill-free {
+      background: rgba(111, 166, 78, 0.18);
+      color: #466d2f;
+    }
+
+    .pill-app {
+      background: rgba(45, 141, 160, 0.18);
+      color: #226779;
+    }
+
+    .unlock-found {
+      background: rgba(77, 160, 107, 0.16);
+      color: #357046;
+    }
+
+    .unlock-hidden,
+    .unlock-app_only,
+    .unlock-book_only {
+      background: rgba(141, 150, 150, 0.18);
+      color: #5d6969;
+    }
+
+    .result-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .section {
+      margin: 18px 0 0;
+    }
+
+    .section h2 {
+      display: flex;
+      gap: 10px;
+      align-items: baseline;
+      margin: 0 0 10px;
+      font-size: 21px;
+      letter-spacing: 0;
+    }
+
+    .section h2 span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 10px;
+    }
+
+    .sticker-card {
+      display: grid;
+      grid-template-columns: 58px minmax(0, 1fr);
+      gap: 12px;
+      padding: 12px;
+      border: 1px solid rgba(47, 61, 66, 0.14);
+      border-radius: 8px;
+      background: rgba(255, 253, 244, 0.92);
+      box-shadow: 0 8px 18px rgba(31, 53, 59, 0.06);
+    }
+
+    .mark {
+      width: 58px;
+      height: 58px;
+      display: grid;
+      place-items: center;
+      border-radius: 14px;
+      background: rgba(45, 141, 160, 0.15);
+      color: var(--sea);
+      font-size: 25px;
+      font-weight: 900;
+      box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.72);
+      overflow: hidden;
+      position: relative;
+      flex: 0 0 auto;
+    }
+
+    .mark img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: contain;
+      padding: 5px;
+    }
+
+    .mark-letter {
+      display: grid;
+      place-items: center;
+      width: 100%;
+      height: 100%;
+    }
+
+    .mark[data-view="forest_friends"] {
+      background: rgba(111, 166, 78, 0.16);
+      color: var(--forest);
+    }
+
+    .mark[data-view="items"] {
+      background: rgba(217, 146, 44, 0.16);
+      color: var(--item);
+    }
+
+    .mark[data-view="food"] {
+      background: rgba(213, 107, 75, 0.16);
+      color: var(--food);
+    }
+
+    .mark[data-view="sounds"] {
+      background: rgba(131, 103, 199, 0.16);
+      color: var(--sound);
+    }
+
+    .mark[data-view="letters"] {
+      background: rgba(197, 106, 162, 0.16);
+      color: var(--letter);
+    }
+
+    .mark[data-view="badges"] {
+      background: rgba(196, 154, 49, 0.17);
+      color: var(--badge);
+    }
+
+    .mark[data-view="places"] {
+      background: rgba(85, 127, 178, 0.16);
+      color: var(--place);
+    }
+
+    .sticker-card.is-locked .mark {
+      background: rgba(141, 150, 150, 0.16);
+      color: var(--locked);
+      filter: grayscale(0.72);
+    }
+
+    .sticker-main {
+      min-width: 0;
+    }
+
+    .sticker-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    .sticker-name {
+      margin: 0;
+      font-size: 19px;
+      line-height: 1.2;
+      font-weight: 900;
+    }
+
+    .sticker-id {
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      overflow-wrap: anywhere;
+    }
+
+    .note {
+      margin: 9px 0 0;
+      color: var(--ink);
+      font-size: 14px;
+      font-weight: 700;
+      line-height: 1.55;
+    }
+
+    .chip-row,
+    .idea-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 9px;
+    }
+
+    .asset-row {
+      display: grid;
+      gap: 5px;
+      margin-top: 9px;
+      padding-top: 9px;
+      border-top: 1px dashed rgba(47, 61, 66, 0.16);
+    }
+
+    .source {
+      width: fit-content;
+      min-height: 22px;
+      padding: 0 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .source-existing {
+      background: rgba(111, 166, 78, 0.16);
+      color: #466d2f;
+    }
+
+    .source-generate {
+      background: rgba(213, 107, 75, 0.16);
+      color: #8b4634;
+    }
+
+    .source-pending {
+      background: rgba(141, 150, 150, 0.16);
+      color: #5d6969;
+    }
+
+    .asset-text {
+      color: var(--muted);
+      font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+      font-size: 11px;
+      font-weight: 700;
+      overflow-wrap: anywhere;
+      line-height: 1.4;
+    }
+
+    .view-chip[data-view="sea_friends"] {
+      background: rgba(45, 141, 160, 0.15);
+      color: #236b79;
+    }
+
+    .view-chip[data-view="forest_friends"] {
+      background: rgba(111, 166, 78, 0.16);
+      color: #4a7030;
+    }
+
+    .view-chip[data-view="items"] {
+      background: rgba(217, 146, 44, 0.16);
+      color: #8f5c17;
+    }
+
+    .view-chip[data-view="food"] {
+      background: rgba(213, 107, 75, 0.16);
+      color: #8b4634;
+    }
+
+    .view-chip[data-view="sounds"] {
+      background: rgba(131, 103, 199, 0.16);
+      color: #5e4998;
+    }
+
+    .view-chip[data-view="letters"] {
+      background: rgba(197, 106, 162, 0.16);
+      color: #8d4c74;
+    }
+
+    .view-chip[data-view="badges"] {
+      background: rgba(196, 154, 49, 0.17);
+      color: #80631f;
+    }
+
+    .view-chip[data-view="places"] {
+      background: rgba(85, 127, 178, 0.16);
+      color: #405f89;
+    }
+
+    .empty {
+      padding: 26px;
+      text-align: center;
+      color: var(--muted);
+      font-weight: 900;
+    }
+
+    @media (max-width: 860px) {
+      header {
+        display: grid;
+        align-items: start;
+      }
+
+      .summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .toolbar {
+        grid-template-columns: 1fr 1fr;
+      }
+    }
+
+    @media (max-width: 560px) {
+      main {
+        width: min(100% - 18px, 1180px);
+        padding-top: 18px;
+      }
+
+      .summary,
+      .toolbar,
+      .cards {
+        grid-template-columns: 1fr;
+      }
+
+      .sticker-card {
+        grid-template-columns: 52px minmax(0, 1fr);
+      }
+
+      .mark {
+        width: 52px;
+        height: 52px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>シール リスト</h1>
+        <p class="sub">ゲームごとの しゅるい / ロック / なまえ を まとめて みる ページ。</p>
+      </div>
+      <a class="json-link" href="./sticker_book_content_plan.json">JSON</a>
+    </header>
+
+    <section class="summary" aria-label="まとめ">
+      <div class="metric"><strong data-count-games>-</strong><span>ゲーム</span></div>
+      <div class="metric"><strong data-count-stickers>-</strong><span>シール</span></div>
+      <div class="metric"><strong data-count-found>-</strong><span>みつけた</span></div>
+      <div class="metric"><strong data-count-app>-</strong><span>アプリ</span></div>
+      <div class="metric"><strong data-count-existing>-</strong><span>そざいあり</span></div>
+      <div class="metric"><strong data-count-generate>-</strong><span>つくる</span></div>
+    </section>
+
+    <section class="panel toolbar" aria-label="しぼりこみ">
+      <label>
+        ゲーム
+        <select id="game-filter"></select>
+      </label>
+      <label>
+        しゅるい
+        <select id="view-filter"></select>
+      </label>
+      <label>
+        ロック
+        <select id="unlock-filter"></select>
+      </label>
+      <label>
+        そざい
+        <select id="source-filter"></select>
+      </label>
+      <label>
+        ならび
+        <select id="sort-filter"></select>
+      </label>
+      <label>
+        さがす
+        <input id="search" type="search" autocomplete="off" placeholder="やどかり / ランタン / メダル">
+      </label>
+    </section>
+
+    <section class="game-rail" id="game-rail" aria-label="ゲームいちらん"></section>
+
+    <p class="result-line">
+      <span><span id="shown-count">0</span> / <span id="total-count">0</span> シール</span>
+      <span id="active-label">ぜんぶ</span>
+    </p>
+
+    <section id="results"></section>
+  </main>
+
+  <script>
+    const PLAN_URL = "./sticker_book_content_plan.json";
+    const state = {
+      game: "all",
+      view: "all",
+      unlock: "all",
+      source: "all",
+      sort: "game",
+      query: ""
+    };
+
+    let plan = null;
+    let gamesById = new Map();
+    let viewsById = new Map();
+    let unlockById = new Map();
+    let collator = new Intl.Collator("ja");
+
+    const els = {
+      gameFilter: document.querySelector("#game-filter"),
+      viewFilter: document.querySelector("#view-filter"),
+      unlockFilter: document.querySelector("#unlock-filter"),
+      sourceFilter: document.querySelector("#source-filter"),
+      sortFilter: document.querySelector("#sort-filter"),
+      search: document.querySelector("#search"),
+      gameRail: document.querySelector("#game-rail"),
+      results: document.querySelector("#results"),
+      shownCount: document.querySelector("#shown-count"),
+      totalCount: document.querySelector("#total-count"),
+      activeLabel: document.querySelector("#active-label"),
+      countGames: document.querySelector("[data-count-games]"),
+      countStickers: document.querySelector("[data-count-stickers]"),
+      countFound: document.querySelector("[data-count-found]"),
+      countApp: document.querySelector("[data-count-app]"),
+      countExisting: document.querySelector("[data-count-existing]"),
+      countGenerate: document.querySelector("[data-count-generate]")
+    };
+
+    init();
+
+    async function init() {
+      try {
+        const response = await fetch(PLAN_URL, { cache: "no-store" });
+        if (!response.ok) {
+          throw new Error(`${response.status} ${response.statusText}`);
+        }
+        plan = await response.json();
+      } catch (error) {
+        els.results.innerHTML = `<div class="panel empty">JSON が よめません: ${escapeHtml(error.message)}</div>`;
+        return;
+      }
+
+      gamesById = new Map(plan.games.map((game) => [game.id, game]));
+      viewsById = new Map(plan.views.map((view) => [view.id, view]));
+      unlockById = new Map(plan.unlockStates.map((unlock) => [unlock.id, unlock]));
+
+      fillSelect(els.gameFilter, [{ id: "all", label: "ぜんぶ" }, ...plan.games], "id");
+      fillSelect(els.viewFilter, plan.views, "id");
+      fillSelect(els.unlockFilter, [{ id: "all", label: "ぜんぶ" }, ...plan.unlockStates], "id");
+      fillSelect(els.sourceFilter, [
+        { id: "all", label: "ぜんぶ" },
+        { id: "existing", label: "そざいあり" },
+        { id: "generate", label: "つくる" },
+        { id: "none", label: "あとで" }
+      ], "id");
+      fillSelect(els.sortFilter, plan.sorts, "id");
+
+      els.gameFilter.addEventListener("change", () => {
+        state.game = els.gameFilter.value;
+        render();
+      });
+      els.viewFilter.addEventListener("change", () => {
+        state.view = els.viewFilter.value;
+        render();
+      });
+      els.unlockFilter.addEventListener("change", () => {
+        state.unlock = els.unlockFilter.value;
+        render();
+      });
+      els.sourceFilter.addEventListener("change", () => {
+        state.source = els.sourceFilter.value;
+        render();
+      });
+      els.sortFilter.addEventListener("change", () => {
+        state.sort = els.sortFilter.value;
+        render();
+      });
+      els.search.addEventListener("input", () => {
+        state.query = els.search.value.trim().toLowerCase();
+        render();
+      });
+
+      els.countGames.textContent = String(plan.games.length);
+      els.countStickers.textContent = String(plan.stickers.length);
+      els.countFound.textContent = String(countWhere((sticker) => sticker.unlock === "found"));
+      els.countApp.textContent = String(countWhere((sticker) => sticker.tier === "app"));
+      els.countExisting.textContent = String(countWhere((sticker) => sticker.assetStatus === "existing"));
+      els.countGenerate.textContent = String(countWhere((sticker) => sticker.assetStatus === "generate"));
+      els.totalCount.textContent = String(plan.stickers.length);
+
+      render();
+    }
+
+    function fillSelect(select, entries) {
+      select.innerHTML = entries
+        .map((entry) => `<option value="${escapeHtml(entry.id)}">${escapeHtml(entry.label)}</option>`)
+        .join("");
+    }
+
+    function countWhere(predicate) {
+      return plan.stickers.filter(predicate).length;
+    }
+
+    function render() {
+      els.gameFilter.value = state.game;
+      els.viewFilter.value = state.view;
+      els.unlockFilter.value = state.unlock;
+      els.sourceFilter.value = state.source;
+      els.sortFilter.value = state.sort;
+
+      renderGameRail();
+
+      const stickers = sortStickers(filterStickers(plan.stickers));
+      els.shownCount.textContent = String(stickers.length);
+      els.activeLabel.textContent = buildActiveLabel();
+
+      if (!stickers.length) {
+        els.results.innerHTML = `<div class="panel empty">みつかりません</div>`;
+        return;
+      }
+
+      const grouped = groupByGame(stickers);
+      els.results.innerHTML = grouped
+        .map(([gameId, items]) => renderSection(gameId, items))
+        .join("");
+    }
+
+    function renderGameRail() {
+      const counts = new Map();
+      const foundCounts = new Map();
+      for (const sticker of plan.stickers) {
+        counts.set(sticker.gameId, (counts.get(sticker.gameId) || 0) + 1);
+        if (sticker.unlock === "found") {
+          foundCounts.set(sticker.gameId, (foundCounts.get(sticker.gameId) || 0) + 1);
+        }
+      }
+
+      els.gameRail.innerHTML = plan.games
+        .map((game) => {
+          const total = counts.get(game.id) || 0;
+          const found = foundCounts.get(game.id) || 0;
+          const active = state.game === game.id ? " is-active" : "";
+          return `
+            <button type="button" class="game-card${active}" data-game="${escapeHtml(game.id)}">
+              <span class="game-title">
+                <span>${escapeHtml(game.label)}</span>
+                <span>${total}</span>
+              </span>
+              <span class="game-meta">
+                <span class="pill pill-${escapeHtml(game.tier)}">${escapeHtml(game.tier)}</span>
+                <span class="pill">${escapeHtml(game.status)}</span>
+                <span class="pill">みつけた ${found}</span>
+              </span>
+            </button>
+          `;
+        })
+        .join("");
+
+      els.gameRail.querySelectorAll("[data-game]").forEach((button) => {
+        button.addEventListener("click", () => {
+          const gameId = button.getAttribute("data-game");
+          state.game = state.game === gameId ? "all" : gameId;
+          render();
+        });
+      });
+    }
+
+    function filterStickers(stickers) {
+      return stickers.filter((sticker) => {
+        if (state.game !== "all" && sticker.gameId !== state.game) return false;
+        if (state.view !== "all" && sticker.view !== state.view) return false;
+        if (state.unlock !== "all" && sticker.unlock !== state.unlock) return false;
+        if (state.source === "none" && sticker.assetStatus) return false;
+        if (state.source !== "all" && state.source !== "none" && sticker.assetStatus !== state.source) return false;
+        if (!state.query) return true;
+
+        const game = gamesById.get(sticker.gameId);
+        const haystack = [
+          sticker.id,
+          sticker.label,
+          sticker.kana,
+          sticker.listNote,
+          game ? game.label : "",
+          ...(sticker.nameIdeas || [])
+        ].join(" ").toLowerCase();
+        return haystack.includes(state.query);
+      });
+    }
+
+    function sortStickers(stickers) {
+      const copied = [...stickers];
+      const gameOrder = (sticker) => gamesById.get(sticker.gameId)?.order ?? 9999;
+      const defaultSort = (a, b) =>
+        gameOrder(a) - gameOrder(b) ||
+        a.stage - b.stage ||
+        a.sort - b.sort ||
+        collator.compare(a.kana, b.kana);
+
+      if (state.sort === "stage") {
+        return copied.sort((a, b) =>
+          a.stage - b.stage ||
+          gameOrder(a) - gameOrder(b) ||
+          a.sort - b.sort
+        );
+      }
+      if (state.sort === "kana") {
+        return copied.sort((a, b) => collator.compare(a.kana, b.kana) || defaultSort(a, b));
+      }
+      if (state.sort === "found") {
+        const unlockRank = { found: 0, app_only: 1, book_only: 2, hidden: 3 };
+        return copied.sort((a, b) => (unlockRank[a.unlock] ?? 9) - (unlockRank[b.unlock] ?? 9) || defaultSort(a, b));
+      }
+      if (state.sort === "rarity") {
+        return copied.sort((a, b) => b.rarity - a.rarity || defaultSort(a, b));
+      }
+      return copied.sort(defaultSort);
+    }
+
+    function groupByGame(stickers) {
+      const grouped = new Map();
+      for (const sticker of stickers) {
+        if (!grouped.has(sticker.gameId)) {
+          grouped.set(sticker.gameId, []);
+        }
+        grouped.get(sticker.gameId).push(sticker);
+      }
+      return [...grouped.entries()];
+    }
+
+    function renderSection(gameId, stickers) {
+      const game = gamesById.get(gameId) || { label: gameId, tier: "", status: "" };
+      return `
+        <section class="section">
+          <h2>${escapeHtml(game.label)} <span>${stickers.length} シール</span></h2>
+          <div class="cards">
+            ${stickers.map(renderStickerCard).join("")}
+          </div>
+        </section>
+      `;
+    }
+
+    function renderStickerCard(sticker) {
+      const view = viewsById.get(sticker.view) || { label: sticker.view };
+      const unlock = unlockById.get(sticker.unlock) || { label: sticker.unlock };
+      const lockedClass = sticker.unlock === "found" ? "" : " is-locked";
+      const first = [...sticker.label][0] || "?";
+      const markContent = renderMarkContent(sticker, first);
+      const ideas = (sticker.nameIdeas || [])
+        .map((idea) => `<span class="idea">${escapeHtml(idea)}</span>`)
+        .join("");
+      const assetBlock = renderAssetBlock(sticker);
+
+      return `
+        <article class="sticker-card${lockedClass}" data-sticker-card>
+          <div class="mark" data-view="${escapeHtml(sticker.view)}">${markContent}</div>
+          <div class="sticker-main">
+            <div class="sticker-top">
+              <div>
+                <h3 class="sticker-name">${escapeHtml(sticker.label)}</h3>
+                <div class="sticker-id">${escapeHtml(sticker.id)}</div>
+              </div>
+              <span class="pill unlock-${escapeHtml(sticker.unlock)}">${escapeHtml(unlock.label)}</span>
+            </div>
+            <p class="note">${escapeHtml(sticker.listNote)}</p>
+            <div class="chip-row">
+              <span class="view-chip" data-view="${escapeHtml(sticker.view)}">${escapeHtml(view.label)}</span>
+              <span class="pill pill-${escapeHtml(sticker.tier)}">${escapeHtml(sticker.tier)}</span>
+              <span class="pill">ステージ ${escapeHtml(sticker.stage)}</span>
+              <span class="pill">レア ${escapeHtml(sticker.rarity)}</span>
+            </div>
+            <div class="idea-row">${ideas}</div>
+            ${assetBlock}
+          </div>
+        </article>
+      `;
+    }
+
+    function renderMarkContent(sticker, first) {
+      if (sticker.assetStatus === "existing" && sticker.assetPath) {
+        return `<img src="${escapeHtml(assetUrl(sticker.assetPath))}" alt="${escapeHtml(sticker.label)}" loading="lazy" decoding="async" onerror="this.replaceWith(Object.assign(document.createElement('span'), { className: 'mark-letter', textContent: '${escapeJs(first)}' }))">`;
+      }
+      return `<span class="mark-letter">${escapeHtml(first)}</span>`;
+    }
+
+    function assetUrl(path) {
+      if (/^https?:\/\//.test(path) || path.startsWith("../") || path.startsWith("./")) {
+        return path;
+      }
+      return `../../${path}`;
+    }
+
+    function renderAssetBlock(sticker) {
+      if (sticker.assetStatus === "existing") {
+        return `
+          <div class="asset-row">
+            <span class="source source-existing">そざいあり</span>
+            <span class="asset-text">${escapeHtml(sticker.assetPath || "")}</span>
+          </div>
+        `;
+      }
+      if (sticker.assetStatus === "generate") {
+        return `
+          <div class="asset-row">
+            <span class="source source-generate">つくる</span>
+            <span class="asset-text">${escapeHtml(sticker.generationBrief || "")}</span>
+          </div>
+        `;
+      }
+      return `
+        <div class="asset-row">
+          <span class="source source-pending">あとで</span>
+        </div>
+      `;
+    }
+
+    function buildActiveLabel() {
+      const parts = [];
+      if (state.game !== "all") parts.push(gamesById.get(state.game)?.label || state.game);
+      if (state.view !== "all") parts.push(viewsById.get(state.view)?.label || state.view);
+      if (state.unlock !== "all") parts.push(unlockById.get(state.unlock)?.label || state.unlock);
+      if (state.source !== "all") {
+        const sourceLabels = { existing: "そざいあり", generate: "つくる", none: "あとで" };
+        parts.push(sourceLabels[state.source] || state.source);
+      }
+      if (state.query) parts.push(`「${state.query}」`);
+      return parts.length ? parts.join(" / ") : "ぜんぶ";
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#39;"
+      }[char]));
+    }
+
+    function escapeJs(value) {
+      return String(value).replace(/[\\'"\n\r<>&]/g, (char) => ({
+        "\\": "\\\\",
+        "'": "\\'",
+        "\"": "\\\"",
+        "\n": "\\n",
+        "\r": "\\r",
+        "<": "\\u003c",
+        ">": "\\u003e",
+        "&": "\\u0026"
+      }[char]));
+    }
+  </script>
+</body>
+</html>

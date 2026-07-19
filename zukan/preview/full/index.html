@@ -1,0 +1,5166 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>森の図鑑 プレビュー (21:9 + 16:9 セーフエリア)</title>
+<script src="../../../assets/lib/html2canvas.min.js" defer></script>
+<style>
+:root {
+  /* チューナブル */
+  --slot-size: 130px;
+  --slot-color: #E0E0E0;
+  --slot-radius: 16px;
+  --gap: 16px;
+  --padding: 16px;
+
+  /* キャンバス比率: 21:9 outer / 16:9 safe area inner */
+  --canvas-w: 2100px;
+  --canvas-h: 900px;
+  --safe-w: 1600px;
+  --safe-h: 900px;
+  /* side margins = (canvas-w - safe-w) / 2 = 250 */
+
+  --header-h: 150px;  /* 100 → 150 で 1.5x */
+  --bbox-bg: #d4be8a;
+  --bbox-border: rgba(110, 70, 32, 0.55);
+  --bbox-label: rgba(80, 50, 20, 0.65);
+
+  --bg: #1a1a1a;
+  --paper: #f5e9c4;
+  --paper-2: #e8d293;
+  --paper-shadow: rgba(80, 50, 10, 0.3);
+  --wood-dark: #6e4520;
+  --wood-mid: #8a5a2a;
+  --wood-light: #b07a3a;
+  --frame-border: rgba(138, 56, 245, 0.6);
+  --safe-border: rgba(0, 212, 255, 0.4);
+  --owl-bg: #b08acf;
+  --hint-bg: #fff3c4;
+  --text: #4a2d0a;
+  --text-light: #f0f0f0;
+}
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  background: #0c0c0c;
+  color: var(--text-light);
+  font-family: -apple-system, "Hiragino Sans", "Yu Gothic", sans-serif;
+  font-size: 14px;
+  overflow-x: hidden;
+}
+
+/* ───── Toolbar ───── */
+.toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(20,20,20,0.95);
+  border-bottom: 1px solid #333;
+  padding: 10px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  font-size: 12px;
+}
+.toolbar > div { display: inline-flex; gap: 6px; align-items: center; }
+.toolbar label { color: #aaa; }
+.toolbar select, .toolbar input[type="text"], .toolbar input[type="number"], .toolbar button {
+  background: #2a2a2a;
+  color: #fff;
+  border: 1px solid #444;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+}
+.toolbar button { cursor: pointer; }
+.toolbar button:hover { background: #3a3a3a; }
+.toolbar button.active { background: #6a4ed4; border-color: #8a5ef0; }
+.toolbar button.dirty { background: #d4824e; border-color: #f0ae5e; }
+.toolbar button.dirty::after { content: " *"; color: #fff8d4; }
+.layout-toast {
+  position: fixed;
+  top: 60px; left: 50%;
+  transform: translateX(-50%);
+  background: rgba(40, 200, 80, 0.95);
+  color: #fff;
+  padding: 8px 24px;
+  border-radius: 8px;
+  font-size: 13px;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  pointer-events: none;
+  animation: layout-toast-fade 1.6s ease-out forwards;
+}
+@keyframes layout-toast-fade {
+  0%   { opacity: 0; transform: translate(-50%, -8px); }
+  15%  { opacity: 1; transform: translate(-50%, 0); }
+  85%  { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, -8px); }
+}
+.toolbar input[type="file"] { color: #aaa; font-size: 11px; }
+
+/* ───── Stage (21:9 outer) ───── */
+.stage-wrap {
+  padding: 20px;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.stage {
+  width: var(--canvas-w);
+  height: var(--canvas-h);
+  margin: 0 auto;
+  position: relative;
+  /* 森の図鑑: BG.png を 21:9 全面 cover、 main.png (絵本本体) は安全領域内に
+     収まるサイズで center 配置 (cover だと title が縦方向にクロップされて切れるため)。
+     1430×804 = 前回 1300×731 の 110% (安全領域 1600×900 内に少し余白を残しつつ拡大)。 */
+  background:
+    url('../../../assets/_legacy/preview-placeholders/zukan-main.png') center / 1430px 804px no-repeat,
+    url('../../../assets/_legacy/preview-placeholders/zukan-bg.jpg') center / cover no-repeat,
+    #2a2a2a;
+  border: 1px dashed #555;
+  overflow: hidden;
+}
+
+/* ───── Safe Area (16:9) ───── */
+.safe-area {
+  position: absolute;
+  top: 0;
+  left: calc((var(--canvas-w) - var(--safe-w)) / 2);
+  width: var(--safe-w);
+  height: var(--safe-h);
+  display: grid;
+  grid-template-rows: var(--header-h) 1fr;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  padding: 14px;
+}
+
+/* セーフエリアの境界線 (オン/オフ可) */
+body.show-safe .safe-area::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 2px dashed var(--safe-border);
+  pointer-events: none;
+  z-index: 2;
+}
+/* セーフエリア中心のクロスヘア (マゼンタ) ─ safe-area と色を変えて区別 */
+body.show-safe .safe-area {
+  background-image:
+    linear-gradient(transparent calc(50% - 0.5px), rgba(255, 80, 200, 0.45) calc(50% - 0.5px), rgba(255, 80, 200, 0.45) calc(50% + 0.5px), transparent calc(50% + 0.5px)),
+    linear-gradient(90deg, transparent calc(50% - 0.5px), rgba(255, 80, 200, 0.45) calc(50% - 0.5px), rgba(255, 80, 200, 0.45) calc(50% + 0.5px), transparent calc(50% + 0.5px));
+  background-size: 100% 100%, 100% 100%;
+  background-repeat: no-repeat, no-repeat;
+}
+body.show-safe .safe-area > .center-dot {
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 14px; height: 14px;
+  margin: -7px 0 0 -7px;
+  border: 2px solid #ff50c8;
+  border-radius: 50%;
+  background: rgba(255, 80, 200, 0.25);
+  pointer-events: none;
+  z-index: 3;
+}
+body:not(.show-safe) .center-dot { display: none; }
+body.show-safe .safe-area::after {
+  content: "16:9 safe area";
+  position: absolute;
+  top: 4px; left: 8px;
+  font-size: 11px;
+  color: var(--safe-border);
+  pointer-events: none;
+  z-index: 2;
+  background: rgba(0,0,0,0.4);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+/* ───── Header (top) — body と同じグリッド (1fr 700px) で左ピルを問題欄幅に揃える ───── */
+.hdr {
+  display: grid;
+  grid-template-columns: 1fr 700px;
+  gap: 16px;
+  align-items: center;
+  height: var(--header-h);
+}
+.hdr-pill {
+  display: inline-flex; align-items: center; gap: 12px;
+  background:
+    linear-gradient(180deg, var(--paper), var(--paper-2));
+  border: 4px solid var(--wood-dark);
+  border-radius: 50px;
+  padding: 6px 18px;
+  height: calc(100% - 14px);
+  box-shadow: 0 4px 0 var(--wood-dark), 0 6px 12px var(--paper-shadow);
+}
+.hdr-left {
+  gap: 16px;
+  padding: 6px 18px 6px 8px;
+  width: 100%;
+  justify-content: flex-start;
+}
+.hdr-left .owl-icon {
+  width: 64px; height: 64px;
+  background: linear-gradient(180deg, #f4e4c4, #d8b78a);
+  border: 3px solid var(--wood-dark);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 36px;
+  flex: 0 0 auto;
+}
+.hdr-left .title-card {
+  background: linear-gradient(180deg, #c97a3e, #8a4f1f);
+  border: 3px solid var(--wood-dark);
+  border-radius: 12px;
+  padding: 4px 14px;
+  color: #fff7d0;
+  font-weight: 800;
+  font-size: 18px;
+  text-shadow: 0 2px 0 rgba(0,0,0,0.4);
+  text-align: center;
+  line-height: 1.1;
+  flex: 0 0 auto;
+}
+.hdr-left .title-card small { font-size: 11px; display: block; }
+.hdr-left .progress-num {
+  background: linear-gradient(180deg, #fff8e0, #f0dfa6);
+  border: 2px solid var(--wood-dark);
+  border-radius: 16px;
+  padding: 4px 18px;
+  font-weight: 900;
+  font-size: 22px;
+  color: var(--text);
+  flex: 0 0 auto;
+}
+.hdr-left .progress-num { margin-left: auto; }  /* B 位置に移動 */
+.hdr-left .dots {
+  display: flex;
+  gap: 10px;
+  flex: 0 0 auto;
+  /* デフォルトサイズ。 リサイズすると中の dot も追従 */
+  height: 14px;
+  align-items: center;
+  justify-content: space-between;
+}
+.hdr-left .dot {
+  /* 正方形固定: 高さ = container 高さ、 幅 = aspect-ratio で同じ値
+     横方向の余りは justify-content: space-between でドット間に分配 */
+  height: 100%;
+  aspect-ratio: 1;
+  width: auto;
+  flex: 0 0 auto;
+  background: #d6b56a;
+  border: 2px solid var(--wood-mid);
+}
+.hdr-left .dot.done { background-color: #f3a330; }
+
+.hdr-center {
+  justify-self: center;
+  display: inline-flex; align-items: center; gap: 16px;
+  color: var(--text);
+}
+.hdr-center .progress-num {
+  background: linear-gradient(180deg, #fff8e0, #f0dfa6);
+  border: 2px solid var(--wood-dark);
+  border-radius: 16px;
+  padding: 4px 18px;
+  font-weight: 900;
+  font-size: 22px;
+}
+.hdr-center .dots {
+  display: inline-flex; gap: 10px;
+}
+.hdr-center .dot {
+  width: 16px; height: 16px; border-radius: 50%;
+  background: #d6b56a;
+  border: 2px solid var(--wood-mid);
+}
+.hdr-center .dot.done { background: #f3a330; }
+
+.hdr-right {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  justify-self: end;
+}
+.hdr-right .ctrl-btn {
+  /* ヘッダー 150px に合わせて 120×120 正方形 */
+  display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+  width: 120px;
+  height: 120px;
+  padding: 8px;
+  font-weight: 800;
+  font-size: 16px;
+  gap: 6px;
+}
+.hdr-right .ctrl-btn .icon { font-size: 40px; line-height: 1; }
+
+/* ───── Body ───── */
+.body {
+  display: grid;
+  grid-template-columns: 1fr 700px;
+  gap: 16px;
+  height: 100%;
+  align-items: stretch;
+}
+
+/* Question column (left) — 上下空間を均等に */
+.q-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  justify-content: center;
+}
+.q-text-card {
+  /* 想定サイズ: 1000×170 (アスペクト比 ≈ 6:1) */
+  background: linear-gradient(180deg, var(--paper), var(--paper-2));
+  border: 5px solid var(--wood-dark);
+  border-radius: 18px;
+  padding: 22px 80px 22px 32px;  /* 右は audio ボタン分の余白 */
+  display: flex; align-items: center; justify-content: center; gap: 16px;
+  color: var(--text);
+  font-weight: 800;
+  font-size: 32px;
+  min-height: 170px;  /* 最長 29 文字 (2 行折返) + 余裕 */
+  line-height: 1.4;
+  position: relative;
+  box-shadow: 0 6px 0 var(--wood-dark), 0 8px 16px var(--paper-shadow);
+}
+.q-text-card .audio {
+  /* 通常のフレックス子要素として右端に配置 (position: absolute はリサイズ時に挙動が
+     ややこしくなるので避ける) */
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, var(--wood-light), var(--wood-mid));
+  border: 3px solid var(--wood-dark);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px;
+  color: #fff;
+  flex: 0 0 auto;
+}
+
+.board {
+  /* 想定アスペクト比: ~1000×500 (約 2:1)、 画像差替時もこの比を保つこと */
+  background: linear-gradient(180deg, var(--paper), var(--paper-2));
+  border: 5px solid var(--wood-dark);
+  border-radius: 18px;
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  box-shadow: inset 0 -4px 0 rgba(120, 80, 20, 0.15), 0 4px 12px var(--paper-shadow);
+  height: 500px;
+  /* 中身がどれだけ大きくなっても外枠は伸びない */
+  overflow: hidden;
+}
+/* 列の伸び対策: q-col は親の grid 1fr 内に固定 */
+.q-col, .a-col { min-width: 0; }
+.board::before {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  border: 1px dashed var(--frame-border);
+  border-radius: 12px;
+  pointer-events: none;
+  opacity: 0.0; /* デフォルト非表示、 デバッグ用 */
+}
+body.show-board-frame .board::before { opacity: 1; }
+
+.slot {
+  width: var(--slot-size);
+  height: var(--slot-size);
+  background: var(--slot-color);
+  border-radius: var(--slot-radius);
+  display: flex; align-items: center; justify-content: center;
+  color: #888;
+  font-size: 14px;
+  flex: 0 0 auto;
+  background-position: center;
+  background-size: contain;
+  background-repeat: no-repeat;
+  position: relative;
+}
+.slot.has-img { background-color: transparent; color: transparent; }
+.row { display: flex; gap: var(--gap); align-items: center; justify-content: center; }
+.grid {
+  display: flex; flex-direction: column;
+  gap: var(--gap);
+  align-items: center; justify-content: center;
+}
+.grid .row { gap: var(--gap); }
+
+/* Answer column (right) — 4 chips + bottom-right (hint+owl) を縦に。
+   q-col と同じ縦中央寄せ → bottom-right の下辺が board の下辺と揃う */
+.a-col {
+  display: flex; flex-direction: column;
+  gap: 18px;
+  height: 100%;
+  justify-content: center;
+}
+/* 答えチップ 4 個を囲うトレイ (土台)
+   想定アスペクト比: ~700×500 (約 7:5)、 画像差替時はそのまま 1 枚絵で置換 */
+.answer-tray {
+  background: #b07a3a;
+  border: 5px solid var(--wood-dark);
+  border-radius: 18px;
+  padding: 18px;
+  flex: 0 0 auto;
+}
+.answer-panel {
+  /* 想定: 各 chip ~322×220 (1.46:1) */
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 16px;
+}
+.bottom-right {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 8px;  /* 答えトレイの直下に置く、 余分な空間を作らない */
+}
+.bottom-right .hint {
+  flex: 1 1 auto;
+  margin: 0;
+  align-self: center;
+}
+.bottom-right .character {
+  flex: 0 0 auto;
+}
+.chip {
+  /* 想定アスペクト比: ~341×220 (≈1.55:1)、 画像差替時 background-size: contain で */
+  background: linear-gradient(180deg, var(--paper), var(--paper-2));
+  border: 5px solid var(--wood-dark);
+  border-radius: 18px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 12px;
+  color: var(--text);
+  font-weight: 800;
+  font-size: 28px;
+  box-shadow: 0 4px 0 var(--wood-dark), 0 6px 12px var(--paper-shadow);
+  position: relative;
+  height: 220px;
+}
+.chip .circle {
+  width: 110px; height: 110px;
+  border-radius: 50%;
+  background:
+    repeating-linear-gradient(135deg,
+      rgba(255,255,255,0.04) 0 4px,
+      rgba(0,0,0,0.06) 4px 8px),
+    var(--slot-color);
+  border: 3px solid rgba(0,0,0,0.1);
+}
+.chip[data-color="red"]    .circle { background:
+    repeating-linear-gradient(135deg, rgba(255,255,255,0.12) 0 5px, rgba(0,0,0,0.1) 5px 10px), #d23f3f; }
+.chip[data-color="blue"]   .circle { background:
+    repeating-linear-gradient(135deg, rgba(255,255,255,0.12) 0 5px, rgba(0,0,0,0.1) 5px 10px), #3d6dc7; }
+.chip[data-color="yellow"] .circle { background:
+    repeating-linear-gradient(135deg, rgba(255,255,255,0.12) 0 5px, rgba(0,0,0,0.1) 5px 10px), #e8c43a; }
+.chip[data-color="green"]  .circle { background:
+    repeating-linear-gradient(135deg, rgba(255,255,255,0.12) 0 5px, rgba(0,0,0,0.1) 5px 10px), #4ea84e; }
+
+/* (旧 footer-row は a-col 内へ移動、 ここはレガシー残し) */
+.footer-row { display: none; }
+.hint {
+  /* 想定アスペクト比: ~600×120 (5:1) */
+  background: linear-gradient(180deg, #fff8d4, var(--hint-bg));
+  border: 4px solid #b89a3a;
+  border-radius: 16px;
+  padding: 28px 32px;
+  color: var(--text);
+  font-size: 24px;
+  font-weight: 700;
+  max-width: 700px;
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 4px 0 #b89a3a, 0 6px 12px var(--paper-shadow);
+}
+.character {
+  width: 200px; height: 220px;
+  background:
+    radial-gradient(ellipse at 50% 30%, var(--owl-bg) 0%, #5a3a8a 100%);
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 96px;
+  border: 4px solid #5a3a8a;
+  position: relative;
+  margin-bottom: -8px;
+}
+
+/* ───── Annotation overlay ───── */
+#anno-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+}
+#anno-svg {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+}
+.anno-mode #anno-layer { pointer-events: auto; cursor: crosshair; }
+.anno-marker {
+  position: absolute;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: #ff3b6b;
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 800;
+  font-size: 16px;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  cursor: move;
+  user-select: none;
+}
+.anno-text {
+  position: absolute;
+  background: rgba(255, 240, 100, 0.95);
+  color: #222;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  transform: translate(-50%, -50%);
+  cursor: move;
+  user-select: none;
+  border: 2px solid #b89a3a;
+  max-width: 240px;
+}
+.anno-arrow-line {
+  stroke: #ff3b6b;
+  stroke-width: var(--arrow-stroke, 4);
+  fill: none;
+  cursor: move;
+  pointer-events: stroke;
+  stroke-linecap: round;
+}
+.anno-arrow-line.with-head { marker-end: url(#anno-arrow-head); }
+.anno-rect {
+  fill: rgba(255, 59, 107, 0.05);
+  stroke: #ff3b6b;
+  stroke-width: 4;
+  stroke-dasharray: 8 4;
+  cursor: move;
+  pointer-events: all;
+}
+.anno-marker, .anno-text { cursor: move; }
+.anno-selected { outline: 3px solid #00d4ff; outline-offset: 2px; }
+line.anno-arrow-line.anno-selected, rect.anno-rect.anno-selected {
+  stroke: #00d4ff !important; outline: none !important;
+}
+.anno-handle {
+  fill: #00d4ff; stroke: #fff; stroke-width: 2;
+  cursor: nwse-resize; pointer-events: all;
+}
+.anno-handle.endpoint { cursor: grab; }
+.anno-handle-hit {
+  fill: rgba(0, 212, 255, 0.001);
+  stroke: none;
+  pointer-events: all;
+  cursor: grab;
+}
+.anno-tip {
+  position: fixed;
+  bottom: 16px; left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.85);
+  color: #fff;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 12px;
+  z-index: 200;
+  pointer-events: none;
+}
+body.eraser-mode #anno-layer { cursor: crosshair; }
+.tool-btn { font-size: 12px; }
+#anno-tools { display: none; gap: 6px; }
+body.anno-mode #anno-tools { display: inline-flex !important; }
+
+/* ───── Preview mode (端末サイズで見る) ───── */
+#preview-exit {
+  display: none;
+  position: fixed;
+  top: 12px; right: 12px;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.3);
+  cursor: pointer;
+  font-size: 13px;
+  font-family: inherit;
+}
+body.preview-mode #preview-exit { display: block; }
+body.preview-mode .toolbar { display: none; }
+body.preview-mode .anno-tip { display: none !important; }
+body.preview-mode .stage-wrap {
+  position: fixed;
+  inset: 0;
+  padding: 0;
+  margin: 0;
+  overflow: hidden;
+  background: #000;
+}
+body.preview-mode .stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  margin: 0;
+  /* transform set by JS で translate + scale */
+}
+
+/* ───── Wireframe mode (全要素を単純なバウンディングボックスに) ───── */
+.hdr-pill,
+.hdr-left .title-card,
+.hdr-left .progress-num,
+.hdr-right .ctrl-btn,
+.q-text-card,
+.board,
+.chip,
+.answer-tray,
+.hint,
+.character {
+  background: var(--bbox-bg) !important;
+  border: 1px dashed var(--bbox-border) !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+  color: var(--bbox-label) !important;
+}
+/* 内側パーツも矩形に — 丸を消して画像生成時に丸が焼き込まれないように */
+.hdr-left .owl-icon,
+.chip .circle,
+.q-text-card .audio {
+  background: var(--bbox-bg) !important;
+  border: 1px dashed var(--bbox-border) !important;
+  border-radius: 0 !important;
+}
+/* ドットも丸じゃなく小さい矩形に */
+.hdr-left .dot {
+  border-radius: 0 !important;
+  background: var(--bbox-bg) !important;
+  border: 1px dashed var(--bbox-border) !important;
+}
+/* shorthand `background:` を使うと `background-image: none` になって placeholder
+   画像が消えるので、 background-color のみで色付けする */
+.hdr-left .dot.done { background-color: #c89a4a !important; }
+/* キャラクター: 卵形をやめて単純な四角バウンディングボックス
+   width/height は !important を付けず、 リサイズドラッグの inline style を上書き許可 */
+.character {
+  border-radius: 0 !important;
+  width: 200px;
+  height: 168px;
+  font-size: 56px;
+}
+
+/* ───── Placeholder image verification mode ─────
+   本番用ではなく、指定解像度の画像が各バウンディングボックスに
+   100% 100% で正しく入るかを確認するための検証素材。 */
+.hdr-pill,
+.hdr-left .owl-icon,
+.hdr-left .title-card,
+.hdr-left .progress-num,
+.hdr-left .dot,
+.hdr-right .ctrl-btn,
+.q-text-card,
+.q-text-card .audio,
+.board,
+.answer-tray,
+.chip,
+.chip .circle,
+.hint,
+.character,
+.slot {
+  background-position: center !important;
+  /* contain でアスペクト比保持。 box が image より大きければ余白で寸法ミスマッチが見える */
+  background-size: contain !important;
+  background-repeat: no-repeat !important;
+  border: none !important;
+  box-shadow: none !important;
+  text-shadow: none !important;
+}
+/* === 森の図鑑 (zukan) のレイアウト要素 ===
+   safe area 1600x900 の中で、 上部にタイトル看板、 中央に本の見開き、 周辺に
+   タブ・キャラ・ボタンを置く。 各要素は将来的に Codex 生成画像 (RGBA 透過) を
+   background-image で乗せる想定。 v1 はベタ塗り plate のみ。
+   ─────────────────────────────────────────── */
+.zukan-safe {
+  /* デフォルト grid をやめて自由配置 (各要素は absolute + transform で位置決め) */
+  display: block !important;
+  position: relative;
+}
+.zukan-safe > * {
+  position: absolute;
+  box-sizing: border-box;
+}
+
+/* 上部 */
+.z-top-left {
+  top: 24px; left: 24px;
+  width: 220px; height: 64px;
+  background: linear-gradient(180deg, #f3e0ad, #d6b86c);
+  border: 4px solid var(--wood-dark);
+  border-radius: 16px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  font-weight: 800; font-size: 22px; color: #5a3a1a;
+}
+.z-home-icon { font-size: 26px; }
+
+.z-count {
+  top: 24px; left: 280px;
+  width: 280px; height: 64px;
+  background: linear-gradient(180deg, #fff8d4, #f0deaa);
+  border: 3px solid var(--wood-mid);
+  border-radius: 32px;
+  display: flex; align-items: center; gap: 10px; padding: 0 16px;
+  font-weight: 700; font-size: 18px; color: #6a4a20;
+}
+.z-count-icon { font-size: 32px; }
+
+.z-title-board {
+  top: 16px; left: 50%;
+  transform: translateX(-50%);
+  width: 880px; height: 100px;
+  background: linear-gradient(180deg, #b97a3e, #7a4a20);
+  border: 5px solid var(--wood-dark);
+  border-radius: 18px;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff7d0; font-weight: 900; font-size: 32px;
+  text-shadow: 0 3px 0 rgba(0,0,0,0.45);
+  letter-spacing: 0.05em;
+}
+
+/* 本見開き (ベース。 後に PNG 1 枚に差し替えても OK) */
+.z-book {
+  top: 150px; left: 240px;
+  width: 1120px; height: 660px;
+  background: linear-gradient(180deg, #f4e2b8, #e6cf8a);
+  border: 6px solid var(--wood-dark);
+  border-radius: 18px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35), inset 0 0 60px rgba(110, 70, 32, 0.18);
+  display: grid;
+  grid-template-columns: 1fr 8px 1fr;
+  /* 将来的にここで perspective transform を効かせる: 例
+     transform: perspective(1800px) rotateX(2deg);
+     transform-origin: 50% 50%;
+  */
+}
+.z-page {
+  position: relative;
+  padding: 32px;
+}
+.z-book::after {
+  /* 中央の綴じ目 */
+  content: '';
+  grid-column: 2 / 3;
+  background: linear-gradient(90deg, rgba(110,70,32,0), rgba(110,70,32,0.45) 50%, rgba(110,70,32,0));
+}
+
+/* 左ページ */
+.z-page-title {
+  text-align: center;
+  font-size: 24px; font-weight: 800;
+  color: #6a4a20;
+  margin-bottom: 16px;
+}
+.z-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 14px;
+  height: calc(100% - 60px);
+}
+.z-grid-cell {
+  background: linear-gradient(180deg, #fff8d4, #ecd9a0);
+  border: 3px solid var(--wood-mid);
+  border-radius: 14px;
+  display: flex; align-items: flex-end; justify-content: center;
+  padding: 6px;
+  font-weight: 700; font-size: 16px; color: #5a3a1a;
+}
+.z-grid-cell.z-locked {
+  background: linear-gradient(180deg, #d4be8a, #b89a64);
+  color: #6a4a20; font-size: 22px; align-items: center;
+}
+
+/* 右ページ */
+.z-page-right { display: flex; flex-direction: column; gap: 12px; }
+.z-detail-art {
+  align-self: center;
+  width: 260px; height: 220px;
+  background: linear-gradient(180deg, #fff8d4, #d8c08a);
+  border: 3px dashed rgba(110, 70, 32, 0.4);
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 110px;
+}
+.z-detail-stamp {
+  position: absolute; top: 32px; right: 32px;
+  width: 90px; height: 90px;
+  background: #d63a3a;
+  border: 3px solid #a02020;
+  border-radius: 50%;
+  color: #fff; font-weight: 900; font-size: 12px;
+  display: flex; align-items: center; justify-content: center;
+  text-align: center; line-height: 1.1;
+  transform: rotate(-8deg);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.25);
+}
+.z-detail-fields { display: flex; flex-direction: column; gap: 8px; }
+.z-field {
+  display: flex; gap: 10px;
+  border-bottom: 1px dashed rgba(110, 70, 32, 0.4);
+  padding: 4px 0;
+}
+.z-field-label {
+  background: linear-gradient(180deg, #c97a3e, #8a4f1f);
+  color: #fff7d0; font-weight: 800; font-size: 13px;
+  padding: 2px 10px; border-radius: 8px;
+  white-space: nowrap; height: fit-content;
+}
+.z-field-label.z-field-label-green { background: linear-gradient(180deg, #7aa83c, #4f7220); }
+.z-field-val { font-size: 14px; color: #4a2a10; line-height: 1.4; }
+.z-field-comment { border-bottom: none; }
+
+/* 右サイドのタブ */
+.z-tab {
+  right: 24px;
+  width: 160px; height: 68px;
+  background: linear-gradient(180deg, #f3e0ad, #d6b86c);
+  border: 3px solid var(--wood-mid);
+  border-radius: 12px;
+  display: flex; align-items: center; gap: 10px; padding: 0 14px;
+  font-weight: 700; font-size: 16px; color: #5a3a1a;
+}
+.z-tab-1 { top: 200px; }
+.z-tab-2 { top: 290px; }
+.z-tab-icon { font-size: 22px; }
+
+/* 左下のクマと吹き出し */
+.z-bear {
+  bottom: 16px; left: 16px;
+  width: 160px; height: 200px;
+  background: linear-gradient(180deg, #c8a06a, #8a6438);
+  border: 3px solid var(--wood-dark);
+  border-radius: 18px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 80px;
+}
+.z-speech {
+  bottom: 96px; left: 200px;
+  width: 320px; height: 120px;
+  background: linear-gradient(180deg, #fff8d4, #f0deaa);
+  border: 3px solid var(--wood-mid);
+  border-radius: 16px;
+  padding: 14px; font-size: 14px; line-height: 1.4; color: #5a3a1a;
+  display: flex; align-items: center;
+}
+
+/* 下部のアクションボタン */
+.z-btn {
+  bottom: 24px;
+  height: 70px;
+  background: linear-gradient(180deg, #f3e0ad, #d6b86c);
+  border: 4px solid var(--wood-dark);
+  border-radius: 36px;
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  padding: 0 28px;
+  font-weight: 800; font-size: 22px; color: #5a3a1a;
+}
+.z-btn-icon { font-size: 26px; }
+.z-btn-next {
+  left: 50%; transform: translateX(-50%);
+  width: 360px;
+}
+.z-btn-back {
+  right: 24px;
+  width: 200px;
+}
+
+/* テキスト編集の便宜: 一部の編集テキストはハンドル幅を確保するため min-width */
+.zukan-safe .editable-text { min-width: 1ch; }
+
+/* ───── Resize mode (ドラッグで各バウンディングボックスを伸縮 + 移動 + ルーラー/ガイド) ───── */
+body.resize-mode .resizable {
+  position: relative;
+  outline: 2px dashed rgba(0, 212, 255, 0.6);
+  outline-offset: 2px;
+  cursor: move;  /* body ドラッグで移動 */
+}
+/* zukan: 各要素は absolute 配置なので、 resize-mode でも position を維持する */
+body.resize-mode .zukan-safe .resizable {
+  position: absolute;
+}
+
+/* === userbox: ユーザーがドラッグで作った矩形フレーム ─────────────── */
+.userbox {
+  position: absolute;
+  /* 半透明のオレンジで塗りつぶす — 濃度はツールバーのスライダーで調整可能 */
+  background: rgba(255, 178, 86, var(--userbox-opacity, 0.55));
+  border: 3px solid rgba(140, 75, 30, 0.95);
+  border-radius: 8px;
+  box-sizing: border-box;
+}
+/* group メンバー: 紫の二重枠で識別 */
+.userbox[data-group-id] {
+  border-color: rgba(120, 75, 200, 0.95);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+}
+/* 「隠す」 で付与: display:none で非表示、 saved-layout に永続化される */
+.user-hidden { display: none !important; }
+
+/* 背景画像入りの userbox は半透明オレンジを消して画像をくっきり見せる */
+.userbox.userbox-with-bg {
+  background-color: transparent !important;
+  border-color: transparent;
+  /* イラスト独立スケール: --zk-art-size を userbox 単位で上書きすると
+     background-image の表示サイズだけが変わる (= .zk-frame の表示サイズは不変)。
+     デフォルトは contain で現行挙動を維持。 「70% auto」 のような percentage を
+     指定するとイラストだけが枠内で縮む。 */
+  background-size: var(--zk-art-size, contain);
+  background-position: center;
+  background-repeat: no-repeat;
+}
+body.resize-mode .userbox.userbox-with-bg {
+  /* 編集モード中は薄い枠線で位置がわかるようにする */
+  border-color: rgba(140, 75, 30, 0.55);
+}
+
+/* === 本のページ立体モード (旧 Approach A — book-tilt) ===
+   個別 userbox の rotateY 単純傾斜。 視覚的に弱いので Corner Pin (下) に置き換え予定 */
+body.book-tilt #safe-area {
+  perspective: 1800px;
+  transform-style: preserve-3d;
+}
+body.book-tilt .userbox { transform-style: preserve-3d; }
+
+/* === ベジェワープモード ===
+   ページを html2canvas でテクスチャ化 → WebGL canvas に bicubic Bezier patch で warp。
+   16 制御点 / page (= 32 点合計) をドラッグして本のページの曲面を作る。
+   注: display:none の canvas に getContext('webgl') すると null を返す
+   Chromium/Firefox のバグ回避のため visibility ベースで隠す */
+/* ベジェ ON 時はステージの overflow:hidden を解除して、 safe-area 外に飛んだ
+   ベジェハンドル も画面に出せるようにする (旧コードでは stage の境界で
+   クリップされて、 一度外に飛ばすと掴めなくなっていた)。 さらに body の
+   overflow-x:hidden も解除して、 viewport 外の handle にスクロールで到達できる
+   ようにする (zoom out + 縦横スクロール の組合せで全 handle に到達可能に) */
+body.corner-pin-mode .stage { overflow: visible !important; }
+body.corner-pin-mode { overflow: auto !important; }
+#bezier-canvas {
+  position: absolute;
+  left: 0; top: 0;
+  width: 1600px; height: 900px;  /* SAFE_W × SAFE_H、 内部解像度は JS で 2x */
+  pointer-events: none;
+  z-index: 80;
+  visibility: hidden;
+}
+#bezier-handle-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 100;
+  visibility: hidden;
+}
+body.corner-pin-mode #bezier-canvas,
+body.corner-pin-mode #bezier-handle-layer { visibility: visible; }
+/* ベジェプレビューモード: 機能 ON のままハンドルとオレンジ半透明 BG を消して
+   warp 結果だけ見せる。 (撮影時にも適用されるので、 テクスチャ自体が
+   オレンジ抜きで生成される) */
+body.bezier-preview-mode .userbox {
+  background: none !important;
+  border-color: transparent !important;
+}
+body.corner-pin-mode.bezier-preview-mode .bezier-handle {
+  display: none !important;
+}
+/* 制御点ハンドル */
+.bezier-handle {
+  position: absolute;
+  width: 14px; height: 14px;
+  margin: -7px 0 0 -7px;
+  background: #ff50c8;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  cursor: move;
+  pointer-events: auto;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+}
+.bezier-handle[data-page="right"] { background: #50c8ff; }
+/* 角の制御点だけ少し大きく (4 隅は形を決める基準なので強調) */
+.bezier-handle.corner { width: 18px; height: 18px; margin: -9px 0 0 -9px; }
+/* ベジェモード中は元の userbox を隠す (canvas 上で warp された表示を見せる) */
+body.corner-pin-mode .userbox,
+body.corner-pin-mode .resizable {
+  visibility: hidden !important;
+}
+
+/* PNG export 選択メニュー (split button のドロップダウン) */
+.png-export-menu {
+  position: absolute;
+  top: calc(100% + 4px); left: 0;
+  background: rgba(20, 20, 20, 0.95);
+  border: 1px solid #555;
+  border-radius: 6px;
+  padding: 4px;
+  display: flex; flex-direction: column; gap: 2px;
+  z-index: 200;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  min-width: 240px;
+}
+.png-export-menu button {
+  white-space: nowrap;
+  background: #2a2a2a; color: #ddd;
+  border: 1px solid #555; border-radius: 4px;
+  padding: 8px 12px; cursor: pointer;
+  font: 600 12px system-ui, sans-serif;
+  text-align: left;
+}
+.png-export-menu button:hover {
+  background: #3a3a3a; border-color: #ff8a3d; color: #fff;
+}
+
+/* === ワイヤーフレーム表示モード === */
+/* 背景・塗りつぶしを消して bbox 線だけ残す。 Codex に渡す参照用 */
+body.wireframe-only .stage {
+  background: #ffffff !important;
+}
+body.wireframe-only .userbox {
+  background: transparent !important;
+  border: 2px solid #1a1a1a !important;
+  box-shadow: none !important;
+}
+body.wireframe-only .userbox[data-group-id] {
+  border-color: #6a3eb8 !important;
+}
+body.wireframe-only .userbox-badge {
+  background: rgba(0,0,0,0.85) !important;
+  color: #fff !important;
+  border: none !important;
+}
+body.wireframe-only .userbox-del,
+body.wireframe-only .resize-handle,
+body.wireframe-only .resize-size-label,
+body.wireframe-only .ruler {
+  display: none !important;
+}
+/* safe area の dashed は cyan のまま、 中央クロスヘアもマゼンタのまま見える */
+.userbox-badge {
+  position: absolute;
+  top: -22px; left: 0;
+  background: rgba(40, 30, 20, 0.92);
+  color: #ffe7a3;
+  padding: 1px 8px;
+  border-radius: 4px;
+  font: 600 11px ui-monospace, Menlo, Consolas, monospace;
+  cursor: text;
+  white-space: nowrap;
+  outline: none;
+  z-index: 30;
+  pointer-events: auto;
+}
+.userbox-badge:focus {
+  background: #2c1c0c;
+  outline: 2px solid #ff8a3d;
+}
+.userbox-del {
+  position: absolute;
+  top: -22px; right: 0;
+  width: 20px; height: 20px;
+  background: rgba(180, 60, 60, 0.95);
+  color: #fff;
+  border-radius: 4px;
+  font: 700 14px/18px ui-monospace, Menlo, Consolas, monospace;
+  text-align: center;
+  cursor: pointer;
+  z-index: 31;
+  user-select: none;
+}
+.userbox-del:hover { background: #d04040; }
+body:not(.resize-mode):not(.draw-mode) .userbox-badge,
+body:not(.resize-mode):not(.draw-mode) .userbox-del { display: none; }
+
+/* サイズ調整 ON 中: ステージの空き領域は crosshair (新規矩形を描ける合図)。
+   userbox 自体は move カーソル (既存ルールが上書き) */
+body.resize-mode .stage { cursor: crosshair; }
+
+/* 矩形追加モード (draw-mode ON): 既存 userbox はクリック透過にして
+   重なってる場所でも常に新規矩形を作れるようにする */
+body.draw-mode .stage { cursor: crosshair; }
+body.draw-mode .resizable { pointer-events: none; }
+/* ハンドル類はそのまま機能させない (draw 中はリサイズできない) */
+body.draw-mode .resize-handle, body.draw-mode .userbox-badge, body.draw-mode .userbox-del { pointer-events: none; }
+.userbox-preview {
+  position: absolute;
+  background: rgba(255, 138, 61, 0.20);
+  border: 2px dashed #ff8a3d;
+  border-radius: 6px;
+  pointer-events: none;
+  z-index: 70;
+  box-sizing: border-box;
+}
+.resize-handle {
+  position: absolute;
+  background: #00d4ff;
+  border: 2px solid #fff;
+  z-index: 60;
+  pointer-events: auto;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+/* 辺ハンドル: 細長い四角 */
+.resize-handle.edge-n,
+.resize-handle.edge-s {
+  left: 50%; transform: translateX(-50%);
+  width: 28px; height: 14px;
+  cursor: ns-resize;
+}
+.resize-handle.edge-e,
+.resize-handle.edge-w {
+  top: 50%; transform: translateY(-50%);
+  width: 14px; height: 28px;
+  cursor: ew-resize;
+}
+.resize-handle.edge-n { top: -8px; }
+.resize-handle.edge-s { bottom: -8px; }
+.resize-handle.edge-e { right: -8px; }
+.resize-handle.edge-w { left: -8px; }
+/* 角ハンドル: 正方形 */
+.resize-handle.corner-nw,
+.resize-handle.corner-ne,
+.resize-handle.corner-sw,
+.resize-handle.corner-se {
+  width: 16px; height: 16px;
+}
+.resize-handle.corner-nw { top: -9px; left: -9px; cursor: nwse-resize; }
+.resize-handle.corner-ne { top: -9px; right: -9px; cursor: nesw-resize; }
+.resize-handle.corner-sw { bottom: -9px; left: -9px; cursor: nesw-resize; }
+.resize-handle.corner-se { bottom: -9px; right: -9px; cursor: nwse-resize; }
+
+.resize-size-label {
+  position: absolute;
+  bottom: 6px; right: 6px;
+  background: rgba(0,0,0,0.7);
+  color: #fff;
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  z-index: 59;
+  pointer-events: none;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+}
+body:not(.resize-mode) .resize-handle,
+body:not(.resize-mode) .resize-size-label { display: none; }
+
+/* 複数選択中のリサイザブル */
+body.resize-mode .resizable.selected {
+  outline: 3px solid #ff8a3d !important;
+  outline-offset: 3px;
+}
+/* edge-link 中ハイライト (リサイズ中、 隣接して連動する辺) */
+body.resize-mode .resizable.edge-linked {
+  outline: 3px solid #ffe24a !important;
+  outline-offset: 3px;
+}
+
+/* 数値入力パネル */
+.numeric-panel {
+  position: fixed;
+  right: 8px;
+  top: calc(var(--toolbar-h, 0px) + 8px);
+  background: rgba(20,20,20,0.94);
+  color: #fff;
+  border: 1px solid #555;
+  border-radius: 6px;
+  padding: 10px 12px;
+  z-index: 80;
+  font: 11px/1.4 system-ui, -apple-system, sans-serif;
+  display: none;
+  width: 240px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+}
+body.resize-mode.has-selection .numeric-panel { display: block; }
+.numeric-panel h4 { margin: 0 0 8px 0; font-size: 12px; color: #ffba6b; font-weight: 600; }
+.numeric-panel .np-targets {
+  color: #aaa;
+  margin-bottom: 8px;
+  max-height: 60px;
+  overflow-y: auto;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 10px;
+}
+.numeric-panel .np-row { display: flex; gap: 8px; margin-bottom: 4px; }
+.numeric-panel label { display: inline-flex; align-items: center; gap: 4px; flex: 1; color: #ccc; }
+.numeric-panel input[type="number"] {
+  width: 70px; padding: 3px 5px;
+  background: #1a1a1a; color: #fff; border: 1px solid #555; border-radius: 3px;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+}
+.numeric-panel input[type="number"]:focus { border-color: #ff8a3d; outline: none; }
+.numeric-panel input[type="number"]::placeholder { color: #555; font-style: italic; font-size: 10px; }
+.numeric-panel .np-hint { color: #888; font-size: 10px; margin-top: 6px; line-height: 1.3; }
+.numeric-panel .np-section-title {
+  margin-top: 10px; margin-bottom: 4px;
+  font-size: 11px; font-weight: 700; color: #ffba6b;
+  border-top: 1px solid #444; padding-top: 8px;
+}
+.numeric-panel .np-align-row {
+  display: flex; gap: 4px; margin-bottom: 4px;
+}
+.numeric-panel .np-align {
+  flex: 1; padding: 4px 6px;
+  background: #2a2a2a; color: #ddd;
+  border: 1px solid #555; border-radius: 3px;
+  cursor: pointer; font: 600 12px ui-monospace, Menlo, Consolas, monospace;
+}
+.numeric-panel .np-align:hover { background: #3a3a3a; border-color: #ff8a3d; color: #fff; }
+.numeric-panel .np-apply {
+  padding: 3px 10px;
+  background: #6a4ed4; color: #fff;
+  border: 1px solid #8a5ef0; border-radius: 3px;
+  cursor: pointer; font: 600 11px sans-serif;
+}
+.numeric-panel .np-apply:hover { background: #7a5ee0; }
+
+/* ─── ルーラー + ガイドライン ─── */
+.ruler {
+  position: absolute;
+  background:
+    linear-gradient(180deg, #2a2a2a, #1a1a1a);
+  z-index: 70;
+  pointer-events: auto;
+  display: none;
+  color: #999;
+  font-size: 10px;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+}
+body.resize-mode .ruler { display: block; }
+.ruler {
+  position: fixed;  /* fixed なら toolbar 直下 */
+}
+.ruler.horizontal {
+  top: var(--toolbar-h, 0); left: 24px; right: 0;
+  height: 24px;
+  background-image:
+    repeating-linear-gradient(90deg,
+      transparent 0 49px,
+      rgba(255,255,255,0.4) 49px 50px,
+      transparent 50px 99px,
+      rgba(255,255,255,0.7) 99px 100px);
+  cursor: ns-resize;
+}
+.ruler.vertical {
+  top: calc(var(--toolbar-h, 0) + 24px); left: 0; bottom: 0;
+  width: 24px;
+  background-image:
+    repeating-linear-gradient(180deg,
+      transparent 0 49px,
+      rgba(255,255,255,0.4) 49px 50px,
+      transparent 50px 99px,
+      rgba(255,255,255,0.7) 99px 100px);
+  cursor: ew-resize;
+}
+.guide {
+  position: fixed;
+  background: rgba(0, 212, 255, 0.6);
+  z-index: 65;
+  pointer-events: auto;
+}
+.guide.h { left: 24px; right: 0; height: 1px; cursor: ns-resize; box-shadow: 0 0 0 0.5px rgba(0, 212, 255, 0.6); }
+.guide.v { top: calc(var(--toolbar-h, 0) + 24px); bottom: 0; width: 1px; cursor: ew-resize; box-shadow: 0 0 0 0.5px rgba(0, 212, 255, 0.6); }
+/* 1px の見た目はそのままに、 hit 領域だけ ±6px に拡張 (掴みやすく) */
+.guide.h::before {
+  content: ''; position: absolute;
+  left: 0; right: 0; top: -6px; bottom: -6px;
+  cursor: ns-resize; background: transparent;
+}
+.guide.v::before {
+  content: ''; position: absolute;
+  top: 0; bottom: 0; left: -6px; right: -6px;
+  cursor: ew-resize; background: transparent;
+}
+.guide:hover { background: #00d4ff; }
+.guide-label {
+  position: absolute;
+  background: rgba(0, 212, 255, 0.95);
+  color: #000;
+  font-size: 10px;
+  padding: 1px 4px;
+  border-radius: 2px;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  pointer-events: none;
+}
+.guide.h .guide-label { left: 4px; top: 2px; }
+.guide.v .guide-label { top: 4px; left: 2px; }
+
+/* ───── Editable text ───── */
+.editable-text {
+  cursor: text;
+  outline: 1px dashed transparent;
+  border-radius: 2px;
+  transition: outline-color 0.15s, background 0.15s;
+}
+.editable-text:hover {
+  background: rgba(0, 212, 255, 0.08);
+  outline-color: rgba(0, 212, 255, 0.35);
+}
+.editable-text:focus {
+  background: rgba(0, 212, 255, 0.15);
+  outline: 2px solid #00d4ff;
+  outline-offset: 1px;
+}
+
+/* Debug bbox */
+.show-bbox .slot::after {
+  content: attr(data-bbox);
+  position: absolute;
+  bottom: 2px; right: 2px;
+  background: rgba(0,0,0,0.6);
+  color: #fff;
+  font-size: 10px;
+  padding: 1px 4px;
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+/* ───── ツールバー組込ナビゲーション (#zk-pages-btn / .zk-pages-dropdown) ─────
+   page-nav.js の右上 FAB はこのエディタの太いツールバーと重なって見えないため、
+   ツールバーの先頭にも 🌐 ページ ボタンを置く。 FAB はそのまま残す
+   (page-nav.js の docstring に「常駐 layout-editor の 🌐 ページ ボタンと併存可能」
+   と明記済み)。 配色は既存ツールバーのアクセントカラー (#ffba6b 金 / #1a1a1a 黒) を踏襲。 */
+#zk-pages-btn {
+  background: #1a1a1a;
+  color: #ffba6b;
+  border: 1px solid #ffba6b;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+#zk-pages-btn:hover { background: #2a2a2a; }
+#zk-pages-btn[aria-expanded="true"] {
+  background: #6a4ed4;
+  border-color: #8a5ef0;
+  color: #fff;
+}
+.zk-pages-dropdown {
+  position: fixed;
+  z-index: 9100;
+  min-width: 240px;
+  max-width: 360px;
+  background: #1a1a1a;
+  color: #ffba6b;
+  border: 1px solid #ffba6b;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  padding: 6px 0;
+  font: 12px system-ui, -apple-system, sans-serif;
+}
+.zk-pages-dropdown-title {
+  font-size: 11px;
+  color: #ffba6b;
+  padding: 6px 14px 8px;
+  border-bottom: 1px solid rgba(255,186,107,0.3);
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+.zk-pages-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.zk-pages-list li { margin: 0; }
+.zk-pages-link,
+.zk-pages-list span {
+  display: block;
+  padding: 10px 14px;
+  color: #ffba6b;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(255,186,107,0.15);
+  font-size: 13px;
+  line-height: 1.3;
+}
+.zk-pages-list li:last-child .zk-pages-link,
+.zk-pages-list li:last-child span { border-bottom: none; }
+.zk-pages-link:hover { background: rgba(255,186,107,0.1); }
+.zk-pages-link.is-current {
+  color: rgba(255,186,107,0.5);
+  cursor: default;
+  background: rgba(255,186,107,0.05);
+}
+
+/* ───── 装飾フレーム overlay (.zk-frame) ─────
+   userbox の上に重ねるアンティーク風フレーム PNG/SVG。 pointer-events:none で
+   下層の userbox 操作 (resize / select / drag) を邪魔しない。 z-index は
+   userbox-badge (= z-index: auto 系) より低く、 動物イラスト等の前景 img より低く
+   設定 — 中身を妨げず、 ただ枠だけ装飾する。 */
+.zk-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  pointer-events: none;
+  z-index: 5;
+  user-select: none;
+}
+/* userbox 内の前景画像は frame より上 */
+.userbox > img:not(.zk-frame) { position: relative; z-index: 10; }
+</style>
+<script>
+  // page-nav.js 用の編集ページ一覧 (全エディタで統一)
+  window.PageNavConfig = {
+    pages: [
+      { name: 'なぞなぞ', url: '/quizland/?edit=1' },
+      { name: 'なぞなぞ (旧サンドボックス)', url: '/quizland/preview/full/' },
+      { name: 'ずかん (ベジェ編集あり) (このページ)', url: location.pathname, current: true },
+      { name: 'ずかん (調査画面)', url: '/zukan/preview/investigation/?edit=1' },
+    ],
+  };
+</script>
+<script src="../../common/page-nav.js" defer></script>
+</head>
+<body class="show-safe">
+
+<div class="toolbar">
+  <div>
+    <button id="zk-pages-btn" type="button" title="他の編集ページへ" aria-haspopup="true" aria-expanded="false">🌐 ページ</button>
+  </div>
+
+  <div>
+    <label>レイアウト</label>
+    <select id="layout-select">
+      <optgroup label="横並び (order_color)">
+        <option value="row-3" selected>row count=3</option>
+        <option value="row-4">row count=4</option>
+        <option value="row-5">row count=5</option>
+      </optgroup>
+      <optgroup label="グリッド (count_total)">
+        <option value="grid-1">grid count=1</option>
+        <option value="grid-2">grid count=2</option>
+        <option value="grid-3">grid count=3</option>
+        <option value="grid-4">grid count=4 (2×2)</option>
+        <option value="grid-5">grid count=5 (3+2)</option>
+        <option value="grid-6">grid count=6 (3×2)</option>
+        <option value="grid-7">grid count=7 (4+3)</option>
+        <option value="grid-8">grid count=8 (4×2)</option>
+        <option value="grid-9">grid count=9 (3×3)</option>
+      </optgroup>
+    </select>
+  </div>
+
+  <div>
+    <label>スロット差替画像</label>
+    <input type="file" id="img-file" accept="image/png,image/jpeg,image/webp">
+    <button id="img-clear">クリア</button>
+  </div>
+
+  <!-- 🖼 装飾フレーム: 選択中の userbox に装飾フレーム overlay を付与する select。
+       (JS で動的注入していたが、 .toolbar 末尾の margin-left:auto 要素より後ろに
+       追加されて視覚的に画面外へ押し出されていたため、 静的 HTML に直書きする) -->
+  <div id="zk-frame-kind-wrap">
+    <label>🖼 装飾フレーム</label>
+    <select id="zk-frame-kind" title="選択中の枠 (.userbox) に装飾フレームを付与">
+      <option value="">（なし）</option>
+      <option value="animal-banner">動物バナー (横長)</option>
+      <option value="card-square">カードマス (正方形)</option>
+      <option value="rabbit-portrait">うさぎポートレート (縦長)</option>
+      <option value="text-underline">テキスト下線</option>
+    </select>
+  </div>
+  <div>
+    <button id="zk-frame-auto-btn" type="button" title="全 userbox に自動でフレーム種別を割当 (サイズで推測)">🎯 自動割当</button>
+  </div>
+  <div id="zk-art-scale-wrap" title="選択中の userbox の中身イラストのみを縮小 (枠サイズは変えない)">
+    <label>🖼 中身サイズ</label>
+    <input type="range" id="zk-art-scale-input" min="30" max="100" step="5" value="100" disabled />
+    <span id="zk-art-scale-val">100%</span>
+  </div>
+
+  <div>
+    <label>スロット</label>
+    <input type="number" id="slot-size" value="130" min="40" max="300" step="2">px
+    <label>gap</label>
+    <input type="number" id="gap" value="16" min="0" max="48" step="2">px
+    <label>矢印太さ</label>
+    <input type="number" id="arrow-stroke" value="4" min="2" max="16" step="1">px
+  </div>
+
+  <div>
+    <label><input type="checkbox" id="show-bbox"> サイズ表示</label>
+    <label><input type="checkbox" id="show-safe" checked> 16:9 セーフエリア表示</label>
+  </div>
+
+  <div>
+    <button id="anno-toggle">📝 注釈モード OFF</button>
+  </div>
+
+  <div id="anno-tools">
+    <button class="tool-btn" data-tool="select">👆 選択/移動</button>
+    <button class="tool-btn" data-tool="marker">📍 マーカー</button>
+    <button class="tool-btn" data-tool="text">📝 テキスト</button>
+    <button class="tool-btn" data-tool="rect">▭ 矩形</button>
+    <button class="tool-btn" data-tool="arrow">↗ 矢印</button>
+    <button class="tool-btn" data-tool="line">─ 線</button>
+    <button class="tool-btn" data-tool="eraser">🧹 消しゴム</button>
+    <label title="新規注釈の色 / 選択中の要素にも反映" style="display:inline-flex;align-items:center;gap:4px;color:#aaa;">色 <input type="color" id="anno-color" value="#ff3b6b" style="width:32px;height:24px;border:none;background:transparent;padding:0;cursor:pointer;"></label>
+    <button id="anno-clear">🗑 全消去</button>
+    <button id="anno-reset" title="保存も含めて全部消す">♻ リセット</button>
+  </div>
+
+  <div>
+    <button id="resize-toggle" title="ドラッグで既存枠をリサイズ / 空き領域でドラッグすれば新規矩形も作れる">📐 サイズ調整 OFF</button>
+    <button id="userbox-add" title="重なった枠の上でも強制的に新規矩形を作るモード (既存枠はクリック無効)">🆕 矩形追加 OFF</button>
+    <label title="userbox の塗りつぶし濃度を調整 (0=透明)" style="display:inline-flex;align-items:center;gap:4px;color:#aaa;">塗り <input type="range" id="userbox-opacity" min="0" max="100" value="55" style="width:80px;"></label>
+    <button id="corner-pin-toggle" title="bicubic Bezier patch (4×4 = 16 制御点 / page、 32 点合計) でページを真の曲面として warp。 ON にした瞬間にページを html2canvas でスナップショット撮影 → WebGL シェーダ内で曲面変形">🌀 ベジェワープ OFF</button>
+    <button id="bezier-undo"  title="ベジェ操作を 1 つ取り消す (Ctrl+Z)">↶ 取り消し</button>
+    <button id="bezier-reset" title="ベジェ制御点を初期格子 (= 平面 / 歪み無し) に戻す">↺ ベジェリセット</button>
+    <button id="bezier-preview" title="ベジェ ON のままハンドルと userbox オレンジ半透明 BG を非表示にして、 warp 結果だけ見るプレビューモード">👁 プレビュー OFF</button>
+    <button id="zoom-out" title="ズームアウト (画面外の制御点が見えるように縮小)">🔍−</button>
+    <button id="zoom-fit"  title="ズーム 100% に戻す">100%</button>
+    <button id="zoom-in"  title="ズームイン">🔍+</button>
+    <button id="wireframe-toggle" title="背景・色を消して bbox 線だけ表示するモード">👁 ワイヤー表示 OFF</button>
+    <span class="png-export-wrap" style="position:relative;display:inline-block;">
+      <button id="export-png" title="PNG として書き出し (ワイヤー or 現状そのまま を選択)">🖼 PNG</button>
+      <div class="png-export-menu" id="png-export-menu" style="display:none;">
+        <button data-mode="wireframe">🪟 ワイヤー (枠線のみ)</button>
+        <button data-mode="snapshot">📸 現状そのまま (見たまま)</button>
+      </div>
+    </span>
+    <button id="save-layout" title="現在のレイアウトを保存 (Ctrl+S)">💾 保存</button>
+    <button id="revert-layout" title="最後に保存した状態に戻す">⏮ 復元</button>
+    <button id="resize-reset" title="保存値も消して完全リセット">↺ サイズ初期化</button>
+  </div>
+
+  <div>
+    <button id="preview-mode" title="ツールバー非表示 + 画面に合わせてスケール">📱 端末サイズで見る</button>
+    <button id="grid-mode-toggle" title="旧グリッド placeholder と本物画像を切り替え">🔁 グリッド比較 OFF</button>
+  </div>
+
+  <div style="margin-left:auto;color:#666;">
+    <a href="../" style="color:#aaa;">← パーツ一覧</a>
+  </div>
+</div>
+<button id="preview-exit" title="編集モードに戻る (Esc でも戻れる)">✕ 編集に戻る</button>
+
+<!-- 複数選択時の数値入力パネル (resize-mode かつ has-selection の時のみ表示) -->
+<div class="numeric-panel" id="numeric-panel">
+  <h4>選択中: <span id="np-count">0</span> 個</h4>
+  <div class="np-targets" id="np-targets">(なし)</div>
+  <div class="np-row">
+    <label>W <input type="number" id="np-w" step="1"></label>
+    <label>H <input type="number" id="np-h" step="1"></label>
+  </div>
+  <div class="np-row">
+    <label>TX <input type="number" id="np-tx" step="1"></label>
+    <label>TY <input type="number" id="np-ty" step="1"></label>
+  </div>
+  <div class="np-row">
+    <label>LEFT <input type="number" id="np-left" step="1"></label>
+    <label>TOP <input type="number" id="np-top" step="1"></label>
+  </div>
+  <div class="np-row">
+    <label>SCALE% <input type="number" id="np-scale" step="1" placeholder="100"></label>
+    <button class="np-apply" id="np-scale-apply" title="選択中の W/H を SCALE% で拡縮">適用</button>
+  </div>
+  <div class="np-section-title">表示</div>
+  <div class="np-align-row">
+    <button class="np-align" id="np-hide" title="選択中の要素を非表示にする (saved-layout に永続化)">🗑 隠す</button>
+    <button class="np-align" id="np-show-all" title="非表示にした要素を全て元に戻す">↺ 全て表示</button>
+  </div>
+  <div class="np-section-title">整列 (選択中の要素を)</div>
+  <div class="np-align-row">
+    <button class="np-align" data-mode="left" title="左揃え (選択範囲)">⇤</button>
+    <button class="np-align" data-mode="centerH" title="水平センター揃え (選択範囲)">⇔</button>
+    <button class="np-align" data-mode="right" title="右揃え (選択範囲)">⇥</button>
+    <button class="np-align" data-mode="top" title="上揃え (選択範囲)">⤒</button>
+    <button class="np-align" data-mode="centerV" title="垂直センター揃え (選択範囲)">⇕</button>
+    <button class="np-align" data-mode="bottom" title="下揃え (選択範囲)">⤓</button>
+  </div>
+  <div class="np-align-row">
+    <button class="np-align" data-mode="canvasH" title="キャンバス水平センターに移動">↔ Canvas</button>
+    <button class="np-align" data-mode="canvasV" title="キャンバス垂直センターに移動">↕ Canvas</button>
+  </div>
+  <div class="np-hint">
+    Shift+クリックで複数選択 / 値変更で全選択へ反映 / 隣接フレームの辺は自動リンク
+  </div>
+</div>
+
+<div class="anno-tip" id="anno-tip" style="display:none;">
+  <span id="anno-tip-text">注釈モード ON</span>
+</div>
+
+<div class="stage-wrap">
+  <div class="stage" id="stage">
+    <!-- 16:9 safe area inner -->
+    <div class="safe-area zukan-safe" id="safe-area">
+      <!-- センター位置の見える化 (show-safe で表示) -->
+      <div class="center-dot" aria-hidden="true"></div>
+      <!-- ベジェワープ (Bicubic Bezier Patch)。 各ページを 4×4 = 16 制御点で
+           bicubic Bezier 曲面として WebGL シェーダ内で warp。 制御点は 32 個合計、
+           動かすたびに canvas を再描画 (60fps)。 canvas + ハンドルは JS で動的生成 -->
+      <canvas id="bezier-canvas" data-page="all"></canvas>
+      <div id="bezier-handle-layer"></div>
+      <!-- 空のキャンバス: 「🆕 矩形追加」 でドラッグして枠を作る -->
+    </div>
+
+    <!-- Annotation overlay -->
+    <div id="anno-layer">
+      <svg id="anno-svg" preserveAspectRatio="none">
+        <defs>
+          <marker id="anno-arrow-head" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto">
+            <polygon points="0,0 10,5 0,10" fill="currentColor"></polygon>
+          </marker>
+        </defs>
+      </svg>
+    </div>
+  </div>
+</div>
+
+<script>
+// ───── Per-variant slot sizes (個数ごとに最適なサイズを記憶) ─────
+const SLOT_SIZE_DEFAULTS = {
+  'row-3':  { slot: 220, gap: 16 },
+  'row-4':  { slot: 180, gap: 16 },
+  'row-5':  { slot: 140, gap: 16 },
+  'grid-1': { slot: 300, gap: 16 },
+  'grid-2': { slot: 240, gap: 16 },
+  'grid-3': { slot: 220, gap: 16 },
+  'grid-4': { slot: 200, gap: 16 },
+  'grid-5': { slot: 170, gap: 16 },
+  'grid-6': { slot: 160, gap: 16 },
+  'grid-7': { slot: 140, gap: 16 },
+  'grid-8': { slot: 130, gap: 16 },
+  'grid-9': { slot: 130, gap: 16 },
+};
+const PER_VARIANT_KEY = 'quizland_preview_per_variant_v1';
+function getPerVariantSizes() {
+  try { return JSON.parse(localStorage.getItem(PER_VARIANT_KEY)) || {}; }
+  catch(e) { return {}; }
+}
+function savePerVariantSize(variant, slot, gap) {
+  const data = getPerVariantSizes();
+  data[variant] = { slot, gap };
+  try { localStorage.setItem(PER_VARIANT_KEY, JSON.stringify(data)); } catch(e) {}
+}
+function applyVariantSize(variant) {
+  const data = getPerVariantSizes();
+  const s = data[variant] || SLOT_SIZE_DEFAULTS[variant] || { slot: 130, gap: 16 };
+  document.documentElement.style.setProperty('--slot-size', s.slot + 'px');
+  document.documentElement.style.setProperty('--gap', s.gap + 'px');
+  const slotInput = document.getElementById('slot-size');
+  const gapInput = document.getElementById('gap');
+  if (slotInput) slotInput.value = s.slot;
+  if (gapInput) gapInput.value = s.gap;
+}
+
+// ───── Layout rendering ─────
+function buildLayout(value) {
+  const [type, n] = value.split('-');
+  const count = parseInt(n, 10);
+  const board = document.getElementById('board');
+  // zukan/preview/full/ では #board 要素は HTML に存在しない (旧 quizland 由来の
+  // dead code)。 null のまま board.innerHTML を触ると TypeError で IIFE 含む
+  // 後続スクリプトが全滅するため、 ここで早期 return する。
+  // applyVariantSize は board の有無に関わらず実行 (slot-size/gap input の同期は維持)。
+  if (!board) {
+    try { applyVariantSize(value); } catch (e) {}
+    return;
+  }
+  board.innerHTML = '';
+
+  function slot() {
+    const d = document.createElement('div');
+    d.className = 'slot';
+    d.textContent = 'slot';
+    if (currentImg) {
+      d.style.backgroundImage = `url(${currentImg})`;
+      d.classList.add('has-img');
+    }
+    return d;
+  }
+  function row(slotsCount) {
+    const r = document.createElement('div');
+    r.className = 'row';
+    for (let i = 0; i < slotsCount; i++) r.appendChild(slot());
+    return r;
+  }
+  function grid(rows) {
+    const g = document.createElement('div');
+    g.className = 'grid';
+    for (const n of rows) g.appendChild(row(n));
+    return g;
+  }
+
+  if (type === 'row') {
+    board.appendChild(row(count));
+  } else if (type === 'grid') {
+    const layouts = {
+      1: [1], 2: [2], 3: [3],
+      4: [2, 2], 5: [3, 2], 6: [3, 3],
+      7: [4, 3], 8: [4, 4], 9: [3, 3, 3]
+    };
+    board.appendChild(grid(layouts[count]));
+  }
+  // 個数ごとに保存されたサイズ (またはデフォルト) を反映
+  applyVariantSize(value);
+  updateBboxLabels();
+}
+
+let currentImg = null;
+function setSlotImage(url) {
+  currentImg = url;
+  document.querySelectorAll('.slot').forEach(s => {
+    if (url) {
+      s.style.backgroundImage = `url(${url})`;
+      s.classList.add('has-img');
+    } else {
+      s.style.backgroundImage = '';
+      s.classList.remove('has-img');
+    }
+  });
+}
+
+function updateBboxLabels() {
+  document.querySelectorAll('.slot').forEach(s => {
+    const r = s.getBoundingClientRect();
+    s.dataset.bbox = `${Math.round(r.width)}×${Math.round(r.height)}`;
+  });
+}
+
+document.getElementById('layout-select').addEventListener('change', e => { buildLayout(e.target.value); scheduleSave(); });
+document.getElementById('img-file').addEventListener('change', e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = () => setSlotImage(reader.result);
+  reader.readAsDataURL(f);
+});
+document.getElementById('img-clear').addEventListener('click', () => {
+  setSlotImage(null);
+  document.getElementById('img-file').value = '';
+});
+document.getElementById('slot-size').addEventListener('input', e => {
+  const v = parseInt(e.target.value);
+  document.documentElement.style.setProperty('--slot-size', v + 'px');
+  // 現在の variant に紐付けて保存
+  const variant = document.getElementById('layout-select').value;
+  const gap = parseInt(document.getElementById('gap').value);
+  savePerVariantSize(variant, v, gap);
+  updateBboxLabels();
+  scheduleSave();
+});
+document.getElementById('gap').addEventListener('input', e => {
+  const v = parseInt(e.target.value);
+  document.documentElement.style.setProperty('--gap', v + 'px');
+  const variant = document.getElementById('layout-select').value;
+  const slot = parseInt(document.getElementById('slot-size').value);
+  savePerVariantSize(variant, slot, v);
+  updateBboxLabels();
+  scheduleSave();
+});
+document.getElementById('arrow-stroke').addEventListener('input', e => {
+  document.documentElement.style.setProperty('--arrow-stroke', e.target.value);
+  scheduleSave();
+});
+document.getElementById('show-bbox').addEventListener('change', e => {
+  document.body.classList.toggle('show-bbox', e.target.checked);
+  if (e.target.checked) updateBboxLabels();
+  scheduleSave();
+});
+document.getElementById('show-safe').addEventListener('change', e => {
+  document.body.classList.toggle('show-safe', e.target.checked);
+  scheduleSave();
+});
+
+// ───── Annotation system ─────
+const stage = document.getElementById('stage');
+const annoLayer = document.getElementById('anno-layer');
+const annoSvg = document.getElementById('anno-svg');
+const annoToggle = document.getElementById('anno-toggle');
+const annoClear = document.getElementById('anno-clear');
+const annoReset = document.getElementById('anno-reset');
+const annoTip = document.getElementById('anno-tip');
+const annoTipText = document.getElementById('anno-tip-text');
+
+let annoMode = false;
+let currentTool = 'select';
+const labelChars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+let labelIdx = 0;
+let selectedEl = null;
+
+// ── localStorage 自動保存 ──
+// zukan は専用キーを使う (quizland と共有してた `quizland_preview_state_v1` で
+// 一方の reset がもう一方も消す事故が起きたため、 commit `[fix-shared-key]` で分離)。
+// 起動時に旧キーが zukan-only data らしい (= 何かしら anno が入ってる) なら
+// 一度だけ新キーに移行を試みる。
+const STORAGE_KEY = 'zukan_preview_state_v1';
+const STORAGE_KEY_LEGACY = 'quizland_preview_state_v1';
+(function migrateLegacyState() {
+  try {
+    if (localStorage.getItem(STORAGE_KEY)) return;  // 新キー既にあればスキップ
+    const raw = localStorage.getItem(STORAGE_KEY_LEGACY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    const hasAnno = parsed && (
+      (Array.isArray(parsed.markers) && parsed.markers.length) ||
+      (Array.isArray(parsed.texts)   && parsed.texts.length) ||
+      (Array.isArray(parsed.rects)   && parsed.rects.length) ||
+      (Array.isArray(parsed.arrows)  && parsed.arrows.length)
+    );
+    if (hasAnno) {
+      localStorage.setItem(STORAGE_KEY, raw);
+      console.log('[zukan] migrated anno state from legacy shared key');
+    }
+  } catch(_) {}
+})();
+let saveTimer = null;
+function scheduleSave() {
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveState, 300);
+}
+function collectState() {
+  return {
+    markers: [...annoLayer.querySelectorAll('.anno-marker')].map(m => ({
+      x: parseFloat(m.style.left), y: parseFloat(m.style.top), label: m.textContent,
+      color: m.dataset.annoColor || ''
+    })),
+    texts: [...annoLayer.querySelectorAll('.anno-text')].map(t => ({
+      x: parseFloat(t.style.left), y: parseFloat(t.style.top), content: t.textContent,
+      color: t.dataset.annoColor || ''
+    })),
+    rects: [...annoSvg.querySelectorAll('rect.anno-rect')].map(r => ({
+      x: +r.getAttribute('x'), y: +r.getAttribute('y'),
+      w: +r.getAttribute('width'), h: +r.getAttribute('height'),
+      color: r.dataset.annoColor || ''
+    })),
+    arrows: [...annoSvg.querySelectorAll('line.anno-arrow-line')].map(l => ({
+      x1: +l.getAttribute('x1'), y1: +l.getAttribute('y1'),
+      x2: +l.getAttribute('x2'), y2: +l.getAttribute('y2'),
+      head: l.classList.contains('with-head'),
+      color: l.dataset.annoColor || ''
+    })),
+    labelIdx,
+    settings: {
+      layout: document.getElementById('layout-select').value,
+      slotSize: document.getElementById('slot-size').value,
+      gap: document.getElementById('gap').value,
+      arrowStroke: document.getElementById('arrow-stroke').value,
+      showBbox: document.getElementById('show-bbox').checked,
+      showSafe: document.getElementById('show-safe').checked,
+    }
+  };
+}
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(collectState())); } catch(e) {}
+}
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const data = JSON.parse(raw);
+
+    // 設定を先に適用
+    const s = data.settings || {};
+    if (s.layout) {
+      document.getElementById('layout-select').value = s.layout;
+    }
+    if (s.slotSize) {
+      document.getElementById('slot-size').value = s.slotSize;
+      document.documentElement.style.setProperty('--slot-size', s.slotSize + 'px');
+    }
+    if (s.gap) {
+      document.getElementById('gap').value = s.gap;
+      document.documentElement.style.setProperty('--gap', s.gap + 'px');
+    }
+    if (s.arrowStroke) {
+      document.getElementById('arrow-stroke').value = s.arrowStroke;
+      document.documentElement.style.setProperty('--arrow-stroke', s.arrowStroke);
+    }
+    if (typeof s.showBbox === 'boolean') {
+      document.getElementById('show-bbox').checked = s.showBbox;
+      document.body.classList.toggle('show-bbox', s.showBbox);
+    }
+    if (typeof s.showSafe === 'boolean') {
+      document.getElementById('show-safe').checked = s.showSafe;
+      document.body.classList.toggle('show-safe', s.showSafe);
+    }
+
+    // 注釈を復元 (履歴には登録しない)
+    (data.markers || []).forEach(m => restoreMarker(m.x, m.y, m.label, m.color));
+    (data.texts || []).forEach(t => restoreText(t.x, t.y, t.content, t.color));
+    (data.rects || []).forEach(r => restoreRect(r.x, r.y, r.w, r.h, r.color));
+    (data.arrows || []).forEach(a => restoreArrow(a.x1, a.y1, a.x2, a.y2, a.head !== false, a.color));
+
+    if (typeof data.labelIdx === 'number') labelIdx = data.labelIdx;
+    return true;
+  } catch(e) { return false; }
+}
+function restoreMarker(x, y, label, color) {
+  const m = document.createElement('div');
+  m.className = 'anno-marker';
+  m.style.left = x + 'px'; m.style.top = y + 'px';
+  m.textContent = label;
+  if (color) applyAnnoColor(m, color);
+  annoLayer.appendChild(m);
+  attachDeleteHandlers(m);
+  m.addEventListener('dblclick', ev => {
+    ev.stopPropagation();
+    const t = prompt('ラベル', m.textContent);
+    if (t !== null) { m.textContent = t; scheduleSave(); }
+  });
+}
+function restoreText(x, y, content, color) {
+  const t = document.createElement('div');
+  t.className = 'anno-text';
+  t.style.left = x + 'px'; t.style.top = y + 'px';
+  t.textContent = content;
+  if (color) applyAnnoColor(t, color);
+  annoLayer.appendChild(t);
+  attachDeleteHandlers(t);
+  t.addEventListener('dblclick', ev => {
+    ev.stopPropagation();
+    const v = prompt('編集 (空で削除)', t.textContent);
+    if (v === null) return;
+    if (v === '') removeElWithHistory(t);
+    else { t.textContent = v; scheduleSave(); }
+  });
+}
+function restoreRect(x, y, w, h, color) {
+  const r = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  r.setAttribute('class', 'anno-rect'); r.setAttribute('rx', 6);
+  r.setAttribute('x', x); r.setAttribute('y', y);
+  r.setAttribute('width', w); r.setAttribute('height', h);
+  if (color) applyAnnoColor(r, color);
+  annoSvg.appendChild(r);
+  attachDeleteHandlers(r);
+}
+function restoreArrow(x1, y1, x2, y2, hasHead, color) {
+  const l = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  l.setAttribute('class', hasHead ? 'anno-arrow-line with-head' : 'anno-arrow-line');
+  l.setAttribute('x1', x1); l.setAttribute('y1', y1);
+  l.setAttribute('x2', x2); l.setAttribute('y2', y2);
+  if (color) applyAnnoColor(l, color);
+  annoSvg.appendChild(l);
+  attachDeleteHandlers(l);
+}
+function clearAllSavedState() {
+  try { localStorage.removeItem(STORAGE_KEY); } catch(e) {}
+  document.querySelectorAll('.anno-marker, .anno-text').forEach(el => el.remove());
+  annoSvg.querySelectorAll('.anno-arrow-line, .anno-rect, .anno-handle, .anno-handle-hit').forEach(el => el.remove());
+  selectedEl = null;
+  labelIdx = 0;
+  undoStack.length = 0;
+  redoStack.length = 0;
+}
+
+const undoStack = [];
+const redoStack = [];
+function pushHistory(op) {
+  undoStack.push(op);
+  if (undoStack.length > 100) undoStack.shift();
+  redoStack.length = 0;
+  scheduleSave();
+}
+function applyOp(op) {
+  if (op.type === 'add') op.parent.insertBefore(op.el, op.next || null);
+  else if (op.type === 'remove') op.el.remove();
+  else if (op.type === 'transform') { setGeometry(op.el, op.after); if (op.el === selectedEl) updateHandles(); }
+  else if (op.type === 'resize') { setResize(op.el, op.after); }
+  else if (op.type === 'guide-move') { setGuidePos(op.el, op.after); }
+  scheduleSave();
+}
+function applyInverse(op) {
+  if (op.type === 'add') { op.el.remove(); if (op.el === selectedEl) selectEl(null); }
+  else if (op.type === 'remove') op.parent.insertBefore(op.el, op.next || null);
+  else if (op.type === 'transform') { setGeometry(op.el, op.before); if (op.el === selectedEl) updateHandles(); }
+  else if (op.type === 'resize') { setResize(op.el, op.before); }
+  else if (op.type === 'guide-move') { setGuidePos(op.el, op.before); }
+  scheduleSave();
+}
+// リサイズ要素の状態適用
+function setResize(el, st) {
+  el.style.width = st.w || '';
+  el.style.height = st.h || '';
+  el._tx = st.tx || 0;
+  el._ty = st.ty || 0;
+  if (el._tx || el._ty) {
+    setElTransform(el);
+  } else {
+    el.style.transform = '';
+  }
+  if (el.matches('.hdr-left') && st.h) {
+    document.documentElement.style.setProperty('--header-h', st.h);
+  }
+  el._resizeUpdateLabel && el._resizeUpdateLabel();
+  saveResizeState();
+}
+function setGuidePos(el, pos) {
+  if (el.classList.contains('h')) el.style.top = pos + 'px';
+  else el.style.left = pos + 'px';
+  const lbl = el.querySelector('.guide-label');
+  if (lbl) lbl.textContent = (el.classList.contains('h') ? 'y: ' : 'x: ') + Math.round(pos) + 'px';
+  saveResizeState();
+}
+function undo() {
+  if (!undoStack.length) return;
+  const op = undoStack.pop(); applyInverse(op); redoStack.push(op);
+}
+function redo() {
+  if (!redoStack.length) return;
+  const op = redoStack.pop(); applyOp(op); undoStack.push(op);
+}
+
+function getGeometry(el) {
+  if (el.classList.contains('anno-marker') || el.classList.contains('anno-text')) {
+    return { kind: 'pos', left: parseFloat(el.style.left), top: parseFloat(el.style.top) };
+  }
+  if (el.tagName === 'line') {
+    return { kind: 'line',
+      x1: +el.getAttribute('x1'), y1: +el.getAttribute('y1'),
+      x2: +el.getAttribute('x2'), y2: +el.getAttribute('y2') };
+  }
+  if (el.tagName === 'rect') {
+    return { kind: 'rect',
+      x: +el.getAttribute('x'), y: +el.getAttribute('y'),
+      w: +el.getAttribute('width'), h: +el.getAttribute('height') };
+  }
+}
+function setGeometry(el, g) {
+  if (g.kind === 'pos') { el.style.left = g.left + 'px'; el.style.top = g.top + 'px'; }
+  else if (g.kind === 'line') { el.setAttribute('x1', g.x1); el.setAttribute('y1', g.y1); el.setAttribute('x2', g.x2); el.setAttribute('y2', g.y2); }
+  else if (g.kind === 'rect') { el.setAttribute('x', g.x); el.setAttribute('y', g.y); el.setAttribute('width', g.w); el.setAttribute('height', g.h); }
+}
+
+const TIP_TEXTS = {
+  select:  '選択/移動: 注釈をクリック→選択 / ドラッグ→移動 / ハンドルで伸縮 / Delete で削除',
+  marker:  'マーカー: クリックで A,B,C… 配置 (既存の上にも重ねられる) / 移動は選択ツールで',
+  text:    'テキスト: クリックで黄色付箋 (既存の上にも重ねられる) / 移動は選択ツールで',
+  rect:    '矩形: ドラッグで囲い枠 / 移動・伸縮は選択ツールで',
+  arrow:   '矢印: ドラッグで自由な矢印 (端に矢印先) / 移動・エンドポイント伸ばしは選択ツールで',
+  line:    '線: ドラッグで矢印先のないただの線 / 移動・エンドポイント伸ばしは選択ツールで',
+  eraser:  '消しゴム: 注釈をクリックして個別削除',
+};
+
+function nextLabelChar() { const c = labelChars[labelIdx % labelChars.length]; labelIdx++; return c; }
+function setAnnoMode(on) {
+  annoMode = on;
+  document.body.classList.toggle('anno-mode', on);
+  annoToggle.classList.toggle('active', on);
+  annoToggle.textContent = on ? '📝 注釈モード ON' : '📝 注釈モード OFF';
+  annoTip.style.display = on ? 'block' : 'none';
+  if (on) setTool(currentTool);
+  else selectEl(null);
+}
+function setTool(tool) {
+  currentTool = tool;
+  document.body.classList.toggle('eraser-mode', tool === 'eraser');
+  document.querySelectorAll('.tool-btn').forEach(b => b.classList.toggle('active', b.dataset.tool === tool));
+  annoTipText.textContent = TIP_TEXTS[tool] || '';
+}
+annoToggle.addEventListener('click', () => setAnnoMode(!annoMode));
+document.querySelectorAll('.tool-btn').forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
+annoClear.addEventListener('click', () => {
+  if (!confirm('全注釈を削除しますか？')) return;
+  const all = [...document.querySelectorAll('.anno-marker, .anno-text'),
+               ...annoSvg.querySelectorAll('.anno-arrow-line, .anno-rect')];
+  all.forEach(el => { pushHistory({ type: 'remove', el, parent: el.parentNode, next: el.nextSibling }); el.remove(); });
+  selectEl(null);
+});
+
+function selectEl(el) {
+  if (selectedEl) selectedEl.classList.remove('anno-selected');
+  clearHandles();
+  selectedEl = el;
+  if (el) {
+    el.classList.add('anno-selected');
+    updateHandles();
+    // ピッカーを選択中要素の色に同期 (色がセットされていれば)
+    if (annoColorInput && el.dataset && el.dataset.annoColor) {
+      annoColorInput.value = el.dataset.annoColor;
+    }
+  }
+}
+function clearHandles() {
+  annoSvg.querySelectorAll('.anno-handle, .anno-handle-hit').forEach(h => h.remove());
+}
+function updateHandles() {
+  clearHandles();
+  if (!selectedEl) return;
+  const g = getGeometry(selectedEl);
+  if (g.kind === 'line') { addHandle(g.x1, g.y1, 'p1'); addHandle(g.x2, g.y2, 'p2'); }
+  else if (g.kind === 'rect') {
+    addHandle(g.x, g.y, 'tl'); addHandle(g.x + g.w, g.y, 'tr');
+    addHandle(g.x, g.y + g.h, 'bl'); addHandle(g.x + g.w, g.y + g.h, 'br');
+  }
+}
+function addHandle(x, y, role) {
+  const hit = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  hit.setAttribute('class', 'anno-handle anno-handle-hit');
+  hit.setAttribute('cx', x); hit.setAttribute('cy', y); hit.setAttribute('r', 18);
+  hit.dataset.role = role;
+  annoSvg.appendChild(hit);
+
+  const h = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+  h.setAttribute('class', 'anno-handle endpoint');
+  h.setAttribute('cx', x); h.setAttribute('cy', y); h.setAttribute('r', 9);
+  h.dataset.role = role;
+  annoSvg.appendChild(h);
+
+  const handler = (ev) => {
+    ev.stopPropagation();
+    ev.preventDefault();
+    const before = getGeometry(selectedEl);
+    const target = selectedEl;
+    const onMove = (e2) => {
+      const p = getStageCoords(e2);
+      const g = getGeometry(target);
+      if (g.kind === 'line') {
+        if (role === 'p1') { g.x1 = p.x; g.y1 = p.y; } else { g.x2 = p.x; g.y2 = p.y; }
+      } else if (g.kind === 'rect') {
+        let x1 = g.x, y1 = g.y, x2 = g.x + g.w, y2 = g.y + g.h;
+        if (role === 'tl') { x1 = p.x; y1 = p.y; }
+        else if (role === 'tr') { x2 = p.x; y1 = p.y; }
+        else if (role === 'bl') { x1 = p.x; y2 = p.y; }
+        else if (role === 'br') { x2 = p.x; y2 = p.y; }
+        g.x = Math.min(x1, x2); g.y = Math.min(y1, y2);
+        g.w = Math.abs(x2 - x1); g.h = Math.abs(y2 - y1);
+      }
+      setGeometry(target, g); updateHandles();
+    };
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      const after = getGeometry(target);
+      if (JSON.stringify(after) !== JSON.stringify(before)) {
+        pushHistory({ type: 'transform', el: target, before, after });
+      }
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
+  hit.addEventListener('mousedown', handler);
+  h.addEventListener('mousedown', handler);
+  const stop = (ev) => ev.stopPropagation();
+  hit.addEventListener('click', stop);
+  h.addEventListener('click', stop);
+}
+
+function getStageCoords(e) {
+  const r = stage.getBoundingClientRect();
+  // scale 対応 (preview mode で stage が transform: scale されている場合に正しい内部座標にする)
+  const internalW = parseFloat(getComputedStyle(stage).width) || r.width;
+  const internalH = parseFloat(getComputedStyle(stage).height) || r.height;
+  const sx = r.width / internalW;
+  const sy = r.height / internalH;
+  return {
+    x: (e.clientX - r.left) / (sx || 1),
+    y: (e.clientY - r.top) / (sy || 1)
+  };
+}
+
+function removeElWithHistory(el) {
+  pushHistory({ type: 'remove', el, parent: el.parentNode, next: el.nextSibling });
+  el.remove();
+  if (el === selectedEl) selectEl(null);
+}
+function attachDeleteHandlers(el) {
+  el.addEventListener('contextmenu', ev => {
+    ev.preventDefault();
+    if (confirm('この注釈を削除しますか？')) removeElWithHistory(el);
+  });
+  el.addEventListener('click', ev => {
+    if (!annoMode) return;
+    if (currentTool === 'eraser') { ev.stopPropagation(); removeElWithHistory(el); }
+    // 他のツール (作成系) ではバブルさせる → annoLayer の click でマーカー/テキストが追加される
+  });
+  el.addEventListener('mousedown', ev => {
+    if (!annoMode) return;
+    // 選択ツールでのみ移動可能。 他のツール (マーカー/テキスト/矩形/矢印) はバブリングして新規作成
+    if (currentTool !== 'select') return;
+    if (ev.target.classList && (ev.target.classList.contains('anno-handle') || ev.target.classList.contains('anno-handle-hit'))) return;
+    ev.stopPropagation();
+    selectEl(el);
+    const startPt = getStageCoords(ev);
+    const beforeGeo = getGeometry(el);
+    let moved = false;
+    const onMove = (e2) => {
+      const p = getStageCoords(e2);
+      const dx = p.x - startPt.x, dy = p.y - startPt.y;
+      if (Math.abs(dx) > 2 || Math.abs(dy) > 2) moved = true;
+      if (!moved) return;
+      const g = JSON.parse(JSON.stringify(beforeGeo));
+      if (g.kind === 'pos') { g.left += dx; g.top += dy; }
+      else if (g.kind === 'line') { g.x1 += dx; g.y1 += dy; g.x2 += dx; g.y2 += dy; }
+      else if (g.kind === 'rect') { g.x += dx; g.y += dy; }
+      setGeometry(el, g); updateHandles();
+    };
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      if (moved) {
+        const afterGeo = getGeometry(el);
+        pushHistory({ type: 'transform', el, before: beforeGeo, after: afterGeo });
+      }
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  });
+}
+
+// ───── 注釈の色 (現在のピッカー値) ─────
+const annoColorInput = document.getElementById('anno-color');
+let currentAnnoColor = (annoColorInput && annoColorInput.value) || '#ff3b6b';
+function applyAnnoColor(el, color) {
+  if (!el || !color) return;
+  if (el.classList.contains('anno-marker')) {
+    el.style.backgroundColor = color;
+  } else if (el.classList.contains('anno-text')) {
+    el.style.borderColor = color;
+  } else if (el.classList.contains('anno-arrow-line')) {
+    // SVG line: stroke + color (color が currentColor 経由で arrow head にも伝播)
+    el.style.color = color;
+    el.style.stroke = color;
+  } else if (el.classList.contains('anno-rect')) {
+    el.style.stroke = color;
+  }
+  el.dataset.annoColor = color;
+}
+annoColorInput && annoColorInput.addEventListener('input', e => {
+  currentAnnoColor = e.target.value;
+  if (selectedEl) {
+    applyAnnoColor(selectedEl, currentAnnoColor);
+    scheduleSave();
+  }
+});
+
+function addMarker(x, y, label) {
+  const m = document.createElement('div');
+  m.className = 'anno-marker';
+  m.style.left = x + 'px'; m.style.top = y + 'px';
+  m.textContent = label || nextLabelChar();
+  applyAnnoColor(m, currentAnnoColor);
+  annoLayer.appendChild(m);
+  attachDeleteHandlers(m);
+  m.addEventListener('dblclick', ev => {
+    ev.stopPropagation();
+    const t = prompt('ラベル', m.textContent);
+    if (t !== null) m.textContent = t;
+  });
+  pushHistory({ type: 'add', el: m, parent: annoLayer, next: null });
+  return m;
+}
+function addText(x, y) {
+  const text = prompt('テキスト', 'ここを修正');
+  if (!text) return null;
+  const t = document.createElement('div');
+  t.className = 'anno-text';
+  t.style.left = x + 'px'; t.style.top = y + 'px';
+  t.textContent = text;
+  applyAnnoColor(t, currentAnnoColor);
+  annoLayer.appendChild(t);
+  attachDeleteHandlers(t);
+  t.addEventListener('dblclick', ev => {
+    ev.stopPropagation();
+    const v = prompt('編集 (空で削除)', t.textContent);
+    if (v === null) return;
+    if (v === '') removeElWithHistory(t); else t.textContent = v;
+  });
+  pushHistory({ type: 'add', el: t, parent: annoLayer, next: null });
+  return t;
+}
+
+let dragStart = null;
+let tempShape = null;
+annoLayer.addEventListener('mousedown', e => {
+  if (!annoMode) return;
+  // ハンドルだけは早期 return (それ自身のドラッグハンドラに任せる)
+  if (e.target.classList && (e.target.classList.contains('anno-handle') ||
+                              e.target.classList.contains('anno-handle-hit'))) return;
+
+  // 選択ツール: 背景を押したら選択解除
+  if (currentTool === 'select') {
+    if (!e.target.closest('.anno-marker, .anno-text') &&
+        !(e.target.classList && (e.target.classList.contains('anno-arrow-line') || e.target.classList.contains('anno-rect')))) {
+      selectEl(null);
+    }
+    return;
+  }
+
+  if (currentTool === 'rect' || currentTool === 'arrow' || currentTool === 'line') {
+    e.preventDefault();
+    dragStart = getStageCoords(e);
+    if (currentTool === 'rect') {
+      tempShape = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      tempShape.setAttribute('class', 'anno-rect'); tempShape.setAttribute('rx', 6);
+    } else {
+      tempShape = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      // arrow ツールには .with-head クラスを付けて先端を出す。 line はクラス無しで素線
+      tempShape.setAttribute('class', currentTool === 'arrow' ? 'anno-arrow-line with-head' : 'anno-arrow-line');
+    }
+    applyAnnoColor(tempShape, currentAnnoColor);
+    annoSvg.appendChild(tempShape);
+    const onMove = (e2) => {
+      const p = getStageCoords(e2);
+      if (currentTool === 'rect') {
+        const x = Math.min(dragStart.x, p.x), y = Math.min(dragStart.y, p.y);
+        const w = Math.abs(p.x - dragStart.x), h = Math.abs(p.y - dragStart.y);
+        tempShape.setAttribute('x', x); tempShape.setAttribute('y', y);
+        tempShape.setAttribute('width', w); tempShape.setAttribute('height', h);
+      } else {
+        tempShape.setAttribute('x1', dragStart.x); tempShape.setAttribute('y1', dragStart.y);
+        tempShape.setAttribute('x2', p.x); tempShape.setAttribute('y2', p.y);
+      }
+    };
+    const onUp = (e2) => {
+      const p = getStageCoords(e2);
+      const dx = p.x - dragStart.x, dy = p.y - dragStart.y;
+      if (Math.abs(dx) < 4 && Math.abs(dy) < 4) { tempShape && tempShape.remove(); }
+      else { attachDeleteHandlers(tempShape); pushHistory({ type: 'add', el: tempShape, parent: annoSvg, next: null }); }
+      tempShape = null; dragStart = null;
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  }
+});
+annoLayer.addEventListener('click', e => {
+  if (!annoMode) return;
+  // ハンドルだけは無視
+  if (e.target.classList && (e.target.classList.contains('anno-handle') ||
+                              e.target.classList.contains('anno-handle-hit'))) return;
+  if (currentTool === 'eraser') return;
+  if (currentTool === 'select') return;
+  if (currentTool === 'rect' || currentTool === 'arrow') return; // ドラッグ専用
+  const p = getStageCoords(e);
+  if (currentTool === 'marker') addMarker(p.x, p.y);
+  else if (currentTool === 'text') addText(p.x, p.y);
+});
+annoSvg.addEventListener('click', e => {
+  if (!annoMode) return;
+  const t = e.target;
+  if (!t.classList) return;
+  if (t.classList.contains('anno-arrow-line') || t.classList.contains('anno-rect')) {
+    if (currentTool === 'eraser') { e.stopPropagation(); removeElWithHistory(t); }
+    else if (currentTool === 'select') { selectEl(t); }
+    // 作成系ツール: バブルさせる (annoLayer の click で新規作成される)
+  }
+});
+annoSvg.addEventListener('mousedown', e => {
+  if (!annoMode) return;
+  const t = e.target;
+  if (!t.classList) return;
+  if (!(t.classList.contains('anno-arrow-line') || t.classList.contains('anno-rect'))) return;
+  if (currentTool === 'eraser') return;
+  if (currentTool !== 'select') return;  // 移動は選択ツール限定
+  e.stopPropagation(); e.preventDefault();
+  selectEl(t);
+  const startPt = getStageCoords(e);
+  const beforeGeo = getGeometry(t);
+  let moved = false;
+  const onMove = (e2) => {
+    const p = getStageCoords(e2);
+    const dx = p.x - startPt.x, dy = p.y - startPt.y;
+    if (Math.abs(dx) > 2 || Math.abs(dy) > 2) moved = true;
+    if (!moved) return;
+    const g = JSON.parse(JSON.stringify(beforeGeo));
+    if (g.kind === 'line') { g.x1 += dx; g.y1 += dy; g.x2 += dx; g.y2 += dy; }
+    else if (g.kind === 'rect') { g.x += dx; g.y += dy; }
+    setGeometry(t, g); updateHandles();
+  };
+  const onUp = () => {
+    window.removeEventListener('mousemove', onMove);
+    window.removeEventListener('mouseup', onUp);
+    if (moved) {
+      const afterGeo = getGeometry(t);
+      pushHistory({ type: 'transform', el: t, before: beforeGeo, after: afterGeo });
+    }
+  };
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('mouseup', onUp);
+});
+
+window.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+  if ((e.key === 'Delete' || e.key === 'Backspace') && annoMode && selectedEl) {
+    e.preventDefault(); removeElWithHistory(selectedEl); return;
+  }
+  // Ctrl+Z / Cmd+Z: 注釈・リサイズ・移動・ガイド全部に効く
+  if ((e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 'z' || e.key === 'Z')) { e.preventDefault(); undo(); return; }
+  if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.shiftKey && (e.key === 'z' || e.key === 'Z')))) { e.preventDefault(); redo(); return; }
+  if (e.key === 'Escape') selectEl(null);
+});
+
+function resizeSvg() {
+  // 内部寸法 (transform 前) でビューボックスを設定 → 注釈は scale に追従する
+  const w = parseFloat(getComputedStyle(stage).width);
+  const h = parseFloat(getComputedStyle(stage).height);
+  annoSvg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+  annoSvg.setAttribute('width', w);
+  annoSvg.setAttribute('height', h);
+}
+window.addEventListener('resize', resizeSvg);
+window.addEventListener('load', resizeSvg);
+window.addEventListener('resize', updateBboxLabels);
+
+// ───── Resize mode (各バウンディングボックスを辺別ハンドルで伸縮 + 移動 + ルーラー/ガイド) ─────
+const RESIZABLE_SPEC = [
+  // ユーザーがドラッグで作る .userbox のみ。 saved-layout 側に __userboxes として永続化。
+  ['.userbox', 'wh', 'カスタム枠'],
+];
+const RESIZE_KEY = 'zukan_preview_sizes_v1';
+
+// 編集可能テキストの収集 / 復元
+// 動的に付加されるクラスはパス計算から除外 (再読込時の DOM と一致させる)
+const TRANSIENT_CLASSES = new Set([
+  'resizable', 'editable-text', 'anno-mode', 'preview-mode',
+  'show-bbox', 'show-safe', 'eraser-mode', 'dirty', 'active',
+  'selected', 'edge-linked', 'has-selection', 'grid-mode'
+]);
+function getCleanText(el) {
+  // resize ハンドルやサイズラベルは除外して純粋なテキストを取る
+  const clone = el.cloneNode(true);
+  clone.querySelectorAll('.resize-handle, .resize-handle-hit, .resize-size-label').forEach(c => c.remove());
+  return clone.textContent;
+}
+function collectEditableTexts() {
+  const data = {};
+  document.querySelectorAll('.editable-text').forEach(el => {
+    const path = getDomPath(el);
+    data[path] = getCleanText(el);
+  });
+  return data;
+}
+function applyEditableTexts(data) {
+  if (!data) return;
+  document.querySelectorAll('.editable-text').forEach(el => {
+    const path = getDomPath(el);
+    if (data[path] !== undefined) el.textContent = data[path];
+  });
+}
+function getDomPath(el) {
+  const parts = [];
+  let cur = el;
+  while (cur && cur.nodeType === 1 && cur !== document.body) {
+    let s = cur.tagName.toLowerCase();
+    if (cur.id) { s += '#' + cur.id; parts.unshift(s); break; }
+    if (cur.className && typeof cur.className === 'string') {
+      const cls = cur.className.trim().split(/\s+/).filter(c => c && !TRANSIENT_CLASSES.has(c));
+      if (cls.length) s += '.' + cls.join('.');
+    }
+    const parent = cur.parentElement;
+    if (parent) {
+      const sibs = [...parent.children].filter(c => c.tagName === cur.tagName);
+      if (sibs.length > 1) s += ':nth-of-type(' + (sibs.indexOf(cur) + 1) + ')';
+    }
+    parts.unshift(s);
+    cur = cur.parentElement;
+  }
+  return parts.join('>');
+}
+
+// 編集テキストが変更されたら dirty マーク
+document.addEventListener('blur', e => {
+  if (e.target.classList && e.target.classList.contains('editable-text')) {
+    markLayoutDirty();
+  }
+}, true);
+
+// レイアウトのスナップショット (現在の DOM 状態)
+function takeLayoutSnapshot() {
+  const data = {};
+  RESIZABLE_SPEC.forEach(([sel]) => {
+    if (sel === '.userbox') return;  // userbox は __userboxes に書く
+    document.querySelectorAll(sel).forEach((el, i) => {
+      data[`${sel}|${i}`] = {
+        w: el.style.width || '',
+        h: el.style.height || '',
+        tx: el._tx || 0,
+        ty: el._ty || 0,
+      };
+    });
+  });
+  data.__guides = collectGuides();
+  data.__headerH = document.documentElement.style.getPropertyValue('--header-h') || '';
+  data.__texts = collectEditableTexts();
+  data.__userboxes = collectUserboxes();
+  data.__hidden = collectHiddenKeys();
+  if (typeof bezierMesh === 'object' && bezierMesh) data.__bezierMesh = JSON.parse(JSON.stringify(bezierMesh));
+  return data;
+}
+function collectHiddenKeys() {
+  return [...document.querySelectorAll('.user-hidden')].map(el => getElHideKey(el)).filter(Boolean);
+}
+
+// 直近に保存した JSON (dirty 判定用)
+let lastSavedLayoutJson = null;
+
+// 「保存」ボタンが押された時だけ localStorage を更新
+function saveResizeState() {
+  // 後方互換: 既存呼び出しは「dirty マーク更新」のみに変更 (自動保存はしない)
+  markLayoutDirty();
+}
+window.saveResizeState = saveResizeState;
+// ── GitHub 同期 (PC で保存 → スマホでも見れる) ──
+const GH_REPO_OWNER = 'NautilusDW';
+const GH_REPO_NAME  = 'pono-asobiba-app';
+const GH_REPO_BRANCH = 'develop';
+const GH_LAYOUT_PATH = 'zukan/preview/full/saved-layout.json';
+const GH_LAYOUT_URL  = '/' + GH_LAYOUT_PATH;
+function utf8Btoa(s) { return btoa(unescape(encodeURIComponent(s))); }
+async function ghGetContents(path) {
+  const url = '/api/gh/repos/' + GH_REPO_OWNER + '/' + GH_REPO_NAME + '/contents/' +
+              encodeURI(path) + '?ref=' + GH_REPO_BRANCH;
+  const resp = await fetch(url, { method: 'GET', credentials: 'include',
+    headers: { 'Accept': 'application/vnd.github+json' }});
+  if (resp.status === 404) return null;
+  if (!resp.ok) throw new Error('GH GET ' + path + ' → ' + resp.status);
+  return await resp.json();
+}
+async function ghPutContents(path, contentB64, message, sha) {
+  const url = '/api/gh/repos/' + GH_REPO_OWNER + '/' + GH_REPO_NAME + '/contents/' + encodeURI(path);
+  const body = { message: message, content: contentB64, branch: GH_REPO_BRANCH };
+  if (sha) body.sha = sha;
+  const resp = await fetch(url, {
+    method: 'PUT', credentials: 'include',
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/vnd.github+json' },
+    body: JSON.stringify(body),
+  });
+  if (!resp.ok) throw new Error('GH PUT ' + path + ' → ' + resp.status + ' ' + (await resp.text()).slice(0, 200));
+  return await resp.json();
+}
+async function loadSavedLayoutFromServer() {
+  // 静的ファイルとして直接 fetch (Basic Auth 不要)
+  try {
+    const resp = await fetch(GH_LAYOUT_URL + '?t=' + Date.now(), { cache: 'no-store' });
+    if (!resp.ok) return null;
+    return await resp.json();
+  } catch(e) { return null; }
+}
+
+async function explicitSaveLayout() {
+  const snapshot = takeLayoutSnapshot();
+  const compactJson = JSON.stringify(snapshot);          // 比較用 (updateDirtyUI と同形式)
+  const prettyJson  = JSON.stringify(snapshot, null, 2); // 保存用 (人間可読)
+  try { localStorage.setItem(RESIZE_KEY, prettyJson); } catch(e) {}
+  lastSavedLayoutJson = compactJson;
+  updateDirtyUI();
+  showLayoutToast('保存中…');
+  try {
+    const existing = await ghGetContents(GH_LAYOUT_PATH);
+    const sha = existing ? existing.sha : null;
+    await ghPutContents(GH_LAYOUT_PATH, utf8Btoa(prettyJson), 'chore(preview): update saved layout', sha);
+    showLayoutToast('保存しました (端末間共有 OK)');
+  } catch (e) {
+    showLayoutToast('GitHub 保存失敗: ローカルにのみ保存しました');
+    console.warn('GH save failed:', e);
+  }
+}
+function markLayoutDirty() {
+  updateDirtyUI();
+}
+function updateDirtyUI() {
+  const btn = document.getElementById('save-layout');
+  if (!btn) return;
+  const cur = JSON.stringify(takeLayoutSnapshot());
+  btn.classList.toggle('dirty', cur !== lastSavedLayoutJson);
+}
+function revertLayout() {
+  const cur = JSON.stringify(takeLayoutSnapshot());
+  if (cur !== lastSavedLayoutJson && !confirm('保存されている状態に戻しますか？ 未保存の変更は失われます。')) return;
+  // 全リセット
+  RESIZABLE_SPEC.forEach(([sel]) => {
+    document.querySelectorAll(sel).forEach(el => {
+      el.style.width = ''; el.style.height = ''; el.style.transform = '';
+      el._tx = 0; el._ty = 0;
+      el._resizeUpdateLabel && el._resizeUpdateLabel();
+    });
+  });
+  document.documentElement.style.removeProperty('--header-h');
+  document.querySelectorAll('.guide').forEach(g => g.remove());
+  // 保存値から再適用
+  loadResizeState();
+  // 履歴クリア (revert 後はクリーンスタート)
+  undoStack.length = 0;
+  redoStack.length = 0;
+  updateDirtyUI();
+  showLayoutToast('保存状態に戻しました');
+}
+function showLayoutToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'layout-toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 1700);
+}
+function loadResizeState() {
+  try {
+    const raw = localStorage.getItem(RESIZE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    // userbox は __userboxes が真実なので、 標準 pipe-key 経路ではスキップ
+    if (data.__userboxes) restoreUserboxes(data.__userboxes);
+    RESIZABLE_SPEC.forEach(([sel]) => {
+      if (sel === '.userbox') return;  // skip — 上で __userboxes から復元済み
+      document.querySelectorAll(sel).forEach((el, i) => {
+        const s = data[`${sel}|${i}`];
+        if (!s) return;
+        if (s.w) el.style.width = s.w;
+        if (s.h) el.style.height = s.h;
+        if (s.tx || s.ty) {
+          el._tx = s.tx || 0;
+          el._ty = s.ty || 0;
+          setElTransform(el);
+        }
+      });
+    });
+    if (data.__headerH) document.documentElement.style.setProperty('--header-h', data.__headerH);
+    if (data.__guides) restoreGuides(data.__guides);
+    if (data.__texts) applyEditableTexts(data.__texts);
+    if (Array.isArray(data.__hidden)) data.__hidden.forEach(applyHidden);
+    if (data.__bezierMesh && typeof bezierMesh === 'object') {
+      // 4×4 制御点 (= 16 / page) を読み込む
+      ['left', 'right'].forEach(p => {
+        const mp = data.__bezierMesh[p];
+        if (!Array.isArray(mp) || mp.length !== BEZ_N) return;
+        for (let r = 0; r < BEZ_N; r++) {
+          if (!Array.isArray(mp[r]) || mp[r].length !== BEZ_N) continue;
+          for (let c = 0; c < BEZ_N; c++) {
+            const pt = mp[r][c];
+            if (pt && typeof pt.x === 'number' && typeof pt.y === 'number') {
+              bezierMesh[p][r][c] = { x: pt.x, y: pt.y };
+            }
+          }
+        }
+      });
+      // 描画は corner-pin-mode が ON の時だけ意味がある (snapshot が必要)
+      // 制御点位置だけは next toggle-on の時に反映される
+    }
+    // 旧データ (__meshPin 3×3 / __cornerPin 4 角) は新しい bezier 4×4 とは
+    // 制御点の意味が異なるので migration はせず、 デフォルトの平面状態にリセット。
+  } catch(e) {}
+}
+function resetResizeState() {
+  if (!confirm('リサイズ・移動・ガイドを全てリセットしますか？')) return;
+  try { localStorage.removeItem(RESIZE_KEY); } catch(e) {}
+  RESIZABLE_SPEC.forEach(([sel]) => {
+    document.querySelectorAll(sel).forEach(el => {
+      el.style.width = '';
+      el.style.height = '';
+      el.style.transform = '';
+      el._tx = 0;
+      el._ty = 0;
+    });
+  });
+  document.documentElement.style.removeProperty('--header-h');
+  document.querySelectorAll('.guide').forEach(g => g.remove());
+  if (document.body.classList.contains('resize-mode')) {
+    disableResize();
+    enableResize();
+  }
+}
+
+// ───── Multi-selection state + UI ─────
+const selectedElements = new Set();
+window.selectedElements = selectedElements;
+
+function refreshSelectionUI() {
+  document.querySelectorAll('.resizable').forEach(e => e.classList.toggle('selected', selectedElements.has(e)));
+  document.body.classList.toggle('has-selection', selectedElements.size > 0);
+  updateNumericPanel();
+}
+function selectOnly(el) {
+  selectedElements.clear();
+  if (el) selectedElements.add(el);
+  if (typeof expandGroupSelection === 'function') expandGroupSelection(selectedElements);
+  refreshSelectionUI();
+}
+function toggleSelect(el) {
+  if (!el) return;
+  // group 操作: 1 個でも group メンバーが入ってたら group ごと add/remove
+  const gid = el.dataset && el.dataset.groupId;
+  if (gid) {
+    const allMembers = [...document.querySelectorAll(`.userbox[data-group-id="${gid}"]`)];
+    const allIn = allMembers.every(m => selectedElements.has(m));
+    if (allIn) allMembers.forEach(m => selectedElements.delete(m));
+    else allMembers.forEach(m => selectedElements.add(m));
+  } else {
+    if (selectedElements.has(el)) selectedElements.delete(el);
+    else selectedElements.add(el);
+  }
+  refreshSelectionUI();
+}
+function clearSelection() { selectedElements.clear(); refreshSelectionUI(); }
+
+function elementShortLabel(el) {
+  const cls = [...el.classList].filter(c => !['resizable','selected','edge-linked'].includes(c))[0] || el.tagName.toLowerCase();
+  // index among siblings with same first class
+  const sibs = el.parentElement ? [...el.parentElement.children].filter(c => c.classList.contains(cls)) : [el];
+  const idx = sibs.indexOf(el);
+  return '.' + cls + (sibs.length > 1 ? `[${idx}]` : '');
+}
+
+function updateNumericPanel() {
+  const panel = document.getElementById('numeric-panel');
+  if (!panel) return;
+  const sel = [...selectedElements];
+  document.getElementById('np-count').textContent = String(sel.length);
+  const tEl = document.getElementById('np-targets');
+  tEl.textContent = sel.length ? sel.map(elementShortLabel).join(', ') : '(なし)';
+  const getVal = (el, prop) => {
+    if (prop === 'w') return parseFloat(el.style.width) || el.offsetWidth;
+    if (prop === 'h') return parseFloat(el.style.height) || el.offsetHeight;
+    if (prop === 'tx') return Math.round(el._tx || 0);
+    if (prop === 'ty') return Math.round(el._ty || 0);
+    if (prop === 'left') return parseFloat(el.style.left) || 0;
+    if (prop === 'top') return parseFloat(el.style.top) || 0;
+  };
+  ['w','h','tx','ty','left','top'].forEach(prop => {
+    const input = document.getElementById('np-' + prop);
+    if (!input) return;
+    if (document.activeElement === input) return; // don't clobber while typing
+    if (sel.length === 0) { input.value = ''; input.placeholder = ''; return; }
+    const vals = sel.map(el => Math.round(getVal(el, prop)));
+    const allSame = vals.every(v => v === vals[0]);
+    if (allSame) { input.value = vals[0]; input.placeholder = ''; }
+    else { input.value = ''; input.placeholder = '異なる'; }
+  });
+}
+
+function applyNumericInput(prop, valueStr) {
+  const value = parseFloat(valueStr);
+  if (Number.isNaN(value)) return;
+  const sel = [...selectedElements];
+  if (sel.length === 0) return;
+  const beforeMap = new Map();
+  sel.forEach(el => beforeMap.set(el, getResizeState(el)));
+  sel.forEach(el => {
+    if (prop === 'w') {
+      el.style.width = value + 'px';
+    } else if (prop === 'h') {
+      el.style.height = value + 'px';
+      if (el.matches('.hdr-left')) {
+        document.documentElement.style.setProperty('--header-h', value + 'px');
+      }
+    } else if (prop === 'tx') {
+      el._tx = value;
+      setElTransform(el);
+    } else if (prop === 'ty') {
+      el._ty = value;
+      setElTransform(el);
+    } else if (prop === 'left') {
+      el.style.left = value + 'px';
+    } else if (prop === 'top') {
+      el.style.top = value + 'px';
+    }
+    el._resizeUpdateLabel && el._resizeUpdateLabel();
+  });
+  sel.forEach(el => {
+    const after = getResizeState(el);
+    const before = beforeMap.get(el);
+    if (JSON.stringify(after) !== JSON.stringify(before)) {
+      pushHistory({ type: 'resize', el, before, after });
+    }
+  });
+  saveResizeState();
+}
+
+// Numeric panel input wiring (one-time)
+['w','h','tx','ty','left','top'].forEach(prop => {
+  document.addEventListener('change', e => {
+    if (e.target && e.target.id === 'np-' + prop) {
+      applyNumericInput(prop, e.target.value);
+    }
+  });
+});
+
+// SCALE% 適用 (選択中の W/H を percent に基づいて拡縮)
+// 複数選択 (= group 含む) の場合は **選択範囲の中心を基準に位置も連動させる**
+//   → グループとして 1 個の塊のように拡縮できる
+document.addEventListener('click', e => {
+  if (e.target && e.target.id === 'np-scale-apply') {
+    const input = document.getElementById('np-scale');
+    const pct = parseFloat(input.value);
+    if (Number.isNaN(pct) || pct <= 0) return;
+    const factor = pct / 100;
+    const sel = [...selectedElements];
+    if (sel.length === 0) return;
+    const beforeMap = new Map();
+    sel.forEach(el => beforeMap.set(el, getResizeState(el)));
+    const isGroup = sel.length >= 2;
+    let cx = 0, cy = 0;
+    if (isGroup) {
+      const { stageRect, scale } = getStageRectInfo();
+      const rects = sel.map(el => bcrInStage(el, stageRect, scale));
+      const minLeft = Math.min(...rects.map(r => r.left));
+      const maxRight = Math.max(...rects.map(r => r.right));
+      const minTop = Math.min(...rects.map(r => r.top));
+      const maxBottom = Math.max(...rects.map(r => r.bottom));
+      cx = (minLeft + maxRight) / 2;
+      cy = (minTop + maxBottom) / 2;
+    }
+    const { stageRect, scale } = getStageRectInfo();
+    sel.forEach(el => {
+      const oldRect = bcrInStage(el, stageRect, scale);
+      const w = parseFloat(el.style.width) || el.offsetWidth;
+      const h = parseFloat(el.style.height) || el.offsetHeight;
+      el.style.width = Math.round(w * factor) + 'px';
+      el.style.height = Math.round(h * factor) + 'px';
+      // グループ拡縮: 各要素の中心位置を center 基準に factor 倍する
+      // 縦横サイズ変化分 = (oldW - newW)/2 を anchor (top-left) 補正としてさらに足す
+      // 実用上は: 「要素中心が center から (oldCenterX-cx)*factor の位置に来る」 が目標
+      if (isGroup) {
+        const oldCenterX = (oldRect.left + oldRect.right) / 2;
+        const oldCenterY = (oldRect.top + oldRect.bottom) / 2;
+        const targetCenterX = cx + (oldCenterX - cx) * factor;
+        const targetCenterY = cy + (oldCenterY - cy) * factor;
+        // 新しい中心 = 元中心 + (top-left の伸縮ずれ) + tx 補正
+        // top-left は variable; サイズ変化で右下に伸びたぶん中心がずれる: oldCenterX → oldCenterX + (newW-oldW)/2
+        const sizeShiftX = (w * factor - w) / 2;
+        const sizeShiftY = (h * factor - h) / 2;
+        const dxNeeded = targetCenterX - (oldCenterX + sizeShiftX);
+        const dyNeeded = targetCenterY - (oldCenterY + sizeShiftY);
+        el._tx = (el._tx || 0) + dxNeeded;
+        el._ty = (el._ty || 0) + dyNeeded;
+        setElTransform(el);
+      }
+      el._resizeUpdateLabel && el._resizeUpdateLabel();
+    });
+    sel.forEach(el => {
+      const after = getResizeState(el);
+      const before = beforeMap.get(el);
+      if (JSON.stringify(after) !== JSON.stringify(before)) {
+        pushHistory({ type: 'resize', el, before, after });
+      }
+    });
+    saveResizeState();
+    updateNumericPanel();
+    input.value = '';
+  }
+});
+
+// 隠す / 全て表示
+// CSS で `.user-hidden { display: none !important }` を当てて、 saved-layout の
+// `__hidden` 配列にセレクタ + index を永続化する。 「全て表示」 で全部リセット。
+function getElHideKey(el) {
+  // 安定キー: userbox なら id 直、 それ以外は selector|index
+  if (el.classList.contains('userbox') && el.dataset.userboxId) {
+    return 'userbox#' + el.dataset.userboxId;
+  }
+  // RESIZABLE_SPEC のセレクタを順番に試して所属を見つける
+  for (const [sel] of RESIZABLE_SPEC) {
+    if (el.matches(sel)) {
+      const all = [...document.querySelectorAll(sel)];
+      const idx = all.indexOf(el);
+      if (idx >= 0) return sel + '|' + idx;
+    }
+  }
+  return null;
+}
+function applyHidden(key) {
+  if (!key) return;
+  if (key.startsWith('userbox#')) {
+    const id = key.slice(8);
+    const el = document.querySelector(`.userbox[data-userbox-id="${id}"]`);
+    if (el) el.classList.add('user-hidden');
+  } else {
+    const m = key.match(/^(.+)\|(\d+)$/);
+    if (!m) return;
+    const all = document.querySelectorAll(m[1]);
+    const el = all[parseInt(m[2], 10)];
+    if (el) el.classList.add('user-hidden');
+  }
+}
+function hideSelected() {
+  const sel = [...selectedElements];
+  if (sel.length === 0) {
+    showLayoutToast('隠す対象を選択してください');
+    return;
+  }
+  sel.forEach(el => el.classList.add('user-hidden'));
+  selectedElements.clear();
+  refreshSelectionUI();
+  saveResizeState();
+  showLayoutToast(`${sel.length} 個を隠しました (↺ 全て表示 で戻す)`);
+}
+function showAllHidden() {
+  const hidden = document.querySelectorAll('.user-hidden');
+  if (hidden.length === 0) { showLayoutToast('隠してる枠はありません'); return; }
+  hidden.forEach(el => el.classList.remove('user-hidden'));
+  saveResizeState();
+  showLayoutToast(`${hidden.length} 個を再表示`);
+}
+document.addEventListener('click', e => {
+  if (e.target && e.target.id === 'np-hide') hideSelected();
+  if (e.target && e.target.id === 'np-show-all') showAllHidden();
+});
+
+// 整列ボタン
+function alignSelected(mode) {
+  const sel = [...selectedElements];
+  if (sel.length === 0) return;
+  if (sel.length < 2 && !mode.startsWith('canvas')) return;
+  const stageRect = stage.getBoundingClientRect();
+  const stageW = parseFloat(getComputedStyle(stage).width);
+  const scale = stageRect.width / stageW || 1;
+  const rects = sel.map(el => {
+    const r = el.getBoundingClientRect();
+    const left = (r.left - stageRect.left) / scale;
+    const top = (r.top - stageRect.top) / scale;
+    const right = (r.right - stageRect.left) / scale;
+    const bottom = (r.bottom - stageRect.top) / scale;
+    return { el, left, top, right, bottom, cx: (left + right) / 2, cy: (top + bottom) / 2 };
+  });
+  let anchor = null; // {axis: 'x'|'y', kind: 'left'|'right'|'top'|'bottom'|'cx'|'cy', value}
+  if (mode === 'left')      anchor = { kind: 'left',   value: Math.min(...rects.map(r => r.left)) };
+  else if (mode === 'right')   anchor = { kind: 'right',  value: Math.max(...rects.map(r => r.right)) };
+  else if (mode === 'top')     anchor = { kind: 'top',    value: Math.min(...rects.map(r => r.top)) };
+  else if (mode === 'bottom')  anchor = { kind: 'bottom', value: Math.max(...rects.map(r => r.bottom)) };
+  else if (mode === 'centerH') anchor = { kind: 'cx',     value: rects.reduce((s, r) => s + r.cx, 0) / rects.length };
+  else if (mode === 'centerV') anchor = { kind: 'cy',     value: rects.reduce((s, r) => s + r.cy, 0) / rects.length };
+  else if (mode === 'canvasH' || mode === 'canvasV') {
+    const safe = document.getElementById('safe-area').getBoundingClientRect();
+    if (mode === 'canvasH') anchor = { kind: 'cx', value: ((safe.left + safe.right) / 2 - stageRect.left) / scale };
+    else                    anchor = { kind: 'cy', value: ((safe.top + safe.bottom) / 2 - stageRect.top) / scale };
+  }
+  if (!anchor) return;
+  const beforeMap = new Map();
+  sel.forEach(el => beforeMap.set(el, getResizeState(el)));
+  rects.forEach(r => {
+    let dx = 0, dy = 0;
+    if (anchor.kind === 'left')   dx = anchor.value - r.left;
+    else if (anchor.kind === 'right')  dx = anchor.value - r.right;
+    else if (anchor.kind === 'top')    dy = anchor.value - r.top;
+    else if (anchor.kind === 'bottom') dy = anchor.value - r.bottom;
+    else if (anchor.kind === 'cx')     dx = anchor.value - r.cx;
+    else if (anchor.kind === 'cy')     dy = anchor.value - r.cy;
+    r.el._tx = (r.el._tx || 0) + dx;
+    r.el._ty = (r.el._ty || 0) + dy;
+    setElTransform(r.el);
+    r.el._resizeUpdateLabel && r.el._resizeUpdateLabel();
+  });
+  sel.forEach(el => {
+    const after = getResizeState(el);
+    const before = beforeMap.get(el);
+    if (JSON.stringify(after) !== JSON.stringify(before)) {
+      pushHistory({ type: 'resize', el, before, after });
+    }
+  });
+  saveResizeState();
+  updateNumericPanel();
+}
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.np-align');
+  if (btn) {
+    alignSelected(btn.dataset.mode);
+  }
+});
+
+// Click on stage background clears selection
+document.addEventListener('mousedown', e => {
+  if (!document.body.classList.contains('resize-mode')) return;
+  if (e.target.closest('.resizable')) return;
+  if (e.target.closest('.numeric-panel')) return;
+  if (e.target.closest('.toolbar')) return;
+  if (e.target.closest('.resize-handle')) return;
+  if (e.target.closest('.guide')) return;
+  if (e.target.closest('.ruler')) return;
+  if (selectedElements.size > 0) clearSelection();
+});
+
+// ───── Edge linking (adjacent frames share an edge) ─────
+function sidesFromHandlePos(pos) {
+  // Returns clean side array, avoiding the substring trap
+  if (pos === 'edge-e') return ['e'];
+  if (pos === 'edge-w') return ['w'];
+  if (pos === 'edge-n') return ['n'];
+  if (pos === 'edge-s') return ['s'];
+  if (pos === 'corner-ne') return ['n','e'];
+  if (pos === 'corner-nw') return ['n','w'];
+  if (pos === 'corner-se') return ['s','e'];
+  if (pos === 'corner-sw') return ['s','w'];
+  return [];
+}
+function oppositeSide(s) { return ({n:'s',s:'n',e:'w',w:'e'})[s]; }
+
+function getStageRectInfo() {
+  const stageRect = stage.getBoundingClientRect();
+  const stageW = parseFloat(getComputedStyle(stage).width);
+  const scale = stageRect.width / stageW || 1;
+  return { stageRect, scale };
+}
+function bcrInStage(el, stageRect, scale) {
+  const r = el.getBoundingClientRect();
+  return {
+    left: (r.left - stageRect.left) / scale,
+    top: (r.top - stageRect.top) / scale,
+    right: (r.right - stageRect.left) / scale,
+    bottom: (r.bottom - stageRect.top) / scale,
+  };
+}
+
+function findLinkedTargets(primaryEl, draggedSides) {
+  // Returns array of { el, sides: [...] } for each other resizable that has
+  // an edge touching one of the primary's dragged sides.
+  const EPS = 8;
+  const VERT_OVERLAP_MIN = 8;
+  const { stageRect, scale } = getStageRectInfo();
+  const primR = bcrInStage(primaryEl, stageRect, scale);
+  const all = [...document.querySelectorAll('.resizable')].filter(x => x !== primaryEl);
+  const linked = [];
+  for (const otherEl of all) {
+    const r = bcrInStage(otherEl, stageRect, scale);
+    const sides = [];
+    if (draggedSides.includes('e') && Math.abs(r.left - primR.right) < EPS &&
+        Math.min(primR.bottom, r.bottom) - Math.max(primR.top, r.top) > VERT_OVERLAP_MIN) {
+      sides.push('w');
+    }
+    if (draggedSides.includes('w') && Math.abs(r.right - primR.left) < EPS &&
+        Math.min(primR.bottom, r.bottom) - Math.max(primR.top, r.top) > VERT_OVERLAP_MIN) {
+      sides.push('e');
+    }
+    if (draggedSides.includes('s') && Math.abs(r.top - primR.bottom) < EPS &&
+        Math.min(primR.right, r.right) - Math.max(primR.left, r.left) > VERT_OVERLAP_MIN) {
+      sides.push('n');
+    }
+    if (draggedSides.includes('n') && Math.abs(r.bottom - primR.top) < EPS &&
+        Math.min(primR.right, r.right) - Math.max(primR.left, r.left) > VERT_OVERLAP_MIN) {
+      sides.push('s');
+    }
+    if (sides.length) linked.push({ el: otherEl, sides });
+  }
+  return linked;
+}
+
+// Apply a one-axis-per-side resize to a target, using BCR-fixup so the opposite
+// side stays anchored. Used for the primary AND each linked element.
+function performResize(target, sides, dx, dy, sym, axes, stageRect, scale) {
+  const { el, startRect, startW, startH, startTx, startTy } = target;
+  const factor = sym ? 2 : 1;
+  let newW = startW, newH = startH;
+  if (sides.includes('e')) newW = Math.max(20, startW + factor * dx);
+  if (sides.includes('w') && !sides.includes('e')) newW = Math.max(20, startW - factor * dx);
+  if (sides.includes('s')) newH = Math.max(20, startH + factor * dy);
+  if (sides.includes('n') && !sides.includes('s')) newH = Math.max(20, startH - factor * dy);
+  if (axes.includes('w') && (sides.includes('e') || sides.includes('w'))) {
+    el.style.width = newW + 'px';
+  }
+  if (axes.includes('h') && (sides.includes('s') || sides.includes('n'))) {
+    el.style.height = newH + 'px';
+    if (el.matches('.hdr-left')) {
+      document.documentElement.style.setProperty('--header-h', newH + 'px');
+    }
+  }
+  el._tx = startTx;
+  el._ty = startTy;
+  el._tx = startTx; el._ty = startTy; setElTransform(el);
+  const cur = bcrInStage(el, stageRect, scale);
+  let needTx = 0, needTy = 0;
+  if (sym) {
+    const cur_cx = (cur.left + cur.right) / 2;
+    const cur_cy = (cur.top + cur.bottom) / 2;
+    const start_cx = (startRect.left + startRect.right) / 2;
+    const start_cy = (startRect.top + startRect.bottom) / 2;
+    needTx = start_cx - cur_cx;
+    needTy = start_cy - cur_cy;
+  } else {
+    if (sides.includes('e') && !sides.includes('w')) needTx = startRect.left - cur.left;
+    if (sides.includes('w') && !sides.includes('e')) needTx = startRect.right - cur.right;
+    if (sides.includes('s') && !sides.includes('n')) needTy = startRect.top - cur.top;
+    if (sides.includes('n') && !sides.includes('s')) needTy = startRect.bottom - cur.bottom;
+  }
+  el._tx = startTx + needTx;
+  el._ty = startTy + needTy;
+  setElTransform(el);
+  el._resizeUpdateLabel && el._resizeUpdateLabel();
+}
+
+function attachHandle(el, axes) {
+  el.classList.add('resizable');
+  // 辺ハンドル: axes に応じて
+  const positions = [];
+  if (axes.includes('h')) positions.push('edge-n', 'edge-s');
+  if (axes.includes('w')) positions.push('edge-e', 'edge-w');
+  if (axes.includes('w') && axes.includes('h')) {
+    positions.push('corner-nw', 'corner-ne', 'corner-sw', 'corner-se');
+  }
+  positions.forEach(pos => makeHandle(el, pos, axes));
+  // body ドラッグで移動 (ハンドル以外をドラッグ)
+  attachMoveDrag(el);
+  // サイズ表示
+  const lbl = document.createElement('div');
+  lbl.className = 'resize-size-label';
+  el.appendChild(lbl);
+  el._resizeUpdateLabel = () => {
+    const r = el.getBoundingClientRect();
+    const sr = stage.getBoundingClientRect();
+    const stageW = parseFloat(getComputedStyle(stage).width);
+    const scale = sr.width / stageW || 1;
+    lbl.textContent = `${Math.round(r.width / scale)}×${Math.round(r.height / scale)}`;
+  };
+  el._resizeUpdateLabel();
+}
+
+function getResizeState(el) {
+  return {
+    w: el.style.width || '',
+    h: el.style.height || '',
+    tx: el._tx || 0,
+    ty: el._ty || 0,
+  };
+}
+
+function makeHandle(el, pos, axes) {
+  const h = document.createElement('div');
+  h.className = 'resize-handle ' + pos;
+  el.appendChild(h);
+  h.addEventListener('mousedown', e => {
+    e.stopPropagation();
+    e.preventDefault();
+    const primarySides = sidesFromHandlePos(pos);
+    const { stageRect, scale } = getStageRectInfo();
+    const startX = e.clientX, startY = e.clientY;
+    // Capture start state for primary
+    const captureTarget = (target) => {
+      target.startW = target.el.offsetWidth;
+      target.startH = target.el.offsetHeight;
+      target.startTx = target.el._tx || 0;
+      target.startTy = target.el._ty || 0;
+      target.aspect = target.startW / Math.max(1, target.startH);
+      target.startRect = bcrInStage(target.el, stageRect, scale);
+      target.before = getResizeState(target.el);
+    };
+    const primaryTarget = { el, sides: primarySides };
+    captureTarget(primaryTarget);
+
+    // ── グループ corner-drag 拡縮 モード判定 ──
+    // 角ハンドル (sides.length === 2) + el が選択中 + 選択 ≥2 個 なら、
+    // 全グループを bounding box の center を支点にスケール。
+    const isGroupCornerScale = primarySides.length === 2
+      && typeof selectedElements !== 'undefined'
+      && selectedElements.has(el)
+      && selectedElements.size >= 2;
+    let groupScale = null;
+    if (isGroupCornerScale) {
+      const sel = [...selectedElements];
+      const rects = sel.map(s => bcrInStage(s, stageRect, scale));
+      const minLeft = Math.min(...rects.map(r => r.left));
+      const maxRight = Math.max(...rects.map(r => r.right));
+      const minTop = Math.min(...rects.map(r => r.top));
+      const maxBottom = Math.max(...rects.map(r => r.bottom));
+      const gcx = (minLeft + maxRight) / 2;
+      const gcy = (minTop + maxBottom) / 2;
+      groupScale = {
+        gcx, gcy,
+        primaryOrigW: primaryTarget.startW,
+        primaryOrigH: primaryTarget.startH,
+        targets: sel.map((s, i) => ({
+          el: s,
+          origW: parseFloat(s.style.width) || s.offsetWidth,
+          origH: parseFloat(s.style.height) || s.offsetHeight,
+          origTx: s._tx || 0,
+          origTy: s._ty || 0,
+          origCx: (rects[i].left + rects[i].right) / 2,
+          origCy: (rects[i].top + rects[i].bottom) / 2,
+          before: getResizeState(s),
+        })),
+      };
+    }
+
+    // Hold Ctrl/Cmd to disable linking for this drag
+    const linkingDisabled = e.ctrlKey || e.metaKey;
+    const linkedTargets = (isGroupCornerScale || linkingDisabled) ? [] : findLinkedTargets(el, primarySides);
+    linkedTargets.forEach(t => captureTarget(t));
+    linkedTargets.forEach(t => t.el.classList.add('edge-linked'));
+
+    const onMove = (e2) => {
+      const dx = (e2.clientX - startX) / scale;
+      const dy = (e2.clientY - startY) / scale;
+      const sym = e2.altKey;
+
+      if (groupScale) {
+        // primary の意図サイズから factor を算出 (W と H の平均)
+        let newW = groupScale.primaryOrigW, newH = groupScale.primaryOrigH;
+        if (primarySides.includes('e')) newW = Math.max(20, groupScale.primaryOrigW + dx);
+        if (primarySides.includes('w') && !primarySides.includes('e')) newW = Math.max(20, groupScale.primaryOrigW - dx);
+        if (primarySides.includes('s')) newH = Math.max(20, groupScale.primaryOrigH + dy);
+        if (primarySides.includes('n') && !primarySides.includes('s')) newH = Math.max(20, groupScale.primaryOrigH - dy);
+        const factor = (newW / groupScale.primaryOrigW + newH / groupScale.primaryOrigH) / 2;
+        groupScale.targets.forEach(t => {
+          t.el.style.width  = Math.round(t.origW * factor) + 'px';
+          t.el.style.height = Math.round(t.origH * factor) + 'px';
+          // 中心を group center 周りにスケール
+          const newCx = groupScale.gcx + (t.origCx - groupScale.gcx) * factor;
+          const newCy = groupScale.gcy + (t.origCy - groupScale.gcy) * factor;
+          const sizeShiftX = (t.origW * factor - t.origW) / 2;
+          const sizeShiftY = (t.origH * factor - t.origH) / 2;
+          t.el._tx = t.origTx + (newCx - t.origCx) - sizeShiftX;
+          t.el._ty = t.origTy + (newCy - t.origCy) - sizeShiftY;
+          if (typeof setElTransform === 'function') setElTransform(t.el);
+          else t.el.style.transform = `translate(${t.el._tx}px, ${t.el._ty}px)`;
+          t.el._resizeUpdateLabel && t.el._resizeUpdateLabel();
+        });
+        return;  // skip the normal performResize path
+      }
+
+      // 通常パス: primary + linked を performResize
+      performResize(primaryTarget, primarySides, dx, dy, sym, axes, stageRect, scale);
+      linkedTargets.forEach(t => {
+        performResize(t, t.sides, dx, dy, false, 'wh', stageRect, scale);
+      });
+    };
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      linkedTargets.forEach(t => t.el.classList.remove('edge-linked'));
+      const allTargets = groupScale ? groupScale.targets : [primaryTarget, ...linkedTargets];
+      allTargets.forEach(t => {
+        const after = getResizeState(t.el);
+        if (JSON.stringify(after) !== JSON.stringify(t.before)) {
+          pushHistory({ type: 'resize', el: t.el, before: t.before, after });
+        }
+      });
+      saveResizeState();
+      updateNumericPanel();
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  });
+  return h;
+}
+
+function attachMoveDrag(el) {
+  const handler = (e) => {
+    if (!document.body.classList.contains('resize-mode')) return;
+    if (e.target.classList.contains('resize-handle')) return;
+    if (e.target !== el && !el.contains(e.target)) return;
+    if (e.target.classList.contains('resize-handle') ||
+        e.target.classList.contains('resize-size-label')) return;
+    e.stopPropagation();
+    e.preventDefault();
+
+    // Selection logic:
+    //   Shift+click → toggle membership (no drag this gesture)
+    //   plain click on un-selected element → select-only
+    //   click on already-selected element → keep selection, prepare group drag
+    if (e.shiftKey) {
+      toggleSelect(el);
+      return;
+    }
+    if (!selectedElements.has(el)) {
+      selectOnly(el);
+    }
+
+    // Drag targets = all selected (always includes el at this point)
+    const targets = [...selectedElements];
+    if (targets.length === 0) targets.push(el);
+
+    const startX = e.clientX, startY = e.clientY;
+    const { stageRect, scale } = getStageRectInfo();
+    const startStates = targets.map(t => ({
+      el: t,
+      tx: t._tx || 0,
+      ty: t._ty || 0,
+      before: getResizeState(t),
+    }));
+    const primaryStartRect = bcrInStage(el, stageRect, scale);
+
+    const onMove = (e2) => {
+      let dx = (e2.clientX - startX) / scale;
+      let dy = (e2.clientY - startY) / scale;
+      if (e2.shiftKey) {
+        if (Math.abs(dx) >= Math.abs(dy)) dy = 0;
+        else dx = 0;
+      }
+      // 吸着: Ctrl/Cmd 押下中はスキップ。 それ以外は近接する辺/中心/ガイドに吸着
+      if (!(e2.ctrlKey || e2.metaKey)) {
+        const adj = computeMoveSnap(el, primaryStartRect, dx, dy);
+        dx = adj.dx; dy = adj.dy;
+      }
+      startStates.forEach(s => {
+        s.el._tx = s.tx + dx;
+        s.el._ty = s.ty + dy;
+        setElTransform(s.el);
+      });
+    };
+    const onUp = () => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      startStates.forEach(s => {
+        const after = getResizeState(s.el);
+        if (JSON.stringify(after) !== JSON.stringify(s.before)) {
+          pushHistory({ type: 'resize', el: s.el, before: s.before, after });
+        }
+      });
+      saveResizeState();
+      updateNumericPanel();
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  };
+  el.addEventListener('mousedown', handler);
+}
+
+// ─── ルーラー + ガイド ───
+function adjustRulerPos() {
+  const tb = document.querySelector('.toolbar');
+  const toolbarH = (tb && getComputedStyle(tb).display !== 'none') ? tb.offsetHeight : 0;
+  document.documentElement.style.setProperty('--toolbar-h', toolbarH + 'px');
+}
+function setupRulers() {
+  if (document.querySelector('.ruler.horizontal')) {
+    adjustRulerPos();
+    return;
+  }
+  const rh = document.createElement('div'); rh.className = 'ruler horizontal';
+  const rv = document.createElement('div'); rv.className = 'ruler vertical';
+  document.body.appendChild(rh);
+  document.body.appendChild(rv);
+  rh.addEventListener('mousedown', e => createGuide(e, 'h'));
+  rv.addEventListener('mousedown', e => createGuide(e, 'v'));
+  adjustRulerPos();
+  window.addEventListener('resize', adjustRulerPos);
+}
+function createGuide(e, axis) {
+  e.preventDefault();
+  const g = document.createElement('div');
+  g.className = 'guide ' + axis;
+  const lbl = document.createElement('div');
+  lbl.className = 'guide-label';
+  g.appendChild(lbl);
+  document.body.appendChild(g);
+  attachGuideDrag(g, lbl, axis);
+  pushHistory({ type: 'add', el: g, parent: document.body, next: null });
+  // 即座にドラッグ開始
+  const evt = new MouseEvent('mousedown', { clientX: e.clientX, clientY: e.clientY, bubbles: true });
+  g.dispatchEvent(evt);
+}
+function attachGuideDrag(g, lbl, axis) {
+  const getCurPos = () => axis === 'h' ? parseFloat(g.style.top) || 0 : parseFloat(g.style.left) || 0;
+  const updatePos = (clientX, clientY) => {
+    if (axis === 'h') {
+      g.style.top = clientY + 'px';
+      lbl.textContent = `y: ${Math.round(clientY)}px`;
+    } else {
+      g.style.left = clientX + 'px';
+      lbl.textContent = `x: ${Math.round(clientX)}px`;
+    }
+  };
+  g.addEventListener('mousedown', e => {
+    e.stopPropagation();
+    e.preventDefault();
+    const before = getCurPos();
+    const onMove = (e2) => updatePos(e2.clientX, e2.clientY);
+    const onUp = (e2) => {
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseup', onUp);
+      // ルーラーに戻したら削除
+      if (axis === 'h' && e2.clientY < 24) {
+        pushHistory({ type: 'remove', el: g, parent: document.body, next: g.nextSibling });
+        g.remove();
+      } else if (axis === 'v' && e2.clientX < 24) {
+        pushHistory({ type: 'remove', el: g, parent: document.body, next: g.nextSibling });
+        g.remove();
+      } else {
+        const after = getCurPos();
+        if (after !== before) pushHistory({ type: 'guide-move', el: g, before, after });
+      }
+      saveResizeState();
+    };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+    updatePos(e.clientX, e.clientY);
+  });
+  // 右クリックで削除
+  g.addEventListener('contextmenu', e => {
+    e.preventDefault();
+    pushHistory({ type: 'remove', el: g, parent: document.body, next: g.nextSibling });
+    g.remove();
+    saveResizeState();
+  });
+}
+function collectGuides() {
+  return [...document.querySelectorAll('.guide')].map(g => ({
+    axis: g.classList.contains('h') ? 'h' : 'v',
+    pos: g.classList.contains('h') ? parseFloat(g.style.top) : parseFloat(g.style.left),
+  }));
+}
+function restoreGuides(arr) {
+  document.querySelectorAll('.guide').forEach(g => g.remove());
+  arr.forEach(({axis, pos}) => {
+    const g = document.createElement('div');
+    g.className = 'guide ' + axis;
+    if (axis === 'h') g.style.top = pos + 'px';
+    else g.style.left = pos + 'px';
+    const lbl = document.createElement('div');
+    lbl.className = 'guide-label';
+    lbl.textContent = (axis === 'h' ? 'y: ' : 'x: ') + Math.round(pos) + 'px';
+    g.appendChild(lbl);
+    document.body.appendChild(g);
+    attachGuideDrag(g, lbl, axis);
+  });
+}
+
+function enableResize() {
+  document.body.classList.add('resize-mode');
+  document.getElementById('resize-toggle').textContent = '📐 サイズ調整 ON';
+  document.getElementById('resize-toggle').classList.add('active');
+  RESIZABLE_SPEC.forEach(([sel, axes]) => {
+    document.querySelectorAll(sel).forEach(el => attachHandle(el, axes));
+  });
+  setupRulers();
+}
+function disableResize() {
+  document.body.classList.remove('resize-mode');
+  document.getElementById('resize-toggle').textContent = '📐 サイズ調整 OFF';
+  document.getElementById('resize-toggle').classList.remove('active');
+  document.querySelectorAll('.resize-handle, .resize-size-label').forEach(el => el.remove());
+  document.querySelectorAll('.resizable').forEach(el => { el.classList.remove('resizable'); el.classList.remove('selected'); el.classList.remove('edge-linked'); delete el._resizeUpdateLabel; });
+  clearSelection();
+  // resize-mode を抜けたら draw-mode も自動で OFF
+  if (typeof setDrawMode === 'function' && drawModeOn) setDrawMode(false);
+}
+document.getElementById('resize-toggle').addEventListener('click', () => {
+  if (document.body.classList.contains('resize-mode')) disableResize();
+  else enableResize();
+});
+document.getElementById('resize-reset').addEventListener('click', resetResizeState);
+document.getElementById('save-layout').addEventListener('click', explicitSaveLayout);
+document.getElementById('revert-layout').addEventListener('click', revertLayout);
+
+// グリッド比較トグル: 旧 grid placeholder (色付き正方形) と本物画像を切替
+const gridBtn = document.getElementById('grid-mode-toggle');
+function applyGridMode(on) {
+  document.body.classList.toggle('grid-mode', on);
+  gridBtn.textContent = on ? '🔁 グリッド比較 ON' : '🔁 グリッド比較 OFF';
+  gridBtn.classList.toggle('active', on);
+  try { localStorage.setItem('quizland_preview_grid_mode', on ? '1' : '0'); } catch(_) {}
+}
+gridBtn.addEventListener('click', () => applyGridMode(!document.body.classList.contains('grid-mode')));
+try { if (localStorage.getItem('quizland_preview_grid_mode') === '1') applyGridMode(true); } catch(_) {}
+// Ctrl/Cmd+S で保存
+window.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && (e.key === 's' || e.key === 'S')) {
+    e.preventDefault();
+    explicitSaveLayout();
+  }
+});
+
+// ───── 吸着 (snap) と コピペ ─────
+const SNAP_THRESHOLD = 8;  // stage 座標での吸着距離 (px)
+
+// drag 中、 元の bbox を (dx, dy) 動かした時の吸着補正を返す。
+// 他の resizable の left/right/top/bottom/center、 およびガイド線位置に最も近い辺へ揃える。
+function computeMoveSnap(primaryEl, startRect, dx, dy) {
+  const { stageRect, scale } = getStageRectInfo();
+  const newLeft = startRect.left + dx;
+  const newRight = startRect.right + dx;
+  const newTop = startRect.top + dy;
+  const newBottom = startRect.bottom + dy;
+  const newCx = (newLeft + newRight) / 2;
+  const newCy = (newTop + newBottom) / 2;
+  const xCandidates = [newLeft, newRight, newCx];  // primary 側の x 候補
+  const yCandidates = [newTop, newBottom, newCy];
+
+  const targetXs = [];
+  const targetYs = [];
+  // 他の resizable
+  document.querySelectorAll('.resizable').forEach(other => {
+    if (other === primaryEl) return;
+    if (selectedElements.has(other)) return;  // 一緒に動く要素は除外
+    const r = bcrInStage(other, stageRect, scale);
+    targetXs.push(r.left, r.right, (r.left + r.right) / 2);
+    targetYs.push(r.top, r.bottom, (r.top + r.bottom) / 2);
+  });
+  // ガイド線 (位置: fixed なので viewport 座標 → stage 座標へ変換)
+  document.querySelectorAll('.guide.h').forEach(g => {
+    const vy = parseFloat(g.style.top);
+    if (Number.isFinite(vy)) targetYs.push((vy - stageRect.top) / scale);
+  });
+  document.querySelectorAll('.guide.v').forEach(g => {
+    const vx = parseFloat(g.style.left);
+    if (Number.isFinite(vx)) targetXs.push((vx - stageRect.left) / scale);
+  });
+  // safe area の枠 + center も吸着対象に
+  const safe = document.getElementById('safe-area');
+  if (safe) {
+    const sr = bcrInStage(safe, stageRect, scale);
+    targetXs.push(sr.left, sr.right, (sr.left + sr.right) / 2);
+    targetYs.push(sr.top, sr.bottom, (sr.top + sr.bottom) / 2);
+  }
+
+  let bestDx = 0, bestDxAbs = Infinity;
+  for (const tx of targetXs) {
+    for (const cand of xCandidates) {
+      const diff = tx - cand;
+      const d = Math.abs(diff);
+      if (d < SNAP_THRESHOLD && d < bestDxAbs) { bestDx = diff; bestDxAbs = d; }
+    }
+  }
+  let bestDy = 0, bestDyAbs = Infinity;
+  for (const ty of targetYs) {
+    for (const cand of yCandidates) {
+      const diff = ty - cand;
+      const d = Math.abs(diff);
+      if (d < SNAP_THRESHOLD && d < bestDyAbs) { bestDy = diff; bestDyAbs = d; }
+    }
+  }
+  return { dx: dx + bestDx, dy: dy + bestDy };
+}
+
+// 内部クリップボード (OS の clipboard ではなく、 同セッションでの複製用)
+let userboxClipboard = [];
+function isEditableTarget(t) {
+  if (!t || !(t instanceof Element)) return false;
+  if (typeof t.matches !== 'function') return false;
+  // contenteditable=true のもの、 input/textarea
+  if (t.matches('input, textarea')) return true;
+  // contenteditable は属性値 "false" なら通す (matches('[contenteditable]') は属性さえあれば true なので注意)
+  let cur = t;
+  while (cur && cur !== document.body) {
+    const v = cur.getAttribute && cur.getAttribute('contenteditable');
+    if (v === 'true' || v === '') return true;
+    if (v === 'false') return false;
+    cur = cur.parentElement;
+  }
+  return false;
+}
+// ───── userbox 塗り濃度スライダー ─────
+const opacityInput = document.getElementById('userbox-opacity');
+function applyUserboxOpacity(pct) {
+  document.documentElement.style.setProperty('--userbox-opacity', (pct / 100).toFixed(2));
+}
+opacityInput && opacityInput.addEventListener('input', e => {
+  const v = parseInt(e.target.value, 10);
+  applyUserboxOpacity(v);
+  try { localStorage.setItem('zukan_userbox_opacity', String(v)); } catch(_) {}
+});
+try {
+  const saved = localStorage.getItem('zukan_userbox_opacity');
+  if (saved != null && opacityInput) {
+    opacityInput.value = saved;
+    applyUserboxOpacity(parseInt(saved, 10));
+  }
+} catch(_) {}
+
+// ───── ワイヤーフレーム表示 + PNG 書き出し ─────
+const wireframeBtn = document.getElementById('wireframe-toggle');
+function setWireframeMode(on) {
+  document.body.classList.toggle('wireframe-only', on);
+  if (wireframeBtn) {
+    wireframeBtn.textContent = on ? '👁 ワイヤー表示 ON' : '👁 ワイヤー表示 OFF';
+    wireframeBtn.classList.toggle('active', on);
+  }
+}
+wireframeBtn && wireframeBtn.addEventListener('click', () => {
+  setWireframeMode(!document.body.classList.contains('wireframe-only'));
+});
+
+const exportPngBtn = document.getElementById('export-png');
+const pngExportMenu = document.getElementById('png-export-menu');
+exportPngBtn && exportPngBtn.addEventListener('click', e => {
+  e.stopPropagation();
+  if (pngExportMenu) pngExportMenu.style.display = (pngExportMenu.style.display === 'none' ? 'flex' : 'none');
+});
+document.addEventListener('click', e => {
+  if (pngExportMenu && !e.target.closest('.png-export-wrap')) pngExportMenu.style.display = 'none';
+});
+pngExportMenu && pngExportMenu.addEventListener('click', e => {
+  const btn = e.target.closest('button[data-mode]');
+  if (!btn) return;
+  pngExportMenu.style.display = 'none';
+  const mode = btn.dataset.mode;
+  if (mode === 'wireframe') {
+    exportWireframePng();
+  } else if (mode === 'snapshot') {
+    snapshotCurrentView('zukan');
+  }
+});
+
+async function snapshotCurrentView(prefix) {
+  if (typeof html2canvas !== 'function') {
+    alert('html2canvas が読み込めていません。 リロードして再試行してください');
+    return;
+  }
+  const safe = document.getElementById('safe-area');
+  if (!safe) return;
+  showLayoutToast && showLayoutToast('スナップショット生成中...');
+  try {
+    const canvas = await html2canvas(safe, {
+      width: 1600,
+      height: 900,
+      scale: 1,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: null,
+      logging: false,
+    });
+    canvas.toBlob(blob => {
+      if (!blob) { showLayoutToast && showLayoutToast('PNG 生成失敗'); return; }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+      a.download = `${prefix}-snapshot-${ts}.png`;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+      showLayoutToast && showLayoutToast('現状 PNG を保存しました');
+    }, 'image/png');
+  } catch (err) {
+    console.error(err);
+    showLayoutToast && showLayoutToast('スナップショット失敗: ' + err.message);
+  }
+}
+function exportWireframePng() {
+  // 16:9 safe area サイズで出力 (1600×900)
+  const cssRoot = getComputedStyle(document.documentElement);
+  const safeW = parseFloat(cssRoot.getPropertyValue('--safe-w')) || 1600;
+  const safeH = parseFloat(cssRoot.getPropertyValue('--safe-h')) || 900;
+
+  const out = document.createElement('canvas');
+  out.width = safeW;
+  out.height = safeH;
+  const ctx = out.getContext('2d');
+
+  // 白背景 (Codex に渡す時の参照用に視認性を最大化)
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, safeW, safeH);
+
+  // safe area の枠 (canvas 全体 = safe area なので 1px 内側に細く)
+  // 中央クロスヘア (マゼンタ) は書き出しでは描かない (ユーザー指示)
+  ctx.strokeStyle = 'rgba(0, 184, 224, 0.5)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([8, 4]);
+  ctx.strokeRect(1, 1, safeW - 2, safeH - 2);
+
+  // userbox 群を outline + label + size で描画
+  // 位置: safe-area の中で left/top が決まり、 transform: translate(tx, ty) で動く
+  // canvas は safe-area サイズなので、 left + tx がそのまま canvas 座標になる
+  ctx.setLineDash([]);
+  document.querySelectorAll('.userbox').forEach(el => {
+    const left = parseFloat(el.style.left) || 0;
+    const top = parseFloat(el.style.top) || 0;
+    const w = parseFloat(el.style.width) || el.offsetWidth;
+    const h = parseFloat(el.style.height) || el.offsetHeight;
+    const tx = el._tx || 0;
+    const ty = el._ty || 0;
+    const x = left + tx;
+    const y = top + ty;
+
+    // group メンバーは紫、 ソロは黒
+    const isGroup = !!el.dataset.groupId;
+    ctx.strokeStyle = isGroup ? '#6a3eb8' : '#1a1a1a';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(x, y, w, h);
+
+    // ラベル (背景バッジ + 白文字)
+    const label = el.dataset.userboxLabel || '';
+    if (label) {
+      ctx.font = '700 18px system-ui, -apple-system, sans-serif';
+      const padX = 8;
+      const textW = ctx.measureText(label).width;
+      const badgeH = 24;
+      const badgeW = textW + padX * 2;
+      // ラベルが上に出るスペースが無ければ枠の中の上端に置く
+      const badgeY = (y - badgeH - 4 >= 0) ? (y - badgeH - 4) : (y + 4);
+      ctx.fillStyle = isGroup ? 'rgba(106, 62, 184, 0.92)' : 'rgba(0, 0, 0, 0.88)';
+      ctx.fillRect(x, badgeY, badgeW, badgeH);
+      ctx.fillStyle = '#ffe8a8';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(label, x + padX, badgeY + badgeH / 2);
+    }
+
+    // 中央に W × H サイズ表示
+    const sizeText = `${Math.round(w)} × ${Math.round(h)}`;
+    ctx.font = '500 16px ui-monospace, Menlo, Consolas, monospace';
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(sizeText, x + w / 2, y + h / 2);
+    ctx.textAlign = 'start';
+    ctx.textBaseline = 'alphabetic';
+  });
+
+  // 凡例 (右下に小さく)
+  ctx.font = '500 12px ui-monospace, Menlo, Consolas, monospace';
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+  ctx.textAlign = 'right';
+  ctx.fillText(`safe area ${safeW}×${safeH} (16:9)  生成 ${new Date().toLocaleString('ja-JP')}`, safeW - 12, safeH - 12);
+  ctx.textAlign = 'start';
+
+  out.toBlob(blob => {
+    if (!blob) { showLayoutToast('PNG 生成に失敗しました'); return; }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    a.download = `zukan-wireframe-${ts}.png`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+    showLayoutToast('ワイヤー PNG を保存しました');
+  }, 'image/png');
+}
+/* 旧 #export-wireframe-png 直リスナーは split-button に統合済み */
+
+// グループ化 ID 採番 + ヘルパ
+let userboxGroupCounter = 0;
+function expandGroupSelection(set) {
+  // set 内に group メンバーがいたら、 同 group の他メンバーも選択に加える
+  const seenGroups = new Set();
+  set.forEach(el => {
+    const gid = el.dataset && el.dataset.groupId;
+    if (gid) seenGroups.add(gid);
+  });
+  seenGroups.forEach(gid => {
+    document.querySelectorAll(`.userbox[data-group-id="${gid}"]`).forEach(g => set.add(g));
+  });
+}
+
+window.addEventListener('keydown', e => {
+  if (!document.body.classList.contains('resize-mode')) return;
+  if (isEditableTarget(e.target)) return;
+  const isCopy  = (e.ctrlKey || e.metaKey) && (e.key === 'c' || e.key === 'C');
+  const isPaste = (e.ctrlKey || e.metaKey) && (e.key === 'v' || e.key === 'V');
+  const isDup   = (e.ctrlKey || e.metaKey) && (e.key === 'd' || e.key === 'D');
+  const isGroup   = (e.ctrlKey || e.metaKey) && !e.shiftKey && (e.key === 'g' || e.key === 'G');
+  const isUngroup = (e.ctrlKey || e.metaKey) && e.shiftKey  && (e.key === 'g' || e.key === 'G');
+  if (isGroup) {
+    e.preventDefault();
+    const sel = [...selectedElements].filter(el => el.classList.contains('userbox'));
+    if (sel.length < 2) {
+      showLayoutToast('2 個以上選択してから Ctrl+G');
+      return;
+    }
+    userboxGroupCounter += 1;
+    const gid = 'g-' + Date.now() + '-' + userboxGroupCounter;
+    sel.forEach(el => { el.dataset.groupId = gid; });
+    saveResizeState();
+    showLayoutToast(`${sel.length} 個をグループ化`);
+    return;
+  }
+  if (isUngroup) {
+    e.preventDefault();
+    const sel = [...selectedElements].filter(el => el.classList.contains('userbox') && el.dataset.groupId);
+    if (sel.length === 0) {
+      showLayoutToast('グループ解除する枠が選択されていません');
+      return;
+    }
+    sel.forEach(el => { delete el.dataset.groupId; });
+    saveResizeState();
+    showLayoutToast(`${sel.length} 個のグループを解除`);
+    return;
+  }
+  if (isCopy || isDup) {
+    const sel = [...selectedElements].filter(el => el.classList.contains('userbox'));
+    if (sel.length === 0) {
+      e.preventDefault();
+      showLayoutToast('コピー対象の枠が選択されていません');
+      return;
+    }
+    e.preventDefault();
+    userboxClipboard = sel.map(el => ({
+      label: el.dataset.userboxLabel,
+      left: el.style.left,
+      top: el.style.top,
+      w: el.style.width,
+      h: el.style.height,
+      tx: el._tx || 0,
+      ty: el._ty || 0,
+    }));
+    showLayoutToast(`${sel.length} 個コピー`);
+    // Ctrl+D は即ペーストもする (ワンキー複製)
+    if (isDup) doPaste();
+  } else if (isPaste) {
+    e.preventDefault();
+    doPaste();
+  }
+});
+function doPaste() {
+  if (userboxClipboard.length === 0) {
+    showLayoutToast('クリップボードが空です (Ctrl+C で先にコピー)');
+    return;
+  }
+  selectedElements.clear();
+  userboxClipboard.forEach(box => {
+    const el = createUserbox({
+      label: box.label,
+      left: (parseFloat(box.left) + 20) + 'px',
+      top:  (parseFloat(box.top)  + 20) + 'px',
+      w: box.w,
+      h: box.h,
+      tx: box.tx,
+      ty: box.ty,
+    });
+    selectedElements.add(el);
+  });
+  refreshSelectionUI();
+  saveResizeState();
+  showLayoutToast(`${userboxClipboard.length} 個ペースト`);
+}
+
+// ───── 本のページ立体モード (Approach A) ─────
+// userbox の transform 文字列を一元化するヘルパ。 _tx, _ty を必ず読み、
+// book-tilt モード時は左/右ページに応じた perspective + rotateY を追加する。
+function setElTransform(el) {
+  if (!el) return;
+  const tx = el._tx || 0;
+  const ty = el._ty || 0;
+  let t = `translate(${tx}px, ${ty}px)`;
+  if (document.body.classList.contains('book-tilt') && el.classList.contains('userbox')) {
+    const baseLeft = parseFloat(el.style.left) || 0;
+    const w = parseFloat(el.style.width) || el.offsetWidth || 0;
+    const safeW = 1600;
+    const cx = baseLeft + tx + w / 2;  // userbox 中心 X (safe-area 座標)
+    const isLeftPage = cx < safeW / 2;
+    const tiltY = isLeftPage ? 10 : -10;  // 左ページ右傾き、 右ページ左傾き (5°だと見えづらいので 10° に)
+    const originX = isLeftPage ? '100%' : '0%';  // 綴じ目側を支点に
+    el.style.transformOrigin = `${originX} 50%`;
+    t += ` rotateY(${tiltY}deg)`;
+  } else {
+    el.style.transformOrigin = '';
+  }
+  el.style.transform = t;
+}
+
+// ───── Bezier Warp (Bicubic Bezier Patch on WebGL) ─────
+// 各ページを 4×4 = 16 制御点 / page (合計 32 点) で曲面定義。
+// html2canvas でページ全体をテクスチャ化、 WebGL の頂点シェーダ内で
+// bicubic Bezier 公式に従って各頂点位置を warp。 制御点を動かすたびに
+// 再描画 (60fps)、 真のなめらかな曲面で本のページの曲がりを表現できる。
+// 座標系: bezierMesh[page][row][col].{x,y} は **page-local** (0..PAGE_W × 0..SAFE_H)
+const SAFE_W = 1600, SAFE_H = 900;
+const PAGE_W = SAFE_W / 2;     // 800
+const BEZ_N = 4;                // 4×4 control points / page
+const BEZ_TESS = 24;            // 24×24 tessellation / page (1152 三角形)
+
+function _initBezierGrid() {
+  const g = [];
+  for (let r = 0; r < BEZ_N; r++) {
+    g[r] = [];
+    for (let c = 0; c < BEZ_N; c++) {
+      g[r][c] = {
+        x: c * (PAGE_W / (BEZ_N - 1)),
+        y: r * (SAFE_H / (BEZ_N - 1)),
+      };
+    }
+  }
+  return g;
+}
+const bezierMesh = {
+  left:  _initBezierGrid(),
+  right: _initBezierGrid(),
+};
+
+// WebGL 内部状態
+let _gl = null, _glProgram = null, _glVbuf = null, _glTex = null;
+let _glVertexCount = 0;
+const _glLoc = {};
+let _bezCanvas = null;
+let _glTextureCanvas = null;   // html2canvas の出力 (snapshot)
+
+// 動的配列 indexing は WebGL1 の一部実装で蹴られるので、 ループを完全展開して
+// 配列アクセスは constant index のみに揃える (= 16 個の項を手書きで足す)。
+const _VS_SRC = `
+attribute vec2 a_uv;
+uniform vec2 u_cp[16];
+uniform vec2 u_pagePos;
+uniform vec2 u_safeSize;
+varying vec2 v_uv;
+
+void main() {
+  v_uv = a_uv;
+  float u = a_uv.x;
+  float v = a_uv.y;
+  float ui = 1.0 - u;
+  float vi = 1.0 - v;
+  float bu0 = ui*ui*ui;
+  float bu1 = 3.0*u*ui*ui;
+  float bu2 = 3.0*u*u*ui;
+  float bu3 = u*u*u;
+  float bv0 = vi*vi*vi;
+  float bv1 = 3.0*v*vi*vi;
+  float bv2 = 3.0*v*v*vi;
+  float bv3 = v*v*v;
+  vec2 p =
+      bv0 * (bu0*u_cp[ 0] + bu1*u_cp[ 1] + bu2*u_cp[ 2] + bu3*u_cp[ 3])
+    + bv1 * (bu0*u_cp[ 4] + bu1*u_cp[ 5] + bu2*u_cp[ 6] + bu3*u_cp[ 7])
+    + bv2 * (bu0*u_cp[ 8] + bu1*u_cp[ 9] + bu2*u_cp[10] + bu3*u_cp[11])
+    + bv3 * (bu0*u_cp[12] + bu1*u_cp[13] + bu2*u_cp[14] + bu3*u_cp[15]);
+  vec2 safePos = p + u_pagePos;
+  vec2 clip = (safePos / u_safeSize) * 2.0 - 1.0;
+  clip.y = -clip.y;
+  gl_Position = vec4(clip, 0.0, 1.0);
+}
+`;
+
+const _FS_SRC = `
+precision mediump float;
+varying vec2 v_uv;
+uniform sampler2D u_tex;
+uniform vec2 u_uvOffset;
+uniform vec2 u_uvScale;
+void main() {
+  vec2 uv = u_uvOffset + v_uv * u_uvScale;
+  gl_FragColor = texture2D(u_tex, uv);
+}
+`;
+
+// shader compile result + error message を window._lastBezierError に残して
+// alert からも参照できるようにする (本番環境で console を見れない時用)
+window._lastBezierError = null;
+function _glCompileShader(gl, type, src) {
+  const sh = gl.createShader(type);
+  gl.shaderSource(sh, src);
+  gl.compileShader(sh);
+  if (!gl.getShaderParameter(sh, gl.COMPILE_STATUS)) {
+    const log = gl.getShaderInfoLog(sh);
+    const kind = type === gl.VERTEX_SHADER ? 'vertex' : 'fragment';
+    const msg = `${kind} shader compile error:\n${log}`;
+    console.error(msg);
+    window._lastBezierError = msg;
+    return null;
+  }
+  return sh;
+}
+
+function _initWebGL() {
+  if (_gl) return _gl;
+  const oldCanvas = document.getElementById('bezier-canvas');
+  if (!oldCanvas) {
+    window._lastBezierError = '#bezier-canvas element not found in DOM';
+    console.error(window._lastBezierError);
+    return null;
+  }
+  // **重要**: HTML に書かれた既存 canvas は DOM に挿入された状態で初期化が走る
+  // タイミングの関係で getContext が null を返すブラウザがある (Chrome の一部
+  // バージョン)。 確実に context を取るには 「DOM 外で createElement → getContext
+  // → DOM 挿入 (replaceChild)」 が定石。 これで既存 canvas のあらゆる初期化状態を
+  // バイパスできる。
+  const newCanvas = document.createElement('canvas');
+  newCanvas.id = 'bezier-canvas';
+  newCanvas.width  = SAFE_W * 2;   // retina
+  newCanvas.height = SAFE_H * 2;
+  // まず getContext を試す (この時点では DOM 外)
+  const optsList = [
+    { premultipliedAlpha: true,  alpha: true },
+    { premultipliedAlpha: false, alpha: true },
+    { alpha: true },
+    {},
+  ];
+  for (const opts of optsList) {
+    _gl = newCanvas.getContext('webgl', opts) || newCanvas.getContext('experimental-webgl', opts);
+    if (_gl) break;
+  }
+  if (!_gl) {
+    window._lastBezierError =
+      '新規作成した canvas でも WebGL context が取れません。 \n' +
+      '・ハードウェアアクセラレーションが無効化されている (ブラウザ設定を確認)\n' +
+      '・chrome://gpu (Chrome) で WebGL の状態を確認\n' +
+      '・WebGL ブロック系拡張を無効化\n' +
+      '・Cmd+Shift+R / Ctrl+Shift+R で完全リロード';
+    console.error(window._lastBezierError);
+    return null;
+  }
+  // context 取得成功 → DOM 上の旧 canvas を新 canvas で置換
+  // 旧 canvas の position/style は CSS の id selector で同じ規則が当たるので
+  // インライン style はコピーしなくて良い
+  oldCanvas.parentNode.replaceChild(newCanvas, oldCanvas);
+  _bezCanvas = newCanvas;
+  _bezCanvas.style.visibility = 'visible';
+  _bezCanvas.style.display    = 'block';
+  const gl = _gl;
+  console.info('[bezier] WebGL ctx ok, MAX_VERTEX_UNIFORM_VECTORS=',
+    gl.getParameter(gl.MAX_VERTEX_UNIFORM_VECTORS));
+  const vs = _glCompileShader(gl, gl.VERTEX_SHADER, _VS_SRC);
+  const fs = _glCompileShader(gl, gl.FRAGMENT_SHADER, _FS_SRC);
+  if (!vs || !fs) return null;
+  _glProgram = gl.createProgram();
+  gl.attachShader(_glProgram, vs);
+  gl.attachShader(_glProgram, fs);
+  gl.linkProgram(_glProgram);
+  if (!gl.getProgramParameter(_glProgram, gl.LINK_STATUS)) {
+    const log = gl.getProgramInfoLog(_glProgram);
+    window._lastBezierError = 'program link error:\n' + log;
+    console.error(window._lastBezierError);
+    return null;
+  }
+  _glLoc.a_uv       = gl.getAttribLocation(_glProgram, 'a_uv');
+  _glLoc.u_cp       = gl.getUniformLocation(_glProgram, 'u_cp');
+  _glLoc.u_pagePos  = gl.getUniformLocation(_glProgram, 'u_pagePos');
+  _glLoc.u_safeSize = gl.getUniformLocation(_glProgram, 'u_safeSize');
+  _glLoc.u_tex      = gl.getUniformLocation(_glProgram, 'u_tex');
+  _glLoc.u_uvOffset = gl.getUniformLocation(_glProgram, 'u_uvOffset');
+  _glLoc.u_uvScale  = gl.getUniformLocation(_glProgram, 'u_uvScale');
+  // 頂点バッファ: BEZ_TESS×BEZ_TESS の uv 格子 (= 2 三角形 / quad)
+  const verts = [];
+  const N = BEZ_TESS;
+  for (let r = 0; r < N; r++) {
+    for (let c = 0; c < N; c++) {
+      const u0 = c / N, u1 = (c + 1) / N;
+      const v0 = r / N, v1 = (r + 1) / N;
+      verts.push(u0, v0,  u1, v0,  u0, v1);
+      verts.push(u1, v0,  u1, v1,  u0, v1);
+    }
+  }
+  _glVertexCount = verts.length / 2;
+  _glVbuf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, _glVbuf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.STATIC_DRAW);
+  return gl;
+}
+
+function _uploadCP(gl, page) {
+  const arr = new Float32Array(16 * 2);
+  const grid = bezierMesh[page];
+  for (let r = 0; r < BEZ_N; r++) {
+    for (let c = 0; c < BEZ_N; c++) {
+      arr[(r*4+c)*2]     = grid[r][c].x;
+      arr[(r*4+c)*2 + 1] = grid[r][c].y;
+    }
+  }
+  gl.uniform2fv(_glLoc.u_cp, arr);
+}
+
+function _uploadTexture(gl, src) {
+  if (!src) return;
+  if (!_glTex) _glTex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, _glTex);
+  // **重要**: メッシュの uv (0,0) は HTML 上の top-left。 FLIP_Y_WEBGL = false
+  // (デフォルト) で texImage2D すると canvas pixel (0,0) = source top-left が
+  // texture pixel (0,0) に直接格納され、 texture(0,0) サンプル = source top-left。
+  // FLIP_Y を true にすると上下逆になって表示が逆さまになるので明示 false。
+  gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, src);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+}
+
+async function _captureSnapshot() {
+  // 撮影中はベジェ canvas / ハンドルを隠して、 元の userbox を見える状態にする
+  const wasMode = document.body.classList.contains('corner-pin-mode');
+  document.body.classList.remove('corner-pin-mode');
+  if (_bezCanvas) _bezCanvas.style.visibility = 'hidden';
+  document.querySelectorAll('.bezier-handle').forEach(h => h.style.visibility = 'hidden');
+  // **重要**: CSS zoom が掛かったまま html2canvas を呼ぶと、 zoom 適用後の
+  // サイズで撮影されて UV mapping (フル解像度前提) と不整合 → 「OFF→ON で
+  // 盛大にずれる」 バグが起きる。 撮影中だけ zoom=1 に戻す。
+  const stageEl0 = document.getElementById('stage');
+  const savedZoom = stageEl0 ? stageEl0.style.zoom : '';
+  if (stageEl0) stageEl0.style.zoom = '';
+  await new Promise(r => requestAnimationFrame(r));   // CSS 反映待ち
+  // userbox だけ warp、 BG は CSS のまま固定 → safe-area を撮影 (BG は .stage 側
+  // の CSS background-image なので safe-area には含まれない、 結果として透明背景の
+  // userbox レイヤーだけがテクスチャになる)
+  const safeAreaEl = document.getElementById('safe-area');
+  console.info('[bezier] capture starting, safe-area rect:', safeAreaEl?.getBoundingClientRect());
+  let snapshot = null;
+  try {
+    if (typeof html2canvas !== 'function') {
+      console.warn('html2canvas not loaded');
+      alert('html2canvas が読み込めていません。 リロードして再試行してください');
+      if (_bezCanvas) _bezCanvas.style.visibility = '';
+      document.querySelectorAll('.bezier-handle').forEach(h => h.style.visibility = '');
+      return null;
+    }
+    snapshot = await html2canvas(safeAreaEl, {
+      backgroundColor: null,
+      scale: 1,
+      logging: false,
+      useCORS: true,
+      allowTaint: false,
+    });
+  } catch (e) {
+    console.error('[bezier] html2canvas failed:', e);
+  }
+  if (wasMode) document.body.classList.add('corner-pin-mode');
+  if (_bezCanvas) _bezCanvas.style.visibility = '';
+  document.querySelectorAll('.bezier-handle').forEach(h => h.style.visibility = '');
+  // zoom を撮影前の値に戻す (撮影中だけ 1 にしていた)
+  if (stageEl0) stageEl0.style.zoom = savedZoom;
+  console.info('[bezier] snapshot result:',
+    snapshot ? { w: snapshot.width, h: snapshot.height } : null);
+  if (!snapshot || snapshot.width === 0 || snapshot.height === 0) {
+    return null;
+  }
+  // ?debug=1 で snapshot を画面右下に確認用 thumbnail として置く
+  if (new URLSearchParams(location.search).get('debug') === '1') {
+    document.querySelectorAll('.bezier-debug-thumb').forEach(e => e.remove());
+    const dbg = document.createElement('div');
+    dbg.className = 'bezier-debug-thumb';
+    dbg.style.cssText = 'position:fixed;right:8px;bottom:8px;width:240px;border:2px solid #f0f;background:#000;z-index:9999;';
+    snapshot.style.cssText = 'width:100%;display:block;';
+    dbg.appendChild(snapshot.cloneNode(true));
+    document.body.appendChild(dbg);
+  }
+  _glTextureCanvas = snapshot;
+  return snapshot;
+}
+
+// safe-area (1600×900) を撮影 → texture は safe-area と同じアスペクト
+// 左ページ u = 0..0.5、 右ページ u = 0.5..1
+const _UV_OFF_X  = 0.0;
+const _UV_PAGE_W = 0.5;
+
+function applyBezierWarp() {
+  if (!document.body.classList.contains('corner-pin-mode')) return;
+  const gl = _initWebGL();
+  if (!gl) {
+    console.error('[bezier] WebGL init failed in applyBezierWarp');
+    return;
+  }
+  if (!_glTextureCanvas) {
+    console.warn('[bezier] no snapshot, skipping warp render');
+    return;
+  }
+  _uploadTexture(gl, _glTextureCanvas);
+  let err = gl.getError();
+  if (err !== gl.NO_ERROR) console.warn('[bezier] gl error after texImage2D:', err);
+  gl.viewport(0, 0, _bezCanvas.width, _bezCanvas.height);
+  gl.clearColor(0, 0, 0, 0);
+  gl.clear(gl.COLOR_BUFFER_BIT);
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);   // pre-multiplied alpha 用
+  gl.useProgram(_glProgram);
+  gl.bindBuffer(gl.ARRAY_BUFFER, _glVbuf);
+  gl.enableVertexAttribArray(_glLoc.a_uv);
+  gl.vertexAttribPointer(_glLoc.a_uv, 2, gl.FLOAT, false, 0, 0);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, _glTex);
+  gl.uniform1i(_glLoc.u_tex, 0);
+  gl.uniform2f(_glLoc.u_safeSize, SAFE_W, SAFE_H);
+  // 左ページ: stage texture の (UV_OFF_X, 0) - (UV_OFF_X + UV_PAGE_W, 1)
+  _uploadCP(gl, 'left');
+  gl.uniform2f(_glLoc.u_pagePos, 0, 0);
+  gl.uniform2f(_glLoc.u_uvOffset, _UV_OFF_X, 0);
+  gl.uniform2f(_glLoc.u_uvScale, _UV_PAGE_W, 1);
+  gl.drawArrays(gl.TRIANGLES, 0, _glVertexCount);
+  // 右ページ: stage texture の (UV_OFF_X + UV_PAGE_W, 0) - (UV_OFF_X + 2*UV_PAGE_W, 1)
+  _uploadCP(gl, 'right');
+  gl.uniform2f(_glLoc.u_pagePos, PAGE_W, 0);
+  gl.uniform2f(_glLoc.u_uvOffset, _UV_OFF_X + _UV_PAGE_W, 0);
+  gl.uniform2f(_glLoc.u_uvScale, _UV_PAGE_W, 1);
+  gl.drawArrays(gl.TRIANGLES, 0, _glVertexCount);
+  err = gl.getError();
+  if (err !== gl.NO_ERROR) console.warn('[bezier] gl error after drawArrays:', err);
+  _updateBezierHandlePositions();
+}
+
+function _ensureBezierHandles() {
+  const layer = document.getElementById('bezier-handle-layer');
+  if (!layer || layer._init) return;
+  layer._init = true;
+  ['left', 'right'].forEach(page => {
+    for (let r = 0; r < BEZ_N; r++) {
+      for (let c = 0; c < BEZ_N; c++) {
+        const h = document.createElement('div');
+        h.className = 'bezier-handle';
+        if ((r === 0 || r === BEZ_N - 1) && (c === 0 || c === BEZ_N - 1)) {
+          h.classList.add('corner');
+        }
+        h.dataset.page = page;
+        h.dataset.row = r;
+        h.dataset.col = c;
+        layer.appendChild(h);
+      }
+    }
+  });
+  _attachBezierHandlers();
+}
+
+function _updateBezierHandlePositions() {
+  ['left', 'right'].forEach(page => {
+    const grid = bezierMesh[page];
+    const baseLeft = page === 'left' ? 0 : PAGE_W;
+    for (let r = 0; r < BEZ_N; r++) {
+      for (let c = 0; c < BEZ_N; c++) {
+        const h = document.querySelector(
+          `.bezier-handle[data-page="${page}"][data-row="${r}"][data-col="${c}"]`);
+        if (h) {
+          h.style.left = (grid[r][c].x + baseLeft) + 'px';
+          h.style.top  = grid[r][c].y + 'px';
+        }
+      }
+    }
+  });
+}
+
+// ベジェ操作の取り消しスタック (各 mousedown で current state を push)
+const _bezierHistory = [];
+const BEZIER_HISTORY_MAX = 100;
+function _pushBezierHistory() {
+  _bezierHistory.push(JSON.parse(JSON.stringify(bezierMesh)));
+  if (_bezierHistory.length > BEZIER_HISTORY_MAX) _bezierHistory.shift();
+}
+function undoBezier() {
+  if (_bezierHistory.length === 0) {
+    console.info('[bezier] undo stack empty');
+    return;
+  }
+  const prev = _bezierHistory.pop();
+  ['left', 'right'].forEach(p => {
+    for (let r = 0; r < BEZ_N; r++) {
+      for (let c = 0; c < BEZ_N; c++) {
+        bezierMesh[p][r][c] = { x: prev[p][r][c].x, y: prev[p][r][c].y };
+      }
+    }
+  });
+  _updateBezierHandlePositions();
+  if (document.body.classList.contains('corner-pin-mode')) applyBezierWarp();
+  saveResizeState();
+}
+
+function _attachBezierHandlers() {
+  document.querySelectorAll('.bezier-handle').forEach(h => {
+    if (h._handlerAttached) return;
+    h._handlerAttached = true;
+    h.addEventListener('mousedown', e => {
+      e.stopPropagation();
+      e.preventDefault();
+      _pushBezierHistory();   // 取り消し用に現在の状態を push
+      const page = h.dataset.page;
+      const r = parseInt(h.dataset.row, 10);
+      const c = parseInt(h.dataset.col, 10);
+      const startX = e.clientX, startY = e.clientY;
+      const startPos = { ...bezierMesh[page][r][c] };
+      const stageEl0 = document.getElementById('stage');
+      const sR = stageEl0.getBoundingClientRect();
+      const sW = parseFloat(getComputedStyle(stageEl0).width);
+      const scale = sR.width / sW || 1;
+      const onMove = (e2) => {
+        const dx = (e2.clientX - startX) / scale;
+        const dy = (e2.clientY - startY) / scale;
+        bezierMesh[page][r][c] = { x: startPos.x + dx, y: startPos.y + dy };
+        applyBezierWarp();
+      };
+      const onUp = () => {
+        window.removeEventListener('mousemove', onMove);
+        window.removeEventListener('mouseup', onUp);
+        saveResizeState();
+      };
+      window.addEventListener('mousemove', onMove);
+      window.addEventListener('mouseup', onUp);
+    });
+  });
+}
+
+const cornerPinBtn = document.getElementById('corner-pin-toggle');
+async function setCornerPinMode(on) {
+  const cur = document.body.classList.contains('corner-pin-mode');
+  if (cur === on) return;
+  if (on) {
+    if (cornerPinBtn) cornerPinBtn.textContent = '🌀 ベジェワープ 撮影中…';
+    const snap = await _captureSnapshot();
+    if (!snap) {
+      // snapshot 失敗時は mode に入らない (= userbox を隠さない)。 これで
+      // 「ベジェワープを ON にしたら全部消えた」 事故を防ぐ。
+      console.error('[bezier] snapshot failed → aborting mode toggle');
+      alert('ベジェワープの撮影に失敗しました。 console を見て URL に ?debug=1 を付けて再試行してください。');
+      if (cornerPinBtn) cornerPinBtn.textContent = '🌀 ベジェワープ OFF';
+      return;
+    }
+    _ensureBezierHandles();
+    // canvas を可視化してから getContext (display:none の canvas で null になる
+    // ブラウザバグ回避)。 失敗したら mode は付けたままにせず外す
+    document.body.classList.add('corner-pin-mode');
+    const gl = _initWebGL();
+    if (!gl) {
+      document.body.classList.remove('corner-pin-mode');
+      console.error('[bezier] WebGL init failed → aborting mode toggle');
+      alert('WebGL の初期化に失敗しました。\n詳細:\n' + (window._lastBezierError || '(unknown)'));
+      if (cornerPinBtn) cornerPinBtn.textContent = '🌀 ベジェワープ OFF';
+      return;
+    }
+    applyBezierWarp();
+  } else {
+    document.body.classList.remove('corner-pin-mode');
+    _glTextureCanvas = null;
+    document.querySelectorAll('.bezier-debug-thumb').forEach(e => e.remove());
+    // OFF 時に canvas を完全に「無効化」: 描画内容クリア + inline style リセット
+    // ↓ 旧 「OFF にしてもピンクの warped userbox 残像が残る」 バグの修正
+    if (_gl && _bezCanvas) {
+      _gl.viewport(0, 0, _bezCanvas.width, _bezCanvas.height);
+      _gl.clearColor(0, 0, 0, 0);
+      _gl.clear(_gl.COLOR_BUFFER_BIT);
+    }
+    if (_bezCanvas) {
+      // _initWebGL で付けた inline visibility/display を解除して、 CSS の
+      // visibility:hidden を有効化させる
+      _bezCanvas.style.visibility = '';
+      _bezCanvas.style.display = '';
+    }
+  }
+  if (cornerPinBtn) {
+    cornerPinBtn.textContent = on ? '🌀 ベジェワープ ON' : '🌀 ベジェワープ OFF';
+    cornerPinBtn.classList.toggle('active', on);
+  }
+}
+cornerPinBtn && cornerPinBtn.addEventListener('click', () =>
+  setCornerPinMode(!document.body.classList.contains('corner-pin-mode')));
+
+// ベジェ制御点を初期格子 (= 平面 / 歪み無し) に戻すリセットボタン
+const bezierResetBtn = document.getElementById('bezier-reset');
+function resetBezierMesh() {
+  _pushBezierHistory();   // リセットも undo 可能にする
+  bezierMesh.left  = _initBezierGrid();
+  bezierMesh.right = _initBezierGrid();
+  _updateBezierHandlePositions();
+  if (document.body.classList.contains('corner-pin-mode')) applyBezierWarp();
+  saveResizeState();
+}
+bezierResetBtn && bezierResetBtn.addEventListener('click', resetBezierMesh);
+
+// ベジェ操作の取り消しボタン + Ctrl+Z
+const bezierUndoBtn = document.getElementById('bezier-undo');
+bezierUndoBtn && bezierUndoBtn.addEventListener('click', undoBezier);
+
+// ベジェプレビューモード:
+// ON  = ベジェ ON + ハンドル/orange 非表示 でクリーンな warp 結果を表示
+// OFF = ベジェ OFF (= 編集モードに戻る)。 mesh 制御点は保存されたまま、
+//       次回 ON でまた warp に戻れる。
+// (旧仕様: OFF にしても bezier は ON のままで warp の orange だけ残って混乱
+//  していた → OFF で編集モードに戻すよう統合した)
+const bezierPreviewBtn = document.getElementById('bezier-preview');
+async function setBezierPreview(on) {
+  document.body.classList.toggle('bezier-preview-mode', on);
+  if (bezierPreviewBtn) {
+    bezierPreviewBtn.textContent = on ? '👁 プレビュー ON' : '👁 プレビュー OFF';
+    bezierPreviewBtn.classList.toggle('active', on);
+  }
+  if (on) {
+    // 必要なら自動でベジェ ON (プレビューは warp 表示が前提)
+    if (!document.body.classList.contains('corner-pin-mode')) {
+      await setCornerPinMode(true);
+    } else {
+      // 既に bezier ON → 再スナップショットして orange 抜きのクリーン表示に
+      await _captureSnapshot();
+      applyBezierWarp();
+    }
+  } else {
+    // プレビュー OFF → ベジェも OFF にして編集モードに戻る (= 旧 userbox 表示)
+    if (document.body.classList.contains('corner-pin-mode')) {
+      await setCornerPinMode(false);
+    }
+  }
+}
+bezierPreviewBtn && bezierPreviewBtn.addEventListener('click', () =>
+  setBezierPreview(!document.body.classList.contains('bezier-preview-mode')));
+window.addEventListener('keydown', (e) => {
+  // bezier mode 中だけ Ctrl+Z を奪う (普段はブラウザのデフォルトに任せる)
+  if (!document.body.classList.contains('corner-pin-mode')) return;
+  if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+    e.preventDefault();
+    undoBezier();
+  }
+});
+
+// ───── ステージのズーム ─────
+// ベジェの制御点が画面外に出ると掴めなくなるので stage 全体を縮小/拡大できるように。
+// **重要**: transform: scale() だと見かけだけ縮んで layout box の大きさは元の
+// ままなので、 スクロール可能領域は変わらず 「下が切れたまま」 になっていた。
+// CSS `zoom` は見かけ + layout 両方変えるので、 zoom 0.5 にすれば実際に
+// stage が半分の領域として扱われ、 viewport 内に全部収まる。
+let _stageZoom = 1.0;
+function applyStageZoom(z) {
+  _stageZoom = Math.max(0.25, Math.min(3.0, z));
+  const stageEl0 = document.getElementById('stage');
+  if (stageEl0) {
+    // 旧 transform を残してると競合するので念のため空に
+    stageEl0.style.transform = '';
+    stageEl0.style.transformOrigin = '';
+    stageEl0.style.zoom = _stageZoom === 1 ? '' : String(_stageZoom);
+  }
+  // ボタン表示を更新 (現在の zoom 倍率)
+  if (zoomFitBtn) zoomFitBtn.textContent = Math.round(_stageZoom * 100) + '%';
+}
+const zoomOutBtn = document.getElementById('zoom-out');
+const zoomFitBtn = document.getElementById('zoom-fit');
+const zoomInBtn  = document.getElementById('zoom-in');
+zoomOutBtn && zoomOutBtn.addEventListener('click', () => applyStageZoom(_stageZoom - 0.1));
+zoomFitBtn && zoomFitBtn.addEventListener('click', () => applyStageZoom(1.0));
+zoomInBtn  && zoomInBtn .addEventListener('click', () => applyStageZoom(_stageZoom + 0.1));
+// Ctrl + マウスホイール でも調整できるように (preview の操作中に手早く)
+document.addEventListener('wheel', (e) => {
+  if (!e.ctrlKey) return;
+  e.preventDefault();
+  applyStageZoom(_stageZoom + (e.deltaY < 0 ? 0.1 : -0.1));
+}, { passive: false });
+
+// 初期化時はハンドルだけ準備 (実体は OFF 状態で非表示)。 WebGL は撮影時に init。
+_ensureBezierHandles();
+// 旧バージョンで保存された ON フラグが残っていると毎回 auto-toggle されるので削除
+try { localStorage.removeItem('zukan_corner_pin'); } catch(_) {}
+
+// ───── userbox: ユーザーがドラッグで作る矩形フレーム ─────
+// 通常 (resize-mode ON): 空き領域 drag で新規作成。 既存枠の上は select/move/resize
+// 強制 (draw-mode ON): 既存枠の上でも常に新規作成 (重なった枠の上で作りたい時用)
+
+const drawBtn = document.getElementById('userbox-add');
+let drawModeOn = false;
+function setDrawMode(on) {
+  drawModeOn = on;
+  document.body.classList.toggle('draw-mode', on);
+  if (drawBtn) {
+    drawBtn.textContent = on ? '🆕 矩形追加 ON' : '🆕 矩形追加 OFF';
+    drawBtn.classList.toggle('active', on);
+  }
+}
+drawBtn && drawBtn.addEventListener('click', () => {
+  if (!document.body.classList.contains('resize-mode')) enableResize();
+  setDrawMode(!drawModeOn);
+});
+window.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && drawModeOn) setDrawMode(false);
+});
+
+let userboxCounter = 0;
+function createUserbox(opts) {
+  // opts: { id?, label?, left, top, w, h, tx?, ty?, groupId?, bgImage? }
+  userboxCounter += 1;
+  const id = opts.id || ('userbox-' + Date.now() + '-' + userboxCounter);
+  const label = opts.label || ('枠' + userboxCounter);
+  const div = document.createElement('div');
+  div.className = 'userbox';
+  div.dataset.userboxId = id;
+  div.dataset.userboxLabel = label;
+  if (opts.groupId) div.dataset.groupId = opts.groupId;
+  if (opts.bgImage) {
+    div.dataset.bgImage = opts.bgImage;
+    div.style.backgroundImage = `url("${opts.bgImage}")`;
+    // background-size / position / repeat は .userbox-with-bg の CSS 規則
+    // (background-size: var(--zk-art-size, contain) …) に委譲する。
+    // インラインで上書きすると CSS 変数が効かなくなるため、 明示しない。
+    div.style.backgroundColor = 'transparent';
+    div.classList.add('userbox-with-bg');
+    // opts.artScale (= "70" のような数字文字列) が指定されていれば適用
+    if (opts.artScale) {
+      div.dataset.artScale = String(opts.artScale);
+      div.style.setProperty('--zk-art-size', String(opts.artScale) + '% auto');
+    }
+  }
+  div.style.left = opts.left;
+  div.style.top = opts.top;
+  if (opts.w) div.style.width = opts.w;
+  if (opts.h) div.style.height = opts.h;
+  // ラベルバッジ (contenteditable)
+  const badge = document.createElement('div');
+  badge.className = 'userbox-badge';
+  badge.contentEditable = 'true';
+  badge.textContent = label;
+  badge.spellcheck = false;
+  badge.addEventListener('mousedown', e => e.stopPropagation());
+  badge.addEventListener('blur', () => {
+    const newLabel = badge.textContent.trim() || ('枠' + userboxCounter);
+    badge.textContent = newLabel;
+    div.dataset.userboxLabel = newLabel;
+    saveResizeState();
+  });
+  badge.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); badge.blur(); }
+  });
+  div.appendChild(badge);
+  // × 削除ボタン
+  const del = document.createElement('div');
+  del.className = 'userbox-del';
+  del.textContent = '×';
+  del.title = '削除';
+  del.addEventListener('mousedown', e => { e.stopPropagation(); e.preventDefault(); });
+  del.addEventListener('click', e => {
+    e.stopPropagation();
+    if (confirm(`「${div.dataset.userboxLabel}」 を削除しますか？`)) {
+      selectedElements && selectedElements.delete(div);
+      div.remove();
+      saveResizeState();
+      refreshSelectionUI && refreshSelectionUI();
+    }
+  });
+  div.appendChild(del);
+  // safe-area に追加
+  const target = document.querySelector('.zukan-safe') || document.getElementById('safe-area');
+  target.appendChild(div);
+  // resize-mode が ON ならハンドル即装着
+  if (document.body.classList.contains('resize-mode')) {
+    attachHandle(div, 'wh');
+  }
+  // tx/ty を後から適用 (load 経路用)
+  if (opts.tx || opts.ty) {
+    div._tx = opts.tx || 0;
+    div._ty = opts.ty || 0;
+    setElTransform(div);
+  }
+  return div;
+}
+window.createUserbox = createUserbox;
+
+function collectUserboxes() {
+  return [...document.querySelectorAll('.userbox')].map(el => ({
+    id: el.dataset.userboxId,
+    label: el.dataset.userboxLabel,
+    left: el.style.left,
+    top: el.style.top,
+    w: el.style.width,
+    h: el.style.height,
+    tx: el._tx || 0,
+    ty: el._ty || 0,
+    groupId: el.dataset.groupId || '',
+    bgImage: el.dataset.bgImage || '',
+  }));
+}
+window.collectUserboxes = collectUserboxes;
+function restoreUserboxes(arr) {
+  // 重複防止: 既存をクリアしてから再生成
+  document.querySelectorAll('.userbox').forEach(el => el.remove());
+  if (!Array.isArray(arr)) return;
+  arr.forEach(box => createUserbox(box));
+}
+window.restoreUserboxes = restoreUserboxes;
+
+// ステージ mousedown でドラッグ開始
+//   通常: resize-mode ON + 既存枠の外、 で新規作成
+//   強制: draw-mode ON ならどこでも作成 (既存枠の上でも)
+const stageEl = document.getElementById('stage');
+stageEl.addEventListener('mousedown', e => {
+  if (!document.body.classList.contains('resize-mode')) return;
+  // ツールバーなど特殊エリアは draw-mode でもスキップ
+  if (e.target.closest('.toolbar, .ruler, .guide, .numeric-panel')) return;
+  // draw-mode OFF の時のみ、 既存枠/ハンドルの上では何もしない (= select/move 経路に任せる)
+  if (!drawModeOn && e.target.closest('.resizable, .resize-handle, .userbox-badge, .userbox-del')) return;
+  e.preventDefault();
+  e.stopPropagation();
+  const stageRect = stageEl.getBoundingClientRect();
+  const stageW = parseFloat(getComputedStyle(stageEl).width);
+  const scale = stageRect.width / stageW || 1;
+  const safe = document.querySelector('.zukan-safe') || stageEl;
+  const safeRect = safe.getBoundingClientRect();
+  const sx = (e.clientX - safeRect.left) / scale;
+  const sy = (e.clientY - safeRect.top) / scale;
+  const preview = document.createElement('div');
+  preview.className = 'userbox-preview';
+  preview.style.left = sx + 'px';
+  preview.style.top = sy + 'px';
+  preview.style.width = '0px';
+  preview.style.height = '0px';
+  safe.appendChild(preview);
+
+  const onMove = (e2) => {
+    const x = (e2.clientX - safeRect.left) / scale;
+    const y = (e2.clientY - safeRect.top) / scale;
+    const x0 = Math.min(sx, x), y0 = Math.min(sy, y);
+    const w = Math.abs(x - sx), h = Math.abs(y - sy);
+    preview.style.left = x0 + 'px';
+    preview.style.top = y0 + 'px';
+    preview.style.width = w + 'px';
+    preview.style.height = h + 'px';
+  };
+  const onUp = () => {
+    window.removeEventListener('mousemove', onMove);
+    window.removeEventListener('mouseup', onUp);
+    const w = parseFloat(preview.style.width);
+    const h = parseFloat(preview.style.height);
+    const left = preview.style.left;
+    const top = preview.style.top;
+    preview.remove();
+    if (w >= 20 && h >= 20) {
+      createUserbox({ left, top, w: w + 'px', h: h + 'px' });
+      saveResizeState();
+    }
+    // draw-mode は連続作成できるよう ON のまま
+  };
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('mouseup', onUp);
+});
+
+// 起動時にサーバー (commit 済み) → ローカルストレージの順で復元
+(async () => {
+  const serverData = await loadSavedLayoutFromServer();
+  if (serverData && Object.keys(serverData).length > 0) {
+    // server snapshot を適用
+    try { localStorage.setItem(RESIZE_KEY, JSON.stringify(serverData)); } catch(e) {}
+    loadResizeState();
+  } else {
+    loadResizeState();
+  }
+  lastSavedLayoutJson = JSON.stringify(takeLayoutSnapshot());
+})();
+
+// ───── Preview mode (端末サイズで見る) ─────
+const previewBtn = document.getElementById('preview-mode');
+const previewExit = document.getElementById('preview-exit');
+function fitStage() {
+  const w = window.innerWidth, h = window.innerHeight;
+  const stageW = parseFloat(getComputedStyle(stage).width);
+  const stageH = parseFloat(getComputedStyle(stage).height);
+  const scale = Math.min(w / stageW, h / stageH);
+  const scaledW = stageW * scale;
+  const scaledH = stageH * scale;
+  const offsetX = (w - scaledW) / 2;
+  const offsetY = (h - scaledH) / 2;
+  // transform-origin 0 0 + 明示的な translate(px) で確実にレターボックス中央配置
+  stage.style.transformOrigin = '0 0';
+  stage.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
+}
+function enterPreview() {
+  document.body.classList.add('preview-mode');
+  fitStage();
+  window.addEventListener('resize', fitStage);
+  // 縦横対応: 端末を回転したらリフィット
+  window.addEventListener('orientationchange', () => setTimeout(fitStage, 100));
+}
+function exitPreview() {
+  document.body.classList.remove('preview-mode');
+  stage.style.transform = '';
+  window.removeEventListener('resize', fitStage);
+}
+previewBtn?.addEventListener('click', enterPreview);
+previewExit?.addEventListener('click', exitPreview);
+window.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.body.classList.contains('preview-mode')) {
+    exitPreview();
+  }
+});
+
+// URL ?preview=1 で直接プレビューモード
+if (new URLSearchParams(location.search).get('preview') === '1') {
+  setTimeout(enterPreview, 50);
+}
+
+// ── Reset button ──
+if (annoReset) {
+  annoReset.addEventListener('click', () => {
+    if (!confirm('保存された注釈と設定を全て削除します (元に戻せません)。よろしいですか？')) return;
+    clearAllSavedState();
+  });
+}
+
+// ── Init: load saved state, otherwise default layout ──
+const restored = loadState();
+if (!restored) {
+  buildLayout('row-3');
+} else {
+  buildLayout(document.getElementById('layout-select').value);
+}
+
+// ── Save before leaving ──
+window.addEventListener('beforeunload', saveState);
+window.addEventListener('visibilitychange', () => { if (document.hidden) saveState(); });
+
+// ─────────────────────────────────────────────────────────────────────
+//  🌐 ツールバー組込ナビゲーション (Task A)
+//   page-nav.js (右上 FAB) はツールバーと重なって視認できないので、
+//   ツールバー先頭の #zk-pages-btn から同じ pages 一覧を開けるようにする。
+//   FAB は併存 (page-nav.js のドキュメント保証)。
+// ─────────────────────────────────────────────────────────────────────
+(function initZkPagesNav() {
+  // DOMContentLoaded 後に再実行しても二重 bind しないようガード
+  function setup() {
+    const btn = document.getElementById('zk-pages-btn');
+    if (!btn) {
+      console.warn('[zk-pages-nav] #zk-pages-btn not found in DOM');
+      return;
+    }
+    if (btn.dataset.zkBound === '1') return;
+    btn.dataset.zkBound = '1';
+
+    let dropdown = null;
+    let docHandler = null;
+    let escHandler = null;
+
+    function escHtml(s) {
+      return String(s).replace(/[&<>"']/g, c =>
+        c === '&' ? '&amp;' : c === '<' ? '&lt;' : c === '>' ? '&gt;' :
+        c === '"' ? '&quot;' : '&#39;');
+    }
+    function closeDropdown() {
+      if (dropdown) { dropdown.remove(); dropdown = null; }
+      if (docHandler) { document.removeEventListener('click', docHandler, true); docHandler = null; }
+      if (escHandler) { document.removeEventListener('keydown', escHandler, true); escHandler = null; }
+      btn.setAttribute('aria-expanded', 'false');
+    }
+    function openDropdown() {
+      try {
+        const pages = (window.PageNavConfig && Array.isArray(window.PageNavConfig.pages))
+          ? window.PageNavConfig.pages : [];
+        if (!pages.length) {
+          console.warn('[zk-pages-nav] PageNavConfig.pages is empty');
+          return;
+        }
+        dropdown = document.createElement('div');
+        dropdown.className = 'zk-pages-dropdown';
+        // 明示的に display: block を指定 (将来 CSS で初期 display:none に
+        // しても確実に開くようにするための保険)
+        dropdown.style.display = 'block';
+        const rect = btn.getBoundingClientRect();
+        dropdown.style.top  = (rect.bottom + 4) + 'px';
+        dropdown.style.left = Math.max(8, rect.left) + 'px';
+        let html = '<div class="zk-pages-dropdown-title">編集可能なページ</div><ul class="zk-pages-list">';
+        pages.forEach(p => {
+          if (!p || !p.name) return;
+          const name = escHtml(p.name);
+          const url  = p.url ? escHtml(p.url) : '';
+          if (p.current) {
+            html += '<li><a class="zk-pages-link is-current" href="#" onclick="return false;">📍 ' + name + '</a></li>';
+          } else if (url) {
+            html += '<li><a class="zk-pages-link" href="' + url + '">' + name + '</a></li>';
+          } else {
+            html += '<li><span>' + name + '</span></li>';
+          }
+        });
+        html += '</ul>';
+        dropdown.innerHTML = html;
+        document.body.appendChild(dropdown);
+        btn.setAttribute('aria-expanded', 'true');
+
+        // 右端クリップ補正: 表示後に実幅を測り、viewport 右端 (-8px) を超えるなら左へずらす
+        try {
+          const dRect = dropdown.getBoundingClientRect();
+          const rightLimit = window.innerWidth - 8;
+          if (dRect.right > rightLimit) {
+            const w = dropdown.offsetWidth;
+            dropdown.style.left = Math.max(8, window.innerWidth - w - 8) + 'px';
+          }
+        } catch (_) { /* noop */ }
+
+        // 外側クリックで閉じる (defer して同一クリックの捕捉を回避)
+        docHandler = function (e) {
+          if (!dropdown) return;
+          if (dropdown.contains(e.target)) return;
+          if (btn.contains(e.target)) return;
+          closeDropdown();
+        };
+        setTimeout(() => document.addEventListener('click', docHandler, true), 0);
+
+        // Esc で閉じる
+        escHandler = function (e) {
+          if (e.key === 'Escape') { e.preventDefault(); closeDropdown(); }
+        };
+        document.addEventListener('keydown', escHandler, true);
+      } catch (err) {
+        console.error('[zk-pages-nav] openDropdown failed:', err);
+        // 失敗時は state を巻き戻して 次回クリックで再試行できるようにする
+        if (dropdown) { dropdown.remove(); dropdown = null; }
+        btn.setAttribute('aria-expanded', 'false');
+      }
+    }
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (dropdown) closeDropdown(); else openDropdown();
+    });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setup, { once: true });
+  } else {
+    setup();
+  }
+})();
+
+// ─────────────────────────────────────────────────────────────────────
+//  🖼 装飾フレーム (Task B): userbox に .zk-frame オーバーレイを付ける
+//   - userbox.dataset.frameKind = 'animal-banner' | 'card-square' |
+//     'rabbit-portrait' | 'text-underline' でアサイン
+//   - createUserbox() で復元する経路と、 後付けの UI 経路の両方を吸収
+//   - collectUserboxes() / restoreUserboxes() に frameKind を載せて永続化
+//
+//  既存の createUserbox / collectUserboxes / restoreUserboxes には触らず、
+//  monkey-patch でラップする (元コードのリスク最小化)。
+// ─────────────────────────────────────────────────────────────────────
+(function initZkFrameOverlay() {
+  // [zk] 装飾フレーム IIFE の起動を必ずログに残す (起動していなければ後段の
+  // attachFrameUI / autoBtn の bind も走っていない = 完全空振りの典型)
+  try { console.log('[zk] initZkFrameOverlay() boot'); } catch (e) {}
+
+  const PLACEHOLDER_DIR = '../../../assets/zukan/frames/placeholder/';
+  const FRAME_SRC = {
+    'animal-banner':   '../../../assets/zukan/frames/animal-banner.png',
+    'card-square':     '../../../assets/zukan/frames/card-square.png',
+    'rabbit-portrait': '../../../assets/zukan/frames/rabbit-portrait.png',
+    'text-underline':  '../../../assets/zukan/frames/text-underline.png',
+  };
+  const FRAME_LABEL = {
+    '':                 '（なし）',
+    'animal-banner':   '動物バナー (横長)',
+    'card-square':     'カードマス (正方形)',
+    'rabbit-portrait': 'うさぎポートレート (縦長)',
+    'text-underline':  'テキスト下線',
+  };
+  // 装飾フレーム適用対象セレクタ:
+  //   - .userbox          : ユーザーがドラッグで作る矩形 (zukan の主要対象。 15個)
+  //   - .slot             : 旧 quizland 由来のレイアウト slot (zukan モードでは
+  //                         #board が無いので生成されないが、 将来 / 他 preview と
+  //                         共有するため明示)
+  //   - [data-zk-framable]: 任意の DOM へオプトインで装飾フレームを当てる拡張穴
+  const FRAMABLE_SELECTOR = '.userbox, .slot, [data-zk-framable]';
+  // kind 別の推奨デフォルト artScale (%) — userbox-with-bg の中身イラストを
+  // 枠 PNG の透明余白に収まるよう少し縮める初期値。 ユーザーが既に手動で
+  // dataset.artScale を設定していたら上書きしない。
+  const FRAME_DEFAULT_ART_SCALE = {
+    'animal-banner':   90,
+    'card-square':     70,
+    'rabbit-portrait': 80,
+    // 'text-underline' はテキスト用なのでスキップ (= デフォルト適用なし)
+  };
+  // 1) .zk-frame img の付け外し — .userbox 以外 (.slot 等) にも適用できるよう拡張
+  function applyFrame(targetEl, kind) {
+    if (!targetEl) return;
+    try { console.log('[zk] applyFrame', kind, targetEl); } catch (e) {}
+    const existing = targetEl.querySelector(':scope > img.zk-frame');
+    if (existing) existing.remove();
+    if (kind && FRAME_SRC[kind]) {
+      // .zk-frame は CSS で position:absolute + inset:0 なので、 親が
+      // position:static (= .slot のデフォルト等) だと意図しない位置に出る。
+      // 念のため computed position が static なら relative を inline で当てる。
+      try {
+        const cs = getComputedStyle(targetEl);
+        if (cs && cs.position === 'static') {
+          targetEl.style.position = 'relative';
+        }
+      } catch (e) {}
+      const img = document.createElement('img');
+      img.className = 'zk-frame';
+      img.dataset.frameKind = kind;
+      img.alt = '';
+      img.draggable = false;
+      img.src = FRAME_SRC[kind];
+      img.addEventListener('error', () => {
+        try { console.warn('[zk] frame image failed to load:', img.src); } catch (e) {}
+      });
+      // badge と del の前 (= DOM 下層 / overlay 用) に挿入
+      targetEl.insertBefore(img, targetEl.firstChild);
+      targetEl.dataset.frameKind = kind;
+      // kind 別デフォルト artScale を適用 (背景イラスト付き userbox かつ未設定の時のみ)
+      try {
+        const defScale = FRAME_DEFAULT_ART_SCALE[kind];
+        if (
+          defScale != null &&
+          targetEl.classList && targetEl.classList.contains('userbox-with-bg') &&
+          !targetEl.dataset.artScale
+        ) {
+          targetEl.dataset.artScale = String(defScale);
+          targetEl.style.setProperty('--zk-art-size', defScale + '% auto');
+          try { console.log('[zk] applyFrame default artScale=', defScale, 'kind=', kind, 'el=', targetEl); } catch (e) {}
+        }
+      } catch (e) {}
+    } else {
+      delete targetEl.dataset.frameKind;
+      delete targetEl.dataset.artScale;
+      targetEl.style.removeProperty('--zk-art-size');
+    }
+  }
+  window.__zkApplyFrame = applyFrame;
+
+  // 2) createUserbox を wrap して frameKind option を反映
+  if (typeof window.createUserbox === 'function') {
+    const orig = window.createUserbox;
+    window.createUserbox = function (opts) {
+      const el = orig(opts);
+      if (opts && opts.frameKind) applyFrame(el, opts.frameKind);
+      return el;
+    };
+  } else if (typeof createUserbox === 'function') {
+    // createUserbox は IIFE の外で宣言されているため、 直接の再代入は不可。
+    // 代わりに MutationObserver でフォローする (3 を参照)。
+  }
+
+  // 3) safe-area への userbox 追加を MutationObserver で監視し、
+  //    dataset.frameKind が付いていれば applyFrame を呼ぶ。 これで
+  //    createUserbox の closure 内呼び出し (= 上の wrap を経由しない) も
+  //    確実にフレームが付く。
+  const safeArea = document.querySelector('.zukan-safe') || document.getElementById('safe-area');
+  if (safeArea) {
+    const mo = new MutationObserver((records) => {
+      records.forEach(rec => {
+        rec.addedNodes && rec.addedNodes.forEach(node => {
+          if (node && node.nodeType === 1 && node.classList && node.classList.contains('userbox')) {
+            const kind = node.dataset.frameKind;
+            if (kind) applyFrame(node, kind);
+          }
+        });
+      });
+    });
+    mo.observe(safeArea, { childList: true });
+  }
+
+  // 4) collectUserboxes を wrap して frameKind を出力に含める
+  //    照合は dataset.userboxId による 1 対 1 マッチ (= 並び順非依存)
+  if (typeof window.collectUserboxes === 'function') {
+    const origCollect = window.collectUserboxes;
+    window.collectUserboxes = function () {
+      const arr = origCollect();
+      const byId = new Map();
+      document.querySelectorAll('.userbox').forEach(el => {
+        if (el.dataset.userboxId) byId.set(el.dataset.userboxId, el);
+      });
+      arr.forEach(row => {
+        if (!row || !row.id) return;
+        const el = byId.get(row.id);
+        if (el && el.dataset.frameKind) row.frameKind = el.dataset.frameKind;
+        // イラスト独立スケール: dataset.artScale が立っていれば永続化
+        if (el && el.dataset.artScale) row.artScale = el.dataset.artScale;
+      });
+      return arr;
+    };
+  }
+  // 5) restoreUserboxes はそのままで OK (createUserbox 経由 → MutationObserver
+  //    か wrap が反応する)。 ただし opts.frameKind の伝播のために
+  //    dataset を createUserbox 内で立てるルートを併走させる。
+  if (typeof window.restoreUserboxes === 'function') {
+    const origRestore = window.restoreUserboxes;
+    window.restoreUserboxes = function (arr) {
+      // 元実装に createUserbox(box) を呼んでもらうが、 box.frameKind は元では
+      // 使われない。 だから後段で全 userbox を走査して frameKind を当てる。
+      // 照合は dataset.userboxId による 1 対 1 マッチ (= 並び順非依存)
+      origRestore(arr);
+      if (Array.isArray(arr)) {
+        const byId = new Map();
+        document.querySelectorAll('.userbox').forEach(el => {
+          if (el.dataset.userboxId) byId.set(el.dataset.userboxId, el);
+        });
+        arr.forEach(row => {
+          if (!row || !row.id) return;
+          const el = byId.get(row.id);
+          if (!el) return;
+          if (row.frameKind) {
+            el.dataset.frameKind = row.frameKind;
+            applyFrame(el, row.frameKind);
+          }
+          // イラスト独立スケール: createUserbox(box) が opts.artScale を既に処理済みのため
+          // ここでの再書き込みは不要 (= 冗長 + 将来の改変リスク回避)。
+        });
+      }
+    };
+  }
+
+  // 6.5) サイズ自動推測ロジック (純粋関数)
+  //   userbox の幅と高さ (px) から frameKind を返す。
+  //   閾値は frame アスペクト比に基づく:
+  //     animal-banner   4:1   (ratio 4.0)
+  //     card-square     1:1   (ratio 1.0)
+  //     rabbit-portrait ~16:21 (ratio ~0.76)
+  //     text-underline  15:2  (ratio 7.5)
+  function guessFrameKind(width, height) {
+    if (!width || !height) return 'card-square';
+    const ratio = width / height;
+    if (ratio >= 5.0) return 'text-underline';     // 7.5:1 寄り
+    if (ratio >= 2.5) return 'animal-banner';      // 4:1 寄り
+    if (ratio < 0.85) return 'rabbit-portrait';    // 縦長
+    return 'card-square';                          // 1:1 寄り (デフォルト)
+  }
+  window.guessFrameKind = guessFrameKind;
+
+  // 6.6) toast helper: 2 秒表示 → fade out → remove
+  function showToast(msg) {
+    try {
+      document.querySelectorAll('.zk-auto-toast').forEach(el => el.remove());
+      const t = document.createElement('div');
+      t.className = 'zk-auto-toast';
+      t.textContent = msg;
+      t.style.cssText = [
+        'position: fixed',
+        'bottom: 20px',
+        'left: 50%',
+        'transform: translateX(-50%)',
+        'background: #1a1a1a',
+        'color: #ffba6b',
+        'padding: 10px 20px',
+        'border: 1px solid #ffba6b',
+        'border-radius: 6px',
+        'z-index: 99999',
+        'opacity: 1',
+        'transition: opacity 0.3s',
+        'font-size: 14px',
+        'pointer-events: none',
+      ].join(';');
+      document.body.appendChild(t);
+      setTimeout(() => { t.style.opacity = '0'; }, 2000);
+      setTimeout(() => { if (t.parentNode) t.parentNode.removeChild(t); }, 2200);
+    } catch (e) {}
+  }
+
+  // 6.7) 全 framable 要素にサイズから推測した frameKind を一括適用
+  function autoAssignAllFrames() {
+    // FRAMABLE_SELECTOR で .userbox / .slot / [data-zk-framable] を一括取得
+    const boxes = [...document.querySelectorAll(FRAMABLE_SELECTOR)];
+    try { console.log('[zk] auto click, boxes=', boxes.length, 'selector=', FRAMABLE_SELECTOR, boxes); } catch (e) {}
+    if (!boxes.length) {
+      const msg = `対象矩形が見つかりません: セレクタ '${FRAMABLE_SELECTOR}' で検索しました。 実際の要素クラスを ブラウザ devtools で確認してください。`;
+      try { console.warn('[zk] auto click: no boxes', FRAMABLE_SELECTOR); } catch (e) {}
+      try { alert(msg); } catch (e) {}
+      showToast(msg);
+      return;
+    }
+    let count = 0;
+    let skipped = 0;
+    boxes.forEach(el => {
+      const rect = el.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+      if (w < 2 || h < 2) { skipped++; return; } // 非表示や極小はスキップ
+      const kind = guessFrameKind(w, h);
+      try { console.log('[zk] applying', kind, 'to', el, 'w=', w, 'h=', h); } catch (e) {}
+      applyFrame(el, kind);  // 既存 applyFrame を呼ぶ (dataset.frameKind も更新)
+      count++;
+    });
+    if (typeof window.saveResizeState === 'function') window.saveResizeState();
+    try { console.log('[zk] auto done, applied=', count, 'skipped=', skipped, 'total=', boxes.length); } catch (e) {}
+    if (count > 0) {
+      showToast(`${count} 個の矩形にフレームを自動割当しました (skip=${skipped})`);
+    } else {
+      showToast(`0 個に適用 (全 ${boxes.length} 個が非表示/極小): ${FRAMABLE_SELECTOR}`);
+    }
+  }
+
+  // 6) ツールバー UI: 静的 HTML で書かれた #zk-frame-kind <select> に
+  //    change ハンドラを取り付ける (動的 inject はやめた。 .toolbar 末尾の
+  //    margin-left:auto 要素より後ろに append されていたせいで画面外に
+  //    押し出されていたため)。 options は HTML 側で定義済み。
+  function attachFrameUI() {
+    const sel = document.getElementById('zk-frame-kind');
+    const autoBtn = document.getElementById('zk-frame-auto-btn');
+    try { console.log('[zk] attachFrameUI: sel=', sel, 'autoBtn=', autoBtn); } catch (e) {}
+    if (sel && sel.dataset.zkBound !== '1') {
+      sel.dataset.zkBound = '1';
+      sel.addEventListener('change', () => {
+        const kind = sel.value;
+        // selectedElements は外側スコープ。 window.selectedElements で参照。
+        // fallback の document.querySelector も .slot.selected / [data-zk-framable].selected
+        // まで広げる (現状 zukan モードでは .slot は無いが、 将来の page でも動くように)。
+        const sels = (window.selectedElements && window.selectedElements.size)
+          ? [...window.selectedElements]
+          : (function () {
+              const a = document.querySelector(
+                '.userbox.selected, .slot.selected, [data-zk-framable].selected, .resizable.selected'
+              );
+              return a ? [a] : [];
+            })();
+        try { console.log('[zk] dropdown change kind=', kind, 'selected=', sels.length, sels); } catch (e) {}
+        if (!sels.length) {
+          alert('先に枠を選択してください (resize-mode で枠をクリック)');
+          sel.value = '';
+          return;
+        }
+        let appliedCount = 0;
+        sels.forEach(el => {
+          // .userbox / .slot / [data-zk-framable] のいずれかなら適用 (= FRAMABLE_SELECTOR)
+          if (el && el.matches && el.matches(FRAMABLE_SELECTOR)) {
+            applyFrame(el, kind);
+            appliedCount++;
+          } else {
+            try { console.log('[zk] skip (not framable):', el); } catch (e) {}
+          }
+        });
+        try { console.log('[zk] dropdown applied=', appliedCount, '/', sels.length); } catch (e) {}
+        if (appliedCount === 0) {
+          showToast(`選択中の要素は装飾フレーム対象外です (対象: ${FRAMABLE_SELECTOR})`);
+        }
+        if (typeof window.saveResizeState === 'function') window.saveResizeState();
+      });
+    }
+
+    // 🎯 自動割当ボタンの bind (重複 bind 防止)
+    if (autoBtn && autoBtn.dataset.zkBound !== '1') {
+      autoBtn.dataset.zkBound = '1';
+      autoBtn.addEventListener('click', autoAssignAllFrames);
+      try { console.log('[zk] auto-btn bound'); } catch (e) {}
+    } else if (!autoBtn) {
+      try { console.warn('[zk] #zk-frame-auto-btn not found in DOM'); } catch (e) {}
+    }
+
+    // 🖼 中身サイズ スライダーの bind
+    attachArtScaleUI();
+  }
+
+  // ─────────────────────────────────────────────────────────
+  //  🖼 中身サイズ (artScale) スライダー
+  //   userbox-with-bg の background-image を CSS 変数 --zk-art-size 経由で
+  //   独立スケールする。 枠 (.zk-frame img) のサイズは不変。
+  // ─────────────────────────────────────────────────────────
+  function getCurrentlySelectedUserbox() {
+    try {
+      if (window.selectedElements && window.selectedElements.size === 1) {
+        const el = [...window.selectedElements][0];
+        if (el && el.classList && el.classList.contains('userbox')) return el;
+      }
+    } catch (e) {}
+    const sel = document.querySelector('.userbox.selected');
+    return sel || null;
+  }
+
+  function attachArtScaleUI() {
+    const input = document.getElementById('zk-art-scale-input');
+    const valEl = document.getElementById('zk-art-scale-val');
+    if (!input || !valEl) {
+      try { console.warn('[zk] art-scale UI not found'); } catch (e) {}
+      return;
+    }
+    if (input.dataset.zkBound === '1') return;
+    input.dataset.zkBound = '1';
+
+    function applyToSelected(commit) {
+      const el = getCurrentlySelectedUserbox();
+      const val = String(input.value);
+      valEl.textContent = val + '%';
+      if (!el) return;
+      // bgImage を持つ userbox にしか意味がないため、 そうでなければスキップ
+      if (!el.classList.contains('userbox-with-bg')) return;
+      el.dataset.artScale = val;
+      el.style.setProperty('--zk-art-size', val + '% auto');
+      try { console.log('[zk] art-scale changed to', val, 'on', el, 'commit=', !!commit); } catch (e) {}
+      if (commit && typeof window.saveResizeState === 'function') {
+        window.saveResizeState();
+      }
+    }
+    // ドラッグ中リアルタイム反映
+    input.addEventListener('input', () => applyToSelected(false));
+    // 確定時に save
+    input.addEventListener('change', () => applyToSelected(true));
+
+    // 選択状態の変化を 300ms ポーリングで監視: スライダーの enable/disable と value を同期
+    let lastTargetKey = '__init__';
+    function syncSlider() {
+      const el = getCurrentlySelectedUserbox();
+      const key = el
+        ? (el.dataset.userboxId + '|' + (el.classList.contains('userbox-with-bg') ? 'bg' : 'nobg'))
+        : '';
+      if (key === lastTargetKey) return;
+      lastTargetKey = key;
+      try { console.log('[zk] selection changed, target userbox=', el); } catch (e) {}
+      if (el && el.classList.contains('userbox-with-bg')) {
+        input.disabled = false;
+        const cur = el.dataset.artScale ? parseInt(el.dataset.artScale, 10) : 100;
+        const clamped = isFinite(cur) ? Math.min(100, Math.max(30, cur)) : 100;
+        if (clamped !== cur) {
+          el.dataset.artScale = String(clamped);
+          el.style.setProperty('--zk-art-size', clamped + '% auto');
+        }
+        input.value = String(clamped);
+        valEl.textContent = clamped + '%';
+      } else {
+        input.disabled = true;
+        valEl.textContent = '—';
+      }
+    }
+    setInterval(syncSlider, 300);
+    syncSlider();
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', attachFrameUI, { once: true });
+  } else {
+    attachFrameUI();
+  }
+})();
+</script>
+</body>
+</html>

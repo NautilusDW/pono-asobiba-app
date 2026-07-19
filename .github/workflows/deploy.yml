@@ -1,10 +1,25 @@
 name: Deploy to Cloudflare Workers
 
-# develop / master への push で自動的に Cloudflare Workers に deploy する。
+# develop-app / master への push で自動的に Cloudflare Workers に deploy する。
+# 単一トランク統合 (docs/branch-unification-plan.md D1/D2) により develop は
+# トリガから削除済み（凍結ブランチ、以後 push しない）。
 # 手動実行 (workflow_dispatch) にも対応。
 on:
   push:
-    branches: [develop, master]
+    branches: [develop-app, master]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'memory/**'
+      - '.claude/**'
+      - 'logs/**'
+      - 'scripts/**'
+      # unity/ は Unity ネイティブゲームのソースで Web (Cloudflare Workers) 配信とは無関係。
+      # unity 単独 push での無駄な Web デプロイを防ぐ (2026-07-11)。
+      # 注意: paths-ignore は push に含まれる「全ファイル」がこのリストのいずれかに
+      # マッチした時だけスキップする。unity/** と HANDOFF.md (既に **/*.md でignore) の
+      # 混在 push でも、両方が ignore パターンに含まれる限りスキップされる。
+      - 'unity/**'
   workflow_dispatch:
 
 # 同一 branch で連続 push があった時は、進行中の deploy をキャンセルして
@@ -27,14 +42,41 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Deploy to Cloudflare Workers
+      # branch 別に deploy 先を切替:
+      #   - master      → production  (pono-asobiba-app + pono.kodama-no-mori.com)
+      #   - develop-app → staging-app (pono-asobiba-app-staging.ndw.workers.dev)
+      #                   + staging   (pono-asobiba-staging.ndw.workers.dev) の 2 env 直列デプロイ
+      #                   (単一トランク統合: develop-app への 1 push で App/LP 両 staging に同一コミットを配信する)
+      # wrangler.toml の [assets] で ./ 全体をバインドしているので
+      # 追加引数なしで deploy すれば静的ファイル含めて全部 upload される。
+      #
+      # develop-app 向けは wrangler-action の command を複数行 `|` にまとめる案もあったが、
+      # 複数コマンドの一部が失敗した場合の停止/継続挙動が公式 README に明記されておらず
+      # 挙動が保証できないため、GitHub Actions の step 単位で明確に成否が分かる
+      # 2 step 直列構成を採用する (docs/branch-unification-plan.md D2 準拠)。
+      - name: Deploy to Cloudflare Workers (production)
+        if: github.ref == 'refs/heads/master'
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          # branch 別に deploy 先を切替:
-          #   - master  → production (pono-asobiba-app + pono.kodama-no-mori.com)
-          #   - develop → staging    (pono-asobiba-staging.ndw.workers.dev)
-          # wrangler.toml の [assets] で ./ 全体をバインドしているので
-          # 追加引数なしで deploy すれば静的ファイル含めて全部 upload される。
-          command: ${{ github.ref == 'refs/heads/master' && 'deploy' || 'deploy --env staging' }}
+          wranglerVersion: "4"
+          command: deploy
+
+      - name: Deploy to Cloudflare Workers (App staging)
+        if: github.ref == 'refs/heads/develop-app'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4"
+          command: deploy --env staging-app
+
+      - name: Deploy to Cloudflare Workers (LP staging)
+        if: github.ref == 'refs/heads/develop-app'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4"
+          command: deploy --env staging

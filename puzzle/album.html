@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>もりのアルバム | ポノのなかよしパズル</title>
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=1329">
+  <link rel="stylesheet" href="album.css?v=1329">
+</head>
+<body class="album-body">
+  <div class="album-wrapper">
+    <header class="album-header">
+      <button type="button" id="album-back" class="album-back" aria-label="もどる">← もどる</button>
+      <h1 class="album-title">もりのアルバム</h1>
+      <div class="album-header__spacer" aria-hidden="true"></div>
+    </header>
+
+    <section class="album-summary" aria-label="みんなのできたかず">
+      <div class="album-summary__icon" aria-hidden="true">⭐</div>
+      <div class="album-summary__copy">
+        <div class="album-summary__label">みんなで</div>
+        <div class="album-summary__value" id="album-summary-value">0こ できた</div>
+      </div>
+      <div class="album-summary__bar" id="album-summary-bar" role="progressbar" aria-label="みんなのできたかず" aria-valuemin="0" aria-valuemax="160" aria-valuenow="0" aria-valuetext="0こ できた">
+        <div class="album-summary__bar-fill" id="album-summary-bar-fill"></div>
+      </div>
+    </section>
+
+    <main class="album-main">
+      <div class="album-partner-grid" id="album-partner-grid" role="list" aria-label="なかまごとの できたかず"></div>
+    </main>
+  </div>
+
+  <script src="../common/tier.js"></script>
+  <script src="partners.js?v=1329"></script>
+  <script src="bond.js?v=1329"></script>
+  <script src="album.js?v=1329"></script>
+</body>
+</html>

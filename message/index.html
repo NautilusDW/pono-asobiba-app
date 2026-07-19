@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>作者より | ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<!-- FOUC guard: 初回ペイント時の未スタイル表示を防ぐ -->
+<style>html,body{background:#FFF8F0}.page{visibility:hidden}body.pono-game-ready .page{visibility:visible}</style>
+<script>document.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(function(){requestAnimationFrame(function(){document.body.classList.add('pono-game-ready')})})});</script>
+<script src="../common/preload-helper.js"></script>
+<script>window.addEventListener('DOMContentLoaded',function(){if(window.PonoPreload)window.PonoPreload.warmGameAssets('message');});</script>
 <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap" rel="stylesheet">
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -118,13 +123,6 @@ html, body {
   font-size: 0.75rem; font-weight: 700;
   color: var(--text-light);
 }
-.entry-badge {
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-  color: #fff;
-  font-size: 0.7rem; font-weight: 900;
-  padding: 2px 10px; border-radius: 20px;
-}
-
 .entry-title {
   font-size: 1.05rem; font-weight: 900;
   color: var(--text); line-height: 1.4;
@@ -184,7 +182,6 @@ html, body {
   <article class="entry">
     <div class="entry-header">
       <time class="entry-date">YYYY.MM.DD</time>
-      <span class="entry-badge">はじめまして</span>
     </div>
     <h2 class="entry-title">ポノのあそびばへ ようこそ！</h2>
     <div class="entry-body">
@@ -224,7 +221,6 @@ html, body {
   <article class="entry">
     <div class="entry-header">
       <time class="entry-date">YYYY.MM.DD</time>
-      <span class="entry-badge">バッジ名</span>
     </div>
     <h2 class="entry-title">タイトル</h2>
     <div class="entry-body">

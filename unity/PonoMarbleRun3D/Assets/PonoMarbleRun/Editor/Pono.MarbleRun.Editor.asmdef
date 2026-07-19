@@ -1,0 +1,19 @@
+{
+  "name": "Pono.MarbleRun.Editor",
+  "rootNamespace": "Pono.MarbleRun3D.Editor",
+  "references": [
+    "Pono.MarbleRun.Core",
+    "Pono.MarbleRun.App"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}
