@@ -83,6 +83,7 @@
 - 2026-07-06 21:04 - by Claude - [batch:1204-capacitor-phase1-scaffold] - native/** (新規), .gitignore, .assetsignore, common/sw-update.js, common/cloud-sync.js, bento/kitchen.html, AGENTS_CLAIMS.md - Capacitor Phase 1 scaffold (Android 先行、www build pipeline + Web側 SW gating 3点)。play.html/sw.js/CLAUDE.md/HANDOFF.md/MEMORY.md 等の既存 dirty 10 ファイルには一切 touch しない [overlap: batch:1203-ux-3fixes (common/sw-update.js), batch:952-cloud-sync-step-c (common/cloud-sync.js)]
 - 2026-07-13 - by Claude - [batch:1285-bento-shop-nori-set] - bento/index.html, sw.js, tests/**, docs/**, AGENTS_CLAIMS.md - お店モードのご飯3択化 (白/うめぼし/のり弁セット=全箱マスクフィット) + のり細工を自由モード専用に分離 + お店モード初回橋渡しガイド + LPリライト記録doc [overlap: batch:1280 (docs/**), batch:1281 (sw.js)]
 - 2026-07-13 - by Claude - [batch:1284-lp-game-copy-rewrite] - index.html, AGENTS_CLAIMS.md - LP ゲーム/ガチャ/シール帳紹介モーダルの説明文を特徴・ベネフィット前面コピーへ全面リライト (fable orchestration + sonnet 実装 + クロスレビュー) [overlap: batch:1281-analytics-phase1 (index.html)]
+- 2026-07-19 - by Claude - [batch:1351-nazonazo-tunnel-stage-select-recovery] - admin/**, AGENTS_CLAIMS.md - 管理ダッシュボードから消えた謎々トンネルのステージセレクトを調査・復旧 (fable orchestration + sonnet5 並列実装 + エージェント間クロスレビュー、ワークフロー実行中)
 ## なぜ HANDOFF.md と別ファイルなのか
 
 HANDOFF.md は履歴 (Done エントリ含む) が積み上がるため、 「いまアクティブな claim だけを瞬時に把握する」 用途には不向き。 このボードは **常に短い / 常に最新 / 行は使い捨て** という性質を維持することで、 衝突検出のコストをほぼゼロにする狙い。
