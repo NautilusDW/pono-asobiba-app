@@ -510,7 +510,7 @@ tr:hover { background: #FFFAF0; }
   <button class="tab" data-panel="quiz-sound">🐾 音当てクイズ</button>
   <button class="tab" data-panel="quizland">🧩 クイズランド</button>
   <button class="tab" data-panel="voice-lab">🔊 音声生成</button>
-  <button class="tab" data-panel="wordmatch">🔤 ことばあわせ</button>
+  <button class="tab" data-panel="wordmatch">🔤 ことばあわせ（廃止）</button>
   <button class="tab" data-panel="bento">🍱 おべんとう</button>
   <button class="tab" data-panel="writing">✏️ 文字書き</button>
   <button class="tab" data-panel="nazonazo">🚂 なぞなぞ</button>
@@ -989,17 +989,24 @@ tr:hover { background: #FFFAF0; }
   <div class="section">
     <div class="section-title">🎮 ゲーム一覧</div>
     <a class="tool-link" href="../puzzle/index.html"><span class="tool-icon">🧩</span> パズル</a>
-    <a class="tool-link" href="../writing/index.html"><span class="tool-icon">✏️</span> もじかき</a>
-    <a class="tool-link" href="../drawing/index.html"><span class="tool-icon">🎨</span> おえかき</a>
+    <a class="tool-link" href="../writing-mori/index.html"><span class="tool-icon">✏️</span> もじっこファーム</a>
     <a class="tool-link" href="../bento/index.html"><span class="tool-icon">🍱</span> おべんとう</a>
-    <a class="tool-link" href="../wordmatch/index.html"><span class="tool-icon">🔤</span> ことばあわせ</a>
-    <a class="tool-link" href="../bowling/index.html"><span class="tool-icon">🎳</span> ボウリング</a>
-    <a class="tool-link" href="../breakout/index.html"><span class="tool-icon">🧱</span> ブロックくずし</a>
-    <a class="tool-link" href="../slide/index.html"><span class="tool-icon">🛤</span> みちつなぎ</a>
     <a class="tool-link" href="../maze/index.html"><span class="tool-icon">🦔</span> めいろ</a>
     <a class="tool-link" href="../quizland/index.html"><span class="tool-icon">🧠</span> クイズランド</a>
+    <a class="tool-link" href="../quiz-sound/index.html"><span class="tool-icon">🐾</span> 音当てクイズ</a>
+    <a class="tool-link" href="../oto/index.html"><span class="tool-icon">🎵</span> おとタッチ</a>
+    <a class="tool-link" href="../mojicrane/index.html"><span class="tool-icon">🏗️</span> もじもじクレーン</a>
+    <a class="tool-link" href="../nazonazo-tunnel/index.html"><span class="tool-icon">🚂</span> なぞなぞトレイン</a>
+    <a class="tool-link" href="../bento/kitchen.html"><span class="tool-icon">🍳</span> クッキング</a>
     <a class="tool-link" href="../aquarium/map.html"><span class="tool-icon">🐠</span> すいぞくかん</a>
-    <a class="tool-link" href="../coloring/index.html"><span class="tool-icon">🖍</span> ぬりえ</a>
+    <a class="tool-link" href="../coloring/index.html"><span class="tool-icon">🖍</span> ぬりえ（準備中）</a>
+    <!-- 以下は現行メニュー(play.html GAMES)に非掲載の廃止済みゲーム。開発用に残置。 -->
+    <a class="tool-link" href="../writing/index.html"><span class="tool-icon">✏️</span> もじかき（廃止）</a>
+    <a class="tool-link" href="../drawing/index.html"><span class="tool-icon">🎨</span> おえかき（廃止）</a>
+    <a class="tool-link" href="../wordmatch/index.html"><span class="tool-icon">🔤</span> ことばあわせ（廃止）</a>
+    <a class="tool-link" href="../bowling/index.html"><span class="tool-icon">🎳</span> ボウリング（廃止）</a>
+    <a class="tool-link" href="../breakout/index.html"><span class="tool-icon">🧱</span> ブロックくずし（廃止）</a>
+    <a class="tool-link" href="../slide/index.html"><span class="tool-icon">🛤</span> みちつなぎ（廃止）</a>
   </div>
 </div>
 
@@ -6187,21 +6194,31 @@ function renderCardRewards() {
 // サポートするゲーム一覧（ID + 表示名）
 // ゲームが増えたらここに追加するだけで UI に現れる
 // ゲームマスターリスト（初回クリア報酬で使える全ゲーム）
+// 2026-07-19: 現行MVPラインナップ(play.html GAMES/MENU_GAMES)に合わせて整理。
+// bowling/breakout/drawing は rewards.json に既存データが無いため削除。
+// wordmatch/writing/slide は rewards.json に既存の firstClearRewards データが
+// 残っており(getFirstClearGames が union するため消しても表示自体は残る)、
+// ラベルなしの汎用フォールバック表示になるのを避けるため「(廃止)」付きで維持。
+// いずれも common/achievements.js 側で該当ゲームの実績は archived: true 済み。
 var KNOWN_GAMES = [
-  { id: 'puzzle',    label: '🧩 パズル',          hint: '最終ステージクリアで発動' },
-  { id: 'writing',   label: '✏️ もじかき',        hint: 'ひらがな1文字書けたら発動' },
-  { id: 'drawing',   label: '🎨 おえかき',        hint: '初めて絵を保存したら発動' },
-  { id: 'bento',     label: '🍱 おべんとう',      hint: '初めてお弁当を作ったら発動' },
-  { id: 'wordmatch', label: '📝 ことばあわせ',    hint: '最終ステージクリアで発動' },
-  { id: 'bowling',   label: '🎳 びっくりボウリング', hint: '1ラウンド遊んだら発動' },
-  { id: 'breakout',  label: '🧱 ブロックくずし',  hint: '最終ステージクリアで発動' },
-  { id: 'slide',     label: '🛤 みちつなぎ',      hint: '最終ステージクリアで発動' },
-  { id: 'maze',      label: '🌲 めいろ',          hint: '最終ステージ（10）クリアで発動' },
-  { id: 'quizland',  label: '🧠 クイズランド',    hint: '1問正解で発動' },
-  { id: 'coloring',  label: '🖍 ぬりえ',          hint: '初めて塗り終えたら発動', disabled: true },
-  { id: 'bubble',    label: '🫧 しゃぼんだま',    hint: '準備中', disabled: true },
-  { id: 'stacking',  label: '🏗️ つみき',         hint: '準備中', disabled: true },
-  { id: 'sugoroku',  label: '🎲 すごろく',        hint: '準備中', disabled: true },
+  { id: 'puzzle',          label: '🧩 パズル',            hint: '最終ステージクリアで発動' },
+  { id: 'writing-mori',    label: '✏️ もじっこファーム',  hint: 'ひらがな1文字書けたら発動' },
+  { id: 'bento',           label: '🍱 おべんとう',        hint: '初めてお弁当を作ったら発動' },
+  { id: 'maze',            label: '🌲 めいろ',            hint: '最終ステージ（10）クリアで発動' },
+  { id: 'quizland',        label: '🧠 クイズランド',      hint: '1問正解で発動' },
+  { id: 'quiz_sound',      label: '🐾 音当てクイズ',      hint: '1問正解で発動' },
+  { id: 'oto',             label: '🎵 おとタッチ',        hint: '12回タップしたら発動' },
+  { id: 'mojicrane',       label: '🏗️ もじもじクレーン',  hint: '初めてことばを完成させたら発動' },
+  { id: 'nazonazo-tunnel', label: '🚂 なぞなぞトレイン',  hint: '最終ステージクリアで発動' },
+  { id: 'cooking',         label: '🍳 クッキング',        hint: '初めて料理を完成させたら発動' },
+  { id: 'coloring',        label: '🖍 ぬりえ',            hint: '初めて塗り終えたら発動', disabled: true },
+  { id: 'bubble',          label: '🫧 しゃぼんだま',      hint: '準備中', disabled: true },
+  { id: 'stacking',        label: '🏗️ つみき',           hint: '準備中', disabled: true },
+  { id: 'sugoroku',        label: '🎲 すごろく',          hint: '準備中', disabled: true },
+  // ----- 廃止済み(現行メニューには非掲載。rewards.json の既存データ保持のためエントリのみ維持) -----
+  { id: 'wordmatch',       label: '📝 ことばあわせ（廃止）', hint: 'mojicraneに統合済み・新規設定は非推奨' },
+  { id: 'writing',         label: '✏️ もじかき（廃止）',     hint: 'writing-moriに統合済み・新規設定は非推奨' },
+  { id: 'slide',           label: '🛤 みちつなぎ（廃止）',   hint: '廃止済み・新規設定は非推奨' },
 ];
 
 // 現在編集中の first-clear タブに表示するゲーム（既存データ + KNOWN_GAMES + 追加されたもの）

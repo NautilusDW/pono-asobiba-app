@@ -79,44 +79,58 @@
   var LS_STAMP_LOG = 'pono_stamp_log';
   var LS_DAILY_RALLY = 'pono_daily_rally';
   var LS_STAMP_REWARDS_GIVEN = 'pono_stamp_rewards_given';
+  // カード完成報酬を「実際に付与した瞬間」のスナップショットとして記録する場所。
+  // { "card_1": {icon,name,type,id,img,afterMsg}, ... } の形。
+  // rewards.json の CARD_COMPLETE_REWARDS 配列は admin 側で並べ替え/削除され得るため、
+  // 履歴表示(showRewardHistory)を「その時点の配列からインデックス再計算」に頼ると、
+  // 後から配列が変わった時に過去の履歴まで遡って別アイテムに化けるバグがあった
+  // (2026-07-19 整理)。記録が無い旧ユーザーのデータは現状通り再計算にフォールバックする。
+  var LS_STAMP_REWARDS_DETAIL = 'pono_stamp_rewards_detail';
   var PONO_ICON = 'assets/ui/stamp-card/pono_red_rubber_stamp_20260716.webp';
   var SLOTS_PER_CARD = 15;
   var SLOTS_PER_ROW = 5;
 
   // ── Slot rewards (keyed by 1-based slot number within card) ──
+  // フォールバック(fetch失敗時)は assets/data/rewards.json の slotRewards と完全に同期させること。
+  // (2026-07-19 整理: 旧フォールバックは 1/5/10/15 マス目にバラの家具を割り当てていたが、
+  //  実データは 1/8/15 マス目 [20 マス目は SLOTS_PER_CARD=15 のため到達不能なので rewards.json 側で削除済み]
+  //  に別アイテムを割り当てておりズレていた。オフラインでもオンラインと同じ体験になるよう実データへ統一)
   var CARD_SLOT_REWARDS = {
-    1:  (function() {
-          var g = 'boy';
-          try { g = JSON.parse(localStorage.getItem('pono_profile') || '{}').gender || 'boy'; } catch(e) {}
-          var afterMsg = ['あなただけの おもちゃばこ！\nスタンプで もらった たからものを\nここに いれられるよ。', 'スタンプを あつめて\nかぐを てに いれたら\n「わたしのおうち」で\nつかえるように なるよ！'];
-          return g === 'girl'
-            ? { icon: '🎁', name: 'おもちゃばこ', type: 'deco', id: 'deco_box',     img: 'assets/images/Rooms/furnitures_final/box_A.png',           afterMsg: afterMsg }
-            : { icon: '🎁', name: 'おもちゃばこ', type: 'deco', id: 'deco_box_boy', img: 'assets/images/Rooms/furnitures_final/deco_box_boy_A.png', afterMsg: afterMsg };
-        })(),
-    5:  (function() {
-          var g = 'boy';
-          try { g = JSON.parse(localStorage.getItem('pono_profile') || '{}').gender || 'boy'; } catch(e) {}
-          var afterMsg = 'ベッドが ついたよ！\nポノのおへやで かぐを\nじゆうに ならべて みよう！';
-          return g === 'girl'
-            ? { icon: '🛏️', name: 'ピンクベッド', type: 'furn', id: 'furn_bed_pink', img: 'assets/images/Rooms/furnitures_final/bed_pink_A.png', unlockRoom: true, afterMsg: afterMsg }
-            : { icon: '🛏️', name: 'あおいベッド', type: 'furn', id: 'furn_bed_blue_boy', img: 'assets/images/Rooms/furnitures_final/furn_bed_blue_boy_A.png', unlockRoom: true, afterMsg: afterMsg };
-        })(),
-    10: (function() {
-          var g = 'boy';
-          try { g = JSON.parse(localStorage.getItem('pono_profile') || '{}').gender || 'boy'; } catch(e) {}
-          return g === 'girl'
-            ? { icon: '🧸', name: 'くまのぬいぐるみ', type: 'deco', id: 'deco_bear_ribbon', img: 'assets/images/Rooms/furnitures_final/bear_ribbon_A.png' }
-            : { icon: '🧸', name: 'くまのぬいぐるみ', type: 'deco', id: 'furn_bear_1',      img: 'assets/images/Rooms/furnitures_final/bear_A.png' };
-        })(),
-    15: { icon: '⭐', name: 'カードかんせい！', type: 'special' },
+    1: { icon: '🎁', name: 'おもちゃばこ', gendered: true,
+         boy:  { name: 'おもちゃばこ', type: 'deco', id: 'deco_box_boy', img: 'assets/images/Rooms/furnitures_final/deco_box_boy_A.png' },
+         girl: { name: 'おもちゃばこ', type: 'deco', id: 'deco_box',     img: 'assets/images/Rooms/furnitures_final/box_A.png' },
+         afterMsg: ['あなただけの おもちゃばこ！\nスタンプで もらった たからものを\nここに いれられるよ。',
+                    'スタンプを あつめて\nかぐを てに いれたら\n「わたしのおうち」で\nつかえるように なるよ！'] },
+    8: { icon: '🛏️', name: 'あおいベッド / ピンクベッド', gendered: true,
+         boy:  { name: 'あおいベッド', type: 'furn', id: 'imp_furn_d936b511', img: 'assets/images/Rooms/furnitures_final/imp_furn_d936b511_A.png' },
+         girl: { name: 'ピンクベッド', type: 'furn', id: 'imp_furn_c960374d', img: 'assets/images/Rooms/furnitures_final/imp_furn_c960374d_A.png' },
+         unlockRoom: true,
+         afterMsg: 'ベッドが ついたよ！\nポノのおへやで かぐを\nじゆうに ならべて みよう！' },
+    15: { icon: '📚', name: 'きのほんだな / しろいほんだな', gendered: true,
+          boy:  { name: 'きのほんだな',   type: 'furn', id: 'imp_furn_5eb65839', img: 'assets/images/Rooms/furnitures_final/imp_furn_5eb65839_A.png' },
+          girl: { name: 'しろいほんだな', type: 'furn', id: 'imp_furn_23d9a843', img: 'assets/images/Rooms/furnitures_final/imp_furn_23d9a843_A.png' },
+          afterMsg: 'ほんだなが もらえたよ！\nおへやに おいた ほんだなを\nタップすると ずかんが みられるよ！' },
   };
 
   // ── Card complete rewards (one per completed card, rotates) ──
+  // フォールバック(fetch失敗時)は assets/data/rewards.json の cardCompleteRewards と完全に同期させること。
+  // (2026-07-19 整理: 旧フォールバックは さかな/かべがみ/ウミガメ/クラゲ の4件で実データ5件と無関係だった)
   var CARD_COMPLETE_REWARDS = [
-    { icon: '🐠', name: 'さかな',      type: 'sea',  id: 'medaka',        img: 'assets/images/ocean/Fish_S01/Fish_S01_001.png' },
-    { icon: '🖼️', name: 'かべがみ',    type: 'wall', id: 'wall_mizutama', img: 'assets/images/Rooms/walls/mizutama.png' },
-    { icon: '🐢', name: 'ウミガメ',     type: 'sea',  id: 'turtle',        img: 'assets/images/ocean/Turtle/Turtle_001.png' },
-    { icon: '🪼', name: 'クラゲ',       type: 'sea',  id: 'jellyfish',     img: 'assets/images/ocean/JellyFish/JellyFish_001.png' },
+    { icon: '🖼️', name: 'あおぞらのかべがみ / ハートのかべがみ', gendered: true,
+      boy:  { name: 'あおぞらのかべがみ', type: 'wall', id: 'wall_aozora', img: 'assets/images/Rooms/walls/aozora.png' },
+      girl: { name: 'ハートのかべがみ',   type: 'wall', id: 'wall_heart',  img: 'assets/images/Rooms/walls/heart.png' },
+      afterMsg: 'あたらしい かべがみを\nてに いれたよ！\nおへやで きがえてみてね！' },
+    { icon: '🪵', name: 'あたたかもくめのゆか', gendered: false, type: 'floor', id: 'floor_wood_warm', img: 'assets/images/Rooms/floors/kumo_niko.png',
+      afterMsg: 'あたらしい ゆかを\nてに いれたよ！' },
+    { icon: '🎳', name: 'きょうりゅうボウリング / ユニコーンボウリング', gendered: true,
+      boy:  { name: 'きょうりゅうボウリング', type: 'bg', id: 'bg_bowling_dinasour', img: 'assets/images/Bowling/BG/boy/dinasour.webp' },
+      girl: { name: 'ユニコーンボウリング',   type: 'bg', id: 'bg_bowling_unicorn',  img: 'assets/images/Bowling/BG/girl/unicorn.webp' },
+      afterMsg: 'あたらしい はいけいを\nてに いれたよ！\nすてきな たからものが ふえたね！' },
+    { icon: '🖼️', name: 'きょうりゅうかべがみ / みずたまかべがみ', gendered: true,
+      boy:  { name: 'きょうりゅうかべがみ', type: 'wall', id: 'wall_kyouryu',   img: 'assets/images/Rooms/walls/kyouryu.png' },
+      girl: { name: 'みずたまかべがみ',     type: 'wall', id: 'wall_mizutama', img: 'assets/images/Rooms/walls/mizutama.png' } },
+    { icon: '🪵', name: 'ヘリンボーンのゆか', gendered: false, type: 'floor', id: 'floor_herringbone', img: 'assets/images/Rooms/floors/stripe.png',
+      afterMsg: 'あたらしい ゆかが\nとどいたよ！' },
   ];
 
   // レガシー: play.html の #stampRallySection は撤去済みのため実質no-op。play-all.html 専用
@@ -435,6 +449,12 @@
         }
         given.push(compKey);
         setJSON(LS_STAMP_REWARDS_GIVEN, given);
+        // 付与した瞬間の報酬内容をスナップショット保存 (履歴の精度バグ対策。上のLS_STAMP_REWARDS_DETAIL
+        // コメント参照)。CARD_COMPLETE_REWARDS が後で並べ替え/削除されても、この記録があれば
+        // showRewardHistory() は正しいアイテムを表示し続けられる。
+        var _detail = getJSON(LS_STAMP_REWARDS_DETAIL, {});
+        _detail[compKey] = compRw;
+        setJSON(LS_STAMP_REWARDS_DETAIL, _detail);
 
         // Card complete sparkle + treasure
         var section = document.getElementById('stampCardSection');
@@ -840,10 +860,15 @@
       if (found) items.push(rw);
     }
     // カード完成報酬
+    // 付与時に記録したスナップショット(LS_STAMP_REWARDS_DETAIL)があればそれを最優先で表示する。
+    // CARD_COMPLETE_REWARDS 配列は admin での並べ替え/削除や、オフライン→オンライン切り替えで
+    // 内容が変わり得るため、その時点の配列からインデックス再計算すると過去の履歴まで別アイテムに
+    // 化けるバグがあった (2026-07-19 修正)。記録が無い旧ユーザーのデータだけ現状通り再計算にフォールバック。
+    var detailMap = getJSON(LS_STAMP_REWARDS_DETAIL, {});
     for (var g = 0; g < given.length; g++) {
       if (given[g].indexOf('card_') === 0) {
         var cn = parseInt(given[g].replace('card_', ''));
-        var cr = getCompleteReward(cn);
+        var cr = detailMap[given[g]] || getCompleteReward(cn);
         if (cr) items.push(cr);
       }
     }
