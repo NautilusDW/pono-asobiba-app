@@ -1,5 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2293: room家具24品48点はitems.jsの公開URLを変えず、SW内だけで1371c専用cache keyへ
+// 保存する。旧同名画像cacheを再利用せず、初回はno-store取得する (batch:1371c-room-furniture-angle-correction)。
 // v2292: room家具24品48点を、角度補正版rawからsoft alpha付きA/Bへ差し替え。
 // Bは完成Aの画素完全水平反転で統一した (batch:1371-room-furniture-repertoire-expansion)。
 // v2291: LP／アプリ入口のタイトルロゴで、ポノのおなかをオリジナル準拠の
@@ -599,8 +601,41 @@
 // は grantReward を「表示前」から「選択確定後」に変更し、pono_profile(現在のユーザー導線
 // からは誰も書き込まない壊れたキー)への依存を撤去。play.html PAGE_CACHE_VERSION/
 // PONO_SW_VERSION、common/treasure.js?v= / common/stamp-rally.js?v= と同期。
-const CACHE_VERSION = 2292;
+const CACHE_VERSION = 2293;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
+const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
+const ROOM_FURNITURE_CACHE_REFRESH_IDS = [
+  'furn_sofa_beige',
+  'furn_sofa_pink',
+  'furn_sofa_blue',
+  'furn_tv_stand',
+  'furn_coffee_table',
+  'deco_floor_cushion_stripe',
+  'furn_kitchen_counter',
+  'furn_fridge',
+  'furn_dining_table_set',
+  'furn_kitchen_cabinet',
+  'deco_fruit_basket',
+  'deco_cookie_jar',
+  'furn_garden_bench',
+  'furn_sandbox',
+  'furn_garden_table_parasol',
+  'deco_planter_flowers',
+  'deco_watering_can',
+  'deco_birdhouse',
+  'furn_wardrobe_wood',
+  'furn_wardrobe_pink',
+  'furn_wardrobe_blue',
+  'deco_christmas_tree_mini',
+  'deco_tanabata_bamboo',
+  'deco_pumpkin_lantern',
+];
+const ROOM_FURNITURE_CACHE_REFRESH_PATHS = new Set();
+ROOM_FURNITURE_CACHE_REFRESH_IDS.forEach(id => {
+  const base = '/assets/images/Rooms/furnitures_final/' + id;
+  ROOM_FURNITURE_CACHE_REFRESH_PATHS.add(base + '_A.png');
+  ROOM_FURNITURE_CACHE_REFRESH_PATHS.add(base + '_B.png');
+});
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
 
@@ -1021,6 +1056,48 @@ self.addEventListener('fetch', event => {
   const isHTML = event.request.destination === 'document'
     || event.request.headers.get('accept')?.includes('text/html');
   if (isHTML) {
+    return;
+  }
+
+  // batch:1371c の家具24品48点だけは、items.js のURLを維持したままSW内部の
+  // synthetic queryを新cache keyとして使う。items.jsを参照する調整・報酬ツールの
+  // `_A.png` / `_B.png` 末尾判定を壊さず、旧世代cacheの同名画像も拾わない。
+  // synthetic keyが無い初回だけ元URLをno-storeで取得し、通信失敗時のみ旧cacheへ退避する。
+  if (event.request.destination === 'image'
+      && ROOM_FURNITURE_CACHE_REFRESH_PATHS.has(new URL(event.request.url).pathname)) {
+    const versionedUrl = new URL(event.request.url);
+    versionedUrl.searchParams.set('__pono_asset', ROOM_FURNITURE_CACHE_REFRESH_TOKEN);
+    const versionedKey = new Request(versionedUrl.toString());
+    event.respondWith(
+      caches.open(CACHE_NAME).then(cache =>
+        cache.match(versionedKey).then(currentCached => {
+          if (currentCached) return currentCached;
+          return fetch(event.request, { cache: 'no-store' })
+            .then(async response => {
+              if (!response || !response.ok) {
+                throw new Error('room furniture refresh failed: ' + (response ? response.status : 'no response'));
+              }
+              try {
+                await cache.put(versionedKey, response.clone());
+              } catch (cacheError) {
+                try {
+                  console.warn('[sw] room furniture refresh cache put failed', cacheError && cacheError.message);
+                } catch (e) {}
+              }
+              return response;
+            })
+            .catch(networkError =>
+              caches.match(versionedKey).then(previousCached => {
+                if (previousCached) return previousCached;
+                return caches.match(event.request).then(originalCached => {
+                  if (originalCached) return originalCached;
+                  throw networkError;
+                });
+              })
+            );
+        })
+      )
+    );
     return;
   }
 

@@ -2,7 +2,7 @@
 
 - Batch: 1371c-room-furniture-angle-correction
 - 元Batch: 1371-room-furniture-repertoire-expansion
-- 状態: local PASS / commit前 / push・staging反映前
+- 状態: asset実装commit `04c0855fc40472d0d177593d6cef30d111ff7021` をpush済み。Actions run `29693707197` はcompleted/success、App／LP staging deploy success、production skipped。staging HTTPでは48 PNG全件が正本一致でPASSしたが、既存PWA cacheで旧画像と新画像のA/B混在を検出。follow-upとしてsw.js v2293へ対象48画像のsynthetic key `__pono_asset=1371c`、network `no-store`、fallbackを実装し、SWモック／回帰／別エージェントのクロスレビューはPASS。v2293のcommit／push／再deploy後の実ブラウザ再検証はpending。
 - 最終QA正本: qa-final-assets.json
 - 最終QA SHA256: cd2eb7d496d18d7a24b8ea3b8b50544dd617da0abbade862e75d70b2a76ef91b
 
@@ -176,16 +176,18 @@ rawディレクトリ内27 PNGは処理前後のSHA256が全件一致し、alpha
 
 - room/items.js: 対象24 ID、A/Bパス、theme（all 20 / girl 2 / boy 2）、grid、cellSize、footprintSize、min/max、angleB、pivot値が補正前baselineと完全一致。
 - tier: appでは新24点すべて利用可。book/freeでは新24点すべて利用不可。
-- SW: sw.js CACHE_VERSION = 2292。対象48画像の更新をキャッシュ更新対象として反映。
+- SW: asset commit時はsw.js CACHE_VERSION = 2292。staging QAのcache問題を受け、follow-upのlocal実装でv2293へ更新し、対象48画像へsynthetic key `__pono_asset=1371c`を付けたnetwork `no-store`取得とfallbackを追加した。
 - static: room/items.js、sw.js、build_final_assets.mjsのnode parse、room/index.htmlとroom/furniture_adjuster.htmlのinline script parse、git diff --checkをPASS。
 - regression: room furniture app tier、book tier、pending section、shop furniture catalogをPASS。
 - image load: 48/48をbrowser Image.decodeし、natural dimensionsが最終QAと一致。page errorと対象request failureは0。
+- staging HTTP: App staging上の48/48がHTTP 200、image/png、8-bit RGBA、寸法、bytes、SHA256の全項目で最終QA正本と一致。App HTMLのAPP_BUILD=1、items.js、SW v2292を確認し、LP stagingのitems.js／sw.jsも同一commit内容でproduction deployはskipped。
 - room代表操作: furn_sofa_beige、deco_cookie_jar、furn_kitchen_counterでA→B→reload（B維持）→A→reload（A維持）をPASS。
 - responsive: 390×844、844×390、1024×768、1366×768で配置寸法が非ゼロ、document横overflowなし。
 - furniture adjuster: 24点が各1件、pending 0、全点has-b、A/Bモデルとthumbnailが存在し、pivot A/Bは全点0。代表benchもA/Bと[0,0]を確認。page error 0。
+- staging PWA cache follow-up: 既存PWAクライアントで同名上書き前の旧A画像と新B画像が混在し、reload後も旧Aが残る事象を独立QAが検出した。v2293修正はsynthetic key、`no-store`、network失敗時fallback、レスポンス検証をSWモック／関連回帰で確認し、別エージェントのクロスレビューもPASS。再deploy後に同じ既存クライアントでA/Bとreload永続化を再検証する作業は未完了。
 
 ## 現時点の変更範囲
 
-このバッチのruntime差分は対象48 PNGとsw.js v2292。room/items.js、room/index.html、room/furniture_adjuster.html、common/tier.js、play.htmlは変更していない。納品文書として本ファイルとHANDOFF.mdの本バッチ1行を追加した。
+asset実装commitのruntime差分は対象48 PNGとsw.js v2292。follow-upの現時点local差分はcache対策のsw.js v2293と本記録更新で、room/items.js、room/index.html、room/furniture_adjuster.html、common/tier.js、play.htmlは変更していない。
 
-現時点はlocal PASS / commit前であり、commit、push、staging deployは未実施。作業開始前からdirtyだったCLAUDE.mdとMEMORY.mdには触れていない。master、凍結develop、productionは変更していない。
+asset実装commit `04c0855fc40472d0d177593d6cef30d111ff7021` は`develop-app`へpush済み。Actions run `29693707197` はcompleted/successで、App／LP staging deployはともにsuccess、productionはskipped。staging HTTPの48画像正本一致はPASSしたが、既存PWA cacheのA/B混在を検出したため、sw.js v2293のfollow-up修正をlocal実装しSWモック／回帰／クロスレビューまでPASSしている。v2293はまだcommit／push／再deployしておらず、再deploy後の実ブラウザ再検証もpending。作業開始前からdirtyだったCLAUDE.mdとMEMORY.mdには触れていない。master、凍結develop、productionは変更していない。
