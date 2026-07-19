@@ -1,5 +1,8 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2291: LP／アプリ入口のタイトルロゴで、ポノのおなかをオリジナル準拠の
+// 温かいアイボリー色へ修正。ロゴ文字・顔・ポーズ・透明キャンバスは維持し、
+// index.html／index-app.html の画像queryも同期した (batch:1372)。
 // v2289: 独立レビューで発見されたCriticalバグ修正。common/treasure.jsのshowTreasure()は
 // _choiceMode/_choices/_onChooseをモジュール単一状態で持つため、stamp-rally.jsの
 // checkSlotReward()がカード境界(total=15,30,45)で「未取得スロット報酬」(setTimeout 200ms)
@@ -594,7 +597,7 @@
 // は grantReward を「表示前」から「選択確定後」に変更し、pono_profile(現在のユーザー導線
 // からは誰も書き込まない壊れたキー)への依存を撤去。play.html PAGE_CACHE_VERSION/
 // PONO_SW_VERSION、common/treasure.js?v= / common/stamp-rally.js?v= と同期。
-const CACHE_VERSION = 2290;
+const CACHE_VERSION = 2291;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
