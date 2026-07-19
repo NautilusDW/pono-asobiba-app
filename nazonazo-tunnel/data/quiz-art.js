@@ -201,7 +201,9 @@
     "💯|ひゃくてんまん": uiPath("ui_perfect_medal"),
     "🐳|そらとぶ くじら": items["🐋|くじら"],
     "🛸|なぞの ゆーふぉー": items["🛸|ゆーふぉー"],
-    "☄️|おおながれぼし": items["☄️|ながれぼし"]
+    "☄️|おおながれぼし": items["☄️|ながれぼし"],
+    "🐰|ゆきの しろうさぎ": items["🐰|うさぎ"],
+    "🦅|ほのおの わし": items["🦅|わし"]
   });
 
   const ui = {
@@ -242,7 +244,9 @@
     stageNumber: items["🎲|さいころ"],
     stageSea: items["🐋|くじら"],
     stageFuture: items["🤖|ろぼっと"],
-    stageSpace: items["🚀|ろけっと"]
+    stageSpace: items["🚀|ろけっと"],
+    stageSnow: items["🐧|ぺんぎん"],
+    stageFire: items["🐊|わに"]
   };
 
   window.PonoNazonazoQuizArt = { version: VERSION, items: items, ui: ui };

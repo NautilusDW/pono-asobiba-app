@@ -607,7 +607,17 @@
 // は grantReward を「表示前」から「選択確定後」に変更し、pono_profile(現在のユーザー導線
 // からは誰も書き込まない壊れたキー)への依存を撤去。play.html PAGE_CACHE_VERSION/
 // PONO_SW_VERSION、common/treasure.js?v= / common/stamp-rally.js?v= と同期。
-const CACHE_VERSION = 2299;
+// (batch: nazonazo-tunnel-branch-choice-ui) なぞなぞトレイン: トンネル内に
+// snow/fire分岐用の選択ゲートUI(#tunnelBranchGates)を追加。finishTunnelInterior/
+// gloopの無条件stg++をresolveNextStage(stg,pendingBranchChoice)ベースに置換し、
+// applySkinのクロスフェード先読み(nIdx)もresolveNextStage経由に統一。
+// game.js/index.html/styles.cssを変更したためバンプ。
+// クロスレビュー修正: openMap()の解放進度がhidden(snow/fire)分岐indexを
+// 誤ってmax()に含めてしまい本編ステージを丸ごとスキップ可能だったバグ修正、
+// buildRegistry()のhidden除外(=snow/fireで集めた生きものがずかんに永久に
+// 出ない不整合)を撤廃、仲間探しミニゲームと分岐ゲートUIの同時起動によるタップ
+// 領域重複を町区間のみ回避、quiz-art.jsにstageSnow/stageFireアイコン追加。
+const CACHE_VERSION = 2300;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

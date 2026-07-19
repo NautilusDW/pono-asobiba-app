@@ -755,6 +755,22 @@ body.tunnel-interior #tunnelFriendGame[aria-hidden="false"]{display:block}
 #tunnelResultTotal{font-size:clamp(17px,3vw,25px);color:#bdf5c4}
 @keyframes tunnelFriendReveal{0%{transform:scale(.82);opacity:.35}70%{transform:scale(1.12);opacity:1}100%{transform:scale(1);opacity:1}}
 @keyframes tunnelScorePop{0%{transform:translateY(10px) scale(.72);opacity:0}35%,72%{transform:translateY(0) scale(1);opacity:1}100%{transform:translateY(-9px) scale(.94);opacity:0}}
+#tunnelBranchGates{position:absolute;inset:0;z-index:9;display:none;overflow:hidden;pointer-events:none}
+body.tunnel-interior #tunnelBranchGates[aria-hidden="false"]{display:block}
+.tunnel-branch-gate{appearance:none;-webkit-appearance:none;position:absolute;top:32%;bottom:20%;width:min(27vw,208px);min-width:104px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+  border:3px solid rgba(255,255,255,.6);border-radius:26px;background:rgba(20,14,10,.4);color:#fff8df;
+  padding:8px 6px;cursor:pointer;pointer-events:auto;touch-action:manipulation;
+  box-shadow:0 0 0 6px rgba(255,255,255,.16),0 0 32px 6px var(--gate-glow,#fff3a8);
+  transition:transform .32s ease,opacity .32s ease,box-shadow .32s ease}
+.tunnel-branch-gate[data-side="left"]{left:3vw}
+.tunnel-branch-gate[data-side="right"]{right:3vw}
+.tunnel-branch-gate-icon{font-size:clamp(38px,7.6vw,64px);line-height:1}
+.tunnel-branch-gate-label{font-size:clamp(11px,1.9vw,15px);font-weight:800;line-height:1.15;text-align:center;text-shadow:0 2px 0 rgba(0,0,0,.4)}
+.tunnel-branch-gate:focus-visible{outline:4px solid #fff3a8;outline-offset:4px}
+.tunnel-branch-gate.chosen{transform:scale(1.14);box-shadow:0 0 0 8px rgba(255,255,255,.26),0 0 46px 14px var(--gate-glow,#fff3a8)}
+.tunnel-branch-gate.dim{transform:scale(.86);opacity:.32}
+#tunnelBranchGates.is-chosen .tunnel-branch-gate{pointer-events:none}
 body.tunnel-enter-run #veh,body.tunnel-enter-run #cars{transform:translateX(74vw) scale(.96);transition:transform 1.18s linear}
 body.tunnel-exit-setup #veh,body.tunnel-exit-setup #cars{transform:translateX(-58vw) scale(.96);transition:none}
 body.tunnel-exit-run #veh,body.tunnel-exit-run #cars{animation:tunnelExitDrive 1.08s linear both}
@@ -890,6 +906,10 @@ body.tunnel-enter-run #veh .puff,body.tunnel-exit-run #veh .puff{opacity:0}
 #smokeLayer{position:absolute;inset:0;z-index:8;pointer-events:none;overflow:hidden}
 body.tunnel-enter-run #smokeLayer,body.tunnel-exit-run #smokeLayer{display:none}
 body.tunnel-interior #veh .puff,body.tunnel-interior #smokeLayer{display:none!important}
+/* #vehはトンネル内(z-index:7)で仲間探しレイヤー(#tunnelFriendLayer, z-index:6)より
+   手前に描画されるが、#veh自体は元々タップ操作を持たない飾りなので、クリックだけ
+   無効化して背後に重なった仲間シルエットのタップを奪わないようにする。 */
+body.tunnel-interior #veh{pointer-events:none}
 .magic-puff{position:absolute;left:0;top:0;width:var(--puff-size);height:var(--puff-size);
   background:url("../assets/images/nazonazo-tunnel/magic_puffs_square_sheet_20260705.webp") no-repeat;background-size:400% 200%;
   transform:translate3d(0,0,0) scale(var(--puff-start-scale));opacity:0;filter:drop-shadow(0 2px 0 rgba(80,60,40,.08));

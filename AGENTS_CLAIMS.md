@@ -59,6 +59,7 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
+- 2026-07-20 00:00 - by Claude - [batch:1401-nazonazo-tunnel-branch] - nazonazo-tunnel/js/game.js, nazonazo-tunnel/data/questions.js, nazonazo-tunnel/data/quiz-art.js, nazonazo-tunnel/index.html, nazonazo-tunnel/styles.css, sw.js, AGENTS_CLAIMS.md - なぞなぞトレインにトンネル分岐(snow/fire)土台を実装、絵文字フォールバック修正 → トンネル内選択ゲートUI(#tunnelBranchGates)+出口色分岐演出を追加実装 (未push・未削除。呼び出し元でcommit/push判断後に削除要)
 
 
 - 2026-07-17 10:08 - by Codex - [batch:1328d-mojikko-white-paper-ornate-frames] - writing-mori/index.html, assets/images/mojikko/writing/storybook/**, tmp/alpha_pending/1328d-mojikko-white-paper-ornate-frames/**, tests/mojikko_*.cjs, native/**, AGENTS_CLAIMS.md, HANDOFF.md - 紙面を白ベースへ補正し、ことばの穴・見る丸・メッセージ・文字盤・書き順を個別の装飾枠へ差し替える

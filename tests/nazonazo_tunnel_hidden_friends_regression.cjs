@@ -818,11 +818,22 @@ async function runBrowser(browserName, base) {
   });
   await page.locator("#startBtn").click();
   await answerStage(page);
+  // Town now leads into the snow/fire branch-choice tunnel (#tunnelBranchGates), which
+  // intentionally suppresses the hidden-friend bonus for that one tunnel leg only (the
+  // gate cards + train sprite leave no on-screen room for friend silhouettes). Pick the
+  // first branch (snow) and clear its five questions so the *next* tunnel — snow's
+  // rejoin back into jungle, same as the original town->jungle tunnel pre-branch — is
+  // the one exercised below, matching this test's original intent.
+  const branchGate = page.locator(".tunnel-branch-gate").first();
+  await branchGate.waitFor({ state: "visible", timeout: 30000 });
+  await branchGate.click();
+  await answerStage(page);
   await page.waitForFunction(() => document.body.classList.contains("tunnel-interior") && document.getElementById("tunnelFriendGame").getAttribute("aria-hidden") === "false", null, { timeout: 70000 });
   assert.equal((await page.locator("#tunnelFriendTitle").textContent()).includes(TITLE), true, `${browserName}: exact title missing`);
   assert.match(await page.locator("#tunnelFriendGuide").textContent(), /1にん\s*\+100てん[\s\S]*ぜんぶ\s*\+200てん/, `${browserName}: score rules missing from the tunnel panel`);
   assert.match(await page.locator("#tunnelStageScore").textContent(), /1,250てん/, `${browserName}: perfect stage score missing on tunnel entry`);
-  assert.match(await page.locator("#tunnelJourneyScore").textContent(), /1,250てん/, `${browserName}: journey score missing on tunnel entry`);
+  // Journey score is cumulative: town (1,250) + the snow branch leg (1,250) = 2,500.
+  assert.match(await page.locator("#tunnelJourneyScore").textContent(), /2,500てん/, `${browserName}: journey score missing on tunnel entry`);
   const friendButtons = page.locator("#tunnelFriendLayer .tunnel-friend");
   assert.equal(await friendButtons.count(), 3, `${browserName}: all three friends must appear on entry`);
   const buttonMetrics = await friendButtons.evaluateAll(elements => elements.map(element => {
@@ -877,19 +888,20 @@ async function runBrowser(browserName, base) {
   await page.mouse.click(buttonMetrics[2].centerX, buttonMetrics[2].centerY);
   assert.match(await page.locator("#tunnelFriendCounter").textContent(), /3\s*\/\s*3/, `${browserName}: 3/3 counter missing`);
   assert.match(await page.locator("#tunnelStageScore").textContent(), /1,750てん/, `${browserName}: tunnel points were not added to the stage HUD`);
-  assert.match(await page.locator("#tunnelJourneyScore").textContent(), /1,750てん/, `${browserName}: tunnel points were not added to the journey HUD`);
+  // 2,500 (see above) + 500 (3 friends + perfect bonus) = 3,000.
+  assert.match(await page.locator("#tunnelJourneyScore").textContent(), /3,000てん/, `${browserName}: tunnel points were not added to the journey HUD`);
   // #fast compresses the 2.33-second production recap to roughly 0.39 seconds,
   // so capture its live-region text instead of requiring the transient card to
   // remain visible while several Playwright assertions are awaited.
   await page.waitForFunction(() => window.__tunnelFriendAudit.results.some(text =>
     /この めん\s*1,750てん/.test(text) &&
     /かくれともだち\s*\+500/.test(text) &&
-    /ぜんぶ\s*1,750てん/.test(text)
+    /ぜんぶ\s*3,000てん/.test(text)
   ), null, { timeout: 10000 });
   const capturedResult = await page.evaluate(() => window.__tunnelFriendAudit.results.find(text =>
     /この めん\s*1,750てん/.test(text) &&
     /かくれともだち\s*\+500/.test(text) &&
-    /ぜんぶ\s*1,750てん/.test(text)
+    /ぜんぶ\s*3,000てん/.test(text)
   ) || "");
   assert.match(capturedResult, /ぜんぶ|3\s*\/\s*3|3にん/, `${browserName}: complete exit result missing`);
   await page.waitForFunction(() => /×\s*1/.test(document.getElementById("helpBadge").textContent), null, { timeout: 10000 });
@@ -899,7 +911,8 @@ async function runBrowser(browserName, base) {
 
   // The untapped 0/3 branch and its no-reward guarantee are exercised in the
   // deterministic VM harness above. Keep this optional E2E focused on the
-  // requested town -> tunnel -> next-stage journey so #fast cannot outrun a
+  // town -> branch-choice tunnel (no hidden friends there by design) -> snow ->
+  // tunnel (hidden friends) -> jungle journey so #fast cannot outrun a
   // second transient tunnel while Playwright is polling it.
   assert.deepEqual(errors, [], `${browserName}: page errors\n${errors.join("\n")}`);
   assert.deepEqual(failed, [], `${browserName}: request failures\n${failed.join("\n")}`);
