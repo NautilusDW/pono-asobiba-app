@@ -2,15 +2,15 @@
 
 ## ステータス
 
-> ✅ **【実装完了 2026-07-10 — Phase 5 (本番反映) のみ未実施】** 2026-07-10 にユーザー承認された本計画は、同日中に Phase 1〜4 の実装・検証まで完了した。**現行の運用: `develop-app` が唯一の開発トランクであり、push 1 回で App staging / LP staging の両方に自動デプロイされる。`develop` は凍結済み（凍結コミット `0dacb4e4`、`BRANCH_FROZEN.md` 設置済み、以後 push しない）。** production への反映（Phase 5）は従来どおりユーザー明示指示時のみ。現行ルールの正本は [AGENTS.md §1.1 / §1.2](../AGENTS.md)。
+> ✅ **【全 Phase 完了 2026-07-19】** 2026-07-10 にユーザー承認された本計画は、同日中に Phase 1〜4 の実装・検証まで完了。**Phase 5（本番反映）も 2026-07-19 にユーザー明示指示（AskUserQuestion で「フルPhase5を実行」を選択）を受けて実施し、develop-app → master マージ（コミット `9721c6431`）+ 本番デプロイ + 独立クロス検証まで完了した。** 現行の運用: `develop-app` が唯一の開発トランクであり、push 1 回で App staging / LP staging の両方に自動デプロイされる。`develop` は凍結済み（凍結コミット `0dacb4e4`、`BRANCH_FROZEN.md` 設置済み、以後 push しない）。今後の本番反映も同様にユーザー明示指示時のみ実施する。現行ルールの正本は [AGENTS.md §1.1 / §1.2](../AGENTS.md)。
 >
-> ⚠️ **Phase 0（webapp 本番 404）は一度復旧したが再発**（error code: 1042、2026-07-10 実測）。統合とは無関係（master は未デプロイ）だが再調査が必要。詳細は下記 Phase 0 参照。
+> ⚠️ **Phase 0（webapp 本番 404）は一度復旧したが再発**（error code: 1042、2026-07-10 実測）。統合とは無関係。2026-07-19 の Phase 5 本番検証時点では `https://pono-asobiba-app.ndw.workers.dev/` は 200 で正常応答していたが、継続監視が必要。
 
 | 項目 | 内容 |
 | --- | --- |
-| 承認日 | 2026-07-10 |
+| 承認日 | 2026-07-10（Phase 1〜4）/ 2026-07-19（Phase 5、AskUserQuestion 経由でユーザー明示指示） |
 | 承認者 | ユーザー |
-| 実装状態 | **Phase 1〜4 完了（2026-07-10）**。Phase 5（本番）は未実施。Phase 0 は復旧後に再発、再調査中 |
+| 実装状態 | **Phase 1〜5 すべて完了（2026-07-19）**。Phase 0 は復旧後に再発、再調査中（Phase 5 検証時点では 200 応答） |
 | トランク（唯一の開発ブランチ） | `develop-app`（ブランチ名は変更していない） |
 | 凍結済みブランチ | `develop`（凍結コミット `0dacb4e4` push 済み、`BRANCH_FROZEN.md` 設置、以後 push しない） |
 | 正本ドキュメント | 本ファイル `docs/branch-unification-plan.md` |
@@ -23,7 +23,7 @@
 - [x] Phase 2 — 設定統一 ✅ **2026-07-10 完了** — `wrangler.toml` に `[env.staging.assets]` を追加（現物 L73-76）。3 env（production / staging / staging-app）全てで `wrangler deploy --dry-run` ビルド成功。
 - [x] Phase 3 — CI 切替 + フック更新 + `develop` 凍結宣言 ✅ **2026-07-10 完了** — `deploy.yml` をトリガ `branches: [develop-app, master]` + if ガード付き 3 step（master→production / develop-app→App staging→LP staging 直列）に変更。`.claude/settings.local.json` の DEPLOY-FACT 文言と Stop auto-push を develop-app に更新。凍結コミット `0dacb4e4` を `[skip deploy]` で push 済み（デプロイ発火ゼロを確認）。develop 側の deploy.yml は `branches: [master]` のみに変更し、`BRANCH_FROZEN.md` を設置。
 - [x] Phase 4 — 検証（クロスレビュー体制）✅ **2026-07-10 完了・全項目 PASS** — 両 staging が sw.js v2078 を byte 一致で配信。APP_BUILD 注入は App staging のみ（LP staging は注入なし）。LP staging の canonical 正常。GitHub Actions run `29098446114` で production=skipped / App staging=success / LP staging=success を確認。
-- [ ] Phase 5 — 本番反映（ユーザー明示指示時のみ）— **未実施**
+- [x] Phase 5 — 本番反映 ✅ **2026-07-19 完了** — ユーザーが AskUserQuestion で「フルPhase5を実行 (推奨)」を選択し明示承認。エージェントチーム（fable 設計 + sonnet5 実装・監査、独立クロスレビュー）により実施: (1) develop-app に残っていた古い未解決 git-stash コンフリクトマーカー（`docs/beta/google_forms_template.md`）を先に修正、(2) 隔離 worktree でのドライランマージで衝突が `.assetsignore` 1件のみ・develop-app 側が master の完全上位互換であることを確認、(3) master 専用の保護的修正 4 件（secrets/test-artifact 除外・`workers_dev=true`・`run_worker_first=true`・Gemini `x-goog-api-key` 認証）が develop-app 側に維持されていることを確認、(4) 隔離 worktree でマージ・コミット `9721c6431b2289355e6ea915cf0b3f7933df51b3`（親: `db112ad77` × `600e5c77a`）を `origin master` へ push（force 不使用）、(5) GitHub Actions run `29673499942` 成功。本番検証（オーケストレーター自身による直接 curl/`git show` 再検証込み）: 本番 Web アプリ・LP とも 200、`/admin/` は 401（Basic Auth 健在）、`sw.js` `CACHE_VERSION` は 1277→2289 に更新（App staging と一致）、`window.__APP_BUILD__` は本番に未注入（D6 どおり）、`.dev.vars` は 404（secrets 非公開）、`admin/index.html` に `panel-nazonazo` 3 箇所を確認（なぞなぞトンネル管理パネルが本番に反映）。ロールバック不要（問題なし）。
 
 ---
 
@@ -158,9 +158,9 @@
 
 ## 6. 移行完了の定義
 
-以下をすべて満たした時点で「移行完了」とする。**2026-07-10 時点: Phase 0 の再発を除き達成済み（ブランチ統合そのものは完了扱い。Phase 0 は統合と独立した本番インフラ課題として別途追跡）。**
+以下をすべて満たした時点で「移行完了」とする。**2026-07-19 時点: Phase 0 の再発を除き達成済み（ブランチ統合・本番反映とも完了扱い。Phase 0 は統合と独立した本番インフラ課題として別途追跡）。**
 
-- [x] Phase 1〜4 が完了し、本ファイル冒頭のチェックリストがチェック済み（Phase 0 は統合と無関係の再発課題として残存、Phase 5 は本番反映でありユーザー指示待ち）
+- [x] Phase 1〜5 が完了し、本ファイル冒頭のチェックリストがチェック済み（Phase 0 は統合と無関係の再発課題として残存）
 - [x] `develop` ブランチに凍結宣言コミットが入っている（`0dacb4e4`、`BRANCH_FROZEN.md` 設置済み）
 - [x] `develop-app` への 1 回の push で App staging / LP staging の両方に同一コミットが反映されることを実機確認済み（sw.js v2078 byte 一致、run `29098446114`）
 - [x] `.claude/settings.local.json` の DEPLOY-FACT / Stop hook が更新済み
