@@ -59,6 +59,8 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
+- 2026-07-19 19:17 - by Codex - [batch:1371b-room-furniture-alpha-implementation] - room/items.js, assets/images/Rooms/furnitures_final/new48, sw.js, play.html, HANDOFF.md - 家具24点のA/B透過48画像を実装し、ピボット調整互換と統合品質を確認 [overlap: batch:1370-treasure-gender-choice]
+
 - 2026-07-17 10:08 - by Codex - [batch:1328d-mojikko-white-paper-ornate-frames] - writing-mori/index.html, assets/images/mojikko/writing/storybook/**, tmp/alpha_pending/1328d-mojikko-white-paper-ornate-frames/**, tests/mojikko_*.cjs, native/**, AGENTS_CLAIMS.md, HANDOFF.md - 紙面を白ベースへ補正し、ことばの穴・見る丸・メッセージ・文字盤・書き順を個別の装飾枠へ差し替える
 
 

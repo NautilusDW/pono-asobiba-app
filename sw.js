@@ -594,7 +594,7 @@
 // は grantReward を「表示前」から「選択確定後」に変更し、pono_profile(現在のユーザー導線
 // からは誰も書き込まない壊れたキー)への依存を撤去。play.html PAGE_CACHE_VERSION/
 // PONO_SW_VERSION、common/treasure.js?v= / common/stamp-rally.js?v= と同期。
-const CACHE_VERSION = 2289;
+const CACHE_VERSION = 2290;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。

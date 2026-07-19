@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-07-19 - [batch:1371b-room-furniture-alpha-implementation] Codex: DONE — batch:1371のraw 24枚からA/B分割・alpha透過化したPNG 48枚を `assets/images/Rooms/furnitures_final/<id>_[AB].png` へ配置し、`room/items.js`へ24点を登録。pivotX/pivotYとangleBは暫定0で、既存ピボット調整ツールからユーザー調整可能。surface stackingは未調整のため対象定義を拡張していない。画像alpha品質/A-B対応とコード/runtime登録を別エージェント同士で相互レビューしPASS。App tierは新24点すべて利用可、book/freeは新24点とも利用不可。390×844／844×390／1024×768／1366×768のroom smoke、代表3点（大型／小物／白家具）の所持→配置→A/B回転→reload保存、adjusterの24点・A/B表示・pending 0、既存回帰5本、48画像のHTTP 200 + image/pngをすべて確認。SW/PAGE/PONO_SW v2290。既存dirty `CLAUDE.md`／`MEMORY.md`は変更していない。 (by Codex)
+
 - 2026-07-19 - [batch:1371-room-furniture-repertoire-expansion] Codex: DONE — GPT Image 2のみを使い、指定の既存家具5枚を各呼び出しに添付してA/B横並びraw asset sheet 24点を `tmp/alpha_pending/1371-room-furniture-repertoire-expansion/raw/` へ納品。`CODEX-DELIVERY.md` に採用raw・寸法・byte数・SHA256・prompt要旨を記録。生成担当間のクロスレビューと5点の改善再生成後、全24点visual PASS。現物は全て1774×887、8-bit RGB／alphaなし／3MB未満。要求2048×1024以上は未達で、3840×1920強指定でもbuilt-in出力は同寸法だったため、加工拡大せずrawを保持。Photoshopでのalpha化／A-B crop／assets統合／code hookup／SW bumpは未実施。staging未統合・preview URLなし。既存dirtyの`CLAUDE.md`／`MEMORY.md`は未変更。 (by Codex)
 
 - 2026-07-18 - [batch:1353-profile-avatar-choice-scale] Codex: DONE — プロフィールの初回作成／後からの姿編集の両候補一覧を拡大。初回一覧は通常38→62px、スマホ32→54px、短い横画面31→52pxにし、4列を3列へ変更。編集一覧は通常50→66px、短画面42→56px、スマホ42→66pxへ拡大し、カード全体も連動して拡大。候補40体・tier lock・選択／決定導線は維持。390×844／844×390／1024×768／1366×768で編集一覧の実寸、縦scroll、決定ボタン表示、横overflow 0、page error 0を確認。profile回帰、SW構文、diff check PASS、SW/PAGE/PONO v2281。既存dirtyのnative／`.DS_Store`は未変更。 (by Codex)
