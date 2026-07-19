@@ -86,3 +86,4 @@
 ## なぜ HANDOFF.md と別ファイルなのか
 
 HANDOFF.md は履歴 (Done エントリ含む) が積み上がるため、 「いまアクティブな claim だけを瞬時に把握する」 用途には不向き。 このボードは **常に短い / 常に最新 / 行は使い捨て** という性質を維持することで、 衝突検出のコストをほぼゼロにする狙い。
+- 2026-07-19 12:00 - by Claude - [batch:1370-treasure-gender-choice] - common/treasure.js, common/first-clear.js, common/stamp-rally.js, sw.js, play.html, tests/**, AGENTS_CLAIMS.md - 性別自動判定(pono_profile依存の壊れたfallback)を廃止し、宝箱を開ける瞬間に子供がboy/girl見た目をタップ選択する方式へ変更 [overlap: batch:1362-stamp-rally-slot-reward-boundary-fix (common/stamp-rally.js, sw.js, play.html)]
