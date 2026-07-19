@@ -59,8 +59,6 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
-- 2026-07-19 - by Claude - [batch:1350-stamp-rally-reward-data-cleanup] - common/stamp-rally.js, assets/data/rewards.json, sw.js, play.html, AGENTS_CLAIMS.md, HANDOFF.md - スタンプカード報酬ロジックの整合性修正 (履歴の精度バグ/フォールバック同期/20マス目到達不能データ整理)。admin/index.html は別エージェント作業中のため touch しない
-
 - 2026-07-17 10:08 - by Codex - [batch:1328d-mojikko-white-paper-ornate-frames] - writing-mori/index.html, assets/images/mojikko/writing/storybook/**, tmp/alpha_pending/1328d-mojikko-white-paper-ornate-frames/**, tests/mojikko_*.cjs, native/**, AGENTS_CLAIMS.md, HANDOFF.md - 紙面を白ベースへ補正し、ことばの穴・見る丸・メッセージ・文字盤・書き順を個別の装飾枠へ差し替える
 
 
