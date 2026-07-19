@@ -46,6 +46,18 @@
   var _onChoose = null;
   var _choiceResolved = false;
 
+  // ── 多重呼び出しキュー (batch:1371) ──
+  // 同一実行内 (例: stamp-rally.js の checkSlotReward がスロット報酬とカード完成報酬を
+  // それぞれ setTimeout(200ms) / setTimeout(1200ms) で独立に showTreasure() を呼ぶ) で
+  // 2回目の呼び出しが発生すると、_choiceMode/_choices/_onChoose がモジュール単一状態のため
+  // 1回目の選択がまだ確定していないうちに上書きされ、1回目の onChoose が永久に呼ばれず
+  // grantReward がロストする事故があった (2026-07-19 実機検証で確認)。
+  // 対策: showTreasure() の実処理は「busy でなければ即実行、busy ならキューに積む」方式にし、
+  // 表示中の宝箱が完全に閉じきる (_doClose 完了 = onClose 発火後) まで次の呼び出しを
+  // 待たせる。呼び出し側 (stamp-rally.js/first-clear.js) は何も意識しなくてよい設計。
+  var _queue = [];
+  var _busy = false;
+
   // past incident: オーバーレイが正常に閉じずページ全体のクリックを吸収した事故の再発防止 (batch:1320)
   var AUTO_CLOSE_MS = 10000;
   var _autoCloseTimer = null;
@@ -349,9 +361,11 @@
     _closing = true;
     _clearAutoClose();
     _clearPendingTimers();
-    // タップオーバーレイが残っていたら除去
+    // タップオーバーレイが残っていたら除去 (batch:1371: クラス名で確実に照合。
+    // 旧 `[style*="z-index:3"]` はブラウザの style 属性再シリアライズで
+    // "z-index: 3;" とスペースが入るため実ブラウザでは常に不一致だった)。
     if (_container) {
-      var tap = _container.querySelector('[style*="z-index:3"]');
+      var tap = _container.querySelector('.treasure-tap-overlay');
       if (tap) tap.remove();
     }
     // 動画はまだ削除しない。代わりに「開いた宝箱」画像を背景にして見た目を維持
@@ -384,6 +398,12 @@
       }
       _closing = false;
       if (_onClose) { var cb = _onClose; _onClose = null; cb(); }
+      // この宝箱は完全に終了した。busy を解除し、待っている次の呼び出しがあれば処理する。
+      // cb() が同期的に showTreasure() を呼んでいた場合でも、_busy はまだ true のまま
+      // だったのでその呼び出しは _queue に積まれているだけ (即実行はされていない)。
+      // ここで _busy=false にしてから _runQueue() することで、必ず正しい順序で処理される。
+      _busy = false;
+      _runQueue();
     }, 350);
   }
 
@@ -562,17 +582,41 @@
     _later(function() { _showCloseBtn(); }, 2000);
   }
 
+  // ── キュー処理 (batch:1371) ──
+  // _queue の先頭を1件取り出して実行する。空なら busy を解除して待機状態に戻る。
+  // rewardsDisabled は呼び出しごとに再評価する (キュー投入時ではなく実行時)。
+  // disabled の場合は何も表示せず onClose だけ即時発火し、そのまま次のキューへ進む
+  // (=表示が発生しないので busy にする必要がない)。
+  function _runQueue() {
+    if (_queue.length === 0) { _busy = false; return; }
+    var options = _queue.shift();
+    if (_isRewardsDisabled()) {
+      try { if (options && typeof options.onClose === 'function') options.onClose(); } catch (e) {}
+      _runQueue();
+      return;
+    }
+    _busy = true;
+    _startTreasure(options);
+  }
+
   // ── メイン: showTreasure ─────────────────────────────────────────────────────
+  // 呼び出しは即実行せず必ずキューに積み、busy でなければその場で _runQueue() する。
+  // これにより「表示中の宝箱がまだ閉じていない間に別の showTreasure() が呼ばれる」
+  // ケース (例: stamp-rally.js の checkSlotReward がスロット報酬とカード完成報酬を
+  // 200ms/1200ms の独立 setTimeout で呼ぶ) でも、後発呼び出しは先発が完全に閉じる
+  // (onChoose 確定 + モーダル close) まで安全に待たされる。
   window.showTreasure = function(options) {
+    _queue.push(options);
+    if (!_busy) _runQueue();
+  };
+
+  // ── 実処理 (旧 showTreasure 本体。_runQueue() 経由でのみ呼ばれる) ──────────────
+  function _startTreasure(options) {
     // options: { name, img, onClose, label }
     // 2択選択モード (batch:1370): options.choices = [choiceA, choiceB] (各 {name, img, ...})
     // を渡すと、単一revealの代わりに2枚並べてタップで選ばせる。選択結果は
     // options.onChoose(選ばれたchoiceオブジェクト) で受け取る (grantReward 等はそこで行う)。
     // choices が無い/不正な場合は従来通りの単一reveal (name/img) のまま変更なし。
-    if (_isRewardsDisabled()) {
-      try { if (options && typeof options.onClose === 'function') options.onClose(); } catch (e) {}
-      return;
-    }
     _createUI();
     _clearPendingTimers();
     _destroyVideo();
@@ -602,6 +646,16 @@
       _container.style.background = '';
       _container.style.backgroundColor = '#3D1A00';
       _container.style.backgroundImage = '';
+      // batch:1371: _doClose() のスケールアウト演出が inline style で
+      // transform:scale(0) / 専用の easing (cubic-bezier(0.6,-0.28,0.74,0.05)) を
+      // 直接セットしたままになっており、次の表示時にリセットしていなかった。
+      // inline style は stylesheet 側の `#treasure-overlay.visible .treasure-container`
+      // ルールより強いため、2回目以降の宝箱 (=今回のキュー機構で初めて同一ページ内で
+      // 連続表示されるようになった経路) が永久に scale(0) のまま (=見た目上つぶれて
+      // 消えたまま) になってしまう事故があった (2026-07-19 Playwright 実行時に発見)。
+      // inline transform/transition をクリアし、CSS クラス側の制御に戻す。
+      _container.style.transform = '';
+      _container.style.transition = '';
     }
 
     // ラベル・アイテム設定
@@ -659,6 +713,13 @@
 
     // ── 「タップして あけよう！」オーバーレイ（動画の最初のフレームの上に重ねる） ──
     var tapOverlay = document.createElement('div');
+    // batch:1371: _doClose() 側の除去セレクタが `[style*="z-index:3"]` (スペース無し) だったが、
+    // ブラウザは style 属性をシリアライズし直す際に "z-index: 3;" とコロン後にスペースを
+    // 挿入するため、実ブラウザでは一度もマッチせず「タップして開けよう」ボタンが auto-close
+    // (子どもがタップせず放置した場合の安全策クローズ) のたびに DOM に残留し続け、次の宝箱
+    // 表示に古いボタンが重なって残る事故があった (2026-07-19 Playwright 検証で発見)。
+    // style 文字列の照合ではなく専用クラス名で確実に識別できるようにする。
+    tapOverlay.className = 'treasure-tap-overlay';
     tapOverlay.style.cssText =
       'position:absolute;inset:0;z-index:3;display:flex;flex-direction:column;' +
       'align-items:center;justify-content:flex-end;padding-bottom:24px;cursor:pointer;';
@@ -770,5 +831,5 @@
         }).catch(function() {});
       }
     });
-  };
+  }
 })();

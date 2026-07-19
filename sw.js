@@ -1,5 +1,25 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2289: 独立レビューで発見されたCriticalバグ修正。common/treasure.jsのshowTreasure()は
+// _choiceMode/_choices/_onChooseをモジュール単一状態で持つため、stamp-rally.jsの
+// checkSlotReward()がカード境界(total=15,30,45)で「未取得スロット報酬」(setTimeout 200ms)
+// と「カード完成報酬」(setTimeout 1200ms)を独立に呼ぶと、後発の呼び出しが先発の選択未確定
+// (onChoose未発火)のまま状態を上書きし、先発のgrantRewardが永久にロストしていた
+// (v2288の2択UI化でgrantを選択確定後まで遅延させたことで露見)。showTreasure()に呼び出し
+// キューを実装し、表示中の宝箱が完全に閉じきる(onChoose確定+モーダルclose)まで次の呼び出し
+// を待たせるよう修正 (common/treasure.js)。実ブラウザ(Playwright)で、待ち時間ゼロの連続呼び出し
+// および1件目を無操作でオートクローズさせるケースの両方で両方の報酬が過不足なく正しい順序で
+// 確定することを検証 (tests/e2e/treasure/treasure_queue_regression.spec.js)。副次的に、
+// _doClose()のタップオーバーレイ除去セレクタ([style*="z-index:3"]、実ブラウザのstyle属性
+// 再シリアライズでスペースが入り一致しない)と、閉じるアニメーションのinline transformが
+// 次回表示にクリアされず残留する(2回目以降の宝箱が潰れたまま表示される)、の2件の関連バグも
+// 同じPlaywright検証で発見し修正。stamp_rally_slot_reward_boundary_regression.cjsのshowTreasure
+// スタブも2択onChoose確定を模擬するよう更新し再度パス確認 (batch:1371)。play.html
+// PAGE_CACHE_VERSION / PONO_SW_VERSION と同期。
+// v2288: 性別自動判定(pono_profile、現行導線からは誰も書き込まない壊れたキー)を撤去し、
+// gendered な報酬(boy/girl両バリアント)をタップして選ばせる2択UIに置き換え。
+// common/treasure.jsのshowTreasure()にoptions.choices/onChooseを追加し、選択確定後に
+// grantRewardする設計に変更 (common/first-clear.js, common/stamp-rally.js)。
 // v2287: スタンプカード境界(total=15,30,45,...)でスロット報酬(1/8/15マス目)が二重付与
 // される既存バグを修正。getCardNum(total)が境界ちょうどの時「次のカード」の番号を返して
 // いたため、getFilledInCard(total)(=満タンの15)と矛盾し、checkSlotReward()がスロット
@@ -574,7 +594,7 @@
 // は grantReward を「表示前」から「選択確定後」に変更し、pono_profile(現在のユーザー導線
 // からは誰も書き込まない壊れたキー)への依存を撤去。play.html PAGE_CACHE_VERSION/
 // PONO_SW_VERSION、common/treasure.js?v= / common/stamp-rally.js?v= と同期。
-const CACHE_VERSION = 2288;
+const CACHE_VERSION = 2289;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。

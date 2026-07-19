@@ -67,7 +67,19 @@ function runBoundarySimulation(done) {
     ponoProfile: null, // avoid auto _initStampRally() firing at script-load time
     localStorage,
     grantReward(rw) { grantLog.push({ total: currentTotal, type: rw.type, id: rw.id }); },
-    showTreasure() {},
+    // showTreasure stub (updated 2026-07-19, batch:1371): checkSlotReward() now defers
+    // grantReward for gendered rewards until the child's 2-choice tap is confirmed via
+    // options.onChoose (see common/treasure.js's choices/onChoose contract). This stub
+    // simulates a child immediately tapping the first choice (index 0) and immediately
+    // closing, so the deferred-grant path (_finalizeSlotGrant/_finalizeCompleteGrant)
+    // actually fires in this test instead of being silently skipped (which previously
+    // made this test undercount grantReward() calls: 7 instead of 12).
+    showTreasure(opts) {
+      if (opts && Array.isArray(opts.choices) && opts.choices.length === 2 && typeof opts.onChoose === 'function') {
+        opts.onChoose(opts.choices[0]);
+      }
+      if (opts && typeof opts.onClose === 'function') opts.onClose();
+    },
     showAfterMsgOverlay() {},
     addEventListener() {},
   };
@@ -77,6 +89,24 @@ function runBoundarySimulation(done) {
   // assets/data/rewards.json; this is also what an offline device sees in production).
   function fetchStub() { return Promise.reject(new Error("no network in vm sandbox")); }
 
+  // setTimeout wrapper (updated 2026-07-19, batch:1371): checkSlotReward() schedules its
+  // showTreasure() calls via setTimeout(200ms)/setTimeout(1200ms) (the exact independent
+  // calls whose interaction is the subject of the Critical bug report this test-fix
+  // accompanies). Those callbacks now actually run grantReward() (via the showTreasure
+  // stub's synchronous onChoose) *after* the driving `for` loop below has already moved
+  // `currentTotal` on to a later value, so naively reading `currentTotal` from inside the
+  // deferred callback would mis-attribute every choice-mode grant to total=45. Capture
+  // the in-flight total at *scheduling* time instead, and restore it only for the
+  // duration of the deferred callback.
+  function setTimeoutStub(fn, ms) {
+    const capturedTotal = currentTotal;
+    return setTimeout(function() {
+      const prevTotal = currentTotal;
+      currentTotal = capturedTotal;
+      try { fn(); } finally { currentTotal = prevTotal; }
+    }, ms);
+  }
+
   const sandbox = {
     window: windowStub,
     document: makeDocumentStub(),
@@ -85,10 +115,16 @@ function runBoundarySimulation(done) {
     Math,
     Date,
     JSON,
-    setTimeout,
+    setTimeout: setTimeoutStub,
     clearTimeout,
     fetch: fetchStub,
     AbortController: global.AbortController,
+    // stamp-rally.js unconditionally defines its own window.showAfterMsgOverlay
+    // (overwriting windowStub's no-op), and that real implementation uses
+    // requestAnimationFrame for its show-transition. Only reachable now that this
+    // test's showTreasure stub actually fires onChoose/onClose (see above), which
+    // previously left this codepath completely unexercised by this test.
+    requestAnimationFrame: (fn) => setTimeout(fn, 0),
   };
   sandbox.window.localStorage = localStorage;
   sandbox.window.fetch = fetchStub;
@@ -99,16 +135,36 @@ function runBoundarySimulation(done) {
   const PSR = sandbox.window.PonoStampRally;
   assert.ok(PSR && typeof PSR.checkSlotReward === "function", "PonoStampRally.checkSlotReward must be exported");
 
-  // checkSlotReward has an internal `if (!_rewardsReady) { setTimeout(...200ms); return; }`
-  // retry. Give the fetch-reject fallback (`.finally(() => { _rewardsReady = true; })`) time
-  // to settle before starting the total=1..45 simulation loop.
-  setTimeout(() => {
+  // checkSlotReward(total) is only ever called once per real stamp-earning event in
+  // production (see common/stamp-rally.js call sites: setTimeout(() => checkSlotReward
+  // (finalTotal), 150), each firing once per gameplay session), each such call already
+  // catching up on any skipped slots via its own internal `for (s=1..filled)` loop.
+  // Real gameplay always leaves far more than 1200ms between two such calls. Calling
+  // checkSlotReward for every total=1..45 back-to-back with zero delay (as this test
+  // used to, from before the 2026-07-19 2-choice UI change) is unrealistic for the
+  // now-deferred choice-mode grant path: because confirmation only happens inside
+  // showTreasure()'s onChoose (fired from the setTimeout(200ms) callback), a same-tick
+  // total=2 call would still see the total=1 choice-reward key as "not yet given" and
+  // schedule a second, redundant showTreasure() for the same slot — and so on for every
+  // subsequent total, snowballing into dozens of duplicate calls that don't reflect any
+  // real production timing. Await past the longest deferred delay (1200ms) after each
+  // total before moving to the next, so every call sees a fully-settled given[]/detailMap,
+  // matching how real gameplay actually spaces these calls out.
+  //
+  // checkSlotReward also has an internal `if (!_rewardsReady) { setTimeout(...200ms);
+  // return; }` retry; give the fetch-reject fallback
+  // (`.finally(() => { _rewardsReady = true; })`) time to settle first.
+  function wait(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
+
+  (async () => {
+    await wait(300);
     for (let total = 1; total <= 45; total++) {
       currentTotal = total;
       PSR.checkSlotReward(total);
+      await wait(1500);
     }
     done(grantLog, store);
-  }, 300);
+  })();
 }
 
 runBoundarySimulation((grantLog, store) => {
