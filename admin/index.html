@@ -1610,10 +1610,11 @@ tr:hover { background: #FFFAF0; }
 <!-- ===== 🚂 なぞなぞ ===== -->
 <div class="panel" id="panel-nazonazo">
   <div class="section">
-    <div class="section-title">🚂 ステージを試す</div>
+    <div class="section-title">🚂 なぞなぞトンネル ステージセレクト（試遊）</div>
     <div style="font-size:0.75rem;color:#8B7355;margin:-6px 0 12px;line-height:1.5;">
       ステージを選ぶと、通常のゲームと同じ画面を下の枠へ読み込みます。<br>
-      枠の中で難易度を選び、<strong>「はじめる！」</strong>を押してください。宇宙の追跡だけを見る場合は、下の専用ボタンからすぐ開始できます。管理プレビュー中はハイスコア・図鑑・進行状況を保存しません。
+      枠の中で難易度を選び、<strong>「はじめる！」</strong>を押してください。宇宙の追跡だけを見る場合は、下の専用ボタンからすぐ開始できます。管理プレビュー中はハイスコア・図鑑・進行状況を保存しません。<br>
+      ※ ステージ選択ボタンは App 版管理画面 (https://pono-asobiba-app-staging.ndw.workers.dev/admin/) でのみ有効です。本番/LP 版の管理画面にはこのパネルが無い・またはボタンが無効になります。
     </div>
     <div class="nazonazo-admin-stage-grid" id="nazonazo-admin-stage-grid" role="group" aria-label="なぞなぞステージ一覧">
       <button class="btn btn-blue nazonazo-admin-stage-btn" type="button" data-nazonazo-stage="town" aria-pressed="false" onclick="nazonazoSelectStage('town')">🏘️ まちはずれ</button>

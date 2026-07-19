@@ -171,7 +171,14 @@
 
   // ── Card position helpers ──
   function getCardNum(total) {
-    return Math.floor(total / SLOTS_PER_CARD) + 1;
+    // ちょうどカード境界(total=15,30,45,...)の時は「今まさに完成したカード」の番号を
+    // 返す(= getFilledInCard(total) が同じ total に対して 15 [満タン] を返す時と整合させる)。
+    // 旧実装 Math.floor(total/15)+1 は境界で「次のカード」の番号(例: total=15 で 2)を
+    // 返してしまい、checkSlotReward() がスロット報酬キーを 'card2_slot1' のように誤った
+    // 番号で組み立てて、既に 'card1_slot1' として付与済みの報酬を境界のたびに二重付与する
+    // 原因になっていた (2026-07-19 修正、既存の潜在バグ)。
+    if (total <= 0) return 1;
+    return Math.floor((total - 1) / SLOTS_PER_CARD) + 1;
   }
   function getCardPos(total) {
     // 0-indexed position within current card (0..14)
@@ -378,7 +385,10 @@
     var filled = getFilledInCard(total);
     var cardNum = getCardNum(total);
     var isCardComplete = (total > 0 && total % SLOTS_PER_CARD === 0);
-    var completedCardNum = isCardComplete ? Math.floor((total - 1) / SLOTS_PER_CARD) + 1 : 0;
+    // cardNum は getCardNum(total) 経由で計算済み。境界(15,30,...)では「直前に完成した
+    // カード」の番号と一致するよう修正済みなので、そのまま使い回せる(以前は別式で再計算
+    // していたため一見一致しているように見えて実は cardNum 側だけがズレていた)。
+    var completedCardNum = isCardComplete ? cardNum : 0;
 
     // Check ALL slot-level rewards up to current position (catch skipped ones)
     var pendingRewards = [];
@@ -642,7 +652,9 @@
     var rowStart = currentRow * SLOTS_PER_ROW; // 0-based index within card
 
     // Update card number
-    var displayCardNum = showingCompletedCard ? Math.floor((total - 1) / SLOTS_PER_CARD) + 1 : cardNum;
+    // getCardNum(total) は境界(15,30,...)で「直前に完成したカード」の番号を返すよう
+    // 修正済みなので、showingCompletedCard の分岐は不要になった(常に cardNum と一致)。
+    var displayCardNum = cardNum;
     var numEl = document.getElementById('stampCardNum');
     if (numEl) numEl.textContent = displayCardNum + 'まいめ';
 
@@ -738,7 +750,9 @@
     var cardNum = getCardNum(total);
     var filled = getFilledInCard(total);
     var showingCompletedCard = (total > 0 && total % SLOTS_PER_CARD === 0);
-    var displayCardNum = showingCompletedCard ? Math.floor((total - 1) / SLOTS_PER_CARD) + 1 : cardNum;
+    // getCardNum(total) は境界(15,30,...)で「直前に完成したカード」の番号を返すよう
+    // 修正済みなので、showingCompletedCard の分岐は不要になった(常に cardNum と一致)。
+    var displayCardNum = cardNum;
 
     var overlay = document.createElement('div');
     overlay.className = 'stamp-full-modal-overlay';

@@ -67,6 +67,8 @@ assert.match(
 );
 assert.match(admin, /href="\.\.\/nazonazo-tunnel\/"[^>]*target="_blank"[^>]*rel="noopener"/);
 assert.match(admin, /管理プレビュー中はハイスコア・図鑑・進行状況を保存しません/);
+assert.match(admin, /<div class="section-title">🚂 なぞなぞトンネル ステージセレクト（試遊）<\/div>/);
+assert.match(admin, /App 版管理画面 \(https:\/\/pono-asobiba-app-staging\.ndw\.workers\.dev\/admin\/\) でのみ有効です/);
 assert.match(admin, /if \(!window\.__APP_BUILD__\)[\s\S]*?App staging/);
 assert.match(admin, /function nazonazoSelectStage\(stageId, previewKind\)[\s\S]*?frame\.setAttribute\('src',[\s\S]*?adminPreviewToken=/);
 assert.match(admin, /previewKind:\s*nazonazoAdminPendingPreviewKind/);

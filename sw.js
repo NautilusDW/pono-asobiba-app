@@ -1,5 +1,11 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2286: 管理ダッシュボードのなぞなぞトンネル パネル見出しを「🚂 ステージを試す」から
+// 「🚂 なぞなぞトンネル ステージセレクト（試遊）」へ変更し、App staging 管理画面
+// (https://pono-asobiba-app-staging.ndw.workers.dev/admin/) でのみ有効という説明を
+// 静的テキストで追記。タブ文言・postMessage token/origin検証・機能自体は無変更
+// (batch:1351-nazonazo-tunnel-stage-select-recovery)。play.html PAGE_CACHE_VERSION
+// と同期不要 (admin/テストのみ変更)。
 // v2280: 窓と床家具の衝突判定をalpha外接長方形から実不透明ピクセルマスクへ変更。
 // カーテン中央やアーチ内側の透明領域へ家具を置ける一方、窓枠へ実際に食い込む
 // 配置は従来どおり拒否する (batch:1360-room-pixel-mask-window-collision)。
@@ -553,7 +559,7 @@
 // v2285: スタンプカード スロット報酬(1/8/15マス目)の履歴表示にも、カード完成報酬と同じ
 // スナップショット方式(pono_stamp_rewards_detail)を適用。rewards.json のスロット報酬定義が
 // 後で変わっても、過去に付与済みの履歴表示が化けないようにする(common/stamp-rally.js)。
-const CACHE_VERSION = 2285;
+const CACHE_VERSION = 2286;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。
