@@ -105,19 +105,19 @@
     },
     {
       "icon": "🎳",
-      "name": "きょうりゅうボウリング / ユニコーンボウリング",
+      "name": "モンステラ / パステルおはな",
       "gendered": true,
       "boy": {
-        "name": "きょうりゅうボウリング",
-        "type": "bg",
-        "id": "bg_bowling_dinasour",
-        "img": "assets/images/Bowling/BG/boy/dinasour.webp"
+        "name": "モンステラ",
+        "type": "wall",
+        "id": "wall_green_monstera",
+        "img": "assets/images/Rooms/walls/green_monstera.png"
       },
       "girl": {
-        "name": "ユニコーンボウリング",
-        "type": "bg",
-        "id": "bg_bowling_unicorn",
-        "img": "assets/images/Bowling/BG/girl/unicorn.webp"
+        "name": "パステルおはな",
+        "type": "wall",
+        "id": "wall_pastel_flower",
+        "img": "assets/images/Rooms/walls/pastel_flower.png"
       },
       "afterMsg": "ボウリングの はいけいが\nふえたよ！ボウリングで\nえらんで あそんでみてね！"
     },
@@ -310,32 +310,6 @@
         "img": "assets/images/Rooms/furnitures_final/shelf2_A.png"
       },
       "afterMsg": "はじめての クイズランドクリア！\nあたまの いいアイテムが もらえたよ！"
-    }
-  },
-  "fairyRewards": {
-    "water": {
-      "name": "もりの ようせい",
-      "icon": "🧚‍♀️",
-      "color": "#4ade80",
-      "row": "か",
-      "flavor": "おれた きを まほうで いたに かえて、 ゆうしゃを わたらせて くれた もりの ようせい。",
-      "img": null
-    },
-    "shrine": {
-      "name": "ほのおの ようせい",
-      "icon": "🧚‍♂️",
-      "color": "#ff9a60",
-      "row": "な",
-      "flavor": "ほこらに こおりの ふういんで とじこめられていた ようせい。 ゆうしゃに たすけられて なかまに なった。",
-      "img": null
-    },
-    "fire": {
-      "name": "こおりの ようせい",
-      "icon": "🧚‍♀️",
-      "color": "#7ad2ff",
-      "row": "ら",
-      "flavor": "ようがんの ねつに よわらされていた ようせい。 たすけられ、 まほうで いしを よんで あしばを つくる。",
-      "img": null
     }
   }
 }
