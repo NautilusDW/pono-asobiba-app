@@ -550,7 +550,10 @@
 // 商品として現存するため画像/データ自体は削除せず、shop-catalog.jsが誤って実績専用(非売品)扱い
 // していたバグも副次的に解消。(4) rewards.jsonのslot1 afterMsgがカンマ結合の単一文字列になっていた
 // バグを配列2件へ修正。play.html PAGE_CACHE_VERSION / PONO_SW_VERSION / stamp-rally.js?v= と同期。
-const CACHE_VERSION = 2284;
+// v2285: スタンプカード スロット報酬(1/8/15マス目)の履歴表示にも、カード完成報酬と同じ
+// スナップショット方式(pono_stamp_rewards_detail)を適用。rewards.json のスロット報酬定義が
+// 後で変わっても、過去に付与済みの履歴表示が化けないようにする(common/stamp-rally.js)。
+const CACHE_VERSION = 2285;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。

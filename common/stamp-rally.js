@@ -79,12 +79,15 @@
   var LS_STAMP_LOG = 'pono_stamp_log';
   var LS_DAILY_RALLY = 'pono_daily_rally';
   var LS_STAMP_REWARDS_GIVEN = 'pono_stamp_rewards_given';
-  // カード完成報酬を「実際に付与した瞬間」のスナップショットとして記録する場所。
-  // { "card_1": {icon,name,type,id,img,afterMsg}, ... } の形。
-  // rewards.json の CARD_COMPLETE_REWARDS 配列は admin 側で並べ替え/削除され得るため、
-  // 履歴表示(showRewardHistory)を「その時点の配列からインデックス再計算」に頼ると、
-  // 後から配列が変わった時に過去の履歴まで遡って別アイテムに化けるバグがあった
-  // (2026-07-19 整理)。記録が無い旧ユーザーのデータは現状通り再計算にフォールバックする。
+  // カード完成報酬 / スロット報酬(1・8・15マス目)を「実際に付与した瞬間」のスナップショット
+  // として記録する場所。カード完成は "card_1" 形式、スロットは "card1_slot8" 形式のキーで
+  // LS_STAMP_REWARDS_GIVEN と1対1対応させる(先頭が"card_"かどうかで判別できるため、両者を
+  // 同じマップに同居させても衝突しない)。{ "card_1": {...}, "card1_slot8": {...}, ... } の形。
+  // rewards.json の CARD_COMPLETE_REWARDS 配列 / CARD_SLOT_REWARDS オブジェクトは admin 側で
+  // 並べ替え/削除/性別振り分け変更され得るため、履歴表示(showRewardHistory)を「その時点の
+  // データからインデックス/キー再計算」に頼ると、後からデータが変わった時に過去の履歴まで
+  // 遡って別アイテムに化けるバグがあった (2026-07-19 カード完成報酬側で導入、同日スロット報酬
+  // 側にも同じ設計を適用)。記録が無い旧ユーザーのデータは現状通り再計算にフォールバックする。
   var LS_STAMP_REWARDS_DETAIL = 'pono_stamp_rewards_detail';
   var PONO_ICON = 'assets/ui/stamp-card/pono_red_rubber_stamp_20260716.webp';
   var SLOTS_PER_CARD = 15;
@@ -368,6 +371,10 @@
       return;
     }
     var given = getJSON(LS_STAMP_REWARDS_GIVEN, []);
+    // 付与した瞬間のスロット報酬/カード完成報酬オブジェクトのスナップショット置き場。
+    // カード完成報酬で導入した履歴精度対策(LS_STAMP_REWARDS_DETAIL のコメント参照)を
+    // スロット報酬(1/8/15マス目)にも同じ設計で適用する (2026-07-19 拡張)。
+    var detailMap = getJSON(LS_STAMP_REWARDS_DETAIL, {});
     var filled = getFilledInCard(total);
     var cardNum = getCardNum(total);
     var isCardComplete = (total > 0 && total % SLOTS_PER_CARD === 0);
@@ -393,13 +400,20 @@
         window.grantReward({ type: pr.rw.type, id: pr.rw.id });
       }
       given.push(pr.key);
+      // 付与した瞬間の報酬内容をスナップショット保存 (履歴の精度バグ対策。カード完成報酬と
+      // 同じ設計。CARD_SLOT_REWARDS が後で並べ替え/削除/性別振り分け変更されても、
+      // showRewardHistory() はこの記録があれば正しいアイテムを表示し続けられる)
+      detailMap[pr.key] = pr.rw;
       if (pr.rw.unlockRoom) {
         localStorage.setItem('pono_room_card_open', '1');
         var rc = document.getElementById('card-room');
         if (rc) { rc.classList.remove('locked'); rc.style.pointerEvents = ''; }
       }
     }
-    if (pendingRewards.length > 0) setJSON(LS_STAMP_REWARDS_GIVEN, given);
+    if (pendingRewards.length > 0) {
+      setJSON(LS_STAMP_REWARDS_GIVEN, given);
+      setJSON(LS_STAMP_REWARDS_DETAIL, detailMap);
+    }
 
     // 宝箱演出は最初の未取得報酬だけ表示
     var slotRw = firstReward ? firstReward.rw : null;
@@ -451,10 +465,10 @@
         setJSON(LS_STAMP_REWARDS_GIVEN, given);
         // 付与した瞬間の報酬内容をスナップショット保存 (履歴の精度バグ対策。上のLS_STAMP_REWARDS_DETAIL
         // コメント参照)。CARD_COMPLETE_REWARDS が後で並べ替え/削除されても、この記録があれば
-        // showRewardHistory() は正しいアイテムを表示し続けられる。
-        var _detail = getJSON(LS_STAMP_REWARDS_DETAIL, {});
-        _detail[compKey] = compRw;
-        setJSON(LS_STAMP_REWARDS_DETAIL, _detail);
+        // showRewardHistory() は正しいアイテムを表示し続けられる。スロット報酬と同じ detailMap
+        // (関数冒頭で読み込み済み) を共用する。
+        detailMap[compKey] = compRw;
+        setJSON(LS_STAMP_REWARDS_DETAIL, detailMap);
 
         // Card complete sparkle + treasure
         var section = document.getElementById('stampCardSection');
@@ -847,24 +861,29 @@
     if (old) old.remove();
 
     var given = getJSON(LS_STAMP_REWARDS_GIVEN, []);
+    // 付与時に記録したスナップショット(LS_STAMP_REWARDS_DETAIL)。スロット報酬・カード完成報酬
+    // 共通の { givenキー: 付与した瞬間の報酬オブジェクト } マップ (2026-07-19 スロット報酬にも拡張)。
+    // CARD_SLOT_REWARDS/CARD_COMPLETE_REWARDS は admin での並べ替え/削除や、オフライン→オンライン
+    // 切り替えで内容が変わり得るため、その時点の配列/オブジェクトからインデックス再計算すると
+    // 過去の履歴まで別アイテムに化けるバグがあった。記録が無い旧ユーザーのデータだけ、従来通り
+    // その場で再計算(現在の性別解決込み)にフォールバックする。
+    var detailMap = getJSON(LS_STAMP_REWARDS_DETAIL, {});
     // 全報酬定義からもらったものを収集
     var items = [];
     for (var slot in CARD_SLOT_REWARDS) {
       var rw = CARD_SLOT_REWARDS[slot];
       if (!rw || rw.type === 'special') continue;
-      // givenの中にこのスロットのキーがあるか
-      var found = false;
+      // givenの中にこのスロットのキーがあるか (どのカードでもよい、最初に見つかったキーを使う)
+      var foundKey = null;
       for (var g = 0; g < given.length; g++) {
-        if (given[g].indexOf('_slot' + slot) !== -1) { found = true; break; }
+        if (given[g].indexOf('_slot' + slot) !== -1) { foundKey = given[g]; break; }
       }
-      if (found) items.push(rw);
+      if (foundKey) {
+        var slotSnap = detailMap[foundKey] || getSlotRewardInfo(parseInt(slot, 10));
+        if (slotSnap) items.push(slotSnap);
+      }
     }
     // カード完成報酬
-    // 付与時に記録したスナップショット(LS_STAMP_REWARDS_DETAIL)があればそれを最優先で表示する。
-    // CARD_COMPLETE_REWARDS 配列は admin での並べ替え/削除や、オフライン→オンライン切り替えで
-    // 内容が変わり得るため、その時点の配列からインデックス再計算すると過去の履歴まで別アイテムに
-    // 化けるバグがあった (2026-07-19 修正)。記録が無い旧ユーザーのデータだけ現状通り再計算にフォールバック。
-    var detailMap = getJSON(LS_STAMP_REWARDS_DETAIL, {});
     for (var g = 0; g < given.length; g++) {
       if (given[g].indexOf('card_') === 0) {
         var cn = parseInt(given[g].replace('card_', ''));
