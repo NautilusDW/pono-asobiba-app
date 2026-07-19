@@ -35,6 +35,17 @@
   var _fallbackStarted = false; // _fallbackCss 重複挿入ガード用
   var _closing = false;         // _doClose 多重発火ガード (close btn / 背景タップ / auto-close が競合しても1回だけ実行)
 
+  // ── 2択選択モード (性別自動判定の廃止に伴う追加、batch:1370) ──
+  // gendered な報酬 (boy/girl 2バリアント) を子ども自身にタップで選ばせるための状態。
+  // options.choices (配列2件、各 {name, img, ...任意のフィールド}) が渡された時だけ有効化。
+  // 呼び出し側は options.onChoose(選ばれたchoiceオブジェクト) で選択結果を受け取り、
+  // その中で grantReward などの確定処理を行う (= 見せる前に確定させない設計)。
+  var _choiceGrid = null;
+  var _choiceMode = false;
+  var _choices = null;
+  var _onChoose = null;
+  var _choiceResolved = false;
+
   // past incident: オーバーレイが正常に閉じずページ全体のクリックを吸収した事故の再発防止 (batch:1320)
   var AUTO_CLOSE_MS = 10000;
   var _autoCloseTimer = null;
@@ -133,6 +144,46 @@
       '  text-shadow:0 1px 3px rgba(0,0,0,0.8);',
       '  font-family:"Zen Maru Gothic",sans-serif;',
       '}',
+      /* ── 2択選択UI (batch:1370) ── */
+      '.treasure-choice-grid {',
+      '  position:absolute; inset:0;',
+      '  display:flex; flex-direction:column;',
+      '  align-items:center; justify-content:center;',
+      '  gap:10px; padding:14px 10px;',
+      '  transform:scale(0); transform-origin:center;',
+      '  transition:transform 0.5s cubic-bezier(0.34,1.56,0.64,1);',
+      '  pointer-events:none; z-index:2;',
+      '}',
+      '.treasure-choice-grid.show { transform:scale(1); pointer-events:auto; }',
+      '.treasure-choice-prompt {',
+      '  font-size:0.85rem; font-weight:900; color:#FFD700;',
+      '  text-shadow:0 1px 3px rgba(0,0,0,0.7);',
+      '  font-family:"Zen Maru Gothic",sans-serif;',
+      '}',
+      '.treasure-choice-row { display:flex; flex-direction:row; gap:14px; justify-content:center; align-items:stretch; }',
+      '.treasure-choice-btn {',
+      '  display:flex; flex-direction:column; align-items:center; justify-content:center;',
+      '  gap:6px; min-width:104px; min-height:128px; padding:10px 8px;',
+      '  border:3px solid rgba(255,255,255,0.5); border-radius:20px;',
+      '  background:rgba(255,255,255,0.12);',
+      '  cursor:pointer; -webkit-tap-highlight-color:transparent;',
+      '  transition:transform .15s ease, border-color .15s ease, background .15s ease;',
+      '}',
+      '.treasure-choice-btn img {',
+      '  width:64px; height:64px; object-fit:contain; flex-shrink:0;',
+      '  filter:drop-shadow(0 4px 10px rgba(255,215,0,0.45));',
+      '  pointer-events:none;',
+      '}',
+      '.treasure-choice-name {',
+      '  font-size:0.72rem; font-weight:900; color:#fff; text-align:center;',
+      '  text-shadow:0 1px 3px rgba(0,0,0,0.8);',
+      '  font-family:"Zen Maru Gothic",sans-serif;',
+      '  pointer-events:none;',
+      '}',
+      '.treasure-choice-btn:active { transform:scale(0.94); }',
+      '.treasure-choice-btn.is-active {',
+      '  border-color:#FFD700; background:rgba(255,215,0,0.38); transform:scale(1.06);',
+      '}',
       '.treasure-msg {',
       '  margin-top:16px; font-size:1.1rem; font-weight:900;',
       '  color:#FFD700; text-shadow:0 2px 4px rgba(0,0,0,0.5);',
@@ -183,6 +234,19 @@
     _overlay.innerHTML =
       '<div class="treasure-label" id="treasure-label"></div>' +
       '<div class="treasure-container" id="treasure-container">' +
+        '<div class="treasure-choice-grid" id="treasure-choice-grid">' +
+          '<div class="treasure-choice-prompt">どっちが すき？</div>' +
+          '<div class="treasure-choice-row">' +
+            '<button type="button" class="treasure-choice-btn" data-choice-idx="0" aria-pressed="false">' +
+              '<img class="treasure-choice-img" alt="">' +
+              '<div class="treasure-choice-name"></div>' +
+            '</button>' +
+            '<button type="button" class="treasure-choice-btn" data-choice-idx="1" aria-pressed="false">' +
+              '<img class="treasure-choice-img" alt="">' +
+              '<div class="treasure-choice-name"></div>' +
+            '</button>' +
+          '</div>' +
+        '</div>' +
         '<div class="treasure-reward" id="treasure-reward">' +
           '<img id="treasure-reward-img" alt="ごほうび">' +
           '<div class="treasure-reward-name" id="treasure-reward-name"></div>' +
@@ -196,10 +260,20 @@
     _reward    = document.getElementById('treasure-reward');
     _msg       = document.getElementById('treasure-msg');
     _closeBtn  = document.getElementById('treasure-close');
+    _choiceGrid = document.getElementById('treasure-choice-grid');
 
     _closeBtn.addEventListener('click', function() {
       _doClose();
     });
+
+    // 2択ボタン: タップされた瞬間の idx を _choices から都度読むので、
+    // showTreasure() が毎回差し替える _choices の内容と常に一致する。
+    var _choiceBtns = _choiceGrid.querySelectorAll('.treasure-choice-btn');
+    for (var _cbi = 0; _cbi < _choiceBtns.length; _cbi++) {
+      (function(idx) {
+        _choiceBtns[idx].addEventListener('click', function() { _selectChoice(idx); });
+      })(_cbi);
+    }
 
     // 背景タップで閉じる。演出のごく初期(フェードイン中/報酬表示前)の誤タップで
     // 早期クローズしないよう、_finished (=閉じるボタン表示済み) になるまでは無効化する。
@@ -266,6 +340,12 @@
 
   function _doClose() {
     if (_closing) return;
+    // 2択モードで子どもがタップせずオートクローズ/フォールバック終了まで進んだ場合の
+    // safety net: 1つ目の選択肢を自動選択してから閉じる。onChoose は必ず1回発火するので
+    // 呼び出し側 (first-clear.js/stamp-rally.js) は「選択されない」ケースを気にしなくてよい。
+    if (_choiceMode && _choices && _choices.length && !_choiceResolved) {
+      _selectChoice(0, true);
+    }
     _closing = true;
     _clearAutoClose();
     _clearPendingTimers();
@@ -389,8 +469,60 @@
     if (_rewardShown) return;
     _rewardShown = true;
     // 音はタップ時に再生済み
+    if (_choiceMode && _choices && !_choiceResolved) {
+      // 2択モード: 単一revealの代わりに2枚を並べて選ばせる。
+      // 確定reveal・メッセージ表示は _selectChoice() が選択後に引き継ぐ。
+      var btns = _choiceGrid.querySelectorAll('.treasure-choice-btn');
+      for (var i = 0; i < btns.length && i < _choices.length; i++) {
+        var c = _choices[i] || {};
+        var img = btns[i].querySelector('.treasure-choice-img');
+        var nm  = btns[i].querySelector('.treasure-choice-name');
+        if (img) img.src = c.img || '';
+        if (nm)  nm.textContent = c.name || '';
+        btns[i].classList.remove('is-active');
+        btns[i].setAttribute('aria-pressed', 'false');
+      }
+      _choiceGrid.classList.add('show');
+      return;
+    }
     _reward.classList.add('show');
     _later(function() { _msg.classList.add('show'); }, 400);
+  }
+
+  // ── 2択タップ確定 (batch:1370) ──
+  // idx: タップされたボタンの index (0 or 1)。auto: 自動選択(タイムアウト safety net)時 true。
+  function _selectChoice(idx, auto) {
+    if (!_choiceMode || _choiceResolved || !_choices || !_choices[idx]) return;
+    _choiceResolved = true;
+    var picked = _choices[idx];
+
+    if (!auto) {
+      var btns = _choiceGrid.querySelectorAll('.treasure-choice-btn');
+      for (var i = 0; i < btns.length; i++) {
+        btns[i].classList.toggle('is-active', i === idx);
+        btns[i].setAttribute('aria-pressed', i === idx ? 'true' : 'false');
+      }
+    }
+
+    // 呼び出し側の確定処理 (grantReward 等) をアニメーション完了を待たずに即実行。
+    // タイマー競合を避けるため setTimeout ではなく同期呼び出し。
+    if (_onChoose) { try { _onChoose(picked); } catch (e) {} }
+
+    // 選択エフェクトを一瞬見せてから (auto 選択時は間を空けずに) 通常の単一reveal表示へ。
+    _later(function() {
+      _choiceGrid.classList.remove('show');
+      var rewardImg = document.getElementById('treasure-reward-img');
+      rewardImg.src = picked.img || '';
+      rewardImg.style.display = picked.img ? '' : 'none';
+      document.getElementById('treasure-reward-name').textContent = picked.name || '';
+      _reward.classList.add('show');
+      _later(function() { _msg.classList.add('show'); }, 400);
+      // 動画終了などで既に _showCloseBtn() 側の「閉じるボタン表示」が保留されていた場合、
+      // 選択確定後にここで表示する。
+      if (_finished && !_closeBtn.classList.contains('show')) {
+        _later(function() { _closeBtn.classList.add('show'); }, 400);
+      }
+    }, auto ? 0 : 550);
   }
 
   // ── 動画完了後に閉じるボタンを表示 ─────────────────────────────────────────
@@ -410,6 +542,10 @@
 
     // アイテムがまだ表示されていなければ表示
     _showReward();
+    // 2択モードで未選択の間は閉じるボタンを出さない (選択後 _selectChoice() が表示する)。
+    // タップせず放置した場合も _scheduleAutoClose() の safety net (_doClose 側) で
+    // 自動選択されてから閉じるので、宝箱が開いたまま固まることはない。
+    if (_choiceMode && _choices && !_choiceResolved) return;
     _later(function() { _closeBtn.classList.add('show'); }, 400);
   }
 
@@ -429,6 +565,10 @@
   // ── メイン: showTreasure ─────────────────────────────────────────────────────
   window.showTreasure = function(options) {
     // options: { name, img, onClose, label }
+    // 2択選択モード (batch:1370): options.choices = [choiceA, choiceB] (各 {name, img, ...})
+    // を渡すと、単一revealの代わりに2枚並べてタップで選ばせる。選択結果は
+    // options.onChoose(選ばれたchoiceオブジェクト) で受け取る (grantReward 等はそこで行う)。
+    // choices が無い/不正な場合は従来通りの単一reveal (name/img) のまま変更なし。
     if (_isRewardsDisabled()) {
       try { if (options && typeof options.onClose === 'function') options.onClose(); } catch (e) {}
       return;
@@ -440,6 +580,21 @@
     _fallbackStarted = false;
     _rewardShown = false;
     _closing = false;
+
+    _choiceMode = !!(options && Array.isArray(options.choices) && options.choices.length === 2 &&
+                     options.choices[0] && options.choices[1] &&
+                     options.choices[0].img && options.choices[1].img);
+    _choices = _choiceMode ? options.choices : null;
+    _onChoose = _choiceMode ? (options.onChoose || null) : null;
+    _choiceResolved = false;
+    if (_choiceGrid) {
+      _choiceGrid.classList.remove('show');
+      var _resetBtns = _choiceGrid.querySelectorAll('.treasure-choice-btn');
+      for (var _rb = 0; _rb < _resetBtns.length; _rb++) {
+        _resetBtns[_rb].classList.remove('is-active');
+        _resetBtns[_rb].setAttribute('aria-pressed', 'false');
+      }
+    }
     // メインBGMをフェードアウト（演出中は静かに）
     _bgmFadeOut();
     // コンテナ背景をリセット（poster 読込失敗時の黒枠対策で茶系グラデを下敷きに）

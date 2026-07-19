@@ -567,7 +567,14 @@
 // v2285: スタンプカード スロット報酬(1/8/15マス目)の履歴表示にも、カード完成報酬と同じ
 // スナップショット方式(pono_stamp_rewards_detail)を適用。rewards.json のスロット報酬定義が
 // 後で変わっても、過去に付与済みの履歴表示が化けないようにする(common/stamp-rally.js)。
-const CACHE_VERSION = 2287;
+// v2288 (batch:1370): 性別自動判定を廃止し「宝箱を開ける瞬間に子どもがboy/girlの見た目を
+// タップで選ぶ」方式へ変更。common/treasure.js の showTreasure() に options.choices/onChoose
+// による2択選択モードを追加(gendered報酬でboy/girl両方のデータが揃う時のみ有効化。
+// データ不備時は従来通り単一revealへフォールバック)。common/first-clear.js/common/stamp-rally.js
+// は grantReward を「表示前」から「選択確定後」に変更し、pono_profile(現在のユーザー導線
+// からは誰も書き込まない壊れたキー)への依存を撤去。play.html PAGE_CACHE_VERSION/
+// PONO_SW_VERSION、common/treasure.js?v= / common/stamp-rally.js?v= と同期。
+const CACHE_VERSION = 2288;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 // CACHE_VERSION bump 規約: sw.js / CRITICAL_ASSETS 配下 / play.html (PAGE_CACHE_VERSION) を
 // 編集したら必ず +1 して deploy する。orchestrator が最後にバンプする運用 (CLAUDE.md 参照)。

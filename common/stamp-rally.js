@@ -238,37 +238,50 @@
     }
     return fallbackImg || '';
   }
+  // gendered エントリの1バリアントを正規化 (name/type/id/img/afterMsg/unlockRoom の共通シェイプへ)
+  function _normalizeVariant(rw, variantKey) {
+    var v = (rw && rw[variantKey]) || {};
+    return {
+      icon: rw.icon,
+      name: v.name || rw.name,
+      type: v.type,
+      id:   v.id,
+      img:  _resolveRewardImg(v.type, v.id, v.img),
+      unlockRoom: v.unlockRoom || rw.unlockRoom,
+      afterMsg: v.afterMsg || rw.afterMsg
+    };
+  }
+  // gendered かつ boy/girl 両方のデータが揃っているか (子どもに2択UIで選ばせられるか)
+  function _hasBothVariants(rw) {
+    return !!(rw && rw.gendered &&
+      rw.boy  && rw.boy.id  && rw.boy.img &&
+      rw.girl && rw.girl.id && rw.girl.img);
+  }
   function getSlotRewardInfo(slotNum1Based) {
     var rw = CARD_SLOT_REWARDS[slotNum1Based] || null;
     if (!rw) return null;
     if (rw.gendered) {
-      var g = 'boy';
-      try { g = JSON.parse(localStorage.getItem('pono_profile') || '{}').gender || 'boy'; } catch(e) {}
-      var v = rw[g] || rw['boy'] || {};
-      // 男女別の名前があればそれを優先、無ければ総称名
-      return { icon: rw.icon, name: v.name || rw.name, type: v.type, id: v.id,
-               img: _resolveRewardImg(v.type, v.id, v.img),
-               unlockRoom: v.unlockRoom || rw.unlockRoom, afterMsg: v.afterMsg || rw.afterMsg };
+      // 2択UIで選ばせられない文脈(バックログの取りこぼしキャッチアップ・スロットのヒント
+      // プレビュー・旧ユーザーの履歴再計算)専用のデフォルト解決。2026-07-19: pono_profile
+      // による自動判定(現在のユーザー導線からは誰も書き込まないキーで、常にboy固定に
+      // なっていた壊れたfallback)を撤去し、常にboy優先の安全側フォールバックへ統一
+      // (checkSlotReward() の実際の付与は選べる場面では2択UI経由に変更済み)。
+      return _normalizeVariant(rw, rw.boy ? 'boy' : 'girl');
     }
     return rw;
   }
-  function getCompleteReward(cardNum) {
+  // カード完成報酬の「生データ」(boy/girl 両バリアント未解決) を取得。2択UI用。
+  function _getRawCompleteReward(cardNum) {
     if (CARD_COMPLETE_REWARDS.length === 0) return null;
     var idx = (cardNum - 1) % CARD_COMPLETE_REWARDS.length;
-    var rw = CARD_COMPLETE_REWARDS[idx];
+    return CARD_COMPLETE_REWARDS[idx] || null;
+  }
+  function getCompleteReward(cardNum) {
+    var rw = _getRawCompleteReward(cardNum);
     if (!rw) return null;
     if (rw.gendered) {
-      var g = 'boy';
-      try { g = JSON.parse(localStorage.getItem('pono_profile') || '{}').gender || 'boy'; } catch(e) {}
-      var v = rw[g] || rw['boy'] || {};
-      return {
-        icon: rw.icon,
-        name: v.name || rw.name,
-        type: v.type,
-        id:   v.id,
-        img:  _resolveRewardImg(v.type, v.id, v.img),
-        afterMsg: v.afterMsg || rw.afterMsg || ''
-      };
+      // getSlotRewardInfo と同じ理由でboy優先のデフォルト解決 (2026-07-19 pono_profile 撤去)
+      return _normalizeVariant(rw, rw.boy ? 'boy' : 'girl');
     }
     // 非破壊でコピーを返す（元配列を汚さない）
     return {
@@ -398,13 +411,21 @@
       // slotKeyはカード番号+スロット番号で一意に
       var sk = 'card' + cardNum + '_slot' + s;
       if (given.indexOf(sk) === -1) {
-        pendingRewards.push({ rw: rw, key: sk });
+        pendingRewards.push({ rw: rw, key: sk, slot: s });
       }
     }
 
-    // 順番に報酬を付与（最初の1個だけ宝箱演出、残りはサイレント）
+    // 最初の1個 (実際に宝箱演出を見せる分) だけ、boy/girl 両バリアントが揃っていれば
+    // 2択UIで選ばせる。2個目以降 (バックログの取りこぼしキャッチアップ) は演出を見せない
+    // ので選ばせようが無く、従来通り即座にデフォルト解決(boy優先)で付与する。
     var firstReward = pendingRewards.length > 0 ? pendingRewards[0] : null;
+    var firstRaw = firstReward ? CARD_SLOT_REWARDS[firstReward.slot] : null;
+    var firstUseChoice = !!(firstReward && _hasBothVariants(firstRaw));
+
+    // 順番に報酬を付与（最初の1個だけ宝箱演出、残りはサイレント）。
+    // 最初の1個が2択対象の場合は、選択確定後 (_finalizeSlotGrant) まで付与を保留する。
     for (var i = 0; i < pendingRewards.length; i++) {
+      if (i === 0 && firstUseChoice) continue;
       var pr = pendingRewards[i];
       if (window.grantReward) {
         window.grantReward({ type: pr.rw.type, id: pr.rw.id });
@@ -426,12 +447,14 @@
     }
 
     // 宝箱演出は最初の未取得報酬だけ表示
-    var slotRw = firstReward ? firstReward.rw : null;
-    var slotKey = firstReward ? firstReward.key : null;
-    if (slotRw) {
-      (function(rw) {
-        function _showRoomUnlock() {
-          if (!rw.unlockRoom) return;
+    if (firstReward) {
+      (function(entry, useChoice, raw) {
+        // 非choiceは上のループで既に確定済みなので entry.rw をそのまま使う。
+        // choiceモードは選択確定 (_finalizeSlotGrant) まで null のまま。
+        var chosenRw = useChoice ? null : entry.rw;
+
+        function _showRoomUnlock(rw) {
+          if (!rw || !rw.unlockRoom) return;
           var unlockOv = document.createElement('div');
           unlockOv.id = '_room-unlock-ov';
           unlockOv.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,0.6);display:flex;align-items:center;justify-content:center;';
@@ -448,59 +471,119 @@
             location.href = 'room/index.html';
           });
         }
+
+        // 2択UI専用: 子どもが選んだ方だけを確定させる (grantReward + given/detailMap 更新)。
+        // 非choiceは既にループで確定済みなのでこの関数は呼ばれない。
+        function _finalizeSlotGrant(rw) {
+          chosenRw = rw;
+          if (window.grantReward) {
+            window.grantReward({ type: rw.type, id: rw.id });
+          }
+          given.push(entry.key);
+          detailMap[entry.key] = rw;
+          setJSON(LS_STAMP_REWARDS_GIVEN, given);
+          setJSON(LS_STAMP_REWARDS_DETAIL, detailMap);
+          if (rw.unlockRoom) {
+            localStorage.setItem('pono_room_card_open', '1');
+            var rc = document.getElementById('card-room');
+            if (rc) { rc.classList.remove('locked'); rc.style.pointerEvents = ''; }
+          }
+        }
+
         setTimeout(function() {
-          if (window.showTreasure) {
+          if (!window.showTreasure) return;
+          if (useChoice) {
+            var boyVariant = _normalizeVariant(raw, 'boy');
+            var girlVariant = _normalizeVariant(raw, 'girl');
             window.showTreasure({
-              name: rw.name,
-              img: rw.img || '',
+              label: 'スタンプボーナス',
+              choices: [
+                { name: boyVariant.name, img: boyVariant.img || '', _rw: boyVariant },
+                { name: girlVariant.name, img: girlVariant.img || '', _rw: girlVariant }
+              ],
+              onChoose: function(picked) { _finalizeSlotGrant(picked._rw); },
+              onClose: function() {
+                window.showAfterMsgOverlay(chosenRw, function() { _showRoomUnlock(chosenRw); });
+              }
+            });
+          } else {
+            window.showTreasure({
+              name: entry.rw.name,
+              img: entry.rw.img || '',
               label: 'スタンプボーナス',
               onClose: function() {
-                window.showAfterMsgOverlay(rw, _showRoomUnlock);
+                window.showAfterMsgOverlay(chosenRw, function() { _showRoomUnlock(chosenRw); });
               }
             });
           }
         }, 200);
-      })(slotRw);
+      })(firstReward, firstUseChoice, firstRaw);
     }
 
     // Check card completion reward (slot 15 = card complete)
     if (isCardComplete) {
       var compKey = 'card_' + completedCardNum;
-      var compRw = getCompleteReward(completedCardNum);
-      if (compRw && given.indexOf(compKey) === -1) {
-        if (window.grantReward) {
-          window.grantReward({ type: compRw.type, id: compRw.id });
-        }
-        given.push(compKey);
-        setJSON(LS_STAMP_REWARDS_GIVEN, given);
-        // 付与した瞬間の報酬内容をスナップショット保存 (履歴の精度バグ対策。上のLS_STAMP_REWARDS_DETAIL
-        // コメント参照)。CARD_COMPLETE_REWARDS が後で並べ替え/削除されても、この記録があれば
-        // showRewardHistory() は正しいアイテムを表示し続けられる。スロット報酬と同じ detailMap
-        // (関数冒頭で読み込み済み) を共用する。
-        detailMap[compKey] = compRw;
-        setJSON(LS_STAMP_REWARDS_DETAIL, detailMap);
-
-        // Card complete sparkle + treasure
+      var compRaw = _getRawCompleteReward(completedCardNum);
+      var compUseChoice = _hasBothVariants(compRaw);
+      // 非choiceの場合のみ、既存通りデフォルト解決した結果を使う (choiceは選択待ち)
+      var compResolved = (compRaw && !compUseChoice) ? getCompleteReward(completedCardNum) : null;
+      if (compRaw && (compUseChoice || compResolved) && given.indexOf(compKey) === -1) {
+        // Card complete sparkle
         var section = document.getElementById('stampCardSection');
         if (section) {
           section.classList.add('card-complete');
           setTimeout(function() { section.classList.remove('card-complete'); }, 1200);
         }
-        (function(rw) {
+
+        (function(raw, useChoice, resolved) {
+          // 非choiceは即座に確定 (以前と同じタイミング=表示より先)。choiceは選択確定まで null。
+          var chosenRw = useChoice ? null : resolved;
+
+          function _finalizeCompleteGrant(rw) {
+            chosenRw = rw;
+            if (window.grantReward) {
+              window.grantReward({ type: rw.type, id: rw.id });
+            }
+            given.push(compKey);
+            setJSON(LS_STAMP_REWARDS_GIVEN, given);
+            // 付与した瞬間の報酬内容をスナップショット保存 (履歴の精度バグ対策。上の
+            // LS_STAMP_REWARDS_DETAIL コメント参照)。選ばれた方をそのまま記録する。
+            detailMap[compKey] = rw;
+            setJSON(LS_STAMP_REWARDS_DETAIL, detailMap);
+          }
+
+          if (!useChoice) { _finalizeCompleteGrant(resolved); }
+
           setTimeout(function() {
-            if (window.showTreasure) {
+            if (!window.showTreasure) return;
+            if (useChoice) {
+              var boyVariant = _normalizeVariant(raw, 'boy');
+              var girlVariant = _normalizeVariant(raw, 'girl');
               window.showTreasure({
-                name: rw.name,
-                img: rw.img || '',
+                label: 'カードかんせいボーナス',
+                choices: [
+                  { name: boyVariant.name, img: boyVariant.img || '', _rw: boyVariant },
+                  { name: girlVariant.name, img: girlVariant.img || '', _rw: girlVariant }
+                ],
+                onChoose: function(picked) { _finalizeCompleteGrant(picked._rw); },
+                onClose: function() {
+                  // afterMsg があれば宝箱を閉じた後に表示
+                  window.showAfterMsgOverlay(chosenRw);
+                }
+              });
+            } else {
+              window.showTreasure({
+                name: resolved.name,
+                img: resolved.img || '',
                 label: 'カードかんせいボーナス',
                 onClose: function() {
                   // afterMsg があれば宝箱を閉じた後に表示
-                  window.showAfterMsgOverlay(rw);
+                  window.showAfterMsgOverlay(chosenRw);
                 }
               });
             }
           }, 1200);
-        })(compRw);
+        })(compRaw, compUseChoice, compResolved);
       }
     }
   }

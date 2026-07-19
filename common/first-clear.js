@@ -6,8 +6,12 @@
 // を呼ぶ。このヘルパーが以下を実行する:
 //   1. rewards.json の firstClearRewards[gameId] を取得
 //   2. すでに付与済みならスキップ（二重付与防止）
-//   3. gendered なら pono_profile.gender で boy/girl を選択
-//   4. window.grantReward で部屋コレクションに追加
+//   3. gendered かつ boy/girl 両バリアントが揃っていれば、window.showTreasure の
+//      2択UIで子ども自身にタップで見た目を選ばせる (2026-07-19、batch:1370)。
+//      片方欠損時や opts.skipImmediate 時は選ばせようが無いので boy優先の安全側
+//      フォールバックへ倒す (旧 pono_profile.gender 自動判定は撤去済み。
+//      現在のユーザー導線からは誰も書き込まない壊れたキーだったため)。
+//   4. window.grantReward で部屋コレクションに追加（選択確定後）
 //   5. ホーム画面で再生するスタンプ演出の情報を localStorage に記録
 //   6. window.showTreasure で宝箱演出を即座に表示
 //
@@ -71,23 +75,35 @@
     return p;
   }
 
-  // gendered エントリを現在のプロフィールに応じて解決
-  function _resolveGendered(rw) {
+  // gendered エントリの1バリアントを正規化 (name/type/id/img/afterMsg の共通シェイプへ)
+  function _normalizeVariant(rw, variantKey) {
+    var v = (rw && rw[variantKey]) || {};
+    return {
+      icon: rw.icon,
+      name: v.name || rw.name,
+      type: v.type,
+      id:   v.id,
+      img:  v.img,
+      afterMsg: v.afterMsg || rw.afterMsg || ''
+    };
+  }
+
+  // gendered かつ boy/girl 両方のデータが揃っているか (2択UIを出せるか)
+  function _hasBothVariants(rw) {
+    return !!(rw && rw.gendered &&
+      rw.boy  && rw.boy.id  && rw.boy.img &&
+      rw.girl && rw.girl.id && rw.girl.img);
+  }
+
+  // 性別非対応 / データ不備時のフォールバック解決 (2択UIを出せない場面専用)。
+  // 2026-07-19: pono_profile による自動判定は「現在のユーザー導線からは誰も書き込まない
+  // 壊れたキー」だったため撤去 (常に'boy'優先の安全側フォールバックに統一)。
+  // gendered なのに片方のバリアントしか無いデータ不備時もここに来る想定。
+  function _resolveDefault(rw) {
     if (!rw) return null;
     if (rw.gendered) {
-      var g = 'boy';
-      try {
-        g = JSON.parse(localStorage.getItem('pono_profile') || '{}').gender || 'boy';
-      } catch (e) {}
-      var v = rw[g] || rw.boy || {};
-      return {
-        icon: rw.icon,
-        name: v.name || rw.name,
-        type: v.type,
-        id:   v.id,
-        img:  v.img,
-        afterMsg: v.afterMsg || rw.afterMsg || ''
-      };
+      var variantKey = rw.boy ? 'boy' : 'girl';
+      return _normalizeVariant(rw, variantKey);
     }
     return {
       icon: rw.icon,
@@ -221,71 +237,107 @@
         var raw = data.firstClearRewards[gameId];
         if (!raw) return false;
 
-        var rw = _resolveGendered(raw);
-        if (!rw || !rw.id) return false;
+        // 2択UIを出せるのは「その場でタップして選ばせる瞬間がある」時だけ。
+        // skipImmediate (例: oto) はゲーム内で一切UIを見せないので、選ばせようがなく
+        // 常に安全側フォールバック(_resolveDefault、boy優先)に倒す。
+        // gendered なのに片方のバリアントが欠けているデータ不備時も同様にフォールバック。
+        var useChoice = !opts.skipImmediate && _hasBothVariants(raw);
+        var boyVariant = null, girlVariant = null, rw = null;
+        if (useChoice) {
+          boyVariant  = _normalizeVariant(raw, 'boy');
+          girlVariant = _normalizeVariant(raw, 'girl');
+        } else {
+          rw = _resolveDefault(raw);
+          if (!rw || !rw.id) return false;
+        }
 
         // おうちアンロック状態に応じて afterMsg に案内文を追記
         //   ・未アンロック: 「スタンプを あつめて ベッドを もらったら、おへやに かざれるように なるよ！」
         //   ・アンロック済: 「おへやに かざってみてね！」
         // こうすることで「もらったけど今は使えない」状態でも子どもが混乱しない。
-        try {
-          var roomUnlocked = localStorage.getItem('pono_room_card_open') === '1';
-          var hint = roomUnlocked
-            ? 'おへやに かざってみてね！'
-            : 'スタンプを あつめて ベッドを もらったら、おへやに かざれるように なるよ！';
-          var base = (rw.afterMsg || '').replace(/\s+$/, '');
-          rw.afterMsg = base ? (base + '\n\n' + hint) : hint;
-        } catch (e) { /* localStorage 不能環境でも致命的ではないのでそのまま */ }
-
-        // 先に部屋コレクションに付与（grantReward は idempotent なので二重付与の心配なし）
-        // 失敗してもキャッチしてマーキング自体はスキップさせない
-        var grantOk = false;
-        try {
-          if (window.grantReward) {
-            window.grantReward({ type: rw.type, id: rw.id });
-            grantOk = true;
-          }
-        } catch (e) {
-          console.warn('[first-clear] grantReward failed:', e);
-          // grantReward が失敗しても演出は出したいので続行
-          // （マーキングはしないので次回もう1度試行される）
+        // 2択モードでは boy/girl どちらが選ばれても案内文が付くよう両方に付記する。
+        function _appendRoomHint(target) {
+          try {
+            var roomUnlocked = localStorage.getItem('pono_room_card_open') === '1';
+            var hint = roomUnlocked
+              ? 'おへやに かざってみてね！'
+              : 'スタンプを あつめて ベッドを もらったら、おへやに かざれるように なるよ！';
+            var base = (target.afterMsg || '').replace(/\s+$/, '');
+            target.afterMsg = base ? (base + '\n\n' + hint) : hint;
+          } catch (e) { /* localStorage 不能環境でも致命的ではないのでそのまま */ }
         }
+        if (useChoice) { _appendRoomHint(boyVariant); _appendRoomHint(girlVariant); }
+        else { _appendRoomHint(rw); }
 
-        // grantReward 成功時のみマーキング（失敗時は次回リトライ）
-        if (grantOk) _markGranted(gameId);
-
-        // ホーム帰還時に演出する情報をキュー
-        _queuePending(gameId, rw);
+        // 部屋コレクションへの確定処理 (grantReward は idempotent なので二重付与の心配なし)。
+        // 2択モードでは「子どもがタップで選んだ後」(showTreasure の onChoose 経由) に呼ばれる。
+        // 非choiceモードは今まで通り表示前に確定させる。
+        var chosenRw = null;
+        function _finalizeGrant(selected) {
+          chosenRw = selected;
+          var grantOk = false;
+          try {
+            if (window.grantReward) {
+              window.grantReward({ type: selected.type, id: selected.id });
+              grantOk = true;
+            }
+          } catch (e) {
+            console.warn('[first-clear] grantReward failed:', e);
+            // grantReward が失敗しても演出は出したいので続行
+            // （マーキングはしないので次回もう1度試行される）
+          }
+          // grantReward 成功時のみマーキング（失敗時は次回リトライ）
+          if (grantOk) _markGranted(gameId);
+          // ホーム帰還時に演出する情報をキュー（選ばれた方のアイテムをそのまま記録）
+          _queuePending(gameId, selected);
+        }
 
         // 宝箱演出を即座に表示
         // 閉じた後: afterMsg があれば表示 → opts.onClose を呼ぶ
-        var resolvedImg = _resolveImgPath(rw.img);
         var chainedClose = function() {
-          if (rw.afterMsg && typeof window.showAfterMsgOverlay === 'function') {
+          var closeRw = chosenRw || rw;
+          if (!closeRw) { if (opts.onClose) opts.onClose(); return; }
+          var resolvedImg = _resolveImgPath(closeRw.img);
+          if (closeRw.afterMsg && typeof window.showAfterMsgOverlay === 'function') {
             window.showAfterMsgOverlay(
-              { name: rw.name, img: resolvedImg, afterMsg: rw.afterMsg },
+              { name: closeRw.name, img: resolvedImg, afterMsg: closeRw.afterMsg },
               opts.onClose || null
             );
-          } else if (rw.afterMsg) {
+          } else if (closeRw.afterMsg) {
             // showAfterMsgOverlay が無いゲームページ用の簡易実装
-            _simpleAfterMsg(rw.name, resolvedImg, rw.afterMsg, opts.onClose || null);
+            _simpleAfterMsg(closeRw.name, resolvedImg, closeRw.afterMsg, opts.onClose || null);
           } else if (opts.onClose) {
             opts.onClose();
           }
         };
 
         if (opts.skipImmediate) {
-          // ゲーム内では表示しない。pono_pending_first_clear にキュー済みなので
-          // play.html の checkPendingFirstClear が帰還時に演出する。
+          // ゲーム内では表示しない (useChoice=false固定なのでrwが確定済み)。
+          // pono_pending_first_clear にキュー済みなので play.html の checkPendingFirstClear
+          // が帰還時に演出する想定 (現状 play.html 側は未実装だが oto の既存挙動を維持)。
+          _finalizeGrant(rw);
           if (opts.onClose) opts.onClose();
-        } else if (window.showTreasure) {
+        } else if (useChoice && window.showTreasure) {
+          window.showTreasure({
+            label: 'はじめての クリア！🎉',
+            choices: [
+              { name: boyVariant.name, img: _resolveImgPath(boyVariant.img), _rw: boyVariant },
+              { name: girlVariant.name, img: _resolveImgPath(girlVariant.img), _rw: girlVariant }
+            ],
+            onChoose: function(picked) { _finalizeGrant(picked._rw); },
+            onClose: chainedClose
+          });
+        } else if (!useChoice && window.showTreasure) {
+          _finalizeGrant(rw);
           window.showTreasure({
             name: rw.name,
-            img:  resolvedImg,
+            img:  _resolveImgPath(rw.img),
             label: 'はじめての クリア！🎉',
             onClose: chainedClose
           });
         } else {
+          // showTreasure 未ロード等のフォールバック環境: 選ばせようが無いので安全側(boy優先)に確定
+          _finalizeGrant(useChoice ? boyVariant : rw);
           chainedClose();
         }
 
