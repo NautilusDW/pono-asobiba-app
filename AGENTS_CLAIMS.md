@@ -59,7 +59,6 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
-- 2026-07-20 20:56 - by Codex - [batch:1328e-mojikko-match-owl-riddle] - writing-mori/index.html, assets/images/mojikko/writing/storybook/**, tmp/alpha_pending/1328e-**, tests/mojikko_*.cjs, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - 実使用中のフクロウ博士なぞなぞ画面を正本に、もじっこ文字書きの枠・紙・角飾りを同じ色・線幅・紙質・装飾密度へ合わせ直す
 
 
 - 2026-06-28 09:27 - by Codex - [batch:877-gacha-tray-mask-lower] - play.html, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - ガチャ受け皿マスクが上すぎるため奥壁ラインを下げて再調整 [overlap: batch:860-data-export-import]
