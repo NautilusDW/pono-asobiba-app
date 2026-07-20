@@ -2098,7 +2098,7 @@ const SPACE_STAR_PROFILES={
 function buildSpaceStars(){
  spaceStarSprites=[];
  Object.values(spaceStarLayers).forEach(layer=>{if(layer)layer.replaceChildren();});
- const st=STAGES[stg];if(!st||st.id!=="space")return;
+ const st=STAGES[stg];if(!st||st.mechanic!=="spaceChase")return;
  const reduced=seaReducedMotion();
  const colors=["#ffffff","#bcefff","#fff1a8","#d9c8ff"];
  Object.entries(SPACE_STAR_PROFILES).forEach(([depthName,profile],profileIndex)=>{
@@ -3055,7 +3055,7 @@ function buildSeaHabitat(){
  if(!seaHabitatLayer)return;
  seaHabitatLayer.replaceChildren();
  const st=STAGES[stg];
- if(window.__PONO_TIER_LOCKED__||!st||st.id!=="sea"||!st.assets||!st.assets.habitat)return;
+ if(window.__PONO_TIER_LOCKED__||!st||st.mechanic!=="seaBoss"||!st.assets||!st.assets.habitat)return;
  [
   {kind:"moray",cell:0,baseX:10,depth:.78},
   {kind:"seahorse",cell:1,baseX:48,depth:.84},
