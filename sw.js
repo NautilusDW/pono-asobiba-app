@@ -623,7 +623,13 @@
 // GENS(sizeD/sizeT)/questions.js(DINO/TOY/CAT/FANTASY/SKY/RUINS)/quiz-art.js
 // (stageDino等)を拡張。styles.cssは既存の#veh/#cars exact-match回帰テスト
 // (nazonazo_mountain_weather_regression.cjs)を壊さないため今回は無変更。
-const CACHE_VERSION = 2301;
+// (batch:1401-nazonazo-admin-branch-preview) 管理ダッシュボード(admin/index.html)の
+// 🚂なぞなぞQAパネルに、分岐先隠しステージ8つ(snow/fire/dino/toy/cat/fantasy/sky/ruins)
+// のプレビューボタンを「🌉ぶんき ルート(かくれステージ)」見出し付きの別グループとして
+// 追加。game.jsのNAZONAZO_ADMIN_STAGE_INDEXにも8id(index6〜13)を追加。プレイヤー向け
+// 本編マップ(openMap)は無変更、隠しルート発見体験もそのまま。admin/index.html・
+// game.jsを変更したためバンプ。
+const CACHE_VERSION = 2302;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

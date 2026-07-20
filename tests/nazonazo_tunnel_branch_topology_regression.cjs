@@ -145,14 +145,24 @@ const BRANCH_SPECS = [
 
 // Cross-check MAINLINE_ORDER against the admin dashboard's own canonical mapping
 // (NAZONAZO_ADMIN_STAGE_INDEX), a second independent source of truth in the same file.
+// The admin index intentionally also exposes every hidden branch-destination stage
+// (QA-preview only; openMap() below still never surfaces them to players), so the
+// expected key order is the six mainline stages followed by every hidden stage id
+// in BRANCH_SPECS order -- deriving that from BRANCH_SPECS (not hand-typed again)
+// keeps this a real cross-check against the structural ground truth above.
+const HIDDEN_BRANCH_IDS = BRANCH_SPECS.flatMap(spec => spec.choiceIds);
+const EXPECTED_ADMIN_STAGE_INDEX_ORDER = MAINLINE_ORDER.concat(HIDDEN_BRANCH_IDS);
 const adminIndexMarker = "const NAZONAZO_ADMIN_STAGE_INDEX=Object.freeze(";
 const adminIndexAt = game.indexOf(adminIndexMarker);
 assert.ok(adminIndexAt >= 0, "NAZONAZO_ADMIN_STAGE_INDEX: declaration missing");
 const adminObjectAt = adminIndexAt + adminIndexMarker.length;
 const adminObjectEnd = scanBalanced(game, adminObjectAt, "{", "}");
 const adminStageIndex = vm.runInNewContext(`(${game.slice(adminObjectAt, adminObjectEnd + 1)})`, Object.create(null), { timeout: 1000 });
-assert.deepEqual(Object.keys(adminStageIndex), MAINLINE_ORDER, "admin stage index keys must match the mainline order");
+assert.deepEqual(Object.keys(adminStageIndex), EXPECTED_ADMIN_STAGE_INDEX_ORDER,
+  "admin stage index keys must be the six mainline stages (in mainline order) followed by every hidden branch-destination stage (QA-preview only, in BRANCH_SPECS order)");
 MAINLINE_ORDER.forEach((id, index) => assert.equal(adminStageIndex[id], index, `${id}: admin stage index drifted from mainline order`));
+HIDDEN_BRANCH_IDS.forEach((id, offset) => assert.equal(adminStageIndex[id], MAINLINE_ORDER.length + offset,
+  `${id}: admin stage index (hidden QA-preview entry) must equal its STAGES array position`));
 
 /* ---------- topology must match mainline order exactly, hidden stages excluded ---------- */
 assert.deepEqual(topology.filter(t => !t.hidden).map(t => t.id), MAINLINE_ORDER, "non-hidden STAGES entries must be exactly the six mainline stages in order");

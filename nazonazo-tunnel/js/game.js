@@ -5868,7 +5868,7 @@ function openMap(msg){
 // 公開URLからステージを指定する入口は作らない。same-origin の /admin iframe が
 // canonical IDをpostMessageした時だけ選択し、実開始は子画面のタップで行う。
 const NAZONAZO_ADMIN_STAGE_CHANNEL="pono-nazonazo-admin-stage-v1";
-const NAZONAZO_ADMIN_STAGE_INDEX=Object.freeze({town:0,jungle:1,number:2,sea:3,future:4,space:5});
+const NAZONAZO_ADMIN_STAGE_INDEX=Object.freeze({town:0,jungle:1,number:2,sea:3,future:4,space:5,snow:6,fire:7,dino:8,toy:9,cat:10,fantasy:11,sky:12,ruins:13});
 let nazonazoAdminPreviewStageIndex=-1;
 let nazonazoAdminPreviewToken="";
 

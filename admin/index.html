@@ -282,6 +282,29 @@ tr:hover { background: #FFFAF0; }
   justify-content: center;
   text-align: center;
 }
+.nazonazo-admin-branch-group {
+  margin-top: 14px;
+  padding: 12px;
+  border: 1px dashed #C4B5FD;
+  border-radius: 10px;
+  background: rgba(124, 58, 237, 0.06);
+}
+.nazonazo-admin-branch-heading {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #6D28D9;
+  margin: 0 0 4px;
+}
+.nazonazo-admin-branch-desc {
+  font-size: 0.72rem;
+  color: #8B7355;
+  margin: 0 0 10px;
+  line-height: 1.5;
+}
+.btn-purple.nazonazo-admin-stage-btn.is-active {
+  background: #4C1D95;
+  box-shadow: 0 0 0 3px rgba(76, 29, 149, 0.22);
+}
 .nazonazo-admin-special-preview.is-active {
   background: #7C3AED;
   color: #fff;
@@ -1624,6 +1647,22 @@ tr:hover { background: #FFFAF0; }
       <button class="btn btn-blue nazonazo-admin-stage-btn" type="button" data-nazonazo-stage="future" aria-pressed="false" onclick="nazonazoSelectStage('future')">🌆 みらいシティ</button>
       <button class="btn btn-blue nazonazo-admin-stage-btn" type="button" data-nazonazo-stage="space" aria-pressed="false" onclick="nazonazoSelectStage('space')">🌌 うちゅう</button>
     </div>
+    <div class="nazonazo-admin-branch-group">
+      <div class="nazonazo-admin-branch-heading">🌉 ぶんき ルート（かくれステージ）</div>
+      <div class="nazonazo-admin-branch-desc">
+        本編マップ画面には表示されない、トンネル分岐の先にある隠しステージです。開発者向けQAプレビュー専用ボタンで、プレイヤーが実際に分岐を見つけて進む体験そのものは変更していません。
+      </div>
+      <div class="nazonazo-admin-stage-grid" id="nazonazo-admin-branch-stage-grid" role="group" aria-label="なぞなぞ かくれステージ一覧">
+        <button class="btn btn-purple nazonazo-admin-stage-btn" type="button" data-nazonazo-stage="snow" aria-pressed="false" onclick="nazonazoSelectStage('snow')">❄️ ゆきのくに</button>
+        <button class="btn btn-purple nazonazo-admin-stage-btn" type="button" data-nazonazo-stage="fire" aria-pressed="false" onclick="nazonazoSelectStage('fire')">🔥 ひのくに</button>
+        <button class="btn btn-purple nazonazo-admin-stage-btn" type="button" data-nazonazo-stage="dino" aria-pressed="false" onclick="nazonazoSelectStage('dino')">🦕 きょうりゅうのもり</button>
+        <button class="btn btn-purple nazonazo-admin-stage-btn" type="button" data-nazonazo-stage="toy" aria-pressed="false" onclick="nazonazoSelectStage('toy')">🧸 おもちゃのくに</button>
+        <button class="btn btn-purple nazonazo-admin-stage-btn" type="button" data-nazonazo-stage="cat" aria-pressed="false" onclick="nazonazoSelectStage('cat')">🐱 ねこのまち</button>
+        <button class="btn btn-purple nazonazo-admin-stage-btn" type="button" data-nazonazo-stage="fantasy" aria-pressed="false" onclick="nazonazoSelectStage('fantasy')">🦄 まほうのくに</button>
+        <button class="btn btn-purple nazonazo-admin-stage-btn" type="button" data-nazonazo-stage="sky" aria-pressed="false" onclick="nazonazoSelectStage('sky')">☁️ そらのくに</button>
+        <button class="btn btn-purple nazonazo-admin-stage-btn" type="button" data-nazonazo-stage="ruins" aria-pressed="false" onclick="nazonazoSelectStage('ruins')">🏺 こだいいせき</button>
+      </div>
+    </div>
     <button class="btn btn-pink nazonazo-admin-special-preview" id="nazonazo-admin-space-chase" type="button" data-nazonazo-preview-kind="spaceChase" aria-pressed="false" onclick="nazonazoSelectSpaceChase()">🌠 最終おいかけっこだけ すぐ試す</button>
     <div class="nazonazo-admin-preview-head">
       <div class="nazonazo-admin-status" id="nazonazo-admin-status" role="status" aria-live="polite">ステージを選んでください。</div>
@@ -1955,7 +1994,15 @@ var NAZONAZO_ADMIN_STAGES = Object.freeze({
   number: 'すうじのへや',
   sea: 'ふかいうみ',
   future: 'みらいシティ',
-  space: 'うちゅう'
+  space: 'うちゅう',
+  snow: 'ゆきのくに',
+  fire: 'ひのくに',
+  dino: 'きょうりゅうのもり',
+  toy: 'おもちゃのくに',
+  cat: 'ねこのまち',
+  fantasy: 'まほうのくに',
+  sky: 'そらのくに',
+  ruins: 'こだいいせき'
 });
 var nazonazoAdminPendingStage = '';
 var nazonazoAdminPendingPreviewKind = 'stage';

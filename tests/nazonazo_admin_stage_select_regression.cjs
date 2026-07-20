@@ -36,6 +36,14 @@ const expectedStages = [
   ["sea", "ふかいうみ"],
   ["future", "みらいシティ"],
   ["space", "うちゅう"],
+  ["snow", "ゆきのくに"],
+  ["fire", "ひのくに"],
+  ["dino", "きょうりゅうのもり"],
+  ["toy", "おもちゃのくに"],
+  ["cat", "ねこのまち"],
+  ["fantasy", "まほうのくに"],
+  ["sky", "そらのくに"],
+  ["ruins", "こだいいせき"],
 ];
 const expectedIds = expectedStages.map(([id]) => id);
 
@@ -104,7 +112,7 @@ const trustedWindow = {
 };
 const trusted = runTrust(trustedWindow);
 assert.deepEqual(trusted.ids, expectedIds);
-assert.deepEqual(trusted.indexes, [0, 1, 2, 3, 4, 5]);
+assert.deepEqual(trusted.indexes, [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]);
 assert.equal(trusted.trusted, true, "same-origin /admin parent should be trusted");
 
 const selfWindow = { location: { origin: "https://example.test", pathname: "/nazonazo-tunnel/" } };
