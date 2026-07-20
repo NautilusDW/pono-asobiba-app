@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-07-20 - [batch:1372f-lp-title-belly-visible-upper-fill] Codex: ユーザー実画面で1372eが「さっきと変わってない」と再評価。配信画像自体は1372e SHAへ切替済みだったため原因はキャッシュではなく、変更量3,237pxが実表示で判別できないほど小さかったこと。今回は現行配信ロゴをedit target、ユーザー最新スクショ／公式ポノ／1372d生成Bを参照し、白い腹毛の上端を腕の直下から明確に見える高さ（前版より約18〜24px上、中央〜左も十分な幅）へ広げる。腕の茶色・腕下輪郭・顔・足・文字・alpha・下腹は固定し、GPT Image 2生成の自然な毛先を用いる。mainはdirtyかつoriginと分岐中のため、最新origin/develop-appから隔離worktreeを作成。sw.jsはbatch:1401とoverlap宣言済み。 (by Codex)
+
 - 2026-07-20 - [batch:1372e-lp-title-belly-upper-fill] Codex: ユーザー実画面評価「上の方、もうちょっとだね」を受領。batch:1372dで段差のない再生成腹毛と前腕保護は達成したため、同じGPT Image 2の毛先・下腹形状・色を維持し、腹毛上端だけを前腕の背後で数px上へ広げる。現行ロゴをedit target、ユーザーの2枚目見本／公式ポノ／batch:1372d生成Bを参照し、顔・前腕・足・文字・alphaを固定。最新origin/develop-app `bd3c97fec`の隔離worktreeで作業し、mainのdirtyなぞなぞ／SW、凍結develop、productionは触れない。`sw.js`はbatch:1401とoverlap宣言済み。 (by Codex)
 - 2026-07-20 - [batch:1372e-lp-title-belly-upper-fill] DONE — GPT Image 2で腹毛上端を再生成し、選択候補から上側だけを現行ロゴへ合成。前版比の変更はx=122..245／y=352..392の3,237 RGB画素、alpha差0、y>=394差0、保護した前腕差0。独立画像レビューで「控えめに高い／腕は茶色／水彩毛先が滑らか」を確認し、Chrome実表示はLP 1365x768・390x844、App入口844x390で画像読込完了・overflow/console errorなし。`brand_logo.png`／`@2x`は1715x500 RGBA・SHA-256 `346ad15bb13b78e2633988a3c92617432dbe0830b0e913d305daeff4145a44e1`、HTML query／SWをv2304へ更新。`25ddc79b7`をdevelop-appへpush、Actions run `29721852339`成功（App→LP直列）。LP staging `https://pono-asobiba-staging.ndw.workers.dev/`（free/book）とApp staging `https://pono-asobiba-app-staging.ndw.workers.dev/index-app.html`（app）は同じ新ロゴを配信し、両配信PNGのSHAも一致。production／master、main worktreeのdirtyなぞなぞ・SWは未変更。 (by Codex)
 

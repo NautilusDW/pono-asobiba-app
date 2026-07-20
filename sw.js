@@ -1,5 +1,8 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2305: v2304では実寸で差が見えなかったため、白いおなかの上端を前腕の直下まで
+// 明確に拡張。前腕の茶色と下側の腹毛は維持した
+// (batch:1372f-lp-title-belly-visible-upper-fill)。
 // v2304: LP／アプリ入口タイトルの白いおなかを、前腕の背後で少し上へ拡張。
 // GPT Image 2の再生成結果から上端だけを合成し、前腕・下側の腹毛・透明輪郭は維持した
 // (batch:1372e-lp-title-belly-upper-fill)。
@@ -636,7 +639,7 @@
 // 追加。game.jsのNAZONAZO_ADMIN_STAGE_INDEXにも8id(index6〜13)を追加。プレイヤー向け
 // 本編マップ(openMap)は無変更、隠しルート発見体験もそのまま。admin/index.html・
 // game.jsを変更したためバンプ。
-const CACHE_VERSION = 2304;
+const CACHE_VERSION = 2305;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [
