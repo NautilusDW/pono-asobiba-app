@@ -59,8 +59,7 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
-- 2026-07-20 00:00 - by Claude - [batch:1401-nazonazo-tunnel-branch] - nazonazo-tunnel/js/game.js, nazonazo-tunnel/data/questions.js, nazonazo-tunnel/data/quiz-art.js, nazonazo-tunnel/index.html, nazonazo-tunnel/styles.css, sw.js, AGENTS_CLAIMS.md - なぞなぞトレインにトンネル分岐(snow/fire)土台を実装、絵文字フォールバック修正 → トンネル内選択ゲートUI(#tunnelBranchGates)+出口色分岐演出を追加実装 (未push・未削除。呼び出し元でcommit/push判断後に削除要)
-- 2026-07-20 12:00 - by Claude - [batch:1401b-nazonazo-admin-branch-preview] - nazonazo-tunnel/js/game.js, admin/index.html, sw.js, tests/nazonazo_admin_stage_select_regression.cjs, tests/nazonazo_tunnel_branch_topology_regression.cjs, AGENTS_CLAIMS.md - 管理ダッシュボードに分岐先隠しステージ8つ(snow/fire/dino/toy/cat/fantasy/sky/ruins)のQAプレビューボタンを追加(本編openMapは無変更) [overlap: batch:1401-nazonazo-tunnel-branch]
+- 2026-07-20 19:48 - by Codex - [batch:1382-nazonazo-branch-bg-raster-integration] - nazonazo-tunnel/js/game.js, nazonazo-tunnel/index.html, nazonazo-tunnel/styles.css, sw.js, tests/nazonazo_tunnel_branch_background_assets_regression.cjs, AGENTS_CLAIMS.md - GPT Image 2生成済みの新規分岐8ステージ背景48枚をアルファ付きラスター背景として統合・回帰検証 [overlap transferred with user approval: batch:1401-nazonazo-tunnel-branch, batch:1401b-nazonazo-admin-branch-preview]
 
 
 - 2026-07-17 10:08 - by Codex - [batch:1328d-mojikko-white-paper-ornate-frames] - writing-mori/index.html, assets/images/mojikko/writing/storybook/**, tmp/alpha_pending/1328d-mojikko-white-paper-ornate-frames/**, tests/mojikko_*.cjs, native/**, AGENTS_CLAIMS.md, HANDOFF.md - 紙面を白ベースへ補正し、ことばの穴・見る丸・メッセージ・文字盤・書き順を個別の装飾枠へ差し替える
@@ -91,3 +90,10 @@
 
 HANDOFF.md は履歴 (Done エントリ含む) が積み上がるため、 「いまアクティブな claim だけを瞬時に把握する」 用途には不向き。 このボードは **常に短い / 常に最新 / 行は使い捨て** という性質を維持することで、 衝突検出のコストをほぼゼロにする狙い。
 - 2026-07-19 12:00 - by Claude - [batch:1370-treasure-gender-choice] - common/treasure.js, common/first-clear.js, common/stamp-rally.js, sw.js, play.html, tests/**, AGENTS_CLAIMS.md - 性別自動判定(pono_profile依存の壊れたfallback)を廃止し、宝箱を開ける瞬間に子供がboy/girl見た目をタップ選択する方式へ変更 [overlap: batch:1362-stamp-rally-slot-reward-boundary-fix (common/stamp-rally.js, sw.js, play.html)]
+
+## Transferred / closed claims
+
+<!-- 履歴保全用。以下は Active claims ではありません。 -->
+
+- 2026-07-20 00:00 - by Claude - [batch:1401-nazonazo-tunnel-branch] - nazonazo-tunnel/js/game.js, nazonazo-tunnel/data/questions.js, nazonazo-tunnel/data/quiz-art.js, nazonazo-tunnel/index.html, nazonazo-tunnel/styles.css, sw.js, AGENTS_CLAIMS.md - CLOSED 2026-07-20 19:48: ユーザー承認により Codex agent team の batch:1382 へ移管。なぞなぞトレインにトンネル分岐(snow/fire)土台を実装、絵文字フォールバック修正 → トンネル内選択ゲートUI(#tunnelBranchGates)+出口色分岐演出を追加実装
+- 2026-07-20 12:00 - by Claude - [batch:1401b-nazonazo-admin-branch-preview] - nazonazo-tunnel/js/game.js, admin/index.html, sw.js, tests/nazonazo_admin_stage_select_regression.cjs, tests/nazonazo_tunnel_branch_topology_regression.cjs, AGENTS_CLAIMS.md - CLOSED 2026-07-20 19:48: ユーザー承認により Codex agent team の batch:1382 へ移管。管理ダッシュボードに分岐先隠しステージ8つ(snow/fire/dino/toy/cat/fantasy/sky/ruins)のQAプレビューボタンを追加(本編openMapは無変更) [overlap: batch:1401-nazonazo-tunnel-branch]
