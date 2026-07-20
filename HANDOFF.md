@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-07-20 - [batch:1372g-lp-title-belly-armpit-fill] Codex: ユーザー最新評価「もうちょっと、脇の下のあたり」を受領。1372fで中央〜右の上端量は見える高さになったため、今回は全体を動かさず、画像左側の腕付け根直下に残る茶色い三角領域だけを温かい白毛で上へつなぐ。現行v2305ロゴをedit target、ユーザー最新スクショ／公式ポノ／1372f生成rawを参照し、腕・腕下輪郭・中央以右の腹毛・下腹・顔・足・文字・alphaを固定。GPT Image 2で局所生成後、生成毛先から脇下領域だけを合成する。mainはdirtyかつoriginと分岐中のため最新origin/develop-appの隔離worktreeを使用し、sw.jsはbatch:1401とoverlap宣言。 (by Codex)
+
 - 2026-07-20 - [batch:1372f-lp-title-belly-visible-upper-fill] DONE — 1372eの配信画像は正しく切替済みだったが、前版比3,237pxの変更が縮小表示で見えなかったため再生成。GPT Image 2の強い上腹候補から腕直下の自然な白毛を合成し、前版比x=111..248／y=340..419の6,489 RGB画素へ拡大（alpha差0、y>=420差0、保護前腕差0）。275px横並び独立レビューで「即座に区別可能／腕は全て茶色／段差なし」をPASS。Chrome実表示はLP 1365x768・390x844、App入口844x390でv2305、natural 1715x500、overflow 0、console error 0。ロゴPNG／@2xは882,167 bytes・SHA-256 `0d76bdc92759c86043cf768cdc108364184e8be0c95ebc64391bd0e70ac25a31`。feature commit `6069857ea`、Actions run `29723645828`でproduction skip・App→LP staging直列deploy成功。LP staging `https://pono-asobiba-staging.ndw.workers.dev/`（free/book）とApp staging `https://pono-asobiba-app-staging.ndw.workers.dev/index-app.html`（app）のHTML query v2305／配信PNG SHAはlocalと完全一致。master／production、main worktreeの分岐・他作業は未変更。 (by Codex)
 
 - 2026-07-20 - [batch:1372e-lp-title-belly-upper-fill] Codex: ユーザー実画面評価「上の方、もうちょっとだね」を受領。batch:1372dで段差のない再生成腹毛と前腕保護は達成したため、同じGPT Image 2の毛先・下腹形状・色を維持し、腹毛上端だけを前腕の背後で数px上へ広げる。現行ロゴをedit target、ユーザーの2枚目見本／公式ポノ／batch:1372d生成Bを参照し、顔・前腕・足・文字・alphaを固定。最新origin/develop-app `bd3c97fec`の隔離worktreeで作業し、mainのdirtyなぞなぞ／SW、凍結develop、productionは触れない。`sw.js`はbatch:1401とoverlap宣言済み。 (by Codex)
