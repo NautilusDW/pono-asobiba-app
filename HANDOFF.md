@@ -17,6 +17,8 @@
 
 ## Active (進行中 / 未着手)
 
+- 2026-07-20 - [batch:1372e-lp-title-belly-upper-fill] Codex: ユーザー実画面評価「上の方、もうちょっとだね」を受領。batch:1372dで段差のない再生成腹毛と前腕保護は達成したため、同じGPT Image 2の毛先・下腹形状・色を維持し、腹毛上端だけを前腕の背後で数px上へ広げる。現行ロゴをedit target、ユーザーの2枚目見本／公式ポノ／batch:1372d生成Bを参照し、顔・前腕・足・文字・alphaを固定。最新origin/develop-app `bd3c97fec`の隔離worktreeで作業し、mainのdirtyなぞなぞ／SW、凍結develop、productionは触れない。`sw.js`はbatch:1401とoverlap宣言済み。 (by Codex)
+
 - 2026-07-20 - [batch:1372d-lp-title-belly-regenerate] Codex: ユーザー再評価「今度はカクカク。もう一回生成し直したら」を受領。batch:1372cは腕の前景保護を画素上は達成したが、腹上端をpiecewise座標で切ったため毛先の輪郭が人工的な段差に見える。座標マスク生成を廃止し、GPT Image 2のprecise-object-editで白い腹毛・滑らかな水彩毛先・腕の背後関係を再生成する。白腹追加前の正本をedit target、batch:1372の生成見本と公式 `pono_001.png` を形・色参照にし、顔・腕・ポーズ・ロゴ文字・alphaを固定。生成rawは `tmp/alpha_pending/1372d-lp-title-belly-regenerate/raw/` に保持し、採用時は生成された連続階調の毛境界だけを正本へ反映する。当初`8a8c05a47`の隔離worktreeで生成・比較し、並走batch:1401のpush後は最新origin/develop-app `f24d6ffdb`から新しい隔離worktreeへ載せ直した。凍結develop／productionは触れない。 (by Codex)
 
 - 2026-07-20 - [batch:1372d-lp-title-belly-regenerate] Codex: DONE (local implementation + review) — GPT Image 2で腹毛を2案再生成し、独立目視レビューでも2枚目に近い小さめ・下寄りのB案を採用。生成proofのneutral checkerを除外して生成された毛先の連続輪郭だけを白腹追加前の正本へ合成し、足側へ漏れた淡色差分は復元。新runtime差分は7,154px／`x=121..239,y=355..435`、y>=436差分0、alpha差分0、保護前腕差分0。1x/@2xは1715×500 RGBA・同一SHA `2a1a2bf1…`。顔・前腕・足・文字・透明輪郭は正本のまま。`index.html`／`index-app.html` preload・src・srcsetとSWを最新並走版の次番号v2303へ同期。Chromium 390×844／1366×768 LP＋390×844 app入口で、腹毛に段差／四角い切抜きがなく腕の背後へ収まることを目視、natural 1715×500、横overflow 0、console/page error 0。diff check／SW・処理スクリプト構文PASS。develop-app commit/push・両staging確認待ち。凍結develop／productionは未変更。 (by Codex)
