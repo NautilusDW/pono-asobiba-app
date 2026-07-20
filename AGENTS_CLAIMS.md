@@ -59,8 +59,6 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
-- 2026-07-20 11:31 - by Codex - [batch:1372d-lp-title-belly-regenerate] - assets/lp/hero/brand_logo*.png, index.html, index-app.html, sw.js, tmp/alpha_pending/1372d-lp-title-belly-regenerate/**, AGENTS_CLAIMS.md, HANDOFF.md - カクつく座標マスクを廃止しGPT Image 2で自然な白い腹毛を再生成して反映 [overlap: batch:1401-nazonazo-tunnel-branch]
-
 - 2026-07-20 00:00 - by Claude - [batch:1401-nazonazo-tunnel-branch] - nazonazo-tunnel/js/game.js, nazonazo-tunnel/data/questions.js, nazonazo-tunnel/data/quiz-art.js, nazonazo-tunnel/index.html, nazonazo-tunnel/styles.css, sw.js, AGENTS_CLAIMS.md - なぞなぞトレインにトンネル分岐(snow/fire)土台を実装、絵文字フォールバック修正 → トンネル内選択ゲートUI(#tunnelBranchGates)+出口色分岐演出を追加実装 (未push・未削除。呼び出し元でcommit/push判断後に削除要)
 - 2026-07-20 12:00 - by Claude - [batch:1401b-nazonazo-admin-branch-preview] - nazonazo-tunnel/js/game.js, admin/index.html, sw.js, tests/nazonazo_admin_stage_select_regression.cjs, tests/nazonazo_tunnel_branch_topology_regression.cjs, AGENTS_CLAIMS.md - 管理ダッシュボードに分岐先隠しステージ8つ(snow/fire/dino/toy/cat/fantasy/sky/ruins)のQAプレビューボタンを追加(本編openMapは無変更) [overlap: batch:1401-nazonazo-tunnel-branch]
 
