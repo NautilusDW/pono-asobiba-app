@@ -771,6 +771,13 @@ body.tunnel-interior #tunnelBranchGates[aria-hidden="false"]{display:block}
 .tunnel-branch-gate.chosen{transform:scale(1.14);box-shadow:0 0 0 8px rgba(255,255,255,.26),0 0 46px 14px var(--gate-glow,#fff3a8)}
 .tunnel-branch-gate.dim{transform:scale(.86);opacity:.32}
 #tunnelBranchGates.is-chosen .tunnel-branch-gate{pointer-events:none}
+/* 軽い揺れ+瞬き(transform/box-shadowのみ。filter/backdrop-filterとmask/clip-pathの併用は
+   WebKitちらつき事故(feedback_webkit_mask_filter_card_flicker)の教訓から絶対に使わない) */
+@keyframes tunnelBranchGateBeckon{
+  0%,100%{transform:translateY(0) scale(1);box-shadow:0 0 0 6px rgba(255,255,255,.16),0 0 32px 6px var(--gate-glow,#fff3a8)}
+  50%{transform:translateY(-4px) scale(1.035);box-shadow:0 0 0 9px rgba(255,255,255,.24),0 0 40px 10px var(--gate-glow,#fff3a8)}
+}
+.tunnel-branch-gate:not(.chosen):not(.dim){animation:tunnelBranchGateBeckon 1.6s ease-in-out infinite}
 body.tunnel-enter-run #veh,body.tunnel-enter-run #cars{transform:translateX(74vw) scale(.96);transition:transform 1.18s linear}
 body.tunnel-exit-setup #veh,body.tunnel-exit-setup #cars{transform:translateX(-58vw) scale(.96);transition:none}
 body.tunnel-exit-run #veh,body.tunnel-exit-run #cars{animation:tunnelExitDrive 1.08s linear both}
@@ -1306,7 +1313,14 @@ h1{font-size:clamp(24px,5.6vw,50px);color:#e0704a;text-shadow:0 3px 0 #fff}
 #mapTitle .ui-art{width:1.45em;height:1.45em}
 #loopBadge{font-size:clamp(13px,2.6vw,19px);font-weight:800;background:#8e7cf0;color:#fff;border-radius:999px;padding:4px 14px;display:none}
 #loopBadge .ui-art{width:1.55em;height:1.55em;margin-right:3px}
-#mapRow{display:flex;align-items:center;gap:2px;max-width:96vw}
+/* mapRow の横幅算出は本編6ノード+矢印5個ぴったりの固定予算(vw基準のnode min-widthで
+   画面幅に厳密フィットする設計)。分岐ヒント(.map-fork-hint)は row の直接の子には
+   絶対にしない -- 過去に row の子として横一列に足したところ、追加幅の分だけ
+   「みらいシティ」「うちゅう」ノードが画面外へ押し出されタップ不能になる回帰が
+   あった(child_ux レビューで発覚)。ヒントは各 mapNode 自身の子として絶対配置で
+   吊り下げ、row の横幅計算に一切関与しないようにする。吊り下げ分の余白は
+   margin-bottom で row 全体にまとめて確保する。 */
+#mapRow{display:flex;align-items:center;gap:2px;max-width:96vw;margin-bottom:clamp(14px,3vh,24px)}
 .mapNode{appearance:none;-webkit-appearance:none;position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;
   background:#fff;border:4px solid #f5c06a;border-radius:20px;padding:8px 6px;min-width:clamp(70px,13vw,120px);
   font-size:clamp(11px,2.2vw,17px);font-weight:800;box-shadow:0 4px 0 #f5c06a;cursor:pointer}
@@ -1317,6 +1331,14 @@ h1{font-size:clamp(24px,5.6vw,50px);color:#e0704a;text-shadow:0 3px 0 #fff}
 @keyframes curPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
 .mapNode .st{position:absolute;top:-12px;right:-6px;font-size:clamp(14px,3vw,24px)}
 .mapDash{font-size:clamp(14px,3vw,24px);color:#c9a05a;font-weight:800}
+/* 情報タグとして静的に見せる(パルス・立体シャドウ無し): ボタンに見えて反応しない
+   状態(child_ux レビュー指摘)を避けるため、押せる要素と同じ視覚文法(浮き上がる
+   box-shadow・継続アニメ)を意図的に外している。タップも受け付けない。 */
+.map-fork-hint{position:absolute;left:50%;bottom:-18px;transform:translateX(-50%);
+  display:inline-flex;align-items:center;gap:2px;padding:2px 5px;border-radius:999px;
+  background:rgba(255,255,255,.85);white-space:nowrap;pointer-events:none;z-index:2}
+.map-fork-mark{font-size:clamp(10px,1.8vw,13px)}
+.map-fork-option{font-size:clamp(11px,2vw,15px)}
 #mapMsg{font-size:clamp(14px,3vw,22px);font-weight:700}
 #resTitle{font-size:clamp(24px,5.6vw,48px);color:#e0704a;text-shadow:0 3px 0 #fff;display:flex;align-items:center;justify-content:center;gap:8px}
 #resStars{font-size:clamp(24px,5vw,46px);display:flex;align-items:center;justify-content:center;gap:5px;font-weight:900}
@@ -1504,7 +1526,8 @@ body.ios-device #quiz.show:not(.sea-quiz):not(.future-capsule-quiz):not(.space-g
   .magic-puff{animation-name:magicPuffReduced!important;animation-timing-function:ease-out!important;animation-fill-mode:forwards!important}
   #quiz{transition-duration:.18s!important}
   .num-scene::before,.num-card,.num-poly,.num-ring,.tun.number-gate .hole::before,
-  .space-star-particle::before,.bub,.twk,.fly,.mapNode.cur,.dropStation.done .drop-station-friends{animation:none!important}
+  .space-star-particle::before,.bub,.twk,.fly,.mapNode.cur,.dropStation.done .drop-station-friends,
+  .tunnel-branch-gate{animation:none!important}
   .num-card{opacity:.86}.num-poly{opacity:.38}.num-ring{opacity:.3}.space-star-particle::before{opacity:var(--space-star-opacity,.72);transform:none}
   .runEvent,.runEvent::after{animation:none!important}.runEvent::after{opacity:.8}.runEvent.found{animation:runEventFound .55s ease forwards!important}
   .choice.glow{animation:none!important;box-shadow:0 5px 0 var(--good),0 0 0 7px rgba(87,193,94,.22)}

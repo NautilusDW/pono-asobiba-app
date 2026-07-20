@@ -256,7 +256,12 @@
     stageCat: "../assets/images/bento/npc/neko_normal.png?v=20260617-risu-bright-set",
     stageFantasy: uiPath("ui_rainbow"),
     stageSky: items["🦜|おうむ"],
-    stageRuins: items["🧱|れんが"]
+    stageRuins: items["🧱|れんが"],
+    // Phase1(Darius homage)で新設したハブステージ。新規ラスターは追加せず、
+    // 既存アイテムを別ステージ用に再利用するだけ(他のstageXxxと同じ流用パターン)。
+    stageSea2: items["🦑|いか"],
+    stageFuture2: items["⏰|とけい"],
+    stageSpace2: items["🪐|どせい"]
   };
 
   window.PonoNazonazoQuizArt = { version: VERSION, items: items, ui: ui };

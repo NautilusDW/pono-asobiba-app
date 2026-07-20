@@ -341,6 +341,7 @@ const STAGES=[
   fg(P){return svgURI(900,220,gBlocksRow(900,220,P.fgBlocks,5,85,true));},
  decor(P,r){return bgUrl(ASSETS.number.decor);}},
  {id:"sea",icon:"🌊",art:"stageSea",veh:"sub",bank:SEA,gens:["legsS","sizeS"],rare:["🐳","そらとぶ くじら"],countsToProgress:true,mechanic:"seaBoss",
+  branches:[{choiceId:"future",toId:"future"},{choiceId:"future2",toId:"future2"}],
   names:["ふかいうみ","よるの ふかいうみ"],
   assets:ASSETS.sea,
   pals:[
@@ -472,7 +473,7 @@ const STAGES=[
   ground(P){return svgURI(600,90,gRail(600,90,P.tie,P.rail,P.grass));},
   fg(P){return svgURI(900,220,gBumps(900,220,P.fgA,7,150,715)+gGrassSpikes(900,220,P.fgB,40,90,717));},
   decor(P,r){return svgURI(160,260,gBumps(160,260,P.fgB,3,90,719+r)+gTreeRow(160,260,P.leaf,P.trunk,2,120,721+r));}},
- {id:"fantasy",icon:"🦄",art:"stageFantasy",veh:"train",bank:FANTASY,gens:[],rare:["🦄","にじいろの ゆにこーん"],countsToProgress:false,hidden:true,rejoinId:"sea",
+ {id:"fantasy",icon:"🦄",art:"stageFantasy",veh:"train",bank:FANTASY,gens:[],rare:["🦄","にじいろの ゆにこーん"],countsToProgress:false,hidden:true,rejoinId:"sea2",
   names:["まほうのくに","よるの まほうのくに"],
   pals:[
    {sky:["#ffd6f0","#d6e8ff"],far1:"#b89ae0",far2:"#d0a8e8",win1:"#ffe08a",win2:"#9df0c8",
@@ -510,7 +511,7 @@ const STAGES=[
   ground(P){return svgURI(600,90,gRail(600,90,P.tie,P.rail,P.grass));},
   fg(P){return svgURI(900,220,gBumps(900,220,P.fgA,7,150,917)+gBumps(900,220,P.fgB,5,110,919));},
   decor(P,r){return svgURI(160,260,gBumps(160,260,P.fgA,3,110,921+r)+gBumps(160,260,P.fgB,2,80,923+r));}},
- {id:"ruins",icon:"🏺",art:"stageRuins",veh:"train",bank:RUINS,gens:[],rare:["🏺","ひかる こだいの つぼ"],countsToProgress:false,hidden:true,rejoinId:"space",
+ {id:"ruins",icon:"🏺",art:"stageRuins",veh:"train",bank:RUINS,gens:[],rare:["🏺","ひかる こだいの つぼ"],countsToProgress:false,hidden:true,rejoinId:"space2",
   names:["こだいいせき","たいまつの こだいいせき"],
   pals:[
    {sky:["#ffdca0","#fff0d0"],haze:"#e8c48a",skyl:"#d9a86a",hill:"#c9905a",house:"#e8c48a",roof:"#c07a3a",
@@ -527,10 +528,78 @@ const STAGES=[
   mid(P){return svgURI(1400,H,gHouses(1400,H,P.house,P.roof,7,1011)+gTreeRow(1400,H,P.leaf,P.trunk,8,120,1013));},
   ground(P){return svgURI(600,90,gRail(600,90,P.tie,P.rail,P.grass));},
   fg(P){return svgURI(900,220,gBumps(900,220,P.fgA,7,150,1015)+gGrassSpikes(900,220,P.fgB,40,90,1017));},
-  decor(P,r){return svgURI(160,260,gBumps(160,260,P.fgB,3,90,1019+r)+gTreeRow(160,260,P.leaf,P.trunk,2,120,1021+r));}}
+  decor(P,r){return svgURI(160,260,gBumps(160,260,P.fgB,3,90,1019+r)+gTreeRow(160,260,P.leaf,P.trunk,2,120,1021+r));}},
+ // ---- Phase1 (Darius homage): 毎ジャンクション必ず分岐する構造の新規ハブステージ。
+ // 既存index0-13の意味を変えないため、必ず配列末尾(14/15/16)に追加すること
+ // (bestStarsByStageが loop+"-"+stg という物理indexキーのため、セーブ互換性のMUST制約)。
+ // sea/future と同じ mechanic を共有するスタブ(問題バンクは既存を流用、Phase2で差別化)。
+ {id:"sea2",icon:"🦑",art:"stageSea2",veh:"sub",bank:SEA,gens:[],rare:["🐙","しんかいの たこ"],countsToProgress:true,hidden:true,mechanic:"seaBoss",
+  branches:[{choiceId:"future",toId:"future"},{choiceId:"future2",toId:"future2"}],
+  names:["しんかいのうみ","よるの しんかいのうみ"],
+  pals:[
+   {sky:["#0d3a5c","#031a30"],far1:"#0a2542",far2:"#082038",mid1:"#0f3050",mid2:"#0c2a46",sand1:"#463f30",sand2:"#332c22",fgA:"#041824",fgB:"#03121c",mount:"#1c3850",fx:"bubbles_glow"},
+   {sky:["#020a16","#01050c"],far1:"#04101c",far2:"#030c16",mid1:"#061626",mid2:"#050f1e",sand1:"#221d16",sand2:"#15110d",fgA:"#01080e",fgB:"#01050a",mount:"#0e2436",fx:"bubbles_glow"}],
+  horizon(P,NP){return svgURI(HW,H,
+    gBumps(1250,H,P.far1,10,100,1091)+
+    gSkyline(1000,H,P.far2,1093,null)+
+    '<rect x="1290" y="0" width="410" height="'+H+'" fill="'+NP.sky[0]+'" opacity="0.55"/>'+
+    '<g transform="translate(1310,0)">'+gSkyline(390,H,NP.far1,1095,NP.win1)+'</g>');},
+  mid(P){return svgURI(1400,H,gBumps(1400,H,P.mid1,9,110,1101)+gKelp(1400,H,P.mid2,8,1103));},
+  ground(P){return svgURI(600,90,gSand(600,90,P.sand1,P.sand2,1105));},
+  fg(P){return svgURI(900,220,gKelp(900,220,P.fgA,6,1107)+gBumps(900,220,P.fgB,5,120,1109));},
+  decor(P,r){return svgURI(180,300,gKelp(180,300,P.mid2,2,1111+r)+gBumps(180,300,P.far1,2,80,1113+r));}},
+ {id:"future2",icon:"⚙️",art:"stageFuture2",veh:"train",bank:FUTURE,gens:[],rare:["🧲","からくりの じしゃく"],countsToProgress:true,hidden:true,mechanic:"futureCrane",
+  branches:[{choiceId:"sky",toId:"sky"},{choiceId:"ruins",toId:"ruins"}],
+  names:["からくりのまち","よるの からくりのまち"],
+  pals:[
+   {sky:["#4a3018","#8a5a28"],far1:"#5c3c1c",far2:"#6e4a24",win1:"#ffcf7a",win2:"#e8b45a",mid1:"#6a4820",mid2:"#7a5428",gBase:"#3a2810",gLine:"#c98a3a",gTick:"#e0a84a",fgA:"#241809",fgB:"#1c1206",fgWin:"#e0a84a",mount:"#8a6a3a",fx:"none"},
+   {sky:["#1c0f06","#2c1a08"],far1:"#241608",far2:"#2e1c0a",win1:"#ffcf7a",win2:"#ffe4a0",mid1:"#341f0c",mid2:"#3e250e",gBase:"#140b04",gLine:"#e0a84a",gTick:"#ffcf7a",fgA:"#100903",fgB:"#0c0602",fgWin:"#ffcf7a",mount:"#4a2e12",fx:"none"}],
+  horizon(P,NP){return svgURI(HW,H,
+    gSkyline(1250,H,P.far1,1211,P.win1)+
+    gSkyline(1100,H,P.far2,1213,P.win2)+
+    '<rect x="1290" y="0" width="410" height="'+H+'" fill="'+NP.sky[0]+'" opacity="0.6"/>'+
+    '<g transform="translate(1290,0)">'+gStars(410,H,26,1215)+'</g>'+
+    gPlanet(1560,90,34,"#e8b06a","#f5d9a0"));},
+  mid(P){return svgURI(1400,H,gSkyline(1400,H,P.mid1,1221,P.win2)+gBumps(1400,H,P.mid2,8,70,1223));},
+  ground(P){return svgURI(600,90,gNeonGround(600,90,P.gBase,P.gLine,P.gTick));},
+  fg(P){return svgURI(900,220,gSkyline(900,220,P.fgA,1225,P.fgWin)+gBumps(900,220,P.fgB,6,90,1227));},
+  decor(P,r){return svgURI(160,260,gSkyline(160,260,P.fgA,1229+r,P.fgWin)+gBumps(160,260,P.fgB,2,80,1231+r));}},
+ {id:"space2",icon:"🌠",art:"stageSpace2",veh:"rocket",bank:SPACE,gens:[],rare:["🪐","にじいろの わくせい"],countsToProgress:true,hidden:true,final:true,mechanic:"spaceChase",
+  names:["せいうんのうちゅう","きらめく せいうんのうちゅう"],
+  pals:[
+   {sky:["#2a0a4a","#5a1a7a"],mid1:"#6a2a8a",mid2:"#8a3a9a",fgA:"#3a1050",fgB:"#5a2070",p1:"#ff6ab0",p2:"#5ae0ff",p3:"#ffe066",mount:"#8a3a9a"},
+   {sky:["#1a0330","#3a0a58"],mid1:"#4a1668",mid2:"#5a2078",fgA:"#22063a",fgB:"#340a54",p1:"#ff3a9a",p2:"#2ad0ff",p3:"#ffd23a",mount:"#5a2078"}],
+  horizon(P,NP){return svgURI(HW,H,
+    gStars(1250,H,60,1351)+
+    gPlanet(300,80,28,P.p1,null)+gPlanet(760,150,40,P.p2,"#f5d9a0")+gPlanet(1080,70,22,P.p3,null)+
+    '<g transform="translate(1290,0)">'+gStars(410,H,20,1353)+'</g>'+
+    '<circle cx="1560" cy="150" r="80" fill="'+P.p1+'"/>'+
+    '<ellipse cx="1535" cy="125" rx="30" ry="18" fill="'+P.p2+'"/>'+
+    '<ellipse cx="1590" cy="170" rx="24" ry="14" fill="'+P.p3+'"/>'+
+    '<circle cx="1560" cy="150" r="80" fill="none" stroke="#ffffff" stroke-width="5" opacity="0.6"/>');},
+  mid(P){return svgURI(1400,H,gStars(1400,H,40,1361)+gBumps(1400,H,P.mid1,7,60,1363));},
+  ground(P){return svgURI(600,90,'<rect width="600" height="90" fill="'+P.sky[0]+'"/>'+gStars(600,90,10,1365));},
+  fg(P){return svgURI(900,220,gBumps(900,220,P.fgA,5,110,1367)+gStars(900,120,14,1369));},
+  decor(P,r){return svgURI(140,240,gBumps(140,240,P.fgB,3,90,1371+r)+gStars(140,240,6,1373+r));}}
 ];
 function stageIndexById(id){return STAGES.findIndex(function(s){return s.id===id;});}
 function stageHasBranches(s){return !!(s&&Array.isArray(s.branches)&&s.branches.length);}
+// hidden hub stages appended at the STAGES tail (sea2/future2/space2) share their mechanic
+// with a visible mainline stage (sea/future/space) and stand in for it on the fixed-size
+// 6-node map row / progression gauge. Map a physical STAGES index to the index of the
+// mainline slot it should count as for that purpose (mainline stages map to themselves).
+// mechanic-based (not id-based) so any future mainline-equivalent hub added the same way is
+// covered automatically.
+function mainlineSlotIndex(idx){
+ const s=STAGES[idx];
+ if(!s)return -1;
+ if(!s.hidden)return idx;
+ if(s.mechanic){
+  const twin=STAGES.findIndex(function(o){return !o.hidden&&o.mechanic===s.mechanic;});
+  if(twin>=0)return twin;
+ }
+ return idx;
+}
 function resolveNextStage(currentStg,choiceId){
  const st=STAGES[currentStg];
  if(stageHasBranches(st)){
@@ -1963,6 +2032,22 @@ function buildQList(){
 function origin(s){return (loop*STAGES.length+s)*SPAN;}
 function palOf(s){return STAGES[s].pals[loop%2];}
 function hasStationArt(st){return !!(st&&st.assets&&st.assets.station);}
+// note: avoid ASCII apostrophes or unpaired quote characters in comments in this file.
+// several nazonazo *.cjs regression tests extract individual functions using a naive
+// brace-depth scanner with no comment awareness, so a stray apostrophe or an unpaired
+// quote character inside a comment silently corrupts its quote tracking and miscounts
+// every brace and string that follows.
+// hidden hub twins (sea2/future2/space2) reuse the interactive mechanic of a mainline
+// stage (submarine steering, crane game, rocket chase) wholesale, but styles.css and
+// several document.body.classList.contains(...) checks in this file key off the literal
+// mainline "st-sea"/"st-future"/"st-space" class only. Rather than duplicating every such
+// selector for each hub id, also stamp the mainline family class onto body so the hub id
+// class and the mainline mechanic family class are both present at once.
+function stageBodyClass(st){
+ const own="st-"+st.id;
+ const family=st.mechanic==="seaBoss"?"st-sea":st.mechanic==="futureCrane"?"st-future":st.mechanic==="spaceChase"?"st-space":"";
+ return family&&family!==own?own+" "+family:own;
+}
 function applySkin(weatherReady){
  const st=STAGES[stg],P=palOf(stg);
  // space はマインライン最終ステージ固定(末尾追加した snow/fire に押し出されても
@@ -1977,7 +2062,7 @@ function applySkin(weatherReady){
  const wasAdminSpaceChase=nazonazoAdminPreviewMode&&nazonazoAdminPreviewKind==="spaceChase";
  const weather=weatherReady?weatherForStage(st):startStageWeather(st);
  if(weather!=="rain")hideWeatherNotice();
- document.body.className=(IOS_DEVICE?"ios-device ":"")+"st-"+st.id+" v-"+st.veh+" weather-"+weather+(PORTAL_EDIT_ENABLED?" portal-edit":"");
+ document.body.className=(IOS_DEVICE?"ios-device ":"")+stageBodyClass(st)+" v-"+st.veh+" weather-"+weather+(PORTAL_EDIT_ENABLED?" portal-edit":"");
  // 画面スキンの全置換で、初期描画ガードを解除する永続クラスまで消さない。
  if(wasGameReady)document.body.classList.add("pono-game-ready");
  if(wasAdminPreview)document.body.classList.add("nazonazo-admin-stage-preview");
@@ -2028,7 +2113,10 @@ function buildWorld(keepCover){
    t.appendChild(hp);
   }
   world.appendChild(t);tunnels.push(t);
-  for(let k=0;k<((st.id==="space"||st.id==="sea")?0:2);k++){
+  // id直書きだと sea2/space2(同じ mechanic を共有する新規ハブステージ)が対象から漏れて
+  // trackside decor が意図せず増える(sea/space はここを常に0にする設計)ため、
+  // mechanic ベースの判定に一般化してある(Phase0 の isSeaStage/isSpaceStage と同じ方針)。
+  for(let k=0;k<((st.mechanic==="spaceChase"||st.mechanic==="seaBoss")?0:2);k++){
    const d=document.createElement("div");d.className="decor";
    const imageDecor=!!(st.assets&&st.assets.decor);
    const wv=imageDecor?(st.id==="jungle"?68+((i+k)%3)*7:80+((i+k)%3)*7):(8+((i*7+k*5)%8));
@@ -3871,6 +3959,10 @@ function startTunnelBranchChoice(){
  tunnelBranchGates.replaceChildren();
  tunnelBranchGates.classList.remove("is-chosen");
  tunnelBranchGates.setAttribute("aria-hidden","false");
+ // 第三者ナレーション方針([[policy_character_voice]]): 実音声ではなく既存のspeak()
+ // (=ARIA live region更新)で「呼びかけ」を出す。全ジャンクション共通(town/jungle/
+ // number/sea/future とその隠しハブ sea2/future2 のいずれで分岐が来ても同じ文言)。
+ speak("さあ、どっちの みちに いく？");
  st.branches.forEach((branch,index)=>{
   const idx=branchTargetIdx(branch),target=STAGES[idx];
   if(!target)return;
@@ -5839,26 +5931,55 @@ function openMap(msg){
   // countsToProgress は「マップ表示するか」の hidden とは別軸のフラグ(hidden の値を
   // 流用しない): 進度カウントの可否だけを独立して判定する。
   if(!(STAGES[i]&&STAGES[i].countsToProgress))return;
-  highestOpen=Math.max(highestOpen,i+1);
+  // sea2/future2/space2 physically live at the STAGES tail (index 14-16, past every
+  // mainline index) so clearing them must count toward their mainline SLOT (sea/future/
+  // space), not their raw array index -- otherwise reaching sea2 alone would jump
+  // highestOpen past every mainline node and unlock the whole map row prematurely.
+  highestOpen=Math.max(highestOpen,mainlineSlotIndex(i)+1);
  });
  // 現在地(stg)が countsToProgress:false のステージの最中(=分岐トンネル走行中)の場合も、
  // 本編の解放進度を先に進めてしまわないよう無視する。
- const curMainlineIdx=(STAGES[stg]&&STAGES[stg].countsToProgress)?stg:-1;
+ const curMainlineIdx=(STAGES[stg]&&STAGES[stg].countsToProgress)?mainlineSlotIndex(stg):-1;
  highestOpen=Math.min(STAGES.length-1,Math.max(highestOpen,curMainlineIdx));
+ const curSlot=mainlineSlotIndex(stg);
  STAGES.forEach((s,i)=>{
-  // hidden(=snow/fire等トンネル分岐限定の隠しルート)はマップ一覧に出さない
-  // (町からのトンネル内タップでのみ選べる寄り道ルートのため)。マップ表示可否は
-  // 引き続き hidden で判定し、上の進度カウント(countsToProgress)とは独立に保つ。
+  // マップの横一列(row)自体は引き続き本編6ノードだけを並べる(hidden=町からの
+  // トンネル内タップでのみ選べる寄り道ルート/新設ハブは、まだ本編マップの直接
+  // 選択肢としては出さない設計のため)。ただし「隠しルートだから存在ごと消す」
+  // という以前の扱いはやめ、直後の分岐ヒント(下記)で前向きに存在を見せる。
   if(s.hidden)return;
   if(row.children.length){const d=document.createElement("span");d.className="mapDash";d.textContent="→";row.appendChild(d);}
   const canVisit=i<=highestOpen;
-  const n=document.createElement("button");n.type="button";n.className="mapNode"+(i===stg?" cur":"")+(canVisit?"":" locked");
+  // curSlot: while on a hidden hub twin (sea2/future2/space2), highlight the mainline
+  // stand-in node (e.g. sea) as "cur" instead of highlighting nothing (stg itself is past
+  // the index range of this row for those hubs).
+  const n=document.createElement("button");n.type="button";n.className="mapNode"+(i===curSlot?" cur":"")+(canVisit?"":" locked");
   if(!canVisit)n.disabled=true;
   const mapLabel=document.createElement("span");mapLabel.className="map-node-label";mapLabel.textContent=s.names[loop%2];
   n.append(createUiArt(s.art,"mi map-stage-art"),mapLabel);
   if(cleared[i])n.appendChild(createUiArt("star","st map-clear-art"));
   if(canVisit)bindTap(n,()=>{ensureAC();stg=i;openMap("「"+s.names[loop%2]+"」から いく？");});
   row.appendChild(n);
+  // Darius homage: 毎ジャンクション必ず分岐する構造を、まだフルグラフ描画はせず
+  // 軽量な「えらべる みち」表示だけで見せる(🔀 + 行き先候補アイコン2つ)。
+  // 「隠しルート」という言葉・雰囲気は出さない(表示はあくまで前向きな一言)。
+  // 実装メモ: 以前は row の直接の子として横一列に並べていたが、#mapRow は
+  // flex-wrap無し・overflow-x無しの固定横幅(6ノード+矢印5個ぴったり)で、
+  // ヒント分の追加幅が「みらいシティ」「うちゅう」ノードを画面外へ押し出し
+  // タップ不能にする回帰を起こしていた。ノード自体の子として絶対配置で
+  // 吊り下げる形にし、row の横幅計算に一切関与しないようにする。
+  if(stageHasBranches(s)){
+   const fork=document.createElement("span");fork.className="map-fork-hint";
+   fork.setAttribute("role","img");fork.setAttribute("aria-label","えらべる みちが あるよ");
+   const mark=document.createElement("span");mark.className="map-fork-mark";mark.textContent="🔀";
+   fork.appendChild(mark);
+   s.branches.slice(0,2).forEach(b=>{
+    const target=STAGES[stageIndexById(b.toId)];
+    const opt=document.createElement("span");opt.className="map-fork-option";opt.textContent=(target&&target.icon)||"❓";
+    fork.appendChild(opt);
+   });
+   n.appendChild(fork);
+  }
  });
  $("loopBadge").style.display=(loop>=1)?"block":"none";
  $("mapMsg").textContent=msg||("つぎは「"+STAGES[stg].names[loop%2]+"」！");

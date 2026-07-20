@@ -108,7 +108,9 @@ const buildWorld = extractFunction(game, "buildWorld");
 assert.match(buildWorld, /const stationStage=hasStationArt\(st\)/);
 assert.match(buildWorld, /stationStage\s*\?\s*'<div class="station-art"/);
 assert.match(buildWorld, /t\.classList\.add\("station",st\.id\+"-station"\)/);
-assert.match(buildWorld, /for\(let k=0;k<\(\(st\.id==="space"(?:\|\|st\.id==="sea")?\)\?0:2\);k\+\+\)/,
+// mechanic-based (not id-based) so this also covers space2, the Phase1 hidden hub stage that
+// shares space's spaceChase mechanic and must keep the same 0-decor convention.
+assert.match(buildWorld, /for\(let k=0;k<\(\(st\.mechanic==="spaceChase"(?:\|\|st\.mechanic==="seaBoss")?\)\?0:2\);k\+\+\)/,
   "legacy procedural space decor must not be generated");
 assert.match(css, /body\.st-space \.tun\.station\.space-station\{[^}]*aspect-ratio:2172\/724/);
 assert.match(css, /body\.st-space \.tun\.station\.space-station\.open \.station-art\{/);

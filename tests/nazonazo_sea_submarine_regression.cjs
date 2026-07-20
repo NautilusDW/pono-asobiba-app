@@ -100,8 +100,10 @@ assert.match(css, /body\.st-sea #fgT\s*\{[^}]*height\s*:\s*14vh[^}]*background-s
   "the near coral layer must be cropped lower so its transparent tail stays offscreen");
 
 /* The old procedural kelp/blob SVGs were the dark-blue posts in the scene. */
+// mechanic-based (not id-based) so this also covers sea2, the Phase1 hidden hub stage that
+// shares sea's seaBoss mechanic and must keep the same 0-decor convention.
 const buildWorldBody = extractFunction(js, "buildWorld");
-assert.match(buildWorldBody, /st\.id==="space"\|\|st\.id==="sea"[\s\S]{0,40}\?0:2/,
+assert.match(buildWorldBody, /st\.mechanic==="spaceChase"\|\|st\.mechanic==="seaBoss"[\s\S]{0,40}\?0:2/,
   "deep sea must not create the generic gKelp/gBumps decor pair at every checkpoint");
 
 /* Three generated, opaque-bottom habitat residents replace those placeholder shapes. */

@@ -637,7 +637,32 @@
 // STAGES.reduce()による自動導出へ置換、openMap()の進度カウントをhiddenから独立した
 // countsToProgress:falseフラグへ分離(マップ表示可否は引き続きhiddenで判定)。game.jsを
 // 変更したためバンプ。
-const CACHE_VERSION = 2303;
+// (batch:1403-nazonazo-darius-phase1-data-wiring) 「毎ジャンクション必ず分岐する」構造の
+// Phase1データ配線。sea に branches:[future,future2] を新設(唯一の完全新規ジャンクション)、
+// fantasyのrejoinIdをsea→sea2、ruinsのrejoinIdをspace→space2へ変更、末尾index14/15/16に
+// sea2/future2/space2(hidden:true・countsToProgress:true・プロシージャルSVGのみ・問題バンク
+// はPhase1スタブとして既存流用)を追加。buildWorld()のtrackside decor件数抑制をst.id直書き
+// からst.mechanicベースへ一般化(sea2/space2への一般化漏れ対応)。トンネル分岐ゲートに
+// speak()呼びかけ+transform/box-shadowのみの揺れ演出、openMap()に「えらべる みち」フォーク
+// ヒント(🔀+行き先2アイコン)を追加。game.js/styles.css/quiz-art.jsを変更したためバンプ。
+// (batch:1404-nazonazo-darius-phase1-crossreview-fix) 3レンズ独立クロスレビューで発見された
+// Phase1回帰3件を修正。(1) sea2/future2/space2はbody.className="st-"+st.idでのみクラス
+// 付与されるため、styles.cssの.st-sea/.st-future/.st-space(31/22/30箇所)や
+// document.body.classList.contains("st-space")等のJS判定が一切効かず、sea2の潜水艦操作
+// UI・全クイズ当たり判定、space2の通常操縦・星背景が実質プレイ不能だった。applySkin()を
+// 新設stageBodyClass()(st.mechanicベース)経由にし、body に "st-<id>" と同時にmechanicを
+// 共有する本編ステージの"st-sea"/"st-future"/"st-space"family classも付与するよう一般化。
+// (2) openMap()のhighestOpen計算がsea2/future2/space2の物理STAGES index(末尾14-16、本編
+// 0-5より後ろ)をそのままi+1採用しており、sea2に到達しただけで本編マップ6ノード全てが
+// 先取りアンロックされる進行スキップバグがあった。新設mainlineSlotIndex()(mechanicで
+// 本編の対応ステージindexへ変換)を導入しopenMap()のhighestOpen/cur判定を修正。
+// (3) openMap()の分岐ヒント(.map-fork-hint)を#mapRowの直接の子(横一列)として追加していた
+// ため、追加幅で「みらいシティ」「うちゅう」ノードが画面外へ押し出されタップ不能になる
+// レイアウト回帰があった。ヒントを各mapNodeボタン自身の子として絶対配置化しrowの横幅
+// 計算から除外、押せるボタンに見えて反応しない見た目(box-shadow・無限パルス)も撤去し
+// 静的な情報タグへ変更。game.js/styles.css/tests/nazonazo_tunnel_branch_topology_regression.cjs/
+// tests/nazonazo_ready_class_regression.cjsを変更したためバンプ。
+const CACHE_VERSION = 2305;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

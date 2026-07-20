@@ -27,6 +27,15 @@ const preserveEnd = applySkin.indexOf("\n setDriverForStage", preserveStart);
 assert.ok(preserveStart >= 0 && preserveEnd > preserveStart, "ready-class preservation must wrap the body class reset");
 const preserveSnippet = applySkin.slice(preserveStart, preserveEnd);
 
+// applySkin's body-class reset now delegates to stageBodyClass() (hidden hub twins
+// sea2/future2/space2 also stamp their mainline mechanic family class, e.g. st-sea, onto
+// body). Pull the real implementation in alongside the snippet under test rather than
+// reimplementing it, so this test keeps exercising production code.
+const sbcStart = game.indexOf("function stageBodyClass(");
+assert.ok(sbcStart >= 0, "stageBodyClass must be present");
+const sbcEnd = game.indexOf("\n}", sbcStart) + 2;
+const stageBodyClassSrc = game.slice(sbcStart, sbcEnd);
+
 function runSkinClassReset(initialClassName, iosDevice, portalEdit) {
   let classes = new Set(initialClassName.split(/\s+/).filter(Boolean));
   const body = {
@@ -41,7 +50,7 @@ function runSkinClassReset(initialClassName, iosDevice, portalEdit) {
     set(value) { classes = new Set(String(value).split(/\s+/).filter(Boolean)); }
   });
 
-  vm.runInNewContext(preserveSnippet, {
+  vm.runInNewContext(`${stageBodyClassSrc}\n${preserveSnippet}`, {
     document: { body },
     IOS_DEVICE: iosDevice,
     PORTAL_EDIT_ENABLED: portalEdit,
