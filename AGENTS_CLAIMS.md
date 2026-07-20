@@ -59,8 +59,6 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
-- 2026-07-20 10:24 - by Codex - [batch:1372b-lp-title-belly-position] - assets/lp/hero/brand_logo*.png, index.html, index-app.html, sw.js, tmp/alpha_pending/1372b-lp-title-belly-position/**, AGENTS_CLAIMS.md, HANDOFF.md - batch:1372で左下へずれた白いおなかを生成版の中央・縦長形状へ修正 [overlap: batch:1401-nazonazo-tunnel-branch]
-
 
 
 - 2026-07-17 10:08 - by Codex - [batch:1328d-mojikko-white-paper-ornate-frames] - writing-mori/index.html, assets/images/mojikko/writing/storybook/**, tmp/alpha_pending/1328d-mojikko-white-paper-ornate-frames/**, tests/mojikko_*.cjs, native/**, AGENTS_CLAIMS.md, HANDOFF.md - 紙面を白ベースへ補正し、ことばの穴・見る丸・メッセージ・文字盤・書き順を個別の装飾枠へ差し替える
