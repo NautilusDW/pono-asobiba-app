@@ -1,5 +1,7 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2310: もじっこ文字書きをフクロウ博士のなぞなぞ実物枠・紙質へ統一し、
+// 白基調の専用4枠を自然比で接続 (batch:1328e-mojikko-match-owl-riddle)。
 // v2309: なぞなぞトレインの新規分岐8ステージへ、選択した面だけを読む
 // 6層ラスター背景とシームレスなパララックスを追加。48画像は実行時選択読込のため
 // CRITICAL_ASSETSには追加しない (batch:1382-nazonazo-branch-bg-raster-integration)。
@@ -685,7 +687,7 @@
 // 計算から除外、押せるボタンに見えて反応しない見た目(box-shadow・無限パルス)も撤去し
 // 静的な情報タグへ変更。game.js/styles.css/tests/nazonazo_tunnel_branch_topology_regression.cjs/
 // tests/nazonazo_ready_class_regression.cjsを変更したためバンプ。
-const CACHE_VERSION = 2309;
+const CACHE_VERSION = 2310;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

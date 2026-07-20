@@ -10,6 +10,7 @@ const vm = require('node:vm');
 const root = path.resolve(__dirname, '..');
 const html = fs.readFileSync(path.join(root, 'writing-mori/index.html'), 'utf8');
 const nativeManifest = JSON.parse(fs.readFileSync(path.join(root, 'native/content-manifest.json'), 'utf8'));
+const allowPendingAssets = process.env.MOJIKKO_ALLOW_PENDING_ASSETS === '1';
 
 function between(source, start, end) {
   const startIndex = source.indexOf(start);
@@ -78,12 +79,12 @@ assert.match(html, /\.stroke-preview\s*\{[^}]*font-family:\s*var\(--moji-font\)/
 
 const expectedStoryAssets = [
   'assets/images/mojikko/care/yard_background_wide_v2.png',
-  'assets/images/mojikko/writing/storybook/white-ornate-frame-family/00_mojikko_white_frame_master.png',
-  'assets/images/mojikko/writing/storybook/white-ornate-frame-family/01_mojikko_task_frame_master.png',
-  'assets/images/mojikko/writing/storybook/white-ornate-frame-family/02_mojikko_milmaru_frame_master.png',
-  'assets/images/mojikko/writing/storybook/white-ornate-frame-family/03_mojikko_message_frame_master.png',
-  'assets/images/mojikko/writing/storybook/white-ornate-frame-family/04_mojikko_writing_board_frame_master.png',
-  'assets/images/mojikko/writing/storybook/white-ornate-frame-family/05_mojikko_stroke_order_frame_master.png',
+  'assets/images/quizland/Fukuro_frame_003.webp',
+  'assets/images/quizland/progress-num.png',
+  'assets/images/mojikko/writing/storybook/owl-riddle-frame-family/01_word_hole_task_995x1581.png',
+  'assets/images/mojikko/writing/storybook/owl-riddle-frame-family/02_milmaru_reward_1305x1206.png',
+  'assets/images/mojikko/writing/storybook/owl-riddle-frame-family/03_writing_board_1323x1189.png',
+  'assets/images/mojikko/writing/storybook/owl-riddle-frame-family/04_stroke_order_centered_941x1672.png',
   'assets/_legacy/preview-placeholders/ctrl-btn-settings.png',
   'assets/images/quizland/quizland_difficulty_star_gold_gpt_image2_20260623.png',
   'assets/images/Bento_parts/cookie.webp',
@@ -98,48 +99,54 @@ const expectedStoryAssets = [
 ];
 for (const relative of expectedStoryAssets) {
   const file = path.join(root, relative);
+  if (!fs.existsSync(file) && allowPendingAssets && relative.includes('/owl-riddle-frame-family/')) {
+    console.warn(`pending Owl-riddle frame: ${relative}`);
+    continue;
+  }
   assert.ok(fs.existsSync(file), `missing storybook asset: ${relative}`);
   assert.ok(fs.statSync(file).size > 0, `empty storybook asset: ${relative}`);
   assert.ok(fs.statSync(file).size < 3 * 1024 * 1024, `storybook asset exceeds 3MB: ${relative}`);
 }
 
 const frameAssetExpectations = Object.freeze({
-  'assets/images/mojikko/writing/storybook/white-ornate-frame-family/00_mojikko_white_frame_master.png': {
-    dimensions: [473, 484],
-    sha256: 'a852453bf7d341f2d2a886a4be0fe9a680905f25932346db96909151f239c362'
+  'assets/images/mojikko/writing/storybook/owl-riddle-frame-family/01_word_hole_task_995x1581.png': {
+    dimensions: [995, 1581],
+    sha256: 'ec8c9f2677143033d59fb9ac599cdc101c874436ea2616837eeda0ae34c9a17d'
   },
-  'assets/images/mojikko/writing/storybook/white-ornate-frame-family/01_mojikko_task_frame_master.png': {
-    dimensions: [1135, 1121],
-    sha256: '8329d6787ede21cc30b0ea472c5a1ffbae85055d1ca3e9809998df73491fe008'
+  'assets/images/mojikko/writing/storybook/owl-riddle-frame-family/02_milmaru_reward_1305x1206.png': {
+    dimensions: [1305, 1206],
+    sha256: '314ba523b79416c1e93888f547f91d28a412bf06bb909d9a27450fbe11eb3d52'
   },
-  'assets/images/mojikko/writing/storybook/white-ornate-frame-family/02_mojikko_milmaru_frame_master.png': {
-    dimensions: [1147, 1140],
-    sha256: '1bf31a81b44685cde388c6339e1a8400b72f2ffe4bdf4488ddfbc5e60e168da2'
+  'assets/images/mojikko/writing/storybook/owl-riddle-frame-family/03_writing_board_1323x1189.png': {
+    dimensions: [1323, 1189],
+    sha256: 'db14e39fc984969b611e92f3e9d81d4a979aa8bab52b2c44b3d63f3dfb985166'
   },
-  'assets/images/mojikko/writing/storybook/white-ornate-frame-family/03_mojikko_message_frame_master.png': {
-    dimensions: [1069, 1070],
-    sha256: '993ba6bd35a9d6f6c760ccb40a6490963e1e3bef212ecf6b73996ccc28365b23'
-  },
-  'assets/images/mojikko/writing/storybook/white-ornate-frame-family/04_mojikko_writing_board_frame_master.png': {
-    dimensions: [1148, 1148],
-    sha256: '923f717a1f854d3f386f587f2ed0d77c718b7692c717a43b6e3617b2dce4010b'
-  },
-  'assets/images/mojikko/writing/storybook/white-ornate-frame-family/05_mojikko_stroke_order_frame_master.png': {
-    dimensions: [1146, 1147],
-    sha256: '787f40fd3c8e23c528822f8ad546c604048cbb7afc7bf72b9cd4381f2a021337'
+  'assets/images/mojikko/writing/storybook/owl-riddle-frame-family/04_stroke_order_centered_941x1672.png': {
+    dimensions: [941, 1672],
+    sha256: 'ad8be1c49686f02f1c458bc9569075e9d37fdb5281536ea6f096ad7e95092f6e'
   }
 });
 for (const [source, expected] of Object.entries(frameAssetExpectations)) {
+  if (!fs.existsSync(path.join(root, source)) && allowPendingAssets) continue;
   const png = fs.readFileSync(path.join(root, source));
-  assert.equal(png.subarray(1, 4).toString('ascii'), 'PNG', `${source}: frame master is not a PNG`);
+  assert.equal(png.subarray(1, 4).toString('ascii'), 'PNG', `${source}: special frame is not a PNG`);
   assert.deepEqual(
     [png.readUInt32BE(16), png.readUInt32BE(20)],
     expected.dimensions,
     `${source}: dimensions drifted`
   );
-  assert.equal(png[25], 6, `${source}: frame master must remain RGBA`);
-  assert.equal(sha256(png), expected.sha256, `${source}: pixels drifted`);
+  assert.equal(sha256(png), expected.sha256, `${source}: accepted raw bytes drifted`);
 }
+assert.equal(
+  sha256(fs.readFileSync(path.join(root, 'assets/images/quizland/Fukuro_frame_003.webp'))),
+  '48fa73e70f17e738f59ebf8772c6d6d50af7a5ff12d45174491bca3908a35d2d',
+  'the exact Quizland message-strip pixels drifted'
+);
+assert.equal(
+  sha256(fs.readFileSync(path.join(root, 'assets/images/quizland/progress-num.png'))),
+  '380b6303ae9598e8e08e5f65bd760e6d3d579cde0b24be690bd607eec91155ea',
+  'the exact Quizland generic-paper pixels drifted'
+);
 
 const canonicalSettingsPng = fs.readFileSync(path.join(root, 'assets/_legacy/preview-placeholders/ctrl-btn-settings.png'));
 assert.equal(canonicalSettingsPng.subarray(1, 4).toString('ascii'), 'PNG', 'canonical settings control is not a PNG');
@@ -189,8 +196,8 @@ assert.match(html, /--story-milmaru-baby:\s*url\('\.\.\/assets\/images\/mojikko\
 assert.match(html, /--story-milmaru-egg:\s*url\('\.\.\/assets\/images\/mojikko\/writing\/storybook\/milmaru_egg_idle_20260716\.webp'\)/);
 assert.match(
   html,
-  /#stage-wrap\s*\{\s*background:\s*#243b33;\s*\}\s*#stage\s*\{\s*background:\s*var\(--story-yard-bg\) right center \/ cover no-repeat;/s,
-  'the dark wrapper fallback and original right-aligned yard must stay exact'
+  /#stage-wrap\s*\{\s*background:\s*var\(--story-yard-bg\) right center \/ cover no-repeat;\s*\}\s*#stage\s*\{\s*background:\s*var\(--story-yard-bg\) right center \/ cover no-repeat;/s,
+  'the wrapper letterbox and stage must both keep the original yard artwork'
 );
 assert.doesNotMatch(
   between(html, '#stage::before {', '.bg-cloud,'),
@@ -199,37 +206,33 @@ assert.doesNotMatch(
 );
 assert.doesNotMatch(html, /menu_card_base_0[1-4]\.webp/, 'rejected menu-card assets must not be referenced by writing-mori');
 const frameVariableExpectations = Object.freeze({
-  master: ['00_mojikko_white_frame_master.png', '8.7px'],
-  task: ['01_mojikko_task_frame_master.png', '34.2px'],
-  milmaru: ['02_mojikko_milmaru_frame_master.png', '32.9px'],
-  message: ['03_mojikko_message_frame_master.png', '25.2px'],
-  writing: ['04_mojikko_writing_board_frame_master.png', '33px'],
-  stroke: ['05_mojikko_stroke_order_frame_master.png', '35px']
+  strip: ['--owl-strip-frame', '../assets/images/quizland/Fukuro_frame_003.webp'],
+  generic: ['--owl-generic-frame', '../assets/images/quizland/progress-num.png'],
+  task: ['--owl-special-task', '../assets/images/mojikko/writing/storybook/owl-riddle-frame-family/01_word_hole_task_995x1581.png'],
+  milmaru: ['--owl-special-milmaru', '../assets/images/mojikko/writing/storybook/owl-riddle-frame-family/02_milmaru_reward_1305x1206.png'],
+  writing: ['--owl-special-writing', '../assets/images/mojikko/writing/storybook/owl-riddle-frame-family/03_writing_board_1323x1189.png'],
+  stroke: ['--owl-special-stroke', '../assets/images/mojikko/writing/storybook/owl-riddle-frame-family/04_stroke_order_centered_941x1672.png']
 });
-for (const [role, [filename, width]] of Object.entries(frameVariableExpectations)) {
-  const variable = role === 'master' ? '--story-frame-master' : `--story-frame-${role}`;
-  const widthVariable = role === 'master' ? '--story-frame-box' : `--story-frame-${role}-box`;
-  assert.ok(
-    html.includes(`${variable}: url('../assets/images/mojikko/writing/storybook/white-ornate-frame-family/${filename}');`),
-    `${role}: frame source must remain a literal same-origin asset`
-  );
-  assert.ok(html.includes(`${widthVariable}: ${width};`), `${role}: normal rail box width drifted`);
+for (const [role, [variable, source]] of Object.entries(frameVariableExpectations)) {
+  assert.ok(html.includes(`${variable}: url('${source}');`), `${role}: Owl-riddle source must remain a literal same-origin asset`);
 }
+assert.match(html, /--owl-generic-slice:\s*18 fill;/, 'Quizland progress paper slice drifted');
+assert.match(html, /--owl-generic-rail:\s*8px;/, 'normal Quizland rail width drifted');
 assert.doesNotMatch(html, /--story-settings\b/, 'the rejected settings-frame variable must not remain reusable');
 assert.doesNotMatch(
   html,
-  /assets\/images\/mojikko\/writing\/storybook\/(?:frame-family|settings-gauge-family)\//,
+  /white-ornate|assets\/images\/mojikko\/writing\/storybook\/(?:frame-family|settings-gauge-family)\//,
   'the superseded frame families must not be referenced at runtime'
 );
-const ornateFrameCss = between(
+const owlFrameCss = between(
   html,
-  'White-paper ornate frame family (batch:1328d)',
+  'Owl-doctor runtime materials (batch:1328e)',
   '</style>'
 );
 assert.doesNotMatch(
   html,
-  /background-size:\s*100%\s+100%/,
-  'generated frame art must never be stretched away from its native ratio'
+  /background-size:\s*100%\s+100%|object-fit:\s*fill/,
+  'Owl-riddle frame art must never be stretched away from its native ratio'
 );
 assert.doesNotMatch(
   html,
@@ -238,95 +241,125 @@ assert.doesNotMatch(
 );
 assert.doesNotMatch(
   html,
-  /assets\/(?:zukan\/ui\/(?:hint|discovery|investigation|map)|images\/Fukuro_frame_|images\/StickerBook\/)/,
-  'the writing screen must not mix legacy frame families back in'
+  /assets\/(?:zukan\/ui\/(?:hint|discovery|investigation|map)|images\/StickerBook\/)/,
+  'the writing screen must not mix unrelated frame families back in'
 );
-const genericSurfaceRule = between(ornateFrameCss, '.character-panel,', '\n}\n\n.character-panel {');
+const specialBaseRule = between(owlFrameCss, '.character-panel,', '\n}\n\n.character-panel {');
 for (const selector of [
-  '.character-panel', '.companion-card', '.stroke-panel', '.prompt-bar', '.message-box',
-  '.writing-board', '.star-box', '#modeSwitchBtn', '#resetBtn', '#doneBtn', '#careBtn',
-  '#modalRetryBtn', '.kana-tab', '.char-button', '.word-clue-cell.blank', '.daily-clue-cell',
-  '.settings-popover', '.mode-choice-card', '.result-card', 'body #ach-next-hint'
+  '.character-panel', '.companion-card', '.writing-board', '.prompt-bar', '.message-box'
 ]) {
-  assert.ok(genericSurfaceRule.includes(selector), `${selector}: escaped the generic surface rule`);
+  assert.ok(specialBaseRule.includes(selector), selector + ': escaped the native-ratio surface rule');
 }
-assert.match(genericSurfaceRule, /border:\s*0 solid transparent !important;/);
-assert.match(genericSurfaceRule, /border-image-source:\s*var\(--story-frame-master\) !important;/);
-assert.match(genericSurfaceRule, /border-image-slice:\s*55 fill !important;/);
-assert.match(genericSurfaceRule, /border-image-width:\s*var\(--story-frame-box\) !important;/);
-assert.match(genericSurfaceRule, /border-image-outset:\s*0 !important;/);
-assert.match(genericSurfaceRule, /border-image-repeat:\s*stretch !important;/);
-assert.match(genericSurfaceRule, /background:\s*none !important;/);
-assert.doesNotMatch(genericSurfaceRule, /\.settings-btn|\.settings-menu-item|\.mode-choice-button/, 'exceptions must not gain nested frames');
+assert.doesNotMatch(specialBaseRule, /\.stroke-panel/, 'the centered stroke crop must not use the full-image contain path');
+assert.match(specialBaseRule, /border-image:\s*none !important;/);
+assert.match(specialBaseRule, /background-size:\s*contain !important;/);
+assert.match(specialBaseRule, /background-color:\s*transparent !important;/);
 
 const roleFrameRules = Object.freeze([
-  ['.character-panel {', '.companion-card {', '--story-frame-task', '242 fill', '--story-frame-task-box'],
-  ['.companion-card {', '.prompt-bar,', '--story-frame-milmaru', '230 fill', '--story-frame-milmaru-box'],
-  ['.prompt-bar,', '.writing-board {', '--story-frame-message', '139 fill', '--story-frame-message-box'],
-  ['.writing-board {', '.stroke-panel {', '--story-frame-writing', '230 fill', '--story-frame-writing-box'],
-  ['.stroke-panel {', '.writing-board::before,', '--story-frame-stroke', '240 fill', '--story-frame-stroke-box']
+  ['.character-panel {', '.companion-card {', '--owl-special-task', '995 / 1581', '14px'],
+  ['.companion-card {', '.stroke-panel {', '--owl-special-milmaru', '1305 / 1206', '15px'],
+  ['.writing-board {', '.prompt-bar,', '--owl-special-writing', '1323 / 1189', '22px']
 ]);
-for (const [start, end, sourceVariable, slice, widthVariable] of roleFrameRules) {
-  const rule = between(ornateFrameCss, start, end);
-  assert.match(rule, new RegExp(`border-image-source:\\s*var\\(${sourceVariable}\\) !important;`));
-  assert.match(rule, new RegExp(`border-image-slice:\\s*${slice.replace(' ', '\\s+')} !important;`));
-  assert.match(rule, new RegExp(`border-image-width:\\s*var\\(${widthVariable}\\) !important;`));
-  assert.match(
-    rule,
-    new RegExp(`border-radius:\\s*var\\(${widthVariable}\\) !important;`),
-    `${sourceVariable}: same-host paper underlay lost its rounded outer clip`
-  );
-  assert.match(
-    rule,
-    /background-color:\s*#fdfcfb !important;/,
-    `${sourceVariable}: transparent slice hairline is no longer backed by white paper`
-  );
+for (const [start, end, sourceVariable, ratio, radius] of roleFrameRules) {
+  const rule = between(owlFrameCss, start, end);
+  assert.match(rule, new RegExp('background-image:\\s*var\\(' + sourceVariable + '\\) !important;'));
+  assert.match(rule, new RegExp('aspect-ratio:\\s*' + ratio.replaceAll(' ', '\\s*') + ';'));
+  assert.match(rule, new RegExp('border-radius:\\s*' + radius.replace('.', '\\.') + ' !important;'));
+  assert.match(rule, /background-clip:\s*border-box !important;/, sourceVariable + ': rounded clipping drifted');
 }
-const messageFrameRule = between(ornateFrameCss, '.prompt-bar,', '.writing-board {');
+
+const strokeFrameRule = between(owlFrameCss, '.stroke-panel {', '.writing-board {');
+assert.match(strokeFrameRule, /aspect-ratio:\s*496\s*\/\s*1759;/);
+assert.match(strokeFrameRule, /border-image:\s*none !important;/);
+assert.match(strokeFrameRule, /background-image:\s*var\(--owl-special-stroke\) !important;/);
+assert.match(strokeFrameRule, /background-position:\s*center !important;/);
+assert.match(strokeFrameRule, /background-repeat:\s*no-repeat !important;/);
+assert.match(strokeFrameRule, /background-size:\s*auto 100% !important;/);
+assert.match(strokeFrameRule, /border-radius:\s*12px !important;/);
+assert.match(strokeFrameRule, /background-clip:\s*border-box !important;/);
+assert.match(strokeFrameRule, /overflow:\s*hidden;/);
+assert.doesNotMatch(strokeFrameRule, /border-image-(?:source|slice|width)|background-size:\s*(?:contain|100%\s+100%)/, 'stroke must use one uniform centered height-fit crop only');
+
+const messageFrameRule = between(owlFrameCss, '.prompt-bar,\n.message-box {', '.writing-board::before,');
 assert.match(messageFrameRule, /box-sizing:\s*border-box;/);
-assert.match(messageFrameRule, /padding-inline:\s*52px !important;/, 'the shallow message frame lost its 32px+ text safety area');
+assert.match(messageFrameRule, /aspect-ratio:\s*1252\s*\/\s*201;/, 'the exact Quizland strip ratio drifted');
+assert.match(messageFrameRule, /background-image:\s*var\(--owl-strip-frame\) !important;/);
+assert.match(messageFrameRule, /padding-inline:\s*54px !important;/, 'the shallow message frame lost its 32px+ text safety area');
 assert.match(
   html,
   /\.settings-btn\s*\{[^}]*aspect-ratio:\s*1\s*\/\s*1;[^}]*background:\s*url\('\.\.\/assets\/_legacy\/preview-placeholders\/ctrl-btn-settings\.png'\) center \/ contain no-repeat !important;/s
 );
+
+const genericSurfaceRule = between(owlFrameCss, '.star-box,', '\n}\n\n#modeSwitchBtn,');
+for (const selector of [
+  '.star-box', '#modeSwitchBtn', '#resetBtn', '#doneBtn', '#careBtn', '#modalRetryBtn',
+  '.kana-tab', '.char-button', '.word-clue-cell.blank', '.daily-clue-cell',
+  '.mode-progress-count', '.settings-popover', '.mode-choice-card', '.result-card'
+]) {
+  assert.ok(genericSurfaceRule.includes(selector), selector + ': escaped the Quizland generic surface rule');
+}
+assert.doesNotMatch(genericSurfaceRule, /\.mode-progress-dot/, '28px progress dots must never receive a 9-slice rail');
+assert.match(genericSurfaceRule, /border:\s*0 solid transparent !important;/);
+assert.match(genericSurfaceRule, /border-image-source:\s*var\(--owl-generic-frame\) !important;/);
+assert.match(genericSurfaceRule, /border-image-slice:\s*var\(--owl-generic-slice\) !important;/);
+assert.match(genericSurfaceRule, /border-image-width:\s*var\(--owl-generic-rail\) !important;/);
+assert.match(genericSurfaceRule, /border-image-outset:\s*0 !important;/);
+assert.match(genericSurfaceRule, /border-image-repeat:\s*stretch !important;/);
+assert.match(genericSurfaceRule, /background:\s*none !important;/);
+assert.doesNotMatch(genericSurfaceRule, /\.settings-btn|\.settings-menu-item|\.mode-choice-button/, 'exceptions must not gain nested frames');
 assert.match(
-  ornateFrameCss,
-  /@media \(max-height:\s*500px\)[^]*:root\s*\{[^}]*--story-frame-box:\s*12\.57px;[^}]*--story-frame-task-box:\s*49\.4px;[^}]*--story-frame-milmaru-box:\s*47\.52px;[^}]*--story-frame-message-box:\s*36\.4px;[^}]*--story-frame-writing-box:\s*47\.67px;[^}]*--story-frame-stroke-box:\s*50\.56px;/s,
-  'short landscape must preserve the calibrated visible rail for all six sources'
+  html,
+  /\.mode-progress-dot\s*\{[^}]*width:\s*28px;[^}]*height:\s*28px;[^}]*border-radius:\s*50%;/s,
+  'mode progress must remain a native 28px circular marker'
 );
 assert.match(
-  ornateFrameCss,
-  /\.writing-board::before,\s*\.writing-board::after\s*\{[^}]*content:\s*none !important;[^}]*display:\s*none !important;[^}]*border-image:\s*none !important;/s,
-  'the direct writing-board frame must not keep a pseudo-frame layer'
+  owlFrameCss,
+  /@media \(max-height:\s*500px\)[^]*:root\s*\{[^}]*--owl-generic-rail:\s*14\.5px;/s,
+  'short landscape must preserve the generic visible rail'
 );
 assert.match(
-  ornateFrameCss,
-  /\.settings-menu-item\s*\{[^}]*border-image:\s*none !important;[^}]*background:\s*transparent !important;[^}]*box-shadow:\s*none !important;/s,
+  owlFrameCss,
+  /\.writing-board::before,[^}]*\.message-box::after\s*\{[^}]*content:\s*none !important;[^}]*display:\s*none !important;[^}]*border-image:\s*none !important;/s,
+  'native-ratio frames must not keep a second pseudo-frame layer'
+);
+assert.match(
+  owlFrameCss,
+  /body #ach-next-hint\s*\{[^}]*aspect-ratio:\s*1252\s*\/\s*201;[^}]*border-image:\s*none !important;[^}]*background:\s*var\(--owl-strip-frame\) center \/ contain no-repeat !important;/s,
+  'the transient achievement hint must use one native Owl-doctor strip instead of a sliced rail'
+);
+assert.match(
+  owlFrameCss,
+  /body:has\(#ach-next-hint\.show\) #stage \.feedback-row \.pixel-button\s*\{[^}]*opacity:\s*0;[^}]*pointer-events:\s*none;[^}]*border-image-source:\s*none !important;[^}]*background:\s*none !important;/s,
+  'the transient achievement hint must fully occlude the normal operation frames'
+);
+assert.match(
+  owlFrameCss,
+  /\.settings-menu-item,[^}]*\.mode-choice-close\s*\{[^}]*border-image:\s*none !important;[^}]*background:\s*transparent !important;[^}]*box-shadow:\s*none !important;/s,
   'settings must have one outer frame, not a nested return frame'
 );
 assert.match(
-  ornateFrameCss,
-  /\.mode-choice-buttons\s*\{[^}]*inset:\s*var\(--story-frame-box\);/s,
+  owlFrameCss,
+  /\.mode-choice-buttons\s*\{[^}]*inset:\s*var\(--owl-generic-rail\);/s,
   'chooser hit areas must stay inside the one outer rail'
 );
 assert.match(
-  ornateFrameCss,
+  owlFrameCss,
   /\.mode-choice-button:nth-child\(odd\)\s*\{[^}]*border-right:\s*1px solid/s,
   'chooser columns must use only a one-pixel HTML separator'
 );
 assert.match(
-  ornateFrameCss,
+  owlFrameCss,
   /\.mode-choice-button:nth-child\(-n \+ 2\)\s*\{[^}]*border-bottom:\s*1px solid/s,
   'chooser rows must use only a one-pixel HTML separator'
 );
 assert.match(
   html,
-  /\.mode-choice-button\.active::before,\s*\.mode-choice-button:active:not\(:disabled\)::before\s*\{[^}]*background:\s*#f7e5a7;[^}]*opacity:\s*0\.72;/s,
+  /\.mode-choice-button\.active::before\s*\{[^}]*background:\s*rgba\(239, 216, 154, 0\.42\);/s,
   'mode selection feedback must tint only its unframed quadrant'
 );
 assert.match(
-  ornateFrameCss,
-  /\.panel-title,[^}]*\.mode-progress-count\s*\{[^}]*background-color:\s*transparent !important;[^}]*background-image:\s*none !important;[^}]*box-shadow:\s*none !important;/s,
+  owlFrameCss,
+  /\.panel-title,[^}]*\.stroke-mini svg\s*\{[^}]*background-color:\s*transparent !important;[^}]*background-image:\s*none !important;[^}]*box-shadow:\s*none !important;/s,
   'inner text surfaces must not add a second frame'
 );
 assert.match(

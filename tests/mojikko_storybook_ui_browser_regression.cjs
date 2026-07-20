@@ -10,6 +10,8 @@ const { chromium } = require('playwright');
 const sharp = require('sharp');
 
 const root = path.resolve(__dirname, '..');
+const screenshotDir = process.env.MOJIKKO_SCREENSHOT_DIR || '';
+if (screenshotDir) fs.mkdirSync(screenshotDir, { recursive: true });
 const generatedStoryAssets = [
   '/assets/images/mojikko/writing/storybook/icon_moji_milk_20260716.webp',
   '/assets/images/mojikko/writing/storybook/word_himawari_20260716.webp',
@@ -19,32 +21,27 @@ const generatedStoryAssets = [
   '/assets/images/mojikko/writing/storybook/milmaru_egg_idle_20260716.webp'
 ];
 const framePaths = Object.freeze({
-  generic: '/assets/images/mojikko/writing/storybook/white-ornate-frame-family/00_mojikko_white_frame_master.png',
-  task: '/assets/images/mojikko/writing/storybook/white-ornate-frame-family/01_mojikko_task_frame_master.png',
-  milmaru: '/assets/images/mojikko/writing/storybook/white-ornate-frame-family/02_mojikko_milmaru_frame_master.png',
-  message: '/assets/images/mojikko/writing/storybook/white-ornate-frame-family/03_mojikko_message_frame_master.png',
-  writing: '/assets/images/mojikko/writing/storybook/white-ornate-frame-family/04_mojikko_writing_board_frame_master.png',
-  stroke: '/assets/images/mojikko/writing/storybook/white-ornate-frame-family/05_mojikko_stroke_order_frame_master.png'
+  generic: '/assets/images/quizland/progress-num.png',
+  task: '/assets/images/mojikko/writing/storybook/owl-riddle-frame-family/01_word_hole_task_995x1581.png',
+  milmaru: '/assets/images/mojikko/writing/storybook/owl-riddle-frame-family/02_milmaru_reward_1305x1206.png',
+  message: '/assets/images/quizland/Fukuro_frame_003.webp',
+  writing: '/assets/images/mojikko/writing/storybook/owl-riddle-frame-family/03_writing_board_1323x1189.png',
+  stroke: '/assets/images/mojikko/writing/storybook/owl-riddle-frame-family/04_stroke_order_centered_941x1672.png'
 });
 const frameAssets = [
   '/assets/images/mojikko/care/yard_background_wide_v2.png',
   ...Object.values(framePaths)
 ];
 const unifiedFrameDimensions = Object.freeze({
-  '00_mojikko_white_frame_master.png': [473, 484],
-  '01_mojikko_task_frame_master.png': [1135, 1121],
-  '02_mojikko_milmaru_frame_master.png': [1147, 1140],
-  '03_mojikko_message_frame_master.png': [1069, 1070],
-  '04_mojikko_writing_board_frame_master.png': [1148, 1148],
-  '05_mojikko_stroke_order_frame_master.png': [1146, 1147]
+  'progress-num.png': [119, 63],
+  '01_word_hole_task_995x1581.png': [995, 1581],
+  '02_milmaru_reward_1305x1206.png': [1305, 1206],
+  'Fukuro_frame_003.webp': [1252, 201],
+  '03_writing_board_1323x1189.png': [1323, 1189],
+  '04_stroke_order_centered_941x1672.png': [941, 1672]
 });
 const frameCalibrations = Object.freeze({
-  generic: { slice: 55, normalWidth: 8.7, shortWidth: 12.57 },
-  task: { slice: 242, normalWidth: 34.2, shortWidth: 49.4 },
-  milmaru: { slice: 230, normalWidth: 32.9, shortWidth: 47.52 },
-  message: { slice: 139, normalWidth: 25.2, shortWidth: 36.4 },
-  writing: { slice: 230, normalWidth: 33, shortWidth: 47.67 },
-  stroke: { slice: 240, normalWidth: 35, shortWidth: 50.56 }
+  generic: { slice: 18, normalWidth: 8, shortWidth: 14.5 }
 });
 const surfaceFrameRoles = Object.freeze({
   characters: 'task',
@@ -65,10 +62,9 @@ const surfaceFrameRoles = Object.freeze({
   care: 'generic',
   retry: 'generic'
 });
-const specialUnderlaySurfaceRoles = Object.freeze({
+const nativeBackgroundSurfaceRoles = Object.freeze({
   characters: 'task',
   companion: 'milmaru',
-  strokes: 'stroke',
   prompt: 'message',
   message: 'message',
   board: 'writing'
@@ -179,65 +175,30 @@ function sha256(value) {
   return crypto.createHash('sha256').update(value).digest('hex');
 }
 
-async function auditWhiteFrameMasters() {
+async function auditOwlFrameAssets() {
   for (const [role, source] of Object.entries(framePaths)) {
     const filename = path.basename(source);
-    const { data, info } = await sharp(path.join(root, source)).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+    const file = path.join(root, source);
+    const bytes = fs.readFileSync(file);
+    const { data, info } = await sharp(bytes).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
     assert.deepEqual([info.width, info.height], unifiedFrameDimensions[filename], `${role}: source dimensions drifted`);
+    assert.ok(info.width > 0 && info.height > 0, `${role}: source has no decodable pixels`);
+    assert.ok(bytes.length > 0 && bytes.length < 3 * 1024 * 1024, `${role}: source escaped the asset-size guard`);
 
     const pixel = (x, y) => {
       const index = (y * info.width + x) * info.channels;
       return [data[index], data[index + 1], data[index + 2], data[index + 3]];
     };
-    const isWhitePaper = ([red, green, blue, alpha]) => (
-      alpha >= 240
-      && red >= 238
-      && green >= 238
-      && blue >= 232
-      && Math.max(red, green, blue) - Math.min(red, green, blue) <= 18
-    );
+    const center = pixel(Math.floor(info.width / 2), Math.floor(info.height / 2));
+    assert.ok(center[3] >= 245, `${role}: center paper unexpectedly became transparent`);
+    assert.ok(Math.min(center[0], center[1], center[2]) >= 160, `${role}: center stopped being light paper`);
 
-    let centralPixels = 0;
-    let whitePixels = 0;
-    let yellowPixels = 0;
-    for (let y = Math.floor(info.height * 0.15); y < Math.ceil(info.height * 0.85); y += 1) {
-      for (let x = Math.floor(info.width * 0.15); x < Math.ceil(info.width * 0.85); x += 1) {
-        const rgba = pixel(x, y);
-        centralPixels += 1;
-        if (isWhitePaper(rgba)) whitePixels += 1;
-        if (rgba[3] >= 240 && rgba[0] - rgba[2] >= 18 && rgba[0] >= 210 && rgba[1] >= 195) yellowPixels += 1;
-      }
+    if (role === 'generic') {
+      assert.equal(sha256(bytes), '380b6303ae9598e8e08e5f65bd760e6d3d579cde0b24be690bd607eec91155ea', 'generic: exact Quizland progress paper drifted');
     }
-    assert.ok(whitePixels / centralPixels >= 0.98, `${role}: central paper is no longer white-based`);
-    assert.ok(yellowPixels / centralPixels <= 0.01, `${role}: central paper became uniformly yellowed`);
-
-    const railsForLine = (line) => {
-      const opaque = [];
-      const paper = [];
-      line.forEach((rgba, index) => {
-        if (rgba[3] >= 220) opaque.push(index);
-        if (isWhitePaper(rgba)) paper.push(index);
-      });
-      assert.ok(opaque.length > 0 && paper.length > 0, `${role}: source rail segmentation failed`);
-      return [
-        Math.min(...paper) - Math.min(...opaque),
-        Math.max(...opaque) - Math.max(...paper)
-      ];
-    };
-    const horizontalRails = railsForLine(
-      Array.from({ length: info.width }, (_, x) => pixel(x, Math.floor(info.height / 2)))
-    );
-    const verticalRails = railsForLine(
-      Array.from({ length: info.height }, (_, y) => pixel(Math.floor(info.width / 2), y))
-    );
-    const averageSourceRail = [...horizontalRails, ...verticalRails]
-      .reduce((sum, value) => sum + value, 0) / 4;
-    const calibration = frameCalibrations[role];
-    const visibleRail = averageSourceRail * calibration.normalWidth / calibration.slice;
-    assert.ok(
-      visibleRail >= 5.8 && visibleRail <= 6.4,
-      `${role}: visible wood rail ${visibleRail.toFixed(2)}px escaped the 5.8–6.4px family`
-    );
+    if (role === 'message') {
+      assert.equal(sha256(bytes), '48fa73e70f17e738f59ebf8772c6d6d50af7a5ff12d45174491bca3908a35d2d', 'message: exact Owl-doctor strip drifted');
+    }
   }
 }
 
@@ -273,32 +234,11 @@ async function assertNoWhiteCornerRectangles(screenshot, rects, label) {
   }
 }
 
-async function auditSpecialFramePaperUnderlay(page, surfaces, stageScale, usesShortLandscapeFrame, label) {
-  const override = await page.addStyleTag({ content: `
-    .character-panel,
-    .companion-card,
-    .prompt-bar,
-    .message-box,
-    .writing-board,
-    .stroke-panel {
-      background-color: transparent !important;
-    }
-  ` });
-  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-  const beforeBuffer = await page.screenshot({ animations: 'disabled' });
-  await override.evaluate((element) => element.remove());
-  await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-  const afterBuffer = await page.screenshot({ animations: 'disabled' });
-  const before = await sharp(beforeBuffer).removeAlpha().raw().toBuffer({ resolveWithObject: true });
-  const after = await sharp(afterBuffer).removeAlpha().raw().toBuffer({ resolveWithObject: true });
-  assert.deepEqual(
-    [before.info.width, before.info.height, before.info.channels],
-    [after.info.width, after.info.height, after.info.channels],
-    `${label}: underlay A/B screenshots changed geometry`
-  );
-
+async function auditSpecialFramePaperUnderlay(page, surfaces, _stageScale, _usesShortLandscapeFrame, label) {
+  const screenshot = await page.screenshot({ animations: 'disabled' });
+  const image = await sharp(screenshot).removeAlpha().raw().toBuffer({ resolveWithObject: true });
   const clamp = (value, minimum, maximum) => Math.max(minimum, Math.min(maximum, value));
-  const pixel = (image, x, y) => {
+  const pixel = (x, y) => {
     const cx = clamp(Math.round(x), 0, image.info.width - 1);
     const cy = clamp(Math.round(y), 0, image.info.height - 1);
     const index = (cy * image.info.width + cx) * image.info.channels;
@@ -307,107 +247,43 @@ async function auditSpecialFramePaperUnderlay(page, surfaces, stageScale, usesSh
   const rgbDiff = (first, second) => (
     Math.abs(first[0] - second[0]) + Math.abs(first[1] - second[1]) + Math.abs(first[2] - second[2])
   ) / 3;
-  const isPaper = ([red, green, blue]) => (
-    Math.min(red, green, blue) >= 225
-    && Math.max(red, green, blue) - Math.min(red, green, blue) <= 22
-  );
-  const isYard = ([red, green, blue]) => (
-    Math.max(red, green, blue) - Math.min(red, green, blue) >= 20
-    && Math.min(red, green, blue) < 225
-    && (green >= red + 8 || blue >= red + 8)
-  );
 
   const report = {};
-  for (const [name, surface] of Object.entries(surfaces)) {
-    const calibration = frameCalibrations[surface.role];
-    const cssWidth = usesShortLandscapeFrame ? calibration.shortWidth : calibration.normalWidth;
-    const radius = cssWidth * stageScale;
-    const { rect } = surface;
-    const margin = Math.max(3, Math.min(radius + 3, Math.min(rect.width, rect.height) / 2 - 2));
+  for (const [name, { rect }] of Object.entries(surfaces)) {
     const sides = [
-      {
-        orientation: 'vertical',
-        coordinate: rect.left + radius,
-        from: rect.top + margin,
-        to: rect.bottom - margin,
-        reference: (x, y) => [x + 4, y]
-      },
-      {
-        orientation: 'vertical',
-        coordinate: rect.right - radius,
-        from: rect.top + margin,
-        to: rect.bottom - margin,
-        reference: (x, y) => [x - 4, y]
-      },
-      {
-        orientation: 'horizontal',
-        coordinate: rect.top + radius,
-        from: rect.left + margin,
-        to: rect.right - margin,
-        reference: (x, y) => [x, y + 4]
-      },
-      {
-        orientation: 'horizontal',
-        coordinate: rect.bottom - radius,
-        from: rect.left + margin,
-        to: rect.right - margin,
-        reference: (x, y) => [x, y - 4]
-      }
+      { from: rect.top + rect.height * 0.22, to: rect.bottom - rect.height * 0.22, inside: (value) => [rect.left + 2, value], outside: (value) => [rect.left - 2, value] },
+      { from: rect.top + rect.height * 0.22, to: rect.bottom - rect.height * 0.22, inside: (value) => [rect.right - 2, value], outside: (value) => [rect.right + 2, value] },
+      { from: rect.left + rect.width * 0.22, to: rect.right - rect.width * 0.22, inside: (value) => [value, rect.top + 2], outside: (value) => [value, rect.top - 2] },
+      { from: rect.left + rect.width * 0.22, to: rect.right - rect.width * 0.22, inside: (value) => [value, rect.bottom - 2], outside: (value) => [value, rect.bottom + 2] }
     ];
-    const repairedPaperContrasts = [];
-    let repairedPixels = 0;
-    let yardPixelsAfter = 0;
+    let sampled = 0;
+    let backgroundLike = 0;
     for (const side of sides) {
-      for (let delta = -2; delta <= 2; delta += 1) {
-        const cross = Math.round(side.coordinate) + delta;
-        for (let along = Math.ceil(side.from); along <= Math.floor(side.to); along += 1) {
-          const x = side.orientation === 'vertical' ? cross : along;
-          const y = side.orientation === 'vertical' ? along : cross;
-          const [referenceX, referenceY] = side.reference(x, y);
-          const beforeLine = pixel(before, x, y);
-          const afterLine = pixel(after, x, y);
-          if (rgbDiff(beforeLine, afterLine) <= 2) continue;
-          repairedPixels += 1;
-          if (isYard(afterLine)) yardPixelsAfter += 1;
-          const afterPaper = pixel(after, referenceX, referenceY);
-          if (isPaper(afterLine) && isPaper(afterPaper)) {
-            repairedPaperContrasts.push(rgbDiff(afterLine, afterPaper));
-          }
-        }
+      const step = Math.max(1, Math.floor((side.to - side.from) / 80));
+      for (let value = Math.ceil(side.from); value <= Math.floor(side.to); value += step) {
+        sampled += 1;
+        const inside = side.inside(value);
+        const outside = side.outside(value);
+        if (rgbDiff(pixel(...inside), pixel(...outside)) <= 4) backgroundLike += 1;
       }
     }
-
-    let outerCornerPixels = 0;
-    let outerCornerChanges = 0;
-    const corners = [
-      { xFrom: rect.left, xTo: rect.left + radius, yFrom: rect.top, yTo: rect.top + radius, cx: rect.left + radius, cy: rect.top + radius },
-      { xFrom: rect.right - radius, xTo: rect.right, yFrom: rect.top, yTo: rect.top + radius, cx: rect.right - radius, cy: rect.top + radius },
-      { xFrom: rect.left, xTo: rect.left + radius, yFrom: rect.bottom - radius, yTo: rect.bottom, cx: rect.left + radius, cy: rect.bottom - radius },
-      { xFrom: rect.right - radius, xTo: rect.right, yFrom: rect.bottom - radius, yTo: rect.bottom, cx: rect.right - radius, cy: rect.bottom - radius }
-    ];
-    for (const corner of corners) {
-      for (let y = Math.ceil(corner.yFrom); y < Math.floor(corner.yTo); y += 1) {
-        for (let x = Math.ceil(corner.xFrom); x < Math.floor(corner.xTo); x += 1) {
-          if (Math.hypot(x - corner.cx, y - corner.cy) <= radius + 1.25) continue;
-          outerCornerPixels += 1;
-          if (rgbDiff(pixel(before, x, y), pixel(after, x, y)) > 1) outerCornerChanges += 1;
+    const backgroundLikeRatio = sampled ? backgroundLike / sampled : 1;
+    assert.ok(sampled >= 24, `${label}:${name}: edge fringe audit had too few samples`);
+    assert.ok(backgroundLikeRatio < 0.7, `${label}:${name}: background-like blank band or fringe remained at the frame edge (${backgroundLikeRatio.toFixed(3)})`);
+    let lightSidePixels = 0;
+    let sidePixels = 0;
+    if (name === 'strokes') {
+      for (let y = Math.ceil(rect.top + rect.height * 0.12); y <= Math.floor(rect.bottom - rect.height * 0.12); y += 1) {
+        for (const x of [rect.left + 1, rect.right - 1]) {
+          const rgb = pixel(x, y);
+          sidePixels += 1;
+          if (Math.min(...rgb) >= 242 && Math.max(...rgb) - Math.min(...rgb) <= 18) lightSidePixels += 1;
         }
       }
+      assert.ok(sidePixels >= 40, `${label}:strokes: white-side-margin audit had too few samples`);
+      assert.ok(lightSidePixels / sidePixels < 0.03, `${label}:strokes: generated white side margin remained visible at runtime`);
     }
-
-    const adjacentPaperDifference = repairedPaperContrasts.length
-      ? repairedPaperContrasts.reduce((sum, value) => sum + value, 0) / repairedPaperContrasts.length
-      : 0;
-    if (usesShortLandscapeFrame) {
-      assert.ok(repairedPixels > 0, `${label}:${name}: controlled A/B found no transparent slice pixels to back`);
-    }
-    assert.ok(
-      adjacentPaperDifference <= 3,
-      `${label}:${name}: repaired seam differs from adjacent paper by ${adjacentPaperDifference.toFixed(2)} RGB levels`
-    );
-    assert.equal(yardPixelsAfter, 0, `${label}:${name}: yard color still shows through the repaired slice hairline`);
-    assert.equal(outerCornerChanges, 0, `${label}:${name}: rounded same-host underlay leaked into an outer transparent corner`);
-    report[name] = { repairedPixels, adjacentPaperDifference, yardPixelsAfter, outerCornerPixels, outerCornerChanges };
+    report[name] = { sampled, backgroundLike, backgroundLikeRatio, sidePixels, lightSidePixels };
   }
   return report;
 }
@@ -614,7 +490,7 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
 }
 
 (async () => {
-  await auditWhiteFrameMasters();
+  await auditOwlFrameAssets();
   const { server, base } = await startServer();
   const browser = await chromium.launch({ headless: true });
   const viewports = [
@@ -713,6 +589,9 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
         assert.match(portraitState.orientationCopy, /よこむきに してね/);
         assert.equal(portraitState.overflowX, false);
         assert.deepEqual(portraitState.values, seededModeBytes, 'portrait must not rewrite mode snapshots');
+        if (screenshotDir) {
+          await page.screenshot({ path: path.join(screenshotDir, 'main-portrait-390x844.png'), animations: 'disabled' });
+        }
         await context.close();
         continue;
       }
@@ -768,10 +647,15 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
             selector,
             pseudo,
             display: style.display,
+            visibility: style.visibility,
+            opacity: style.opacity,
             content: style.content,
             backgroundColor: style.backgroundColor,
             backgroundImage: style.backgroundImage,
             backgroundSize: style.backgroundSize,
+            backgroundPosition: style.backgroundPosition,
+            backgroundRepeat: style.backgroundRepeat,
+            backgroundClip: style.backgroundClip,
             borderImageSource: style.borderImageSource,
             borderImageSlice: style.borderImageSlice,
             borderImageWidth: style.borderImageWidth,
@@ -779,6 +663,8 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
             borderImageRepeat: style.borderImageRepeat,
             borderRadius: style.borderRadius,
             borderWidths: [style.borderTopWidth, style.borderRightWidth, style.borderBottomWidth, style.borderLeftWidth],
+            overflowX: style.overflowX,
+            overflowY: style.overflowY,
             boxShadow: style.boxShadow,
             filter: style.filter,
             transform: style.transform
@@ -822,6 +708,9 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
           uiFont: getComputedStyle(document.querySelector('#modeSwitchBtn')).fontFamily,
           writerFont: getComputedStyle(document.querySelector('#writerTarget')).fontFamily,
           wrapBackground: getComputedStyle(document.querySelector('#stage-wrap')).backgroundImage,
+          wrapBackgroundPosition: getComputedStyle(document.querySelector('#stage-wrap')).backgroundPosition,
+          wrapBackgroundSize: getComputedStyle(document.querySelector('#stage-wrap')).backgroundSize,
+          wrapBackgroundRepeat: getComputedStyle(document.querySelector('#stage-wrap')).backgroundRepeat,
           stageBackground: getComputedStyle(document.querySelector('#stage')).backgroundImage,
           stageBackgroundPosition: getComputedStyle(document.querySelector('#stage')).backgroundPosition,
           stageBackgroundSize: getComputedStyle(document.querySelector('#stage')).backgroundSize,
@@ -879,8 +768,8 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
               boxSizing: style.boxSizing
             };
           })(),
-          boardFrame: getComputedStyle(document.querySelector('#writingBoard')).borderImageSource,
-          promptFrame: getComputedStyle(document.querySelector('#promptText')).borderImageSource,
+          boardFrame: getComputedStyle(document.querySelector('#writingBoard')).backgroundImage,
+          promptFrame: getComputedStyle(document.querySelector('#promptText')).backgroundImage,
           peripheralFrames: ['.character-panel', '#companionCard', '.stroke-panel'].map((selector) => surfaceAudit(selector)),
           mainFrameSources: [
             getComputedStyle(document.querySelector('.character-panel')).borderImageSource,
@@ -1003,13 +892,19 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
       assert.ok(initial.modeCenterDelta < 0.1, `${viewport.name}: mode switch is not centered in the header`);
       assert.match(initial.uiFont, /Zen Maru Gothic/);
       assert.match(initial.writerFont, /Yu Mincho/);
-      assert.equal(initial.wrapBackground, 'none');
+      assert.match(initial.wrapBackground, /yard_background_wide_v2\.png/);
+      assert.equal(initial.wrapBackgroundPosition, '100% 50%');
+      assert.equal(initial.wrapBackgroundSize, 'cover');
+      assert.equal(initial.wrapBackgroundRepeat, 'no-repeat');
       assert.match(initial.stageBackground, /yard_background_wide_v2\.png/);
       assert.equal(initial.stageBackgroundPosition, '100% 50%');
       assert.equal(initial.stageBackgroundSize, 'cover');
       assert.equal(initial.stageBackgroundRepeat, 'no-repeat');
       assert.doesNotMatch(initial.scanlineBackground, /repeating-linear-gradient/);
-      assert.ok(Math.abs(initial.promptSafety.normalizedHeight - 101) <= 0.1, `${viewport.name}: shallow message frame height drifted`);
+      assert.ok(
+        Math.abs(initial.promptSafety.normalizedHeight - (627 * 201 / 1252)) <= 0.4,
+        `${viewport.name}: exact Owl-doctor strip ratio drifted`
+      );
       assert.ok(initial.promptSafety.paddingLeft >= 32, `${viewport.name}: prompt lost its 32px left safety area`);
       assert.ok(initial.promptSafety.paddingRight >= 32, `${viewport.name}: prompt lost its 32px right safety area`);
       assert.equal(initial.promptSafety.boxSizing, 'border-box', `${viewport.name}: prompt safety padding changed geometry`);
@@ -1036,26 +931,46 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
       assert.match(initial.starIconSurface.backgroundImage, /quizland_difficulty_star_gold_gpt_image2_20260623\.png/, `${viewport.name}: separate star icon is missing`);
       for (const surface of initial.imageOnlySurfaces) {
         const role = surfaceFrameRoles[surface.name];
-        const calibration = frameCalibrations[role];
-        const expectedFrameBox = `${usesShortLandscapeFrame ? calibration.shortWidth : calibration.normalWidth}px`;
-        assert.ok(
-          surface.borderImageSource.includes(path.basename(framePaths[role])),
-          `${viewport.name}:${surface.name} escaped its ${role} frame`
-        );
-        assert.equal(surface.borderImageSlice, `${calibration.slice} fill`, `${viewport.name}:${surface.name} slice drifted`);
-        assert.equal(surface.borderImageWidth, expectedFrameBox, `${viewport.name}:${surface.name} rail box width drifted`);
-        assert.equal(surface.borderImageOutset, '0', `${viewport.name}:${surface.name} frame changed geometry`);
-        assert.equal(surface.borderImageRepeat, 'stretch', `${viewport.name}:${surface.name} paper gained tiled seams`);
         assert.deepEqual(surface.borderWidths, ['0px', '0px', '0px', '0px'], `${viewport.name}:${surface.name} retained a CSS border`);
-        if (specialUnderlaySurfaceRoles[surface.name]) {
-          assert.equal(surface.backgroundColor, 'rgb(253, 252, 251)', `${viewport.name}:${surface.name} lost its seam-blocking paper underlay`);
-          assert.equal(surface.borderRadius, expectedFrameBox, `${viewport.name}:${surface.name} underlay lost its outer-corner clip`);
+        assert.equal(surface.backgroundColor, 'rgba(0, 0, 0, 0)', `${viewport.name}:${surface.name} retained a CSS paper layer`);
+        assert.equal(surface.boxShadow, 'none', `${viewport.name}:${surface.name} retained a rectangular CSS shadow`);
+        if (nativeBackgroundSurfaceRoles[surface.name]) {
+          const expectedRadii = { task: '14px', milmaru: '15px', message: '0px', writing: '22px' };
+          assert.ok(surface.backgroundImage.includes(path.basename(framePaths[role])), `${viewport.name}:${surface.name} lost its native-ratio ${role} art`);
+          assert.equal(surface.backgroundSize, 'contain', `${viewport.name}:${surface.name} native art stopped using contain`);
+          assert.equal(surface.borderImageSource, 'none', `${viewport.name}:${surface.name} gained a second sliced frame`);
+          assert.equal(surface.borderRadius, expectedRadii[role], `${viewport.name}:${surface.name} outer-corner clip drifted`);
+          assert.equal(surface.backgroundClip, 'border-box', `${viewport.name}:${surface.name} background escaped its host clip`);
+          if (role === 'task' || role === 'milmaru') {
+            assert.equal(surface.overflowX, 'hidden', `${viewport.name}:${surface.name} square image corners are no longer clipped`);
+            assert.equal(surface.overflowY, 'hidden', `${viewport.name}:${surface.name} square image corners are no longer clipped`);
+          }
+        } else if (role === 'stroke') {
+          assert.ok(surface.backgroundImage.includes(path.basename(framePaths.stroke)), `${viewport.name}:stroke lost its centered generated source`);
+          assert.equal(surface.backgroundSize, 'auto 100%', `${viewport.name}:stroke no longer uses a uniform height-fit crop`);
+          assert.equal(surface.backgroundPosition, '50% 50%', `${viewport.name}:stroke central frame is no longer centered`);
+          assert.equal(surface.backgroundRepeat, 'no-repeat', `${viewport.name}:stroke source unexpectedly tiled`);
+          assert.equal(surface.borderImageSource, 'none', `${viewport.name}:stroke crop gained a second 9-slice frame`);
+          assert.equal(surface.borderRadius, '12px', `${viewport.name}:stroke lost its modest Owl-like outer clip`);
+          assert.equal(surface.backgroundClip, 'border-box', `${viewport.name}:stroke crop escaped its rounded host`);
+          assert.equal(surface.overflowX, 'hidden', `${viewport.name}:stroke crop no longer clips its outer corners`);
+          assert.equal(surface.overflowY, 'hidden', `${viewport.name}:stroke crop no longer clips its outer corners`);
         } else {
+          const calibration = frameCalibrations.generic;
+          const expectedFrameBox = `${usesShortLandscapeFrame ? calibration.shortWidth : calibration.normalWidth}px`;
+          assert.ok(surface.borderImageSource.includes(path.basename(framePaths.generic)), `${viewport.name}:${surface.name} escaped the exact Quizland generic paper`);
+          assert.equal(surface.borderImageSlice, `${calibration.slice} fill`, `${viewport.name}:${surface.name} generic slice drifted`);
+          assert.equal(surface.borderImageWidth, expectedFrameBox, `${viewport.name}:${surface.name} generic rail width drifted`);
+          assert.equal(surface.borderImageOutset, '0', `${viewport.name}:${surface.name} generic frame changed geometry`);
+          assert.equal(surface.borderImageRepeat, 'stretch', `${viewport.name}:${surface.name} generic paper gained tiled seams`);
+          assert.equal(surface.backgroundImage, 'none', `${viewport.name}:${surface.name} retained a whole-image frame`);
           assert.equal(surface.backgroundColor, 'rgba(0, 0, 0, 0)', `${viewport.name}:${surface.name} retained a CSS paper layer`);
           assert.equal(surface.borderRadius, '0px', `${viewport.name}:${surface.name} gained an unrelated rounded CSS layer`);
         }
-        assert.equal(surface.backgroundImage, 'none', `${viewport.name}:${surface.name} retained a whole-image frame`);
-        assert.equal(surface.boxShadow, 'none', `${viewport.name}:${surface.name} retained a rectangular CSS shadow`);
+      }
+      for (const control of initial.imageOnlySurfaces.filter((surface) => surface.name === 'reset' || surface.name === 'done')) {
+        assert.equal(control.visibility, 'visible', `${viewport.name}:${control.name} must remain visible before an achievement hint`);
+        assert.equal(control.opacity, '1', `${viewport.name}:${control.name} must remain opaque before an achievement hint`);
       }
       for (const pseudo of initial.imageOnlyPseudos) {
         assert.equal(pseudo.backgroundColor, 'rgba(0, 0, 0, 0)', `${viewport.name}:${pseudo.selector}${pseudo.pseudo} paints a pseudo paper`);
@@ -1068,19 +983,11 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
         assert.equal(surface.boxShadow, 'none', `${viewport.name}:${surface.selector} retained a nested box shadow`);
       }
       assert.equal(initial.speechAfter.content, 'none', `${viewport.name}: companion speech tail returned as a second box`);
-      assert.ok(initial.writingBoardLayers.board.borderImageSource.includes(path.basename(framePaths.writing)), `${viewport.name}: writing board lost its direct master`);
-      assert.equal(
-        initial.writingBoardLayers.board.borderImageWidth,
-        `${usesShortLandscapeFrame ? frameCalibrations.writing.shortWidth : frameCalibrations.writing.normalWidth}px`,
-        `${viewport.name}: writing board rail width drifted`
-      );
-      assert.equal(initial.writingBoardLayers.board.backgroundColor, 'rgb(253, 252, 251)', `${viewport.name}: writing board seam underlay disappeared`);
-      assert.equal(
-        initial.writingBoardLayers.board.borderRadius,
-        `${usesShortLandscapeFrame ? frameCalibrations.writing.shortWidth : frameCalibrations.writing.normalWidth}px`,
-        `${viewport.name}: writing board underlay outer clip drifted`
-      );
-      assert.equal(initial.writingBoardLayers.board.backgroundImage, 'none', `${viewport.name}: board host retained a whole image`);
+      assert.equal(initial.writingBoardLayers.board.borderImageSource, 'none', `${viewport.name}: writing board gained a second sliced master`);
+      assert.ok(initial.writingBoardLayers.board.backgroundImage.includes(path.basename(framePaths.writing)), `${viewport.name}: writing board lost its native-ratio Owl-doctor art`);
+      assert.equal(initial.writingBoardLayers.board.backgroundSize, 'contain', `${viewport.name}: writing board art is stretched`);
+      assert.equal(initial.writingBoardLayers.board.backgroundColor, 'rgba(0, 0, 0, 0)', `${viewport.name}: writing board gained a CSS paper underlay`);
+      assert.equal(initial.writingBoardLayers.board.borderRadius, '22px', `${viewport.name}: writing board square source corners are no longer clipped`);
       assert.equal(initial.writingBoardLayers.frame.content, 'none', `${viewport.name}: old writing pseudo-frame returned`);
       assert.equal(initial.writingBoardLayers.frame.display, 'none', `${viewport.name}: old writing pseudo-frame is visible`);
       assert.equal(initial.writingBoardLayers.frame.borderImageSource, 'none', `${viewport.name}: old writing pseudo-frame kept border art`);
@@ -1136,6 +1043,19 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
           assert.ok(initial.textAudits[name].visualFontSize >= 13.5, `${viewport.name}:${name} primary text is below 13.5px`);
         }
       }
+      const frameRatios = {
+        characters: 995 / 1581,
+        companion: 1305 / 1206,
+        prompt: 1252 / 201,
+        board: 1323 / 1189,
+        strokes: 496 / 1759
+      };
+      for (const [name, ratio] of Object.entries(frameRatios)) {
+        assert.ok(
+          Math.abs(initial.rects[name].width / initial.rects[name].height - ratio) < 0.001,
+          `${viewport.name}:${name} host ratio drifted`
+        );
+      }
       assert.ok(
         Math.abs(initial.rects.writer.width / initial.rects.board.width - 0.785) < 0.001,
         `${viewport.name}: story frame changed the writer/board ratio`
@@ -1145,7 +1065,7 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
         `${viewport.name}: HanziWriter size drifted from its target`
       );
       if (viewport.name === 'design-size') {
-        assert.ok(Math.abs(initial.rects.writer.width - 502.390625) < 0.02, `design-size: writer target drifted from baseline (${initial.rects.writer.width})`);
+        assert.ok(Math.abs(initial.rects.writer.width - 502.3125) < 0.02, `design-size: writer target drifted from Owl-doctor board baseline (${initial.rects.writer.width})`);
         assert.equal(initial.writerRuntime.currentWriterSize, 502, 'design-size: HanziWriter runtime size drifted');
         assert.equal(initial.writerRuntime.totalMaskCells, 2054, 'design-size: guide mask drifted');
         assert.deepEqual(initial.writerRuntime.strokeMaskCells, [341, 442, 1271], 'design-size: per-stroke masks drifted');
@@ -1160,6 +1080,9 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
       assert.ok(Math.abs(initial.rects.settings.width / initial.rects.settings.height - 1) < 0.001, `${viewport.name}: canonical settings is not square`);
       assert.ok(initial.visibleImages.every((image) => image.complete && image.width > 0), `${viewport.name}: visible image failed to decode`);
       const initialScreenshot = await page.screenshot();
+      if (screenshotDir) {
+        fs.writeFileSync(path.join(screenshotDir, `main-${viewport.name}-${viewport.width}x${viewport.height}.png`), initialScreenshot);
+      }
       await assertNoWhiteCornerRectangles(initialScreenshot, initial.frameCornerRects, `${viewport.name}:main`);
       await auditSpecialFramePaperUnderlay(
         page,
@@ -1184,7 +1107,7 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
         );
       }
       assert.equal(
-        initial.resources.some((url) => /\/storybook\/(?:frame-family|settings-gauge-family)\//.test(url)),
+        initial.resources.some((url) => /\/storybook\/(?:white-ornate-frame-family|frame-family|settings-gauge-family)\//.test(url)),
         false,
         `${viewport.name}: superseded frame art was requested`
       );
@@ -1355,9 +1278,9 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
           assert.equal(audit.borderImageWidth, `${expectedTintInset}px`, `${viewport.name}:${name} frame width drifted`);
           assert.ok(audit.inset.every((value) => Math.abs(value - expectedTintInset) < 0.1), `${viewport.name}:${name} tint escaped its paper well`);
         }
-        assert.equal(stateTintAudit.tab.tint, 'rgba(247, 229, 167, 0.68)', `${viewport.name}: active kana tint drifted`);
-        assert.equal(stateTintAudit.activeCharacter.tint, 'rgba(247, 229, 167, 0.68)', `${viewport.name}: active character tint drifted`);
-        assert.equal(stateTintAudit.doneCharacter.tint, 'rgba(222, 234, 200, 0.72)', `${viewport.name}: completed character tint drifted`);
+        assert.equal(stateTintAudit.tab.tint, 'rgba(239, 216, 154, 0.42)', `${viewport.name}: active kana tint drifted`);
+        assert.equal(stateTintAudit.activeCharacter.tint, 'rgba(239, 216, 154, 0.42)', `${viewport.name}: active character tint drifted`);
+        assert.equal(stateTintAudit.doneCharacter.tint, 'rgba(191, 215, 177, 0.46)', `${viewport.name}: completed character tint drifted`);
       }
       assert.equal(initial.resources.some((url) => url.includes('stage-bg.webp')), false, `${viewport.name}: QuizLand background was requested`);
       const initialMilmaruResources = initial.resources
@@ -1409,7 +1332,11 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
               unifiedFrameDimensions[name],
               `${asset.src}: native dimensions drifted`
             );
-            assert.ok(asset.transparentCorners >= 3, `${asset.src}: transparent outer corners were lost`);
+            if (asset.src.includes('/quizland/')) {
+              assert.ok(asset.transparentCorners >= 3, `${asset.src}: canonical Quizland transparent corners were lost`);
+            } else {
+              assert.equal(asset.transparentCorners, 0, `${asset.src}: accepted RGB special frame bytes unexpectedly changed alpha`);
+            }
           }
         }
 
@@ -1590,6 +1517,9 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
             paddingLeft: parseFloat(style.paddingLeft),
             paddingRight: parseFloat(style.paddingRight),
             boxSizing: style.boxSizing,
+            backgroundImage: style.backgroundImage,
+            backgroundSize: style.backgroundSize,
+            borderImageSource: style.borderImageSource,
             messageText: rectOf('#messageBox'),
             textRect: (() => {
               const rect = messageRange.getBoundingClientRect();
@@ -1609,7 +1539,10 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
         assert.equal(feedback.display, 'flex', `${viewport.name}:${label} feedback display`);
         assert.equal(feedback.visibility, 'visible', `${viewport.name}:${label} feedback visibility`);
         assert.equal(feedback.opacity, '1', `${viewport.name}:${label} feedback opacity`);
-        assert.ok(Math.abs(feedback.normalizedHeight - 101) <= 0.1, `${viewport.name}:${label} shallow feedback height drifted`);
+        assert.ok(Math.abs(feedback.normalizedHeight - (627 * 201 / 1252)) <= 0.4, `${viewport.name}:${label} exact Owl-doctor feedback ratio drifted`);
+        assert.ok(feedback.backgroundImage.includes(path.basename(framePaths.message)), `${viewport.name}:${label} feedback lost the exact Owl-doctor strip`);
+        assert.equal(feedback.backgroundSize, 'contain', `${viewport.name}:${label} feedback strip is stretched`);
+        assert.equal(feedback.borderImageSource, 'none', `${viewport.name}:${label} feedback gained a second sliced frame`);
         assert.ok(feedback.paddingLeft >= 32, `${viewport.name}:${label} feedback lost its left text safety area`);
         assert.ok(feedback.paddingRight >= 32, `${viewport.name}:${label} feedback lost its right text safety area`);
         assert.equal(feedback.boxSizing, 'border-box', `${viewport.name}:${label} feedback safety padding changed geometry`);
@@ -1674,6 +1607,13 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
           inert: resultOverlay.inert,
           activeId: document.activeElement && document.activeElement.id,
           backgroundInert: getResultBackgroundElements().map((element) => element.inert),
+          feedbackControlPresentation: [resetBtn, doneBtn].map((element) => ({
+            visibility: getComputedStyle(element).visibility,
+            opacity: getComputedStyle(element).opacity,
+            pointerEvents: getComputedStyle(element).pointerEvents,
+            borderImageSource: getComputedStyle(element).borderImageSource,
+            backgroundImage: getComputedStyle(element).backgroundImage
+          })),
           wrapScroll: {
             left: document.querySelector('#stage-wrap').scrollLeft,
             top: document.querySelector('#stage-wrap').scrollTop
@@ -1734,6 +1674,10 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
       assert.equal(openedResult.inert, false, `${viewport.name}: open result remains inert`);
       assert.equal(openedResult.activeId, 'modalRetryBtn', `${viewport.name}: result primary action did not receive focus`);
       assert.ok(openedResult.backgroundInert.every(Boolean), `${viewport.name}: result background remains interactive`);
+      assert.deepEqual(openedResult.feedbackControlPresentation, [
+        { visibility: 'visible', opacity: '0', pointerEvents: 'none', borderImageSource: 'none', backgroundImage: 'none' },
+        { visibility: 'visible', opacity: '0', pointerEvents: 'none', borderImageSource: 'none', backgroundImage: 'none' }
+      ], `${viewport.name}: achievement hint left a second operation frame protruding`);
       assert.deepEqual(openedResult.wrapScroll, { left: 0, top: 0 }, `${viewport.name}: result focus scrolled the stage wrapper`);
       assert.ok(Math.abs(openedResult.stageGeometry.left - initial.stageGeometry.left) < 0.1, `${viewport.name}: result focus shifted the stage horizontally`);
       assert.ok(Math.abs(openedResult.stageGeometry.top - initial.stageGeometry.top) < 0.1, `${viewport.name}: result focus shifted the stage vertically`);
@@ -1741,14 +1685,10 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
       assert.equal(openedResult.hint.shown, true, `${viewport.name}: achievement notice timing changed`);
       assert.equal(openedResult.hint.opacity, '1', `${viewport.name}: achievement notice is not visible`);
       assert.match(openedResult.hint.text, /あと \d+ で/);
-      assert.equal(openedResult.hint.backgroundImage, 'none');
-      assert.ok(openedResult.hint.borderImageSource.includes(path.basename(framePaths.generic)));
-      assert.equal(openedResult.hint.borderImageSlice, `${frameCalibrations.generic.slice} fill`);
-      assert.equal(
-        openedResult.hint.borderImageWidth,
-        `${usesShortLandscapeFrame ? frameCalibrations.generic.shortWidth : frameCalibrations.generic.normalWidth}px`
-      );
-      assert.equal(openedResult.hint.borderImageRepeat, 'stretch');
+      assert.ok(openedResult.hint.backgroundImage.includes(path.basename(framePaths.message)));
+      assert.equal(openedResult.hint.backgroundSize, 'contain');
+      assert.equal(openedResult.hint.borderImageSource, 'none');
+      assert.ok(Math.abs(openedResult.hint.width / openedResult.hint.height - 1252 / 201) < 0.01);
       assert.equal(openedResult.hint.borderRadius, '0px');
       assert.equal(openedResult.hint.boxShadow, 'none');
       assert.equal(openedResult.hint.pointerEvents, 'none');
@@ -1951,7 +1891,7 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
         assert.equal(choice.surface.boxShadow, 'none', `${viewport.name}:chooser-${index + 1} paints a CSS shadow`);
       });
       assert.ok(chooser.choices.every((choice) => choice.surface.backgroundImage === 'none'), `${viewport.name}:chooser choices replaced the fixed base art`);
-      assert.equal(chooser.choices[0].tint.backgroundColor, 'rgb(247, 229, 167)', `${viewport.name}:current mode lost its paper-well tint`);
+      assert.equal(chooser.choices[0].tint.backgroundColor, 'rgba(239, 216, 154, 0.42)', `${viewport.name}:current mode lost its paper-well tint`);
       assert.equal(chooser.choices[0].tint.opacity, '0.72', `${viewport.name}:current mode tint opacity drifted`);
       assert.ok(chooser.choices.slice(1).every((choice) => choice.tint.backgroundColor === 'rgba(0, 0, 0, 0)'), `${viewport.name}:inactive chooser well retained tint`);
       assert.ok(Math.abs(chooser.choices[0].button.top - chooser.choices[1].button.top) < 0.1, `${viewport.name}:chooser top row is uneven`);
@@ -2024,6 +1964,9 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
         };
       });
       assert.equal(wordClue.chooserVisible, false, `${viewport.name}: chooser did not settle`);
+      if (screenshotDir && viewport.name === 'design-size') {
+        await page.screenshot({ path: path.join(screenshotDir, 'mode-word-hole-1600x900.png'), animations: 'disabled' });
+      }
       assert.ok(wordClue.blankSurface, `${viewport.name}: word-hole mode did not render its blank tile`);
       assert.equal(wordClue.blankSurface.backgroundImage, 'none', `${viewport.name}: word blank retained a whole-image frame`);
       assert.ok(wordClue.blankSurface.borderImageSource.includes(path.basename(framePaths.generic)), `${viewport.name}: word blank escaped the generic master`);
@@ -2070,6 +2013,18 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
         currentCells: document.querySelectorAll('.daily-clue-cell.current').length,
         progress: modeProgressCount.textContent,
         overlayOpen: isResultOverlayOpen(),
+        progressDots: Array.from(document.querySelectorAll('.mode-progress-dot')).map((dot) => {
+          const style = getComputedStyle(dot);
+          return {
+            width: style.width,
+            height: style.height,
+            borderRadius: style.borderRadius,
+            borderImageSource: style.borderImageSource,
+            borderWidths: [style.borderTopWidth, style.borderRightWidth, style.borderBottomWidth, style.borderLeftWidth],
+            contentWidth: parseFloat(style.width) - parseFloat(style.borderLeftWidth) - parseFloat(style.borderRightWidth),
+            contentHeight: parseFloat(style.height) - parseFloat(style.borderTopWidth) - parseFloat(style.borderBottomWidth)
+          };
+        }),
         surfaces: Array.from(document.querySelectorAll('.daily-clue-cell')).map((cell) => {
           const style = getComputedStyle(cell);
           return {
@@ -2087,6 +2042,18 @@ async function auditMilmaruInitialNetwork(browser, base, state) {
       assert.equal(dailyState.currentCells, 1, `${viewport.name}: daily mode current character is ambiguous`);
       assert.match(dailyState.progress, /1 \/ 3/, `${viewport.name}: daily progress is wrong`);
       assert.equal(dailyState.overlayOpen, false, `${viewport.name}: daily mode inherited a stale result`);
+      if (screenshotDir && viewport.name === 'design-size') {
+        await page.screenshot({ path: path.join(screenshotDir, 'mode-daily-three-1600x900.png'), animations: 'disabled' });
+      }
+      assert.equal(dailyState.progressDots.length, 3, `${viewport.name}: daily mode progress dots disappeared`);
+      for (const [index, dot] of dailyState.progressDots.entries()) {
+        assert.equal(dot.width, '28px', `${viewport.name}: progress dot ${index + 1} width collapsed`);
+        assert.equal(dot.height, '28px', `${viewport.name}: progress dot ${index + 1} height collapsed`);
+        assert.equal(dot.borderRadius, '50%', `${viewport.name}: progress dot ${index + 1} stopped being circular`);
+        assert.equal(dot.borderImageSource, 'none', `${viewport.name}: progress dot ${index + 1} incorrectly gained an 8px 9-slice rail`);
+        assert.deepEqual(dot.borderWidths, ['2px', '2px', '2px', '2px'], `${viewport.name}: progress dot ${index + 1} plain outline drifted`);
+        assert.ok(dot.contentWidth >= 20 && dot.contentHeight >= 20, `${viewport.name}: progress dot ${index + 1} content box collapsed`);
+      }
       assert.equal(dailyState.surfaces.length, 3, `${viewport.name}: daily tile surface audit missed a cell`);
       for (const [index, surface] of dailyState.surfaces.entries()) {
         assert.equal(surface.backgroundImage, 'none', `${viewport.name}: daily tile ${index + 1} retained a whole-image frame`);

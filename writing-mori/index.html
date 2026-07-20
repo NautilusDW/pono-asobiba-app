@@ -105,18 +105,14 @@
   --round-font: 'Zen Maru Gothic', 'Hiragino Maru Gothic ProN', sans-serif;
   --moji-font: 'Yu Mincho', 'Hiragino Mincho ProN', 'Hiragino Mincho Pro', serif;
   --story-yard-bg: url('../assets/images/mojikko/care/yard_background_wide_v2.png');
-  --story-frame-master: url('../assets/images/mojikko/writing/storybook/white-ornate-frame-family/00_mojikko_white_frame_master.png');
-  --story-frame-task: url('../assets/images/mojikko/writing/storybook/white-ornate-frame-family/01_mojikko_task_frame_master.png');
-  --story-frame-milmaru: url('../assets/images/mojikko/writing/storybook/white-ornate-frame-family/02_mojikko_milmaru_frame_master.png');
-  --story-frame-message: url('../assets/images/mojikko/writing/storybook/white-ornate-frame-family/03_mojikko_message_frame_master.png');
-  --story-frame-writing: url('../assets/images/mojikko/writing/storybook/white-ornate-frame-family/04_mojikko_writing_board_frame_master.png');
-  --story-frame-stroke: url('../assets/images/mojikko/writing/storybook/white-ornate-frame-family/05_mojikko_stroke_order_frame_master.png');
-  --story-frame-box: 8.7px;
-  --story-frame-task-box: 34.2px;
-  --story-frame-milmaru-box: 32.9px;
-  --story-frame-message-box: 25.2px;
-  --story-frame-writing-box: 33px;
-  --story-frame-stroke-box: 35px;
+  --owl-strip-frame: url('../assets/images/quizland/Fukuro_frame_003.webp');
+  --owl-generic-frame: url('../assets/images/quizland/progress-num.png');
+  --owl-special-task: url('../assets/images/mojikko/writing/storybook/owl-riddle-frame-family/01_word_hole_task_995x1581.png');
+  --owl-special-milmaru: url('../assets/images/mojikko/writing/storybook/owl-riddle-frame-family/02_milmaru_reward_1305x1206.png');
+  --owl-special-writing: url('../assets/images/mojikko/writing/storybook/owl-riddle-frame-family/03_writing_board_1323x1189.png');
+  --owl-special-stroke: url('../assets/images/mojikko/writing/storybook/owl-riddle-frame-family/04_stroke_order_centered_941x1672.png');
+  --owl-generic-slice: 18 fill;
+  --owl-generic-rail: 8px;
   --story-star: url('../assets/images/quizland/quizland_difficulty_star_gold_gpt_image2_20260623.png');
   --story-cookie: url('../assets/images/Bento_parts/cookie.webp');
   --story-gohan: url('../assets/images/nazonazo-tunnel/quiz-art/quiz_onigiri_20260714.webp');
@@ -1836,7 +1832,7 @@ html, body {
 }
 
 #stage-wrap {
-  background: #243b33;
+  background: var(--story-yard-bg) right center / cover no-repeat;
 }
 
 #stage {
@@ -2569,7 +2565,7 @@ html, body {
 
 .stroke-panel {
   grid-template-rows: 48px 1fr 154px;
-  border-image-source: var(--story-frame-stroke);
+  border-image-source: var(--owl-special-stroke);
   border-image-slice: 72 20 52;
   border-image-width: 42px 22px 30px;
 }
@@ -3182,7 +3178,7 @@ html, body {
   align-self: center;
   padding: 57px 17px 24px;
   grid-template-rows: 52px 1fr 132px;
-  background-image: var(--story-frame-stroke) !important;
+  background-image: var(--owl-special-stroke) !important;
 }
 
 .panel-title {
@@ -3735,7 +3731,7 @@ html, body {
   aspect-ratio: 496 / 1759;
   padding: 26px 23px 24px;
   grid-template-rows: 52px 1fr 132px;
-  background-image: var(--story-frame-stroke) !important;
+  background-image: var(--owl-special-stroke) !important;
 }
 
 .panel-title,
@@ -4254,22 +4250,110 @@ body #ach-next-hint.show {
 }
 
 /* --------------------------------------------------------------------------
-   White-paper ornate frame family (batch:1328d)
-   Generic controls share one clean white-paper master. The task, Milmaru,
-   message, writing and stroke-order surfaces each use a dedicated carved
-   corner master. Every source remains a zero-layout 9-slice border image;
-   per-source slice/width calibration keeps the visible wood rail consistent.
-   A same-host rounded white underlay sits behind each special image so a
-   transparent raster hairline cannot reveal the yard at the slice boundary.
-   Inner labels and chooser quadrants stay unframed to avoid card-in-card UI.
+   Owl-doctor runtime materials (batch:1328e)
+   The message strip is the exact Quizland frame at its native 1252:201 ratio.
+   Three role-specific windows also keep their delivered native ratios. The
+   stroke-order source keeps its generated ratio and is uniformly height-fit;
+   its intentionally blank side margins crop outside the tall host. Small
+   reusable controls use Quizland's progress-number paper as a true 9-slice;
+   the source image itself is never stretched as one whole rectangle.
    -------------------------------------------------------------------------- */
 
 .character-panel,
 .companion-card,
-.stroke-panel,
-.prompt-bar,
-.message-box,
 .writing-board,
+.prompt-bar,
+.message-box {
+  border: 0 !important;
+  border-image: none !important;
+  border-radius: 0 !important;
+  background-color: transparent !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-size: contain !important;
+  box-shadow: none !important;
+  image-rendering: auto;
+}
+
+.character-panel {
+  width: 292px;
+  height: auto;
+  aspect-ratio: 995 / 1581;
+  padding: 31px 30px 33px 28px;
+  border-radius: 14px !important;
+  background-clip: border-box !important;
+  background-image: var(--owl-special-task) !important;
+  overflow: hidden;
+}
+
+.companion-card {
+  width: 292px;
+  height: auto;
+  min-height: 0;
+  aspect-ratio: 1305 / 1206;
+  padding: 31px 28px 27px 30px;
+  border-radius: 15px !important;
+  background-clip: border-box !important;
+  background-image: var(--owl-special-milmaru) !important;
+  overflow: hidden;
+}
+
+.stroke-panel {
+  width: 212px;
+  height: auto;
+  aspect-ratio: 496 / 1759;
+  padding: 26px 23px 24px;
+  border: 0 !important;
+  border-radius: 12px !important;
+  border-image: none !important;
+  background-image: var(--owl-special-stroke) !important;
+  background-color: transparent !important;
+  background-position: center !important;
+  background-repeat: no-repeat !important;
+  background-size: auto 100% !important;
+  background-clip: border-box !important;
+  overflow: hidden;
+  box-shadow: none !important;
+  image-rendering: auto;
+}
+
+.writing-board {
+  width: auto;
+  height: 100%;
+  max-width: min(640px, 100%);
+  max-height: 575.104px;
+  aspect-ratio: 1323 / 1189;
+  border-radius: 22px !important;
+  background-clip: border-box !important;
+  background-image: var(--owl-special-writing) !important;
+  overflow: visible;
+}
+
+.prompt-bar,
+.message-box {
+  width: 627px;
+  height: auto;
+  min-height: 0;
+  aspect-ratio: 1252 / 201;
+  box-sizing: border-box;
+  padding-inline: 54px !important;
+  background-image: var(--owl-strip-frame) !important;
+}
+
+.writing-board::before,
+.writing-board::after,
+.prompt-bar::before,
+.prompt-bar::after,
+.message-box::before,
+.message-box::after {
+  content: none !important;
+  display: none !important;
+  background: none !important;
+  border: 0 !important;
+  border-image: none !important;
+  box-shadow: none !important;
+}
+
 .star-box,
 #modeSwitchBtn,
 #resetBtn,
@@ -4280,15 +4364,15 @@ body #ach-next-hint.show {
 .char-button,
 .word-clue-cell.blank,
 .daily-clue-cell,
+.mode-progress-count,
 .settings-popover,
 .mode-choice-card,
-.result-card,
-body #ach-next-hint {
+.result-card {
   border: 0 solid transparent !important;
   border-radius: 0 !important;
-  border-image-source: var(--story-frame-master) !important;
-  border-image-slice: 55 fill !important;
-  border-image-width: var(--story-frame-box) !important;
+  border-image-source: var(--owl-generic-frame) !important;
+  border-image-slice: var(--owl-generic-slice) !important;
+  border-image-width: var(--owl-generic-rail) !important;
   border-image-outset: 0 !important;
   border-image-repeat: stretch !important;
   background: none !important;
@@ -4297,60 +4381,54 @@ body #ach-next-hint {
   image-rendering: auto;
 }
 
-.character-panel {
-  border-image-source: var(--story-frame-task) !important;
-  border-image-slice: 242 fill !important;
-  border-image-width: var(--story-frame-task-box) !important;
-  border-radius: var(--story-frame-task-box) !important;
-  background-color: #fdfcfb !important;
-}
-
-.companion-card {
-  border-image-source: var(--story-frame-milmaru) !important;
-  border-image-slice: 230 fill !important;
-  border-image-width: var(--story-frame-milmaru-box) !important;
-  border-radius: var(--story-frame-milmaru-box) !important;
-  background-color: #fdfcfb !important;
-}
-
-.prompt-bar,
-.message-box {
-  border-image-source: var(--story-frame-message) !important;
-  border-image-slice: 139 fill !important;
-  border-image-width: var(--story-frame-message-box) !important;
-  border-radius: var(--story-frame-message-box) !important;
-  background-color: #fdfcfb !important;
-  box-sizing: border-box;
-  padding-inline: 52px !important;
-}
-
-.writing-board {
-  border-image-source: var(--story-frame-writing) !important;
-  border-image-slice: 230 fill !important;
-  border-image-width: var(--story-frame-writing-box) !important;
-  border-radius: var(--story-frame-writing-box) !important;
-  background-color: #fdfcfb !important;
-}
-
-.stroke-panel {
-  border-image-source: var(--story-frame-stroke) !important;
-  border-image-slice: 240 fill !important;
-  border-image-width: var(--story-frame-stroke-box) !important;
-  border-radius: var(--story-frame-stroke-box) !important;
-  background-color: #fdfcfb !important;
-}
-
-.writing-board::before,
-.writing-board::after {
-  content: none !important;
-  display: none !important;
-  background: none !important;
+body #ach-next-hint {
+  aspect-ratio: 1252 / 201;
   border: 0 !important;
   border-image: none !important;
+  background: var(--owl-strip-frame) center / contain no-repeat !important;
+  background-color: transparent !important;
   box-shadow: none !important;
+  image-rendering: auto;
+}
+
+body:has(#ach-next-hint.show) #stage .feedback-row .pixel-button {
+  opacity: 0;
+  pointer-events: none;
+  border-image-source: none !important;
+  background: none !important;
+}
+
+#modeSwitchBtn,
+#resetBtn,
+#doneBtn,
+#careBtn,
+#modalRetryBtn {
+  min-width: 44px;
+  min-height: 44px;
+  aspect-ratio: auto;
+}
+
+#modeSwitchBtn {
+  width: 270px;
+  height: 64px;
+}
+
+#resetBtn,
+#doneBtn {
+  height: 72px;
+}
+
+#careBtn,
+#modalRetryBtn {
+  height: 84px;
 }
 
 .star-box {
+  width: 190px;
+  min-width: 190px;
+  height: 64px;
+  min-height: 44px;
+  aspect-ratio: auto;
   padding: 8px 20px;
   gap: 9px;
 }
@@ -4363,7 +4441,24 @@ body #ach-next-hint {
   background: var(--story-star) center / contain no-repeat;
 }
 
-.settings-menu-item {
+.kana-tab,
+.char-button,
+.char-spacer {
+  min-width: 44px;
+  min-height: 44px;
+  height: 52px;
+  aspect-ratio: auto;
+}
+
+#stage.compact .char-row {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.settings-menu-item,
+.mode-choice-button,
+.mode-choice-button.active,
+.mode-choice-close {
   border: 0 !important;
   border-image: none !important;
   border-radius: 0 !important;
@@ -4373,29 +4468,19 @@ body #ach-next-hint {
 
 .settings-menu-item:hover,
 .settings-menu-item:focus-visible {
-  background: rgba(255, 239, 183, 0.68) !important;
+  background: rgba(246, 229, 183, 0.52) !important;
 }
 
 .mode-choice-buttons {
-  inset: var(--story-frame-box);
-}
-
-.mode-choice-button,
-.mode-choice-button.active,
-.mode-choice-close {
-  border: 0 solid transparent !important;
-  border-image: none !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  box-shadow: none !important;
+  inset: var(--owl-generic-rail);
 }
 
 .mode-choice-button:nth-child(odd) {
-  border-right: 1px solid rgba(130, 91, 49, 0.34) !important;
+  border-right: 1px solid rgba(96, 67, 35, 0.28) !important;
 }
 
 .mode-choice-button:nth-child(-n + 2) {
-  border-bottom: 1px solid rgba(130, 91, 49, 0.34) !important;
+  border-bottom: 1px solid rgba(96, 67, 35, 0.28) !important;
 }
 
 .mode-choice-button::before,
@@ -4409,8 +4494,8 @@ body #ach-next-hint {
 
 .kana-tab::before,
 .char-button::before {
-  inset: var(--story-frame-box) !important;
-  border-radius: 8px !important;
+  inset: var(--owl-generic-rail) !important;
+  border-radius: 5px !important;
 }
 
 .panel-title,
@@ -4422,35 +4507,43 @@ body #ach-next-hint {
 .stroke-card.current,
 .stroke-card.done,
 .stroke-preview,
-.stroke-mini svg,
-.mode-progress-count {
+.stroke-mini svg {
+  border: 0 !important;
+  border-image: none !important;
+  border-radius: 0 !important;
   background-color: transparent !important;
   background-image: none !important;
   box-shadow: none !important;
+}
+
+.word-clue-cell.blank,
+.daily-clue-cell {
+  position: relative;
+  overflow: hidden;
 }
 
 .word-clue-cell.blank::before,
 .daily-clue-cell::before {
   content: '';
   position: absolute;
-  inset: var(--story-frame-box);
+  inset: var(--owl-generic-rail);
   z-index: 0;
   pointer-events: none;
   background: transparent;
 }
 
-.word-clue-cell.blank {
-  position: relative;
-  overflow: hidden;
-}
-
 .word-clue-cell.blank::before,
-.daily-clue-cell.current::before {
-  background: rgba(247, 217, 142, 0.48);
+.daily-clue-cell.current::before,
+.kana-tab.active::before,
+.char-button.active::before,
+.char-button.done.active::before,
+.mode-choice-button.active::before {
+  background: rgba(239, 216, 154, 0.42);
 }
 
-.daily-clue-cell.done::before {
-  background: rgba(191, 222, 173, 0.55);
+.daily-clue-cell.done::before,
+.char-button.done:not(.active)::before {
+  background: rgba(191, 215, 177, 0.46);
 }
 
 .word-clue-cell.blank > *,
@@ -4461,15 +4554,34 @@ body #ach-next-hint {
 
 @media (max-height: 500px) and (orientation: landscape) {
   :root {
-    --story-frame-box: 12.57px;
-    --story-frame-task-box: 49.4px;
-    --story-frame-milmaru-box: 47.52px;
-    --story-frame-message-box: 36.4px;
-    --story-frame-writing-box: 47.67px;
-    --story-frame-stroke-box: 50.56px;
+    --owl-generic-rail: 14.5px;
+  }
+
+  #stage #modeSwitchBtn,
+  #stage #resetBtn,
+  #stage #doneBtn {
+    height: 108px;
+    min-height: 108px;
+  }
+
+  #stage #careBtn,
+  #stage #modalRetryBtn {
+    height: 124px;
+    min-height: 124px;
+  }
+
+  .kana-tab,
+  .char-button,
+  .char-spacer {
+    height: 108px;
+    min-height: 108px;
+    aspect-ratio: auto;
   }
 
   .star-box {
+    width: 204px;
+    min-width: 204px;
+    height: 108px;
     padding: 10px 22px;
     gap: 10px;
   }
