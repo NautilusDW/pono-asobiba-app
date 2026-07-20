@@ -1,5 +1,25 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2308: なぞなぞトレイン分岐系列(batch:1401〜1404)と、LP／アプリ入口タイトルロゴ
+// 系列(v2303〜v2307)を履歴保持で安全統合し、両系列を同一キャッシュ世代へ更新
+// (batch:1382-nazonazo-branch-bg-raster-integration)。
+// v2307: 直前の白いおなかの横方向への張り出しを戻し、元の腹幅を保ったまま
+// 脇の下〜前腕直下だけを上向きに白毛でつないだ。前腕・左側の茶色い胴・
+// 下側の腹毛・顔・足・文字・透明輪郭は維持した
+// (batch:1372h-lp-title-belly-underarm-vertical-fill)。
+// v2306: LP／アプリ入口タイトルの白いおなかを、画像左側の腕の付け根〜脇の下だけ
+// 弧状に少し広げた。前腕・中央／右／下側の腹毛・顔・足・文字・透明輪郭は維持した
+// (batch:1372g-lp-title-belly-armpit-fill)。
+// v2305: v2304では実寸で差が見えなかったため、白いおなかの上端を前腕の直下まで
+// 明確に拡張。前腕の茶色と下側の腹毛は維持した
+// (batch:1372f-lp-title-belly-visible-upper-fill)。
+// v2304: LP／アプリ入口タイトルの白いおなかを、前腕の背後で少し上へ拡張。
+// GPT Image 2の再生成結果から上端だけを合成し、前腕・下側の腹毛・透明輪郭は維持した
+// (batch:1372e-lp-title-belly-upper-fill)。
+// v2303: LP／アプリ入口タイトルの白いおなかをGPT Image 2で再生成。
+// 座標輪郭を廃止して水彩の毛先が連続する小さめの腹毛だけを元ロゴへ合成し、
+// 顔・前腕・足・文字・透明輪郭は元画素のまま維持した
+// (batch:1372d-lp-title-belly-regenerate)。
 // v2299: LP／アプリ入口タイトルの白いおなかを、生成見本と同じく前腕の背後へ配置。
 // 前腕下面カーブ＋3pxを元画素のまま保護し、腕への色かかりを解消した
 // (batch:1372c-lp-title-belly-arm-clearance)。
@@ -662,7 +682,7 @@
 // 計算から除外、押せるボタンに見えて反応しない見た目(box-shadow・無限パルス)も撤去し
 // 静的な情報タグへ変更。game.js/styles.css/tests/nazonazo_tunnel_branch_topology_regression.cjs/
 // tests/nazonazo_ready_class_regression.cjsを変更したためバンプ。
-const CACHE_VERSION = 2305;
+const CACHE_VERSION = 2308;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [
