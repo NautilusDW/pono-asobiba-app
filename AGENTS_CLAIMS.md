@@ -59,6 +59,8 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
+- 2026-07-20 11:02 - by Codex - [batch:1372c-lp-title-belly-arm-clearance] - assets/lp/hero/brand_logo*.png, index.html, index-app.html, sw.js, tmp/alpha_pending/1372c-lp-title-belly-arm-clearance/**, AGENTS_CLAIMS.md, HANDOFF.md - 2枚目の見本どおり白腹上端を腕から完全に離し、腕領域の変更0pxで再修正 [overlap: batch:1401-nazonazo-tunnel-branch]
+
 
 
 - 2026-07-17 10:08 - by Codex - [batch:1328d-mojikko-white-paper-ornate-frames] - writing-mori/index.html, assets/images/mojikko/writing/storybook/**, tmp/alpha_pending/1328d-mojikko-white-paper-ornate-frames/**, tests/mojikko_*.cjs, native/**, AGENTS_CLAIMS.md, HANDOFF.md - 紙面を白ベースへ補正し、ことばの穴・見る丸・メッセージ・文字盤・書き順を個別の装飾枠へ差し替える

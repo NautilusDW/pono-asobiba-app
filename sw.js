@@ -1,5 +1,8 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2299: LP／アプリ入口タイトルの白いおなかを、生成見本と同じく前腕の背後へ配置。
+// 前腕下面カーブ＋3pxを元画素のまま保護し、腕への色かかりを解消した
+// (batch:1372c-lp-title-belly-arm-clearance)。
 // v2298: LP／アプリ入口のタイトルロゴで、白いおなかが生成見本より左へ広がった
 // batch:1372 の反映ずれを修正。生成見本と同じ右寄りの小さな縦長形へ合わせ、
 // 色もオリジナル準拠の温かいアイボリーへ調整した (batch:1372b-lp-title-belly-position)。
@@ -604,7 +607,7 @@
 // は grantReward を「表示前」から「選択確定後」に変更し、pono_profile(現在のユーザー導線
 // からは誰も書き込まない壊れたキー)への依存を撤去。play.html PAGE_CACHE_VERSION/
 // PONO_SW_VERSION、common/treasure.js?v= / common/stamp-rally.js?v= と同期。
-const CACHE_VERSION = 2298;
+const CACHE_VERSION = 2299;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [
