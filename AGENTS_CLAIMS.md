@@ -59,6 +59,9 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
+- 2026-07-20 21:55 - by Codex - [batch:1385-nazonazo-branch-stage-polish] - nazonazo-tunnel/index.html, nazonazo-tunnel/styles.css, nazonazo-tunnel/js/game.js, assets/images/nazonazo-tunnel/effect_fire_flame_small_20260720.webp, assets/images/nazonazo-tunnel/effect_fire_flame_tall_20260720.webp, assets/images/nazonazo-tunnel/branch_dino_life_waterhole_20260720.webp, assets/images/nazonazo-tunnel/branch_dino_life_trex_20260720.webp, assets/images/nazonazo-tunnel/branch_toy_variety_playroom_20260720.webp, assets/images/nazonazo-tunnel/branch_toy_variety_parade_20260720.webp, assets/images/nazonazo-tunnel/branch_cat_cats_town_20260720.webp, assets/images/nazonazo-tunnel/branch_cat_cats_play_20260720.webp, HANDOFF.md, AGENTS_CLAIMS.md - 雪・炎の軽量演出、恐竜・多様なおもちゃ・住民猫の固有ランドマーク、8分岐背景レイヤー高さ補正を実装。sw.js / tests/** は pending user-approved stale-claim cleanup, not yet claimed
+
+- 2026-07-17 10:08 - by Codex - [batch:1328d-mojikko-white-paper-ornate-frames] - writing-mori/index.html, assets/images/mojikko/writing/storybook/**, tmp/alpha_pending/1328d-mojikko-white-paper-ornate-frames/**, tests/mojikko_*.cjs, native/**, AGENTS_CLAIMS.md, HANDOFF.md - 紙面を白ベースへ補正し、ことばの穴・見る丸・メッセージ・文字盤・書き順を個別の装飾枠へ差し替える
 
 
 - 2026-06-28 09:27 - by Codex - [batch:877-gacha-tray-mask-lower] - play.html, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - ガチャ受け皿マスクが上すぎるため奥壁ラインを下げて再調整 [overlap: batch:860-data-export-import]
