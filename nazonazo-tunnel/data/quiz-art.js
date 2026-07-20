@@ -246,7 +246,17 @@
     stageFuture: items["🤖|ろぼっと"],
     stageSpace: items["🚀|ろけっと"],
     stageSnow: items["🐧|ぺんぎん"],
-    stageFire: items["🐊|わに"]
+    stageFire: items["🐊|わに"],
+    stageDino: items["🦣|まんもす"],
+    stageToy: items["🧸|ぬいぐるみ"],
+    // NPC_BASE("../assets/images/bento/npc/") + NPC_VER("20260617-risu-bright-set") と同一パスを直書き。
+    // quiz-art.js は index.html 内で game.js より先に読み込まれるため npcSrc() を呼べない
+    // (呼ぶと ReferenceError で window.PonoNazonazoQuizArt の代入自体が失敗し、全ステージの
+    // 図鑑アートが壊れる)。NPCアセットのバージョンを上げる際はこの文字列も合わせて更新すること。
+    stageCat: "../assets/images/bento/npc/neko_normal.png?v=20260617-risu-bright-set",
+    stageFantasy: uiPath("ui_rainbow"),
+    stageSky: items["🦜|おうむ"],
+    stageRuins: items["🧱|れんが"]
   };
 
   window.PonoNazonazoQuizArt = { version: VERSION, items: items, ui: ui };

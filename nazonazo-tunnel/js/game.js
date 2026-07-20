@@ -4,7 +4,9 @@
   const {
     TOWN, JUNGLE, SEA, FUTURE, SPACE, WORDPLAY,
     KANJI_NUM, CNT_EMO, JLEGS, SLEGS, JSIZE, SSIZE, SPEED,
-    SNOW, FIRE
+    SNOW, FIRE,
+    DINO, TOY, CAT, FANTASY, SKY, RUINS,
+    DSIZE, TSIZE
   } = data;
 
 /* ================= generated quiz illustrations ================= */
@@ -308,6 +310,7 @@ const STAGES=[
   fg(P){return svgURI(900,220,gBumps(900,220,P.fgA,7,150,25)+gGrassSpikes(900,220,P.fgB,40,90,27));},
   decor(P,r){return bgUrl(ASSETS.town.decor);}},
  {id:"jungle",icon:"🌴",art:"stageJungle",veh:"train",bank:JUNGLE,gens:["legsJ","sizeJ"],skyPosition:"center calc(100% - 22vh)",
+  branches:[{choiceId:"dino",toId:"dino"},{choiceId:"toy",toId:"toy"}],
   names:["ジャングル","よるの ジャングル"],
  pals:[
    {sky:["#cfe8b0","#7cc06e"],far1:"#aed69c",far2:"#8cc47c",mid1:"#4f8f42",mid2:"#5c9a4c",trunk:"#35652c",grass:"#6a9e54",tie:"#5a4630",rail:"#3c3c3c",fgA:"#2e6b28",fgB:"#245a1e",mount:"#5f9e4e",fx:"none"},
@@ -324,6 +327,7 @@ const STAGES=[
   fg(P){return svgURI(900,220,gBumps(900,220,P.fgA,6,170,55)+gKelp(900,220,P.fgB,5,57));},
  decor(P,r){return bgUrl(ASSETS.jungle.decor);}},
  {id:"number",icon:"🎲",art:"stageNumber",veh:"train",bank:null,gens:[],
+  branches:[{choiceId:"cat",toId:"cat"},{choiceId:"fantasy",toId:"fantasy"}],
   names:["すうじのへや","ゆめの すうじのへや"],
   assets:ASSETS.number,
   pals:[
@@ -352,6 +356,7 @@ const STAGES=[
   fg(P){return svgURI(900,220,gKelp(900,220,P.fgA,6,107)+gBumps(900,220,P.fgB,5,120,109));},
  decor(P,r){return svgURI(180,300,gKelp(180,300,P.mid2,2,111+r)+gBumps(180,300,P.far1,2,80,113+r));}},
  {id:"future",icon:"🌆",art:"stageFuture",veh:"train",bank:FUTURE,gens:["speedF"],
+  branches:[{choiceId:"sky",toId:"sky"},{choiceId:"ruins",toId:"ruins"}],
   names:["みらいシティ","あさやけの みらいシティ"],
   assets:ASSETS.future,
   pals:[
@@ -415,9 +420,117 @@ const STAGES=[
   mid(P){return svgURI(1400,H,gTreeRow(1400,H,P.mid1,P.trunk,9,150,441)+gBumps(1400,H,P.mid2,8,85,443));},
   ground(P){return svgURI(600,90,gRail(600,90,P.tie,P.rail,P.grass));},
   fg(P){return svgURI(900,220,gBumps(900,220,P.fgA,6,160,445)+gGrassSpikes(900,220,P.fgB,34,70,447));},
-  decor(P,r){return svgURI(160,260,gBumps(160,260,P.fgB,3,100,449+r)+gMountains(160,260,P.mid2,10,70,3,451+r,0.9));}}
+  decor(P,r){return svgURI(160,260,gBumps(160,260,P.fgB,3,100,449+r)+gMountains(160,260,P.mid2,10,70,3,451+r,0.9));}},
+ {id:"dino",icon:"🦕",art:"stageDino",veh:"train",bank:DINO,gens:["sizeD"],hidden:true,rejoinId:"number",
+  names:["きょうりゅうのもり","よるの きょうりゅうのもり"],
+  pals:[
+   {sky:["#d9e8a0","#f2e6b0"],far1:"#c4d68a",far2:"#a8c46e",mid1:"#7a9e52",mid2:"#8fae5e",
+    trunk:"#5c4530",grass:"#a3b25a",tie:"#5a4530",rail:"#4a4a4a",fgA:"#5f7a3c",fgB:"#3e5a26",mount:"#8a6a48",fx:"none"},
+   {sky:["#152a22","#0a1712"],far1:"#22392c",far2:"#1c3226",mid1:"#294a34",mid2:"#1c3624",
+    trunk:"#20180f",grass:"#1e3322",tie:"#1a140c",rail:"#333333",fgA:"#152a1c",fgB:"#0e2014",mount:"#3a5c40",fx:"fireflies"}],
+  horizon(P,NP){return svgURI(HW,H,
+    gMountains(HW,H,P.far1,50,90,14,501,0.85)+
+    gMountains(1200,H,P.far2,25,80,16,503,0.95)+
+    '<rect x="1290" y="0" width="410" height="'+H+'" fill="'+(NP.sky?NP.sky[0]:P.sky[0])+'" opacity="0.35"/>'+
+    '<g transform="translate(1340,0)">'+gBlocksRow(340,H,NP.blocks||[P.mid1,P.mid2,P.far2],3,507,true)+'</g>'+
+    '<g transform="translate(1380,0)">'+gDigitsFloat(300,H,"#ffffff",4,509,40)+'</g>');},
+  mid(P){return svgURI(1400,H,gTreeRow(1400,H,P.mid1,P.trunk,10,170,511)+gBumps(1400,H,P.mid2,9,90,513));},
+  ground(P){return svgURI(600,90,gRail(600,90,P.tie,P.rail,P.grass));},
+  fg(P){return svgURI(900,220,gBumps(900,220,P.fgA,6,170,515)+gKelp(900,220,P.fgB,5,517));},
+  decor(P,r){return svgURI(160,260,gBumps(160,260,P.fgB,3,120,519+r)+gTreeRow(160,260,P.mid1,P.trunk,2,140,521+r));}},
+ {id:"toy",icon:"🧸",art:"stageToy",veh:"train",bank:TOY,gens:["sizeT"],hidden:true,rejoinId:"number",
+  names:["おもちゃのくに","よるの おもちゃのくに"],
+  pals:[
+   {sky:["#ffe0f0","#fff6e0"],dig1:"#ffb6d5",dig2:"#c9a8f0",
+    blocks:["#d9c6f5","#f5c6e0","#c6e0f5"],blocks2:["#c0a8ee","#eea8cc","#a8ccee"],fgBlocks:["#8f76d0","#c06aa8","#6a8fc0"],
+    flo1:"#ffe8f5",flo2:"#ffd1e6",mount:"#c9a8f0"},
+   {sky:["#2c2350","#4a3570"],dig1:"#7a68b0",dig2:"#5a4a8a",
+    blocks:["#5a4a8a","#8a4a7a","#4a6a8a"],blocks2:["#4a3a70","#6a3a5a","#3a5a6a"],fgBlocks:["#2a2246","#4a2a3a","#2a3a4a"],
+    flo1:"#332a5c",flo2:"#241d40",mount:"#5a4a8a"}],
+  horizon(P,NP){return svgURI(HW,H,
+    gDigitsFloat(HW,H,P.dig1,20,601,44)+
+    gBlocksRow(HW,H,P.blocks,9,603,false));},
+  mid(P){return svgURI(1400,H,gDigitsFloat(1400,H,P.dig2,12,605,64)+gBlocksRow(1400,H,P.blocks2,6,607,true));},
+  ground(P){return svgURI(600,90,gChecker(600,90,P.flo1,P.flo2));},
+  fg(P){return svgURI(900,220,gBlocksRow(900,220,P.fgBlocks,5,609,true));},
+  decor(P,r){return svgURI(160,260,gBlocksRow(160,260,P.fgBlocks,2,611+r,true)+gDigitsFloat(160,260,P.dig1,3,613+r,30));}},
+ {id:"cat",icon:"🐱",art:"stageCat",veh:"train",bank:CAT,gens:[],hidden:true,rejoinId:"sea",
+  names:["ねこのまち","よるの ねこのまち"],
+  pals:[
+   {sky:["#ffe3b0","#fff3d8"],haze:"#f0cf9e",skyl:"#e6ba86",hill:"#d9a86e",house:"#fdf1de",roof:"#e0806a",
+    leaf:"#c9a878",trunk:"#8a6a4a",grass:"#e8c98a",tie:"#6b4a2f",rail:"#4a4a4a",fgA:"#d9a45e",fgB:"#b9843e",mount:"#c98a5e"},
+   {sky:["#243252","#111a30"],haze:"#2e3d5c",skyl:"#28344c",hill:"#3a4a68",house:"#2a3550",roof:"#5e3450",
+    leaf:"#33405a",trunk:"#221a2c",grass:"#2c3654",tie:"#1c1520",rail:"#333333",fgA:"#232c48",fgB:"#181f38",mount:"#3f4d6e"}],
+  horizon(P,NP){return svgURI(HW,H,
+    gMountains(HW,H,P.haze,40,70,18,701,0.9)+
+    gSkyline(1150,H,P.skyl,703,null)+
+    gMountains(HW,H,P.hill,10,55,22,705,0.95)+
+    '<rect x="1290" y="0" width="410" height="'+H+'" fill="'+(NP.sky?NP.sky[0]:P.sky[0])+'" opacity="0.28"/>'+
+    '<g transform="translate(1330,0)">'+gMountains(370,H,NP.mid1||P.hill,30,110,7,707,0.9)+'</g>'+
+    '<g transform="translate(1470,0)">'+gTreeRow(230,H,P.leaf,P.trunk,3,150,709)+'</g>');},
+  mid(P){return svgURI(1400,H,gHouses(1400,H,P.house,P.roof,7,711)+gTreeRow(1400,H,P.leaf,P.trunk,8,120,713));},
+  ground(P){return svgURI(600,90,gRail(600,90,P.tie,P.rail,P.grass));},
+  fg(P){return svgURI(900,220,gBumps(900,220,P.fgA,7,150,715)+gGrassSpikes(900,220,P.fgB,40,90,717));},
+  decor(P,r){return svgURI(160,260,gBumps(160,260,P.fgB,3,90,719+r)+gTreeRow(160,260,P.leaf,P.trunk,2,120,721+r));}},
+ {id:"fantasy",icon:"🦄",art:"stageFantasy",veh:"train",bank:FANTASY,gens:[],hidden:true,rejoinId:"sea",
+  names:["まほうのくに","よるの まほうのくに"],
+  pals:[
+   {sky:["#ffd6f0","#d6e8ff"],far1:"#b89ae0",far2:"#d0a8e8",win1:"#ffe08a",win2:"#9df0c8",
+    mid1:"#c8a0e8",mid2:"#f0b8dc",gBase:"#a8e8c0",gLine:"#ffd98a",gTick:"#f5a8d0",
+    fgA:"#7ecf9e",fgB:"#5fb384",fgWin:"#ffe08a",mount:"#c8a0e8",fx:"none"},
+   {sky:["#241243","#3a1a5e"],far1:"#4a2a70",far2:"#5a3480",win1:"#ffe08a",win2:"#c9a8ff",
+    mid1:"#5a3a8a",mid2:"#6a4090",gBase:"#2f4a3c",gLine:"#ffe08a",gTick:"#c9a8ff",
+    fgA:"#241a40",fgB:"#191030",fgWin:"#ffe08a",mount:"#5a3a8a",fx:"fireflies"}],
+  horizon(P,NP){return svgURI(HW,H,
+    gSkyline(1250,H,P.far1,801,P.win1)+
+    gSkyline(1100,H,P.far2,803,P.win2)+
+    '<rect x="1290" y="0" width="410" height="'+H+'" fill="'+(NP.sky?NP.sky[0]:P.sky[0])+'" opacity="0.6"/>'+
+    '<g transform="translate(1290,0)">'+gStars(410,H,26,805)+'</g>'+
+    gPlanet(1560,90,34,"#f5a8d0","#ffe9f5"));},
+  mid(P){return svgURI(1400,H,gSkyline(1400,H,P.mid1,811,P.win2)+gBumps(1400,H,P.mid2,8,70,813));},
+  ground(P){return svgURI(600,90,gNeonGround(600,90,P.gBase,P.gLine,P.gTick));},
+  fg(P){return svgURI(900,220,gSkyline(900,220,P.fgA,815,P.fgWin)+gBumps(900,220,P.fgB,6,90,817));},
+  decor(P,r){return svgURI(160,260,gStars(160,260,10,819+r)+gBumps(160,260,P.fgB,2,90,821+r));}},
+ {id:"sky",icon:"☁️",art:"stageSky",veh:"train",bank:SKY,gens:[],hidden:true,rejoinId:"space",
+  names:["そらのくに","よるの そらのくに"],
+  pals:[
+   {sky:["#8ecdf5","#fdf8e8"],haze:"#cfe9f7",skyl:"#eaf3ff",hill:"#ffffff",house:"#fff8ea",roof:"#ffd98a",
+    leaf:"#eaf6ff",trunk:"#d8c890",grass:"#ffffff",tie:"#d0a860",rail:"#4a4a4a",fgA:"#ffffff",fgB:"#eef6ff",mount:"#ffe0a0"},
+   {sky:["#152a52","#0a1530"],haze:"#22355c",skyl:"#2c3f6e",hill:"#33456e",house:"#2a3660",roof:"#e8c060",
+    leaf:"#3a4a78",trunk:"#26305a",grass:"#2e3a64",tie:"#1c2340",rail:"#333333",fgA:"#28345c",fgB:"#1c2648",mount:"#3a4a78"}],
+  horizon(P,NP){return svgURI(HW,H,
+    gMountains(HW,H,P.haze,40,70,18,901,0.9)+
+    gSkyline(1150,H,P.skyl,903,null)+
+    gMountains(HW,H,P.hill,10,55,22,905,0.95)+
+    gStars(HW,H,22,907)+
+    '<rect x="1290" y="0" width="410" height="'+H+'" fill="'+(NP.sky?NP.sky[0]:P.sky[0])+'" opacity="0.28"/>'+
+    '<g transform="translate(1330,0)">'+gMountains(370,H,NP.mid1||P.hill,30,110,7,909,0.9)+'</g>'+
+    '<g transform="translate(1470,0)">'+gBumps(230,H,P.leaf,3,90,911)+'</g>');},
+  mid(P){return svgURI(1400,H,gBumps(1400,H,P.house,10,95,913)+gBumps(1400,H,P.hill,7,65,915));},
+  ground(P){return svgURI(600,90,gRail(600,90,P.tie,P.rail,P.grass));},
+  fg(P){return svgURI(900,220,gBumps(900,220,P.fgA,7,150,917)+gBumps(900,220,P.fgB,5,110,919));},
+  decor(P,r){return svgURI(160,260,gBumps(160,260,P.fgA,3,110,921+r)+gBumps(160,260,P.fgB,2,80,923+r));}},
+ {id:"ruins",icon:"🏺",art:"stageRuins",veh:"train",bank:RUINS,gens:[],hidden:true,rejoinId:"space",
+  names:["こだいいせき","たいまつの こだいいせき"],
+  pals:[
+   {sky:["#ffdca0","#fff0d0"],haze:"#e8c48a",skyl:"#d9a86a",hill:"#c9905a",house:"#e8c48a",roof:"#c07a3a",
+    leaf:"#8aa860",trunk:"#6a4a2a",grass:"#d4a858",tie:"#5a3a20",rail:"#4a4a4a",fgA:"#b8823f",fgB:"#96652c",mount:"#c9905a"},
+   {sky:["#241a3a","#12102a"],haze:"#3a2c4a",skyl:"#332440",hill:"#4a3550",house:"#3a2a44",roof:"#e0a040",
+    leaf:"#33402e",trunk:"#22160f",grass:"#3a2c1c",tie:"#221708",rail:"#333333",fgA:"#3a2818",fgB:"#28190e",mount:"#4a3550",fx:"fireflies"}],
+  horizon(P,NP){return svgURI(HW,H,
+    gMountains(HW,H,P.haze,40,70,18,1001,0.9)+
+    gSkyline(1150,H,P.skyl,1003,null)+
+    gMountains(HW,H,P.hill,10,55,22,1005,0.95)+
+    '<rect x="1290" y="0" width="410" height="'+H+'" fill="'+(NP.sky?NP.sky[0]:P.sky[0])+'" opacity="0.28"/>'+
+    '<g transform="translate(1330,0)">'+gMountains(370,H,NP.mid1||P.hill,30,110,7,1007,0.9)+'</g>'+
+    '<g transform="translate(1470,0)">'+gTreeRow(230,H,P.leaf,P.trunk,3,150,1009)+'</g>');},
+  mid(P){return svgURI(1400,H,gHouses(1400,H,P.house,P.roof,7,1011)+gTreeRow(1400,H,P.leaf,P.trunk,8,120,1013));},
+  ground(P){return svgURI(600,90,gRail(600,90,P.tie,P.rail,P.grass));},
+  fg(P){return svgURI(900,220,gBumps(900,220,P.fgA,7,150,1015)+gGrassSpikes(900,220,P.fgB,40,90,1017));},
+  decor(P,r){return svgURI(160,260,gBumps(160,260,P.fgB,3,90,1019+r)+gTreeRow(160,260,P.leaf,P.trunk,2,120,1021+r));}}
 ];
-const RARES=[["🕊️","しろい はと"],["🦜","にじいろ おうむ"],["💯","ひゃくてんまん"],["🐳","そらとぶ くじら"],["🛸","なぞの ゆーふぉー"],["☄️","おおながれぼし"],["🐰","ゆきの しろうさぎ"],["🦅","ほのおの わし"]];
+const RARES=[["🕊️","しろい はと"],["🦜","にじいろ おうむ"],["💯","ひゃくてんまん"],["🐳","そらとぶ くじら"],["🛸","なぞの ゆーふぉー"],["☄️","おおながれぼし"],["🐰","ゆきの しろうさぎ"],["🦅","ほのおの わし"],
+ ["🦕","でんせつの きょうりゅう"],["🧸","きらきらの ぬいぐるみ"],["🐱","しあわせの ねこ"],["🦄","にじいろの ゆにこーん"],["☁️","きんいろの くも"],["🏺","ひかる こだいの つぼ"]];
 function stageIndexById(id){return STAGES.findIndex(function(s){return s.id===id;});}
 function stageHasBranches(s){return !!(s&&Array.isArray(s.branches)&&s.branches.length);}
 function resolveNextStage(currentStg,choiceId){
@@ -517,7 +630,8 @@ const dropX=o=>o+DROP_OFF+CHECKPOINT_STOP_LEFT_VW;
 /* ================= collection registry ================= */
 const zkGroups=[]; const zkReg=new Set(); // key: e|t (メモリ内のみ・本番はセーブ実装)
 function buildRegistry(){
- const extra={jungle:JLEGS.map(x=>[x[0],x[1]]).concat(JSIZE),sea:SLEGS.map(x=>[x[0],x[1]]).concat(SSIZE),future:SPEED,town:[],number:[],space:[]};
+ const extra={jungle:JLEGS.map(x=>[x[0],x[1]]).concat(JSIZE),sea:SLEGS.map(x=>[x[0],x[1]]).concat(SSIZE),future:SPEED,town:[],number:[],space:[],
+  dino:DSIZE,toy:TSIZE};
  STAGES.forEach(st=>{
   // hidden(=snow/fire等トンネル分岐限定の隠しルート)も分岐UI実装後は実際にプレイして
   // 集められるため、通常ステージと同じグループとしてずかんに含める(除外すると
@@ -1777,7 +1891,10 @@ function genCompare(list,word){
 const GENS={
  legsJ:()=>genLegs(JLEGS), sizeJ:()=>genCompare(JSIZE,"おおきい"),
  legsS:()=>genLegs(SLEGS), sizeS:()=>genCompare(SSIZE,"おおきい"),
- speedF:()=>genCompare(SPEED,"はやい"), legsJ_none:null
+ speedF:()=>genCompare(SPEED,"はやい"),
+ sizeD:()=>genCompare(DSIZE,"おおきい"),
+ sizeT:()=>genCompare(TSIZE,"ちいさい"),
+ legsJ_none:null
 };
 function seaRescueQuestionKey(question){
  return question&&question.a?String(question.a[1]||question.a[0]||""):"";

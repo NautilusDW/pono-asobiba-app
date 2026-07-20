@@ -617,7 +617,13 @@
 // buildRegistry()のhidden除外(=snow/fireで集めた生きものがずかんに永久に
 // 出ない不整合)を撤廃、仲間探しミニゲームと分岐ゲートUIの同時起動によるタップ
 // 領域重複を町区間のみ回避、quiz-art.jsにstageSnow/stageFireアイコン追加。
-const CACHE_VERSION = 2300;
+// (batch:1401-nazonazo-tunnel-branch2-3-4) 分岐点2(jungle→number: dino/toy)・
+// 分岐点3(number→sea: cat/fantasy)・分岐点4(future→space: sky/ruins)を追加。
+// STAGES末尾に6新規隠しステージ、jungle/number/futureにbranches追加、RARES/
+// GENS(sizeD/sizeT)/questions.js(DINO/TOY/CAT/FANTASY/SKY/RUINS)/quiz-art.js
+// (stageDino等)を拡張。styles.cssは既存の#veh/#cars exact-match回帰テスト
+// (nazonazo_mountain_weather_regression.cjs)を壊さないため今回は無変更。
+const CACHE_VERSION = 2301;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

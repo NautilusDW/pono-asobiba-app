@@ -59,6 +59,8 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
+- 2026-07-20 11:02 - by Codex - [batch:1372c-lp-title-belly-arm-clearance] - assets/lp/hero/brand_logo*.png, index.html, index-app.html, sw.js, tmp/alpha_pending/1372c-lp-title-belly-arm-clearance/**, AGENTS_CLAIMS.md, HANDOFF.md - 2枚目の見本どおり白腹上端を腕から完全に離し、腕領域の変更0pxで再修正 [overlap: batch:1401-nazonazo-tunnel-branch]
+
 - 2026-07-20 00:00 - by Claude - [batch:1401-nazonazo-tunnel-branch] - nazonazo-tunnel/js/game.js, nazonazo-tunnel/data/questions.js, nazonazo-tunnel/data/quiz-art.js, nazonazo-tunnel/index.html, nazonazo-tunnel/styles.css, sw.js, AGENTS_CLAIMS.md - なぞなぞトレインにトンネル分岐(snow/fire)土台を実装、絵文字フォールバック修正 → トンネル内選択ゲートUI(#tunnelBranchGates)+出口色分岐演出を追加実装 (未push・未削除。呼び出し元でcommit/push判断後に削除要)
 
 
