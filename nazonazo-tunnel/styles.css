@@ -490,14 +490,77 @@ body.st-space #veh{bottom:26vh}
 #fgT{position:absolute;left:0;right:0;bottom:0;height:22vh;z-index:8;pointer-events:none;
   background-repeat:repeat-x;background-size:auto 100%;will-change:background-position}
 
-/* ===== branch stages: one selected six-layer raster set, repeated without a clamp ===== */
+/* ===== branch stages: six aligned raster planes plus selected-stage polish ===== */
+body.branch-raster{
+  --branch-horizon-y:0vh;--branch-mid-y:0vh;--branch-decor-height:20vh;--branch-decor-bottom:11.5vh;--branch-fg-height:22vh;
+  --branch-polish-brightness:1;--branch-polish-saturate:1;--branch-polish-contrast:1;--branch-polish-hue:0deg;--branch-snow-opacity:1}
+body.st-snow{--branch-horizon-y:18.57vh;--branch-mid-y:18.07vh;--branch-decor-height:20vh;--branch-fg-height:19.9vh}
+body.st-fire{--branch-horizon-y:13.68vh;--branch-mid-y:-6.39vh;--branch-decor-height:20vh;--branch-fg-height:22vh}
+body.st-dino{--branch-horizon-y:21.91vh;--branch-mid-y:-.52vh;--branch-decor-height:11.4vh;--branch-fg-height:22vh}
+body.st-toy{--branch-horizon-y:11.51vh;--branch-mid-y:-15.84vh;--branch-decor-height:20vh;--branch-decor-bottom:17.08vh;--branch-fg-height:22vh}
+body.st-cat{--branch-horizon-y:24.15vh;--branch-mid-y:19.82vh;--branch-fg-height:16.4vh}
+body.st-fantasy{--branch-horizon-y:10.25vh;--branch-mid-y:8.99vh;--branch-decor-height:19.9vh;--branch-fg-height:22vh}
+body.st-sky{--branch-horizon-y:-.35vh;--branch-mid-y:-1.98vh;--branch-decor-height:20vh;--branch-fg-height:22vh}
+body.st-ruins{--branch-horizon-y:8.42vh;--branch-mid-y:19.45vh;--branch-decor-height:17.1vh;--branch-fg-height:17.7vh}
+body.branch-raster.branch-night{
+  --branch-polish-brightness:.68;--branch-polish-saturate:.78;--branch-polish-contrast:.98;--branch-polish-hue:-6deg;--branch-snow-opacity:.74}
 body.branch-raster:not(.tunnel-interior) #branchDecorT{display:block}
+body.branch-raster.st-cat #branchDecorT{display:none!important}
 body.tunnel-interior #branchDecorT{display:none!important}
 body.branch-raster #horizon{left:0;right:0;width:100%;transform:none!important;overflow:hidden;
-  background-position:left bottom;background-size:auto 100%;background-repeat:repeat-x;will-change:background-position}
+  background-position:left calc(100% + var(--branch-horizon-y));background-size:auto 100%;background-repeat:repeat-x;will-change:background-position}
+body.branch-raster #midT{background-position:left calc(100% + var(--branch-mid-y))}
 body.branch-raster #midT,body.branch-raster #groundT,body.branch-raster #fgT{
-  background-position:left bottom;background-size:auto 100%;background-repeat:repeat-x}
-body.branch-raster #groundT{height:18vh}
+  background-size:auto 100%;background-repeat:repeat-x}
+body.branch-raster #groundT{height:18vh;background-position:left bottom}
+body.branch-raster #branchDecorT{bottom:var(--branch-decor-bottom);height:var(--branch-decor-height)}
+body.branch-raster #fgT{height:var(--branch-fg-height);background-position:left bottom}
+
+.branch-stage-effect-layer,#branchLandmarkLayer{position:absolute;inset:0;display:none;overflow:hidden;contain:layout paint;pointer-events:none}
+#branchEffectFar{z-index:1}#branchLandmarkLayer{z-index:4}#branchEffectMid{z-index:6}#branchEffectNear{z-index:9}
+body.st-snow:not(.tunnel-interior) #branchEffectFar,
+body.st-snow:not(.tunnel-interior) #branchEffectMid,
+body.st-snow:not(.tunnel-interior) #branchEffectNear,
+body.st-fire:not(.tunnel-interior) #branchEffectMid,
+body.st-dino:not(.tunnel-interior) #branchLandmarkLayer,
+body.st-cat:not(.tunnel-interior) #branchLandmarkLayer{display:block}
+body.st-snow #branchEffectFar,body.st-snow #branchEffectMid,body.st-snow #branchEffectNear{opacity:var(--branch-snow-opacity)}
+body.tunnel-interior .branch-stage-effect-layer,body.tunnel-interior #branchLandmarkLayer{display:none!important}
+
+.branch-snow-particle{position:absolute;left:var(--snow-rest-left);top:var(--snow-rest-top);display:block;width:var(--snow-size);height:var(--snow-size);
+  opacity:var(--snow-opacity);pointer-events:none;animation:branchSnowFall var(--snow-duration) linear var(--snow-delay) infinite paused}
+.branch-snow-particle img{display:block;width:100%;height:100%;object-fit:contain;transform-origin:50% 50%;
+  animation:branchSnowTwinkle var(--snow-twinkle) ease-in-out var(--snow-twinkle-delay) infinite alternate paused}
+body.branch-effects-running.pono-game-ready.st-snow:not(.tunnel-interior) .branch-snow-particle{
+  left:var(--snow-left);top:-18vh;animation-play-state:running;will-change:transform}
+body.branch-effects-running.pono-game-ready.st-snow:not(.tunnel-interior) .branch-snow-particle img{animation-play-state:running;will-change:transform}
+body:not(.branch-effects-running) .branch-snow-particle:nth-child(n+3){display:none}
+@keyframes branchSnowFall{from{transform:translate3d(0,0,0) rotate(var(--snow-rotate-start))}to{transform:translate3d(var(--snow-drift),136vh,0) rotate(var(--snow-rotate-end))}}
+@keyframes branchSnowTwinkle{from{opacity:.48;transform:scale(var(--snow-scale-min))}to{opacity:1;transform:scale(var(--snow-scale-max))}}
+
+.branch-fire-hotspot,.branch-fire-ember{position:absolute;left:0;bottom:18vh;display:block;pointer-events:none;transform:translate3d(-200vw,0,0)}
+.branch-fire-hotspot{width:clamp(30px,5.5vmin,58px)}
+.branch-fire-hotspot img,.branch-fire-ember img{display:block;width:100%;height:auto;object-fit:contain;transform-origin:50% 100%;
+  filter:brightness(var(--branch-polish-brightness)) saturate(var(--branch-polish-saturate)) contrast(var(--branch-polish-contrast)) hue-rotate(var(--branch-polish-hue));transition:filter .48s ease}
+.branch-fire-hotspot img{animation:branchFireFlicker var(--fire-duration) ease-in-out var(--fire-delay) infinite alternate paused;
+  transform:translate3d(0,var(--fire-guard-y,0px),0) scale(var(--fire-scale-x),var(--fire-scale-y))}
+.branch-fire-ember{width:clamp(14px,3.2vmin,32px)}
+.branch-fire-ember img{opacity:var(--ember-opacity);animation:branchFireEmber var(--ember-duration) ease-out var(--ember-delay) infinite paused;
+  transform:translate3d(var(--ember-base-x),var(--ember-guard-y,0px),0) scale(var(--ember-scale))}
+body.branch-effects-running.pono-game-ready.st-fire:not(.tunnel-interior) .branch-fire-hotspot img,
+body.branch-effects-running.pono-game-ready.st-fire:not(.tunnel-interior) .branch-fire-ember img{animation-play-state:running;will-change:transform,opacity}
+@keyframes branchFireFlicker{
+  from{opacity:.8;transform:translate3d(-1px,var(--fire-guard-y,0px),0) scale(var(--fire-scale-x-from),var(--fire-scale-y-from)) rotate(-1.5deg)}
+  to{opacity:1;transform:translate3d(1px,var(--fire-guard-y,0px),0) scale(var(--fire-scale-x-to),var(--fire-scale-y-to)) rotate(1.5deg)}}
+@keyframes branchFireEmber{
+  0%{opacity:0;transform:translate3d(var(--ember-base-x),var(--ember-guard-y,0px),0) scale(var(--ember-scale-start))}
+  18%{opacity:var(--ember-opacity)}
+  100%{opacity:0;transform:translate3d(calc(var(--ember-base-x) + var(--ember-drift-x)),calc(var(--ember-guard-y,0px) - var(--ember-rise)),0) scale(var(--ember-scale))}}
+
+.branch-landmark{position:absolute;left:0;bottom:18vh;display:block;line-height:0;pointer-events:none;transform:translate3d(-200vw,0,0) translateX(-50%)}
+.branch-landmark.is-dino{width:clamp(330px,76vw,920px)}.branch-landmark.is-cat{width:clamp(320px,70vw,860px)}
+.branch-landmark img{display:block;width:100%;height:auto;transform:translate3d(0,var(--landmark-guard-y,0px),0);
+  filter:brightness(var(--branch-polish-brightness)) saturate(var(--branch-polish-saturate)) contrast(var(--branch-polish-contrast)) hue-rotate(var(--branch-polish-hue));transition:filter .48s ease}
 
 /* ===== town panorama loops: mirrored neighbors make every join pixel-exact ===== */
 .town-loop-strip{display:none;position:absolute;left:0;width:max-content;pointer-events:none;will-change:transform}
@@ -1565,6 +1628,12 @@ body.ios-device #quiz.show:not(.sea-quiz):not(.future-capsule-quiz):not(.space-g
   body.st-sea.v-sub #veh .vbody,body.st-sea.v-sub #veh .submarine-art{animation:none!important}
   .rain-particle{left:var(--rain-rest-x);top:var(--rain-rest-y);animation:none!important;transform:rotate(var(--rain-angle));will-change:auto!important}
   #rainFar .rain-particle:nth-child(n+8),#rainMid .rain-particle:nth-child(n+6),#rainNear .rain-particle:nth-child(n+4){display:none}
+  .branch-snow-particle{left:var(--snow-rest-left)!important;top:var(--snow-rest-top)!important;animation:none!important;transform:none!important;will-change:auto!important}
+  .branch-snow-particle img{animation:none!important;opacity:1!important;transform:scale(var(--snow-scale-min))!important;will-change:auto!important}
+  .branch-stage-effect-layer .branch-snow-particle:nth-child(n+3){display:none!important}
+  .branch-fire-hotspot:not(:first-child){display:none!important}
+  .branch-fire-hotspot img{animation:none!important;opacity:.92!important;transform:translate3d(0,var(--fire-guard-y,0px),0) scale(var(--fire-scale-x),var(--fire-scale-y))!important;will-change:auto!important}
+  .branch-fire-ember{display:none!important}
   .jungle-animal-art{animation:none!important;transform:none!important}
   .jungle-animal-frame{animation:none!important;transform:none!important}
   .jungle-animal-frame-sheet{animation:none!important;transform:translate3d(-33.3333%,0,0)!important}
