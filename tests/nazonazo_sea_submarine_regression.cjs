@@ -309,7 +309,7 @@ function makeSeaRareCollisionHarness({ overlap = true, sea = true, moving = true
     },
     isSeaStage: () => sea,
     stg: 3,
-    RARES: [[], [], [], ["🐳", "そらとぶ くじら"]],
+    STAGES: [{}, {}, {}, { rare: ["🐳", "そらとぶ くじら"] }],
     SCORE_POINTS: { rare: 300 },
     addScore: () => { state.scoreCalls += 1; },
     registerZk: () => true,

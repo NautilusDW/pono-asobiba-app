@@ -629,7 +629,15 @@
 // 追加。game.jsのNAZONAZO_ADMIN_STAGE_INDEXにも8id(index6〜13)を追加。プレイヤー向け
 // 本編マップ(openMap)は無変更、隠しルート発見体験もそのまま。admin/index.html・
 // game.jsを変更したためバンプ。
-const CACHE_VERSION = 2302;
+// (batch:1402-nazonazo-darius-phase0-refactor) 将来のDarius homage分岐拡張(Phase1/2)に
+// 向けた技術的負債解消の純粋リファクタ(新規コンテンツ追加なし、既存14ステージの挙動は
+// 完全不変)。RARES独立配列を廃止しSTAGES[i].rare(2要素)へ移植、isMainlineFinalStgを
+// STAGES[i].final、isSeaStage/isFutureStage/isSpaceStageをSTAGES[i].mechanic
+// (seaBoss/futureCrane/spaceChase)ベースの判定へ一般化、NAZONAZO_ADMIN_STAGE_INDEXを
+// STAGES.reduce()による自動導出へ置換、openMap()の進度カウントをhiddenから独立した
+// countsToProgress:falseフラグへ分離(マップ表示可否は引き続きhiddenで判定)。game.jsを
+// 変更したためバンプ。
+const CACHE_VERSION = 2303;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

@@ -110,8 +110,13 @@ function extractStagesTopology(source) {
     const stageSource = stagesSource.slice(objectStart, objectEnd + 1);
 
     const hidden = /\bhidden:true\b/.test(stageSource);
+    const final = /\bfinal:true\b/.test(stageSource);
+    const mechanicMatch = stageSource.match(/mechanic:"(\w+)"/);
+    const mechanic = mechanicMatch ? mechanicMatch[1] : null;
     const rejoinMatch = stageSource.match(/rejoinId:"(\w+)"/);
     const rejoinId = rejoinMatch ? rejoinMatch[1] : null;
+    const rareMatch = stageSource.match(/rare:\[("(?:[^"\\]|\\.)*"),("(?:[^"\\]|\\.)*")\]/);
+    const rare = rareMatch ? [JSON.parse(rareMatch[1]), JSON.parse(rareMatch[2])] : null;
 
     let branches = null;
     const branchesMarkerAt = stageSource.indexOf("branches:[");
@@ -124,7 +129,7 @@ function extractStagesTopology(source) {
       assert.ok(branches.length > 0, `${match[1]}: branches:[ ] present but no choiceId/toId pairs parsed`);
     }
 
-    topology.push({ index: topology.length, id: match[1], hidden, rejoinId, branches });
+    topology.push({ index: topology.length, id: match[1], hidden, final, mechanic, rejoinId, branches, rare });
   }
   assert.ok(topology.length > 0, "STAGES: no stage objects parsed (extractor drifted from source shape)");
   return topology;
@@ -143,27 +148,6 @@ const BRANCH_SPECS = [
   { originId: "future", choiceIds: ["sky", "ruins"] }
 ];
 
-// Cross-check MAINLINE_ORDER against the admin dashboard's own canonical mapping
-// (NAZONAZO_ADMIN_STAGE_INDEX), a second independent source of truth in the same file.
-// The admin index intentionally also exposes every hidden branch-destination stage
-// (QA-preview only; openMap() below still never surfaces them to players), so the
-// expected key order is the six mainline stages followed by every hidden stage id
-// in BRANCH_SPECS order -- deriving that from BRANCH_SPECS (not hand-typed again)
-// keeps this a real cross-check against the structural ground truth above.
-const HIDDEN_BRANCH_IDS = BRANCH_SPECS.flatMap(spec => spec.choiceIds);
-const EXPECTED_ADMIN_STAGE_INDEX_ORDER = MAINLINE_ORDER.concat(HIDDEN_BRANCH_IDS);
-const adminIndexMarker = "const NAZONAZO_ADMIN_STAGE_INDEX=Object.freeze(";
-const adminIndexAt = game.indexOf(adminIndexMarker);
-assert.ok(adminIndexAt >= 0, "NAZONAZO_ADMIN_STAGE_INDEX: declaration missing");
-const adminObjectAt = adminIndexAt + adminIndexMarker.length;
-const adminObjectEnd = scanBalanced(game, adminObjectAt, "{", "}");
-const adminStageIndex = vm.runInNewContext(`(${game.slice(adminObjectAt, adminObjectEnd + 1)})`, Object.create(null), { timeout: 1000 });
-assert.deepEqual(Object.keys(adminStageIndex), EXPECTED_ADMIN_STAGE_INDEX_ORDER,
-  "admin stage index keys must be the six mainline stages (in mainline order) followed by every hidden branch-destination stage (QA-preview only, in BRANCH_SPECS order)");
-MAINLINE_ORDER.forEach((id, index) => assert.equal(adminStageIndex[id], index, `${id}: admin stage index drifted from mainline order`));
-HIDDEN_BRANCH_IDS.forEach((id, offset) => assert.equal(adminStageIndex[id], MAINLINE_ORDER.length + offset,
-  `${id}: admin stage index (hidden QA-preview entry) must equal its STAGES array position`));
-
 /* ---------- topology must match mainline order exactly, hidden stages excluded ---------- */
 assert.deepEqual(topology.filter(t => !t.hidden).map(t => t.id), MAINLINE_ORDER, "non-hidden STAGES entries must be exactly the six mainline stages in order");
 
@@ -171,9 +155,35 @@ assert.deepEqual(topology.filter(t => !t.hidden).map(t => t.id), MAINLINE_ORDER,
 const stagesStub = topology.map(t => ({
   id: t.id,
   hidden: t.hidden || undefined,
+  final: t.final || undefined,
   branches: t.branches ? t.branches.map(b => ({ choiceId: b.choiceId, toId: b.toId })) : undefined,
   rejoinId: t.rejoinId || undefined
 }));
+
+// Cross-check MAINLINE_ORDER against the admin dashboard's own canonical mapping
+// (NAZONAZO_ADMIN_STAGE_INDEX), a second independent source of truth in the same file.
+// The admin index intentionally also exposes every hidden branch-destination stage
+// (QA-preview only; openMap() below still never surfaces them to players), so the
+// expected key order is the six mainline stages followed by every hidden stage id
+// in BRANCH_SPECS order -- deriving that from BRANCH_SPECS (not hand-typed again)
+// keeps this a real cross-check against the structural ground truth above.
+// NAZONAZO_ADMIN_STAGE_INDEX is itself derived from STAGES (Object.freeze(STAGES.reduce(...)))
+// rather than a hand-typed table, so it is evaluated (not statically parsed as an object
+// literal) with the lightweight stagesStub standing in for the real, heavy STAGES array.
+const HIDDEN_BRANCH_IDS = BRANCH_SPECS.flatMap(spec => spec.choiceIds);
+const EXPECTED_ADMIN_STAGE_INDEX_ORDER = MAINLINE_ORDER.concat(HIDDEN_BRANCH_IDS);
+const adminIndexMarker = "const NAZONAZO_ADMIN_STAGE_INDEX=";
+const adminIndexAt = game.indexOf(adminIndexMarker);
+assert.ok(adminIndexAt >= 0, "NAZONAZO_ADMIN_STAGE_INDEX: declaration missing");
+const adminExprAt = adminIndexAt + adminIndexMarker.length;
+const adminExprEnd = game.indexOf(";", adminExprAt);
+assert.ok(adminExprEnd > adminExprAt, "NAZONAZO_ADMIN_STAGE_INDEX: unterminated declaration");
+const adminStageIndex = vm.runInNewContext(`(${game.slice(adminExprAt, adminExprEnd)})`, { STAGES: stagesStub }, { timeout: 1000 });
+assert.deepEqual(Object.keys(adminStageIndex), EXPECTED_ADMIN_STAGE_INDEX_ORDER,
+  "admin stage index keys must be the six mainline stages (in mainline order) followed by every hidden branch-destination stage (QA-preview only, in BRANCH_SPECS order)");
+MAINLINE_ORDER.forEach((id, index) => assert.equal(adminStageIndex[id], index, `${id}: admin stage index drifted from mainline order`));
+HIDDEN_BRANCH_IDS.forEach((id, offset) => assert.equal(adminStageIndex[id], MAINLINE_ORDER.length + offset,
+  `${id}: admin stage index (hidden QA-preview entry) must equal its STAGES array position`));
 
 const navContext = { STAGES: stagesStub };
 vm.runInNewContext(
@@ -197,6 +207,12 @@ function resolveId(fromId, choiceId) {
 // rather than asserting a same-stage clamp resolveNextStage never promises on its own.
 topology.forEach(t => {
   assert.equal(navContext.__isMainlineFinalStg(idIndex(t.id)), t.id === "space", `${t.id}: isMainlineFinalStg must be true only for "space"`);
+});
+// The isMainlineFinalStg guard now reads STAGES[s].final (not STAGES[s].id==="space"),
+// so also assert that final:true is declared on "space" and nowhere else -- otherwise
+// the check above could pass by accident if a future stage add copy-pasted the flag.
+topology.forEach(t => {
+  assert.equal(!!t.final, t.id === "space", `${t.id}: STAGES entry's final:true flag must be set only on "space"`);
 });
 
 /* ---------- parameterized per-branch-point checks (structural + functional) ---------- */
@@ -264,19 +280,19 @@ for (const townChoice of BRANCH_SPECS[0].choiceIds) {
 }
 assert.equal(journeysWalked, 16, "expected all 2^4 branch-choice combinations across the 4 branch points to be walked");
 
-/* ---------- RARES must have exactly one entry per STAGES entry (guard-leak detection) ---------- */
-function extractConstArray(source, name) {
-  const marker = `const ${name}=`;
-  const markerAt = source.indexOf(marker);
-  assert.ok(markerAt >= 0, `${name}: declaration missing`);
-  const arrayOpenAt = markerAt + marker.length;
-  assert.equal(source[arrayOpenAt], "[", `${name}: expected an array literal`);
-  const arrayEnd = scanBalanced(source, arrayOpenAt, "[", "]");
-  assert.ok(arrayEnd > arrayOpenAt, `${name}: unterminated array literal`);
-  return vm.runInNewContext(`(${source.slice(arrayOpenAt, arrayEnd + 1)})`, Object.create(null), { timeout: 1000 });
-}
-const rares = extractConstArray(game, "RARES");
-assert.equal(rares.length, topology.length, `RARES must have exactly one entry per STAGES entry (RARES=${rares.length}, STAGES=${topology.length}); a mismatch means maybeSpawnRare() can index past the end and spawn undefined art`);
+/* ---------- every STAGES entry must carry its own rare:[emoji,label] tuple (guard-leak detection) ---------- */
+// There is no separate RARES array to fall out of sync with STAGES any more (maybeSpawnRare()
+// and collectSeaRareCollision() both read STAGES[stg].rare directly), so the guard-leak this
+// used to catch -- forgetting to append a matching RARES entry when adding a stage -- is now a
+// missing/malformed rare:[...] field on the STAGES entry itself.
+topology.forEach(t => {
+  assert.ok(Array.isArray(t.rare) && t.rare.length === 2 && t.rare.every(v => typeof v === "string" && v.length > 0),
+    `${t.id}: STAGES entry must declare rare:[emoji,label] (a mismatch means maybeSpawnRare() can destructure undefined and crash)`);
+});
+assert.match(extractFunction(game, "maybeSpawnRare"), /const \[e,t\]=STAGES\[stg\]\.rare/,
+  "maybeSpawnRare must read the rare tuple from the current STAGES entry, not a parallel RARES array");
+assert.match(extractFunction(game, "collectSeaRareCollision"), /STAGES\[stg\]\.rare/,
+  "collectSeaRareCollision must read the rare tuple from the current STAGES entry, not a parallel RARES array");
 
 /* ---------- openMap()'s highestOpen must exclude every hidden branch stage from all 4 branch points ---------- */
 class FakeClassList {
@@ -307,7 +323,10 @@ class FakeElement {
   append(...children) { children.forEach(child => this.appendChild(child)); }
 }
 
-const openMapStages = topology.map(t => ({ id: t.id, hidden: t.hidden, art: "dummyArt", names: [t.id, t.id] }));
+// countsToProgress is a separate flag from hidden (map-display vs. progress-count are now
+// decoupled), but today every hidden branch stage also opts out of progress and every
+// mainline stage opts in, so the stub mirrors that real STAGES data 1:1.
+const openMapStages = topology.map(t => ({ id: t.id, hidden: t.hidden, countsToProgress: !t.hidden, art: "dummyArt", names: [t.id, t.id] }));
 
 function createOpenMapHarness() {
   const ids = {

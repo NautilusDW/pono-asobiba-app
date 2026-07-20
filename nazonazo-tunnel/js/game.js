@@ -291,7 +291,7 @@ const ASSETS={
 };
 const bgUrl=src=>'url("'+src+'")';
 const STAGES=[
- {id:"town",icon:"🏘️",art:"stageTown",veh:"train",bank:TOWN,gens:[],skyPosition:"center calc(100% - var(--town-sky-lift,42vh))",
+ {id:"town",icon:"🏘️",art:"stageTown",veh:"train",bank:TOWN,gens:[],rare:["🕊️","しろい はと"],countsToProgress:true,skyPosition:"center calc(100% - var(--town-sky-lift,42vh))",
   branches:[{choiceId:"snow",toId:"snow"},{choiceId:"fire",toId:"fire"}],
   names:["まちはずれ","ゆうやけの まちはずれ"],
   assets:ASSETS.town,
@@ -309,7 +309,7 @@ const STAGES=[
   ground(P){return svgURI(600,90,gRail(600,90,P.tie,P.rail,P.grass));},
   fg(P){return svgURI(900,220,gBumps(900,220,P.fgA,7,150,25)+gGrassSpikes(900,220,P.fgB,40,90,27));},
   decor(P,r){return bgUrl(ASSETS.town.decor);}},
- {id:"jungle",icon:"🌴",art:"stageJungle",veh:"train",bank:JUNGLE,gens:["legsJ","sizeJ"],skyPosition:"center calc(100% - 22vh)",
+ {id:"jungle",icon:"🌴",art:"stageJungle",veh:"train",bank:JUNGLE,gens:["legsJ","sizeJ"],rare:["🦜","にじいろ おうむ"],countsToProgress:true,skyPosition:"center calc(100% - 22vh)",
   branches:[{choiceId:"dino",toId:"dino"},{choiceId:"toy",toId:"toy"}],
   names:["ジャングル","よるの ジャングル"],
  pals:[
@@ -326,7 +326,7 @@ const STAGES=[
   ground(P){return svgURI(600,90,gRail(600,90,P.tie,P.rail,P.grass));},
   fg(P){return svgURI(900,220,gBumps(900,220,P.fgA,6,170,55)+gKelp(900,220,P.fgB,5,57));},
  decor(P,r){return bgUrl(ASSETS.jungle.decor);}},
- {id:"number",icon:"🎲",art:"stageNumber",veh:"train",bank:null,gens:[],
+ {id:"number",icon:"🎲",art:"stageNumber",veh:"train",bank:null,gens:[],rare:["💯","ひゃくてんまん"],countsToProgress:true,
   branches:[{choiceId:"cat",toId:"cat"},{choiceId:"fantasy",toId:"fantasy"}],
   names:["すうじのへや","ゆめの すうじのへや"],
   assets:ASSETS.number,
@@ -340,7 +340,7 @@ const STAGES=[
   ground(P){return svgURI(600,90,gChecker(600,90,P.flo1,P.flo2));},
   fg(P){return svgURI(900,220,gBlocksRow(900,220,P.fgBlocks,5,85,true));},
  decor(P,r){return bgUrl(ASSETS.number.decor);}},
- {id:"sea",icon:"🌊",art:"stageSea",veh:"sub",bank:SEA,gens:["legsS","sizeS"],
+ {id:"sea",icon:"🌊",art:"stageSea",veh:"sub",bank:SEA,gens:["legsS","sizeS"],rare:["🐳","そらとぶ くじら"],countsToProgress:true,mechanic:"seaBoss",
   names:["ふかいうみ","よるの ふかいうみ"],
   assets:ASSETS.sea,
   pals:[
@@ -355,7 +355,7 @@ const STAGES=[
   ground(P){return svgURI(600,90,gSand(600,90,P.sand1,P.sand2,105));},
   fg(P){return svgURI(900,220,gKelp(900,220,P.fgA,6,107)+gBumps(900,220,P.fgB,5,120,109));},
  decor(P,r){return svgURI(180,300,gKelp(180,300,P.mid2,2,111+r)+gBumps(180,300,P.far1,2,80,113+r));}},
- {id:"future",icon:"🌆",art:"stageFuture",veh:"train",bank:FUTURE,gens:["speedF"],
+ {id:"future",icon:"🌆",art:"stageFuture",veh:"train",bank:FUTURE,gens:["speedF"],rare:["🛸","なぞの ゆーふぉー"],countsToProgress:true,mechanic:"futureCrane",
   branches:[{choiceId:"sky",toId:"sky"},{choiceId:"ruins",toId:"ruins"}],
   names:["みらいシティ","あさやけの みらいシティ"],
   assets:ASSETS.future,
@@ -372,7 +372,7 @@ const STAGES=[
   ground(P){return svgURI(600,90,gNeonGround(600,90,P.gBase,P.gLine,P.gTick));},
   fg(P){return svgURI(900,220,gSkyline(900,220,P.fgA,135,P.fgWin)+gBumps(900,220,P.fgB,6,90,137));},
   decor(P,r){return bgUrl(ASSETS.future.decor);}},
- {id:"space",icon:"🌌",art:"stageSpace",veh:"rocket",bank:SPACE,gens:[],
+ {id:"space",icon:"🌌",art:"stageSpace",veh:"rocket",bank:SPACE,gens:[],rare:["☄️","おおながれぼし"],countsToProgress:true,final:true,mechanic:"spaceChase",
   names:["うちゅう","ぎんがの おく"],
   assets:ASSETS.space,
   pals:[
@@ -390,7 +390,7 @@ const STAGES=[
   ground(P){return svgURI(600,90,'<rect width="600" height="90" fill="'+P.sky[0]+'"/>'+gStars(600,90,10,165));},
   fg(P){return svgURI(900,220,gBumps(900,220,P.fgA,5,110,167)+gStars(900,120,14,169));},
   decor(P,r){return svgURI(140,240,gBumps(140,240,P.fgB,3,90,171+r)+gStars(140,240,6,173+r));}},
- {id:"snow",icon:"❄️",art:"stageSnow",veh:"train",bank:SNOW,gens:[],hidden:true,rejoinId:"jungle",
+ {id:"snow",icon:"❄️",art:"stageSnow",veh:"train",bank:SNOW,gens:[],rare:["🐰","ゆきの しろうさぎ"],countsToProgress:false,hidden:true,rejoinId:"jungle",
   names:["ゆきのくに","よるの ゆきのくに"],
   pals:[
    {sky:["#bfe6fb","#eef8ff"],haze:"#d7ecf5",skyl:"#c8e4f2",hill:"#e3f2fa",house:"#f5f8fb",roof:"#e2707f",leaf:"#cfead9",trunk:"#6b5645",grass:"#eef7fb",tie:"#5c4a3a",rail:"#4a4a4a",fgA:"#d8ecf5",fgB:"#b9d9ea",mount:"#8fb9d1"},
@@ -406,7 +406,7 @@ const STAGES=[
   ground(P){return svgURI(600,90,gRail(600,90,P.tie,P.rail,P.grass));},
   fg(P){return svgURI(900,220,gBumps(900,220,P.fgA,7,150,415)+gGrassSpikes(900,220,P.fgB,36,80,417));},
   decor(P,r){return svgURI(160,260,gBumps(160,260,P.fgB,3,90,419+r)+gTreeRow(160,260,P.leaf,P.trunk,2,120,421+r));}},
- {id:"fire",icon:"🔥",art:"stageFire",veh:"train",bank:FIRE,gens:[],hidden:true,rejoinId:"jungle",
+ {id:"fire",icon:"🔥",art:"stageFire",veh:"train",bank:FIRE,gens:[],rare:["🦅","ほのおの わし"],countsToProgress:false,hidden:true,rejoinId:"jungle",
   names:["ひのくに","よるの ひのくに"],
   pals:[
    {sky:["#ff8a4a","#3a1810"],far1:"#8a3a2a",far2:"#a8503a",mid1:"#c45a2e",mid2:"#7a3320",trunk:"#2b1a12",grass:"#5a2a1c",tie:"#241209",rail:"#3c3c3c",fgA:"#6e2e1c",fgB:"#4a1f13",mount:"#9c4a2e"},
@@ -421,7 +421,7 @@ const STAGES=[
   ground(P){return svgURI(600,90,gRail(600,90,P.tie,P.rail,P.grass));},
   fg(P){return svgURI(900,220,gBumps(900,220,P.fgA,6,160,445)+gGrassSpikes(900,220,P.fgB,34,70,447));},
   decor(P,r){return svgURI(160,260,gBumps(160,260,P.fgB,3,100,449+r)+gMountains(160,260,P.mid2,10,70,3,451+r,0.9));}},
- {id:"dino",icon:"🦕",art:"stageDino",veh:"train",bank:DINO,gens:["sizeD"],hidden:true,rejoinId:"number",
+ {id:"dino",icon:"🦕",art:"stageDino",veh:"train",bank:DINO,gens:["sizeD"],rare:["🦕","でんせつの きょうりゅう"],countsToProgress:false,hidden:true,rejoinId:"number",
   names:["きょうりゅうのもり","よるの きょうりゅうのもり"],
   pals:[
    {sky:["#d9e8a0","#f2e6b0"],far1:"#c4d68a",far2:"#a8c46e",mid1:"#7a9e52",mid2:"#8fae5e",
@@ -438,7 +438,7 @@ const STAGES=[
   ground(P){return svgURI(600,90,gRail(600,90,P.tie,P.rail,P.grass));},
   fg(P){return svgURI(900,220,gBumps(900,220,P.fgA,6,170,515)+gKelp(900,220,P.fgB,5,517));},
   decor(P,r){return svgURI(160,260,gBumps(160,260,P.fgB,3,120,519+r)+gTreeRow(160,260,P.mid1,P.trunk,2,140,521+r));}},
- {id:"toy",icon:"🧸",art:"stageToy",veh:"train",bank:TOY,gens:["sizeT"],hidden:true,rejoinId:"number",
+ {id:"toy",icon:"🧸",art:"stageToy",veh:"train",bank:TOY,gens:["sizeT"],rare:["🧸","きらきらの ぬいぐるみ"],countsToProgress:false,hidden:true,rejoinId:"number",
   names:["おもちゃのくに","よるの おもちゃのくに"],
   pals:[
    {sky:["#ffe0f0","#fff6e0"],dig1:"#ffb6d5",dig2:"#c9a8f0",
@@ -454,7 +454,7 @@ const STAGES=[
   ground(P){return svgURI(600,90,gChecker(600,90,P.flo1,P.flo2));},
   fg(P){return svgURI(900,220,gBlocksRow(900,220,P.fgBlocks,5,609,true));},
   decor(P,r){return svgURI(160,260,gBlocksRow(160,260,P.fgBlocks,2,611+r,true)+gDigitsFloat(160,260,P.dig1,3,613+r,30));}},
- {id:"cat",icon:"🐱",art:"stageCat",veh:"train",bank:CAT,gens:[],hidden:true,rejoinId:"sea",
+ {id:"cat",icon:"🐱",art:"stageCat",veh:"train",bank:CAT,gens:[],rare:["🐱","しあわせの ねこ"],countsToProgress:false,hidden:true,rejoinId:"sea",
   names:["ねこのまち","よるの ねこのまち"],
   pals:[
    {sky:["#ffe3b0","#fff3d8"],haze:"#f0cf9e",skyl:"#e6ba86",hill:"#d9a86e",house:"#fdf1de",roof:"#e0806a",
@@ -472,7 +472,7 @@ const STAGES=[
   ground(P){return svgURI(600,90,gRail(600,90,P.tie,P.rail,P.grass));},
   fg(P){return svgURI(900,220,gBumps(900,220,P.fgA,7,150,715)+gGrassSpikes(900,220,P.fgB,40,90,717));},
   decor(P,r){return svgURI(160,260,gBumps(160,260,P.fgB,3,90,719+r)+gTreeRow(160,260,P.leaf,P.trunk,2,120,721+r));}},
- {id:"fantasy",icon:"🦄",art:"stageFantasy",veh:"train",bank:FANTASY,gens:[],hidden:true,rejoinId:"sea",
+ {id:"fantasy",icon:"🦄",art:"stageFantasy",veh:"train",bank:FANTASY,gens:[],rare:["🦄","にじいろの ゆにこーん"],countsToProgress:false,hidden:true,rejoinId:"sea",
   names:["まほうのくに","よるの まほうのくに"],
   pals:[
    {sky:["#ffd6f0","#d6e8ff"],far1:"#b89ae0",far2:"#d0a8e8",win1:"#ffe08a",win2:"#9df0c8",
@@ -491,7 +491,7 @@ const STAGES=[
   ground(P){return svgURI(600,90,gNeonGround(600,90,P.gBase,P.gLine,P.gTick));},
   fg(P){return svgURI(900,220,gSkyline(900,220,P.fgA,815,P.fgWin)+gBumps(900,220,P.fgB,6,90,817));},
   decor(P,r){return svgURI(160,260,gStars(160,260,10,819+r)+gBumps(160,260,P.fgB,2,90,821+r));}},
- {id:"sky",icon:"☁️",art:"stageSky",veh:"train",bank:SKY,gens:[],hidden:true,rejoinId:"space",
+ {id:"sky",icon:"☁️",art:"stageSky",veh:"train",bank:SKY,gens:[],rare:["☁️","きんいろの くも"],countsToProgress:false,hidden:true,rejoinId:"space",
   names:["そらのくに","よるの そらのくに"],
   pals:[
    {sky:["#8ecdf5","#fdf8e8"],haze:"#cfe9f7",skyl:"#eaf3ff",hill:"#ffffff",house:"#fff8ea",roof:"#ffd98a",
@@ -510,7 +510,7 @@ const STAGES=[
   ground(P){return svgURI(600,90,gRail(600,90,P.tie,P.rail,P.grass));},
   fg(P){return svgURI(900,220,gBumps(900,220,P.fgA,7,150,917)+gBumps(900,220,P.fgB,5,110,919));},
   decor(P,r){return svgURI(160,260,gBumps(160,260,P.fgA,3,110,921+r)+gBumps(160,260,P.fgB,2,80,923+r));}},
- {id:"ruins",icon:"🏺",art:"stageRuins",veh:"train",bank:RUINS,gens:[],hidden:true,rejoinId:"space",
+ {id:"ruins",icon:"🏺",art:"stageRuins",veh:"train",bank:RUINS,gens:[],rare:["🏺","ひかる こだいの つぼ"],countsToProgress:false,hidden:true,rejoinId:"space",
   names:["こだいいせき","たいまつの こだいいせき"],
   pals:[
    {sky:["#ffdca0","#fff0d0"],haze:"#e8c48a",skyl:"#d9a86a",hill:"#c9905a",house:"#e8c48a",roof:"#c07a3a",
@@ -529,8 +529,6 @@ const STAGES=[
   fg(P){return svgURI(900,220,gBumps(900,220,P.fgA,7,150,1015)+gGrassSpikes(900,220,P.fgB,40,90,1017));},
   decor(P,r){return svgURI(160,260,gBumps(160,260,P.fgB,3,90,1019+r)+gTreeRow(160,260,P.leaf,P.trunk,2,120,1021+r));}}
 ];
-const RARES=[["🕊️","しろい はと"],["🦜","にじいろ おうむ"],["💯","ひゃくてんまん"],["🐳","そらとぶ くじら"],["🛸","なぞの ゆーふぉー"],["☄️","おおながれぼし"],["🐰","ゆきの しろうさぎ"],["🦅","ほのおの わし"],
- ["🦕","でんせつの きょうりゅう"],["🧸","きらきらの ぬいぐるみ"],["🐱","しあわせの ねこ"],["🦄","にじいろの ゆにこーん"],["☁️","きんいろの くも"],["🏺","ひかる こだいの つぼ"]];
 function stageIndexById(id){return STAGES.findIndex(function(s){return s.id===id;});}
 function stageHasBranches(s){return !!(s&&Array.isArray(s.branches)&&s.branches.length);}
 function resolveNextStage(currentStg,choiceId){
@@ -546,7 +544,7 @@ function resolveNextStage(currentStg,choiceId){
  }
  return Math.min(currentStg+1,STAGES.length-1);
 }
-function isMainlineFinalStg(s){return !!(STAGES[s]&&STAGES[s].id==="space");}
+function isMainlineFinalStg(s){return !!(STAGES[s]&&STAGES[s].final);}
 const RUN_EVENTS={town:[["🦋","ちょう"],["🌼","おはな"],["🍀","よつば"],["🎈","ふうせん"],["🐦","ことり"]]};
 const JUNGLE_MID_TILE_ASPECT=2,JUNGLE_MID_TILE_SCALE=1.16;
 const JUNGLE_ANIMAL_LAYOUT={
@@ -645,7 +643,7 @@ function buildRegistry(){
  });
  zkGroups.push({key:"wp",label:"なぞなぞマスター",art:"master",items:WORDPLAY.map(q=>({e:q.a[0],t:q.a[1]}))});
  zkGroups.push({key:"station",label:"えきの ともだち",art:"station",items:STATION_HELPERS.map(h=>({e:h.e,t:h.name,img:h.normal}))});
- zkGroups.push({key:"rare",label:"めずらしい ともだち",art:"rare",items:RARES.map(x=>({e:x[0],t:x[1]})),rare:true});
+ zkGroups.push({key:"rare",label:"めずらしい ともだち",art:"rare",items:STAGES.map(s=>({e:s.rare[0],t:s.rare[1]})),rare:true});
 }
 function zkKey(e,t){return e+"|"+t;}
 function zkTotal(){let n=0;const s=new Set();zkGroups.forEach(g=>g.items.forEach(it=>s.add(zkKey(it.e,it.t))));return s.size;}
@@ -1946,8 +1944,8 @@ function buildJungleQuestionList(stage){
 function buildQList(){
  const st=STAGES[stg];
  if(st.id==="number"){qList=[];for(let i=0;i<QN;i++)qList.push(Math.random()<0.6?genCount():genNext());return;}
- if(st.id==="sea"){seaBossDefeated=false;seaDecoysSeen.clear();qList=buildSeaRescueList(st);return;}
- if(st.id==="space")spaceChaseDefeated=false;
+ if(st.mechanic==="seaBoss"){seaBossDefeated=false;seaDecoysSeen.clear();qList=buildSeaRescueList(st);return;}
+ if(st.mechanic==="spaceChase")spaceChaseDefeated=false;
  if(st.id==="jungle"){qList=buildJungleQuestionList(st);return;}
  let statics=shuffle(st.bank.filter(x=>(x.min||0)<=level));
  const gens=(st.gens||[]).filter(g=>GENS[g]);
@@ -2085,9 +2083,9 @@ function buildAmbient(P){
  const sc=$("scene"),st=STAGES[stg];
  const fx=(P&&P.fx)||"";
  if(st.id==="number")buildNumberFx(sc);
- if(st.id==="sea"){for(let i=0;i<8;i++){const b=document.createElement("div");b.className="bub";
+ if(st.mechanic==="seaBoss"){for(let i=0;i<8;i++){const b=document.createElement("div");b.className="bub";
   b.style.left=(5+i*12)+"%";b.style.animationDuration=(7+(i%4)*2.5)+"s";b.style.animationDelay=(-i*1.7)+"s";sc.appendChild(b);}}
- if(st.id==="future"){for(let i=0;i<10;i++){const t=document.createElement("div");t.className="twk";t.textContent="✦";
+ if(st.mechanic==="futureCrane"){for(let i=0;i<10;i++){const t=document.createElement("div");t.className="twk";t.textContent="✦";
   t.style.left=(3+i*10)+"%";t.style.top=(5+((i*23)%40))+"%";t.style.animationDelay=(-i*.4)+"s";sc.appendChild(t);}}
  if(fx==="fireflies"){for(let i=0;i<12;i++){const f=document.createElement("div");f.className="fly";f.textContent="●";
   f.style.left=(3+i*8)+"%";f.style.top=(30+((i*17)%45))+"%";f.style.animationDelay=(-i*.6)+"s";sc.appendChild(f);}}
@@ -2253,7 +2251,7 @@ function seaQuestionOptions(question){
 function snapSeaReducedMotion(){
  if(seaReducedMotion()){steerX=steerTargetX;steerY=steerTargetY;}
 }
-function isSeaStage(){return !!(STAGES[stg]&&STAGES[stg].id==="sea");}
+function isSeaStage(){return !!(STAGES[stg]&&STAGES[stg].mechanic==="seaBoss");}
 function seaLandscapeReady(){return (window.innerWidth||844)>=(window.innerHeight||390);}
 function seaControlAvailable(){
  return !window.__PONO_TIER_LOCKED__&&seaLandscapeReady()&&isSeaStage()&&playing&&!tunnelInteriorMode&&
@@ -3568,7 +3566,7 @@ function scheduleRareSpawn(){
 function maybeSpawnRare(){
  if(!playing||!driving||rareEl)return;
  if(!FORCERARE&&Math.random()>rareSpawnChance())return;
- const [e,t]=RARES[stg];
+ const [e,t]=STAGES[stg].rare;
  rareEl=document.createElement("button");rareEl.type="button";
  rareEl.className="rare";rareEl.setAttribute("aria-label",t+"を みつける");
  rareEl.appendChild(createQuizArt(e,t,"rare-art"));
@@ -3601,7 +3599,7 @@ function collectSeaRareCollision(){
  const hull={left:sub.left+sub.width*.1,right:sub.right-sub.width*.08,top:sub.top+sub.height*.18,bottom:sub.bottom-sub.height*.14};
  const overlap=hull.left<item.right&&hull.right>item.left&&hull.top<item.bottom&&hull.bottom>item.top;
  if(!overlap)return false;
- const rare=RARES[stg]||["","めずらしい ともだち"];
+ const rare=STAGES[stg].rare||["","めずらしい ともだち"];
  return collectRareEvent(rareEl,rare[0],rare[1]);
 }
 
@@ -4353,8 +4351,8 @@ function resetNumberCargoGame(){
  choicesEl.classList.remove("number-mode");
  choicesEl.setAttribute("aria-label","こたえを えらぶ");
 }
-function isFutureStage(){return !!(STAGES[stg]&&STAGES[stg].id==="future");}
-function isSpaceStage(){return !!(STAGES[stg]&&STAGES[stg].id==="space");}
+function isFutureStage(){return !!(STAGES[stg]&&STAGES[stg].mechanic==="futureCrane");}
+function isSpaceStage(){return !!(STAGES[stg]&&STAGES[stg].mechanic==="spaceChase");}
 function futureReducedMotion(){
  try{return !!(window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches);}catch(_){return false;}
 }
@@ -5833,21 +5831,24 @@ function openMap(msg){
  let highestOpen=0;
  cleared.forEach((done,i)=>{
   if(!done)return;
-  // hidden(=snow/fire等トンネル分岐限定の隠しルート)のクリアは本編の解放進度に
-  // 数えない。index が本編(town〜space)より後ろにあるため、単純に i+1 を採用すると
-  // 分岐を1つクリアしただけで本編ステージを丸ごと解放扱いにしてしまう
+  // countsToProgress:false(=snow/fire等トンネル分岐限定の隠しルート)のクリアは本編の
+  // 解放進度に数えない。index が本編(town〜space)より後ろにあるため、単純に i+1 を
+  // 採用すると分岐を1つクリアしただけで本編ステージを丸ごと解放扱いにしてしまう
   // (rejoin先の本編ステージ自体をクリアした時点で、そのステージの cleared フラグで
   // 正しく解放される)。
-  if(STAGES[i]&&STAGES[i].hidden)return;
+  // countsToProgress は「マップ表示するか」の hidden とは別軸のフラグ(hidden の値を
+  // 流用しない): 進度カウントの可否だけを独立して判定する。
+  if(!(STAGES[i]&&STAGES[i].countsToProgress))return;
   highestOpen=Math.max(highestOpen,i+1);
  });
- // 現在地(stg)が隠しステージの最中(=分岐トンネル走行中)の場合も、本編の解放進度を
- // 先に進めてしまわないよう無視する。
- const curMainlineIdx=(STAGES[stg]&&STAGES[stg].hidden)?-1:stg;
+ // 現在地(stg)が countsToProgress:false のステージの最中(=分岐トンネル走行中)の場合も、
+ // 本編の解放進度を先に進めてしまわないよう無視する。
+ const curMainlineIdx=(STAGES[stg]&&STAGES[stg].countsToProgress)?stg:-1;
  highestOpen=Math.min(STAGES.length-1,Math.max(highestOpen,curMainlineIdx));
  STAGES.forEach((s,i)=>{
   // hidden(=snow/fire等トンネル分岐限定の隠しルート)はマップ一覧に出さない
-  // (町からのトンネル内タップでのみ選べる寄り道ルートのため)。
+  // (町からのトンネル内タップでのみ選べる寄り道ルートのため)。マップ表示可否は
+  // 引き続き hidden で判定し、上の進度カウント(countsToProgress)とは独立に保つ。
   if(s.hidden)return;
   if(row.children.length){const d=document.createElement("span");d.className="mapDash";d.textContent="→";row.appendChild(d);}
   const canVisit=i<=highestOpen;
@@ -5868,7 +5869,7 @@ function openMap(msg){
 // 公開URLからステージを指定する入口は作らない。same-origin の /admin iframe が
 // canonical IDをpostMessageした時だけ選択し、実開始は子画面のタップで行う。
 const NAZONAZO_ADMIN_STAGE_CHANNEL="pono-nazonazo-admin-stage-v1";
-const NAZONAZO_ADMIN_STAGE_INDEX=Object.freeze({town:0,jungle:1,number:2,sea:3,future:4,space:5,snow:6,fire:7,dino:8,toy:9,cat:10,fantasy:11,sky:12,ruins:13});
+const NAZONAZO_ADMIN_STAGE_INDEX=Object.freeze(STAGES.reduce((acc,s,i)=>(acc[s.id]=i,acc),{}));
 let nazonazoAdminPreviewStageIndex=-1;
 let nazonazoAdminPreviewToken="";
 

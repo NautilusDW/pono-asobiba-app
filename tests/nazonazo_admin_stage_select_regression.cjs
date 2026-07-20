@@ -93,8 +93,15 @@ const bridgeEnd = game.indexOf("\n/* ================= wiring ================= 
 assert.ok(bridgeStart > 0 && bridgeEnd > bridgeStart, "Nazonazo admin stage bridge is missing");
 const bridge = game.slice(bridgeStart, bridgeEnd);
 
+// NAZONAZO_ADMIN_STAGE_INDEX is derived from STAGES (Object.freeze(STAGES.reduce(...)))
+// rather than a hand-typed id->index table, so the bridge slice needs a STAGES stand-in
+// in scope. A minimal {id}-only stub (built from the independent expectedIds ground truth
+// above, in the same order) is enough -- it avoids dragging in the real STAGES array's
+// heavy SVG-art object literal just to test the admin trust/index bridge.
+const stagesIdStub = expectedIds.map((id) => ({ id }));
+
 function runTrust(windowObject) {
-  const context = { window: windowObject };
+  const context = { window: windowObject, STAGES: stagesIdStub };
   vm.runInNewContext(
     bridge + ";this.__ids=Object.keys(NAZONAZO_ADMIN_STAGE_INDEX);this.__indexes=this.__ids.map(id=>NAZONAZO_ADMIN_STAGE_INDEX[id]);this.__trusted=nazonazoAdminPreviewParentIsTrusted();",
     context,

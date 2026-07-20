@@ -149,6 +149,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-07-20T05:14:18Z - なぞなぞトレインgame.jsのDarius homage分岐拡張に向けたPhase0技術的負債リファクタ(RARES自己記述化/isMainlineFinalStg一般化/isSeaStage等のmechanicフラグ化/NAZONAZO_ADMIN_STAGE_INDEX自動生成/hidden概念分離)
+- **タスク**: なぞなぞトレインgame.jsのDarius homage分岐拡張に向けたPhase0技術的負債リファクタ(RARES自己記述化/isMainlineFinalStg一般化/isSeaStage等のmechanicフラグ化/NAZONAZO_ADMIN_STAGE_INDEX自動生成/hidden概念分離)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 0
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {}
+- **サマリ**: 行動ログが空のため分析できません。
+
+
 ### 2026-07-20T04:43:59Z - 隠しステージ8つのQAプレビュー機能: クロスレビュー2件の指摘反映確認
 - **タスク**: 隠しステージ8つのQAプレビュー機能: クロスレビュー2件の指摘反映確認
 - **結果**: 成功
@@ -242,19 +255,6 @@ wrangler deploy                  # master 内容を production に
 
 ### 2026-07-20T01:45:34Z - なぞなぞトレイン: 分岐点2(dino/toy)・3(cat/fantasy)・4(sky/ruins)を確定設計書通りに実装
 - **タスク**: なぞなぞトレイン: 分岐点2(dino/toy)・3(cat/fantasy)・4(sky/ruins)を確定設計書通りに実装
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 0
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {}
-- **サマリ**: 行動ログが空のため分析できません。
-
-
-### 2026-07-20T00:27:16Z - なぞなぞトレイン分岐拡張ロードマップ設計(genCompare/genLegs・quiz-art・headgehog・partners再利用逆算)
-- **タスク**: なぞなぞトレイン分岐拡張ロードマップ設計(genCompare/genLegs・quiz-art・headgehog・partners再利用逆算)
 - **結果**: 成功
 - **理由**: N/A
 - **総アクション数**: 0
