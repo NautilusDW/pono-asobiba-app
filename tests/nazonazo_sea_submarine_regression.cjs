@@ -12,9 +12,9 @@ const html = read("nazonazo-tunnel/index.html");
 const css = read("nazonazo-tunnel/styles.css");
 const js = read("nazonazo-tunnel/js/game.js");
 
-assert.match(html, /styles\.css\?v=20260716-1329/,
+assert.match(html, /styles\.css\?v=20260720-1382/,
   "the non-choice illustration pass needs a fresh stylesheet cache key");
-assert.match(html, /js\/game\.js\?v=20260716-1329/,
+assert.match(html, /js\/game\.js\?v=20260720-1382/,
   "the non-choice illustration pass needs a fresh script cache key");
 
 function extractFunction(source, name) {

@@ -287,6 +287,70 @@ const ASSETS={
   fg:"../assets/images/nazonazo-tunnel/space_asteroids_cutout_loop_20260713.png",
   station:"../assets/images/nazonazo-tunnel/space_constellation_checkpoint_20260713.png",
   rocket:"../assets/images/nazonazo-tunnel/space_vehicle_exploration_rocket_pono_20260713.png"
+ },
+ snow:{
+  sky:"../assets/images/nazonazo-tunnel/branch_snow_sky_back_20260720.webp",
+  horizon:"../assets/images/nazonazo-tunnel/branch_snow_horizon_cutout_loop_20260720.webp",
+  mid:"../assets/images/nazonazo-tunnel/branch_snow_mid_cutout_loop_20260720.webp",
+  ground:"../assets/images/nazonazo-tunnel/branch_snow_ground_track_loop_20260720.webp",
+  fg:"../assets/images/nazonazo-tunnel/branch_snow_foreground_cutout_loop_20260720.webp",
+  decor:"../assets/images/nazonazo-tunnel/branch_snow_decor_cutout_20260720.webp"
+ },
+ fire:{
+  sky:"../assets/images/nazonazo-tunnel/branch_fire_sky_back_20260720.webp",
+  horizon:"../assets/images/nazonazo-tunnel/branch_fire_horizon_cutout_loop_20260720.webp",
+  mid:"../assets/images/nazonazo-tunnel/branch_fire_mid_cutout_loop_20260720.webp",
+  ground:"../assets/images/nazonazo-tunnel/branch_fire_ground_track_loop_20260720.webp",
+  fg:"../assets/images/nazonazo-tunnel/branch_fire_foreground_cutout_loop_20260720.webp",
+  decor:"../assets/images/nazonazo-tunnel/branch_fire_decor_cutout_20260720.webp"
+ },
+ dino:{
+  sky:"../assets/images/nazonazo-tunnel/branch_dino_sky_back_20260720.webp",
+  horizon:"../assets/images/nazonazo-tunnel/branch_dino_horizon_cutout_loop_20260720.webp",
+  mid:"../assets/images/nazonazo-tunnel/branch_dino_mid_cutout_loop_20260720.webp",
+  ground:"../assets/images/nazonazo-tunnel/branch_dino_ground_track_loop_20260720.webp",
+  fg:"../assets/images/nazonazo-tunnel/branch_dino_foreground_cutout_loop_20260720.webp",
+  decor:"../assets/images/nazonazo-tunnel/branch_dino_decor_cutout_20260720.webp"
+ },
+ toy:{
+  sky:"../assets/images/nazonazo-tunnel/branch_toy_sky_back_20260720.webp",
+  horizon:"../assets/images/nazonazo-tunnel/branch_toy_horizon_cutout_loop_20260720.webp",
+  mid:"../assets/images/nazonazo-tunnel/branch_toy_mid_cutout_loop_20260720.webp",
+  ground:"../assets/images/nazonazo-tunnel/branch_toy_ground_track_loop_20260720.webp",
+  fg:"../assets/images/nazonazo-tunnel/branch_toy_foreground_cutout_loop_20260720.webp",
+  decor:"../assets/images/nazonazo-tunnel/branch_toy_decor_cutout_20260720.webp"
+ },
+ cat:{
+  sky:"../assets/images/nazonazo-tunnel/branch_cat_sky_back_20260720.webp",
+  horizon:"../assets/images/nazonazo-tunnel/branch_cat_horizon_cutout_loop_20260720.webp",
+  mid:"../assets/images/nazonazo-tunnel/branch_cat_mid_cutout_loop_20260720.webp",
+  ground:"../assets/images/nazonazo-tunnel/branch_cat_ground_track_loop_20260720.webp",
+  fg:"../assets/images/nazonazo-tunnel/branch_cat_foreground_cutout_loop_20260720.webp",
+  decor:"../assets/images/nazonazo-tunnel/branch_cat_decor_cutout_loop_20260720.webp"
+ },
+ fantasy:{
+  sky:"../assets/images/nazonazo-tunnel/branch_fantasy_sky_back_20260720.webp",
+  horizon:"../assets/images/nazonazo-tunnel/branch_fantasy_horizon_cutout_loop_20260720.webp",
+  mid:"../assets/images/nazonazo-tunnel/branch_fantasy_mid_cutout_loop_20260720.webp",
+  ground:"../assets/images/nazonazo-tunnel/branch_fantasy_ground_track_loop_20260720.webp",
+  fg:"../assets/images/nazonazo-tunnel/branch_fantasy_foreground_cutout_loop_20260720.webp",
+  decor:"../assets/images/nazonazo-tunnel/branch_fantasy_decor_cutout_loop_20260720.webp"
+ },
+ sky:{
+  sky:"../assets/images/nazonazo-tunnel/branch_sky_sky_back_20260720.webp",
+  horizon:"../assets/images/nazonazo-tunnel/branch_sky_horizon_cutout_loop_20260720.webp",
+  mid:"../assets/images/nazonazo-tunnel/branch_sky_mid_cutout_loop_20260720.webp",
+  ground:"../assets/images/nazonazo-tunnel/branch_sky_ground_track_loop_20260720.webp",
+  fg:"../assets/images/nazonazo-tunnel/branch_sky_foreground_cutout_loop_20260720.webp",
+  decor:"../assets/images/nazonazo-tunnel/branch_sky_decor_cutout_loop_20260720.webp"
+ },
+ ruins:{
+  sky:"../assets/images/nazonazo-tunnel/branch_ruins_sky_back_20260720.webp",
+  horizon:"../assets/images/nazonazo-tunnel/branch_ruins_horizon_cutout_loop_20260720.webp",
+  mid:"../assets/images/nazonazo-tunnel/branch_ruins_mid_cutout_loop_20260720.webp",
+  ground:"../assets/images/nazonazo-tunnel/branch_ruins_ground_track_loop_20260720.webp",
+  fg:"../assets/images/nazonazo-tunnel/branch_ruins_foreground_cutout_loop_20260720.webp",
+  decor:"../assets/images/nazonazo-tunnel/branch_ruins_decor_cutout_loop_20260720.webp"
  }
 };
 const bgUrl=src=>'url("'+src+'")';
@@ -393,6 +457,7 @@ const STAGES=[
   decor(P,r){return svgURI(140,240,gBumps(140,240,P.fgB,3,90,171+r)+gStars(140,240,6,173+r));}},
  {id:"snow",icon:"❄️",art:"stageSnow",veh:"train",bank:SNOW,gens:[],rare:["🐰","ゆきの しろうさぎ"],countsToProgress:false,hidden:true,rejoinId:"jungle",
   names:["ゆきのくに","よるの ゆきのくに"],
+  assets:ASSETS.snow,
   pals:[
    {sky:["#bfe6fb","#eef8ff"],haze:"#d7ecf5",skyl:"#c8e4f2",hill:"#e3f2fa",house:"#f5f8fb",roof:"#e2707f",leaf:"#cfead9",trunk:"#6b5645",grass:"#eef7fb",tie:"#5c4a3a",rail:"#4a4a4a",fgA:"#d8ecf5",fgB:"#b9d9ea",mount:"#8fb9d1"},
    {sky:["#1c3a52","#0c1f30"],haze:"#2c4f68",skyl:"#23445c",hill:"#365b74",house:"#2a4456",roof:"#7a3540",leaf:"#3c5f5a",trunk:"#26201a",grass:"#22394a",tie:"#1c1712",rail:"#333333",fgA:"#1a3040",fgB:"#142636",mount:"#3f6178"}],
@@ -409,6 +474,7 @@ const STAGES=[
   decor(P,r){return svgURI(160,260,gBumps(160,260,P.fgB,3,90,419+r)+gTreeRow(160,260,P.leaf,P.trunk,2,120,421+r));}},
  {id:"fire",icon:"🔥",art:"stageFire",veh:"train",bank:FIRE,gens:[],rare:["🦅","ほのおの わし"],countsToProgress:false,hidden:true,rejoinId:"jungle",
   names:["ひのくに","よるの ひのくに"],
+  assets:ASSETS.fire,
   pals:[
    {sky:["#ff8a4a","#3a1810"],far1:"#8a3a2a",far2:"#a8503a",mid1:"#c45a2e",mid2:"#7a3320",trunk:"#2b1a12",grass:"#5a2a1c",tie:"#241209",rail:"#3c3c3c",fgA:"#6e2e1c",fgB:"#4a1f13",mount:"#9c4a2e"},
    {sky:["#2a0a06","#120302"],far1:"#3a120a",far2:"#5a1c0e",mid1:"#e8641f",mid2:"#7a2a12",trunk:"#150a06",grass:"#3a150c",tie:"#120906",rail:"#2a2a2a",fgA:"#4a1608",fgB:"#2a0c05",mount:"#c2501f"}],
@@ -424,6 +490,7 @@ const STAGES=[
   decor(P,r){return svgURI(160,260,gBumps(160,260,P.fgB,3,100,449+r)+gMountains(160,260,P.mid2,10,70,3,451+r,0.9));}},
  {id:"dino",icon:"🦕",art:"stageDino",veh:"train",bank:DINO,gens:["sizeD"],rare:["🦕","でんせつの きょうりゅう"],countsToProgress:false,hidden:true,rejoinId:"number",
   names:["きょうりゅうのもり","よるの きょうりゅうのもり"],
+  assets:ASSETS.dino,
   pals:[
    {sky:["#d9e8a0","#f2e6b0"],far1:"#c4d68a",far2:"#a8c46e",mid1:"#7a9e52",mid2:"#8fae5e",
     trunk:"#5c4530",grass:"#a3b25a",tie:"#5a4530",rail:"#4a4a4a",fgA:"#5f7a3c",fgB:"#3e5a26",mount:"#8a6a48",fx:"none"},
@@ -441,6 +508,7 @@ const STAGES=[
   decor(P,r){return svgURI(160,260,gBumps(160,260,P.fgB,3,120,519+r)+gTreeRow(160,260,P.mid1,P.trunk,2,140,521+r));}},
  {id:"toy",icon:"🧸",art:"stageToy",veh:"train",bank:TOY,gens:["sizeT"],rare:["🧸","きらきらの ぬいぐるみ"],countsToProgress:false,hidden:true,rejoinId:"number",
   names:["おもちゃのくに","よるの おもちゃのくに"],
+  assets:ASSETS.toy,
   pals:[
    {sky:["#ffe0f0","#fff6e0"],dig1:"#ffb6d5",dig2:"#c9a8f0",
     blocks:["#d9c6f5","#f5c6e0","#c6e0f5"],blocks2:["#c0a8ee","#eea8cc","#a8ccee"],fgBlocks:["#8f76d0","#c06aa8","#6a8fc0"],
@@ -457,6 +525,7 @@ const STAGES=[
   decor(P,r){return svgURI(160,260,gBlocksRow(160,260,P.fgBlocks,2,611+r,true)+gDigitsFloat(160,260,P.dig1,3,613+r,30));}},
  {id:"cat",icon:"🐱",art:"stageCat",veh:"train",bank:CAT,gens:[],rare:["🐱","しあわせの ねこ"],countsToProgress:false,hidden:true,rejoinId:"sea",
   names:["ねこのまち","よるの ねこのまち"],
+  assets:ASSETS.cat,
   pals:[
    {sky:["#ffe3b0","#fff3d8"],haze:"#f0cf9e",skyl:"#e6ba86",hill:"#d9a86e",house:"#fdf1de",roof:"#e0806a",
     leaf:"#c9a878",trunk:"#8a6a4a",grass:"#e8c98a",tie:"#6b4a2f",rail:"#4a4a4a",fgA:"#d9a45e",fgB:"#b9843e",mount:"#c98a5e"},
@@ -475,6 +544,7 @@ const STAGES=[
   decor(P,r){return svgURI(160,260,gBumps(160,260,P.fgB,3,90,719+r)+gTreeRow(160,260,P.leaf,P.trunk,2,120,721+r));}},
  {id:"fantasy",icon:"🦄",art:"stageFantasy",veh:"train",bank:FANTASY,gens:[],rare:["🦄","にじいろの ゆにこーん"],countsToProgress:false,hidden:true,rejoinId:"sea2",
   names:["まほうのくに","よるの まほうのくに"],
+  assets:ASSETS.fantasy,
   pals:[
    {sky:["#ffd6f0","#d6e8ff"],far1:"#b89ae0",far2:"#d0a8e8",win1:"#ffe08a",win2:"#9df0c8",
     mid1:"#c8a0e8",mid2:"#f0b8dc",gBase:"#a8e8c0",gLine:"#ffd98a",gTick:"#f5a8d0",
@@ -494,6 +564,7 @@ const STAGES=[
   decor(P,r){return svgURI(160,260,gStars(160,260,10,819+r)+gBumps(160,260,P.fgB,2,90,821+r));}},
  {id:"sky",icon:"☁️",art:"stageSky",veh:"train",bank:SKY,gens:[],rare:["☁️","きんいろの くも"],countsToProgress:false,hidden:true,rejoinId:"space",
   names:["そらのくに","よるの そらのくに"],
+  assets:ASSETS.sky,
   pals:[
    {sky:["#8ecdf5","#fdf8e8"],haze:"#cfe9f7",skyl:"#eaf3ff",hill:"#ffffff",house:"#fff8ea",roof:"#ffd98a",
     leaf:"#eaf6ff",trunk:"#d8c890",grass:"#ffffff",tie:"#d0a860",rail:"#4a4a4a",fgA:"#ffffff",fgB:"#eef6ff",mount:"#ffe0a0"},
@@ -513,6 +584,7 @@ const STAGES=[
   decor(P,r){return svgURI(160,260,gBumps(160,260,P.fgA,3,110,921+r)+gBumps(160,260,P.fgB,2,80,923+r));}},
  {id:"ruins",icon:"🏺",art:"stageRuins",veh:"train",bank:RUINS,gens:[],rare:["🏺","ひかる こだいの つぼ"],countsToProgress:false,hidden:true,rejoinId:"space2",
   names:["こだいいせき","たいまつの こだいいせき"],
+  assets:ASSETS.ruins,
   pals:[
    {sky:["#ffdca0","#fff0d0"],haze:"#e8c48a",skyl:"#d9a86a",hill:"#c9905a",house:"#e8c48a",roof:"#c07a3a",
     leaf:"#8aa860",trunk:"#6a4a2a",grass:"#d4a858",tie:"#5a3a20",rail:"#4a4a4a",fgA:"#b8823f",fgB:"#96652c",mount:"#c9905a"},
@@ -582,6 +654,19 @@ const STAGES=[
   fg(P){return svgURI(900,220,gBumps(900,220,P.fgA,5,110,1367)+gStars(900,120,14,1369));},
   decor(P,r){return svgURI(140,240,gBumps(140,240,P.fgB,3,90,1371+r)+gStars(140,240,6,1373+r));}}
 ];
+const BRANCH_RASTER_STAGE_IDS=new Set(["snow","fire","dino","toy","cat","fantasy","sky","ruins"]);
+const BRANCH_RASTER_ASSET_KEYS=Object.freeze(["sky","horizon","mid","ground","fg","decor"]);
+const branchRasterImageCache=new Map();
+function isBranchRasterStage(st){return !!(st&&BRANCH_RASTER_STAGE_IDS.has(st.id));}
+function preloadBranchRasterStage(st){
+ if(!isBranchRasterStage(st)||!st.assets)return;
+ BRANCH_RASTER_ASSET_KEYS.forEach(key=>{
+  const src=st.assets[key];
+  if(!src||branchRasterImageCache.has(src))return;
+  const image=new Image();image.decoding="async";image.src=src;
+  branchRasterImageCache.set(src,image);
+ });
+}
 function stageIndexById(id){return STAGES.findIndex(function(s){return s.id===id;});}
 function stageHasBranches(s){return !!(s&&Array.isArray(s.branches)&&s.branches.length);}
 // hidden hub stages appended at the STAGES tail (sea2/future2/space2) share their mechanic
@@ -1089,7 +1174,7 @@ function setDriverMood(mood){
 
 /* ================= dom ================= */
 const $=id=>document.getElementById(id);
-const world=$("world"),veh=$("veh"),horizon=$("horizon"),midT=$("midT"),groundT=$("groundT"),fgT=$("fgT"),seaFishLayer=$("seaFishLayer"),seaHabitatLayer=$("seaHabitatLayer"),smokeLayer=$("smokeLayer"),townHorizonLoop=$("townHorizonLoop"),townMidLoop=$("townMidLoop"),futureHorizonLoop=$("futureHorizonLoop"),futureMidLoop=$("futureMidLoop"),futureForegroundLoop=$("futureForegroundLoop"),spaceHorizonLoop=$("spaceHorizonLoop"),spaceForegroundLoop=$("spaceForegroundLoop"),jungleHabitatBack=$("jungleHabitatBack");
+const world=$("world"),veh=$("veh"),horizon=$("horizon"),midT=$("midT"),groundT=$("groundT"),branchDecorT=$("branchDecorT"),fgT=$("fgT"),seaFishLayer=$("seaFishLayer"),seaHabitatLayer=$("seaHabitatLayer"),smokeLayer=$("smokeLayer"),townHorizonLoop=$("townHorizonLoop"),townMidLoop=$("townMidLoop"),futureHorizonLoop=$("futureHorizonLoop"),futureMidLoop=$("futureMidLoop"),futureForegroundLoop=$("futureForegroundLoop"),spaceHorizonLoop=$("spaceHorizonLoop"),spaceForegroundLoop=$("spaceForegroundLoop"),jungleHabitatBack=$("jungleHabitatBack");
 const vehicleSteerShell=$("vehicleSteerShell"),seaSteerSurface=$("seaSteerSurface"),spaceSteerSurface=$("spaceSteerSurface"),seaAnswerLayer=$("seaAnswerLayer"),seaBossLayer=$("seaBossLayer"),seaRescueMessage=$("seaRescueMessage"),seaArenaShade=$("seaArenaShade"),seaRoundCountdown=$("seaRoundCountdown"),seaQuizGuide=$("seaQuizGuide"),seaSteerHint=$("seaSteerHint"),spaceSteerHint=$("spaceSteerHint");
 const futureCapsuleLayer=$("futureCapsuleLayer"),spaceGalaxyLayer=$("spaceGalaxyLayer");
 const spaceChaseLayer=$("spaceChaseLayer"),spaceChaseGuide=$("spaceChaseGuide"),spaceChaseTitle=$("spaceChaseTitle"),spaceChaseBoostMeter=$("spaceChaseBoostMeter"),spaceChaseFinalMeter=$("spaceChaseFinalMeter"),spaceChaseRoundText=$("spaceChaseRoundText"),spaceChaseBoostButton=$("spaceChaseBoostButton"),spaceChaseRouteMap=$("spaceChaseRouteMap"),spaceChaseRoutePaths=$("spaceChaseRoutePaths"),spaceChaseJunctions=$("spaceChaseJunctions"),spaceChaseBoostItemsLayer=$("spaceChaseBoostItems"),spaceChaseRouteChoices=$("spaceChaseRouteChoices"),spaceChaseCinematic=$("spaceChaseCinematic"),spaceChaseCinematicText=$("spaceChaseCinematicText"),spaceChaseRescuePanel=$("spaceChaseRescuePanel"),spaceChaseRescuePlayfield=$("spaceChaseRescuePlayfield"),spaceChaseRescueTitle=$("spaceChaseRescueTitle"),spaceChaseRescueGuide=$("spaceChaseRescueGuide"),spaceChaseRescueProgress=$("spaceChaseRescueProgress"),spaceChaseRescueRing=$("spaceChaseRescueRing"),spaceChaseRescueStar=$("spaceChaseRescueStar"),spaceChaseRescueTether=$("spaceChaseRescueTether"),spaceChaseTailGates=$("spaceChaseTailGates"),spaceChaseSealTargets=$("spaceChaseSealTargets"),spaceChaseTimingPulse=$("spaceChaseTimingPulse"),spaceChaseConstellation=$("spaceChaseConstellation"),spaceChaseRescueMashButton=$("spaceChaseRescueMashButton");
@@ -2050,6 +2135,8 @@ function stageBodyClass(st){
 }
 function applySkin(weatherReady){
  const st=STAGES[stg],P=palOf(stg);
+ const branchRaster=isBranchRasterStage(st);
+ preloadBranchRasterStage(st);
  // space はマインライン最終ステージ固定(末尾追加した snow/fire に押し出されても
  // 「次のパレットを覗き見る」演出は自分自身のまま = 既存6ステージの挙動を完全維持)。
  // 分岐ステージ(town)ではまだプレイヤーが選択していないため、resolveNextStage の
@@ -2069,6 +2156,8 @@ function applySkin(weatherReady){
  if(wasAdminSpaceChase)document.body.classList.add("nazonazo-admin-space-chase-preview");
  document.body.dataset.weather=weather;
  setDriverForStage(stg);
+ document.body.classList.toggle("branch-raster",branchRaster);
+ document.body.classList.toggle("branch-night",branchRaster&&loop%2===1);
  skyA.style.background=st.assets&&st.assets.sky?bgUrl(st.assets.sky)+" "+(st.skyPosition||"center bottom")+" / cover no-repeat":"linear-gradient("+P.sky[0]+","+P.sky[1]+")";
  skyA.style.backgroundColor=st.id==="town"?"#c7d659":(st.id==="jungle"?"#34793f":"transparent");
  skyB.style.background="linear-gradient("+NP.sky[0]+","+NP.sky[1]+")";
@@ -2076,6 +2165,7 @@ function applySkin(weatherReady){
  horizon.style.backgroundImage=st.assets&&st.assets.horizon?bgUrl(st.assets.horizon):st.horizon(P,NP);
  midT.style.backgroundImage=st.assets&&st.assets.mid?bgUrl(st.assets.mid):st.mid(P);
  groundT.style.backgroundImage=st.assets&&st.assets.ground?bgUrl(st.assets.ground):st.ground(P);
+ if(branchDecorT)branchDecorT.style.backgroundImage=branchRaster&&st.assets&&st.assets.decor?bgUrl(st.assets.decor):"none";
  fgT.style.backgroundImage=st.assets&&st.assets.fg?bgUrl(st.assets.fg):st.fg(P);
  if(jungleHabitatBack)jungleHabitatBack.style.backgroundImage=st.id==="jungle"&&st.assets&&st.assets.habitat?bgUrl(st.assets.habitat):"none";
  buildAmbient(P);
@@ -2117,6 +2207,7 @@ function buildWorld(keepCover){
   // trackside decor が意図せず増える(sea/space はここを常に0にする設計)ため、
   // mechanic ベースの判定に一般化してある(Phase0 の isSeaStage/isSpaceStage と同じ方針)。
   for(let k=0;k<((st.mechanic==="spaceChase"||st.mechanic==="seaBoss")?0:2);k++){
+   if(isBranchRasterStage(st))continue;
    const d=document.createElement("div");d.className="decor";
    const imageDecor=!!(st.assets&&st.assets.decor);
    const wv=imageDecor?(st.id==="jungle"?68+((i+k)%3)*7:80+((i+k)%3)*7):(8+((i*7+k*5)%8));
@@ -4005,6 +4096,7 @@ function chooseTunnelBranch(branch,index,button,isAuto){
  if(tunnelBranchGates)tunnelBranchGates.classList.add("is-chosen");
  tone(index?680:920,0,.15,"triangle",.14);tone(index?1020:1360,.09,.2,"triangle",.12);
  const idx=branchTargetIdx(branch),target=STAGES[idx];
+ preloadBranchRasterStage(target);
  const label=(target&&target.names&&target.names[loop%2])||"つぎの みち";
  if(!isAuto)confetti(6);
  showStamp(label+"を えらんだ！","ok");
@@ -4211,7 +4303,11 @@ function render(now){
  renderSpaceStars(now);
  if(jungleHabitatBack&&document.body.classList.contains("st-jungle"))jungleHabitatBack.style.backgroundPositionX=cssXFromVw(-(worldX-o)*.92);
  updateScreenExitShift();
- if(document.body.classList.contains("st-town")&&townHorizonLoop){
+ const branchRasterStage=document.body.classList.contains("branch-raster");
+ if(branchRasterStage){
+  horizon.style.transform="translate3d(0,0,0)";
+  horizon.style.backgroundPositionX=cssXFromVw(-(worldX-o)*.095);
+ }else if(document.body.classList.contains("st-town")&&townHorizonLoop){
   horizon.style.transform="translate3d(0,0,0)";
   horizon.style.backgroundPositionX="0px";
   const horizonTileWidth=(window.innerHeight||390)*1.34*(1983/793);
@@ -4241,7 +4337,9 @@ function render(now){
   const hd=clamp((worldX-o)*0.095,0,70);
   horizon.style.transform="translate3d("+cssXFromVw(-hd)+",0,0)";
  }
- if(document.body.classList.contains("st-town")&&townMidLoop){
+ if(branchRasterStage){
+  midT.style.backgroundPositionX=cssXFromVw(-(worldX-o)*.25);
+ }else if(document.body.classList.contains("st-town")&&townMidLoop){
   const tileWidth=(window.innerHeight||390)*1.14*(1774/887);
   const period=tileWidth*2;
   const rawOffset=((worldX*0.25*(window.innerWidth||844)/100)%period+period)%period;
@@ -4262,7 +4360,8 @@ function render(now){
   midT.style.backgroundPositionX=cssXFromVw(-worldX*0.25);
  }
  const futureStage=document.body.classList.contains("st-future"),spaceStage=document.body.classList.contains("st-space");
- groundT.style.backgroundPositionX=spaceStage?"0px":cssXFromVw(futureStage?-(worldX-o):-worldX);
+ groundT.style.backgroundPositionX=branchRasterStage?cssXFromVw(-(worldX-o)):spaceStage?"0px":cssXFromVw(futureStage?-(worldX-o):-worldX);
+ if(branchDecorT)branchDecorT.style.backgroundPositionX=branchRasterStage?cssXFromVw(-(worldX-o)):"0px";
  if(futureStage&&futureForegroundLoop){
   const tileWidth=(window.innerHeight||390)*FUTURE_FOREGROUND_HEIGHT*FUTURE_FOREGROUND_ASPECT;
   const period=tileWidth*2;
@@ -4275,7 +4374,7 @@ function render(now){
   const rawOffset=(((worldX-o)*SPACE_FOREGROUND_PARALLAX*(window.innerWidth||844)/100)%period+period)%period;
   const loopOffset=IOS_DEVICE?Math.round(rawOffset):Number(rawOffset.toFixed(2));
   spaceForegroundLoop.style.transform="translate3d("+(-loopOffset)+"px,0,0)";fgT.style.backgroundPositionX="0px";
- }else fgT.style.backgroundPositionX=document.body.classList.contains("st-sea")?cssXFromVw(-(worldX-o)*1.06):cssXFromVw(-worldX*1.35);
+ }else fgT.style.backgroundPositionX=branchRasterStage?cssXFromVw(-(worldX-o)*1.35):document.body.classList.contains("st-sea")?cssXFromVw(-(worldX-o)*1.06):cssXFromVw(-worldX*1.35);
  const p=clamp((worldX-o)/COVER_OFF,0,1);
  skyB.style.opacity=(p>0.78?((p-0.78)/0.22)*0.9:0).toFixed(2);
  const cv=transitCover||coverEl;

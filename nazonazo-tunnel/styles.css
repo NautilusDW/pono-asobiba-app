@@ -418,6 +418,9 @@ body.st-jungle:not(.tunnel-interior) .jungle-flight-layer{display:block}
 }
 #groundT{position:absolute;left:0;right:0;bottom:0;height:12vh;z-index:2;
   background-repeat:repeat-x;background-size:auto 100%;will-change:background-position}
+#branchDecorT{position:absolute;left:0;right:0;bottom:11.5vh;height:20vh;z-index:3;display:none;
+  background-position:left bottom;background-size:auto 100%;background-repeat:repeat-x;
+  pointer-events:none;will-change:background-position}
 #jungleHabitatBack{position:absolute;left:0;right:0;bottom:20vh;height:14vh;z-index:3;display:none;overflow:hidden;
   background-position:left bottom;background-size:auto 100%;background-repeat:repeat-x;pointer-events:none;will-change:background-position}
 body.st-jungle:not(.tunnel-interior) #jungleHabitatBack{display:block}
@@ -486,6 +489,15 @@ body.st-jungle.v-train #cars,body.st-jungle.v-train #veh{bottom:13.3vh}
 body.st-space #veh{bottom:26vh}
 #fgT{position:absolute;left:0;right:0;bottom:0;height:22vh;z-index:8;pointer-events:none;
   background-repeat:repeat-x;background-size:auto 100%;will-change:background-position}
+
+/* ===== branch stages: one selected six-layer raster set, repeated without a clamp ===== */
+body.branch-raster:not(.tunnel-interior) #branchDecorT{display:block}
+body.tunnel-interior #branchDecorT{display:none!important}
+body.branch-raster #horizon{left:0;right:0;width:100%;transform:none!important;overflow:hidden;
+  background-position:left bottom;background-size:auto 100%;background-repeat:repeat-x;will-change:background-position}
+body.branch-raster #midT,body.branch-raster #groundT,body.branch-raster #fgT{
+  background-position:left bottom;background-size:auto 100%;background-repeat:repeat-x}
+body.branch-raster #groundT{height:18vh}
 
 /* ===== town panorama loops: mirrored neighbors make every join pixel-exact ===== */
 .town-loop-strip{display:none;position:absolute;left:0;width:max-content;pointer-events:none;will-change:transform}
@@ -580,7 +592,7 @@ body:not(.weather-rain) .rain-particle,body.tunnel-interior .rain-particle{anima
 body.pono-game-ready.weather-rain:not(.tunnel-interior) #weatherShade{opacity:1}
 body.pono-game-ready.weather-rain:not(.tunnel-interior) #skyA,body.pono-game-ready.weather-rain:not(.tunnel-interior) #skyB,
 body.pono-game-ready.weather-rain:not(.tunnel-interior) #horizon,body.pono-game-ready.weather-rain:not(.tunnel-interior) #midT,
-body.pono-game-ready.weather-rain:not(.tunnel-interior) #groundT,body.pono-game-ready.weather-rain:not(.tunnel-interior) #fgT,body.pono-game-ready.weather-rain:not(.tunnel-interior) #jungleHabitatBack,
+body.pono-game-ready.weather-rain:not(.tunnel-interior) #groundT,body.pono-game-ready.weather-rain:not(.tunnel-interior) #branchDecorT,body.pono-game-ready.weather-rain:not(.tunnel-interior) #fgT,body.pono-game-ready.weather-rain:not(.tunnel-interior) #jungleHabitatBack,
 body.pono-game-ready.weather-rain:not(.tunnel-interior) .jungle-animal-layer,
 body.pono-game-ready.weather-rain:not(.tunnel-interior) #world>.tun,body.pono-game-ready.weather-rain:not(.tunnel-interior) #world>.dropStation{
   filter:brightness(.7) saturate(.62) contrast(.98)}
@@ -589,6 +601,16 @@ body.pono-game-ready.weather-rain:not(.tunnel-interior) #world>.decor{
 body.pono-game-ready.weather-rain:not(.tunnel-interior) #veh,body.pono-game-ready.weather-rain:not(.tunnel-interior) #cars{
   filter:brightness(.84) saturate(.76) contrast(1.01)}
 body.pono-game-ready.weather-rain:not(.tunnel-interior) .runEvent{filter:brightness(1.08) saturate(1.05)}
+body.branch-raster #skyA,body.branch-raster #horizon,body.branch-raster #midT,
+body.branch-raster #groundT,body.branch-raster #branchDecorT,body.branch-raster #fgT{
+  transition:filter .48s ease}
+body.branch-raster.branch-night:not(.tunnel-interior) #skyA,
+body.branch-raster.branch-night:not(.tunnel-interior) #horizon,
+body.branch-raster.branch-night:not(.tunnel-interior) #midT,
+body.branch-raster.branch-night:not(.tunnel-interior) #groundT,
+body.branch-raster.branch-night:not(.tunnel-interior) #branchDecorT,
+body.branch-raster.branch-night:not(.tunnel-interior) #fgT{
+  filter:brightness(.68) saturate(.78) contrast(.98) hue-rotate(-6deg)}
 @keyframes rainParticleFall{
   from{transform:translate3d(0,0,0) rotate(var(--rain-angle))}
   to{transform:translate3d(var(--rain-drift),150vh,0) rotate(var(--rain-angle))}
@@ -1531,7 +1553,9 @@ body.ios-device #quiz.show:not(.sea-quiz):not(.future-capsule-quiz):not(.space-g
   .num-card{opacity:.86}.num-poly{opacity:.38}.num-ring{opacity:.3}.space-star-particle::before{opacity:var(--space-star-opacity,.72);transform:none}
   .runEvent,.runEvent::after{animation:none!important}.runEvent::after{opacity:.8}.runEvent.found{animation:runEventFound .55s ease forwards!important}
   .choice.glow{animation:none!important;box-shadow:0 5px 0 var(--good),0 0 0 7px rgba(87,193,94,.22)}
-  #seaArenaShade,#seaRoundCountdown,body.st-sea #fgT{transition:none!important}
+  #seaArenaShade,#seaRoundCountdown,body.st-sea #fgT,body.branch-raster #skyA,
+  body.branch-raster #horizon,body.branch-raster #midT,body.branch-raster #groundT,
+  body.branch-raster #branchDecorT,body.branch-raster #fgT{transition:none!important}
   #seaRoundCountdown.is-ready,#seaRoundCountdown.is-go{animation:none!important;opacity:1;transform:translate(-50%,-50%)!important}
   .sea-answer-bubble{animation:none!important}
   .sea-answer-bubble.glow .sea-answer-visual{animation:none!important;box-shadow:0 0 0 7px rgba(110,229,106,.36),0 0 22px rgba(179,255,182,.85)}

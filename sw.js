@@ -1,5 +1,8 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2309: なぞなぞトレインの新規分岐8ステージへ、選択した面だけを読む
+// 6層ラスター背景とシームレスなパララックスを追加。48画像は実行時選択読込のため
+// CRITICAL_ASSETSには追加しない (batch:1382-nazonazo-branch-bg-raster-integration)。
 // v2308: なぞなぞトレイン分岐系列(batch:1401〜1404)と、LP／アプリ入口タイトルロゴ
 // 系列(v2303〜v2307)を履歴保持で安全統合し、両系列を同一キャッシュ世代へ更新
 // (batch:1382-nazonazo-branch-bg-raster-integration)。
@@ -682,7 +685,7 @@
 // 計算から除外、押せるボタンに見えて反応しない見た目(box-shadow・無限パルス)も撤去し
 // 静的な情報タグへ変更。game.js/styles.css/tests/nazonazo_tunnel_branch_topology_regression.cjs/
 // tests/nazonazo_ready_class_regression.cjsを変更したためバンプ。
-const CACHE_VERSION = 2308;
+const CACHE_VERSION = 2309;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [
