@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>QA diag sea2 (temporary, safe to delete)</title></head>
+<body style="margin:0">
+<iframe id="nazonazo-admin-frame" style="width:844px;height:390px;border:0"
+  data-src="../nazonazo-tunnel/?adminStagePreview=1"></iframe>
+<script>
+var CHANNEL = 'pono-nazonazo-admin-stage-v1';
+var TOKEN = 'qadiagtoken-' + Math.random().toString(36).slice(2, 14);
+var STAGE = new URLSearchParams(location.search).get('stage') || 'sea2';
+var frame = document.getElementById('nazonazo-admin-frame');
+window.addEventListener('message', function (event) {
+  if (event.origin !== location.origin) return;
+  var data = event.data;
+  if (!data || data.channel !== CHANNEL) return;
+  window.__qaLastMsg = data;
+  if (data.type === 'ready') {
+    frame.contentWindow.postMessage({ channel: CHANNEL, type: 'select', stageId: STAGE, previewKind: 'stage', token: TOKEN }, location.origin);
+  }
+});
+var base = frame.getAttribute('data-src');
+frame.setAttribute('src', base + '&adminPreviewToken=' + encodeURIComponent(TOKEN));
+</script>
+</body>
+</html>
