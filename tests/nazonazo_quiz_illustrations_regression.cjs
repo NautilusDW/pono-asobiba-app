@@ -49,11 +49,11 @@ function extractLiteral(pattern, label) {
 
 /* The registry must load between question data and the runtime, with fresh cache keys. */
 const questionScriptIndex = html.indexOf('src="data/questions.js');
-const artScriptIndex = html.indexOf('src="data/quiz-art.js?v=20260714');
-const gameScriptIndex = html.indexOf('src="js/game.js?v=20260721');
+const artScriptIndex = html.indexOf('src="data/quiz-art.js?v=20260721-1407');
+const gameScriptIndex = html.indexOf('src="js/game.js?v=20260721-1407');
 assert.ok(questionScriptIndex >= 0 && questionScriptIndex < artScriptIndex && artScriptIndex < gameScriptIndex,
   "quiz art must load after questions and before game.js");
-assert.match(html, /styles\.css\?v=20260721/, "illustration layout needs a fresh stylesheet cache key");
+assert.match(html, /styles\.css\?v=20260721-1407/, "illustration layout needs a fresh stylesheet cache key");
 
 /* Every static and generated semantic pair must have an exact composite-key entry. */
 assert.ok(fs.existsSync(registryPath), "nazonazo-tunnel/data/quiz-art.js is missing");
@@ -68,18 +68,18 @@ function addPair(pair) {
   if (!Array.isArray(pair) || pair.length < 2) return;
   pairs.set(`${pair[0]}|${pair[1]}`, [pair[0], pair[1]]);
 }
-for (const bankName of ["TOWN", "JUNGLE", "SEA", "FUTURE", "SPACE", "WORDPLAY"]) {
+for (const bankName of ["TOWN", "JUNGLE", "SEA", "FUTURE", "SPACE", "WORDPLAY", "SNOW", "FIRE", "DINO", "TOY", "CAT", "FANTASY", "SKY", "RUINS"]) {
   for (const question of data[bankName]) {
     addPair(question.a);
     question.d.forEach(addPair);
     addPair(question.pe);
   }
 }
-for (const listName of ["CNT_EMO", "JLEGS", "SLEGS", "JSIZE", "SSIZE", "SPEED"]) data[listName].forEach(addPair);
+for (const listName of ["CNT_EMO", "JLEGS", "SLEGS", "JSIZE", "SSIZE", "SPEED", "DSIZE", "TSIZE"]) data[listName].forEach(addPair);
 extractLiteral(/const SEA_DECOYS=(\[[\s\S]*?\]);/, "SEA_DECOYS").forEach(addPair);
 extractLiteral(/const NUMBER_CARGO_THEMES=(\[[\s\S]*?\]);/, "NUMBER_CARGO_THEMES")
   .forEach(theme => addPair([theme.e, theme.name]));
-assert.equal(pairs.size, 175, "the complete quiz-content inventory changed; review the art registry deliberately");
+assert.equal(pairs.size, 202, "the complete quiz-content inventory changed; review the art registry deliberately");
 
 const registrySandbox = { window: {} };
 vm.createContext(registrySandbox);

@@ -49,8 +49,8 @@ function assertNoChildFacingKanji(source, label) {
 }
 
 const layerBlock = html.match(/<div id="spaceChaseLayer"[\s\S]*?<div id="seaRoundCountdown"/)?.[0] || "";
-assert.match(html, /styles\.css\?v=20260721-1385/);
-assert.match(html, /js\/game\.js\?v=20260721-1385/);
+assert.match(html, /styles\.css\?v=20260721-1407/);
+assert.match(html, /js\/game\.js\?v=20260721-1407/);
 assert.match(layerBlock, /id="spaceChaseRouteMap"[^>]*viewBox="0 0 1350 720"/);
 assert.match(layerBlock, /class="space-chase-world"/);
 assert.match(layerBlock, /id="spaceChaseCinematic"[^>]*aria-hidden="true"/);
@@ -109,7 +109,7 @@ assert.match(css, /@media \(prefers-reduced-motion:reduce\)[\s\S]*?\.space-chase
 assert.match(css, /body\.space-chase-active #veh[\s\S]*?visibility:hidden!important/);
 
 const cacheVersion = Number(sw.match(/const CACHE_VERSION = (\d+);/)?.[1]);
-assert.equal(cacheVersion, 2313);
+assert.equal(cacheVersion, 2314);
 assert.match(sw, /v2241:[\s\S]{0,700}batch:1329-nazonazo-grand-rescue/);
 
 const constantsStart = game.indexOf("const SPACE_CHASE_WORLD_WIDTH");

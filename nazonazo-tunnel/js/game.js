@@ -307,7 +307,7 @@ const ASSETS={
  dino:{
   sky:"../assets/images/nazonazo-tunnel/branch_dino_sky_back_20260720.webp",
   horizon:"../assets/images/nazonazo-tunnel/branch_dino_horizon_cutout_loop_20260720.webp",
-  mid:"../assets/images/nazonazo-tunnel/branch_dino_mid_cutout_loop_20260720.webp",
+  mid:"../assets/images/nazonazo-tunnel/branch_dino_mid_open_cutout_loop_20260721.webp",
   ground:"../assets/images/nazonazo-tunnel/branch_dino_ground_track_loop_20260720.webp",
   fg:"../assets/images/nazonazo-tunnel/branch_dino_foreground_cutout_loop_20260720.webp",
   decor:"../assets/images/nazonazo-tunnel/branch_dino_decor_cutout_20260720.webp"
@@ -325,8 +325,8 @@ const ASSETS={
   horizon:"../assets/images/nazonazo-tunnel/branch_cat_horizon_cutout_loop_20260720.webp",
   mid:"../assets/images/nazonazo-tunnel/branch_cat_mid_cutout_loop_20260720.webp",
   ground:"../assets/images/nazonazo-tunnel/branch_cat_ground_track_loop_20260720.webp",
-  fg:"../assets/images/nazonazo-tunnel/branch_cat_foreground_cutout_loop_20260720.webp",
-  decor:"../assets/images/nazonazo-tunnel/branch_cat_decor_cutout_loop_20260720.webp"
+  fg:"../assets/images/nazonazo-tunnel/branch_cat_foreground_no_yarn_cutout_loop_20260721.webp",
+  decor:"../assets/images/nazonazo-tunnel/branch_cat_decor_no_yarn_cutout_loop_20260721.webp"
  },
  fantasy:{
   sky:"../assets/images/nazonazo-tunnel/branch_fantasy_sky_back_20260720.webp",
@@ -665,8 +665,24 @@ const BRANCH_STAGE_POLISH_ASSETS=Object.freeze({
   flame:"../assets/images/nazonazo-tunnel/effect_fire_flame_particle_a_20260720.webp",
   ember:"../assets/images/nazonazo-tunnel/effect_fire_ember_particle_20260720.webp"
  }),
- dino:Object.freeze({landmark:"../assets/images/nazonazo-tunnel/branch_dino_life_landmark_cutout_20260720.webp"}),
- cat:Object.freeze({landmark:"../assets/images/nazonazo-tunnel/branch_cat_cats_landmark_cutout_20260720.webp"})
+ dino:Object.freeze({
+  farHerd:"../assets/images/nazonazo-tunnel/branch_dino_far_herd_cutout_20260721.webp",
+  waterhole:"../assets/images/nazonazo-tunnel/branch_dino_waterhole_cutout_20260721.webp",
+  stegosaurus:"../assets/images/nazonazo-tunnel/branch_dino_stegosaurus_family_cutout_20260721.webp",
+  parasaurolophus:"../assets/images/nazonazo-tunnel/branch_dino_parasaurolophus_herd_cutout_20260721.webp",
+  sauropod:"../assets/images/nazonazo-tunnel/branch_dino_sauropod_clearing_cutout_20260721.webp",
+  trex:"../assets/images/nazonazo-tunnel/branch_dino_trex_glimpse_cutout_20260721.webp"
+ }),
+ cat:Object.freeze({
+  cottage:"../assets/images/nazonazo-tunnel/branch_cat_cottage_life_cutout_20260721.webp",
+  garden:"../assets/images/nazonazo-tunnel/branch_cat_garden_life_cutout_20260721.webp",
+  fence:"../assets/images/nazonazo-tunnel/branch_cat_fence_life_cutout_20260721.webp",
+  rooftop:"../assets/images/nazonazo-tunnel/branch_cat_rooftop_life_cutout_20260721.webp",
+  bridge:"../assets/images/nazonazo-tunnel/branch_cat_bridge_life_cutout_20260721.webp",
+  plaza:"../assets/images/nazonazo-tunnel/branch_cat_plaza_life_cutout_20260721.webp",
+  tree:"../assets/images/nazonazo-tunnel/branch_cat_tree_life_cutout_20260721.webp",
+  lane:"../assets/images/nazonazo-tunnel/branch_cat_lane_life_cutout_20260721.webp"
+ })
 });
 const branchRasterImageCache=new Map();
 const branchStagePolishImageCache=new Map();
@@ -1196,7 +1212,7 @@ function setDriverMood(mood){
 
 /* ================= dom ================= */
 const $=id=>document.getElementById(id);
-const world=$("world"),veh=$("veh"),horizon=$("horizon"),midT=$("midT"),groundT=$("groundT"),branchDecorT=$("branchDecorT"),fgT=$("fgT"),branchEffectFar=$("branchEffectFar"),branchLandmarkLayer=$("branchLandmarkLayer"),branchEffectMid=$("branchEffectMid"),branchEffectNear=$("branchEffectNear"),seaFishLayer=$("seaFishLayer"),seaHabitatLayer=$("seaHabitatLayer"),smokeLayer=$("smokeLayer"),townHorizonLoop=$("townHorizonLoop"),townMidLoop=$("townMidLoop"),futureHorizonLoop=$("futureHorizonLoop"),futureMidLoop=$("futureMidLoop"),futureForegroundLoop=$("futureForegroundLoop"),spaceHorizonLoop=$("spaceHorizonLoop"),spaceForegroundLoop=$("spaceForegroundLoop"),jungleHabitatBack=$("jungleHabitatBack");
+const world=$("world"),veh=$("veh"),horizon=$("horizon"),midT=$("midT"),groundT=$("groundT"),branchDecorT=$("branchDecorT"),fgT=$("fgT"),branchEffectFar=$("branchEffectFar"),branchWorldLifeLayer=$("branchWorldLifeLayer"),branchEffectMid=$("branchEffectMid"),branchEffectNear=$("branchEffectNear"),seaFishLayer=$("seaFishLayer"),seaHabitatLayer=$("seaHabitatLayer"),smokeLayer=$("smokeLayer"),townHorizonLoop=$("townHorizonLoop"),townMidLoop=$("townMidLoop"),futureHorizonLoop=$("futureHorizonLoop"),futureMidLoop=$("futureMidLoop"),futureForegroundLoop=$("futureForegroundLoop"),spaceHorizonLoop=$("spaceHorizonLoop"),spaceForegroundLoop=$("spaceForegroundLoop"),jungleHabitatBack=$("jungleHabitatBack");
 const vehicleSteerShell=$("vehicleSteerShell"),seaSteerSurface=$("seaSteerSurface"),spaceSteerSurface=$("spaceSteerSurface"),seaAnswerLayer=$("seaAnswerLayer"),seaBossLayer=$("seaBossLayer"),seaRescueMessage=$("seaRescueMessage"),seaArenaShade=$("seaArenaShade"),seaRoundCountdown=$("seaRoundCountdown"),seaQuizGuide=$("seaQuizGuide"),seaSteerHint=$("seaSteerHint"),spaceSteerHint=$("spaceSteerHint");
 const futureCapsuleLayer=$("futureCapsuleLayer"),spaceGalaxyLayer=$("spaceGalaxyLayer");
 const spaceChaseLayer=$("spaceChaseLayer"),spaceChaseGuide=$("spaceChaseGuide"),spaceChaseTitle=$("spaceChaseTitle"),spaceChaseBoostMeter=$("spaceChaseBoostMeter"),spaceChaseFinalMeter=$("spaceChaseFinalMeter"),spaceChaseRoundText=$("spaceChaseRoundText"),spaceChaseBoostButton=$("spaceChaseBoostButton"),spaceChaseRouteMap=$("spaceChaseRouteMap"),spaceChaseRoutePaths=$("spaceChaseRoutePaths"),spaceChaseJunctions=$("spaceChaseJunctions"),spaceChaseBoostItemsLayer=$("spaceChaseBoostItems"),spaceChaseRouteChoices=$("spaceChaseRouteChoices"),spaceChaseCinematic=$("spaceChaseCinematic"),spaceChaseCinematicText=$("spaceChaseCinematicText"),spaceChaseRescuePanel=$("spaceChaseRescuePanel"),spaceChaseRescuePlayfield=$("spaceChaseRescuePlayfield"),spaceChaseRescueTitle=$("spaceChaseRescueTitle"),spaceChaseRescueGuide=$("spaceChaseRescueGuide"),spaceChaseRescueProgress=$("spaceChaseRescueProgress"),spaceChaseRescueRing=$("spaceChaseRescueRing"),spaceChaseRescueStar=$("spaceChaseRescueStar"),spaceChaseRescueTether=$("spaceChaseRescueTether"),spaceChaseTailGates=$("spaceChaseTailGates"),spaceChaseSealTargets=$("spaceChaseSealTargets"),spaceChaseTimingPulse=$("spaceChaseTimingPulse"),spaceChaseConstellation=$("spaceChaseConstellation"),spaceChaseRescueMashButton=$("spaceChaseRescueMashButton");
@@ -1243,7 +1259,8 @@ let lastJungleAnimalRenderKey="";
 let lastJungleFlightRenderAt=0;
 let spaceStarSprites=[];
 let branchFireSprites=[];
-let branchLandmarkSprite=null;
+let branchDinoFarHerdSprite=null;
+let branchWorldLifeSprites=[];
 let branchPolishDensityKey="";
 let branchPolishResizeTimer=0;
 let lastWheelPeriod=0;
@@ -2305,12 +2322,31 @@ const BRANCH_SNOW_PROFILES=Object.freeze([
 ]);
 const BRANCH_FIRE_HOTSPOT_RATIOS=Object.freeze([.041958,.181818,.300699,.384615,.510490,.622378,.751748,.835664]);
 const BRANCH_FIRE_MOBILE_INDEXES=Object.freeze([0,1,3,4,6,7]);
-const BRANCH_LANDMARK_PROGRESS=.5;
 const BRANCH_CUTOUT_GUARD_PX=12;
-const BRANCH_LANDMARK_CONFIG=Object.freeze({
- dino:Object.freeze({className:"dino",sourceWidth:1451}),
- cat:Object.freeze({className:"cat",sourceWidth:1510})
-});
+const BRANCH_DINO_FAR_HERD_PARALLAX=.035;
+const BRANCH_DINO_WORLD_LIFE_CONFIG=Object.freeze([
+ Object.freeze({asset:"waterhole",ratio:.14,width:46,bottom:17.5,scale:.94,depth:3,sourceWidth:1533,guard:16}),
+ Object.freeze({asset:"stegosaurus",ratio:.30,width:30,bottom:19.5,scale:.88,depth:4,sourceWidth:1448,guard:14}),
+ Object.freeze({asset:"parasaurolophus",ratio:.46,width:32,bottom:18.5,scale:.91,depth:3,sourceWidth:1453,guard:14}),
+ Object.freeze({asset:"sauropod",ratio:.62,width:37,bottom:17.5,scale:.96,depth:2,sourceWidth:1479,guard:16}),
+ Object.freeze({asset:"trex",ratio:.78,width:18,bottom:20,scale:.84,depth:4,sourceWidth:876,guard:16})
+]);
+const BRANCH_CAT_WORLD_LIFE_CONFIG=Object.freeze([
+ Object.freeze({asset:"cottage",ratio:.04,width:14,bottom:17.5,scale:.9,depth:2,sourceWidth:1263,guard:16}),
+ Object.freeze({asset:"garden",ratio:.10,width:12,bottom:18.5,scale:.96,depth:4,sourceWidth:1463,guard:16}),
+ Object.freeze({asset:"fence",ratio:.16,width:11,bottom:19,scale:.9,depth:3,sourceWidth:1423,guard:16}),
+ Object.freeze({asset:"rooftop",ratio:.22,width:10,bottom:26,scale:.86,depth:2,sourceWidth:1204,guard:16}),
+ Object.freeze({asset:"bridge",ratio:.28,width:15,bottom:17.5,scale:.96,depth:3,sourceWidth:1485,guard:12}),
+ Object.freeze({asset:"plaza",ratio:.34,width:16,bottom:18,scale:.92,depth:4,sourceWidth:1488,guard:12}),
+ Object.freeze({asset:"tree",ratio:.40,width:13,bottom:18.5,scale:.9,depth:3,sourceWidth:1108,guard:16}),
+ Object.freeze({asset:"lane",ratio:.46,width:12,bottom:19,scale:.94,depth:2,sourceWidth:1366,guard:16}),
+ Object.freeze({asset:"cottage",ratio:.52,width:12,bottom:17.5,scale:.86,depth:3,sourceWidth:1263,guard:16}),
+ Object.freeze({asset:"garden",ratio:.58,width:11,bottom:19.5,scale:.9,depth:4,sourceWidth:1463,guard:16}),
+ Object.freeze({asset:"fence",ratio:.64,width:10,bottom:18.5,scale:.86,depth:2,sourceWidth:1423,guard:16}),
+ Object.freeze({asset:"rooftop",ratio:.70,width:10,bottom:26,scale:.82,depth:3,sourceWidth:1204,guard:16}),
+ Object.freeze({asset:"bridge",ratio:.76,width:12,bottom:17.5,scale:.9,depth:3,sourceWidth:1485,guard:12}),
+ Object.freeze({asset:"plaza",ratio:.82,width:11,bottom:18,scale:.86,depth:4,sourceWidth:1488,guard:12})
+]);
 function branchPolishShortSide(){return Math.min(window.innerWidth||844,window.innerHeight||390);}
 function branchPolishDensity(){return prefersReducedMotionActive()?"reduced":(branchPolishShortSide()<500?"mobile":"desktop");}
 function branchImage(src,className){
@@ -2402,23 +2438,44 @@ function buildBranchFire(assets,density){
  branchEffectMid.dataset.branchEffect="fire";branchEffectMid.dataset.hotspotCount=String(ratios.length);branchEffectMid.dataset.emberCount=String(emberCount);
  branchEffectMid.appendChild(fragment);
 }
-function buildBranchLandmark(st,assets){
- const config=BRANCH_LANDMARK_CONFIG[st.id];
- if(!config||!branchLandmarkLayer)return;
+function buildBranchWorldLifeSprite(stageId,assets,config,index){
+ if(!branchWorldLifeLayer||!assets||!assets[config.asset])return;
  const sprite=document.createElement("span");
- const image=branchImage(assets.landmark,"branch-landmark-art");
- sprite.className="branch-landmark is-"+config.className;sprite.dataset.landmarkStage=st.id;sprite.appendChild(image);
- branchLandmarkLayer.appendChild(sprite);
- branchLandmarkSprite={el:sprite,img:image,ratio:BRANCH_LANDMARK_PROGRESS,sourceWidth:config.sourceWidth,guard:BRANCH_CUTOUT_GUARD_PX,scale:1,guardVar:"--landmark-guard-y"};
+ const image=branchImage(assets[config.asset],"branch-world-life-art");
+ sprite.className="branch-world-life is-"+stageId+" is-"+config.asset;
+ sprite.dataset.lifeStage=stageId;sprite.dataset.lifeAsset=config.asset;sprite.dataset.lifeIndex=String(index);sprite.dataset.stageRatio=String(config.ratio);sprite.dataset.depth=String(config.depth);
+ sprite.style.setProperty("--life-width",config.width+"vw");
+ sprite.style.setProperty("--life-bottom",config.bottom+"vh");
+ sprite.style.zIndex=String(config.depth);
+ image.style.setProperty("--life-scale",String(config.scale));
+ sprite.appendChild(image);branchWorldLifeLayer.appendChild(sprite);
+ const lifeSprite={el:sprite,img:image,ratio:config.ratio,sourceWidth:config.sourceWidth,guard:config.guard,scale:config.scale,guardVar:"--life-guard-y"};
+ branchWorldLifeSprites.push(lifeSprite);
  image.addEventListener("load",syncBranchCutoutGuards,{once:true});
 }
+function buildBranchDinoWorldLife(assets){
+ if(branchEffectFar&&assets&&assets.farHerd){
+  const sprite=document.createElement("span");
+  const image=branchImage(assets.farHerd,"branch-dino-far-herd-art");
+  sprite.className="branch-dino-far-herd";sprite.dataset.stageRatio="viewport";sprite.dataset.parallax=String(BRANCH_DINO_FAR_HERD_PARALLAX);sprite.appendChild(image);
+  branchEffectFar.dataset.branchEffect="dino-far-herd";branchEffectFar.appendChild(sprite);
+  branchDinoFarHerdSprite={el:sprite,img:image,sourceWidth:1894,guard:16,scale:.32,guardVar:"--dino-far-guard-y"};
+  image.addEventListener("load",syncBranchCutoutGuards,{once:true});
+ }
+ BRANCH_DINO_WORLD_LIFE_CONFIG.forEach((config,index)=>buildBranchWorldLifeSprite("dino",assets,config,index));
+}
+function buildBranchCatWorldLife(assets){
+ BRANCH_CAT_WORLD_LIFE_CONFIG.forEach((config,index)=>buildBranchWorldLifeSprite("cat",assets,config,index));
+}
+function syncOneBranchCutoutGuard(sprite){
+ const width=sprite.el.offsetWidth;if(!width||!sprite.sourceWidth)return;
+ const guard=width*sprite.guard/sprite.sourceWidth*(sprite.scale||1);
+ sprite.img.style.setProperty(sprite.guardVar,guard.toFixed(2)+"px");
+}
 function syncBranchCutoutGuards(){
- const sprites=branchFireSprites.slice();if(branchLandmarkSprite)sprites.push(branchLandmarkSprite);
- sprites.forEach(sprite=>{
-  const width=sprite.el.offsetWidth;if(!width||!sprite.sourceWidth)return;
-  const guard=width*sprite.guard/sprite.sourceWidth*(sprite.scale||1);
-  sprite.img.style.setProperty(sprite.guardVar,guard.toFixed(2)+"px");
- });
+ branchFireSprites.forEach(syncOneBranchCutoutGuard);
+ branchWorldLifeSprites.forEach(syncOneBranchCutoutGuard);
+ if(branchDinoFarHerdSprite)syncOneBranchCutoutGuard(branchDinoFarHerdSprite);
 }
 function pauseBranchStagePolish(){document.body.classList.remove("branch-effects-running");}
 function syncBranchStagePolishState(){
@@ -2428,22 +2485,28 @@ function syncBranchStagePolishState(){
 }
 function buildBranchStagePolish(st){
  Object.values(branchStageEffectLayers).forEach(layer=>{if(layer){layer.replaceChildren();delete layer.dataset.branchEffect;delete layer.dataset.particleCount;delete layer.dataset.hotspotCount;delete layer.dataset.emberCount;}});
- if(branchLandmarkLayer)branchLandmarkLayer.replaceChildren();
- branchFireSprites=[];branchLandmarkSprite=null;branchPolishDensityKey=branchPolishDensity();
+ if(branchWorldLifeLayer)branchWorldLifeLayer.replaceChildren();
+ branchFireSprites=[];branchDinoFarHerdSprite=null;branchWorldLifeSprites=[];branchPolishDensityKey=branchPolishDensity();
  const assets=st&&BRANCH_STAGE_POLISH_ASSETS[st.id];
  if(assets){
   if(st.id==="snow")buildBranchSnow(assets,branchPolishDensityKey);
   else if(st.id==="fire")buildBranchFire(assets,branchPolishDensityKey);
-  else if(st.id==="dino"||st.id==="cat")buildBranchLandmark(st,assets);
+  else if(st.id==="dino")buildBranchDinoWorldLife(assets);
+  else if(st.id==="cat")buildBranchCatWorldLife(assets);
  }
  syncBranchCutoutGuards();syncBranchStagePolishState();
 }
 function renderBranchStagePolish(now,o){
  const st=STAGES[stg];if(!st||!isBranchRasterStage(st)||tunnelInteriorMode)return;
  const localWorldX=worldX-o;
- if(branchLandmarkSprite){
-  const x=SPAN*branchLandmarkSprite.ratio-localWorldX;
-  branchLandmarkSprite.el.style.transform="translate3d("+cssXFromVw(x)+",0,0) translateX(-50%)";
+ if(branchDinoFarHerdSprite){
+  const x=-5-localWorldX*BRANCH_DINO_FAR_HERD_PARALLAX;
+  branchDinoFarHerdSprite.el.style.transform="translate3d("+cssXFromVw(x)+",0,0)";
+ }
+ for(let i=0;i<branchWorldLifeSprites.length;i++){
+  const sprite=branchWorldLifeSprites[i];
+  const x=SPAN*sprite.ratio-localWorldX;
+  sprite.el.style.transform="translate3d("+cssXFromVw(x)+",0,0) translateX(-50%)";
  }
  branchFireSprites.forEach(sprite=>{
   const x=SPAN*sprite.ratio-localWorldX;

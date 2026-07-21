@@ -287,8 +287,8 @@ assert.match(game, /if\(wasAdminPreview\)document\.body\.classList\.add\("nazona
 assert.match(game, /const wasAdminSpaceChase=nazonazoAdminPreviewMode&&nazonazoAdminPreviewKind==="spaceChase";/);
 assert.match(game, /if\(wasAdminSpaceChase\)document\.body\.classList\.add\("nazonazo-admin-space-chase-preview"\);/);
 assert.match(html, /id="adminStagePreviewLabel" hidden/);
-assert.match(html, /js\/game\.js\?v=20260721-1385/);
-assert.match(html, /styles\.css\?v=20260721-1385/);
+assert.match(html, /js\/game\.js\?v=20260721-1407/);
+assert.match(html, /styles\.css\?v=20260721-1407/);
 assert.match(styles, /body\.nazonazo-admin-stage-preview #gameSettings\{display:none!important\}/,
   "the public return menu must not cover the tiny authenticated stage preview");
 assert.match(styles, /@media \(orientation:landscape\) and \(max-height:180px\)[\s\S]*?body\.nazonazo-admin-stage-preview #title h1,[\s\S]*?#zkBtnTitle\{display:none\}/);

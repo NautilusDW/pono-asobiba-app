@@ -492,11 +492,11 @@ body.st-space #veh{bottom:26vh}
 
 /* ===== branch stages: six aligned raster planes plus selected-stage polish ===== */
 body.branch-raster{
-  --branch-horizon-y:0vh;--branch-mid-y:0vh;--branch-decor-height:20vh;--branch-decor-bottom:11.5vh;--branch-fg-height:22vh;
+  --branch-horizon-y:0vh;--branch-mid-y:0vh;--branch-mid-height:100%;--branch-mid-bottom:0vh;--branch-decor-height:20vh;--branch-decor-bottom:11.5vh;--branch-fg-height:22vh;
   --branch-polish-brightness:1;--branch-polish-saturate:1;--branch-polish-contrast:1;--branch-polish-hue:0deg;--branch-snow-opacity:1}
 body.st-snow{--branch-horizon-y:18.57vh;--branch-mid-y:18.07vh;--branch-decor-height:20vh;--branch-fg-height:19.9vh}
 body.st-fire{--branch-horizon-y:13.68vh;--branch-mid-y:-6.39vh;--branch-decor-height:20vh;--branch-fg-height:22vh}
-body.st-dino{--branch-horizon-y:21.91vh;--branch-mid-y:-.52vh;--branch-decor-height:11.4vh;--branch-fg-height:22vh}
+body.st-dino{--branch-horizon-y:0vh;--branch-mid-y:0vh;--branch-mid-height:56vh;--branch-decor-height:11.4vh;--branch-fg-height:22vh}
 body.st-toy{--branch-horizon-y:11.51vh;--branch-mid-y:-15.84vh;--branch-decor-height:20vh;--branch-decor-bottom:17.08vh;--branch-fg-height:22vh}
 body.st-cat{--branch-horizon-y:24.15vh;--branch-mid-y:19.82vh;--branch-fg-height:16.4vh}
 body.st-fantasy{--branch-horizon-y:10.25vh;--branch-mid-y:8.99vh;--branch-decor-height:19.9vh;--branch-fg-height:22vh}
@@ -505,27 +505,27 @@ body.st-ruins{--branch-horizon-y:8.42vh;--branch-mid-y:19.45vh;--branch-decor-he
 body.branch-raster.branch-night{
   --branch-polish-brightness:.68;--branch-polish-saturate:.78;--branch-polish-contrast:.98;--branch-polish-hue:-6deg;--branch-snow-opacity:.74}
 body.branch-raster:not(.tunnel-interior) #branchDecorT{display:block}
-body.branch-raster.st-cat #branchDecorT{display:none!important}
 body.tunnel-interior #branchDecorT{display:none!important}
 body.branch-raster #horizon{left:0;right:0;width:100%;transform:none!important;overflow:hidden;
   background-position:left calc(100% + var(--branch-horizon-y));background-size:auto 100%;background-repeat:repeat-x;will-change:background-position}
-body.branch-raster #midT{background-position:left calc(100% + var(--branch-mid-y))}
+body.branch-raster #midT{top:auto;bottom:var(--branch-mid-bottom);height:var(--branch-mid-height);background-position:left calc(100% + var(--branch-mid-y))}
 body.branch-raster #midT,body.branch-raster #groundT,body.branch-raster #fgT{
   background-size:auto 100%;background-repeat:repeat-x}
 body.branch-raster #groundT{height:18vh;background-position:left bottom}
 body.branch-raster #branchDecorT{bottom:var(--branch-decor-bottom);height:var(--branch-decor-height)}
 body.branch-raster #fgT{height:var(--branch-fg-height);background-position:left bottom}
 
-.branch-stage-effect-layer,#branchLandmarkLayer{position:absolute;inset:0;display:none;overflow:hidden;contain:layout paint;pointer-events:none}
-#branchEffectFar{z-index:1}#branchLandmarkLayer{z-index:4}#branchEffectMid{z-index:6}#branchEffectNear{z-index:9}
+.branch-stage-effect-layer,#branchWorldLifeLayer{position:absolute;inset:0;display:none;overflow:hidden;contain:layout paint;pointer-events:none}
+#branchEffectFar{z-index:1}#branchWorldLifeLayer{z-index:4}#branchEffectMid{z-index:6}#branchEffectNear{z-index:9}
 body.st-snow:not(.tunnel-interior) #branchEffectFar,
 body.st-snow:not(.tunnel-interior) #branchEffectMid,
 body.st-snow:not(.tunnel-interior) #branchEffectNear,
 body.st-fire:not(.tunnel-interior) #branchEffectMid,
-body.st-dino:not(.tunnel-interior) #branchLandmarkLayer,
-body.st-cat:not(.tunnel-interior) #branchLandmarkLayer{display:block}
+body.st-dino:not(.tunnel-interior) #branchEffectFar,
+body.st-dino:not(.tunnel-interior) #branchWorldLifeLayer,
+body.st-cat:not(.tunnel-interior) #branchWorldLifeLayer{display:block}
 body.st-snow #branchEffectFar,body.st-snow #branchEffectMid,body.st-snow #branchEffectNear{opacity:var(--branch-snow-opacity)}
-body.tunnel-interior .branch-stage-effect-layer,body.tunnel-interior #branchLandmarkLayer{display:none!important}
+body.tunnel-interior .branch-stage-effect-layer,body.tunnel-interior #branchWorldLifeLayer{display:none!important}
 
 .branch-snow-particle{position:absolute;left:var(--snow-rest-left);top:var(--snow-rest-top);display:block;width:var(--snow-size);height:var(--snow-size);
   opacity:var(--snow-opacity);pointer-events:none;animation:branchSnowFall var(--snow-duration) linear var(--snow-delay) infinite paused}
@@ -557,9 +557,11 @@ body.branch-effects-running.pono-game-ready.st-fire:not(.tunnel-interior) .branc
   18%{opacity:var(--ember-opacity)}
   100%{opacity:0;transform:translate3d(calc(var(--ember-base-x) + var(--ember-drift-x)),calc(var(--ember-guard-y,0px) - var(--ember-rise)),0) scale(var(--ember-scale))}}
 
-.branch-landmark{position:absolute;left:0;bottom:18vh;display:block;line-height:0;pointer-events:none;transform:translate3d(-200vw,0,0) translateX(-50%)}
-.branch-landmark.is-dino{width:clamp(330px,76vw,920px)}.branch-landmark.is-cat{width:clamp(320px,70vw,860px)}
-.branch-landmark img{display:block;width:100%;height:auto;transform:translate3d(0,var(--landmark-guard-y,0px),0);
+.branch-dino-far-herd{position:absolute;left:0;bottom:28vh;display:block;width:210vw;line-height:0;pointer-events:none;opacity:.74;transform:translate3d(-5vw,0,0)}
+.branch-dino-far-herd img{display:block;width:100%;height:auto;transform-origin:50% 100%;transform:translate3d(0,var(--dino-far-guard-y,0px),0) scale(.32);
+  filter:brightness(var(--branch-polish-brightness)) saturate(var(--branch-polish-saturate)) contrast(var(--branch-polish-contrast)) hue-rotate(var(--branch-polish-hue));transition:filter .48s ease}
+.branch-world-life{position:absolute;left:0;bottom:var(--life-bottom);display:block;width:var(--life-width);line-height:0;pointer-events:none;transform:translate3d(-200vw,0,0) translateX(-50%)}
+.branch-world-life img{display:block;width:100%;height:auto;object-fit:contain;transform-origin:50% 100%;transform:translate3d(0,var(--life-guard-y,0px),0) scale(var(--life-scale));
   filter:brightness(var(--branch-polish-brightness)) saturate(var(--branch-polish-saturate)) contrast(var(--branch-polish-contrast)) hue-rotate(var(--branch-polish-hue));transition:filter .48s ease}
 
 /* ===== town panorama loops: mirrored neighbors make every join pixel-exact ===== */
@@ -685,7 +687,9 @@ body.branch-raster.branch-night:not(.tunnel-interior) #fgT{
 .flyer .flyer-art img{width:100%;height:100%}
 .rare{appearance:none;-webkit-appearance:none;position:absolute;z-index:9;width:clamp(54px,8vw,82px);height:clamp(54px,8vw,82px);padding:0;border:0;background:transparent;cursor:pointer;
   filter:drop-shadow(0 0 10px rgba(255,255,180,.8))}
-.rare .rare-art{display:grid;width:100%;height:100%}.rare:focus-visible{outline:4px solid #fff18a;outline-offset:4px;border-radius:50%}
+.rare .rare-art{display:grid;width:100%;height:100%}
+.rare .rare-art img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.rare:focus-visible{outline:4px solid #fff18a;outline-offset:4px;border-radius:50%}
 
 /* ===== checkpoint / tunnel ===== */
 .tun{position:absolute;bottom:11.5vh;width:26vw;max-width:320px;height:46vh;z-index:5}
@@ -1282,9 +1286,11 @@ body.nazonazo-admin-space-chase-preview #title{gap:clamp(7px,1.5vh,13px)}
 .choice .lb{font-size:clamp(14px,3vw,22px);font-weight:700}
 .quiz-art{position:relative;display:grid;place-items:center;overflow:visible;line-height:1}
 .quiz-art-image{display:block;width:100%;height:100%;object-fit:contain;object-position:center;pointer-events:none;user-select:none;-webkit-user-drag:none}
+.quiz-art-image[hidden]{display:none!important}
 .quiz-art-fallback{width:100%;height:100%;place-items:center;font:inherit;line-height:1}
 .quiz-art-fallback[hidden]{display:none!important}.quiz-art.is-fallback>.quiz-art-fallback{display:grid}
 .choice>.quiz-art{display:grid;width:clamp(58px,12vmin,104px);height:clamp(58px,12vmin,104px);margin:0 auto 2px}
+.choice>.quiz-art .quiz-art-image{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
 .future-capsule .quiz-art{display:grid;width:clamp(42px,8vmin,68px);height:clamp(42px,8vmin,68px);margin:0}
 .space-galaxy-planet-choice>.quiz-art{display:grid;width:clamp(44px,8vmin,68px);height:clamp(44px,8vmin,68px);margin:0}
 .choice.dim{opacity:.35;pointer-events:none}

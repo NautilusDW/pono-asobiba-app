@@ -90,8 +90,11 @@ function extractFunction(source, name) {
 }
 
 const ASSET_OVERRIDES = Object.freeze({
+  "dino.mid": "../assets/images/nazonazo-tunnel/branch_dino_mid_open_cutout_loop_20260721.webp",
   "toy.mid": "../assets/images/nazonazo-tunnel/branch_toy_mid_variety_cutout_loop_20260720.webp",
-  "toy.decor": "../assets/images/nazonazo-tunnel/branch_toy_decor_variety_cutout_loop_20260720.webp"
+  "toy.decor": "../assets/images/nazonazo-tunnel/branch_toy_decor_variety_cutout_loop_20260720.webp",
+  "cat.fg": "../assets/images/nazonazo-tunnel/branch_cat_foreground_no_yarn_cutout_loop_20260721.webp",
+  "cat.decor": "../assets/images/nazonazo-tunnel/branch_cat_decor_no_yarn_cutout_loop_20260721.webp"
 });
 
 function expectedAsset(stageId, key) {
@@ -128,7 +131,7 @@ for (const stageId of STAGE_IDS) {
   }
 }
 assert.equal(new Set(expectedUrls).size, 48, "the branch raster map must contain 48 unique URLs");
-const branchUrlLiterals = assetsSource.match(/"\.\.\/assets\/images\/nazonazo-tunnel\/branch_[^"]+_20260720\.webp"/g) || [];
+const branchUrlLiterals = assetsSource.match(/"\.\.\/assets\/images\/nazonazo-tunnel\/branch_[^"]+_2026072[01]\.webp"/g) || [];
 assert.equal(branchUrlLiterals.length, 48, "ASSETS must contain exactly 48 branch raster URL literals and no bonus preload asset");
 assert.equal(new Set(branchUrlLiterals).size, 48, "every branch raster URL literal must be unique");
 
@@ -247,8 +250,8 @@ const styleToken = html.match(/styles\.css\?v=([^"']+)/);
 const gameToken = html.match(/js\/game\.js\?v=([^"']+)/);
 assert.ok(styleToken && gameToken, "nazonazo stylesheet and game cache tokens must exist");
 assert.equal(styleToken[1], gameToken[1], "nazonazo stylesheet and game cache tokens must match");
-assert.equal(styleToken[1], "20260721-1385", "nazonazo branch stage polish cache token drifted");
-assert.match(sw, /const CACHE_VERSION = 2313;/, "service worker cache version must be 2313");
+assert.equal(styleToken[1], "20260721-1407", "nazonazo branch world-density cache token drifted");
+assert.match(sw, /const CACHE_VERSION = 2314;/, "service worker cache version must be 2314");
 assert.doesNotMatch(sw, /branch_(?:snow|fire|dino|toy|cat|fantasy|sky|ruins)_(?:sky|horizon|mid|ground|foreground|decor)/,
   "branch raster images must stay out of service-worker precache lists");
 

@@ -99,9 +99,9 @@ assert.doesNotMatch(html, /\p{Extended_Pictographic}/u, "static child-facing HTM
 for (const id of ["help", "friends", "map", "home", "pono", "hint", "book", "train", "rocket", "sprout", "flower", "star", "smartphone", "rainbow", "touch", "fire"]) {
   assert.match(html, new RegExp(`data-ui-art="${id}"`), `static UI is missing the ${id} image host`);
 }
-assert.match(html, /data\/quiz-art\.js\?v=20260714-1297/);
-assert.match(html, /js\/game\.js\?v=20260721-1385/);
-assert.match(html, /styles\.css\?v=20260721-1385/);
+assert.match(html, /data\/quiz-art\.js\?v=20260721-1407/);
+assert.match(html, /js\/game\.js\?v=20260721-1407/);
+assert.match(html, /styles\.css\?v=20260721-1407/);
 
 /* Every non-choice runtime route goes through the same generated/reused image renderers. */
 const runtimeRoutes = [

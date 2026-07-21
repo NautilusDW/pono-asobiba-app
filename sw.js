@@ -697,7 +697,11 @@
 // v2313: コードレビュー指摘対応。bubble/coloring/stacking の
 // 「テスト用: 毎回表示」デバッグ残骸(localStorage.removeItem直後の
 // チュートリアル強制表示)を除去、チュートリアルが1回だけ出るよう修正。
-const CACHE_VERSION = 2313;
+// v2314: なぞなぞトレインの恐竜ステージを、常時見える遠景の群れと水辺を含む
+// 5つの生活シーンへ拡張し、疎な中景で山並みを再表示。猫ステージは毛糸の旧前景を
+// 撤去し、8種類の猫の暮らしを全長14地点へ分散。選択ステージだけ追加素材を先読みし、
+// 新規17画像は初回画面必須ではないため CRITICAL_ASSETS へ追加しない (batch:1407)。
+const CACHE_VERSION = 2314;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

@@ -2,6 +2,8 @@
 (function () {
   const ROOT = "../assets/images/nazonazo-tunnel/quiz-art/";
   const VERSION = "20260714";
+  const BRANCH_VERSION = "20260721";
+  const REGISTRY_VERSION = "20260721-1407";
   const slugs = {
     "⌚|うでどけい": "wristwatch",
     "⏰|とけい": "clock",
@@ -185,6 +187,48 @@
     items[key] = ROOT + "quiz_" + slugs[key] + "_" + VERSION + ".webp";
   });
 
+  const branchPath = function (slug) {
+    return ROOT + "quiz_" + slug + "_" + BRANCH_VERSION + ".webp";
+  };
+
+  // 20260721: 分岐8ステージ用の通常27点＋レア6点。
+  // 既存20260714素材のVERSIONは変えず、新規33点だけ日付別パスへ解決する。
+  Object.assign(items, {
+    "❄️|ゆき": branchPath("snow"),
+    "🔥|ひ": branchPath("fire"),
+    "🦕|きょうりゅう": branchPath("dinosaur"),
+    "🦂|さそり": branchPath("scorpion"),
+    "🦎|とかげ": branchPath("lizard"),
+    "🌋|かざん": branchPath("volcano"),
+    "🥚|たまご": branchPath("dinosaur_egg"),
+    "🧩|ぱずる": branchPath("jigsaw_puzzle"),
+    "🪀|よーよー": branchPath("yoyo"),
+    "🐱|ねこ": branchPath("cat"),
+    "🧶|けいとだま": branchPath("yarn_ball"),
+    "🥛|ぎゅうにゅう": branchPath("milk"),
+    "🐾|あしあと": branchPath("pawprints"),
+    "🦄|ゆにこーん": branchPath("unicorn"),
+    "🌈|にじ": branchPath("rainbow"),
+    "🪄|まほうのつえ": branchPath("magic_wand"),
+    "🧚|ようせい": branchPath("fairy"),
+    "☁️|くも": branchPath("cloud"),
+    "🪶|はね": branchPath("feather"),
+    "🪂|パラシュート": branchPath("parachute"),
+    "🎏|こいのぼり": branchPath("koinobori"),
+    "🎐|ふうりん": branchPath("wind_chime"),
+    "🏺|つぼ": branchPath("ancient_vase"),
+    "🗝️|かぎ": branchPath("ancient_key"),
+    "💎|ほうせき": branchPath("gem"),
+    "🧭|らしんばん": branchPath("compass"),
+    "🪔|らんぷ": branchPath("oil_lamp"),
+    "🦕|でんせつの きょうりゅう": branchPath("legendary_dinosaur"),
+    "🧸|きらきらの ぬいぐるみ": branchPath("sparkling_teddy_bear"),
+    "🐱|しあわせの ねこ": branchPath("happy_cat"),
+    "🦄|にじいろの ゆにこーん": branchPath("rainbow_unicorn"),
+    "☁️|きんいろの くも": branchPath("golden_cloud"),
+    "🏺|ひかる こだいの つぼ": branchPath("glowing_ancient_vase")
+  });
+
   const UI_ROOT = "../assets/images/nazonazo-tunnel/ui-art/";
   const uiPath = function (slug) {
     return UI_ROOT + slug + "_" + VERSION + ".webp";
@@ -264,5 +308,5 @@
     stageSpace2: items["🪐|どせい"]
   };
 
-  window.PonoNazonazoQuizArt = { version: VERSION, items: items, ui: ui };
+  window.PonoNazonazoQuizArt = { version: REGISTRY_VERSION, items: items, ui: ui };
 })();
