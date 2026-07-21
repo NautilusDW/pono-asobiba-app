@@ -80,6 +80,7 @@
 - 2026-07-06 - by Claude - [batch:1203-ux-3fixes] - common/data-export.js, common/sw-update.js, sw.js, play.html, AGENTS_CLAIMS.md - UX 3件: Preview 強化 + SW toast 繰り返し抑制 + CORE_PRESERVE_IF_ABSENT 拡張 + sw v2006→v2007 [overlap: batch:tier-v3-phase1]
 - 2026-07-06 21:04 - by Claude - [batch:1204-capacitor-phase1-scaffold] - native/** (新規), .gitignore, .assetsignore, common/sw-update.js, common/cloud-sync.js, bento/kitchen.html, AGENTS_CLAIMS.md - Capacitor Phase 1 scaffold (Android 先行、www build pipeline + Web側 SW gating 3点)。play.html/sw.js/CLAUDE.md/HANDOFF.md/MEMORY.md 等の既存 dirty 10 ファイルには一切 touch しない [overlap: batch:1203-ux-3fixes (common/sw-update.js), batch:952-cloud-sync-step-c (common/cloud-sync.js)]
 - 2026-07-13 - by Claude - [batch:1284-lp-game-copy-rewrite] - index.html, AGENTS_CLAIMS.md - LP ゲーム/ガチャ/シール帳紹介モーダルの説明文を特徴・ベネフィット前面コピーへ全面リライト (fable orchestration + sonnet 実装 + クロスレビュー) [overlap: batch:1281-analytics-phase1 (index.html)]
+- 2026-07-22 - by Claude - [batch:1411-tier-a-new-genre-games] - donguri-wakekko/** (新規), pakupaku-catch/** (新規), play.html, sw.js, tests/donguri_wakekko_regression.cjs (新規), tests/pakupaku_catch_regression.cjs (新規), AGENTS_CLAIMS.md - クイズ偏重脱却の新ジャンルゲーム2本(戦略かけひき系+アクション系)をプレースホルダー素材で新規実装 (fable設計 + sonnet実装 + クロスレビュー、docs/GAME_DIVERSIFICATION_PROPOSAL_2026-07-22.md のTier A)
 ## なぜ HANDOFF.md と別ファイルなのか
 
 HANDOFF.md は履歴 (Done エントリ含む) が積み上がるため、 「いまアクティブな claim だけを瞬時に把握する」 用途には不向き。 このボードは **常に短い / 常に最新 / 行は使い捨て** という性質を維持することで、 衝突検出のコストをほぼゼロにする狙い。
