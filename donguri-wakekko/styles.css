@@ -1,0 +1,393 @@
+/* ============================================================
+   どんぐり わけっこ たいけつ — styles.css
+   placeholder 素材方針 (CLAUDE.md 画像縦横比ルール準拠):
+   - 画像は object-fit:contain のみ。stretch (background-size:100% 100% /
+     object-fit:fill) は一切使わない。
+   - #basketBoardArt (未使用・将来の本番アート差し替え点) を導入する場合は
+     background-size:contain + #basketBoard に画像実測 aspect-ratio を
+     設定すること。現在は当たり判定 (.basket-zone) 側と分離した CSS 描画のみ。
+   ============================================================ */
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "BIZ UDPGothic", sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background-image: url('../assets/images/BG_03.webp');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+#app {
+  position: relative;
+  width: 100%;
+  height: 100dvh;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+/* ---- ホームリンク ---- */
+#homeLinkWrap {
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 200;
+}
+#homeLink {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.88);
+  box-shadow: 0 3px 10px rgba(0,0,0,0.22);
+  text-decoration: none;
+  font-size: 1.3rem;
+}
+
+/* ---- 共通オーバーレイ画面 (title / result) ---- */
+.overlay-screen {
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 24px;
+  text-align: center;
+  background: rgba(20, 40, 24, 0.55);
+}
+
+#gameTitle {
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 900;
+  text-shadow: 0 3px 8px rgba(0,0,0,0.4);
+  margin: 0;
+}
+#gameSubtitle {
+  color: #FFF3D6;
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0 0 6px;
+}
+
+#startBtn, #rematchBtn {
+  padding: 14px 40px;
+  border: none;
+  border-radius: 50px;
+  background: linear-gradient(135deg, #FFD84D, #F5A800);
+  color: #5C3A00;
+  font-family: inherit;
+  font-size: 1.05rem;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 5px 16px rgba(245,168,0,0.45);
+}
+#startBtn:active, #rematchBtn:active { transform: scale(0.96); }
+
+#resultTitle {
+  color: #fff;
+  font-size: 1.4rem;
+  font-weight: 900;
+  text-shadow: 0 3px 8px rgba(0,0,0,0.4);
+  margin: 0 0 6px;
+}
+
+/* ---- ボード画面 ---- */
+.board-screen {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 10px 10px 14px;
+  gap: 8px;
+}
+
+/* ---- ラウンドインジケータ ---- */
+#roundIndicator {
+  display: flex;
+  gap: 10px;
+  padding: 6px 14px;
+  background: rgba(255,255,255,0.85);
+  border-radius: 30px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+}
+.round-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #D8D0C0;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.08);
+}
+.round-dot.is-win  { background: #E0524D; }
+.round-dot.is-lose { background: #7D6BB5; }
+.round-dot.is-draw { background: #9AA0A6; }
+
+/* ---- あらいぐま ---- */
+#raccoonRow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 78px;
+}
+#raccoonAvatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff, #FCEBD5 70%, #F0D6AE);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  transition: transform 0.5s ease;
+}
+#raccoonAvatar.look-0 { transform: translateX(-34px) rotate(-14deg); }
+#raccoonAvatar.look-1 { transform: translateX(0) rotate(0deg) scale(1.05); }
+#raccoonAvatar.look-2 { transform: translateX(34px) rotate(14deg); }
+
+#raccoonThoughtBubble {
+  position: absolute;
+  top: -6px;
+  right: calc(50% - 90px);
+  min-width: 34px;
+  min-height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+  background: #fff;
+  border-radius: 50%;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.2);
+  opacity: 0;
+  transform: scale(0.6);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+  pointer-events: none;
+}
+#raccoonThoughtBubble.show { opacity: 1; transform: scale(1); }
+
+/* ---- かご盤面 ----
+   #basketBoard は当たり判定コンテナ。本番アートを入れる場合は
+   #basketBoardArt (未実装・差し替え点) を background-size:contain で
+   重ね、#basketBoard 側に画像実測 aspect-ratio を設定すること。 */
+#basketBoard {
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: 640px;
+  display: flex;
+  gap: 8px;
+  min-height: 0;
+}
+
+.basket-zone {
+  position: relative;
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  border-radius: 18px;
+  background: linear-gradient(180deg, #EFE3C7 0%, #E4D2A6 55%, #C9AD74 100%);
+  border: 3px solid #B8905A;
+  box-shadow: inset 0 3px 8px rgba(255,255,255,0.4), 0 4px 10px rgba(0,0,0,0.18);
+  overflow: hidden;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+.basket-zone.is-drop-target {
+  box-shadow: 0 0 0 4px #34D399, inset 0 3px 8px rgba(255,255,255,0.4);
+  transform: scale(1.02);
+}
+
+.basket-npc-slot {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-end;
+  justify-content: center;
+  gap: 2px;
+  padding: 4px;
+  border-bottom: 2px dashed rgba(125,107,181,0.35);
+  background: rgba(125,107,181,0.06);
+}
+
+.basket-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 4px 0;
+  flex: 0 0 auto;
+}
+.basket-icon { font-size: 1.4rem; line-height: 1; }
+.basket-label { font-size: 0.72rem; font-weight: 900; color: #6B4A22; }
+
+.basket-player-slot {
+  flex: 1 1 0;
+  min-height: 46px;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  justify-content: center;
+  gap: 2px;
+  padding: 4px;
+  background: rgba(224,82,77,0.06);
+}
+
+.basket-flags {
+  position: absolute;
+  top: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 4px;
+  pointer-events: none;
+}
+.flag {
+  width: 16px;
+  height: 22px;
+  position: relative;
+}
+.flag::before {
+  content: "";
+  position: absolute;
+  left: 1px;
+  top: 0;
+  width: 2px;
+  height: 22px;
+  background: #6B4A22;
+}
+.flag::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 0;
+  width: 0;
+  height: 0;
+  border-style: solid;
+  border-width: 6px 0 6px 11px;
+}
+.flag-player::after { border-color: transparent transparent transparent #E0524D; }
+.flag-npc::after { border-color: transparent transparent transparent #7D6BB5; }
+
+/* ---- どんぐり駒 ---- */
+.acorn-token {
+  width: clamp(36px, 9vmin, 56px);
+  height: clamp(36px, 9vmin, 56px);
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  touch-action: none;
+  animation: acornPop 0.25s ease both;
+}
+.acorn-token img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+.acorn-emoji-fallback {
+  font-size: clamp(1.4rem, 6vmin, 2.2rem);
+  line-height: 1;
+}
+.acorn-token.is-selected {
+  outline: 3px solid #FFD84D;
+  outline-offset: 2px;
+  border-radius: 50%;
+  background: rgba(255,216,77,0.28);
+}
+.acorn-token.is-dragging {
+  filter: drop-shadow(0 6px 10px rgba(0,0,0,0.35));
+  transform: scale(1.12);
+}
+.acorn-token-npc { animation-delay: inherit; }
+
+@keyframes acornPop {
+  0%   { transform: scale(0.4); opacity: 0; }
+  70%  { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ---- トレイ ---- */
+#tray {
+  width: 100%;
+  max-width: 640px;
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.7);
+  box-shadow: inset 0 2px 6px rgba(0,0,0,0.12);
+  flex: 0 0 auto;
+}
+#tray.is-drop-target {
+  box-shadow: 0 0 0 4px #34D399, inset 0 2px 6px rgba(0,0,0,0.12);
+}
+
+/* ---- けっていボタン ---- */
+#confirmBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 30px;
+  border: none;
+  border-radius: 50px;
+  background: linear-gradient(135deg, #FF8A65, #E0524D);
+  color: #fff;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 5px 16px rgba(224,82,77,0.4);
+  flex: 0 0 auto;
+  transition: opacity 0.2s ease, transform 0.15s ease;
+}
+#confirmBtn:active { transform: scale(0.96); }
+#confirmBtn:disabled {
+  opacity: 0.4;
+  cursor: default;
+  box-shadow: none;
+}
+.confirm-icon { font-size: 1.2rem; }
+
+/* ---- フェーズ別の見た目調整 (data-donguri-phase は JS が body に付与) ---- */
+body[data-donguri-phase="hint"] .acorn-token,
+body[data-donguri-phase="reveal"] .acorn-token,
+body[data-donguri-phase="confirm"] .acorn-token,
+body[data-donguri-phase="judge"] .acorn-token {
+  cursor: default;
+  opacity: 0.85;
+}
+
+@media (max-width: 380px) {
+  .basket-label { font-size: 0.66rem; }
+  #gameTitle { font-size: 1.25rem; }
+}
+
+/* ---- ダーク/ライト双方でも読みやすいテキストコントラスト維持のための保険 ---- */
+@media (prefers-color-scheme: dark) {
+  .overlay-screen { background: rgba(10, 20, 12, 0.62); }
+}

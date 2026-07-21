@@ -1,5 +1,9 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2318: どんぐりわけっこ対決 (donguri-wakekko/) とぱくぱくキャッチ (pakupaku-catch/) を
+// comingSoon+debugPlayable で新規追加。ゲーム個別ファイルは network-first 配信のため
+// CRITICAL_ASSETSには追加しない (batch:1411-tier-a-new-genre-games)。play.html
+// PAGE_CACHE_VERSION/window.PONO_SW_VERSION と同期 (2318)。
 // v2311: なぞなぞトレイン新規分岐の雪・炎パーティクル、恐竜・猫ランドマーク、
 // toy背景差し替えと8ステージ高さ補正を最終化。追加8画像は選択面だけの実行時読込とし、
 // CRITICAL_ASSETSには追加しない (batch:1385-nazonazo-branch-stage-polish)。
@@ -708,7 +712,7 @@
 // v2316: なぞなぞトレインの火・恐竜・猫ステージの画像と多重スクロールを世界観に合わせて再調整 (batch:1409-world-coherence)。
 // v2317: なぞなぞトレインの恐竜・卵・猫の実接地線を地面へ固定し、猫の建物と生活景を
 // clampなしのworld座標で連続スクロールさせる。全区間の猫密度も均等化 (batch:1410)。
-const CACHE_VERSION = 2317;
+const CACHE_VERSION = 2318;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

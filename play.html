@@ -11362,6 +11362,20 @@
         tier: 'app'
       },
       {
+        id: 'pakupaku-catch',
+        title: 'ぱくぱくキャッチ',
+        subtitle: 'たべものを カゴで うけとめよう',
+        icon: '🍙',
+        // 専用bg/thumbなし (canvas描画のみ)。bubble/coloring/stacking と同じ共通背景を流用。
+        bg: 'assets/images/BG_03.webp',
+        href: 'pakupaku-catch/',
+        panel: 'assets/ui/menu_card_base_02.webp',
+        peekPos: '50% 50%',
+        comingSoon: true,
+        debugPlayable: true,
+        tier: 'app'
+      },
+      {
         id: 'aquarium',
         title: 'ポノのすいぞくかん',
         subtitle: 'いきものたちに タッチしよう',
@@ -11389,6 +11403,20 @@
         // thumb_maze.webp は実際は ずかん風 (本+葉+きのこ+まつぼっくり)
         // の絵なので、 ずかんカードで正しく使う。
         thumb: 'assets/ui/thumb_maze.webp',
+        comingSoon: true,
+        debugPlayable: true,
+        tier: 'app'
+      },
+      {
+        id: 'donguri-wakekko',
+        title: 'どんぐりわけっこ',
+        subtitle: 'どんぐりを わけて あらいぐまと しょうぶ',
+        icon: '🌰',
+        // 専用bg/thumbなし (placeholder段階)。bubble/coloring/stacking と同じ共通背景を流用。
+        bg: 'assets/images/BG_03.webp',
+        href: 'donguri-wakekko/',
+        panel: 'assets/ui/menu_card_base_01.webp',
+        peekPos: '50% 50%',
         comingSoon: true,
         debugPlayable: true,
         tier: 'app'
@@ -11465,7 +11493,7 @@
       // ----- 完成ゲーム (通常カード) -----
       'starparodier', 'undersea-cave', 'sea-album',
       // ----- 開発中コンテンツ (comingSoon:true, debugPlayable:true) -----
-      'bubble', 'coloring', 'stacking', 'aquarium'
+      'bubble', 'coloring', 'stacking', 'aquarium', 'pakupaku-catch'
       // monster_math は 2026-07-07 の否定的フィードバックによるリセット後
       // 再評価が未確認のため保留 (詳細は HANDOFF.md 参照)
     ];
@@ -11627,7 +11655,7 @@
     // sw.js の CACHE_VERSION と揃える。Date.now() ベースだと iOS Safari で HTTP キャッシュが
     // 機能しなくなる (毎回 URL が変わる) ので、static な version を使う。デプロイ時に
     // CACHE_VERSION をバンプすれば自動でバスター値も変わり、SW 更新と同期する。
-    const PAGE_CACHE_VERSION = 2290; // sw.js CACHE_VERSION と同期 (v2289: 宝箱多重呼び出しキュー修正。カード境界でスロット報酬とカード完成報酬のonChooseが競合しgrantRewardがロストするCriticalバグをshowTreasure()のキューイングで修正)
+    const PAGE_CACHE_VERSION = 2318; // sw.js CACHE_VERSION と同期 (v2318: どんぐりわけっこ対決/ぱくぱくキャッチを comingSoon+debugPlayable で新規追加)
     const __bust = (url) => __isPreview ? `${url}${url.includes('?') ? '&' : '?'}_=v${PAGE_CACHE_VERSION}` : url;
     // ===== ごかんそう (rating) Apps Script Web App 連携 (v1951 で Google Forms から移行) =====
     // 星クリック時に rating-modal.js が hidden POST (no-cors) で送信。 hostname 分岐は不要 (Apps Script
@@ -11636,7 +11664,7 @@
     // batch:938 (v1953): rating-modal.js:217 の `String(window.PONO_SW_VERSION || '')` が
     // 空文字にならないよう、 sw.js CACHE_VERSION と同期した値を注入。 sw.js を bump するたびに
     // ここも同期させる (play.html PAGE_CACHE_VERSION と同じ運用)。
-    window.PONO_SW_VERSION = 'v2290'; // PAGE_CACHE_VERSION/sw.js CACHE_VERSION と同期
+    window.PONO_SW_VERSION = 'v2318'; // PAGE_CACHE_VERSION/sw.js CACHE_VERSION と同期
 
     // Keep the old vertical loop behavior: the viewport shows four cards,
     // with the fifth game reachable by scrolling up/down through duplicate sets.

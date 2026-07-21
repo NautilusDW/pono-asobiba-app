@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>ぱくぱくキャッチ | ポノのあそびば</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<!-- FOUC guard: init 完了まで canvas を非表示にしてチラ見えを防ぐ (bubble/index.html 踏襲) -->
+<style>html,body{background:#000}#stage{visibility:hidden}body.pono-game-ready #stage{visibility:visible}</style>
+<script>document.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(function(){requestAnimationFrame(function(){document.body.classList.add('pono-game-ready')})})});</script>
+
+<script src="../common/preload-helper.js"></script>
+<!-- NOTE: common/preload-helper.js の GAME_WARM_ASSETS に 'pakupaku-catch' エントリが
+     未登録の間は warmGameAssets() は no-op で安全に何もしない (list未登録→false)。
+     統合担当が GAME_WARM_ASSETS に追加した時点でこの呼び出しがそのまま効き始める。 -->
+<script>window.addEventListener('DOMContentLoaded',function(){if(window.PonoPreload)window.PonoPreload.warmGameAssets('pakupaku-catch');});</script>
+<script src="../common/haptics.js"></script>
+<script src="../common/achievements.js"></script>
+<script src="../common/menu.js"></script>
+<script src="../common/highscore.js"></script>
+
+<link rel="stylesheet" href="styles.css?v=20260722-1">
+<script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
+</head>
+<body>
+
+<div id="landscape-notice">
+  <div class="rotate-icon">📱</div>
+  <p>スマホを<br><strong>たてむき</strong>にしてね！</p>
+</div>
+
+<div class="tut-dim hidden" id="tut-dim"></div>
+<div class="tut-bubble hidden" id="tut-bubble"></div>
+
+<div id="stage">
+  <canvas id="c"></canvas>
+
+  <div id="hud">
+    <div class="hud-pill hud-timer" id="hud-timer">⏱ 60</div>
+    <div class="hud-pill hud-score" id="hud-score">🍙 0</div>
+  </div>
+
+  <div id="start-screen">
+    <div class="title">ぱくぱくキャッチ</div>
+    <div class="icon">🍙</div>
+    <div class="desc">おちてくる たべものを<br>カゴで うけとめよう！<br>とげとげ や いしは よけてね</div>
+    <button class="tap-btn" id="start-btn">▶ タップで はじめる</button>
+  </div>
+
+  <div id="countdown-screen">
+    <div class="cd-text" id="cd-text">よーい…</div>
+  </div>
+
+  <div id="result-overlay">
+    <div id="result-card">
+      <div class="result-banner">おしまい！</div>
+      <div class="result-pono">🦉🧺</div>
+      <div class="result-score" id="result-score">0 てん</div>
+      <div class="result-new hidden" id="result-new">✨ しんきろく！</div>
+      <button class="result-btn" id="retry-btn">🔁 もういちど</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/logic.js?v=20260722-1"></script>
+<script src="js/game.js?v=20260722-1"></script>
+</body>
+</html>

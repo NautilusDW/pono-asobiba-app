@@ -1,0 +1,181 @@
+/* ── pakupaku-catch/styles.css ── */
+@import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  background: #000;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#stage {
+  position: fixed;
+  top: 0; bottom: 0; left: 50%;
+  transform: translateX(-50%);
+  width: min(100%, 100vh * 9 / 16);
+  height: 100%;
+  background: #000;
+}
+
+canvas#c {
+  display: block;
+  touch-action: none;
+  margin: 0 auto;
+}
+
+/* ── Start screen ── */
+#start-screen {
+  position: absolute; inset: 0; z-index: 9999;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: linear-gradient(180deg, #ffb877 0%, #ffd9a0 45%, #fff3d6 100%);
+  text-align: center; padding: 24px;
+}
+#start-screen .title {
+  font-size: 30px; font-weight: 900; color: #7a4a1f;
+  text-shadow: 0 2px 6px rgba(255,255,255,0.5);
+  letter-spacing: 0.03em;
+}
+#start-screen .icon { font-size: 60px; margin: 14px 0; }
+#start-screen .desc {
+  font-size: 18px; font-weight: 700; color: #6b4423;
+  line-height: 1.7; margin-top: 6px;
+}
+#start-screen .tap-btn {
+  margin-top: 40px;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-size: 22px; font-weight: 900; color: #fff;
+  background: linear-gradient(135deg, #ff8c42, #ff6b35);
+  border: none; border-radius: 999px;
+  padding: 16px 42px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+  cursor: pointer;
+  animation: startPulse 1.4s infinite;
+}
+@keyframes startPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(0.96)} }
+
+/* ── Countdown ── */
+#countdown-screen {
+  position: absolute; inset: 0; z-index: 9998;
+  display: none;
+  align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.15);
+  pointer-events: none;
+}
+#countdown-screen.show { display: flex; }
+#countdown-screen .cd-text {
+  font-size: 34px; font-weight: 900; color: #fff;
+  text-shadow: 0 3px 10px rgba(0,0,0,0.45);
+  background: rgba(122,74,31,0.55);
+  border-radius: 24px;
+  padding: 18px 30px;
+  animation: cdPop 0.4s ease;
+}
+@keyframes cdPop { from{transform:scale(0.7);opacity:0} to{transform:scale(1);opacity:1} }
+
+/* ── HUD ── */
+#hud {
+  position: absolute; top: max(14px, env(safe-area-inset-top)); left: 0; right: 0; z-index: 500;
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 0 76px 0 84px; /* leave room for ⚙️ button */
+  pointer-events: none;
+}
+#hud .hud-pill {
+  font-weight: 900; font-size: 18px; color: #5a3a1c;
+  background: rgba(255,255,255,0.82);
+  border-radius: 999px;
+  padding: 8px 16px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.14);
+  display: flex; align-items: center; gap: 6px;
+}
+#hud .hud-timer.hud-low {
+  color: #e8560f;
+  animation: hudLowPulse 0.6s infinite;
+}
+@keyframes hudLowPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.12)} }
+
+/* ── Landscape notice (縦持ち強制) ── */
+#landscape-notice {
+  display: none;
+  position: fixed; inset: 0; z-index: 9980;
+  background: #1a3a4a;
+  flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+  color: white; text-align: center; padding: 40px;
+  font-family: 'Zen Maru Gothic', sans-serif;
+}
+#landscape-notice .rotate-icon { font-size: 64px; animation: rotateHintV 2s ease-in-out infinite; }
+@keyframes rotateHintV { 0%,100%{transform:rotate(0deg)} 50%{transform:rotate(-90deg)} }
+#landscape-notice p { font-size: 18px; line-height: 1.6; }
+
+/* ── Tutorial overlay (bubble の tut-dim/tut-bubble パターンを流用) ── */
+.tut-dim { position: fixed; inset: 0; z-index: 9995; background: rgba(93,78,55,0.65); pointer-events: auto; }
+.tut-dim.hidden { display: none; }
+.tut-bubble {
+  position: fixed; z-index: 9997;
+  left: 50%; top: 50%; transform: translate(-50%, -50%);
+  background: #fff; border-radius: 20px; padding: 22px 20px;
+  width: min(84%, 320px);
+  box-shadow: 0 8px 28px rgba(93,78,55,0.35);
+  font-size: 1rem; font-weight: 700; color: #5D4E37; line-height: 1.7;
+  text-align: center;
+  animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+.tut-bubble.hidden { display: none; }
+.tut-bubble .tut-icon { font-size: 40px; margin-bottom: 8px; }
+.tut-next-btn {
+  display: inline-block; margin-top: 14px; padding: 10px 30px;
+  border: none; border-radius: 50px;
+  background: linear-gradient(135deg, #60A5FA, #818CF8);
+  color: #fff; font-family: inherit; font-size: 0.95rem; font-weight: 900;
+  cursor: pointer;
+}
+.tut-next-btn:active { transform: scale(0.95); }
+@keyframes popIn { from{transform:translate(-50%,-50%) scale(0.8);opacity:0.5} to{transform:translate(-50%,-50%) scale(1);opacity:1} }
+
+/* ── Result overlay ── */
+#result-overlay {
+  position: absolute; inset: 0; z-index: 9990;
+  display: none; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.55);
+  padding: 20px;
+}
+#result-overlay.show { display: flex; }
+#result-card {
+  background: #FFF8E7; border-radius: 26px;
+  padding: 26px 22px 22px;
+  width: min(88%, 320px);
+  text-align: center;
+  box-shadow: 0 10px 34px rgba(0,0,0,0.3);
+  transform: scale(0.85);
+  transition: transform 0.25s;
+}
+#result-overlay.show #result-card { transform: scale(1); }
+#result-card .result-banner {
+  font-size: 22px; font-weight: 900; color: #7a4a1f; margin-bottom: 6px;
+}
+#result-card .result-pono { font-size: 48px; margin: 4px 0 10px; }
+#result-card .result-score {
+  font-size: 30px; font-weight: 900; color: #ff6b35; margin-bottom: 4px;
+}
+#result-card .result-new {
+  font-size: 14px; font-weight: 900; color: #e8560f;
+  animation: hudLowPulse 0.8s infinite;
+  margin-bottom: 8px;
+}
+#result-card .result-btn {
+  margin-top: 16px;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-size: 18px; font-weight: 900; color: #2d6a4f;
+  background: linear-gradient(135deg, #a8e6cf, #88d8a8);
+  border: none; border-radius: 16px;
+  padding: 12px 30px;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+}
+#result-card .result-btn:active { transform: scale(0.95); }
