@@ -19,7 +19,7 @@ const sources = Object.freeze({
 const STAGE_IDS = Object.freeze(["snow", "fire", "dino", "toy", "cat", "fantasy", "sky", "ruins"]);
 const LAYER_KEYS = Object.freeze(["sky", "horizon", "mid", "ground", "fg", "decor"]);
 const TOKEN = "20260721-1385";
-const SW_VERSION = 2311;
+const SW_VERSION = 2313;
 const THREE_MIB = 3 * 1024 * 1024;
 const CANONICAL = Object.freeze([
   Object.freeze({ name: "effect_snowflake_particle_20260720.webp", bytes: 339906, width: 792, height: 927, sha256: "e2288efcadbf3ab0c16dde0a6d4c2fd167560dbf941cf2e1712ac12a801f6ce6" }),

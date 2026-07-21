@@ -690,7 +690,14 @@
 // 計算から除外、押せるボタンに見えて反応しない見た目(box-shadow・無限パルス)も撤去し
 // 静的な情報タグへ変更。game.js/styles.css/tests/nazonazo_tunnel_branch_topology_regression.cjs/
 // tests/nazonazo_ready_class_regression.cjsを変更したためバンプ。
-const CACHE_VERSION = 2311;
+// v2312: play.html の APP_TITLE_MENU_IDS へ開発中コンテンツを追加
+// (starparodier/undersea-cave/sea-album を通常公開 + bubble/coloring/
+// stacking/aquarium を comingSoon:true+debugPlayable:true で追加、
+// GAMES 配列へ新規4エントリ追加) したためバンプ。
+// v2313: コードレビュー指摘対応。bubble/coloring/stacking の
+// 「テスト用: 毎回表示」デバッグ残骸(localStorage.removeItem直後の
+// チュートリアル強制表示)を除去、チュートリアルが1回だけ出るよう修正。
+const CACHE_VERSION = 2313;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

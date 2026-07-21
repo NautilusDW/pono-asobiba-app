@@ -109,7 +109,7 @@ assert.match(css, /@media \(prefers-reduced-motion:reduce\)[\s\S]*?\.space-chase
 assert.match(css, /body\.space-chase-active #veh[\s\S]*?visibility:hidden!important/);
 
 const cacheVersion = Number(sw.match(/const CACHE_VERSION = (\d+);/)?.[1]);
-assert.equal(cacheVersion, 2311);
+assert.equal(cacheVersion, 2313);
 assert.match(sw, /v2241:[\s\S]{0,700}batch:1329-nazonazo-grand-rescue/);
 
 const constantsStart = game.indexOf("const SPACE_CHASE_WORLD_WIDTH");

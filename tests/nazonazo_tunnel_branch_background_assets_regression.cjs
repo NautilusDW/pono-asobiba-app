@@ -248,7 +248,7 @@ const gameToken = html.match(/js\/game\.js\?v=([^"']+)/);
 assert.ok(styleToken && gameToken, "nazonazo stylesheet and game cache tokens must exist");
 assert.equal(styleToken[1], gameToken[1], "nazonazo stylesheet and game cache tokens must match");
 assert.equal(styleToken[1], "20260721-1385", "nazonazo branch stage polish cache token drifted");
-assert.match(sw, /const CACHE_VERSION = 2311;/, "service worker cache version must be 2311");
+assert.match(sw, /const CACHE_VERSION = 2313;/, "service worker cache version must be 2313");
 assert.doesNotMatch(sw, /branch_(?:snow|fire|dino|toy|cat|fantasy|sky|ruins)_(?:sky|horizon|mid|ground|foreground|decor)/,
   "branch raster images must stay out of service-worker precache lists");
 

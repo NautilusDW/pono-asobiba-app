@@ -11318,6 +11318,67 @@
       },
       // ----- Coming-soon (debug-playable for devs) -----
       {
+        id: 'bubble',
+        title: 'しゃぼんだまパーティー',
+        subtitle: 'タップして シャボンだまを われよう',
+        icon: '🫧',
+        // 専用bg/thumbなし (canvas描画のみのゲームで静止画素材が未生成)。
+        // 暫定で共通背景を流用 (coloring/stacking も同画像を採用)。
+        bg: 'assets/images/BG_03.webp',
+        href: 'bubble/',
+        panel: 'assets/ui/menu_card_base_01.webp',
+        peekPos: '50% 50%',
+        comingSoon: true,
+        debugPlayable: true,
+        tier: 'app'
+      },
+      {
+        id: 'coloring',
+        title: 'ポノのぬりえ',
+        subtitle: 'すきな いろで ぬってみよう',
+        icon: '🖍',
+        bg: 'assets/images/BG_03.webp',
+        href: 'coloring/',
+        panel: 'assets/ui/menu_card_base_02.webp',
+        thumb: 'assets/images/nurie001.webp',
+        thumbPos: '50% 50%',
+        peekPos: '50% 50%',
+        comingSoon: true,
+        debugPlayable: true,
+        tier: 'app'
+      },
+      {
+        id: 'stacking',
+        title: 'コトリをたすけよう',
+        subtitle: 'ブロックを つんで たすけにいこう',
+        icon: '🐦',
+        // 専用thumbなし (BGMのみ存在) のため省略。
+        bg: 'assets/images/BG_03.webp',
+        href: 'stacking/',
+        panel: 'assets/ui/menu_card_base_03.webp',
+        peekPos: '50% 50%',
+        comingSoon: true,
+        debugPlayable: true,
+        tier: 'app'
+      },
+      {
+        id: 'aquarium',
+        title: 'ポノのすいぞくかん',
+        subtitle: 'いきものたちに タッチしよう',
+        icon: '🐠',
+        bg: 'assets/images/aquarium/AquariumMap.webp',
+        // index.html ではなく map.html (ゾーンルーティング方式の MVP 実装)。
+        // admin/index.html の開発者用リンクも同じく map.html を使用。
+        href: 'aquarium/map.html',
+        panel: 'assets/ui/menu_card_base_04.webp',
+        thumb: 'assets/images/ocean/Turtle/Turtle_001.png',
+        thumbPos: '50% 50%',
+        peekPos: '50% 50%',
+        comingSoon: true,
+        debugPlayable: true,
+        tier: 'app'
+      },
+      {
         id: 'zukan',
         title: 'ポノのもりのずかん',
         subtitle: 'もりを たんけんして どうぶつを みつけよう',
@@ -11400,7 +11461,13 @@
     ];
     const APP_TITLE_MENU_IDS = [
       'quizland', 'nazonazo-tunnel', 'maze', 'oto',
-      'bento', 'cooking', 'puzzle', 'writing-mori'
+      'bento', 'cooking', 'puzzle', 'writing-mori',
+      // ----- 完成ゲーム (通常カード) -----
+      'starparodier', 'undersea-cave', 'sea-album',
+      // ----- 開発中コンテンツ (comingSoon:true, debugPlayable:true) -----
+      'bubble', 'coloring', 'stacking', 'aquarium'
+      // monster_math は 2026-07-07 の否定的フィードバックによるリセット後
+      // 再評価が未確認のため保留 (詳細は HANDOFF.md 参照)
     ];
 
     const APP_TITLE_GAME_OVERRIDES = {
