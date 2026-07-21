@@ -1,0 +1,116 @@
+{
+  "version": 1,
+  "batch": "1408-nazonazo-depth-parallax",
+  "assets": [
+    {
+      "id": "fire-horizon",
+      "model": "gpt-image-2",
+      "rawPath": "tmp/alpha_pending/1375-nazonazo-branch-bg-fire/horizon.png",
+      "rawSha256": "bd7a918ed7962d06da200d96c6c914e1efb4ade340631e7218f0b24ea55c5ebb",
+      "candidatePath": "tmp/alpha_pending/1408a-nazonazo-fire-alpha-v2/candidates/branch_fire_horizon_cutout_loop_alpha_v2.webp",
+      "candidateSha256": "3c86658dfff71dbd07a119e29245dc36aa6bf8b56a865926ec370191ebfbc44c",
+      "canonical": "branch_fire_horizon_cutout_loop_depthfix_20260721.webp",
+      "canonicalSha256": "3c86658dfff71dbd07a119e29245dc36aa6bf8b56a865926ec370191ebfbc44c"
+    },
+    {
+      "id": "fire-mid",
+      "model": "gpt-image-2",
+      "rawPath": "tmp/alpha_pending/1375-nazonazo-branch-bg-fire/mid.png",
+      "rawSha256": "86f9eff29821a3a5430581bdfc49702a5e83c949fd92d31945c7aa3100d91a2a",
+      "candidatePath": "tmp/alpha_pending/1408a-nazonazo-fire-alpha-v2/candidates/branch_fire_mid_cutout_loop_alpha_v2.webp",
+      "candidateSha256": "3b3c633f513b8634437f58a87df46ff2131e8daffb5fcf4e00f58d468e12563a",
+      "canonical": "branch_fire_mid_cutout_loop_depthfix_20260721.webp",
+      "canonicalSha256": "3b3c633f513b8634437f58a87df46ff2131e8daffb5fcf4e00f58d468e12563a"
+    },
+    {
+      "id": "fire-foreground",
+      "model": "gpt-image-2",
+      "rawPath": "tmp/alpha_pending/1375-nazonazo-branch-bg-fire/fg.png",
+      "rawSha256": "17fd35fb8f0343d1fc12b99174f70e26b1f361a3d2295f1c52fcdabb9c3fc086",
+      "candidatePath": "tmp/alpha_pending/1408a-nazonazo-fire-alpha-v2/candidates/branch_fire_foreground_cutout_loop_alpha_v2.webp",
+      "candidateSha256": "294d0794012a1cd64d176c3c1856e98d58d8b3e1825b9ba0dba7971b3feb0589",
+      "canonical": "branch_fire_foreground_cutout_loop_depthfix_20260721.webp",
+      "canonicalSha256": "294d0794012a1cd64d176c3c1856e98d58d8b3e1825b9ba0dba7971b3feb0589"
+    },
+    {
+      "id": "fire-decor",
+      "model": "gpt-image-2",
+      "rawPath": "tmp/alpha_pending/1375-nazonazo-branch-bg-fire/decor.png",
+      "rawSha256": "e8c45b1941abdeea5ab54b8e7f7cea56c792fffa97246f4e79e806572214a366",
+      "candidatePath": "tmp/alpha_pending/1408a-nazonazo-fire-alpha-v2/candidates/branch_fire_decor_cutout_alpha_v2.webp",
+      "candidateSha256": "801421e2aec33b7a0cde272fa51c1327d1e0d14b7fe128c85746a3e7249e3021",
+      "canonical": "branch_fire_decor_cutout_depthfix_20260721.webp",
+      "canonicalSha256": "801421e2aec33b7a0cde272fa51c1327d1e0d14b7fe128c85746a3e7249e3021"
+    },
+    {
+      "id": "fire-flame",
+      "model": "gpt-image-2",
+      "rawPath": "tmp/alpha_pending/1383-nazonazo-snow-fire-effects/fire_flame_particle_a_raw.png",
+      "rawSha256": "d1805594804d9da821061717b70c8f1744b3bee89699c1b5400311aaaa0fe55a",
+      "candidatePath": "tmp/alpha_pending/1408a-nazonazo-fire-alpha-v2/candidates/effect_fire_flame_particle_a_alpha_v2.webp",
+      "candidateSha256": "9b52d614385f5fbad7fb3384996801206bd7ae92062c0ce84c353b6de4d547d7",
+      "canonical": "effect_fire_flame_particle_a_depthfix_20260721.webp",
+      "canonicalSha256": "9b52d614385f5fbad7fb3384996801206bd7ae92062c0ce84c353b6de4d547d7"
+    },
+    {
+      "id": "fire-ember",
+      "model": "gpt-image-2",
+      "rawPath": "tmp/alpha_pending/1383-nazonazo-snow-fire-effects/fire_ember_particle_raw.png",
+      "rawSha256": "f9046f92f829ebb65d2ace3922e7b4c813f9982d04ceefec3df1296472e90de7",
+      "candidatePath": "tmp/alpha_pending/1408a-nazonazo-fire-alpha-v2/candidates/effect_fire_ember_particle_alpha_v2.webp",
+      "candidateSha256": "3af58af80ab989b8334a18a63a2463917ba9d9e3888d622e45b6606ee26c4889",
+      "canonical": "effect_fire_ember_particle_depthfix_20260721.webp",
+      "canonicalSha256": "3af58af80ab989b8334a18a63a2463917ba9d9e3888d622e45b6606ee26c4889"
+    },
+    {
+      "id": "dino-meadow",
+      "model": "gpt-image-2",
+      "rawPath": "tmp/alpha_pending/1408-nazonazo-depth-fix-dino-meadow/dino_meadow_base_raw.png",
+      "rawSha256": "4989ba97dc0db485cd56404c45c349d2698a8d17cc400987c1998b47a9bbf424",
+      "candidatePath": "tmp/alpha_pending/1408b-nazonazo-fantasy-alpha-v2/dino-meadow-loop/candidate/dino_meadow_loop_3200x800_lossless.webp",
+      "candidateSha256": "530af1024821e8606cb8810f8801f85d88737a23399f0d5b686572a4c7361ff9",
+      "canonical": "branch_dino_meadow_loop_depthfix_20260721.webp",
+      "canonicalSha256": "530af1024821e8606cb8810f8801f85d88737a23399f0d5b686572a4c7361ff9"
+    },
+    {
+      "id": "fantasy-horizon-v4",
+      "model": "gpt-image-2",
+      "rawPath": "tmp/alpha_pending/1379-nazonazo-branch-bg-fantasy/horizon.png",
+      "rawSha256": "1bc60b0028a907db1daba49eda476ffe5582c86d6bf5321f39347c762100e821",
+      "candidatePath": "tmp/alpha_pending/1408b-nazonazo-fantasy-alpha-v2/fantasy-alpha-v4-baseline-feather/candidates/fantasy_horizon_alpha_v4.webp",
+      "candidateSha256": "67b7a649df18aa6f5417ac951bd1a86fec1231c365221296621a5dbd6ccbdbb9",
+      "canonical": "branch_fantasy_horizon_cutout_loop_depthfix_v4_20260721.webp",
+      "canonicalSha256": "67b7a649df18aa6f5417ac951bd1a86fec1231c365221296621a5dbd6ccbdbb9"
+    },
+    {
+      "id": "fantasy-mid-v4",
+      "model": "gpt-image-2",
+      "rawPath": "tmp/alpha_pending/1379-nazonazo-branch-bg-fantasy/mid.png",
+      "rawSha256": "a22e8a9ccbbfcad28df782c6d8a3db90ce128b2d2659922eab5ca817a859e6f8",
+      "candidatePath": "tmp/alpha_pending/1408b-nazonazo-fantasy-alpha-v2/fantasy-alpha-v4-baseline-feather/candidates/fantasy_mid_alpha_v4.webp",
+      "candidateSha256": "788d218754a20dd50d6c2665b48eed2818a7b972632a8173a9c7b73251e04bdd",
+      "canonical": "branch_fantasy_mid_cutout_loop_depthfix_v4_20260721.webp",
+      "canonicalSha256": "788d218754a20dd50d6c2665b48eed2818a7b972632a8173a9c7b73251e04bdd"
+    },
+    {
+      "id": "fantasy-foreground",
+      "model": "gpt-image-2",
+      "rawPath": "tmp/alpha_pending/1379-nazonazo-branch-bg-fantasy/fg.png",
+      "rawSha256": "8291792acd49b7deff5e31081ecf3c07e7821c976eddeec32f71088a51e5cb32",
+      "candidatePath": "tmp/alpha_pending/1408b-nazonazo-fantasy-alpha-v2/candidates/fantasy_foreground_alpha_v2.webp",
+      "candidateSha256": "dd65ca1c6330d1d9b6c354a9afd5a218fcf6b994f9e9e5c4f434335bce6ce733",
+      "canonical": "branch_fantasy_foreground_cutout_loop_depthfix_20260721.webp",
+      "canonicalSha256": "dd65ca1c6330d1d9b6c354a9afd5a218fcf6b994f9e9e5c4f434335bce6ce733"
+    },
+    {
+      "id": "fantasy-decor",
+      "model": "gpt-image-2",
+      "rawPath": "tmp/alpha_pending/1379-nazonazo-branch-bg-fantasy/decor.png",
+      "rawSha256": "5f1c67d4a438981c7d6a67296a8cd03ec334c724c231f48b1f2c063ac813945f",
+      "candidatePath": "tmp/alpha_pending/1408b-nazonazo-fantasy-alpha-v2/candidates/fantasy_decor_alpha_v2.webp",
+      "candidateSha256": "229d86765a7cb15cf532b403fe3bc55fc814b56f1d7b2c9df979a33c2a5d0bb4",
+      "canonical": "branch_fantasy_decor_cutout_loop_depthfix_20260721.webp",
+      "canonicalSha256": "229d86765a7cb15cf532b403fe3bc55fc814b56f1d7b2c9df979a33c2a5d0bb4"
+    }
+  ]
+}

@@ -49,11 +49,11 @@ function extractLiteral(pattern, label) {
 
 /* The registry must load between question data and the runtime, with fresh cache keys. */
 const questionScriptIndex = html.indexOf('src="data/questions.js');
-const artScriptIndex = html.indexOf('src="data/quiz-art.js?v=20260721-1407');
-const gameScriptIndex = html.indexOf('src="js/game.js?v=20260721-1407');
+const artScriptIndex = html.indexOf('src="data/quiz-art.js?v=20260721-1408');
+const gameScriptIndex = html.indexOf('src="js/game.js?v=20260721-1408');
 assert.ok(questionScriptIndex >= 0 && questionScriptIndex < artScriptIndex && artScriptIndex < gameScriptIndex,
   "quiz art must load after questions and before game.js");
-assert.match(html, /styles\.css\?v=20260721-1407/, "illustration layout needs a fresh stylesheet cache key");
+assert.match(html, /styles\.css\?v=20260721-1408/, "illustration layout needs a fresh stylesheet cache key");
 
 /* Every static and generated semantic pair must have an exact composite-key entry. */
 assert.ok(fs.existsSync(registryPath), "nazonazo-tunnel/data/quiz-art.js is missing");

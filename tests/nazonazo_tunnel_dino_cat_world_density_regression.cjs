@@ -17,12 +17,12 @@ const sources = Object.freeze({
   sw: read("sw.js")
 });
 
-const TOKEN = "20260721-1407";
-const SW_VERSION = 2314;
+const TOKEN = "20260721-1408";
+const SW_VERSION = 2315;
 const THREE_MIB = 3 * 1024 * 1024;
 const STAGE_IDS = Object.freeze(["snow", "fire", "dino", "toy", "cat", "fantasy", "sky", "ruins"]);
 const LAYER_KEYS = Object.freeze(["sky", "horizon", "mid", "ground", "fg", "decor"]);
-const EXPECTED_VALIDATE_CHECKS = 117;
+const EXPECTED_VALIDATE_CHECKS = 118;
 
 const CANONICAL = Object.freeze([
   Object.freeze({ name: "branch_dino_far_herd_cutout_20260721.webp", width: 1894, height: 367, bytes: 599190, sha256: "9217d6f0c2e59abb9c8285fa4d0d305b85d6f4e4ed4e9b1d5223c2381a1add9e", raw: "01_dino_far_herd_raw.png", rawWidth: 1942, rawHeight: 809, rawBytes: 1126084, rawSha256: "6c5446c023af876c17a76706341fa7dd58363f63cf299d2e295209be9890a78b", candidate: "dino/branch_dino_far_herd_cutout_20260721.webp" }),
@@ -59,7 +59,7 @@ const REPORTS = Object.freeze([
 
 const EXTRA_URLS = Object.freeze({
   snow: Object.freeze({ snowflake: "../assets/images/nazonazo-tunnel/effect_snowflake_particle_20260720.webp", diamond: "../assets/images/nazonazo-tunnel/effect_diamond_dust_particle_20260720.webp" }),
-  fire: Object.freeze({ flame: "../assets/images/nazonazo-tunnel/effect_fire_flame_particle_a_20260720.webp", ember: "../assets/images/nazonazo-tunnel/effect_fire_ember_particle_20260720.webp" }),
+  fire: Object.freeze({ flame: "../assets/images/nazonazo-tunnel/effect_fire_flame_particle_a_depthfix_20260721.webp", ember: "../assets/images/nazonazo-tunnel/effect_fire_ember_particle_depthfix_20260721.webp" }),
   dino: Object.freeze({
     farHerd: "../assets/images/nazonazo-tunnel/branch_dino_far_herd_cutout_20260721.webp",
     waterhole: "../assets/images/nazonazo-tunnel/branch_dino_waterhole_cutout_20260721.webp",
@@ -81,11 +81,11 @@ const EXTRA_URLS = Object.freeze({
 });
 
 const DINO_CONFIG = Object.freeze([
-  Object.freeze({ asset: "waterhole", ratio: .14, width: 46, bottom: 17.5, scale: .94, depth: 3, sourceWidth: 1533, guard: 16 }),
-  Object.freeze({ asset: "stegosaurus", ratio: .30, width: 30, bottom: 19.5, scale: .88, depth: 4, sourceWidth: 1448, guard: 14 }),
-  Object.freeze({ asset: "parasaurolophus", ratio: .46, width: 32, bottom: 18.5, scale: .91, depth: 3, sourceWidth: 1453, guard: 14 }),
-  Object.freeze({ asset: "sauropod", ratio: .62, width: 37, bottom: 17.5, scale: .96, depth: 2, sourceWidth: 1479, guard: 16 }),
-  Object.freeze({ asset: "trex", ratio: .78, width: 18, bottom: 20, scale: .84, depth: 4, sourceWidth: 876, guard: 16 })
+  Object.freeze({ asset: "waterhole", ratio: .14, width: 32, bottom: 17.5, scale: .94, depth: 3, parallax: .42, sourceWidth: 1533, guard: 16 }),
+  Object.freeze({ asset: "stegosaurus", ratio: .30, width: 23, bottom: 19.5, scale: .88, depth: 4, parallax: .55, sourceWidth: 1448, guard: 14 }),
+  Object.freeze({ asset: "parasaurolophus", ratio: .46, width: 23, bottom: 18.5, scale: .91, depth: 3, parallax: .42, sourceWidth: 1453, guard: 14 }),
+  Object.freeze({ asset: "sauropod", ratio: .62, width: 28, bottom: 17.5, scale: .96, depth: 2, parallax: .30, sourceWidth: 1479, guard: 16 }),
+  Object.freeze({ asset: "trex", ratio: .78, width: 15, bottom: 20, scale: .84, depth: 4, parallax: .55, sourceWidth: 876, guard: 16 })
 ]);
 
 const CAT_CONFIG = Object.freeze([
@@ -234,11 +234,20 @@ function sceneDirectChildIds(html) {
 
 function expectedBaseAsset(stageId, key) {
   const overrides = {
+    "fire.horizon": "../assets/images/nazonazo-tunnel/branch_fire_horizon_cutout_loop_depthfix_20260721.webp",
+    "fire.mid": "../assets/images/nazonazo-tunnel/branch_fire_mid_cutout_loop_depthfix_20260721.webp",
+    "fire.fg": "../assets/images/nazonazo-tunnel/branch_fire_foreground_cutout_loop_depthfix_20260721.webp",
+    "fire.decor": "../assets/images/nazonazo-tunnel/branch_fire_decor_cutout_depthfix_20260721.webp",
     "dino.mid": "../assets/images/nazonazo-tunnel/branch_dino_mid_open_cutout_loop_20260721.webp",
+    "dino.meadow": "../assets/images/nazonazo-tunnel/branch_dino_meadow_loop_depthfix_20260721.webp",
     "toy.mid": "../assets/images/nazonazo-tunnel/branch_toy_mid_variety_cutout_loop_20260720.webp",
     "toy.decor": "../assets/images/nazonazo-tunnel/branch_toy_decor_variety_cutout_loop_20260720.webp",
     "cat.fg": "../assets/images/nazonazo-tunnel/branch_cat_foreground_no_yarn_cutout_loop_20260721.webp",
-    "cat.decor": "../assets/images/nazonazo-tunnel/branch_cat_decor_no_yarn_cutout_loop_20260721.webp"
+    "cat.decor": "../assets/images/nazonazo-tunnel/branch_cat_decor_no_yarn_cutout_loop_20260721.webp",
+    "fantasy.horizon": "../assets/images/nazonazo-tunnel/branch_fantasy_horizon_cutout_loop_depthfix_v4_20260721.webp",
+    "fantasy.mid": "../assets/images/nazonazo-tunnel/branch_fantasy_mid_cutout_loop_depthfix_v4_20260721.webp",
+    "fantasy.fg": "../assets/images/nazonazo-tunnel/branch_fantasy_foreground_cutout_loop_depthfix_20260721.webp",
+    "fantasy.decor": "../assets/images/nazonazo-tunnel/branch_fantasy_decor_cutout_loop_depthfix_20260721.webp"
   };
   if (overrides[`${stageId}.${key}`]) return overrides[`${stageId}.${key}`];
   const suffix = key === "sky" ? "sky_back" : key === "horizon" ? "horizon_cutout_loop" :
@@ -274,14 +283,15 @@ function validate(candidate) {
   STAGE_IDS.forEach(stageId => {
     const stageSource = extractObjectAfter(assetsSource, `\n ${stageId}:`);
     const entries = parseOwnStringEntries(stageSource);
-    check(JSON.stringify(entries.map(entry => entry[0])) === JSON.stringify(LAYER_KEYS), "asset-urls");
-    LAYER_KEYS.forEach(key => {
+    const stageKeys = stageId === "dino" ? [...LAYER_KEYS, "meadow"] : LAYER_KEYS;
+    check(JSON.stringify(entries.map(entry => entry[0])) === JSON.stringify(stageKeys), "asset-urls");
+    stageKeys.forEach(key => {
       const expected = expectedBaseAsset(stageId, key);
       check(entries.some(([entryKey, url]) => entryKey === key && url === expected), "asset-urls");
       baseUrls.push(expected);
     });
   });
-  check(baseUrls.length === 48 && new Set(baseUrls).size === 48, "asset-urls");
+  check(baseUrls.length === 49 && new Set(baseUrls).size === 49, "asset-urls");
   const extrasSource = extractObjectAfter(game, "const BRANCH_STAGE_POLISH_ASSETS=");
   const extraStageKeys = [...extrasSource.matchAll(/\n ([a-z]+):Object\.freeze\(/g)].map(match => match[1]);
   check(JSON.stringify(extraStageKeys) === JSON.stringify(Object.keys(EXTRA_URLS)), "asset-urls");
@@ -290,7 +300,7 @@ function validate(candidate) {
     check(JSON.stringify(actual) === JSON.stringify(expected), "asset-urls");
   });
   LEGACY_RUNTIME_URLS.forEach(url => check(![game, html, css, sw].some(source => source.includes(url)), "asset-urls"));
-  check((game.match(/branch_(?:dino|cat)_[^"']+_20260721\.webp/g) || []).length === 17, "asset-urls");
+  check((game.match(/branch_(?:dino|cat)_[^"']+_20260721\.webp/g) || []).length === 18, "asset-urls");
 
   const polishPreload = extractFunction(game, "preloadBranchStagePolish");
   const rasterPreload = extractFunction(game, "preloadBranchRasterStage");
@@ -303,8 +313,8 @@ function validate(candidate) {
   check(preloadRefs(polishPreload) === 1 && preloadRefs(applySkin) === 1 && preloadRefs(chooseTunnelBranch) === 1 && preloadRefs(game) === 3, "preload-scope");
   check(applySkin.includes("preloadBranchRasterStage(st);") && applySkin.includes("preloadBranchStagePolish(st);") &&
     chooseTunnelBranch.includes("preloadBranchRasterStage(target);") && chooseTunnelBranch.includes("preloadBranchStagePolish(target);"), "preload-scope");
-  const expectedTotals = { snow: 8, fire: 8, dino: 12, toy: 6, cat: 14, fantasy: 6, sky: 6, ruins: 6 };
-  const actualTotals = Object.fromEntries(STAGE_IDS.map(stageId => [stageId, 6 + Object.keys(EXTRA_URLS[stageId] || {}).length]));
+  const expectedTotals = { snow: 8, fire: 8, dino: 13, toy: 6, cat: 14, fantasy: 6, sky: 6, ruins: 6 };
+  const actualTotals = Object.fromEntries(STAGE_IDS.map(stageId => [stageId, (stageId === "dino" ? 7 : 6) + Object.keys(EXTRA_URLS[stageId] || {}).length]));
   check(JSON.stringify(actualTotals) === JSON.stringify(expectedTotals), "preload-scope");
 
   const preloadStart = game.indexOf("const BRANCH_RASTER_STAGE_IDS=");
@@ -320,15 +330,15 @@ function validate(candidate) {
     const context = { Image: FakeImage, Set, Map, Object };
     try {
       vm.runInNewContext(`${game.slice(preloadStart, preloadEnd)}\nthis.raster=preloadBranchRasterStage;this.polish=preloadBranchStagePolish;this.rasterCache=branchRasterImageCache;this.polishCache=branchStagePolishImageCache;`, context, { timeout: 1000 });
-      const dinoBase = Object.fromEntries(LAYER_KEYS.map(key => [key, expectedBaseAsset("dino", key)]));
+      const dinoBase = Object.fromEntries([...LAYER_KEYS, "meadow"].map(key => [key, expectedBaseAsset("dino", key)]));
       const catBase = Object.fromEntries(LAYER_KEYS.map(key => [key, expectedBaseAsset("cat", key)]));
       context.raster({ id: "dino", assets: dinoBase }); context.polish({ id: "dino" });
-      preloadProbe.dino = made.length === 12 && made.slice(6).every(image => image.src.includes("/branch_dino_"));
+      preloadProbe.dino = made.length === 13 && made.slice(7).every(image => image.src.includes("/branch_dino_"));
       context.raster({ id: "dino", assets: dinoBase }); context.polish({ id: "dino" });
-      preloadProbe.dinoRepeat = made.length === 12;
+      preloadProbe.dinoRepeat = made.length === 13;
       context.raster({ id: "cat", assets: catBase }); context.polish({ id: "cat" });
-      preloadProbe.cat = made.length === 26 && made.slice(18).every(image => image.src.includes("/branch_cat_"));
-      preloadProbe.totals = context.rasterCache?.size === 12 && context.polishCache?.size === 14;
+      preloadProbe.cat = made.length === 27 && made.slice(19).every(image => image.src.includes("/branch_cat_"));
+      preloadProbe.totals = context.rasterCache?.size === 13 && context.polishCache?.size === 14;
     } catch { /* stable checks below report the failure */ }
   }
   check(preloadProbe.dino, "preload-scope");
@@ -360,15 +370,19 @@ function validate(candidate) {
     dinoRatios.every((ratio, index) => index === 0 || ratio - dinoRatios[index - 1] >= .14), "dino-scenes");
   check(DINO_ASSET_COUNTS.farHerd === 8 && dinoAssets.reduce((total, asset) => total + (DINO_ASSET_COUNTS[asset] || 0), 0) === 12 &&
     Object.values(DINO_ASSET_COUNTS).reduce((total, count) => total + count, 0) === 20, "dino-scenes");
-  check(game.includes("const BRANCH_DINO_FAR_HERD_PARALLAX=.035;") &&
+  check(game.includes("const BRANCH_DINO_MEADOW_PARALLAX=.12;") &&
+    game.includes("const BRANCH_DINO_FAR_HERD_PARALLAX=.075;") &&
+    game.includes("const BRANCH_DINO_FAR_HERD_SPACING_VW=115;") &&
+    game.includes("const BRANCH_DINO_FAR_HERD_POOL_SIZE=3;") &&
     !game.includes("const BRANCH_LANDMARK_PROGRESS=.5;"), "dino-scenes");
   const buildDino = extractFunction(game, "buildBranchDinoWorldLife");
   check((buildDino.match(/document\.createElement\("span"\)/g) || []).length === 1 &&
     buildDino.includes('branchEffectFar.dataset.branchEffect="dino-far-herd"') &&
-    buildDino.includes("branchEffectFar.appendChild(sprite);") &&
-    buildDino.includes('sourceWidth:1894,guard:16,scale:.32,guardVar:"--dino-far-guard-y"') &&
+    buildDino.includes("for(let index=0;index<BRANCH_DINO_FAR_HERD_POOL_SIZE;index++)") &&
+    buildDino.includes("branchEffectFar.appendChild(fragment);") &&
+    buildDino.includes('sourceWidth:1894,guard:16,scale:1,guardVar:"--dino-far-guard-y"') &&
     buildDino.includes('BRANCH_DINO_WORLD_LIFE_CONFIG.forEach((config,index)=>buildBranchWorldLifeSprite("dino",assets,config,index));') &&
-    !/cloneNode|append\(|%|repeat|while\s*\(/.test(buildDino), "dino-scenes");
+    !/cloneNode|while\s*\(/.test(buildDino), "dino-scenes");
 
   check(JSON.stringify(plain(catConfig)) === JSON.stringify(CAT_CONFIG), "cat-scenes");
   const catAssets = Array.isArray(catConfig) ? catConfig.map(config => config.asset) : [];
@@ -406,8 +420,9 @@ function validate(candidate) {
   const renderPolish = extractFunction(game, "renderBranchStagePolish");
   const render = extractFunction(game, "render");
   check(renderPolish.includes("const localWorldX=worldX-o;") &&
-    renderPolish.includes("const x=-5-localWorldX*BRANCH_DINO_FAR_HERD_PARALLAX;") &&
-    renderPolish.includes("const x=SPAN*sprite.ratio-localWorldX;") &&
+    renderPolish.includes("branchDinoMeadow.style.backgroundPositionX=cssXFromVw(-localWorldX*BRANCH_DINO_MEADOW_PARALLAX)") &&
+    renderPolish.includes("const herdWorldX=localWorldX*BRANCH_DINO_FAR_HERD_PARALLAX;") &&
+    renderPolish.includes('const x=sprite.stageId==="dino"?50+(sprite.anchor-localWorldX)*sprite.parallax:sprite.anchor-localWorldX;') &&
     !/SPAN\*sprite\.ratio-worldX/.test(renderPolish), "world-lock");
   check(render.includes("const o=origin(stg);") && render.includes("renderBranchStagePolish(now,o);"), "world-lock");
   check(!/createElement|createDocumentFragment|appendChild|replaceChildren|cloneNode|new Image/.test(renderPolish), "render-allocation");
@@ -427,11 +442,12 @@ function validate(candidate) {
   check(rasterDefaults.get("--branch-mid-height") === "100%" && rasterDefaults.get("--branch-mid-bottom") === "0vh" &&
     rasterMid.get("top") === "auto" && rasterMid.get("bottom") === "var(--branch-mid-bottom)" && rasterMid.get("height") === "var(--branch-mid-height)", "dino-visibility");
   check(lastProperty(css, "body.st-dino:not(.tunnel-interior) #branchEffectFar", "display") === "block" &&
-    lastProperty(css, "body.st-dino:not(.tunnel-interior) #branchWorldLifeLayer", "display") === "block", "dino-visibility");
+    lastProperty(css, "body.st-dino:not(.tunnel-interior) #branchWorldLifeLayer", "display") === "block" &&
+    lastProperty(css, "body.st-dino:not(.tunnel-interior) #branchDinoMeadow", "display") === "block", "dino-visibility");
   const farCss = firstRule(css, ".branch-dino-far-herd");
-  check(farCss.get("bottom") === "28vh" && farCss.get("width") === "210vw" && farCss.get("opacity") === ".74" &&
+  check(farCss.get("bottom") === "28vh" && farCss.get("width") === "70vw" && farCss.get("opacity") === ".9" &&
     farCss.get("pointer-events") === "none" &&
-    firstRule(css, ".branch-dino-far-herd img").get("transform") === "translate3d(0,var(--dino-far-guard-y,0px),0) scale(.32)", "dino-visibility");
+    firstRule(css, ".branch-dino-far-herd img").get("transform") === "translate3d(0,var(--dino-far-guard-y,0px),0)", "dino-visibility");
 
   check(lastProperty(css, "body.branch-raster:not(.tunnel-interior) #branchDecorT", "display") === "block" &&
     !cssRules(css).some(rule => rule.selectors.some(selector => selector.includes("st-cat") && selector.endsWith("#branchDecorT")) && rule.declarations.get("display")?.includes("none")), "cat-world");
@@ -453,7 +469,7 @@ function validate(candidate) {
   check(buildPolish.includes('else if(st.id==="dino")buildBranchDinoWorldLife(assets);') &&
     buildPolish.includes('else if(st.id==="cat")buildBranchCatWorldLife(assets);') &&
     buildPolish.includes("branchWorldLifeLayer.replaceChildren()") &&
-    buildPolish.includes("branchDinoFarHerdSprite=null;branchWorldLifeSprites=[]"), "lifecycle");
+    buildPolish.includes("branchDinoFarHerdSprites=[];branchWorldLifeSprites=[]"), "lifecycle");
   const syncPolish = extractFunction(game, "syncBranchStagePolishState");
   const enterTunnel = extractFunction(game, "enterTunnelInterior");
   const finishTunnel = extractFunction(game, "finishTunnelInterior");
@@ -470,7 +486,7 @@ function validate(candidate) {
 
   const reducedMotion = extractBalancedAfter(css, "@media (prefers-reduced-motion:reduce)", "{", "}");
   check(reducedMotion.includes(".branch-snow-particle{left:var(--snow-rest-left)!important;top:var(--snow-rest-top)!important;animation:none!important;") &&
-    reducedMotion.includes(".branch-fire-hotspot:not(:first-child){display:none!important}") &&
+    !reducedMotion.includes(".branch-fire-hotspot:not(:first-child)") &&
     reducedMotion.includes(".branch-fire-ember{display:none!important}"), "motion-night");
   const branchNight = firstRule(css, "body.branch-raster.branch-night");
   check(branchNight.get("--branch-polish-brightness") === ".68" && branchNight.get("--branch-snow-opacity") === ".74", "motion-night");
@@ -478,7 +494,7 @@ function validate(candidate) {
     firstRule(css, ".branch-world-life img").get("filter")?.includes("var(--branch-polish-brightness)"), "motion-night");
 
   check(html.match(/styles\.css\?v=([^"']+)/)?.[1] === TOKEN && html.match(/js\/game\.js\?v=([^"']+)/)?.[1] === TOKEN, "query-sw");
-  check(new RegExp(`const CACHE_VERSION = ${SW_VERSION};`).test(sw) && /\/\/ v2314:/.test(sw), "query-sw");
+  check(new RegExp(`const CACHE_VERSION = ${SW_VERSION};`).test(sw) && /\/\/ v2315:/.test(sw), "query-sw");
   const critical = criticalAssetSet(sw);
   const canonicalPaths = CANONICAL.map(asset => `/assets/images/nazonazo-tunnel/${asset.name}`);
   check(critical instanceof Set && canonicalPaths.filter(assetPath => critical.has(assetPath)).length === 0, "sw-critical");
@@ -561,10 +577,10 @@ const mutations = [
   { name: "old cat decor yarn URL", expected: "asset-urls", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, "branch_cat_decor_no_yarn_cutout_loop_20260721.webp", "branch_cat_decor_cutout_loop_20260720.webp") }) },
   { name: "old dino landmark URL", expected: "asset-urls", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, "branch_dino_far_herd_cutout_20260721.webp", "branch_dino_life_landmark_cutout_20260720.webp") }) },
   { name: "old cat landmark URL", expected: "asset-urls", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, "branch_cat_cottage_life_cutout_20260721.webp", "branch_cat_cats_landmark_cutout_20260720.webp") }) },
-  { name: "dino far herd speed too fast", expected: "dino-scenes", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, "const BRANCH_DINO_FAR_HERD_PARALLAX=.035;", "const BRANCH_DINO_FAR_HERD_PARALLAX=.35;") }) },
-  { name: "dino life scene removed", expected: "dino-scenes", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, ' Object.freeze({asset:"trex",ratio:.78,width:18,bottom:20,scale:.84,depth:4,sourceWidth:876,guard:16})\n', "") }) },
+  { name: "dino far herd speed too fast", expected: "dino-scenes", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, "const BRANCH_DINO_FAR_HERD_PARALLAX=.075;", "const BRANCH_DINO_FAR_HERD_PARALLAX=.35;") }) },
+  { name: "dino life scene removed", expected: "dino-scenes", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, ' Object.freeze({asset:"trex",ratio:.78,width:15,bottom:20,scale:.84,depth:4,parallax:.55,sourceWidth:876,guard:16})\n', "") }) },
   { name: "dino ratios concentrated", expected: "dino-scenes", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, 'asset:"sauropod",ratio:.62', 'asset:"sauropod",ratio:.47') }) },
-  { name: "dino far herd repeated", expected: "dino-scenes", mutate: c => ({ ...c, game: mutateFunction(c.game, "buildBranchDinoWorldLife", "branchEffectFar.appendChild(sprite);", "branchEffectFar.append(sprite,sprite.cloneNode(true));") }) },
+  { name: "dino far herd pool shrinks", expected: "dino-scenes", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, "const BRANCH_DINO_FAR_HERD_POOL_SIZE=3;", "const BRANCH_DINO_FAR_HERD_POOL_SIZE=2;") }) },
   { name: "absolute global worldX", expected: "world-lock", mutate: c => ({ ...c, game: mutateFunction(c.game, "renderBranchStagePolish", "const localWorldX=worldX-o;", "const localWorldX=worldX;") }) },
   { name: "cat count drops to thirteen", expected: "cat-scenes", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, ' Object.freeze({asset:"plaza",ratio:.82,width:11,bottom:18,scale:.86,depth:4,sourceWidth:1488,guard:12})\n', "") }) },
   { name: "cat adjacent scene repeats", expected: "cat-scenes", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, 'Object.freeze({asset:"garden",ratio:.10', 'Object.freeze({asset:"cottage",ratio:.10') }) },

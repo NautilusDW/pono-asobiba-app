@@ -495,11 +495,11 @@ body.branch-raster{
   --branch-horizon-y:0vh;--branch-mid-y:0vh;--branch-mid-height:100%;--branch-mid-bottom:0vh;--branch-decor-height:20vh;--branch-decor-bottom:11.5vh;--branch-fg-height:22vh;
   --branch-polish-brightness:1;--branch-polish-saturate:1;--branch-polish-contrast:1;--branch-polish-hue:0deg;--branch-snow-opacity:1}
 body.st-snow{--branch-horizon-y:18.57vh;--branch-mid-y:18.07vh;--branch-decor-height:20vh;--branch-fg-height:19.9vh}
-body.st-fire{--branch-horizon-y:13.68vh;--branch-mid-y:-6.39vh;--branch-decor-height:20vh;--branch-fg-height:22vh}
+body.st-fire{--branch-horizon-y:-6.5vh;--branch-mid-y:2vh;--branch-decor-height:8vh;--branch-decor-bottom:17vh;--branch-fg-height:12vh}
 body.st-dino{--branch-horizon-y:0vh;--branch-mid-y:0vh;--branch-mid-height:56vh;--branch-decor-height:11.4vh;--branch-fg-height:22vh}
 body.st-toy{--branch-horizon-y:11.51vh;--branch-mid-y:-15.84vh;--branch-decor-height:20vh;--branch-decor-bottom:17.08vh;--branch-fg-height:22vh}
 body.st-cat{--branch-horizon-y:24.15vh;--branch-mid-y:19.82vh;--branch-fg-height:16.4vh}
-body.st-fantasy{--branch-horizon-y:10.25vh;--branch-mid-y:8.99vh;--branch-decor-height:19.9vh;--branch-fg-height:22vh}
+body.st-fantasy{--branch-horizon-y:-20vh;--branch-mid-y:8.99vh;--branch-decor-height:8vh;--branch-decor-bottom:38vh;--branch-fg-height:20vh}
 body.st-sky{--branch-horizon-y:-.35vh;--branch-mid-y:-1.98vh;--branch-decor-height:20vh;--branch-fg-height:22vh}
 body.st-ruins{--branch-horizon-y:8.42vh;--branch-mid-y:19.45vh;--branch-decor-height:17.1vh;--branch-fg-height:17.7vh}
 body.branch-raster.branch-night{
@@ -514,6 +514,13 @@ body.branch-raster #midT,body.branch-raster #groundT,body.branch-raster #fgT{
 body.branch-raster #groundT{height:18vh;background-position:left bottom}
 body.branch-raster #branchDecorT{bottom:var(--branch-decor-bottom);height:var(--branch-decor-height)}
 body.branch-raster #fgT{height:var(--branch-fg-height);background-position:left bottom}
+body.st-fire #fgT{z-index:5}
+
+#branchDinoMeadow{position:absolute;left:0;right:0;bottom:0;height:45vh;z-index:0;display:none;pointer-events:none;
+  background-position:left bottom;background-size:auto 100%;background-repeat:repeat-x;will-change:background-position;
+  filter:brightness(var(--branch-polish-brightness)) saturate(var(--branch-polish-saturate)) contrast(var(--branch-polish-contrast)) hue-rotate(var(--branch-polish-hue));transition:filter .48s ease}
+body.st-dino:not(.tunnel-interior) #branchDinoMeadow{display:block}
+body.tunnel-interior #branchDinoMeadow{display:none!important}
 
 .branch-stage-effect-layer,#branchWorldLifeLayer{position:absolute;inset:0;display:none;overflow:hidden;contain:layout paint;pointer-events:none}
 #branchEffectFar{z-index:1}#branchWorldLifeLayer{z-index:4}#branchEffectMid{z-index:6}#branchEffectNear{z-index:9}
@@ -538,13 +545,13 @@ body:not(.branch-effects-running) .branch-snow-particle:nth-child(n+3){display:n
 @keyframes branchSnowFall{from{transform:translate3d(0,0,0) rotate(var(--snow-rotate-start))}to{transform:translate3d(var(--snow-drift),136vh,0) rotate(var(--snow-rotate-end))}}
 @keyframes branchSnowTwinkle{from{opacity:.48;transform:scale(var(--snow-scale-min))}to{opacity:1;transform:scale(var(--snow-scale-max))}}
 
-.branch-fire-hotspot,.branch-fire-ember{position:absolute;left:0;bottom:18vh;display:block;pointer-events:none;transform:translate3d(-200vw,0,0)}
-.branch-fire-hotspot{width:clamp(30px,5.5vmin,58px)}
+.branch-fire-hotspot,.branch-fire-ember{position:absolute;left:0;bottom:12.5vh;display:block;pointer-events:none;transform:translate3d(-200vw,0,0)}
+.branch-fire-hotspot{width:clamp(36px,7vmin,72px)}
 .branch-fire-hotspot img,.branch-fire-ember img{display:block;width:100%;height:auto;object-fit:contain;transform-origin:50% 100%;
   filter:brightness(var(--branch-polish-brightness)) saturate(var(--branch-polish-saturate)) contrast(var(--branch-polish-contrast)) hue-rotate(var(--branch-polish-hue));transition:filter .48s ease}
 .branch-fire-hotspot img{animation:branchFireFlicker var(--fire-duration) ease-in-out var(--fire-delay) infinite alternate paused;
   transform:translate3d(0,var(--fire-guard-y,0px),0) scale(var(--fire-scale-x),var(--fire-scale-y))}
-.branch-fire-ember{width:clamp(14px,3.2vmin,32px)}
+.branch-fire-ember{width:clamp(12px,2.2vmin,24px)}
 .branch-fire-ember img{opacity:var(--ember-opacity);animation:branchFireEmber var(--ember-duration) ease-out var(--ember-delay) infinite paused;
   transform:translate3d(var(--ember-base-x),var(--ember-guard-y,0px),0) scale(var(--ember-scale))}
 body.branch-effects-running.pono-game-ready.st-fire:not(.tunnel-interior) .branch-fire-hotspot img,
@@ -557,12 +564,16 @@ body.branch-effects-running.pono-game-ready.st-fire:not(.tunnel-interior) .branc
   18%{opacity:var(--ember-opacity)}
   100%{opacity:0;transform:translate3d(calc(var(--ember-base-x) + var(--ember-drift-x)),calc(var(--ember-guard-y,0px) - var(--ember-rise)),0) scale(var(--ember-scale))}}
 
-.branch-dino-far-herd{position:absolute;left:0;bottom:28vh;display:block;width:210vw;line-height:0;pointer-events:none;opacity:.74;transform:translate3d(-5vw,0,0)}
-.branch-dino-far-herd img{display:block;width:100%;height:auto;transform-origin:50% 100%;transform:translate3d(0,var(--dino-far-guard-y,0px),0) scale(.32);
+.branch-dino-far-herd{position:absolute;left:0;bottom:28vh;display:block;width:70vw;max-height:35vh;line-height:0;pointer-events:none;opacity:.9;transform:translate3d(-200vw,0,0)}
+.branch-dino-far-herd img{display:block;width:100%;height:auto;max-height:35vh;object-fit:contain;object-position:left bottom;transform-origin:50% 100%;transform:translate3d(0,var(--dino-far-guard-y,0px),0);
   filter:brightness(var(--branch-polish-brightness)) saturate(var(--branch-polish-saturate)) contrast(var(--branch-polish-contrast)) hue-rotate(var(--branch-polish-hue));transition:filter .48s ease}
 .branch-world-life{position:absolute;left:0;bottom:var(--life-bottom);display:block;width:var(--life-width);line-height:0;pointer-events:none;transform:translate3d(-200vw,0,0) translateX(-50%)}
-.branch-world-life img{display:block;width:100%;height:auto;object-fit:contain;transform-origin:50% 100%;transform:translate3d(0,var(--life-guard-y,0px),0) scale(var(--life-scale));
+.branch-world-life img{display:block;width:100%;height:auto;max-height:35vh;object-fit:contain;transform-origin:50% 100%;transform:translate3d(0,var(--life-guard-y,0px),0) scale(var(--life-scale));
   filter:brightness(var(--branch-polish-brightness)) saturate(var(--branch-polish-saturate)) contrast(var(--branch-polish-contrast)) hue-rotate(var(--branch-polish-hue));transition:filter .48s ease}
+
+body.st-fantasy:not(.tunnel-interior) #branchDecorT{opacity:.9;animation:none}
+body.branch-effects-running.pono-game-ready.st-fantasy:not(.tunnel-interior) #branchDecorT{animation:branchFantasyTwinkle 3.6s ease-in-out infinite alternate}
+@keyframes branchFantasyTwinkle{from{opacity:.72}to{opacity:1}}
 
 /* ===== town panorama loops: mirrored neighbors make every join pixel-exact ===== */
 .town-loop-strip{display:none;position:absolute;left:0;width:max-content;pointer-events:none;will-change:transform}
@@ -657,7 +668,7 @@ body:not(.weather-rain) .rain-particle,body.tunnel-interior .rain-particle{anima
 body.pono-game-ready.weather-rain:not(.tunnel-interior) #weatherShade{opacity:1}
 body.pono-game-ready.weather-rain:not(.tunnel-interior) #skyA,body.pono-game-ready.weather-rain:not(.tunnel-interior) #skyB,
 body.pono-game-ready.weather-rain:not(.tunnel-interior) #horizon,body.pono-game-ready.weather-rain:not(.tunnel-interior) #midT,
-body.pono-game-ready.weather-rain:not(.tunnel-interior) #groundT,body.pono-game-ready.weather-rain:not(.tunnel-interior) #branchDecorT,body.pono-game-ready.weather-rain:not(.tunnel-interior) #fgT,body.pono-game-ready.weather-rain:not(.tunnel-interior) #jungleHabitatBack,
+body.pono-game-ready.weather-rain:not(.tunnel-interior) #groundT,body.pono-game-ready.weather-rain:not(.tunnel-interior) #branchDecorT,body.pono-game-ready.weather-rain:not(.tunnel-interior) #branchDinoMeadow,body.pono-game-ready.weather-rain:not(.tunnel-interior) #fgT,body.pono-game-ready.weather-rain:not(.tunnel-interior) #jungleHabitatBack,
 body.pono-game-ready.weather-rain:not(.tunnel-interior) .jungle-animal-layer,
 body.pono-game-ready.weather-rain:not(.tunnel-interior) #world>.tun,body.pono-game-ready.weather-rain:not(.tunnel-interior) #world>.dropStation{
   filter:brightness(.7) saturate(.62) contrast(.98)}
@@ -1624,7 +1635,7 @@ body.ios-device #quiz.show:not(.sea-quiz):not(.future-capsule-quiz):not(.space-g
   .choice.glow{animation:none!important;box-shadow:0 5px 0 var(--good),0 0 0 7px rgba(87,193,94,.22)}
   #seaArenaShade,#seaRoundCountdown,body.st-sea #fgT,body.branch-raster #skyA,
   body.branch-raster #horizon,body.branch-raster #midT,body.branch-raster #groundT,
-  body.branch-raster #branchDecorT,body.branch-raster #fgT{transition:none!important}
+  body.branch-raster #branchDecorT,body.branch-raster #branchDinoMeadow,body.branch-raster #fgT{transition:none!important}
   #seaRoundCountdown.is-ready,#seaRoundCountdown.is-go{animation:none!important;opacity:1;transform:translate(-50%,-50%)!important}
   .sea-answer-bubble{animation:none!important}
   .sea-answer-bubble.glow .sea-answer-visual{animation:none!important;box-shadow:0 0 0 7px rgba(110,229,106,.36),0 0 22px rgba(179,255,182,.85)}
@@ -1637,9 +1648,9 @@ body.ios-device #quiz.show:not(.sea-quiz):not(.future-capsule-quiz):not(.space-g
   .branch-snow-particle{left:var(--snow-rest-left)!important;top:var(--snow-rest-top)!important;animation:none!important;transform:none!important;will-change:auto!important}
   .branch-snow-particle img{animation:none!important;opacity:1!important;transform:scale(var(--snow-scale-min))!important;will-change:auto!important}
   .branch-stage-effect-layer .branch-snow-particle:nth-child(n+3){display:none!important}
-  .branch-fire-hotspot:not(:first-child){display:none!important}
   .branch-fire-hotspot img{animation:none!important;opacity:.92!important;transform:translate3d(0,var(--fire-guard-y,0px),0) scale(var(--fire-scale-x),var(--fire-scale-y))!important;will-change:auto!important}
   .branch-fire-ember{display:none!important}
+  body.st-fantasy:not(.tunnel-interior) #branchDecorT{animation:none!important;opacity:.9!important}
   .jungle-animal-art{animation:none!important;transform:none!important}
   .jungle-animal-frame{animation:none!important;transform:none!important}
   .jungle-animal-frame-sheet{animation:none!important;transform:translate3d(-33.3333%,0,0)!important}

@@ -701,7 +701,11 @@
 // 5つの生活シーンへ拡張し、疎な中景で山並みを再表示。猫ステージは毛糸の旧前景を
 // 撤去し、8種類の猫の暮らしを全長14地点へ分散。選択ステージだけ追加素材を先読みし、
 // 新規17画像は初回画面必須ではないため CRITICAL_ASSETS へ追加しない (batch:1407)。
-const CACHE_VERSION = 2314;
+// v2315: なぞなぞトレインの火・恐竜・魔法ステージを奥行き再調整。火は遠景へ火山を戻し、
+// 地表に炎5／火の粉7〜8の再利用プールを常時流す。恐竜は空の透けを草原で塞ぎ、遠景群れと
+// 5つの生活シーンを深度別速度へ分離。魔法の城を上へ出し、星の装飾だけを穏やかに明滅させる。
+// 新規11画像は選択ステージだけが読むため CRITICAL_ASSETS へ追加しない (batch:1408)。
+const CACHE_VERSION = 2315;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

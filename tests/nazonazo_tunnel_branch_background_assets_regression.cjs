@@ -15,6 +15,7 @@ const sw = read("sw.js");
 
 const STAGE_IDS = ["snow", "fire", "dino", "toy", "cat", "fantasy", "sky", "ruins"];
 const LAYER_KEYS = ["sky", "horizon", "mid", "ground", "fg", "decor"];
+const PRELOAD_KEYS = [...LAYER_KEYS, "meadow"];
 const REJOIN = {
   snow: "jungle", fire: "jungle", dino: "number", toy: "number",
   cat: "sea", fantasy: "sea2", sky: "space", ruins: "space2"
@@ -90,11 +91,20 @@ function extractFunction(source, name) {
 }
 
 const ASSET_OVERRIDES = Object.freeze({
+  "fire.horizon": "../assets/images/nazonazo-tunnel/branch_fire_horizon_cutout_loop_depthfix_20260721.webp",
+  "fire.mid": "../assets/images/nazonazo-tunnel/branch_fire_mid_cutout_loop_depthfix_20260721.webp",
+  "fire.fg": "../assets/images/nazonazo-tunnel/branch_fire_foreground_cutout_loop_depthfix_20260721.webp",
+  "fire.decor": "../assets/images/nazonazo-tunnel/branch_fire_decor_cutout_depthfix_20260721.webp",
   "dino.mid": "../assets/images/nazonazo-tunnel/branch_dino_mid_open_cutout_loop_20260721.webp",
+  "dino.meadow": "../assets/images/nazonazo-tunnel/branch_dino_meadow_loop_depthfix_20260721.webp",
   "toy.mid": "../assets/images/nazonazo-tunnel/branch_toy_mid_variety_cutout_loop_20260720.webp",
   "toy.decor": "../assets/images/nazonazo-tunnel/branch_toy_decor_variety_cutout_loop_20260720.webp",
   "cat.fg": "../assets/images/nazonazo-tunnel/branch_cat_foreground_no_yarn_cutout_loop_20260721.webp",
-  "cat.decor": "../assets/images/nazonazo-tunnel/branch_cat_decor_no_yarn_cutout_loop_20260721.webp"
+  "cat.decor": "../assets/images/nazonazo-tunnel/branch_cat_decor_no_yarn_cutout_loop_20260721.webp",
+  "fantasy.horizon": "../assets/images/nazonazo-tunnel/branch_fantasy_horizon_cutout_loop_depthfix_v4_20260721.webp",
+  "fantasy.mid": "../assets/images/nazonazo-tunnel/branch_fantasy_mid_cutout_loop_depthfix_v4_20260721.webp",
+  "fantasy.fg": "../assets/images/nazonazo-tunnel/branch_fantasy_foreground_cutout_loop_depthfix_20260721.webp",
+  "fantasy.decor": "../assets/images/nazonazo-tunnel/branch_fantasy_decor_cutout_loop_depthfix_20260721.webp"
 });
 
 function expectedAsset(stageId, key) {
@@ -114,8 +124,9 @@ const expectedUrls = [];
 for (const stageId of STAGE_IDS) {
   const stageAssets = extractObjectAfter(assetsSource, `\n ${stageId}:`);
   const ownKeys = [...stageAssets.matchAll(/\n\s{2}([a-z]+):/g)].map(match => match[1]);
-  assert.deepEqual(ownKeys, LAYER_KEYS, `${stageId}: branch asset object must contain exactly the six layer keys`);
-  for (const key of LAYER_KEYS) {
+  const expectedKeys = stageId === "dino" ? PRELOAD_KEYS : LAYER_KEYS;
+  assert.deepEqual(ownKeys, expectedKeys, `${stageId}: branch asset object keys drifted`);
+  for (const key of expectedKeys) {
     const url = expectedAsset(stageId, key);
     expectedUrls.push(url);
     assert.ok(stageAssets.includes(`${key}:"${url}"`), `${stageId}.${key}: exact production URL missing`);
@@ -130,16 +141,16 @@ for (const stageId of STAGE_IDS) {
     assert.equal(bytes.readUInt32LE(4) + 8, bytes.length, `${relative}: incomplete RIFF length`);
   }
 }
-assert.equal(new Set(expectedUrls).size, 48, "the branch raster map must contain 48 unique URLs");
+assert.equal(new Set(expectedUrls).size, 49, "the branch raster map must contain 48 layers plus the dino meadow");
 const branchUrlLiterals = assetsSource.match(/"\.\.\/assets\/images\/nazonazo-tunnel\/branch_[^"]+_2026072[01]\.webp"/g) || [];
-assert.equal(branchUrlLiterals.length, 48, "ASSETS must contain exactly 48 branch raster URL literals and no bonus preload asset");
-assert.equal(new Set(branchUrlLiterals).size, 48, "every branch raster URL literal must be unique");
+assert.equal(branchUrlLiterals.length, 49, "ASSETS must contain 48 layers plus the dino meadow URL");
+assert.equal(new Set(branchUrlLiterals).size, 49, "every branch raster URL literal must be unique");
 
 const branchStageIdsLiteral = game.match(/const BRANCH_RASTER_STAGE_IDS=new Set\((\[[^\]]+\])\);/);
 const branchAssetKeysLiteral = game.match(/const BRANCH_RASTER_ASSET_KEYS=Object\.freeze\((\[[^\]]+\])\);/);
 assert.ok(branchStageIdsLiteral && branchAssetKeysLiteral, "branch raster preload allowlists must remain literal and reviewable");
 assert.deepEqual(JSON.parse(branchStageIdsLiteral[1]), STAGE_IDS, "branch raster stage allowlist must exactly match the eight branch stages");
-assert.deepEqual(JSON.parse(branchAssetKeysLiteral[1]), LAYER_KEYS, "branch raster preload allowlist must contain exactly the six layer keys");
+assert.deepEqual(JSON.parse(branchAssetKeysLiteral[1]), PRELOAD_KEYS, "branch raster preload allowlist must include the dino meadow key");
 
 const stagesMarker = "const STAGES=";
 const stagesAt = game.indexOf(stagesMarker);
@@ -190,12 +201,11 @@ assert.equal((game.match(/preloadBranchRasterStage\(/g) || []).length, 3,
   "branch preloading must have only the declaration, current-stage call and confirmed-target call");
 assert.ok(buildWorld.includes('for(let k=0;k<((st.mechanic==="spaceChase"||st.mechanic==="seaBoss")?0:2);k++){\n   if(isBranchRasterStage(st))continue;'),
   "branch stages must skip generic per-station decor at the start of the existing decor loop");
-assert.match(render, /if\(branchRasterStage\)\{\s*horizon\.style\.transform="translate3d\(0,0,0\)";\s*horizon\.style\.backgroundPositionX=cssXFromVw\(-\(worldX-o\)\*\.095\);\s*\}else if/s,
-  "branch horizon must use unclamped stage-relative 0.095 parallax");
-assert.ok(render.includes('midT.style.backgroundPositionX=cssXFromVw(-(worldX-o)*.25);'), "branch mid parallax must be 0.25 stage-relative");
+assert.ok(render.includes('branchStageId==="dino"?.035:.095'), "branch horizon must keep the dino far-depth override");
+assert.ok(render.includes('branchStageId==="dino"?.22:.25'), "branch mid must keep the dino depth override");
 assert.ok(render.includes('groundT.style.backgroundPositionX=branchRasterStage?cssXFromVw(-(worldX-o)):'), "branch ground parallax must be 1.0 stage-relative");
-assert.ok(render.includes('branchDecorT.style.backgroundPositionX=branchRasterStage?cssXFromVw(-(worldX-o)):"0px";'), "branch decor parallax must be 1.0 stage-relative");
-assert.ok(render.includes('branchRasterStage?cssXFromVw(-(worldX-o)*1.35):'), "branch foreground parallax must be 1.35 stage-relative");
+assert.ok(render.includes('branchStageId==="fire"?.62:(branchStageId==="fantasy"?.42:1)'), "fire/fantasy decor parallax overrides must remain explicit");
+assert.ok(render.includes('branchStageId==="fire"?1.15:(branchStageId==="dino"?1.25:1.35)'), "foreground depth ladder must remain explicit");
 assert.ok(render.indexOf("if(branchRasterStage){") < render.indexOf("const hd=clamp((worldX-o)*0.095,0,70);"),
   "branch horizon handling must precede the generic clamped horizon fallback");
 
@@ -250,9 +260,9 @@ const styleToken = html.match(/styles\.css\?v=([^"']+)/);
 const gameToken = html.match(/js\/game\.js\?v=([^"']+)/);
 assert.ok(styleToken && gameToken, "nazonazo stylesheet and game cache tokens must exist");
 assert.equal(styleToken[1], gameToken[1], "nazonazo stylesheet and game cache tokens must match");
-assert.equal(styleToken[1], "20260721-1407", "nazonazo branch world-density cache token drifted");
-assert.match(sw, /const CACHE_VERSION = 2314;/, "service worker cache version must be 2314");
+assert.equal(styleToken[1], "20260721-1408", "nazonazo branch depth cache token drifted");
+assert.match(sw, /const CACHE_VERSION = 2315;/, "service worker cache version must be 2315");
 assert.doesNotMatch(sw, /branch_(?:snow|fire|dino|toy|cat|fantasy|sky|ruins)_(?:sky|horizon|mid|ground|foreground|decor)/,
   "branch raster images must stay out of service-worker precache lists");
 
-console.log("nazonazo branch background assets regression: PASS (8 stages, 48 WebP layers)");
+console.log("nazonazo branch background assets regression: PASS (8 stages, 48 WebP layers + dino meadow)");

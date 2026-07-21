@@ -18,15 +18,15 @@ const sources = Object.freeze({
 
 const STAGE_IDS = Object.freeze(["snow", "fire", "dino", "toy", "cat", "fantasy", "sky", "ruins"]);
 const LAYER_KEYS = Object.freeze(["sky", "horizon", "mid", "ground", "fg", "decor"]);
-const TOKEN = "20260721-1407";
-const SW_VERSION = 2314;
+const TOKEN = "20260721-1408";
+const SW_VERSION = 2315;
 const THREE_MIB = 3 * 1024 * 1024;
 const EXPECTED_VALIDATE_CHECKS = 146;
 const CANONICAL = Object.freeze([
   Object.freeze({ name: "effect_snowflake_particle_20260720.webp", bytes: 339906, width: 792, height: 927, sha256: "e2288efcadbf3ab0c16dde0a6d4c2fd167560dbf941cf2e1712ac12a801f6ce6" }),
   Object.freeze({ name: "effect_diamond_dust_particle_20260720.webp", bytes: 31940, width: 341, height: 364, sha256: "2ddda0ab3c410debfa117b3ff1d0bb04c6c9571d27df40da1c9745b285dd2ff1" }),
-  Object.freeze({ name: "effect_fire_flame_particle_a_20260720.webp", bytes: 404708, width: 640, height: 863, sha256: "2eff0e7193b98cefec25f4c5375b2b7c9eed3722f33d80c9570497bd9efbe808" }),
-  Object.freeze({ name: "effect_fire_ember_particle_20260720.webp", bytes: 70072, width: 407, height: 422, sha256: "36f7dd5a544132cace2bcc803314fe24e2bf893bad72d2f7c35fabc719604b5f" }),
+  Object.freeze({ name: "effect_fire_flame_particle_a_depthfix_20260721.webp", bytes: 406580, width: 640, height: 863, sha256: "9b52d614385f5fbad7fb3384996801206bd7ae92062c0ce84c353b6de4d547d7" }),
+  Object.freeze({ name: "effect_fire_ember_particle_depthfix_20260721.webp", bytes: 70944, width: 407, height: 422, sha256: "3af58af80ab989b8334a18a63a2463917ba9d9e3888d622e45b6606ee26c4889" }),
   Object.freeze({ name: "branch_toy_mid_variety_cutout_loop_20260720.webp", bytes: 831368, width: 3072, height: 556, sha256: "0bb8bfd2abadbaa67da0ff4c9cb6bc77bc90b93ae3c4ba4b149c53829a45a0c8" }),
   Object.freeze({ name: "branch_toy_decor_variety_cutout_loop_20260720.webp", bytes: 525816, width: 3072, height: 260, sha256: "380919cd93b7fefcc3c14fcc1d5402ad9e19fe49e96250a7d70d8dd037388615" }),
   Object.freeze({ name: "branch_dino_far_herd_cutout_20260721.webp", bytes: 599190, width: 1894, height: 367, sha256: "9217d6f0c2e59abb9c8285fa4d0d305b85d6f4e4ed4e9b1d5223c2381a1add9e" }),
@@ -54,8 +54,8 @@ const EXTRA_URLS = Object.freeze({
     diamond: "../assets/images/nazonazo-tunnel/effect_diamond_dust_particle_20260720.webp"
   }),
   fire: Object.freeze({
-    flame: "../assets/images/nazonazo-tunnel/effect_fire_flame_particle_a_20260720.webp",
-    ember: "../assets/images/nazonazo-tunnel/effect_fire_ember_particle_20260720.webp"
+    flame: "../assets/images/nazonazo-tunnel/effect_fire_flame_particle_a_depthfix_20260721.webp",
+    ember: "../assets/images/nazonazo-tunnel/effect_fire_ember_particle_depthfix_20260721.webp"
   }),
   dino: Object.freeze({
     farHerd: "../assets/images/nazonazo-tunnel/branch_dino_far_herd_cutout_20260721.webp",
@@ -79,21 +79,21 @@ const EXTRA_URLS = Object.freeze({
 
 const STAGE_Y = Object.freeze({
   snow: Object.freeze(["18.57vh", "18.07vh"]),
-  fire: Object.freeze(["13.68vh", "-6.39vh"]),
+  fire: Object.freeze(["-6.5vh", "2vh"]),
   dino: Object.freeze(["0vh", "0vh"]),
   toy: Object.freeze(["11.51vh", "-15.84vh"]),
   cat: Object.freeze(["24.15vh", "19.82vh"]),
-  fantasy: Object.freeze(["10.25vh", "8.99vh"]),
+  fantasy: Object.freeze(["-20vh", "8.99vh"]),
   sky: Object.freeze(["-.35vh", "-1.98vh"]),
   ruins: Object.freeze(["8.42vh", "19.45vh"])
 });
 const STAGE_GEOMETRY = Object.freeze({
   snow: Object.freeze({ decorHeight: "20vh", decorBottom: "11.5vh", fgHeight: "19.9vh" }),
-  fire: Object.freeze({ decorHeight: "20vh", decorBottom: "11.5vh", fgHeight: "22vh" }),
+  fire: Object.freeze({ decorHeight: "8vh", decorBottom: "17vh", fgHeight: "12vh" }),
   dino: Object.freeze({ decorHeight: "11.4vh", decorBottom: "11.5vh", fgHeight: "22vh" }),
   toy: Object.freeze({ decorHeight: "20vh", decorBottom: "17.08vh", fgHeight: "22vh" }),
   cat: Object.freeze({ decorHeight: "20vh", decorBottom: "11.5vh", fgHeight: "16.4vh" }),
-  fantasy: Object.freeze({ decorHeight: "19.9vh", decorBottom: "11.5vh", fgHeight: "22vh" }),
+  fantasy: Object.freeze({ decorHeight: "8vh", decorBottom: "38vh", fgHeight: "20vh" }),
   sky: Object.freeze({ decorHeight: "20vh", decorBottom: "11.5vh", fgHeight: "22vh" }),
   ruins: Object.freeze({ decorHeight: "17.1vh", decorBottom: "11.5vh", fgHeight: "17.7vh" })
 });
@@ -211,6 +211,18 @@ function sceneDirectChildIds(html) {
 }
 
 function expectedBaseAsset(stageId, key) {
+  const depthFix = {
+    "fire.horizon": "../assets/images/nazonazo-tunnel/branch_fire_horizon_cutout_loop_depthfix_20260721.webp",
+    "fire.mid": "../assets/images/nazonazo-tunnel/branch_fire_mid_cutout_loop_depthfix_20260721.webp",
+    "fire.fg": "../assets/images/nazonazo-tunnel/branch_fire_foreground_cutout_loop_depthfix_20260721.webp",
+    "fire.decor": "../assets/images/nazonazo-tunnel/branch_fire_decor_cutout_depthfix_20260721.webp",
+    "dino.meadow": "../assets/images/nazonazo-tunnel/branch_dino_meadow_loop_depthfix_20260721.webp",
+    "fantasy.horizon": "../assets/images/nazonazo-tunnel/branch_fantasy_horizon_cutout_loop_depthfix_v4_20260721.webp",
+    "fantasy.mid": "../assets/images/nazonazo-tunnel/branch_fantasy_mid_cutout_loop_depthfix_v4_20260721.webp",
+    "fantasy.fg": "../assets/images/nazonazo-tunnel/branch_fantasy_foreground_cutout_loop_depthfix_20260721.webp",
+    "fantasy.decor": "../assets/images/nazonazo-tunnel/branch_fantasy_decor_cutout_loop_depthfix_20260721.webp"
+  };
+  if (depthFix[`${stageId}.${key}`]) return depthFix[`${stageId}.${key}`];
   if (stageId === "dino" && key === "mid") return "../assets/images/nazonazo-tunnel/branch_dino_mid_open_cutout_loop_20260721.webp";
   if (stageId === "toy" && key === "mid") return "../assets/images/nazonazo-tunnel/branch_toy_mid_variety_cutout_loop_20260720.webp";
   if (stageId === "toy" && key === "decor") return "../assets/images/nazonazo-tunnel/branch_toy_decor_variety_cutout_loop_20260720.webp";
@@ -303,11 +315,12 @@ function validate(candidate) {
   STAGE_IDS.forEach(stageId => {
     const stageSource = extractObjectAfter(assetsSource, `\n ${stageId}:`);
     const entries = parseOwnStringEntries(stageSource);
-    check(JSON.stringify(entries.map(entry => entry[0])) === JSON.stringify(LAYER_KEYS), "base-assets");
+    const stageKeys = stageId === "dino" ? [...LAYER_KEYS, "meadow"] : LAYER_KEYS;
+    check(JSON.stringify(entries.map(entry => entry[0])) === JSON.stringify(stageKeys), "base-assets");
     entries.forEach(entry => baseUrls.push(entry[1]));
-    LAYER_KEYS.forEach(key => check(entries.some(entry => entry[0] === key && entry[1] === expectedBaseAsset(stageId, key)), stageId === "toy" ? "toy-assets" : "base-assets"));
+    stageKeys.forEach(key => check(entries.some(entry => entry[0] === key && entry[1] === expectedBaseAsset(stageId, key)), stageId === "toy" ? "toy-assets" : "base-assets"));
   });
-  check(baseUrls.length === 48 && new Set(baseUrls).size === 48, "base-assets");
+  check(baseUrls.length === 49 && new Set(baseUrls).size === 49, "base-assets");
   check(!game.includes("branch_toy_mid_cutout_loop_20260720.webp") && !game.includes("branch_toy_decor_cutout_20260720.webp"), "toy-assets");
 
   const extrasSource = extractObjectAfter(game, "const BRANCH_STAGE_POLISH_ASSETS=");
@@ -319,9 +332,9 @@ function validate(candidate) {
     const stageSource = expected === EXTRA_URLS[stageId] ? extractObjectAfter(extrasSource, `\n ${stageId}:Object.freeze(`) : "";
     const entries = parseOwnStringEntries(stageSource);
     check(JSON.stringify(Object.fromEntries(entries)) === JSON.stringify(expected), "extra-assets");
-    stageTotals[stageId] = 6 + Object.keys(expected).length;
+    stageTotals[stageId] = (stageId === "dino" ? 7 : 6) + Object.keys(expected).length;
   });
-  check(JSON.stringify(stageTotals) === JSON.stringify({ snow: 8, fire: 8, dino: 12, toy: 6, cat: 14, fantasy: 6, sky: 6, ruins: 6 }), "preload-totals");
+  check(JSON.stringify(stageTotals) === JSON.stringify({ snow: 8, fire: 8, dino: 13, toy: 6, cat: 14, fantasy: 6, sky: 6, ruins: 6 }), "preload-totals");
   const polishPreload = extractFunction(game, "preloadBranchStagePolish");
   check(polishPreload.includes("const assets=st&&BRANCH_STAGE_POLISH_ASSETS[st.id]") &&
     polishPreload.includes("Object.values(assets).forEach") && !polishPreload.includes("Object.values(BRANCH_STAGE_POLISH_ASSETS)"), "preload-scope");
@@ -393,20 +406,18 @@ function validate(candidate) {
   check(!snowVisualRules.some(rule => rule.selectors.some(selector => /branch-snow-particle::(?:before|after)/.test(selector)) ||
     [...rule.declarations.keys()].some(property => forbiddenSnowProperties.has(property))), "snow-image-only");
 
-  const fireRatiosSource = extractArrayAfter(game, "const BRANCH_FIRE_HOTSPOT_RATIOS=Object.freeze(");
-  const fireRatios = fireRatiosSource.slice(1, -1).split(",").filter(Boolean).map(Number);
-  const mobileIndexesSource = extractArrayAfter(game, "const BRANCH_FIRE_MOBILE_INDEXES=Object.freeze(");
-  const mobileIndexes = mobileIndexesSource.slice(1, -1).split(",").filter(Boolean).map(Number);
-  const fireRatiosFunction = extractFunction(game, "activeBranchFireRatios");
   const buildFire = extractFunction(game, "buildBranchFire");
-  check(fireRatios.length === 8 && fireRatios.every((ratio, index) => ratio > 0 && ratio < 1 && (index === 0 || ratio > fireRatios[index - 1])), "fire-counts");
-  check(JSON.stringify(mobileIndexes) === JSON.stringify([0, 1, 3, 4, 6, 7]) &&
-    new Set(mobileIndexes).size === 6 && mobileIndexes.every(index => Number.isInteger(index) && index >= 0 && index < fireRatios.length), "fire-counts");
-  check(fireRatiosFunction.includes('if(density==="reduced")return [BRANCH_FIRE_HOTSPOT_RATIOS[4]];') &&
-    fireRatiosFunction.includes('if(density==="mobile")return BRANCH_FIRE_MOBILE_INDEXES.map(index=>BRANCH_FIRE_HOTSPOT_RATIOS[index]);') &&
-    fireRatiosFunction.includes("return BRANCH_FIRE_HOTSPOT_RATIOS.slice();"), "fire-counts");
-  check(buildFire.includes('const emberCount=density==="reduced"?0:(density==="mobile"?10:18)') &&
+  check(game.includes("const BRANCH_FIRE_FLAME_SPACING_VW=42;") && game.includes("const BRANCH_FIRE_FLAME_POOL_SIZE=5;") &&
+    game.includes("const BRANCH_FIRE_EMBER_SPACING_VW=18;") && game.includes("const BRANCH_FIRE_EMBER_DESKTOP_POOL_SIZE=8;") &&
+    game.includes("const BRANCH_FIRE_EMBER_MOBILE_POOL_SIZE=7;") && game.includes("const BRANCH_FIRE_REDUCED_X_VW=Object.freeze([12,50,88]);"), "fire-counts");
+  check(buildFire.includes('const flameCount=reduced?BRANCH_FIRE_REDUCED_X_VW.length:BRANCH_FIRE_FLAME_POOL_SIZE;') &&
+    buildFire.includes('const emberCount=reduced?0:(density==="mobile"?BRANCH_FIRE_EMBER_MOBILE_POOL_SIZE:BRANCH_FIRE_EMBER_DESKTOP_POOL_SIZE);') &&
+    buildFire.includes("period:BRANCH_FIRE_FLAME_SPACING_VW*flameCount") &&
+    buildFire.includes("period:BRANCH_FIRE_EMBER_SPACING_VW*emberCount") &&
     buildFire.includes('branchImage(assets.flame,"branch-fire-art")') && buildFire.includes('branchImage(assets.ember,"branch-fire-ember-art")'), "fire-counts");
+  check((buildFire.match(/for\(let /g) || []).length === 2 && buildFire.includes("if(reduced)sprite.dataset.staticX") &&
+    buildFire.includes('branchEffectMid.dataset.hotspotCount=String(flameCount)') &&
+    buildFire.includes('branchEffectMid.dataset.emberCount=String(emberCount)'), "fire-counts");
 
   const dinoLifeConfig = extractArrayAfter(game, "const BRANCH_DINO_WORLD_LIFE_CONFIG=Object.freeze(");
   const catLifeConfig = extractArrayAfter(game, "const BRANCH_CAT_WORLD_LIFE_CONFIG=Object.freeze(");
@@ -419,7 +430,8 @@ function validate(candidate) {
   const renderPolish = extractFunction(game, "renderBranchStagePolish");
   const render = extractFunction(game, "render");
   check(JSON.stringify(dinoLifeEntries) === JSON.stringify([["waterhole", .14], ["stegosaurus", .30], ["parasaurolophus", .46], ["sauropod", .62], ["trex", .78]]) &&
-    game.includes("const BRANCH_DINO_FAR_HERD_PARALLAX=.035;") &&
+    game.includes("const BRANCH_DINO_MEADOW_PARALLAX=.12;") && game.includes("const BRANCH_DINO_FAR_HERD_PARALLAX=.075;") &&
+    game.includes("const BRANCH_DINO_FAR_HERD_SPACING_VW=115;") && game.includes("const BRANCH_DINO_FAR_HERD_POOL_SIZE=3;") &&
     (buildDinoLife.match(/document\.createElement\("span"\)/g) || []).length === 1 &&
     buildPolish.includes('st.id==="dino"') && !game.includes("BRANCH_LANDMARK_PROGRESS"), "landmark-count");
   check(JSON.stringify(catLifeEntries) === JSON.stringify([["cottage", .04], ["garden", .10], ["fence", .16], ["rooftop", .22], ["bridge", .28], ["plaza", .34], ["tree", .40], ["lane", .46], ["cottage", .52], ["garden", .58], ["fence", .64], ["rooftop", .70], ["bridge", .76], ["plaza", .82]]) &&
@@ -429,13 +441,14 @@ function validate(candidate) {
   const syncOneCutoutGuard = extractFunction(game, "syncOneBranchCutoutGuard");
   check(game.includes("const BRANCH_CUTOUT_GUARD_PX=12;") &&
     dinoLifeConfig.includes("sourceWidth:1533,guard:16") && catLifeConfig.includes("sourceWidth:1263,guard:16") &&
-    buildWorldLife.includes("guard:config.guard") && buildDinoLife.includes("sourceWidth:1894,guard:16,scale:.32") &&
+    buildWorldLife.includes("guard:config.guard") && buildDinoLife.includes("sourceWidth:1894,guard:16,scale:1") &&
     syncCutoutGuards.includes("branchWorldLifeSprites.forEach(syncOneBranchCutoutGuard)") &&
     syncOneCutoutGuard.includes("const guard=width*sprite.guard/sprite.sourceWidth*(sprite.scale||1);") &&
     syncOneCutoutGuard.includes('sprite.img.style.setProperty(sprite.guardVar,guard.toFixed(2)+"px")'), "cutout-guard");
   check(renderPolish.includes("const localWorldX=worldX-o;") &&
-    (renderPolish.match(/SPAN\*[^;]+\.ratio-localWorldX/g) || []).length === 2 &&
-    renderPolish.includes("const x=-5-localWorldX*BRANCH_DINO_FAR_HERD_PARALLAX;") &&
+    renderPolish.includes("const herdWorldX=localWorldX*BRANCH_DINO_FAR_HERD_PARALLAX;") &&
+    renderPolish.includes("const x=sprite.stageId===\"dino\"?50+(sprite.anchor-localWorldX)*sprite.parallax:sprite.anchor-localWorldX;") &&
+    renderPolish.includes("const raw=sprite.poolIndex*sprite.spacing+sprite.phase-localWorldX;") &&
     !/SPAN\*[^;]+\.ratio-worldX/.test(renderPolish) && render.includes("const o=origin(stg);") &&
     render.includes("renderBranchStagePolish(now,o);"), "world-lock");
   check(lastProperty(css, "body.branch-raster:not(.tunnel-interior) #branchDecorT", "display") === "block" &&
@@ -466,7 +479,7 @@ function validate(candidate) {
   check(reducedMotion.includes(".branch-snow-particle{left:var(--snow-rest-left)!important;top:var(--snow-rest-top)!important;animation:none!important;") &&
     reducedMotion.includes(".branch-snow-particle img{animation:none!important;") &&
     reducedMotion.includes(".branch-stage-effect-layer .branch-snow-particle:nth-child(n+3){display:none!important}"), "motion-safety");
-  check(reducedMotion.includes(".branch-fire-hotspot:not(:first-child){display:none!important}") &&
+  check(!reducedMotion.includes(".branch-fire-hotspot:not(:first-child)") &&
     reducedMotion.includes(".branch-fire-hotspot img{animation:none!important;") &&
     reducedMotion.includes(".branch-fire-ember{display:none!important}"), "motion-safety");
 
@@ -525,7 +538,7 @@ function validate(candidate) {
   const styleToken = html.match(/styles\.css\?v=([^"']+)/)?.[1];
   const gameToken = html.match(/js\/game\.js\?v=([^"']+)/)?.[1];
   check(styleToken === TOKEN && gameToken === TOKEN, "query-sync");
-  check(new RegExp(`const CACHE_VERSION = ${SW_VERSION};`).test(sw) && /\/\/ v2314:/.test(sw) && /\/\/ v2313:/.test(sw), "sw-version");
+  check(new RegExp(`const CACHE_VERSION = ${SW_VERSION};`).test(sw) && /\/\/ v2315:/.test(sw) && /\/\/ v2314:/.test(sw), "sw-version");
   const critical = criticalAssetSet(sw);
   const canonicalPrecachePaths = CANONICAL.map(asset => `/assets/images/nazonazo-tunnel/${asset.name}`);
   check(critical instanceof Set && canonicalPrecachePaths.every(assetPath => !critical.has(assetPath)), "sw-precache");
@@ -640,19 +653,19 @@ const mutations = [
     }
   },
   {
-    name: "fire desktop ratios stop copying",
+    name: "fire flame pool shrinks",
     expected: "fire-counts",
     mutate(candidate) {
       return { ...candidate, game: replaceExactlyOnce(candidate.game,
-        " return BRANCH_FIRE_HOTSPOT_RATIOS.slice();",
-        " return BRANCH_FIRE_HOTSPOT_RATIOS;") };
+        "const BRANCH_FIRE_FLAME_POOL_SIZE=5;",
+        "const BRANCH_FIRE_FLAME_POOL_SIZE=4;") };
     }
   },
   {
     name: "fire absolute worldX",
     expected: "world-lock",
     mutate(candidate) {
-      return { ...candidate, game: mutateAfter(candidate.game, "branchFireSprites.forEach(sprite=>{", "const x=SPAN*sprite.ratio-localWorldX;", "const x=SPAN*sprite.ratio-worldX;") };
+      return { ...candidate, game: mutateAfter(candidate.game, "branchFireSprites.forEach(sprite=>{", "sprite.phase-localWorldX", "sprite.phase-worldX") };
     }
   },
   {
