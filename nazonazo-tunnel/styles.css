@@ -495,10 +495,10 @@ body.branch-raster{
   --branch-horizon-y:0vh;--branch-mid-y:0vh;--branch-mid-height:100%;--branch-mid-bottom:0vh;--branch-decor-height:20vh;--branch-decor-bottom:11.5vh;--branch-fg-height:22vh;
   --branch-polish-brightness:1;--branch-polish-saturate:1;--branch-polish-contrast:1;--branch-polish-hue:0deg;--branch-snow-opacity:1}
 body.st-snow{--branch-horizon-y:18.57vh;--branch-mid-y:18.07vh;--branch-decor-height:20vh;--branch-fg-height:19.9vh}
-body.st-fire{--branch-horizon-y:-6.5vh;--branch-mid-y:2vh;--branch-decor-height:8vh;--branch-decor-bottom:17vh;--branch-fg-height:12vh}
-body.st-dino{--branch-horizon-y:0vh;--branch-mid-y:0vh;--branch-mid-height:56vh;--branch-decor-height:11.4vh;--branch-fg-height:22vh}
+body.st-fire{--branch-horizon-y:0vh;--branch-mid-y:0vh;--branch-mid-height:53vh;--branch-mid-bottom:13vh;--branch-decor-height:0vh;--branch-decor-bottom:0vh;--branch-fg-height:13.5vh}
+body.st-dino{--branch-horizon-y:-5.5vh;--branch-mid-y:0vh;--branch-mid-height:56vh;--branch-mid-bottom:4vh;--branch-decor-height:0vh;--branch-fg-height:22vh}
 body.st-toy{--branch-horizon-y:11.51vh;--branch-mid-y:-15.84vh;--branch-decor-height:20vh;--branch-decor-bottom:17.08vh;--branch-fg-height:22vh}
-body.st-cat{--branch-horizon-y:24.15vh;--branch-mid-y:19.82vh;--branch-fg-height:16.4vh}
+body.st-cat{--branch-horizon-y:24.15vh;--branch-mid-y:19.82vh;--branch-decor-height:0vh;--branch-fg-height:16.4vh}
 body.st-fantasy{--branch-horizon-y:-20vh;--branch-mid-y:8.99vh;--branch-decor-height:8vh;--branch-decor-bottom:38vh;--branch-fg-height:20vh}
 body.st-sky{--branch-horizon-y:-.35vh;--branch-mid-y:-1.98vh;--branch-decor-height:20vh;--branch-fg-height:22vh}
 body.st-ruins{--branch-horizon-y:8.42vh;--branch-mid-y:19.45vh;--branch-decor-height:17.1vh;--branch-fg-height:17.7vh}
@@ -514,9 +514,22 @@ body.branch-raster #midT,body.branch-raster #groundT,body.branch-raster #fgT{
 body.branch-raster #groundT{height:18vh;background-position:left bottom}
 body.branch-raster #branchDecorT{bottom:var(--branch-decor-bottom);height:var(--branch-decor-height)}
 body.branch-raster #fgT{height:var(--branch-fg-height);background-position:left bottom}
-body.st-fire #fgT{z-index:5}
+/* Fire owns one distant landmark and a low magma band. Old repeating horizon/decor art
+   must not compete with that scale story. Dino/Cat likewise retire their old repeated props. */
+body.st-fire:not(.tunnel-interior) #horizon,
+body.st-fire:not(.tunnel-interior) #branchDecorT,
+body.st-dino:not(.tunnel-interior) #branchDecorT,
+body.st-cat:not(.tunnel-interior) #branchDecorT{display:none!important;background-image:none!important}
+body.st-fire:not(.tunnel-interior) #midT{z-index:2;background-position:left bottom}
+body.st-fire:not(.tunnel-interior) #groundT{z-index:3}
+body.st-fire:not(.tunnel-interior) #branchEffectMid{z-index:2}
+body.st-fire:not(.tunnel-interior) #fgT{z-index:5;bottom:0;background-position:left bottom}
+body.st-dino:not(.tunnel-interior) #horizon{
+  -webkit-mask-image:linear-gradient(to bottom,#000 0%,#000 51%,rgba(0,0,0,.72) 53%,transparent 56%);
+  mask-image:linear-gradient(to bottom,#000 0%,#000 51%,rgba(0,0,0,.72) 53%,transparent 56%)}
+body.st-cat:not(.tunnel-interior) #fgT{z-index:6}
 
-#branchDinoMeadow{position:absolute;left:0;right:0;bottom:0;height:45vh;z-index:0;display:none;pointer-events:none;
+#branchDinoMeadow{position:absolute;left:0;right:0;top:52vh;bottom:auto;height:48vh;z-index:0;display:none;pointer-events:none;
   background-position:left bottom;background-size:auto 100%;background-repeat:repeat-x;will-change:background-position;
   filter:brightness(var(--branch-polish-brightness)) saturate(var(--branch-polish-saturate)) contrast(var(--branch-polish-contrast)) hue-rotate(var(--branch-polish-hue));transition:filter .48s ease}
 body.st-dino:not(.tunnel-interior) #branchDinoMeadow{display:block}
@@ -527,9 +540,11 @@ body.tunnel-interior #branchDinoMeadow{display:none!important}
 body.st-snow:not(.tunnel-interior) #branchEffectFar,
 body.st-snow:not(.tunnel-interior) #branchEffectMid,
 body.st-snow:not(.tunnel-interior) #branchEffectNear,
+body.st-fire:not(.tunnel-interior) #branchEffectFar,
 body.st-fire:not(.tunnel-interior) #branchEffectMid,
 body.st-dino:not(.tunnel-interior) #branchEffectFar,
 body.st-dino:not(.tunnel-interior) #branchWorldLifeLayer,
+body.st-cat:not(.tunnel-interior) #branchEffectFar,
 body.st-cat:not(.tunnel-interior) #branchWorldLifeLayer{display:block}
 body.st-snow #branchEffectFar,body.st-snow #branchEffectMid,body.st-snow #branchEffectNear{opacity:var(--branch-snow-opacity)}
 body.tunnel-interior .branch-stage-effect-layer,body.tunnel-interior #branchWorldLifeLayer{display:none!important}
@@ -545,17 +560,37 @@ body:not(.branch-effects-running) .branch-snow-particle:nth-child(n+3){display:n
 @keyframes branchSnowFall{from{transform:translate3d(0,0,0) rotate(var(--snow-rotate-start))}to{transform:translate3d(var(--snow-drift),136vh,0) rotate(var(--snow-rotate-end))}}
 @keyframes branchSnowTwinkle{from{opacity:.48;transform:scale(var(--snow-scale-min))}to{opacity:1;transform:scale(var(--snow-scale-max))}}
 
-.branch-fire-hotspot,.branch-fire-ember{position:absolute;left:0;bottom:12.5vh;display:block;pointer-events:none;transform:translate3d(-200vw,0,0)}
-.branch-fire-hotspot{width:clamp(36px,7vmin,72px)}
-.branch-fire-hotspot img,.branch-fire-ember img{display:block;width:100%;height:auto;object-fit:contain;transform-origin:50% 100%;
+.branch-fire-volcano-landmark{position:absolute;left:0;bottom:30vh;display:block;width:clamp(440px,72vw,980px);max-height:44vh;line-height:0;
+  pointer-events:none;transform:translate3d(-200vw,0,0);transform-origin:50% 100%}
+.branch-fire-volcano-art{display:block;width:100%;height:auto;max-height:44vh;object-fit:contain;object-position:center bottom;
   filter:brightness(var(--branch-polish-brightness)) saturate(var(--branch-polish-saturate)) contrast(var(--branch-polish-contrast)) hue-rotate(var(--branch-polish-hue));transition:filter .48s ease}
-.branch-fire-hotspot img{animation:branchFireFlicker var(--fire-duration) ease-in-out var(--fire-delay) infinite alternate paused;
+.branch-fire-crater-glow{position:absolute;left:42.5%;top:41%;width:10%;aspect-ratio:1.75;display:block;border-radius:50%;pointer-events:none;
+  opacity:.62;background:radial-gradient(ellipse,rgba(255,244,166,.96) 0 12%,rgba(255,143,44,.72) 28%,rgba(255,74,24,.28) 56%,transparent 74%);
+  filter:blur(clamp(2px,.45vmin,5px));transform:translate(-50%,-50%) scale(.92);animation:branchFireCraterGlow 1.8s ease-in-out infinite alternate paused}
+.branch-fire-crater-ember{position:absolute;left:42.5%;top:39.5%;display:block;width:clamp(3px,.55vmin,7px);aspect-ratio:1;margin-left:var(--crater-ember-x);
+  border-radius:50%;opacity:0;background:#fff1a0;box-shadow:0 0 5px #fff,0 0 10px #ff762e;
+  animation:branchFireCraterEmber 2.1s ease-out var(--crater-ember-delay) infinite paused}
+.branch-fire-vent{--fire-vent-width:clamp(30px,5.1vmin,52px);--fire-vent-cover:clamp(8px,1.8vmin,15px);position:absolute;left:0;bottom:calc(var(--branch-fg-height) - var(--fire-vent-cover))!important;z-index:2;display:block;width:var(--fire-vent-width);
+  line-height:0;pointer-events:none;transform:translate3d(-200vw,0,0) translateX(-50%);transform-origin:50% 100%}
+.branch-fire-vent[data-vent="0"]{--fire-vent-width:clamp(28px,4.6vmin,46px)}
+.branch-fire-vent[data-vent="1"]{--fire-vent-width:clamp(36px,5.8vmin,58px);--fire-vent-cover:clamp(10px,2vmin,18px)}
+.branch-fire-flame{display:block;width:100%;height:auto;object-fit:contain;transform-origin:50% 100%;
+  filter:brightness(var(--branch-polish-brightness)) saturate(var(--branch-polish-saturate)) contrast(var(--branch-polish-contrast)) hue-rotate(var(--branch-polish-hue));transition:filter .48s ease;
+  animation:branchFireFlicker var(--fire-duration) ease-in-out var(--fire-delay) infinite alternate paused;
   transform:translate3d(0,var(--fire-guard-y,0px),0) scale(var(--fire-scale-x),var(--fire-scale-y))}
-.branch-fire-ember{width:clamp(12px,2.2vmin,24px)}
-.branch-fire-ember img{opacity:var(--ember-opacity);animation:branchFireEmber var(--ember-duration) ease-out var(--ember-delay) infinite paused;
+.branch-fire-ember-field{position:absolute;inset:0;display:block;overflow:visible;pointer-events:none}
+.branch-fire-ember{position:absolute;left:50%;bottom:34%;display:block;width:clamp(8px,1.5vmin,15px);pointer-events:none}
+.branch-fire-ember img{display:block;width:100%;height:auto;object-fit:contain;opacity:var(--ember-opacity);
+  animation:branchFireEmber var(--ember-duration) ease-out var(--ember-delay) infinite paused;
   transform:translate3d(var(--ember-base-x),var(--ember-guard-y,0px),0) scale(var(--ember-scale))}
-body.branch-effects-running.pono-game-ready.st-fire:not(.tunnel-interior) .branch-fire-hotspot img,
-body.branch-effects-running.pono-game-ready.st-fire:not(.tunnel-interior) .branch-fire-ember img{animation-play-state:running;will-change:transform,opacity}
+body.branch-effects-running.pono-game-ready.st-fire:not(.tunnel-interior) .branch-fire-flame,
+body.branch-effects-running.pono-game-ready.st-fire:not(.tunnel-interior) .branch-fire-ember img,
+body.branch-effects-running.pono-game-ready.st-fire:not(.tunnel-interior) .branch-fire-crater-glow,
+body.branch-effects-running.pono-game-ready.st-fire:not(.tunnel-interior) .branch-fire-crater-ember{animation-play-state:running;will-change:transform,opacity}
+body.branch-night.st-fire:not(.tunnel-interior) .branch-fire-crater-glow{opacity:.9;filter:blur(clamp(2px,.5vmin,6px)) brightness(1.2)}
+body.branch-night.st-fire:not(.tunnel-interior) .branch-fire-volcano-art{filter:brightness(.64) saturate(.82) contrast(1.02) hue-rotate(-6deg)}
+@keyframes branchFireCraterGlow{from{opacity:.52;transform:translate(-50%,-50%) scale(.88)}to{opacity:.86;transform:translate(-50%,-50%) scale(1.08)}}
+@keyframes branchFireCraterEmber{0%{opacity:0;transform:translate3d(0,4px,0) scale(.65)}20%{opacity:.92}100%{opacity:0;transform:translate3d(4px,-28px,0) scale(.25)}}
 @keyframes branchFireFlicker{
   from{opacity:.8;transform:translate3d(-1px,var(--fire-guard-y,0px),0) scale(var(--fire-scale-x-from),var(--fire-scale-y-from)) rotate(-1.5deg)}
   to{opacity:1;transform:translate3d(1px,var(--fire-guard-y,0px),0) scale(var(--fire-scale-x-to),var(--fire-scale-y-to)) rotate(1.5deg)}}
@@ -564,12 +599,64 @@ body.branch-effects-running.pono-game-ready.st-fire:not(.tunnel-interior) .branc
   18%{opacity:var(--ember-opacity)}
   100%{opacity:0;transform:translate3d(calc(var(--ember-base-x) + var(--ember-drift-x)),calc(var(--ember-guard-y,0px) - var(--ember-rise)),0) scale(var(--ember-scale))}}
 
-.branch-dino-far-herd{position:absolute;left:0;bottom:28vh;display:block;width:70vw;max-height:35vh;line-height:0;pointer-events:none;opacity:.9;transform:translate3d(-200vw,0,0)}
-.branch-dino-far-herd img{display:block;width:100%;height:auto;max-height:35vh;object-fit:contain;object-position:left bottom;transform-origin:50% 100%;transform:translate3d(0,var(--dino-far-guard-y,0px),0);
+.branch-dino-far-herd{position:absolute;left:0;bottom:34.5vh;z-index:1;display:block;width:clamp(440px,60vw,900px);max-height:32vh;line-height:0;pointer-events:none;opacity:.72;transform:translate3d(-200vw,0,0)}
+.branch-dino-far-herd img{display:block;width:100%;height:auto;max-height:32vh;object-fit:contain;object-position:left bottom;transform-origin:50% 100%;transform:translate3d(0,var(--dino-far-guard-y,0px),0);
   filter:brightness(var(--branch-polish-brightness)) saturate(var(--branch-polish-saturate)) contrast(var(--branch-polish-contrast)) hue-rotate(var(--branch-polish-hue));transition:filter .48s ease}
 .branch-world-life{position:absolute;left:0;bottom:var(--life-bottom);display:block;width:var(--life-width);line-height:0;pointer-events:none;transform:translate3d(-200vw,0,0) translateX(-50%)}
-.branch-world-life img{display:block;width:100%;height:auto;max-height:35vh;object-fit:contain;transform-origin:50% 100%;transform:translate3d(0,var(--life-guard-y,0px),0) scale(var(--life-scale));
+.branch-world-life img{display:block;width:100%;height:auto;max-height:35vh;object-fit:contain;transform-origin:50% 100%;transform:translate3d(0,var(--life-guard-y,0px),0) scale(var(--life-scale-x,var(--life-scale)),var(--life-scale));
   filter:brightness(var(--branch-polish-brightness)) saturate(var(--branch-polish-saturate)) contrast(var(--branch-polish-contrast)) hue-rotate(var(--branch-polish-hue));transition:filter .48s ease}
+
+body.st-dino:not(.tunnel-interior) #branchEffectFar{z-index:1}
+body.st-dino:not(.tunnel-interior) #branchWorldLifeLayer{z-index:4}
+body.st-dino:not(.tunnel-interior) .branch-world-life--far{z-index:2!important}
+body.st-dino:not(.tunnel-interior) .branch-world-life--mid{z-index:3!important}
+body.st-dino:not(.tunnel-interior) .branch-world-life--near{z-index:4!important}
+body.st-dino:not(.tunnel-interior) .branch-dino-nest-landmark{bottom:25.5vh;width:clamp(14vw,16vw,18vw);max-height:28vh}
+body.st-dino:not(.tunnel-interior) .branch-dino-nest-landmark img{max-height:28vh;object-position:center bottom}
+body.st-dino:not(.tunnel-interior) .branch-dino-far-herd img,
+body.st-dino:not(.tunnel-interior) .branch-world-life img{mix-blend-mode:multiply}
+body.branch-night.st-dino:not(.tunnel-interior) .branch-dino-far-herd img,
+body.branch-night.st-dino:not(.tunnel-interior) .branch-world-life img{mix-blend-mode:normal;filter:brightness(.62) saturate(.72) contrast(1.04) hue-rotate(-8deg)}
+
+body.st-cat:not(.tunnel-interior) #branchEffectFar{z-index:1}
+body.st-cat:not(.tunnel-interior) #branchWorldLifeLayer{z-index:4}
+body.st-cat:not(.tunnel-interior) .branch-world-life.is-cat{opacity:0;transition:opacity .38s ease}
+body.st-cat:not(.tunnel-interior) .branch-world-life.is-cat.is-active,
+body.st-cat:not(.tunnel-interior) .branch-world-life.is-cat[data-active="true"]{opacity:1}
+body.st-cat:not(.tunnel-interior) .branch-cat-population--far{bottom:clamp(25.5vh,var(--life-bottom),28vh);z-index:1!important;width:clamp(48vw,var(--life-width),56vw);max-height:46vh}
+body.st-cat:not(.tunnel-interior) .branch-cat-population--mid{bottom:clamp(12.5vh,var(--life-bottom),14vh);z-index:3!important;width:clamp(30vw,var(--life-width),40vw);max-height:40vh}
+body.st-cat:not(.tunnel-interior) .branch-cat-population--near{bottom:clamp(17.5vh,var(--life-bottom),22vh);z-index:4!important;width:clamp(22vw,var(--life-width),28vw);max-height:36vh}
+body.st-cat:not(.tunnel-interior) .branch-cat-population--far img{max-height:46vh}
+body.st-cat:not(.tunnel-interior) .branch-cat-population--mid img{max-height:40vh}
+body.st-cat:not(.tunnel-interior) .branch-cat-population--near img{max-height:36vh}
+body.branch-night.st-cat:not(.tunnel-interior) .branch-world-life img{filter:brightness(.7) saturate(.74) contrast(1.02) hue-rotate(-5deg)}
+
+@media (max-height:500px){
+  body.st-fire{--branch-mid-height:52vh;--branch-mid-bottom:14vh;--branch-fg-height:13vh}
+  .branch-fire-volcano-landmark{bottom:32vh;width:clamp(420px,68vw,760px);max-height:40vh}
+  .branch-fire-volcano-art{max-height:40vh}
+  .branch-fire-vent[data-vent="0"]{--fire-vent-width:clamp(26px,4.5vmin,42px)}
+  .branch-fire-vent[data-vent="1"]{--fire-vent-width:clamp(32px,5.6vmin,52px)}
+  body.st-dino:not(.tunnel-interior) .branch-dino-nest-landmark{bottom:22vh;width:clamp(14vw,15vw,18vw);max-height:25vh}
+  body.st-cat:not(.tunnel-interior) .branch-cat-population--far,
+  body.st-cat:not(.tunnel-interior) .branch-cat-population--far img{max-height:42vh}
+  body.st-cat:not(.tunnel-interior) .branch-cat-population--mid,
+  body.st-cat:not(.tunnel-interior) .branch-cat-population--mid img{max-height:36vh}
+  body.st-cat:not(.tunnel-interior) .branch-cat-population--near,
+  body.st-cat:not(.tunnel-interior) .branch-cat-population--near img{max-height:32vh}
+}
+@media (orientation:portrait){
+  .branch-fire-volcano-landmark{bottom:31vh;width:min(92vw,720px);max-height:38vh}
+  .branch-fire-volcano-art{max-height:38vh}
+  .branch-dino-far-herd{width:min(86vw,720px);max-height:29vh}
+  .branch-dino-far-herd img{max-height:29vh}
+  body.st-cat:not(.tunnel-interior) .branch-cat-population--far{bottom:clamp(25.5vh,var(--life-bottom),27vh);width:clamp(48vw,var(--life-width),54vw);max-height:36vh}
+  body.st-cat:not(.tunnel-interior) .branch-cat-population--mid{bottom:clamp(12.5vh,var(--life-bottom),14vh);width:clamp(30vw,var(--life-width),36vw);max-height:32vh}
+  body.st-cat:not(.tunnel-interior) .branch-cat-population--near{bottom:clamp(17.5vh,var(--life-bottom),20vh);width:clamp(22vw,var(--life-width),25vw);max-height:28vh}
+  body.st-cat:not(.tunnel-interior) .branch-cat-population--far img{max-height:36vh}
+  body.st-cat:not(.tunnel-interior) .branch-cat-population--mid img{max-height:32vh}
+  body.st-cat:not(.tunnel-interior) .branch-cat-population--near img{max-height:28vh}
+}
 
 body.st-fantasy:not(.tunnel-interior) #branchDecorT{opacity:.9;animation:none}
 body.branch-effects-running.pono-game-ready.st-fantasy:not(.tunnel-interior) #branchDecorT{animation:branchFantasyTwinkle 3.6s ease-in-out infinite alternate}
@@ -1384,7 +1471,13 @@ body.st-space.space-galaxy-active #quiz.show{transform:translate(-50%,0)}
 #stamp.ng{background:#f5a05a;animation:pop .9s ease forwards}
 #stamp.clear{background:#8e7cf0;animation:pop 1.6s ease forwards}
 #stamp.new{background:#3aa8d8;animation:pop 1.2s ease forwards}
-@keyframes pop{0%{transform:translate(-50%,-50%) scale(0)}45%{transform:translate(-50%,-50%) scale(1.12)}70%,100%{transform:translate(-50%,-50%) scale(1)}100%{opacity:0}}
+@keyframes pop{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(.55)}
+  12%{opacity:0;transform:translate(-50%,-50%) scale(.75)}
+  20%{opacity:1;transform:translate(-50%,-50%) scale(.9)}
+  45%{opacity:1;transform:translate(-50%,-50%) scale(1.12)}
+  70%,99%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(1)}}
 .conf{position:absolute;top:-4vh;font-size:clamp(16px,3.4vw,30px);animation:fall 2.4s linear forwards;z-index:22;pointer-events:none}
 .conf .confetti-art{width:1.5em;height:1.5em}
 @keyframes fall{to{transform:translateY(115vh) rotate(560deg)}}
@@ -1620,6 +1713,7 @@ body.ios-device #quiz.show:not(.sea-quiz):not(.future-capsule-quiz):not(.space-g
 }
 @media (prefers-reduced-motion:reduce){
   /* 一律0.01秒化は無限アニメを100Hz点滅にし、有限の取得演出も消すため使用しない。 */
+  #stamp.ok,#stamp.ng,#stamp.clear,#stamp.new{opacity:1!important}
   body.v-train #veh.go .train-wheel,body.v-train #cars.go .car-wheel,
   body.v-train #veh.go .train-wheel-rod,body.v-train #veh.go .train-main-rod,body.v-train #veh.go .train-crosshead{
     animation-duration:1.65s!important;animation-play-state:running!important}
@@ -1648,8 +1742,11 @@ body.ios-device #quiz.show:not(.sea-quiz):not(.future-capsule-quiz):not(.space-g
   .branch-snow-particle{left:var(--snow-rest-left)!important;top:var(--snow-rest-top)!important;animation:none!important;transform:none!important;will-change:auto!important}
   .branch-snow-particle img{animation:none!important;opacity:1!important;transform:scale(var(--snow-scale-min))!important;will-change:auto!important}
   .branch-stage-effect-layer .branch-snow-particle:nth-child(n+3){display:none!important}
-  .branch-fire-hotspot img{animation:none!important;opacity:.92!important;transform:translate3d(0,var(--fire-guard-y,0px),0) scale(var(--fire-scale-x),var(--fire-scale-y))!important;will-change:auto!important}
-  .branch-fire-ember{display:none!important}
+  .branch-fire-flame{animation:none!important;opacity:.94!important;transform:translate3d(0,var(--fire-guard-y,0px),0) scale(var(--fire-scale-x),var(--fire-scale-y))!important;will-change:auto!important}
+  .branch-fire-crater-glow{animation:none!important;opacity:.72!important;transform:translate(-50%,-50%) scale(1)!important;will-change:auto!important}
+  .branch-fire-ember-field,.branch-fire-crater-ember{display:none!important}
+  .branch-fire-volcano-art,.branch-fire-flame,.branch-dino-far-herd img,.branch-world-life img{transition:none!important}
+  body.st-cat:not(.tunnel-interior) .branch-world-life.is-cat{transition:none!important}
   body.st-fantasy:not(.tunnel-interior) #branchDecorT{animation:none!important;opacity:.9!important}
   .jungle-animal-art{animation:none!important;transform:none!important}
   .jungle-animal-frame{animation:none!important;transform:none!important}

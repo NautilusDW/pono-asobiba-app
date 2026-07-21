@@ -705,7 +705,8 @@
 // 地表に炎5／火の粉7〜8の再利用プールを常時流す。恐竜は空の透けを草原で塞ぎ、遠景群れと
 // 5つの生活シーンを深度別速度へ分離。魔法の城を上へ出し、星の装飾だけを穏やかに明滅させる。
 // 新規11画像は選択ステージだけが読むため CRITICAL_ASSETS へ追加しない (batch:1408)。
-const CACHE_VERSION = 2315;
+// v2316: なぞなぞトレインの火・恐竜・猫ステージの画像と多重スクロールを世界観に合わせて再調整 (batch:1409-world-coherence)。
+const CACHE_VERSION = 2316;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

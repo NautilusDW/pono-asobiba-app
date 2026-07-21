@@ -17,12 +17,23 @@ const sources = Object.freeze({
   sw: read("sw.js")
 });
 
-const TOKEN = "20260721-1408";
-const SW_VERSION = 2315;
+const TOKEN = "20260721-1409";
+const SW_VERSION = 2316;
 const THREE_MIB = 3 * 1024 * 1024;
 const STAGE_IDS = Object.freeze(["snow", "fire", "dino", "toy", "cat", "fantasy", "sky", "ruins"]);
 const LAYER_KEYS = Object.freeze(["sky", "horizon", "mid", "ground", "fg", "decor"]);
-const EXPECTED_VALIDATE_CHECKS = 118;
+const STAGE_ASSET_KEYS = Object.freeze({
+  snow: LAYER_KEYS,
+  fire: Object.freeze(["sky", "mid", "ground", "fg"]),
+  dino: Object.freeze(["sky", "horizon", "mid", "ground", "fg", "meadow"]),
+  toy: LAYER_KEYS,
+  cat: LAYER_KEYS,
+  fantasy: LAYER_KEYS,
+  sky: LAYER_KEYS,
+  ruins: LAYER_KEYS
+});
+const EXPECTED_VALIDATE_CHECKS = 126;
+const EXPECTED_MUTATIONS = 42;
 
 const CANONICAL = Object.freeze([
   Object.freeze({ name: "branch_dino_far_herd_cutout_20260721.webp", width: 1894, height: 367, bytes: 599190, sha256: "9217d6f0c2e59abb9c8285fa4d0d305b85d6f4e4ed4e9b1d5223c2381a1add9e", raw: "01_dino_far_herd_raw.png", rawWidth: 1942, rawHeight: 809, rawBytes: 1126084, rawSha256: "6c5446c023af876c17a76706341fa7dd58363f63cf299d2e295209be9890a78b", candidate: "dino/branch_dino_far_herd_cutout_20260721.webp" }),
@@ -59,14 +70,19 @@ const REPORTS = Object.freeze([
 
 const EXTRA_URLS = Object.freeze({
   snow: Object.freeze({ snowflake: "../assets/images/nazonazo-tunnel/effect_snowflake_particle_20260720.webp", diamond: "../assets/images/nazonazo-tunnel/effect_diamond_dust_particle_20260720.webp" }),
-  fire: Object.freeze({ flame: "../assets/images/nazonazo-tunnel/effect_fire_flame_particle_a_depthfix_20260721.webp", ember: "../assets/images/nazonazo-tunnel/effect_fire_ember_particle_depthfix_20260721.webp" }),
+  fire: Object.freeze({
+    volcano: "../assets/images/nazonazo-tunnel/branch_fire_distant_volcano_worldfix_20260721.webp",
+    flame: "../assets/images/nazonazo-tunnel/effect_fire_flame_particle_a_depthfix_20260721.webp",
+    ember: "../assets/images/nazonazo-tunnel/effect_fire_ember_particle_depthfix_20260721.webp"
+  }),
   dino: Object.freeze({
-    farHerd: "../assets/images/nazonazo-tunnel/branch_dino_far_herd_cutout_20260721.webp",
-    waterhole: "../assets/images/nazonazo-tunnel/branch_dino_waterhole_cutout_20260721.webp",
-    stegosaurus: "../assets/images/nazonazo-tunnel/branch_dino_stegosaurus_family_cutout_20260721.webp",
-    parasaurolophus: "../assets/images/nazonazo-tunnel/branch_dino_parasaurolophus_herd_cutout_20260721.webp",
-    sauropod: "../assets/images/nazonazo-tunnel/branch_dino_sauropod_clearing_cutout_20260721.webp",
-    trex: "../assets/images/nazonazo-tunnel/branch_dino_trex_glimpse_cutout_20260721.webp"
+    farHerd: "../assets/images/nazonazo-tunnel/branch_dino_far_herd_cutout_worldfix_20260721.webp",
+    waterhole: "../assets/images/nazonazo-tunnel/branch_dino_waterhole_cutout_worldfix_20260721.webp",
+    stegosaurus: "../assets/images/nazonazo-tunnel/branch_dino_stegosaurus_cutout_worldfix_20260721.webp",
+    parasaurolophus: "../assets/images/nazonazo-tunnel/branch_dino_parasaurolophus_cutout_worldfix_20260721.webp",
+    sauropod: "../assets/images/nazonazo-tunnel/branch_dino_sauropod_cutout_worldfix_20260721.webp",
+    trex: "../assets/images/nazonazo-tunnel/branch_dino_trex_cutout_worldfix_20260721.webp",
+    nest: "../assets/images/nazonazo-tunnel/branch_dino_fern_nest_worldfix_20260721.webp"
   }),
   cat: Object.freeze({
     cottage: "../assets/images/nazonazo-tunnel/branch_cat_cottage_life_cutout_20260721.webp",
@@ -76,37 +92,47 @@ const EXTRA_URLS = Object.freeze({
     bridge: "../assets/images/nazonazo-tunnel/branch_cat_bridge_life_cutout_20260721.webp",
     plaza: "../assets/images/nazonazo-tunnel/branch_cat_plaza_life_cutout_20260721.webp",
     tree: "../assets/images/nazonazo-tunnel/branch_cat_tree_life_cutout_20260721.webp",
-    lane: "../assets/images/nazonazo-tunnel/branch_cat_lane_life_cutout_20260721.webp"
+    lane: "../assets/images/nazonazo-tunnel/branch_cat_lane_life_cutout_20260721.webp",
+    farTownA: "../assets/images/nazonazo-tunnel/branch_cat_far_town_a_worldfix_20260721.webp",
+    farTownB: "../assets/images/nazonazo-tunnel/branch_cat_far_town_b_worldfix_20260721.webp",
+    midGardenA: "../assets/images/nazonazo-tunnel/branch_cat_mid_garden_a_worldfix_20260721.webp",
+    midLaneB: "../assets/images/nazonazo-tunnel/branch_cat_mid_lane_b_worldfix_20260721.webp"
   })
 });
 
 const DINO_CONFIG = Object.freeze([
-  Object.freeze({ asset: "waterhole", ratio: .14, width: 32, bottom: 17.5, scale: .94, depth: 3, parallax: .42, sourceWidth: 1533, guard: 16 }),
-  Object.freeze({ asset: "stegosaurus", ratio: .30, width: 23, bottom: 19.5, scale: .88, depth: 4, parallax: .55, sourceWidth: 1448, guard: 14 }),
-  Object.freeze({ asset: "parasaurolophus", ratio: .46, width: 23, bottom: 18.5, scale: .91, depth: 3, parallax: .42, sourceWidth: 1453, guard: 14 }),
-  Object.freeze({ asset: "sauropod", ratio: .62, width: 28, bottom: 17.5, scale: .96, depth: 2, parallax: .30, sourceWidth: 1479, guard: 16 }),
-  Object.freeze({ asset: "trex", ratio: .78, width: 15, bottom: 20, scale: .84, depth: 4, parallax: .55, sourceWidth: 876, guard: 16 })
+  Object.freeze({ asset: "waterhole", ratio: .12, width: 32, bottom: 24, scale: .90, depth: 2, parallax: .22, sourceWidth: 1533, guard: 16, role: "far" }),
+  Object.freeze({ asset: "parasaurolophus", ratio: .33, width: 24, bottom: 24.5, scale: .90, depth: 2, parallax: .24, sourceWidth: 1453, guard: 14, role: "far" }),
+  Object.freeze({ asset: "nest", ratio: .47, width: 16, bottom: 18.5, scale: .90, depth: 3, parallax: .34, sourceWidth: 1350, guard: 16, role: "mid", className: "branch-dino-nest-landmark" }),
+  Object.freeze({ asset: "sauropod", ratio: .59, width: 29, bottom: 23, scale: .94, depth: 2, parallax: .20, sourceWidth: 1479, guard: 16, role: "far" }),
+  Object.freeze({ asset: "stegosaurus", ratio: .76, width: 24, bottom: 18.5, scale: .88, depth: 4, parallax: .62, sourceWidth: 1448, guard: 14, role: "near" }),
+  Object.freeze({ asset: "trex", ratio: .90, width: 16, bottom: 19, scale: .84, depth: 4, parallax: .70, sourceWidth: 876, guard: 16, role: "near" })
 ]);
 
-const CAT_CONFIG = Object.freeze([
-  Object.freeze({ asset: "cottage", ratio: .04, width: 14, bottom: 17.5, scale: .9, depth: 2, sourceWidth: 1263, guard: 16 }),
-  Object.freeze({ asset: "garden", ratio: .10, width: 12, bottom: 18.5, scale: .96, depth: 4, sourceWidth: 1463, guard: 16 }),
-  Object.freeze({ asset: "fence", ratio: .16, width: 11, bottom: 19, scale: .9, depth: 3, sourceWidth: 1423, guard: 16 }),
-  Object.freeze({ asset: "rooftop", ratio: .22, width: 10, bottom: 26, scale: .86, depth: 2, sourceWidth: 1204, guard: 16 }),
-  Object.freeze({ asset: "bridge", ratio: .28, width: 15, bottom: 17.5, scale: .96, depth: 3, sourceWidth: 1485, guard: 12 }),
-  Object.freeze({ asset: "plaza", ratio: .34, width: 16, bottom: 18, scale: .92, depth: 4, sourceWidth: 1488, guard: 12 }),
-  Object.freeze({ asset: "tree", ratio: .40, width: 13, bottom: 18.5, scale: .9, depth: 3, sourceWidth: 1108, guard: 16 }),
-  Object.freeze({ asset: "lane", ratio: .46, width: 12, bottom: 19, scale: .94, depth: 2, sourceWidth: 1366, guard: 16 }),
-  Object.freeze({ asset: "cottage", ratio: .52, width: 12, bottom: 17.5, scale: .86, depth: 3, sourceWidth: 1263, guard: 16 }),
-  Object.freeze({ asset: "garden", ratio: .58, width: 11, bottom: 19.5, scale: .9, depth: 4, sourceWidth: 1463, guard: 16 }),
-  Object.freeze({ asset: "fence", ratio: .64, width: 10, bottom: 18.5, scale: .86, depth: 2, sourceWidth: 1423, guard: 16 }),
-  Object.freeze({ asset: "rooftop", ratio: .70, width: 10, bottom: 26, scale: .82, depth: 3, sourceWidth: 1204, guard: 16 }),
-  Object.freeze({ asset: "bridge", ratio: .76, width: 12, bottom: 17.5, scale: .9, depth: 3, sourceWidth: 1485, guard: 12 }),
-  Object.freeze({ asset: "plaza", ratio: .82, width: 11, bottom: 18, scale: .86, depth: 4, sourceWidth: 1488, guard: 12 })
+const CAT_STOP_ANCHORS = Object.freeze([296, 726, 1156, 1586, 2016]);
+const CAT_FAR_CONFIG = Object.freeze([
+  Object.freeze({ asset: "farTownA", anchor: 296, width: 54, bottom: 27, scale: .94, depth: 1, parallax: .10, sourceWidth: 1568, guard: 16, role: "far", viewportX: 12, stationIndex: 0, visibleCats: 5 }),
+  Object.freeze({ asset: "farTownB", anchor: 726, width: 52, bottom: 26, scale: .92, depth: 1, parallax: .18, sourceWidth: 1568, guard: 16, role: "far", viewportX: 88, stationIndex: 1, visibleCats: 5, flip: true }),
+  Object.freeze({ asset: "farTownA", anchor: 1156, width: 50, bottom: 28, scale: .91, depth: 1, parallax: .11, sourceWidth: 1568, guard: 16, role: "far", viewportX: 14, stationIndex: 2, visibleCats: 5, flip: true }),
+  Object.freeze({ asset: "farTownB", anchor: 1586, width: 56, bottom: 25.5, scale: .94, depth: 1, parallax: .20, sourceWidth: 1568, guard: 16, role: "far", viewportX: 87, stationIndex: 3, visibleCats: 5 }),
+  Object.freeze({ asset: "farTownA", anchor: 2016, width: 52, bottom: 27, scale: .92, depth: 1, parallax: .09, sourceWidth: 1568, guard: 16, role: "far", viewportX: 13, stationIndex: 4, visibleCats: 5 })
 ]);
-
-const DINO_ASSET_COUNTS = Object.freeze({ farHerd: 8, waterhole: 4, stegosaurus: 3, parasaurolophus: 3, sauropod: 1, trex: 1 });
-const CAT_TRAVEL_INTERVALS = Object.freeze([[0, .12], [.12, .30], [.30, .48], [.48, .66], [.66, .84]]);
+const CAT_MID_CONFIG = Object.freeze(Array.from({ length: 9 }, (_, index) => Object.freeze({
+  asset: index % 2 ? "midLaneB" : "midGardenA", anchor: CAT_STOP_ANCHORS[0] + index * 215, width: index % 2 ? 34 : 36,
+  bottom: index % 3 === 1 ? 12.5 : 14, scale: index % 2 ? .92 : .94, depth: 3, parallax: index % 2 ? .54 : .44,
+  sourceWidth: 1568, guard: 16, role: "mid", viewportX: index % 2 ? 7 : 93,
+  stationIndex: index % 2 ? Math.floor(index / 2) : index / 2, interval: index % 2 === 1, visibleCats: 3, flip: index % 4 === 1
+})));
+const CAT_NEAR_CONFIG = Object.freeze([
+  Object.freeze({ asset: "cottage", anchor: 296, width: 21, bottom: 17.5, scale: .92, depth: 4, parallax: .72, sourceWidth: 1263, guard: 16, role: "near", viewportX: 10, stationIndex: 0, visibleCats: 2 }),
+  Object.freeze({ asset: "garden", anchor: 511, width: 20, bottom: 18, scale: .92, depth: 4, parallax: .76, sourceWidth: 1463, guard: 16, role: "near", viewportX: 91, stationIndex: 0, interval: true, visibleCats: 2, flip: true }),
+  Object.freeze({ asset: "fence", anchor: 726, width: 20, bottom: 18, scale: .90, depth: 4, parallax: .74, sourceWidth: 1423, guard: 16, role: "near", viewportX: 90, stationIndex: 1, visibleCats: 2 }),
+  Object.freeze({ asset: "rooftop", anchor: 941, width: 19, bottom: 22, scale: .88, depth: 4, parallax: .78, sourceWidth: 1204, guard: 16, role: "near", viewportX: 9, stationIndex: 1, interval: true, visibleCats: 2, flip: true }),
+  Object.freeze({ asset: "bridge", anchor: 1156, width: 22, bottom: 17.5, scale: .92, depth: 4, parallax: .73, sourceWidth: 1485, guard: 12, role: "near", viewportX: 10, stationIndex: 2, visibleCats: 2 }),
+  Object.freeze({ asset: "plaza", anchor: 1371, width: 22, bottom: 17.5, scale: .90, depth: 4, parallax: .77, sourceWidth: 1488, guard: 12, role: "near", viewportX: 91, stationIndex: 2, interval: true, visibleCats: 2, flip: true }),
+  Object.freeze({ asset: "tree", anchor: 1586, width: 20, bottom: 18, scale: .90, depth: 4, parallax: .75, sourceWidth: 1108, guard: 16, role: "near", viewportX: 90, stationIndex: 3, visibleCats: 2 }),
+  Object.freeze({ asset: "lane", anchor: 2016, width: 21, bottom: 18, scale: .92, depth: 4, parallax: .74, sourceWidth: 1366, guard: 16, role: "near", viewportX: 10, stationIndex: 4, visibleCats: 2, flip: true })
+]);
 
 const LEGACY_RUNTIME_URLS = Object.freeze([
   "branch_dino_mid_cutout_loop_20260720.webp",
@@ -172,9 +198,9 @@ function extractFunction(source, name) {
   return end > openAt ? source.slice(markerAt, end + 1) : "";
 }
 
-function evalLiteral(source) {
+function evalLiteral(source, context = {}) {
   if (!source) return null;
-  try { return vm.runInNewContext(`(${source})`, { Object }, { timeout: 1000 }); }
+  try { return vm.runInNewContext(`(${source})`, { Object, Array, Math, ...context }, { timeout: 1000 }); }
   catch { return null; }
 }
 
@@ -234,10 +260,8 @@ function sceneDirectChildIds(html) {
 
 function expectedBaseAsset(stageId, key) {
   const overrides = {
-    "fire.horizon": "../assets/images/nazonazo-tunnel/branch_fire_horizon_cutout_loop_depthfix_20260721.webp",
-    "fire.mid": "../assets/images/nazonazo-tunnel/branch_fire_mid_cutout_loop_depthfix_20260721.webp",
-    "fire.fg": "../assets/images/nazonazo-tunnel/branch_fire_foreground_cutout_loop_depthfix_20260721.webp",
-    "fire.decor": "../assets/images/nazonazo-tunnel/branch_fire_decor_cutout_depthfix_20260721.webp",
+    "fire.mid": "../assets/images/nazonazo-tunnel/branch_fire_woodland_basalt_mid_loop_worldfix_20260721.webp",
+    "fire.fg": "../assets/images/nazonazo-tunnel/branch_fire_magma_river_fg_loop_worldfix_20260721.webp",
     "dino.mid": "../assets/images/nazonazo-tunnel/branch_dino_mid_open_cutout_loop_20260721.webp",
     "dino.meadow": "../assets/images/nazonazo-tunnel/branch_dino_meadow_loop_depthfix_20260721.webp",
     "toy.mid": "../assets/images/nazonazo-tunnel/branch_toy_mid_variety_cutout_loop_20260720.webp",
@@ -283,7 +307,7 @@ function validate(candidate) {
   STAGE_IDS.forEach(stageId => {
     const stageSource = extractObjectAfter(assetsSource, `\n ${stageId}:`);
     const entries = parseOwnStringEntries(stageSource);
-    const stageKeys = stageId === "dino" ? [...LAYER_KEYS, "meadow"] : LAYER_KEYS;
+    const stageKeys = STAGE_ASSET_KEYS[stageId];
     check(JSON.stringify(entries.map(entry => entry[0])) === JSON.stringify(stageKeys), "asset-urls");
     stageKeys.forEach(key => {
       const expected = expectedBaseAsset(stageId, key);
@@ -291,7 +315,7 @@ function validate(candidate) {
       baseUrls.push(expected);
     });
   });
-  check(baseUrls.length === 49 && new Set(baseUrls).size === 49, "asset-urls");
+  check(baseUrls.length === 46 && new Set(baseUrls).size === 46, "asset-urls");
   const extrasSource = extractObjectAfter(game, "const BRANCH_STAGE_POLISH_ASSETS=");
   const extraStageKeys = [...extrasSource.matchAll(/\n ([a-z]+):Object\.freeze\(/g)].map(match => match[1]);
   check(JSON.stringify(extraStageKeys) === JSON.stringify(Object.keys(EXTRA_URLS)), "asset-urls");
@@ -300,7 +324,12 @@ function validate(candidate) {
     check(JSON.stringify(actual) === JSON.stringify(expected), "asset-urls");
   });
   LEGACY_RUNTIME_URLS.forEach(url => check(![game, html, css, sw].some(source => source.includes(url)), "asset-urls"));
-  check((game.match(/branch_(?:dino|cat)_[^"']+_20260721\.webp/g) || []).length === 18, "asset-urls");
+  check((game.match(/branch_(?:dino|cat)_[^"']+_20260721\.webp/g) || []).length === 23, "asset-urls");
+  const dinoWorldfixSceneKeys = ["farHerd", "waterhole", "stegosaurus", "parasaurolophus", "sauropod", "trex"];
+  check(dinoWorldfixSceneKeys.every(key => EXTRA_URLS.dino[key].includes("_worldfix_20260721.webp")) &&
+    EXTRA_URLS.dino.nest.endsWith("branch_dino_fern_nest_worldfix_20260721.webp"), "dino-scenes");
+  check(!Object.hasOwn(Object.fromEntries(parseOwnStringEntries(extractObjectAfter(assetsSource, "\n dino:"))), "decor") &&
+    !Object.hasOwn(Object.fromEntries(parseOwnStringEntries(extractObjectAfter(assetsSource, "\n fire:"))), "horizon"), "asset-urls");
 
   const polishPreload = extractFunction(game, "preloadBranchStagePolish");
   const rasterPreload = extractFunction(game, "preloadBranchRasterStage");
@@ -313,8 +342,8 @@ function validate(candidate) {
   check(preloadRefs(polishPreload) === 1 && preloadRefs(applySkin) === 1 && preloadRefs(chooseTunnelBranch) === 1 && preloadRefs(game) === 3, "preload-scope");
   check(applySkin.includes("preloadBranchRasterStage(st);") && applySkin.includes("preloadBranchStagePolish(st);") &&
     chooseTunnelBranch.includes("preloadBranchRasterStage(target);") && chooseTunnelBranch.includes("preloadBranchStagePolish(target);"), "preload-scope");
-  const expectedTotals = { snow: 8, fire: 8, dino: 13, toy: 6, cat: 14, fantasy: 6, sky: 6, ruins: 6 };
-  const actualTotals = Object.fromEntries(STAGE_IDS.map(stageId => [stageId, (stageId === "dino" ? 7 : 6) + Object.keys(EXTRA_URLS[stageId] || {}).length]));
+  const expectedTotals = { snow: 8, fire: 7, dino: 13, toy: 6, cat: 18, fantasy: 6, sky: 6, ruins: 6 };
+  const actualTotals = Object.fromEntries(STAGE_IDS.map(stageId => [stageId, STAGE_ASSET_KEYS[stageId].length + Object.keys(EXTRA_URLS[stageId] || {}).length]));
   check(JSON.stringify(actualTotals) === JSON.stringify(expectedTotals), "preload-scope");
 
   const preloadStart = game.indexOf("const BRANCH_RASTER_STAGE_IDS=");
@@ -330,15 +359,15 @@ function validate(candidate) {
     const context = { Image: FakeImage, Set, Map, Object };
     try {
       vm.runInNewContext(`${game.slice(preloadStart, preloadEnd)}\nthis.raster=preloadBranchRasterStage;this.polish=preloadBranchStagePolish;this.rasterCache=branchRasterImageCache;this.polishCache=branchStagePolishImageCache;`, context, { timeout: 1000 });
-      const dinoBase = Object.fromEntries([...LAYER_KEYS, "meadow"].map(key => [key, expectedBaseAsset("dino", key)]));
+      const dinoBase = Object.fromEntries(STAGE_ASSET_KEYS.dino.map(key => [key, expectedBaseAsset("dino", key)]));
       const catBase = Object.fromEntries(LAYER_KEYS.map(key => [key, expectedBaseAsset("cat", key)]));
       context.raster({ id: "dino", assets: dinoBase }); context.polish({ id: "dino" });
-      preloadProbe.dino = made.length === 13 && made.slice(7).every(image => image.src.includes("/branch_dino_"));
+      preloadProbe.dino = made.length === 13 && made.slice(6).every(image => image.src.includes("/branch_dino_"));
       context.raster({ id: "dino", assets: dinoBase }); context.polish({ id: "dino" });
       preloadProbe.dinoRepeat = made.length === 13;
       context.raster({ id: "cat", assets: catBase }); context.polish({ id: "cat" });
-      preloadProbe.cat = made.length === 27 && made.slice(19).every(image => image.src.includes("/branch_cat_"));
-      preloadProbe.totals = context.rasterCache?.size === 13 && context.polishCache?.size === 14;
+      preloadProbe.cat = made.length === 31 && made.slice(19).every(image => image.src.includes("/branch_cat_"));
+      preloadProbe.totals = context.rasterCache?.size === 12 && context.polishCache?.size === 19;
     } catch { /* stable checks below report the failure */ }
   }
   check(preloadProbe.dino, "preload-scope");
@@ -358,20 +387,30 @@ function validate(candidate) {
     lastProperty(css, "#branchEffectMid", "z-index") === "6" && lastProperty(css, "#branchEffectNear", "z-index") === "9", "world-life-layer");
 
   const dinoConfigSource = extractArrayAfter(game, "const BRANCH_DINO_WORLD_LIFE_CONFIG=Object.freeze(");
-  const catConfigSource = extractArrayAfter(game, "const BRANCH_CAT_WORLD_LIFE_CONFIG=Object.freeze(");
+  const catFarSource = extractArrayAfter(game, "const BRANCH_CAT_FAR_CONFIG=Object.freeze(");
+  const catMidCall = extractBalancedAfter(game, "const BRANCH_CAT_MID_CONFIG=Object.freeze", "(", ")");
+  const catNearSource = extractArrayAfter(game, "const BRANCH_CAT_NEAR_CONFIG=Object.freeze(");
   const dinoConfig = evalLiteral(dinoConfigSource);
-  const catConfig = evalLiteral(catConfigSource);
+  const catContext = { BRANCH_CAT_STOP_ANCHORS: CAT_STOP_ANCHORS, QN: 5, GAP: 430 };
+  const catFar = evalLiteral(catFarSource, catContext);
+  const catMid = evalLiteral(catMidCall ? `Object.freeze${catMidCall}` : "", catContext);
+  const catNear = evalLiteral(catNearSource, catContext);
   const plain = value => JSON.parse(JSON.stringify(value));
   check(JSON.stringify(plain(dinoConfig)) === JSON.stringify(DINO_CONFIG), "dino-scenes");
   const dinoAssets = Array.isArray(dinoConfig) ? dinoConfig.map(config => config.asset) : [];
   const dinoRatios = Array.isArray(dinoConfig) ? dinoConfig.map(config => config.ratio) : [];
-  check(JSON.stringify(dinoAssets) === JSON.stringify(["waterhole", "stegosaurus", "parasaurolophus", "sauropod", "trex"]), "dino-scenes");
-  check(dinoRatios.length === 5 && new Set(dinoRatios).size === 5 && dinoRatios[0] <= .14 && dinoRatios.at(-1) >= .78 &&
-    dinoRatios.every((ratio, index) => index === 0 || ratio - dinoRatios[index - 1] >= .14), "dino-scenes");
-  check(DINO_ASSET_COUNTS.farHerd === 8 && dinoAssets.reduce((total, asset) => total + (DINO_ASSET_COUNTS[asset] || 0), 0) === 12 &&
-    Object.values(DINO_ASSET_COUNTS).reduce((total, count) => total + count, 0) === 20, "dino-scenes");
-  check(game.includes("const BRANCH_DINO_MEADOW_PARALLAX=.12;") &&
-    game.includes("const BRANCH_DINO_FAR_HERD_PARALLAX=.075;") &&
+  const dinoByRole = role => (Array.isArray(dinoConfig) ? dinoConfig.filter(config => config.role === role) : []);
+  check(JSON.stringify(dinoAssets) === JSON.stringify(["waterhole", "parasaurolophus", "nest", "sauropod", "stegosaurus", "trex"]), "dino-scenes");
+  check(dinoRatios.length === 6 && new Set(dinoRatios).size === 6 &&
+    dinoRatios.every((ratio, index) => index === 0 || ratio > dinoRatios[index - 1]), "dino-scenes");
+  check(dinoByRole("far").length === 3 && dinoByRole("mid").length === 1 && dinoByRole("mid")[0]?.asset === "nest" &&
+    dinoByRole("near").length === 2, "dino-scenes");
+  check(Math.max(...dinoByRole("far").map(config => config.parallax)) < dinoByRole("mid")[0]?.parallax &&
+    dinoByRole("mid")[0]?.parallax < Math.min(...dinoByRole("near").map(config => config.parallax)) &&
+    dinoByRole("far").every(config => config.depth === 2) && dinoByRole("mid")[0]?.depth === 3 &&
+    dinoByRole("near").every(config => config.depth === 4), "dino-scenes");
+  check(game.includes("const BRANCH_DINO_MEADOW_PARALLAX=.10;") &&
+    game.includes("const BRANCH_DINO_FAR_HERD_PARALLAX=.06;") &&
     game.includes("const BRANCH_DINO_FAR_HERD_SPACING_VW=115;") &&
     game.includes("const BRANCH_DINO_FAR_HERD_POOL_SIZE=3;") &&
     !game.includes("const BRANCH_LANDMARK_PROGRESS=.5;"), "dino-scenes");
@@ -384,52 +423,65 @@ function validate(candidate) {
     buildDino.includes('BRANCH_DINO_WORLD_LIFE_CONFIG.forEach((config,index)=>buildBranchWorldLifeSprite("dino",assets,config,index));') &&
     !/cloneNode|while\s*\(/.test(buildDino), "dino-scenes");
 
-  check(JSON.stringify(plain(catConfig)) === JSON.stringify(CAT_CONFIG), "cat-scenes");
-  const catAssets = Array.isArray(catConfig) ? catConfig.map(config => config.asset) : [];
-  const catRatios = Array.isArray(catConfig) ? catConfig.map(config => config.ratio) : [];
-  check(JSON.stringify(catAssets) === JSON.stringify(["cottage", "garden", "fence", "rooftop", "bridge", "plaza", "tree", "lane", "cottage", "garden", "fence", "rooftop", "bridge", "plaza"]), "cat-scenes");
-  check(JSON.stringify(catRatios) === JSON.stringify([.04, .10, .16, .22, .28, .34, .40, .46, .52, .58, .64, .70, .76, .82]) &&
-    catRatios.every((ratio, index) => index === 0 || ratio > catRatios[index - 1]), "cat-scenes");
-  const travelIntervalAssets = CAT_TRAVEL_INTERVALS.map(([start, end], intervalIndex) => new Set(catConfig
-    .filter(config => config.ratio >= start && (intervalIndex === CAT_TRAVEL_INTERVALS.length - 1 ? config.ratio <= end : config.ratio < end))
-    .map(config => config.asset)));
-  check(travelIntervalAssets.length === 5 && travelIntervalAssets.every(assets => assets.size >= 2), "cat-scenes");
-  check(catAssets.every((asset, index) => index === 0 || asset !== catAssets[index - 1]) &&
-    ["cottage", "garden", "fence", "rooftop", "bridge", "plaza"].every(asset => {
-      const indexes = catAssets.map((value, index) => value === asset ? index : -1).filter(index => index >= 0);
-      return indexes.length === 2 && Number((catRatios[indexes[1]] - catRatios[indexes[0]]).toFixed(2)) >= .48;
-    }) && ["tree", "lane"].every(asset => catAssets.filter(value => value === asset).length === 1), "cat-scenes");
-  const worldSpan = Number(game.match(/\bSPAN=(\d+)/)?.[1]);
-  const visibilityEvents = (Array.isArray(catConfig) ? catConfig : []).flatMap(config => {
-    const center = worldSpan * config.ratio;
-    return [center - 100 - config.width / 2, center + config.width / 2];
-  }).sort((left, right) => left - right);
-  const visibilitySamples = visibilityEvents.flatMap((event, index) => index === visibilityEvents.length - 1 ? [event] : [event, (event + visibilityEvents[index + 1]) / 2]);
-  const simultaneousVisible = visibilitySamples.map(localWorldX => catConfig.filter(config => {
-    const center = worldSpan * config.ratio - localWorldX;
-    return center >= -config.width / 2 && center <= 100 + config.width / 2;
-  }).length);
-  check(Number.isFinite(worldSpan) && simultaneousVisible.length > 0 && Math.max(...simultaneousVisible) <= 2, "cat-scenes");
+  check(JSON.stringify(plain(catFar)) === JSON.stringify(CAT_FAR_CONFIG) &&
+    JSON.stringify(plain(catMid)) === JSON.stringify(CAT_MID_CONFIG) &&
+    JSON.stringify(plain(catNear)) === JSON.stringify(CAT_NEAR_CONFIG), "cat-scenes");
+  check(catFar?.length === 5 && catMid?.length === 9 && catNear?.length === 8 &&
+    !game.includes("BRANCH_CAT_WORLD_LIFE_CONFIG") && !game.includes(".04,.10,.16,.22,.28,.34,.40,.46,.52,.58,.64,.70,.76,.82"), "cat-scenes");
+  const catRoles = { far: catFar || [], mid: catMid || [], near: catNear || [] };
+  check(JSON.stringify(catRoles.near.map(config => config.asset)) === JSON.stringify(["cottage", "garden", "fence", "rooftop", "bridge", "plaza", "tree", "lane"]), "cat-scenes");
+  check(Object.values(catRoles).every(configs => configs.every((config, index) => index === 0 || config.asset !== configs[index - 1].asset)), "cat-scenes");
+  check(JSON.stringify(catRoles.far.map(config => config.stationIndex)) === JSON.stringify([0, 1, 2, 3, 4]) &&
+    JSON.stringify(catRoles.mid.filter(config => !config.interval).map(config => config.stationIndex)) === JSON.stringify([0, 1, 2, 3, 4]) &&
+    catRoles.mid.filter(config => config.interval).length === 4, "cat-scenes");
+  const stationDeclaration = "const BRANCH_CAT_STOP_ANCHORS=Object.freeze(Array.from({length:QN},(_,index)=>INTRO-CHECKPOINT_STOP_LEFT_VW+index*GAP));";
+  check(game.includes("const QN=5, SPAN=2860, INTRO=320, GAP=430") && game.includes("const CHECKPOINT_STOP_LEFT_VW=24") &&
+    game.includes(stationDeclaration), "cat-scenes");
+  const catSamples = [...CAT_STOP_ANCHORS, ...CAT_STOP_ANCHORS.slice(0, -1).map((anchor, index) => (anchor + CAT_STOP_ANCHORS[index + 1]) / 2)];
+  const nearest = (configs, localWorldX) => configs.reduce((best, config) =>
+    !best || Math.abs(config.anchor - localWorldX) < Math.abs(best.anchor - localWorldX) ? config : best, null);
+  const activeSamples = catSamples.map(localWorldX => Object.fromEntries(Object.entries(catRoles).map(([role, configs]) => [role, nearest(configs, localWorldX)])));
+  check(activeSamples.every(active => Object.keys(active).length === 3 && Object.values(active).every(Boolean)), "cat-scenes");
+  check(activeSamples.every(active => active.far.visibleCats + active.mid.visibleCats + active.near.visibleCats === 10), "cat-scenes");
+  check(CAT_STOP_ANCHORS.every((anchor, stationIndex) => Object.values(Object.fromEntries(Object.entries(catRoles).map(([role, configs]) => [role, nearest(configs, anchor)])))
+    .every(config => config.stationIndex === stationIndex && !config.interval)), "cat-scenes");
+  check(Object.values(catRoles).flat().every(config => config.viewportX <= 14 || config.viewportX >= 87) &&
+    catRoles.far.every(config => config.parallax <= .20) && catRoles.mid.every(config => config.parallax >= .44 && config.parallax <= .54) &&
+    catRoles.near.every(config => config.parallax >= .72), "cat-scenes");
   check(!/branch-(?:landmark|world-life)[^{]*\{[^}]*70vw/.test(css) && !css.includes("branch-landmark.is-cat"), "cat-scenes");
   const buildCat = extractFunction(game, "buildBranchCatWorldLife");
-  check(buildCat.includes('BRANCH_CAT_WORLD_LIFE_CONFIG.forEach((config,index)=>buildBranchWorldLifeSprite("cat",assets,config,index));'), "cat-scenes");
+  check(buildCat.includes('BRANCH_CAT_FAR_CONFIG.forEach((config,index)=>buildBranchWorldLifeSprite("cat",assets,{...config,layer:"far"},index));') &&
+    buildCat.includes('BRANCH_CAT_MID_CONFIG.forEach((config,index)=>buildBranchWorldLifeSprite("cat",assets,config,BRANCH_CAT_FAR_CONFIG.length+index));') &&
+    buildCat.includes('BRANCH_CAT_NEAR_CONFIG.forEach((config,index)=>buildBranchWorldLifeSprite("cat",assets,config,BRANCH_CAT_FAR_CONFIG.length+BRANCH_CAT_MID_CONFIG.length+index));'), "cat-scenes");
 
   const buildLife = extractFunction(game, "buildBranchWorldLifeSprite");
   check(buildLife.includes('sprite.dataset.stageRatio=String(config.ratio)') && buildLife.includes('sprite.dataset.depth=String(config.depth)') &&
-    buildLife.includes('sprite.style.setProperty("--life-width",config.width+"vw")') && buildLife.includes("sprite.style.zIndex=String(config.depth)"), "world-life-layer");
+    buildLife.includes("sprite.dataset.lifeRole=role") && buildLife.includes('sprite.style.setProperty("--life-width",config.width+"vw")') &&
+    buildLife.includes("sprite.style.zIndex=String(config.depth)"), "world-life-layer");
+  check(buildLife.includes('sprite.dataset.travelLimit=String(role==="far"?12:(role==="mid"?18:14))') &&
+    buildLife.includes('sprite.dataset.visibleCatTarget=String(config.visibleCats)') &&
+    buildLife.includes('viewportX:Number.isFinite(config.viewportX)?config.viewportX:50'), "cat-scenes");
   const renderPolish = extractFunction(game, "renderBranchStagePolish");
   const render = extractFunction(game, "render");
   check(renderPolish.includes("const localWorldX=worldX-o;") &&
     renderPolish.includes("branchDinoMeadow.style.backgroundPositionX=cssXFromVw(-localWorldX*BRANCH_DINO_MEADOW_PARALLAX)") &&
     renderPolish.includes("const herdWorldX=localWorldX*BRANCH_DINO_FAR_HERD_PARALLAX;") &&
-    renderPolish.includes('const x=sprite.stageId==="dino"?50+(sprite.anchor-localWorldX)*sprite.parallax:sprite.anchor-localWorldX;') &&
+    renderPolish.includes("const travel=(sprite.anchor-localWorldX)*sprite.parallax;") &&
+    renderPolish.includes('const x=(sprite.stageId==="dino"?50:sprite.viewportX)+(sprite.stageId==="cat"?clamp(travel,-sprite.travelLimit,sprite.travelLimit):travel);') &&
     !/SPAN\*sprite\.ratio-worldX/.test(renderPolish), "world-lock");
+  const inactiveSkipAt = renderPolish.indexOf("if(!active)continue;");
+  const transformAt = renderPolish.indexOf("const travel=(sprite.anchor-localWorldX)*sprite.parallax;");
+  check(renderPolish.includes("const activeCatByRole={};") &&
+    renderPolish.includes("const distance=Math.abs(sprite.anchor-localWorldX),current=activeCatByRole[sprite.role];") &&
+    renderPolish.includes("if(!current||distance<current.distance)activeCatByRole[sprite.role]={sprite,distance};") &&
+    renderPolish.includes("activeCatByRole[sprite.role].sprite===sprite") && inactiveSkipAt >= 0 && inactiveSkipAt < transformAt, "cat-scenes");
   check(render.includes("const o=origin(stg);") && render.includes("renderBranchStagePolish(now,o);"), "world-lock");
   check(!/createElement|createDocumentFragment|appendChild|replaceChildren|cloneNode|new Image/.test(renderPolish), "render-allocation");
 
   const dinoCss = firstRule(css, "body.st-dino");
-  check(dinoCss.get("--branch-horizon-y") === "0vh" && dinoCss.get("--branch-mid-y") === "0vh" &&
-    dinoCss.get("--branch-mid-height") === "56vh" && !css.includes("21.91vh") && !css.includes("-.52vh"), "dino-visibility");
+  check(dinoCss.get("--branch-horizon-y") === "-5.5vh" && dinoCss.get("--branch-mid-y") === "0vh" &&
+    dinoCss.get("--branch-mid-height") === "56vh" && dinoCss.get("--branch-mid-bottom") === "4vh" &&
+    !css.includes("21.91vh") && !css.includes("-.52vh"), "dino-visibility");
   const baseHorizon = firstRule(css, "#horizon");
   const rasterHorizon = firstRule(css, "body.branch-raster #horizon");
   const dinoHorizonHidden = cssRules(css).some(rule => rule.selectors.some(selector => selector.includes("st-dino") && selector.endsWith("#horizon")) &&
@@ -445,13 +497,21 @@ function validate(candidate) {
     lastProperty(css, "body.st-dino:not(.tunnel-interior) #branchWorldLifeLayer", "display") === "block" &&
     lastProperty(css, "body.st-dino:not(.tunnel-interior) #branchDinoMeadow", "display") === "block", "dino-visibility");
   const farCss = firstRule(css, ".branch-dino-far-herd");
-  check(farCss.get("bottom") === "28vh" && farCss.get("width") === "70vw" && farCss.get("opacity") === ".9" &&
+  check(farCss.get("bottom") === "34.5vh" && farCss.get("width") === "clamp(440px,60vw,900px)" && farCss.get("opacity") === ".72" &&
     farCss.get("pointer-events") === "none" &&
     firstRule(css, ".branch-dino-far-herd img").get("transform") === "translate3d(0,var(--dino-far-guard-y,0px),0)", "dino-visibility");
+  const nestCss = firstRule(css, "body.st-dino:not(.tunnel-interior) .branch-dino-nest-landmark");
+  check(nestCss.get("bottom") === "25.5vh" && nestCss.get("width") === "clamp(14vw,16vw,18vw)" &&
+    (game.match(/asset:"nest"/g) || []).length === 1 && (game.match(/branch_dino_fern_nest_worldfix_20260721\.webp/g) || []).length === 1, "dino-scenes");
 
   check(lastProperty(css, "body.branch-raster:not(.tunnel-interior) #branchDecorT", "display") === "block" &&
-    !cssRules(css).some(rule => rule.selectors.some(selector => selector.includes("st-cat") && selector.endsWith("#branchDecorT")) && rule.declarations.get("display")?.includes("none")), "cat-world");
+    lastProperty(css, "body.st-dino:not(.tunnel-interior) #branchDecorT", "display") === "none!important" &&
+    lastProperty(css, "body.st-cat:not(.tunnel-interior) #branchDecorT", "display") === "none!important", "cat-world");
   check(lastProperty(css, "body.st-cat:not(.tunnel-interior) #branchWorldLifeLayer", "display") === "block", "cat-world");
+  check(firstRule(css, "body.st-cat:not(.tunnel-interior) .branch-world-life.is-cat").get("opacity") === "0" &&
+    firstRule(css, "body.st-cat:not(.tunnel-interior) .branch-cat-population--far").get("z-index") === "1!important" &&
+    firstRule(css, "body.st-cat:not(.tunnel-interior) .branch-cat-population--mid").get("z-index") === "3!important" &&
+    firstRule(css, "body.st-cat:not(.tunnel-interior) .branch-cat-population--near").get("z-index") === "4!important", "cat-world");
 
   const ground = firstRule(css, "#groundT");
   const world = firstRule(css, "#world");
@@ -487,14 +547,15 @@ function validate(candidate) {
   const reducedMotion = extractBalancedAfter(css, "@media (prefers-reduced-motion:reduce)", "{", "}");
   check(reducedMotion.includes(".branch-snow-particle{left:var(--snow-rest-left)!important;top:var(--snow-rest-top)!important;animation:none!important;") &&
     !reducedMotion.includes(".branch-fire-hotspot:not(:first-child)") &&
-    reducedMotion.includes(".branch-fire-ember{display:none!important}"), "motion-night");
+    reducedMotion.includes(".branch-fire-ember-field,.branch-fire-crater-ember{display:none!important}"), "motion-night");
   const branchNight = firstRule(css, "body.branch-raster.branch-night");
   check(branchNight.get("--branch-polish-brightness") === ".68" && branchNight.get("--branch-snow-opacity") === ".74", "motion-night");
   check(firstRule(css, ".branch-dino-far-herd img").get("filter")?.includes("var(--branch-polish-brightness)") &&
     firstRule(css, ".branch-world-life img").get("filter")?.includes("var(--branch-polish-brightness)"), "motion-night");
 
-  check(html.match(/styles\.css\?v=([^"']+)/)?.[1] === TOKEN && html.match(/js\/game\.js\?v=([^"']+)/)?.[1] === TOKEN, "query-sw");
-  check(new RegExp(`const CACHE_VERSION = ${SW_VERSION};`).test(sw) && /\/\/ v2315:/.test(sw), "query-sw");
+  check(html.match(/styles\.css\?v=([^"']+)/)?.[1] === TOKEN && html.match(/data\/quiz-art\.js\?v=([^"']+)/)?.[1] === TOKEN &&
+    html.match(/js\/game\.js\?v=([^"']+)/)?.[1] === TOKEN, "query-sw");
+  check(new RegExp(`const CACHE_VERSION = ${SW_VERSION};`).test(sw), "query-sw");
   const critical = criticalAssetSet(sw);
   const canonicalPaths = CANONICAL.map(asset => `/assets/images/nazonazo-tunnel/${asset.name}`);
   check(critical instanceof Set && canonicalPaths.filter(assetPath => critical.has(assetPath)).length === 0, "sw-critical");
@@ -575,40 +636,55 @@ const mutations = [
   { name: "old dino middle URL", expected: "asset-urls", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, "branch_dino_mid_open_cutout_loop_20260721.webp", "branch_dino_mid_cutout_loop_20260720.webp") }) },
   { name: "old cat foreground yarn URL", expected: "asset-urls", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, "branch_cat_foreground_no_yarn_cutout_loop_20260721.webp", "branch_cat_foreground_cutout_loop_20260720.webp") }) },
   { name: "old cat decor yarn URL", expected: "asset-urls", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, "branch_cat_decor_no_yarn_cutout_loop_20260721.webp", "branch_cat_decor_cutout_loop_20260720.webp") }) },
-  { name: "old dino landmark URL", expected: "asset-urls", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, "branch_dino_far_herd_cutout_20260721.webp", "branch_dino_life_landmark_cutout_20260720.webp") }) },
   { name: "old cat landmark URL", expected: "asset-urls", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, "branch_cat_cottage_life_cutout_20260721.webp", "branch_cat_cats_landmark_cutout_20260720.webp") }) },
-  { name: "dino far herd speed too fast", expected: "dino-scenes", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, "const BRANCH_DINO_FAR_HERD_PARALLAX=.075;", "const BRANCH_DINO_FAR_HERD_PARALLAX=.35;") }) },
-  { name: "dino life scene removed", expected: "dino-scenes", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, ' Object.freeze({asset:"trex",ratio:.78,width:15,bottom:20,scale:.84,depth:4,parallax:.55,sourceWidth:876,guard:16})\n', "") }) },
-  { name: "dino ratios concentrated", expected: "dino-scenes", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, 'asset:"sauropod",ratio:.62', 'asset:"sauropod",ratio:.47') }) },
+  { name: "dino far herd speed too fast", expected: "dino-scenes", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, "const BRANCH_DINO_FAR_HERD_PARALLAX=.06;", "const BRANCH_DINO_FAR_HERD_PARALLAX=.35;") }) },
+  { name: "dino life scene removed", expected: "dino-scenes", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, ' Object.freeze({asset:"trex",ratio:.90,width:16,bottom:19,scale:.84,depth:4,parallax:.70,sourceWidth:876,guard:16,role:"near"})\n', "") }) },
+  { name: "dino far role becomes near", expected: "dino-scenes", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, 'asset:"waterhole",ratio:.12,width:32,bottom:24,scale:.90,depth:2,parallax:.22,sourceWidth:1533,guard:16,role:"far"', 'asset:"waterhole",ratio:.12,width:32,bottom:24,scale:.90,depth:2,parallax:.22,sourceWidth:1533,guard:16,role:"near"') }) },
+  { name: "dino ratios concentrated", expected: "dino-scenes", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, 'asset:"sauropod",ratio:.59', 'asset:"sauropod",ratio:.47') }) },
   { name: "dino far herd pool shrinks", expected: "dino-scenes", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, "const BRANCH_DINO_FAR_HERD_POOL_SIZE=3;", "const BRANCH_DINO_FAR_HERD_POOL_SIZE=2;") }) },
+  { name: "dino nest duplicated", expected: "dino-scenes", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, 'asset:"parasaurolophus",ratio:.33', 'asset:"nest",ratio:.33') }) },
   { name: "absolute global worldX", expected: "world-lock", mutate: c => ({ ...c, game: mutateFunction(c.game, "renderBranchStagePolish", "const localWorldX=worldX-o;", "const localWorldX=worldX;") }) },
-  { name: "cat count drops to thirteen", expected: "cat-scenes", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, ' Object.freeze({asset:"plaza",ratio:.82,width:11,bottom:18,scale:.86,depth:4,sourceWidth:1488,guard:12})\n', "") }) },
-  { name: "cat adjacent scene repeats", expected: "cat-scenes", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, 'Object.freeze({asset:"garden",ratio:.10', 'Object.freeze({asset:"cottage",ratio:.10') }) },
-  { name: "cat reuse gap collapses", expected: "cat-scenes", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, 'asset:"cottage",ratio:.52', 'asset:"cottage",ratio:.35') }) },
-  { name: "cat travel interval loses variety", expected: "cat-scenes", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, 'asset:"garden",ratio:.10', 'asset:"garden",ratio:.13') }) },
-  { name: "cat simultaneous scenes exceed two", expected: "cat-scenes", mutate: c => ({ ...c, game: replaceExactlyOnce(replaceExactlyOnce(c.game, 'asset:"garden",ratio:.10', 'asset:"garden",ratio:.041'), 'asset:"fence",ratio:.16', 'asset:"fence",ratio:.042') }) },
-  { name: "cat world span collapses scene spacing", expected: "cat-scenes", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, "SPAN=2860", "SPAN=286") }) },
+  { name: "cat far station removed", expected: "cat-scenes", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, ' Object.freeze({asset:"farTownA",anchor:BRANCH_CAT_STOP_ANCHORS[4],width:52,bottom:27,scale:.92,depth:1,parallax:.09,sourceWidth:1568,guard:16,role:"far",viewportX:13,stationIndex:4,visibleCats:5})\n', "") }) },
+  { name: "cat middle interval removed", expected: "cat-scenes", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, "length:QN*2-1", "length:QN*2-2") }) },
+  { name: "cat near scene removed", expected: "cat-scenes", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, ' Object.freeze({asset:"lane",anchor:BRANCH_CAT_STOP_ANCHORS[4],width:21,bottom:18,scale:.92,depth:4,parallax:.74,sourceWidth:1366,guard:16,role:"near",viewportX:10,stationIndex:4,visibleCats:2,flip:true})\n', "") }) },
+  { name: "cat adjacent far scene repeats", expected: "cat-scenes", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, 'Object.freeze({asset:"farTownB",anchor:BRANCH_CAT_STOP_ANCHORS[1]', 'Object.freeze({asset:"farTownA",anchor:BRANCH_CAT_STOP_ANCHORS[1]') }) },
+  { name: "cat density target drops", expected: "cat-scenes", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, "viewportX:12,stationIndex:0,visibleCats:5", "viewportX:12,stationIndex:0,visibleCats:4") }) },
+  { name: "cat station anchor collapses", expected: "cat-scenes", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, 'asset:"farTownB",anchor:BRANCH_CAT_STOP_ANCHORS[1]', 'asset:"farTownB",anchor:BRANCH_CAT_STOP_ANCHORS[0]') }) },
+  { name: "cat near asset repeats", expected: "cat-scenes", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, 'Object.freeze({asset:"garden",anchor:BRANCH_CAT_STOP_ANCHORS[0]+GAP/2', 'Object.freeze({asset:"cottage",anchor:BRANCH_CAT_STOP_ANCHORS[0]+GAP/2') }) },
+  { name: "cat active selector loses role", expected: "cat-scenes", mutate: c => ({ ...c, game: mutateFunction(c.game, "renderBranchStagePolish", "const distance=Math.abs(sprite.anchor-localWorldX),current=activeCatByRole[sprite.role];", 'const distance=Math.abs(sprite.anchor-localWorldX),current=activeCatByRole.far;') }) },
+  { name: "cat inactive sprites keep transforming", expected: "cat-scenes", mutate: c => ({ ...c, game: mutateFunction(c.game, "renderBranchStagePolish", "if(!active)continue;", 'if(!active)sprite.el.style.transform="";') }) },
+  { name: "cat loses train-safe viewport offset", expected: "world-lock", mutate: c => ({ ...c, game: mutateFunction(c.game, "renderBranchStagePolish", 'const x=(sprite.stageId==="dino"?50:sprite.viewportX)+(sprite.stageId==="cat"?clamp(travel,-sprite.travelLimit,sprite.travelLimit):travel);', 'const x=50+(sprite.stageId==="cat"?clamp(travel,-sprite.travelLimit,sprite.travelLimit):travel);') }) },
+  { name: "cat far travel limit expands", expected: "cat-scenes", mutate: c => ({ ...c, game: mutateFunction(c.game, "buildBranchWorldLifeSprite", 'sprite.dataset.travelLimit=String(role==="far"?12:(role==="mid"?18:14));', 'sprite.dataset.travelLimit=String(role==="far"?20:(role==="mid"?18:14));') }) },
   { name: "legacy cat 70vw billboard", expected: "cat-scenes", mutate: c => ({ ...c, css: replaceExactlyOnce(c.css, "\n.branch-world-life{position:absolute;", "\n.branch-world-life.is-cat{width:clamp(320px,70vw,860px)}\n.branch-world-life{position:absolute;") }) },
-  { name: "dino old horizon offset", expected: "dino-visibility", mutate: c => ({ ...c, css: replaceExactlyOnce(c.css, "body.st-dino{--branch-horizon-y:0vh;", "body.st-dino{--branch-horizon-y:21.91vh;") }) },
-  { name: "dino horizon hidden", expected: "dino-visibility", mutate: c => ({ ...c, css: replaceExactlyOnce(c.css, "body.st-dino{--branch-horizon-y:0vh;", "body.st-dino #horizon{display:none!important}\nbody.st-dino{--branch-horizon-y:0vh;") }) },
-  { name: "dino horizon opacity zero important", expected: "dino-visibility", mutate: c => ({ ...c, css: replaceExactlyOnce(c.css, "body.st-dino{--branch-horizon-y:0vh;", "body.st-dino #horizon{opacity:0!important}\nbody.st-dino{--branch-horizon-y:0vh;") }) },
+  { name: "dino old horizon offset", expected: "dino-visibility", mutate: c => ({ ...c, css: replaceExactlyOnce(c.css, "body.st-dino{--branch-horizon-y:-5.5vh;", "body.st-dino{--branch-horizon-y:21.91vh;") }) },
+  { name: "dino horizon hidden", expected: "dino-visibility", mutate: c => ({ ...c, css: replaceExactlyOnce(c.css, "body.st-dino{--branch-horizon-y:-5.5vh;", "body.st-dino #horizon{display:none!important}\nbody.st-dino{--branch-horizon-y:-5.5vh;") }) },
+  { name: "dino horizon opacity zero important", expected: "dino-visibility", mutate: c => ({ ...c, css: replaceExactlyOnce(c.css, "body.st-dino{--branch-horizon-y:-5.5vh;", "body.st-dino #horizon{opacity:0!important}\nbody.st-dino{--branch-horizon-y:-5.5vh;") }) },
   { name: "dino middle height returns to 100", expected: "dino-visibility", mutate: c => ({ ...c, css: replaceExactlyOnce(c.css, "--branch-mid-height:56vh;", "--branch-mid-height:100%;") }) },
-  { name: "world life layer z7", expected: "world-life-layer", mutate: c => ({ ...c, css: replaceExactlyOnce(c.css, "#branchWorldLifeLayer{z-index:4}", "#branchWorldLifeLayer{z-index:7}") }) },
+  { name: "dino far herd returns to billboard", expected: "dino-visibility", mutate: c => ({ ...c, css: replaceExactlyOnce(c.css, "width:clamp(440px,60vw,900px)", "width:70vw") }) },
+  { name: "dino nest moves onto rail", expected: "dino-scenes", mutate: c => ({ ...c, css: replaceExactlyOnce(c.css, ".branch-dino-nest-landmark{bottom:25.5vh;", ".branch-dino-nest-landmark{bottom:12vh;") }) },
+  { name: "dino decor shown again", expected: "cat-world", mutate: c => ({ ...c, css: replaceExactlyOnce(c.css, "body.st-dino:not(.tunnel-interior) #branchDecorT,", "body.st-dino:not(.tunnel-interior) #branchDecorT_REMOVED,") }) },
+  { name: "cat decor shown again", expected: "cat-world", mutate: c => ({ ...c, css: replaceExactlyOnce(c.css, "body.st-cat:not(.tunnel-interior) #branchDecorT{display:none!important", "body.st-cat:not(.tunnel-interior) #branchDecorT_REMOVED{display:none!important") }) },
+  { name: "cat inactive CSS visible", expected: "cat-world", mutate: c => ({ ...c, css: replaceExactlyOnce(c.css, ".branch-world-life.is-cat{opacity:0;", ".branch-world-life.is-cat{opacity:1;") }) },
+  { name: "world life layer z7", expected: "world-life-layer", mutate: c => ({ ...c, css: replaceExactlyOnce(c.css, "#branchEffectFar{z-index:1}#branchWorldLifeLayer{z-index:4}#branchEffectMid{z-index:6}", "#branchEffectFar{z-index:1}#branchWorldLifeLayer{z-index:7}#branchEffectMid{z-index:6}") }) },
   { name: "world life pointer becomes auto", expected: "world-life-layer", mutate: c => ({ ...c, css: replaceExactlyOnce(c.css, ".branch-stage-effect-layer,#branchWorldLifeLayer{position:absolute;inset:0;display:none;overflow:hidden;contain:layout paint;pointer-events:none}", ".branch-stage-effect-layer,#branchWorldLifeLayer{position:absolute;inset:0;display:none;overflow:hidden;contain:layout paint;pointer-events:auto}") }) },
   { name: "global critical preload", expected: "sw-critical", mutate: c => ({ ...c, sw: replaceExactlyOnce(c.sw, "const CRITICAL_ASSETS_IMAGES = [", `const CRITICAL_ASSETS_IMAGES = [\n  '/assets/images/nazonazo-tunnel/${CANONICAL[0].name}',`) }) },
   { name: "wrong dino cat polish preload", expected: "preload-scope", mutate: c => ({ ...c, game: mutateFunction(c.game, "preloadBranchStagePolish", "const assets=st&&BRANCH_STAGE_POLISH_ASSETS[st.id];", "const assets=st&&BRANCH_STAGE_POLISH_ASSETS.cat;") }) },
   { name: "extra global polish preload", expected: "preload-scope", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, "\nfunction stageIndexById", "\npreloadBranchStagePolish({id:\"cat\"});\nfunction stageIndexById") }) },
-  { name: "cat decor hidden again", expected: "cat-world", mutate: c => ({ ...c, css: replaceExactlyOnce(c.css, "body.branch-raster:not(.tunnel-interior) #branchDecorT{display:block}", "body.branch-raster:not(.tunnel-interior) #branchDecorT{display:block}\nbody.branch-raster.st-cat #branchDecorT{display:none!important}") }) },
+  { name: "reduced motion keeps ember field", expected: "motion-night", mutate: c => ({ ...c, css: replaceExactlyOnce(c.css, ".branch-fire-ember-field,.branch-fire-crater-ember{display:none!important}", ".branch-fire-crater-ember{display:none!important}") }) },
   { name: "render allocates DOM", expected: "render-allocation", mutate: c => ({ ...c, game: mutateFunction(c.game, "renderBranchStagePolish", " const localWorldX=worldX-o;", ' document.createElement("span");\n const localWorldX=worldX-o;') }) },
-  { name: "world life DOM old id", expected: "world-life-layer", mutate: c => ({ ...c, html: replaceExactlyOnce(c.html, '<div id="branchWorldLifeLayer" aria-hidden="true"></div>', '<div id="branchLandmarkLayer" aria-hidden="true"></div>') }) }
+  { name: "world life DOM old id", expected: "world-life-layer", mutate: c => ({ ...c, html: replaceExactlyOnce(c.html, '<div id="branchWorldLifeLayer" aria-hidden="true"></div>', '<div id="branchLandmarkLayer" aria-hidden="true"></div>') }) },
+  { name: "HTML token rolls back", expected: "query-sw", mutate: c => ({ ...c, html: replaceExactlyOnce(c.html, "styles.css?v=20260721-1409", "styles.css?v=20260721-1408") }) },
+  { name: "service worker version rolls back", expected: "query-sw", mutate: c => ({ ...c, sw: replaceExactlyOnce(c.sw, "const CACHE_VERSION = 2316;", "const CACHE_VERSION = 2315;") }) }
 ];
 
 async function main() {
   const provenance = await validateCanonicalAndProvenance();
   const baseline = validate(sources);
-  assert.deepEqual(baseline.errors, [], "1407 dino/cat world-density baseline contract must pass");
+  assert.deepEqual(baseline.errors, [], "1409 dino/cat world-density baseline contract must pass");
   assert.equal(baseline.checkCount, EXPECTED_VALIDATE_CHECKS,
     `EXPECTED_VALIDATE_CHECKS must match measured static contracts (${baseline.checkCount})`);
+  assert.equal(mutations.length, EXPECTED_MUTATIONS,
+    `mutation inventory must remain exact (${mutations.length}/${EXPECTED_MUTATIONS})`);
   mutations.forEach(mutation => {
     const result = validate(mutation.mutate(sources));
     assert.deepEqual(result.errors, [mutation.expected],

@@ -18,10 +18,10 @@ const sources = Object.freeze({
 
 const STAGE_IDS = Object.freeze(["snow", "fire", "dino", "toy", "cat", "fantasy", "sky", "ruins"]);
 const LAYER_KEYS = Object.freeze(["sky", "horizon", "mid", "ground", "fg", "decor"]);
-const TOKEN = "20260721-1408";
-const SW_VERSION = 2315;
+const TOKEN = "20260721-1409";
+const SW_VERSION = 2316;
 const THREE_MIB = 3 * 1024 * 1024;
-const EXPECTED_VALIDATE_CHECKS = 146;
+const EXPECTED_VALIDATE_CHECKS = 143;
 const CANONICAL = Object.freeze([
   Object.freeze({ name: "effect_snowflake_particle_20260720.webp", bytes: 339906, width: 792, height: 927, sha256: "e2288efcadbf3ab0c16dde0a6d4c2fd167560dbf941cf2e1712ac12a801f6ce6" }),
   Object.freeze({ name: "effect_diamond_dust_particle_20260720.webp", bytes: 31940, width: 341, height: 364, sha256: "2ddda0ab3c410debfa117b3ff1d0bb04c6c9571d27df40da1c9745b285dd2ff1" }),
@@ -54,16 +54,18 @@ const EXTRA_URLS = Object.freeze({
     diamond: "../assets/images/nazonazo-tunnel/effect_diamond_dust_particle_20260720.webp"
   }),
   fire: Object.freeze({
+    volcano: "../assets/images/nazonazo-tunnel/branch_fire_distant_volcano_worldfix_20260721.webp",
     flame: "../assets/images/nazonazo-tunnel/effect_fire_flame_particle_a_depthfix_20260721.webp",
     ember: "../assets/images/nazonazo-tunnel/effect_fire_ember_particle_depthfix_20260721.webp"
   }),
   dino: Object.freeze({
-    farHerd: "../assets/images/nazonazo-tunnel/branch_dino_far_herd_cutout_20260721.webp",
-    waterhole: "../assets/images/nazonazo-tunnel/branch_dino_waterhole_cutout_20260721.webp",
-    stegosaurus: "../assets/images/nazonazo-tunnel/branch_dino_stegosaurus_family_cutout_20260721.webp",
-    parasaurolophus: "../assets/images/nazonazo-tunnel/branch_dino_parasaurolophus_herd_cutout_20260721.webp",
-    sauropod: "../assets/images/nazonazo-tunnel/branch_dino_sauropod_clearing_cutout_20260721.webp",
-    trex: "../assets/images/nazonazo-tunnel/branch_dino_trex_glimpse_cutout_20260721.webp"
+    farHerd: "../assets/images/nazonazo-tunnel/branch_dino_far_herd_cutout_worldfix_20260721.webp",
+    waterhole: "../assets/images/nazonazo-tunnel/branch_dino_waterhole_cutout_worldfix_20260721.webp",
+    stegosaurus: "../assets/images/nazonazo-tunnel/branch_dino_stegosaurus_cutout_worldfix_20260721.webp",
+    parasaurolophus: "../assets/images/nazonazo-tunnel/branch_dino_parasaurolophus_cutout_worldfix_20260721.webp",
+    sauropod: "../assets/images/nazonazo-tunnel/branch_dino_sauropod_cutout_worldfix_20260721.webp",
+    trex: "../assets/images/nazonazo-tunnel/branch_dino_trex_cutout_worldfix_20260721.webp",
+    nest: "../assets/images/nazonazo-tunnel/branch_dino_fern_nest_worldfix_20260721.webp"
   }),
   cat: Object.freeze({
     cottage: "../assets/images/nazonazo-tunnel/branch_cat_cottage_life_cutout_20260721.webp",
@@ -73,14 +75,18 @@ const EXTRA_URLS = Object.freeze({
     bridge: "../assets/images/nazonazo-tunnel/branch_cat_bridge_life_cutout_20260721.webp",
     plaza: "../assets/images/nazonazo-tunnel/branch_cat_plaza_life_cutout_20260721.webp",
     tree: "../assets/images/nazonazo-tunnel/branch_cat_tree_life_cutout_20260721.webp",
-    lane: "../assets/images/nazonazo-tunnel/branch_cat_lane_life_cutout_20260721.webp"
+    lane: "../assets/images/nazonazo-tunnel/branch_cat_lane_life_cutout_20260721.webp",
+    farTownA: "../assets/images/nazonazo-tunnel/branch_cat_far_town_a_worldfix_20260721.webp",
+    farTownB: "../assets/images/nazonazo-tunnel/branch_cat_far_town_b_worldfix_20260721.webp",
+    midGardenA: "../assets/images/nazonazo-tunnel/branch_cat_mid_garden_a_worldfix_20260721.webp",
+    midLaneB: "../assets/images/nazonazo-tunnel/branch_cat_mid_lane_b_worldfix_20260721.webp"
   })
 });
 
 const STAGE_Y = Object.freeze({
   snow: Object.freeze(["18.57vh", "18.07vh"]),
-  fire: Object.freeze(["-6.5vh", "2vh"]),
-  dino: Object.freeze(["0vh", "0vh"]),
+  fire: Object.freeze(["0vh", "0vh"]),
+  dino: Object.freeze(["-5.5vh", "0vh"]),
   toy: Object.freeze(["11.51vh", "-15.84vh"]),
   cat: Object.freeze(["24.15vh", "19.82vh"]),
   fantasy: Object.freeze(["-20vh", "8.99vh"]),
@@ -89,10 +95,10 @@ const STAGE_Y = Object.freeze({
 });
 const STAGE_GEOMETRY = Object.freeze({
   snow: Object.freeze({ decorHeight: "20vh", decorBottom: "11.5vh", fgHeight: "19.9vh" }),
-  fire: Object.freeze({ decorHeight: "8vh", decorBottom: "17vh", fgHeight: "12vh" }),
-  dino: Object.freeze({ decorHeight: "11.4vh", decorBottom: "11.5vh", fgHeight: "22vh" }),
+  fire: Object.freeze({ decorHeight: "0vh", decorBottom: "0vh", fgHeight: "13.5vh" }),
+  dino: Object.freeze({ decorHeight: "0vh", decorBottom: "11.5vh", fgHeight: "22vh" }),
   toy: Object.freeze({ decorHeight: "20vh", decorBottom: "17.08vh", fgHeight: "22vh" }),
-  cat: Object.freeze({ decorHeight: "20vh", decorBottom: "11.5vh", fgHeight: "16.4vh" }),
+  cat: Object.freeze({ decorHeight: "0vh", decorBottom: "11.5vh", fgHeight: "16.4vh" }),
   fantasy: Object.freeze({ decorHeight: "8vh", decorBottom: "38vh", fgHeight: "20vh" }),
   sky: Object.freeze({ decorHeight: "20vh", decorBottom: "11.5vh", fgHeight: "22vh" }),
   ruins: Object.freeze({ decorHeight: "17.1vh", decorBottom: "11.5vh", fgHeight: "17.7vh" })
@@ -212,10 +218,8 @@ function sceneDirectChildIds(html) {
 
 function expectedBaseAsset(stageId, key) {
   const depthFix = {
-    "fire.horizon": "../assets/images/nazonazo-tunnel/branch_fire_horizon_cutout_loop_depthfix_20260721.webp",
-    "fire.mid": "../assets/images/nazonazo-tunnel/branch_fire_mid_cutout_loop_depthfix_20260721.webp",
-    "fire.fg": "../assets/images/nazonazo-tunnel/branch_fire_foreground_cutout_loop_depthfix_20260721.webp",
-    "fire.decor": "../assets/images/nazonazo-tunnel/branch_fire_decor_cutout_depthfix_20260721.webp",
+    "fire.mid": "../assets/images/nazonazo-tunnel/branch_fire_woodland_basalt_mid_loop_worldfix_20260721.webp",
+    "fire.fg": "../assets/images/nazonazo-tunnel/branch_fire_magma_river_fg_loop_worldfix_20260721.webp",
     "dino.meadow": "../assets/images/nazonazo-tunnel/branch_dino_meadow_loop_depthfix_20260721.webp",
     "fantasy.horizon": "../assets/images/nazonazo-tunnel/branch_fantasy_horizon_cutout_loop_depthfix_v4_20260721.webp",
     "fantasy.mid": "../assets/images/nazonazo-tunnel/branch_fantasy_mid_cutout_loop_depthfix_v4_20260721.webp",
@@ -315,12 +319,13 @@ function validate(candidate) {
   STAGE_IDS.forEach(stageId => {
     const stageSource = extractObjectAfter(assetsSource, `\n ${stageId}:`);
     const entries = parseOwnStringEntries(stageSource);
-    const stageKeys = stageId === "dino" ? [...LAYER_KEYS, "meadow"] : LAYER_KEYS;
+    const stageKeys = stageId === "fire" ? ["sky", "mid", "ground", "fg"] :
+      (stageId === "dino" ? ["sky", "horizon", "mid", "ground", "fg", "meadow"] : LAYER_KEYS);
     check(JSON.stringify(entries.map(entry => entry[0])) === JSON.stringify(stageKeys), "base-assets");
     entries.forEach(entry => baseUrls.push(entry[1]));
     stageKeys.forEach(key => check(entries.some(entry => entry[0] === key && entry[1] === expectedBaseAsset(stageId, key)), stageId === "toy" ? "toy-assets" : "base-assets"));
   });
-  check(baseUrls.length === 49 && new Set(baseUrls).size === 49, "base-assets");
+  check(baseUrls.length === 46 && new Set(baseUrls).size === 46, "base-assets");
   check(!game.includes("branch_toy_mid_cutout_loop_20260720.webp") && !game.includes("branch_toy_decor_cutout_20260720.webp"), "toy-assets");
 
   const extrasSource = extractObjectAfter(game, "const BRANCH_STAGE_POLISH_ASSETS=");
@@ -332,9 +337,9 @@ function validate(candidate) {
     const stageSource = expected === EXTRA_URLS[stageId] ? extractObjectAfter(extrasSource, `\n ${stageId}:Object.freeze(`) : "";
     const entries = parseOwnStringEntries(stageSource);
     check(JSON.stringify(Object.fromEntries(entries)) === JSON.stringify(expected), "extra-assets");
-    stageTotals[stageId] = (stageId === "dino" ? 7 : 6) + Object.keys(expected).length;
+    stageTotals[stageId] = (stageId === "fire" ? 4 : 6) + Object.keys(expected).length;
   });
-  check(JSON.stringify(stageTotals) === JSON.stringify({ snow: 8, fire: 8, dino: 13, toy: 6, cat: 14, fantasy: 6, sky: 6, ruins: 6 }), "preload-totals");
+  check(JSON.stringify(stageTotals) === JSON.stringify({ snow: 8, fire: 7, dino: 13, toy: 6, cat: 18, fantasy: 6, sky: 6, ruins: 6 }), "preload-totals");
   const polishPreload = extractFunction(game, "preloadBranchStagePolish");
   check(polishPreload.includes("const assets=st&&BRANCH_STAGE_POLISH_ASSETS[st.id]") &&
     polishPreload.includes("Object.values(assets).forEach") && !polishPreload.includes("Object.values(BRANCH_STAGE_POLISH_ASSETS)"), "preload-scope");
@@ -379,7 +384,7 @@ function validate(candidate) {
       context.preloadPolish({ id: "snow" });
       preloadVm.repeat = constructed.length === 2 && context.polishCache.size === 2;
       context.preloadPolish({ id: "fire" });
-      preloadVm.fire = constructed.length === 4 && context.polishCache.size === 4 &&
+      preloadVm.fire = constructed.length === 5 && context.polishCache.size === 5 &&
         JSON.stringify(constructed.slice(2).map(image => image.src)) === JSON.stringify(Object.values(EXTRA_URLS.fire));
     } catch {
       // Individual checks below retain stable failure codes for mutation probes.
@@ -407,53 +412,59 @@ function validate(candidate) {
     [...rule.declarations.keys()].some(property => forbiddenSnowProperties.has(property))), "snow-image-only");
 
   const buildFire = extractFunction(game, "buildBranchFire");
-  check(game.includes("const BRANCH_FIRE_FLAME_SPACING_VW=42;") && game.includes("const BRANCH_FIRE_FLAME_POOL_SIZE=5;") &&
-    game.includes("const BRANCH_FIRE_EMBER_SPACING_VW=18;") && game.includes("const BRANCH_FIRE_EMBER_DESKTOP_POOL_SIZE=8;") &&
-    game.includes("const BRANCH_FIRE_EMBER_MOBILE_POOL_SIZE=7;") && game.includes("const BRANCH_FIRE_REDUCED_X_VW=Object.freeze([12,50,88]);"), "fire-counts");
-  check(buildFire.includes('const flameCount=reduced?BRANCH_FIRE_REDUCED_X_VW.length:BRANCH_FIRE_FLAME_POOL_SIZE;') &&
-    buildFire.includes('const emberCount=reduced?0:(density==="mobile"?BRANCH_FIRE_EMBER_MOBILE_POOL_SIZE:BRANCH_FIRE_EMBER_DESKTOP_POOL_SIZE);') &&
-    buildFire.includes("period:BRANCH_FIRE_FLAME_SPACING_VW*flameCount") &&
-    buildFire.includes("period:BRANCH_FIRE_EMBER_SPACING_VW*emberCount") &&
-    buildFire.includes('branchImage(assets.flame,"branch-fire-art")') && buildFire.includes('branchImage(assets.ember,"branch-fire-ember-art")'), "fire-counts");
-  check((buildFire.match(/for\(let /g) || []).length === 2 && buildFire.includes("if(reduced)sprite.dataset.staticX") &&
-    buildFire.includes('branchEffectMid.dataset.hotspotCount=String(flameCount)') &&
-    buildFire.includes('branchEffectMid.dataset.emberCount=String(emberCount)'), "fire-counts");
+  const fireVentConfig = extractArrayAfter(game, "const BRANCH_FIRE_VENT_TERRAIN_CONFIG=Object.freeze(");
+  const fireVentEntries = [...fireVentConfig.matchAll(/cycle:(\d+),phase:([.\d]+)/g)]
+    .map(match => [Number(match[1]), Number(match[2])]);
+  check(JSON.stringify(fireVentEntries) === JSON.stringify([[0, .29], [2, .76], [5, .29], [6, .76], [10, .29], [13, .76], [18, .29]]) &&
+    game.includes("const BRANCH_FIRE_MAGMA_PARALLAX=1.07;") && game.includes("const BRANCH_FIRE_VOLCANO_PARALLAX=.03;") &&
+    !game.includes("BRANCH_FIRE_FLAME_POOL_SIZE") && !game.includes("BRANCH_FIRE_EMBER_DESKTOP_POOL_SIZE"), "fire-counts");
+  check(buildFire.includes("BRANCH_FIRE_VENT_TERRAIN_CONFIG.forEach((config,index)=>{") &&
+    buildFire.includes('branchImage(assets.flame,"branch-fire-flame")') && buildFire.includes('branchImage(assets.ember,"branch-fire-ember-art")') &&
+    buildFire.includes("cycle:config.cycle,phase:config.phase") && buildFire.includes("const emberCount=reduced?0:"), "fire-counts");
+  check(buildFire.includes('branchEffectFar.dataset.landmarkCount="1"') &&
+    buildFire.includes('branchEffectMid.dataset.hotspotCount=String(BRANCH_FIRE_VENT_TERRAIN_CONFIG.length)') &&
+    buildFire.includes('branchEffectMid.dataset.ventCount=String(BRANCH_FIRE_VENT_TERRAIN_CONFIG.length)') &&
+    buildFire.includes('branchEffectMid.dataset.emberCount=String(emberTotal)'), "fire-counts");
 
   const dinoLifeConfig = extractArrayAfter(game, "const BRANCH_DINO_WORLD_LIFE_CONFIG=Object.freeze(");
-  const catLifeConfig = extractArrayAfter(game, "const BRANCH_CAT_WORLD_LIFE_CONFIG=Object.freeze(");
+  const catFarConfig = extractArrayAfter(game, "const BRANCH_CAT_FAR_CONFIG=Object.freeze(");
+  const catNearConfig = extractArrayAfter(game, "const BRANCH_CAT_NEAR_CONFIG=Object.freeze(");
   const dinoLifeEntries = [...dinoLifeConfig.matchAll(/asset:"([a-z]+)",ratio:([.\d]+)/g)].map(match => [match[1], Number(match[2])]);
-  const catLifeEntries = [...catLifeConfig.matchAll(/asset:"([a-z]+)",ratio:([.\d]+)/g)].map(match => [match[1], Number(match[2])]);
+  const catFarCount = (catFarConfig.match(/Object\.freeze\(\{/g) || []).length;
+  const catNearCount = (catNearConfig.match(/Object\.freeze\(\{/g) || []).length;
   const buildDinoLife = extractFunction(game, "buildBranchDinoWorldLife");
   const buildCatLife = extractFunction(game, "buildBranchCatWorldLife");
   const buildWorldLife = extractFunction(game, "buildBranchWorldLifeSprite");
   const buildPolish = extractFunction(game, "buildBranchStagePolish");
   const renderPolish = extractFunction(game, "renderBranchStagePolish");
   const render = extractFunction(game, "render");
-  check(JSON.stringify(dinoLifeEntries) === JSON.stringify([["waterhole", .14], ["stegosaurus", .30], ["parasaurolophus", .46], ["sauropod", .62], ["trex", .78]]) &&
-    game.includes("const BRANCH_DINO_MEADOW_PARALLAX=.12;") && game.includes("const BRANCH_DINO_FAR_HERD_PARALLAX=.075;") &&
+  check(JSON.stringify(dinoLifeEntries) === JSON.stringify([["waterhole", .12], ["parasaurolophus", .33], ["nest", .47], ["sauropod", .59], ["stegosaurus", .76], ["trex", .90]]) &&
+    game.includes("const BRANCH_DINO_MEADOW_PARALLAX=.10;") && game.includes("const BRANCH_DINO_FAR_HERD_PARALLAX=.06;") &&
     game.includes("const BRANCH_DINO_FAR_HERD_SPACING_VW=115;") && game.includes("const BRANCH_DINO_FAR_HERD_POOL_SIZE=3;") &&
     (buildDinoLife.match(/document\.createElement\("span"\)/g) || []).length === 1 &&
     buildPolish.includes('st.id==="dino"') && !game.includes("BRANCH_LANDMARK_PROGRESS"), "landmark-count");
-  check(JSON.stringify(catLifeEntries) === JSON.stringify([["cottage", .04], ["garden", .10], ["fence", .16], ["rooftop", .22], ["bridge", .28], ["plaza", .34], ["tree", .40], ["lane", .46], ["cottage", .52], ["garden", .58], ["fence", .64], ["rooftop", .70], ["bridge", .76], ["plaza", .82]]) &&
-    buildCatLife.includes('BRANCH_CAT_WORLD_LIFE_CONFIG.forEach((config,index)=>buildBranchWorldLifeSprite("cat",assets,config,index));') &&
+  check(catFarCount === 5 && catNearCount === 8 && game.includes("const BRANCH_CAT_MID_CONFIG=Object.freeze(Array.from({length:QN*2-1}") &&
+    buildCatLife.includes("BRANCH_CAT_FAR_CONFIG.forEach") && buildCatLife.includes("BRANCH_CAT_MID_CONFIG.forEach") &&
+    buildCatLife.includes("BRANCH_CAT_NEAR_CONFIG.forEach") && !game.includes("BRANCH_CAT_WORLD_LIFE_CONFIG") &&
     buildPolish.includes('st.id==="cat"'), "landmark-count");
   const syncCutoutGuards = extractFunction(game, "syncBranchCutoutGuards");
   const syncOneCutoutGuard = extractFunction(game, "syncOneBranchCutoutGuard");
   check(game.includes("const BRANCH_CUTOUT_GUARD_PX=12;") &&
-    dinoLifeConfig.includes("sourceWidth:1533,guard:16") && catLifeConfig.includes("sourceWidth:1263,guard:16") &&
+    dinoLifeConfig.includes("sourceWidth:1533,guard:16") && catNearConfig.includes("sourceWidth:1263,guard:16") &&
     buildWorldLife.includes("guard:config.guard") && buildDinoLife.includes("sourceWidth:1894,guard:16,scale:1") &&
     syncCutoutGuards.includes("branchWorldLifeSprites.forEach(syncOneBranchCutoutGuard)") &&
     syncOneCutoutGuard.includes("const guard=width*sprite.guard/sprite.sourceWidth*(sprite.scale||1);") &&
     syncOneCutoutGuard.includes('sprite.img.style.setProperty(sprite.guardVar,guard.toFixed(2)+"px")'), "cutout-guard");
   check(renderPolish.includes("const localWorldX=worldX-o;") &&
     renderPolish.includes("const herdWorldX=localWorldX*BRANCH_DINO_FAR_HERD_PARALLAX;") &&
-    renderPolish.includes("const x=sprite.stageId===\"dino\"?50+(sprite.anchor-localWorldX)*sprite.parallax:sprite.anchor-localWorldX;") &&
-    renderPolish.includes("const raw=sprite.poolIndex*sprite.spacing+sprite.phase-localWorldX;") &&
+    renderPolish.includes('const x=(sprite.stageId==="dino"?50:sprite.viewportX)+(sprite.stageId==="cat"?clamp(travel,-sprite.travelLimit,sprite.travelLimit):travel);') &&
+    renderPolish.includes("const anchor=(sprite.cycle+sprite.phase)*magmaPeriod;") &&
+    renderPolish.includes("const x=anchor-localWorldX*BRANCH_FIRE_MAGMA_PARALLAX;") &&
     !/SPAN\*[^;]+\.ratio-worldX/.test(renderPolish) && render.includes("const o=origin(stg);") &&
     render.includes("renderBranchStagePolish(now,o);"), "world-lock");
   check(lastProperty(css, "body.branch-raster:not(.tunnel-interior) #branchDecorT", "display") === "block" &&
-    !cssRules(css).some(rule => rule.selectors.some(selector => selector.includes("st-cat") && selector.endsWith("#branchDecorT")) &&
-      rule.declarations.get("display")?.includes("none")), "cat-decor");
+    cssRules(css).some(rule => rule.selectors.some(selector => selector.includes("st-cat") && selector.endsWith("#branchDecorT")) &&
+      rule.declarations.get("display") === "none!important" && rule.declarations.get("background-image") === "none!important"), "cat-decor");
 
   const syncPolish = extractFunction(game, "syncBranchStagePolishState");
   const enterTunnel = extractFunction(game, "enterTunnelInterior");
@@ -480,8 +491,8 @@ function validate(candidate) {
     reducedMotion.includes(".branch-snow-particle img{animation:none!important;") &&
     reducedMotion.includes(".branch-stage-effect-layer .branch-snow-particle:nth-child(n+3){display:none!important}"), "motion-safety");
   check(!reducedMotion.includes(".branch-fire-hotspot:not(:first-child)") &&
-    reducedMotion.includes(".branch-fire-hotspot img{animation:none!important;") &&
-    reducedMotion.includes(".branch-fire-ember{display:none!important}"), "motion-safety");
+    reducedMotion.includes(".branch-fire-flame{animation:none!important;") &&
+    reducedMotion.includes(".branch-fire-ember-field,.branch-fire-crater-ember{display:none!important}"), "motion-safety");
 
   Object.entries(STAGE_Y).forEach(([stageId, values]) => {
     const declarations = firstRule(css, `body.st-${stageId}`);
@@ -525,20 +536,21 @@ function validate(candidate) {
     if (!rule.declarations.has("filter")) return;
     rule.selectors.filter(selector => selector.includes("branch-night")).forEach(selector => {
       const target = selector.match(/(#[A-Za-z][\w-]*)$/)?.[1] || "";
+      if (!target) return;
       nightFilteredTargets.push(target);
       check(allowedNightTargets.has(target), "night-filter");
       check(rule.declarations.get("filter") === nightFilterValue, "night-filter");
     });
   });
   check(JSON.stringify([...new Set(nightFilteredTargets)].sort()) === JSON.stringify([...allowedNightTargets].sort()), "night-filter");
-  check(firstRule(css, ".branch-fire-hotspot img").get("filter")?.includes("var(--branch-polish-brightness)") &&
+  check(firstRule(css, ".branch-fire-flame").get("filter")?.includes("var(--branch-polish-brightness)") &&
     firstRule(css, ".branch-dino-far-herd img").get("filter")?.includes("var(--branch-polish-brightness)") &&
     firstRule(css, ".branch-world-life img").get("filter")?.includes("var(--branch-polish-brightness)"), "night-filter");
 
   const styleToken = html.match(/styles\.css\?v=([^"']+)/)?.[1];
   const gameToken = html.match(/js\/game\.js\?v=([^"']+)/)?.[1];
   check(styleToken === TOKEN && gameToken === TOKEN, "query-sync");
-  check(new RegExp(`const CACHE_VERSION = ${SW_VERSION};`).test(sw) && /\/\/ v2315:/.test(sw) && /\/\/ v2314:/.test(sw), "sw-version");
+  check(new RegExp(`const CACHE_VERSION = ${SW_VERSION};`).test(sw) && /\/\/ v2316:/.test(sw) && /\/\/ v2315:/.test(sw) && /\/\/ v2314:/.test(sw), "sw-version");
   const critical = criticalAssetSet(sw);
   const canonicalPrecachePaths = CANONICAL.map(asset => `/assets/images/nazonazo-tunnel/${asset.name}`);
   check(critical instanceof Set && canonicalPrecachePaths.every(assetPath => !critical.has(assetPath)), "sw-precache");
@@ -653,26 +665,28 @@ const mutations = [
     }
   },
   {
-    name: "fire flame pool shrinks",
+    name: "fire terrain vent schedule shrinks",
     expected: "fire-counts",
     mutate(candidate) {
       return { ...candidate, game: replaceExactlyOnce(candidate.game,
-        "const BRANCH_FIRE_FLAME_POOL_SIZE=5;",
-        "const BRANCH_FIRE_FLAME_POOL_SIZE=4;") };
+        "Object.freeze({cycle:18,phase:.29,width:4.8",
+        "Object.freeze({cycle:13,phase:.29,width:4.8") };
     }
   },
   {
     name: "fire absolute worldX",
     expected: "world-lock",
     mutate(candidate) {
-      return { ...candidate, game: mutateAfter(candidate.game, "branchFireSprites.forEach(sprite=>{", "sprite.phase-localWorldX", "sprite.phase-worldX") };
+      return { ...candidate, game: mutateAfter(candidate.game, "branchFireSprites.forEach(sprite=>{", "anchor-localWorldX*BRANCH_FIRE_MAGMA_PARALLAX", "anchor-worldX*BRANCH_FIRE_MAGMA_PARALLAX") };
     }
   },
   {
     name: "world life z7",
     expected: "dom-layers",
     mutate(candidate) {
-      return { ...candidate, css: replaceExactlyOnce(candidate.css, "#branchWorldLifeLayer{z-index:4}", "#branchWorldLifeLayer{z-index:7}") };
+      return { ...candidate, css: replaceExactlyOnce(candidate.css,
+        "#branchEffectFar{z-index:1}#branchWorldLifeLayer{z-index:4}#branchEffectMid{z-index:6}",
+        "#branchEffectFar{z-index:1}#branchWorldLifeLayer{z-index:7}#branchEffectMid{z-index:6}") };
     }
   },
   {
@@ -683,12 +697,12 @@ const mutations = [
     }
   },
   {
-    name: "cat decor hidden",
+    name: "cat retired decor becomes visible",
     expected: "cat-decor",
     mutate(candidate) {
       return { ...candidate, css: replaceExactlyOnce(candidate.css,
-        "body.branch-raster:not(.tunnel-interior) #branchDecorT{display:block}",
-        "body.branch-raster:not(.tunnel-interior) #branchDecorT{display:block}\nbody.branch-raster.st-cat #branchDecorT{display:none!important}") };
+        "body.st-cat:not(.tunnel-interior) #branchDecorT{display:none!important;background-image:none!important}",
+        "body.st-cat:not(.tunnel-interior) #branchDecorT{display:block!important;background-image:none!important}") };
     }
   },
   {

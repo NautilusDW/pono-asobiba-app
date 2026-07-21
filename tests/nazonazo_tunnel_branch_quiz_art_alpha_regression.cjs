@@ -19,7 +19,7 @@ const sources = Object.freeze({
   html: read("nazonazo-tunnel/index.html")
 });
 
-const TOKEN = "20260721-1408";
+const TOKEN = "20260721-1409";
 const REGISTRY_VERSION = "20260721-1407";
 const THREE_MIB = 3 * 1024 * 1024;
 const ASSET_ROOT = "assets/images/nazonazo-tunnel/quiz-art";
@@ -409,9 +409,9 @@ const mutations = [
     questions = replaceExactlyOnce(questions, 'a:["__swap__","__swap__"]', 'a:["🧩","ぱずる"]');
     return { ...c, questions };
   } },
-  { name: "quiz registry token stale", expected: "token-sync", mutate: c => ({ ...c, html: replaceExactlyOnce(c.html, 'data/quiz-art.js?v=20260721-1408', 'data/quiz-art.js?v=20260721-1407') }) },
-  { name: "game token stale", expected: "token-sync", mutate: c => ({ ...c, html: replaceExactlyOnce(c.html, 'js/game.js?v=20260721-1408', 'js/game.js?v=20260721-1407') }) },
-  { name: "style token stale", expected: "token-sync", mutate: c => ({ ...c, html: replaceExactlyOnce(c.html, 'styles.css?v=20260721-1408', 'styles.css?v=20260721-1407') }) },
+  { name: "quiz registry token stale", expected: "token-sync", mutate: c => ({ ...c, html: replaceExactlyOnce(c.html, 'data/quiz-art.js?v=20260721-1409', 'data/quiz-art.js?v=20260721-1408') }) },
+  { name: "game token stale", expected: "token-sync", mutate: c => ({ ...c, html: replaceExactlyOnce(c.html, 'js/game.js?v=20260721-1409', 'js/game.js?v=20260721-1408') }) },
+  { name: "style token stale", expected: "token-sync", mutate: c => ({ ...c, html: replaceExactlyOnce(c.html, 'styles.css?v=20260721-1409', 'styles.css?v=20260721-1408') }) },
   { name: "hidden image consumes layout", expected: "css-hidden", mutate: c => ({ ...c, css: replaceExactlyOnce(c.css, '.quiz-art-image[hidden]{display:none!important}', '.quiz-art-image[hidden]{visibility:hidden}') }) },
   { name: "quiz holder gains white tile", expected: "css-holder", mutate: c => ({ ...c, css: replaceExactlyOnce(c.css, '.quiz-art{position:relative;', '.quiz-art{background:#fff;position:relative;') }) },
   { name: "renderer bypasses exact registry", expected: "runtime-helper", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, 'const src=typeof srcOverride==="string"&&srcOverride?srcOverride:resolveQuizArt(emoji,label);', 'const src="";') }) },

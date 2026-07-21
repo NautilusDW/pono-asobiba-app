@@ -22,10 +22,10 @@ const sha256 = bytes => crypto.createHash("sha256").update(bytes).digest("hex");
 const compact = value => value.replace(/\s+/g, "");
 
 const ASSETS = Object.freeze([
-  { stage: "fire", key: "horizon", name: "branch_fire_horizon_cutout_loop_depthfix_20260721.webp", width: 3548, height: 887, bytes: 493774, sha256: "3c86658dfff71dbd07a119e29245dc36aa6bf8b56a865926ec370191ebfbc44c", alpha: true, loop: true, candidate: "tmp/alpha_pending/1408a-nazonazo-fire-alpha-v2/candidates/branch_fire_horizon_cutout_loop_alpha_v2.webp" },
-  { stage: "fire", key: "mid", name: "branch_fire_mid_cutout_loop_depthfix_20260721.webp", width: 3548, height: 887, bytes: 2075228, sha256: "3b3c633f513b8634437f58a87df46ff2131e8daffb5fcf4e00f58d468e12563a", alpha: true, loop: true, candidate: "tmp/alpha_pending/1408a-nazonazo-fire-alpha-v2/candidates/branch_fire_mid_cutout_loop_alpha_v2.webp" },
-  { stage: "fire", key: "fg", name: "branch_fire_foreground_cutout_loop_depthfix_20260721.webp", width: 3548, height: 318, bytes: 1203184, sha256: "294d0794012a1cd64d176c3c1856e98d58d8b3e1825b9ba0dba7971b3feb0589", alpha: true, loop: true, candidate: "tmp/alpha_pending/1408a-nazonazo-fire-alpha-v2/candidates/branch_fire_foreground_cutout_loop_alpha_v2.webp" },
-  { stage: "fire", key: "decor", name: "branch_fire_decor_cutout_depthfix_20260721.webp", width: 3548, height: 218, bytes: 427106, sha256: "801421e2aec33b7a0cde272fa51c1327d1e0d14b7fe128c85746a3e7249e3021", alpha: true, loop: true, candidate: "tmp/alpha_pending/1408a-nazonazo-fire-alpha-v2/candidates/branch_fire_decor_cutout_alpha_v2.webp" },
+  { stage: "fire", key: "horizon", name: "branch_fire_horizon_cutout_loop_depthfix_20260721.webp", width: 3548, height: 887, bytes: 493774, sha256: "3c86658dfff71dbd07a119e29245dc36aa6bf8b56a865926ec370191ebfbc44c", alpha: true, loop: true, active: false, candidate: "tmp/alpha_pending/1408a-nazonazo-fire-alpha-v2/candidates/branch_fire_horizon_cutout_loop_alpha_v2.webp" },
+  { stage: "fire", key: "mid", name: "branch_fire_mid_cutout_loop_depthfix_20260721.webp", width: 3548, height: 887, bytes: 2075228, sha256: "3b3c633f513b8634437f58a87df46ff2131e8daffb5fcf4e00f58d468e12563a", alpha: true, loop: true, active: false, candidate: "tmp/alpha_pending/1408a-nazonazo-fire-alpha-v2/candidates/branch_fire_mid_cutout_loop_alpha_v2.webp" },
+  { stage: "fire", key: "fg", name: "branch_fire_foreground_cutout_loop_depthfix_20260721.webp", width: 3548, height: 318, bytes: 1203184, sha256: "294d0794012a1cd64d176c3c1856e98d58d8b3e1825b9ba0dba7971b3feb0589", alpha: true, loop: true, active: false, candidate: "tmp/alpha_pending/1408a-nazonazo-fire-alpha-v2/candidates/branch_fire_foreground_cutout_loop_alpha_v2.webp" },
+  { stage: "fire", key: "decor", name: "branch_fire_decor_cutout_depthfix_20260721.webp", width: 3548, height: 218, bytes: 427106, sha256: "801421e2aec33b7a0cde272fa51c1327d1e0d14b7fe128c85746a3e7249e3021", alpha: true, loop: true, active: false, candidate: "tmp/alpha_pending/1408a-nazonazo-fire-alpha-v2/candidates/branch_fire_decor_cutout_alpha_v2.webp" },
   { stage: "fire", key: "flame", name: "effect_fire_flame_particle_a_depthfix_20260721.webp", width: 640, height: 863, bytes: 406580, sha256: "9b52d614385f5fbad7fb3384996801206bd7ae92062c0ce84c353b6de4d547d7", alpha: true, loop: false, candidate: "tmp/alpha_pending/1408a-nazonazo-fire-alpha-v2/candidates/effect_fire_flame_particle_a_alpha_v2.webp" },
   { stage: "fire", key: "ember", name: "effect_fire_ember_particle_depthfix_20260721.webp", width: 407, height: 422, bytes: 70944, sha256: "3af58af80ab989b8334a18a63a2463917ba9d9e3888d622e45b6606ee26c4889", alpha: true, loop: false, candidate: "tmp/alpha_pending/1408a-nazonazo-fire-alpha-v2/candidates/effect_fire_ember_particle_alpha_v2.webp" },
   { stage: "dino", key: "meadow", name: "branch_dino_meadow_loop_depthfix_20260721.webp", width: 3200, height: 800, bytes: 2710152, sha256: "530af1024821e8606cb8810f8801f85d88737a23399f0d5b686572a4c7361ff9", alpha: false, loop: true, candidate: "tmp/alpha_pending/1408b-nazonazo-fantasy-alpha-v2/dino-meadow-loop/candidate/dino_meadow_loop_3200x800_lossless.webp" },
@@ -108,7 +108,7 @@ async function validate(candidateSources, assetSpecs = ASSETS) {
     check(inspected.bytes.length === asset.bytes && inspected.bytes.length < THREE_MIB && sha256(inspected.bytes) === asset.sha256, "asset-hash");
     check(inspected.metadata.format === "webp" && inspected.metadata.width === asset.width && inspected.metadata.height === asset.height &&
       inspected.metadata.hasAlpha === asset.alpha && inspected.metadata.channels === (asset.alpha ? 4 : 3), "asset-alpha-seam");
-    check(game.includes(asset.name), "asset-hash");
+    check(asset.active === false || game.includes(asset.name), "asset-hash");
     if (asset.alpha) {
       let transparent = 0;
       let visible = 0;
@@ -155,35 +155,33 @@ async function validate(candidateSources, assetSpecs = ASSETS) {
 
   const fireRenderAt = gameCompact.indexOf("branchFireSprites.forEach(sprite=>{");
   const fireRenderSource = fireRenderAt >= 0 ? gameCompact.slice(fireRenderAt, fireRenderAt + 900) : "";
-  const flameCoverage = moduloViewportCoverage(5, 42, 0, 4);
-  const emberDesktopCoverage = moduloViewportCoverage(8, 18, 9, 1.5);
-  const emberMobileCoverage = moduloViewportCoverage(7, 18, 9, 1.5);
-  check(gameCompact.includes("constBRANCH_FIRE_FLAME_SPACING_VW=42;") && gameCompact.includes("constBRANCH_FIRE_FLAME_POOL_SIZE=5;") &&
-    gameCompact.includes("constBRANCH_FIRE_EMBER_SPACING_VW=18;") && gameCompact.includes("constBRANCH_FIRE_EMBER_DESKTOP_POOL_SIZE=8;") &&
-    gameCompact.includes("constBRANCH_FIRE_EMBER_MOBILE_POOL_SIZE=7;") &&
-    fireRenderSource.includes("constraw=sprite.poolIndex*sprite.spacing+sprite.phase-localWorldX;") &&
-    fireRenderSource.includes("x=((raw%sprite.period)+sprite.period)%sprite.period;") &&
+  const ventAnchors = [...game.matchAll(/Object\.freeze\(\{cycle:(\d+),phase:([.\d]+),width:/g)]
+    .map(match => [Number(match[1]), Number(match[2])]);
+  check(JSON.stringify(ventAnchors) === JSON.stringify([[0, .29], [2, .76], [5, .29], [6, .76], [10, .29], [13, .76], [18, .29]]) &&
+    gameCompact.includes("constBRANCH_FIRE_MAGMA_PARALLAX=1.07;") &&
+    !gameCompact.includes("BRANCH_FIRE_FLAME_POOL_SIZE") && !gameCompact.includes("BRANCH_FIRE_EMBER_DESKTOP_POOL_SIZE") &&
+    fireRenderSource.includes("constanchor=(sprite.cycle+sprite.phase)*magmaPeriod;") &&
+    fireRenderSource.includes("constx=anchor-localWorldX*BRANCH_FIRE_MAGMA_PARALLAX;") &&
     fireRenderSource.includes('sprite.el.style.transform="translate3d("+cssXFromVw(x)+",0,0)translateX(-50%)";') &&
-    flameCoverage?.minVisible === 2 && flameCoverage.maxVisible === 3 &&
-    emberDesktopCoverage?.minVisible >= 3 && emberMobileCoverage?.minVisible >= 3, "fire-modulo");
-  check(cssCompact.includes("body.st-fire#fgT{z-index:5}") && cssCompact.includes("#branchEffectMid{z-index:6}") &&
+    !fireRenderSource.includes("%magmaPeriod") && !fireRenderSource.includes("poolIndex"), "fire-modulo");
+  check(cssCompact.includes("body.st-fire:not(.tunnel-interior)#fgT{z-index:5;") && cssCompact.includes("#branchEffectMid{z-index:6}") &&
     cssCompact.includes("body.st-fire:not(.tunnel-interior)#branchEffectMid") &&
-    cssCompact.includes(".branch-fire-hotspot,.branch-fire-ember{position:absolute;left:0;bottom:12.5vh;") &&
-    cssCompact.includes(".branch-fire-hotspotimg{animation:branchFireFlicker"), "fire-modulo");
+    cssCompact.includes(".branch-fire-vent{--fire-vent-width:clamp(30px,5.1vmin,52px);") &&
+    cssCompact.includes("bottom:calc(var(--branch-fg-height)-var(--fire-vent-cover))!important;z-index:2;") &&
+    cssCompact.includes(".branch-fire-flame{display:block;width:100%;"), "fire-modulo");
 
   const meadowCssAt = cssCompact.indexOf("#branchDinoMeadow{");
   const meadowCss = meadowCssAt >= 0 ? cssCompact.slice(meadowCssAt, meadowCssAt + 800) : "";
   check(gameCompact.includes('document.body.classList.toggle("branch-night",branchRaster&&loop%2===1);') &&
     gameCompact.includes('functionprefersReducedMotionActive(){try{return!!(window.matchMedia&&window.matchMedia("(prefers-reduced-motion:reduce)").matches);}catch(_){returnfalse;}}') &&
     gameCompact.includes('functionbranchPolishDensity(){returnprefersReducedMotionActive()?"reduced":') &&
-    gameCompact.includes("staticX:reduced?BRANCH_FIRE_REDUCED_X_VW[index]:null") &&
-    fireRenderSource.includes("letx=sprite.staticX;if(x===null){") &&
-    gameCompact.includes("constBRANCH_FIRE_REDUCED_X_VW=Object.freeze([12,50,88]);") &&
+    gameCompact.includes("constemberCount=reduced?0:") &&
+    gameCompact.includes("BRANCH_FIRE_VENT_TERRAIN_CONFIG.forEach((config,index)=>{") &&
     cssCompact.includes("body.branch-raster.branch-night{--branch-polish-brightness:.68;--branch-polish-saturate:.78;--branch-polish-contrast:.98;--branch-polish-hue:-6deg;--branch-snow-opacity:.74}") &&
     cssCompact.includes("body.branch-raster.branch-night:not(.tunnel-interior)#branchDecorT,") &&
     meadowCss.includes("filter:brightness(var(--branch-polish-brightness))saturate(var(--branch-polish-saturate))contrast(var(--branch-polish-contrast))hue-rotate(var(--branch-polish-hue));") &&
-    cssCompact.includes(".branch-fire-hotspotimg{animation:none!important;") &&
-    cssCompact.includes(".branch-fire-ember{display:none!important}") &&
+    cssCompact.includes(".branch-fire-flame{animation:none!important;") &&
+    cssCompact.includes(".branch-fire-ember-field,.branch-fire-crater-ember{display:none!important}") &&
     !cssCompact.includes(".branch-fire-hotspot:not(:first-child)"), "night-reduced");
 
   const meadow = ASSETS.find(asset => asset.key === "meadow");
@@ -191,16 +189,16 @@ async function validate(candidateSources, assetSpecs = ASSETS) {
   check(!meadowInfo.metadata.hasAlpha && meadowInfo.metadata.channels === 3 &&
     html.indexOf('id="branchDinoMeadow"') < html.indexOf('id="horizon"') &&
     gameCompact.includes('if(branchDinoMeadow)branchDinoMeadow.style.backgroundImage=st.id==="dino"&&st.assets&&st.assets.meadow?bgUrl(st.assets.meadow):"none";') &&
-    cssCompact.includes("#branchDinoMeadow{position:absolute;left:0;right:0;bottom:0;height:45vh;z-index:0;display:none;") &&
+    cssCompact.includes("#branchDinoMeadow{position:absolute;left:0;right:0;top:52vh;bottom:auto;height:48vh;z-index:0;display:none;") &&
     cssCompact.includes("body.st-dino:not(.tunnel-interior)#branchDinoMeadow{display:block}") &&
-    gameCompact.includes("constBRANCH_DINO_MEADOW_PARALLAX=.12;") &&
-    gameCompact.includes("constBRANCH_DINO_FAR_HERD_PARALLAX=.075;") &&
+    gameCompact.includes("constBRANCH_DINO_MEADOW_PARALLAX=.10;") &&
+    gameCompact.includes("constBRANCH_DINO_FAR_HERD_PARALLAX=.06;") &&
     gameCompact.includes("constBRANCH_DINO_FAR_HERD_POOL_SIZE=3;") &&
     gameCompact.includes("branchDinoMeadow.style.backgroundPositionX=cssXFromVw(-localWorldX*BRANCH_DINO_MEADOW_PARALLAX)") &&
-    gameCompact.includes('constx=sprite.stageId==="dino"?50+(sprite.anchor-localWorldX)*sprite.parallax:sprite.anchor-localWorldX;') &&
-    gameCompact.includes('horizon.style.backgroundPositionX=cssXFromVw(-(worldX-o)*(branchStageId==="dino"?.035:.095));') &&
-    gameCompact.includes('midT.style.backgroundPositionX=cssXFromVw(-(worldX-o)*(branchStageId==="dino"?.22:.25));') &&
-    gameCompact.includes('constbranchFgRate=branchStageId==="fire"?1.15:(branchStageId==="dino"?1.25:1.35);'), "dino-meadow-parallax");
+    gameCompact.includes('consttravel=(sprite.anchor-localWorldX)*sprite.parallax;') &&
+    gameCompact.includes('constx=(sprite.stageId==="dino"?50:sprite.viewportX)+') &&
+    gameCompact.includes('constbranchMidRate=branchStageId==="fire"?.17:(branchStageId==="dino"?.18:.25);') &&
+    gameCompact.includes('constbranchFgRate=branchStageId==="fire"?BRANCH_FIRE_MAGMA_PARALLAX:(branchStageId==="dino"?1.18:1.35);'), "dino-meadow-parallax");
   const herdRenderAt = gameCompact.indexOf("branchDinoFarHerdSprites.forEach(sprite=>{");
   const herdRenderSource = herdRenderAt >= 0 ? gameCompact.slice(herdRenderAt, herdRenderAt + 700) : "";
   const herdCoverage = dinoHerdViewportCoverage(3, 115, 70);
@@ -209,8 +207,8 @@ async function validate(candidateSources, assetSpecs = ASSETS) {
     herdRenderSource.includes('sprite.el.style.transform="translate3d("+cssXFromVw(x)+",0,0)";') &&
     herdCoverage.minVisible === 1 && herdCoverage.maxVisible === 2, "dino-meadow-parallax");
   const parallaxValues = [...game.matchAll(/asset:"(?:waterhole|stegosaurus|parasaurolophus|sauropod|trex)"[^\n]+parallax:([.\d]+)/g)].map(match => Number(match[1]));
-  check(JSON.stringify(parallaxValues) === JSON.stringify([.42, .55, .42, .30, .55]) &&
-    [.035, .075, .12, .22, .30, .42, .55, 1, 1.25].every((value, index, values) => index === 0 || value > values[index - 1]), "dino-meadow-parallax");
+  check(JSON.stringify(parallaxValues) === JSON.stringify([.22, .24, .20, .62, .70]) &&
+    [.06, .10, .18, .20, .22, .24, .34, .62, .70, 1, 1.18].every((value, index, values) => index === 0 || value > values[index - 1]), "dino-meadow-parallax");
 
   let fantasyRowsPass = true;
   for (const asset of ASSETS.filter(item => item.clearFrom)) {
@@ -232,8 +230,8 @@ async function validate(candidateSources, assetSpecs = ASSETS) {
   }
   const styleToken = html.match(/styles\.css\?v=([^"']+)/)?.[1];
   const gameToken = html.match(/js\/game\.js\?v=([^"']+)/)?.[1];
-  check(fantasyRowsPass && styleToken === "20260721-1408" && gameToken === styleToken &&
-    /const CACHE_VERSION = 2315;/.test(sw) && /\/\/ v2315:/.test(sw) &&
+  check(fantasyRowsPass && styleToken === "20260721-1409" && gameToken === styleToken &&
+    /const CACHE_VERSION = 2316;/.test(sw) && /\/\/ v2316:/.test(sw) && /\/\/ v2315:/.test(sw) &&
     game.includes("branch_fantasy_horizon_cutout_loop_depthfix_v4_20260721.webp") &&
     game.includes("branch_fantasy_mid_cutout_loop_depthfix_v4_20260721.webp") &&
     !game.includes("branch_fantasy_horizon_cutout_loop_depthfix_v3_20260721.webp") &&
@@ -259,21 +257,21 @@ function replaceFirstAfter(source, marker, search, replacement) {
 }
 
 async function main() {
-  assert.deepEqual(await validate(sources), [], "1408 depth/parallax baseline must pass");
+  assert.deepEqual(await validate(sources), [], "1409 depth/parallax baseline must pass");
   const mutations = [
     { name: "canonical hash drift", code: "asset-hash", sources, assets: ASSETS.map((asset, index) => index === 0 ? { ...asset, sha256: "0".repeat(64) } : asset) },
-    { name: "fire modulo pool shrinks", code: "fire-modulo", sources: { ...sources, game: replaceOnce(sources.game, "const BRANCH_FIRE_FLAME_POOL_SIZE=5;", "const BRANCH_FIRE_FLAME_POOL_SIZE=4;") }, assets: ASSETS },
+    { name: "fire authored vent schedule collapses", code: "fire-modulo", sources: { ...sources, game: replaceOnce(sources.game, "Object.freeze({cycle:18,phase:.29,width:4.8", "Object.freeze({cycle:13,phase:.29,width:4.8") }, assets: ASSETS },
     { name: "fire modulo x is discarded offscreen", code: "fire-modulo", sources: { ...sources, game: replaceFirstAfter(sources.game, "branchFireSprites.forEach(sprite=>{", 'sprite.el.style.transform="translate3d("+cssXFromVw(x)+",0,0) translateX(-50%)";', 'sprite.el.style.transform="translate3d(-200vw,0,0)";') }, assets: ASSETS },
     { name: "night toggle removed", code: "night-reduced", sources: { ...sources, game: replaceOnce(sources.game, ' document.body.classList.toggle("branch-night",branchRaster&&loop%2===1);\n', "") }, assets: ASSETS },
     { name: "dino meadow night filter removed", code: "night-reduced", sources: { ...sources, css: replaceFirstAfter(sources.css, "#branchDinoMeadow{", "filter:brightness(var(--branch-polish-brightness)) saturate(var(--branch-polish-saturate)) contrast(var(--branch-polish-contrast)) hue-rotate(var(--branch-polish-hue));", "filter:none;") }, assets: ASSETS },
-    { name: "reduced fire rests collapse", code: "night-reduced", sources: { ...sources, game: replaceOnce(sources.game, "const BRANCH_FIRE_REDUCED_X_VW=Object.freeze([12,50,88]);", "const BRANCH_FIRE_REDUCED_X_VW=Object.freeze([50,50,50]);") }, assets: ASSETS },
-    { name: "reduced fire static bridge removed", code: "night-reduced", sources: { ...sources, game: replaceOnce(sources.game, "staticX:reduced?BRANCH_FIRE_REDUCED_X_VW[index]:null", "staticX:null") }, assets: ASSETS },
+    { name: "reduced fire keeps embers", code: "night-reduced", sources: { ...sources, game: replaceOnce(sources.game, "const emberCount=reduced?0:", "const emberCount=reduced?1:") }, assets: ASSETS },
+    { name: "reduced fire flicker resumes", code: "night-reduced", sources: { ...sources, css: replaceOnce(sources.css, ".branch-fire-flame{animation:none!important;", ".branch-fire-flame{animation:branchFireFlicker!important;") }, assets: ASSETS },
     { name: "night saturate variable removed", code: "night-reduced", sources: { ...sources, css: replaceOnce(sources.css, "--branch-polish-saturate:.78;", "") }, assets: ASSETS },
     { name: "night contrast variable removed", code: "night-reduced", sources: { ...sources, css: replaceOnce(sources.css, "--branch-polish-contrast:.98;", "") }, assets: ASSETS },
     { name: "night hue variable removed", code: "night-reduced", sources: { ...sources, css: replaceOnce(sources.css, "--branch-polish-hue:-6deg;", "") }, assets: ASSETS },
-    { name: "dino meadow joins foreground speed", code: "dino-meadow-parallax", sources: { ...sources, game: replaceOnce(sources.game, "const BRANCH_DINO_MEADOW_PARALLAX=.12;", "const BRANCH_DINO_MEADOW_PARALLAX=1.25;") }, assets: ASSETS },
+    { name: "dino meadow joins foreground speed", code: "dino-meadow-parallax", sources: { ...sources, game: replaceOnce(sources.game, "const BRANCH_DINO_MEADOW_PARALLAX=.10;", "const BRANCH_DINO_MEADOW_PARALLAX=1.18;") }, assets: ASSETS },
     { name: "dino far herd loses signed wrap", code: "dino-meadow-parallax", sources: { ...sources, game: replaceOnce(sources.game, "const x=(((raw+BRANCH_DINO_FAR_HERD_SPACING_VW)%period)+period)%period-BRANCH_DINO_FAR_HERD_SPACING_VW;", "const x=((raw%period)+period)%period;") }, assets: ASSETS },
-    { name: "fantasy cache token rolls back", code: "fantasy-baseline-token", sources: { ...sources, html: replaceOnce(sources.html, "styles.css?v=20260721-1408", "styles.css?v=20260721-1407") }, assets: ASSETS }
+    { name: "fantasy cache token rolls back", code: "fantasy-baseline-token", sources: { ...sources, html: replaceOnce(sources.html, "styles.css?v=20260721-1409", "styles.css?v=20260721-1408") }, assets: ASSETS }
   ];
   for (const mutation of mutations) {
     assert.deepEqual(await validate(mutation.sources, mutation.assets), [mutation.code], `${mutation.name}: must reject only ${mutation.code}`);
