@@ -18,8 +18,8 @@ const sources = Object.freeze({
 
 const STAGE_IDS = Object.freeze(["snow", "fire", "dino", "toy", "cat", "fantasy", "sky", "ruins"]);
 const LAYER_KEYS = Object.freeze(["sky", "horizon", "mid", "ground", "fg", "decor"]);
-const TOKEN = "20260721-1409";
-const SW_VERSION = 2316;
+const TOKEN = "20260722-1410";
+const SW_VERSION = 2317;
 const THREE_MIB = 3 * 1024 * 1024;
 const EXPECTED_VALIDATE_CHECKS = 143;
 const CANONICAL = Object.freeze([
@@ -86,7 +86,7 @@ const EXTRA_URLS = Object.freeze({
 const STAGE_Y = Object.freeze({
   snow: Object.freeze(["18.57vh", "18.07vh"]),
   fire: Object.freeze(["0vh", "0vh"]),
-  dino: Object.freeze(["-5.5vh", "0vh"]),
+  dino: Object.freeze(["-8.2vh", "0vh"]),
   toy: Object.freeze(["11.51vh", "-15.84vh"]),
   cat: Object.freeze(["24.15vh", "19.82vh"]),
   fantasy: Object.freeze(["-20vh", "8.99vh"]),
@@ -429,7 +429,7 @@ function validate(candidate) {
   const dinoLifeConfig = extractArrayAfter(game, "const BRANCH_DINO_WORLD_LIFE_CONFIG=Object.freeze(");
   const catFarConfig = extractArrayAfter(game, "const BRANCH_CAT_FAR_CONFIG=Object.freeze(");
   const catNearConfig = extractArrayAfter(game, "const BRANCH_CAT_NEAR_CONFIG=Object.freeze(");
-  const dinoLifeEntries = [...dinoLifeConfig.matchAll(/asset:"([a-z]+)",ratio:([.\d]+)/g)].map(match => [match[1], Number(match[2])]);
+  const dinoLifeEntries = [...dinoLifeConfig.matchAll(/asset:"([a-z]+)",anchor:(\d+)/g)].map(match => [match[1], Number(match[2])]);
   const catFarCount = (catFarConfig.match(/Object\.freeze\(\{/g) || []).length;
   const catNearCount = (catNearConfig.match(/Object\.freeze\(\{/g) || []).length;
   const buildDinoLife = extractFunction(game, "buildBranchDinoWorldLife");
@@ -438,26 +438,30 @@ function validate(candidate) {
   const buildPolish = extractFunction(game, "buildBranchStagePolish");
   const renderPolish = extractFunction(game, "renderBranchStagePolish");
   const render = extractFunction(game, "render");
-  check(JSON.stringify(dinoLifeEntries) === JSON.stringify([["waterhole", .12], ["parasaurolophus", .33], ["nest", .47], ["sauropod", .59], ["stegosaurus", .76], ["trex", .90]]) &&
+  check(JSON.stringify(dinoLifeEntries) === JSON.stringify([["waterhole", 368], ["parasaurolophus", 820], ["nest", 980], ["sauropod", 1335], ["stegosaurus", 1620], ["trex", 2050]]) &&
     game.includes("const BRANCH_DINO_MEADOW_PARALLAX=.10;") && game.includes("const BRANCH_DINO_FAR_HERD_PARALLAX=.06;") &&
     game.includes("const BRANCH_DINO_FAR_HERD_SPACING_VW=115;") && game.includes("const BRANCH_DINO_FAR_HERD_POOL_SIZE=3;") &&
     (buildDinoLife.match(/document\.createElement\("span"\)/g) || []).length === 1 &&
     buildPolish.includes('st.id==="dino"') && !game.includes("BRANCH_LANDMARK_PROGRESS"), "landmark-count");
-  check(catFarCount === 5 && catNearCount === 8 && game.includes("const BRANCH_CAT_MID_CONFIG=Object.freeze(Array.from({length:QN*2-1}") &&
+  check(catFarCount === 5 && catNearCount === 9 && game.includes("const BRANCH_CAT_MID_CONFIG=Object.freeze(Array.from({length:QN*2-1}") &&
     buildCatLife.includes("BRANCH_CAT_FAR_CONFIG.forEach") && buildCatLife.includes("BRANCH_CAT_MID_CONFIG.forEach") &&
     buildCatLife.includes("BRANCH_CAT_NEAR_CONFIG.forEach") && !game.includes("BRANCH_CAT_WORLD_LIFE_CONFIG") &&
     buildPolish.includes('st.id==="cat"'), "landmark-count");
   const syncCutoutGuards = extractFunction(game, "syncBranchCutoutGuards");
-  const syncOneCutoutGuard = extractFunction(game, "syncOneBranchCutoutGuard");
-  check(game.includes("const BRANCH_CUTOUT_GUARD_PX=12;") &&
-    dinoLifeConfig.includes("sourceWidth:1533,guard:16") && catNearConfig.includes("sourceWidth:1263,guard:16") &&
-    buildWorldLife.includes("guard:config.guard") && buildDinoLife.includes("sourceWidth:1894,guard:16,scale:1") &&
-    syncCutoutGuards.includes("branchWorldLifeSprites.forEach(syncOneBranchCutoutGuard)") &&
-    syncOneCutoutGuard.includes("const guard=width*sprite.guard/sprite.sourceWidth*(sprite.scale||1);") &&
-    syncOneCutoutGuard.includes('sprite.img.style.setProperty(sprite.guardVar,guard.toFixed(2)+"px")'), "cutout-guard");
+  const syncGrounding = extractFunction(game, "syncBranchWorldSpriteGrounding");
+  const groundingFormula = extractFunction(game, "computeBranchWorldSpriteBottomPx");
+  check(dinoLifeConfig.includes("sourceWidth:1533,sourceHeight:722,transparentBottomPx:17,groundPlaneY:.79,groundAnchorY:.97645") &&
+    catNearConfig.includes("sourceWidth:1263,sourceHeight:974,transparentBottomPx:17,groundPlaneY:BRANCH_CAT_GROUND_PLANE_Y,groundAnchorY:.9825") &&
+    buildWorldLife.includes("groundPlaneY:config.groundPlaneY") && buildWorldLife.includes("groundAnchorY:config.groundAnchorY") &&
+    buildDinoLife.includes("sourceWidth:1894,sourceHeight:367,transparentBottomPx:BRANCH_DINO_FAR_HERD_GROUND.transparentBottomPx") &&
+    groundingFormula.includes("stageHeight*(1-groundPlaneY)-renderedHeight*(1-groundAnchorY)-occlusionPx") &&
+    syncGrounding.includes("const renderedRect=sprite.img.getBoundingClientRect();") && syncGrounding.includes("const renderedHeight=renderedRect.height,renderedWidth=renderedRect.width;") &&
+    syncCutoutGuards.includes("syncBranchWorldSpriteGroundingAll();") && !syncCutoutGuards.includes("branchWorldLifeSprites.forEach(syncOneBranchCutoutGuard)"), "grounding");
   check(renderPolish.includes("const localWorldX=worldX-o;") &&
     renderPolish.includes("const herdWorldX=localWorldX*BRANCH_DINO_FAR_HERD_PARALLAX;") &&
-    renderPolish.includes('const x=(sprite.stageId==="dino"?50:sprite.viewportX)+(sprite.stageId==="cat"?clamp(travel,-sprite.travelLimit,sprite.travelLimit):travel);') &&
+    game.includes("function projectBranchWorldSpriteX(anchor,localWorldX,parallax){") &&
+    renderPolish.includes("const x=projectBranchWorldSpriteX(sprite.anchor,localWorldX,sprite.parallax);") &&
+    !renderPolish.includes("clamp(travel") && !renderPolish.includes("activeCatByRole") &&
     renderPolish.includes("const anchor=(sprite.cycle+sprite.phase)*magmaPeriod;") &&
     renderPolish.includes("const x=anchor-localWorldX*BRANCH_FIRE_MAGMA_PARALLAX;") &&
     !/SPAN\*[^;]+\.ratio-worldX/.test(renderPolish) && render.includes("const o=origin(stg);") &&
@@ -550,7 +554,7 @@ function validate(candidate) {
   const styleToken = html.match(/styles\.css\?v=([^"']+)/)?.[1];
   const gameToken = html.match(/js\/game\.js\?v=([^"']+)/)?.[1];
   check(styleToken === TOKEN && gameToken === TOKEN, "query-sync");
-  check(new RegExp(`const CACHE_VERSION = ${SW_VERSION};`).test(sw) && /\/\/ v2316:/.test(sw) && /\/\/ v2315:/.test(sw) && /\/\/ v2314:/.test(sw), "sw-version");
+  check(new RegExp(`const CACHE_VERSION = ${SW_VERSION};`).test(sw) && /\/\/ v2317:/.test(sw) && /\/\/ v2316:/.test(sw) && /\/\/ v2315:/.test(sw), "sw-version");
   const critical = criticalAssetSet(sw);
   const canonicalPrecachePaths = CANONICAL.map(asset => `/assets/images/nazonazo-tunnel/${asset.name}`);
   check(critical instanceof Set && canonicalPrecachePaths.every(assetPath => !critical.has(assetPath)), "sw-precache");
@@ -690,10 +694,10 @@ const mutations = [
     }
   },
   {
-    name: "dino cutout source width drift",
-    expected: "cutout-guard",
+    name: "dino grounding source size drift",
+    expected: "grounding",
     mutate(candidate) {
-      return { ...candidate, game: replaceExactlyOnce(candidate.game, 'sourceWidth:1533,guard:16', 'sourceWidth:1532,guard:16') };
+      return { ...candidate, game: replaceExactlyOnce(candidate.game, 'sourceWidth:1533,sourceHeight:722', 'sourceWidth:1532,sourceHeight:722') };
     }
   },
   {

@@ -706,7 +706,9 @@
 // 5つの生活シーンを深度別速度へ分離。魔法の城を上へ出し、星の装飾だけを穏やかに明滅させる。
 // 新規11画像は選択ステージだけが読むため CRITICAL_ASSETS へ追加しない (batch:1408)。
 // v2316: なぞなぞトレインの火・恐竜・猫ステージの画像と多重スクロールを世界観に合わせて再調整 (batch:1409-world-coherence)。
-const CACHE_VERSION = 2316;
+// v2317: なぞなぞトレインの恐竜・卵・猫の実接地線を地面へ固定し、猫の建物と生活景を
+// clampなしのworld座標で連続スクロールさせる。全区間の猫密度も均等化 (batch:1410)。
+const CACHE_VERSION = 2317;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

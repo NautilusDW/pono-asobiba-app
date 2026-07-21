@@ -322,6 +322,7 @@ const rareRecords = { scores: [], stamps: [], registrations: 0, sounds: 0, confe
 const rareElement = {
   parentNode: {},
   dataset: {},
+  style: {},
   remove() { this.parentNode = null; }
 };
 const rareContext = {
@@ -333,7 +334,8 @@ const rareContext = {
   sndNew() { rareRecords.sounds += 1; },
   confetti(count) { rareRecords.confetti += count; },
   showStamp(message, kind) { rareRecords.stamps.push([message, kind]); },
-  speak(message) { rareRecords.speech.push(message); }
+  speak(message) { rareRecords.speech.push(message); },
+  setTimeout(callback) { callback(); return 1; }
 };
 vm.runInNewContext(`${collectRareEvent};this.__collectRareEvent=collectRareEvent;`, rareContext, {
   filename: "nazonazo-shared-rare-event-vm.js",

@@ -20,6 +20,7 @@ const sources = Object.freeze({
 });
 
 const TOKEN = "20260721-1409";
+const RUNTIME_TOKEN = "20260722-1410";
 const REGISTRY_VERSION = "20260721-1407";
 const THREE_MIB = 3 * 1024 * 1024;
 const ASSET_ROOT = "assets/images/nazonazo-tunnel/quiz-art";
@@ -263,10 +264,10 @@ function validate(candidate) {
   const rareRule = cssRule(candidate.css, ".rare");
   check(!holderRule.has("background") && !holderRule.has("background-color") && rareRule.get("background") === "transparent", "css-holder");
 
-  const stylesAt = candidate.html.indexOf('href="styles.css?v=' + TOKEN + '"');
+  const stylesAt = candidate.html.indexOf('href="styles.css?v=' + RUNTIME_TOKEN + '"');
   const questionsAt = candidate.html.indexOf('src="data/questions.js');
   const registryAt = candidate.html.indexOf('src="data/quiz-art.js?v=' + TOKEN + '"');
-  const gameAt = candidate.html.indexOf('src="js/game.js?v=' + TOKEN + '"');
+  const gameAt = candidate.html.indexOf('src="js/game.js?v=' + RUNTIME_TOKEN + '"');
   check(stylesAt >= 0 && questionsAt >= 0 && questionsAt < registryAt && registryAt < gameAt, "token-sync");
   return errors;
 }
@@ -410,8 +411,8 @@ const mutations = [
     return { ...c, questions };
   } },
   { name: "quiz registry token stale", expected: "token-sync", mutate: c => ({ ...c, html: replaceExactlyOnce(c.html, 'data/quiz-art.js?v=20260721-1409', 'data/quiz-art.js?v=20260721-1408') }) },
-  { name: "game token stale", expected: "token-sync", mutate: c => ({ ...c, html: replaceExactlyOnce(c.html, 'js/game.js?v=20260721-1409', 'js/game.js?v=20260721-1408') }) },
-  { name: "style token stale", expected: "token-sync", mutate: c => ({ ...c, html: replaceExactlyOnce(c.html, 'styles.css?v=20260721-1409', 'styles.css?v=20260721-1408') }) },
+  { name: "game token stale", expected: "token-sync", mutate: c => ({ ...c, html: replaceExactlyOnce(c.html, 'js/game.js?v=20260722-1410', 'js/game.js?v=20260721-1409') }) },
+  { name: "style token stale", expected: "token-sync", mutate: c => ({ ...c, html: replaceExactlyOnce(c.html, 'styles.css?v=20260722-1410', 'styles.css?v=20260721-1409') }) },
   { name: "hidden image consumes layout", expected: "css-hidden", mutate: c => ({ ...c, css: replaceExactlyOnce(c.css, '.quiz-art-image[hidden]{display:none!important}', '.quiz-art-image[hidden]{visibility:hidden}') }) },
   { name: "quiz holder gains white tile", expected: "css-holder", mutate: c => ({ ...c, css: replaceExactlyOnce(c.css, '.quiz-art{position:relative;', '.quiz-art{background:#fff;position:relative;') }) },
   { name: "renderer bypasses exact registry", expected: "runtime-helper", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, 'const src=typeof srcOverride==="string"&&srcOverride?srcOverride:resolveQuizArt(emoji,label);', 'const src="";') }) },

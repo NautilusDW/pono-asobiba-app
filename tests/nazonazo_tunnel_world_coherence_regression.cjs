@@ -18,10 +18,11 @@ const sources = Object.freeze({
   sw: read("sw.js")
 });
 
-const TOKEN = "20260721-1409";
-const SW_VERSION = 2316;
+const TOKEN = "20260722-1410";
+const QUIZ_ART_TOKEN = "20260721-1409";
+const SW_VERSION = 2317;
 const THREE_MIB = 3 * 1024 * 1024;
-const EXPECTED_VALIDATE_CHECKS = 174;
+const EXPECTED_VALIDATE_CHECKS = 175;
 const EXPECTED_MUTATIONS = 40;
 const imageRoot = path.join(root, "assets/images/nazonazo-tunnel");
 const LEGACY_FIRE = Object.freeze([
@@ -241,12 +242,13 @@ async function validate(candidateSources, candidateFixture = fixture) {
     fireRender.includes('sprite.el.dataset.worldAnchor=anchor.toFixed(3);sprite.el.dataset.worldX=anchor.toFixed(3);sprite.el.dataset.worldPeriod=magmaPeriod.toFixed(3);sprite.el.dataset.visible=visible?"true":"false"') &&
     fireRender.includes('sprite.el.style.transform="translate3d("+cssXFromVw(x)+",0,0)translateX(-50%)"'), "fire-occlusion");
   check(renderPolish.includes("constlocalWorldX=worldX-o") && gameCompact.includes("renderBranchStagePolish(now,o);") &&
-    renderPolish.includes("consttravel=(sprite.anchor-localWorldX)*sprite.parallax"), "world-lock");
+    gameCompact.includes("functionprojectBranchWorldSpriteX(anchor,localWorldX,parallax){return50+(anchor-localWorldX)*parallax;}") &&
+    renderPolish.includes("constx=projectBranchWorldSpriteX(sprite.anchor,localWorldX,sprite.parallax)") &&
+    !renderPolish.includes("clamp(travel") && !renderPolish.includes("activeCatByRole"), "world-lock");
 
   const dinoConfig = evalLiteral(extractBalancedAfter(game, "const BRANCH_DINO_WORLD_LIFE_CONFIG=Object.freeze(", "[", "]"));
   const dinoBuild = compact(extractFunction(game, "buildBranchDinoWorldLife"));
   check(Array.isArray(dinoConfig) && dinoConfig.length === 6 &&
-    JSON.stringify(dinoConfig.map(item => item.asset)) === JSON.stringify(["waterhole", "parasaurolophus", "nest", "sauropod", "stegosaurus", "trex"]) &&
     ["farHerd", "waterhole", "stegosaurus", "parasaurolophus", "sauropod", "trex", "nest"].every(key =>
       gameCompact.includes(`${key}:"../assets/images/nazonazo-tunnel/branch_dino_`)), "dino-assets");
   check(cssCompact.includes("body.st-dino:not(.tunnel-interior)#branchDecorT,") &&
@@ -254,20 +256,28 @@ async function validate(candidateSources, candidateFixture = fixture) {
     gameCompact.includes("body.st-dino") === false &&
     !game.includes('decor:"../assets/images/nazonazo-tunnel/branch_dino_decor_cutout_20260720.webp"'), "dino-decor-hidden");
   const nest = Array.isArray(dinoConfig) ? dinoConfig.filter(item => item.asset === "nest") : [];
-  check(nest.length === 1 && nest[0].ratio === .47 && nest[0].className === "branch-dino-nest-landmark" &&
-    nest[0].depth === 3 && nest[0].parallax === .34 && nest[0].role === "mid" &&
+  check(nest.length === 1 && nest[0].className === "branch-dino-nest-landmark" &&
+    nest[0].depth === 3 && nest[0].parallax === .32 && nest[0].role === "mid" &&
+    nest[0].groundPlaneY === .815 && nest[0].groundAnchorY === .98243 && nest[0].transparentBottomPx === 14 &&
     occurrenceCount(dinoBuild, 'buildBranchWorldLifeSprite("dino",assets,config,index)') === 1 &&
     !dinoBuild.includes("%") && !dinoBuild.includes("cloneNode") &&
-    cssCompact.includes("body.st-dino:not(.tunnel-interior).branch-dino-nest-landmark{bottom:25.5vh;width:clamp(14vw,16vw,18vw);max-height:28vh}"), "dino-nest-single");
+    cssCompact.includes("body.st-dino:not(.tunnel-interior).branch-dino-nest-landmark{width:var(--life-width)}") &&
+    !cssCompact.includes(".branch-dino-nest-landmark{bottom:") && !cssCompact.includes(".branch-dino-nest-landmarkimg{max-height:"), "dino-nest-single");
+  check(Array.isArray(dinoConfig) &&
+    JSON.stringify(dinoConfig.map(item => item.asset)) === JSON.stringify(["waterhole", "parasaurolophus", "nest", "sauropod", "stegosaurus", "trex"]) &&
+    JSON.stringify(dinoConfig.map(item => item.anchor)) === JSON.stringify([368, 820, 980, 1335, 1620, 2050]) &&
+    new Set(dinoConfig.map(item => item.asset)).size === 6, "dino-anchors");
   check(Array.isArray(dinoConfig) && JSON.stringify(dinoConfig.map(item => item.role)) === JSON.stringify(["far", "far", "mid", "far", "near", "near"]) &&
-    dinoConfig.filter(item => item.role === "far").every(item => item.parallax >= .20 && item.parallax <= .24) &&
-    dinoConfig.filter(item => item.role === "mid").every(item => item.parallax === .34) &&
+    JSON.stringify(dinoConfig.map(item => item.parallax)) === JSON.stringify([.14, .16, .32, .14, .62, .70]) &&
+    dinoConfig.filter(item => item.role === "far").every(item => item.layer === "far") &&
+    dinoConfig.filter(item => item.role === "mid").every(item => item.parallax === .32) &&
     dinoConfig.filter(item => item.role === "near").every(item => item.parallax >= .62 && item.parallax <= .70) &&
+    dinoConfig.every(item => Number.isFinite(item.groundPlaneY) && Number.isFinite(item.groundAnchorY) && Number.isInteger(item.transparentBottomPx)) &&
     cssCompact.includes("body.st-dino:not(.tunnel-interior).branch-world-life--far{z-index:2!important}") &&
     cssCompact.includes("body.st-dino:not(.tunnel-interior).branch-world-life--mid{z-index:3!important}") &&
     cssCompact.includes("body.st-dino:not(.tunnel-interior).branch-world-life--near{z-index:4!important}") &&
     cssCompact.includes("body.st-dino:not(.tunnel-interior).branch-dino-far-herdimg,body.st-dino:not(.tunnel-interior).branch-world-lifeimg{mix-blend-mode:multiply}"), "dino-depth-split");
-  check(cssCompact.includes("body.st-dino{--branch-horizon-y:-5.5vh;--branch-mid-y:0vh;--branch-mid-height:56vh;--branch-mid-bottom:4vh;--branch-decor-height:0vh;--branch-fg-height:22vh}") &&
+  check(cssCompact.includes("body.st-dino{--branch-horizon-y:-8.2vh;--branch-mid-y:0vh;--branch-mid-height:56vh;--branch-mid-bottom:4vh;--branch-decor-height:0vh;--branch-fg-height:22vh}") &&
     cssCompact.includes("#branchDinoMeadow{position:absolute;left:0;right:0;top:52vh;bottom:auto;height:48vh;z-index:0;") &&
     cssCompact.includes("body.st-dino:not(.tunnel-interior)#horizon{-webkit-mask-image:linear-gradient(tobottom,#0000%,#00051%,rgba(0,0,0,.72)53%,transparent56%);mask-image:linear-gradient(tobottom,#0000%,#00051%,rgba(0,0,0,.72)53%,transparent56%)}") &&
     gameCompact.includes("constBRANCH_DINO_MEADOW_PARALLAX=.10;") && gameCompact.includes("constBRANCH_DINO_FAR_HERD_PARALLAX=.06;") &&
@@ -283,33 +293,39 @@ async function validate(candidateSources, candidateFixture = fixture) {
     !game.includes("BRANCH_CAT_WORLD_LIFE_CONFIG") && !game.includes("branch_cat_foreground_cutout_loop_20260720.webp") &&
     !game.includes("branch_cat_decor_cutout_loop_20260720.webp") &&
     cssCompact.includes("body.st-cat:not(.tunnel-interior)#branchDecorT{display:none!important;background-image:none!important}"), "cat-assets");
-  check(gameCompact.includes("constBRANCH_CAT_STOP_ANCHORS=Object.freeze(Array.from({length:QN}") && farCount === 5 && nearCount === 8 &&
+  check(gameCompact.includes("constBRANCH_CAT_STOP_ANCHORS=Object.freeze(Array.from({length:QN}") && farCount === 5 && nearCount === 9 &&
     gameCompact.includes("constBRANCH_CAT_MID_CONFIG=Object.freeze(Array.from({length:QN*2-1}") &&
     JSON.stringify([...farArray.matchAll(/stationIndex:(\d)/g)].map(match => Number(match[1]))) === JSON.stringify([0, 1, 2, 3, 4]) &&
     catBuild.includes("BRANCH_CAT_FAR_CONFIG.forEach") && catBuild.includes("BRANCH_CAT_MID_CONFIG.forEach") && catBuild.includes("BRANCH_CAT_NEAR_CONFIG.forEach") &&
     catBuild.includes("branchWorldLifeLayer.dataset.catMidCount=String(BRANCH_CAT_MID_CONFIG.length)") &&
     catBuild.includes("branchWorldLifeLayer.dataset.catNearCount=String(BRANCH_CAT_NEAR_CONFIG.length)"), "cat-stations");
-  check(gameCompact.includes('role:"far",viewportX:12,stationIndex:0,visibleCats:5') &&
-    gameCompact.includes('role:"mid",viewportX:index%2?7:93,stationIndex:index%2?Math.floor(index/2):index/2,interval:index%2===1,visibleCats:3') &&
-    gameCompact.includes('role:"near",viewportX:10,stationIndex:0,visibleCats:2') &&
-    5 + 3 + 2 === 10 && farCount === 5 && occurrenceCount(gameCompact, "activeCatByRole[sprite.role]") >= 3,
+  check(gameCompact.includes('role:"far",stationIndex:0,visibleCats:5') &&
+    gameCompact.includes('role:"mid",stationIndex:index%2?Math.floor(index/2):index/2,interval:index%2===1,visibleCats:3') &&
+    gameCompact.includes('role:"near",stationIndex:0,visibleCats:2') &&
+    5 + 3 + 2 >= 8 && 5 + 3 + 2 <= 12 && farCount === 5 &&
+    occurrenceCount(gameCompact, "activeCatByRole") === 0,
   "cat-density");
-  check(cssCompact.includes(".branch-cat-population--far{bottom:clamp(25.5vh,var(--life-bottom),28vh);z-index:1!important;width:clamp(48vw,var(--life-width),56vw);") &&
-    cssCompact.includes(".branch-cat-population--mid{bottom:clamp(12.5vh,var(--life-bottom),14vh);z-index:3!important;width:clamp(30vw,var(--life-width),40vw);") &&
-    cssCompact.includes(".branch-cat-population--near{bottom:clamp(17.5vh,var(--life-bottom),22vh);z-index:4!important;width:clamp(22vw,var(--life-width),28vw);") &&
-    gameCompact.includes("parallax:index%2?.54:.44") && gameCompact.includes('travelLimit:stageId==="cat"?(role==="far"?12:(role==="mid"?18:14)):Infinity'), "cat-depth");
-  const inactiveAt = renderPolish.indexOf("if(!active)continue;");
+  check(cssCompact.includes(".branch-cat-population--far{z-index:1!important;width:var(--life-width)}") &&
+    cssCompact.includes(".branch-cat-population--mid{z-index:3!important;width:var(--life-width)}") &&
+    cssCompact.includes(".branch-cat-population--near{z-index:4!important;width:var(--life-width)}") &&
+    gameCompact.includes("constBRANCH_CAT_FAR_PARALLAX=.14,BRANCH_CAT_MID_PARALLAX=.46,BRANCH_CAT_NEAR_PARALLAX=.74") &&
+    gameCompact.includes("groundPlaneY:BRANCH_CAT_GROUND_PLANE_Y") && gameCompact.includes("groundAnchorY:") &&
+    !cssCompact.includes(".branch-cat-population--far{bottom:") && !cssCompact.includes(".branch-cat-population--farimg{max-height:"), "cat-depth");
   const transformAt = renderPolish.indexOf('sprite.el.style.transform="translate3d("+cssXFromVw(x)+",0,0)translateX(-50%)"');
-  check(renderPolish.includes("constactiveCatByRole={}") && renderPolish.includes('sprite.el.classList.toggle("is-active",active)') &&
-    renderPolish.includes('sprite.el.style.opacity=active?"1":"0"') && inactiveAt >= 0 && transformAt > inactiveAt &&
-    cssCompact.includes(".branch-world-life.is-cat{opacity:0;transition:opacity.38sease}") &&
-    cssCompact.includes('.branch-world-life.is-cat[data-active="true"]{opacity:1}'), "cat-inactive");
+  const visibleAt = renderPolish.indexOf('sprite.el.dataset.visible=visible?"true":"false"');
+  const catRenderAt = renderPolish.indexOf('if(sprite.stageId==="cat"){');
+  const catRender = catRenderAt >= 0 ? renderPolish.slice(catRenderAt, renderPolish.indexOf("}else{", catRenderAt)) : "";
+  check(transformAt >= 0 && visibleAt > transformAt &&
+    catRender.includes("consthalfWidth=sprite.halfWidthVw||0,visible=x+halfWidth>-16&&x-halfWidth<116") &&
+    catRender.includes('sprite.el.style.visibility=visible?"visible":"hidden"') &&
+    !catRender.includes("if(!active)continue") && !renderPolish.includes("is-active") &&
+    !cssCompact.includes(".branch-world-life.is-cat.is-active") && !cssCompact.includes('[data-active="true"]'), "cat-inactive");
 
   const styleToken = html.match(/styles\.css\?v=([^"']+)/)?.[1];
   const artToken = html.match(/data\/quiz-art\.js\?v=([^"']+)/)?.[1];
   const gameToken = html.match(/js\/game\.js\?v=([^"']+)/)?.[1];
-  check(styleToken === TOKEN && artToken === TOKEN && gameToken === TOKEN &&
-    new RegExp(`const CACHE_VERSION = ${SW_VERSION};`).test(sw) && /\/\/ v2316:/.test(sw) && /\/\/ v2315:/.test(sw), "query-cache");
+  check(styleToken === TOKEN && artToken === QUIZ_ART_TOKEN && gameToken === TOKEN &&
+    new RegExp(`const CACHE_VERSION = ${SW_VERSION};`).test(sw) && /\/\/ v2317:/.test(sw) && /\/\/ v2316:/.test(sw), "query-cache");
   check(cssCompact.includes("#stamp{position:absolute;left:50%;top:32%;transform:translate(-50%,-50%)scale(0);") &&
     cssCompact.includes("#stamp.ok{background:var(--good);animation:pop.9seaseforwards}") &&
     cssCompact.includes("@keyframespop{0%{opacity:0;transform:translate(-50%,-50%)scale(.55)}12%{opacity:0;transform:translate(-50%,-50%)scale(.75)}20%{opacity:1;transform:translate(-50%,-50%)scale(.9)}") &&
@@ -346,7 +362,7 @@ function fixtureMutation(name, code, mutate) {
 
 async function main() {
   const baseline = await validate(sources, fixture);
-  assert.deepEqual(baseline.errors, [], "1409 world-coherence baseline must pass");
+  assert.deepEqual(baseline.errors, [], "1410 world-coherence baseline must pass");
   assert.equal(baseline.checks, EXPECTED_VALIDATE_CHECKS, "update exact validation check count intentionally");
 
   const mutations = [
@@ -355,17 +371,17 @@ async function main() {
     fixtureMutation("non-loop is mislabeled loop", "asset-seam", value => { value.assets[3].loop = true; }),
     fixtureMutation("raw lineage hash loses its digest contract", "asset-lineage", value => { value.assets[0].rawSha256 = "invalid"; }),
     sourceMutation("runtime canonical map drifts", "game", "branch_cat_far_town_a_worldfix_20260721.webp", "branch_cat_far_town_a_worldfix_broken.webp", "asset-map-1409"),
-    sourceMutation("selected image enters SW", "sw", "const CACHE_VERSION = 2316;", "const CACHE_VERSION = 2316; // branch_cat_far_town_a_worldfix_20260721.webp", "sw-critical"),
+    sourceMutation("selected image enters SW", "sw", "const CACHE_VERSION = 2317;", "const CACHE_VERSION = 2317; // branch_cat_far_town_a_worldfix_20260721.webp", "sw-critical"),
     sourceMutation("legacy fire horizon returns", "game", "const BRANCH_FIRE_MAGMA_ASPECT=3548/177;", "const BRANCH_FIRE_MAGMA_ASPECT=3548/177; // branch_fire_horizon_cutout_loop_depthfix_20260721.webp", "fire-assets"),
     sourceMutation("legacy fire pool returns", "game", "const BRANCH_FIRE_MAGMA_PARALLAX=1.07;", "const BRANCH_FIRE_MAGMA_PARALLAX=1.07; const BRANCH_FIRE_FLAME_POOL_SIZE=5;", "fire-assets"),
     sourceMutation("volcano parallax drifts", "game", "const BRANCH_FIRE_VOLCANO_PARALLAX=.03;", "const BRANCH_FIRE_VOLCANO_PARALLAX=.30;", "fire-volcano-single"),
-    sourceMutation("query token rolls back", "html", "styles.css?v=20260721-1409", "styles.css?v=20260721-1408", "query-cache"),
+    sourceMutation("query token rolls back", "html", "styles.css?v=20260722-1410", "styles.css?v=20260721-1409", "query-cache"),
     sourceMutation("volcano becomes repeating", "game", 'landmark.dataset.loop="false";', 'landmark.dataset.loop="true";', "fire-volcano-single"),
     sourceMutation("volcano count becomes two", "game", 'branchEffectFar.dataset.landmarkCount="1";', 'branchEffectFar.dataset.landmarkCount="2";', "fire-volcano-single"),
     sourceMutation("vent cycle ordering drifts", "game", "Object.freeze({cycle:18,phase:.29,width:4.8", "Object.freeze({cycle:13,phase:.29,width:4.8", "fire-vent-anchors"),
     sourceMutation("vent phase drifts", "game", "Object.freeze({cycle:0,phase:.29,width:4.4", "Object.freeze({cycle:0,phase:.30,width:4.4", "fire-vent-anchors"),
     sourceMutation("terrain cycle DOM bridge removed", "game", "sprite.dataset.terrainCycle=String(config.cycle);", "sprite.dataset.terrainCycle='';", "fire-vent-anchors"),
-    sourceMutation("service-worker generation rolls back", "sw", "const CACHE_VERSION = 2316;", "const CACHE_VERSION = 2315;", "query-cache"),
+    sourceMutation("service-worker generation rolls back", "sw", "const CACHE_VERSION = 2317;", "const CACHE_VERSION = 2316;", "query-cache"),
     sourceMutation("vent model loses phase", "game", 'cycle:config.cycle,phase:config.phase,sourceWidth:640', 'cycle:config.cycle,phase:0,sourceWidth:640', "fire-vent-anchors"),
     sourceMutation("vent anchor calculation drifts", "game", "const anchor=(sprite.cycle+sprite.phase)*magmaPeriod;", "const anchor=sprite.cycle*magmaPeriod;", "fire-vent-anchors"),
     sourceMutation("vent terrain speed drifts", "game", "const x=anchor-localWorldX*BRANCH_FIRE_MAGMA_PARALLAX;", "const x=anchor-localWorldX;", "fire-vent-anchors"),
@@ -376,20 +392,20 @@ async function main() {
     sourceMutationAfter("fire DOM transform bridge removed", "game", "branchFireSprites.forEach(sprite=>{", 'sprite.el.style.transform="translate3d("+cssXFromVw(x)+",0,0) translateX(-50%)";', 'sprite.el.style.transform="translate3d(-200vw,0,0)";', "fire-occlusion"),
     sourceMutation("local world origin removed", "game", "const localWorldX=worldX-o;", "const localWorldX=worldX;", "world-lock"),
     sourceMutation("render origin argument removed", "game", "renderBranchStagePolish(now,o);", "renderBranchStagePolish(now,0);", "world-lock"),
-    sourceMutation("dino life key drifts", "game", 'Object.freeze({asset:"waterhole",ratio:.12', 'Object.freeze({asset:"waterholeBroken",ratio:.12', "dino-assets"),
+    sourceMutation("dino life key drifts", "game", 'Object.freeze({asset:"waterhole",anchor:368', 'Object.freeze({asset:"waterholeBroken",anchor:368', "dino-anchors"),
     sourceMutation("dino decor becomes visible", "css", "body.st-dino:not(.tunnel-interior) #branchDecorT,", "body.st-dino:not(.tunnel-interior) #branchDecorBROKEN,", "dino-decor-hidden"),
-    sourceMutation("nest station ratio drifts", "game", 'Object.freeze({asset:"nest",ratio:.47', 'Object.freeze({asset:"nest",ratio:.57', "dino-nest-single"),
+    sourceMutation("nest world anchor drifts", "game", 'Object.freeze({asset:"nest",anchor:980', 'Object.freeze({asset:"nest",anchor:1080', "dino-anchors"),
     sourceMutation("nest landmark identity removed", "game", 'className:"branch-dino-nest-landmark"', 'className:"branch-dino-nest"', "dino-nest-single"),
-    sourceMutation("nest depth drifts", "game", 'asset:"nest",ratio:.47,width:16,bottom:18.5,scale:.90,depth:3', 'asset:"nest",ratio:.47,width:16,bottom:18.5,scale:.90,depth:2', "dino-nest-single"),
-    sourceMutation("far life promoted near", "game", 'Object.freeze({asset:"waterhole",ratio:.12,width:32,bottom:24,scale:.90,depth:2,parallax:.22,sourceWidth:1533,guard:16,role:"far"})', 'Object.freeze({asset:"waterhole",ratio:.12,width:32,bottom:24,scale:.90,depth:2,parallax:.22,sourceWidth:1533,guard:16,role:"near"})', "dino-depth-split"),
+    sourceMutation("nest depth drifts", "game", 'asset:"nest",anchor:980,width:16,scale:.90,depth:3', 'asset:"nest",anchor:980,width:16,scale:.90,depth:2', "dino-nest-single"),
+    sourceMutation("far life promoted near", "game", 'groundAnchorY:.97645,occlusionPx:0,role:"far",layer:"far"', 'groundAnchorY:.97645,occlusionPx:0,role:"near",layer:"far"', "dino-depth-split"),
     sourceMutation("dino far z order drifts", "css", ".branch-world-life--far{z-index:2!important}", ".branch-world-life--far{z-index:4!important}", "dino-depth-split"),
     sourceMutation("stamp visible pop frame removed", "css", "20%{opacity:1;transform:translate(-50%,-50%) scale(.9)}", "20%{opacity:0;transform:translate(-50%,-50%) scale(.9)}", "stamp-pop"),
-    sourceMutation("dino horizon falls", "css", "--branch-horizon-y:-5.5vh", "--branch-horizon-y:21.91vh", "dino-vertical"),
+    sourceMutation("dino horizon falls", "css", "--branch-horizon-y:-8.2vh", "--branch-horizon-y:21.91vh", "dino-vertical"),
     sourceMutation("dino meadow falls", "css", "#branchDinoMeadow{position:absolute;left:0;right:0;top:52vh", "#branchDinoMeadow{position:absolute;left:0;right:0;top:62vh", "dino-vertical"),
-    sourceMutation("cat station five collapses", "game", "viewportX:13,stationIndex:4,visibleCats:5", "viewportX:13,stationIndex:3,visibleCats:5", "cat-stations"),
+    sourceMutation("cat station five collapses", "game", "stationIndex:4,visibleCats:5", "stationIndex:3,visibleCats:5", "cat-stations"),
     sourceMutation("cat midpoint count collapses", "game", "Array.from({length:QN*2-1}", "Array.from({length:QN}", "cat-stations"),
-    sourceMutation("cat density target drops", "game", 'role:"far",viewportX:12,stationIndex:0,visibleCats:5', 'role:"far",viewportX:12,stationIndex:0,visibleCats:4', "cat-density"),
-    sourceMutation("inactive cat write skip removed", "game", "if(!active)continue;", "if(!active){}", "cat-inactive")
+    sourceMutation("cat density target drops", "game", 'role:"far",stationIndex:0,visibleCats:5', 'role:"far",stationIndex:0,visibleCats:4', "cat-density"),
+    sourceMutationAfter("cat viewport culling breaks", "game", 'if(sprite.stageId==="cat"){', 'sprite.el.style.visibility=visible?"visible":"hidden"', 'sprite.el.style.visibility="hidden"', "cat-inactive")
   ];
 
   assert.equal(mutations.length, EXPECTED_MUTATIONS, "mutation count drifted");

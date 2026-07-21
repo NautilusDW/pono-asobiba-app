@@ -404,8 +404,13 @@ topology.forEach(t => {
   assert.ok(Array.isArray(t.rare) && t.rare.length === 2 && t.rare.every(v => typeof v === "string" && v.length > 0),
     `${t.id}: STAGES entry must declare rare:[emoji,label] (a mismatch means maybeSpawnRare() can destructure undefined and crash)`);
 });
-assert.match(extractFunction(game, "maybeSpawnRare"), /const \[e,t\]=STAGES\[stg\]\.rare/,
-  "maybeSpawnRare must read the rare tuple from the current STAGES entry, not a parallel RARES array");
+const maybeSpawnRareSource = extractFunction(game, "maybeSpawnRare");
+const readsRareDirectly = /const\s+\[\s*e\s*,\s*t\s*\]\s*=\s*STAGES\s*\[\s*stg\s*\]\.rare\b/.test(maybeSpawnRareSource);
+const readsRareThroughCurrentStage = /const\s+stage\s*=\s*STAGES\s*\[\s*stg\s*\]\s*,\s*\[\s*e\s*,\s*t\s*\]\s*=\s*stage\.rare\b/.test(maybeSpawnRareSource);
+assert.ok(readsRareDirectly || readsRareThroughCurrentStage,
+  "maybeSpawnRare must read the rare tuple from the current STAGES entry, directly or through that exact current-stage alias");
+assert.doesNotMatch(maybeSpawnRareSource, /\bRARES\s*\[/,
+  "maybeSpawnRare must not restore a parallel rare tuple registry");
 assert.match(extractFunction(game, "collectSeaRareCollision"), /STAGES\[stg\]\.rare/,
   "collectSeaRareCollision must read the rare tuple from the current STAGES entry, not a parallel RARES array");
 

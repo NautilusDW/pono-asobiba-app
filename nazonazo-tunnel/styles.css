@@ -496,7 +496,7 @@ body.branch-raster{
   --branch-polish-brightness:1;--branch-polish-saturate:1;--branch-polish-contrast:1;--branch-polish-hue:0deg;--branch-snow-opacity:1}
 body.st-snow{--branch-horizon-y:18.57vh;--branch-mid-y:18.07vh;--branch-decor-height:20vh;--branch-fg-height:19.9vh}
 body.st-fire{--branch-horizon-y:0vh;--branch-mid-y:0vh;--branch-mid-height:53vh;--branch-mid-bottom:13vh;--branch-decor-height:0vh;--branch-decor-bottom:0vh;--branch-fg-height:13.5vh}
-body.st-dino{--branch-horizon-y:-5.5vh;--branch-mid-y:0vh;--branch-mid-height:56vh;--branch-mid-bottom:4vh;--branch-decor-height:0vh;--branch-fg-height:22vh}
+body.st-dino{--branch-horizon-y:-8.2vh;--branch-mid-y:0vh;--branch-mid-height:56vh;--branch-mid-bottom:4vh;--branch-decor-height:0vh;--branch-fg-height:22vh}
 body.st-toy{--branch-horizon-y:11.51vh;--branch-mid-y:-15.84vh;--branch-decor-height:20vh;--branch-decor-bottom:17.08vh;--branch-fg-height:22vh}
 body.st-cat{--branch-horizon-y:24.15vh;--branch-mid-y:19.82vh;--branch-decor-height:0vh;--branch-fg-height:16.4vh}
 body.st-fantasy{--branch-horizon-y:-20vh;--branch-mid-y:8.99vh;--branch-decor-height:8vh;--branch-decor-bottom:38vh;--branch-fg-height:20vh}
@@ -599,11 +599,11 @@ body.branch-night.st-fire:not(.tunnel-interior) .branch-fire-volcano-art{filter:
   18%{opacity:var(--ember-opacity)}
   100%{opacity:0;transform:translate3d(calc(var(--ember-base-x) + var(--ember-drift-x)),calc(var(--ember-guard-y,0px) - var(--ember-rise)),0) scale(var(--ember-scale))}}
 
-.branch-dino-far-herd{position:absolute;left:0;bottom:34.5vh;z-index:1;display:block;width:clamp(440px,60vw,900px);max-height:32vh;line-height:0;pointer-events:none;opacity:.72;transform:translate3d(-200vw,0,0)}
-.branch-dino-far-herd img{display:block;width:100%;height:auto;max-height:32vh;object-fit:contain;object-position:left bottom;transform-origin:50% 100%;transform:translate3d(0,var(--dino-far-guard-y,0px),0);
+.branch-dino-far-herd{position:absolute;left:0;bottom:0;z-index:1;display:block;width:clamp(440px,60vw,900px);line-height:0;pointer-events:none;opacity:.72;visibility:hidden;transform:translate3d(-200vw,0,0)}
+.branch-dino-far-herd img{display:block;width:100%;height:auto;object-fit:contain;object-position:left bottom;transform-origin:50% 100%;
   filter:brightness(var(--branch-polish-brightness)) saturate(var(--branch-polish-saturate)) contrast(var(--branch-polish-contrast)) hue-rotate(var(--branch-polish-hue));transition:filter .48s ease}
-.branch-world-life{position:absolute;left:0;bottom:var(--life-bottom);display:block;width:var(--life-width);line-height:0;pointer-events:none;transform:translate3d(-200vw,0,0) translateX(-50%)}
-.branch-world-life img{display:block;width:100%;height:auto;max-height:35vh;object-fit:contain;transform-origin:50% 100%;transform:translate3d(0,var(--life-guard-y,0px),0) scale(var(--life-scale-x,var(--life-scale)),var(--life-scale));
+.branch-world-life{position:absolute;left:0;bottom:0;display:block;width:var(--life-width);line-height:0;pointer-events:none;visibility:hidden;transform:translate3d(-200vw,0,0) translateX(-50%)}
+.branch-world-life img{display:block;width:100%;height:auto;object-fit:contain;transform-origin:50% 100%;transform:scale(var(--life-scale-x,var(--life-scale)),var(--life-scale));
   filter:brightness(var(--branch-polish-brightness)) saturate(var(--branch-polish-saturate)) contrast(var(--branch-polish-contrast)) hue-rotate(var(--branch-polish-hue));transition:filter .48s ease}
 
 body.st-dino:not(.tunnel-interior) #branchEffectFar{z-index:1}
@@ -611,8 +611,8 @@ body.st-dino:not(.tunnel-interior) #branchWorldLifeLayer{z-index:4}
 body.st-dino:not(.tunnel-interior) .branch-world-life--far{z-index:2!important}
 body.st-dino:not(.tunnel-interior) .branch-world-life--mid{z-index:3!important}
 body.st-dino:not(.tunnel-interior) .branch-world-life--near{z-index:4!important}
-body.st-dino:not(.tunnel-interior) .branch-dino-nest-landmark{bottom:25.5vh;width:clamp(14vw,16vw,18vw);max-height:28vh}
-body.st-dino:not(.tunnel-interior) .branch-dino-nest-landmark img{max-height:28vh;object-position:center bottom}
+body.st-dino:not(.tunnel-interior) .branch-dino-nest-landmark{width:var(--life-width)}
+body.st-dino:not(.tunnel-interior) .branch-dino-nest-landmark img{object-position:center bottom}
 body.st-dino:not(.tunnel-interior) .branch-dino-far-herd img,
 body.st-dino:not(.tunnel-interior) .branch-world-life img{mix-blend-mode:multiply}
 body.branch-night.st-dino:not(.tunnel-interior) .branch-dino-far-herd img,
@@ -621,14 +621,10 @@ body.branch-night.st-dino:not(.tunnel-interior) .branch-world-life img{mix-blend
 body.st-cat:not(.tunnel-interior) #branchEffectFar{z-index:1}
 body.st-cat:not(.tunnel-interior) #branchWorldLifeLayer{z-index:4}
 body.st-cat:not(.tunnel-interior) .branch-world-life.is-cat{opacity:0;transition:opacity .38s ease}
-body.st-cat:not(.tunnel-interior) .branch-world-life.is-cat.is-active,
-body.st-cat:not(.tunnel-interior) .branch-world-life.is-cat[data-active="true"]{opacity:1}
-body.st-cat:not(.tunnel-interior) .branch-cat-population--far{bottom:clamp(25.5vh,var(--life-bottom),28vh);z-index:1!important;width:clamp(48vw,var(--life-width),56vw);max-height:46vh}
-body.st-cat:not(.tunnel-interior) .branch-cat-population--mid{bottom:clamp(12.5vh,var(--life-bottom),14vh);z-index:3!important;width:clamp(30vw,var(--life-width),40vw);max-height:40vh}
-body.st-cat:not(.tunnel-interior) .branch-cat-population--near{bottom:clamp(17.5vh,var(--life-bottom),22vh);z-index:4!important;width:clamp(22vw,var(--life-width),28vw);max-height:36vh}
-body.st-cat:not(.tunnel-interior) .branch-cat-population--far img{max-height:46vh}
-body.st-cat:not(.tunnel-interior) .branch-cat-population--mid img{max-height:40vh}
-body.st-cat:not(.tunnel-interior) .branch-cat-population--near img{max-height:36vh}
+body.st-cat:not(.tunnel-interior) .branch-world-life.is-cat[data-visible="true"]{opacity:1}
+body.st-cat:not(.tunnel-interior) .branch-cat-population--far{z-index:1!important;width:var(--life-width)}
+body.st-cat:not(.tunnel-interior) .branch-cat-population--mid{z-index:3!important;width:var(--life-width)}
+body.st-cat:not(.tunnel-interior) .branch-cat-population--near{z-index:4!important;width:var(--life-width)}
 body.branch-night.st-cat:not(.tunnel-interior) .branch-world-life img{filter:brightness(.7) saturate(.74) contrast(1.02) hue-rotate(-5deg)}
 
 @media (max-height:500px){
@@ -637,25 +633,11 @@ body.branch-night.st-cat:not(.tunnel-interior) .branch-world-life img{filter:bri
   .branch-fire-volcano-art{max-height:40vh}
   .branch-fire-vent[data-vent="0"]{--fire-vent-width:clamp(26px,4.5vmin,42px)}
   .branch-fire-vent[data-vent="1"]{--fire-vent-width:clamp(32px,5.6vmin,52px)}
-  body.st-dino:not(.tunnel-interior) .branch-dino-nest-landmark{bottom:22vh;width:clamp(14vw,15vw,18vw);max-height:25vh}
-  body.st-cat:not(.tunnel-interior) .branch-cat-population--far,
-  body.st-cat:not(.tunnel-interior) .branch-cat-population--far img{max-height:42vh}
-  body.st-cat:not(.tunnel-interior) .branch-cat-population--mid,
-  body.st-cat:not(.tunnel-interior) .branch-cat-population--mid img{max-height:36vh}
-  body.st-cat:not(.tunnel-interior) .branch-cat-population--near,
-  body.st-cat:not(.tunnel-interior) .branch-cat-population--near img{max-height:32vh}
 }
 @media (orientation:portrait){
   .branch-fire-volcano-landmark{bottom:31vh;width:min(92vw,720px);max-height:38vh}
   .branch-fire-volcano-art{max-height:38vh}
-  .branch-dino-far-herd{width:min(86vw,720px);max-height:29vh}
-  .branch-dino-far-herd img{max-height:29vh}
-  body.st-cat:not(.tunnel-interior) .branch-cat-population--far{bottom:clamp(25.5vh,var(--life-bottom),27vh);width:clamp(48vw,var(--life-width),54vw);max-height:36vh}
-  body.st-cat:not(.tunnel-interior) .branch-cat-population--mid{bottom:clamp(12.5vh,var(--life-bottom),14vh);width:clamp(30vw,var(--life-width),36vw);max-height:32vh}
-  body.st-cat:not(.tunnel-interior) .branch-cat-population--near{bottom:clamp(17.5vh,var(--life-bottom),20vh);width:clamp(22vw,var(--life-width),25vw);max-height:28vh}
-  body.st-cat:not(.tunnel-interior) .branch-cat-population--far img{max-height:36vh}
-  body.st-cat:not(.tunnel-interior) .branch-cat-population--mid img{max-height:32vh}
-  body.st-cat:not(.tunnel-interior) .branch-cat-population--near img{max-height:28vh}
+  .branch-dino-far-herd{width:min(86vw,720px)}
 }
 
 body.st-fantasy:not(.tunnel-interior) #branchDecorT{opacity:.9;animation:none}
@@ -785,8 +767,15 @@ body.branch-raster.branch-night:not(.tunnel-interior) #fgT{
 .flyer .flyer-art img{width:100%;height:100%}
 .rare{appearance:none;-webkit-appearance:none;position:absolute;z-index:9;width:clamp(54px,8vw,82px);height:clamp(54px,8vw,82px);padding:0;border:0;background:transparent;cursor:pointer;
   filter:drop-shadow(0 0 10px rgba(255,255,180,.8))}
-.rare .rare-art{display:grid;width:100%;height:100%}
+.rare .rare-art{display:grid;width:100%;height:100%;opacity:0;transform:scale(1);transform-origin:50% 50%;transition:opacity .26s ease,transform .26s ease}
+.rare[data-rare-phase="primed"] .rare-art{opacity:0;transform:scale(.62)}
+.rare[data-rare-phase="active"] .rare-art{opacity:1;transform:scale(1)}
+.rare[data-rare-phase="exit"] .rare-art{opacity:0;transform:scale(.72)}
 .rare .rare-art img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.rare[data-placement="ground"]{height:auto;line-height:0}
+.rare[data-placement="ground"] .rare-art{display:block;height:auto;transform-origin:50% 100%}
+.rare[data-placement="ground"] .rare-art img{position:static;inset:auto;display:block;width:100%;height:auto}
+.rare[data-placement="ground"] .rare-art.is-fallback{aspect-ratio:1}
 .rare:focus-visible{outline:4px solid #fff18a;outline-offset:4px;border-radius:50%}
 
 /* ===== checkpoint / tunnel ===== */
@@ -1746,6 +1735,7 @@ body.ios-device #quiz.show:not(.sea-quiz):not(.future-capsule-quiz):not(.space-g
   .branch-fire-crater-glow{animation:none!important;opacity:.72!important;transform:translate(-50%,-50%) scale(1)!important;will-change:auto!important}
   .branch-fire-ember-field,.branch-fire-crater-ember{display:none!important}
   .branch-fire-volcano-art,.branch-fire-flame,.branch-dino-far-herd img,.branch-world-life img{transition:none!important}
+  .rare .rare-art{transition:none!important}
   body.st-cat:not(.tunnel-interior) .branch-world-life.is-cat{transition:none!important}
   body.st-fantasy:not(.tunnel-interior) #branchDecorT{animation:none!important;opacity:.9!important}
   .jungle-animal-art{animation:none!important;transform:none!important}

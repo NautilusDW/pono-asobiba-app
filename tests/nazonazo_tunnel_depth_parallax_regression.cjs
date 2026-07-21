@@ -195,8 +195,9 @@ async function validate(candidateSources, assetSpecs = ASSETS) {
     gameCompact.includes("constBRANCH_DINO_FAR_HERD_PARALLAX=.06;") &&
     gameCompact.includes("constBRANCH_DINO_FAR_HERD_POOL_SIZE=3;") &&
     gameCompact.includes("branchDinoMeadow.style.backgroundPositionX=cssXFromVw(-localWorldX*BRANCH_DINO_MEADOW_PARALLAX)") &&
-    gameCompact.includes('consttravel=(sprite.anchor-localWorldX)*sprite.parallax;') &&
-    gameCompact.includes('constx=(sprite.stageId==="dino"?50:sprite.viewportX)+') &&
+    gameCompact.includes("functionprojectBranchWorldSpriteX(anchor,localWorldX,parallax){return50+(anchor-localWorldX)*parallax;}") &&
+    gameCompact.includes("constx=projectBranchWorldSpriteX(sprite.anchor,localWorldX,sprite.parallax);") &&
+    !gameCompact.includes("clamp(travel") && !gameCompact.includes("activeCatByRole") &&
     gameCompact.includes('constbranchMidRate=branchStageId==="fire"?.17:(branchStageId==="dino"?.18:.25);') &&
     gameCompact.includes('constbranchFgRate=branchStageId==="fire"?BRANCH_FIRE_MAGMA_PARALLAX:(branchStageId==="dino"?1.18:1.35);'), "dino-meadow-parallax");
   const herdRenderAt = gameCompact.indexOf("branchDinoFarHerdSprites.forEach(sprite=>{");
@@ -207,8 +208,9 @@ async function validate(candidateSources, assetSpecs = ASSETS) {
     herdRenderSource.includes('sprite.el.style.transform="translate3d("+cssXFromVw(x)+",0,0)";') &&
     herdCoverage.minVisible === 1 && herdCoverage.maxVisible === 2, "dino-meadow-parallax");
   const parallaxValues = [...game.matchAll(/asset:"(?:waterhole|stegosaurus|parasaurolophus|sauropod|trex)"[^\n]+parallax:([.\d]+)/g)].map(match => Number(match[1]));
-  check(JSON.stringify(parallaxValues) === JSON.stringify([.22, .24, .20, .62, .70]) &&
-    [.06, .10, .18, .20, .22, .24, .34, .62, .70, 1, 1.18].every((value, index, values) => index === 0 || value > values[index - 1]), "dino-meadow-parallax");
+  check(JSON.stringify(parallaxValues) === JSON.stringify([.14, .16, .14, .62, .70]) &&
+    Math.max(.14, .16, .14) < .32 && .32 < Math.min(.62, .70) &&
+    .06 < .10 && .10 < .14 && .70 < 1 && 1 < 1.18, "dino-meadow-parallax");
 
   let fantasyRowsPass = true;
   for (const asset of ASSETS.filter(item => item.clearFrom)) {
@@ -230,8 +232,8 @@ async function validate(candidateSources, assetSpecs = ASSETS) {
   }
   const styleToken = html.match(/styles\.css\?v=([^"']+)/)?.[1];
   const gameToken = html.match(/js\/game\.js\?v=([^"']+)/)?.[1];
-  check(fantasyRowsPass && styleToken === "20260721-1409" && gameToken === styleToken &&
-    /const CACHE_VERSION = 2316;/.test(sw) && /\/\/ v2316:/.test(sw) && /\/\/ v2315:/.test(sw) &&
+  check(fantasyRowsPass && styleToken === "20260722-1410" && gameToken === styleToken &&
+    /const CACHE_VERSION = 2317;/.test(sw) && /\/\/ v2317:/.test(sw) && /\/\/ v2316:/.test(sw) &&
     game.includes("branch_fantasy_horizon_cutout_loop_depthfix_v4_20260721.webp") &&
     game.includes("branch_fantasy_mid_cutout_loop_depthfix_v4_20260721.webp") &&
     !game.includes("branch_fantasy_horizon_cutout_loop_depthfix_v3_20260721.webp") &&
@@ -271,7 +273,8 @@ async function main() {
     { name: "night hue variable removed", code: "night-reduced", sources: { ...sources, css: replaceOnce(sources.css, "--branch-polish-hue:-6deg;", "") }, assets: ASSETS },
     { name: "dino meadow joins foreground speed", code: "dino-meadow-parallax", sources: { ...sources, game: replaceOnce(sources.game, "const BRANCH_DINO_MEADOW_PARALLAX=.10;", "const BRANCH_DINO_MEADOW_PARALLAX=1.18;") }, assets: ASSETS },
     { name: "dino far herd loses signed wrap", code: "dino-meadow-parallax", sources: { ...sources, game: replaceOnce(sources.game, "const x=(((raw+BRANCH_DINO_FAR_HERD_SPACING_VW)%period)+period)%period-BRANCH_DINO_FAR_HERD_SPACING_VW;", "const x=((raw%period)+period)%period;") }, assets: ASSETS },
-    { name: "fantasy cache token rolls back", code: "fantasy-baseline-token", sources: { ...sources, html: replaceOnce(sources.html, "styles.css?v=20260721-1409", "styles.css?v=20260721-1408") }, assets: ASSETS }
+    { name: "dino world projection ignores anchor", code: "dino-meadow-parallax", sources: { ...sources, game: replaceOnce(sources.game, "return 50+(anchor-localWorldX)*parallax;", "return 50-localWorldX*parallax;") }, assets: ASSETS },
+    { name: "fantasy cache token rolls back", code: "fantasy-baseline-token", sources: { ...sources, html: replaceOnce(sources.html, "styles.css?v=20260722-1410", "styles.css?v=20260721-1409") }, assets: ASSETS }
   ];
   for (const mutation of mutations) {
     assert.deepEqual(await validate(mutation.sources, mutation.assets), [mutation.code], `${mutation.name}: must reject only ${mutation.code}`);

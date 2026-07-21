@@ -2345,35 +2345,41 @@ const BRANCH_DINO_MEADOW_PARALLAX=.10;
 const BRANCH_DINO_FAR_HERD_PARALLAX=.06;
 const BRANCH_DINO_FAR_HERD_SPACING_VW=115;
 const BRANCH_DINO_FAR_HERD_POOL_SIZE=3;
+const BRANCH_DINO_FAR_HERD_GROUND=Object.freeze({groundPlaneY:.66,groundAnchorY:.95368,transparentBottomPx:17,occlusionPx:0});
 const BRANCH_DINO_WORLD_LIFE_CONFIG=Object.freeze([
- Object.freeze({asset:"waterhole",ratio:.12,width:32,bottom:24,scale:.90,depth:2,parallax:.22,sourceWidth:1533,guard:16,role:"far"}),
- Object.freeze({asset:"parasaurolophus",ratio:.33,width:24,bottom:24.5,scale:.90,depth:2,parallax:.24,sourceWidth:1453,guard:14,role:"far"}),
- Object.freeze({asset:"nest",ratio:.47,width:16,bottom:18.5,scale:.90,depth:3,parallax:.34,sourceWidth:1350,guard:16,role:"mid",className:"branch-dino-nest-landmark"}),
- Object.freeze({asset:"sauropod",ratio:.59,width:29,bottom:23,scale:.94,depth:2,parallax:.20,sourceWidth:1479,guard:16,role:"far"}),
- Object.freeze({asset:"stegosaurus",ratio:.76,width:24,bottom:18.5,scale:.88,depth:4,parallax:.62,sourceWidth:1448,guard:14,role:"near"}),
- Object.freeze({asset:"trex",ratio:.90,width:16,bottom:19,scale:.84,depth:4,parallax:.70,sourceWidth:876,guard:16,role:"near"})
+ Object.freeze({asset:"waterhole",anchor:368,width:32,scale:.90,depth:2,parallax:.14,sourceWidth:1533,sourceHeight:722,transparentBottomPx:17,groundPlaneY:.79,groundAnchorY:.97645,occlusionPx:0,role:"far",layer:"far"}),
+ Object.freeze({asset:"parasaurolophus",anchor:820,width:24,scale:.90,depth:2,parallax:.16,sourceWidth:1453,sourceHeight:769,transparentBottomPx:15,groundPlaneY:.79,groundAnchorY:.98049,occlusionPx:0,role:"far",layer:"far"}),
+ Object.freeze({asset:"nest",anchor:980,width:16,scale:.90,depth:3,parallax:.32,sourceWidth:1350,sourceHeight:797,transparentBottomPx:14,groundPlaneY:.815,groundAnchorY:.98243,occlusionPx:0,role:"mid",className:"branch-dino-nest-landmark"}),
+ Object.freeze({asset:"sauropod",anchor:1335,width:29,scale:.94,depth:2,parallax:.14,sourceWidth:1479,sourceHeight:925,transparentBottomPx:16,groundPlaneY:.79,groundAnchorY:.98270,occlusionPx:0,role:"far",layer:"far"}),
+ Object.freeze({asset:"stegosaurus",anchor:1620,width:24,scale:.88,depth:4,parallax:.62,sourceWidth:1448,sourceHeight:769,transparentBottomPx:17,groundPlaneY:.815,groundAnchorY:.97789,occlusionPx:0,role:"near"}),
+ Object.freeze({asset:"trex",anchor:2050,width:16,scale:.84,depth:4,parallax:.70,sourceWidth:876,sourceHeight:544,transparentBottomPx:16,groundPlaneY:.815,groundAnchorY:.97059,occlusionPx:0,role:"near"})
 ]);
 const BRANCH_CAT_STOP_ANCHORS=Object.freeze(Array.from({length:QN},(_,index)=>INTRO-CHECKPOINT_STOP_LEFT_VW+index*GAP));
+const BRANCH_CAT_GROUND_PLANE_Y=.85;
+const BRANCH_CAT_FAR_PARALLAX=.14,BRANCH_CAT_MID_PARALLAX=.46,BRANCH_CAT_NEAR_PARALLAX=.74;
+const BRANCH_CAT_MID_ANCHOR_OFFSET=32/BRANCH_CAT_MID_PARALLAX;
+const BRANCH_CAT_NEAR_ANCHOR_OFFSET=-32/BRANCH_CAT_NEAR_PARALLAX;
 const BRANCH_CAT_FAR_CONFIG=Object.freeze([
- Object.freeze({asset:"farTownA",anchor:BRANCH_CAT_STOP_ANCHORS[0],width:54,bottom:27,scale:.94,depth:1,parallax:.10,sourceWidth:1568,guard:16,role:"far",viewportX:12,stationIndex:0,visibleCats:5}),
- Object.freeze({asset:"farTownB",anchor:BRANCH_CAT_STOP_ANCHORS[1],width:52,bottom:26,scale:.92,depth:1,parallax:.18,sourceWidth:1568,guard:16,role:"far",viewportX:88,stationIndex:1,visibleCats:5,flip:true}),
- Object.freeze({asset:"farTownA",anchor:BRANCH_CAT_STOP_ANCHORS[2],width:50,bottom:28,scale:.91,depth:1,parallax:.11,sourceWidth:1568,guard:16,role:"far",viewportX:14,stationIndex:2,visibleCats:5,flip:true}),
- Object.freeze({asset:"farTownB",anchor:BRANCH_CAT_STOP_ANCHORS[3],width:56,bottom:25.5,scale:.94,depth:1,parallax:.20,sourceWidth:1568,guard:16,role:"far",viewportX:87,stationIndex:3,visibleCats:5}),
- Object.freeze({asset:"farTownA",anchor:BRANCH_CAT_STOP_ANCHORS[4],width:52,bottom:27,scale:.92,depth:1,parallax:.09,sourceWidth:1568,guard:16,role:"far",viewportX:13,stationIndex:4,visibleCats:5})
+ Object.freeze({asset:"farTownA",anchor:BRANCH_CAT_STOP_ANCHORS[0],width:44,scale:.94,depth:1,parallax:BRANCH_CAT_FAR_PARALLAX,sourceWidth:1568,sourceHeight:1056,transparentBottomPx:342,groundPlaneY:BRANCH_CAT_GROUND_PLANE_Y,groundAnchorY:.6758,occlusionPx:0,role:"far",stationIndex:0,visibleCats:5}),
+ Object.freeze({asset:"farTownB",anchor:BRANCH_CAT_STOP_ANCHORS[1],width:44,scale:.92,depth:1,parallax:BRANCH_CAT_FAR_PARALLAX,sourceWidth:1568,sourceHeight:1056,transparentBottomPx:245,groundPlaneY:BRANCH_CAT_GROUND_PLANE_Y,groundAnchorY:.7678,occlusionPx:0,role:"far",stationIndex:1,visibleCats:5,flip:true}),
+ Object.freeze({asset:"farTownA",anchor:BRANCH_CAT_STOP_ANCHORS[2],width:42,scale:.91,depth:1,parallax:BRANCH_CAT_FAR_PARALLAX,sourceWidth:1568,sourceHeight:1056,transparentBottomPx:342,groundPlaneY:BRANCH_CAT_GROUND_PLANE_Y,groundAnchorY:.6758,occlusionPx:0,role:"far",stationIndex:2,visibleCats:5,flip:true}),
+ Object.freeze({asset:"farTownB",anchor:BRANCH_CAT_STOP_ANCHORS[3],width:45,scale:.94,depth:1,parallax:BRANCH_CAT_FAR_PARALLAX,sourceWidth:1568,sourceHeight:1056,transparentBottomPx:245,groundPlaneY:BRANCH_CAT_GROUND_PLANE_Y,groundAnchorY:.7678,occlusionPx:0,role:"far",stationIndex:3,visibleCats:5}),
+ Object.freeze({asset:"farTownA",anchor:BRANCH_CAT_STOP_ANCHORS[4],width:43,scale:.92,depth:1,parallax:BRANCH_CAT_FAR_PARALLAX,sourceWidth:1568,sourceHeight:1056,transparentBottomPx:342,groundPlaneY:BRANCH_CAT_GROUND_PLANE_Y,groundAnchorY:.6758,occlusionPx:0,role:"far",stationIndex:4,visibleCats:5})
 ]);
 const BRANCH_CAT_MID_CONFIG=Object.freeze(Array.from({length:QN*2-1},(_,index)=>Object.freeze({
- asset:index%2?"midLaneB":"midGardenA",anchor:BRANCH_CAT_STOP_ANCHORS[0]+index*GAP/2,width:index%2?34:36,bottom:index%3===1?12.5:14,scale:index%2?.92:.94,depth:3,
- parallax:index%2?.54:.44,sourceWidth:1568,guard:16,role:"mid",viewportX:index%2?7:93,stationIndex:index%2?Math.floor(index/2):index/2,interval:index%2===1,visibleCats:3,flip:index%4===1
+ asset:index%2?"midLaneB":"midGardenA",anchor:index%2?[619.696,1049.696,1479.696,1909.696][(index-1)/2]:BRANCH_CAT_STOP_ANCHORS[0]+index*GAP/2+BRANCH_CAT_MID_ANCHOR_OFFSET,width:34,scale:index%2?.92:.94,depth:3,
+ parallax:BRANCH_CAT_MID_PARALLAX,sourceWidth:1568,sourceHeight:1056,transparentBottomPx:165,groundPlaneY:BRANCH_CAT_GROUND_PLANE_Y,groundAnchorY:.8436,occlusionPx:0,role:"mid",stationIndex:index%2?Math.floor(index/2):index/2,interval:index%2===1,visibleCats:3,flip:index%4===1
 })));
 const BRANCH_CAT_NEAR_CONFIG=Object.freeze([
- Object.freeze({asset:"cottage",anchor:BRANCH_CAT_STOP_ANCHORS[0],width:21,bottom:17.5,scale:.92,depth:4,parallax:.72,sourceWidth:1263,guard:16,role:"near",viewportX:10,stationIndex:0,visibleCats:2}),
- Object.freeze({asset:"garden",anchor:BRANCH_CAT_STOP_ANCHORS[0]+GAP/2,width:20,bottom:18,scale:.92,depth:4,parallax:.76,sourceWidth:1463,guard:16,role:"near",viewportX:91,stationIndex:0,interval:true,visibleCats:2,flip:true}),
- Object.freeze({asset:"fence",anchor:BRANCH_CAT_STOP_ANCHORS[1],width:20,bottom:18,scale:.90,depth:4,parallax:.74,sourceWidth:1423,guard:16,role:"near",viewportX:90,stationIndex:1,visibleCats:2}),
- Object.freeze({asset:"rooftop",anchor:BRANCH_CAT_STOP_ANCHORS[1]+GAP/2,width:19,bottom:22,scale:.88,depth:4,parallax:.78,sourceWidth:1204,guard:16,role:"near",viewportX:9,stationIndex:1,interval:true,visibleCats:2,flip:true}),
- Object.freeze({asset:"bridge",anchor:BRANCH_CAT_STOP_ANCHORS[2],width:22,bottom:17.5,scale:.92,depth:4,parallax:.73,sourceWidth:1485,guard:12,role:"near",viewportX:10,stationIndex:2,visibleCats:2}),
- Object.freeze({asset:"plaza",anchor:BRANCH_CAT_STOP_ANCHORS[2]+GAP/2,width:22,bottom:17.5,scale:.90,depth:4,parallax:.77,sourceWidth:1488,guard:12,role:"near",viewportX:91,stationIndex:2,interval:true,visibleCats:2,flip:true}),
- Object.freeze({asset:"tree",anchor:BRANCH_CAT_STOP_ANCHORS[3],width:20,bottom:18,scale:.90,depth:4,parallax:.75,sourceWidth:1108,guard:16,role:"near",viewportX:90,stationIndex:3,visibleCats:2}),
- Object.freeze({asset:"lane",anchor:BRANCH_CAT_STOP_ANCHORS[4],width:21,bottom:18,scale:.92,depth:4,parallax:.74,sourceWidth:1366,guard:16,role:"near",viewportX:10,stationIndex:4,visibleCats:2,flip:true})
+ Object.freeze({asset:"cottage",anchor:BRANCH_CAT_STOP_ANCHORS[0]+BRANCH_CAT_NEAR_ANCHOR_OFFSET,width:21,scale:.92,depth:4,parallax:BRANCH_CAT_NEAR_PARALLAX,sourceWidth:1263,sourceHeight:974,transparentBottomPx:17,groundPlaneY:BRANCH_CAT_GROUND_PLANE_Y,groundAnchorY:.9825,occlusionPx:0,role:"near",stationIndex:0,visibleCats:2}),
+ Object.freeze({asset:"garden",anchor:619.109,width:20,scale:.92,depth:4,parallax:BRANCH_CAT_NEAR_PARALLAX,sourceWidth:1463,sourceHeight:849,transparentBottomPx:16,groundPlaneY:BRANCH_CAT_GROUND_PLANE_Y,groundAnchorY:.9811,occlusionPx:0,role:"near",stationIndex:0,interval:true,visibleCats:2,flip:true}),
+ Object.freeze({asset:"fence",anchor:BRANCH_CAT_STOP_ANCHORS[1]+BRANCH_CAT_NEAR_ANCHOR_OFFSET,width:20,scale:.90,depth:4,parallax:BRANCH_CAT_NEAR_PARALLAX,sourceWidth:1423,sourceHeight:944,transparentBottomPx:18,groundPlaneY:BRANCH_CAT_GROUND_PLANE_Y,groundAnchorY:.9809,occlusionPx:0,role:"near",stationIndex:1,visibleCats:2}),
+ Object.freeze({asset:"fence",anchor:1049.109,width:20,scale:.90,depth:4,parallax:BRANCH_CAT_NEAR_PARALLAX,sourceWidth:1423,sourceHeight:944,transparentBottomPx:18,groundPlaneY:BRANCH_CAT_GROUND_PLANE_Y,groundAnchorY:.9809,occlusionPx:0,role:"near",stationIndex:1,interval:true,visibleCats:2,flip:true}),
+ Object.freeze({asset:"bridge",anchor:BRANCH_CAT_STOP_ANCHORS[2]+BRANCH_CAT_NEAR_ANCHOR_OFFSET,width:22,scale:.92,depth:4,parallax:BRANCH_CAT_NEAR_PARALLAX,sourceWidth:1485,sourceHeight:907,transparentBottomPx:12,groundPlaneY:BRANCH_CAT_GROUND_PLANE_Y,groundAnchorY:.9868,occlusionPx:0,role:"near",stationIndex:2,visibleCats:2}),
+ Object.freeze({asset:"plaza",anchor:1465.595,width:22,scale:.90,depth:4,parallax:BRANCH_CAT_NEAR_PARALLAX,sourceWidth:1488,sourceHeight:780,transparentBottomPx:12,groundPlaneY:BRANCH_CAT_GROUND_PLANE_Y,groundAnchorY:.9846,occlusionPx:0,role:"near",stationIndex:2,interval:true,visibleCats:2,flip:true}),
+ Object.freeze({asset:"tree",anchor:BRANCH_CAT_STOP_ANCHORS[3]+BRANCH_CAT_NEAR_ANCHOR_OFFSET,width:20,scale:.90,depth:4,parallax:BRANCH_CAT_NEAR_PARALLAX,sourceWidth:1108,sourceHeight:998,transparentBottomPx:18,groundPlaneY:BRANCH_CAT_GROUND_PLANE_Y,groundAnchorY:.9819,occlusionPx:0,role:"near",stationIndex:3,visibleCats:2}),
+ Object.freeze({asset:"garden",anchor:1895.595,width:20,scale:.92,depth:4,parallax:BRANCH_CAT_NEAR_PARALLAX,sourceWidth:1463,sourceHeight:849,transparentBottomPx:16,groundPlaneY:BRANCH_CAT_GROUND_PLANE_Y,groundAnchorY:.9811,occlusionPx:0,role:"near",stationIndex:3,interval:true,visibleCats:2}),
+ Object.freeze({asset:"lane",anchor:BRANCH_CAT_STOP_ANCHORS[4]+BRANCH_CAT_NEAR_ANCHOR_OFFSET,width:21,scale:.92,depth:4,parallax:BRANCH_CAT_NEAR_PARALLAX,sourceWidth:1366,sourceHeight:979,transparentBottomPx:19,groundPlaneY:BRANCH_CAT_GROUND_PLANE_Y,groundAnchorY:.9806,occlusionPx:0,role:"near",stationIndex:4,visibleCats:2,flip:true})
 ]);
 function branchPolishShortSide(){return Math.min(window.innerWidth||844,window.innerHeight||390);}
 function branchPolishDensity(){return prefersReducedMotionActive()?"reduced":(branchPolishShortSide()<500?"mobile":"desktop");}
@@ -2480,6 +2486,12 @@ function buildBranchFire(assets,density){
  branchEffectMid.dataset.branchEffect="fire-vents";branchEffectMid.dataset.hotspotCount=String(BRANCH_FIRE_VENT_TERRAIN_CONFIG.length);branchEffectMid.dataset.ventCount=String(BRANCH_FIRE_VENT_TERRAIN_CONFIG.length);branchEffectMid.dataset.emberCount=String(emberTotal);
  branchEffectMid.appendChild(fragment);
 }
+function projectBranchWorldSpriteX(anchor,localWorldX,parallax){
+ return 50+(anchor-localWorldX)*parallax;
+}
+function computeBranchWorldSpriteBottomPx(stageHeight,renderedHeight,groundPlaneY,groundAnchorY,occlusionPx=0){
+ return stageHeight*(1-groundPlaneY)-renderedHeight*(1-groundAnchorY)-occlusionPx;
+}
 function buildBranchWorldLifeSprite(stageId,assets,config,index){
  const layer=config.layer==="far"?branchEffectFar:branchWorldLifeLayer;
  if(!layer||!assets||!assets[config.asset])return;
@@ -2490,18 +2502,21 @@ function buildBranchWorldLifeSprite(stageId,assets,config,index){
  sprite.dataset.lifeStage=stageId;sprite.dataset.lifeAsset=config.asset;sprite.dataset.lifeIndex=String(index);sprite.dataset.depth=String(config.depth);sprite.dataset.parallax=String(config.parallax||1);
  if(Number.isFinite(config.ratio))sprite.dataset.stageRatio=String(config.ratio);
  sprite.dataset.lifeRole=role;
- if(stageId==="cat")sprite.dataset.travelLimit=String(role==="far"?12:(role==="mid"?18:14));
  if(Number.isFinite(config.stationIndex))sprite.dataset.stationIndex=String(config.stationIndex);
  if(config.interval)sprite.dataset.interval="true";
  if(config.visibleCats){sprite.dataset.visibleCatTarget=String(config.visibleCats);sprite.dataset.visibleCatCount=String(config.visibleCats);}
+ sprite.dataset.worldAnchor=String(config.anchor);
+ sprite.dataset.groundPlaneY=String(config.groundPlaneY);
+ sprite.dataset.groundAnchorY=String(config.groundAnchorY);
+ sprite.dataset.transparentBottomPx=String(config.transparentBottomPx||0);
  sprite.style.setProperty("--life-width",config.width+"vw");
- sprite.style.setProperty("--life-bottom",config.bottom+"vh");
+ sprite.style.bottom="0px";sprite.style.visibility="hidden";sprite.style.opacity="0";
  sprite.style.zIndex=String(config.depth);
  image.style.setProperty("--life-scale",String(config.scale));image.style.setProperty("--life-scale-x",String(config.flip?-config.scale:config.scale));
  sprite.appendChild(image);layer.appendChild(sprite);
- const lifeSprite={el:sprite,img:image,stageId,anchor:Number.isFinite(config.anchor)?config.anchor:SPAN*config.ratio,viewportX:Number.isFinite(config.viewportX)?config.viewportX:50,parallax:config.parallax||1,role,active:null,travelLimit:stageId==="cat"?(role==="far"?12:(role==="mid"?18:14)):Infinity,sourceWidth:config.sourceWidth,guard:config.guard,scale:config.scale,guardVar:"--life-guard-y"};
+ const lifeSprite={el:sprite,img:image,stageId,anchor:config.anchor,parallax:config.parallax||1,role,sourceWidth:config.sourceWidth,sourceHeight:config.sourceHeight,transparentBottomPx:config.transparentBottomPx,groundPlaneY:config.groundPlaneY,groundAnchorY:config.groundAnchorY,occlusionPx:config.occlusionPx||0,scale:config.scale,groundingReady:false,halfWidthVw:0};
  branchWorldLifeSprites.push(lifeSprite);
- image.addEventListener("load",syncBranchCutoutGuards,{once:true});
+ image.addEventListener("load",()=>{syncBranchWorldSpriteGrounding(lifeSprite);render();},{once:true});
 }
 function buildBranchDinoWorldLife(assets){
  if(branchEffectFar&&assets&&assets.farHerd){
@@ -2511,7 +2526,8 @@ function buildBranchDinoWorldLife(assets){
    const image=branchImage(assets.farHerd,"branch-dino-far-herd-art");
    sprite.className="branch-dino-far-herd";sprite.dataset.poolIndex=String(index);sprite.dataset.worldSpacing=String(BRANCH_DINO_FAR_HERD_SPACING_VW);sprite.dataset.worldPeriod=String(BRANCH_DINO_FAR_HERD_SPACING_VW*BRANCH_DINO_FAR_HERD_POOL_SIZE);sprite.dataset.parallax=String(BRANCH_DINO_FAR_HERD_PARALLAX);sprite.appendChild(image);
    fragment.appendChild(sprite);
-   branchDinoFarHerdSprites.push({el:sprite,img:image,poolIndex:index,sourceWidth:1894,guard:16,scale:1,guardVar:"--dino-far-guard-y"});
+   sprite.dataset.groundPlaneY=String(BRANCH_DINO_FAR_HERD_GROUND.groundPlaneY);sprite.dataset.groundAnchorY=String(BRANCH_DINO_FAR_HERD_GROUND.groundAnchorY);sprite.dataset.transparentBottomPx=String(BRANCH_DINO_FAR_HERD_GROUND.transparentBottomPx);sprite.style.bottom="0px";sprite.style.visibility="hidden";
+   branchDinoFarHerdSprites.push({el:sprite,img:image,poolIndex:index,sourceWidth:1894,sourceHeight:367,transparentBottomPx:BRANCH_DINO_FAR_HERD_GROUND.transparentBottomPx,groundPlaneY:BRANCH_DINO_FAR_HERD_GROUND.groundPlaneY,groundAnchorY:BRANCH_DINO_FAR_HERD_GROUND.groundAnchorY,occlusionPx:BRANCH_DINO_FAR_HERD_GROUND.occlusionPx,scale:1,groundingReady:false,halfWidthVw:0});
    image.addEventListener("load",syncBranchCutoutGuards,{once:true});
   }
   branchEffectFar.dataset.branchEffect="dino-far-herd";branchEffectFar.dataset.herdCount=String(BRANCH_DINO_FAR_HERD_POOL_SIZE);branchEffectFar.appendChild(fragment);
@@ -2530,10 +2546,26 @@ function syncOneBranchCutoutGuard(sprite){
  const guard=width*sprite.guard/sprite.sourceWidth*(sprite.scale||1);
  sprite.img.style.setProperty(sprite.guardVar,guard.toFixed(2)+"px");
 }
+function syncBranchWorldSpriteGrounding(sprite){
+ if(!sprite||!sprite.el||!sprite.img||!Number.isFinite(sprite.groundPlaneY)||!Number.isFinite(sprite.groundAnchorY))return false;
+ const stageEl=$("scene"),stageHeight=(stageEl&&stageEl.clientHeight)||window.innerHeight||390;
+ const renderedRect=sprite.img.getBoundingClientRect();
+ const renderedHeight=renderedRect.height,renderedWidth=renderedRect.width;
+ if(!stageHeight||!renderedHeight||!renderedWidth){sprite.groundingReady=false;return false;}
+ const bottomPx=computeBranchWorldSpriteBottomPx(stageHeight,renderedHeight,sprite.groundPlaneY,sprite.groundAnchorY,sprite.occlusionPx||0);
+ sprite.el.style.bottom=bottomPx.toFixed(2)+"px";
+ sprite.el.dataset.renderedHeight=renderedHeight.toFixed(2);sprite.el.dataset.groundBottomPx=bottomPx.toFixed(2);
+ sprite.halfWidthVw=renderedWidth/(window.innerWidth||844)*50;
+ sprite.groundingReady=true;
+ return true;
+}
+function syncBranchWorldSpriteGroundingAll(){
+ branchWorldLifeSprites.forEach(syncBranchWorldSpriteGrounding);
+ branchDinoFarHerdSprites.forEach(syncBranchWorldSpriteGrounding);
+}
 function syncBranchCutoutGuards(){
  branchFireSprites.forEach(syncOneBranchCutoutGuard);
- branchWorldLifeSprites.forEach(syncOneBranchCutoutGuard);
- branchDinoFarHerdSprites.forEach(syncOneBranchCutoutGuard);
+ syncBranchWorldSpriteGroundingAll();
 }
 function pauseBranchStagePolish(){document.body.classList.remove("branch-effects-running");}
 function syncBranchStagePolishState(){
@@ -2575,29 +2607,22 @@ function renderBranchStagePolish(now,o){
    const x=(((raw+BRANCH_DINO_FAR_HERD_SPACING_VW)%period)+period)%period-BRANCH_DINO_FAR_HERD_SPACING_VW;
    const anchor=herdWorldX+x;
    sprite.el.dataset.worldAnchor=anchor.toFixed(3);
+   if(!sprite.groundingReady)syncBranchWorldSpriteGrounding(sprite);
+   sprite.el.style.visibility="visible";
    sprite.el.style.transform="translate3d("+cssXFromVw(x)+",0,0)";
-  });
- }
- const activeCatByRole={};
- if(st.id==="cat"){
-  branchWorldLifeSprites.forEach(sprite=>{
-   if(sprite.stageId!=="cat")return;
-   const distance=Math.abs(sprite.anchor-localWorldX),current=activeCatByRole[sprite.role];
-   if(!current||distance<current.distance)activeCatByRole[sprite.role]={sprite,distance};
   });
  }
  for(let i=0;i<branchWorldLifeSprites.length;i++){
   const sprite=branchWorldLifeSprites[i];
-  if(sprite.stageId==="cat"){
-   const active=!!(activeCatByRole[sprite.role]&&activeCatByRole[sprite.role].sprite===sprite);
-   if(sprite.active!==active){
-    sprite.active=active;sprite.el.classList.toggle("is-active",active);sprite.el.dataset.active=active?"true":"false";sprite.el.style.opacity=active?"1":"0";sprite.el.setAttribute("aria-hidden",active?"false":"true");
-   }
-   if(!active)continue;
-  }
-  const travel=(sprite.anchor-localWorldX)*sprite.parallax;
-  const x=(sprite.stageId==="dino"?50:sprite.viewportX)+(sprite.stageId==="cat"?clamp(travel,-sprite.travelLimit,sprite.travelLimit):travel);
+  if(!sprite.groundingReady)syncBranchWorldSpriteGrounding(sprite);
+  const x=projectBranchWorldSpriteX(sprite.anchor,localWorldX,sprite.parallax);
   sprite.el.style.transform="translate3d("+cssXFromVw(x)+",0,0) translateX(-50%)";
+  if(sprite.stageId==="cat"){
+   const halfWidth=sprite.halfWidthVw||0,visible=x+halfWidth>-16&&x-halfWidth<116;
+   sprite.el.dataset.visible=visible?"true":"false";sprite.el.style.visibility=visible?"visible":"hidden";sprite.el.style.opacity=visible?"1":"0";sprite.el.setAttribute("aria-hidden","true");
+  }else{
+   sprite.el.style.visibility="visible";sprite.el.style.opacity="1";
+  }
  }
  const magmaPeriod=branchFireSprites.length?branchFireMagmaPeriodVw():0;
  branchFireSprites.forEach(sprite=>{
@@ -4080,6 +4105,28 @@ function boardPassenger(p,learned,stationEl){
 }
 
 /* ================= rare events ================= */
+const RARE_GROUND_CONFIG=Object.freeze({
+ dino:Object.freeze({groundPlaneY:.815,groundAnchorY:.986441,sourceWidth:1072,sourceHeight:1180,transparentBottomPx:16}),
+ toy:Object.freeze({groundPlaneY:.82,groundAnchorY:.985752,sourceWidth:916,sourceHeight:1123,transparentBottomPx:16}),
+ cat:Object.freeze({groundPlaneY:.85,groundAnchorY:.985974,sourceWidth:777,sourceHeight:1212,transparentBottomPx:17}),
+ fantasy:Object.freeze({groundPlaneY:.82,groundAnchorY:.985166,sourceWidth:1126,sourceHeight:1146,transparentBottomPx:17}),
+ ruins:Object.freeze({groundPlaneY:.82,groundAnchorY:.985383,sourceWidth:822,sourceHeight:1163,transparentBottomPx:17})
+});
+function activateRareEvent(el){
+ if(!el||!el.parentNode||el.dataset.rarePhase!=="pending")return;
+ el.dataset.rarePhase="primed";
+ requestAnimationFrame(()=>{if(el.parentNode&&el.dataset.rarePhase==="primed")el.dataset.rarePhase="active";});
+}
+function syncRareGrounding(el,fallback){
+ if(!el||!el.parentNode||el.dataset.placement!=="ground")return false;
+ const config=RARE_GROUND_CONFIG[el.dataset.rareStage];if(!config)return false;
+ const image=el.querySelector(".rare-art .quiz-art-image"),rect=image&&!image.hidden?image.getBoundingClientRect():(fallback?el.getBoundingClientRect():null);
+ const stageEl=$("scene"),stageHeight=(stageEl&&stageEl.clientHeight)||window.innerHeight||390,renderedHeight=rect&&rect.height||0;
+ if(!stageHeight||!renderedHeight)return false;
+ const anchor=fallback?1:config.groundAnchorY,bottomPx=computeBranchWorldSpriteBottomPx(stageHeight,renderedHeight,config.groundPlaneY,anchor,0);
+ el.style.bottom=bottomPx.toFixed(2)+"px";el.dataset.renderedHeight=renderedHeight.toFixed(2);el.dataset.groundBottomPx=bottomPx.toFixed(2);el.dataset.groundReady="true";
+ activateRareEvent(el);return true;
+}
 function clearRareEvent(){
  clearTimeout(rareSpawnTimer);rareSpawnTimer=0;
  if(rareEl){rareEl.remove();rareEl=null;}
@@ -4096,28 +4143,38 @@ function scheduleRareSpawn(){
 function maybeSpawnRare(){
  if(!playing||!driving||rareEl)return;
  if(!FORCERARE&&Math.random()>rareSpawnChance())return;
- const [e,t]=STAGES[stg].rare;
+ const stage=STAGES[stg],[e,t]=stage.rare,groundConfig=RARE_GROUND_CONFIG[stage.id];
  rareEl=document.createElement("button");rareEl.type="button";
  rareEl.className="rare";rareEl.setAttribute("aria-label",t+"を みつける");
+ rareEl.dataset.rareStage=stage.id;rareEl.dataset.placement=groundConfig?"ground":(stage.id==="sky"?"air":"legacy-air");rareEl.dataset.rarePhase="pending";
+ if(groundConfig){rareEl.dataset.groundPlaneY=String(groundConfig.groundPlaneY);rareEl.dataset.groundAnchorY=String(groundConfig.groundAnchorY);rareEl.dataset.sourceWidth=String(groundConfig.sourceWidth);rareEl.dataset.sourceHeight=String(groundConfig.sourceHeight);rareEl.dataset.transparentBottomPx=String(groundConfig.transparentBottomPx);rareEl.dataset.groundReady="false";}
  rareEl.appendChild(createQuizArt(e,t,"rare-art"));
- rareEl.style.left="104vw";rareEl.style.top=(10+rnd(0,18))+"vh";
+ const rareImage=rareEl.querySelector(".rare-art .quiz-art-image");if(rareImage)rareImage.loading="eager";
+ const el=rareEl;
+ rareEl.style.left="104vw";
+ if(groundConfig){rareEl.style.bottom="0px";rareEl.style.top="auto";}else{rareEl.style.top=(10+rnd(0,18))+"vh";rareEl.style.bottom="auto";}
  $("app").appendChild(rareEl);
+ if(groundConfig){
+  if(rareImage){rareImage.addEventListener("load",()=>syncRareGrounding(el),{once:true});rareImage.addEventListener("error",()=>syncRareGrounding(el,true),{once:true});}
+  requestAnimationFrame(()=>{if(!syncRareGrounding(el)&&rareImage&&rareImage.complete)syncRareGrounding(el,true);});
+ }else activateRareEvent(el);
  rareSpawned=true;
  const born=performance.now();
- const el=rareEl;
  bindTap(el,()=>collectRareEvent(el,e,t));
  (function fly(){
-  if(!el.parentNode)return;
+ if(!el.parentNode)return;
+  if(el.dataset.collected==="1")return;
   const dt=(performance.now()-born)/1000*FAST;
   const x=104-dt*26;
-  el.style.left=x+"vw";
+  el.style.left=x+"vw";el.dataset.xVw=x.toFixed(3);
+  if(x<0&&el.dataset.rarePhase!=="exit")el.dataset.rarePhase="exit";
   if(x<-12){el.remove();if(rareEl===el)rareEl=null;return;}
   requestAnimationFrame(fly);
  })();
 }
 function collectRareEvent(el,e,t){
  if(!el||!el.parentNode||el.dataset.collected==="1")return false;
- el.dataset.collected="1";el.remove();if(rareEl===el)rareEl=null;
+ el.dataset.collected="1";el.dataset.rarePhase="exit";el.style.pointerEvents="none";if(rareEl===el)rareEl=null;setTimeout(()=>el.remove(),260);
  rareCount++;addScore(SCORE_POINTS.rare,"rare");
  const isNew=registerZk(e,t);sndNew();confetti(8);
  showStamp((isNew?"めずらしい ともだち！":"また あえたね！")+" +"+SCORE_POINTS.rare+"てん","new");
@@ -6628,6 +6685,7 @@ window.addEventListener("resize",syncNumberCargoColumns,{passive:true});
 window.addEventListener("resize",handleSeaViewportChange,{passive:true});
 window.addEventListener("resize",handleFutureCraneViewportChange,{passive:true});
 window.addEventListener("resize",scheduleBranchStagePolishResize,{passive:true});
+window.addEventListener("resize",()=>{if(rareEl)syncRareGrounding(rareEl);},{passive:true});
 window.addEventListener("resize",()=>{spaceChaseState.frameAt=0;cancelSpaceChaseRescuePointer(true);invalidateSpaceObstacleLayout();updateSpaceRepairVisual();updateSpaceChaseVisual();if(!spaceStationSteerResume&&!quiz.classList.contains("show"))clampSpaceSteerOffsets();},{passive:true});
 quiz.addEventListener("transitionend",handleFutureCraneQuizTransitionEnd);
 window.addEventListener("pageshow",()=>{closeGameSettings();ensureAC();updateRainParticleVisibility(false);});
