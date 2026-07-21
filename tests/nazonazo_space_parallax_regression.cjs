@@ -13,8 +13,8 @@ const html = read("nazonazo-tunnel/index.html");
 const css = read("nazonazo-tunnel/styles.css");
 const game = read("nazonazo-tunnel/js/game.js");
 
-assert.match(html, /styles\.css\?v=20260720-1382/);
-assert.match(html, /js\/game\.js\?v=20260720-1382/);
+assert.match(html, /styles\.css\?v=20260721-1385/);
+assert.match(html, /js\/game\.js\?v=20260721-1385/);
 
 function extractBalanced(source, start, openChar = "{", closeChar = "}") {
   const open = source.indexOf(openChar, start);

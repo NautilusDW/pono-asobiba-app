@@ -89,7 +89,14 @@ function extractFunction(source, name) {
   return source.slice(markerAt, end + 1);
 }
 
+const ASSET_OVERRIDES = Object.freeze({
+  "toy.mid": "../assets/images/nazonazo-tunnel/branch_toy_mid_variety_cutout_loop_20260720.webp",
+  "toy.decor": "../assets/images/nazonazo-tunnel/branch_toy_decor_variety_cutout_loop_20260720.webp"
+});
+
 function expectedAsset(stageId, key) {
+  const override = ASSET_OVERRIDES[`${stageId}.${key}`];
+  if (override) return override;
   const suffix = key === "sky" ? "sky_back" :
     key === "horizon" ? "horizon_cutout_loop" :
     key === "mid" ? "mid_cutout_loop" :
@@ -240,8 +247,8 @@ const styleToken = html.match(/styles\.css\?v=([^"']+)/);
 const gameToken = html.match(/js\/game\.js\?v=([^"']+)/);
 assert.ok(styleToken && gameToken, "nazonazo stylesheet and game cache tokens must exist");
 assert.equal(styleToken[1], gameToken[1], "nazonazo stylesheet and game cache tokens must match");
-assert.equal(styleToken[1], "20260720-1382", "nazonazo branch raster integration cache token drifted");
-assert.match(sw, /const CACHE_VERSION = 2309;/, "service worker cache version must be 2309");
+assert.equal(styleToken[1], "20260721-1385", "nazonazo branch stage polish cache token drifted");
+assert.match(sw, /const CACHE_VERSION = 2311;/, "service worker cache version must be 2311");
 assert.doesNotMatch(sw, /branch_(?:snow|fire|dino|toy|cat|fantasy|sky|ruins)_(?:sky|horizon|mid|ground|foreground|decor)/,
   "branch raster images must stay out of service-worker precache lists");
 
