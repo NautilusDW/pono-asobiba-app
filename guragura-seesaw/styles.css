@@ -118,6 +118,17 @@ html, body {
   box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
 
+/* ── あとちょっと！ハラハラ演出 (near-balance rising edge のワンショット金色グロー) ──
+   #plank は game.js の rAF ループが inline style で transform=rotate(θ) を毎フレーム
+   上書きするため、このアニメには絶対に transform を含めないこと (含めると CSS
+   アニメーションが inline transform より優先され回転が壊れる)。box-shadow のみ使う。 */
+@keyframes nearBalanceGlow {
+  0%   { box-shadow: 0 4px 8px rgba(0,0,0,0.2), 0 0 0 0 rgba(255,214,64,0); }
+  35%  { box-shadow: 0 4px 8px rgba(0,0,0,0.2), 0 0 20px 8px rgba(255,214,64,0.85); }
+  100% { box-shadow: 0 4px 8px rgba(0,0,0,0.2), 0 0 0 0 rgba(255,214,64,0); }
+}
+#plank.is-near-balance { animation: nearBalanceGlow 0.6s ease-out; }
+
 .pan {
   position: absolute;
   top: 50%;

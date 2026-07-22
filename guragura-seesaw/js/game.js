@@ -119,6 +119,8 @@
   var balanceHoldStart = null; // isBalanced&&isSettled が連続成立し始めた ms タイムスタンプ
   var roundClearing = false;   // 演出中の二重発火防止
   var dragState = null;        // { itemId, source: 'tray'|'pan', el }
+  var wasNearBalance = false;  // 「あとちょっと！」rising edge 検知用ヒステリシスフラグ。
+                                // ドラッグ開始時・ラウンド遷移時に必ず false へリセットする。
 
   // ═══ ラウンド進捗ドット ═══
   var dotEls = [];
@@ -249,6 +251,13 @@
     dragState = { itemId: itemId, source: source, el: el };
     el.classList.add('is-dragging');
     balanceHoldStart = null; // ドラッグ操作中は釣り合い判定を停止
+    // wasNearBalance はここでリセットしない: rAFループ(591行目付近)は !dragState の
+    // 間しか near-balance を再評価しないため、ドラッグ中は値が凍結されたまま保持される。
+    // ここで強制 false にすると、持ち上げただけ/slipで弾き戻された等 session が
+    // 実際には変化していないドラッグでも、終了直後の次フレームで
+    // false→true の立ち上がりが誤検出され演出が再発火してしまう
+    // (未就学児が「持ち上げて置き直す」を繰り返すたびに光ってしまう実害あり)。
+    // ラウンド開始(startGame)・ラウンド遷移(onRoundBalanced内)では別途明示リセット済み。
     showGhost(itemId, x, y);
     if (panRightEl) panRightEl.classList.add('is-drop-target');
     clearDragHintTimer();
@@ -419,6 +428,13 @@
     retriggerClass(el, 'show', 1500);
   }
 
+  // ═══ あとちょっと！ハラハラ演出 (near-balance rising edge のワンショット) ═══
+  // 光(#plank に淡い金色グローを1発)+触覚のみ。数字表示・新規音響サブシステムは追加しない。
+  function triggerNearBalanceFx() {
+    if (window.Haptics) window.Haptics.fire('nearBalance');
+    retriggerClass(plankEl, 'is-near-balance', 600);
+  }
+
   // ═══ チュートリアル (hyokkori-hightouch の tut-dim/tut-bubble パターンを流用) ═══
   var TUT_STEPS = [
     { icon: '⚖️', text: 'ひだりの おさらと おなじ おもさに<br>なるように つりあわせるよ！' },
@@ -463,6 +479,7 @@
     sim = { angle: 0, vel: 0 };
     balanceHoldStart = null;
     roundClearing = false;
+    wasNearBalance = false;
     renderAll();
     phase = 'playing';
     window._achDeferPopups = true;
@@ -487,6 +504,7 @@
     setTimeout(function () {
       roundClearing = false;
       balanceHoldStart = null;
+      wasNearBalance = false; // ラウンド遷移時は必ずリセット
       session = L.advanceRound(session);
       if (session.finished) {
         finishGame();
@@ -574,6 +592,18 @@
       if (plankEl) {
         plankEl.style.setProperty('--tilt', sim.angle + 'deg');
         plankEl.style.transform = 'rotate(' + sim.angle + 'deg)';
+      }
+
+      // ── あとちょっと！ハラハラ演出: near-balance rising edge 検知 ──
+      // ドラッグ中でない/ラウンドクリア演出中でない/右皿に1個以上乗っている、を
+      // 満たすフレームだけ判定する (満たさないフレームは wasNearBalance を保持し
+      // 評価をスキップする。ドラッグ開始時・ラウンド遷移時は別途明示リセット済み)。
+      if (!dragState && !roundClearing && session.rightIds.length > 0) {
+        var nearNow = L.isNearBalance(target) && !L.isBalanced(leftWeight, rightWeight);
+        if (nearNow && !wasNearBalance) {
+          triggerNearBalanceFx();
+        }
+        wasNearBalance = nearNow;
       }
 
       if (dragState) {

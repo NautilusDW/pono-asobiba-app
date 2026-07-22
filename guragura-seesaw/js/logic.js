@@ -49,6 +49,11 @@ var ANGLE_PER_DIFF = 3.5;   // deg / 重さ差1
 var BALANCE_EPS_DEG = 1.0;  // これ以下で「つりあい」成立
 var SLIP_DIFF = 5;          // 配置後の |右-左| がこれ以上なら滑り落ち(配置拒否)
 var PAN_CAPACITY = 4;       // 片皿の最大アイテム数
+// 「あとちょっと！」near-balance 判定の閾値。 重さ差(=CATALOGのweight単位)1個ぶんの
+// 傾き(ANGLE_PER_DIFF*1=3.5deg)は「近い」と判定し、2個ぶんの差(3.5*2=7deg)は
+// 「近い」と判定しないよう、3.5 と 7 のちょうど中間の 5.0 を採用する
+// (BALANCE_EPS_DEG(1.0) < NEAR_BALANCE_EPS_DEG(5.0) < ANGLE_PER_DIFF*2(7) を保証)。
+var NEAR_BALANCE_EPS_DEG = 5.0;
 
 // ═══ 減衰振動 (バネ) 定数 ════════════════════════════════════════════
 var SPRING_K = 60;      // 1/s^2
@@ -98,6 +103,19 @@ function computeTilt(leftWeight, rightWeight) {
 /** 釣り合っているか (角度が閾値以下)。 */
 function isBalanced(leftWeight, rightWeight) {
   return Math.abs(computeTilt(leftWeight, rightWeight)) <= BALANCE_EPS_DEG;
+}
+
+/**
+ * 「あとちょっと！」演出用の近接判定。 角度(deg)だけを受け取る純関数
+ * (weight ではなく computeTilt() 済みの deg を渡すこと)。
+ * nearDeg 省略時は NEAR_BALANCE_EPS_DEG を使う。 呼び出し側は isBalanced と
+ * 併用し、「近いがまだ釣り合っていない」状態 (isNearBalance && !isBalanced) を
+ * 検出する想定。
+ */
+function isNearBalance(targetDeg, nearDeg) {
+  var deg = toFiniteNumber(targetDeg);
+  var threshold = nearDeg === undefined ? NEAR_BALANCE_EPS_DEG : toFiniteNumber(nearDeg);
+  return Math.abs(deg) <= threshold;
 }
 
 // ═══ 皿状態の純関数操作 ══════════════════════════════════════════════
@@ -230,6 +248,7 @@ var PUBLIC_API = {
   BALANCE_EPS_DEG: BALANCE_EPS_DEG,
   SLIP_DIFF: SLIP_DIFF,
   PAN_CAPACITY: PAN_CAPACITY,
+  NEAR_BALANCE_EPS_DEG: NEAR_BALANCE_EPS_DEG,
   SPRING_K: SPRING_K,
   SPRING_DAMP: SPRING_DAMP,
   getItem: getItem,
@@ -237,6 +256,7 @@ var PUBLIC_API = {
   sumWeights: sumWeights,
   computeTilt: computeTilt,
   isBalanced: isBalanced,
+  isNearBalance: isNearBalance,
   placeItem: placeItem,
   removeItem: removeItem,
   springStep: springStep,

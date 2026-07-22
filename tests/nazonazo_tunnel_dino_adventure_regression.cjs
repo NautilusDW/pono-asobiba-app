@@ -15,6 +15,10 @@ const original = Object.freeze({
   game: read("nazonazo-tunnel/js/game.js")
 });
 const DINO_ASSET_FILES = Object.freeze([
+  "branch_dino_adventure_crane_arm_base_cutout_20260723.webp",
+  "branch_dino_adventure_crane_cable_cutout_20260723.webp",
+  "branch_dino_adventure_crane_hook_cutout_20260723.webp",
+  "branch_dino_adventure_fallen_log_ring_cutout_20260723.webp",
   "branch_dino_adventure_waterway_dry_20260722.webp",
   "branch_dino_adventure_waterway_success_20260722.webp",
   "branch_dino_adventure_trex_waiting_cutout_20260722.webp",
@@ -621,54 +625,154 @@ async function runBrowser(browserName, base) {
   const saveBefore = await frame.evaluate(() => localStorage.getItem("pono_nazonazo_tunnel_v1"));
   const journeyStartedAt = Date.now();
   await frame.locator("#startBtn").click();
-  const initial = await waitSnapshot(frame, state => state.phase === "water" || state.phase === "water-ready", `${browserName}: water event did not start`, 20000);
-  qaMetrics.waterRevealMs = Date.now() - journeyStartedAt;
+  const initial = await waitSnapshot(frame, state => state.phase === "crane" || state.phase === "crane-held", `${browserName}: crane event did not start`, 20000);
+  qaMetrics.craneRevealMs = Date.now() - journeyStartedAt;
   if (slowAssetDelayMs) {
-    assert.ok(qaMetrics.waterRevealMs < slowAssetDelayMs + 6000, `${browserName}: water reveal wait was excessive: ${qaMetrics.waterRevealMs}ms`);
+    assert.ok(qaMetrics.craneRevealMs < slowAssetDelayMs + 6000, `${browserName}: crane reveal wait was excessive: ${qaMetrics.craneRevealMs}ms`);
   }
   assert.equal(initial.eventIndex, 0);
   assert.equal(initial.boss.bossHp, 3);
   assert.equal(initial.boss.trainHp, 3);
   assert.equal(initial.water.budget, 9);
-  await assertRenderedImage(frame.locator("#dinoWaterDinos"), "branch_dino_adventure_waterway_dry_20260722.webp", "water dry");
+  assert.equal(initial.crane.attempt, 1);
+  assert.equal(initial.crane.completed, false);
   assert.equal(await frame.locator("#quiz.show").count(), 0, `${browserName}: dino opened a quiz`);
   assert.equal(await frame.locator(".tun:visible").count(), 0, `${browserName}: dino built visible quiz stations`);
-  assert.equal(await frame.locator("[class*='crane']:visible").count(), 0, `${browserName}: dino built a visible crane`);
+  assert.equal(await frame.locator("#dinoCraneGame:visible").count(), 1, `${browserName}: crane event is not visible`);
 
   const viewports = [[390, 844], [844, 390], [1024, 768], [1366, 768]];
   for (const [width, height] of viewports) {
     await page.setViewportSize({ width, height });
     await frame.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     const fit = await frame.evaluate(() => {
-      const gridRect = document.getElementById("dinoWaterGrid").getBoundingClientRect();
+      const viewport = { width: innerWidth, height: innerHeight };
+      const rect = id => {
+        const value = document.getElementById(id).getBoundingClientRect();
+        return { left: value.left, right: value.right, top: value.top, bottom: value.bottom, width: value.width, height: value.height };
+      };
+      const inside = value => value.left >= -2 && value.right <= viewport.width + 2 && value.top >= -2 && value.bottom <= viewport.height + 2;
+      const arm = rect("dinoCraneArm");
+      const hook = rect("dinoCraneHook");
+      const log = rect("dinoCraneLog");
+      const ring = rect("dinoCraneRingGuide");
+      const playfield = document.getElementById("dinoCranePlayfield").getBoundingClientRect();
+      const state = window.__nazonazoDinoAdventureDebug.snapshot();
+      const size = state.crane.geometry.logSize;
+      const logVisible = {
+        left: playfield.left + state.crane.logRing.x - (.53 - .028) * size,
+        right: playfield.left + state.crane.logRing.x + (.983 - .53) * size,
+        top: playfield.top + state.crane.logRing.y - (.34 - .150) * size,
+        bottom: playfield.top + state.crane.logRing.y + (.729 - .34) * size
+      };
       return {
         overflowX: document.documentElement.scrollWidth - innerWidth,
         overflowY: document.documentElement.scrollHeight - innerHeight,
         layerPhase: document.getElementById("dinoAdventureLayer").dataset.phase,
         adminSettingsHidden: getComputedStyle(document.getElementById("gameSettings")).display === "none",
         baseDotsHidden: getComputedStyle(document.getElementById("dots")).visibility === "hidden",
-        gridInside: gridRect.left >= -1 && gridRect.right <= innerWidth + 1 && gridRect.top >= -1 && gridRect.bottom <= innerHeight + 1
+        rotateVisible: getComputedStyle(document.getElementById("rotateHint")).display !== "none",
+        craneInside: [arm, hook, logVisible, ring].every(inside),
+        arm,
+        hook,
+        log,
+        logVisible,
+        ring
       };
     });
     assert.ok(fit.overflowX <= 1 && fit.overflowY <= 1, `${browserName}: overflow ${width}x${height}: ${JSON.stringify(fit)}`);
     assert.ok(fit.layerPhase && fit.layerPhase !== "idle", `${browserName}: resize reset adventure at ${width}x${height}`);
     assert.equal(fit.adminSettingsHidden, true, `${browserName}: admin-only settings suppression drifted at ${width}x${height}`);
     assert.equal(fit.baseDotsHidden, true, `${browserName}: quiz station dots leaked behind dino header at ${width}x${height}`);
-    assert.equal(fit.gridInside, true, `${browserName}: water grid clipped at ${width}x${height}`);
-    qaMetrics.viewports.push({ width, height, overflowX: fit.overflowX, overflowY: fit.overflowY, gridInside: fit.gridInside });
-    await page.screenshot({ path: `/tmp/nazonazo-dino-adventure-${browserName}-water-${width}x${height}.png`, fullPage: true });
+    assert.equal(fit.rotateVisible, height > width, `${browserName}: portrait rotate policy drifted at ${width}x${height}`);
+    if (width >= height) assert.equal(fit.craneInside, true, `${browserName}: crane art clipped at ${width}x${height}: ${JSON.stringify(fit)}`);
+    qaMetrics.viewports.push({ width, height, overflowX: fit.overflowX, overflowY: fit.overflowY, craneInside: fit.craneInside });
+    await page.screenshot({ path: `/tmp/nazonazo-dino-adventure-${browserName}-crane-${width}x${height}.png`, fullPage: true });
   }
   await page.setViewportSize({ width: 844, height: 390 });
+  await frame.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
 
   await page.emulateMedia({ reducedMotion: "reduce" });
   const reducedMotion = await frame.evaluate(() => ({
+    crane: getComputedStyle(document.getElementById("dinoCraneRingGuide")).animationName,
     water: getComputedStyle(document.querySelector(".dino-water-scene img")).animationName,
     trex: getComputedStyle(document.getElementById("dinoBossTrex")).animationName,
     action: getComputedStyle(document.getElementById("dinoBossAction")).animationName
   }));
-  assert.deepEqual(reducedMotion, { water: "none", trex: "none", action: "none" }, `${browserName}: reduced motion left dino animation active`);
+  assert.deepEqual(reducedMotion, { crane: "none", water: "none", trex: "none", action: "none" }, `${browserName}: reduced motion left dino animation active`);
   assert.notEqual((await snapshot(frame)).phase, "idle", `${browserName}: reduced-motion switch reset event`);
   await page.emulateMedia({ reducedMotion: "no-preference" });
+
+  // Cancelled input returns both pieces and retries only this event without a penalty.
+  const hookCenter = await frame.locator("#dinoCraneHook").evaluate(element => {
+    const rect = element.getBoundingClientRect();
+    return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+  });
+  await frame.locator("#dinoCraneHook").dispatchEvent("pointerdown", { pointerId: 71, pointerType: "touch", isPrimary: true, clientX: hookCenter.x, clientY: hookCenter.y });
+  await waitSnapshot(frame, state => state.crane.pointerId === 71, `${browserName}: crane pointer was not registered`);
+  await frame.locator("#dinoCraneHook").dispatchEvent("pointercancel", { pointerId: 71, pointerType: "touch", isPrimary: true, clientX: hookCenter.x, clientY: hookCenter.y });
+  const cancelled = await waitSnapshot(frame, state => state.phase === "crane-retry" && state.crane.phase === "returning", `${browserName}: pointercancel did not begin crane return`);
+  assert.equal(cancelled.eventIndex, 0, `${browserName}: pointercancel advanced the route`);
+  assert.equal(cancelled.crane.scoreGranted, false, `${browserName}: pointercancel granted crane score`);
+  assert.equal(cancelled.water.completed, false, `${browserName}: pointercancel skipped the water event`);
+  const retriedCrane = await waitSnapshot(frame, state => state.phase === "crane" && state.crane.attempt === 2, `${browserName}: crane did not return for a same-event retry`, 5000);
+  assert.equal(retriedCrane.eventIndex, 0);
+  assert.equal(retriedCrane.crane.attached, false);
+
+  const craneHook = frame.locator("#dinoCraneHook");
+  await craneHook.focus();
+  async function nudgeCraneUntil(predicate, target, label) {
+    for (let index = 0; index < 120; index += 1) {
+      const state = await snapshot(frame);
+      if (predicate(state)) return state;
+      const point = target(state);
+      const dx = point.x - state.crane.hook.x;
+      const dy = point.y - state.crane.hook.y;
+      const key = Math.abs(dx) >= Math.abs(dy)
+        ? (dx < 0 ? "ArrowLeft" : "ArrowRight")
+        : (dy < 0 ? "ArrowUp" : "ArrowDown");
+      await craneHook.press(key);
+    }
+    assert.fail(`${browserName}: ${label}; latest=${JSON.stringify(await snapshot(frame))}`);
+  }
+  const attachedCrane = await nudgeCraneUntil(
+    state => state.crane.attached,
+    state => ({ x: state.crane.geometry.ringX, y: state.crane.geometry.ringY }),
+    "keyboard could not attach the hook to the one log ring"
+  );
+  assert.equal(attachedCrane.phase, "crane-held");
+  const safeCrane = await nudgeCraneUntil(
+    state => state.crane.safeReady,
+    state => ({ x: state.crane.geometry.safeX, y: state.crane.geometry.safeY }),
+    "keyboard could not move the attached log to the safe zone"
+  );
+  const logSize = safeCrane.crane.geometry.logSize;
+  const logBounds = {
+    left: safeCrane.crane.logRing.x - (.53 - .028) * logSize,
+    right: safeCrane.crane.logRing.x + (.983 - .53) * logSize,
+    top: safeCrane.crane.logRing.y - (.34 - .150) * logSize,
+    bottom: safeCrane.crane.logRing.y + (.729 - .34) * logSize
+  };
+  const safeReference = {
+    left: safeCrane.crane.geometry.safeX - (.53 - .028) * logSize - 14,
+    right: safeCrane.crane.geometry.safeX + (.983 - .53) * logSize + 14,
+    top: safeCrane.crane.geometry.safeY - (.34 - .150) * logSize - 14,
+    bottom: safeCrane.crane.geometry.safeY + (.729 - .34) * logSize + 14
+  };
+  assert.ok(logBounds.left >= safeReference.left && logBounds.right <= safeReference.right && logBounds.top >= safeReference.top && logBounds.bottom <= safeReference.bottom, `${browserName}: visible log bounds are not fully inside the safe zone`);
+  await craneHook.press("Enter");
+  const craneSuccess = await waitSnapshot(frame, state => state.phase === "crane-success" && state.crane.completed, `${browserName}: keyboard crane success did not commit`);
+  assert.equal(craneSuccess.eventIndex, 1);
+  assert.equal(craneSuccess.crane.scoreGranted, true);
+  assert.equal(craneSuccess.crane.attempt, 2);
+  await page.screenshot({ path: `/tmp/nazonazo-dino-adventure-${browserName}-crane-success-844x390.png`, fullPage: true });
+
+  const waterStartedAt = Date.now();
+  const waterInitial = await waitSnapshot(frame, state => state.phase === "water" || state.phase === "water-ready", `${browserName}: crane did not transition to the water event`, 20000);
+  qaMetrics.waterRevealAfterCraneMs = Date.now() - waterStartedAt;
+  assert.equal(waterInitial.eventIndex, 1);
+  assert.equal(waterInitial.crane.completed, true);
+  assert.equal(waterInitial.water.completed, false);
+  await assertRenderedImage(frame.locator("#dinoWaterDinos"), "branch_dino_adventure_waterway_dry_20260722.webp", "water dry");
 
   const waterMetrics = await frame.evaluate(() => {
     const grid = document.getElementById("dinoWaterGrid").getBoundingClientRect();
@@ -704,7 +808,7 @@ async function runBrowser(browserName, base) {
 
   // The implementation exposes a read-only solution only in the authenticated admin preview.
   // Input still travels through the real pointer handlers; the debug hook cannot mutate state.
-  const solution = initial.water.solution.map(point => point.row * 7 + point.col);
+  const solution = waterInitial.water.solution.map(point => point.row * 7 + point.col);
   assert.ok(Array.isArray(solution) && solution.length >= 4, `${browserName}: admin snapshot solution missing`);
   async function trace(indices) {
     const boxes = [];
@@ -734,12 +838,12 @@ async function runBrowser(browserName, base) {
   await trace(solution);
   const savedWater = await waitSnapshot(frame, state => state.water.completed && state.phase === "resolve-water", `${browserName}: water success tableau did not appear`, 12000);
   const waterSavedAt = Date.now();
-  assert.equal(savedWater.eventIndex, 1);
+  assert.equal(savedWater.eventIndex, 2);
   assert.equal(await frame.locator("#dinoWaterGame.is-saved").count(), 1, `${browserName}: water success class missing`);
   await assertRenderedImage(frame.locator("#dinoWaterDinos"), "branch_dino_adventure_waterway_success_20260722.webp", "water success");
   await page.waitForTimeout(400);
   await page.screenshot({ path: `/tmp/nazonazo-dino-adventure-${browserName}-water-success-844x390.png`, fullPage: true });
-  const afterWater = await waitSnapshot(frame, state => state.water.completed && state.eventIndex === 1 && state.boss.phase !== "idle", `${browserName}: water did not transition directly to boss once`, 20000);
+  const afterWater = await waitSnapshot(frame, state => state.water.completed && state.eventIndex === 2 && state.boss.phase !== "idle", `${browserName}: water did not transition directly to boss once`, 20000);
   qaMetrics.bossRevealAfterWaterMs = Date.now() - waterSavedAt;
   assert.equal(afterWater.transitionCount >= 1, true);
   assert.equal(afterWater.boss.waterCharge, 3);
@@ -908,7 +1012,7 @@ async function runBrowser(browserName, base) {
   assert.equal(lost.boss.trainHp, 0);
   await assertBossTrexAsset("branch_dino_adventure_trex_waiting_cutout_20260722.webp", "lost");
   assert.equal(lost.water.completed, true, `${browserName}: boss loss reset water completion`);
-  assert.equal(lost.eventIndex, 1, `${browserName}: boss loss changed event position`);
+  assert.equal(lost.eventIndex, 2, `${browserName}: boss loss changed event position`);
   assert.equal(await frame.locator("#dinoBossRetry").isVisible(), true, `${browserName}: boss retry button missing`);
   assert.equal(await frame.locator("#dinoBossAction:visible").count(), 0, `${browserName}: boss action remained visible after loss`);
   assert.equal(await frame.locator("#dinoWaterGame:visible").count(), 0, `${browserName}: water event replayed on boss loss`);
@@ -960,6 +1064,102 @@ async function runBrowser(browserName, base) {
   await browser.close();
 }
 
+async function runCranePointerBrowser(browserName, base) {
+  const { chromium, webkit } = require("playwright");
+  const browserType = browserName.startsWith("webkit") ? webkit : chromium;
+  const browser = await browserType.launch({ headless: true });
+  const context = await browser.newContext({ viewport: { width: 1174, height: 658 }, reducedMotion: "no-preference" });
+  await context.addInitScript(() => {
+    window.__APP_BUILD__ = 1;
+    localStorage.setItem("pono_nazonazo_tunnel_v1", JSON.stringify({
+      schemaVersion: 1,
+      lastLevel: 0,
+      unlockedLoop: 0,
+      bestStarsByStage: { "0-0": 3 },
+      collectedFriends: [],
+      highScore: 1250
+    }));
+  });
+  const page = await context.newPage();
+  const pageErrors = [];
+  const requestFailures = [];
+  const craneResponses = new Map();
+  const craneAssetFiles = DINO_ASSET_FILES.slice(0, 4);
+  page.on("pageerror", error => pageErrors.push(String(error)));
+  page.on("requestfailed", request => requestFailures.push(`${request.method()} ${request.url()} ${request.failure()?.errorText || ""}`));
+  page.on("response", response => {
+    const file = path.basename(new URL(response.url()).pathname);
+    if (!craneAssetFiles.includes(file)) return;
+    const statuses = craneResponses.get(file) || [];
+    statuses.push(response.status());
+    craneResponses.set(file, statuses);
+  });
+  await page.goto(`${base}/admin/dino-adventure-qa.html`, { waitUntil: "networkidle" });
+  let frame = page.frames().find(candidate => /\/nazonazo-tunnel\//.test(candidate.url()));
+  const frameDeadline = Date.now() + 15000;
+  while (!frame && Date.now() < frameDeadline) {
+    await new Promise(resolve => setTimeout(resolve, 40));
+    frame = page.frames().find(candidate => /\/nazonazo-tunnel\//.test(candidate.url()));
+  }
+  assert.ok(frame, `${browserName}: pointer parity preview iframe missing`);
+  await frame.locator("#startBtn").waitFor({ state: "visible", timeout: 15000 });
+  await frame.waitForFunction(() => !document.getElementById("startBtn").disabled && /きょうりゅう/.test(document.getElementById("startBtn").textContent), null, { timeout: 15000 });
+  const saveBefore = await frame.evaluate(() => localStorage.getItem("pono_nazonazo_tunnel_v1"));
+  await frame.locator("#startBtn").click();
+  await waitSnapshot(frame, state => state.phase === "crane" && state.crane.attempt === 1, `${browserName}: pointer parity crane did not start`, 20000);
+  const field = await frame.locator("#dinoCranePlayfield").boundingBox();
+  assert.ok(field, `${browserName}: crane playfield missing`);
+
+  const clientPoint = statePoint => ({ x: field.x + statePoint.x, y: field.y + statePoint.y });
+  let state = await snapshot(frame);
+  let point = clientPoint(state.crane.hook);
+  await page.mouse.move(point.x, point.y);
+  await page.mouse.down();
+  await page.mouse.move(point.x + 36, point.y - 28, { steps: 4 });
+  await page.mouse.up();
+  const returning = await waitSnapshot(frame, value => value.phase === "crane-retry" && value.crane.phase === "returning", `${browserName}: pointer miss did not enter return`);
+  assert.equal(returning.eventIndex, 0);
+  assert.equal(returning.crane.scoreGranted, false);
+  await page.screenshot({ path: `/tmp/nazonazo-dino-crane-pointer-${browserName}-returning-1174x658.png`, fullPage: true });
+  await waitSnapshot(frame, value => value.phase === "crane" && value.crane.attempt === 2, `${browserName}: pointer miss did not retry same event`, 5000);
+
+  state = await snapshot(frame);
+  point = clientPoint(state.crane.hook);
+  const ring = clientPoint({ x: state.crane.geometry.ringX, y: state.crane.geometry.ringY });
+  await page.mouse.move(point.x, point.y);
+  await page.mouse.down();
+  await page.mouse.move(ring.x - 58, ring.y, { steps: 10 });
+  const nearSnap = await snapshot(frame);
+  assert.equal(nearSnap.crane.attached, false, `${browserName}: hook snapped before entering the forgiving radius`);
+  await page.screenshot({ path: `/tmp/nazonazo-dino-crane-pointer-${browserName}-near-snap-1174x658.png`, fullPage: true });
+  await page.mouse.move(ring.x, ring.y, { steps: 4 });
+  const held = await waitSnapshot(frame, value => value.phase === "crane-held" && value.crane.attached, `${browserName}: real pointer did not snap to the log ring`);
+  assert.equal(held.crane.attempt, 2);
+  await page.screenshot({ path: `/tmp/nazonazo-dino-crane-pointer-${browserName}-held-1174x658.png`, fullPage: true });
+
+  const safe = clientPoint({ x: held.crane.geometry.safeX, y: held.crane.geometry.safeY });
+  await page.mouse.move(safe.x, safe.y, { steps: 12 });
+  const safeReady = await waitSnapshot(frame, value => value.crane.safeReady && value.crane.attached, `${browserName}: real pointer did not carry the log fully into the safe zone`);
+  assert.equal(safeReady.eventIndex, 0);
+  await page.screenshot({ path: `/tmp/nazonazo-dino-crane-pointer-${browserName}-safe-ready-1174x658.png`, fullPage: true });
+  await page.mouse.up();
+  const success = await waitSnapshot(frame, value => value.phase === "crane-success" && value.crane.completed, `${browserName}: real pointer drop did not commit crane success`);
+  assert.equal(success.eventIndex, 1);
+  assert.equal(success.crane.scoreGranted, true);
+  await page.screenshot({ path: `/tmp/nazonazo-dino-crane-pointer-${browserName}-success-1174x658.png`, fullPage: true });
+
+  const saveAfter = await frame.evaluate(() => localStorage.getItem("pono_nazonazo_tunnel_v1"));
+  assert.equal(saveAfter, saveBefore, `${browserName}: pointer parity preview mutated save data`);
+  const report = Object.fromEntries(craneAssetFiles.map(file => [file, craneResponses.get(file) || []]));
+  assert.deepEqual(craneAssetFiles.filter(file => report[file].length !== 1 || report[file][0] !== 200), [], `${browserName}: pointer parity crane asset loads drifted: ${JSON.stringify(report)}`);
+  assert.deepEqual(pageErrors, [], `${browserName}: pointer parity page errors\n${pageErrors.join("\n")}`);
+  const unexpectedRequestFailures = requestFailures.filter(failure => !/^HEAD .+\/admin\/ net::ERR_ABORTED$/.test(failure));
+  assert.deepEqual(unexpectedRequestFailures, [], `${browserName}: pointer parity request failures\n${unexpectedRequestFailures.join("\n")}`);
+  console.log(`nazonazo dino crane pointer parity (${browserName}): PASS ${JSON.stringify({ attempt: success.crane.attempt, eventIndex: success.eventIndex, assets: report })}`);
+  await context.close();
+  await browser.close();
+}
+
 async function runSlowStaleRevealBrowser(browserName, base) {
   const slowAssetDelayMs = Math.max(0, Number(process.env.NAZONAZO_SLOW_DINO_ASSETS_MS) || 0);
   if (!slowAssetDelayMs) return;
@@ -1003,13 +1203,14 @@ async function runSlowStaleRevealBrowser(browserName, base) {
   const staleDom = await frame.evaluate(() => ({
     layerHidden: document.getElementById("dinoAdventureLayer").hidden,
     layerAriaHidden: document.getElementById("dinoAdventureLayer").getAttribute("aria-hidden"),
+    craneHidden: document.getElementById("dinoCraneGame").hidden,
     waterHidden: document.getElementById("dinoWaterGame").hidden,
     bossHidden: document.getElementById("dinoBossGame").hidden,
-    activeClass: document.body.classList.contains("dino-adventure-active") || document.body.classList.contains("dino-boss-active")
+    activeClass: document.body.classList.contains("dino-adventure-active") || document.body.classList.contains("dino-crane-active") || document.body.classList.contains("dino-boss-active")
   }));
   assert.equal(afterDelay.phase, "idle", `${browserName}: stale predecode callback changed phase after stage exit`);
   assert.equal(afterDelay.epoch, reset.epoch, `${browserName}: stale predecode callback changed epoch after stage exit`);
-  assert.deepEqual(staleDom, { layerHidden: true, layerAriaHidden: "true", waterHidden: true, bossHidden: true, activeClass: false }, `${browserName}: stale predecode callback revealed dino DOM after stage exit`);
+  assert.deepEqual(staleDom, { layerHidden: true, layerAriaHidden: "true", craneHidden: true, waterHidden: true, bossHidden: true, activeClass: false }, `${browserName}: stale predecode callback revealed dino DOM after stage exit`);
   assert.deepEqual(pageErrors, [], `${browserName}: stale-reveal page errors\n${pageErrors.join("\n")}`);
   const unexpectedRequestFailures = requestFailures.filter(failure => !/^HEAD .+\/admin\/ net::ERR_ABORTED$/.test(failure));
   assert.deepEqual(unexpectedRequestFailures, [], `${browserName}: stale-reveal request failures\n${unexpectedRequestFailures.join("\n")}`);
@@ -1079,7 +1280,10 @@ async function main() {
     try {
       const browsers = process.env.NAZONAZO_BROWSER.split(",").map(value => value.trim()).filter(Boolean);
       for (const browserName of browsers) {
-        if (process.env.NAZONAZO_STALE_ONLY !== "1") await runBrowser(browserName, server.base);
+        if (process.env.NAZONAZO_STALE_ONLY !== "1") {
+          await runBrowser(browserName, server.base);
+          await runCranePointerBrowser(browserName, server.base);
+        }
         await runSlowStaleRevealBrowser(browserName, server.base);
       }
     } finally {

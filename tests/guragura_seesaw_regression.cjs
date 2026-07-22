@@ -205,6 +205,19 @@ section("isBalanced 閾値", () => {
   assert.ok(L.BALANCE_EPS_DEG < L.ANGLE_PER_DIFF, "BALANCE_EPS_DEG < ANGLE_PER_DIFF (整数weightでの誤判定防止)");
 });
 
+// ── 4b. isNearBalance 閾値 (「あとちょっと！」演出用) ────────────
+section("isNearBalance 閾値", () => {
+  assert.equal(L.isNearBalance(0), true, "角度0 (=釣り合い) も near 判定に含まれる (呼び出し側で isBalanced と併用して除外する設計)");
+  assert.equal(L.isNearBalance(L.ANGLE_PER_DIFF), true, "重さ差1個ぶん (3.5deg) は near と判定する");
+  assert.equal(L.isNearBalance(-L.ANGLE_PER_DIFF), true, "対称性: 負の角度でも near 判定は絶対値で行う");
+  assert.equal(L.isNearBalance(L.ANGLE_PER_DIFF * 2), false, "重さ差2個ぶん (7deg) は near と判定しない");
+  assert.ok(L.NEAR_BALANCE_EPS_DEG > L.BALANCE_EPS_DEG, "NEAR_BALANCE_EPS_DEG は BALANCE_EPS_DEG より広い (isBalanced のスーパーセット)");
+  assert.ok(L.NEAR_BALANCE_EPS_DEG < L.ANGLE_PER_DIFF * 2, "NEAR_BALANCE_EPS_DEG は重さ差2個ぶんの角度未満 (誤検出防止)");
+  assert.equal(L.isNearBalance(10, 5), false, "第2引数 nearDeg で閾値を明示上書きできる (10 > 5)");
+  assert.equal(L.isNearBalance(3, 5), true, "第2引数 nearDeg で閾値を明示上書きできる (3 <= 5)");
+  assert.ok(Number.isFinite(L.NEAR_BALANCE_EPS_DEG) && L.isNearBalance(NaN) === true, "NaN 入力は 0 扱いで near 判定される (他の純関数と同じ NaN 耐性)");
+});
+
 // ── 5. placeItem / removeItem 不変条件 ─────────────────────────
 section("placeItem / removeItem 不変条件", () => {
   // 容量超過 -> full、元 state 非破壊
@@ -419,7 +432,7 @@ section("AR 違反禁止", () => {
 // ── 12. Haptics whitelist ────────────────────────────────────────
 section("Haptics whitelist", () => {
   const hapticsJs = read("common/haptics.js");
-  const allowed = ["stickerPaste", "gachaTurn3", "superBadgePop"];
+  const allowed = ["stickerPaste", "gachaTurn3", "superBadgePop", "nearBalance"];
   const calls = [...gameJs.matchAll(/Haptics\.fire\(\s*['"]([^'"]+)['"]/g)].map(m => m[1]);
   assert.ok(calls.length > 0, "game.js は Haptics.fire を呼んでいる");
   for (const pattern of calls) {
@@ -436,6 +449,41 @@ section("禁止 API", () => {
   if (treasureCalls.length > 0) {
     assert.match(gameJs, /showTreasure\(\s*\{/, "showTreasure は showTreasure({ 形のみで呼ばれる");
   }
+});
+
+// ── 13.5 beginDrag: wasNearBalance 誤リセット防止 (near-balance 誤発火バグ回帰) ──
+// クロスレビューで発見: beginDrag() で毎回 wasNearBalance を false にリセットすると、
+// 「持ち上げただけでキャンセル」「slip で弾き戻された」等 session.leftIds/rightIds が
+// 変化しないドラッグでも、ドラッグ終了直後の次フレームで false→true の立ち上がりが
+// 誤検出され、光/ハプティクスのワンショット演出が何も変わっていないのに再発火する。
+// rAFループの近接判定は !dragState の間しか評価されないため (591行目付近)、
+// beginDrag 側でリセットしなくても副作用は無い。
+// 一方 startGame (ラウンド開始) と onRoundBalanced (ラウンド遷移) では、
+// 新ラウンドを完全に新しい状態として扱うべきなので明示リセットが必要 = 維持する。
+section("beginDrag は wasNearBalance をリセットしない (near-balance 誤発火バグ回帰)", () => {
+  const beginDragMatch = gameJs.match(/function beginDrag\([^)]*\)\s*\{([\s\S]*?)\n  \}/);
+  assert.ok(beginDragMatch, "beginDrag() 関数本体を抽出できる");
+  assert.doesNotMatch(
+    beginDragMatch[1],
+    /wasNearBalance\s*=\s*false/,
+    "beginDrag() は wasNearBalance を強制リセットしない (ドラッグキャンセル/slip 後の誤発火防止)"
+  );
+
+  const startGameMatch = gameJs.match(/function startGame\(\)\s*\{([\s\S]*?)\n  \}/);
+  assert.ok(startGameMatch, "startGame() 関数本体を抽出できる");
+  assert.match(
+    startGameMatch[1],
+    /wasNearBalance\s*=\s*false/,
+    "startGame() は wasNearBalance を明示リセットする (新ラウンド開始は完全に新規状態)"
+  );
+
+  const onRoundBalancedMatch = gameJs.match(/function onRoundBalanced\(\)\s*\{([\s\S]*?)\n  \}/);
+  assert.ok(onRoundBalancedMatch, "onRoundBalanced() 関数本体を抽出できる");
+  assert.match(
+    onRoundBalancedMatch[1],
+    /wasNearBalance\s*=\s*false/,
+    "onRoundBalanced() (ラウンド遷移) は wasNearBalance を明示リセットする"
+  );
 });
 
 // ── 14. index.html 構造 ─────────────────────────────────────────

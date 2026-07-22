@@ -21,6 +21,10 @@
     capsuleCrack: 100,
     rareBadgePop: [15, 40, 15, 80],
     superBadgePop: [10, 30, 10, 30, 10, 120],
+    // ── guragura-seesaw (v1) ────────────────────────────────
+    // near-balance: 「あとちょっと！」rising edge の単発ワンショット。
+    // 頻繁に発火しうる (毎ラウンド最大1回程度) ため他パターンより短く軽量にする。
+    nearBalance: 8,
   });
 
   var disabled = false;

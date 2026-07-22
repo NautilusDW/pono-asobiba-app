@@ -707,10 +707,10 @@ const DINO_ADVENTURE_ASSETS={
 // Canonical GPT Image 2 crane assets are connected only after asset QA/promotion.
 // Empty entries deliberately fail closed instead of rendering a placeholder.
 const DINO_CRANE_ASSETS=Object.freeze({
- arm:"",
- cable:"",
- hook:"",
- log:""
+ arm:"../assets/images/nazonazo-tunnel/branch_dino_adventure_crane_arm_base_cutout_20260723.webp",
+ cable:"../assets/images/nazonazo-tunnel/branch_dino_adventure_crane_cable_cutout_20260723.webp",
+ hook:"../assets/images/nazonazo-tunnel/branch_dino_adventure_crane_hook_cutout_20260723.webp",
+ log:"../assets/images/nazonazo-tunnel/branch_dino_adventure_fallen_log_ring_cutout_20260723.webp"
 });
 const dinoAdventureImageCache=new Map(),dinoAdventureImageDecodePromises=new Map();
 const dinoAdventureDomPaintedSrc=new WeakMap();

@@ -1,5 +1,13 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2336: guragura-seesaw に「あとちょっと！ハラハラ演出」を追加。 釣り合いに近づいた
+// 瞬間(near-balance rising edge)だけ #plank に淡い金色グロー(box-shadow アニメ、
+// transform は絶対に含めない)+ common/haptics.js の新パターン 'nearBalance'(8ms単発)
+// を1回だけ発火。 logic.js に純関数 isNearBalance(targetDeg, nearDeg) と定数
+// NEAR_BALANCE_EPS_DEG=5.0 (重さ差1個ぶん=3.5degは近い/2個ぶん=7degは近くない、
+// を切り分ける中間値) を追加。 ゲーム個別ファイルは network-first 配信のため
+// CRITICAL_ASSETS には追加しない。play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSION
+// と同期 (2336)。
 // v2331: donguri-wakekko/hyokkori-hightouch/hatake-nikki/guragura-seesaw の横画面誤検知
 // +スタートボタン無反応の修正セッション。ゲーム個別ファイルは network-first 配信のため
 // CRITICAL_ASSETS には追加しない。play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSION
@@ -771,7 +779,7 @@
 // preventDefault)。水やり成功フィードバック(バッジ/演出/flash文言)と常設ステータスバー
 // を追加し、#stage 背景を cover→contain に防御的変更 (ひし形頂点欠け不能化)。
 // play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSION と同期 (2335)。
-const CACHE_VERSION = 2335;
+const CACHE_VERSION = 2336;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [
