@@ -142,6 +142,7 @@
   // (= ゲームを止めない) 側に倒す。
   var LANDSCAPE_NOTICE_CONFIRM_MS = 300;
   var landscapeNoticeTimer = null;
+  var landscapeNoticeBlocking = false;
 
   function computeIsPortrait() {
     try {
@@ -173,6 +174,7 @@
   function applyLandscapeNotice(show) {
     var notice = document.getElementById('landscape-notice');
     if (!notice) return;
+    landscapeNoticeBlocking = !!show;
     notice.style.display = show ? 'flex' : 'none';
     notice.setAttribute('aria-hidden', show ? 'false' : 'true');
   }
@@ -267,6 +269,9 @@
   var boardLockedUntil = 0; // OVERHEAT 演出用 (state.time 基準)
   var seedHolderHole = null; // null は花壇、数値は最後に成功した隠れ場所。
   var lastPartnerId = null;
+  var tutorialOpen = false;
+  var highScoreTimer = 0;
+  var relayAnnouncementTimer = 0;
 
   function resetGameState() {
     state = L.createInitialState();
@@ -280,6 +285,10 @@
     settleTimer = 0;
     boardLockedUntil = 0;
     lastPartnerId = null;
+    lastTickSecond = -1;
+    tutorialOpen = false;
+    if (highScoreTimer) { clearTimeout(highScoreTimer); highScoreTimer = 0; }
+    if (relayAnnouncementTimer) { clearTimeout(relayAnnouncementTimer); relayAnnouncementTimer = 0; }
     confetti = [];
     resetRelayVisual();
   }
@@ -341,6 +350,7 @@
   function renderSpawn(idx, kind, partner) {
     var refs = holeRefs[idx];
     if (!refs) return;
+    refs.visualToken = (refs.visualToken || 0) + 1;
     refs.img.src = partner[kind];
     refs.img.alt = kind === 'awake' ? 'おきている おともだち' : 'ねている おともだち';
     refs.hole.setAttribute('aria-label', kind === 'awake' ? 'ハイタッチする おともだち' : 'ねている おともだち');
@@ -355,9 +365,23 @@
     h.occupant = null;
     var refs = holeRefs[idx];
     if (refs) {
+      refs.visualToken = (refs.visualToken || 0) + 1;
       refs.wrap.classList.remove('is-visible', 'is-sleeping');
       refs.hole.setAttribute('aria-label', 'おともだちが でてくる ばしょ');
     }
+  }
+
+  function celebrateAndRetract(idx) {
+    var h = holes[idx];
+    var refs = holeRefs[idx];
+    if (!h || !h.occupant || !refs) return;
+    h.occupant = null;
+    var token = refs.visualToken || 0;
+    setTimeout(function () {
+      if ((refs.visualToken || 0) !== token || holes[idx].occupant) return;
+      refs.wrap.classList.remove('is-visible', 'is-sleeping', 'is-hit');
+      refs.hole.setAttribute('aria-label', 'おともだちが でてくる ばしょ');
+    }, prefersReducedMotion() ? 0 : 300);
   }
 
   function updateHoleTimeouts() {
@@ -375,6 +399,7 @@
   // ═══ 紙吹雪 (bubble/index.html の addConfetti 相当を fx-canvas 向けに簡略移植) ═══
   var confetti = [];
   function spawnConfettiBurst(x, y, count) {
+    if (prefersReducedMotion()) return;
     var n = count || 16;
     var colors = ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#ff9f45'];
     for (var i = 0; i < n; i++) {
@@ -417,6 +442,107 @@
     var stageRect = stageEl.getBoundingClientRect();
     return { x: rect.left + rect.width / 2 - stageRect.left, y: rect.top + rect.height / 2 - stageRect.top };
   }
+
+  function flowerbedAnchorPoint() {
+    var stageRect = stageEl.getBoundingClientRect();
+    if (!flowerbedEl) return { x: stageRect.width / 2, y: stageRect.height * 0.18 };
+    var rect = flowerbedEl.getBoundingClientRect();
+    return {
+      x: rect.left + rect.width * 0.5 - stageRect.left,
+      y: rect.top + rect.height * 0.46 - stageRect.top
+    };
+  }
+
+  function partnerPawPoint(idx) {
+    var refs = holeRefs[idx];
+    if (!refs || !refs.img) return holeCenterPoint(idx);
+    var stageRect = stageEl.getBoundingClientRect();
+    var rect = refs.img.getBoundingClientRect();
+    return {
+      x: rect.left + rect.width * 0.70 - stageRect.left,
+      y: rect.top + rect.height * 0.38 - stageRect.top
+    };
+  }
+
+  function setSeedPoint(point, animate) {
+    if (!lightSeedEl || !point) return;
+    var shouldAnimate = animate && !prefersReducedMotion();
+    if (!shouldAnimate) lightSeedEl.style.transition = 'none';
+    else lightSeedEl.style.removeProperty('transition');
+    lightSeedEl.style.setProperty('--seed-x', Math.round(point.x) + 'px');
+    lightSeedEl.style.setProperty('--seed-y', Math.round(point.y) + 'px');
+    if (!shouldAnimate) {
+      requestAnimationFrame(function () { if (lightSeedEl) lightSeedEl.style.removeProperty('transition'); });
+    }
+  }
+
+  function positionRelayVisual() {
+    if (!lightSeedEl) return;
+    var point = seedHolderHole === null ? flowerbedAnchorPoint() : partnerPawPoint(seedHolderHole);
+    setSeedPoint(point, false);
+  }
+
+  function moveSeedToHole(idx) {
+    if (idx === null || !holeRefs[idx]) return;
+    setSeedPoint(partnerPawPoint(idx), true);
+    seedHolderHole = idx;
+    if (lightSeedEl) {
+      lightSeedEl.dataset.holder = String(idx);
+      retriggerClass(lightSeedEl, 'is-flying', 520);
+    }
+  }
+
+  function announceRelay(text) {
+    if (!relayAnnouncementEl || !text) return;
+    if (relayAnnouncementTimer) clearTimeout(relayAnnouncementTimer);
+    relayAnnouncementEl.textContent = '';
+    void relayAnnouncementEl.offsetWidth;
+    relayAnnouncementEl.textContent = text;
+    relayAnnouncementTimer = setTimeout(function () {
+      relayAnnouncementTimer = 0;
+      if (relayAnnouncementEl) relayAnnouncementEl.textContent = '';
+    }, 1200);
+  }
+
+  function setFlowerStage(stage, announce) {
+    var safeStage = Math.max(0, Math.min(FLOWER_IMAGES.length - 1, Number(stage) || 0));
+    if (!flowerbedEl) return;
+    var previous = Number(flowerbedEl.dataset.stage || 0);
+    flowerbedEl.src = FLOWER_IMAGES[safeStage];
+    flowerbedEl.dataset.stage = String(safeStage);
+    flowerbedEl.alt = safeStage === 0 ? 'これから そだつ はなばたけ' : 'そだっている はなばたけ';
+    if (announce && safeStage !== previous) {
+      var messages = ['', 'めが でたよ', 'つぼみが できたよ', 'おはなが さいたよ'];
+      announceRelay(messages[safeStage]);
+      retriggerClass(relayProgressEl, 'is-growing', 700);
+    }
+  }
+
+  function updateRelayVisual(result) {
+    var step = typeof result.relayStep === 'number' ? result.relayStep : state.relayStep;
+    var flowerStage = typeof result.flowerStage === 'number' ? result.flowerStage : state.flowerStage;
+    for (var i = 0; i < relayPipEls.length; i++) {
+      relayPipEls[i].classList.toggle('is-lit', flowerStage >= L.FLOWER_STAGE_MAX || i < step);
+    }
+    setFlowerStage(flowerStage, !!result.flowerStageChanged);
+    if (result.flowerStageChanged && flowerStage === L.FLOWER_STAGE_MAX) {
+      var bloom = flowerbedAnchorPoint();
+      spawnConfettiBurst(bloom.x, bloom.y, 38);
+      playFanfare();
+    }
+  }
+
+  function resetRelayVisual() {
+    seedHolderHole = null;
+    if (lightSeedEl) lightSeedEl.dataset.holder = 'flowerbed';
+    for (var i = 0; i < relayPipEls.length; i++) relayPipEls[i].classList.remove('is-lit');
+    setFlowerStage(0, false);
+    if (relayProgressEl) relayProgressEl.classList.remove('is-growing');
+    if (relayAnnouncementEl) relayAnnouncementEl.textContent = '';
+    requestAnimationFrame(positionRelayVisual);
+  }
+
+  window.addEventListener('resize', positionRelayVisual);
 
   // ═══ 音 (WebAudio 直接合成。 pakupaku-catch と同型の簡易トーン) ═══
   var audioCtx = null;
@@ -472,7 +598,7 @@
   // ═══ OVERHEAT 演出 (責めない演出) ═══
   var overheatBannerEl = document.getElementById('overheat-banner');
   function triggerOverheatBanner() {
-    retriggerClass(overheatBannerEl, 'show');
+    retriggerClass(overheatBannerEl, 'show', 1500);
   }
 
   function updateBoardLockVisual() {
@@ -510,7 +636,11 @@
         var pt = idx !== null ? holeCenterPoint(idx) : { x: fxCanvas.width / 2, y: fxCanvas.height / 2 };
         var refs = idx !== null ? holeRefs[idx] : null;
         if (refs) retriggerClass(refs.wrap, 'is-hit', 320);
-        if (idx !== null) retractHole(idx);
+        if (idx !== null) {
+          moveSeedToHole(idx);
+          celebrateAndRetract(idx);
+        }
+        updateRelayVisual(res);
         spawnConfettiBurst(pt.x, pt.y, 18);
         if (window.Haptics) window.Haptics.fire('stickerPaste');
         if (window.incrementStat) window.incrementStat('hyokkori_touches', 1);
@@ -572,11 +702,13 @@
 
   // ═══ チュートリアル ═══
   var TUT_STEPS = [
-    { icon: '🖐️', text: 'おきてる こが ひょっこり でてきたら<br>すぐに タップして ハイタッチしよう！' },
-    { icon: '😴', text: 'ねてる こ (💤 の こ) は そっとしておいてね。<br>タップすると びっくりさせちゃうよ' }
+    { image: ASSET_BASE + 'fx_highfive_burst.png', text: 'おきてる こへ ハイタッチして<br>ひかりを つなごう！' },
+    { image: ASSET_BASE + 'fx_sleep_moon_cloud.png', text: 'ねてる こは<br>そっと みまもってね' },
+    { image: ASSET_BASE + 'mechanic_light_seed.png', text: '4かい つなぐと<br>おはなが そだつよ' }
   ];
   var tutStep = 0;
   function showTutorial() {
+    tutorialOpen = true;
     tutStep = 0;
     renderTutStep();
   }
@@ -587,11 +719,12 @@
     var step = TUT_STEPS[tutStep];
     dim.classList.remove('hidden');
     bubble.classList.remove('hidden');
-    bubble.innerHTML = '<div class="tut-icon">' + step.icon + '</div>' + step.text +
+    bubble.innerHTML = '<img class="tut-icon" src="' + step.image + '" alt="" draggable="false">' + step.text +
       '<br><button class="tut-next-btn" id="tut-next">' + (tutStep < TUT_STEPS.length - 1 ? 'つぎへ' : 'とじる') + '</button>';
-    document.getElementById('tut-next').addEventListener('pointerdown', onTutNext);
+    document.getElementById('tut-next').addEventListener('click', onTutNext);
   }
   function closeTutorial() {
+    tutorialOpen = false;
     var dim = document.getElementById('tut-dim');
     var bubble = document.getElementById('tut-bubble');
     if (dim) dim.classList.add('hidden');
@@ -605,7 +738,7 @@
     renderTutStep();
   }
   var tutDimEl = document.getElementById('tut-dim');
-  if (tutDimEl) tutDimEl.addEventListener('pointerdown', closeTutorial);
+  if (tutDimEl) tutDimEl.addEventListener('click', closeTutorial);
 
   // ═══ ゲームフロー: start → countdown → playing → settling → result ═══
   function beginCountdown() {
@@ -635,6 +768,10 @@
   function showResult() {
     var scoreEl = document.getElementById('result-score');
     if (scoreEl) scoreEl.textContent = state.score + ' てん';
+    var relayEl = document.getElementById('result-relay');
+    if (relayEl) relayEl.textContent = 'ひかりを ' + state.relayHits + 'かい つないだよ';
+    var bannerEl = document.querySelector('#result-card .result-banner');
+    if (bannerEl) bannerEl.textContent = state.flowerStage >= L.FLOWER_STAGE_MAX ? 'おはなが いっぱい！' : 'ここまで そだったよ！';
     var rank = window.saveHighScore ? window.saveHighScore('hyokkori-hightouch', state.score) : 0;
     var newEl = document.getElementById('result-new');
     if (rank >= 1) {
@@ -642,15 +779,29 @@
       spawnConfettiBurst(fxCanvas.width / 2, fxCanvas.height * 0.25, rank === 1 ? 50 : 22);
       if (window.Haptics) window.Haptics.fire('superBadgePop');
       playFanfare();
-      setTimeout(function () {
-        if (window.showHighScoreTable) window.showHighScoreTable('hyokkori-hightouch', '🖐️ ひょっこりハイタッチ ハイスコア');
+      if (highScoreTimer) clearTimeout(highScoreTimer);
+      highScoreTimer = setTimeout(function () {
+        highScoreTimer = 0;
+        var resultOverlay = document.getElementById('result-overlay');
+        if (phase === 'result' && resultOverlay && resultOverlay.classList.contains('show') && window.showHighScoreTable) {
+          window.showHighScoreTable('hyokkori-hightouch', '🖐️ ひょっこりハイタッチ ハイスコア');
+        }
       }, 900);
     } else {
       if (newEl) newEl.classList.add('hidden');
       playFanfare();
     }
     var overlay = document.getElementById('result-overlay');
-    if (overlay) overlay.classList.add('show');
+    if (overlay) {
+      overlay.classList.add('show');
+      setTimeout(function () {
+        var retry = document.getElementById('retry-btn');
+        if (retry) {
+          try { retry.focus({ preventScroll: true }); }
+          catch (e) { retry.focus(); }
+        }
+      }, prefersReducedMotion() ? 0 : 280);
+    }
   }
 
   function startMenuOnce() {
@@ -668,7 +819,7 @@
 
   var startBtn = document.getElementById('start-btn');
   if (startBtn) {
-    startBtn.addEventListener('pointerdown', function (e) {
+    startBtn.addEventListener('click', function (e) {
       e.preventDefault();
       e.stopPropagation();
       ensureAudio();
@@ -683,7 +834,7 @@
 
   var retryBtn = document.getElementById('retry-btn');
   if (retryBtn) {
-    retryBtn.addEventListener('pointerdown', function (e) {
+    retryBtn.addEventListener('click', function (e) {
       e.preventDefault();
       e.stopPropagation();
       var overlay = document.getElementById('result-overlay');
@@ -694,6 +845,7 @@
     });
   }
 
+  preloadGameAssetsLocally();
   resetGameState();
   updateHud();
 
@@ -705,7 +857,7 @@
     if (dt > 0.05) dt = 0.05; // タブ切替復帰時などの大ジャンプを吸収
     lastTs = ts;
 
-    if (phase === 'playing' || phase === 'settling') {
+    if ((phase === 'playing' || phase === 'settling') && !tutorialOpen && !landscapeNoticeBlocking) {
       // state.time (壁時計) は settling 中も進める (pakupaku-catch と同型)。
       L.tickTimer(state, dt);
       if (phase === 'playing') {

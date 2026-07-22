@@ -1,5 +1,11 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2340: ひょっこりハイタッチをGPT Image 2製の専用32画像へ刷新し、起きている
+// 友だちへの成功時だけ「ひかりのたね」が別の隠れ場所へ移るリレーと、4回ごとの
+// 花壇3段階成長を追加。専用awake/sleeping画像、森背景、隠れ場所、開始/結果、FX、
+// メニューサムネを接続した。ゲーム個別ファイルと画像はnetwork-first配信のため
+// CRITICAL_ASSETSには追加しない。play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSION
+// と同期 (2340)。
 // v2339: guragura-seesaw に「ふたご皿(twin basket)」メカニクスを追加 (ラウンド3-5、
 // logic.js の TWIN_ROUND_CONFIG/placeItemTwin/removeItemTwin と対になるUI実装)。
 // ラウンド3(elephant単体,普通)=1皿最大3個/局所重さ上限5、ラウンド4(dog+cherry)・
@@ -803,7 +809,7 @@
 // preventDefault)。水やり成功フィードバック(バッジ/演出/flash文言)と常設ステータスバー
 // を追加し、#stage 背景を cover→contain に防御的変更 (ひし形頂点欠け不能化)。
 // play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSION と同期 (2335)。
-const CACHE_VERSION = 2339;
+const CACHE_VERSION = 2340;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

@@ -5,7 +5,7 @@
 // window.screen.orientation / matchMedia の例外を一切 catch していないことが
 // 指摘された。 boot() 冒頭近くで同期的に呼ばれる updateLandscapeNotice() が
 // 例外を投げると、boot() 自体は try/catch に包まれていなかったため、
-// 例外発生地点より後ろの穴生成・start-btn の pointerdown バインドが実行されず
+// 例外発生地点より後ろの穴生成・start-btn の click バインドが実行されず
 // 「見た目はスタートボタンが動いているのにタップ無反応」という、
 // 元のバグより気づきにくい壊れ方をする再現手順が示された
 // (`Object.defineProperty(window.screen, 'orientation', { get() { throw ... } })`

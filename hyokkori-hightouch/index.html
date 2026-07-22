@@ -21,7 +21,7 @@
 <script src="../common/menu.js"></script>
 <script src="../common/highscore.js"></script>
 
-<link rel="stylesheet" href="styles.css?v=20260723-4">
+<link rel="stylesheet" href="styles.css?v=20260723-5">
 </head>
 <body>
 
@@ -75,13 +75,13 @@
 
   <div id="relay-progress" role="group" aria-label="ひかりの たね">
     <div id="relay-announcement" role="status" aria-live="polite" aria-atomic="true"></div>
-    <div class="relay-pips" aria-hidden="true">
+    <div class="relay-pips" id="relay-pips" aria-hidden="true">
       <span class="relay-pip" data-relay-pip="0"></span>
       <span class="relay-pip" data-relay-pip="1"></span>
       <span class="relay-pip" data-relay-pip="2"></span>
       <span class="relay-pip" data-relay-pip="3"></span>
     </div>
-    <img id="flowerbed-img" src="../assets/images/hyokkori-hightouch/flowerbed_stage_0_soil.png" alt="おはなが そだつ ばしょ" draggable="false">
+    <img id="flowerbed-img" data-stage="0" src="../assets/images/hyokkori-hightouch/flowerbed_stage_0_soil.png" alt="おはなが そだつ ばしょ" draggable="false">
   </div>
 
   <img id="light-seed" src="../assets/images/hyokkori-hightouch/mechanic_light_seed.png" alt="" draggable="false" aria-hidden="true">
@@ -107,7 +107,7 @@
   </div>
 </div>
 
-<script src="js/logic.js?v=20260723-2"></script>
-<script src="js/game.js?v=20260723-3"></script>
+<script src="js/logic.js?v=20260723-5"></script>
+<script src="js/game.js?v=20260723-5"></script>
 </body>
 </html>

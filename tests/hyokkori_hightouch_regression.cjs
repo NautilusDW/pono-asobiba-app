@@ -413,12 +413,43 @@ function mulberry32(seed) {
   assert.match(stylesCss, /object-fit:\s*contain/, "styles.css がキャラ画像に object-fit:contain を使っている");
 }
 
-// ── 11. 寝てる表現の存在 (regex) ─────────────────────────────────────
+// ── 11. 専用画像・色だけに頼らない睡眠表現 ──────────────────────────
 {
-  const hasZzz = gameJs.includes("💤") || indexHtml.includes("💤");
-  assert.ok(hasZzz, "game.js または index.html に 💤 が存在する");
+  const assetNames = [
+    "bg_forest_morning_16x9.png",
+    "menu_thumb_highfive_relay.png",
+    "flowerbed_stage_0_soil.png",
+    "flowerbed_stage_1_sprout.png",
+    "flowerbed_stage_2_buds.png",
+    "flowerbed_stage_3_bloom.png",
+    "hideout_stump.png",
+    "hideout_leaf_bush.png",
+    "hideout_tree_roots.png",
+    "fx_highfive_burst.png",
+    "fx_leaf_puff.png",
+    "fx_overheat_swirl.png",
+    "fx_sleep_moon_cloud.png",
+    "mechanic_light_seed.png",
+    "pono_title_highfive.png",
+    "pono_result_bloom.png",
+    ...["araiguma", "fukurou", "harinezumi", "karasu", "kitsune", "kojika", "risu", "usagi"]
+      .flatMap(id => [`friend_${id}_awake.png`, `friend_${id}_sleeping.png`]),
+  ];
+  assert.equal(assetNames.length, 32, "最終候補は32点");
+  for (const name of assetNames) {
+    assert.ok(fs.existsSync(path.join(root, "assets/images/hyokkori-hightouch", name)), `${name} が配置されている`);
+  }
+  assert.match(gameJs, /friend_araiguma_awake\.png/, "awake専用画像を参照する");
+  assert.match(gameJs, /friend_araiguma_sleeping\.png/, "sleeping専用画像を参照する");
+  assert.match(indexHtml + gameJs, /fx_sleep_moon_cloud\.png/, "閉眼ポーズに加えて月雲を使う");
   assert.match(stylesCss, /\.is-sleeping/, "styles.css に .is-sleeping クラスが存在する");
-  assert.match(stylesCss, /grayscale/, "styles.css に grayscale filter が存在する");
+  assert.doesNotMatch(stylesCss, /grayscale/, "睡眠状態を色だけで区別しない");
+  assert.doesNotMatch(indexHtml + gameJs, /💤/, "旧emoji睡眠表示を専用画像へ置換済み");
+  assert.doesNotMatch(indexHtml + gameJs, /reference_only_/, "比較用画像を実行時参照しない");
+  assert.match(gameJs, /seedHolderHole/, "たねの現在位置を保持する");
+  assert.match(gameJs, /forbidden\.push\(seedHolderHole\)/, "たね保持場所を次の出現候補から外す");
+  assert.match(indexHtml, /id="flowerbed-img"/, "花壇4段階の表示先が存在する");
+  assert.match(indexHtml, /id="light-seed"/, "ひかりのたね表示が存在する");
 }
 
 // ── 12. play.html 統合検証 (donguri-wakekko 登録漏れの再発防止) ──────

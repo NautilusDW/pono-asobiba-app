@@ -2,7 +2,7 @@
 //
 // 背景: 統制環境 (静的サーバ + Playwright、横長viewport 5パターン) では両事象とも
 // 再現しなかった (updateLandscapeNotice の判定式に不等号逆転等のバグは無し。
-// #start-btn の pointerdown バインドは実タッチで即座に発火する)。それでも実機限定の
+// #start-btn のネイティブ click は実タッチとキーボードの両方で発火する)。それでも実機限定の
 // 誤発火経路 (URLバー展開アニメ中の中間 resize、iPad Slide Over/Split View、
 // Android WebView の回転タイミング差) を構造的に潰すため、判定ソースを
 // screen.orientation 優先 + 300ms 非対称ヒステリシスへ堅牢化した
@@ -69,8 +69,7 @@ for (const vp of LANDSCAPE_VIEWPORTS) {
 
     // startPulse アニメーション (scale 1⇄0.96) で Playwright の "element is stable" 判定が
     // 成立しないため、tests/e2e/guragura/screen-transitions.spec.ts と同様に
-    // { force: true } で安定性チェックをスキップする。pointerdown バインドなので
-    // click() (内部で pointerdown を発火) で確実に発火する。
+    // { force: true } で安定性チェックをスキップし、ネイティブ click を発火する。
     await page.locator('#start-btn').click({ force: true });
 
     await expect(page.locator('#start-screen')).toBeHidden();
