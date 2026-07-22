@@ -766,7 +766,12 @@
 // 投げても穴生成・start-btn バインドが丸ごと止まらないようにフェイルセーフ化
 // (orientation-api-exception 対応)。play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSION
 // と同期 (2333)。
-const CACHE_VERSION = 2334;
+// v2335: hatake-nikki の水やり長押し中に iOS ネイティブコールアウトで touchcancel が
+// 発火し水やりが無言中断される不具合を修正 (-webkit-touch-callout:none + contextmenu
+// preventDefault)。水やり成功フィードバック(バッジ/演出/flash文言)と常設ステータスバー
+// を追加し、#stage 背景を cover→contain に防御的変更 (ひし形頂点欠け不能化)。
+// play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSION と同期 (2335)。
+const CACHE_VERSION = 2335;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

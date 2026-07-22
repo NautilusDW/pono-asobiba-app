@@ -1357,8 +1357,32 @@ body.dino-adventure-active #dots{opacity:0;visibility:hidden}
 #dinoAdventureProgress{padding:5px 12px;border-radius:999px;font-size:clamp(12px,2vw,17px);font-weight:1000;white-space:nowrap}
 #dinoAdventureGuide{position:absolute;left:50%;top:calc(max(7px,env(safe-area-inset-top)) + 49px);z-index:9;min-width:min(76vw,520px);max-width:88vw;
   transform:translateX(-50%);padding:5px 13px;border-radius:16px;text-align:center;font-size:clamp(14px,2.5vw,20px);font-weight:1000;line-height:1.18;pointer-events:none}
-.dino-water-game,.dino-boss-game{position:absolute;inset:0;z-index:2}
-.dino-water-game[hidden],.dino-boss-game[hidden]{display:none!important}
+.dino-crane-game,.dino-water-game,.dino-boss-game{position:absolute;inset:0;z-index:2}
+.dino-crane-game[hidden],.dino-water-game[hidden],.dino-boss-game[hidden]{display:none!important}
+.dino-crane-backdrop{position:absolute;inset:0;z-index:0;width:100%;height:100%;object-fit:cover;object-position:center;pointer-events:none;user-select:none}
+.dino-crane-train{position:absolute;left:calc(55vw - clamp(95px,15.45vw,165.5px));bottom:9.1vh;z-index:2;width:clamp(190px,30.9vw,331px);height:clamp(95px,15.45vw,165.5px);pointer-events:none}
+.dino-crane-train>.train-art{display:block;position:absolute;inset:-3% -4% -1% -2%}
+.dino-crane-playfield{position:absolute;inset:0;z-index:3;overflow:hidden;pointer-events:none;touch-action:none}
+.dino-crane-arm,.dino-crane-cable,.dino-crane-log{position:absolute;display:block;max-width:none;max-height:none;object-fit:fill;pointer-events:none;user-select:none;will-change:left,top,transform}
+.dino-crane-arm{z-index:4;filter:drop-shadow(0 4px 3px rgba(68,56,31,.2))}
+.dino-crane-cable{z-index:5}
+.dino-crane-log{z-index:4;filter:drop-shadow(0 5px 4px rgba(57,72,31,.24))}
+.dino-crane-hook{appearance:none;-webkit-appearance:none;position:absolute;z-index:7;display:block;margin:0;padding:0;border:0;background:transparent;box-shadow:none;cursor:grab;touch-action:none;pointer-events:auto;will-change:left,top}
+.dino-crane-hook:active{cursor:grabbing}
+.dino-crane-hook:disabled{cursor:default}
+.dino-crane-hook>img{display:block;width:100%;height:100%;object-fit:fill;pointer-events:none;filter:drop-shadow(0 4px 2px rgba(52,48,36,.28))}
+.dino-crane-hook::after{content:"";position:absolute;inset:-12px;border-radius:50%;border:4px solid transparent;pointer-events:none}
+.dino-crane-hook:focus-visible{outline:0}
+.dino-crane-hook:focus-visible::after{border-color:#fff273;box-shadow:0 0 0 3px #4d7da2,0 0 18px rgba(255,242,115,.86)}
+.dino-crane-ring-guide{position:absolute;z-index:6;border:5px solid rgba(255,236,91,.94);border-radius:50%;box-shadow:0 0 0 4px rgba(255,255,255,.9),0 0 22px rgba(255,218,55,.82);pointer-events:none;animation:dinoCraneTargetPulse .9s ease-in-out infinite alternate}
+.dino-crane-safe-zone{position:absolute;z-index:3;display:none;place-items:end center;border:5px dashed rgba(72,170,103,.88);border-radius:24px;background:rgba(237,255,219,.18);box-shadow:inset 0 0 0 4px rgba(255,255,255,.55),0 0 18px rgba(100,197,118,.35);pointer-events:none}
+.dino-crane-safe-zone strong{transform:translateY(-5px);padding:3px 10px;border-radius:999px;background:rgba(255,253,232,.94);color:#397449;font-size:clamp(10px,1.8vw,15px);font-weight:1000;white-space:nowrap}
+.dino-crane-safe-zone.is-ready{border-style:solid;background:rgba(221,255,199,.34);box-shadow:inset 0 0 0 4px rgba(255,255,255,.7),0 0 26px rgba(104,219,119,.72)}
+.dino-crane-game[data-phase="held"] .dino-crane-ring-guide,.dino-crane-game[data-phase="returning"] .dino-crane-ring-guide,.dino-crane-game[data-phase="success"] .dino-crane-ring-guide{display:none}
+.dino-crane-game[data-phase="held"] .dino-crane-safe-zone,.dino-crane-game[data-phase="success"] .dino-crane-safe-zone{display:grid}
+.dino-crane-game[data-phase="held"] .dino-crane-log{filter:drop-shadow(0 9px 7px rgba(57,72,31,.3))}
+body.dino-crane-active #veh,body.dino-crane-active #cars{visibility:hidden!important}
+@keyframes dinoCraneTargetPulse{to{transform:scale(1.09);box-shadow:0 0 0 6px rgba(255,255,255,.92),0 0 30px rgba(255,218,55,.9)}}
 .dino-water-scene{position:absolute;right:-2%;bottom:9vh;width:clamp(210px,39vw,520px);height:55vh;display:flex;align-items:flex-end;justify-content:flex-end;pointer-events:none;opacity:.82}
 .dino-water-scene img{display:block;max-width:100%;max-height:100%;object-fit:contain;object-position:right bottom;filter:drop-shadow(0 5px 3px rgba(61,76,35,.16));transform-origin:72% 92%}
 .dino-water-game.is-saved .dino-water-scene img{animation:dinoWaterDrink .72s ease-in-out 2 alternate}
@@ -1831,7 +1855,8 @@ body.ios-device #quiz.show:not(.sea-quiz):not(.future-capsule-quiz):not(.space-g
   .num-card{opacity:.86}.num-poly{opacity:.38}.num-ring{opacity:.3}.space-star-particle::before{opacity:var(--space-star-opacity,.72);transform:none}
   .runEvent,.runEvent::after{animation:none!important}.runEvent::after{opacity:.8}.runEvent.found{animation:runEventFound .55s ease forwards!important}
   .choice.glow{animation:none!important;box-shadow:0 5px 0 var(--good),0 0 0 7px rgba(87,193,94,.22)}
-  .dino-water-game.is-saved .dino-water-scene img,.dino-water-cell[data-stop="true"],.dino-boss-game[data-phase="defend"] .dino-boss-trex,.dino-boss-wave,.dino-boss-game[data-phase="burst"] .dino-boss-tug>i,.dino-boss-action.is-burst{animation:none!important}
+  .dino-crane-ring-guide,.dino-water-game.is-saved .dino-water-scene img,.dino-water-cell[data-stop="true"],.dino-boss-game[data-phase="defend"] .dino-boss-trex,.dino-boss-wave,.dino-boss-game[data-phase="burst"] .dino-boss-tug>i,.dino-boss-action.is-burst{animation:none!important}
+  .dino-crane-arm,.dino-crane-cable,.dino-crane-hook,.dino-crane-log,.dino-crane-safe-zone{transition:none!important}
   .dino-boss-action,.dino-boss-trex,.dino-boss-tug>span,.dino-boss-tug>i,.dino-water-cell::before,.dino-water-cell::after{transition:none!important}
   .dino-boss-game[data-phase="burst"] .dino-boss-tug>i,.dino-boss-action.is-burst{filter:brightness(1.16)}
   #seaArenaShade,#seaRoundCountdown,body.st-sea #fgT,body.branch-raster #skyA,

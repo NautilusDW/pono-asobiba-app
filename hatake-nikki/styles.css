@@ -13,6 +13,7 @@ html, body {
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
+  -webkit-touch-callout: none; /* iOS 長押しコールアウト禁止 (水やり長押し800msを中断させない) */
 }
 
 #stage {
@@ -21,11 +22,13 @@ html, body {
   transform: translate(-50%, -50%);
   width: min(100vw, 100dvh * 16 / 9);
   height: min(100dvh, 100vw * 9 / 16);
-  background: #bfe6b0 url('../assets/images/yard/green.png') center/cover no-repeat;
-  /* green.png は 1200x670 (AR≒1.79) で stage の AR(16/9≒1.78) にほぼ一致するため
-     cover を使っても歪みは発生しない (AR絶対遵守ルール §CLAUDE.md 準拠)。 */
+  background: #bfe6b0 url('../assets/images/yard/green.png') center/contain no-repeat;
+  /* green.png(AR1.791) と stage(AR1.778) の差により contain では上下に合計約0.7%
+     (2〜4px) の #bfe6b0 帯が出るが、色調一致のため視認不能。cover のクロップを
+     ゼロにし、ひし形頂点の欠けを構造的に不可能にする (AR保持: stretch ではない)。 */
   overflow: hidden;
   touch-action: none;
+  -webkit-touch-callout: none; /* 保険: 継承されるが将来 .plot が別ツリーへ移っても守られるように明示 */
 }
 
 /* ══ 画面遷移: .show クラス方式のみを使う ══════════════════════════════
@@ -109,6 +112,7 @@ html, body {
   background: url('../assets/images/yard/hatake_crop.png') center/contain no-repeat;
   display: flex; align-items: center; justify-content: center;
   -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none; /* iOS 長押しコールアウト禁止 (保険: 継承元と重複明示) */
 }
 .plot[data-plot="0"] { left: 12%; }
 .plot[data-plot="1"] { left: 38%; }
@@ -122,6 +126,29 @@ html, body {
 @keyframes waterTargetPulse {
   0%, 100% { filter: drop-shadow(0 0 4px rgba(80,180,255,0.55)); }
   50%      { filter: drop-shadow(0 0 16px rgba(80,180,255,0.95)) brightness(1.06); }
+}
+
+/* 水やり成功の演出 (doWater 発火時に一瞬だけ追加される) */
+.water-splash-fx {
+  position: absolute; left: 50%; top: 30%;
+  transform: translateX(-50%);
+  font-size: clamp(22px, 5vmin, 32px);
+  pointer-events: none;
+  animation: waterSplashPop 0.9s ease-out forwards;
+}
+@keyframes waterSplashPop {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(8px)  scale(0.6); }
+  25%  { opacity: 1; transform: translateX(-50%) translateY(-6px) scale(1.15); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-26px) scale(1); }
+}
+
+/* 「きょう すでに みずやり済み」の永続バッジ (日またぎ/収穫で自動的に外れる) */
+.plot.is-watered::after {
+  content: '💧';
+  position: absolute; top: -14%; left: 4%;
+  font-size: clamp(14px, 3.4vmin, 22px);
+  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25));
+  pointer-events: none;
 }
 
 .plant {
@@ -232,6 +259,21 @@ html, body {
   opacity: 0; transition: opacity 0.25s;
 }
 #hint-toast.is-visible { opacity: 1; }
+
+/* 常設ステータスバー (状態説明テキスト。field-screen 表示中は常時表示) */
+#status-bar {
+  position: absolute; left: 50%;
+  bottom: max(10px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  max-width: 74%;
+  background: rgba(255,255,255,0.92); color: #2d5a3c;
+  font-weight: 900; font-size: clamp(13px, 2.6vmin, 16px);
+  border-radius: 999px; padding: 8px 18px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.14);
+  z-index: 500; pointer-events: none;
+  text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+#status-bar.is-flash { background: linear-gradient(135deg,#d9f4ff,#bfe9ff); color: #17679d; }
 
 /* 種ピッカー (簡易モーダル) */
 #seed-picker {

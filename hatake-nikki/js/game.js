@@ -140,6 +140,8 @@ function createScreenController(screens) {
   var toolSeedBtn = document.getElementById('tool-seed-btn');
   var hintToastEl = document.getElementById('hint-toast');
   var hintToastTimer = null;
+  var statusBarEl = document.getElementById('status-bar');
+  var statusFlashTimer = null;
 
   var plotRefs = [];
   var plotEls = document.querySelectorAll('.plot');
@@ -170,9 +172,57 @@ function createScreenController(screens) {
   function updateWaterTargets() {
     for (var wi = 0; wi < plotRefs.length; wi++) {
       if (!plotRefs[wi]) continue;
-      var on = (activeTool === 'water') && !!appState.plots[wi].seedId;
+      var p = appState.plots[wi];
+      var on = (activeTool === 'water') && !!p.seedId && !p.wateredToday;
       plotRefs[wi].el.classList.toggle('is-water-target', on);
     }
+  }
+
+  // ═══ 常設ステータスバー (状態説明テキスト) ═══
+  // 優先度は上から判定 (仕様書 §3 の文言マトリクス通り)。
+  function computeStatusText() {
+    var anyPlanted = false, anyUnwatered = false, anyHarvest = false, anyBug = false;
+    for (var i = 0; i < appState.plots.length; i++) {
+      var p = appState.plots[i];
+      if (!p.seedId) continue;
+      anyPlanted = true;
+      if (!p.wateredToday) anyUnwatered = true;
+      if (L.stageOf(p) === 3) anyHarvest = true;
+      if (p.bug) anyBug = true;
+    }
+    var holding = false;
+    for (var h = 0; h < plotPress.length; h++) {
+      if (plotPress[h] && plotPress[h].timerId) { holding = true; break; }
+    }
+    if (holding) return 'そのまま ゆびを はなさないでね…';
+    if (activeTool === 'seed' && pendingSeedId) return 'あいている はたけを タップ！ たねを うえるよ';
+    if (activeTool === 'water') {
+      if (!anyPlanted) return 'まず 🌱ボタンで たねを うえてね';
+      if (!anyUnwatered) return 'きょうの みずやりは ぜんぶ できたよ！';
+      return 'ひかる はたけを ながおしして みずやり！';
+    }
+    if (anyBug) return '🐞 むしを ゆびで はじいて とばそう！';
+    if (anyHarvest) return 'ぴかぴかの やさいを タップして しゅうかく！';
+    if (!anyPlanted) return '🌱ボタンで たねを うえよう';
+    if (anyUnwatered) return '🚿ボタンを おして みずやりしよう';
+    return 'きょうの おせわは ばっちり！ また あした';
+  }
+
+  function updateStatusBar() {
+    if (!statusBarEl || statusFlashTimer) return; // flash 中は上書きしない
+    statusBarEl.textContent = computeStatusText();
+    statusBarEl.classList.remove('is-flash');
+  }
+
+  function flashStatus(text, ms) {
+    if (!statusBarEl) return;
+    if (statusFlashTimer) clearTimeout(statusFlashTimer);
+    statusBarEl.textContent = text;
+    statusBarEl.classList.add('is-flash');
+    statusFlashTimer = setTimeout(function () {
+      statusFlashTimer = null;
+      updateStatusBar();
+    }, ms || 1600);
   }
 
   // ═══ 描画 ═══
@@ -214,6 +264,7 @@ function createScreenController(screens) {
       }
     }
     if (refs.bugEl) refs.bugEl.classList.toggle('is-visible', !!plot.bug);
+    refs.el.classList.toggle('is-watered', !!plot.wateredToday);
   }
 
   function renderAllPlots() {
@@ -253,6 +304,18 @@ function createScreenController(screens) {
     if (window.Haptics) window.Haptics.fire('stickerPaste');
     renderPlot(idx);
     updateWaterTargets();
+    playWaterSplash(idx);
+    flashStatus('💧 みずやり できた！');
+  }
+
+  function playWaterSplash(idx) {
+    var refs = plotRefs[idx];
+    if (!refs) return;
+    var fx = document.createElement('div');
+    fx.className = 'water-splash-fx';
+    fx.textContent = '💧✨';
+    refs.el.appendChild(fx);
+    setTimeout(function () { if (fx.parentNode) fx.parentNode.removeChild(fx); }, 900);
   }
 
   function doShooBug(idx) {
@@ -266,6 +329,7 @@ function createScreenController(screens) {
         refs.bugEl.classList.remove('is-fleeing', 'is-visible');
       }, 400);
     }
+    updateStatusBar();
   }
 
   function doHarvest(idx) {
@@ -280,6 +344,7 @@ function createScreenController(screens) {
     saveState();
     renderPlot(idx);
     updateWaterTargets();
+    updateStatusBar();
     if (window.Haptics) window.Haptics.fire('superBadgePop');
     if (window.incrementStat) {
       window.incrementStat('hatake_harvest', 1);
@@ -307,6 +372,7 @@ function createScreenController(screens) {
     saveState();
     renderPlot(idx);
     updateWaterTargets();
+    updateStatusBar();
   }
 
   function doTapAction(idx) {
@@ -363,6 +429,7 @@ function createScreenController(screens) {
       }
       refs.el.classList.add('is-pressed');
     }
+    updateStatusBar();
   }
 
   function endPress(idx, endX, endY) {
@@ -370,7 +437,14 @@ function createScreenController(screens) {
     var st = plotPress[idx];
     plotPress[idx] = null;
     if (!st) return;
-    if (st.timerId) { clearTimeout(st.timerId); st.timerId = null; }
+    if (st.timerId) {
+      clearTimeout(st.timerId);
+      st.timerId = null;
+      // 早すぎるリリース (800ms未満で指を離した): 水やり対象だった時だけ再挑戦を促す。
+      if (!st.onBug && activeTool === 'water' && appState.plots[idx].seedId) {
+        flashStatus('もうすこし ながく おしてね');
+      }
+    }
     refs.el.classList.remove('is-watering', 'is-pressed');
     if (refs.gaugeFillEl) refs.gaugeFillEl.style.width = '0%';
 
@@ -385,17 +459,33 @@ function createScreenController(screens) {
     if (dist <= TAP_MOVE_TOLERANCE) {
       doTapAction(idx);
     }
+    updateStatusBar(); // flash 中なら no-op (flashStatus が優先される)
   }
 
   function cancelPress(idx) {
     var refs = plotRefs[idx];
     var st = plotPress[idx];
     plotPress[idx] = null;
-    if (st && st.timerId) clearTimeout(st.timerId);
+    if (st && st.timerId) {
+      clearTimeout(st.timerId);
+      // touchcancel でタイマーが生きていた = 長押し途中の中断 (コールアウト等)。
+      // 無言リセットにせず、もう一度長押ししてねと案内する。
+      flashStatus('もういちど ながおしして みてね');
+    }
     if (refs) {
       refs.el.classList.remove('is-watering', 'is-pressed');
       if (refs.gaugeFillEl) refs.gaugeFillEl.style.width = '0%';
     }
+    updateStatusBar(); // flash 中なら no-op
+  }
+
+  // iOS/Android の長押しネイティブメニュー抑止 (issue1)。
+  // NOTE: .plot の touchstart は {passive:true} のまま変えない
+  // (preventDefault はここでは不要。コールアウトは CSS -webkit-touch-callout:none +
+  // この contextmenu 抑止で塞ぐ)。
+  var stageEl = document.getElementById('stage');
+  if (stageEl) {
+    stageEl.addEventListener('contextmenu', function (e) { e.preventDefault(); });
   }
 
   for (var gi = 0; gi < plotRefs.length; gi++) {
@@ -449,6 +539,7 @@ function createScreenController(screens) {
       toolWaterBtn.classList.toggle('is-active', activeTool === 'water');
       if (toolSeedBtn) toolSeedBtn.classList.remove('is-active');
       updateWaterTargets();
+      updateStatusBar();
     });
   }
   if (toolSeedBtn) {
@@ -468,6 +559,7 @@ function createScreenController(screens) {
         if (toolSeedBtn) toolSeedBtn.classList.add('is-active');
         screenCtl.hide('seed-picker');
         updateWaterTargets();
+        updateStatusBar();
       });
     })(seedChoiceEls[sci]);
   }
@@ -479,6 +571,7 @@ function createScreenController(screens) {
     if (toolSeedBtn) toolSeedBtn.classList.remove('is-active');
     screenCtl.hide('seed-picker');
     updateWaterTargets();
+    updateStatusBar();
   }
   var seedPickerCloseBtn = document.getElementById('seed-picker-close-btn');
   if (seedPickerCloseBtn) {
@@ -549,6 +642,7 @@ function createScreenController(screens) {
     renderHud();
     renderAllPlots();
     updateWaterTargets();
+    updateStatusBar();
     screenCtl.show('field-screen');
     if (result.daysPassed >= 1 && diaryTextEl) {
       diaryTextEl.textContent = result.daysPassed + 'にちぶり！ おかえりなさい';

@@ -161,6 +161,8 @@ function validate(candidate) {
 
   const requiredIds = [
     "dinoAdventureLayer", "dinoAdventureTitle", "dinoAdventureGuide", "dinoAdventureProgress",
+    "dinoCraneGame", "dinoCraneBackdrop", "dinoCraneTrain", "dinoCranePlayfield", "dinoCraneArm",
+    "dinoCraneCable", "dinoCraneHook", "dinoCraneLog", "dinoCraneRingGuide", "dinoCraneSafeZone",
     "dinoWaterGame", "dinoWaterDinos", "dinoWaterGrid", "dinoWaterBudget", "dinoWaterRetry",
     "dinoBossGame", "dinoBossTrex", "dinoBossTrainHp", "dinoBossTrexHp", "dinoBossWater",
     "dinoBossTug", "dinoBossAction", "dinoBossRetry"
@@ -171,7 +173,7 @@ function validate(candidate) {
   check(/<section id="dinoAdventureLayer"[^>]*data-phase="idle"[^>]*aria-hidden="true"[^>]*hidden/.test(html), "layer-a11y");
   check(/id="dinoWaterGrid"[^>]*role="grid"[^>]*tabindex="0"/.test(html), "water-keyboard");
   check(/id="dinoWaterBudget"[^>]*role="progressbar"[^>]*aria-valuemin="0"[^>]*aria-valuemax="9"[^>]*aria-valuenow="9"/.test(html), "water-budget-a11y");
-  for (const id of ["dinoWaterRetry", "dinoBossAction", "dinoBossRetry"]) {
+  for (const id of ["dinoCraneHook", "dinoWaterRetry", "dinoBossAction", "dinoBossRetry"]) {
     check(new RegExp(`<button id="${id}"[^>]*type="button"`).test(html), "real-button", id);
   }
   for (const id of ["dinoBossTrainHp", "dinoBossTrexHp"]) {
@@ -179,6 +181,8 @@ function validate(candidate) {
   }
 
   check(cssCompact.includes("#dinoAdventureLayer{position:absolute;inset:0;") && cssCompact.includes("#dinoAdventureLayer[hidden]{display:none!important}"), "layer-layout");
+  check(cssCompact.includes(".dino-crane-playfield{position:absolute;inset:0;") && cssCompact.includes(".dino-crane-hook{appearance:none;") && cssCompact.includes("touch-action:none"), "crane-layout");
+  check(cssCompact.includes(".dino-crane-safe-zone{") && cssCompact.includes('.dino-crane-game[data-phase="held"].dino-crane-safe-zone'), "crane-safe-guide");
   check(cssCompact.includes(".dino-water-grid{") && cssCompact.includes("grid-template-columns:repeat(7,var(--water-cell))") && cssCompact.includes("grid-template-rows:repeat(4,var(--water-cell))"), "water-grid-layout");
   check(cssCompact.includes("#dinoWaterRetry,.dino-boss-retry{") && cssCompact.includes("min-height:52px"), "retry-target");
   check(cssCompact.includes(".dino-boss-action{") && /min-height:clamp\((?:6[4-9]|[7-9]\d)px/.test(css), "boss-target");
@@ -186,9 +190,10 @@ function validate(candidate) {
   const reducedAt = css.indexOf("@media (prefers-reduced-motion:reduce)");
   const reduced = reducedAt >= 0 ? css.slice(reducedAt) : "";
   const reducedCompact = compact(reduced);
-  check(reducedCompact.includes('.dino-water-game.is-saved.dino-water-sceneimg,.dino-water-cell[data-stop="true"],.dino-boss-game[data-phase="defend"].dino-boss-trex,.dino-boss-wave,.dino-boss-game[data-phase="burst"].dino-boss-tug>i,.dino-boss-action.is-burst{animation:none!important}') && reducedCompact.includes(".dino-boss-action,.dino-boss-trex,.dino-boss-tug>span,.dino-boss-tug>i,.dino-water-cell::before,.dino-water-cell::after{transition:none!important}"), "reduced-motion");
+  check(reducedCompact.includes('.dino-crane-ring-guide,.dino-water-game.is-saved.dino-water-sceneimg,.dino-water-cell[data-stop="true"],.dino-boss-game[data-phase="defend"].dino-boss-trex,.dino-boss-wave,.dino-boss-game[data-phase="burst"].dino-boss-tug>i,.dino-boss-action.is-burst{animation:none!important}') && reducedCompact.includes(".dino-crane-arm,.dino-crane-cable,.dino-crane-hook,.dino-crane-log,.dino-crane-safe-zone{transition:none!important}"), "reduced-motion");
 
-  check(numericConstant(game, "DINO_ADVENTURE_EVENT_COUNT") === 2, "event-count");
+  check(numericConstant(game, "DINO_ADVENTURE_EVENT_COUNT") === 3, "event-count");
+  check(numericConstant(game, "DINO_CRANE_SCORE") > 0 && numericConstant(game, "DINO_CRANE_SNAP_RADIUS") >= 44 && numericConstant(game, "DINO_CRANE_SAFE_SNAP_RADIUS") >= 54, "crane-forgiving-targets");
   check(numericConstant(game, "DINO_WATER_ROWS") === 4 && numericConstant(game, "DINO_WATER_COLS") === 7, "water-dimensions");
   check(numericConstant(game, "DINO_WATER_DIG_BUDGET") === 9 && Number.isFinite(numericConstant(game, "DINO_WATER_DIG_BUDGET")), "water-budget");
   const rocks = extractArrayConstant(game, "DINO_WATER_ROCKS");
@@ -210,12 +215,20 @@ function validate(candidate) {
 
   const requiredFunctions = [
     "createDinoAdventureState", "isDinoAdventureStage", "resetDinoAdventure", "startDinoAdventure",
+    "showDinoCraneEvent", "revealDinoCraneEvent", "attachDinoCraneLog", "moveDinoCraneHookTo",
+    "beginDinoCraneRetry", "commitDinoCraneSuccess", "dinoCraneLogFullyInsideSafe",
     "showDinoWaterEvent", "showDinoBossEncounter", "tickDinoAdventure", "finishDinoBossVictory"
   ];
   const functions = Object.fromEntries(requiredFunctions.map(name => [name, extractFunction(game, name)]));
   for (const [name, body] of Object.entries(functions)) check(Boolean(body), "runtime-function", name);
   const dedicatedBodies = Object.values(functions).join("\n");
-  check(!/showQuiz\s*\(|onPick\s*\(|renderChoiceCards\s*\(|futureCrane|DINO\b/.test(dedicatedBodies), "zero-quiz-crane");
+  check(!/showQuiz\s*\(|onPick\s*\(|renderChoiceCards\s*\(|futureCrane|futureCapsule|\bcur\b/.test(dedicatedBodies), "zero-quiz-crane");
+  const startAdventure = functions.startDinoAdventure || "";
+  const finishCrane = extractFunction(game, "finishDinoCraneSuccess");
+  const finishWater = extractFunction(game, "finishDinoWaterSuccess");
+  const gameLoop = extractFunction(game, "gloop");
+  check(/pending=["']dinoCrane["']/.test(startAdventure) && /pending=["']dinoWater["']/.test(finishCrane) && /pending=["']dinoBoss["']/.test(finishWater), "crane-water-boss-flow");
+  check(/p===["']dinoCrane["']/.test(gameLoop) && /showDinoCraneEvent\s*\(/.test(gameLoop), "crane-arrival-dispatch");
   check(gameCompact.includes('mechanic==="dinoAdventure"') || gameCompact.includes('mechanic!=="dinoAdventure"'), "mode-dispatch");
   check(/window\.__nazonazoDinoAdventureDebug\s*=/.test(game) && /snapshot\s*[:(]/.test(game), "runtime-snapshot");
   check(/nazonazoAdminPreviewMode/.test(game.slice(Math.max(0, game.indexOf("__nazonazoDinoAdventureDebug") - 1000), game.indexOf("__nazonazoDinoAdventureDebug") + 2000)), "snapshot-admin-only");
@@ -229,19 +242,28 @@ function validate(candidate) {
   const reset = functions.resetDinoAdventure || "";
   check(/epoch/.test(reset) && /pointer|Pointer/.test(reset) && /createDinoAdventureState\s*\(/.test(reset) && /classList\.remove/.test(reset), "cleanup-state");
   check(/visibilitychange/.test(game) && /resetDinoAdventure|pauseDinoAdventure|dinoAdventure/.test(game), "hidden-lifecycle");
-  check(/resize/.test(game) && /dinoAdventure|DinoAdventure/.test(game), "resize-lifecycle");
-  check(/keydown/.test(game) && /dinoWater|DinoWater|dinoBoss|DinoBoss/.test(game), "keyboard-runtime");
+  check(/resize/.test(game) && /handleDinoCraneViewportChange/.test(game), "resize-lifecycle");
+  check(/keydown/.test(game) && /handleDinoCraneKeyDown/.test(game) && /dinoWater|DinoWater|dinoBoss|DinoBoss/.test(game), "keyboard-runtime");
 
   const assetPreloader = extractFunction(game, "preloadDinoAdventureAssets") || "";
+  const craneAssetPreloader = extractFunction(game, "preloadDinoCraneAssets") || "";
+  const revealCrane = extractFunction(game, "revealDinoCraneEvent") || "";
   const revealWater = extractFunction(game, "revealDinoWaterEvent") || "";
   const revealBoss = extractFunction(game, "revealDinoBossEncounter") || "";
   check(numericConstant(game, "DINO_ADVENTURE_ASSET_READY_TIMEOUT_MS") === 8000 && /image\.decode/.test(assetPreloader) && /Promise\.race/.test(assetPreloader) && /Promise\.all/.test(assetPreloader), "asset-predecode");
+  check(/image\.decode/.test(craneAssetPreloader) && /Promise\.race/.test(craneAssetPreloader) && /Promise\.all/.test(craneAssetPreloader) && /sources\.length!==4/.test(craneAssetPreloader), "crane-asset-predecode");
   check(/dinoAdventureImageCache=new Map\(\),dinoAdventureImageDecodePromises=new Map\(\)/.test(game) && /if\(dinoAdventureAssetsReadyPromise\)return dinoAdventureAssetsReadyPromise/.test(assetPreloader), "asset-predecode-cache");
   check(compact(functions.showDinoWaterEvent || "").includes("preloadDinoAdventureAssets().then(()=>revealDinoWaterEvent(epoch))") && compact(functions.showDinoBossEncounter || "").includes("preloadDinoAdventureAssets().then(()=>revealDinoBossEncounter(epoch))"), "asset-predecode-gate");
+  check(/preloadDinoCraneAssets/.test(functions.showDinoCraneEvent || "") && /Promise\.all/.test(revealCrane) && /dinoAdventureState\.epoch!==epoch/.test(revealCrane), "crane-asset-predecode-gate");
   check([revealWater, revealBoss].every(body => /isDinoAdventureStage\(\)/.test(body) && /!playing/.test(body) && /dinoAdventureState\.epoch!==epoch/.test(body) && /dinoAdventureState\.phase!==["']travel["']/.test(body)), "asset-stale-reveal-guard");
 
   const stateFactory = functions.createDinoAdventureState || "";
   check(/completionCount:0/.test(stateFactory) && /transitionCount:0/.test(stateFactory) && /epoch:0/.test(stateFactory), "one-shot-state");
+  check(/crane:\{[^}]*attempt:1[^}]*completed:false[^}]*scoreGranted:false[^}]*pointerId:null[^}]*attached:false/.test(stateFactory), "crane-state");
+  const retryCrane = functions.beginDinoCraneRetry || "";
+  const commitCrane = functions.commitDinoCraneSuccess || "";
+  check(!/stageMiss\+\+|addScore\s*\(/.test(retryCrane) && /phase=["']crane-retry["']/.test(retryCrane), "crane-no-penalty-retry");
+  check(/crane\.completed/.test(commitCrane) && /crane\.scoreGranted/.test(commitCrane) && /dinoCraneLogFullyInsideSafe/.test(commitCrane), "crane-one-shot-score");
   check(/bossHp:DINO_BOSS_HP/.test(stateFactory) && /trainHp:DINO_BOSS_TRAIN_HP/.test(stateFactory) && /waterCharge:DINO_BOSS_WATER_CHARGES/.test(stateFactory), "boss-state");
   check(/route:\[DINO_WATER_START\]/.test(stateFactory) && /budget:DINO_WATER_DIG_BUDGET/.test(stateFactory) && /attempt:1/.test(stateFactory), "water-state");
 
@@ -326,6 +348,7 @@ function testDeterministicRuntimeTransactions(game) {
     prefersReducedMotionActive: () => false,
     dinoAdventureState: null,
     dinoAdventureLayer: null,
+    dinoCraneGame: null,
     dinoWaterGame: null,
     dinoBossGame: null,
     dinoWaterRetry: null,
@@ -1044,7 +1067,7 @@ async function main() {
   }));
   sourceMutation("reduced motion no longer covers dino interactions", "reduced-motion", candidate => ({
     ...candidate,
-    css: replaceExactlyOnce(candidate.css, '  .dino-water-game.is-saved .dino-water-scene img,.dino-water-cell[data-stop="true"],.dino-boss-game[data-phase="defend"] .dino-boss-trex,.dino-boss-wave,.dino-boss-game[data-phase="burst"] .dino-boss-tug>i,.dino-boss-action.is-burst{animation:none!important}', "  .removed-dino-reduced-motion{animation:none!important}")
+    css: replaceExactlyOnce(candidate.css, '  .dino-crane-ring-guide,.dino-water-game.is-saved .dino-water-scene img,.dino-water-cell[data-stop="true"],.dino-boss-game[data-phase="defend"] .dino-boss-trex,.dino-boss-wave,.dino-boss-game[data-phase="burst"] .dino-boss-tug>i,.dino-boss-action.is-burst{animation:none!important}', "  .removed-dino-reduced-motion{animation:none!important}")
   }));
   sourceMutation("water event reveals before asset predecode", "asset-predecode-gate", candidate => ({
     ...candidate,
