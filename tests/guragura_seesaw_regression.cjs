@@ -471,4 +471,13 @@ section("play.html 統合検証", () => {
   }
 });
 
+// ── 16. logic.js 読込失敗フォールバック (2026-07-22 はじめるボタン無反応バグ再発防止) ──
+section("キャッシュバスティング + ロード失敗フォールバックの静的検証", () => {
+  assert.match(indexHtml, /src="js\/logic\.js\?v=/, "index.html の js/logic.js に ?v= キャッシュバスティングが付いている");
+  assert.match(indexHtml, /src="js\/game\.js\?v=/, "index.html の js/game.js に ?v= キャッシュバスティングが付いている");
+  assert.match(indexHtml, /href="styles\.css\?v=/, "index.html の styles.css に ?v= キャッシュバスティングが付いている");
+  assert.match(gameJs, /function showLoadError\s*\(/, "game.js に showLoadError フォールバックが存在する");
+  assert.match(gameJs, /\?retry=/, "game.js が logic.js 再取得時にキャッシュバイパス (?retry=) を使っている");
+});
+
 console.log(`\n全 ${passCount} セクション green.`);

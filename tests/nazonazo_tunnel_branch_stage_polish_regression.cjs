@@ -18,8 +18,8 @@ const sources = Object.freeze({
 
 const STAGE_IDS = Object.freeze(["snow", "fire", "dino", "toy", "cat", "fantasy", "sky", "ruins"]);
 const LAYER_KEYS = Object.freeze(["sky", "horizon", "mid", "ground", "fg", "decor"]);
-const TOKEN = "20260722-1410";
-const SW_VERSION = 2326;
+const TOKEN = "20260722-1411";
+const SW_VERSION = 2327;
 const THREE_MIB = 3 * 1024 * 1024;
 const EXPECTED_VALIDATE_CHECKS = 143;
 const CANONICAL = Object.freeze([
@@ -743,8 +743,8 @@ const mutations = [
     expected: "lifecycle",
     mutate(candidate) {
       return { ...candidate, game: replaceExactlyOnce(candidate.game,
-        " if(document.hidden){\n  pauseBranchStagePolish();\n  closeGameSettings();",
-        " if(document.hidden){\n  closeGameSettings();") };
+        " if(document.hidden){\n  pauseBranchStagePolish();\n  pauseDinoAdventureInput();\n  closeGameSettings();",
+        " if(document.hidden){\n  pauseDinoAdventureInput();\n  closeGameSettings();") };
     }
   },
   {

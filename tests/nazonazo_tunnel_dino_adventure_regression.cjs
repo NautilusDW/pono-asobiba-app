@@ -425,7 +425,7 @@ const QA_TOKEN = "dino-adventure-qa-1411";
 
 function adminHarnessHtml() {
   return `<!doctype html><html lang="ja"><meta charset="utf-8"><title>dino qa</title>
-    <style>html,body,iframe{margin:0;width:100%;height:100%;border:0;overflow:hidden}</style>
+    <style>html,body,iframe{margin:0;width:100%;height:100%;border:0;overflow:hidden}iframe{display:block}</style>
     <iframe id="game" allow="autoplay" src="/nazonazo-tunnel/?weather=clear&adminStagePreview=1&adminPreviewToken=${QA_TOKEN}#fast"></iframe>
     <script>
       const frame=document.getElementById("game");
@@ -513,6 +513,7 @@ async function runBrowser(browserName, base) {
   const page = await context.newPage();
   const pageErrors = [];
   const requestFailures = [];
+  const qaMetrics = { viewports: [], boss: {} };
   page.on("pageerror", error => pageErrors.push(String(error)));
   page.on("requestfailed", request => requestFailures.push(`${request.method()} ${request.url()} ${request.failure()?.errorText || ""}`));
   await page.goto(`${base}/admin/dino-adventure-qa.html`, { waitUntil: "networkidle" });
@@ -542,16 +543,19 @@ async function runBrowser(browserName, base) {
         overflowY: document.documentElement.scrollHeight - innerHeight,
         layerPhase: document.getElementById("dinoAdventureLayer").dataset.phase,
         adminSettingsHidden: getComputedStyle(document.getElementById("gameSettings")).display === "none",
+        baseDotsHidden: getComputedStyle(document.getElementById("dots")).visibility === "hidden",
         gridInside: gridRect.left >= -1 && gridRect.right <= innerWidth + 1 && gridRect.top >= -1 && gridRect.bottom <= innerHeight + 1
       };
     });
     assert.ok(fit.overflowX <= 1 && fit.overflowY <= 1, `${browserName}: overflow ${width}x${height}: ${JSON.stringify(fit)}`);
     assert.ok(fit.layerPhase && fit.layerPhase !== "idle", `${browserName}: resize reset adventure at ${width}x${height}`);
     assert.equal(fit.adminSettingsHidden, true, `${browserName}: admin-only settings suppression drifted at ${width}x${height}`);
+    assert.equal(fit.baseDotsHidden, true, `${browserName}: quiz station dots leaked behind dino header at ${width}x${height}`);
     assert.equal(fit.gridInside, true, `${browserName}: water grid clipped at ${width}x${height}`);
+    qaMetrics.viewports.push({ width, height, overflowX: fit.overflowX, overflowY: fit.overflowY, gridInside: fit.gridInside });
+    await page.screenshot({ path: `/tmp/nazonazo-dino-adventure-${browserName}-water-${width}x${height}.png`, fullPage: true });
   }
   await page.setViewportSize({ width: 844, height: 390 });
-  await page.screenshot({ path: `/tmp/nazonazo-dino-adventure-${browserName}-water-844x390.png`, fullPage: true });
 
   await page.emulateMedia({ reducedMotion: "reduce" });
   const reducedMotion = await frame.evaluate(() => ({
@@ -570,10 +574,18 @@ async function runBrowser(browserName, base) {
       const rect = element.getBoundingClientRect();
       return { width: rect.width, height: rect.height };
     });
-    return { grid: { left: grid.left, right: grid.right, top: grid.top, bottom: grid.bottom }, retry: { width: retry.width, height: retry.height }, cells };
+    const goalLabel = document.querySelector(".dino-water-goal strong");
+    return {
+      grid: { left: grid.left, right: grid.right, top: grid.top, bottom: grid.bottom },
+      retry: { width: retry.width, height: retry.height },
+      goalLabel: { whiteSpace: getComputedStyle(goalLabel).whiteSpace, scrollWidth: goalLabel.scrollWidth, clientWidth: goalLabel.clientWidth },
+      cells
+    };
   });
   assert.equal(waterMetrics.cells.length, 28, `${browserName}: water grid needs 28 runtime cells`);
   assert.ok(waterMetrics.cells.every(cell => cell.width >= 38 && cell.height >= 38), `${browserName}: undersized water cell`);
+  assert.equal(waterMetrics.goalLabel.whiteSpace, "nowrap", `${browserName}: dinosaur goal label can split mid-word`);
+  assert.ok(waterMetrics.goalLabel.scrollWidth <= waterMetrics.goalLabel.clientWidth + 1, `${browserName}: dinosaur goal label is clipped`);
 
   const waterGrid = frame.locator("#dinoWaterGrid");
   await waterGrid.focus();
@@ -640,9 +652,69 @@ async function runBrowser(browserName, base) {
   async function waitBossPhase(phase, timeout = 12000) {
     return waitSnapshot(frame, state => state.phase === `boss-${phase}` && state.boss.phase === phase, `${browserName}: boss phase ${phase} missing`, timeout);
   }
+  async function bossGeometry(label) {
+    const metrics = await frame.evaluate(() => {
+      const guide = document.getElementById("dinoAdventureGuide").getBoundingClientRect();
+      const hud = document.querySelector(".dino-boss-hud").getBoundingClientRect();
+      const overlapWidth = Math.max(0, Math.min(guide.right, hud.right) - Math.max(guide.left, hud.left));
+      const overlapHeight = Math.max(0, Math.min(guide.bottom, hud.bottom) - Math.max(guide.top, hud.top));
+      return {
+        guide: { top: guide.top, bottom: guide.bottom, left: guide.left, right: guide.right },
+        hud: { top: hud.top, bottom: hud.bottom, left: hud.left, right: hud.right },
+        overlapWidth,
+        overlapHeight,
+        overlapArea: overlapWidth * overlapHeight
+      };
+    });
+    assert.equal(metrics.overlapArea, 0, `${browserName}: guide overlaps boss HUD in ${label}: ${JSON.stringify(metrics)}`);
+    qaMetrics.boss[label] = metrics;
+    return metrics;
+  }
+
+  // Rotating during a timed boss phase must suspend the deadline and discard
+  // any captured pointer/focus before the landscape interaction resumes.
+  const beforePortrait = await waitBossPhase("defend");
+  const portraitAction = frame.locator("#dinoBossAction");
+  const portraitActionBox = await portraitAction.boundingBox();
+  assert.ok(portraitActionBox, `${browserName}: boss action missing before portrait pause`);
+  await page.mouse.move(portraitActionBox.x + portraitActionBox.width / 2, portraitActionBox.y + portraitActionBox.height / 2);
+  await page.mouse.down();
+  await waitSnapshot(frame, state => state.boss.brakeHeld && state.boss.pointerId !== null, `${browserName}: boss pointer was not captured before portrait pause`);
+  await page.setViewportSize({ width: 390, height: 844 });
+  await frame.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  await page.mouse.up();
+  await page.waitForTimeout(3100);
+  const whilePortrait = await snapshot(frame);
+  const portraitDom = await frame.evaluate(() => ({
+    rotateVisible: getComputedStyle(document.getElementById("rotateHint")).display !== "none",
+    actionFocused: document.activeElement === document.getElementById("dinoBossAction")
+  }));
+  assert.equal(portraitDom.rotateVisible, true, `${browserName}: portrait rotation hint missing during boss pause`);
+  assert.equal(portraitDom.actionFocused, false, `${browserName}: stale boss focus survived portrait pause`);
+  assert.equal(whilePortrait.phase, beforePortrait.phase, `${browserName}: portrait advanced the timed boss phase`);
+  assert.equal(whilePortrait.boss.phase, beforePortrait.boss.phase, `${browserName}: portrait advanced the boss state`);
+  assert.equal(whilePortrait.transitionCount, beforePortrait.transitionCount, `${browserName}: portrait committed a boss transition`);
+  assert.equal(whilePortrait.boss.bossHp, beforePortrait.boss.bossHp, `${browserName}: portrait damaged the boss`);
+  assert.equal(whilePortrait.boss.trainHp, beforePortrait.boss.trainHp, `${browserName}: portrait damaged the train`);
+  assert.equal(whilePortrait.boss.waterCharge, beforePortrait.boss.waterCharge, `${browserName}: portrait consumed water`);
+  assert.equal(whilePortrait.boss.brakeHeld, false, `${browserName}: stale brake hold survived portrait pause`);
+  assert.equal(whilePortrait.boss.pointerId, null, `${browserName}: stale boss pointer survived portrait pause`);
+  await page.setViewportSize({ width: 844, height: 390 });
+  await frame.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+  const afterPortrait = await snapshot(frame);
+  assert.equal(afterPortrait.phase, beforePortrait.phase, `${browserName}: landscape resume skipped the paused phase`);
+  assert.equal(afterPortrait.transitionCount, beforePortrait.transitionCount, `${browserName}: landscape resume duplicated a transition`);
+  assert.equal(afterPortrait.boss.pointerId, null, `${browserName}: landscape resume restored a stale pointer`);
+
   let burstScreenshotTaken = false;
+  let defendScreenshotTaken = false;
   async function holdBrake(input = "pointer") {
     await waitBossPhase("defend");
+    if (!defendScreenshotTaken) {
+      defendScreenshotTaken = true;
+      await bossGeometry("defend");
+      await page.screenshot({ path: `/tmp/nazonazo-dino-adventure-${browserName}-boss-defend-844x390.png`, fullPage: true });
+    }
     const button = frame.locator("#dinoBossAction");
     if (input === "keyboard") {
       await button.focus();
@@ -673,6 +745,7 @@ async function runBrowser(browserName, base) {
     await waitBossPhase("burst");
     if (!burstScreenshotTaken) {
       burstScreenshotTaken = true;
+      await bossGeometry("burst");
       await page.screenshot({ path: `/tmp/nazonazo-dino-adventure-${browserName}-boss-burst-844x390.png`, fullPage: true });
     }
     const hpBefore = (await snapshot(frame)).boss.bossHp;
@@ -704,6 +777,8 @@ async function runBrowser(browserName, base) {
   assert.equal(lost.eventIndex, 1, `${browserName}: boss loss changed event position`);
   assert.equal(await frame.locator("#dinoBossRetry").isVisible(), true, `${browserName}: boss retry button missing`);
   assert.equal(await frame.locator("#dinoWaterGame:visible").count(), 0, `${browserName}: water event replayed on boss loss`);
+  await bossGeometry("lost");
+  await page.screenshot({ path: `/tmp/nazonazo-dino-adventure-${browserName}-boss-lost-844x390.png`, fullPage: true });
   await frame.locator("#dinoBossRetry").press("Enter");
   const retry = await waitSnapshot(frame, state => state.boss.retryCount === 1 && ["intro", "telegraph", "defend"].includes(state.boss.phase), `${browserName}: keyboard boss-only retry failed`);
   assert.equal(retry.boss.bossHp, 3);
@@ -735,6 +810,7 @@ async function runBrowser(browserName, base) {
   assert.ok(adminHeadAbort.length <= 1, `${browserName}: repeated admin-auth HEAD aborts\n${adminHeadAbort.join("\n")}`);
   assert.deepEqual(unexpectedRequestFailures, [], `${browserName}: gameplay request failures\n${unexpectedRequestFailures.join("\n")}`);
   await page.screenshot({ path: `/tmp/nazonazo-dino-adventure-${browserName}-844x390.png`, fullPage: true });
+  console.log(`nazonazo dino browser metrics (${browserName}): ${JSON.stringify(qaMetrics)}`);
   await context.close();
   await browser.close();
 }

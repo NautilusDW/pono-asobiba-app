@@ -5,8 +5,34 @@
 'use strict';
 
 (function () {
+
+  // ═══ 読み込み失敗フォールバック ═══
+  // logic.js のロード失敗時、game.js 全初期化が無言スキップされ
+  // 「タイトルは見えるがタップ無反応」になる事故 (2026-07-22 報告) の再発防止。
+  function showLoadError() {
+    if (document.getElementById('loadErrorScreen')) return;
+    var ov = document.createElement('div');
+    ov.id = 'loadErrorScreen';
+    ov.setAttribute('role', 'alert');
+    ov.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;background:rgba(42,74,94,0.96);color:#fff;font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN",sans-serif;text-align:center';
+    var msg = document.createElement('div');
+    msg.style.cssText = 'font-size:1.05rem;font-weight:900;line-height:1.6';
+    msg.innerHTML = 'よみこみが うまくいかなかったよ<br>もういちど ためしてね';
+    ov.appendChild(msg);
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = '🔄 もういちど よみこむ';
+    btn.style.cssText = 'padding:12px 32px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-size:1rem;font-weight:900;font-family:inherit;cursor:pointer';
+    btn.addEventListener('pointerdown', function () { location.reload(); });
+    ov.appendChild(btn);
+    document.body.appendChild(ov);
+    // FOUC ガードで #app が visibility:hidden のままでもオーバーレイは body 直下なので見える。
+    // ただし pono-game-ready が未付与だと背景だけ #2a4a5e になるため付与しておく。
+    document.body.classList.add('pono-game-ready');
+  }
+
+  function boot() {
   var L = window.GuraguraLogic;
-  if (!L) { console.error('[guragura-seesaw] GuraguraLogic (js/logic.js) が読み込まれていません'); return; }
 
   // ═══ 画像パス (game.js のみが知っている。logic.js は数値/ラベルのみ持つ) ═══
   // 将来の本番アート差し替えはこのマップの張り替えのみで済む (logic.js 不変)。
@@ -529,4 +555,16 @@
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
+  }
+
+  // ═══ ブート判定: logic.js 正常時は即起動、失敗時はキャッシュバイパスで1回だけ再試行 ═══
+  if (window.GuraguraLogic) { boot(); return; }
+  console.error('[guragura-seesaw] GuraguraLogic (js/logic.js) が読み込まれていません — キャッシュバイパスで再試行します');
+  var retryScript = document.createElement('script');
+  retryScript.src = 'js/logic.js?retry=' + Date.now(); // ?retry= で HTTP キャッシュを確実にバイパス
+  retryScript.onload = function () {
+    if (window.GuraguraLogic) { boot(); } else { showLoadError(); }
+  };
+  retryScript.onerror = function () { showLoadError(); };
+  document.body.appendChild(retryScript);
 })();

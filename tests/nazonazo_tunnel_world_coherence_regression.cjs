@@ -18,9 +18,9 @@ const sources = Object.freeze({
   sw: read("sw.js")
 });
 
-const TOKEN = "20260722-1410";
+const TOKEN = "20260722-1411";
 const QUIZ_ART_TOKEN = "20260721-1409";
-const SW_VERSION = 2326;
+const SW_VERSION = 2327;
 const THREE_MIB = 3 * 1024 * 1024;
 const EXPECTED_VALIDATE_CHECKS = 175;
 const EXPECTED_MUTATIONS = 40;
@@ -375,7 +375,7 @@ async function main() {
     sourceMutation("legacy fire horizon returns", "game", "const BRANCH_FIRE_MAGMA_ASPECT=3548/177;", "const BRANCH_FIRE_MAGMA_ASPECT=3548/177; // branch_fire_horizon_cutout_loop_depthfix_20260721.webp", "fire-assets"),
     sourceMutation("legacy fire pool returns", "game", "const BRANCH_FIRE_MAGMA_PARALLAX=1.07;", "const BRANCH_FIRE_MAGMA_PARALLAX=1.07; const BRANCH_FIRE_FLAME_POOL_SIZE=5;", "fire-assets"),
     sourceMutation("volcano parallax drifts", "game", "const BRANCH_FIRE_VOLCANO_PARALLAX=.03;", "const BRANCH_FIRE_VOLCANO_PARALLAX=.30;", "fire-volcano-single"),
-    sourceMutation("query token rolls back", "html", "styles.css?v=20260722-1410", "styles.css?v=20260721-1409", "query-cache"),
+    sourceMutation("query token rolls back", "html", "styles.css?v=20260722-1411", "styles.css?v=20260722-1410", "query-cache"),
     sourceMutation("volcano becomes repeating", "game", 'landmark.dataset.loop="false";', 'landmark.dataset.loop="true";', "fire-volcano-single"),
     sourceMutation("volcano count becomes two", "game", 'branchEffectFar.dataset.landmarkCount="1";', 'branchEffectFar.dataset.landmarkCount="2";', "fire-volcano-single"),
     sourceMutation("vent cycle ordering drifts", "game", "Object.freeze({cycle:18,phase:.29,width:4.8", "Object.freeze({cycle:13,phase:.29,width:4.8", "fire-vent-anchors"),
