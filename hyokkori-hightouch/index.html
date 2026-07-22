@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>ひょっこりハイタッチ | ポノのあそびば</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<!-- FOUC guard: init 完了まで stage を非表示にしてチラ見えを防ぐ (pakupaku-catch/index.html 踏襲) -->
+<style>html,body{background:#274b3d}#stage{visibility:hidden}body.pono-game-ready #stage{visibility:visible}</style>
+<script>document.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(function(){requestAnimationFrame(function(){document.body.classList.add('pono-game-ready')})})});</script>
+
+<script src="../common/preload-helper.js"></script>
+<!-- NOTE: common/preload-helper.js の GAME_WARM_ASSETS に 'hyokkori-hightouch' エントリが
+     未登録の間は warmGameAssets() は no-op で安全に何もしない (list未登録→false)。
+     統合担当が GAME_WARM_ASSETS に追加した時点でこの呼び出しがそのまま効き始める。 -->
+<script>window.addEventListener('DOMContentLoaded',function(){if(window.PonoPreload)window.PonoPreload.warmGameAssets('hyokkori-hightouch');});</script>
+<script src="../common/haptics.js"></script>
+<script src="../common/achievements.js"></script>
+<script src="../common/menu.js"></script>
+<script src="../common/highscore.js"></script>
+
+<link rel="stylesheet" href="styles.css?v=20260722-1">
+</head>
+<body>
+
+<div id="landscape-notice">
+  <div class="rotate-icon">📱</div>
+  <p>スマホを<br><strong>たてむき</strong>にしてね！</p>
+</div>
+
+<div class="tut-dim hidden" id="tut-dim"></div>
+<div class="tut-bubble hidden" id="tut-bubble"></div>
+
+<div id="stage">
+
+  <div id="hud">
+    <div class="hud-pill hud-timer" id="hud-timer">⏱ 60</div>
+    <div class="hud-pill hud-score" id="hud-score">🖐️ 0</div>
+  </div>
+
+  <div id="start-screen">
+    <div class="title">ひょっこりハイタッチ</div>
+    <div class="icon">🖐️</div>
+    <div class="desc">おきてる こと ハイタッチ！<br>ねてる こは そっとしておいてね</div>
+    <button class="tap-btn" id="start-btn">▶ タップで はじめる</button>
+  </div>
+
+  <div id="countdown-screen">
+    <div class="cd-text" id="cd-text">よーい…</div>
+  </div>
+
+  <!-- .hh-hole は6個 (2列x3行) とも同一マークアップ (data-hole の番号だけ違う) なので
+       テンプレート1個 + js/game.js の buildHoles() で複製生成する (重複マークアップ排除)。 -->
+  <template id="hh-hole-tpl">
+    <div class="hh-hole">
+      <div class="hh-mound"></div>
+      <div class="hh-window">
+        <div class="hh-char-wrap">
+          <img class="hh-char" alt="" draggable="false">
+          <div class="hh-zzz" aria-hidden="true">💤</div>
+          <div class="hh-sparkle" aria-hidden="true">✨</div>
+          <div class="hh-hit-fx" aria-hidden="true">🖐️✨</div>
+          <div class="hh-shh-bubble" aria-hidden="true">しーっ 🤫</div>
+        </div>
+      </div>
+      <div class="hh-dust" aria-hidden="true">💨</div>
+    </div>
+  </template>
+  <div id="board"></div>
+
+  <div id="overheat-banner" aria-hidden="true">🌀 ゆっくりでいいよ！</div>
+
+  <canvas id="fx-canvas" aria-hidden="true"></canvas>
+
+  <div id="result-overlay">
+    <div id="result-card">
+      <div class="result-banner">おしまい！</div>
+      <div class="result-pono">🦉🖐️</div>
+      <div class="result-score" id="result-score">0 てん</div>
+      <div class="result-new hidden" id="result-new">✨ しんきろく！</div>
+      <button class="result-btn" id="retry-btn">🔁 もういちど</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/logic.js?v=20260722-1"></script>
+<script src="js/game.js?v=20260722-2"></script>
+</body>
+</html>

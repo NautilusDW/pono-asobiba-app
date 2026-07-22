@@ -19,7 +19,7 @@ const sources = Object.freeze({
 
 const TOKEN = "20260722-1410";
 const QUIZ_ART_TOKEN = "20260721-1409";
-const SW_VERSION = 2319;
+const SW_VERSION = 2320;
 const THREE_MIB = 3 * 1024 * 1024;
 const STAGE_IDS = Object.freeze(["snow", "fire", "dino", "toy", "cat", "fantasy", "sky", "ruins"]);
 const LAYER_KEYS = Object.freeze(["sky", "horizon", "mid", "ground", "fg", "decor"]);
@@ -704,7 +704,7 @@ const mutations = [
   { name: "render allocates DOM", expected: "render-allocation", mutate: c => ({ ...c, game: mutateFunction(c.game, "renderBranchStagePolish", " const localWorldX=worldX-o;", ' document.createElement("span");\n const localWorldX=worldX-o;') }) },
   { name: "world life DOM old id", expected: "world-life-layer", mutate: c => ({ ...c, html: replaceExactlyOnce(c.html, '<div id="branchWorldLifeLayer" aria-hidden="true"></div>', '<div id="branchLandmarkLayer" aria-hidden="true"></div>') }) },
   { name: "HTML token rolls back", expected: "query-sw", mutate: c => ({ ...c, html: replaceExactlyOnce(c.html, "styles.css?v=20260722-1410", "styles.css?v=20260721-1409") }) },
-  { name: "service worker version rolls back", expected: "query-sw", mutate: c => ({ ...c, sw: replaceExactlyOnce(c.sw, "const CACHE_VERSION = 2319;", "const CACHE_VERSION = 2318;") }) }
+  { name: "service worker version rolls back", expected: "query-sw", mutate: c => ({ ...c, sw: replaceExactlyOnce(c.sw, "const CACHE_VERSION = 2320;", "const CACHE_VERSION = 2319;") }) }
 ];
 
 async function main() {

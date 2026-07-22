@@ -20,7 +20,7 @@ const sources = Object.freeze({
 
 const TOKEN = "20260722-1410";
 const QUIZ_ART_TOKEN = "20260721-1409";
-const SW_VERSION = 2319;
+const SW_VERSION = 2320;
 const THREE_MIB = 3 * 1024 * 1024;
 const EXPECTED_VALIDATE_CHECKS = 175;
 const EXPECTED_MUTATIONS = 40;
@@ -371,7 +371,7 @@ async function main() {
     fixtureMutation("non-loop is mislabeled loop", "asset-seam", value => { value.assets[3].loop = true; }),
     fixtureMutation("raw lineage hash loses its digest contract", "asset-lineage", value => { value.assets[0].rawSha256 = "invalid"; }),
     sourceMutation("runtime canonical map drifts", "game", "branch_cat_far_town_a_worldfix_20260721.webp", "branch_cat_far_town_a_worldfix_broken.webp", "asset-map-1409"),
-    sourceMutation("selected image enters SW", "sw", "const CACHE_VERSION = 2319;", "const CACHE_VERSION = 2319; // branch_cat_far_town_a_worldfix_20260721.webp", "sw-critical"),
+    sourceMutation("selected image enters SW", "sw", "const CACHE_VERSION = 2320;", "const CACHE_VERSION = 2320; // branch_cat_far_town_a_worldfix_20260721.webp", "sw-critical"),
     sourceMutation("legacy fire horizon returns", "game", "const BRANCH_FIRE_MAGMA_ASPECT=3548/177;", "const BRANCH_FIRE_MAGMA_ASPECT=3548/177; // branch_fire_horizon_cutout_loop_depthfix_20260721.webp", "fire-assets"),
     sourceMutation("legacy fire pool returns", "game", "const BRANCH_FIRE_MAGMA_PARALLAX=1.07;", "const BRANCH_FIRE_MAGMA_PARALLAX=1.07; const BRANCH_FIRE_FLAME_POOL_SIZE=5;", "fire-assets"),
     sourceMutation("volcano parallax drifts", "game", "const BRANCH_FIRE_VOLCANO_PARALLAX=.03;", "const BRANCH_FIRE_VOLCANO_PARALLAX=.30;", "fire-volcano-single"),
@@ -381,7 +381,7 @@ async function main() {
     sourceMutation("vent cycle ordering drifts", "game", "Object.freeze({cycle:18,phase:.29,width:4.8", "Object.freeze({cycle:13,phase:.29,width:4.8", "fire-vent-anchors"),
     sourceMutation("vent phase drifts", "game", "Object.freeze({cycle:0,phase:.29,width:4.4", "Object.freeze({cycle:0,phase:.30,width:4.4", "fire-vent-anchors"),
     sourceMutation("terrain cycle DOM bridge removed", "game", "sprite.dataset.terrainCycle=String(config.cycle);", "sprite.dataset.terrainCycle='';", "fire-vent-anchors"),
-    sourceMutation("service-worker generation rolls back", "sw", "const CACHE_VERSION = 2319;", "const CACHE_VERSION = 2318;", "query-cache"),
+    sourceMutation("service-worker generation rolls back", "sw", "const CACHE_VERSION = 2320;", "const CACHE_VERSION = 2319;", "query-cache"),
     sourceMutation("vent model loses phase", "game", 'cycle:config.cycle,phase:config.phase,sourceWidth:640', 'cycle:config.cycle,phase:0,sourceWidth:640', "fire-vent-anchors"),
     sourceMutation("vent anchor calculation drifts", "game", "const anchor=(sprite.cycle+sprite.phase)*magmaPeriod;", "const anchor=sprite.cycle*magmaPeriod;", "fire-vent-anchors"),
     sourceMutation("vent terrain speed drifts", "game", "const x=anchor-localWorldX*BRANCH_FIRE_MAGMA_PARALLAX;", "const x=anchor-localWorldX;", "fire-vent-anchors"),
