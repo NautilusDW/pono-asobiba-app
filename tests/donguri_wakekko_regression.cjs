@@ -213,6 +213,26 @@ assertPatternPool(EASY_PATTERNS, "EASY_PATTERNS", true);
   assert.match(html, /<script src="\.\.\/common\/narration\.js"><\/script>/);
 })();
 
+// ── 7b) hidden 属性が CSS の display 宣言に負けないこと ──────────────────
+// 2026-07-22 事故: .overlay-screen/.board-screen の無条件 display:flex が
+// UA stylesheet の [hidden]{display:none} をカスケードで打ち消し、title/result
+// オーバーレイが常時同時表示になった。author CSS 側の [hidden] !important
+// ガードの存在を検証する。
+(function testHiddenAttributeCssGuard() {
+  const css = fs.readFileSync(path.join(root, "donguri-wakekko/styles.css"), "utf8");
+  assert.match(
+    css,
+    /\[hidden\]\s*\{[^}]*display:\s*none\s*!important/,
+    "styles.css must contain a [hidden]{display:none !important} guard"
+  );
+  // 3画面が index.html 上で hidden 制御の対象として存在すること
+  assert.match(html, /<section id="board" class="board-screen" hidden>/);
+  assert.match(html, /<section id="resultScreen" class="overlay-screen" hidden>/);
+  assert.match(html, /<section id="titleScreen" class="overlay-screen">(?!\s*hidden)/);
+  // 横画面プロンプト (§2) の存在確認
+  assert.match(html, /id="landscape-notice"/);
+})();
+
 // ── 8) 禁止 API 不使用 ──────────────────────────────────────────────────────
 (function testForbiddenApiUsage() {
   assert.equal(/highscore/i.test(game), false, "game.js must not reference highscore.js");

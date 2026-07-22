@@ -806,4 +806,23 @@ function permuteDistRandom(dist) {
   } else {
     init();
   }
+
+  // ---- 横画面 (16:9) 強制プロンプト (hyokkori-hightouch/js/game.js 踏襲) ----
+  function updateLandscapeNotice() {
+    var notice = document.getElementById('landscape-notice');
+    if (!notice) return;
+    var isPortrait = window.innerHeight >= window.innerWidth;
+    var isTouch = matchMedia('(pointer: coarse)').matches;
+    var show = isPortrait && isTouch;
+    notice.style.display = show ? 'flex' : 'none';
+    notice.setAttribute('aria-hidden', show ? 'false' : 'true');
+    var app = document.getElementById('app');
+    if (app) app.toggleAttribute('inert', show);
+  }
+  updateLandscapeNotice();
+  window.addEventListener('orientationchange', function () {
+    setTimeout(updateLandscapeNotice, 100);
+    setTimeout(updateLandscapeNotice, 500);
+  });
+  window.addEventListener('resize', updateLandscapeNotice);
 })();

@@ -27,10 +27,11 @@ body {
 }
 
 #app {
-  position: relative;
-  width: 100%;
-  height: 100dvh;
-  min-height: 100vh;
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(100vw, 100dvh * 16 / 9);
+  height: min(100dvh, 100vw * 9 / 16);
   overflow: hidden;
 }
 
@@ -52,6 +53,32 @@ body {
   box-shadow: 0 3px 10px rgba(0,0,0,0.22);
   text-decoration: none;
   font-size: 1.3rem;
+}
+
+/* hidden 属性を author CSS の display 宣言 (.overlay-screen / .board-screen の
+   display:flex) より必ず優先させる。これが無いと UA stylesheet の
+   [hidden]{display:none} がカスケードで負けて画面切替が効かない (2026-07-22 事故)。 */
+#app [hidden] {
+  display: none !important;
+}
+
+/* ── Landscape notice (横持ち強制。hyokkori-hightouch/styles.css 踏襲) ── */
+#landscape-notice {
+  display: none;
+  position: fixed; inset: 0; z-index: 9980;
+  background: #1a3a2a;
+  flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+  color: white; text-align: center; padding: 40px;
+  font-family: inherit;
+}
+#landscape-notice .rotate-icon { font-size: 64px; animation: rotateHintV 2s ease-in-out infinite; }
+@keyframes rotateHintV { 0%,100%{transform:rotate(0deg)} 50%{transform:rotate(-90deg)} }
+#landscape-notice p { font-size: 18px; line-height: 1.6; }
+#landscape-notice .landscape-back {
+  color: #fff; font-weight: 900; font-size: 16px;
+  background: rgba(255,255,255,0.18);
+  border-radius: 999px; padding: 10px 26px;
+  text-decoration: none;
 }
 
 /* ---- 共通オーバーレイ画面 (title / result) ---- */
@@ -105,17 +132,17 @@ body {
   margin: 0 0 6px;
 }
 
-/* ---- ボード画面 ---- */
+/* ---- ボード画面 (横画面16:9: 左レール/中央かご/右レールの3カラムグリッド) ---- */
 .board-screen {
   position: relative;
   width: 100%;
   height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  padding: 10px 10px 14px;
+  display: grid;
+  grid-template-columns: clamp(120px, 18%, 170px) 1fr clamp(130px, 20%, 180px);
+  grid-template-rows: auto 1fr;
   gap: 8px;
+  padding: 10px;
+  align-items: stretch;
 }
 
 /* ---- ラウンドインジケータ ---- */
@@ -159,14 +186,17 @@ body {
   box-shadow: 0 4px 12px rgba(0,0,0,0.2);
   transition: transform 0.5s ease;
 }
-#raccoonAvatar.look-0 { transform: translateX(-34px) rotate(-14deg); }
-#raccoonAvatar.look-1 { transform: translateX(0) rotate(0deg) scale(1.05); }
-#raccoonAvatar.look-2 { transform: translateX(34px) rotate(14deg); }
+/* 横画面レイアウトで あらいぐま は左レール固定配置になり、translateX による
+   左右移動は「中央上から左右のカゴを見る」意味を失うため、その場での傾き/
+   拡大のみの演出に変更 (視線ヒントの主表現は思考バブルの絵文字に委ねる)。 */
+#raccoonAvatar.look-0 { transform: rotate(-14deg); }
+#raccoonAvatar.look-1 { transform: scale(1.05); }
+#raccoonAvatar.look-2 { transform: rotate(14deg); }
 
 #raccoonThoughtBubble {
   position: absolute;
-  top: -6px;
-  right: calc(50% - 90px);
+  top: -10px;
+  right: -6px;
   min-width: 34px;
   min-height: 34px;
   display: flex;
@@ -373,6 +403,20 @@ body {
 }
 .confirm-icon { font-size: 1.2rem; }
 
+/* ---- 横画面 (16:9) グリッド配置 (.board-screen が display:grid のときの子要素配置) ----
+   カスケード順の注意: これらの宣言は上記の各ウィジェット単体ルール
+   (#roundIndicator / #raccoonRow / #basketBoard / #tray / #confirmBtn の
+   width/height/max-width 等) より必ず後ろに置くこと。同じ id セレクタ1個の
+   詳細度なので、先に書くと後続の単体ルールに上書きされて grid 配置用の
+   max-width:none 等が無効化される (2026-07-22 実装時に発見・要修正だった罠)。 */
+#roundIndicator { grid-column: 1; grid-row: 1; justify-self: center; }
+#raccoonRow     { grid-column: 1; grid-row: 2; align-self: center; height: auto; }
+#basketBoard    { grid-column: 2; grid-row: 1 / 3; max-width: none; height: 100%; }
+#tray           { grid-column: 3; grid-row: 1 / 3; align-self: stretch; justify-self: stretch;
+                  flex-direction: column; flex-wrap: wrap; width: auto; max-width: none;
+                  align-content: center; }
+#confirmBtn     { grid-column: 3; grid-row: 2; align-self: end; justify-self: center; z-index: 5; }
+
 /* ---- フェーズ別の見た目調整 (data-donguri-phase は JS が body に付与) ---- */
 body[data-donguri-phase="hint"] .acorn-token,
 body[data-donguri-phase="reveal"] .acorn-token,
@@ -382,7 +426,9 @@ body[data-donguri-phase="judge"] .acorn-token {
   opacity: 0.85;
 }
 
-@media (max-width: 380px) {
+/* 横画面 (16:9) では幅より高さが窮屈になりやすいため、幅ベースの分岐は
+   高さベースに置き換える (#app は letterbox 化されており実質横長固定)。 */
+@media (max-height: 400px) {
   .basket-label { font-size: 0.66rem; }
   #gameTitle { font-size: 1.25rem; }
 }
