@@ -72,7 +72,7 @@
 <script src="../common/haptics.js"></script>
 <script src="../common/treasure.js"></script>
 <script src="../common/menu.js"></script>
-<link rel="stylesheet" href="styles.css?v=20260722-1">
+<link rel="stylesheet" href="styles.css?v=20260722-2">
 </head>
 <body>
 <div id="landscape-notice" role="dialog" aria-modal="true" aria-label="よこむきの おねがい" aria-hidden="true">
@@ -109,14 +109,16 @@
     <section id="playScreen" class="screen">
       <div id="seesawWrap">
         <div id="fulcrum"></div>
-        <div id="plank">
-          <div class="pan pan-left" id="panLeft">
-            <div class="pan-dish"></div>
-            <div class="pan-items" id="panLeftItems"></div>
-          </div>
-          <div class="pan pan-right" id="panRight">
-            <div class="pan-dish"></div>
-            <div class="pan-items" id="panRightItems"></div>
+        <div id="plankPivot">
+          <div id="plank">
+            <div class="pan pan-left" id="panLeft">
+              <div class="pan-dish"></div>
+              <div class="pan-items" id="panLeftItems"></div>
+            </div>
+            <div class="pan pan-right" id="panRight">
+              <div class="pan-dish"></div>
+              <div class="pan-items" id="panRightItems"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -140,6 +142,6 @@
 </div>
 
 <script src="js/logic.js?v=20260722-1"></script>
-<script src="js/game.js?v=20260722-1"></script>
+<script src="js/game.js?v=20260722-2"></script>
 </body>
 </html>

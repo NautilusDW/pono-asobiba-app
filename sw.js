@@ -1,5 +1,15 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2330: guragura-seesaw 板センタリング欠落によるレイアウト崩れ修正 + 初回チュートリアル追加。
+// #plank (left:50%; width:58%; のみでセンタリング補正なし) が回転ゼロでも常に右へ
+// オーバーフローし右皿 (#panRight) が #stage 外へ出て不可視になっていたバグ (初回コミット
+// e46006e77 から存在) を、位置決め専用の #plankPivot ラッパーを新設し #plank を
+// transform-origin 50% 50% の回転専用要素へ分離する二層構造で修正 (game.js の rAF ループが
+// #plank の transform を rotate(θ) で毎フレーム上書きするため CSS 単体修正は不成立、
+// game.js 側は無変更)。加えて初回自動チュートリアル (pono_guragura_tut_seen_v1) 導入、
+// TUT_STEPS 文言改善、ドロップ先ハイライト (.pan-right.is-drop-target) 追加。ゲーム個別
+// ファイルは network-first 配信のため CRITICAL_ASSETS には追加しない。play.html
+// PAGE_CACHE_VERSION/window.PONO_SW_VERSION と同期 (2330)。
 // v2329: hyokkori-hightouch「はじめる」ボタン無反応バグの再発防止修正。guragura-seesaw
 // (v2327) と同型の脆弱パターン (js/logic.js 読込失敗時に game.js 全初期化が無言スキップ)
 // が js/game.js 冒頭ガードに存在していたため、同じ boot() ラップ+自動リトライ1回+
@@ -745,7 +755,7 @@
 // clampなしのworld座標で連続スクロールさせる。全区間の猫密度も均等化 (batch:1410)。
 // v2326: hatake-nikki の畑レイアウト崩れ(#field-bg幽霊アセット除去+tool-rail/plot2重なり解消)
 // 修正 + 水やり操作discoverability改善(パルス演出/ヒントトースト/初回チュートリアル自動表示) (batch:1415)。
-const CACHE_VERSION = 2329;
+const CACHE_VERSION = 2330;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

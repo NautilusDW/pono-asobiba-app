@@ -31,6 +31,8 @@
     document.body.classList.add('pono-game-ready');
   }
 
+  var TUT_SEEN_KEY = 'pono_guragura_tut_seen_v1'; // 初回自動チュートリアル既読フラグ (hatake-nikki/js/game.js のパターン踏襲)
+
   function boot() {
   var L = window.GuraguraLogic;
 
@@ -208,6 +210,31 @@
     if (ghostEl) ghostEl.classList.remove('is-active');
   }
 
+  // ═══ 無操作ヒント: ラウンド開始から6秒間ドラッグが無ければ指アイコンを表示 ═══
+  var dragHintEl = null;
+  var dragHintTimer = null;
+  function ensureDragHint() {
+    if (dragHintEl) return dragHintEl;
+    dragHintEl = document.createElement('div');
+    dragHintEl.id = 'dragHint';
+    dragHintEl.className = 'hidden';
+    dragHintEl.setAttribute('aria-hidden', 'true');
+    dragHintEl.textContent = '👉';
+    stageEl.appendChild(dragHintEl);
+    return dragHintEl;
+  }
+  function scheduleDragHint() {
+    clearDragHintTimer();
+    dragHintTimer = setTimeout(function () {
+      var el = ensureDragHint();
+      el.classList.remove('hidden');
+    }, 6000);
+  }
+  function clearDragHintTimer() {
+    if (dragHintTimer) { clearTimeout(dragHintTimer); dragHintTimer = null; }
+    if (dragHintEl) dragHintEl.classList.add('hidden');
+  }
+
   function pointOverPanRight(x, y) {
     var rect = panRightEl.getBoundingClientRect();
     var margin = 20;
@@ -223,6 +250,8 @@
     el.classList.add('is-dragging');
     balanceHoldStart = null; // ドラッグ操作中は釣り合い判定を停止
     showGhost(itemId, x, y);
+    if (panRightEl) panRightEl.classList.add('is-drop-target');
+    clearDragHintTimer();
   }
 
   function attachDragHandlers(el, itemId, source) {
@@ -243,6 +272,8 @@
     dragState = null;
     hideGhost();
     if (ds.el) ds.el.classList.remove('is-dragging');
+    if (panRightEl) panRightEl.classList.remove('is-drop-target');
+    scheduleDragHint();
 
     if (cancelled) return; // 元の位置に戻すだけ (state 変化なし)
 
@@ -390,8 +421,9 @@
 
   // ═══ チュートリアル (hyokkori-hightouch の tut-dim/tut-bubble パターンを流用) ═══
   var TUT_STEPS = [
-    { icon: '⚖️', text: 'トレイの のせものを みぎの おさらへ<br>ドラッグして つりあわせよう！' },
-    { icon: '😲', text: 'おもすぎたら「わっ」と はねかえって<br>トレイに もどってくるよ。 だいじょうぶ！' }
+    { icon: '⚖️', text: 'ひだりの おさらと おなじ おもさに<br>なるように つりあわせるよ！' },
+    { icon: '👉', text: 'したの トレイから のせものを<br><b>みぎの おさら</b>まで ゆびで うごかしてね' },
+    { icon: '😲', text: 'おもすぎたら「わっ」と はねかえるよ。<br>べつの のせものを ためして だいじょうぶ！' }
   ];
   var tutStep = 0;
   function showTutorial() {
@@ -435,6 +467,14 @@
     phase = 'playing';
     window._achDeferPopups = true;
     showScreen('playScreen');
+    scheduleDragHint();
+
+    var tutSeen = false;
+    try { tutSeen = localStorage.getItem(TUT_SEEN_KEY) === '1'; } catch (e) {}
+    if (!tutSeen) {
+      try { localStorage.setItem(TUT_SEEN_KEY, '1'); } catch (e) {}
+      showTutorial();
+    }
   }
 
   function onRoundBalanced() {
@@ -453,6 +493,7 @@
       } else {
         sim = { angle: 0, vel: 0 };
         renderAll();
+        scheduleDragHint();
       }
     }, 1600);
   }
@@ -464,6 +505,7 @@
 
   function finishGame() {
     phase = 'result';
+    clearDragHintTimer();
     if (window.incrementStat) window.incrementStat('guragura_games', 1);
     if (window.flushAchievementPopups) window.flushAchievementPopups();
     window._achDeferPopups = false;

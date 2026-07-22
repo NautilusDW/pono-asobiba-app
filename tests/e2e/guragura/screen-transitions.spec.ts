@@ -23,6 +23,12 @@ async function setupPage(page) {
     try {
       window.sessionStorage.setItem('pono_debug_mode_session', '1');
     } catch (_e) { /* noop */ }
+    // このスペックの焦点は画面遷移そのものなので、初回自動チュートリアル (既読フラグ未設定時に
+    // 表示される #tut-dim/#tut-bubble) が retryBtn 等のクリックを妨げないよう既読扱いにしておく。
+    // チュートリアル自体の表示/非表示検証は tests/e2e/guragura/layout-containment.spec.ts が担当する。
+    try {
+      window.localStorage.setItem('pono_guragura_tut_seen_v1', '1');
+    } catch (_e) { /* noop */ }
   });
 }
 

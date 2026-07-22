@@ -20,7 +20,7 @@ const sources = Object.freeze({
 
 const TOKEN = "20260722-1412";
 const QUIZ_ART_TOKEN = "20260721-1409";
-const SW_VERSION = 2329;
+const SW_VERSION = 2330;
 const THREE_MIB = 3 * 1024 * 1024;
 const EXPECTED_VALIDATE_CHECKS = 175;
 const EXPECTED_MUTATIONS = 40;

@@ -96,15 +96,26 @@ html, body {
   filter: drop-shadow(0 6px 6px rgba(0,0,0,0.2));
 }
 
-#plank {
+/* 位置決め専用ラッパー。 transform はセンタリング専有 (JS は触らない)。
+   width 58% と logic.js MAX_ANGLE=14 は tests/e2e/guragura/layout-containment.spec.ts
+   および tests/guragura_seesaw_layout_regression.cjs で収容保証済み。変更時は要再確認。 */
+#plankPivot {
   position: absolute;
   left: 50%; bottom: calc(34% + 11%);
   width: 58%; height: 2.5%;
+  transform: translateX(-50%);
+}
+
+/* 回転専用。 transform は game.js の rAF ループが rotate(θ) で毎フレーム専有上書きする。
+   ここには static transform を絶対に書かないこと (書いても JS に消される)。
+   センタリングは親 #plankPivot が担う。 */
+#plank {
+  position: absolute;
+  inset: 0;
   transform-origin: 50% 50%;
   background: linear-gradient(180deg, #d9a96b, #b9803f);
   border-radius: 999px;
   box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-  /* transform は game.js の rAF ループが style.transform で回転値を差し込む */
 }
 
 .pan {
@@ -186,6 +197,32 @@ html, body {
   100% { transform: scale(1); }
 }
 .item-box.is-placed { animation: placePop 0.28s ease-out; }
+
+/* ── ドロップ先ハイライト (ドラッグ中だけ右皿を光らせる) ── */
+.pan-right.is-drop-target .pan-dish {
+  box-shadow: 0 0 0 4px #ffd93d, 0 0 18px 6px rgba(255,217,61,0.8), inset 0 4px 8px rgba(0,0,0,0.2);
+  animation: dropPulse 0.8s infinite;
+}
+@keyframes dropPulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.25); }
+}
+
+/* ── 無操作ヒント: トレイ→右皿方向にふわふわ動く指アイコン ── */
+#dragHint {
+  position: absolute;
+  z-index: 550;
+  left: 14%; bottom: 24%;
+  font-size: 34px;
+  pointer-events: none;
+  animation: dragHintFloat 1.4s ease-in-out infinite;
+  filter: drop-shadow(0 3px 4px rgba(0,0,0,0.3));
+}
+#dragHint.hidden { display: none; }
+@keyframes dragHintFloat {
+  0%, 100% { transform: translate(0, 0); opacity: 0.85; }
+  50% { transform: translate(18px, -10px); opacity: 1; }
+}
 
 /* ── トレイ ── */
 #tray {
@@ -269,6 +306,7 @@ html, body {
 }
 .tut-bubble.hidden { display: none; }
 .tut-bubble .tut-icon { font-size: 40px; margin-bottom: 8px; }
+.tut-bubble b { color: #e07a2f; }
 .tut-next-btn {
   display: inline-block; margin-top: 14px; padding: 10px 30px;
   border: none; border-radius: 50px;
