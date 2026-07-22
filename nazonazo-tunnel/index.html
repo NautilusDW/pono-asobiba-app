@@ -142,6 +142,34 @@
           <div id="dinoAdventureProgress" role="status" aria-live="polite" aria-atomic="true">みずみち 0 / 2</div>
         </header>
         <p id="dinoAdventureGuide" role="status" aria-live="polite" aria-atomic="true">みずを とどけよう！</p>
+        <div id="dinoCraneGame" class="dino-crane-game" data-phase="idle" role="group" aria-label="クレーンで たおれぎを あんぜんな ばしょへ はこぶ" hidden>
+          <img id="dinoCraneBackdrop" class="dino-crane-backdrop" alt="" decoding="async" draggable="false" aria-hidden="true">
+          <div id="dinoCraneTrain" class="dino-crane-train" aria-hidden="true">
+            <div class="train-art">
+              <div class="train-driver"></div>
+              <div class="train-wheel train-wheel-a"></div>
+              <div class="train-wheel train-wheel-b"></div>
+              <div class="train-wheel train-wheel-c"></div>
+              <div class="train-cylinder"></div>
+              <div class="train-crosshead"></div>
+              <div class="train-piston-rod"></div>
+              <div class="train-wheel-rod train-wheel-rod-a"></div>
+              <div class="train-wheel-rod train-wheel-rod-b"></div>
+              <div class="train-main-rod"></div>
+              <div class="train-body-img"></div>
+            </div>
+          </div>
+          <div id="dinoCranePlayfield" class="dino-crane-playfield">
+            <img id="dinoCraneArm" class="dino-crane-arm" alt="" decoding="async" draggable="false" aria-hidden="true">
+            <img id="dinoCraneCable" class="dino-crane-cable" alt="" decoding="async" draggable="false" aria-hidden="true">
+            <button id="dinoCraneHook" class="dino-crane-hook" type="button" aria-label="フック。やじるしキーで うごかし、エンターで つかむ または おろす">
+              <img alt="" decoding="async" draggable="false" aria-hidden="true">
+            </button>
+            <img id="dinoCraneLog" class="dino-crane-log" alt="" decoding="async" draggable="false" aria-hidden="true">
+            <div id="dinoCraneRingGuide" class="dino-crane-ring-guide" aria-hidden="true"></div>
+            <div id="dinoCraneSafeZone" class="dino-crane-safe-zone" aria-hidden="true"><strong>あんぜんな ばしょ</strong></div>
+          </div>
+        </div>
         <div id="dinoWaterGame" class="dino-water-game" role="group" aria-label="ゆびで みずみちを つくる" hidden>
           <div class="dino-water-scene" aria-hidden="true">
             <img id="dinoWaterDinos" alt="" decoding="async" draggable="false">
