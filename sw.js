@@ -1,5 +1,14 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2337: hatake-nikki コードレビュー指摘の修正。 (1) 常設ステータスバーの
+// updateStatusBar() に force 引数を追加し、 beginPress() の長押し開始時(優先度1の
+// 「そのまま ゆびを はなさないでね…」)だけ statusFlashTimer 中でも強制的に上書き
+// できるようにした(直前の水やり成功flash等に最大1.6秒埋もれるバグを解消)。
+// (2) beginPress() の水やりタイマー開始条件へ !plot.wateredToday を追加し、
+// 既に本日水やり済みの畝を長押ししても成功フロー(バッジ/スプラッシュ/flash/
+// ハプティクス)が再生されないようにした。 ゲーム個別ファイルは network-first
+// 配信のため CRITICAL_ASSETS には追加しない。play.html PAGE_CACHE_VERSION/
+// window.PONO_SW_VERSION と同期 (2337)。
 // v2336: guragura-seesaw に「あとちょっと！ハラハラ演出」を追加。 釣り合いに近づいた
 // 瞬間(near-balance rising edge)だけ #plank に淡い金色グロー(box-shadow アニメ、
 // transform は絶対に含めない)+ common/haptics.js の新パターン 'nearBalance'(8ms単発)
@@ -779,7 +788,7 @@
 // preventDefault)。水やり成功フィードバック(バッジ/演出/flash文言)と常設ステータスバー
 // を追加し、#stage 背景を cover→contain に防御的変更 (ひし形頂点欠け不能化)。
 // play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSION と同期 (2335)。
-const CACHE_VERSION = 2336;
+const CACHE_VERSION = 2337;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

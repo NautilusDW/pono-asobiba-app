@@ -5027,13 +5027,13 @@ function measureDinoCraneGeometry(){
  const mountX=train.left-field.left+train.width*.60,mountY=train.top-field.top+train.height*.20;
  const armLeft=mountX-.12*armSize,armTop=mountY-.80*armSize;
  const pulleyX=armLeft+.87*armSize,pulleyY=armTop+.15*armSize;
- const minX=Math.max(hookSize*.55,pulleyX-width*.18),maxX=Math.max(minX+1,Math.min(width-hookSize*.55,pulleyX+width*.26));
+ const minX=Math.max(hookSize*.55,width*.17),maxX=Math.max(minX+1,Math.min(width-hookSize*.55,pulleyX+width*.26));
  const groundY=Math.min(height*.91,train.bottom-field.top);
- const initialRingX=clamp(width*.70,minX+2,maxX-2);
+ const initialRingX=clamp(width*.24,minX+2,maxX-2);
  const initialRingY=groundY-(.729-.34)*logSize;
  const safeRingX=Math.min(maxX,Math.max(initialRingX+Math.min(width*.16,logSize*.70),width*.84));
  const safeRingY=initialRingY;
- const homeX=minX,homeTip={x:pulleyX,y:pulleyY};
+ const homeX=clamp(pulleyX,minX,maxX),homeTip={x:pulleyX,y:pulleyY};
  const homeY=clamp(initialRingY-Math.min(92,height*.18),homeTip.y+hookSize*.67,initialRingY-12);
  return {width,height,fieldLeft:field.left,fieldTop:field.top,armSize,hookSize,logSize,mountX,mountY,armLeft,armTop,pulleyX,pulleyY,minX,maxX,groundY,initialRingX,initialRingY,safeRingX,safeRingY,homeX,homeY};
 }
@@ -5685,7 +5685,7 @@ function dinoAdventureDebugSnapshot(){
  const cells=[];for(let index=0;index<DINO_WATER_ROWS*DINO_WATER_COLS;index++){const point=dinoWaterCoordinates(index);cells.push({row:point.row,col:point.col,kind:dinoWaterKind(index)});}
  return {
   phase:state.phase,eventIndex:state.eventIndex,transitionCount:state.transitionCount,completionCount:state.completionCount,epoch:state.epoch,inputLocked:state.inputLocked,pointerId:crane.pointerId!==null?crane.pointerId:water.pointerId,timerActive:!!state.phaseEndAt,
-	  crane:{phase:crane.phase,attempt:crane.attempt,completed:crane.completed,scoreGranted:crane.scoreGranted,attached:crane.attached,safeReady:crane.safeReady,pointerId:crane.pointerId,hook:{x:Number(crane.hookX.toFixed(2)),y:Number(crane.hookY.toFixed(2))},logRing:{x:Number(crane.logRingX.toFixed(2)),y:Number(crane.logRingY.toFixed(2))},geometry:crane.geometry?{width:Number(crane.geometry.width.toFixed(2)),height:Number(crane.geometry.height.toFixed(2)),armSize:Number(crane.geometry.armSize.toFixed(2)),hookSize:Number(crane.geometry.hookSize.toFixed(2)),logSize:Number(crane.geometry.logSize.toFixed(2)),pulleyX:Number(crane.geometry.pulleyX.toFixed(2)),pulleyY:Number(crane.geometry.pulleyY.toFixed(2)),ringX:Number(crane.geometry.initialRingX.toFixed(2)),ringY:Number(crane.geometry.initialRingY.toFixed(2)),safeX:Number(crane.geometry.safeRingX.toFixed(2)),safeY:Number(crane.geometry.safeRingY.toFixed(2))}:null},
+  crane:{phase:crane.phase,attempt:crane.attempt,completed:crane.completed,scoreGranted:crane.scoreGranted,attached:crane.attached,safeReady:crane.safeReady,pointerId:crane.pointerId,hook:{x:Number(crane.hookX.toFixed(2)),y:Number(crane.hookY.toFixed(2))},logRing:{x:Number(crane.logRingX.toFixed(2)),y:Number(crane.logRingY.toFixed(2))},geometry:crane.geometry?{width:Number(crane.geometry.width.toFixed(2)),height:Number(crane.geometry.height.toFixed(2)),armSize:Number(crane.geometry.armSize.toFixed(2)),hookSize:Number(crane.geometry.hookSize.toFixed(2)),logSize:Number(crane.geometry.logSize.toFixed(2)),pulleyX:Number(crane.geometry.pulleyX.toFixed(2)),pulleyY:Number(crane.geometry.pulleyY.toFixed(2)),ringX:Number(crane.geometry.initialRingX.toFixed(2)),ringY:Number(crane.geometry.initialRingY.toFixed(2)),safeX:Number(crane.geometry.safeRingX.toFixed(2)),safeY:Number(crane.geometry.safeRingY.toFixed(2))}:null},
   water:{route:water.route.map(dinoWaterCoordinates),solution:DINO_WATER_SOLUTION.map(dinoWaterCoordinates),cells,budget:water.budget,waterCharges:water.waterCharges,completed:water.completed,attempt:water.attempt,invalidCell:water.invalidCell===null?null:dinoWaterCoordinates(water.invalidCell),awaitingRetry:water.awaitingRetry},
   boss:{phase:boss.phase,bossHp:boss.bossHp,trainHp:boss.trainHp,waterCharge:boss.waterCharge,brakeHeld:boss.brakeHeld,burstOpen:boss.burstOpen,hornCharge:Number(boss.hornCharge.toFixed(4)),balance:Number(boss.balance.toFixed(4)),pointerId:boss.brakePointerId,retryCount:boss.retryCount}
  };

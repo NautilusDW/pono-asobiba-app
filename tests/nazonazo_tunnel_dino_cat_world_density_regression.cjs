@@ -17,7 +17,7 @@ const sources = Object.freeze({
   sw: read("sw.js")
 });
 
-const TOKEN = "20260722-1412";
+const TOKEN = "20260723-1418";
 const QUIZ_ART_TOKEN = "20260721-1409";
 const SW_VERSION = 2330;
 const THREE_MIB = 3 * 1024 * 1024;
@@ -372,13 +372,13 @@ function validate(candidate) {
       const dinoBase = Object.fromEntries(STAGE_ASSET_KEYS.dino.map(key => [key, expectedBaseAsset("dino", key)]));
       const catBase = Object.fromEntries(LAYER_KEYS.map(key => [key, expectedBaseAsset("cat", key)]));
       context.raster({ id: "dino", assets: dinoBase }); context.polish({ id: "dino" });
-      preloadProbe.dino = made.length === 26 &&
-        made.slice(6, 19).every(image => image.src.includes("/branch_dino_adventure_")) &&
-        made.slice(19, 26).every(image => image.src.includes("/branch_dino_") && !image.src.includes("/branch_dino_adventure_"));
+      preloadProbe.dino = made.length === 30 &&
+        made.slice(6, 23).every(image => image.src.includes("/branch_dino_adventure_")) &&
+        made.slice(23, 30).every(image => image.src.includes("/branch_dino_") && !image.src.includes("/branch_dino_adventure_"));
       context.raster({ id: "dino", assets: dinoBase }); context.polish({ id: "dino" });
-      preloadProbe.dinoRepeat = made.length === 26;
+      preloadProbe.dinoRepeat = made.length === 30;
       context.raster({ id: "cat", assets: catBase }); context.polish({ id: "cat" });
-      preloadProbe.cat = made.length === 44 && made.slice(32).every(image => image.src.includes("/branch_cat_"));
+      preloadProbe.cat = made.length === 48 && made.slice(36).every(image => image.src.includes("/branch_cat_"));
       preloadProbe.totals = context.rasterCache?.size === 12 && context.polishCache?.size === 19;
     } catch { /* stable checks below report the failure */ }
   }
@@ -707,7 +707,7 @@ const mutations = [
   { name: "reduced motion keeps ember field", expected: "motion-night", mutate: c => ({ ...c, css: replaceExactlyOnce(c.css, ".branch-fire-ember-field,.branch-fire-crater-ember{display:none!important}", ".branch-fire-crater-ember{display:none!important}") }) },
   { name: "render allocates DOM", expected: "render-allocation", mutate: c => ({ ...c, game: mutateFunction(c.game, "renderBranchStagePolish", " const localWorldX=worldX-o;", ' document.createElement("span");\n const localWorldX=worldX-o;') }) },
   { name: "world life DOM old id", expected: "world-life-layer", mutate: c => ({ ...c, html: replaceExactlyOnce(c.html, '<div id="branchWorldLifeLayer" aria-hidden="true"></div>', '<div id="branchLandmarkLayer" aria-hidden="true"></div>') }) },
-  { name: "HTML token rolls back", expected: "query-sw", mutate: c => ({ ...c, html: replaceExactlyOnce(c.html, "styles.css?v=20260722-1412", "styles.css?v=20260722-1411") }) },
+  { name: "HTML token rolls back", expected: "query-sw", mutate: c => ({ ...c, html: replaceExactlyOnce(c.html, "styles.css?v=20260723-1418", "styles.css?v=20260723-1417") }) },
   { name: "service worker version rolls back", expected: "query-sw", mutate: c => ({ ...c, sw: replaceExactlyOnce(c.sw, `const CACHE_VERSION = ${SW_VERSION};`, `const CACHE_VERSION = ${SW_VERSION - 2};`) }) }
 ];
 

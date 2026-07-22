@@ -208,8 +208,17 @@ function createScreenController(screens) {
     return 'きょうの おせわは ばっちり！ また あした';
   }
 
-  function updateStatusBar() {
-    if (!statusBarEl || statusFlashTimer) return; // flash 中は上書きしない
+  // force=true の場合のみ flash 表示中でも強制的に上書きする。
+  // 優先度1(長押し中の「そのまま ゆびを はなさないでね…」)は仕様上
+  // いかなる flash よりも優先されるべきなので、beginPress の長押し開始時だけ
+  // force で呼び出し、別畝の水やり成功flash等に埋もれないようにする。
+  function updateStatusBar(force) {
+    if (!statusBarEl) return;
+    if (statusFlashTimer && !force) return; // flash 中は上書きしない
+    if (statusFlashTimer) {
+      clearTimeout(statusFlashTimer);
+      statusFlashTimer = null;
+    }
     statusBarEl.textContent = computeStatusText();
     statusBarEl.classList.remove('is-flash');
   }
@@ -399,7 +408,10 @@ function createScreenController(screens) {
     plotPress[idx] = st;
     if (st.onBug) return;
     var plot = appState.plots[idx];
-    if (activeTool === 'water' && plot.seedId) {
+    // 既に本日水やり済みの畝は is-water-target(パルス)対象外だが、そのまま
+    // 長押しされても水やり成功フロー(バッジ/スプラッシュ/flash/ハプティクス)を
+    // 再生しない(冪等だが「済んだかどうか分かりにくい」苦情の趣旨に反するため)。
+    if (activeTool === 'water' && plot.seedId && !plot.wateredToday) {
       refs.el.classList.add('is-watering');
       if (refs.gaugeFillEl) {
         // 800ms かけて 0%→100% まで満ちるアニメーション (CSS transition: width 800ms linear と対)。
@@ -429,7 +441,9 @@ function createScreenController(screens) {
       }
       refs.el.classList.add('is-pressed');
     }
-    updateStatusBar();
+    // 長押し(水やりタイマー始動)時のみ force: 優先度1のholding文言で
+    // 直前の成功flash等を割り込んで即時反映する。
+    updateStatusBar(!!st.timerId);
   }
 
   function endPress(idx, endX, endY) {

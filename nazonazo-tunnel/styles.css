@@ -1382,6 +1382,7 @@ body.dino-adventure-active #dots{opacity:0;visibility:hidden}
 .dino-crane-game[data-phase="held"] .dino-crane-safe-zone,.dino-crane-game[data-phase="success"] .dino-crane-safe-zone{display:grid}
 .dino-crane-game[data-phase="held"] .dino-crane-log{filter:drop-shadow(0 9px 7px rgba(57,72,31,.3))}
 body.dino-crane-active #veh,body.dino-crane-active #cars{visibility:hidden!important}
+body.dino-crane-active #dinoAdventureGuide{min-width:min(70vw,480px)}
 @keyframes dinoCraneTargetPulse{to{transform:scale(1.09);box-shadow:0 0 0 6px rgba(255,255,255,.92),0 0 30px rgba(255,218,55,.9)}}
 .dino-water-scene{position:absolute;right:-2%;bottom:9vh;width:clamp(210px,39vw,520px);height:55vh;display:flex;align-items:flex-end;justify-content:flex-end;pointer-events:none;opacity:.82}
 .dino-water-scene img{display:block;max-width:100%;max-height:100%;object-fit:contain;object-position:right bottom;filter:drop-shadow(0 5px 3px rgba(61,76,35,.16));transform-origin:72% 92%}

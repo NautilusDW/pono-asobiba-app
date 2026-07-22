@@ -174,6 +174,8 @@ function validate(candidate) {
   for (const id of requiredIds) {
     check((html.match(new RegExp(`id=["']${id}["']`, "g")) || []).length === 1, "dom-contract", id);
   }
+  check((html.match(/id=["']dinoCraneLog["']/g) || []).length === 1, "crane-one-log");
+  check((html.match(/id=["']dinoCraneSafeZone["']/g) || []).length === 1, "crane-one-safe-zone");
   check(/<section id="dinoAdventureLayer"[^>]*data-phase="idle"[^>]*aria-hidden="true"[^>]*hidden/.test(html), "layer-a11y");
   check(/id="dinoWaterGrid"[^>]*role="grid"[^>]*tabindex="0"/.test(html), "water-keyboard");
   check(/id="dinoWaterBudget"[^>]*role="progressbar"[^>]*aria-valuemin="0"[^>]*aria-valuemax="9"[^>]*aria-valuenow="9"/.test(html), "water-budget-a11y");
@@ -266,8 +268,11 @@ function validate(candidate) {
   check(/crane:\{[^}]*attempt:1[^}]*completed:false[^}]*scoreGranted:false[^}]*pointerId:null[^}]*attached:false/.test(stateFactory), "crane-state");
   const retryCrane = functions.beginDinoCraneRetry || "";
   const commitCrane = functions.commitDinoCraneSuccess || "";
+  const releaseCrane = extractFunction(game, "releaseDinoCranePointer") || "";
   check(!/stageMiss\+\+|addScore\s*\(/.test(retryCrane) && /phase=["']crane-retry["']/.test(retryCrane), "crane-no-penalty-retry");
   check(/crane\.completed/.test(commitCrane) && /crane\.scoreGranted/.test(commitCrane) && /dinoCraneLogFullyInsideSafe/.test(commitCrane), "crane-one-shot-score");
+  check(/if\(cancelled\)\{beginDinoCraneRetry\(false\);return;\}/.test(compact(releaseCrane)), "crane-pointercancel-retry");
+  check(/isDinoAdventureStage\(\)/.test(revealCrane) && /!playing/.test(revealCrane) && (revealCrane.match(/dinoAdventureState\.epoch!==epoch/g) || []).length >= 3 && /dinoAdventureState\.phase!==["']travel["']/.test(revealCrane), "crane-stale-reveal-guard");
   check(/bossHp:DINO_BOSS_HP/.test(stateFactory) && /trainHp:DINO_BOSS_TRAIN_HP/.test(stateFactory) && /waterCharge:DINO_BOSS_WATER_CHARGES/.test(stateFactory), "boss-state");
   check(/route:\[DINO_WATER_START\]/.test(stateFactory) && /budget:DINO_WATER_DIG_BUDGET/.test(stateFactory) && /attempt:1/.test(stateFactory), "water-state");
 
@@ -295,7 +300,9 @@ function replaceExactlyOnce(source, from, to) {
   return source.replace(from, to);
 }
 
+let sourceMutationCount = 0;
 function sourceMutation(name, expectedCode, mutate) {
+  sourceMutationCount += 1;
   const candidate = mutate({ ...original });
   const result = validate(candidate);
   assert.ok(result.errors.some(error => error === expectedCode || error.startsWith(`${expectedCode}:`)), `${name}: mutation survived; errors=${result.errors.join(", ")}`);
@@ -640,7 +647,7 @@ async function runBrowser(browserName, base) {
   assert.equal(await frame.locator(".tun:visible").count(), 0, `${browserName}: dino built visible quiz stations`);
   assert.equal(await frame.locator("#dinoCraneGame:visible").count(), 1, `${browserName}: crane event is not visible`);
 
-  const viewports = [[390, 844], [844, 390], [1024, 768], [1366, 768]];
+  const viewports = [[390, 844], [568, 320], [844, 390], [1024, 768], [1366, 768]];
   for (const [width, height] of viewports) {
     await page.setViewportSize({ width, height });
     await frame.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
@@ -1111,6 +1118,8 @@ async function runCranePointerBrowser(browserName, base) {
   assert.ok(field, `${browserName}: crane playfield missing`);
 
   const clientPoint = statePoint => ({ x: field.x + statePoint.x, y: field.y + statePoint.y });
+  const pointerEvidence = {};
+  const captureEvidence = value => ({ phase: value.phase, hook: value.crane.hook, logRing: value.crane.logRing, ring: { x: value.crane.geometry.ringX, y: value.crane.geometry.ringY }, safe: { x: value.crane.geometry.safeX, y: value.crane.geometry.safeY } });
   let state = await snapshot(frame);
   let point = clientPoint(state.crane.hook);
   await page.mouse.move(point.x, point.y);
@@ -1120,32 +1129,38 @@ async function runCranePointerBrowser(browserName, base) {
   const returning = await waitSnapshot(frame, value => value.phase === "crane-retry" && value.crane.phase === "returning", `${browserName}: pointer miss did not enter return`);
   assert.equal(returning.eventIndex, 0);
   assert.equal(returning.crane.scoreGranted, false);
+  pointerEvidence.returning = captureEvidence(returning);
   await page.screenshot({ path: `/tmp/nazonazo-dino-crane-pointer-${browserName}-returning-1174x658.png`, fullPage: true });
   await waitSnapshot(frame, value => value.phase === "crane" && value.crane.attempt === 2, `${browserName}: pointer miss did not retry same event`, 5000);
 
   state = await snapshot(frame);
   point = clientPoint(state.crane.hook);
   const ring = clientPoint({ x: state.crane.geometry.ringX, y: state.crane.geometry.ringY });
+  const approachSign = point.x >= ring.x ? 1 : -1;
   await page.mouse.move(point.x, point.y);
   await page.mouse.down();
-  await page.mouse.move(ring.x - 58, ring.y, { steps: 10 });
+  await page.mouse.move(ring.x + approachSign * 58, ring.y, { steps: 10 });
   const nearSnap = await snapshot(frame);
   assert.equal(nearSnap.crane.attached, false, `${browserName}: hook snapped before entering the forgiving radius`);
+  pointerEvidence.nearSnap = captureEvidence(nearSnap);
   await page.screenshot({ path: `/tmp/nazonazo-dino-crane-pointer-${browserName}-near-snap-1174x658.png`, fullPage: true });
   await page.mouse.move(ring.x, ring.y, { steps: 4 });
   const held = await waitSnapshot(frame, value => value.phase === "crane-held" && value.crane.attached, `${browserName}: real pointer did not snap to the log ring`);
   assert.equal(held.crane.attempt, 2);
+  pointerEvidence.held = captureEvidence(held);
   await page.screenshot({ path: `/tmp/nazonazo-dino-crane-pointer-${browserName}-held-1174x658.png`, fullPage: true });
 
   const safe = clientPoint({ x: held.crane.geometry.safeX, y: held.crane.geometry.safeY });
   await page.mouse.move(safe.x, safe.y, { steps: 12 });
   const safeReady = await waitSnapshot(frame, value => value.crane.safeReady && value.crane.attached, `${browserName}: real pointer did not carry the log fully into the safe zone`);
   assert.equal(safeReady.eventIndex, 0);
+  pointerEvidence.safeReady = captureEvidence(safeReady);
   await page.screenshot({ path: `/tmp/nazonazo-dino-crane-pointer-${browserName}-safe-ready-1174x658.png`, fullPage: true });
   await page.mouse.up();
   const success = await waitSnapshot(frame, value => value.phase === "crane-success" && value.crane.completed, `${browserName}: real pointer drop did not commit crane success`);
   assert.equal(success.eventIndex, 1);
   assert.equal(success.crane.scoreGranted, true);
+  pointerEvidence.success = captureEvidence(success);
   await page.screenshot({ path: `/tmp/nazonazo-dino-crane-pointer-${browserName}-success-1174x658.png`, fullPage: true });
 
   const saveAfter = await frame.evaluate(() => localStorage.getItem("pono_nazonazo_tunnel_v1"));
@@ -1155,7 +1170,7 @@ async function runCranePointerBrowser(browserName, base) {
   assert.deepEqual(pageErrors, [], `${browserName}: pointer parity page errors\n${pageErrors.join("\n")}`);
   const unexpectedRequestFailures = requestFailures.filter(failure => !/^HEAD .+\/admin\/ net::ERR_ABORTED$/.test(failure));
   assert.deepEqual(unexpectedRequestFailures, [], `${browserName}: pointer parity request failures\n${unexpectedRequestFailures.join("\n")}`);
-  console.log(`nazonazo dino crane pointer parity (${browserName}): PASS ${JSON.stringify({ attempt: success.crane.attempt, eventIndex: success.eventIndex, assets: report })}`);
+  console.log(`nazonazo dino crane pointer parity (${browserName}): PASS ${JSON.stringify({ attempt: success.crane.attempt, eventIndex: success.eventIndex, evidence: pointerEvidence, assets: report })}`);
   await context.close();
   await browser.close();
 }
@@ -1274,23 +1289,65 @@ async function main() {
     ...candidate,
     game: replaceExactlyOnce(candidate.game, "preloadDinoAdventureAssets().then(()=>revealDinoWaterEvent(epoch));", "revealDinoWaterEvent(epoch);")
   }));
+  sourceMutation("crane event count is dropped", "event-count", candidate => ({
+    ...candidate,
+    game: replaceExactlyOnce(candidate.game, "DINO_ADVENTURE_EVENT_COUNT=3", "DINO_ADVENTURE_EVENT_COUNT=2")
+  }));
+  sourceMutation("crane is skipped before the water event", "crane-water-boss-flow", candidate => ({
+    ...candidate,
+    game: replaceExactlyOnce(candidate.game, 'pending="dinoCrane"', 'pending="dinoWater"')
+  }));
+  sourceMutation("crane reuses the quiz runtime", "zero-quiz-crane", candidate => ({
+    ...candidate,
+    game: replaceExactlyOnce(candidate.game, "function showDinoCraneEvent(){", "function showDinoCraneEvent(){showQuiz();")
+  }));
+  sourceMutation("crane snap target becomes a reaction trap", "crane-forgiving-targets", candidate => ({
+    ...candidate,
+    game: replaceExactlyOnce(candidate.game, "DINO_CRANE_SCORE=250,DINO_CRANE_SNAP_RADIUS=48", "DINO_CRANE_SCORE=250,DINO_CRANE_SNAP_RADIUS=20")
+  }));
+  sourceMutation("crane success ignores full safe containment", "crane-one-shot-score", candidate => ({
+    ...candidate,
+    game: replaceExactlyOnce(candidate.game, "||!dinoCraneLogFullyInsideSafe())return false", ")return false")
+  }));
+  sourceMutation("crane score loses its one-shot guard", "crane-one-shot-score", candidate => ({
+    ...candidate,
+    game: replaceExactlyOnce(candidate.game, 'if(!crane.scoreGranted){crane.scoreGranted=true;addScore(DINO_CRANE_SCORE,"adventure");}', 'addScore(DINO_CRANE_SCORE,"adventure");')
+  }));
+  sourceMutation("pointercancel no longer retries the crane event", "crane-pointercancel-retry", candidate => ({
+    ...candidate,
+    game: replaceExactlyOnce(candidate.game, "if(cancelled){beginDinoCraneRetry(false);return;}", "if(cancelled)return;")
+  }));
+  sourceMutation("crane reveals without its asset predecode gate", "crane-asset-predecode-gate", candidate => ({
+    ...candidate,
+    game: replaceExactlyOnce(candidate.game, "Promise.all([preloadDinoCraneAssets(),preloadDinoAdventureAssets()]).then(()=>revealDinoCraneEvent(epoch));", "revealDinoCraneEvent(epoch);")
+  }));
+  sourceMutation("stale crane reveal ignores its epoch", "crane-stale-reveal-guard", candidate => ({
+    ...candidate,
+    game: replaceExactlyOnce(candidate.game, 'if(!craneAssetsReady||!isDinoAdventureStage()||!playing||dinoAdventureState.epoch!==epoch||dinoAdventureState.phase!=="travel"||dinoAdventureState.crane.completed)return;', 'if(!craneAssetsReady||!isDinoAdventureStage()||!playing||dinoAdventureState.phase!=="travel"||dinoAdventureState.crane.completed)return;')
+  }));
+  sourceMutation("a second movable log is added", "dom-contract", candidate => ({
+    ...candidate,
+    html: replaceExactlyOnce(candidate.html, '<img id="dinoCraneLog" class="dino-crane-log" alt="" decoding="async" draggable="false" aria-hidden="true">', '<img id="dinoCraneLog" class="dino-crane-log" alt="" decoding="async" draggable="false" aria-hidden="true"><img id="dinoCraneLog" class="dino-crane-log" alt="" aria-hidden="true">')
+  }));
 
   if (process.env.NAZONAZO_BROWSER) {
     const server = await startServer();
     try {
       const browsers = process.env.NAZONAZO_BROWSER.split(",").map(value => value.trim()).filter(Boolean);
       for (const browserName of browsers) {
-        if (process.env.NAZONAZO_STALE_ONLY !== "1") {
+        if (process.env.NAZONAZO_CRANE_POINTER_ONLY === "1") {
+          await runCranePointerBrowser(browserName, server.base);
+        } else if (process.env.NAZONAZO_STALE_ONLY !== "1") {
           await runBrowser(browserName, server.base);
           await runCranePointerBrowser(browserName, server.base);
         }
-        await runSlowStaleRevealBrowser(browserName, server.base);
+        if (process.env.NAZONAZO_CRANE_POINTER_ONLY !== "1") await runSlowStaleRevealBrowser(browserName, server.base);
       }
     } finally {
       await server.close();
     }
   }
-  console.log(`nazonazo dino adventure regression: OK (${result.checks} source checks, 12 mutations rejected)`);
+  console.log(`nazonazo dino adventure regression: OK (${result.checks} source checks, ${sourceMutationCount} mutations rejected)`);
 }
 
 main().catch(error => {
