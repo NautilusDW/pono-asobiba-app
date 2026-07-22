@@ -386,4 +386,15 @@ function mulberry32(seed) {
   assert.match(stylesCss, /16\s*\/\s*9/, "styles.css の #stage が 16:9 比率を使っている");
 }
 
+// ── 16. logic.js 読込失敗フォールバック (guragura-seesaw 2026-07-22 バグ再発防止の移植) ──
+{
+  assert.match(indexHtml, /src="js\/logic\.js\?v=/, "index.html の js/logic.js に ?v= キャッシュバスティングが付いている");
+  assert.match(indexHtml, /src="js\/game\.js\?v=/, "index.html の js/game.js に ?v= キャッシュバスティングが付いている");
+  assert.match(indexHtml, /href="styles\.css\?v=/, "index.html の styles.css に ?v= キャッシュバスティングが付いている");
+  assert.match(gameJs, /function showLoadError\s*\(/, "game.js に showLoadError フォールバックが存在する");
+  assert.match(gameJs, /\?retry=/, "game.js が logic.js 再取得時にキャッシュバイパス (?retry=) を使っている");
+  assert.match(gameJs, /function boot\s*\(/, "game.js の本体が boot() 関数でラップされている");
+  assert.match(gameJs, /if\s*\(\s*window\.HyokkoriLogic\s*\)\s*\{\s*boot\(\);\s*return;\s*\}/, "HyokkoriLogic 正常時は即座に boot() を呼ぶ");
+}
+
 console.log("hyokkori hightouch regression: PASS");

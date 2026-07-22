@@ -1,5 +1,15 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2329: hyokkori-hightouch「はじめる」ボタン無反応バグの再発防止修正。guragura-seesaw
+// (v2327) と同型の脆弱パターン (js/logic.js 読込失敗時に game.js 全初期化が無言スキップ)
+// が js/game.js 冒頭ガードに存在していたため、同じ boot() ラップ+自動リトライ1回+
+// 再読込UIを移植し、script タグに ?v= キャッシュバスティングを付与。ゲーム個別ファイルは
+// network-first 配信のため CRITICAL_ASSETS には追加しない (v2327 と同型)。play.html
+// PAGE_CACHE_VERSION/window.PONO_SW_VERSION と同期 (2329)。
+// v2328: なぞなぞトレインの恐竜分岐を、みずみち救助とティラノのきてき勝負からなる
+// 専用アドベンチャーへ刷新。GPT Image 2製の水辺2景・ティラノ6状態・咆哮／汽笛／
+// 水タンク／操作部品13点を実行時読込し、縦向き・バックグラウンド中断時の入力を破棄する
+// (batch:1411-nazonazo-dino-adventure)。個別素材はnetwork-firstのためprecache追加なし。
 // v2327: guragura-seesaw「はじめる」ボタン無反応バグ修正。js/logic.js 読込失敗時に
 // game.js 全初期化が無言スキップされる脆弱性へ、自動リトライ1回+再読込UIを追加し、
 // script タグに姉妹ゲーム同型の ?v= キャッシュバスティングを付与。ゲーム個別ファイルは
@@ -735,7 +745,7 @@
 // clampなしのworld座標で連続スクロールさせる。全区間の猫密度も均等化 (batch:1410)。
 // v2326: hatake-nikki の畑レイアウト崩れ(#field-bg幽霊アセット除去+tool-rail/plot2重なり解消)
 // 修正 + 水やり操作discoverability改善(パルス演出/ヒントトースト/初回チュートリアル自動表示) (batch:1415)。
-const CACHE_VERSION = 2327;
+const CACHE_VERSION = 2329;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

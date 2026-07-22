@@ -288,10 +288,12 @@ const preloadSource = game.slice(preloadStart, preloadEnd);
 const constructed = [];
 class FakeImage {
   constructor() { constructed.push(this); }
+  addEventListener() {}
+  decode() { return Promise.resolve(this); }
   set src(value) { this._src = value; }
   get src() { return this._src; }
 }
-const preloadContext = { Image: FakeImage, Set, Map, Object };
+const preloadContext = { Image: FakeImage, Set, Map, Object, Promise, setTimeout: callback => { callback(); return 0; } };
 vm.runInNewContext(`${preloadSource}\nthis.preloadRaster=preloadBranchRasterStage;this.preloadPolish=preloadBranchStagePolish;` +
   "this.rasterCache=branchRasterImageCache;this.polishCache=branchStagePolishImageCache;", preloadContext, { timeout: 1000 });
 const selectedAssets = Object.fromEntries(LAYER_KEYS.map(key => [key, expectedAsset("snow", key)]));
@@ -324,7 +326,11 @@ preloadContext.preloadPolish({ id: "dino" });
 const dinoWorldfixUrls = Object.entries(WORLD_COHERENCE_ASSETS)
   .filter(([qualifiedKey]) => qualifiedKey.startsWith("dino."))
   .map(([, url]) => url);
-assert.deepEqual(constructed.slice(19).map(image => image.src), dinoWorldfixUrls,
+const dinoAdventureUrls = constructed.slice(19, 32).map(image => image.src);
+assert.equal(dinoAdventureUrls.length, 13, "Dino selected-stage preload must include all thirteen adventure assets");
+assert.ok(dinoAdventureUrls.every(url => url.includes("/branch_dino_adventure_")),
+  "Dino adventure preload must stay scoped to the selected Dino stage");
+assert.deepEqual(constructed.slice(32).map(image => image.src), dinoWorldfixUrls,
   "Dino polish preload must contain the six worldfix scenes and one fern nest");
 assert.equal(preloadContext.polishCache.size, 10, "Fire and Dino must cache exactly ten polish URLs");
 
@@ -332,10 +338,10 @@ preloadContext.preloadRaster({ id: "fire", assets: fireAssets });
 preloadContext.preloadPolish({ id: "fire" });
 preloadContext.preloadRaster({ id: "dino", assets: dinoAssets });
 preloadContext.preloadPolish({ id: "dino" });
-assert.equal(constructed.length, 26, "Fire/Dino raster and polish preloads must remain deduplicated");
+assert.equal(constructed.length, 39, "Fire/Dino raster, adventure and polish preloads must remain deduplicated");
 preloadContext.preloadRaster({ id: "town", assets: selectedAssets });
 preloadContext.preloadPolish({ id: "town" });
-assert.equal(constructed.length, 26, "a non-branch stage must not preload branch assets");
+assert.equal(constructed.length, 39, "a non-branch stage must not preload branch assets");
 
 assert.match(applySkin, /classList\.toggle\("branch-raster",branchRaster\)/, "branch-raster body class toggle missing");
 assert.match(applySkin, /classList\.toggle\("branch-night",branchRaster&&loop%2===1\)/, "branch-night must only mark the second loop");
@@ -388,8 +394,8 @@ const styleToken = html.match(/styles\.css\?v=([^"']+)/);
 const gameToken = html.match(/js\/game\.js\?v=([^"']+)/);
 assert.ok(styleToken && gameToken, "nazonazo stylesheet and game cache tokens must exist");
 assert.equal(styleToken[1], gameToken[1], "nazonazo stylesheet and game cache tokens must match");
-assert.equal(styleToken[1], "20260722-1411", "nazonazo branch depth cache token drifted");
-assert.match(sw, /const CACHE_VERSION = 2327;/, "service worker cache version must be 2327");
+assert.equal(styleToken[1], "20260722-1412", "nazonazo branch depth cache token drifted");
+assert.match(sw, /const CACHE_VERSION = 2329;/, "service worker cache version must be 2329");
 assert.doesNotMatch(sw, /branch_(?:snow|fire|dino|toy|cat|fantasy|sky|ruins)_(?:sky|horizon|mid|ground|foreground|decor)/,
   "branch raster images must stay out of service-worker precache lists");
 

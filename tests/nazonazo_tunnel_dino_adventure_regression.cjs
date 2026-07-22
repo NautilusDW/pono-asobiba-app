@@ -14,6 +14,21 @@ const original = Object.freeze({
   css: read("nazonazo-tunnel/styles.css"),
   game: read("nazonazo-tunnel/js/game.js")
 });
+const DINO_ASSET_FILES = Object.freeze([
+  "branch_dino_adventure_waterway_dry_20260722.webp",
+  "branch_dino_adventure_waterway_success_20260722.webp",
+  "branch_dino_adventure_trex_waiting_cutout_20260722.webp",
+  "branch_dino_adventure_trex_inhale_cutout_20260722.webp",
+  "branch_dino_adventure_trex_roar_cutout_20260722.webp",
+  "branch_dino_adventure_trex_tired_cutout_20260722.webp",
+  "branch_dino_adventure_trex_step_back_cutout_20260722.webp",
+  "branch_dino_adventure_trex_yield_cutout_20260722.webp",
+  "branch_dino_adventure_roar_wave_cutout_20260722.webp",
+  "branch_dino_adventure_whistle_burst_cutout_20260722.webp",
+  "branch_dino_adventure_water_tank_cutout_20260722.webp",
+  "branch_dino_adventure_brake_control_cutout_20260722.webp",
+  "branch_dino_adventure_whistle_control_cutout_20260722.webp"
+]);
 
 function compact(source) {
   return source
@@ -138,6 +153,11 @@ function validate(candidate) {
   check(stage.includes('hidden:true') && stage.includes('countsToProgress:false') && stage.includes('rejoinId:"number"'), "branch-rejoin");
   const canonicalStageIds = [...stagesSource(game).matchAll(/\{id:"([a-z0-9]+)"/g)].slice(0, 14).map(match => match[1]);
   check(canonicalStageIds[8] === "dino" && canonicalStageIds[9] === "toy", "save-index");
+  for (const file of DINO_ASSET_FILES) {
+    const assetPath = path.join(root, "assets/images/nazonazo-tunnel", file);
+    check((game.match(new RegExp(file.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g")) || []).length === 1, "asset-mapping", file);
+    check(fs.existsSync(assetPath) && fs.statSync(assetPath).size > 0 && fs.statSync(assetPath).size < 3 * 1024 * 1024, "asset-file", file);
+  }
 
   const requiredIds = [
     "dinoAdventureLayer", "dinoAdventureTitle", "dinoAdventureGuide", "dinoAdventureProgress",
@@ -211,6 +231,14 @@ function validate(candidate) {
   check(/visibilitychange/.test(game) && /resetDinoAdventure|pauseDinoAdventure|dinoAdventure/.test(game), "hidden-lifecycle");
   check(/resize/.test(game) && /dinoAdventure|DinoAdventure/.test(game), "resize-lifecycle");
   check(/keydown/.test(game) && /dinoWater|DinoWater|dinoBoss|DinoBoss/.test(game), "keyboard-runtime");
+
+  const assetPreloader = extractFunction(game, "preloadDinoAdventureAssets") || "";
+  const revealWater = extractFunction(game, "revealDinoWaterEvent") || "";
+  const revealBoss = extractFunction(game, "revealDinoBossEncounter") || "";
+  check(numericConstant(game, "DINO_ADVENTURE_ASSET_READY_TIMEOUT_MS") === 8000 && /image\.decode/.test(assetPreloader) && /Promise\.race/.test(assetPreloader) && /Promise\.all/.test(assetPreloader), "asset-predecode");
+  check(/dinoAdventureImageCache=new Map\(\),dinoAdventureImageDecodePromises=new Map\(\)/.test(game) && /if\(dinoAdventureAssetsReadyPromise\)return dinoAdventureAssetsReadyPromise/.test(assetPreloader), "asset-predecode-cache");
+  check(compact(functions.showDinoWaterEvent || "").includes("preloadDinoAdventureAssets().then(()=>revealDinoWaterEvent(epoch))") && compact(functions.showDinoBossEncounter || "").includes("preloadDinoAdventureAssets().then(()=>revealDinoBossEncounter(epoch))"), "asset-predecode-gate");
+  check([revealWater, revealBoss].every(body => /isDinoAdventureStage\(\)/.test(body) && /!playing/.test(body) && /dinoAdventureState\.epoch!==epoch/.test(body) && /dinoAdventureState\.phase!==["']travel["']/.test(body)), "asset-stale-reveal-guard");
 
   const stateFactory = functions.createDinoAdventureState || "";
   check(/completionCount:0/.test(stateFactory) && /transitionCount:0/.test(stateFactory) && /epoch:0/.test(stateFactory), "one-shot-state");
@@ -461,12 +489,19 @@ async function startServer() {
     const relative = pathname.endsWith("/") ? `${pathname}index.html` : pathname;
     const full = path.resolve(root, `.${relative}`);
     if (full !== root && !full.startsWith(`${root}${path.sep}`)) return response.writeHead(403).end("forbidden");
-    fs.readFile(full, (error, body) => {
+    const slowAssetDelayMs = Math.max(0, Number(process.env.NAZONAZO_SLOW_DINO_ASSETS_MS) || 0);
+    const isDinoAdventureAsset = DINO_ASSET_FILES.includes(path.basename(full));
+    const serveFile = () => fs.readFile(full, (error, body) => {
       if (error) return response.writeHead(error.code === "ENOENT" ? 404 : 500).end("not found");
-      response.writeHead(200, { "content-type": mime[path.extname(full)] || "application/octet-stream", "cache-control": "no-store" });
+      response.writeHead(200, {
+        "content-type": mime[path.extname(full)] || "application/octet-stream",
+        "cache-control": slowAssetDelayMs && isDinoAdventureAsset ? "public, max-age=3600" : "no-store"
+      });
       if (request.method === "HEAD") return response.end();
       response.end(body);
     });
+    if (slowAssetDelayMs && isDinoAdventureAsset) setTimeout(serveFile, slowAssetDelayMs);
+    else serveFile();
   });
   await new Promise((resolve, reject) => {
     server.once("error", reject);
@@ -513,21 +548,66 @@ async function runBrowser(browserName, base) {
   const page = await context.newPage();
   const pageErrors = [];
   const requestFailures = [];
-  const qaMetrics = { viewports: [], boss: {} };
+  const adventureAssetResponses = new Map();
+  const slowAssetDelayMs = Math.max(0, Number(process.env.NAZONAZO_SLOW_DINO_ASSETS_MS) || 0);
+  const qaMetrics = { slowAssetDelayMs, viewports: [], boss: {} };
   page.on("pageerror", error => pageErrors.push(String(error)));
   page.on("requestfailed", request => requestFailures.push(`${request.method()} ${request.url()} ${request.failure()?.errorText || ""}`));
-  await page.goto(`${base}/admin/dino-adventure-qa.html`, { waitUntil: "networkidle" });
-  const frame = page.frames().find(candidate => /\/nazonazo-tunnel\//.test(candidate.url()));
+  page.on("response", response => {
+    const file = path.basename(new URL(response.url()).pathname);
+    if (!DINO_ASSET_FILES.includes(file)) return;
+    const statuses = adventureAssetResponses.get(file) || [];
+    statuses.push(response.status());
+    adventureAssetResponses.set(file, statuses);
+  });
+  await page.goto(`${base}/admin/dino-adventure-qa.html`, { waitUntil: slowAssetDelayMs ? "domcontentloaded" : "networkidle" });
+  let frame = page.frames().find(candidate => /\/nazonazo-tunnel\//.test(candidate.url()));
+  const frameDeadline = Date.now() + 15000;
+  while (!frame && Date.now() < frameDeadline) {
+    await new Promise(resolve => setTimeout(resolve, 40));
+    frame = page.frames().find(candidate => /\/nazonazo-tunnel\//.test(candidate.url()));
+  }
   assert.ok(frame, `${browserName}: preview iframe missing`);
+  async function assertRenderedImage(locator, expectedFile, label) {
+    const metrics = await locator.evaluate(image => {
+      const rect = image.getBoundingClientRect();
+      const style = getComputedStyle(image);
+      return {
+        src: image.getAttribute("src"),
+        complete: image.complete,
+        naturalWidth: image.naturalWidth,
+        naturalHeight: image.naturalHeight,
+        width: rect.width,
+        height: rect.height,
+        display: style.display,
+        visibility: style.visibility
+      };
+    });
+    assert.equal(metrics.src && metrics.src.split("/").at(-1), expectedFile, `${browserName}: wrong image in ${label}: ${metrics.src}`);
+    assert.equal(metrics.complete, true, `${browserName}: ${label} revealed before image load completed`);
+    assert.ok(metrics.naturalWidth > 0 && metrics.naturalHeight > 0, `${browserName}: ${label} revealed a blank image: ${JSON.stringify(metrics)}`);
+    assert.ok(metrics.width > 0 && metrics.height > 0 && metrics.display !== "none" && metrics.visibility !== "hidden", `${browserName}: ${label} image is not visibly laid out: ${JSON.stringify(metrics)}`);
+    await locator.evaluate(image => image.decode());
+    await frame.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    const paintedSrc = await locator.getAttribute("src");
+    assert.equal(paintedSrc && paintedSrc.split("/").at(-1), expectedFile, `${browserName}: image advanced before ${label} painted: ${paintedSrc}`);
+    return metrics;
+  }
   await frame.locator("#startBtn").waitFor({ state: "visible", timeout: 15000 });
   await frame.waitForFunction(() => !document.getElementById("startBtn").disabled && /きょうりゅう/.test(document.getElementById("startBtn").textContent), null, { timeout: 15000 });
   const saveBefore = await frame.evaluate(() => localStorage.getItem("pono_nazonazo_tunnel_v1"));
+  const journeyStartedAt = Date.now();
   await frame.locator("#startBtn").click();
   const initial = await waitSnapshot(frame, state => state.phase === "water" || state.phase === "water-ready", `${browserName}: water event did not start`, 20000);
+  qaMetrics.waterRevealMs = Date.now() - journeyStartedAt;
+  if (slowAssetDelayMs) {
+    assert.ok(qaMetrics.waterRevealMs < slowAssetDelayMs + 6000, `${browserName}: water reveal wait was excessive: ${qaMetrics.waterRevealMs}ms`);
+  }
   assert.equal(initial.eventIndex, 0);
   assert.equal(initial.boss.bossHp, 3);
   assert.equal(initial.boss.trainHp, 3);
   assert.equal(initial.water.budget, 9);
+  await assertRenderedImage(frame.locator("#dinoWaterDinos"), "branch_dino_adventure_waterway_dry_20260722.webp", "water dry");
   assert.equal(await frame.locator("#quiz.show").count(), 0, `${browserName}: dino opened a quiz`);
   assert.equal(await frame.locator(".tun:visible").count(), 0, `${browserName}: dino built visible quiz stations`);
   assert.equal(await frame.locator("[class*='crane']:visible").count(), 0, `${browserName}: dino built a visible crane`);
@@ -629,7 +709,15 @@ async function runBrowser(browserName, base) {
   assert.equal(retriedWater.water.attempt, 2);
 
   await trace(solution);
+  const savedWater = await waitSnapshot(frame, state => state.water.completed && state.phase === "resolve-water", `${browserName}: water success tableau did not appear`, 12000);
+  const waterSavedAt = Date.now();
+  assert.equal(savedWater.eventIndex, 1);
+  assert.equal(await frame.locator("#dinoWaterGame.is-saved").count(), 1, `${browserName}: water success class missing`);
+  await assertRenderedImage(frame.locator("#dinoWaterDinos"), "branch_dino_adventure_waterway_success_20260722.webp", "water success");
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: `/tmp/nazonazo-dino-adventure-${browserName}-water-success-844x390.png`, fullPage: true });
   const afterWater = await waitSnapshot(frame, state => state.water.completed && state.eventIndex === 1 && state.boss.phase !== "idle", `${browserName}: water did not transition directly to boss once`, 20000);
+  qaMetrics.bossRevealAfterWaterMs = Date.now() - waterSavedAt;
   assert.equal(afterWater.transitionCount >= 1, true);
   assert.equal(afterWater.boss.waterCharge, 3);
 
@@ -670,6 +758,15 @@ async function runBrowser(browserName, base) {
     qaMetrics.boss[label] = metrics;
     return metrics;
   }
+  async function assertBossTrexAsset(expectedFile, label) {
+    const trex = frame.locator("#dinoBossTrex");
+    await assertRenderedImage(trex, expectedFile, `T-Rex ${label}`);
+  }
+
+  await waitBossPhase("telegraph");
+  await assertBossTrexAsset("branch_dino_adventure_trex_inhale_cutout_20260722.webp", "telegraph");
+  await bossGeometry("telegraph");
+  await page.screenshot({ path: `/tmp/nazonazo-dino-adventure-${browserName}-boss-telegraph-844x390.png`, fullPage: true });
 
   // Rotating during a timed boss phase must suspend the deadline and discard
   // any captured pointer/focus before the landscape interaction resumes.
@@ -708,10 +805,13 @@ async function runBrowser(browserName, base) {
 
   let burstScreenshotTaken = false;
   let defendScreenshotTaken = false;
+  let hitScreenshotTaken = false;
+  let tiredAssetChecked = false;
   async function holdBrake(input = "pointer") {
     await waitBossPhase("defend");
     if (!defendScreenshotTaken) {
       defendScreenshotTaken = true;
+      await assertBossTrexAsset("branch_dino_adventure_trex_roar_cutout_20260722.webp", "defend");
       await bossGeometry("defend");
       await page.screenshot({ path: `/tmp/nazonazo-dino-adventure-${browserName}-boss-defend-844x390.png`, fullPage: true });
     }
@@ -730,6 +830,10 @@ async function runBrowser(browserName, base) {
   }
   async function hornAndBurst() {
     await waitBossPhase("charge");
+    if (!tiredAssetChecked) {
+      tiredAssetChecked = true;
+      await assertBossTrexAsset("branch_dino_adventure_trex_tired_cutout_20260722.webp", "charge");
+    }
     const action = frame.locator("#dinoBossAction");
     const before = await snapshot(frame);
     await action.click();
@@ -753,6 +857,12 @@ async function runBrowser(browserName, base) {
     await action.press("Space");
     const hit = await waitSnapshot(frame, state => state.boss.bossHp === hpBefore - 1, `${browserName}: successful burst did not remove exactly one boss HP`, 5000);
     assert.equal(hit.boss.bossHp, hpBefore - 1);
+    if (!hitScreenshotTaken) {
+      hitScreenshotTaken = true;
+      await assertBossTrexAsset("branch_dino_adventure_trex_step_back_cutout_20260722.webp", "hit");
+      await bossGeometry("hit");
+      await page.screenshot({ path: `/tmp/nazonazo-dino-adventure-${browserName}-boss-hit-844x390.png`, fullPage: true });
+    }
     return hit;
   }
 
@@ -773,9 +883,11 @@ async function runBrowser(browserName, base) {
   }
   const lost = await waitBossPhase("lost");
   assert.equal(lost.boss.trainHp, 0);
+  await assertBossTrexAsset("branch_dino_adventure_trex_waiting_cutout_20260722.webp", "lost");
   assert.equal(lost.water.completed, true, `${browserName}: boss loss reset water completion`);
   assert.equal(lost.eventIndex, 1, `${browserName}: boss loss changed event position`);
   assert.equal(await frame.locator("#dinoBossRetry").isVisible(), true, `${browserName}: boss retry button missing`);
+  assert.equal(await frame.locator("#dinoBossAction:visible").count(), 0, `${browserName}: boss action remained visible after loss`);
   assert.equal(await frame.locator("#dinoWaterGame:visible").count(), 0, `${browserName}: water event replayed on boss loss`);
   await bossGeometry("lost");
   await page.screenshot({ path: `/tmp/nazonazo-dino-adventure-${browserName}-boss-lost-844x390.png`, fullPage: true });
@@ -796,6 +908,12 @@ async function runBrowser(browserName, base) {
     assert.equal(beforeHit.boss.waterCharge - hit.boss.waterCharge, 1, `${browserName}: successful hit did not consume one water charge`);
     firstWinRound = false;
   }
+  const victory = await waitBossPhase("victory", 12000);
+  assert.equal(victory.boss.bossHp, 0);
+  await assertBossTrexAsset("branch_dino_adventure_trex_yield_cutout_20260722.webp", "victory");
+  assert.equal(await frame.locator("#dinoBossAction:visible").count(), 0, `${browserName}: boss action remained visible after victory`);
+  await bossGeometry("victory");
+  await page.screenshot({ path: `/tmp/nazonazo-dino-adventure-${browserName}-boss-victory-844x390.png`, fullPage: true });
   const won = await waitSnapshot(frame, state => state.completionCount === 1 || state.phase === "complete", `${browserName}: boss victory did not commit once`, 20000);
   assert.equal(won.boss.bossHp, 0);
   assert.equal(won.completionCount, 1);
@@ -804,6 +922,10 @@ async function runBrowser(browserName, base) {
 
   const saveAfter = await frame.evaluate(() => localStorage.getItem("pono_nazonazo_tunnel_v1"));
   assert.equal(saveAfter, saveBefore, `${browserName}: admin preview mutated save data`);
+  const assetLoadReport = Object.fromEntries(DINO_ASSET_FILES.map(file => [file, adventureAssetResponses.get(file) || []]));
+  const invalidAssetResponses = DINO_ASSET_FILES.filter(file => assetLoadReport[file].length !== 1 || assetLoadReport[file][0] !== 200);
+  assert.deepEqual(invalidAssetResponses, [], `${browserName}: dino adventure assets were missing, failed, or requested more than once: ${JSON.stringify(assetLoadReport)}`);
+  qaMetrics.assets = assetLoadReport;
   assert.deepEqual(pageErrors, [], `${browserName}: page errors\n${pageErrors.join("\n")}`);
   const adminHeadAbort = requestFailures.filter(failure => /^HEAD .+\/admin\/ net::ERR_ABORTED$/.test(failure));
   const unexpectedRequestFailures = requestFailures.filter(failure => !adminHeadAbort.includes(failure));
@@ -811,6 +933,64 @@ async function runBrowser(browserName, base) {
   assert.deepEqual(unexpectedRequestFailures, [], `${browserName}: gameplay request failures\n${unexpectedRequestFailures.join("\n")}`);
   await page.screenshot({ path: `/tmp/nazonazo-dino-adventure-${browserName}-844x390.png`, fullPage: true });
   console.log(`nazonazo dino browser metrics (${browserName}): ${JSON.stringify(qaMetrics)}`);
+  await context.close();
+  await browser.close();
+}
+
+async function runSlowStaleRevealBrowser(browserName, base) {
+  const slowAssetDelayMs = Math.max(0, Number(process.env.NAZONAZO_SLOW_DINO_ASSETS_MS) || 0);
+  if (!slowAssetDelayMs) return;
+  const { chromium, webkit } = require("playwright");
+  const browserType = browserName.startsWith("webkit") ? webkit : chromium;
+  const browser = await browserType.launch({ headless: true });
+  const context = await browser.newContext({ viewport: { width: 844, height: 390 }, reducedMotion: "no-preference" });
+  await context.addInitScript(() => {
+    window.__APP_BUILD__ = 1;
+    localStorage.setItem("pono_nazonazo_tunnel_v1", JSON.stringify({
+      schemaVersion: 1,
+      lastLevel: 0,
+      unlockedLoop: 0,
+      bestStarsByStage: { "0-0": 3 },
+      collectedFriends: [],
+      highScore: 1250
+    }));
+  });
+  const page = await context.newPage();
+  const pageErrors = [];
+  const requestFailures = [];
+  page.on("pageerror", error => pageErrors.push(String(error)));
+  page.on("requestfailed", request => requestFailures.push(`${request.method()} ${request.url()} ${request.failure()?.errorText || ""}`));
+  await page.goto(`${base}/admin/dino-adventure-qa.html`, { waitUntil: "domcontentloaded" });
+  let frame = page.frames().find(candidate => /\/nazonazo-tunnel\//.test(candidate.url()));
+  const frameDeadline = Date.now() + 15000;
+  while (!frame && Date.now() < frameDeadline) {
+    await new Promise(resolve => setTimeout(resolve, 40));
+    frame = page.frames().find(candidate => /\/nazonazo-tunnel\//.test(candidate.url()));
+  }
+  assert.ok(frame, `${browserName}: stale-reveal preview iframe missing`);
+  await frame.locator("#startBtn").waitFor({ state: "visible", timeout: 15000 });
+  await frame.waitForFunction(() => !document.getElementById("startBtn").disabled && /きょうりゅう/.test(document.getElementById("startBtn").textContent), null, { timeout: 15000 });
+  await frame.locator("#startBtn").click();
+  const travelling = await waitSnapshot(frame, state => state.phase === "travel", `${browserName}: stale-reveal journey did not enter travel`, 5000);
+  await page.evaluate(() => window.qaSelect("cat"));
+  const reset = await waitSnapshot(frame, state => state.phase === "idle" && state.epoch > travelling.epoch, `${browserName}: stage exit did not invalidate dino epoch`, 5000);
+  await frame.waitForFunction(() => document.body.classList.contains("st-cat"), null, { timeout: 5000 });
+  await page.waitForTimeout(slowAssetDelayMs + 1200);
+  const afterDelay = await snapshot(frame);
+  const staleDom = await frame.evaluate(() => ({
+    layerHidden: document.getElementById("dinoAdventureLayer").hidden,
+    layerAriaHidden: document.getElementById("dinoAdventureLayer").getAttribute("aria-hidden"),
+    waterHidden: document.getElementById("dinoWaterGame").hidden,
+    bossHidden: document.getElementById("dinoBossGame").hidden,
+    activeClass: document.body.classList.contains("dino-adventure-active") || document.body.classList.contains("dino-boss-active")
+  }));
+  assert.equal(afterDelay.phase, "idle", `${browserName}: stale predecode callback changed phase after stage exit`);
+  assert.equal(afterDelay.epoch, reset.epoch, `${browserName}: stale predecode callback changed epoch after stage exit`);
+  assert.deepEqual(staleDom, { layerHidden: true, layerAriaHidden: "true", waterHidden: true, bossHidden: true, activeClass: false }, `${browserName}: stale predecode callback revealed dino DOM after stage exit`);
+  assert.deepEqual(pageErrors, [], `${browserName}: stale-reveal page errors\n${pageErrors.join("\n")}`);
+  const unexpectedRequestFailures = requestFailures.filter(failure => !/^HEAD .+\/admin\/ net::ERR_ABORTED$/.test(failure));
+  assert.deepEqual(unexpectedRequestFailures, [], `${browserName}: stale-reveal request failures\n${unexpectedRequestFailures.join("\n")}`);
+  console.log(`nazonazo dino stale reveal (${browserName}): PASS (${slowAssetDelayMs}ms delayed assets, epoch ${travelling.epoch}->${reset.epoch})`);
   await context.close();
   await browser.close();
 }
@@ -866,17 +1046,24 @@ async function main() {
     ...candidate,
     css: replaceExactlyOnce(candidate.css, '  .dino-water-game.is-saved .dino-water-scene img,.dino-water-cell[data-stop="true"],.dino-boss-game[data-phase="defend"] .dino-boss-trex,.dino-boss-wave,.dino-boss-game[data-phase="burst"] .dino-boss-tug>i,.dino-boss-action.is-burst{animation:none!important}', "  .removed-dino-reduced-motion{animation:none!important}")
   }));
+  sourceMutation("water event reveals before asset predecode", "asset-predecode-gate", candidate => ({
+    ...candidate,
+    game: replaceExactlyOnce(candidate.game, "preloadDinoAdventureAssets().then(()=>revealDinoWaterEvent(epoch));", "revealDinoWaterEvent(epoch);")
+  }));
 
   if (process.env.NAZONAZO_BROWSER) {
     const server = await startServer();
     try {
       const browsers = process.env.NAZONAZO_BROWSER.split(",").map(value => value.trim()).filter(Boolean);
-      for (const browserName of browsers) await runBrowser(browserName, server.base);
+      for (const browserName of browsers) {
+        if (process.env.NAZONAZO_STALE_ONLY !== "1") await runBrowser(browserName, server.base);
+        await runSlowStaleRevealBrowser(browserName, server.base);
+      }
     } finally {
       await server.close();
     }
   }
-  console.log(`nazonazo dino adventure regression: OK (${result.checks} source checks, 11 mutations rejected)`);
+  console.log(`nazonazo dino adventure regression: OK (${result.checks} source checks, 12 mutations rejected)`);
 }
 
 main().catch(error => {

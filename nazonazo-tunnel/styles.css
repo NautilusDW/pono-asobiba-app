@@ -1411,7 +1411,8 @@ body.dino-adventure-active #dots{opacity:0;visibility:hidden}
 .dino-boss-wave-train{border-color:rgba(127,231,249,.86)}.dino-boss-wave-trex{border-color:rgba(255,192,105,.82)}
 .dino-boss-game.has-adventure-art .dino-boss-wave{width:clamp(92px,17vw,214px);height:auto;aspect-ratio:1;border:0;border-radius:0;background-position:center;background-repeat:no-repeat;background-size:contain}
 .dino-boss-game.has-adventure-art .dino-boss-wave-train{background-image:var(--dino-whistle-burst-art)}
-.dino-boss-game.has-adventure-art .dino-boss-wave-trex{background-image:var(--dino-roar-wave-art);scale:-1 1}
+.dino-boss-game.has-adventure-art .dino-boss-wave-trex{background-image:none}
+.dino-boss-game.has-adventure-art .dino-boss-wave-trex::before{content:"";position:absolute;inset:0;background-image:var(--dino-roar-wave-art);background-position:center;background-repeat:no-repeat;background-size:contain;transform:scaleX(-1)}
 .dino-boss-game.has-adventure-art .dino-boss-train-side{left:44%;bottom:23vh;width:clamp(60px,9vw,106px);height:auto;aspect-ratio:1}
 .dino-boss-game.has-adventure-art .dino-boss-steam-tank{inset:0;width:100%;height:100%;padding:0;border:0;border-radius:0;background-color:transparent;background-image:var(--dino-water-tank-art);background-position:center;background-repeat:no-repeat;background-size:contain;box-shadow:none;filter:drop-shadow(0 4px 2px rgba(71,55,28,.22));transition:filter .2s ease,opacity .2s ease}
 .dino-boss-game.has-adventure-art .dino-boss-steam-tank i{display:none}
@@ -1439,6 +1440,7 @@ body.dino-adventure-active #dots{opacity:0;visibility:hidden}
 .dino-boss-action.has-control-art.is-horn::before{background-image:var(--dino-whistle-control-art)}
 .dino-boss-action.has-control-art strong,.dino-boss-action.has-control-art small{grid-column:2}
 .dino-boss-action.has-control-art strong{grid-row:1;align-self:end}.dino-boss-action.has-control-art small{grid-row:2;align-self:start}
+.dino-boss-action[hidden]{display:none!important}
 .dino-boss-action:disabled{pointer-events:none;filter:saturate(.4);opacity:.62}
 .dino-boss-retry{position:absolute;left:50%;bottom:max(18px,env(safe-area-inset-bottom));z-index:12;transform:translateX(-50%);min-height:64px}
 body.dino-boss-active.st-dino:not(.tunnel-interior) .branch-world-life.is-trex{opacity:0!important;visibility:hidden!important}
@@ -1803,6 +1805,9 @@ body.ios-device #quiz.show:not(.sea-quiz):not(.future-capsule-quiz):not(.space-g
   body.v-train #veh.go .train-wheel-rod,body.v-train #veh.go .train-main-rod,body.v-train #veh.go .train-crosshead{animation-duration:var(--wheel-period,1.3s)}
   body.tunnel-interior.v-train #veh.go .train-wheel,body.tunnel-interior.v-train #cars.go .car-wheel,
   body.tunnel-interior.v-train #veh.go .train-wheel-rod,body.tunnel-interior.v-train #veh.go .train-main-rod,body.tunnel-interior.v-train #veh.go .train-crosshead{animation-duration:var(--wheel-period,1.5s)}
+}
+@media (orientation:landscape) and (max-height:500px){
+  .dino-boss-game .dino-boss-trex{bottom:2.5vh}
 }
 @keyframes magicPuffReduced{
   0%{opacity:0;transform:translate3d(0,0,0) scale(var(--puff-start-scale))}

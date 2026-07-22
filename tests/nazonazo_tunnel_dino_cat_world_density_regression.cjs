@@ -17,9 +17,9 @@ const sources = Object.freeze({
   sw: read("sw.js")
 });
 
-const TOKEN = "20260722-1411";
+const TOKEN = "20260722-1412";
 const QUIZ_ART_TOKEN = "20260721-1409";
-const SW_VERSION = 2327;
+const SW_VERSION = 2329;
 const THREE_MIB = 3 * 1024 * 1024;
 const STAGE_IDS = Object.freeze(["snow", "fire", "dino", "toy", "cat", "fantasy", "sky", "ruins"]);
 const LAYER_KEYS = Object.freeze(["sky", "horizon", "mid", "ground", "fg", "decor"]);
@@ -361,20 +361,24 @@ function validate(candidate) {
     const made = [];
     class FakeImage {
       constructor() { made.push(this); }
+      addEventListener() {}
+      decode() { return Promise.resolve(this); }
       set src(value) { this._src = value; }
       get src() { return this._src; }
     }
-    const context = { Image: FakeImage, Set, Map, Object };
+    const context = { Image: FakeImage, Set, Map, Object, Promise, setTimeout: callback => { callback(); return 0; } };
     try {
       vm.runInNewContext(`${game.slice(preloadStart, preloadEnd)}\nthis.raster=preloadBranchRasterStage;this.polish=preloadBranchStagePolish;this.rasterCache=branchRasterImageCache;this.polishCache=branchStagePolishImageCache;`, context, { timeout: 1000 });
       const dinoBase = Object.fromEntries(STAGE_ASSET_KEYS.dino.map(key => [key, expectedBaseAsset("dino", key)]));
       const catBase = Object.fromEntries(LAYER_KEYS.map(key => [key, expectedBaseAsset("cat", key)]));
       context.raster({ id: "dino", assets: dinoBase }); context.polish({ id: "dino" });
-      preloadProbe.dino = made.length === 13 && made.slice(6).every(image => image.src.includes("/branch_dino_"));
+      preloadProbe.dino = made.length === 26 &&
+        made.slice(6, 19).every(image => image.src.includes("/branch_dino_adventure_")) &&
+        made.slice(19, 26).every(image => image.src.includes("/branch_dino_") && !image.src.includes("/branch_dino_adventure_"));
       context.raster({ id: "dino", assets: dinoBase }); context.polish({ id: "dino" });
-      preloadProbe.dinoRepeat = made.length === 13;
+      preloadProbe.dinoRepeat = made.length === 26;
       context.raster({ id: "cat", assets: catBase }); context.polish({ id: "cat" });
-      preloadProbe.cat = made.length === 31 && made.slice(19).every(image => image.src.includes("/branch_cat_"));
+      preloadProbe.cat = made.length === 44 && made.slice(32).every(image => image.src.includes("/branch_cat_"));
       preloadProbe.totals = context.rasterCache?.size === 12 && context.polishCache?.size === 19;
     } catch { /* stable checks below report the failure */ }
   }
@@ -703,7 +707,7 @@ const mutations = [
   { name: "reduced motion keeps ember field", expected: "motion-night", mutate: c => ({ ...c, css: replaceExactlyOnce(c.css, ".branch-fire-ember-field,.branch-fire-crater-ember{display:none!important}", ".branch-fire-crater-ember{display:none!important}") }) },
   { name: "render allocates DOM", expected: "render-allocation", mutate: c => ({ ...c, game: mutateFunction(c.game, "renderBranchStagePolish", " const localWorldX=worldX-o;", ' document.createElement("span");\n const localWorldX=worldX-o;') }) },
   { name: "world life DOM old id", expected: "world-life-layer", mutate: c => ({ ...c, html: replaceExactlyOnce(c.html, '<div id="branchWorldLifeLayer" aria-hidden="true"></div>', '<div id="branchLandmarkLayer" aria-hidden="true"></div>') }) },
-  { name: "HTML token rolls back", expected: "query-sw", mutate: c => ({ ...c, html: replaceExactlyOnce(c.html, "styles.css?v=20260722-1411", "styles.css?v=20260722-1410") }) },
+  { name: "HTML token rolls back", expected: "query-sw", mutate: c => ({ ...c, html: replaceExactlyOnce(c.html, "styles.css?v=20260722-1412", "styles.css?v=20260722-1411") }) },
   { name: "service worker version rolls back", expected: "query-sw", mutate: c => ({ ...c, sw: replaceExactlyOnce(c.sw, `const CACHE_VERSION = ${SW_VERSION};`, `const CACHE_VERSION = ${SW_VERSION - 2};`) }) }
 ];
 
