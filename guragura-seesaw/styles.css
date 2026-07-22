@@ -1,0 +1,301 @@
+/* ── guragura-seesaw/styles.css ── */
+@import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  background: #2a4a5e;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* ── 16:9 レターボックス (hyokkori-hightouch/styles.css 踏襲) ── */
+#stage {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(100vw, 100dvh * 16 / 9);
+  height: min(100dvh, 100vw * 9 / 16);
+  background: linear-gradient(180deg, #bfe8ff 0%, #9fd6f5 38%, #cdeec0 62%, #a9d98c 100%);
+  touch-action: none;
+  overflow: hidden;
+}
+
+/* ── HUD ── */
+#hud {
+  position: absolute; top: max(14px, env(safe-area-inset-top)); left: 0; right: 0; z-index: 500;
+  display: flex; justify-content: center; align-items: center;
+  padding: 0 76px 0 84px; /* leave room for ⚙️ button */
+  pointer-events: none;
+}
+#roundDots { display: flex; gap: 8px; }
+.round-dot {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: rgba(255,255,255,0.55);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.12), inset 0 0 0 2px rgba(255,255,255,0.7);
+}
+.round-dot.is-done { background: #ffd93d; }
+.round-dot.is-current { background: #ff9f45; transform: scale(1.2); }
+
+/* ── 画面遷移 (.show クラス方式。 hidden 属性は使わない) ── */
+.screen {
+  display: none; /* ベースは必ず display:none */
+  position: absolute; inset: 0;
+}
+.screen.show { display: block; }
+/* 個別上書きは必ず .show を含むセレクタでのみ display を宣言する
+   (#titleScreen{display:flex} のような無条件宣言は禁止) */
+.screen.show#titleScreen { display: flex; align-items: center; justify-content: center; }
+.screen.show#resultScreen { display: flex; align-items: center; justify-content: center; }
+
+/* ── タイトル画面 ── */
+#titleScreen .title-card {
+  text-align: center;
+  background: rgba(255,255,255,0.9);
+  border-radius: 28px;
+  padding: 32px 30px 28px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+  max-width: 84%;
+}
+.title-icon { font-size: 52px; margin-bottom: 6px; }
+.title-text {
+  font-size: 24px; font-weight: 900; color: #2d5a6e;
+  line-height: 1.4; letter-spacing: 0.02em;
+}
+.title-desc { font-size: 15px; font-weight: 700; color: #4a7a8c; margin-top: 10px; }
+.tap-btn {
+  margin-top: 24px;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-size: 20px; font-weight: 900; color: #fff;
+  background: linear-gradient(135deg, #4dc0e0, #2b8fae);
+  border: none; border-radius: 999px;
+  padding: 14px 36px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+  cursor: pointer;
+  animation: startPulse 1.4s infinite;
+}
+@keyframes startPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(0.96)} }
+
+/* ── シーソー ── */
+#seesawWrap { position: absolute; inset: 0; }
+
+#fulcrum {
+  position: absolute;
+  left: 50%; bottom: 34%;
+  transform: translateX(-50%);
+  width: 0; height: 0;
+  border-left: 6% solid transparent;
+  border-right: 6% solid transparent;
+  border-bottom: 12% solid #8a5a2b;
+  filter: drop-shadow(0 6px 6px rgba(0,0,0,0.2));
+}
+
+#plank {
+  position: absolute;
+  left: 50%; bottom: calc(34% + 11%);
+  width: 58%; height: 2.5%;
+  transform-origin: 50% 50%;
+  background: linear-gradient(180deg, #d9a96b, #b9803f);
+  border-radius: 999px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  /* transform は game.js の rAF ループが style.transform で回転値を差し込む */
+}
+
+.pan {
+  position: absolute;
+  top: 50%;
+  width: 17%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.pan-left { left: 2%; transform: translate(-50%, 0); }
+.pan-right { right: 2%; transform: translate(50%, 0); }
+.pan-dish {
+  width: 100%;
+  aspect-ratio: 5 / 2;
+  border-radius: 0 0 50% 50% / 0 0 70% 70%;
+  background: radial-gradient(ellipse at 50% 0%, #cfe9f5 0%, #9fc9dd 60%, #7ba9bd 100%);
+  box-shadow: inset 0 4px 8px rgba(0,0,0,0.2), 0 4px 8px rgba(0,0,0,0.15);
+}
+.pan-items {
+  position: absolute;
+  bottom: 6%;
+  left: 0; right: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 2%;
+  pointer-events: none;
+}
+/* アイテムラッパーに逆回転を掛けて絵は常に正立させる (AR 歪みなし) */
+.pan-items .item-box {
+  transform: rotate(calc(var(--tilt, 0deg) * -1));
+}
+
+/* ── アイテム箱 (トレイ・皿 共通) ── */
+/* サイズは stage の高さに対する割合 (s=9% / m=12% / l=15%)。
+   JS が #stage の実測 height を --stage-h (px) として documentElement に設定する。 */
+.item-box {
+  position: relative;
+  border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: grab;
+}
+.item-box.size-s { width: calc(var(--stage-h, 480px) * 0.09); height: calc(var(--stage-h, 480px) * 0.09); }
+.item-box.size-m { width: calc(var(--stage-h, 480px) * 0.12); height: calc(var(--stage-h, 480px) * 0.12); }
+.item-box.size-l { width: calc(var(--stage-h, 480px) * 0.15); height: calc(var(--stage-h, 480px) * 0.15); }
+.item-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* AR 厳守: stretch/fill は絶対禁止 */
+  pointer-events: none;
+  filter: drop-shadow(0 3px 4px rgba(0,0,0,0.25));
+}
+.item-box.is-dragging { opacity: 0.35; }
+
+/* ドラッグ中のゴースト (#stage 直下 absolute で指に追従) */
+#dragGhost {
+  position: absolute;
+  z-index: 800;
+  pointer-events: none;
+  display: none;
+}
+#dragGhost img { width: 100%; height: 100%; object-fit: contain; }
+#dragGhost.is-active { display: block; }
+
+/* 滑り落ち演出: 「わっ」と弾んでトレイに戻る (罰にしない・コミカル) */
+@keyframes slipBoing {
+  0% { transform: scale(1) rotate(0deg); }
+  30% { transform: scale(1.25) rotate(-14deg); }
+  60% { transform: scale(0.9) rotate(10deg); }
+  100% { transform: scale(1) rotate(0deg); }
+}
+.item-box.is-slip { animation: slipBoing 0.5s ease-out; }
+
+@keyframes placePop {
+  0% { transform: scale(0.6); }
+  60% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+.item-box.is-placed { animation: placePop 0.28s ease-out; }
+
+/* ── トレイ ── */
+#tray {
+  position: absolute;
+  left: 4%; right: 4%; bottom: 2%; height: 20%;
+  display: flex; align-items: flex-end; justify-content: center;
+  gap: 2.5%;
+  padding: 1.5% 2%;
+  border-radius: 20px;
+  background: linear-gradient(180deg, #c99a5b 0%, #a97a3d 100%);
+  box-shadow: inset 0 4px 10px rgba(0,0,0,0.25), 0 4px 10px rgba(0,0,0,0.15);
+}
+
+/* ── つりあいバナー / 滑り落ちふきだし ── */
+#balanceBanner, #slipBubble {
+  position: absolute;
+  left: 50%; top: 20%;
+  transform: translate(-50%, -50%) scale(0.8);
+  z-index: 600;
+  background: rgba(45,90,110,0.9);
+  color: #fff;
+  font-size: 20px; font-weight: 900;
+  padding: 14px 26px;
+  border-radius: 20px;
+  box-shadow: 0 8px 22px rgba(0,0,0,0.3);
+  opacity: 0;
+  pointer-events: none;
+  text-align: center;
+  white-space: nowrap;
+}
+#balanceBanner.show, #slipBubble.show {
+  animation: gg-banner-pop 1.5s ease-out;
+}
+@keyframes gg-banner-pop {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.7); }
+  15% { opacity: 1; transform: translate(-50%, -50%) scale(1.05); }
+  85% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
+}
+
+/* ── 紙吹雪 canvas (最前面) ── */
+#fx-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 700;
+  pointer-events: none;
+  display: block;
+}
+
+/* ── Landscape notice (横持ち強制。 hyokkori-hightouch/index.html 踏襲) ── */
+#landscape-notice {
+  display: none;
+  position: fixed; inset: 0; z-index: 9980;
+  background: #1a3a4a;
+  flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+  color: white; text-align: center; padding: 40px;
+  font-family: 'Zen Maru Gothic', sans-serif;
+}
+#landscape-notice .rotate-icon { font-size: 64px; animation: rotateHintV 2s ease-in-out infinite; }
+@keyframes rotateHintV { 0%,100%{transform:rotate(0deg)} 50%{transform:rotate(-90deg)} }
+#landscape-notice p { font-size: 18px; line-height: 1.6; }
+#landscape-notice .landscape-back {
+  color: #fff; font-weight: 900; font-size: 16px;
+  background: rgba(255,255,255,0.18);
+  border-radius: 999px; padding: 10px 26px;
+  text-decoration: none;
+}
+
+/* ── Tutorial overlay (hyokkori-hightouch の tut-dim/tut-bubble パターンを流用) ── */
+.tut-dim { position: fixed; inset: 0; z-index: 9995; background: rgba(45,90,110,0.65); pointer-events: auto; }
+.tut-dim.hidden { display: none; }
+.tut-bubble {
+  position: fixed; z-index: 9997;
+  left: 50%; top: 50%; transform: translate(-50%, -50%);
+  background: #fff; border-radius: 20px; padding: 22px 20px;
+  width: min(84%, 320px);
+  box-shadow: 0 8px 28px rgba(45,90,110,0.35);
+  font-size: 1rem; font-weight: 700; color: #2d5a6e; line-height: 1.7;
+  text-align: center;
+  animation: popIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+.tut-bubble.hidden { display: none; }
+.tut-bubble .tut-icon { font-size: 40px; margin-bottom: 8px; }
+.tut-next-btn {
+  display: inline-block; margin-top: 14px; padding: 10px 30px;
+  border: none; border-radius: 50px;
+  background: linear-gradient(135deg, #60A5FA, #818CF8);
+  color: #fff; font-family: inherit; font-size: 0.95rem; font-weight: 900;
+  cursor: pointer;
+}
+.tut-next-btn:active { transform: scale(0.95); }
+@keyframes popIn { from{transform:translate(-50%,-50%) scale(0.8);opacity:0.5} to{transform:translate(-50%,-50%) scale(1);opacity:1} }
+
+/* ── 結果画面 ── */
+#resultScreen .result-card {
+  background: #FFF8E7; border-radius: 26px;
+  padding: 30px 26px 26px;
+  width: min(88%, 340px);
+  text-align: center;
+  box-shadow: 0 10px 34px rgba(0,0,0,0.3);
+}
+#resultScreen .result-banner { font-size: 22px; font-weight: 900; color: #2d5a6e; margin-bottom: 10px; }
+#resultScreen .result-icon { font-size: 48px; margin: 4px 0 16px; }
+#resultScreen .result-btn {
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-size: 18px; font-weight: 900; color: #2d6a4f;
+  background: linear-gradient(135deg, #a8e6cf, #88d8a8);
+  border: none; border-radius: 16px;
+  padding: 12px 30px;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+}
+#resultScreen .result-btn:active { transform: scale(0.95); }

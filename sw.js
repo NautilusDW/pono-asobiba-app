@@ -1,5 +1,10 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2325: ポノのはたけにっき (hatake-nikki/) とぐらぐらシーソーひろば (guragura-seesaw/) を
+// comingSoon+debugPlayable で新規追加し、APP_TITLE_MENU_IDS にも登録。ゲーム個別ファイルは
+// network-first 配信のため CRITICAL_ASSETS には追加しない (v2318/v2320 と同型)。play.html
+// PAGE_CACHE_VERSION/window.PONO_SW_VERSION と同期 (2325、並走セッションによる2322→2325の
+// バージョンドリフトも解消)。
 // v2322: donguri-wakekko の hidden 属性無効化バグ修正 (.overlay-screen/.board-screen の
 // 無条件 display:flex が UA stylesheet の [hidden]{display:none} をカスケードで打ち消し、
 // title/result オーバーレイが常時同時表示になる事故。#app [hidden]{display:none !important}
@@ -723,7 +728,7 @@
 // v2316: なぞなぞトレインの火・恐竜・猫ステージの画像と多重スクロールを世界観に合わせて再調整 (batch:1409-world-coherence)。
 // v2317: なぞなぞトレインの恐竜・卵・猫の実接地線を地面へ固定し、猫の建物と生活景を
 // clampなしのworld座標で連続スクロールさせる。全区間の猫密度も均等化 (batch:1410)。
-const CACHE_VERSION = 2323;
+const CACHE_VERSION = 2325;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

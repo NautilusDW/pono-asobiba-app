@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>ぐらぐらシーソーひろば | ポノのあそびば</title>
+<!-- FOUC guard: 初回ペイント時の未スタイル表示を防ぐ (donguri-wakekko/index.html と同型) -->
+<style>html,body{background:#2a4a5e}#app{visibility:hidden}body.pono-game-ready #app{visibility:visible}</style>
+<script>document.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(function(){requestAnimationFrame(function(){if(!window.__PONO_TIER_LOCKED__)document.body.classList.add('pono-game-ready')})})});</script>
+<!-- app (アプリばん) 専用 tier ガード。 tier.js 未読込/例外時は fail-open (従来通り表示)。 -->
+<script src="../common/debug-mode.js"></script>
+<script src="../common/tier.js"></script>
+<script src="../common/achievements.js"></script>
+<script>
+(function(){
+  'use strict';
+  var locked = false;
+  try {
+    var pt = window.PonoTier;
+    if (pt && typeof pt.getTier === 'function') locked = (pt.getTier() !== 'app');
+  } catch (e) { locked = false; }
+  if (!locked) return;
+  window.__PONO_TIER_LOCKED__ = true;
+  // FOUC 防止: head 内同期実行なので初回ペイント前にゲーム側 DOM を不可視化
+  var st = document.createElement('style');
+  st.textContent = 'html{background:#FFF7E6 !important}body>*:not(#ponoTierLockScreen){visibility:hidden !important}';
+  (document.head || document.documentElement).appendChild(st);
+  // キーボード入力がゲームへ届かないよう capture 段階で遮断 (ロック中のみ)。
+  var KEY_EVTS = ['keydown', 'keyup', 'keypress'];
+  for (var i = 0; i < KEY_EVTS.length; i++) {
+    window.addEventListener(KEY_EVTS[i], function(e){
+      if (window.__PONO_TIER_LOCKED__) e.stopImmediatePropagation();
+    }, true);
+  }
+  function showLock(){
+    if (!document.body || document.getElementById('ponoTierLockScreen')) return;
+    var ov = document.createElement('div');
+    ov.id = 'ponoTierLockScreen';
+    ov.setAttribute('role', 'dialog');
+    ov.style.cssText = 'position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(165deg,#FFF7E6 0%,#FFEDC2 45%,#D9EFD5 100%);font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN",sans-serif;text-align:center';
+    var card = document.createElement('div');
+    card.style.cssText = 'background:#fff;border-radius:26px;padding:28px 24px 26px;max-width:340px;width:100%;box-shadow:0 12px 40px rgba(93,78,55,0.22)';
+    var emo = document.createElement('div');
+    emo.setAttribute('aria-hidden', 'true');
+    emo.style.cssText = 'font-size:2.6rem;line-height:1;margin-bottom:12px';
+    emo.textContent = '⚖️\u{1F430}';
+    card.appendChild(emo);
+    var tag = document.createElement('div');
+    tag.style.cssText = 'display:inline-block;font-size:0.74rem;font-weight:900;color:#fff;background:linear-gradient(135deg,#34D399,#10B981);padding:4px 14px;border-radius:50px;letter-spacing:0.06em;margin-bottom:12px';
+    tag.textContent = 'アプリばん せんよう';
+    card.appendChild(tag);
+    var ttl = document.createElement('div');
+    ttl.style.cssText = 'font-size:1.12rem;font-weight:900;color:#5D4E37;line-height:1.5;margin-bottom:10px';
+    ttl.textContent = 'この ゲームは アプリばんで あそべるよ！';
+    card.appendChild(ttl);
+    var body = document.createElement('div');
+    body.style.cssText = 'font-size:0.92rem;font-weight:700;color:#8B7B60;line-height:1.6;margin-bottom:18px';
+    body.textContent = 'アプリばんに あたらしい あそびが まってるよ';
+    card.appendChild(body);
+    var btn = document.createElement('a');
+    btn.href = '../play.html';
+    btn.style.cssText = 'display:inline-block;padding:12px 34px;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-size:0.98rem;font-weight:900;text-decoration:none;box-shadow:0 4px 14px rgba(59,130,246,0.4)';
+    btn.textContent = 'メニューへ もどる';
+    card.appendChild(btn);
+    ov.appendChild(card);
+    document.body.appendChild(ov);
+  }
+  if (document.body) { showLock(); }
+  else { document.addEventListener('DOMContentLoaded', showLock); }
+})();
+</script>
+<script src="../common/haptics.js"></script>
+<script src="../common/treasure.js"></script>
+<script src="../common/menu.js"></script>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div id="landscape-notice" role="dialog" aria-modal="true" aria-label="よこむきの おねがい" aria-hidden="true">
+  <div class="rotate-icon">📱</div>
+  <p>スマホを<br><strong>よこむき</strong>にしてね！</p>
+  <a class="landscape-back" href="../play.html">ホームにもどる</a>
+</div>
+
+<div class="tut-dim hidden" id="tut-dim"></div>
+<div class="tut-bubble hidden" id="tut-bubble"></div>
+
+<div id="app">
+  <div id="stage">
+
+    <div id="hud">
+      <div id="roundDots" aria-label="ラウンドの すすみぐあい">
+        <span class="round-dot" data-round="0"></span>
+        <span class="round-dot" data-round="1"></span>
+        <span class="round-dot" data-round="2"></span>
+        <span class="round-dot" data-round="3"></span>
+        <span class="round-dot" data-round="4"></span>
+      </div>
+    </div>
+
+    <section id="titleScreen" class="screen show">
+      <div class="title-card">
+        <div class="title-icon">⚖️</div>
+        <h1 class="title-text">ぐらぐら<br>シーソーひろば</h1>
+        <p class="title-desc">のせて つりあわせよう！</p>
+        <button class="tap-btn" id="startBtn" type="button">▶ タップで はじめる</button>
+      </div>
+    </section>
+
+    <section id="playScreen" class="screen">
+      <div id="seesawWrap">
+        <div id="fulcrum"></div>
+        <div id="plank">
+          <div class="pan pan-left" id="panLeft">
+            <div class="pan-dish"></div>
+            <div class="pan-items" id="panLeftItems"></div>
+          </div>
+          <div class="pan pan-right" id="panRight">
+            <div class="pan-dish"></div>
+            <div class="pan-items" id="panRightItems"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="balanceBanner" aria-hidden="true">つりあった！</div>
+      <div id="slipBubble" aria-hidden="true">おもすぎたみたい！</div>
+
+      <div id="tray" aria-label="のせもの トレイ"></div>
+    </section>
+
+    <section id="resultScreen" class="screen">
+      <div class="result-card">
+        <div class="result-banner">ぜんぶ つりあった！</div>
+        <div class="result-icon">⚖️✨</div>
+        <button class="result-btn" id="retryBtn" type="button">🔁 もういちど</button>
+      </div>
+    </section>
+
+    <canvas id="fx-canvas" aria-hidden="true"></canvas>
+  </div>
+</div>
+
+<script src="js/logic.js"></script>
+<script src="js/game.js" defer></script>
+</body>
+</html>

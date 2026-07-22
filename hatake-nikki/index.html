@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>ポノのはたけにっき | ポノのあそびば</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<!-- FOUC guard: init 完了まで stage を非表示にしてチラ見えを防ぐ (hyokkori-hightouch/index.html 踏襲) -->
+<style>html,body{background:#3a5a30}#stage{visibility:hidden}body.pono-game-ready #stage{visibility:visible}</style>
+<script>document.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(function(){requestAnimationFrame(function(){if(!window.__PONO_TIER_LOCKED__)document.body.classList.add('pono-game-ready')})})});</script>
+
+<!-- app (アプリばん) 専用 tier ガード。 tier.js 未読込/例外時は fail-open (従来通り表示)。
+     donguri-wakekko/index.html のブロックを丸ごと踏襲。 -->
+<script src="../common/debug-mode.js"></script>
+<script src="../common/tier.js"></script>
+<script src="../common/achievements.js"></script>
+<script>
+(function(){
+  'use strict';
+  var locked = false;
+  try {
+    var pt = window.PonoTier;
+    if (pt && typeof pt.getTier === 'function') locked = (pt.getTier() !== 'app');
+  } catch (e) { locked = false; }
+  if (!locked) return;
+  window.__PONO_TIER_LOCKED__ = true;
+  var st = document.createElement('style');
+  st.textContent = 'html{background:#FFF7E6 !important}body>*:not(#ponoTierLockScreen){visibility:hidden !important}';
+  (document.head || document.documentElement).appendChild(st);
+  var KEY_EVTS = ['keydown', 'keyup', 'keypress'];
+  for (var i = 0; i < KEY_EVTS.length; i++) {
+    window.addEventListener(KEY_EVTS[i], function(e){
+      if (window.__PONO_TIER_LOCKED__) e.stopImmediatePropagation();
+    }, true);
+  }
+  function showLock(){
+    if (!document.body || document.getElementById('ponoTierLockScreen')) return;
+    var ov = document.createElement('div');
+    ov.id = 'ponoTierLockScreen';
+    ov.setAttribute('role', 'dialog');
+    ov.style.cssText = 'position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(165deg,#FFF7E6 0%,#FFEDC2 45%,#D9EFD5 100%);font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN",sans-serif;text-align:center';
+    var card = document.createElement('div');
+    card.style.cssText = 'background:#fff;border-radius:26px;padding:28px 24px 26px;max-width:340px;width:100%;box-shadow:0 12px 40px rgba(93,78,55,0.22)';
+    var emo = document.createElement('div');
+    emo.setAttribute('aria-hidden', 'true');
+    emo.style.cssText = 'font-size:2.6rem;line-height:1;margin-bottom:12px';
+    emo.textContent = '\u{1F955}\u{1F4D6}';
+    card.appendChild(emo);
+    var tag = document.createElement('div');
+    tag.style.cssText = 'display:inline-block;font-size:0.74rem;font-weight:900;color:#fff;background:linear-gradient(135deg,#34D399,#10B981);padding:4px 14px;border-radius:50px;letter-spacing:0.06em;margin-bottom:12px';
+    tag.textContent = 'アプリばん せんよう';
+    card.appendChild(tag);
+    var ttl = document.createElement('div');
+    ttl.style.cssText = 'font-size:1.12rem;font-weight:900;color:#5D4E37;line-height:1.5;margin-bottom:10px';
+    ttl.textContent = 'この ゲームは アプリばんで あそべるよ！';
+    card.appendChild(ttl);
+    var body = document.createElement('div');
+    body.style.cssText = 'font-size:0.92rem;font-weight:700;color:#8B7B60;line-height:1.6;margin-bottom:18px';
+    body.textContent = 'アプリばんに あたらしい あそびが まってるよ';
+    card.appendChild(body);
+    var btn = document.createElement('a');
+    btn.href = '../play.html';
+    btn.style.cssText = 'display:inline-block;padding:12px 34px;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-size:0.98rem;font-weight:900;text-decoration:none;box-shadow:0 4px 14px rgba(59,130,246,0.4)';
+    btn.textContent = 'メニューへ もどる';
+    card.appendChild(btn);
+    ov.appendChild(card);
+    document.body.appendChild(ov);
+  }
+  if (document.body) { showLock(); }
+  else { document.addEventListener('DOMContentLoaded', showLock); }
+})();
+</script>
+
+<script src="../common/preload-helper.js"></script>
+<!-- NOTE: common/preload-helper.js の GAME_WARM_ASSETS に 'hatake-nikki' エントリが
+     未登録の間は warmGameAssets() は no-op で安全に何もしない (list未登録→false)。
+     統合担当が GAME_WARM_ASSETS に追加した時点でこの呼び出しがそのまま効き始める。 -->
+<script>window.addEventListener('DOMContentLoaded',function(){if(window.PonoPreload)window.PonoPreload.warmGameAssets('hatake-nikki');});</script>
+<script src="../common/haptics.js"></script>
+<script src="../common/menu.js"></script>
+<script src="../common/treasure.js"></script>
+
+<link rel="stylesheet" href="styles.css?v=20260722-1">
+</head>
+<body>
+
+<div id="landscape-notice" role="dialog" aria-modal="true" aria-label="よこむきの おねがい" aria-hidden="true">
+  <div class="rotate-icon">📱</div>
+  <p>スマホを<br><strong>よこむき</strong>にしてね！</p>
+  <a class="landscape-back" href="../play.html">ホームにもどる</a>
+</div>
+
+<div class="tut-dim hidden" id="tut-dim"></div>
+<div class="tut-bubble hidden" id="tut-bubble"></div>
+
+<div id="stage">
+
+  <!-- ── スタート画面 (デフォルト表示。.screen.show で表示、他は.screenのみ=display:none) ── -->
+  <section id="start-screen" class="screen show">
+    <div class="title">ポノのはたけにっき</div>
+    <div class="icon">🥕</div>
+    <div class="desc">まいにち みずやり やさいを そだてよう<br>おやすみしても だいじょうぶ！</div>
+    <button class="tap-btn" id="start-btn">▶ はじめる</button>
+  </section>
+
+  <!-- ── 畑ほんたい ── -->
+  <section id="field-screen" class="screen">
+    <div id="hud">
+      <div class="hud-pill" id="hud-date">📅 --</div>
+      <button type="button" class="hud-pill zukan-btn" id="zukan-open-btn" aria-label="はたけずかん">📖</button>
+    </div>
+
+    <div id="field-bg" aria-hidden="true"></div>
+
+    <div id="plot-area">
+      <div class="plot" data-plot="0">
+        <div class="plant" data-stage="-1"></div>
+        <div class="bug-sprite"></div>
+        <div class="water-gauge"><div class="water-gauge-fill"></div></div>
+      </div>
+      <div class="plot" data-plot="1">
+        <div class="plant" data-stage="-1"></div>
+        <div class="bug-sprite"></div>
+        <div class="water-gauge"><div class="water-gauge-fill"></div></div>
+      </div>
+      <div class="plot" data-plot="2">
+        <div class="plant" data-stage="-1"></div>
+        <div class="bug-sprite"></div>
+        <div class="water-gauge"><div class="water-gauge-fill"></div></div>
+      </div>
+    </div>
+
+    <div id="tool-rail">
+      <button type="button" class="tool-btn" id="tool-water-btn" aria-label="じょうろで みずやり">🚿</button>
+      <button type="button" class="tool-btn" id="tool-seed-btn" aria-label="たねを うえる">🌱</button>
+    </div>
+  </section>
+
+  <!-- ── 種ピッカー (簡易モーダル) ── -->
+  <div id="seed-picker" class="screen">
+    <div class="seed-picker-card">
+      <div class="seed-choices-row">
+        <button type="button" class="seed-choice" data-seed="ninjin">
+          <img src="../assets/images/word/ninjin.png" alt="にんじん">
+          <span>にんじん</span>
+        </button>
+        <button type="button" class="seed-choice" data-seed="tomato">
+          <img src="../assets/images/word/tomato.png" alt="とまと">
+          <span>とまと</span>
+        </button>
+      </div>
+      <button type="button" class="seed-picker-close-btn" id="seed-picker-close-btn">✕ とじる</button>
+    </div>
+  </div>
+
+  <!-- ── 日記ポップアップ ── -->
+  <div id="diary-overlay" class="screen">
+    <div class="diary-card">
+      <div class="diary-icon">📔</div>
+      <div class="diary-text" id="diary-text">きょうの にっき</div>
+      <button type="button" class="diary-close-btn" id="diary-close-btn">とじる</button>
+    </div>
+  </div>
+
+  <!-- ── はたけずかん ── -->
+  <div id="zukan-overlay" class="screen">
+    <div class="zukan-card">
+      <div class="zukan-title">🥕 はたけずかん 📖</div>
+      <div class="zukan-grid" id="zukan-grid"></div>
+      <button type="button" class="zukan-close-btn" id="zukan-close-btn">とじる</button>
+    </div>
+  </div>
+
+</div>
+
+<script src="js/logic.js?v=20260722-1"></script>
+<script src="js/game.js?v=20260722-1"></script>
+</body>
+</html>
