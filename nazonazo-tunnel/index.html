@@ -142,7 +142,7 @@
           <div id="dinoAdventureProgress" role="status" aria-live="polite" aria-atomic="true">たおれぎ 0 / 3</div>
         </header>
         <p id="dinoAdventureGuide" role="status" aria-live="polite" aria-atomic="true">フックで たおれぎを はこぼう！</p>
-        <div id="dinoCraneGame" class="dino-crane-game" data-phase="idle" role="group" aria-label="クレーンで たおれぎを あんぜんな ばしょへ はこぶ" hidden>
+        <div id="dinoCraneGame" class="dino-crane-game" data-phase="idle" role="group" aria-label="れっしゃの クレーンで 3つの にもつを はこぶ" hidden>
           <img id="dinoCraneBackdrop" class="dino-crane-backdrop" alt="" decoding="async" draggable="false" aria-hidden="true">
           <div id="dinoCraneTrain" class="dino-crane-train" aria-hidden="true">
             <div class="train-art">
@@ -162,26 +162,42 @@
           <div id="dinoCranePlayfield" class="dino-crane-playfield">
             <img id="dinoCraneArm" class="dino-crane-arm" alt="" decoding="async" draggable="false" aria-hidden="true">
             <img id="dinoCraneCable" class="dino-crane-cable" alt="" decoding="async" draggable="false" aria-hidden="true">
-            <button id="dinoCraneHook" class="dino-crane-hook" type="button" aria-label="フック。やじるしキーで うごかし、エンターで つかむ または おろす">
+            <div id="dinoCraneHook" class="dino-crane-hook" aria-hidden="true">
               <img alt="" decoding="async" draggable="false" aria-hidden="true">
-            </button>
-            <img id="dinoCraneLog" class="dino-crane-log" alt="" decoding="async" draggable="false" aria-hidden="true">
-            <div id="dinoCraneRingGuide" class="dino-crane-ring-guide" aria-hidden="true"></div>
-            <div id="dinoCraneSafeZone" class="dino-crane-safe-zone" aria-hidden="true"><strong>あんぜんな ばしょ</strong></div>
+            </div>
+            <div id="dinoCraneCargoLayer" class="dino-crane-cargo-layer" aria-hidden="true">
+              <img id="dinoCraneBranch" class="dino-crane-cargo" data-cargo="branch" alt="" decoding="async" draggable="false">
+              <img id="dinoCraneLog" class="dino-crane-cargo" data-cargo="log" alt="" decoding="async" draggable="false">
+              <img id="dinoCraneRock" class="dino-crane-cargo" data-cargo="rock" alt="" decoding="async" draggable="false">
+            </div>
+            <div id="dinoCraneRingGuides" class="dino-crane-ring-guides" aria-hidden="true"></div>
+            <div id="dinoCraneSafePlatform" class="dino-crane-safe-platform" aria-hidden="true">
+              <img id="dinoCranePlatformArt" alt="" decoding="async" draggable="false">
+              <div class="dino-crane-bay" data-bay="0"></div><div class="dino-crane-bay" data-bay="1"></div><div class="dino-crane-bay" data-bay="2"></div>
+            </div>
           </div>
+          <div class="dino-crane-readout">
+            <div id="dinoCraneCargoStatus" role="status" aria-live="polite">にもつ 0 / 3</div>
+            <div id="dinoCraneSwing" class="dino-crane-swing" role="meter" aria-label="ゆれ" aria-valuemin="0" aria-valuemax="18" aria-valuenow="0"><span></span><i></i><strong>ゆれ</strong></div>
+            <div id="dinoCraneChances" role="status" aria-label="のこり 3かい">●●●</div>
+          </div>
+          <div id="dinoCraneControls" class="dino-crane-controls" role="group" aria-label="クレーンの そうさ">
+            <button id="dinoCraneLeft" type="button" aria-label="ひだりへ うごかす">◀<small>ひだり</small></button>
+            <button id="dinoCraneLower" type="button" aria-label="フックを おろす"><strong>おろす</strong><small>つかむ・おく</small></button>
+            <button id="dinoCraneRight" type="button" aria-label="みぎへ うごかす">▶<small>みぎ</small></button>
+          </div>
+          <button id="dinoCraneRetry" class="dino-crane-retry" type="button" hidden>のこりを もういちど</button>
         </div>
-        <div id="dinoWaterGame" class="dino-water-game" role="group" aria-label="ゆびで みずみちを つくる" hidden>
+        <div id="dinoWaterGame" class="dino-water-game" role="group" aria-label="みぞの タイルを まわして みずの みちを つなぐ" hidden>
           <div class="dino-water-scene" aria-hidden="true">
             <img id="dinoWaterDinos" alt="" decoding="async" draggable="false">
           </div>
           <div class="dino-water-playfield">
-            <div class="dino-water-source" aria-hidden="true"><strong>みず</strong><span>💧</span></div>
-            <div id="dinoWaterGrid" class="dino-water-grid" role="grid" tabindex="0" aria-label="みずから いけまで となりの つちを なぞる"></div>
-            <div class="dino-water-goal" aria-hidden="true"><strong>いけ</strong><span>🦕</span></div>
+            <div id="dinoWaterGrid" class="dino-water-grid" role="grid" aria-label="タイルを おすと みぞが 90ど まわる"></div>
           </div>
           <div class="dino-water-status-row">
-            <div id="dinoWaterBudget" class="dino-water-budget" role="progressbar" aria-label="のこりの みず" aria-valuemin="0" aria-valuemax="9" aria-valuenow="9"><span></span><strong>みず 9</strong></div>
-            <button id="dinoWaterRetry" type="button" hidden>もういちど</button>
+            <div id="dinoWaterBudget" class="dino-water-budget" role="progressbar" aria-label="つながった みずの みち" aria-valuemin="0" aria-valuemax="28" aria-valuenow="1"><span></span><strong>みず 1</strong></div>
+            <button id="dinoWaterHint" type="button">おたすけ 1</button>
           </div>
         </div>
         <div id="dinoBossGame" class="dino-boss-game" data-phase="idle" role="group" aria-label="ティラノとの きてきしょうぶ" hidden>
