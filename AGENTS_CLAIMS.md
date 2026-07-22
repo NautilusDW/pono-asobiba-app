@@ -59,6 +59,8 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
+- 2026-07-23 - by Codex - [batch:1418-hyokkori-hightouch-art-refresh] - tmp/alpha_pending/1418-hyokkori-hightouch-art-refresh/**, HANDOFF.md, AGENTS_CLAIMS.md - ひょっこりハイタッチ専用の背景・隠れ場所・8匹の起床/睡眠状態・開始/結果装飾をGPT Image 2 rawで全面新規生成し、中規模の遊びのひとひねり案を併記する。実装・alpha抜き・crop・assets配置は対象外
+- 2026-07-23 - by Codex - [batch:1417-nazonazo-dino-train-crane] - nazonazo-tunnel/index.html, nazonazo-tunnel/styles.css, nazonazo-tunnel/js/game.js, assets/images/nazonazo-tunnel/branch_dino_crane_*, tests/nazonazo_tunnel_dino_crane_regression.cjs, HANDOFF.md, AGENTS_CLAIMS.md - 恐竜イベント先頭に列車クレーンで倒木を湧き水から安全地帯へ運ぶ非クイズイベントを追加。既存 water / boss は設計変更せず crane→water→boss、無罰の同イベント再試行、pointer/keyboard/lifecycle/slow-decode/one-shot scoreを実装。sw.js/play.htmlは対象外
 - 2026-07-21 - by Claude - [batch:1406-app-title-menu-devcontent] - play.html, sw.js, AGENTS_CLAIMS.md - APP_TITLE_MENU_IDS に開発中コンテンツ (starparodier/undersea-cave/sea-album を通常公開 + bubble/coloring/stacking/aquarium を comingSoon:true+debugPlayable:true で追加)
 - 2026-07-22 - by Claude - [batch:1414b-hatake-seesaw-integration] - play.html, sw.js, AGENTS_CLAIMS.md - hatake-nikki / guragura-seesaw を GAMES + APP_TITLE_MENU_IDS に統合登録 + CACHE_VERSION バンプ [overlap: batch:1414-hatake-seesaw]
 - 2026-06-28 09:27 - by Codex - [batch:877-gacha-tray-mask-lower] - play.html, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - ガチャ受け皿マスクが上すぎるため奥壁ラインを下げて再調整 [overlap: batch:860-data-export-import]
