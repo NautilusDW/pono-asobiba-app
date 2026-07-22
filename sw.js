@@ -1,5 +1,11 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2338: なぞなぞトレイン恐竜分岐の先頭へ、列車クレーンで湧き水そばの
+// 倒木を安全地帯へ運ぶイベントを追加。クレーン→水路→ティラノ勝負の3イベント、
+// pointer/keyboard入力、同イベント無罰retry、遅延decode/stale callback防御を実装し、
+// なぞなぞ個別CSS/JSの読込tokenを1418へ更新。ゲーム個別ファイルと画像は
+// network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
+// PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2338)。
 // v2337: hatake-nikki コードレビュー指摘の修正。 (1) 常設ステータスバーの
 // updateStatusBar() に force 引数を追加し、 beginPress() の長押し開始時(優先度1の
 // 「そのまま ゆびを はなさないでね…」)だけ statusFlashTimer 中でも強制的に上書き
@@ -788,7 +794,7 @@
 // preventDefault)。水やり成功フィードバック(バッジ/演出/flash文言)と常設ステータスバー
 // を追加し、#stage 背景を cover→contain に防御的変更 (ひし形頂点欠け不能化)。
 // play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSION と同期 (2335)。
-const CACHE_VERSION = 2337;
+const CACHE_VERSION = 2338;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [
