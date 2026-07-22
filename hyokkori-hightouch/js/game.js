@@ -32,7 +32,21 @@
     document.body.classList.add('pono-game-ready');
   }
 
+  // boot() 本体 (bootInner) を try/catch で包む防御。 logic.js 読込に成功していても
+  // 起動処理の途中 (向き判定 API 例外など、予見しきれない実行時エラー全般) で
+  // 例外が飛ぶと、以降の穴生成・start-btn バインド等が丸ごとスキップされ
+  // 「見た目は正常だがタップ無反応」という一番気づきにくい壊れ方になる。
+  // ここで一段防御することで、想定外の例外でも必ず再読込UIへ縮退させる。
   function boot() {
+    try {
+      bootInner();
+    } catch (e) {
+      console.error('[hyokkori-hightouch] boot() 内で予期しない例外が発生しました。再読込UIを表示します:', e);
+      showLoadError();
+    }
+  }
+
+  function bootInner() {
   var L = window.HyokkoriLogic;
 
   // ═══ DOM 参照 ═══
@@ -76,19 +90,42 @@
   // 判定は物理画面の向き (screen.orientation) を優先。 viewport 実寸 (innerWidth/Height) は
   // URLバー展開アニメや回転中の中間 resize で一瞬逆転して誤表示するため最終フォールバックのみ。
   // さらに「表示」は 300ms 後の再判定一致を要求 (非対称ヒステリシス)、「非表示」は即時。
-  // (2026-07-23 横画面誤検知+スタート無反応バグ対応。 guragura-seesaw と同型の対策を移植)
+  // (2026-07-23 横画面誤検知+スタート無反応バグ対応。 このゲーム独自に実装した対策であり、
+  // guragura-seesaw 側には同種の hysteresis/screen.orientation 対応は未移植 — 別途フォローアップ要)
+  //
+  // fail-open 設計: screen.orientation / matchMedia へのアクセスは環境によっては例外を
+  // 投げうる (ブラウザ拡張機能によるオーバーライド、一部 WebView 実装など)。 ここで例外を
+  // 握りつぶさずに boot() まで伝播させると穴生成や start-btn バインドごと丸ごと止まる
+  // (このゲームで実際に検証済みの致命的レグレッション)。 判定不能時は「notice を出さない」
+  // (= ゲームを止めない) 側に倒す。
   var LANDSCAPE_NOTICE_CONFIRM_MS = 300;
   var landscapeNoticeTimer = null;
 
   function computeIsPortrait() {
-    var so = window.screen && window.screen.orientation;
-    if (so && typeof so.type === 'string' && so.type.indexOf('portrait') === 0) return true;
-    if (so && typeof so.type === 'string' && so.type.indexOf('landscape') === 0) return false;
-    if (typeof window.matchMedia === 'function') {
-      var mq = window.matchMedia('(orientation: portrait)');
-      if (mq && typeof mq.matches === 'boolean') return mq.matches;
+    try {
+      var so = window.screen && window.screen.orientation;
+      if (so && typeof so.type === 'string' && so.type.indexOf('portrait') === 0) return true;
+      if (so && typeof so.type === 'string' && so.type.indexOf('landscape') === 0) return false;
+      if (typeof window.matchMedia === 'function') {
+        var mq = window.matchMedia('(orientation: portrait)');
+        if (mq && typeof mq.matches === 'boolean') return mq.matches;
+      }
+      // screen.orientation も matchMedia も判定材料を返さなかった (=判定不能)。
+      // 旧実装はここで innerHeight>=innerWidth の素朴比較にフォールバックしていたが、
+      // それはこの修正が置き換えたかった誤検知の温床そのものなので使わない。
+      // fail-open (= notice を出さない) にする。
+      return false;
+    } catch (e) {
+      return false; // 例外時も fail-open。
     }
-    return window.innerHeight >= window.innerWidth;
+  }
+
+  function isCoarsePointer() {
+    try {
+      return typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+    } catch (e) {
+      return false; // 判定不能時は fail-open (notice を出さない)。
+    }
   }
 
   function applyLandscapeNotice(show) {
@@ -101,7 +138,7 @@
   function updateLandscapeNotice() {
     var notice = document.getElementById('landscape-notice');
     if (!notice) return;
-    var isTouch = matchMedia('(pointer: coarse)').matches;
+    var isTouch = isCoarsePointer();
     var wantShow = computeIsPortrait() && isTouch;
     if (!wantShow) {
       // 非表示は即時 (誤表示でゲームがブロックされるのを最優先で防ぐ)
@@ -113,7 +150,7 @@
     if (landscapeNoticeTimer) return;            // 確認待ち中
     landscapeNoticeTimer = setTimeout(function () {
       landscapeNoticeTimer = null;
-      if (computeIsPortrait() && matchMedia('(pointer: coarse)').matches) {
+      if (computeIsPortrait() && isCoarsePointer()) {
         applyLandscapeNotice(true);
       }
     }, LANDSCAPE_NOTICE_CONFIRM_MS);
@@ -124,9 +161,14 @@
     setTimeout(updateLandscapeNotice, 500);
   });
   window.addEventListener('resize', updateLandscapeNotice);
-  if (window.screen && window.screen.orientation && typeof window.screen.orientation.addEventListener === 'function') {
-    window.screen.orientation.addEventListener('change', updateLandscapeNotice);
-  }
+  // ここも window.screen.orientation への直接アクセスなので、他の参照箇所 (computeIsPortrait /
+  // isCoarsePointer) と同じ理由で try/catch する。 リスナー登録に失敗しても resize /
+  // orientationchange のフォールバックで notice 更新は続くので、握りつぶして問題ない。
+  try {
+    if (window.screen && window.screen.orientation && typeof window.screen.orientation.addEventListener === 'function') {
+      window.screen.orientation.addEventListener('change', updateLandscapeNotice);
+    }
+  } catch (e) { /* fail-open: 登録できなくても致命的ではない */ }
 
   // ═══ 隠れ場所 (穴) を <template id="hh-hole-tpl"> から HOLE_COUNT 個複製生成 ═══
   // (6箇所とも同一マークアップなので index.html 側の手書き複製を避ける)

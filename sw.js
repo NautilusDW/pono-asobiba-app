@@ -759,7 +759,14 @@
 // clampなしのworld座標で連続スクロールさせる。全区間の猫密度も均等化 (batch:1410)。
 // v2326: hatake-nikki の畑レイアウト崩れ(#field-bg幽霊アセット除去+tool-rail/plot2重なり解消)
 // 修正 + 水やり操作discoverability改善(パルス演出/ヒントトースト/初回チュートリアル自動表示) (batch:1415)。
-const CACHE_VERSION = 2332;
+// v2332: なぞなぞトレインの火山恐竜ワールド・猫ワールドを再構築し、背景アセットと
+// クイズ用アートを刷新 (feat: rebuild fire dino and cat worlds)。play.html
+// PAGE_CACHE_VERSION/window.PONO_SW_VERSION と同期 (2332)。
+// v2333: hyokkori-hightouch の boot() を try/catch で防御し、向き判定 API が例外を
+// 投げても穴生成・start-btn バインドが丸ごと止まらないようにフェイルセーフ化
+// (orientation-api-exception 対応)。play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSION
+// と同期 (2333)。
+const CACHE_VERSION = 2334;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

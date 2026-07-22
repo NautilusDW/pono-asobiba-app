@@ -381,9 +381,35 @@ function mulberry32(seed) {
 {
   assert.match(indexHtml, /よこむき/, "landscape-notice が『よこむき』を促す (横画面強制)");
   assert.doesNotMatch(indexHtml, /たてむき/, "旧・縦持ち強制の文言『たてむき』が残っていない");
-  assert.match(gameJs, /innerHeight\s*>=\s*window\.innerWidth/, "game.js が縦向き判定 (isPortrait) で notice を出す (向き反転済み)");
+  assert.match(gameJs, /function\s+computeIsPortrait\s*\(/, "game.js に computeIsPortrait 判定関数が存在する");
   assert.doesNotMatch(gameJs, /isLandscape\s*&&\s*isTouch/, "旧・横向き時表示の判定式が残っていない");
   assert.match(stylesCss, /16\s*\/\s*9/, "styles.css の #stage が 16:9 比率を使っている");
+}
+
+// ── 15b. 向き判定 API 例外時の fail-open (2026-07-23 レビュー指摘対応) ──────
+{
+  assert.match(
+    gameJs,
+    /function\s+computeIsPortrait\s*\([^)]*\)\s*\{\s*try\s*\{/,
+    "computeIsPortrait() の本体が try で始まっている (screen.orientation/matchMedia アクセスを保護)"
+  );
+  assert.doesNotMatch(
+    gameJs,
+    /return\s+window\.innerHeight\s*>=\s*window\.innerWidth\s*;/,
+    "旧・innerHeight>=innerWidth への素朴フォールバックが復活していない (fail-open に置換済み)"
+  );
+  assert.match(gameJs, /function\s+isCoarsePointer\s*\(/, "matchMedia('(pointer: coarse)') 呼び出しを守る isCoarsePointer() ヘルパーが存在する");
+  assert.match(
+    gameJs,
+    /function\s+isCoarsePointer\s*\([^)]*\)\s*\{\s*try\s*\{/,
+    "isCoarsePointer() の本体が try で始まっている"
+  );
+  assert.match(gameJs, /function\s+bootInner\s*\(/, "boot() 本体が bootInner() に分離されている");
+  assert.match(
+    gameJs,
+    /function\s+boot\s*\(\s*\)\s*\{\s*try\s*\{\s*bootInner\(\);\s*\}\s*catch/,
+    "boot() が bootInner() 全体を try/catch で包み、例外時に showLoadError へフォールバックする"
+  );
 }
 
 // ── 16. logic.js 読込失敗フォールバック (guragura-seesaw 2026-07-22 バグ再発防止の移植) ──
