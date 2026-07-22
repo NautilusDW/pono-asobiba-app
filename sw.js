@@ -1,5 +1,14 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2339: guragura-seesaw に「ふたご皿(twin basket)」メカニクスを追加 (ラウンド3-5、
+// logic.js の TWIN_ROUND_CONFIG/placeItemTwin/removeItemTwin と対になるUI実装)。
+// ラウンド3(elephant単体,普通)=1皿最大3個/局所重さ上限5、ラウンド4(dog+cherry)・
+// ラウンド5(bear+grapes、難しい)=1皿最大2個/局所重さ上限4。 右皿をA(桃#FFD9B3/橙
+// #FF9F45)・B(藤#E0D4F7/紫#9B7FD4)の2ドロップゾーンに分割し、局所超過(そのお皿だけ
+// おもすぎ)は「こっちのおさらだけ、おもすぎたみたい！」を該当バスケット近くに表示。
+// ラウンド1・2は既存の単一右皿(rightIds/placeItem/removeItem)のまま無変更。ゲーム
+// 個別ファイルは network-first 配信のため CRITICAL_ASSETS には追加しない。play.html
+// PAGE_CACHE_VERSION/window.PONO_SW_VERSION と同期 (2339)。
 // v2338: なぞなぞトレイン恐竜分岐の先頭へ、列車クレーンで湧き水そばの
 // 倒木を安全地帯へ運ぶイベントを追加。クレーン→水路→ティラノ勝負の3イベント、
 // pointer/keyboard入力、同イベント無罰retry、遅延decode/stale callback防御を実装し、
@@ -794,7 +803,7 @@
 // preventDefault)。水やり成功フィードバック(バッジ/演出/flash文言)と常設ステータスバー
 // を追加し、#stage 背景を cover→contain に防御的変更 (ひし形頂点欠け不能化)。
 // play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSION と同期 (2335)。
-const CACHE_VERSION = 2338;
+const CACHE_VERSION = 2339;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

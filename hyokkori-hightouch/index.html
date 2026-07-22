@@ -21,7 +21,7 @@
 <script src="../common/menu.js"></script>
 <script src="../common/highscore.js"></script>
 
-<link rel="stylesheet" href="styles.css?v=20260723-3">
+<link rel="stylesheet" href="styles.css?v=20260723-4">
 </head>
 <body>
 
@@ -42,10 +42,12 @@
   </div>
 
   <div id="start-screen">
-    <div class="title">ひょっこりハイタッチ</div>
-    <div class="icon">🖐️</div>
-    <div class="desc">おきてる こと ハイタッチ！<br>ねてる こは そっとしておいてね</div>
-    <button class="tap-btn" id="start-btn">▶ タップで はじめる</button>
+    <img class="start-pono icon" src="../assets/images/hyokkori-hightouch/pono_title_highfive.png" alt="ポノが ハイタッチを しているよ" draggable="false">
+    <div class="start-copy">
+      <div class="title" id="start-title">ひょっこりハイタッチ</div>
+      <div class="desc">ひかりの たねを つないで<br>おはなを さかせよう！</div>
+      <button class="tap-btn" id="start-btn">タップで はじめる</button>
+    </div>
   </div>
 
   <div id="countdown-screen">
@@ -56,32 +58,51 @@
        テンプレート1個 + js/game.js の buildHoles() で複製生成する (重複マークアップ排除)。 -->
   <template id="hh-hole-tpl">
     <div class="hh-hole">
-      <div class="hh-mound"></div>
+      <img class="hh-hideout hh-mound" src="../assets/images/hyokkori-hightouch/hideout_stump.png" alt="" draggable="false" aria-hidden="true">
       <div class="hh-window">
         <div class="hh-char-wrap">
           <img class="hh-char" alt="" draggable="false">
-          <div class="hh-zzz" aria-hidden="true">💤</div>
-          <div class="hh-sparkle" aria-hidden="true">✨</div>
-          <div class="hh-hit-fx" aria-hidden="true">🖐️✨</div>
-          <div class="hh-shh-bubble" aria-hidden="true">しーっ 🤫</div>
+          <span class="hh-sparkle" aria-hidden="true"></span>
+          <img class="hh-sleep-fx" src="../assets/images/hyokkori-hightouch/fx_sleep_moon_cloud.png" alt="" draggable="false" aria-hidden="true">
+          <img class="hh-hit-fx" src="../assets/images/hyokkori-hightouch/fx_highfive_burst.png" alt="" draggable="false" aria-hidden="true">
+          <div class="hh-shh-bubble" aria-hidden="true">しーっ</div>
         </div>
       </div>
-      <div class="hh-dust" aria-hidden="true">💨</div>
+      <img class="hh-dust" src="../assets/images/hyokkori-hightouch/fx_leaf_puff.png" alt="" draggable="false" aria-hidden="true">
     </div>
   </template>
   <div id="board"></div>
 
-  <div id="overheat-banner" aria-hidden="true">🌀 ゆっくりでいいよ！</div>
+  <div id="relay-progress" role="group" aria-label="ひかりの たね">
+    <div id="relay-announcement" role="status" aria-live="polite" aria-atomic="true"></div>
+    <div class="relay-pips" aria-hidden="true">
+      <span class="relay-pip" data-relay-pip="0"></span>
+      <span class="relay-pip" data-relay-pip="1"></span>
+      <span class="relay-pip" data-relay-pip="2"></span>
+      <span class="relay-pip" data-relay-pip="3"></span>
+    </div>
+    <img id="flowerbed-img" src="../assets/images/hyokkori-hightouch/flowerbed_stage_0_soil.png" alt="おはなが そだつ ばしょ" draggable="false">
+  </div>
+
+  <img id="light-seed" src="../assets/images/hyokkori-hightouch/mechanic_light_seed.png" alt="" draggable="false" aria-hidden="true">
+
+  <div id="overheat-banner" aria-hidden="true">
+    <img class="overheat-fx" src="../assets/images/hyokkori-hightouch/fx_overheat_swirl.png" alt="" draggable="false">
+    <span>ゆっくり つなごう！</span>
+  </div>
 
   <canvas id="fx-canvas" aria-hidden="true"></canvas>
 
-  <div id="result-overlay">
+  <div id="result-overlay" role="dialog" aria-modal="true" aria-labelledby="result-title">
     <div id="result-card">
-      <div class="result-banner">おしまい！</div>
-      <div class="result-pono">🦉🖐️</div>
-      <div class="result-score" id="result-score">0 てん</div>
-      <div class="result-new hidden" id="result-new">✨ しんきろく！</div>
-      <button class="result-btn" id="retry-btn">🔁 もういちど</button>
+      <img class="result-pono" src="../assets/images/hyokkori-hightouch/pono_result_bloom.png" alt="おはなに かこまれた ポノ" draggable="false">
+      <div class="result-copy">
+        <div class="result-banner" id="result-title">おしまい！</div>
+        <div class="result-score" id="result-score">0 てん</div>
+        <div id="result-relay">0かい つながったよ</div>
+        <div class="result-new hidden" id="result-new">しんきろく！</div>
+        <button class="result-btn" id="retry-btn">もういちど</button>
+      </div>
     </div>
   </div>
 </div>

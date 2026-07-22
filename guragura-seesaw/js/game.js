@@ -59,6 +59,15 @@
   var panLeftItemsEl = document.getElementById('panLeftItems');
   var panRightItemsEl = document.getElementById('panRightItems');
   var panRightEl = document.getElementById('panRight');
+  // ふたご皿 (twin basket、ラウンド3-5専用) DOM 参照。 ラウンド1・2 では
+  // #panRightTwin は非表示のまま (styles.css の #plank.is-twin-round 排他制御)。
+  var panRightTwinEl = document.getElementById('panRightTwin');
+  var panRightAEl = document.getElementById('panRightA');
+  var panRightBEl = document.getElementById('panRightB');
+  var panRightAItemsEl = document.getElementById('panRightAItems');
+  var panRightBItemsEl = document.getElementById('panRightBItems');
+  var slipBubbleAEl = document.getElementById('slipBubbleA');
+  var slipBubbleBEl = document.getElementById('slipBubbleB');
   var trayEl = document.getElementById('tray');
   var balanceBannerEl = document.getElementById('balanceBanner');
   var slipBubbleEl = document.getElementById('slipBubble');
@@ -122,6 +131,12 @@
   var wasNearBalance = false;  // 「あとちょっと！」rising edge 検知用ヒステリシスフラグ。
                                 // ドラッグ開始時・ラウンド遷移時に必ず false へリセットする。
 
+  // ═══ ふたご皿 (twin basket) 判定ヘルパー ═══
+  // 現在の session.round が logic.js の TWIN_ROUND_CONFIG に該当するか。
+  function isTwinRoundNow() {
+    return !!(session && L.isTwinRound(session.round));
+  }
+
   // ═══ ラウンド進捗ドット ═══
   var dotEls = [];
   (function collectDots() {
@@ -153,26 +168,38 @@
     return el;
   }
 
-  function renderPan(side, ids) {
-    var container = side === 'left' ? panLeftItemsEl : panRightItemsEl;
+  function renderItemsInto(container, ids, source) {
+    if (!container) return;
     container.innerHTML = '';
     for (var i = 0; i < ids.length; i++) {
-      container.appendChild(createItemBoxEl(ids[i], side === 'left' ? 'left' : 'pan'));
+      container.appendChild(createItemBoxEl(ids[i], source));
     }
   }
 
+  function renderPan(side, ids) {
+    var container = side === 'left' ? panLeftItemsEl : panRightItemsEl;
+    renderItemsInto(container, ids, side === 'left' ? 'left' : 'pan');
+  }
+
   function renderTray(ids) {
-    trayEl.innerHTML = '';
-    for (var i = 0; i < ids.length; i++) {
-      trayEl.appendChild(createItemBoxEl(ids[i], 'tray'));
-    }
+    renderItemsInto(trayEl, ids, 'tray');
   }
 
   function renderAll() {
     if (!session) return;
     renderRoundDots();
+    var twin = isTwinRoundNow();
+    if (plankEl) plankEl.classList.toggle('is-twin-round', twin);
     renderPan('left', session.leftIds);
-    renderPan('right', session.rightIds);
+    if (twin) {
+      renderItemsInto(panRightAItemsEl, session.rightBasketAIds, 'panA');
+      renderItemsInto(panRightBItemsEl, session.rightBasketBIds, 'panB');
+      if (panRightItemsEl) panRightItemsEl.innerHTML = ''; // 非表示中の単一皿は空にしておく
+    } else {
+      renderPan('right', session.rightIds);
+      if (panRightAItemsEl) panRightAItemsEl.innerHTML = '';
+      if (panRightBItemsEl) panRightBItemsEl.innerHTML = '';
+    }
     renderTray(session.trayIds);
   }
 
@@ -237,11 +264,16 @@
     if (dragHintEl) dragHintEl.classList.add('hidden');
   }
 
-  function pointOverPanRight(x, y) {
-    var rect = panRightEl.getBoundingClientRect();
+  function pointOverEl(el, x, y) {
+    if (!el) return false;
+    var rect = el.getBoundingClientRect();
     var margin = 20;
     return x >= rect.left - margin && x <= rect.right + margin &&
       y >= rect.top - margin && y <= rect.bottom + margin;
+  }
+
+  function pointOverPanRight(x, y) {
+    return pointOverEl(panRightEl, x, y);
   }
 
   function beginDrag(itemId, source, el, x, y) {
@@ -260,6 +292,8 @@
     // ラウンド開始(startGame)・ラウンド遷移(onRoundBalanced内)では別途明示リセット済み。
     showGhost(itemId, x, y);
     if (panRightEl) panRightEl.classList.add('is-drop-target');
+    if (panRightAEl) panRightAEl.classList.add('is-drop-target');
+    if (panRightBEl) panRightBEl.classList.add('is-drop-target');
     clearDragHintTimer();
   }
 
@@ -282,10 +316,21 @@
     hideGhost();
     if (ds.el) ds.el.classList.remove('is-dragging');
     if (panRightEl) panRightEl.classList.remove('is-drop-target');
+    if (panRightAEl) panRightAEl.classList.remove('is-drop-target');
+    if (panRightBEl) panRightBEl.classList.remove('is-drop-target');
     scheduleDragHint();
 
     if (cancelled) return; // 元の位置に戻すだけ (state 変化なし)
 
+    if (isTwinRoundNow()) {
+      endDragTwin(ds, x, y);
+    } else {
+      endDragSingle(ds, x, y);
+    }
+  }
+
+  // ── ラウンド1・2 (単一右皿): 既存の rightIds/placeItem/removeItem 経路 ──
+  function endDragSingle(ds, x, y) {
     var overPan = pointOverPanRight(x, y);
 
     if (ds.source === 'tray') {
@@ -315,6 +360,68 @@
       var next = L.removeItem(stateSnapshot2, ds.itemId);
       session.leftIds = next.leftIds;
       session.rightIds = next.rightIds;
+      session.trayIds = next.trayIds;
+      renderAll();
+    }
+  }
+
+  // ── ラウンド3-5 (ふたご皿): rightBasketAIds/rightBasketBIds/placeItemTwin/removeItemTwin 経路 ──
+  function endDragTwin(ds, x, y) {
+    var overA = pointOverEl(panRightAEl, x, y);
+    var overB = pointOverEl(panRightBEl, x, y);
+
+    if (ds.source === 'tray') {
+      var basketId = overA ? 'A' : (overB ? 'B' : null);
+      if (!basketId) return; // バスケット外へのドロップはトレイへスッと戻す (演出は控えめ、罰なし)
+      var stateSnapshot = {
+        leftIds: session.leftIds,
+        rightBasketAIds: session.rightBasketAIds,
+        rightBasketBIds: session.rightBasketBIds,
+        trayIds: session.trayIds
+      };
+      var res = L.placeItemTwin(stateSnapshot, ds.itemId, basketId, session.round);
+      if (res.ok) {
+        session.leftIds = res.state.leftIds;
+        session.rightBasketAIds = res.state.rightBasketAIds;
+        session.rightBasketBIds = res.state.rightBasketBIds;
+        session.trayIds = res.state.trayIds;
+        if (window.Haptics) window.Haptics.fire('stickerPaste');
+        playPlaceSound();
+        renderAll();
+        var itemsContainer = basketId === 'A' ? panRightAItemsEl : panRightBItemsEl;
+        var placedEl = itemsContainer.querySelector('[data-item-id="' + ds.itemId + '"]');
+        if (placedEl) retriggerClass(placedEl, 'is-placed', 300);
+      } else if (res.reason === 'slip') {
+        // 全体 slip (両皿合計 vs 左皿) は既存の全体メッセージのまま。
+        retriggerClass(ds.el, 'is-slip', 500);
+        showBubble(slipBubbleEl, 'おもすぎたみたい！');
+        if (window.Haptics) window.Haptics.fire('gachaTurn3');
+        playSlipSound();
+      } else if (res.reason === 'localSlip') {
+        // そのバスケット単独が おもすぎ: こぼれた側のバスケット近くにメッセージ + boing。
+        // Haptics/効果音は既存の全体slipパターンをそのまま流用 (局所用の新パターンは追加しない)。
+        retriggerClass(ds.el, 'is-slip', 500);
+        var localBasketEl = res.basketId === 'A' ? panRightAEl : panRightBEl;
+        var localBubbleEl = res.basketId === 'A' ? slipBubbleAEl : slipBubbleBEl;
+        retriggerClass(localBasketEl, 'is-local-slip', 500);
+        showBubble(localBubbleEl, 'こっちのおさらだけ、おもすぎたみたい！');
+        if (window.Haptics) window.Haptics.fire('gachaTurn3');
+        playSlipSound();
+      }
+      // reason === 'full' / 'notfound': 静かに元の位置へ (演出なし)
+    } else if (ds.source === 'panA' || ds.source === 'panB') {
+      if (overA || overB) return; // バスケットへ戻された (タップ相当) は no-op
+      var srcBasket = ds.source === 'panA' ? 'A' : 'B';
+      var stateSnapshot2 = {
+        leftIds: session.leftIds,
+        rightBasketAIds: session.rightBasketAIds,
+        rightBasketBIds: session.rightBasketBIds,
+        trayIds: session.trayIds
+      };
+      var next = L.removeItemTwin(stateSnapshot2, srcBasket, ds.itemId);
+      session.leftIds = next.leftIds;
+      session.rightBasketAIds = next.rightBasketAIds;
+      session.rightBasketBIds = next.rightBasketBIds;
       session.trayIds = next.trayIds;
       renderAll();
     }
@@ -574,6 +681,19 @@
       session.finished = true;
       finishGame();
     };
+    // e2e (Playwright) がラウンド1・2の単一皿操作を毎回解かずに、任意ラウンド
+    // (例: ふたご皿ラウンド3=index2) まで一気に進めてUIを検証できるようにするテスト専用API。
+    window.__guraguraDebugGotoRound = function (roundIndex) {
+      if (!session) startGame();
+      while (session.round < roundIndex && !session.finished) {
+        session = L.advanceRound(session);
+      }
+      sim = { angle: 0, vel: 0 };
+      balanceHoldStart = null;
+      roundClearing = false;
+      wasNearBalance = false;
+      renderAll();
+    };
   }
 
   // ═══ メインループ ═══
@@ -585,8 +705,12 @@
     lastTs = ts;
 
     if (phase === 'playing' && session) {
+      var twinNow = isTwinRoundNow();
       var leftWeight = L.sumWeights(session.leftIds);
-      var rightWeight = L.sumWeights(session.rightIds);
+      var rightWeight = twinNow ? L.sumTwinRightWeight(session) : L.sumWeights(session.rightIds);
+      var rightCount = twinNow
+        ? (session.rightBasketAIds.length + session.rightBasketBIds.length)
+        : session.rightIds.length;
       var target = L.computeTilt(leftWeight, rightWeight);
       sim = L.springStep(sim, target, dt);
       if (plankEl) {
@@ -595,10 +719,11 @@
       }
 
       // ── あとちょっと！ハラハラ演出: near-balance rising edge 検知 ──
-      // ドラッグ中でない/ラウンドクリア演出中でない/右皿に1個以上乗っている、を
-      // 満たすフレームだけ判定する (満たさないフレームは wasNearBalance を保持し
-      // 評価をスキップする。ドラッグ開始時・ラウンド遷移時は別途明示リセット済み)。
-      if (!dragState && !roundClearing && session.rightIds.length > 0) {
+      // ドラッグ中でない/ラウンドクリア演出中でない/右側 (単一皿 or ふたご皿合計) に
+      // 1個以上乗っている、を満たすフレームだけ判定する (満たさないフレームは
+      // wasNearBalance を保持し評価をスキップする。ドラッグ開始時・ラウンド遷移時は
+      // 別途明示リセット済み)。
+      if (!dragState && !roundClearing && rightCount > 0) {
         var nearNow = L.isNearBalance(target) && !L.isBalanced(leftWeight, rightWeight);
         if (nearNow && !wasNearBalance) {
           triggerNearBalanceFx();

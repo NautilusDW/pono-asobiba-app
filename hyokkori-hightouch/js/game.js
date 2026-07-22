@@ -55,18 +55,60 @@
   var fxCanvas = document.getElementById('fx-canvas');
   var fxCtx = fxCanvas.getContext('2d');
 
-  // partner_*.webp 8種 (実測 512x512 正方形。 AR 厳守のため object-fit:contain の
-  // 正方形の箱に必ず入れる。 絶対に stretch しない)。
-  var PARTNER_IMAGES = [
-    '../assets/images/puzzle/partners/partner_araiguma.webp',
-    '../assets/images/puzzle/partners/partner_fukurou.webp',
-    '../assets/images/puzzle/partners/partner_harinezumi.webp',
-    '../assets/images/puzzle/partners/partner_karasu.webp',
-    '../assets/images/puzzle/partners/partner_kitsune.webp',
-    '../assets/images/puzzle/partners/partner_kojika.webp',
-    '../assets/images/puzzle/partners/partner_risu.webp',
-    '../assets/images/puzzle/partners/partner_usagi.webp'
+  // GPT Image 2 でこのゲーム専用に描いた8種。awake/sleeping は同じ正方形
+  // キャンバスを共有し、状態が切り替わっても大きさや足元が跳ねない。
+  var ASSET_BASE = '../assets/images/hyokkori-hightouch/';
+  var PARTNERS = [
+    { id: 'araiguma', awake: ASSET_BASE + 'friend_araiguma_awake.png', sleeping: ASSET_BASE + 'friend_araiguma_sleeping.png' },
+    { id: 'fukurou', awake: ASSET_BASE + 'friend_fukurou_awake.png', sleeping: ASSET_BASE + 'friend_fukurou_sleeping.png' },
+    { id: 'harinezumi', awake: ASSET_BASE + 'friend_harinezumi_awake.png', sleeping: ASSET_BASE + 'friend_harinezumi_sleeping.png' },
+    { id: 'karasu', awake: ASSET_BASE + 'friend_karasu_awake.png', sleeping: ASSET_BASE + 'friend_karasu_sleeping.png' },
+    { id: 'kitsune', awake: ASSET_BASE + 'friend_kitsune_awake.png', sleeping: ASSET_BASE + 'friend_kitsune_sleeping.png' },
+    { id: 'kojika', awake: ASSET_BASE + 'friend_kojika_awake.png', sleeping: ASSET_BASE + 'friend_kojika_sleeping.png' },
+    { id: 'risu', awake: ASSET_BASE + 'friend_risu_awake.png', sleeping: ASSET_BASE + 'friend_risu_sleeping.png' },
+    { id: 'usagi', awake: ASSET_BASE + 'friend_usagi_awake.png', sleeping: ASSET_BASE + 'friend_usagi_sleeping.png' }
   ];
+  var HIDEOUT_IMAGES = [
+    ASSET_BASE + 'hideout_stump.png',
+    ASSET_BASE + 'hideout_leaf_bush.png',
+    ASSET_BASE + 'hideout_tree_roots.png',
+    ASSET_BASE + 'hideout_tree_roots.png',
+    ASSET_BASE + 'hideout_stump.png',
+    ASSET_BASE + 'hideout_leaf_bush.png'
+  ];
+  var FLOWER_IMAGES = [
+    ASSET_BASE + 'flowerbed_stage_0_soil.png',
+    ASSET_BASE + 'flowerbed_stage_1_sprout.png',
+    ASSET_BASE + 'flowerbed_stage_2_buds.png',
+    ASSET_BASE + 'flowerbed_stage_3_bloom.png'
+  ];
+  var FX_IMAGES = [
+    ASSET_BASE + 'fx_highfive_burst.png',
+    ASSET_BASE + 'fx_leaf_puff.png',
+    ASSET_BASE + 'fx_overheat_swirl.png',
+    ASSET_BASE + 'fx_sleep_moon_cloud.png',
+    ASSET_BASE + 'mechanic_light_seed.png',
+    ASSET_BASE + 'pono_title_highfive.png',
+    ASSET_BASE + 'pono_result_bloom.png'
+  ];
+
+  // common/preload-helper.js は担当外なので、このゲーム自身の idle 時間で専用画像を温める。
+  // 背景・開始ポノ・花壇0・たねはHTML/CSSから先に読み込まれ、ここでは残りを補完する。
+  var preloadRefs = [];
+  function preloadGameAssetsLocally() {
+    var urls = HIDEOUT_IMAGES.concat(FLOWER_IMAGES, FX_IMAGES);
+    for (var i = 0; i < PARTNERS.length; i++) urls.push(PARTNERS[i].awake, PARTNERS[i].sleeping);
+    var run = function () {
+      for (var j = 0; j < urls.length; j++) {
+        var img = new Image();
+        img.decoding = 'async';
+        img.src = urls[j];
+        preloadRefs.push(img);
+      }
+    };
+    if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(run, { timeout: 1000 });
+    else setTimeout(run, 120);
+  }
 
   // classList を一旦外して reflow を挟んでから付け直し、CSS アニメを毎回再発火させる。
   // ms を渡すとそのミリ秒後に自動で外す (一過性エフェクト用)。
@@ -178,6 +220,8 @@
     for (var i = 0; i < L.HOLE_COUNT; i++) {
       var node = tpl.content.firstElementChild.cloneNode(true);
       node.setAttribute('data-hole', i);
+      var hideout = node.querySelector('.hh-hideout');
+      if (hideout) hideout.src = HIDEOUT_IMAGES[i % HIDEOUT_IMAGES.length];
       boardEl.appendChild(node);
     }
   }
@@ -194,8 +238,23 @@
       windowEl: holeEl.querySelector('.hh-window'),
       wrap: holeEl.querySelector('.hh-char-wrap'),
       img: holeEl.querySelector('.hh-char'),
+      sleepFx: holeEl.querySelector('.hh-sleep-fx'),
+      hitFx: holeEl.querySelector('.hh-hit-fx'),
       dust: holeEl.querySelector('.hh-dust')
     });
+  }
+
+  // ═══ ひかりのたねリレー表示 ═══
+  var relayProgressEl = document.getElementById('relay-progress');
+  var flowerbedEl = document.getElementById('flowerbed-img');
+  var lightSeedEl = document.getElementById('light-seed');
+  var relayAnnouncementEl = document.getElementById('relay-announcement');
+  var relayPipEls = document.querySelectorAll('#relay-pips .relay-pip');
+  var reducedMotionQuery = null;
+  try { reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)'); } catch (e) {}
+
+  function prefersReducedMotion() {
+    return !!(reducedMotionQuery && reducedMotionQuery.matches);
   }
 
   // ═══ ゲーム状態 ═══
@@ -206,6 +265,8 @@
   var spawnTimerMs = 0;
   var settleTimer = 0;
   var boardLockedUntil = 0; // OVERHEAT 演出用 (state.time 基準)
+  var seedHolderHole = null; // null は花壇、数値は最後に成功した隠れ場所。
+  var lastPartnerId = null;
 
   function resetGameState() {
     state = L.createInitialState();
@@ -218,6 +279,9 @@
     spawnTimerMs = 0;
     settleTimer = 0;
     boardLockedUntil = 0;
+    lastPartnerId = null;
+    confetti = [];
+    resetRelayVisual();
   }
 
   function resetHoleVisual(idx) {
@@ -225,6 +289,7 @@
     if (!refs) return;
     refs.wrap.classList.remove('is-visible', 'is-sleeping', 'is-hit', 'is-wobble');
     refs.hole.classList.remove('is-locked');
+    refs.hole.setAttribute('aria-label', 'おともだちが でてくる ばしょ');
   }
 
   // ═══ 出現・退場 ═══
@@ -236,24 +301,49 @@
     return arr;
   }
 
+  function occupiedPartnerIds() {
+    var ids = [];
+    for (var i = 0; i < holes.length; i++) {
+      var occ = holes[i].occupant;
+      if (occ && occ.partnerId) ids.push(occ.partnerId);
+    }
+    return ids;
+  }
+
+  function pickPartner() {
+    var occupiedIds = occupiedPartnerIds();
+    var excluded = occupiedIds.slice();
+    if (lastPartnerId) excluded.push(lastPartnerId);
+    var choices = PARTNERS.filter(function (partner) { return excluded.indexOf(partner.id) < 0; });
+    if (choices.length === 0) choices = PARTNERS.filter(function (partner) { return occupiedIds.indexOf(partner.id) < 0; });
+    if (choices.length === 0) choices = PARTNERS;
+    return choices[Math.floor(Math.random() * choices.length)];
+  }
+
   function trySpawn() {
     var occupied = occupiedHoleIndices();
     if (occupied.length >= 2) return; // 同時出現は最大2体まで
-    var holeIdx = L.pickHole(occupied, Math.random);
+    var forbidden = occupied.slice();
+    // 最後にたねを受け取った場所を外し、「別の場所へつなぐ」選択を作る。
+    if (seedHolderHole !== null && forbidden.indexOf(seedHolderHole) < 0) forbidden.push(seedHolderHole);
+    var holeIdx = L.pickHole(forbidden, Math.random);
     if (holeIdx === null) return;
     var kind = L.pickSpawnKind(state.elapsed, recentKinds, Math.random);
     recentKinds.push(kind);
     if (recentKinds.length > 6) recentKinds.shift();
     var showTime = L.showTimeAt(state.elapsed);
-    var imgSrc = PARTNER_IMAGES[Math.floor(Math.random() * PARTNER_IMAGES.length)];
-    holes[holeIdx].occupant = { kind: kind, showUntil: state.elapsed + showTime };
-    renderSpawn(holeIdx, kind, imgSrc);
+    var partner = pickPartner();
+    lastPartnerId = partner.id;
+    holes[holeIdx].occupant = { kind: kind, partnerId: partner.id, showUntil: state.elapsed + showTime };
+    renderSpawn(holeIdx, kind, partner);
   }
 
-  function renderSpawn(idx, kind, imgSrc) {
+  function renderSpawn(idx, kind, partner) {
     var refs = holeRefs[idx];
     if (!refs) return;
-    refs.img.src = imgSrc;
+    refs.img.src = partner[kind];
+    refs.img.alt = kind === 'awake' ? 'おきている おともだち' : 'ねている おともだち';
+    refs.hole.setAttribute('aria-label', kind === 'awake' ? 'ハイタッチする おともだち' : 'ねている おともだち');
     refs.wrap.classList.remove('is-hit', 'is-wobble');
     refs.wrap.classList.toggle('is-sleeping', kind === 'sleeping');
     retriggerClass(refs.wrap, 'is-visible'); // translate アニメを毎回発火させる
@@ -264,7 +354,10 @@
     if (!h.occupant) return;
     h.occupant = null;
     var refs = holeRefs[idx];
-    if (refs) refs.wrap.classList.remove('is-visible', 'is-sleeping');
+    if (refs) {
+      refs.wrap.classList.remove('is-visible', 'is-sleeping');
+      refs.hole.setAttribute('aria-label', 'おともだちが でてくる ばしょ');
+    }
   }
 
   function updateHoleTimeouts() {

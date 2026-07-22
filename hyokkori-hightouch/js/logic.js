@@ -19,6 +19,10 @@ var SLEEP_RATIO_MAX = 0.40;  // 上限クランプ
 
 var MAX_COMBO_BONUS = 10;    // コンボボーナス上限 (min(combo, 10))
 
+// ── ひかりのたねリレー ──
+var RELAY_HITS_PER_STAGE = 4; // 4回つなぐごとに花壇が1段階育つ。
+var FLOWER_STAGE_MAX = 3;     // 0:つち → 1:め → 2:つぼみ → 3:まんかい。
+
 // ── スパムタップ対策 三層防御 (確定値。実装仕様書 §3.1) ──
 var TAP_COOLDOWN = 0.22;         // 有効タップ後の全入力ロック秒
 var WHIFF_LOCK = 0.35;           // 空振りタップ後のロック秒
@@ -37,6 +41,40 @@ function clamp01(v) {
 function clamp(v, min, max) {
   if (!(v >= min)) return min;
   return v > max ? max : v;
+}
+
+/** 成功回数から、ひかりのたねと花壇の表示段階を算出する。 */
+function relayProgressAt(hitCount) {
+  var relayHits = Math.floor(Number(hitCount));
+  if (!isFinite(relayHits) || relayHits < 0) relayHits = 0;
+  return {
+    relayHits: relayHits,
+    relayStep: relayHits % RELAY_HITS_PER_STAGE,
+    flowerStage: Math.min(FLOWER_STAGE_MAX, Math.floor(relayHits / RELAY_HITS_PER_STAGE))
+  };
+}
+
+/** awake タップ成功時だけ、ひかりのたねを1つ先へ進める。 */
+function advanceRelay(state) {
+  var previousFlowerStage = state && typeof state.flowerStage === 'number'
+    ? state.flowerStage
+    : 0;
+  var progress = relayProgressAt((state && state.relayHits) || 0);
+  var next = relayProgressAt(progress.relayHits + 1);
+
+  if (state) {
+    state.relayHits = next.relayHits;
+    state.relayStep = next.relayStep;
+    state.flowerStage = next.flowerStage;
+  }
+
+  return {
+    relayAdvanced: !!state,
+    relayHits: next.relayHits,
+    relayStep: next.relayStep,
+    flowerStage: next.flowerStage,
+    flowerStageChanged: !!state && next.flowerStage !== previousFlowerStage
+  };
 }
 
 /**
@@ -113,6 +151,9 @@ function createInitialState() {
     combo: 0,
     bestCombo: 0,
     hits: 0,           // awake タップ成功数
+    relayHits: 0,      // ひかりのたねをつないだ累計回数
+    relayStep: 0,      // 次の花壇段階までの進み (0〜3)
+    flowerStage: 0,    // 花壇の成長段階 (0〜3)
     sleepTaps: 0,       // sleeping タップ (誤タップ) 数
     whiffs: 0,          // 空振りタップ数
     overheatCount: 0,    // OVERHEAT 発火回数
@@ -180,8 +221,16 @@ function registerTap(state, tSec, target) {
     state.combo += 1;
     if (state.combo > state.bestCombo) state.bestCombo = state.combo;
     state.hits += 1;
+    var relay = advanceRelay(state);
     state.inputLockUntil = tSec + TAP_COOLDOWN;
-    return { result: 'hit', scoreDelta: delta };
+    return {
+      result: 'hit',
+      scoreDelta: delta,
+      relayAdvanced: relay.relayAdvanced,
+      relayStep: relay.relayStep,
+      flowerStage: relay.flowerStage,
+      flowerStageChanged: relay.flowerStageChanged
+    };
   }
 
   if (target === 'sleeping') {
@@ -221,6 +270,8 @@ var PUBLIC_API = {
   SLEEP_RATIO_MIN: SLEEP_RATIO_MIN,
   SLEEP_RATIO_MAX: SLEEP_RATIO_MAX,
   MAX_COMBO_BONUS: MAX_COMBO_BONUS,
+  RELAY_HITS_PER_STAGE: RELAY_HITS_PER_STAGE,
+  FLOWER_STAGE_MAX: FLOWER_STAGE_MAX,
   TAP_COOLDOWN: TAP_COOLDOWN,
   WHIFF_LOCK: WHIFF_LOCK,
   SLEEP_PENALTY: SLEEP_PENALTY,
@@ -232,6 +283,8 @@ var PUBLIC_API = {
   showTimeAt: showTimeAt,
   spawnIntervalAt: spawnIntervalAt,
   sleepRatioAt: sleepRatioAt,
+  relayProgressAt: relayProgressAt,
+  advanceRelay: advanceRelay,
   pickSpawnKind: pickSpawnKind,
   pickHole: pickHole,
   createInitialState: createInitialState,

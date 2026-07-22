@@ -55,6 +55,18 @@ var PAN_CAPACITY = 4;       // 片皿の最大アイテム数
 // (BALANCE_EPS_DEG(1.0) < NEAR_BALANCE_EPS_DEG(5.0) < ANGLE_PER_DIFF*2(7) を保証)。
 var NEAR_BALANCE_EPS_DEG = 5.0;
 
+// ═══ ふたご皿 (twin basket) ラウンド設定 ════════════════════════════
+// キーは ROUNDS の 0-indexed ラウンド番号。 該当しないラウンド (0,1 = ラウンド1,2)
+// は従来通り単一右皿 (rightIds/placeItem/removeItem) のまま。
+// - basketCapacityEach: 1皿あたりの最大アイテム数
+// - localOverloadMax:   1皿単独の重さ上限 (これを超えたらそのバスケットだけ拒否)
+// 数値は実データで3ラウンドとも解けることを検証済みのため変更しないこと。
+var TWIN_ROUND_CONFIG = {
+  2: { tier: 'normal', basketCapacityEach: 3, localOverloadMax: 5 }, // ラウンド3 (elephant)
+  3: { tier: 'hard', basketCapacityEach: 2, localOverloadMax: 4 },   // ラウンド4 (dog+cherry)
+  4: { tier: 'hard', basketCapacityEach: 2, localOverloadMax: 4 }    // ラウンド5 (bear+grapes)
+};
+
 // ═══ 減衰振動 (バネ) 定数 ════════════════════════════════════════════
 var SPRING_K = 60;      // 1/s^2
 var SPRING_DAMP = 5.5;  // 1/s (アンダーダンプ → 2〜3回ぐらぐらして静定)
@@ -179,6 +191,125 @@ function removeItem(state, panIndexOrItemId) {
   return next;
 }
 
+// ═══ ふたご皿 (twin basket) 状態の純関数操作 ════════════════════════
+// state 形状: { leftIds: string[], rightBasketAIds: string[], rightBasketBIds: string[], trayIds: string[] }
+// 既存の placeItem/removeItem・{leftIds,rightIds,trayIds} 形状には一切影響しない
+// (ラウンド1・2は従来通りそちらを使い続ける)。すべて新しい配列/オブジェクトを返す。
+
+/** roundIndex → TWIN_ROUND_CONFIG のエントリ (該当しなければ null)。 */
+function getTwinRoundConfig(roundIndex) {
+  return TWIN_ROUND_CONFIG.hasOwnProperty(roundIndex) ? TWIN_ROUND_CONFIG[roundIndex] : null;
+}
+
+/** roundIndex がふたご皿ラウンドか。 */
+function isTwinRound(roundIndex) {
+  return TWIN_ROUND_CONFIG.hasOwnProperty(roundIndex);
+}
+
+function cloneStateTwin(state) {
+  return {
+    leftIds: (state.leftIds || []).slice(),
+    trayIds: (state.trayIds || []).slice(),
+    rightBasketAIds: (state.rightBasketAIds || []).slice(),
+    rightBasketBIds: (state.rightBasketBIds || []).slice()
+  };
+}
+
+/** バスケットA+B の合計重量。 */
+function sumTwinRightWeight(state) {
+  return sumWeights(state && state.rightBasketAIds) + sumWeights(state && state.rightBasketBIds);
+}
+
+/**
+ * トレイからアイテムをふたご皿(A/B)の指定バスケットへ配置する。
+ * basketId は 'A' か 'B'。
+ * roundIndex は呼び出し側 (game.js) が session.round から渡す想定
+ * (TWIN_ROUND_CONFIG からその皿の basketCapacityEach/localOverloadMax を引くため)。
+ * 省略時は state.round を fallback として参照し、それも無ければ
+ * capacityEach=PAN_CAPACITY / localOverloadMax=Infinity (無制限) にデグレードする。
+ *
+ * 検証順序 (変更しないこと):
+ *   (1) 容量超過            → { ok:false, reason:'full',      basketId, state:<元のまま> }
+ *   (2) バスケット単独の重さが localOverloadMax 超過
+ *                           → { ok:false, reason:'localSlip', basketId, state:<元のまま> }
+ *   (3) 両皿合計と左皿の差が SLIP_DIFF 以上
+ *                           → { ok:false, reason:'slip',      basketId, state:<元のまま> }
+ * トレイに存在しない id / basketId が 'A'/'B' 以外
+ *                           → { ok:false, reason:'notfound',  state:<元のまま> }
+ * 成功 → { ok:true, basketId, state:<新state> }
+ */
+function placeItemTwin(state, itemId, basketId, roundIndex) {
+  var trayIds = (state && state.trayIds) || [];
+  var trayIdx = trayIds.indexOf(itemId);
+  if (trayIdx === -1) {
+    return { ok: false, reason: 'notfound', state: state };
+  }
+  if (basketId !== 'A' && basketId !== 'B') {
+    return { ok: false, reason: 'notfound', state: state };
+  }
+
+  var resolvedRoundIndex = roundIndex === undefined ? (state && state.round) : roundIndex;
+  var config = getTwinRoundConfig(resolvedRoundIndex);
+  var capacityEach = (config && typeof config.basketCapacityEach === 'number') ? config.basketCapacityEach : PAN_CAPACITY;
+  var localMax = (config && typeof config.localOverloadMax === 'number') ? config.localOverloadMax : Infinity;
+
+  var basketAIds = (state && state.rightBasketAIds) || [];
+  var basketBIds = (state && state.rightBasketBIds) || [];
+  var targetIds = basketId === 'A' ? basketAIds : basketBIds;
+  var otherIds = basketId === 'A' ? basketBIds : basketAIds;
+
+  // (1) 容量超過
+  if (targetIds.length >= capacityEach) {
+    return { ok: false, reason: 'full', basketId: basketId, state: state };
+  }
+
+  var prospectiveTarget = targetIds.concat([itemId]);
+  var targetWeight = sumWeights(prospectiveTarget);
+
+  // (2) そのバスケット単独の重さが localOverloadMax 超過
+  if (targetWeight > localMax) {
+    return { ok: false, reason: 'localSlip', basketId: basketId, state: state };
+  }
+
+  // (3) 両皿合計と左皿の差が SLIP_DIFF 以上
+  var leftWeight = sumWeights(state && state.leftIds);
+  var totalRightWeight = targetWeight + sumWeights(otherIds);
+  var diff = totalRightWeight - leftWeight;
+  if (Math.abs(diff) >= SLIP_DIFF) {
+    return { ok: false, reason: 'slip', basketId: basketId, state: state };
+  }
+
+  var next = cloneStateTwin(state);
+  next.trayIds.splice(trayIdx, 1);
+  if (basketId === 'A') {
+    next.rightBasketAIds = prospectiveTarget;
+  } else {
+    next.rightBasketBIds = prospectiveTarget;
+  }
+  return { ok: true, basketId: basketId, state: next };
+}
+
+/**
+ * ふたご皿(A/B)の指定バスケットからアイテムをトレイへ戻す (タップで取り外し)。
+ * indexOrItemId が number ならそのバスケット内 index、string なら itemId として扱う。
+ * basketId が 'A'/'B' 以外、または見つからなければ no-op (新しい state だが内容は同一)。
+ */
+function removeItemTwin(state, basketId, indexOrItemId) {
+  var next = cloneStateTwin(state);
+  if (basketId !== 'A' && basketId !== 'B') return next;
+  var key = basketId === 'A' ? 'rightBasketAIds' : 'rightBasketBIds';
+  var idx = -1;
+  if (typeof indexOrItemId === 'number') {
+    if (indexOrItemId >= 0 && indexOrItemId < next[key].length) idx = indexOrItemId;
+  } else {
+    idx = next[key].indexOf(indexOrItemId);
+  }
+  if (idx === -1) return next;
+  var removed = next[key].splice(idx, 1)[0];
+  next.trayIds.push(removed);
+  return next;
+}
+
 // ═══ バネ (減衰振動) シミュレーション ════════════════════════════════
 // sim = { angle, vel } を破壊せず新しい { angle, vel } を返す。
 function springStep(sim, targetDeg, dt) {
@@ -201,29 +332,46 @@ function isSettled(sim, targetDeg) {
 }
 
 // ═══ セッション進行 ══════════════════════════════════════════════════
-// session 形状: { round, finished, leftIds, rightIds, trayIds }
+// session 形状: { round, finished, leftIds, rightIds, trayIds, rightBasketAIds, rightBasketBIds }
+// rightIds (単一皿・ラウンド1,2用) と rightBasketAIds/rightBasketBIds (ふたご皿・
+// ラウンド3-5用) は常に両方初期化される。 どちらを使うかは game.js が
+// isTwinRound(session.round) / getTwinRoundConfig(session.round) を見て判断する。
+
+/** session に roundIndex の初期状態 (leftIds/trayIds/right*) を適用する (mutate)。 */
+function applyRoundState(session, roundIndex) {
+  var round = ROUNDS[roundIndex];
+  session.round = roundIndex;
+  session.leftIds = round.left.slice();
+  session.trayIds = round.tray.slice();
+  session.rightIds = [];
+  session.rightBasketAIds = [];
+  session.rightBasketBIds = [];
+  return session;
+}
 
 /** 新規セッション (ラウンド0から開始)。 */
 function createSession() {
-  return {
-    round: 0,
-    finished: false,
-    leftIds: ROUNDS[0].left.slice(),
-    trayIds: ROUNDS[0].tray.slice(),
-    rightIds: []
-  };
+  var session = { finished: false };
+  applyRoundState(session, 0);
+  return session;
 }
 
-/** 現在ラウンドが釣り合っているか。 */
+/** 現在ラウンドが釣り合っているか (単一皿ラウンド用。 ふたご皿は isSessionBalancedTwin)。 */
 function isSessionBalanced(session) {
   if (!session) return false;
   return isBalanced(sumWeights(session.leftIds), sumWeights(session.rightIds));
 }
 
+/** 現在ラウンドが釣り合っているか (ふたご皿ラウンド用。 A+B 合計で判定)。 */
+function isSessionBalancedTwin(session) {
+  if (!session) return false;
+  return isBalanced(sumWeights(session.leftIds), sumTwinRightWeight(session));
+}
+
 /**
- * 現在ラウンドをクリアして次ラウンドへ進める (呼び出し前に isSessionBalanced
- * が true であることを呼び出し側が確認しておくこと。ここでは強制しない)。
- * 最終ラウンドだった場合は finished=true にする。
+ * 現在ラウンドをクリアして次ラウンドへ進める (呼び出し前に isSessionBalanced/
+ * isSessionBalancedTwin が true であることを呼び出し側が確認しておくこと。
+ * ここでは強制しない)。 最終ラウンドだった場合は finished=true にする。
  */
 function advanceRound(session) {
   if (!session) return session;
@@ -232,10 +380,7 @@ function advanceRound(session) {
     session.finished = true;
     return session;
   }
-  session.round = nextRound;
-  session.leftIds = ROUNDS[nextRound].left.slice();
-  session.trayIds = ROUNDS[nextRound].tray.slice();
-  session.rightIds = [];
+  applyRoundState(session, nextRound);
   return session;
 }
 
@@ -249,6 +394,7 @@ var PUBLIC_API = {
   SLIP_DIFF: SLIP_DIFF,
   PAN_CAPACITY: PAN_CAPACITY,
   NEAR_BALANCE_EPS_DEG: NEAR_BALANCE_EPS_DEG,
+  TWIN_ROUND_CONFIG: TWIN_ROUND_CONFIG,
   SPRING_K: SPRING_K,
   SPRING_DAMP: SPRING_DAMP,
   getItem: getItem,
@@ -259,10 +405,16 @@ var PUBLIC_API = {
   isNearBalance: isNearBalance,
   placeItem: placeItem,
   removeItem: removeItem,
+  getTwinRoundConfig: getTwinRoundConfig,
+  isTwinRound: isTwinRound,
+  sumTwinRightWeight: sumTwinRightWeight,
+  placeItemTwin: placeItemTwin,
+  removeItemTwin: removeItemTwin,
   springStep: springStep,
   isSettled: isSettled,
   createSession: createSession,
   isSessionBalanced: isSessionBalanced,
+  isSessionBalancedTwin: isSessionBalancedTwin,
   advanceRound: advanceRound
 };
 

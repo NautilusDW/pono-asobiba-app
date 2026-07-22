@@ -124,6 +124,94 @@ function mulberry32(seed) {
   assert.equal(s3.inputLockUntil, 1.35, "emptyタップ後は0.35秒ロック");
 }
 
+// ── 3b. ひかりのたねリレー ─────────────────────────────────────────
+{
+  // 定数・公開APIがコード整理時に消えたり値を変えたりしないこと。
+  assert.match(logicJsSrc, /RELAY_HITS_PER_STAGE\s*=\s*4\b/, "4回成功で花壇が1段階育つ");
+  assert.match(logicJsSrc, /FLOWER_STAGE_MAX\s*=\s*3\b/, "花壇の最大段階は3");
+  assert.equal(L.RELAY_HITS_PER_STAGE, 4, "RELAY_HITS_PER_STAGE が公開される");
+  assert.equal(L.FLOWER_STAGE_MAX, 3, "FLOWER_STAGE_MAX が公開される");
+  assert.equal(typeof L.relayProgressAt, "function", "relayProgressAt が公開される");
+  assert.equal(typeof L.advanceRelay, "function", "advanceRelay が公開される");
+
+  const initial = L.createInitialState();
+  assert.deepEqual(
+    { relayHits: initial.relayHits, relayStep: initial.relayStep, flowerStage: initial.flowerStage },
+    { relayHits: 0, relayStep: 0, flowerStage: 0 },
+    "初期状態では、たねと花壇の進行が0から始まる"
+  );
+  assert.deepEqual(L.relayProgressAt(-1), { relayHits: 0, relayStep: 0, flowerStage: 0 }, "負数は安全に0へクランプされる");
+  assert.deepEqual(L.relayProgressAt(16), { relayHits: 16, relayStep: 0, flowerStage: 3 }, "満開後も成功回数を保ちつつ花壇は上限3に留まる");
+
+  const state = L.createInitialState();
+  const boundaries = {
+    3: { relayStep: 3, flowerStage: 0, flowerStageChanged: false },
+    4: { relayStep: 0, flowerStage: 1, flowerStageChanged: true },
+    7: { relayStep: 3, flowerStage: 1, flowerStageChanged: false },
+    8: { relayStep: 0, flowerStage: 2, flowerStageChanged: true },
+    11: { relayStep: 3, flowerStage: 2, flowerStageChanged: false },
+    12: { relayStep: 0, flowerStage: 3, flowerStageChanged: true }
+  };
+
+  for (let hit = 1; hit <= 13; hit++) {
+    const res = L.registerTap(state, hit, "awake");
+    assert.equal(res.result, "hit", `リレー#${hit}: awake 成功は hit`);
+    assert.equal(res.relayAdvanced, true, `リレー#${hit}: 成功時だけ relayAdvanced=true`);
+    assert.equal(state.relayHits, hit, `リレー#${hit}: relayHits が1ずつ増える`);
+    assert.equal(res.relayStep, hit % 4, `リレー#${hit}: relayStep は成功数%4`);
+    assert.equal(res.flowerStage, Math.min(3, Math.floor(hit / 4)), `リレー#${hit}: flowerStage が式どおり進む`);
+    assert.equal(state.relayStep, res.relayStep, `リレー#${hit}: state と戻り値の relayStep が一致する`);
+    assert.equal(state.flowerStage, res.flowerStage, `リレー#${hit}: state と戻り値の flowerStage が一致する`);
+
+    if (boundaries[hit]) {
+      assert.deepEqual(
+        {
+          relayStep: res.relayStep,
+          flowerStage: res.flowerStage,
+          flowerStageChanged: res.flowerStageChanged
+        },
+        boundaries[hit],
+        `リレー境界 ${hit} 回目の表示メタデータが一致する`
+      );
+    } else {
+      assert.equal(res.flowerStageChanged, false, `リレー#${hit}: 4回区切り以外では花壇段階を変えない`);
+    }
+  }
+
+  // sleeping / whiff / locked / overheat / missed awake のどれでも進行を失わない。
+  const protectedState = L.createInitialState();
+  for (let hit = 0; hit < 4; hit++) L.registerTap(protectedState, hit, "awake");
+  const relaySnapshot = () => ({
+    relayHits: protectedState.relayHits,
+    relayStep: protectedState.relayStep,
+    flowerStage: protectedState.flowerStage
+  });
+  const expectedProgress = { relayHits: 4, relayStep: 0, flowerStage: 1 };
+
+  assert.equal(L.registerTap(protectedState, 4, "sleeping").result, "sleepPenalty", "前提: sleeping 判定");
+  assert.deepEqual(relaySnapshot(), expectedProgress, "sleeping タップでもリレー進行を失わない");
+
+  assert.equal(L.registerTap(protectedState, 5.1, "empty").result, "whiff", "前提: whiff 判定");
+  assert.deepEqual(relaySnapshot(), expectedProgress, "空振りでもリレー進行を失わない");
+
+  assert.equal(L.registerTap(protectedState, 5.2, "awake").result, "locked", "前提: whiff lock 中のタップは locked");
+  assert.deepEqual(relaySnapshot(), expectedProgress, "locked タップでもリレー進行を失わない");
+
+  L.missedAwake(protectedState);
+  assert.deepEqual(relaySnapshot(), expectedProgress, "awake を取り逃してもリレー進行を失わない");
+
+  let overheatResult = null;
+  for (let i = 0; i < L.SPAM_THRESHOLD + 2; i++) {
+    const res = L.registerTap(protectedState, 6 + i * 0.05, "empty");
+    if (res.result === "overheat") {
+      overheatResult = res;
+      break;
+    }
+  }
+  assert.ok(overheatResult, "前提: 短時間の連打で overheat が発火する");
+  assert.deepEqual(relaySnapshot(), expectedProgress, "overheat でもリレー進行を失わない");
+}
+
 // ── 4. クールダウン ──────────────────────────────────────────────────
 {
   const state = L.createInitialState();

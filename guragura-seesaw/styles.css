@@ -219,6 +219,89 @@ html, body {
   50% { filter: brightness(1.25); }
 }
 
+/* ── ふたご皿 (twin basket、ラウンド3-5専用) ──────────────────────
+   通常は #panRight (単一皿) のみ表示。 game.js が現在ラウンドを見て
+   #plank に is-twin-round クラスを付け外しし、 このブロックで排他的に
+   表示を切り替える (ラウンド1・2 は従来の #panRight のまま/未変更)。 */
+#panRightTwin {
+  position: absolute;
+  top: 50%;
+  right: 1%;
+  width: 32%;
+  display: none;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 4%;
+}
+#plank.is-twin-round .pan-right { display: none; }
+#plank.is-twin-round #panRightTwin { display: flex; }
+
+.pan-twin {
+  position: relative;
+  width: 47%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* A皿: 淡いピーチ地 + 橙アクセント。 B皿: 淡いラベンダー地 + 紫アクセント。
+   既存の黄色グロー(#ffd93d、ドロップ先ハイライト)とは役割を分け、
+   通常時の地色として使う (下の .is-drop-target とは共存する)。 */
+.pan-twin-a .pan-dish {
+  background: radial-gradient(ellipse at 50% 0%, #FFEFDC 0%, #FFD9B3 55%, #FF9F45 100%);
+  box-shadow: inset 0 4px 8px rgba(0,0,0,0.2), 0 4px 8px rgba(0,0,0,0.15), inset 0 0 0 3px rgba(255,159,69,0.55);
+}
+.pan-twin-b .pan-dish {
+  background: radial-gradient(ellipse at 50% 0%, #F1EAFB 0%, #E0D4F7 55%, #9B7FD4 100%);
+  box-shadow: inset 0 4px 8px rgba(0,0,0,0.2), 0 4px 8px rgba(0,0,0,0.15), inset 0 0 0 3px rgba(155,127,212,0.55);
+}
+
+/* ドラッグ中のドロップ先ハイライト (単一皿の .pan-right.is-drop-target と同じ黄色グロー) */
+.pan-twin.is-drop-target .pan-dish {
+  box-shadow: 0 0 0 4px #ffd93d, 0 0 18px 6px rgba(255,217,61,0.8), inset 0 4px 8px rgba(0,0,0,0.2);
+  animation: dropPulse 0.8s infinite;
+}
+
+/* localSlip (そのバスケットだけ おもすぎ) の弾む演出。 既存 slipBoing を再利用。
+   .pan-twin は他にベース transform を持たないため、アニメと衝突しない。 */
+.pan-twin.is-local-slip { animation: slipBoing 0.5s ease-out; }
+
+/* バスケット直近に出す「こっちのおさらだけ、おもすぎたみたい！」ふきだし。
+   既存 #balanceBanner/#slipBubble と同じ showBubble()/retriggerClass() 経由で
+   表示する (gg-banner-pop を流用)。 */
+.pan-bubble {
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  margin-bottom: 6%;
+  transform: translate(-50%, 0) scale(0.8);
+  z-index: 650;
+  background: rgba(45,90,110,0.92);
+  color: #fff;
+  font-size: 13px; font-weight: 900;
+  padding: 8px 10px;
+  border-radius: 14px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.3);
+  opacity: 0;
+  pointer-events: none;
+  text-align: center;
+  white-space: normal;
+  width: max-content;
+  max-width: 34vw;
+}
+.pan-bubble.show {
+  animation: gg-banner-pop-local 1.5s ease-out;
+}
+/* #balanceBanner/#slipBubble の gg-banner-pop と同じ easing/timing/opacity構成だが、
+   .pan-bubble は left:50%/bottom:100% 基準 (Y方向center合わせが不要) なので
+   transform の Y成分だけ 0 に差し替えた専用版。JS 側 (showBubble/retriggerClass) は完全流用。 */
+@keyframes gg-banner-pop-local {
+  0% { opacity: 0; transform: translate(-50%, 0) scale(0.7); }
+  15% { opacity: 1; transform: translate(-50%, 0) scale(1.05); }
+  85% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, 0) scale(0.95); }
+}
+
 /* ── 無操作ヒント: トレイ→右皿方向にふわふわ動く指アイコン ── */
 #dragHint {
   position: absolute;
