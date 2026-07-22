@@ -728,7 +728,9 @@
 // v2316: なぞなぞトレインの火・恐竜・猫ステージの画像と多重スクロールを世界観に合わせて再調整 (batch:1409-world-coherence)。
 // v2317: なぞなぞトレインの恐竜・卵・猫の実接地線を地面へ固定し、猫の建物と生活景を
 // clampなしのworld座標で連続スクロールさせる。全区間の猫密度も均等化 (batch:1410)。
-const CACHE_VERSION = 2325;
+// v2326: hatake-nikki の畑レイアウト崩れ(#field-bg幽霊アセット除去+tool-rail/plot2重なり解消)
+// 修正 + 水やり操作discoverability改善(パルス演出/ヒントトースト/初回チュートリアル自動表示) (batch:1415)。
+const CACHE_VERSION = 2326;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

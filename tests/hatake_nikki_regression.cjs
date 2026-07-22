@@ -409,4 +409,48 @@ function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
   assert.match(gameJs, /screenCtl\.hide\('seed-picker'\)/, "closeSeedPicker が screenCtl.hide('seed-picker') を呼ぶ");
 }
 
+// ── 24. #field-bg 幽霊アセット撤去 (レイアウト崩れバグ1-A修正) ──────────
+{
+  assert.doesNotMatch(indexHtml, /field-bg/, "index.html に field-bg という文字列が存在しない");
+  assert.doesNotMatch(stylesCss, /yard\/hatake\.png/, "styles.css に yard/hatake.png 参照が存在しない (hatake_crop は許可)");
+  assert.match(stylesCss, /yard\/hatake_crop\.png/, "styles.css は hatake_crop.png (畝アセット) を引き続き参照する");
+}
+
+// ── 25. #tool-rail と .plot[data-plot="2"] の重なり解消 (レイアウト崩れバグ1-B修正) ──
+{
+  const railMatch = stylesCss.match(/#tool-rail\s*\{[^}]*\}/);
+  assert.ok(railMatch, "#tool-rail のブロックが見つかる");
+  const railBlock = railMatch[0];
+  const railRightMatch = railBlock.match(/right:\s*([\d.]+)%/);
+  const railWidthMatch = railBlock.match(/width:\s*([\d.]+)%/);
+  assert.ok(railRightMatch && railWidthMatch, "#tool-rail の right/width が%指定で見つかる");
+  const railRight = Number(railRightMatch[1]);
+  const railWidth = Number(railWidthMatch[1]);
+  const railLeftEdge = 100 - railRight - railWidth; // レール左端 (% from left)
+
+  const plot2Match = stylesCss.match(/\.plot\[data-plot="2"\]\s*\{[^}]*\}/);
+  const plotWidthMatch = stylesCss.match(/\.plot\s*\{[^}]*width:\s*([\d.]+)%/);
+  assert.ok(plot2Match && plotWidthMatch, ".plot[data-plot=\"2\"] / .plot の width が見つかる");
+  const plot2LeftMatch = plot2Match[0].match(/left:\s*([\d.]+)%/);
+  assert.ok(plot2LeftMatch, ".plot[data-plot=\"2\"] の left が見つかる");
+  const plot2Left = Number(plot2LeftMatch[1]);
+  const plotWidth = Number(plotWidthMatch[1]);
+  const plot2RightEdge = plot2Left + plotWidth; // plot2 右端 (% from left)
+
+  assert.ok(railLeftEdge >= plot2RightEdge, `#tool-rail 左端(${railLeftEdge}%) が .plot[data-plot="2"] 右端(${plot2RightEdge}%) 以上 (重なりゼロ)`);
+}
+
+// ── 26. 水やり discoverability (レイアウト崩れバグ2修正) ────────────────
+{
+  assert.match(gameJs, /function updateWaterTargets/, "game.js に updateWaterTargets 関数が定義されている");
+  assert.match(gameJs, /function showHintToast/, "game.js に showHintToast 関数が定義されている");
+  assert.match(gameJs, /pono_hatake_tut_seen_v1/, "game.js に初回チュートリアル既読フラグ pono_hatake_tut_seen_v1 が存在する");
+  assert.match(gameJs, /is-water-target/, "game.js が is-water-target クラスをトグルしている");
+  assert.match(stylesCss, /\.plot\.is-water-target\s*\{/, "styles.css に .plot.is-water-target の定義がある");
+  assert.match(stylesCss, /@keyframes\s+waterTargetPulse/, "styles.css に waterTargetPulse アニメーションが定義されている");
+  assert.match(indexHtml, /id="hint-toast"/, "index.html に #hint-toast 要素が存在する");
+  assert.match(stylesCss, /#hint-toast\s*\{/, "styles.css に #hint-toast の定義がある");
+  assert.match(gameJs, /activeTool === 'water' && !plot\.seedId/, "game.js の beginPress else分岐が空畝×水ツールを検知する");
+}
+
 console.log("hatake nikki regression: PASS");

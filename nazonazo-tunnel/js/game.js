@@ -486,7 +486,7 @@ const STAGES=[
   ground(P){return svgURI(600,90,gRail(600,90,P.tie,P.rail,P.grass));},
   fg(P){return svgURI(900,220,gBumps(900,220,P.fgA,6,160,445)+gGrassSpikes(900,220,P.fgB,34,70,447));},
   decor(P,r){return svgURI(160,260,gBumps(160,260,P.fgB,3,100,449+r)+gMountains(160,260,P.mid2,10,70,3,451+r,0.9));}},
- {id:"dino",icon:"🦕",art:"stageDino",veh:"train",bank:DINO,gens:["sizeD"],rare:["🦕","でんせつの きょうりゅう"],countsToProgress:false,hidden:true,rejoinId:"number",
+ {id:"dino",icon:"🦕",art:"stageDino",veh:"train",bank:DINO,gens:["sizeD"],rare:["🦕","でんせつの きょうりゅう"],countsToProgress:false,hidden:true,rejoinId:"number",mechanic:"dinoAdventure",
   names:["きょうりゅうのもり","よるの きょうりゅうのもり"],
   assets:ASSETS.dino,
   pals:[
@@ -688,6 +688,22 @@ const BRANCH_STAGE_POLISH_ASSETS=Object.freeze({
   midLaneB:"../assets/images/nazonazo-tunnel/branch_cat_mid_lane_b_worldfix_20260721.webp"
  })
 });
+// batch:1411 の専用素材は asset manifest 昇格後にこの契約だけを差し替える。
+// それまでは同じ GPT Image 2 由来の既存切り抜きを各状態の安全な fallback とする。
+const DINO_ADVENTURE_ASSETS={
+ waterDry:BRANCH_STAGE_POLISH_ASSETS.dino.waterhole,
+ waterSuccess:BRANCH_STAGE_POLISH_ASSETS.dino.waterhole,
+ trexWaiting:BRANCH_STAGE_POLISH_ASSETS.dino.trex,
+ trexInhale:BRANCH_STAGE_POLISH_ASSETS.dino.trex,
+ trexRoar:BRANCH_STAGE_POLISH_ASSETS.dino.trex,
+ trexTired:BRANCH_STAGE_POLISH_ASSETS.dino.trex,
+ trexStepBack:BRANCH_STAGE_POLISH_ASSETS.dino.trex,
+ trexYield:BRANCH_STAGE_POLISH_ASSETS.dino.trex,
+ roarWave:"",
+ whistleBurst:"",
+ waterTank:"",
+ controls:""
+};
 const branchRasterImageCache=new Map();
 const branchStagePolishImageCache=new Map();
 function isBranchRasterStage(st){return !!(st&&BRANCH_RASTER_STAGE_IDS.has(st.id));}
@@ -879,6 +895,28 @@ let pendingBranchChoice=null,branchGateActive=false,branchGateTimer=0;
 let bestStarsByStage={},answerLocked=false,portalEditHolding=false,nextMagicPuffAt=0,smokeRunning=false,smokeSerial=0,exitPortalBaseWorldX=0;
 let numberCargoPicked=[],numberCargoGoalShown=false;
 let numberCargoTheme=null;
+const DINO_ADVENTURE_EVENT_COUNT=2;
+const DINO_WATER_ROWS=4,DINO_WATER_COLS=7,DINO_WATER_START=14,DINO_WATER_GOAL=13,DINO_WATER_DIG_BUDGET=9;
+const DINO_WATER_ROCKS=[0,1,2,5,7,16,18,19,23,25];
+const DINO_WATER_SOLUTION=[14,15,8,9,10,11,12,13];
+Object.freeze(DINO_WATER_ROCKS);Object.freeze(DINO_WATER_SOLUTION);
+const DINO_WATER_FLOW_STEP_MS=level=>prefersReducedMotionActive()?70:Math.max(110,190-level*25);
+const DINO_BOSS_HP=3,DINO_BOSS_TRAIN_HP=3,DINO_BOSS_WATER_CHARGES=3;
+const DINO_BOSS_INTRO_MS=700,DINO_BOSS_TELEGRAPH_MS=900,DINO_BOSS_DEFEND_MS=2600,DINO_BOSS_HIT_MS=820,DINO_BOSS_VICTORY_MS=1250;
+const DINO_BOSS_ATTACK_MS=[6500,6200,5900];
+const DINO_BOSS_BURST_MS=[1500,1300,1150];
+const DINO_BOSS_DEFEND_HOLD_MS=[900,1200,1500],DINO_BOSS_TAP_POWER=[.082,.066,.055];
+const DINO_BOSS_TAP_GAP_MS=55,DINO_BOSS_TAP_RATE_CAP=7,DINO_BOSS_WATER_POWER=1.14;
+const DINO_BOSS_BALANCE_MIN=.18,DINO_BOSS_BALANCE_HIT=.88;
+const DINO_WATER_SCORE=300,DINO_BOSS_SCORE=450;
+function createDinoAdventureState(){
+ return {
+  phase:"idle",eventIndex:0,transitionCount:0,completionCount:0,epoch:0,frameAt:0,pausedAt:0,phaseEndAt:0,attackEndAt:0,inputLocked:false,
+  water:{route:[DINO_WATER_START],budget:DINO_WATER_DIG_BUDGET,waterCharges:0,completed:false,attempt:1,pointerId:null,keyboardIndex:DINO_WATER_START,flowIndex:-1,flowNextAt:0,invalidCell:null,awaitingRetry:false},
+  boss:{phase:"idle",bossHp:DINO_BOSS_HP,trainHp:DINO_BOSS_TRAIN_HP,round:0,waterCharge:DINO_BOSS_WATER_CHARGES,brakeHeld:false,brakePointerId:null,activeHornPointers:new Set(),balance:.5,defenseHeldMs:0,hornCharge:0,burstOpen:false,lastTapAt:0,tapTimes:[],retryCount:0,roundFailures:0,rewardGranted:false}
+ };
+}
+let dinoAdventureState=createDinoAdventureState();
 const SEA_FIRE_INTERVAL_MS=90;
 const SEA_SHOT_LIMIT=56;
 const SEA_COMPANION_LIMIT=3;
@@ -1219,6 +1257,9 @@ const $=id=>document.getElementById(id);
 const world=$("world"),veh=$("veh"),horizon=$("horizon"),midT=$("midT"),groundT=$("groundT"),branchDecorT=$("branchDecorT"),branchDinoMeadow=$("branchDinoMeadow"),fgT=$("fgT"),branchEffectFar=$("branchEffectFar"),branchWorldLifeLayer=$("branchWorldLifeLayer"),branchEffectMid=$("branchEffectMid"),branchEffectNear=$("branchEffectNear"),seaFishLayer=$("seaFishLayer"),seaHabitatLayer=$("seaHabitatLayer"),smokeLayer=$("smokeLayer"),townHorizonLoop=$("townHorizonLoop"),townMidLoop=$("townMidLoop"),futureHorizonLoop=$("futureHorizonLoop"),futureMidLoop=$("futureMidLoop"),futureForegroundLoop=$("futureForegroundLoop"),spaceHorizonLoop=$("spaceHorizonLoop"),spaceForegroundLoop=$("spaceForegroundLoop"),jungleHabitatBack=$("jungleHabitatBack");
 const vehicleSteerShell=$("vehicleSteerShell"),seaSteerSurface=$("seaSteerSurface"),spaceSteerSurface=$("spaceSteerSurface"),seaAnswerLayer=$("seaAnswerLayer"),seaBossLayer=$("seaBossLayer"),seaRescueMessage=$("seaRescueMessage"),seaArenaShade=$("seaArenaShade"),seaRoundCountdown=$("seaRoundCountdown"),seaQuizGuide=$("seaQuizGuide"),seaSteerHint=$("seaSteerHint"),spaceSteerHint=$("spaceSteerHint");
 const futureCapsuleLayer=$("futureCapsuleLayer"),spaceGalaxyLayer=$("spaceGalaxyLayer");
+const dinoAdventureLayer=$("dinoAdventureLayer"),dinoAdventureTitle=$("dinoAdventureTitle"),dinoAdventureGuide=$("dinoAdventureGuide"),dinoAdventureProgress=$("dinoAdventureProgress");
+const dinoWaterGame=$("dinoWaterGame"),dinoWaterDinos=$("dinoWaterDinos"),dinoWaterGrid=$("dinoWaterGrid"),dinoWaterBudget=$("dinoWaterBudget"),dinoWaterRetry=$("dinoWaterRetry");
+const dinoBossGame=$("dinoBossGame"),dinoBossTrex=$("dinoBossTrex"),dinoBossTug=$("dinoBossTug"),dinoBossAction=$("dinoBossAction"),dinoBossRetry=$("dinoBossRetry"),dinoBossTrainHp=$("dinoBossTrainHp"),dinoBossTrexHp=$("dinoBossTrexHp"),dinoBossWater=$("dinoBossWater");
 const spaceChaseLayer=$("spaceChaseLayer"),spaceChaseGuide=$("spaceChaseGuide"),spaceChaseTitle=$("spaceChaseTitle"),spaceChaseBoostMeter=$("spaceChaseBoostMeter"),spaceChaseFinalMeter=$("spaceChaseFinalMeter"),spaceChaseRoundText=$("spaceChaseRoundText"),spaceChaseBoostButton=$("spaceChaseBoostButton"),spaceChaseRouteMap=$("spaceChaseRouteMap"),spaceChaseRoutePaths=$("spaceChaseRoutePaths"),spaceChaseJunctions=$("spaceChaseJunctions"),spaceChaseBoostItemsLayer=$("spaceChaseBoostItems"),spaceChaseRouteChoices=$("spaceChaseRouteChoices"),spaceChaseCinematic=$("spaceChaseCinematic"),spaceChaseCinematicText=$("spaceChaseCinematicText"),spaceChaseRescuePanel=$("spaceChaseRescuePanel"),spaceChaseRescuePlayfield=$("spaceChaseRescuePlayfield"),spaceChaseRescueTitle=$("spaceChaseRescueTitle"),spaceChaseRescueGuide=$("spaceChaseRescueGuide"),spaceChaseRescueProgress=$("spaceChaseRescueProgress"),spaceChaseRescueRing=$("spaceChaseRescueRing"),spaceChaseRescueStar=$("spaceChaseRescueStar"),spaceChaseRescueTether=$("spaceChaseRescueTether"),spaceChaseTailGates=$("spaceChaseTailGates"),spaceChaseSealTargets=$("spaceChaseSealTargets"),spaceChaseTimingPulse=$("spaceChaseTimingPulse"),spaceChaseConstellation=$("spaceChaseConstellation"),spaceChaseRescueMashButton=$("spaceChaseRescueMashButton");
 const spaceChaseRescueGates=spaceChaseTailGates?[...spaceChaseTailGates.querySelectorAll("[data-rescue-gate]")]:[];
 const spaceChaseRescueLocks=spaceChaseSealTargets?[...spaceChaseSealTargets.querySelectorAll("[data-rescue-lock]")]:[];
@@ -2146,6 +2187,7 @@ function buildJungleQuestionList(stage){
 }
 function buildQList(){
  const st=STAGES[stg];
+ if(isDinoAdventureStage(st)){qList=[];return;}
  if(st.id==="number"){qList=[];for(let i=0;i<QN;i++)qList.push(Math.random()<0.6?genCount():genNext());return;}
  if(st.mechanic==="seaBoss"){seaBossDefeated=false;seaDecoysSeen.clear();qList=buildSeaRescueList(st);return;}
  if(st.mechanic==="spaceChase")spaceChaseDefeated=false;
@@ -2233,7 +2275,7 @@ function buildWorld(keepCover){
  if(keepCover&&transitCover)world.appendChild(transitCover);
  tunnels=[];
  const o=origin(stg),st=STAGES[stg],P=palOf(stg);
- for(let i=0;i<QN;i++){
+ if(!isDinoAdventureStage(st))for(let i=0;i<QN;i++){
  const t=document.createElement("div");t.className="tun";
   const stationStage=hasStationArt(st);
   t.classList.add(st.id+"-gate");
@@ -2294,12 +2336,14 @@ function buildWorld(keepCover){
   }
  }
  if(!isMainlineFinalStg(stg)){
-  dropEl=document.createElement("div");
-  dropEl.className="dropStation";
-  dropEl.style.left=dropX(o)+"vw";
-  dropEl.innerHTML='<div class="drop-station-art"></div><div class="drop-station-name">おりるえき</div><div class="drop-station-friends" data-ui-art="friends" aria-hidden="true"></div>';
-  hydrateStaticUiArt(dropEl);
-  world.appendChild(dropEl);
+  if(!isDinoAdventureStage(st)){
+   dropEl=document.createElement("div");
+   dropEl.className="dropStation";
+   dropEl.style.left=dropX(o)+"vw";
+   dropEl.innerHTML='<div class="drop-station-art"></div><div class="drop-station-name">おりるえき</div><div class="drop-station-friends" data-ui-art="friends" aria-hidden="true"></div>';
+   hydrateStaticUiArt(dropEl);
+   world.appendChild(dropEl);
+  }else dropEl=null;
   coverEl=document.createElement("div");
   coverEl.className="cover";
   coverEl.style.left=(o+COVER_OFF)+"vw";
@@ -3996,6 +4040,7 @@ function finishTunnelInterior(){
   if(!playing)return;
   tunnelInteriorMode=false;
   document.body.classList.remove("tunnel-interior","tunnel-exit-approach");
+  resetDinoAdventure();
   stg=resolveNextStage(stg,pendingBranchChoice);pendingBranchChoice=null;
   resetStageScore();buildQList();qSeg=0;stageMiss=0;rareSpawned=false;
   applySkin();buildWorld(false);drawDots();
@@ -4004,7 +4049,8 @@ function finishTunnelInterior(){
   if(typeof syncBranchStagePolishState==="function")syncBranchStagePolishState();
   exitPortalBaseWorldX=worldX;
   updateScreenExitShift();
-  pending="quiz";driving=true;swapReady=false;swapped=false;
+  pending=isDinoAdventureStage()?"dinoWater":"quiz";driving=true;swapReady=false;swapped=false;
+  if(isDinoAdventureStage())startDinoAdventure();
   veh.classList.add("go");veh.classList.remove("idle");
   carsEl.classList.add("go");
   sparkOnVeh();sndGo();
@@ -4030,6 +4076,7 @@ function finishTunnelInterior(){
 }
 function beginStageTransit(){
  if(!coverEl)return;
+ if(!isDinoAdventureStage())resetDinoAdventure();
  clearRareEvent();
  resetSeaInteraction();
  resetSpaceSteering();
@@ -4196,8 +4243,9 @@ function drawDots(){
  const sp=document.createElement("span");sp.id="stgName";
  sp.append(createUiArt(STAGES[stg].art,"stage-hud-art"),document.createTextNode(STAGES[stg].names[loop%2]));
  dotsEl.appendChild(sp);
- for(let i=0;i<QN;i++){const d=document.createElement("div");d.className="dot"+(i<qSeg?" on":"");
-  if(i<qSeg)d.appendChild(createUiArt("star","progress-star-art"));dotsEl.appendChild(d);}
+ const dino=isDinoAdventureStage(),count=dino?DINO_ADVENTURE_EVENT_COUNT:QN,done=dino?dinoAdventureState.eventIndex:qSeg;
+ for(let i=0;i<count;i++){const d=document.createElement("div");d.className="dot"+(i<done?" on":"");
+  if(i<done)d.appendChild(createUiArt("star","progress-star-art"));dotsEl.appendChild(d);}
 }
 function clearReducedStampPresentation(){
  clearTimeout(stampFeedbackTimer);stampFeedbackTimer=0;
@@ -4253,7 +4301,7 @@ function updateHelpHud(){
  }
  if(helpBtn){illustratedCounter(helpBtn,"help",n,"help-button-art");helpBtn.setAttribute("aria-label","おたすけ "+n+"こ");helpBtn.classList.toggle("empty",!n);helpBtn.disabled=false;}
 }
-function emptyStageScoreBreakdown(){return {quiz:0,clear:0,help:0,rare:0,tunnel:0};}
+function emptyStageScoreBreakdown(){return {quiz:0,clear:0,help:0,rare:0,tunnel:0,adventure:0};}
 function formatScore(value){return Math.max(0,Math.round(Number(value)||0)).toLocaleString("ja-JP");}
 function resetStageScore(){
  stageScore=0;stageScoreBreakdown=emptyStageScoreBreakdown();stageClearScoreGranted=false;stageCompletionHandled=false;
@@ -4299,7 +4347,8 @@ function tunnelScoreBreakdownText(){
   ["clear","クリア"],
   ["help","おたすけ"],
   ["rare","めずらしい ともだち"],
-  ["tunnel","かくれともだち"]
+  ["tunnel","かくれともだち"],
+  ["adventure","きょうりゅう"]
  ];
  return labels.filter(([key])=>stageScoreBreakdown[key]>0)
   .map(([key,label])=>label+" +"+formatScore(stageScoreBreakdown[key])).join(" ・ ");
@@ -4840,6 +4889,399 @@ function showQuizAfterSettle(){
  },STOP_SETTLE_MS);
 }
 
+/* ================= dinosaur adventure ================= */
+function isDinoAdventureStage(stage=STAGES[stg]){
+ return !!(stage&&stage.mechanic==="dinoAdventure");
+}
+function dinoAdventureIsActive(){
+ return isDinoAdventureStage()&&dinoAdventureState.phase!=="idle"&&dinoAdventureState.phase!=="travel"&&dinoAdventureState.phase!=="complete";
+}
+function dinoAdventureNow(){return typeof performance!=="undefined"?performance.now():Date.now();}
+function dinoAdventureDuration(normal,reduced=90){return prefersReducedMotionActive()?reduced:normal;}
+function dinoAdventureSetGuide(message,announceMessage=true){
+ if(dinoAdventureGuide)dinoAdventureGuide.textContent=message||"";
+ if(announceMessage&&message)announce(message);
+}
+function dinoAdventureSetPhase(phase,duration=0,now=dinoAdventureNow()){
+ const state=dinoAdventureState;
+ state.phase=phase;state.transitionCount++;state.phaseEndAt=duration>0?now+duration:0;
+ if(dinoAdventureLayer)dinoAdventureLayer.dataset.phase=phase;
+ if(phase.startsWith("boss-")){
+  state.boss.phase=phase.slice(5);
+  if(dinoBossGame)dinoBossGame.dataset.phase=state.boss.phase;
+ }
+ updateDinoAdventurePresentation();
+ return phase;
+}
+function dinoWaterCell(index){return dinoWaterGrid&&dinoWaterGrid.querySelector('[data-water-index="'+index+'"]');}
+function dinoWaterKind(index){
+ if(index===DINO_WATER_START)return "source";
+ if(index===DINO_WATER_GOAL)return "goal";
+ return DINO_WATER_ROCKS.includes(index)?"rock":"soil";
+}
+function dinoWaterCoordinates(index){return {row:Math.floor(index/DINO_WATER_COLS),col:index%DINO_WATER_COLS};}
+function dinoWaterIndexAt(row,col){
+ if(row<0||row>=DINO_WATER_ROWS||col<0||col>=DINO_WATER_COLS)return -1;
+ return row*DINO_WATER_COLS+col;
+}
+function buildDinoWaterGrid(){
+ if(!dinoWaterGrid||dinoWaterGrid.childElementCount===DINO_WATER_ROWS*DINO_WATER_COLS)return;
+ dinoWaterGrid.replaceChildren();
+ for(let index=0;index<DINO_WATER_ROWS*DINO_WATER_COLS;index++){
+  const cell=document.createElement("div"),point=dinoWaterCoordinates(index),kind=dinoWaterKind(index);
+  cell.id="dinoWaterCell"+index;cell.className="dino-water-cell";cell.setAttribute("role","gridcell");cell.setAttribute("aria-rowindex",String(point.row+1));cell.setAttribute("aria-colindex",String(point.col+1));
+  cell.dataset.waterIndex=String(index);cell.dataset.row=String(point.row);cell.dataset.col=String(point.col);cell.dataset.kind=kind;cell.dataset.dug="false";cell.dataset.watered="false";cell.dataset.stop="false";cell.dataset.cursor="false";
+  cell.setAttribute("aria-label",kind==="source"?"みずの でぐち":kind==="goal"?"きょうりゅうの みずば":kind==="rock"?"かたい いわ":"ほれる つち");
+  dinoWaterGrid.appendChild(cell);
+ }
+}
+function syncDinoWaterPresentation(clearWater=false){
+ if(!dinoWaterGrid)return;
+ const water=dinoAdventureState.water,routeSet=new Set(water.route),cursor=water.route[water.route.length-1];
+ dinoWaterGrid.querySelectorAll(".dino-water-cell").forEach(cell=>{
+  const index=Number(cell.dataset.waterIndex);
+  cell.dataset.dug=routeSet.has(index)?"true":"false";
+  cell.dataset.cursor=index===cursor?"true":"false";
+  cell.dataset.stop=(water.awaitingRetry&&index===(water.invalidCell===null?cursor:water.invalidCell))?"true":"false";
+  if(clearWater)cell.dataset.watered="false";
+ });
+ const percent=clamp(water.budget/DINO_WATER_DIG_BUDGET*100,0,100);
+ if(dinoWaterBudget){
+  dinoWaterBudget.style.setProperty("--dino-water-budget",percent.toFixed(1)+"%");dinoWaterBudget.setAttribute("aria-valuenow",String(water.budget));
+  const label=dinoWaterBudget.querySelector("strong");if(label)label.textContent="みず "+water.budget;
+ }
+ if(dinoWaterGrid){
+  dinoWaterGrid.setAttribute("aria-activedescendant","dinoWaterCell"+cursor);
+  dinoWaterGrid.setAttribute("aria-label","みずから きょうりゅうまで、となりの つちを なぞる。のこり "+water.budget);
+ }
+ if(dinoWaterRetry)dinoWaterRetry.hidden=!water.awaitingRetry;
+}
+function resetDinoWaterAttempt(incrementAttempt=false){
+ const water=dinoAdventureState.water;
+ if(incrementAttempt)water.attempt++;
+ water.route=[DINO_WATER_START];water.budget=DINO_WATER_DIG_BUDGET;water.pointerId=null;water.keyboardIndex=DINO_WATER_START;water.flowIndex=-1;water.flowNextAt=0;water.invalidCell=null;water.awaitingRetry=false;
+ dinoAdventureState.inputLocked=false;
+ if(dinoWaterGame)dinoWaterGame.classList.remove("is-saved");
+ buildDinoWaterGrid();syncDinoWaterPresentation(true);
+ dinoAdventureSetPhase("water");dinoAdventureSetGuide("みずから きょうりゅうまで、となりの つちを なぞろう！");
+}
+function dinoWaterAdjacent(a,b){
+ const A=dinoWaterCoordinates(a),B=dinoWaterCoordinates(b);return Math.abs(A.row-B.row)+Math.abs(A.col-B.col)===1;
+}
+function traceDinoWaterCell(index){
+ const water=dinoAdventureState.water;
+ if(dinoAdventureState.phase!=="water"||dinoAdventureState.inputLocked||water.awaitingRetry||index<0)return false;
+ const last=water.route[water.route.length-1],previous=water.route[water.route.length-2];
+ if(index===last)return true;
+ if(index===previous){water.route.pop();water.budget=Math.min(DINO_WATER_DIG_BUDGET,water.budget+1);water.keyboardIndex=index;water.invalidCell=null;syncDinoWaterPresentation(true);return true;}
+ if(!dinoWaterAdjacent(last,index)||water.route.includes(index))return false;
+ if(dinoWaterKind(index)==="rock"){
+  water.invalidCell=index;dinoAdventureSetGuide("ここは かたい いわだよ。べつの つちへ すすもう！",false);syncDinoWaterPresentation(false);return false;
+ }
+ if(water.budget<=0){water.invalidCell=index;dinoAdventureSetGuide("みずが たりないよ。みじかい みちに しよう！",false);syncDinoWaterPresentation(false);return false;}
+ water.route.push(index);water.budget--;water.keyboardIndex=index;water.invalidCell=null;syncDinoWaterPresentation(true);tone(290+water.route.length*16,0,.035,"sine",.025);return true;
+}
+function dinoWaterIndexFromPointer(event){
+ if(!dinoWaterGrid)return -1;
+ const target=document.elementFromPoint(event.clientX,event.clientY),cell=target&&target.closest&&target.closest(".dino-water-cell");
+ return cell&&dinoWaterGrid.contains(cell)?Number(cell.dataset.waterIndex):-1;
+}
+function startDinoWaterPointer(event){
+ const water=dinoAdventureState.water;
+ if(dinoAdventureState.phase!=="water"||dinoAdventureState.inputLocked||water.awaitingRetry||water.pointerId!==null)return;
+ const index=dinoWaterIndexFromPointer(event);if(index!==DINO_WATER_START)return;
+ event.preventDefault();ensureAC();water.pointerId=event.pointerId;
+ try{dinoWaterGrid.setPointerCapture(event.pointerId);}catch(_){}
+ traceDinoWaterCell(index);
+}
+function moveDinoWaterPointer(event){
+ if(dinoAdventureState.water.pointerId!==event.pointerId)return;
+ event.preventDefault();traceDinoWaterCell(dinoWaterIndexFromPointer(event));
+}
+function finishDinoWaterPointer(event,cancelled=false){
+ const water=dinoAdventureState.water;if(water.pointerId!==event.pointerId)return;
+ event.preventDefault();water.pointerId=null;
+ try{dinoWaterGrid.releasePointerCapture(event.pointerId);}catch(_){}
+ if(!cancelled)resolveDinoWaterAttempt();
+}
+function resolveDinoWaterAttempt(){
+ const state=dinoAdventureState,water=state.water;
+ if(state.phase!=="water"||state.inputLocked||water.awaitingRetry)return false;
+ if(water.route.length<=1){dinoAdventureSetGuide("みずの でぐちから なぞってね！");return false;}
+ state.inputLocked=true;water.flowIndex=-1;water.flowNextAt=dinoAdventureNow();
+ if(water.route[water.route.length-1]!==DINO_WATER_GOAL&&water.invalidCell===null)water.invalidCell=water.route[water.route.length-1];
+ dinoAdventureSetPhase("resolve-water");dinoAdventureSetGuide("みずが ながれるよ！");
+ return true;
+}
+function tickDinoWaterFlow(now){
+ const state=dinoAdventureState,water=state.water;if(state.phase!=="resolve-water"||now<water.flowNextAt)return;
+ water.flowIndex++;
+ if(water.flowIndex<water.route.length){
+  const cell=dinoWaterCell(water.route[water.flowIndex]);if(cell)cell.dataset.watered="true";
+  water.flowNextAt=now+DINO_WATER_FLOW_STEP_MS(level);tone(330+water.flowIndex*13,0,.035,"sine",.018);return;
+ }
+ const success=water.route[water.route.length-1]===DINO_WATER_GOAL;
+ if(!success){
+  water.awaitingRetry=true;state.inputLocked=false;dinoAdventureSetPhase("water-failed");syncDinoWaterPresentation(false);
+  dinoAdventureSetGuide("ここで みずが とまったよ。もういちど つなごう！");showStamp("もう すこし！","ng");sndNG();return;
+ }
+ water.completed=true;water.waterCharges=DINO_BOSS_WATER_CHARGES;water.invalidCell=null;state.eventIndex=1;state.inputLocked=true;
+ if(dinoWaterGame)dinoWaterGame.classList.add("is-saved");
+ if(dinoWaterDinos)dinoWaterDinos.src=DINO_ADVENTURE_ASSETS.waterSuccess;
+ addScore(DINO_WATER_SCORE,"adventure");drawDots();sndFan();showStamp("みずが とどいた！ +"+DINO_WATER_SCORE+"てん","clear");dinoAdventureSetGuide("きょうりゅうが みずを のめたよ！");
+ state.phaseEndAt=now+dinoAdventureDuration(1250,260);
+}
+function finishDinoWaterSuccess(){
+ const state=dinoAdventureState;if(!state.water.completed||state.phase!=="resolve-water")return;
+ state.inputLocked=false;state.phase="travel";state.transitionCount++;state.phaseEndAt=0;state.frameAt=0;
+ if(dinoAdventureLayer){dinoAdventureLayer.hidden=true;dinoAdventureLayer.setAttribute("aria-hidden","true");dinoAdventureLayer.dataset.phase="travel";}
+ if(dinoWaterGame)dinoWaterGame.hidden=true;
+ document.body.classList.remove("dino-adventure-active");
+ sndGo();target=stops(origin(stg),QN-1);pending="dinoBoss";driving=true;
+}
+function showDinoWaterEvent(){
+ if(!isDinoAdventureStage()||!playing)return;
+ clearRareEvent();quiz.classList.remove("show");buildDinoWaterGrid();
+ if(dinoWaterDinos)dinoWaterDinos.src=DINO_ADVENTURE_ASSETS.waterDry;
+ if(dinoAdventureLayer){dinoAdventureLayer.hidden=false;dinoAdventureLayer.setAttribute("aria-hidden","false");}
+ if(dinoWaterGame)dinoWaterGame.hidden=false;if(dinoBossGame)dinoBossGame.hidden=true;
+ document.body.classList.add("dino-adventure-active");
+ dinoAdventureTitle.textContent="ゆびで みずみち";dinoAdventureProgress.textContent="みずみち 1 / 2";
+ resetDinoWaterAttempt(false);
+ requestAnimationFrame(()=>{try{dinoWaterGrid.focus({preventScroll:true});}catch(_){}});
+}
+function dinoBossAssetForPhase(phase){
+ if(phase==="telegraph")return DINO_ADVENTURE_ASSETS.trexInhale;
+ if(phase==="defend")return DINO_ADVENTURE_ASSETS.trexRoar;
+ if(phase==="charge"||phase==="burst")return DINO_ADVENTURE_ASSETS.trexTired;
+ if(phase==="hit")return DINO_ADVENTURE_ASSETS.trexStepBack;
+ if(phase==="victory")return DINO_ADVENTURE_ASSETS.trexYield;
+ return DINO_ADVENTURE_ASSETS.trexWaiting;
+}
+function dinoBossHearts(value){return "♥".repeat(Math.max(0,value))+"♡".repeat(Math.max(0,3-value));}
+function updateDinoBossHud(){
+ const state=dinoAdventureState,boss=state.boss,phase=boss.phase;
+ if(dinoBossTrainHp){dinoBossTrainHp.setAttribute("aria-valuenow",String(boss.trainHp));const span=dinoBossTrainHp.querySelector("span");if(span)span.textContent=dinoBossHearts(boss.trainHp);}
+ if(dinoBossTrexHp){dinoBossTrexHp.setAttribute("aria-valuenow",String(boss.bossHp));const span=dinoBossTrexHp.querySelector("span");if(span)span.textContent=dinoBossHearts(boss.bossHp);}
+ if(dinoBossWater){const drops="💧".repeat(Math.max(0,boss.waterCharge))+"·".repeat(Math.max(0,3-boss.waterCharge));const span=dinoBossWater.querySelector("span");if(span)span.textContent=drops;dinoBossWater.setAttribute("aria-label","おおきな きてきの みず "+boss.waterCharge+"こ");}
+ document.querySelectorAll(".dino-boss-steam-tank i").forEach((drop,index)=>drop.classList.toggle("is-on",index<boss.waterCharge));
+ if(dinoBossTug){const value=Math.round(clamp(boss.balance,0,1)*100);dinoBossTug.style.setProperty("--dino-tug",value+"%");dinoBossTug.setAttribute("aria-valuenow",String(value));}
+ if(dinoBossTrex){const src=dinoBossAssetForPhase(phase);if(src&&dinoBossTrex.getAttribute("src")!==src)dinoBossTrex.src=src;dinoBossTrex.style.setProperty("--dino-boss-step",String(DINO_BOSS_HP-boss.bossHp));}
+ if(!dinoBossAction)return;
+ dinoBossAction.classList.remove("is-held","is-horn","is-burst");dinoBossAction.hidden=phase==="lost"||phase==="victory";
+ const strong=dinoBossAction.querySelector("strong"),small=dinoBossAction.querySelector("small");
+ if(phase==="defend"){
+  dinoBossAction.disabled=false;dinoBossAction.setAttribute("aria-label","ブレーキを おしつづける");if(strong)strong.textContent="ブレーキ";if(small)small.textContent="おしつづけよう";dinoBossAction.classList.toggle("is-held",boss.brakeHeld);
+ }else if(phase==="charge"){
+  dinoBossAction.disabled=false;dinoBossAction.classList.add("is-horn");dinoBossAction.setAttribute("aria-label","きてきを れんだして ちからを ためる");if(strong)strong.textContent="きてき！";if(small)small.textContent="れんだしよう";
+ }else if(phase==="burst"){
+  dinoBossAction.disabled=false;dinoBossAction.classList.add("is-horn","is-burst");dinoBossAction.setAttribute("aria-label","いま おおきな きてきを ならす");if(strong)strong.textContent="いま！";if(small)small.textContent="おおきな きてき";
+ }else{
+  dinoBossAction.disabled=true;dinoBossAction.setAttribute("aria-label","つぎの あいずを まつ");if(strong)strong.textContent="まってね";if(small)small.textContent="ティラノを みよう";
+ }
+ if(dinoBossRetry)dinoBossRetry.hidden=phase!=="lost";
+}
+function updateDinoAdventurePresentation(){
+ const state=dinoAdventureState;
+ if(dinoAdventureLayer)dinoAdventureLayer.dataset.phase=state.phase;
+ if(dinoAdventureProgress)dinoAdventureProgress.textContent=state.eventIndex>=2?"できた 2 / 2":state.phase.startsWith("boss-")?"ティラノ 2 / 2":"みずみち 1 / 2";
+ if(state.phase.startsWith("boss-"))updateDinoBossHud();
+}
+function clearDinoBossPointers(){
+ const boss=dinoAdventureState.boss;boss.brakeHeld=false;boss.brakePointerId=null;boss.activeHornPointers.clear();
+ if(dinoBossAction)dinoBossAction.classList.remove("is-held");
+}
+function enterDinoBossTelegraph(now=dinoAdventureNow()){
+ const boss=dinoAdventureState.boss;clearDinoBossPointers();boss.balance=.5;boss.defenseHeldMs=0;boss.hornCharge=0;boss.burstOpen=false;
+ dinoAdventureSetPhase("boss-telegraph",dinoAdventureDuration(DINO_BOSS_TELEGRAPH_MS,220),now);dinoAdventureSetGuide("ティラノが ほうこうするよ！ じゅんび！");tone(115,0,.34,"sawtooth",.045);
+}
+function enterDinoBossDefend(now=dinoAdventureNow()){
+ const boss=dinoAdventureState.boss;boss.balance=.5;boss.defenseHeldMs=0;boss.burstOpen=false;
+ dinoAdventureSetPhase("boss-defend",DINO_BOSS_DEFEND_MS,now);dinoAdventureSetGuide("ブレーキを おしつづけて ふんばろう！");
+ requestAnimationFrame(()=>{try{dinoBossAction.focus({preventScroll:true});}catch(_){}});
+}
+function enterDinoBossCharge(now=dinoAdventureNow(),keepAttackDeadline=false){
+ const boss=dinoAdventureState.boss;clearDinoBossPointers();boss.hornCharge=keepAttackDeadline?Math.max(.72,boss.hornCharge):Math.min(.24,.18+(DINO_BOSS_HP-boss.waterCharge)*.01);boss.balance=.28+boss.hornCharge*.6;boss.burstOpen=false;boss.tapTimes=[];boss.lastTapAt=0;
+ if(!keepAttackDeadline)dinoAdventureState.attackEndAt=now+(DINO_BOSS_ATTACK_MS[level]||DINO_BOSS_ATTACK_MS[0]);
+ dinoAdventureSetPhase("boss-charge",0,now);dinoAdventureSetGuide("きてきを れんだして ちからを ためよう！");
+ requestAnimationFrame(()=>{try{dinoBossAction.focus({preventScroll:true});}catch(_){}});
+}
+function enterDinoBossBurst(now=dinoAdventureNow()){
+ const boss=dinoAdventureState.boss;boss.hornCharge=1;boss.balance=.94;boss.burstOpen=true;boss.lastTapAt=0;boss.tapTimes=[];
+ dinoAdventureState.attackEndAt=0;
+ dinoAdventureSetPhase("boss-burst",DINO_BOSS_BURST_MS[level]||DINO_BOSS_BURST_MS[0],now);dinoAdventureSetGuide("いま！ おおきな きてき！");tone(920,0,.09,"triangle",.06);tone(1220,.08,.12,"triangle",.05);
+}
+function failDinoBossDefense(message,now=dinoAdventureNow()){
+ const boss=dinoAdventureState.boss;if(boss.phase==="lost"||boss.phase==="victory")return;
+ clearDinoBossPointers();boss.trainHp=Math.max(0,boss.trainHp-1);boss.roundFailures++;boss.balance=.08;boss.burstOpen=false;stageMiss++;
+ sndNG();showStamp("おしもどされた！","ng");dinoAdventureSetGuide(message||"もういちど ふんばろう！");updateDinoBossHud();
+ if(boss.trainHp<=0){
+  dinoAdventureSetPhase("boss-lost",0,now);dinoAdventureSetGuide("れっしゃが さがったよ。ボスから もういちど！");setDriverMood("surprised");return;
+ }
+ dinoAdventureSetPhase("boss-fail",dinoAdventureDuration(720,180),now);
+}
+function missDinoBossAttackWindow(message,now=dinoAdventureNow()){
+ const boss=dinoAdventureState.boss;if(boss.phase==="lost"||boss.phase==="victory")return;
+ clearDinoBossPointers();boss.roundFailures++;boss.balance=.34;boss.burstOpen=false;boss.hornCharge=0;dinoAdventureState.attackEndAt=0;stageMiss++;
+ sndNG();showStamp("タイミングを みよう！","ng");dinoAdventureSetGuide(message||"あいずを みて、もういちど！");updateDinoBossHud();
+ dinoAdventureSetPhase("boss-fail",dinoAdventureDuration(620,170),now);
+}
+function hitDinoBoss(now=dinoAdventureNow()){
+ const boss=dinoAdventureState.boss;if(boss.phase!=="burst"||!boss.burstOpen)return false;
+ boss.burstOpen=false;boss.bossHp=Math.max(0,boss.bossHp-1);boss.waterCharge=Math.max(0,boss.waterCharge-1);boss.round++;boss.balance=1;clearDinoBossPointers();
+ sndFan();showStamp(boss.bossHp?"ティラノが さがった！":"みちが あいた！","ok");dinoAdventureSetGuide(boss.bossHp?"きいたよ！ あと "+boss.bossHp+"かい！":"ティラノが みちを ゆずってくれたよ！");
+ dinoAdventureSetPhase("boss-hit",dinoAdventureDuration(DINO_BOSS_HIT_MS,180),now);updateDinoBossHud();return true;
+}
+function finishDinoBossVictory(now){
+ now=Number.isFinite(now)?now:dinoAdventureNow();
+ const state=dinoAdventureState,boss=state.boss;if(boss.phase==="victory"||state.completionCount>0)return;
+ clearDinoBossPointers();boss.bossHp=0;boss.balance=1;boss.burstOpen=false;state.eventIndex=2;drawDots();
+ if(!boss.rewardGranted){boss.rewardGranted=true;addScore(DINO_BOSS_SCORE,"adventure");}
+ setDriverMood("cheer");sndFan();confetti(20);showStamp("ティラノに かった！ +"+DINO_BOSS_SCORE+"てん","clear");dinoAdventureSetGuide("ティラノが みちを ゆずってくれたよ！");
+ dinoAdventureSetPhase("boss-victory",dinoAdventureDuration(DINO_BOSS_VICTORY_MS,280),now);
+}
+function completeDinoAdventureStage(){
+ const state=dinoAdventureState;if(state.completionCount>0||!playing||!isDinoAdventureStage())return;
+ state.completionCount++;state.phase="complete";state.transitionCount++;state.phaseEndAt=0;state.attackEndAt=0;clearDinoBossPointers();
+ if(dinoAdventureLayer){dinoAdventureLayer.hidden=true;dinoAdventureLayer.setAttribute("aria-hidden","true");dinoAdventureLayer.dataset.phase="complete";}
+ if(dinoBossGame)dinoBossGame.hidden=true;
+ document.body.classList.remove("dino-adventure-active","dino-boss-active");
+ completeCurrentStage(origin(stg));
+}
+function startDinoBossAttempt(retry=false){
+ const state=dinoAdventureState,old=state.boss,retryCount=old.retryCount+(retry?1:0),rewardGranted=old.rewardGranted;
+ state.boss={phase:"idle",bossHp:DINO_BOSS_HP,trainHp:DINO_BOSS_TRAIN_HP,round:0,waterCharge:state.water.waterCharges||DINO_BOSS_WATER_CHARGES,brakeHeld:false,brakePointerId:null,activeHornPointers:new Set(),balance:.5,defenseHeldMs:0,hornCharge:0,burstOpen:false,lastTapAt:0,tapTimes:[],retryCount,roundFailures:0,rewardGranted};
+ state.attackEndAt=0;state.inputLocked=false;setDriverMood("thinking");
+ dinoAdventureSetPhase("boss-intro",dinoAdventureDuration(DINO_BOSS_INTRO_MS,180));dinoAdventureSetGuide(retry?"ティラノと もういちど しょうぶ！":"ティラノが せんろを ふさいだ！");
+ updateDinoBossHud();tone(120,0,.32,"sawtooth",.05);
+}
+function showDinoBossEncounter(){
+ if(!isDinoAdventureStage()||!playing||!dinoAdventureState.water.completed)return;
+ clearRareEvent();quiz.classList.remove("show");
+ if(dinoAdventureLayer){dinoAdventureLayer.hidden=false;dinoAdventureLayer.setAttribute("aria-hidden","false");}
+ if(dinoWaterGame)dinoWaterGame.hidden=true;if(dinoBossGame)dinoBossGame.hidden=false;
+ document.body.classList.add("dino-adventure-active","dino-boss-active");
+ dinoAdventureTitle.textContent="ティラノと きてきしょうぶ";dinoAdventureProgress.textContent="ティラノ 2 / 2";
+ startDinoBossAttempt(false);
+}
+function acceptDinoBossHornTap(now=dinoAdventureNow()){
+ const state=dinoAdventureState,boss=state.boss;if(boss.phase!=="charge"&&boss.phase!=="burst")return false;
+ if(now-boss.lastTapAt<DINO_BOSS_TAP_GAP_MS)return false;
+ boss.tapTimes=boss.tapTimes.filter(at=>now-at<1000);if(boss.tapTimes.length>=DINO_BOSS_TAP_RATE_CAP)return false;
+ boss.lastTapAt=now;boss.tapTimes.push(now);ensureAC();
+ if(boss.phase==="burst")return hitDinoBoss(now);
+ const roundPressure=1+boss.round*.06,waterPower=boss.waterCharge>0?DINO_BOSS_WATER_POWER:1;
+ boss.hornCharge=clamp(boss.hornCharge+(DINO_BOSS_TAP_POWER[level]||DINO_BOSS_TAP_POWER[0])*waterPower/roundPressure,0,1);boss.balance=clamp(.28+boss.hornCharge*.66,0,1);
+ tone(520+boss.hornCharge*360,0,.055,"square",.045);updateDinoBossHud();
+ if(boss.hornCharge>=1)enterDinoBossBurst(now);return true;
+}
+function handleDinoBossActionPointerDown(event){
+ const boss=dinoAdventureState.boss;if(!dinoAdventureIsActive()||dinoBossAction.disabled)return;
+ event.preventDefault();ensureAC();
+ if(boss.phase==="defend"){
+  if(boss.brakePointerId!==null)return;boss.brakePointerId=event.pointerId;boss.brakeHeld=true;
+  try{dinoBossAction.setPointerCapture(event.pointerId);}catch(_){}updateDinoBossHud();return;
+ }
+ if(boss.phase==="charge"||boss.phase==="burst"){
+  if(boss.activeHornPointers.has(event.pointerId))return;boss.activeHornPointers.add(event.pointerId);
+  try{dinoBossAction.setPointerCapture(event.pointerId);}catch(_){}acceptDinoBossHornTap(dinoAdventureNow());
+ }
+}
+function releaseDinoBossActionPointer(event){
+ const boss=dinoAdventureState.boss;
+ if(boss.brakePointerId===event.pointerId){boss.brakePointerId=null;boss.brakeHeld=false;updateDinoBossHud();}
+ boss.activeHornPointers.delete(event.pointerId);
+ try{dinoBossAction.releasePointerCapture(event.pointerId);}catch(_){}
+}
+function handleDinoBossActionKeyDown(event){
+ if(event.key!==" "&&event.key!=="Enter")return;if(event.repeat){event.preventDefault();return;}
+ const boss=dinoAdventureState.boss;if(dinoBossAction.disabled)return;event.preventDefault();ensureAC();
+ if(boss.phase==="defend"){boss.brakeHeld=true;updateDinoBossHud();}
+ else acceptDinoBossHornTap(dinoAdventureNow());
+}
+function handleDinoBossActionKeyUp(event){
+ if(event.key!==" "&&event.key!=="Enter")return;event.preventDefault();
+ if(dinoAdventureState.boss.phase==="defend"){dinoAdventureState.boss.brakeHeld=false;updateDinoBossHud();}
+}
+function handleDinoWaterKeyDown(event){
+ if(dinoAdventureState.phase!=="water"||dinoAdventureState.water.awaitingRetry)return;
+ const water=dinoAdventureState.water,current=water.route[water.route.length-1],point=dinoWaterCoordinates(current);let next=-1;
+ if(event.key==="ArrowUp")next=dinoWaterIndexAt(point.row-1,point.col);
+ else if(event.key==="ArrowDown")next=dinoWaterIndexAt(point.row+1,point.col);
+ else if(event.key==="ArrowLeft")next=dinoWaterIndexAt(point.row,point.col-1);
+ else if(event.key==="ArrowRight")next=dinoWaterIndexAt(point.row,point.col+1);
+ else if(event.key==="Backspace"){event.preventDefault();const previous=water.route[water.route.length-2];if(previous!==undefined)traceDinoWaterCell(previous);return;}
+ else if(event.key===" "||event.key==="Enter"){event.preventDefault();resolveDinoWaterAttempt();return;}
+ else return;
+ event.preventDefault();traceDinoWaterCell(next);
+}
+function tickDinoAdventure(now,dt){
+ const state=dinoAdventureState;if(!isDinoAdventureStage()||state.phase==="idle"||state.phase==="travel"||state.phase==="complete"||document.hidden)return;
+ if(state.phase==="resolve-water"){
+  if(!state.water.completed)tickDinoWaterFlow(now);
+  else if(state.phaseEndAt&&now>=state.phaseEndAt)finishDinoWaterSuccess();
+  return;
+ }
+ const boss=state.boss;
+ if(state.phase==="boss-intro"&&now>=state.phaseEndAt){enterDinoBossTelegraph(now);return;}
+ if(state.phase==="boss-telegraph"&&now>=state.phaseEndAt){enterDinoBossDefend(now);return;}
+ if(state.phase==="boss-defend"){
+  if(boss.brakeHeld)boss.defenseHeldMs+=Math.max(0,dt*1000);
+  const required=DINO_BOSS_DEFEND_HOLD_MS[level]||DINO_BOSS_DEFEND_HOLD_MS[0],elapsed=clamp(1-(state.phaseEndAt-now)/DINO_BOSS_DEFEND_MS,0,1),held=clamp(boss.defenseHeldMs/required,0,1);
+  boss.balance=clamp(.48+held*.42-elapsed*.52,0,1);updateDinoBossHud();
+  if(now>=state.phaseEndAt){if(boss.defenseHeldMs>=required||boss.balance>DINO_BOSS_BALANCE_MIN)enterDinoBossCharge(now);else failDinoBossDefense("ブレーキを ながく おして ふんばろう！",now);}return;
+ }
+ if(state.phase==="boss-charge"){
+  boss.hornCharge=Math.max(0,boss.hornCharge-dt*.008);boss.balance=clamp(.28+boss.hornCharge*.66,0,1);updateDinoBossHud();
+  if(now>=state.attackEndAt)missDinoBossAttackWindow("きてきを もっと はやく ならそう！",now);return;
+ }
+ if(state.phase==="boss-burst"){
+  if(now>=state.phaseEndAt)missDinoBossAttackWindow("いま！で おおきな きてきを ならそう！",now);return;
+ }
+ if(state.phase==="boss-hit"&&now>=state.phaseEndAt){if(boss.bossHp<=0)finishDinoBossVictory(now);else enterDinoBossTelegraph(now);return;}
+ if(state.phase==="boss-fail"&&now>=state.phaseEndAt){enterDinoBossTelegraph(now);return;}
+ if(state.phase==="boss-victory"&&now>=state.phaseEndAt)completeDinoAdventureStage();
+}
+function pauseDinoAdventureInput(){
+ const state=dinoAdventureState;if(state.phase==="idle"||state.phase==="complete")return;
+ const now=dinoAdventureNow();if(!state.pausedAt)state.pausedAt=now;state.frameAt=0;
+ if(state.water.pointerId!==null){try{dinoWaterGrid.releasePointerCapture(state.water.pointerId);}catch(_){}state.water.pointerId=null;}
+ clearDinoBossPointers();
+}
+function resumeDinoAdventureInput(){
+ const state=dinoAdventureState;if(!state.pausedAt)return;
+ const delta=Math.max(0,dinoAdventureNow()-state.pausedAt);state.pausedAt=0;state.frameAt=0;
+ if(state.phaseEndAt)state.phaseEndAt+=delta;if(state.attackEndAt)state.attackEndAt+=delta;if(state.water.flowNextAt)state.water.flowNextAt+=delta;
+ updateDinoAdventurePresentation();
+}
+function resetDinoAdventure(){
+ const old=dinoAdventureState,nextEpoch=(old&&old.epoch||0)+1;
+ if(old&&old.water&&old.water.pointerId!==null){try{dinoWaterGrid.releasePointerCapture(old.water.pointerId);}catch(_){}}
+ dinoAdventureState=createDinoAdventureState();dinoAdventureState.epoch=nextEpoch;dinoAdventureState.phaseEndAt=0;dinoAdventureState.frameAt=0;
+ if(dinoAdventureLayer){dinoAdventureLayer.hidden=true;dinoAdventureLayer.setAttribute("aria-hidden","true");dinoAdventureLayer.dataset.phase="idle";}
+ if(dinoWaterGame){dinoWaterGame.hidden=true;dinoWaterGame.classList.remove("is-saved");}
+ if(dinoBossGame){dinoBossGame.hidden=true;dinoBossGame.dataset.phase="idle";}
+ if(dinoWaterRetry)dinoWaterRetry.hidden=true;if(dinoBossRetry)dinoBossRetry.hidden=true;
+ document.body.classList.remove("dino-adventure-active","dino-boss-active");
+}
+function startDinoAdventure(){
+ resetDinoAdventure();dinoAdventureState.phase="travel";dinoAdventureState.transitionCount++;dinoAdventureState.eventIndex=0;
+ qList=[];qSeg=0;drawDots();worldX=origin(stg);target=stops(origin(stg),0);pending="dinoWater";driving=true;playing=true;swapReady=false;swapped=false;
+}
+function dinoAdventureDebugSnapshot(){
+ const state=dinoAdventureState,water=state.water,boss=state.boss;
+ const cells=[];for(let index=0;index<DINO_WATER_ROWS*DINO_WATER_COLS;index++){const point=dinoWaterCoordinates(index);cells.push({row:point.row,col:point.col,kind:dinoWaterKind(index)});}
+ return {
+  phase:state.phase,eventIndex:state.eventIndex,transitionCount:state.transitionCount,completionCount:state.completionCount,epoch:state.epoch,inputLocked:state.inputLocked,pointerId:water.pointerId,timerActive:!!state.phaseEndAt,
+  water:{route:water.route.map(dinoWaterCoordinates),solution:DINO_WATER_SOLUTION.map(dinoWaterCoordinates),cells,budget:water.budget,waterCharges:water.waterCharges,completed:water.completed,attempt:water.attempt,invalidCell:water.invalidCell===null?null:dinoWaterCoordinates(water.invalidCell),awaitingRetry:water.awaitingRetry},
+  boss:{phase:boss.phase,bossHp:boss.bossHp,trainHp:boss.trainHp,waterCharge:boss.waterCharge,brakeHeld:boss.brakeHeld,burstOpen:boss.burstOpen,hornCharge:Number(boss.hornCharge.toFixed(4)),balance:Number(boss.balance.toFixed(4)),pointerId:boss.brakePointerId,retryCount:boss.retryCount}
+ };
+}
+function installDinoAdventureDebugSnapshot(){
+ if(!nazonazoAdminPreviewMode)return;
+ window.__nazonazoDinoAdventureDebug=Object.freeze({snapshot:dinoAdventureDebugSnapshot});
+}
+
 /* ================= game loop ================= */
 let lastT=0;
 function gloop(t){
@@ -4853,7 +5295,8 @@ function gloop(t){
  if(playing&&driving){
   const dist=target-worldX;
   const rainSpeed=rainTrainSpeedMultiplier(STAGES[stg],tunnelRun);
-  const maxV=tunnelGameRun?TUNNEL_GAME_MAX_V:(tunnelRun?TUNNEL_TRANSIT_MAX_V:(swapReady?52:38)*rainSpeed);
+  const dinoTravel=isDinoAdventureStage()&&(pending==="dinoWater"||pending==="dinoBoss");
+  const maxV=tunnelGameRun?TUNNEL_GAME_MAX_V:(tunnelRun?TUNNEL_TRANSIT_MAX_V:(dinoTravel?68:(swapReady?52:38))*rainSpeed);
   vel=tunnelRun?maxV:clamp(dist*.98,6,maxV);
   updateWheelMotion(dist,tunnelRun,tunnelGameRun);
   worldX=Math.min(target,worldX+vel*dt);
@@ -4890,6 +5333,8 @@ function gloop(t){
     carsEl.classList.remove("go");
    }
    if(p==="quiz")showQuizAfterSettle();
+   else if(p==="dinoWater")showDinoWaterEvent();
+   else if(p==="dinoBoss")showDinoBossEncounter();
    else if(p==="seaBoss")showSeaBossEncounter();
    else if(p==="spaceChase")showSpaceChaseEncounter();
    else if(p==="dropoff")showDropoff();
@@ -4899,6 +5344,7 @@ function gloop(t){
    else if(p==="ending")ending();
   }
  }
+ tickDinoAdventure(t,dt);
  tickMagicPuffs(t);
  tickTrainSe(t);
  render(t);
@@ -4918,6 +5364,7 @@ function startJourneyAt(s,options){
  stopStageWeather();
  clearTunnelFriendGame();
  clearTunnelBranchChoice();
+ resetDinoAdventure();
  stg=s;resetStageScore();qSeg=0;stageMiss=0;rareSpawned=false;
  portalEditHolding=false;tunnelInteriorMode=false;
  document.body.classList.remove("tunnel-enter-run","tunnel-exit-setup","tunnel-exit-run","tunnel-exit-clear","tunnel-exit-approach","tunnel-exit-brighten","tunnel-exit-white","tunnel-fade-dark","tunnel-interior");
@@ -4932,7 +5379,8 @@ function startJourneyAt(s,options){
   cars=[];helpItems=[];renderCars();updateHelpHud();$("map").classList.add("hidden");quiz.classList.remove("show");render();showSpaceChaseEncounter();return;
  }
  worldX=origin(s);target=stops(origin(s),0);
- pending="quiz";driving=true;playing=true;swapReady=false;swapped=false;
+ pending=isDinoAdventureStage()?"dinoWater":"quiz";driving=true;playing=true;swapReady=false;swapped=false;
+ if(isDinoAdventureStage())startDinoAdventure();
  if(typeof syncBranchStagePolishState==="function")syncBranchStagePolishState();
  cars=[];helpItems=[];renderCars();updateHelpHud();
  $("map").classList.add("hidden");
@@ -6406,6 +6854,7 @@ function ending(){
  stopStageWeather();setWeatherPresentation("clear");
  clearTunnelFriendGame();
  clearTunnelBranchChoice();
+ resetDinoAdventure();
  setDriverMood("cheer");
  playing=false;
  if(typeof pauseBranchStagePolish==="function")pauseBranchStagePolish();
@@ -6438,6 +6887,7 @@ function openMap(msg){
  stopStageWeather();setWeatherPresentation("clear");
  clearTunnelFriendGame();
  clearTunnelBranchChoice();
+ if(typeof resetDinoAdventure==="function")resetDinoAdventure();
  playing=false;driving=false;quiz.classList.remove("show");
  if(typeof pauseBranchStagePolish==="function")pauseBranchStagePolish();
  const row=$("mapRow");row.innerHTML="";
@@ -6542,7 +6992,7 @@ function nazonazoAdminPreviewArm(stageId,previewKind){
   return false;
  }
  const index=NAZONAZO_ADMIN_STAGE_INDEX[stageId];
- resetNumberCargoGame();resetSeaInteraction();clearFutureCapsuleGame();clearSpaceRepairGame();resetSpaceSteering();
+ resetNumberCargoGame();resetSeaInteraction();clearFutureCapsuleGame();clearSpaceRepairGame();resetSpaceSteering();resetDinoAdventure();
  nazonazoAdminPreviewKind=previewKind;
  nazonazoAdminPreviewStageIndex=index;
  stg=index;loop=0;playing=false;driving=false;pending=null;vel=0;
@@ -6584,6 +7034,7 @@ async function initNazonazoAdminStagePreviewBridge(){
  levelButtons.forEach(button=>{button.disabled=false;});
  if(label){label.hidden=false;label.textContent="かんり がめんで ステージを えらんでね";}
  if(start){start.disabled=true;start.textContent="ステージを えらんでね";}
+ installDinoAdventureDebugSnapshot();
  window.addEventListener("message",event=>{
   if(event.origin!==window.location.origin||event.source!==window.parent||!nazonazoAdminPreviewParentIsTrusted())return;
   const data=event.data;
@@ -6645,10 +7096,30 @@ bindTap(mapMenuBtn,()=>{
  if(quiz.classList.contains("show")){showStamp("いまは トンネルを あけよう","ng");return;}
  if(seaBossPhase!=="idle"){showStamp("いまは おおあわぬしを たおそう","ng");return;}
  if(spaceChaseState.phase!=="idle"){showStamp("いまは ほしのこを おいかけよう","ng");return;}
+ if(isDinoAdventureStage()&&dinoAdventureState.phase!=="idle"&&dinoAdventureState.phase!=="complete"){showStamp("いまは きょうりゅうを たすけよう","ng");return;}
  openMap();
 });
 bindTap($("spkBtn"),()=>{showHint();});
 bindTap($("helpBtn"),()=>{useHelp();});
+
+if(dinoWaterGrid){
+ dinoWaterGrid.addEventListener("pointerdown",startDinoWaterPointer);
+ dinoWaterGrid.addEventListener("pointermove",moveDinoWaterPointer);
+ dinoWaterGrid.addEventListener("pointerup",event=>finishDinoWaterPointer(event,false));
+ dinoWaterGrid.addEventListener("pointercancel",event=>finishDinoWaterPointer(event,true));
+ dinoWaterGrid.addEventListener("lostpointercapture",event=>finishDinoWaterPointer(event,true));
+ dinoWaterGrid.addEventListener("keydown",handleDinoWaterKeyDown);
+}
+if(dinoBossAction){
+ dinoBossAction.addEventListener("pointerdown",handleDinoBossActionPointerDown);
+ dinoBossAction.addEventListener("pointerup",releaseDinoBossActionPointer);
+ dinoBossAction.addEventListener("pointercancel",releaseDinoBossActionPointer);
+ dinoBossAction.addEventListener("lostpointercapture",releaseDinoBossActionPointer);
+ dinoBossAction.addEventListener("keydown",handleDinoBossActionKeyDown);
+ dinoBossAction.addEventListener("keyup",handleDinoBossActionKeyUp);
+}
+if(dinoWaterRetry)bindTap(dinoWaterRetry,()=>{ensureAC();resetDinoWaterAttempt(true);requestAnimationFrame(()=>{try{dinoWaterGrid.focus({preventScroll:true});}catch(_){}});});
+if(dinoBossRetry)bindTap(dinoBossRetry,()=>{ensureAC();startDinoBossAttempt(true);});
 
 initGameSettingsMenu();
 buildRainParticles(false);
@@ -6667,6 +7138,7 @@ document.addEventListener("pointerdown",()=>{ensureAC();},{capture:true,passive:
 document.addEventListener("visibilitychange",()=>{
  if(document.hidden){
   pauseBranchStagePolish();
+  pauseDinoAdventureInput();
   closeGameSettings();
   hideWeatherNotice();
   spaceChaseState.frameAt=0;
@@ -6676,6 +7148,7 @@ document.addEventListener("visibilitychange",()=>{
  }else{
   spaceChaseState.frameAt=0;
   syncBranchStagePolishState();
+  resumeDinoAdventureInput();
   ensureAC();
   if((seaRoundPhase==="ready"||seaRoundPhase==="go")&&!seaRoundCountdownTimer&&isSeaStage()&&quiz.classList.contains("show"))startSeaRoundCountdown();
  }
@@ -6685,13 +7158,14 @@ window.addEventListener("resize",syncNumberCargoColumns,{passive:true});
 window.addEventListener("resize",handleSeaViewportChange,{passive:true});
 window.addEventListener("resize",handleFutureCraneViewportChange,{passive:true});
 window.addEventListener("resize",scheduleBranchStagePolishResize,{passive:true});
+window.addEventListener("resize",()=>{pauseDinoAdventureInput();resumeDinoAdventureInput();syncDinoWaterPresentation(false);updateDinoAdventurePresentation();},{passive:true});
 window.addEventListener("resize",()=>{if(rareEl)syncRareGrounding(rareEl);},{passive:true});
 window.addEventListener("resize",()=>{spaceChaseState.frameAt=0;cancelSpaceChaseRescuePointer(true);invalidateSpaceObstacleLayout();updateSpaceRepairVisual();updateSpaceChaseVisual();if(!spaceStationSteerResume&&!quiz.classList.contains("show"))clampSpaceSteerOffsets();},{passive:true});
 quiz.addEventListener("transitionend",handleFutureCraneQuizTransitionEnd);
 window.addEventListener("pageshow",()=>{closeGameSettings();ensureAC();updateRainParticleVisibility(false);});
 window.addEventListener("pageshow",syncBranchStagePolishState);
 window.addEventListener("focus",()=>{ensureAC();});
-window.addEventListener("pagehide",()=>{spaceChaseState.frameAt=0;cancelSpaceChaseRescuePointer(true);closeGameSettings();hideWeatherNotice();pauseSeaInput();pauseFutureCraneInput();clearTimeout(rainParticleResizeTimer);safeSuspend();});
+window.addEventListener("pagehide",()=>{spaceChaseState.frameAt=0;cancelSpaceChaseRescuePointer(true);closeGameSettings();hideWeatherNotice();pauseSeaInput();pauseFutureCraneInput();pauseDinoAdventureInput();clearTimeout(rainParticleResizeTimer);safeSuspend();});
 window.addEventListener("pagehide",()=>{pauseBranchStagePolish();clearTimeout(branchPolishResizeTimer);});
 
 requestAnimationFrame(gloop);

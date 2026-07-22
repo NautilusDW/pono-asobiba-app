@@ -105,6 +105,8 @@ function createScreenController(screens) {
   var diaryTextEl = document.getElementById('diary-text');
   var toolWaterBtn = document.getElementById('tool-water-btn');
   var toolSeedBtn = document.getElementById('tool-seed-btn');
+  var hintToastEl = document.getElementById('hint-toast');
+  var hintToastTimer = null;
 
   var plotRefs = [];
   var plotEls = document.querySelectorAll('.plot');
@@ -117,6 +119,27 @@ function createScreenController(screens) {
       bugEl: plotEl.querySelector('.bug-sprite'),
       gaugeFillEl: plotEl.querySelector('.water-gauge-fill')
     };
+  }
+
+  // ═══ 水やり discoverability: ヒントトースト + 対象畝パルス ═══
+  function showHintToast(text) {
+    if (!hintToastEl) return;
+    hintToastEl.textContent = text;
+    hintToastEl.classList.add('is-visible');
+    if (hintToastTimer) clearTimeout(hintToastTimer);
+    hintToastTimer = setTimeout(function () {
+      hintToastEl.classList.remove('is-visible');
+    }, 1600);
+  }
+
+  // activeTool や plots の状態が変わったら必ずこれを呼び、水ツール選択中の
+  // 水やり可能な畝 (植栽済み) だけをパルスさせて誘導する。
+  function updateWaterTargets() {
+    for (var wi = 0; wi < plotRefs.length; wi++) {
+      if (!plotRefs[wi]) continue;
+      var on = (activeTool === 'water') && !!appState.plots[wi].seedId;
+      plotRefs[wi].el.classList.toggle('is-water-target', on);
+    }
   }
 
   // ═══ 描画 ═══
@@ -196,6 +219,7 @@ function createScreenController(screens) {
     saveState();
     if (window.Haptics) window.Haptics.fire('stickerPaste');
     renderPlot(idx);
+    updateWaterTargets();
   }
 
   function doShooBug(idx) {
@@ -222,6 +246,7 @@ function createScreenController(screens) {
     saveZukan();
     saveState();
     renderPlot(idx);
+    updateWaterTargets();
     if (window.Haptics) window.Haptics.fire('superBadgePop');
     if (window.incrementStat) {
       window.incrementStat('hatake_harvest', 1);
@@ -248,6 +273,7 @@ function createScreenController(screens) {
     if (toolSeedBtn) toolSeedBtn.classList.remove('is-active');
     saveState();
     renderPlot(idx);
+    updateWaterTargets();
   }
 
   function doTapAction(idx) {
@@ -298,6 +324,10 @@ function createScreenController(screens) {
         doWater(idx);
       }, WATER_HOLD_MS);
     } else {
+      if (activeTool === 'water' && !plot.seedId) {
+        showHintToast('🌱 まず たねを うえてね');
+        if (window.Haptics) window.Haptics.fire('stickerPaste');
+      }
       refs.el.classList.add('is-pressed');
     }
   }
@@ -385,6 +415,7 @@ function createScreenController(screens) {
       pendingSeedId = null;
       toolWaterBtn.classList.toggle('is-active', activeTool === 'water');
       if (toolSeedBtn) toolSeedBtn.classList.remove('is-active');
+      updateWaterTargets();
     });
   }
   if (toolSeedBtn) {
@@ -403,6 +434,7 @@ function createScreenController(screens) {
         if (toolWaterBtn) toolWaterBtn.classList.remove('is-active');
         if (toolSeedBtn) toolSeedBtn.classList.add('is-active');
         screenCtl.hide('seed-picker');
+        updateWaterTargets();
       });
     })(seedChoiceEls[sci]);
   }
@@ -413,6 +445,7 @@ function createScreenController(screens) {
     activeTool = null;
     if (toolSeedBtn) toolSeedBtn.classList.remove('is-active');
     screenCtl.hide('seed-picker');
+    updateWaterTargets();
   }
   var seedPickerCloseBtn = document.getElementById('seed-picker-close-btn');
   if (seedPickerCloseBtn) {
@@ -474,6 +507,7 @@ function createScreenController(screens) {
   }
 
   // ═══ ゲームフロー: start-screen → (catchUpDays) → field-screen [→ diary-overlay] ═══
+  var TUT_SEEN_KEY = 'pono_hatake_tut_seen_v1';
   function startGame() {
     appState = loadState();
     var todayKey = L.dateKey(L.getNow());
@@ -481,10 +515,18 @@ function createScreenController(screens) {
     saveState();
     renderHud();
     renderAllPlots();
+    updateWaterTargets();
     screenCtl.show('field-screen');
     if (result.daysPassed >= 1 && diaryTextEl) {
       diaryTextEl.textContent = result.daysPassed + 'にちぶり！ おかえりなさい';
       screenCtl.show('diary-overlay');
+    }
+
+    var tutSeen = false;
+    try { tutSeen = localStorage.getItem(TUT_SEEN_KEY) === '1'; } catch (e) {}
+    if (!tutSeen) {
+      try { localStorage.setItem(TUT_SEEN_KEY, '1'); } catch (e) {}
+      showTutorial();
     }
   }
 

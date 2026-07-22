@@ -83,7 +83,7 @@
   else { document.addEventListener('DOMContentLoaded', showLock); }
 })();
 </script>
-<link rel="stylesheet" href="styles.css?v=20260722-1410">
+<link rel="stylesheet" href="styles.css?v=20260722-1411">
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
 <body class="st-town v-train" data-driver="pono" data-driver-mood="happy">
@@ -135,6 +135,45 @@
     <div id="spaceSteerSurface" aria-hidden="true"></div>
     <div id="seaAnswerLayer" role="group" aria-labelledby="qText"></div>
     <div id="seaBossLayer" role="group" aria-label="おおあわぬしとの たたかい" hidden></div>
+    <section id="dinoAdventureLayer" data-phase="idle" aria-labelledby="dinoAdventureTitle" aria-describedby="dinoAdventureGuide" aria-hidden="true" hidden>
+      <div class="dino-adventure-board">
+        <header class="dino-adventure-header">
+          <h2 id="dinoAdventureTitle">きょうりゅうを たすけよう！</h2>
+          <div id="dinoAdventureProgress" role="status" aria-live="polite" aria-atomic="true">みずみち 0 / 2</div>
+        </header>
+        <p id="dinoAdventureGuide" role="status" aria-live="polite" aria-atomic="true">みずを とどけよう！</p>
+        <div id="dinoWaterGame" class="dino-water-game" role="group" aria-label="ゆびで みずみちを つくる" hidden>
+          <div class="dino-water-scene" aria-hidden="true">
+            <img id="dinoWaterDinos" alt="" decoding="async" draggable="false">
+          </div>
+          <div class="dino-water-playfield">
+            <div class="dino-water-source" aria-hidden="true"><strong>みず</strong><span>💧</span></div>
+            <div id="dinoWaterGrid" class="dino-water-grid" role="grid" tabindex="0" aria-label="みずから きょうりゅうまで、となりの つちを なぞる"></div>
+            <div class="dino-water-goal" aria-hidden="true"><strong>きょうりゅう</strong><span>🦕</span></div>
+          </div>
+          <div class="dino-water-status-row">
+            <div id="dinoWaterBudget" class="dino-water-budget" role="progressbar" aria-label="のこりの みず" aria-valuemin="0" aria-valuemax="9" aria-valuenow="9"><span></span><strong>みず 9</strong></div>
+            <button id="dinoWaterRetry" type="button" hidden>もういちど</button>
+          </div>
+        </div>
+        <div id="dinoBossGame" class="dino-boss-game" data-phase="idle" role="group" aria-label="ティラノとの きてきしょうぶ" hidden>
+          <div class="dino-boss-arena" aria-hidden="true">
+            <div class="dino-boss-train-side"><span class="dino-boss-steam-tank"><i></i><i></i><i></i></span></div>
+            <div class="dino-boss-wave dino-boss-wave-train"></div>
+            <div class="dino-boss-wave dino-boss-wave-trex"></div>
+            <img id="dinoBossTrex" class="dino-boss-trex" alt="" decoding="async" draggable="false">
+          </div>
+          <div class="dino-boss-hud">
+            <div id="dinoBossTrainHp" class="dino-boss-hp is-train" role="progressbar" aria-label="れっしゃの げんき" aria-valuemin="0" aria-valuemax="3" aria-valuenow="3"><strong>れっしゃ</strong><span>♥♥♥</span></div>
+            <div id="dinoBossWater" class="dino-boss-water" role="status" aria-label="おおきな きてきの みず 3こ"><strong>みず</strong><span>💧💧💧</span></div>
+            <div id="dinoBossTrexHp" class="dino-boss-hp is-trex" role="progressbar" aria-label="ティラノの げんき" aria-valuemin="0" aria-valuemax="3" aria-valuenow="3"><strong>ティラノ</strong><span>♥♥♥</span></div>
+          </div>
+          <div id="dinoBossTug" class="dino-boss-tug" role="progressbar" aria-label="きてきと ほうこうの おしあい" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"><span></span><i></i></div>
+          <button id="dinoBossAction" class="dino-boss-action" type="button" aria-label="ブレーキを おしつづける" disabled><strong>ブレーキ</strong><small>おしつづけよう</small></button>
+          <button id="dinoBossRetry" class="dino-boss-retry" type="button" hidden>もういちど しょうぶ！</button>
+        </div>
+      </div>
+    </section>
     <div id="seaRescueMessage" role="status" aria-live="polite" aria-atomic="true" hidden></div>
     <div id="futureCapsuleLayer" role="group" aria-labelledby="qText" hidden></div>
     <div id="spaceGalaxyLayer" role="group" aria-labelledby="qText" hidden></div>
@@ -394,6 +433,6 @@
 <div id="rotateHint"><span class="ui-art" data-ui-art="smartphone" aria-hidden="true"></span><span class="rotate-arrow" aria-hidden="true">→</span><span>よこむきに してね</span></div>
 <script src="data/questions.js?v=20260713-1273"></script>
 <script src="data/quiz-art.js?v=20260721-1409"></script>
-<script src="js/game.js?v=20260722-1410"></script>
+<script src="js/game.js?v=20260722-1411"></script>
 </body>
 </html>

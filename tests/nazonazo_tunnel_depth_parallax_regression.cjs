@@ -233,7 +233,7 @@ async function validate(candidateSources, assetSpecs = ASSETS) {
   const styleToken = html.match(/styles\.css\?v=([^"']+)/)?.[1];
   const gameToken = html.match(/js\/game\.js\?v=([^"']+)/)?.[1];
   check(fantasyRowsPass && styleToken === "20260722-1410" && gameToken === styleToken &&
-    /const CACHE_VERSION = 2325;/.test(sw) && /\/\/ v2317:/.test(sw) && /\/\/ v2316:/.test(sw) &&
+    /const CACHE_VERSION = 2326;/.test(sw) && /\/\/ v2317:/.test(sw) && /\/\/ v2316:/.test(sw) &&
     game.includes("branch_fantasy_horizon_cutout_loop_depthfix_v4_20260721.webp") &&
     game.includes("branch_fantasy_mid_cutout_loop_depthfix_v4_20260721.webp") &&
     !game.includes("branch_fantasy_horizon_cutout_loop_depthfix_v3_20260721.webp") &&

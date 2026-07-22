@@ -82,7 +82,7 @@
 <script src="../common/menu.js"></script>
 <script src="../common/treasure.js"></script>
 
-<link rel="stylesheet" href="styles.css?v=20260722-1">
+<link rel="stylesheet" href="styles.css?v=20260722-2">
 </head>
 <body>
 
@@ -112,8 +112,6 @@
       <button type="button" class="hud-pill zukan-btn" id="zukan-open-btn" aria-label="はたけずかん">📖</button>
     </div>
 
-    <div id="field-bg" aria-hidden="true"></div>
-
     <div id="plot-area">
       <div class="plot" data-plot="0">
         <div class="plant" data-stage="-1"></div>
@@ -136,6 +134,8 @@
       <button type="button" class="tool-btn" id="tool-water-btn" aria-label="じょうろで みずやり">🚿</button>
       <button type="button" class="tool-btn" id="tool-seed-btn" aria-label="たねを うえる">🌱</button>
     </div>
+
+    <div id="hint-toast" aria-live="polite"></div>
   </section>
 
   <!-- ── 種ピッカー (簡易モーダル) ── -->
@@ -175,7 +175,7 @@
 
 </div>
 
-<script src="js/logic.js?v=20260722-1"></script>
-<script src="js/game.js?v=20260722-1"></script>
+<script src="js/logic.js?v=20260722-2"></script>
+<script src="js/game.js?v=20260722-2"></script>
 </body>
 </html>
