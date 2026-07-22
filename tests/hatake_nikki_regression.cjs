@@ -284,8 +284,65 @@ function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
 {
   assert.match(indexHtml, /よこむき/, "landscape-notice が『よこむき』を促す");
   assert.doesNotMatch(indexHtml, /たてむき/, "縦持ち強制の文言が無い");
-  assert.match(gameJs, /innerHeight\s*>=\s*window\.innerWidth/, "game.js が縦向き判定 (isPortrait) で notice を出す");
+  // 2026-07-23 修正: viewport 縦横比 (innerHeight >= innerWidth) のみによる誤検知の
+  // 再発防止。0x0/未確定 viewport を portrait 誤判定する `>=` パターンは禁止。
+  assert.doesNotMatch(gameJs, /innerHeight\s*>=\s*window\.innerWidth/, "game.js は誤検知しやすい innerHeight>=innerWidth 判定を使わない (退行検知)");
+  assert.match(gameJs, /function isPortraitNow/, "game.js に isPortraitNow (物理向き優先判定) 関数が定義されている");
+  assert.match(gameJs, /screen\.orientation/, "game.js が screen.orientation (物理向き) を参照する");
+  assert.match(gameJs, /orientation:\s*portrait/, "game.js が matchMedia('(orientation: portrait)') フォールバックを持つ");
+  assert.match(gameJs, /addEventListener\('pageshow'/, "game.js が pageshow (bfcache 復帰) で再評価する");
   assert.match(stylesCss, /16\s*\/\s*9/, "styles.css の #stage が 16:9 比率を使っている");
+
+  // isPortraitNow を vm で slice して境界値を直接検証する。
+  const marker = "(function () {\n  if (typeof document === 'undefined') return;";
+  const pureBlockEnd = gameJs.indexOf(marker);
+  assert.ok(pureBlockEnd > 0, "DOM control IIFE marker must be present in game.js");
+  const fnStart = gameJs.indexOf("function isPortraitNow");
+  assert.ok(fnStart > pureBlockEnd, "isPortraitNow は DOM 制御ブロック内に定義されている");
+  const fnEndMarker = "\n  function updateLandscapeNotice";
+  const fnEnd = gameJs.indexOf(fnEndMarker, fnStart);
+  assert.ok(fnEnd > fnStart, "isPortraitNow の終端 (updateLandscapeNotice 開始) が見つかる");
+  const isPortraitSrc = gameJs.slice(fnStart, fnEnd);
+
+  function evalIsPortraitNow(win) {
+    const sandbox = { window: win, screen: win.screen, matchMedia: win.matchMedia || (() => { throw new Error('no matchMedia'); }) };
+    // portraitMQ はテスト対象外 (screen.orientation 優先経路 / fail-open 経路のみ検証)
+    sandbox.portraitMQ = win.portraitMQ !== undefined ? win.portraitMQ : null;
+    const wrapped = "(function () {\n  var portraitMQ = sandbox_portraitMQ;\n" + isPortraitSrc + "\n  return isPortraitNow();\n})()";
+    const ctx = vm.createContext({ window: win, screen: win.screen, matchMedia: sandbox.matchMedia, sandbox_portraitMQ: sandbox.portraitMQ });
+    return vm.runInContext(wrapped, ctx);
+  }
+
+  // (1) 物理向き最優先: viewport 数値が portrait でも screen.orientation が landscape なら false
+  assert.equal(
+    evalIsPortraitNow({ screen: { orientation: { type: 'landscape-primary' } }, innerWidth: 375, innerHeight: 667 }),
+    false,
+    "screen.orientation.type=landscape-primary なら viewport が縦長でも landscape 判定"
+  );
+  // (2) orientation API なし・viewport 未確定 (0x0) は fail-open で landscape 扱い
+  assert.equal(
+    evalIsPortraitNow({ screen: {}, innerWidth: 0, innerHeight: 0, matchMedia: () => { throw new Error('no MQ'); } }),
+    false,
+    "0x0 未確定 viewport は fail-open で landscape (非表示) 扱い"
+  );
+  // (3) 通常のランドスケープ viewport
+  assert.equal(
+    evalIsPortraitNow({ screen: {}, innerWidth: 667, innerHeight: 375, matchMedia: () => { throw new Error('no MQ'); } }),
+    false,
+    "667x375 (ランドスケープ) は false"
+  );
+  // (4) 通常のポートレート viewport
+  assert.equal(
+    evalIsPortraitNow({ screen: {}, innerWidth: 375, innerHeight: 667, matchMedia: () => { throw new Error('no MQ'); } }),
+    true,
+    "375x667 (ポートレート) は true"
+  );
+  // (5) 正方形は landscape 扱い (厳密不等号)
+  assert.equal(
+    evalIsPortraitNow({ screen: {}, innerWidth: 800, innerHeight: 800, matchMedia: () => { throw new Error('no MQ'); } }),
+    false,
+    "800x800 (正方形) は厳密不等号により false (landscape 扱い)"
+  );
 }
 
 // ── 15. iOS タッチ対策 ───────────────────────────────────────────────

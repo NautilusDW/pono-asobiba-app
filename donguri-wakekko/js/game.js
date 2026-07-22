@@ -807,13 +807,33 @@ function permuteDistRandom(dist) {
     init();
   }
 
-  // ---- 横画面 (16:9) 強制プロンプト (hyokkori-hightouch/js/game.js 踏襲) ----
+  // ---- 横画面 (16:9) 強制プロンプト (hatake-nikki/js/game.js:58-107 と同型に強靭化) ----
+  // viewport 縦横比だけで向きを推定しない。WebView 起動直後/bfcache 復帰直後は
+  // innerWidth/innerHeight が 0 や古い値になることがあり、旧実装の
+  // 「innerHeight >= innerWidth」は 0>=0 → portrait と誤検知してフルスクリーン
+  // オーバーレイ + #app inert で startBtn を塞ぐ。物理向き (screen.orientation) を
+  // 最優先、判定不能時は fail-open (表示しない)。
+  var portraitMQ = null;
+  try { portraitMQ = matchMedia('(orientation: portrait)'); } catch (e) {}
+
+  function isPortraitNow() {
+    try {
+      var so = window.screen && screen.orientation;
+      if (so && typeof so.type === 'string' && so.type) {
+        return so.type.indexOf('portrait') === 0;
+      }
+    } catch (e) {}
+    if (portraitMQ && typeof portraitMQ.matches === 'boolean') return portraitMQ.matches;
+    if (!window.innerWidth || !window.innerHeight) return false; // 未確定は landscape 扱い (fail-open)
+    return window.innerHeight > window.innerWidth; // 厳密不等号 (正方形は landscape 扱い)
+  }
+
   function updateLandscapeNotice() {
     var notice = document.getElementById('landscape-notice');
     if (!notice) return;
-    var isPortrait = window.innerHeight >= window.innerWidth;
-    var isTouch = matchMedia('(pointer: coarse)').matches;
-    var show = isPortrait && isTouch;
+    var isTouch = false;
+    try { isTouch = matchMedia('(pointer: coarse)').matches; } catch (e) {}
+    var show = isPortraitNow() && isTouch;
     notice.style.display = show ? 'flex' : 'none';
     notice.setAttribute('aria-hidden', show ? 'false' : 'true');
     var app = document.getElementById('app');
@@ -825,4 +845,18 @@ function permuteDistRandom(dist) {
     setTimeout(updateLandscapeNotice, 500);
   });
   window.addEventListener('resize', updateLandscapeNotice);
+  window.addEventListener('pageshow', updateLandscapeNotice); // bfcache 復帰対策
+  window.addEventListener('load', updateLandscapeNotice);     // 起動直後の viewport 確定後に再評価
+  try {
+    if (screen.orientation && screen.orientation.addEventListener) {
+      screen.orientation.addEventListener('change', updateLandscapeNotice);
+    }
+  } catch (e) {}
+  if (portraitMQ) {
+    if (portraitMQ.addEventListener) portraitMQ.addEventListener('change', updateLandscapeNotice);
+    else if (portraitMQ.addListener) portraitMQ.addListener(updateLandscapeNotice); // 旧 iOS Safari
+  }
+  if (window.visualViewport && visualViewport.addEventListener) {
+    visualViewport.addEventListener('resize', updateLandscapeNotice);
+  }
 })();

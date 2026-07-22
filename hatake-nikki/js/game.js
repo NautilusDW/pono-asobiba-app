@@ -55,13 +55,32 @@ function createScreenController(screens) {
   };
   var screenCtl = createScreenController(screens);
 
-  // ═══ 横画面強制 (hyokkori-hightouch/js/game.js の updateLandscapeNotice を踏襲) ═══
+  // ═══ 横画面強制 ═══
+  // viewport 縦横比だけで向きを推定しない。WebView 起動直後/bfcache 復帰直後は
+  // innerWidth/innerHeight が 0 や古い値になることがあり「0>=0→portrait」で
+  // 誤検知フルスクリーンオーバーレイが start-btn を塞ぐ事故になる。
+  // 物理向き (screen.orientation) を最優先、判定不能時は fail-open (表示しない)。
+  var portraitMQ = null;
+  try { portraitMQ = matchMedia('(orientation: portrait)'); } catch (e) {}
+
+  function isPortraitNow() {
+    try {
+      var so = window.screen && screen.orientation;
+      if (so && typeof so.type === 'string' && so.type) {
+        return so.type.indexOf('portrait') === 0;
+      }
+    } catch (e) {}
+    if (portraitMQ && typeof portraitMQ.matches === 'boolean') return portraitMQ.matches;
+    if (!window.innerWidth || !window.innerHeight) return false; // 未確定は landscape 扱い
+    return window.innerHeight > window.innerWidth; // 厳密不等号 (正方形は landscape 扱い)
+  }
+
   function updateLandscapeNotice() {
     var notice = document.getElementById('landscape-notice');
     if (!notice) return;
-    var isPortrait = window.innerHeight >= window.innerWidth;
-    var isTouch = matchMedia('(pointer: coarse)').matches;
-    var show = isPortrait && isTouch;
+    var isTouch = false;
+    try { isTouch = matchMedia('(pointer: coarse)').matches; } catch (e) {}
+    var show = isPortraitNow() && isTouch;
     notice.style.display = show ? 'flex' : 'none';
     notice.setAttribute('aria-hidden', show ? 'false' : 'true');
   }
@@ -71,6 +90,20 @@ function createScreenController(screens) {
     setTimeout(updateLandscapeNotice, 500);
   });
   window.addEventListener('resize', updateLandscapeNotice);
+  window.addEventListener('pageshow', updateLandscapeNotice); // bfcache 復帰対策
+  window.addEventListener('load', updateLandscapeNotice);     // 起動直後の viewport 確定後に再評価
+  try {
+    if (screen.orientation && screen.orientation.addEventListener) {
+      screen.orientation.addEventListener('change', updateLandscapeNotice);
+    }
+  } catch (e) {}
+  if (portraitMQ) {
+    if (portraitMQ.addEventListener) portraitMQ.addEventListener('change', updateLandscapeNotice);
+    else if (portraitMQ.addListener) portraitMQ.addListener(updateLandscapeNotice); // 旧 iOS Safari
+  }
+  if (window.visualViewport && visualViewport.addEventListener) {
+    visualViewport.addEventListener('resize', updateLandscapeNotice);
+  }
 
   // ═══ セーブ / ロード ═══
   function loadState() {
@@ -532,10 +565,16 @@ function createScreenController(screens) {
 
   var startBtn = document.getElementById('start-btn');
   if (startBtn) {
-    startBtn.addEventListener('pointerdown', function (e) {
+    var startPressLocked = false;
+    var onStartPress = function (e) {
       e.preventDefault(); e.stopPropagation();
+      if (startPressLocked) return; // pointerdown→click の二重発火抑止
+      startPressLocked = true;
+      setTimeout(function () { startPressLocked = false; }, 700);
       startMenuOnce();
       startGame();
-    });
+    };
+    startBtn.addEventListener('pointerdown', onStartPress);
+    startBtn.addEventListener('click', onStartPress); // PointerEvent 未配送環境の保険
   }
 })();

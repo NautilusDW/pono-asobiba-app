@@ -72,14 +72,51 @@
   resizeFx();
   window.addEventListener('resize', resizeFx);
 
+  // ═══ 横画面強制 notice ═══
+  // 判定は物理画面の向き (screen.orientation) を優先。 viewport 実寸 (innerWidth/Height) は
+  // URLバー展開アニメや回転中の中間 resize で一瞬逆転して誤表示するため最終フォールバックのみ。
+  // さらに「表示」は 300ms 後の再判定一致を要求 (非対称ヒステリシス)、「非表示」は即時。
+  // (2026-07-23 横画面誤検知+スタート無反応バグ対応。 guragura-seesaw と同型の対策を移植)
+  var LANDSCAPE_NOTICE_CONFIRM_MS = 300;
+  var landscapeNoticeTimer = null;
+
+  function computeIsPortrait() {
+    var so = window.screen && window.screen.orientation;
+    if (so && typeof so.type === 'string' && so.type.indexOf('portrait') === 0) return true;
+    if (so && typeof so.type === 'string' && so.type.indexOf('landscape') === 0) return false;
+    if (typeof window.matchMedia === 'function') {
+      var mq = window.matchMedia('(orientation: portrait)');
+      if (mq && typeof mq.matches === 'boolean') return mq.matches;
+    }
+    return window.innerHeight >= window.innerWidth;
+  }
+
+  function applyLandscapeNotice(show) {
+    var notice = document.getElementById('landscape-notice');
+    if (!notice) return;
+    notice.style.display = show ? 'flex' : 'none';
+    notice.setAttribute('aria-hidden', show ? 'false' : 'true');
+  }
+
   function updateLandscapeNotice() {
     var notice = document.getElementById('landscape-notice');
     if (!notice) return;
-    var isPortrait = window.innerHeight >= window.innerWidth;
     var isTouch = matchMedia('(pointer: coarse)').matches;
-    var show = isPortrait && isTouch;
-    notice.style.display = show ? 'flex' : 'none';
-    notice.setAttribute('aria-hidden', show ? 'false' : 'true');
+    var wantShow = computeIsPortrait() && isTouch;
+    if (!wantShow) {
+      // 非表示は即時 (誤表示でゲームがブロックされるのを最優先で防ぐ)
+      if (landscapeNoticeTimer) { clearTimeout(landscapeNoticeTimer); landscapeNoticeTimer = null; }
+      applyLandscapeNotice(false);
+      return;
+    }
+    if (notice.style.display === 'flex') return; // 表示済み
+    if (landscapeNoticeTimer) return;            // 確認待ち中
+    landscapeNoticeTimer = setTimeout(function () {
+      landscapeNoticeTimer = null;
+      if (computeIsPortrait() && matchMedia('(pointer: coarse)').matches) {
+        applyLandscapeNotice(true);
+      }
+    }, LANDSCAPE_NOTICE_CONFIRM_MS);
   }
   updateLandscapeNotice();
   window.addEventListener('orientationchange', function () {
@@ -87,6 +124,9 @@
     setTimeout(updateLandscapeNotice, 500);
   });
   window.addEventListener('resize', updateLandscapeNotice);
+  if (window.screen && window.screen.orientation && typeof window.screen.orientation.addEventListener === 'function') {
+    window.screen.orientation.addEventListener('change', updateLandscapeNotice);
+  }
 
   // ═══ 隠れ場所 (穴) を <template id="hh-hole-tpl"> から HOLE_COUNT 個複製生成 ═══
   // (6箇所とも同一マークアップなので index.html 側の手書き複製を避ける)

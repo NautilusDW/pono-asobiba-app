@@ -1,5 +1,9 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2331: donguri-wakekko/hyokkori-hightouch/hatake-nikki/guragura-seesaw の横画面誤検知
+// +スタートボタン無反応の修正セッション。ゲーム個別ファイルは network-first 配信のため
+// CRITICAL_ASSETS には追加しない。play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSION
+// と同期 (2331)。
 // v2330: guragura-seesaw 板センタリング欠落によるレイアウト崩れ修正 + 初回チュートリアル追加。
 // #plank (left:50%; width:58%; のみでセンタリング補正なし) が回転ゼロでも常に右へ
 // オーバーフローし右皿 (#panRight) が #stage 外へ出て不可視になっていたバグ (初回コミット
@@ -755,7 +759,7 @@
 // clampなしのworld座標で連続スクロールさせる。全区間の猫密度も均等化 (batch:1410)。
 // v2326: hatake-nikki の畑レイアウト崩れ(#field-bg幽霊アセット除去+tool-rail/plot2重なり解消)
 // 修正 + 水やり操作discoverability改善(パルス演出/ヒントトースト/初回チュートリアル自動表示) (batch:1415)。
-const CACHE_VERSION = 2330;
+const CACHE_VERSION = 2332;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [
