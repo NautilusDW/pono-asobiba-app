@@ -48,9 +48,11 @@
   function updateLandscapeNotice() {
     var notice = document.getElementById('landscape-notice');
     if (!notice) return;
-    var isLandscape = window.innerWidth > window.innerHeight;
+    var isPortrait = window.innerHeight >= window.innerWidth;
     var isTouch = matchMedia('(pointer: coarse)').matches;
-    notice.style.display = (isLandscape && isTouch) ? 'flex' : 'none';
+    var show = isPortrait && isTouch;
+    notice.style.display = show ? 'flex' : 'none';
+    notice.setAttribute('aria-hidden', show ? 'false' : 'true');
   }
   updateLandscapeNotice();
   window.addEventListener('orientationchange', function () {

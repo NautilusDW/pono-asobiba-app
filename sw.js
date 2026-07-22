@@ -1,5 +1,6 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2321: hyokkori-hightouch を横画面 (16:9) レイアウトに刷新。
 // v2320: ひょっこりハイタッチ (hyokkori-hightouch/) を comingSoon+debugPlayable で新規追加。
 // ゲーム個別ファイルは network-first 配信のため CRITICAL_ASSETS には追加しない
 // (v2318 と同型)。play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSION と同期 (2320)。
@@ -717,7 +718,7 @@
 // v2316: なぞなぞトレインの火・恐竜・猫ステージの画像と多重スクロールを世界観に合わせて再調整 (batch:1409-world-coherence)。
 // v2317: なぞなぞトレインの恐竜・卵・猫の実接地線を地面へ固定し、猫の建物と生活景を
 // clampなしのworld座標で連続スクロールさせる。全区間の猫密度も均等化 (batch:1410)。
-const CACHE_VERSION = 2320;
+const CACHE_VERSION = 2321;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

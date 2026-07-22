@@ -6,7 +6,7 @@
 
 // ═══ 定数 ═══════════════════════════════════════════════════════════
 var GAME_DURATION = 60;      // 秒。60秒経過で finished。
-var HOLE_COUNT = 6;          // 隠れ場所の数 (2列x3行)。
+var HOLE_COUNT = 6;          // 隠れ場所の数 (3列x2行)。
 
 var SHOW_TIME_MAX = 1.5;     // 秒 (ゲーム開始時の出現表示時間)
 var SHOW_TIME_MIN = 1.0;     // 秒 (60秒後)

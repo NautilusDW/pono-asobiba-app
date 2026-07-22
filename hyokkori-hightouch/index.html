@@ -21,13 +21,14 @@
 <script src="../common/menu.js"></script>
 <script src="../common/highscore.js"></script>
 
-<link rel="stylesheet" href="styles.css?v=20260722-1">
+<link rel="stylesheet" href="styles.css?v=20260723-1">
 </head>
 <body>
 
-<div id="landscape-notice">
+<div id="landscape-notice" role="dialog" aria-modal="true" aria-label="よこむきの おねがい" aria-hidden="true">
   <div class="rotate-icon">📱</div>
-  <p>スマホを<br><strong>たてむき</strong>にしてね！</p>
+  <p>スマホを<br><strong>よこむき</strong>にしてね！</p>
+  <a class="landscape-back" href="../play.html">ホームにもどる</a>
 </div>
 
 <div class="tut-dim hidden" id="tut-dim"></div>
@@ -51,7 +52,7 @@
     <div class="cd-text" id="cd-text">よーい…</div>
   </div>
 
-  <!-- .hh-hole は6個 (2列x3行) とも同一マークアップ (data-hole の番号だけ違う) なので
+  <!-- .hh-hole は6個 (3列x2行) とも同一マークアップ (data-hole の番号だけ違う) なので
        テンプレート1個 + js/game.js の buildHoles() で複製生成する (重複マークアップ排除)。 -->
   <template id="hh-hole-tpl">
     <div class="hh-hole">
@@ -85,7 +86,7 @@
   </div>
 </div>
 
-<script src="js/logic.js?v=20260722-1"></script>
-<script src="js/game.js?v=20260722-2"></script>
+<script src="js/logic.js?v=20260723-1"></script>
+<script src="js/game.js?v=20260723-1"></script>
 </body>
 </html>

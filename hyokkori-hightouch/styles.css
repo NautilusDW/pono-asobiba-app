@@ -17,10 +17,10 @@ html, body {
 
 #stage {
   position: fixed;
-  top: 0; bottom: 0; left: 50%;
-  transform: translateX(-50%);
-  width: min(100%, 100vh * 9 / 16);
-  height: 100%;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(100vw, 100dvh * 16 / 9);
+  height: min(100dvh, 100vw * 9 / 16);
   background: linear-gradient(180deg, #bfe6b0 0%, #9ed48a 45%, #7cb96a 100%);
   touch-action: none;
   overflow: hidden;
@@ -96,16 +96,16 @@ html, body {
 }
 @keyframes cdPop { from{transform:scale(0.7);opacity:0} to{transform:scale(1);opacity:1} }
 
-/* ── 隠れ場所グリッド (2列x3行) ── */
+/* ── 隠れ場所グリッド (3列x2行) ── */
 #board {
   position: absolute;
   left: 0; right: 0;
-  top: 15%; bottom: 8%;
+  top: 17%; bottom: 6%;
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  grid-template-rows: repeat(3, 1fr);
-  gap: 4% 6%;
-  padding: 0 8%;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 6% 4%;
+  padding: 0 6%;
   z-index: 10;
 }
 
@@ -124,7 +124,7 @@ html, body {
   position: absolute;
   left: 50%; bottom: 6%;
   transform: translateX(-50%);
-  width: 78%;
+  width: 62%;
   aspect-ratio: 5 / 2;
   border-radius: 50%;
   background: radial-gradient(ellipse at 50% 30%, #b9803f 0%, #8a5a2b 55%, #6b4423 100%);
@@ -135,9 +135,10 @@ html, body {
 /* 窓 (overflow:hidden でキャラが下から「ひょっこり」出る) */
 .hh-window {
   position: relative;
-  width: 62%;
+  height: 66%;
+  width: auto;
   aspect-ratio: 1 / 1;
-  margin-bottom: 8%;
+  margin-bottom: 4%;
   overflow: hidden;
   border-radius: 50% 50% 46% 46% / 60% 60% 40% 40%;
   background: radial-gradient(circle at 50% 30%, #3c2a18 0%, #241708 70%);
@@ -166,7 +167,7 @@ html, body {
 .hh-sparkle {
   position: absolute;
   top: -6%; right: 2%;
-  font-size: clamp(16px, 5vw, 28px);
+  font-size: clamp(16px, 5vmin, 28px);
   opacity: 0;
   pointer-events: none;
 }
@@ -187,7 +188,7 @@ html, body {
 .hh-zzz {
   position: absolute;
   top: -0.4em; right: 4%;
-  font-size: clamp(20px, 6vw, 34px);
+  font-size: clamp(20px, 6vmin, 34px);
   opacity: 0;
   pointer-events: none;
 }
@@ -202,7 +203,7 @@ html, body {
   position: absolute;
   top: 30%; left: 50%;
   transform: translate(-50%, -50%) scale(0.4);
-  font-size: clamp(24px, 8vw, 40px);
+  font-size: clamp(24px, 8vmin, 40px);
   opacity: 0;
   pointer-events: none;
 }
@@ -232,7 +233,7 @@ html, body {
   transform: translateX(-50%) scale(0.6);
   background: #fff;
   color: #5D4E37;
-  font-size: clamp(11px, 3.4vw, 14px);
+  font-size: clamp(11px, 3.4vmin, 14px);
   font-weight: 900;
   padding: 4px 10px;
   border-radius: 12px;
@@ -256,7 +257,7 @@ html, body {
   position: absolute;
   left: 50%; bottom: 14%;
   transform: translate(-50%, 0) scale(0.6);
-  font-size: clamp(18px, 5.5vw, 26px);
+  font-size: clamp(18px, 5.5vmin, 26px);
   opacity: 0;
   pointer-events: none;
   z-index: 3;
@@ -306,7 +307,7 @@ html, body {
   display: block;
 }
 
-/* ── Landscape notice (縦持ち強制) ── */
+/* ── Landscape notice (横持ち強制) ── */
 #landscape-notice {
   display: none;
   position: fixed; inset: 0; z-index: 9980;
@@ -318,6 +319,12 @@ html, body {
 #landscape-notice .rotate-icon { font-size: 64px; animation: rotateHintV 2s ease-in-out infinite; }
 @keyframes rotateHintV { 0%,100%{transform:rotate(0deg)} 50%{transform:rotate(-90deg)} }
 #landscape-notice p { font-size: 18px; line-height: 1.6; }
+#landscape-notice .landscape-back {
+  color: #fff; font-weight: 900; font-size: 16px;
+  background: rgba(255,255,255,0.18);
+  border-radius: 999px; padding: 10px 26px;
+  text-decoration: none;
+}
 
 /* ── Tutorial overlay (pakupaku-catch の tut-dim/tut-bubble パターンを流用) ── */
 .tut-dim { position: fixed; inset: 0; z-index: 9995; background: rgba(45,90,60,0.65); pointer-events: auto; }

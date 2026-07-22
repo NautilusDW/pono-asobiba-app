@@ -377,4 +377,13 @@ function mulberry32(seed) {
   assert.doesNotMatch(indexHtml, /diff-btn/, "index.html に難易度選択UI (diff-btn) が存在しない");
 }
 
+// ── 15. 横画面 (16:9) 強制 ──────────────────────────────────────────
+{
+  assert.match(indexHtml, /よこむき/, "landscape-notice が『よこむき』を促す (横画面強制)");
+  assert.doesNotMatch(indexHtml, /たてむき/, "旧・縦持ち強制の文言『たてむき』が残っていない");
+  assert.match(gameJs, /innerHeight\s*>=\s*window\.innerWidth/, "game.js が縦向き判定 (isPortrait) で notice を出す (向き反転済み)");
+  assert.doesNotMatch(gameJs, /isLandscape\s*&&\s*isTouch/, "旧・横向き時表示の判定式が残っていない");
+  assert.match(stylesCss, /16\s*\/\s*9/, "styles.css の #stage が 16:9 比率を使っている");
+}
+
 console.log("hyokkori hightouch regression: PASS");
