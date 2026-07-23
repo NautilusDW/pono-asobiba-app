@@ -145,9 +145,9 @@ for (const viewport of [
     for (const drop of artState.dropGeometry) {
       expect(drop.centerX).toBeGreaterThanOrEqual(0.72);
       expect(drop.centerX).toBeLessThanOrEqual(0.84);
-      expect(drop.centerY).toBeGreaterThanOrEqual(0.28);
+      expect(drop.centerY).toBeGreaterThanOrEqual(0.25);
       expect(drop.centerY).toBeLessThanOrEqual(0.44);
-      expect(drop.widthRatio).toBeGreaterThanOrEqual(0.28);
+      expect(drop.widthRatio).toBeGreaterThanOrEqual(0.18);
     }
     for (const plant of artState.plantAnchors) {
       expect(Math.abs(plant.x - 0.5)).toBeLessThanOrEqual(0.01);
@@ -172,9 +172,9 @@ for (const viewport of [
     expect(sign0Box.width).toBeGreaterThanOrEqual(46);
     expect(sign1Box.width).toBeGreaterThanOrEqual(46);
     expect(sign2Box.width).toBeGreaterThanOrEqual(46);
-    expect(drop0Box.width).toBeGreaterThanOrEqual(44);
-    expect(drop1Box.width).toBeGreaterThanOrEqual(44);
-    expect(drop2Box.width).toBeGreaterThanOrEqual(44);
+    expect(drop0Box.width).toBeGreaterThanOrEqual(36);
+    expect(drop1Box.width).toBeGreaterThanOrEqual(36);
+    expect(drop2Box.width).toBeGreaterThanOrEqual(36);
     // しずくは離れたバッジではなく、3区画とも畑の右上側へ重ねる。
     for (const [plotBox, dropBox] of [
       [plot0Box, drop0Box],

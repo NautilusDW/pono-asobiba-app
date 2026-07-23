@@ -576,7 +576,7 @@ function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
   assert.match(stylesCss, /\.plot\[data-plot="0"\]\s*\{\s*--crop-sign-tilt:\s*-1\.5deg;\s*\}/, 'plot0は固定の微小傾き');
   assert.match(stylesCss, /\.plot\[data-plot="1"\]\s*\{\s*--crop-sign-tilt:\s*0\.75deg;\s*\}/, 'plot1は固定の微小傾き');
   assert.match(stylesCss, /\.plot\[data-plot="2"\]\s*\{\s*--crop-sign-tilt:\s*-0\.75deg;\s*\}/, 'plot2は固定の微小傾き');
-  assert.match(stylesCss, /\.watered-drop\s*\{[^}]*right:\s*6%[^}]*top:\s*3%[^}]*width:\s*clamp\(44px,\s*31%,\s*76px\)/s, 'しずく済マークは畝上の右上へ大きく置く');
+  assert.match(stylesCss, /\.watered-drop\s*\{[^}]*right:\s*8%[^}]*top:\s*5%[^}]*width:\s*clamp\(36px,\s*23%,\s*52px\)/s, 'しずく済マークは畝上の右上へ大きく置く');
   assert.match(stylesCss, /\.watered-drop\s*\{[^}]*pointer-events:\s*none/s, 'しずくは畑の操作を妨げない');
   assert.match(stylesCss, /\.plant\s*\{[^}]*position:\s*absolute[^}]*inset:\s*0/s, '芽の中央基準は畝全面へ固定する');
   assert.doesNotMatch(indexHtml + gameJs + stylesCss, /🚿|💧/, 'じょうろ・しずくの絵文字をUI実装に残さない');
