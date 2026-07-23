@@ -71,7 +71,7 @@
 </script>
 <script src="../common/haptics.js"></script>
 <script src="../common/menu.js"></script>
-<link rel="stylesheet" href="styles.css?v=20260723-1">
+<link rel="stylesheet" href="styles.css?v=20260724-1">
 </head>
 <body>
 <div id="landscape-notice" role="dialog" aria-modal="true" aria-label="よこむきの おねがい" aria-hidden="true">
@@ -82,14 +82,25 @@
 
 <div id="app">
   <div id="stage">
+    <!-- 真横カットアウェイ(断面)ビュー: 水面線(34%)より上=陸上、下=水中断面。 -->
     <div id="skyLayer">
       <div class="sky-cloud" id="cloud1"></div>
       <div class="sky-cloud" id="cloud2"></div>
     </div>
-    <div id="waterLayer"></div>
-    <div id="shoreDock">
-      <div id="angler" aria-hidden="true">🎣</div>
+    <div id="waterLayer">
+      <div class="fish-shadow ambient" id="shadowA" aria-hidden="true"></div>
+      <div class="fish-shadow ambient" id="shadowB" aria-hidden="true"></div>
+      <div class="fish-shadow target" id="shadowTarget" aria-hidden="true"></div>
     </div>
+    <div id="waterLine" aria-hidden="true"></div>
+    <div id="shoreDock" aria-hidden="true"></div>
+    <div id="angler" aria-hidden="true">🎣</div>
+
+    <svg id="lineSvg" viewBox="0 0 160 90" preserveAspectRatio="none" aria-hidden="true">
+      <path id="lineAir"></path>
+      <path id="lineWater"></path>
+      <path id="hookMark" d="M -1.1,0 Q -1.1,2.2 0.6,2.1 Q 1.9,2 1.1,0.6"></path>
+    </svg>
 
     <div id="hud">
       <div id="narrationBar" aria-live="polite">ポノの かわづり</div>
@@ -99,6 +110,7 @@
       <span id="bucketList"></span>
       <span id="bucketCount">0</span>
     </div>
+    <div id="phaseWord" aria-hidden="true"></div>
 
     <section id="titleScreen" class="screen show">
       <div class="title-card">
@@ -111,28 +123,33 @@
 
     <section id="playScreen" class="screen">
       <div id="castSpots" aria-hidden="true">
-        <div class="cast-spot" data-spot="0" style="left:38%;top:62%;"><div class="spot-dot"></div></div>
-        <div class="cast-spot" data-spot="1" style="left:58%;top:74%;"><div class="spot-dot"></div></div>
-        <div class="cast-spot" data-spot="2" style="left:76%;top:58%;"><div class="spot-dot"></div></div>
+        <div class="cast-spot" data-spot="0" style="left:40%;top:34%;"><div class="spot-dot"></div></div>
+        <div class="cast-spot" data-spot="1" style="left:60%;top:34%;"><div class="spot-dot"></div></div>
+        <div class="cast-spot" data-spot="2" style="left:78%;top:34%;"><div class="spot-dot"></div></div>
       </div>
 
       <div id="splashRing" aria-hidden="true"></div>
+      <div id="splashChurn" aria-hidden="true"><span class="churn-drop">💦</span></div>
       <div id="bobber" aria-hidden="true">
         <div class="bobber-tip"></div>
         <div class="bobber-body"></div>
       </div>
 
-      <div id="biteWindowWrap" aria-hidden="true">
-        <div id="biteWindowFill"></div>
+      <div id="biteMark" aria-hidden="true">
+        <div class="bite-ring"></div>
+        <span class="bite-ex">！</span>
       </div>
 
       <div id="rendaWrap" aria-hidden="true">
-        <div id="rendaFishHint">🐟</div>
+        <div id="rendaBigText">ひっぱれ！！</div>
+        <div id="rendaCombo">れんだ ×<span id="rendaComboNum">0</span></div>
         <div id="rendaGaugeOuter">
           <div id="rendaGaugeFloorMark"></div>
           <div id="rendaGaugeFill"></div>
         </div>
       </div>
+
+      <div id="fxLayer" aria-hidden="true"></div>
 
       <div id="catchOverlay" class="overlay-banner" aria-live="polite">
         <div class="catch-icon" id="catchIcon">🐟</div>
@@ -143,14 +160,16 @@
       <div id="escapeOverlay" class="overlay-banner" aria-live="polite">およいで いっちゃった。でも また くるよ</div>
       <div id="helpOverlay" class="overlay-banner" aria-live="polite">ポノも てつだうよ！</div>
     </section>
+
+    <div id="moodLayer" aria-hidden="true"></div>
   </div>
 </div>
 
 <script src="../common/acorns.js"></script>
-<script src="../common/tsuri/fish-data.js?v=20260723-1"></script>
-<script src="../common/tsuri/core.js?v=20260723-1"></script>
-<script src="../common/tsuri/input.js?v=20260723-1"></script>
-<script src="js/logic.js?v=20260723-1"></script>
-<script src="js/game.js?v=20260723-1"></script>
+<script src="../common/tsuri/fish-data.js?v=20260724-1"></script>
+<script src="../common/tsuri/core.js?v=20260724-1"></script>
+<script src="../common/tsuri/input.js?v=20260724-1"></script>
+<script src="js/logic.js?v=20260724-1"></script>
+<script src="js/game.js?v=20260724-1"></script>
 </body>
 </html>

@@ -1,18 +1,16 @@
 // ── tsuri-kawa/js/game.js ──
-// ポノの かわづり (Phase 0 川づりMVP): DOM/描画/入力・ゲームループ (DOM 依存)。
+// ポノの かわづり: DOM/描画/入力・ゲームループ (DOM 依存)。ビジュアル全面刷新 v1 (2026-07-24)。
 // 純粋な状態機械は common/tsuri/core.js の window.PonoTsuriCore、
 // 川づり固有のチューニング/セーブ形状は js/logic.js の window.TsuriKawaLogic、
 // 魚マスターデータは common/tsuri/fish-data.js の window.PonoFishData、
 // タップ入力は common/tsuri/input.js の window.PonoTsuriInput を参照する。
+// core.js / fish-data.js / input.js / logic.js の公開API・状態遷移・チューニング値は
+// 一切変更しない (見た目だけを全面刷新する)。
 'use strict';
 
 (function () {
 
   // ═══ 読み込み失敗フォールバック ═══
-  // 依存モジュール (fish-data/core/input/logic) のいずれかが読み込みに失敗すると
-  // 「タイトルは見えるがタップ無反応」になる既知の事故パターン (guragura-seesaw /
-  // hyokkori-hightouch 2026-07-22/23 報告) の再発防止。1回だけキャッシュバイパスで
-  // 再試行し、それでも揃わなければ再読込UIへ縮退する。
   function showLoadError() {
     if (document.getElementById('loadErrorScreen')) return;
     var ov = document.createElement('div');
@@ -56,8 +54,12 @@
     fish_salmon: '🐡',
     treasure_boot: '👢'
   };
+  // 魚影サイズ (企画書の size フィールドを読み取るのみ・契約変更なし)
+  var SIZE_WIDTH_PCT = { s: 7, m: 10, l: 14 };
+  var FLY_WORDS = ['いいぞ！', 'そのちょうし！', 'もうすこし！'];
 
   // ═══ DOM 参照 ═══
+  var stageEl = document.getElementById('stage');
   var playScreenEl = document.getElementById('playScreen');
   var narrationEl = document.getElementById('narrationBar');
   var bucketListEl = document.getElementById('bucketList');
@@ -65,9 +67,13 @@
   var castSpotEls = document.querySelectorAll('.cast-spot');
   var bobberEl = document.getElementById('bobber');
   var splashRingEl = document.getElementById('splashRing');
-  var biteWrapEl = document.getElementById('biteWindowWrap');
-  var biteFillEl = document.getElementById('biteWindowFill');
+  var splashChurnEl = document.getElementById('splashChurn');
+  var biteMarkEl = document.getElementById('biteMark');
+  var biteRingEl = biteMarkEl ? biteMarkEl.querySelector('.bite-ring') : null;
   var rendaWrapEl = document.getElementById('rendaWrap');
+  var rendaBigTextEl = document.getElementById('rendaBigText');
+  var rendaComboEl = document.getElementById('rendaCombo');
+  var rendaComboNumEl = document.getElementById('rendaComboNum');
   var rendaFillEl = document.getElementById('rendaGaugeFill');
   var catchOverlayEl = document.getElementById('catchOverlay');
   var catchIconEl = document.getElementById('catchIcon');
@@ -76,6 +82,19 @@
   var escapeOverlayEl = document.getElementById('escapeOverlay');
   var helpOverlayEl = document.getElementById('helpOverlay');
   var anglerEl = document.getElementById('angler');
+  var shadowTargetEl = document.getElementById('shadowTarget');
+  var lineSvgEl = document.getElementById('lineSvg');
+  var lineAirEl = document.getElementById('lineAir');
+  var lineWaterEl = document.getElementById('lineWater');
+  var hookMarkEl = document.getElementById('hookMark');
+  var phaseWordEl = document.getElementById('phaseWord');
+  var fxLayerEl = document.getElementById('fxLayer');
+  var moodLayerEl = document.getElementById('moodLayer');
+
+  function prefersReducedMotion() {
+    try { return typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches; }
+    catch (e) { return false; }
+  }
 
   // 判定は物理画面の向き (screen.orientation) を優先。 viewport 実寸は
   // 回転中の中間 resize 等で一瞬 0/古い値を返すことがあるためフォールバックにも
@@ -155,13 +174,21 @@
   var session = null;
   var save = loadSave();
   var bucketSessionCatches = []; // 表示専用 (このセッション内で釣った魚のアイコン列)
-  var lastCastSpotPos = { left: 50, top: 60 };
+  var lastCastSpotPos = { left: 50, top: 34 };
   var biteWindowStartSec = 0;
+  var waitTotalSec = 0;
   var preBiteShown = false;
   var pendingRestartTimer = null;
+  var rendaComboCount = 0;
+  var rendaFlyIdx = 0;
 
   function setNarration(text) {
     narrationEl.textContent = text;
+  }
+  function setPhaseWord(text, cls) {
+    if (!phaseWordEl) return;
+    phaseWordEl.textContent = text || '';
+    phaseWordEl.className = cls || '';
   }
 
   function renderBucket() {
@@ -186,6 +213,98 @@
     helpOverlayEl.classList.remove('show');
   }
 
+  // ═══ 汎用トゥイーン (rAF駆動。cast放物線/魚ジャンプ/逃走ダッシュで共有) ═══
+  function tweenPosition(el, from, to, durationMs, opts) {
+    opts = opts || {};
+    var arc = opts.arc || 0; // 山なりの高さ(%)。負のtopが「上」なので内部でマイナス方向に加算する
+    var start = null;
+    function step(ts) {
+      if (start === null) start = ts;
+      var raw = durationMs > 0 ? Math.min(1, (ts - start) / durationMs) : 1;
+      var t = raw; // linear (easing は呼び出し側が from/to 側で調整する想定)
+      var x = from.left + (to.left - from.left) * t;
+      var yBase = from.top + (to.top - from.top) * t;
+      var bump = arc ? -arc * 4 * t * (1 - t) : 0;
+      el.style.left = x + '%';
+      el.style.top = (yBase + bump) + '%';
+      if (raw < 1) {
+        requestAnimationFrame(step);
+      } else if (typeof opts.onDone === 'function') {
+        opts.onDone();
+      }
+    }
+    requestAnimationFrame(step);
+  }
+
+  // ═══ 釣り糸 SVG (フィードバック3: 竿先→ウキ(たわみ)→針(水中垂直)を常時描画) ═══
+  var ROD_TIP = { x: 27.2, y: 9 }; // viewBox(160x90)座標。 ステージ%の(17,10)相当
+  function pctToViewBox(leftPct, topPct) {
+    return { x: leftPct * 1.6, y: topPct * 0.9 };
+  }
+  function updateLineSvg(leftPct) {
+    var b = pctToViewBox(leftPct, 34);
+    var bobTop = { x: b.x, y: 30.6 };   // ウキ上端
+    var bobBottom = { x: b.x, y: 31.4 }; // ウキ下端
+    var hookPt = { x: b.x, y: 43.4 };    // 針
+    var midX = (ROD_TIP.x + bobTop.x) / 2;
+    var midY = (ROD_TIP.y + bobTop.y) / 2 + 6;
+    if (lineAirEl) lineAirEl.setAttribute('d', 'M ' + ROD_TIP.x + ',' + ROD_TIP.y + ' Q ' + midX + ',' + midY + ' ' + bobTop.x + ',' + bobTop.y);
+    if (lineWaterEl) lineWaterEl.setAttribute('d', 'M ' + bobBottom.x + ',' + bobBottom.y + ' L ' + hookPt.x + ',' + hookPt.y);
+    if (hookMarkEl) hookMarkEl.setAttribute('transform', 'translate(' + hookPt.x + ',' + hookPt.y + ')');
+  }
+  function showLineSvg() { if (lineSvgEl) lineSvgEl.classList.add('show'); }
+  function hideLineSvg() { if (lineSvgEl) lineSvgEl.classList.remove('show'); }
+
+  // ═══ 気分レイヤー (状態別フラッシュ/tint。ネガ演出は短く戻す) ═══
+  function moodFlash(name, durationMs) {
+    if (!moodLayerEl) return;
+    var cls = 'mood-flash-' + name;
+    moodLayerEl.classList.remove(cls);
+    void moodLayerEl.offsetWidth;
+    moodLayerEl.classList.add(cls);
+    setTimeout(function () { moodLayerEl.classList.remove(cls); }, durationMs || 400);
+  }
+  function moodSetAmbient(name) {
+    if (!moodLayerEl) return;
+    moodLayerEl.classList.remove('mood-renda');
+    if (name === 'renda') moodLayerEl.classList.add('mood-renda');
+  }
+
+  function shakeStage() {
+    if (!stageEl || prefersReducedMotion()) return;
+    stageEl.classList.remove('shake');
+    void stageEl.offsetWidth;
+    stageEl.classList.add('shake');
+  }
+
+  // ═══ 飛び文字 / 星パーティクル (#fxLayer に動的生成、animationendで必ずremove) ═══
+  function spawnFxWord(text, leftPct, topPct, variant) {
+    if (!fxLayerEl) return;
+    var el = document.createElement('div');
+    el.className = 'fx-word' + (variant ? ' ' + variant : '');
+    el.textContent = text;
+    el.style.left = leftPct + '%';
+    el.style.top = topPct + '%';
+    el.addEventListener('animationend', function () { el.remove(); });
+    fxLayerEl.appendChild(el);
+  }
+  function spawnStars(leftPct, topPct, count) {
+    if (!fxLayerEl || prefersReducedMotion()) return;
+    for (var i = 0; i < count; i++) {
+      var el = document.createElement('span');
+      el.className = 'fx-star';
+      el.textContent = '⭐';
+      el.style.left = leftPct + '%';
+      el.style.top = topPct + '%';
+      var angle = (Math.PI * 2 * i) / count + Math.random() * 0.6;
+      var dist = 24 + Math.random() * 18;
+      el.style.setProperty('--dx', Math.cos(angle) * dist + 'px');
+      el.style.setProperty('--dy', Math.sin(angle) * dist + 'px');
+      el.addEventListener('animationend', function () { el.remove(); });
+      fxLayerEl.appendChild(el);
+    }
+  }
+
   // ═══ キャストスポット (波紋) ═══
   function showCastSpots() {
     var spots = Array.prototype.slice.call(castSpotEls);
@@ -200,18 +319,14 @@
     for (var i = 0; i < castSpotEls.length; i++) castSpotEls[i].classList.remove('is-active');
   }
 
-  // ═══ ウキ (ぼぼば) ═══
+  // ═══ ウキ ═══
   function positionAt(el, pos) {
     el.style.left = pos.left + '%';
     el.style.top = pos.top + '%';
   }
-  function showBobber(pos) {
-    positionAt(bobberEl, pos);
-    bobberEl.classList.remove('is-gabo', 'is-twitch');
-    bobberEl.classList.add('show', 'is-idle-float');
-  }
   function hideBobber() {
-    bobberEl.classList.remove('show', 'is-idle-float', 'is-twitch', 'is-gabo');
+    bobberEl.classList.remove('show', 'is-idle-float', 'is-twitch', 'is-bite-sink', 'is-escape-pop');
+    bobberEl.style.opacity = '';
   }
   function showSplash(pos) {
     positionAt(splashRingEl, pos);
@@ -219,31 +334,127 @@
     void splashRingEl.offsetWidth;
     splashRingEl.classList.add('show');
   }
+  function showSplashChurn(pos) {
+    if (!splashChurnEl) return;
+    positionAt(splashChurnEl, pos);
+    splashChurnEl.classList.add('show');
+  }
+  function hideSplashChurn() {
+    if (splashChurnEl) splashChurnEl.classList.remove('show');
+  }
+
+  // ═══ 本命魚影 (フィードバック1: 待ち中に画面端から針へ接近してくる) ═══
+  function setupTargetShadow(species) {
+    if (!shadowTargetEl) return;
+    var widthPct = (species && SIZE_WIDTH_PCT[species.size]) || 8;
+    var isRound = !!(species && species.id === 'treasure_boot');
+    shadowTargetEl.style.width = (isRound ? Math.min(widthPct, 6) : widthPct) + '%';
+    shadowTargetEl.classList.toggle('is-round', isRound);
+    shadowTargetEl.classList.remove('is-eyeing', 'is-thrash', 'is-fleeing', 'face-left');
+    shadowTargetEl.style.left = '105%';
+    shadowTargetEl.style.top = '48%';
+    shadowTargetEl.classList.add('show');
+  }
+  function hideTargetShadow() {
+    if (!shadowTargetEl) return;
+    shadowTargetEl.classList.remove('show', 'is-eyeing', 'is-thrash', 'is-fleeing', 'face-left');
+  }
+  function updateTargetShadowApproach(progress) {
+    if (!shadowTargetEl) return;
+    var p = Math.max(0, Math.min(1, progress));
+    var x = 105 + (lastCastSpotPos.left + 2 - 105) * p;
+    var y = 48 + (40 - 48) * p;
+    shadowTargetEl.style.left = x + '%';
+    shadowTargetEl.style.top = y + '%';
+    shadowTargetEl.classList.toggle('face-left', true); // 左(針)へ向かって泳ぐので反転表示
+  }
 
   // ═══ フェーズ導入 UI (tick 由来 / タップ由来 の両方から共有呼び出しする) ═══
   function enterBiteUI() {
     biteWindowStartSec = session.biteWindowRemainingSec > 0 ? session.biteWindowRemainingSec : 1;
-    biteFillEl.style.width = '100%';
+    if (biteRingEl) biteRingEl.style.setProperty('--frac', '1');
+    if (biteMarkEl) {
+      positionAt(biteMarkEl, { left: lastCastSpotPos.left, top: 24 });
+      biteMarkEl.classList.remove('show');
+      void biteMarkEl.offsetWidth;
+      biteMarkEl.classList.add('show');
+    }
     bobberEl.classList.remove('is-idle-float', 'is-twitch');
-    bobberEl.classList.add('show', 'is-gabo');
+    bobberEl.classList.add('show', 'is-bite-sink');
     showSplash(lastCastSpotPos);
-    biteWrapEl.classList.add('show');
+    if (shadowTargetEl) {
+      shadowTargetEl.classList.remove('is-eyeing');
+      shadowTargetEl.style.left = (lastCastSpotPos.left + 2) + '%';
+      shadowTargetEl.style.top = '40%';
+    }
+    if (stageEl) stageEl.classList.add('edge-glow');
+    moodFlash('gold', 300);
     if (window.Haptics) window.Haptics.fire('fishingBite');
+    setPhaseWord('いまだ！タップ！', 'pw-bite');
     setNarration('いまだ！ タップ！');
   }
 
+  function updateRendaCombo() {
+    if (!rendaComboNumEl || !rendaComboEl) return;
+    rendaComboNumEl.textContent = String(rendaComboCount);
+    rendaComboEl.classList.remove('pop');
+    void rendaComboEl.offsetWidth;
+    rendaComboEl.classList.add('pop');
+  }
+  function updateRendaGaugeTier(pct) {
+    if (!rendaFillEl) return;
+    rendaFillEl.classList.remove('tier-mid', 'tier-hot');
+    if (pct >= 80) rendaFillEl.classList.add('tier-hot');
+    else if (pct >= 50) rendaFillEl.classList.add('tier-mid');
+  }
+
   function enterRendaUI() {
-    biteWrapEl.classList.remove('show');
-    bobberEl.classList.remove('show', 'is-gabo', 'is-twitch', 'is-idle-float');
-    rendaFillEl.style.width = Math.max(0, session.gaugePct) + '%';
+    if (biteMarkEl) biteMarkEl.classList.remove('show');
+    if (stageEl) stageEl.classList.remove('edge-glow');
+    bobberEl.classList.remove('show', 'is-bite-sink', 'is-twitch', 'is-idle-float');
+    showSplashChurn(lastCastSpotPos);
+    if (shadowTargetEl) {
+      shadowTargetEl.style.left = (lastCastSpotPos.left + 2) + '%';
+      shadowTargetEl.style.top = '40%';
+      shadowTargetEl.classList.add('is-thrash');
+    }
+    rendaComboCount = 0;
+    updateRendaCombo();
+    if (rendaBigTextEl) rendaBigTextEl.textContent = 'ひっぱれ！！';
+    var pct = Math.max(0, Math.min(100, session.gaugePct));
+    rendaFillEl.style.width = pct + '%';
+    updateRendaGaugeTier(pct);
     rendaWrapEl.classList.add('show');
+    moodSetAmbient('renda');
+    setPhaseWord('', 'pw-hidden');
     setNarration('ぽんぽん タップで ひっぱろう！');
   }
 
   function enterEscapedUI() {
-    biteWrapEl.classList.remove('show');
+    if (biteMarkEl) biteMarkEl.classList.remove('show');
     rendaWrapEl.classList.remove('show');
-    hideBobber();
+    hideSplashChurn();
+    moodSetAmbient('none');
+    if (stageEl) stageEl.classList.remove('edge-glow');
+    // 「魚が居たのに逃げた」ことを見せる: 画面外へ高速で泳ぎ去る
+    if (shadowTargetEl && shadowTargetEl.classList.contains('show')) {
+      shadowTargetEl.classList.remove('is-eyeing', 'is-thrash');
+      shadowTargetEl.classList.add('is-fleeing');
+      var curLeft = parseFloat(shadowTargetEl.style.left) || lastCastSpotPos.left;
+      var curTop = parseFloat(shadowTargetEl.style.top) || 44;
+      tweenPosition(shadowTargetEl, { left: curLeft, top: curTop }, { left: 112, top: curTop - 6 }, 600, {
+        onDone: function () { hideTargetShadow(); }
+      });
+    } else {
+      hideTargetShadow();
+    }
+    // ウキが「ぽかっ」と浮上して消える
+    bobberEl.classList.remove('is-bite-sink');
+    bobberEl.classList.add('is-escape-pop');
+    setTimeout(hideBobber, 820);
+    hideLineSvg();
+    moodFlash('bluegray', 400);
+    setPhaseWord('にげちゃった…', 'pw-escaped');
     setNarration('およいで いっちゃった。でも また くるよ');
     showOverlay(escapeOverlayEl);
     scheduleAutoReadyToCast(1600);
@@ -251,14 +462,41 @@
 
   function onFishLanded(helped) {
     rendaWrapEl.classList.remove('show');
-    biteWrapEl.classList.remove('show');
+    if (biteMarkEl) biteMarkEl.classList.remove('show');
+    moodSetAmbient('none');
+    hideSplashChurn();
     hideBobber();
+    hideLineSvg();
+    hideTargetShadow();
 
     var species = Logic.getSpeciesById(session.speciesId);
     if (!species) { scheduleAutoReadyToCast(400); return; } // 防御的 (未知 speciesId)
 
     if (window.incrementStat) {
       try { window.incrementStat('tsuri_kawa_catches', 1); } catch (e) {}
+    }
+
+    var icon = SPECIES_ICON[species.id] || (species.edible ? '🐟' : '🎁');
+    setPhaseWord('つれた！', 'pw-landed');
+
+    // 魚ジャンプ演出: 水しぶき点 → 画面中央へ放物線
+    if (fxLayerEl) {
+      var jumpEl = document.createElement('div');
+      jumpEl.className = 'fx-fish-jump wobble';
+      jumpEl.textContent = icon;
+      var from = { left: lastCastSpotPos.left, top: 34 };
+      var to = { left: 50, top: 38 };
+      jumpEl.style.left = from.left + '%';
+      jumpEl.style.top = from.top + '%';
+      fxLayerEl.appendChild(jumpEl);
+      tweenPosition(jumpEl, from, to, 500, {
+        arc: 18,
+        onDone: function () {
+          moodFlash('white', 300);
+          spawnStars(50, 38, 6);
+          setTimeout(function () { jumpEl.remove(); }, 300);
+        }
+      });
     }
 
     if (helped) {
@@ -271,7 +509,6 @@
     save = applied.save;
     persistSave();
 
-    var icon = SPECIES_ICON[species.id] || (species.edible ? '🐟' : '🎁');
     bucketSessionCatches.push(icon);
     renderBucket();
 
@@ -286,7 +523,8 @@
       persistSave();
     }
 
-    var catchDelay = helped ? 900 : 0;
+    // 魚ジャンプ(0.5s)が先、overlayはその後(+ おたすけ時はさらに待つ)
+    var catchDelay = 500 + (helped ? 900 : 0);
     setTimeout(function () {
       catchIconEl.textContent = icon;
       catchNameEl.textContent = species.name;
@@ -310,17 +548,39 @@
       if (uiPhase !== 'playing') return;
       clearOverlays();
       setNarration('つぎは どこに なげる？');
+      setPhaseWord('どこに なげる？', 'pw-idle');
       showCastSpots();
     }, delayMs);
   }
 
   // ═══ タップ入力 (iOS pointercancel 対応込みの common/tsuri/input.js を使用) ═══
+  function extractClientXY(evt) {
+    try {
+      if (!evt) return null;
+      if (evt.changedTouches && evt.changedTouches[0]) {
+        return { x: evt.changedTouches[0].clientX, y: evt.changedTouches[0].clientY };
+      }
+      if (typeof evt.clientX === 'number') return { x: evt.clientX, y: evt.clientY };
+    } catch (e) { /* ベストエフォート */ }
+    return null;
+  }
+  function clientToStagePct(xy) {
+    if (!xy || !stageEl) return null;
+    try {
+      var rect = stageEl.getBoundingClientRect();
+      if (!rect.width || !rect.height) return null;
+      var left = ((xy.x - rect.left) / rect.width) * 100;
+      var top = ((xy.y - rect.top) / rect.height) * 100;
+      return { left: Math.max(0, Math.min(100, left)), top: Math.max(0, Math.min(100, top)) };
+    } catch (e) { return null; }
+  }
+
   function onCastSpotTap(el) {
     if (!session) return;
     if (!(session.phase === 'idle' || Core.isTerminal(session))) return; // 二重発火防止
     if (pendingRestartTimer) { clearTimeout(pendingRestartTimer); pendingRestartTimer = null; }
     var left = parseFloat(el.style.left) || 50;
-    var top = parseFloat(el.style.top) || 60;
+    var top = parseFloat(el.style.top) || 34;
     lastCastSpotPos = { left: left, top: top };
     hideCastSpots();
     clearOverlays();
@@ -332,7 +592,26 @@
     preBiteShown = false;
     var waitRange = Logic.nextWaitSecRange(session.consecutiveMisses);
     session = Core.cast(session, { waitSecRange: waitRange });
-    showBobber(lastCastSpotPos);
+    waitTotalSec = session.waitRemainingSec > 0 ? session.waitRemainingSec : 1;
+
+    var species = Logic.getSpeciesById(session.speciesId);
+    setupTargetShadow(species);
+
+    // ウキを竿先から着水点へ放物線で飛ばす(0.45s)
+    bobberEl.classList.remove('is-idle-float', 'is-twitch', 'is-bite-sink', 'is-escape-pop');
+    bobberEl.style.opacity = '';
+    bobberEl.classList.add('show');
+    hideLineSvg();
+    tweenPosition(bobberEl, { left: 17, top: 10 }, { left: lastCastSpotPos.left, top: lastCastSpotPos.top }, 450, {
+      arc: 16,
+      onDone: function () {
+        bobberEl.classList.add('is-idle-float');
+        showSplash(lastCastSpotPos);
+        updateLineSvg(lastCastSpotPos.left);
+        showLineSvg();
+      }
+    });
+    setPhaseWord('まとう…', 'pw-wait');
     setNarration('ウキを みててね');
   }
 
@@ -342,12 +621,34 @@
     if (session.phase === 'renda') enterRendaUI();
   }
 
-  function onRendaTap() {
+  function onRendaTap(evt) {
     if (!session || session.phase !== 'renda') return;
     var species = Logic.getSpeciesById(session.speciesId);
     session = Core.tapRenda(session, species, Core.GEAR_MODS_NEUTRAL);
     if (session.phase === 'renda') {
-      rendaFillEl.style.width = Math.max(0, Math.min(100, session.gaugePct)) + '%';
+      var pct = Math.max(0, Math.min(100, session.gaugePct));
+      rendaFillEl.style.width = pct + '%';
+      updateRendaGaugeTier(pct);
+      rendaComboCount++;
+      updateRendaCombo();
+
+      var pos = clientToStagePct(extractClientXY(evt)) || { left: 50, top: 60 };
+      var big = (rendaComboCount % 5 === 0);
+      var word = big ? 'すごい！' : FLY_WORDS[rendaFlyIdx % FLY_WORDS.length];
+      if (!big) rendaFlyIdx++;
+      spawnFxWord(word, pos.left, pos.top, big ? 'fx-word-big' : '');
+      spawnStars(pos.left, pos.top, 2);
+      shakeStage();
+      if (anglerEl) {
+        anglerEl.classList.remove('is-rod-bend');
+        void anglerEl.offsetWidth;
+        anglerEl.classList.add('is-rod-bend');
+      }
+
+      if (rendaBigTextEl) {
+        var stuckAtFloor = session.floorHeldSec >= 2 && session.gaugePct <= (Core.TUNING.gaugeFloorPct + 0.5);
+        rendaBigTextEl.textContent = stuckAtFloor ? 'タップ タップ！' : 'ひっぱれ！！';
+      }
     } else if (session.phase === 'landed') {
       onFishLanded(false);
     }
@@ -368,10 +669,15 @@
   }
   // あたり/連打は「画面のどこでもタップ」(企画書§2.3準拠) なので play 画面全体に1つ。
   // idle/wait/landed/escaped 中は no-op (キャストスポット側の attachTap が別枠で処理)。
-  Input.attachTap(playScreenEl, function () {
+  Input.attachTap(playScreenEl, function (evt) {
     if (!session) return;
     if (session.phase === 'bite') onBiteTap();
-    else if (session.phase === 'renda') onRendaTap();
+    else if (session.phase === 'renda') onRendaTap(evt);
+    else if (session.phase === 'wait') {
+      // 早すぎタップ: no-op (契約通り) だが「まだまだ〜」の吹き出しだけ見せる
+      var pos = clientToStagePct(extractClientXY(evt));
+      if (pos) spawnFxWord('まだまだ〜', pos.left, pos.top, 'fx-word-soft');
+    }
   });
 
   // ═══ ゲームフロー: title → playing (継続ループ、5匹区切り等はPhase1以降) ═══
@@ -381,10 +687,15 @@
     renderBucket();
     preBiteShown = false;
     biteWindowStartSec = 0;
+    rendaComboCount = 0;
     clearOverlays();
     hideBobber();
+    hideLineSvg();
+    hideTargetShadow();
+    moodSetAmbient('none');
     showScreen('playScreen');
     setNarration('すきな ばしょに なげてみよう！');
+    setPhaseWord('どこに なげる？', 'pw-idle');
     showCastSpots();
     uiPhase = 'playing';
   }
@@ -443,18 +754,30 @@
           onFishLanded(true);
         }
       } else if (session.phase === 'wait') {
+        if (waitTotalSec > 0) {
+          var progress = 1 - Math.max(0, session.waitRemainingSec) / waitTotalSec;
+          updateTargetShadowApproach(progress);
+        }
         var near = session.waitRemainingSec <= 1.0 && session.waitRemainingSec > 0;
         if (near && !preBiteShown) {
           preBiteShown = true;
           bobberEl.classList.remove('is-idle-float');
           bobberEl.classList.add('is-twitch');
+          if (shadowTargetEl) shadowTargetEl.classList.add('is-eyeing');
+          setPhaseWord('…きたかも！', 'pw-prebite');
           setNarration('…きたかも？');
         }
       } else if (session.phase === 'bite' && biteWindowStartSec > 0) {
         var frac = Math.max(0, Math.min(1, session.biteWindowRemainingSec / biteWindowStartSec));
-        biteFillEl.style.width = (frac * 100) + '%';
+        if (biteRingEl) biteRingEl.style.setProperty('--frac', String(frac));
       } else if (session.phase === 'renda') {
-        rendaFillEl.style.width = Math.max(0, Math.min(100, session.gaugePct)) + '%';
+        var pct2 = Math.max(0, Math.min(100, session.gaugePct));
+        rendaFillEl.style.width = pct2 + '%';
+        updateRendaGaugeTier(pct2);
+        if (rendaBigTextEl) {
+          var stuck = session.floorHeldSec >= 2 && session.gaugePct <= (Core.TUNING.gaugeFloorPct + 0.5);
+          rendaBigTextEl.textContent = stuck ? 'タップ タップ！' : rendaBigTextEl.textContent;
+        }
       }
     }
 

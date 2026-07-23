@@ -4,6 +4,10 @@
 // として追加し、play.html GAMES/APP_TITLE_MENU_IDS に登録。ゲーム個別ファイルは
 // network-first配信のためCRITICAL_ASSETSには追加しない。play.html
 // PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2362)。
+// v2363: tsuri-kawa/ ビジュアル全面刷新 (真横カットアウェイ視点への統一、
+// 釣り糸SVG常時描画、魚影常時表示+待ち中の接近演出、ウキ縮小、フェーズワード、
+// HIT型連打演出)。core.js/fish-data.js/input.js/logic.js は無変更(見た目のみ)。
+// tsuri-kawa/index.html,styles.css,js/game.js の ?v= を 20260724-1 に同期。
 // v2361: ひょっこりハイタッチ「もりのおさんぽ」の背景色を場所ごとに刷新。
 // どんぐりみちは赤茶・琥珀、みずべは水色・青緑へ分離し、こもれびひろばの
 // 黄緑との差を明確化。locations.js の query を20260723-1444へ同期。背景2点と
@@ -950,7 +954,7 @@
 // styles.css／game.js queryを20260723-1429へ同期。ゲーム個別ファイルと画像は
 // network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
 // PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2347)。
-const CACHE_VERSION = 2362;
+const CACHE_VERSION = 2363;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [
