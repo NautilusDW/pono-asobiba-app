@@ -59,6 +59,8 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
+- 2026-07-24 - by Claude - [batch:1449-tsuri-unity-water-spike] - unity/PonoNativeGames/Assets/Pono/Games/<新規スパイク名>/** (新規パッケージのみ・AquaLumina/HideSeekCreatures/ColorWaterDelivery/AppShellは不変更), docs/unity-migration/** (新規), AGENTS_CLAIMS.md, HANDOFF.md - つりゲーム(tsuri-kawa、アプリ限定コンテンツ)の川面をUnity URP水シェーダーでどこまで美しくできるか検証する技術スパイク。AquaLuminaの安全な統合パターン(専用シーン・コピーしたRenderer2D・専用VolumeProfile・共有DefaultVolumeProfile.asset不可侵)を踏襲。fable設計→sonnet5並列実装→クロスレビューで進行中。web CI対象外(unity/はpaths-ignore)のためweb側batchとの衝突なし [overlap: batch:1446-aquarium-unity-water-spike (同じunity/PonoNativeGamesプロジェクト、AquaLuminaのRenderer2D/VolumeProfile追加パターンを参照するのみで同ファイルは編集しない)]
+
 - 2026-07-23 - by Claude - [batch:1447-tsuri-fishing-phase0] - tsuri-kawa/** (新規), common/tsuri/** (新規: core.js/input.js/fish-data.js), common/haptics.js, tests/tsuri_core_regression.cjs (新規), play.html, sw.js, AGENTS_CLAIMS.md, HANDOFF.md - 新規「ポノのつりゲーム」川づりPhase0(コアループのみ、food-inventory連携なし)をプレースホルダー素材で実装。企画書 docs/TSURI_FISHING_GAME_PLAN_2026-07-23.md 準拠、fable設計済み→sonnet5並列実装+クロスレビューで進行中 [overlap: play.html/sw.jsは多数のbatchと共通]
 
 - 2026-07-23 - by Claude - [batch:1437-machizukuri-new-feature] - machizukuri/** (新規), room/index.html, hatake-nikki/js/logic.js, hatake-nikki/js/game.js, play.html, sw.js, tests/machizukuri_*.cjs (新規), AGENTS_CLAIMS.md, HANDOFF.md - 新機能「ポノのまちづくり」設計+実装(room/はたけ連携)。fable設計→sonnet5実装のマルチエージェントworkflowで進行中 [overlap: play.html/sw.js は多数のbatchと共通]
