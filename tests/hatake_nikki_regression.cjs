@@ -556,6 +556,9 @@ function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
 
   assert.strictEqual((indexHtml.match(/class="crop-sign"/g) || []).length, 3, '各畝に作物立て札が1つある');
   assert.strictEqual((indexHtml.match(/class="watered-drop"/g) || []).length, 3, '各畝に水やり済みしずく画像が1つある');
+  for (const asset of ['crop_sign_tomato.png', 'crop_sign_ninjin.png', 'hatake_crop_wet.png']) {
+    assert.match(indexHtml, new RegExp('<link\\s+rel="preload"\\s+as="image"[^>]*' + asset.replace('.', '\\.') + '[^>]*>'), `${asset} を開始画面で先読みする`);
+  }
   assert.match(indexHtml, /id="tool-water-btn"[\s\S]*?deco_watering_can_B\.png[\s\S]*?<\/button>/, 'じょうろボタンは画像アセットを使う');
   assert.match(gameJs, /CROP_SIGN_IMAGES\s*=\s*\{[\s\S]*?tomato:[\s\S]*?crop_sign_tomato\.png[\s\S]*?ninjin:[\s\S]*?crop_sign_ninjin\.png/, '作物IDと立て札画像が対応する');
   assert.match(gameJs, /setAttribute\('data-crop',\s*plot\.seedId\)/, '植栽中は畑に data-crop を付ける');

@@ -82,6 +82,11 @@
 <script src="../common/menu.js"></script>
 <script src="../common/treasure.js"></script>
 
+<!-- 初回の開始直後から立て札と湿った畑を欠けずに見せる。crop-sign は
+     seedId 判定後に src が付くため、開始画面のうちに明示的に先読みする。 -->
+<link rel="preload" as="image" href="../assets/images/hatake-nikki/crop_sign_tomato.png" type="image/png">
+<link rel="preload" as="image" href="../assets/images/hatake-nikki/crop_sign_ninjin.png" type="image/png">
+<link rel="preload" as="image" href="../assets/images/hatake-nikki/hatake_crop_wet.png" type="image/png">
 <link rel="stylesheet" href="styles.css?v=20260723-4">
 </head>
 <body>
