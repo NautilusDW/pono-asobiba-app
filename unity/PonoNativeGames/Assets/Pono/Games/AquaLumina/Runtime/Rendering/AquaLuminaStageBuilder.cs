@@ -27,9 +27,14 @@ namespace Pono.AquaLumina.Rendering
     /// Builds the entire baseline underwater scene (background, rock
     /// silhouettes, kelp, fish, sun, bubbles, marine snow) procedurally at
     /// runtime under a given parent transform. Every texture is a
-    /// code-generated <see cref="Texture2D"/> and every material is a plain
-    /// <c>new Material(shader)</c> — this project has zero .prefab/.mat assets
-    /// by convention and this builder must not introduce any.
+    /// code-generated <see cref="Texture2D"/>, with two deliberate
+    /// exceptions: the illustrated coral/reef decoration and whale-shark hero
+    /// sprite, which are loaded from Resources via
+    /// <see cref="AquaLuminaSpriteLoader"/> by the companion
+    /// <see cref="AquaLuminaCoralDecoration"/> and
+    /// <see cref="AquaLuminaWhaleShark"/> builder classes. Every material is a
+    /// plain <c>new Material(shader)</c> — this project has zero .prefab/.mat
+    /// assets by convention and this builder must not introduce any.
     ///
     /// This class has no dependency on the god-ray/caustics/distortion effect
     /// modules: with all of those switched off, what this builder produces
@@ -57,12 +62,19 @@ namespace Pono.AquaLumina.Rendering
 
         // Sorting-order contract shared with the other AquaLumina rendering
         // modules (god rays / caustics / distortion own the gaps at 20+).
+        // Order 15 (AquaLuminaWhaleShark) and order 17 (AquaLuminaCoralDecoration)
+        // are also part of this contract but are owned as private consts in
+        // those companion classes, not here — this table is the single source
+        // of truth for who sits where, but each class still declares its own
+        // const rather than reaching into this file's private members.
         private const int BackgroundSortingOrder = 0;
         private const int SurfaceLightBandSortingOrder = 5;
         private const int FarRocksSortingOrder = 10;
         private const int KelpSortingOrder = 12;
         private const int FishSortingOrder = 14;
+        // 15: AquaLuminaWhaleShark.WhaleSharkSortingOrder (illustrated hero sprite).
         private const int NearRocksSortingOrder = 16;
+        // 17: AquaLuminaCoralDecoration.CoralSortingOrder (illustrated reef decoration).
         private const int SunDiscSortingOrder = 30;
         private const int MarineSnowSortingOrder = 35;
         private const int BubblesSortingOrder = 40;
@@ -117,6 +129,15 @@ namespace Pono.AquaLumina.Rendering
             BuildRockLayer(content, root.transform, visibleRect, random, spriteMaterial, isFarLayer: false);
             BuildKelp(content, root.transform, visibleRect, random, spriteMaterial);
             BuildFish(content, root.transform, visibleRect, random, spriteMaterial);
+
+            // Placed after BuildFish deliberately: every RNG draw for the
+            // existing background/rocks/kelp/fish layout above happens before
+            // coral touches the shared random stream, so that previously-tuned
+            // procedural layout stays bit-identical (the whale shark takes no
+            // random parameter at all, and the particle systems below use
+            // their own fixed seeds, consuming nothing from `random` either).
+            AquaLuminaCoralDecoration.Build(content, root.transform, visibleRect, random, spriteMaterial);
+            AquaLuminaWhaleShark.Build(content, root.transform, visibleRect, spriteMaterial);
 
             var particleTexture = CreateSoftCircleTexture();
             content.RegisterGeneratedAsset(particleTexture);
@@ -499,7 +520,11 @@ namespace Pono.AquaLumina.Rendering
             var maxY = rect.yMax - rect.height * 0.25f;
             var nativeSize = new Vector2(FishTextureWidth, FishTextureHeight) / PixelsPerUnit;
 
-            for (var i = 0; i < 3; i++)
+            // 2 ambient fish, not 3: the third slot is now the illustrated
+            // AquaLuminaWhaleShark hero, built right after this method returns.
+            // The first two fish still draw the exact same RNG values as
+            // before (this loop only dropped its own trailing iteration).
+            for (var i = 0; i < 2; i++)
             {
                 var length = NextFloat(random, 0.9f, 1.6f);
                 // Uniform scale on both axes preserves the texture's native

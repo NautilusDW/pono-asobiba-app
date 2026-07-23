@@ -288,6 +288,21 @@
     el.addEventListener('animationend', function () { el.remove(); });
     fxLayerEl.appendChild(el);
   }
+  // ═══ れんだ中の飛び文字スポーン位置 (レビュー指摘対応:
+  //     #rendaWrap (見出し「ひっぱれ!!」+ コンボ数 + ゲージ、top 32%〜約72%の帯)
+  //     に飛び文字が重なって読めなくなる問題を修正。タップ座標をそのまま使わず、
+  //     帯より確実に下の安全ゾーンへ逃がす。あわせて styles.css 側の
+  //     .fx-word-renda (flyWordUpBurst) で浮上距離自体も短く抑え、
+  //     浮上中に帯へ再突入しないようにしている(2つの対策はセットで機能する)。
+  //     x はタップ位置を活かしつつ画面端に寄りすぎないようクランプする。 ═══
+  var RENDA_FX_SAFE_TOP_MIN = 74;
+  var RENDA_FX_SAFE_TOP_RANGE = 16; // 74%〜90%
+  function rendaFxSpawnPos(tapPos) {
+    var left = tapPos ? tapPos.left : 50;
+    left = Math.max(14, Math.min(86, left));
+    var top = RENDA_FX_SAFE_TOP_MIN + Math.random() * RENDA_FX_SAFE_TOP_RANGE;
+    return { left: left, top: top };
+  }
   function spawnStars(leftPct, topPct, count) {
     if (!fxLayerEl || prefersReducedMotion()) return;
     for (var i = 0; i < count; i++) {
@@ -632,11 +647,12 @@
       rendaComboCount++;
       updateRendaCombo();
 
-      var pos = clientToStagePct(extractClientXY(evt)) || { left: 50, top: 60 };
+      var tapPos = clientToStagePct(extractClientXY(evt));
+      var pos = rendaFxSpawnPos(tapPos);
       var big = (rendaComboCount % 5 === 0);
       var word = big ? 'すごい！' : FLY_WORDS[rendaFlyIdx % FLY_WORDS.length];
       if (!big) rendaFlyIdx++;
-      spawnFxWord(word, pos.left, pos.top, big ? 'fx-word-big' : '');
+      spawnFxWord(word, pos.left, pos.top, big ? 'fx-word-big fx-word-renda' : 'fx-word-renda');
       spawnStars(pos.left, pos.top, 2);
       shakeStage();
       if (anglerEl) {

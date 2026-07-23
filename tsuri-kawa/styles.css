@@ -653,6 +653,18 @@ html, body {
   20% { opacity: 1; transform: translate(-50%, -70%) scale(1.05); }
   100% { opacity: 0; transform: translate(-50%, -220%) scale(1); }
 }
+/* れんだ中専用の飛び文字アニメ (レビュー指摘対応): 通常の flyWordUp は自身の
+   高さの-220%まで上昇するため、#rendaWrap (見出し/コンボ数/ゲージ、
+   top32%〜約72%の帯) の低い安全ゾーンに出しても浮上中に帯へ再突入し重なって
+   しまう。れんだ中はごく短い浮上距離(-70%まで)に抑えて帯の外に留める。 */
+.fx-word.fx-word-renda {
+  animation-name: flyWordUpBurst;
+}
+@keyframes flyWordUpBurst {
+  0% { opacity: 0; transform: translate(-50%, 10%) scale(0.7); }
+  20% { opacity: 1; transform: translate(-50%, -20%) scale(1.05); }
+  100% { opacity: 0; transform: translate(-50%, -70%) scale(1); }
+}
 .fx-star {
   position: absolute;
   transform: translate(-50%, -50%);
