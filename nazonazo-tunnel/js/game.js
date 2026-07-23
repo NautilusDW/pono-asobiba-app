@@ -353,7 +353,7 @@ const ASSETS={
 };
 const bgUrl=src=>'url("'+src+'")';
 const STAGES=[
- {id:"town",icon:"🏘️",art:"stageTown",veh:"train",bank:TOWN,gens:[],rare:["🕊️","しろい はと"],countsToProgress:true,skyPosition:"center calc(100% - var(--town-sky-lift,42vh))",
+ {id:"town",icon:"🏘️",art:"stageTown",veh:"train",bank:TOWN,gens:[],rare:["🕊️","しろい はと"],countsToProgress:true,mechanic:"townDock",skyPosition:"center calc(100% - var(--town-sky-lift,42vh))",
   branches:[{choiceId:"snow",toId:"snow"},{choiceId:"fire",toId:"fire"}],
   names:["まちはずれ","ゆうやけの まちはずれ"],
   assets:ASSETS.town,
@@ -1094,6 +1094,49 @@ function createDinoAdventureState(){
  };
 }
 let dinoAdventureState=createDinoAdventureState();
+// ===== 町: ぴたっと停車 (townDock) =====
+// hold-to-accelerate / release-to-coast の単一操作で、位置の違う3つの停車目印に
+// 汽車をぴたりと止めて村人を乗せるミニゲーム。dino の crane 水平移動 tick と同じ
+// 「ease-toward-target-speed を dt でクランプする」物理モデルを踏襲するが、汽車の
+// 大域移動 (worldX/vel/target/driving) には一切触れない完全に独立したローカル状態
+// (townDockState.pos, 0〜TOWN_DOCK_TRACK_LEN の抽象スカラー) を持つ。
+const TOWN_DOCK_STATION_COUNT=3;
+const TOWN_DOCK_TRACK_LEN=100;
+const TOWN_DOCK_ACCEL_RATE=150;
+const TOWN_DOCK_DECEL_RATE=58;
+const TOWN_DOCK_SETTLE_VEL=.08;
+const TOWN_DOCK_ZONE_WIDEN_FACTOR=1.4;
+const TOWN_DOCK_ASSIST_ATTEMPT_TIER=3;
+const TOWN_DOCK_STATION_SCORE=150;
+const TOWN_DOCK_RETRY_DELAY_MS=1150;
+const TOWN_DOCK_BOARD_DELAY_MS=1300;
+const TOWN_DOCK_NEXT_STATION_DELAY_MS=650;
+const TOWN_DOCK_ALL_CLEAR_DELAY_MS=1500;
+const TOWN_DOCK_STATIONS=Object.freeze([
+ Object.freeze({zoneCenter:50,zoneWidth:36,cruiseSpeed:30,oscAmplitude:0,oscPeriodMs:0}),
+ Object.freeze({zoneCenter:62,zoneWidth:16,cruiseSpeed:46,oscAmplitude:0,oscPeriodMs:0}),
+ Object.freeze({zoneCenter:56,zoneWidth:16,cruiseSpeed:46,oscAmplitude:4.8,oscPeriodMs:5200})
+]);
+const TOWN_DOCK_LINES=Object.freeze({
+ intro:["ればーを おしつづけて すすもう。はなすと ゆっくり とまるよ","こんどは とまる わくが せまいよ","わくが ゆっくり うごくよ！"],
+ undershoot:"もう すこし まえで とまろう",
+ overshoot:"すこし はやすぎたかな",
+ blink:"わくの はしを よく みてね",
+ widen:"わくが ひろがったよ！",
+ assist:"すこし てつだうね",
+ success:"ぴたっと とまれたね!",
+ allClear:"みんな のせられたね！まちが あかるくなったよ"
+});
+function createTownDockState(){
+ return {
+  epoch:0,phase:"idle",stationIndex:0,attempts:0,assist:false,
+  pos:0,vel:0,oscPhase:0,
+  heldPointers:new Map(),keyDirection:0,
+  pausedAt:0,frameAt:0,
+  completionCount:0,transitionCount:0
+ };
+}
+let townDockState=createTownDockState();
 const SEA_FIRE_INTERVAL_MS=90;
 const SEA_SHOT_LIMIT=56;
 const SEA_COMPANION_LIMIT=3;
@@ -2368,7 +2411,7 @@ function buildJungleQuestionList(stage){
 }
 function buildQList(){
  const st=STAGES[stg];
- if(isDinoAdventureStage(st)){qList=[];return;}
+ if(isDinoAdventureStage(st)||isTownDockStage(st)){qList=[];return;}
  if(st.id==="number"){qList=[];for(let i=0;i<QN;i++)qList.push(Math.random()<0.6?genCount():genNext());return;}
  if(st.mechanic==="seaBoss"){seaBossDefeated=false;seaDecoysSeen.clear();qList=buildSeaRescueList(st);return;}
  if(st.mechanic==="spaceChase")spaceChaseDefeated=false;
@@ -4482,7 +4525,7 @@ function updateHelpHud(){
  }
  if(helpBtn){illustratedCounter(helpBtn,"help",n,"help-button-art");helpBtn.setAttribute("aria-label","おたすけ "+n+"こ");helpBtn.classList.toggle("empty",!n);helpBtn.disabled=false;}
 }
-function emptyStageScoreBreakdown(){return {quiz:0,clear:0,help:0,rare:0,tunnel:0,adventure:0};}
+function emptyStageScoreBreakdown(){return {quiz:0,clear:0,help:0,rare:0,tunnel:0,adventure:0,townDock:0};}
 function formatScore(value){return Math.max(0,Math.round(Number(value)||0)).toLocaleString("ja-JP");}
 function resetStageScore(){
  stageScore=0;stageScoreBreakdown=emptyStageScoreBreakdown();stageClearScoreGranted=false;stageCompletionHandled=false;
@@ -4529,7 +4572,8 @@ function tunnelScoreBreakdownText(){
   ["help","おたすけ"],
   ["rare","めずらしい ともだち"],
   ["tunnel","かくれともだち"],
-  ["adventure","きょうりゅう"]
+  ["adventure","きょうりゅう"],
+  ["townDock","えき"]
  ];
  return labels.filter(([key])=>stageScoreBreakdown[key]>0)
   .map(([key,label])=>label+" +"+formatScore(stageScoreBreakdown[key])).join(" ・ ");
