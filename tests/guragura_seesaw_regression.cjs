@@ -128,6 +128,54 @@ function analyzeRoundForward(roundIndex) {
   };
 }
 
+// ── §17b 用: slip / near-balance 到達可能性の正準(canonical) BFS ─────────
+// analyzeRoundForward() はアイテムを置いた「順序」ごとに別状態として数える
+// (permutation単位、§6/§8 が意図的にそれを利用している) が、slip/near-balance
+// が「到達可能かどうか」という問いには順序の重複は不要でノイズになるだけなので、
+// ここでは rightIds/trayIds をソートしたキーで正準化 (順序違いの重複を圧縮) して
+// 探索する。単一皿ラウンド専用 (v3.1 では全10ラウンドが単一皿なのでこれで十分)。
+// 本番の L.placeItem をそのまま呼び、reason==='slip' を1回でも観測できたら
+// slipReachable=true、rightIds が空でない非balanced状態で L.isNearBalance が
+// true を返したら nearBalanceReachable=true とする。
+function canonicalKey(state) {
+  return state.rightIds.slice().sort().join(',') + '|' + state.trayIds.slice().sort().join(',');
+}
+
+function analyzeReachabilityCanonical(roundIndex) {
+  const round = L.ROUNDS[roundIndex];
+  const leftWeight = L.sumWeights(round.left);
+  const start = createRoundState(roundIndex);
+  const seen = new Set([canonicalKey(start)]);
+  const queue = [start];
+  let solvable = false;
+  let slipReachable = false;
+  let nearBalanceReachable = false;
+
+  while (queue.length > 0) {
+    const state = queue.shift();
+    const rightWeight = L.sumWeights(state.rightIds);
+    const balanced = L.isBalanced(leftWeight, rightWeight);
+    if (balanced) { solvable = true; continue; } // 実ゲームは釣り合った瞬間にラウンドが終わり、それ以上は置けない
+
+    const tilt = L.computeTilt(leftWeight, rightWeight);
+    if (state.rightIds.length > 0 && L.isNearBalance(tilt)) nearBalanceReachable = true;
+
+    for (const itemId of new Set(state.trayIds)) {
+      const res = L.placeItem(state, itemId);
+      if (!res.ok) {
+        if (res.reason === 'slip') slipReachable = true;
+        continue;
+      }
+      const key = canonicalKey(res.state);
+      if (!seen.has(key)) {
+        seen.add(key);
+        queue.push(res.state);
+      }
+    }
+  }
+  return { solvable, slipReachable, nearBalanceReachable };
+}
+
 // ── brace-balanced 関数抽出 (nazonazo_number_jump_regression.cjs の extractFunction 踏襲) ──
 function extractFunction(src, name) {
   const start = src.indexOf(`function ${name}(`);
@@ -664,31 +712,43 @@ section("TWIN_ROUND_CONFIG 定数値 (v3: 空/休眠)", () => {
   );
 });
 
-// ── 17b. 全10ラウンド trap-free / 最小構成 監査 (前進のみで解ける保証) ──
-// 設計フェーズの solvabilityProof をソースオブトゥルースとして、実装済みの
-// placeItem と同一のチェック順序で BFS した結果が「全ラウンド solvable・
-// 詰み(trap)なし・初手許容率100%・トレイの全アイテムが解に参加」を満たすことを
-// 検証する。 各ラウンドは tray 合計 === left 合計の「最小構成」(デコイなし) で
-// 設計されているため、この4条件が満たされないなら SLIP_DIFF/PAN_CAPACITY か
-// ラウンド構成そのものにバグがあることになる。
-section("全10ラウンド trap-free / 最小構成 監査", () => {
+// ── 17b. 全10ラウンド 到達可能性監査 (v3.1: デコイ再導入で slip/near-balance を実際に到達可能にする) ──
+// クロスレビュー指摘 (2026-07-23 夜) の回帰防止テスト: v3 初版は「tray合計 ===
+// left合計 (デコイなし)」で設計されていたため、正の重みだけを足し上げて厳密一致
+// させる構造上、(a) 最後の1個を置くまでは必ず undershoot になり slip
+// (reason==='slip') が全10ラウンド×全順列で一度も発火せず、(b) カタログの最小
+// weight(2) のせいで最終手前にちょうど diff=±1 (near-balance圏) へ到達する余地も
+// 無い、という「詰みは無いが選ぶ楽しさも失敗の学びも無い」退化を許してしまって
+// いた (このセクションの旧版はその退化した状態を「trap-free」として合格させる
+// 側の不変条件だった)。
+//
+// v3.1 は各ラウンドの tray にデコイ (実際の解では使わない、または使うと重すぎる
+// アイテム) を1〜2点追加し、tray合計 > left合計 にした。 これにより slip も
+// near-balance も本番の placeItem/isNearBalance を素通りさせるだけで実際に
+// 到達可能になったことを、本番ロジックそのものを BFS で走らせて検証する。
+// (デコイを選んで前進のみでは詰む状態が新たに生まれるが、removeItem は常に
+// 使えるため「詰み」ではなく健全なトライアル&エラーであり許容する。 そのため
+// 「受理された全中間状態が前進のみで解へ到達できる」という旧来の不変条件は
+// もう要求しない)。
+section("全10ラウンド 到達可能性監査 (デコイ再導入・slip/near-balance 到達可能性)", () => {
   L.ROUNDS.forEach((round, i) => {
     const leftWeight = L.sumWeights(round.left);
     const trayWeight = L.sumWeights(round.tray);
-    assert.equal(leftWeight, trayWeight, `ラウンド${i + 1}: tray合計(${trayWeight})はleft合計(${leftWeight})と厳密に一致する (最小構成・デコイなし)`);
+    assert.ok(trayWeight > leftWeight, `ラウンド${i + 1}: tray合計(${trayWeight})はleft合計(${leftWeight})より大きい (デコイが存在する、v3.1)`);
 
     const analysis = analyzeRoundForward(i);
-    assert.ok(analysis.solutions.length >= 1, `ラウンド${i + 1}: 実ロジックで到達可能な解が存在する (got ${analysis.solutions.length})`);
-    assert.equal(analysis.deadStates.length, 0, `ラウンド${i + 1}: 受理された全中間状態が前進のみ(removeItem不使用)で解へ到達できる (詰みが無い、got ${analysis.deadStates.length}件)`);
-    // solutionItemIds は Set (id 単位で重複排除) なので、tray 側も id 単位で重複排除してから比較する
-    // (一部ラウンドは意図的に blueberry 等を2個以上トレイに含むため、多重集合として比較しない)
-    assert.deepEqual([...analysis.solutionItemIds].sort(), [...new Set(round.tray)].sort(), `ラウンド${i + 1}: トレイに含まれる全種類のアイテムが少なくとも1つの解に参加する (死んだアイテムが無い)`);
+    assert.ok(analysis.solutions.length >= 1, `ラウンド${i + 1}: 実ロジックで到達可能な解が存在する (デコイがあっても詰みきりではない、got ${analysis.solutions.length})`);
 
     const firstMoves = acceptedNextStates(i, analysis.initialState);
-    assert.equal(firstMoves.length, round.tray.length, `ラウンド${i + 1}: トレイ全アイテムが初手として本番ロジックで受理される (初手許容率100%)`);
+    assert.equal(firstMoves.length, round.tray.length, `ラウンド${i + 1}: トレイ全アイテムが初手として本番ロジックで受理される (どのカタログ重量も left+SLIP_DIFF を単独では超えないため、初手はデコイ込みでも常に受理される)`);
 
-    const acceptedOverTarget = analysis.reachableStates.filter(entry => L.sumWeights(entry.state.rightIds) > leftWeight);
-    assert.equal(acceptedOverTarget.length, 0, `ラウンド${i + 1}: 目標を超過したまま黙って受理される状態がない`);
+    // 本題: クロスレビューが指摘した「slip/near-balanceが数学的に到達不能」の
+    // 直接的な回帰防止。 正準化BFSで本番の placeItem/isNearBalance を実際に
+    // 走らせ、両方とも実際に発火する経路が存在することを検証する。
+    const reach = analyzeReachabilityCanonical(i);
+    assert.ok(reach.solvable, `ラウンド${i + 1}: 正準化BFSでも解に到達できる`);
+    assert.ok(reach.slipReachable, `ラウンド${i + 1}: 「おもすぎたら はねかえる」slip (reason==='slip') が実際に到達可能な経路が存在する (旧v3の退化バグの回帰防止)`);
+    assert.ok(reach.nearBalanceReachable, `ラウンド${i + 1}: 「あとちょっと！」near-balance (diff=±1) が実際に到達可能な経路が存在する (旧v3の退化バグの回帰防止)`);
   });
 });
 

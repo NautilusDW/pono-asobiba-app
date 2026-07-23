@@ -50,30 +50,59 @@ for (var _ci = 0; _ci < CATALOG.length; _ci++) {
   CATALOG_BY_ID[CATALOG[_ci].id] = CATALOG[_ci];
 }
 
-// ═══ ラウンド定義 (10ラウンド固定、2026-07-23 v3 再設計) ═══════════════
+// ═══ ラウンド定義 (10ラウンド固定、2026-07-23 v3 再設計 → v3.1 でデコイ再導入) ══
 // left: おだい (id 配列、5個以上のグループ)。tray: そのラウンドでトレイに出す
 // アイテム id 配列。重さ合計は CATALOG から導出するのでハードコードしない。
-// 全ラウンドとも tray の合計重量が left の合計重量と厳密に一致する「最小構成」
-// (デコイなし、tray の全アイテムが最終的に必ず使われる) にしてある。理由は
-// tests/guragura_seesaw_regression.cjs の「全ラウンド trap-free 監査」コメント参照:
-// このカタログの重さ粒度 (2,3,4,5,6,7,8,9,10,11,12,14) には端数調整用の最小単位が
-// 無いため、余剰アイテム (デコイ) を混ぜると前進のみでは詰みを作りやすい。
+//
+// v3.1 (2026-07-23 夜、クロスレビュー指摘の是正): v3 初版は「tray の合計重量が
+// left の合計重量と厳密に一致する最小構成 (デコイなし)」だったが、これは全ての
+// 正の重さを足し上げて厳密一致させる構造上、「最後の1個を置くまでは必ず
+// undershoot (右<左)」が数学的に保証されてしまい、結果として:
+//   - 「おもすぎたら はねかえる」slip 演出 (SLIP_DIFF=8) が全10ラウンド×全順列で
+//     一度も発火しない (overshoot 自体が起こり得ない)
+//   - 「あとちょっと！」near-balance 演出 (diff=±1) も、カタログの最小 weight が
+//     2 のため最終手前でぴったり ±1 に到達する余地が無く、同じく全10ラウンドで
+//     一度も発火しない
+// という「詰みは無いが、選ぶ楽しさも失敗の学びも無い、出したものを全部乗せれば
+// 必ず勝つだけの作業」に退化してしまうバグがクロスレビューで発見された
+// (tests/guragura_seesaw_regression.cjs 側の「全ラウンド trap-free / 最小構成」
+// 監査がこの退化を許してしまっていた不変条件そのものだったため、テスト側も
+// 同時に是正した)。
+//
+// 是正方針: 各ラウンドの tray に「実際の解では使わない (または、使うと重すぎる)
+// デコイ」を1〜2点追加し、tray 合計 > left 合計 にする。 これにより:
+//   - デコイ (または本来の解アイテムの誤った組合せ) を乗せ続けると、本当に
+//     right-left >= SLIP_DIFF(8) を跨いで slip が発火する経路が生まれる
+//   - デコイ+本来アイテムの部分和が left±1 に一致する「おしい」経路も生まれ、
+//     near-balance が実際に発火する
+//   - 一方、本来の解アイテム (旧v3のtray全部) はそのまま tray の部分集合として
+//     残っているため、詰みではなく「選べば解ける」設計は維持される
+// (全10ラウンドについて、本番の placeItem をそのまま呼ぶ全探索スクリプトで
+// slip 到達可能・near-balance 到達可能・解到達可能の3点を検証済み。 詳細は
+// tests/guragura_seesaw_regression.cjs の「全10ラウンド 到達可能性監査」参照)。
+//
+// 注意: デコイを混ぜたことで「前進のみでは解けない (=slip にはならないが
+// undershoot のまま詰む) 状態」が新たに生まれるラウンドがあるが、removeItem
+// (皿の外へドラッグ/タップで取り外し) は常に無制限に使えるため、これは
+// 「間違えたら気付いて置き直す」という健全なトライアル&エラーであり、
+// 旧v3が警戒していた「黙って受理されるが取り返しがつかない詰み」ではない。
 //
 // 段階的導入 (ふたご皿は今回使わない。全ラウンド単一皿 = placeItem/removeItem):
 //   R1-3  果物/野菜のみ (R1 は導入緩和で4個)
 //   R4-7  果物/野菜 + 人形 (R4=frog初登場, R7=bear初登場)
 //   R8-10 果物/野菜 + 人形 + 石 (R8=mystery_stone, R9=star+heart, R10=elephant+石3種フィナーレ)
+// デコイも各ラウンドの段階 (その時点までに登場済みのカテゴリ) からのみ選んでいる。
 var ROUNDS = [
-  { left: ['cherry', 'lemon', 'blueberry', 'apple'],                    tray: ['carrot', 'cherry', 'lemon', 'blueberry'] },
-  { left: ['apple', 'carrot', 'cherry', 'lemon', 'blueberry'],          tray: ['corn', 'grapes'] },
-  { left: ['grapes', 'blueberry', 'blueberry', 'blueberry', 'cherry'],  tray: ['corn', 'apple', 'lemon'] },
-  { left: ['frog', 'apple', 'carrot', 'blueberry', 'blueberry'],        tray: ['corn', 'apple', 'blueberry', 'blueberry'] },
-  { left: ['cat', 'cherry', 'lemon', 'blueberry', 'blueberry'],         tray: ['dog', 'apple', 'lemon'] },
-  { left: ['dog', 'apple', 'lemon', 'blueberry', 'blueberry'],          tray: ['cat', 'carrot', 'apple', 'blueberry'] },
-  { left: ['bear', 'cherry', 'lemon', 'blueberry', 'blueberry'],        tray: ['dog', 'cat', 'frog', 'lemon'] },
-  { left: ['mystery_stone', 'apple', 'carrot', 'blueberry', 'blueberry'], tray: ['cat', 'dog', 'frog', 'carrot'] },
-  { left: ['star_block', 'cat', 'cherry', 'blueberry', 'blueberry'],    tray: ['heart_block', 'dog', 'carrot', 'lemon', 'cherry'] },
-  { left: ['elephant', 'heart_block', 'blueberry', 'blueberry', 'cherry'], tray: ['mystery_stone', 'star_block', 'lemon', 'lemon'] }
+  { left: ['cherry', 'lemon', 'blueberry', 'apple'],                    tray: ['carrot', 'cherry', 'lemon', 'blueberry', 'grapes'] },
+  { left: ['apple', 'carrot', 'cherry', 'lemon', 'blueberry'],          tray: ['corn', 'grapes', 'carrot', 'cherry'] },
+  { left: ['grapes', 'blueberry', 'blueberry', 'blueberry', 'cherry'],  tray: ['corn', 'apple', 'lemon', 'grapes'] },
+  { left: ['frog', 'apple', 'carrot', 'blueberry', 'blueberry'],        tray: ['corn', 'apple', 'blueberry', 'blueberry', 'cherry', 'grapes'] },
+  { left: ['cat', 'cherry', 'lemon', 'blueberry', 'blueberry'],         tray: ['dog', 'apple', 'lemon', 'corn'] },
+  { left: ['dog', 'apple', 'lemon', 'blueberry', 'blueberry'],          tray: ['cat', 'carrot', 'apple', 'blueberry', 'corn'] },
+  { left: ['bear', 'cherry', 'lemon', 'blueberry', 'blueberry'],        tray: ['dog', 'cat', 'frog', 'lemon', 'grapes'] },
+  { left: ['mystery_stone', 'apple', 'carrot', 'blueberry', 'blueberry'], tray: ['cat', 'dog', 'frog', 'carrot', 'bear'] },
+  { left: ['star_block', 'cat', 'cherry', 'blueberry', 'blueberry'],    tray: ['heart_block', 'dog', 'carrot', 'lemon', 'cherry', 'mystery_stone'] },
+  { left: ['elephant', 'heart_block', 'blueberry', 'blueberry', 'cherry'], tray: ['mystery_stone', 'star_block', 'lemon', 'lemon', 'corn'] }
 ];
 
 // ═══ 傾き・釣り合い・滑り落ち定数 ════════════════════════════════════
@@ -90,10 +119,16 @@ var BALANCE_EPS_DEG = 1.0;  // これ以下で「つりあい」成立
 // 「おもすぎたら はねかえる」演出が全ラウンドで実質発火不能になる。非対称化することで
 // SLIP_DIFF を8まで下げ、(a) 明らかな置きすぎ (overshoot) だけを正しく拒否しつつ
 // (b) 積み上げ途中の undershoot を毎回はじかない、という両立を実現している。
-// 全10ラウンドを前進のみ (removeItem不使用) で解けること・詰みが無いこと・トレイの
-// 全アイテムが解に参加することは tests/guragura_seesaw_regression.cjs で全探索検証済み。
+// 全10ラウンドについて、本番の placeItem をそのまま呼ぶ全探索で「少なくとも1つの
+// 解到達経路がある (詰みきりではない)」「slip (overshoot) が実際に発火する経路が
+// ある」「near-balance (diff=±1) が実際に発火する経路がある」の3点を検証済み
+// (tests/guragura_seesaw_regression.cjs の「全10ラウンド 到達可能性監査」参照。
+// v3.1 でデコイを再導入したため、旧v3が保証していた「トレイの全アイテムが必ず
+// 解に参加する」「前進のみでどの状態からも詰みなく解ける」は、もはや意図的な
+// 設計目標ではない。デコイを選んでしまって前進のみでは詰む状態は removeItem
+// で常に立て直せるため、これは「詰み」ではなく健全なトライアル&エラー)。
 var SLIP_DIFF = 8;          // 配置後 (右-左) がこれ以上なら滑り落ち(配置拒否)。overshootのみ判定。
-var PAN_CAPACITY = 8;       // 片皿の最大アイテム数 (v3 最大トレイ数5に余裕を持たせた値)
+var PAN_CAPACITY = 8;       // 片皿の最大アイテム数 (v3.1 最大トレイ数6に余裕を持たせた値)
 // 「あとちょっと！」near-balance 判定の閾値。 重さ差(=CATALOGのweight単位)1個ぶんの
 // 傾き(ANGLE_PER_DIFF*1=3.5deg)は「近い」と判定し、2個ぶんの差(3.5*2=7deg)は
 // 「近い」と判定しないよう、3.5 と 7 のちょうど中間の 5.0 を採用する
