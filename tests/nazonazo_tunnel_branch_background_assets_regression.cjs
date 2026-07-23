@@ -14,7 +14,7 @@ const css = read("nazonazo-tunnel/styles.css");
 const sw = read("sw.js");
 const DINO_V2_TOKEN = "20260723-1421";
 const RUNTIME_TOKEN = "20260723-1429";
-const SW_VERSION = 2351;
+const SW_VERSION = 2352;
 
 const STAGE_IDS = ["snow", "fire", "dino", "toy", "cat", "fantasy", "sky", "ruins"];
 const LAYER_KEYS = ["sky", "horizon", "mid", "ground", "fg", "decor"];

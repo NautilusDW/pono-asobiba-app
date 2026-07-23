@@ -1,5 +1,12 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2352: ポノのはたけにっきを、最初から使える論理3×3の9区画へ拡張。
+// 画面では奥から1／2／3／2／1枚に見えるアイソメ配置を畑面中央へ置き、
+// 旧3／4区画セーブのindexと位置を保持して不足分だけ空畑で補完する。
+// 水やり済みしずくは14〜22pxへ縮小して札の左上外側へ移し、作物絵と
+// 隣接畝の土へ重ならないようにした。styles/logic/game queryも更新。
+// ゲーム個別ファイルはnetwork-first配信のためCRITICAL_ASSETSには追加しない。
+// play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSION と同期 (2352)。
 // v2351: ひょっこりハイタッチの6茂みを背景の接地点へ揃え、画像内で右寄りだった
 // 穴中心をキャラ窓へ補正。前葉と窓下端を同じ高さで閉じて出現途中の下漏れを防ぎ、
 // 停止位置も上げてキャラの胴体が水平に切れる表示を解消した。styles.css queryを
@@ -880,7 +887,7 @@
 // styles.css／game.js queryを20260723-1429へ同期。ゲーム個別ファイルと画像は
 // network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
 // PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2347)。
-const CACHE_VERSION = 2351;
+const CACHE_VERSION = 2352;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [
