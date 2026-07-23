@@ -85,8 +85,10 @@ const ADJACENT_PLOTS = {
   8: [2, 3, 6]
 };
 
+const CROP_IDS = ['tomato', 'ninjin', 'potato', 'onion'];
+const STAGE_FILE_SUFFIXES = ['seed', 'sprout', 'young', 'forming', 'ready'];
 const visualState = Array.from({ length: PLOT_COUNT }, (_, index) => ({
-  seedId: index % 2 === 0 ? 'tomato' : 'ninjin',
+  seedId: CROP_IDS[index % CROP_IDS.length],
   daysGrown: index % 4,
   wateredToday: true,
   wilted: false,
@@ -113,10 +115,8 @@ for (const viewport of [
     )).toEqual(DOM_VISUAL_ORDER);
 
     for (let dataIndex = 0; dataIndex < PLOT_COUNT; dataIndex += 1) {
-      const expectedCrop = dataIndex % 2 === 0 ? 'tomato' : 'ninjin';
-      const expectedSignSource = expectedCrop === 'tomato'
-        ? /crop_sign_tomato_iso_v2\.png$/
-        : /crop_sign_ninjin_iso_v2\.png$/;
+      const expectedCrop = CROP_IDS[dataIndex % CROP_IDS.length];
+      const expectedSignSource = new RegExp(`crop_sign_${expectedCrop}_iso_v3\\.webp$`);
       const plot = page.locator(`.plot[data-plot="${dataIndex}"]`);
       const sign = plot.locator('.crop-sign');
       const drop = plot.locator('.watered-drop');
@@ -127,6 +127,11 @@ for (const viewport of [
       await expect(drop).toBeVisible();
       await expect(drop).toHaveAttribute('src', /watered_drop_mark_v2\.png$/);
     }
+    await expect(page.locator('.crop-stage-img')).toHaveCount(PLOT_COUNT);
+    await page.waitForFunction(() =>
+      Array.from(document.querySelectorAll('.crop-stage-img'))
+        .every((image) => image.complete && image.naturalWidth > 0)
+    );
 
     const artState = await page.evaluate(() => {
       const plots = Array.from(document.querySelectorAll('.plot'));
@@ -187,15 +192,28 @@ for (const viewport of [
           };
         }),
         plantAnchors: plots.map((plot) => {
-          const plant = plot.querySelector('.plant-emoji');
-          if (!plant) return null;
+          const plant = plot.querySelector('.plant');
+          const image = plant && plant.querySelector('img.crop-stage-img');
+          if (!plant || !image) return null;
           return {
-            x: plant.offsetLeft / plot.clientWidth,
-            y: plant.offsetTop / plot.clientHeight
+            crop: plot.dataset.crop,
+            stage: Number(plant.dataset.stage),
+            source: image.getAttribute('src'),
+            x: (plant.offsetLeft + plant.offsetWidth / 2) / plot.clientWidth,
+            y: (plant.offsetTop + plant.offsetHeight / 2) / plot.clientHeight,
+            loaded: image.complete && image.naturalWidth > 0,
+            pointerEvents: getComputedStyle(image).pointerEvents
           };
         }).filter(Boolean),
+        plantEmojiCount: document.querySelectorAll('.plant-emoji').length,
+        legacyCropImageCount: document.querySelectorAll('.crop-img').length,
         wateringCanLoaded: !!wateringCan && wateringCan.complete && wateringCan.naturalWidth > 0,
-        wateringCanText: document.getElementById('tool-water-btn').textContent.trim()
+        wateringCanText: document.getElementById('tool-water-btn').textContent.trim(),
+        seedBoxLoaded: (() => {
+          const seedBox = document.querySelector('#tool-seed-btn img');
+          return !!seedBox && seedBox.complete && seedBox.naturalWidth > 0;
+        })(),
+        seedToolText: document.getElementById('tool-seed-btn').textContent.trim()
       };
     });
     expect(artState.backgrounds).toHaveLength(PLOT_COUNT);
@@ -227,13 +245,24 @@ for (const viewport of [
       expect(geometry.dropLoaded).toBe(true);
       expect(geometry.pointerEvents.every((value) => value === 'none')).toBe(true);
     }
-    expect(artState.plantAnchors).toHaveLength(5);
+    expect(artState.plantAnchors).toHaveLength(PLOT_COUNT);
     for (const plant of artState.plantAnchors) {
       expect(Math.abs(plant.x - 0.5)).toBeLessThanOrEqual(0.01);
       expect(Math.abs(plant.y - 0.5)).toBeLessThanOrEqual(0.01);
+      expect(plant.loaded).toBe(true);
+      expect(plant.pointerEvents).toBe('none');
+      expect(plant.stage).toBeGreaterThanOrEqual(0);
+      expect(plant.stage).toBeLessThanOrEqual(4);
+      expect(plant.source).toMatch(new RegExp(
+        `crops/${plant.crop}_stage_${plant.stage}_${STAGE_FILE_SUFFIXES[plant.stage]}\\.webp$`
+      ));
     }
+    expect(artState.plantEmojiCount).toBe(0);
+    expect(artState.legacyCropImageCount).toBe(0);
     expect(artState.wateringCanLoaded).toBe(true);
     expect(artState.wateringCanText).toBe('');
+    expect(artState.seedBoxLoaded).toBe(true);
+    expect(artState.seedToolText).toBe('');
 
     const boxesByDataIndex = await Promise.all(
       Array.from({ length: PLOT_COUNT }, async (_, dataIndex) => {
@@ -303,11 +332,11 @@ for (const viewport of [
 
     await expect(page.locator('.plot[data-plot="0"]')).toHaveAttribute(
       'aria-label',
-      'いちばん おくの とまとの はたけ。きょうの みずやり できた'
+      'いちばん おくの とまとの はたけ。めが でた。きょうの みずやり できた'
     );
     await expect(page.locator('.plot[data-plot="1"]')).toHaveAttribute(
       'aria-label',
-      'ひだりの にんじんの はたけ。きょうの みずやり できた'
+      'ひだりの にんじんの はたけ。ちいさな かぶ。きょうの みずやり できた'
     );
 
     await page.screenshot({
@@ -315,6 +344,102 @@ for (const viewport of [
     });
   });
 }
+
+test('4作物は種から収穫まで5段階の生成画像だけで表示する', async ({ page }) => {
+  // stage対応:
+  // 0=(0日,未水やり), 1=(0日,水やり済み), 2=(1日,水やり済み),
+  // 3=(2日,水やり済み), 4=(3日,未水やり)。
+  // 日数の閾値そのものではなく、子どもが実際に見る5つの状態を固定する。
+  const growthState = [
+    { seedId: 'tomato', daysGrown: 0, wateredToday: false },
+    { seedId: 'tomato', daysGrown: 0, wateredToday: true },
+    { seedId: 'ninjin', daysGrown: 1, wateredToday: true },
+    { seedId: 'potato', daysGrown: 2, wateredToday: true },
+    { seedId: 'onion', daysGrown: 3, wateredToday: false },
+    { seedId: 'ninjin', daysGrown: 0, wateredToday: false },
+    { seedId: 'potato', daysGrown: 1, wateredToday: true },
+    { seedId: 'onion', daysGrown: 2, wateredToday: true },
+    { seedId: 'tomato', daysGrown: 3, wateredToday: false }
+  ].map((plot) => ({ ...plot, wilted: false, bug: false }));
+
+  await gotoSeededField(page, { width: 844, height: 390 }, growthState);
+
+  await expect(page.locator('.crop-stage-img')).toHaveCount(PLOT_COUNT);
+  await expect(page.locator('.plant-emoji')).toHaveCount(0);
+  await expect(page.locator('.crop-img')).toHaveCount(0);
+
+  const rendered = await page.locator('.plot').evaluateAll((plots) =>
+    plots.map((plot) => {
+      const plant = plot.querySelector('.plant');
+      const image = plant.querySelector('img.crop-stage-img');
+      return {
+        crop: plot.dataset.crop,
+        stage: Number(plant.dataset.stage),
+        source: image && image.getAttribute('src'),
+        alt: image && image.getAttribute('alt'),
+        loaded: !!image && image.complete && image.naturalWidth > 0,
+        plantText: plant.textContent
+      };
+    })
+  );
+
+  const renderedByDataIndex = new Map(
+    rendered.map((entry, visualIndex) => [DOM_VISUAL_ORDER[visualIndex], entry])
+  );
+  const expectedStages = [0, 1, 2, 3, 4];
+  for (let dataIndex = 0; dataIndex < growthState.length; dataIndex += 1) {
+    const expected = growthState[dataIndex];
+    const entry = renderedByDataIndex.get(dataIndex);
+    expect(entry.crop).toBe(expected.seedId);
+    expect(entry.loaded).toBe(true);
+    expect(entry.plantText).toBe('');
+    expect(entry.stage).toBeGreaterThanOrEqual(0);
+    expect(entry.stage).toBeLessThanOrEqual(4);
+    expect(entry.source).toMatch(new RegExp(
+      `crops/${expected.seedId}_stage_${entry.stage}_${STAGE_FILE_SUFFIXES[entry.stage]}\\.webp$`
+    ));
+  }
+  expect(expectedStages.map((_, index) => renderedByDataIndex.get(index).stage)).toEqual(expectedStages);
+
+  const cropMetadata = await page.evaluate(() =>
+    Object.fromEntries(Object.entries(window.HatakeLogic.CROPS).map(([id, crop]) => [
+      id,
+      {
+        name: crop.name,
+        stageImages: crop.stageImages
+      }
+    ]))
+  );
+  expect(Object.keys(cropMetadata).sort()).toEqual([...CROP_IDS].sort());
+  for (const cropId of CROP_IDS) {
+    expect(cropMetadata[cropId].stageImages).toHaveLength(5);
+    cropMetadata[cropId].stageImages.forEach((source, stage) => {
+      expect(source).toMatch(new RegExp(
+        `crops/${cropId}_stage_${stage}_${STAGE_FILE_SUFFIXES[stage]}\\.webp$`
+      ));
+    });
+  }
+
+  const assetLoadResults = await page.evaluate(async (metadata) => {
+    const sources = Object.values(metadata).flatMap((crop) => crop.stageImages);
+    return Promise.all(sources.map((source) => new Promise((resolve) => {
+      const image = new Image();
+      image.onload = () => resolve({ source, loaded: image.naturalWidth > 0 });
+      image.onerror = () => resolve({ source, loaded: false });
+      image.src = source;
+    })));
+  }, cropMetadata);
+  expect(assetLoadResults).toHaveLength(CROP_IDS.length * 5);
+  expect(assetLoadResults.every((asset) => asset.loaded)).toBe(true);
+
+  for (const cropId of CROP_IDS) {
+    const sign = page.locator(`.plot[data-crop="${cropId}"] .crop-sign`).first();
+    await expect(sign).toHaveAttribute(
+      'src',
+      new RegExp(`crop_sign_${cropId}_iso_v3\\.webp$`)
+    );
+  }
+});
 
 test('収穫すると立て札・湿った土・しずくが空畑の状態へ戻る', async ({ page }) => {
   const harvestState = Array.from({ length: PLOT_COUNT }, () => ({
@@ -326,7 +451,7 @@ test('収穫すると立て札・湿った土・しずくが空畑の状態へ�
   }));
   harvestState[8] = {
     seedId: 'tomato',
-    daysGrown: 3,
+    daysGrown: 99,
     wateredToday: true,
     wilted: false,
     bug: false

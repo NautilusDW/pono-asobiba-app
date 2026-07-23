@@ -82,13 +82,24 @@
 <script src="../common/menu.js"></script>
 <script src="../common/treasure.js"></script>
 
-<!-- 初回の開始直後から立て札と湿った畑を欠けずに見せる。crop-sign は
-     seedId 判定後に src が付くため、開始画面のうちに明示的に先読みする。 -->
-<link rel="preload" as="image" href="../assets/images/hatake-nikki/crop_sign_tomato_iso_v2.png" type="image/png">
-<link rel="preload" as="image" href="../assets/images/hatake-nikki/crop_sign_ninjin_iso_v2.png" type="image/png">
+<!-- 初回の開始直後から種箱・種・立て札・湿った畑を欠けずに見せる。
+     作物ごとの成長画像は stage 0 だけ先読みし、以降は必要な段階だけ読む。 -->
+<link rel="preload" as="image" href="../assets/images/hatake-nikki/seed_tool_box_iso.webp" type="image/webp">
+<link rel="preload" as="image" href="../assets/images/hatake-nikki/crop_sign_tomato_iso_v3.webp" type="image/webp">
+<link rel="preload" as="image" href="../assets/images/hatake-nikki/crop_sign_ninjin_iso_v3.webp" type="image/webp">
+<link rel="preload" as="image" href="../assets/images/hatake-nikki/crop_sign_potato_iso_v3.webp" type="image/webp">
+<link rel="preload" as="image" href="../assets/images/hatake-nikki/crop_sign_onion_iso_v3.webp" type="image/webp">
+<link rel="preload" as="image" href="../assets/images/hatake-nikki/crops/tomato_seed_choice.webp" type="image/webp">
+<link rel="preload" as="image" href="../assets/images/hatake-nikki/crops/ninjin_seed_choice.webp" type="image/webp">
+<link rel="preload" as="image" href="../assets/images/hatake-nikki/crops/potato_seed_choice.webp" type="image/webp">
+<link rel="preload" as="image" href="../assets/images/hatake-nikki/crops/onion_seed_choice.webp" type="image/webp">
+<link rel="preload" as="image" href="../assets/images/hatake-nikki/crops/tomato_stage_0_seed.webp" type="image/webp">
+<link rel="preload" as="image" href="../assets/images/hatake-nikki/crops/ninjin_stage_0_seed.webp" type="image/webp">
+<link rel="preload" as="image" href="../assets/images/hatake-nikki/crops/potato_stage_0_seed.webp" type="image/webp">
+<link rel="preload" as="image" href="../assets/images/hatake-nikki/crops/onion_stage_0_seed.webp" type="image/webp">
 <link rel="preload" as="image" href="../assets/images/hatake-nikki/hatake_crop_wet.png" type="image/png">
 <link rel="preload" as="image" href="../assets/images/hatake-nikki/watered_drop_mark_v2.png" type="image/png">
-<link rel="stylesheet" href="styles.css?v=20260723-7">
+<link rel="stylesheet" href="styles.css?v=20260723-8">
 </head>
 <body>
 
@@ -106,8 +117,8 @@
   <!-- ── スタート画面 (デフォルト表示。.screen.show で表示、他は.screenのみ=display:none) ── -->
   <section id="start-screen" class="screen show">
     <div class="title">ポノのはたけにっき</div>
-    <div class="icon">🥕</div>
-    <div class="desc">まいにち みずやり やさいを そだてよう<br>おやすみしても だいじょうぶ！</div>
+    <div class="icon"><img src="../assets/images/hatake-nikki/seed_tool_box_iso.webp" alt="" aria-hidden="true" draggable="false"></div>
+    <div class="desc">おべんとうの やさいを そだてよう<br>おやすみしても だいじょうぶ！</div>
     <button class="tap-btn" id="start-btn">▶ はじめる</button>
   </section>
 
@@ -216,7 +227,9 @@
       <button type="button" class="tool-btn" id="tool-water-btn" aria-label="じょうろで みずやり">
         <img class="tool-icon tool-icon-water" src="../assets/images/Rooms/furnitures_final/deco_watering_can_B.png" alt="" aria-hidden="true" draggable="false">
       </button>
-      <button type="button" class="tool-btn" id="tool-seed-btn" aria-label="たねを うえる">🌱</button>
+      <button type="button" class="tool-btn" id="tool-seed-btn" aria-label="たねを うえる">
+        <img class="tool-icon tool-icon-seed" src="../assets/images/hatake-nikki/seed_tool_box_iso.webp" alt="" aria-hidden="true" draggable="false">
+      </button>
     </div>
 
     <div id="status-bar" aria-live="polite"></div>
@@ -226,14 +239,23 @@
   <!-- ── 種ピッカー (簡易モーダル) ── -->
   <div id="seed-picker" class="screen">
     <div class="seed-picker-card">
+      <div class="seed-picker-title">おべんとうに つかえる<br>たねを えらんでね</div>
       <div class="seed-choices-row">
+        <button type="button" class="seed-choice" data-seed="tomato">
+          <img src="../assets/images/hatake-nikki/crops/tomato_seed_choice.webp" alt="とまとの たね">
+          <span>とまと</span>
+        </button>
         <button type="button" class="seed-choice" data-seed="ninjin">
-          <img src="../assets/images/word/ninjin.png" alt="にんじん">
+          <img src="../assets/images/hatake-nikki/crops/ninjin_seed_choice.webp" alt="にんじんの たね">
           <span>にんじん</span>
         </button>
-        <button type="button" class="seed-choice" data-seed="tomato">
-          <img src="../assets/images/word/tomato.png" alt="とまと">
-          <span>とまと</span>
+        <button type="button" class="seed-choice" data-seed="potato">
+          <img src="../assets/images/hatake-nikki/crops/potato_seed_choice.webp" alt="じゃがいもの たねいも">
+          <span>じゃがいも</span>
+        </button>
+        <button type="button" class="seed-choice" data-seed="onion">
+          <img src="../assets/images/hatake-nikki/crops/onion_seed_choice.webp" alt="たまねぎの たね">
+          <span>たまねぎ</span>
         </button>
       </div>
       <button type="button" class="seed-picker-close-btn" id="seed-picker-close-btn">✕ とじる</button>
@@ -252,7 +274,7 @@
   <!-- ── はたけずかん ── -->
   <div id="zukan-overlay" class="screen">
     <div class="zukan-card">
-      <div class="zukan-title">🥕 はたけずかん 📖</div>
+      <div class="zukan-title">はたけずかん</div>
       <div class="zukan-grid" id="zukan-grid"></div>
       <button type="button" class="zukan-close-btn" id="zukan-close-btn">とじる</button>
     </div>
@@ -260,7 +282,7 @@
 
 </div>
 
-<script src="js/logic.js?v=20260723-3"></script>
-<script src="js/game.js?v=20260723-5"></script>
+<script src="js/logic.js?v=20260723-4"></script>
+<script src="js/game.js?v=20260723-6"></script>
 </body>
 </html>

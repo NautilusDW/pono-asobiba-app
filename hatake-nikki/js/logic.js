@@ -64,8 +64,74 @@
 
   // ═══ 作物マスタ ═══
   var CROPS = {
-    ninjin: { id: 'ninjin', name: 'にんじん', img: '../assets/images/word/ninjin.png', stageThresholds: [1, 2, 4] },
-    tomato: { id: 'tomato', name: 'とまと', img: '../assets/images/word/tomato.png', stageThresholds: [1, 2, 3] }
+    tomato: {
+      id: 'tomato',
+      name: 'とまと',
+      inventoryId: 'tomato',
+      img: '../assets/images/hatake-nikki/crops/tomato_stage_4_ready.webp',
+      seedChoiceImg: '../assets/images/hatake-nikki/crops/tomato_seed_choice.webp',
+      signImg: '../assets/images/hatake-nikki/crop_sign_tomato_iso_v3.webp',
+      stageImages: [
+        '../assets/images/hatake-nikki/crops/tomato_stage_0_seed.webp',
+        '../assets/images/hatake-nikki/crops/tomato_stage_1_sprout.webp',
+        '../assets/images/hatake-nikki/crops/tomato_stage_2_young.webp',
+        '../assets/images/hatake-nikki/crops/tomato_stage_3_forming.webp',
+        '../assets/images/hatake-nikki/crops/tomato_stage_4_ready.webp'
+      ],
+      progressThresholds: [1, 3, 5, 6],
+      recipeIds: ['tomato']
+    },
+    ninjin: {
+      id: 'ninjin',
+      name: 'にんじん',
+      inventoryId: 'carrot',
+      img: '../assets/images/hatake-nikki/crops/ninjin_stage_4_ready.webp',
+      seedChoiceImg: '../assets/images/hatake-nikki/crops/ninjin_seed_choice.webp',
+      signImg: '../assets/images/hatake-nikki/crop_sign_ninjin_iso_v3.webp',
+      stageImages: [
+        '../assets/images/hatake-nikki/crops/ninjin_stage_0_seed.webp',
+        '../assets/images/hatake-nikki/crops/ninjin_stage_1_sprout.webp',
+        '../assets/images/hatake-nikki/crops/ninjin_stage_2_young.webp',
+        '../assets/images/hatake-nikki/crops/ninjin_stage_3_forming.webp',
+        '../assets/images/hatake-nikki/crops/ninjin_stage_4_ready.webp'
+      ],
+      progressThresholds: [1, 3, 5, 6],
+      recipeIds: ['ninjin_ingen', 'kinpira', 'potato_salad', 'harumaki']
+    },
+    potato: {
+      id: 'potato',
+      name: 'じゃがいも',
+      inventoryId: 'potato',
+      img: '../assets/images/hatake-nikki/crops/potato_stage_4_ready.webp',
+      seedChoiceImg: '../assets/images/hatake-nikki/crops/potato_seed_choice.webp',
+      signImg: '../assets/images/hatake-nikki/crop_sign_potato_iso_v3.webp',
+      stageImages: [
+        '../assets/images/hatake-nikki/crops/potato_stage_0_seed.webp',
+        '../assets/images/hatake-nikki/crops/potato_stage_1_sprout.webp',
+        '../assets/images/hatake-nikki/crops/potato_stage_2_young.webp',
+        '../assets/images/hatake-nikki/crops/potato_stage_3_forming.webp',
+        '../assets/images/hatake-nikki/crops/potato_stage_4_ready.webp'
+      ],
+      progressThresholds: [1, 3, 5, 6],
+      recipeIds: ['korokke', 'potato_salad']
+    },
+    onion: {
+      id: 'onion',
+      name: 'たまねぎ',
+      inventoryId: 'onion',
+      img: '../assets/images/hatake-nikki/crops/onion_stage_4_ready.webp',
+      seedChoiceImg: '../assets/images/hatake-nikki/crops/onion_seed_choice.webp',
+      signImg: '../assets/images/hatake-nikki/crop_sign_onion_iso_v3.webp',
+      stageImages: [
+        '../assets/images/hatake-nikki/crops/onion_stage_0_seed.webp',
+        '../assets/images/hatake-nikki/crops/onion_stage_1_sprout.webp',
+        '../assets/images/hatake-nikki/crops/onion_stage_2_young.webp',
+        '../assets/images/hatake-nikki/crops/onion_stage_3_forming.webp',
+        '../assets/images/hatake-nikki/crops/onion_stage_4_ready.webp'
+      ],
+      progressThresholds: [1, 3, 5, 6],
+      recipeIds: ['hamburg', 'meatball', 'napolitan']
+    }
   };
   var PLOT_COUNT = 9;
 
@@ -85,16 +151,30 @@
     return { lastSeenKey: todayKey, plots: emptyPlots() };
   }
 
-  /** plot の成長段階 (0=たね,1=め,2=そだち,3=しゅうかくOK)。未植栽は -1。 */
+  /**
+   * 日数と当日の水やりを、見た目用の「おせわ進行」へ変換する。
+   * 1日を2目盛りにし、水やり直後の奇数目盛りで新しい絵を即時表示する。
+   * 翌日の rollover では daysGrown+1 / wateredToday=false となって同じ偶数目盛りへ
+   * 移るため、画像が元へ戻らない。3日の実待ちの中で5枚を順に見せられる。
+   */
+  function careProgressOf(plot) {
+    if (!plot || !plot.seedId) return -1;
+    var dg = (typeof plot.daysGrown === 'number' && isFinite(plot.daysGrown) && plot.daysGrown >= 0)
+      ? plot.daysGrown : 0;
+    return dg * 2 + (plot.wateredToday ? 1 : 0);
+  }
+
+  /** plot の成長段階 (0=たね,1=め,2=小さな株,3=できはじめ,4=しゅうかくOK)。未植栽は -1。 */
   function stageOf(plot) {
     if (!plot || !plot.seedId) return -1;
     var crop = CROPS[plot.seedId];
     if (!crop) return -1;
-    var th = crop.stageThresholds;
-    var dg = plot.daysGrown || 0;
-    if (dg >= th[2]) return 3;
-    if (dg >= th[1]) return 2;
-    if (dg >= th[0]) return 1;
+    var th = crop.progressThresholds;
+    var progress = careProgressOf(plot);
+    if (progress >= th[3]) return 4;
+    if (progress >= th[2]) return 3;
+    if (progress >= th[1]) return 2;
+    if (progress >= th[0]) return 1;
     return 0;
   }
 
@@ -129,11 +209,11 @@
     return true;
   }
 
-  /** stage3 (しゅうかくOK) のみ収穫成功。plot は空に戻る。 */
+  /** stage4 (しゅうかくOK) のみ収穫成功。plot は空に戻る。 */
   function harvest(state, plotIdx) {
     if (!state || !state.plots || !state.plots[plotIdx]) return { ok: false };
     var plot = state.plots[plotIdx];
-    if (stageOf(plot) !== 3) return { ok: false };
+    if (stageOf(plot) !== 4) return { ok: false };
     var seedId = plot.seedId;
     state.plots[plotIdx] = emptyPlot();
     return { ok: true, seedId: seedId };
@@ -240,6 +320,7 @@
     PLOT_COUNT: PLOT_COUNT,
     createInitialState: createInitialState,
     emptyPlot: emptyPlot,
+    careProgressOf: careProgressOf,
     stageOf: stageOf,
     plantSeed: plantSeed,
     waterPlot: waterPlot,

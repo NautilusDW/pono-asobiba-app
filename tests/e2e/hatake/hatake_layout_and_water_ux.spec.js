@@ -452,7 +452,7 @@ test.describe('hatake-nikki: layout regression (論理3×3の畝9枚がひし形
     const frontPlot = page.locator('.plot[data-plot="3"]');
     await frontPlot.focus();
     await page.keyboard.press('Enter');
-    await expect(frontPlot).toHaveAttribute('aria-label', 'いちばん てまえの とまとの はたけ。きょうの みずやりは まだ');
+    await expect(frontPlot).toHaveAttribute('aria-label', 'いちばん てまえの とまとの はたけ。たね。きょうの みずやりは まだ');
 
     const waterTool = page.locator('#tool-water-btn');
     await waterTool.focus();
@@ -478,7 +478,7 @@ test.describe('hatake-nikki: layout regression (論理3×3の畝9枚がひし形
     const backPlot = page.locator('.plot[data-plot="0"]');
     const plotBox = await backPlot.boundingBox();
     await page.mouse.click(plotBox.x + plotBox.width / 2, plotBox.y + plotBox.height / 2);
-    await expect(backPlot).toHaveAttribute('aria-label', 'いちばん おくの にんじんの はたけ。きょうの みずやりは まだ');
+    await expect(backPlot).toHaveAttribute('aria-label', 'いちばん おくの にんじんの はたけ。たね。きょうの みずやりは まだ');
 
     const waterTool = page.locator('#tool-water-btn');
     await waterTool.click();

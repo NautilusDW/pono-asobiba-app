@@ -8,6 +8,7 @@
 // 統合が未実施の間は該当セクションが skip される。
 
 const assert = require("node:assert/strict");
+const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
@@ -36,7 +37,41 @@ function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
     assert.equal(typeof L[name], "function", `HatakeLogic.${name} は関数`);
   }
   assert.equal(typeof L.CROPS, "object", "HatakeLogic.CROPS は定義済み");
-  assert.ok(L.CROPS.ninjin && L.CROPS.tomato, "CROPS に ninjin/tomato が存在する");
+  const cropIds = Object.keys(L.CROPS).sort();
+  assert.deepEqual(cropIds, ["ninjin", "onion", "potato", "tomato"], "CROPS はおべんとうで使う4種だけに絞る");
+  const expectedInventoryIds = {
+    tomato: "tomato",
+    ninjin: "carrot",
+    potato: "potato",
+    onion: "onion"
+  };
+  const allStageImages = [];
+  const allSignImages = [];
+  const allSeedChoiceImages = [];
+  for (const cropId of cropIds) {
+    const crop = L.CROPS[cropId];
+    assert.equal(crop.id, cropId, `${cropId}.id は作物IDと一致する`);
+    assert.equal(crop.inventoryId, expectedInventoryIds[cropId], `${cropId}.inventoryId はおべんとう材料IDへ対応する`);
+    assert.equal(typeof crop.signImg, "string", `${cropId}.signImg が定義される`);
+    assert.match(crop.signImg, new RegExp("crop_sign_" + cropId + "_iso_v3\\.webp$"), `${cropId}.signImg は同じ作物の v3 WebP 立て札`);
+    assert.equal(typeof crop.seedChoiceImg, "string", `${cropId}.seedChoiceImg が定義される`);
+    assert.match(crop.seedChoiceImg, new RegExp("/crops/" + cropId + "_seed_choice\\.webp$"), `${cropId}.seedChoiceImg は同じ作物の種生成画像`);
+    assert.deepEqual(crop.progressThresholds, [1, 3, 5, 6], `${cropId} は共通の5段階 careProgress 閾値を使う`);
+    assert.equal(crop.stageImages.length, 5, `${cropId}.stageImages は種から収穫まで5枚`);
+    assert.equal(new Set(crop.stageImages).size, 5, `${cropId}.stageImages の5枚はすべて別URL`);
+    const stageSuffixes = ["seed", "sprout", "young", "forming", "ready"];
+    for (let stage = 0; stage < crop.stageImages.length; stage++) {
+      assert.equal(typeof crop.stageImages[stage], "string", `${cropId} stage${stage} URL は文字列`);
+      assert.match(crop.stageImages[stage], new RegExp("/crops/" + cropId + "_stage_" + stage + "_" + stageSuffixes[stage] + "\\.webp$"), `${cropId} stage${stage} は対応する WebP`);
+    }
+    assert.equal("stageThresholds" in crop, false, `${cropId} は旧3段階 stageThresholds を残さない`);
+    allStageImages.push(...crop.stageImages);
+    allSignImages.push(crop.signImg);
+    allSeedChoiceImages.push(crop.seedChoiceImg);
+  }
+  assert.equal(new Set(allStageImages).size, 20, "4作物×5段階の成長画像URLは全20枚ユニーク");
+  assert.equal(new Set(allSignImages).size, 4, "4作物の立て札URLは重複しない");
+  assert.equal(new Set(allSeedChoiceImages).size, 4, "4作物の種選択画像URLは重複しない");
   assert.equal(L.PLOT_COUNT, 9, "畑は固定9区画");
 
   const initial = L.createInitialState("2026-07-23");
@@ -88,18 +123,47 @@ function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
   assert.doesNotMatch(gameJs, /\.toISOString\(/, "game.js は toISOString を呼び出さない");
 }
 
-// ── 4. 成長段階マッピング ────────────────────────────────────────────
+// ── 4. 5段階成長マッピング (日数 + 当日の水やり) ─────────────────────
 {
-  function plotWith(seedId, daysGrown) {
-    return { seedId: seedId, daysGrown: daysGrown, wateredToday: false, wilted: false, bug: false };
+  function plotWith(seedId, daysGrown, wateredToday) {
+    return { seedId: seedId, daysGrown: daysGrown, wateredToday: !!wateredToday, wilted: false, bug: false };
   }
-  const ninjinExpected = { 0: 0, 1: 1, 2: 2, 3: 2, 4: 3, 10: 3 };
-  for (const [dg, expected] of Object.entries(ninjinExpected)) {
-    assert.equal(L.stageOf(plotWith("ninjin", Number(dg))), expected, `ninjin daysGrown=${dg} -> stage ${expected}`);
+  const progressCases = [
+    { daysGrown: 0, wateredToday: false, careProgress: 0, stage: 0 },
+    { daysGrown: 0, wateredToday: true, careProgress: 1, stage: 1 },
+    { daysGrown: 1, wateredToday: false, careProgress: 2, stage: 1 },
+    { daysGrown: 1, wateredToday: true, careProgress: 3, stage: 2 },
+    { daysGrown: 2, wateredToday: false, careProgress: 4, stage: 2 },
+    { daysGrown: 2, wateredToday: true, careProgress: 5, stage: 3 },
+    { daysGrown: 3, wateredToday: false, careProgress: 6, stage: 4 },
+    { daysGrown: 10, wateredToday: true, careProgress: 21, stage: 4 }
+  ];
+  for (const cropId of ["tomato", "ninjin", "potato", "onion"]) {
+    for (const c of progressCases) {
+      assert.equal(
+        L.stageOf(plotWith(cropId, c.daysGrown, c.wateredToday)),
+        c.stage,
+        `${cropId}: careProgress=${c.careProgress} -> stage ${c.stage}`
+      );
+    }
   }
-  // tomato は閾値 [1,2,3] なので3日目で stage3 に到達 (ninjinより1日早い)
-  assert.equal(L.stageOf(plotWith("tomato", 3)), 3, "tomato は3日で stage3");
-  assert.equal(L.stageOf(plotWith("tomato", 2)), 2, "tomato は2日で stage2");
+
+  // 子どもが操作した直後に必ず1段階進み、以後は「翌日 + 水やり」で交互に進む。
+  const sequence = L.createInitialState("2026-07-01");
+  assert.ok(L.plantSeed(sequence, 0, "tomato"), "種を植えられる");
+  assert.equal(L.stageOf(sequence.plots[0]), 0, "植えた直後は種画像 stage0");
+  assert.ok(L.waterPlot(sequence, 0), "植えた当日に水やりできる");
+  assert.equal(L.stageOf(sequence.plots[0]), 1, "最初の水やり直後に芽 stage1");
+  L.advanceOneDay(sequence, "2026-07-02");
+  assert.equal(L.stageOf(sequence.plots[0]), 1, "翌日は同じ stage1 を保つ");
+  assert.ok(L.waterPlot(sequence, 0), "2回目の水やりができる");
+  assert.equal(L.stageOf(sequence.plots[0]), 2, "2回目の水やり直後に若葉 stage2");
+  L.advanceOneDay(sequence, "2026-07-03");
+  assert.ok(L.waterPlot(sequence, 0), "3回目の水やりができる");
+  assert.equal(L.stageOf(sequence.plots[0]), 3, "2日目の水やり直後に実りはじめ stage3");
+  L.advanceOneDay(sequence, "2026-07-04");
+  assert.equal(L.stageOf(sequence.plots[0]), 4, "3日目に収穫OK stage4");
+
   assert.equal(L.stageOf(L.emptyPlot()), -1, "未植栽 plot は stage -1");
 }
 
@@ -223,14 +287,16 @@ function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
 {
   const s = L.createInitialState("2026-07-01");
   L.plantSeed(s, 0, "tomato");
-  s.plots[0].daysGrown = 2; // stage2 (まだ収穫不可)
+  s.plots[0].daysGrown = 2;
+  s.plots[0].wateredToday = true; // careProgress=5, stage3 (実りはじめ・まだ収穫不可)
   let res = L.harvest(s, 0);
-  assert.equal(res.ok, false, "stage<3 では収穫失敗");
+  assert.equal(res.ok, false, "stage3 では収穫失敗");
   assert.equal(s.plots[0].seedId, "tomato", "収穫失敗時は plot 不変");
 
-  s.plots[0].daysGrown = 3; // stage3
+  s.plots[0].daysGrown = 3;
+  s.plots[0].wateredToday = false; // careProgress=6, stage4
   res = L.harvest(s, 0);
-  assert.equal(res.ok, true, "stage3 で収穫成功");
+  assert.equal(res.ok, true, "stage4 でのみ収穫成功");
   assert.equal(res.seedId, "tomato", "収穫結果に seedId が含まれる");
   assert.deepEqual(s.plots[0], L.emptyPlot(), "収穫後 plot は空に戻る");
 
@@ -612,15 +678,42 @@ function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
   assert.match(gameJs, /bindControlAction\(tutNextBtn,\s*advanceTutorial\)/, '初回チュートリアルもEnter/Spaceで進められる');
 }
 
-// ── 28. 作物立て札 + 生成画像による水やり済み表示 ───────────────────
+// ── 28. おべんとう4作物×5段階 + 種 + 立て札 + 水やり済み表示 ─────────
 {
-  const requiredArt = [
-    'assets/images/hatake-nikki/crop_sign_tomato_iso_v2.png',
-    'assets/images/hatake-nikki/crop_sign_ninjin_iso_v2.png',
+  const cropIds = ['tomato', 'ninjin', 'potato', 'onion'];
+  const assetPathFromUrl = url => url.replace(/^\.\.\//, '');
+  const generatedArt = ['assets/images/hatake-nikki/seed_tool_box_iso.webp'];
+  for (const cropId of cropIds) {
+    const crop = L.CROPS[cropId];
+    generatedArt.push(assetPathFromUrl(crop.signImg));
+    generatedArt.push(assetPathFromUrl(crop.seedChoiceImg));
+    generatedArt.push(...crop.stageImages.map(assetPathFromUrl));
+  }
+  assert.equal(generatedArt.length, 29, '生成画像は種箱1 + 4作物×(立て札1 + 種選択1 + 成長5) = 29枚');
+  assert.equal(new Set(generatedArt).size, 29, '29枚の生成画像はすべて別URL');
+  for (const relative of generatedArt) {
+    assert.match(relative, /\.webp$/, `${relative} は WebP`);
+    const absolute = path.join(root, relative);
+    assert.ok(fs.existsSync(absolute), `${relative} が存在する`);
+    assert.ok(fs.statSync(absolute).size > 0, `${relative} が空ファイルではない`);
+    assert.ok(fs.statSync(absolute).size <= 3 * 1024 * 1024, `${relative} が3MB以下`);
+  }
+
+  // URLだけ変えて同じ絵を使い回す退行も検知する。
+  const stageHashes = [];
+  for (const cropId of cropIds) {
+    for (const url of L.CROPS[cropId].stageImages) {
+      const bytes = fs.readFileSync(path.join(root, assetPathFromUrl(url)));
+      stageHashes.push(crypto.createHash('sha256').update(bytes).digest('hex'));
+    }
+  }
+  assert.equal(new Set(stageHashes).size, 20, '4作物×5段階の成長画像はファイル内容も全20枚ユニーク');
+
+  const existingWetArt = [
     'assets/images/hatake-nikki/hatake_crop_wet.png',
     'assets/images/hatake-nikki/watered_drop_mark_v2.png'
   ];
-  for (const relative of requiredArt) {
+  for (const relative of existingWetArt) {
     const absolute = path.join(root, relative);
     assert.ok(fs.existsSync(absolute), `${relative} が存在する`);
     assert.ok(fs.statSync(absolute).size > 0, `${relative} が空ファイルではない`);
@@ -631,13 +724,36 @@ function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
   assert.strictEqual((indexHtml.match(/class="crop-sign"/g) || []).length, 9, '各畝に作物立て札が1つある');
   assert.strictEqual((indexHtml.match(/class="watered-drop"/g) || []).length, 9, '各畝に水やり済みしずく画像が1つある');
   assert.strictEqual((indexHtml.match(/<div class="plot-marker" aria-hidden="true">\s*<img class="crop-sign"[^>]*>\s*<img class="watered-drop"[^>]*>\s*<\/div>/g) || []).length, 9, '各plot-marker内で立て札と水マークを同じアンカーに束ねる');
-  for (const asset of ['crop_sign_tomato_iso_v2.png', 'crop_sign_ninjin_iso_v2.png', 'hatake_crop_wet.png', 'watered_drop_mark_v2.png']) {
-    assert.match(indexHtml, new RegExp('<link\\s+rel="preload"\\s+as="image"[^>]*' + asset.replace('.', '\\.') + '[^>]*>'), `${asset} を開始画面で先読みする`);
+  const preloadUrls = [
+    '../assets/images/hatake-nikki/seed_tool_box_iso.webp',
+    ...cropIds.map(cropId => L.CROPS[cropId].signImg),
+    ...cropIds.map(cropId => L.CROPS[cropId].seedChoiceImg),
+    ...cropIds.map(cropId => L.CROPS[cropId].stageImages[0]),
+    '../assets/images/hatake-nikki/hatake_crop_wet.png',
+    '../assets/images/hatake-nikki/watered_drop_mark_v2.png'
+  ];
+  for (const assetUrl of preloadUrls) {
+    const escaped = assetUrl.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    assert.match(indexHtml, new RegExp('<link\\s+rel="preload"\\s+as="image"\\s+href="' + escaped + '"[^>]*>'), `${assetUrl} を開始画面で先読みする`);
   }
   assert.match(indexHtml, /id="tool-water-btn"[\s\S]*?deco_watering_can_B\.png[\s\S]*?<\/button>/, 'じょうろボタンは画像アセットを使う');
-  assert.match(gameJs, /CROP_SIGN_IMAGES\s*=\s*\{[\s\S]*?tomato:[\s\S]*?crop_sign_tomato_iso_v2\.png[\s\S]*?ninjin:[\s\S]*?crop_sign_ninjin_iso_v2\.png/, '作物IDと再生成した立て札画像が対応する');
+  assert.match(indexHtml, /id="tool-seed-btn"[\s\S]*?<img[^>]+class="tool-icon tool-icon-seed"[^>]+seed_tool_box_iso\.webp[^>]*>[\s\S]*?<\/button>/, 'たねボタンは生成したアイソメ種箱画像を使う');
+  assert.strictEqual((indexHtml.match(/class="seed-choice"\s+data-seed="(?:tomato|ninjin|potato|onion)"/g) || []).length, 4, '種ピッカーには4作物だけを表示する');
+  for (const cropId of cropIds) {
+    const choiceUrl = L.CROPS[cropId].seedChoiceImg.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    assert.match(indexHtml, new RegExp('class="seed-choice"\\s+data-seed="' + cropId + '"[\\s\\S]*?<img\\s+src="' + choiceUrl + '"'), `${cropId} は完成作物ではなく専用の種画像から植える`);
+  }
+  assert.match(gameJs, /cropInfo\.signImg/, '作物マスタの signImg から対応する立て札を表示する');
   assert.match(gameJs, /setAttribute\('data-crop',\s*plot\.seedId\)/, '植栽中は畑に data-crop を付ける');
   assert.match(gameJs, /removeAttribute\('data-crop'\)/, '空畑へ戻ると data-crop を外す');
+  assert.match(gameJs, /className\s*=\s*['"]crop-stage-img['"]/, '種から収穫まで crop-stage-img を使う');
+  assert.match(gameJs, /crop\.stageImages\[stage\]/, '現在の5段階 stage に対応する生成画像URLを表示する');
+  assert.doesNotMatch(indexHtml + gameJs + stylesCss, /plant-emoji|🌱|🌿/, '芽・育ち中を絵文字で描画しない');
+  assert.doesNotMatch(indexHtml + gameJs + stylesCss, /\bcrop-img\b/, '旧完成作物1枚だけの crop-img 描画を残さない');
+  for (let stage = 0; stage <= 4; stage++) {
+    assert.match(stylesCss, new RegExp('\\.plant\\[data-stage="' + stage + '"\\]\\s+img\\.crop-stage-img\\s*\\{'), `stage${stage} 専用の画像サイズ調整がある`);
+  }
+  assert.match(stylesCss, /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*?\.plant\[data-stage="4"\]\s+img\.crop-stage-img\s*\{[^}]*animation:\s*none/, '動きを減らす設定では収穫OKの点滅を止める');
   assert.match(stylesCss, /\.plot\.is-watered\s*\{[^}]*hatake_crop_wet\.png/, '水やり済みは湿った土の生成画像へ切り替える');
   assert.match(stylesCss, /\.plot\.is-watered\s*\{[^}]*background-size:\s*contain[^}]*background-position:\s*center[^}]*background-repeat:\s*no-repeat/s, '湿った畝は上頂点を切らず全体表示する');
   assert.match(stylesCss, /\.plot\.is-watered\s+\.watered-drop\s*\{[^}]*display:\s*block/, '水やり済みは大きなしずく画像を表示する');

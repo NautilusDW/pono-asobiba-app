@@ -77,7 +77,17 @@ html, body {
   text-shadow: 0 2px 6px rgba(255,255,255,0.5);
   letter-spacing: 0.03em;
 }
-#start-screen .icon { font-size: 56px; margin: 14px 0; }
+#start-screen .icon {
+  width: clamp(82px, 16vmin, 112px);
+  height: clamp(72px, 14vmin, 98px);
+  margin: 10px 0 8px;
+}
+#start-screen .icon img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
 #start-screen .desc {
   font-size: 16px; font-weight: 700; color: #6b4423;
   line-height: 1.7; margin-top: 6px;
@@ -243,27 +253,33 @@ html, body {
   display: flex; align-items: center; justify-content: center;
   transition: filter 0.4s, transform 0.4s;
 }
-.plant .plant-emoji {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  font-size: clamp(20px, 6vmin, 34px);
-  line-height: 1;
-  /* 絵文字の葉が右へ張る分、茎の根元が畝中央へ来るよう光学補正する。 */
-  transform: translate(calc(-50% + 0.14em), -50%);
-}
-.plant img.crop-img {
+.plant img.crop-stage-img {
   display: block;
-  max-width: 60%;
-  max-height: 60%;
-  object-fit: contain; /* AR 厳守: stretch/fill は絶対禁止 */
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* 512×512透明canvasの根元アンカーを全作物で共有 */
+  transform: translateY(-27%);
+  pointer-events: none;
 }
-.plant[data-stage="2"] img.crop-img {
-  filter: saturate(0.6) hue-rotate(60deg) brightness(0.95); /* そだち中: まだ青い印象の簡易フィルタ */
+.plant[data-stage="0"] img.crop-stage-img {
+  width: 96%;
+  height: 96%;
 }
-.plant[data-stage="3"] img.crop-img {
-  max-width: 100%;
-  max-height: 100%;
+.plant[data-stage="1"] img.crop-stage-img {
+  width: 100%;
+  height: 100%;
+}
+.plant[data-stage="2"] img.crop-stage-img {
+  width: 106%;
+  height: 106%;
+}
+.plant[data-stage="3"] img.crop-stage-img {
+  width: 112%;
+  height: 112%;
+}
+.plant[data-stage="4"] img.crop-stage-img {
+  width: 118%;
+  height: 118%;
   animation: hatakeGlow 1.4s ease-in-out infinite;
 }
 @keyframes hatakeGlow {
@@ -332,6 +348,10 @@ html, body {
   width: 82%;
   height: 82%;
 }
+.tool-btn .tool-icon-seed {
+  width: 90%;
+  height: 90%;
+}
 
 /* じょうろ水やりゲージ (長押し進捗表示) */
 .water-gauge {
@@ -357,6 +377,10 @@ html, body {
   to { opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
+  .plant[data-stage="4"] img.crop-stage-img {
+    animation: none;
+    filter: drop-shadow(0 0 8px rgba(255,235,120,0.85));
+  }
   .plot.is-water-target {
     animation: none;
     filter: drop-shadow(0 0 8px rgba(80,180,255,0.78));
@@ -402,11 +426,23 @@ html, body {
 }
 .seed-picker-card {
   background: #FFF8E7; border-radius: 24px;
-  padding: 22px; display: flex; flex-direction: column; align-items: center; gap: 16px;
+  width: min(94%, 570px);
+  padding: 16px 18px 14px;
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
   box-shadow: 0 10px 30px rgba(0,0,0,0.3);
 }
+.seed-picker-title {
+  color: #5D4E37;
+  font-size: clamp(14px, 2.8vmin, 17px);
+  font-weight: 900;
+  line-height: 1.35;
+  text-align: center;
+}
 .seed-picker-card .seed-choices-row {
-  display: flex; gap: 20px;
+  width: 100%;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(6px, 1.4vw, 12px);
 }
 .seed-picker-close-btn {
   font-family: 'Zen Maru Gothic', sans-serif;
@@ -421,17 +457,26 @@ html, body {
 .seed-choice {
   display: flex; flex-direction: column; align-items: center; gap: 8px;
   background: #fff; border: none; border-radius: 18px;
-  padding: 14px 18px;
+  min-width: 0;
+  padding: 8px 5px 9px;
   box-shadow: 0 3px 10px rgba(0,0,0,0.15);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
 .seed-choice:active { transform: scale(0.95); }
 .seed-choice img {
-  width: 56px; height: 56px;
+  width: clamp(58px, 10vmin, 78px);
+  height: clamp(58px, 10vmin, 78px);
   object-fit: contain; /* AR 厳守 */
 }
-.seed-choice span { font-weight: 900; color: #5D4E37; font-size: 14px; }
+.seed-choice span {
+  max-width: 100%;
+  font-weight: 900;
+  color: #5D4E37;
+  font-size: clamp(11px, 2.3vmin, 14px);
+  line-height: 1.2;
+  white-space: nowrap;
+}
 
 /* ── 日記オーバーレイ ── */
 #diary-overlay {
