@@ -31,9 +31,9 @@ async function waitForGameReady(page) {
 
 // 新規アクセス相当 (localStorage 空) で #field-screen まで進める。
 // diary-overlay (daysPassed>=1) は初回は出ないが、念のため出ていたら閉じる。
-async function gotoFreshField(page) {
+async function gotoFreshField(page, viewport) {
   await setAppBuild(page);
-  await page.setViewportSize(VIEWPORT);
+  await page.setViewportSize(viewport || VIEWPORT);
   await page.goto('/hatake-nikki/index.html');
   await page.evaluate(() => { try { localStorage.clear(); } catch (e) {} });
   await page.reload();
@@ -69,9 +69,40 @@ async function touchPlot(page, plotLocator, phase, identifier) {
   }
 }
 
-test.describe('hatake-nikki: layout regression (畝3枚が完全可視)', () => {
-  test('畝3枚が #stage 内に完全収容され、#tool-rail と重ならず、#field-bg 幽霊要素が存在しない', async ({ page }) => {
-    await gotoFreshField(page);
+function isInsideConvexQuad(point, polygon, epsilon) {
+  let direction = 0;
+  for (let i = 0; i < polygon.length; i++) {
+    const a = polygon[i];
+    const b = polygon[(i + 1) % polygon.length];
+    const cross = (b.x - a.x) * (point.y - a.y) - (b.y - a.y) * (point.x - a.x);
+    if (Math.abs(cross) <= epsilon) continue;
+    const current = cross > 0 ? 1 : -1;
+    if (direction && current !== direction) return false;
+    direction = current;
+  }
+  return true;
+}
+
+test.describe('hatake-nikki: layout regression (畝3枚がひし形地面の実測座標に合う)', () => {
+  const viewports = [
+    { width: 844, height: 390 },
+    { width: 1024, height: 768 },
+    { width: 1366, height: 768 }
+  ];
+  const expectedCenters = [
+    { x: 0.355, y: 0.429 },
+    { x: 0.238, y: 0.549 },
+    { x: 0.483, y: 0.565 }
+  ];
+  const fieldDiamond = [
+    { x: 0.5, y: 0.125 },
+    { x: 0.905, y: 0.54 },
+    { x: 0.5, y: 0.961 },
+    { x: 0.095, y: 0.537 }
+  ];
+
+  for (const viewport of viewports) test(`${viewport.width}x${viewport.height}: 畝3枚がひし形面内の実測三角配置に合う`, async ({ page }) => {
+    await gotoFreshField(page, viewport);
     await closeTutorialIfOpen(page);
 
     // #field-bg 幽霊要素の完全撤去
@@ -82,14 +113,52 @@ test.describe('hatake-nikki: layout regression (畝3枚が完全可視)', () => 
     await expect(plots).toHaveCount(3);
 
     const stageBox = await page.locator('#stage').boundingBox();
+    const plotAreaBox = await page.locator('#plot-area').boundingBox();
     const railBox = await page.locator('#tool-rail').boundingBox();
     expect(stageBox).toBeTruthy();
+    expect(plotAreaBox).toBeTruthy();
     expect(railBox).toBeTruthy();
+
+    // 背景 contain と同じ 1200×670 面が stage の中央にあること。
+    expect(Math.abs(plotAreaBox.width / plotAreaBox.height - 1200 / 670)).toBeLessThan(0.002);
+    expect(Math.abs((plotAreaBox.y + plotAreaBox.height / 2) - (stageBox.y + stageBox.height / 2))).toBeLessThanOrEqual(1);
 
     const EPS = 1; // 誤差1px許容
     for (let i = 0; i < 3; i++) {
       const plotBox = await plots.nth(i).boundingBox();
       expect(plotBox).toBeTruthy();
+
+      const normalized = {
+        x: (plotBox.x - plotAreaBox.x) / plotAreaBox.width,
+        y: (plotBox.y - plotAreaBox.y) / plotAreaBox.height,
+        width: plotBox.width / plotAreaBox.width,
+        height: plotBox.height / plotAreaBox.height
+      };
+      const normalizedCenter = {
+        x: normalized.x + normalized.width / 2,
+        y: normalized.y + normalized.height / 2
+      };
+
+      // egg/index.html FARM_PLOT_POS と共通の実測中心座標。
+      expect(Math.abs(normalizedCenter.x - expectedCenters[i].x)).toBeLessThan(0.002);
+      expect(Math.abs(normalizedCenter.y - expectedCenters[i].y)).toBeLessThan(0.002);
+      expect(Math.abs(normalized.width - 238 / 1200)).toBeLessThan(0.002);
+      expect(Math.abs(normalized.height - 143 / 670)).toBeLessThan(0.002);
+
+      // 畝絵の4頂点が green.png のひし形面内に入ること。
+      const plotDiamond = [
+        { x: normalizedCenter.x, y: normalized.y },
+        { x: normalized.x + normalized.width, y: normalizedCenter.y },
+        { x: normalizedCenter.x, y: normalized.y + normalized.height },
+        { x: normalized.x, y: normalizedCenter.y }
+      ];
+      for (const vertex of plotDiamond) {
+        expect(isInsideConvexQuad(vertex, fieldDiamond, 0.004)).toBe(true);
+      }
+
+      // 最小横画面でも指で押せるヒット領域を維持。
+      expect(plotBox.width).toBeGreaterThanOrEqual(44);
+      expect(plotBox.height).toBeGreaterThanOrEqual(44);
 
       // (i) #stage に完全内包
       expect(plotBox.x).toBeGreaterThanOrEqual(stageBox.x - EPS);
@@ -106,7 +175,7 @@ test.describe('hatake-nikki: layout regression (畝3枚が完全可視)', () => 
       expect(noHorizontalOverlap).toBe(true);
     }
 
-    await page.screenshot({ path: 'test-results/hatake_layout_3plots.png' });
+    await page.screenshot({ path: `test-results/hatake_layout_3plots_${viewport.width}x${viewport.height}.png` });
   });
 });
 

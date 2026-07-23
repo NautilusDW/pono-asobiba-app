@@ -17,9 +17,9 @@ const sources = Object.freeze({
   sw: read("sw.js")
 });
 
-const TOKEN = "20260723-1418";
+const TOKEN = "20260723-1421";
 const QUIZ_ART_TOKEN = "20260721-1409";
-const SW_VERSION = 2338;
+const SW_VERSION = 2345;
 const THREE_MIB = 3 * 1024 * 1024;
 const STAGE_IDS = Object.freeze(["snow", "fire", "dino", "toy", "cat", "fantasy", "sky", "ruins"]);
 const LAYER_KEYS = Object.freeze(["sky", "horizon", "mid", "ground", "fg", "decor"]);
@@ -33,8 +33,42 @@ const STAGE_ASSET_KEYS = Object.freeze({
   sky: LAYER_KEYS,
   ruins: LAYER_KEYS
 });
-const EXPECTED_VALIDATE_CHECKS = 126;
-const EXPECTED_MUTATIONS = 42;
+const EXPECTED_VALIDATE_CHECKS = 127;
+const EXPECTED_MUTATIONS = 45;
+const DINO_V2_PRELOAD_FILES = Object.freeze([
+  "branch_dino_adventure_crane_arm_base_cutout_20260723.webp",
+  "branch_dino_adventure_crane_cable_cutout_20260723.webp",
+  "branch_dino_adventure_crane_hook_cutout_20260723.webp",
+  "branch_dino_adventure_branch_bundle_ring_cutout_20260723.webp",
+  "branch_dino_adventure_fallen_log_ring_cutout_20260723.webp",
+  "branch_dino_adventure_sling_boulder_ring_cutout_20260723.webp",
+  "branch_dino_adventure_three_bay_safe_platform_cutout_20260723.webp",
+  "branch_dino_adventure_waterway_dry_20260722.webp",
+  "branch_dino_adventure_waterway_success_20260722.webp",
+  "branch_dino_adventure_trex_waiting_cutout_20260722.webp",
+  "branch_dino_adventure_trex_inhale_cutout_20260722.webp",
+  "branch_dino_adventure_trex_roar_cutout_20260722.webp",
+  "branch_dino_adventure_trex_tired_cutout_20260722.webp",
+  "branch_dino_adventure_trex_step_back_cutout_20260722.webp",
+  "branch_dino_adventure_trex_yield_cutout_20260722.webp",
+  "branch_dino_adventure_roar_wave_cutout_20260722.webp",
+  "branch_dino_adventure_whistle_burst_cutout_20260722.webp",
+  "branch_dino_adventure_water_tank_cutout_20260722.webp",
+  "branch_dino_adventure_brake_control_cutout_20260722.webp",
+  "branch_dino_adventure_whistle_control_cutout_20260722.webp",
+  "branch_dino_adventure_water_tile_source_dry_20260723.webp",
+  "branch_dino_adventure_water_tile_straight_dry_20260723.webp",
+  "branch_dino_adventure_water_tile_curve_dry_20260723.webp",
+  "branch_dino_adventure_water_tile_tee_dry_20260723.webp",
+  "branch_dino_adventure_water_tile_pond_dry_20260723.webp",
+  "branch_dino_adventure_water_tile_rock_dry_20260723.webp",
+  "branch_dino_adventure_water_tile_source_wet_20260723.webp",
+  "branch_dino_adventure_water_tile_straight_wet_20260723.webp",
+  "branch_dino_adventure_water_tile_curve_wet_20260723.webp",
+  "branch_dino_adventure_water_tile_tee_wet_20260723.webp",
+  "branch_dino_adventure_water_tile_pond_wet_20260723.webp",
+  "branch_dino_adventure_water_tile_rock_wet_20260723.webp"
+]);
 
 const CANONICAL = Object.freeze([
   Object.freeze({ name: "branch_dino_far_herd_cutout_20260721.webp", width: 1894, height: 367, bytes: 599190, sha256: "9217d6f0c2e59abb9c8285fa4d0d305b85d6f4e4ed4e9b1d5223c2381a1add9e", raw: "01_dino_far_herd_raw.png", rawWidth: 1942, rawHeight: 809, rawBytes: 1126084, rawSha256: "6c5446c023af876c17a76706341fa7dd58363f63cf299d2e295209be9890a78b", candidate: "dino/branch_dino_far_herd_cutout_20260721.webp" }),
@@ -356,7 +390,7 @@ function validate(candidate) {
 
   const preloadStart = game.indexOf("const BRANCH_RASTER_STAGE_IDS=");
   const preloadEnd = game.indexOf("\nfunction stageIndexById", preloadStart);
-  const preloadProbe = { dino: false, dinoRepeat: false, cat: false, totals: false };
+  const preloadProbe = { dino: false, dinoV2Exact: false, dinoRepeat: false, cat: false, totals: false };
   if (preloadStart >= 0 && preloadEnd > preloadStart) {
     const made = [];
     class FakeImage {
@@ -368,21 +402,28 @@ function validate(candidate) {
     }
     const context = { Image: FakeImage, Set, Map, Object, Promise, setTimeout: callback => { callback(); return 0; } };
     try {
-      vm.runInNewContext(`${game.slice(preloadStart, preloadEnd)}\nthis.raster=preloadBranchRasterStage;this.polish=preloadBranchStagePolish;this.rasterCache=branchRasterImageCache;this.polishCache=branchStagePolishImageCache;`, context, { timeout: 1000 });
+      vm.runInNewContext(`${game.slice(preloadStart, preloadEnd)}\nthis.raster=preloadBranchRasterStage;this.polish=preloadBranchStagePolish;this.rasterCache=branchRasterImageCache;this.polishCache=branchStagePolishImageCache;this.dinoCache=dinoAdventureImageCache;`, context, { timeout: 1000 });
       const dinoBase = Object.fromEntries(STAGE_ASSET_KEYS.dino.map(key => [key, expectedBaseAsset("dino", key)]));
       const catBase = Object.fromEntries(LAYER_KEYS.map(key => [key, expectedBaseAsset("cat", key)]));
       context.raster({ id: "dino", assets: dinoBase }); context.polish({ id: "dino" });
-      preloadProbe.dino = made.length === 30 &&
-        made.slice(6, 23).every(image => image.src.includes("/branch_dino_adventure_")) &&
-        made.slice(23, 30).every(image => image.src.includes("/branch_dino_") && !image.src.includes("/branch_dino_adventure_"));
+      const dinoV2Files = made.slice(6, 38).map(image => path.basename(image.src.split("?")[0]));
+      const dinoPolishFiles = made.slice(38, 45).map(image => path.basename(image.src));
+      preloadProbe.dino = made.length === 45 &&
+        made.slice(0, 6).every(image => image.src.includes("/branch_dino_")) &&
+        made.slice(6, 38).every(image => image.src.includes("/branch_dino_adventure_")) &&
+        made.slice(38, 45).every(image => image.src.includes("/branch_dino_") && !image.src.includes("/branch_dino_adventure_"));
+      preloadProbe.dinoV2Exact = JSON.stringify(dinoV2Files) === JSON.stringify(DINO_V2_PRELOAD_FILES) &&
+        JSON.stringify(dinoPolishFiles) === JSON.stringify(Object.values(EXTRA_URLS.dino).map(src => path.basename(src))) &&
+        new Set(dinoV2Files).size === 32;
       context.raster({ id: "dino", assets: dinoBase }); context.polish({ id: "dino" });
-      preloadProbe.dinoRepeat = made.length === 30;
+      preloadProbe.dinoRepeat = made.length === 45;
       context.raster({ id: "cat", assets: catBase }); context.polish({ id: "cat" });
-      preloadProbe.cat = made.length === 48 && made.slice(36).every(image => image.src.includes("/branch_cat_"));
-      preloadProbe.totals = context.rasterCache?.size === 12 && context.polishCache?.size === 19;
+      preloadProbe.cat = made.length === 63 && made.slice(51).every(image => image.src.includes("/branch_cat_"));
+      preloadProbe.totals = context.rasterCache?.size === 12 && context.polishCache?.size === 19 && context.dinoCache?.size === 32;
     } catch { /* stable checks below report the failure */ }
   }
   check(preloadProbe.dino, "preload-scope");
+  check(preloadProbe.dinoV2Exact, "preload-scope");
   check(preloadProbe.dinoRepeat, "preload-scope");
   check(preloadProbe.cat, "preload-scope");
   check(preloadProbe.totals, "preload-scope");
@@ -704,10 +745,13 @@ const mutations = [
   { name: "global critical preload", expected: "sw-critical", mutate: c => ({ ...c, sw: replaceExactlyOnce(c.sw, "const CRITICAL_ASSETS_IMAGES = [", `const CRITICAL_ASSETS_IMAGES = [\n  '/assets/images/nazonazo-tunnel/${CANONICAL[0].name}',`) }) },
   { name: "wrong dino cat polish preload", expected: "preload-scope", mutate: c => ({ ...c, game: mutateFunction(c.game, "preloadBranchStagePolish", "const assets=st&&BRANCH_STAGE_POLISH_ASSETS[st.id];", "const assets=st&&BRANCH_STAGE_POLISH_ASSETS.cat;") }) },
   { name: "extra global polish preload", expected: "preload-scope", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, "\nfunction stageIndexById", "\npreloadBranchStagePolish({id:\"cat\"});\nfunction stageIndexById") }) },
+  { name: "dino crane platform omitted from preload", expected: "preload-scope", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, '["arm","cable","hook","branch","log","rock","platform"]', '["arm","cable","hook","branch","log","rock"]') }) },
+  { name: "dino adventure scene preload omitted", expected: "preload-scope", mutate: c => ({ ...c, game: mutateFunction(c.game, "preloadBranchStagePolish", "preloadDinoCraneAssets();preloadDinoAdventureAssets();preloadDinoWaterTileAssets();", "preloadDinoCraneAssets();preloadDinoWaterTileAssets();") }) },
+  { name: "dino wet tile preload aliases dry tiles", expected: "preload-scope", mutate: c => ({ ...c, game: replaceExactlyOnce(c.game, "DINO_WATER_TILE_ASSETS.wet[key]", "DINO_WATER_TILE_ASSETS.dry[key]") }) },
   { name: "reduced motion keeps ember field", expected: "motion-night", mutate: c => ({ ...c, css: replaceExactlyOnce(c.css, ".branch-fire-ember-field,.branch-fire-crater-ember{display:none!important}", ".branch-fire-crater-ember{display:none!important}") }) },
   { name: "render allocates DOM", expected: "render-allocation", mutate: c => ({ ...c, game: mutateFunction(c.game, "renderBranchStagePolish", " const localWorldX=worldX-o;", ' document.createElement("span");\n const localWorldX=worldX-o;') }) },
   { name: "world life DOM old id", expected: "world-life-layer", mutate: c => ({ ...c, html: replaceExactlyOnce(c.html, '<div id="branchWorldLifeLayer" aria-hidden="true"></div>', '<div id="branchLandmarkLayer" aria-hidden="true"></div>') }) },
-  { name: "HTML token rolls back", expected: "query-sw", mutate: c => ({ ...c, html: replaceExactlyOnce(c.html, "styles.css?v=20260723-1418", "styles.css?v=20260723-1417") }) },
+  { name: "HTML token rolls back", expected: "query-sw", mutate: c => ({ ...c, html: replaceExactlyOnce(c.html, "styles.css?v=20260723-1421", "styles.css?v=20260723-1420") }) },
   { name: "service worker version rolls back", expected: "query-sw", mutate: c => ({ ...c, sw: replaceExactlyOnce(c.sw, `const CACHE_VERSION = ${SW_VERSION};`, `const CACHE_VERSION = ${SW_VERSION - 2};`) }) }
 ];
 

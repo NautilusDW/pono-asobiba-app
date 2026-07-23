@@ -510,4 +510,30 @@ function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
   assert.match(gameJs, /activeTool === 'water' && !plot\.seedId/, "game.js の beginPress else分岐が空畝×水ツールを検知する");
 }
 
+// ── 27. 畝は green.png の1200×670面と共通の実測座標で配置 ─────
+{
+  const plotAreaMatch = stylesCss.match(/#plot-area\s*\{[^}]*\}/);
+  assert.ok(plotAreaMatch, '#plot-area のスタイルが存在する');
+  assert.match(plotAreaMatch[0], /aspect-ratio:\s*1200\s*\/\s*670/, '#plot-area が green.png の1200:670比率を持つ');
+  assert.match(plotAreaMatch[0], /top:\s*50%/, '#plot-area を stage の縦中央に置く');
+  assert.match(plotAreaMatch[0], /translateY\(-50%\)/, '#plot-area の中心を stage の中心に合わせる');
+
+  const expected = [
+    { idx: 0, left: 25.583333, top: 32.228358 },
+    { idx: 1, left: 13.883333, top: 44.228358 },
+    { idx: 2, left: 38.383333, top: 45.828358 }
+  ];
+  for (const pos of expected) {
+    const blockMatch = stylesCss.match(new RegExp('\\.plot\\[data-plot="' + pos.idx + '"\\]\\s*\\{[^}]*\\}'));
+    assert.ok(blockMatch, `plot${pos.idx} の座標ブロックが存在する`);
+    const left = Number((blockMatch[0].match(/left:\s*([\d.]+)%/) || [])[1]);
+    const top = Number((blockMatch[0].match(/top:\s*([\d.]+)%/) || [])[1]);
+    assert.ok(Math.abs(left - pos.left) < 0.00001, `plot${pos.idx} のleftが実測座標`);
+    assert.ok(Math.abs(top - pos.top) < 0.00001, `plot${pos.idx} のtopが実測座標`);
+  }
+  const plotBlock = stylesCss.match(/\.plot\s*\{[^}]*\}/);
+  assert.ok(plotBlock, '.plot ブロックが存在する');
+  assert.doesNotMatch(plotBlock[0], /bottom\s*:/, '畝配置は画面下端基準の bottom を使わない');
+}
+
 console.log("hatake nikki regression: PASS");

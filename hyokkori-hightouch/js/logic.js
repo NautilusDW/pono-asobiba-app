@@ -147,6 +147,31 @@ function hitScoreFor(comboBefore, target) {
 }
 
 /**
+ * 中央コンボ表示の段階と花火量を返す。2コンボ未満は非表示。
+ * 文字は成功ごとに少しずつ育て、花火は4段階で増やす。
+ */
+function comboFxProfileAt(comboCount) {
+  var combo = Math.floor(Number(comboCount));
+  if (!isFinite(combo) || combo < 0) combo = 0;
+  if (combo < 2) {
+    return { combo: combo, tier: 0, growPx: 0, burstCount: 0, particleCount: 0, durationMs: 0 };
+  }
+
+  var tier = combo >= 15 ? 4 : combo >= 10 ? 3 : combo >= 5 ? 2 : 1;
+  var burstCounts = [0, 1, 1, 2, 3];
+  var particleCounts = [0, 8, 18, 32, 54];
+  var durations = [0, 760, 850, 950, 1050];
+  return {
+    combo: combo,
+    tier: tier,
+    growPx: Math.min(50, Math.round((combo - 2) * 26) / 10),
+    burstCount: burstCounts[tier],
+    particleCount: particleCounts[tier],
+    durationMs: durations[tier]
+  };
+}
+
+/**
  * 次に出現させる kind ('awake' | 'sleeping') を選ぶ。
  * recentKinds: 直近の出現 kind 履歴 (末尾が最新)。直近2体が両方 'sleeping' の
  * 場合は理不尽感防止のため強制的に 'awake' を選出する (3連続sleeping禁止)。
@@ -331,6 +356,7 @@ var PUBLIC_API = {
   sleepRatioAt: sleepRatioAt,
   isBonusSpawn: isBonusSpawn,
   hitScoreFor: hitScoreFor,
+  comboFxProfileAt: comboFxProfileAt,
   relayProgressAt: relayProgressAt,
   advanceRelay: advanceRelay,
   pickSpawnKind: pickSpawnKind,

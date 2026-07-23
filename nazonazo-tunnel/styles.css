@@ -1408,7 +1408,7 @@ body.dino-crane-active #dinoAdventureGuide{min-width:min(70vw,480px)}
 .dino-water-game.has-full-scene.is-saved .dino-water-playfield{opacity:0;pointer-events:none;transform:translateX(-50%) scale(.96)}
 .dino-water-game.has-full-scene.is-saved .dino-water-scene img{animation:dinoWaterSuccessGlow .62s ease both}
 .dino-water-playfield{position:absolute;left:50%;top:clamp(104px,28vh,205px);z-index:4;padding:clamp(5px,1vw,10px);transform:translateX(-50%);border:3px solid rgba(129,158,73,.48);border-radius:24px;background:rgba(255,250,218,.9);box-shadow:0 8px 26px rgba(64,83,38,.2)}
-.dino-water-grid{--water-cell:clamp(38px,10.4vmin,64px);display:grid;grid-template-columns:repeat(7,var(--water-cell));grid-template-rows:repeat(4,var(--water-cell));gap:3px;padding:5px;border:3px solid #a97846;border-radius:17px;background:#d7ad6d;box-shadow:inset 0 0 0 5px rgba(104,76,39,.13)}
+.dino-water-grid{--water-cell:clamp(44px,10.4vmin,64px);display:grid;grid-template-columns:repeat(7,var(--water-cell));grid-template-rows:repeat(4,var(--water-cell));gap:3px;padding:5px;border:3px solid #a97846;border-radius:17px;background:#d7ad6d;box-shadow:inset 0 0 0 5px rgba(104,76,39,.13)}
 .dino-water-cell{appearance:none;-webkit-appearance:none;position:relative;width:var(--water-cell);height:var(--water-cell);padding:0;border:2px solid rgba(116,78,38,.34);border-radius:9px;overflow:hidden;background:#cf9e5d;box-shadow:inset 0 2px 0 rgba(255,255,255,.28);cursor:pointer;touch-action:manipulation}
 .dino-water-cell[aria-disabled="true"]{cursor:default}.dino-water-cell:focus-visible{outline:5px solid #fff273;outline-offset:2px;z-index:3}
 .dino-water-tile-rotator{position:absolute;inset:-1px;display:block;transform-origin:center;transition:transform .18s cubic-bezier(.2,.85,.3,1.18)}
@@ -1720,7 +1720,7 @@ h1{font-size:clamp(24px,5.6vw,50px);color:#e0704a;text-shadow:0 3px 0 #fff}
   .mapNode .mi.ui-art,.mapNode .mi .ui-art{width:clamp(36px,6vw,48px);height:clamp(36px,6vw,48px)}
   #quiz{width:min(96vw,760px);top:50%;bottom:auto;max-height:calc(100vh - 92px);overflow-y:auto;border-radius:20px;padding:8px 12px calc(8px + env(safe-area-inset-bottom))}
   .dino-adventure-header{right:56px;top:3px}.dino-adventure-header h2{padding:3px 9px;font-size:13px;border-width:2px}#dinoAdventureProgress{padding:3px 8px;font-size:11px;border-width:2px}#dinoAdventureGuide{top:39px;padding:3px 9px;border-width:2px;font-size:12px}
-  .dino-water-playfield{left:50%;right:auto;top:67px;bottom:auto;transform:translateX(-50%);padding:3px;border-width:2px;border-radius:15px}.dino-water-game.has-full-scene .dino-water-playfield{top:67px}.dino-water-grid{--water-cell:clamp(31px,8.8vmin,42px);gap:2px;padding:3px;border-width:2px;border-radius:12px}.dino-water-status-row{left:7px;bottom:4px;gap:5px}.dino-water-budget{width:136px;min-height:42px;padding:3px 7px;border-width:2px}.dino-water-budget>strong{font-size:10px}#dinoWaterHint{min-width:108px;min-height:46px;border-width:3px}.dino-water-scene{right:-4%;bottom:7vh;height:48vh}
+  .dino-water-playfield{left:50%;right:auto;top:67px;bottom:auto;transform:translateX(-50%);padding:3px;border-width:2px;border-radius:15px}.dino-water-game.has-full-scene .dino-water-playfield{top:67px}.dino-water-grid{--water-cell:clamp(44px,8.8vmin,48px);gap:2px;padding:3px;border-width:2px;border-radius:12px}.dino-water-status-row{left:7px;bottom:4px;gap:5px}.dino-water-budget{width:136px;min-height:42px;padding:3px 7px;border-width:2px}.dino-water-budget>strong{font-size:10px}#dinoWaterHint{min-width:108px;min-height:46px;border-width:3px}.dino-water-scene{right:-4%;bottom:7vh;height:48vh}
   .dino-boss-hud{left:5px;right:56px;top:82px;gap:3px}.dino-boss-hp,.dino-boss-water{min-height:32px;padding:2px 6px;border-width:2px}.dino-boss-hp>span{font-size:15px}.dino-boss-hp>strong,.dino-boss-water>strong{font-size:8px}.dino-boss-water>span{font-size:13px}.dino-boss-tug{bottom:73px;width:min(50vw,420px);height:19px;border-width:3px}.dino-boss-tug>i{width:27px;border-width:4px}.dino-boss-action{bottom:4px;min-width:180px;min-height:58px;padding:3px 12px;border-width:4px;border-radius:19px}.dino-boss-action strong{font-size:20px}.dino-boss-action small{font-size:10px}.dino-boss-retry{bottom:7px;min-height:52px}.dino-boss-trex{bottom:8vh;max-height:58vh}
   #qRow{gap:8px;margin-bottom:7px}
   #qBubble{padding:6px 10px}
@@ -1832,11 +1832,15 @@ body.ios-device #quiz.show:not(.sea-quiz):not(.future-capsule-quiz):not(.space-g
 }
 @media (orientation:landscape) and (max-height:500px){
   .dino-boss-game .dino-boss-trex{bottom:2.5vh}
+  .dino-crane-readout{top:124px}
+  .dino-water-game.has-full-scene .dino-water-playfield,.dino-water-playfield{top:102px;padding:3px;border-width:2px;border-radius:15px}
+  .dino-water-grid{--water-cell:clamp(44px,9vmin,52px);gap:2px;padding:3px;border-width:2px;border-radius:12px}
 }
 @media (orientation:landscape) and (max-height:360px){
   .dino-crane-readout{top:82px}.dino-crane-controls{bottom:5px}.dino-crane-controls button{min-height:44px}
-  .dino-water-game.has-full-scene .dino-water-playfield,.dino-water-playfield{top:88px}
-  .dino-water-grid{--water-cell:34px}.dino-water-status-row{bottom:5px}.dino-water-budget{min-height:42px}#dinoWaterHint{min-height:46px}
+  #dinoAdventureGuide{top:36px;padding:2px 8px;font-size:11px;box-shadow:0 2px 0 rgba(86,112,48,.22)}
+  .dino-water-game.has-full-scene .dino-water-playfield,.dino-water-playfield{top:64px;padding:1px}
+  .dino-water-grid{--water-cell:44px}.dino-water-status-row{bottom:3px}.dino-water-budget{min-height:42px}#dinoWaterHint{min-height:46px}
 }
 @keyframes magicPuffReduced{
   0%{opacity:0;transform:translate3d(0,0,0) scale(var(--puff-start-scale))}

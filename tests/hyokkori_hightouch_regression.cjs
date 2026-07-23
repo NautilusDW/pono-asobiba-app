@@ -609,6 +609,33 @@ function mulberry32(seed) {
   assert.match(stylesCss, /#combo-hud\.is-visible/, "2コンボ以上を見せるHUD状態がある");
   assert.match(stylesCss, /\.hh-char-wrap\.is-visible\.is-bonus/, "ボーナスを通常キャラと見分ける表示状態がある");
   assert.match(stylesCss, /\.hh-score-pop\.is-bonus/, "ボーナス加点を見分ける表示状態がある");
+
+  const comboHudTag = indexHtml.match(/<div\b[^>]*id=["']combo-hud["'][^>]*>/);
+  assert.ok(comboHudTag, "中央コンボ表示の開始タグがある");
+  assert.doesNotMatch(comboHudTag[0], /\bhud-pill\b/, "コンボ表示をテキストボックス型HUDに戻さない");
+  assert.match(comboHudTag[0], /data-tier=["']0["']/, "コンボ段階は非表示の0から始まる");
+
+  const comboRuleMatch = stylesCss.match(/#combo-hud\s*\{([^}]*)\}/);
+  assert.ok(comboRuleMatch, "#combo-hud の単独CSSルールがある");
+  const comboRule = comboRuleMatch[1];
+  assert.match(comboRule, /top:\s*50%/, "コンボ表示は画面中央に置く");
+  assert.match(comboRule, /left:\s*50%/, "コンボ表示は横中央に置く");
+  assert.match(comboRule, /transform:\s*translate\(\s*-50%\s*,\s*-50%\s*\)/, "コンボ自身の中心を画面中央へ合わせる");
+  assert.match(comboRule, /padding:\s*0\s*;/, "箱型の内側余白を持たない");
+  assert.match(comboRule, /border:\s*0\s*;/, "コンボ表示に枠を付けない");
+  assert.match(comboRule, /background:\s*transparent\s*;/, "コンボ表示に背景箱を付けない");
+  assert.match(comboRule, /box-shadow:\s*none\s*;/, "コンボ表示に箱影を付けない");
+  assert.match(comboRule, /pointer-events:\s*none\s*;/, "中央の大きな文字でハイタッチを遮らない");
+  assert.match(stylesCss, /#combo-count\s*\{[^}]*font-size:\s*clamp\(\s*64px\s*,/s, "コンボ数は最低64pxの大きな文字");
+  for (const tier of [2, 3, 4]) {
+    assert.match(stylesCss, new RegExp(`#combo-hud\\[data-tier=["']${tier}["']\\]`), `tier ${tier} の色演出がある`);
+  }
+  assert.match(gameJs, /L\.comboFxProfileAt\(\s*combo\s*\)/, "現在コンボを文字成長・花火プロファイルへ変換する");
+  assert.match(gameJs, /comboHudEl\.dataset\.tier\s*=\s*String\(profile\.tier\)/, "実行時のコンボ段階をDOMへ反映する");
+  assert.match(gameJs, /spawnComboFireworks\(\s*profile\s*\)/, "コンボ段階に合わせた花火を発火する");
+  assert.match(gameJs, /dataset\.comboFxParticles\s*=\s*String\(profile\.particleCount\)/, "花火粒子数を実行時検証可能なdata属性へ反映する");
+  assert.match(gameJs, /function\s+spawnComboFireworks\([^)]*\)[\s\S]*?prefersReducedMotion\(\)\)\s*return;/, "うごきをへらす設定で花火粒子を生成しない");
+  assert.match(stylesCss, /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*?#combo-hud\.is-slam\s+\.combo-core[\s\S]*?animation:\s*none\s*!important/, "うごきをへらす設定で文字スラムを停止する");
 }
 
 // ── 12. play.html 統合検証 (donguri-wakekko 登録漏れの再発防止) ──────
@@ -700,6 +727,66 @@ function mulberry32(seed) {
   assert.match(gameJs, /\?retry=/, "game.js が logic.js 再取得時にキャッシュバイパス (?retry=) を使っている");
   assert.match(gameJs, /function boot\s*\(/, "game.js の本体が boot() 関数でラップされている");
   assert.match(gameJs, /if\s*\(\s*window\.HyokkoriLogic\s*\)\s*\{\s*boot\(\);\s*return;\s*\}/, "HyokkoriLogic 正常時は即座に boot() を呼ぶ");
+}
+
+// ── 17. 中央コンボ演出の段階・上限・不正値耐性 ───────────────────────────
+{
+  assert.equal(typeof L.comboFxProfileAt, "function", "comboFxProfileAt が公開される");
+
+  const boundaryCases = [
+    { combo: 0, tier: 0, growPx: 0, bursts: 0, particles: 0, duration: 0 },
+    { combo: 1, tier: 0, growPx: 0, bursts: 0, particles: 0, duration: 0 },
+    { combo: 2, tier: 1, growPx: 0, bursts: 1, particles: 8, duration: 760 },
+    { combo: 4, tier: 1, growPx: 5.2, bursts: 1, particles: 8, duration: 760 },
+    { combo: 5, tier: 2, growPx: 7.8, bursts: 1, particles: 18, duration: 850 },
+    { combo: 9, tier: 2, growPx: 18.2, bursts: 1, particles: 18, duration: 850 },
+    { combo: 10, tier: 3, growPx: 20.8, bursts: 2, particles: 32, duration: 950 },
+    { combo: 14, tier: 3, growPx: 31.2, bursts: 2, particles: 32, duration: 950 },
+    { combo: 15, tier: 4, growPx: 33.8, bursts: 3, particles: 54, duration: 1050 },
+    { combo: 100, tier: 4, growPx: 50, bursts: 3, particles: 54, duration: 1050 }
+  ];
+  for (const expected of boundaryCases) {
+    const actual = L.comboFxProfileAt(expected.combo);
+    assert.deepEqual(
+      actual,
+      {
+        combo: expected.combo,
+        tier: expected.tier,
+        growPx: expected.growPx,
+        burstCount: expected.bursts,
+        particleCount: expected.particles,
+        durationMs: expected.duration
+      },
+      `${expected.combo}コンボの文字成長と花火量が段階仕様に一致`
+    );
+  }
+
+  let previous = L.comboFxProfileAt(0);
+  for (let combo = 1; combo <= 100; combo += 1) {
+    const current = L.comboFxProfileAt(combo);
+    for (const key of ["combo", "tier", "growPx", "burstCount", "particleCount", "durationMs"]) {
+      assert.ok(Number.isFinite(current[key]), `${combo}コンボの ${key} は有限値`);
+    }
+    assert.ok(current.tier >= previous.tier, `${combo}コンボでtierが逆行しない`);
+    assert.ok(current.growPx >= previous.growPx, `${combo}コンボで文字サイズが逆行しない`);
+    assert.ok(current.burstCount >= previous.burstCount, `${combo}コンボで花火数が逆行しない`);
+    assert.ok(current.particleCount >= previous.particleCount, `${combo}コンボで粒子数が逆行しない`);
+    assert.ok(current.durationMs >= previous.durationMs, `${combo}コンボで演出時間が逆行しない`);
+    assert.ok(current.growPx <= 50, `${combo}コンボで文字成長上限50pxを超えない`);
+    assert.ok(current.particleCount <= 54, `${combo}コンボで粒子上限54を超えない`);
+    previous = current;
+  }
+
+  for (const invalid of [NaN, Infinity, -Infinity, -1, undefined, null, "abc", {}, []]) {
+    assert.deepEqual(
+      L.comboFxProfileAt(invalid),
+      { combo: 0, tier: 0, growPx: 0, burstCount: 0, particleCount: 0, durationMs: 0 },
+      `不正値 ${String(invalid)} は安全な非表示状態へ正規化する`
+    );
+  }
+  assert.equal(L.comboFxProfileAt(4.99).combo, 4, "小数コンボは切り捨てる");
+  assert.equal(L.comboFxProfileAt("10").tier, 3, "数値文字列は安全に正規化する");
+  assert.equal(L.comboFxProfileAt(Number.MAX_SAFE_INTEGER).growPx, 50, "極端に大きいコンボも文字成長上限で止まる");
 }
 
 console.log("hyokkori hightouch regression: PASS");

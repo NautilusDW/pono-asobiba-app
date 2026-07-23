@@ -825,7 +825,19 @@
 // preventDefault)。水やり成功フィードバック(バッジ/演出/flash文言)と常設ステータスバー
 // を追加し、#stage 背景を cover→contain に防御的変更 (ひし形頂点欠け不能化)。
 // play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSION と同期 (2335)。
-const CACHE_VERSION = 2342;
+// v2343: guragura-seesaw 重大バグ修正。 .pan-items { pointer-events: none } が
+// 皿に置いたアイテムを永久に掴めなくしていた (誤配置しても取り除けず詰む事故、
+// 2026-07-23 ユーザー報告)。 .item-box に pointer-events:auto を明示して復旧。
+// play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSION と同期 (2343)。
+// v2344: なぞなぞトレイン恐竜面のクレーンを3荷物・3置場・重さ別挙動・振り子タイミングへ拡張し、
+// 水路を4×7回転タイル・ランダム盤面・一度だけのヒントへ刷新。CSS/JSと関連画像のqueryを
+// 20260723-1421へ同期。play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSION と同期 (2344)。
+// v2345: ひょっこりハイタッチのコンボを枠なしの大きな中央数字へ変更。成功ごとに
+// 文字を育て、2／5／10／15コンボの段階で色・弾み・放射花火の本数と粒子を強化した。
+// 操作を遮らないpointer透過、解除／再挑戦時の消去、reduced-motion時の花火停止も追加。
+// ゲーム個別ファイルはnetwork-first配信のためCRITICAL_ASSETSには追加しない。
+// play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSION と同期 (2345)。
+const CACHE_VERSION = 2345;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

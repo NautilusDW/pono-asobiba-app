@@ -302,6 +302,8 @@
   var renderedCombo = -1;
   var lifetimeBestCombo = readBestComboRecord();
   var comboRecordBroken = false;
+  var comboHideTimer = 0;
+  var comboSlamTimer = 0;
 
   function resetGameState() {
     state = L.createInitialState();
@@ -319,6 +321,14 @@
     tutorialOpen = false;
     comboRecordBroken = false;
     renderedCombo = -1;
+    if (comboHideTimer) { clearTimeout(comboHideTimer); comboHideTimer = 0; }
+    if (comboSlamTimer) { clearTimeout(comboSlamTimer); comboSlamTimer = 0; }
+    if (comboHudEl) {
+      comboHudEl.classList.remove('is-visible', 'is-slam');
+      comboHudEl.dataset.tier = '0';
+      comboHudEl.style.setProperty('--combo-grow', '0px');
+      comboHudEl.setAttribute('aria-hidden', 'true');
+    }
     if (comboStatusEl) comboStatusEl.textContent = '';
     if (relayAnnouncementTimer) { clearTimeout(relayAnnouncementTimer); relayAnnouncementTimer = 0; }
     confetti = [];
@@ -472,23 +482,88 @@
     }
   }
 
+  function clearComboFireworks() {
+    for (var i = confetti.length - 1; i >= 0; i--) {
+      if (confetti[i].source === 'combo') confetti.splice(i, 1);
+    }
+    fxCanvas.dataset.comboFxTier = '0';
+    fxCanvas.dataset.comboFxBursts = '0';
+    fxCanvas.dataset.comboFxParticles = '0';
+  }
+
+  function spawnComboFireworks(profile) {
+    clearComboFireworks();
+    if (!profile || profile.tier < 1 || prefersReducedMotion()) return;
+
+    var originsByTier = {
+      1: [[0.5, 0.48]],
+      2: [[0.5, 0.44]],
+      3: [[0.42, 0.47], [0.58, 0.42]],
+      4: [[0.36, 0.48], [0.5, 0.37], [0.64, 0.48]]
+    };
+    var origins = originsByTier[profile.tier] || originsByTier[1];
+    var colors = ['#fff7a3', '#ffc93d', '#ff6fa8', '#74e4ff', '#aa83ff', '#72e89a'];
+    var remaining = profile.particleCount;
+
+    for (var burst = 0; burst < origins.length; burst++) {
+      var burstsLeft = origins.length - burst;
+      var count = Math.ceil(remaining / burstsLeft);
+      remaining -= count;
+      var originX = fxCanvas.width * origins[burst][0];
+      var originY = fxCanvas.height * origins[burst][1];
+      for (var p = 0; p < count; p++) {
+        var angle = (Math.PI * 2 * p / count) + (Math.random() - 0.5) * 0.18;
+        var speed = 105 + profile.tier * 24 + Math.random() * 82;
+        confetti.push({
+          x: originX,
+          y: originY,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          gravity: 38,
+          decay: 1.12,
+          rot: angle,
+          rotSpd: (Math.random() - 0.5) * 3,
+          life: 1,
+          size: 3.5 + profile.tier * 0.7 + Math.random() * 3,
+          color: colors[(p + burst * 2) % colors.length],
+          shape: 'spark',
+          source: 'combo'
+        });
+      }
+    }
+
+    fxCanvas.dataset.comboFxTier = String(profile.tier);
+    fxCanvas.dataset.comboFxBursts = String(profile.burstCount);
+    fxCanvas.dataset.comboFxParticles = String(profile.particleCount);
+  }
+
   function updateAndDrawConfetti(dt) {
     fxCtx.clearRect(0, 0, fxCanvas.width, fxCanvas.height);
     if (confetti.length === 0) return;
     for (var i = confetti.length - 1; i >= 0; i--) {
       var c = confetti[i];
-      c.vy += 340 * dt;
+      c.vy += (typeof c.gravity === 'number' ? c.gravity : 340) * dt;
       c.x += c.vx * dt;
       c.y += c.vy * dt;
       c.rot += c.rotSpd * dt;
-      c.life -= dt * 0.6;
+      c.life -= dt * (typeof c.decay === 'number' ? c.decay : 0.6);
       if (c.life <= 0 || c.y > fxCanvas.height + 40) { confetti.splice(i, 1); continue; }
       fxCtx.save();
       fxCtx.globalAlpha = Math.max(0, c.life);
       fxCtx.translate(c.x, c.y);
       fxCtx.rotate(c.rot);
-      fxCtx.fillStyle = c.color;
-      fxCtx.fillRect(-c.size / 2, -c.size / 2, c.size, c.size * 0.6);
+      if (c.shape === 'spark') {
+        fxCtx.strokeStyle = c.color;
+        fxCtx.lineWidth = Math.max(2, c.size * 0.42);
+        fxCtx.lineCap = 'round';
+        fxCtx.beginPath();
+        fxCtx.moveTo(-c.size * 1.4, 0);
+        fxCtx.lineTo(c.size * 1.4, 0);
+        fxCtx.stroke();
+      } else {
+        fxCtx.fillStyle = c.color;
+        fxCtx.fillRect(-c.size / 2, -c.size / 2, c.size, c.size * 0.6);
+      }
       fxCtx.restore();
     }
     fxCtx.globalAlpha = 1;
@@ -642,22 +717,63 @@
   var hudTimerEl = document.getElementById('hud-timer');
   var hudScoreEl = document.getElementById('hud-score');
 
+  function hideComboHud(clearFx) {
+    if (comboHideTimer) { clearTimeout(comboHideTimer); comboHideTimer = 0; }
+    if (comboSlamTimer) { clearTimeout(comboSlamTimer); comboSlamTimer = 0; }
+    if (comboHudEl) {
+      comboHudEl.classList.remove('is-visible', 'is-slam');
+      comboHudEl.setAttribute('aria-hidden', 'true');
+    }
+    if (clearFx) clearComboFireworks();
+  }
+
+  function slamComboHud() {
+    if (!comboHudEl) return;
+    if (comboSlamTimer) clearTimeout(comboSlamTimer);
+    comboHudEl.classList.remove('is-slam');
+    void comboHudEl.offsetWidth;
+    comboHudEl.classList.add('is-slam');
+    comboSlamTimer = setTimeout(function () {
+      comboSlamTimer = 0;
+      if (comboHudEl) comboHudEl.classList.remove('is-slam');
+    }, 560);
+  }
+
   function updateComboHud() {
     if (!comboHudEl || !comboCountEl) return;
     var combo = Math.max(0, Number(state.combo) || 0);
-    var shouldShow = combo >= 2;
-    if (combo !== renderedCombo) {
-      comboCountEl.textContent = String(combo);
-      comboHudEl.setAttribute('aria-label', combo + 'コンボ');
-      if (shouldShow && renderedCombo >= 0) retriggerClass(comboHudEl, 'is-bump', 240);
-      if (comboStatusEl) {
-        if (shouldShow) comboStatusEl.textContent = combo + 'コンボ';
-        else if (renderedCombo >= 2 && combo === 0) comboStatusEl.textContent = 'コンボ おしまい';
-      }
-      renderedCombo = combo;
+    if (combo === renderedCombo) return;
+
+    var previousCombo = renderedCombo;
+    var profile = L.comboFxProfileAt(combo);
+    comboCountEl.textContent = String(combo);
+    comboHudEl.setAttribute('aria-label', combo + 'コンボ');
+    comboHudEl.dataset.tier = String(profile.tier);
+    comboHudEl.style.setProperty('--combo-grow', profile.growPx + 'px');
+
+    if (comboStatusEl) {
+      if (profile.tier > 0) comboStatusEl.textContent = combo + 'コンボ';
+      else if (previousCombo >= 2 && combo === 0) comboStatusEl.textContent = 'コンボ おしまい';
+      else if (combo === 1) comboStatusEl.textContent = '';
     }
-    comboHudEl.classList.toggle('is-visible', shouldShow);
-    comboHudEl.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
+
+    if (profile.tier > 0) {
+      if (comboHideTimer) clearTimeout(comboHideTimer);
+      comboHudEl.classList.add('is-visible');
+      comboHudEl.setAttribute('aria-hidden', 'false');
+      slamComboHud();
+      spawnComboFireworks(profile);
+      comboHideTimer = setTimeout(function () {
+        comboHideTimer = 0;
+        hideComboHud(true);
+      }, profile.durationMs);
+    } else {
+      hideComboHud(true);
+      comboHudEl.dataset.tier = '0';
+      comboHudEl.style.setProperty('--combo-grow', '0px');
+    }
+
+    renderedCombo = combo;
   }
 
   function showScorePop(idx, result) {
@@ -847,6 +963,7 @@
 
   function finishGame() {
     phase = 'result';
+    hideComboHud(true);
     if (window.incrementStat) window.incrementStat('hyokkori_games', 1);
     // 別タブで更新された記録も取り込み、古いページから小さい値で上書きしない。
     lifetimeBestCombo = Math.max(lifetimeBestCombo, readBestComboRecord());

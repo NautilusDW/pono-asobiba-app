@@ -170,6 +170,12 @@ html, body {
   border-radius: 14px;
   display: flex; align-items: center; justify-content: center;
   cursor: grab;
+  /* .pan-items (皿側の入れ物) が pointer-events:none なので、そのままだと
+     皿に置いたアイテムは touchstart/pointerdown が一切発火せず二度と掴めなく
+     なる (= 誤って乗せたアイテムをトレイへ戻す手段が無いまま詰む重大バグ、
+     2026-07-23 ユーザー報告で発覚。 tray 側は元々 pointer-events を制限して
+     いないため今まで気づかれなかった)。 ここで明示的に auto へ戻す。 */
+  pointer-events: auto;
 }
 .item-box.size-s { width: calc(var(--stage-h, 480px) * 0.09); height: calc(var(--stage-h, 480px) * 0.09); }
 .item-box.size-m { width: calc(var(--stage-h, 480px) * 0.12); height: calc(var(--stage-h, 480px) * 0.12); }

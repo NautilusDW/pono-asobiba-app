@@ -22,7 +22,7 @@
 <script src="../common/highscore.js"></script>
 
 <link rel="preload" as="image" href="../assets/images/hyokkori-hightouch/friend_hikari_momonga_bonus_awake.png">
-<link rel="stylesheet" href="styles.css?v=20260723-6">
+<link rel="stylesheet" href="styles.css?v=20260723-7">
 </head>
 <body>
 
@@ -39,11 +39,15 @@
 
   <div id="hud">
     <div class="hud-pill hud-timer" id="hud-timer">⏱ 30</div>
-    <div class="hud-pill" id="combo-hud" aria-hidden="true">
-      <span id="combo-count">0</span><span class="combo-label">コンボ</span>
-    </div>
     <div class="hh-sr-only" id="combo-status-sr" role="status" aria-live="polite" aria-atomic="true"></div>
     <div class="hud-pill hud-score" id="hud-score">🖐️ 0</div>
+  </div>
+
+  <div id="combo-hud" data-tier="0" aria-hidden="true">
+    <div class="combo-core">
+      <span id="combo-count">0</span>
+      <span class="combo-label">コンボ</span>
+    </div>
   </div>
 
   <div id="start-screen">
@@ -117,7 +121,7 @@
   </div>
 </div>
 
-<script src="js/logic.js?v=20260723-6"></script>
-<script src="js/game.js?v=20260723-6"></script>
+<script src="js/logic.js?v=20260723-7"></script>
+<script src="js/game.js?v=20260723-7"></script>
 </body>
 </html>

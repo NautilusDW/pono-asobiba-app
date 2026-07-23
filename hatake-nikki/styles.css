@@ -101,22 +101,30 @@ html, body {
 }
 
 #plot-area {
-  position: absolute; inset: 0;
+  /* green.png の実画像面 (1200×670) と同じ座標系を作る。
+     stage は16:9、背景は contain のためわずかに上下余白が出る。
+     inset:0 の画面座標で畝を置くと、絵のひし形とずれるので不可。 */
+  position: absolute;
+  left: 0; top: 50%;
+  width: 100%;
+  aspect-ratio: 1200 / 670;
+  transform: translateY(-50%);
 }
 
 .plot {
   position: absolute;
-  bottom: 12%;
-  width: 20%;
+  width: 19.833333%; /* 238 / 1200: hatake_crop.png の原寸比 */
   aspect-ratio: 238 / 143; /* hatake_crop.png 実測 AR を厳守 (stretch禁止) */
   background: url('../assets/images/yard/hatake_crop.png') center/contain no-repeat;
   display: flex; align-items: center; justify-content: center;
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none; /* iOS 長押しコールアウト禁止 (保険: 継承元と重複明示) */
 }
-.plot[data-plot="0"] { left: 12%; }
-.plot[data-plot="1"] { left: 38%; }
-.plot[data-plot="2"] { left: 64%; }
+/* egg/index.html の FARM_PLOT_POS 先頭3点と共通の実測座標。
+   0=奥、1/2=手前の三角形にし、ひし形地面の外に出さない。 */
+.plot[data-plot="0"] { left: 25.583333%; top: 32.228358%; z-index: 1; }
+.plot[data-plot="1"] { left: 13.883333%; top: 44.228358%; z-index: 2; }
+.plot[data-plot="2"] { left: 38.383333%; top: 45.828358%; z-index: 2; }
 .plot.is-pressed { filter: brightness(0.92); }
 
 /* 水ツール選択中: 水やりできる畝を光らせて誘導 */
