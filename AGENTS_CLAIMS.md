@@ -59,6 +59,8 @@
 
 <!-- ↓ ここに 1 行ずつ追記。 終わったら自分の行を完全削除。 -->
 
+- 2026-07-24 - by Claude - [batch:1452-tsuri-web-retire-unity-migrate] - tsuri-kawa/**(削除), common/tsuri/**(削除), tests/tsuri_core_regression.cjs(削除), play.html, sw.js, common/haptics.js, docs/TSURI_FISHING_GAME_PLAN_2026-07-23.md, unity/PonoNativeGames/Assets/Pono/Games/KawaGlint/**(バグ修正のみ、新規追加は無し), AGENTS_CLAIMS.md, HANDOFF.md - ユーザー判断によりWeb版つりゲーム(tsuri-kawa)を廃止しUnity版(KawaGlint)へ完全移行。配信基盤(WebGL/ネイティブアプリ化)は別途後日対応、まずゲーム実装をUnity一本化。fable設計→sonnet5並列実装→クロスレビューで進行中 [overlap: batch:1447-tsuri-fishing-phase0(この作業で廃止対象そのもの), batch:1449-tsuri-unity-water-spike(KawaGlint本体、継続作業)]
+
 - 2026-07-24 - by Claude - [batch:1453-nazonazo-town-pitatto-teisha] - nazonazo-tunnel/js/game.js, nazonazo-tunnel/index.html, nazonazo-tunnel/styles.css, tests/nazonazo_town_dock_regression.cjs (新規), sw.js, docs/NAZONAZO_TRAIN_STAGE_REDESIGN_2026-07-24.md, AGENTS_CLAIMS.md - docs/NAZONAZO_TRAIN_STAGE_REDESIGN_2026-07-24.md townステージ(ぴたっと停車)の実装着手。5問クイズをホールド/リリースの停車ミニゲームへ置換 [overlap: batch:1417-nazonazo-dino-train-crane (同ファイル群、dinoイベントのみ担当し無関係)]
 
 - 2026-07-24 - by Claude - [batch:1451-machizukuri-yasai-stand-weigh-reveal] - machizukuri/js/logic.js, machizukuri/js/game.js, machizukuri/index.html, machizukuri/styles.css, tests/machizukuri_regression.cjs, sw.js, play.html, AGENTS_CLAIMS.md - はたけにっき収穫の重さ(weightMultiplier)をやさいスタンドで計量リビールする機能を実装 (guragura-seesawのspringStep/isSettledパターンをmachizukuri/js/logic.jsに複製、common/hatake-harvest-bridge.js(hatake側で実装済み)のキューを読んでharvestSpentへボーナス還元)。node回帰(machizukuri_regression.cjs Stage1-3 + guragura_seesaw_regression.cjsのキャッシュバージョン3-way同期)green、sw v2365→2366。commit/push未実施 [overlap: batch:1437-machizukuri-new-feature (同機能の先行フェーズ、machizukuri/**を共有), batch:1450/1449/1447 (sw.js/play.html)]
