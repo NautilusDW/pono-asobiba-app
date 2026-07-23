@@ -11,6 +11,10 @@
   // 「タイトルは見えるがタップ無反応」になる事故 (guragura-seesaw 2026-07-22 報告。
   // 同型の脆弱ガードが本ゲームにも存在したため同じ修正パターンを移植)。
   function showLoadError() {
+    if (typeof window.__showHyokkoriLoadError === 'function') {
+      window.__showHyokkoriLoadError();
+      return;
+    }
     if (document.getElementById('loadErrorScreen')) return;
     var ov = document.createElement('div');
     ov.id = 'loadErrorScreen';
@@ -24,7 +28,7 @@
     btn.type = 'button';
     btn.textContent = '🔄 もういちど よみこむ';
     btn.style.cssText = 'padding:12px 32px;border:none;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-size:1rem;font-weight:900;font-family:inherit;cursor:pointer';
-    btn.addEventListener('pointerdown', function () { location.reload(); });
+    btn.addEventListener('click', function () { location.reload(); });
     ov.appendChild(btn);
     document.body.appendChild(ov);
     // FOUC ガードで #stage が visibility:hidden のままでもオーバーレイは body 直下なので見える。
@@ -48,6 +52,7 @@
 
   function bootInner() {
   var L = window.HyokkoriLogic;
+  var H = window.HyokkoriLocations;
 
   // ═══ DOM 参照 ═══
   var stageEl = document.getElementById('stage');
@@ -55,28 +60,10 @@
   var fxCanvas = document.getElementById('fx-canvas');
   var fxCtx = fxCanvas.getContext('2d');
 
-  // GPT Image 2 でこのゲーム専用に描いた8種。awake/sleeping は同じ正方形
-  // キャンバスを共有し、状態が切り替わっても大きさや足元が跳ねない。
   var ASSET_BASE = '../assets/images/hyokkori-hightouch/';
-  var PARTNERS = [
-    { id: 'araiguma', awake: ASSET_BASE + 'friend_araiguma_awake.png', sleeping: ASSET_BASE + 'friend_araiguma_sleeping.png' },
-    { id: 'fukurou', awake: ASSET_BASE + 'friend_fukurou_awake.png', sleeping: ASSET_BASE + 'friend_fukurou_sleeping.png' },
-    { id: 'harinezumi', awake: ASSET_BASE + 'friend_harinezumi_awake.png', sleeping: ASSET_BASE + 'friend_harinezumi_sleeping.png' },
-    { id: 'karasu', awake: ASSET_BASE + 'friend_karasu_awake.png', sleeping: ASSET_BASE + 'friend_karasu_sleeping.png' },
-    { id: 'kitsune', awake: ASSET_BASE + 'friend_kitsune_awake.png', sleeping: ASSET_BASE + 'friend_kitsune_sleeping.png' },
-    { id: 'kojika', awake: ASSET_BASE + 'friend_kojika_awake.png', sleeping: ASSET_BASE + 'friend_kojika_sleeping.png' },
-    { id: 'risu', awake: ASSET_BASE + 'friend_risu_awake.png', sleeping: ASSET_BASE + 'friend_risu_sleeping.png' },
-    { id: 'usagi', awake: ASSET_BASE + 'friend_usagi_awake.png', sleeping: ASSET_BASE + 'friend_usagi_sleeping.png' }
-  ];
-  var BONUS_PARTNER = {
-    id: 'hikari_momonga',
-    awake: ASSET_BASE + 'friend_hikari_momonga_bonus_awake.png'
-  };
+  var PARTNER_CATALOG = H.PARTNER_CATALOG;
   var HIGH_SCORE_GAME_ID = 'hyokkori-hightouch-v2';
   var BEST_COMBO_KEY = 'pono_hyokkori_best_combo_v2';
-  // 6か所は同じ遊び方なので、開口形状も同じ葉の茂みに統一する。
-  // 背面と手前縁に同じ画像を重ね、キャラだけを間へ挟む。
-  var HIDEOUT_IMAGE = ASSET_BASE + 'hideout_leaf_bush.png';
   var FX_IMAGES = [
     ASSET_BASE + 'fx_highfive_burst.png',
     ASSET_BASE + 'fx_leaf_puff.png',
@@ -86,20 +73,129 @@
     ASSET_BASE + 'pono_result_bloom.png'
   ];
 
-  // common/preload-helper.js は担当外なので、このゲーム自身の idle 時間で専用画像を温める。
-  // 背景・開始ポノはHTML/CSSから先に読み込まれ、ここでは残りを補完する。
-  var preloadRefs = [];
-  function preloadGameAssetsLocally() {
-    // 7体目に必ず使うボーナスを最優先。遅い回線でも初登場までに間に合わせる。
-    var urls = [BONUS_PARTNER.awake, HIDEOUT_IMAGE].concat(FX_IMAGES);
-    for (var i = 0; i < PARTNERS.length; i++) urls.push(PARTNERS[i].awake, PARTNERS[i].sleeping);
-    var run = function () {
-      for (var j = 0; j < urls.length; j++) {
-        var img = new Image();
-        img.decoding = 'async';
-        img.src = urls[j];
-        preloadRefs.push(img);
+  // 起動時は現在地だけを必須読込し、次の場所だけを遊んでいる間に温める。
+  // 3場所すべてを一括取得しないことで、初回通信量と低メモリ端末の負荷を抑える。
+  var assetPromiseByUrl = Object.create(null);
+  var loadedAssetUrls = Object.create(null);
+  // 10Mbps前後でも背景＋最初に遊べる動物1組を待てる値。
+  // 全15画像の完了は待たず、残りは同時に温めながら読み込む。
+  var REQUIRED_ASSET_TIMEOUT_MS = 12000;
+
+  function locationFrameAssetUrls(location) {
+    return [location.background, location.hideout].filter(Boolean);
+  }
+
+  function locationAssetUrls(location) {
+    var urls = locationFrameAssetUrls(location);
+    var ids = (location.partnerIds || []).concat([location.bonusPartnerId]);
+    for (var i = 0; i < ids.length; i++) {
+      var partner = PARTNER_CATALOG[ids[i]];
+      if (!partner) continue;
+      if (partner.awake) urls.push(partner.awake);
+      if (partner.sleeping) urls.push(partner.sleeping);
+    }
+    return urls.filter(function (url, idx, list) {
+      return !!url && list.indexOf(url) === idx;
+    });
+  }
+
+  function loadAndDecodeImage(url) {
+    if (!url) return Promise.reject(new Error('画像URLがありません'));
+    if (loadedAssetUrls[url]) return Promise.resolve(true);
+    if (assetPromiseByUrl[url]) return assetPromiseByUrl[url];
+    assetPromiseByUrl[url] = new Promise(function (resolve, reject) {
+      var settled = false;
+      var img = new Image();
+      var timer = setTimeout(function () {
+        if (settled) return;
+        settled = true;
+        delete assetPromiseByUrl[url];
+        reject(new Error('画像の読込がタイムアウトしました: ' + url));
+      }, REQUIRED_ASSET_TIMEOUT_MS);
+      function done() {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        loadedAssetUrls[url] = true;
+        delete assetPromiseByUrl[url];
+        resolve(true);
       }
+      function failed() {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        delete assetPromiseByUrl[url];
+        reject(new Error('画像を読み込めませんでした: ' + url));
+      }
+      img.decoding = 'async';
+      img.onload = function () {
+        if (typeof img.decode !== 'function') { done(); return; }
+        img.decode().then(done, function () {
+          // Safari は画像表示可能でも decode() だけを reject することがある。
+          if (img.complete && img.naturalWidth > 0) done();
+          else failed();
+        });
+      };
+      img.onerror = failed;
+      img.src = url;
+      if (img.complete && img.naturalWidth > 0) {
+        if (typeof img.decode === 'function') img.decode().then(done, done);
+        else done();
+      }
+    });
+    return assetPromiseByUrl[url];
+  }
+
+  function preloadLocationAssets(location) {
+    return Promise.all(locationAssetUrls(location).map(loadAndDecodeImage));
+  }
+
+  function preloadFirstPlayablePartner(location) {
+    var ids = location.partnerIds || [];
+    for (var i = 0; i < ids.length; i++) {
+      var id = ids[i];
+      var partner = PARTNER_CATALOG[id];
+      if (!partner || !partner.awake || !partner.sleeping) continue;
+      return Promise.all([
+          loadAndDecodeImage(partner.awake),
+          loadAndDecodeImage(partner.sleeping)
+        ]);
+    }
+    return Promise.reject(new Error('遊べる動物が登録されていません'));
+  }
+
+  function preloadBonusPartner(location) {
+    var bonusPartner = PARTNER_CATALOG[location.bonusPartnerId];
+    if (!bonusPartner || !bonusPartner.awake) {
+      return Promise.reject(new Error('ボーナスの動物が登録されていません'));
+    }
+    return loadAndDecodeImage(bonusPartner.awake);
+  }
+
+  function preloadPlayableLocation(location) {
+    // 開始前は背景・外装、最初の1種類、7体目に必要なボーナスだけ。
+    // 残りはカウントダウン以降に読み、タイトルを見ているだけの時に
+    // 全15画像を転送しない一方、回線速度に左右されず7体目を必ずボーナスにする。
+    return Promise.all([
+      Promise.all(locationFrameAssetUrls(location).map(loadAndDecodeImage)),
+      preloadFirstPlayablePartner(location),
+      preloadBonusPartner(location)
+    ]);
+  }
+
+  function warmNextLocation(location) {
+    var run = function () {
+      preloadLocationAssets(location).catch(function () {
+        // 先読み失敗は次の場所へ進む時に必須読込として再試行し、そこで明示表示する。
+      });
+    };
+    if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(run, { timeout: 1000 });
+    else setTimeout(run, 120);
+  }
+
+  function preloadSharedFxLocally() {
+    var run = function () {
+      for (var i = 0; i < FX_IMAGES.length; i++) loadAndDecodeImage(FX_IMAGES[i]).catch(function () {});
     };
     if (typeof window.requestIdleCallback === 'function') window.requestIdleCallback(run, { timeout: 1000 });
     else setTimeout(run, 120);
@@ -172,6 +268,7 @@
     landscapeNoticeBlocking = !!show;
     notice.style.display = show ? 'flex' : 'none';
     notice.setAttribute('aria-hidden', show ? 'false' : 'true');
+    setBoardInteractive(!show && phase === 'playing' && !tutorialOpen);
   }
 
   function updateLandscapeNotice() {
@@ -209,27 +306,77 @@
     }
   } catch (e) { /* fail-open: 登録できなくても致命的ではない */ }
 
-  // ═══ 隠れ場所 (穴) を <template id="hh-hole-tpl"> から HOLE_COUNT 個複製生成 ═══
-  // (6箇所とも同一マークアップなので index.html 側の手書き複製を避ける)
-  function buildHoles() {
-    var tpl = document.getElementById('hh-hole-tpl');
-    if (!tpl) return; // テンプレート未読込なら何もしない (querySelectorAll側が空配列で安全に扱う)
-    for (var i = 0; i < L.HOLE_COUNT; i++) {
-      var node = tpl.content.firstElementChild.cloneNode(true);
-      node.setAttribute('data-hole', i);
-      var hideouts = node.querySelectorAll('.hh-hideout');
-      for (var h = 0; h < hideouts.length; h++) hideouts[h].src = HIDEOUT_IMAGE;
-      boardEl.appendChild(node);
+  // ═══ 散歩の保存と場所切替 ═══
+  var memoryWalkState = null;
+  var walkStorageUnavailable = false;
+  var walkState = null;
+  var currentLocation = null;
+  var nextLocation = null;
+  var locationLoadEpoch = 0;
+  var boardEpoch = 0;
+
+  function readWalkState() {
+    var raw = memoryWalkState;
+    if (!walkStorageUnavailable) {
+      try {
+        var saved = localStorage.getItem(H.WALK_SAVE_KEY);
+        if (saved) raw = JSON.parse(saved);
+      } catch (e) {
+        // localStorage無効・JSON破損時も、同じ起動中はメモリ上で散歩を続けられる。
+        // JSON破損は次の正常保存で直せるため、アクセス自体が失敗した時だけwrite側で判定する。
+        try { localStorage.getItem(H.WALK_SAVE_KEY); } catch (storageError) { walkStorageUnavailable = true; }
+      }
+    }
+    return H.normalizeWalkState(raw);
+  }
+
+  function writeWalkState(value) {
+    var normalized = H.normalizeWalkState(value);
+    memoryWalkState = normalized;
+    if (!walkStorageUnavailable) {
+      try { localStorage.setItem(H.WALK_SAVE_KEY, JSON.stringify(normalized)); }
+      catch (e) { walkStorageUnavailable = true; }
+    }
+    return normalized;
+  }
+
+  function routeIndexOf(location) {
+    return Math.max(0, H.ROUTE_IDS.indexOf(location.id));
+  }
+
+  function routeLocationAfter(location) {
+    var index = routeIndexOf(location);
+    var nextId = H.ROUTE_IDS[(index + 1) % H.ROUTE_IDS.length];
+    return H.LOCATION_BY_ID[nextId] || H.LOCATIONS[0];
+  }
+
+  function updateStartLocation() {
+    var startLocationEl = document.getElementById('start-location');
+    if (!startLocationEl || !currentLocation) return;
+    startLocationEl.textContent = (routeIndexOf(currentLocation) + 1) + '/' + H.ROUTE_IDS.length + '　' + currentLocation.name;
+  }
+
+  // ═══ 隠れ場所を場所定義の正規化座標から動的生成 ═══
+  var holeRefs = [];
+
+  function setBoardInteractive(enabled) {
+    var active = !!enabled;
+    if (active) {
+      boardEl.removeAttribute('inert');
+      boardEl.removeAttribute('aria-hidden');
+    } else {
+      boardEl.setAttribute('inert', '');
+      boardEl.setAttribute('aria-hidden', 'true');
+    }
+    var refs = holeRefs || [];
+    for (var i = 0; i < refs.length; i++) {
+      refs[i].hole.disabled = !active;
+      refs[i].hole.tabIndex = active ? 0 : -1;
     }
   }
-  buildHoles();
 
-  // ═══ 隠れ場所 (穴) の DOM 参照テーブル ═══
-  var holeRefs = [];
-  var holeEls = boardEl.querySelectorAll('.hh-hole');
-  for (var hi = 0; hi < holeEls.length; hi++) {
-    var holeEl = holeEls[hi];
-    holeRefs.push({
+  function makeHoleRef(holeEl) {
+    return {
       idx: parseInt(holeEl.getAttribute('data-hole'), 10),
       hole: holeEl,
       windowEl: holeEl.querySelector('.hh-window'),
@@ -240,7 +387,85 @@
       dust: holeEl.querySelector('.hh-dust'),
       foreground: holeEl.querySelector('.hh-hideout-foreground'),
       bonusBadge: holeEl.querySelector('.hh-bonus-badge'),
-      scorePop: holeEl.querySelector('.hh-score-pop')
+      scorePop: holeEl.querySelector('.hh-score-pop'),
+      epoch: boardEpoch,
+      visualToken: 0
+    };
+  }
+
+  function buildHoles(location) {
+    var tpl = document.getElementById('hh-hole-tpl');
+    if (!tpl || !location) throw new Error('隠れ場所のテンプレートまたは場所定義がありません');
+    var fragment = document.createDocumentFragment();
+    var nextRefs = [];
+    boardEpoch += 1;
+    for (var i = 0; i < location.slots.length; i++) {
+      var slot = location.slots[i];
+      var node = tpl.content.firstElementChild.cloneNode(true);
+      // 移行途中の古いHTMLを読んでも支援技術向けの実buttonへ正規化する。
+      if (node.tagName !== 'BUTTON') {
+        var button = document.createElement('button');
+        button.type = 'button';
+        button.className = node.className;
+        while (node.firstChild) button.appendChild(node.firstChild);
+        node = button;
+      }
+      node.type = 'button';
+      node.disabled = true;
+      node.tabIndex = -1;
+      node.setAttribute('data-hole', i);
+      node.style.setProperty('--slot-x', Number(slot.x) + '%');
+      node.style.setProperty('--slot-y', Number(slot.y) + '%');
+      node.style.setProperty('--depth-scale', String(Number(slot.depth) || 1));
+      node.style.setProperty('--slot-z', String(20 + Math.round(Number(slot.y) || 0)));
+      var hideouts = node.querySelectorAll('.hh-hideout');
+      for (var h = 0; h < hideouts.length; h++) hideouts[h].src = location.hideout;
+      (function (idx, buttonEl) {
+        // detail===0 はキーボードまたは支援技術によるbutton activation。
+        // touchstart / mouse pointerdown 後の合成clickはここで二重処理しない。
+        buttonEl.addEventListener('click', function (e) {
+          if (e.detail !== 0) return;
+          e.preventDefault();
+          ensureAudio();
+          handleHoleActivation(idx);
+        });
+      })(i, node);
+      fragment.appendChild(node);
+      nextRefs.push(makeHoleRef(node));
+    }
+    boardEl.replaceChildren(fragment);
+    holeRefs = nextRefs;
+    boardEl.dataset.location = location.id;
+    boardEl.dataset.lastSuccessfulHole = '';
+    setBoardInteractive(false);
+  }
+
+  function afterPaint() {
+    return new Promise(function (resolve) {
+      requestAnimationFrame(function () { requestAnimationFrame(resolve); });
+    });
+  }
+
+  function swapLocation(location, initial) {
+    var requestEpoch = ++locationLoadEpoch;
+    document.body.classList.add('pono-game-loading');
+    setBoardInteractive(false);
+    return preloadPlayableLocation(location).then(function () {
+      if (requestEpoch !== locationLoadEpoch) return false;
+      currentLocation = location;
+      stageEl.style.setProperty('--location-bg', 'url("' + location.background.replace(/"/g, '\\"') + '")');
+      stageEl.dataset.location = location.id;
+      buildHoles(location);
+      updateStartLocation();
+      resetGameState();
+      updateHud();
+      return afterPaint();
+    }).then(function (painted) {
+      if (requestEpoch !== locationLoadEpoch || painted === false) return false;
+      document.body.classList.remove('pono-game-loading');
+      if (initial) document.body.classList.add('pono-game-ready');
+      nextLocation = routeLocationAfter(currentLocation);
+      return true;
     });
   }
 
@@ -279,6 +504,7 @@
   var boardLockedUntil = 0; // OVERHEAT 演出用 (state.time 基準)
   var lastSuccessfulHole = null; // 直前の成功地点。次の出現候補からだけ外す。
   var lastPartnerId = null;
+  var partnerBag = [];
   var actualSpawnCount = 0;
   var tutorialOpen = false;
   var renderedCombo = -1;
@@ -286,6 +512,10 @@
   var comboRecordBroken = false;
   var comboHideTimer = 0;
   var comboSlamTimer = 0;
+  var activeRun = null;
+  var activeRunAdvanced = false;
+  var resultCompletedLap = false;
+  var nextWarmTimer = 0;
 
   function resetGameState() {
     state = L.createInitialState();
@@ -301,12 +531,17 @@
     lastSuccessfulHole = null;
     boardEl.dataset.lastSuccessfulHole = '';
     lastPartnerId = null;
+    partnerBag = [];
     actualSpawnCount = 0;
     tutorialOpen = false;
+    activeRun = null;
+    activeRunAdvanced = false;
+    resultCompletedLap = false;
     comboRecordBroken = false;
     renderedCombo = -1;
     if (comboHideTimer) { clearTimeout(comboHideTimer); comboHideTimer = 0; }
     if (comboSlamTimer) { clearTimeout(comboSlamTimer); comboSlamTimer = 0; }
+    if (nextWarmTimer) { clearTimeout(nextWarmTimer); nextWarmTimer = 0; }
     if (comboHudEl) {
       comboHudEl.classList.remove('is-visible', 'is-slam');
       comboHudEl.dataset.tier = '0';
@@ -321,6 +556,7 @@
   function resetHoleVisual(idx) {
     var refs = holeRefs[idx];
     if (!refs) return;
+    delete refs.wrap.dataset.partner;
     refs.wrap.classList.remove('is-visible', 'is-sleeping', 'is-hit', 'is-wobble', 'is-bonus');
     if (refs.bonusBadge) refs.bonusBadge.classList.remove('show');
     if (refs.scorePop) {
@@ -349,14 +585,53 @@
     return ids;
   }
 
-  function pickPartner() {
+  function refillPartnerBag() {
+    partnerBag = (currentLocation && currentLocation.partnerIds ? currentLocation.partnerIds : []).filter(function (id) {
+      return !!PARTNER_CATALOG[id];
+    });
+    // Fisher-Yates。袋を使い切るまで同じ6種は重複しない。
+    for (var i = partnerBag.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = partnerBag[i];
+      partnerBag[i] = partnerBag[j];
+      partnerBag[j] = tmp;
+    }
+  }
+
+  function takeDeferredPartner(excluded, avoidLast, kind) {
+    var count = partnerBag.length;
+    for (var i = 0; i < count; i++) {
+      var id = partnerBag.shift();
+      var candidate = PARTNER_CATALOG[id];
+      var stateImage = candidate && candidate[kind];
+      if (candidate && stateImage && loadedAssetUrls[stateImage] &&
+          excluded.indexOf(id) < 0 && (!avoidLast || id !== lastPartnerId)) {
+        return candidate;
+      }
+      // 同時出現中・直前の子は捨てずに袋の後ろへ回す。
+      partnerBag.push(id);
+    }
+    return null;
+  }
+
+  function pickPartner(kind) {
+    if (partnerBag.length === 0) refillPartnerBag();
     var occupiedIds = occupiedPartnerIds();
-    var excluded = occupiedIds.slice();
-    if (lastPartnerId) excluded.push(lastPartnerId);
-    var choices = PARTNERS.filter(function (partner) { return excluded.indexOf(partner.id) < 0; });
-    if (choices.length === 0) choices = PARTNERS.filter(function (partner) { return occupiedIds.indexOf(partner.id) < 0; });
-    if (choices.length === 0) choices = PARTNERS;
-    return choices[Math.floor(Math.random() * choices.length)];
+    var partner = takeDeferredPartner(occupiedIds, true, kind);
+    if (!partner) partner = takeDeferredPartner(occupiedIds, false, kind);
+    if (partner) return partner;
+
+    // 読込待ちのIDだけが袋に残った時も、すでにdecode済みの子で遊びを止めない。
+    // 袋自体は崩さないので、残りが読み込めた後は一巡一回の順へ自然に戻る。
+    var ready = (currentLocation.partnerIds || []).filter(function (id) {
+      var candidate = PARTNER_CATALOG[id];
+      return candidate && candidate[kind] && loadedAssetUrls[candidate[kind]] &&
+        occupiedIds.indexOf(id) < 0;
+    });
+    var withoutLast = ready.filter(function (id) { return id !== lastPartnerId; });
+    var fallbackIds = withoutLast.length ? withoutLast : ready;
+    if (!fallbackIds.length) return null;
+    return PARTNER_CATALOG[fallbackIds[Math.floor(Math.random() * fallbackIds.length)]];
   }
 
   function trySpawn() {
@@ -365,15 +640,28 @@
     var forbidden = occupied.slice();
     // 直前に成功した場所を外し、視線が盤面を自然に移るリズムだけを残す。
     if (lastSuccessfulHole !== null && forbidden.indexOf(lastSuccessfulHole) < 0) forbidden.push(lastSuccessfulHole);
-    var holeIdx = L.pickHole(forbidden, Math.random);
+    var holeIdx = L.pickHole(holeRefs.length, forbidden, Math.random);
     if (holeIdx === null) return;
     actualSpawnCount += 1;
     var isBonus = L.isBonusSpawn(actualSpawnCount);
     var kind = isBonus ? 'awake' : L.pickSpawnKind(state.elapsed, recentKinds, Math.random);
+    var partner = isBonus ? PARTNER_CATALOG[currentLocation.bonusPartnerId] : pickPartner(kind);
+    var partnerImage = partner && (isBonus ? partner.awake : partner[kind]);
+    if (isBonus && partnerImage && !loadedAssetUrls[partnerImage]) {
+      // swapLocation() の必須読込後なので通常は到達しない防御分岐。
+      // 想定外のdecode状態消失時も7体目を通常へ置換せず、同じcountで再試行する。
+      loadAndDecodeImage(partnerImage).catch(function () {});
+      actualSpawnCount -= 1;
+      return;
+    }
+    // 遅い回線では未decode画像を出さず、次の出現間隔で再試行する。
+    if (!partner || !partnerImage || !loadedAssetUrls[partnerImage]) {
+      actualSpawnCount -= 1;
+      return;
+    }
     recentKinds.push(kind);
     if (recentKinds.length > 6) recentKinds.shift();
     var showTime = isBonus ? L.bonusShowTimeAt(state.elapsed) : L.showTimeAt(state.elapsed);
-    var partner = isBonus ? BONUS_PARTNER : pickPartner();
     if (!isBonus) lastPartnerId = partner.id;
     holes[holeIdx].occupant = {
       kind: kind,
@@ -388,6 +676,7 @@
     var refs = holeRefs[idx];
     if (!refs) return;
     refs.visualToken = (refs.visualToken || 0) + 1;
+    refs.wrap.dataset.partner = partner.id;
     refs.img.src = isBonus ? partner.awake : partner[kind];
     refs.img.alt = isBonus
       ? 'キラキラの ひかりモモンガ'
@@ -425,8 +714,9 @@
     if (!h || !h.occupant || !refs) return;
     h.occupant = null;
     var token = refs.visualToken || 0;
+    var epoch = refs.epoch;
     setTimeout(function () {
-      if ((refs.visualToken || 0) !== token || holes[idx].occupant) return;
+      if (epoch !== boardEpoch || (refs.visualToken || 0) !== token || (holes[idx] && holes[idx].occupant)) return;
       refs.wrap.classList.remove('is-visible', 'is-sleeping', 'is-hit', 'is-bonus');
       if (refs.bonusBadge) refs.bonusBadge.classList.remove('show');
       refs.hole.setAttribute('aria-label', 'おともだちが でてくる ばしょ');
@@ -707,6 +997,11 @@
   function handleTapAt(clientX, clientY) {
     if (phase !== 'playing') return;
     var idx = resolveHoleFromPoint(clientX, clientY);
+    handleHoleActivation(idx);
+  }
+
+  function handleHoleActivation(idx) {
+    if (phase !== 'playing') return;
     // 成功直後は加点を読める間だけ見た目を残す。中身はすでに回収済みなので、
     // 同じ見た目への追いタップを空振り扱いにしてコンボを切らない。
     if (idx !== null && holes[idx] && !holes[idx].occupant &&
@@ -795,11 +1090,12 @@
   var TUT_STEPS = [
     { image: ASSET_BASE + 'fx_highfive_burst.png', text: 'おきてる こへ ハイタッチ！<br>つづくと コンボ！' },
     { image: ASSET_BASE + 'fx_sleep_moon_cloud.png', text: 'ねてる こは<br>そっと みまもってね' },
-    { image: BONUS_PARTNER.awake, text: 'キラキラの こは 30てん！<br>みつけたら ハイタッチ！' }
+    { image: PARTNER_CATALOG.hikari_momonga.awake, text: 'キラキラの こは 30てん！<br>みつけたら ハイタッチ！' }
   ];
   var tutStep = 0;
   function showTutorial() {
     tutorialOpen = true;
+    setBoardInteractive(false);
     tutStep = 0;
     renderTutStep();
   }
@@ -820,6 +1116,7 @@
     var bubble = document.getElementById('tut-bubble');
     if (dim) dim.classList.add('hidden');
     if (bubble) bubble.classList.add('hidden');
+    if (phase === 'playing' && !landscapeNoticeBlocking) setBoardInteractive(true);
   }
   function onTutNext(e) {
     e.preventDefault();
@@ -832,24 +1129,81 @@
   if (tutDimEl) tutDimEl.addEventListener('click', closeTutorial);
 
   // ═══ ゲームフロー: start → countdown → playing → settling → result ═══
+  var countdownEpoch = 0;
+
+  function createRunId() {
+    try {
+      if (window.crypto && typeof window.crypto.randomUUID === 'function') return window.crypto.randomUUID();
+    } catch (e) {}
+    return 'hh-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
+  }
+
   function beginCountdown() {
+    if (!currentLocation) return;
     phase = 'countdown';
+    setBoardInteractive(false);
+    activeRun = {
+      runId: createRunId(),
+      locationId: currentLocation.id,
+      mode: walkState.mode || 'route'
+    };
+    activeRunAdvanced = false;
+    preloadLocationAssets(currentLocation).catch(function () {});
+    preloadSharedFxLocally();
+    var warmFromLocationId = currentLocation.id;
+    var warmTarget = routeLocationAfter(currentLocation);
+    if (nextWarmTimer) clearTimeout(nextWarmTimer);
+    nextWarmTimer = setTimeout(function () {
+      nextWarmTimer = 0;
+      if (currentLocation && currentLocation.id === warmFromLocationId) warmNextLocation(warmTarget);
+    }, 5000);
+    var epoch = ++countdownEpoch;
     var cdScreen = document.getElementById('countdown-screen');
     var cdText = document.getElementById('cd-text');
     if (cdScreen) cdScreen.classList.add('show');
-    if (cdText) cdText.textContent = 'よーい…';
-    setTimeout(function () { if (cdText) cdText.textContent = 'すたーと！'; }, 600);
+    if (cdText) cdText.textContent = currentLocation.name;
     setTimeout(function () {
+      if (epoch === countdownEpoch && cdText) cdText.textContent = 'よーい…';
+    }, 400);
+    setTimeout(function () {
+      if (epoch === countdownEpoch && cdText) cdText.textContent = 'すたーと！';
+    }, 800);
+    setTimeout(function () {
+      if (epoch !== countdownEpoch) return;
       if (cdScreen) cdScreen.classList.remove('show');
       phase = 'playing';
+      if (!tutorialOpen && !landscapeNoticeBlocking) setBoardInteractive(true);
       window._achDeferPopups = true;
       lastTs = null;
     }, 1200);
   }
 
+  function advanceCompletedRunOnce() {
+    if (activeRunAdvanced || !activeRun) return;
+    var before = readWalkState();
+    var after = H.advanceWalkState(before, {
+      runId: activeRun.runId,
+      locationId: activeRun.locationId,
+      mode: activeRun.mode,
+      score: state.score,
+      bestCombo: state.bestCombo
+    });
+    var beforeRuns = Number(before.routeCompletedRuns) || 0;
+    var afterRuns = Number(after.routeCompletedRuns) || 0;
+    resultCompletedLap = afterRuns > beforeRuns &&
+      H.ROUTE_IDS.length > 0 &&
+      afterRuns % H.ROUTE_IDS.length === 0;
+    walkState = writeWalkState(after);
+    nextLocation = H.locationForRun(walkState);
+    activeRunAdvanced = true;
+  }
+
   function finishGame() {
+    if (phase === 'result') return;
     phase = 'result';
+    setBoardInteractive(false);
     hideComboHud(true);
+    advanceCompletedRunOnce();
     if (window.incrementStat) window.incrementStat('hyokkori_games', 1);
     // 別タブで更新された記録も取り込み、古いページから小さい値で上書きしない。
     lifetimeBestCombo = Math.max(lifetimeBestCombo, readBestComboRecord());
@@ -868,6 +1222,26 @@
     showResult();
   }
 
+  function renderResultWalkProgress() {
+    var progressEl = document.getElementById('walk-progress');
+    var completedRuns = Number(walkState.routeCompletedRuns) || 0;
+    var completedInLap = resultCompletedLap
+      ? H.ROUTE_IDS.length
+      : completedRuns % H.ROUTE_IDS.length;
+    if (progressEl) {
+      var dots = progressEl.querySelectorAll('.walk-dot');
+      for (var i = 0; i < dots.length; i++) {
+        dots[i].classList.toggle('is-complete', i < completedInLap);
+        dots[i].classList.toggle('is-current', !resultCompletedLap && i === completedInLap);
+      }
+      progressEl.setAttribute('aria-label', resultCompletedLap
+        ? 'もりを ひとまわり できた'
+        : H.ROUTE_IDS.length + 'このうち ' + completedInLap + 'こ すすんだ');
+    }
+    var nextEl = document.getElementById('result-next-location');
+    if (nextEl && nextLocation) nextEl.textContent = 'つぎは ' + nextLocation.name;
+  }
+
   function showResult() {
     var scoreEl = document.getElementById('result-score');
     if (scoreEl) scoreEl.textContent = state.score + ' てん';
@@ -878,7 +1252,12 @@
     var comboNewEl = document.getElementById('result-combo-new');
     if (comboNewEl) comboNewEl.classList.toggle('hidden', !comboRecordBroken);
     var bannerEl = document.querySelector('#result-card .result-banner');
-    if (bannerEl) bannerEl.textContent = 'ナイス ハイタッチ！';
+    if (bannerEl) {
+      if (resultCompletedLap) bannerEl.textContent = 'もりを ひとまわり できた！';
+      else if (state.score === 0) bannerEl.textContent = 'さいごまで あそべた！';
+      else bannerEl.textContent = 'いっぽ すすんだ！';
+    }
+    renderResultWalkProgress();
     var rank = state.score > 0 && window.saveHighScore
       ? window.saveHighScore(HIGH_SCORE_GAME_ID, state.score)
       : 0;
@@ -921,9 +1300,11 @@
 
   var startBtn = document.getElementById('start-btn');
   if (startBtn) {
+    startBtn.disabled = true;
     startBtn.addEventListener('click', function (e) {
       e.preventDefault();
       e.stopPropagation();
+      if (startBtn.disabled || phase !== 'idle' || !currentLocation) return;
       ensureAudio();
       var startScreen = document.getElementById('start-screen');
       if (startScreen) startScreen.style.display = 'none';
@@ -935,21 +1316,44 @@
   }
 
   var retryBtn = document.getElementById('retry-btn');
+  var locationTransitioning = false;
   if (retryBtn) {
     retryBtn.addEventListener('click', function (e) {
       e.preventDefault();
       e.stopPropagation();
-      var overlay = document.getElementById('result-overlay');
-      if (overlay) overlay.classList.remove('show');
-      resetGameState();
-      updateHud();
-      beginCountdown();
+      if (locationTransitioning || phase !== 'result' || !nextLocation) return;
+      locationTransitioning = true;
+      phase = 'loading';
+      retryBtn.disabled = true;
+      retryBtn.textContent = 'よみこみちゅう…';
+      var targetLocation = nextLocation;
+      swapLocation(targetLocation, false).then(function (applied) {
+        if (!applied) return;
+        var overlay = document.getElementById('result-overlay');
+        if (overlay) overlay.classList.remove('show');
+        retryBtn.disabled = false;
+        retryBtn.textContent = 'さんぽを つづける';
+        locationTransitioning = false;
+        beginCountdown();
+      }).catch(function (e2) {
+        console.error('[hyokkori-hightouch] 次の場所を読み込めませんでした:', e2);
+        showLoadError();
+      });
     });
   }
 
-  preloadGameAssetsLocally();
-  resetGameState();
-  updateHud();
+  document.body.classList.remove('pono-game-ready');
+  document.body.classList.add('pono-game-loading');
+  walkState = readWalkState();
+  currentLocation = H.locationForRun(walkState);
+  swapLocation(currentLocation, true).then(function (applied) {
+    if (!applied) return;
+    phase = 'idle';
+    if (startBtn) startBtn.disabled = false;
+  }).catch(function (e) {
+    console.error('[hyokkori-hightouch] 最初の場所を読み込めませんでした:', e);
+    showLoadError();
+  });
 
   // ═══ メインループ ═══
   var lastTs = null;
@@ -965,6 +1369,7 @@
       if (phase === 'playing') {
         if (state.finished) {
           phase = 'settling';
+          setBoardInteractive(false);
           settleTimer = 0;
         } else {
           spawnTimerMs += dt * 1000;
@@ -994,14 +1399,29 @@
   requestAnimationFrame(loop);
   }
 
-  // ═══ ブート判定: logic.js 正常時は即起動、失敗時はキャッシュバイパスで1回だけ再試行 ═══
-  if (window.HyokkoriLogic) { boot(); return; }
-  console.error('[hyokkori-hightouch] HyokkoriLogic (js/logic.js) が読み込まれていません — キャッシュバイパスで再試行します');
-  var retryScript = document.createElement('script');
-  retryScript.src = 'js/logic.js?retry=' + Date.now(); // ?retry= で HTTP キャッシュを確実にバイパス
-  retryScript.onload = function () {
-    if (window.HyokkoriLogic) { boot(); } else { showLoadError(); }
-  };
-  retryScript.onerror = function () { showLoadError(); };
-  document.body.appendChild(retryScript);
+  // ═══ ブート判定: locations.js / logic.js を1回だけキャッシュバイパス再試行 ═══
+  function dependenciesReady() {
+    return !!(window.HyokkoriLocations && window.HyokkoriLogic);
+  }
+
+  if (dependenciesReady()) { boot(); return; }
+
+  var retryQueue = [];
+  if (!window.HyokkoriLocations) retryQueue.push('js/locations.js');
+  if (!window.HyokkoriLogic) retryQueue.push('js/logic.js');
+  console.error('[hyokkori-hightouch] 必須スクリプトが読み込まれていません — キャッシュバイパスで再試行します:', retryQueue);
+
+  function loadRetryScriptAt(index) {
+    if (index >= retryQueue.length) {
+      if (dependenciesReady()) boot();
+      else showLoadError();
+      return;
+    }
+    var retryScript = document.createElement('script');
+    retryScript.src = retryQueue[index] + '?retry=' + Date.now();
+    retryScript.onload = function () { loadRetryScriptAt(index + 1); };
+    retryScript.onerror = function () { showLoadError(); };
+    document.body.appendChild(retryScript);
+  }
+  loadRetryScriptAt(0);
 })();

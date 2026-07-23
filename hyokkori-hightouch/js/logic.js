@@ -6,7 +6,7 @@
 
 // ═══ 定数 ═══════════════════════════════════════════════════════════
 var GAME_DURATION = 30;      // 秒。30秒経過で finished。
-var HOLE_COUNT = 6;          // 隠れ場所の数 (3列x2行)。
+var HOLE_COUNT = 6;          // 旧1場所版の互換値。新規呼び出しは場所の slots.length を渡す。
 
 var SHOW_TIME_MAX = 1.65;    // 秒 (ゲーム開始時の出現表示時間)
 var SHOW_TIME_MIN = 1.25;    // 秒 (30秒後)
@@ -150,18 +150,36 @@ function pickSpawnKind(tSec, recentKinds, rand) {
 }
 
 /**
- * 空いている隠れ場所 (0〜HOLE_COUNT-1) からランダムに1つ選ぶ。
- * occupiedHoles: 現在ふさがっている穴番号の配列。全部ふさがっていれば null。
+ * 指定数の隠れ場所 (0〜holeCount-1) から、禁止されていない1つを選ぶ。
+ * forbiddenHoles: 現在ふさがっている場所などの番号。候補がなければ null。
+ *
+ * 旧形式 pickHole(forbiddenHoles, rand) も既存キャッシュとの移行中だけ受け付ける。
+ * 新規コードは必ず pickHole(location.slots.length, forbiddenHoles, rand) を使う。
  */
-function pickHole(occupiedHoles, rand) {
-  var rng = typeof rand === 'function' ? rand : Math.random;
-  var occupied = occupiedHoles || [];
+function pickHole(holeCount, forbiddenHoles, rand) {
+  var count;
+  var forbidden;
+  var rng;
+
+  if (Array.isArray(holeCount)) {
+    count = HOLE_COUNT;
+    forbidden = holeCount;
+    rng = typeof forbiddenHoles === 'function' ? forbiddenHoles : Math.random;
+  } else {
+    count = Math.floor(Number(holeCount));
+    if (!isFinite(count) || count <= 0) return null;
+    forbidden = Array.isArray(forbiddenHoles) ? forbiddenHoles : [];
+    rng = typeof rand === 'function' ? rand : Math.random;
+  }
+
   var free = [];
-  for (var i = 0; i < HOLE_COUNT; i++) {
-    if (occupied.indexOf(i) === -1) free.push(i);
+  for (var i = 0; i < count; i++) {
+    if (forbidden.indexOf(i) === -1) free.push(i);
   }
   if (free.length === 0) return null;
-  var idx = Math.floor(rng() * free.length);
+  var randomValue = Number(rng());
+  if (!isFinite(randomValue)) randomValue = 0;
+  var idx = Math.floor(randomValue * free.length);
   if (idx >= free.length) idx = free.length - 1;
   if (idx < 0) idx = 0;
   return free[idx];

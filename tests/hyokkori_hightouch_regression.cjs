@@ -17,9 +17,12 @@ const read = relative => fs.readFileSync(path.join(root, relative), "utf8");
 
 const logicPath = path.join(root, "hyokkori-hightouch/js/logic.js");
 const L = require(logicPath);
+const locationsPath = path.join(root, "hyokkori-hightouch/js/locations.js");
+const D = require(locationsPath);
 
 const gameJs = read("hyokkori-hightouch/js/game.js");
 const logicJsSrc = read("hyokkori-hightouch/js/logic.js");
+const locationsJsSrc = read("hyokkori-hightouch/js/locations.js");
 const indexHtml = read("hyokkori-hightouch/index.html");
 const stylesCss = read("hyokkori-hightouch/styles.css");
 
@@ -111,6 +114,204 @@ function mulberry32(seed) {
   for (const invalid of [0, -7, NaN, Infinity, 7.5, undefined, null]) {
     assert.equal(L.isBonusSpawn(invalid), false, `不正な実出現数 ${String(invalid)} はボーナスにしない`);
   }
+}
+
+// ── 2c. 3地点データ・可変かくれ場所・さんぽ進行 ─────────────────────
+{
+  assert.deepEqual(
+    D.ROUTE_IDS,
+    ["komorebi_clearing", "donguri_path", "mizube"],
+    "第1弾は広場→こみち→みずべの固定3地点"
+  );
+  assert.equal(D.WALK_SAVE_KEY, "pono_hyokkori_walk_v1", "さんぽ進行は専用v1キーへ保存する");
+  assert.equal(D.LOCATIONS.length, 3, "第1弾の場所定義は3件");
+  const browserSandbox = { window: {} };
+  vm.runInNewContext(locationsJsSrc, browserSandbox, { filename: "hyokkori-locations-browser.js" });
+  assert.equal(typeof browserSandbox.window.HyokkoriLocations.normalizeWalkState, "function", "ブラウザへHyokkoriLocationsを公開する");
+  assert.equal(browserSandbox.window.HyokkoriLocations.LOCATIONS.length, 3, "ブラウザ公開APIにも3地点が入る");
+
+  const expectedSlots = {
+    komorebi_clearing: [
+      [21, 30, 0.88], [50, 30, 0.88], [79, 30, 0.88],
+      [21, 79, 1], [50, 79, 1], [79, 79, 1]
+    ],
+    donguri_path: [
+      [20, 29, 0.88], [50, 29, 0.88], [80, 29, 0.88],
+      [34, 79, 1], [66, 79, 1]
+    ],
+    mizube: [
+      [29, 30, 0.88], [71, 30, 0.88],
+      [21, 79, 1], [79, 79, 1]
+    ]
+  };
+
+  for (const location of D.LOCATIONS) {
+    assert.equal(D.LOCATION_BY_ID[location.id], location, `${location.id} をIDから同じ定義へ引ける`);
+    assert.deepEqual(
+      location.slots.map(slot => [slot.x, slot.y, slot.depth]),
+      expectedSlots[location.id],
+      `${location.id} の正規化座標・前後パースが企画値と一致`
+    );
+    assert.equal(location.partnerIds.length, 6, `${location.id} の通常動物は6種`);
+    assert.equal(new Set(location.partnerIds).size, 6, `${location.id} の通常動物IDは重複しない`);
+    for (const partnerId of location.partnerIds) {
+      const catalogEntry = D.PARTNER_CATALOG[partnerId];
+      assert.ok(catalogEntry, `${location.id}: ${partnerId} がカタログに存在する`);
+      assert.equal(typeof catalogEntry.awake, "string", `${partnerId} にawake画像がある`);
+      assert.equal(typeof catalogEntry.sleeping, "string", `${partnerId} にsleeping画像がある`);
+    }
+    assert.equal(location.bonusPartnerId, "hikari_momonga", `${location.id} の案内役はひかりモモンガ`);
+  }
+
+  assert.match(D.LOCATION_BY_ID.donguri_path.background, /bg_donguri_path_20260723\.png$/, "こみち専用背景を使う");
+  assert.match(D.LOCATION_BY_ID.mizube.background, /bg_mizube_20260723\.png$/, "みずべ専用背景を使う");
+  assert.ok(D.LOCATION_BY_ID.donguri_path.partnerIds.includes("tanuki"), "こみちに新規たぬきが出る");
+  assert.ok(D.LOCATION_BY_ID.mizube.partnerIds.includes("kawauso"), "みずべに新規かわうそが出る");
+
+  for (const holeCount of [4, 5, 6]) {
+    assert.equal(L.pickHole(holeCount, [], () => 0), 0, `${holeCount}か所: rand=0なら先頭`);
+    assert.equal(L.pickHole(holeCount, [], () => 0.999999), holeCount - 1, `${holeCount}か所: rand≒1なら末尾`);
+    assert.equal(
+      L.pickHole(holeCount, Array.from({ length: holeCount - 1 }, (_, index) => index), () => 0.5),
+      holeCount - 1,
+      `${holeCount}か所: 禁止されていない唯一の候補を返す`
+    );
+    assert.equal(
+      L.pickHole(holeCount, Array.from({ length: holeCount }, (_, index) => index), () => 0),
+      null,
+      `${holeCount}か所: 全候補禁止ならnull`
+    );
+  }
+  assert.equal(L.pickHole(0, [], () => 0), null, "0か所は安全にnull");
+  assert.equal(L.pickHole(NaN, [], () => 0), null, "不正な場所数は安全にnull");
+  assert.equal(L.pickHole(4, [], () => NaN), 0, "不正な乱数は安全に先頭候補へフォールバック");
+  assert.equal(L.pickHole([0, 1, 2, 3, 4], () => 0), 5, "旧2引数形式は6か所版として移行互換を保つ");
+
+  const emptyWalk = D.normalizeWalkState(null);
+  assert.deepEqual(emptyWalk, {
+    version: 1,
+    routeId: "mori-3-v1",
+    routeCompletedRuns: 0,
+    completedLocationIds: [],
+    mode: "route",
+    selectedLocationId: null,
+    lastCompletedRunId: null,
+    locationRecords: {}
+  }, "保存なしは広場から始まる安全な初期状態");
+  assert.equal(D.locationForRun(emptyWalk).id, "komorebi_clearing", "0完走は広場");
+  assert.equal(D.locationForRun({ routeCompletedRuns: 1 }).id, "donguri_path", "1完走はこみち");
+  assert.equal(D.locationForRun({ routeCompletedRuns: 2 }).id, "mizube", "2完走はみずべ");
+  assert.equal(D.locationForRun({ routeCompletedRuns: 3 }).id, "komorebi_clearing", "3完走で広場へ一周する");
+  assert.equal(
+    D.locationForRun({ mode: "select", selectedLocationId: "mizube", routeCompletedRuns: 0 }).id,
+    "mizube",
+    "選択モードは指定場所を返す"
+  );
+
+  const repaired = D.normalizeWalkState({
+    version: -8,
+    routeId: "unknown",
+    routeCompletedRuns: -4,
+    completedLocationIds: ["mizube", "unknown", "mizube", "komorebi_clearing"],
+    mode: "select",
+    selectedLocationId: "unknown",
+    lastCompletedRunId: "  run-old  ",
+    locationRecords: {
+      mizube: { plays: 2.9, bestScore: 123.8, bestCombo: -2 },
+      unknown: { plays: 99, bestScore: 99, bestCombo: 99 }
+    },
+    extra: "drop me"
+  });
+  assert.equal(repaired.version, 1, "versionは現行へ正規化");
+  assert.equal(repaired.routeId, "mori-3-v1", "routeIdは現行へ正規化");
+  assert.equal(repaired.routeCompletedRuns, 0, "負の完走数は0");
+  assert.deepEqual(repaired.completedLocationIds, ["komorebi_clearing", "mizube"], "完走地点は既知IDをルート順に重複排除");
+  assert.equal(repaired.mode, "route", "未知の選択地点は一本道へ戻す");
+  assert.equal(repaired.selectedLocationId, null, "未知の選択地点を残さない");
+  assert.equal(repaired.lastCompletedRunId, "run-old", "runIdの外側空白を除く");
+  assert.deepEqual(repaired.locationRecords, {
+    mizube: { plays: 2, bestScore: 123, bestCombo: 0 }
+  }, "場所別記録を既知ID・非負整数へ正規化");
+  assert.equal(D.normalizeWalkState("{bad json").routeCompletedRuns, 0, "壊れたJSONは初期状態へ戻す");
+  assert.equal(D.normalizeWalkState({ mode: "select", selectedLocationId: "toString" }).mode, "route", "Object.prototype名も未知の場所として扱う");
+  assert.deepEqual(
+    D.normalizeWalkState(JSON.stringify({ routeCompletedRuns: 2 })),
+    D.normalizeWalkState({ routeCompletedRuns: 2 }),
+    "JSON文字列とオブジェクトを同じ決定論状態へ正規化"
+  );
+
+  const beforeFirstAdvance = D.normalizeWalkState(null);
+  const firstAdvance = D.advanceWalkState(beforeFirstAdvance, {
+    runId: "run-1",
+    locationId: "komorebi_clearing",
+    mode: "route",
+    score: 108,
+    bestCombo: 7
+  });
+  assert.equal(beforeFirstAdvance.routeCompletedRuns, 0, "advanceWalkStateは入力を変更しない");
+  assert.equal(firstAdvance.routeCompletedRuns, 1, "完走で一本道を1歩進める");
+  assert.deepEqual(firstAdvance.completedLocationIds, ["komorebi_clearing"], "完走した場所を追加");
+  assert.deepEqual(firstAdvance.locationRecords.komorebi_clearing, {
+    plays: 1,
+    bestScore: 108,
+    bestCombo: 7
+  }, "場所別回数・最高点・最大コンボを記録");
+  assert.equal(firstAdvance.lastCompletedRunId, "run-1", "反映済みrunIdを保存");
+  assert.equal(D.locationForRun(firstAdvance).id, "donguri_path", "次のrunはこみち");
+
+  const duplicateAdvance = D.advanceWalkState(firstAdvance, {
+    runId: "run-1",
+    locationId: "donguri_path",
+    mode: "route",
+    score: 999,
+    bestCombo: 99
+  });
+  assert.deepEqual(duplicateAdvance, firstAdvance, "同じrunIdの二重完了では歩数・記録を増やさない");
+  assert.notEqual(duplicateAdvance, firstAdvance, "重複時も呼び出し側が安全に扱える新しい正規化オブジェクトを返す");
+
+  const secondAdvance = D.advanceWalkState(firstAdvance, {
+    runId: "run-2",
+    locationId: "donguri_path",
+    mode: "route",
+    score: 0,
+    bestCombo: 0
+  });
+  assert.equal(secondAdvance.routeCompletedRuns, 2, "0点完走でも次へ進む");
+  assert.equal(secondAdvance.locationRecords.donguri_path.plays, 1, "0点でも完走回数を記録");
+  assert.equal(D.locationForRun(secondAdvance).id, "mizube", "2歩目の次はみずべ");
+
+  const wrongRouteLocation = D.advanceWalkState(secondAdvance, {
+    runId: "run-other-location",
+    locationId: "komorebi_clearing",
+    mode: "route",
+    score: 10,
+    bestCombo: 1
+  });
+  assert.equal(wrongRouteLocation.routeCompletedRuns, 2, "現在地と違う古いrunは一本道を飛ばさない");
+  assert.equal(wrongRouteLocation.locationRecords.komorebi_clearing.plays, 2, "古いrunも場所別完走としては記録する");
+
+  const selectedAdvance = D.advanceWalkState({
+    ...secondAdvance,
+    mode: "select",
+    selectedLocationId: "komorebi_clearing"
+  }, {
+    runId: "run-select",
+    locationId: "komorebi_clearing",
+    mode: "select",
+    score: 222,
+    bestCombo: 12
+  });
+  assert.equal(selectedAdvance.routeCompletedRuns, 2, "場所選択の完走は一本道を進めない");
+  assert.deepEqual(selectedAdvance.locationRecords.komorebi_clearing, {
+    plays: 2,
+    bestScore: 222,
+    bestCombo: 12
+  }, "場所選択でも場所別記録は更新する");
+  assert.deepEqual(
+    D.advanceWalkState(secondAdvance, { runId: "", locationId: "mizube", mode: "route" }),
+    secondAdvance,
+    "runIdなしでは完走を反映しない"
+  );
 }
 
 // ── 3. registerTap 基礎 ─────────────────────────────────────────────
@@ -274,7 +475,7 @@ function mulberry32(seed) {
       if (spawnTimerMs >= interval && occupied.filter(o => o).length < 2) {
         spawnTimerMs = 0;
         const occupiedIdx = occupied.map(o => o.hole);
-        const hole = L.pickHole(occupiedIdx, rand);
+        const hole = L.pickHole(D.LOCATIONS[0].slots.length, occupiedIdx, rand);
         if (hole !== null) {
           actualSpawnCount += 1;
           const kind = L.isBonusSpawn(actualSpawnCount)
@@ -330,7 +531,7 @@ function mulberry32(seed) {
     for (let t = 0; t <= L.GAME_DURATION; t += stepMs / 1000) {
       const target = resolveTarget(schedule, hole, t);
       L.registerTap(state, t, target);
-      hole = (hole + 1) % L.HOLE_COUNT;
+      hole = (hole + 1) % D.LOCATIONS[0].slots.length;
     }
     L.tickTimer(state, L.GAME_DURATION);
     return state;
@@ -431,17 +632,19 @@ function mulberry32(seed) {
   const idxHaptics = idxOf("haptics.js");
   const idxAchievements = idxOf("achievements.js");
   const idxMenu = idxOf("menu.js");
+  const idxLocations = idxOf("js/locations.js");
   const idxLogic = idxOf("js/logic.js");
   const idxGame = idxOf("js/game.js");
 
   for (const [name, idx] of [["highscore.js", idxHighscore], ["haptics.js", idxHaptics], ["achievements.js", idxAchievements], ["menu.js", idxMenu]]) {
     assert.ok(idx !== -1, `${name} が index.html に読み込まれている`);
   }
+  assert.ok(idxLocations !== -1, "js/locations.js が index.html に読み込まれている");
   assert.ok(idxLogic !== -1, "js/logic.js が index.html に読み込まれている");
   assert.ok(idxGame !== -1, "js/game.js が index.html に読み込まれている");
   assert.ok(idxHighscore < idxLogic && idxHaptics < idxLogic && idxAchievements < idxLogic && idxMenu < idxLogic,
     "共通モジュールは logic.js より前に読み込まれる");
-  assert.ok(idxLogic < idxGame, "logic.js は game.js より前に読み込まれる");
+  assert.ok(idxLocations < idxLogic && idxLogic < idxGame, "locations.js → logic.js → game.js の順で読み込む");
 
   assert.match(gameJs, /var\s+HIGH_SCORE_GAME_ID\s*=\s*['"]hyokkori-hightouch-v2['"]/, "30秒版は旧60秒版と分けたハイスコアIDを使う");
   assert.match(gameJs, /saveHighScore\(\s*HIGH_SCORE_GAME_ID\s*,/, "game.js が30秒版IDで saveHighScore(...) を呼ぶ");
@@ -459,27 +662,30 @@ function mulberry32(seed) {
 
 // ── 11. 専用画像・色だけに頼らない睡眠表現 ──────────────────────────
 {
-  const assetNames = [
-    "bg_forest_combo_terraces.png",
+  const fixedAssetNames = [
     "menu_thumb_highfive_combo.png",
-    "hideout_leaf_bush.png",
     "fx_highfive_burst.png",
     "fx_leaf_puff.png",
     "fx_overheat_swirl.png",
     "fx_sleep_moon_cloud.png",
     "pono_title_highfive.png",
-    "pono_result_bloom.png",
-    "friend_hikari_momonga_bonus_awake.png",
-    ...["araiguma", "fukurou", "harinezumi", "karasu", "kitsune", "kojika", "risu", "usagi"]
-      .flatMap(id => [`friend_${id}_awake.png`, `friend_${id}_sleeping.png`]),
+    "pono_result_bloom.png"
   ];
-  assert.equal(assetNames.length, 26, "花壇・たねを外した実行時画像は26点");
+  const catalogAssetNames = Object.values(D.PARTNER_CATALOG)
+    .flatMap(entry => [entry.awake, entry.sleeping].filter(Boolean))
+    .map(assetPath => path.basename(assetPath));
+  const locationAssetNames = D.LOCATIONS
+    .flatMap(location => [location.background, location.hideout])
+    .map(assetPath => path.basename(assetPath));
+  const assetNames = [...new Set([...fixedAssetNames, ...catalogAssetNames, ...locationAssetNames])];
+  assert.equal(assetNames.length, new Set(assetNames).size, "場所データから導出した実行時画像名は重複しない");
   for (const name of assetNames) {
     assert.ok(fs.existsSync(path.join(root, "assets/images/hyokkori-hightouch", name)), `${name} が配置されている`);
   }
-  assert.match(gameJs, /friend_araiguma_awake\.png/, "awake専用画像を参照する");
-  assert.match(gameJs, /friend_araiguma_sleeping\.png/, "sleeping専用画像を参照する");
-  assert.match(gameJs, /friend_hikari_momonga_bonus_awake\.png/, "見た目で区別できるボーナス専用画像を参照する");
+  assert.match(D.PARTNER_CATALOG.araiguma.awake, /friend_araiguma_awake\.png$/, "awake専用画像を参照する");
+  assert.match(D.PARTNER_CATALOG.araiguma.sleeping, /friend_araiguma_sleeping\.png$/, "sleeping専用画像を参照する");
+  assert.match(D.PARTNER_CATALOG.hikari_momonga.awake, /friend_hikari_momonga_bonus_awake\.png$/, "見た目で区別できるボーナス専用画像を参照する");
+  assert.match(gameJs, /HyokkoriLocations/, "game.js が場所・動物カタログを参照する");
   assert.match(indexHtml + gameJs, /fx_sleep_moon_cloud\.png/, "閉眼ポーズに加えて月雲を使う");
   assert.match(stylesCss, /\.is-sleeping/, "styles.css に .is-sleeping クラスが存在する");
   assert.doesNotMatch(stylesCss, /grayscale/, "睡眠状態を色だけで区別しない");
@@ -493,13 +699,18 @@ function mulberry32(seed) {
   assert.doesNotMatch(gameJs + logicJsSrc + stylesCss, /relayProgressAt|advanceRelay|FLOWER_STAGE_MAX|mechanic_light_seed|#light-seed|#flowerbed-img/, "花壇・たねの実行時処理とCSSを撤去する");
   assert.equal((indexHtml.match(/class=["'][^"']*hh-hideout-foreground/g) || []).length, 1, "templateに共通の手前縁を1つ定義する");
   assert.match(stylesCss, /\.hh-hideout-foreground\s*\{[^}]*z-index:\s*4[^}]*clip-path:\s*inset\(60%\s+0\s+0\s+0\)/s, "手前縁を穴の暗部より下へ置き、キャラより上に重ねる");
-  assert.match(stylesCss, /#board\s*\{[^}]*row-gap:\s*30%[^}]*column-gap:\s*2%[^}]*padding:\s*0\s+9%/s, "背景の接地点へ揃えた3x2配置を使う");
+  assert.match(stylesCss, /#board\s*\{[^}]*position:\s*absolute[^}]*inset:\s*0/s, "可変配置の盤面をステージ全面へ重ねる");
+  assert.match(stylesCss, /\.hh-hole\s*\{[^}]*position:\s*absolute[^}]*top:\s*var\(--slot-y[^}]*left:\s*var\(--slot-x/s, "かくれ場所を定義データの正規化座標へ置く");
+  assert.match(gameJs, /function\s+buildHoles\(\s*location\s*\)[\s\S]*?location\.slots\.length/, "場所のslots数だけ操作buttonを構築する");
+  for (const property of ["--slot-x", "--slot-y", "--depth-scale", "--slot-z"]) {
+    assert.ok(gameJs.includes(`setProperty('${property}'`), `${property} を場所定義からCSSへ渡す`);
+  }
   assert.match(stylesCss, /\.hh-hideout\s*\{[^}]*translate\(-53\.5%,\s*-50%\)/s, "茂み画像内の穴中心53.5%をキャラ窓へ合わせる");
   assert.match(stylesCss, /\.hh-window\s*\{[^}]*clip-path:\s*inset\(0\s+0\s+35\.5%\s+0/s, "通常画面のキャラ窓下端を前葉の開始位置より上に保つ");
   assert.match(stylesCss, /\.hh-char-wrap\.is-visible\s*\{[^}]*translate\(-50%,\s*0\)/s, "停止時は胴体が不自然に切れない高さまで表示する");
   assert.match(stylesCss, /@media\s*\(max-height:\s*430px\)[\s\S]*?\.hh-window\s*\{[^}]*clip-path:\s*inset\(0\s+0\s+32%\s+0/s, "短画面でもキャラ窓と前葉を隙間なく重ねる");
-  assert.match(stylesCss, /\.hh-hole:nth-child\(-n \+ 3\)\s*\{[^}]*--depth-scale:\s*0\.88/s, "上段を小さくして奥行きを付ける");
-  assert.match(stylesCss, /@container\s*\(max-height:\s*430px\)[\s\S]*?--depth-scale:\s*0\.9/s, "短画面では上段の可読サイズを少し戻す");
+  assert.ok(D.LOCATIONS.every(location => location.slots.some(slot => slot.depth === 0.88)), "各場所の上段データに0.88倍の奥行きがある");
+  assert.ok(D.LOCATIONS.every(location => location.slots.some(slot => slot.depth === 1)), "各場所の下段データに等倍の手前列がある");
   assert.match(stylesCss, /\.hh-window\s*\{[^}]*scale\(var\(--depth-scale\)\)/s, "キャラも茂みと同じ前後比率で拡縮する");
   assert.match(stylesCss, /\.hh-hole\.is-pressed\s+\.hh-hideout\s*\{[^}]*translate\(-53\.5%,\s*-50%\)[^}]*scale\(var\(--depth-scale\)\)\s+scale\(0\.96\)/s, "押した瞬間も穴中心補正と前後パースを保つ");
 }
@@ -515,8 +726,11 @@ function mulberry32(seed) {
   assert.match(gameJs, /Math\.max\(\s*lifetimeBestCombo\s*,\s*readBestComboRecord\(\)\s*\)/, "終了時に別タブの最新記録を再読込し、小さい値で上書きしない");
   assert.match(gameJs, /prefersReducedMotion\(\)\s*\?\s*620\s*:\s*300/, "うごきをへらす設定でも加点表示の静止時間を残す");
   assert.match(gameJs, /!holes\[idx\]\.occupant[\s\S]{0,180}classList\.contains\(['"]is-visible['"]\)\)\s*return/, "成功後の見た目への追いタップは空振りにしない");
-  assert.match(gameJs, /\[BONUS_PARTNER\.awake,\s*HIDEOUT_IMAGE\]\.concat\(/, "ボーナス画像をローカルpreloadの先頭で優先する");
-  assert.match(indexHtml, /rel=["']preload["'][^>]*friend_hikari_momonga_bonus_awake\.png/, "ボーナス画像をHTMLからも先読みする");
+  assert.match(gameJs, /function\s+locationAssetUrls\(\s*location\s*\)[\s\S]*?location\.bonusPartnerId/, "場所の必須画像に共通ボーナスを含める");
+  assert.match(gameJs, /function\s+preloadLocationAssets\(\s*location\s*\)[\s\S]*?locationAssetUrls\(location\)/, "現在地単位で必須画像を先読みする");
+  assert.match(gameJs, /function\s+warmNextLocation\(\s*location\s*\)[\s\S]*?preloadLocationAssets\(location\)/, "遊んでいる間に次の場所だけを温める");
+  assert.doesNotMatch(indexHtml, /rel=["']preload["'][^>]*friend_hikari_momonga_bonus_awake\.png/, "初回必須転送へボーナス画像を混ぜない");
+  assert.match(indexHtml, /pono_result_bloom\.png[^>]*loading=["']lazy["']/, "結果ポノは30秒のプレイ中に温め、初回表示を塞がない");
 
   for (const id of ["combo-hud", "combo-count", "combo-status-sr", "result-combo", "result-best-combo", "result-combo-new"]) {
     assert.match(indexHtml, new RegExp(`id=["']${id}["']`), `${id} の表示先が存在する`);
@@ -556,6 +770,42 @@ function mulberry32(seed) {
   assert.match(stylesCss, /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*?#combo-hud\.is-slam\s+\.combo-core[\s\S]*?animation:\s*none\s*!important/, "うごきをへらす設定で文字スラムを停止する");
 }
 
+// ── 11c. 可変場所・シャッフル袋・さんぽ保存の実行時結線 ─────────────
+{
+  assert.match(gameJs, /var\s+H\s*=\s*window\.HyokkoriLocations/, "場所APIをboot内で受け取る");
+  assert.match(gameJs, /var\s+PARTNER_CATALOG\s*=\s*H\.PARTNER_CATALOG/, "動物画像の正本を場所カタログへ一本化する");
+  assert.match(gameJs, /L\.pickHole\(\s*holeRefs\.length\s*,\s*forbidden\s*,\s*Math\.random\s*\)/, "現在地の実スロット数をpickHoleへ渡す");
+  assert.doesNotMatch(gameJs, /L\.HOLE_COUNT/, "game.js は旧6か所固定値を参照しない");
+
+  for (const functionName of ["refillPartnerBag", "takeDeferredPartner", "pickPartner"]) {
+    assert.match(gameJs, new RegExp(`function\\s+${functionName}\\s*\\(`), `${functionName} が実装されている`);
+  }
+  assert.match(gameJs, /partnerBag\s*=\s*\(\s*currentLocation[^;]*partnerIds/s, "シャッフル袋は現在地の6種から作る");
+  assert.match(gameJs, /partnerBag\.push\(\s*id\s*\)/, "同時出現中・直前の動物は捨てず袋の後ろへ回す");
+  assert.match(gameJs, /PARTNER_CATALOG\[\s*currentLocation\.bonusPartnerId\s*\]/, "場所共通の案内役IDからボーナスを出す");
+  assert.match(gameJs, /refs\.wrap\.dataset\.partner\s*=\s*partner\.id/, "動物ごとの見え方補正へpartner idを渡す");
+  assert.match(stylesCss, /\.hh-char-wrap\[data-partner=["']kawauso["']\]\s+\.hh-char\s*\{[^}]*width:\s*130%[^}]*height:\s*130%/s, "長い尾を含むかわうそだけ穴内で見やすく拡大する");
+
+  assert.match(gameJs, /function\s+readWalkState\(\)[\s\S]*?H\.normalizeWalkState\(\s*raw\s*\)/, "保存を読むたびに進行を正規化する");
+  assert.match(gameJs, /function\s+writeWalkState\([^)]*\)[\s\S]*?H\.WALK_SAVE_KEY[\s\S]*?JSON\.stringify/, "正規化した進行をゲーム専用キーへ保存する");
+  assert.match(gameJs, /currentLocation\s*=\s*H\.locationForRun\(\s*walkState\s*\)/, "起動時の場所を完走回数から決める");
+  assert.match(gameJs, /activeRun\s*=\s*\{[\s\S]*?runId:[\s\S]*?locationId:\s*currentLocation\.id[\s\S]*?mode:\s*walkState\.mode/, "run開始時にID・場所・モードを固定する");
+  assert.match(gameJs, /function\s+advanceCompletedRunOnce\(\)[\s\S]*?activeRunAdvanced[\s\S]*?readWalkState\(\)[\s\S]*?H\.advanceWalkState\(/, "完走時は最新保存を再読込し1回だけ進行を確定する");
+  assert.match(gameJs, /H\.advanceWalkState\([^;]*\{[\s\S]*?score:\s*state\.score[\s\S]*?bestCombo:\s*state\.bestCombo/, "場所別記録へ得点と最大コンボを渡す");
+  assert.match(gameJs, /function\s+finishGame\(\)[\s\S]*?phase\s*===\s*['"]result['"][\s\S]*?advanceCompletedRunOnce\(\)/, "結果処理の二重発火を止めてから散歩を進める");
+
+  assert.match(gameJs, /state\.score\s*===\s*0[\s\S]*?さいごまで あそべた！/, "0点でも完走を肯定する結果文言がある");
+  for (const id of ["start-location", "walk-progress", "result-next-location", "retry-btn"]) {
+    assert.match(indexHtml, new RegExp(`id=["']${id}["']`), `${id} の表示先が存在する`);
+  }
+  assert.equal((indexHtml.match(/class=["'][^"']*walk-dot/g) || []).length, D.ROUTE_IDS.length, "散歩道の点数をルート定義と揃える");
+  assert.match(gameJs, /nextLocation\s*=\s*H\.locationForRun\(\s*walkState\s*\)/, "完走後の次地点は保存済み進行から決める");
+  assert.match(gameJs, /swapLocation\(\s*targetLocation\s*,\s*false\s*\)[\s\S]*?beginCountdown\(\)/, "つづける操作は次地点の読込完了後にカウントダウンする");
+  assert.match(gameJs, /stageEl\.style\.setProperty\(\s*['"]--location-bg['"]/, "背景を場所定義からステージへ反映する");
+  assert.match(gameJs, /requestEpoch\s*!==\s*locationLoadEpoch/, "遅れて完了した旧場所の画像読込を無視する");
+  assert.match(gameJs, /epoch\s*!==\s*boardEpoch/, "旧盤面の遅延退場処理を新しい場所へ反映しない");
+}
+
 // ── 12. play.html 統合検証 (donguri-wakekko 登録漏れの再発防止) ──────
 {
   const playHtmlPath = path.join(root, "play.html");
@@ -579,6 +829,7 @@ function mulberry32(seed) {
 
 // ── 13. 構文検証 ─────────────────────────────────────────────────────
 {
+  assert.doesNotThrow(() => new vm.Script(locationsJsSrc, { filename: "hyokkori-hightouch-locations.js" }));
   assert.doesNotThrow(() => new vm.Script(logicJsSrc, { filename: "hyokkori-hightouch-logic.js" }));
   assert.doesNotThrow(() => new vm.Script(gameJs, { filename: "hyokkori-hightouch-game.js" }));
 
@@ -639,15 +890,19 @@ function mulberry32(seed) {
   );
 }
 
-// ── 16. logic.js 読込失敗フォールバック (guragura-seesaw 2026-07-22 バグ再発防止の移植) ──
+// ── 16. locations / logic 読込失敗フォールバック ───────────────────
 {
+  assert.match(indexHtml, /src="js\/locations\.js\?v=/, "index.html の js/locations.js に ?v= キャッシュバスティングが付いている");
   assert.match(indexHtml, /src="js\/logic\.js\?v=/, "index.html の js/logic.js に ?v= キャッシュバスティングが付いている");
   assert.match(indexHtml, /src="js\/game\.js\?v=/, "index.html の js/game.js に ?v= キャッシュバスティングが付いている");
   assert.match(indexHtml, /href="styles\.css\?v=/, "index.html の styles.css に ?v= キャッシュバスティングが付いている");
   assert.match(gameJs, /function showLoadError\s*\(/, "game.js に showLoadError フォールバックが存在する");
-  assert.match(gameJs, /\?retry=/, "game.js が logic.js 再取得時にキャッシュバイパス (?retry=) を使っている");
+  assert.match(gameJs, /\?retry=/, "game.js が必須スクリプト再取得時にキャッシュバイパス (?retry=) を使っている");
   assert.match(gameJs, /function boot\s*\(/, "game.js の本体が boot() 関数でラップされている");
-  assert.match(gameJs, /if\s*\(\s*window\.HyokkoriLogic\s*\)\s*\{\s*boot\(\);\s*return;\s*\}/, "HyokkoriLogic 正常時は即座に boot() を呼ぶ");
+  assert.match(gameJs, /function\s+dependenciesReady\(\)[\s\S]*?window\.HyokkoriLocations\s*&&\s*window\.HyokkoriLogic/, "場所・ロジックの両方が揃った時だけ起動する");
+  assert.match(gameJs, /if\s*\(\s*dependenciesReady\(\)\s*\)\s*\{\s*boot\(\);\s*return;\s*\}/, "必須モジュール正常時は即座にboot()を呼ぶ");
+  assert.match(gameJs, /if\s*\(\s*!window\.HyokkoriLocations\s*\)\s*retryQueue\.push\(\s*['"]js\/locations\.js['"]\s*\)/, "場所定義の読込失敗を個別に再試行する");
+  assert.match(gameJs, /if\s*\(\s*!window\.HyokkoriLogic\s*\)\s*retryQueue\.push\(\s*['"]js\/logic\.js['"]\s*\)/, "純粋ロジックの読込失敗を個別に再試行する");
 }
 
 // ── 17. 中央コンボ演出の段階・上限・不正値耐性 ───────────────────────────

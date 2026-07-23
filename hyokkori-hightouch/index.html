@@ -8,8 +8,29 @@
 <title>ひょっこりハイタッチ | ポノのあそびば</title>
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <!-- FOUC guard: init 完了まで stage を非表示にしてチラ見えを防ぐ (pakupaku-catch/index.html 踏襲) -->
-<style>html,body{background:#274b3d}#stage{visibility:hidden}body.pono-game-ready #stage{visibility:visible}</style>
-<script>document.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(function(){requestAnimationFrame(function(){document.body.classList.add('pono-game-ready')})})});</script>
+<style>
+html,body{background:#274b3d}
+#stage{visibility:hidden}
+body.pono-game-ready #stage{visibility:visible}
+#loadErrorScreen{position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;background:rgba(39,75,61,.96);color:#fff;font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN",sans-serif;text-align:center}
+#loadErrorScreen[hidden]{display:none}
+#loadErrorScreen .load-error-message{font-size:1.05rem;font-weight:900;line-height:1.6}
+#loadErrorScreen button{min-height:48px;padding:12px 32px;border:0;border-radius:999px;background:linear-gradient(135deg,#60a5fa,#3b82f6);color:#fff;font-family:inherit;font-size:1rem;font-weight:900;cursor:pointer}
+</style>
+<script>
+window.__showHyokkoriLoadError=function(){
+  var overlay=document.getElementById('loadErrorScreen');
+  if(!overlay)return;
+  overlay.hidden=false;
+  document.body.classList.add('pono-game-ready');
+  document.body.classList.remove('pono-game-loading');
+  var button=document.getElementById('load-error-retry');
+  if(button&&!button.dataset.bound){
+    button.dataset.bound='1';
+    button.addEventListener('click',function(){location.reload()});
+  }
+};
+</script>
 
 <script src="../common/preload-helper.js"></script>
 <!-- NOTE: common/preload-helper.js の GAME_WARM_ASSETS に 'hyokkori-hightouch' エントリが
@@ -21,10 +42,14 @@
 <script src="../common/menu.js"></script>
 <script src="../common/highscore.js"></script>
 
-<link rel="preload" as="image" href="../assets/images/hyokkori-hightouch/friend_hikari_momonga_bonus_awake.png">
-<link rel="stylesheet" href="styles.css?v=20260723-1432">
+<link rel="stylesheet" href="styles.css?v=20260723-1438">
 </head>
 <body>
+
+<div id="loadErrorScreen" role="alert" hidden>
+  <div class="load-error-message">よみこみが うまくいかなかったよ<br>もういちど ためしてね</div>
+  <button id="load-error-retry" type="button">🔄 もういちど よみこむ</button>
+</div>
 
 <div id="landscape-notice" role="dialog" aria-modal="true" aria-label="よこむきの おねがい" aria-hidden="true">
   <div class="rotate-icon">📱</div>
@@ -54,8 +79,9 @@
     <img class="start-pono icon" src="../assets/images/hyokkori-hightouch/pono_title_highfive.png" alt="ポノが ハイタッチを しているよ" draggable="false">
     <div class="start-copy">
       <div class="title" id="start-title">ひょっこりハイタッチ</div>
-      <div class="desc">30びょうで ハイタッチ！<br>コンボを どこまで つなげるかな？</div>
-      <button class="tap-btn" id="start-btn">タップで はじめる</button>
+      <div class="start-location" id="start-location">こもれびの ひろば</div>
+      <div class="desc">おきている どうぶつと<br>ハイタッチしよう！</div>
+      <button class="tap-btn" id="start-btn" type="button">ここで あそぶ</button>
     </div>
   </div>
 
@@ -63,25 +89,25 @@
     <div class="cd-text" id="cd-text">よーい…</div>
   </div>
 
-  <!-- .hh-hole は6個 (3列x2行) とも同一マークアップ (data-hole の番号だけ違う) なので
-       テンプレート1個 + js/game.js の buildHoles() で複製生成する (重複マークアップ排除)。 -->
+  <!-- 場所定義の slots 数だけ、js/game.js の buildHoles() が複製する。
+       各スロットは実buttonとし、座標と遠近はCSS変数で受け取る。 -->
   <template id="hh-hole-tpl">
-    <div class="hh-hole">
+    <button class="hh-hole" type="button">
       <img class="hh-hideout hh-hideout-base hh-mound" src="../assets/images/hyokkori-hightouch/hideout_leaf_bush.png" alt="" draggable="false" aria-hidden="true">
-      <div class="hh-window">
-        <div class="hh-char-wrap">
+      <span class="hh-window">
+        <span class="hh-char-wrap">
           <img class="hh-char" alt="" draggable="false">
           <span class="hh-sparkle" aria-hidden="true"></span>
           <img class="hh-sleep-fx" src="../assets/images/hyokkori-hightouch/fx_sleep_moon_cloud.png" alt="" draggable="false" aria-hidden="true">
           <img class="hh-hit-fx" src="../assets/images/hyokkori-hightouch/fx_highfive_burst.png" alt="" draggable="false" aria-hidden="true">
           <span class="hh-bonus-badge" aria-hidden="true">30てん</span>
           <span class="hh-score-pop" aria-hidden="true"></span>
-          <div class="hh-shh-bubble" aria-hidden="true">しーっ</div>
-        </div>
-      </div>
+          <span class="hh-shh-bubble" aria-hidden="true">しーっ</span>
+        </span>
+      </span>
       <img class="hh-hideout hh-hideout-foreground" src="../assets/images/hyokkori-hightouch/hideout_leaf_bush.png" alt="" draggable="false" aria-hidden="true">
       <img class="hh-dust" src="../assets/images/hyokkori-hightouch/fx_leaf_puff.png" alt="" draggable="false" aria-hidden="true">
-    </div>
+    </button>
   </template>
   <div id="board" data-last-successful-hole=""></div>
 
@@ -94,21 +120,40 @@
 
   <div id="result-overlay" role="dialog" aria-modal="true" aria-labelledby="result-title">
     <div id="result-card">
-      <img class="result-pono" src="../assets/images/hyokkori-hightouch/pono_result_bloom.png" alt="おはなを もって ハイタッチする ポノ" draggable="false">
+      <img class="result-pono" src="../assets/images/hyokkori-hightouch/pono_result_bloom.png" alt="おはなを もって ハイタッチする ポノ" loading="lazy" decoding="async" draggable="false">
       <div class="result-copy">
         <div class="result-banner" id="result-title">おしまい！</div>
         <div class="result-score" id="result-score">0 てん</div>
-        <div id="result-combo">さいだい 0コンボ</div>
-        <div id="result-best-combo">きろく 0コンボ</div>
-        <div class="result-combo-new hidden" id="result-combo-new">コンボ しんきろく！</div>
-        <div class="result-new hidden" id="result-new">スコア しんきろく！</div>
-        <button class="result-btn" id="retry-btn">もういちど</button>
+        <div class="result-combo-line">
+          <span id="result-combo">さいだい 0コンボ</span>
+          <span class="result-combo-separator" aria-hidden="true">・</span>
+          <span id="result-best-combo">きろく 0コンボ</span>
+        </div>
+        <div class="result-records" aria-live="polite">
+          <div class="result-combo-new hidden" id="result-combo-new">コンボ しんきろく！</div>
+          <div class="result-new hidden" id="result-new">スコア しんきろく！</div>
+        </div>
+        <div class="walk-next">
+          <div id="walk-progress" aria-label="もりの さんぽみち">
+            <span class="walk-dot" data-walk-index="0" aria-hidden="true"></span>
+            <span class="walk-dot" data-walk-index="1" aria-hidden="true"></span>
+            <span class="walk-dot" data-walk-index="2" aria-hidden="true"></span>
+          </div>
+          <div id="result-next-location">つぎは どんぐりの こみち</div>
+        </div>
+        <button class="result-btn" id="retry-btn" type="button">さんぽを つづける</button>
       </div>
     </div>
   </div>
 </div>
 
-<script src="js/logic.js?v=20260723-1428"></script>
-<script src="js/game.js?v=20260723-1428"></script>
+<script src="js/locations.js?v=20260723-1438"></script>
+<script src="js/logic.js?v=20260723-1438"></script>
+<script src="js/game.js?v=20260723-1438" onerror="window.__showHyokkoriLoadError()"></script>
+<script>
+window.setTimeout(function(){
+  if(!document.body.classList.contains('pono-game-ready'))window.__showHyokkoriLoadError();
+},14000);
+</script>
 </body>
 </html>

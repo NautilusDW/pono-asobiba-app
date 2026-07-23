@@ -1,9 +1,6 @@
-// hyokkori-hightouch/: js/logic.js 読み込み失敗時の耐性テスト。
-// 背景: guragura-seesaw で発見された「logic.js ロード失敗時に game.js 冒頭ガードが
-// 無言 return し、見た目正常なタイトル画面がタップ無反応になる」事故 (2026-07-22 報告)
-// と同型の脆弱パターンが hyokkori-hightouch/js/game.js にも存在していたため、
-// 同じ自動リトライ + エラーUI修正を移植した際の回帰防止テスト。
-// 既存の e2e (存在すれば) はリソース正常配信のハッピーパスのみで、この障害モードを検出できない。
+// hyokkori-hightouch/: 必須の locations.js / logic.js 読み込み失敗時の耐性テスト。
+// どちらか一方が欠けても、見た目だけ正常で無反応なタイトルを残さず、
+// 1回のキャッシュバイパス再試行か、明示的な再読込UIへ縮退することを固定する。
 const { test, expect } = require('@playwright/test');
 
 async function setupPage(page) {
@@ -13,32 +10,51 @@ async function setupPage(page) {
   });
 }
 
-test('logic.js の初回読み込みが失敗しても自動リトライで復帰し、はじめるボタンでカウントダウンに進む', async ({ page }) => {
-  await setupPage(page);
-  let aborted = false;
-  await page.route('**/hyokkori-hightouch/js/logic.js*', (route) => {
-    if (!aborted) { aborted = true; return route.abort(); } // 初回だけ失敗させる
-    return route.continue(); // ?retry= 付きの再試行は成功させる
+for (const dependency of ['locations', 'logic']) {
+  test(`${dependency}.js の初回読み込みが失敗しても自動リトライで復帰し、開始できる`, async ({ page }) => {
+    await setupPage(page);
+    let aborted = false;
+    await page.route(`**/hyokkori-hightouch/js/${dependency}.js*`, (route) => {
+      if (!aborted) {
+        aborted = true;
+        return route.abort();
+      }
+      return route.continue();
+    });
+    await page.goto('/hyokkori-hightouch/index.html');
+
+    await page.waitForFunction(() => (
+      !!window.HyokkoriLocations
+      && !!window.HyokkoriLogic
+      && document.body.classList.contains('pono-game-ready')
+    ));
+    await expect(page.locator('#start-screen')).toBeVisible();
+    await expect(page.locator('#loadErrorScreen')).toBeHidden();
+    await expect(page.locator('#loadErrorScreen')).toHaveAttribute('hidden', '');
+
+    await page.locator('#start-btn').click({ force: true });
+    await expect(page.locator('#countdown-screen')).toBeVisible();
   });
-  await page.goto('/hyokkori-hightouch/index.html');
 
-  // リトライ完了 (= boot() 実行済み) を待ってからタップする
-  await page.waitForFunction(() => !!window.HyokkoriLogic);
-  await expect(page.locator('#start-screen')).toBeVisible();
-  await expect(page.locator('#loadErrorScreen')).toHaveCount(0); // 復帰できたのでエラーUIは出ない
+  test(`${dependency}.js がリトライ含め読めない場合、無言ではなく再読込UIを表示する`, async ({ page }) => {
+    await setupPage(page);
+    await page.route(`**/hyokkori-hightouch/js/${dependency}.js*`, (route) => route.abort());
+    await page.goto('/hyokkori-hightouch/index.html');
 
-  // 実際にボタンをタップしてカウントダウン画面へ遷移することまで検証する (バグの核心)。
-  await page.locator('#start-btn').click({ force: true });
-  await expect(page.locator('#countdown-screen')).toBeVisible();
-});
+    await expect(page.locator('#loadErrorScreen')).toBeVisible();
+    await expect(page.locator('#loadErrorScreen button')).toBeVisible();
+  });
+}
 
-test('logic.js がリトライ含め完全に読み込めない場合、無言ではなく再読込UIを表示する', async ({ page }) => {
+test('game.js が読み込めない場合も、hiddenの盤面だけを残さずかなの再読込UIを表示する', async ({ page }) => {
+  test.setTimeout(15_000);
   await setupPage(page);
-  await page.route('**/hyokkori-hightouch/js/logic.js*', (route) => route.abort()); // 全試行を失敗させる
+  await page.route('**/hyokkori-hightouch/js/game.js*', (route) => route.abort());
   await page.goto('/hyokkori-hightouch/index.html');
 
-  // 旧実装なら何も起きず「見た目正常・タップ無反応」だった。
-  // 新実装ではユーザーに見えるエラーオーバーレイ + 再読込ボタンが出ること。
-  await expect(page.locator('#loadErrorScreen')).toBeVisible();
-  await expect(page.locator('#loadErrorScreen button')).toBeVisible();
+  const errorScreen = page.locator('#loadErrorScreen');
+  await expect(errorScreen).toBeVisible({ timeout: 8_000 });
+  await expect(errorScreen).toContainText('よみこみが うまくいかなかったよ');
+  await expect(errorScreen.getByRole('button')).toHaveText(/もういちど よみこむ/);
+  await expect(errorScreen).toHaveAttribute('role', 'alert');
 });

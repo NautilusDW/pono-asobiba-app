@@ -4,7 +4,7 @@
 
 対象: `hyokkori-hightouch/` / `assets/images/hyokkori-hightouch/`
 
-状態: 方向性確定・実装前。画像生成、コード変更、セーブ追加は未着手。
+状態: Phase 1（こもれび・どんぐり・みずべの3地点）実装済み。Phase 2（後半2地点・自由選択・場所固有外装）は未着手。
 
 ## 1. 結論
 
