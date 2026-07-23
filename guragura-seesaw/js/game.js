@@ -33,7 +33,22 @@
 
   var TUT_SEEN_KEY = 'pono_guragura_tut_seen_v1'; // 初回自動チュートリアル既読フラグ (hatake-nikki/js/game.js のパターン踏襲)
 
+  // boot() 本体 (bootInner) を try/catch で包む防御。 logic.js 読込に成功していても
+  // 起動処理の途中 (向き判定 API 例外など、予見しきれない実行時エラー全般) で
+  // 例外が飛ぶと、以降の穴生成・start-btn バインド等が丸ごとスキップされ
+  // 「見た目は正常だがタップ無反応」という一番気づきにくい壊れ方になる。
+  // ここで一段防御することで、想定外の例外でも必ず再読込UIへ縮退させる。
+  // (hyokkori-hightouch/js/game.js の同型対策を移植。 2026-07-23)
   function boot() {
+    try {
+      bootInner();
+    } catch (e) {
+      console.error('[guragura-seesaw] boot() 内で予期しない例外が発生しました。再読込UIを表示します:', e);
+      showLoadError();
+    }
+  }
+
+  function bootInner() {
   var L = window.GuraguraLogic;
 
   // ═══ 画像パス (game.js のみが知っている。logic.js は数値/ラベルのみ持つ) ═══
@@ -96,12 +111,45 @@
   updateStageVars();
   window.addEventListener('resize', updateStageVars);
 
+  // 判定は物理画面の向き (screen.orientation) を優先。 viewport 実寸 (innerWidth/Height) は
+  // URLバー展開アニメや回転中の中間 resize、WebView起動直後/bfcache復帰直後の一瞬で
+  // 0 や古い値を返すことがあり誤検知の温床になるため、フォールバックにも使わない。
+  // (2026-07-23 「タップで はじめる」無反応再発対応。 姉妹ゲーム hyokkori-hightouch の
+  // 確立済みパターンを移植)
+  //
+  // fail-open 設計: screen.orientation / matchMedia へのアクセスは環境によっては例外を
+  // 投げうる (ブラウザ拡張機能によるオーバーライド、一部 WebView 実装など)。 ここで例外を
+  // 握りつぶさずに boot() まで伝播させると入力バインドごと丸ごと止まる致命的レグレッションに
+  // なりうるため、判定不能時は「notice を出さない」(= ゲームを止めない) 側に倒す。
+  function computeIsPortrait() {
+    try {
+      var so = window.screen && window.screen.orientation;
+      if (so && typeof so.type === 'string' && so.type.indexOf('portrait') === 0) return true;
+      if (so && typeof so.type === 'string' && so.type.indexOf('landscape') === 0) return false;
+      if (typeof window.matchMedia === 'function') {
+        var mq = window.matchMedia('(orientation: portrait)');
+        if (mq && typeof mq.matches === 'boolean') return mq.matches;
+      }
+      // screen.orientation も matchMedia も判定材料を返さなかった (=判定不能)。
+      // fail-open (= notice を出さない) にする。
+      return false;
+    } catch (e) {
+      return false; // 例外時も fail-open。
+    }
+  }
+
+  function isCoarsePointer() {
+    try {
+      return typeof matchMedia === 'function' && matchMedia('(pointer: coarse)').matches;
+    } catch (e) {
+      return false; // 判定不能時は fail-open (notice を出さない)。
+    }
+  }
+
   function updateLandscapeNotice() {
     var notice = document.getElementById('landscape-notice');
     if (!notice) return;
-    var isPortrait = window.innerHeight >= window.innerWidth;
-    var isTouch = matchMedia('(pointer: coarse)').matches;
-    var show = isPortrait && isTouch;
+    var show = computeIsPortrait() && isCoarsePointer();
     notice.style.display = show ? 'flex' : 'none';
     notice.setAttribute('aria-hidden', show ? 'false' : 'true');
   }
@@ -111,6 +159,24 @@
     setTimeout(updateLandscapeNotice, 500);
   });
   window.addEventListener('resize', updateLandscapeNotice);
+  window.addEventListener('pageshow', updateLandscapeNotice); // bfcache 復帰対策
+  window.addEventListener('load', updateLandscapeNotice); // 読み込み直後の再評価 (念のための保険、通常は同期呼び出しで足りる)
+  // window.visualViewport への直接アクセスなので、他の参照箇所 (computeIsPortrait /
+  // isCoarsePointer / screen.orientation) と同じ理由で try/catch する。 リスナー登録に失敗しても
+  // resize / orientationchange / pageshow のフォールバックで notice 更新は続くので、握りつぶして問題ない。
+  try {
+    if (window.visualViewport && typeof window.visualViewport.addEventListener === 'function') {
+      window.visualViewport.addEventListener('resize', updateLandscapeNotice);
+    }
+  } catch (e) { /* fail-open: 登録できなくても致命的ではない */ }
+  // window.screen.orientation への直接アクセスなので、他の参照箇所 (computeIsPortrait /
+  // isCoarsePointer) と同じ理由で try/catch する。 リスナー登録に失敗しても resize /
+  // orientationchange / pageshow のフォールバックで notice 更新は続くので、握りつぶして問題ない。
+  try {
+    if (window.screen && window.screen.orientation && typeof window.screen.orientation.addEventListener === 'function') {
+      window.screen.orientation.addEventListener('change', updateLandscapeNotice);
+    }
+  } catch (e) { /* fail-open: 登録できなくても致命的ではない */ }
 
   // ═══ 画面遷移 (.show クラス方式。 hidden 属性は一切使わない) ═══
   var SCREEN_IDS = ['titleScreen', 'playScreen', 'resultScreen'];

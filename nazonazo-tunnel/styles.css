@@ -1360,27 +1360,42 @@ body.dino-adventure-active #dots{opacity:0;visibility:hidden}
 .dino-crane-game,.dino-water-game,.dino-boss-game{position:absolute;inset:0;z-index:2}
 .dino-crane-game[hidden],.dino-water-game[hidden],.dino-boss-game[hidden]{display:none!important}
 .dino-crane-backdrop{position:absolute;inset:0;z-index:0;width:100%;height:100%;object-fit:cover;object-position:center;pointer-events:none;user-select:none}
-.dino-crane-train{position:absolute;left:calc(55vw - clamp(95px,15.45vw,165.5px));bottom:9.1vh;z-index:2;width:clamp(190px,30.9vw,331px);height:clamp(95px,15.45vw,165.5px);pointer-events:none}
+.dino-crane-train{position:absolute;left:calc(42vw - clamp(95px,15.45vw,165.5px));bottom:9.1vh;z-index:2;width:clamp(190px,30.9vw,331px);height:clamp(95px,15.45vw,165.5px);pointer-events:none}
 .dino-crane-train>.train-art{display:block;position:absolute;inset:-3% -4% -1% -2%}
-.dino-crane-playfield{position:absolute;inset:0;z-index:3;overflow:hidden;pointer-events:none;touch-action:none}
-.dino-crane-arm,.dino-crane-cable,.dino-crane-log{position:absolute;display:block;max-width:none;max-height:none;object-fit:fill;pointer-events:none;user-select:none;will-change:left,top,transform}
+.dino-crane-playfield{position:absolute;inset:0;z-index:3;overflow:hidden;pointer-events:none}
+.dino-crane-arm,.dino-crane-cable,.dino-crane-cargo{position:absolute;display:block;max-width:none;max-height:none;object-fit:fill;pointer-events:none;user-select:none;will-change:left,top,transform}
 .dino-crane-arm{z-index:4;filter:drop-shadow(0 4px 3px rgba(68,56,31,.2))}
 .dino-crane-cable{z-index:5}
-.dino-crane-log{z-index:4;filter:drop-shadow(0 5px 4px rgba(57,72,31,.24))}
-.dino-crane-hook{appearance:none;-webkit-appearance:none;position:absolute;z-index:7;display:block;margin:0;padding:0;border:0;background:transparent;box-shadow:none;cursor:grab;touch-action:none;pointer-events:auto;will-change:left,top}
-.dino-crane-hook:active{cursor:grabbing}
-.dino-crane-hook:disabled{cursor:default}
+.dino-crane-cargo-layer{position:absolute;inset:0;z-index:4;pointer-events:none}
+.dino-crane-cargo{z-index:4;filter:drop-shadow(0 5px 4px rgba(57,72,31,.24));transition:filter .18s ease}
+.dino-crane-cargo[data-attached="true"]{z-index:6;filter:drop-shadow(0 9px 7px rgba(57,72,31,.3))}
+.dino-crane-cargo[data-placed="true"]{filter:drop-shadow(0 3px 2px rgba(57,72,31,.2))}
+.dino-crane-hook{position:absolute;z-index:7;display:block;pointer-events:none;will-change:left,top}
 .dino-crane-hook>img{display:block;width:100%;height:100%;object-fit:fill;pointer-events:none;filter:drop-shadow(0 4px 2px rgba(52,48,36,.28))}
-.dino-crane-hook::after{content:"";position:absolute;inset:-12px;border-radius:50%;border:4px solid transparent;pointer-events:none}
-.dino-crane-hook:focus-visible{outline:0}
-.dino-crane-hook:focus-visible::after{border-color:#fff273;box-shadow:0 0 0 3px #4d7da2,0 0 18px rgba(255,242,115,.86)}
-.dino-crane-ring-guide{position:absolute;z-index:6;border:5px solid rgba(255,236,91,.94);border-radius:50%;box-shadow:0 0 0 4px rgba(255,255,255,.9),0 0 22px rgba(255,218,55,.82);pointer-events:none;animation:dinoCraneTargetPulse .9s ease-in-out infinite alternate}
-.dino-crane-safe-zone{position:absolute;z-index:3;display:none;place-items:end center;border:5px dashed rgba(72,170,103,.88);border-radius:24px;background:rgba(237,255,219,.18);box-shadow:inset 0 0 0 4px rgba(255,255,255,.55),0 0 18px rgba(100,197,118,.35);pointer-events:none}
-.dino-crane-safe-zone strong{transform:translateY(-5px);padding:3px 10px;border-radius:999px;background:rgba(255,253,232,.94);color:#397449;font-size:clamp(10px,1.8vw,15px);font-weight:1000;white-space:nowrap}
-.dino-crane-safe-zone.is-ready{border-style:solid;background:rgba(221,255,199,.34);box-shadow:inset 0 0 0 4px rgba(255,255,255,.7),0 0 26px rgba(104,219,119,.72)}
-.dino-crane-game[data-phase="held"] .dino-crane-ring-guide,.dino-crane-game[data-phase="returning"] .dino-crane-ring-guide,.dino-crane-game[data-phase="success"] .dino-crane-ring-guide{display:none}
-.dino-crane-game[data-phase="held"] .dino-crane-safe-zone,.dino-crane-game[data-phase="success"] .dino-crane-safe-zone{display:grid}
-.dino-crane-game[data-phase="held"] .dino-crane-log{filter:drop-shadow(0 9px 7px rgba(57,72,31,.3))}
+.dino-crane-ring-guides{position:absolute;inset:0;z-index:7;pointer-events:none}
+.dino-crane-ring-guides>i{position:absolute;display:block;border:4px solid rgba(255,236,91,.96);border-radius:50%;box-shadow:0 0 0 3px rgba(255,255,255,.9),0 0 18px rgba(255,218,55,.82);animation:dinoCraneTargetPulse .9s ease-in-out infinite alternate}
+.dino-crane-ring-guides>i[hidden]{display:none}
+.dino-crane-safe-platform{position:absolute;z-index:3;pointer-events:none}
+.dino-crane-safe-platform>img{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;filter:drop-shadow(0 4px 3px rgba(58,71,38,.22))}
+.dino-crane-bay{position:absolute;top:22%;bottom:26%;width:25%;transform:translateX(-50%);border:3px dashed rgba(87,177,105,.72);border-radius:16px;background:rgba(224,255,204,.12);box-shadow:inset 0 0 0 3px rgba(255,255,255,.38)}
+.dino-crane-bay[data-bay="0"]{left:18%}.dino-crane-bay[data-bay="1"]{left:50%}.dino-crane-bay[data-bay="2"]{left:82%}
+.dino-crane-bay.is-target{border-color:#ffd94e;background:rgba(255,242,126,.22);box-shadow:0 0 18px rgba(255,221,67,.58)}
+.dino-crane-bay.is-ready{border-style:solid;border-color:#61df7b;background:rgba(178,255,187,.36);box-shadow:0 0 24px rgba(89,226,114,.82)}
+.dino-crane-bay.is-filled{border-style:solid;border-color:rgba(72,170,103,.42);background:rgba(203,255,199,.12)}
+.dino-crane-readout{position:absolute;left:clamp(9px,2vw,18px);right:clamp(68px,8vw,92px);top:clamp(96px,24vh,120px);z-index:8;display:grid;grid-template-columns:auto minmax(120px,240px) auto;align-items:center;justify-content:space-between;gap:8px;pointer-events:none}
+#dinoCraneCargoStatus,#dinoCraneChances{padding:5px 10px;border:3px solid rgba(255,255,255,.88);border-radius:999px;background:rgba(255,252,230,.94);box-shadow:0 4px 0 rgba(72,89,44,.22);color:#486128;font-size:clamp(11px,1.9vw,16px);font-weight:1000;white-space:nowrap}
+#dinoCraneChances{letter-spacing:3px;color:#ee755e}
+.dino-crane-swing{--dino-crane-swing:0;position:relative;height:28px;border:4px solid rgba(255,255,255,.92);border-radius:999px;background:linear-gradient(90deg,#ef8b64 0 35%,#72d988 35% 65%,#ef8b64 65%);box-shadow:0 4px 0 rgba(70,76,49,.23);overflow:hidden}
+.dino-crane-swing>span{position:absolute;left:50%;top:0;bottom:0;width:3px;background:rgba(255,255,255,.9)}
+.dino-crane-swing>i{position:absolute;left:calc(50% + var(--dino-crane-swing) * 44%);top:50%;width:18px;height:18px;transform:translate(-50%,-50%);border:3px solid #fff;border-radius:50%;background:#e76956;box-shadow:0 2px 0 rgba(81,61,44,.28);transition:left .06s linear,background .12s}
+.dino-crane-swing.is-green>i{background:#40c96b;box-shadow:0 0 12px #a9ffb8}
+.dino-crane-swing>strong{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:9px;color:#355a37;text-shadow:0 1px #fff;pointer-events:none}
+.dino-crane-controls{position:absolute;left:50%;bottom:max(7px,env(safe-area-inset-bottom));z-index:9;display:grid;grid-template-columns:minmax(92px,150px) minmax(116px,190px) minmax(92px,150px);gap:clamp(7px,1.4vw,13px);transform:translateX(-50%)}
+.dino-crane-controls button,.dino-crane-retry{appearance:none;-webkit-appearance:none;min-height:clamp(50px,12vh,68px);padding:5px 12px;border:4px solid #fff0a5;border-radius:20px;background:linear-gradient(#ffcb63,#ed8e43);box-shadow:0 6px 0 #a85d31;color:#613b20;font-size:clamp(20px,3.4vw,30px);font-weight:1000;touch-action:none;user-select:none;cursor:pointer}
+.dino-crane-controls button small{display:block;font-size:clamp(9px,1.5vw,13px);line-height:1}.dino-crane-controls button strong{font-size:clamp(16px,2.8vw,24px)}
+.dino-crane-controls button:active:not(:disabled){transform:translateY(4px);box-shadow:0 2px 0 #a85d31}.dino-crane-controls button:disabled{filter:grayscale(.45);opacity:.48;cursor:default}
+.dino-crane-controls button:focus-visible,.dino-crane-retry:focus-visible{outline:5px solid #fff273;outline-offset:3px}
+.dino-crane-retry{position:absolute;left:50%;bottom:22%;z-index:11;min-width:min(70vw,310px);transform:translateX(-50%);font-size:clamp(15px,2.8vw,23px);background:linear-gradient(#ff9f62,#ed5f54);color:#fff;text-shadow:0 2px rgba(125,45,38,.5)}
 body.dino-crane-active #veh,body.dino-crane-active #cars{visibility:hidden!important}
 body.dino-crane-active #dinoAdventureGuide{min-width:min(70vw,480px)}
 @keyframes dinoCraneTargetPulse{to{transform:scale(1.09);box-shadow:0 0 0 6px rgba(255,255,255,.92),0 0 30px rgba(255,218,55,.9)}}
@@ -1389,39 +1404,23 @@ body.dino-crane-active #dinoAdventureGuide{min-width:min(70vw,480px)}
 .dino-water-game.is-saved .dino-water-scene img{animation:dinoWaterDrink .72s ease-in-out 2 alternate}
 .dino-water-game.has-full-scene .dino-water-scene{inset:0;width:auto;height:auto;display:block;opacity:1}
 .dino-water-game.has-full-scene .dino-water-scene img{width:100%;height:100%;max-width:none;max-height:none;object-fit:cover;object-position:center;filter:none}
-.dino-water-game.has-full-scene .dino-water-playfield{left:50%;right:auto;top:clamp(112px,38vh,290px);bottom:auto;grid-template-columns:auto;gap:0;padding:clamp(5px,1vw,10px);transform:translateX(-50%);background:rgba(255,250,218,.78);backdrop-filter:blur(2px);transition:opacity .3s ease,transform .3s ease}
-.dino-water-game.has-full-scene .dino-water-source,.dino-water-game.has-full-scene .dino-water-goal{display:none}
-.dino-water-game.has-full-scene .dino-water-cell[data-kind="source"]::before,.dino-water-game.has-full-scene .dino-water-cell[data-kind="goal"]::before{inset:0;z-index:2;display:grid;place-items:center;opacity:1;transform:none;background:none;font-size:clamp(18px,3.4vmin,28px)}
-.dino-water-game.has-full-scene .dino-water-cell[data-kind="source"]::before{content:"💧"}
-.dino-water-game.has-full-scene .dino-water-cell[data-kind="goal"]::before{content:"🦕"}
-.dino-water-game.has-full-scene .dino-water-cell::after{z-index:1}
+.dino-water-game.has-full-scene .dino-water-playfield{left:50%;right:auto;top:clamp(104px,28vh,205px);bottom:auto;padding:clamp(5px,1vw,10px);transform:translateX(-50%);background:rgba(255,250,218,.84);backdrop-filter:blur(2px);transition:opacity .3s ease,transform .3s ease}
 .dino-water-game.has-full-scene.is-saved .dino-water-playfield{opacity:0;pointer-events:none;transform:translateX(-50%) scale(.96)}
 .dino-water-game.has-full-scene.is-saved .dino-water-scene img{animation:dinoWaterSuccessGlow .62s ease both}
-.dino-water-playfield{position:absolute;left:clamp(10px,4vw,44px);top:clamp(76px,20vh,116px);bottom:clamp(48px,12vh,78px);z-index:4;
-  display:grid;grid-template-columns:auto auto auto;align-items:center;gap:clamp(5px,1.2vw,12px);padding:clamp(6px,1.4vw,12px);border:3px solid rgba(129,158,73,.48);border-radius:24px;
-  background:rgba(255,250,218,.9);box-shadow:0 8px 26px rgba(64,83,38,.2);touch-action:none}
-.dino-water-source,.dino-water-goal{display:grid;justify-items:center;gap:2px;width:clamp(54px,8.5vw,82px);font-size:clamp(20px,4vw,38px);font-weight:1000;color:#39759b;text-align:center}
-.dino-water-goal{color:#58752e}.dino-water-source strong,.dino-water-goal strong{font-size:clamp(9px,1.35vw,12px);white-space:nowrap}
-.dino-water-grid{--water-cell:clamp(38px,9.1vmin,58px);display:grid;grid-template-columns:repeat(7,var(--water-cell));grid-template-rows:repeat(4,var(--water-cell));gap:3px;padding:5px;border:3px solid #a97846;border-radius:17px;
-  background:#d7ad6d;box-shadow:inset 0 0 0 5px rgba(104,76,39,.13);outline:0;touch-action:none;cursor:crosshair}
-.dino-water-grid:focus-visible{outline:5px solid #fff273;outline-offset:3px}
-.dino-water-cell{appearance:none;-webkit-appearance:none;position:relative;width:var(--water-cell);height:var(--water-cell);padding:0;border:2px solid rgba(116,78,38,.27);border-radius:10px;overflow:hidden;background:linear-gradient(145deg,#e6c887,#c99255);box-shadow:inset 0 2px 0 rgba(255,255,255,.28);pointer-events:auto}
-.dino-water-cell::before{content:"";position:absolute;inset:16%;border-radius:9px;background:#855c35;opacity:0;transform:scale(.45)}
-.dino-water-cell::after{content:"";position:absolute;left:50%;top:50%;width:130%;height:46%;border-radius:999px;background:linear-gradient(#a9efff,#55bfe4 55%,#2e94c7);box-shadow:0 0 0 2px rgba(235,254,255,.65),0 0 11px rgba(72,196,235,.76);opacity:0;transform:translate(-50%,-50%) scaleX(.25);transform-origin:center}
-.dino-water-cell[data-kind="rock"]{background:linear-gradient(145deg,#9b9279,#716b5b);box-shadow:inset 0 2px 0 rgba(255,255,255,.32)}
-.dino-water-cell[data-kind="rock"]::before{opacity:1;inset:11%;border-radius:47% 53% 42% 58%;background:#5d594d;transform:none;box-shadow:inset 3px 3px 0 rgba(255,255,255,.15)}
-.dino-water-cell[data-kind="source"],.dino-water-cell[data-kind="goal"]{border-color:#eafcff;background:#62c4e5}
-.dino-water-cell[data-kind="goal"]{border-color:#e9f6b1;background:#9fc96a}
-.dino-water-cell[data-dug="true"]::before{opacity:1;transform:scale(1);transition:transform .12s ease,opacity .12s ease}
-.dino-water-cell[data-watered="true"]::after{opacity:1;transform:translate(-50%,-50%) scaleX(1);transition:transform .22s ease,opacity .15s ease}
-.dino-water-cell[data-stop="true"]{box-shadow:inset 0 0 0 4px #ffb44f,0 0 0 4px rgba(255,246,164,.78);animation:dinoWaterStop .5s ease-in-out 2 alternate}
-.dino-water-cell[data-cursor="true"]{outline:4px solid #fff273;outline-offset:-5px}
+.dino-water-playfield{position:absolute;left:50%;top:clamp(104px,28vh,205px);z-index:4;padding:clamp(5px,1vw,10px);transform:translateX(-50%);border:3px solid rgba(129,158,73,.48);border-radius:24px;background:rgba(255,250,218,.9);box-shadow:0 8px 26px rgba(64,83,38,.2)}
+.dino-water-grid{--water-cell:clamp(38px,10.4vmin,64px);display:grid;grid-template-columns:repeat(7,var(--water-cell));grid-template-rows:repeat(4,var(--water-cell));gap:3px;padding:5px;border:3px solid #a97846;border-radius:17px;background:#d7ad6d;box-shadow:inset 0 0 0 5px rgba(104,76,39,.13)}
+.dino-water-cell{appearance:none;-webkit-appearance:none;position:relative;width:var(--water-cell);height:var(--water-cell);padding:0;border:2px solid rgba(116,78,38,.34);border-radius:9px;overflow:hidden;background:#cf9e5d;box-shadow:inset 0 2px 0 rgba(255,255,255,.28);cursor:pointer;touch-action:manipulation}
+.dino-water-cell[aria-disabled="true"]{cursor:default}.dino-water-cell:focus-visible{outline:5px solid #fff273;outline-offset:2px;z-index:3}
+.dino-water-tile-rotator{position:absolute;inset:-1px;display:block;transform-origin:center;transition:transform .18s cubic-bezier(.2,.85,.3,1.18)}
+.dino-water-tile-rotator>img{position:absolute;inset:0;width:100%;height:100%;object-fit:fill;pointer-events:none;user-select:none}
+.dino-water-tile-rotator>.is-wet{opacity:0;transition:opacity .2s ease}.dino-water-cell[data-wet="true"] .is-wet{opacity:1}.dino-water-cell[data-wet="true"] .is-dry{opacity:0}
+.dino-water-cell[data-kind="source"]{border-color:#68d0ed;box-shadow:0 0 15px rgba(82,206,238,.72)}.dino-water-cell[data-kind="pond"]{border-color:#8ed16c}.dino-water-cell[data-kind="rock"]{filter:saturate(.85)}
 .dino-water-status-row{position:absolute;left:clamp(14px,5vw,52px);bottom:max(8px,env(safe-area-inset-bottom));z-index:6;display:flex;align-items:center;gap:9px}
 .dino-water-budget{width:clamp(150px,27vw,240px);min-height:48px;display:grid;grid-template-columns:1fr auto;align-items:center;gap:7px;padding:7px 11px;border:3px solid #73bad2;border-radius:999px;background:rgba(246,253,255,.95);box-shadow:0 4px 0 #4c91ae}
 .dino-water-budget>span{height:13px;border-radius:999px;background:linear-gradient(90deg,#55c7ec var(--dino-water-budget,100%),#d8e5e9 var(--dino-water-budget,100%));transition:background .18s}
 .dino-water-budget>strong{font-size:clamp(12px,2vw,16px);white-space:nowrap;color:#397695}
-#dinoWaterRetry,.dino-boss-retry{appearance:none;-webkit-appearance:none;min-width:clamp(136px,22vw,210px);min-height:52px;padding:6px 14px;border:4px solid #fff0a5;border-radius:999px;background:linear-gradient(#ff9f62,#ed5f54);color:#fff;font-weight:1000;box-shadow:0 6px 0 #a6433c;text-shadow:0 2px 0 rgba(125,45,38,.5);cursor:pointer;touch-action:manipulation}
-#dinoWaterRetry:focus-visible,.dino-boss-action:focus-visible,.dino-boss-retry:focus-visible{outline:5px solid #fff273;outline-offset:3px}
+#dinoWaterHint,.dino-boss-retry{appearance:none;-webkit-appearance:none;min-width:clamp(116px,19vw,180px);min-height:52px;padding:6px 14px;border:4px solid #fff0a5;border-radius:999px;background:linear-gradient(#ffb864,#ed744c);color:#fff;font-weight:1000;box-shadow:0 6px 0 #a64d38;text-shadow:0 2px 0 rgba(125,45,38,.5);cursor:pointer;touch-action:manipulation}
+#dinoWaterHint:disabled{filter:grayscale(.6);opacity:.55;cursor:default}#dinoWaterHint:focus-visible,.dino-boss-action:focus-visible,.dino-boss-retry:focus-visible{outline:5px solid #fff273;outline-offset:3px}
 .dino-boss-arena{position:absolute;inset:0;overflow:hidden;pointer-events:none}
 .dino-boss-trex{position:absolute;right:2.5%;bottom:10.5vh;width:clamp(190px,34vw,430px);max-height:67vh;object-fit:contain;object-position:right bottom;transform-origin:72% 90%;filter:drop-shadow(0 8px 4px rgba(50,45,25,.23));transition:transform .34s ease,filter .2s ease,opacity .2s}
 .dino-boss-game[data-phase="telegraph"] .dino-boss-trex{transform:translate3d(0,-2px,0) rotate(-2deg) scale(1.025);filter:brightness(1.08) drop-shadow(0 8px 4px rgba(50,45,25,.23))}
@@ -1721,7 +1720,7 @@ h1{font-size:clamp(24px,5.6vw,50px);color:#e0704a;text-shadow:0 3px 0 #fff}
   .mapNode .mi.ui-art,.mapNode .mi .ui-art{width:clamp(36px,6vw,48px);height:clamp(36px,6vw,48px)}
   #quiz{width:min(96vw,760px);top:50%;bottom:auto;max-height:calc(100vh - 92px);overflow-y:auto;border-radius:20px;padding:8px 12px calc(8px + env(safe-area-inset-bottom))}
   .dino-adventure-header{right:56px;top:3px}.dino-adventure-header h2{padding:3px 9px;font-size:13px;border-width:2px}#dinoAdventureProgress{padding:3px 8px;font-size:11px;border-width:2px}#dinoAdventureGuide{top:39px;padding:3px 9px;border-width:2px;font-size:12px}
-  .dino-water-playfield{left:6px;top:67px;bottom:51px;gap:3px;padding:3px;border-width:2px;border-radius:15px}.dino-water-grid{--water-cell:clamp(31px,8.8vmin,42px);gap:2px;padding:3px;border-width:2px;border-radius:12px}.dino-water-source,.dino-water-goal{width:48px;font-size:20px}.dino-water-source strong,.dino-water-goal strong{font-size:8px}.dino-water-status-row{left:7px;bottom:4px;gap:5px}.dino-water-budget{width:136px;min-height:42px;padding:3px 7px;border-width:2px}.dino-water-budget>strong{font-size:10px}#dinoWaterRetry{min-width:118px;min-height:46px;border-width:3px}.dino-water-scene{right:-4%;bottom:7vh;height:48vh}
+  .dino-water-playfield{left:50%;right:auto;top:67px;bottom:auto;transform:translateX(-50%);padding:3px;border-width:2px;border-radius:15px}.dino-water-game.has-full-scene .dino-water-playfield{top:67px}.dino-water-grid{--water-cell:clamp(31px,8.8vmin,42px);gap:2px;padding:3px;border-width:2px;border-radius:12px}.dino-water-status-row{left:7px;bottom:4px;gap:5px}.dino-water-budget{width:136px;min-height:42px;padding:3px 7px;border-width:2px}.dino-water-budget>strong{font-size:10px}#dinoWaterHint{min-width:108px;min-height:46px;border-width:3px}.dino-water-scene{right:-4%;bottom:7vh;height:48vh}
   .dino-boss-hud{left:5px;right:56px;top:82px;gap:3px}.dino-boss-hp,.dino-boss-water{min-height:32px;padding:2px 6px;border-width:2px}.dino-boss-hp>span{font-size:15px}.dino-boss-hp>strong,.dino-boss-water>strong{font-size:8px}.dino-boss-water>span{font-size:13px}.dino-boss-tug{bottom:73px;width:min(50vw,420px);height:19px;border-width:3px}.dino-boss-tug>i{width:27px;border-width:4px}.dino-boss-action{bottom:4px;min-width:180px;min-height:58px;padding:3px 12px;border-width:4px;border-radius:19px}.dino-boss-action strong{font-size:20px}.dino-boss-action small{font-size:10px}.dino-boss-retry{bottom:7px;min-height:52px}.dino-boss-trex{bottom:8vh;max-height:58vh}
   #qRow{gap:8px;margin-bottom:7px}
   #qBubble{padding:6px 10px}
@@ -1834,6 +1833,11 @@ body.ios-device #quiz.show:not(.sea-quiz):not(.future-capsule-quiz):not(.space-g
 @media (orientation:landscape) and (max-height:500px){
   .dino-boss-game .dino-boss-trex{bottom:2.5vh}
 }
+@media (orientation:landscape) and (max-height:360px){
+  .dino-crane-readout{top:82px}.dino-crane-controls{bottom:5px}.dino-crane-controls button{min-height:44px}
+  .dino-water-game.has-full-scene .dino-water-playfield,.dino-water-playfield{top:88px}
+  .dino-water-grid{--water-cell:34px}.dino-water-status-row{bottom:5px}.dino-water-budget{min-height:42px}#dinoWaterHint{min-height:46px}
+}
 @keyframes magicPuffReduced{
   0%{opacity:0;transform:translate3d(0,0,0) scale(var(--puff-start-scale))}
   15%{opacity:var(--puff-alpha)}
@@ -1856,9 +1860,9 @@ body.ios-device #quiz.show:not(.sea-quiz):not(.future-capsule-quiz):not(.space-g
   .num-card{opacity:.86}.num-poly{opacity:.38}.num-ring{opacity:.3}.space-star-particle::before{opacity:var(--space-star-opacity,.72);transform:none}
   .runEvent,.runEvent::after{animation:none!important}.runEvent::after{opacity:.8}.runEvent.found{animation:runEventFound .55s ease forwards!important}
   .choice.glow{animation:none!important;box-shadow:0 5px 0 var(--good),0 0 0 7px rgba(87,193,94,.22)}
-  .dino-crane-ring-guide,.dino-water-game.is-saved .dino-water-scene img,.dino-water-cell[data-stop="true"],.dino-boss-game[data-phase="defend"] .dino-boss-trex,.dino-boss-wave,.dino-boss-game[data-phase="burst"] .dino-boss-tug>i,.dino-boss-action.is-burst{animation:none!important}
-  .dino-crane-arm,.dino-crane-cable,.dino-crane-hook,.dino-crane-log,.dino-crane-safe-zone{transition:none!important}
-  .dino-boss-action,.dino-boss-trex,.dino-boss-tug>span,.dino-boss-tug>i,.dino-water-cell::before,.dino-water-cell::after{transition:none!important}
+  .dino-crane-ring-guides>i,.dino-water-game.is-saved .dino-water-scene img,.dino-boss-game[data-phase="defend"] .dino-boss-trex,.dino-boss-wave,.dino-boss-game[data-phase="burst"] .dino-boss-tug>i,.dino-boss-action.is-burst{animation:none!important}
+  .dino-crane-arm,.dino-crane-cable,.dino-crane-hook,.dino-crane-cargo,.dino-crane-bay,.dino-crane-swing>i{transition:none!important}
+  .dino-boss-action,.dino-boss-trex,.dino-boss-tug>span,.dino-boss-tug>i,.dino-water-tile-rotator,.dino-water-tile-rotator>.is-wet{transition:none!important}
   .dino-boss-game[data-phase="burst"] .dino-boss-tug>i,.dino-boss-action.is-burst{filter:brightness(1.16)}
   #seaArenaShade,#seaRoundCountdown,body.st-sea #fgT,body.branch-raster #skyA,
   body.branch-raster #horizon,body.branch-raster #midT,body.branch-raster #groundT,

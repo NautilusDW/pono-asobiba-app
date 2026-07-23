@@ -68,6 +68,12 @@
     { id: 'risu', awake: ASSET_BASE + 'friend_risu_awake.png', sleeping: ASSET_BASE + 'friend_risu_sleeping.png' },
     { id: 'usagi', awake: ASSET_BASE + 'friend_usagi_awake.png', sleeping: ASSET_BASE + 'friend_usagi_sleeping.png' }
   ];
+  var BONUS_PARTNER = {
+    id: 'hikari_momonga',
+    awake: ASSET_BASE + 'friend_hikari_momonga_bonus_awake.png'
+  };
+  var HIGH_SCORE_GAME_ID = 'hyokkori-hightouch-v2';
+  var BEST_COMBO_KEY = 'pono_hyokkori_best_combo_v2';
   var HIDEOUT_IMAGES = [
     ASSET_BASE + 'hideout_stump.png',
     ASSET_BASE + 'hideout_leaf_bush.png',
@@ -96,7 +102,8 @@
   // 背景・開始ポノ・花壇0・たねはHTML/CSSから先に読み込まれ、ここでは残りを補完する。
   var preloadRefs = [];
   function preloadGameAssetsLocally() {
-    var urls = HIDEOUT_IMAGES.concat(FLOWER_IMAGES, FX_IMAGES);
+    // 7体目に必ず使うボーナスを最優先。遅い回線でも初登場までに間に合わせる。
+    var urls = [BONUS_PARTNER.awake].concat(HIDEOUT_IMAGES, FLOWER_IMAGES, FX_IMAGES);
     for (var i = 0; i < PARTNERS.length; i++) urls.push(PARTNERS[i].awake, PARTNERS[i].sleeping);
     var run = function () {
       for (var j = 0; j < urls.length; j++) {
@@ -242,7 +249,9 @@
       img: holeEl.querySelector('.hh-char'),
       sleepFx: holeEl.querySelector('.hh-sleep-fx'),
       hitFx: holeEl.querySelector('.hh-hit-fx'),
-      dust: holeEl.querySelector('.hh-dust')
+      dust: holeEl.querySelector('.hh-dust'),
+      bonusBadge: holeEl.querySelector('.hh-bonus-badge'),
+      scorePop: holeEl.querySelector('.hh-score-pop')
     });
   }
 
@@ -252,11 +261,29 @@
   var lightSeedEl = document.getElementById('light-seed');
   var relayAnnouncementEl = document.getElementById('relay-announcement');
   var relayPipEls = document.querySelectorAll('#relay-pips .relay-pip');
+  var comboHudEl = document.getElementById('combo-hud');
+  var comboCountEl = document.getElementById('combo-count');
+  var comboStatusEl = document.getElementById('combo-status-sr');
   var reducedMotionQuery = null;
   try { reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)'); } catch (e) {}
 
   function prefersReducedMotion() {
     return !!(reducedMotionQuery && reducedMotionQuery.matches);
+  }
+
+  function readBestComboRecord() {
+    try {
+      var value = parseInt(localStorage.getItem(BEST_COMBO_KEY), 10);
+      return isFinite(value) && value > 0 ? value : 0;
+    } catch (e) {
+      return 0;
+    }
+  }
+
+  function writeBestComboRecord(value) {
+    var safeValue = Math.max(0, Math.floor(Number(value) || 0));
+    try { localStorage.setItem(BEST_COMBO_KEY, String(safeValue)); } catch (e) {}
+    return safeValue;
   }
 
   // ═══ ゲーム状態 ═══
@@ -269,9 +296,12 @@
   var boardLockedUntil = 0; // OVERHEAT 演出用 (state.time 基準)
   var seedHolderHole = null; // null は花壇、数値は最後に成功した隠れ場所。
   var lastPartnerId = null;
+  var actualSpawnCount = 0;
   var tutorialOpen = false;
-  var highScoreTimer = 0;
   var relayAnnouncementTimer = 0;
+  var renderedCombo = -1;
+  var lifetimeBestCombo = readBestComboRecord();
+  var comboRecordBroken = false;
 
   function resetGameState() {
     state = L.createInitialState();
@@ -285,18 +315,26 @@
     settleTimer = 0;
     boardLockedUntil = 0;
     lastPartnerId = null;
-    lastTickSecond = -1;
+    actualSpawnCount = 0;
     tutorialOpen = false;
-    if (highScoreTimer) { clearTimeout(highScoreTimer); highScoreTimer = 0; }
+    comboRecordBroken = false;
+    renderedCombo = -1;
+    if (comboStatusEl) comboStatusEl.textContent = '';
     if (relayAnnouncementTimer) { clearTimeout(relayAnnouncementTimer); relayAnnouncementTimer = 0; }
     confetti = [];
     resetRelayVisual();
+    updateComboHud();
   }
 
   function resetHoleVisual(idx) {
     var refs = holeRefs[idx];
     if (!refs) return;
-    refs.wrap.classList.remove('is-visible', 'is-sleeping', 'is-hit', 'is-wobble');
+    refs.wrap.classList.remove('is-visible', 'is-sleeping', 'is-hit', 'is-wobble', 'is-bonus');
+    if (refs.bonusBadge) refs.bonusBadge.classList.remove('show');
+    if (refs.scorePop) {
+      refs.scorePop.classList.remove('show', 'is-bonus');
+      refs.scorePop.textContent = '';
+    }
     refs.hole.classList.remove('is-locked');
     refs.hole.setAttribute('aria-label', 'おともだちが でてくる ばしょ');
   }
@@ -337,25 +375,42 @@
     if (seedHolderHole !== null && forbidden.indexOf(seedHolderHole) < 0) forbidden.push(seedHolderHole);
     var holeIdx = L.pickHole(forbidden, Math.random);
     if (holeIdx === null) return;
-    var kind = L.pickSpawnKind(state.elapsed, recentKinds, Math.random);
+    actualSpawnCount += 1;
+    var isBonus = L.isBonusSpawn(actualSpawnCount);
+    var kind = isBonus ? 'awake' : L.pickSpawnKind(state.elapsed, recentKinds, Math.random);
     recentKinds.push(kind);
     if (recentKinds.length > 6) recentKinds.shift();
-    var showTime = L.showTimeAt(state.elapsed);
-    var partner = pickPartner();
-    lastPartnerId = partner.id;
-    holes[holeIdx].occupant = { kind: kind, partnerId: partner.id, showUntil: state.elapsed + showTime };
-    renderSpawn(holeIdx, kind, partner);
+    var showTime = isBonus ? L.bonusShowTimeAt(state.elapsed) : L.showTimeAt(state.elapsed);
+    var partner = isBonus ? BONUS_PARTNER : pickPartner();
+    if (!isBonus) lastPartnerId = partner.id;
+    holes[holeIdx].occupant = {
+      kind: kind,
+      partnerId: partner.id,
+      isBonus: isBonus,
+      showUntil: state.elapsed + showTime
+    };
+    renderSpawn(holeIdx, kind, partner, isBonus);
   }
 
-  function renderSpawn(idx, kind, partner) {
+  function renderSpawn(idx, kind, partner, isBonus) {
     var refs = holeRefs[idx];
     if (!refs) return;
     refs.visualToken = (refs.visualToken || 0) + 1;
-    refs.img.src = partner[kind];
-    refs.img.alt = kind === 'awake' ? 'おきている おともだち' : 'ねている おともだち';
-    refs.hole.setAttribute('aria-label', kind === 'awake' ? 'ハイタッチする おともだち' : 'ねている おともだち');
-    refs.wrap.classList.remove('is-hit', 'is-wobble');
+    refs.img.src = isBonus ? partner.awake : partner[kind];
+    refs.img.alt = isBonus
+      ? 'キラキラの ひかりモモンガ'
+      : (kind === 'awake' ? 'おきている おともだち' : 'ねている おともだち');
+    refs.hole.setAttribute('aria-label', isBonus
+      ? '30てんの ひかりモモンガ ハイタッチ'
+      : (kind === 'awake' ? 'ハイタッチする おともだち' : 'ねている おともだち'));
+    refs.wrap.classList.remove('is-hit', 'is-wobble', 'is-bonus');
     refs.wrap.classList.toggle('is-sleeping', kind === 'sleeping');
+    refs.wrap.classList.toggle('is-bonus', !!isBonus);
+    if (refs.bonusBadge) refs.bonusBadge.classList.toggle('show', !!isBonus);
+    if (refs.scorePop) {
+      refs.scorePop.classList.remove('show', 'is-bonus');
+      refs.scorePop.textContent = '';
+    }
     retriggerClass(refs.wrap, 'is-visible'); // translate アニメを毎回発火させる
   }
 
@@ -366,7 +421,8 @@
     var refs = holeRefs[idx];
     if (refs) {
       refs.visualToken = (refs.visualToken || 0) + 1;
-      refs.wrap.classList.remove('is-visible', 'is-sleeping');
+      refs.wrap.classList.remove('is-visible', 'is-sleeping', 'is-bonus');
+      if (refs.bonusBadge) refs.bonusBadge.classList.remove('show');
       refs.hole.setAttribute('aria-label', 'おともだちが でてくる ばしょ');
     }
   }
@@ -379,9 +435,11 @@
     var token = refs.visualToken || 0;
     setTimeout(function () {
       if ((refs.visualToken || 0) !== token || holes[idx].occupant) return;
-      refs.wrap.classList.remove('is-visible', 'is-sleeping', 'is-hit');
+      refs.wrap.classList.remove('is-visible', 'is-sleeping', 'is-hit', 'is-bonus');
+      if (refs.bonusBadge) refs.bonusBadge.classList.remove('show');
       refs.hole.setAttribute('aria-label', 'おともだちが でてくる ばしょ');
-    }, prefersReducedMotion() ? 0 : 300);
+    // reduced-motion時は動かさず、加点表示を読める短い静止時間だけ残す。
+    }, prefersReducedMotion() ? 620 : 300);
   }
 
   function updateHoleTimeouts() {
@@ -391,7 +449,7 @@
       if (state.elapsed >= occ.showUntil) {
         var wasAwake = occ.kind === 'awake';
         retractHole(i);
-        if (wasAwake) L.missedAwake(state); // 取り逃しは combo リセットのみ。 減点・演出なし。
+        if (wasAwake) L.missedAwake(state); // 待って見送るのは失敗にせず、コンボも得点も維持。
       }
     }
   }
@@ -570,29 +628,54 @@
     } catch (e) {}
   }
   function playHitSound() { tone(660, 0, 0.08, 'triangle', 0.11); tone(880, 0.06, 0.1, 'triangle', 0.1); }
+  function playBonusSound() {
+    tone(784, 0, 0.10, 'triangle', 0.12);
+    tone(1047, 0.07, 0.13, 'triangle', 0.11);
+    tone(1319, 0.14, 0.16, 'triangle', 0.10);
+  }
   function playSleepSound() { tone(220, 0, 0.16, 'sine', 0.08); }
   function playWhiffSound() { tone(180, 0, 0.08, 'sine', 0.05); }
   function playFanfare() {
     [523, 659, 784, 1047, 1319].forEach(function (f, i) { tone(f, i * 0.11, 0.18, 'triangle', 0.13); });
   }
-  function playTick() { tone(880, 0, 0.05, 'square', 0.08); }
-
   // ═══ HUD ═══
   var hudTimerEl = document.getElementById('hud-timer');
   var hudScoreEl = document.getElementById('hud-score');
-  var lastTickSecond = -1;
+
+  function updateComboHud() {
+    if (!comboHudEl || !comboCountEl) return;
+    var combo = Math.max(0, Number(state.combo) || 0);
+    var shouldShow = combo >= 2;
+    if (combo !== renderedCombo) {
+      comboCountEl.textContent = String(combo);
+      comboHudEl.setAttribute('aria-label', combo + 'コンボ');
+      if (shouldShow && renderedCombo >= 0) retriggerClass(comboHudEl, 'is-bump', 240);
+      if (comboStatusEl) {
+        if (shouldShow) comboStatusEl.textContent = combo + 'コンボ';
+        else if (renderedCombo >= 2 && combo === 0) comboStatusEl.textContent = 'コンボ おしまい';
+      }
+      renderedCombo = combo;
+    }
+    comboHudEl.classList.toggle('is-visible', shouldShow);
+    comboHudEl.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
+  }
+
+  function showScorePop(idx, result) {
+    var refs = idx !== null ? holeRefs[idx] : null;
+    if (!refs || !refs.scorePop || !result) return;
+    refs.scorePop.textContent = (result.isBonus ? 'キラキラ ' : '') + '＋' + result.scoreDelta;
+    refs.scorePop.classList.toggle('is-bonus', !!result.isBonus);
+    retriggerClass(refs.scorePop, 'show', 620);
+  }
 
   function updateHud() {
     var remaining = Math.max(0, Math.ceil(L.GAME_DURATION - state.elapsed));
     if (hudTimerEl) {
       hudTimerEl.textContent = '⏱ ' + remaining;
-      hudTimerEl.classList.toggle('hud-low', remaining <= 10);
+      hudTimerEl.classList.toggle('hud-low', remaining <= 5);
     }
     if (hudScoreEl) hudScoreEl.textContent = '🖐️ ' + state.score;
-    if (remaining <= 5 && remaining >= 1 && remaining !== lastTickSecond && phase === 'playing') {
-      lastTickSecond = remaining;
-      playTick();
-    }
+    updateComboHud();
   }
 
   // ═══ OVERHEAT 演出 (責めない演出) ═══
@@ -623,7 +706,7 @@
     var idx = resolveHoleFromPoint(clientX, clientY);
     var target = 'empty';
     if (idx !== null && holes[idx] && holes[idx].occupant) {
-      target = holes[idx].occupant.kind;
+      target = holes[idx].occupant.isBonus ? 'bonus' : holes[idx].occupant.kind;
     }
     var res = L.registerTap(state, state.time, target);
     applyTapResult(res, idx);
@@ -638,13 +721,15 @@
         if (refs) retriggerClass(refs.wrap, 'is-hit', 320);
         if (idx !== null) {
           moveSeedToHole(idx);
+          showScorePop(idx, res);
           celebrateAndRetract(idx);
         }
         updateRelayVisual(res);
-        spawnConfettiBurst(pt.x, pt.y, 18);
-        if (window.Haptics) window.Haptics.fire('stickerPaste');
+        spawnConfettiBurst(pt.x, pt.y, res.isBonus ? 34 : 18);
+        if (window.Haptics) window.Haptics.fire(res.isBonus ? 'superBadgePop' : 'stickerPaste');
         if (window.incrementStat) window.incrementStat('hyokkori_touches', 1);
-        playHitSound();
+        if (res.isBonus) playBonusSound();
+        else playHitSound();
         break;
       }
       case 'sleepPenalty': {
@@ -702,9 +787,9 @@
 
   // ═══ チュートリアル ═══
   var TUT_STEPS = [
-    { image: ASSET_BASE + 'fx_highfive_burst.png', text: 'おきてる こへ ハイタッチして<br>ひかりを つなごう！' },
+    { image: ASSET_BASE + 'fx_highfive_burst.png', text: 'おきてる こへ ハイタッチ！<br>つづくと コンボ！' },
     { image: ASSET_BASE + 'fx_sleep_moon_cloud.png', text: 'ねてる こは<br>そっと みまもってね' },
-    { image: ASSET_BASE + 'mechanic_light_seed.png', text: '4かい つなぐと<br>おはなが そだつよ' }
+    { image: BONUS_PARTNER.awake, text: 'キラキラの こは 30てん！<br>4かい つなぐと おはなが そだつよ' }
   ];
   var tutStep = 0;
   function showTutorial() {
@@ -759,7 +844,18 @@
   function finishGame() {
     phase = 'result';
     if (window.incrementStat) window.incrementStat('hyokkori_games', 1);
-    if (window.setStatMax) window.setStatMax('hyokkori_best_combo', state.bestCombo);
+    // 別タブで更新された記録も取り込み、古いページから小さい値で上書きしない。
+    lifetimeBestCombo = Math.max(lifetimeBestCombo, readBestComboRecord());
+    var previousBestCombo = lifetimeBestCombo;
+    if (state.bestCombo > lifetimeBestCombo) {
+      lifetimeBestCombo = writeBestComboRecord(state.bestCombo);
+    }
+    comboRecordBroken = lifetimeBestCombo > previousBestCombo;
+    try {
+      if (window.setStatMax) window.setStatMax('hyokkori_best_combo', state.bestCombo);
+    } catch (e) {
+      console.warn('[hyokkori-hightouch] きろくの共有をスキップしました:', e);
+    }
     if (window.flushAchievementPopups) window.flushAchievementPopups();
     window._achDeferPopups = false;
     showResult();
@@ -770,23 +866,24 @@
     if (scoreEl) scoreEl.textContent = state.score + ' てん';
     var relayEl = document.getElementById('result-relay');
     if (relayEl) relayEl.textContent = 'ひかりを ' + state.relayHits + 'かい つないだよ';
+    var comboEl = document.getElementById('result-combo');
+    if (comboEl) comboEl.textContent = 'さいだい ' + state.bestCombo + 'コンボ';
+    var bestComboEl = document.getElementById('result-best-combo');
+    if (bestComboEl) bestComboEl.textContent = 'きろく ' + lifetimeBestCombo + 'コンボ';
+    var comboNewEl = document.getElementById('result-combo-new');
+    if (comboNewEl) comboNewEl.classList.toggle('hidden', !comboRecordBroken);
     var bannerEl = document.querySelector('#result-card .result-banner');
     if (bannerEl) bannerEl.textContent = state.flowerStage >= L.FLOWER_STAGE_MAX ? 'おはなが いっぱい！' : 'ここまで そだったよ！';
-    var rank = window.saveHighScore ? window.saveHighScore('hyokkori-hightouch', state.score) : 0;
+    var rank = state.score > 0 && window.saveHighScore
+      ? window.saveHighScore(HIGH_SCORE_GAME_ID, state.score)
+      : 0;
     var newEl = document.getElementById('result-new');
     if (rank >= 1) {
+      if (newEl) newEl.textContent = rank === 1 ? 'スコア しんきろく！' : 'スコア ベスト5！';
       if (newEl) newEl.classList.remove('hidden');
       spawnConfettiBurst(fxCanvas.width / 2, fxCanvas.height * 0.25, rank === 1 ? 50 : 22);
       if (window.Haptics) window.Haptics.fire('superBadgePop');
       playFanfare();
-      if (highScoreTimer) clearTimeout(highScoreTimer);
-      highScoreTimer = setTimeout(function () {
-        highScoreTimer = 0;
-        var resultOverlay = document.getElementById('result-overlay');
-        if (phase === 'result' && resultOverlay && resultOverlay.classList.contains('show') && window.showHighScoreTable) {
-          window.showHighScoreTable('hyokkori-hightouch', '🖐️ ひょっこりハイタッチ ハイスコア');
-        }
-      }, 900);
     } else {
       if (newEl) newEl.classList.add('hidden');
       playFanfare();
@@ -811,7 +908,7 @@
       extraButtons: [{
         icon: '🏆',
         label: 'ハイスコア',
-        onClick: function () { if (window.showHighScoreTable) window.showHighScoreTable('hyokkori-hightouch', '🖐️ ひょっこりハイタッチ ハイスコア'); }
+        onClick: function () { if (window.showHighScoreTable) window.showHighScoreTable(HIGH_SCORE_GAME_ID, '🖐️ ひょっこりハイタッチ ハイスコア'); }
       }]
     });
     window._menuInited = true;
@@ -880,7 +977,7 @@
       updateBoardLockVisual();
       updateHud();
 
-      if (phase === 'settling' && (occupiedHoleIndices().length === 0 || settleTimer >= 2)) {
+      if (phase === 'settling' && (occupiedHoleIndices().length === 0 || settleTimer >= 1)) {
         finishGame();
       }
     }

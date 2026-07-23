@@ -45,6 +45,18 @@ a:focus-visible {
   display: none !important;
 }
 
+.hh-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 #stage {
   position: fixed;
   top: 50%;
@@ -93,14 +105,53 @@ a:focus-visible {
   font-weight: 900;
 }
 
-#hud .hud-timer.hud-low {
-  color: #d84f2f;
-  animation: hud-low-pulse 0.6s ease-in-out infinite;
+#combo-hud {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 112px;
+  min-width: 112px;
+  gap: 5px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-50%) scale(0.9);
+  background: rgba(255, 247, 205, 0.95);
+  color: #9a551f;
+  font-variant-numeric: tabular-nums;
+  transition: opacity 0.12s ease, transform 0.12s ease;
 }
 
-@keyframes hud-low-pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
+#combo-hud.is-visible,
+#combo-hud.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translateX(-50%) scale(1);
+}
+
+#combo-hud.is-bump {
+  animation: combo-hud-bump 0.22s ease-out;
+}
+
+#combo-count {
+  min-width: 1.4em;
+  font-size: 1.12em;
+  line-height: 1;
+  text-align: right;
+}
+
+#combo-hud .combo-label {
+  font-size: 0.82em;
+  line-height: 1;
+}
+
+@keyframes combo-hud-bump {
+  0%, 100% { transform: translateX(-50%) scale(1); }
+  48% { transform: translateX(-50%) scale(1.08); }
+}
+
+#hud .hud-timer.hud-low {
+  color: #c9672f;
+  background: rgba(255, 244, 218, 0.94);
 }
 
 /* ── Start screen ── */
@@ -318,13 +369,31 @@ a:focus-visible {
   transform: translate(-50%, 7%);
 }
 
+.hh-char-wrap.is-bonus::before {
+  position: absolute;
+  inset: 6%;
+  z-index: 0;
+  border: clamp(3px, 0.65vmin, 6px) solid #ffd75a;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 250, 182, 0.86) 0 42%, rgba(255, 221, 83, 0.34) 62%, rgba(255, 211, 49, 0) 76%);
+  box-shadow: 0 0 10px #fff7ad, 0 0 22px rgba(255, 193, 42, 0.95);
+  content: '';
+  pointer-events: none;
+}
+
 .hh-char {
+  position: relative;
+  z-index: 1;
   display: block;
   width: 100%;
   height: 100%;
   object-fit: contain;
   object-position: center bottom;
   transform-origin: 50% 90%;
+}
+
+.hh-char-wrap.is-bonus .hh-char {
+  filter: drop-shadow(0 0 7px #fff8b0) drop-shadow(0 0 10px rgba(255, 187, 44, 0.95));
 }
 
 /* 起きている子の小さな光。絵文字ではなくCSSの光点にして画風を揃える。 */
@@ -403,6 +472,77 @@ a:focus-visible {
   0% { opacity: 0; transform: translate(-50%, -50%) scale(0.42); }
   38% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
   100% { opacity: 0; transform: translate(-50%, -58%) scale(0.94); }
+}
+
+.hh-bonus-badge {
+  position: absolute;
+  top: 2%;
+  left: 50%;
+  z-index: 7;
+  min-width: 64px;
+  padding: 3px 9px;
+  transform: translateX(-50%);
+  border: 2px solid rgba(255, 255, 255, 0.94);
+  border-radius: 999px;
+  opacity: 0;
+  visibility: hidden;
+  background: linear-gradient(145deg, #ffe971, #f5aa28);
+  box-shadow: 0 3px 8px rgba(140, 82, 12, 0.26), 0 0 10px rgba(255, 234, 100, 0.88);
+  color: #75400f;
+  font-size: clamp(11px, 2.2vmin, 16px);
+  font-weight: 900;
+  line-height: 1.2;
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.hh-char-wrap.is-visible.is-bonus .hh-bonus-badge,
+.hh-bonus-badge.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+.hh-score-pop {
+  position: absolute;
+  top: 31%;
+  left: 50%;
+  z-index: 9;
+  min-width: 58px;
+  padding: 4px 10px;
+  transform: translate(-50%, -35%) scale(0.72);
+  border: 2px solid rgba(255, 255, 255, 0.94);
+  border-radius: 999px;
+  opacity: 0;
+  background: rgba(255, 250, 238, 0.96);
+  box-shadow: 0 4px 10px rgba(73, 73, 45, 0.2);
+  color: var(--coral);
+  font-size: clamp(15px, 3.3vmin, 24px);
+  font-weight: 900;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.hh-score-pop.is-bonus,
+.hh-char-wrap.is-bonus .hh-score-pop {
+  border-color: #fff4a6;
+  background: linear-gradient(145deg, #fffbd6, #ffd956);
+  box-shadow: 0 4px 12px rgba(145, 88, 15, 0.28), 0 0 13px rgba(255, 225, 83, 0.92);
+  color: #9b4f0d;
+}
+
+.hh-score-pop.show,
+.hh-score-pop.is-visible,
+.hh-score-pop.is-active {
+  animation: hh-score-pop 0.56s ease-out;
+}
+
+@keyframes hh-score-pop {
+  0% { opacity: 0; transform: translate(-50%, -25%) scale(0.68); }
+  24%, 66% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -95%) scale(0.94); }
 }
 
 /* ねている子に触れたときも、責めずに短く知らせる。 */
@@ -847,6 +987,32 @@ a:focus-visible {
   font-weight: 900;
 }
 
+#result-combo {
+  margin-top: 3px;
+  color: #b75d2d;
+  font-size: clamp(14px, 2.25vmin, 19px);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+#result-best-combo {
+  margin-top: 1px;
+  color: #657453;
+  font-size: clamp(12px, 1.85vmin, 16px);
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+#result-card .result-combo-new {
+  margin-top: 4px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: #fff1a6;
+  color: #9b561c;
+  font-size: clamp(12px, 1.9vmin, 16px);
+  font-weight: 900;
+}
+
 #result-card .result-new {
   margin-top: 6px;
   color: #df693f;
@@ -892,6 +1058,12 @@ a:focus-visible {
     min-height: 36px;
     padding: 4px 12px;
     font-size: 14px;
+  }
+
+  #combo-hud {
+    width: 98px;
+    min-width: 98px;
+    gap: 4px;
   }
 
   #start-screen {
@@ -981,6 +1153,17 @@ a:focus-visible {
     font-size: clamp(12px, 3.6vh, 15px);
   }
 
+  #result-combo {
+    margin-top: 1px;
+    font-size: clamp(12px, 3.6vh, 15px);
+  }
+
+  #result-best-combo,
+  #result-card .result-combo-new {
+    margin-top: 1px;
+    font-size: clamp(10px, 3.1vh, 13px);
+  }
+
   #result-card .result-new {
     margin-top: 3px;
     font-size: 12px;
@@ -1039,7 +1222,7 @@ a:focus-visible {
   }
 
   #start-screen .tap-btn,
-  #hud .hud-timer.hud-low,
+  #combo-hud.is-bump,
   .hh-char-wrap.is-visible:not(.is-sleeping) .hh-sparkle,
   .hh-char-wrap.is-sleeping .hh-char,
   .hh-char-wrap.is-visible.is-sleeping .hh-sleep-fx,
@@ -1051,6 +1234,14 @@ a:focus-visible {
   #landscape-notice .rotate-icon,
   .tut-bubble,
   #countdown-screen .cd-text {
+    animation: none !important;
+  }
+
+  .hh-score-pop.show,
+  .hh-score-pop.is-visible,
+  .hh-score-pop.is-active {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
     animation: none !important;
   }
 

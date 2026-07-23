@@ -5,19 +5,24 @@
 'use strict';
 
 // ═══ 定数 ═══════════════════════════════════════════════════════════
-var GAME_DURATION = 60;      // 秒。60秒経過で finished。
+var GAME_DURATION = 30;      // 秒。30秒経過で finished。
 var HOLE_COUNT = 6;          // 隠れ場所の数 (3列x2行)。
 
-var SHOW_TIME_MAX = 1.5;     // 秒 (ゲーム開始時の出現表示時間)
-var SHOW_TIME_MIN = 1.0;     // 秒 (60秒後)
+var SHOW_TIME_MAX = 1.65;    // 秒 (ゲーム開始時の出現表示時間)
+var SHOW_TIME_MIN = 1.25;    // 秒 (30秒後)
 
-var SPAWN_INTERVAL_MAX_MS = 1100; // ゲーム開始時の出現間隔
-var SPAWN_INTERVAL_MIN_MS = 650;  // 下限クランプ
+var SPAWN_INTERVAL_MAX_MS = 1250; // ゲーム開始時の出現間隔
+var SPAWN_INTERVAL_MIN_MS = 900;  // 下限クランプ
 
-var SLEEP_RATIO_MIN = 0.25;
-var SLEEP_RATIO_MAX = 0.40;  // 上限クランプ
+var SLEEP_RATIO_MIN = 0.18;
+var SLEEP_RATIO_MAX = 0.28;  // 上限クランプ
 
-var MAX_COMBO_BONUS = 10;    // コンボボーナス上限 (min(combo, 10))
+var NORMAL_HIT_SCORE = 10;   // ふつうのおともだちの基本点。
+var BONUS_HIT_SCORE = 30;    // ボーナスのおともだちの基本点。
+var MAX_COMBO_BONUS = 10;    // コンボ加点上限 (直前までの成功数を +0〜+10)。
+var BONUS_SPAWN_EVERY = 7;   // 実際に出現できた7体ごとにボーナス。
+var BONUS_SHOW_TIME_EXTRA = 0.30;
+var BONUS_SHOW_TIME_MAX = 1.90;
 
 // ── ひかりのたねリレー ──
 var RELAY_HITS_PER_STAGE = 4; // 4回つなぐごとに花壇が1段階育つ。
@@ -26,7 +31,7 @@ var FLOWER_STAGE_MAX = 3;     // 0:つち → 1:め → 2:つぼみ → 3:まん
 // ── スパムタップ対策 三層防御 (確定値。実装仕様書 §3.1) ──
 var TAP_COOLDOWN = 0.22;         // 有効タップ後の全入力ロック秒
 var WHIFF_LOCK = 0.35;           // 空振りタップ後のロック秒
-var SLEEP_PENALTY = 5;           // 寝てる子タップの減点
+var SLEEP_PENALTY = 0;           // 寝てる子タップは減点なし (コンボ解除と入力ロックのみ)
 var SLEEP_PENALTY_LOCK = 1.0;    // 寝てる子タップ後のロック秒
 var SPAM_WINDOW = 2.0;           // スライディングウィンドウ秒
 var SPAM_THRESHOLD = 8;          // ウィンドウ内タップ数がこれ以上で OVERHEAT
@@ -78,7 +83,7 @@ function advanceRelay(state) {
 }
 
 /**
- * 0(開始) → 1(60秒経過) へ単調非減少・上限クランプ済みの進行スケール。
+ * 0(開始) → 1(30秒経過) へ単調非減少・上限クランプ済みの進行スケール。
  * t が負値/NaNでも 0、 巨大値でも 1 に収まる (常に有限)。
  * pakupaku-catch/js/logic.js の curveAt (sqrt ease) を踏襲。
  */
@@ -87,25 +92,58 @@ function curveAt(tSec) {
   return Math.sqrt(raw);
 }
 
-/** 出現表示時間 (秒)。 1.5 → 1.0、常に単調非増加・クランプ (0未満/NaNにならない)。 */
+/** 出現表示時間 (秒)。 1.65 → 1.25、常に単調非増加・クランプ (0未満/NaNにならない)。 */
 function showTimeAt(tSec) {
   var k = curveAt(tSec);
   var v = SHOW_TIME_MAX - k * (SHOW_TIME_MAX - SHOW_TIME_MIN);
   return clamp(v, SHOW_TIME_MIN, SHOW_TIME_MAX);
 }
 
-/** 出現間隔 (ms)。 1100 → 650、下限650クランプ必須。 */
+/** ボーナスは見分ける時間を0.30秒足し、最大1.90秒まで表示する。 */
+function bonusShowTimeAt(tSec) {
+  return Math.min(BONUS_SHOW_TIME_MAX, showTimeAt(tSec) + BONUS_SHOW_TIME_EXTRA);
+}
+
+/** 出現間隔 (ms)。 1250 → 900、下限900クランプ必須。 */
 function spawnIntervalAt(tSec) {
   var k = curveAt(tSec);
   var ms = SPAWN_INTERVAL_MAX_MS - k * (SPAWN_INTERVAL_MAX_MS - SPAWN_INTERVAL_MIN_MS);
   return clamp(ms, SPAWN_INTERVAL_MIN_MS, SPAWN_INTERVAL_MAX_MS);
 }
 
-/** 寝てる子の出現比率。 0.25 → 0.40、全 t で 0〜0.40 に収まる。 */
+/** 寝てる子の出現比率。 0.18 → 0.28、全 t でこの範囲に収まる。 */
 function sleepRatioAt(tSec) {
   var k = curveAt(tSec);
   var ratio = SLEEP_RATIO_MIN + k * (SLEEP_RATIO_MAX - SLEEP_RATIO_MIN);
   return clamp(ratio, SLEEP_RATIO_MIN, SLEEP_RATIO_MAX);
+}
+
+/**
+ * 実際に穴へ配置できた出現数がボーナス回かを返す。
+ * spawn の試行回数ではなく、1から始まる実出現数を渡すこと。
+ */
+function isBonusSpawn(actualSpawnCount) {
+  var count = Number(actualSpawnCount);
+  return isFinite(count) && count > 0 && Math.floor(count) === count && count % BONUS_SPAWN_EVERY === 0;
+}
+
+/**
+ * 成功前のコンボ数と対象から、今回の加点内訳を算出する純関数。
+ * target は 'awake' または 'bonus'。それ以外は安全側で通常点として扱う。
+ */
+function hitScoreFor(comboBefore, target) {
+  var previousCombo = Math.floor(Number(comboBefore));
+  if (!isFinite(previousCombo) || previousCombo < 0) previousCombo = 0;
+  var isBonus = target === 'bonus';
+  var baseScore = isBonus ? BONUS_HIT_SCORE : NORMAL_HIT_SCORE;
+  var comboBonus = Math.min(previousCombo, MAX_COMBO_BONUS);
+  return {
+    nextCombo: previousCombo + 1,
+    baseScore: baseScore,
+    comboBonus: comboBonus,
+    scoreDelta: baseScore + comboBonus,
+    isBonus: isBonus
+  };
 }
 
 /**
@@ -145,12 +183,13 @@ function pickHole(occupiedHoles, rand) {
 /** 新規ゲーム状態を生成。 */
 function createInitialState() {
   return {
-    elapsed: 0,        // 秒 (60でクランプ・finished確定後は増えない。出現カーブ/HUD表示用)
+    elapsed: 0,        // 秒 (30でクランプ・finished確定後は増えない。出現カーブ/HUD表示用)
     time: 0,           // 秒 (finished後も増え続ける。 入力ロック判定など「壁時計」用途はこちらを使う)
     score: 0,
     combo: 0,
     bestCombo: 0,
-    hits: 0,           // awake タップ成功数
+    hits: 0,           // awake / bonus タップ成功数
+    bonusHits: 0,      // bonus タップ成功数
     relayHits: 0,      // ひかりのたねをつないだ累計回数
     relayStep: 0,      // 次の花壇段階までの進み (0〜3)
     flowerStage: 0,    // 花壇の成長段階 (0〜3)
@@ -159,13 +198,13 @@ function createInitialState() {
     overheatCount: 0,    // OVERHEAT 発火回数
     tapTimes: [],        // スパム判定用スライディングウィンドウ (秒の配列)
     inputLockUntil: 0,   // この time 秒数まで入力ロック中 (0 = ロックなし)
-    finished: false      // true になったら出現停止 (60秒経過確定)
+    finished: false      // true になったら出現停止 (30秒経過確定)
   };
 }
 
 /**
  * タイマーを dtSec 秒進める。 dtSec 省略時は 1 秒として扱う (テスト容易性のため)。
- * 60秒 (GAME_DURATION) に到達したら finished = true に固定する。
+ * 30秒 (GAME_DURATION) に到達したら finished = true に固定する。
  * state.time は finished 後も止まらず進み続ける (settling 中の入力ロック解除判定用。
  * pakupaku-catch の state.time/elapsed 二本立てパターンを踏襲)。
  */
@@ -184,7 +223,7 @@ function tickTimer(state, dtSec) {
 
 /**
  * タップを判定する。 tSec は state.time と同じ壁時計上の時刻を渡すこと。
- * target: 'awake' | 'sleeping' | 'empty' (穴に何がいるかの解決は呼び出し側が行う)。
+ * target: 'awake' | 'bonus' | 'sleeping' | 'empty' (穴に何がいるかの解決は呼び出し側が行う)。
  * 戻り値: { result: 'hit'|'sleepPenalty'|'whiff'|'overheat'|'locked'|'finished', scoreDelta: number }
  *
  * 処理順序 (この順序が本質。実装仕様書 §3.2):
@@ -214,18 +253,23 @@ function registerTap(state, tSec, target) {
     return { result: 'locked', scoreDelta: 0 };
   }
 
-  if (target === 'awake') {
-    var bonus = Math.min(state.combo, MAX_COMBO_BONUS);
-    var delta = 10 + bonus;
-    state.score += delta;
-    state.combo += 1;
+  if (target === 'awake' || target === 'bonus') {
+    var scoring = hitScoreFor(state.combo, target);
+    state.score += scoring.scoreDelta;
+    state.combo = scoring.nextCombo;
     if (state.combo > state.bestCombo) state.bestCombo = state.combo;
-    state.hits += 1;
+    state.hits = (state.hits || 0) + 1;
+    if (scoring.isBonus) state.bonusHits = (state.bonusHits || 0) + 1;
     var relay = advanceRelay(state);
     state.inputLockUntil = tSec + TAP_COOLDOWN;
     return {
       result: 'hit',
-      scoreDelta: delta,
+      scoreDelta: scoring.scoreDelta,
+      combo: state.combo,
+      bestCombo: state.bestCombo,
+      baseScore: scoring.baseScore,
+      comboBonus: scoring.comboBonus,
+      isBonus: scoring.isBonus,
       relayAdvanced: relay.relayAdvanced,
       relayStep: relay.relayStep,
       flowerStage: relay.flowerStage,
@@ -250,12 +294,10 @@ function registerTap(state, tSec, target) {
 }
 
 /**
- * awake を取り逃した (タップされずに自動退場した) ときに呼ぶ。
- * combo をリセットするのみ。 減点・入力ロックなし (罰にしない)。
+ * awake / bonus を取り逃した (タップされずに自動退場した) ときに呼ぶ。
+ * 無入力は失敗扱いにせず、コンボ・得点・リレーをすべて維持する。
  */
 function missedAwake(state) {
-  if (!state) return state;
-  state.combo = 0;
   return state;
 }
 
@@ -269,7 +311,10 @@ var PUBLIC_API = {
   SPAWN_INTERVAL_MAX_MS: SPAWN_INTERVAL_MAX_MS,
   SLEEP_RATIO_MIN: SLEEP_RATIO_MIN,
   SLEEP_RATIO_MAX: SLEEP_RATIO_MAX,
+  NORMAL_HIT_SCORE: NORMAL_HIT_SCORE,
+  BONUS_HIT_SCORE: BONUS_HIT_SCORE,
   MAX_COMBO_BONUS: MAX_COMBO_BONUS,
+  BONUS_SPAWN_EVERY: BONUS_SPAWN_EVERY,
   RELAY_HITS_PER_STAGE: RELAY_HITS_PER_STAGE,
   FLOWER_STAGE_MAX: FLOWER_STAGE_MAX,
   TAP_COOLDOWN: TAP_COOLDOWN,
@@ -281,8 +326,11 @@ var PUBLIC_API = {
   OVERHEAT_LOCK: OVERHEAT_LOCK,
   curveAt: curveAt,
   showTimeAt: showTimeAt,
+  bonusShowTimeAt: bonusShowTimeAt,
   spawnIntervalAt: spawnIntervalAt,
   sleepRatioAt: sleepRatioAt,
+  isBonusSpawn: isBonusSpawn,
+  hitScoreFor: hitScoreFor,
   relayProgressAt: relayProgressAt,
   advanceRelay: advanceRelay,
   pickSpawnKind: pickSpawnKind,

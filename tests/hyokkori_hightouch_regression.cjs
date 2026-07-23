@@ -38,28 +38,47 @@ function mulberry32(seed) {
 {
   const sampleTimes = [-10, 0, 5, 10, 20, 30, 45, 60, 90, 9999];
 
+  assert.equal(L.GAME_DURATION, 30, "1ゲームは30秒");
+  assert.equal(L.SHOW_TIME_MAX, 1.65, "開始時の表示時間は1.65秒");
+  assert.equal(L.SHOW_TIME_MIN, 1.25, "終盤の表示時間は1.25秒");
+  assert.equal(L.SPAWN_INTERVAL_MAX_MS, 1250, "開始時の出現間隔は1250ms");
+  assert.equal(L.SPAWN_INTERVAL_MIN_MS, 900, "終盤の出現間隔は900ms");
+  assert.equal(L.SLEEP_RATIO_MIN, 0.18, "開始時のsleeping比率は18%");
+  assert.equal(L.SLEEP_RATIO_MAX, 0.28, "終盤のsleeping比率は28%");
+  assert.equal(L.SLEEP_PENALTY, 0, "sleepingタップでは減点しない");
+
   let prevShow = Infinity;
+  let prevBonusShow = Infinity;
   for (const t of sampleTimes) {
     const v = L.showTimeAt(t);
     assert.ok(Number.isFinite(v), `showTimeAt(${t}) は有限値`);
     assert.ok(v <= prevShow + 1e-9, `showTimeAt は単調非増加であること (t=${t})`);
-    assert.ok(v <= 1.5 + 1e-9 && v >= 1.0 - 1e-9, `showTimeAt は 1.0〜1.5 にクランプされる (t=${t} got=${v})`);
+    assert.ok(v <= 1.65 + 1e-9 && v >= 1.25 - 1e-9, `showTimeAt は 1.25〜1.65 にクランプされる (t=${t} got=${v})`);
     prevShow = v;
-  }
-  assert.equal(L.showTimeAt(0), 1.5, "showTimeAt(0) は 1.5 から始まる");
-  assert.ok(Math.abs(L.showTimeAt(60) - 1.0) < 1e-9, "showTimeAt(60) は 1.0 に達する");
 
-  assert.equal(L.spawnIntervalAt(0), 1100, "spawnIntervalAt(0) は 1100ms から始まる");
-  assert.ok(L.spawnIntervalAt(60) >= 650 - 1e-9, "spawnIntervalAt(60) は下限650ms以上");
-  assert.ok(L.spawnIntervalAt(120) >= 650 - 1e-9, "spawnIntervalAt(120) でも下限650ms以上");
-  assert.ok(L.spawnIntervalAt(9999) >= 650 - 1e-9 && Number.isFinite(L.spawnIntervalAt(9999)), "極端な t でも有限かつ下限クランプ");
+    const bonusV = L.bonusShowTimeAt(t);
+    assert.ok(Number.isFinite(bonusV), `bonusShowTimeAt(${t}) は有限値`);
+    assert.ok(bonusV <= prevBonusShow + 1e-9, `bonusShowTimeAt は単調非増加であること (t=${t})`);
+    assert.ok(bonusV >= v - 1e-9 && bonusV <= 1.90 + 1e-9, `bonusShowTimeAt(${t}) は通常以上・1.90秒以下`);
+    prevBonusShow = bonusV;
+  }
+  assert.equal(L.showTimeAt(0), 1.65, "showTimeAt(0) は1.65から始まる");
+  assert.ok(Math.abs(L.showTimeAt(30) - 1.25) < 1e-9, "showTimeAt(30) は1.25に達する");
+  assert.ok(Math.abs(L.bonusShowTimeAt(0) - 1.90) < 1e-9, "開始時のbonus表示は1.90秒でクランプ");
+  assert.ok(Math.abs(L.bonusShowTimeAt(30) - 1.55) < 1e-9, "終盤のbonus表示は通常より0.30秒長い");
+
+  assert.equal(L.spawnIntervalAt(0), 1250, "spawnIntervalAt(0) は1250msから始まる");
+  assert.ok(Math.abs(L.spawnIntervalAt(30) - 900) < 1e-9, "spawnIntervalAt(30) は900msに達する");
+  assert.ok(L.spawnIntervalAt(120) >= 900 - 1e-9, "spawnIntervalAt(120) でも下限900ms以上");
+  assert.ok(L.spawnIntervalAt(9999) >= 900 - 1e-9 && Number.isFinite(L.spawnIntervalAt(9999)), "極端な t でも有限かつ下限クランプ");
 
   for (const t of sampleTimes) {
     const ratio = L.sleepRatioAt(t);
     assert.ok(Number.isFinite(ratio), `sleepRatioAt(${t}) は有限値`);
-    assert.ok(ratio >= 0 && ratio <= 0.40 + 1e-9, `sleepRatioAt(${t}) は 0〜0.40 に収まる (got ${ratio})`);
+    assert.ok(ratio >= 0.18 - 1e-9 && ratio <= 0.28 + 1e-9, `sleepRatioAt(${t}) は0.18〜0.28に収まる (got ${ratio})`);
   }
-  assert.ok(Math.abs(L.sleepRatioAt(0) - 0.25) < 1e-9, "sleepRatioAt(0) は 0.25 から始まる");
+  assert.ok(Math.abs(L.sleepRatioAt(0) - 0.18) < 1e-9, "sleepRatioAt(0) は0.18から始まる");
+  assert.ok(Math.abs(L.sleepRatioAt(30) - 0.28) < 1e-9, "sleepRatioAt(30) は0.28に達する");
 }
 
 // ── 2. pickSpawnKind: 3連続sleeping禁止 ────────────────────────────
@@ -79,10 +98,50 @@ function mulberry32(seed) {
   assert.equal(k4, "sleeping", "直近2体が awake→sleeping の場合は強制介入しない");
 }
 
+// ── 2b. 7体ごとの決定論ボーナス ────────────────────────────────────
+{
+  assert.equal(L.BONUS_SPAWN_EVERY, 7, "ボーナスは実出現7体ごと");
+  assert.equal(typeof L.isBonusSpawn, "function", "isBonusSpawn が公開される");
+  assert.equal(typeof L.bonusShowTimeAt, "function", "bonusShowTimeAt が公開される");
+  const bonusPositions = [];
+  for (let actualSpawnCount = 1; actualSpawnCount <= 30; actualSpawnCount++) {
+    if (L.isBonusSpawn(actualSpawnCount)) bonusPositions.push(actualSpawnCount);
+  }
+  assert.deepEqual(bonusPositions, [7, 14, 21, 28], "30体中のボーナス位置は7・14・21・28で固定");
+  for (const invalid of [0, -7, NaN, Infinity, 7.5, undefined, null]) {
+    assert.equal(L.isBonusSpawn(invalid), false, `不正な実出現数 ${String(invalid)} はボーナスにしない`);
+  }
+}
+
 // ── 3. registerTap 基礎 ─────────────────────────────────────────────
 {
+  assert.equal(L.NORMAL_HIT_SCORE, 10, "通常の基本点は10");
+  assert.equal(L.BONUS_HIT_SCORE, 30, "ボーナスの基本点は30");
+  assert.equal(L.MAX_COMBO_BONUS, 10, "コンボ加点上限は10");
+  assert.equal(typeof L.hitScoreFor, "function", "hitScoreFor が公開される");
+
+  const scoreCases = [
+    { before: 0, target: "awake", next: 1, base: 10, comboBonus: 0, delta: 10, isBonus: false },
+    { before: 1, target: "awake", next: 2, base: 10, comboBonus: 1, delta: 11, isBonus: false },
+    { before: 10, target: "awake", next: 11, base: 10, comboBonus: 10, delta: 20, isBonus: false },
+    { before: 11, target: "awake", next: 12, base: 10, comboBonus: 10, delta: 20, isBonus: false },
+    { before: 0, target: "bonus", next: 1, base: 30, comboBonus: 0, delta: 30, isBonus: true },
+    { before: 2, target: "bonus", next: 3, base: 30, comboBonus: 2, delta: 32, isBonus: true },
+    { before: 999, target: "bonus", next: 1000, base: 30, comboBonus: 10, delta: 40, isBonus: true },
+    { before: NaN, target: "awake", next: 1, base: 10, comboBonus: 0, delta: 10, isBonus: false },
+    { before: -5, target: "bonus", next: 1, base: 30, comboBonus: 0, delta: 30, isBonus: true }
+  ];
+  for (const c of scoreCases) {
+    assert.deepEqual(
+      L.hitScoreFor(c.before, c.target),
+      { nextCombo: c.next, baseScore: c.base, comboBonus: c.comboBonus, scoreDelta: c.delta, isBonus: c.isBonus },
+      `hitScoreFor(${String(c.before)}, ${c.target}) の内訳が一致`
+    );
+  }
+
   // awake: +10+min(combo,10)、ボーナス上限10をループで検証
   const state = L.createInitialState();
+  assert.equal(state.bonusHits, 0, "初期bonusHitsは0");
   let t = 0;
   for (let i = 0; i < 15; i++) {
     const before = state.score;
@@ -90,16 +149,38 @@ function mulberry32(seed) {
     const res = L.registerTap(state, t, "awake");
     assert.equal(res.result, "hit", `#${i}: awakeタップは hit`);
     assert.equal(res.scoreDelta, 10 + expectedBonus, `#${i}: scoreDelta は 10+min(combo,10)`);
+    assert.equal(res.combo, i + 1, `#${i}: 戻り値comboがリアルタイム値と一致`);
+    assert.equal(res.bestCombo, i + 1, `#${i}: 戻り値bestComboが更新される`);
+    assert.equal(res.baseScore, 10, `#${i}: 通常のbaseScoreは10`);
+    assert.equal(res.comboBonus, expectedBonus, `#${i}: comboBonus内訳が一致`);
+    assert.equal(res.isBonus, false, `#${i}: 通常hitはisBonus=false`);
     assert.equal(state.score, before + 10 + expectedBonus, `#${i}: score加算が一致`);
     t += 1.0; // クールダウン(0.22s)より十分長い間隔で連打を回避
   }
   assert.ok(state.bestCombo >= 15, "bestCombo が更新され続けている");
 
-  // sleeping: -5・score floor 0・combo=0・lock 1.0s
+  // normal → normal → bonus: 10 + 11 + 32 = 53、リレーは3回分だけ。
+  const mixed = L.createInitialState();
+  const m1 = L.registerTap(mixed, 0, "awake");
+  const m2 = L.registerTap(mixed, 1, "awake");
+  const m3 = L.registerTap(mixed, 2, "bonus");
+  assert.deepEqual([m1.scoreDelta, m2.scoreDelta, m3.scoreDelta], [10, 11, 32], "通常・通常・ボーナスの加点列");
+  assert.equal(mixed.score, 53, "通常・通常・ボーナスの合計は53点");
+  assert.equal(mixed.combo, 3, "3回連続成功で3コンボ");
+  assert.equal(mixed.bestCombo, 3, "最大コンボも3");
+  assert.equal(mixed.hits, 3, "bonusを含む成功数は3");
+  assert.equal(mixed.bonusHits, 1, "bonus成功数だけを別記録");
+  assert.equal(mixed.relayHits, 3, "bonusもリレーは1回分だけ進める");
+  assert.equal(m3.baseScore, 30, "bonusのbaseScoreは30");
+  assert.equal(m3.comboBonus, 2, "3コンボ目のcomboBonusは2");
+  assert.equal(m3.isBonus, true, "bonus hitのメタデータ");
+
+  // sleeping: 減点なし・combo=0・bestCombo維持・lock 1.0s
   const s2 = L.createInitialState();
   const r2a = L.registerTap(s2, 0, "sleeping");
   assert.equal(r2a.result, "sleepPenalty");
-  assert.equal(s2.score, 0, "score が floor 0 でマイナスにならない");
+  assert.equal(s2.score, 0, "sleepingタップでもscoreは0のまま");
+  assert.equal(r2a.scoreDelta, 0, "sleepingタップのscoreDeltaは0");
   assert.equal(s2.combo, 0, "sleepingタップでcomboが0");
   assert.equal(s2.inputLockUntil, 1.0, "sleepingタップ後は1.0秒ロック");
 
@@ -107,10 +188,12 @@ function mulberry32(seed) {
   L.registerTap(s2b, 0, "awake"); // combo=1, score=10
   L.registerTap(s2b, 1.0, "awake"); // combo=2, score=10+11=21
   const scoreBefore = s2b.score;
+  const bestBefore = s2b.bestCombo;
   const r2c = L.registerTap(s2b, 2.0, "sleeping");
-  assert.equal(s2b.score, Math.max(0, scoreBefore - 5), "sleepingタップで-5 (floor付き)");
-  assert.equal(r2c.scoreDelta, -5, "scoreDeltaは-5");
+  assert.equal(s2b.score, scoreBefore, "sleepingタップでも得点は減らない");
+  assert.equal(r2c.scoreDelta, 0, "sleepingのscoreDeltaは0");
   assert.equal(s2b.combo, 0, "sleepingタップでcomboリセット");
+  assert.equal(s2b.bestCombo, bestBefore, "sleepingタップでも最大コンボは維持");
 
   // empty: combo=0・lock 0.35s・score不変
   const s3 = L.createInitialState();
@@ -121,7 +204,21 @@ function mulberry32(seed) {
   assert.equal(r3.scoreDelta, 0, "emptyタップはscoreDelta 0");
   assert.equal(s3.score, scoreBeforeEmpty, "emptyタップでscoreが不変");
   assert.equal(s3.combo, 0, "emptyタップでcomboリセット");
+  assert.equal(s3.bestCombo, 1, "emptyタップでも最大コンボは維持");
   assert.equal(s3.inputLockUntil, 1.35, "emptyタップ後は0.35秒ロック");
+
+  // 無入力の取り逃しは、急かさないためcomboを維持する。
+  const missed = L.createInitialState();
+  L.registerTap(missed, 0, "awake");
+  L.registerTap(missed, 1, "bonus");
+  const missedSnapshot = { score: missed.score, combo: missed.combo, bestCombo: missed.bestCombo, relayHits: missed.relayHits };
+  assert.equal(L.missedAwake(missed), missed, "missedAwakeは同じstateを返す");
+  assert.deepEqual(
+    { score: missed.score, combo: missed.combo, bestCombo: missed.bestCombo, relayHits: missed.relayHits },
+    missedSnapshot,
+    "awake / bonusの自然退場では得点・combo・最大combo・リレーをすべて維持"
+  );
+  assert.equal(L.missedAwake(null), null, "stateなしでも安全");
 }
 
 // ── 3b. ひかりのたねリレー ─────────────────────────────────────────
@@ -178,6 +275,17 @@ function mulberry32(seed) {
     }
   }
 
+  // 4回目がbonusでも花壇は1段階だけ育ち、bonusだから複数回分にはならない。
+  const bonusBoundary = L.createInitialState();
+  for (let hit = 1; hit <= 3; hit++) L.registerTap(bonusBoundary, hit, "awake");
+  const bonusFourth = L.registerTap(bonusBoundary, 4, "bonus");
+  assert.equal(bonusFourth.result, "hit", "4回目のbonusも成功扱い");
+  assert.equal(bonusFourth.isBonus, true, "4回目はbonusメタデータ付き");
+  assert.equal(bonusBoundary.relayHits, 4, "bonusを含めてリレーは合計4回分");
+  assert.equal(bonusBoundary.relayStep, 0, "4回境界でrelayStepは0に戻る");
+  assert.equal(bonusBoundary.flowerStage, 1, "bonusでも花壇は1段階だけ育つ");
+  assert.equal(bonusFourth.flowerStageChanged, true, "4回目のbonusで成長通知を返す");
+
   // sleeping / whiff / locked / overheat / missed awake のどれでも進行を失わない。
   const protectedState = L.createInitialState();
   for (let hit = 0; hit < 4; hit++) L.registerTap(protectedState, hit, "awake");
@@ -221,6 +329,8 @@ function mulberry32(seed) {
   const rLocked = L.registerTap(state, 0.1, "awake");
   assert.equal(rLocked.result, "locked", "0.1秒後 (0.22秒クールダウン未経過) は locked");
   assert.equal(state.score, scoreAfterFirstHit, "locked中はscoreが変化しない");
+  assert.equal(state.combo, 1, "locked入力ではcomboをリセットしない");
+  assert.equal(state.bestCombo, 1, "locked入力では最大comboも変えない");
 
   const rHit = L.registerTap(state, 0.25, "awake");
   assert.equal(rHit.result, "hit", "0.25秒後 (クールダウン経過後) は hit になる");
@@ -231,7 +341,7 @@ function mulberry32(seed) {
 {
   const SEED = 20260722;
 
-  // 60秒分の出現スケジュールを構築 (両戦略に同一スケジュールを与える)。
+  // 30秒分の出現スケジュールを構築 (両戦略に同一スケジュールを与える)。
   function buildSchedule(seed) {
     const rand = mulberry32(seed);
     const state = L.createInitialState();
@@ -239,9 +349,10 @@ function mulberry32(seed) {
     const occupied = []; // 現在埋まっている穴 index の配列 (簡易モデル: showUntilで解放)
     const schedule = [];
     let spawnTimerMs = 0;
-    const DT = 0.05; // 50ms刻みでスケジュール構築 (spawnInterval最小650msより十分細かい)
+    let actualSpawnCount = 0;
+    const DT = 0.05; // 50ms刻みでスケジュール構築 (spawnInterval最小900msより十分細かい)
 
-    while (state.elapsed < 60) {
+    while (state.elapsed < L.GAME_DURATION) {
       // 期限切れの占有穴を解放
       for (let i = occupied.length - 1; i >= 0; i--) {
         if (state.elapsed >= occupied[i].showUntil) occupied.splice(i, 1);
@@ -253,10 +364,13 @@ function mulberry32(seed) {
         const occupiedIdx = occupied.map(o => o.hole);
         const hole = L.pickHole(occupiedIdx, rand);
         if (hole !== null) {
-          const kind = L.pickSpawnKind(state.elapsed, recentKinds, rand);
-          recentKinds.push(kind);
+          actualSpawnCount += 1;
+          const kind = L.isBonusSpawn(actualSpawnCount)
+            ? "bonus"
+            : L.pickSpawnKind(state.elapsed, recentKinds, rand);
+          recentKinds.push(kind === "bonus" ? "awake" : kind);
           if (recentKinds.length > 6) recentKinds.shift();
-          const showTime = L.showTimeAt(state.elapsed);
+          const showTime = kind === "bonus" ? L.bonusShowTimeAt(state.elapsed) : L.showTimeAt(state.elapsed);
           const tShow = state.elapsed;
           const tHide = state.elapsed + showTime;
           occupied.push({ hole, showUntil: tHide });
@@ -280,20 +394,20 @@ function mulberry32(seed) {
   const scheduleB = buildSchedule(SEED);
   const scheduleC = buildSchedule(SEED);
 
-  // 戦略A (honest): 各awake出現の tShow+0.15 にその穴だけをタップする。
+  // 戦略A (honest): 各awake/bonus出現の tShow+0.15 にその穴だけをタップする。
   function runHonest(schedule) {
     const state = L.createInitialState();
     const taps = [];
     for (const item of schedule) {
-      if (item.kind === "awake") taps.push({ t: item.tShow + 0.15, hole: item.hole });
+      if (item.kind === "awake" || item.kind === "bonus") taps.push({ t: item.tShow + 0.15, hole: item.hole });
     }
     taps.sort((a, b) => a.t - b.t);
     for (const tap of taps) {
-      if (tap.t > 60) continue;
+      if (tap.t > L.GAME_DURATION) continue;
       const target = resolveTarget(schedule, tap.hole, tap.t);
       L.registerTap(state, tap.t, target);
     }
-    L.tickTimer(state, 60);
+    L.tickTimer(state, L.GAME_DURATION);
     return state;
   }
 
@@ -301,12 +415,12 @@ function mulberry32(seed) {
   function runMachineGun(schedule, stepMs) {
     const state = L.createInitialState();
     let hole = 0;
-    for (let t = 0; t <= 60; t += stepMs / 1000) {
+    for (let t = 0; t <= L.GAME_DURATION; t += stepMs / 1000) {
       const target = resolveTarget(schedule, hole, t);
       L.registerTap(state, t, target);
       hole = (hole + 1) % L.HOLE_COUNT;
     }
-    L.tickTimer(state, 60);
+    L.tickTimer(state, L.GAME_DURATION);
     return state;
   }
 
@@ -321,6 +435,7 @@ function mulberry32(seed) {
   assert.ok(stateSpam60.overheatCount >= 1, "60ms連打でOVERHEATが実際に発火する");
   assert.ok(stateSpam16.overheatCount >= 1, "16ms連打でOVERHEATが実際に発火する");
   assert.ok(stateHonest.score > 0, "honest戦略自体が成立している (テストの自己健全性)");
+  assert.ok(stateHonest.bonusHits >= 1, "30秒のhonest戦略で決定論bonusを実際に獲得できる");
   assert.equal(stateHonest.overheatCount, 0, "honest戦略はSPAM_THRESHOLDに一度も達しない (正当プレイ誤爆なし)");
 }
 
@@ -336,37 +451,53 @@ function mulberry32(seed) {
     t += 0.05;
   }
   assert.ok(overheated, "前提: 連打でOVERHEATが発火している");
+  assert.equal(state.combo, 0, "OVERHEATで現在comboをリセットする");
+  assert.equal(state.bestCombo, 0, "成功前のOVERHEATでは最大comboは0のまま");
   const lockedAt = state.inputLockUntil;
 
   // 恒久ロックではない: OVERHEAT_LOCK 経過後の単発タップは hit になる
   const tAfter = lockedAt + 0.01;
   const resAfter = L.registerTap(state, tAfter, "awake");
   assert.equal(resAfter.result, "hit", "OVERHEAT_LOCK経過後の単発タップはhitになる (恒久ロックは連打継続時のみ)");
+
+  const streak = L.createInitialState();
+  L.registerTap(streak, 0, "awake");
+  L.registerTap(streak, 1, "bonus");
+  for (let i = 0; i < L.SPAM_THRESHOLD; i++) {
+    L.registerTap(streak, 2 + i * 0.05, "empty");
+  }
+  assert.ok(streak.overheatCount >= 1, "成功後の連打でもOVERHEATが発火する");
+  assert.equal(streak.combo, 0, "成功後のOVERHEATで現在comboは0");
+  assert.equal(streak.bestCombo, 2, "OVERHEATでも達成済み最大comboは維持");
 }
 
 // ── 7. タイマー ──────────────────────────────────────────────────────
 {
   const state = L.createInitialState();
-  for (let i = 0; i < 61; i++) L.tickTimer(state, 1);
-  assert.equal(state.finished, true, "61秒分 tickTimer すると finished === true");
+  L.tickTimer(state, 29.999);
+  assert.equal(state.finished, false, "29.999秒ではまだfinishedではない");
+  assert.ok(Math.abs(state.elapsed - 29.999) < 1e-9, "29.999秒を保持する");
+  L.tickTimer(state, 0.001);
+  assert.equal(state.finished, true, "30秒到達でfinished === true");
+  assert.equal(state.elapsed, 30, "elapsedは30秒でクランプ");
 
   const resAfterFinish = L.registerTap(state, state.time, "awake");
   assert.equal(resAfterFinish.result, "finished", "finished後のregisterTapはfinished");
 
   // finished間際のsleepingタップの1.0sロックがsettling中に解除される
   const s2 = L.createInitialState();
-  L.tickTimer(s2, 59.5);
-  assert.equal(s2.finished, false, "前提: 59.5秒時点ではまだfinishedではない");
+  L.tickTimer(s2, 29.5);
+  assert.equal(s2.finished, false, "前提: 29.5秒時点ではまだfinishedではない");
   const rSleep = L.registerTap(s2, s2.time, "sleeping");
   assert.equal(rSleep.result, "sleepPenalty");
-  const lockUntil = s2.inputLockUntil; // 59.5 + 1.0 = 60.5
-  assert.ok(lockUntil > 60, "前提: ロック解除時刻がGAME_DURATION(60)を超えている");
+  const lockUntil = s2.inputLockUntil; // 29.5 + 1.0 = 30.5
+  assert.ok(lockUntil > L.GAME_DURATION, "前提: ロック解除時刻がGAME_DURATIONを超えている");
 
-  L.tickTimer(s2, 0.9); // time=60.4 -> elapsedは60でクランプされfinished=true。まだlockUntil(60.5)未満
-  assert.equal(s2.finished, true, "60秒超過でfinishedになる");
+  L.tickTimer(s2, 0.9); // time=30.4 -> elapsedは30でクランプされfinished=true。まだlockUntil(30.5)未満
+  assert.equal(s2.finished, true, "30秒超過でfinishedになる");
   assert.ok(s2.time < lockUntil, "finished直後はまだロック解除時刻未満のはず");
 
-  L.tickTimer(s2, 0.5); // time=60.9, settling中を模擬。壁時計が進みロック解除時刻を超える
+  L.tickTimer(s2, 0.5); // time=30.9, settling中を模擬。壁時計が進みロック解除時刻を超える
   assert.ok(s2.time >= lockUntil, "settling中でも壁時計が進みロック解除時刻を超える");
 }
 
@@ -400,8 +531,9 @@ function mulberry32(seed) {
     "共通モジュールは logic.js より前に読み込まれる");
   assert.ok(idxLogic < idxGame, "logic.js は game.js より前に読み込まれる");
 
-  assert.match(gameJs, /saveHighScore\(\s*['"]hyokkori-hightouch['"]/, "game.js が saveHighScore('hyokkori-hightouch', ...) を呼ぶ");
-  assert.match(gameJs, /showHighScoreTable\(\s*['"]hyokkori-hightouch['"]/, "game.js が showHighScoreTable('hyokkori-hightouch', ...) を呼ぶ");
+  assert.match(gameJs, /var\s+HIGH_SCORE_GAME_ID\s*=\s*['"]hyokkori-hightouch-v2['"]/, "30秒版は旧60秒版と分けたハイスコアIDを使う");
+  assert.match(gameJs, /saveHighScore\(\s*HIGH_SCORE_GAME_ID\s*,/, "game.js が30秒版IDで saveHighScore(...) を呼ぶ");
+  assert.match(gameJs, /showHighScoreTable\(\s*HIGH_SCORE_GAME_ID\s*,/, "game.js が30秒版IDで showHighScoreTable(...) を呼ぶ");
 }
 
 // ── 10. AR (画像縦横比) 違反禁止 (regex) ─────────────────────────────
@@ -432,15 +564,17 @@ function mulberry32(seed) {
     "mechanic_light_seed.png",
     "pono_title_highfive.png",
     "pono_result_bloom.png",
+    "friend_hikari_momonga_bonus_awake.png",
     ...["araiguma", "fukurou", "harinezumi", "karasu", "kitsune", "kojika", "risu", "usagi"]
       .flatMap(id => [`friend_${id}_awake.png`, `friend_${id}_sleeping.png`]),
   ];
-  assert.equal(assetNames.length, 32, "最終候補は32点");
+  assert.equal(assetNames.length, 33, "ボーナスキャラを含む実行時画像は33点");
   for (const name of assetNames) {
     assert.ok(fs.existsSync(path.join(root, "assets/images/hyokkori-hightouch", name)), `${name} が配置されている`);
   }
   assert.match(gameJs, /friend_araiguma_awake\.png/, "awake専用画像を参照する");
   assert.match(gameJs, /friend_araiguma_sleeping\.png/, "sleeping専用画像を参照する");
+  assert.match(gameJs, /friend_hikari_momonga_bonus_awake\.png/, "見た目で区別できるボーナス専用画像を参照する");
   assert.match(indexHtml + gameJs, /fx_sleep_moon_cloud\.png/, "閉眼ポーズに加えて月雲を使う");
   assert.match(stylesCss, /\.is-sleeping/, "styles.css に .is-sleeping クラスが存在する");
   assert.doesNotMatch(stylesCss, /grayscale/, "睡眠状態を色だけで区別しない");
@@ -450,6 +584,30 @@ function mulberry32(seed) {
   assert.match(gameJs, /forbidden\.push\(seedHolderHole\)/, "たね保持場所を次の出現候補から外す");
   assert.match(indexHtml, /id="flowerbed-img"/, "花壇4段階の表示先が存在する");
   assert.match(indexHtml, /id="light-seed"/, "ひかりのたね表示が存在する");
+}
+
+// ── 11b. ボーナス出現・リアルタイムコンボ・最大記録UI ──────────────
+{
+  assert.match(gameJs, /actualSpawnCount\s*\+=\s*1|actualSpawnCount\+\+/, "実際に配置できた出現数だけを数える");
+  assert.match(gameJs, /L\.isBonusSpawn\(\s*actualSpawnCount\s*\)/, "実出現数を7体ごとのボーナス判定へ渡す");
+  assert.match(gameJs, /L\.bonusShowTimeAt\(/, "ボーナスには見分けやすい専用表示時間を使う");
+  assert.match(gameJs, /target\s*=\s*[^;]*isBonus\s*\?\s*['"]bonus['"]\s*:/, "ボーナスタップを通常awakeとは別の得点対象として渡す");
+  assert.match(gameJs, /var\s+BEST_COMBO_KEY\s*=\s*['"]pono_hyokkori_best_combo_v2['"]/, "最大コンボ記録はゲーム専用キーで保存する");
+  assert.match(gameJs, /localStorage\.setItem\(\s*BEST_COMBO_KEY/, "最大コンボ記録をlocalStorageへ保存する");
+  assert.match(gameJs, /Math\.max\(\s*lifetimeBestCombo\s*,\s*readBestComboRecord\(\)\s*\)/, "終了時に別タブの最新記録を再読込し、小さい値で上書きしない");
+  assert.match(gameJs, /prefersReducedMotion\(\)\s*\?\s*620\s*:\s*300/, "うごきをへらす設定でも加点表示の静止時間を残す");
+  assert.match(gameJs, /\[BONUS_PARTNER\.awake\]\.concat\(/, "ボーナス画像をローカルpreloadの先頭で優先する");
+  assert.match(indexHtml, /rel=["']preload["'][^>]*friend_hikari_momonga_bonus_awake\.png/, "ボーナス画像をHTMLからも先読みする");
+
+  for (const id of ["combo-hud", "combo-count", "combo-status-sr", "result-combo", "result-best-combo", "result-combo-new"]) {
+    assert.match(indexHtml, new RegExp(`id=["']${id}["']`), `${id} の表示先が存在する`);
+  }
+  assert.match(indexHtml, /id=["']combo-status-sr["'][^>]*role=["']status["'][^>]*aria-live=["']polite["']/, "常時存在する読み上げ用コンボstatusがある");
+  assert.match(indexHtml, /class=["'][^"']*hh-bonus-badge[^"']*["'][^>]*>30てん</, "ボーナスキャラに30てんの視覚ラベルがある");
+  assert.match(indexHtml, /class=["'][^"']*hh-score-pop/, "リアルタイム加点の表示先がある");
+  assert.match(stylesCss, /#combo-hud\.is-visible/, "2コンボ以上を見せるHUD状態がある");
+  assert.match(stylesCss, /\.hh-char-wrap\.is-visible\.is-bonus/, "ボーナスを通常キャラと見分ける表示状態がある");
+  assert.match(stylesCss, /\.hh-score-pop\.is-bonus/, "ボーナス加点を見分ける表示状態がある");
 }
 
 // ── 12. play.html 統合検証 (donguri-wakekko 登録漏れの再発防止) ──────
@@ -492,7 +650,8 @@ function mulberry32(seed) {
 
 // ── 14. 難易度選択なし ───────────────────────────────────────────────
 {
-  assert.match(logicJsSrc, /GAME_DURATION\s*=\s*60\b/, "logic.js に GAME_DURATION = 60 (秒) が定義されている");
+  assert.match(logicJsSrc, /GAME_DURATION\s*=\s*30\b/, "logic.js に GAME_DURATION = 30 (秒) が定義されている");
+  assert.match(indexHtml, /id=["']hud-timer["'][^>]*>⏱\s*30</, "初期HUDも30秒表示でJS更新前の60秒を見せない");
   assert.doesNotMatch(indexHtml, /diff-btn/, "index.html に難易度選択UI (diff-btn) が存在しない");
 }
 

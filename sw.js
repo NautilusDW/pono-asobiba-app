@@ -1,5 +1,15 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2341: guragura-seesaw「タップで はじめる」無反応の再発 (2026-07-22 に一度修正した
+// logic.js 読込リトライは健在だったが、横画面誤検知ガード (#landscape-notice) が
+// 旧来の innerHeight>=innerWidth 素朴比較のままだったため、WebView起動直後/回転中の
+// 中間resize等でinnerWidth/innerHeightが不正確な値を返すと誤って表示されボタンを
+// 塞いでいた) を修正。姉妹ゲーム hyokkori-hightouch 確立済みパターンを移植し、
+// screen.orientation.type優先+matchMedia(orientation)フォールバック+fail-open+
+// try/catch二重防御 (computeIsPortrait/isCoarsePointer個別 + boot()全体をbootInner()
+// 経由でtry/catch化) に統一。pageshow/load/visualViewport resizeの再評価トリガーも追加。
+// ゲーム個別ファイルは network-first 配信のため CRITICAL_ASSETS には追加しない。
+// play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSION と同期 (2341)。
 // v2340: ひょっこりハイタッチをGPT Image 2製の専用32画像へ刷新し、起きている
 // 友だちへの成功時だけ「ひかりのたね」が別の隠れ場所へ移るリレーと、4回ごとの
 // 花壇3段階成長を追加。専用awake/sleeping画像、森背景、隠れ場所、開始/結果、FX、
@@ -809,7 +819,7 @@
 // preventDefault)。水やり成功フィードバック(バッジ/演出/flash文言)と常設ステータスバー
 // を追加し、#stage 背景を cover→contain に防御的変更 (ひし形頂点欠け不能化)。
 // play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSION と同期 (2335)。
-const CACHE_VERSION = 2340;
+const CACHE_VERSION = 2341;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

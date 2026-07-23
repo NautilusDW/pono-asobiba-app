@@ -21,7 +21,8 @@
 <script src="../common/menu.js"></script>
 <script src="../common/highscore.js"></script>
 
-<link rel="stylesheet" href="styles.css?v=20260723-5">
+<link rel="preload" as="image" href="../assets/images/hyokkori-hightouch/friend_hikari_momonga_bonus_awake.png">
+<link rel="stylesheet" href="styles.css?v=20260723-6">
 </head>
 <body>
 
@@ -37,7 +38,11 @@
 <div id="stage">
 
   <div id="hud">
-    <div class="hud-pill hud-timer" id="hud-timer">⏱ 60</div>
+    <div class="hud-pill hud-timer" id="hud-timer">⏱ 30</div>
+    <div class="hud-pill" id="combo-hud" aria-hidden="true">
+      <span id="combo-count">0</span><span class="combo-label">コンボ</span>
+    </div>
+    <div class="hh-sr-only" id="combo-status-sr" role="status" aria-live="polite" aria-atomic="true"></div>
     <div class="hud-pill hud-score" id="hud-score">🖐️ 0</div>
   </div>
 
@@ -45,7 +50,7 @@
     <img class="start-pono icon" src="../assets/images/hyokkori-hightouch/pono_title_highfive.png" alt="ポノが ハイタッチを しているよ" draggable="false">
     <div class="start-copy">
       <div class="title" id="start-title">ひょっこりハイタッチ</div>
-      <div class="desc">ひかりの たねを つないで<br>おはなを さかせよう！</div>
+      <div class="desc">30びょうで コンボを つないで<br>おはなを さかせよう！</div>
       <button class="tap-btn" id="start-btn">タップで はじめる</button>
     </div>
   </div>
@@ -65,6 +70,8 @@
           <span class="hh-sparkle" aria-hidden="true"></span>
           <img class="hh-sleep-fx" src="../assets/images/hyokkori-hightouch/fx_sleep_moon_cloud.png" alt="" draggable="false" aria-hidden="true">
           <img class="hh-hit-fx" src="../assets/images/hyokkori-hightouch/fx_highfive_burst.png" alt="" draggable="false" aria-hidden="true">
+          <span class="hh-bonus-badge" aria-hidden="true">30てん</span>
+          <span class="hh-score-pop" aria-hidden="true"></span>
           <div class="hh-shh-bubble" aria-hidden="true">しーっ</div>
         </div>
       </div>
@@ -100,14 +107,17 @@
         <div class="result-banner" id="result-title">おしまい！</div>
         <div class="result-score" id="result-score">0 てん</div>
         <div id="result-relay">0かい つながったよ</div>
-        <div class="result-new hidden" id="result-new">しんきろく！</div>
+        <div id="result-combo">さいだい 0コンボ</div>
+        <div id="result-best-combo">きろく 0コンボ</div>
+        <div class="result-combo-new hidden" id="result-combo-new">コンボ しんきろく！</div>
+        <div class="result-new hidden" id="result-new">スコア しんきろく！</div>
         <button class="result-btn" id="retry-btn">もういちど</button>
       </div>
     </div>
   </div>
 </div>
 
-<script src="js/logic.js?v=20260723-5"></script>
-<script src="js/game.js?v=20260723-5"></script>
+<script src="js/logic.js?v=20260723-6"></script>
+<script src="js/game.js?v=20260723-6"></script>
 </body>
 </html>
