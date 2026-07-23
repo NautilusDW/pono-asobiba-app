@@ -848,14 +848,30 @@ namespace Pono.KawaGlint.Rendering
             var velocityOverLifetime = system.velocityOverLifetime;
             velocityOverLifetime.enabled = true;
             velocityOverLifetime.space = ParticleSystemSimulationSpace.World;
+            // NOTE: ParticleSystem.VelocityOverLifetimeModule has no "separateAxes" toggle (that
+            // property lives on NoiseModule, not this module -- verified against the installed
+            // UnityEngine.ParticleSystemModule.dll; an earlier attempt to call it here failed to
+            // compile). Instead this module shares ONE curve-evaluation mode across ALL of its
+            // curves (x, y, z, orbitalX/Y/Z, orbitalOffsetX/Y/Z, radial, speedModifier) -- setting
+            // x/y/z to the two-constant constructor fixes the module's mode to TwoConstants, but
+            // every other curve on the module was left at its untouched default (Constant), and
+            // Unity re-validates that all curves share one mode every single frame, which is
+            // exactly the "Particle Velocity curves must all be in the same mode" spam confirmed
+            // in the checked-in QA player logs. Explicitly zeroing every other curve with the same
+            // two-constant constructor makes the whole module consistently TwoConstants and is a
+            // pure no-op behaviorally (motes never orbit, offset-orbit, move radially, or have
+            // their speed remapped).
             velocityOverLifetime.x = new ParticleSystem.MinMaxCurve(0.05f, 0.2f);
             velocityOverLifetime.y = new ParticleSystem.MinMaxCurve(0.01f, 0.05f); // slight rise
-            // z must be explicitly set to the same "TwoConstants" curve mode as x/y above --
-            // leaving it untouched keeps it in the module's default Constant(0) mode, which Unity
-            // logs every frame as "Particle Velocity curves must all be in the same mode" (all
-            // three axes of one curve-based module must share a mode). Motes never drift in z, so
-            // this is a static zero range in the same mode, not a behavior change.
-            velocityOverLifetime.z = new ParticleSystem.MinMaxCurve(0f, 0f);
+            velocityOverLifetime.z = new ParticleSystem.MinMaxCurve(0f, 0f); // motes never drift in z
+            velocityOverLifetime.orbitalX = new ParticleSystem.MinMaxCurve(0f, 0f);
+            velocityOverLifetime.orbitalY = new ParticleSystem.MinMaxCurve(0f, 0f);
+            velocityOverLifetime.orbitalZ = new ParticleSystem.MinMaxCurve(0f, 0f);
+            velocityOverLifetime.orbitalOffsetX = new ParticleSystem.MinMaxCurve(0f, 0f);
+            velocityOverLifetime.orbitalOffsetY = new ParticleSystem.MinMaxCurve(0f, 0f);
+            velocityOverLifetime.orbitalOffsetZ = new ParticleSystem.MinMaxCurve(0f, 0f);
+            velocityOverLifetime.radial = new ParticleSystem.MinMaxCurve(0f, 0f);
+            velocityOverLifetime.speedModifier = new ParticleSystem.MinMaxCurve(1f, 1f);
 
             var noise = system.noise;
             noise.enabled = true;
@@ -1003,6 +1019,17 @@ namespace Pono.KawaGlint.Rendering
             {
                 Debug.LogError($"KawaGlint: shader not found, falling back: {SpriteUnlitShaderName}");
                 shader = Shader.Find("Sprites/Default");
+            }
+            if (shader == null)
+            {
+                // Last-resort guard: even "Sprites/Default" is missing (a stripped/broken
+                // player, exactly the failure the checked-in QA logs showed). Hidden/
+                // InternalErrorShader ships with every Unity build and is never stripped, so
+                // `new Material(shader)` below never receives null (which would throw) and the
+                // stage keeps rendering -- as an obvious magenta error material -- instead of the
+                // whole builder faulting.
+                Debug.LogError("KawaGlint: Sprites/Default also missing, falling back to Hidden/InternalErrorShader");
+                shader = Shader.Find("Hidden/InternalErrorShader");
             }
             var material = new Material(shader)
             {

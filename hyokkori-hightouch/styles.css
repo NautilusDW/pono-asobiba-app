@@ -1229,10 +1229,6 @@ a:focus-visible {
     width: min(var(--char-width), 112px);
   }
 
-  .hh-hideout {
-    width: min(94%, 190px);
-  }
-
   #result-card {
     width: min(94%, 620px);
     max-height: calc(100% - 4px);

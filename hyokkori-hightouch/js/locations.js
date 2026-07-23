@@ -101,7 +101,7 @@ var LOCATIONS = [
       { x: 82, groundY: 38, depth: 0.86, hideout: 'far', rotate: 0 },
       { x: 27, groundY: 81, depth: 0.95, hideout: 'near', rotate: 0 },
       { x: 72, groundY: 77, depth: 0.97, hideout: 'near', rotate: 0 },
-      { x: 50, groundY: 96, depth: 1.06, hideout: 'near', rotate: 0 }
+      { x: 50, groundY: 94, depth: 1.06, hideout: 'near', rotate: 0 }
     ],
     partnerIds: ['risu', 'harinezumi', 'fukurou', 'karasu', 'kitsune', 'tanuki'],
     bonusPartnerId: 'hikari_momonga'
@@ -132,7 +132,7 @@ var LOCATIONS = [
       }
     },
     slots: [
-      { x: 18, groundY: 47, depth: 0.82, hideout: 'far', rotate: 0 },
+      { x: 13, groundY: 47, depth: 0.82, hideout: 'far', rotate: 0 },
       { x: 80, groundY: 45, depth: 0.86, hideout: 'far', rotate: 0 },
       { x: 20, groundY: 88, depth: 1.04, hideout: 'near', rotate: 0 },
       { x: 80, groundY: 87, depth: 1.02, hideout: 'near', rotate: 0 }

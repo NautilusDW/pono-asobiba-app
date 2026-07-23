@@ -149,6 +149,58 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-07-23T22:18:08Z - つりゲーム川面Unity水シェーダー技術スパイク(KawaGlint)をfable設計+sonnet5並列実装+クロスレビュー+実機ビルド検証で構築
+- **タスク**: つりゲーム川面Unity水シェーダー技術スパイク(KawaGlint)をfable設計+sonnet5並列実装+クロスレビュー+実機ビルド検証で構築
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 0
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {}
+- **サマリ**: 行動ログが空のため分析できません。
+
+
+### 2026-07-23T22:16:05Z - KawaGlint(川づり)Unity技術スパイクのbatchmode検証(setup/build/CLIキャプチャ/視覚判定)
+- **タスク**: KawaGlint(川づり)Unity技術スパイクのbatchmode検証(setup/build/CLIキャプチャ/視覚判定)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 0
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {}
+- **サマリ**: 行動ログが空のため分析できません。
+
+
+### 2026-07-23T21:59:57Z - KawaGlintレビュー指摘(全黒QAスクリーンショット+surface=unavailable)の原因調査と是正
+- **タスク**: KawaGlintレビュー指摘(全黒QAスクリーンショット+surface=unavailable)の原因調査と是正
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 0
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {}
+- **サマリ**: 行動ログが空のため分析できません。
+
+
+### 2026-07-23T21:58:58Z - KawaGlint river stage レビュー指摘の修正 (VelocityOverLifetimeモード不整合バグ修正+QA再撮影)
+- **タスク**: KawaGlint river stage レビュー指摘の修正 (VelocityOverLifetimeモード不整合バグ修正+QA再撮影)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 0
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {}
+- **サマリ**: 行動ログが空のため分析できません。
+
+
 ### 2026-07-23T21:49:05Z - guragura-seesaw × machizukuri クロスオーバー: はたけの収穫サイズ計算(水やり忘れ・虫放置・じっくり待った日数)+やさいスタンド計量リビール実装完了
 - **タスク**: guragura-seesaw × machizukuri クロスオーバー: はたけの収穫サイズ計算(水やり忘れ・虫放置・じっくり待った日数)+やさいスタンド計量リビール実装完了
 - **結果**: 成功
@@ -205,58 +257,6 @@ wrangler deploy                  # master 内容を production に
 - **タスク**: hatake-nikki収穫重さ計算(wiltCount/bugsMissed/extraDays/weightMultiplier)実装+machizukuri橋渡しキュー(common/hatake-harvest-bridge.js)新設
 - **結果**: 成功
 - **理由**: N/A
-- **総アクション数**: 0
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {}
-- **サマリ**: 行動ログが空のため分析できません。
-
-
-### 2026-07-23T21:23:58Z - KawaGlint Module1(refraction) Unity URP実装: KawaRefractionVolume/Feature/Shader新規作成
-- **タスク**: KawaGlint Module1(refraction) Unity URP実装: KawaRefractionVolume/Feature/Shader新規作成
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 0
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {}
-- **サマリ**: 行動ログが空のため分析できません。
-
-
-### 2026-07-23T21:23:28Z - KawaGlint module2 surface: waterline crest+sparkle+foam shader/component
-- **タスク**: KawaGlint module2 surface: waterline crest+sparkle+foam shader/component
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 0
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {}
-- **サマリ**: 行動ログが空のため分析できません。
-
-
-### 2026-07-23T21:04:36Z - Unity licensing re-check + AquaLumina spike setup/build verification
-- **タスク**: Unity licensing re-check + AquaLumina spike setup/build verification
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 0
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {}
-- **サマリ**: 行動ログが空のため分析できません。
-
-
-### 2026-07-23T18:40:35Z - AquaLumina coral decoration reviewer findings: fixed rock-skyline placement bound + slot overlap risk; batchmode compile-verify blocked by sandbox permission
-- **タスク**: AquaLumina coral decoration reviewer findings: fixed rock-skyline placement bound + slot overlap risk; batchmode compile-verify blocked by sandbox permission
-- **結果**: 失敗
-- **理由**: High-severity finding (never compiled/imported, no .meta files) could not be closed in this sandboxed subagent session: Unity 6000.3.19f1 batchmode invocation against the project was denied by the permission system (tried twice, incl. dangerouslyDisableSandbox); a live interactive Editor session already open on this same project (predating the new files) has not auto-imported them either. Medium/low findings were fixed with real code changes (provable runtime-enforced placement bound, tightened overlap constants).
 - **総アクション数**: 0
 - **エラー数**: 0
 - **検出された良いパターン**: なし

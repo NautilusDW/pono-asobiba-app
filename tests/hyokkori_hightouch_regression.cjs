@@ -132,70 +132,75 @@ function mulberry32(seed) {
 
   const expectedSlots = {
     komorebi_clearing: [
-      [29, 46, 0.82, "far", -1.4], [81, 39, 0.88, "far", 1.2],
-      [24, 61, 0.93, "near", 0.8], [76, 60, 0.95, "near", -1],
-      [18, 82, 1.06, "near", 1.2], [82, 80, 1.08, "near", -1.2]
+      [27, 52, 0.82, "far", 0], [78, 49, 0.88, "far", 0],
+      [24, 70.5, 0.93, "near", 0], [76, 70, 0.95, "near", 0],
+      [18, 91.5, 1.06, "near", 0], [82, 91.5, 1.08, "near", 0]
     ],
     donguri_path: [
-      [18, 46, 0.82, "far", -2], [82, 32, 0.86, "far", 1.5],
-      [27, 69, 0.95, "near", 1.5], [72, 65, 0.97, "near", -1.5],
-      [50, 84, 1.06, "near", 0.6]
+      [18, 52, 0.82, "far", 0], [82, 38, 0.86, "far", 0],
+      [27, 81, 0.95, "near", 0], [72, 77, 0.97, "near", 0],
+      [50, 94, 1.06, "near", 0]
     ],
     mizube: [
-      [18, 43, 0.82, "far", -1], [80, 40, 0.86, "far", 1.2],
-      [20, 79, 1.04, "near", 1.5], [80, 78, 1.02, "near", -1.2]
+      [13, 47, 0.82, "far", 0], [80, 45, 0.86, "far", 0],
+      [20, 88, 1.04, "near", 0], [80, 87, 1.02, "near", 0]
     ]
   };
   const expectedWorldAssets = {
     komorebi_clearing: {
       background: "bg_world_komorebi_lowangle_20260724.png",
-      far: "hideout_world_komorebi_far_20260724.png",
-      near: "hideout_world_komorebi_near_20260724.png"
+      far: "hideout_world_komorebi_far_v2_20260724.png",
+      near: "hideout_world_komorebi_near_v2_20260724.png"
     },
     donguri_path: {
       background: "bg_world_donguri_overlook_20260724.png",
-      far: "hideout_world_donguri_far_20260724.png",
-      near: "hideout_world_donguri_near_20260724.png"
+      far: "hideout_world_donguri_far_v2_20260724.png",
+      near: "hideout_world_donguri_near_v2_20260724.png"
     },
     mizube: {
-      background: "bg_world_mizube_waterline_20260724.png",
-      far: "hideout_world_mizube_far_20260724.png",
-      near: "hideout_world_mizube_near_20260724.png"
+      background: "bg_world_mizube_waterline_v2_20260724.png",
+      far: "hideout_world_mizube_far_v2_20260724.png",
+      near: "hideout_world_mizube_near_v2_20260724.png"
     }
   };
   const expectedHideoutLayouts = {
     komorebi_clearing: {
-      far: { foregroundTop: 57, windowBottom: 38, charWidth: 54 },
-      near: { foregroundTop: 62, windowBottom: 31, charWidth: 58 }
+      far: { groundAnchorY: 78.2, foregroundTop: 67, windowBottom: 30, charWidth: 52, charLiftCqh: 7.5 },
+      near: { groundAnchorY: 75.3, foregroundTop: 64, windowBottom: 28, charWidth: 58, charLiftCqh: 8 }
     },
     donguri_path: {
-      far: { foregroundTop: 59.5, windowBottom: 31, charWidth: 46 },
-      near: { foregroundTop: 62, windowBottom: 26, charWidth: 46 }
+      far: { groundAnchorY: 68.2, foregroundTop: 60, windowBottom: 30, charWidth: 48, charLiftCqh: 7.5 },
+      near: { groundAnchorY: 81, foregroundTop: 64, windowBottom: 28, charWidth: 52, charLiftCqh: 8.5 }
     },
     mizube: {
-      far: { foregroundTop: 55.5, windowBottom: 40, charWidth: 50 },
-      near: { foregroundTop: 57.5, windowBottom: 38, charWidth: 55 }
+      far: { groundAnchorY: 69.8, foregroundTop: 64, windowBottom: 30, charWidth: 50, charLiftCqh: 7 },
+      near: { groundAnchorY: 66.8, foregroundTop: 56, windowBottom: 28, charWidth: 55, charLiftCqh: 8 }
     }
   };
 
   for (const location of D.LOCATIONS) {
     assert.equal(D.LOCATION_BY_ID[location.id], location, `${location.id} をIDから同じ定義へ引ける`);
     assert.deepEqual(
-      location.slots.map(slot => [slot.x, slot.y, slot.depth, slot.hideout, slot.rotate]),
+      location.slots.map(slot => [slot.x, slot.groundY, slot.depth, slot.hideout, slot.rotate]),
       expectedSlots[location.id],
-      `${location.id} の正規化座標・前後パース・開口種・傾きが企画値と一致`
+      `${location.id} の接地座標・前後パース・開口種・傾きが企画値と一致`
     );
     assert.equal(path.basename(location.background), expectedWorldAssets[location.id].background, `${location.id} は専用構図の背景を使う`);
     assert.equal(path.basename(location.hideouts.far), expectedWorldAssets[location.id].far, `${location.id} は遠景専用の開口を使う`);
     assert.equal(path.basename(location.hideouts.near), expectedWorldAssets[location.id].near, `${location.id} は近景専用の開口を使う`);
     assert.deepEqual(location.hideoutLayouts, expectedHideoutLayouts[location.id], `${location.id} の開口ごとのマスク・動物幅がα境界の監査値と一致`);
     for (const variant of ["far", "near"]) {
+      assert.ok(Number.isFinite(location.hideoutLayouts[variant].groundAnchorY), `${location.id} ${variant} に素材内の接地アンカーがある`);
+      assert.ok(location.hideoutLayouts[variant].groundAnchorY > 0 && location.hideoutLayouts[variant].groundAnchorY <= 100, `${location.id} ${variant} の接地アンカーは素材内に収まる`);
       assert.ok(Number.isFinite(location.hideoutLayouts[variant].foregroundTop), `${location.id} ${variant} に手前縁位置がある`);
       assert.ok(Number.isFinite(location.hideoutLayouts[variant].windowBottom), `${location.id} ${variant} に動物窓の下端がある`);
       assert.ok(Number.isFinite(location.hideoutLayouts[variant].charWidth), `${location.id} ${variant} に動物幅がある`);
+      assert.ok(Number.isFinite(location.hideoutLayouts[variant].charLiftCqh), `${location.id} ${variant} に接地点基準の動物持ち上げ量がある`);
     }
+    assert.ok(location.slots.every(slot => !Object.prototype.hasOwnProperty.call(slot, "y")), `${location.id} に画像中心基準の旧y座標を残さない`);
+    assert.ok(location.slots.every(slot => Number.isFinite(slot.groundY) && slot.groundY >= 0 && slot.groundY <= 100), `${location.id} の全slotに画面内の接地座標がある`);
     assert.ok(location.slots.every(slot => ["far", "near"].includes(slot.hideout)), `${location.id} の全slotに遠景・近景種別がある`);
-    assert.ok(location.slots.every(slot => Number.isFinite(slot.rotate)), `${location.id} の全slotに傾きがある`);
+    assert.ok(location.slots.every(slot => slot.rotate === 0), `${location.id} の全slotは接地辺を浮かせる傾きを付けない`);
     assert.equal(location.partnerIds.length, 6, `${location.id} の通常動物は6種`);
     assert.equal(new Set(location.partnerIds).size, 6, `${location.id} の通常動物IDは重複しない`);
     for (const partnerId of location.partnerIds) {
@@ -209,7 +214,8 @@ function mulberry32(seed) {
 
   assert.match(D.LOCATION_BY_ID.komorebi_clearing.background, /bg_world_komorebi_lowangle_20260724\.png$/, "ひろばは子どもの目線の専用背景を使う");
   assert.match(D.LOCATION_BY_ID.donguri_path.background, /bg_world_donguri_overlook_20260724\.png$/, "こみちは見下ろし構図の専用背景を使う");
-  assert.match(D.LOCATION_BY_ID.mizube.background, /bg_world_mizube_waterline_20260724\.png$/, "みずべは水面目線の専用背景を使う");
+  assert.match(D.LOCATION_BY_ID.mizube.background, /bg_world_mizube_waterline_v2_20260724\.png$/, "みずべは泡状の石ドームを除いた修正版背景を使う");
+  assert.doesNotMatch(locationsJsSrc, /bg_world_mizube_waterline_20260724\.png/, "生成失敗の泡状石ドームを含む旧みずべ背景を実行時参照しない");
   assert.ok(D.LOCATION_BY_ID.donguri_path.partnerIds.includes("tanuki"), "こみちに新規たぬきが出る");
   assert.ok(D.LOCATION_BY_ID.mizube.partnerIds.includes("kawauso"), "みずべに新規かわうそが出る");
 
@@ -752,16 +758,32 @@ function mulberry32(seed) {
   assert.match(stylesCss, /--window-bottom:\s*35\.5%/, "動物窓の下側マスクに安全な既定値を持たせる");
   assert.match(stylesCss, /\.hh-hideout-foreground\s*\{[^}]*z-index:\s*4[^}]*clip-path:\s*inset\(var\(--foreground-top\)\s+0\s+0\s+0\)/s, "場所別の手前縁をCSS変数で切り、キャラより上に重ねる");
   assert.match(stylesCss, /#board\s*\{[^}]*position:\s*absolute[^}]*inset:\s*0/s, "可変配置の盤面をステージ全面へ重ねる");
-  assert.match(stylesCss, /\.hh-hole\s*\{[^}]*position:\s*absolute[^}]*top:\s*var\(--slot-y[^}]*left:\s*var\(--slot-x/s, "かくれ場所を定義データの正規化座標へ置く");
+  assert.match(stylesCss, /\.hh-hole\s*\{[^}]*position:\s*absolute[^}]*top:\s*var\(--slot-y[^}]*left:\s*var\(--slot-x/s, "かくれ場所buttonの中心を定義データの接地点へ置く");
   assert.match(gameJs, /function\s+buildHoles\(\s*location\s*\)[\s\S]*?location\.slots\.length/, "場所のslots数だけ操作buttonを構築する");
-  for (const property of ["--slot-x", "--slot-y", "--depth-scale", "--slot-z", "--hideout-rotate", "--foreground-top", "--window-bottom", "--char-width"]) {
+  for (const property of ["--slot-x", "--slot-y", "--depth-scale", "--slot-z", "--hideout-rotate", "--ground-anchor-y", "--foreground-top", "--window-bottom", "--char-width", "--char-ground-lift"]) {
     assert.ok(gameJs.includes(`setProperty('${property}'`), `${property} を場所定義からCSSへ渡す`);
   }
   assert.match(gameJs, /dataset\.hideoutVariant\s*=\s*hideoutVariant/, "各buttonへ遠景・近景の開口種別を記録する");
+  assert.match(gameJs, /var\s+slotGroundY\s*=\s*Number\(slot\.groundY\)/, "slotのy値は画像中心ではなく背景上の接地点として読む");
+  assert.match(gameJs, /slotGroundY\s*<\s*0\s*\|\|\s*slotGroundY\s*>\s*100/, "画面外の接地点を受け付けない");
+  assert.match(gameJs, /dataset\.groundY\s*=\s*String\(slotGroundY\)/, "接地点を実行時監査用data属性へ記録する");
+  assert.match(gameJs, /var\s+groundAnchorY\s*=\s*Number\(hideoutLayout\.groundAnchorY\)/, "素材ごとの接地アンカーを読む");
+  assert.match(gameJs, /groundAnchorY\s*<=\s*0\s*\|\|\s*groundAnchorY\s*>\s*100/, "素材外の接地アンカーを受け付けない");
+  assert.doesNotMatch(gameJs + stylesCss, /depth-shift-y/, "中心補正の旧depth-shift-yを接地アンカー実装へ残さない");
+  assert.equal((indexHtml.match(/class=["']hh-ground-stack["']/g) || []).length, 1, "templateに接地単位のstackを1つ定義する");
+  assert.match(indexHtml, /class=["']hh-ground-stack["'][\s\S]*?hh-hideout-base[\s\S]*?hh-char-wrap[\s\S]*?hh-hideout-foreground[\s\S]*?<\/span>/s, "開口・動物・手前縁を同じ接地stackでまとめる");
+  const groundStackRule = stylesCss.match(/\.hh-ground-stack\s*\{([^}]*)\}/s);
+  assert.ok(groundStackRule, ".hh-ground-stack のCSS規則がある");
+  assert.match(groundStackRule[1], /top:\s*50%/, "接地stackの上辺をbutton中心の背景接地点へ合わせる");
+  assert.match(groundStackRule[1], /translateX\(-50%\)[^;]*scale\(var\(--depth-scale\)\)[^;]*rotate\(var\(--hideout-rotate\)\)/s, "開口・動物・演出を接地点基準でまとめて遠近拡縮する");
+  assert.match(groundStackRule[1], /transform-origin:\s*50%\s+0/, "遠近拡縮の原点を接地stackの上辺中央に固定する");
   const hideoutRule = stylesCss.match(/\.hh-hideout\s*\{([^}]*)\}/s);
   assert.ok(hideoutRule, ".hh-hideout のCSS規則がある");
-  assert.match(hideoutRule[1], /translate\(-50%,\s*-50%\)[^;]*scale\(var\(--depth-scale\)\)[^;]*rotate\(var\(--hideout-rotate\)\)/s, "開口画像を中央基準で遠近・傾き込み配置する");
+  assert.match(hideoutRule[1], /top:\s*calc\(0%\s*-\s*var\(--ground-anchor-y\)\)/, "素材内の接地アンカー分だけ開口画像を上へ戻す");
+  assert.match(hideoutRule[1], /width:\s*100%/, "素材内アンカーと同じ正方形幅で開口を描画する");
+  assert.doesNotMatch(hideoutRule[1], /\btransform\s*:/, "開口画像単体を中心基準で再変形しない");
   assert.doesNotMatch(hideoutRule[1], /\bfilter\s*:/, "開口画像へ後付けの色調filterを重ねない");
+  assert.doesNotMatch(stylesCss, /@media\s*\(max-height:\s*430px\)[\s\S]*?\.hh-hideout\s*\{[^}]*\bwidth\s*:/, "短い画面でも画像だけを縮めて接地アンカーをずらさない");
   assert.match(indexHtml, /class=["']hh-char-wrap["'][\s\S]*?class=["']hh-window["'][\s\S]*?class=["']hh-char-rise["'][\s\S]*?class=["']hh-char["'][\s\S]*?<\/span>\s*<\/span>\s*<span class=["']hh-sparkle["']/s, "動物本体だけを窓内へ置き、月・光はマスク外の兄弟レイヤーにする");
   assert.match(stylesCss, /\.hh-char-wrap\s*\{[^}]*overflow:\s*visible/s, "月・光・加点を包む状態wrapは切り抜かない");
   assert.match(stylesCss, /\.hh-window\s*\{[^}]*overflow:\s*visible/s, "動物窓の上・左右はボーナス画像内の星と光彩を切らない");
@@ -771,8 +793,11 @@ function mulberry32(seed) {
   assert.ok(D.LOCATIONS.every(location => location.slots.filter(slot => slot.hideout === "near").length >= 2), "各場所に近景専用の開口が2個以上ある");
   assert.ok(D.LOCATIONS.every(location => location.slots.filter(slot => slot.hideout === "far").every(slot => slot.depth < 0.9)), "遠景列は0.9倍未満にする");
   assert.ok(D.LOCATIONS.every(location => location.slots.filter(slot => slot.hideout === "near").every(slot => slot.depth >= 0.9)), "近景列は0.9倍以上にする");
-  assert.match(stylesCss, /\.hh-char-wrap\s*\{[^}]*scale\(var\(--depth-scale\)\)/s, "キャラとマスク外演出も茂みと同じ前後比率で拡縮する");
-  assert.match(stylesCss, /\.hh-hole\.is-pressed\s+\.hh-hideout\s*\{[^}]*translate\(-50%,\s*-50%\)[^}]*scale\(var\(--depth-scale\)\)[^}]*rotate\(var\(--hideout-rotate\)\)[^}]*scale\(0\.96\)/s, "押した瞬間も中央基準・前後パース・傾きを保つ");
+  assert.doesNotMatch(stylesCss, /\.hh-char-wrap\s*\{[^}]*scale\(var\(--depth-scale\)\)/s, "キャラだけへ遠近scaleを二重適用しない");
+  assert.match(stylesCss, /\.hh-hole\.is-pressed\s+\.hh-ground-stack\s*\{[^}]*translateX\(-50%\)[^}]*scale\(var\(--depth-scale\)\)[^}]*rotate\(var\(--hideout-rotate\)\)[^}]*scale\(0\.96\)/s, "押した瞬間も接地点基準のstack全体で前後パースを保つ");
+  for (const src of ["styles.css", "js/locations.js", "js/game.js"]) {
+    assert.match(indexHtml, new RegExp(`${src.replace(/[./]/g, "\\$&")}\\?v=20260724-1450`), `${src} は1450修正版のキャッシュトークンで読む`);
+  }
 }
 
 // ── 11b. ボーナス出現・リアルタイムコンボ・最大記録UI ──────────────
