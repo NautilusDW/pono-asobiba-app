@@ -1,5 +1,12 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2367: ひょっこりハイタッチの場所別far／near外装6点を、地面へ浅く
+// 埋まった水彩絵本調のv2へ差し替え、水辺背景の透明ドーム状生成不良も
+// 修正版へ更新。画像中心ではなくalpha実体下端のgroundAnchorYを背景上の
+// groundYへ合わせる接地点stackへ移行し、短い横画面の外装だけを縮める旧指定と
+// 最下段の可視タップ領域不足を解消した。ゲーム個別ファイルと画像は
+// network-first配信のためCRITICAL_ASSETSには追加しない。play.html
+// PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2367)。
 // v2366: ポノのまちづくり やさいスタンドに計量リビール機能を実装。
 // はたけにっき側の新規収穫キュー(common/hatake-harvest-bridge.js、
 // pono_hatake_harvest_queue_v1)を読み、guragura-seesawのspringStep/
@@ -969,7 +976,7 @@
 // styles.css／game.js queryを20260723-1429へ同期。ゲーム個別ファイルと画像は
 // network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
 // PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2347)。
-const CACHE_VERSION = 2366;
+const CACHE_VERSION = 2367;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

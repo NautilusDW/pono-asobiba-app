@@ -1051,4 +1051,63 @@ function mulberry32(seed) {
   assert.equal(L.comboFxProfileAt(Number.MAX_SAFE_INTEGER).growPx, 50, "極端に大きいコンボも文字成長上限で止まる");
 }
 
-console.log("hyokkori hightouch regression: PASS");
+// ── 18. v2開口画像の実alpha下端と接地アンカー ───────────────────────
+(async function verifyHideoutAlphaGroundAnchors() {
+  // wrangler/miniflare の開発依存として常に導入される sharp で、CSS値同士ではなく
+  // PNGの実alphaを読む。画像差し替え時に接地点だけ古いまま残る回帰を防ぐ。
+  const sharp = require("sharp");
+  const seen = new Set();
+
+  for (const location of D.LOCATIONS) {
+    for (const variant of ["far", "near"]) {
+      const assetPath = path.resolve(
+        root,
+        "hyokkori-hightouch",
+        location.hideouts[variant]
+      );
+      if (seen.has(assetPath)) continue;
+      seen.add(assetPath);
+
+      const result = await sharp(assetPath)
+        .ensureAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+      const { width, height, channels } = result.info;
+      assert.equal(channels, 4, `${path.basename(assetPath)} はRGBAとして読める`);
+      assert.ok(fs.statSync(assetPath).size < 3 * 1024 * 1024, `${path.basename(assetPath)} は3MB未満`);
+
+      let lastAlphaY = -1;
+      for (let y = 0; y < height; y += 1) {
+        const rowStart = y * width * channels;
+        for (let x = 0; x < width; x += 1) {
+          if (result.data[rowStart + x * channels + 3] > 0) lastAlphaY = y;
+        }
+      }
+      assert.ok(lastAlphaY >= 0, `${path.basename(assetPath)} に可視alphaがある`);
+
+      const alphaBottomPercent = (lastAlphaY + 1) / height * 100;
+      const configuredAnchor = location.hideoutLayouts[variant].groundAnchorY;
+      assert.ok(
+        Math.abs(alphaBottomPercent - configuredAnchor) <= 0.12,
+        `${location.id} ${variant} のgroundAnchorYは実alpha下端と一致する ` +
+        `(asset=${alphaBottomPercent.toFixed(3)} configured=${configuredAnchor})`
+      );
+
+      const cornerAlphaOffsets = [
+        3,
+        (width - 1) * channels + 3,
+        (height - 1) * width * channels + 3,
+        ((height * width) - 1) * channels + 3
+      ];
+      assert.ok(
+        cornerAlphaOffsets.every(offset => result.data[offset] === 0),
+        `${path.basename(assetPath)} の四隅は完全透過`
+      );
+    }
+  }
+
+  console.log("hyokkori hightouch regression: PASS");
+})().catch(error => {
+  console.error(error);
+  process.exitCode = 1;
+});
