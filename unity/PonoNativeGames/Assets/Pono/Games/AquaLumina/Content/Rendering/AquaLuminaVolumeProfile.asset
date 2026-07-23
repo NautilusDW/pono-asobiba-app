@@ -1,0 +1,133 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &-9054647827455773468
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b2db86121404754db890f4c8dfe81b2, type: 3}
+  m_Name: Bloom
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.Bloom
+  active: 1
+  skipIterations:
+    m_OverrideState: 1
+    m_Value: 1
+  threshold:
+    m_OverrideState: 1
+    m_Value: 0.8
+  intensity:
+    m_OverrideState: 1
+    m_Value: 0.9
+  scatter:
+    m_OverrideState: 1
+    m_Value: 0.65
+  clamp:
+    m_OverrideState: 1
+    m_Value: 65472
+  tint:
+    m_OverrideState: 1
+    m_Value: {r: 1, g: 1, b: 1, a: 1}
+  highQualityFiltering:
+    m_OverrideState: 1
+    m_Value: 0
+  filter:
+    m_OverrideState: 1
+    m_Value: 0
+  downscale:
+    m_OverrideState: 1
+    m_Value: 0
+  maxIterations:
+    m_OverrideState: 1
+    m_Value: 6
+  dirtTexture:
+    m_OverrideState: 1
+    m_Value: {fileID: 0}
+    dimension: 1
+  dirtIntensity:
+    m_OverrideState: 1
+    m_Value: 0
+--- !u!114 &-6323800913176135336
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c74de3e60a30341b1a2f8fbb2c4db7ea, type: 3}
+  m_Name: AquaGodRayVolume
+  m_EditorClassIdentifier: Pono.AquaLumina.Rendering::Pono.AquaLumina.Rendering.AquaGodRayVolume
+  active: 1
+  intensity:
+    m_OverrideState: 1
+    m_Value: 0.85
+  density:
+    m_OverrideState: 1
+    m_Value: 0.96
+  decay:
+    m_OverrideState: 1
+    m_Value: 0.95
+  sampleCount:
+    m_OverrideState: 1
+    m_Value: 64
+  lightViewportPosition:
+    m_OverrideState: 1
+    m_Value: {x: 0.5, y: 1.05}
+  threshold:
+    m_OverrideState: 1
+    m_Value: 0.55
+  beamNoiseStrength:
+    m_OverrideState: 1
+    m_Value: 0.55
+  tint:
+    m_OverrideState: 1
+    m_Value: {r: 1, g: 0.92, b: 0.76, a: 1}
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d7fd9488000d3734a9e00ee676215985, type: 3}
+  m_Name: AquaLuminaVolumeProfile
+  m_EditorClassIdentifier: Unity.RenderPipelines.Core.Runtime::UnityEngine.Rendering.VolumeProfile
+  components:
+  - {fileID: -6323800913176135336}
+  - {fileID: 6985340445423785134}
+  - {fileID: -9054647827455773468}
+--- !u!114 &6985340445423785134
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d654b6827a93540c9b3499ef7855fb4d, type: 3}
+  m_Name: AquaWaterDistortionVolume
+  m_EditorClassIdentifier: Pono.AquaLumina.Rendering::Pono.AquaLumina.Rendering.AquaWaterDistortionVolume
+  active: 1
+  refractionStrength:
+    m_OverrideState: 1
+    m_Value: 0.012
+  shimmerStrength:
+    m_OverrideState: 1
+    m_Value: 0.35
+  waveScale:
+    m_OverrideState: 1
+    m_Value: 1.6
+  speed:
+    m_OverrideState: 1
+    m_Value: 0.5
+  chromaticShift:
+    m_OverrideState: 1
+    m_Value: 0.0025
