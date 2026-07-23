@@ -142,6 +142,10 @@ function createScreenController(screens) {
   var hintToastTimer = null;
   var statusBarEl = document.getElementById('status-bar');
   var statusFlashTimer = null;
+  var CROP_SIGN_IMAGES = {
+    tomato: '../assets/images/hatake-nikki/crop_sign_tomato.png',
+    ninjin: '../assets/images/hatake-nikki/crop_sign_ninjin.png'
+  };
 
   var plotRefs = [];
   var plotEls = document.querySelectorAll('.plot');
@@ -150,6 +154,7 @@ function createScreenController(screens) {
     var idx = parseInt(plotEl.getAttribute('data-plot'), 10);
     plotRefs[idx] = {
       el: plotEl,
+      signEl: plotEl.querySelector('.crop-sign'),
       plantEl: plotEl.querySelector('.plant'),
       bugEl: plotEl.querySelector('.bug-sprite'),
       gaugeFillEl: plotEl.querySelector('.water-gauge-fill')
@@ -197,14 +202,14 @@ function createScreenController(screens) {
     if (holding) return 'そのまま ゆびを はなさないでね…';
     if (activeTool === 'seed' && pendingSeedId) return 'あいている はたけを タップ！ たねを うえるよ';
     if (activeTool === 'water') {
-      if (!anyPlanted) return 'まず 🌱ボタンで たねを うえてね';
+      if (!anyPlanted) return 'まず たねボタンで たねを うえてね';
       if (!anyUnwatered) return 'きょうの みずやりは ぜんぶ できたよ！';
       return 'ひかる はたけを ながおしして みずやり！';
     }
     if (anyBug) return '🐞 むしを ゆびで はじいて とばそう！';
     if (anyHarvest) return 'ぴかぴかの やさいを タップして しゅうかく！';
-    if (!anyPlanted) return '🌱ボタンで たねを うえよう';
-    if (anyUnwatered) return '🚿ボタンを おして みずやりしよう';
+    if (!anyPlanted) return 'たねボタンで たねを うえよう';
+    if (anyUnwatered) return 'じょうろボタンを おして みずやりしよう';
     return 'きょうの おせわは ばっちり！ また あした';
   }
 
@@ -248,6 +253,19 @@ function createScreenController(screens) {
     if (!refs) return;
     var plot = appState.plots[idx];
     var stage = L.stageOf(plot);
+    var cropInfo = plot.seedId ? L.CROPS[plot.seedId] : null;
+    var signSrc = plot.seedId ? CROP_SIGN_IMAGES[plot.seedId] : null;
+    if (plot.seedId) refs.el.setAttribute('data-crop', plot.seedId);
+    else refs.el.removeAttribute('data-crop');
+    if (refs.signEl) {
+      if (signSrc) {
+        refs.signEl.src = signSrc;
+        refs.signEl.classList.add('is-visible');
+      } else {
+        refs.signEl.removeAttribute('src');
+        refs.signEl.classList.remove('is-visible');
+      }
+    }
     refs.plantEl.setAttribute('data-stage', String(stage));
     refs.plantEl.classList.toggle('is-wilted', !!plot.wilted);
     refs.plantEl.innerHTML = '';
@@ -274,6 +292,12 @@ function createScreenController(screens) {
     }
     if (refs.bugEl) refs.bugEl.classList.toggle('is-visible', !!plot.bug);
     refs.el.classList.toggle('is-watered', !!plot.wateredToday);
+    if (cropInfo) {
+      refs.el.setAttribute('aria-label', cropInfo.name + 'の はたけ。' +
+        (plot.wateredToday ? 'きょうの みずやり できた' : 'きょうの みずやりは まだ'));
+    } else {
+      refs.el.setAttribute('aria-label', 'あいている はたけ');
+    }
   }
 
   function renderAllPlots() {
@@ -314,15 +338,18 @@ function createScreenController(screens) {
     renderPlot(idx);
     updateWaterTargets();
     playWaterSplash(idx);
-    flashStatus('💧 みずやり できた！');
+    flashStatus('みずやり できた！');
   }
 
   function playWaterSplash(idx) {
     var refs = plotRefs[idx];
     if (!refs) return;
-    var fx = document.createElement('div');
+    var fx = document.createElement('img');
     fx.className = 'water-splash-fx';
-    fx.textContent = '💧✨';
+    fx.src = '../assets/images/hatake-nikki/watered_drop.png';
+    fx.alt = '';
+    fx.setAttribute('aria-hidden', 'true');
+    fx.draggable = false;
     refs.el.appendChild(fx);
     setTimeout(function () { if (fx.parentNode) fx.parentNode.removeChild(fx); }, 900);
   }
@@ -436,7 +463,7 @@ function createScreenController(screens) {
       }, WATER_HOLD_MS);
     } else {
       if (activeTool === 'water' && !plot.seedId) {
-        showHintToast('🌱 まず たねを うえてね');
+        showHintToast('まず たねを うえてね');
         if (window.Haptics) window.Haptics.fire('stickerPaste');
       }
       refs.el.classList.add('is-pressed');
@@ -604,7 +631,7 @@ function createScreenController(screens) {
 
   // ═══ チュートリアル (共通 tut-dim/tut-bubble パターン。hyokkori-hightouch 踏襲) ═══
   var TUT_STEPS = [
-    { icon: '🚿', text: 'じょうろボタンを えらんで<br>はたけを おしつづけると みずやりできるよ' },
+    { iconSrc: '../assets/images/Rooms/furnitures_final/deco_watering_can_B.png', text: 'じょうろボタンを えらんで<br>はたけを おしつづけると みずやりできるよ' },
     { icon: '🐞', text: 'むしが きたら ゆびで はじいて<br>とばしてあげてね' },
     { icon: '🥕', text: 'ぴかぴか ひかったら しゅうかくのサイン！<br>タップして とろう' }
   ];
@@ -618,9 +645,12 @@ function createScreenController(screens) {
     var bubble = document.getElementById('tut-bubble');
     if (!dim || !bubble) return;
     var step = TUT_STEPS[tutStep];
+    var iconHtml = step.iconSrc
+      ? '<img src="' + step.iconSrc + '" alt="" aria-hidden="true" draggable="false">'
+      : step.icon;
     dim.classList.remove('hidden');
     bubble.classList.remove('hidden');
-    bubble.innerHTML = '<div class="tut-icon">' + step.icon + '</div>' + step.text +
+    bubble.innerHTML = '<div class="tut-icon">' + iconHtml + '</div>' + step.text +
       '<br><button class="tut-next-btn" id="tut-next">' + (tutStep < TUT_STEPS.length - 1 ? 'つぎへ' : 'とじる') + '</button>';
     document.getElementById('tut-next').addEventListener('pointerdown', onTutNext);
   }

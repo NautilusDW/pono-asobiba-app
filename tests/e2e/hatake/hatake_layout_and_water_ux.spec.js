@@ -331,7 +331,7 @@ test.describe('hatake-nikki: 水やりツール discoverability', () => {
     const stage0 = await plot0.locator('.plant').getAttribute('data-stage');
     expect(stage0).toBe('0'); // たね植栽済み (stage0)
 
-    // 🚿 を選択 (pointerdown)
+    // じょうろを選択 (pointerdown)
     await page.locator('#tool-water-btn').dispatchEvent('pointerdown');
     await page.waitForTimeout(100);
 
@@ -339,7 +339,7 @@ test.describe('hatake-nikki: 水やりツール discoverability', () => {
     await expect(page.locator('.plot[data-plot="1"]')).not.toHaveClass(/is-water-target/);
     await expect(page.locator('.plot[data-plot="2"]')).not.toHaveClass(/is-water-target/);
 
-    // 🚿 を再度押して解除
+    // じょうろを再度押して解除
     await page.locator('#tool-water-btn').dispatchEvent('pointerdown');
     await page.waitForTimeout(100);
     await expect(plot0).not.toHaveClass(/is-water-target/);

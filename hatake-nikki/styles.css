@@ -127,6 +127,7 @@ html, body {
 .plot-hit-area {
   position: absolute;
   inset: 0;
+  z-index: 1;
   clip-path: polygon(50% 0%, 100% 46%, 50% 100%, 0% 46%);
   pointer-events: auto;
   touch-action: manipulation;
@@ -137,6 +138,48 @@ html, body {
 .plot[data-plot="1"] { left: 13.883333%; top: 44.228358%; z-index: 2; }
 .plot[data-plot="2"] { left: 38.383333%; top: 45.828358%; z-index: 2; }
 .plot.is-pressed { filter: brightness(0.92); }
+
+/* 植えた作物の立て札。stage ではなく seedId に連動し、植え付け直後から
+   収穫まで同じ札を常設する。杭先は土へ入り、中央の作物を隠さない。 */
+.crop-sign {
+  position: absolute;
+  left: 5%;
+  top: -21%;
+  z-index: 2;
+  display: none;
+  width: clamp(46px, 34%, 88px);
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 2px rgba(80, 52, 30, 0.24));
+  pointer-events: none;
+}
+.crop-sign.is-visible { display: block; }
+/* 右手前の札を左へ置くと奥の畝へ重なって見えるため、この畝だけ後縁右側へ。 */
+.plot[data-plot="2"] .crop-sign {
+  left: auto;
+  right: 1%;
+}
+
+/* 水やり済みは「濃い湿った土 + 水色の外周 + 大きなしずく」の3手掛かり。
+   生成画像は238×143。元の畝より透明余白が少し広いため、輪郭を元画像へ
+   合わせる範囲だけ拡大し、状態切替時の見かけの縮みを防ぐ。 */
+.plot.is-watered {
+  background-image: url('../assets/images/hatake-nikki/hatake_crop_wet.png');
+  background-size: 112% auto;
+}
+.watered-drop {
+  position: absolute;
+  right: 4%;
+  bottom: 4%;
+  z-index: 4;
+  display: none;
+  width: clamp(32px, 23%, 58px);
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 2px rgba(30, 111, 173, 0.28));
+  pointer-events: none;
+}
+.plot.is-watered .watered-drop { display: block; }
 
 /* 水ツール選択中: 水やりできる畝を光らせて誘導 */
 .plot.is-water-target {
@@ -149,9 +192,13 @@ html, body {
 
 /* 水やり成功の演出 (doWater 発火時に一瞬だけ追加される) */
 .water-splash-fx {
-  position: absolute; left: 50%; top: 30%;
+  position: absolute; left: 72%; top: 30%;
+  z-index: 5;
   transform: translateX(-50%);
-  font-size: clamp(22px, 5vmin, 32px);
+  width: clamp(38px, 29%, 70px);
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 2px 3px rgba(30, 111, 173, 0.3));
   pointer-events: none;
   animation: waterSplashPop 0.9s ease-out forwards;
 }
@@ -161,17 +208,9 @@ html, body {
   100% { opacity: 0; transform: translateX(-50%) translateY(-26px) scale(1); }
 }
 
-/* 「きょう すでに みずやり済み」の永続バッジ (日またぎ/収穫で自動的に外れる) */
-.plot.is-watered::after {
-  content: '💧';
-  position: absolute; top: -14%; left: 4%;
-  font-size: clamp(14px, 3.4vmin, 22px);
-  filter: drop-shadow(0 1px 2px rgba(0,0,0,0.25));
-  pointer-events: none;
-}
-
 .plant {
   position: relative;
+  z-index: 3;
   display: flex; align-items: center; justify-content: center;
   width: 100%; height: 100%;
   transition: filter 0.4s, transform 0.4s;
@@ -209,6 +248,7 @@ html, body {
 .bug-sprite {
   position: absolute;
   top: -10%; right: -6%;
+  z-index: 6;
   width: 34%;
   aspect-ratio: 268 / 204; /* Ladybug_normal_1.png 実測 AR */
   background: url('../assets/images/ocean/Ladybug/Ladybug_normal_1.png') center/contain no-repeat;
@@ -248,11 +288,23 @@ html, body {
   box-shadow: 0 0 0 3px #ff8c2f, 0 4px 12px rgba(0,0,0,0.18);
 }
 .tool-btn:active { transform: scale(0.93); }
+.tool-btn .tool-icon {
+  display: block;
+  width: 76%;
+  height: 76%;
+  object-fit: contain;
+  pointer-events: none;
+}
+.tool-btn .tool-icon-water {
+  width: 82%;
+  height: 82%;
+}
 
 /* じょうろ水やりゲージ (長押し進捗表示) */
 .water-gauge {
   position: absolute;
   left: 0; bottom: -8%;
+  z-index: 7;
   width: 100%; height: 6px;
   border-radius: 4px;
   background: rgba(255,255,255,0.5);
@@ -265,6 +317,20 @@ html, body {
   width: 0%;
   background: #3aa1e0;
   transition: width 800ms linear;
+}
+
+@keyframes waterSplashReduced {
+  from { opacity: 0.85; }
+  to { opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .plot.is-water-target {
+    animation: none;
+    filter: drop-shadow(0 0 8px rgba(80,180,255,0.78));
+  }
+  .water-splash-fx {
+    animation: waterSplashReduced 0.35s linear forwards;
+  }
 }
 
 /* 水やり誘導ヒントトースト (空の畝を水ツールで押した時に表示) */
@@ -437,6 +503,13 @@ html, body {
 }
 .tut-bubble.hidden { display: none; }
 .tut-bubble .tut-icon { font-size: 40px; margin-bottom: 8px; }
+.tut-bubble .tut-icon img {
+  display: block;
+  width: 64px;
+  height: 54px;
+  margin: 0 auto;
+  object-fit: contain;
+}
 .tut-next-btn {
   display: inline-block; margin-top: 14px; padding: 10px 30px;
   border: none; border-radius: 50px;

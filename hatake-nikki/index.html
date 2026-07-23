@@ -82,7 +82,7 @@
 <script src="../common/menu.js"></script>
 <script src="../common/treasure.js"></script>
 
-<link rel="stylesheet" href="styles.css?v=20260723-3">
+<link rel="stylesheet" href="styles.css?v=20260723-4">
 </head>
 <body>
 
@@ -115,26 +115,34 @@
     <div id="plot-area">
       <div class="plot" data-plot="0">
         <div class="plot-hit-area" aria-hidden="true"></div>
+        <img class="crop-sign" alt="" aria-hidden="true" draggable="false">
         <div class="plant" data-stage="-1"></div>
+        <img class="watered-drop" src="../assets/images/hatake-nikki/watered_drop.png" alt="" aria-hidden="true" draggable="false">
         <div class="bug-sprite"></div>
         <div class="water-gauge"><div class="water-gauge-fill"></div></div>
       </div>
       <div class="plot" data-plot="1">
         <div class="plot-hit-area" aria-hidden="true"></div>
+        <img class="crop-sign" alt="" aria-hidden="true" draggable="false">
         <div class="plant" data-stage="-1"></div>
+        <img class="watered-drop" src="../assets/images/hatake-nikki/watered_drop.png" alt="" aria-hidden="true" draggable="false">
         <div class="bug-sprite"></div>
         <div class="water-gauge"><div class="water-gauge-fill"></div></div>
       </div>
       <div class="plot" data-plot="2">
         <div class="plot-hit-area" aria-hidden="true"></div>
+        <img class="crop-sign" alt="" aria-hidden="true" draggable="false">
         <div class="plant" data-stage="-1"></div>
+        <img class="watered-drop" src="../assets/images/hatake-nikki/watered_drop.png" alt="" aria-hidden="true" draggable="false">
         <div class="bug-sprite"></div>
         <div class="water-gauge"><div class="water-gauge-fill"></div></div>
       </div>
     </div>
 
     <div id="tool-rail">
-      <button type="button" class="tool-btn" id="tool-water-btn" aria-label="じょうろで みずやり">🚿</button>
+      <button type="button" class="tool-btn" id="tool-water-btn" aria-label="じょうろで みずやり">
+        <img class="tool-icon tool-icon-water" src="../assets/images/Rooms/furnitures_final/deco_watering_can_B.png" alt="" aria-hidden="true" draggable="false">
+      </button>
       <button type="button" class="tool-btn" id="tool-seed-btn" aria-label="たねを うえる">🌱</button>
     </div>
 
@@ -180,6 +188,6 @@
 </div>
 
 <script src="js/logic.js?v=20260723-1"></script>
-<script src="js/game.js?v=20260723-1"></script>
+<script src="js/game.js?v=20260723-2"></script>
 </body>
 </html>
