@@ -1,5 +1,12 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2349: ひょっこりハイタッチの上段3か所を短い画面で0.90、それ以外で0.88へ
+// 縮小して少し奥へ接地させ、下段3か所は基準サイズのまま相対的に手前へ見せる
+// 前後パースを追加。葉の茂み・手前縁・キャラ窓を同じ比率で拡縮し、押下時も比率を
+// 維持する一方、6か所のタップ面は無変形・同寸のまま保った。styles.css queryを
+// 20260723-1431へ同期。ゲーム個別ファイルはnetwork-first配信のため
+// CRITICAL_ASSETSには追加しない。play.html PAGE_CACHE_VERSION/
+// window.PONO_SW_VERSION と同期 (2349)。
 // v2348: guragura-seesaw の重さ再設計 (logic.js CATALOG/ROUNDS/TWIN_ROUND_CONFIG/
 // SLIP_DIFF を「果物/野菜(1-3) < 動物(4-10)、動物内 frog<cat<dog<bear<elephant」
 // の一貫順序へ全面更新) に追従し、tests/e2e/guragura/ の twin-basket-round3.spec.ts /
@@ -860,7 +867,7 @@
 // styles.css／game.js queryを20260723-1429へ同期。ゲーム個別ファイルと画像は
 // network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
 // PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2347)。
-const CACHE_VERSION = 2348;
+const CACHE_VERSION = 2349;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [
