@@ -238,7 +238,9 @@ section("カタログ健全性", () => {
   assert.deepEqual(mysteryItems, [
     { id: "star_block", label: "ほしのブロック", weight: 11, sizeClass: "s" },
     { id: "heart_block", label: "はーとのブロック", weight: 5, sizeClass: "l" },
-    { id: "mystery_stone", label: "ふしぎな いし", weight: 9, sizeClass: "m" }
+    // mystery_stone は 2026-07-23 二度目のクロスレビュー指摘対応で weight9→13 に変更
+    // (旧9は通常の m 帯6〜8からわずか+1しか離れておらず意外性が弱かったため)。
+    { id: "mystery_stone", label: "ふしぎな いし", weight: 13, sizeClass: "m" }
   ], "ふしぎブロック3点のID/かなラベル/重さ/見た目サイズが固定されている (石は大きさと重さ不一致の特殊枠のまま)");
 
   // v3 (2026-07-23 人形/大きさ=重さ統一) の期待値。 果物/野菜・人形 (旧:動物) は
@@ -273,7 +275,7 @@ const STONE_IDS = ["star_block", "heart_block", "mystery_stone"];
 
 section("重さ×見た目サイズ独立性 (v3: 石だけが例外)", () => {
   // 石(ふしぎブロック)3点の中には weightA > weightB && sizeRank(A) < sizeRank(B)
-  // (重いのに見た目が小さい) のペアが存在する (star_block(11,s) vs mystery_stone(9,m) 等)
+  // (重いのに見た目が小さい) のペアが存在する (mystery_stone(13,m) vs heart_block(5,l) 等)
   let stoneFoundInverse = false;
   for (const aId of STONE_IDS) {
     for (const bId of STONE_IDS) {
@@ -284,11 +286,15 @@ section("重さ×見た目サイズ独立性 (v3: 石だけが例外)", () => {
   }
   assert.ok(stoneFoundInverse, "石3点の中に「重いのに見た目が小さい」ペアが存在する (置いて初めて分かる特殊枠)");
 
-  // 石3点は sizeClass s→m→l の順に重さが完全に逆転している (s>m>l)
+  // 石3点は sizeClass と重さの大小関係が対応しない (2026-07-23 二度目のクロス
+  // レビュー指摘対応で mystery_stone を weight9→13 に引き上げたため、旧来の
+  // 「s>m>l の完全な逆転」から mystery_stone(m,13) > star_block(s,11) >
+  // heart_block(l,5) という関係に変わった。 依然として sizeClass の順序
+  // (s<m<l) とは無関係な大小関係であることは維持されている)
   assert.ok(
-    L.itemWeight("star_block") > L.itemWeight("mystery_stone") &&
-    L.itemWeight("mystery_stone") > L.itemWeight("heart_block"),
-    "石3点は見た目サイズ(s<m<l)と重さの大小関係が完全に逆になっている (star_block(s)が最重量、heart_block(l)が最軽量)"
+    L.itemWeight("mystery_stone") > L.itemWeight("star_block") &&
+    L.itemWeight("star_block") > L.itemWeight("heart_block"),
+    "石3点は mystery_stone(m) が最重量、heart_block(l) が最軽量になっている (見た目サイズ順とは無関係)"
   );
 
   // カタログ全体で見ても「重いのに見た目が小さい」ペアが存在する (石カテゴリ由来)

@@ -1,5 +1,16 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2359: ぐらぐらシーソーひろば 二度目のクロスレビュー軽微指摘3件を是正。
+// (1) R7 (index6) の tray dog/cat/frog 3種同時登場を緩和 (frog を外し
+// blueberry+1)。 (2) R8/R9 (index7/8) で mystery_stone/star_block が
+// 初登場ラウンドの tray (ドラッグ対象) に無かった不備を修正 (left固定だけで
+// 触れなかった問題)。 (3) mystery_stone の意外性強化のため weight9→13 に変更
+// (通常のmサイズ帯6〜8からわずか+1しか離れておらず弱かったため)。
+// logic.js のみの変更、本番 placeItem を呼ぶ全探索スクリプトで全10ラウンドの
+// 解到達可能性・slip到達可能性・near-balance到達可能性を再検証済み。
+// guragura-seesaw/index.html の ?v= を20260723-7→8 (styles.css/logic.js/
+// game.js、実体は logic.js のみ変更)。play.html PAGE_CACHE_VERSION/
+// window.PONO_SW_VERSION と同期 (2359)。
 // v2358: ポノのまちづくり (machizukuri/) を comingSoon+debugPlayable で新規追加し、
 // APP_TITLE_MENU_IDS にも登録。しゅうかくで そだつ まち v1 (12区画・買って置く・
 // 花ミクロスロット・室と畑への読み取り専用連携)。ゲーム個別ファイル
@@ -925,7 +936,7 @@
 // styles.css／game.js queryを20260723-1429へ同期。ゲーム個別ファイルと画像は
 // network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
 // PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2347)。
-const CACHE_VERSION = 2358;
+const CACHE_VERSION = 2359;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

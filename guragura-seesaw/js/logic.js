@@ -26,7 +26,13 @@
 // カテゴリ別ウェイト帯:
 //   果物/野菜 s(2〜3) < m(6) < l(10)
 //   人形       s(4)   < m(7〜8) < l(12〜14)
-//   石(逆転)   l(5) < m(9) < s(11)   ※ s/m/l と weight の大小が逆順になるよう意図的に配置
+//   石(逆転)   l(5) < s(11) < m(13)   ※ 大きさと重さの対応を持たせない特殊枠。
+//   2026-07-23 二度目のクロスレビュー指摘対応: mystery_stone は旧 weight9 だと
+//   通常の m 帯(6〜8)からわずか+1しか離れておらず「見た目からは分からない」意外性が
+//   弱かったため、m帯から明確に外れる 13 (全カタログ中2番目の重さ、elephant(14)に次ぐ)
+//   へ引き上げた。 これにより石3点は mystery_stone(13) > star_block(11) > heart_block(5)
+//   という大小関係になる (以前の「s>m>l の完全な逆転」から変化したが、依然として
+//   「大きさと重さが一致しない」という核心の特殊枠設計は維持されている)。
 var CATALOG = [
   { id: 'cherry',    label: 'さくらんぼ',     weight: 3, sizeClass: 's' },
   { id: 'blueberry', label: 'ブルーベリー',   weight: 2, sizeClass: 's' },
@@ -42,7 +48,7 @@ var CATALOG = [
   { id: 'elephant',  label: 'ぞう',           weight: 14, sizeClass: 'l' },
   { id: 'star_block', label: 'ほしのブロック', weight: 11, sizeClass: 's' },
   { id: 'heart_block', label: 'はーとのブロック', weight: 5, sizeClass: 'l' },
-  { id: 'mystery_stone', label: 'ふしぎな いし', weight: 9, sizeClass: 'm' }
+  { id: 'mystery_stone', label: 'ふしぎな いし', weight: 13, sizeClass: 'm' }
 ];
 
 var CATALOG_BY_ID = {};
@@ -92,6 +98,24 @@ for (var _ci = 0; _ci < CATALOG.length; _ci++) {
 //   R4-7  果物/野菜 + 人形 (R4=frog初登場, R7=bear初登場)
 //   R8-10 果物/野菜 + 人形 + 石 (R8=mystery_stone, R9=star+heart, R10=elephant+石3種フィナーレ)
 // デコイも各ラウンドの段階 (その時点までに登場済みのカテゴリ) からのみ選んでいる。
+//
+// 2026-07-23 二度目のクロスレビュー指摘対応 (3件、node全探索スクリプトで再検証済み):
+//   (1) R7 (index6): tray の dog/cat/frog 3種同時登場 (それまで1→2種ずつの導入
+//       ペースから急に跳ね上がる) を緩和し、frog を tray から外して
+//       blueberry をもう1点追加した (frog は既に R4 で初登場済みなので再登場の
+//       必須要件ではない)。 新解は dog+cat+lemon+blueberry+blueberry=22
+//       (grapes は従来通りデコイ)。
+//   (2) R8 (index7、mystery_stone初登場): 従来は mystery_stone が left にしか
+//       無く tray (ドラッグ対象) に無かったため、「置いて初めて重さが分かる」
+//       発見体験が初登場ラウンドで得られない本末転倒があった。 tray にも
+//       mystery_stone を追加し、bear+frog+mystery_stone=29 という mystery_stone
+//       自身が解の一部になる経路を用意した (dog/cat/carrot はデコイ)。
+//   (3) R9 (index8、star_block初登場): 同じ理由で star_block が tray に無かった
+//       ため追加。 tray サイズを6のまま維持するため、既に前段(R8)で発見済みの
+//       mystery_stone を tray から外し star_block と入れ替えた (R9は
+//       mystery_stone の初登場ラウンドではないため、tray から外れても発見体験は
+//       損なわれない)。 新解は heart_block+dog+carrot+lemon+cherry=25
+//       (star_block+dog+carrot=25 等の別解も生まれた)。
 var ROUNDS = [
   { left: ['cherry', 'lemon', 'blueberry', 'apple'],                    tray: ['carrot', 'cherry', 'lemon', 'blueberry', 'grapes'] },
   { left: ['apple', 'carrot', 'cherry', 'lemon', 'blueberry'],          tray: ['corn', 'grapes', 'carrot', 'cherry'] },
@@ -99,9 +123,9 @@ var ROUNDS = [
   { left: ['frog', 'apple', 'carrot', 'blueberry', 'blueberry'],        tray: ['corn', 'apple', 'blueberry', 'blueberry', 'cherry', 'grapes'] },
   { left: ['cat', 'cherry', 'lemon', 'blueberry', 'blueberry'],         tray: ['dog', 'apple', 'lemon', 'corn'] },
   { left: ['dog', 'apple', 'lemon', 'blueberry', 'blueberry'],          tray: ['cat', 'carrot', 'apple', 'blueberry', 'corn'] },
-  { left: ['bear', 'cherry', 'lemon', 'blueberry', 'blueberry'],        tray: ['dog', 'cat', 'frog', 'lemon', 'grapes'] },
-  { left: ['mystery_stone', 'apple', 'carrot', 'blueberry', 'blueberry'], tray: ['cat', 'dog', 'frog', 'carrot', 'bear'] },
-  { left: ['star_block', 'cat', 'cherry', 'blueberry', 'blueberry'],    tray: ['heart_block', 'dog', 'carrot', 'lemon', 'cherry', 'mystery_stone'] },
+  { left: ['bear', 'cherry', 'lemon', 'blueberry', 'blueberry'],        tray: ['dog', 'cat', 'lemon', 'blueberry', 'blueberry', 'grapes'] },
+  { left: ['mystery_stone', 'apple', 'carrot', 'blueberry', 'blueberry'], tray: ['cat', 'dog', 'frog', 'carrot', 'bear', 'mystery_stone'] },
+  { left: ['star_block', 'cat', 'cherry', 'blueberry', 'blueberry'],    tray: ['heart_block', 'dog', 'carrot', 'lemon', 'cherry', 'star_block'] },
   { left: ['elephant', 'heart_block', 'blueberry', 'blueberry', 'cherry'], tray: ['mystery_stone', 'star_block', 'lemon', 'lemon', 'corn'] }
 ];
 
