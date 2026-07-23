@@ -1,0 +1,50 @@
+{
+  "batch": "1436-nazonazo-dino-water-guidance",
+  "generator": "built-in GPT Image 2",
+  "independent_visual_qa": "PASS",
+  "runtime_composite_qa": "PASS",
+  "semantic_contract": {
+    "adult_dinosaurs": 0,
+    "juvenile_dinosaurs": 3,
+    "same_children_across_states": true,
+    "before_all_inside": true,
+    "success_all_outside": true,
+    "right_runtime_space_clear": true
+  },
+  "canvas": {
+    "width": 1536,
+    "height": 1024,
+    "color": "RGB"
+  },
+  "promotion": {
+    "codec": "WebP lossless",
+    "command": "cwebp -lossless -m 6 -metadata none",
+    "alpha": false,
+    "crop": false,
+    "resize": false
+  },
+  "files": [
+    {
+      "state": "before",
+      "raw": "../1436-nazonazo-dino-water-guidance-raw/dino_rescue_children_before_raw_gpt-image-2.png",
+      "raw_bytes": 3006805,
+      "raw_sha256": "c33661f6e9ea90e792d30b31f93b797c30276af06f5c23ef3184ba9fc790f8dc",
+      "candidate": "branch_dino_adventure_rescue_children_before_20260723.webp",
+      "canonical": "../../../assets/images/nazonazo-tunnel/branch_dino_adventure_rescue_children_before_20260723.webp",
+      "candidate_bytes": 2017986,
+      "candidate_sha256": "5ce388ad6c65feb39a6e044d7b34322b1fc5c6309a8e155be85704777ffe2aa8",
+      "decoded_rgb_framemd5": "2008a6d9ce9bbee06e61dcf547f01827"
+    },
+    {
+      "state": "success",
+      "raw": "../1436-nazonazo-dino-water-guidance-raw/dino_rescue_children_after_raw_gpt-image-2.png",
+      "raw_bytes": 2936969,
+      "raw_sha256": "c35adeae97e7016eb2ae464f552b75012bd6607d6cccc79e29db6e987b9e0f79",
+      "candidate": "branch_dino_adventure_rescue_children_success_20260723.webp",
+      "canonical": "../../../assets/images/nazonazo-tunnel/branch_dino_adventure_rescue_children_success_20260723.webp",
+      "candidate_bytes": 1986546,
+      "candidate_sha256": "53281c750d8f9813e586ab2476bba2c4e642de428386371a50bb6f91994c974f",
+      "decoded_rgb_framemd5": "232a20521dae981bf483b4e3d44c82c1"
+    }
+  ]
+}

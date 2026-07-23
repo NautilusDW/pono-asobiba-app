@@ -2,6 +2,7 @@
 "use strict";
 
 const assert = require("node:assert/strict");
+const crypto = require("node:crypto");
 const fs = require("node:fs");
 const path = require("node:path");
 
@@ -12,6 +13,33 @@ const original = Object.freeze({
   css: read("nazonazo-tunnel/styles.css"),
   game: read("nazonazo-tunnel/js/game.js")
 });
+const rescueManifestPath = path.join(root, "tmp/alpha_pending/1436-nazonazo-dino-water-guidance-promotion/PROMOTION-MANIFEST.json");
+
+function sha256(file) {
+  return crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex");
+}
+
+function assertReviewedChildrenAssets() {
+  const manifest = JSON.parse(fs.readFileSync(rescueManifestPath, "utf8"));
+  assert.equal(manifest.generator, "built-in GPT Image 2");
+  assert.deepEqual(manifest.semantic_contract, {
+    adult_dinosaurs: 0,
+    juvenile_dinosaurs: 3,
+    same_children_across_states: true,
+    before_all_inside: true,
+    success_all_outside: true,
+    right_runtime_space_clear: true
+  });
+  for (const entry of manifest.files) {
+    const raw = path.resolve(path.dirname(rescueManifestPath), entry.raw);
+    const candidate = path.resolve(path.dirname(rescueManifestPath), entry.candidate);
+    const canonical = path.resolve(path.dirname(rescueManifestPath), entry.canonical);
+    for (const [file, bytes, hash] of [[raw, entry.raw_bytes, entry.raw_sha256], [candidate, entry.candidate_bytes, entry.candidate_sha256], [canonical, entry.candidate_bytes, entry.candidate_sha256]]) {
+      assert.equal(fs.statSync(file).size, bytes, `${entry.state}: reviewed asset byte count drifted`);
+      assert.equal(sha256(file), hash, `${entry.state}: reviewed asset hash drifted`);
+    }
+  }
+}
 
 function scanBalanced(source, openAt, openChar, closeChar) {
   let depth = 0;
@@ -132,6 +160,7 @@ function validate(candidate) {
     "dinoWaterBriefing",
     "dinoWaterBriefingTitle",
     "dinoWaterBriefingText",
+    "dinoWaterDifficulty",
     "dinoWaterStart",
     "dinoWaterContinue"
   ];
@@ -146,8 +175,10 @@ function validate(candidate) {
   const waterSection = extractRange(html, '<div id="dinoWaterGame"', '<div id="dinoBossGame"');
 
   check(/role="status"/.test(notice) && /aria-live="assertive"/.test(notice) && /\shidden(?:\s|>)/.test(notice), "warning-a11y");
-  check(/おや[？?]/.test(notice) && /まえで こどもの きょうりゅうが こまってる/.test(notice), "warning-copy");
-  check(/\shidden(?:\s|>)/.test(craneBriefing) && /すみかの でぐちが ふさがってる/.test(craneBriefing) && /クレーンで どかして あげよう/.test(craneBriefing), "crane-briefing-copy");
+  check(/たいへん[！!]/.test(notice) && /すみかの でぐちで こどもの きょうりゅうたちが こまってる/.test(notice), "warning-copy");
+  check(/\shidden(?:\s|>)/.test(craneBriefing) && /こどもたちが すみかから でられない/.test(craneBriefing) &&
+    /おとなは えさを とりに いって まだ かえってない/.test(craneBriefing) && /3つを クレーンで どかして たすけよう/.test(craneBriefing), "crane-briefing-copy");
+  check(!/こどもの きょうりゅう(?:が|を)(?!たち)/.test(`${notice}\n${craneBriefing}`) && !/親子再会/.test(`${html}\n${game}`), "children-only-story");
   check(/\shidden(?:\s|>)/.test(waterBriefing) && /わきみずが いけまで とどかない/.test(waterBriefing) && /みずの みちを つなごう/.test(waterBriefing), "water-briefing-copy");
   for (const [id, label] of [["dinoCraneStart", "たすける"], ["dinoWaterStart", "みずを とどける"]]) {
     const button = extractElement(html, id);
@@ -238,6 +269,7 @@ function validate(candidate) {
   check(/dinoCraneSetPhase\(["']resolving["']\)/.test(commitCrane) && /dinoCraneSuccessBackdrop/.test(commitCrane) &&
     /is-rescued/.test(commitCrane) && /finalizeDinoCraneSuccess/.test(extractFunction(game, "tickDinoCrane")), "crane-rescue-resolution");
   check(/crane-success/.test(finalizeCrane) && /dinoCraneContinue\.hidden=false/.test(finalizeCrane), "crane-success-hold");
+  check(/こどもたちが みんな でてこられたよ/.test(finalizeCrane), "children-success-copy");
   check(!/finishDinoCraneSuccess\s*\(/.test(extractFunction(game, "tickDinoCrane")), "crane-no-auto-advance");
 
   const craneRuntime = [
@@ -307,6 +339,7 @@ function mutation(name, expectedCode, mutate) {
 
 const result = validate(original);
 assert.equal(result.errors.length, 0, `dino rescue story contracts failed (${result.checks} checks):\n${result.errors.join("\n")}`);
+assertReviewedChildrenAssets();
 
 mutation("approach notice is removed", "dom-contract", candidate => ({
   ...candidate,
@@ -318,7 +351,7 @@ mutation("warning begins only at the stopping point", "warning-distance", candid
 }));
 mutation("crane briefing leaks the old water objective", "crane-water-separation", candidate => ({
   ...candidate,
-  html: replaceExactlyOnce(candidate.html, "クレーンで どかして あげよう！", "どかして わきみずを だそう！")
+  html: replaceExactlyOnce(candidate.html, "3つを クレーンで どかして たすけよう！", "3つを どかして わきみずを だそう！")
 }));
 mutation("crane background skips its readable crossfade", "crane-crossfade-timing", candidate => ({
   ...candidate,

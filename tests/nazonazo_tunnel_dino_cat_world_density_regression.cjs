@@ -17,9 +17,9 @@ const sources = Object.freeze({
   sw: read("sw.js")
 });
 
-const TOKEN = "20260723-1435";
+const TOKEN = "20260723-1436";
 const QUIZ_ART_TOKEN = "20260721-1409";
-const SW_VERSION = 2354;
+const SW_VERSION = 2355;
 const THREE_MIB = 3 * 1024 * 1024;
 const STAGE_IDS = Object.freeze(["snow", "fire", "dino", "toy", "cat", "fantasy", "sky", "ruins"]);
 const LAYER_KEYS = Object.freeze(["sky", "horizon", "mid", "ground", "fg", "decor"]);
@@ -35,7 +35,7 @@ const STAGE_ASSET_KEYS = Object.freeze({
 });
 const EXPECTED_VALIDATE_CHECKS = 127;
 const EXPECTED_MUTATIONS = 45;
-const DINO_PRIORITY_PRELOAD_FILE = "branch_dino_adventure_rescue_before_20260723.webp";
+const DINO_PRIORITY_PRELOAD_FILE = "branch_dino_adventure_rescue_children_before_20260723.webp";
 
 const CANONICAL = Object.freeze([
   Object.freeze({ name: "branch_dino_far_herd_cutout_20260721.webp", width: 1894, height: 367, bytes: 599190, sha256: "9217d6f0c2e59abb9c8285fa4d0d305b85d6f4e4ed4e9b1d5223c2381a1add9e", raw: "01_dino_far_herd_raw.png", rawWidth: 1942, rawHeight: 809, rawBytes: 1126084, rawSha256: "6c5446c023af876c17a76706341fa7dd58363f63cf299d2e295209be9890a78b", candidate: "dino/branch_dino_far_herd_cutout_20260721.webp" }),
@@ -377,7 +377,7 @@ function validate(candidate) {
       const dinoPolishFiles = made.slice(7, 14).map(image => path.basename(image.src));
       preloadProbe.dino = made.length === 14 &&
         made.slice(0, 6).every(image => image.src.includes("/branch_dino_")) &&
-        made.slice(6, 7).every(image => image.src.includes("/branch_dino_adventure_rescue_before_")) &&
+        made.slice(6, 7).every(image => image.src.includes("/branch_dino_adventure_rescue_children_before_")) &&
         made.slice(7, 14).every(image => image.src.includes("/branch_dino_") && !image.src.includes("/branch_dino_adventure_"));
       preloadProbe.dinoPriorityExact = JSON.stringify(dinoPriorityFiles) === JSON.stringify([DINO_PRIORITY_PRELOAD_FILE]) &&
         JSON.stringify(dinoPolishFiles) === JSON.stringify(Object.values(EXTRA_URLS.dino).map(src => path.basename(src)));
@@ -717,7 +717,7 @@ const mutations = [
   { name: "reduced motion keeps ember field", expected: "motion-night", mutate: c => ({ ...c, css: replaceExactlyOnce(c.css, ".branch-fire-ember-field,.branch-fire-crater-ember{display:none!important}", ".branch-fire-crater-ember{display:none!important}") }) },
   { name: "render allocates DOM", expected: "render-allocation", mutate: c => ({ ...c, game: mutateFunction(c.game, "renderBranchStagePolish", " const localWorldX=worldX-o;", ' document.createElement("span");\n const localWorldX=worldX-o;') }) },
   { name: "world life DOM old id", expected: "world-life-layer", mutate: c => ({ ...c, html: replaceExactlyOnce(c.html, '<div id="branchWorldLifeLayer" aria-hidden="true"></div>', '<div id="branchLandmarkLayer" aria-hidden="true"></div>') }) },
-  { name: "HTML token rolls back", expected: "query-sw", mutate: c => ({ ...c, html: replaceExactlyOnce(c.html, "styles.css?v=20260723-1435", "styles.css?v=20260723-1434") }) },
+  { name: "HTML token rolls back", expected: "query-sw", mutate: c => ({ ...c, html: replaceExactlyOnce(c.html, "styles.css?v=20260723-1436", "styles.css?v=20260723-1434") }) },
   { name: "service worker version rolls back", expected: "query-sw", mutate: c => ({ ...c, sw: replaceExactlyOnce(c.sw, `const CACHE_VERSION = ${SW_VERSION};`, `const CACHE_VERSION = ${SW_VERSION - 2};`) }) }
 ];
 

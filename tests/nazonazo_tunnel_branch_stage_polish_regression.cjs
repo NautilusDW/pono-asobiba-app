@@ -18,8 +18,8 @@ const sources = Object.freeze({
 
 const STAGE_IDS = Object.freeze(["snow", "fire", "dino", "toy", "cat", "fantasy", "sky", "ruins"]);
 const LAYER_KEYS = Object.freeze(["sky", "horizon", "mid", "ground", "fg", "decor"]);
-const TOKEN = "20260723-1435";
-const SW_VERSION = 2354;
+const TOKEN = "20260723-1436";
+const SW_VERSION = 2355;
 const THREE_MIB = 3 * 1024 * 1024;
 const EXPECTED_VALIDATE_CHECKS = 143;
 const CANONICAL = Object.freeze([

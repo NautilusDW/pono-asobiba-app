@@ -12,8 +12,8 @@ const game = read("nazonazo-tunnel/js/game.js");
 const html = read("nazonazo-tunnel/index.html");
 const css = read("nazonazo-tunnel/styles.css");
 const sw = read("sw.js");
-const RUNTIME_TOKEN = "20260723-1435";
-const SW_VERSION = 2354;
+const RUNTIME_TOKEN = "20260723-1436";
+const SW_VERSION = 2355;
 
 const STAGE_IDS = ["snow", "fire", "dino", "toy", "cat", "fantasy", "sky", "ruins"];
 const LAYER_KEYS = ["sky", "horizon", "mid", "ground", "fg", "decor"];
@@ -325,7 +325,7 @@ assert.deepEqual(constructed.slice(13, 19).map(image => image.src), Object.value
   "Dino raster preload must include the meadow but no retired decor strip");
 assert.equal(preloadContext.rasterCache.size, 16, "Dino must add exactly six raster preloaders");
 preloadContext.preloadPolish({ id: "dino" });
-const expectedDinoPriorityUrl = "../assets/images/nazonazo-tunnel/branch_dino_adventure_rescue_before_20260723.webp?v=20260723-1435";
+const expectedDinoPriorityUrl = "../assets/images/nazonazo-tunnel/branch_dino_adventure_rescue_children_before_20260723.webp?v=20260723-1436";
 assert.deepEqual(constructed.slice(19, 20).map(image => image.src), [expectedDinoPriorityUrl],
   "Dino selected-stage preload must initially request only the blocked rescue scene");
 const dinoWorldfixUrls = Object.entries(WORLD_COHERENCE_ASSETS)
