@@ -1,5 +1,10 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2361: ひょっこりハイタッチ「もりのおさんぽ」の背景色を場所ごとに刷新。
+// どんぐりみちは赤茶・琥珀、みずべは水色・青緑へ分離し、こもれびひろばの
+// 黄緑との差を明確化。locations.js の query を20260723-1444へ同期。背景2点と
+// ゲーム個別ファイルはnetwork-first配信のためCRITICAL_ASSETSには追加しない。
+// play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2361)。
 // v2360: ひょっこりハイタッチの動物本体だけを下辺マスク内へ分離し、月・
 // 通常光・ボーナス画像内の星と光彩・加点表示が右上で切れる問題を修正。
 // styles.css/index.html queryを20260723-1442へ同期。ゲーム個別ファイルは
@@ -941,7 +946,7 @@
 // styles.css／game.js queryを20260723-1429へ同期。ゲーム個別ファイルと画像は
 // network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
 // PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2347)。
-const CACHE_VERSION = 2360;
+const CACHE_VERSION = 2361;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [
