@@ -1,0 +1,27 @@
+Unity Editor version:    6000.3.19f1 (7689f4515d75)
+Branch:                  6000.3/staging
+Build type:              Release
+Batch mode:              YES
+macOS version:           Version 26.5.2 (Build 25F84)
+Darwin version:          25.5.0
+Architecture:            arm64
+Running under Rosetta:   NO
+Available memory:        65536 MB
+Date:                    2026-07-23T18:28:49Z
+[Licensing::Module] Trying to connect to existing licensing client channel...
+[Licensing::IpcConnector] Successfully connected to: "LicenseClient-ndw_mac" at "2026-07-23T18:28:49.845285Z"
+Launching external process: /Applications/Unity/Hub/Editor/6000.3.19f1/Unity.app/Contents/Resources/PackageManager/Server/UnityPackageManager
+
+COMMAND LINE ARGUMENTS:
+/Applications/Unity/Hub/Editor/6000.3.19f1/Unity.app/Contents/MacOS/Unity
+-batchmode
+-quit
+-projectPath
+/Users/ndw_mac/AppDevelopment/pono-asobiba-app/unity/PonoNativeGames
+-executeMethod
+Pono.AquaLumina.Editor.AquaLuminaProjectSetup.SetupFromCommandLine
+-logFile
+/Users/ndw_mac/AppDevelopment/pono-asobiba-app/unity/PonoNativeGames/aqualumina_verify.log
+Successfully changed project path to: /Users/ndw_mac/AppDevelopment/pono-asobiba-app/unity/PonoNativeGames
+/Users/ndw_mac/AppDevelopment/pono-asobiba-app/unity/PonoNativeGames
+[Package Manager] Server process was shutdown
