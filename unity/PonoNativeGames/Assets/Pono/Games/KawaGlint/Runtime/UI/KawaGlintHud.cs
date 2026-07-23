@@ -24,7 +24,11 @@ namespace Pono.KawaGlint.UI
         private static readonly Color GaugeGreen = new Color32(0x6F, 0xCF, 0x6F, 0xFF);
         private static readonly Color GaugeYellow = new Color32(0xFF, 0xD9, 0x3D, 0xFF);
         private static readonly Color GaugeOrange = new Color32(0xFF, 0x8A, 0x3D, 0xFF);
-        private static readonly Color RarityNormalColor = new Color32(0x7F, 0xD0, 0xE8, 0xFF);
+
+        /// <summary>Catch-banner rarity dot colors -- the single shared source for both this HUD's
+        /// default banner state and <see cref="Gameplay.KawaGlintGameController"/>'s dot-color lookup.</summary>
+        public static readonly Color RarityNormalColor = new Color32(0x7F, 0xD0, 0xE8, 0xFF);
+        public static readonly Color RarityRareColor = new Color32(0xFF, 0xD9, 0x3D, 0xFF);
 
         private Text _phaseWord;
         private Text _narrationBar;
@@ -164,11 +168,6 @@ namespace Pono.KawaGlint.UI
             StartCoroutine(AnimateFlyWord(word));
         }
 
-        public void ShowCatchBanner(string label, string speciesName)
-        {
-            ShowCatchBanner(label, speciesName, RarityNormalColor);
-        }
-
         public void ShowCatchBanner(string label, string speciesName, Color dotColor)
         {
             if (_catchBannerLabel != null)
@@ -225,7 +224,7 @@ namespace Pono.KawaGlint.UI
             phaseRect.anchoredPosition = new Vector2(0f, -60f);
             phaseRect.sizeDelta = new Vector2(1200f, 100f);
 
-            var narrationBg = KawaGlintUiFactory.CreateImage("NarrationBar", canvasTransform, new Color(0.05f, 0.16f, 0.24f, 0.72f));
+            var narrationBg = KawaGlintUiFactory.CreateImage("NarrationBarBg", canvasTransform, new Color(0.05f, 0.16f, 0.24f, 0.72f));
             var narrationBgRect = narrationBg.rectTransform;
             narrationBgRect.anchorMin = new Vector2(0.5f, 0f);
             narrationBgRect.anchorMax = new Vector2(0.5f, 0f);
@@ -233,7 +232,7 @@ namespace Pono.KawaGlint.UI
             narrationBgRect.anchoredPosition = new Vector2(0f, 40f);
             narrationBgRect.sizeDelta = new Vector2(1400f, 96f);
 
-            _narrationBar = KawaGlintUiFactory.CreateText("NarrationBarLabel", narrationBgRect, string.Empty, 40, TextAnchor.MiddleCenter, Color.white);
+            _narrationBar = KawaGlintUiFactory.CreateText("NarrationBar", narrationBgRect, string.Empty, 40, TextAnchor.MiddleCenter, Color.white);
             KawaGlintUiFactory.Fill(_narrationBar.rectTransform);
 
             _bucketCount = KawaGlintUiFactory.CreateText("BucketCount", canvasTransform, "つれた かず 0", 36, TextAnchor.UpperRight, Color.white);

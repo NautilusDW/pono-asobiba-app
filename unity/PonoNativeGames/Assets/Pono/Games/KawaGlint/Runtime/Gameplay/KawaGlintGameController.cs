@@ -174,10 +174,8 @@ namespace Pono.KawaGlint.Gameplay
                     break;
                 case TsuriPhase.Renda:
                     _hud.SetRendaGauge(_session.GaugePct);
-                    if (_session.FloorHeldSec >= FloorHeldStuckSec && _session.GaugePct <= RendaStuckFloorPct)
-                    {
-                        _hud.SetRendaBigText(RendaBigTextTapTap);
-                    }
+                    var stuckAtFloor = _session.FloorHeldSec >= FloorHeldStuckSec && _session.GaugePct <= RendaStuckFloorPct;
+                    _hud.SetRendaBigText(stuckAtFloor ? RendaBigTextTapTap : RendaBigTextPull);
                     break;
             }
         }
