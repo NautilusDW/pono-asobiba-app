@@ -512,9 +512,23 @@ function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
   const normalized = L.normalizeState({ plots: [{ seedId: "ninjin", daysGrown: 2, wateredToday: true, wilted: false, bug: true }] });
   assert.equal(normalized.plots.length, 9, "normalizeState は常に9枠の plots を返す");
   assert.equal(normalized.plots[0].seedId, "ninjin", "妥当なフィールドは保持される");
+  assert.equal(normalized.plots[0].wiltCount, 0, "wiltCount 欠損の旧セーブは 0 へフォールバックする");
+  assert.equal(normalized.plots[0].bugsMissed, 0, "bugsMissed 欠損の旧セーブは 0 へフォールバックする");
   for (let i = 1; i < normalized.plots.length; i++) {
     assert.deepEqual(normalized.plots[i], L.emptyPlot(), `欠損plot${i}はemptyPlot相当になる`);
   }
+
+  // wiltCount/bugsMissed を持つ新セーブは値をそのまま保持する (フォールバックしない)。
+  const normalizedWithTracking = L.normalizeState({ plots: [{ seedId: "tomato", daysGrown: 3, wateredToday: false, wilted: false, bug: false, wiltCount: 2, bugsMissed: 1 }] });
+  assert.equal(normalizedWithTracking.plots[0].wiltCount, 2, "妥当な wiltCount は保持される");
+  assert.equal(normalizedWithTracking.plots[0].bugsMissed, 1, "妥当な bugsMissed は保持される");
+  const normalizedBadTracking = L.normalizeState({ plots: [{ seedId: "tomato", daysGrown: 3, wiltCount: -1, bugsMissed: "oops" }] });
+  assert.equal(normalizedBadTracking.plots[0].wiltCount, 0, "負数の wiltCount は 0 へ丸められる");
+  assert.equal(normalizedBadTracking.plots[0].bugsMissed, 0, "型不正の bugsMissed は 0 へ丸められる");
+
+  // wiltCount/bugsMissed フィールドを持たない旧セーブ形式 (この2フィールド追加より前の実データ想定)。
+  // normalizeState は不足分を 0 で補うので、期待値は明示的に { wiltCount: 0, bugsMissed: 0 } を足して比較する。
+  const withTrackingDefaults = plot => Object.assign({}, plot, { wiltCount: 0, bugsMissed: 0 });
 
   const legacyPlots = [
     { seedId: "ninjin", daysGrown: 2, wateredToday: true, wilted: false, bug: true },
@@ -523,7 +537,7 @@ function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
   ];
   const normalizedLegacy = L.normalizeState({ lastSeenKey: "2026-07-22", plots: legacyPlots });
   assert.equal(normalizedLegacy.plots.length, 9, "旧3区画セーブを9区画へ拡張する");
-  assert.deepEqual(normalizedLegacy.plots.slice(0, 3), legacyPlots, "旧3区画セーブのplot0〜2を同じ順序で保持する");
+  assert.deepEqual(normalizedLegacy.plots.slice(0, 3), legacyPlots.map(withTrackingDefaults), "旧3区画セーブのplot0〜2を同じ順序で保持し、欠損した計量トラッキング2フィールドは0で補う");
   assert.ok(normalizedLegacy.plots.slice(3).every(plot => JSON.stringify(plot) === JSON.stringify(L.emptyPlot())), "旧3区画セーブには空のplot3〜8を追加する");
 
   const legacyFourPlots = legacyPlots.concat([
@@ -531,7 +545,7 @@ function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
   ]);
   const normalizedLegacyFour = L.normalizeState({ lastSeenKey: "2026-07-23", plots: legacyFourPlots });
   assert.equal(normalizedLegacyFour.plots.length, 9, "旧4区画セーブを9区画へ拡張する");
-  assert.deepEqual(normalizedLegacyFour.plots.slice(0, 4), legacyFourPlots, "旧4区画セーブのplot0〜3の意味と順序を保持する");
+  assert.deepEqual(normalizedLegacyFour.plots.slice(0, 4), legacyFourPlots.map(withTrackingDefaults), "旧4区画セーブのplot0〜3の意味と順序を保持し、欠損した計量トラッキング2フィールドは0で補う");
   assert.ok(normalizedLegacyFour.plots.slice(4).every(plot => JSON.stringify(plot) === JSON.stringify(L.emptyPlot())), "旧4区画セーブには空のplot4〜8を追加する");
 
   const tenPlots = Array.from({ length: 10 }, (_, index) => ({
@@ -543,7 +557,7 @@ function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
   }));
   const normalizedTen = L.normalizeState({ plots: tenPlots });
   assert.equal(normalizedTen.plots.length, 9, "10区画以上の未知セーブは固定9区画へ切り詰める");
-  assert.deepEqual(normalizedTen.plots, tenPlots.slice(0, 9), "切り詰め時もplot0〜8までは同じindexで保持する");
+  assert.deepEqual(normalizedTen.plots, tenPlots.slice(0, 9).map(withTrackingDefaults), "切り詰め時もplot0〜8までは同じindexで保持し、欠損した計量トラッキング2フィールドは0で補う");
   assert.equal(normalizedTen.plots.some(plot => plot.daysGrown === 9), false, "10枠目以降のデータは混入しない");
 
   const badCrop = L.normalizeState({ plots: [{ seedId: "unknown-crop", daysGrown: 5 }] });
@@ -959,6 +973,268 @@ function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
   assert.match(stylesCss, /\.watered-drop\s*\{[^}]*pointer-events:\s*none/s, 'しずくは畑の操作を妨げない');
   assert.match(stylesCss, /\.plant\s*\{[^}]*position:\s*absolute[^}]*inset:\s*0/s, '芽の中央基準は畝全面へ固定する');
   assert.doesNotMatch(indexHtml + gameJs + stylesCss, /🚿|💧/, 'じょうろ・しずくの絵文字をUI実装に残さない');
+}
+
+// ── 29. 計量トラッキング: wiltCount / bugsMissed の日次カウント ──────
+// (machizukuri やさいスタンド計量リビール向け新規トラッキング)
+{
+  // (a) 水やりを怠った日ごとに wiltCount が加算される (連続放置は連続で加算)。
+  const s = L.createInitialState("2026-07-01");
+  L.plantSeed(s, 0, "tomato");
+  assert.equal(s.plots[0].wiltCount, 0, "植栽直後は wiltCount=0");
+  assert.equal(s.plots[0].bugsMissed, 0, "植栽直後は bugsMissed=0");
+
+  L.advanceOneDay(s, "2026-07-02"); // 水やりせず放置
+  assert.equal(s.plots[0].wiltCount, 1, "水やりを怠った1日目で wiltCount=1");
+  L.advanceOneDay(s, "2026-07-03"); // さらに放置
+  assert.equal(s.plots[0].wiltCount, 2, "連続放置で wiltCount が積み上がる");
+
+  L.waterPlot(s, 0);
+  L.advanceOneDay(s, "2026-07-04"); // 水やり済みの日は加算されない
+  assert.equal(s.plots[0].wiltCount, 2, "水やり済みの日は wiltCount が増えない");
+
+  // (b) 虫が来ていて、その日追い払わずに日をまたぐと bugsMissed が加算される。
+  // 判定は bugShouldSpawn による新しい虫の再抽選より前の「直前のbug値」を見る。
+  const s2 = L.createInitialState("2026-07-01");
+  L.plantSeed(s2, 1, "ninjin");
+  L.waterPlot(s2, 1);
+  L.advanceOneDay(s2, "2026-07-02"); // stage1へ (虫が湧きうる段階)
+  s2.plots[1].bug = true; // 追い払わないまま虫を強制的に立てる
+  assert.equal(s2.plots[1].bugsMissed, 0, "まだロールオーバーしていないので bugsMissed=0");
+  L.waterPlot(s2, 1);
+  L.advanceOneDay(s2, "2026-07-03"); // bug=true のままロールオーバー
+  assert.equal(s2.plots[1].bugsMissed, 1, "虫を追い払わずに日をまたぐと bugsMissed+1");
+
+  // (c) shooBug で追い払った日はカウントされない。
+  const s3 = L.createInitialState("2026-07-01");
+  L.plantSeed(s3, 2, "onion");
+  L.waterPlot(s3, 2);
+  L.advanceOneDay(s3, "2026-07-02");
+  s3.plots[2].bug = true;
+  L.shooBug(s3, 2); // 追い払う
+  L.waterPlot(s3, 2);
+  L.advanceOneDay(s3, "2026-07-03");
+  assert.equal(s3.plots[2].bugsMissed, 0, "追い払った虫は bugsMissed に数えない");
+
+  // (d) 虫がいなければ bugsMissed は増えない。
+  const s4 = L.createInitialState("2026-07-01");
+  L.plantSeed(s4, 3, "potato");
+  L.advanceOneDay(s4, "2026-07-02");
+  assert.equal(s4.plots[3].bugsMissed, 0, "虫がいなければ bugsMissed は増えない");
+
+  // (e) plantSeed は wiltCount/bugsMissed を明示的に0リセットする防御コードを持つ
+  // (通常の空plotは既に0だが、既存の他フィールドと同様に明示リセットする既存の流儀に揃える)。
+  const s5 = L.createInitialState("2026-07-01");
+  s5.plots[0].wiltCount = 4;
+  s5.plots[0].bugsMissed = 3;
+  assert.ok(L.plantSeed(s5, 0, "tomato"), "植栽できる");
+  assert.equal(s5.plots[0].wiltCount, 0, "plantSeed は wiltCount を明示的に0へリセットする");
+  assert.equal(s5.plots[0].bugsMissed, 0, "plantSeed は bugsMissed を明示的に0へリセットする");
+}
+
+// ── 30. 重さ乗数 (weightMultiplier) の計算式: 検証済み4ベクトル ─────
+// 仕様確定式 (数値を変更しないこと):
+//   extraDays = clamp(daysGrown − stage4到達最小daysGrown(常に3), 0, 5)
+//   weightMultiplier = clamp(1.0 − 0.2×wiltCount − 0.2×bugsMissed + 0.15×extraDays, 0.4, 2.0)
+{
+  function harvestWithTracking(daysGrown, wateredToday, wiltCount, bugsMissed) {
+    const s = L.createInitialState("2026-07-01");
+    L.plantSeed(s, 0, "tomato");
+    s.plots[0].daysGrown = daysGrown;
+    s.plots[0].wateredToday = wateredToday;
+    s.plots[0].wiltCount = wiltCount;
+    s.plots[0].bugsMissed = bugsMissed;
+    return L.harvest(s, 0);
+  }
+
+  const vectors = [
+    { wiltCount: 3, bugsMissed: 2, daysGrown: 3, expectedExtraDays: 0, expectedMultiplier: 0.4 },
+    { wiltCount: 0, bugsMissed: 0, daysGrown: 3, expectedExtraDays: 0, expectedMultiplier: 1.0 },
+    { wiltCount: 0, bugsMissed: 2, daysGrown: 8, expectedExtraDays: 5, expectedMultiplier: 1.35 },
+    { wiltCount: 0, bugsMissed: 0, daysGrown: 8, expectedExtraDays: 5, expectedMultiplier: 1.75 }
+  ];
+  for (const v of vectors) {
+    const res = harvestWithTracking(v.daysGrown, false, v.wiltCount, v.bugsMissed);
+    assert.equal(res.ok, true, `daysGrown=${v.daysGrown} は収穫成功する (stage4到達)`);
+    assert.equal(res.extraDays, v.expectedExtraDays, `wiltCount=${v.wiltCount},bugsMissed=${v.bugsMissed},daysGrown=${v.daysGrown} → extraDays=${v.expectedExtraDays}`);
+    assert.equal(res.weightMultiplier, v.expectedMultiplier, `wiltCount=${v.wiltCount},bugsMissed=${v.bugsMissed},extraDays=${v.expectedExtraDays} → weightMultiplier=${v.expectedMultiplier}`);
+    assert.equal(res.weight, Math.round(L.BASE_WEIGHT * v.expectedMultiplier), "weight は BASE_WEIGHT×weightMultiplier の丸め値");
+  }
+
+  // クランプ境界 (仕様: 0.4〜2.0)。
+  const extremeLow = harvestWithTracking(3, false, 10, 10); // 理論値は大幅なマイナスでも下限で止まる
+  assert.equal(extremeLow.weightMultiplier, 0.4, "理論値が0未満でも下限0.4でクランプされる");
+  const extremeHigh = harvestWithTracking(20, false, 0, 0); // daysGrownが大きくてもextraDaysは5で頭打ち
+  assert.equal(extremeHigh.extraDays, 5, "extraDays は daysGrown が大きくても5でクランプされる");
+  assert.equal(extremeHigh.weightMultiplier, 1.75, "extraDays=5が上限なので、それ以上 daysGrown を伸ばしても乗数は増えない");
+
+  // extraDays は stage4到達に必要な最小daysGrown(=3、4作物共通)からの差分。4作物とも同じ基準。
+  for (const cropId of ["tomato", "ninjin", "potato", "onion"]) {
+    const s = L.createInitialState("2026-07-01");
+    L.plantSeed(s, 0, cropId);
+    s.plots[0].daysGrown = 3; // stage4ちょうど到達
+    s.plots[0].wateredToday = false;
+    const res = L.harvest(s, 0);
+    assert.equal(res.extraDays, 0, `${cropId}: daysGrown=3 (stage4ちょうど到達) は extraDays=0`);
+  }
+}
+
+// ── 31. harvest() 返り値の拡張フィールド ─────────────────────────────
+{
+  const s = L.createInitialState("2026-07-01");
+  L.plantSeed(s, 0, "ninjin");
+  s.plots[0].daysGrown = 4; // stage4 + extraDays=1
+  s.plots[0].wateredToday = false;
+  s.plots[0].wiltCount = 1;
+  s.plots[0].bugsMissed = 0;
+  const res = L.harvest(s, 0);
+  assert.equal(res.ok, true);
+  for (const key of ["seedId", "weightMultiplier", "weight", "wiltCount", "bugsMissed", "extraDays"]) {
+    assert.ok(key in res, `harvest() の返り値に ${key} が含まれる`);
+  }
+  assert.equal(res.wiltCount, 1, "返り値の wiltCount は収穫時点のplotの値をそのまま返す");
+  assert.equal(res.bugsMissed, 0, "返り値の bugsMissed は収穫時点のplotの値をそのまま返す");
+  assert.equal(res.extraDays, 1, "extraDays = daysGrown(4) - stage4最小daysGrown(3) = 1");
+  assert.equal(res.weightMultiplier, 0.95, "weightMultiplier = 1.0 - 0.2*wiltCount(1) + 0.15*extraDays(1) = 0.95 (丸め後)");
+  assert.deepEqual(s.plots[0], L.emptyPlot(), "収穫後 plot は wiltCount/bugsMissed も含め完全に空へ戻る");
+
+  // 収穫失敗時 (stage4未満) は拡張フィールドを含まない ({ ok: false } のみ)。
+  const s2 = L.createInitialState("2026-07-01");
+  L.plantSeed(s2, 0, "ninjin");
+  const failRes = L.harvest(s2, 0);
+  assert.deepEqual(failRes, { ok: false }, "収穫失敗時は { ok: false } のみを返す");
+}
+
+// ── 32. common/hatake-harvest-bridge.js: 収穫キューブリッジ ──────────
+// hatake-nikki → machizukuri の一方向データ橋渡し (machizukuri → hatake-nikki
+// 方向の書き込みはこのモジュールには存在しない = enqueue以外に書き込みAPIが無い)。
+{
+  const bridgePath = path.join(root, "common/hatake-harvest-bridge.js");
+  assert.ok(fs.existsSync(bridgePath), "common/hatake-harvest-bridge.js が存在する");
+  const bridgeSrc = fs.readFileSync(bridgePath, "utf8");
+  assert.doesNotThrow(() => new vm.Script(bridgeSrc, { filename: "hatake-harvest-bridge.js" }), "hatake-harvest-bridge.js は構文的に妥当");
+
+  function makeFakeLocalStorage() {
+    const store = {};
+    return {
+      getItem: k => (Object.prototype.hasOwnProperty.call(store, k) ? store[k] : null),
+      setItem: (k, v) => { store[k] = String(v); },
+      removeItem: k => { delete store[k]; }
+    };
+  }
+
+  // localStorage をテストごとに差し替えたいので、その都度 require キャッシュを外して読み直す。
+  function loadBridge(fakeLocalStorage) {
+    const resolved = require.resolve(bridgePath);
+    delete require.cache[resolved];
+    global.localStorage = fakeLocalStorage;
+    return require(bridgePath);
+  }
+
+  try {
+    // (a) 空キューは hasPending()=false, dequeueOldest()=null, peekAll()=[]
+    {
+      const B = loadBridge(makeFakeLocalStorage());
+      assert.equal(B.hasPending(), false, "初期状態は未計量の収穫なし");
+      assert.equal(B.dequeueOldest(), null, "空キューのdequeueOldestはnull");
+      assert.deepEqual(B.peekAll(), [], "空キューのpeekAllは空配列");
+    }
+
+    // (b) enqueue → hasPending/peekAll/dequeueOldest の基本往復
+    {
+      const B = loadBridge(makeFakeLocalStorage());
+      B.enqueue({
+        seedId: "tomato", name: "とまと",
+        img: "../assets/images/hatake-nikki/crops/tomato_stage_4_ready.webp",
+        weightMultiplier: 1.35, weight: 135, wiltCount: 0, bugsMissed: 2, extraDays: 5
+      });
+      assert.equal(B.hasPending(), true, "enqueue後はhasPending=true");
+      const all = B.peekAll();
+      assert.equal(all.length, 1, "peekAllで1件確認できる");
+      assert.equal(B.hasPending(), true, "peekAll後もキューは消費されない");
+      assert.equal(all[0].seedId, "tomato");
+      assert.equal(all[0].weightMultiplier, 1.35);
+      assert.equal(typeof all[0].ts, "number", "enqueueがtsを付与する");
+
+      const item = B.dequeueOldest();
+      assert.equal(item.seedId, "tomato", "dequeueOldestはenqueueした内容を返す");
+      assert.equal(B.hasPending(), false, "dequeue後はキューが空になる");
+      assert.equal(B.dequeueOldest(), null, "2回目のdequeueOldestはnull");
+    }
+
+    // (c) FIFO順序 (最古から取り出す)
+    {
+      const B = loadBridge(makeFakeLocalStorage());
+      B.enqueue({ seedId: "tomato", weightMultiplier: 1.0 });
+      B.enqueue({ seedId: "ninjin", weightMultiplier: 1.2 });
+      B.enqueue({ seedId: "potato", weightMultiplier: 0.8 });
+      assert.equal(B.dequeueOldest().seedId, "tomato", "最初にenqueueしたものが最初に出る");
+      assert.equal(B.dequeueOldest().seedId, "ninjin");
+      assert.equal(B.dequeueOldest().seedId, "potato");
+      assert.equal(B.dequeueOldest(), null);
+    }
+
+    // (d) MAX_QUEUE_LEN 超過時は古い順に間引く (無限増殖防止)
+    {
+      const B = loadBridge(makeFakeLocalStorage());
+      assert.equal(B.MAX_QUEUE_LEN, 20, "上限は仕様確定値20件");
+      // weight フィールドを連番マーカーとして流用し、間引き後にどのエントリが残るかを追跡する
+      // (enqueue はスキーマ外の未知フィールドを保持しないため、既定フィールドを使う)。
+      for (let i = 0; i < B.MAX_QUEUE_LEN + 5; i++) {
+        B.enqueue({ seedId: "tomato", weightMultiplier: 1.0, weight: i });
+      }
+      const all = B.peekAll();
+      assert.equal(all.length, B.MAX_QUEUE_LEN, `上限${B.MAX_QUEUE_LEN}件を超えない`);
+      assert.equal(all[0].weight, 5, "上限超過時は古い順に間引かれ、最古の5件が消える");
+      assert.equal(all[all.length - 1].weight, B.MAX_QUEUE_LEN + 4, "直近のenqueueは残る");
+    }
+
+    // (e) 壊れたJSON/非配列値は空配列にフォールバックする (クラッシュしない)
+    {
+      const fakeLS = makeFakeLocalStorage();
+      fakeLS.setItem("pono_hatake_harvest_queue_v1", "{not-valid-json");
+      const B = loadBridge(fakeLS);
+      assert.doesNotThrow(() => B.hasPending(), "壊れたJSONでもhasPendingはクラッシュしない");
+      assert.equal(B.hasPending(), false, "壊れたJSONは空扱い");
+      assert.deepEqual(B.peekAll(), [], "壊れたJSONはpeekAllで空配列");
+
+      const fakeLS2 = makeFakeLocalStorage();
+      fakeLS2.setItem("pono_hatake_harvest_queue_v1", JSON.stringify({ not: "an array" }));
+      const B2 = loadBridge(fakeLS2);
+      assert.deepEqual(B2.peekAll(), [], "非配列値も空配列にフォールバックする");
+    }
+
+    // (f) キー名は仕様確定値 (pono_ 接頭辞 + _v1 サフィックス規約)
+    {
+      const B = loadBridge(makeFakeLocalStorage());
+      assert.equal(B.KEY, "pono_hatake_harvest_queue_v1", "localStorageキー名は仕様確定値");
+    }
+  } finally {
+    delete global.localStorage;
+  }
+
+  // machizukuri → hatake-nikki 方向の書き込みAPIが存在しないことを静的にも確認する
+  // (hatake-nikki 本体のセーブキーへ一切触れない設計であることの回帰検知)。
+  assert.doesNotMatch(bridgeSrc, /pono_hatake_state_v1|pono_hatake_zukan_v1/, "hatake-harvest-bridge.js は hatake-nikki 本体のセーブキーに一切触れない");
+}
+
+// ── 33. hatake-nikki 側の配線: doHarvest → HatakeHarvestBridge.enqueue ──
+{
+  assert.match(gameJs, /window\.HatakeHarvestBridge\s*&&\s*crop/, "doHarvest が HatakeHarvestBridge の存在チェック付きで呼ばれる");
+  assert.match(
+    gameJs,
+    /window\.HatakeHarvestBridge\.enqueue\(\{\s*seedId:\s*res\.seedId,\s*name:\s*crop\.name,\s*img:\s*crop\.img,\s*weightMultiplier:\s*res\.weightMultiplier,\s*weight:\s*res\.weight,\s*wiltCount:\s*res\.wiltCount,\s*bugsMissed:\s*res\.bugsMissed,\s*extraDays:\s*res\.extraDays\s*\}\)/,
+    "doHarvest が harvest() の拡張返り値をそのままキューへ渡す"
+  );
+  // incrementStat の直後に配線する設計 (design doc の呼び出し順を維持)。
+  const incrementStatIdx = gameJs.indexOf("window.incrementStat('hatake_harvest', 1);");
+  const enqueueIdx = gameJs.indexOf("window.HatakeHarvestBridge.enqueue(");
+  assert.ok(incrementStatIdx >= 0 && enqueueIdx > incrementStatIdx, "ブリッジへのenqueueはincrementStat呼び出しの後に配線される");
+
+  assert.match(indexHtml, /<script src="\.\.\/common\/hatake-harvest-bridge\.js"><\/script>/, "index.html が common/hatake-harvest-bridge.js を読み込む");
+  const idxBridge = indexHtml.indexOf('common/hatake-harvest-bridge.js');
+  const idxLogicTag = indexHtml.indexOf('js/logic.js');
+  assert.ok(idxBridge !== -1 && idxBridge < idxLogicTag, "hatake-harvest-bridge.js は logic.js より前に読み込まれる");
 }
 
 console.log("hatake nikki regression: PASS");

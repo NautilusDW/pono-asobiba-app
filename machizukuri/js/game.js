@@ -206,7 +206,11 @@
       var entry = findLotState(lotId);
       if (!entry) return;
       if (entry.partId) {
-        openPopover(lotId, entry.partId);
+        if (entry.partId === 'yasai_stand' && window.HatakeHarvestBridge && window.HatakeHarvestBridge.hasPending()) {
+          openWeighReveal(lotId, entry.partId);
+        } else {
+          openPopover(lotId, entry.partId);
+        }
       } else {
         openPicker(lotId);
       }
@@ -451,6 +455,104 @@
       goToRoom();
     }
 
+    // ═══ やさいスタンド 計量リビール (はたけの収穫を天秤演出で見せる。
+    // guragura-seesaw/js/logic.js の springStep()/isSettled() パターンを
+    // machizukuri/js/logic.js 側に複製した revealSpringStep()/isRevealSettled()
+    // を使う自動演出のみで、プレイヤー操作は一切受け付けない (ドラッグ操作は
+    // 実装しない、閉じるのは背景タップ/とじるボタンのみ)。
+    //
+    // ボーナス適用タイミング: dequeueOldest() 直後、静定を待たずに即時
+    // applyHarvestWeighBonus() を確定させる (first-clear.js の
+    // _finalizeGrant が選択確定後アニメ完了を待たず即実行するのと同じ思想)。
+    // これにより、アニメを最後まで見ずに背景タップ/close連打で閉じても
+    // 子どもがボーナスを失わない。 ═══
+    var weighRaf = null;
+    var weighLastTs = null;
+    var weighSim = { angle: 0, vel: 0 };
+    var weighMsgShown = false;
+    var weighTarget = 0;
+
+    function weighResultText(weightMultiplier) {
+      if (weightMultiplier >= 1.5) return 'とっても おおきく そだったね！✨';
+      if (weightMultiplier >= 1.0) return 'じょうずに そだてたね！';
+      return 'まあまあの おおきさだったよ。つぎも たのしみだね！';
+    }
+
+    function showWeighResultMsg(weightMultiplier) {
+      var msgEl = document.getElementById('weigh-msg');
+      if (!msgEl) return;
+      msgEl.textContent = weighResultText(weightMultiplier);
+      msgEl.classList.add('show');
+    }
+
+    function stopWeighLoop() {
+      if (weighRaf) cancelAnimationFrame(weighRaf);
+      weighRaf = null;
+      weighLastTs = null;
+    }
+
+    function openWeighReveal(lotId, partId) {
+      if (!window.HatakeHarvestBridge) return;
+      var item = window.HatakeHarvestBridge.dequeueOldest();
+      if (!item) { openPopover(lotId, partId); return; } // 念のためのレースガード (呼び出し直前に別タブ等で消費された場合)
+
+      var bonus = L.applyHarvestWeighBonus(appState, item.weightMultiplier);
+      saveState();
+      refreshEconomyUI();
+
+      var cropImg = document.getElementById('weigh-crop-img');
+      if (cropImg) {
+        cropImg.src = item.img || '';
+        cropImg.alt = item.name || '';
+        var scale = 0.8 + (typeof item.weightMultiplier === 'number' ? item.weightMultiplier : 1.0) * 0.3;
+        cropImg.style.setProperty('--weigh-crop-scale', scale);
+      }
+      var msgEl = document.getElementById('weigh-msg');
+      if (msgEl) msgEl.classList.remove('show');
+
+      weighSim = { angle: 0, vel: 0 };
+      weighLastTs = null;
+      weighMsgShown = false;
+      weighTarget = L.computeRevealTilt(item.weightMultiplier);
+
+      var reveal = document.getElementById('weigh-reveal');
+      if (reveal) reveal.classList.add('show');
+
+      stopWeighLoop();
+      function loop(ts) {
+        if (weighLastTs == null) weighLastTs = ts;
+        var dt = Math.min(0.05, (ts - weighLastTs) / 1000);
+        weighLastTs = ts;
+        weighSim = L.revealSpringStep(weighSim, weighTarget, dt);
+        var plankEl = document.getElementById('weighPlank');
+        if (plankEl) {
+          plankEl.style.setProperty('--weigh-tilt', weighSim.angle + 'deg');
+          plankEl.style.transform = 'rotate(' + weighSim.angle + 'deg)';
+        }
+        if (!weighMsgShown && L.isRevealSettled(weighSim, weighTarget)) {
+          weighMsgShown = true;
+          showWeighResultMsg(item.weightMultiplier);
+          if (item.weightMultiplier >= 1.5) spawnConfettiAtLot(lotId);
+          if (window.Haptics) window.Haptics.fire('stickerPaste');
+        }
+        var stillOpen = document.getElementById('weigh-reveal');
+        if (stillOpen && stillOpen.classList.contains('show')) {
+          weighRaf = requestAnimationFrame(loop);
+        } else {
+          weighRaf = null;
+        }
+      }
+      weighRaf = requestAnimationFrame(loop);
+    }
+
+    function closeWeighReveal() {
+      var reveal = document.getElementById('weigh-reveal');
+      if (reveal) reveal.classList.remove('show');
+      stopWeighLoop();
+      var msgEl = document.getElementById('weigh-msg');
+      if (msgEl) msgEl.classList.remove('show');
+    }
+
     // ═══ はな うえる (道ばた repeatable micro-slot) ═══
     function onPlantFlower() {
       var res = L.plantFlower(appState, harvestTotal());
@@ -561,6 +663,11 @@
     if (popoverStoreBtn) popoverStoreBtn.addEventListener('click', onStorePart);
     var popoverDoorBtn = document.getElementById('popover-door-btn');
     if (popoverDoorBtn) popoverDoorBtn.addEventListener('click', onDoorTap);
+
+    var weighBackdrop = document.getElementById('weigh-backdrop');
+    if (weighBackdrop) weighBackdrop.addEventListener('click', closeWeighReveal);
+    var weighCloseBtn = document.getElementById('weigh-close-btn');
+    if (weighCloseBtn) weighCloseBtn.addEventListener('click', closeWeighReveal);
   }
 
   if (!L || !P) {

@@ -15,6 +15,12 @@
 
   var _nowOverride = null;
 
+  /** v を [min,max] にクランプする (guragura-seesaw/js/logic.js の clamp() と同型)。 */
+  function clamp(v, min, max) {
+    if (!(v >= min)) return min;
+    return v > max ? max : v;
+  }
+
   function getNow() {
     return _nowOverride ? new Date(_nowOverride.getTime()) : new Date();
   }
@@ -171,6 +177,61 @@
     return { ok: true, flowers: state.flowers };
   }
 
+  // ═══ やさいスタンド計量リビール (はたけ収穫の重さを天秤演出で見せる) ═══
+  // guragura-seesaw/js/logic.js の springStep()/isSettled() と「角度のみを扱う
+  // 汎用減衰振動シミュレーション」という形だけを踏襲し、定数値 (SPRING_K/DAMP と
+  // 静定閾値) もそのまま複製する (同じ「ぐらぐら感」を再現するための意図的な値
+  // 一致。 guragura-seesaw/js/logic.js を直接 require/連結はしない — 他ゲームの
+  // logic.js をスクリプトタグで丸ごと読み込む前例がプロジェクトに無く、影響範囲を
+  // このファイル自身に閉じるための設計判断)。 computeTilt (差分×ANGLE_PER_DIFF)
+  // はスケールが weightMultiplier(0.4〜2.0) と全く異なるため流用せず、係数を
+  // 再設計した computeRevealTilt を新設する。
+  var REVEAL_MAX_ANGLE = 14;        // deg クランプ (guragura MAX_ANGLE と同じ視覚レンジ)
+  var REVEAL_ANGLE_PER_MULT = 14;   // deg / (weightMultiplier-1.0 が 1.0 動くごと)
+  var REVEAL_SPRING_K = 60;         // guragura SPRING_K と同値
+  var REVEAL_SPRING_DAMP = 5.5;     // guragura SPRING_DAMP と同値
+
+  /** weightMultiplier(0.4〜2.0) → 天秤の目標傾き(deg)。 1.0で水平、大きいほど収穫物側(右皿)が沈む。 */
+  function computeRevealTilt(weightMultiplier) {
+    var m = (typeof weightMultiplier === 'number' && isFinite(weightMultiplier)) ? weightMultiplier : 1.0;
+    var deg = (m - 1.0) * REVEAL_ANGLE_PER_MULT;
+    return clamp(deg, -REVEAL_MAX_ANGLE, REVEAL_MAX_ANGLE);
+  }
+
+  /** guragura-seesaw springStep() と同一実装 (角度のみの汎用減衰振動)。 sim を mutate せず新しい {angle,vel} を返す。 */
+  function revealSpringStep(sim, targetDeg, dt) {
+    var d = clamp((typeof dt === 'number' && isFinite(dt)) ? dt : 0, 0, 0.05);
+    var angle = (sim && isFinite(sim.angle)) ? sim.angle : 0;
+    var vel = (sim && isFinite(sim.vel)) ? sim.vel : 0;
+    var target = (typeof targetDeg === 'number' && isFinite(targetDeg)) ? targetDeg : 0;
+    vel = vel + (target - angle) * REVEAL_SPRING_K * d;
+    vel = vel * Math.max(0, 1 - REVEAL_SPRING_DAMP * d);
+    angle = angle + vel * d;
+    return { angle: angle, vel: vel };
+  }
+
+  /** guragura-seesaw isSettled() と同一閾値 (角度差<0.4deg かつ 速度<1.5)。 */
+  function isRevealSettled(sim, targetDeg) {
+    var angle = (sim && isFinite(sim.angle)) ? sim.angle : 0;
+    var vel = (sim && isFinite(sim.vel)) ? sim.vel : 0;
+    var target = (typeof targetDeg === 'number' && isFinite(targetDeg)) ? targetDeg : 0;
+    return Math.abs(angle - target) < 0.4 && Math.abs(vel) < 1.5;
+  }
+
+  /** harvestSpent への還元ボーナス量 (常に0以上、ペナルティなし)。 */
+  function harvestWeighBonus(weightMultiplier) {
+    var m = (typeof weightMultiplier === 'number' && isFinite(weightMultiplier)) ? weightMultiplier : 1.0;
+    return Math.max(0, Math.round(m));
+  }
+
+  /** 計量リビール確定時に呼ぶ。state.harvestSpent を mutate して減算し、ボーナス量を返す。 */
+  function applyHarvestWeighBonus(state, weightMultiplier) {
+    if (!state || typeof state.harvestSpent !== 'number') return 0;
+    var bonus = harvestWeighBonus(weightMultiplier);
+    state.harvestSpent -= bonus;
+    return bonus;
+  }
+
   /** 12/12 到達を milestoneSeen.district1 で一度だけ検出する。 */
   function milestoneReached(state) {
     if (!state || !Array.isArray(state.lots) || !state.milestoneSeen ||
@@ -251,7 +312,12 @@
     buyAndPlace: buyAndPlace,
     storePart: storePart,
     plantFlower: plantFlower,
-    milestoneReached: milestoneReached
+    milestoneReached: milestoneReached,
+    computeRevealTilt: computeRevealTilt,
+    revealSpringStep: revealSpringStep,
+    isRevealSettled: isRevealSettled,
+    harvestWeighBonus: harvestWeighBonus,
+    applyHarvestWeighBonus: applyHarvestWeighBonus
   };
 
   if (typeof module !== 'undefined' && module.exports) {

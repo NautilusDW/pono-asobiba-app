@@ -413,11 +413,12 @@ a:focus-visible {
   touch-action: manipulation;
   transition: opacity 0.2s ease;
   --depth-scale: 1;
-  --depth-shift-y: 0cqh;
   --hideout-rotate: 0deg;
+  --ground-anchor-y: 75%;
   --foreground-top: 62%;
   --window-bottom: 35.5%;
   --char-width: 58%;
+  --char-ground-lift: 4cqh;
 }
 
 .hh-hole:focus-visible {
@@ -430,6 +431,7 @@ a:focus-visible {
 }
 
 .hh-hideout,
+.hh-ground-stack,
 .hh-char,
 .hh-sleep-fx,
 .hh-hit-fx,
@@ -437,22 +439,32 @@ a:focus-visible {
   pointer-events: none;
 }
 
-.hh-hideout {
+.hh-ground-stack {
   position: absolute;
-  top: calc(50% + var(--depth-shift-y));
+  top: 50%;
   left: 50%;
-  z-index: 2;
   display: block;
   width: min(92%, 320px);
-  height: auto;
-  transform: translate(-50%, -50%) scale(var(--depth-scale)) rotate(var(--hideout-rotate));
-  transform-origin: center;
-  object-fit: contain;
+  transform: translateX(-50%) scale(var(--depth-scale)) rotate(var(--hideout-rotate));
+  transform-origin: 50% 0;
   transition: transform 0.12s ease;
+  aspect-ratio: 1 / 1;
+  isolation: isolate;
 }
 
-.hh-hole.is-pressed .hh-hideout {
-  transform: translate(-50%, -50%) scale(var(--depth-scale)) rotate(var(--hideout-rotate)) scale(0.96);
+.hh-hideout {
+  position: absolute;
+  top: calc(0% - var(--ground-anchor-y));
+  left: 0;
+  z-index: 2;
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.hh-hole.is-pressed .hh-ground-stack {
+  transform: translateX(-50%) scale(var(--depth-scale)) rotate(var(--hideout-rotate)) scale(0.96);
 }
 
 .hh-hideout-foreground {
@@ -471,12 +483,12 @@ a:focus-visible {
  */
 .hh-char-wrap {
   position: absolute;
-  top: calc(50% + var(--depth-shift-y));
+  top: calc(0px - clamp(24px, var(--char-ground-lift), 48px));
   left: 50%;
   z-index: 3;
   width: min(var(--char-width), 220px);
   overflow: visible;
-  transform: translate(-50%, -50%) scale(var(--depth-scale));
+  transform: translate(-50%, -50%);
   transform-origin: center;
   aspect-ratio: 1 / 1;
   isolation: isolate;
@@ -741,14 +753,14 @@ a:focus-visible {
 /* 空振りは小さな葉っぱの煙だけ。 */
 .hh-dust {
   position: absolute;
-  bottom: 4%;
+  top: calc(0px - clamp(5px, 1.5cqh, 12px));
   left: 50%;
   z-index: 6;
   display: block;
   width: min(47%, 150px);
   height: auto;
   opacity: 0;
-  transform: translate(-50%, 0) scale(0.55);
+  transform: translate(-50%, -50%) scale(0.55);
   object-fit: contain;
 }
 
@@ -757,9 +769,9 @@ a:focus-visible {
 }
 
 @keyframes hh-dust-puff {
-  0% { opacity: 0; transform: translate(-50%, 0) scale(0.5); }
-  42% { opacity: 0.9; transform: translate(-50%, -4%) scale(1); }
-  100% { opacity: 0; transform: translate(-50%, -15%) scale(1.14); }
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+  42% { opacity: 0.9; transform: translate(-50%, -60%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -76%) scale(1.14); }
 }
 
 /* ── ゆっくり案内 ── */

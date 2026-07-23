@@ -41,20 +41,32 @@ var LOCATIONS = [
     shortName: 'ひろば',
     background: ASSET_BASE + 'bg_world_komorebi_lowangle_20260724.png',
     hideouts: {
-      far: ASSET_BASE + 'hideout_world_komorebi_far_20260724.png',
-      near: ASSET_BASE + 'hideout_world_komorebi_near_20260724.png'
+      far: ASSET_BASE + 'hideout_world_komorebi_far_v2_20260724.png',
+      near: ASSET_BASE + 'hideout_world_komorebi_near_v2_20260724.png'
     },
     hideoutLayouts: {
-      far: { foregroundTop: 57, windowBottom: 38, charWidth: 54 },
-      near: { foregroundTop: 62, windowBottom: 31, charWidth: 58 }
+      far: {
+        groundAnchorY: 78.2,
+        foregroundTop: 67,
+        windowBottom: 12,
+        charWidth: 52,
+        charLiftCqh: 7.5
+      },
+      near: {
+        groundAnchorY: 75.3,
+        foregroundTop: 64,
+        windowBottom: 10,
+        charWidth: 58,
+        charLiftCqh: 8
+      }
     },
     slots: [
-      { x: 29, y: 46, depth: 0.82, hideout: 'far', rotate: -1.4 },
-      { x: 81, y: 39, depth: 0.88, hideout: 'far', rotate: 1.2 },
-      { x: 24, y: 61, depth: 0.93, hideout: 'near', rotate: 0.8 },
-      { x: 76, y: 60, depth: 0.95, hideout: 'near', rotate: -1 },
-      { x: 18, y: 82, depth: 1.06, hideout: 'near', rotate: 1.2 },
-      { x: 82, y: 80, depth: 1.08, hideout: 'near', rotate: -1.2 }
+      { x: 27, groundY: 52, depth: 0.82, hideout: 'far', rotate: 0 },
+      { x: 78, groundY: 49, depth: 0.88, hideout: 'far', rotate: 0 },
+      { x: 24, groundY: 70.5, depth: 0.93, hideout: 'near', rotate: 0 },
+      { x: 76, groundY: 70, depth: 0.95, hideout: 'near', rotate: 0 },
+      { x: 18, groundY: 91.5, depth: 1.06, hideout: 'near', rotate: 0 },
+      { x: 82, groundY: 91.5, depth: 1.08, hideout: 'near', rotate: 0 }
     ],
     partnerIds: ['kitsune', 'usagi', 'risu', 'harinezumi', 'kojika', 'araiguma'],
     bonusPartnerId: 'hikari_momonga'
@@ -65,19 +77,31 @@ var LOCATIONS = [
     shortName: 'こみち',
     background: ASSET_BASE + 'bg_world_donguri_overlook_20260724.png',
     hideouts: {
-      far: ASSET_BASE + 'hideout_world_donguri_far_20260724.png',
-      near: ASSET_BASE + 'hideout_world_donguri_near_20260724.png'
+      far: ASSET_BASE + 'hideout_world_donguri_far_v2_20260724.png',
+      near: ASSET_BASE + 'hideout_world_donguri_near_v2_20260724.png'
     },
     hideoutLayouts: {
-      far: { foregroundTop: 59.5, windowBottom: 31, charWidth: 46 },
-      near: { foregroundTop: 62, windowBottom: 26, charWidth: 46 }
+      far: {
+        groundAnchorY: 68.2,
+        foregroundTop: 60,
+        windowBottom: 14,
+        charWidth: 48,
+        charLiftCqh: 7.5
+      },
+      near: {
+        groundAnchorY: 81,
+        foregroundTop: 64,
+        windowBottom: 10,
+        charWidth: 52,
+        charLiftCqh: 8.5
+      }
     },
     slots: [
-      { x: 18, y: 46, depth: 0.82, hideout: 'far', rotate: -2 },
-      { x: 82, y: 32, depth: 0.86, hideout: 'far', rotate: 1.5 },
-      { x: 27, y: 69, depth: 0.95, hideout: 'near', rotate: 1.5 },
-      { x: 72, y: 65, depth: 0.97, hideout: 'near', rotate: -1.5 },
-      { x: 50, y: 84, depth: 1.06, hideout: 'near', rotate: 0.6 }
+      { x: 18, groundY: 52, depth: 0.82, hideout: 'far', rotate: 0 },
+      { x: 82, groundY: 38, depth: 0.86, hideout: 'far', rotate: 0 },
+      { x: 27, groundY: 81, depth: 0.95, hideout: 'near', rotate: 0 },
+      { x: 72, groundY: 77, depth: 0.97, hideout: 'near', rotate: 0 },
+      { x: 50, groundY: 96, depth: 1.06, hideout: 'near', rotate: 0 }
     ],
     partnerIds: ['risu', 'harinezumi', 'fukurou', 'karasu', 'kitsune', 'tanuki'],
     bonusPartnerId: 'hikari_momonga'
@@ -86,20 +110,32 @@ var LOCATIONS = [
     id: 'mizube',
     name: 'せせらぎの みずべ',
     shortName: 'みずべ',
-    background: ASSET_BASE + 'bg_world_mizube_waterline_20260724.png',
+    background: ASSET_BASE + 'bg_world_mizube_waterline_v2_20260724.png',
     hideouts: {
-      far: ASSET_BASE + 'hideout_world_mizube_far_20260724.png',
-      near: ASSET_BASE + 'hideout_world_mizube_near_20260724.png'
+      far: ASSET_BASE + 'hideout_world_mizube_far_v2_20260724.png',
+      near: ASSET_BASE + 'hideout_world_mizube_near_v2_20260724.png'
     },
     hideoutLayouts: {
-      far: { foregroundTop: 55.5, windowBottom: 40, charWidth: 50 },
-      near: { foregroundTop: 57.5, windowBottom: 38, charWidth: 55 }
+      far: {
+        groundAnchorY: 69.8,
+        foregroundTop: 64,
+        windowBottom: 14,
+        charWidth: 50,
+        charLiftCqh: 7
+      },
+      near: {
+        groundAnchorY: 66.8,
+        foregroundTop: 56,
+        windowBottom: 10,
+        charWidth: 55,
+        charLiftCqh: 8
+      }
     },
     slots: [
-      { x: 18, y: 43, depth: 0.82, hideout: 'far', rotate: -1 },
-      { x: 80, y: 40, depth: 0.86, hideout: 'far', rotate: 1.2 },
-      { x: 20, y: 79, depth: 1.04, hideout: 'near', rotate: 1.5 },
-      { x: 80, y: 78, depth: 1.02, hideout: 'near', rotate: -1.2 }
+      { x: 18, groundY: 47, depth: 0.82, hideout: 'far', rotate: 0 },
+      { x: 80, groundY: 45, depth: 0.86, hideout: 'far', rotate: 0 },
+      { x: 20, groundY: 88, depth: 1.04, hideout: 'near', rotate: 0 },
+      { x: 80, groundY: 87, depth: 1.02, hideout: 'near', rotate: 0 }
     ],
     // かえるを追加する第2弾までは、見分けやすいふくろうを仮の6種目にする。
     partnerIds: ['araiguma', 'kojika', 'usagi', 'karasu', 'kawauso', 'fukurou'],

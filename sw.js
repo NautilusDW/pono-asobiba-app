@@ -1,5 +1,15 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2366: ポノのまちづくり やさいスタンドに計量リビール機能を実装。
+// はたけにっき側の新規収穫キュー(common/hatake-harvest-bridge.js、
+// pono_hatake_harvest_queue_v1)を読み、guragura-seesawのspringStep/
+// isSettledパターンを machizukuri/js/logic.js に複製した天秤演出
+// (プレイヤー操作なしの自動リビール)でweightMultiplierを見せ、
+// harvestSpentへボーナス還元する (新通貨は増やさない)。
+// machizukuri/index.html に common/hatake-harvest-bridge.js の読み込みを
+// 追加、?v= を20260724-1へ同期。ゲーム個別ファイルは network-first配信の
+// ためCRITICAL_ASSETSには追加しない。play.html PAGE_CACHE_VERSION/
+// window.PONO_SW_VERSIONと同期 (2366)。
 // v2365: ひょっこりハイタッチの3地点を、紙目のある水彩・色鉛筆調の
 // 専用背景へ全面更新。低い草地目線／斜面の俯瞰／水面目線で構図を分け、
 // 各地点専用の遠景・近景開口、素材別マスク、可変配置・パースを接続した。
@@ -959,7 +969,7 @@
 // styles.css／game.js queryを20260723-1429へ同期。ゲーム個別ファイルと画像は
 // network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
 // PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2347)。
-const CACHE_VERSION = 2365;
+const CACHE_VERSION = 2366;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

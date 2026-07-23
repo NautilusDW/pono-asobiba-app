@@ -31,7 +31,9 @@ const logicJsSrc = read("machizukuri/js/logic.js");
 {
   const fns = [
     "getNow", "setNowForTest", "isEvening", "createInitialState", "normalizeState",
-    "availableVeggies", "buyAndPlace", "storePart", "plantFlower", "milestoneReached"
+    "availableVeggies", "buyAndPlace", "storePart", "plantFlower", "milestoneReached",
+    "computeRevealTilt", "revealSpringStep", "isRevealSettled",
+    "harvestWeighBonus", "applyHarvestWeighBonus"
   ];
   for (const name of fns) {
     assert.equal(typeof L[name], "function", `MachiLogic.${name} は関数`);
@@ -252,6 +254,68 @@ const logicJsSrc = read("machizukuri/js/logic.js");
 
   const n3 = L.normalizeState({ flowers: -50 });
   assert.equal(n3.flowers, 0, "負の flowers は0にクランプされる");
+}
+
+// ── 8.5 やさいスタンド計量リビール: hatake-nikki側の4検証ベクトルに対応する
+//        weightMultiplier で天秤傾き/静定/ボーナスがすべて期待通り動くこと ──
+{
+  // computeRevealTilt: (m-1.0)*14、[-14,14]クランプ。 hatake-nikki側の検証4ベクトルの
+  // weightMultiplier 実値 (0.4/1.0/1.35/1.75) を直接使う (数値を再設計しない)。
+  assert.equal(L.computeRevealTilt(0.4), -8.4, "weightMultiplier=0.4(下限)は -8.4deg (収穫物側が持ち上がる)");
+  assert.equal(L.computeRevealTilt(1.0), 0, "weightMultiplier=1.0 は水平 (0deg)");
+  assert.equal(Math.round(L.computeRevealTilt(1.35) * 100) / 100, 4.9, "weightMultiplier=1.35 は 4.9deg");
+  assert.equal(L.computeRevealTilt(1.75), 10.5, "weightMultiplier=1.75 は 10.5deg");
+  assert.equal(L.computeRevealTilt(2.0), 14, "weightMultiplier=2.0(上限) は MAX_ANGLE の 14deg に到達する");
+  assert.equal(L.computeRevealTilt(3.0), 14, "上限を超えても 14deg でクランプされる");
+  assert.equal(L.computeRevealTilt(-5), -14, "異常に小さい値でも -14deg でクランプされる");
+  assert.equal(L.computeRevealTilt(undefined), 0, "undefined は 1.0 相当 (0deg) にフォールバックする");
+  assert.equal(L.computeRevealTilt(NaN), 0, "NaN は 1.0 相当 (0deg) にフォールバックする");
+
+  // harvestWeighBonus: max(0, round(m))。 同じ4ベクトルでの早見表。
+  assert.equal(L.harvestWeighBonus(0.4), 0, "weightMultiplier=0.4 のボーナスは0 (ペナルティにはならない)");
+  assert.equal(L.harvestWeighBonus(1.0), 1, "weightMultiplier=1.0 のボーナスは1");
+  assert.equal(L.harvestWeighBonus(1.35), 1, "weightMultiplier=1.35 のボーナスは1 (round)");
+  assert.equal(L.harvestWeighBonus(1.75), 2, "weightMultiplier=1.75 のボーナスは2 (round)");
+  assert.equal(L.harvestWeighBonus(-3), 0, "負の値でもボーナスは非負にクランプされる");
+
+  // applyHarvestWeighBonus: harvestSpent を減算し常に非負ボーナスを返す (新通貨は増やさない)。
+  {
+    const s = { harvestSpent: 5 };
+    const bonus = L.applyHarvestWeighBonus(s, 1.75);
+    assert.equal(bonus, 2, "applyHarvestWeighBonus は harvestWeighBonus と同じ値を返す");
+    assert.equal(s.harvestSpent, 3, "harvestSpent が bonus ぶん減算される (5-2=3)");
+  }
+  {
+    const s = { harvestSpent: 0 };
+    const bonus = L.applyHarvestWeighBonus(s, 0.4);
+    assert.equal(bonus, 0, "weightMultiplier=0.4 でもボーナス0 (ペナルティで harvestSpent が増えたりしない)");
+    assert.equal(s.harvestSpent, 0, "harvestSpent は不変");
+  }
+  assert.equal(L.applyHarvestWeighBonus(null, 1.75), 0, "state が null なら0を返しクラッシュしない");
+  assert.equal(L.applyHarvestWeighBonus({}, 1.75), 0, "harvestSpent フィールド欠損でも0を返しクラッシュしない (state は mutate されない)");
+
+  // revealSpringStep/isRevealSettled: guragura-seesaw springStep/isSettled と同型の
+  // 減衰振動が、有限フレーム数内に目標角度へ静定すること (無限ループ化しない契約)。
+  for (const mult of [0.4, 1.0, 1.35, 1.75, 2.0]) {
+    const target = L.computeRevealTilt(mult);
+    let sim = { angle: 0, vel: 0 };
+    let settledAtFrame = -1;
+    for (let frame = 0; frame < 600; frame++) {
+      sim = L.revealSpringStep(sim, target, 1 / 60);
+      if (L.isRevealSettled(sim, target)) { settledAtFrame = frame; break; }
+    }
+    assert.ok(settledAtFrame !== -1, `weightMultiplier=${mult} は600フレーム以内に静定する (target=${target}deg)`);
+  }
+  // dt=0 (フレーム落ち直後など) や異常値でもクラッシュせず角度が有限に保たれること。
+  {
+    let sim = L.revealSpringStep({ angle: 0, vel: 0 }, 10, 0);
+    assert.ok(isFinite(sim.angle) && isFinite(sim.vel), "dt=0 でも angle/vel は有限値のまま");
+    sim = L.revealSpringStep({ angle: NaN, vel: undefined }, NaN, 0.016);
+    assert.ok(isFinite(sim.angle) && isFinite(sim.vel), "不正な sim/targetDeg でもクラッシュせず有限値にフォールバックする");
+  }
+  assert.equal(L.isRevealSettled(null, 0), true, "sim が null でも (0,0) 扱いで判定しクラッシュしない");
+
+  console.log("machizukuri regression stage 1 (weigh-reveal logic): PASS");
 }
 
 // ── 9. milestoneReached は12/12到達で一度だけ発火する ───────────────
@@ -475,6 +539,27 @@ function stripAtRuleBlocks(css) {
       pointerNoneSelectors.includes(".lot > *"),
       ".lot > * (区画内アイコン) は pointer-events:none のまま、タップは .lot ボタン自体へ通す"
     );
+
+    // ── 2c-bis. やさいスタンド計量リビール DOM 契約 (hatake-nikki 収穫キューブリッジ + guragura-seesaw 天秤演出流用) ──
+    assert.match(indexHtml, /<script src="\.\.\/common\/hatake-harvest-bridge\.js"><\/script>/, "index.html が common/hatake-harvest-bridge.js を読み込んでいる (js/game.js より前)");
+    {
+      const bridgeIdx = indexHtml.indexOf('hatake-harvest-bridge.js');
+      const gameJsIdx = indexHtml.indexOf('js/game.js?');
+      assert.ok(bridgeIdx !== -1 && gameJsIdx !== -1 && bridgeIdx < gameJsIdx, "hatake-harvest-bridge.js は js/game.js より前に読み込まれる (window.HatakeHarvestBridge が game.js 実行時に存在保証されるため)");
+    }
+    assert.match(indexHtml, /id="weigh-reveal"\s+class="sheet"/, "#weigh-reveal は既存の .sheet パターンを流用している");
+    assert.match(indexHtml, /id="weigh-backdrop"/, "#weigh-backdrop (バックドロップタップで閉じる) が存在する");
+    assert.match(indexHtml, /id="weighFulcrum"/, "#weighFulcrum (guragura #fulcrum 相当) が存在する");
+    assert.match(indexHtml, /id="weighPlankPivot"/, "#weighPlankPivot (guragura #plankPivot 相当) が存在する");
+    assert.match(indexHtml, /id="weighPlank"/, "#weighPlank (guragura #plank 相当、JS が rotate() を毎フレーム上書き) が存在する");
+    assert.match(indexHtml, /class="pan weigh-pan-left"/, ".weigh-pan-left (guragura .pan-left 相当) が存在する");
+    assert.match(indexHtml, /class="pan weigh-pan-right"/, ".weigh-pan-right (guragura .pan-right 相当) が存在する");
+    assert.match(indexHtml, /id="weigh-crop-img"/, "#weigh-crop-img (収穫物画像の差し込み先) が存在する");
+    assert.match(indexHtml, /id="weigh-msg"/, "#weigh-msg (結果メッセージの差し込み先) が存在する");
+    assert.match(indexHtml, /id="weigh-close-btn"/, "#weigh-close-btn (とじるボタン) が存在する");
+    assert.doesNotMatch(indexHtml, /id="weigh-reveal"[^>]*>[\s\S]*?draggable/, "計量リビールは自動演出のみでドラッグ可能要素を持たない");
+    assert.match(stylesCss, /#weigh-reveal|\.weigh-card/, "styles.css に計量リビール用のスタイルが定義されている");
+    assert.match(stylesCss, /#weighPlank\s*\{[^}]*position:\s*absolute/, "#weighPlank は絶対配置 (JS の rotate() 上書きに対応)");
 
     // ── 2d. 画像ストレッチ禁止 (background-size:100% 100% / object-fit:fill) ──
     for (const [name, src] of [["index.html", indexHtml], ["styles.css", stylesCss]]) {

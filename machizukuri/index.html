@@ -76,7 +76,8 @@
 <script src="../common/haptics.js"></script>
 <script src="../common/menu.js"></script>
 <script src="../common/treasure.js"></script>
-<link rel="stylesheet" href="styles.css?v=20260723-1">
+<script src="../common/hatake-harvest-bridge.js"></script>
+<link rel="stylesheet" href="styles.css?v=20260724-1">
 </head>
 <body>
 
@@ -176,6 +177,34 @@
     </div>
   </div>
 
+  <!-- ── やさいスタンド 計量リビール (はたけの収穫を天秤演出で見せる。
+       プレイヤー操作は無い自動演出のみ。 guragura-seesaw/index.html の
+       #fulcrum/#plankPivot/#plank/.pan-left/.pan-right/.pan-dish という
+       入れ子構造パターンをそのまま踏襲し、weigh- 接頭辞で ID を分離する) ── -->
+  <div id="weigh-reveal" class="sheet" role="dialog" aria-modal="true" aria-label="やさいの おおきさ">
+    <div class="sheet-backdrop" id="weigh-backdrop"></div>
+    <div class="sheet-card weigh-card">
+      <div class="weigh-title">やさいの おおきさ</div>
+      <div id="weighWrap">
+        <div id="weighFulcrum"></div>
+        <div id="weighPlankPivot">
+          <div id="weighPlank">
+            <div class="pan weigh-pan-left">
+              <div class="pan-dish"></div>
+              <div class="pan-items"><span class="weigh-ref-icon" aria-hidden="true">🌱</span></div>
+            </div>
+            <div class="pan weigh-pan-right">
+              <div class="pan-dish"></div>
+              <div class="pan-items"><img id="weigh-crop-img" alt=""></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="weigh-msg" id="weigh-msg"></div>
+      <button type="button" class="sheet-close-btn" id="weigh-close-btn">✕ とじる</button>
+    </div>
+  </div>
+
 </div>
 
 <!-- スクリプト読み込み失敗時の可視エラーUI。 #stage の外 (body 直下) に置き、
@@ -195,9 +224,9 @@
     console.error('[machizukuri] js/' + name + '.js の読み込みに失敗しました。');
   };
 </script>
-<script src="js/parts.js?v=20260723-1" onload="window.__machiScriptLoaded('parts')" onerror="window.__machiScriptErrored('parts')"></script>
-<script src="js/logic.js?v=20260723-1" onload="window.__machiScriptLoaded('logic')" onerror="window.__machiScriptErrored('logic')"></script>
-<script src="js/game.js?v=20260723-1" onload="window.__machiScriptLoaded('game')" onerror="window.__machiScriptErrored('game')"></script>
+<script src="js/parts.js?v=20260724-1" onload="window.__machiScriptLoaded('parts')" onerror="window.__machiScriptErrored('parts')"></script>
+<script src="js/logic.js?v=20260724-1" onload="window.__machiScriptLoaded('logic')" onerror="window.__machiScriptErrored('logic')"></script>
+<script src="js/game.js?v=20260724-1" onload="window.__machiScriptLoaded('game')" onerror="window.__machiScriptErrored('game')"></script>
 <script>
 (function () {
   'use strict';

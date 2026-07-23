@@ -419,6 +419,15 @@ function createScreenController(screens) {
       window.incrementStat('hatake_harvest', 1);
       if (window.checkAchievements) window.checkAchievements();
     }
+    // machizukuri やさいスタンドの計量リビール向けキュー書き込み (一方向橋渡し。
+    // machizukuri → hatake-nikki 方向の書き込みはこの経路からは発生しない)。
+    if (window.HatakeHarvestBridge && crop) {
+      window.HatakeHarvestBridge.enqueue({
+        seedId: res.seedId, name: crop.name, img: crop.img,
+        weightMultiplier: res.weightMultiplier, weight: res.weight,
+        wiltCount: res.wiltCount, bugsMissed: res.bugsMissed, extraDays: res.extraDays
+      });
+    }
     // Narration: MVP では呼ばない (キャラ肉声禁止ポリシー + 音声未生成)。
     // 将来: 女性ナレ「やさいが よろこんでいるよ」型のみ可。
     if (window.showTreasure && crop) {

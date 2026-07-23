@@ -415,10 +415,14 @@
       node.disabled = true;
       node.tabIndex = -1;
       node.setAttribute('data-hole', i);
+      var slotGroundY = Number(slot.groundY);
+      if (!isFinite(slotGroundY) || slotGroundY < 0 || slotGroundY > 100) {
+        throw new Error('かくればしょの せっちいちが ふせいです');
+      }
       node.style.setProperty('--slot-x', Number(slot.x) + '%');
-      node.style.setProperty('--slot-y', Number(slot.y) + '%');
+      node.style.setProperty('--slot-y', slotGroundY + '%');
       node.style.setProperty('--depth-scale', String(Number(slot.depth) || 1));
-      node.style.setProperty('--slot-z', String(20 + Math.round(Number(slot.y) || 0)));
+      node.style.setProperty('--slot-z', String(20 + Math.round(slotGroundY)));
       if (slot.hideout !== 'far' && slot.hideout !== 'near') {
         throw new Error('かくればしょの遠近定義が正しくありません');
       }
@@ -428,12 +432,19 @@
       var hideoutRotate = Number(slot.rotate);
       if (!isFinite(hideoutRotate)) hideoutRotate = 0;
       var hideoutLayout = (location.hideoutLayouts && location.hideoutLayouts[hideoutVariant]) || {};
+      var groundAnchorY = Number(hideoutLayout.groundAnchorY);
+      if (!isFinite(groundAnchorY) || groundAnchorY <= 0 || groundAnchorY > 100) {
+        throw new Error('かくればしょの せっちアンカーが ふせいです');
+      }
       node.dataset.hideoutVariant = hideoutVariant;
       node.dataset.depth = String(Number(slot.depth) || 1);
+      node.dataset.groundY = String(slotGroundY);
       node.style.setProperty('--hideout-rotate', hideoutRotate + 'deg');
+      node.style.setProperty('--ground-anchor-y', groundAnchorY + '%');
       node.style.setProperty('--foreground-top', (Number(hideoutLayout.foregroundTop) || 60) + '%');
       node.style.setProperty('--window-bottom', (Number(hideoutLayout.windowBottom) || 35.5) + '%');
       node.style.setProperty('--char-width', (Number(hideoutLayout.charWidth) || 58) + '%');
+      node.style.setProperty('--char-ground-lift', (Number(hideoutLayout.charLiftCqh) || 4) + 'cqh');
       var hideouts = node.querySelectorAll('.hh-hideout');
       for (var h = 0; h < hideouts.length; h++) hideouts[h].src = hideoutSrc;
       (function (idx, buttonEl) {

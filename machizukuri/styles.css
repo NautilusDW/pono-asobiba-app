@@ -269,6 +269,85 @@ html, body {
 #part-popover.is-house .popover-store-btn { display: none; }
 #part-popover.is-house .popover-door-btn { display: flex; }
 
+/* ── やさいスタンド 計量リビール (はたけの収穫の重さを天秤演出で見せる。
+   プレイヤー操作は無い自動演出のみ。 guragura-seesaw/index.html の
+   #fulcrum/#plankPivot/#plank/.pan-left/.pan-right/.pan-dish という入れ子
+   構造パターンをそのまま踏襲し、寸法だけシートカード内 (px基準) に合わせて
+   再設計している (guragura 側の % はフルスクリーン #stage 基準のためそのまま
+   流用不可)。 item-box のドラッグ関連スタイルはこちらには一切持ち込まない。 ── */
+.weigh-card { text-align: center; }
+.weigh-title { font-size: 17px; font-weight: 900; color: var(--machi-ink); margin-bottom: 14px; }
+#weighWrap { position: relative; width: 100%; height: 168px; margin: 0 auto; }
+#weighFulcrum {
+  position: absolute;
+  left: 50%; bottom: 18px;
+  transform: translateX(-50%);
+  width: 0; height: 0;
+  border-left: 16px solid transparent;
+  border-right: 16px solid transparent;
+  border-bottom: 30px solid #8a5a2b;
+}
+/* 位置決め専用ラッパー。 transform はセンタリング専有 (JS は触らない。guragura #plankPivot と同じ役割分担)。 */
+#weighPlankPivot {
+  position: absolute;
+  left: 50%; bottom: 48px;
+  width: 82%; height: 8px;
+  transform: translateX(-50%);
+}
+/* 回転専用。 transform は js/game.js の rAF ループが rotate(θ) で毎フレーム専有上書きする
+   (guragura #plank と同じ契約。ここには static transform を書かない)。 */
+#weighPlank {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 50%;
+  background: linear-gradient(180deg, #d9a96b, #b9803f);
+  border-radius: 999px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+#weighWrap .pan {
+  position: absolute;
+  top: 50%;
+  width: 78px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.weigh-pan-left { left: 6%; transform: translate(-50%, 0); }
+.weigh-pan-right { right: 6%; transform: translate(50%, 0); }
+#weighWrap .pan-dish {
+  width: 100%;
+  aspect-ratio: 5 / 2;
+  border-radius: 0 0 50% 50% / 0 0 70% 70%;
+  background: radial-gradient(ellipse at 50% 0%, #cfe9f5 0%, #9fc9dd 60%, #7ba9bd 100%);
+  box-shadow: inset 0 3px 6px rgba(0,0,0,0.2), 0 3px 6px rgba(0,0,0,0.15);
+}
+#weighWrap .pan-items {
+  position: absolute;
+  bottom: 10%;
+  left: 0; right: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  pointer-events: none;
+}
+/* アイテム/アイコンに逆回転を掛けて絵は常に正立させる (guragura .pan-items .item-box と同じ AR 保持策) */
+.weigh-ref-icon { font-size: 30px; line-height: 1; transform: rotate(calc(var(--weigh-tilt, 0deg) * -1)); }
+#weigh-crop-img {
+  width: 52px; height: 52px;
+  object-fit: contain; /* AR 厳守: stretch/fill は絶対禁止 */
+  transform: rotate(calc(var(--weigh-tilt, 0deg) * -1)) scale(var(--weigh-crop-scale, 1));
+  filter: drop-shadow(0 3px 4px rgba(0,0,0,0.25));
+}
+.weigh-msg {
+  min-height: 1.5em;
+  margin-top: 12px;
+  font-size: 15px; font-weight: 900; color: var(--machi-ink);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.weigh-msg.show { opacity: 1; }
+#weigh-close-btn { margin-top: 16px; }
+
 /* ══ 昼/夕方ティント (parts.js sceneTint() の DAY_TINT/EVENING_TINT と
    同じ値をここでも保持する。 game.js が setProperty で直接上書きしても
    inline style の詳細度で勝つため衝突しないが、game.js がクラス切替だけで

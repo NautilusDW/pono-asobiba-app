@@ -137,7 +137,13 @@
 
   /** 空の plot を生成する。 */
   function emptyPlot() {
-    return { seedId: null, daysGrown: 0, wateredToday: false, wilted: false, bug: false };
+    return {
+      seedId: null, daysGrown: 0, wateredToday: false, wilted: false, bug: false,
+      // ── 計量用トラッキング (machizukuri やさいスタンド計量リビール向け) ──
+      // wiltCount: 育成中に advanceOneDay で wilted=true になった累積回数。
+      // bugsMissed: 育成中に advanceOneDay 実行直前、前日の虫が追い払われていなかった累積回数。
+      wiltCount: 0, bugsMissed: 0
+    };
   }
 
   function emptyPlots() {
@@ -189,6 +195,8 @@
     plot.wateredToday = false;
     plot.wilted = false;
     plot.bug = false;
+    plot.wiltCount = 0;
+    plot.bugsMissed = 0;
     return true;
   }
 
@@ -209,14 +217,45 @@
     return true;
   }
 
-  /** stage4 (しゅうかくOK) のみ収穫成功。plot は空に戻る。 */
+  var BASE_WEIGHT = 100; // 重さ乗数1.0を「基準100」として表す固定値 (仕様確定値)。
+
+  /** v を [min, max] へクランプする。 */
+  function clamp(v, min, max) {
+    if (!(v >= min)) return min;
+    return v > max ? max : v;
+  }
+
+  /**
+   * stage4 (しゅうかくOK) のみ収穫成功。plot は空に戻る。
+   * 育て方の丁寧さを「重さ」として算出し返す (machizukuri やさいスタンドの
+   * 計量リビール演出向け。仕様確定式、数値は変更しないこと):
+   *   extraDays = clamp(daysGrown − stage4到達に必要な最小daysGrown, 0, 5)
+   *     (stage4到達最小daysGrownは進行度閾値[3]=6から Math.ceil(6/2)=3 で導出。
+   *      全作物 progressThresholds が [1,3,5,6] 共通のため常に3)
+   *   weightMultiplier = clamp(1.0 − 0.2×wiltCount − 0.2×bugsMissed + 0.15×extraDays, 0.4, 2.0)
+   */
   function harvest(state, plotIdx) {
     if (!state || !state.plots || !state.plots[plotIdx]) return { ok: false };
     var plot = state.plots[plotIdx];
     if (stageOf(plot) !== 4) return { ok: false };
     var seedId = plot.seedId;
+    var crop = CROPS[seedId];
+
+    var stage4DaysGrown = Math.ceil(crop.progressThresholds[3] / 2);
+    var extraDays = clamp((plot.daysGrown || 0) - stage4DaysGrown, 0, 5);
+    var wiltCount = plot.wiltCount || 0;
+    var bugsMissed = plot.bugsMissed || 0;
+
+    var weightMultiplier = clamp(1.0 - 0.2 * wiltCount - 0.2 * bugsMissed + 0.15 * extraDays, 0.4, 2.0);
+    weightMultiplier = Math.round(weightMultiplier * 100) / 100; // 浮動小数誤差の丸め
+    var weight = Math.round(BASE_WEIGHT * weightMultiplier);
+
     state.plots[plotIdx] = emptyPlot();
-    return { ok: true, seedId: seedId };
+    return {
+      ok: true, seedId: seedId,
+      weightMultiplier: weightMultiplier, weight: weight,
+      wiltCount: wiltCount, bugsMissed: bugsMissed, extraDays: extraDays
+    };
   }
 
   /**
@@ -230,21 +269,29 @@
 
   /**
    * 1日分のロールオーバーを実施する (§2.2)。
-   * 1. wateredToday===true → daysGrown+=1, wilted=false
-   * 2. wateredToday===false かつ植栽済み → wilted=true (daysGrown は不変・枯れない)
-   * 3. wateredToday を false にリセット
-   * 4. 虫発生判定 (stage>=1 の plot に決定論ハッシュで抽選)
+   * 1. 虫の再抽選より前に「前日の虫がまだ居残っていたか (=追い払われなかったか)」を bugsMissed へ加算
+   * 2. wateredToday===true → daysGrown+=1, wilted=false
+   * 3. wateredToday===false かつ植栽済み → wilted=true (daysGrown は不変・枯れない)。
+   *    このとき wiltCount も加算する (計量用トラッキング)。
+   * 4. wateredToday を false にリセット
+   * 5. 虫発生判定 (stage>=1 の plot に決定論ハッシュで抽選)
    */
   function advanceOneDay(state, newDayKey) {
     if (!state || !state.plots) return state;
     for (var i = 0; i < state.plots.length; i++) {
       var plot = state.plots[i];
       if (plot.seedId) {
+        // ★ bugShouldSpawn による再抽選 (下の plot.bug=...) より前に、
+        //   「直前の虫がまだ残っていたか」を判定してから加算する。
+        if (plot.bug) {
+          plot.bugsMissed = (plot.bugsMissed || 0) + 1;
+        }
         if (plot.wateredToday) {
           plot.daysGrown = (plot.daysGrown || 0) + 1;
           plot.wilted = false;
         } else {
           plot.wilted = true;
+          plot.wiltCount = (plot.wiltCount || 0) + 1;
         }
       }
       plot.wateredToday = false;
@@ -283,6 +330,9 @@
     e.wateredToday = !!p.wateredToday;
     e.wilted = !!p.wilted;
     e.bug = !!p.bug;
+    // 旧セーブ (この2フィールドを持たない) は 0 へ自動フォールバックする (後方互換)。
+    e.wiltCount = (typeof p.wiltCount === 'number' && isFinite(p.wiltCount) && p.wiltCount >= 0) ? p.wiltCount : 0;
+    e.bugsMissed = (typeof p.bugsMissed === 'number' && isFinite(p.bugsMissed) && p.bugsMissed >= 0) ? p.bugsMissed : 0;
     return e;
   }
 
@@ -318,6 +368,7 @@
     hashCode: hashCode,
     CROPS: CROPS,
     PLOT_COUNT: PLOT_COUNT,
+    BASE_WEIGHT: BASE_WEIGHT,
     createInitialState: createInitialState,
     emptyPlot: emptyPlot,
     careProgressOf: careProgressOf,

@@ -93,24 +93,28 @@ window.__showHyokkoriLoadError=function(){
        各スロットは実buttonとし、座標と遠近はCSS変数で受け取る。 -->
   <template id="hh-hole-tpl">
     <button class="hh-hole" type="button">
-      <img class="hh-hideout hh-hideout-base hh-mound" alt="" draggable="false" aria-hidden="true">
-      <!-- 動物本体だけを窓でマスクする。月・光・加点表示は同じwrap内の
-           マスク外レイヤーに置き、右上や上端が途中で切れないようにする。 -->
-      <span class="hh-char-wrap">
-        <span class="hh-window">
-          <span class="hh-char-rise">
-            <img class="hh-char" alt="" draggable="false">
+      <!-- stackの上辺中央が背景上の接地点。画像中心ではなく、素材ごとの
+           groundAnchorYをstack内で上へ戻して、遠近scale後も地面から浮かせない。 -->
+      <span class="hh-ground-stack">
+        <img class="hh-hideout hh-hideout-base hh-mound" alt="" draggable="false" aria-hidden="true">
+        <!-- 動物本体だけを窓でマスクする。月・光・加点表示は同じwrap内の
+             マスク外レイヤーに置き、右上や上端が途中で切れないようにする。 -->
+        <span class="hh-char-wrap">
+          <span class="hh-window">
+            <span class="hh-char-rise">
+              <img class="hh-char" alt="" draggable="false">
+            </span>
           </span>
+          <span class="hh-sparkle" aria-hidden="true"></span>
+          <img class="hh-sleep-fx" src="../assets/images/hyokkori-hightouch/fx_sleep_moon_cloud.png" alt="" draggable="false" aria-hidden="true">
+          <img class="hh-hit-fx" src="../assets/images/hyokkori-hightouch/fx_highfive_burst.png" alt="" draggable="false" aria-hidden="true">
+          <span class="hh-bonus-badge" aria-hidden="true">30てん</span>
+          <span class="hh-score-pop" aria-hidden="true"></span>
+          <span class="hh-shh-bubble" aria-hidden="true">しーっ</span>
         </span>
-        <span class="hh-sparkle" aria-hidden="true"></span>
-        <img class="hh-sleep-fx" src="../assets/images/hyokkori-hightouch/fx_sleep_moon_cloud.png" alt="" draggable="false" aria-hidden="true">
-        <img class="hh-hit-fx" src="../assets/images/hyokkori-hightouch/fx_highfive_burst.png" alt="" draggable="false" aria-hidden="true">
-        <span class="hh-bonus-badge" aria-hidden="true">30てん</span>
-        <span class="hh-score-pop" aria-hidden="true"></span>
-        <span class="hh-shh-bubble" aria-hidden="true">しーっ</span>
+        <img class="hh-hideout hh-hideout-foreground" alt="" draggable="false" aria-hidden="true">
+        <img class="hh-dust" src="../assets/images/hyokkori-hightouch/fx_leaf_puff.png" alt="" draggable="false" aria-hidden="true">
       </span>
-      <img class="hh-hideout hh-hideout-foreground" alt="" draggable="false" aria-hidden="true">
-      <img class="hh-dust" src="../assets/images/hyokkori-hightouch/fx_leaf_puff.png" alt="" draggable="false" aria-hidden="true">
     </button>
   </template>
   <div id="board" data-last-successful-hole=""></div>

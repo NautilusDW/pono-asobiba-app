@@ -1,0 +1,35 @@
+const { chromium } = require('playwright');
+(async () => {
+  const browser = await chromium.launch();
+  const ctx = await browser.newContext({ viewport: { width: 844, height: 390 }, hasTouch: true, isMobile: true });
+  const page = await ctx.newPage();
+  await page.addInitScript(() => { window.__APP_BUILD__ = 1; });
+  page.on('console', m => console.log('CONSOLE:', m.type(), m.text()));
+  page.on('pageerror', e => console.log('PAGEERROR:', String(e)));
+  await page.goto('http://localhost:8000/machizukuri/index.html');
+  await page.evaluate(() => {
+    const lots = [];
+    for (let i = 0; i < 12; i++) lots.push({ lotId: 'lot' + (i + 1), partId: null });
+    lots[0].partId = 'pono_house';
+    lots[1].partId = 'tree_maru';
+    lots[2].partId = 'yasai_stand';
+    const state = { v: 1, harvestSpent: 0, lots, owned: {}, flowers: 0, milestoneSeen: { district1: false } };
+    localStorage.clear();
+    localStorage.setItem('pono_machi_state_v1', JSON.stringify(state));
+    localStorage.setItem('pono_machi_tut_seen_v1', '1'); localStorage.setItem('pono_hatake_harvest_queue_v1', JSON.stringify([{seedId:'tomato',name:'とまと',img:'x.webp',weightMultiplier:1.75,weight:175,wiltCount:0,bugsMissed:0,extraDays:5,ts:Date.now()}]));
+  });
+  await page.reload();
+  await page.waitForFunction(() => document.body.classList.contains('pono-game-ready'), null, { timeout: 10000 });
+  await page.locator('#start-btn').click({ force: true });
+  console.log('town-screen class:', await page.locator('#town-screen').getAttribute('class'));
+  console.log('lot3 exists:', await page.locator('.lot[data-lot-id="lot3"]').count());
+  console.log('lot3 class:', await page.locator('.lot[data-lot-id="lot3"]').getAttribute('class'));
+  console.log('lot3 box:', await page.locator('.lot[data-lot-id="lot3"]').boundingBox());
+  console.log('HatakeHarvestBridge exists:', await page.evaluate(() => !!window.HatakeHarvestBridge));
+  console.log('hasPending:', await page.evaluate(() => window.HatakeHarvestBridge && window.HatakeHarvestBridge.hasPending()));
+  await page.locator('.lot[data-lot-id="lot3"]').click({ force: true });
+  await page.waitForTimeout(500);
+  console.log('weigh-reveal class:', await page.locator('#weigh-reveal').getAttribute('class'));
+  console.log('part-popover class:', await page.locator('#part-popover').getAttribute('class'));
+  await browser.close();
+})();
