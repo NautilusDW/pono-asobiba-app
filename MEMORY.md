@@ -149,6 +149,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-07-23T22:55:57Z - KawaGlintゲームプレイ追加の設計書作成(tsuri core.js C#移植仕様・入力/UI/アクター拡張・PlayModeテスト計画・4モジュール分割)
+- **タスク**: KawaGlintゲームプレイ追加の設計書作成(tsuri core.js C#移植仕様・入力/UI/アクター拡張・PlayModeテスト計画・4モジュール分割)
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 0
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {}
+- **サマリ**: 行動ログが空のため分析できません。
+
+
 ### 2026-07-23T22:18:08Z - つりゲーム川面Unity水シェーダー技術スパイク(KawaGlint)をfable設計+sonnet5並列実装+クロスレビュー+実機ビルド検証で構築
 - **タスク**: つりゲーム川面Unity水シェーダー技術スパイク(KawaGlint)をfable設計+sonnet5並列実装+クロスレビュー+実機ビルド検証で構築
 - **結果**: 成功
@@ -242,19 +255,6 @@ wrangler deploy                  # master 内容を production に
 
 ### 2026-07-23T21:27:30Z - KawaGlint module3(stage) 手続き生成川辺ステージ実装
 - **タスク**: KawaGlint module3(stage) 手続き生成川辺ステージ実装
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 0
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {}
-- **サマリ**: 行動ログが空のため分析できません。
-
-
-### 2026-07-23T21:26:57Z - hatake-nikki収穫重さ計算(wiltCount/bugsMissed/extraDays/weightMultiplier)実装+machizukuri橋渡しキュー(common/hatake-harvest-bridge.js)新設
-- **タスク**: hatake-nikki収穫重さ計算(wiltCount/bugsMissed/extraDays/weightMultiplier)実装+machizukuri橋渡しキュー(common/hatake-harvest-bridge.js)新設
 - **結果**: 成功
 - **理由**: N/A
 - **総アクション数**: 0
