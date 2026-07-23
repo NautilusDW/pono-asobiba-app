@@ -1,0 +1,22 @@
+{
+    "name": "Pono.KawaGlint.Tests.PlayMode",
+    "rootNamespace": "Pono.KawaGlint.Tests.PlayMode",
+    "references": [
+        "Pono.KawaGlint.App",
+        "Pono.KawaGlint.Core",
+        "Pono.KawaGlint.Rendering",
+        "Unity.ugui"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false,
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ]
+}

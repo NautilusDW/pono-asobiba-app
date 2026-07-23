@@ -1,5 +1,7 @@
 using System;
+using Pono.KawaGlint.Gameplay;
 using Pono.KawaGlint.Rendering;
+using Pono.KawaGlint.UI;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -36,6 +38,10 @@ namespace Pono.KawaGlint.Bootstrap
         private KawaSurfaceBand _surface;
         private KawaGlintActorsController _actors;
         private Volume _volume;
+        private KawaGlintGameController _gameController;
+
+        /// <summary>The playable game-loop controller wired up in Awake (null only if no Camera.main was found).</summary>
+        public KawaGlintGameController GameController => _gameController;
 
         /// <summary>Human-readable renderer identity for the QA capture sidecar (e.g. "Renderer2D").</summary>
         public string RendererLabel
@@ -87,6 +93,16 @@ namespace Pono.KawaGlint.Bootstrap
                 // the actual waterline world Y), rather than trusting the two to agree by coincidence.
                 var viewportY = _camera.WorldToViewportPoint(new Vector3(0f, _stage.WaterlineWorldY, 0f)).y;
                 refraction.waterlineViewportY.Override(viewportY);
+            }
+
+            if (_actors != null)
+            {
+                var hud = KawaGlintHud.Build(transform);
+                KawaGlintUiFactory.EnsureEventSystem();
+                var gameControllerGo = new GameObject("KawaGlintGameController");
+                gameControllerGo.transform.SetParent(transform, false);
+                _gameController = gameControllerGo.AddComponent<KawaGlintGameController>();
+                _gameController.Configure(_actors, hud, hud.InputSurface, _camera, _stage, Environment.TickCount);
             }
 
             KawaGlintQaCapture.AttachIfRequested(gameObject, this);

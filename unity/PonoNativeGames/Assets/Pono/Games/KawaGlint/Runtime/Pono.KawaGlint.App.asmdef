@@ -2,9 +2,12 @@
   "name": "Pono.KawaGlint.App",
   "rootNamespace": "Pono.KawaGlint",
   "references": [
+    "Pono.KawaGlint.Core",
     "Pono.KawaGlint.Rendering",
     "Unity.RenderPipelines.Universal.Runtime",
-    "Unity.RenderPipelines.Core.Runtime"
+    "Unity.RenderPipelines.Core.Runtime",
+    "Unity.ugui",
+    "Unity.InputSystem"
   ],
   "includePlatforms": [],
   "excludePlatforms": [],

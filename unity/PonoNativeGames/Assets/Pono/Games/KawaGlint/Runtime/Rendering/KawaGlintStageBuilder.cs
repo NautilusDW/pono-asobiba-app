@@ -814,6 +814,13 @@ namespace Pono.KawaGlint.Rendering
             go.transform.position = new Vector3(waterRect.center.x, waterRect.center.y, 0f);
 
             var system = go.AddComponent<ParticleSystem>();
+            // AddComponent<ParticleSystem>() starts the system playing immediately
+            // (main.playOnAwake defaults to true), and both randomSeed and
+            // main.duration below refuse to be set on an already-playing system
+            // ("...is still playing is not supported"). Stop-and-clear first so every
+            // configuration call below lands on a fully stopped system; system.Play()
+            // at the end of this method restarts it under the final configuration.
+            system.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
             // Fixed, non-auto seed so particle placement/timing is
             // reproducible across CLI captures, same rationale as
             // GenerationSeed above.

@@ -101,10 +101,16 @@ namespace Pono.KawaGlint.Rendering
             var spriteMaterial = CreateSharedMaterial("KawaGlint Actor Sprite (Runtime)");
             controller.RegisterGeneratedAsset(spriteMaterial);
 
-            BuildFishShadows(controller, root.transform, waterWorldRect, random, spriteMaterial);
+            BuildFishShadows(controller, root.transform, waterWorldRect, random, spriteMaterial, out var fishSprite, out var fishNativeWidthWorld);
             BuildBobber(controller, root.transform, waterlineWorldY, spriteMaterial);
             BuildRippleRings(controller, root.transform, waterlineWorldY, spriteMaterial);
             BuildFishingLine(controller, root.transform, rodTipWorldPosition, spriteMaterial);
+
+            // Built last and after every seeded random draw above, so the
+            // four ambient fish keep their reproducible placement regardless
+            // of this addition. Shares the ambient fish silhouette
+            // texture/sprite rather than generating a second copy.
+            BuildTargetFish(controller, root.transform, fishSprite, fishNativeWidthWorld, spriteMaterial);
 
             return controller;
         }
@@ -118,14 +124,18 @@ namespace Pono.KawaGlint.Rendering
             Transform parent,
             Rect waterWorldRect,
             System.Random random,
-            Material material)
+            Material material,
+            out Sprite fishSprite,
+            out float nativeWidthWorld)
         {
             var texture = CreateFishShadowTexture();
             controller.RegisterGeneratedAsset(texture);
             var sprite = CreateSprite(texture, new Vector2(0.5f, 0.5f), "KawaGlint Fish Shadow", PixelsPerUnit);
             controller.RegisterGeneratedAsset(sprite);
+            fishSprite = sprite;
 
             var nativeWidth = FishTextureWidth / PixelsPerUnit;
+            nativeWidthWorld = nativeWidth;
 
             for (var i = 0; i < FishCount; i++)
             {
@@ -213,6 +223,31 @@ namespace Pono.KawaGlint.Rendering
             texture.SetPixels32(pixels);
             texture.Apply(false, false);
             return texture;
+        }
+
+        // ---------------------------------------------------------------
+        // Target fish (order 14, same as ambient shadows -- reuses the
+        // ambient silhouette sprite; deliberately excluded from
+        // RegisterFish so it never joins the ambient wrap-drift pool)
+        // ---------------------------------------------------------------
+
+        private static void BuildTargetFish(
+            KawaGlintActorsController controller,
+            Transform parent,
+            Sprite fishSprite,
+            float nativeWidthWorld,
+            Material material)
+        {
+            var go = new GameObject("TargetFishShadow");
+            go.transform.SetParent(parent, false);
+            go.SetActive(false);
+
+            var renderer = go.AddComponent<SpriteRenderer>();
+            renderer.sprite = fishSprite;
+            renderer.sharedMaterial = material;
+            renderer.sortingOrder = FishSortingOrder;
+
+            controller.SetTargetFish(go.transform, renderer, nativeWidthWorld);
         }
 
         // ---------------------------------------------------------------

@@ -46,6 +46,18 @@ namespace Pono.KawaGlint.Rendering
             public float PhaseOffsetSeconds;
         }
 
+        // Target fish (the one the player actually catches) is driven
+        // step-by-step by the Gameplay-layer game controller rather than
+        // animating ambiently like the four FishEntry silhouettes above --
+        // hence a small explicit mode enum instead of a per-frame formula.
+        private enum TargetFishMode
+        {
+            Hidden,
+            Approach,
+            Thrash,
+            Flee
+        }
+
         private const float RingMinScale = 0.3f;
         private const float RingMaxScale = 1.1f;
         private const float RingMaxAlpha = 0.35f;
@@ -54,6 +66,14 @@ namespace Pono.KawaGlint.Rendering
         // below the straight rod-tip-to-bobber midpoint (DESIGN.md: "sagging
         // 0.35 units below the straight midpoint").
         private const float LineSagWorldUnits = 0.35f;
+
+        private const float TargetFishAppearY = -1.5f;
+        private const float TargetFishAnchorY = 0.6f;
+        private const float TargetFishTargetXOffset = 0.4f;
+        private const float TargetFishThrashAmplitudeX = 0.15f;
+        private const float TargetFishThrashFrequency = 20f;
+        private const float TargetFishFleeSpeedWorld = 8f;
+        private const float TargetFishFleeSinkSpeedWorld = 0.5f;
 
         private readonly List<Object> _generatedAssets = new List<Object>();
         private readonly List<FishEntry> _fish = new List<FishEntry>();
@@ -66,6 +86,141 @@ namespace Pono.KawaGlint.Rendering
         private LineRenderer _fishingLine;
         private Vector3 _rodTipWorldPosition;
         private Vector3[] _lineBuffer;
+
+        private bool _ringsVisible = true;
+        private bool _lineVisible = true;
+
+        private Transform _targetFishTransform;
+        private SpriteRenderer _targetFishRenderer;
+        private float _targetFishNativeWidthWorld;
+        private float _targetFishWorldLength;
+        private TargetFishMode _targetFishMode = TargetFishMode.Hidden;
+        private Vector3 _targetFishAppearWorld;
+        private float _targetFishTargetAnchorX;
+
+        /// <summary>The bobber this controller drives the ripple rings/fishing line against.</summary>
+        public KawaGlintBobber Bobber => _bobber;
+
+        /// <summary>Whether the ambient ripple rings are currently drawn (default true, spike-compatible).</summary>
+        public void SetRingsVisible(bool visible)
+        {
+            _ringsVisible = visible;
+            for (var i = 0; i < _rings.Count; i++)
+            {
+                _rings[i].Renderer.enabled = visible;
+            }
+        }
+
+        /// <summary>Whether the rod-tip-to-bobber fishing line is currently drawn (default true, spike-compatible).</summary>
+        public void SetFishingLineVisible(bool visible)
+        {
+            _lineVisible = visible;
+        }
+
+        /// <summary>True while the single catchable target fish is shown (Approach/Thrash/Flee, not Hidden).</summary>
+        public bool IsTargetFishVisible => _targetFishTransform != null && _targetFishTransform.gameObject.activeSelf;
+
+        /// <summary>
+        /// Reveals the target fish just off the right edge of the water and
+        /// begins its Approach toward wherever <see cref="SetTargetFishApproach"/>
+        /// is subsequently told to move it. <paramref name="worldLength"/>
+        /// uniformly scales the shared silhouette sprite (aspect preserved).
+        /// </summary>
+        public void ShowTargetFish(float worldLength)
+        {
+            if (_targetFishTransform == null)
+            {
+                return;
+            }
+
+            _targetFishWorldLength = worldLength;
+            var scale = _targetFishNativeWidthWorld > 0.0001f ? worldLength / _targetFishNativeWidthWorld : 1f;
+            _targetFishTransform.localScale = new Vector3(scale, scale, 1f);
+
+            _targetFishAppearWorld = new Vector3(_wrapMaxX + worldLength * 0.5f, TargetFishAppearY, 0f);
+            _targetFishTransform.position = _targetFishAppearWorld;
+            if (_targetFishRenderer != null)
+            {
+                // Approach always travels -X (right edge toward the bobber);
+                // the shared silhouette already faces -X unflipped.
+                _targetFishRenderer.flipX = false;
+            }
+            _targetFishTransform.gameObject.SetActive(true);
+            _targetFishMode = TargetFishMode.Approach;
+        }
+
+        /// <summary>
+        /// Moves the (already-shown) target fish from its appear point toward
+        /// <paramref name="targetWorldX"/> (offset by a fixed anchor gap) as
+        /// <paramref name="progress01"/> advances from 0 to 1.
+        /// </summary>
+        public void SetTargetFishApproach(float progress01, float targetWorldX)
+        {
+            if (_targetFishTransform == null || _targetFishMode == TargetFishMode.Hidden)
+            {
+                return;
+            }
+
+            _targetFishMode = TargetFishMode.Approach;
+            _targetFishTargetAnchorX = targetWorldX + TargetFishTargetXOffset;
+
+            var anchor = new Vector3(_targetFishTargetAnchorX, TargetFishAnchorY, 0f);
+            _targetFishTransform.position = Vector3.Lerp(_targetFishAppearWorld, anchor, Mathf.Clamp01(progress01));
+        }
+
+        /// <summary>Toggles the renda ("引き寄せ") thrash jitter around the current anchor on/off.</summary>
+        public void SetTargetFishThrash(bool thrashing)
+        {
+            if (_targetFishTransform == null || _targetFishMode == TargetFishMode.Hidden)
+            {
+                return;
+            }
+
+            _targetFishMode = thrashing ? TargetFishMode.Thrash : TargetFishMode.Approach;
+        }
+
+        /// <summary>Sends the target fish fleeing off the right edge; it self-hides once fully off-screen.</summary>
+        public void FleeTargetFish()
+        {
+            if (_targetFishTransform == null)
+            {
+                return;
+            }
+
+            if (_targetFishRenderer != null)
+            {
+                // Flees +X (back toward the right edge it appeared from), so
+                // flip to face the direction of travel.
+                _targetFishRenderer.flipX = true;
+            }
+            _targetFishMode = TargetFishMode.Flee;
+        }
+
+        /// <summary>Immediately hides the target fish (e.g. after a catch banner closes).</summary>
+        public void HideTargetFish()
+        {
+            if (_targetFishTransform == null)
+            {
+                return;
+            }
+
+            _targetFishMode = TargetFishMode.Hidden;
+            _targetFishTransform.gameObject.SetActive(false);
+        }
+
+        /// <summary>
+        /// Registers the single target-fish actor built by
+        /// <see cref="KawaGlintActorsBuilder"/> (kept out of <see cref="RegisterFish"/>
+        /// so it never joins the ambient wrap-drift pool). Not consumed by
+        /// randomness -- built after all seeded generation so ambient fish
+        /// placement stays reproducible.
+        /// </summary>
+        internal void SetTargetFish(Transform targetFishTransform, SpriteRenderer targetFishRenderer, float nativeWidthWorld)
+        {
+            _targetFishTransform = targetFishTransform;
+            _targetFishRenderer = targetFishRenderer;
+            _targetFishNativeWidthWorld = nativeWidthWorld;
+        }
 
         /// <summary>Tracks a runtime-only asset (Texture2D/Sprite/Mesh/Material) for destruction in OnDestroy.</summary>
         internal void RegisterGeneratedAsset(Object asset)
@@ -140,6 +295,7 @@ namespace Pono.KawaGlint.Rendering
             AnimateFish(time, deltaTime);
             AnimateRings(time);
             AnimateFishingLine();
+            AnimateTargetFish(time, deltaTime);
         }
 
         private void AnimateFish(float time, float deltaTime)
@@ -170,7 +326,7 @@ namespace Pono.KawaGlint.Rendering
 
         private void AnimateRings(float time)
         {
-            if (_rings.Count == 0 || _bobber == null)
+            if (_rings.Count == 0 || _bobber == null || !_ringsVisible)
             {
                 return;
             }
@@ -204,6 +360,15 @@ namespace Pono.KawaGlint.Rendering
                 return;
             }
 
+            // Defensive: even if a caller left SetFishingLineVisible(true),
+            // never draw the line taut to a hidden bobber.
+            var visible = _lineVisible && _bobber.VisualState != KawaGlintBobberState.Hidden;
+            _fishingLine.enabled = visible;
+            if (!visible)
+            {
+                return;
+            }
+
             var start = _rodTipWorldPosition;
             var end = new Vector3(_bobber.CenterWorldX, _bobber.TopWorldY, 0f);
             var midpoint = (start + end) * 0.5f;
@@ -222,6 +387,45 @@ namespace Pono.KawaGlint.Rendering
             }
 
             _fishingLine.SetPositions(_lineBuffer);
+        }
+
+        private void AnimateTargetFish(float time, float deltaTime)
+        {
+            if (_targetFishTransform == null || _targetFishMode == TargetFishMode.Hidden)
+            {
+                return;
+            }
+
+            switch (_targetFishMode)
+            {
+                case TargetFishMode.Thrash:
+                {
+                    // Jitters around the anchor set by the last
+                    // SetTargetFishApproach call; Y stays pinned to the anchor.
+                    var jitterX = Mathf.Sin(time * TargetFishThrashFrequency) * TargetFishThrashAmplitudeX;
+                    _targetFishTransform.position = new Vector3(_targetFishTargetAnchorX + jitterX, TargetFishAnchorY, 0f);
+                    break;
+                }
+                case TargetFishMode.Flee:
+                {
+                    var position = _targetFishTransform.position;
+                    position.x += TargetFishFleeSpeedWorld * deltaTime;
+                    position.y -= TargetFishFleeSinkSpeedWorld * deltaTime;
+                    _targetFishTransform.position = position;
+
+                    var halfWidth = _targetFishWorldLength * 0.5f;
+                    if (position.x - halfWidth > _wrapMaxX)
+                    {
+                        _targetFishMode = TargetFishMode.Hidden;
+                        _targetFishTransform.gameObject.SetActive(false);
+                    }
+                    break;
+                }
+                case TargetFishMode.Approach:
+                    // Position is driven directly by SetTargetFishApproach;
+                    // nothing to animate here between calls.
+                    break;
+            }
         }
 
         private void OnDestroy()
