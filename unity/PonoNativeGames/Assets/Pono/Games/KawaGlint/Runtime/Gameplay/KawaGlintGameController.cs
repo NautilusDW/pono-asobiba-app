@@ -51,6 +51,7 @@ namespace Pono.KawaGlint.Gameplay
         private const float FloorHeldStuckSec = 2f;
         private const float EscapedReadySec = 1.6f;
         private const float LandedReadySec = 2.4f;
+        private const float LandedHelpedReadySec = 3.3f;
 
         private KawaGlintActorsController _actors;
         private KawaGlintHud _hud;
@@ -191,7 +192,8 @@ namespace Pono.KawaGlint.Gameplay
                 _actors.SetRingsVisible(true);
             }
 
-            if (!_preBiteShown && _session.WaitRemainingSec <= 1f && _session.WaitRemainingSec > 0f)
+            if (!_preBiteShown && _session.WaitRemainingSec <= 1f && _session.WaitRemainingSec > 0f
+                && _actors.Bobber.VisualState == KawaGlintBobberState.Floating)
             {
                 _preBiteShown = true;
                 _actors.Bobber.SetVisualState(KawaGlintBobberState.Twitch);

@@ -7552,9 +7552,18 @@ function townDockSetGuide(message,announceMessage=true){
  if(announceMessage&&message)announce(message);
 }
 function townDockTimeout(fn,ms){
- const state=townDockState,epoch=state.epoch;
- const id=setTimeout(()=>{state.timers.delete(id);if(state.epoch!==epoch)return;fn();},ms);
- state.timers.add(id);
+ // epoch チェックは必ず生の townDockState (let 再代入されるグローバル) を参照する。
+ // resetTownDockGame() は townDockState=createTownDockState() で丸ごと差し替えるため、
+ // ここでローカル alias を作って alias.epoch を比較すると alias は差し替え前の古い
+ // オブジェクトを握ったままになり、epoch 不一致を一生検知できない (dinoAdventureState
+ // と同じ「生のグローバル変数名で比較する」パターンを踏襲する)。
+ const epoch=townDockState.epoch;
+ const id=setTimeout(()=>{
+  townDockState.timers.delete(id);
+  if(townDockState.epoch!==epoch)return;
+  fn();
+ },ms);
+ townDockState.timers.add(id);
  return id;
 }
 function townDockWindowElements(){return townDockWindows?[...townDockWindows.querySelectorAll("i")]:[];}
