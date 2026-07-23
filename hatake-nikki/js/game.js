@@ -337,21 +337,54 @@ function createScreenController(screens) {
     if (window.Haptics) window.Haptics.fire('stickerPaste');
     renderPlot(idx);
     updateWaterTargets();
-    playWaterSplash(idx);
+    playWaterPour(idx);
     flashStatus('みずやり できた！');
   }
 
-  function playWaterSplash(idx) {
+  function playWaterPour(idx) {
     var refs = plotRefs[idx];
     if (!refs) return;
-    var fx = document.createElement('img');
-    fx.className = 'water-splash-fx';
-    fx.src = '../assets/images/hatake-nikki/watered_drop_mark_v2.png';
-    fx.alt = '';
+    var staleFx = refs.el.querySelector('.watering-pour-fx');
+    if (staleFx && staleFx.parentNode) staleFx.parentNode.removeChild(staleFx);
+
+    var fx = document.createElement('div');
+    fx.className = 'watering-pour-fx';
     fx.setAttribute('aria-hidden', 'true');
-    fx.draggable = false;
+
+    var can = document.createElement('img');
+    can.className = 'watering-can-fx';
+    can.src = '../assets/images/Rooms/furnitures_final/deco_watering_can_B.png';
+    can.alt = '';
+    can.setAttribute('aria-hidden', 'true');
+    can.draggable = false;
+
+    var stream = document.createElement('span');
+    stream.className = 'watering-stream-fx';
+    stream.setAttribute('aria-hidden', 'true');
+
+    var splash = document.createElement('img');
+    splash.className = 'water-splash-fx';
+    splash.src = '../assets/images/hatake-nikki/watered_drop_mark_v2.png';
+    splash.alt = '';
+    splash.setAttribute('aria-hidden', 'true');
+    splash.draggable = false;
+
+    fx.appendChild(can);
+    fx.appendChild(stream);
+    fx.appendChild(splash);
     refs.el.appendChild(fx);
-    setTimeout(function () { if (fx.parentNode) fx.parentNode.removeChild(fx); }, 900);
+
+    var cleanupTimer = null;
+    var cleaned = false;
+    function cleanupWaterPour() {
+      if (cleaned) return;
+      cleaned = true;
+      if (cleanupTimer) clearTimeout(cleanupTimer);
+      if (fx.parentNode) fx.parentNode.removeChild(fx);
+    }
+    can.addEventListener('animationend', cleanupWaterPour, { once: true });
+    // background tabやanimation無効環境でも一時DOMを残さない保険。
+    cleanupTimer = setTimeout(cleanupWaterPour, 1300);
   }
 
   function doShooBug(idx) {

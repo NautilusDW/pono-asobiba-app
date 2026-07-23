@@ -196,13 +196,27 @@ html, body {
 .plot[data-plot="8"] { --crop-sign-tilt: -0.9deg; }
 
 /* 水やり済みは「濃い湿った土 + 水色の外周 + 小さなしずく」の3手掛かり。
-   生成画像は238×143。containで上頂点まで必ず表示し、拡大cropしない。 */
-.plot.is-watered {
-  background-image: url('../assets/images/hatake-nikki/hatake_crop_wet.png');
-  background-size: contain;
-  background-position: center;
-  background-repeat: no-repeat;
+   旧 wet PNG は同じ238×143 canvasでも可視alphaが211×132しかなく、差し替えると
+   畝だけ約11%縮んで見えた。乾いた畝と同じ画像外形を疑似要素で色変換することで、
+   水やり前後の輪郭・大きさ・中心を完全に固定する。 */
+.plot::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: url('../assets/images/yard/hatake_crop.png') center/contain no-repeat;
+  opacity: 0;
+  filter:
+    brightness(0.70)
+    saturate(1.28)
+    contrast(1.08)
+    sepia(0.08)
+    drop-shadow(0 0 1px rgba(63, 220, 242, 0.98))
+    drop-shadow(0 0 3px rgba(63, 220, 242, 0.78));
+  transition: opacity 0.18s ease-out;
+  pointer-events: none;
 }
+.plot.is-watered::before { opacity: 1; }
 .watered-drop {
   position: absolute;
   left: -20%;
@@ -228,22 +242,101 @@ html, body {
   50%      { filter: drop-shadow(0 0 16px rgba(80,180,255,0.95)) brightness(1.06); }
 }
 
-/* 水やり成功の演出 (doWater 発火時に一瞬だけ追加される) */
-.water-splash-fx {
-  position: absolute; left: 72%; top: 30%;
-  z-index: 5;
-  transform: translateX(-50%);
-  width: clamp(34px, 25%, 58px);
+/* 水やり成功の演出。対象畝の右上から実画像のじょうろを傾け、
+   水流を畝中央へ落とす。全要素をplot相対座標にして画面幅へ依存させない。 */
+.watering-pour-fx {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  overflow: visible;
+  pointer-events: none;
+}
+.watering-pour-fx,
+.watering-pour-fx * {
+  pointer-events: none;
+}
+.watering-can-fx {
+  position: absolute;
+  right: 0;
+  top: -35%;
+  width: clamp(38px, 48%, 72px);
   height: auto;
   object-fit: contain;
+  opacity: 0;
+  transform-origin: 82% 62%;
+  filter: drop-shadow(0 3px 4px rgba(58, 85, 77, 0.28));
+  animation: wateringCanPour 0.95s cubic-bezier(0.22, 0.72, 0.22, 1) forwards;
+}
+.watering-stream-fx {
+  position: absolute;
+  left: 51%;
+  top: 4%;
+  width: clamp(3px, 3%, 5px);
+  height: 50%;
+  border-radius: 999px;
+  background: linear-gradient(
+    to bottom,
+    rgba(184, 239, 255, 0.18),
+    rgba(80, 190, 242, 0.92) 24%,
+    rgba(42, 156, 224, 0.88)
+  );
+  opacity: 0;
+  transform: scaleY(0.05);
+  transform-origin: 50% 0;
+  filter: drop-shadow(0 1px 2px rgba(30, 111, 173, 0.32));
+  animation: wateringStreamPour 0.95s ease-in-out forwards;
+}
+.water-splash-fx {
+  position: absolute;
+  left: 50%;
+  top: 43%;
+  width: clamp(22px, 18%, 38px);
+  height: auto;
+  object-fit: contain;
+  opacity: 0;
   filter: drop-shadow(0 2px 3px rgba(30, 111, 173, 0.3));
-  pointer-events: none;
-  animation: waterSplashPop 0.9s ease-out forwards;
+  animation: waterSplashPop 0.68s 0.25s ease-out forwards;
+}
+@keyframes wateringCanPour {
+  0% {
+    opacity: 0;
+    transform: translate(18%, -12%) rotate(8deg) scale(0.88);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(4deg) scale(1);
+  }
+  35%, 72% {
+    opacity: 1;
+    transform: translate(-4%, 4%) rotate(-20deg) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(8%, -6%) rotate(6deg) scale(0.94);
+  }
+}
+@keyframes wateringStreamPour {
+  0%, 26% {
+    opacity: 0;
+    transform: scaleY(0.05);
+  }
+  38% {
+    opacity: 0.92;
+    transform: scaleY(0.25);
+  }
+  50%, 74% {
+    opacity: 0.92;
+    transform: scaleY(1);
+  }
+  88%, 100% {
+    opacity: 0;
+    transform: scaleY(0.18);
+  }
 }
 @keyframes waterSplashPop {
-  0%   { opacity: 0; transform: translateX(-50%) translateY(8px)  scale(0.6); }
-  25%  { opacity: 1; transform: translateX(-50%) translateY(-6px) scale(1.15); }
-  100% { opacity: 0; transform: translateX(-50%) translateY(-26px) scale(1); }
+  0%   { opacity: 0; transform: translate(-50%, 6px) scale(0.55); }
+  30%  { opacity: 1; transform: translate(-50%, 0) scale(1.05); }
+  100% { opacity: 0; transform: translate(-50%, -10px) scale(0.88); }
 }
 
 .plant {
@@ -255,32 +348,100 @@ html, body {
 }
 .plant img.crop-stage-img {
   display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain; /* 512×512透明canvasの根元アンカーを全作物で共有 */
-  transform: translateY(-27%);
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: auto;
+  max-width: none;
+  height: var(--crop-scale, 100%);
+  aspect-ratio: 1 / 1;
+  object-fit: contain;
+  /* 512×512内の土台中心は作物・段階ごとに異なる。画像自体の土台点を
+     left/top 50%へ重ねるため、20状態それぞれの実測アンカーで補正する。 */
+  transform: translate(
+    var(--crop-anchor-x, -50%),
+    var(--crop-anchor-y, -68%)
+  );
   pointer-events: none;
 }
 .plant[data-stage="0"] img.crop-stage-img {
-  width: 96%;
-  height: 96%;
+  --crop-scale: 96%;
 }
 .plant[data-stage="1"] img.crop-stage-img {
-  width: 100%;
-  height: 100%;
+  --crop-scale: 100%;
 }
 .plant[data-stage="2"] img.crop-stage-img {
-  width: 106%;
-  height: 106%;
+  --crop-scale: 106%;
 }
 .plant[data-stage="3"] img.crop-stage-img {
-  width: 112%;
-  height: 112%;
+  --crop-scale: 112%;
 }
 .plant[data-stage="4"] img.crop-stage-img {
-  width: 118%;
-  height: 118%;
+  --crop-scale: 118%;
   animation: hatakeGlow 1.4s ease-in-out infinite;
+}
+
+/* 各値は透明canvasではなく、畝へ接する土の小山／根元の実画素中心。
+   position:50% 50%から、その点のcanvas内比率だけ逆方向へ移動する。 */
+.plot[data-crop="ninjin"] .plant[data-stage="0"] img.crop-stage-img {
+  --crop-anchor-x: -51.97%; --crop-anchor-y: -68.83%;
+}
+.plot[data-crop="ninjin"] .plant[data-stage="1"] img.crop-stage-img {
+  --crop-anchor-x: -48.44%; --crop-anchor-y: -70.55%;
+}
+.plot[data-crop="ninjin"] .plant[data-stage="2"] img.crop-stage-img {
+  --crop-anchor-x: -46.95%; --crop-anchor-y: -71.46%;
+}
+.plot[data-crop="ninjin"] .plant[data-stage="3"] img.crop-stage-img {
+  --crop-anchor-x: -49.24%; --crop-anchor-y: -74.10%;
+}
+.plot[data-crop="ninjin"] .plant[data-stage="4"] img.crop-stage-img {
+  --crop-anchor-x: -47.99%; --crop-anchor-y: -74.65%;
+}
+.plot[data-crop="onion"] .plant[data-stage="0"] img.crop-stage-img {
+  --crop-anchor-x: -55.74%; --crop-anchor-y: -69.80%;
+}
+.plot[data-crop="onion"] .plant[data-stage="1"] img.crop-stage-img {
+  --crop-anchor-x: -49.73%; --crop-anchor-y: -70.14%;
+}
+.plot[data-crop="onion"] .plant[data-stage="2"] img.crop-stage-img {
+  --crop-anchor-x: -40.14%; --crop-anchor-y: -71.25%;
+}
+.plot[data-crop="onion"] .plant[data-stage="3"] img.crop-stage-img {
+  --crop-anchor-x: -55.82%; --crop-anchor-y: -78.16%;
+}
+.plot[data-crop="onion"] .plant[data-stage="4"] img.crop-stage-img {
+  --crop-anchor-x: -48.75%; --crop-anchor-y: -73.96%;
+}
+.plot[data-crop="potato"] .plant[data-stage="0"] img.crop-stage-img {
+  --crop-anchor-x: -55.94%; --crop-anchor-y: -61.62%;
+}
+.plot[data-crop="potato"] .plant[data-stage="1"] img.crop-stage-img {
+  --crop-anchor-x: -49.94%; --crop-anchor-y: -62.68%;
+}
+.plot[data-crop="potato"] .plant[data-stage="2"] img.crop-stage-img {
+  --crop-anchor-x: -42.34%; --crop-anchor-y: -64.94%;
+}
+.plot[data-crop="potato"] .plant[data-stage="3"] img.crop-stage-img {
+  --crop-anchor-x: -53.32%; --crop-anchor-y: -73.87%;
+}
+.plot[data-crop="potato"] .plant[data-stage="4"] img.crop-stage-img {
+  --crop-anchor-x: -48.26%; --crop-anchor-y: -72.03%;
+}
+.plot[data-crop="tomato"] .plant[data-stage="0"] img.crop-stage-img {
+  --crop-anchor-x: -55.31%; --crop-anchor-y: -61.99%;
+}
+.plot[data-crop="tomato"] .plant[data-stage="1"] img.crop-stage-img {
+  --crop-anchor-x: -48.61%; --crop-anchor-y: -63.14%;
+}
+.plot[data-crop="tomato"] .plant[data-stage="2"] img.crop-stage-img {
+  --crop-anchor-x: -38.79%; --crop-anchor-y: -64.79%;
+}
+.plot[data-crop="tomato"] .plant[data-stage="3"] img.crop-stage-img {
+  --crop-anchor-x: -56.46%; --crop-anchor-y: -69.53%;
+}
+.plot[data-crop="tomato"] .plant[data-stage="4"] img.crop-stage-img {
+  --crop-anchor-x: -48.46%; --crop-anchor-y: -74.82%;
 }
 @keyframes hatakeGlow {
   0%, 100% { filter: drop-shadow(0 0 4px rgba(255,235,120,0.6)); }
@@ -372,9 +533,17 @@ html, body {
   transition: width 800ms linear;
 }
 
+@keyframes wateringCanReduced {
+  0%, 100% { opacity: 0; transform: rotate(-20deg); }
+  20%, 78% { opacity: 1; transform: rotate(-20deg); }
+}
+@keyframes wateringStreamReduced {
+  0%, 100% { opacity: 0; transform: scaleY(1); }
+  28%, 76% { opacity: 0.82; transform: scaleY(1); }
+}
 @keyframes waterSplashReduced {
-  from { opacity: 0.85; }
-  to { opacity: 0; }
+  0%, 100% { opacity: 0; transform: translate(-50%, 0) scale(0.9); }
+  30%, 76% { opacity: 0.86; transform: translate(-50%, 0) scale(0.9); }
 }
 @media (prefers-reduced-motion: reduce) {
   .plant[data-stage="4"] img.crop-stage-img {
@@ -385,8 +554,14 @@ html, body {
     animation: none;
     filter: drop-shadow(0 0 8px rgba(80,180,255,0.78));
   }
+  .watering-can-fx {
+    animation: wateringCanReduced 0.34s linear forwards;
+  }
+  .watering-stream-fx {
+    animation: wateringStreamReduced 0.34s linear forwards;
+  }
   .water-splash-fx {
-    animation: waterSplashReduced 0.35s linear forwards;
+    animation: waterSplashReduced 0.34s linear forwards;
   }
 }
 

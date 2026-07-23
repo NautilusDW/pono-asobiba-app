@@ -709,11 +709,12 @@ function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
   }
   assert.equal(new Set(stageHashes).size, 20, '4作物×5段階の成長画像はファイル内容も全20枚ユニーク');
 
-  const existingWetArt = [
-    'assets/images/hatake-nikki/hatake_crop_wet.png',
-    'assets/images/hatake-nikki/watered_drop_mark_v2.png'
+  const runtimeWaterArt = [
+    'assets/images/yard/hatake_crop.png',
+    'assets/images/hatake-nikki/watered_drop_mark_v2.png',
+    'assets/images/Rooms/furnitures_final/deco_watering_can_B.png'
   ];
-  for (const relative of existingWetArt) {
+  for (const relative of runtimeWaterArt) {
     const absolute = path.join(root, relative);
     assert.ok(fs.existsSync(absolute), `${relative} が存在する`);
     assert.ok(fs.statSync(absolute).size > 0, `${relative} が空ファイルではない`);
@@ -729,7 +730,6 @@ function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
     ...cropIds.map(cropId => L.CROPS[cropId].signImg),
     ...cropIds.map(cropId => L.CROPS[cropId].seedChoiceImg),
     ...cropIds.map(cropId => L.CROPS[cropId].stageImages[0]),
-    '../assets/images/hatake-nikki/hatake_crop_wet.png',
     '../assets/images/hatake-nikki/watered_drop_mark_v2.png'
   ];
   for (const assetUrl of preloadUrls) {
@@ -754,9 +754,111 @@ function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
     assert.match(stylesCss, new RegExp('\\.plant\\[data-stage="' + stage + '"\\]\\s+img\\.crop-stage-img\\s*\\{'), `stage${stage} 専用の画像サイズ調整がある`);
   }
   assert.match(stylesCss, /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*?\.plant\[data-stage="4"\]\s+img\.crop-stage-img\s*\{[^}]*animation:\s*none/, '動きを減らす設定では収穫OKの点滅を止める');
-  assert.match(stylesCss, /\.plot\.is-watered\s*\{[^}]*hatake_crop_wet\.png/, '水やり済みは湿った土の生成画像へ切り替える');
-  assert.match(stylesCss, /\.plot\.is-watered\s*\{[^}]*background-size:\s*contain[^}]*background-position:\s*center[^}]*background-repeat:\s*no-repeat/s, '湿った畝は上頂点を切らず全体表示する');
+
+  // 水やり前後で同じ乾いた畝シルエットを使い、色だけを疑似要素で変える。
+  // 旧wet PNGは透明余白が広く、同じCSS boxでも可視輪郭だけ縮むためruntime参照禁止。
+  assert.doesNotMatch(indexHtml + gameJs + stylesCss, /hatake_crop_wet\.png/, '透明余白で縮む旧wet PNGをruntime参照しない');
+  const plotBaseArtBlock = stylesCss.match(/\.plot\s*\{[^}]*\}/s);
+  assert.ok(plotBaseArtBlock, '乾いた畝の共通CSSが存在する');
+  assert.match(plotBaseArtBlock[0], /background:\s*url\('\.\.\/assets\/images\/yard\/hatake_crop\.png'\)\s+center\/contain\s+no-repeat/, '通常畝は乾いた畝画像をcontain表示する');
+  const wetSilhouetteBlock = stylesCss.match(/\.plot::before\s*\{[^}]*\}/s);
+  assert.ok(wetSilhouetteBlock, '水やり色変換用の疑似要素が存在する');
+  assert.match(wetSilhouetteBlock[0], /position:\s*absolute[^}]*inset:\s*0/s, '水やり色レイヤーは畝と同じ絶対領域を使う');
+  assert.match(wetSilhouetteBlock[0], /background:\s*url\('\.\.\/assets\/images\/yard\/hatake_crop\.png'\)\s+center\/contain\s+no-repeat/, '水やり色レイヤーも通常畝と同じ画像・contain外形を使う');
+  assert.match(wetSilhouetteBlock[0], /opacity:\s*0/, '未水やり時は色レイヤーを隠す');
+  assert.match(wetSilhouetteBlock[0], /filter:[^}]*brightness\([^)]*\)[^}]*saturate\([^)]*\)[^}]*drop-shadow\([^)]*\)/s, '湿った土色と水色外周は同一シルエットへのfilterで作る');
+  assert.match(wetSilhouetteBlock[0], /pointer-events:\s*none/, '水やり色レイヤーは畝操作を妨げない');
+  assert.match(stylesCss, /\.plot\.is-watered::before\s*\{\s*opacity:\s*1;\s*\}/, '水やり済みだけ同寸の湿り色レイヤーを表示する');
   assert.match(stylesCss, /\.plot\.is-watered\s+\.watered-drop\s*\{[^}]*display:\s*block/, '水やり済みは大きなしずく画像を表示する');
+
+  // 512px透明canvasの中心ではなく、各画像の土台／根元を畝中央へ置く。
+  const cropStageImageBlock = stylesCss.match(/\.plant img\.crop-stage-img\s*\{[^}]*\}/s);
+  assert.ok(cropStageImageBlock, '作物成長画像の共通配置CSSが存在する');
+  assert.match(cropStageImageBlock[0], /position:\s*absolute/, '作物画像はflex寸法差の影響を受けない絶対配置');
+  assert.match(cropStageImageBlock[0], /left:\s*50%[^}]*top:\s*50%/s, '作物画像の基準点は畝中央');
+  assert.match(cropStageImageBlock[0], /width:\s*auto[^}]*max-width:\s*none[^}]*height:\s*var\(--crop-scale,\s*100%\)/s, '作物画像は高さ基準で拡大して横幅を自動算出する');
+  assert.match(cropStageImageBlock[0], /aspect-ratio:\s*1\s*\/\s*1[^}]*object-fit:\s*contain/s, '作物画像は正方形canvasと縦横比を維持する');
+  assert.match(cropStageImageBlock[0], /transform:\s*translate\(\s*var\(--crop-anchor-x,\s*-50%\),\s*var\(--crop-anchor-y,\s*-68%\)\s*\)/s, '作物画像は実測した根元アンカーで中央へ寄せる');
+  assert.match(cropStageImageBlock[0], /pointer-events:\s*none/, '作物画像は畝操作を妨げない');
+
+  const expectedCropAnchors = {
+    ninjin: [
+      ['-51.97%', '-68.83%'],
+      ['-48.44%', '-70.55%'],
+      ['-46.95%', '-71.46%'],
+      ['-49.24%', '-74.10%'],
+      ['-47.99%', '-74.65%']
+    ],
+    onion: [
+      ['-55.74%', '-69.80%'],
+      ['-49.73%', '-70.14%'],
+      ['-40.14%', '-71.25%'],
+      ['-55.82%', '-78.16%'],
+      ['-48.75%', '-73.96%']
+    ],
+    potato: [
+      ['-55.94%', '-61.62%'],
+      ['-49.94%', '-62.68%'],
+      ['-42.34%', '-64.94%'],
+      ['-53.32%', '-73.87%'],
+      ['-48.26%', '-72.03%']
+    ],
+    tomato: [
+      ['-55.31%', '-61.99%'],
+      ['-48.61%', '-63.14%'],
+      ['-38.79%', '-64.79%'],
+      ['-56.46%', '-69.53%'],
+      ['-48.46%', '-74.82%']
+    ]
+  };
+  const cropAnchorRules = Array.from(stylesCss.matchAll(
+    /\.plot\[data-crop="(tomato|ninjin|potato|onion)"\]\s+\.plant\[data-stage="([0-4])"\]\s+img\.crop-stage-img\s*\{([^}]*)\}/g
+  ));
+  assert.equal(cropAnchorRules.length, 20, '4作物×5段階の実測アンカー規則がちょうど20組ある');
+  const cropAnchorRuleKeys = new Set(cropAnchorRules.map(match => match[1] + ':' + match[2]));
+  assert.equal(cropAnchorRuleKeys.size, 20, '同じ作物・段階のアンカー規則を重複させない');
+  for (const cropId of cropIds) {
+    for (let stage = 0; stage <= 4; stage++) {
+      const rule = cropAnchorRules.find(match => match[1] === cropId && Number(match[2]) === stage);
+      assert.ok(rule, `${cropId} stage${stage} の根元アンカー規則が存在する`);
+      const x = (rule[3].match(/--crop-anchor-x:\s*(-?[\d.]+%)/) || [])[1];
+      const y = (rule[3].match(/--crop-anchor-y:\s*(-?[\d.]+%)/) || [])[1];
+      assert.deepEqual([x, y], expectedCropAnchors[cropId][stage], `${cropId} stage${stage} は実測アンカーX/Yを維持する`);
+    }
+  }
+
+  // 成功した水やりだけで、じょうろ→水流→着水の一時DOMを対象畝へ出す。
+  assert.match(gameJs, /function doWater\(idx\)\s*\{\s*if\s*\(!L\.waterPlot\(appState,\s*idx\)\)\s*return;[\s\S]*?playWaterPour\(idx\);/, '失敗した水やりは即returnし、成功後だけ注水演出を呼ぶ');
+  assert.equal((gameJs.match(/playWaterPour\(idx\)/g) || []).length, 2, '注水演出は関数定義とdoWater成功経路の1呼出しだけ');
+  assert.doesNotMatch(gameJs, /playWaterSplash/, '旧しずくだけの演出関数を残さない');
+  assert.match(gameJs, /function playWaterPour\(idx\)[\s\S]*?createElement\('div'\)[\s\S]*?className\s*=\s*'watering-pour-fx'/, '注水演出は対象畝相対のラッパーを作る');
+  assert.match(gameJs, /createElement\('img'\)[\s\S]*?className\s*=\s*'watering-can-fx'[\s\S]*?deco_watering_can_B\.png/, '注水演出は実画像のじょうろを作る');
+  assert.match(gameJs, /createElement\('span'\)[\s\S]*?className\s*=\s*'watering-stream-fx'/, '注水演出はじょうろからの水流を作る');
+  assert.match(gameJs, /className\s*=\s*'water-splash-fx'[\s\S]*?watered_drop_mark_v2\.png/, '注水演出は畝中央の着水画像を作る');
+  assert.match(gameJs, /fx\.appendChild\(can\);\s*fx\.appendChild\(stream\);\s*fx\.appendChild\(splash\);\s*refs\.el\.appendChild\(fx\);/, 'じょうろ・水流・着水を同じ対象畝へ順番に追加する');
+  assert.match(gameJs, /querySelector\('\.watering-pour-fx'\)[\s\S]*?removeChild\(staleFx\)/, '連続操作前に同じ畝の古い注水演出を除去する');
+  assert.match(gameJs, /function cleanupWaterPour\(\)\s*\{\s*if\s*\(cleaned\)\s*return;\s*cleaned\s*=\s*true;[\s\S]*?clearTimeout\(cleanupTimer\)[\s\S]*?removeChild\(fx\)/, '注水演出cleanupは一度だけ実行してtimerとDOMを片付ける');
+  assert.match(gameJs, /can\.addEventListener\('animationend',\s*cleanupWaterPour,\s*\{\s*once:\s*true\s*\}\)/, 'じょうろanimation終了時に一度だけcleanupする');
+  assert.match(gameJs, /setTimeout\(cleanupWaterPour,\s*1300\)/, 'animation終了が来ない環境でも注水演出を片付ける');
+
+  const pourFxBlock = stylesCss.match(/\.watering-pour-fx\s*\{[^}]*\}/s);
+  assert.ok(pourFxBlock, '注水演出ラッパーCSSが存在する');
+  assert.match(pourFxBlock[0], /position:\s*absolute[^}]*inset:\s*0[^}]*overflow:\s*visible/s, '注水演出は対象畝全面を基準に外側のじょうろも表示する');
+  assert.match(pourFxBlock[0], /pointer-events:\s*none/, '注水演出ラッパーは畝操作を妨げない');
+  assert.match(stylesCss, /\.watering-pour-fx,\s*\.watering-pour-fx\s+\*\s*\{[^}]*pointer-events:\s*none/s, '注水演出の全子要素も入力を奪わない');
+  assert.match(stylesCss, /\.watering-can-fx\s*\{[^}]*position:\s*absolute[^}]*object-fit:\s*contain[^}]*animation:\s*wateringCanPour\s+0\.95s[^}]*forwards/s, 'じょうろ画像は畝相対で傾く本演出を使う');
+  assert.match(stylesCss, /\.watering-stream-fx\s*\{[^}]*position:\s*absolute[^}]*background:\s*linear-gradient\([^}]*animation:\s*wateringStreamPour\s+0\.95s[^}]*forwards/s, '水流は畝中央へ伸びる本演出を使う');
+  assert.match(stylesCss, /\.water-splash-fx\s*\{[^}]*position:\s*absolute[^}]*animation:\s*waterSplashPop\s+0\.68s\s+0\.25s[^}]*forwards/s, '着水画像は水流の後に畝中央で表示する');
+  for (const keyframes of ['wateringCanPour', 'wateringStreamPour', 'waterSplashPop']) {
+    assert.match(stylesCss, new RegExp('@keyframes\\s+' + keyframes + '\\s*\\{'), `${keyframes} の本演出keyframesが存在する`);
+  }
+  for (const keyframes of ['wateringCanReduced', 'wateringStreamReduced', 'waterSplashReduced']) {
+    assert.match(stylesCss, new RegExp('@keyframes\\s+' + keyframes + '\\s*\\{'), `${keyframes} の動きを減らすkeyframesが存在する`);
+  }
+  assert.match(stylesCss, /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*?\.watering-can-fx\s*\{[^}]*animation:\s*wateringCanReduced\s+0\.34s\s+linear\s+forwards/, '動きを減らす設定ではじょうろ移動を短い静的表示へ替える');
+  assert.match(stylesCss, /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*?\.watering-stream-fx\s*\{[^}]*animation:\s*wateringStreamReduced\s+0\.34s\s+linear\s+forwards/, '動きを減らす設定では水流を短い静的表示へ替える');
+  assert.match(stylesCss, /@media\s*\(prefers-reduced-motion:\s*reduce\)[\s\S]*?\.water-splash-fx\s*\{[^}]*animation:\s*waterSplashReduced\s+0\.34s\s+linear\s+forwards/, '動きを減らす設定では着水を短い静的表示へ替える');
+
   const markerBlock = stylesCss.match(/\.plot-marker\s*\{[^}]*\}/s);
   assert.ok(markerBlock, '札と水マークの共通ラッパーCSSが存在する');
   assert.match(markerBlock[0], /left:\s*10%/, '全マーカーは畝の左隅寄りに同じアンカーXを使う');

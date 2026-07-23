@@ -65,6 +65,26 @@ async function plantNinjin(page, idx) {
   await page.waitForTimeout(100);
 }
 
+function waterPourParts(page, idx) {
+  const plot = page.locator(`.plot[data-plot="${idx}"]`);
+  const wrapper = plot.locator('.watering-pour-fx');
+  return {
+    plot,
+    wrapper,
+    can: wrapper.locator('.watering-can-fx'),
+    stream: wrapper.locator('.watering-stream-fx'),
+    splash: wrapper.locator('.water-splash-fx')
+  };
+}
+
+async function expectNoWaterPour(page, idx) {
+  const fx = waterPourParts(page, idx);
+  await expect(fx.wrapper).toHaveCount(0);
+  await expect(fx.can).toHaveCount(0);
+  await expect(fx.stream).toHaveCount(0);
+  await expect(fx.splash).toHaveCount(0);
+}
+
 test('contextmenu は preventDefault される (長押しメニュー抑止)', async ({ page }) => {
   await startGame(page);
   const prevented = await page.locator('#stage').evaluate(el => {
@@ -98,7 +118,91 @@ test('800ms長押しで水やり成功 → is-watered + 成功flash + パルス�
   const watered = await page.evaluate(() =>
     JSON.parse(localStorage.getItem('pono_hatake_state_v1')).plots[0].wateredToday);
   expect(watered).toBe(true);
-  await page.waitForTimeout(1700); // flash 復帰
+
+  // 成功した対象畝だけに、実画像じょうろ・水流・着水演出をまとめて生成する。
+  const fx = waterPourParts(page, 0);
+  await expect(page.locator('.watering-pour-fx')).toHaveCount(1);
+  await expect(fx.wrapper).toHaveCount(1);
+  await expect(fx.can).toHaveCount(1);
+  await expect(fx.stream).toHaveCount(1);
+  await expect(fx.splash).toHaveCount(1);
+  await expect(fx.can).toHaveAttribute(
+    'src',
+    /assets\/images\/Rooms\/furnitures_final\/deco_watering_can_B\.png$/
+  );
+  await expect(fx.splash).toHaveAttribute(
+    'src',
+    /assets\/images\/hatake-nikki\/watered_drop_mark_v2\.png$/
+  );
+  await expect.poll(() => fx.can.evaluate(el => el.complete && el.naturalWidth > 0)).toBe(true);
+
+  const fxState = await fx.wrapper.evaluate((wrapper) => {
+    const plot = wrapper.closest('.plot');
+    const plotRect = plot.getBoundingClientRect();
+    const wrapperRect = wrapper.getBoundingClientRect();
+    const centerTarget = document.elementFromPoint(
+      plotRect.left + plotRect.width / 2,
+      plotRect.top + plotRect.height / 2
+    );
+    const nodes = [
+      wrapper,
+      wrapper.querySelector('.watering-can-fx'),
+      wrapper.querySelector('.watering-stream-fx'),
+      wrapper.querySelector('.water-splash-fx')
+    ];
+    return {
+      parentPlot: plot.dataset.plot,
+      pointerEvents: nodes.map(node => getComputedStyle(node).pointerEvents),
+      centerIsBlockedByFx: !!centerTarget && wrapper.contains(centerTarget),
+      wrapperRect: {
+        x: wrapperRect.x,
+        y: wrapperRect.y,
+        width: wrapperRect.width,
+        height: wrapperRect.height
+      },
+      plotRect: {
+        x: plotRect.x,
+        y: plotRect.y,
+        width: plotRect.width,
+        height: plotRect.height
+      }
+    };
+  });
+  expect(fxState.parentPlot).toBe('0');
+  expect(fxState.pointerEvents).toEqual(['none', 'none', 'none', 'none']);
+  expect(fxState.centerIsBlockedByFx).toBe(false);
+  expect(Math.abs(fxState.wrapperRect.x - fxState.plotRect.x)).toBeLessThanOrEqual(0.5);
+  expect(Math.abs(fxState.wrapperRect.y - fxState.plotRect.y)).toBeLessThanOrEqual(0.5);
+  expect(Math.abs(fxState.wrapperRect.width - fxState.plotRect.width)).toBeLessThanOrEqual(0.5);
+  expect(Math.abs(fxState.wrapperRect.height - fxState.plotRect.height)).toBeLessThanOrEqual(0.5);
+
+  // 水流が伸び切る中盤で、着水点が対象畝の中央付近にあることを確認する。
+  await page.waitForTimeout(250);
+  const [plotBox, streamBox, splashBox] = await Promise.all([
+    fx.plot.boundingBox(),
+    fx.stream.boundingBox(),
+    fx.splash.boundingBox()
+  ]);
+  expect(plotBox).toBeTruthy();
+  expect(streamBox).toBeTruthy();
+  expect(splashBox).toBeTruthy();
+  const streamEndX = (streamBox.x + streamBox.width / 2 - plotBox.x) / plotBox.width;
+  const streamEndY = (streamBox.y + streamBox.height - plotBox.y) / plotBox.height;
+  const splashCenterX = (splashBox.x + splashBox.width / 2 - plotBox.x) / plotBox.width;
+  expect(streamEndX).toBeGreaterThanOrEqual(0.46);
+  expect(streamEndX).toBeLessThanOrEqual(0.58);
+  expect(streamEndY).toBeGreaterThanOrEqual(0.42);
+  expect(streamEndY).toBeLessThanOrEqual(0.62);
+  expect(splashCenterX).toBeGreaterThanOrEqual(0.44);
+  expect(splashCenterX).toBeLessThanOrEqual(0.58);
+
+  // animationend（失火時は1300ms保険）で一時DOMを必ず片付ける。
+  await expect(fx.wrapper).toHaveCount(0, { timeout: 1400 });
+  await expect(page.locator('#status-bar')).toHaveText(
+    'きょうの みずやりは ぜんぶ できたよ！',
+    { timeout: 1800 }
+  );
+  await expect(page.locator('.watering-pour-fx')).toHaveCount(0);
   await expect(page.locator('#status-bar')).toHaveText('きょうの みずやりは ぜんぶ できたよ！');
 });
 
@@ -133,17 +237,17 @@ test('水やり済みの畝を再度長押ししても成功フローは再生�
   await touchOn(page, '.plot[data-plot="0"]', 'touchend');
   await page.waitForTimeout(1700); // flash 復帰待ち
   await expect(page.locator('#status-bar')).toHaveText('きょうの みずやりは ぜんぶ できたよ！');
-  const splashCountBefore = await page.locator('.plot[data-plot="0"] .water-splash-fx').count();
+  await expectNoWaterPour(page, 0);
   // 既に水やり済みの畝をあえて再度長押し
   await touchOn(page, '.plot[data-plot="0"]', 'touchstart');
   await page.waitForTimeout(100);
   await expect(page.locator('.plot[data-plot="0"]')).not.toHaveClass(/is-watering/); // ゲージ演出が始まらない
+  await expectNoWaterPour(page, 0);
   await page.waitForTimeout(850);
   await touchOn(page, '.plot[data-plot="0"]', 'touchend');
   await page.waitForTimeout(100);
   await expect(page.locator('#status-bar')).not.toHaveText('みずやり できた！'); // 成功flashが再生されない
-  const splashCountAfter = await page.locator('.plot[data-plot="0"] .water-splash-fx').count();
-  expect(splashCountAfter).toBe(splashCountBefore);
+  await expectNoWaterPour(page, 0);
 });
 
 test('touchcancel で中断 → 水やり不成立 + リトライ文言', async ({ page }) => {
@@ -161,6 +265,7 @@ test('touchcancel で中断 → 水やり不成立 + リトライ文言', async 
   const watered = await page.evaluate(() =>
     JSON.parse(localStorage.getItem('pono_hatake_state_v1')).plots[0].wateredToday);
   expect(watered).toBe(false);
+  await expectNoWaterPour(page, 0);
 });
 
 test('早すぎるリリース(800ms未満) → 水やり不成立 + リトライ文言', async ({ page }) => {
@@ -174,6 +279,55 @@ test('早すぎるリリース(800ms未満) → 水やり不成立 + リトラ�
   await page.waitForTimeout(100);
   await expect(page.locator('.plot[data-plot="0"]')).not.toHaveClass(/is-watered/);
   await expect(page.locator('#status-bar')).toHaveText('もうすこし ながく おしてね');
+  await expectNoWaterPour(page, 0);
+});
+
+test('動きをへらす設定では0.35秒以内の静かな水やり演出になり、自動で片付く', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await startGame(page);
+  await plantNinjin(page, 0);
+  await page.locator('#tool-water-btn').dispatchEvent('pointerdown');
+  await page.waitForTimeout(100);
+
+  const fx = waterPourParts(page, 0);
+  await touchOn(page, '.plot[data-plot="0"]', 'touchstart');
+  // 800ms成功直前まで進め、短いreduced-motion演出を確実に捕まえる。
+  await page.waitForTimeout(790);
+  await expect(fx.wrapper).toHaveCount(1, { timeout: 450 });
+  await expect(fx.can).toHaveCount(1);
+  await expect(fx.stream).toHaveCount(1);
+  await expect(fx.splash).toHaveCount(1);
+  await expect(fx.plot).toHaveClass(/is-watered/);
+
+  const reducedMotionState = await fx.wrapper.evaluate((wrapper) => {
+    const can = wrapper.querySelector('.watering-can-fx');
+    const stream = wrapper.querySelector('.watering-stream-fx');
+    const splash = wrapper.querySelector('.water-splash-fx');
+    const durationSeconds = (element) => {
+      const value = getComputedStyle(element).animationDuration.split(',')[0].trim();
+      return value.endsWith('ms') ? parseFloat(value) / 1000 : parseFloat(value);
+    };
+    return {
+      names: [can, stream, splash].map(element => getComputedStyle(element).animationName),
+      durations: [can, stream, splash].map(durationSeconds),
+      pointerEvents: [wrapper, can, stream, splash]
+        .map(element => getComputedStyle(element).pointerEvents)
+    };
+  });
+  expect(reducedMotionState.names).toEqual([
+    'wateringCanReduced',
+    'wateringStreamReduced',
+    'waterSplashReduced'
+  ]);
+  for (const duration of reducedMotionState.durations) {
+    expect(duration).toBeGreaterThan(0);
+    expect(duration).toBeLessThanOrEqual(0.35);
+  }
+  expect(reducedMotionState.pointerEvents).toEqual(['none', 'none', 'none', 'none']);
+
+  await touchOn(page, '.plot[data-plot="0"]', 'touchend');
+  await expect(fx.wrapper).toHaveCount(0, { timeout: 800 });
+  await expectNoWaterPour(page, 0);
 });
 
 test('ステータスバーの状態遷移', async ({ page }) => {

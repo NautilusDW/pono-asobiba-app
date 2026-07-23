@@ -139,8 +139,25 @@ for (const viewport of [
       const overlaps = (a, b) =>
         a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
       return {
-        backgrounds: plots.map((el) => getComputedStyle(el).backgroundImage),
-        backgroundSizes: plots.map((el) => getComputedStyle(el).backgroundSize),
+        plotLayers: plots.map((el) => {
+          const base = getComputedStyle(el);
+          const wet = getComputedStyle(el, '::before');
+          return {
+            baseBackgroundImage: base.backgroundImage,
+            baseBackgroundSize: base.backgroundSize,
+            baseBackgroundPosition: base.backgroundPosition,
+            baseBackgroundRepeat: base.backgroundRepeat,
+            wetBackgroundImage: wet.backgroundImage,
+            wetBackgroundSize: wet.backgroundSize,
+            wetBackgroundPosition: wet.backgroundPosition,
+            wetBackgroundRepeat: wet.backgroundRepeat,
+            wetOpacity: wet.opacity,
+            wetFilter: wet.filter,
+            wetPointerEvents: wet.pointerEvents,
+            wetPosition: wet.position,
+            wetInset: [wet.top, wet.right, wet.bottom, wet.left]
+          };
+        }),
         geometry: plots.map((plot) => {
           const marker = plot.querySelector('.plot-marker');
           const sign = plot.querySelector('.crop-sign');
@@ -191,20 +208,6 @@ for (const viewport of [
             pointerEvents: [marker, sign, drop].map((el) => getComputedStyle(el).pointerEvents)
           };
         }),
-        plantAnchors: plots.map((plot) => {
-          const plant = plot.querySelector('.plant');
-          const image = plant && plant.querySelector('img.crop-stage-img');
-          if (!plant || !image) return null;
-          return {
-            crop: plot.dataset.crop,
-            stage: Number(plant.dataset.stage),
-            source: image.getAttribute('src'),
-            x: (plant.offsetLeft + plant.offsetWidth / 2) / plot.clientWidth,
-            y: (plant.offsetTop + plant.offsetHeight / 2) / plot.clientHeight,
-            loaded: image.complete && image.naturalWidth > 0,
-            pointerEvents: getComputedStyle(image).pointerEvents
-          };
-        }).filter(Boolean),
         plantEmojiCount: document.querySelectorAll('.plant-emoji').length,
         legacyCropImageCount: document.querySelectorAll('.crop-img').length,
         wateringCanLoaded: !!wateringCan && wateringCan.complete && wateringCan.naturalWidth > 0,
@@ -216,9 +219,27 @@ for (const viewport of [
         seedToolText: document.getElementById('tool-seed-btn').textContent.trim()
       };
     });
-    expect(artState.backgrounds).toHaveLength(PLOT_COUNT);
-    expect(artState.backgrounds.every((value) => value.includes('hatake_crop_wet.png'))).toBe(true);
-    expect(artState.backgroundSizes).toEqual(Array(PLOT_COUNT).fill('contain'));
+    expect(artState.plotLayers).toHaveLength(PLOT_COUNT);
+    for (const layer of artState.plotLayers) {
+      // 水やり前後で畝の外形を変えない。通常背景も疑似要素も同じ乾いた畝を使い、
+      // 疑似要素側だけを暗色化・水色縁取りして湿りを表現する。
+      expect(layer.baseBackgroundImage).toContain('assets/images/yard/hatake_crop.png');
+      expect(layer.baseBackgroundImage).not.toContain('hatake_crop_wet.png');
+      expect(layer.wetBackgroundImage).toBe(layer.baseBackgroundImage);
+      expect(layer.baseBackgroundSize).toBe('contain');
+      expect(layer.wetBackgroundSize).toBe(layer.baseBackgroundSize);
+      expect(layer.wetBackgroundPosition).toBe(layer.baseBackgroundPosition);
+      expect(layer.wetBackgroundRepeat).toBe(layer.baseBackgroundRepeat);
+      expect(layer.wetOpacity).toBe('1');
+      expect(layer.wetFilter).toContain('brightness(0.7)');
+      expect(layer.wetFilter).toContain('saturate(1.28)');
+      expect(layer.wetFilter).toContain('contrast(1.08)');
+      expect(layer.wetFilter).toContain('sepia(0.08)');
+      expect(layer.wetFilter).toContain('drop-shadow');
+      expect(layer.wetPointerEvents).toBe('none');
+      expect(layer.wetPosition).toBe('absolute');
+      expect(layer.wetInset).toEqual(['0px', '0px', '0px', '0px']);
+    }
     expect(artState.geometry).toHaveLength(PLOT_COUNT);
     for (const geometry of artState.geometry) {
       expect(Math.abs(geometry.anchorX - 0.1)).toBeLessThanOrEqual(0.01);
@@ -244,18 +265,6 @@ for (const viewport of [
       expect(geometry.signLoaded).toBe(true);
       expect(geometry.dropLoaded).toBe(true);
       expect(geometry.pointerEvents.every((value) => value === 'none')).toBe(true);
-    }
-    expect(artState.plantAnchors).toHaveLength(PLOT_COUNT);
-    for (const plant of artState.plantAnchors) {
-      expect(Math.abs(plant.x - 0.5)).toBeLessThanOrEqual(0.01);
-      expect(Math.abs(plant.y - 0.5)).toBeLessThanOrEqual(0.01);
-      expect(plant.loaded).toBe(true);
-      expect(plant.pointerEvents).toBe('none');
-      expect(plant.stage).toBeGreaterThanOrEqual(0);
-      expect(plant.stage).toBeLessThanOrEqual(4);
-      expect(plant.source).toMatch(new RegExp(
-        `crops/${plant.crop}_stage_${plant.stage}_${STAGE_FILE_SUFFIXES[plant.stage]}\\.webp$`
-      ));
     }
     expect(artState.plantEmojiCount).toBe(0);
     expect(artState.legacyCropImageCount).toBe(0);
@@ -431,6 +440,160 @@ test('4作物は種から収穫まで5段階の生成画像だけで表示する
   }, cropMetadata);
   expect(assetLoadResults).toHaveLength(CROP_IDS.length * 5);
   expect(assetLoadResults.every((asset) => asset.loaded)).toBe(true);
+
+  const cropAnchorChecks = await page.evaluate(async (metadata) => {
+    const plot = document.querySelector('.plot[data-plot="0"]');
+    const plant = plot && plot.querySelector('.plant');
+    const image = plant && plant.querySelector('img.crop-stage-img');
+    if (!plot || !plant || !image) throw new Error('作物アンカー検証用の畝が見つかりません');
+    const initialState = {
+      cropId: plot.dataset.crop,
+      stage: plant.dataset.stage,
+      source: image.getAttribute('src')
+    };
+
+    const hueOf = (red, green, blue) => {
+      const max = Math.max(red, green, blue);
+      const min = Math.min(red, green, blue);
+      const delta = max - min;
+      if (delta === 0) return 0;
+      let hue;
+      if (max === red) hue = ((green - blue) / delta) % 6;
+      else if (max === green) hue = ((blue - red) / delta) + 2;
+      else hue = ((red - green) / delta) + 4;
+      return (hue * 60 + 360) % 360;
+    };
+
+    // 画像下側の茶色系画素から、細い茎ではなく横幅の広い土の小山を抽出する。
+    // 最大行幅の45%以上ある行だけを集計することで、全20画像で同じ基準を使う。
+    const findSoilAnchor = (targetImage) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = targetImage.naturalWidth;
+      canvas.height = targetImage.naturalHeight;
+      const context = canvas.getContext('2d', { willReadFrequently: true });
+      context.drawImage(targetImage, 0, 0);
+      const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+      const rows = [];
+
+      for (let y = Math.floor(canvas.height * 0.4); y < canvas.height; y += 1) {
+        let count = 0;
+        let xSum = 0;
+        for (let x = 0; x < canvas.width; x += 1) {
+          const offset = (y * canvas.width + x) * 4;
+          const red = pixels[offset];
+          const green = pixels[offset + 1];
+          const blue = pixels[offset + 2];
+          const alpha = pixels[offset + 3];
+          const max = Math.max(red, green, blue);
+          const min = Math.min(red, green, blue);
+          const saturation = max > 0 ? (max - min) / max : 0;
+          const hue = hueOf(red, green, blue);
+          if (
+            alpha >= 40 &&
+            hue >= 18 && hue <= 52 &&
+            saturation >= 0.18 &&
+            max >= 65
+          ) {
+            count += 1;
+            xSum += x;
+          }
+        }
+        rows.push({ y, count, xSum });
+      }
+
+      const maxRowCount = Math.max(...rows.map((row) => row.count));
+      const broadRows = rows.filter((row) => row.count >= maxRowCount * 0.45);
+      const broadPixelCount = broadRows.reduce((sum, row) => sum + row.count, 0);
+      if (!maxRowCount || !broadPixelCount) {
+        throw new Error(`土の小山を抽出できません: ${targetImage.getAttribute('src')}`);
+      }
+      return {
+        x: broadRows.reduce((sum, row) => sum + row.xSum, 0) / broadPixelCount,
+        y: broadRows.reduce((sum, row) => sum + row.y * row.count, 0) / broadPixelCount,
+        broadPixelCount,
+        maxRowCount
+      };
+    };
+
+    const loadImage = async (source) => {
+      await new Promise((resolve, reject) => {
+        image.onload = resolve;
+        image.onerror = () => reject(new Error(`画像を読み込めません: ${source}`));
+        image.src = source;
+        if (image.complete && image.naturalWidth > 0) resolve();
+      });
+      if (typeof image.decode === 'function') await image.decode();
+      await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    };
+
+    const checks = [];
+    for (const cropId of Object.keys(metadata)) {
+      for (let stage = 0; stage < metadata[cropId].stageImages.length; stage += 1) {
+        const source = metadata[cropId].stageImages[stage];
+        plot.dataset.crop = cropId;
+        plant.dataset.stage = String(stage);
+        await loadImage(source);
+
+        const soil = findSoilAnchor(image);
+        const plotRect = plot.getBoundingClientRect();
+        const imageRect = image.getBoundingClientRect();
+        const style = getComputedStyle(image);
+        const expectedAnchorX = -(soil.x / image.naturalWidth) * 100;
+        const expectedAnchorY = -(soil.y / image.naturalHeight) * 100;
+        const effectiveX =
+          imageRect.left + (soil.x / image.naturalWidth) * imageRect.width;
+        const effectiveY =
+          imageRect.top + (soil.y / image.naturalHeight) * imageRect.height;
+        const plotCenterX = plotRect.left + plotRect.width / 2;
+        const plotCenterY = plotRect.top + plotRect.height / 2;
+
+        checks.push({
+          cropId,
+          stage,
+          source,
+          naturalWidth: image.naturalWidth,
+          naturalHeight: image.naturalHeight,
+          broadPixelCount: soil.broadPixelCount,
+          maxRowCount: soil.maxRowCount,
+          cssAnchorX: parseFloat(style.getPropertyValue('--crop-anchor-x')),
+          cssAnchorY: parseFloat(style.getPropertyValue('--crop-anchor-y')),
+          expectedAnchorX,
+          expectedAnchorY,
+          effectiveDeltaX: effectiveX - plotCenterX,
+          effectiveDeltaY: effectiveY - plotCenterY,
+          imageSquareDelta: imageRect.width - imageRect.height,
+          position: style.position,
+          pointerEvents: style.pointerEvents
+        });
+      }
+    }
+    plot.dataset.crop = initialState.cropId;
+    plant.dataset.stage = initialState.stage;
+    await loadImage(initialState.source);
+    return checks;
+  }, cropMetadata);
+
+  expect(cropAnchorChecks).toHaveLength(CROP_IDS.length * 5);
+  expect(new Set(
+    cropAnchorChecks.map((entry) => `${entry.cropId}:${entry.stage}`)
+  ).size).toBe(CROP_IDS.length * 5);
+  for (const anchor of cropAnchorChecks) {
+    expect(anchor.naturalWidth).toBe(512);
+    expect(anchor.naturalHeight).toBe(512);
+    expect(anchor.broadPixelCount).toBeGreaterThan(1000);
+    expect(anchor.maxRowCount).toBeGreaterThan(100);
+    expect(Math.abs(anchor.cssAnchorX - anchor.expectedAnchorX)).toBeLessThanOrEqual(0.06);
+    expect(Math.abs(anchor.cssAnchorY - anchor.expectedAnchorY)).toBeLessThanOrEqual(0.06);
+    // CSSで補正した「土の小山／根元」の実画面座標が畝の真ん中に来ること。
+    expect(Math.abs(anchor.effectiveDeltaX)).toBeLessThanOrEqual(0.75);
+    expect(Math.abs(anchor.effectiveDeltaY)).toBeLessThanOrEqual(0.75);
+    expect(Math.abs(anchor.imageSquareDelta)).toBeLessThanOrEqual(0.5);
+    expect(anchor.position).toBe('absolute');
+    expect(anchor.pointerEvents).toBe('none');
+    expect(anchor.source).toMatch(new RegExp(
+      `crops/${anchor.cropId}_stage_${anchor.stage}_${STAGE_FILE_SUFFIXES[anchor.stage]}\\.webp$`
+    ));
+  }
 
   for (const cropId of CROP_IDS) {
     const sign = page.locator(`.plot[data-crop="${cropId}"] .crop-sign`).first();
