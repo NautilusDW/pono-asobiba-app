@@ -492,12 +492,16 @@ function mulberry32(seed) {
   assert.doesNotMatch(indexHtml, /id=["'](?:relay-progress|relay-announcement|relay-pips|flowerbed-img|light-seed)["']/, "花壇・たねの表示DOMを撤去する");
   assert.doesNotMatch(gameJs + logicJsSrc + stylesCss, /relayProgressAt|advanceRelay|FLOWER_STAGE_MAX|mechanic_light_seed|#light-seed|#flowerbed-img/, "花壇・たねの実行時処理とCSSを撤去する");
   assert.equal((indexHtml.match(/class=["'][^"']*hh-hideout-foreground/g) || []).length, 1, "templateに共通の手前縁を1つ定義する");
-  assert.match(stylesCss, /\.hh-hideout-foreground\s*\{[^}]*z-index:\s*4[^}]*clip-path:\s*inset\(58%\s+0\s+0\s+0\)/s, "手前縁をキャラより上へ重ね、下58%だけ表示する");
-  assert.match(stylesCss, /#board\s*\{[^}]*row-gap:\s*30%[^}]*column-gap:\s*3%/s, "中央レーンを空けた3x2配置を使う");
+  assert.match(stylesCss, /\.hh-hideout-foreground\s*\{[^}]*z-index:\s*4[^}]*clip-path:\s*inset\(60%\s+0\s+0\s+0\)/s, "手前縁を穴の暗部より下へ置き、キャラより上に重ねる");
+  assert.match(stylesCss, /#board\s*\{[^}]*row-gap:\s*30%[^}]*column-gap:\s*2%[^}]*padding:\s*0\s+9%/s, "背景の接地点へ揃えた3x2配置を使う");
+  assert.match(stylesCss, /\.hh-hideout\s*\{[^}]*translate\(-53\.5%,\s*-50%\)/s, "茂み画像内の穴中心53.5%をキャラ窓へ合わせる");
+  assert.match(stylesCss, /\.hh-window\s*\{[^}]*clip-path:\s*inset\(0\s+0\s+35\.5%\s+0/s, "通常画面のキャラ窓下端を前葉の開始位置より上に保つ");
+  assert.match(stylesCss, /\.hh-char-wrap\.is-visible\s*\{[^}]*translate\(-50%,\s*0\)/s, "停止時は胴体が不自然に切れない高さまで表示する");
+  assert.match(stylesCss, /@media\s*\(max-height:\s*430px\)[\s\S]*?\.hh-window\s*\{[^}]*clip-path:\s*inset\(0\s+0\s+32%\s+0/s, "短画面でもキャラ窓と前葉を隙間なく重ねる");
   assert.match(stylesCss, /\.hh-hole:nth-child\(-n \+ 3\)\s*\{[^}]*--depth-scale:\s*0\.88/s, "上段を小さくして奥行きを付ける");
   assert.match(stylesCss, /@container\s*\(max-height:\s*430px\)[\s\S]*?--depth-scale:\s*0\.9/s, "短画面では上段の可読サイズを少し戻す");
   assert.match(stylesCss, /\.hh-window\s*\{[^}]*scale\(var\(--depth-scale\)\)/s, "キャラも茂みと同じ前後比率で拡縮する");
-  assert.match(stylesCss, /\.hh-hole\.is-pressed\s+\.hh-hideout\s*\{[^}]*scale\(var\(--depth-scale\)\)\s+scale\(0\.96\)/s, "押した瞬間も前後パースを保つ");
+  assert.match(stylesCss, /\.hh-hole\.is-pressed\s+\.hh-hideout\s*\{[^}]*translate\(-53\.5%,\s*-50%\)[^}]*scale\(var\(--depth-scale\)\)\s+scale\(0\.96\)/s, "押した瞬間も穴中心補正と前後パースを保つ");
 }
 
 // ── 11b. ボーナス出現・リアルタイムコンボ・最大記録UI ──────────────

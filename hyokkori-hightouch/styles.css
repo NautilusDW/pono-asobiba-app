@@ -374,8 +374,8 @@ a:focus-visible {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   grid-template-rows: repeat(2, 35%);
   row-gap: 30%;
-  column-gap: 3%;
-  padding: 0 5%;
+  column-gap: 2%;
+  padding: 0 9%;
 }
 
 .hh-hole {
@@ -425,19 +425,27 @@ a:focus-visible {
   display: block;
   width: min(92%, 320px);
   height: auto;
-  transform: translate(-50%, -50%) scale(var(--depth-scale));
+  /*
+   * 元画像内の穴中心は画像幅の約53.5%にある。
+   * 画像だけを補正し、操作面とキャラ窓は各グリッドの中央に保つ。
+   */
+  transform: translate(-53.5%, -50%) scale(var(--depth-scale));
   filter: saturate(0.88) brightness(1.02);
   object-fit: contain;
   transition: transform 0.12s ease;
 }
 
 .hh-hole.is-pressed .hh-hideout {
-  transform: translate(-50%, -50%) scale(var(--depth-scale)) scale(0.96);
+  transform: translate(-53.5%, -50%) scale(var(--depth-scale)) scale(0.96);
 }
 
 .hh-hideout-foreground {
   z-index: 4;
-  clip-path: inset(58% 0 0 0);
+  /*
+   * 穴の暗部より下だけを前葉として重ねる。
+   * キャラ窓の下端とわずかに重ね、出現途中も下から透けないようにする。
+   */
+  clip-path: inset(60% 0 0 0);
 }
 
 /* キャラは共通の正方形キャンバスのまま重ね、下辺だけを窓で隠す。 */
@@ -451,7 +459,7 @@ a:focus-visible {
   transform: translate(-50%, -50%) scale(var(--depth-scale));
   aspect-ratio: 1 / 1;
   border-radius: 48% 48% 38% 38% / 52% 52% 44% 44%;
-  clip-path: inset(0 0 18% 0 round 48% 48% 34% 34%);
+  clip-path: inset(0 0 35.5% 0 round 48% 48% 34% 34%);
 }
 
 .hh-char-wrap {
@@ -465,7 +473,7 @@ a:focus-visible {
 }
 
 .hh-char-wrap.is-visible {
-  transform: translate(-50%, 7%);
+  transform: translate(-50%, 0);
 }
 
 .hh-char-wrap.is-bonus::before {
@@ -1072,11 +1080,12 @@ a:focus-visible {
     grid-template-rows: repeat(2, 35%);
     row-gap: 30%;
     column-gap: 2%;
-    padding: 0 4%;
+    padding: 0 9%;
   }
 
   .hh-window {
     width: min(52%, 112px);
+    clip-path: inset(0 0 32% 0 round 48% 48% 34% 34%);
   }
 
   .hh-hideout {
