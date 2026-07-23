@@ -1,5 +1,14 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2368: なぞなぞトレインの「まち」面に、5問クイズの代わりとなる専用ミニゲーム
+// 「ぴたっと停車」を追加。レバーを長押しで加速・はなすと惰性減速する単一操作で、
+// 位置の異なる3つの停車わくへ汽車をぴたりと止めて村人を乗せる。未達成/行き過ぎは
+// 同じ駅でその場リトライ (わく点滅→わく拡大→自動アシストの3段階ヒント)、3駅完了で
+// completeCurrentStage を1回だけ呼ぶ。既存の質問カード方式(showQuiz)は町では一切
+// 経由しない。nazonazo-tunnel/index.html,styles.css,js/game.js の ?v= を
+// 20260724-1 へ同期。ゲーム個別ファイルと画像はnetwork-first配信のため
+// CRITICAL_ASSETSには追加しない。play.html PAGE_CACHE_VERSION/
+// window.PONO_SW_VERSIONと同期 (2368)。
 // v2367: ひょっこりハイタッチの場所別far／near外装6点を、地面へ浅く
 // 埋まった水彩絵本調のv2へ差し替え、水辺背景の透明ドーム状生成不良も
 // 修正版へ更新。画像中心ではなくalpha実体下端のgroundAnchorYを背景上の
@@ -976,7 +985,7 @@
 // styles.css／game.js queryを20260723-1429へ同期。ゲーム個別ファイルと画像は
 // network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
 // PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2347)。
-const CACHE_VERSION = 2367;
+const CACHE_VERSION = 2368;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

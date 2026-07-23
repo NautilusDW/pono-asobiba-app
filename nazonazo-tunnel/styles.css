@@ -1517,6 +1517,44 @@ body.dino-boss-active.st-dino:not(.tunnel-interior) .branch-world-life.is-trex{o
 @keyframes dinoBurstKnobReady{to{filter:brightness(1.2);transform:translate(-50%,-50%) scale(1.08)}}
 @keyframes dinoBurstButtonReady{to{filter:brightness(1.2);transform:translateX(-50%) scale(1.05)}}
 
+/* ===== 町: ぴたっと停車 (townDock) ===== */
+#townDockLayer{position:absolute;inset:0;z-index:18;display:block;overflow:hidden;pointer-events:auto;touch-action:none;
+  background:linear-gradient(180deg,rgba(255,240,205,.10),rgba(255,214,158,.18));isolation:isolate}
+#townDockLayer[hidden]{display:none!important}
+body.town-dock-active #dots{opacity:0;visibility:hidden}
+body.town-dock-active #veh,body.town-dock-active #cars{visibility:hidden!important}
+.town-dock-board{position:absolute;inset:0;overflow:hidden}
+.town-dock-header{position:absolute;left:max(10px,env(safe-area-inset-left));right:max(68px,calc(10px + env(safe-area-inset-right)));top:max(7px,env(safe-area-inset-top));z-index:8;
+  display:flex;align-items:center;justify-content:space-between;gap:8px;pointer-events:none}
+.town-dock-header h2,#townDockProgress,#townDockGuide{border:3px solid rgba(214,150,68,.5);background:rgba(255,250,235,.94);box-shadow:0 4px 0 rgba(112,80,32,.22);color:#7a4a1e}
+.town-dock-header h2{max-width:57vw;margin:0;padding:5px 13px;border-radius:999px;font-size:clamp(15px,2.7vw,22px);font-weight:1000;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#townDockProgress{padding:5px 12px;border-radius:999px;font-size:clamp(12px,2vw,17px);font-weight:1000;white-space:nowrap}
+#townDockGuide{position:absolute;left:50%;top:calc(max(7px,env(safe-area-inset-top)) + 49px);z-index:9;min-width:min(76vw,520px);max-width:88vw;
+  transform:translateX(-50%);padding:5px 13px;border-radius:16px;text-align:center;font-size:clamp(14px,2.5vw,20px);font-weight:1000;line-height:1.18;pointer-events:none}
+.town-dock-scene{position:absolute;left:50%;top:clamp(90px,24vh,150px);z-index:5;width:min(80vw,520px);transform:translateX(-50%);display:flex;align-items:center;justify-content:space-between;gap:10px;pointer-events:none}
+.town-dock-villager{width:clamp(40px,9vw,64px);height:clamp(52px,11vw,80px);position:relative;opacity:1;transform:translateY(0) scale(1);transition:opacity .5s ease,transform .5s ease}
+.town-dock-villager::before{content:"";position:absolute;left:50%;top:0;width:58%;aspect-ratio:1;transform:translateX(-50%);border-radius:50%;background:#ffd9ad;box-shadow:0 2px 0 rgba(140,90,40,.2)}
+.town-dock-villager::after{content:"";position:absolute;left:50%;bottom:0;width:100%;height:64%;transform:translateX(-50%);border-radius:40% 40% 18% 18%;background:#e8834f;box-shadow:0 2px 0 rgba(140,90,40,.2)}
+.town-dock-villager.is-boarded{opacity:0;transform:translateY(-10px) scale(.7)}
+.town-dock-windows{display:flex;gap:8px}
+.town-dock-windows i{display:block;width:clamp(16px,3vw,26px);height:clamp(16px,3vw,26px);border-radius:6px;background:#5a4630;box-shadow:inset 0 0 0 2px rgba(255,255,255,.4);transition:background .4s ease,box-shadow .4s ease}
+.town-dock-windows i.is-lit{background:#ffe58a;box-shadow:inset 0 0 0 2px rgba(255,255,255,.7),0 0 12px rgba(255,224,120,.85)}
+.town-dock-track{--town-dock-pos:0;position:absolute;left:50%;top:clamp(150px,40vh,280px);z-index:6;width:min(84vw,620px);height:34px;transform:translateX(-50%);
+  border:4px solid rgba(255,255,255,.92);border-radius:999px;background:linear-gradient(90deg,#e8834f,#c76438);box-shadow:0 4px 0 rgba(90,58,28,.28);overflow:hidden}
+.town-dock-zone{position:absolute;top:0;bottom:0;left:32%;width:36%;background:rgba(114,217,136,.92);box-shadow:inset 0 0 0 2px rgba(255,255,255,.6);transition:left .12s ease,width .12s ease}
+.town-dock-zone.is-blink{animation:townDockZoneBlink 1s ease-in-out infinite}
+.town-dock-knob{position:absolute;left:calc(var(--town-dock-pos) * 1%);top:50%;width:26px;height:26px;transform:translate(-50%,-50%);border:3px solid #fff;border-radius:50%;background:#e76956;box-shadow:0 2px 0 rgba(81,61,44,.28);transition:background .12s}
+.town-dock-knob.is-settled{background:#40c96b;box-shadow:0 0 12px #a9ffb8}
+.town-dock-controls{position:absolute;left:50%;bottom:max(7px,env(safe-area-inset-bottom));z-index:9;transform:translateX(-50%)}
+#townDockThrottle{appearance:none;-webkit-appearance:none;min-width:clamp(200px,40vw,320px);min-height:clamp(64px,14vh,86px);padding:6px 20px;border:4px solid #fff0a5;border-radius:24px;
+  background:linear-gradient(#ffcb63,#ed8e43);box-shadow:0 6px 0 #a85d31;color:#613b20;font-size:clamp(18px,3.2vw,26px);font-weight:1000;touch-action:none;user-select:none;cursor:pointer}
+#townDockThrottle small{display:block;font-size:clamp(9px,1.5vw,13px);line-height:1}#townDockThrottle strong{font-size:clamp(16px,2.8vw,24px)}
+#townDockThrottle:active:not(:disabled),#townDockThrottle.is-held{transform:translateY(4px);box-shadow:0 2px 0 #a85d31}
+#townDockThrottle:disabled{filter:grayscale(.45);opacity:.48;cursor:default}
+#townDockThrottle:focus-visible{outline:5px solid #fff273;outline-offset:3px}
+body.town-dock-bright #scene{filter:brightness(1.12) saturate(1.1) sepia(.04);transition:filter 1.1s ease}
+@keyframes townDockZoneBlink{0%,100%{opacity:1}50%{opacity:.35}}
+
 /* ===== quiz ===== */
 #quiz{position:absolute;left:50%;top:50%;bottom:auto;transform:translate(-50%,120vh);width:min(94vw,760px);
   background:var(--panel);border-radius:26px;border:4px solid var(--cardEdge);
@@ -1950,4 +1988,7 @@ body.ios-device #quiz.show:not(.sea-quiz):not(.future-capsule-quiz):not(.space-g
   body.st-space.space-obstacle-hit .vehicle-steer-shell{animation:none!important;filter:brightness(1.35)}
   .jungle-flight-layer{display:none!important}
   .tunnel-friend,.tunnel-friend-visual,.tunnel-friend img,.tunnel-friend .tunnel-friend-emoji,.tunnel-friend::after{animation:none!important;will-change:auto!important}
+  .town-dock-villager,.town-dock-windows i,.town-dock-knob,.town-dock-zone{transition:none!important}
+  .town-dock-zone.is-blink{animation:none!important;opacity:.7}
+  body.town-dock-bright #scene{transition:none!important}
 }

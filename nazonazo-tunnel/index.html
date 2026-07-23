@@ -83,7 +83,7 @@
   else { document.addEventListener('DOMContentLoaded', showLock); }
 })();
 </script>
-<link rel="stylesheet" href="styles.css?v=20260723-1436">
+<link rel="stylesheet" href="styles.css?v=20260724-1">
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
 <body class="st-town v-train" data-driver="pono" data-driver-mood="happy">
@@ -238,6 +238,26 @@
           <div id="dinoBossTug" class="dino-boss-tug" role="progressbar" aria-label="きてきと ほうこうの おしあい" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"><span></span><i></i></div>
           <button id="dinoBossAction" class="dino-boss-action" type="button" aria-label="ブレーキを おしつづける" disabled><strong>ブレーキ</strong><small>おしつづけよう</small></button>
           <button id="dinoBossRetry" class="dino-boss-retry" type="button" hidden>もういちど しょうぶ！</button>
+        </div>
+      </div>
+    </section>
+    <section id="townDockLayer" data-phase="idle" aria-labelledby="townDockTitle" aria-describedby="townDockGuide" aria-hidden="true" hidden>
+      <div class="town-dock-board">
+        <header class="town-dock-header">
+          <h2 id="townDockTitle">むらびとを のせよう！</h2>
+          <div id="townDockProgress" role="status" aria-live="polite" aria-atomic="true">えき 1 / 3</div>
+        </header>
+        <p id="townDockGuide" role="status" aria-live="polite" aria-atomic="true">ればーを おしつづけて すすもう。はなすと ゆっくり とまるよ</p>
+        <div class="town-dock-scene" aria-hidden="true">
+          <div id="townDockVillager" class="town-dock-villager"></div>
+          <div id="townDockWindows" class="town-dock-windows"><i data-window="0"></i><i data-window="1"></i><i data-window="2"></i></div>
+        </div>
+        <div id="townDockTrack" class="town-dock-track" role="meter" aria-label="れっしゃの いち" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+          <div id="townDockZone" class="town-dock-zone"></div>
+          <i id="townDockKnob" class="town-dock-knob"></i>
+        </div>
+        <div id="townDockControls" class="town-dock-controls" role="group" aria-label="れっしゃの そうさ">
+          <button id="townDockThrottle" type="button" aria-label="おしつづけると すすむ。はなすと とまるよ"><strong>しゅっぱつ</strong><small>おしつづける</small></button>
         </div>
       </div>
     </section>
@@ -500,6 +520,6 @@
 <div id="rotateHint"><span class="ui-art" data-ui-art="smartphone" aria-hidden="true"></span><span class="rotate-arrow" aria-hidden="true">→</span><span>よこむきに してね</span></div>
 <script src="data/questions.js?v=20260713-1273"></script>
 <script src="data/quiz-art.js?v=20260721-1409"></script>
-<script src="js/game.js?v=20260723-1436"></script>
+<script src="js/game.js?v=20260724-1"></script>
 </body>
 </html>
