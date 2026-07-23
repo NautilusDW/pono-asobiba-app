@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>ポノのまちづくり | ポノのあそびば</title>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<!-- FOUC guard: init 完了まで stage を非表示にしてチラ見えを防ぐ (hatake-nikki/index.html 踏襲) -->
+<style>html,body{background:#cdeffd}#stage{visibility:hidden}body.pono-game-ready #stage{visibility:visible}</style>
+<script>document.addEventListener('DOMContentLoaded',function(){requestAnimationFrame(function(){requestAnimationFrame(function(){if(!window.__PONO_TIER_LOCKED__)document.body.classList.add('pono-game-ready')})})});</script>
+
+<!-- app (アプリばん) 専用 tier ガード。 tier.js 未読込/例外時は fail-open (従来通り表示)。
+     hatake-nikki/index.html・guragura-seesaw/index.html のブロックを丸ごと踏襲。 -->
+<script src="../common/debug-mode.js"></script>
+<script src="../common/tier.js"></script>
+<script src="../common/achievements.js"></script>
+<script>
+(function(){
+  'use strict';
+  var locked = false;
+  try {
+    var pt = window.PonoTier;
+    if (pt && typeof pt.getTier === 'function') locked = (pt.getTier() !== 'app');
+  } catch (e) { locked = false; }
+  if (!locked) return;
+  window.__PONO_TIER_LOCKED__ = true;
+  var st = document.createElement('style');
+  st.textContent = 'html{background:#FFF7E6 !important}body>*:not(#ponoTierLockScreen){visibility:hidden !important}';
+  (document.head || document.documentElement).appendChild(st);
+  var KEY_EVTS = ['keydown', 'keyup', 'keypress'];
+  for (var i = 0; i < KEY_EVTS.length; i++) {
+    window.addEventListener(KEY_EVTS[i], function(e){
+      if (window.__PONO_TIER_LOCKED__) e.stopImmediatePropagation();
+    }, true);
+  }
+  function showLock(){
+    if (!document.body || document.getElementById('ponoTierLockScreen')) return;
+    var ov = document.createElement('div');
+    ov.id = 'ponoTierLockScreen';
+    ov.setAttribute('role', 'dialog');
+    ov.style.cssText = 'position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:24px;background:linear-gradient(165deg,#FFF7E6 0%,#FFEDC2 45%,#D9EFD5 100%);font-family:"Zen Maru Gothic","Hiragino Maru Gothic ProN",sans-serif;text-align:center';
+    var card = document.createElement('div');
+    card.style.cssText = 'background:#fff;border-radius:26px;padding:28px 24px 26px;max-width:340px;width:100%;box-shadow:0 12px 40px rgba(93,78,55,0.22)';
+    var emo = document.createElement('div');
+    emo.setAttribute('aria-hidden', 'true');
+    emo.style.cssText = 'font-size:2.6rem;line-height:1;margin-bottom:12px';
+    emo.textContent = '\u{1F3D8}\u{FE0F}\u{1F331}';
+    card.appendChild(emo);
+    var tag = document.createElement('div');
+    tag.style.cssText = 'display:inline-block;font-size:0.74rem;font-weight:900;color:#fff;background:linear-gradient(135deg,#34D399,#10B981);padding:4px 14px;border-radius:50px;letter-spacing:0.06em;margin-bottom:12px';
+    tag.textContent = 'アプリばん せんよう';
+    card.appendChild(tag);
+    var ttl = document.createElement('div');
+    ttl.style.cssText = 'font-size:1.12rem;font-weight:900;color:#5D4E37;line-height:1.5;margin-bottom:10px';
+    ttl.textContent = 'この ゲームは アプリばんで あそべるよ！';
+    card.appendChild(ttl);
+    var body = document.createElement('div');
+    body.style.cssText = 'font-size:0.92rem;font-weight:700;color:#8B7B60;line-height:1.6;margin-bottom:18px';
+    body.textContent = 'アプリばんに あたらしい あそびが まってるよ';
+    card.appendChild(body);
+    var btn = document.createElement('a');
+    btn.href = '../play.html';
+    btn.style.cssText = 'display:inline-block;padding:12px 34px;border-radius:50px;background:linear-gradient(135deg,#60A5FA,#3B82F6);color:#fff;font-size:0.98rem;font-weight:900;text-decoration:none;box-shadow:0 4px 14px rgba(59,130,246,0.4)';
+    btn.textContent = 'メニューへ もどる';
+    card.appendChild(btn);
+    ov.appendChild(card);
+    document.body.appendChild(ov);
+  }
+  if (document.body) { showLock(); }
+  else { document.addEventListener('DOMContentLoaded', showLock); }
+})();
+</script>
+
+<script src="../common/haptics.js"></script>
+<script src="../common/menu.js"></script>
+<script src="../common/treasure.js"></script>
+<link rel="stylesheet" href="styles.css?v=20260723-1">
+</head>
+<body>
+
+<!-- 横むき誘導。 screen.orientation-first / fail-open 判定は js/game.js の
+     updateLandscapeNotice() が担当し、ここでは .show クラスで表示/非表示を
+     切り替えるだけ (guragura-seesaw 踏襲、ただし表示切替は bare hidden 属性
+     ではなく必ず .show クラスで行う本 feature の規約に合わせる)。 -->
+<div id="landscape-notice" role="dialog" aria-modal="true" aria-label="よこむきの おねがい" aria-hidden="true">
+  <div class="rotate-icon">📱</div>
+  <p>スマホを<br><strong>よこむき</strong>にしてね！</p>
+  <a class="landscape-back" href="../play.html">ホームにもどる</a>
+</div>
+
+<!-- 初回2ステップ チュートリアル (hatake-nikki/guragura-seesaw の tut-dim/tut-bubble
+     パターン踏襲)。 中身は js/game.js が毎ステップ innerHTML で差し替える。
+     本 feature の規約により表示切替は .show クラスのみで行う (bare hidden 属性禁止)。 -->
+<div class="tut-dim" id="tut-dim"></div>
+<div class="tut-bubble" id="tut-bubble"></div>
+
+<div id="stage">
+
+  <!--
+    ═══ js/game.js への DOM 契約メモ (ws-c はこのファイルのみを書き、
+    js/parts.js・js/logic.js の内部実装は関知しない。以下は js/game.js
+    実装時に参照される id/クラス名の取り決め) ═══
+
+    #scene-bg          … MachiParts.BG_SCENE の innerHTML 差し込み先
+    #scene-flowers      … MachiParts.FLOWER_SLOTS ぶんの flower_cluster 描画先
+    #scene-lots         … MachiParts.LOTS ぶんの <button class="lot"> 生成先。
+                           tap で空区画なら #picker-sheet、設置済みなら
+                           #part-popover (pono_house なら .is-house 付与) を開く。
+    #scene-butterflies  … MachiParts.BUTTERFLIES の svg 差し込み先。 各要素に
+                           idleAnimClass ('machi-anim-fly-a' 等) を付与すると
+                           styles.css 側の offset-path アニメが自動で動く。
+    #confetti-layer     … 設置成功時に .machi-confetti-piece を一時追加する先。
+    #stage.is-day / #stage.is-evening
+                        … MachiLogic.isEvening(MachiLogic.getNow()) に応じて
+                           トグルすると、parts.js の --machi-* カスタム
+                           プロパティ既定値と streetlamp グロー・世界観の
+                           トーンが連動して切り替わる (styles.css 側で定義済み)。
+    .lot.is-empty       … 空区画に自動で招き glow (machi-lot-glow) が付く。
+    .grow-in            … 設置直後の区画へ一時的に付与すると芽吹きアニメが動く。
+
+    どの id/クラスも js/game.js 側が createElement/classList で操作する前提で、
+    このファイル自身は空コンテナのみを用意する (parts.js の内部データ構造は
+    ws-c が知る必要がないため、区画座標などは一切ハードコードしない)。
+  -->
+
+  <section id="start-screen" class="screen show">
+    <div class="start-card">
+      <div class="start-icon" aria-hidden="true">🏘️</div>
+      <h1 class="start-title">ポノのまちづくり</h1>
+      <p class="start-desc">やさいを とどけて、まいにち<br>すこしずつ そだつ まち</p>
+      <button type="button" class="tap-btn" id="start-btn">▶ はじめる</button>
+    </div>
+  </section>
+
+  <section id="town-screen" class="screen">
+    <div id="scene-bg" class="scene-layer" aria-hidden="true"></div>
+    <div id="tint-overlay" class="scene-layer" aria-hidden="true"></div>
+    <div id="scene-flowers" class="scene-layer" aria-hidden="true"></div>
+    <div id="scene-lots" class="scene-layer scene-layer-interactive" role="group" aria-label="まちの くかく"></div>
+    <div id="scene-butterflies" class="scene-layer" aria-hidden="true"></div>
+    <div id="confetti-layer" class="scene-layer" aria-hidden="true"></div>
+
+    <div id="hud">
+      <button type="button" class="hud-pill hud-btn" id="hud-flower-btn" aria-label="はなを うえる">🌼 うえる</button>
+      <div class="hud-pill" id="hud-veggie" aria-live="polite">🥕 --</div>
+    </div>
+  </section>
+
+  <!-- ── したから出てくる ピッカー (空区画タップ時) ── -->
+  <div id="picker-sheet" class="sheet" role="dialog" aria-modal="true" aria-label="なにを たてる？">
+    <div class="sheet-backdrop" id="picker-backdrop"></div>
+    <div class="sheet-card">
+      <div class="sheet-header">
+        <div class="sheet-title">なにを たてる？</div>
+        <div class="sheet-balance" id="picker-balance">🥕 --</div>
+      </div>
+      <div class="sheet-parts" id="picker-parts-list"></div>
+      <a class="picker-cta" id="picker-empty-cta" href="../hatake-nikki/">🥕 はたけで やさいを そだてよう</a>
+      <button type="button" class="sheet-close-btn" id="picker-close-btn">✕ とじる</button>
+    </div>
+  </div>
+
+  <!-- ── 設置済みパーツ ポップオーバー (しまう / いえなら おうちへ いく) ── -->
+  <div id="part-popover" class="sheet" role="dialog" aria-modal="true" aria-label="たてもの">
+    <div class="sheet-backdrop" id="popover-backdrop"></div>
+    <div class="popover-card">
+      <div class="popover-icon" id="popover-icon" aria-hidden="true"></div>
+      <div class="popover-name" id="popover-name"></div>
+      <div class="popover-actions">
+        <button type="button" class="popover-btn popover-store-btn" id="popover-store-btn">📦 しまう</button>
+        <button type="button" class="popover-btn popover-door-btn" id="popover-door-btn">🚪 おうちへ いく</button>
+      </div>
+      <button type="button" class="popover-close-btn" id="popover-close-btn">とじる</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- スクリプト読み込み失敗時の可視エラーUI。 #stage の外 (body 直下) に置き、
+     FOUC guard の visibility:hidden の影響を受けずに必ず表示できるようにする
+     (guragura-seesaw/js/game.js showLoadError() 相当だが、こちらは js/game.js
+     自体の読み込み失敗にも耐えるよう index.html 側に静的マークアップとして持つ)。 -->
+<div id="machi-boot-error" class="error-ui" role="alert">
+  <div class="error-ui-msg">よみこみが うまくいかなかったよ<br>もういちど ためしてね</div>
+  <button type="button" class="error-ui-btn" id="machi-boot-error-retry">🔄 もういちど よみこむ</button>
+</div>
+
+<script>
+  window.__machiScriptState = { parts: 'pending', logic: 'pending', game: 'pending' };
+  window.__machiScriptLoaded = function (name) { window.__machiScriptState[name] = 'loaded'; };
+  window.__machiScriptErrored = function (name) {
+    window.__machiScriptState[name] = 'error';
+    console.error('[machizukuri] js/' + name + '.js の読み込みに失敗しました。');
+  };
+</script>
+<script src="js/parts.js?v=20260723-1" onload="window.__machiScriptLoaded('parts')" onerror="window.__machiScriptErrored('parts')"></script>
+<script src="js/logic.js?v=20260723-1" onload="window.__machiScriptLoaded('logic')" onerror="window.__machiScriptErrored('logic')"></script>
+<script src="js/game.js?v=20260723-1" onload="window.__machiScriptLoaded('game')" onerror="window.__machiScriptErrored('game')"></script>
+<script>
+(function () {
+  'use strict';
+  // ═══ ブート判定: window.MachiLogic/window.MachiParts の存在チェックだけでは
+  // js/game.js 自身の読み込み失敗 (404・ネットワークエラー) を検知できない
+  // (parts.js/logic.js は game.js と無関係に自力で window.MachiParts/MachiLogic
+  // をセットするため)。 3本の <script> タグに onload/onerror 属性を直接つけて
+  // __machiScriptState で読み込み結果を追跡し、ready() は「game.js 自身の
+  // onload が発火したか」も要求する。 onload/onerror 属性はタグの解析時点から
+  // 有効なので、async/defer なしのこれら3本は直後のこのブロックが実行される
+  // 時点で読み込み・実行が確定済み。 time-based poll ではなく実イベントで
+  // 判定するため、判定用の遅延は不要。
+  function ready() {
+    var st = window.__machiScriptState || {};
+    return !!(window.MachiLogic && window.MachiParts) && st.game === 'loaded';
+  }
+  function showBootError() {
+    var el = document.getElementById('machi-boot-error');
+    if (el) el.classList.add('show');
+    document.body.classList.add('pono-game-ready');
+  }
+  function hideBootError() {
+    var el = document.getElementById('machi-boot-error');
+    if (el) el.classList.remove('show');
+  }
+  function retryScriptTags() {
+    var bust = '?retry=' + Date.now();
+    var names = ['parts', 'logic', 'game'];
+    var i = 0;
+    function next() {
+      if (i >= names.length) {
+        if (ready()) hideBootError(); else showBootError();
+        return;
+      }
+      var name = names[i];
+      var s = document.createElement('script');
+      s.src = 'js/' + name + '.js' + bust;
+      s.onload = function () {
+        window.__machiScriptState[name] = 'loaded';
+        i += 1;
+        next();
+      };
+      s.onerror = function () {
+        window.__machiScriptState[name] = 'error';
+        showBootError();
+      };
+      document.body.appendChild(s);
+    }
+    next();
+  }
+  function checkAndRecover() {
+    if (ready()) { hideBootError(); return; }
+    console.error('[machizukuri] MachiLogic/MachiParts/game.js の読み込みが完了していません。キャッシュバイパスで再試行します。');
+    retryScriptTags();
+  }
+  var retryBtn = document.getElementById('machi-boot-error-retry');
+  if (retryBtn) {
+    retryBtn.addEventListener('click', function () { location.reload(); });
+  }
+  checkAndRecover();
+})();
+</script>
+</body>
+</html>

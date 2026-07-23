@@ -13,7 +13,16 @@
 // 修正: .item-box に pointer-events:auto を明示 (styles.css)。
 //
 // 本specは「置く→(誤配置に気づいて)取り除く→もう一度正しく置く」という
-// フルサイクルを、単一皿(ラウンド1)とふたご皿(ラウンド3, A/B両方)で検証する。
+// フルサイクルを、単一皿の2ラウンド (最初のラウンド、および石カテゴリが混ざる
+// 終盤ラウンド) で検証する。
+//
+// 2026-07-23 v3 再設計 (人形/大きさ=重さ統一・10ラウンド化) でふたご皿メカニクスは
+// どのラウンドからも使わなくなった (TWIN_ROUND_CONFIG={}) ため、旧「ラウンド3
+// (ふたご皿): A皿・B皿それぞれで…」テストは前提が崩れている。 ふたご皿UI自体が
+// 実行時に一切到達しないことは twin-basket-round3.spec.ts が検証するため、本ファイル
+// では単一皿の石アイテム (star_block/mystery_stone) を使った remove サイクルに
+// 置き換える (石カテゴリはトレイに登場するのが終盤ラウンドのみのため、単一皿
+// 経路でも別途カバーしておく価値がある)。
 const { test, expect } = require('@playwright/test');
 
 async function setupPage(page) {
@@ -77,7 +86,7 @@ test.describe('guragura-seesaw: 皿に置いたアイテムをトレイへ取り
     await expect(page.locator('#panRightItems .item-box[data-item-id="blueberry"]')).toBeVisible();
   });
 
-  test('ラウンド3 (ふたご皿): A皿・B皿それぞれで 置く→取り除く→置き直せる', async ({ page }) => {
+  test('ラウンド10 (石カテゴリが混ざる最終ラウンド・単一皿): 置く→取り除く→別の石を置き直せる', async ({ page }) => {
     await setupPage(page);
     await page.goto('/guragura-seesaw/index.html');
     await page.locator('#startBtn').click({ force: true });
@@ -85,82 +94,53 @@ test.describe('guragura-seesaw: 皿に置いたアイテムをトレイへ取り
     await page.waitForTimeout(200); // レイアウト確定待ち (並列worker起動直後のflaky対策)
     await page.evaluate(() => {
       // @ts-ignore debug-only global, guragura-seesaw/js/game.js 参照
-      window.__guraguraDebugGotoRound(2);
+      window.__guraguraDebugGotoRound(9); // 最終ラウンド (0-indexed9): tray に mystery_stone/star_block を含む
     });
-    await expect(page.locator('#plank')).toHaveClass(/is-twin-round/);
+    // v3 (2026-07-23) 再設計以降、ふたご皿はどのラウンドでも使わないため
+    // #plank に is-twin-round は付かず、単一皿 (#panRight/#panRightItems) 経路になる
+    // (ふたご皿UIが実行時に到達しないこと自体は twin-basket-round3.spec.ts が別途検証)。
+    await expect(page.locator('#plank')).not.toHaveClass(/is-twin-round/);
 
-    // ── A皿: ほしを誤配置 → 取り除く → はーとを置き直す ──
-    // target は elephant=10。ほし(7)/はーと(7) はどちらも空の状態から
-    // 受理され、単体ではまだ釣り合わないため、自動進行せず取り外しを検証できる。
-    const star = page.locator('#tray .item-box[data-item-id="star_block"]');
-    const starBox = await star.boundingBox();
-    const panABox = await page.locator('#panRightA').boundingBox();
-    expect(starBox, 'tray star_block bounding box').toBeTruthy();
-    expect(panABox, 'panRightA bounding box').toBeTruthy();
-    if (!starBox || !panABox) return;
-    await dragMouse(page, starBox, panABox);
-    await expect(page.locator('#panRightAItems .item-box[data-item-id="star_block"]')).toBeVisible();
-    await page.waitForTimeout(2000);
-
-    const placedA = page.locator('#panRightAItems .item-box[data-item-id="star_block"]');
-    const placedABox = await placedA.boundingBox();
-    const trayBox = await page.locator('#tray').boundingBox();
-    expect(placedABox, 'placed star_block(A) bounding box').toBeTruthy();
-    expect(trayBox, 'tray bounding box').toBeTruthy();
-    if (!placedABox || !trayBox) return;
-    await dragMouse(page, placedABox, trayBox);
-    await expect(page.locator('#panRightAItems .item-box[data-item-id="star_block"]')).toHaveCount(0);
-    await expect(page.locator('#tray .item-box[data-item-id="star_block"]')).toBeVisible();
-
-    const heart = page.locator('#tray .item-box[data-item-id="heart_block"]');
-    const heartBox = await heart.boundingBox();
-    const panABox2 = await page.locator('#panRightA').boundingBox();
-    expect(heartBox, 'tray heart_block bounding box').toBeTruthy();
-    expect(panABox2, 'panRightA bounding box (2nd)').toBeTruthy();
-    if (!heartBox || !panABox2) return;
-    await dragMouse(page, heartBox, panABox2);
-    await expect(page.locator('#panRightAItems .item-box[data-item-id="heart_block"]')).toBeVisible();
-
-    // B皿を独立に試せるよう、A皿へ置き直したはーとも一度トレイへ戻す。
-    await page.waitForTimeout(2000);
-    const placedHeart = page.locator('#panRightAItems .item-box[data-item-id="heart_block"]');
-    const placedHeartBox = await placedHeart.boundingBox();
-    const trayBoxForHeart = await page.locator('#tray').boundingBox();
-    expect(placedHeartBox, 'placed heart_block(A) bounding box').toBeTruthy();
-    expect(trayBoxForHeart, 'tray bounding box for heart removal').toBeTruthy();
-    if (!placedHeartBox || !trayBoxForHeart) return;
-    await dragMouse(page, placedHeartBox, trayBoxForHeart);
-    await expect(page.locator('#panRightAItems .item-box[data-item-id="heart_block"]')).toHaveCount(0);
-
-    // ── B皿: ほしを誤配置 → 取り除く → いしを置き直す ──
-    const starForB = page.locator('#tray .item-box[data-item-id="star_block"]');
-    const starForBBox = await starForB.boundingBox();
-    const panBBox = await page.locator('#panRightB').boundingBox();
-    expect(starForBBox, 'tray star_block bounding box for B').toBeTruthy();
-    expect(panBBox, 'panRightB bounding box').toBeTruthy();
-    if (!starForBBox || !panBBox) return;
-    await dragMouse(page, starForBBox, panBBox);
-    await expect(page.locator('#panRightBItems .item-box[data-item-id="star_block"]')).toBeVisible();
-    await page.waitForTimeout(2000);
-
-    const placedB = page.locator('#panRightBItems .item-box[data-item-id="star_block"]');
-    const placedBBox = await placedB.boundingBox();
-    const trayBox2 = await page.locator('#tray').boundingBox();
-    expect(placedBBox, 'placed star_block(B) bounding box').toBeTruthy();
-    expect(trayBox2, 'tray bounding box (2nd)').toBeTruthy();
-    if (!placedBBox || !trayBox2) return;
-    await dragMouse(page, placedBBox, trayBox2);
-    await expect(page.locator('#panRightBItems .item-box[data-item-id="star_block"]')).toHaveCount(0);
-    await expect(page.locator('#tray .item-box[data-item-id="star_block"]')).toBeVisible();
-
+    // ふしぎな いし を誤配置 → 取り除く → ほしの ブロックを置き直す
     const stone = page.locator('#tray .item-box[data-item-id="mystery_stone"]');
     const stoneBox = await stone.boundingBox();
-    const panBBox2 = await page.locator('#panRightB').boundingBox();
+    const panBox = await page.locator('#panRight').boundingBox();
     expect(stoneBox, 'tray mystery_stone bounding box').toBeTruthy();
-    expect(panBBox2, 'panRightB bounding box (2nd)').toBeTruthy();
-    if (!stoneBox || !panBBox2) return;
-    await dragMouse(page, stoneBox, panBBox2);
-    await expect(page.locator('#panRightBItems .item-box[data-item-id="mystery_stone"]')).toBeVisible();
+    expect(panBox, 'panRight bounding box').toBeTruthy();
+    if (!stoneBox || !panBox) return;
+    await dragMouse(page, stoneBox, panBox);
+    await expect(page.locator('#panRightItems .item-box[data-item-id="mystery_stone"]')).toBeVisible();
+    await page.waitForTimeout(2000);
+
+    const placedStone = page.locator('#panRightItems .item-box[data-item-id="mystery_stone"]');
+    const placedStoneBox = await placedStone.boundingBox();
+    const trayBox = await page.locator('#tray').boundingBox();
+    expect(placedStoneBox, 'placed mystery_stone bounding box').toBeTruthy();
+    expect(trayBox, 'tray bounding box').toBeTruthy();
+    if (!placedStoneBox || !trayBox) return;
+    await dragMouse(page, placedStoneBox, trayBox);
+    await expect(page.locator('#panRightItems .item-box[data-item-id="mystery_stone"]')).toHaveCount(0);
+    await expect(page.locator('#tray .item-box[data-item-id="mystery_stone"]')).toBeVisible();
+
+    const star = page.locator('#tray .item-box[data-item-id="star_block"]');
+    const starBox = await star.boundingBox();
+    const panBox2 = await page.locator('#panRight').boundingBox();
+    expect(starBox, 'tray star_block bounding box').toBeTruthy();
+    expect(panBox2, 'panRight bounding box (2nd)').toBeTruthy();
+    if (!starBox || !panBox2) return;
+    await dragMouse(page, starBox, panBox2);
+    await expect(page.locator('#panRightItems .item-box[data-item-id="star_block"]')).toBeVisible();
+
+    // 詰みでないことの最終確認: 取り除いた後も別アイテムを新たに置ける
+    await page.waitForTimeout(2000);
+    const lemon = page.locator('#tray .item-box[data-item-id="lemon"]').first();
+    const lemonBox = await lemon.boundingBox();
+    const panBox3 = await page.locator('#panRight').boundingBox();
+    expect(lemonBox, 'tray lemon bounding box').toBeTruthy();
+    expect(panBox3, 'panRight bounding box (3rd)').toBeTruthy();
+    if (!lemonBox || !panBox3) return;
+    await dragMouse(page, lemonBox, panBox3);
+    await expect(page.locator('#panRightItems .item-box[data-item-id="lemon"]')).toBeVisible();
   });
 
   test('皿の中へ戻して離した場合 (実質タップ) はno-opで、置いたままになる', async ({ page }) => {

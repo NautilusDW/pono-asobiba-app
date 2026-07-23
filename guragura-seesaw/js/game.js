@@ -77,8 +77,10 @@
   var panLeftItemsEl = document.getElementById('panLeftItems');
   var panRightItemsEl = document.getElementById('panRightItems');
   var panRightEl = document.getElementById('panRight');
-  // ふたご皿 (twin basket、ラウンド3-5専用) DOM 参照。 ラウンド1・2 では
-  // #panRightTwin は非表示のまま (styles.css の #plank.is-twin-round 排他制御)。
+  // ふたご皿 (twin basket) DOM 参照 [休眠中 / DORMANT]。 2026-07-23 v3 再設計で
+  // TWIN_ROUND_CONFIG={} となり、isTwinRoundNow() は全10ラウンドで常に false を
+  // 返すため、#panRightTwin は実行時どのラウンドでも表示されない (styles.css の
+  // #plank.is-twin-round 排他制御により常に非表示)。 将来の再導入に備え休眠させて残す。
   var panRightTwinEl = document.getElementById('panRightTwin');
   var panRightAEl = document.getElementById('panRightA');
   var panRightBEl = document.getElementById('panRightB');
@@ -398,7 +400,7 @@
     }
   }
 
-  // ── ラウンド1・2 (単一右皿): 既存の rightIds/placeItem/removeItem 経路 ──
+  // ── 単一右皿 (2026-07-23 v3: 全10ラウンド共通): rightIds/placeItem/removeItem 経路 ──
   function endDragSingle(ds, x, y) {
     var overPan = pointOverPanRight(x, y);
 
@@ -434,7 +436,10 @@
     }
   }
 
-  // ── ラウンド3-5 (ふたご皿): rightBasketAIds/rightBasketBIds/placeItemTwin/removeItemTwin 経路 ──
+  // ── ふたご皿 (twin basket) [休眠中 / DORMANT]: rightBasketAIds/rightBasketBIds/
+  // placeItemTwin/removeItemTwin 経路。 2026-07-23 v3 では isTwinRoundNow() が
+  // 常に false を返す (TWIN_ROUND_CONFIG={}) ため endDrag() から呼ばれることは無い。
+  // 将来の再導入に備え休眠させて残す。 ──
   function endDragTwin(ds, x, y) {
     var overA = pointOverEl(panRightAEl, x, y);
     var overB = pointOverEl(panRightBEl, x, y);
@@ -754,8 +759,8 @@
       session.finished = true;
       finishGame();
     };
-    // e2e (Playwright) がラウンド1・2の単一皿操作を毎回解かずに、任意ラウンド
-    // (例: ふたご皿ラウンド3=index2) まで一気に進めてUIを検証できるようにするテスト専用API。
+    // e2e (Playwright) が前段の単一皿ラウンドを毎回解かずに、任意ラウンド
+    // (例: 石が混ざる終盤ラウンド) まで一気に進めてUIを検証できるようにするテスト専用API。
     window.__guraguraDebugGotoRound = function (roundIndex) {
       if (!session) startGame();
       while (session.round < roundIndex && !session.finished) {

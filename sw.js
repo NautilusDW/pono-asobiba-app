@@ -1,5 +1,19 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2358: ポノのまちづくり (machizukuri/) を comingSoon+debugPlayable で新規追加し、
+// APP_TITLE_MENU_IDS にも登録。しゅうかくで そだつ まち v1 (12区画・買って置く・
+// 花ミクロスロット・室と畑への読み取り専用連携)。ゲーム個別ファイル
+// (machizukuri/index.html, machizukuri/styles.css, machizukuri/js/logic.js,
+// machizukuri/js/parts.js, machizukuri/js/game.js) は network-first 配信のため
+// CRITICAL_ASSETS には追加しない (hatake-nikki/guragura-seesaw 新規追加時の
+// v2325 と同型)。play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSION と同期 (2358)。
+// v2357: ぐらぐらシーソーひろば v3 再設計 (人形/大きさ=重さ統一・10ラウンド化・
+// ふたご皿廃止) のUI側追従。roundDots 5→10個、.pan 17%→25%/item-box 9-15%→
+// 7-11% に縮小して5個グループのお皿詰まりを解消、ふたご皿UIは休眠コードとして
+// 一貫させたまま維持 (実行時には到達しない)。tests/e2e/guragura/ の
+// twin-basket-round3.spec.ts / remove-placed-item.spec.ts を10ラウンド構成に
+// 追従。guragura-seesaw/index.html の ?v= を20260723-6→7 (styles.css/logic.js/
+// game.js)。play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSION と同期 (2357)。
 // v2356: ひょっこりハイタッチを、こもれび6穴／どんぐり5穴／みずべ4穴の
 // 「もりの さんぽみち」3地点へ拡張。場所データ、30秒完走ごとの保存進行、
 // 新背景2点、たぬき／かわうそ4状態、結果の散歩道、低速読込とfocus終端を追加。
@@ -911,7 +925,7 @@
 // styles.css／game.js queryを20260723-1429へ同期。ゲーム個別ファイルと画像は
 // network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
 // PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2347)。
-const CACHE_VERSION = 2356;
+const CACHE_VERSION = 2358;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

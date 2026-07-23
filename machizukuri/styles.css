@@ -1,0 +1,476 @@
+/* ── machizukuri/styles.css ──
+   ポノのまちづくり: ページシェル用スタイル。
+
+   このファイルの監査ルール (レビュー時に必ず再確認すること):
+   1. .lot / ピッカーの part-btn / ポップオーバーの各ボタンなど「タップ可能な
+      要素」の祖先には pointer-events:none を一切付けない。 hatake-nikki の
+      wrapper+hit-area 方式 (祖先none→子だけauto) はそれ自体が guragura-seesaw
+      で実機無反応事故を起こした過去パターンのため、本 feature では採用しない。
+      装飾のみで対話要素を一切持たないレイヤー (#scene-bg / #tint-overlay /
+      #scene-flowers / #scene-butterflies / #confetti-layer) だけが
+      pointer-events:none の対象であり、これらは #scene-lots とは兄弟関係の
+      別レイヤーであって祖先関係ではないため、.lot 側の操作性に影響しない。
+   2. filter / mask プロパティはこのファイルのどこにも書かない。 グロー表現は
+      box-shadow、フォーカスリングは outline、押下フィードバックは transform
+      のみで代替する。
+   3. 画面/シート/ポップオーバー/チュートリアル/エラーUI の表示切替は必ず
+      .show クラスで行う (bare hidden 属性には依存しない)。
+*/
+@import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --machi-cream: #FFF8E7;
+  --machi-ink: #5D4E37;
+  --machi-ink-soft: #8B7B60;
+  --machi-green-1: #4caf50;
+  --machi-green-2: #2d8a3e;
+  --machi-blue-1: #60A5FA;
+  --machi-blue-2: #3B82F6;
+}
+
+html, body {
+  width: 100%;
+  height: 100dvh;
+  overflow: hidden;
+  overscroll-behavior: none;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  background: #cdeffd;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* ══ 16:9 固定ステージ (parts.js STAGE_VIEWBOX '0 0 1600 900' と同じ比率) ══ */
+#stage {
+  position: fixed;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(100vw, 100dvh * 16 / 9);
+  height: min(100dvh, 100vw * 9 / 16);
+  overflow: hidden;
+  background: #eef8ff;
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+}
+
+/* ══ 画面遷移: .show クラス方式のみを使う (bare hidden 属性には依存しない) ══ */
+.screen { display: none; position: absolute; inset: 0; }
+.screen.show { display: flex; }
+#stage [hidden] { display: none !important; }
+
+/* ── スタート画面 ── */
+#start-screen {
+  z-index: 900;
+  flex-direction: column; align-items: center; justify-content: center;
+  background: linear-gradient(180deg, #bfe6ff 0%, #eaf7ff 55%, #d8f3d8 100%);
+  text-align: center; padding: 24px;
+}
+.start-card { display: flex; flex-direction: column; align-items: center; }
+.start-icon { font-size: 54px; margin-bottom: 6px; }
+.start-title {
+  font-size: 26px; font-weight: 900; color: var(--machi-ink);
+  letter-spacing: 0.03em;
+}
+.start-desc {
+  font-size: 15px; font-weight: 700; color: var(--machi-ink-soft);
+  line-height: 1.7; margin-top: 10px;
+}
+.start-card .tap-btn {
+  margin-top: 30px;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-size: 21px; font-weight: 900; color: #fff;
+  background: linear-gradient(135deg, var(--machi-green-1), var(--machi-green-2));
+  border: none; border-radius: 999px;
+  padding: 16px 42px;
+  box-shadow: 0 6px 16px rgba(0,0,0,0.2);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  animation: machiStartPulse 1.4s infinite;
+}
+@keyframes machiStartPulse { 0%,100%{transform:scale(1)} 50%{transform:scale(0.96)} }
+
+/* ── まち画面: レイヤー構成 ──
+   各レイヤーは #town-screen の直接の子 (兄弟同士) であり、どのレイヤーも
+   #scene-lots の祖先にはならない。 装飾レイヤーの pointer-events:none が
+   .lot の操作性を絶対に妨げない設計上の理由はファイル冒頭の監査ルール1参照。 */
+#town-screen { z-index: 500; background: transparent; }
+.scene-layer { position: absolute; inset: 0; }
+#scene-bg, #tint-overlay, #scene-flowers, #scene-butterflies, #confetti-layer {
+  pointer-events: none;
+}
+#scene-bg { z-index: 1; }
+#scene-bg .machi-bg-scene { width: 100%; height: 100%; display: block; }
+#tint-overlay { z-index: 2; }
+#scene-flowers { z-index: 3; }
+#scene-lots { z-index: 10; }
+.scene-layer-interactive { pointer-events: auto; }
+#scene-butterflies { z-index: 15; }
+#confetti-layer { z-index: 20; overflow: hidden; }
+
+/* ── HUD (菜っぱ残高・はな うえるボタン) ── */
+#hud {
+  position: absolute; top: max(12px, env(safe-area-inset-top)); left: 0; right: 0; z-index: 600;
+  display: flex; justify-content: flex-end; align-items: center; gap: 10px;
+  padding: 0 16px 0 84px; /* common/menu.js の ⚙️ ボタン分の余白 */
+}
+.hud-pill {
+  font-weight: 900; font-size: 15px; color: var(--machi-ink);
+  background: rgba(255,255,255,0.92);
+  border-radius: 999px;
+  padding: 8px 16px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.14);
+  display: flex; align-items: center; gap: 6px;
+  white-space: nowrap;
+}
+.hud-btn {
+  border: none;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.hud-btn:active { transform: scale(0.94); }
+
+/* ── 区画 (lot) ──
+   js/game.js が MachiParts.LOTS を読み、STAGE_VIEWBOX (1600x900) 座標を
+   %に換算して left/top/width/height をインラインで設定する想定。
+   このファイルは座標を一切知らないので絶対位置の基準だけを用意する。 */
+.lot {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex; align-items: flex-end; justify-content: center;
+  background: transparent;
+  border: none;
+  padding: 0; margin: 0;
+  font: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: transform 0.15s ease;
+}
+.lot > * { width: 100%; height: 100%; display: block; pointer-events: none; }
+.lot:active { transform: translate(-50%, -50%) scale(0.93); }
+.lot:focus-visible {
+  outline: 3px solid #ffd75e;
+  outline-offset: 3px;
+  border-radius: 12px;
+}
+.lot.is-empty { border-radius: 50%; animation: machiLotGlow 1.6s ease-in-out infinite; }
+.lot.is-house { cursor: pointer; }
+
+/* ── モーダル/シート共通土台 (バックドロップ + カード) ── */
+.sheet {
+  display: none;
+  position: absolute; inset: 0; z-index: 800;
+  align-items: flex-end; justify-content: center;
+}
+.sheet.show { display: flex; }
+.sheet-backdrop {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.35);
+}
+.sheet-card, .popover-card {
+  position: relative;
+  background: var(--machi-cream);
+  border-radius: 24px 24px 0 0;
+  padding: 20px 20px max(20px, env(safe-area-inset-bottom));
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 -8px 30px rgba(0,0,0,0.3);
+}
+.popover-card {
+  border-radius: 24px;
+  margin: 0 20px max(20px, env(safe-area-inset-bottom));
+  text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+}
+#part-popover { align-items: center; }
+
+/* ── ピッカー (空区画タップ時) ── */
+.sheet-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px;
+}
+.sheet-title { font-size: 17px; font-weight: 900; color: var(--machi-ink); }
+.sheet-balance {
+  font-size: 15px; font-weight: 900; color: var(--machi-ink);
+  background: #fff; border-radius: 999px; padding: 6px 14px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+}
+.sheet-parts {
+  display: flex; flex-wrap: wrap; gap: 10px; justify-content: center;
+  max-height: 38vh; overflow-y: auto;
+  padding: 4px 2px 8px;
+}
+.part-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 4px;
+  width: 84px;
+  background: #fff; border: none; border-radius: 16px;
+  padding: 10px 8px 8px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.14);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  font-family: 'Zen Maru Gothic', sans-serif;
+}
+.part-btn:active { transform: scale(0.94); }
+.part-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.part-btn .part-btn-icon { width: 44px; height: 44px; pointer-events: none; }
+.part-btn .part-btn-icon svg { width: 100%; height: 100%; display: block; }
+.part-btn .part-btn-name { font-size: 12px; font-weight: 900; color: var(--machi-ink); }
+.part-btn .part-btn-cost { font-size: 12px; font-weight: 900; color: #e07800; }
+
+.picker-cta {
+  display: none;
+  align-items: center; justify-content: center; gap: 6px;
+  margin: 4px 0 12px;
+  font-size: 15px; font-weight: 900; color: #fff; text-decoration: none;
+  background: linear-gradient(135deg, var(--machi-blue-1), var(--machi-blue-2));
+  border-radius: 999px; padding: 12px 20px;
+  box-shadow: 0 4px 14px rgba(59,130,246,0.35);
+}
+.picker-cta.show { display: flex; }
+
+.sheet-close-btn, .popover-close-btn {
+  display: block;
+  margin: 0 auto;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-size: 15px; font-weight: 900; color: var(--machi-ink-soft);
+  background: rgba(0,0,0,0.06);
+  border: none; border-radius: 14px;
+  padding: 8px 26px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.sheet-close-btn:active, .popover-close-btn:active { transform: scale(0.95); }
+
+/* ── ポップオーバー (設置済みパーツ / いえ) ── */
+.popover-icon { width: 72px; height: 72px; }
+.popover-icon svg { width: 100%; height: 100%; display: block; }
+.popover-name { font-size: 16px; font-weight: 900; color: var(--machi-ink); }
+.popover-actions { display: flex; gap: 12px; }
+.popover-btn {
+  font-family: 'Zen Maru Gothic', sans-serif;
+  font-size: 15px; font-weight: 900; color: #fff;
+  border: none; border-radius: 16px;
+  padding: 12px 20px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+}
+.popover-btn:active { transform: scale(0.94); }
+.popover-store-btn { display: flex; background: linear-gradient(135deg, #a8e6cf, #88d8a8); color: #2d6a4f; }
+.popover-door-btn { display: none; background: linear-gradient(135deg, var(--machi-blue-1), var(--machi-blue-2)); }
+#part-popover.is-house .popover-store-btn { display: none; }
+#part-popover.is-house .popover-door-btn { display: flex; }
+
+/* ══ 昼/夕方ティント (parts.js sceneTint() の DAY_TINT/EVENING_TINT と
+   同じ値をここでも保持する。 game.js が setProperty で直接上書きしても
+   inline style の詳細度で勝つため衝突しないが、game.js がクラス切替だけで
+   済ませたい場合にも同じ見た目になるようフォールバックとして複製している。
+   値を変える時は parts.js 側の対応表も必ず合わせて更新すること。 ══ */
+#stage.is-day {
+  --machi-sky-top: #bfe6ff;
+  --machi-sky-bottom: #eef8ff;
+  --machi-hill-far: #bfe3c9;
+  --machi-hill-near: #9ed6ae;
+  --machi-grass: #b8e6a8;
+  --machi-road: #e8d9b8;
+  --machi-road-line: #ffffff;
+  --machi-river: #9fd8ee;
+  --machi-river-highlight: #d8f3ff;
+  --machi-lamp-glow: #ffe9a8;
+  --machi-lamp-glow-opacity: 0;
+}
+#stage.is-evening {
+  --machi-sky-top: #46508a;
+  --machi-sky-bottom: #f0a875;
+  --machi-hill-far: #5d7a72;
+  --machi-hill-near: #4c6b56;
+  --machi-grass: #5f8a5a;
+  --machi-road: #c9b98f;
+  --machi-road-line: #fff6e0;
+  --machi-river: #3f6f8f;
+  --machi-river-highlight: #7fb8d6;
+  --machi-lamp-glow: #ffe9a8;
+  --machi-lamp-glow-opacity: 1;
+}
+#tint-overlay {
+  background: linear-gradient(180deg, rgba(70,80,138,0.32) 0%, rgba(240,168,117,0.14) 100%);
+  opacity: 0;
+  transition: opacity 1.2s ease;
+}
+#stage.is-evening #tint-overlay { opacity: 1; }
+
+/* ══ アニメーション: grow-in / confetti / sway / glow ══
+   .machi-anim-sway と .machi-anim-lamp-glow と .machi-anim-fly-a/b は
+   machizukuri/js/parts.js の idleAnimClass にそのまま対応する固定契約名。
+   クラス名を変える場合は parts.js 側も合わせて変更すること。 */
+@keyframes machiGrowIn {
+  0%   { transform: translate(-50%, -50%) scale(0.15); opacity: 0; }
+  60%  { transform: translate(-50%, -50%) scale(1.12); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+}
+.grow-in { animation: machiGrowIn 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+
+@keyframes machiConfettiFall {
+  0%   { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  100% { transform: translate(var(--machi-conf-x, 0px), var(--machi-conf-y, 90px)) rotate(var(--machi-conf-r, 360deg)); opacity: 0; }
+}
+.machi-confetti-piece {
+  position: absolute;
+  width: 9px; height: 9px;
+  border-radius: 3px;
+  background: var(--machi-conf-color, #ffd166);
+  animation: machiConfettiFall 0.9s ease-out forwards;
+}
+
+@keyframes machiSway { 0%, 100% { transform: rotate(-2.5deg); } 50% { transform: rotate(2.5deg); } }
+.machi-anim-sway { transform-origin: 50% 100%; animation: machiSway 3.2s ease-in-out infinite; }
+
+@keyframes machiLotGlow {
+  0%, 100% { box-shadow: 0 0 6px 2px rgba(255, 225, 120, 0.55); }
+  50%      { box-shadow: 0 0 18px 8px rgba(255, 225, 120, 0.9); }
+}
+
+/* streetlamp のグロー円は parts.js SVG 内で既に
+   opacity="var(--machi-lamp-glow-opacity, 0)" を持ち、昼は不透明度0で
+   自ら消える。 ここでの box-shadow パルスも同じ変数を alpha に流用して
+   連動させ、昼間に光の輪だけ残る事故を防いでいる (フォールバックとして
+   相対カラー構文非対応ブラウザ向けの固定値も先に書いておく)。 */
+@keyframes machiLampGlow {
+  0%, 100% {
+    box-shadow: 0 0 16px 5px rgba(255, 233, 168, 0.18);
+    box-shadow: 0 0 16px 5px rgb(255 233 168 / calc(0.32 * var(--machi-lamp-glow-opacity, 0)));
+  }
+  50% {
+    box-shadow: 0 0 28px 10px rgba(255, 233, 168, 0.32);
+    box-shadow: 0 0 28px 10px rgb(255 233 168 / calc(0.7 * var(--machi-lamp-glow-opacity, 0)));
+  }
+}
+.machi-anim-lamp-glow { animation: machiLampGlow 2.4s ease-in-out infinite; border-radius: 50%; }
+
+/* ── ちょうちょ: offset-path を軸に、非対応環境は translate keyframe へ ── */
+.machi-butterfly { position: absolute; width: clamp(22px, 5vmin, 36px); height: auto; }
+@keyframes machiButterflyProgress { 0% { offset-distance: 0%; } 100% { offset-distance: 100%; } }
+.machi-anim-fly-a {
+  left: 12%; top: 62%;
+  offset-path: path('M0,0 C50,-46 120,26 190,-14 S320,42 380,-6 S480,20 520,0');
+  offset-rotate: 0deg;
+  animation: machiButterflyProgress 11s linear infinite;
+}
+.machi-anim-fly-b {
+  left: 58%; top: 24%;
+  offset-path: path('M0,0 C-40,34 -90,-24 -140,10 S-250,-32 -300,6 S-380,-16 -420,0');
+  offset-rotate: 0deg;
+  animation: machiButterflyProgress 13s linear infinite;
+}
+@supports not (offset-path: path('M0,0')) {
+  .machi-anim-fly-a { animation: machiButterflyFlyFallbackA 11s ease-in-out infinite; }
+  .machi-anim-fly-b { animation: machiButterflyFlyFallbackB 13s ease-in-out infinite; }
+  @keyframes machiButterflyFlyFallbackA {
+    0%   { transform: translate(0, 0); }
+    25%  { transform: translate(90px, -50px); }
+    50%  { transform: translate(180px, 14px); }
+    75%  { transform: translate(90px, 60px); }
+    100% { transform: translate(0, 0); }
+  }
+  @keyframes machiButterflyFlyFallbackB {
+    0%   { transform: translate(0, 0); }
+    25%  { transform: translate(-80px, 40px); }
+    50%  { transform: translate(-160px, -18px); }
+    75%  { transform: translate(-80px, -60px); }
+    100% { transform: translate(0, 0); }
+  }
+}
+
+/* ── Landscape notice (横持ち強制) ── */
+#landscape-notice {
+  display: none;
+  position: fixed; inset: 0; z-index: 9980;
+  background: #1a3a4a;
+  flex-direction: column; align-items: center; justify-content: center; gap: 20px;
+  color: white; text-align: center; padding: 40px;
+  font-family: 'Zen Maru Gothic', sans-serif;
+}
+#landscape-notice.show { display: flex; }
+#landscape-notice .rotate-icon { font-size: 64px; animation: machiRotateHint 2s ease-in-out infinite; }
+@keyframes machiRotateHint { 0%,100%{transform:rotate(0deg)} 50%{transform:rotate(-90deg)} }
+#landscape-notice p { font-size: 18px; line-height: 1.6; }
+#landscape-notice .landscape-back {
+  color: #fff; font-weight: 900; font-size: 16px;
+  background: rgba(255,255,255,0.18);
+  border-radius: 999px; padding: 10px 26px;
+  text-decoration: none;
+}
+
+/* ── チュートリアル (tut-dim/tut-bubble、中身は js/game.js が差し込む) ── */
+.tut-dim { display: none; position: fixed; inset: 0; z-index: 9995; background: rgba(30,60,90,0.6); }
+.tut-dim.show { display: block; }
+.tut-bubble {
+  display: none;
+  position: fixed; z-index: 9997;
+  left: 50%; top: 50%; transform: translate(-50%, -50%);
+  background: #fff; border-radius: 20px; padding: 22px 20px;
+  width: min(84%, 320px);
+  box-shadow: 0 8px 28px rgba(30,60,90,0.35);
+  font-size: 1rem; font-weight: 700; color: var(--machi-ink); line-height: 1.7;
+  text-align: center;
+  animation: machiPopIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+.tut-bubble.show { display: block; }
+@keyframes machiPopIn { from{transform:translate(-50%,-50%) scale(0.8);opacity:0.5} to{transform:translate(-50%,-50%) scale(1);opacity:1} }
+.tut-bubble .tut-icon { font-size: 40px; margin-bottom: 8px; }
+.tut-next-btn {
+  display: inline-block; margin-top: 14px; padding: 10px 30px;
+  border: none; border-radius: 50px;
+  background: linear-gradient(135deg, var(--machi-blue-1), #818CF8);
+  color: #fff; font-family: inherit; font-size: 0.95rem; font-weight: 900;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.tut-next-btn:active { transform: scale(0.95); }
+
+/* ── スクリプト読込エラーUI ── */
+.error-ui {
+  display: none;
+  position: fixed; inset: 0; z-index: 9999;
+  flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+  padding: 24px;
+  background: rgba(42, 74, 94, 0.96);
+  color: #fff;
+  font-family: 'Zen Maru Gothic', sans-serif;
+  text-align: center;
+}
+.error-ui.show { display: flex; }
+.error-ui-msg { font-size: 1.05rem; font-weight: 900; line-height: 1.6; }
+.error-ui-btn {
+  padding: 12px 32px; border: none; border-radius: 50px;
+  background: linear-gradient(135deg, var(--machi-blue-1), var(--machi-blue-2));
+  color: #fff; font-size: 1rem; font-weight: 900; font-family: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* ── prefers-reduced-motion: アイドル/演出アニメを止める ── */
+@media (prefers-reduced-motion: reduce) {
+  .grow-in { animation: none; opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  .machi-confetti-piece { animation: none; opacity: 0; }
+  .lot.is-empty { animation: none; box-shadow: 0 0 8px 3px rgba(255, 225, 120, 0.75); }
+  .machi-anim-sway { animation: none; }
+  .machi-anim-lamp-glow { animation: none; }
+  .machi-anim-fly-a, .machi-anim-fly-b { animation: none; }
+  .start-card .tap-btn { animation: none; }
+}
+
+/* ── 保険: .hidden 汎用ユーティリティ (bare hidden 属性へ依存する将来編集への
+   最終防御。 本 feature は .show 方式を正としているためこのルールは通常
+   使われない想定だが、hatake-nikki 踏襲で保険としてのみ残す) ── */
+.hidden { display: none !important; }

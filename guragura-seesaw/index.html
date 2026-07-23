@@ -72,7 +72,7 @@
 <script src="../common/haptics.js"></script>
 <script src="../common/treasure.js"></script>
 <script src="../common/menu.js"></script>
-<link rel="stylesheet" href="styles.css?v=20260723-6">
+<link rel="stylesheet" href="styles.css?v=20260723-7">
 </head>
 <body>
 <div id="landscape-notice" role="dialog" aria-modal="true" aria-label="よこむきの おねがい" aria-hidden="true">
@@ -94,6 +94,11 @@
         <span class="round-dot" data-round="2"></span>
         <span class="round-dot" data-round="3"></span>
         <span class="round-dot" data-round="4"></span>
+        <span class="round-dot" data-round="5"></span>
+        <span class="round-dot" data-round="6"></span>
+        <span class="round-dot" data-round="7"></span>
+        <span class="round-dot" data-round="8"></span>
+        <span class="round-dot" data-round="9"></span>
       </div>
     </div>
 
@@ -119,9 +124,12 @@
               <div class="pan-dish"></div>
               <div class="pan-items" id="panRightItems"></div>
             </div>
-            <!-- ふたご皿 (twin basket、ラウンド3-5専用)。 通常は非表示、
-                 #plank.is-twin-round の時だけ game.js が表示に切り替える
-                 (#panRight とは同時に見えないよう CSS 側で排他制御)。 -->
+            <!-- ふたご皿 (twin basket) UI [休眠中 / DORMANT]。 2026-07-23 v3 再設計で
+                 TWIN_ROUND_CONFIG={} となり、全10ラウンドが単一皿 (#panRight) 構成に
+                 なったため、このブロックはどのラウンドでも表示されない (常に
+                 #plank.is-twin-round が付かない → 下記 CSS の排他制御により非表示のまま)。
+                 将来の再導入に備え DOM ごと休眠させて残してある (logic.js の
+                 TWIN_ROUND_CONFIG コメント参照)。 -->
             <div id="panRightTwin" aria-hidden="true">
               <div class="pan pan-twin pan-twin-a" id="panRightA">
                 <div class="pan-bubble" id="slipBubbleA" aria-hidden="true"></div>
@@ -156,7 +164,7 @@
   </div>
 </div>
 
-<script src="js/logic.js?v=20260723-6"></script>
-<script src="js/game.js?v=20260723-6"></script>
+<script src="js/logic.js?v=20260723-7"></script>
+<script src="js/game.js?v=20260723-7"></script>
 </body>
 </html>
