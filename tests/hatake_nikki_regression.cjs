@@ -542,10 +542,10 @@ function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
 // ── 28. 作物立て札 + 生成画像による水やり済み表示 ───────────────────
 {
   const requiredArt = [
-    'assets/images/hatake-nikki/crop_sign_tomato.png',
-    'assets/images/hatake-nikki/crop_sign_ninjin.png',
+    'assets/images/hatake-nikki/crop_sign_tomato_iso_v2.png',
+    'assets/images/hatake-nikki/crop_sign_ninjin_iso_v2.png',
     'assets/images/hatake-nikki/hatake_crop_wet.png',
-    'assets/images/hatake-nikki/watered_drop.png'
+    'assets/images/hatake-nikki/watered_drop_mark_v2.png'
   ];
   for (const relative of requiredArt) {
     const absolute = path.join(root, relative);
@@ -556,17 +556,29 @@ function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
 
   assert.strictEqual((indexHtml.match(/class="crop-sign"/g) || []).length, 3, '各畝に作物立て札が1つある');
   assert.strictEqual((indexHtml.match(/class="watered-drop"/g) || []).length, 3, '各畝に水やり済みしずく画像が1つある');
-  for (const asset of ['crop_sign_tomato.png', 'crop_sign_ninjin.png', 'hatake_crop_wet.png']) {
+  for (const asset of ['crop_sign_tomato_iso_v2.png', 'crop_sign_ninjin_iso_v2.png', 'hatake_crop_wet.png', 'watered_drop_mark_v2.png']) {
     assert.match(indexHtml, new RegExp('<link\\s+rel="preload"\\s+as="image"[^>]*' + asset.replace('.', '\\.') + '[^>]*>'), `${asset} を開始画面で先読みする`);
   }
   assert.match(indexHtml, /id="tool-water-btn"[\s\S]*?deco_watering_can_B\.png[\s\S]*?<\/button>/, 'じょうろボタンは画像アセットを使う');
-  assert.match(gameJs, /CROP_SIGN_IMAGES\s*=\s*\{[\s\S]*?tomato:[\s\S]*?crop_sign_tomato\.png[\s\S]*?ninjin:[\s\S]*?crop_sign_ninjin\.png/, '作物IDと立て札画像が対応する');
+  assert.match(gameJs, /CROP_SIGN_IMAGES\s*=\s*\{[\s\S]*?tomato:[\s\S]*?crop_sign_tomato_iso_v2\.png[\s\S]*?ninjin:[\s\S]*?crop_sign_ninjin_iso_v2\.png/, '作物IDと再生成した立て札画像が対応する');
   assert.match(gameJs, /setAttribute\('data-crop',\s*plot\.seedId\)/, '植栽中は畑に data-crop を付ける');
   assert.match(gameJs, /removeAttribute\('data-crop'\)/, '空畑へ戻ると data-crop を外す');
   assert.match(stylesCss, /\.plot\.is-watered\s*\{[^}]*hatake_crop_wet\.png/, '水やり済みは湿った土の生成画像へ切り替える');
+  assert.match(stylesCss, /\.plot\.is-watered\s*\{[^}]*background-size:\s*contain[^}]*background-position:\s*center[^}]*background-repeat:\s*no-repeat/s, '湿った畝は上頂点を切らず全体表示する');
   assert.match(stylesCss, /\.plot\.is-watered\s+\.watered-drop\s*\{[^}]*display:\s*block/, '水やり済みは大きなしずく画像を表示する');
-  assert.match(stylesCss, /\.crop-sign\s*\{[^}]*pointer-events:\s*none/s, '立て札は畑の操作を妨げない');
+  const signBlock = stylesCss.match(/\.crop-sign\s*\{[^}]*\}/s);
+  assert.ok(signBlock, '立て札の共通CSSが存在する');
+  assert.match(signBlock[0], /left:\s*27%/, '全立て札は同じ左下アンカーXを使う');
+  assert.match(signBlock[0], /top:\s*72%/, '全立て札は同じ左下アンカーYを使う');
+  assert.match(signBlock[0], /translate\(-43\.2%,\s*-95%\)/, '立て札は杭先を共通アンカーへ合わせる');
+  assert.match(signBlock[0], /pointer-events:\s*none/, '立て札は畑の操作を妨げない');
+  assert.doesNotMatch(stylesCss, /\.plot\[data-plot="2"\]\s+\.crop-sign/, 'plot2だけ立て札位置を変える例外を置かない');
+  assert.match(stylesCss, /\.plot\[data-plot="0"\]\s*\{\s*--crop-sign-tilt:\s*-1\.5deg;\s*\}/, 'plot0は固定の微小傾き');
+  assert.match(stylesCss, /\.plot\[data-plot="1"\]\s*\{\s*--crop-sign-tilt:\s*0\.75deg;\s*\}/, 'plot1は固定の微小傾き');
+  assert.match(stylesCss, /\.plot\[data-plot="2"\]\s*\{\s*--crop-sign-tilt:\s*-0\.75deg;\s*\}/, 'plot2は固定の微小傾き');
+  assert.match(stylesCss, /\.watered-drop\s*\{[^}]*right:\s*6%[^}]*top:\s*3%[^}]*width:\s*clamp\(44px,\s*31%,\s*76px\)/s, 'しずく済マークは畝上の右上へ大きく置く');
   assert.match(stylesCss, /\.watered-drop\s*\{[^}]*pointer-events:\s*none/s, 'しずくは畑の操作を妨げない');
+  assert.match(stylesCss, /\.plant\s*\{[^}]*position:\s*absolute[^}]*inset:\s*0/s, '芽の中央基準は畝全面へ固定する');
   assert.doesNotMatch(indexHtml + gameJs + stylesCss, /🚿|💧/, 'じょうろ・しずくの絵文字をUI実装に残さない');
 }
 

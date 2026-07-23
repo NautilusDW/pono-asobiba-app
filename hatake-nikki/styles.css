@@ -117,6 +117,7 @@ html, body {
   aspect-ratio: 238 / 143; /* hatake_crop.png 実測 AR を厳守 (stretch禁止) */
   background: url('../assets/images/yard/hatake_crop.png') center/contain no-repeat;
   display: flex; align-items: center; justify-content: center;
+  overflow: visible;
   /* 畝同士は透明な矩形部分が重なる。コンテナ全体をヒット対象にすると、
      手前の畝の透明角が奥の畝への操作を奪うため、実画像のひし形だけを
      .plot-hit-area で受ける。子の touch は既存の .plot listener へ bubble する。 */
@@ -139,41 +140,44 @@ html, body {
 .plot[data-plot="2"] { left: 38.383333%; top: 45.828358%; z-index: 2; }
 .plot.is-pressed { filter: brightness(0.92); }
 
-/* 植えた作物の立て札。stage ではなく seedId に連動し、植え付け直後から
-   収穫まで同じ札を常設する。杭先は土へ入り、中央の作物を隠さない。 */
+/* 植えた作物の立て札。全区画で、杭先を畝の左下辺上の同じ相対点
+   (27%,72%)へ固定する。画像は畝軸と同じ約30.6°のアイソメ角で生成済み。
+   位置は変えず、自然な手作り感だけを±1.5°以内の固定傾きで付ける。 */
 .crop-sign {
   position: absolute;
-  left: 5%;
-  top: -21%;
+  left: 27%;
+  top: 72%;
   z-index: 2;
   display: none;
-  width: clamp(46px, 34%, 88px);
+  width: clamp(46px, 30%, 84px);
   height: auto;
   object-fit: contain;
   filter: drop-shadow(0 2px 2px rgba(80, 52, 30, 0.24));
+  transform-origin: 0 0;
+  transform: rotate(var(--crop-sign-tilt, 0deg)) translate(-43.2%, -95%);
   pointer-events: none;
 }
 .crop-sign.is-visible { display: block; }
-/* 右手前の札を左へ置くと奥の畝へ重なって見えるため、この畝だけ後縁右側へ。 */
-.plot[data-plot="2"] .crop-sign {
-  left: auto;
-  right: 1%;
-}
+.plot[data-plot="0"] { --crop-sign-tilt: -1.5deg; }
+.plot[data-plot="1"] { --crop-sign-tilt: 0.75deg; }
+.plot[data-plot="2"] { --crop-sign-tilt: -0.75deg; }
 
 /* 水やり済みは「濃い湿った土 + 水色の外周 + 大きなしずく」の3手掛かり。
-   生成画像は238×143。元の畝より透明余白が少し広いため、輪郭を元画像へ
-   合わせる範囲だけ拡大し、状態切替時の見かけの縮みを防ぐ。 */
+   生成画像は238×143。containで上頂点まで必ず表示し、拡大cropしない。 */
 .plot.is-watered {
   background-image: url('../assets/images/hatake-nikki/hatake_crop_wet.png');
-  background-size: 112% auto;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
 }
 .watered-drop {
   position: absolute;
-  right: 4%;
-  bottom: 4%;
+  right: 6%;
+  top: 3%;
+  bottom: auto;
   z-index: 4;
   display: none;
-  width: clamp(32px, 23%, 58px);
+  width: clamp(44px, 31%, 76px);
   height: auto;
   object-fit: contain;
   filter: drop-shadow(0 2px 2px rgba(30, 111, 173, 0.28));
@@ -209,15 +213,20 @@ html, body {
 }
 
 .plant {
-  position: relative;
+  position: absolute;
+  inset: 0;
   z-index: 3;
   display: flex; align-items: center; justify-content: center;
-  width: 100%; height: 100%;
   transition: filter 0.4s, transform 0.4s;
 }
 .plant .plant-emoji {
+  position: absolute;
+  left: 50%;
+  top: 50%;
   font-size: clamp(20px, 6vmin, 34px);
   line-height: 1;
+  /* 絵文字の葉が右へ張る分、茎の根元が畝中央へ来るよう光学補正する。 */
+  transform: translate(calc(-50% + 0.14em), -50%);
 }
 .plant img.crop-img {
   display: block;

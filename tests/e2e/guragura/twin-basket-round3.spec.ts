@@ -1,11 +1,14 @@
 // guragura-seesaw/: ふたご皿 (twin basket) メカニクス e2e スモークテスト。
 //
-// ラウンド3 (index2, おだい=elephant単体, "普通"ティア: 1皿最大3個/局所重さ上限5) を
-// 対象に、実際のドラッグ操作 (page.mouse: このゲームは HTML5 dragTo ではなく
+// ラウンド3 (index2, おだい=elephant単体(重さ10), "普通"ティア: 1皿最大3個/局所重さ
+// 上限7) を対象に、実際のドラッグ操作 (page.mouse: このゲームは HTML5 dragTo ではなく
 // pointerdown/pointermove/pointerup の自前実装なので dragTo() は使えない) で
 // A/B バスケットへ配置 → 釣り合い成立 → 次ラウンドへ自動進行することを検証する。
 // 加えて局所超過 (「こっちのおさらだけ、おもすぎたみたい！」) の拒否・メッセージ表示も
 // 検証する。 §3-24 (game.js/styles.css 実装) の実地確認。
+// 重さ再設計 (2026-07-23): CATALOG/TWIN_ROUND_CONFIG が新値に更新されたことに伴い、
+// 本specがハードコードしていた解 (dog→A, lemon→B = 6=6) は成立しなくなったため
+// (新 dog=6, lemon=1, target=elephant=10) dog→A, frog→B (6+4=10) に差し替えた。
 
 const { test, expect } = require('@playwright/test');
 
@@ -52,14 +55,14 @@ async function dragTrayItemTo(page, itemId, targetLocator) {
 }
 
 test.describe('guragura-seesaw: ふたご皿 (twin basket) ラウンド3', () => {
-  test('dog→A, lemon→B で釣り合い、ラウンド4へ自動進行する (検証済みの解)', async ({ page }) => {
+  test('dog→A, frog→B で釣り合い、ラウンド4へ自動進行する (検証済みの解)', async ({ page }) => {
     await gotoTwinRound3(page);
 
     await dragTrayItemTo(page, 'dog', page.locator('#panRightA'));
     await expect(page.locator('#panRightAItems .item-box[data-item-id="dog"]')).toBeVisible();
 
-    await dragTrayItemTo(page, 'lemon', page.locator('#panRightB'));
-    await expect(page.locator('#panRightBItems .item-box[data-item-id="lemon"]')).toBeVisible();
+    await dragTrayItemTo(page, 'frog', page.locator('#panRightB'));
+    await expect(page.locator('#panRightBItems .item-box[data-item-id="frog"]')).toBeVisible();
 
     // バネ静定(最大3秒程度)+ 600ms保持 を見込んでバナー表示を長めに待つ
     await expect(page.locator('#balanceBanner')).toHaveClass(/show/, { timeout: 8000 });
@@ -84,11 +87,11 @@ test.describe('guragura-seesaw: ふたご皿 (twin basket) ラウンド3', () =>
   test('局所超過 (そのお皿だけ おもすぎ) は拒否され、専用メッセージが出る', async ({ page }) => {
     await gotoTwinRound3(page);
 
-    // dog(4) → A: localOverloadMax(5) 以内なので成功
+    // dog(6) → A: localOverloadMax(7) 以内なので成功
     await dragTrayItemTo(page, 'dog', page.locator('#panRightA'));
     await expect(page.locator('#panRightAItems .item-box[data-item-id="dog"]')).toBeVisible();
 
-    // apple(2) → A: dog(4)+apple(2)=6 > localOverloadMax(5) で localSlip 拒否
+    // apple(2) → A: dog(6)+apple(2)=8 > localOverloadMax(7) で localSlip 拒否
     await dragTrayItemTo(page, 'apple', page.locator('#panRightA'));
 
     await expect(page.locator('#slipBubbleA')).toHaveClass(/show/);

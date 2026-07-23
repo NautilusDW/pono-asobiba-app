@@ -143,8 +143,8 @@ function createScreenController(screens) {
   var statusBarEl = document.getElementById('status-bar');
   var statusFlashTimer = null;
   var CROP_SIGN_IMAGES = {
-    tomato: '../assets/images/hatake-nikki/crop_sign_tomato.png',
-    ninjin: '../assets/images/hatake-nikki/crop_sign_ninjin.png'
+    tomato: '../assets/images/hatake-nikki/crop_sign_tomato_iso_v2.png',
+    ninjin: '../assets/images/hatake-nikki/crop_sign_ninjin_iso_v2.png'
   };
 
   var plotRefs = [];
@@ -346,7 +346,7 @@ function createScreenController(screens) {
     if (!refs) return;
     var fx = document.createElement('img');
     fx.className = 'water-splash-fx';
-    fx.src = '../assets/images/hatake-nikki/watered_drop.png';
+    fx.src = '../assets/images/hatake-nikki/watered_drop_mark_v2.png';
     fx.alt = '';
     fx.setAttribute('aria-hidden', 'true');
     fx.draggable = false;

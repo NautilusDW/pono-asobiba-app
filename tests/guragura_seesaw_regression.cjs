@@ -234,7 +234,7 @@ section("placeItem / removeItem 不変条件", () => {
   {
     const state = { leftIds: [], rightIds: [], trayIds: ["elephant"] };
     const before = JSON.parse(JSON.stringify(state));
-    const res = L.placeItem(state, "elephant"); // left=0, right=6, diff=6 >= SLIP_DIFF(5)
+    const res = L.placeItem(state, "elephant"); // left=0, right=10, diff=10 >= SLIP_DIFF(6)
     assert.equal(res.ok, false);
     assert.equal(res.reason, "slip");
     assert.deepEqual(state, before, "slip 時、元 state は非破壊");
@@ -537,17 +537,28 @@ section("TWIN_ROUND_CONFIG 定数値", () => {
   assert.equal(L.getTwinRoundConfig(0), null, "ラウンド1 の config は null");
   assert.equal(L.getTwinRoundConfig(1), null, "ラウンド2 の config は null");
 
-  // ラウンド3 (index2, elephant単体 weight6) = "普通" ティア
+  // ラウンド3 (index2, elephant単体 weight10) = "普通" ティア
+  // slipDiff:9 (2026-07-23 レビュー対応): グローバル SLIP_DIFF(6) のままだと最初の1個を
+  // 安全に置ける tray アイテムが 4/14 (28.6%) しかなく、しかも "難しい" ティアのラウンド4
+  // (66.7%) より厳しいという tier 逆転が起きていたため、ラウンド単位で緩和した
+  // (71.4%、ラウンド4を上回り "普通" が最も寛容という序列に是正)。
   assert.equal(L.isTwinRound(2), true, "ラウンド3 (index2) はふたご皿対象");
-  assert.deepEqual(L.TWIN_ROUND_CONFIG[2], { tier: "normal", basketCapacityEach: 3, localOverloadMax: 5 }, "ラウンド3の config 値");
+  assert.deepEqual(L.TWIN_ROUND_CONFIG[2], { tier: "normal", basketCapacityEach: 3, localOverloadMax: 7, slipDiff: 9 }, "ラウンド3の config 値");
 
-  // ラウンド4 (index3, dog+cherry weight5) = "難しい" ティア
+  // ラウンド4 (index3, dog+cherry weight7) = "難しい" ティア (既に66.7%と十分寛容なため今回変更なし)
   assert.equal(L.isTwinRound(3), true, "ラウンド4 (index3) はふたご皿対象");
-  assert.deepEqual(L.TWIN_ROUND_CONFIG[3], { tier: "hard", basketCapacityEach: 2, localOverloadMax: 4 }, "ラウンド4の config 値");
+  assert.deepEqual(L.TWIN_ROUND_CONFIG[3], { tier: "hard", basketCapacityEach: 2, localOverloadMax: 5 }, "ラウンド4の config 値");
 
-  // ラウンド5 (index4, bear+grapes weight8) = "難しい" ティア (下限値、変更禁止)
+  // ラウンド5 (index4, bear+grapes weight10) = "難しい" ティア
+  // localOverloadMax:5→7 (2026-07-23 レビュー対応): dog(重さ6) が単体でも
+  // localOverloadMax(5) を超過し、このラウンドでは一度も配置できない「死んだアイテム」に
+  // なっていたバグを修正 (7に引き上げ、dog単体はもちろん dog+cherry/lemon も収まる)。
+  // slipDiff:8: グローバル SLIP_DIFF(6) のままだと最初の1個を安全に置ける tray アイテムが
+  // 2/14 (14.3%、catのみ) しかなく、子供が最初に触るコマの約86%が即座に弾かれる詰みに
+  // 近い状態だったため緩和 (42.9%、corn/dog/catの3種が安全に。 "難しい" ティアの
+  // 最終ラウンドとして他の2ふたご皿ラウンドより厳しいままだが、実質詰みは解消)。
   assert.equal(L.isTwinRound(4), true, "ラウンド5 (index4) はふたご皿対象");
-  assert.deepEqual(L.TWIN_ROUND_CONFIG[4], { tier: "hard", basketCapacityEach: 2, localOverloadMax: 4 }, "ラウンド5の config 値 (数学的下限、変更禁止)");
+  assert.deepEqual(L.TWIN_ROUND_CONFIG[4], { tier: "hard", basketCapacityEach: 2, localOverloadMax: 7, slipDiff: 8 }, "ラウンド5の config 値");
 
   // ROUNDS 配列自体は変更されていないこと (既存形状の後方互換)
   assert.equal(L.ROUNDS.length, 5, "ROUNDS は引き続き5個固定");
@@ -574,13 +585,12 @@ section("placeItemTwin / removeItemTwin 不変条件", () => {
     assert.deepEqual(state, before, "容量超過時、元 state は非破壊");
   }
 
-  // (2) 局所超過 -> localSlip、元 state 非破壊 (ラウンド3, localOverloadMax=5)
-  //     bear(5) を A に置いた後、さらに何か置くと A 単独が超過する例の代わりに、
-  //     直接 elephant(6) を空の A に置くケースで検証 (6 > 5 = localOverloadMax)
+  // (2) 局所超過 -> localSlip、元 state 非破壊 (ラウンド3, localOverloadMax=7)
+  //     直接 elephant(10) を空の A に置くケースで検証 (10 > 7 = localOverloadMax)
   {
     const state = { leftIds: [], rightBasketAIds: [], rightBasketBIds: [], trayIds: ["elephant"] };
     const before = JSON.parse(JSON.stringify(state));
-    const res = L.placeItemTwin(state, "elephant", "A", 2); // A単独 weight6 > localOverloadMax(5)
+    const res = L.placeItemTwin(state, "elephant", "A", 2); // A単独 weight10 > localOverloadMax(7)
     assert.equal(res.ok, false);
     assert.equal(res.reason, "localSlip");
     assert.equal(res.basketId, "A", "こぼれたバスケットIDが結果に含まれる (UI がそのバスケット近くにメッセージを出すため)");
@@ -589,19 +599,22 @@ section("placeItemTwin / removeItemTwin 不変条件", () => {
 
   // (2b) localOverloadMax ちょうど (境界値) は許可される (超過のみ拒否、以下はOK)
   {
-    // ラウンド5 corn(4) を空の A へ、 localOverloadMax=4 ちょうど -> 成功するはず
-    const state = { leftIds: [], rightBasketAIds: [], rightBasketBIds: [], trayIds: ["corn"] };
-    const res = L.placeItemTwin(state, "corn", "A", 4);
+    // ラウンド5 (index4, hard tier, 2026-07-23 localOverloadMax 5→7 に引き上げ済み) の
+    // bear(7) を空の A へ、 localOverloadMax=7 ちょうど (かつ全体diff=7 は slipDiff(8) 未満)
+    // -> 成功するはず
+    const state = { leftIds: [], rightBasketAIds: [], rightBasketBIds: [], trayIds: ["bear"] };
+    const res = L.placeItemTwin(state, "bear", "A", 4);
     assert.equal(res.ok, true, "バスケット単独重量が localOverloadMax とちょうど等しい場合は許可される (超過のみ拒否)");
   }
 
   // (3) 全体 slip -> slip、元 state 非破壊 (バスケット単独は localOverloadMax 以内だが
-  //     左皿が空なので合計との差が SLIP_DIFF に達する)
+  //     合計との差がそのラウンドの slipDiff に達する)
   {
-    // ラウンド3 (localOverloadMax=5): left=0, bear(5) を空の B へ置くと
-    // バスケット単独 weight=5 (localOverloadMax と同値なので local はセーフ) だが、
-    // 全体 diff = 5-0 = 5 >= SLIP_DIFF(5) で slip になる。
-    const state = { leftIds: [], rightBasketAIds: [], rightBasketBIds: [], trayIds: ["bear"] };
+    // ラウンド3 (index2, normal tier, localOverloadMax=7, slipDiff=9): A に dog(6) が
+    // 既に置かれている状態で bear(7) を空の B へ置くと、バスケット単独 weight=7
+    // (localOverloadMax(7) ちょうどなので local はセーフ) だが、全体 diff = (6+7)-0 = 13
+    // >= slipDiff(9) で slip になる。
+    const state = { leftIds: [], rightBasketAIds: ["dog"], rightBasketBIds: [], trayIds: ["bear"] };
     const before = JSON.parse(JSON.stringify(state));
     const res = L.placeItemTwin(state, "bear", "B", 2);
     assert.equal(res.ok, false);
@@ -612,12 +625,12 @@ section("placeItemTwin / removeItemTwin 不変条件", () => {
 
   // チェック順序: 容量超過が最優先 (局所超過や slip の条件も満たしていても full が返る)
   {
-    // ラウンド4 (capacityEach=2, localOverloadMax=4): A に既に2個 (容量上限) 入っている状態で
+    // ラウンド4 (capacityEach=2, localOverloadMax=5): A に既に2個 (容量上限) 入っている状態で
     // さらに置こうとすると、置くアイテム次第で localSlip や slip の条件も満たし得るが、
     // full が最優先で返ること。
     const state = {
-      leftIds: ["dog", "cherry"], // weight5
-      rightBasketAIds: ["apple", "lemon"], // weight4, 容量2個で満杯
+      leftIds: ["dog", "cherry"], // weight7
+      rightBasketAIds: ["apple", "lemon"], // weight3, 容量2個で満杯
       rightBasketBIds: [],
       trayIds: ["carrot"]
     };
@@ -682,41 +695,48 @@ section("placeItemTwin / removeItemTwin 不変条件", () => {
 
 // ── 19. ふたご皿ラウンド 実在する成功シーケンス (検証済みの解) ────
 section("ふたご皿ラウンド 実在する成功シーケンス", () => {
-  // ラウンド3 (index2): elephant(6) おだい。 dog(4)→A, lemon(2)→B で釣り合う
+  // ラウンド3 (index2): elephant(10) おだい。 dog(6)→A, frog(4)→B で釣り合う
   {
     let state = { leftIds: L.ROUNDS[2].left.slice(), rightBasketAIds: [], rightBasketBIds: [], trayIds: L.ROUNDS[2].tray.slice() };
     let res = L.placeItemTwin(state, "dog", "A", 2);
     assert.equal(res.ok, true, "ラウンド3: dog→A が成功する");
     state = res.state;
-    res = L.placeItemTwin(state, "lemon", "B", 2);
-    assert.equal(res.ok, true, "ラウンド3: lemon→B が成功する");
+    res = L.placeItemTwin(state, "frog", "B", 2);
+    assert.equal(res.ok, true, "ラウンド3: frog→B が成功する");
     state = res.state;
-    assert.equal(L.isBalanced(L.sumWeights(state.leftIds), L.sumTwinRightWeight(state)), true, "ラウンド3: dog(A)+lemon(B) で釣り合う");
+    assert.equal(L.isBalanced(L.sumWeights(state.leftIds), L.sumTwinRightWeight(state)), true, "ラウンド3: dog(A)+frog(B) で釣り合う");
     assert.ok(state.rightBasketAIds.length <= 3 && state.rightBasketBIds.length <= 3, "容量内に収まっている");
   }
 
-  // ラウンド4 (index3): dog+cherry(5) おだい。 apple(2)→A, carrot(3)→B で釣り合う
+  // ラウンド4 (index3): dog+cherry(7) おだい。 grapes(3)→A, frog(4)→B で釣り合う
   {
     let state = { leftIds: L.ROUNDS[3].left.slice(), rightBasketAIds: [], rightBasketBIds: [], trayIds: L.ROUNDS[3].tray.slice() };
-    let res = L.placeItemTwin(state, "apple", "A", 3);
-    assert.equal(res.ok, true, "ラウンド4: apple→A が成功する");
+    let res = L.placeItemTwin(state, "grapes", "A", 3);
+    assert.equal(res.ok, true, "ラウンド4: grapes→A が成功する");
     state = res.state;
-    res = L.placeItemTwin(state, "carrot", "B", 3);
-    assert.equal(res.ok, true, "ラウンド4: carrot→B が成功する");
+    res = L.placeItemTwin(state, "frog", "B", 3);
+    assert.equal(res.ok, true, "ラウンド4: frog→B が成功する");
     state = res.state;
-    assert.equal(L.isBalanced(L.sumWeights(state.leftIds), L.sumTwinRightWeight(state)), true, "ラウンド4: apple(A)+carrot(B) で釣り合う");
+    assert.equal(L.isBalanced(L.sumWeights(state.leftIds), L.sumTwinRightWeight(state)), true, "ラウンド4: grapes(A)+frog(B) で釣り合う");
   }
 
-  // ラウンド5 (index4): bear+grapes(8) おだい。 corn(4)→A, dog(4)→B で釣り合う (ほぼ一択)
+  // ラウンド5 (index4): bear+grapes(10) おだい。 cat(5) を A に置いてから corn(3)+carrot(2)
+  // を B に足す。 (2026-07-23 レビュー対応で localOverloadMax 5→7 / slipDiff 8 に調整済み。
+  // 以前は最初の1手として安全なのが cat のみ (2/14, 14.3%) で、dog(6) は
+  // localOverloadMax(5) 超過により一度も置けない「死んだアイテム」だったが、
+  // 現在は corn/dog/cat の3種 (6/14, 42.9%) が最初の1手として安全に置ける)。
   {
     let state = { leftIds: L.ROUNDS[4].left.slice(), rightBasketAIds: [], rightBasketBIds: [], trayIds: L.ROUNDS[4].tray.slice() };
-    let res = L.placeItemTwin(state, "corn", "A", 4);
-    assert.equal(res.ok, true, "ラウンド5: corn→A が成功する");
+    let res = L.placeItemTwin(state, "cat", "A", 4);
+    assert.equal(res.ok, true, "ラウンド5: cat→A が成功する");
     state = res.state;
-    res = L.placeItemTwin(state, "dog", "B", 4);
-    assert.equal(res.ok, true, "ラウンド5: dog→B が成功する");
+    res = L.placeItemTwin(state, "corn", "B", 4);
+    assert.equal(res.ok, true, "ラウンド5: corn→B が成功する");
     state = res.state;
-    assert.equal(L.isBalanced(L.sumWeights(state.leftIds), L.sumTwinRightWeight(state)), true, "ラウンド5: corn(A)+dog(B) で釣り合う");
+    res = L.placeItemTwin(state, "carrot", "B", 4);
+    assert.equal(res.ok, true, "ラウンド5: carrot→B が成功する");
+    state = res.state;
+    assert.equal(L.isBalanced(L.sumWeights(state.leftIds), L.sumTwinRightWeight(state)), true, "ラウンド5: cat(A)+corn+carrot(B) で釣り合う");
   }
 });
 
@@ -743,12 +763,12 @@ section("createSession / advanceRound のふたご皿対応", () => {
   assert.deepEqual(session.rightBasketAIds, [], "ラウンド3進行後 rightBasketAIds は空配列");
   assert.deepEqual(session.rightBasketBIds, [], "ラウンド3進行後 rightBasketBIds は空配列");
 
-  // ラウンド3をふたご皿の実解で釣り合わせて次に進める
+  // ラウンド3をふたご皿の実解で釣り合わせて次に進める (dog(6)+frog(4)=elephant(10))
   let res = L.placeItemTwin(session, "dog", "A", session.round);
   assert.equal(res.ok, true);
   session.rightBasketAIds = res.state.rightBasketAIds;
   session.trayIds = res.state.trayIds;
-  res = L.placeItemTwin(session, "lemon", "B", session.round);
+  res = L.placeItemTwin(session, "frog", "B", session.round);
   assert.equal(res.ok, true);
   session.rightBasketBIds = res.state.rightBasketBIds;
   session.trayIds = res.state.trayIds;

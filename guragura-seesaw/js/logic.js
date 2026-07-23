@@ -12,19 +12,23 @@
 // ═══ 乗せ物カタログ (12点) ═══════════════════════════════════════════
 // img は game.js 側の ITEM_IMAGES マップで id → 画像パスに解決する。
 // ここでは数値 (weight) とラベル・見た目の箱サイズ区分 (CSS表示専用) のみ持つ。
+// 重さ設計方針 (2026-07-23 再設計): 実物の質量比の再現は目指さない。
+// その代わり「果物/野菜(1〜3) < 動物(4〜10)」「動物内 frog<cat<dog<bear<elephant」
+// という相対順序だけを一貫させ、子供が遊びながら重さの相対順序を体で覚えられる
+// ようにする (詳細は tests/guragura_seesaw_regression.cjs §19 のコメント参照)。
 var CATALOG = [
   { id: 'cherry',    label: 'さくらんぼ',     weight: 1, sizeClass: 'l' },
   { id: 'blueberry', label: 'ブルーベリー',   weight: 1, sizeClass: 's' },
   { id: 'apple',     label: 'りんご',         weight: 2, sizeClass: 'm' },
-  { id: 'lemon',     label: 'れもん',         weight: 2, sizeClass: 's' },
-  { id: 'frog',      label: 'かえる',         weight: 2, sizeClass: 'm' },
+  { id: 'lemon',     label: 'れもん',         weight: 1, sizeClass: 's' },
+  { id: 'frog',      label: 'かえる',         weight: 4, sizeClass: 'm' },
   { id: 'grapes',    label: 'ぶどう',         weight: 3, sizeClass: 'l' },
-  { id: 'cat',       label: 'ねこ',           weight: 3, sizeClass: 'm' },
-  { id: 'carrot',    label: 'にんじん',       weight: 3, sizeClass: 'm' },
-  { id: 'dog',       label: 'いぬ',           weight: 4, sizeClass: 'm' },
-  { id: 'corn',      label: 'とうもろこし',   weight: 4, sizeClass: 'l' },
-  { id: 'bear',      label: 'くま',           weight: 5, sizeClass: 'l' },
-  { id: 'elephant',  label: 'ぞう',           weight: 6, sizeClass: 'm' }
+  { id: 'cat',       label: 'ねこ',           weight: 5, sizeClass: 'm' },
+  { id: 'carrot',    label: 'にんじん',       weight: 2, sizeClass: 'm' },
+  { id: 'dog',       label: 'いぬ',           weight: 6, sizeClass: 'm' },
+  { id: 'corn',      label: 'とうもろこし',   weight: 3, sizeClass: 'l' },
+  { id: 'bear',      label: 'くま',           weight: 7, sizeClass: 'l' },
+  { id: 'elephant',  label: 'ぞう',           weight: 10, sizeClass: 'm' }
 ];
 
 var CATALOG_BY_ID = {};
@@ -35,9 +39,20 @@ for (var _ci = 0; _ci < CATALOG.length; _ci++) {
 // ═══ ラウンド定義 (5ラウンド固定) ════════════════════════════════════
 // left: おだい (id 配列)。tray: そのラウンドでトレイに出すアイテム id 配列。
 // 重さ合計は CATALOG から導出するのでハードコードしない。
+// ラウンド2 (index1) の left は bear ではなく cat (2026-07-23 変更)。 単一皿は
+// 「置くたびに逐次 |右-左|>=SLIP_DIFF で即拒否」される仕様のため、left=bear(重さ7)
+// のままだと安全な最初の一手が dog(重さ6) しかない構造的な詰みに近い状態になる
+// ことを検証済み。 cat(重さ5) なら tray 中の複数アイテムから安全に始められる。
+// ラウンド1 (index0) の tray から frog/cat を除外 (2026-07-23 レビュー対応)。 新カタログ
+// では動物 (frog=4,cat=5) が全て果物/野菜 (最大3) より重いため、おだい grapes(3) に
+// 対して frog/cat を単体で置くと |diff|<SLIP_DIFF(6) で拒否されずに黙って乗ってしまい、
+// placeItem は加算しかできない (取り除き機能を使わない限り) 前進のみでは二度と釣り合わない
+// 詰み状態を作る。 これはラウンド1 のチュートリアル文言「おもすぎたら 皿が はねかえすよ」
+// (自動で弾かれる、という約束) に反するため、tray 内の最大重量が target と同値の corn(3)
+// になるよう carrot/corn に差し替えた (単体オーバーシュートが構造的に発生しなくなる)。
 var ROUNDS = [
-  { left: ['grapes'],        tray: ['cherry', 'blueberry', 'apple', 'lemon', 'frog', 'cat'] },
-  { left: ['bear'],          tray: ['apple', 'grapes', 'cherry', 'lemon', 'blueberry', 'frog'] },
+  { left: ['grapes'],        tray: ['cherry', 'blueberry', 'apple', 'lemon', 'carrot', 'corn'] },
+  { left: ['cat'],           tray: ['apple', 'grapes', 'cherry', 'lemon', 'blueberry', 'frog'] },
   { left: ['elephant'],      tray: ['dog', 'apple', 'grapes', 'cat', 'lemon', 'frog', 'cherry'] },
   { left: ['dog', 'cherry'], tray: ['grapes', 'apple', 'carrot', 'lemon', 'blueberry', 'frog'] },
   { left: ['bear', 'grapes'], tray: ['corn', 'dog', 'apple', 'cat', 'carrot', 'lemon', 'cherry'] }
@@ -47,7 +62,12 @@ var ROUNDS = [
 var MAX_ANGLE = 14;         // deg クランプ
 var ANGLE_PER_DIFF = 3.5;   // deg / 重さ差1
 var BALANCE_EPS_DEG = 1.0;  // これ以下で「つりあい」成立
-var SLIP_DIFF = 5;          // 配置後の |右-左| がこれ以上なら滑り落ち(配置拒否)
+// SLIP_DIFF は 5→6 に変更 (2026-07-23)。 新カタログで動物グループを果物グループより
+// 確実に重くした結果、重い目標 (elephant=10, bear+grapes=10) に対して「軽いアイテムを
+// 1個だけ置く」ケースで、SLIP_DIFF=5 のままだと安全な最初の一手が dog(重さ6) のみに
+// 限定されることを検証済み。 6 に引き上げることで複数の自然な開始アイテムから
+// 到達可能になる一方、明白な誤り (例: 空の左皿に elephant 単体) は引き続き弾かれる。
+var SLIP_DIFF = 6;          // 配置後の |右-左| がこれ以上なら滑り落ち(配置拒否)
 var PAN_CAPACITY = 4;       // 片皿の最大アイテム数
 // 「あとちょっと！」near-balance 判定の閾値。 重さ差(=CATALOGのweight単位)1個ぶんの
 // 傾き(ANGLE_PER_DIFF*1=3.5deg)は「近い」と判定し、2個ぶんの差(3.5*2=7deg)は
@@ -60,11 +80,27 @@ var NEAR_BALANCE_EPS_DEG = 5.0;
 // は従来通り単一右皿 (rightIds/placeItem/removeItem) のまま。
 // - basketCapacityEach: 1皿あたりの最大アイテム数
 // - localOverloadMax:   1皿単独の重さ上限 (これを超えたらそのバスケットだけ拒否)
+// - slipDiff (省略可):  このラウンドの placeItemTwin (3)全体slipチェックに使う
+//                        しきい値。 省略時はグローバル SLIP_DIFF にフォールバックする。
 // 数値は実データで3ラウンドとも解けることを検証済みのため変更しないこと。
+// localOverloadMax は 2026-07-23 に新カタログ (target 6→10, 5→7, 8→10) に比例して
+// normal 5→7 / hard 4→5 へ引き上げ済み (basketCapacityEach は据え置き)。
+//
+// 2026-07-23 レビュー対応 (第2弾): グローバル SLIP_DIFF(6) だけでは重い target (10) を
+// 持つラウンド3・5 で「最初の1個」を安全に置ける tray アイテムが極端に絞られ
+// (ラウンド3: 4/14、ラウンド5: 2/14 の first-move combination しか成功しない) 、かつ
+// ラウンド5 は dog(6) が localOverloadMax(5) を単体で超過するため一度も置けない
+// 「死んだアイテム」になっていた。 対策として (a) placeItemTwin の (3)全体slip判定に
+// ラウンド単位の slipDiff オーバーライドを追加、 (b) ラウンド3 に slipDiff:9 を設定して
+// "普通" ティアがラウンド4 "難しい" ティアより甘くなるよう是正 (28.6%→71.4%、
+// ラウンド4の66.7%を上回り tier の強弱が逆転しない)、 (c) ラウンド5 は
+// localOverloadMax を 5→7 に引き上げて dog を配置可能にしつつ slipDiff:8 を設定
+// (14.3%→42.9%、"難しい" ティアらしく3ラウンド中もっとも厳しいままだが即詰みは解消)。
+// ラウンド4 (index3) は既に十分寛容 (66.7%) だったため変更なし。
 var TWIN_ROUND_CONFIG = {
-  2: { tier: 'normal', basketCapacityEach: 3, localOverloadMax: 5 }, // ラウンド3 (elephant)
-  3: { tier: 'hard', basketCapacityEach: 2, localOverloadMax: 4 },   // ラウンド4 (dog+cherry)
-  4: { tier: 'hard', basketCapacityEach: 2, localOverloadMax: 4 }    // ラウンド5 (bear+grapes)
+  2: { tier: 'normal', basketCapacityEach: 3, localOverloadMax: 7, slipDiff: 9 }, // ラウンド3 (elephant)
+  3: { tier: 'hard', basketCapacityEach: 2, localOverloadMax: 5 },   // ラウンド4 (dog+cherry)
+  4: { tier: 'hard', basketCapacityEach: 2, localOverloadMax: 7, slipDiff: 8 }    // ラウンド5 (bear+grapes)
 };
 
 // ═══ 減衰振動 (バネ) 定数 ════════════════════════════════════════════
@@ -232,7 +268,7 @@ function sumTwinRightWeight(state) {
  *   (1) 容量超過            → { ok:false, reason:'full',      basketId, state:<元のまま> }
  *   (2) バスケット単独の重さが localOverloadMax 超過
  *                           → { ok:false, reason:'localSlip', basketId, state:<元のまま> }
- *   (3) 両皿合計と左皿の差が SLIP_DIFF 以上
+ *   (3) 両皿合計と左皿の差が (ラウンド別 slipDiff、省略時はグローバル SLIP_DIFF) 以上
  *                           → { ok:false, reason:'slip',      basketId, state:<元のまま> }
  * トレイに存在しない id / basketId が 'A'/'B' 以外
  *                           → { ok:false, reason:'notfound',  state:<元のまま> }
@@ -252,6 +288,7 @@ function placeItemTwin(state, itemId, basketId, roundIndex) {
   var config = getTwinRoundConfig(resolvedRoundIndex);
   var capacityEach = (config && typeof config.basketCapacityEach === 'number') ? config.basketCapacityEach : PAN_CAPACITY;
   var localMax = (config && typeof config.localOverloadMax === 'number') ? config.localOverloadMax : Infinity;
+  var slipDiffForRound = (config && typeof config.slipDiff === 'number') ? config.slipDiff : SLIP_DIFF;
 
   var basketAIds = (state && state.rightBasketAIds) || [];
   var basketBIds = (state && state.rightBasketBIds) || [];
@@ -271,11 +308,11 @@ function placeItemTwin(state, itemId, basketId, roundIndex) {
     return { ok: false, reason: 'localSlip', basketId: basketId, state: state };
   }
 
-  // (3) 両皿合計と左皿の差が SLIP_DIFF 以上
+  // (3) 両皿合計と左皿の差が (ラウンド別 slipDiff、省略時はグローバル SLIP_DIFF) 以上
   var leftWeight = sumWeights(state && state.leftIds);
   var totalRightWeight = targetWeight + sumWeights(otherIds);
   var diff = totalRightWeight - leftWeight;
-  if (Math.abs(diff) >= SLIP_DIFF) {
+  if (Math.abs(diff) >= slipDiffForRound) {
     return { ok: false, reason: 'slip', basketId: basketId, state: state };
   }
 

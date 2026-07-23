@@ -1,5 +1,12 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2348: guragura-seesaw の重さ再設計 (logic.js CATALOG/ROUNDS/TWIN_ROUND_CONFIG/
+// SLIP_DIFF を「果物/野菜(1-3) < 動物(4-10)、動物内 frog<cat<dog<bear<elephant」
+// の一貫順序へ全面更新) に追従し、tests/e2e/guragura/ の twin-basket-round3.spec.ts /
+// remove-placed-item.spec.ts がハードコードしていた解 (dog+lemon 等) を新しい
+// 重さで実在する解 (dog+frog, dog→cat/frog→lemon 等) へ更新。ゲーム個別ファイルは
+// network-first配信のためCRITICAL_ASSETSには追加しない。play.html
+// PAGE_CACHE_VERSION/window.PONO_SW_VERSION と同期 (2348)。
 // v2342: ひょっこりハイタッチを30秒へ短縮し、実出現7体ごとのGPT Image 2製
 // 「ひかりモモンガ」(30点)、通常10点／ボーナス30点＋連続成功コンボ加点、
 // リアルタイム加点・コンボHUD、端末内の最大コンボ記録を追加。自然退場はコンボを

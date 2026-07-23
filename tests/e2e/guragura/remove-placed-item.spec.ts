@@ -89,7 +89,11 @@ test.describe('guragura-seesaw: 皿に置いたアイテムをトレイへ取り
     });
     await expect(page.locator('#plank')).toHaveClass(/is-twin-round/);
 
-    // ── A皿: dog を誤配置 → 取り除く → apple を置き直す ──
+    // ── A皿: dog を誤配置 → 取り除く → cat を置き直す ──
+    // 重さ再設計 (2026-07-23、レビュー対応第2弾で slipDiff:9 に調整済み) 後、
+    // このラウンドの target は elephant=10。 dog(6)/cat(5) はどちらも
+    // 「A/B とも空の状態」で単体配置しても安全 (|6-10|=4<9, |5-10|=5<9) なため
+    // dog→取り除く→cat と置き直せる。
     const dog = page.locator('#tray .item-box[data-item-id="dog"]');
     const dogBox = await dog.boundingBox();
     const panABox = await page.locator('#panRightA').boundingBox();
@@ -110,45 +114,47 @@ test.describe('guragura-seesaw: 皿に置いたアイテムをトレイへ取り
     await expect(page.locator('#panRightAItems .item-box[data-item-id="dog"]')).toHaveCount(0);
     await expect(page.locator('#tray .item-box[data-item-id="dog"]')).toBeVisible();
 
-    const apple = page.locator('#tray .item-box[data-item-id="apple"]');
-    const appleBox = await apple.boundingBox();
+    const cat = page.locator('#tray .item-box[data-item-id="cat"]');
+    const catBox = await cat.boundingBox();
     const panABox2 = await page.locator('#panRightA').boundingBox();
-    expect(appleBox, 'tray apple bounding box').toBeTruthy();
+    expect(catBox, 'tray cat bounding box').toBeTruthy();
     expect(panABox2, 'panRightA bounding box (2nd)').toBeTruthy();
-    if (!appleBox || !panABox2) return;
-    await dragMouse(page, appleBox, panABox2);
-    await expect(page.locator('#panRightAItems .item-box[data-item-id="apple"]')).toBeVisible();
+    if (!catBox || !panABox2) return;
+    await dragMouse(page, catBox, panABox2);
+    await expect(page.locator('#panRightAItems .item-box[data-item-id="cat"]')).toBeVisible();
 
-    // ── B皿: lemon を誤配置 → 取り除く → cat を置き直す ──
+    // ── B皿: frog を誤配置 → 取り除く → lemon を置き直す ──
+    // A皿に cat(5) が残っている状態での配置なので、frog(4)/lemon(1) 単体でも
+    // 合計が 0 に戻らず安全 (frog: |4+5-10|=1<9, lemon: |1+5-10|=4<9、slipDiff=9)。
     await page.waitForTimeout(2000);
-    const lemon = page.locator('#tray .item-box[data-item-id="lemon"]');
-    const lemonBox = await lemon.boundingBox();
+    const frog = page.locator('#tray .item-box[data-item-id="frog"]');
+    const frogBox = await frog.boundingBox();
     const panBBox = await page.locator('#panRightB').boundingBox();
-    expect(lemonBox, 'tray lemon bounding box').toBeTruthy();
+    expect(frogBox, 'tray frog bounding box').toBeTruthy();
     expect(panBBox, 'panRightB bounding box').toBeTruthy();
-    if (!lemonBox || !panBBox) return;
-    await dragMouse(page, lemonBox, panBBox);
-    await expect(page.locator('#panRightBItems .item-box[data-item-id="lemon"]')).toBeVisible();
+    if (!frogBox || !panBBox) return;
+    await dragMouse(page, frogBox, panBBox);
+    await expect(page.locator('#panRightBItems .item-box[data-item-id="frog"]')).toBeVisible();
     await page.waitForTimeout(2000);
 
-    const placedB = page.locator('#panRightBItems .item-box[data-item-id="lemon"]');
+    const placedB = page.locator('#panRightBItems .item-box[data-item-id="frog"]');
     const placedBBox = await placedB.boundingBox();
     const trayBox2 = await page.locator('#tray').boundingBox();
-    expect(placedBBox, 'placed lemon(B) bounding box').toBeTruthy();
+    expect(placedBBox, 'placed frog(B) bounding box').toBeTruthy();
     expect(trayBox2, 'tray bounding box (2nd)').toBeTruthy();
     if (!placedBBox || !trayBox2) return;
     await dragMouse(page, placedBBox, trayBox2);
-    await expect(page.locator('#panRightBItems .item-box[data-item-id="lemon"]')).toHaveCount(0);
-    await expect(page.locator('#tray .item-box[data-item-id="lemon"]')).toBeVisible();
+    await expect(page.locator('#panRightBItems .item-box[data-item-id="frog"]')).toHaveCount(0);
+    await expect(page.locator('#tray .item-box[data-item-id="frog"]')).toBeVisible();
 
-    const cat = page.locator('#tray .item-box[data-item-id="cat"]');
-    const catBox = await cat.boundingBox();
+    const lemon = page.locator('#tray .item-box[data-item-id="lemon"]');
+    const lemonBox = await lemon.boundingBox();
     const panBBox2 = await page.locator('#panRightB').boundingBox();
-    expect(catBox, 'tray cat bounding box').toBeTruthy();
+    expect(lemonBox, 'tray lemon bounding box').toBeTruthy();
     expect(panBBox2, 'panRightB bounding box (2nd)').toBeTruthy();
-    if (!catBox || !panBBox2) return;
-    await dragMouse(page, catBox, panBBox2);
-    await expect(page.locator('#panRightBItems .item-box[data-item-id="cat"]')).toBeVisible();
+    if (!lemonBox || !panBBox2) return;
+    await dragMouse(page, lemonBox, panBBox2);
+    await expect(page.locator('#panRightBItems .item-box[data-item-id="lemon"]')).toBeVisible();
   });
 
   test('皿の中へ戻して離した場合 (実質タップ) はno-opで、置いたままになる', async ({ page }) => {

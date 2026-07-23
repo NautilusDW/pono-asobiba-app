@@ -84,10 +84,11 @@
 
 <!-- 初回の開始直後から立て札と湿った畑を欠けずに見せる。crop-sign は
      seedId 判定後に src が付くため、開始画面のうちに明示的に先読みする。 -->
-<link rel="preload" as="image" href="../assets/images/hatake-nikki/crop_sign_tomato.png" type="image/png">
-<link rel="preload" as="image" href="../assets/images/hatake-nikki/crop_sign_ninjin.png" type="image/png">
+<link rel="preload" as="image" href="../assets/images/hatake-nikki/crop_sign_tomato_iso_v2.png" type="image/png">
+<link rel="preload" as="image" href="../assets/images/hatake-nikki/crop_sign_ninjin_iso_v2.png" type="image/png">
 <link rel="preload" as="image" href="../assets/images/hatake-nikki/hatake_crop_wet.png" type="image/png">
-<link rel="stylesheet" href="styles.css?v=20260723-4">
+<link rel="preload" as="image" href="../assets/images/hatake-nikki/watered_drop_mark_v2.png" type="image/png">
+<link rel="stylesheet" href="styles.css?v=20260723-5">
 </head>
 <body>
 
@@ -122,7 +123,7 @@
         <div class="plot-hit-area" aria-hidden="true"></div>
         <img class="crop-sign" alt="" aria-hidden="true" draggable="false">
         <div class="plant" data-stage="-1"></div>
-        <img class="watered-drop" src="../assets/images/hatake-nikki/watered_drop.png" alt="" aria-hidden="true" draggable="false">
+        <img class="watered-drop" src="../assets/images/hatake-nikki/watered_drop_mark_v2.png" alt="" aria-hidden="true" draggable="false">
         <div class="bug-sprite"></div>
         <div class="water-gauge"><div class="water-gauge-fill"></div></div>
       </div>
@@ -130,7 +131,7 @@
         <div class="plot-hit-area" aria-hidden="true"></div>
         <img class="crop-sign" alt="" aria-hidden="true" draggable="false">
         <div class="plant" data-stage="-1"></div>
-        <img class="watered-drop" src="../assets/images/hatake-nikki/watered_drop.png" alt="" aria-hidden="true" draggable="false">
+        <img class="watered-drop" src="../assets/images/hatake-nikki/watered_drop_mark_v2.png" alt="" aria-hidden="true" draggable="false">
         <div class="bug-sprite"></div>
         <div class="water-gauge"><div class="water-gauge-fill"></div></div>
       </div>
@@ -138,7 +139,7 @@
         <div class="plot-hit-area" aria-hidden="true"></div>
         <img class="crop-sign" alt="" aria-hidden="true" draggable="false">
         <div class="plant" data-stage="-1"></div>
-        <img class="watered-drop" src="../assets/images/hatake-nikki/watered_drop.png" alt="" aria-hidden="true" draggable="false">
+        <img class="watered-drop" src="../assets/images/hatake-nikki/watered_drop_mark_v2.png" alt="" aria-hidden="true" draggable="false">
         <div class="bug-sprite"></div>
         <div class="water-gauge"><div class="water-gauge-fill"></div></div>
       </div>
@@ -193,6 +194,6 @@
 </div>
 
 <script src="js/logic.js?v=20260723-1"></script>
-<script src="js/game.js?v=20260723-2"></script>
+<script src="js/game.js?v=20260723-3"></script>
 </body>
 </html>
