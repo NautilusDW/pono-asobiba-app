@@ -75,6 +75,8 @@ test('共通の葉の開口と新背景を使い、花壇・たね素材を読�
     const base = hole.querySelector('.hh-hideout-base');
     const windowRect = windowEl.getBoundingClientRect();
     const foregroundRect = foreground.getBoundingClientRect();
+    const baseRect = base.getBoundingClientRect();
+    const holeRect = hole.getBoundingClientRect();
     return {
       hole: hole.getAttribute('data-hole'),
       basePath: new URL(base.getAttribute('src'), location.href).pathname,
@@ -84,6 +86,12 @@ test('共通の葉の開口と新背景を使い、花壇・たね素材を読�
       pointerEvents: getComputedStyle(foreground).pointerEvents,
       foregroundClip: getComputedStyle(foreground).clipPath,
       windowClip: getComputedStyle(windowEl).clipPath,
+      depthScale: Number.parseFloat(getComputedStyle(hole).getPropertyValue('--depth-scale')),
+      hitTransform: getComputedStyle(hole).transform,
+      baseWidth: baseRect.width,
+      windowWidth: windowRect.width,
+      hitWidth: holeRect.width,
+      hitHeight: holeRect.height,
       centerX: windowRect.left + windowRect.width / 2,
       centerY: windowRect.top + windowRect.height / 2,
       overlapsWindowBottom: foregroundRect.bottom > windowRect.bottom - windowRect.height * 0.2,
@@ -94,6 +102,9 @@ test('共通の葉の開口と新背景を使い、花壇・たね素材を読�
     expect(item.basePath).toBe(`${ASSET_BASE}hideout_leaf_bush.png`);
     expect(item.foregroundPath).toBe(`${ASSET_BASE}hideout_leaf_bush.png`);
     expect(item.foregroundZ).toBeGreaterThan(item.windowZ);
+    expect(item.hitTransform).toBe('none');
+    expect(item.hitWidth).toBeGreaterThanOrEqual(44);
+    expect(item.hitHeight).toBeGreaterThanOrEqual(44);
     expect(item.pointerEvents).toBe('none');
     expect(item.foregroundClip).not.toBe('none');
     expect(item.windowClip).not.toBe('none');
@@ -101,10 +112,24 @@ test('共通の葉の開口と新背景を使い、花壇・たね素材を読�
   }
   for (const row of [layerGeometry.slice(0, 3), layerGeometry.slice(3, 6)]) {
     expect(Math.max(...row.map((item) => item.centerY)) - Math.min(...row.map((item) => item.centerY))).toBeLessThan(1);
+    expect(Math.max(...row.map((item) => item.baseWidth)) - Math.min(...row.map((item) => item.baseWidth))).toBeLessThan(1);
+    expect(Math.max(...row.map((item) => item.windowWidth)) - Math.min(...row.map((item) => item.windowWidth))).toBeLessThan(1);
   }
   for (let column = 0; column < 3; column += 1) {
     expect(Math.abs(layerGeometry[column].centerX - layerGeometry[column + 3].centerX)).toBeLessThan(1);
+    expect(Math.abs(layerGeometry[column].hitWidth - layerGeometry[column + 3].hitWidth)).toBeLessThan(1);
+    expect(Math.abs(layerGeometry[column].hitHeight - layerGeometry[column + 3].hitHeight)).toBeLessThan(1);
   }
+  const topRow = layerGeometry.slice(0, 3);
+  const bottomRow = layerGeometry.slice(3, 6);
+  expect(topRow.every((item) => Math.abs(item.depthScale - 0.9) < 0.001)).toBe(true);
+  expect(bottomRow.every((item) => Math.abs(item.depthScale - 1) < 0.001)).toBe(true);
+  const baseDepthRatio = bottomRow[0].baseWidth / topRow[0].baseWidth;
+  const characterDepthRatio = bottomRow[0].windowWidth / topRow[0].windowWidth;
+  expect(baseDepthRatio).toBeGreaterThan(1.09);
+  expect(baseDepthRatio).toBeLessThan(1.13);
+  expect(characterDepthRatio).toBeGreaterThan(1.09);
+  expect(characterDepthRatio).toBeLessThan(1.13);
 
   const assetResults = await page.evaluate(async ({ base, names }) => Promise.all(names.map(async (name) => {
     const response = await fetch(base + name, { cache: 'no-store' });

@@ -494,6 +494,10 @@ function mulberry32(seed) {
   assert.equal((indexHtml.match(/class=["'][^"']*hh-hideout-foreground/g) || []).length, 1, "templateに共通の手前縁を1つ定義する");
   assert.match(stylesCss, /\.hh-hideout-foreground\s*\{[^}]*z-index:\s*4[^}]*clip-path:\s*inset\(58%\s+0\s+0\s+0\)/s, "手前縁をキャラより上へ重ね、下58%だけ表示する");
   assert.match(stylesCss, /#board\s*\{[^}]*row-gap:\s*30%[^}]*column-gap:\s*3%/s, "中央レーンを空けた3x2配置を使う");
+  assert.match(stylesCss, /\.hh-hole:nth-child\(-n \+ 3\)\s*\{[^}]*--depth-scale:\s*0\.88/s, "上段を小さくして奥行きを付ける");
+  assert.match(stylesCss, /@container\s*\(max-height:\s*430px\)[\s\S]*?--depth-scale:\s*0\.9/s, "短画面では上段の可読サイズを少し戻す");
+  assert.match(stylesCss, /\.hh-window\s*\{[^}]*scale\(var\(--depth-scale\)\)/s, "キャラも茂みと同じ前後比率で拡縮する");
+  assert.match(stylesCss, /\.hh-hole\.is-pressed\s+\.hh-hideout\s*\{[^}]*scale\(var\(--depth-scale\)\)\s+scale\(0\.96\)/s, "押した瞬間も前後パースを保つ");
 }
 
 // ── 11b. ボーナス出現・リアルタイムコンボ・最大記録UI ──────────────

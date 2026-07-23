@@ -73,7 +73,47 @@ test('中央コンボレーンが4画面サイズで上下のキャラ窓と重�
       const stage = document.getElementById('stage').getBoundingClientRect();
       const combo = comboHud.getBoundingClientRect();
       const core = coreElement.getBoundingClientRect();
+      const holes = Array.from(document.querySelectorAll('.hh-hole'));
       const windows = Array.from(document.querySelectorAll('.hh-window')).map((element) => element.getBoundingClientRect());
+      const depthScales = holes.map((element) => Number.parseFloat(
+        getComputedStyle(element).getPropertyValue('--depth-scale'),
+      ));
+      document.querySelectorAll('#start-screen, #countdown-screen, #result-overlay, #landscape-notice').forEach((element) => {
+        element.style.display = 'none';
+      });
+      const hitTargets = holes.map((hole) => {
+        const rect = hole.getBoundingClientRect();
+        const points = [
+          [rect.left + rect.width * 0.5, rect.top + rect.height * 0.5],
+          [rect.left + rect.width * 0.2, rect.top + rect.height * 0.5],
+          [rect.left + rect.width * 0.8, rect.top + rect.height * 0.5],
+          [rect.left + rect.width * 0.5, rect.top + rect.height * 0.2],
+          [rect.left + rect.width * 0.5, rect.top + rect.height * 0.8],
+        ];
+        return {
+          width: rect.width,
+          height: rect.height,
+          transform: getComputedStyle(hole).transform,
+          allPointsHitHole: points.every(([x, y]) => document.elementFromPoint(x, y)?.closest('.hh-hole') === hole),
+        };
+      });
+      const scaleX = (element) => {
+        const matrix = new DOMMatrixReadOnly(getComputedStyle(element).transform);
+        return Math.hypot(matrix.a, matrix.b);
+      };
+      document.querySelectorAll('.hh-hideout').forEach((element) => {
+        element.style.transition = 'none';
+      });
+      holes[0].classList.add('is-pressed');
+      holes[3].classList.add('is-pressed');
+      const pressedScales = {
+        topBase: scaleX(holes[0].querySelector('.hh-hideout-base')),
+        topForeground: scaleX(holes[0].querySelector('.hh-hideout-foreground')),
+        bottomBase: scaleX(holes[3].querySelector('.hh-hideout-base')),
+        bottomForeground: scaleX(holes[3].querySelector('.hh-hideout-foreground')),
+      };
+      holes[0].classList.remove('is-pressed');
+      holes[3].classList.remove('is-pressed');
       const topBottom = Math.max(...windows.slice(0, 3).map((rect) => rect.bottom));
       const bottomTop = Math.min(...windows.slice(3, 6).map((rect) => rect.top));
       return {
@@ -87,6 +127,12 @@ test('中央コンボレーンが4画面サイズで上下のキャラ窓と重�
         coreBottom: core.bottom,
         topBottom,
         bottomTop,
+        topWindowWidth: windows.slice(0, 3).reduce((sum, rect) => sum + rect.width, 0) / 3,
+        bottomWindowWidth: windows.slice(3, 6).reduce((sum, rect) => sum + rect.width, 0) / 3,
+        topDepthScale: depthScales[0],
+        bottomDepthScale: depthScales[3],
+        hitTargets,
+        pressedScales,
         impactScale,
         pointerEvents: getComputedStyle(comboHud).pointerEvents,
       };
@@ -99,6 +145,17 @@ test('中央コンボレーンが4画面サイズで上下のキャラ窓と重�
     expect(geometry.bottomTop - geometry.coreBottom).toBeGreaterThanOrEqual(2);
     expect(geometry.impactScale).toBeGreaterThan(1);
     expect(geometry.impactScale).toBeLessThanOrEqual(1.14);
+    expect(geometry.bottomWindowWidth / geometry.topWindowWidth).toBeGreaterThan(1.09);
+    expect(geometry.bottomWindowWidth / geometry.topWindowWidth).toBeLessThan(1.15);
+    expect(geometry.topDepthScale).toBeCloseTo(geometry.stageHeight <= 430 ? 0.9 : 0.88, 3);
+    expect(geometry.bottomDepthScale).toBeCloseTo(1, 3);
+    expect(geometry.hitTargets.every((target) => target.transform === 'none')).toBe(true);
+    expect(geometry.hitTargets.every((target) => target.width >= 44 && target.height >= 44)).toBe(true);
+    expect(geometry.hitTargets.every((target) => target.allPointsHitHole)).toBe(true);
+    expect(geometry.pressedScales.topBase).toBeCloseTo(geometry.topDepthScale * 0.96, 3);
+    expect(geometry.pressedScales.topForeground).toBeCloseTo(geometry.topDepthScale * 0.96, 3);
+    expect(geometry.pressedScales.bottomBase).toBeCloseTo(geometry.bottomDepthScale * 0.96, 3);
+    expect(geometry.pressedScales.bottomForeground).toBeCloseTo(geometry.bottomDepthScale * 0.96, 3);
     expect(geometry.pointerEvents).toBe('none');
   }
 });

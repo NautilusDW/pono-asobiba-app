@@ -388,6 +388,21 @@ a:focus-visible {
   cursor: pointer;
   touch-action: manipulation;
   transition: opacity 0.2s ease;
+  --depth-scale: 1;
+  --depth-shift-y: 0cqh;
+}
+
+/* 奥は小さく、手前は大きく。同じ操作面のまま絵だけに前後パースを付ける。 */
+.hh-hole:nth-child(-n + 3) {
+  --depth-scale: 0.88;
+  --depth-shift-y: 1.25cqh;
+}
+
+@container (max-height: 430px) {
+  .hh-hole:nth-child(-n + 3) {
+    --depth-scale: 0.9;
+    --depth-shift-y: 1.1cqh;
+  }
 }
 
 .hh-hole.is-locked {
@@ -404,20 +419,20 @@ a:focus-visible {
 
 .hh-hideout {
   position: absolute;
-  top: 50%;
+  top: calc(50% + var(--depth-shift-y));
   left: 50%;
   z-index: 2;
   display: block;
   width: min(92%, 320px);
   height: auto;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) scale(var(--depth-scale));
   filter: saturate(0.88) brightness(1.02);
   object-fit: contain;
   transition: transform 0.12s ease;
 }
 
 .hh-hole.is-pressed .hh-hideout {
-  transform: translate(-50%, -50%) scale(0.96);
+  transform: translate(-50%, -50%) scale(var(--depth-scale)) scale(0.96);
 }
 
 .hh-hideout-foreground {
@@ -428,12 +443,12 @@ a:focus-visible {
 /* キャラは共通の正方形キャンバスのまま重ね、下辺だけを窓で隠す。 */
 .hh-window {
   position: absolute;
-  top: 50%;
+  top: calc(50% + var(--depth-shift-y));
   left: 50%;
   z-index: 3;
   width: min(58%, 220px);
   overflow: hidden;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%) scale(var(--depth-scale));
   aspect-ratio: 1 / 1;
   border-radius: 48% 48% 38% 38% / 52% 52% 44% 44%;
   clip-path: inset(0 0 18% 0 round 48% 48% 34% 34%);
@@ -1065,7 +1080,6 @@ a:focus-visible {
   }
 
   .hh-hideout {
-    top: 50%;
     width: min(94%, 190px);
   }
 
