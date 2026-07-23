@@ -159,7 +159,7 @@ function mulberry32(seed) {
   }
   assert.ok(state.bestCombo >= 15, "bestCombo が更新され続けている");
 
-  // normal → normal → bonus: 10 + 11 + 32 = 53、リレーは3回分だけ。
+  // normal → normal → bonus: 10 + 11 + 32 = 53。
   const mixed = L.createInitialState();
   const m1 = L.registerTap(mixed, 0, "awake");
   const m2 = L.registerTap(mixed, 1, "awake");
@@ -170,7 +170,6 @@ function mulberry32(seed) {
   assert.equal(mixed.bestCombo, 3, "最大コンボも3");
   assert.equal(mixed.hits, 3, "bonusを含む成功数は3");
   assert.equal(mixed.bonusHits, 1, "bonus成功数だけを別記録");
-  assert.equal(mixed.relayHits, 3, "bonusもリレーは1回分だけ進める");
   assert.equal(m3.baseScore, 30, "bonusのbaseScoreは30");
   assert.equal(m3.comboBonus, 2, "3コンボ目のcomboBonusは2");
   assert.equal(m3.isBonus, true, "bonus hitのメタデータ");
@@ -211,113 +210,26 @@ function mulberry32(seed) {
   const missed = L.createInitialState();
   L.registerTap(missed, 0, "awake");
   L.registerTap(missed, 1, "bonus");
-  const missedSnapshot = { score: missed.score, combo: missed.combo, bestCombo: missed.bestCombo, relayHits: missed.relayHits };
+  const missedSnapshot = { score: missed.score, combo: missed.combo, bestCombo: missed.bestCombo };
   assert.equal(L.missedAwake(missed), missed, "missedAwakeは同じstateを返す");
   assert.deepEqual(
-    { score: missed.score, combo: missed.combo, bestCombo: missed.bestCombo, relayHits: missed.relayHits },
+    { score: missed.score, combo: missed.combo, bestCombo: missed.bestCombo },
     missedSnapshot,
-    "awake / bonusの自然退場では得点・combo・最大combo・リレーをすべて維持"
+    "awake / bonusの自然退場では得点・combo・最大comboをすべて維持"
   );
   assert.equal(L.missedAwake(null), null, "stateなしでも安全");
 }
 
-// ── 3b. ひかりのたねリレー ─────────────────────────────────────────
+// ── 3b. 表示を増やさない成功地点リズム ─────────────────────────────
 {
-  // 定数・公開APIがコード整理時に消えたり値を変えたりしないこと。
-  assert.match(logicJsSrc, /RELAY_HITS_PER_STAGE\s*=\s*4\b/, "4回成功で花壇が1段階育つ");
-  assert.match(logicJsSrc, /FLOWER_STAGE_MAX\s*=\s*3\b/, "花壇の最大段階は3");
-  assert.equal(L.RELAY_HITS_PER_STAGE, 4, "RELAY_HITS_PER_STAGE が公開される");
-  assert.equal(L.FLOWER_STAGE_MAX, 3, "FLOWER_STAGE_MAX が公開される");
-  assert.equal(typeof L.relayProgressAt, "function", "relayProgressAt が公開される");
-  assert.equal(typeof L.advanceRelay, "function", "advanceRelay が公開される");
-
+  assert.equal(L.RELAY_HITS_PER_STAGE, undefined, "花壇進行の公開定数を撤去");
+  assert.equal(L.FLOWER_STAGE_MAX, undefined, "花壇段階の公開定数を撤去");
+  assert.equal(L.relayProgressAt, undefined, "花壇進行APIを撤去");
+  assert.equal(L.advanceRelay, undefined, "ひかりのたね進行APIを撤去");
   const initial = L.createInitialState();
-  assert.deepEqual(
-    { relayHits: initial.relayHits, relayStep: initial.relayStep, flowerStage: initial.flowerStage },
-    { relayHits: 0, relayStep: 0, flowerStage: 0 },
-    "初期状態では、たねと花壇の進行が0から始まる"
-  );
-  assert.deepEqual(L.relayProgressAt(-1), { relayHits: 0, relayStep: 0, flowerStage: 0 }, "負数は安全に0へクランプされる");
-  assert.deepEqual(L.relayProgressAt(16), { relayHits: 16, relayStep: 0, flowerStage: 3 }, "満開後も成功回数を保ちつつ花壇は上限3に留まる");
-
-  const state = L.createInitialState();
-  const boundaries = {
-    3: { relayStep: 3, flowerStage: 0, flowerStageChanged: false },
-    4: { relayStep: 0, flowerStage: 1, flowerStageChanged: true },
-    7: { relayStep: 3, flowerStage: 1, flowerStageChanged: false },
-    8: { relayStep: 0, flowerStage: 2, flowerStageChanged: true },
-    11: { relayStep: 3, flowerStage: 2, flowerStageChanged: false },
-    12: { relayStep: 0, flowerStage: 3, flowerStageChanged: true }
-  };
-
-  for (let hit = 1; hit <= 13; hit++) {
-    const res = L.registerTap(state, hit, "awake");
-    assert.equal(res.result, "hit", `リレー#${hit}: awake 成功は hit`);
-    assert.equal(res.relayAdvanced, true, `リレー#${hit}: 成功時だけ relayAdvanced=true`);
-    assert.equal(state.relayHits, hit, `リレー#${hit}: relayHits が1ずつ増える`);
-    assert.equal(res.relayStep, hit % 4, `リレー#${hit}: relayStep は成功数%4`);
-    assert.equal(res.flowerStage, Math.min(3, Math.floor(hit / 4)), `リレー#${hit}: flowerStage が式どおり進む`);
-    assert.equal(state.relayStep, res.relayStep, `リレー#${hit}: state と戻り値の relayStep が一致する`);
-    assert.equal(state.flowerStage, res.flowerStage, `リレー#${hit}: state と戻り値の flowerStage が一致する`);
-
-    if (boundaries[hit]) {
-      assert.deepEqual(
-        {
-          relayStep: res.relayStep,
-          flowerStage: res.flowerStage,
-          flowerStageChanged: res.flowerStageChanged
-        },
-        boundaries[hit],
-        `リレー境界 ${hit} 回目の表示メタデータが一致する`
-      );
-    } else {
-      assert.equal(res.flowerStageChanged, false, `リレー#${hit}: 4回区切り以外では花壇段階を変えない`);
-    }
+  for (const key of ["relayHits", "relayStep", "flowerStage"]) {
+    assert.equal(Object.prototype.hasOwnProperty.call(initial, key), false, `${key} をゲーム状態へ残さない`);
   }
-
-  // 4回目がbonusでも花壇は1段階だけ育ち、bonusだから複数回分にはならない。
-  const bonusBoundary = L.createInitialState();
-  for (let hit = 1; hit <= 3; hit++) L.registerTap(bonusBoundary, hit, "awake");
-  const bonusFourth = L.registerTap(bonusBoundary, 4, "bonus");
-  assert.equal(bonusFourth.result, "hit", "4回目のbonusも成功扱い");
-  assert.equal(bonusFourth.isBonus, true, "4回目はbonusメタデータ付き");
-  assert.equal(bonusBoundary.relayHits, 4, "bonusを含めてリレーは合計4回分");
-  assert.equal(bonusBoundary.relayStep, 0, "4回境界でrelayStepは0に戻る");
-  assert.equal(bonusBoundary.flowerStage, 1, "bonusでも花壇は1段階だけ育つ");
-  assert.equal(bonusFourth.flowerStageChanged, true, "4回目のbonusで成長通知を返す");
-
-  // sleeping / whiff / locked / overheat / missed awake のどれでも進行を失わない。
-  const protectedState = L.createInitialState();
-  for (let hit = 0; hit < 4; hit++) L.registerTap(protectedState, hit, "awake");
-  const relaySnapshot = () => ({
-    relayHits: protectedState.relayHits,
-    relayStep: protectedState.relayStep,
-    flowerStage: protectedState.flowerStage
-  });
-  const expectedProgress = { relayHits: 4, relayStep: 0, flowerStage: 1 };
-
-  assert.equal(L.registerTap(protectedState, 4, "sleeping").result, "sleepPenalty", "前提: sleeping 判定");
-  assert.deepEqual(relaySnapshot(), expectedProgress, "sleeping タップでもリレー進行を失わない");
-
-  assert.equal(L.registerTap(protectedState, 5.1, "empty").result, "whiff", "前提: whiff 判定");
-  assert.deepEqual(relaySnapshot(), expectedProgress, "空振りでもリレー進行を失わない");
-
-  assert.equal(L.registerTap(protectedState, 5.2, "awake").result, "locked", "前提: whiff lock 中のタップは locked");
-  assert.deepEqual(relaySnapshot(), expectedProgress, "locked タップでもリレー進行を失わない");
-
-  L.missedAwake(protectedState);
-  assert.deepEqual(relaySnapshot(), expectedProgress, "awake を取り逃してもリレー進行を失わない");
-
-  let overheatResult = null;
-  for (let i = 0; i < L.SPAM_THRESHOLD + 2; i++) {
-    const res = L.registerTap(protectedState, 6 + i * 0.05, "empty");
-    if (res.result === "overheat") {
-      overheatResult = res;
-      break;
-    }
-  }
-  assert.ok(overheatResult, "前提: 短時間の連打で overheat が発火する");
-  assert.deepEqual(relaySnapshot(), expectedProgress, "overheat でもリレー進行を失わない");
 }
 
 // ── 4. クールダウン ──────────────────────────────────────────────────
@@ -548,27 +460,20 @@ function mulberry32(seed) {
 // ── 11. 専用画像・色だけに頼らない睡眠表現 ──────────────────────────
 {
   const assetNames = [
-    "bg_forest_morning_16x9.png",
-    "menu_thumb_highfive_relay.png",
-    "flowerbed_stage_0_soil.png",
-    "flowerbed_stage_1_sprout.png",
-    "flowerbed_stage_2_buds.png",
-    "flowerbed_stage_3_bloom.png",
-    "hideout_stump.png",
+    "bg_forest_combo_terraces.png",
+    "menu_thumb_highfive_combo.png",
     "hideout_leaf_bush.png",
-    "hideout_tree_roots.png",
     "fx_highfive_burst.png",
     "fx_leaf_puff.png",
     "fx_overheat_swirl.png",
     "fx_sleep_moon_cloud.png",
-    "mechanic_light_seed.png",
     "pono_title_highfive.png",
     "pono_result_bloom.png",
     "friend_hikari_momonga_bonus_awake.png",
     ...["araiguma", "fukurou", "harinezumi", "karasu", "kitsune", "kojika", "risu", "usagi"]
       .flatMap(id => [`friend_${id}_awake.png`, `friend_${id}_sleeping.png`]),
   ];
-  assert.equal(assetNames.length, 33, "ボーナスキャラを含む実行時画像は33点");
+  assert.equal(assetNames.length, 26, "花壇・たねを外した実行時画像は26点");
   for (const name of assetNames) {
     assert.ok(fs.existsSync(path.join(root, "assets/images/hyokkori-hightouch", name)), `${name} が配置されている`);
   }
@@ -580,10 +485,15 @@ function mulberry32(seed) {
   assert.doesNotMatch(stylesCss, /grayscale/, "睡眠状態を色だけで区別しない");
   assert.doesNotMatch(indexHtml + gameJs, /💤/, "旧emoji睡眠表示を専用画像へ置換済み");
   assert.doesNotMatch(indexHtml + gameJs, /reference_only_/, "比較用画像を実行時参照しない");
-  assert.match(gameJs, /seedHolderHole/, "たねの現在位置を保持する");
-  assert.match(gameJs, /forbidden\.push\(seedHolderHole\)/, "たね保持場所を次の出現候補から外す");
-  assert.match(indexHtml, /id="flowerbed-img"/, "花壇4段階の表示先が存在する");
-  assert.match(indexHtml, /id="light-seed"/, "ひかりのたね表示が存在する");
+  assert.match(gameJs, /var\s+lastSuccessfulHole\s*=\s*null/, "直前の成功地点だけを内部保持する");
+  assert.match(gameJs, /forbidden\.push\(lastSuccessfulHole\)/, "直前の成功地点を次の出現候補から外す");
+  assert.match(gameJs, /function\s+rememberSuccessfulHole\([^)]*\)[\s\S]*?lastSuccessfulHole\s*=\s*idx/, "awake・bonus成功時だけ地点を更新する");
+  assert.match(gameJs, /lastSuccessfulHole\s*=\s*null;[\s\S]{0,120}dataset\.lastSuccessfulHole\s*=\s*['"]['"]/, "リトライ時に成功地点の除外を解除する");
+  assert.doesNotMatch(indexHtml, /id=["'](?:relay-progress|relay-announcement|relay-pips|flowerbed-img|light-seed)["']/, "花壇・たねの表示DOMを撤去する");
+  assert.doesNotMatch(gameJs + logicJsSrc + stylesCss, /relayProgressAt|advanceRelay|FLOWER_STAGE_MAX|mechanic_light_seed|#light-seed|#flowerbed-img/, "花壇・たねの実行時処理とCSSを撤去する");
+  assert.equal((indexHtml.match(/class=["'][^"']*hh-hideout-foreground/g) || []).length, 1, "templateに共通の手前縁を1つ定義する");
+  assert.match(stylesCss, /\.hh-hideout-foreground\s*\{[^}]*z-index:\s*4[^}]*clip-path:\s*inset\(58%\s+0\s+0\s+0\)/s, "手前縁をキャラより上へ重ね、下58%だけ表示する");
+  assert.match(stylesCss, /#board\s*\{[^}]*row-gap:\s*30%[^}]*column-gap:\s*3%/s, "中央レーンを空けた3x2配置を使う");
 }
 
 // ── 11b. ボーナス出現・リアルタイムコンボ・最大記録UI ──────────────
@@ -597,7 +507,7 @@ function mulberry32(seed) {
   assert.match(gameJs, /Math\.max\(\s*lifetimeBestCombo\s*,\s*readBestComboRecord\(\)\s*\)/, "終了時に別タブの最新記録を再読込し、小さい値で上書きしない");
   assert.match(gameJs, /prefersReducedMotion\(\)\s*\?\s*620\s*:\s*300/, "うごきをへらす設定でも加点表示の静止時間を残す");
   assert.match(gameJs, /!holes\[idx\]\.occupant[\s\S]{0,180}classList\.contains\(['"]is-visible['"]\)\)\s*return/, "成功後の見た目への追いタップは空振りにしない");
-  assert.match(gameJs, /\[BONUS_PARTNER\.awake\]\.concat\(/, "ボーナス画像をローカルpreloadの先頭で優先する");
+  assert.match(gameJs, /\[BONUS_PARTNER\.awake,\s*HIDEOUT_IMAGE\]\.concat\(/, "ボーナス画像をローカルpreloadの先頭で優先する");
   assert.match(indexHtml, /rel=["']preload["'][^>]*friend_hikari_momonga_bonus_awake\.png/, "ボーナス画像をHTMLからも先読みする");
 
   for (const id of ["combo-hud", "combo-count", "combo-status-sr", "result-combo", "result-best-combo", "result-combo-new"]) {
@@ -648,6 +558,9 @@ function mulberry32(seed) {
       const menuIdsMatch = playHtml.match(/APP_TITLE_MENU_IDS\s*=\s*\[([\s\S]*?)\]/);
       assert.ok(menuIdsMatch, "play.html に APP_TITLE_MENU_IDS 配列が見つかる");
       assert.match(menuIdsMatch[1], /['"]hyokkori-hightouch['"]/, "APP_TITLE_MENU_IDS 配列内に 'hyokkori-hightouch' が含まれる (登録漏れ厳禁)");
+      assert.match(playHtml, /subtitle:\s*['"]ハイタッチで コンボを つなごう['"]/, "メニュー副題から花壇・たねの説明を外す");
+      assert.match(playHtml, /thumb:\s*['"]assets\/images\/hyokkori-hightouch\/menu_thumb_highfive_combo\.png['"]/, "たねのないハイタッチ用サムネイルを使う");
+      assert.match(playHtml, /bg:\s*['"]assets\/images\/hyokkori-hightouch\/bg_forest_combo_terraces\.png['"]/, "カード背景も中央レーン版へ更新する");
     } else {
       console.log("  (skip: play.html への hyokkori-hightouch 統合は未実施。統合担当のタスク)");
     }

@@ -74,36 +74,24 @@
   };
   var HIGH_SCORE_GAME_ID = 'hyokkori-hightouch-v2';
   var BEST_COMBO_KEY = 'pono_hyokkori_best_combo_v2';
-  var HIDEOUT_IMAGES = [
-    ASSET_BASE + 'hideout_stump.png',
-    ASSET_BASE + 'hideout_leaf_bush.png',
-    ASSET_BASE + 'hideout_tree_roots.png',
-    ASSET_BASE + 'hideout_tree_roots.png',
-    ASSET_BASE + 'hideout_stump.png',
-    ASSET_BASE + 'hideout_leaf_bush.png'
-  ];
-  var FLOWER_IMAGES = [
-    ASSET_BASE + 'flowerbed_stage_0_soil.png',
-    ASSET_BASE + 'flowerbed_stage_1_sprout.png',
-    ASSET_BASE + 'flowerbed_stage_2_buds.png',
-    ASSET_BASE + 'flowerbed_stage_3_bloom.png'
-  ];
+  // 6か所は同じ遊び方なので、開口形状も同じ葉の茂みに統一する。
+  // 背面と手前縁に同じ画像を重ね、キャラだけを間へ挟む。
+  var HIDEOUT_IMAGE = ASSET_BASE + 'hideout_leaf_bush.png';
   var FX_IMAGES = [
     ASSET_BASE + 'fx_highfive_burst.png',
     ASSET_BASE + 'fx_leaf_puff.png',
     ASSET_BASE + 'fx_overheat_swirl.png',
     ASSET_BASE + 'fx_sleep_moon_cloud.png',
-    ASSET_BASE + 'mechanic_light_seed.png',
     ASSET_BASE + 'pono_title_highfive.png',
     ASSET_BASE + 'pono_result_bloom.png'
   ];
 
   // common/preload-helper.js は担当外なので、このゲーム自身の idle 時間で専用画像を温める。
-  // 背景・開始ポノ・花壇0・たねはHTML/CSSから先に読み込まれ、ここでは残りを補完する。
+  // 背景・開始ポノはHTML/CSSから先に読み込まれ、ここでは残りを補完する。
   var preloadRefs = [];
   function preloadGameAssetsLocally() {
     // 7体目に必ず使うボーナスを最優先。遅い回線でも初登場までに間に合わせる。
-    var urls = [BONUS_PARTNER.awake].concat(HIDEOUT_IMAGES, FLOWER_IMAGES, FX_IMAGES);
+    var urls = [BONUS_PARTNER.awake, HIDEOUT_IMAGE].concat(FX_IMAGES);
     for (var i = 0; i < PARTNERS.length; i++) urls.push(PARTNERS[i].awake, PARTNERS[i].sleeping);
     var run = function () {
       for (var j = 0; j < urls.length; j++) {
@@ -229,8 +217,8 @@
     for (var i = 0; i < L.HOLE_COUNT; i++) {
       var node = tpl.content.firstElementChild.cloneNode(true);
       node.setAttribute('data-hole', i);
-      var hideout = node.querySelector('.hh-hideout');
-      if (hideout) hideout.src = HIDEOUT_IMAGES[i % HIDEOUT_IMAGES.length];
+      var hideouts = node.querySelectorAll('.hh-hideout');
+      for (var h = 0; h < hideouts.length; h++) hideouts[h].src = HIDEOUT_IMAGE;
       boardEl.appendChild(node);
     }
   }
@@ -250,17 +238,12 @@
       sleepFx: holeEl.querySelector('.hh-sleep-fx'),
       hitFx: holeEl.querySelector('.hh-hit-fx'),
       dust: holeEl.querySelector('.hh-dust'),
+      foreground: holeEl.querySelector('.hh-hideout-foreground'),
       bonusBadge: holeEl.querySelector('.hh-bonus-badge'),
       scorePop: holeEl.querySelector('.hh-score-pop')
     });
   }
 
-  // ═══ ひかりのたねリレー表示 ═══
-  var relayProgressEl = document.getElementById('relay-progress');
-  var flowerbedEl = document.getElementById('flowerbed-img');
-  var lightSeedEl = document.getElementById('light-seed');
-  var relayAnnouncementEl = document.getElementById('relay-announcement');
-  var relayPipEls = document.querySelectorAll('#relay-pips .relay-pip');
   var comboHudEl = document.getElementById('combo-hud');
   var comboCountEl = document.getElementById('combo-count');
   var comboStatusEl = document.getElementById('combo-status-sr');
@@ -294,11 +277,10 @@
   var spawnTimerMs = 0;
   var settleTimer = 0;
   var boardLockedUntil = 0; // OVERHEAT 演出用 (state.time 基準)
-  var seedHolderHole = null; // null は花壇、数値は最後に成功した隠れ場所。
+  var lastSuccessfulHole = null; // 直前の成功地点。次の出現候補からだけ外す。
   var lastPartnerId = null;
   var actualSpawnCount = 0;
   var tutorialOpen = false;
-  var relayAnnouncementTimer = 0;
   var renderedCombo = -1;
   var lifetimeBestCombo = readBestComboRecord();
   var comboRecordBroken = false;
@@ -316,6 +298,8 @@
     spawnTimerMs = 0;
     settleTimer = 0;
     boardLockedUntil = 0;
+    lastSuccessfulHole = null;
+    boardEl.dataset.lastSuccessfulHole = '';
     lastPartnerId = null;
     actualSpawnCount = 0;
     tutorialOpen = false;
@@ -330,9 +314,7 @@
       comboHudEl.setAttribute('aria-hidden', 'true');
     }
     if (comboStatusEl) comboStatusEl.textContent = '';
-    if (relayAnnouncementTimer) { clearTimeout(relayAnnouncementTimer); relayAnnouncementTimer = 0; }
     confetti = [];
-    resetRelayVisual();
     updateComboHud();
   }
 
@@ -381,8 +363,8 @@
     var occupied = occupiedHoleIndices();
     if (occupied.length >= 2) return; // 同時出現は最大2体まで
     var forbidden = occupied.slice();
-    // 最後にたねを受け取った場所を外し、「別の場所へつなぐ」選択を作る。
-    if (seedHolderHole !== null && forbidden.indexOf(seedHolderHole) < 0) forbidden.push(seedHolderHole);
+    // 直前に成功した場所を外し、視線が盤面を自然に移るリズムだけを残す。
+    if (lastSuccessfulHole !== null && forbidden.indexOf(lastSuccessfulHole) < 0) forbidden.push(lastSuccessfulHole);
     var holeIdx = L.pickHole(forbidden, Math.random);
     if (holeIdx === null) return;
     actualSpawnCount += 1;
@@ -576,106 +558,11 @@
     return { x: rect.left + rect.width / 2 - stageRect.left, y: rect.top + rect.height / 2 - stageRect.top };
   }
 
-  function flowerbedAnchorPoint() {
-    var stageRect = stageEl.getBoundingClientRect();
-    if (!flowerbedEl) return { x: stageRect.width / 2, y: stageRect.height * 0.18 };
-    var rect = flowerbedEl.getBoundingClientRect();
-    return {
-      x: rect.left + rect.width * 0.5 - stageRect.left,
-      y: rect.top + rect.height * 0.46 - stageRect.top
-    };
-  }
-
-  function partnerPawPoint(idx) {
-    var refs = holeRefs[idx];
-    if (!refs || !refs.img) return holeCenterPoint(idx);
-    var stageRect = stageEl.getBoundingClientRect();
-    var rect = refs.img.getBoundingClientRect();
-    return {
-      x: rect.left + rect.width * 0.70 - stageRect.left,
-      y: rect.top + rect.height * 0.38 - stageRect.top
-    };
-  }
-
-  function setSeedPoint(point, animate) {
-    if (!lightSeedEl || !point) return;
-    var shouldAnimate = animate && !prefersReducedMotion();
-    if (!shouldAnimate) lightSeedEl.style.transition = 'none';
-    else lightSeedEl.style.removeProperty('transition');
-    lightSeedEl.style.setProperty('--seed-x', Math.round(point.x) + 'px');
-    lightSeedEl.style.setProperty('--seed-y', Math.round(point.y) + 'px');
-    if (!shouldAnimate) {
-      requestAnimationFrame(function () { if (lightSeedEl) lightSeedEl.style.removeProperty('transition'); });
-    }
-  }
-
-  function positionRelayVisual() {
-    if (!lightSeedEl) return;
-    var point = seedHolderHole === null ? flowerbedAnchorPoint() : partnerPawPoint(seedHolderHole);
-    setSeedPoint(point, false);
-  }
-
-  function moveSeedToHole(idx) {
+  function rememberSuccessfulHole(idx) {
     if (idx === null || !holeRefs[idx]) return;
-    setSeedPoint(partnerPawPoint(idx), true);
-    seedHolderHole = idx;
-    if (lightSeedEl) {
-      lightSeedEl.dataset.holder = String(idx);
-      retriggerClass(lightSeedEl, 'is-flying', 520);
-    }
+    lastSuccessfulHole = idx;
+    boardEl.dataset.lastSuccessfulHole = String(idx);
   }
-
-  function announceRelay(text) {
-    if (!relayAnnouncementEl || !text) return;
-    if (relayAnnouncementTimer) clearTimeout(relayAnnouncementTimer);
-    relayAnnouncementEl.textContent = '';
-    void relayAnnouncementEl.offsetWidth;
-    relayAnnouncementEl.textContent = text;
-    relayAnnouncementTimer = setTimeout(function () {
-      relayAnnouncementTimer = 0;
-      if (relayAnnouncementEl) relayAnnouncementEl.textContent = '';
-    }, 1200);
-  }
-
-  function setFlowerStage(stage, announce) {
-    var safeStage = Math.max(0, Math.min(FLOWER_IMAGES.length - 1, Number(stage) || 0));
-    if (!flowerbedEl) return;
-    var previous = Number(flowerbedEl.dataset.stage || 0);
-    flowerbedEl.src = FLOWER_IMAGES[safeStage];
-    flowerbedEl.dataset.stage = String(safeStage);
-    flowerbedEl.alt = safeStage === 0 ? 'これから そだつ はなばたけ' : 'そだっている はなばたけ';
-    if (announce && safeStage !== previous) {
-      var messages = ['', 'めが でたよ', 'つぼみが できたよ', 'おはなが さいたよ'];
-      announceRelay(messages[safeStage]);
-      retriggerClass(relayProgressEl, 'is-growing', 700);
-    }
-  }
-
-  function updateRelayVisual(result) {
-    var step = typeof result.relayStep === 'number' ? result.relayStep : state.relayStep;
-    var flowerStage = typeof result.flowerStage === 'number' ? result.flowerStage : state.flowerStage;
-    for (var i = 0; i < relayPipEls.length; i++) {
-      relayPipEls[i].classList.toggle('is-lit', flowerStage >= L.FLOWER_STAGE_MAX || i < step);
-    }
-    setFlowerStage(flowerStage, !!result.flowerStageChanged);
-    if (result.flowerStageChanged && flowerStage === L.FLOWER_STAGE_MAX) {
-      var bloom = flowerbedAnchorPoint();
-      spawnConfettiBurst(bloom.x, bloom.y, 38);
-      playFanfare();
-    }
-  }
-
-  function resetRelayVisual() {
-    seedHolderHole = null;
-    if (lightSeedEl) lightSeedEl.dataset.holder = 'flowerbed';
-    for (var i = 0; i < relayPipEls.length; i++) relayPipEls[i].classList.remove('is-lit');
-    setFlowerStage(0, false);
-    if (relayProgressEl) relayProgressEl.classList.remove('is-growing');
-    if (relayAnnouncementEl) relayAnnouncementEl.textContent = '';
-    requestAnimationFrame(positionRelayVisual);
-  }
-
-  window.addEventListener('resize', positionRelayVisual);
 
   // ═══ 音 (WebAudio 直接合成。 pakupaku-catch と同型の簡易トーン) ═══
   var audioCtx = null;
@@ -840,11 +727,10 @@
         var refs = idx !== null ? holeRefs[idx] : null;
         if (refs) retriggerClass(refs.wrap, 'is-hit', 320);
         if (idx !== null) {
-          moveSeedToHole(idx);
+          rememberSuccessfulHole(idx);
           showScorePop(idx, res);
           celebrateAndRetract(idx);
         }
-        updateRelayVisual(res);
         spawnConfettiBurst(pt.x, pt.y, res.isBonus ? 34 : 18);
         if (window.Haptics) window.Haptics.fire(res.isBonus ? 'superBadgePop' : 'stickerPaste');
         if (window.incrementStat) window.incrementStat('hyokkori_touches', 1);
@@ -909,7 +795,7 @@
   var TUT_STEPS = [
     { image: ASSET_BASE + 'fx_highfive_burst.png', text: 'おきてる こへ ハイタッチ！<br>つづくと コンボ！' },
     { image: ASSET_BASE + 'fx_sleep_moon_cloud.png', text: 'ねてる こは<br>そっと みまもってね' },
-    { image: BONUS_PARTNER.awake, text: 'キラキラの こは 30てん！<br>4かい つなぐと おはなが そだつよ' }
+    { image: BONUS_PARTNER.awake, text: 'キラキラの こは 30てん！<br>みつけたら ハイタッチ！' }
   ];
   var tutStep = 0;
   function showTutorial() {
@@ -985,8 +871,6 @@
   function showResult() {
     var scoreEl = document.getElementById('result-score');
     if (scoreEl) scoreEl.textContent = state.score + ' てん';
-    var relayEl = document.getElementById('result-relay');
-    if (relayEl) relayEl.textContent = 'ひかりを ' + state.relayHits + 'かい つないだよ';
     var comboEl = document.getElementById('result-combo');
     if (comboEl) comboEl.textContent = 'さいだい ' + state.bestCombo + 'コンボ';
     var bestComboEl = document.getElementById('result-best-combo');
@@ -994,7 +878,7 @@
     var comboNewEl = document.getElementById('result-combo-new');
     if (comboNewEl) comboNewEl.classList.toggle('hidden', !comboRecordBroken);
     var bannerEl = document.querySelector('#result-card .result-banner');
-    if (bannerEl) bannerEl.textContent = state.flowerStage >= L.FLOWER_STAGE_MAX ? 'おはなが いっぱい！' : 'ここまで そだったよ！';
+    if (bannerEl) bannerEl.textContent = 'ナイス ハイタッチ！';
     var rank = state.score > 0 && window.saveHighScore
       ? window.saveHighScore(HIGH_SCORE_GAME_ID, state.score)
       : 0;

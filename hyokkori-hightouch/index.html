@@ -22,7 +22,7 @@
 <script src="../common/highscore.js"></script>
 
 <link rel="preload" as="image" href="../assets/images/hyokkori-hightouch/friend_hikari_momonga_bonus_awake.png">
-<link rel="stylesheet" href="styles.css?v=20260723-7">
+<link rel="stylesheet" href="styles.css?v=20260723-1428">
 </head>
 <body>
 
@@ -54,7 +54,7 @@
     <img class="start-pono icon" src="../assets/images/hyokkori-hightouch/pono_title_highfive.png" alt="ポノが ハイタッチを しているよ" draggable="false">
     <div class="start-copy">
       <div class="title" id="start-title">ひょっこりハイタッチ</div>
-      <div class="desc">30びょうで コンボを つないで<br>おはなを さかせよう！</div>
+      <div class="desc">30びょうで ハイタッチ！<br>コンボを どこまで つなげるかな？</div>
       <button class="tap-btn" id="start-btn">タップで はじめる</button>
     </div>
   </div>
@@ -67,7 +67,7 @@
        テンプレート1個 + js/game.js の buildHoles() で複製生成する (重複マークアップ排除)。 -->
   <template id="hh-hole-tpl">
     <div class="hh-hole">
-      <img class="hh-hideout hh-mound" src="../assets/images/hyokkori-hightouch/hideout_stump.png" alt="" draggable="false" aria-hidden="true">
+      <img class="hh-hideout hh-hideout-base hh-mound" src="../assets/images/hyokkori-hightouch/hideout_leaf_bush.png" alt="" draggable="false" aria-hidden="true">
       <div class="hh-window">
         <div class="hh-char-wrap">
           <img class="hh-char" alt="" draggable="false">
@@ -79,23 +79,11 @@
           <div class="hh-shh-bubble" aria-hidden="true">しーっ</div>
         </div>
       </div>
+      <img class="hh-hideout hh-hideout-foreground" src="../assets/images/hyokkori-hightouch/hideout_leaf_bush.png" alt="" draggable="false" aria-hidden="true">
       <img class="hh-dust" src="../assets/images/hyokkori-hightouch/fx_leaf_puff.png" alt="" draggable="false" aria-hidden="true">
     </div>
   </template>
-  <div id="board"></div>
-
-  <div id="relay-progress" role="group" aria-label="ひかりの たね">
-    <div id="relay-announcement" role="status" aria-live="polite" aria-atomic="true"></div>
-    <div class="relay-pips" id="relay-pips" aria-hidden="true">
-      <span class="relay-pip" data-relay-pip="0"></span>
-      <span class="relay-pip" data-relay-pip="1"></span>
-      <span class="relay-pip" data-relay-pip="2"></span>
-      <span class="relay-pip" data-relay-pip="3"></span>
-    </div>
-    <img id="flowerbed-img" data-stage="0" src="../assets/images/hyokkori-hightouch/flowerbed_stage_0_soil.png" alt="おはなが そだつ ばしょ" draggable="false">
-  </div>
-
-  <img id="light-seed" src="../assets/images/hyokkori-hightouch/mechanic_light_seed.png" alt="" draggable="false" aria-hidden="true">
+  <div id="board" data-last-successful-hole=""></div>
 
   <div id="overheat-banner" aria-hidden="true">
     <img class="overheat-fx" src="../assets/images/hyokkori-hightouch/fx_overheat_swirl.png" alt="" draggable="false">
@@ -106,11 +94,10 @@
 
   <div id="result-overlay" role="dialog" aria-modal="true" aria-labelledby="result-title">
     <div id="result-card">
-      <img class="result-pono" src="../assets/images/hyokkori-hightouch/pono_result_bloom.png" alt="おはなに かこまれた ポノ" draggable="false">
+      <img class="result-pono" src="../assets/images/hyokkori-hightouch/pono_result_bloom.png" alt="おはなを もって ハイタッチする ポノ" draggable="false">
       <div class="result-copy">
         <div class="result-banner" id="result-title">おしまい！</div>
         <div class="result-score" id="result-score">0 てん</div>
-        <div id="result-relay">0かい つながったよ</div>
         <div id="result-combo">さいだい 0コンボ</div>
         <div id="result-best-combo">きろく 0コンボ</div>
         <div class="result-combo-new hidden" id="result-combo-new">コンボ しんきろく！</div>
@@ -121,7 +108,7 @@
   </div>
 </div>
 
-<script src="js/logic.js?v=20260723-7"></script>
-<script src="js/game.js?v=20260723-7"></script>
+<script src="js/logic.js?v=20260723-1428"></script>
+<script src="js/game.js?v=20260723-1428"></script>
 </body>
 </html>

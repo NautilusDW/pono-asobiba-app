@@ -66,11 +66,12 @@ a:focus-visible {
   overflow: hidden;
   transform: translate(-50%, -50%);
   background-color: #b8dca5;
-  background-image: url('../assets/images/hyokkori-hightouch/bg_forest_morning_16x9.png');
+  background-image: url('../assets/images/hyokkori-hightouch/bg_forest_combo_terraces.png');
   background-position: center;
   background-repeat: no-repeat;
   background-size: cover;
   box-shadow: 0 0 36px rgba(10, 35, 26, 0.42);
+  container-type: size;
   touch-action: none;
 }
 
@@ -112,7 +113,7 @@ a:focus-visible {
   z-index: 720;
   display: flex;
   width: min(74%, 520px);
-  height: min(46%, 300px);
+  height: 24%;
   align-items: center;
   justify-content: center;
   padding: 0;
@@ -130,7 +131,7 @@ a:focus-visible {
   --combo-stroke: #b9542f;
   --combo-glow: rgba(255, 188, 69, 0.74);
   --combo-grow: 0px;
-  --combo-impact-scale: 1.18;
+  --combo-impact-scale: 1.06;
   transition: opacity 0.16s ease, visibility 0s linear 0.16s;
 }
 
@@ -154,6 +155,7 @@ a:focus-visible {
 #combo-count {
   color: var(--combo-fill);
   font-size: clamp(64px, calc(14vmin + 18px + var(--combo-grow)), 160px);
+  font-size: clamp(64px, calc(14cqh + 18px + var(--combo-grow)), min(160px, 23cqh));
   font-weight: 900;
   letter-spacing: -0.06em;
   line-height: 0.76;
@@ -181,25 +183,38 @@ a:focus-visible {
   --combo-fill: #fff276;
   --combo-stroke: #e4632e;
   --combo-glow: rgba(255, 187, 40, 0.92);
-  --combo-impact-scale: 1.25;
+  --combo-impact-scale: 1.09;
 }
 
 #combo-hud[data-tier="3"] {
   --combo-fill: #fff5a3;
   --combo-stroke: #e83e70;
   --combo-glow: rgba(255, 78, 148, 0.9);
-  --combo-impact-scale: 1.32;
+  --combo-impact-scale: 1.12;
 }
 
 #combo-hud[data-tier="4"] {
   --combo-fill: #fff;
   --combo-stroke: #8e56df;
   --combo-glow: rgba(119, 225, 255, 0.98);
-  --combo-impact-scale: 1.4;
+  --combo-impact-scale: 1.14;
 }
 
 #combo-hud.is-slam .combo-core {
   animation: combo-center-slam 0.52s cubic-bezier(0.2, 1.55, 0.42, 1);
+}
+
+@container (max-height: 620px) {
+  .combo-core {
+    filter: drop-shadow(0 0 8px var(--combo-glow));
+  }
+
+  #combo-count {
+    text-shadow:
+      0 3px 0 rgba(102, 65, 28, 0.28),
+      0 0 12px rgba(255, 255, 255, 0.94),
+      0 0 20px var(--combo-glow);
+  }
 }
 
 @keyframes combo-center-slam {
@@ -227,7 +242,7 @@ a:focus-visible {
   padding: clamp(18px, 4vmin, 48px);
   background:
     linear-gradient(90deg, rgba(255, 247, 216, 0.36), rgba(255, 255, 255, 0.12)),
-    url('../assets/images/hyokkori-hightouch/bg_forest_morning_16x9.png') center / cover no-repeat;
+    url('../assets/images/hyokkori-hightouch/bg_forest_combo_terraces.png') center / cover no-repeat;
   text-align: center;
 }
 
@@ -350,15 +365,16 @@ a:focus-visible {
 /* ── 6つの かくればしょ ── */
 #board {
   position: absolute;
-  top: 12%;
+  top: 10%;
   right: 0;
-  bottom: 15%;
+  bottom: 10%;
   left: 0;
   z-index: 20;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-template-rows: repeat(2, minmax(0, 1fr));
-  gap: 0 3%;
+  grid-template-rows: repeat(2, 35%);
+  row-gap: 30%;
+  column-gap: 3%;
   padding: 0 5%;
 }
 
@@ -366,8 +382,9 @@ a:focus-visible {
   position: relative;
   display: flex;
   min-width: 0;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
+  isolation: isolate;
   cursor: pointer;
   touch-action: manipulation;
   transition: opacity 0.2s ease;
@@ -387,32 +404,39 @@ a:focus-visible {
 
 .hh-hideout {
   position: absolute;
-  bottom: -28%;
+  top: 50%;
   left: 50%;
   z-index: 2;
   display: block;
-  width: min(105%, 370px);
+  width: min(92%, 320px);
   height: auto;
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);
+  filter: saturate(0.88) brightness(1.02);
   object-fit: contain;
   transition: transform 0.12s ease;
 }
 
 .hh-hole.is-pressed .hh-hideout {
-  transform: translateX(-50%) scale(0.96);
+  transform: translate(-50%, -50%) scale(0.96);
+}
+
+.hh-hideout-foreground {
+  z-index: 4;
+  clip-path: inset(58% 0 0 0);
 }
 
 /* キャラは共通の正方形キャンバスのまま重ね、下辺だけを窓で隠す。 */
 .hh-window {
   position: absolute;
-  bottom: 1%;
+  top: 50%;
   left: 50%;
   z-index: 3;
-  width: min(74%, 280px);
+  width: min(58%, 220px);
   overflow: hidden;
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);
   aspect-ratio: 1 / 1;
   border-radius: 48% 48% 38% 38% / 52% 52% 44% 44%;
+  clip-path: inset(0 0 18% 0 round 48% 48% 34% 34%);
 }
 
 .hh-char-wrap {
@@ -669,140 +693,6 @@ a:focus-visible {
   100% { opacity: 0; transform: translate(-50%, -15%) scale(1.14); }
 }
 
-/* ── ひかりの たね リレー ── */
-#relay-progress {
-  position: absolute;
-  bottom: -5%;
-  left: 50%;
-  z-index: 36;
-  width: clamp(110px, 16%, 190px);
-  transform: translateX(-50%);
-  pointer-events: none;
-  aspect-ratio: 1 / 1;
-}
-
-#flowerbed-img {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  transition: transform 0.3s ease, filter 0.3s ease;
-}
-
-#relay-progress.is-growing #flowerbed-img,
-#flowerbed-img.is-growing,
-#flowerbed-img.is-blooming {
-  animation: flowerbed-grow 0.62s cubic-bezier(0.22, 1.45, 0.5, 1);
-}
-
-@keyframes flowerbed-grow {
-  0% { filter: brightness(1); transform: scale(0.92); }
-  48% { filter: brightness(1.18); transform: scale(1.08); }
-  100% { filter: brightness(1); transform: scale(1); }
-}
-
-.relay-pips {
-  position: absolute;
-  top: 14%;
-  left: 50%;
-  z-index: 3;
-  display: flex;
-  gap: clamp(5px, 0.8vmin, 9px);
-  align-items: center;
-  padding: 5px 9px;
-  transform: translateX(-50%);
-  border: 2px solid rgba(255, 255, 255, 0.82);
-  border-radius: 999px;
-  background: rgba(48, 91, 58, 0.58);
-  box-shadow: 0 3px 9px rgba(37, 79, 51, 0.18);
-}
-
-.relay-pip {
-  display: block;
-  width: clamp(11px, 1.65vmin, 17px);
-  border: 2px solid rgba(255, 255, 255, 0.92);
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.35);
-  box-shadow: inset 0 1px 3px rgba(44, 94, 57, 0.3);
-  aspect-ratio: 1 / 1;
-}
-
-.relay-pip.is-lit,
-.relay-pip.is-filled,
-.relay-pip.is-active {
-  background: var(--sun);
-  box-shadow: 0 0 7px #fff9a9, 0 0 13px #ffd45e;
-  transform: scale(1.08);
-}
-
-#relay-announcement {
-  position: absolute;
-  top: -12%;
-  left: 50%;
-  z-index: 4;
-  max-width: 230px;
-  padding: 7px 13px;
-  border: 2px solid rgba(255, 255, 255, 0.86);
-  border-radius: 999px;
-  opacity: 0;
-  transform: translate(-50%, 5px) scale(0.88);
-  background: rgba(62, 136, 78, 0.94);
-  box-shadow: 0 5px 13px rgba(35, 81, 50, 0.22);
-  color: #fff;
-  font-size: clamp(12px, 2vmin, 17px);
-  font-weight: 900;
-  line-height: 1.35;
-  text-align: center;
-  white-space: nowrap;
-}
-
-#relay-announcement.show,
-#relay-announcement.is-visible,
-#relay-announcement:not(:empty) {
-  animation: relay-message 1.1s ease-out;
-}
-
-@keyframes relay-message {
-  0% { opacity: 0; transform: translate(-50%, 6px) scale(0.84); }
-  20%, 72% { opacity: 1; transform: translate(-50%, 0) scale(1); }
-  100% { opacity: 0; transform: translate(-50%, -5px) scale(0.97); }
-}
-
-#light-seed {
-  position: absolute;
-  top: 0;
-  left: 0;
-  z-index: 62;
-  display: block;
-  width: clamp(48px, 7.5%, 82px);
-  height: auto;
-  transform: translate3d(var(--seed-x, 0px), var(--seed-y, 0px), 0) translate(-50%, -50%);
-  filter: drop-shadow(0 0 8px rgba(255, 242, 120, 0.82));
-  object-fit: contain;
-  pointer-events: none;
-  transition: transform 0.4s cubic-bezier(0.22, 0.92, 0.36, 1);
-  animation: light-seed-glow 1.35s ease-in-out infinite;
-}
-
-#light-seed.is-flying,
-#light-seed.is-moving {
-  filter: drop-shadow(0 0 14px rgba(255, 247, 143, 1));
-  animation: light-seed-flight-glow 0.52s ease-out;
-}
-
-@keyframes light-seed-glow {
-  0%, 100% { filter: drop-shadow(0 0 6px rgba(255, 240, 119, 0.62)); }
-  50% { filter: drop-shadow(0 0 13px rgba(255, 247, 164, 1)); }
-}
-
-@keyframes light-seed-flight-glow {
-  0%, 100% { filter: drop-shadow(0 0 7px rgba(255, 240, 119, 0.68)); }
-  45% { filter: drop-shadow(0 0 20px rgba(255, 252, 185, 1)); }
-}
-
 /* ── ゆっくり案内 ── */
 #overheat-banner {
   position: absolute;
@@ -1040,13 +930,6 @@ a:focus-visible {
   line-height: 1.25;
 }
 
-#result-relay {
-  margin-top: 3px;
-  color: #4c7a50;
-  font-size: clamp(14px, 2.2vmin, 19px);
-  font-weight: 900;
-}
-
 #result-combo {
   margin-top: 3px;
   color: #b75d2d;
@@ -1122,7 +1005,16 @@ a:focus-visible {
 
   #combo-hud {
     width: min(78%, 440px);
-    height: 46%;
+    height: 24%;
+  }
+
+  #combo-count {
+    font-size: clamp(64px, calc(11vmin + 12px + var(--combo-grow)), 90px);
+    line-height: 0.72;
+  }
+
+  #combo-hud .combo-label {
+    font-size: clamp(16px, 3.7vmin, 23px);
   }
 
   #start-screen {
@@ -1160,28 +1052,21 @@ a:focus-visible {
   }
 
   #board {
-    top: 11%;
-    bottom: 16%;
-    gap: 0 2%;
+    top: 10%;
+    bottom: 10%;
+    grid-template-rows: repeat(2, 35%);
+    row-gap: 30%;
+    column-gap: 2%;
     padding: 0 4%;
   }
 
   .hh-window {
-    width: min(75%, 160px);
+    width: min(52%, 112px);
   }
 
   .hh-hideout {
-    bottom: -30%;
-    width: min(106%, 210px);
-  }
-
-  #relay-progress {
-    bottom: -5%;
-    width: clamp(108px, 16%, 122px);
-  }
-
-  #light-seed {
-    width: clamp(44px, 7.2%, 60px);
+    top: 50%;
+    width: min(94%, 190px);
   }
 
   #result-card {
@@ -1206,10 +1091,6 @@ a:focus-visible {
 
   #result-card .result-score {
     font-size: clamp(26px, 8.2vh, 34px);
-  }
-
-  #result-relay {
-    font-size: clamp(12px, 3.6vh, 15px);
   }
 
   #result-combo {
@@ -1285,10 +1166,6 @@ a:focus-visible {
   .hh-char-wrap.is-visible:not(.is-sleeping) .hh-sparkle,
   .hh-char-wrap.is-sleeping .hh-char,
   .hh-char-wrap.is-visible.is-sleeping .hh-sleep-fx,
-  #relay-progress.is-growing #flowerbed-img,
-  #flowerbed-img.is-growing,
-  #flowerbed-img.is-blooming,
-  #light-seed,
   #result-card .result-new,
   #landscape-notice .rotate-icon,
   .tut-bubble,
@@ -1324,14 +1201,6 @@ a:focus-visible {
   .hh-dust.is-active {
     opacity: 0.86;
     transform: translate(-50%, -7%) scale(1);
-    animation: none;
-  }
-
-  #relay-announcement.show,
-  #relay-announcement.is-visible,
-  #relay-announcement:not(:empty) {
-    opacity: 1;
-    transform: translate(-50%, 0) scale(1);
     animation: none;
   }
 
