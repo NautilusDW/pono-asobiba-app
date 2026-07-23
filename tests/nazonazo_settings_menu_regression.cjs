@@ -23,9 +23,9 @@ assert.match(html, /id="mapMenuBtn"[^>]*role="menuitem"[\s\S]{0,180}?data-ui-art
 assert.match(html, /id="returnHomeLink"[^>]*href="\.\.\/play\.html"[^>]*role="menuitem"[\s\S]{0,180}?data-ui-art="home"[^>]*data-ui-art-eager="1"[\s\S]{0,100}?ホームへ もどる/);
 const settingsMarkup = html.slice(html.indexOf('<div id="gameSettings"'), html.indexOf('<div id="rotateHint"'));
 assert.doesNotMatch(settingsMarkup, /\p{Extended_Pictographic}/u, "the new menu must not reintroduce platform emoji");
-assert.match(html, /styles\.css\?v=20260721-1409/);
+assert.match(html, /styles\.css\?v=20260723-1435/);
 assert.match(html, /data\/quiz-art\.js\?v=20260721-1409/);
-assert.match(html, /js\/game\.js\?v=20260721-1409/);
+assert.match(html, /js\/game\.js\?v=20260723-1435/);
 
 const artSandbox = { window: {} };
 vm.runInNewContext(artSource, artSandbox, { filename: "quiz-art.js" });
@@ -61,8 +61,10 @@ assert.match(game, /document\.addEventListener\("pointerdown"[\s\S]{0,260}?stopI
   "the tap used to close the menu must not leak into a quiz or steering surface");
 assert.match(game, /event\.target!==settingsOutsideClickTarget/,
   "outside-click suppression must not swallow a fast follow-up tap on Home");
-assert.match(game, /bindTap\(mapMenuBtn,[\s\S]{0,120}?closeGameSettings\(\)[\s\S]{0,260}?openMap\(\)/,
+assert.match(game, /bindTap\(mapMenuBtn,\(\)=>\{\s*closeGameSettings\(\);[\s\S]{0,520}?openMap\(\);\s*\}\);/,
   "the former one-tap map action must remain available inside settings");
+assert.match(game, /if\(isDinoAdventureStage\(\)&&dinoAdventureState\.phase!=="idle"&&dinoAdventureState\.phase!=="complete"\)\{showStamp\("いまは きょうりゅうを たすけよう","ng"\);return;\}/,
+  "the settings map action must not interrupt an active dinosaur rescue");
 assert.match(game, /if\(settingsBtn&&entry\.index===0\)[\s\S]{0,260}?settingsBtn\.getBoundingClientRect\(\)/,
   "moving sea choices must reserve the visible settings button instead of a hidden map item");
 assert.doesNotMatch(game, /\bhomeBtn\b/, "the removed HUD map button must not survive as stale runtime state");

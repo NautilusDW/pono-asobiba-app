@@ -12,9 +12,8 @@ const game = read("nazonazo-tunnel/js/game.js");
 const html = read("nazonazo-tunnel/index.html");
 const css = read("nazonazo-tunnel/styles.css");
 const sw = read("sw.js");
-const DINO_V2_TOKEN = "20260723-1421";
-const RUNTIME_TOKEN = "20260723-1429";
-const SW_VERSION = 2352;
+const RUNTIME_TOKEN = "20260723-1435";
+const SW_VERSION = 2353;
 
 const STAGE_IDS = ["snow", "fire", "dino", "toy", "cat", "fantasy", "sky", "ruins"];
 const LAYER_KEYS = ["sky", "horizon", "mid", "ground", "fg", "decor"];
@@ -326,38 +325,26 @@ assert.deepEqual(constructed.slice(13, 19).map(image => image.src), Object.value
   "Dino raster preload must include the meadow but no retired decor strip");
 assert.equal(preloadContext.rasterCache.size, 16, "Dino must add exactly six raster preloaders");
 preloadContext.preloadPolish({ id: "dino" });
-const expectedDinoCraneUrls = [
-  "crane_arm_base_cutout", "crane_cable_cutout", "crane_hook_cutout", "branch_bundle_ring_cutout",
-  "fallen_log_ring_cutout", "sling_boulder_ring_cutout", "three_bay_safe_platform_cutout"
-].map(name => `../assets/images/nazonazo-tunnel/branch_dino_adventure_${name}_20260723.webp?v=${DINO_V2_TOKEN}`);
-const dinoCraneUrls = constructed.slice(19, 26).map(image => image.src);
-assert.deepEqual(dinoCraneUrls, expectedDinoCraneUrls,
-  "Dino selected-stage preload must contain the exact seven crane assets in reviewable runtime order");
+const expectedDinoPriorityUrl = "../assets/images/nazonazo-tunnel/branch_dino_adventure_rescue_before_20260723.webp?v=20260723-1435";
+assert.deepEqual(constructed.slice(19, 20).map(image => image.src), [expectedDinoPriorityUrl],
+  "Dino selected-stage preload must initially request only the blocked rescue scene");
 const dinoWorldfixUrls = Object.entries(WORLD_COHERENCE_ASSETS)
   .filter(([qualifiedKey]) => qualifiedKey.startsWith("dino."))
   .map(([, url]) => url);
-const dinoAdventureUrls = constructed.slice(26, 39).map(image => image.src);
-assert.equal(dinoAdventureUrls.length, 13, "Dino selected-stage preload must include all thirteen adventure assets");
-assert.ok(dinoAdventureUrls.every(url => url.includes("/branch_dino_adventure_")),
-  "Dino adventure preload must stay scoped to the selected Dino stage");
-const waterTileKinds = ["source", "straight", "curve", "tee", "pond", "rock"];
-const expectedDinoWaterTileUrls = ["dry", "wet"].flatMap(state =>
-  waterTileKinds.map(kind => `../assets/images/nazonazo-tunnel/branch_dino_adventure_water_tile_${kind}_${state}_20260723.webp?v=${DINO_V2_TOKEN}`));
-const dinoWaterTileUrls = constructed.slice(39, 51).map(image => image.src);
-assert.deepEqual(dinoWaterTileUrls, expectedDinoWaterTileUrls,
-  "Dino selected-stage preload must contain dry six then wet six water tiles in exact runtime order");
-assert.deepEqual(constructed.slice(51).map(image => image.src), dinoWorldfixUrls,
+assert.deepEqual(constructed.slice(20).map(image => image.src), dinoWorldfixUrls,
   "Dino polish preload must contain the six worldfix scenes and one fern nest");
+assert.equal(constructed.filter(image => image.src.includes("/branch_dino_adventure_")).length, 1,
+  "Dino selected-stage preload must defer success, crane, water and boss adventure assets");
 assert.equal(preloadContext.polishCache.size, 10, "Fire and Dino must cache exactly ten polish URLs");
 
 preloadContext.preloadRaster({ id: "fire", assets: fireAssets });
 preloadContext.preloadPolish({ id: "fire" });
 preloadContext.preloadRaster({ id: "dino", assets: dinoAssets });
 preloadContext.preloadPolish({ id: "dino" });
-assert.equal(constructed.length, 58, "Fire/Dino raster, crane, adventure, water-tile and polish preloads must remain deduplicated");
+assert.equal(constructed.length, 27, "Fire/Dino raster, priority rescue and polish preloads must remain deduplicated");
 preloadContext.preloadRaster({ id: "town", assets: selectedAssets });
 preloadContext.preloadPolish({ id: "town" });
-assert.equal(constructed.length, 58, "a non-branch stage must not preload branch assets");
+assert.equal(constructed.length, 27, "a non-branch stage must not preload branch assets");
 
 assert.match(applySkin, /classList\.toggle\("branch-raster",branchRaster\)/, "branch-raster body class toggle missing");
 assert.match(applySkin, /classList\.toggle\("branch-night",branchRaster&&loop%2===1\)/, "branch-night must only mark the second loop");

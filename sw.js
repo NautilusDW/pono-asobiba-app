@@ -1,5 +1,11 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2353: なぞなぞトレイン「きょうりゅうのもり」のクレーンを、困っている
+// こどもの恐竜の救出へ変更。救出前後の背景、停止前の予告、説明画面、
+// 段階的な画像先読み、水路の源から池までの順送り表示を追加し、個別CSS/JS
+// queryを20260723-1435へ同期。ゲーム個別ファイルはnetwork-first配信のため
+// CRITICAL_ASSETSには追加しない。play.html PAGE_CACHE_VERSION/
+// window.PONO_SW_VERSION と同期 (2353)。
 // v2352: ポノのはたけにっきを、最初から使える論理3×3の9区画へ拡張。
 // 画面では奥から1／2／3／2／1枚に見えるアイソメ配置を畑面中央へ置き、
 // 旧3／4区画セーブのindexと位置を保持して不足分だけ空畑で補完する。
@@ -887,7 +893,7 @@
 // styles.css／game.js queryを20260723-1429へ同期。ゲーム個別ファイルと画像は
 // network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
 // PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2347)。
-const CACHE_VERSION = 2352;
+const CACHE_VERSION = 2353;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

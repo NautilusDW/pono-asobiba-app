@@ -170,12 +170,13 @@ function validate(candidate) {
   check(/#dinoCraneStart|#dinoWaterStart|\.dino-adventure-briefing>button/.test(css) &&
     /min-height\s*:\s*(?:4[4-9]|[5-9]\d)px/.test(css), "briefing-touch-target");
   check(/\.dino-crane-game\.is-rescued\s+\.dino-crane-success-backdrop\{[^}]*opacity\s*:\s*1/.test(css), "crane-success-crossfade");
-  check(/dino-crane-game(?::is\([^)]*(?:resolving|success)|\[data-phase=["'](?:resolving|success)["']\])[^}]*\s+(?:\.dino-crane-train|\.dino-crane-playfield)/.test(css) ||
-    /dino-crane-game(?::is\([^)]*(?:resolving|success)|\[data-phase=["'](?:resolving|success)["']\])[^}]*\{[^}]*(?:opacity\s*:\s*0|visibility\s*:\s*hidden)/.test(css), "crane-success-reveal");
+  check(/dino-crane-game(?::is\([^)]*(?:resolving|success)[^)]*\)|\[data-phase=["'](?:resolving|success)["']\])\s+\.dino-crane-train[^,{]*(?:,|\{)/.test(css) &&
+    /dino-crane-game(?::is\([^)]*(?:resolving|success)[^)]*\)|\[data-phase=["'](?:resolving|success)["']\])\s+\.dino-crane-playfield[^,{]*(?:,|\{)/.test(css) &&
+    /(?:dino-crane-train|dino-crane-playfield)[^{]*\{[^}]*(?:opacity\s*:\s*0|visibility\s*:\s*hidden)/.test(css), "crane-success-reveal");
   check(/\.dino-water-game(?::is\([^)]*\.is-filling|\.is-filling)/.test(css) && /\.dino-water-success-scene/.test(css), "water-success-crossfade");
   check(/transition\s*:\s*opacity\s+\.7s/.test(css), "crossfade-duration");
   const reduced = css.slice(css.indexOf("@media (prefers-reduced-motion:reduce)"));
-  check(/dino-crane-backdrop/.test(reduced) && /dino-water-(?:dry-scene|success-scene)/.test(reduced) && /transition\s*:\s*none!important/.test(reduced), "reduced-motion");
+  check(/\.dino-crane-backdrop[^}]*\.dino-water-scene img\{[^}]*(?:transition-duration\s*:\s*\.12s|transition\s*:\s*none)!important/.test(reduced), "reduced-motion");
 
   const requiredFunctions = [
     "maybeShowDinoCraneApproachWarning",
@@ -189,6 +190,7 @@ function validate(candidate) {
     "finishDinoCraneSuccess",
     "finishDinoWaterSuccess",
     "revealDinoCraneEvent",
+    "prepareDinoCraneGameplayAssets",
     "revealDinoWaterEvent",
     "dinoAdventureDebugSnapshot"
   ];
@@ -210,11 +212,22 @@ function validate(candidate) {
     gameLoop.indexOf("maybeShowDinoCraneApproachWarning") < gameLoop.indexOf("worldX>=target"), "warning-before-stop");
 
   const revealCrane = functions.revealDinoCraneEvent;
-  check(/crane-briefing/.test(revealCrane) && /dinoCraneBriefing\.hidden=false/.test(revealCrane), "crane-briefing-hold");
+  const prepareCrane = functions.prepareDinoCraneGameplayAssets;
+  check(/dinoCraneSetPhase\(["']briefing["']\)/.test(revealCrane) && /dinoCraneBriefing\.hidden=false/.test(revealCrane) &&
+    revealCrane.indexOf("dinoCraneBriefing.hidden=false") < revealCrane.indexOf("prepareDinoCraneGameplayAssets(epoch)"),
+  "crane-briefing-hold");
+  check(revealCrane.indexOf("await preloadDinoRescueAssets") >= 0 &&
+    revealCrane.indexOf("prepareDinoAdventureDomImage(dinoCraneBackdrop,DINO_ADVENTURE_ASSETS.rescueBlocked)") >= 0 &&
+    revealCrane.indexOf("prepareDinoAdventureDomImage(dinoCraneBackdrop,DINO_ADVENTURE_ASSETS.rescueBlocked)") < revealCrane.indexOf("dinoApproachNotice.hidden=true") &&
+    !/preloadDinoCraneAssets/.test(revealCrane),
+  "warning-asset-handoff");
   check(/resetDinoCraneAttempt\s*\(/.test(revealCrane) && /inputLocked=true/.test(revealCrane) &&
-    /dinoCraneStart/.test(revealCrane), "crane-controls-gated");
+    /dinoCraneStart\.disabled=true/.test(revealCrane) && /aria-busy/.test(revealCrane) &&
+    /Promise\.all\(\[preloadDinoRescueSuccessAsset\(\),preloadDinoCraneAssets\(\)\]\)/.test(prepareCrane) &&
+    /dinoCraneStart\.disabled=false/.test(prepareCrane), "crane-controls-gated");
   const startCrane = functions.beginDinoCraneRescue;
-  check(/crane-briefing/.test(startCrane) && /dinoCraneBriefing\.hidden=true/.test(startCrane) &&
+  check(/crane-briefing/.test(startCrane) && /if\(!crane\.assetsReady\)/.test(startCrane) &&
+    /dinoCraneBriefing\.hidden=true/.test(startCrane) &&
     /inputLocked=false/.test(startCrane) && /dinoCraneSetPhase\(["']ready["']\)/.test(startCrane), "crane-start-transaction");
   const movementAllowed = extractFunction(game, "dinoCraneMovementAllowed");
   check(/ready/.test(movementAllowed) && /carrying/.test(movementAllowed) && !/briefing/.test(movementAllowed), "crane-controls-disabled-before-start");

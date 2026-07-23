@@ -141,7 +141,8 @@ const retryCrane = extractFunction(game, "retryDinoCraneEvent");
 check(/cargo=>!cargo\.placed/.test(retryCrane) && !/placed=false/.test(retryCrane), "event retry must preserve already placed cargo");
 const commitCrane = extractFunction(game, "commitDinoCraneSuccess");
 check(/crane\.placedCount!==DINO_CRANE_CARGO_DEFS\.length/.test(commitCrane), "crane may complete only at 3/3");
-check(/crane\.completed/.test(commitCrane) && /crane\.scoreGranted/.test(commitCrane), "crane completion and score need one-shot guards");
+const finalizeCrane = extractFunction(game, "finalizeDinoCraneSuccess");
+check(/crane\.completed/.test(commitCrane) && /crane\.scoreGranted/.test(finalizeCrane), "crane completion and score need one-shot guards");
 check(!/handleDinoCranePointerDown|handleDinoCranePointerMove|moveDinoCraneHookTo|dinoCraneHook\.addEventListener\(["']pointer/.test(game), "direct hook/object drag must be absent");
 check(/dinoCraneLeft\.addEventListener\(["']pointerdown/.test(game) && /dinoCraneRight\.addEventListener\(["']pointerdown/.test(game) && /dinoCraneLower\.addEventListener\(["']click/.test(game), "left/right hold plus lower/drop wiring missing");
 
@@ -230,7 +231,14 @@ check(/pauseDinoAdventureInput/.test(game) && /resumeDinoAdventureInput/.test(ga
 check(/dinoAdventureState\.epoch!==epoch/.test(extractFunction(game, "revealDinoCraneEvent")) && /dinoAdventureState\.epoch!==epoch/.test(extractFunction(game, "revealDinoWaterEvent")), "stale reveal epoch guards missing");
 check(/sources\.length!==7/.test(extractFunction(game, "preloadDinoCraneAssets")), "all seven crane assets must predecode");
 check(/sources\.length!==12/.test(extractFunction(game, "preloadDinoWaterTileAssets")), "all dry/wet tile assets must predecode");
-check(/Promise\.all/.test(extractFunction(game, "revealDinoCraneEvent")) && /prepareDinoAdventureDomImage/.test(extractFunction(game, "revealDinoCraneEvent")), "crane reveal must wait for decoded art");
+const revealCrane = extractFunction(game, "revealDinoCraneEvent");
+const prepareCrane = extractFunction(game, "prepareDinoCraneGameplayAssets");
+check(/await preloadDinoRescueAssets/.test(revealCrane) &&
+  /prepareDinoAdventureDomImage\(dinoCraneBackdrop,DINO_ADVENTURE_ASSETS\.rescueBlocked\)/.test(revealCrane) &&
+  /Promise\.all\(\[preloadDinoRescueSuccessAsset\(\),preloadDinoCraneAssets\(\)\]\)/.test(prepareCrane) &&
+  (prepareCrane.match(/prepareDinoAdventureDomImage/g) || []).length === 8 &&
+  /assetsReady=true/.test(prepareCrane),
+"crane briefing must paint blocked art before secondary gameplay art unlocks start");
 check(/Promise\.all/.test(extractFunction(game, "revealDinoWaterEvent")) && /preloadDinoWaterTileAssets/.test(extractFunction(game, "revealDinoWaterEvent")), "water reveal must wait for all tile art");
 
 check(/\.dino-crane-controls\{/.test(css), "crane controls CSS missing");

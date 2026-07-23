@@ -15,6 +15,8 @@ const original = Object.freeze({
   game: read("nazonazo-tunnel/js/game.js")
 });
 const DINO_ASSET_FILES = Object.freeze([
+  "branch_dino_adventure_rescue_before_20260723.webp",
+  "branch_dino_adventure_rescue_success_20260723.webp",
   "branch_dino_adventure_crane_arm_base_cutout_20260723.webp",
   "branch_dino_adventure_crane_cable_cutout_20260723.webp",
   "branch_dino_adventure_crane_hook_cutout_20260723.webp",
@@ -180,11 +182,13 @@ function validate(candidate) {
 
   const requiredIds = [
     "dinoAdventureLayer", "dinoAdventureTitle", "dinoAdventureGuide", "dinoAdventureProgress",
-    "dinoCraneGame", "dinoCraneBackdrop", "dinoCraneTrain", "dinoCranePlayfield", "dinoCraneArm",
+    "dinoApproachNotice", "dinoCraneGame", "dinoCraneBackdrop", "dinoCraneSuccessBackdrop",
+    "dinoCraneBriefing", "dinoCraneStart", "dinoCraneTrain", "dinoCranePlayfield", "dinoCraneArm",
     "dinoCraneCable", "dinoCraneHook", "dinoCraneCargoLayer", "dinoCraneBranch", "dinoCraneLog", "dinoCraneRock",
     "dinoCraneRingGuides", "dinoCraneSafePlatform", "dinoCranePlatformArt", "dinoCraneCargoStatus",
     "dinoCraneSwing", "dinoCraneChances", "dinoCraneControls", "dinoCraneLeft", "dinoCraneLower",
-    "dinoCraneRight", "dinoCraneRetry", "dinoCraneContinue", "dinoWaterGame", "dinoWaterDinos", "dinoWaterGrid",
+    "dinoCraneRight", "dinoCraneRetry", "dinoCraneContinue", "dinoWaterGame", "dinoWaterDinos",
+    "dinoWaterSuccessScene", "dinoWaterBriefing", "dinoWaterStart", "dinoWaterGrid",
     "dinoWaterBudget", "dinoWaterHint", "dinoWaterContinue",
     "dinoBossGame", "dinoBossTrex", "dinoBossTrainHp", "dinoBossTrexHp", "dinoBossWater",
     "dinoBossTug", "dinoBossAction", "dinoBossRetry"
@@ -197,7 +201,7 @@ function validate(candidate) {
   check(/<section id="dinoAdventureLayer"[^>]*data-phase="idle"[^>]*aria-hidden="true"[^>]*hidden/.test(html), "layer-a11y");
   check(/id="dinoWaterGrid"[^>]*role="grid"/.test(html) && /handleDinoWaterKeyDown/.test(game), "water-keyboard");
   check(/id="dinoWaterBudget"[^>]*role="progressbar"[^>]*aria-valuemin="0"[^>]*aria-valuemax="28"[^>]*aria-valuenow="1"/.test(html), "water-connect-a11y");
-  for (const id of ["dinoCraneLeft", "dinoCraneLower", "dinoCraneRight", "dinoCraneRetry", "dinoCraneContinue", "dinoWaterHint", "dinoWaterContinue", "dinoBossAction", "dinoBossRetry"]) {
+  for (const id of ["dinoCraneStart", "dinoCraneLeft", "dinoCraneLower", "dinoCraneRight", "dinoCraneRetry", "dinoCraneContinue", "dinoWaterStart", "dinoWaterHint", "dinoWaterContinue", "dinoBossAction", "dinoBossRetry"]) {
     check(new RegExp(`<button id="${id}"[^>]*type="button"`).test(html), "real-button", id);
   }
   for (const id of ["dinoBossTrainHp", "dinoBossTrexHp"]) {
@@ -224,7 +228,9 @@ function validate(candidate) {
   const reducedAt = css.indexOf("@media (prefers-reduced-motion:reduce)");
   const reduced = reducedAt >= 0 ? css.slice(reducedAt) : "";
   const reducedCompact = compact(reduced);
-  check(reducedCompact.includes('.dino-crane-ring-guides>i,.dino-water-game.is-saved.dino-water-sceneimg,.dino-boss-game[data-phase="defend"].dino-boss-trex,.dino-boss-wave,.dino-boss-game[data-phase="burst"].dino-boss-tug>i,.dino-boss-action.is-burst{animation:none!important}') && reducedCompact.includes(".dino-crane-arm,.dino-crane-cable,.dino-crane-hook,.dino-crane-cargo,.dino-crane-bay,.dino-crane-swing>i{transition:none!important}") && reducedCompact.includes(".dino-water-tile-rotator,.dino-water-tile-rotator>.is-wet{transition:none!important}"), "reduced-motion");
+  check(reducedCompact.includes('.dino-crane-ring-guides>i,.dino-water-game.is-saved.dino-water-success-scene,.dino-boss-game[data-phase="defend"].dino-boss-trex,.dino-boss-wave,.dino-boss-game[data-phase="burst"].dino-boss-tug>i,.dino-boss-action.is-burst{animation:none!important}') && reducedCompact.includes(".dino-crane-arm,.dino-crane-cable,.dino-crane-hook,.dino-crane-cargo,.dino-crane-bay,.dino-crane-swing>i{transition:none!important}") && reducedCompact.includes(".dino-water-tile-rotator,.dino-water-tile-rotator>.is-dry,.dino-water-tile-rotator>.is-wet{transition:none!important}") && reducedCompact.includes(".dino-crane-backdrop,.dino-crane-train,.dino-crane-playfield,.dino-water-sceneimg{transition-duration:.12s!important}"), "reduced-motion");
+  check(cssCompact.includes(".dino-water-tile-rotator>.is-dry,.dino-water-tile-rotator>.is-wet{transition:opacity.2sease}"),
+    "water-tile-crossfade");
 
   check(numericConstant(game, "DINO_ADVENTURE_EVENT_COUNT") === 3, "event-count");
   const cargoDefs = extractArrayConstant(game, "DINO_CRANE_CARGO_DEFS");
@@ -248,9 +254,11 @@ function validate(candidate) {
 
   const requiredFunctions = [
     "createDinoAdventureState", "isDinoAdventureStage", "resetDinoAdventure", "startDinoAdventure",
-    "showDinoCraneEvent", "revealDinoCraneEvent", "beginDinoCraneMovePointer", "beginDinoCraneLower",
-    "registerDinoCraneMiss", "retryDinoCraneEvent", "commitDinoCraneSuccess", "tickDinoCrane",
+    "showDinoCraneEvent", "revealDinoCraneEvent", "prepareDinoCraneGameplayAssets", "beginDinoCraneRescue",
+    "measureDinoCraneGeometry", "syncDinoCranePresentation", "beginDinoCraneMovePointer", "beginDinoCraneLower",
+    "registerDinoCraneMiss", "retryDinoCraneEvent", "commitDinoCraneSuccess", "finalizeDinoCraneSuccess", "tickDinoCrane",
     "generateDinoWaterBoard", "dinoWaterReachable", "dinoWaterBoardSolved", "rotateDinoWaterTile", "useDinoWaterHint",
+    "beginDinoWaterSuccess", "tickDinoWaterSuccess", "commitDinoWaterSuccess",
     "showDinoWaterEvent", "showDinoBossEncounter", "tickDinoAdventure", "finishDinoBossVictory"
   ];
   const functions = Object.fromEntries(requiredFunctions.map(name => [name, extractFunction(game, name)]));
@@ -279,38 +287,109 @@ function validate(candidate) {
   check(/resize/.test(game) && /handleDinoCraneViewportChange/.test(game), "resize-lifecycle");
   check(/keydown/.test(game) && /handleDinoCraneKeyDown/.test(game) && /dinoWater|DinoWater|dinoBoss|DinoBoss/.test(game), "keyboard-runtime");
 
+  const sceneAssetPreloader = extractFunction(game, "preloadDinoSceneAssets") || "";
   const assetPreloader = extractFunction(game, "preloadDinoAdventureAssets") || "";
+  const rescueAssetPreloader = extractFunction(game, "preloadDinoRescueAssets") || "";
+  const rescueSuccessAssetPreloader = extractFunction(game, "preloadDinoRescueSuccessAsset") || "";
+  const waterSceneAssetPreloader = extractFunction(game, "preloadDinoWaterSceneAssets") || "";
   const craneAssetPreloader = extractFunction(game, "preloadDinoCraneAssets") || "";
-  const revealCrane = extractFunction(game, "revealDinoCraneEvent") || "";
-  const revealWater = extractFunction(game, "revealDinoWaterEvent") || "";
-  const revealBoss = extractFunction(game, "revealDinoBossEncounter") || "";
-  check(numericConstant(game, "DINO_ADVENTURE_ASSET_READY_TIMEOUT_MS") === 8000 && /image\.decode/.test(assetPreloader) && /Promise\.race/.test(assetPreloader) && /Promise\.all/.test(assetPreloader), "asset-predecode");
   const waterTilePreloader = extractFunction(game, "preloadDinoWaterTileAssets") || "";
+  const stagePolishPreloader = extractFunction(game, "preloadBranchStagePolish") || "";
+  const applyAdventureArt = extractFunction(game, "applyDinoAdventureArt") || "";
+  const showCrane = functions.showDinoCraneEvent || "";
+  const revealCrane = extractFunction(game, "revealDinoCraneEvent") || "";
+  const prepareCrane = functions.prepareDinoCraneGameplayAssets || "";
+  const beginCrane = functions.beginDinoCraneRescue || "";
+  const showWater = functions.showDinoWaterEvent || "";
+  const revealWater = extractFunction(game, "revealDinoWaterEvent") || "";
+  const showBoss = functions.showDinoBossEncounter || "";
+  const revealBoss = extractFunction(game, "revealDinoBossEncounter") || "";
+  check(numericConstant(game, "DINO_ADVENTURE_ASSET_READY_TIMEOUT_MS") === 24000 &&
+    /image\.decode/.test(sceneAssetPreloader) && /Promise\.race/.test(sceneAssetPreloader) && /Promise\.all/.test(sceneAssetPreloader) &&
+    /image\.decode/.test(assetPreloader) && /Promise\.race/.test(assetPreloader) && /Promise\.all/.test(assetPreloader), "asset-predecode");
   check(/image\.decode/.test(craneAssetPreloader) && /Promise\.race/.test(craneAssetPreloader) && /Promise\.all/.test(craneAssetPreloader) && /sources\.length!==7/.test(craneAssetPreloader), "crane-asset-predecode");
   check(/image\.decode/.test(waterTilePreloader) && /Promise\.race/.test(waterTilePreloader) && /Promise\.all/.test(waterTilePreloader) && /sources\.length!==12/.test(waterTilePreloader), "water-tile-predecode");
-  check(/dinoAdventureImageCache=new Map\(\),dinoAdventureImageDecodePromises=new Map\(\)/.test(game) && /if\(dinoAdventureAssetsReadyPromise\)return dinoAdventureAssetsReadyPromise/.test(assetPreloader), "asset-predecode-cache");
-  check(/preloadDinoWaterTileAssets/.test(functions.showDinoWaterEvent || "") && /preloadDinoAdventureAssets/.test(functions.showDinoWaterEvent || "") && compact(functions.showDinoBossEncounter || "").includes("preloadDinoAdventureAssets().then(()=>revealDinoBossEncounter(epoch))"), "asset-predecode-gate");
-  check(/preloadDinoCraneAssets/.test(functions.showDinoCraneEvent || "") && /Promise\.all/.test(revealCrane) && /dinoAdventureState\.epoch!==epoch/.test(revealCrane), "crane-asset-predecode-gate");
+  check(/dinoAdventureImageCache=new Map\(\),dinoAdventureImageDecodePromises=new Map\(\)/.test(game) &&
+    /if\(dinoAdventureAssetsReadyPromise\)return dinoAdventureAssetsReadyPromise/.test(assetPreloader) &&
+    /if\(!dinoRescueAssetsReadyPromise\)dinoRescueAssetsReadyPromise=/.test(compact(rescueAssetPreloader)) &&
+    /if\(!dinoRescueSuccessAssetReadyPromise\)dinoRescueSuccessAssetReadyPromise=/.test(compact(rescueSuccessAssetPreloader)) &&
+    /if\(!dinoWaterSceneAssetsReadyPromise\)dinoWaterSceneAssetsReadyPromise=/.test(compact(waterSceneAssetPreloader)), "asset-predecode-cache");
+  check(compact(rescueAssetPreloader).includes("preloadDinoSceneAssets([DINO_ADVENTURE_ASSETS.rescueBlocked])") &&
+    compact(rescueSuccessAssetPreloader).includes("preloadDinoSceneAssets([DINO_ADVENTURE_ASSETS.rescueSuccess])") &&
+    compact(waterSceneAssetPreloader).includes("preloadDinoSceneAssets([DINO_ADVENTURE_ASSETS.waterDry,DINO_ADVENTURE_ASSETS.waterSuccess])"),
+  "asset-priority-groups");
+  check(compact(stagePolishPreloader).includes('if(st&&st.id==="dino")preloadDinoRescueAssets()') &&
+    !/preloadDino(?:Crane|Water|Adventure)Assets/.test(stagePolishPreloader) &&
+    compact(applyAdventureArt).startsWith("functionapplyDinoAdventureArt(){preloadDinoRescueAssets();") &&
+    !/preloadDino(?:Crane|Water|Adventure)Assets/.test(applyAdventureArt), "asset-priority-entry");
+  check(compact(showCrane).includes("preloadDinoRescueAssets().then(()=>revealDinoCraneEvent(epoch))") &&
+    !/preloadDino(?:Crane|Water|Adventure)Assets/.test(showCrane), "crane-asset-predecode-gate");
+  const craneBriefingAt = revealCrane.indexOf("dinoCraneBriefing.hidden=false");
+  const craneLoadingAt = revealCrane.indexOf("dinoCraneStart.disabled=true");
+  const craneSecondaryAt = revealCrane.indexOf("prepareDinoCraneGameplayAssets(epoch)");
+  check(/await preloadDinoRescueAssets/.test(revealCrane) &&
+    /prepareDinoAdventureDomImage\(dinoCraneBackdrop,DINO_ADVENTURE_ASSETS\.rescueBlocked\)/.test(revealCrane) &&
+    craneBriefingAt >= 0 && craneBriefingAt < craneLoadingAt && craneLoadingAt < craneSecondaryAt, "crane-briefing-priority");
+  const prepareCraneCompact = compact(prepareCrane);
+  const craneReadyAt = prepareCrane.indexOf("dinoAdventureState.crane.assetsReady=true");
+  const craneEnableAt = prepareCrane.lastIndexOf("dinoCraneStart.disabled=false");
+  const waterDeferredAt = prepareCrane.indexOf("preloadDinoWaterSceneAssets()");
+  check(prepareCraneCompact.includes("awaitPromise.all([preloadDinoRescueSuccessAsset(),preloadDinoCraneAssets()])") &&
+    (prepareCrane.match(/prepareDinoAdventureDomImage/g) || []).length === 8 &&
+    craneReadyAt >= 0 && craneReadyAt < craneEnableAt && craneEnableAt < waterDeferredAt &&
+    /dinoCraneStart\.textContent=["']たすける！["']/.test(prepareCrane) &&
+    /preloadDinoWaterTileAssets/.test(prepareCrane), "crane-secondary-asset-gate");
+  check(/if\(!crane\.assetsReady\)/.test(beginCrane) && /prepareDinoCraneGameplayAssets\(state\.epoch\)/.test(beginCrane) &&
+    /dinoCraneStart\.disabled=true/.test(beginCrane) && /return false/.test(beginCrane), "crane-start-loading-gate");
+  check(compact(showWater).includes("Promise.all([preloadDinoWaterSceneAssets(),preloadDinoWaterTileAssets()]).then(()=>revealDinoWaterEvent(epoch))") &&
+    !/preloadDinoAdventureAssets/.test(showWater), "asset-predecode-gate");
+  const waterBriefingAt = revealWater.indexOf("dinoWaterBriefing.hidden=false");
+  const bossDeferredAt = revealWater.indexOf("preloadDinoAdventureAssets()");
+  check(waterBriefingAt >= 0 && bossDeferredAt > waterBriefingAt &&
+    compact(showBoss).includes("preloadDinoAdventureAssets().then(()=>revealDinoBossEncounter(epoch))"), "boss-deferred-predecode");
   check([revealWater, revealBoss].every(body => /isDinoAdventureStage\(\)/.test(body) && /!playing/.test(body) && /dinoAdventureState\.epoch!==epoch/.test(body) && /dinoAdventureState\.phase!==["']travel["']/.test(body)), "asset-stale-reveal-guard");
 
   const stateFactory = functions.createDinoAdventureState || "";
+  const craneGeometry = functions.measureDinoCraneGeometry || "";
+  const cranePresentation = functions.syncDinoCranePresentation || "";
   check(/completionCount:0/.test(stateFactory) && /transitionCount:0/.test(stateFactory) && /epoch:0/.test(stateFactory), "one-shot-state");
-  check(/crane:\{[^}]*attempt:1[^}]*completed:false[^}]*scoreGranted:false[^}]*chances:DINO_CRANE_CHANCES[^}]*placedCount:0[^}]*movePointers:new Map\(\)/.test(stateFactory), "crane-state");
+  check(/crane:\{[^}]*attempt:1[^}]*completed:false[^}]*scoreGranted:false[^}]*chances:DINO_CRANE_CHANCES[^}]*placedCount:0[^}]*movePointers:new Map\(\)[^}]*assetsReady:false[^}]*successBackdropReady:false/.test(stateFactory), "crane-state");
+  check(/rescueSceneHeight/.test(craneGeometry) && /rescueGroundY=clamp\([^;]*\.67[^;]*height\*\.62[^;]*height\*\.80\)/.test(craneGeometry) &&
+    /ringY=rescueGroundY-\(def\.bbox\[3\]-def\.anchorY\)\*size/.test(craneGeometry), "crane-rescue-grounding");
+  check(/g\.height<=360\?clamp\(g\.hookSize\*\.55,30,34\):clamp\(g\.hookSize\*\.70,38,58\)/.test(cranePresentation),
+    "crane-short-ring-visibility");
   const retryCrane = functions.retryDinoCraneEvent || "";
   const commitCrane = functions.commitDinoCraneSuccess || "";
+  const finalizeCrane = functions.finalizeDinoCraneSuccess || "";
   const tickCrane = functions.tickDinoCrane || "";
-  const beginWaterSuccess = extractFunction(game, "beginDinoWaterSuccess") || "";
-  const commitWaterSuccess = extractFunction(game, "commitDinoWaterSuccess") || "";
+  const beginWaterSuccess = functions.beginDinoWaterSuccess || "";
+  const tickWaterSuccess = functions.tickDinoWaterSuccess || "";
+  const commitWaterSuccess = functions.commitDinoWaterSuccess || "";
   const tickAdventure = functions.tickDinoAdventure || "";
   check(!/stageMiss\+\+|addScore\s*\(/.test(retryCrane) && /cargo=>!cargo\.placed/.test(retryCrane) && !/placed=false/.test(retryCrane), "crane-no-penalty-retry");
-  check(/crane\.completed/.test(commitCrane) && /crane\.scoreGranted/.test(commitCrane) && /crane\.placedCount!==DINO_CRANE_CARGO_DEFS\.length/.test(commitCrane), "crane-one-shot-score");
-  check(/dinoAdventureSetPhase\(["']crane-success["'],0,now\)/.test(commitCrane) && /dinoCraneContinue\.hidden=false/.test(commitCrane) && !/finishDinoCraneSuccess\s*\(/.test(tickCrane), "crane-manual-success-hold");
-  check(/prepareDinoAdventureDomImage\(dinoWaterDinos,DINO_ADVENTURE_ASSETS\.waterSuccess\)/.test(beginWaterSuccess) && /commitDinoWaterSuccess/.test(beginWaterSuccess) && /dinoWaterContinue\.hidden=false/.test(commitWaterSuccess) && /phaseEndAt=0/.test(commitWaterSuccess) && !/finishDinoWaterSuccess\s*\(/.test(tickAdventure), "water-manual-success-hold");
+  check(/crane\.completed/.test(commitCrane) && /crane\.scoreGranted/.test(finalizeCrane) && /crane\.placedCount!==DINO_CRANE_CARGO_DEFS\.length/.test(commitCrane), "crane-one-shot-score");
+  check(/dinoAdventureSetPhase\(["']crane-success["'],0,now\)/.test(finalizeCrane) && /dinoCraneContinue\.hidden=false/.test(finalizeCrane) && !/finishDinoCraneSuccess\s*\(/.test(tickCrane), "crane-manual-success-hold");
+  check(/flowQueue=\[\.\.\.water\.path\]/.test(beginWaterSuccess) && /resolve-water-flow/.test(beginWaterSuccess) &&
+    /commitDinoWaterSuccess/.test(tickWaterSuccess) && /dinoWaterContinue\.hidden=false/.test(commitWaterSuccess) &&
+    /phaseEndAt=0/.test(commitWaterSuccess) && !/finishDinoWaterSuccess\s*\(/.test(tickAdventure), "water-manual-success-hold");
+  const flowResetAddAt = beginWaterSuccess.indexOf('classList.add("is-flow-reset")');
+  const flowResetApplyAt = beginWaterSuccess.indexOf("applyDinoWaterWetPresentation");
+  const flowResetFlushAt = beginWaterSuccess.indexOf("dinoWaterGrid.offsetWidth");
+  const flowResetRemoveAt = beginWaterSuccess.indexOf('classList.remove("is-flow-reset")');
+  check(flowResetAddAt >= 0 && flowResetAddAt < flowResetApplyAt && flowResetApplyAt < flowResetFlushAt && flowResetFlushAt < flowResetRemoveAt &&
+    cssCompact.includes(".dino-water-game.is-flow-reset.dino-water-tile-rotator>.is-dry,.dino-water-game.is-flow-reset.dino-water-tile-rotator>.is-wet{transition:none!important}") &&
+    /dinoWaterGame\.classList\.remove\(["']is-flow-reset["']/.test(reset), "water-flow-reset");
   check(/if\(!state\.crane\.completed\|\|state\.phase!==["']crane-success["']\)return/.test(finishCrane) && /if\(!state\.water\.completed\|\|state\.phase!==["']resolve-water["']\)return/.test(finishWater), "success-continue-one-shot");
   check(/bindTap\(dinoCraneContinue,[^\n]*finishDinoCraneSuccess/.test(game) && /bindTap\(dinoWaterContinue,[^\n]*finishDinoWaterSuccess/.test(game), "success-continue-binding");
   check(/dinoCraneContinue\.hidden=true/.test(reset) && /dinoWaterContinue\.hidden=true/.test(reset), "success-continue-cleanup");
   check((game.match(/\["pointerup","pointercancel","lostpointercapture"\]/g) || []).length >= 2 && /endDinoCraneMovePointer/.test(game) && /movePointers\.delete/.test(extractFunction(game, "endDinoCraneMovePointer")), "crane-pointercancel-retry");
-  check(/isDinoAdventureStage\(\)/.test(revealCrane) && /!playing/.test(revealCrane) && (revealCrane.match(/dinoAdventureState\.epoch!==epoch/g) || []).length >= 3 && /dinoAdventureState\.phase!==["']travel["']/.test(revealCrane), "crane-stale-reveal-guard");
+  check(/isDinoAdventureStage\(\)/.test(revealCrane) && /!playing/.test(revealCrane) &&
+    (revealCrane.match(/dinoAdventureState\.epoch!==epoch/g) || []).length >= 2 &&
+    /dinoAdventureState\.phase!==["']travel["']/.test(revealCrane) &&
+    (prepareCrane.match(/epoch!==epoch/g) || []).length >= 3 &&
+    (prepareCrane.match(/phase!==["']crane-briefing["']/g) || []).length >= 3, "crane-stale-reveal-guard");
+  check(/dinoCraneStart\.disabled=false/.test(reset) && /dinoCraneStart\.textContent=["']たすける！["']/.test(reset) &&
+    /dinoCraneStart\.removeAttribute\(["']aria-busy["']\)/.test(reset), "crane-start-cleanup");
   check(/bossHp:DINO_BOSS_HP/.test(stateFactory) && /trainHp:DINO_BOSS_TRAIN_HP/.test(stateFactory) && /waterCharge:DINO_BOSS_WATER_CHARGES/.test(stateFactory), "boss-state");
   check(/water:\{seed:0,board:\[\],path:\[\],wet:\[\],helpRemaining:1,rotationCount:0/.test(stateFactory) && /attempt:1/.test(stateFactory), "water-state");
 
@@ -698,7 +777,7 @@ async function runBrowser(browserName, base) {
     return metrics;
   }
   const viewports = [[390, 844], [568, 320], [844, 390], [1024, 768], [1366, 768]];
-  async function assertHeldSuccessFeedback({ buttonId, expectedPhase, expectedGuide, startedAt, reducedMotion, imageFile = "" }) {
+  async function assertHeldSuccessFeedback({ buttonId, expectedPhase, expectedGuide, startedAt, reducedMotion, imageFile = "", imageId = "dinoWaterDinos" }) {
     const button = frame.locator(`#${buttonId}`);
     await button.waitFor({ state: "visible", timeout: 3000 });
     await frame.waitForFunction(id => document.activeElement?.id === id, buttonId, { timeout: 3000 });
@@ -766,12 +845,12 @@ async function runBrowser(browserName, base) {
     for (const [width, height] of viewports) {
       await page.setViewportSize({ width, height });
       await frame.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
-      const fit = await frame.evaluate(({ id, guideText, imageExpected }) => {
+      const fit = await frame.evaluate(({ id, guideText, imageExpected, successImageId }) => {
         const button = document.getElementById(id), guide = document.getElementById("dinoAdventureGuide");
         const buttonRect = button.getBoundingClientRect(), guideRect = guide.getBoundingClientRect();
         const overlapWidth = Math.max(0, Math.min(buttonRect.right, guideRect.right) - Math.max(buttonRect.left, guideRect.left));
         const overlapHeight = Math.max(0, Math.min(buttonRect.bottom, guideRect.bottom) - Math.max(buttonRect.top, guideRect.top));
-        const image = document.getElementById("dinoWaterDinos");
+        const image = document.getElementById(successImageId);
         const imageRect = image.getBoundingClientRect();
         return {
           overflowX: document.documentElement.scrollWidth - innerWidth,
@@ -785,7 +864,7 @@ async function runBrowser(browserName, base) {
           imageVisible: !imageExpected || (image.complete && image.naturalWidth > 0 && image.naturalHeight > 0 && imageRect.width > 0 && imageRect.height > 0 && getComputedStyle(image).display !== "none"),
           playfieldOpacity: Number(getComputedStyle(document.querySelector(".dino-water-playfield")).opacity)
         };
-      }, { id: buttonId, guideText: expectedGuide, imageExpected: Boolean(imageFile) });
+      }, { id: buttonId, guideText: expectedGuide, imageExpected: Boolean(imageFile), successImageId: imageId });
       assert.ok(fit.overflowX <= 1 && fit.overflowY <= 1, `${browserName}: success overflow ${width}x${height}: ${JSON.stringify(fit)}`);
       assert.equal(fit.buttonInside, true, `${browserName}: success continue action clipped at ${width}x${height}: ${JSON.stringify(fit)}`);
       assert.ok(fit.buttonWidth >= 44 && fit.buttonHeight >= 44, `${browserName}: success continue action below 44px at ${width}x${height}`);
@@ -794,6 +873,10 @@ async function runBrowser(browserName, base) {
       if (imageFile) {
         assert.equal(fit.imageVisible, true, `${browserName}: water success art not visible at ${width}x${height}: ${JSON.stringify(fit)}`);
         assert.ok(fit.playfieldOpacity <= 0.05, `${browserName}: solved water board still obscures the success art at ${width}x${height}: ${JSON.stringify(fit)}`);
+      }
+      if (width === 568 && height === 320) {
+        const successKind = buttonId === "dinoCraneContinue" ? "crane" : "water";
+        await page.screenshot({ path: `/tmp/nazonazo-dino-adventure-${browserName}-${successKind}-success-transient-568x320.png`, fullPage: true });
       }
     }
     await page.setViewportSize({ width: 844, height: 390 });
@@ -817,7 +900,13 @@ async function runBrowser(browserName, base) {
     assert.equal(held.phase, expectedPhase, `${browserName}: success advanced without the continue action`);
     assert.equal(await button.isVisible(), true, `${browserName}: success continue action disappeared while waiting`);
     assert.equal(await frame.locator("#dinoAdventureGuide").textContent(), expectedGuide, `${browserName}: success guide disappeared while waiting`);
-    if (imageFile) await assertRenderedImage(frame.locator("#dinoWaterDinos"), imageFile, "held water success");
+    if (imageFile) await assertRenderedImage(frame.locator(`#${imageId}`), imageFile, "held water success");
+    const successKind = buttonId === "dinoCraneContinue" ? "crane" : "water";
+    await page.setViewportSize({ width: 568, height: 320 });
+    await frame.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    await page.screenshot({ path: `/tmp/nazonazo-dino-adventure-${browserName}-${successKind}-success-568x320.png`, fullPage: true });
+    await page.setViewportSize({ width: 844, height: 390 });
+    await frame.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
 
     // Backgrounding cannot consume the manual acknowledgement or create a stale transition.
     await frame.evaluate(() => {
@@ -837,11 +926,74 @@ async function runBrowser(browserName, base) {
   const saveBefore = await frame.evaluate(() => localStorage.getItem("pono_nazonazo_tunnel_v1"));
   const journeyStartedAt = Date.now();
   await frame.locator("#startBtn").click();
-  const initial = await waitSnapshot(frame, state => state.phase === "crane-ready", `${browserName}: crane event did not start`, 20000);
+  const warning = await waitSnapshot(frame, state => state.phase === "travel" && state.driving && state.pending === "dinoCrane" && state.noticeVisible,
+    `${browserName}: the approach warning did not appear before the train stopped`, 10000);
+  assert.equal(warning.craneBriefingVisible, false, `${browserName}: detailed crane briefing appeared while the train was moving`);
+  assert.equal(await frame.locator("#dinoApproachNotice").isVisible(), true, `${browserName}: approach warning state had no visible notice`);
+  assert.match(await frame.locator("#dinoApproachNotice").textContent(), /おや[？?].*こどもの きょうりゅうが こまってる/s,
+    `${browserName}: approach warning did not explain why the train was stopping`);
+  // With deliberately delayed artwork there is a stable stopped/loading
+  // interval: the short warning must remain until the decoded briefing is
+  // actually ready. With warm cache the stop-to-briefing handoff can complete
+  // in one microtask, so a 40 ms polling sample is intentionally not required.
+  if (slowAssetDelayMs >= 1000) {
+    const stoppedWarning = await waitSnapshot(frame, state => state.phase === "travel" && !state.driving && state.noticeVisible,
+      `${browserName}: delayed artwork cleared the approach warning before the briefing was ready`, 10000);
+    assert.equal(stoppedWarning.pending, null, `${browserName}: stopped warning retained a stale travel transaction`);
+  }
+
+  const briefing = await waitSnapshot(frame, state => state.phase === "crane-briefing" && state.craneBriefingVisible,
+    `${browserName}: stopped train did not enter the held rescue briefing`, 20000);
+  const briefingShownAt = Date.now();
   qaMetrics.craneRevealMs = Date.now() - journeyStartedAt;
   if (slowAssetDelayMs) {
-    assert.ok(qaMetrics.craneRevealMs < slowAssetDelayMs + 6000, `${browserName}: crane reveal wait was excessive: ${qaMetrics.craneRevealMs}ms`);
+    assert.ok(qaMetrics.craneRevealMs < slowAssetDelayMs + 1500, `${browserName}: blocked rescue art did not reveal the briefing within the priority budget: ${qaMetrics.craneRevealMs}ms`);
   }
+  assert.equal(briefing.noticeVisible, false, `${browserName}: approach warning remained over the detailed briefing`);
+  assert.equal(briefing.inputLocked, true, `${browserName}: crane controls unlocked before the child accepted the rescue`);
+  assert.equal(briefing.crane.blockedCount, 3, `${browserName}: rescue did not begin with three blockers`);
+  assert.equal(await frame.locator("#dinoCraneStart").isVisible(), true, `${browserName}: rescue briefing start action is missing`);
+  assert.equal(await frame.locator("#dinoCraneLeft").isDisabled(), true, `${browserName}: left crane control enabled behind the briefing`);
+  assert.equal(await frame.locator("#dinoCraneLower").isDisabled(), true, `${browserName}: lower crane control enabled behind the briefing`);
+  assert.equal(await frame.locator("#dinoCraneRight").isDisabled(), true, `${browserName}: right crane control enabled behind the briefing`);
+  const briefingTransitionCount = briefing.transitionCount;
+  const craneStart = frame.locator("#dinoCraneStart");
+  if (slowAssetDelayMs) {
+    assert.equal(briefing.crane.assetsReady, false, `${browserName}: secondary crane art was reported ready at the first slow-network briefing frame`);
+    assert.equal(await craneStart.isDisabled(), true, `${browserName}: rescue start enabled before secondary art decoded`);
+    assert.equal((await craneStart.textContent()).trim(), "よみこみちゅう", `${browserName}: disabled rescue start lacked its loading label`);
+    assert.equal(await craneStart.getAttribute("aria-busy"), "true", `${browserName}: disabled rescue start lacked aria-busy`);
+    await craneStart.dispatchEvent("pointerdown", { pointerId: 71, pointerType: "mouse", button: 0 });
+    await craneStart.dispatchEvent("pointerup", { pointerId: 71, pointerType: "mouse", button: 0 });
+    await craneStart.dispatchEvent("click");
+    await craneStart.dispatchEvent("keydown", { key: "Enter", code: "Enter" });
+    await craneStart.dispatchEvent("keydown", { key: " ", code: "Space" });
+    await page.waitForTimeout(160);
+    const rejectedLoadingInput = await snapshot(frame);
+    assert.equal(rejectedLoadingInput.phase, "crane-briefing", `${browserName}: disabled loading action advanced the crane`);
+    assert.equal(rejectedLoadingInput.transitionCount, briefingTransitionCount, `${browserName}: disabled loading action created a transition`);
+    assert.equal(rejectedLoadingInput.crane.blockedCount, 3, `${browserName}: disabled loading action moved a blocker`);
+  }
+  const readyBriefing = await waitSnapshot(frame,
+    state => state.phase === "crane-briefing" && state.crane.assetsReady && state.crane.successBackdropReady,
+    `${browserName}: crane gameplay art did not unlock the held briefing`, 30000);
+  await frame.waitForFunction(() => {
+    const button = document.getElementById("dinoCraneStart");
+    return button && !button.disabled && button.textContent.trim() === "たすける！" && !button.hasAttribute("aria-busy");
+  }, null, { timeout: 30000 });
+  qaMetrics.craneAssetsReadyAfterBriefingMs = Date.now() - briefingShownAt;
+  if (slowAssetDelayMs) {
+    assert.ok(qaMetrics.craneAssetsReadyAfterBriefingMs < slowAssetDelayMs * 2 + 3000,
+      `${browserName}: secondary crane art exceeded its two-wave decode budget: ${qaMetrics.craneAssetsReadyAfterBriefingMs}ms`);
+  }
+  assert.equal(readyBriefing.transitionCount, briefingTransitionCount, `${browserName}: secondary art readiness created a game transition`);
+  const briefingHoldRemaining = Math.max(0, briefingShownAt + 900 - Date.now());
+  if (briefingHoldRemaining) await page.waitForTimeout(briefingHoldRemaining);
+  const heldBriefing = await snapshot(frame);
+  assert.equal(heldBriefing.phase, "crane-briefing", `${browserName}: crane briefing auto-advanced without the start action`);
+  assert.equal(heldBriefing.transitionCount, briefingTransitionCount, `${browserName}: held crane briefing created a hidden transition`);
+  await craneStart.press("Enter");
+  const initial = await waitSnapshot(frame, state => state.phase === "crane-ready", `${browserName}: rescue start did not unlock the crane`, 5000);
   assert.equal(initial.eventIndex, 0);
   assert.equal(initial.boss.bossHp, 3);
   assert.equal(initial.boss.trainHp, 3);
@@ -853,6 +1005,9 @@ async function runBrowser(browserName, base) {
   assert.equal(await frame.locator("#quiz.show").count(), 0, `${browserName}: dino opened a quiz`);
   assert.equal(await frame.locator(".tun:visible").count(), 0, `${browserName}: dino built visible quiz stations`);
   assert.equal(await frame.locator("#dinoCraneGame:visible").count(), 1, `${browserName}: crane event is not visible`);
+  await assertRenderedImage(frame.locator("#dinoCraneBackdrop"), "branch_dino_adventure_rescue_before_20260723.webp", "blocked rescue background");
+  await assertRenderedImage(frame.locator("#dinoCraneSuccessBackdrop"), "branch_dino_adventure_rescue_success_20260723.webp", "decoded rescue success background");
+  assert.equal(await frame.locator("#dinoCraneGame").getAttribute("data-blocked-count"), "3", `${browserName}: entrance did not begin with three blockers`);
 
   for (const [width, height] of viewports) {
     await page.setViewportSize({ width, height });
@@ -867,6 +1022,10 @@ async function runBrowser(browserName, base) {
       const arm = rect("dinoCraneArm");
       const hook = rect("dinoCraneHook");
       const cargoes = [...document.querySelectorAll(".dino-crane-cargo")].map(element => {
+        const value = element.getBoundingClientRect();
+        return { left: value.left, right: value.right, top: value.top, bottom: value.bottom, width: value.width, height: value.height };
+      });
+      const ringGuides = [...document.querySelectorAll(".dino-crane-ring-guides>i:not([hidden])")].map(element => {
         const value = element.getBoundingClientRect();
         return { left: value.left, right: value.right, top: value.top, bottom: value.bottom, width: value.width, height: value.height };
       });
@@ -885,10 +1044,11 @@ async function runBrowser(browserName, base) {
         adminSettingsHidden: getComputedStyle(document.getElementById("gameSettings")).display === "none",
         baseDotsHidden: getComputedStyle(document.getElementById("dots")).visibility === "hidden",
         rotateVisible: getComputedStyle(document.getElementById("rotateHint")).display !== "none",
-        craneInside: [arm, hook, platform, controls, ...cargoes].every(value => inside(value) && value.width > 0 && value.height > 0),
+        craneInside: [arm, hook, platform, controls, ...cargoes, ...ringGuides].every(value => inside(value) && value.width > 0 && value.height > 0),
         arm,
         hook,
         cargoes,
+        ringGuides,
         platform,
         controls,
         guide,
@@ -902,8 +1062,13 @@ async function runBrowser(browserName, base) {
     assert.equal(fit.baseDotsHidden, true, `${browserName}: quiz station dots leaked behind dino header at ${width}x${height}`);
     assert.equal(fit.rotateVisible, height > width, `${browserName}: portrait rotate policy drifted at ${width}x${height}`);
     assert.equal(fit.guideReadoutOverlapArea, 0, `${browserName}: crane guide overlaps the cargo/swing readout at ${width}x${height}: ${JSON.stringify(fit)}`);
+    if (width >= height && height <= 360) {
+      assert.equal(fit.ringGuides.length, 3, `${browserName}: short landscape lost a cargo ring guide at ${width}x${height}`);
+      assert.ok(fit.ringGuides.every(guide => guide.width >= 30 && guide.width <= 34.5 && guide.height >= 30 && guide.height <= 34.5),
+        `${browserName}: short-landscape ring guides obscure the trapped child at ${width}x${height}: ${JSON.stringify(fit.ringGuides)}`);
+    }
     if (width >= height) assert.equal(fit.craneInside, true, `${browserName}: crane art clipped at ${width}x${height}: ${JSON.stringify(fit)}`);
-    qaMetrics.viewports.push({ width, height, overflowX: fit.overflowX, overflowY: fit.overflowY, craneInside: fit.craneInside, guideReadoutOverlapArea: fit.guideReadoutOverlapArea });
+    qaMetrics.viewports.push({ width, height, overflowX: fit.overflowX, overflowY: fit.overflowY, craneInside: fit.craneInside, guideReadoutOverlapArea: fit.guideReadoutOverlapArea, ringGuides: fit.ringGuides });
     await page.screenshot({ path: `/tmp/nazonazo-dino-adventure-${browserName}-crane-${width}x${height}.png`, fullPage: true });
   }
   await page.setViewportSize({ width: 844, height: 390 });
@@ -981,6 +1146,8 @@ async function runBrowser(browserName, base) {
   await attachCargo("branch", true);
   const branchPlaced = await placeCargo("branch", 0, true);
   assert.equal(branchPlaced.crane.placedCount, 1);
+  assert.equal(branchPlaced.crane.blockedCount, 2);
+  assert.equal(await frame.locator("#dinoCraneGame").getAttribute("data-blocked-count"), "2");
   assert.equal(branchPlaced.crane.chances, 3);
 
   // Three misses lose this event only; retry preserves already placed cargo.
@@ -1006,6 +1173,8 @@ async function runBrowser(browserName, base) {
   await attachCargo("log");
   const logPlaced = await placeCargo("log", 1);
   assert.equal(logPlaced.crane.placedCount, 2);
+  assert.equal(logPlaced.crane.blockedCount, 1);
+  assert.equal(await frame.locator("#dinoCraneGame").getAttribute("data-blocked-count"), "1");
   await page.emulateMedia({ reducedMotion: "reduce" });
   await attachCargo("rock");
   const craneSuccess = await placeCargo("rock", 2);
@@ -1015,11 +1184,13 @@ async function runBrowser(browserName, base) {
   assert.equal(craneSuccess.eventIndex, 1);
   assert.equal(craneSuccess.crane.scoreGranted, true);
   assert.equal(craneSuccess.crane.attempt, 2);
+  assert.equal(craneSuccess.crane.blockedCount, 0);
+  assert.equal(await frame.locator("#dinoCraneGame").getAttribute("data-blocked-count"), "0");
   assert.deepEqual(craneSuccess.crane.cargos.map(cargo => [cargo.id, cargo.placed]), [["branch", true], ["log", true], ["rock", true]]);
   await assertHeldSuccessFeedback({
     buttonId: "dinoCraneContinue",
     expectedPhase: "crane-success",
-    expectedGuide: "じゃまな ものが どいて、わきみずが でてきたよ！",
+    expectedGuide: "こどもの きょうりゅうが でてこられたよ！",
     startedAt: craneSuccessStartedAt,
     reducedMotion: true
   });
@@ -1035,8 +1206,20 @@ async function runBrowser(browserName, base) {
   assert.equal((await snapshot(frame)).transitionCount, afterCraneContinue.transitionCount, `${browserName}: stale crane acknowledgement transitioned twice`);
   await page.emulateMedia({ reducedMotion: "no-preference" });
   const waterStartedAt = Date.now();
-  const waterInitial = await waitSnapshot(frame, state => state.phase === "water" || state.phase === "water-ready", `${browserName}: crane did not transition to the water event`, 20000);
+  const waterBriefingState = await waitSnapshot(frame, state => state.phase === "water-briefing" && state.waterBriefingVisible,
+    `${browserName}: crane did not transition to the held water briefing`, 20000);
   qaMetrics.waterRevealAfterCraneMs = Date.now() - waterStartedAt;
+  assert.equal(waterBriefingState.inputLocked, true, `${browserName}: water board unlocked before the child accepted its objective`);
+  assert.equal(waterBriefingState.water.tiles.length, 28, `${browserName}: water briefing did not prepare all 28 tiles`);
+  assert.equal(await frame.locator("#dinoWaterStart").isVisible(), true, `${browserName}: water briefing start action is missing`);
+  const briefingRotationCount = waterBriefingState.water.rotationCount;
+  await frame.locator("#dinoWaterCell15").dispatchEvent("click");
+  await page.waitForTimeout(120);
+  assert.equal((await snapshot(frame)).water.rotationCount, briefingRotationCount, `${browserName}: water tile rotated behind the briefing`);
+  await page.waitForTimeout(780);
+  assert.equal((await snapshot(frame)).phase, "water-briefing", `${browserName}: water briefing auto-advanced`);
+  await frame.locator("#dinoWaterStart").press("Space");
+  const waterInitial = await waitSnapshot(frame, state => state.phase === "water", `${browserName}: water start did not unlock the puzzle`, 5000);
   assert.equal(waterInitial.eventIndex, 1);
   assert.equal(waterInitial.crane.completed, true);
   assert.equal(waterInitial.water.completed, false);
@@ -1044,6 +1227,7 @@ async function runBrowser(browserName, base) {
   assert.equal(waterInitial.water.solved, false);
   assert.deepEqual([...new Set(waterInitial.water.tiles.map(tile => tile.type))].sort(), ["curve", "pond", "rock", "source", "straight", "tee"]);
   await assertRenderedImage(frame.locator("#dinoWaterDinos"), "branch_dino_adventure_waterway_dry_20260722.webp", "water dry");
+  await assertRenderedImage(frame.locator("#dinoWaterSuccessScene"), "branch_dino_adventure_waterway_success_20260722.webp", "decoded water success");
 
   const waterMetrics = await frame.evaluate(() => {
     const grid = document.getElementById("dinoWaterGrid").getBoundingClientRect();
@@ -1101,9 +1285,10 @@ async function runBrowser(browserName, base) {
   await page.emulateMedia({ reducedMotion: "reduce" });
   const waterReduced = await frame.locator(".dino-water-tile-rotator").first().evaluate(element => ({
     rotation: getComputedStyle(element).transitionDuration,
+    dry: getComputedStyle(element.querySelector(".is-dry")).transitionDuration,
     wet: getComputedStyle(element.querySelector(".is-wet")).transitionDuration
   }));
-  assert.deepEqual(waterReduced, { rotation: "0s", wet: "0s" }, `${browserName}: reduced motion left water tile transition active`);
+  assert.deepEqual(waterReduced, { rotation: "0s", dry: "0s", wet: "0s" }, `${browserName}: reduced motion left water tile transition active`);
   assert.equal((await snapshot(frame)).phase, "water", `${browserName}: reduced-motion switch reset water event`);
   await page.emulateMedia({ reducedMotion: "no-preference" });
 
@@ -1135,10 +1320,9 @@ async function runBrowser(browserName, base) {
   await frame.locator("#dinoWaterHint").click();
   const hinted = await waitSnapshot(frame, state => state.water.helpRemaining === 0, `${browserName}: one-use water hint was not consumed`);
   assert.equal(await frame.locator("#dinoWaterHint").isDisabled(), true, `${browserName}: spent water hint remained enabled`);
-  assert.ok(["water", "resolve-water"].includes(hinted.phase), `${browserName}: water hint left the event in an invalid phase`);
+  assert.ok(["water", "resolve-water-flow", "resolve-water-crossfade", "resolve-water"].includes(hinted.phase), `${browserName}: water hint left the event in an invalid phase`);
 
   // Solve through the real 90-degree tile buttons using only the read-only admin snapshot.
-  await page.emulateMedia({ reducedMotion: "reduce" });
   let solveState = await snapshot(frame);
   if (solveState.phase === "water") {
     for (const index of solveState.water.path) {
@@ -1153,18 +1337,141 @@ async function runBrowser(browserName, base) {
       if (solveState.phase !== "water") break;
     }
   }
+  const flowing = await waitSnapshot(frame, state => state.phase === "resolve-water-flow",
+    `${browserName}: solved channel did not begin the source-to-pond flow`, 3000);
+  assert.deepEqual(flowing.water.flowQueue, flowing.water.path, `${browserName}: water flow did not follow the solved route`);
+  assert.equal(flowing.water.flowQueue[0], 14, `${browserName}: water flow did not start at the spring`);
+  assert.equal(flowing.water.flowQueue.at(-1), 13, `${browserName}: water flow did not end at the pond`);
+  assert.equal(flowing.water.flowIndex, 1, `${browserName}: staged flow did not begin with the spring alone`);
+  assert.equal(flowing.water.completed, false, `${browserName}: water committed before reaching the pond`);
+  assert.equal(flowing.water.waterCharges, 0, `${browserName}: boss water charges were granted before the pond filled`);
+  assert.equal(flowing.water.pondReached, false, `${browserName}: pond was marked reached at the source`);
+  assert.deepEqual(flowing.water.wet, flowing.water.flowQueue.slice(0, flowing.water.flowIndex),
+    `${browserName}: initial wet tiles did not match the causal flow prefix`);
+  const sourceVisual = await frame.evaluate(() => [...document.querySelectorAll(".dino-water-cell")].map(cell => ({
+    index: Number(cell.dataset.waterIndex),
+    wetState: cell.dataset.wet,
+    dryOpacity: Number(getComputedStyle(cell.querySelector(".is-dry")).opacity),
+    wetOpacity: Number(getComputedStyle(cell.querySelector(".is-wet")).opacity)
+  })));
+  assert.equal(sourceVisual.filter(cell => cell.wetState === "true").length, 1, `${browserName}: source frame marked more than one tile wet`);
+  assert.ok(sourceVisual.every(cell => cell.index === 14
+    ? cell.wetState === "true" && cell.wetOpacity >= 0.95 && cell.dryOpacity <= 0.05
+    : cell.wetState === "false" && cell.wetOpacity <= 0.05 && cell.dryOpacity >= 0.95),
+  `${browserName}: source frame retained a backwards/full-route water ghost: ${JSON.stringify(sourceVisual)}`);
+  await page.screenshot({ path: `/tmp/nazonazo-dino-adventure-${browserName}-water-flow-source-844x390.png`, fullPage: true });
+
+  // Backgrounding must pause the staged fill, not let the pond fill offscreen.
+  await frame.evaluate(() => {
+    Object.defineProperty(document, "hidden", { configurable: true, get: () => true });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+  const hiddenFlowStart = await snapshot(frame);
+  await page.waitForTimeout(420);
+  const hiddenFlowEnd = await snapshot(frame);
+  assert.equal(hiddenFlowEnd.phase, "resolve-water-flow", `${browserName}: hidden tab advanced the flow phase`);
+  assert.equal(hiddenFlowEnd.water.flowIndex, hiddenFlowStart.water.flowIndex, `${browserName}: hidden tab advanced wet tiles`);
+  assert.deepEqual(hiddenFlowEnd.water.wet, hiddenFlowStart.water.wet, `${browserName}: hidden tab changed the wet route`);
+  await frame.evaluate(() => {
+    Object.defineProperty(document, "hidden", { configurable: true, get: () => false });
+    document.dispatchEvent(new Event("visibilitychange"));
+  });
+
+  const observedFlowIndexes = new Set([hiddenFlowEnd.water.flowIndex]);
+  let lastObservedFlowIndex = hiddenFlowEnd.water.flowIndex;
+  let midFlowCaptured = false;
+  let midFlowIndex = 0;
+  let crossfade = null;
+  const flowDeadline = Date.now() + 5000;
+  while (Date.now() < flowDeadline) {
+    const current = await snapshot(frame);
+    if (current.phase === "resolve-water-crossfade") {
+      crossfade = current;
+      break;
+    }
+    assert.equal(current.phase, "resolve-water-flow", `${browserName}: water skipped the crossfade phase`);
+    assert.deepEqual(current.water.wet, current.water.flowQueue.slice(0, current.water.flowIndex),
+      `${browserName}: wet tiles were not a contiguous source-to-pond prefix`);
+    if (current.water.flowIndex < current.water.flowQueue.length) {
+      assert.equal(current.water.wet.includes(13), false, `${browserName}: pond became wet before the route reached it`);
+    }
+    if (current.water.flowIndex > lastObservedFlowIndex) {
+      const newestWetIndex = current.water.wet.at(-1);
+      const opacity = await frame.locator(`#dinoWaterCell${newestWetIndex}`).evaluate(cell => ({
+        dry: Number(getComputedStyle(cell.querySelector(".is-dry")).opacity),
+        wet: Number(getComputedStyle(cell.querySelector(".is-wet")).opacity)
+      }));
+      assert.ok(opacity.dry + opacity.wet >= 0.85,
+        `${browserName}: newly wet tile flashed blank instead of crossfading: ${JSON.stringify({ newestWetIndex, opacity })}`);
+      lastObservedFlowIndex = current.water.flowIndex;
+    }
+    observedFlowIndexes.add(current.water.flowIndex);
+    if (!midFlowCaptured && current.water.flowIndex >= Math.ceil(current.water.flowQueue.length / 2)) {
+      midFlowCaptured = true;
+      midFlowIndex = current.water.flowIndex;
+      await page.screenshot({ path: `/tmp/nazonazo-dino-adventure-${browserName}-water-flow-mid-844x390.png`, fullPage: true });
+    }
+    await page.waitForTimeout(28);
+  }
+  assert.ok(crossfade, `${browserName}: source-to-pond flow never entered its crossfade`);
+  assert.ok(observedFlowIndexes.size >= 3, `${browserName}: water appeared all at once instead of advancing tile by tile: ${JSON.stringify([...observedFlowIndexes])}`);
+  assert.ok(midFlowCaptured && midFlowIndex > flowing.water.flowIndex,
+    `${browserName}: mid-flow evidence did not advance beyond the source: ${JSON.stringify({ source: flowing.water.flowIndex, mid: midFlowIndex })}`);
+  assert.deepEqual(crossfade.water.wet, crossfade.water.flowQueue, `${browserName}: crossfade began before every route tile was wet`);
+  assert.equal(crossfade.water.wet.at(-1), 13, `${browserName}: pond was not the final wet tile`);
+  assert.equal(crossfade.water.pondReached, true, `${browserName}: crossfade began without reaching the pond`);
+  assert.equal(crossfade.water.completed, false, `${browserName}: crossfade committed success immediately`);
+  assert.equal(crossfade.water.waterCharges, 0, `${browserName}: crossfade granted boss water charges early`);
+  assert.equal(await frame.locator("#dinoWaterGame.is-filling").count(), 1, `${browserName}: filling class missing during crossfade`);
+  assert.equal(await frame.locator("#dinoWaterContinue").isVisible(), false, `${browserName}: continue action appeared before crossfade completed`);
+  const crossfadeDetectedAt = Date.now();
+
+  await page.waitForTimeout(280);
+  const blend = await frame.evaluate(() => {
+    const dry = document.getElementById("dinoWaterDinos");
+    const success = document.getElementById("dinoWaterSuccessScene");
+    const playfield = document.querySelector(".dino-water-playfield");
+    return {
+      phase: window.__nazonazoDinoAdventureDebug.snapshot().phase,
+      drySrc: dry.getAttribute("src"),
+      successSrc: success.getAttribute("src"),
+      dryOpacity: Number(getComputedStyle(dry).opacity),
+      successOpacity: Number(getComputedStyle(success).opacity),
+      playfieldOpacity: Number(getComputedStyle(playfield).opacity)
+    };
+  });
+  assert.equal(blend.phase, "resolve-water-crossfade", `${browserName}: 700ms water crossfade ended too early`);
+  assert.equal(blend.drySrc.split("?")[0].split("/").at(-1), "branch_dino_adventure_waterway_dry_20260722.webp",
+    `${browserName}: crossfade replaced the dry image source instead of blending two scenes`);
+  assert.equal(blend.successSrc.split("?")[0].split("/").at(-1), "branch_dino_adventure_waterway_success_20260722.webp",
+    `${browserName}: crossfade success scene used the wrong source`);
+  assert.ok(blend.dryOpacity > 0.05 && blend.dryOpacity < 0.95, `${browserName}: dry scene was not mid-fade: ${JSON.stringify(blend)}`);
+  assert.ok(blend.successOpacity > 0.05 && blend.successOpacity < 0.95, `${browserName}: success scene was not mid-fade: ${JSON.stringify(blend)}`);
+  await page.screenshot({ path: `/tmp/nazonazo-dino-adventure-${browserName}-water-crossfade-844x390.png`, fullPage: true });
+
   const savedWater = await waitSnapshot(frame, state => state.water.completed && state.phase === "resolve-water", `${browserName}: water success tableau did not appear`, 12000);
   const waterSavedAt = Date.now();
+  assert.ok(waterSavedAt - crossfadeDetectedAt >= 560, `${browserName}: water scene crossfade was shorter than its 700ms contract`);
   assert.equal(savedWater.eventIndex, 2);
+  assert.equal(savedWater.water.waterCharges, 3, `${browserName}: completed water event did not grant three boss charges`);
   assert.equal(await frame.locator("#dinoWaterGame.is-saved").count(), 1, `${browserName}: water success class missing`);
-  await assertRenderedImage(frame.locator("#dinoWaterDinos"), "branch_dino_adventure_waterway_success_20260722.webp", "water success");
+  await assertRenderedImage(frame.locator("#dinoWaterDinos"), "branch_dino_adventure_waterway_dry_20260722.webp", "retained water dry scene");
+  await assertRenderedImage(frame.locator("#dinoWaterSuccessScene"), "branch_dino_adventure_waterway_success_20260722.webp", "water success");
+  const finalWaterBlend = await frame.evaluate(() => ({
+    dry: Number(getComputedStyle(document.getElementById("dinoWaterDinos")).opacity),
+    success: Number(getComputedStyle(document.getElementById("dinoWaterSuccessScene")).opacity),
+    playfield: Number(getComputedStyle(document.querySelector(".dino-water-playfield")).opacity)
+  }));
+  assert.ok(finalWaterBlend.dry <= 0.05 && finalWaterBlend.success >= 0.95 && finalWaterBlend.playfield <= 0.05,
+    `${browserName}: final water tableau did not fully reveal the drinking scene: ${JSON.stringify(finalWaterBlend)}`);
   await assertHeldSuccessFeedback({
     buttonId: "dinoWaterContinue",
     expectedPhase: "resolve-water",
     expectedGuide: "きょうりゅうが みずを のめたよ！",
     startedAt: waterSavedAt,
-    reducedMotion: true,
-    imageFile: "branch_dino_adventure_waterway_success_20260722.webp"
+    reducedMotion: false,
+    imageFile: "branch_dino_adventure_waterway_success_20260722.webp",
+    imageId: "dinoWaterSuccessScene"
   });
   qaMetrics.waterSuccessHeldMs = Date.now() - waterSavedAt;
   await page.screenshot({ path: `/tmp/nazonazo-dino-adventure-${browserName}-water-success-844x390.png`, fullPage: true });
@@ -1418,7 +1725,7 @@ async function runCranePointerBrowser(browserName, base) {
   const pageErrors = [];
   const requestFailures = [];
   const craneResponses = new Map();
-  const craneAssetFiles = DINO_ASSET_FILES.slice(0, 7);
+  const craneAssetFiles = DINO_ASSET_FILES.slice(0, 9);
   page.on("pageerror", error => pageErrors.push(String(error)));
   page.on("requestfailed", request => requestFailures.push(`${request.method()} ${request.url()} ${request.failure()?.errorText || ""}`));
   page.on("response", response => {
@@ -1439,8 +1746,36 @@ async function runCranePointerBrowser(browserName, base) {
   await frame.locator("#startBtn").waitFor({ state: "visible", timeout: 15000 });
   await frame.waitForFunction(() => !document.getElementById("startBtn").disabled && /きょうりゅう/.test(document.getElementById("startBtn").textContent), null, { timeout: 15000 });
   const saveBefore = await frame.evaluate(() => localStorage.getItem("pono_nazonazo_tunnel_v1"));
+  async function clickPhysical(locator) {
+    const box = await locator.boundingBox();
+    assert.ok(box, `${browserName}: physical pointer target missing`);
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  }
   await frame.locator("#startBtn").click();
-  await waitSnapshot(frame, state => state.phase === "crane-ready" && state.crane.attempt === 1, `${browserName}: pointer parity crane did not start`, 20000);
+  const warning = await waitSnapshot(frame, state => state.phase === "travel" && state.driving && state.noticeVisible,
+    `${browserName}: pointer parity missed the moving approach warning`, 10000);
+  assert.equal(warning.craneBriefingVisible, false, `${browserName}: pointer parity showed the briefing before stopping`);
+  const briefing = await waitSnapshot(frame, state => state.phase === "crane-briefing" && state.craneBriefingVisible,
+    `${browserName}: pointer parity did not hold at the rescue briefing`, 20000);
+  assert.equal(briefing.inputLocked, true, `${browserName}: pointer parity crane was interactive behind the briefing`);
+  assert.equal(briefing.crane.blockedCount, 3, `${browserName}: pointer parity rescue did not begin with three blockers`);
+  const pointerReady = await waitSnapshot(frame,
+    state => state.phase === "crane-briefing" && state.crane.assetsReady && state.crane.successBackdropReady,
+    `${browserName}: pointer parity crane art did not become ready`, 30000);
+  assert.equal(pointerReady.transitionCount, briefing.transitionCount, `${browserName}: pointer parity asset readiness advanced the event`);
+  await frame.waitForFunction(() => {
+    const button = document.getElementById("dinoCraneStart");
+    return button && !button.disabled && button.textContent.trim() === "たすける！" && !button.hasAttribute("aria-busy");
+  }, null, { timeout: 30000 });
+  await clickPhysical(frame.locator("#dinoCraneStart"));
+  const initial = await waitSnapshot(frame, state => state.phase === "crane-ready" && state.crane.attempt === 1,
+    `${browserName}: physical pointer did not start the crane rescue`, 5000);
+  assert.equal(initial.crane.blockedCount, 3, `${browserName}: crane briefing changed the blocker count`);
+  await frame.locator("#dinoCraneBackdrop").waitFor({ state: "visible", timeout: 3000 });
+  assert.equal((await frame.locator("#dinoCraneBackdrop").getAttribute("src")).split("?")[0].split("/").at(-1),
+    "branch_dino_adventure_rescue_before_20260723.webp", `${browserName}: pointer parity used the wrong blocked rescue scene`);
+  assert.equal((await frame.locator("#dinoCraneSuccessBackdrop").getAttribute("src")).split("?")[0].split("/").at(-1),
+    "branch_dino_adventure_rescue_success_20260723.webp", `${browserName}: pointer parity used the wrong success rescue scene`);
   const pointerEvidence = {};
   const captureEvidence = value => ({
     phase: value.phase,
@@ -1450,11 +1785,6 @@ async function runCranePointerBrowser(browserName, base) {
     swingGreen: value.crane.swingGreen,
     placed: value.crane.cargos.map(cargo => [cargo.id, cargo.placed])
   });
-  async function clickPhysical(locator) {
-    const box = await locator.boundingBox();
-    assert.ok(box, `${browserName}: physical pointer target missing`);
-    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
-  }
   async function moveCranePointerToX(targetX, label) {
     for (let pass = 0; pass < 120; pass += 1) {
       const before = await snapshot(frame);
@@ -1497,6 +1827,10 @@ async function runCranePointerBrowser(browserName, base) {
     pointerEvidence[`${id}Ready`] = captureEvidence(ready);
     await clickPhysical(frame.locator("#dinoCraneLower"));
     const placed = await waitSnapshot(frame, value => value.crane.cargos.find(item => item.id === id)?.placed && (value.phase === "crane-ready" || value.phase === "crane-success"), `${browserName}: pointer did not place ${id}`, 6000);
+    const expectedBlocked = 3 - placed.crane.placedCount;
+    assert.equal(placed.crane.blockedCount, expectedBlocked, `${browserName}: pointer placement did not reduce the blocker count`);
+    assert.equal(await frame.locator("#dinoCraneGame").getAttribute("data-blocked-count"), String(expectedBlocked),
+      `${browserName}: pointer placement did not update the visual blocker state`);
     pointerEvidence[`${id}Placed`] = captureEvidence(placed);
     return placed;
   }
@@ -1511,6 +1845,7 @@ async function runCranePointerBrowser(browserName, base) {
   assert.equal(success.crane.completed, true);
   assert.equal(success.eventIndex, 1);
   assert.equal(success.crane.scoreGranted, true);
+  assert.equal(await frame.locator("#dinoCraneSuccessBackdrop").isVisible(), true, `${browserName}: pointer success did not reveal the reunion scene`);
   pointerEvidence.success = captureEvidence(success);
   const continueButton = frame.locator("#dinoCraneContinue");
   await continueButton.waitFor({ state: "visible", timeout: 3000 });
@@ -1528,7 +1863,7 @@ async function runCranePointerBrowser(browserName, base) {
   const heldSuccess = await snapshot(frame);
   assert.equal(heldSuccess.phase, "crane-success", `${browserName}: pointer success auto-advanced before acknowledgement`);
   assert.equal(await continueButton.isVisible(), true, `${browserName}: pointer success continue action disappeared`);
-  assert.equal(await frame.locator("#dinoAdventureGuide").textContent(), "じゃまな ものが どいて、わきみずが でてきたよ！");
+  assert.equal(await frame.locator("#dinoAdventureGuide").textContent(), "こどもの きょうりゅうが でてこられたよ！");
   await page.screenshot({ path: `/tmp/nazonazo-dino-crane-pointer-${browserName}-success-1174x658.png`, fullPage: true });
 
   const beforeContinue = await snapshot(frame);
@@ -1585,11 +1920,18 @@ async function runSlowStaleRevealBrowser(browserName, base) {
   await frame.locator("#startBtn").waitFor({ state: "visible", timeout: 15000 });
   await frame.waitForFunction(() => !document.getElementById("startBtn").disabled && /きょうりゅう/.test(document.getElementById("startBtn").textContent), null, { timeout: 15000 });
   await frame.locator("#startBtn").click();
-  const travelling = await waitSnapshot(frame, state => state.phase === "travel", `${browserName}: stale-reveal journey did not enter travel`, 5000);
+  const travelling = await waitSnapshot(frame, state => state.phase === "travel" && state.driving && state.noticeVisible,
+    `${browserName}: stale-reveal journey did not reach its moving warning`, 10000);
+  const loadingBriefing = await waitSnapshot(frame,
+    state => state.phase === "crane-briefing" && state.craneBriefingVisible && !state.crane.assetsReady,
+    `${browserName}: stale-reveal journey did not expose the secondary crane decode window`, 20000);
+  assert.equal(await frame.locator("#dinoCraneStart").isDisabled(), true, `${browserName}: stale-reveal secondary decode did not keep start disabled`);
+  assert.equal((await frame.locator("#dinoCraneStart").textContent()).trim(), "よみこみちゅう", `${browserName}: stale-reveal secondary decode lacked its loading label`);
+  assert.equal(await frame.locator("#dinoCraneStart").getAttribute("aria-busy"), "true", `${browserName}: stale-reveal secondary decode lacked aria-busy`);
   await page.evaluate(() => window.qaSelect("cat"));
-  const reset = await waitSnapshot(frame, state => state.phase === "idle" && state.epoch > travelling.epoch, `${browserName}: stage exit did not invalidate dino epoch`, 5000);
+  const reset = await waitSnapshot(frame, state => state.phase === "idle" && state.epoch > loadingBriefing.epoch, `${browserName}: stage exit did not invalidate dino epoch`, 5000);
   await frame.waitForFunction(() => document.body.classList.contains("st-cat"), null, { timeout: 5000 });
-  await page.waitForTimeout(slowAssetDelayMs + 1200);
+  await page.waitForTimeout(slowAssetDelayMs * 2 + 2200);
   const afterDelay = await snapshot(frame);
   const staleDom = await frame.evaluate(() => ({
     layerHidden: document.getElementById("dinoAdventureLayer").hidden,
@@ -1597,15 +1939,28 @@ async function runSlowStaleRevealBrowser(browserName, base) {
     craneHidden: document.getElementById("dinoCraneGame").hidden,
     waterHidden: document.getElementById("dinoWaterGame").hidden,
     bossHidden: document.getElementById("dinoBossGame").hidden,
-    activeClass: document.body.classList.contains("dino-adventure-active") || document.body.classList.contains("dino-crane-active") || document.body.classList.contains("dino-boss-active")
+    activeClass: document.body.classList.contains("dino-adventure-active") || document.body.classList.contains("dino-crane-active") || document.body.classList.contains("dino-boss-active"),
+    startDisabled: document.getElementById("dinoCraneStart").disabled,
+    startText: document.getElementById("dinoCraneStart").textContent.trim(),
+    startBusy: document.getElementById("dinoCraneStart").getAttribute("aria-busy")
   }));
   assert.equal(afterDelay.phase, "idle", `${browserName}: stale predecode callback changed phase after stage exit`);
   assert.equal(afterDelay.epoch, reset.epoch, `${browserName}: stale predecode callback changed epoch after stage exit`);
-  assert.deepEqual(staleDom, { layerHidden: true, layerAriaHidden: "true", craneHidden: true, waterHidden: true, bossHidden: true, activeClass: false }, `${browserName}: stale predecode callback revealed dino DOM after stage exit`);
+  assert.deepEqual(staleDom, {
+    layerHidden: true,
+    layerAriaHidden: "true",
+    craneHidden: true,
+    waterHidden: true,
+    bossHidden: true,
+    activeClass: false,
+    startDisabled: false,
+    startText: "たすける！",
+    startBusy: null
+  }, `${browserName}: stale secondary decode callback changed reset dino DOM after stage exit`);
   assert.deepEqual(pageErrors, [], `${browserName}: stale-reveal page errors\n${pageErrors.join("\n")}`);
   const unexpectedRequestFailures = requestFailures.filter(failure => !/^HEAD .+\/admin\/ net::ERR_ABORTED$/.test(failure));
   assert.deepEqual(unexpectedRequestFailures, [], `${browserName}: stale-reveal request failures\n${unexpectedRequestFailures.join("\n")}`);
-  console.log(`nazonazo dino stale reveal (${browserName}): PASS (${slowAssetDelayMs}ms delayed assets, epoch ${travelling.epoch}->${reset.epoch})`);
+  console.log(`nazonazo dino stale reveal (${browserName}): PASS (${slowAssetDelayMs}ms delayed assets, epoch ${travelling.epoch}->${reset.epoch}, exited during secondary decode)`);
   await context.close();
   await browser.close();
 }
@@ -1659,11 +2014,33 @@ async function main() {
   }));
   sourceMutation("reduced motion no longer covers dino interactions", "reduced-motion", candidate => ({
     ...candidate,
-    css: replaceExactlyOnce(candidate.css, '  .dino-crane-ring-guides>i,.dino-water-game.is-saved .dino-water-scene img,.dino-boss-game[data-phase="defend"] .dino-boss-trex,.dino-boss-wave,.dino-boss-game[data-phase="burst"] .dino-boss-tug>i,.dino-boss-action.is-burst{animation:none!important}', "  .removed-dino-reduced-motion{animation:none!important}")
+    css: replaceExactlyOnce(candidate.css, '  .dino-crane-ring-guides>i,.dino-water-game.is-saved .dino-water-success-scene,.dino-boss-game[data-phase="defend"] .dino-boss-trex,.dino-boss-wave,.dino-boss-game[data-phase="burst"] .dino-boss-tug>i,.dino-boss-action.is-burst{animation:none!important}', "  .removed-dino-reduced-motion{animation:none!important}")
+  }));
+  sourceMutation("wet tiles flash blank instead of crossfading", "water-tile-crossfade", candidate => ({
+    ...candidate,
+    css: replaceExactlyOnce(candidate.css,
+      ".dino-water-tile-rotator>.is-dry,.dino-water-tile-rotator>.is-wet{transition:opacity .2s ease}",
+      ".dino-water-tile-rotator>.is-wet{transition:opacity .2s ease}")
+  }));
+  sourceMutation("solved water flashes the full route before restarting at the source", "water-flow-reset", candidate => ({
+    ...candidate,
+    game: replaceExactlyOnce(candidate.game,
+      "if(dinoWaterGrid)void dinoWaterGrid.offsetWidth;",
+      'if(dinoWaterGrid)dinoWaterGrid.dataset.flowReset="skipped";')
   }));
   sourceMutation("water event reveals before asset predecode", "asset-predecode-gate", candidate => ({
     ...candidate,
-    game: replaceExactlyOnce(candidate.game, "Promise.all([preloadDinoAdventureAssets(),preloadDinoWaterTileAssets()]).then(()=>revealDinoWaterEvent(epoch));", "revealDinoWaterEvent(epoch);")
+    game: replaceExactlyOnce(candidate.game, "Promise.all([preloadDinoWaterSceneAssets(),preloadDinoWaterTileAssets()]).then(()=>revealDinoWaterEvent(epoch));", "revealDinoWaterEvent(epoch);")
+  }));
+  sourceMutation("slow-network decode fallback regresses to eight seconds", "asset-predecode", candidate => ({
+    ...candidate,
+    game: replaceExactlyOnce(candidate.game, "DINO_ADVENTURE_ASSET_READY_TIMEOUT_MS=24000", "DINO_ADVENTURE_ASSET_READY_TIMEOUT_MS=8000")
+  }));
+  sourceMutation("dino stage entry eagerly saturates the network with crane art", "asset-priority-entry", candidate => ({
+    ...candidate,
+    game: replaceExactlyOnce(candidate.game,
+      'if(st&&st.id==="dino")preloadDinoRescueAssets();',
+      'if(st&&st.id==="dino"){preloadDinoRescueAssets();preloadDinoCraneAssets();}')
   }));
   sourceMutation("crane event count is dropped", "event-count", candidate => ({
     ...candidate,
@@ -1703,11 +2080,21 @@ async function main() {
   }));
   sourceMutation("crane reveals without its asset predecode gate", "crane-asset-predecode-gate", candidate => ({
     ...candidate,
-    game: replaceExactlyOnce(candidate.game, "Promise.all([preloadDinoCraneAssets(),preloadDinoAdventureAssets()]).then(()=>revealDinoCraneEvent(epoch));", "revealDinoCraneEvent(epoch);")
+    game: replaceExactlyOnce(candidate.game, "preloadDinoRescueAssets().then(()=>revealDinoCraneEvent(epoch));", "revealDinoCraneEvent(epoch);")
   }));
   sourceMutation("stale crane reveal ignores its epoch", "crane-stale-reveal-guard", candidate => ({
     ...candidate,
-    game: replaceExactlyOnce(candidate.game, 'if(!craneAssetsReady||!isDinoAdventureStage()||!playing||dinoAdventureState.epoch!==epoch||dinoAdventureState.phase!=="travel"||dinoAdventureState.crane.completed)return;', 'if(!craneAssetsReady||!isDinoAdventureStage()||!playing||dinoAdventureState.phase!=="travel"||dinoAdventureState.crane.completed)return;')
+    game: replaceExactlyOnce(candidate.game, 'if(!isDinoAdventureStage()||!playing||dinoAdventureState.epoch!==epoch||dinoAdventureState.phase!=="travel"||dinoAdventureState.crane.completed)return;', 'if(!isDinoAdventureStage()||!playing||dinoAdventureState.phase!=="travel"||dinoAdventureState.crane.completed)return;')
+  }));
+  sourceMutation("disabled crane start bypasses its asset-ready gate", "crane-start-loading-gate", candidate => ({
+    ...candidate,
+    game: replaceExactlyOnce(candidate.game, "if(!crane.assetsReady){", "if(false){")
+  }));
+  sourceMutation("secondary crane decode loses its stale epoch guard", "crane-stale-reveal-guard", candidate => ({
+    ...candidate,
+    game: replaceExactlyOnce(candidate.game,
+      'if(!isDinoAdventureStage()||!playing||state.epoch!==epoch||state.phase!=="crane-briefing"||crane.completed||crane.assetsReady)return false;',
+      'if(!isDinoAdventureStage()||!playing||state.phase!=="crane-briefing"||crane.completed||crane.assetsReady)return false;')
   }));
   sourceMutation("a fourth movable cargo is added", "crane-three-cargo", candidate => ({
     ...candidate,
@@ -1719,7 +2106,17 @@ async function main() {
   }));
   sourceMutation("two cargoes share one bay", "crane-weight-contract", candidate => ({
     ...candidate,
-    game: replaceExactlyOnce(candidate.game, 'startX:.41,bay:2', 'startX:.41,bay:1')
+    game: replaceExactlyOnce(candidate.game, 'startX:.26,bay:2', 'startX:.26,bay:1')
+  }));
+  sourceMutation("rescue cargoes return to the train-level ground", "crane-rescue-grounding", candidate => ({
+    ...candidate,
+    game: replaceExactlyOnce(candidate.game, "ringY=rescueGroundY-(def.bbox[3]-def.anchorY)*size", "ringY=groundY-(def.bbox[3]-def.anchorY)*size")
+  }));
+  sourceMutation("short-landscape ring guides cover the trapped child again", "crane-short-ring-visibility", candidate => ({
+    ...candidate,
+    game: replaceExactlyOnce(candidate.game,
+      "g.height<=360?clamp(g.hookSize*.55,30,34):clamp(g.hookSize*.70,38,58)",
+      "clamp(g.hookSize*.70,38,58)")
   }));
   sourceMutation("water tap rotates 180 degrees", "water-rotation-contract", candidate => ({
     ...candidate,
