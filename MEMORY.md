@@ -149,6 +149,19 @@ wrangler deploy                  # master 内容を production に
 
 ## Task Analysis History
 
+### 2026-07-23T23:29:43Z - KawaGlint 川づりゲームプレイ化のPlayMode/EditModeテスト実行・検証
+- **タスク**: KawaGlint 川づりゲームプレイ化のPlayMode/EditModeテスト実行・検証
+- **結果**: 成功
+- **理由**: N/A
+- **総アクション数**: 0
+- **エラー数**: 0
+- **検出された良いパターン**: なし
+- **検出された悪いパターン**: なし
+- **有効だったアクション**: 特になし
+- **ツール使用統計**: {}
+- **サマリ**: 行動ログが空のため分析できません。
+
+
 ### 2026-07-23T23:17:56Z - KawaGlint(Unityつりゲーム水面スパイク)へcommon/tsuri/core.jsのWeb版釣り状態機械をC#移植しタップで遊べるゲームプレイ統合
 - **タスク**: KawaGlint(Unityつりゲーム水面スパイク)へcommon/tsuri/core.jsのWeb版釣り状態機械をC#移植しタップで遊べるゲームプレイ統合
 - **結果**: 成功
@@ -242,19 +255,6 @@ wrangler deploy                  # master 内容を production に
 
 ### 2026-07-23T22:16:05Z - KawaGlint(川づり)Unity技術スパイクのbatchmode検証(setup/build/CLIキャプチャ/視覚判定)
 - **タスク**: KawaGlint(川づり)Unity技術スパイクのbatchmode検証(setup/build/CLIキャプチャ/視覚判定)
-- **結果**: 成功
-- **理由**: N/A
-- **総アクション数**: 0
-- **エラー数**: 0
-- **検出された良いパターン**: なし
-- **検出された悪いパターン**: なし
-- **有効だったアクション**: 特になし
-- **ツール使用統計**: {}
-- **サマリ**: 行動ログが空のため分析できません。
-
-
-### 2026-07-23T21:59:57Z - KawaGlintレビュー指摘(全黒QAスクリーンショット+surface=unavailable)の原因調査と是正
-- **タスク**: KawaGlintレビュー指摘(全黒QAスクリーンショット+surface=unavailable)の原因調査と是正
 - **結果**: 成功
 - **理由**: N/A
 - **総アクション数**: 0

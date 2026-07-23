@@ -42,8 +42,6 @@ namespace Pono.KawaGlint.Gameplay
         private const string SpeciesUnknownName = "なにか";
 
         private static readonly string[] RendaFlyWords = { "いいぞ！", "そのちょうし！", "もうすこし！" };
-        private static readonly Color RarityNormalColor = new Color32(0x7F, 0xD0, 0xE8, 0xFF);
-        private static readonly Color RarityRareColor = new Color32(0xFF, 0xD9, 0x3D, 0xFF);
 
         private const float RendaStuckFloorPct = 30.5f;
         private const float ShoreTapMarginWorld = 0.8f;
@@ -350,7 +348,7 @@ namespace Pono.KawaGlint.Gameplay
             var edible = species != null && species.Edible;
             var label = edible ? CatchLabelEdible : CatchLabelTreasure;
             var speciesName = species != null ? species.Name : SpeciesUnknownName;
-            var dotColor = species != null && species.Rarity == TsuriRarity.Rare ? RarityRareColor : RarityNormalColor;
+            var dotColor = species != null && species.Rarity == TsuriRarity.Rare ? KawaGlintHud.RarityRareColor : KawaGlintHud.RarityNormalColor;
 
             _hud.ShowCatchBanner(label, speciesName, dotColor);
             _hud.SetPhaseWord(PhaseWordLanded);
