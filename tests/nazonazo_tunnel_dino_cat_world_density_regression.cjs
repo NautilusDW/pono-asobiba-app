@@ -19,7 +19,7 @@ const sources = Object.freeze({
 
 const TOKEN = "20260723-1429";
 const QUIZ_ART_TOKEN = "20260721-1409";
-const SW_VERSION = 2349;
+const SW_VERSION = 2351;
 const THREE_MIB = 3 * 1024 * 1024;
 const STAGE_IDS = Object.freeze(["snow", "fire", "dino", "toy", "cat", "fantasy", "sky", "ruins"]);
 const LAYER_KEYS = Object.freeze(["sky", "horizon", "mid", "ground", "fg", "decor"]);

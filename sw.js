@@ -1,5 +1,11 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2351: ひょっこりハイタッチの6茂みを背景の接地点へ揃え、画像内で右寄りだった
+// 穴中心をキャラ窓へ補正。前葉と窓下端を同じ高さで閉じて出現途中の下漏れを防ぎ、
+// 停止位置も上げてキャラの胴体が水平に切れる表示を解消した。styles.css queryを
+// 20260723-1432へ同期。ゲーム個別ファイルはnetwork-first配信のため
+// CRITICAL_ASSETSには追加しない。play.html PAGE_CACHE_VERSION/
+// window.PONO_SW_VERSION と同期 (2351)。
 // v2350: ポノのはたけにっきを、最初から使える4区画の左右対称なアイソメ2×2
 // (奥1・中央左右2・手前1)へ整理し、中央に緑のあぜ道を確保。旧3区画セーブは
 // 既存データを保持して4枠目だけ空畑で補完する。全区画の共通左上アンカーへ
@@ -874,7 +880,7 @@
 // styles.css／game.js queryを20260723-1429へ同期。ゲーム個別ファイルと画像は
 // network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
 // PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2347)。
-const CACHE_VERSION = 2350;
+const CACHE_VERSION = 2351;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [
