@@ -1396,6 +1396,9 @@ body.dino-adventure-active #dots{opacity:0;visibility:hidden}
 .dino-crane-controls button:active:not(:disabled){transform:translateY(4px);box-shadow:0 2px 0 #a85d31}.dino-crane-controls button:disabled{filter:grayscale(.45);opacity:.48;cursor:default}
 .dino-crane-controls button:focus-visible,.dino-crane-retry:focus-visible{outline:5px solid #fff273;outline-offset:3px}
 .dino-crane-retry{position:absolute;left:50%;bottom:22%;z-index:11;min-width:min(70vw,310px);transform:translateX(-50%);font-size:clamp(15px,2.8vw,23px);background:linear-gradient(#ff9f62,#ed5f54);color:#fff;text-shadow:0 2px rgba(125,45,38,.5)}
+.dino-adventure-continue{appearance:none;-webkit-appearance:none;position:absolute;left:50%;bottom:max(10px,env(safe-area-inset-bottom));z-index:14;min-width:clamp(180px,30vw,280px);min-height:clamp(54px,12vh,72px);transform:translateX(-50%);padding:7px 24px;border:5px solid #fff0a5;border-radius:999px;background:linear-gradient(#75d984,#3da85a);box-shadow:0 7px 0 #287641,0 0 22px rgba(255,242,118,.58);color:#fff;font-family:inherit;font-size:clamp(19px,3.4vw,28px);font-weight:1000;text-shadow:0 2px 0 rgba(32,102,55,.7);cursor:pointer;touch-action:manipulation}
+.dino-adventure-continue[hidden]{display:none!important}.dino-adventure-continue:active{transform:translate(-50%,5px);box-shadow:0 2px 0 #287641,0 0 22px rgba(255,242,118,.65)}.dino-adventure-continue:focus-visible{outline:5px solid #fff273;outline-offset:3px}
+.dino-crane-game[data-phase="success"] .dino-crane-controls,.dino-water-game.is-saved .dino-water-status-row{opacity:0;visibility:hidden;pointer-events:none}
 body.dino-crane-active #veh,body.dino-crane-active #cars{visibility:hidden!important}
 body.dino-crane-active #dinoAdventureGuide{min-width:min(70vw,480px)}
 @keyframes dinoCraneTargetPulse{to{transform:scale(1.09);box-shadow:0 0 0 6px rgba(255,255,255,.92),0 0 30px rgba(255,218,55,.9)}}
@@ -1593,6 +1596,7 @@ body.st-space.space-galaxy-active #quiz.show{transform:translate(-50%,0)}
 #stamp.ng{background:#f5a05a;animation:pop .9s ease forwards}
 #stamp.clear{background:#8e7cf0;animation:pop 1.6s ease forwards}
 #stamp.new{background:#3aa8d8;animation:pop 1.2s ease forwards}
+body.dino-adventure-success #stamp{top:50%;z-index:23}
 @keyframes pop{
   0%{opacity:0;transform:translate(-50%,-50%) scale(.55)}
   12%{opacity:0;transform:translate(-50%,-50%) scale(.75)}

@@ -83,7 +83,7 @@
   else { document.addEventListener('DOMContentLoaded', showLock); }
 })();
 </script>
-<link rel="stylesheet" href="styles.css?v=20260723-1421">
+<link rel="stylesheet" href="styles.css?v=20260723-1429">
 <script defer src="https://cloud.umami.is/script.js" data-website-id="89d02cb9-6bec-4f30-a21a-65321374dbdc"></script>
 </head>
 <body class="st-town v-train" data-driver="pono" data-driver-mood="happy">
@@ -187,6 +187,7 @@
             <button id="dinoCraneRight" type="button" aria-label="みぎへ うごかす">▶<small>みぎ</small></button>
           </div>
           <button id="dinoCraneRetry" class="dino-crane-retry" type="button" hidden>のこりを もういちど</button>
+          <button id="dinoCraneContinue" class="dino-adventure-continue" type="button" hidden>つぎへ</button>
         </div>
         <div id="dinoWaterGame" class="dino-water-game" role="group" aria-label="みぞの タイルを まわして みずの みちを つなぐ" hidden>
           <div class="dino-water-scene" aria-hidden="true">
@@ -199,6 +200,7 @@
             <div id="dinoWaterBudget" class="dino-water-budget" role="progressbar" aria-label="つながった みずの みち" aria-valuemin="0" aria-valuemax="28" aria-valuenow="1"><span></span><strong>みず 1</strong></div>
             <button id="dinoWaterHint" type="button">おたすけ 1</button>
           </div>
+          <button id="dinoWaterContinue" class="dino-adventure-continue" type="button" hidden>ティラノの ところへ</button>
         </div>
         <div id="dinoBossGame" class="dino-boss-game" data-phase="idle" role="group" aria-label="ティラノとの きてきしょうぶ" hidden>
           <div class="dino-boss-arena" aria-hidden="true">
@@ -477,6 +479,6 @@
 <div id="rotateHint"><span class="ui-art" data-ui-art="smartphone" aria-hidden="true"></span><span class="rotate-arrow" aria-hidden="true">→</span><span>よこむきに してね</span></div>
 <script src="data/questions.js?v=20260713-1273"></script>
 <script src="data/quiz-art.js?v=20260721-1409"></script>
-<script src="js/game.js?v=20260723-1421"></script>
+<script src="js/game.js?v=20260723-1429"></script>
 </body>
 </html>

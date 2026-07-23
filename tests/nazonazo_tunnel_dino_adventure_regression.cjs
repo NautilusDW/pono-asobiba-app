@@ -184,8 +184,8 @@ function validate(candidate) {
     "dinoCraneCable", "dinoCraneHook", "dinoCraneCargoLayer", "dinoCraneBranch", "dinoCraneLog", "dinoCraneRock",
     "dinoCraneRingGuides", "dinoCraneSafePlatform", "dinoCranePlatformArt", "dinoCraneCargoStatus",
     "dinoCraneSwing", "dinoCraneChances", "dinoCraneControls", "dinoCraneLeft", "dinoCraneLower",
-    "dinoCraneRight", "dinoCraneRetry", "dinoWaterGame", "dinoWaterDinos", "dinoWaterGrid",
-    "dinoWaterBudget", "dinoWaterHint",
+    "dinoCraneRight", "dinoCraneRetry", "dinoCraneContinue", "dinoWaterGame", "dinoWaterDinos", "dinoWaterGrid",
+    "dinoWaterBudget", "dinoWaterHint", "dinoWaterContinue",
     "dinoBossGame", "dinoBossTrex", "dinoBossTrainHp", "dinoBossTrexHp", "dinoBossWater",
     "dinoBossTug", "dinoBossAction", "dinoBossRetry"
   ];
@@ -197,7 +197,7 @@ function validate(candidate) {
   check(/<section id="dinoAdventureLayer"[^>]*data-phase="idle"[^>]*aria-hidden="true"[^>]*hidden/.test(html), "layer-a11y");
   check(/id="dinoWaterGrid"[^>]*role="grid"/.test(html) && /handleDinoWaterKeyDown/.test(game), "water-keyboard");
   check(/id="dinoWaterBudget"[^>]*role="progressbar"[^>]*aria-valuemin="0"[^>]*aria-valuemax="28"[^>]*aria-valuenow="1"/.test(html), "water-connect-a11y");
-  for (const id of ["dinoCraneLeft", "dinoCraneLower", "dinoCraneRight", "dinoCraneRetry", "dinoWaterHint", "dinoBossAction", "dinoBossRetry"]) {
+  for (const id of ["dinoCraneLeft", "dinoCraneLower", "dinoCraneRight", "dinoCraneRetry", "dinoCraneContinue", "dinoWaterHint", "dinoWaterContinue", "dinoBossAction", "dinoBossRetry"]) {
     check(new RegExp(`<button id="${id}"[^>]*type="button"`).test(html), "real-button", id);
   }
   for (const id of ["dinoBossTrainHp", "dinoBossTrexHp"]) {
@@ -209,6 +209,16 @@ function validate(candidate) {
   check(cssCompact.includes(".dino-crane-bay{") && cssCompact.includes(".dino-crane-bay.is-ready{") && cssCompact.includes(".dino-crane-controls{"), "crane-safe-guide");
   check(cssCompact.includes(".dino-water-grid{") && cssCompact.includes("grid-template-columns:repeat(7,var(--water-cell))") && cssCompact.includes("grid-template-rows:repeat(4,var(--water-cell))"), "water-grid-layout");
   check(cssCompact.includes(".dino-crane-controlsbutton,.dino-crane-retry{") && cssCompact.includes("min-height:clamp(50px,12vh,68px)"), "retry-target");
+  check(cssCompact.includes(".dino-adventure-continue{") && /\.dino-adventure-continue\{[^}]*min-height:clamp\((?:4[4-9]|[5-9]\d)px/.test(css), "success-continue-target");
+  check(/body\.dino-adventure-(?:active|success)\s+#stamp\s*\{[^}]*z-index\s*:\s*(?:1[9]|2\d|[3-9]\d)/.test(css), "success-stamp-front");
+  const successStampRules = [...css.matchAll(/body\.dino-adventure-success\s+#stamp\s*\{([^}]*)\}/g)];
+  const popAt = css.indexOf("@keyframes pop"), popOpenAt = popAt >= 0 ? css.indexOf("{", popAt) : -1;
+  const popEndAt = popOpenAt >= 0 ? scanBalanced(css, popOpenAt, "{", "}") : -1;
+  const popKeyframes = popEndAt > popOpenAt ? compact(css.slice(popOpenAt, popEndAt + 1)) : "";
+  const showStampBody = compact(extractFunction(game, "showStamp"));
+  check(successStampRules.length >= 1 && successStampRules.every(rule => !/(?:animation|opacity|visibility|transform)\s*:/.test(rule[1])) &&
+    /#stamp\.clear\{[^}]*animation:pop\s+1\.6s\s+ease\s+forwards/.test(css) && /100%\{opacity:0;/.test(popKeyframes) &&
+    showStampBody.includes("stampFeedbackTimer=setTimeout") && showStampBody.includes("},1250);"), "success-stamp-finite");
   check(cssCompact.includes(".dino-boss-action{") && /min-height:clamp\((?:6[4-9]|[7-9]\d)px/.test(css), "boss-target");
   check(/#settingsBtn\{[^}]*width:56px;[^}]*height:56px/.test(css) && /#settingsBtn\{width:48px;height:48px\}/.test(css), "settings-target");
   const reducedAt = css.indexOf("@media (prefers-reduced-motion:reduce)");
@@ -288,8 +298,17 @@ function validate(candidate) {
   check(/crane:\{[^}]*attempt:1[^}]*completed:false[^}]*scoreGranted:false[^}]*chances:DINO_CRANE_CHANCES[^}]*placedCount:0[^}]*movePointers:new Map\(\)/.test(stateFactory), "crane-state");
   const retryCrane = functions.retryDinoCraneEvent || "";
   const commitCrane = functions.commitDinoCraneSuccess || "";
+  const tickCrane = functions.tickDinoCrane || "";
+  const beginWaterSuccess = extractFunction(game, "beginDinoWaterSuccess") || "";
+  const commitWaterSuccess = extractFunction(game, "commitDinoWaterSuccess") || "";
+  const tickAdventure = functions.tickDinoAdventure || "";
   check(!/stageMiss\+\+|addScore\s*\(/.test(retryCrane) && /cargo=>!cargo\.placed/.test(retryCrane) && !/placed=false/.test(retryCrane), "crane-no-penalty-retry");
   check(/crane\.completed/.test(commitCrane) && /crane\.scoreGranted/.test(commitCrane) && /crane\.placedCount!==DINO_CRANE_CARGO_DEFS\.length/.test(commitCrane), "crane-one-shot-score");
+  check(/dinoAdventureSetPhase\(["']crane-success["'],0,now\)/.test(commitCrane) && /dinoCraneContinue\.hidden=false/.test(commitCrane) && !/finishDinoCraneSuccess\s*\(/.test(tickCrane), "crane-manual-success-hold");
+  check(/prepareDinoAdventureDomImage\(dinoWaterDinos,DINO_ADVENTURE_ASSETS\.waterSuccess\)/.test(beginWaterSuccess) && /commitDinoWaterSuccess/.test(beginWaterSuccess) && /dinoWaterContinue\.hidden=false/.test(commitWaterSuccess) && /phaseEndAt=0/.test(commitWaterSuccess) && !/finishDinoWaterSuccess\s*\(/.test(tickAdventure), "water-manual-success-hold");
+  check(/if\(!state\.crane\.completed\|\|state\.phase!==["']crane-success["']\)return/.test(finishCrane) && /if\(!state\.water\.completed\|\|state\.phase!==["']resolve-water["']\)return/.test(finishWater), "success-continue-one-shot");
+  check(/bindTap\(dinoCraneContinue,[^\n]*finishDinoCraneSuccess/.test(game) && /bindTap\(dinoWaterContinue,[^\n]*finishDinoWaterSuccess/.test(game), "success-continue-binding");
+  check(/dinoCraneContinue\.hidden=true/.test(reset) && /dinoWaterContinue\.hidden=true/.test(reset), "success-continue-cleanup");
   check((game.match(/\["pointerup","pointercancel","lostpointercapture"\]/g) || []).length >= 2 && /endDinoCraneMovePointer/.test(game) && /movePointers\.delete/.test(extractFunction(game, "endDinoCraneMovePointer")), "crane-pointercancel-retry");
   check(/isDinoAdventureStage\(\)/.test(revealCrane) && /!playing/.test(revealCrane) && (revealCrane.match(/dinoAdventureState\.epoch!==epoch/g) || []).length >= 3 && /dinoAdventureState\.phase!==["']travel["']/.test(revealCrane), "crane-stale-reveal-guard");
   check(/bossHp:DINO_BOSS_HP/.test(stateFactory) && /trainHp:DINO_BOSS_TRAIN_HP/.test(stateFactory) && /waterCharge:DINO_BOSS_WATER_CHARGES/.test(stateFactory), "boss-state");
@@ -317,6 +336,13 @@ function replaceExactlyOnce(source, from, to) {
   const count = source.split(from).length - 1;
   assert.equal(count, 1, `mutation anchor count for ${from}: ${count}`);
   return source.replace(from, to);
+}
+
+function replaceRegexExactlyOnce(source, pattern, replacement) {
+  assert.equal(pattern.global, false, "mutation regex must not be global");
+  const matches = source.match(new RegExp(pattern.source, `${pattern.flags}g`)) || [];
+  assert.equal(matches.length, 1, `mutation regex anchor count for ${pattern}: ${matches.length}`);
+  return source.replace(pattern, replacement);
 }
 
 let sourceMutationCount = 0;
@@ -671,6 +697,141 @@ async function runBrowser(browserName, base) {
     assert.equal(paintedSrc && paintedSrc.split("?")[0].split("/").at(-1), expectedFile, `${browserName}: image advanced before ${label} painted: ${paintedSrc}`);
     return metrics;
   }
+  const viewports = [[390, 844], [568, 320], [844, 390], [1024, 768], [1366, 768]];
+  async function assertHeldSuccessFeedback({ buttonId, expectedPhase, expectedGuide, startedAt, reducedMotion, imageFile = "" }) {
+    const button = frame.locator(`#${buttonId}`);
+    await button.waitFor({ state: "visible", timeout: 3000 });
+    await frame.waitForFunction(id => document.activeElement?.id === id, buttonId, { timeout: 3000 });
+
+    // The transient score stamp must be in front of the adventure layer, but
+    // must not cover the persistent guide or continue action on short landscape.
+    await page.setViewportSize({ width: 568, height: 320 });
+    await frame.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    const stampDelay = Math.max(0, startedAt + 400 - Date.now());
+    if (stampDelay) await page.waitForTimeout(stampDelay);
+    const transient = await frame.evaluate(({ id, guideText }) => {
+      const stamp = document.getElementById("stamp");
+      const layer = document.getElementById("dinoAdventureLayer");
+      const guide = document.getElementById("dinoAdventureGuide");
+      const button = document.getElementById(id);
+      const rect = element => {
+        const value = element.getBoundingClientRect();
+        return { left: value.left, right: value.right, top: value.top, bottom: value.bottom, width: value.width, height: value.height };
+      };
+      const overlap = (a, b) => Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+      const stampRect = rect(stamp), guideRect = rect(guide), buttonRect = rect(button);
+      return {
+        bodySuccess: document.body.classList.contains("dino-adventure-success"),
+        activeId: document.activeElement?.id || "",
+        guideText: guide.textContent,
+        guideExpected: guideText,
+        stampText: stamp.textContent,
+        stampOpacity: Number(getComputedStyle(stamp).opacity),
+        stampZ: Number(getComputedStyle(stamp).zIndex),
+        layerZ: Number(getComputedStyle(layer).zIndex),
+        stampGuideOverlap: overlap(stampRect, guideRect),
+        stampButtonOverlap: overlap(stampRect, buttonRect),
+        buttonRect
+      };
+    }, { id: buttonId, guideText: expectedGuide });
+    assert.equal(transient.bodySuccess, true, `${browserName}: success foreground class missing`);
+    assert.equal(transient.activeId, buttonId, `${browserName}: success continue action did not receive focus`);
+    assert.equal(transient.guideText, expectedGuide, `${browserName}: success guide changed before it could be read`);
+    assert.ok(transient.stampText.length > 0 && transient.stampOpacity >= 0.8, `${browserName}: success stamp was not initially visible: ${JSON.stringify(transient)}`);
+    assert.ok(transient.stampZ > transient.layerZ, `${browserName}: success stamp remained behind the adventure layer: ${JSON.stringify(transient)}`);
+    assert.equal(transient.stampGuideOverlap, 0, `${browserName}: success stamp covered the guide at 568x320: ${JSON.stringify(transient)}`);
+    assert.equal(transient.stampButtonOverlap, 0, `${browserName}: success stamp covered the continue action at 568x320: ${JSON.stringify(transient)}`);
+    assert.ok(transient.buttonRect.width >= 44 && transient.buttonRect.height >= 44, `${browserName}: success continue action is undersized at 568x320`);
+
+    await page.setViewportSize({ width: 844, height: 390 });
+    await frame.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    const transientWide = await frame.evaluate(id => {
+      const stamp = document.getElementById("stamp"), layer = document.getElementById("dinoAdventureLayer");
+      const guide = document.getElementById("dinoAdventureGuide"), button = document.getElementById(id);
+      const rect = element => element.getBoundingClientRect();
+      const overlap = (a, b) => Math.max(0, Math.min(a.right, b.right) - Math.max(a.left, b.left)) * Math.max(0, Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top));
+      const stampRect = rect(stamp);
+      return {
+        opacity: Number(getComputedStyle(stamp).opacity),
+        stampZ: Number(getComputedStyle(stamp).zIndex),
+        layerZ: Number(getComputedStyle(layer).zIndex),
+        guideOverlap: overlap(stampRect, rect(guide)),
+        buttonOverlap: overlap(stampRect, rect(button))
+      };
+    }, buttonId);
+    assert.ok(transientWide.opacity >= 0.8 && transientWide.stampZ > transientWide.layerZ, `${browserName}: success stamp was not initially in front at 844x390: ${JSON.stringify(transientWide)}`);
+    assert.equal(transientWide.guideOverlap, 0, `${browserName}: success stamp covered the guide at 844x390: ${JSON.stringify(transientWide)}`);
+    assert.equal(transientWide.buttonOverlap, 0, `${browserName}: success stamp covered the continue action at 844x390: ${JSON.stringify(transientWide)}`);
+
+    for (const [width, height] of viewports) {
+      await page.setViewportSize({ width, height });
+      await frame.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+      const fit = await frame.evaluate(({ id, guideText, imageExpected }) => {
+        const button = document.getElementById(id), guide = document.getElementById("dinoAdventureGuide");
+        const buttonRect = button.getBoundingClientRect(), guideRect = guide.getBoundingClientRect();
+        const overlapWidth = Math.max(0, Math.min(buttonRect.right, guideRect.right) - Math.max(buttonRect.left, guideRect.left));
+        const overlapHeight = Math.max(0, Math.min(buttonRect.bottom, guideRect.bottom) - Math.max(buttonRect.top, guideRect.top));
+        const image = document.getElementById("dinoWaterDinos");
+        const imageRect = image.getBoundingClientRect();
+        return {
+          overflowX: document.documentElement.scrollWidth - innerWidth,
+          overflowY: document.documentElement.scrollHeight - innerHeight,
+          buttonInside: buttonRect.left >= -2 && buttonRect.right <= innerWidth + 2 && buttonRect.top >= -2 && buttonRect.bottom <= innerHeight + 2,
+          buttonWidth: buttonRect.width,
+          buttonHeight: buttonRect.height,
+          guideText: guide.textContent,
+          guideExpected: guideText,
+          guideButtonOverlap: overlapWidth * overlapHeight,
+          imageVisible: !imageExpected || (image.complete && image.naturalWidth > 0 && image.naturalHeight > 0 && imageRect.width > 0 && imageRect.height > 0 && getComputedStyle(image).display !== "none"),
+          playfieldOpacity: Number(getComputedStyle(document.querySelector(".dino-water-playfield")).opacity)
+        };
+      }, { id: buttonId, guideText: expectedGuide, imageExpected: Boolean(imageFile) });
+      assert.ok(fit.overflowX <= 1 && fit.overflowY <= 1, `${browserName}: success overflow ${width}x${height}: ${JSON.stringify(fit)}`);
+      assert.equal(fit.buttonInside, true, `${browserName}: success continue action clipped at ${width}x${height}: ${JSON.stringify(fit)}`);
+      assert.ok(fit.buttonWidth >= 44 && fit.buttonHeight >= 44, `${browserName}: success continue action below 44px at ${width}x${height}`);
+      assert.equal(fit.guideText, expectedGuide, `${browserName}: success guide drifted at ${width}x${height}`);
+      assert.equal(fit.guideButtonOverlap, 0, `${browserName}: success guide overlaps continue action at ${width}x${height}: ${JSON.stringify(fit)}`);
+      if (imageFile) {
+        assert.equal(fit.imageVisible, true, `${browserName}: water success art not visible at ${width}x${height}: ${JSON.stringify(fit)}`);
+        assert.ok(fit.playfieldOpacity <= 0.05, `${browserName}: solved water board still obscures the success art at ${width}x${height}: ${JSON.stringify(fit)}`);
+      }
+    }
+    await page.setViewportSize({ width: 844, height: 390 });
+    await frame.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+
+    // The stamp is deliberately finite so it cannot become a permanent cover,
+    // while the result, guide and explicit action remain until the child acts.
+    const stampEndAt = startedAt + (reducedMotion ? 1450 : 1800);
+    const untilStampEnds = Math.max(0, stampEndAt - Date.now());
+    if (untilStampEnds) await page.waitForTimeout(untilStampEnds);
+    const afterStamp = await frame.evaluate(() => {
+      const stamp = document.getElementById("stamp");
+      return { className: stamp.className, opacity: Number(getComputedStyle(stamp).opacity), bodySuccess: document.body.classList.contains("dino-adventure-success") };
+    });
+    assert.ok(afterStamp.className === "" || afterStamp.opacity <= 0.05, `${browserName}: transient success stamp became a permanent cover: ${JSON.stringify(afterStamp)}`);
+    assert.equal(afterStamp.bodySuccess, true, `${browserName}: persistent success state ended with the transient stamp`);
+
+    const untilHold = Math.max(0, startedAt + 2600 - Date.now());
+    if (untilHold) await page.waitForTimeout(untilHold);
+    const held = await snapshot(frame);
+    assert.equal(held.phase, expectedPhase, `${browserName}: success advanced without the continue action`);
+    assert.equal(await button.isVisible(), true, `${browserName}: success continue action disappeared while waiting`);
+    assert.equal(await frame.locator("#dinoAdventureGuide").textContent(), expectedGuide, `${browserName}: success guide disappeared while waiting`);
+    if (imageFile) await assertRenderedImage(frame.locator("#dinoWaterDinos"), imageFile, "held water success");
+
+    // Backgrounding cannot consume the manual acknowledgement or create a stale transition.
+    await frame.evaluate(() => {
+      Object.defineProperty(document, "hidden", { configurable: true, get: () => true });
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    await page.waitForTimeout(450);
+    assert.equal((await snapshot(frame)).phase, expectedPhase, `${browserName}: hidden tab consumed success acknowledgement`);
+    await frame.evaluate(() => {
+      Object.defineProperty(document, "hidden", { configurable: true, get: () => false });
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    return held;
+  }
   await frame.locator("#startBtn").waitFor({ state: "visible", timeout: 15000 });
   await frame.waitForFunction(() => !document.getElementById("startBtn").disabled && /きょうりゅう/.test(document.getElementById("startBtn").textContent), null, { timeout: 15000 });
   const saveBefore = await frame.evaluate(() => localStorage.getItem("pono_nazonazo_tunnel_v1"));
@@ -693,7 +854,6 @@ async function runBrowser(browserName, base) {
   assert.equal(await frame.locator(".tun:visible").count(), 0, `${browserName}: dino built visible quiz stations`);
   assert.equal(await frame.locator("#dinoCraneGame:visible").count(), 1, `${browserName}: crane event is not visible`);
 
-  const viewports = [[390, 844], [568, 320], [844, 390], [1024, 768], [1366, 768]];
   for (const [width, height] of viewports) {
     await page.setViewportSize({ width, height });
     await frame.evaluate(() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve))));
@@ -846,16 +1006,34 @@ async function runBrowser(browserName, base) {
   await attachCargo("log");
   const logPlaced = await placeCargo("log", 1);
   assert.equal(logPlaced.crane.placedCount, 2);
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await attachCargo("rock");
   const craneSuccess = await placeCargo("rock", 2);
+  const craneSuccessStartedAt = Date.now();
   assert.equal(craneSuccess.phase, "crane-success");
   assert.equal(craneSuccess.crane.completed, true);
   assert.equal(craneSuccess.eventIndex, 1);
   assert.equal(craneSuccess.crane.scoreGranted, true);
   assert.equal(craneSuccess.crane.attempt, 2);
   assert.deepEqual(craneSuccess.crane.cargos.map(cargo => [cargo.id, cargo.placed]), [["branch", true], ["log", true], ["rock", true]]);
+  await assertHeldSuccessFeedback({
+    buttonId: "dinoCraneContinue",
+    expectedPhase: "crane-success",
+    expectedGuide: "じゃまな ものが どいて、わきみずが でてきたよ！",
+    startedAt: craneSuccessStartedAt,
+    reducedMotion: true
+  });
+  qaMetrics.craneSuccessHeldMs = Date.now() - craneSuccessStartedAt;
   await page.screenshot({ path: `/tmp/nazonazo-dino-adventure-${browserName}-crane-success-844x390.png`, fullPage: true });
 
+  const beforeCraneContinue = await snapshot(frame);
+  await frame.locator("#dinoCraneContinue").press("Enter");
+  const afterCraneContinue = await snapshot(frame);
+  assert.equal(afterCraneContinue.phase, "travel", `${browserName}: Enter did not acknowledge crane success`);
+  assert.equal(afterCraneContinue.transitionCount, beforeCraneContinue.transitionCount + 1, `${browserName}: crane acknowledgement was not exactly one transition`);
+  await frame.locator("#dinoCraneContinue").dispatchEvent("click");
+  assert.equal((await snapshot(frame)).transitionCount, afterCraneContinue.transitionCount, `${browserName}: stale crane acknowledgement transitioned twice`);
+  await page.emulateMedia({ reducedMotion: "no-preference" });
   const waterStartedAt = Date.now();
   const waterInitial = await waitSnapshot(frame, state => state.phase === "water" || state.phase === "water-ready", `${browserName}: crane did not transition to the water event`, 20000);
   qaMetrics.waterRevealAfterCraneMs = Date.now() - waterStartedAt;
@@ -960,6 +1138,7 @@ async function runBrowser(browserName, base) {
   assert.ok(["water", "resolve-water"].includes(hinted.phase), `${browserName}: water hint left the event in an invalid phase`);
 
   // Solve through the real 90-degree tile buttons using only the read-only admin snapshot.
+  await page.emulateMedia({ reducedMotion: "reduce" });
   let solveState = await snapshot(frame);
   if (solveState.phase === "water") {
     for (const index of solveState.water.path) {
@@ -979,10 +1158,27 @@ async function runBrowser(browserName, base) {
   assert.equal(savedWater.eventIndex, 2);
   assert.equal(await frame.locator("#dinoWaterGame.is-saved").count(), 1, `${browserName}: water success class missing`);
   await assertRenderedImage(frame.locator("#dinoWaterDinos"), "branch_dino_adventure_waterway_success_20260722.webp", "water success");
-  await page.waitForTimeout(400);
+  await assertHeldSuccessFeedback({
+    buttonId: "dinoWaterContinue",
+    expectedPhase: "resolve-water",
+    expectedGuide: "きょうりゅうが みずを のめたよ！",
+    startedAt: waterSavedAt,
+    reducedMotion: true,
+    imageFile: "branch_dino_adventure_waterway_success_20260722.webp"
+  });
+  qaMetrics.waterSuccessHeldMs = Date.now() - waterSavedAt;
   await page.screenshot({ path: `/tmp/nazonazo-dino-adventure-${browserName}-water-success-844x390.png`, fullPage: true });
+  const beforeWaterContinue = await snapshot(frame);
+  const bossTravelStartedAt = Date.now();
+  await frame.locator("#dinoWaterContinue").press("Space");
+  const afterWaterContinue = await snapshot(frame);
+  assert.equal(afterWaterContinue.phase, "travel", `${browserName}: Space did not acknowledge water success`);
+  assert.equal(afterWaterContinue.transitionCount, beforeWaterContinue.transitionCount + 1, `${browserName}: water acknowledgement was not exactly one transition`);
+  await frame.locator("#dinoWaterContinue").dispatchEvent("click");
+  assert.equal((await snapshot(frame)).transitionCount, afterWaterContinue.transitionCount, `${browserName}: stale water acknowledgement transitioned twice`);
+  await page.emulateMedia({ reducedMotion: "no-preference" });
   const afterWater = await waitSnapshot(frame, state => state.water.completed && state.eventIndex === 2 && state.boss.phase !== "idle", `${browserName}: water did not transition directly to boss once`, 20000);
-  qaMetrics.bossRevealAfterWaterMs = Date.now() - waterSavedAt;
+  qaMetrics.bossRevealAfterWaterContinueMs = Date.now() - bossTravelStartedAt;
   assert.equal(afterWater.transitionCount >= 1, true);
   assert.equal(afterWater.boss.waterCharge, 3);
 
@@ -1310,12 +1506,38 @@ async function runCranePointerBrowser(browserName, base) {
   await pointerPlaceCargo("log", 1);
   await page.screenshot({ path: `/tmp/nazonazo-dino-crane-pointer-${browserName}-log-1174x658.png`, fullPage: true });
   const success = await pointerPlaceCargo("rock", 2);
+  const successAt = Date.now();
   assert.equal(success.phase, "crane-success");
   assert.equal(success.crane.completed, true);
   assert.equal(success.eventIndex, 1);
   assert.equal(success.crane.scoreGranted, true);
   pointerEvidence.success = captureEvidence(success);
+  const continueButton = frame.locator("#dinoCraneContinue");
+  await continueButton.waitFor({ state: "visible", timeout: 3000 });
+  await page.waitForTimeout(Math.max(0, successAt + 400 - Date.now()));
+  const foreground = await frame.evaluate(() => ({
+    stampZ: Number(getComputedStyle(document.getElementById("stamp")).zIndex),
+    layerZ: Number(getComputedStyle(document.getElementById("dinoAdventureLayer")).zIndex),
+    stampOpacity: Number(getComputedStyle(document.getElementById("stamp")).opacity)
+  }));
+  assert.ok(foreground.stampZ > foreground.layerZ && foreground.stampOpacity >= 0.8, `${browserName}: pointer success stamp was not initially in front: ${JSON.stringify(foreground)}`);
+  await page.waitForTimeout(Math.max(0, successAt + 1800 - Date.now()));
+  const finiteStamp = await frame.evaluate(() => ({ className: document.getElementById("stamp").className, opacity: Number(getComputedStyle(document.getElementById("stamp")).opacity) }));
+  assert.ok(finiteStamp.className === "" || finiteStamp.opacity <= 0.05, `${browserName}: normal-motion success stamp became permanent: ${JSON.stringify(finiteStamp)}`);
+  await page.waitForTimeout(Math.max(0, successAt + 2600 - Date.now()));
+  const heldSuccess = await snapshot(frame);
+  assert.equal(heldSuccess.phase, "crane-success", `${browserName}: pointer success auto-advanced before acknowledgement`);
+  assert.equal(await continueButton.isVisible(), true, `${browserName}: pointer success continue action disappeared`);
+  assert.equal(await frame.locator("#dinoAdventureGuide").textContent(), "じゃまな ものが どいて、わきみずが でてきたよ！");
   await page.screenshot({ path: `/tmp/nazonazo-dino-crane-pointer-${browserName}-success-1174x658.png`, fullPage: true });
+
+  const beforeContinue = await snapshot(frame);
+  await clickPhysical(continueButton);
+  const continued = await snapshot(frame);
+  assert.equal(continued.phase, "travel", `${browserName}: physical pointer did not acknowledge crane success`);
+  assert.equal(continued.transitionCount, beforeContinue.transitionCount + 1, `${browserName}: pointer acknowledgement was not one-shot`);
+  await continueButton.dispatchEvent("click");
+  assert.equal((await snapshot(frame)).transitionCount, continued.transitionCount, `${browserName}: stale pointer acknowledgement transitioned twice`);
 
   const saveAfter = await frame.evaluate(() => localStorage.getItem("pono_nazonazo_tunnel_v1"));
   assert.equal(saveAfter, saveBefore, `${browserName}: pointer parity preview mutated save data`);
@@ -1467,6 +1689,14 @@ async function main() {
     ...candidate,
     game: replaceExactlyOnce(candidate.game, 'if(!crane.scoreGranted){crane.scoreGranted=true;addScore(DINO_CRANE_SCORE,"adventure");}', 'addScore(DINO_CRANE_SCORE,"adventure");')
   }));
+  sourceMutation("crane success regains an automatic timer", "crane-manual-success-hold", candidate => ({
+    ...candidate,
+    game: replaceExactlyOnce(candidate.game, 'dinoAdventureSetPhase("crane-success",0,now)', 'dinoAdventureSetPhase("crane-success",1250,now)')
+  }));
+  sourceMutation("crane continue action loses its handler", "success-continue-binding", candidate => ({
+    ...candidate,
+    game: replaceExactlyOnce(candidate.game, 'if(dinoCraneContinue)bindTap(dinoCraneContinue,()=>{ensureAC();finishDinoCraneSuccess();});', '')
+  }));
   sourceMutation("pointercancel no longer stops held crane movement", "crane-pointercancel-retry", candidate => ({
     ...candidate,
     game: replaceExactlyOnce(candidate.game, 'if(dinoCraneLeft){dinoCraneLeft.addEventListener("pointerdown",event=>beginDinoCraneMovePointer(event,-1,dinoCraneLeft));for(const type of ["pointerup","pointercancel","lostpointercapture"])', 'if(dinoCraneLeft){dinoCraneLeft.addEventListener("pointerdown",event=>beginDinoCraneMovePointer(event,-1,dinoCraneLeft));for(const type of ["pointerup","lostpointercapture"])')
@@ -1498,6 +1728,34 @@ async function main() {
   sourceMutation("water help becomes reusable", "water-state", candidate => ({
     ...candidate,
     game: replaceExactlyOnce(candidate.game, "helpRemaining:1,rotationCount:0", "helpRemaining:2,rotationCount:0")
+  }));
+  sourceMutation("water success regains an automatic timer", "water-manual-success-hold", candidate => ({
+    ...candidate,
+    game: replaceExactlyOnce(candidate.game, 'state.phaseEndAt=0;if(dinoWaterContinue)dinoWaterContinue.hidden=false', 'state.phaseEndAt=now+1250;if(dinoWaterContinue)dinoWaterContinue.hidden=false')
+  }));
+  sourceMutation("water continue action loses its handler", "success-continue-binding", candidate => ({
+    ...candidate,
+    game: replaceExactlyOnce(candidate.game, 'if(dinoWaterContinue)bindTap(dinoWaterContinue,()=>{ensureAC();finishDinoWaterSuccess();});', '')
+  }));
+  sourceMutation("success stamp falls behind the adventure layer", "success-stamp-front", candidate => ({
+    ...candidate,
+    css: replaceRegexExactlyOnce(
+      candidate.css,
+      /(body\.dino-adventure-success\s+#stamp\s*\{[^}]*\bz-index\s*:\s*)23\b/,
+      (_match, prefix) => `${prefix}12`
+    )
+  }));
+  sourceMutation("success stamp becomes a permanent cover", "success-stamp-finite", candidate => ({
+    ...candidate,
+    css: replaceRegexExactlyOnce(
+      candidate.css,
+      /(body\.dino-adventure-success\s+#stamp\s*\{[^}]*\bz-index\s*:\s*23;?)/,
+      (_match, prefix) => `${prefix}opacity:1!important;`
+    )
+  }));
+  sourceMutation("reduced-motion success stamp disappears too quickly", "success-stamp-finite", candidate => ({
+    ...candidate,
+    game: replaceExactlyOnce(candidate.game, "},1250);", "},250);")
   }));
 
   if (process.env.NAZONAZO_BROWSER) {

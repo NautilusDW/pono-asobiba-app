@@ -842,7 +842,12 @@
 // styles.css は個別query更新済み。ゲーム個別ファイルはnetwork-first配信のため
 // CRITICAL_ASSETSには追加しない。play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSION
 // と同期 (2346)。
-const CACHE_VERSION = 2346;
+// v2347: なぞなぞトレイン恐竜面のクレーン／水路成功結果を、自動遷移ではなく
+// 明示ボタンを押すまで保持。水路はdecode済み成功絵を確認してから次へ進める。
+// styles.css／game.js queryを20260723-1429へ同期。ゲーム個別ファイルと画像は
+// network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
+// PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2347)。
+const CACHE_VERSION = 2347;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

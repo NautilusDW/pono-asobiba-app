@@ -13,6 +13,8 @@ const html = read("nazonazo-tunnel/index.html");
 const css = read("nazonazo-tunnel/styles.css");
 const sw = read("sw.js");
 const DINO_V2_TOKEN = "20260723-1421";
+const RUNTIME_TOKEN = "20260723-1429";
+const SW_VERSION = 2347;
 
 const STAGE_IDS = ["snow", "fire", "dino", "toy", "cat", "fantasy", "sky", "ruins"];
 const LAYER_KEYS = ["sky", "horizon", "mid", "ground", "fg", "decor"];
@@ -408,8 +410,8 @@ const styleToken = html.match(/styles\.css\?v=([^"']+)/);
 const gameToken = html.match(/js\/game\.js\?v=([^"']+)/);
 assert.ok(styleToken && gameToken, "nazonazo stylesheet and game cache tokens must exist");
 assert.equal(styleToken[1], gameToken[1], "nazonazo stylesheet and game cache tokens must match");
-assert.equal(styleToken[1], "20260723-1421", "nazonazo branch depth cache token drifted");
-assert.match(sw, /const CACHE_VERSION = 2345;/, "service worker cache version must be 2345");
+assert.equal(styleToken[1], RUNTIME_TOKEN, "nazonazo branch depth cache token drifted");
+assert.match(sw, new RegExp(`const CACHE_VERSION = ${SW_VERSION};`), `service worker cache version must be ${SW_VERSION}`);
 assert.doesNotMatch(sw, /branch_(?:snow|fire|dino|toy|cat|fantasy|sky|ruins)_(?:sky|horizon|mid|ground|foreground|decor)/,
   "branch raster images must stay out of service-worker precache lists");
 

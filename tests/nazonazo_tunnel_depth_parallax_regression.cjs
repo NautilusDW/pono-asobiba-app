@@ -232,8 +232,8 @@ async function validate(candidateSources, assetSpecs = ASSETS) {
   }
   const styleToken = html.match(/styles\.css\?v=([^"']+)/)?.[1];
   const gameToken = html.match(/js\/game\.js\?v=([^"']+)/)?.[1];
-  check(fantasyRowsPass && styleToken === "20260723-1421" && gameToken === styleToken &&
-    /const CACHE_VERSION = 2345;/.test(sw) && /\/\/ v2317:/.test(sw) && /\/\/ v2316:/.test(sw) &&
+  check(fantasyRowsPass && styleToken === "20260723-1429" && gameToken === styleToken &&
+    /const CACHE_VERSION = 2347;/.test(sw) && /\/\/ v2317:/.test(sw) && /\/\/ v2316:/.test(sw) &&
     game.includes("branch_fantasy_horizon_cutout_loop_depthfix_v4_20260721.webp") &&
     game.includes("branch_fantasy_mid_cutout_loop_depthfix_v4_20260721.webp") &&
     !game.includes("branch_fantasy_horizon_cutout_loop_depthfix_v3_20260721.webp") &&
@@ -274,7 +274,7 @@ async function main() {
     { name: "dino meadow joins foreground speed", code: "dino-meadow-parallax", sources: { ...sources, game: replaceOnce(sources.game, "const BRANCH_DINO_MEADOW_PARALLAX=.10;", "const BRANCH_DINO_MEADOW_PARALLAX=1.18;") }, assets: ASSETS },
     { name: "dino far herd loses signed wrap", code: "dino-meadow-parallax", sources: { ...sources, game: replaceOnce(sources.game, "const x=(((raw+BRANCH_DINO_FAR_HERD_SPACING_VW)%period)+period)%period-BRANCH_DINO_FAR_HERD_SPACING_VW;", "const x=((raw%period)+period)%period;") }, assets: ASSETS },
     { name: "dino world projection ignores anchor", code: "dino-meadow-parallax", sources: { ...sources, game: replaceOnce(sources.game, "return 50+(anchor-localWorldX)*parallax;", "return 50-localWorldX*parallax;") }, assets: ASSETS },
-    { name: "fantasy cache token rolls back", code: "fantasy-baseline-token", sources: { ...sources, html: replaceOnce(sources.html, "styles.css?v=20260723-1421", "styles.css?v=20260723-1420") }, assets: ASSETS }
+    { name: "fantasy cache token rolls back", code: "fantasy-baseline-token", sources: { ...sources, html: replaceOnce(sources.html, "styles.css?v=20260723-1429", "styles.css?v=20260723-1428") }, assets: ASSETS }
   ];
   for (const mutation of mutations) {
     assert.deepEqual(await validate(mutation.sources, mutation.assets), [mutation.code], `${mutation.name}: must reject only ${mutation.code}`);
