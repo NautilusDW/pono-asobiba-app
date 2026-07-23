@@ -534,6 +534,9 @@ function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
   const plotBlock = stylesCss.match(/\.plot\s*\{[^}]*\}/);
   assert.ok(plotBlock, '.plot ブロックが存在する');
   assert.doesNotMatch(plotBlock[0], /bottom\s*:/, '畝配置は画面下端基準の bottom を使わない');
+  assert.match(plotBlock[0], /pointer-events:\s*none/, '透明な矩形部分はタッチを奪わない');
+  assert.match(stylesCss, /\.plot-hit-area\s*\{[^}]*clip-path:\s*polygon\(50% 0%, 100% 46%, 50% 100%, 0% 46%\)[^}]*pointer-events:\s*auto/s, '実画像のひし形だけを操作面にする');
+  assert.strictEqual((indexHtml.match(/class="plot-hit-area"/g) || []).length, 3, '各畝にひし形の操作面が1つある');
 }
 
 console.log("hatake nikki regression: PASS");

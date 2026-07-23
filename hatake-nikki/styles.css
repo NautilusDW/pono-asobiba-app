@@ -117,8 +117,19 @@ html, body {
   aspect-ratio: 238 / 143; /* hatake_crop.png 実測 AR を厳守 (stretch禁止) */
   background: url('../assets/images/yard/hatake_crop.png') center/contain no-repeat;
   display: flex; align-items: center; justify-content: center;
+  /* 畝同士は透明な矩形部分が重なる。コンテナ全体をヒット対象にすると、
+     手前の畝の透明角が奥の畝への操作を奪うため、実画像のひし形だけを
+     .plot-hit-area で受ける。子の touch は既存の .plot listener へ bubble する。 */
+  pointer-events: none;
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none; /* iOS 長押しコールアウト禁止 (保険: 継承元と重複明示) */
+}
+.plot-hit-area {
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(50% 0%, 100% 46%, 50% 100%, 0% 46%);
+  pointer-events: auto;
+  touch-action: manipulation;
 }
 /* egg/index.html の FARM_PLOT_POS 先頭3点と共通の実測座標。
    0=奥、1/2=手前の三角形にし、ひし形地面の外に出さない。 */
@@ -202,6 +213,7 @@ html, body {
   aspect-ratio: 268 / 204; /* Ladybug_normal_1.png 実測 AR */
   background: url('../assets/images/ocean/Ladybug/Ladybug_normal_1.png') center/contain no-repeat;
   display: none;
+  pointer-events: auto;
   animation: bugWiggle 1.2s ease-in-out infinite;
 }
 .bug-sprite.is-visible { display: block; }

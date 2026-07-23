@@ -837,7 +837,12 @@
 // 操作を遮らないpointer透過、解除／再挑戦時の消去、reduced-motion時の花火停止も追加。
 // ゲーム個別ファイルはnetwork-first配信のためCRITICAL_ASSETSには追加しない。
 // play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSION と同期 (2345)。
-const CACHE_VERSION = 2345;
+// v2346: hatake-nikki の3区画を green.png の実画像面へ三角配置し、透明な矩形同士の
+// 重なりで奥の畝へのタッチが手前へ奪われないよう、可視ひし形だけを操作面に分離。
+// styles.css は個別query更新済み。ゲーム個別ファイルはnetwork-first配信のため
+// CRITICAL_ASSETSには追加しない。play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSION
+// と同期 (2346)。
+const CACHE_VERSION = 2346;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

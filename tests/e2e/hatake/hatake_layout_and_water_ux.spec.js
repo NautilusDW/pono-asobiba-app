@@ -122,6 +122,8 @@ test.describe('hatake-nikki: layout regression (畝3枚がひし形地面の実�
     // 背景 contain と同じ 1200×670 面が stage の中央にあること。
     expect(Math.abs(plotAreaBox.width / plotAreaBox.height - 1200 / 670)).toBeLessThan(0.002);
     expect(Math.abs((plotAreaBox.y + plotAreaBox.height / 2) - (stageBox.y + stageBox.height / 2))).toBeLessThanOrEqual(1);
+    expect(Math.abs(plotAreaBox.x - stageBox.x)).toBeLessThanOrEqual(1);
+    expect(Math.abs(plotAreaBox.width - stageBox.width)).toBeLessThanOrEqual(1);
 
     const EPS = 1; // 誤差1px許容
     for (let i = 0; i < 3; i++) {
@@ -175,7 +177,102 @@ test.describe('hatake-nikki: layout regression (畝3枚がひし形地面の実�
       expect(noHorizontalOverlap).toBe(true);
     }
 
+    // 手前plotの透明な矩形角が、奥plotの見えている土への操作を奪わないこと。
+    // locator.dispatchEvent() は実ブラウザのhit-testを迂回するため、
+    // elementFromPoint() で重なり部分と各畝中心の実ターゲットを検査する。
+    const hitTargets = await page.evaluate(() => {
+      const plotEls = Array.from(document.querySelectorAll('.plot'));
+      const boxes = plotEls.map((el) => el.getBoundingClientRect());
+      const pointInDiamond = (x, y, box) => {
+        const nx = (x - box.left) / box.width;
+        const ny = (y - box.top) / box.height;
+        if (nx < 0 || nx > 1 || ny < 0 || ny > 1) return false;
+        const halfWidth = ny <= 0.46 ? ny / 0.92 : (1 - ny) / 1.08;
+        return nx >= 0.5 - halfWidth && nx <= 0.5 + halfWidth;
+      };
+      const plotIdAt = (x, y) => {
+        const hit = document.elementFromPoint(x, y);
+        const plot = hit && hit.closest('.plot');
+        return plot ? plot.dataset.plot : null;
+      };
+      const result = { centers: [], exposedBackPlot: [] };
+      boxes.forEach((box) => {
+        result.centers.push(plotIdAt(box.left + box.width / 2, box.top + box.height / 2));
+      });
+
+      const back = boxes[0];
+      for (let gy = 1; gy < 20; gy++) {
+        for (let gx = 1; gx < 20; gx++) {
+          const x = back.left + back.width * gx / 20;
+          const y = back.top + back.height * gy / 20;
+          if (!pointInDiamond(x, y, back)) continue;
+          const overlapsFrontRect = boxes.slice(1).some((front) =>
+            x >= front.left && x <= front.right && y >= front.top && y <= front.bottom
+          );
+          const overlapsFrontDiamond = boxes.slice(1).some((front) => pointInDiamond(x, y, front));
+          if (overlapsFrontRect && !overlapsFrontDiamond) result.exposedBackPlot.push(plotIdAt(x, y));
+        }
+      }
+      return result;
+    });
+    expect(hitTargets.centers).toEqual(['0', '1', '2']);
+    expect(hitTargets.exposedBackPlot.length).toBeGreaterThan(0);
+    expect(hitTargets.exposedBackPlot.every((target) => target === '0')).toBe(true);
+
     await page.screenshot({ path: `test-results/hatake_layout_3plots_${viewport.width}x${viewport.height}.png` });
+  });
+
+  test('透明矩形が重なる座標で触っても奥の畝だけに植えられる', async ({ page }) => {
+    await gotoFreshField(page, VIEWPORT);
+    await closeTutorialIfOpen(page);
+    await page.locator('#tool-seed-btn').dispatchEvent('pointerdown');
+    await page.waitForSelector('#seed-picker.show');
+    await page.locator('.seed-choice[data-seed="tomato"]').dispatchEvent('pointerdown');
+    await page.waitForTimeout(100);
+
+    const targetInfo = await page.evaluate(() => {
+      const plots = Array.from(document.querySelectorAll('.plot'));
+      const boxes = plots.map((el) => el.getBoundingClientRect());
+      const pointInDiamond = (x, y, box) => {
+        const nx = (x - box.left) / box.width;
+        const ny = (y - box.top) / box.height;
+        if (nx < 0 || nx > 1 || ny < 0 || ny > 1) return false;
+        const halfWidth = ny <= 0.46 ? ny / 0.92 : (1 - ny) / 1.08;
+        return nx >= 0.5 - halfWidth && nx <= 0.5 + halfWidth;
+      };
+      const back = boxes[0];
+      let point = null;
+      for (let gy = 1; gy < 20 && !point; gy++) {
+        for (let gx = 1; gx < 20; gx++) {
+          const x = back.left + back.width * gx / 20;
+          const y = back.top + back.height * gy / 20;
+          if (!pointInDiamond(x, y, back)) continue;
+          const overlapsFrontRect = boxes.slice(1).some((front) =>
+            x >= front.left && x <= front.right && y >= front.top && y <= front.bottom
+          );
+          const overlapsFrontDiamond = boxes.slice(1).some((front) => pointInDiamond(x, y, front));
+          if (overlapsFrontRect && !overlapsFrontDiamond) { point = { x, y }; break; }
+        }
+      }
+      if (!point) return null;
+      const target = document.elementFromPoint(point.x, point.y);
+      const touch = { clientX: point.x, clientY: point.y, identifier: 1425 };
+      for (const type of ['touchstart', 'touchend']) {
+        const event = new Event(type, { bubbles: true, cancelable: true });
+        Object.defineProperty(event, 'changedTouches', { value: [touch] });
+        Object.defineProperty(event, 'touches', { value: type === 'touchstart' ? [touch] : [] });
+        target.dispatchEvent(event);
+      }
+      const plot = target && target.closest('.plot');
+      return { point, targetPlot: plot ? plot.dataset.plot : null };
+    });
+
+    expect(targetInfo).toBeTruthy();
+    expect(targetInfo.targetPlot).toBe('0');
+    const state = await page.evaluate(() => JSON.parse(localStorage.getItem('pono_hatake_state_v1')));
+    expect(state.plots[0].seedId).toBe('tomato');
+    expect(state.plots[1].seedId).toBe(null);
+    expect(state.plots[2].seedId).toBe(null);
   });
 });
 
