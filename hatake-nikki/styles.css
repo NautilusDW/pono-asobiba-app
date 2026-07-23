@@ -245,6 +245,14 @@ html, body {
 /* 水やり成功の演出。対象畝の右上から実画像のじょうろを傾け、
    水流を畝中央へ落とす。全要素をplot相対座標にして画面幅へ依存させない。 */
 .watering-pour-fx {
+  /* じょうろ画像内の散水口中心(486×375 canvasの約65×174)と、
+     水流の始点をこの1点へ固定する。right基準だと画像幅が72pxで頭打ちに
+     なった後だけ散水口が右へ流れるため、plot中央を共通アンカーにする。 */
+  --watering-pour-x: 50%;
+  --watering-pour-source-y: 4%;
+  --watering-pour-target-y: 50%;
+  --watering-can-spout-x: 13.4%;
+  --watering-can-spout-y: 46.4%;
   position: absolute;
   inset: 0;
   z-index: 8;
@@ -257,22 +265,30 @@ html, body {
 }
 .watering-can-fx {
   position: absolute;
-  right: 0;
-  top: -35%;
+  left: var(--watering-pour-x);
+  top: var(--watering-pour-source-y);
+  right: auto;
+  z-index: 2;
   width: clamp(38px, 48%, 72px);
   height: auto;
   object-fit: contain;
   opacity: 0;
-  transform-origin: 82% 62%;
+  transform-origin:
+    var(--watering-can-spout-x)
+    var(--watering-can-spout-y);
   filter: drop-shadow(0 3px 4px rgba(58, 85, 77, 0.28));
   animation: wateringCanPour 0.95s cubic-bezier(0.22, 0.72, 0.22, 1) forwards;
 }
 .watering-stream-fx {
   position: absolute;
-  left: 51%;
-  top: 4%;
+  left: var(--watering-pour-x);
+  top: var(--watering-pour-source-y);
+  z-index: 1;
   width: clamp(3px, 3%, 5px);
-  height: 50%;
+  height: calc(
+    var(--watering-pour-target-y) -
+    var(--watering-pour-source-y)
+  );
   border-radius: 999px;
   background: linear-gradient(
     to bottom,
@@ -281,15 +297,16 @@ html, body {
     rgba(42, 156, 224, 0.88)
   );
   opacity: 0;
-  transform: scaleY(0.05);
+  transform: translateX(-50%) scaleY(0.05);
   transform-origin: 50% 0;
   filter: drop-shadow(0 1px 2px rgba(30, 111, 173, 0.32));
   animation: wateringStreamPour 0.95s ease-in-out forwards;
 }
 .water-splash-fx {
   position: absolute;
-  left: 50%;
-  top: 43%;
+  left: var(--watering-pour-x);
+  top: var(--watering-pour-target-y);
+  z-index: 3;
   width: clamp(22px, 18%, 38px);
   height: auto;
   object-fit: contain;
@@ -300,43 +317,70 @@ html, body {
 @keyframes wateringCanPour {
   0% {
     opacity: 0;
-    transform: translate(18%, -12%) rotate(8deg) scale(0.88);
+    transform:
+      translate(4.6%, -58.4%)
+      rotate(8deg)
+      scale(0.88);
   }
   18% {
     opacity: 1;
-    transform: translate(0, 0) rotate(4deg) scale(1);
+    transform:
+      translate(
+        calc(0% - var(--watering-can-spout-x)),
+        calc(0% - var(--watering-can-spout-y))
+      )
+      rotate(4deg)
+      scale(1);
   }
-  35%, 72% {
+  35%, 88% {
     opacity: 1;
-    transform: translate(-4%, 4%) rotate(-20deg) scale(1);
+    transform:
+      translate(
+        calc(0% - var(--watering-can-spout-x)),
+        calc(0% - var(--watering-can-spout-y))
+      )
+      rotate(-20deg)
+      scale(1);
   }
   100% {
     opacity: 0;
-    transform: translate(8%, -6%) rotate(6deg) scale(0.94);
+    transform:
+      translate(-5.4%, -52.4%)
+      rotate(6deg)
+      scale(0.94);
   }
 }
 @keyframes wateringStreamPour {
   0%, 26% {
     opacity: 0;
-    transform: scaleY(0.05);
+    transform: translateX(-50%) scaleY(0.05);
   }
   38% {
     opacity: 0.92;
-    transform: scaleY(0.25);
+    transform: translateX(-50%) scaleY(0.25);
   }
   50%, 74% {
     opacity: 0.92;
-    transform: scaleY(1);
+    transform: translateX(-50%) scaleY(1);
   }
   88%, 100% {
     opacity: 0;
-    transform: scaleY(0.18);
+    transform: translateX(-50%) scaleY(0.18);
   }
 }
 @keyframes waterSplashPop {
-  0%   { opacity: 0; transform: translate(-50%, 6px) scale(0.55); }
-  30%  { opacity: 1; transform: translate(-50%, 0) scale(1.05); }
-  100% { opacity: 0; transform: translate(-50%, -10px) scale(0.88); }
+  0% {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 6px)) scale(0.55);
+  }
+  30% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% - 10px)) scale(0.88);
+  }
 }
 
 .plant {
@@ -534,16 +578,44 @@ html, body {
 }
 
 @keyframes wateringCanReduced {
-  0%, 100% { opacity: 0; transform: rotate(-20deg); }
-  20%, 78% { opacity: 1; transform: rotate(-20deg); }
+  0%, 100% {
+    opacity: 0;
+    transform:
+      translate(
+        calc(0% - var(--watering-can-spout-x)),
+        calc(0% - var(--watering-can-spout-y))
+      )
+      rotate(-20deg);
+  }
+  20%, 78% {
+    opacity: 1;
+    transform:
+      translate(
+        calc(0% - var(--watering-can-spout-x)),
+        calc(0% - var(--watering-can-spout-y))
+      )
+      rotate(-20deg);
+  }
 }
 @keyframes wateringStreamReduced {
-  0%, 100% { opacity: 0; transform: scaleY(1); }
-  28%, 76% { opacity: 0.82; transform: scaleY(1); }
+  0%, 100% {
+    opacity: 0;
+    transform: translateX(-50%) scaleY(1);
+  }
+  28%, 76% {
+    opacity: 0.82;
+    transform: translateX(-50%) scaleY(1);
+  }
 }
 @keyframes waterSplashReduced {
-  0%, 100% { opacity: 0; transform: translate(-50%, 0) scale(0.9); }
-  30%, 76% { opacity: 0.86; transform: translate(-50%, 0) scale(0.9); }
+  0%, 100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
+  30%, 76% {
+    opacity: 0.86;
+    transform: translate(-50%, -50%) scale(0.9);
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .plant[data-stage="4"] img.crop-stage-img {

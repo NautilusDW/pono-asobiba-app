@@ -843,12 +843,82 @@ function clone(obj) { return JSON.parse(JSON.stringify(obj)); }
 
   const pourFxBlock = stylesCss.match(/\.watering-pour-fx\s*\{[^}]*\}/s);
   assert.ok(pourFxBlock, '注水演出ラッパーCSSが存在する');
+  assert.match(pourFxBlock[0], /--watering-pour-x:\s*50%/, 'じょうろ・水流・着水は畝中央Xを共通アンカーにする');
+  assert.match(pourFxBlock[0], /--watering-pour-source-y:\s*4%/, '吐水口と水流は畝上部4%を共通の始点Yにする');
+  assert.match(pourFxBlock[0], /--watering-pour-target-y:\s*50%/, '水流と着水は畝中央50%を共通の到達点Yにする');
+  assert.match(pourFxBlock[0], /--watering-can-spout-x:\s*13\.4%/, 'じょうろ画像内の吐水口Xアンカーは実測13.4%を使う');
+  assert.match(pourFxBlock[0], /--watering-can-spout-y:\s*46\.4%/, 'じょうろ画像内の吐水口Yアンカーは実測46.4%を使う');
   assert.match(pourFxBlock[0], /position:\s*absolute[^}]*inset:\s*0[^}]*overflow:\s*visible/s, '注水演出は対象畝全面を基準に外側のじょうろも表示する');
   assert.match(pourFxBlock[0], /pointer-events:\s*none/, '注水演出ラッパーは畝操作を妨げない');
   assert.match(stylesCss, /\.watering-pour-fx,\s*\.watering-pour-fx\s+\*\s*\{[^}]*pointer-events:\s*none/s, '注水演出の全子要素も入力を奪わない');
-  assert.match(stylesCss, /\.watering-can-fx\s*\{[^}]*position:\s*absolute[^}]*object-fit:\s*contain[^}]*animation:\s*wateringCanPour\s+0\.95s[^}]*forwards/s, 'じょうろ画像は畝相対で傾く本演出を使う');
-  assert.match(stylesCss, /\.watering-stream-fx\s*\{[^}]*position:\s*absolute[^}]*background:\s*linear-gradient\([^}]*animation:\s*wateringStreamPour\s+0\.95s[^}]*forwards/s, '水流は畝中央へ伸びる本演出を使う');
-  assert.match(stylesCss, /\.water-splash-fx\s*\{[^}]*position:\s*absolute[^}]*animation:\s*waterSplashPop\s+0\.68s\s+0\.25s[^}]*forwards/s, '着水画像は水流の後に畝中央で表示する');
+
+  const canFxBlock = stylesCss.match(/\.watering-can-fx\s*\{[^}]*\}/s);
+  assert.ok(canFxBlock, 'じょうろ画像のCSSが存在する');
+  assert.match(canFxBlock[0], /position:\s*absolute[^}]*object-fit:\s*contain[^}]*animation:\s*wateringCanPour\s+0\.95s[^}]*forwards/s, 'じょうろ画像は畝相対で傾く本演出を使う');
+  assert.match(canFxBlock[0], /left:\s*var\(--watering-pour-x\)/, 'じょうろは水流と共通のXアンカーへ置く');
+  assert.match(canFxBlock[0], /top:\s*var\(--watering-pour-source-y\)/, 'じょうろの吐水口は水流と共通の始点Yへ置く');
+  assert.match(canFxBlock[0], /right:\s*auto/, 'じょうろは画面幅で吐水口がずれる旧right基準を解除する');
+  assert.doesNotMatch(canFxBlock[0], /right:\s*0(?:[;\s]|$)/, 'じょうろを畝右端へ固定する旧right:0を戻さない');
+  assert.doesNotMatch(canFxBlock[0], /top:\s*-35%/, 'じょうろを畝の高さで上へずらす旧top:-35%を戻さない');
+  assert.match(
+    canFxBlock[0],
+    /transform-origin:\s*var\(--watering-can-spout-x\)\s*var\(--watering-can-spout-y\)/s,
+    'じょうろは画像内の実測吐水口を回転中心にする'
+  );
+
+  const streamFxBlock = stylesCss.match(/\.watering-stream-fx\s*\{[^}]*\}/s);
+  assert.ok(streamFxBlock, '水流のCSSが存在する');
+  assert.match(streamFxBlock[0], /position:\s*absolute[^}]*background:\s*linear-gradient\([^}]*animation:\s*wateringStreamPour\s+0\.95s[^}]*forwards/s, '水流は畝中央へ伸びる本演出を使う');
+  assert.match(streamFxBlock[0], /left:\s*var\(--watering-pour-x\)/, '水流の中心はじょうろと共通のXアンカーを使う');
+  assert.match(streamFxBlock[0], /top:\s*var\(--watering-pour-source-y\)/, '水流はじょうろ吐水口と共通の始点Yから始まる');
+  assert.match(
+    streamFxBlock[0],
+    /height:\s*calc\(\s*var\(--watering-pour-target-y\)\s*-\s*var\(--watering-pour-source-y\)\s*\)/s,
+    '水流の長さは共通の始点Yから畝中央の到達点Yまでに固定する'
+  );
+  assert.match(streamFxBlock[0], /transform:\s*translateX\(-50%\)\s+scaleY\(0\.05\)/, '水流線の中心を共通Xアンカーへ正確に重ねる');
+
+  const splashFxBlock = stylesCss.match(/\.water-splash-fx\s*\{[^}]*\}/s);
+  assert.ok(splashFxBlock, '着水画像のCSSが存在する');
+  assert.match(splashFxBlock[0], /position:\s*absolute[^}]*animation:\s*waterSplashPop\s+0\.68s\s+0\.25s[^}]*forwards/s, '着水画像は水流の後に畝中央で表示する');
+  assert.match(splashFxBlock[0], /left:\s*var\(--watering-pour-x\)/, '着水画像はじょうろ・水流と共通のXアンカーを使う');
+  assert.match(splashFxBlock[0], /top:\s*var\(--watering-pour-target-y\)/, '着水画像は水流と共通の到達点Yへ置く');
+
+  const sliceCss = (startMarker, endMarker) => {
+    const start = stylesCss.indexOf(startMarker);
+    const end = stylesCss.indexOf(endMarker, start + startMarker.length);
+    assert.ok(start !== -1 && end > start, `${startMarker} から ${endMarker} までのCSSが見つかる`);
+    return stylesCss.slice(start, end);
+  };
+  const canPourFrames = sliceCss('@keyframes wateringCanPour', '@keyframes wateringStreamPour');
+  assert.match(
+    canPourFrames,
+    /18%\s*\{[\s\S]*?translate\(\s*calc\(0%\s*-\s*var\(--watering-can-spout-x\)\),\s*calc\(0%\s*-\s*var\(--watering-can-spout-y\)\)\s*\)[\s\S]*?rotate\(4deg\)/,
+    'じょうろ表示時も実測吐水口を共通始点へ固定する'
+  );
+  assert.match(
+    canPourFrames,
+    /35%,\s*88%\s*\{[\s\S]*?translate\(\s*calc\(0%\s*-\s*var\(--watering-can-spout-x\)\),\s*calc\(0%\s*-\s*var\(--watering-can-spout-y\)\)\s*\)[\s\S]*?rotate\(-20deg\)/,
+    '注水中の-20度回転でも実測吐水口を共通始点へ固定する'
+  );
+
+  const streamPourFrames = sliceCss('@keyframes wateringStreamPour', '@keyframes waterSplashPop');
+  const streamPourTransforms = Array.from(streamPourFrames.matchAll(/transform:\s*([^;]+);/g), match => match[1]);
+  assert.equal(streamPourTransforms.length, 4, '通常水流は4つの伸長keyframeを持つ');
+  assert.ok(streamPourTransforms.every(value => /translateX\(-50%\)/.test(value)), '通常水流の全keyframeで線の中心を共通Xアンカーに維持する');
+
+  const canReducedFrames = sliceCss('@keyframes wateringCanReduced', '@keyframes wateringStreamReduced');
+  const reducedAnchorXUses = (canReducedFrames.match(/calc\(0%\s*-\s*var\(--watering-can-spout-x\)\)/g) || []).length;
+  const reducedAnchorYUses = (canReducedFrames.match(/calc\(0%\s*-\s*var\(--watering-can-spout-y\)\)/g) || []).length;
+  assert.equal(reducedAnchorXUses, 2, '動きを減らすじょうろの全2keyframeで吐水口Xアンカーを維持する');
+  assert.equal(reducedAnchorYUses, 2, '動きを減らすじょうろの全2keyframeで吐水口Yアンカーを維持する');
+
+  const streamReducedFrames = sliceCss('@keyframes wateringStreamReduced', '@keyframes waterSplashReduced');
+  const streamReducedTransforms = Array.from(streamReducedFrames.matchAll(/transform:\s*([^;]+);/g), match => match[1]);
+  assert.equal(streamReducedTransforms.length, 2, '動きを減らす水流は表示前後の2keyframeを持つ');
+  assert.ok(streamReducedTransforms.every(value => /translateX\(-50%\)/.test(value)), '動きを減らす水流も全keyframeで線の中心を共通Xアンカーに維持する');
+
+  assert.match(indexHtml, /href="styles\.css\?v=20260723-10"/, '吐水口位置修正版styles.cssのキャッシュキー20260723-10を読み込む');
   for (const keyframes of ['wateringCanPour', 'wateringStreamPour', 'waterSplashPop']) {
     assert.match(stylesCss, new RegExp('@keyframes\\s+' + keyframes + '\\s*\\{'), `${keyframes} の本演出keyframesが存在する`);
   }
