@@ -1,5 +1,12 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2354: ぐらぐらシーソーひろばのぞうラウンドを、GPT Image 2製の
+// ほし／はーと／ふしぎないし各weight7と、ぶどうweight3の発見型パズルへ変更。
+// 3種は見た目サイズを変えつつ同じ重さとし、軽すぎる試行には方向どおりの案内を表示。
+// 実配置関数の全状態探索で初手許容75%、全トレイ参加、前進不能・黙った超過0を確認。
+// styles/logic/game queryを20260723-6へ同期。ゲーム個別ファイルはnetwork-first配信の
+// ためCRITICAL_ASSETSには追加しない。play.html PAGE_CACHE_VERSION/
+// window.PONO_SW_VERSION と同期 (2354)。
 // v2353: なぞなぞトレイン「きょうりゅうのもり」のクレーンを、困っている
 // こどもの恐竜の救出へ変更。救出前後の背景、停止前の予告、説明画面、
 // 段階的な画像先読み、水路の源から池までの順送り表示を追加し、個別CSS/JS
@@ -893,7 +900,7 @@
 // styles.css／game.js queryを20260723-1429へ同期。ゲーム個別ファイルと画像は
 // network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
 // PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2347)。
-const CACHE_VERSION = 2353;
+const CACHE_VERSION = 2354;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

@@ -13,7 +13,7 @@ const html = read("nazonazo-tunnel/index.html");
 const css = read("nazonazo-tunnel/styles.css");
 const sw = read("sw.js");
 const RUNTIME_TOKEN = "20260723-1435";
-const SW_VERSION = 2353;
+const SW_VERSION = 2354;
 
 const STAGE_IDS = ["snow", "fire", "dino", "toy", "cat", "fantasy", "sky", "ruins"];
 const LAYER_KEYS = ["sky", "horizon", "mid", "ground", "fg", "decor"];

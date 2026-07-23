@@ -4,11 +4,10 @@
 // 上限7) を対象に、実際のドラッグ操作 (page.mouse: このゲームは HTML5 dragTo ではなく
 // pointerdown/pointermove/pointerup の自前実装なので dragTo() は使えない) で
 // A/B バスケットへ配置 → 釣り合い成立 → 次ラウンドへ自動進行することを検証する。
-// 加えて局所超過 (「こっちのおさらだけ、おもすぎたみたい！」) の拒否・メッセージ表示も
-// 検証する。 §3-24 (game.js/styles.css 実装) の実地確認。
-// 重さ再設計 (2026-07-23): CATALOG/TWIN_ROUND_CONFIG が新値に更新されたことに伴い、
-// 本specがハードコードしていた解 (dog→A, lemon→B = 6=6) は成立しなくなったため
-// (新 dog=6, lemon=1, target=elephant=10) dog→A, frog→B (6+4=10) に差し替えた。
+// 加えて局所超過、軽すぎる初手、別皿2ブロックによる全体超過の拒否と
+// 方向どおりのメッセージ表示も検証する。 §3-24 (game.js/styles.css 実装) の実地確認。
+// ふしぎブロック導入 (2026-07-23): ぞう(10) に対して、現実の小動物を寄せ集めず
+// ほし(7)→A、ぶどう(3)→B の発見型ルートで解く。
 
 const { test, expect } = require('@playwright/test');
 
@@ -55,14 +54,14 @@ async function dragTrayItemTo(page, itemId, targetLocator) {
 }
 
 test.describe('guragura-seesaw: ふたご皿 (twin basket) ラウンド3', () => {
-  test('dog→A, frog→B で釣り合い、ラウンド4へ自動進行する (検証済みの解)', async ({ page }) => {
+  test('ほし→A、ぶどう→B で釣り合い、ラウンド4へ自動進行する', async ({ page }) => {
     await gotoTwinRound3(page);
 
-    await dragTrayItemTo(page, 'dog', page.locator('#panRightA'));
-    await expect(page.locator('#panRightAItems .item-box[data-item-id="dog"]')).toBeVisible();
+    await dragTrayItemTo(page, 'star_block', page.locator('#panRightA'));
+    await expect(page.locator('#panRightAItems .item-box[data-item-id="star_block"]')).toBeVisible();
 
-    await dragTrayItemTo(page, 'frog', page.locator('#panRightB'));
-    await expect(page.locator('#panRightBItems .item-box[data-item-id="frog"]')).toBeVisible();
+    await dragTrayItemTo(page, 'grapes', page.locator('#panRightB'));
+    await expect(page.locator('#panRightBItems .item-box[data-item-id="grapes"]')).toBeVisible();
 
     // バネ静定(最大3秒程度)+ 600ms保持 を見込んでバナー表示を長めに待つ
     await expect(page.locator('#balanceBanner')).toHaveClass(/show/, { timeout: 8000 });
@@ -87,22 +86,53 @@ test.describe('guragura-seesaw: ふたご皿 (twin basket) ラウンド3', () =>
   test('局所超過 (そのお皿だけ おもすぎ) は拒否され、専用メッセージが出る', async ({ page }) => {
     await gotoTwinRound3(page);
 
-    // dog(6) → A: localOverloadMax(7) 以内なので成功
-    await dragTrayItemTo(page, 'dog', page.locator('#panRightA'));
-    await expect(page.locator('#panRightAItems .item-box[data-item-id="dog"]')).toBeVisible();
+    // ほし(7) → A: localOverloadMax(7) ちょうどなので成功
+    await dragTrayItemTo(page, 'star_block', page.locator('#panRightA'));
+    await expect(page.locator('#panRightAItems .item-box[data-item-id="star_block"]')).toBeVisible();
 
-    // apple(2) → A: dog(6)+apple(2)=8 > localOverloadMax(7) で localSlip 拒否
-    await dragTrayItemTo(page, 'apple', page.locator('#panRightA'));
+    // はーと(7) → A: ほし(7)+はーと(7)=14 > localOverloadMax(7) で localSlip 拒否
+    await dragTrayItemTo(page, 'heart_block', page.locator('#panRightA'));
 
     await expect(page.locator('#slipBubbleA')).toHaveClass(/show/);
     await expect(page.locator('#slipBubbleA')).toContainText('こっちのおさらだけ');
 
-    // apple は拒否されトレイに残ったまま (A には入っていない)
-    await expect(page.locator('#panRightAItems .item-box[data-item-id="apple"]')).toHaveCount(0);
-    await expect(page.locator('#tray .item-box[data-item-id="apple"]')).toBeVisible();
+    // はーとは拒否されトレイに残ったまま (A には入っていない)
+    await expect(page.locator('#panRightAItems .item-box[data-item-id="heart_block"]')).toHaveCount(0);
+    await expect(page.locator('#tray .item-box[data-item-id="heart_block"]')).toBeVisible();
 
     // B側のバスケット/バブルには影響が及んでいない (局所限定であることの確認)
     await expect(page.locator('#panRightBItems .item-box')).toHaveCount(0);
+    await expect(page.locator('#slipBubbleB')).not.toHaveClass(/show/);
+  });
+
+  test('ぶどうを先に置いた軽すぎる試行は、重すぎると逆案内しない', async ({ page }) => {
+    await gotoTwinRound3(page);
+
+    // ぶどう(3)だけでは elephant(10) との差7が slipDiff(4)以上。
+    // 置く順番のヒントとして軽い方向を正しく伝え、ぶどうはトレイへ戻す。
+    await dragTrayItemTo(page, 'grapes', page.locator('#panRightA'));
+
+    await expect(page.locator('#slipBubble')).toHaveClass(/show/);
+    await expect(page.locator('#slipBubble')).toContainText('まだ かるいみたい');
+    await expect(page.locator('#slipBubble')).not.toContainText('おもすぎ');
+    await expect(page.locator('#panRightAItems .item-box[data-item-id="grapes"]')).toHaveCount(0);
+    await expect(page.locator('#tray .item-box[data-item-id="grapes"]')).toBeVisible();
+  });
+
+  test('ブロックを別々のお皿へ2個置く全体超過は境界値で拒否される', async ({ page }) => {
+    await gotoTwinRound3(page);
+
+    await dragTrayItemTo(page, 'star_block', page.locator('#panRightA'));
+    await expect(page.locator('#panRightAItems .item-box[data-item-id="star_block"]')).toBeVisible();
+
+    // ほし(7)+はーと(7)=14、elephant(10)との差4は slipDiff(4)ちょうど。
+    // B単独は上限7以内なので localSlip ではなく全体slipになる。
+    await dragTrayItemTo(page, 'heart_block', page.locator('#panRightB'));
+
+    await expect(page.locator('#slipBubble')).toHaveClass(/show/);
+    await expect(page.locator('#slipBubble')).toContainText('おもすぎたみたい');
+    await expect(page.locator('#panRightBItems .item-box[data-item-id="heart_block"]')).toHaveCount(0);
+    await expect(page.locator('#tray .item-box[data-item-id="heart_block"]')).toBeVisible();
     await expect(page.locator('#slipBubbleB')).not.toHaveClass(/show/);
   });
 });

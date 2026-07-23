@@ -37,49 +37,95 @@ function sizeRank(id) {
   return item ? SIZE_RANK[item.sizeClass] : -1;
 }
 
-// ── 全部分集合列挙 (§6 用の独立実装。逐次 placeItem シミュレーションで到達可能性まで見る) ──
-function findMultipleReachableSolutions(round) {
-  const trayIds = round.tray;
-  const leftWeight = L.sumWeights(round.left);
-  const n = trayIds.length;
+// ── 前進のみの全状態探索 ──────────────────────────────────────────
+// 単一皿は placeItem、ふたご皿は placeItemTwin を直接呼ぶ。テスト側に重さ判定を
+// 再実装せず、本番ロジックと同じ検証順序・しきい値で全受理状態を列挙する。
+function createRoundState(roundIndex) {
+  const round = L.ROUNDS[roundIndex];
+  if (L.isTwinRound(roundIndex)) {
+    return {
+      leftIds: round.left.slice(),
+      rightBasketAIds: [],
+      rightBasketBIds: [],
+      trayIds: round.tray.slice()
+    };
+  }
+  return { leftIds: round.left.slice(), rightIds: [], trayIds: round.tray.slice() };
+}
+
+function isRoundStateBalanced(roundIndex, state) {
+  if (L.isTwinRound(roundIndex)) {
+    return L.isBalanced(L.sumWeights(state.leftIds), L.sumTwinRightWeight(state));
+  }
+  return L.isBalanced(L.sumWeights(state.leftIds), L.sumWeights(state.rightIds));
+}
+
+function roundStateKey(roundIndex, state) {
+  if (L.isTwinRound(roundIndex)) {
+    return [
+      state.rightBasketAIds.join(","),
+      state.rightBasketBIds.join(","),
+      state.trayIds.join(",")
+    ].join("|");
+  }
+  return [state.rightIds.join(","), state.trayIds.join(",")].join("|");
+}
+
+function acceptedNextStates(roundIndex, state) {
+  const next = [];
+  for (const itemId of state.trayIds.slice()) {
+    if (L.isTwinRound(roundIndex)) {
+      for (const basketId of ["A", "B"]) {
+        const res = L.placeItemTwin(state, itemId, basketId, roundIndex);
+        if (res.ok) next.push({ itemId, basketId, state: res.state });
+      }
+    } else {
+      const res = L.placeItem(state, itemId);
+      if (res.ok) next.push({ itemId, basketId: null, state: res.state });
+    }
+  }
+  return next;
+}
+
+function analyzeRoundForward(roundIndex) {
+  const memo = new Map();
   const solutions = [];
-  for (let mask = 1; mask < (1 << n); mask++) {
-    const subset = [];
-    for (let i = 0; i < n; i++) {
-      if (mask & (1 << i)) subset.push(trayIds[i]);
-    }
-    if (subset.length > L.PAN_CAPACITY) continue;
-    if (L.sumWeights(subset) !== leftWeight) continue;
-    // 到達可能性チェック: subset の並び順のいずれかで、逐次 placeItem が
-    // 一度も slip にならずに全部乗せられるか (少なくとも1つの順序があればOK)。
-    if (isReachableInSomeOrder(round, subset)) solutions.push(subset);
-  }
-  return solutions;
-}
 
-function permutations(arr) {
-  if (arr.length <= 1) return [arr];
-  const result = [];
-  for (let i = 0; i < arr.length; i++) {
-    const rest = arr.slice(0, i).concat(arr.slice(i + 1));
-    for (const p of permutations(rest)) result.push([arr[i]].concat(p));
-  }
-  return result;
-}
+  function visit(state) {
+    const key = roundStateKey(roundIndex, state);
+    if (memo.has(key)) return memo.get(key).canReachBalance;
 
-function isReachableInSomeOrder(round, subset) {
-  const orders = permutations(subset);
-  for (const order of orders) {
-    let state = { leftIds: round.left.slice(), rightIds: [], trayIds: round.tray.slice() };
-    let ok = true;
-    for (const id of order) {
-      const res = L.placeItem(state, id);
-      if (!res.ok) { ok = false; break; }
-      state = res.state;
+    if (isRoundStateBalanced(roundIndex, state)) {
+      const entry = { state, canReachBalance: true, balanced: true };
+      memo.set(key, entry);
+      solutions.push(state);
+      return true;
     }
-    if (ok) return true;
+
+    // 配置するたび tray が1点減るため循環は無い。本番関数が受理した遷移だけを辿る。
+    const children = acceptedNextStates(roundIndex, state);
+    let canReachBalance = false;
+    for (const child of children) {
+      if (visit(child.state)) canReachBalance = true;
+    }
+    memo.set(key, { state, canReachBalance, balanced: false });
+    return canReachBalance;
   }
-  return false;
+
+  const initialState = createRoundState(roundIndex);
+  visit(initialState);
+  const entries = [...memo.values()];
+  return {
+    initialState,
+    solutions,
+    reachableStates: entries,
+    deadStates: entries.filter(entry => !entry.balanced && !entry.canReachBalance),
+    solutionItemIds: new Set(
+      solutions.flatMap(state => L.isTwinRound(roundIndex)
+        ? state.rightBasketAIds.concat(state.rightBasketBIds)
+        : state.rightIds)
+    )
+  };
 }
 
 // ── brace-balanced 関数抽出 (nazonazo_number_jump_regression.cjs の extractFunction 踏襲) ──
@@ -116,7 +162,7 @@ console.log("── guragura-seesaw 回帰テスト ──");
 // ── 1. カタログ健全性 ─────────────────────────────────────────────
 section("カタログ健全性", () => {
   assert.ok(Array.isArray(L.CATALOG), "CATALOG は配列");
-  assert.ok(L.CATALOG.length >= 10 && L.CATALOG.length <= 15, `CATALOG は10〜15点 (got ${L.CATALOG.length})`);
+  assert.equal(L.CATALOG.length, 15, "既存12点 + ふしぎブロック3点");
   const ids = new Set();
   for (const item of L.CATALOG) {
     assert.ok(Number.isInteger(item.weight) && item.weight > 0, `${item.id} の weight は正整数`);
@@ -128,14 +174,43 @@ section("カタログ健全性", () => {
   // game.js の ITEM_IMAGES から抽出した全パスが実在すること
   const imgMapMatch = gameJs.match(/ITEM_IMAGES\s*=\s*\{([\s\S]*?)\n\s*\};/);
   assert.ok(imgMapMatch, "game.js に ITEM_IMAGES マップが見つかる");
-  const pathRe = /['"]([^'"]+\.(?:png|webp))['"]/g;
+  const imageById = {};
+  const pathRe = /^\s*([a-z0-9_]+):\s*['"]([^'"]+\.(?:png|webp))['"]/gm;
   let m;
-  const imgPaths = [];
-  while ((m = pathRe.exec(imgMapMatch[1]))) imgPaths.push(m[1]);
-  assert.ok(imgPaths.length >= L.CATALOG.length, "ITEM_IMAGES のパス数がカタログ数以上");
-  for (const p of imgPaths) {
+  while ((m = pathRe.exec(imgMapMatch[1]))) imageById[m[1]] = m[2];
+  assert.equal(Object.keys(imageById).length, L.CATALOG.length, "ITEM_IMAGES は全カタログIDを1対1で持つ");
+  for (const item of L.CATALOG) {
+    const p = imageById[item.id];
+    assert.ok(p, `ITEM_IMAGES に ${item.id} の対応パスがある`);
     const resolved = path.join(root, "guragura-seesaw", p);
     assert.ok(fs.existsSync(resolved), `画像が実在する: ${p}`);
+  }
+
+  const mysteryItems = ["star_block", "heart_block", "mystery_stone"].map(id => L.getItem(id));
+  assert.deepEqual(mysteryItems, [
+    { id: "star_block", label: "ほしのブロック", weight: 7, sizeClass: "s" },
+    { id: "heart_block", label: "はーとのブロック", weight: 7, sizeClass: "l" },
+    { id: "mystery_stone", label: "ふしぎな いし", weight: 7, sizeClass: "m" }
+  ], "ふしぎブロック3点のID/かなラベル/重さ/見た目サイズが固定されている");
+
+  const expectedRealWeights = {
+    cherry: 1, blueberry: 1, apple: 2, lemon: 1, frog: 4, grapes: 3,
+    cat: 5, carrot: 2, dog: 6, corn: 3, bear: 7, elephant: 10
+  };
+  for (const [id, weight] of Object.entries(expectedRealWeights)) {
+    assert.equal(L.itemWeight(id), weight, `現実カテゴリ ${id} の再設計済み相対重量は変更しない`);
+  }
+
+  for (const item of mysteryItems) {
+    const assetPath = path.join(root, "guragura-seesaw", imageById[item.id]);
+    const png = fs.readFileSync(assetPath);
+    assert.equal(png.toString("ascii", 1, 4), "PNG", `${item.id} はPNG`);
+    const width = png.readUInt32BE(16);
+    const height = png.readUInt32BE(20);
+    assert.equal(width, 640, `${item.id} の実測幅は640px`);
+    assert.equal(height, 640, `${item.id} の実測高は640px (AR 1:1)`);
+    assert.equal(png[25], 6, `${item.id} はRGBA PNG`);
+    assert.ok(png.length < 3 * 1024 * 1024, `${item.id} は3MiB未満`);
   }
 });
 
@@ -278,11 +353,11 @@ section("placeItem / removeItem 不変条件", () => {
   }
 });
 
-// ── 6. 全ラウンド複数解 (到達可能性まで検証) ─────────────────────
-section("全ラウンド複数解", () => {
-  L.ROUNDS.forEach((round, i) => {
-    const solutions = findMultipleReachableSolutions(round);
-    assert.ok(solutions.length >= 2, `ラウンド${i + 1} には到達可能な解が2通り以上ある (got ${solutions.length})`);
+// ── 6. 全ラウンド実ロジック解 (到達可能性まで検証) ───────────────
+section("全ラウンド実ロジック解", () => {
+  L.ROUNDS.forEach((_round, i) => {
+    const analysis = analyzeRoundForward(i);
+    assert.ok(analysis.solutions.length >= 2, `ラウンド${i + 1} には本番配置関数で到達可能な解状態が2通り以上ある (got ${analysis.solutions.length})`);
   });
 });
 
@@ -319,26 +394,19 @@ section("セッション進行", () => {
 
   for (let r = 0; r < L.ROUNDS.length; r++) {
     assert.equal(session.round, r, `round は ${r}`);
-    const round = L.ROUNDS[r];
-    const solutions = findMultipleReachableSolutions(round);
-    assert.ok(solutions.length > 0, `ラウンド${r + 1} に解が存在する前提`);
-    const orders = permutations(solutions[0]);
-    let placedState = null;
-    for (const order of orders) {
-      let state = { leftIds: session.leftIds.slice(), rightIds: [], trayIds: session.trayIds.slice() };
-      let ok = true;
-      for (const id of order) {
-        const res = L.placeItem(state, id);
-        if (!res.ok) { ok = false; break; }
-        state = res.state;
-      }
-      if (ok) { placedState = state; break; }
-    }
-    assert.ok(placedState, `ラウンド${r + 1} を解いた state が得られる`);
+    const analysis = analyzeRoundForward(r);
+    assert.ok(analysis.solutions.length > 0, `ラウンド${r + 1} に実ロジックで解が存在する`);
+    const placedState = analysis.solutions[0];
     session.leftIds = placedState.leftIds;
-    session.rightIds = placedState.rightIds;
     session.trayIds = placedState.trayIds;
-    assert.equal(L.isSessionBalanced(session), true, `ラウンド${r + 1} は釣り合っている`);
+    if (L.isTwinRound(r)) {
+      session.rightBasketAIds = placedState.rightBasketAIds;
+      session.rightBasketBIds = placedState.rightBasketBIds;
+      assert.equal(L.isSessionBalancedTwin(session), true, `ラウンド${r + 1} はふたご皿の実セマンティクスで釣り合っている`);
+    } else {
+      session.rightIds = placedState.rightIds;
+      assert.equal(L.isSessionBalanced(session), true, `ラウンド${r + 1} は単一皿の実セマンティクスで釣り合っている`);
+    }
     session = L.advanceRound(session);
   }
   assert.equal(session.finished, true, "5ラウンド全部釣り合ったら finished");
@@ -537,13 +605,11 @@ section("TWIN_ROUND_CONFIG 定数値", () => {
   assert.equal(L.getTwinRoundConfig(0), null, "ラウンド1 の config は null");
   assert.equal(L.getTwinRoundConfig(1), null, "ラウンド2 の config は null");
 
-  // ラウンド3 (index2, elephant単体 weight10) = "普通" ティア
-  // slipDiff:9 (2026-07-23 レビュー対応): グローバル SLIP_DIFF(6) のままだと最初の1個を
-  // 安全に置ける tray アイテムが 4/14 (28.6%) しかなく、しかも "難しい" ティアのラウンド4
-  // (66.7%) より厳しいという tier 逆転が起きていたため、ラウンド単位で緩和した
-  // (71.4%、ラウンド4を上回り "普通" が最も寛容という序列に是正)。
+  // ラウンド3 (index2, elephant単体 weight10) = "普通" ティア。
+  // ふしぎブロック7は3点とも初手から受理され、ぶどう3を足して解ける。
+  // slipDiff:4 は2点目のブロックによる合計14を境界値で即拒否する。
   assert.equal(L.isTwinRound(2), true, "ラウンド3 (index2) はふたご皿対象");
-  assert.deepEqual(L.TWIN_ROUND_CONFIG[2], { tier: "normal", basketCapacityEach: 3, localOverloadMax: 7, slipDiff: 9 }, "ラウンド3の config 値");
+  assert.deepEqual(L.TWIN_ROUND_CONFIG[2], { tier: "normal", basketCapacityEach: 3, localOverloadMax: 7, slipDiff: 4 }, "ラウンド3の config 値");
 
   // ラウンド4 (index3, dog+cherry weight7) = "難しい" ティア (既に66.7%と十分寛容なため今回変更なし)
   assert.equal(L.isTwinRound(3), true, "ラウンド4 (index3) はふたご皿対象");
@@ -565,6 +631,73 @@ section("TWIN_ROUND_CONFIG 定数値", () => {
   assert.deepEqual(L.ROUNDS[2].left, ["elephant"], "ラウンド3 のおだいは elephant 単体のまま");
   assert.deepEqual(L.ROUNDS[3].left, ["dog", "cherry"], "ラウンド4 のおだいは dog+cherry のまま");
   assert.deepEqual(L.ROUNDS[4].left, ["bear", "grapes"], "ラウンド5 のおだいは bear+grapes のまま");
+});
+
+// ── 17b. ぞうラウンド「ふしぎブロック」前進可能性監査 ────────────
+section("ぞうラウンド ふしぎブロック前進可能性監査", () => {
+  const roundIndex = 2;
+  const round = L.ROUNDS[roundIndex];
+  const config = L.getTwinRoundConfig(roundIndex);
+  const analysis = analyzeRoundForward(roundIndex);
+  const targetWeight = L.sumWeights(round.left);
+  const firstAcceptedIds = new Set(
+    acceptedNextStates(roundIndex, analysis.initialState).map(next => next.itemId)
+  );
+
+  assert.deepEqual(round.tray, ["star_block", "heart_block", "mystery_stone", "grapes"], "ぞうラウンドは小動物を使わず、ふしぎブロック3点+ぶどう");
+  assert.ok(analysis.solutions.length >= 2, `A/Bの分け方を含む実在解が複数ある (got ${analysis.solutions.length})`);
+
+  assert.deepEqual([...firstAcceptedIds], ["star_block", "heart_block", "mystery_stone"], "ふしぎブロック3点はすべて初手から本番ロジックで受理される");
+  assert.equal(firstAcceptedIds.size / round.tray.length, 3 / 4, "初手許容率は3/4 (75%)");
+  assert.equal(acceptedNextStates(roundIndex, analysis.initialState).length, 6, "初手の item×A/B 8操作中、ブロック3点×2皿=6操作を受理");
+
+  assert.deepEqual([...analysis.solutionItemIds].sort(), round.tray.slice().sort(), "トレイ4点すべてが実在する解に参加する");
+  assert.equal(analysis.deadStates.length, 0, "受理された全中間状態は removeItemTwin なしの前進だけで解へ到達できる");
+
+  const solutionSubsets = [...new Set(analysis.solutions.map(state =>
+    state.rightBasketAIds.concat(state.rightBasketBIds).sort().join("+")
+  ))].sort();
+  assert.deepEqual(solutionSubsets, [
+    "grapes+heart_block",
+    "grapes+mystery_stone",
+    "grapes+star_block"
+  ], "3種類すべてのふしぎブロックに、ぶどうを足す実在解がある");
+
+  const acceptedOverTarget = analysis.reachableStates.filter(entry =>
+    L.sumTwinRightWeight(entry.state) > targetWeight
+  );
+  assert.equal(acceptedOverTarget.length, 0, "目標を超過したまま黙って受理される状態がない");
+
+  for (const itemId of round.tray) {
+    assert.ok(L.itemWeight(itemId) <= config.localOverloadMax, `${itemId} 単体は localOverloadMax(${config.localOverloadMax}) 以下`);
+  }
+  assert.equal(config.basketCapacityEach, 3, "解は各かご1点ずつで、各皿上限3と矛盾しない");
+  assert.equal(config.localOverloadMax, 7, "各ふしぎブロックは上限7ちょうどで単体配置できる");
+  assert.equal(config.slipDiff, 4, "2個目のブロックは合計差4の境界で黙って受理せず弾く");
+  console.log(`    ぞう監査: 初手3/4、解subset ${solutionSubsets.length}、解state ${analysis.solutions.length}、到達state ${analysis.reachableStates.length}、dead ${analysis.deadStates.length}、over ${acceptedOverTarget.length}`);
+});
+
+section("くま+ぶどうラウンド 現状維持評価", () => {
+  const roundIndex = 4;
+  const round = L.ROUNDS[roundIndex];
+  const analysis = analyzeRoundForward(roundIndex);
+  const targetWeight = L.sumWeights(round.left);
+  const firstAcceptedIds = new Set(
+    acceptedNextStates(roundIndex, analysis.initialState).map(next => next.itemId)
+  );
+  const solutionSubsets = [...new Set(analysis.solutions.map(state =>
+    state.rightBasketAIds.concat(state.rightBasketBIds).sort().join("+")
+  ))].sort();
+  const acceptedOverTarget = analysis.reachableStates.filter(entry =>
+    L.sumTwinRightWeight(entry.state) > targetWeight
+  );
+
+  assert.deepEqual([...firstAcceptedIds], ["corn", "dog", "cat"], "最終ラウンドの安全な初手は既存の3点");
+  assert.equal(firstAcceptedIds.size / round.tray.length, 3 / 7, "最終ハードラウンドの初手許容率は3/7 (42.9%)");
+  assert.deepEqual([...analysis.solutionItemIds].sort(), round.tray.slice().sort(), "既存トレイ7点はすべて少なくとも1つの解に参加する");
+  assert.ok(solutionSubsets.includes("corn+dog+lemon"), "dog(6)+corn(3)+lemon(1) の自然な1動物+果物野菜ルートが実在する");
+  assert.ok(round.tray.every(id => !["star_block", "heart_block", "mystery_stone"].includes(id)), "自然な正解があるため、最終ラウンドへふしぎブロックは追加しない");
+  console.log(`    くま監査: 初手3/7、解subset ${solutionSubsets.length}、解state ${analysis.solutions.length}、到達state ${analysis.reachableStates.length}、dead ${analysis.deadStates.length}、over ${acceptedOverTarget.length}`);
 });
 
 // ── 18. placeItemTwin / removeItemTwin 不変条件 (容量・局所超過・全体slip・チェック順序) ──
@@ -610,17 +743,35 @@ section("placeItemTwin / removeItemTwin 不変条件", () => {
   // (3) 全体 slip -> slip、元 state 非破壊 (バスケット単独は localOverloadMax 以内だが
   //     合計との差がそのラウンドの slipDiff に達する)
   {
-    // ラウンド3 (index2, normal tier, localOverloadMax=7, slipDiff=9): A に dog(6) が
+    // ラウンド3 (index2, normal tier, localOverloadMax=7, slipDiff=4): A に dog(6) が
     // 既に置かれている状態で bear(7) を空の B へ置くと、バスケット単独 weight=7
     // (localOverloadMax(7) ちょうどなので local はセーフ) だが、全体 diff = (6+7)-0 = 13
-    // >= slipDiff(9) で slip になる。
+    // >= slipDiff(4) で slip になる。
     const state = { leftIds: [], rightBasketAIds: ["dog"], rightBasketBIds: [], trayIds: ["bear"] };
     const before = JSON.parse(JSON.stringify(state));
     const res = L.placeItemTwin(state, "bear", "B", 2);
     assert.equal(res.ok, false);
     assert.equal(res.reason, "slip");
+    assert.equal(res.weightDirection, "tooHeavy", "右側合計が重すぎる全体slipは tooHeavy");
     assert.equal(res.basketId, "B");
     assert.deepEqual(state, before, "slip 時、元 state は非破壊");
+  }
+
+  // (3b) 右側合計が軽すぎる場合も reason は slip のまま、向きだけ tooLight で返す。
+  //      UI が「おもすぎ」と逆の案内をしないための方向情報。
+  {
+    const state = {
+      leftIds: ["elephant"],
+      rightBasketAIds: [],
+      rightBasketBIds: [],
+      trayIds: ["grapes"]
+    };
+    const before = JSON.parse(JSON.stringify(state));
+    const res = L.placeItemTwin(state, "grapes", "A", 2);
+    assert.equal(res.ok, false);
+    assert.equal(res.reason, "slip", "検証順序と既存reasonは維持する");
+    assert.equal(res.weightDirection, "tooLight", "ぶどう先置きは軽すぎる方向として返す");
+    assert.deepEqual(state, before, "tooLight slip 時も元 state は非破壊");
   }
 
   // チェック順序: 容量超過が最優先 (局所超過や slip の条件も満たしていても full が返る)
@@ -695,16 +846,17 @@ section("placeItemTwin / removeItemTwin 不変条件", () => {
 
 // ── 19. ふたご皿ラウンド 実在する成功シーケンス (検証済みの解) ────
 section("ふたご皿ラウンド 実在する成功シーケンス", () => {
-  // ラウンド3 (index2): elephant(10) おだい。 dog(6)→A, frog(4)→B で釣り合う
+  // ラウンド3 (index2): elephant(10) おだい。
+  // star_block(7)→A, grapes(3)→B で釣り合う
   {
     let state = { leftIds: L.ROUNDS[2].left.slice(), rightBasketAIds: [], rightBasketBIds: [], trayIds: L.ROUNDS[2].tray.slice() };
-    let res = L.placeItemTwin(state, "dog", "A", 2);
-    assert.equal(res.ok, true, "ラウンド3: dog→A が成功する");
+    let res = L.placeItemTwin(state, "star_block", "A", 2);
+    assert.equal(res.ok, true, "ラウンド3: star_block→A が成功する");
     state = res.state;
-    res = L.placeItemTwin(state, "frog", "B", 2);
-    assert.equal(res.ok, true, "ラウンド3: frog→B が成功する");
+    res = L.placeItemTwin(state, "grapes", "B", 2);
+    assert.equal(res.ok, true, "ラウンド3: grapes→B が成功する");
     state = res.state;
-    assert.equal(L.isBalanced(L.sumWeights(state.leftIds), L.sumTwinRightWeight(state)), true, "ラウンド3: dog(A)+frog(B) で釣り合う");
+    assert.equal(L.isBalanced(L.sumWeights(state.leftIds), L.sumTwinRightWeight(state)), true, "ラウンド3: ほし(A)+ぶどう(B) で釣り合う");
     assert.ok(state.rightBasketAIds.length <= 3 && state.rightBasketBIds.length <= 3, "容量内に収まっている");
   }
 
@@ -763,12 +915,13 @@ section("createSession / advanceRound のふたご皿対応", () => {
   assert.deepEqual(session.rightBasketAIds, [], "ラウンド3進行後 rightBasketAIds は空配列");
   assert.deepEqual(session.rightBasketBIds, [], "ラウンド3進行後 rightBasketBIds は空配列");
 
-  // ラウンド3をふたご皿の実解で釣り合わせて次に進める (dog(6)+frog(4)=elephant(10))
-  let res = L.placeItemTwin(session, "dog", "A", session.round);
+  // ラウンド3をふたご皿の実解で釣り合わせて次に進める
+  // (star_block(7)+grapes(3)=elephant(10))
+  let res = L.placeItemTwin(session, "star_block", "A", session.round);
   assert.equal(res.ok, true);
   session.rightBasketAIds = res.state.rightBasketAIds;
   session.trayIds = res.state.trayIds;
-  res = L.placeItemTwin(session, "frog", "B", session.round);
+  res = L.placeItemTwin(session, "grapes", "B", session.round);
   assert.equal(res.ok, true);
   session.rightBasketBIds = res.state.rightBasketBIds;
   session.trayIds = res.state.trayIds;
@@ -840,12 +993,14 @@ section("game.js: ふたご皿ドラッグルーティング", () => {
   // 'slip' と 'localSlip' の両方を区別して扱っていることを確認する)
   assert.match(gameJs, /reason === 'slip'/, "全体 slip (reason==='slip') の分岐がある");
   assert.match(gameJs, /reason === 'localSlip'/, "局所 slip (reason==='localSlip') の分岐がある");
+  assert.match(gameJs, /weightDirection === 'tooLight'/, "全体 slip は軽すぎる方向を区別する");
 
   // localSlip 専用メッセージ・アニメ (仕様書どおりの文言)
   assert.match(gameJs, /こっちのおさらだけ、おもすぎたみたい！/, "localSlip 専用メッセージが実装されている");
   assert.match(gameJs, /is-local-slip/, "localSlip 時にバスケット側の boing アニメクラスが付与される");
   // 全体 slip の既存メッセージは変更されていない
   assert.match(gameJs, /おもすぎたみたい！/, "全体 slip の既存メッセージ「おもすぎたみたい！」は維持されている");
+  assert.match(gameJs, /まだ かるいみたい！/, "軽すぎる全体 slip は逆方向のかな案内を出す");
 
   // localSlip / 全体 slip とも Haptics は既存パターンのみ流用 (局所専用の新パターン追加はスコープ外)
   const endDragTwinMatch = gameJs.match(/function endDragTwin\([^)]*\)\s*\{[\s\S]*?\n  \}/);

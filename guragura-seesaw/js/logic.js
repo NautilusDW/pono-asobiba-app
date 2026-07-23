@@ -9,13 +9,15 @@
 //   の判定関数はどこでもそれを読んではならない (回帰テストでソース regex 検証される)。
 'use strict';
 
-// ═══ 乗せ物カタログ (12点) ═══════════════════════════════════════════
+// ═══ 乗せ物カタログ (15点) ═══════════════════════════════════════════
 // img は game.js 側の ITEM_IMAGES マップで id → 画像パスに解決する。
 // ここでは数値 (weight) とラベル・見た目の箱サイズ区分 (CSS表示専用) のみ持つ。
 // 重さ設計方針 (2026-07-23 再設計): 実物の質量比の再現は目指さない。
 // その代わり「果物/野菜(1〜3) < 動物(4〜10)」「動物内 frog<cat<dog<bear<elephant」
 // という相対順序だけを一貫させ、子供が遊びながら重さの相対順序を体で覚えられる
 // ようにする (詳細は tests/guragura_seesaw_regression.cjs §19 のコメント参照)。
+// ふしぎブロック3点は現実の品物と比較できない別カテゴリ。見た目の大小と重さを
+// あえて逆転させ、実際に皿へ置いて初めて分かる発見型の遊びに使う。
 var CATALOG = [
   { id: 'cherry',    label: 'さくらんぼ',     weight: 1, sizeClass: 'l' },
   { id: 'blueberry', label: 'ブルーベリー',   weight: 1, sizeClass: 's' },
@@ -28,7 +30,10 @@ var CATALOG = [
   { id: 'dog',       label: 'いぬ',           weight: 6, sizeClass: 'm' },
   { id: 'corn',      label: 'とうもろこし',   weight: 3, sizeClass: 'l' },
   { id: 'bear',      label: 'くま',           weight: 7, sizeClass: 'l' },
-  { id: 'elephant',  label: 'ぞう',           weight: 10, sizeClass: 'm' }
+  { id: 'elephant',  label: 'ぞう',           weight: 10, sizeClass: 'm' },
+  { id: 'star_block', label: 'ほしのブロック', weight: 7, sizeClass: 's' },
+  { id: 'heart_block', label: 'はーとのブロック', weight: 7, sizeClass: 'l' },
+  { id: 'mystery_stone', label: 'ふしぎな いし', weight: 7, sizeClass: 'm' }
 ];
 
 var CATALOG_BY_ID = {};
@@ -53,7 +58,7 @@ for (var _ci = 0; _ci < CATALOG.length; _ci++) {
 var ROUNDS = [
   { left: ['grapes'],        tray: ['cherry', 'blueberry', 'apple', 'lemon', 'carrot', 'corn'] },
   { left: ['cat'],           tray: ['apple', 'grapes', 'cherry', 'lemon', 'blueberry', 'frog'] },
-  { left: ['elephant'],      tray: ['dog', 'apple', 'grapes', 'cat', 'lemon', 'frog', 'cherry'] },
+  { left: ['elephant'],      tray: ['star_block', 'heart_block', 'mystery_stone', 'grapes'] },
   { left: ['dog', 'cherry'], tray: ['grapes', 'apple', 'carrot', 'lemon', 'blueberry', 'frog'] },
   { left: ['bear', 'grapes'], tray: ['corn', 'dog', 'apple', 'cat', 'carrot', 'lemon', 'cherry'] }
 ];
@@ -82,11 +87,10 @@ var NEAR_BALANCE_EPS_DEG = 5.0;
 // - localOverloadMax:   1皿単独の重さ上限 (これを超えたらそのバスケットだけ拒否)
 // - slipDiff (省略可):  このラウンドの placeItemTwin (3)全体slipチェックに使う
 //                        しきい値。 省略時はグローバル SLIP_DIFF にフォールバックする。
-// 数値は実データで3ラウンドとも解けることを検証済みのため変更しないこと。
-// localOverloadMax は 2026-07-23 に新カタログ (target 6→10, 5→7, 8→10) に比例して
-// normal 5→7 / hard 4→5 へ引き上げ済み (basketCapacityEach は据え置き)。
+// 数値は各ラウンドの実トレイを本番関数で全状態探索して決める。
 //
-// 2026-07-23 レビュー対応 (第2弾): グローバル SLIP_DIFF(6) だけでは重い target (10) を
+// 2026-07-23 ふしぎブロック導入前のレビュー対応 (第2弾):
+// グローバル SLIP_DIFF(6) だけでは重い target (10) を
 // 持つラウンド3・5 で「最初の1個」を安全に置ける tray アイテムが極端に絞られ
 // (ラウンド3: 4/14、ラウンド5: 2/14 の first-move combination しか成功しない) 、かつ
 // ラウンド5 は dog(6) が localOverloadMax(5) を単体で超過するため一度も置けない
@@ -97,8 +101,15 @@ var NEAR_BALANCE_EPS_DEG = 5.0;
 // localOverloadMax を 5→7 に引き上げて dog を配置可能にしつつ slipDiff:8 を設定
 // (14.3%→42.9%、"難しい" ティアらしく3ラウンド中もっとも厳しいままだが即詰みは解消)。
 // ラウンド4 (index3) は既に十分寛容 (66.7%) だったため変更なし。
+//
+// 2026-07-23 ふしぎブロック導入: ラウンド3のトレイを重さ7のブロック3点と
+// ぶどう(3)へ置換。どのブロックも先に置け、ぶどうを足すと target10 になる。
+// ラウンド別 slipDiff を4へ絞り、別々のかごへブロックを2点置く試みも
+// |14-10|=4 の時点で即座に拒否する。同じかごなら localOverloadMax7 を超えて拒否。
+// 実際の placeItemTwin 全状態探索で、受理された全中間状態が取り外しなしで
+// 解へ到達でき、黙って目標を超える状態が無いことを確認している。
 var TWIN_ROUND_CONFIG = {
-  2: { tier: 'normal', basketCapacityEach: 3, localOverloadMax: 7, slipDiff: 9 }, // ラウンド3 (elephant)
+  2: { tier: 'normal', basketCapacityEach: 3, localOverloadMax: 7, slipDiff: 4 }, // ラウンド3 (elephant)
   3: { tier: 'hard', basketCapacityEach: 2, localOverloadMax: 5 },   // ラウンド4 (dog+cherry)
   4: { tier: 'hard', basketCapacityEach: 2, localOverloadMax: 7, slipDiff: 8 }    // ラウンド5 (bear+grapes)
 };
@@ -269,7 +280,8 @@ function sumTwinRightWeight(state) {
  *   (2) バスケット単独の重さが localOverloadMax 超過
  *                           → { ok:false, reason:'localSlip', basketId, state:<元のまま> }
  *   (3) 両皿合計と左皿の差が (ラウンド別 slipDiff、省略時はグローバル SLIP_DIFF) 以上
- *                           → { ok:false, reason:'slip',      basketId, state:<元のまま> }
+ *                           → { ok:false, reason:'slip',      basketId,
+ *                               weightDirection:'tooLight'|'tooHeavy', state:<元のまま> }
  * トレイに存在しない id / basketId が 'A'/'B' 以外
  *                           → { ok:false, reason:'notfound',  state:<元のまま> }
  * 成功 → { ok:true, basketId, state:<新state> }
@@ -313,7 +325,13 @@ function placeItemTwin(state, itemId, basketId, roundIndex) {
   var totalRightWeight = targetWeight + sumWeights(otherIds);
   var diff = totalRightWeight - leftWeight;
   if (Math.abs(diff) >= slipDiffForRound) {
-    return { ok: false, reason: 'slip', basketId: basketId, state: state };
+    return {
+      ok: false,
+      reason: 'slip',
+      weightDirection: diff < 0 ? 'tooLight' : 'tooHeavy',
+      basketId: basketId,
+      state: state
+    };
   }
 
   var next = cloneStateTwin(state);

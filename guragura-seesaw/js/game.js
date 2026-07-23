@@ -65,7 +65,10 @@
     dog: '../assets/images/ocean/Dog/Dog_normal_1.png',
     corn: '../assets/images/ocean/Corn/Corn_normal_1.png',
     bear: '../assets/images/ocean/Bear/Bear_normal_1.png',
-    elephant: '../assets/images/ocean/Elephant/Elephant_normal_1.png'
+    elephant: '../assets/images/ocean/Elephant/Elephant_normal_1.png',
+    star_block: '../assets/images/guragura-seesaw/items/item_star_block.png',
+    heart_block: '../assets/images/guragura-seesaw/items/item_heart_block.png',
+    mystery_stone: '../assets/images/guragura-seesaw/items/item_mystery_stone.png'
   };
 
   // ═══ DOM 参照 ═══
@@ -458,9 +461,13 @@
         var placedEl = itemsContainer.querySelector('[data-item-id="' + ds.itemId + '"]');
         if (placedEl) retriggerClass(placedEl, 'is-placed', 300);
       } else if (res.reason === 'slip') {
-        // 全体 slip (両皿合計 vs 左皿) は既存の全体メッセージのまま。
+        // 全体 slip (両皿合計 vs 左皿)。左右の差の向きをそのまま伝え、
+        // 軽すぎる試行に「おもすぎ」と誤案内しない。
         retriggerClass(ds.el, 'is-slip', 500);
-        showBubble(slipBubbleEl, 'おもすぎたみたい！');
+        showBubble(
+          slipBubbleEl,
+          res.weightDirection === 'tooLight' ? 'まだ かるいみたい！' : 'おもすぎたみたい！'
+        );
         if (window.Haptics) window.Haptics.fire('gachaTurn3');
         playSlipSound();
       } else if (res.reason === 'localSlip') {
