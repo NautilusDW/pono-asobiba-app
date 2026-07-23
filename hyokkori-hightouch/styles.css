@@ -9,7 +9,7 @@
   --leaf: #4b9d65;
   --leaf-dark: #2f7650;
   --coral: #ef724f;
-  --location-bg: url('../assets/images/hyokkori-hightouch/bg_forest_combo_terraces.png');
+  --location-bg: url('../assets/images/hyokkori-hightouch/bg_world_komorebi_lowangle_20260724.png');
 }
 
 *, *::before, *::after {
@@ -241,9 +241,9 @@ a:focus-visible {
   justify-content: center;
   gap: clamp(4px, 2vw, 34px);
   padding: clamp(18px, 4vmin, 48px);
-  background-color: #b8dca5;
+  background-color: #d9e6cf;
   background-image:
-    linear-gradient(90deg, rgba(255, 247, 216, 0.36), rgba(255, 255, 255, 0.12)),
+    linear-gradient(90deg, rgba(255, 253, 245, 0.18), rgba(255, 255, 255, 0.06)),
     var(--location-bg);
   background-position: center, center;
   background-repeat: no-repeat, no-repeat;
@@ -254,7 +254,7 @@ a:focus-visible {
 #start-screen::after {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(255, 249, 222, 0.08), rgba(50, 101, 65, 0.14));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(37, 58, 48, 0.08));
   content: '';
   pointer-events: none;
 }
@@ -391,7 +391,7 @@ a:focus-visible {
   z-index: var(--slot-z, 1);
   display: flex;
   width: clamp(88px, 25cqw, 300px);
-  height: clamp(82px, 33cqh, 230px);
+  height: clamp(56px, 18cqh, 126px);
   min-width: 44px;
   min-height: 44px;
   align-items: center;
@@ -414,6 +414,10 @@ a:focus-visible {
   transition: opacity 0.2s ease;
   --depth-scale: 1;
   --depth-shift-y: 0cqh;
+  --hideout-rotate: 0deg;
+  --foreground-top: 62%;
+  --window-bottom: 35.5%;
+  --char-width: 58%;
 }
 
 .hh-hole:focus-visible {
@@ -441,18 +445,14 @@ a:focus-visible {
   display: block;
   width: min(92%, 320px);
   height: auto;
-  /*
-   * 元画像内の穴中心は画像幅の約53.5%にある。
-   * 画像だけを補正し、操作面とキャラ窓は各グリッドの中央に保つ。
-   */
-  transform: translate(-53.5%, -50%) scale(var(--depth-scale));
-  filter: saturate(0.88) brightness(1.02);
+  transform: translate(-50%, -50%) scale(var(--depth-scale)) rotate(var(--hideout-rotate));
+  transform-origin: center;
   object-fit: contain;
   transition: transform 0.12s ease;
 }
 
 .hh-hole.is-pressed .hh-hideout {
-  transform: translate(-53.5%, -50%) scale(var(--depth-scale)) scale(0.96);
+  transform: translate(-50%, -50%) scale(var(--depth-scale)) rotate(var(--hideout-rotate)) scale(0.96);
 }
 
 .hh-hideout-foreground {
@@ -461,7 +461,7 @@ a:focus-visible {
    * 穴の暗部より下だけを前葉として重ねる。
    * キャラ窓の下端とわずかに重ね、出現途中も下から透けないようにする。
    */
-  clip-path: inset(60% 0 0 0);
+  clip-path: inset(var(--foreground-top) 0 0 0);
 }
 
 /*
@@ -474,7 +474,7 @@ a:focus-visible {
   top: calc(50% + var(--depth-shift-y));
   left: 50%;
   z-index: 3;
-  width: min(58%, 220px);
+  width: min(var(--char-width), 220px);
   overflow: visible;
   transform: translate(-50%, -50%) scale(var(--depth-scale));
   transform-origin: center;
@@ -491,7 +491,7 @@ a:focus-visible {
    * キャラdrop-shadowまで欠けずに見せる。隠れ中の本体は104%下なので漏れない。
    */
   overflow: visible;
-  clip-path: inset(-30% -30% 35.5% -30%);
+  clip-path: inset(-30% -30% var(--window-bottom) -30%);
 }
 
 .hh-char-rise {
@@ -1210,15 +1210,11 @@ a:focus-visible {
 
   .hh-hole {
     width: clamp(88px, 25cqw, 160px);
-    height: clamp(78px, 33cqh, 132px);
+    height: clamp(56px, 18cqh, 76px);
   }
 
   .hh-char-wrap {
-    width: min(52%, 112px);
-  }
-
-  .hh-window {
-    clip-path: inset(-30% -30% 32% -30%);
+    width: min(var(--char-width), 112px);
   }
 
   .hh-hideout {

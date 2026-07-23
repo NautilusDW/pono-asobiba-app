@@ -82,7 +82,8 @@
   var REQUIRED_ASSET_TIMEOUT_MS = 12000;
 
   function locationFrameAssetUrls(location) {
-    return [location.background, location.hideout].filter(Boolean);
+    var hideouts = location.hideouts || {};
+    return [location.background, hideouts.far, hideouts.near].filter(Boolean);
   }
 
   function locationAssetUrls(location) {
@@ -418,8 +419,23 @@
       node.style.setProperty('--slot-y', Number(slot.y) + '%');
       node.style.setProperty('--depth-scale', String(Number(slot.depth) || 1));
       node.style.setProperty('--slot-z', String(20 + Math.round(Number(slot.y) || 0)));
+      if (slot.hideout !== 'far' && slot.hideout !== 'near') {
+        throw new Error('かくればしょの遠近定義が正しくありません');
+      }
+      var hideoutVariant = slot.hideout;
+      var hideoutSrc = location.hideouts && location.hideouts[hideoutVariant];
+      if (!hideoutSrc) throw new Error('かくればしょの画像定義がありません');
+      var hideoutRotate = Number(slot.rotate);
+      if (!isFinite(hideoutRotate)) hideoutRotate = 0;
+      var hideoutLayout = (location.hideoutLayouts && location.hideoutLayouts[hideoutVariant]) || {};
+      node.dataset.hideoutVariant = hideoutVariant;
+      node.dataset.depth = String(Number(slot.depth) || 1);
+      node.style.setProperty('--hideout-rotate', hideoutRotate + 'deg');
+      node.style.setProperty('--foreground-top', (Number(hideoutLayout.foregroundTop) || 60) + '%');
+      node.style.setProperty('--window-bottom', (Number(hideoutLayout.windowBottom) || 35.5) + '%');
+      node.style.setProperty('--char-width', (Number(hideoutLayout.charWidth) || 58) + '%');
       var hideouts = node.querySelectorAll('.hh-hideout');
-      for (var h = 0; h < hideouts.length; h++) hideouts[h].src = location.hideout;
+      for (var h = 0; h < hideouts.length; h++) hideouts[h].src = hideoutSrc;
       (function (idx, buttonEl) {
         // detail===0 はキーボードまたは支援技術によるbutton activation。
         // touchstart / mouse pointerdown 後の合成clickはここで二重処理しない。
