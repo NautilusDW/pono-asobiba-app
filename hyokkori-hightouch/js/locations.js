@@ -48,14 +48,14 @@ var LOCATIONS = [
       far: {
         groundAnchorY: 78.2,
         foregroundTop: 67,
-        windowBottom: 12,
+        windowBottom: 30,
         charWidth: 52,
         charLiftCqh: 7.5
       },
       near: {
         groundAnchorY: 75.3,
         foregroundTop: 64,
-        windowBottom: 10,
+        windowBottom: 28,
         charWidth: 58,
         charLiftCqh: 8
       }
@@ -84,14 +84,14 @@ var LOCATIONS = [
       far: {
         groundAnchorY: 68.2,
         foregroundTop: 60,
-        windowBottom: 14,
+        windowBottom: 30,
         charWidth: 48,
         charLiftCqh: 7.5
       },
       near: {
         groundAnchorY: 81,
         foregroundTop: 64,
-        windowBottom: 10,
+        windowBottom: 28,
         charWidth: 52,
         charLiftCqh: 8.5
       }
@@ -119,14 +119,14 @@ var LOCATIONS = [
       far: {
         groundAnchorY: 69.8,
         foregroundTop: 64,
-        windowBottom: 14,
+        windowBottom: 30,
         charWidth: 50,
         charLiftCqh: 7
       },
       near: {
         groundAnchorY: 66.8,
         foregroundTop: 56,
-        windowBottom: 10,
+        windowBottom: 28,
         charWidth: 55,
         charLiftCqh: 8
       }
