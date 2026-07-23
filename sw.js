@@ -1,5 +1,10 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2365: ひょっこりハイタッチの3地点を、紙目のある水彩・色鉛筆調の
+// 専用背景へ全面更新。低い草地目線／斜面の俯瞰／水面目線で構図を分け、
+// 各地点専用の遠景・近景開口、素材別マスク、可変配置・パースを接続した。
+// ゲーム個別ファイルと画像はnetwork-first配信のためCRITICAL_ASSETSには
+// 追加しない。play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2365)。
 // v2362: 新規ミニゲーム「ポノのかわづり」Phase 0 (川づりMVP) を tsuri-kawa/
 // として追加し、play.html GAMES/APP_TITLE_MENU_IDS に登録。ゲーム個別ファイルは
 // network-first配信のためCRITICAL_ASSETSには追加しない。play.html
@@ -954,7 +959,7 @@
 // styles.css／game.js queryを20260723-1429へ同期。ゲーム個別ファイルと画像は
 // network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
 // PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2347)。
-const CACHE_VERSION = 2364;
+const CACHE_VERSION = 2365;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [
