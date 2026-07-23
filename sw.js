@@ -1,5 +1,10 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2356: ひょっこりハイタッチを、こもれび6穴／どんぐり5穴／みずべ4穴の
+// 「もりの さんぽみち」3地点へ拡張。場所データ、30秒完走ごとの保存進行、
+// 新背景2点、たぬき／かわうそ4状態、結果の散歩道、低速読込とfocus終端を追加。
+// ゲーム個別ファイルと新規画像はnetwork-first配信のためCRITICAL_ASSETSには
+// 追加しない。play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSION と同期 (2356)。
 // v2355: なぞなぞトレイン「きょうりゅうのもり」の救助背景を、親不在で
 // 閉じ込められた子ども恐竜3頭へ変更。水路はかんたん3×4／ふつう4×5／
 // むずかしい4×7へ分け、発光ゴールと回転時の水路中央接続を追加した。
@@ -906,7 +911,7 @@
 // styles.css／game.js queryを20260723-1429へ同期。ゲーム個別ファイルと画像は
 // network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
 // PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2347)。
-const CACHE_VERSION = 2355;
+const CACHE_VERSION = 2356;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [
