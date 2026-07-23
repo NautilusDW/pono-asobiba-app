@@ -58,7 +58,7 @@ var LOCATIONS = [
     id: 'donguri_path',
     name: 'どんぐりの こみち',
     shortName: 'こみち',
-    background: ASSET_BASE + 'bg_donguri_path_20260723.png',
+    background: ASSET_BASE + 'bg_donguri_path_autumn_20260723.png',
     hideout: SHARED_HIDEOUT,
     slots: [
       { x: 20, y: 29, depth: 0.88 },
@@ -74,7 +74,7 @@ var LOCATIONS = [
     id: 'mizube',
     name: 'せせらぎの みずべ',
     shortName: 'みずべ',
-    background: ASSET_BASE + 'bg_mizube_20260723.png',
+    background: ASSET_BASE + 'bg_mizube_cool_20260723.png',
     hideout: SHARED_HIDEOUT,
     slots: [
       { x: 29, y: 30, depth: 0.88 },

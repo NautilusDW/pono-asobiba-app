@@ -16,8 +16,8 @@ const PARTNERS = [
 ];
 const EXPECTED_ASSETS = [
   'bg_forest_combo_terraces.png',
-  'bg_donguri_path_20260723.png',
-  'bg_mizube_20260723.png',
+  'bg_donguri_path_autumn_20260723.png',
+  'bg_mizube_cool_20260723.png',
   'menu_thumb_highfive_combo.png',
   'hideout_leaf_bush.png',
   'fx_highfive_burst.png',
@@ -53,7 +53,7 @@ const LOCATIONS = [
   {
     id: 'donguri_path',
     name: 'どんぐりの こみち',
-    background: 'bg_donguri_path_20260723.png',
+    background: 'bg_donguri_path_autumn_20260723.png',
     slots: [
       { x: 20, y: 29, depth: 0.88 },
       { x: 50, y: 29, depth: 0.88 },
@@ -65,7 +65,7 @@ const LOCATIONS = [
   {
     id: 'mizube',
     name: 'せせらぎの みずべ',
-    background: 'bg_mizube_20260723.png',
+    background: 'bg_mizube_cool_20260723.png',
     slots: [
       { x: 29, y: 30, depth: 0.88 },
       { x: 71, y: 30, depth: 0.88 },
@@ -194,6 +194,155 @@ test('3背景・10種の動物・共通の葉の開口を使い、旧花壇素�
   expect(assetResponses.filter(({ status }) => status >= 400)).toEqual([]);
   expect(consoleErrors).toEqual([]);
   expect(pageErrors).toEqual([]);
+});
+
+test('3地点の背景を黄緑・赤茶・青緑へ分け、中央帯の明るさを保つ', async ({ page }) => {
+  test.setTimeout(35_000);
+  await page.setViewportSize({ width: 844, height: 390 });
+  await setupApp(page);
+  await page.goto('/hyokkori-hightouch/index.html');
+  await waitForLocation(page, LOCATIONS[0]);
+
+  const palettes = await page.evaluate(async ({ base, backgrounds }) => {
+    const hueOf = (r, g, b) => {
+      const red = r / 255;
+      const green = g / 255;
+      const blue = b / 255;
+      const max = Math.max(red, green, blue);
+      const min = Math.min(red, green, blue);
+      const delta = max - min;
+      if (!delta) return 0;
+      let hue = max === red
+        ? ((green - blue) / delta) % 6
+        : max === green
+          ? ((blue - red) / delta) + 2
+          : ((red - green) / delta) + 4;
+      hue *= 60;
+      return hue < 0 ? hue + 360 : hue;
+    };
+
+    return Promise.all(backgrounds.map(async ({ id, filename }) => {
+      const response = await fetch(base + filename, { cache: 'no-store' });
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const image = new Image();
+      await new Promise((resolve, reject) => {
+        image.onload = resolve;
+        image.onerror = reject;
+        image.src = objectUrl;
+      });
+
+      const canvas = document.createElement('canvas');
+      canvas.width = 160;
+      canvas.height = 90;
+      const context = canvas.getContext('2d', { willReadFrequently: true });
+      context.drawImage(image, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(objectUrl);
+
+      const pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+      const sums = [0, 0, 0];
+      let warm = 0;
+      let yellow = 0;
+      let cyan = 0;
+      let saturated = 0;
+      let centerLuma = 0;
+      let centerCount = 0;
+      const pixelCount = pixels.length / 4;
+
+      for (let index = 0; index < pixels.length; index += 4) {
+        const r = pixels[index];
+        const g = pixels[index + 1];
+        const b = pixels[index + 2];
+        sums[0] += r;
+        sums[1] += g;
+        sums[2] += b;
+
+        const max = Math.max(r, g, b);
+        const min = Math.min(r, g, b);
+        const saturation = max ? (max - min) / max : 0;
+        if (saturation > 0.12) {
+          saturated += 1;
+          const hue = hueOf(r, g, b);
+          if (hue < 50 || hue >= 345) warm += 1;
+          if (hue >= 45 && hue < 100) yellow += 1;
+          if (hue >= 155 && hue < 210) cyan += 1;
+        }
+
+        const pixelIndex = index / 4;
+        const x = pixelIndex % canvas.width;
+        const y = Math.floor(pixelIndex / canvas.width);
+        if (x >= 67 && x <= 93 && y >= 39 && y <= 59) {
+          centerLuma += 0.2126 * r + 0.7152 * g + 0.0722 * b;
+          centerCount += 1;
+        }
+      }
+
+      return {
+        id,
+        status: response.status,
+        width: image.naturalWidth,
+        height: image.naturalHeight,
+        mean: sums.map((sum) => sum / pixelCount),
+        warmRatio: warm / pixelCount,
+        yellowRatio: yellow / pixelCount,
+        cyanRatio: cyan / pixelCount,
+        saturatedRatio: saturated / pixelCount,
+        centerLuma: centerLuma / centerCount,
+      };
+    }));
+  }, {
+    base: ASSET_BASE,
+    backgrounds: LOCATIONS.map(({ id, background }) => ({ id, filename: background })),
+  });
+
+  const byId = Object.fromEntries(palettes.map((palette) => [palette.id, palette]));
+  for (const palette of palettes) {
+    expect(palette.status).toBe(200);
+    expect([palette.width, palette.height]).toEqual(
+      palette.id === 'komorebi_clearing' ? [1672, 941] : [1600, 900],
+    );
+    expect(palette.saturatedRatio).toBeGreaterThan(0.7);
+    expect(palette.centerLuma).toBeGreaterThan(135);
+  }
+
+  expect(byId.komorebi_clearing.yellowRatio).toBeGreaterThan(0.75);
+  expect(byId.donguri_path.warmRatio).toBeGreaterThan(0.75);
+  expect(byId.donguri_path.yellowRatio).toBeLessThan(0.25);
+  expect(byId.mizube.cyanRatio).toBeGreaterThan(0.75);
+  expect(byId.mizube.yellowRatio).toBeLessThan(0.2);
+
+  const rgbToLab = (rgb) => {
+    const linear = rgb.map((value) => {
+      const channel = value / 255;
+      return channel <= 0.04045
+        ? channel / 12.92
+        : ((channel + 0.055) / 1.055) ** 2.4;
+    });
+    const xyz = [
+      (linear[0] * 0.4124 + linear[1] * 0.3576 + linear[2] * 0.1805) / 0.95047,
+      linear[0] * 0.2126 + linear[1] * 0.7152 + linear[2] * 0.0722,
+      (linear[0] * 0.0193 + linear[1] * 0.1192 + linear[2] * 0.9505) / 1.08883,
+    ].map((value) => (value > 0.008856
+      ? Math.cbrt(value)
+      : 7.787 * value + 16 / 116));
+    return [
+      116 * xyz[1] - 16,
+      500 * (xyz[0] - xyz[1]),
+      200 * (xyz[1] - xyz[2]),
+    ];
+  };
+  const colorDistance = (left, right) => {
+    const leftLab = rgbToLab(left.mean);
+    const rightLab = rgbToLab(right.mean);
+    return Math.hypot(
+      leftLab[0] - rightLab[0],
+      leftLab[1] - rightLab[1],
+      leftLab[2] - rightLab[2],
+    );
+  };
+  expect(colorDistance(byId.komorebi_clearing, byId.donguri_path)).toBeGreaterThan(20);
+  expect(colorDistance(byId.donguri_path, byId.mizube)).toBeGreaterThan(20);
+  expect(colorDistance(byId.mizube, byId.komorebi_clearing)).toBeGreaterThan(20);
 });
 
 test('3場所×4画面で6・5・4個の実buttonを定義座標へ置き、遠近と下側マスクを保つ', async ({ page }) => {

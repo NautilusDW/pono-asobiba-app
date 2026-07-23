@@ -163,8 +163,8 @@ function mulberry32(seed) {
     assert.equal(location.bonusPartnerId, "hikari_momonga", `${location.id} の案内役はひかりモモンガ`);
   }
 
-  assert.match(D.LOCATION_BY_ID.donguri_path.background, /bg_donguri_path_20260723\.png$/, "こみち専用背景を使う");
-  assert.match(D.LOCATION_BY_ID.mizube.background, /bg_mizube_20260723\.png$/, "みずべ専用背景を使う");
+  assert.match(D.LOCATION_BY_ID.donguri_path.background, /bg_donguri_path_autumn_20260723\.png$/, "こみちは秋色の専用背景を使う");
+  assert.match(D.LOCATION_BY_ID.mizube.background, /bg_mizube_cool_20260723\.png$/, "みずべは涼色の専用背景を使う");
   assert.ok(D.LOCATION_BY_ID.donguri_path.partnerIds.includes("tanuki"), "こみちに新規たぬきが出る");
   assert.ok(D.LOCATION_BY_ID.mizube.partnerIds.includes("kawauso"), "みずべに新規かわうそが出る");
 
