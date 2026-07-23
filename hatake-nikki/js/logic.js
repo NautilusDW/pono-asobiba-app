@@ -67,7 +67,7 @@
     ninjin: { id: 'ninjin', name: 'にんじん', img: '../assets/images/word/ninjin.png', stageThresholds: [1, 2, 4] },
     tomato: { id: 'tomato', name: 'とまと', img: '../assets/images/word/tomato.png', stageThresholds: [1, 2, 3] }
   };
-  var PLOT_COUNT = 4;
+  var PLOT_COUNT = 9;
 
   /** 空の plot を生成する。 */
   function emptyPlot() {
@@ -80,7 +80,7 @@
     return plots;
   }
 
-  /** 新規ゲーム状態を生成する (最初から使えるplot 4枠)。 */
+  /** 新規ゲーム状態を生成する (最初から使えるplot 9枠)。 */
   function createInitialState(todayKey) {
     return { lastSeenKey: todayKey, plots: emptyPlots() };
   }
@@ -218,8 +218,8 @@
         out.lastSeenKey = raw.lastSeenKey;
       }
       if (Array.isArray(raw.plots)) {
-        // 旧3区画セーブは0〜2をそのまま保ち、4枠目だけ空畑で補う。
-        // 5枠以上の未知データは、固定4区画の範囲外なので決定論的に切り捨てる。
+        // 旧3／4区画セーブは既存indexをそのまま保ち、9枠まで空畑で補う。
+        // 10枠以上の未知データは、固定9区画の範囲外なので決定論的に切り捨てる。
         for (var i = 0; i < PLOT_COUNT; i++) {
           out.plots[i] = _normalizePlot(raw.plots[i]);
         }

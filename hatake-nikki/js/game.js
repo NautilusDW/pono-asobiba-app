@@ -147,7 +147,17 @@ function createScreenController(screens) {
     tomato: '../assets/images/hatake-nikki/crop_sign_tomato_iso_v2.png',
     ninjin: '../assets/images/hatake-nikki/crop_sign_ninjin_iso_v2.png'
   };
-  var PLOT_POSITION_NAMES = ['おく', 'ひだり', 'みぎ', 'てまえ'];
+  var PLOT_POSITION_NAMES = [
+    'いちばん おく',
+    'ひだり',
+    'みぎ',
+    'いちばん てまえ',
+    'おくの ひだり',
+    'おくの みぎ',
+    'まんなか',
+    'てまえの ひだり',
+    'てまえの みぎ'
+  ];
 
   var plotRefs = [];
   var plotEls = document.querySelectorAll('.plot');

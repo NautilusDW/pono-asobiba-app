@@ -70,12 +70,28 @@ function pointInsidePlotDiamond(point, plotBox) {
   return x >= 0.5 - halfWidth && x <= 0.5 + halfWidth;
 }
 
-const visualState = [
-  { seedId: 'tomato', daysGrown: 0, wateredToday: true, wilted: false, bug: false },
-  { seedId: 'ninjin', daysGrown: 1, wateredToday: true, wilted: false, bug: false },
-  { seedId: 'tomato', daysGrown: 2, wateredToday: true, wilted: false, bug: false },
-  { seedId: 'ninjin', daysGrown: 0, wateredToday: true, wilted: false, bug: false }
-];
+const PLOT_COUNT = 9;
+const DOM_VISUAL_ORDER = [0, 4, 5, 1, 6, 2, 7, 8, 3];
+const TILTS_BY_DATA_INDEX = [-1.5, 0.75, -0.75, 1.25, -0.4, 1, -1.1, 0.5, -0.9];
+const ADJACENT_PLOTS = {
+  0: [4, 5],
+  1: [4, 7],
+  2: [5, 8],
+  3: [7, 8],
+  4: [0, 1, 6],
+  5: [0, 2, 6],
+  6: [4, 5, 7, 8],
+  7: [1, 3, 6],
+  8: [2, 3, 6]
+};
+
+const visualState = Array.from({ length: PLOT_COUNT }, (_, index) => ({
+  seedId: index % 2 === 0 ? 'tomato' : 'ninjin',
+  daysGrown: index % 4,
+  wateredToday: true,
+  wilted: false,
+  bug: false
+}));
 
 for (const viewport of [
   { width: 667, height: 375 },
@@ -87,53 +103,87 @@ for (const viewport of [
     await gotoSeededField(page, viewport, visualState);
 
     const plots = page.locator('.plot');
-    const signs = page.locator('.crop-sign');
-    const drops = page.locator('.watered-drop');
-    const expectedCrops = ['tomato', 'ninjin', 'tomato', 'ninjin'];
-    const expectedSignSources = [
-      /crop_sign_tomato_iso_v2\.png$/,
-      /crop_sign_ninjin_iso_v2\.png$/,
-      /crop_sign_tomato_iso_v2\.png$/,
-      /crop_sign_ninjin_iso_v2\.png$/
-    ];
+    await expect(plots).toHaveCount(PLOT_COUNT);
+    await expect(page.locator('.plot-marker')).toHaveCount(PLOT_COUNT);
+    await expect(page.locator('.crop-sign')).toHaveCount(PLOT_COUNT);
+    await expect(page.locator('.watered-drop')).toHaveCount(PLOT_COUNT);
+    await expect(page.locator('#plot-area')).toHaveAttribute('aria-label', '9つの はたけ');
+    expect(await plots.evaluateAll((elements) =>
+      elements.map((element) => Number(element.dataset.plot))
+    )).toEqual(DOM_VISUAL_ORDER);
 
-    await expect(plots).toHaveCount(4);
-    await expect(page.locator('#plot-area')).toHaveAttribute('aria-label', '4つの はたけ');
-    for (let index = 0; index < 4; index += 1) {
-      const plot = plots.nth(index);
-      const sign = signs.nth(index);
-      const drop = drops.nth(index);
-      await expect(plot).toHaveAttribute('data-crop', expectedCrops[index]);
+    for (let dataIndex = 0; dataIndex < PLOT_COUNT; dataIndex += 1) {
+      const expectedCrop = dataIndex % 2 === 0 ? 'tomato' : 'ninjin';
+      const expectedSignSource = expectedCrop === 'tomato'
+        ? /crop_sign_tomato_iso_v2\.png$/
+        : /crop_sign_ninjin_iso_v2\.png$/;
+      const plot = page.locator(`.plot[data-plot="${dataIndex}"]`);
+      const sign = plot.locator('.crop-sign');
+      const drop = plot.locator('.watered-drop');
+      await expect(plot).toHaveAttribute('data-crop', expectedCrop);
       await expect(plot).toHaveClass(/is-watered/);
       await expect(sign).toHaveClass(/is-visible/);
-      await expect(sign).toHaveAttribute('src', expectedSignSources[index]);
+      await expect(sign).toHaveAttribute('src', expectedSignSource);
       await expect(drop).toBeVisible();
       await expect(drop).toHaveAttribute('src', /watered_drop_mark_v2\.png$/);
     }
 
     const artState = await page.evaluate(() => {
       const plots = Array.from(document.querySelectorAll('.plot'));
-      const markers = Array.from(document.querySelectorAll('.plot-marker'));
-      const signs = Array.from(document.querySelectorAll('.crop-sign'));
-      const drops = Array.from(document.querySelectorAll('.watered-drop'));
       const wateringCan = document.querySelector('#tool-water-btn img');
+      const overlaps = (a, b) =>
+        a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
       return {
         backgrounds: plots.map((el) => getComputedStyle(el).backgroundImage),
         backgroundSizes: plots.map((el) => getComputedStyle(el).backgroundSize),
-        markerGeometry: markers.map((marker, index) => ({
-          anchorX: marker.offsetLeft / plots[index].clientWidth,
-          anchorY: marker.offsetTop / plots[index].clientHeight,
-          width: marker.offsetWidth,
-          expectedWidth: Math.min(56, Math.max(30, plots[index].clientWidth * 0.2)),
-          widthRatio: marker.offsetWidth / plots[index].clientWidth,
-          tilt: parseFloat(getComputedStyle(plots[index]).getPropertyValue('--crop-sign-tilt'))
-        })),
-        dropGeometry: drops.map((el, index) => {
-          const marker = markers[index];
+        geometry: plots.map((plot) => {
+          const marker = plot.querySelector('.plot-marker');
+          const sign = plot.querySelector('.crop-sign');
+          const drop = plot.querySelector('.watered-drop');
+          const markerWidth = marker.clientWidth;
+          const markerHeight = marker.clientHeight;
+          const signRect = {
+            left: sign.offsetLeft,
+            top: sign.offsetTop,
+            right: sign.offsetLeft + sign.offsetWidth,
+            bottom: sign.offsetTop + sign.offsetHeight
+          };
+          const dropRect = {
+            left: drop.offsetLeft,
+            top: drop.offsetTop,
+            right: drop.offsetLeft + drop.offsetWidth,
+            bottom: drop.offsetTop + drop.offsetHeight
+          };
+          // 小さい表示でも確実に読ませる作物絵の主要識別領域を板の中央右側に置く。
+          // 左上のしずくがこの40%〜86% × 30%〜72%へ入らないことを固定する。
+          const cropArtSafeZone = {
+            left: signRect.left + sign.offsetWidth * 0.40,
+            top: signRect.top + sign.offsetHeight * 0.30,
+            right: signRect.left + sign.offsetWidth * 0.86,
+            bottom: signRect.top + sign.offsetHeight * 0.72
+          };
           return {
-            width: el.offsetWidth,
-            expectedWidth: Math.min(32, Math.max(20, marker.clientWidth * 0.7)),
-            markerWidth: marker.clientWidth
+            dataIndex: Number(plot.dataset.plot),
+            anchorX: marker.offsetLeft / plot.clientWidth,
+            anchorY: marker.offsetTop / plot.clientHeight,
+            markerWidth,
+            markerExpectedWidth: Math.min(44, Math.max(24, plot.clientWidth * 0.2)),
+            markerWidthRatio: markerWidth / plot.clientWidth,
+            tilt: parseFloat(getComputedStyle(plot).getPropertyValue('--crop-sign-tilt')),
+            dropWidth: drop.offsetWidth,
+            dropExpectedWidth: Math.min(22, Math.max(14, markerWidth * 0.45)),
+            dropWidthRatio: drop.offsetWidth / markerWidth,
+            dropLeftRatio: drop.offsetLeft / markerWidth,
+            dropTopRatio: drop.offsetTop / markerHeight,
+            dropOverlapsSignUpperLeft:
+              dropRect.right > signRect.left &&
+              dropRect.bottom > signRect.top &&
+              dropRect.left < signRect.left + sign.offsetWidth * 0.28 &&
+              dropRect.top < signRect.top + sign.offsetHeight * 0.30,
+            dropOverlapsCropArtSafeZone: overlaps(dropRect, cropArtSafeZone),
+            signLoaded: sign.complete && sign.naturalWidth > 0,
+            dropLoaded: drop.complete && drop.naturalWidth > 0,
+            pointerEvents: [marker, sign, drop].map((el) => getComputedStyle(el).pointerEvents)
           };
         }),
         plantAnchors: plots.map((plot) => {
@@ -144,67 +194,69 @@ for (const viewport of [
             y: plant.offsetTop / plot.clientHeight
           };
         }).filter(Boolean),
-        signsLoaded: signs.every((el) => el.complete && el.naturalWidth > 0),
-        dropsLoaded: drops.every((el) => el.complete && el.naturalWidth > 0),
-        pointerEvents: markers.concat(signs, drops).map((el) => getComputedStyle(el).pointerEvents),
         wateringCanLoaded: !!wateringCan && wateringCan.complete && wateringCan.naturalWidth > 0,
         wateringCanText: document.getElementById('tool-water-btn').textContent.trim()
       };
     });
-    expect(artState.backgrounds).toHaveLength(4);
+    expect(artState.backgrounds).toHaveLength(PLOT_COUNT);
     expect(artState.backgrounds.every((value) => value.includes('hatake_crop_wet.png'))).toBe(true);
-    expect(artState.backgroundSizes).toEqual(['contain', 'contain', 'contain', 'contain']);
-    for (const marker of artState.markerGeometry) {
-      expect(Math.abs(marker.anchorX - 0.1)).toBeLessThanOrEqual(0.01);
-      expect(Math.abs(marker.anchorY - 0.5)).toBeLessThanOrEqual(0.01);
-      expect(marker.width).toBeGreaterThanOrEqual(29);
-      expect(marker.width).toBeLessThanOrEqual(57);
-      expect(Math.abs(marker.width - marker.expectedWidth)).toBeLessThanOrEqual(1.5);
+    expect(artState.backgroundSizes).toEqual(Array(PLOT_COUNT).fill('contain'));
+    expect(artState.geometry).toHaveLength(PLOT_COUNT);
+    for (const geometry of artState.geometry) {
+      expect(Math.abs(geometry.anchorX - 0.1)).toBeLessThanOrEqual(0.01);
+      expect(Math.abs(geometry.anchorY - 0.5)).toBeLessThanOrEqual(0.01);
+      expect(geometry.markerWidth).toBeGreaterThanOrEqual(23);
+      expect(geometry.markerWidth).toBeLessThanOrEqual(45);
+      expect(Math.abs(geometry.markerWidth - geometry.markerExpectedWidth)).toBeLessThanOrEqual(1.5);
       // clamp の下限・上限に当たらない画面では plot 幅の約20%。
-      if (marker.expectedWidth > 30 && marker.expectedWidth < 56) {
-        expect(Math.abs(marker.widthRatio - 0.2)).toBeLessThanOrEqual(0.01);
+      if (geometry.markerExpectedWidth > 24 && geometry.markerExpectedWidth < 44) {
+        expect(Math.abs(geometry.markerWidthRatio - 0.2)).toBeLessThanOrEqual(0.01);
       }
-    }
-    expect(artState.markerGeometry.map((value) => value.tilt)).toEqual([-1.5, 0.75, -0.75, 1.25]);
-    for (const drop of artState.dropGeometry) {
-      expect(drop.width).toBeGreaterThanOrEqual(19);
-      expect(drop.width).toBeLessThanOrEqual(33);
-      expect(Math.abs(drop.width - drop.expectedWidth)).toBeLessThanOrEqual(1.5);
-      if (drop.expectedWidth > 20 && drop.expectedWidth < 32) {
-        expect(Math.abs(drop.width / drop.markerWidth - 0.7)).toBeLessThanOrEqual(0.04);
+      expect(geometry.tilt).toBe(TILTS_BY_DATA_INDEX[geometry.dataIndex]);
+      expect(geometry.dropWidth).toBeGreaterThanOrEqual(13);
+      expect(geometry.dropWidth).toBeLessThanOrEqual(23);
+      expect(Math.abs(geometry.dropWidth - geometry.dropExpectedWidth)).toBeLessThanOrEqual(1.5);
+      if (geometry.dropExpectedWidth > 14 && geometry.dropExpectedWidth < 22) {
+        expect(Math.abs(geometry.dropWidthRatio - 0.45)).toBeLessThanOrEqual(0.04);
       }
+      expect(Math.abs(geometry.dropLeftRatio - (-0.2))).toBeLessThanOrEqual(0.03);
+      expect(Math.abs(geometry.dropTopRatio - (-0.18))).toBeLessThanOrEqual(0.03);
+      expect(geometry.dropOverlapsSignUpperLeft).toBe(true);
+      expect(geometry.dropOverlapsCropArtSafeZone).toBe(false);
+      expect(geometry.signLoaded).toBe(true);
+      expect(geometry.dropLoaded).toBe(true);
+      expect(geometry.pointerEvents.every((value) => value === 'none')).toBe(true);
     }
-    expect(artState.plantAnchors).toHaveLength(3);
+    expect(artState.plantAnchors).toHaveLength(5);
     for (const plant of artState.plantAnchors) {
       expect(Math.abs(plant.x - 0.5)).toBeLessThanOrEqual(0.01);
       expect(Math.abs(plant.y - 0.5)).toBeLessThanOrEqual(0.01);
     }
-    expect(artState.signsLoaded).toBe(true);
-    expect(artState.dropsLoaded).toBe(true);
-    expect(artState.pointerEvents.every((value) => value === 'none')).toBe(true);
     expect(artState.wateringCanLoaded).toBe(true);
     expect(artState.wateringCanText).toBe('');
 
-    const plotBoxes = await Promise.all(
-      Array.from({ length: 4 }, (_, index) => plots.nth(index).boundingBox())
-    );
-    const signBoxes = await Promise.all(
-      Array.from({ length: 4 }, (_, index) => signs.nth(index).boundingBox())
-    );
-    const dropBoxes = await Promise.all(
-      Array.from({ length: 4 }, (_, index) => drops.nth(index).boundingBox())
+    const boxesByDataIndex = await Promise.all(
+      Array.from({ length: PLOT_COUNT }, async (_, dataIndex) => {
+        const plot = page.locator(`.plot[data-plot="${dataIndex}"]`);
+        return {
+          dataIndex,
+          plot: await plot.boundingBox(),
+          sign: await plot.locator('.crop-sign').boundingBox(),
+          drop: await plot.locator('.watered-drop').boundingBox()
+        };
+      })
     );
     const stageBox = await page.locator('#stage').boundingBox();
 
-    for (let index = 0; index < 4; index += 1) {
-      const plotBox = plotBoxes[index];
-      const signBox = signBoxes[index];
-      const dropBox = dropBoxes[index];
+    for (const boxes of boxesByDataIndex) {
+      const plotBox = boxes.plot;
+      const signBox = boxes.sign;
+      const dropBox = boxes.drop;
 
       // しずくは離れたバッジではなく、札の左上へ一部重ねる。
-      expect(dropBox.x).toBeLessThan(signBox.x + signBox.width * 0.5);
+      expect(dropBox.x).toBeLessThan(signBox.x + signBox.width * 0.3);
       expect(dropBox.x + dropBox.width).toBeGreaterThan(signBox.x);
-      expect(dropBox.y).toBeLessThan(signBox.y + signBox.height * 0.35);
+      expect(dropBox.y).toBeLessThan(signBox.y + signBox.height * 0.3);
       expect(dropBox.y + dropBox.height).toBeGreaterThan(signBox.y);
 
       // 水やりマークが畑中央の芽を覆わない。
@@ -219,68 +271,84 @@ for (const viewport of [
         plantCenter.y <= dropBox.y + dropBox.height
       ).toBe(false);
 
-      // 畝の透明な矩形AABB同士は意図的に重なるため、clip-pathで見えている
-      // ひし形だけを対象に、しずくの四隅・辺中央・中心が侵入しないことを確認。
-      const dropSamplePoints = [
-        { x: dropBox.x, y: dropBox.y },
-        { x: dropBox.x + dropBox.width * 0.5, y: dropBox.y },
-        { x: dropBox.x + dropBox.width, y: dropBox.y },
-        { x: dropBox.x, y: dropBox.y + dropBox.height * 0.5 },
-        { x: dropBox.x + dropBox.width * 0.5, y: dropBox.y + dropBox.height * 0.5 },
-        { x: dropBox.x + dropBox.width, y: dropBox.y + dropBox.height * 0.5 },
-        { x: dropBox.x, y: dropBox.y + dropBox.height },
-        { x: dropBox.x + dropBox.width * 0.5, y: dropBox.y + dropBox.height },
-        { x: dropBox.x + dropBox.width, y: dropBox.y + dropBox.height }
+      // 畝も生成しずくも透明な矩形キャンバスを持つ。矩形角ではなく、実際の
+      // しずくシルエット（先端・左右輪郭・下の水輪）をサンプルし、隣接する
+      // clip-path の見える土へ描画画素が侵入しないことを確認する。
+      const dropVisibleSilhouette = [
+        [0.50, 0.05],
+        [0.36, 0.25], [0.64, 0.25],
+        [0.22, 0.48], [0.50, 0.45], [0.78, 0.48],
+        [0.10, 0.68], [0.50, 0.68], [0.90, 0.68],
+        [0.05, 0.84], [0.25, 0.84], [0.50, 0.84], [0.75, 0.84], [0.95, 0.84],
+        [0.12, 0.93], [0.50, 0.95], [0.88, 0.93]
       ];
-      for (let adjacent = 0; adjacent < 4; adjacent += 1) {
-        if (adjacent === index) continue;
-        const otherPlot = plotBoxes[adjacent];
+      const dropSamplePoints = dropVisibleSilhouette.map(([x, y]) => ({
+        x: dropBox.x + dropBox.width * x,
+        y: dropBox.y + dropBox.height * y
+      }));
+      for (const adjacent of ADJACENT_PLOTS[boxes.dataIndex]) {
+        const otherPlot = boxesByDataIndex[adjacent].plot;
         expect.soft(
           dropSamplePoints.some((point) => pointInsidePlotDiamond(point, otherPlot)),
-          `plot${index} のしずくが plot${adjacent} の見える土へ入らない`
+          `plot${boxes.dataIndex} のしずくが plot${adjacent} の見える土へ入らない`
         ).toBe(false);
       }
     }
-    for (const box of [...signBoxes, ...dropBoxes, ...plotBoxes]) {
+    for (const box of boxesByDataIndex.flatMap((boxes) => [boxes.sign, boxes.drop, boxes.plot])) {
       expect(box.x).toBeGreaterThanOrEqual(stageBox.x - 1);
       expect(box.y).toBeGreaterThanOrEqual(stageBox.y - 1);
       expect(box.x + box.width).toBeLessThanOrEqual(stageBox.x + stageBox.width + 1);
       expect(box.y + box.height).toBeLessThanOrEqual(stageBox.y + stageBox.height + 1);
     }
 
-    await expect(plots.nth(0)).toHaveAttribute('aria-label', 'おくの とまとの はたけ。きょうの みずやり できた');
-    await expect(plots.nth(1)).toHaveAttribute('aria-label', 'ひだりの にんじんの はたけ。きょうの みずやり できた');
+    await expect(page.locator('.plot[data-plot="0"]')).toHaveAttribute(
+      'aria-label',
+      'いちばん おくの とまとの はたけ。きょうの みずやり できた'
+    );
+    await expect(page.locator('.plot[data-plot="1"]')).toHaveAttribute(
+      'aria-label',
+      'ひだりの にんじんの はたけ。きょうの みずやり できた'
+    );
 
     await page.screenshot({
-      path: `test-results/hatake_markers_4plots_${viewport.width}x${viewport.height}.png`
+      path: `test-results/hatake_markers_9plots_${viewport.width}x${viewport.height}.png`
     });
   });
 }
 
 test('収穫すると立て札・湿った土・しずくが空畑の状態へ戻る', async ({ page }) => {
-  await gotoSeededField(page, { width: 844, height: 390 }, [
-    { seedId: null, daysGrown: 0, wateredToday: false, wilted: false, bug: false },
-    { seedId: null, daysGrown: 0, wateredToday: false, wilted: false, bug: false },
-    { seedId: null, daysGrown: 0, wateredToday: false, wilted: false, bug: false },
-    { seedId: 'tomato', daysGrown: 3, wateredToday: true, wilted: false, bug: false }
-  ]);
+  const harvestState = Array.from({ length: PLOT_COUNT }, () => ({
+    seedId: null,
+    daysGrown: 0,
+    wateredToday: false,
+    wilted: false,
+    bug: false
+  }));
+  harvestState[8] = {
+    seedId: 'tomato',
+    daysGrown: 3,
+    wateredToday: true,
+    wilted: false,
+    bug: false
+  };
+  await gotoSeededField(page, { width: 844, height: 390 }, harvestState);
 
   const plots = page.locator('.plot');
-  const plot3 = page.locator('.plot[data-plot="3"]');
-  await expect(plots).toHaveCount(4);
-  await expect(plot3.locator('.crop-sign')).toBeVisible();
-  await expect(plot3.locator('.watered-drop')).toBeVisible();
-  await tapPlot(page, '.plot[data-plot="3"]');
-  await expect(plots).toHaveCount(4);
-  await expect(plot3).not.toHaveAttribute('data-crop', /.+/);
-  await expect(plot3.locator('.crop-sign')).toBeHidden();
-  await expect(plot3.locator('.crop-sign')).not.toHaveAttribute('src', /.+/);
-  await expect(plot3).not.toHaveClass(/is-watered/);
-  await expect(plot3.locator('.watered-drop')).toBeHidden();
-  await expect(plot3).toHaveAttribute('aria-label', 'てまえの あいている はたけ');
+  const plot8 = page.locator('.plot[data-plot="8"]');
+  await expect(plots).toHaveCount(PLOT_COUNT);
+  await expect(plot8.locator('.crop-sign')).toBeVisible();
+  await expect(plot8.locator('.watered-drop')).toBeVisible();
+  await tapPlot(page, '.plot[data-plot="8"]');
+  await expect(plots).toHaveCount(PLOT_COUNT);
+  await expect(plot8).not.toHaveAttribute('data-crop', /.+/);
+  await expect(plot8.locator('.crop-sign')).toBeHidden();
+  await expect(plot8.locator('.crop-sign')).not.toHaveAttribute('src', /.+/);
+  await expect(plot8).not.toHaveClass(/is-watered/);
+  await expect(plot8.locator('.watered-drop')).toBeHidden();
+  await expect(plot8).toHaveAttribute('aria-label', 'てまえの みぎの あいている はたけ');
   const savedPlots = await page.evaluate(() =>
     JSON.parse(localStorage.getItem('pono_hatake_state_v1')).plots
   );
-  expect(savedPlots).toHaveLength(4);
-  expect(savedPlots[3].seedId).toBe(null);
+  expect(savedPlots).toHaveLength(PLOT_COUNT);
+  expect(savedPlots[8].seedId).toBe(null);
 });

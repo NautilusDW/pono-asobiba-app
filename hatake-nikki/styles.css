@@ -113,7 +113,7 @@ html, body {
 
 .plot {
   position: absolute;
-  width: 19.833333%; /* 238 / 1200: hatake_crop.png の原寸比 */
+  width: 14.5%;
   aspect-ratio: 238 / 143; /* hatake_crop.png 実測 AR を厳守 (stretch禁止) */
   background: url('../assets/images/yard/hatake_crop.png') center/contain no-repeat;
   display: flex; align-items: center; justify-content: center;
@@ -133,13 +133,18 @@ html, body {
   pointer-events: auto;
   touch-action: manipulation;
 }
-/* green.png 上のアイソメ2×2。画面では 0=奥、1/2=中央、3=手前の
-   左右対称なひし形になり、4枚の間に緑のあぜ道が残る。
-   4区画はロックせず最初からすべて使える。 */
-.plot[data-plot="0"] { left: 30.583333%; top: 27.328358%; z-index: 1; }
-.plot[data-plot="1"] { left: 13.583333%; top: 43.328358%; z-index: 2; }
-.plot[data-plot="2"] { left: 47.583333%; top: 43.328358%; z-index: 2; }
-.plot[data-plot="3"] { left: 30.583333%; top: 59.328358%; z-index: 3; }
+/* green.png 上の論理3×3。アイソメ投影では奥から1／2／3／2／1枚に見える。
+   9枚全体の重心を畑面中央(50%,54%)に置き、右のツールレールを避けつつ、
+   各列の間には細い緑のあぜ道を残す。9区画は最初からすべて使える。 */
+.plot[data-plot="0"] { left: 42.75%; top: 22.698%; z-index: 1; }
+.plot[data-plot="4"] { left: 30.25%; top: 34.448%; z-index: 2; }
+.plot[data-plot="5"] { left: 55.25%; top: 34.448%; z-index: 2; }
+.plot[data-plot="1"] { left: 17.75%; top: 46.198%; z-index: 3; }
+.plot[data-plot="6"] { left: 42.75%; top: 46.198%; z-index: 3; }
+.plot[data-plot="2"] { left: 67.75%; top: 46.198%; z-index: 3; }
+.plot[data-plot="7"] { left: 30.25%; top: 57.948%; z-index: 4; }
+.plot[data-plot="8"] { left: 55.25%; top: 57.948%; z-index: 4; }
+.plot[data-plot="3"] { left: 42.75%; top: 69.698%; z-index: 5; }
 .plot.is-pressed { filter: brightness(0.92); }
 .plot:focus-visible {
   outline: none;
@@ -147,14 +152,14 @@ html, body {
 }
 
 /* 札と水やり済みマークを同じアンカーで動かす。
-   杭先は左角付近(10%,50%)へ移し、札は前版の約65%に縮小。
-   生成しずくは札の左上へ重ね、前版の約60%にする。 */
+   杭先は全9区画とも左角付近(10%,50%)へ固定し、札は前版の約65%。
+   生成しずくは札の左上外側へ寄せ、作物絵の安全域と重ならない大きさにする。 */
 .plot-marker {
   position: absolute;
   left: 10%;
   top: 50%;
   z-index: 4;
-  width: clamp(30px, 20%, 56px);
+  width: clamp(24px, 20%, 44px);
   transform-origin: 0 0;
   transform: rotate(var(--crop-sign-tilt, 0deg)) translate(-43.2%, -95%);
   pointer-events: none;
@@ -174,8 +179,13 @@ html, body {
 .plot[data-plot="1"] { --crop-sign-tilt: 0.75deg; }
 .plot[data-plot="2"] { --crop-sign-tilt: -0.75deg; }
 .plot[data-plot="3"] { --crop-sign-tilt: 1.25deg; }
+.plot[data-plot="4"] { --crop-sign-tilt: -0.4deg; }
+.plot[data-plot="5"] { --crop-sign-tilt: 1deg; }
+.plot[data-plot="6"] { --crop-sign-tilt: -1.1deg; }
+.plot[data-plot="7"] { --crop-sign-tilt: 0.5deg; }
+.plot[data-plot="8"] { --crop-sign-tilt: -0.9deg; }
 
-/* 水やり済みは「濃い湿った土 + 水色の外周 + 大きなしずく」の3手掛かり。
+/* 水やり済みは「濃い湿った土 + 水色の外周 + 小さなしずく」の3手掛かり。
    生成画像は238×143。containで上頂点まで必ず表示し、拡大cropしない。 */
 .plot.is-watered {
   background-image: url('../assets/images/hatake-nikki/hatake_crop_wet.png');
@@ -185,13 +195,13 @@ html, body {
 }
 .watered-drop {
   position: absolute;
-  left: -8%;
-  top: -8%;
+  left: -20%;
+  top: -18%;
   right: auto;
   bottom: auto;
   z-index: 2;
   display: none;
-  width: clamp(20px, 70%, 32px);
+  width: clamp(14px, 45%, 22px);
   height: auto;
   object-fit: contain;
   filter: drop-shadow(0 2px 2px rgba(30, 111, 173, 0.28));

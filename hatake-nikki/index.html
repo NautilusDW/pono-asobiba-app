@@ -88,7 +88,7 @@
 <link rel="preload" as="image" href="../assets/images/hatake-nikki/crop_sign_ninjin_iso_v2.png" type="image/png">
 <link rel="preload" as="image" href="../assets/images/hatake-nikki/hatake_crop_wet.png" type="image/png">
 <link rel="preload" as="image" href="../assets/images/hatake-nikki/watered_drop_mark_v2.png" type="image/png">
-<link rel="stylesheet" href="styles.css?v=20260723-6">
+<link rel="stylesheet" href="styles.css?v=20260723-7">
 </head>
 <body>
 
@@ -118,8 +118,29 @@
       <button type="button" class="hud-pill zukan-btn" id="zukan-open-btn" aria-label="はたけずかん">📖</button>
     </div>
 
-    <div id="plot-area" role="group" aria-label="4つの はたけ">
-      <div class="plot" data-plot="0" role="button" tabindex="0" aria-label="おくの あいている はたけ">
+    <div id="plot-area" role="group" aria-label="9つの はたけ">
+      <!-- DOM順は画面の奥から手前。data-plot 0〜3は旧4区画の場所も維持する。 -->
+      <div class="plot" data-plot="0" role="button" tabindex="0" aria-label="いちばん おくの あいている はたけ">
+        <div class="plot-hit-area" aria-hidden="true"></div>
+        <div class="plot-marker" aria-hidden="true">
+          <img class="crop-sign" alt="" draggable="false">
+          <img class="watered-drop" src="../assets/images/hatake-nikki/watered_drop_mark_v2.png" alt="" draggable="false">
+        </div>
+        <div class="plant" data-stage="-1"></div>
+        <div class="bug-sprite"></div>
+        <div class="water-gauge"><div class="water-gauge-fill"></div></div>
+      </div>
+      <div class="plot" data-plot="4" role="button" tabindex="0" aria-label="おくの ひだりの あいている はたけ">
+        <div class="plot-hit-area" aria-hidden="true"></div>
+        <div class="plot-marker" aria-hidden="true">
+          <img class="crop-sign" alt="" draggable="false">
+          <img class="watered-drop" src="../assets/images/hatake-nikki/watered_drop_mark_v2.png" alt="" draggable="false">
+        </div>
+        <div class="plant" data-stage="-1"></div>
+        <div class="bug-sprite"></div>
+        <div class="water-gauge"><div class="water-gauge-fill"></div></div>
+      </div>
+      <div class="plot" data-plot="5" role="button" tabindex="0" aria-label="おくの みぎの あいている はたけ">
         <div class="plot-hit-area" aria-hidden="true"></div>
         <div class="plot-marker" aria-hidden="true">
           <img class="crop-sign" alt="" draggable="false">
@@ -139,6 +160,16 @@
         <div class="bug-sprite"></div>
         <div class="water-gauge"><div class="water-gauge-fill"></div></div>
       </div>
+      <div class="plot" data-plot="6" role="button" tabindex="0" aria-label="まんなかの あいている はたけ">
+        <div class="plot-hit-area" aria-hidden="true"></div>
+        <div class="plot-marker" aria-hidden="true">
+          <img class="crop-sign" alt="" draggable="false">
+          <img class="watered-drop" src="../assets/images/hatake-nikki/watered_drop_mark_v2.png" alt="" draggable="false">
+        </div>
+        <div class="plant" data-stage="-1"></div>
+        <div class="bug-sprite"></div>
+        <div class="water-gauge"><div class="water-gauge-fill"></div></div>
+      </div>
       <div class="plot" data-plot="2" role="button" tabindex="0" aria-label="みぎの あいている はたけ">
         <div class="plot-hit-area" aria-hidden="true"></div>
         <div class="plot-marker" aria-hidden="true">
@@ -149,7 +180,27 @@
         <div class="bug-sprite"></div>
         <div class="water-gauge"><div class="water-gauge-fill"></div></div>
       </div>
-      <div class="plot" data-plot="3" role="button" tabindex="0" aria-label="てまえの あいている はたけ">
+      <div class="plot" data-plot="7" role="button" tabindex="0" aria-label="てまえの ひだりの あいている はたけ">
+        <div class="plot-hit-area" aria-hidden="true"></div>
+        <div class="plot-marker" aria-hidden="true">
+          <img class="crop-sign" alt="" draggable="false">
+          <img class="watered-drop" src="../assets/images/hatake-nikki/watered_drop_mark_v2.png" alt="" draggable="false">
+        </div>
+        <div class="plant" data-stage="-1"></div>
+        <div class="bug-sprite"></div>
+        <div class="water-gauge"><div class="water-gauge-fill"></div></div>
+      </div>
+      <div class="plot" data-plot="8" role="button" tabindex="0" aria-label="てまえの みぎの あいている はたけ">
+        <div class="plot-hit-area" aria-hidden="true"></div>
+        <div class="plot-marker" aria-hidden="true">
+          <img class="crop-sign" alt="" draggable="false">
+          <img class="watered-drop" src="../assets/images/hatake-nikki/watered_drop_mark_v2.png" alt="" draggable="false">
+        </div>
+        <div class="plant" data-stage="-1"></div>
+        <div class="bug-sprite"></div>
+        <div class="water-gauge"><div class="water-gauge-fill"></div></div>
+      </div>
+      <div class="plot" data-plot="3" role="button" tabindex="0" aria-label="いちばん てまえの あいている はたけ">
         <div class="plot-hit-area" aria-hidden="true"></div>
         <div class="plot-marker" aria-hidden="true">
           <img class="crop-sign" alt="" draggable="false">
@@ -209,7 +260,7 @@
 
 </div>
 
-<script src="js/logic.js?v=20260723-2"></script>
-<script src="js/game.js?v=20260723-4"></script>
+<script src="js/logic.js?v=20260723-3"></script>
+<script src="js/game.js?v=20260723-5"></script>
 </body>
 </html>
