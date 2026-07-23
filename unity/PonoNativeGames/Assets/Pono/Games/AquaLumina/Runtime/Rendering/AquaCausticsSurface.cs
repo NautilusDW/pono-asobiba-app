@@ -36,10 +36,21 @@ namespace Pono.AquaLumina.Rendering
 
         /// <summary>
         /// Builds the caustics quad under <paramref name="parent"/>, covering
-        /// <paramref name="worldRect"/> at z = 0. Returns null when the caustics
-        /// shader is unavailable (e.g. stripped from a build, or unsupported on
-        /// the running graphics API) — this is a graceful no-op path, callers
-        /// must tolerate a null return and simply render without caustics.
+        /// <paramref name="worldRect"/> (expressed in world-space XY at world
+        /// z = 0). Returns null when the caustics shader is unavailable
+        /// (e.g. stripped from a build, or unsupported on the running graphics
+        /// API) — this is a graceful no-op path, callers must tolerate a null
+        /// return and simply render without caustics.
+        ///
+        /// <paramref name="worldRect"/> is always honored in true world space
+        /// regardless of <paramref name="parent"/>'s own position/rotation/scale:
+        /// the mesh vertices are baked via <see cref="Transform.InverseTransformPoint"/>
+        /// against <paramref name="parent"/> (see BuildQuadMesh), not by copying
+        /// worldRect's raw XY values as local vertex coordinates. This makes the
+        /// method safe to call with a parent that is not sitting at the world
+        /// origin with an identity transform (e.g. a camera-shake rig, a scaled
+        /// UI-scaling root, a parallax layer) — the quad still lands at the
+        /// intended world-space rect either way.
         /// </summary>
         public static AquaCausticsSurface Create(Transform parent, Rect worldRect, int sortingOrder, float intensity)
         {
@@ -62,7 +73,7 @@ namespace Pono.AquaLumina.Rendering
             go.transform.SetParent(parent, worldPositionStays: false);
 
             var surface = go.AddComponent<AquaCausticsSurface>();
-            surface.Initialize(shader, worldRect, sortingOrder, intensity);
+            surface.Initialize(shader, parent, worldRect, sortingOrder, intensity);
             return surface;
         }
 
@@ -76,9 +87,9 @@ namespace Pono.AquaLumina.Rendering
             }
         }
 
-        private void Initialize(Shader shader, Rect worldRect, int sortingOrder, float intensity)
+        private void Initialize(Shader shader, Transform parent, Rect worldRect, int sortingOrder, float intensity)
         {
-            _mesh = BuildQuadMesh(worldRect, out var rectExtent);
+            _mesh = BuildQuadMesh(parent, worldRect, out var rectExtent);
 
             // new Material(shader) + sharedMaterial (never .material) so we never
             // silently spawn a second per-instance clone behind our own backs;
@@ -92,12 +103,18 @@ namespace Pono.AquaLumina.Rendering
             _material.SetFloat(ScaleId, 2.6f);
             _material.SetFloat(SpeedId, 0.6f);
             _material.SetVector(FadeParamsId, new Vector4(0.05f, 0.75f, 0.35f, 0f));
-            // _RectExtent is a deliberate small addition beyond the fade tuple:
+            // _RectExtent is part of this material's documented uniform contract
+            // (Intensity/Tint/Scale/Speed/FadeParams/RectExtent — six total, see
+            // AquaCaustics.shader's Properties block for the full pinned list):
             // it carries the quad's own UV extents (uMax = aspect, vMax = 1) so
             // the shader's box-edge soft mask can stay proportionally even on
             // all four sides regardless of worldRect's aspect ratio, without
             // needing a per-frame CPU parameter (set once here, static for the
-            // lifetime of the surface).
+            // lifetime of the surface). Required precisely because the box-edge
+            // soft mask is itself a requirement (no additive quad may show a
+            // hard rectangle silhouette against the background) — any future
+            // reader enumerating "the caustics parameters" must treat this as
+            // the sixth, non-optional entry, not an implementation-private extra.
             _material.SetVector(RectExtentId, rectExtent);
 
             var meshFilter = gameObject.AddComponent<MeshFilter>();
@@ -117,21 +134,39 @@ namespace Pono.AquaLumina.Rendering
         // rect's aspect ratio: BOTH axes are divided by the rect's height, so v
         // spans exactly 0..1 while u spans 0..aspect. This lets the shader's
         // Voronoi lattice use one uniform "_Scale" without stretching cells.
-        private static Mesh BuildQuadMesh(Rect worldRect, out Vector4 rectExtent)
+        //
+        // Vertices are baked via parent.InverseTransformPoint rather than by
+        // copying worldRect's raw XY values as local vertex coordinates. The
+        // GameObject this mesh is attached to always has an identity local
+        // transform at construction time (see Create: it is a freshly created
+        // GameObject, parented with worldPositionStays: false before any local
+        // transform is touched), so its world matrix is exactly parent's world
+        // matrix — meaning InverseTransformPoint(worldCorner) against parent is
+        // precisely the local-space vertex value that reproduces worldCorner in
+        // world space once the mesh is drawn. This keeps worldRect honored in
+        // true world space even when parent is not at the world origin with an
+        // identity rotation/scale (camera-shake rigs, scaled UI roots, parallax
+        // layers, etc.) — the corner points are still computed in world space
+        // first (worldRect is authoritative), only their frame of reference is
+        // converted before being stored as mesh data.
+        private static Mesh BuildQuadMesh(Transform parent, Rect worldRect, out Vector4 rectExtent)
         {
             var height = Mathf.Max(worldRect.height, 0.0001f);
             var aspect = worldRect.width / height;
 
-            var vertices = new Vector3[4];
-            vertices[0] = new Vector3(worldRect.xMin, worldRect.yMin, 0f);
-            vertices[1] = new Vector3(worldRect.xMax, worldRect.yMin, 0f);
-            vertices[2] = new Vector3(worldRect.xMax, worldRect.yMax, 0f);
-            vertices[3] = new Vector3(worldRect.xMin, worldRect.yMax, 0f);
+            var worldCorners = new Vector3[4];
+            worldCorners[0] = new Vector3(worldRect.xMin, worldRect.yMin, 0f);
+            worldCorners[1] = new Vector3(worldRect.xMax, worldRect.yMin, 0f);
+            worldCorners[2] = new Vector3(worldRect.xMax, worldRect.yMax, 0f);
+            worldCorners[3] = new Vector3(worldRect.xMin, worldRect.yMax, 0f);
 
+            var vertices = new Vector3[4];
             var uvs = new Vector2[4];
             for (var i = 0; i < 4; i++)
             {
-                var local = (Vector2)vertices[i] - worldRect.min;
+                vertices[i] = parent != null ? parent.InverseTransformPoint(worldCorners[i]) : worldCorners[i];
+
+                var local = (Vector2)worldCorners[i] - worldRect.min;
                 uvs[i] = new Vector2(local.x / height, local.y / height);
             }
 

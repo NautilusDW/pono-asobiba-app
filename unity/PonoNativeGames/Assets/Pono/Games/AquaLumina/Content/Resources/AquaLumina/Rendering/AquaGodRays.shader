@@ -76,9 +76,27 @@ Shader "Pono/AquaLumina/GodRays"
             // Self-contained hash noise - this shader has no shared HLSL helper file to pull
             // from (the module is limited to exactly this one .shader file), so the noise lives
             // here, scoped to the only pass that needs it.
+            //
+            // Deliberately an integer bit-mixing hash (PCG-style avalanche: Jarzynski & Olano,
+            // "Hash Functions for GPU Rendering"), not the classic frac(sin(x*127.1)*43758.5453)
+            // idiom: that trig-based form is well known to produce visible periodic/banding
+            // artifacts on some GPU driver sin() implementations as inputs grow large, and this
+            // pass's caller (ValueNoise1D, via FragThreshold's beam angle) feeds it
+            // angle * 24.0 + _AquaTime * 0.35, where _AquaTime is Time.time - unbounded over a
+            // long play session. A multiply/xorshift avalanche has no such large-argument
+            // precision failure mode.
             float Hash11(float x)
             {
-                return frac(sin(x * 127.1) * 43758.5453);
+                // x arrives pre-floored (an integer-valued float lattice index, see
+                // ValueNoise1D), so truncating through int first gives an exact integer to hash
+                // instead of re-deriving one from x's raw bit pattern.
+                int i = (int)x;
+                uint n = (uint)i;
+
+                n = n * 747796405u + 2891336453u;
+                uint word = ((n >> ((n >> 28u) + 4u)) ^ n) * 277803737u;
+                word = (word >> 22u) ^ word;
+                return (float)word * (1.0 / 4294967295.0);
             }
 
             // Quintic (5th-order) fade between lattice points - cheaper than Perlin's gradient

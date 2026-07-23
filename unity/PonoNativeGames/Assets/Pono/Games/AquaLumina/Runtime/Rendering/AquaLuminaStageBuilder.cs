@@ -81,6 +81,22 @@ namespace Pono.AquaLumina.Rendering
                 throw new ArgumentNullException(nameof(camera));
             }
 
+            if (!camera.orthographic)
+            {
+                // ComputeVisibleWorldRect (below) and the sun-disc depth
+                // resolution both assume an orthographic projection (reading
+                // orthographicSize/aspect directly). This builder is only ever
+                // exercised today via AquaLuminaProjectSetup's spike scene,
+                // which hardcodes an orthographic camera, but that contract
+                // isn't enforced anywhere - warn loudly instead of silently
+                // producing an incorrect layout if a future caller passes a
+                // perspective camera.
+                Debug.LogWarning(
+                    "AquaLuminaStageBuilder.Build: expected an orthographic camera; layout "
+                    + "(visible-world-rect, sun placement, etc.) will be incorrect for a "
+                    + "perspective camera.");
+            }
+
             var root = new GameObject("AquaStage");
             root.transform.SetParent(parent, false);
             var content = root.AddComponent<AquaLuminaStageContent>();
@@ -309,6 +325,21 @@ namespace Pono.AquaLumina.Rendering
             // Height derives from the texture's own pixel aspect ratio while
             // width is forced to span the rect, so the silhouette is never
             // stretched off its authored proportions.
+            //
+            // Known trade-off (not a correctness bug): this quad spans the
+            // texture's full authored height (RockTextureHeight:Width = 1:3.2),
+            // but CreateRockSilhouetteTexture only ever paints the bottom
+            // ~30-34% (+ a modest sine-wave amplitude) of that as opaque; the
+            // rest above the skyline is fully transparent and simply doesn't
+            // draw, so this does not visually misrepresent the rocks as taller
+            // than intended - it only means the sprite's bounds/overdraw
+            // footprint (~55% of a typical 16:9 rect's height) is larger than
+            // the visible silhouette. Accepted for this spike; if a future QA
+            // screenshot shows the rock layer reading as unexpectedly
+            // dominant, either author a wider/shorter rock texture (lower
+            // RockTextureHeight:RockTextureWidth) or cap worldHeight
+            // independently and derive width from that instead of the full
+            // rect width.
             var worldHeight = rect.width * (RockTextureHeight / (float)RockTextureWidth);
             var renderer = CreateSpriteRendererObject(
                 name,
@@ -396,7 +427,14 @@ namespace Pono.AquaLumina.Rendering
             {
                 var sprite = variants[i % variantCount];
                 var worldHeight = NextFloat(random, 3f, 6f);
-                var worldWidth = Mathf.Lerp(0.35f, 0.55f, Mathf.InverseLerp(3f, 6f, worldHeight));
+                // Width derives from height via the texture's own pixel aspect
+                // ratio (KelpTextureWidth:KelpTextureHeight, 1:8) so the
+                // resulting scale is uniform on both axes - matches the
+                // pattern already used for rocks/fish elsewhere in this file.
+                // Randomizing worldHeight alone still gives blade-to-blade
+                // size variety (plus the 3 distinct wave-pattern variants)
+                // without ever stretching a blade off its authored proportions.
+                var worldWidth = worldHeight * (KelpTextureWidth / (float)KelpTextureHeight);
                 var x = NextFloat(random, rect.xMin + margin, rect.xMax - margin);
 
                 var renderer = CreateSpriteRendererObject(

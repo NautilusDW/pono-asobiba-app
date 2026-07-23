@@ -26,8 +26,8 @@ Shader "Pono/AquaLumina/WaterDistortion"
             #pragma fragment Frag
             #pragma target 3.5
 
-            // INTEGRATION FIX (see AquaLumina/README.md integration notes): the original
-            // "Common.hlsl + TextureXR.hlsl + Blit.hlsl" include set does not compile on Metal.
+            // INTEGRATION FIX: the original "Common.hlsl + TextureXR.hlsl + Blit.hlsl" include
+            // set does not compile on Metal.
             // Blit.hlsl's FragOctahedralProject function (unused here, but still part of the
             // same translation unit) calls UnpackNormalOctQuadEncode, which lives in
             // Packing.hlsl - not pulled in by either Common.hlsl or TextureXR.hlsl. (The
@@ -107,13 +107,25 @@ Shader "Pono/AquaLumina/WaterDistortion"
                 offset *= min(edge.x, edge.y);
 
                 // Subtle per-channel UV split reads as gentle chromatic refraction at water
-                // boundaries without ever exceeding a couple of pixels at 1080p (k stays tiny
-                // because _ChromaticShift is clamped to <= 0.01 by the Volume parameter).
-                float k = _ChromaticShift * 200.0;
+                // boundaries. IMPORTANT: this offset is derived ONLY from _ChromaticShift and the
+                // *direction* of the flow field -- it deliberately does NOT multiply against
+                // `offset` (which already carries _RefractionStrength's own 0-0.05 range and
+                // depthFactor). That keeps the two Volume-exposed sliders independent: cranking
+                // refractionStrength to its max can no longer amplify the chromatic split, so
+                // _ChromaticShift's own clamp (0-0.01, see AquaWaterDistortionVolume.cs) is what
+                // bounds the worst case on its own. At chromaticShift's max (0.01) the resulting
+                // per-channel displacement from the base UV is at most 0.01 * kChromaShiftScale
+                // (~5px at 1080p height in the worst-case axis-aligned flow direction), regardless
+                // of what refractionStrength is set to.
+                float flowLen = length(flow);
+                float2 flowDir = flowLen > 1e-5 ? flow / flowLen : float2(0.0, 0.0);
+                const float kChromaShiftScale = 0.5;
+                float2 chromaOffset = flowDir * _ChromaticShift * kChromaShiftScale;
+
                 float4 col = 1.0;
-                col.r = SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_LinearClamp, uv + offset * (1.0 + k)).r;
+                col.r = SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_LinearClamp, uv + offset + chromaOffset).r;
                 col.g = SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_LinearClamp, uv + offset).g;
-                col.b = SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_LinearClamp, uv + offset * (1.0 - k)).b;
+                col.b = SAMPLE_TEXTURE2D_X(_BlitTexture, sampler_LinearClamp, uv + offset - chromaOffset).b;
 
                 // Shimmer (goal d): a fast sparkle plus a slow ambient band, both scaled by
                 // _ShimmerStrength and depthFactor. Only .rgb is modulated -- this pass

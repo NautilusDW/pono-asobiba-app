@@ -27,6 +27,24 @@ namespace Pono.AquaLumina.Editor
         public const string SourceRendererPath = "Assets/Settings/Renderer2D.asset";
         public const string PipelineAssetPath = "Assets/Settings/UniversalRP.asset";
 
+        // Project-wide, shared default Volume Profile (referenced by
+        // Assets/UniversalRenderPipelineGlobalSettings.asset as the pipeline-wide fallback for
+        // every camera/scene, including the shipping HideSeekCreatures/ColorWaterDelivery games).
+        // This spike must NEVER add component overrides here - see EnsureGodRayOverrides /
+        // EnsureWaterDistortionOverrides above, which only ever touch VolumeProfilePath. It can
+        // still end up here anyway: Unity auto-syncs newly compiled VolumeComponent subclasses
+        // into the project's global default profile the first time the Editor evaluates the
+        // Volume stack after a domain reload (VolumeManager.EvaluateVolumeDefaultState /
+        // ApplyDefaultProfile), which is exactly what happened once in practice (recovered
+        // 2026-07-24; see AquaLumina/README.md's safety-design section for the full story).
+        // VerifySpike guards against a repeat, and RemoveOrphanedDefaultProfileEntries (below)
+        // is the idempotent cleanup for it - called from RemoveRendererFromPipeline (so retiring
+        // the spike also un-pollutes this shared asset), RebuildSpikeScene (so a routine rebuild
+        // self-heals it too), and BuildMacFromCommandLine (so the auto-sync a real
+        // BuildPipeline.BuildPlayer call can itself re-trigger - confirmed happening even right
+        // after a clean VerifySpike - gets cleaned up before the build path exits).
+        private const string SharedDefaultVolumeProfilePath = "Assets/DefaultVolumeProfile.asset";
+
         // Pinned so EnsurePipelineEntry can abort loudly if Assets/Settings/Renderer2D.asset -
         // shared by both shipping games - is ever swapped out for a different asset at the same
         // path (see the safety constraints this integration operates under).
@@ -50,6 +68,11 @@ namespace Pono.AquaLumina.Editor
             var profile = EnsureVolumeProfile();
 
             BuildScene(rendererData, rendererIndex, profile);
+
+            // Self-heal: a routine rebuild is also a good place to catch/undo the Unity
+            // default-Volume-profile auto-sync described on SharedDefaultVolumeProfilePath's doc
+            // comment, in case it has silently reoccurred since the last run.
+            RemoveOrphanedDefaultProfileEntries();
 
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -159,6 +182,29 @@ namespace Pono.AquaLumina.Editor
                 }
             }
 
+            // Regression guard: this spike's overrides must live only in VolumeProfilePath, never
+            // leak into the shared, project-global default Volume Profile. See
+            // SharedDefaultVolumeProfilePath's doc comment for why this matters and the incident
+            // that prompted adding this check.
+            var sharedDefaultProfile = AssetDatabase.LoadAssetAtPath<VolumeProfile>(SharedDefaultVolumeProfilePath);
+            if (sharedDefaultProfile != null)
+            {
+                if (sharedDefaultProfile.Has<AquaGodRayVolume>())
+                {
+                    Debug.LogError(
+                        $"{SharedDefaultVolumeProfilePath} (shared, project-global) must NOT contain "
+                        + $"AquaGodRayVolume - it belongs only in {VolumeProfilePath}.");
+                    errors++;
+                }
+                if (sharedDefaultProfile.Has<AquaWaterDistortionVolume>())
+                {
+                    Debug.LogError(
+                        $"{SharedDefaultVolumeProfilePath} (shared, project-global) must NOT contain "
+                        + $"AquaWaterDistortionVolume - it belongs only in {VolumeProfilePath}.");
+                    errors++;
+                }
+            }
+
             var sceneInBuildSettings = false;
             foreach (var buildScene in EditorBuildSettings.scenes)
             {
@@ -210,16 +256,23 @@ namespace Pono.AquaLumina.Editor
                 }
             }
 
-            if (removed == 0)
+            if (removed > 0)
+            {
+                serializedPipeline.ApplyModifiedProperties();
+                EditorUtility.SetDirty(pipelineAsset);
+                AssetDatabase.SaveAssets();
+                Debug.Log($"[AquaLuminaProjectSetup] Removed {removed} Aqua Lumina renderer entry(ies) from the pipeline asset.");
+            }
+            else
             {
                 Debug.Log("[AquaLuminaProjectSetup] No AquaLumina renderer entries found in the pipeline asset; nothing to remove.");
-                return;
             }
 
-            serializedPipeline.ApplyModifiedProperties();
-            EditorUtility.SetDirty(pipelineAsset);
-            AssetDatabase.SaveAssets();
-            Debug.Log($"[AquaLuminaProjectSetup] Removed {removed} Aqua Lumina renderer entry(ies) from the pipeline asset.");
+            // Retiring the spike from the pipeline is exactly the moment an orphaned Aqua Lumina
+            // entry in the shared project-global default profile (see
+            // SharedDefaultVolumeProfilePath's doc comment) would otherwise be left behind
+            // indefinitely - clean it up here too, unconditionally and idempotently.
+            RemoveOrphanedDefaultProfileEntries();
         }
 
         public static void SetupFromCommandLine()
@@ -235,16 +288,31 @@ namespace Pono.AquaLumina.Editor
                 ?? Path.GetFullPath("Builds/macOS/PonoAquaLumina.app");
             Directory.CreateDirectory(Path.GetDirectoryName(output) ?? "Builds/macOS");
 
-            var report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
+            BuildReport report;
+            try
             {
-                // 00_Boot is deliberately excluded - it boots HideSeekCreatures (see
-                // HideSeekProjectSetup), not this spike. This mirrors the ColorWaterDelivery
-                // precedent of building only its own scene.
-                scenes = new[] { SpikeScenePath },
-                locationPathName = output,
-                target = BuildTarget.StandaloneOSX,
-                options = BuildOptions.None
-            });
+                report = BuildPipeline.BuildPlayer(new BuildPlayerOptions
+                {
+                    // 00_Boot is deliberately excluded - it boots HideSeekCreatures (see
+                    // HideSeekProjectSetup), not this spike. This mirrors the ColorWaterDelivery
+                    // precedent of building only its own scene.
+                    scenes = new[] { SpikeScenePath },
+                    locationPathName = output,
+                    target = BuildTarget.StandaloneOSX,
+                    options = BuildOptions.None
+                });
+            }
+            finally
+            {
+                // BuildPipeline.BuildPlayer itself (its script recompile/domain reload for the
+                // build target) can re-trigger Unity's internal VolumeComponent auto-sync into
+                // the shared default profile - even immediately after EnsureReady()'s VerifySpike()
+                // call reported it clean, since that check runs before the build, not after (see
+                // SharedDefaultVolumeProfilePath's doc comment for the full story). Clean up here,
+                // unconditionally and in a finally block, so pollution introduced by the build
+                // itself never survives the build path, whether the build succeeds or throws.
+                RemoveOrphanedDefaultProfileEntries();
+            }
 
             if (report.summary.result != BuildResult.Succeeded)
             {
@@ -399,6 +467,72 @@ namespace Pono.AquaLumina.Editor
             serializedPipeline.ApplyModifiedProperties();
             EditorUtility.SetDirty(pipelineAsset);
             return newIndex;
+        }
+
+        // -----------------------------------------------------------------
+        // Shared DefaultVolumeProfile.asset guard (see SharedDefaultVolumeProfilePath's doc
+        // comment for why this asset needs guarding at all).
+        // -----------------------------------------------------------------
+
+        [MenuItem("Pono/Aqua Lumina/Clean Shared Default Volume Profile")]
+        public static void CleanSharedDefaultVolumeProfile()
+        {
+            if (RemoveOrphanedDefaultProfileEntries() == 0)
+            {
+                Debug.Log(
+                    $"[AquaLuminaProjectSetup] '{SharedDefaultVolumeProfilePath}' has no Aqua Lumina components to remove.");
+            }
+        }
+
+        /// <summary>
+        /// Idempotently strips any AquaGodRayVolume/AquaWaterDistortionVolume sub-assets from the
+        /// project-wide shared default Volume profile, if present. Uses VolumeProfile.Remove&lt;T&gt;
+        /// (removes the component from the profile's components list) followed by
+        /// AssetDatabase.RemoveObjectFromAsset + DestroyImmediate (removes the now-unreferenced
+        /// sub-asset object from the .asset file itself) - Remove&lt;T&gt; alone would leave an
+        /// orphaned, unreferenced MonoBehaviour sub-asset serialized into the file. No-op (returns
+        /// 0) if the shared asset doesn't exist or doesn't contain either component, so this is
+        /// always safe to call unconditionally.
+        /// </summary>
+        private static int RemoveOrphanedDefaultProfileEntries()
+        {
+            var profile = AssetDatabase.LoadAssetAtPath<VolumeProfile>(SharedDefaultVolumeProfilePath);
+            if (profile == null)
+            {
+                return 0;
+            }
+
+            var removed = 0;
+            removed += RemoveComponentIfPresent<AquaGodRayVolume>(profile);
+            removed += RemoveComponentIfPresent<AquaWaterDistortionVolume>(profile);
+
+            if (removed > 0)
+            {
+                EditorUtility.SetDirty(profile);
+                AssetDatabase.SaveAssets();
+                Debug.LogWarning(
+                    $"[AquaLuminaProjectSetup] Removed {removed} orphaned Aqua Lumina component(s) from the shared "
+                    + $"'{SharedDefaultVolumeProfilePath}' (project-wide default Volume profile). These must only "
+                    + $"ever live in '{VolumeProfilePath}'.");
+            }
+            return removed;
+        }
+
+        private static int RemoveComponentIfPresent<T>(VolumeProfile profile)
+            where T : VolumeComponent
+        {
+            if (!profile.TryGet(out T component))
+            {
+                return 0;
+            }
+
+            profile.Remove<T>();
+            if (component != null)
+            {
+                AssetDatabase.RemoveObjectFromAsset(component);
+                UnityEngine.Object.DestroyImmediate(component, true);
+            }
+            return 1;
         }
 
         // -----------------------------------------------------------------

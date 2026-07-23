@@ -18,9 +18,11 @@ Shader "Pono/AquaLumina/Caustics"
         _Scale ("Voronoi Scale", Float) = 2.6
         _Speed ("Animation Speed", Float) = 0.6
         _FadeParams ("Fade Params (bottomV, topV, minFade, unused)", Vector) = (0.05, 0.75, 0.35, 0)
-        // Not part of the pinned tuning tuple above: the quad's own UV extents
-        // (uMax = aspect, vMax = 1), used only to keep the box-edge soft mask
-        // proportionally even on all four sides. See AquaCausticsSurface.cs.
+        // Sixth and final entry of this material's documented uniform contract
+        // (Intensity/Tint/Scale/Speed/FadeParams/RectExtent): the quad's own UV
+        // extents (uMax = aspect, vMax = 1), required so the box-edge soft mask
+        // stays proportionally even on all four sides regardless of worldRect's
+        // aspect ratio. Not optional/private — see AquaCausticsSurface.cs.
         _RectExtent ("Rect UV Extent (uMax, vMax, unused, unused)", Vector) = (1.78, 1.0, 0, 0)
     }
 
@@ -76,12 +78,20 @@ Shader "Pono/AquaLumina/Caustics"
             // float (not half): _Time.y keeps growing for the lifetime of the
             // session, and half's ~11-bit mantissa loses enough precision
             // within a few minutes to make the animation visibly stutter/jump.
-            float _Intensity;
-            float4 _Tint;
-            float _Scale;
-            float _Speed;
-            float4 _FadeParams;
-            float4 _RectExtent;
+            //
+            // Wrapped in the idiomatic URP UnityPerMaterial CBUFFER (matching
+            // Unity's own built-in URP Sprite/Lit shaders) rather than declared
+            // as loose globals, so the SRP Batcher can treat this material's
+            // per-draw data as one batched constant buffer instead of falling
+            // back to legacy per-draw-call constant upload.
+            CBUFFER_START(UnityPerMaterial)
+                float _Intensity;
+                float4 _Tint;
+                float _Scale;
+                float _Speed;
+                float4 _FadeParams;
+                float4 _RectExtent;
+            CBUFFER_END
 
             Varyings Vert(Attributes input)
             {

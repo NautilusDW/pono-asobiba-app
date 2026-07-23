@@ -90,32 +90,10 @@ namespace Pono.AquaLumina.Rendering
 
             PushUniforms(volume);
 
-            // INTEGRATION FIX (see AquaLumina/README.md integration notes): the original value
-            // here was BeforeRenderingPostProcessing + 1, which crashed every frame on the URP 2D
-            // Renderer with "texture handle does not have a valid descriptor ... commonly caused
-            // by referencing ... the system back buffer" (RecordRenderGraph on this pass).
-            //
-            // Root cause, traced through Renderer2DRendergraph.cs: the 2D Renderer buckets every
-            // custom pass into one of 4 coarse RenderPassEvent2D groups via a <= comparison
-            // (ScriptableRenderPass2D.GetInjectionPoint2D), so BeforeRenderingPostProcessing + 1
-            // DID get bucketed into (and executed during) the AfterRenderingPostProcessing group,
-            // same as a pass set to exactly RenderPassEvent.AfterRenderingPostProcessing would be.
-            // But Renderer2DRendergraph.OnAfterRendering separately decides whether *anything*
-            // runs after post-processing using an *exact* equality check
-            // (`x.renderPassEvent == RenderPassEvent.AfterRenderingPostProcessing`), not the same
-            // bucketed comparison. BeforeRenderingPostProcessing + 1 failed that exact check, so
-            // the renderer wrongly concluded nothing ran afterwards and resolved post-processing
-            // straight to the back buffer - which this pass then tried (and failed) to read back
-            // as a normal RenderGraph texture.
-            //
-            // Using the exact enum value here satisfies both checks: it still lands in the
-            // AfterRenderingPostProcessing bucket (so it still runs after the water-distortion
-            // feature, which sits at exactly BeforeRenderingPostProcessing - an earlier bucket,
-            // processed in an earlier RecordCustomRenderGraphPasses call - regardless of the two
-            // features' order on the Renderer2DData asset), and it correctly signals the renderer
-            // to keep an intermediate camera-color target alive for this pass to read from.
-            _pass.renderPassEvent = RenderPassEvent.AfterRenderingPostProcessing;
-            _pass.requiresIntermediateTexture = true;
+            // renderPassEvent / requiresIntermediateTexture are constant for the pass's entire
+            // lifetime (see the INTEGRATION FIX comment in AquaGodRayPass's constructor for why
+            // AfterRenderingPostProcessing specifically is required), so both are set once there
+            // rather than reassigned on every AddRenderPasses call.
             _pass.SetMaterial(_material);
             renderer.EnqueuePass(_pass);
         }
@@ -229,6 +207,39 @@ namespace Pono.AquaLumina.Rendering
             public AquaGodRayPass()
             {
                 profilingSampler = new ProfilingSampler("AquaGodRay");
+
+                // INTEGRATION FIX (see AquaLumina/README.md integration notes): the original value
+                // here was BeforeRenderingPostProcessing + 1, which crashed every frame on the URP
+                // 2D Renderer with "texture handle does not have a valid descriptor ... commonly
+                // caused by referencing ... the system back buffer" (RecordRenderGraph on this
+                // pass).
+                //
+                // Root cause, traced through Renderer2DRendergraph.cs: the 2D Renderer buckets
+                // every custom pass into one of 4 coarse RenderPassEvent2D groups via a <=
+                // comparison (ScriptableRenderPass2D.GetInjectionPoint2D), so
+                // BeforeRenderingPostProcessing + 1 DID get bucketed into (and executed during)
+                // the AfterRenderingPostProcessing group, same as a pass set to exactly
+                // RenderPassEvent.AfterRenderingPostProcessing would be. But
+                // Renderer2DRendergraph.OnAfterRendering separately decides whether *anything*
+                // runs after post-processing using an *exact* equality check
+                // (`x.renderPassEvent == RenderPassEvent.AfterRenderingPostProcessing`), not the
+                // same bucketed comparison. BeforeRenderingPostProcessing + 1 failed that exact
+                // check, so the renderer wrongly concluded nothing ran afterwards and resolved
+                // post-processing straight to the back buffer - which this pass then tried (and
+                // failed) to read back as a normal RenderGraph texture.
+                //
+                // Using the exact enum value here satisfies both checks: it still lands in the
+                // AfterRenderingPostProcessing bucket (so it still runs after the water-distortion
+                // feature, which sits at exactly BeforeRenderingPostProcessing - an earlier
+                // bucket, processed in an earlier RecordCustomRenderGraphPasses call - regardless
+                // of the two features' order on the Renderer2DData asset), and it correctly
+                // signals the renderer to keep an intermediate camera-color target alive for this
+                // pass to read from.
+                //
+                // Both fields are constant for the pass's entire lifetime (set once here, not
+                // reassigned per-frame in AddRenderPasses).
+                renderPassEvent = RenderPassEvent.AfterRenderingPostProcessing;
+                requiresIntermediateTexture = true;
             }
 
             public void SetMaterial(Material material)

@@ -223,20 +223,31 @@ namespace Pono.AquaLumina.Rendering
                     copyDesc.clearBuffer = false;
                     var copy = renderGraph.CreateTexture(copyDesc);
 
-                    // Deliberately use the plain (no-material) AddBlitPass overload for the
-                    // scene-copy step rather than calling RenderGraphUtils.AddCopyPass directly.
-                    // Raw AddCopyPass throws an ArgumentException whenever
-                    // RenderGraph.nativeRenderPassesEnabled is false for the active platform/
-                    // backend, and we cannot guarantee that flag across every device this spike
-                    // may run on. This AddBlitPass overload internally calls the same
-                    // CanAddCopyPass check and transparently uses the fast frame-buffer-fetch
-                    // copy path when supported, falling back to a plain Blitter copy otherwise --
-                    // same visual result, zero crash risk. It is the exact technique URP's own
-                    // FullScreenPassRendererFeature uses for its "fetchColorBuffer" copy step.
-                    renderGraph.AddBlitPass(source, copy, Vector2.one, Vector2.zero, passName: "AquaWaterDistortion Copy");
+                    // Group both utility-pass calls below under one RenderGraphProfilingScope so
+                    // the frame debugger / RenderGraph viewer shows a single unified
+                    // "AquaWaterDistortion" marker here, for parity with the Compatibility-Mode
+                    // Execute() path's `using (new ProfilingScope(cmd, profilingSampler))` below.
+                    // AddBlitPass itself has no passName-grouping/sampler parameter of its own
+                    // (each call gets its own internal pass name), so this scope is the mechanism
+                    // RenderGraph exposes for grouping multiple utility passes under one marker.
+                    using (new RenderGraphProfilingScope(renderGraph, profilingSampler))
+                    {
+                        // Deliberately use the plain (no-material) AddBlitPass overload for the
+                        // scene-copy step rather than calling RenderGraphUtils.AddCopyPass
+                        // directly. Raw AddCopyPass throws an ArgumentException whenever
+                        // RenderGraph.nativeRenderPassesEnabled is false for the active platform/
+                        // backend, and we cannot guarantee that flag across every device this
+                        // spike may run on. This AddBlitPass overload internally calls the same
+                        // CanAddCopyPass check and transparently uses the fast frame-buffer-fetch
+                        // copy path when supported, falling back to a plain Blitter copy
+                        // otherwise -- same visual result, zero crash risk. It is the exact
+                        // technique URP's own FullScreenPassRendererFeature uses for its
+                        // "fetchColorBuffer" copy step.
+                        renderGraph.AddBlitPass(source, copy, Vector2.one, Vector2.zero, passName: "AquaWaterDistortion Copy");
 
-                    var blitParameters = new RenderGraphUtils.BlitMaterialParameters(copy, source, _material, 0);
-                    renderGraph.AddBlitPass(blitParameters, "AquaWaterDistortion");
+                        var blitParameters = new RenderGraphUtils.BlitMaterialParameters(copy, source, _material, 0);
+                        renderGraph.AddBlitPass(blitParameters, "AquaWaterDistortion");
+                    }
                 }
                 catch (Exception exception)
                 {

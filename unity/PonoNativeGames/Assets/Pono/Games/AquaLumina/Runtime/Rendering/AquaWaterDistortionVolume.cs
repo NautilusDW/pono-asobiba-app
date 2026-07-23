@@ -12,10 +12,24 @@ namespace Pono.AquaLumina.Rendering
     /// them together in one pass, sharing one scene copy and one noise field.
     /// </summary>
     /// <remarks>
-    /// Both <see cref="refractionStrength"/> and <see cref="shimmerStrength"/> default to (near)
-    /// zero/idle so the pass stays inert (<see cref="IsActive"/> returns false and the render
-    /// feature skips it) until a scene Volume profile explicitly overrides them. QA can toggle
-    /// the whole effect at runtime via the inherited <see cref="VolumeComponent.active"/> flag.
+    /// Both <see cref="refractionStrength"/> and <see cref="shimmerStrength"/> default to genuine
+    /// zero, so <see cref="IsActive"/> returns false and <see cref="AquaWaterDistortionFeature"/>
+    /// skips the pass entirely until a scene Volume profile explicitly overrides them (the spike's
+    /// own <c>AquaLuminaVolumeProfile.asset</c> overrides shimmerStrength to 0.35 - see
+    /// EnsureWaterDistortionOverrides in AquaLuminaProjectSetup.cs). This matters even beyond the
+    /// obvious "no override -> no effect" case: <c>VolumeManager.instance.stack.GetComponent&lt;T&gt;()</c>
+    /// returns a phantom instance carrying these class-default field values (with <c>active ==
+    /// true</c>) whenever nothing in the stack overrides the component - including, in practice,
+    /// the auto-synced stub Unity's Volume system appends to the project's shared global default
+    /// profile the first time a new VolumeComponent subclass is compiled (see
+    /// AquaLuminaProjectSetup.SharedDefaultVolumeProfilePath's doc comment). A non-zero default
+    /// here would leak into every camera in the project through that stub, and would also survive
+    /// <c>AquaLuminaBootstrap.SetComponentActive&lt;T&gt;</c> (Bootstrap assembly; not referenced
+    /// from here, hence plain-text rather than a resolvable cref) disabling this component on the
+    /// scene's own Volume - disabling a component only stops IT from contributing an override, it
+    /// does not zero out the interpolated stack's fallback state. Keeping both parameters at a
+    /// true zero default is what makes the QA harness's "baseline" capture mode (all effects off)
+    /// actually render undistorted, not just nominally "off".
     /// </remarks>
     [Serializable, VolumeComponentMenu("Pono Aqua Lumina/Water Distortion")]
     [SupportedOnRenderPipeline(typeof(UniversalRenderPipelineAsset))]
@@ -24,8 +38,8 @@ namespace Pono.AquaLumina.Rendering
         [Tooltip("UV-space refraction displacement amount. 0 = off. The scene profile overrides this to 0.012.")]
         public ClampedFloatParameter refractionStrength = new ClampedFloatParameter(0f, 0f, 0.05f);
 
-        [Tooltip("Strength of the sparkle + slow ambient-banding shimmer overlay.")]
-        public ClampedFloatParameter shimmerStrength = new ClampedFloatParameter(0.35f, 0f, 1f);
+        [Tooltip("Strength of the sparkle + slow ambient-banding shimmer overlay. 0 = off. The scene profile overrides this to 0.35.")]
+        public ClampedFloatParameter shimmerStrength = new ClampedFloatParameter(0f, 0f, 1f);
 
         [Tooltip("Spatial frequency of the underlying flow/shimmer noise field.")]
         public ClampedFloatParameter waveScale = new ClampedFloatParameter(1.6f, 0.25f, 8f);
@@ -33,7 +47,7 @@ namespace Pono.AquaLumina.Rendering
         [Tooltip("Playback speed of the flow/shimmer animation.")]
         public ClampedFloatParameter speed = new ClampedFloatParameter(0.5f, 0f, 3f);
 
-        [Tooltip("Per-channel UV split layered on top of the refraction offset (subtle chromatic fringing, capped well under a handful of pixels at 1080p).")]
+        [Tooltip("Chromatic fringing amount, independent of refractionStrength (the split direction follows the flow field, but its magnitude is driven only by this value): capped at ~5px at 1080p height even at this parameter's own max, regardless of how refractionStrength is set.")]
         public ClampedFloatParameter chromaticShift = new ClampedFloatParameter(0.0025f, 0f, 0.01f);
 
         /// <summary>
