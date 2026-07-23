@@ -596,6 +596,7 @@ function mulberry32(seed) {
   assert.match(gameJs, /localStorage\.setItem\(\s*BEST_COMBO_KEY/, "最大コンボ記録をlocalStorageへ保存する");
   assert.match(gameJs, /Math\.max\(\s*lifetimeBestCombo\s*,\s*readBestComboRecord\(\)\s*\)/, "終了時に別タブの最新記録を再読込し、小さい値で上書きしない");
   assert.match(gameJs, /prefersReducedMotion\(\)\s*\?\s*620\s*:\s*300/, "うごきをへらす設定でも加点表示の静止時間を残す");
+  assert.match(gameJs, /!holes\[idx\]\.occupant[\s\S]{0,180}classList\.contains\(['"]is-visible['"]\)\)\s*return/, "成功後の見た目への追いタップは空振りにしない");
   assert.match(gameJs, /\[BONUS_PARTNER\.awake\]\.concat\(/, "ボーナス画像をローカルpreloadの先頭で優先する");
   assert.match(indexHtml, /rel=["']preload["'][^>]*friend_hikari_momonga_bonus_awake\.png/, "ボーナス画像をHTMLからも先読みする");
 

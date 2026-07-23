@@ -704,6 +704,10 @@
   function handleTapAt(clientX, clientY) {
     if (phase !== 'playing') return;
     var idx = resolveHoleFromPoint(clientX, clientY);
+    // 成功直後は加点を読める間だけ見た目を残す。中身はすでに回収済みなので、
+    // 同じ見た目への追いタップを空振り扱いにしてコンボを切らない。
+    if (idx !== null && holes[idx] && !holes[idx].occupant &&
+        holeRefs[idx] && holeRefs[idx].wrap.classList.contains('is-visible')) return;
     var target = 'empty';
     if (idx !== null && holes[idx] && holes[idx].occupant) {
       target = holes[idx].occupant.isBonus ? 'bonus' : holes[idx].occupant.kind;

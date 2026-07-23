@@ -1,5 +1,11 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2342: ひょっこりハイタッチを30秒へ短縮し、実出現7体ごとのGPT Image 2製
+// 「ひかりモモンガ」(30点)、通常10点／ボーナス30点＋連続成功コンボ加点、
+// リアルタイム加点・コンボHUD、端末内の最大コンボ記録を追加。自然退場はコンボを
+// 維持し、睡眠タップの減点と終盤の音カウントを撤去して急かしすぎない進行へ調整。
+// ゲーム個別ファイルと画像はnetwork-first配信のためCRITICAL_ASSETSには追加しない。
+// play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSION と同期 (2342)。
 // v2341: guragura-seesaw「タップで はじめる」無反応の再発 (2026-07-22 に一度修正した
 // logic.js 読込リトライは健在だったが、横画面誤検知ガード (#landscape-notice) が
 // 旧来の innerHeight>=innerWidth 素朴比較のままだったため、WebView起動直後/回転中の
@@ -819,7 +825,7 @@
 // preventDefault)。水やり成功フィードバック(バッジ/演出/flash文言)と常設ステータスバー
 // を追加し、#stage 背景を cover→contain に防御的変更 (ひし形頂点欠け不能化)。
 // play.html PAGE_CACHE_VERSION/window.PONO_SW_VERSION と同期 (2335)。
-const CACHE_VERSION = 2341;
+const CACHE_VERSION = 2342;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [
