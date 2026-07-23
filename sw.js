@@ -1,5 +1,10 @@
 // Service Worker for ポノのあそびば PWA
 // Network-first + version-based cache busting
+// v2360: ひょっこりハイタッチの動物本体だけを下辺マスク内へ分離し、月・
+// 通常光・ボーナス画像内の星と光彩・加点表示が右上で切れる問題を修正。
+// styles.css/index.html queryを20260723-1442へ同期。ゲーム個別ファイルは
+// network-first配信のためCRITICAL_ASSETSには追加しない。play.html
+// PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2360)。
 // v2359: ぐらぐらシーソーひろば 二度目のクロスレビュー軽微指摘3件を是正。
 // (1) R7 (index6) の tray dog/cat/frog 3種同時登場を緩和 (frog を外し
 // blueberry+1)。 (2) R8/R9 (index7/8) で mystery_stone/star_block が
@@ -936,7 +941,7 @@
 // styles.css／game.js queryを20260723-1429へ同期。ゲーム個別ファイルと画像は
 // network-first配信のためCRITICAL_ASSETSには追加しない。play.htmlの
 // PAGE_CACHE_VERSION/window.PONO_SW_VERSIONと同期 (2347)。
-const CACHE_VERSION = 2359;
+const CACHE_VERSION = 2360;
 const CACHE_NAME = 'pono-v' + CACHE_VERSION;
 const ROOM_FURNITURE_CACHE_REFRESH_TOKEN = '1371c';
 const ROOM_FURNITURE_CACHE_REFRESH_IDS = [

@@ -706,12 +706,15 @@ function mulberry32(seed) {
     assert.ok(gameJs.includes(`setProperty('${property}'`), `${property} を場所定義からCSSへ渡す`);
   }
   assert.match(stylesCss, /\.hh-hideout\s*\{[^}]*translate\(-53\.5%,\s*-50%\)/s, "茂み画像内の穴中心53.5%をキャラ窓へ合わせる");
-  assert.match(stylesCss, /\.hh-window\s*\{[^}]*clip-path:\s*inset\(0\s+0\s+35\.5%\s+0/s, "通常画面のキャラ窓下端を前葉の開始位置より上に保つ");
-  assert.match(stylesCss, /\.hh-char-wrap\.is-visible\s*\{[^}]*translate\(-50%,\s*0\)/s, "停止時は胴体が不自然に切れない高さまで表示する");
-  assert.match(stylesCss, /@media\s*\(max-height:\s*430px\)[\s\S]*?\.hh-window\s*\{[^}]*clip-path:\s*inset\(0\s+0\s+32%\s+0/s, "短画面でもキャラ窓と前葉を隙間なく重ねる");
+  assert.match(indexHtml, /class=["']hh-char-wrap["'][\s\S]*?class=["']hh-window["'][\s\S]*?class=["']hh-char-rise["'][\s\S]*?class=["']hh-char["'][\s\S]*?<\/span>\s*<\/span>\s*<span class=["']hh-sparkle["']/s, "動物本体だけを窓内へ置き、月・光はマスク外の兄弟レイヤーにする");
+  assert.match(stylesCss, /\.hh-char-wrap\s*\{[^}]*overflow:\s*visible/s, "月・光・加点を包む状態wrapは切り抜かない");
+  assert.match(stylesCss, /\.hh-window\s*\{[^}]*overflow:\s*visible/s, "動物窓の上・左右はボーナス画像内の星と光彩を切らない");
+  assert.match(stylesCss, /\.hh-window\s*\{[^}]*clip-path:\s*inset\(-30%\s+-30%\s+35\.5%\s+-30%\)/s, "通常画面は上・左右を広げ、下端だけを前葉の開始位置より上に保つ");
+  assert.match(stylesCss, /\.hh-char-wrap\.is-visible\s+\.hh-char-rise\s*\{[^}]*translate\(-50%,\s*0\)/s, "停止時は胴体が不自然に切れない高さまで表示する");
+  assert.match(stylesCss, /@media\s*\(max-height:\s*430px\)[\s\S]*?\.hh-window\s*\{[^}]*clip-path:\s*inset\(-30%\s+-30%\s+32%\s+-30%\)/s, "短画面でも上・左右の光彩を保ち、下端は前葉と隙間なく重ねる");
   assert.ok(D.LOCATIONS.every(location => location.slots.some(slot => slot.depth === 0.88)), "各場所の上段データに0.88倍の奥行きがある");
   assert.ok(D.LOCATIONS.every(location => location.slots.some(slot => slot.depth === 1)), "各場所の下段データに等倍の手前列がある");
-  assert.match(stylesCss, /\.hh-window\s*\{[^}]*scale\(var\(--depth-scale\)\)/s, "キャラも茂みと同じ前後比率で拡縮する");
+  assert.match(stylesCss, /\.hh-char-wrap\s*\{[^}]*scale\(var\(--depth-scale\)\)/s, "キャラとマスク外演出も茂みと同じ前後比率で拡縮する");
   assert.match(stylesCss, /\.hh-hole\.is-pressed\s+\.hh-hideout\s*\{[^}]*translate\(-53\.5%,\s*-50%\)[^}]*scale\(var\(--depth-scale\)\)\s+scale\(0\.96\)/s, "押した瞬間も穴中心補正と前後パースを保つ");
 }
 

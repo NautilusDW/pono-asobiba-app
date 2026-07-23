@@ -464,21 +464,37 @@ a:focus-visible {
   clip-path: inset(60% 0 0 0);
 }
 
-/* キャラは共通の正方形キャンバスのまま重ね、下辺だけを窓で隠す。 */
-.hh-window {
+/*
+ * 状態wrapは穴の中心・遠近を正本にし、overflow: visible のまま保つ。
+ * 動物本体だけを子の .hh-window で切り抜くことで、右上の月・光・加点表示を
+ * 穴マスクに巻き込まず、同じ位置と遠近のまま最後まで見せる。
+ */
+.hh-char-wrap {
   position: absolute;
   top: calc(50% + var(--depth-shift-y));
   left: 50%;
   z-index: 3;
   width: min(58%, 220px);
-  overflow: hidden;
+  overflow: visible;
   transform: translate(-50%, -50%) scale(var(--depth-scale));
+  transform-origin: center;
   aspect-ratio: 1 / 1;
-  border-radius: 48% 48% 38% 38% / 52% 52% 44% 44%;
-  clip-path: inset(0 0 35.5% 0 round 48% 48% 34% 34%);
+  isolation: isolate;
 }
 
-.hh-char-wrap {
+.hh-window {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  /*
+   * 下辺だけを固定マスクにする。上・左右は30%広げ、ボーナス画像内の星と
+   * キャラdrop-shadowまで欠けずに見せる。隠れ中の本体は104%下なので漏れない。
+   */
+  overflow: visible;
+  clip-path: inset(-30% -30% 35.5% -30%);
+}
+
+.hh-char-rise {
   position: absolute;
   bottom: -2%;
   left: 50%;
@@ -488,7 +504,7 @@ a:focus-visible {
   transition: transform 0.32s cubic-bezier(0.24, 1.42, 0.52, 1);
 }
 
-.hh-char-wrap.is-visible {
+.hh-char-wrap.is-visible .hh-char-rise {
   transform: translate(-50%, 0);
 }
 
@@ -534,6 +550,7 @@ a:focus-visible {
   position: absolute;
   top: 9%;
   right: 13%;
+  z-index: 5;
   width: clamp(13px, 3.2vmin, 27px);
   border-radius: 50%;
   opacity: 0;
@@ -567,6 +584,7 @@ a:focus-visible {
   position: absolute;
   top: 2%;
   right: 0;
+  z-index: 5;
   display: block;
   width: 42%;
   height: auto;
@@ -589,6 +607,7 @@ a:focus-visible {
   position: absolute;
   top: 43%;
   left: 50%;
+  z-index: 6;
   display: block;
   width: 82%;
   height: auto;
@@ -694,6 +713,7 @@ a:focus-visible {
   position: absolute;
   top: 5%;
   left: 50%;
+  z-index: 8;
   padding: 5px 11px;
   border: 2px solid #d4e7c8;
   border-radius: 999px;
@@ -1193,9 +1213,12 @@ a:focus-visible {
     height: clamp(78px, 33cqh, 132px);
   }
 
-  .hh-window {
+  .hh-char-wrap {
     width: min(52%, 112px);
-    clip-path: inset(0 0 32% 0 round 48% 48% 34% 34%);
+  }
+
+  .hh-window {
+    clip-path: inset(-30% -30% 32% -30%);
   }
 
   .hh-hideout {
